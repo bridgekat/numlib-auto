@@ -1,6 +1,6 @@
 import Mathlib.Algebra.Polynomial.Module.AEval
 import Numlib.Krylov.Arnoldi
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Optimality
 
 /-!
 # Krylov iterates: specifications

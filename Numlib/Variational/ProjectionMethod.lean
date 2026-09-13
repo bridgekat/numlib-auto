@@ -9,7 +9,7 @@ The operator-level twin of `Numlib.Variational.Galerkin`: instead of a sesquilin
 Hilbert space, the data is a bounded operator `A` and a bounded projection `P` of the space onto the
 trial space, and the discrete problem is `P (A u) = P f` with `u ∈ range P`
 (`IsProjectionMethodSolution`, [kress1998numerical] (11.30)).  For an orthogonal projection this is
-the Galerkin specification `IsGalerkin A f 0 (range P) u` of `Numlib.LinearSolve.Projection.Basic`
+the Galerkin specification `IsGalerkin A f 0 (range P) u` of `Numlib.Projection.Basic`
 (`isProjectionMethodSolution_starProjection_iff`), and Céa's lemma reads `‖u* - u_n‖ ≤ (‖A‖ / c)
 inf_{v ∈ range P} ‖u* - v‖` for a strictly coercive `A`
 (`IsProjectionMethodSolution.norm_sub_le_of_isCoercive`).
@@ -46,7 +46,7 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [InnerProductSpac
 /-- For an orthogonal projection the projection method is the Galerkin method with `x₀ = 0`: the
 projected equation `P (A u) = P f` says exactly that the residual `f - A u` is orthogonal to the
 trial space ([kress1998numerical], §12.1; the same specification is
-`Numlib.LinearSolve.Projection.Basic`'s `IsGalerkin`). -/
+`Numlib.Projection.Basic`'s `IsGalerkin`). -/
 theorem isProjectionMethodSolution_starProjection_iff (A : X →ₗ[𝕜] X) (f : X)
     (K : Submodule 𝕜 X) [K.HasOrthogonalProjection] (u : X) :
     IsProjectionMethodSolution A f K.starProjection u ↔ IsGalerkin A f 0 K u := by

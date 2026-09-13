@@ -4,8 +4,8 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Convergence.CG
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Subspace
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Basic
+import Numlib.Projection.Optimality
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import NumlibSurface.SaadSparse.Chapter06.Section05

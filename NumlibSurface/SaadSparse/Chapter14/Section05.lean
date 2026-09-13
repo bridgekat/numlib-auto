@@ -1,4 +1,4 @@
-import Numlib.LinearSolve.DomainDecomposition.Schur
+import Numlib.DomainDecomposition.Schur
 import NumlibSurface.SaadSparse.Chapter14.Section02
 
 /-!
@@ -20,7 +20,7 @@ A *full matrix method* iterates on the unreduced system (14.2) with a block prec
   `equation_14_51` is (14.51): the iterates of the preconditioned method are again of that form.
 * `proposition_14_11` and `proposition_14_12` are the two propositions.  Saad states them for "the
   same Krylov subspace method", which is not a formal object; they are read here as statements
-  about the specifications of `Numlib/LinearSolve/Projection/Basic`, so that they cover GMRES,
+  about the specifications of `Numlib/Projection/Basic`, so that they cover GMRES,
   MINRES, FOM, CG and the Lanczos method at once.  Both sides of the equivalence are written in the
   variable the split-preconditioned method actually iterates on — `u = U_A x` on the full system and
   `w = U_S y` on the reduced one — and `equation_14_51` translates the first back into Saad's `x_m`.
@@ -28,7 +28,7 @@ A *full matrix method* iterates on the unreduced system (14.2) with a block prec
   Saad writes — the iteration *produces* iterates of the form (14.51) — and
   `proposition_14_11_galerkin` and `proposition_14_12_galerkin` are the orthogonal-projection twins.
 
-Everything specializes `Numlib/LinearSolve/DomainDecomposition/Schur`.
+Everything specializes `Numlib/DomainDecomposition/Schur`.
 -/
 
 open Matrix DomainDecomposition

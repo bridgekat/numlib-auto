@@ -1,7 +1,7 @@
 import Mathlib.Combinatorics.SimpleGraph.Paths
 import Mathlib.Data.ENat.Lattice
 import Mathlib.LinearAlgebra.Matrix.Notation
-import Numlib.LinearSolve.Preconditioner.ILU
+import Numlib.Preconditioner.ILU
 import NumlibSurface.SaadSparse.Chapter03.Section02
 
 /-!
@@ -14,7 +14,7 @@ of fill (Definition 10.5) with its fill-path characterizations (Theorems 10.6 an
 modified factorization `MILU` of §10.3.5.
 
 Almost nothing is constructed here. Saad's `ILU_P` is `Matrix.IsILU` of
-`Numlib/LinearSolve/Preconditioner/ILU.lean`, stated declaratively — `L` unit lower triangular, `U`
+`Numlib/Preconditioner/ILU.lean`, stated declaratively — `L` unit lower triangular, `U`
 upper triangular, both vanishing on the zero pattern `P`, and `L U` agreeing with `A` off `P` —
 rather than as the output of a loop; `isILU_iff` is that reading written out. What the surface adds
 is the book's vocabulary: the condition (10.11) on a zero pattern as `IsZeroPattern`, the level of

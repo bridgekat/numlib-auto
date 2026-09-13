@@ -1,5 +1,5 @@
 import Numlib.Analysis.Normed.Ring.CondNumber
-import Numlib.LinearSolve.Perturbation
+import Numlib.Conditioning.LinearSystem
 import NumlibSurface.SaadSparse.Chapter01.Basics
 
 /-!
@@ -20,7 +20,7 @@ The condition number is the backbone's `NormedRing.condNumber` of the operator
 `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)` (`Matrix.condNumberLp_eq_condNumber`), and the
 perturbation bounds are `relative_error_le_condNumber`,
 `relative_error_le_condNumber_mul_relative_residual` and `hasDerivAt_perturbed_solution` of
-`Numlib/LinearSolve/Perturbation.lean`.  The bridge that carries the last of these to matrices is
+`Numlib/Conditioning/LinearSystem.lean`.  The bridge that carries the last of these to matrices is
 `Matrix.ringInverse_lpCLM`: the matrix inverse and the ring inverse of the induced operator agree,
 junk values and all, because `Matrix.lpCLM` reflects invertibility (`Matrix.isUnit_lpCLM_iff`).
 
@@ -117,7 +117,7 @@ theorem relative_error_le_of_perturbed (hA : IsUnit A) (ΔA : Matrix (Fin n) (Fi
 
 /-- **Saad (1.74)–(1.75)**: the solution `x(ε) = (A + ε E)⁻¹ (b + ε e)` of a linearly perturbed
 system is differentiable in `ε` at `0`, with derivative `A⁻¹ (e - E x)` at the unperturbed
-solution `x = A⁻¹ b`.  `hasDerivAt_perturbed_solution` of `Numlib/LinearSolve/Perturbation.lean`,
+solution `x = A⁻¹ b`.  `hasDerivAt_perturbed_solution` of `Numlib/Conditioning/LinearSystem.lean`,
 transported to matrices by `Matrix.ringInverse_lpCLM`: the matrix inverse of `A + ε E` is the ring
 inverse of the induced operator, junk values included, and `A` invertible makes `A + ε E`
 invertible for all small `ε`, so near `0` the function differentiated really is the solution.

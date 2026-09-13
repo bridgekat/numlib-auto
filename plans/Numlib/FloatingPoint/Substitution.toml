@@ -16,7 +16,7 @@ Results, in the entrywise order of `LinearAlgebra/Matrix/Order` over an ordered 
 
 * Theorem 8.5 = QSS (3.24): `(T + ΔT) x̂ = b` with `|ΔT| ≤ γ_n |T|`, forward and backward;
 * Theorem 8.7 = QSS §3.2.2's improved bound: when `|u_ii| ≥ |u_ij|` for `j > i`, `|x_i - x̂_i| ≤
-  2^{n-i+1} γ_n max_{j ≥ i} |x̂_j|`, from Lemma 8.6 (`LinearSolve/Direct/Substitution`); its row
+  2^{n-i+1} γ_n max_{j ≥ i} |x̂_j|`, from Lemma 8.6 (`Direct/Substitution`); its row
   diagonally dominant sibling from Lemma 8.8.
 
 The normwise consequence QSS (3.25) needs a norm and is a surface statement over `ℝ` through
@@ -79,7 +79,7 @@ desc = '''Higham Theorem 8.7 = QSS §3.2.2's improved bound: over `ℝ`, if `U` 
 i < j → |U i j| ≤ |U i i|` and nonzero diagonal, `U *ᵥ x = b` and `RoundsBackSubst m U b x̂`, then `∀
 i, |x i - x̂ i| ≤ 2 ^ (#{j | i ≤ j}) * gamma m.u (card n) * ⨆ j ≥ i, |x̂ j|` (`2^{n-i+1}` on `Fin n`
 with `1`-based `i`). From `|x - x̂| = |U⁻¹ ΔU x̂| ≤ γ_n |U⁻¹| |U| |x̂|` and
-`Matrix.abs_inv_mul_abs_apply_le_two_pow` of `LinearSolve/Direct/Substitution`. The lower triangular
+`Matrix.abs_inv_mul_abs_apply_le_two_pow` of `Direct/Substitution`. The lower triangular
 statement (`|l_ii| ≥ |l_ij|` for `j < i`) is the transported version. ★★'''
 deps = ["FloatingPoint.exists_roundsBackSubst_eq", "Matrix.abs_inv_mul_abs_apply_le_two_pow"]
 

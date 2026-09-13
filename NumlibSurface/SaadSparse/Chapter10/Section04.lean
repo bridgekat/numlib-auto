@@ -1,4 +1,4 @@
-import Numlib.LinearSolve.Preconditioner.ILU
+import Numlib.Preconditioner.ILU
 
 /-!
 # Saad §10.4: threshold strategies and `ILUT`
@@ -19,7 +19,7 @@ diagonal is never dropped. Writing Algorithm 10.6 down instead would add a heap-
 with no mathematical content, and Theorem 10.8 uses none of it.
 
 Saad's `M̂` matrix (10.25)–(10.27) is `Matrix.IsMHat` of
-`Numlib/LinearSolve/Preconditioner/ILU.lean`, and his "diagonally dominant `M̂` matrix" is
+`Numlib/Preconditioner/ILU.lean`, and his "diagonally dominant `M̂` matrix" is
 `Matrix.IsMHat.IsDiagDominant`. It is genuinely weaker than his M-matrix of Definition 1.30: nothing
 is assumed about nonsingularity or about the sign of the inverse. The book's "row `i` with `i < n`"
 is `i ≠ Fin.last n`, and the backbone states it order-theoretically as `¬ IsMax i`.

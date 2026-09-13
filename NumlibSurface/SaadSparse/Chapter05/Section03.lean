@@ -4,8 +4,8 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.OneDimensional
+import Numlib.Projection.Basic
+import Numlib.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
 /-!
@@ -18,7 +18,7 @@ the residual-norm steepest descent (Algorithm 5.4).
 
 All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin A`
 (`step1_eq`, `sdStep_eq`, `mrStep_eq` are `rfl`), so the convergence estimates specialize
-`Numlib/LinearSolve/Projection/OneDimensional.lean`.
+`Numlib/Projection/OneDimensional.lean`.
 
 The exact one-step identities specialize the backbone's
 `Projection.norm_residual_minResStep_sq_eq` and `Projection.energyNorm_steepestDescentStep_sq_eq`:

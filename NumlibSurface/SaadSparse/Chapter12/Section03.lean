@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
-import Numlib.LinearSolve.Preconditioner.Chebyshev
-import Numlib.LinearSolve.Preconditioner.Polynomial
+import Numlib.Preconditioner.Chebyshev
+import Numlib.Preconditioner.Polynomial
 import Numlib.RingTheory.Polynomial.KernelPolynomial
 import NumlibSurface.SaadSparse.Common
 
@@ -15,8 +15,8 @@ series (§12.3.1), Chebyshev acceleration (§12.3.2, Algorithm 12.1) and least-s
 (§12.3.3).
 
 The section carries no numbered result, so the declarations here are named for the book's
-displayed equations. Everything specializes `Numlib/LinearSolve/Preconditioner/Polynomial`,
-`Numlib/LinearSolve/Preconditioner/Chebyshev` and `Numlib/RingTheory/Polynomial/KernelPolynomial`;
+displayed equations. Everything specializes `Numlib/Preconditioner/Polynomial`,
+`Numlib/Preconditioner/Chebyshev` and `Numlib/RingTheory/Polynomial/KernelPolynomial`;
 what the surface adds is the real-matrix reading and the identification of Saad's residual
 polynomial `T_k(t) = C_k((θ - t)/δ)/C_k(θ/δ)` with `Polynomial.Chebyshev.shifted k α β 0`
 (`T_k_eq_shifted`), which is the point at which this chapter meets the Chebyshev min–max theorem

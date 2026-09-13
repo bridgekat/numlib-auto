@@ -7,7 +7,7 @@ residual-based bounds of §4.6.2 through the condition number. (4.70) and the in
 heuristics (`≃`, "should not be regarded as an upper bound") and Examples 4.11–4.12 are numerical;
 none is a node. Norms are the `ℓ²` norms of `EuclideanSpace ℝ (Fin n)` and the induced operator norm
 (`Matrix.Norms.L2Operator`); the statements transfer to any pair of compatible norms, which the
-backbone (`Numlib/LinearSolve/Stationary/Basic`, stated on a normed space) already provides.
+backbone (`Numlib/Stationary/Basic`, stated on a normed space) already provides.
 '''
 
 [[node]]
@@ -78,7 +78,7 @@ kind = "theorem"
 desc = '''§4.6.2, second display, the normalized residual test: for `IsUnit A`, `b ≠ 0` and any `y`, if
 `‖b - A y‖ / ‖b‖ ≤ ε` then `‖A⁻¹ b - y‖ / ‖A⁻¹ b‖ ≤ NormedRing.condNumber A * ε`, with
 `K(A) = ‖A‖ ‖A⁻¹‖` in the `ℓ²` operator norm. `relative_error_le_condNumber_mul_relative_residual`
-of `Numlib/LinearSolve/Perturbation` on `toEuclideanCLM A`. The preconditioned variant
+of `Numlib/Conditioning/LinearSystem` on `toEuclideanCLM A`. The preconditioned variant
 `‖P⁻¹ r_k‖/‖P⁻¹ r₀‖ ≤ ε` is a criterion, not a result, and has no node. ★'''
 deps = ["QuarteroniSaccoSaleri.Chapter04.residual_stopping_abs", "NormedRing.condNumber", "relative_error_le_condNumber_mul_relative_residual"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.73'

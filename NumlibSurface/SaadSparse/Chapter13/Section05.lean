@@ -1,4 +1,4 @@
-import Numlib.LinearSolve.Multigrid.TwoGrid
+import Numlib.Multigrid.TwoGrid
 import NumlibSurface.SaadSparse.Chapter13.Section04
 
 /-!
@@ -10,7 +10,7 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 (13.63), Theorem 13.3 with its rate (13.64), and Example 13.8, the verification of the smoothing
 property for weighted Jacobi.
 
-Everything runs on `Numlib/LinearSolve/Multigrid/TwoGrid.lean`, whose two hypotheses
+Everything runs on `Numlib/Multigrid/TwoGrid.lean`, whose two hypotheses
 `Multigrid.IsSmootherWith` and `Multigrid.IsApproximationWith` are (13.62) and (13.63) for an
 abstract dual pair of seminorms.  What the surface adds is Saad's concrete pair,
 `‖x‖_D = (D x, x)^{1/2}` and `‖y‖_{D⁻¹} = (D⁻¹ y, y)^{1/2}` with `D = diag(A)`, and the proof that

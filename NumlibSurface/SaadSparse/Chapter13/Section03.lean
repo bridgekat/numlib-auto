@@ -1,5 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
-import Numlib.LinearSolve.Multigrid.Basic
+import Numlib.Multigrid.Basic
 
 /-!
 # Saad §13.3: inter-grid operations
@@ -49,7 +49,7 @@ book is the `2q + 1` here.
 
 The use the chapter makes of the transpose relation is that the coarse-grid correction of §13.4 is
 unchanged when Saad's restriction is replaced by the *adjoint* of the prolongation, which is the
-form `Numlib/LinearSolve/Multigrid/Basic.lean` takes: `Multigrid.coarseProjection A hA Pr` depends
+form `Numlib/Multigrid/Basic.lean` takes: `Multigrid.coarseProjection A hA Pr` depends
 on `Pr` only through `LinearMap.range Pr`, so the positive factor `2^d` cancels
 (`coarseProjection_eq_of_scaled`, `coarseProjection_apply_eq_of_smul`).
 -/

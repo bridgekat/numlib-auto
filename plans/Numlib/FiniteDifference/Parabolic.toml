@@ -124,7 +124,7 @@ desc = '''Asymptotic stability iff strict contraction on every mode: under the p
 `(∀ u₀, Tendsto (fun k => (thetaAmplification M A θ Δt ^ k) *ᵥ u₀) atTop (𝓝 0)) ↔ ∀ lam, det (A - lam
 • M) = 0 → |1 - (1 - θ) * lam * Δt| < 1 + θ * lam * Δt`; for `θ ≥ 1/2` the right side always holds,
 for `θ < 1/2` it is `(1 - 2θ) lam Δt < 2` for every generalized eigenvalue. From
-`Stationary.forall_tendsto_iff_spectralRadius_lt_one` (`Numlib/LinearSolve/Stationary/Basic`) over
+`Stationary.forall_tendsto_iff_spectralRadius_lt_one` (`Numlib/Stationary/Basic`) over
 `ℂ` through `Matrix.complexify`, and `thetaAmplification_hasEigenvalue_iff` (all eigenvalues real).
 (Quarteroni–Sacco–Saleri §13.2's "asymptotically stable", (13.11).) ★★'''
 deps = ["FiniteDifference.thetaAmplification_hasEigenvalue_iff", "Stationary.forall_tendsto_iff_spectralRadius_lt_one"]

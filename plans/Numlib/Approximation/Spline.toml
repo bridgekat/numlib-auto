@@ -207,7 +207,7 @@ id = "linfty_opNorm_inv_momentMatrix_le"
 kind = "theorem"
 desc = '''`‖(momentMatrix n h lam0 mun)⁻¹‖_∞ ≤ 1` (the `‖·‖_∞` operator norm, Mathlib's
 `Matrix.linfty_opNorm`): for `A = 2 (1 - G)` with `‖G‖_∞ ≤ 1/2` (the Jacobi iteration matrix, whose
-norm is the Jacobi contraction of `Numlib/LinearSolve/Stationary/DiagDominant`), `‖A⁻¹‖ ≤ (1/2) ·
+norm is the Jacobi contraction of `Numlib/Stationary/DiagDominant`), `‖A⁻¹‖ ≤ (1/2) ·
 1/(1 - 1/2) = 1` by the Neumann series. Equivalently and more directly: for `A v = w`, at an index
 `i` where `|v_i|` is maximal, `2|v_i| ≤ |w_i| + (μ_i + λ_i)|v_i|`, so `‖v‖_∞ ≤ ‖w‖_∞`. It is what
 the error bound `norm_sub_cubicInterp_le` rests on. ★★'''

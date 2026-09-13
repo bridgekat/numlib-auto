@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Topology.MetricSpace.Contracting
-import Numlib.LinearSolve.Stationary.Basic
+import Numlib.Stationary.Basic
 
 /-!
 # Fixed-point iterations

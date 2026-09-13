@@ -1,0 +1,7 @@
+desc = '''
+Projection methods for `A x = b`: the Petrov–Galerkin specifications (`IsPetrovGalerkin`,
+`IsGalerkin`, `IsMinResidual`, `IsMinError`) that every Krylov method instantiates, their
+well-posedness and optimality properties, the one-dimensional processes (steepest descent, minimal
+residual), additive and coordinate projections, and conjugate-direction methods. This is the
+layer `Krylov` builds on, which is why it is a top-level subject and not a part of it.
+'''

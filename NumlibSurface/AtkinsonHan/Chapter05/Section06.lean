@@ -6,7 +6,7 @@ import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
 import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Subspace
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Optimality
 
 /-!
 # Atkinson–Han §5.6: the conjugate gradient method for operator equations

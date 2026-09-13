@@ -11,9 +11,9 @@ are MATLAB experiments and Remark 4.3 is prose on rounding; none is a node.
 
 Vectors are `EuclideanSpace ℝ (Fin n)`, written `𝔼`, matrices act through `op A = toEuclideanLin A`,
 and the inner product is Mathlib's `inner ℝ`; the energy norm is `energyNorm (op A)`. Every
-convergence rate is a specialization of `Numlib/LinearSolve/Stationary/Richardson`,
-`Numlib/LinearSolve/Projection/{Optimality,OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
-`Numlib/Krylov/Convergence/CG`, `Numlib/Krylov/Preconditioned` and `Numlib/LinearSolve/Stationary/ADI`.
+convergence rate is a specialization of `Numlib/Stationary/Richardson`,
+`Numlib/Projection/{Optimality,OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
+`Numlib/Krylov/Convergence/CG`, `Numlib/Krylov/Preconditioned` and `Numlib/Stationary/ADI`.
 The CG and PCG algorithms are defined here in the book's own letters (its `β_k` carries the opposite
 sign to the backbone's) and identified with `CG.iterate`/`Krylov.PCG.iterate`, as
 `SaadSparse.Chapter06.cg_eq_CG` does for Saad's Algorithm 6.18.

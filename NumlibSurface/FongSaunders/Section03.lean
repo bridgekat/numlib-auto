@@ -31,7 +31,7 @@ variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b : Vec n} {α β : ℝ}
 
 /-! ### Linearity of the product in the matrix, and two Frobenius-norm lemmas
 
-The backbone (`Numlib/LinearSolve/Perturbation.lean`) proves the Rigal–Gaches theorem with the
+The backbone (`Numlib/Conditioning/LinearSystem.lean`) proves the Rigal–Gaches theorem with the
 *operator* norm on `E →L[𝕜] E`.  The paper uses the Frobenius norm, so the surface reproves the
 two norm facts the argument needs; everything else is the same computation. -/
 

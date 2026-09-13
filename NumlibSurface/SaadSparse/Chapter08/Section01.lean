@@ -1,5 +1,5 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Common
 

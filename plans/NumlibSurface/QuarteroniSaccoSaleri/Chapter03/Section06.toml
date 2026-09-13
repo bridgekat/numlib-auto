@@ -1,7 +1,7 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
 desc = '''
 §3.6, computing the inverse: the columns of `A⁻¹` from `P A = L U` by `2n` triangular solves, and the
-Faddeev–LeVerrier formula. Backbone: `Numlib/LinearSolve/Direct/Substitution`,
+Faddeev–LeVerrier formula. Backbone: `Numlib/Direct/Substitution`,
 `Numlib/LinearAlgebra/Matrix/FaddeevLeVerrier` (new).
 '''
 

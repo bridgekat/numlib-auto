@@ -6,11 +6,11 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Sparse.Pattern
-import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
-import Numlib.LinearSolve.Stationary.DiagDominant
-import Numlib.LinearSolve.Stationary.RegularSplitting
-import Numlib.LinearSolve.Stationary.SPD
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Stationary.ConsistentlyOrdered
+import Numlib.Stationary.DiagDominant
+import Numlib.Stationary.RegularSplitting
+import Numlib.Stationary.SPD
+import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Chapter01.Section08
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter04.Section01
@@ -25,7 +25,7 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 characterizes convergence), Corollary 4.2 (`‖G‖ < 1` suffices), the remark `|λ| ≤ ‖A‖` before
 Theorem 4.6, and Example 4.1 (Richardson). The proofs specialize the backbone's spectral-radius
 theory (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
-`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`, `Numlib/LinearSolve/Stationary/Basic.lean`) to
+`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`, `Numlib/Stationary/Basic.lean`) to
 real matrices acting on `Fin n → ℝ`.
 
 **§4.2.3, diagonally dominant matrices**: Definition 4.5, Gershgorin's theorem (Theorem 4.6) in its

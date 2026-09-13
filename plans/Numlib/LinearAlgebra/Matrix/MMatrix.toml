@@ -41,7 +41,7 @@ entries is an M-matrix (the irreducible companion of QSS Property 1.20, needed f
 regularization matrix (3.78) of §3.14.2): `A.IsIrreduciblyDiagDominant → (∀ i, 0 < A i i) →
 (∀ i j, i ≠ j → A i j ≤ 0) → A.IsMMatrix`. By `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one`
 and `Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one` of
-`LinearSolve/Stationary/DiagDominant` (the Jacobi operator there is `1 - D⁻¹ A` up to
+`Stationary/DiagDominant` (the Jacobi operator there is `1 - D⁻¹ A` up to
 complexification). ★'''
 deps = ["Matrix.isMMatrix_iff_complexSpectralRadius_lt_one", "Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one"]
 

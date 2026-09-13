@@ -1,0 +1,107 @@
+namespace = "Matrix"
+desc = '''
+Componentwise perturbation theory for `A x = b` (Quarteroni–Sacco–Saleri §3.1.2 (3.14)–(3.16),
+§3.1.4's computed-residual bound, Remark 3.7; Higham §7.2, Theorem 7.4; Skeel 1979), for real
+square matrices in the entrywise order and absolute value of `LinearAlgebra/Matrix/Order`, with
+`‖·‖_∞` on vectors (the sup norm of the `Pi` type) and Mathlib's scoped `Matrix.Norms.Operator`
+instance (the maximum absolute row sum) on matrices.
+
+* The Skeel condition numbers `cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞` and `cond(A) = ‖|A⁻¹| |A|‖_∞`
+  (Remark 3.7; the book's display is garbled and is read this way), `cond(A) = sup_x cond(A, x)`,
+  and the invariance of `cond(A, x)` under row scaling `A ↦ D A`, which `κ` lacks.
+* The componentwise perturbation theorem (Higham Theorem 7.4): `|ΔA| ≤ γ E`, `|Δb| ≤ γ f`, `γ
+  ‖|A⁻¹| E‖_∞ < 1` give `‖δx‖_∞ / ‖x‖_∞ ≤ γ ‖|A⁻¹| (E |x| + f)‖_∞ / ((1 - γ ‖|A⁻¹| E‖_∞) ‖x‖_∞)`;
+  with `E = |A|`, `f = |b|` this is (3.15).
+* The row-by-row bounds (3.16) with `r_(i)ᵀ = e_iᵀ A⁻¹`, immediate from `δx = -A⁻¹ ΔA (x + δx)` and
+  `δx = A⁻¹ Δb`.
+* The LAPACK a posteriori bound of §3.1.4: `‖e‖_∞ ≤ ‖|A⁻¹| (|r̂| + γ_{n+1} (|A| |y| + |b|))‖_∞`
+  when the computed residual satisfies `r̂ = r + δr`, `|δr| ≤ γ_{n+1} (|A| |y| + |b|)`, which is
+  what `FloatingPoint.exists_roundsAffineStep_eq_add` of `FloatingPoint/Stationary` delivers for
+  `r̂ = fl(b - A y)` (checked in `notes/qss/ch03/proto/ProtoFloatingPoint.lean`).
+
+Separate from `Conditioning/LinearSystem` because that module is operator-level and norm-only;
+everything here needs entries. Consumers: QSS §3.10, §3.12 (Skeel's refinement analysis), Higham
+Ch. 7, 12.
+'''
+
+[[node]]
+id = "skeelCondAt"
+kind = "definition"
+desc = '''`skeelCondAt A x = ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ / ‖x‖` for `A : Matrix n n ℝ`, `x : n → ℝ`, with the
+sup norm (`Pi.normedAddCommGroup`): QSS Remark 3.7's `cond(A, x)`. ★'''
+deps = []
+
+[[node]]
+id = "skeelCond"
+kind = "definition"
+desc = '''`skeelCond A = ‖A⁻¹.abs * A.abs‖` in the scoped `Matrix.Norms.Operator` (`‖·‖_∞`) norm: Remark 3.7's
+`cond(A)`. ★'''
+deps = []
+
+[[node]]
+id = "skeelCondAt_le_skeelCond"
+kind = "theorem"
+desc = '''`skeelCondAt A x ≤ skeelCond A` (`Matrix.linfty_opNorm_mulVec` twice, with `‖|x|‖ = ‖x‖`). ★'''
+deps = ["Matrix.skeelCondAt", "Matrix.skeelCond"]
+
+[[node]]
+id = "skeelCond_eq_iSup_skeelCondAt"
+kind = "theorem"
+desc = '''Remark 3.7: `skeelCond A = ⨆ x, skeelCondAt A x` (`[Nonempty n]`); the supremum is attained at `x
+= 1` because `|A⁻¹| |A|` is entrywise nonnegative, so its row sums are `(|A⁻¹| |A| 𝟙)_i`. ★'''
+deps = ["Matrix.skeelCondAt_le_skeelCond"]
+
+[[node]]
+id = "skeelCondAt_diagonal_mul"
+kind = "theorem"
+desc = '''Remark 3.7, row-scaling invariance: for a nonsingular diagonal `D`, `skeelCondAt (D * A) x = skeelCondAt
+A x`, since `(D A)⁻¹ = A⁻¹ D⁻¹` and `|A⁻¹ D⁻¹| |D A| = |A⁻¹| |D⁻¹| |D| |A| = |A⁻¹| |A|`. Contrast
+`NormedRing.condNumber`, which is not invariant. ★'''
+deps = ["Matrix.skeelCondAt"]
+
+[[node]]
+id = "norm_sub_le_of_abs_le"
+kind = "theorem"
+desc = '''Higham Theorem 7.4, the componentwise perturbation theorem: for `IsUnit A`, `A *ᵥ x = b`, `(A + ΔA)
+*ᵥ y = b + Δb`, `ΔA.abs ≤ₑ γ • E`, `|Δb| ≤ γ • f` with `E`, `f` entrywise nonnegative, `0 ≤ γ` and `γ
+‖A⁻¹.abs * E‖ < 1`, `x ≠ 0`:
+`‖y - x‖ / ‖x‖ ≤ γ ‖A⁻¹.abs *ᵥ (E *ᵥ |x| + f)‖ / ((1 - γ ‖A⁻¹.abs * E‖) ‖x‖)`.
+Proof as Higham's: `y - x = A⁻¹ (Δb - ΔA y)`, so `|y - x| ≤ |A⁻¹| (γ f + γ E |y|) ≤ γ |A⁻¹| (f + E |x|)
++ γ |A⁻¹| E |y - x|` (`Matrix.abs_mulVec_le`, `Matrix.EntrywiseNonneg.mulVec_mono` of
+`LinearAlgebra/Matrix/Order`), take `‖·‖_∞` and solve for `‖y - x‖`. ★★'''
+deps = ["Matrix.abs_mulVec_le", "Matrix.EntrywiseNonneg.mulVec_mono"]
+
+[[node]]
+id = "norm_sub_le_of_abs_le_abs"
+kind = "theorem"
+desc = '''QSS (3.15), both inequalities: with `E = A.abs`, `f = |b|`, the previous bound, and then `‖δx‖_∞ /
+‖x‖_∞ ≤ 2 γ / (1 - γ ‖|A⁻¹||A|‖_∞) ‖|A⁻¹| |A|‖_∞` using `|A⁻¹| |b| ≤ |A⁻¹| |A| |x|` and
+`‖|A⁻¹||A||x|‖_∞ ≤ ‖|A⁻¹||A|‖_∞ ‖x‖_∞`. In terms of `skeelCond`: `‖δx‖/‖x‖ ≤ 2γ skeelCond A / (1 -
+γ skeelCond A)`. ★'''
+deps = ["Matrix.norm_sub_le_of_abs_le", "Matrix.skeelCond"]
+
+[[node]]
+id = "abs_sub_apply_le_of_abs_le_abs"
+kind = "theorem"
+desc = '''QSS (3.16), first: if `A *ᵥ x = b`, `(A + ΔA) *ᵥ y = b` (`Δb = 0`), `ΔA.abs ≤ₑ γ • A.abs`, then for
+each `i`, `|y i - x i| ≤ γ * (|A⁻¹ i| ⬝ᵥ (A.abs *ᵥ |y|))` — `r_(i)ᵀ = e_iᵀ A⁻¹` is row `i` of `A⁻¹`.
+From `y - x = -A⁻¹ ΔA y` entrywise. ★'''
+deps = ["Matrix.abs_mulVec_le"]
+
+[[node]]
+id = "abs_sub_apply_div_le_of_abs_le_abs"
+kind = "theorem"
+desc = '''QSS (3.16), second: if `A *ᵥ x = b`, `A *ᵥ y = b + Δb` (`ΔA = 0`), `|Δb| ≤ γ • |b|`, and `x i ≠ 0`,
+then `|y i - x i| / |x i| ≤ γ * (|A⁻¹ i| ⬝ᵥ |b|) / |A⁻¹ i ⬝ᵥ b|`, since `x i = A⁻¹ i ⬝ᵥ b` and `y i -
+x i = A⁻¹ i ⬝ᵥ Δb`. ★'''
+deps = []
+
+[[node]]
+id = "norm_sub_le_of_computedResidual"
+kind = "theorem"
+desc = '''QSS §3.1.4, the LAPACK bound: if `IsUnit A`, `A *ᵥ x = b`, and `r̂ = (b - A *ᵥ y) + δr` with `|δr| ≤ c
+• (A.abs *ᵥ |y| + |b|)` (`c = γ_{n+1}` in the model), then `‖y - x‖ ≤ ‖A⁻¹.abs *ᵥ (|r̂| + c • (A.abs
+*ᵥ |y| + |b|))‖`, hence the book's display after division by `‖y‖_∞`. From `y - x = -A⁻¹ r`, `|r| ≤
+|r̂| + |δr|`. The hypothesis on `r̂` is supplied by `FloatingPoint.exists_roundsAffineStep_eq_add`
+with `G = -A`, `c = b`. ★'''
+deps = ["Matrix.abs_mulVec_le", "FloatingPoint.exists_roundsAffineStep_eq_add"]

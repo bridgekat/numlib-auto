@@ -1,0 +1,7 @@
+desc = '''
+Stationary iterations for `A x = b`: splittings `A = M - N` and the affine iteration `x ↦ M⁻¹ N x +
+M⁻¹ b` they generate, with the classical instances (Jacobi, Gauss–Seidel, SOR, SSOR, Richardson,
+ADI, their block forms) and the convergence theory — spectral radius, diagonal dominance, symmetric
+positive definiteness, regular splittings, consistent orderings. Below `Krylov` in the import
+order; the projection specifications are `Projection`, and `Preconditioner` builds on both.
+'''

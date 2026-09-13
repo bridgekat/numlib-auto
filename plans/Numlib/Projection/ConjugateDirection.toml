@@ -1,0 +1,78 @@
+namespace = "ConjugateDirection"
+desc = '''
+Conjugate-direction methods for a symmetric coercive `A` on an inner product space: the iteration
+`x_{k+1} = x_k + α_k d_k` with the exact line-search step `α_k = ⟪d_k, r_k⟫ / ⟪d_k, A d_k⟫`
+(`Projection.step1` of `Numlib/Projection/OneDimensional`) along a family of directions
+`d : ℕ → E` that are nonzero and mutually `A`-orthogonal, and the *expanding subspace theorem*: the
+`k`-th iterate is the Galerkin iterate over `x₀ + span {d_0, …, d_{k-1}}`, so the residual is
+orthogonal to every earlier direction, the iterate minimizes the energy norm of the error — the
+quadratic (7.35) — over that affine space, and in dimension `n` the `n`-th iterate is exact
+(Quarteroni–Sacco–Saleri Theorem 4.11 and Property 7.6; Nocedal–Wright Thm 5.1–5.2;
+Hestenes–Stiefel §3–4). The conjugate gradient recurrence of `Numlib/Krylov/CG` is the instance in
+which the directions are generated from the residuals, and the nonlinear conjugate gradient methods
+of optimization (Fletcher–Reeves, Polak–Ribière, Quarteroni–Sacco–Saleri §7.2.4) reduce to this on
+a quadratic. Nothing here is Krylov-specific: the directions are arbitrary, which is why the module
+sits under `Projection` and below `Krylov`. Stated at rung L1 (inner product space, no
+completeness); termination at L3.
+
+Prototypes: `notes/qss/ch04/proto/ConjugateDirection.lean` and `notes/qss/ch07/proto/Descent.lean` (both
+elaborate with `sorry`).
+'''
+
+[[node]]
+id = "iterate_sub_mem_span"
+kind = "theorem"
+desc = '''`ConjugateDirection.iterate A b x₀ p k - x₀ ∈ Submodule.span 𝕜 (Set.range fun i : Fin k => p i)`:
+the iterate stays in the affine space spanned by the directions used so far. Induction. ★'''
+deps = ["ConjugateDirection.iterate"]
+
+[[node]]
+id = "IsConjugateFamily"
+kind = "definition"
+desc = '''`IsConjugateFamily (A : E →ₗ[𝕜] E) (d : ℕ → E) : Prop := ∀ k m, k ≠ m →
+inner 𝕜 (A (d k)) (d m) = 0`, a family of mutually `A`-conjugate directions (`d^{(k)ᵀ} A d^{(m)} = 0`
+for `k ≠ m`). The directions are *not* required to be nonzero: the conjugate gradient directions
+vanish past the grade of the residual and are still conjugate (`CG.isConjugateFamily_direction`),
+the step `Projection.step1` is total (a zero direction gives a zero step), and the one statement
+below that needs `d k ≠ 0` — finite termination — says so. ★'''
+deps = []
+
+[[node]]
+id = "iterate"
+kind = "definition"
+desc = '''`ConjugateDirection.iterate A b d x₀ : ℕ → E`, `iterate 0 = x₀`,
+`iterate (k+1) = Projection.step1 A b (d k) (d k) (iterate k)` — the descent method (7.25) along the
+directions `d` with the exact step (7.36), `α_k = ⟪d k, r_k⟫ / ⟪d k, A (d k)⟫`. ★'''
+deps = ["ConjugateDirection.IsConjugateFamily"]
+
+[[node]]
+id = "inner_residual_direction_eq_zero"
+kind = "theorem"
+desc = '''Property 7.6, third clause: for `A` symmetric coercive and `IsConjugateFamily A d`,
+`m ≤ k → inner 𝕜 (b - A (iterate A b d x₀ (k+1))) (d m) = 0`. Proof by induction on `k`: the step
+along `d k` makes `r_{k+1} ⟂ d k` (`step1_isPetrovGalerkin`) and, since `A (d k) ⟂ d m` for
+`m < k`, leaves `⟪r, d m⟫` unchanged. ★★'''
+deps = ["ConjugateDirection.iterate", "Projection.step1_isPetrovGalerkin"]
+
+[[node]]
+id = "isGalerkin_iterate"
+kind = "theorem"
+desc = '''Property 7.6, second clause (the expanding subspace theorem): under the same hypotheses,
+`IsGalerkin A b x₀ (Submodule.span 𝕜 (d '' Set.Iio (k+1))) (iterate A b d x₀ (k+1))`, hence by
+`IsGalerkin.quadratic_le` / `IsGalerkin.iff_energyNorm_min` the iterate minimizes the quadratic
+(7.35) — equivalently the energy norm of the error — over `x₀ + span {d 0, …, d k}`. Proof:
+`iterate (k+1) - x₀ = ∑ α_j • d j` lies in the span, and the residual is orthogonal to every
+generator by `inner_residual_direction_eq_zero`. ★★'''
+deps = ["ConjugateDirection.inner_residual_direction_eq_zero", "IsGalerkin"]
+
+[[node]]
+id = "iterate_eq_of_finrank_le"
+kind = "theorem"
+desc = '''Property 7.6, first clause (finite termination; Quarteroni–Sacco–Saleri Theorem 4.11): if
+`[FiniteDimensional 𝕜 E]` with `finrank 𝕜 E = n`, `A` is symmetric coercive, `IsConjugateFamily A d`
+and `d k ≠ 0` for every `k < n`, then `A (iterate A b d x₀ n) = b`. Proof: `n` nonzero pairwise
+`A`-conjugate vectors are linearly independent (orthogonal in the energy inner product,
+`linearIndependent_of_ne_zero_of_inner_eq_zero` on `WithEnergy A hA`), so their span is `⊤` and the
+Galerkin condition on `⊤` (`isGalerkin_iterate`) is `r = 0`. Also the refinement: exactness already
+at the first `k` with `span {d 0, …, d (k-1)} = ⊤`. ★★'''
+deps = ["ConjugateDirection.isGalerkin_iterate"]

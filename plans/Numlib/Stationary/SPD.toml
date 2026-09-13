@@ -1,0 +1,311 @@
+[[node]]
+id = "Stationary.Splitting.richardson_complexSpectralRadius_eq"
+
+[[node]]
+id = "Stationary.Splitting.richardson_complexSpectralRadius_lt_one_iff"
+
+[[node]]
+id = "Stationary.Splitting.isMinOn_richardson_complexSpectralRadius"
+
+[[node]]
+id = "Stationary.Splitting.richardson_complexSpectralRadius_optimal_eq"
+
+[[node]]
+id = "Matrix.jorSplitting"
+
+[[node]]
+id = "Matrix.jorSplitting_iterationOperator"
+
+[[node]]
+id = "Matrix.jorSplitting_isMinOn_complexSpectralRadius"
+
+[[node]]
+id = "Matrix.det_sorSplitting_iterationOperator"
+
+[[node]]
+id = "Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive"
+
+[[node]]
+id = "Stationary.Splitting.isCoercive_of_spectralRadius_lt_one"
+
+[[node]]
+id = "Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef"
+
+[[node]]
+id = "Stationary.Splitting.energyNorm_sq_iterationOperator_apply"
+kind = "theorem"
+desc = '''The energy identity behind the Householder–John theorem, made public (it is the private
+`energy_identity` of the module, line 73). For `A : E →L[ℂ] E` symmetric on a finite-dimensional
+complex inner product space, a splitting `s` with `G = s.iterationOperator`, `Q = s.m + s.mᴴ - A`,
+and every `e`:
+`re ⟪A (G e), G e⟫ = re ⟪A e, e⟫ - re ⟪Q (e - G e), e - G e⟫`.
+Since `e - G e = M⁻¹ A e`, this is `‖G e‖_A² = ‖e‖_A² - ⟪Q y, y⟫` with `y = M⁻¹ A e`. Prototype:
+`notes/qss/ch04/proto/EnergyMonotone.lean`. ★'''
+deps = ["Stationary.Splitting.iterationOperator", "Stationary.Splitting.one_sub_iterationOperator"]
+
+[[node]]
+id = "Stationary.Splitting.energyNorm_iterationOperator_apply_lt"
+kind = "theorem"
+desc = '''Monotone convergence in the energy norm (Quarteroni–Sacco–Saleri, Property 4.2 and Theorem 4.5,
+monotonicity clause): if `A` is symmetric coercive and `Q = s.m + s.mᴴ - A` is coercive, then for
+every `e ≠ 0`, `energyNorm A (s.iterationOperator e) < energyNorm A e`. From the energy identity:
+`⟪Q y, y⟫ > 0` because `y = M⁻¹ A e ≠ 0` (`A` and `M` are injective). ★'''
+deps = ["Stationary.Splitting.energyNorm_sq_iterationOperator_apply", "energyNorm", "LinearMap.IsSymmetricCoercive", "LinearMap.IsCoercive"]
+
+[[node]]
+id = "Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le"
+kind = "theorem"
+desc = '''The uniform form of the energy contraction: under the same hypotheses (`A` symmetric coercive,
+`Q` coercive, `E` finite-dimensional) there is `q < 1` with
+`energyNorm A (s.iterationOperator e) ≤ q * energyNorm A e` for every `e`, i.e. `‖G‖_A < 1`.
+Proof: with `Q` coercive of constant `c` and `M⁻¹ A` bounded below on the `A`-unit sphere by
+compactness, `⟪Q y, y⟫ ≥ c ‖M⁻¹ A e‖² ≥ c' ‖e‖_A²`, so `q² = 1 - c'` works; or take `q` as the
+`A`-operator norm of `G` on the compact unit sphere of `WithEnergy A` and use the strict pointwise
+decrease. Consequences: `ρ(G) ≤ ‖G‖_A < 1` (Property 4.2's inequality chain), and the SSOR
+convergence below, where the SSOR operator is a *product* of two such contractions. ★★'''
+deps = ["Stationary.Splitting.energyNorm_iterationOperator_apply_lt", "WithEnergy"]
+
+[[node]]
+id = "Stationary.Splitting.energyInner_iterationOperator_comm"
+kind = "theorem"
+desc = '''For symmetric `A` and a splitting whose `s.m` is symmetric (as an operator), the iteration
+operator `G = 1 - M⁻¹ A` is self-adjoint in the `A`-inner product:
+`⟪A (G x), y⟫ = ⟪A x, G y⟫`, i.e. `A G = (A G)ᴴ` since `A G = A - A M⁻¹ A`. Likewise `G` is
+self-adjoint in the `M`-inner product, `⟪M (G x), y⟫ = ⟪M x, G y⟫`, since `M G = M - A`. Pure
+algebra; compare `Preconditioner.energyInner_comm_of_comp_eq` of
+`Numlib/Preconditioner/Polynomial`. Two clauses, the second under the name
+`Stationary.Splitting.inner_m_iterationOperator_comm`. ★'''
+deps = ["Stationary.Splitting.iterationOperator", "Stationary.Splitting.one_sub_iterationOperator", "energyInner"]
+
+[[node]]
+id = "Stationary.Splitting.inner_m_iterationOperator_comm"
+kind = "theorem"
+desc = '''`⟪s.m (G x), y⟫ = ⟪s.m x, G y⟫` for symmetric `A` and symmetric `s.m`: the iteration operator is
+self-adjoint in the `M`-inner product (`M G = M - A` is symmetric). The second clause of
+`Stationary.Splitting.energyInner_iterationOperator_comm`. ★'''
+deps = ["Stationary.Splitting.iterationOperator", "Stationary.Splitting.one_sub_iterationOperator"]
+
+[[node]]
+id = "Stationary.Splitting.energyNorm_iterationOperator_apply_le_spectralRadius"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Property 4.1 (`ρ(B) = ‖B‖_A`) and the engine of Corollary 4.1: for
+`A : E →L[ℂ] E` symmetric coercive on a finite-dimensional space and a splitting with symmetric
+`s.m`, `energyNorm A (s.iterationOperator e) ≤ (spectralRadius ℂ s.iterationOperator).toReal * energyNorm A e`
+for every `e`, and the constant is attained: there is `e ≠ 0` with equality. Proof: `G` is
+self-adjoint on `WithEnergy A` (`energyInner_iterationOperator_comm`), a self-adjoint operator on a
+finite-dimensional inner product space has operator norm equal to its spectral radius
+(Mathlib `IsSelfAdjoint.spectralRadius_eq_nnnorm` in the C*-algebra `WithEnergy A →L[ℂ] WithEnergy A`,
+or `ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`), and the spectrum of the underlying linear
+map does not depend on the norm the type synonym carries. Attainment is at an eigenvector of an
+eigenvalue of maximal modulus (real, since `G` is `A`-self-adjoint). Prototype (`≤` clause):
+`notes/qss/ch04/proto/EnergyMonotone.lean`. ★★'''
+deps = ["Stationary.Splitting.energyInner_iterationOperator_comm", "WithEnergy", "energyNorm"]
+
+[[node]]
+id = "Stationary.Splitting.norm_m_iterationOperator_apply_le_spectralRadius"
+kind = "theorem"
+desc = '''The `P`-norm clause of Quarteroni–Sacco–Saleri Property 4.1, `ρ(B) = ‖B‖_P`: with `A` symmetric,
+`s.m` symmetric coercive and `E` finite-dimensional,
+`energyNorm s.m (s.iterationOperator e) ≤ (spectralRadius ℂ s.iterationOperator).toReal * energyNorm s.m e`
+for all `e`, with equality at some `e ≠ 0`. Same proof as the `A`-norm version with
+`inner_m_iterationOperator_comm` in place of `energyInner_iterationOperator_comm`. ★★'''
+deps = ["Stationary.Splitting.inner_m_iterationOperator_comm", "WithEnergy", "energyNorm"]
+
+[[node]]
+id = "Stationary.Splitting.complexify"
+kind = "definition"
+desc = '''The complexification of a real splitting: for `s : Splitting A` with `A : Matrix n n ℝ`, the
+splitting of `complexify A` with `m = complexify s.m` (a unit by `isUnit_complexify_iff`). Its
+iteration operator is the complexification of `s.iterationOperator`
+(`Stationary.Splitting.complexify_iterationOperator`). This is the private pair
+`complexSplitting`/`complexSplitting_iterationOperator` at lines 430–447 of the module, made public
+so that a surface can move a real splitting to `ℂ` without re-deriving it; the Jacobi and
+Gauss–Seidel cases are done by hand in `Matrix.complexify_jacobi_iterationOperator` and
+`Matrix.complexify_gaussSeidel_iterationOperator` of `Numlib/Stationary/Splitting`, which
+should become instances of this. ★'''
+deps = ["Stationary.Splitting", "Matrix.complexify", "Matrix.isUnit_complexify_iff"]
+
+[[node]]
+id = "Stationary.Splitting.complexify_iterationOperator"
+kind = "theorem"
+desc = '''`(s.complexify).iterationOperator = complexify s.iterationOperator`, so that
+`complexSpectralRadius s.iterationOperator = spectralRadius ℂ (s.complexify).iterationOperator`. ★'''
+deps = ["Stationary.Splitting.complexify", "Stationary.Splitting.iterationOperator"]
+
+[[node]]
+id = "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef"
+kind = "theorem"
+desc = '''**Householder–John for real matrices.** For `A : Matrix n n ℝ` with `A.PosDef` and a splitting
+`s : Splitting A` with `(s.m + s.mᵀ - A).PosDef`, `complexSpectralRadius s.iterationOperator < 1`.
+It is `spectralRadius_lt_one_of_isSymmetricCoercive` on `EuclideanSpace ℂ n` applied to
+`s.complexify` through `Matrix.toEuclideanCLM`, exactly the route the proof of
+`Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef` takes privately; the SOR theorem should
+then be re-derived from this node. Every matrix-level instance below (Jacobi with `2D - A` positive
+definite, Gauss–Seidel, block Jacobi, SSOR) is this theorem with its `Q` computed. Quarteroni–Sacco–Saleri
+Properties 4.1–4.2 ("for their proof we refer to [Hac94]"). ★★'''
+deps = ["Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive", "Stationary.Splitting.complexify_iterationOperator", "Matrix.posDef_complexify_iff", "Matrix.posDef_iff_isSymmetricCoercive"]
+
+[[node]]
+id = "Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt"
+kind = "theorem"
+desc = '''The matrix form of the energy-norm monotonicity: for real `A.PosDef`, `(s.m + s.mᵀ - A).PosDef`
+and `e ≠ 0`, `(A *ᵥ (G *ᵥ e)) ⬝ᵥ (G *ᵥ e) < (A *ᵥ e) ⬝ᵥ e` with `G = s.iterationOperator`, i.e.
+`‖G e‖_A < ‖e‖_A` for the real energy norm `‖e‖_A² = eᵀ A e`; and its uniform version
+`∃ q < 1, ∀ e, (A (G e)) ⬝ᵥ (G e) ≤ q² (A e ⬝ᵥ e)`. Read off
+`energyNorm_iterationOperator_apply_lt`/`exists_energyNorm_iterationOperator_apply_le` on the
+complexification (the real quadratic form at a real vector is the complex one), or prove directly
+from the real energy identity. This is the form in which Quarteroni–Sacco–Saleri Properties 4.1–4.2,
+Theorem 4.5 and Property 4.3 state monotonicity. ★★'''
+deps = ["Stationary.Splitting.energyNorm_iterationOperator_apply_lt", "Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le", "Stationary.Splitting.complexify_iterationOperator"]
+
+[[node]]
+id = "Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius"
+kind = "theorem"
+desc = '''The matrix form of Quarteroni–Sacco–Saleri Property 4.1's identities: for real `A.PosDef` and a
+splitting with `s.m` symmetric (`s.mᵀ = s.m`),
+`(A *ᵥ (G *ᵥ e)) ⬝ᵥ (G *ᵥ e) ≤ ρ(G)² * ((A *ᵥ e) ⬝ᵥ e)` with `ρ(G) = (complexSpectralRadius G).toReal`,
+attained at some real `e ≠ 0`; and the same in the `P`-form `(s.m *ᵥ ·) ⬝ᵥ ·` when moreover
+`s.m.PosDef`. Transport of `energyNorm_iterationOperator_apply_le_spectralRadius` and
+`norm_m_iterationOperator_apply_le_spectralRadius` through `Stationary.Splitting.complexify`; the
+witness can be taken real because a real symmetric-in-`A` matrix has a real eigenvector for its
+extreme eigenvalue. With `complexSpectralRadius_lt_one_of_posDef` this is Corollary 4.1 of the book
+in the generality of its closing remark (`P` and `A` symmetric positive definite, no hypothesis on
+`P⁻¹ A`). ★★'''
+deps = ["Stationary.Splitting.energyNorm_iterationOperator_apply_le_spectralRadius", "Stationary.Splitting.norm_m_iterationOperator_apply_le_spectralRadius", "Stationary.Splitting.complexify_iterationOperator"]
+
+[[node]]
+id = "Matrix.jacobiSplitting_complexSpectralRadius_lt_one_of_posDef"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Theorem 4.3: if `A` and `2 • diagPart A - A` are real symmetric positive
+definite then `complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1` (with
+`h : IsUnit (diagPart A)` supplied by `PosDef.diag_pos`). It is
+`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` with `m = D`, `Q = 2D - A`. ★'''
+deps = ["Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Matrix.jacobiSplitting"]
+
+[[node]]
+id = "Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Theorem 4.5 (convergence clause): for real `A.PosDef`,
+`complexSpectralRadius (gaussSeidelSplitting A h).iterationOperator < 1`. Either
+`complexSpectralRadius_lt_one_of_posDef` with `M = D - E`, `M + Mᵀ - A = D` positive definite because
+the diagonal of a positive definite matrix is positive, or `sorSplitting_one` together with
+`sorSplitting_complexSpectralRadius_lt_one_iff_posDef` at `ω = 1`. The monotonicity clause of
+Theorem 4.5 is `energyNorm_mulVec_iterationOperator_lt` for this splitting. ★'''
+deps = ["Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Matrix.gaussSeidelSplitting", "Matrix.sorSplitting_one", "Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef"]
+
+[[node]]
+id = "Matrix.sorSplitting_complexSpectralRadius_lt_one_iff"
+kind = "theorem"
+desc = '''Ostrowski's theorem in the form Quarteroni–Sacco–Saleri Property 4.3 states it: for real
+`A.PosDef` (so `h : IsUnit (diagPart A)` holds) and `ω ≠ 0`,
+`complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1 ↔ 0 < ω ∧ ω < 2`. `←` is
+`sorSplitting_complexSpectralRadius_lt_one_iff_posDef`, `→` is
+`lt_two_of_sorSplitting_complexSpectralRadius_lt_one` (Kahan), which needs `[Nonempty n]` — for an
+empty index type the iteration matrix is the empty matrix of spectral radius `0` and the statement is
+false at, say, `ω = 3`; keep `[Nonempty n]`. ★'''
+deps = ["Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef", "Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one"]
+
+[[node]]
+id = "Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Theorem 4.7 (Kahan's bound): for `A : Matrix n n 𝕜` (`RCLike 𝕜`) with
+invertible diagonal, `[Nonempty n]` and `ω ≠ 0`,
+`ENNReal.ofReal |1 - ω| ≤ complexSpectralRadius (sorSplitting A h hω).iterationOperator` (for real `A`;
+over `𝕜` with `spectralRadius ℂ` after complexification). Since `|det G_ω| = |1 - ω|^n`
+(`det_sorSplitting_iterationOperator`) and the determinant is the product of the `n` eigenvalues
+counted with multiplicity (Mathlib `Matrix.det_eq_prod_roots_charpoly` over `ℂ`), each of modulus at
+most `ρ(G_ω)`, we get `|1 - ω|^n ≤ ρ(G_ω)^n`. At `ω = 0` the book's statement is about
+`sorIterationMatrix A 0 = 1`, of spectral radius `1 = |0 - 1|`, and holds trivially; the existing
+`lt_two_of_sorSplitting_complexSpectralRadius_lt_one` is the corollary `ρ < 1 → 0 < ω < 2`. ★'''
+deps = ["Matrix.det_sorSplitting_iterationOperator", "Matrix.sorSplitting", "Matrix.complexSpectralRadius"]
+
+[[node]]
+id = "Matrix.jorSplitting_iterationOperator_eq_one_sub"
+kind = "theorem"
+desc = '''`(jorSplitting A h hω).iterationOperator = 1 - ω • ((diagPart A)⁻¹ * A)`: the JOR iteration matrix is
+Richardson's `1 - α P⁻¹ A` with `P = D`, `α = ω` (Quarteroni–Sacco–Saleri, display after (4.12) and
+§4.3). From `jorSplitting_iterationOperator` and `Splitting.one_sub_iterationOperator` for the
+Jacobi splitting. ★'''
+deps = ["Matrix.jorSplitting_iterationOperator", "Stationary.Splitting.one_sub_iterationOperator", "Matrix.jacobiSplitting"]
+
+[[node]]
+id = "Matrix.jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Theorem 4.4: for real `A.PosDef` and `ω ≠ 0`,
+`complexSpectralRadius (jorSplitting A h hω).iterationOperator < 1 ↔ 0 < ω ∧ ω < 2 / (complexSpectralRadius ((diagPart A)⁻¹ * A)).toReal`.
+The matrix `D⁻¹ A` is similar to `D^{-1/2} A D^{-1/2}`, hence has real positive eigenvalues
+`0 < λ_n ≤ … ≤ λ_1 = ρ(D⁻¹ A)` (`Matrix.spectrum_inv_mul_subset_of_posDef` with `P = D`), and by
+`jorSplitting_iterationOperator_eq_one_sub` the JOR matrix is `1 - ω D⁻¹ A`, to which Theorem 4.9's
+criterion `Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff` of
+`Numlib/Stationary/Richardson` applies. The book's proof ("A has real positive
+eigenvalues") is the same argument. ★★'''
+deps = ["Matrix.jorSplitting_iterationOperator_eq_one_sub", "Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff", "Matrix.spectrum_inv_mul_subset_of_posDef"]
+
+[[node]]
+id = "Matrix.jorSplitting_complexSpectralRadius_lt_one_of_le_one"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Theorem 4.6: if the Jacobi iteration converges,
+`complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1`, then for `0 < ω ≤ 1`
+`complexSpectralRadius (jorSplitting A h hω).iterationOperator < 1`, for any real `A` with invertible
+diagonal (no symmetry). By `jorSplitting_iterationOperator` the JOR matrix is
+`(1 - ω) • 1 + ω • B_J`, and `Matrix.complexSpectralRadius_affine_le` gives
+`ρ ≤ (1 - ω) + ω ρ(B_J) < 1` — the book's `|μ_k|² ≤ (ω r_k + 1 - ω)²` computation. ★'''
+deps = ["Matrix.jorSplitting_iterationOperator", "Matrix.complexSpectralRadius_affine_le"]
+
+[[node]]
+id = "Matrix.ssorSplitting_m_isSymm"
+kind = "theorem"
+desc = '''For a symmetric `A` (`Aᵀ = A`) with invertible diagonal, `ω ≠ 0`, `ω ≠ 2`, the SSOR preconditioner
+`(ssorSplitting A h hω hω2).m = (ω (2 - ω))⁻¹ • ((D + ω L) D⁻¹ (D + ω U))` is symmetric, because
+`(D + ω L)ᵀ = D + ω U` when `Lᵀ = U` (`strictLower Aᵀ = (strictUpper A)ᵀ`). Quarteroni–Sacco–Saleri
+(4.22): `P_SSOR(ω) = (D/ω - E) (ω/(2 - ω)) D⁻¹ (D/ω - F)`, and (4.21)'s `P_SGS` at `ω = 1`. ★'''
+deps = ["Matrix.ssorSplitting"]
+
+[[node]]
+id = "Matrix.ssorSplitting_m_posDef"
+kind = "theorem"
+desc = '''For real `A.PosDef`, `0 < ω < 2`: `(ssorSplitting A h hω hω2).m.PosDef`. It is a positive multiple
+of `X D⁻¹ Xᵀ` with `X = D + ω L` invertible and `D⁻¹` positive definite (congruence preserves
+positive definiteness: `Matrix.PosDef.conjTranspose_mul_mul_same`). ★'''
+deps = ["Matrix.ssorSplitting_m_isSymm"]
+
+[[node]]
+id = "Matrix.ssorSplitting_m_sub_posSemidef"
+kind = "theorem"
+desc = '''For real symmetric `A` with positive diagonal and `0 < ω < 2`:
+`((ssorSplitting A h hω hω2).m - A).PosSemidef`, by the factorization
+`P_SSOR - A = (ω (2 - ω))⁻¹ • (((1 - ω) D + ω L) D⁻¹ ((1 - ω) D + ω U))` — expand
+`(D + ωL) D⁻¹ (D + ωU) = D + ω(L + U) + ω² L D⁻¹ U = (1 - ω) D + ω A + ω² L D⁻¹ U` and collect. This is
+the "`P ≥ A`" that makes the SSOR iteration operator positive semidefinite in the `A`-inner
+product; at `ω = 1` it reads `P_SGS - A = L D⁻¹ U = L D⁻¹ Lᵀ`. ★★'''
+deps = ["Matrix.ssorSplitting_m_isSymm"]
+
+[[node]]
+id = "Matrix.ssorSplitting_complexSpectralRadius_lt_one"
+kind = "theorem"
+desc = '''SSOR converges for a symmetric positive definite matrix and `0 < ω < 2` (Quarteroni–Sacco–Saleri
+§4.2.6, "see [Hac94] for the proof"; Property 4.5 at `ω = 1`):
+`complexSpectralRadius (ssorSplitting A h hω hω2).iterationOperator < 1` for real `A.PosDef`.
+Householder–John with `M = P_SSOR`: `M + Mᵀ - A = 2M - A = M + (M - A)`, positive definite as the sum
+of `ssorSplitting_m_posDef` and `ssorSplitting_m_sub_posSemidef`; then
+`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`. (Alternatively: the SSOR operator is
+the product of the SOR and backward-SOR operators, `Matrix.ssorSplitting_iterationOperator_eq_mul`,
+each an `A`-norm contraction by `exists_energyNorm_iterationOperator_apply_le`.) ★'''
+deps = ["Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Matrix.ssorSplitting_m_posDef", "Matrix.ssorSplitting_m_sub_posSemidef"]
+
+[[node]]
+id = "Matrix.ssorSplitting_iterationOperator_posSemidef_energy"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Property 4.5, the structural clause read correctly: for real `A.PosDef`
+and `0 < ω < 2` the SSOR (at `ω = 1`: symmetric Gauss–Seidel) iteration matrix
+`G = (ssorSplitting A h hω hω2).iterationOperator` satisfies `(A * G).IsSymm` — `G` is self-adjoint
+in the `A`-inner product — and `(A * G).PosSemidef`, i.e. `⟪A G x, x⟫ ≥ 0`; equivalently the
+eigenvalues of `G` are real and lie in `[0, 1)`. Indeed `A G = A - A P⁻¹ A` is symmetric for
+symmetric `P`, and `⟪A G x, x⟫ ≥ 0 ⟺ A ≤ A P⁻¹ A ⟺ A⁻¹ ≥ P⁻¹ ⟺ P ≥ A`, which is
+`ssorSplitting_m_sub_posSemidef`. The book prints "`B_SGS` is symmetric positive definite"; that is
+false as printed (for a diagonal `A`, `B_SGS = 0`, and `B_SGS` is not Euclidean-symmetric in
+general — see the errata in the chapter report), and this node is the reading. ★★'''
+deps = ["Matrix.ssorSplitting_m_isSymm", "Matrix.ssorSplitting_m_sub_posSemidef", "Stationary.Splitting.one_sub_iterationOperator"]

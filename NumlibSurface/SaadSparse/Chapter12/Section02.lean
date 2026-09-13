@@ -1,6 +1,6 @@
-import Numlib.LinearSolve.DomainDecomposition.Schwarz
-import Numlib.LinearSolve.Multigrid.Basic
-import Numlib.LinearSolve.Projection.Additive
+import Numlib.DomainDecomposition.Schwarz
+import Numlib.Multigrid.Basic
+import Numlib.Projection.Additive
 import NumlibSurface.SaadSparse.Common
 
 /-!

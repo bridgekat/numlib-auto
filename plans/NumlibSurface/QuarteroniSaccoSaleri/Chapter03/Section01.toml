@@ -4,9 +4,9 @@ desc = '''
 (§3.1.1, with Remark 3.1 on the distance to singularity), the forward a priori analysis (Theorems
 3.1–3.3 and the componentwise bounds (3.15)–(3.16), Example 3.1), the backward a priori analysis
 (Property 3.1, (3.19)) and the a posteriori analysis ((3.20)–(3.21) and the computed-residual
-bound). Everything normwise is a specialization of `Numlib/LinearSolve/Perturbation` and
+bound). Everything normwise is a specialization of `Numlib/Conditioning/LinearSystem` and
 `Numlib/Analysis/Normed/Ring/CondNumber`; the componentwise part is
-`Numlib/LinearSolve/Perturbation/Componentwise`. `K_p(A)` is chapter 1's restatement of (3.4).
+`Numlib/Conditioning/LinearSystem/Componentwise`. `K_p(A)` is chapter 1's restatement of (3.4).
 '''
 
 [[node]]

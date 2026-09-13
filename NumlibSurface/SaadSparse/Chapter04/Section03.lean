@@ -1,6 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
-import Numlib.LinearSolve.Stationary.ADI
+import Numlib.Stationary.ADI
 import NumlibSurface.SaadSparse.Chapter02.Section02
 
 /-!
@@ -21,7 +21,7 @@ and holds for every `H`, `V` and `r`.
 The one theorem is `adi_converges`: for symmetric positive definite `H` and `V` and a positive
 constant `r` the sweep converges, from every starting vector and for every right-hand side, to
 the solution of `(H + V) x = b`, and `adi_complexSpectralRadius_lt_one` gives `ρ(G_r) < 1`. Both
-specialize `Numlib/LinearSolve/Stationary/ADI.lean` through `Matrix.toEuclideanCLM`, which
+specialize `Numlib/Stationary/ADI.lean` through `Matrix.toEuclideanCLM`, which
 carries `G_adi` to `Stationary.peacemanRachford` (`toEuclideanCLM_G_adi`). Commutativity of `H`
 and `V` is neither needed nor assumed: it belongs to the theory of the optimal parameter
 *sequence*, which the book only cites.
@@ -108,7 +108,7 @@ theorem equation_4_50 (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) :
 /-! ### The bridge to the backbone -/
 
 /-- Saad (4.50): the iteration matrix of Algorithm 4.3 is the Peaceman–Rachford operator of
-`Numlib/LinearSolve/Stationary/ADI.lean`, read through `Matrix.toEuclideanCLM`. -/
+`Numlib/Stationary/ADI.lean`, read through `Matrix.toEuclideanCLM`. -/
 theorem toEuclideanCLM_G_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
     (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) :
     toEuclideanCLM (𝕜 := ℝ) (G_adi H V r)

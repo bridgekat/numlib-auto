@@ -13,7 +13,7 @@ is invertible with an entrywise nonnegative inverse ([saad2003iterative], Theore
 inverse (his Definition 1.30). Both are statements about the entrywise order of
 `Numlib/LinearAlgebra/Matrix/Order` and the spectral radius of
 `Numlib/LinearAlgebra/Matrix/Complexify`, and neither mentions an iteration; the splittings that
-consume them are in `Numlib/LinearSolve/Stationary/RegularSplitting`.
+consume them are in `Numlib/Stationary/RegularSplitting`.
 
 ## Main definitions
 

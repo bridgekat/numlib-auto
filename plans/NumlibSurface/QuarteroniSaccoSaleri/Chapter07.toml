@@ -16,7 +16,7 @@ vector norm" with the induced (consistent) matrix norm. Jacobian and Hessian mat
 matrices of `fderiv` in the standard basis (`jacobianMatrix`, `hessianMatrix`, surface
 definitions with bridge lemmas to `fderiv`), and spectral radii are `Matrix.complexSpectralRadius`.
 Backbone: `Numlib/Nonlinear/{Newton,FixedPoint,DifferenceJacobian,QuasiNewton}`,
-`Numlib/Optimization/*`, `Numlib/LinearSolve/Projection/{OneDimensional,ConjugateDirection}`,
+`Numlib/Optimization/*`, `Numlib/Projection/{OneDimensional,ConjugateDirection}`,
 `Numlib/Krylov/CG`, `Numlib/Variational/Minimization`, `Numlib/Analysis/Convex/Gateaux`.
 
 Two results are not formalized, with the reason in their nodes: Property 7.2 (Dennis–Moré

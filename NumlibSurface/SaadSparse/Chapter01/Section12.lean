@@ -1,6 +1,6 @@
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.Matrix.ToEuclideanLin
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Common
 
 /-!

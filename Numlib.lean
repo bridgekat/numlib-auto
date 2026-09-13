@@ -212,6 +212,9 @@ import Numlib.Combinatorics.Relation.StronglyConnected
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet
+import Numlib.Conditioning.LinearSystem
+import Numlib.DomainDecomposition.Schur
+import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
 import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
@@ -287,39 +290,36 @@ import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearAlgebra.Subspace
-import Numlib.LinearSolve.DomainDecomposition.Schur
-import Numlib.LinearSolve.DomainDecomposition.Schwarz
-import Numlib.LinearSolve.Multigrid.Basic
-import Numlib.LinearSolve.Multigrid.FullMultigrid
-import Numlib.LinearSolve.Multigrid.TwoGrid
-import Numlib.LinearSolve.Perturbation
-import Numlib.LinearSolve.Preconditioner.ApproximateInverse
-import Numlib.LinearSolve.Preconditioner.Chebyshev
-import Numlib.LinearSolve.Preconditioner.ILU
-import Numlib.LinearSolve.Preconditioner.Polynomial
-import Numlib.LinearSolve.Projection.Additive
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.Coordinate
-import Numlib.LinearSolve.Projection.OneDimensional
-import Numlib.LinearSolve.Projection.Optimality
-import Numlib.LinearSolve.Stationary.ADI
-import Numlib.LinearSolve.Stationary.Basic
-import Numlib.LinearSolve.Stationary.Block
-import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
-import Numlib.LinearSolve.Stationary.DiagDominant
-import Numlib.LinearSolve.Stationary.RegularSplitting
-import Numlib.LinearSolve.Stationary.SPD
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Multigrid.Basic
+import Numlib.Multigrid.FullMultigrid
+import Numlib.Multigrid.TwoGrid
 import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
+import Numlib.Preconditioner.ApproximateInverse
+import Numlib.Preconditioner.Chebyshev
+import Numlib.Preconditioner.ILU
+import Numlib.Preconditioner.Polynomial
+import Numlib.Projection.Additive
+import Numlib.Projection.Basic
+import Numlib.Projection.Coordinate
+import Numlib.Projection.OneDimensional
+import Numlib.Projection.Optimality
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.KernelPolynomial
+import Numlib.Stationary.ADI
+import Numlib.Stationary.Basic
+import Numlib.Stationary.Block
+import Numlib.Stationary.ConsistentlyOrdered
+import Numlib.Stationary.DiagDominant
+import Numlib.Stationary.RegularSplitting
+import Numlib.Stationary.SPD
+import Numlib.Stationary.Splitting
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Variational.Forms
@@ -357,10 +357,12 @@ general convex analysis `Numlib.Analysis.Convex`, at four levels of generality f
 vector space to Euclidean space, and the Sobolev, Fourier and wavelet material),
 `Numlib.LinearAlgebra`, `Numlib.RingTheory`, `Numlib.Topology`, `Numlib.Order`, `Numlib.Algebra`,
 `Numlib.Combinatorics` and `Numlib.Geometry`. The **subjects** stand on them: `Numlib.Conditioning`
-for well-posedness, condition numbers and the consistency–stability–convergence vocabulary;
-`Numlib.FloatingPoint` for the relational rounding model and the number systems that instantiate
-it; `Numlib.LinearSolve` for direct solvers, perturbation theory, stationary iterations and
-projection methods; `Numlib.Krylov` for the Krylov spine; `Numlib.Eigen` for eigenvalue bounds and
+for well-posedness, condition numbers, the consistency–stability–convergence vocabulary and the
+perturbation theory of linear systems; `Numlib.FloatingPoint` for the relational rounding model
+and the number systems that instantiate it; then the solvers for `A x = b` in their import order —
+`Numlib.Direct`, `Numlib.Stationary` and `Numlib.Projection` (the specifications every Krylov
+method instantiates), `Numlib.Krylov` for the Krylov spine, and above it `Numlib.Preconditioner`,
+`Numlib.Multigrid` and `Numlib.DomainDecomposition`; `Numlib.Eigen` for eigenvalue bounds and
 algorithms; `Numlib.Nonlinear` for fixed points, rootfinding and Newton's method;
 `Numlib.Optimization` for descent, line-search, quasi-Newton and constrained methods with the
 smooth first- and second-order theory; `Numlib.Approximation` for interpolation, quadrature and

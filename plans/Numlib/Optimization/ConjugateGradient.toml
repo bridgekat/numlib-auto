@@ -7,8 +7,8 @@ space with the gradient `g : E → E` as data; and the theorem that on the quadr
 `½ ⟪A x, x⟫ - ⟪b, x⟫` with exact line searches both choices reproduce the linear CG iterates of
 `Numlib/Krylov/CG` (so that everything proved there — finite termination, optimality, the
 `√κ` rate — applies). The linear theory itself is not repeated: exact steps along a direction,
-steepest descent and Kantorovich's inequality are `Numlib/LinearSolve/Projection/OneDimensional`,
-conjugate directions are `Numlib/LinearSolve/Projection/ConjugateDirection`, and the gradient of
+steepest descent and Kantorovich's inequality are `Numlib/Projection/OneDimensional`,
+conjugate directions are `Numlib/Projection/ConjugateDirection`, and the gradient of
 the quadratic is `hasGradientAt_energyFunctional` in `Numlib/Analysis/InnerProductSpace/Energy`.
 '''
 

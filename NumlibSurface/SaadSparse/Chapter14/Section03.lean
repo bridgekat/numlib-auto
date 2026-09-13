@@ -1,6 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.SchurComplement
-import Numlib.LinearSolve.DomainDecomposition.Schwarz
-import Numlib.LinearSolve.Stationary.Block
+import Numlib.DomainDecomposition.Schwarz
+import Numlib.Stationary.Block
 import NumlibSurface.SaadSparse.Chapter12.Section02
 
 /-!
@@ -19,7 +19,7 @@ book first writes them as `V_i = R_iᵀ` and `A_i = V_iᵀ A V_i`, so they are
 Everything rests on one identification, `Chapter12.subdomainProjector_eq_energyProjection`: for a
 symmetric positive definite `A`, `P_i` **is** the `A`-orthogonal projector onto
 `Ran(R_iᵀ) = span {e_j : j ∈ S_i}` (`Chapter12.subdomainSpace`).  The whole convergence theory is
-then read off `Numlib/LinearSolve/DomainDecomposition/Schwarz.lean`, whose statements are about the
+then read off `Numlib/DomainDecomposition/Schwarz.lean`, whose statements are about the
 orthogonal projectors of an inner product space, applied in the energy space of `A`.
 
 * §14.3.1–14.3.3: `multiplicativeSweep` is (14.25), `Q_s` its error operator (14.26), and

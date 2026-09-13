@@ -4,7 +4,7 @@ import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.FongSaunders.Section03
 
 /-!

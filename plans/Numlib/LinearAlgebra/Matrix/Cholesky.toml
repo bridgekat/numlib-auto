@@ -111,7 +111,7 @@ id = "isCholesky_cholesky"
 kind = "theorem"
 desc = '''Correctness of (3.45): `A.PosDef → IsCholesky A (cholesky A)ᴴ`. Induction along the order as in
 the book's proof: the recurrence for row `i` is forward substitution `H_{i-1}ᴴ h = v` (the
-prototype's `Matrix.forwardSubst` of `LinearSolve/Direct/Substitution`) followed by `β = √(α -
+prototype's `Matrix.forwardSubst` of `Direct/Substitution`) followed by `β = √(α -
 hᴴh)`, and `α - hᴴ h = det A(≤ i) / det A(< i) > 0` by `Matrix.PosDef.det_pos` on the leading
 blocks (`Matrix.PosDef.submatrix`). ★★★'''
 deps = ["Matrix.cholesky", "Matrix.IsCholesky", "Matrix.existsUnique_isCholesky", "Matrix.forwardSubst"]

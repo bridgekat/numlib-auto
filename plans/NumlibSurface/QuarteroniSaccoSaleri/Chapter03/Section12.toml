@@ -2,7 +2,7 @@ namespace = "QuarteroniSaccoSaleri.Chapter03"
 desc = '''
 §3.12, improving the accuracy of GEM: scaling (§3.12.1) with the Skeel condition number of Remark
 3.7, and iterative refinement (§3.12.2) as a stationary iteration. Backbone:
-`Numlib/LinearSolve/Direct/Refinement`, `Numlib/LinearSolve/Perturbation/Componentwise`. Example
+`Numlib/Direct/Refinement`, `Numlib/Conditioning/LinearSystem/Componentwise`. Example
 3.10 (numerical) and the heuristic `K_∞(A) ≃ β^{t(1-1/p)}` are not nodes; the two finite-precision
 convergence factors of §3.12.2 are recorded as not formalized.
 '''

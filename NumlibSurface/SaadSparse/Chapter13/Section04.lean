@@ -1,5 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
-import Numlib.LinearSolve.Multigrid.FullMultigrid
+import Numlib.Multigrid.FullMultigrid
 import NumlibSurface.SaadSparse.Chapter02.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
@@ -23,7 +23,7 @@ of §13.3 satisfies them (`isCoarsening_model`), and `example_13_2` is the only 
 matrix the chapter computes.
 
 Everything the chapter proves about the coarse-grid correction is read off
-`Numlib/LinearSolve/Multigrid/Basic.lean` through two bridges: `toEuclideanLin_coarseProjector`,
+`Numlib/Multigrid/Basic.lean` through two bridges: `toEuclideanLin_coarseProjector`,
 which identifies Saad's `Q_h = I_H^h A_H⁻¹ I_h^H A_h` with the backbone's `A`-orthogonal projector
 onto `Ran(I_H^h)`, and `equation_13_43_eq`, which identifies the two-grid operator (13.43) with
 `Multigrid.twoGridOperator`.  Lemma 13.1 is then `Submodule.starProjection`'s own idempotence,
@@ -299,7 +299,7 @@ theorem smootherStep_iterate_residual (A B : Matrix (Fin n) (Fin n) ℝ)
     rw [Function.iterate_succ_apply', hstep, ih, ← mul_act, ← pow_succ']
 
 /-- **Example 13.3**: the Jacobi smoother is `B = D⁻¹`, and its error propagation operator is the
-Jacobi iteration matrix of `Numlib/LinearSolve/Stationary/Splitting.lean`. -/
+Jacobi iteration matrix of `Numlib/Stationary/Splitting.lean`. -/
 theorem example_13_3_jacobi (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (diagPart A)) :
     smoother A (diagPart A)⁻¹ = (A.jacobiSplitting h).iterationOperator := by
   change 1 - (diagPart A)⁻¹ * A = 1 - Ring.inverse (diagPart A) * A

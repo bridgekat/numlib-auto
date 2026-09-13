@@ -1,5 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
-import Numlib.LinearSolve.Preconditioner.ILU
+import Numlib.Preconditioner.ILU
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -25,7 +25,7 @@ with `R = 0`. What is lost is the orthogonality of `Q`.
 in one row of `L` link rows that are themselves linked; from that, the rows of `Q` retained in a
 row of `L` are pairwise orthogonal (`inner_imgsQ_eq_zero`), the cross terms of `(a_i, a_j)`
 disappear, and `L Lᵀ` agrees with `B = A Aᵀ` off the pattern. So `L` is an incomplete Cholesky
-factor of `B` in the sense of `Matrix.IsIC` of `Numlib/LinearSolve/Preconditioner/ILU`, which was
+factor of `B` in the sense of `Matrix.IsIC` of `Numlib/Preconditioner/ILU`, which was
 added for this statement, and `Matrix.IsIC.eq_of_diag_pos` makes it *the* factor. Saad states the
 theorem without proof, citing the literature; the proof here is the induction described at
 `inner_imgsQ_eq_zero`. Two readings that the printed statement leaves open — the symmetry of

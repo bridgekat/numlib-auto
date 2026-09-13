@@ -9,6 +9,6 @@ methods (`Constrained`). Everything is stated on a real normed or inner product 
 derivative carried as data `f' : E → E →L[ℝ] ℝ` (as `Numlib/Analysis/Convex/Gateaux` does), and
 the surface specializes to `EuclideanSpace ℝ (Fin n)`. The quadratic case — exact line search
 along a direction, steepest descent, conjugate directions, Kantorovich's inequality — is
-`Numlib/LinearSolve/Projection/OneDimensional`, `Numlib/LinearSolve/Projection/ConjugateDirection`
+`Numlib/Projection/OneDimensional`, `Numlib/Projection/ConjugateDirection`
 and `Numlib/Krylov/CG`, not repeated here.
 '''

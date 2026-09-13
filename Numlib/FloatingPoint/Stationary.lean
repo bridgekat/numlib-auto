@@ -1,6 +1,6 @@
 import Mathlib.Analysis.SpecificLimits.Basic
 import Numlib.FloatingPoint.InnerProduct
-import Numlib.LinearSolve.Stationary.Basic
+import Numlib.Stationary.Basic
 
 /-!
 # Stationary iterations in finite precision

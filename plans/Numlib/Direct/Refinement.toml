@@ -1,0 +1,99 @@
+desc = '''
+Improving and assessing the accuracy of a direct solve (Quarteroni–Sacco–Saleri §3.11–3.12):
+
+* *iterative refinement* as a stationary iteration: with an approximate inverse `C` (the LU solve
+  of §3.12.2), the step `x ↦ x + C (b - A x)` is `Stationary.step (1 - C A) (C b)` of
+  `Stationary/Basic`, so it converges for every `x₀` iff `ρ(1 - C A) < 1`, reduces the
+  error by the factor `‖1 - C A‖` per step when that is `< 1`, and is exact after one step when `C =
+  A⁻¹` (the book's "in absence of rounding errors, the process would stop at the first step"). The
+  quantity `‖1 - C A‖` is `‖R‖` of Property 3.1 with the factors in the other order. The
+  finite-precision statements of §3.12.2 (`ρ ≃ 2n cond(A, x) u` for fixed precision, `ρ ≃ u` for
+  mixed precision, Higham Theorems 12.1–12.2) are asymptotic and are recorded in the surface as not
+  formalized; a rigorous one-step theorem (Higham Theorem 12.3) is future work here.
+* *scaling* (§3.12.1): the equivalence `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x` for
+  nonsingular diagonal `D₁`, `D₂`.
+* *condition estimation* (§3.11): the basic lower bound `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖` for any `d ≠ 0`,
+  the estimate `K̂(A) = ‖A‖ ‖y‖ / ‖x‖` for `Aᵀ x = d`, `A y = x` and its property `K̂(A) ≤ K(A)`.
+  The lookahead heuristic (3.71)–(3.72) that chooses `d` is an algorithm with no theorem attached
+  and is not formalized; Exercise 15's SVD formula for `‖y‖₂/‖x‖₂` is in the surface.
+
+Stated on a normed space / normed ring where possible (`E →L[𝕜] E` and `NormedRing.condNumber`),
+matrices only for scaling.
+'''
+
+[[node]]
+id = "Refinement.step"
+kind = "definition"
+desc = '''`Refinement.step C A b x = x + C (b - A x)` for `A C : E →L[𝕜] E`, `b x : E`: one step of iterative
+refinement with the approximate inverse `C` (QSS §3.12.2, steps 1–3; the LU solve is `C = luSolve`
+composed as a linear map). ★'''
+deps = []
+
+[[node]]
+id = "Refinement.step_eq_stationary_step"
+kind = "theorem"
+desc = '''`Refinement.step C A b = Stationary.step (1 - C * A) (C b)`, so `Refinement.iterate` is
+`Stationary.step^[k]`. ★'''
+deps = ["Refinement.step", "Stationary.step"]
+
+[[node]]
+id = "Refinement.step_eq_of_eq_inverse"
+kind = "theorem"
+desc = '''Exact arithmetic stops after one step: if `C * A = 1` (in particular `C = A⁻¹`) and `A x* = b`, then
+`Refinement.step C A b x = x*` for every `x`. ★'''
+deps = ["Refinement.step"]
+
+[[node]]
+id = "Refinement.iterate_sub_eq"
+kind = "theorem"
+desc = '''Error propagation: if `A x* = b` then `(Refinement.step C A b)^[k] x₀ - x* = (1 - C * A)^k (x₀ -
+x*)`; `Stationary.step_iterate_sub` through `step_eq_stationary_step`. ★'''
+deps = ["Refinement.step_eq_stationary_step", "Stationary.step_iterate_sub"]
+
+[[node]]
+id = "Refinement.norm_iterate_sub_le"
+kind = "theorem"
+desc = '''Linear convergence: if `‖1 - C * A‖ < 1` and `A x* = b`, then `‖(Refinement.step C A b)^[k] x₀ -
+x*‖ ≤ ‖1 - C * A‖^k ‖x₀ - x*‖`. Note `‖1 - C A‖ ≤ ‖C‖ ‖A - C⁻¹‖`-type bounds relate it to the
+backward a priori analysis of Property 3.1. ★'''
+deps = ["Refinement.iterate_sub_eq"]
+
+[[node]]
+id = "Refinement.forall_tendsto_iff_spectralRadius_lt_one"
+kind = "theorem"
+desc = '''In a finite-dimensional complex space, refinement converges for every `x₀` iff `spectralRadius ℂ (1
+- C * A) < 1`: `Stationary.forall_tendsto_iff_spectralRadius_lt_one`. ★'''
+deps = ["Refinement.step_eq_stationary_step", "Stationary.forall_tendsto_iff_spectralRadius_lt_one"]
+
+[[node]]
+id = "Matrix.scaled_mulVec_eq_iff"
+kind = "theorem"
+desc = '''QSS §3.12.1: for nonsingular diagonal `D₁ D₂ : Matrix n n K` (`IsUnit`), `A *ᵥ x = b ↔ (D₁ * A * D₂)
+*ᵥ (D₂⁻¹ *ᵥ x) = D₁ *ᵥ b`; row scaling alone is `D₂ = 1`. `Matrix.mulVec_mulVec` and
+`Matrix.mulVec_nonsing_inv_mulVec` of `LinearAlgebra/Matrix/NonsingularInverse`. ★'''
+deps = []
+
+[[node]]
+id = "norm_apply_div_le_norm_inverse"
+kind = "theorem"
+desc = '''QSS §3.11, the basic idea: for `A : E ≃L[𝕜] E` and `d ≠ 0`, `‖A.symm d‖ / ‖d‖ ≤ ‖(A.symm : E →L[𝕜]
+E)‖`, i.e. `γ(d) = ‖y‖/‖d‖ ≤ ‖A⁻¹‖` for `A y = d`. `ContinuousLinearMap.le_opNorm`. ★'''
+deps = []
+
+[[node]]
+id = "condEstimate"
+kind = "definition"
+desc = '''QSS §3.11 (3.70): for `A : E ≃L[𝕜] E` on a Hilbert space and a probe vector `d : E`, with `x` the
+solution of `A† x = d` (the book's `Rᵀ x = d`) and `y = A⁻¹ x` (the book's `R y = x`),
+`condEstimate A d = ‖A‖ * ‖y‖ / ‖x‖`. State it for a general `A` (the book's `R`, or `L U` in
+(3.72)); the lower-bound property below is all that is provable about it, the quality of the
+estimate depending on the heuristic choice of `d`. ★'''
+deps = ["norm_apply_div_le_norm_inverse"]
+
+[[node]]
+id = "condEstimate_le_condNumber"
+kind = "theorem"
+desc = '''`d ≠ 0 → condEstimate A d ≤ κ A` (then `x ≠ 0`, and `‖y‖/‖x‖ = ‖A⁻¹ x‖/‖x‖ ≤ ‖A⁻¹‖`). The book's
+`K̂₁(A) = ‖R‖₁ ‖y‖₁ / ‖x‖₁` is this in the `1`-norm together with `K₁(R) = K₁(A)` up to the factor
+`n` of Exercise 14; the statement here is norm-agnostic. ★'''
+deps = ["condEstimate", "norm_apply_div_le_norm_inverse", "NormedRing.condNumber"]

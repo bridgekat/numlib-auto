@@ -237,7 +237,7 @@ resolvent `A.symm` and `relCondNumber A.symm univ b ≤ ENNReal.ofReal A.condNum
 value is `‖A.symm‖ₑ * (‖b‖ₑ / ‖A.symm b‖ₑ)` (`relCondNumberWithin_continuousLinearMap`) and
 `‖b‖ ≤ ‖A‖ ‖A.symm b‖`; alternatively each ratio is bounded by
 `ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`
-(`Numlib/LinearSolve/Perturbation.lean:36`). The single-space `NormedRing.condNumber` form
+(`Numlib/Conditioning/LinearSystem.lean:36`). The single-space `NormedRing.condNumber` form
 follows through `ContinuousLinearEquiv.condNumber_coe`. ★'''
 deps = ["Conditioning.relCondNumber", "Conditioning.relCondNumberWithin_continuousLinearMap", "ContinuousLinearEquiv.condNumber"]
 

@@ -6,7 +6,7 @@ import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.PosDef
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Section04
 import NumlibSurface.SaadSparse.Chapter06.Section06
 

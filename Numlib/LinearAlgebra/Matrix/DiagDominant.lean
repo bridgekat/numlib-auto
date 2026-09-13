@@ -13,8 +13,8 @@ Corollary 4.8; [kress1998numerical] (4.4)–(4.5) and Theorem 4.7; [quarteroni20
 Definition 1.24).  This is the matrix-analytic layer only: nothing here mentions a splitting or an
 iteration.  The convergence of the Jacobi and Gauss–Seidel iterations for these matrices, the
 explicit `‖·‖_∞` contraction constants and the Gershgorin pencil arguments are in
-`Numlib/LinearSolve/Stationary/DiagDominant.lean`, which builds on this module and on
-`Numlib/LinearSolve/Stationary/Splitting.lean`.  The split lets the foundation modules —
+`Numlib/Stationary/DiagDominant.lean`, which builds on this module and on
+`Numlib/Stationary/Splitting.lean`.  The split lets the foundation modules —
 `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, the LU factorization — name the dominance predicates
 without importing the theory of stationary iterations.
 
@@ -91,7 +91,7 @@ theorem IsStrictDiagDominant.diag_ne_zero {A : Matrix n n 𝕜} (hA : A.IsStrict
   norm_pos_iff.mp (lt_of_le_of_lt (Finset.sum_nonneg fun _ _ => norm_nonneg _) (hA i))
 
 /-- The diagonal part of a strictly row diagonally dominant matrix is invertible, so the Jacobi,
-Gauss–Seidel and SOR splittings of such a matrix (`Numlib/LinearSolve/Stationary/Splitting.lean`)
+Gauss–Seidel and SOR splittings of such a matrix (`Numlib/Stationary/Splitting.lean`)
 are all defined; this is the hypothesis every convergence statement about them carries. -/
 theorem IsStrictDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
     IsUnit (diagPart A) :=
@@ -196,7 +196,7 @@ theorem IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n �
 with strict dominance in at least one row, is nonsingular.  A vector in its kernel would make every
 row an equality row by `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`, against the
 strict row.  Stated for a matrix `B` dominated off the diagonal by an irreducible `A`, which is how
-the convergence proofs of `Numlib/LinearSolve/Stationary/DiagDominant.lean` use it. -/
+the convergence proofs of `Numlib/Stationary/DiagDominant.lean` use it. -/
 theorem IsPatternIrreducible.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.IsPatternIrreducible)
     (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
     (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)

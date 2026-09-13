@@ -10,13 +10,16 @@ problems with resolvents `Gn n`. Everything is `Prop`-valued predicates and `ℝ
 quantities on these plain functions, never a bundle of data: a problem *is* well posed, a method
 *is* consistent, stable, convergent; a datum *has* a condition number, possibly `⊤`.
 
-Two modules:
+Three modules:
 
 * `Conditioning/Problem` — well-posedness, the absolute and relative condition numbers as suprema
   of amplification ratios over a set of admissible perturbations, their limit as the perturbation
   size tends to zero, the first-order formula through the Fréchet derivative, and the two model
   instances: a linear problem (the condition number `κ` of `Numlib/Analysis/Normed/Ring/CondNumber`)
   and the root of a function (the local inverse).
+* `Conditioning/LinearSystem` — the problem `A x = b` itself: the normwise perturbation bounds in
+  `κ(A) = ‖A‖ ‖A⁻¹‖`, the residual–error relation and the Rigal–Gaches backward error, with the
+  componentwise (Skeel) theory planned in `Conditioning/LinearSystem/Componentwise`.
 * `Conditioning/Method` — consistency, strong consistency, stability (equicontinuity of the
   numerical resolvents, with a Lipschitz variant and the asymptotic condition number),
   convergence, the relations between them ending in the abstract equivalence theorem, and the

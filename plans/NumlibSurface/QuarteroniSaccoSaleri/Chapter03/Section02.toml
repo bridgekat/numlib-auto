@@ -1,7 +1,7 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
 desc = '''
 §3.2, triangular systems: forward and backward substitution (3.22)–(3.23) as the backbone functions
-`Matrix.forwardSubst`, `Matrix.backSubst` of `Numlib/LinearSolve/Direct/Substitution`, their
+`Matrix.forwardSubst`, `Matrix.backSubst` of `Numlib/Direct/Substitution`, their
 rounding-error analysis (3.24)–(3.25) and the improved componentwise bounds from
 `Numlib/FloatingPoint/Substitution`, and the inverse of a triangular matrix (3.26)–(3.28). Programs
 1–3 and the operation counts are not nodes.

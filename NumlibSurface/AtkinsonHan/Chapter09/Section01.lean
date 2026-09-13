@@ -2,8 +2,8 @@ import Mathlib.NumberTheory.ZetaValues
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Basic
+import Numlib.Projection.Optimality
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section03

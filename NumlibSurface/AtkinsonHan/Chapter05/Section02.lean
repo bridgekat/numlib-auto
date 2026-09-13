@@ -3,8 +3,8 @@ import Numlib.IntegralEquations.Basic
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.Hessenberg
-import Numlib.LinearSolve.Stationary.Basic
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Stationary.Basic
+import Numlib.Stationary.Splitting
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 
 /-!
@@ -16,7 +16,7 @@ Theorem 5.1.3 — the scalar iteration on an interval, the stationary iterative 
 linear system, the integral equations of the second kind, and the Picard iteration for an initial
 value problem.
 
-Proofs specialize `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`,
+Proofs specialize `Numlib/Stationary/{Basic,Splitting}.lean`,
 `Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean`, `Numlib/Nonlinear/FixedPoint.lean`
 and `Numlib/IntegralEquations/Basic.lean`.
 
@@ -196,7 +196,7 @@ noncomputable def iterMatrix : Matrix ι ι ℝ := s.N⁻¹ * s.M
 `x_n = N⁻¹ M x_{n-1} + N⁻¹ b`. -/
 noncomputable def iterStep (b x : ι → ℝ) : ι → ℝ := s.iterMatrix *ᵥ x + s.N⁻¹ *ᵥ b
 
-/-- The corresponding backbone splitting (`Numlib/LinearSolve/Stationary/Splitting.lean`).  Note
+/-- The corresponding backbone splitting (`Numlib/Stationary/Splitting.lean`).  Note
 the naming swap: the backbone writes `a = m - n` with `m` invertible, the book `A = N - M` with
 `N` nonsingular, so `m = N` and `n = M`. -/
 def toSplitting : Stationary.Splitting A := ⟨s.N, s.isUnit⟩
@@ -218,7 +218,7 @@ theorem toSplitting_iterationOperator : s.toSplitting.iterationOperator = s.iter
     Matrix.nonsing_inv_eq_ringInverse]
 
 /-- The book's iteration is the backbone's affine step
-(`Stationary.step`, `Numlib/LinearSolve/Stationary/Basic.lean`). -/
+(`Stationary.step`, `Numlib/Stationary/Basic.lean`). -/
 theorem iterStep_eq_stationary_step (b : ι → ℝ) :
     s.iterStep b = Stationary.step (mulVecCLM s.iterMatrix) (s.N⁻¹ *ᵥ b) := rfl
 

@@ -1,5 +1,5 @@
 import Numlib.Krylov.Block
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Section02
 
 /-!

@@ -4,8 +4,8 @@ import Numlib.Krylov.CR
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.Subspace
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Basic
+import Numlib.Projection.Optimality
 import NumlibSurface.FongSaunders.Section01
 
 /-!

@@ -1,6 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -29,7 +29,7 @@ statement does not claim.
 
 Theorems 1.31–1.33 are stated with the Jacobi iteration matrix written out as `1 - D⁻¹ A`;
 `theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi splitting of
-`Numlib/LinearSolve/Stationary/Splitting.lean`, which is the form §4.1 uses.
+`Numlib/Stationary/Splitting.lean`, which is the form §4.1 uses.
 
 Saad's Problem P-1.33 asks whether clause (4) of Definition 1.30 — the nonnegativity of the
 inverse — is redundant in the way Theorem 1.32 shows clause (1) to be.  It is not, and the answer
@@ -284,7 +284,7 @@ theorem theorem_1_31 (hd : ∀ i, 0 < A i i) (hoff : ∀ i j, i ≠ j → A i j 
     exact hnn.mul hDinvnn
 
 /-- The matrix `I - D⁻¹ A` of Theorem 1.31 is the iteration operator of the Jacobi splitting
-`A = D - (E + F)` of `Numlib/LinearSolve/Stationary/Splitting.lean`, which is the form §4.1 uses.
+`A = D - (E + F)` of `Numlib/Stationary/Splitting.lean`, which is the form §4.1 uses.
 Read with `Matrix.jacobiSplitting_iterationOperator`, this makes the M-matrix hypothesis of
 Chapter 4 checkable from the sign pattern of `A` alone. -/
 theorem theorem_1_31_jacobi (h : IsUnit (diagPart A)) :

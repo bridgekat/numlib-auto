@@ -2,7 +2,7 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Subspace
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Common
 
 /-!

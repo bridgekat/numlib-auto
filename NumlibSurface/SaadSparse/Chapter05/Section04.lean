@@ -1,5 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
-import Numlib.LinearSolve.Projection.Additive
+import Numlib.Projection.Additive
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
 /-!

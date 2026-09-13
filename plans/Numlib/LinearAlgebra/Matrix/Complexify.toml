@@ -120,7 +120,7 @@ id = "isHermitian_complexify_iff"
 id = "posDef_complexify_iff"
 kind = "theorem"
 desc = '''`(complexify A).PosDef ↔ A.PosDef` for a real matrix. This is the private
-`posDef_complexify_iff` of `Numlib/LinearSolve/Stationary/SPD.lean` (line 389), to be made public here
+`posDef_complexify_iff` of `Numlib/Stationary/SPD.lean` (line 389), to be made public here
 where every consumer can reach it: the complex quadratic form of a real symmetric matrix at
 `x + i y` is the sum of the real forms at `x` and `y`. ★'''
 deps = ["Matrix.complexify", "Matrix.isHermitian_complexify_iff"]
@@ -139,7 +139,7 @@ id = "spectrum_complexify_affine"
 kind = "theorem"
 desc = '''Spectral mapping for affine images of a real matrix: for `c d : ℝ` with `d ≠ 0`,
 `spectrum ℂ (complexify (c • 1 + d • X)) = (fun μ : ℂ => c + d * μ) '' spectrum ℂ (complexify X)`.
-Private today as `mem_spectrum_complexify_affine_iff` in `Numlib/LinearSolve/Stationary/SPD.lean`
+Private today as `mem_spectrum_complexify_affine_iff` in `Numlib/Stationary/SPD.lean`
 (line 308); it is what every relaxation argument uses — JOR `(1 - ω) 1 + ω B_J`, Richardson
 `1 - α M` — and belongs here. From Mathlib's `spectrum.add_mem_iff`/`spectrum.smul_eq_smul` or
 directly from `mem_spectrum_complexify_iff`. ★'''

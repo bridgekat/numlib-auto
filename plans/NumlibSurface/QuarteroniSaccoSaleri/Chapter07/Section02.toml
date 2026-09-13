@@ -9,7 +9,7 @@ secant updates (7.42)–(7.46) of §7.2.7. Gradients are Mathlib's `HasGradientA
 derivative data of the backbone being `f' x = InnerProductSpace.toDual ℝ _ (gradient f x)`; the
 Hessian matrix is `hessianMatrix f x`, the matrix of the second derivative in the standard basis.
 Backbone: `Numlib/Optimization/{Descent,LineSearch,ConjugateGradient,QuasiNewton}`,
-`Numlib/LinearSolve/Projection/{OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
+`Numlib/Projection/{OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
 `Numlib/Analysis/InnerProductSpace/Energy`. §7.2.1 (Hooke–Jeeves, Nelder–Mead) states nothing and
 has no nodes beyond the minimizer of the Rosenbrock function in Example 7.5.
 '''
@@ -195,7 +195,7 @@ kind = "theorem"
 desc = '''Lemma 7.1 (Kantorovich inequality): for `A` symmetric positive definite with extreme
 eigenvalues `λmax ≥ λmin > 0` and `y ≠ 0`,
 `4 λmax λmin / (λmax + λmin)² ≤ (yᵀ y)² / ((yᵀ A y)(yᵀ A⁻¹ y))`. The reciprocal form of
-`Projection.kantorovich_inequality` (`Numlib/LinearSolve/Projection/OneDimensional.lean:235`,
+`Projection.kantorovich_inequality` (`Numlib/Projection/OneDimensional.lean:235`,
 `re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)²/(4 λmax λmin) ‖x‖⁴`), rearranged. ★'''
 deps = ["Projection.kantorovich_inequality", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 7.1'

@@ -31,7 +31,7 @@ an instance of this one (its stability is a bound on powers of an operator).
 
 The backward error of §2.3 is the infimum size of a data perturbation for which a computed `x̂`
 is an exact solution, and the module ends with "forward error ≤ condition number × backward
-error". `LinearSolve/Perturbation.lean` has the *normwise, weighted* backward error of a linear
+error". `Conditioning/LinearSystem.lean` has the *normwise, weighted* backward error of a linear
 system (Rigal–Gaches) as the root-namespace `backwardError`; that one stays, and the chapter-3 plan
 should relate the two.
 

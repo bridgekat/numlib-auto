@@ -1,4 +1,4 @@
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Chapter04.Section01
 
 /-!

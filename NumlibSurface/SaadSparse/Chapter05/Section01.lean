@@ -2,8 +2,8 @@ import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.Matrix.ToEuclideanLin
-import Numlib.LinearSolve.Projection.Basic
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Basic
+import Numlib.Projection.Optimality
 import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 
@@ -17,7 +17,7 @@ and Proposition 5.1), the optimality characterizations (Propositions 5.2–5.5),
 
 The book's condition (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`; it is the backbone's
 `IsPetrovGalerkin` for `Matrix.toEuclideanLin A` (`isProjectionApprox_iff`), so that every
-statement below specializes a result of `Numlib/LinearSolve/Projection/`.
+statement below specializes a result of `Numlib/Projection/`.
 
 The matrix reading of Theorem 5.7 is `theorem_5_7_matrix_eq` and `theorem_5_7_matrix`: with
 `L = K` and an orthonormal basis `V` of `K`, the isometry `‖V y‖₂ = ‖y‖₂` turns (5.11) into

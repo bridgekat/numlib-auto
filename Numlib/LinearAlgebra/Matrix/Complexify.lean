@@ -190,7 +190,7 @@ theorem complexify_inv (A : Matrix n n ℝ) : complexify A⁻¹ = (complexify A)
     rw [h0, h0', complexify_zero]
 
 /-- Complexification commutes with the iteration operator `1 - m⁻¹ a` of a splitting
-(`Stationary.Splitting.iterationOperator` of `Numlib/LinearSolve/Stationary/Splitting.lean`),
+(`Stationary.Splitting.iterationOperator` of `Numlib/Stationary/Splitting.lean`),
 here written out with `Ring.inverse`. -/
 theorem complexify_one_sub_inverse_mul (m A : Matrix n n ℝ) :
     complexify (1 - Ring.inverse m * A) = 1 - Ring.inverse (complexify m) * complexify A := by

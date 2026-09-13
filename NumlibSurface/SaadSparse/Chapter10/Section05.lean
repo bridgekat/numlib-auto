@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Matrix.Normed
-import Numlib.LinearSolve.Preconditioner.ApproximateInverse
-import Numlib.LinearSolve.Projection.OneDimensional
+import Numlib.Preconditioner.ApproximateInverse
+import Numlib.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -15,7 +15,7 @@ means `‖·‖_F` throughout this file. The Frobenius inner product `⟨X, Y⟩
 introduced here, together with the linear isometry `frobeniusEquiv` onto
 `EuclideanSpace ℝ (Fin n × Fin n)`: Mathlib carries the Frobenius *norm* but no inner product
 space structure on `Matrix`, and the isometry is what lets the general Hilbert-space statements of
-`Numlib/LinearSolve/Preconditioner/ApproximateInverse` be read as statements about matrices. That
+`Numlib/Preconditioner/ApproximateInverse` be read as statements about matrices. That
 is how Proposition 10.9, the gradient `G = -2 Aᵀ R`, is obtained.
 
 The rest of the section has almost no matrix content, and the backbone reflects that. Proposition
@@ -24,7 +24,7 @@ bound on `M = A⁻¹ - A⁻¹ R`; and the quadratic convergence of the self-prec
 minimal-residual iteration — Proposition 10.13 (10.60) and Proposition 10.14 — is the one-line
 observation that a minimizer over the step length beats the choice `α = 1`, whose residual is
 `R²`. The first half of Proposition 10.13, one minimal-residual step on a single column, is the
-one-dimensional projection step of `Numlib/LinearSolve/Projection/OneDimensional` applied to the
+one-dimensional projection step of `Numlib/Projection/OneDimensional` applied to the
 preconditioned matrix `C = A M`, since self-preconditioned MR for `A m = e_j` *is* plain MR for
 `C y = e_j`.
 
@@ -209,7 +209,7 @@ theorem corollary_10_12 {A M : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A.det) {
 minimal-residual step of the
 self-preconditioned iteration for a single column. Self-preconditioned MR for `A m = b` with
 search direction `M r` *is* plain MR for `C y = b` with `C = A M` and `m = M y`, so the exact
-one-step identity `‖r′‖ = ‖r‖ sin ∠(r, C r)` of `Numlib/LinearSolve/Projection/OneDimensional`
+one-step identity `‖r′‖ = ‖r‖ sin ∠(r, C r)` of `Numlib/Projection/OneDimensional`
 applies verbatim to the preconditioned matrix. In particular `‖r′‖ ≤ ‖(I - A M) r‖`, which is the
 bound (10.59) the book draws. The second half, (10.60), is `proposition_10_14`, which is stated
 for the

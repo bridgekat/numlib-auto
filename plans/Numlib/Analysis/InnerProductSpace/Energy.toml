@@ -57,7 +57,7 @@ id = "energyFunctional"
 kind = "definition"
 desc = '''`energyFunctional (A : E →ₗ[𝕜] E) (b : E) (x : E) : ℝ := RCLike.re (inner 𝕜 (A x) x) / 2 - RCLike.re (inner 𝕜 b x)`,
 the quadratic `½ xᵀ A x - bᵀ x` of (7.35), the functional `IsGalerkin.quadratic_le` in
-`Numlib/LinearSolve/Projection/Optimality` bounds without naming. ★'''
+`Numlib/Projection/Optimality` bounds without naming. ★'''
 deps = []
 
 [[node]]

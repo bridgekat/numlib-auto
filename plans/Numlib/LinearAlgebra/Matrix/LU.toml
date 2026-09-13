@@ -19,7 +19,7 @@ replaced by `b`.
 
 The algorithms — the Doolittle recurrence, the elimination stages of GEM, pivoting and the growth
 factor — are `LinearAlgebra/Matrix/LU/Elimination` and `LinearAlgebra/Matrix/LU/Pivoting`; the
-substitution solves are `LinearSolve/Direct/Substitution`; the rounding-error analysis is
+substitution solves are `Direct/Substitution`; the rounding-error analysis is
 `FloatingPoint/LU`. Cholesky is `LinearAlgebra/Matrix/Cholesky`.
 
 Sources: Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §3.3–3.4, 3.7–3.8; Higham, *Accuracy and

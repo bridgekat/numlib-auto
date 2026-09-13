@@ -3,7 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Hessenberg
-import Numlib.LinearSolve.Projection.Basic
+import Numlib.Projection.Basic
 
 /-!
 # Arnoldi's process

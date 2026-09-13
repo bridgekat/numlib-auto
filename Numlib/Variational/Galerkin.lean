@@ -1,7 +1,7 @@
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.Normed.Module.BestApprox
-import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Projection.Optimality
 import Numlib.Variational.LaxMilgram
 
 /-!
@@ -9,7 +9,7 @@ import Numlib.Variational.LaxMilgram
 
 * `IsGalerkinSolution a ℓ K u`: `u ∈ K` and `a u v = ℓ v` for all `v ∈ K` ([han2009theoretical]
   (9.1.4)); bridge to the operator specification `IsGalerkin (toOperator a) (rieszRep ℓ) 0 K u` of
-  `Numlib.LinearSolve.Projection.Basic`, and to the stiffness-matrix system (9.1.5).
+  `Numlib.Projection.Basic`, and to the stiffness-matrix system (9.1.5).
 * Céa's lemma `‖u - u_N‖ ≤ (M / c) inf_{v ∈ K} ‖u - v‖` ([han2009theoretical] Prop 9.1.3, their
   inequality (9.1.11)), the Hermitian sharpening `√(M / c)` (from the energy-norm optimality of
   `u_N` remarked on just after that proposition, with the energy functional (9.1.7) and the
@@ -127,7 +127,7 @@ namespace IsGalerkinSolution
 
 variable {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜} {K : Submodule 𝕜 V} {u : V}
 
-/-- Bridge to the operator specification `IsGalerkin` of `Numlib.LinearSolve.Projection.Basic`:
+/-- Bridge to the operator specification `IsGalerkin` of `Numlib.Projection.Basic`:
 Galerkin for the form is Galerkin for `A = toOperator a`, `b = rieszRep ℓ`, `x₀ = 0`. -/
 theorem iff_isGalerkin [CompleteSpace V] :
     IsGalerkinSolution a ℓ K u ↔

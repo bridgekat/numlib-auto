@@ -1,4 +1,4 @@
-import Numlib.LinearSolve.Projection.OneDimensional
+import Numlib.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Chapter07.Section03
 
 /-!

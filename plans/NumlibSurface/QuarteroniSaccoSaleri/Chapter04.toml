@@ -17,10 +17,10 @@ product is the subject (§4.3–4.5), the two pictures being related by `WithLp.
 on Euclidean vectors; its `ρ(B)` is `Matrix.complexSpectralRadius B` (real matrices are complexified
 before any spectral statement, `Numlib/LinearAlgebra/Matrix/Complexify`); its `K₂(A)` is
 `NormedRing.condNumber A` under `Matrix.Norms.L2Operator`. The book's iteration matrices and sweeps
-are the splittings of `Numlib/LinearSolve/Stationary/Splitting` and the sweeps of
-`Numlib/LinearSolve/Stationary/Sweep`; every convergence result is a specialization of
-`Numlib/LinearSolve/Stationary/{Basic,SPD,DiagDominant,ConsistentlyOrdered,Richardson,ADI}`, and the
-Krylov material of `Numlib/LinearSolve/Projection/*` and `Numlib/Krylov/*`. This library imports no
+are the splittings of `Numlib/Stationary/Splitting` and the sweeps of
+`Numlib/Stationary/Sweep`; every convergence result is a specialization of
+`Numlib/Stationary/{Basic,SPD,DiagDominant,ConsistentlyOrdered,Richardson,ADI}`, and the
+Krylov material of `Numlib/Projection/*` and `Numlib/Krylov/*`. This library imports no
 other surface library; the glue it shares with `SaadSparse` (complexification of splittings, the
 sweep/splitting identities) is planned as backbone extensions and consumed from there.
 '''

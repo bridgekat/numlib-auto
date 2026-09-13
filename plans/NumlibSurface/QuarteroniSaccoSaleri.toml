@@ -22,7 +22,7 @@ piecewise polynomial) carry equivalence lemmas to the backbone's.
 
 This book is the central reference of the 2026-09 planning round: the backbone directories
 `Numlib/Conditioning`, `Numlib/ODE`, `Numlib/Optimization`, `Numlib/Probability`,
-`Numlib/Algebra`, `Numlib/LinearSolve/Direct` and `Numlib/Analysis/PDE`, and some eighty new modules
+`Numlib/Algebra`, `Numlib/Direct` and `Numlib/Analysis/PDE`, and some eighty new modules
 under the existing directories, were laid out from its thirteen chapters; `notes/backbone.md` §17
 records the decisions, `notes/book-errata.md` the book's misprints found on the way, and every
 node that quotes a result the book states without proof and that is out of reach (the Dahlquist

@@ -270,7 +270,7 @@ kind = "definition"
 desc = '''Definition 4.3, as printed: `HasAProperty M : Prop` for `M : Matrix (Fin n) (Fin n) ℝ` is the
 conjunction of (a) `M` is consistently ordered in the spectral sense the definition spells out —
 `α D⁻¹ E + α⁻¹ D⁻¹ F` has eigenvalues independent of `α ≠ 0` — which is
-`Matrix.IsConsistentlyOrdered (complexify M)` of `Numlib/LinearSolve/Stationary/ConsistentlyOrdered`
+`Matrix.IsConsistentlyOrdered (complexify M)` of `Numlib/Stationary/ConsistentlyOrdered`
 (note the backbone's `L = D⁻¹ E`, `U = D⁻¹ F` are the *same* matrices up to the sign convention
 `E = -strictLower`, the spectrum of `α L + α⁻¹ U` being invariant under negation of both), and (b) `M`
 can be partitioned in the `2 × 2` block form `[D̃₁ M₁₂; M₂₁ D̃₂]` with diagonal `D̃₁`, `D̃₂`:
@@ -406,7 +406,7 @@ block labelling `π : Fin n → ι` (`ι` linearly ordered), `A.PosDef` and
 `h : IsUnit (blockDiagPart π A)` from positive definiteness of the diagonal blocks). Householder–John
 `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` with `M = blockDiagPart π A`. The
 block Gauss–Seidel and block SOR methods "introduced in a similar manner" are
-`Matrix.blockGaussSeidelSplitting`/`blockSorSplitting` of `Numlib/LinearSolve/Stationary/Block` and
+`Matrix.blockGaussSeidelSplitting`/`blockSorSplitting` of `Numlib/Stationary/Block` and
 need no node. ★'''
 deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "QuarteroniSaccoSaleri.Chapter04.equation_4_6", "Matrix.blockDiagPart", "Matrix.blockJacobiSplitting", "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.3'

@@ -13,7 +13,7 @@ One step of Gaussian elimination at a pivot `p`, applied to a square matrix `M` 
 finite linear order `n`: the rows strictly below `p` have `M i p / M p p` times the row `p`
 subtracted from them, and every other row is left alone. It is the elementary operation from which
 the `LU` factorization (`Numlib/LinearAlgebra/Matrix/LU`) and the incomplete factorizations of
-`Numlib/LinearSolve/Preconditioner/ILU` are built.
+`Numlib/Preconditioner/ILU` are built.
 
 ## Main definitions
 

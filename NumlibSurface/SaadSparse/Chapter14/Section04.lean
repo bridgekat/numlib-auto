@@ -1,6 +1,6 @@
 import Mathlib.Data.Sum.Order
-import Numlib.LinearSolve.DomainDecomposition.Schur
-import Numlib.LinearSolve.Preconditioner.ILU
+import Numlib.DomainDecomposition.Schur
+import Numlib.Preconditioner.ILU
 import NumlibSurface.SaadSparse.Chapter14.Section02
 
 /-!
@@ -26,7 +26,7 @@ method, and §14.4.1 builds the preconditioner for `S` out of one for the whole 
   `Fin p ⊕ₗ Fin q`, whose factors are block triangular by `toBlocks₁₂_eq_zero_of_isILU` and
   `toBlocks₂₁_eq_zero_of_isILU`.
 
-Everything specializes `Numlib/LinearSolve/DomainDecomposition/Schur`.
+Everything specializes `Numlib/DomainDecomposition/Schur`.
 
 §14.4.2 is probing: `S` is dense but its entries decay away from the diagonal, so it is replaced by
 a tridiagonal `T` recovered from three matrix–vector products.  The *use* is a heuristic — the book

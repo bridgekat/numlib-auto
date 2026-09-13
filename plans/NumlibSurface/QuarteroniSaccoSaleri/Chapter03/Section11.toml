@@ -2,7 +2,7 @@ namespace = "QuarteroniSaccoSaleri.Chapter03"
 desc = '''
 §3.11, approximate computation of `K(A)`: the lower-bound principle behind every condition
 estimator, the estimate (3.70) and its LU form (3.72), and `K₂(A) = K₂(R)`. Backbone:
-`Numlib/LinearSolve/Direct/Refinement`. The lookahead heuristic (3.71) for choosing `d`, Program 14
+`Numlib/Direct/Refinement`. The lookahead heuristic (3.71) for choosing `d`, Program 14
 and Example 3.9 state no theorem and are not nodes; Exercise 15, which the text cites, is in
 `Section15`.
 '''
@@ -20,7 +20,7 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.70)'
 id = "condEstimate"
 kind = "definition"
 desc = '''§3.11: the estimate `K̂₁(A) = ‖R‖₁ ‖y‖₁ / ‖x‖₁`, and its LU form (3.72) `K̂₁(A) = ‖A‖₁ ‖y‖₁ / ‖x‖₁` with
-`(L U)ᵀ x = d`, `L U y = x`: `condEstimate` of `Numlib/LinearSolve/Direct/Refinement` on the
+`(L U)ᵀ x = d`, `L U y = x`: `condEstimate` of `Numlib/Direct/Refinement` on the
 operator of `A` in the `1`-norm (chapter 1's `‖·‖₁`). ★'''
 deps = ["_root_.condEstimate", "QuarteroniSaccoSaleri.Chapter03.equation_3_70"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'

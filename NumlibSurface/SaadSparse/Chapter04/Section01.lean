@@ -1,6 +1,6 @@
 import Numlib.LinearAlgebra.Matrix.Hessenberg
-import Numlib.LinearSolve.Stationary.Block
-import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Stationary.Block
+import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -12,7 +12,7 @@ SOR (4.11)–(4.12) and SSOR (4.13)–(4.14) iterations, the general splitting f
 the preconditioners (4.24)–(4.27).
 
 Every iteration is a `Stationary.Splitting` of the backbone
-(`Numlib/LinearSolve/Stationary/Splitting.lean`): the equivalence lemmas `jacobiStep_eq`,
+(`Numlib/Stationary/Splitting.lean`): the equivalence lemmas `jacobiStep_eq`,
 `gsStep_eq`, `backwardGsStep_eq`, `sorStep_eq` and `ssorStep_eq` identify the book's
 componentwise or matrix recurrences with `Splitting.step` of the corresponding splitting.
 
@@ -20,7 +20,7 @@ Block relaxation (§4.1.1, (4.15)–(4.17), Algorithms 4.1–4.2) is the last se
 non-overlapping case: the blocks are the fibres of a labelling `π : Fin n → Fin p`, `blockD`,
 `blockE` and `blockF` are the block analogues of `D`, `E` and `F`, and `blockJacobiStep` and
 `blockGaussSeidelStep` are the two sweeps.  Each is the corresponding block splitting of
-`Numlib/LinearSolve/Stationary/Block.lean` (`blockJacobiStep_eq`, `blockGaussSeidelStep_eq`) and,
+`Numlib/Stationary/Block.lean` (`blockJacobiStep_eq`, `blockGaussSeidelStep_eq`) and,
 through §5.4, the additive and the multiplicative projection process over the blocks
 (`blockJacobiStep_eq_additiveStep`, `blockGaussSeidelStep_eq_multiplicativeStep`).  Overlapping
 blocks — the general form of Algorithm 4.1 — are not formalized; the book proves no theorem about

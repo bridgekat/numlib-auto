@@ -5,7 +5,7 @@ MILU), §10.4 (ILUT, Thm 10.8), §10.5 (approximate inverses, Prop 10.9–10.14,
 (preconditioners for the normal equations, Prop 10.17 and Thm 10.18).
 
 Theorem 10.18 is proved, over the incomplete Cholesky factorization `Matrix.IsIC` that was added to
-`Numlib/LinearSolve/Preconditioner/ILU.lean` beside `Matrix.IsILU` for it. Saad states it without
+`Numlib/Preconditioner/ILU.lean` beside `Matrix.IsILU` for it. Saad states it without
 proof, citing Wang–Gallivan–Bramley, and it is **false as printed**: its zero-pattern condition
 constrains the pairs `(i, j)` with `i < j` while the algorithm drops those with `j < i`, so on a
 lower-triangular reading it constrains nothing that is dropped. `SaadSparse.Chapter10.IsICPattern`
