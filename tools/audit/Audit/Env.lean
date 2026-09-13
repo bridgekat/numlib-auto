@@ -17,9 +17,13 @@ open Lean
 
 namespace Audit
 
-/-- The module a constant was declared in, if it was imported. -/
+/--
+The module a constant was declared in, if it was imported. Read off `env.header.modules`
+directly: `Environment.allImportedModuleNames` rebuilds an array of every imported module on each
+call, which made this — called once per constant of Mathlib — the whole running time of an audit.
+-/
 def moduleOf (env : Environment) (c : Name) : Option Name :=
-  (env.getModuleIdxFor? c).bind fun i => env.allImportedModuleNames[i.toNat]?
+  (env.getModuleIdxFor? c).bind fun i => env.header.modules[i.toNat]?.map (·.module)
 
 /-- Whether a module belongs to the project, i.e. sits under one of the roots. -/
 def isProjectModule (roots : Array Name) (m : Name) : Bool :=
