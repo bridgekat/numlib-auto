@@ -1,0 +1,31 @@
+[[node]]
+id = 'ConvexAnalysis.proper_coe_real'
+
+[[node]]
+id = 'ConvexOn.convexFn_coe'
+
+[[node]]
+id = 'isVariationalInequalitySolution_zero_iff_sub_mem_normalCone'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, (11.3.8)'
+
+[[node]]
+id = 'isVariationalInequalitySolution_iff_sub_mem_subgradient'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, (11.3.3)'
+
+[[node]]
+id = 'ConvexOn.isExactSum_coe_indicatorFn'
+
+[[node]]
+id = 'isVariationalInequalitySolution_iff_sub_mem_add_normalCone'
+source = 'Rockafellar, Convex Analysis, Theorem 23.8'
+
+[[node]]
+id = 'IsStronglyMonotoneWith.isMonotoneRel_graph'
+
+[[node]]
+id = 'isMinOn_iff_neg_mem_normalCone'
+source = 'Rockafellar, Convex Analysis, Theorem 27.4'
+
+[[node]]
+id = 'isMinOn_iff_neg_toDual_symm_mem_normalCone'
+source = 'Rockafellar, Convex Analysis, Theorem 27.4'

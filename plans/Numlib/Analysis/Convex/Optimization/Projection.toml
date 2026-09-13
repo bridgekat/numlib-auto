@@ -1,0 +1,7 @@
+[[node]]
+id = 'isBestApprox_iff_sub_mem_normalCone'
+source = 'Rockafellar, Convex Analysis, §27, the application of Theorem 27.4; Atkinson–Han, Theoretical Numerical Analysis, Lemma 3.4.1'
+
+[[node]]
+id = 'isBestApprox_iff_prox_eq'
+source = 'Rockafellar, Convex Analysis, §31, the remark following Theorem 31.5'

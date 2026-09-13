@@ -60,6 +60,7 @@ import Numlib.Analysis.Convex.Optimization.MoreauGradient
 import Numlib.Analysis.Convex.Optimization.Normal
 import Numlib.Analysis.Convex.Optimization.Perturbation
 import Numlib.Analysis.Convex.Optimization.Program
+import Numlib.Analysis.Convex.Optimization.Projection
 import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Closedness
 import Numlib.Analysis.Convex.Polyhedral.Cone
@@ -94,8 +95,8 @@ import Numlib.Analysis.Convex.Saddle.Kernel
 import Numlib.Analysis.Convex.Saddle.Minimax
 import Numlib.Analysis.Convex.Saddle.Monotone
 import Numlib.Analysis.Convex.Saddle.Rademacher
+import Numlib.Analysis.Convex.Saddle.Real
 import Numlib.Analysis.Convex.Saddle.Subgradient
-import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.Separation
 import Numlib.Analysis.Convex.Simplicial
 import Numlib.Analysis.Convex.StrictConvexSpace
@@ -136,8 +137,12 @@ surface that tests it against one.
 This module imports the whole of `Numlib.Analysis.Convex` and adds nothing of its own. The
 general theory described below was merged from the tdaf repository; beside it the directory
 keeps this project's older, independent modules of convexity facts Mathlib lacks (natural home:
-`Mathlib.Analysis.Convex`) — `Gateaux`, `SaddlePoint`, `StrictConvexSpace` and `Uniform` — which
-predate the merge and are not part of the layout below.
+`Mathlib.Analysis.Convex`) — `Gateaux`, `StrictConvexSpace` and `Uniform` — which predate the merge
+and are not part of the layout below. Where the two meet, the meeting is a bridge module:
+`Optimization/Projection` reads the metric projection of `Numlib/Analysis/Normed/Module/BestApprox`
+as a proximal mapping, `Saddle/Real` reads the real-valued saddle-point theory of Atkinson–Han
+through `IsSaddlePointOn`, and `Numlib/Variational/Inequality/NormalCone` reads the elliptic
+variational inequality as a normal-cone and subgradient condition.
 
 ## Four levels of generality
 

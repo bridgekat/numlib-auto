@@ -66,6 +66,7 @@ import Numlib.Analysis.Convex.Optimization.MoreauGradient
 import Numlib.Analysis.Convex.Optimization.Normal
 import Numlib.Analysis.Convex.Optimization.Perturbation
 import Numlib.Analysis.Convex.Optimization.Program
+import Numlib.Analysis.Convex.Optimization.Projection
 import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Closedness
 import Numlib.Analysis.Convex.Polyhedral.Cone
@@ -100,8 +101,8 @@ import Numlib.Analysis.Convex.Saddle.Kernel
 import Numlib.Analysis.Convex.Saddle.Minimax
 import Numlib.Analysis.Convex.Saddle.Monotone
 import Numlib.Analysis.Convex.Saddle.Rademacher
+import Numlib.Analysis.Convex.Saddle.Real
 import Numlib.Analysis.Convex.Saddle.Subgradient
-import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.Separation
 import Numlib.Analysis.Convex.Simplicial
 import Numlib.Analysis.Convex.StrictConvexSpace
@@ -325,6 +326,7 @@ import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation
 import Numlib.Variational.Inequality.Basic
+import Numlib.Variational.Inequality.NormalCone
 import Numlib.Variational.LaxMilgram
 import Numlib.Variational.Minimization
 import Numlib.Variational.ProjectionMethod

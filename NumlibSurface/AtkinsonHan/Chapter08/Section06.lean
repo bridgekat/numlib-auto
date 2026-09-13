@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.SaddlePoint
+import Numlib.Analysis.Convex.Saddle.Real
 
 /-!
 # Atkinson–Han §8.6: mixed and dual formulations
@@ -15,7 +15,9 @@ here needs a function space.
 
 * `IsSaddlePoint` — Definition 8.6.1, (8.6.10), in the book's own shape
   `L(u, q) ≤ L(u, p) ≤ L(v, p)`, with `isSaddlePoint_iff` identifying it with the backbone's
-  `_root_.IsSaddlePoint`.
+  `ConvexAnalysis.IsSaddlePointOn`.  The backbone follows Rockafellar — the first variable is
+  maximized, the second minimized, and the kernel is `EReal`-valued — so the book's `(u, p)` on
+  `A × B` is the backbone's `(p, u)` on `B × A` for the transposed kernel `(q, v) ↦ L(v, q)`.
 * `primalObjective`, `dualObjective` — the primal problem (8.6.12) `min_{v ∈ A} sup_{q ∈ B} L(v, q)`
   and the dual problem (8.6.13) `max_{q ∈ B} inf_{v ∈ A} L(v, q)`.
 * `proposition_8_6_2` — (8.6.11): `(u, p)` is a saddle point exactly when `u` solves the primal
@@ -52,20 +54,25 @@ variable {α β : Type*} {L : α → β → ℝ} {A : Set α} {B : Set β} {u : 
 
 so that `p` maximizes `L(u, ·)` over `B` while `u` minimizes `L(·, p)` over `A`.  The book writes
 the two inequalities as one chain, which is what is transcribed here;
-`isSaddlePoint_iff` splits it into the backbone's four fields. -/
+`isSaddlePoint_iff` splits it into the backbone's four clauses. -/
 def IsSaddlePoint (L : α → β → ℝ) (A : Set α) (B : Set β) (u : α) (p : β) : Prop :=
   u ∈ A ∧ p ∈ B ∧ ∀ v ∈ A, ∀ q ∈ B, L u q ≤ L u p ∧ L u p ≤ L v p
 
-/-- Definition 8.6.1 is the backbone's `_root_.IsSaddlePoint`.  The book's chain quantifies over
-`v ∈ A` and `q ∈ B` at once; splitting it is legitimate because `u ∈ A` and `p ∈ B` make each
-half instantiable on its own. -/
-theorem isSaddlePoint_iff : IsSaddlePoint L A B u p ↔ _root_.IsSaddlePoint L A B u p := by
+/-- Definition 8.6.1 is the backbone's `ConvexAnalysis.IsSaddlePointOn`, for the transposed
+kernel `(q, v) ↦ L(v, q)` read in `EReal`, relative to `B × A`, at the point `(p, u)`: the
+backbone maximizes its first variable and minimizes its second, which is the book's convention
+with the two variables exchanged.  The book's chain quantifies over `v ∈ A` and `q ∈ B` at once;
+splitting it is legitimate because `u ∈ A` and `p ∈ B` make each half instantiable on its own. -/
+theorem isSaddlePoint_iff :
+    IsSaddlePoint L A B u p ↔
+      ConvexAnalysis.IsSaddlePointOn (fun q : β × α => ((L q.2 q.1 : ℝ) : EReal)) B A (p, u) := by
   constructor
   · rintro ⟨hu, hp, h⟩
-    exact ⟨hu, hp, fun q hq => (h u hu q hq).1, fun v hv => (h v hv p hp).2⟩
-  · intro h
-    exact ⟨h.mem_left, h.mem_right,
-      fun v hv q hq => ⟨h.apply_le q hq, h.le_apply v hv⟩⟩
+    exact ⟨hp, hu, fun q hq => EReal.coe_le_coe_iff.2 (h u hu q hq).1,
+      fun v hv => EReal.coe_le_coe_iff.2 (h v hv p hp).2⟩
+  · rintro ⟨hp, hu, h₁, h₂⟩
+    exact ⟨hu, hp, fun v hv q hq =>
+      ⟨EReal.coe_le_coe_iff.1 (h₁ q hq), EReal.coe_le_coe_iff.1 (h₂ v hv)⟩⟩
 
 /-- The objective of the primal problem (8.6.12): `J(v) = sup_{q ∈ B} L(v, q)`, to be minimized
 over `A`. -/
@@ -79,12 +86,12 @@ noncomputable def dualObjective (L : α → β → ℝ) (A : Set α) (q : β) : 
 /-- At a saddle point the primal objective takes the value `L(u, p)`: `sup_{q ∈ B} L(u, q)` is
 attained at `q = p`. -/
 theorem primalObjective_eq (h : IsSaddlePoint L A B u p) : primalObjective L B u = L u p :=
-  (isSaddlePoint_iff.mp h).sSup_image_eq
+  (isSaddlePoint_iff.mp h).sSup_image_coe_eq
 
 /-- At a saddle point the dual objective takes the value `L(u, p)`: `inf_{v ∈ A} L(v, p)` is
 attained at `v = u`. -/
 theorem dualObjective_eq (h : IsSaddlePoint L A B u p) : dualObjective L A p = L u p :=
-  (isSaddlePoint_iff.mp h).sInf_image_eq
+  (isSaddlePoint_iff.mp h).sInf_image_coe_eq
 
 /-- **Proposition 8.6.2**, (8.6.11).  A pair `(u, p) ∈ A × B` is a saddle point of `L` if and only
 if `u` solves the primal problem (8.6.12), `p` solves the dual problem (8.6.13), and the common
@@ -102,11 +109,12 @@ theorem proposition_8_6_2 (hu : u ∈ A) (hp : p ∈ B) (hbddA : ∀ v ∈ A, Bd
   constructor
   · intro h
     have h' := isSaddlePoint_iff.mp h
-    exact ⟨⟨primalObjective_eq h, h'.isLeast_sSup hbddA⟩,
-      dualObjective_eq h, h'.isGreatest_sInf hbddB⟩
+    exact ⟨⟨primalObjective_eq h, h'.isLeast_sSup_coe hbddA⟩,
+      dualObjective_eq h, h'.isGreatest_sInf_coe hbddB⟩
   · rintro ⟨⟨hpu, hleast⟩, hdp, hgreatest⟩
     refine isSaddlePoint_iff.mpr
-      (isSaddlePoint_of_isLeast_of_isGreatest hu hp (hbddA u hu) (hbddB p hp) ?_ ?_ ?_)
+      (ConvexAnalysis.isSaddlePointOn_coe_of_isLeast_of_isGreatest hp hu (hbddA u hu) (hbddB p hp)
+        ?_ ?_ ?_)
     · change IsLeast (primalObjective L B '' A) (primalObjective L B u)
       rw [hpu]
       exact hleast
@@ -119,8 +127,7 @@ theorem proposition_8_6_2 (hu : u ∈ A) (hp : p ∈ B) (hbddA : ∀ v ∈ A, Bd
 `L(u, p)`.  There is no duality gap. -/
 theorem equation_8_6_14 (h : IsSaddlePoint L A B u p) (hbddA : ∀ v ∈ A, BddAbove (L v '' B))
     (hbddB : ∀ q ∈ B, BddBelow ((fun v => L v q) '' A)) :
-    sInf (primalObjective L B '' A) = sSup (dualObjective L A '' B) := by
-  have h' := isSaddlePoint_iff.mp h
-  exact (h'.isLeast_sSup hbddA).csInf_eq.trans ((h'.isGreatest_sInf hbddB).csSup_eq).symm
+    sInf (primalObjective L B '' A) = sSup (dualObjective L A '' B) :=
+  (isSaddlePoint_iff.mp h).sInf_sSup_eq_sSup_sInf_coe hbddA hbddB
 
 end AtkinsonHan.Chapter08

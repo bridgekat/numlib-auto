@@ -1,0 +1,62 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = '_root_.EReal.coe_sSup_of_bddAbove'
+
+[[node]]
+id = '_root_.EReal.coe_sInf_of_bddBelow'
+
+[[node]]
+id = 'isSaddlePointOn_iff_isSaddlePoint_subtype'
+
+[[node]]
+id = 'maximin_subtype'
+
+[[node]]
+id = 'minimax_subtype'
+
+[[node]]
+id = 'biSup_biInf_le_biInf_biSup'
+
+[[node]]
+id = 'isSaddlePointOn_iff_attained'
+
+[[node]]
+id = 'IsSaddlePointOn.biSup_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.biInf_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.biSup_biInf_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.biInf_biSup_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.isGreatest_image_coe'
+
+[[node]]
+id = 'IsSaddlePointOn.isLeast_image_coe'
+
+[[node]]
+id = 'IsSaddlePointOn.sSup_image_coe_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.sInf_image_coe_eq'
+
+[[node]]
+id = 'IsSaddlePointOn.isLeast_sSup_coe'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, Proposition 8.6.2'
+
+[[node]]
+id = 'IsSaddlePointOn.isGreatest_sInf_coe'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, Proposition 8.6.2'
+
+[[node]]
+id = 'IsSaddlePointOn.sInf_sSup_eq_sSup_sInf_coe'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, (8.6.14)'
+
+[[node]]
+id = 'isSaddlePointOn_coe_of_isLeast_of_isGreatest'
+source = 'Atkinson–Han, Theoretical Numerical Analysis, Proposition 8.6.2'

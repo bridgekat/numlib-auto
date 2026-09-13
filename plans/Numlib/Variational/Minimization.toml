@@ -41,5 +41,10 @@ which the statement fails: `f x = (x - 1)²` on `[0, 1)` and `f 1 = 5` is strong
 closed convex `[0, 1]` and has no minimizer. Proof: existence from
 `exists_isMinOn_of_isClosed_of_finiteDimensional` with `StrongConvexOn.isCoerciveFunctionalOn`
 (lower semicontinuity at `x₀` gives the local lower bound), uniqueness from
-`IsMinOn.eq_of_strictConvexOn` with `StrongConvexOn.strictConvexOn`. ★★'''
+`IsMinOn.eq_of_strictConvexOn` with `StrongConvexOn.strictConvexOn`. The convex route to the
+existence half is `ConvexAnalysis.argmin_nonempty_of_recessionConeFn_eq_zero`
+(`Numlib/Analysis/Convex/Optimization/Minimum`, Rockafellar Theorem 27.2) applied to the closed
+proper convex `f + δ_K` read in `EReal`, whose recession cone is `{0}` because strong convexity
+makes `f` grow quadratically; the coercivity route above is shorter and stays infinite-dimensional
+in statement, so it remains the plan. ★★'''
 deps = ["StrongConvexOn.isCoerciveFunctionalOn", "exists_isMinOn_of_isClosed_of_finiteDimensional", "IsMinOn.eq_of_strictConvexOn"]

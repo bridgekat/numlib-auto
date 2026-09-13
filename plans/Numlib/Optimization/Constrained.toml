@@ -8,7 +8,9 @@ Lagrange multiplier theorem for equality constraints with uniqueness of the mult
 Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which produces a nontrivial
 `(Λ, Λ₀)` and needs regularity to normalize `Λ₀ = 1`), the second-order sufficient condition on the
 tangent space of the constraints, Karush–Kuhn–Tucker points and the KKT necessary conditions
-under regularity, the sufficiency of the KKT conditions for convex programs, and the penalty and
+under regularity, the sufficiency of the KKT conditions for convex programs, the KKT conditions
+for a differentiable convex program under Slater's condition (a restatement of the Kuhn–Tucker
+theory of `Numlib/Analysis/Convex/Optimization/Program`), and the penalty and
 augmented-Lagrangian methods with the convergence of their minimizers. Derivatives are data
 `f' : E → E →L[ℝ] ℝ`, `h' : ι → E → E →L[ℝ] ℝ`, with `HasStrictFDerivAt` where Mathlib's theorem
 wants it (a `C¹` function is strictly differentiable, `ContDiffAt.hasStrictFDerivAt`) and
@@ -106,12 +108,19 @@ LICQ the tangent cone of the feasible set at `x` equals the linearized cone
 theorem applied to the active constraints (Mathlib: `HasStrictFDerivAt.implicitFunction`), and it
 is the only place regularity enters; (b) the first-order condition `f' x z ≥ 0` on the tangent cone
 (`IsLocalMinOn.hasFDerivWithinAt_nonneg`, as in Property 7.9); (c) Farkas' lemma to turn
-`f' x z ≥ 0` on a polyhedral cone into the multiplier representation — Mathlib has
-`ProperCone.hyperplane_separation_point` (`Mathlib/Analysis/Convex/Cone/Dual.lean`), but the
-finitely generated cone must be shown closed (`ProperCone`), a small finite-dimensional lemma.
-Alternatively McShane's penalty proof avoids (a) and (c) at the price of a compactness argument.
-Uniqueness of `(l, μ)` under LICQ is the separate ★ node `kkt_multipliers_unique`. ★★★'''
-deps = ["Constrained.IsRegularPointIneq", "Constrained.IsKKTPoint"]
+`f' x z ≥ 0` on the linearized cone into the multiplier representation — this third is proved:
+`ConvexAnalysis.farkas` (`Numlib/Analysis/Convex/LinearInequalities`) states, for a pairing `B`
+with `B.flip` compatible, `(∀ z, (∀ i, B z (a i) ≤ 0) → B z a₀ ≤ 0) ↔ ∃ l ≥ 0, ∑ i, l i • a i = a₀`,
+and the closedness of the finitely generated cone that its proof needs is
+`ConvexAnalysis.FinitelyGeneratedCone.isClosed` (`Polyhedral/Cone`). Instantiate `B = innerₗ E`
+with the gradients read as vectors through Riesz — compatibility from finite dimension, which makes
+`E` complete so that `instIsCompatiblePairingInner` and `isCompatiblePairing_flip_of_isInnerPairing`
+apply — or directly `B = (topDualPairing ℝ E).flip` on the functionals `f' x`, `h' i x`, `g' j x`
+(`instIsCompatiblePairingTopDualFinite`); the generators are `h' i x`, `-h' i x` and the active
+`g' j x`, and `a₀ = -f' x`. Alternatively McShane's penalty proof avoids (a) and (c) at the price
+of a compactness argument. Uniqueness of `(l, μ)` under LICQ is the separate ★ node
+`kkt_multipliers_unique`. ★★★'''
+deps = ["Constrained.IsRegularPointIneq", "Constrained.IsKKTPoint", "ConvexAnalysis.farkas", "ConvexAnalysis.FinitelyGeneratedCone.isClosed"]
 
 [[node]]
 id = "kkt_multipliers_unique"
@@ -137,8 +146,38 @@ the Lagrangian `Λ = f + ∑ μ_j g_j` is convex on `C` with `Λ x = f x` (compl
 `isMinOn_iff_forall_lineDeriv_nonneg` of `Numlib/Analysis/Convex/Gateaux`), and on `S`,
 `f y ≥ Λ y ≥ Λ x = f x`. Equality constraints are the pair `h ≤ 0`, `-h ≤ 0` with free
 multipliers, and `≥`-constraints have nonpositive multipliers; stationarity `Λ' x = 0` is the
-case `C = univ` of the variational inequality. ★★'''
+case `C = univ` of the variational inequality. The subgradient form of this sufficiency — for
+nondifferentiable convex `f`, `g j` and affine equality constraints in `ℝⁿ`, with
+`0 ∈ ∂f(x) + ∑ μ_j ∂g_j(x)` in place of the variational inequality — is Rockafellar Theorem 28.3,
+`Rockafellar.OrdinaryConvexProgram.theorem_28_3_kuhnTucker` (`NumlibSurface/Rockafellar/Part6/
+Section28`), whose backbone core is `ConvexAnalysis.le_of_mem_subgradient_of_neg_mem_normalCone`;
+this node keeps the Gâteaux form because it allows a nonlinear equality constraint with a free
+multiplier whenever `μ · h` is convex on `C`, which is what Property 7.15 asks. ★★'''
 deps = []
+
+[[node]]
+id = "exists_kkt_of_convexOn_of_slater"
+kind = "theorem"
+desc = '''Kuhn–Tucker conditions for a differentiable convex program under Slater's condition — the
+constraint qualification the book alludes to after Property 7.14, in the convex case, with Slater
+in place of LICQ. In finite dimension let `f : E → ℝ` be convex (`ConvexOn ℝ univ f`), each
+inequality constraint `g j` convex, each equality constraint `h i` affine (`h i y = φ i y + c i`
+with `φ i : E →L[ℝ] ℝ`), all differentiable at `x` with `HasFDerivAt f (f' x) x`,
+`HasFDerivAt (g j) (g' j x) x`, `HasFDerivAt (h i) (h' i x) x`; let Slater's condition hold,
+`∃ y, (∀ i, h i y = 0) ∧ ∀ j, g j y < 0`; and let `x` minimize `f` on the feasible set
+`{y | (∀ i, h i y = 0) ∧ ∀ j, g j y ≤ 0}` (for a convex program a local minimizer is global). Then
+`∃ l μ, IsKKTPoint f' h h' g g' x l μ`. No regularity of the constraint gradients is assumed, and
+`(l, μ)` need not be unique. Proof: `ConvexAnalysis.exists_isKuhnTuckerVector_of_slater`
+(`Numlib/Analysis/Convex/Optimization/Program`) — or its equality form
+`exists_multipliers_of_slater_eq` — applied to `f₀ = f`, `f_j = g_j` read in `EReal` (so
+`dom f₀ = univ` and `ri (dom f₀) = univ`) and `b = h` as affine maps, gives multipliers `μ ≥ 0`, `l`
+with `inf_y (f y + ∑ μ_j g_j y + ∑ l_i h_i y) = f x`; the general form of Rockafellar's Theorem 28.3,
+in `Optimization/Program`, turns that into the Kuhn–Tucker conditions at `x`: complementary
+slackness `μ_j g_j x = 0` and `x` an unconstrained minimizer of the Lagrangian
+`f + ∑ μ_j g_j + ∑ l_i h_i`; the Lagrangian is differentiable at `x`, so its derivative vanishes
+there (`IsLocalMin.hasFDerivAt_eq_zero`), which is `stationary`. Feasibility is the hypothesis. ★★'''
+deps = ["Constrained.IsKKTPoint", "ConvexAnalysis.exists_isKuhnTuckerVector_of_slater"]
+source = 'Rockafellar, Convex Analysis, Theorems 28.2 and 28.3'
 
 [[node]]
 id = "penalized"
