@@ -235,6 +235,7 @@ import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.FloatingPoint.Stationary
+import Numlib.FloatingPoint.System
 import Numlib.Geometry.Euclidean.TriangleShape
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel

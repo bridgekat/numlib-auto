@@ -1,40 +1,13 @@
 namespace = "QuarteroniSaccoSaleri.Chapter02"
-desc = '''
-Quarteroni–Sacco–Saleri §2.6: the two exercises the main text cites — Exercise 11, which proves
-(2.37), and Exercise 12, the quantitative form of the failure of associativity of `⊕`. Both are
-`Numlib/FloatingPoint/System` statements read over `ℝ`, with the book's `≃` bounds made exact by
-keeping the second-order terms. The remaining exercises are not cited by the text and are not
-nodes.
-'''
 
 [[node]]
 id = "exercise_2_11"
-kind = "theorem"
-desc = '''**Exercise 11, i.e. (2.37)**: for all real `x, y` with `x + y ≠ 0`, `|s.add x y - (x + y)| / |x +
-y| ≤ u (1 + u) (|x| + |y|) / |x + y| + u` with `u = s.unitRoundoff ℝ`. The book's hint: split off
-`fl(x) + fl(y)` and use (2.36) and (2.35). `FloatingPoint.System.abs_add_sub_le` divided by `|x +
-y|`. The book states it "for all `x, y ∈ 𝔽`", where it is weaker than (2.36) (`fl(x) = x` there);
-the inequality is meaningful, and true, for arbitrary real operands, which is how it is stated.
-★'''
-deps = ["FloatingPoint.System.abs_add_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 2.11 and (2.37)'
 
 [[node]]
 id = "exercise_2_12_left"
-kind = "theorem"
-desc = '''**Exercise 12, first bound**: for `x, y, z ∈ s.numbers ℝ`, `|s.add (s.add x y) z - (x + y + z)| ≤
-(2 |x + y| + |z|) u + |x + y| u²`; the book's `C₁ ≃ (2|x + y| + |z|) u` with the `u²` term kept.
-`FloatingPoint.System.abs_add_add_sub_le`. The book's hypothesis that `x + y`, `y + z`, `x + y + z`
-"fall into the range of `𝔽`" is not needed for the bound (Property 2.1 is unconditional in the
-backbone); it would be needed for the intermediate results to lie in `𝔽`. ★'''
-deps = ["FloatingPoint.System.abs_add_add_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 2.12'
 
 [[node]]
 id = "exercise_2_12_right"
-kind = "theorem"
-desc = '''**Exercise 12, second bound**: for `x, y, z ∈ s.numbers ℝ`, `|s.add x (s.add y z) - (x + y + z)| ≤
-(|x| + 2 |y + z|) u + |y + z| u²`; the book's `C₂ ≃ (|x| + 2|y + z|) u`. From `exercise_2_12_left`
-by commutativity (`FloatingPoint.System.add_comm`) and `add_comm` in `ℝ`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.exercise_2_12_left", "FloatingPoint.System.add_comm"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 2.12'
