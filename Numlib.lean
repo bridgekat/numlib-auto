@@ -225,6 +225,7 @@ import Numlib.Combinatorics.SimpleGraph.LevelSet
 import Numlib.Conditioning.LinearSystem
 import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
+import Numlib.Direct.Substitution
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
@@ -277,6 +278,7 @@ import Numlib.Krylov.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 import Numlib.LinearAlgebra.Matrix.Cauchy
+import Numlib.LinearAlgebra.Matrix.Cholesky
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
@@ -286,6 +288,7 @@ import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
+import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.Order

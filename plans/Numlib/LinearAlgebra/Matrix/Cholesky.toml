@@ -1,160 +1,151 @@
 namespace = "Matrix"
-desc = '''
-Positive definite matrices through their factorizations. The Cholesky factorization of a Hermitian
-positive definite matrix, `A = Hᴴ H` with `H` upper triangular of positive diagonal, unique
-(Quarteroni–Sacco–Saleri Theorem 3.6; Higham Theorem 10.1), built on Mathlib's `LDL`
-(`Mathlib/Analysis/Matrix/LDL.lean`: `LDL.lower * LDL.diag * LDL.lowerᴴ = S` for `S.PosDef`, with
-`LDL.lowerInv` lower triangular by `gramSchmidt_triangular`); the recurrence (3.45) as a total
-function; Sylvester's criterion and the other clauses of the book's Property 1.18, which the
-leading-principal-minor API of `LinearAlgebra/Matrix/LU` makes natural to state here; and the
-2×2-minor bound `|a_ij|² ≤ a_ii a_jj` of positive semidefinite matrices with its consequence that
-the entry of largest modulus of a positive definite matrix is diagonal (their §1.12).
-
-Index type `[Fintype n] [LinearOrder n]`, and for the `LDL` route also `[LocallyFiniteOrderBot n]`,
-which is what Mathlib's `LDL` demands (`Fin N` has it); `[WellFoundedLT n]` follows from finiteness.
-Field `[RCLike 𝕜]`, with `open scoped ComplexOrder` for `Matrix.PosDef` and for `0 < H i i`.
-
-Consumers: Quarteroni–Sacco–Saleri chapters 1 (Property 1.18), 3 (Theorem 3.6, Property 3.2),
-4 (SPD hypotheses), 5 (the symmetric-definite pencils of §5.9 and the Sturm sequences of §5.10.2,
-which count sign changes of exactly these minors) and 8 (spline systems); Kress §2.4 and Higham
-chapter 10 in `references/`.
-'''
 
 [[node]]
 id = "PosSemidef.norm_apply_sq_le_mul_re_diag"
-kind = "theorem"
-desc = '''For `A : Matrix n n 𝕜` positive semidefinite (`RCLike 𝕜`) and all `i j`, `‖A i j‖ ^ 2 ≤ re (A i i) * re (A j j)`: the 2×2 principal minor is nonnegative. Proof: `PosSemidef.submatrix` along `![i, j] : Fin 2 → n` gives a positive semidefinite 2×2 matrix, whose determinant `a_ii a_jj - |a_ij|²` is `≥ 0` by `PosSemidef.det_nonneg` and `det_fin_two`; or directly the Cauchy–Schwarz inequality of the semi-inner product `⟪x, y⟫_A`. ★'''
-deps = []
 
 [[node]]
 id = "PosDef.norm_apply_le_max_re_diag"
-kind = "theorem"
-desc = '''For positive definite `A` and all `i j`, `‖A i j‖ ≤ max (re (A i i)) (re (A j j))`; hence the entry of largest modulus of a positive definite matrix lies on the diagonal (Quarteroni–Sacco–Saleri §1.12, after Property 1.18; the diagonal entries themselves are positive by Mathlib's `Matrix.PosDef.diag_pos`). From the previous node and `√(ab) ≤ max a b`. ★'''
-deps = ["Matrix.PosSemidef.norm_apply_sq_le_mul_re_diag"]
 
 [[node]]
-id = "LDL.lower_isUnitLowerTriangular"
-kind = "theorem"
-desc = '''Mathlib's TODO in `LDL.lean`: `(LDL.lower hS).IsUnitLowerTriangular`. `LDL.lowerInv` is lower
-triangular (`LDL.lowerInv_triangular`) with unit diagonal (`gramSchmidt` leaves the diagonal
-coefficient `1` in the basis `Pi.basisFun`), and the inverse of a unit lower triangular matrix is
-unit lower triangular (`Matrix.blockTriangular_inv_of_blockTriangular`, `Matrix.BlockTriangular.inv_toBlock`).
-★★'''
-deps = ["Matrix.IsUnitLowerTriangular"]
+id = "PosDef.leadingPrincipalSubmatrix"
 
 [[node]]
-id = "LDL.diagEntries_pos"
-kind = "theorem"
-desc = '''`0 < LDL.diagEntries hS i` in `𝕜` under `ComplexOrder` (each is `⟪v, S v⟫` with `v = star (lowerInv
-i)` a row of an invertible matrix, hence nonzero), so `LDL.diag hS` has a positive real diagonal. ★'''
-deps = []
+id = "PosDef.strictLeadingPrincipalSubmatrix"
 
 [[node]]
-id = "isLDM_ldl"
-kind = "theorem"
-desc = '''Bridge to `LinearAlgebra/Matrix/LU`: `IsLDM S (LDL.lower hS) (LDL.diag hS) (LDL.lower hS)` for
-`hS : S.PosDef` (the conjugate-transpose version; `IsLDM` is stated with `Mᵀ`, so for `𝕜 = ℝ` this
-is literal and over `ℂ` state the `ᴴ` variant `IsLDH`). ★'''
-deps = ["Matrix.LDL.lower_isUnitLowerTriangular", "Matrix.IsLDM"]
+id = "PosDef.det_leadingPrincipalSubmatrix_pos"
 
 [[node]]
-id = "IsCholesky"
-kind = "definition"
-desc = '''`IsCholesky A H`: `H.IsUpperTriangular`, `∀ i, 0 < H i i` (in `𝕜` under `ComplexOrder`, i.e. real
-and positive), `Hᴴ * H = A`. The book's (3.44) with `H` upper; Higham writes `A = Rᵀ R`. ★'''
-deps = []
+id = "PosDef.isUnit_leadingPrincipalSubmatrix"
 
 [[node]]
-id = "exists_isCholesky"
-kind = "theorem"
-desc = '''Existence in QSS Theorem 3.6: `A.PosDef → ∃ H, IsCholesky A H`. Take `H = D^{1/2} (LDL.lower hA)ᴴ`
-with `D^{1/2} = diagonal (fun i => √(re (diagEntries i)))`, using `LDL.lower_conj_diag` and
-`LDL.diagEntries_pos`. ★★'''
-deps = ["Matrix.IsCholesky", "Matrix.LDL.lower_isUnitLowerTriangular", "Matrix.LDL.diagEntries_pos"]
+id = "PosDef.isUnit_strictLeadingPrincipalSubmatrix"
 
 [[node]]
-id = "IsCholesky.unique"
-kind = "theorem"
-desc = '''Uniqueness in QSS Theorem 3.6: `IsCholesky A H₁ → IsCholesky A H₂ → H₁ = H₂`. `H₁ H₂⁻¹ =
-H₁⁻ᴴ H₂ᴴ` is both upper and lower triangular, hence diagonal, with positive diagonal and unitary
-(`(H₁ H₂⁻¹)ᴴ (H₁ H₂⁻¹) = 1`), hence `1`. Alternatively `Matrix.qr_unique` applied to `A = H₁ᴴ H₁ =
-(H₁ᴴ) (H₁)`… no — the cleanest is the bordering induction of the book, which is the LU uniqueness
-`IsLU.unique` applied to `L = Hᴴ D⁻¹`, `U = H`. ★★'''
-deps = ["Matrix.IsCholesky", "Matrix.IsLU.unique"]
+id = "IsLowerTriangular.conjTranspose_isUpperTriangular"
 
 [[node]]
-id = "existsUnique_isCholesky"
-kind = "theorem"
-desc = 'QSS Theorem 3.6, Higham Theorem 10.1: `A.PosDef → ∃! H, IsCholesky A H`. ★'
-deps = ["Matrix.exists_isCholesky", "Matrix.IsCholesky.unique"]
+id = "IsUpperTriangular.conjTranspose_isLowerTriangular"
 
 [[node]]
-id = "IsCholesky.posDef"
-kind = "theorem"
-desc = '''Converse of Theorem 3.6 and Property 1.18 (4): `IsCholesky A H → A.PosDef`, since `H` is
-nonsingular (positive diagonal, `Matrix.det_of_isUpperTriangular`) and `Hᴴ H` is positive definite
-for nonsingular `H` (`Matrix.PosDef.conjTranspose_mul_self` with injectivity of `H *ᵥ ·`). ★'''
-deps = ["Matrix.IsCholesky"]
+id = "IsUnitLowerTriangular.conjTranspose_transpose"
 
 [[node]]
-id = "cholesky"
-kind = "definition"
-desc = '''The recurrence (3.45) as a total function, in the lower-triangular indexing of the book's `h_ij`
-(`i ≥ j`, entries of `Hᵀ`): `cholesky A i j = (A i j - ∑_{k<j} cholesky A i k * conj (cholesky A j k))
-/ cholesky A j j` for `j < i`, `cholesky A i i = √(re (A i i - ∑_{k<i} ‖cholesky A i k‖²))` cast to
-`𝕜`, and `0` for `i < j`. Well-founded on `(#{k | k < j}, [j < i])` as `LU/Elimination.luPacked`;
-junk (`√` of a negative is `0`, `x / 0 = 0`) off the positive definite cone. ★★'''
-deps = []
+id = "IsLDM.conjTranspose"
 
 [[node]]
-id = "isCholesky_cholesky"
-kind = "theorem"
-desc = '''Correctness of (3.45): `A.PosDef → IsCholesky A (cholesky A)ᴴ`. Induction along the order as in
-the book's proof: the recurrence for row `i` is forward substitution `H_{i-1}ᴴ h = v` (the
-prototype's `Matrix.forwardSubst` of `Direct/Substitution`) followed by `β = √(α -
-hᴴh)`, and `α - hᴴ h = det A(≤ i) / det A(< i) > 0` by `Matrix.PosDef.det_pos` on the leading
-blocks (`Matrix.PosDef.submatrix`). ★★★'''
-deps = ["Matrix.cholesky", "Matrix.IsCholesky", "Matrix.existsUnique_isCholesky", "Matrix.forwardSubst"]
+id = "IsLDM.eq_of_isHermitian"
 
 [[node]]
-id = "cholesky_eq_of_isCholesky"
-kind = "theorem"
-desc = '''`IsCholesky A H → cholesky A = Hᴴ`, by `IsCholesky.unique`. Every implementation (Program 7, the
-`LDL` route, the QR route of Property 3.3) computes this matrix. ★'''
-deps = ["Matrix.isCholesky_cholesky", "Matrix.IsCholesky.unique"]
+id = "exists_isLDM_conjTranspose_of_isHermitian"
+
+[[node]]
+id = "IsLDM.posDef_iff"
+
+[[node]]
+id = "IsLDM.diag_pos_of_forall_det_pos"
+
+[[node]]
+id = "exists_isLDM_conjTranspose_of_posDef"
 
 [[node]]
 id = "posDef_iff_forall_det_leadingPrincipalSubmatrix_pos"
-kind = "theorem"
-desc = '''Sylvester's criterion, QSS Property 1.18 (3): for `A.IsHermitian`, `A.PosDef ↔ ∀ k, 0 <
-(A.leadingPrincipalSubmatrix k).det` (the determinant of a Hermitian matrix is real; compare in `𝕜`
-under `ComplexOrder`, or state `0 < re det`). `⇒`: `Matrix.PosDef.det_pos` on `Matrix.PosDef.submatrix`.
-`⇐`: induction along the order — the strict leading minors are nonzero so `A = L D Lᴴ` exists
-(`existsUnique_isLDM`, Hermitian form), `d_k = det A(≤ k) / det A(< k) > 0`, and `L D Lᴴ` with
-positive `D` is positive definite. ★★'''
-deps = ["Matrix.leadingPrincipalSubmatrix", "Matrix.existsUnique_isLDM", "Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor"]
-
-[[node]]
-id = "posDef_iff_exists_isUnit_conjTranspose_mul_self"
-kind = "theorem"
-desc = '''QSS Property 1.18 (4): for `A.IsHermitian`, `A.PosDef ↔ ∃ H, IsUnit H ∧ Hᴴ * H = A`. `⇒` by
-`exists_isCholesky`; `⇐` is Mathlib's `Matrix.PosDef.conjTranspose_mul_self`. ★'''
-deps = ["Matrix.exists_isCholesky", "Matrix.IsCholesky.posDef"]
 
 [[node]]
 id = "posDef_iff_forall_principalSubmatrix_eigenvalues_pos"
-kind = "theorem"
-desc = '''QSS Property 1.18 (2): for `A.IsHermitian`, `A.PosDef ↔ ∀ (s : Finset n), ∀ i, 0 <
-(hA.submatrix (Subtype.val : s → n)).eigenvalues i` — all eigenvalues of all principal submatrices
-are positive. `⇒`: `Matrix.PosDef.submatrix` and `Matrix.PosDef.eigenvalues_pos`; `⇐`: take `s =
-univ` and `Matrix.PosDef.of_eigenvalues_pos` (Mathlib: `Matrix.IsHermitian.posDef_iff_eigenvalues_pos`
-or its ingredients). ★'''
-deps = []
+
+[[node]]
+id = "IsCholesky"
+
+[[node]]
+id = "IsCholesky.diag_ne_zero"
+
+[[node]]
+id = "IsCholesky.star_diag"
+
+[[node]]
+id = "IsCholesky.coe_re_diag"
+
+[[node]]
+id = "IsCholesky.isUnit"
+
+[[node]]
+id = "IsCholesky.posDef"
+
+[[node]]
+id = "IsCholesky.isHermitian"
+
+[[node]]
+id = "IsCholesky.apply_eq_sum"
+
+[[node]]
+id = "IsCholesky.star_apply_mul_diag_eq"
+
+[[node]]
+id = "IsCholesky.re_diag_eq_sqrt"
+
+[[node]]
+id = "IsCholesky.isLU"
+
+[[node]]
+id = "IsCholesky.unique"
+
+[[node]]
+id = "exists_isCholesky"
+
+[[node]]
+id = "existsUnique_isCholesky"
+
+[[node]]
+id = "posDef_iff_exists_isUnit_conjTranspose_mul_self"
+
+[[node]]
+id = "choleskyAux"
+
+[[node]]
+id = "cholesky"
+
+[[node]]
+id = "cholesky_apply_of_lt"
+
+[[node]]
+id = "cholesky_apply_self"
+
+[[node]]
+id = "cholesky_apply_of_gt"
+
+[[node]]
+id = "isLowerTriangular_cholesky"
+
+[[node]]
+id = "cholesky_eq_of_isCholesky"
+
+[[node]]
+id = "isCholesky_cholesky"
+
+[[node]]
+id = "cholesky_conjTranspose_eq_of_isCholesky"
+
+[[node]]
+id = "isCholesky_conjTranspose_mul_self_of_qr"
 
 [[node]]
 id = "cholesky_conjTranspose_mul_self_of_qr"
-kind = "theorem"
-desc = '''QSS Property 3.3, last clause: if `X = Q R` with `Qᴴ Q = 1`, `R` upper triangular with positive
-diagonal (the reduced QR of `Matrix.exists_qr`), then `IsCholesky (Xᴴ X) R`, so `R = (cholesky (Xᴴ
-X))ᴴ`: `Rᴴ Qᴴ Q R = Rᴴ R`. ★'''
-deps = ["Matrix.IsCholesky", "Matrix.cholesky_eq_of_isCholesky", "Matrix.exists_qr"]
+
+[[node]]
+id = "LDL.lowerInv_apply_self"
+
+[[node]]
+id = "LDL.lowerInv_isUnitLowerTriangular"
+
+[[node]]
+id = "LDL.lower_isUnitLowerTriangular"
+
+[[node]]
+id = "LDL.diagEntries_pos"
+
+[[node]]
+id = "isLDM_ldl"
+
+[[node]]
+id = "LDL.lower_eq_of_isLDM"

@@ -8,6 +8,7 @@ import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Ring
+import Numlib.LinearAlgebra.Matrix.Cholesky
 
 /-!
 # The Cauchy matrix and its determinant
@@ -31,6 +32,15 @@ along it leaves a Cauchy matrix of one size less, again up to scalings.
 
 * `Matrix.det_cauchy`: the closed form of the determinant.
 * `Matrix.det_cauchy_ne_zero`: it is nonzero when the `x i` are distinct and the `y j` are distinct.
+
+## The Hilbert matrix
+
+`Matrix.hilbert K n` is the Hilbert matrix `h_ij = 1 / (i + j + 1)`, the Cauchy matrix of
+`x i = i + 1`, `y j = j` (`Matrix.hilbert_eq_cauchy`). It is nonsingular (`Matrix.isUnit_hilbert`),
+its determinant is positive over an ordered field (`Matrix.det_hilbert_pos`), and it is positive
+definite (`Matrix.posDef_hilbert`), by Sylvester's criterion of
+`Numlib/LinearAlgebra/Matrix/Cholesky`: its leading principal submatrices are Hilbert matrices
+(`Matrix.hilbert_submatrix_castLE`, `Matrix.det_leadingPrincipalSubmatrix_fin`).
 -/
 
 namespace Matrix
@@ -202,5 +212,95 @@ theorem det_cauchy_ne_zero {n : ℕ} {x y : Fin n → K} (h : ∀ i j, x i + y j
   have hij : i ≠ j := (Finset.mem_Ioi.mp hj).ne
   exact mul_ne_zero (sub_ne_zero.2 fun heq => hij (hx heq).symm)
     (sub_ne_zero.2 fun heq => hij (hy heq).symm)
+
+/-! ### The Hilbert matrix -/
+
+section Hilbert
+
+open scoped ComplexOrder
+
+/-- The **Hilbert matrix** of order `n`, with entries `h_ij = 1 / (i + j + 1)` in `0`-based
+indexing (the `1 / (i + j - 1)` of [quarteroni2000numerical] (3.32) in `1`-based indexing). It is
+the Cauchy matrix of `x i = i + 1`, `y j = j` (`Matrix.hilbert_eq_cauchy`), the Gram matrix of the
+monomials `1, t, …, t^{n-1}` on `L²(0, 1)`, and the standard example of an ill-conditioned
+symmetric positive definite matrix. -/
+def hilbert (K : Type*) [Field K] (n : ℕ) : Matrix (Fin n) (Fin n) K :=
+  .of fun i j => ((i : K) + j + 1)⁻¹
+
+variable (K)
+
+/-- The entries of the Hilbert matrix. -/
+theorem hilbert_apply (n : ℕ) (i j : Fin n) : hilbert K n i j = 1 / ((i : K) + j + 1) := by
+  simp [hilbert]
+
+/-- The Hilbert matrix is the Cauchy matrix of `x i = i + 1` and `y j = j`. -/
+theorem hilbert_eq_cauchy (n : ℕ) :
+    hilbert K n = cauchy (fun i : Fin n => (i : K) + 1) fun j => (j : K) := by
+  ext i j
+  simp only [hilbert, of_apply, cauchy_apply]
+  ring_nf
+
+/-- The Hilbert matrix is nonsingular, being a Cauchy matrix with distinct `x i` and distinct
+`y j` (`Matrix.det_cauchy_ne_zero`). -/
+theorem isUnit_hilbert [CharZero K] (n : ℕ) : IsUnit (hilbert K n) := by
+  rw [isUnit_iff_isUnit_det, hilbert_eq_cauchy, isUnit_iff_ne_zero]
+  refine det_cauchy_ne_zero (fun i j => ?_) (fun i j h => ?_) fun i j h => ?_
+  · have : ((i : K) + 1 + j) = ((i + 1 + j : ℕ) : K) := by push_cast; ring
+    rw [this]
+    exact Nat.cast_ne_zero.2 (by omega)
+  · exact Fin.ext (Nat.cast_injective (add_right_cancel h))
+  · exact Fin.ext (Nat.cast_injective h)
+
+/-- The determinant of the Hilbert matrix is positive: in the Cauchy determinant every factor
+`(x j - x i) (y j - y i) = (j - i)²`, `i < j`, and every `x i + y j` is positive. -/
+theorem det_hilbert_pos [LinearOrder K] [IsStrictOrderedRing K] (n : ℕ) :
+    0 < (hilbert K n).det := by
+  rw [hilbert_eq_cauchy, det_cauchy _ _ fun i j => by positivity]
+  refine div_pos (Finset.prod_pos fun i _ => Finset.prod_pos fun j hj => ?_)
+    (Finset.prod_pos fun i _ => Finset.prod_pos fun j _ => by positivity)
+  have hij : (i : K) < j := by exact_mod_cast Finset.mem_Ioi.1 hj
+  have h1 : (0 : K) < (j : K) + 1 - ((i : K) + 1) := by linarith
+  have h2 : (0 : K) < (j : K) - i := by linarith
+  exact mul_pos h1 h2
+
+/-- On `Fin n`, the leading principal submatrix `A(≤ k)` of `Numlib/LinearAlgebra/Matrix/LU` is,
+up to the reindexing of `{i // i ≤ k}` by `Fin (k + 1)`, the submatrix along `Fin.castLE`, so the
+two have the same determinant. -/
+theorem det_leadingPrincipalSubmatrix_fin {R : Type*} [CommRing R] {n : ℕ}
+    (A : Matrix (Fin n) (Fin n) R) (k : Fin n) :
+    (A.leadingPrincipalSubmatrix k).det =
+      (A.submatrix (Fin.castLE (Nat.succ_le_of_lt k.2))
+        (Fin.castLE (Nat.succ_le_of_lt k.2))).det := by
+  let e : Fin (k + 1) ≃ {i : Fin n // i ≤ k} :=
+    { toFun := fun a => ⟨Fin.castLE (Nat.succ_le_of_lt k.2) a, Fin.le_def.2 (Nat.lt_succ_iff.1 a.2)⟩
+      invFun := fun i => ⟨i.1, Nat.lt_succ_of_le (Fin.le_def.1 i.2)⟩
+      left_inv := fun a => rfl
+      right_inv := fun i => rfl }
+  rw [← det_submatrix_equiv_self e]
+  rfl
+
+/-- The leading principal submatrices of the Hilbert matrix are Hilbert matrices. -/
+theorem hilbert_submatrix_castLE (n m : ℕ) (h : m ≤ n) :
+    (hilbert K n).submatrix (Fin.castLE h) (Fin.castLE h) = hilbert K m := by
+  ext i j
+  simp [hilbert]
+
+/-- The Hilbert matrix is symmetric. -/
+theorem isHermitian_hilbert [StarRing K] [TrivialStar K] (n : ℕ) : (hilbert K n).IsHermitian := by
+  ext i j
+  simp only [conjTranspose_apply, hilbert, of_apply, star_trivial]
+  ring_nf
+
+/-- **The Hilbert matrix is positive definite** ([quarteroni2000numerical] §3.4.2 factors `H₃` as
+`L D Lᵀ` with positive `D`; Example 3.2 runs Gaussian elimination on it without pivoting), by
+Sylvester's criterion: its leading principal minors are determinants of smaller Hilbert matrices,
+which are positive. -/
+theorem posDef_hilbert (n : ℕ) : (hilbert ℝ n).PosDef := by
+  refine (posDef_iff_forall_det_leadingPrincipalSubmatrix_pos (isHermitian_hilbert ℝ n)).2
+    fun k => ?_
+  rw [det_leadingPrincipalSubmatrix_fin, hilbert_submatrix_castLE]
+  exact det_hilbert_pos ℝ _
+
+end Hilbert
 
 end Matrix
