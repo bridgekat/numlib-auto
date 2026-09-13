@@ -1,472 +1,266 @@
 namespace = "QuarteroniSaccoSaleri.Chapter04"
-desc = '''
-Quarteroni–Sacco–Saleri §4.2: linear iterative methods from a splitting `A = P - N` (4.6)–(4.7),
-Properties 4.1–4.2 (convergence and energy-norm monotonicity for symmetric positive definite `A`),
-the Jacobi, JOR, Gauss–Seidel and SOR methods (4.10)–(4.17) and their convergence theory: strict
-diagonal dominance (Theorem 4.2), symmetric positive definiteness (Theorems 4.3–4.5, Property 4.3,
-Property 4.5, SSOR), the JOR relaxation (Theorem 4.6), Kahan's bound (Theorem 4.7), tridiagonal and
-consistently ordered matrices ((4.18), Definition 4.3, Property 4.4 with the optimal parameter
-(4.19)), the rounding-error decomposition of §4.2.4 ((4.20) and Example 4.3), block Jacobi (§4.2.5)
-and the symmetric Gauss–Seidel and SSOR methods of §4.2.6 ((4.21)–(4.22)). Example 4.2 is a table of
-numerically computed spectral radii and has no node; the Programs 15–16 are not nodes, the sweeps they
-implement being `Matrix.jorSweep` and `Matrix.sorSweep` of the backbone.
-
-Every convergence statement is `Tendsto (fun k => (step)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))` for all `b`,
-`x₀`, obtained from a spectral-radius bound through `theorem_4_1`; the spectral-radius bounds are the
-backbone's, on the real iteration matrix through `Matrix.complexSpectralRadius`. Energy norms are the
-real quadratic forms `(A *ᵥ e) ⬝ᵥ e`, and "monotone convergence in `‖·‖_A`" is stated as the strict
-one-step decrease of that form on nonzero errors.
-'''
 
 [[node]]
 id = "Splitting"
-kind = "definition"
-desc = '''`Splitting A := Stationary.Splitting A` for `A : Matrix (Fin n) (Fin n) ℝ`: the additive splitting
-`A = P - N` with `P` nonsingular of §4.2, `P = s.m`, `N = s.n`. An `abbrev`, as in the Saad surface. ★'''
-deps = ["Stationary.Splitting", "Stationary.Splitting.n"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.6'
 
 [[node]]
 id = "equation_4_6"
-kind = "theorem"
-desc = '''(4.6): the step `x_{k+1} = P⁻¹ (N x_k + b)` is `Stationary.Splitting.mulVecStep s b`, and the
-iteration matrix is `B = P⁻¹ N` with `f = P⁻¹ b`:
-`Stationary.Splitting.mulVecStep s b x = affineStep s.iterationOperator (s.m⁻¹ *ᵥ b) x` and
-`s.iterationOperator = s.m⁻¹ * s.n`. From `Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add`
-and `Stationary.Splitting.iterationOperator_eq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.Splitting", "QuarteroniSaccoSaleri.Chapter04.affineStep", "Stationary.Splitting.mulVecStep", "Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add", "Stationary.Splitting.iterationOperator_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.6'
 
 [[node]]
 id = "equation_4_7"
-kind = "theorem"
-desc = '''(4.7)–(4.8): `Stationary.Splitting.mulVecStep s b x = x + s.m⁻¹ *ᵥ (b - A *ᵥ x)`, the update by the
-preconditioned residual `r = b - A x`; and the splitting iteration is consistent,
-`mulVecStep s b x = x ↔ A *ᵥ x = b`. `Stationary.Splitting.mulVecStep_eq_add_inv_mulVec` and
-`mulVecStep_fixed_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.Splitting", "Stationary.Splitting.mulVecStep_eq_add_inv_mulVec", "Stationary.Splitting.mulVecStep_fixed_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.7'
 
 [[node]]
+id = "Splitting.consistent"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.6'
+
+[[node]]
+id = "Splitting.isUnit_of_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "Splitting.tendsto"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
+
+[[node]]
+id = "Splitting.forall_tendsto_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
+
+[[node]]
 id = "property_4_1_spectralRadius_lt_one"
-kind = "theorem"
-desc = '''Property 4.1, convergence: for `A.PosDef`, `s : Splitting A` with `s.m.PosDef` and
-`(2 • s.m - A).PosDef`, `complexSpectralRadius s.iterationOperator < 1`, hence (by `theorem_4_1`)
-convergence from every `x₀` for every `b`. Householder–John,
-`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`, with `s.m + s.mᵀ - A = 2 s.m - A` for
-symmetric `s.m`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.Splitting", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "QuarteroniSaccoSaleri.Chapter04.equation_4_6", "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
+
+[[node]]
+id = "Splitting.exists_mulVec_iterationOperator_eq_smul"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
 [[node]]
 id = "property_4_1_energyNorm"
-kind = "theorem"
-desc = '''Property 4.1, `ρ(B) = ‖B‖_A = ‖B‖_P`, stated without a matrix operator norm: under the hypotheses of
-`property_4_1_spectralRadius_lt_one`, with `B = s.iterationOperator`, `ρ = (complexSpectralRadius B).toReal`,
-(i) `∀ e, (A *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) ≤ ρ ^ 2 * ((A *ᵥ e) ⬝ᵥ e)` and `∃ e ≠ 0` with equality;
-(ii) the same with `s.m` in place of `A`. These say exactly that the operator norms of `B` induced by
-`‖·‖_A` and `‖·‖_P` equal `ρ(B)`. Backbone:
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_1_spectralRadius_lt_one", "Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
 [[node]]
 id = "property_4_1_monotone"
-kind = "theorem"
-desc = '''Property 4.1, monotonicity: under the same hypotheses, for every `e ≠ 0`,
-`(A *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) < (A *ᵥ e) ⬝ᵥ e` and `(s.m *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) < (s.m *ᵥ e) ⬝ᵥ e`,
-i.e. `‖e_{k+1}‖_A < ‖e_k‖_A` and `‖e_{k+1}‖_P < ‖e_k‖_P` along the error sequence `e_{k+1} = B e_k`
-of (4.4). The `A`-clause is `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`; the
-`P`-clause follows from `property_4_1_energyNorm` (ii) with `ρ < 1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_1_spectralRadius_lt_one", "QuarteroniSaccoSaleri.Chapter04.property_4_1_energyNorm", "Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
 [[node]]
+id = "isUnit_of_posDef_add_transpose"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
+
+[[node]]
 id = "property_4_2_isUnit"
-kind = "theorem"
-desc = '''Property 4.2, first clause: if `A.PosDef` and `(P + Pᵀ - A).PosDef` then `IsUnit P` — for `x ≠ 0`,
-`xᵀ P x = ½ xᵀ (P + Pᵀ) x > 0`, so `P x ≠ 0`. This is what lets the splitting
-`⟨P, property_4_2_isUnit …⟩ : Splitting A` be formed. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.Splitting"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
+
+[[node]]
+id = "Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
 
 [[node]]
 id = "property_4_2"
-kind = "theorem"
-desc = '''Property 4.2: for `A.PosDef` and `(P + Pᵀ - A).PosDef`, with `s = ⟨P, property_4_2_isUnit …⟩` and
-`B = s.iterationOperator`: `complexSpectralRadius B < 1` (convergence), and there is `q < 1` with
-`(A *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) ≤ q ^ 2 * ((A *ᵥ e) ⬝ᵥ e)` for all `e`, i.e. `ρ(B) ≤ ‖B‖_A < 1`
-(`ρ ≤ ‖·‖_A` being `spectralRadius_le_opNorm` in the `A`-norm, recorded as the clause
-`(complexSpectralRadius B).toReal ≤ q`). `Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`
-and the uniform clause of `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_2_isUnit", "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef", "Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
 
 [[node]]
 id = "property_4_2_monotone"
-kind = "theorem"
-desc = '''Property 4.2, monotone convergence in `‖·‖_A`: under its hypotheses,
-`(A *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) < (A *ᵥ e) ⬝ᵥ e` for every `e ≠ 0`.
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_2", "Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
 
 [[node]]
 id = "D"
-kind = "definition"
-desc = '''The letters of the splitting `A = D - (E + F)` of §4.2.1: `D A = diagPart A`, `E A = -strictLower A`
-(entries `-a_ij` for `i > j`), `F A = -strictUpper A` (entries `-a_ij` for `j > i`), with the identity
-`A = D A - E A - F A` (`decomp`). Three definitions and one lemma, exactly as
-`SaadSparse.Chapter04.D/E/F/decomp`, which this surface cannot import; nodes `E`, `F`, `decomp`
-accompany this one. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.10'
 
 [[node]]
 id = "E"
-kind = "definition"
-desc = '''`E A = -strictLower A`, the lower triangular matrix with entries `e_ij = -a_ij` for `i > j`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.10'
 
 [[node]]
 id = "F"
-kind = "definition"
-desc = '''`F A = -strictUpper A`, the upper triangular matrix with entries `f_ij = -a_ij` for `j > i`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.10'
 
 [[node]]
 id = "decomp"
-kind = "theorem"
-desc = '`A = D A - E A - F A`, the splitting `A = D - (E + F)` of §4.2.1. ★'
-deps = ["QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.10'
 
 [[node]]
+id = "D_sub_E"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.14'
+
+[[node]]
+id = "D_sub_F"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.21'
+
+[[node]]
+id = "D_sub_smul_E"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.22'
+
+[[node]]
+id = "D_sub_smul_F"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.22'
+
+[[node]]
 id = "equation_4_10"
-kind = "theorem"
-desc = '''(4.10)–(4.11), the Jacobi method: with `hd : ∀ i, A i i ≠ 0` (i.e. `IsUnit (diagPart A)`), the
-componentwise step `Matrix.jorSweep A 1 b x i = (b i - ∑ j ∈ univ.erase i, A i j * x j) / A i i` is the
-splitting step `mulVecStep (jacobiSplitting A h) b x`, whose iteration matrix is
-`B_J = (D A)⁻¹ * (E A + F A) = 1 - (D A)⁻¹ * A`. `Matrix.jorSweep_eq_mulVecStep` at `ω = 1`,
-`Matrix.jacobiSplitting_iterationOperator` and `Stationary.Splitting.one_sub_iterationOperator`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F", "QuarteroniSaccoSaleri.Chapter04.Splitting", "Matrix.jorSweep", "Matrix.jorSweep_eq_mulVecStep", "Matrix.jacobiSplitting", "Matrix.jacobiSplitting_iterationOperator", "Stationary.Splitting.one_sub_iterationOperator"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.11'
 
 [[node]]
 id = "equation_4_12"
-kind = "theorem"
-desc = '''(4.12), the JOR method: for `ω ≠ 0`, `Matrix.jorSweep A ω b x = mulVecStep (jorSplitting A h hω) b x`
-(the componentwise formula after (4.11)), its iteration matrix is
-`B_{Jω} = ω • B_J + (1 - ω) • 1` (`Matrix.jorSplitting_iterationOperator`), the step is
-`x + ω • (D A)⁻¹ *ᵥ (b - A *ᵥ x)`, the method is consistent for every `ω ≠ 0`
-(`Stationary.Splitting.mulVecStep_fixed_iff`) and coincides with Jacobi at `ω = 1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_10", "Matrix.jorSweep_eq_mulVecStep", "Matrix.jorSplitting", "Matrix.jorSplitting_iterationOperator", "Stationary.Splitting.mulVecStep_fixed_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.12'
 
 [[node]]
 id = "equation_4_13"
-kind = "theorem"
-desc = '''(4.13)–(4.14), the Gauss–Seidel method: the sweep `y = Matrix.sorSweep A 1 b x` satisfies the
-recursion `y i = (b i - ∑ j < i, A i j * y j - ∑ j > i, A i j * x j) / A i i` (`Matrix.sorSweep_apply`),
-equals `mulVecStep (gaussSeidelSplitting A h) b x` with `P = D A - E A`, `N = F A`
-(`Matrix.sorSweep_eq_mulVecStep`, `Matrix.gaussSeidelSplitting_n`), and its iteration matrix is
-`B_GS = (D A - E A)⁻¹ * F A`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F", "Matrix.sorSweep", "Matrix.sorSweep_apply", "Matrix.sorSweep_eq_mulVecStep", "Matrix.gaussSeidelSplitting", "Matrix.gaussSeidelSplitting_n"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.14'
 
 [[node]]
 id = "equation_4_15"
-kind = "theorem"
-desc = '''(4.15)–(4.17), the SOR method: for `ω ≠ 0`, the sweep `y = Matrix.sorSweep A ω b x` satisfies the
-recursion (4.15) `y i = ω / A i i * (b i - ∑ j < i, A i j * y j - ∑ j > i, A i j * x j) + (1 - ω) * x i`
-(`Matrix.sorSweep_apply`), the vector form (4.16)
-`(1 - ω • (D A)⁻¹ * E A) *ᵥ y = ((1 - ω) • 1 + ω • (D A)⁻¹ * F A) *ᵥ x + ω • (D A)⁻¹ *ᵥ b`, and the
-iteration matrix (4.17) `B(ω) = (1 - ω • (D A)⁻¹ * E A)⁻¹ * ((1 - ω) • 1 + ω • (D A)⁻¹ * F A)`
-(`Matrix.sorSplitting_iterationOperator` after multiplying through by `D`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F", "Matrix.sorSweep", "Matrix.sorSweep_apply", "Matrix.sorSweep_eq_mulVecStep", "Matrix.sorSplitting", "Matrix.sorSplitting_iterationOperator"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.17'
+
+[[node]]
+id = "equation_4_16"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.16'
+
+[[node]]
+id = "equation_4_17"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.17'
 
 [[node]]
 id = "sor_step_eq_add_inv_mulVec"
-kind = "theorem"
-desc = '''The display after (4.17): `Matrix.sorSweep A ω b x = x + (ω⁻¹ • D A - E A)⁻¹ *ᵥ (b - A *ᵥ x)`, the
-form (4.7) of SOR; consistent for every `ω ≠ 0`, Gauss–Seidel at `ω = 1` (`Matrix.sorSplitting_one`).
-`Stationary.Splitting.mulVecStep_eq_add_inv_mulVec` for `sorSplitting`, whose `m = ω⁻¹ • D + L`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "Stationary.Splitting.mulVecStep_eq_add_inv_mulVec", "Matrix.sorSplitting_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.17'
 
 [[node]]
 id = "theorem_4_2_jacobi"
-kind = "theorem"
-desc = '''Theorem 4.2, Jacobi: if `A.IsStrictDiagDominant` (rows) then for all `b`, `x₀`,
-`Tendsto (fun k => (Matrix.jorSweep A 1 b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))` (`A` is invertible by
-`IsStrictDiagDominant.isUnit`). `Matrix.jacobi_complexSpectralRadius_lt_one` and `theorem_4_1`
-through `equation_4_10`. The book's proof is `‖B_J‖_∞ < 1`, which is
-`Matrix.linfty_opNorm_jacobi_iterMatrix` with `IsStrictDiagDominant.jacobiContraction_lt_one` and
-may be recorded as `theorem_4_2_jacobi_linfty`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_10", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.IsStrictDiagDominant", "Matrix.IsStrictDiagDominant.isUnit", "Matrix.jacobi_complexSpectralRadius_lt_one", "Matrix.linfty_opNorm_jacobi_iterMatrix", "Matrix.IsStrictDiagDominant.jacobiContraction_lt_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.2'
+
+[[node]]
+id = "theorem_4_2_jacobi_linfty"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.2'
 
 [[node]]
 id = "theorem_4_2_gaussSeidel"
-kind = "theorem"
-desc = '''Theorem 4.2, Gauss–Seidel (the half the book delegates to [Axe94] and to Exercise 2): for
-`A.IsStrictDiagDominant`, `Tendsto (fun k => (Matrix.sorSweep A 1 b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))`.
-`Matrix.gaussSeidel_complexSpectralRadius_lt_one`, `equation_4_13`, `theorem_4_1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_13", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.IsStrictDiagDominant", "Matrix.gaussSeidel_complexSpectralRadius_lt_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.2'
 
 [[node]]
 id = "theorem_4_3"
-kind = "theorem"
-desc = '''Theorem 4.3: if `A.PosDef` and `(2 • D A - A).PosDef` then the Jacobi method converges
-(`Tendsto` of `(Matrix.jorSweep A 1 b)^[k] x₀` to `A⁻¹ *ᵥ b` for all `b`, `x₀`) and
-`ρ(B_J) = ‖B_J‖_A = ‖B_J‖_D` in the sense of `property_4_1_energyNorm`. It is Property 4.1 with
-`P = D A` (`property_4_1_spectralRadius_lt_one`, `property_4_1_energyNorm`); the spectral radius
-bound alone is `Matrix.jacobiSplitting_complexSpectralRadius_lt_one_of_posDef`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_1_spectralRadius_lt_one", "QuarteroniSaccoSaleri.Chapter04.property_4_1_energyNorm", "QuarteroniSaccoSaleri.Chapter04.equation_4_10", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.jacobiSplitting_complexSpectralRadius_lt_one_of_posDef"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.3'
+
+[[node]]
+id = "theorem_4_3_energyNorm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.3'
 
 [[node]]
 id = "theorem_4_4"
-kind = "theorem"
-desc = '''Theorem 4.4: for `A.PosDef` and `ω ≠ 0`, the JOR method converges (for all `b`, `x₀`) if
-`0 < ω < 2 / (complexSpectralRadius ((D A)⁻¹ * A)).toReal`; the backbone gives the "iff".
-`Matrix.jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef`, `equation_4_12`, `theorem_4_1`.
-★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_12", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.4'
+
+[[node]]
+id = "theorem_4_4_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.4'
 
 [[node]]
 id = "theorem_4_5"
-kind = "theorem"
-desc = '''Theorem 4.5: for `A.PosDef` the Gauss–Seidel method converges from every `x₀` for every `b`, and
-monotonically in `‖·‖_A`: `(A *ᵥ (B_GS *ᵥ e)) ⬝ᵥ (B_GS *ᵥ e) < (A *ᵥ e) ⬝ᵥ e` for `e ≠ 0`. It is
-Property 4.2 with `P = D A - E A`, whose `P + Pᵀ - A = D A` is positive definite because the diagonal
-of a positive definite matrix is positive (`Matrix.PosDef.diag_pos`); the backbone corollary is
-`Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_2", "QuarteroniSaccoSaleri.Chapter04.property_4_2_monotone", "QuarteroniSaccoSaleri.Chapter04.equation_4_13", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.5'
 
 [[node]]
 id = "equation_4_18"
-kind = "theorem"
-desc = '''(4.18) and the sentence before it: if `A.PosDef` and `A.IsTridiagonal` then the Jacobi method
-converges and `complexSpectralRadius B_GS = (complexSpectralRadius B_J) ^ 2`. The identity is
-`Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq` for `complexify A`, consistently
-ordered by `Matrix.IsTridiagonal.isConsistentlyOrdered` and `Matrix.IsTridiagonal.complexify`, read
-back through `Stationary.Splitting.complexify_iterationOperator`; convergence of Jacobi then follows
-from `theorem_4_5` (`ρ(B_J)² = ρ(B_GS) < 1`). The book's remark that (4.18) "holds even if `A`
-enjoys the `A`-property" is `equation_4_18_of_hasAProperty`, the same identity under
-`definition_4_3` (its consistently-ordered clause). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_5", "QuarteroniSaccoSaleri.Chapter04.equation_4_10", "QuarteroniSaccoSaleri.Chapter04.equation_4_13", "Matrix.IsTridiagonal.isConsistentlyOrdered", "Matrix.IsTridiagonal.complexify", "Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq", "Stationary.Splitting.complexify_iterationOperator"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.18'
 
 [[node]]
 id = "definition_4_3"
-kind = "definition"
-desc = '''Definition 4.3, as printed: `HasAProperty M : Prop` for `M : Matrix (Fin n) (Fin n) ℝ` is the
-conjunction of (a) `M` is consistently ordered in the spectral sense the definition spells out —
-`α D⁻¹ E + α⁻¹ D⁻¹ F` has eigenvalues independent of `α ≠ 0` — which is
-`Matrix.IsConsistentlyOrdered (complexify M)` of `Numlib/Stationary/ConsistentlyOrdered`
-(note the backbone's `L = D⁻¹ E`, `U = D⁻¹ F` are the *same* matrices up to the sign convention
-`E = -strictLower`, the spectrum of `α L + α⁻¹ U` being invariant under negation of both), and (b) `M`
-can be partitioned in the `2 × 2` block form `[D̃₁ M₁₂; M₂₁ D̃₂]` with diagonal `D̃₁`, `D̃₂`:
-`∃ k ≤ n, ∀ i j, i ≠ j → ((i < k ∧ j < k) ∨ (k ≤ i ∧ k ≤ j)) → M i j = 0`, the partition being
-the printed contiguous one (no permutation). Saad's Definition 4.11 (`SaadSparse.Chapter04.HasPropertyA`)
-is clause (b) up to permutation and *implies* consistent ordering of some permutation; QSS's
-definition takes both as hypotheses. ★'''
-deps = ["Matrix.IsConsistentlyOrdered", "Matrix.complexify", "QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.3'
+
+[[node]]
+id = "definition_4_3_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.3'
 
 [[node]]
 id = "equation_4_18_of_hasAProperty"
-kind = "theorem"
-desc = '''(4.18) for a matrix with the `A`-property: if `HasAProperty A` and `IsUnit (D A)` then
-`complexSpectralRadius B_GS = (complexSpectralRadius B_J) ^ 2`, from clause (a) of `definition_4_3`
-and `Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_3", "QuarteroniSaccoSaleri.Chapter04.equation_4_10", "QuarteroniSaccoSaleri.Chapter04.equation_4_13", "Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq", "Stationary.Splitting.complexify_iterationOperator"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.18'
 
 [[node]]
 id = "theorem_4_6"
-kind = "theorem"
-desc = '''Theorem 4.6: if the Jacobi method converges (`complexSpectralRadius B_J < 1`, for `IsUnit (D A)`)
-then JOR converges for every `0 < ω ≤ 1` (`Tendsto` for all `b`, `x₀`).
-`Matrix.jorSplitting_complexSpectralRadius_lt_one_of_le_one`, `equation_4_12`, `theorem_4_1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_12", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.jorSplitting_complexSpectralRadius_lt_one_of_le_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.6'
 
 [[node]]
 id = "theorem_4_7"
-kind = "theorem"
-desc = '''Theorem 4.7 (Kahan): for `IsUnit (D A)`, `n ≠ 0` and every `ω ≠ 0`,
-`ENNReal.ofReal |ω - 1| ≤ complexSpectralRadius B(ω)` with `B(ω) = (sorSplitting A h hω).iterationOperator`;
-consequently SOR does not converge (`¬ complexSpectralRadius B(ω) < 1`) when `ω ≤ 0` or `ω ≥ 2`. At
-`ω = 0` the printed "any `ω ∈ ℝ`" refers to `B(0) = 1`, of spectral radius `1 = |0 - 1|`, and is
-recorded as the trivial clause `theorem_4_7_zero` on `Matrix.sorIterationMatrix (complexify A) 0`.
-`Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius`, `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`.
-★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius", "Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one", "Matrix.sorIterationMatrix"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.7'
+
+[[node]]
+id = "theorem_4_7_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.7'
 
 [[node]]
 id = "property_4_3"
-kind = "theorem"
-desc = '''Property 4.3 (Ostrowski): for `A.PosDef` and `ω ≠ 0`, the SOR method converges (for all `b`, `x₀`)
-iff `0 < ω < 2`; and then the convergence is monotone in `‖·‖_A`:
-`(A *ᵥ (B(ω) *ᵥ e)) ⬝ᵥ (B(ω) *ᵥ e) < (A *ᵥ e) ⬝ᵥ e` for `e ≠ 0`. The equivalence is
-`Matrix.sorSplitting_complexSpectralRadius_lt_one_iff` with `theorem_4_1`; monotonicity is
-`property_4_2_monotone` for `P = ω⁻¹ D A - E A`, whose `P + Pᵀ - A = (2/ω - 1) D A` is positive
-definite for `0 < ω < 2`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "QuarteroniSaccoSaleri.Chapter04.property_4_2_monotone", "Matrix.sorSplitting_complexSpectralRadius_lt_one_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.3'
 
 [[node]]
 id = "property_4_3_diagDominant"
-kind = "theorem"
-desc = '''Property 4.3, last sentence: if `A.IsStrictDiagDominant` then SOR converges for `0 < ω ≤ 1` (for
-all `b`, `x₀`). `Matrix.sorSplitting_spectralRadius_lt_one_of_le_one` (its real-matrix form),
-`equation_4_15`, `theorem_4_1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.IsStrictDiagDominant", "Matrix.sorSplitting_spectralRadius_lt_one_of_le_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.3'
 
 [[node]]
+id = "complexify_sorIterationMatrix"
+
+[[node]]
 id = "property_4_4"
-kind = "theorem"
-desc = '''Property 4.4, the equivalence: if `HasAProperty A` (only its consistently-ordered clause is used),
-`IsUnit (D A)`, and `B_J` has real eigenvalues (`spectrum ℂ (complexify B_J) ⊆ Set.range Complex.ofReal`),
-then for `ω ≠ 0` the SOR method converges for every `x₀` iff `complexSpectralRadius B_J < 1 ∧ 0 < ω < 2`.
-`←`: `Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one`; `→`: Kahan
-(`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`) and
-`Matrix.IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor`; then `theorem_4_1`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_3", "QuarteroniSaccoSaleri.Chapter04.equation_4_15", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one", "Matrix.IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor", "Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one", "Stationary.Splitting.complexify_iterationOperator"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.4'
 
 [[node]]
 id = "property_4_4_optimal"
-kind = "theorem"
-desc = '''Property 4.4, (4.19) and the optimal radius: under the hypotheses of `property_4_4` with
-`ρ_J = (complexSpectralRadius B_J).toReal < 1`, `ω_opt = 2 / (1 + √(1 - ρ_J²))`
-(`Matrix.optimalRelaxation ρ_J`) minimizes `ω ↦ complexSpectralRadius B(ω)` over `0 < ω < 2`
-(`IsMinOn … (Set.Ioo 0 2) ω_opt`) and
-`complexSpectralRadius B(ω_opt) = ENNReal.ofReal ((1 - √(1 - ρ_J²)) / (1 + √(1 - ρ_J²)))`
-(the book's form of `ω_opt - 1`). `Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor`
-and `spectralRadius_sor_optimalRelaxation`; the value needs the algebraic identity
-`2/(1 + s) - 1 = (1 - s)/(1 + s)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_4", "Matrix.optimalRelaxation", "Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor", "Matrix.IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.19'
 
 [[node]]
+id = "example_4_3_matrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
+
+[[node]]
 id = "example_4_3_solution"
-kind = "theorem"
-desc = '''Example 4.3, the exact statements in it: for the lower bidiagonal `A : Matrix (Fin 100) (Fin 100) ℝ`
-with `A i i = 3/2`, `A (i+1) i = 1`, zero elsewhere, and `b i = 5/2`, the vector
-`x i = 1 - (-2/3) ^ ((i : ℕ) + 1)` solves `A *ᵥ x = b` (the book's `x_i = 1 - (-2/3)^i`, `1`-based).
-Check row by row: `3/2 (1 - t^{i+1}) + (1 - t^i) = 5/2 - t^i (3/2 · t + 1) = 5/2` for `t = -2/3`.
-The divergence of Program 16 in floating point is a numerical experiment and is not a node. ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
+
+[[node]]
+id = "charpoly_of_isLowerTriangular"
+
+[[node]]
+id = "complexSpectralRadius_sorSplitting_of_isLowerTriangular"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
 
 [[node]]
 id = "example_4_3_spectralRadius"
-kind = "theorem"
-desc = '''Example 4.3: for the same `A`, `complexSpectralRadius B(3/2) = ENNReal.ofReal (1/2)` — indeed for a
-lower triangular `A` one has `F A = 0`, so `B(ω) = (1 - ω D⁻¹ E)⁻¹ (1 - ω) 1 = (1 - ω) • (unit lower triangular)`
-has the single eigenvalue `1 - ω`; hence `ρ(B(ω)) = |1 - ω|` for every `ω`, `1/2` at `ω = 3/2`.
-Eigenvalues of a triangular matrix are its diagonal entries (`Matrix.det_of_lowerTriangular` on the
-resolvent). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "Matrix.mem_spectrum_complexify_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
 
 [[node]]
+id = "perturbedIterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.20'
+
+[[node]]
+id = "toLp_perturbedIterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.20'
+
+[[node]]
+id = "equation_4_20_iterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.20'
+
+[[node]]
 id = "equation_4_20"
-kind = "theorem"
-desc = '''(4.20) and the error decomposition of §4.2.4: for `s : Splitting A`, `IsUnit A`, a perturbation
-sequence `ζ : ℕ → Fin n → ℝ` and the computed sequence `x̂ 0 = x₀`,
-`x̂ (k+1) = s.m⁻¹ *ᵥ (s.n *ᵥ x̂ k + b - ζ k)`, the error `ê_{k+1} = x - x̂_{k+1}` with `x = A⁻¹ b`
-satisfies `ê (k+1) = (B ^ (k+1)) *ᵥ (x - x₀) + ∑ j ∈ range (k+1), (B ^ j) *ᵥ (s.m⁻¹ *ᵥ ζ (k - j))`,
-`B = s.iterationOperator`. It is `Stationary.sub_forcedIterate_eq` with `f = P⁻¹ b`, forcing
-`f - P⁻¹ ζ_k`. The first term tends to `0` when `ρ(B) < 1` (`theorem_4_1`); the book stops there and
-cites [Hig88] for the second, whose bound `ε/(1 - ‖B‖)` under `‖P⁻¹ ζ_k‖ ≤ ε`, `‖B‖ < 1` is
-`Stationary.norm_perturbed_iterate_sub_le` of `Numlib/FloatingPoint/Stationary` and may be recorded
-as `equation_4_20_bound`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.Splitting", "QuarteroniSaccoSaleri.Chapter04.equation_4_6", "Stationary.forcedIterate", "Stationary.sub_forcedIterate_eq", "Stationary.norm_perturbed_iterate_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.20'
+
+[[node]]
+id = "equation_4_20_bound"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.20'
 
 [[node]]
 id = "theorem_4_3_block"
-kind = "theorem"
-desc = '''§4.2.5, "Theorem 4.3 is still valid provided `D` is substituted by the block diagonal matrix": for a
-block labelling `π : Fin n → ι` (`ι` linearly ordered), `A.PosDef` and
-`(2 • Matrix.blockDiagPart π A - A).PosDef`, the block Jacobi iteration
-`mulVecStep (Matrix.blockJacobiSplitting π A h) b` converges from every `x₀` for every `b` (with
-`h : IsUnit (blockDiagPart π A)` from positive definiteness of the diagonal blocks). Householder–John
-`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef` with `M = blockDiagPart π A`. The
-block Gauss–Seidel and block SOR methods "introduced in a similar manner" are
-`Matrix.blockGaussSeidelSplitting`/`blockSorSplitting` of `Numlib/Stationary/Block` and
-need no node. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "QuarteroniSaccoSaleri.Chapter04.equation_4_6", "Matrix.blockDiagPart", "Matrix.blockJacobiSplitting", "Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.3'
 
 [[node]]
 id = "backwardGaussSeidel_step"
-kind = "theorem"
-desc = '''§4.2.6, backward Gauss–Seidel `(D - F) x_{k+1} = E x_k + b`: the sweep `Matrix.backwardSorSweep A 1 b`
-is `mulVecStep (backwardGaussSeidelSplitting A h) b`, with iteration matrix `B_GSb = (D A - F A)⁻¹ * E A`.
-`Matrix.backwardSorSweep_eq_mulVecStep`, `Matrix.backwardSorSplitting_one`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.D", "QuarteroniSaccoSaleri.Chapter04.E", "QuarteroniSaccoSaleri.Chapter04.F", "Matrix.backwardSorSweep", "Matrix.backwardSorSweep_eq_mulVecStep", "Matrix.backwardSorSplitting_one", "Matrix.backwardGaussSeidelSplitting"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.21'
 
 [[node]]
 id = "equation_4_21"
-kind = "theorem"
-desc = '''(4.21), the symmetric Gauss–Seidel method: one forward sweep followed by one backward sweep,
-`Matrix.backwardSorSweep A 1 b (Matrix.sorSweep A 1 b x)`, equals `affineStep B_SGS b_SGS x` with
-`B_SGS = (D A - F A)⁻¹ * E A * (D A - E A)⁻¹ * F A` and `b_SGS = (D A - F A)⁻¹ *ᵥ ((E A * (D A - E A)⁻¹ + 1) *ᵥ b)`,
-and its preconditioning matrix is `P_SGS = (D A - E A) * (D A)⁻¹ * (D A - F A)`, i.e. the composite
-is `mulVecStep (ssorSplitting A h one_ne_zero _) b`. `Matrix.ssorSweep_eq_mulVecStep`,
-`Matrix.ssorSplitting_iterationOperator_eq_mul`, `Matrix.ssorSplitting_one_m`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_13", "QuarteroniSaccoSaleri.Chapter04.backwardGaussSeidel_step", "QuarteroniSaccoSaleri.Chapter04.affineStep", "Matrix.ssorSweep_eq_mulVecStep", "Matrix.ssorSplitting_iterationOperator_eq_mul", "Matrix.ssorSplitting_one_m", "Matrix.ssorSplitting"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.21'
 
 [[node]]
 id = "property_4_5"
-kind = "theorem"
-desc = '''Property 4.5: for `A.PosDef` the symmetric Gauss–Seidel method converges from every `x₀` for every
-`b`, and `B_SGS` is self-adjoint and positive semidefinite in the `A`-inner product:
-`(A * B_SGS).IsSymm` and `(A * B_SGS).PosSemidef`. The printed clause "`B_SGS` is symmetric positive
-definite" is not true as printed (for a diagonal `A`, `B_SGS = 0`; and `B_SGS` is not
-Euclidean-symmetric in general), so this node states the reading that is true and that the book's
-source (Hackbusch) proves: `B_SGS = I - P_SGS⁻¹ A` with `P_SGS` symmetric and `P_SGS - A = E D⁻¹ F ≥ 0`,
-whence the eigenvalues of `B_SGS` lie in `[0, 1)`. `Matrix.ssorSplitting_complexSpectralRadius_lt_one`
-and `Matrix.ssorSplitting_iterationOperator_posSemidef_energy` at `ω = 1`, `equation_4_21`,
-`theorem_4_1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_21", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.ssorSplitting_complexSpectralRadius_lt_one", "Matrix.ssorSplitting_iterationOperator_posSemidef_energy"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.5'
 
 [[node]]
 id = "equation_4_22"
-kind = "theorem"
-desc = '''(4.22) and the SSOR method: for `ω ≠ 0`, `ω ≠ 2`, one SOR sweep followed by one backward SOR sweep,
-`Matrix.backwardSorSweep A ω b (Matrix.sorSweep A ω b x)`, is `affineStep (B_s ω) (b_ω) x` with
-`B_s ω = (D A - ω • F A)⁻¹ * (ω • E A + (1 - ω) • D A) * (D A - ω • E A)⁻¹ * (ω • F A + (1 - ω) • D A)`
-and `b_ω = ω (2 - ω) • (D A - ω • F A)⁻¹ *ᵥ (D A *ᵥ ((D A - ω • E A)⁻¹ *ᵥ b))`, and its preconditioner is
-`P_SSOR ω = (ω⁻¹ • D A - E A) * ((ω / (2 - ω)) • (D A)⁻¹) * (ω⁻¹ • D A - F A)`, the `m` of
-`Matrix.ssorSplitting A h hω hω2`. `Matrix.ssorSweep_eq_mulVecStep`,
-`Matrix.ssorSplitting_iterationOperator_eq_mul`, `Matrix.sorSplitting_iterationOperator`,
-`Matrix.backwardSorSplitting_iterationOperator`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_15", "QuarteroniSaccoSaleri.Chapter04.affineStep", "Matrix.backwardSorSweep", "Matrix.ssorSweep_eq_mulVecStep", "Matrix.ssorSplitting_iterationOperator_eq_mul", "Matrix.backwardSorSplitting_iterationOperator", "Matrix.ssorSplitting"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.22'
 
 [[node]]
 id = "ssor_tendsto"
-kind = "theorem"
-desc = '''§4.2.6, "If `A` is symmetric and positive definite, the SSOR method is convergent if `0 < ω < 2`":
-for `A.PosDef`, `0 < ω < 2`, the composite sweep of `equation_4_22` converges from every `x₀` for
-every `b`. `Matrix.ssorSplitting_complexSpectralRadius_lt_one`, `theorem_4_1`. The comparison with
-SOR and the choice of `ω` are prose. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_22", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Matrix.ssorSplitting_complexSpectralRadius_lt_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.22'
