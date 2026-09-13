@@ -104,3 +104,15 @@ kind = "definition"
 desc = '''`jump (v : BrokenPolynomial x r) (i : Fin n) : ℝ := traceRight v i - traceLeft v i.castSucc`, the
 jump `[v]_i = v⁺(x_i) - v⁻(x_i)` at the node `x_i` (with `[v]_0 = v⁺(x_0)`). Linear in `v`. ★'''
 deps = ["BrokenPolynomial.traceRight", "BrokenPolynomial.traceLeft"]
+
+[[node]]
+id = "toContinuousMap_range_eq_splineSpace"
+kind = "theorem"
+desc = '''The continuous broken polynomials are the spline space without smoothness: the gluing map
+`toContinuousMap` of `continuous` sends `continuous x r` onto `Spline.splineSpace α β n x r 0` of
+`Numlib/Approximation/Spline`, injectively, so the two are isomorphic `ℝ`-modules and
+`finrank (continuous x r) = n * r + 1` is `Spline.finrank_splineSpace`. With
+`FiniteElement.lagrangeSpace_eq_map_splineSpace` this makes `Spline.splineSpace` the one definition
+of the continuous piecewise polynomials, of which `continuous` is the per-panel representation (the
+one that has traces and jumps) and `FiniteElement.lagrangeSpace` the copy inside `H¹(a, b)`. ★'''
+deps = ["continuous", "Spline.splineSpace", "Spline.finrank_splineSpace"]

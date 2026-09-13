@@ -1,11 +1,4 @@
 namespace = "Matrix"
-desc = '''The matrix-analytic layer of diagonal dominance, split out of `Numlib/LinearSolve/Stationary/DiagDominant`
-so that foundation modules (`LinearAlgebra/Matrix/MMatrix`, `LinearAlgebra/Matrix/LU`) can name the
-predicates without importing the theory of stationary iterations: the strict, column and irreducible
-dominance predicates, their nonsingularity theorems (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 4.7 and Corollary 4.8), Gershgorin's boundary theorem for irreducible matrices, and
-the transfer of every predicate along `Matrix.complexify`. Everything whose statement or proof
-mentions a splitting or an iteration matrix stays in the stationary module.'''
 
 [[node]]
 id = "IsStrictColDiagDominant"

@@ -34,7 +34,10 @@ continuous representative restricts to a polynomial of degree `≤ k` on every p
 Membership of every such function in `H^1` is `memSobolevInterval_of_piecewise_contDiffOn`;
 `FiniteElement.lagrangeSpaceZero hab k x := lagrangeSpace hab k x ⊓ SobolevIntervalZero a b`, the space
 `X_h^{k,0}` (12.57), equivalently (`mem_lagrangeSpaceZero_iff`) the elements of `X_h^k` with
-`g(a) = g(b) = 0` (`mem_sobolevIntervalZero_iff`). `meshSize x = max_j (x (j+1) - x j)`, the `h`. ★★'''
+`g(a) = g(b) = 0` (`mem_sobolevIntervalZero_iff`). `meshSize x = max_j (x (j+1) - x j)`, the `h`. This
+is the copy inside `H¹(a, b)` of the function space `Spline.splineSpace a b n x k 0` of
+`Numlib/Approximation/Spline` (`lagrangeSpace_eq_map_splineSpace`), not a third definition of the
+continuous piecewise polynomials. ★★'''
 deps = ["SobolevInterval", "SobolevIntervalZero", "memSobolevInterval_of_piecewise_contDiffOn", "mem_sobolevIntervalZero_of_toContinuousMap_eq_zero"]
 
 [[node]]
@@ -162,3 +165,19 @@ columns (the nonhomogeneous Dirichlet data `u_0 = 0`, `u_{N+1} = 1` of (12.72) e
 side). With `f ≠ 0` the load vector is `∫ f φ_i`, which is `h f(x_i)` only after the trapezoidal
 quadrature — the point where Galerkin and finite differences differ. ★'''
 deps = ["FiniteElement.stiffnessMatrix_uniform_eq", "IsGalerkinSolution.iff_gramMatrix_mulVec", "FiniteElement.hatBasis"]
+
+[[node]]
+id = "lagrangeSpace_eq_map_splineSpace"
+kind = "theorem"
+desc = '''`X_h^k` is the spline space with no smoothness: for `hab : a < b`, a partition `x` and `k ≥ 1`,
+`u ∈ lagrangeSpace hab k x ↔ ∃ f ∈ Spline.splineSpace a b n x k 0, u.toContinuousMap = f` — the
+continuous functions on `[a, b]` that are polynomials of degree `≤ k` on every panel
+(`Numlib/Approximation/Spline`), read inside `H¹(a, b)` through
+`memSobolevInterval_of_piecewise_contDiffOn`; equivalently `lagrangeSpace` is the image of that
+subspace under the resulting linear map `C(Icc a b, ℝ) ⊇ splineSpace → SobolevInterval 1 a b`, which
+is injective. This is the one definition of the continuous piecewise polynomials: `Spline.splineSpace`
+is the function space, `lagrangeSpace` its copy inside `H¹` that the Galerkin theory needs, and
+`BrokenPolynomial.continuous` (`Numlib/Approximation/BrokenPolynomial`,
+`BrokenPolynomial.toContinuousMap_range_eq_splineSpace`) its per-panel representation; a fact about
+one transfers to the others through these bridges instead of being proved three times. ★'''
+deps = ["lagrangeSpace", "Spline.splineSpace", "memSobolevInterval_of_piecewise_contDiffOn", "SobolevInterval.toContinuousMap"]
