@@ -45,10 +45,8 @@ substance of the section for the rest of the book is Theorem 2.2.4 and the submu
 * `equation_2_2_8` — Example 2.2.9, the norm of an integral operator with continuous kernel on
   `C[a, b]`.
 
-Two clauses of Theorem 2.2.5 are also stated on their own, because later sections use them
-directly: `opNorm_eq_sSup_ratio` is (2.2.4), and `isBoundedOperator_iff_exists_bound` is
-Proposition 2.2.3 under the descriptive name that matches
-`isBoundedOperator_iff_image_bounded` of §2.1.
+One clause of Theorem 2.2.5 is also stated on its own, because later sections use it directly:
+`opNorm_eq_sSup_ratio` is (2.2.4).
 
 Example 2.2.8 is three declarations because Mathlib keeps the three matrix norms apart with scoped
 instances, and because it has no `ℓ¹` operator norm on matrices at all: `example_2_2_8_l1`
@@ -148,13 +146,6 @@ theorem proposition_2_2_3 (L : V →ₗ[𝕜] W) :
     exact mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg v)
   · rintro ⟨γ, hγ, h⟩ r _
     exact ⟨γ * r, fun v hv => (h v).trans (mul_le_mul_of_nonneg_left hv hγ)⟩
-
-/-- The descriptive name of Proposition 2.2.3, matching
-`isBoundedOperator_iff_image_bounded` of §2.1: for a linear operator, Definition 2.1.6 is the
-existence of a bound `γ` in (2.2.2). -/
-theorem isBoundedOperator_iff_exists_bound (L : V →ₗ[𝕜] W) :
-    IsBoundedOperator L ↔ ∃ γ : ℝ, 0 ≤ γ ∧ ∀ v, ‖L v‖ ≤ γ * ‖v‖ :=
-  proposition_2_2_3 L
 
 /-- **Theorem 2.2.4.** A linear operator between normed spaces is continuous if and only if it is
 bounded in the sense of Definition 2.1.6.  With Proposition 2.2.3 this is the statement the book

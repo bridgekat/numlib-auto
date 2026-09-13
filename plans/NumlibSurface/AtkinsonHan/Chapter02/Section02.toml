@@ -7,9 +7,6 @@ id = "proposition_2_2_2"
 id = "proposition_2_2_3"
 
 [[node]]
-id = "isBoundedOperator_iff_exists_bound"
-
-[[node]]
 id = "theorem_2_2_4"
 
 [[node]]

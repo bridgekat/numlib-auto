@@ -479,9 +479,8 @@ theorem norm_sub_smul_toOperator_sq_le [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a
 /-- The operator `A = 𝒥 a` of a `V`-elliptic form is strongly monotone (5.1.8) with the same
 constant, which is what the §5.1 theory (`zarantonello`, `contractingWith_damped`) asks for. -/
 theorem stronglyMonotone_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M)
-    (ha : a.IsEllipticWith α) (x y : V) :
-    α * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ
-      (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y) (x - y)) := by
+    (ha : a.IsEllipticWith α) : IsStronglyMonotoneWith ℝ (BilinForm.toOperator a hM) α := by
+  intro x y
   rw [← map_sub]
   exact BilinForm.isCoerciveWith_toOperator hM ha (x - y)
 

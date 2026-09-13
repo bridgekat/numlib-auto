@@ -67,8 +67,8 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
   functions** — one way the `∂^α` are the tensor derivative evaluated at the tuple naming `α`, the
   other way the tensor is assembled from the `∂^α`, and the symmetry of the iterated derivative of
   a `C^∞` function, `ContDiff.iteratedFDeriv_congr_perm` of
-  `Numlib/Analysis/Sobolev/WeakDeriv.lean`, is what lets it be evaluated at an unsorted tuple of
-  basis vectors.
+  `Numlib/Analysis/Calculus/IteratedFDeriv.lean`, is what lets it be evaluated at an unsorted tuple
+  of basis vectors.
 
 ## Implementation notes
 
@@ -113,7 +113,7 @@ under permutations of its arguments for a `C^∞` function `φ`. Mathlib has tha
 (`ContDiffAt.isSymmSndFDerivAt`) and for analytic functions of any order
 (`ContDiffAt.domDomCongr_iteratedFDeriv`, which needs `ω`-smoothness) but not for `C^∞` functions of
 order `n ≥ 3`, and a test function is not analytic; `ContDiff.iteratedFDeriv_congr_perm` of
-`Numlib/Analysis/Sobolev/WeakDeriv.lean` supplies it, by transporting the commutation of two
+`Numlib/Analysis/Calculus/IteratedFDeriv.lean` supplies it, by transporting the commutation of two
 directional derivatives along a `List.Perm`. Only the functions are matched, not the norms.
 
 ### Upstream

@@ -121,8 +121,8 @@ theorem proposition_2_7_2 {v : ℕ → V} {u : V} (h : WeakSeqTendsto 𝕜 v u) 
   exists_norm_le_of_tendsto_toWeakSpace (tendsto_toWeakSpace_iff.2 h)
 
 /-- **Exercise 2.7.2.** `uₙ ⇀ u` implies `‖u‖ ≤ liminf ‖uₙ‖`: the norm is weakly sequentially
-lower semicontinuous. The book proves the same statement twice; it is `Chapter03.example_3_3_5`.
-`example_2_7_3` is an instance in which the inequality is strict. -/
+lower semicontinuous. The book proves the same statement twice; `Chapter03.example_3_3_5`
+restates this one. `example_2_7_3` is an instance in which the inequality is strict. -/
 theorem exercise_2_7_2 {v : ℕ → V} {u : V} (h : WeakSeqTendsto 𝕜 v u) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
   norm_le_liminf_norm_of_weak_tendsto (tendsto_toWeakSpace_iff.2 h)
@@ -162,8 +162,6 @@ theorem weakSeqTendsto_zero_of_orthonormal {ι H : Type*} [NormedAddCommGroup H]
     have h3 := (Real.continuous_sqrt.tendsto 0).comp h1
     simpa only [Function.comp_def, Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] using h3
   simpa using tendsto_zero_iff_norm_tendsto_zero.2 h2
-
-local instance instTwoPiPos : Fact (0 < 2 * π) := Fact.mk Real.two_pi_pos
 
 /-- **Example 2.7.3.** The sequence `sin (n x)` converges weakly to `0` in `L²(0, 2π)` but not in
 norm: it is orthonormal, so every inner product against it tends to zero by Bessel's inequality,

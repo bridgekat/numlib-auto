@@ -54,7 +54,11 @@ realFourierCoeff f (-j)`.
   polynomials of degree at most `n` are the linear combinations of the `trigFun T m` with `|m| ≤ n`,
   and they form a space of dimension `2 n + 1`.  That space is what the Fourier projection and
   trigonometric interpolation project onto, and the Haar subspace of the trigonometric
-  equioscillation theorem, so it is defined once here rather than in each of them.
+  equioscillation theorem, so it is defined once here rather than in each of them;
+* `span_trigFun_closure_eq_top` and `exists_mem_span_trigFun_norm_sub_lt`: the real trigonometric
+  polynomials are *uniformly* dense in `C(AddCircle T, ℝ)`, the real form of Mathlib's
+  `span_fourier_closure_eq_top`, obtained by taking real parts rather than by a second
+  Stone–Weierstrass argument.
 -/
 
 open Complex MeasureTheory Set Submodule
@@ -605,3 +609,132 @@ theorem finrank_trigPolyLE (T : ℝ) [Fact (0 < T)] (n : ℕ) :
   omega
 
 end Circle
+
+/-! ### Uniform density of the trigonometric polynomials -/
+
+section Density
+
+/-- Taking real parts, as a real-linear map on continuous complex-valued functions. -/
+private noncomputable def reMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
+  (Complex.reCLM.compLeftContinuous ℝ X).toLinearMap
+
+/-- Taking imaginary parts, as a real-linear map on continuous complex-valued functions. -/
+private noncomputable def imMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
+  (Complex.imCLM.compLeftContinuous ℝ X).toLinearMap
+
+@[simp]
+private theorem reMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x : X) :
+    reMap X P x = (P x).re :=
+  rfl
+
+@[simp]
+private theorem imMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x : X) :
+    imMap X P x = (P x).im :=
+  rfl
+
+private theorem sqrt_two_ne_zero : (√2 : ℝ) ≠ 0 := Real.sqrt_ne_zero'.mpr (by norm_num)
+
+/-- The real and imaginary parts of a complex exponential are real trigonometric polynomials. -/
+private theorem reMap_imMap_fourier_mem (n : ℤ) :
+    reMap (AddCircle T) (fourier n) ∈ span ℝ (range (trigFun T)) ∧
+      imMap (AddCircle T) (fourier n) ∈ span ℝ (range (trigFun T)) := by
+  have hgen : ∀ m : ℤ, trigFun T m ∈ span ℝ (range (trigFun T)) := fun m => subset_span ⟨m, rfl⟩
+  have hre : ∀ m : ℤ, 0 < m →
+      reMap (AddCircle T) (fourier m) = (√2 : ℝ)⁻¹ • trigFun T m := by
+    intro m hm
+    ext x
+    rw [reMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_pos hm, re_ofReal_mul,
+      smul_eq_mul, inv_mul_cancel_left₀ sqrt_two_ne_zero]
+  have him : ∀ m : ℤ, 0 < m →
+      imMap (AddCircle T) (fourier m) = (√2 : ℝ)⁻¹ • trigFun T (-m) := by
+    intro m hm
+    ext x
+    rw [imMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_neg (by omega),
+      mul_assoc, re_ofReal_mul, fourier_neg, smul_eq_mul, Complex.I_mul_re, Complex.conj_im,
+      neg_neg, inv_mul_cancel_left₀ sqrt_two_ne_zero]
+  have hconj : ∀ m : ℤ, reMap (AddCircle T) (fourier (-m)) = reMap (AddCircle T) (fourier m) ∧
+      imMap (AddCircle T) (fourier (-m)) = -imMap (AddCircle T) (fourier m) := by
+    refine fun m => ⟨?_, ?_⟩
+    · ext x
+      rw [reMap_apply, reMap_apply, fourier_neg, Complex.conj_re]
+    · ext x
+      rw [ContinuousMap.neg_apply, imMap_apply, imMap_apply, fourier_neg, Complex.conj_im]
+  rcases lt_trichotomy n 0 with hn | rfl | hn
+  · obtain ⟨hr, hi⟩ := hconj (-n)
+    rw [neg_neg] at hr hi
+    refine ⟨?_, ?_⟩
+    · rw [hr, hre (-n) (by omega)]
+      exact smul_mem _ _ (hgen _)
+    · rw [hi, him (-n) (by omega)]
+      exact neg_mem (smul_mem _ _ (hgen _))
+  · refine ⟨?_, ?_⟩
+    · have : reMap (AddCircle T) (fourier (0 : ℤ)) = trigFun T 0 := by
+        ext x; simp
+      rw [this]; exact hgen 0
+    · have : imMap (AddCircle T) (fourier (0 : ℤ)) = 0 := by
+        ext x; simp
+      rw [this]; exact zero_mem _
+  · exact ⟨by rw [hre n hn]; exact smul_mem _ _ (hgen _),
+      by rw [him n hn]; exact smul_mem _ _ (hgen _)⟩
+
+/-- The real and imaginary parts of a complex trigonometric polynomial are real trigonometric
+polynomials. The two halves have to be proved together, because a complex scalar multiple mixes
+them. -/
+private theorem reMap_imMap_mem_of_mem_span {P : C(AddCircle T, ℂ)}
+    (hP : P ∈ span ℂ (range (fourier (T := T)))) :
+    reMap (AddCircle T) P ∈ span ℝ (range (trigFun T)) ∧
+      imMap (AddCircle T) P ∈ span ℝ (range (trigFun T)) := by
+  induction hP using Submodule.span_induction with
+  | mem P hP => obtain ⟨n, rfl⟩ := hP; exact reMap_imMap_fourier_mem n
+  | zero => simp only [map_zero]; exact ⟨zero_mem _, zero_mem _⟩
+  | add P Q _ _ ihP ihQ =>
+      rw [map_add, map_add]
+      exact ⟨add_mem ihP.1 ihQ.1, add_mem ihP.2 ihQ.2⟩
+  | smul c P _ ih =>
+      have hre : reMap (AddCircle T) (c • P)
+          = c.re • reMap (AddCircle T) P - c.im • imMap (AddCircle T) P := by
+        ext x; simp [Complex.mul_re]
+      have him : imMap (AddCircle T) (c • P)
+          = c.re • imMap (AddCircle T) P + c.im • reMap (AddCircle T) P := by
+        ext x; simp [Complex.mul_im]
+      rw [hre, him]
+      exact ⟨sub_mem (smul_mem _ _ ih.1) (smul_mem _ _ ih.2),
+        add_mem (smul_mem _ _ ih.2) (smul_mem _ _ ih.1)⟩
+
+variable [hT : Fact (0 < T)]
+
+/-- **The real trigonometric polynomials are uniformly dense**: every continuous real function on
+the circle is uniformly within `ε` of a real linear combination of the `trigFun T n`. This is the
+density of the complex exponentials, `span_fourier_closure_eq_top`, carried to the real system by
+taking real parts: the real part of a complex trigonometric polynomial is a real one, and taking
+real parts does not increase the uniform norm. -/
+theorem exists_mem_span_trigFun_norm_sub_lt (f : C(AddCircle T, ℝ)) {ε : ℝ} (hε : 0 < ε) :
+    ∃ p ∈ span ℝ (range (trigFun T)), ‖p - f‖ < ε := by
+  -- the complexification of `f`
+  set F : C(AddCircle T, ℂ) := ⟨fun x => (f x : ℂ), Complex.continuous_ofReal.comp f.continuous⟩
+    with hF
+  have hFtop : F ∈ (span ℂ (range (fourier (T := T)))).topologicalClosure := by
+    rw [span_fourier_closure_eq_top]; trivial
+  rw [← SetLike.mem_coe, Submodule.topologicalClosure_coe, Metric.mem_closure_iff] at hFtop
+  obtain ⟨P, hPmem, hPdist⟩ := hFtop ε hε
+  refine ⟨reMap (AddCircle T) P, (reMap_imMap_mem_of_mem_span hPmem).1, ?_⟩
+  have hle : ‖reMap (AddCircle T) P - f‖ ≤ ‖P - F‖ := by
+    refine (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun x => ?_
+    have h1 : (reMap (AddCircle T) P - f) x = (P x - F x).re := by
+      simp [hF, Complex.sub_re]
+    rw [h1, Real.norm_eq_abs]
+    exact (Complex.abs_re_le_norm _).trans (ContinuousMap.norm_coe_le_norm (P - F) x)
+  rw [dist_eq_norm, norm_sub_rev] at hPdist
+  exact lt_of_le_of_lt hle hPdist
+
+/-- The real form of `span_fourier_closure_eq_top`: the span of the real trigonometric system is
+dense in `C(AddCircle T, ℝ)`. -/
+theorem span_trigFun_closure_eq_top : (span ℝ (range (trigFun T))).topologicalClosure = ⊤ := by
+  rw [← Submodule.dense_iff_topologicalClosure_eq_top]
+  intro f
+  rw [Metric.mem_closure_iff]
+  intro ε hε
+  obtain ⟨p, hp, hpf⟩ := exists_mem_span_trigFun_norm_sub_lt f hε
+  exact ⟨p, hp, by rwa [dist_eq_norm, norm_sub_rev]⟩
+
+end Density

@@ -141,11 +141,6 @@ theorem isVariationalInequalitySolution_univ_zero_iff (A : V → V) (f : V) (u :
 
 /-! ### Theorem 11.3.1 and its two specializations -/
 
-/-- The book's hypothesis (11.3.1) in the shape the backbone takes it. -/
-private theorem isStronglyMonotoneWith_of {A : V → V} {c : ℝ}
-    (hmono : Chapter05.StronglyMonotoneWith A c) : IsStronglyMonotoneWith ℝ A c :=
-  fun x y => by simpa using hmono x y
-
 section Existence
 
 variable [CompleteSpace V] {A : V → V} {c₀ M : ℝ} {j : V → ℝ} {K : Set V}
@@ -166,9 +161,9 @@ theorem theorem_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
       ∀ f₁ f₂ u₁ u₂ : V, IsVariationalInequalitySolution A j f₁ K u₁ →
         IsVariationalInequalitySolution A j f₂ K u₂ → ‖u₁ - u₂‖ ≤ 1 / c₀ * ‖f₁ - f₂‖ := by
   refine ⟨fun f => existsUnique_isVariationalInequalitySolution hKne hKcl hKcv hc₀
-      (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hj hjlsc
+      hmono ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hj hjlsc
     f, fun f₁ f₂ u₁ u₂ h₁ h₂ => ?_⟩
-  have h := IsVariationalInequalitySolution.norm_sub_le hc₀ (isStronglyMonotoneWith_of hmono)
+  have h := IsVariationalInequalitySolution.norm_sub_le hc₀ hmono
     h₁ h₂
   rwa [one_div, inv_mul_eq_div]
 
@@ -251,7 +246,8 @@ private theorem norm_sub_lt_of_isVariationalInequalitySolution (hc₀ : 0 < c₀
   have ht0 : (0 : ℝ) ≤ ‖u - u₀‖ := norm_nonneg _
   have hB : 0 ≤ j u₀ - ℓ u₀ - cmin := by linarith [hmin u₀ hu₀]
   have hC : 0 ≤ ‖ℓ‖ + ‖f - A u₀‖ := by positivity
-  have hmono' : c₀ * ‖u - u₀‖ ^ 2 ≤ ⟪A u - A u₀, u - u₀⟫_ℝ := hmono u u₀
+  have hmono' : c₀ * ‖u - u₀‖ ^ 2 ≤ ⟪A u - A u₀, u - u₀⟫_ℝ :=
+    (isStronglyMonotoneWith_real_iff A c₀).1 hmono u u₀
   have hvi := hu.2 u₀ hu₀'
   have hneg : ∀ w : V, ⟪w, u₀ - u⟫_ℝ = -⟪w, u - u₀⟫_ℝ := fun w => by
     rw [← inner_neg_right]
@@ -328,7 +324,7 @@ theorem exercise_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
       ⟨hu₀, by simpa [mem_closedBall_zero_iff] using (by linarith : ‖u₀‖ ≤ ‖u₀‖ + ρ)⟩
     obtain ⟨u, hu, -⟩ := existsUnique_isVariationalInequalitySolution_on ⟨u₀, hu₀R⟩
       (hKcl.inter Metric.isClosed_closedBall) hKRcv hc₀
-      ((isStronglyMonotoneWith_of hmono).isStronglyMonotoneOnWith _)
+      (IsStronglyMonotoneWith.isStronglyMonotoneOnWith hmono _)
       (fun x hx y hy => hlip (‖u₀‖ + ρ) x hx.2 y hy.2)
       (hj.subset inter_subset_left hKRcv) (hjlsc.mono inter_subset_left) f
     -- part (c): the solution of the truncated problem is interior to the ball
@@ -384,8 +380,8 @@ theorem exercise_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
         refine le_of_mul_le_mul_left ?_ hlam0
         linarith [hvi, hjw]
     exact ⟨u, hsol, fun y hy =>
-      IsVariationalInequalitySolution.unique hc₀ (isStronglyMonotoneWith_of hmono) hy hsol⟩
-  · have h := IsVariationalInequalitySolution.norm_sub_le hc₀ (isStronglyMonotoneWith_of hmono)
+      IsVariationalInequalitySolution.unique hc₀ hmono hy hsol⟩
+  · have h := IsVariationalInequalitySolution.norm_sub_le hc₀ hmono
       h₁ h₂
     rwa [one_div, inv_mul_eq_div]
 
@@ -415,7 +411,7 @@ theorem lemma_11_3_8 {A : V → V} {j : V → ℝ} {f : V} {K : Set V} (hKcv : C
     (hA : ∀ v ∈ K, ContinuousWithinAt (fun t : ℝ => A (u + t • (v - u))) (Ioi 0) 0) :
     IsVariationalInequalitySolution A j f K u ↔
       ∀ v ∈ K, ⟪A v, v - u⟫_ℝ + j v - j u ≥ ⟪f, v - u⟫_ℝ :=
-  IsVariationalInequalitySolution.iff_minty hKcv hj (isStronglyMonotoneWith_of hmono) hu hA
+  IsVariationalInequalitySolution.iff_minty hKcv hj hmono hu hA
 
 /-! ### Theorem 11.3.9 and the bilinear-form problems -/
 
@@ -507,7 +503,7 @@ the variational equation `a(u, v) = ℓ(v)`, and its unique solvability is Theor
 theorem exercise_11_3_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
   have hmono : Chapter05.StronglyMonotoneWith (BilinForm.toOperator a hM : V → V) α :=
-    fun x y => Chapter08.stronglyMonotone_toOperator hM ha x y
+    Chapter08.stronglyMonotone_toOperator hM ha
   have hlip : ∀ v₁ v₂ : V, ‖BilinForm.toOperator a hM v₁ - BilinForm.toOperator a hM v₂‖
       ≤ ‖BilinForm.toOperator a hM‖ * ‖v₁ - v₂‖ := by
     intro v₁ v₂

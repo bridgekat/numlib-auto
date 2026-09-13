@@ -294,15 +294,18 @@ each section module names the results it leaves out.
   within §7.5 are Example 7.5.3 (distributions on the circle), Theorem 7.5.7 (the project has no
   trigonometric interpolation operator), §7.5.4 (the logarithmic-kernel symbol, which the book
   quotes without proof) and §7.5.5 (spherical harmonics, which Mathlib does not have).
-* **Weak compactness in a reflexive space.** Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
+* **Weak compactness in a reflexive space.** Reflexivity is the backbone's
+  `NormedSpace.IsReflexive` (`Numlib/Analysis/Normed/Module/Reflexive`; Mathlib's
+  `Module.IsReflexive` is the algebraic double dual and is not it), which is Definition 2.7.4
+  (`Chapter02.definition_2_7_4`), and the half of Theorem 2.7.5 the book goes on to use — every
+  bounded sequence in a reflexive space has a weakly convergent subsequence — is
+  `Chapter02.theorem_2_7_5_mp`. On it stand Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
-  Banach space, and Theorem 8.6.3 (Ekeland–Temam, the existence of a saddle point for a
-  convex–concave functional) all rest on weak sequential compactness of the closed unit ball (the
-  book's Theorem 2.7.5), which Mathlib does not have. §2.7's `WeakSeqTendsto` — the book's
-  Definition 2.7.1, which §3.3 uses throughout — and `example_3_3_5` record as much of the setting
-  as can be stated without it; the finite-dimensional and Hilbert cases of the same material are
-  proved in full. Theorem 2.7.5 itself, and Definition 2.7.4 (reflexivity) with it, is the one
-  numbered result of §2.7 left unstated.
+  Banach space, all proved. What is missing is the converse of Theorem 2.7.5 — that weak
+  sequential compactness of the bounded sets forces reflexivity, which needs Goldstine's theorem
+  and the hard half of Eberlein–Šmulian, neither in Mathlib — and Theorem 8.6.3 (Ekeland–Temam,
+  the existence of a saddle point for a convex–concave functional), whose proof consumes the
+  *topological* weak compactness of a closed bounded convex set rather than the sequential one.
 * **The `C[a, b]` integral-operator toolkit.** `Numlib/IntegralEquations/Basic` has the Fredholm,
   Urysohn and Volterra operators with their norms and Lipschitz constants, which is what §5.2's
   applications and the norm formula (2.2.8) need, and now their *compactness*
@@ -332,9 +335,10 @@ Smaller omissions all have the same shape — an object the backbone or Mathlib 
 and each is listed, with its reason, in the module it belongs to. Chapter 2 carries most of them,
 and they are mainly spaces: `C¹[a, b]` as a normed space, which Examples 2.1.4, 2.1.5 and 2.4.2
 all want, and the duals of `Lᵖ(Ω)` and of `L^∞(0, 1)` in Examples 2.5.1, 2.5.3 and 2.5.9.
-Reflexivity is a different obstruction: Mathlib's `Module.IsReflexive` is the algebraic double
-dual, so Definition 2.7.4 and with it Theorem 2.7.5 have nothing to stand on. Of Chapter 3 only
-Müntz's theorem (Theorem 3.1.5) remains, and of Chapters 4 and 6 the Gibbs constant `(2/π) Si(π)`
+Reflexivity is no longer one of them: Definition 2.7.4 and the forward half of Theorem 2.7.5 are
+proved (see the weak-compactness item above), and only the converse of Theorem 2.7.5 is open. Of
+Chapter 3 nothing numbered remains — Müntz's theorem (Theorem 3.1.5) is proved — and of Chapters
+4 and 6 what is left is the Gibbs constant `(2/π) Si(π)`
 that the book asserts without proof beside Example 4.1.3, and the heat-equation instances of
 §6.2–§6.3. §5.5, on completely continuous vector fields, is quoted by the book without proof —
 Brouwer's and Schauder's theorems and the rotation properties P1–P5 — and is summarized in

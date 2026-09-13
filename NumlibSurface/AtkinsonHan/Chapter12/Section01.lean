@@ -101,16 +101,10 @@ theorem isProjectionSolution_iff_smul_sub_comp {μ : 𝕜} (hμ : μ ≠ 0) {K P
 /-- **(12.1.17)**: a nonzero bounded projection has norm at least one, because `‖P‖ = ‖P²‖ ≤ ‖P‖²`.
 The book records it because `‖P_n‖` is the factor that enters the error constants of the projection
 method, in (12.1.24) and in the hypothesis of Theorem 12.1.2; so no choice of `P_n` pushes those
-constants below the value they take at `‖P_n‖ = 1`. -/
-theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P ≠ 0) : 1 ≤ ‖P‖ := by
-  obtain ⟨x, hx⟩ := DFunLike.ne_iff.1 hP0
-  rw [zero_apply] at hx
-  have hPP : P (P x) = P x := DFunLike.congr_fun hP x
-  have hpos : 0 < ‖P x‖ := norm_pos_iff.2 hx
-  have hle : ‖P x‖ ≤ ‖P‖ * ‖P x‖ :=
-    calc ‖P x‖ = ‖P (P x)‖ := by rw [hPP]
-      _ ≤ ‖P‖ * ‖P x‖ := ContinuousLinearMap.le_opNorm _ _
-  nlinarith
+constants below the value they take at `‖P_n‖ = 1`. It is Exercise 3.6.7,
+`Chapter03.exercise_3_6_7`. -/
+theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P ≠ 0) : 1 ≤ ‖P‖ :=
+  Chapter03.exercise_3_6_7 P hP hP0
 
 /-! ### Example 12.1.1: collocation with Lagrange interpolation -/
 

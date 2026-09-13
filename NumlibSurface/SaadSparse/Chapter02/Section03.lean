@@ -17,8 +17,10 @@ Its **analytic and geometric half** is not formalized, and cannot be with what M
 divergence theorem (2.37) and the integration by parts (2.38)–(2.40) that carry Green's formula
 need a surface measure on the boundary curve `Γ` and an outward unit normal field along it, of
 which Mathlib has neither — its divergence theorem is for boxes; the weak formulation (2.41) is set
-in `H¹₀(Ω)`, and Mathlib has no Sobolev space on an open set and so no trace and no
-zero-boundary-value subspace; and the discrete space `V_h` of (2.42) needs a triangulation
+in `H¹₀(Ω)`, which the backbone does have (`SobolevZero` of `Numlib/Analysis/Sobolev/Space.lean`,
+the closure of the test functions in `W^{1,2}(Ω)`) but with no trace operator, so that the
+boundary condition can be read only through that closure and Green's formula cannot be applied to
+it; and the discrete space `V_h` of (2.42) needs a triangulation
 `Ω_h = ∪ K_i` of a planar domain together with the continuous piecewise-affine functions on it and
 the existence and uniqueness of the nodal interpolant. Nothing in the chapter *proves* anything
 with Sobolev theory — no Céa lemma, no Lax–Milgram theorem, no interpolation estimate and no

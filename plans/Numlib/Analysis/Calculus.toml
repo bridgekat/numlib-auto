@@ -1,1 +1,1 @@
-desc = 'Differential calculus: mean value inequalities not in Mathlib, the Laplacian in polar and spherical coordinates, and the Banach space of continuously differentiable functions on a compact interval.'
+desc = 'Differential calculus: mean value inequalities not in Mathlib, the Laplacian in polar and spherical coordinates, the Banach space of continuously differentiable functions on a compact interval, and the iterated derivatives of a smooth function (peeling one direction off the front of the tuple, and symmetry in the arguments at every order).'

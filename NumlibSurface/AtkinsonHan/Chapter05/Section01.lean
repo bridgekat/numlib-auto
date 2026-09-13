@@ -20,8 +20,10 @@ work of the file is the dictionary between the book's `‖T u - T v‖ ≤ α �
   form. `ContractiveOn.nonExpansiveOn`, `NonExpansiveOn.lipschitzOn` and
   `LipschitzOn.continuousOn` are the chain contractive ⇒ non-expansive ⇒ Lipschitz ⇒ continuous
   that the definition is stated for.
-* `StronglyMonotoneWith` — (5.1.8); `stronglyMonotoneWith_iff_isCoerciveWith` says that for a
-  bounded *linear* operator this is the backbone's `LinearMap.IsCoerciveWith`.
+* `StronglyMonotoneWith` — (5.1.8), the backbone's `IsStronglyMonotoneWith ℝ` by definition;
+  `stronglyMonotoneWith_iff` is the book's own wording of it, and
+  `stronglyMonotoneWith_iff_isCoerciveWith` says that for a bounded *linear* operator it is the
+  backbone's `LinearMap.IsCoerciveWith`.
 
 ## Main results
 
@@ -292,16 +294,16 @@ section Hilbert
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
 /-- (5.1.8): `T` is **strongly monotone** with constant `c`, that is
-`(T v₁ - T v₂, v₁ - v₂) ≥ c ‖v₁ - v₂‖²` on a real Hilbert space. -/
+`(T v₁ - T v₂, v₁ - v₂) ≥ c ‖v₁ - v₂‖²` on a real Hilbert space. This is the backbone's
+`IsStronglyMonotoneWith ℝ T c` (`Numlib/Nonlinear/FixedPoint.lean`), the hypothesis of
+`zarantonello`; `stronglyMonotoneWith_iff` is the book's wording. -/
 def StronglyMonotoneWith (T : V → V) (c : ℝ) : Prop :=
-  ∀ v₁ v₂, c * ‖v₁ - v₂‖ ^ 2 ≤ inner ℝ (T v₁ - T v₂) (v₁ - v₂)
+  IsStronglyMonotoneWith ℝ T c
 
-/-- Identification of (5.1.8) with the hypothesis of the backbone's `zarantonello`
-(`Numlib/Nonlinear/FixedPoint.lean`). -/
+/-- (5.1.8) in the book's own words: the inequality against the real inner product. -/
 theorem stronglyMonotoneWith_iff {T : V → V} {c : ℝ} :
-    StronglyMonotoneWith T c ↔
-      ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ (T x - T y) (x - y)) := by
-  simp only [StronglyMonotoneWith, RCLike.re_to_real]
+    StronglyMonotoneWith T c ↔ ∀ v₁ v₂, c * ‖v₁ - v₂‖ ^ 2 ≤ inner ℝ (T v₁ - T v₂) (v₁ - v₂) :=
+  isStronglyMonotoneWith_real_iff T c
 
 /-- For a bounded linear operator, strong monotonicity is coercivity
 (`LinearMap.IsCoerciveWith`, `Numlib/Analysis/InnerProductSpace/Coercive.lean`). -/
@@ -311,9 +313,7 @@ theorem stronglyMonotoneWith_iff_isCoerciveWith (A : V →L[ℝ] V) (c : ℝ) :
   · intro h x
     simpa [RCLike.re_to_real] using h x 0
   · intro h v₁ v₂
-    have hv := h (v₁ - v₂)
-    rw [RCLike.re_to_real] at hv
-    simpa only [map_sub, ContinuousLinearMap.coe_coe] using hv
+    simpa only [map_sub, ContinuousLinearMap.coe_coe] using h (v₁ - v₂)
 
 /-- Identification of (5.1.9) with Mathlib's `LipschitzWith`. -/
 theorem lipschitzWith_toNNReal_iff {T : V → V} {c : ℝ} (hc : 0 ≤ c) :
@@ -329,10 +329,9 @@ theorem theorem_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ 
     (hmono : StronglyMonotoneWith T c₁) (hlip : ∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖) :
     (∀ b, ∃! u, T u = b) ∧
       ∀ u₁ u₂ b₁ b₂, T u₁ = b₁ → T u₂ = b₂ → ‖u₁ - u₂‖ ≤ 1 / c₁ * ‖b₁ - b₂‖ := by
-  have hm := stronglyMonotoneWith_iff.1 hmono
-  refine ⟨fun b => zarantonello (𝕜 := ℝ) hc₁ hm ((lipschitzWith_toNNReal_iff hc₂.le).1 hlip) b,
+  refine ⟨fun b => zarantonello (𝕜 := ℝ) hc₁ hmono ((lipschitzWith_toNNReal_iff hc₂.le).1 hlip) b,
     fun u₁ u₂ b₁ b₂ h₁ h₂ => ?_⟩
-  have h := norm_sub_le_of_strongly_monotone (𝕜 := ℝ) hc₁ hm h₁ h₂
+  have h := norm_sub_le_of_strongly_monotone (𝕜 := ℝ) hc₁ hmono h₁ h₂
   rwa [one_div, inv_mul_eq_div]
 
 end Hilbert

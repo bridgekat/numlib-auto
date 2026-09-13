@@ -8,6 +8,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Calculus.BumpFunction.Convolution
 import Mathlib.MeasureTheory.Function.LpSpace.DomAct.Continuous
 import Mathlib.MeasureTheory.Integral.MeanInequalities
+import Numlib.Analysis.Calculus.IteratedFDeriv
 
 /-!
 # `L^p` estimates for convolutions, and `L^p` convergence of mollification
@@ -51,8 +52,10 @@ Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, ch
   integral along a sequence converging in `L^p` -- Hölder's inequality in the limit, the comparison
   of `L^1` with `L^p` on a finite measure, and the bound of an integral against a bounded scalar
   factor.
-* `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply`: differentiating a convolution in
-  a fixed direction moves the derivative onto the smooth, compactly supported factor, and
+* `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` and
+  `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`: differentiating a
+  convolution, once in a fixed direction or `n` times along a tuple of directions, moves the
+  derivatives onto the smooth, compactly supported factor; and
   `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt`: a convolution against a compactly
   supported continuous function exists as soon as the other factor is locally integrable on an open
   set containing the closed ball carrying the support.
@@ -985,6 +988,30 @@ theorem LocallyIntegrable.fderiv_convolution_left_apply
     HasCompactSupport.convolutionExists_left _ (hcφ.fderiv ℝ) (hφ.continuous_fderiv (by simp)) hg x
   rw [convolution_def, ContinuousLinearMap.integral_apply hex, convolution_def]
   rfl
+
+open scoped ContDiff in
+/-- Differentiating a convolution `n` times along a tuple of directions moves all `n` derivatives
+onto the smooth, compactly supported factor. The induction peels the directions off the front of
+the tuple with `ContDiff.iteratedFDeriv_succ_apply_left'`, so that no reversal of the tuple
+appears. -/
+theorem LocallyIntegrable.iteratedFDeriv_convolution_left_apply (hg : LocallyIntegrable g μ) :
+    ∀ (n : ℕ) {φ : E → E₁}, HasCompactSupport φ → ContDiff ℝ ∞ φ → ∀ (x : E) (y : Fin n → E),
+      _root_.iteratedFDeriv ℝ n (φ ⋆[L, μ] g) x y
+        = ((fun z ↦ _root_.iteratedFDeriv ℝ n φ z y) ⋆[L, μ] g) x := by
+  intro n
+  induction n with
+  | zero => intro φ _ _ x y; simp [iteratedFDeriv_zero_apply]
+  | succ n ih =>
+    intro φ hcφ hφ x y
+    have hconv : ContDiff ℝ ∞ (φ ⋆[L, μ] g) := hcφ.contDiff_convolution_left L hφ hg
+    set ψ : E → E₁ := fun t ↦ fderiv ℝ φ t (y 0) with hψ
+    have hψc : ContDiff ℝ ∞ ψ := (hφ.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
+    have hψs : HasCompactSupport ψ := hcφ.fderiv_apply ℝ (y 0)
+    have hfun : (fun z ↦ fderiv ℝ (φ ⋆[L, μ] g) z (y 0)) = ψ ⋆[L, μ] g :=
+      funext fun z ↦ hg.fderiv_convolution_left_apply hcφ hφ z (y 0)
+    rw [hconv.iteratedFDeriv_succ_apply_left' n y x, hfun, ih hψs hψc x (Fin.tail y)]
+    exact congrArg (fun h ↦ (h ⋆[L, μ] g) x)
+      (funext fun z ↦ (hφ.iteratedFDeriv_succ_apply_left' n y z).symm)
 
 /-- A convolution against a compactly supported continuous function only sees the other factor on
 the closed ball whose radius is that of the support, so it exists as soon as that factor is

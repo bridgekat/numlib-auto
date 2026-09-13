@@ -27,9 +27,6 @@ id = "existsUnique_isVariationalInequalitySolution_on"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1 with Remark 11.3.2"
 
 [[node]]
-id = "IsStronglyMonotoneOnWith"
-
-[[node]]
 id = "stampacchia"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.6"
 
@@ -52,9 +49,3 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.3.3"
 [[node]]
 id = "IsVariationalInequalitySolution.iff_of_isPositiveHomogeneous"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.3.10"
-
-# The bundled form of the hypothesis `zarantonello` and `contractingWith_damped` take unbundled.
-# It belongs in `Numlib/Nonlinear/FixedPoint`, whose group file this task could not edit; move it
-# there, with the module's other consumers, in the task that lands the switch.
-[[node]]
-id = "IsStronglyMonotoneWith"

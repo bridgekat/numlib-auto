@@ -2,7 +2,6 @@ import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import NumlibSurface.AtkinsonHan.Chapter01.Section02
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
-import NumlibSurface.AtkinsonHan.Chapter03.Section01
 
 /-!
 # Atkinson–Han §4.1: Fourier series
@@ -78,8 +77,6 @@ open scoped ENNReal Real
 
 namespace AtkinsonHan.Chapter04
 
-local instance : Fact (0 < 2 * π) := ⟨Real.two_pi_pos⟩
-
 /-! ### The circle and the interval -/
 
 /-- **The identification of `L^p(-π, π)` with `L^p` of the circle**: the integral of a function on
@@ -124,11 +121,7 @@ theorem equation_4_1_3_cos (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < 
   have h2 : ∀ t : ℝ, trigFun (2 * π) (j : ℤ) (↑t : AddCircle (2 * π)) * g ↑t
       = √2 * (g ↑t * Real.cos ((j : ℝ) * t)) := by
     intro t
-    rw [trigFun_coe_apply_of_pos hj']
-    have harg : 2 * π * ((j : ℤ) : ℝ) * t / (2 * π) = (j : ℝ) * t := by
-      push_cast
-      field_simp
-    rw [harg]
+    rw [trigFun_coe_of_pos hj', Int.cast_natCast]
     ring
   simp only [fourierCoeffCos, realFourierCoeff_eq_intervalIntegral]
   rw [intervalIntegral.integral_congr (fun t _ => h2 t), intervalIntegral.integral_const_mul]
@@ -146,12 +139,9 @@ theorem equation_4_1_3_sin (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < 
   have h2 : ∀ t : ℝ, trigFun (2 * π) (-(j : ℤ)) (↑t : AddCircle (2 * π)) * g ↑t
       = √2 * (g ↑t * Real.sin ((j : ℝ) * t)) := by
     intro t
-    rw [trigFun_coe_apply_of_neg hj']
-    have harg : -(2 * π * ((-(j : ℤ) : ℤ) : ℝ) * t / (2 * π)) = (j : ℝ) * t := by
-      push_cast
-      field_simp
-    rw [harg]
-    ring
+    rw [trigFun_coe_of_neg hj']
+    push_cast
+    ring_nf
   simp only [fourierCoeffSin, realFourierCoeff_eq_intervalIntegral]
   rw [intervalIntegral.integral_congr (fun t _ => h2 t), intervalIntegral.integral_const_mul]
   obtain ⟨I, hI⟩ : ∃ I : ℝ, (∫ t in -π..π, g ↑t * Real.sin ((j : ℝ) * t)) = I := ⟨_, rfl⟩
@@ -362,19 +352,16 @@ theorem theorem_4_1_1_continuous {f : ℝ → ℝ} (hf : Function.Periodic f (2 
 /-! ### `L^p` convergence (Theorem 4.1.2) -/
 
 /-- The trigonometric polynomials are dense in `L^p` of the circle, for `1 ≤ p < ∞`: they are
-dense in `C(AddCircle (2 π), ℝ)` by Corollary 3.1.4, and the continuous functions are dense in
-`L^p`. -/
+dense in `C(AddCircle (2 π), ℝ)` by Corollary 3.1.4 — the backbone's
+`span_trigFun_closure_eq_top`, which the corollary restates — and the continuous functions are
+dense in `L^p`. -/
 theorem dense_image_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     Dense (ContinuousMap.toLp (E := ℝ) p
         (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) ℝ ''
       (Submodule.span ℝ (Set.range (trigFun (2 * π))) : Set C(AddCircle (2 * π), ℝ))) := by
   have hWdense : Dense (Submodule.span ℝ (Set.range (trigFun (2 * π))) :
-      Set C(AddCircle (2 * π), ℝ)) := by
-    intro f
-    rw [Metric.mem_closure_iff]
-    intro ε hε
-    obtain ⟨q, hq, hqf⟩ := AtkinsonHan.Chapter03.corollary_3_1_4 f hε
-    exact ⟨q, hq, by rwa [dist_eq_norm, norm_sub_rev]⟩
+      Set C(AddCircle (2 * π), ℝ)) :=
+    Submodule.dense_iff_topologicalClosure_eq_top.2 span_trigFun_closure_eq_top
   have hTd := ContinuousMap.toLp_denseRange ℝ
     (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) ℝ hp (p := p)
   have hsub : Set.range (ContinuousMap.toLp (E := ℝ) p

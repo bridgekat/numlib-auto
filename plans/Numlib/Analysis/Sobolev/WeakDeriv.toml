@@ -24,42 +24,6 @@ id = "MeasureTheory.LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset"
 id = "MeasureTheory.LocallyIntegrableOn.comp_continuousLinearMap"
 
 [[node]]
-id = "iteratedFDeriv_succ_apply_left_of_differentiableAt"
-
-[[node]]
-id = "ContDiff.fderiv_iteratedFDeriv_apply"
-
-[[node]]
-id = "ContDiff.iteratedFDeriv_succ_apply_left'"
-
-[[node]]
-id = "ContDiff.iteratedFDeriv_cons"
-
-[[node]]
-id = "listFDeriv"
-
-[[node]]
-id = "listFDeriv_nil"
-
-[[node]]
-id = "listFDeriv_cons"
-
-[[node]]
-id = "ContDiff.fderiv_apply_right"
-
-[[node]]
-id = "ContDiff.listFDeriv_ofFn"
-
-[[node]]
-id = "ContDiff.fderiv_fderiv_comm"
-
-[[node]]
-id = "listFDeriv_congr_perm"
-
-[[node]]
-id = "ContDiff.iteratedFDeriv_congr_perm"
-
-[[node]]
 id = "TestFunction.eq_zero_of_notMem"
 
 [[node]]

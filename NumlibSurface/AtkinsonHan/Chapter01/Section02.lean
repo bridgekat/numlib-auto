@@ -8,8 +8,9 @@ import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.Topology.ContinuousMap.Compact
-import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Mathlib.Topology.Instances.AddCircle.Real
+import Numlib.Analysis.Calculus.ContDiffMapIcc
+import Numlib.Analysis.Fourier.TrigonometricBasis
 
 /-!
 # Atkinson–Han §1.2: normed spaces
@@ -85,8 +86,10 @@ part of the statement of `example_1_2_28_a`. `C_p^k(2π)` is read on one period,
 `Cᵏ[0, 2π]` on which every derivative up to order `k` matches at the two ends; that is
 `example_1_2_28_a_periodic`, whose last two conjuncts identify it with the genuinely `2π`-periodic
 `Cᵏ` functions on `ℝ`, and which agrees at `k = 0` with the `C(AddCircle (2π), ℝ)` of
-Example 1.2.5. Example 1.2.28 (b) is the Sobolev completion `W^{m,p}(a, b)` and is out of scope for
-the project, Mathlib having no weak derivative on an interval. Example 1.2.19 is Theorem 1.5.6
+Example 1.2.5. Example 1.2.28 (b), the Sobolev completion `W^{m,p}(a, b)`, is not restated: the
+space itself is the backbone's `SobolevMultiIndex` (`Numlib/Analysis/Sobolev/MultiIndex.lean`)
+read on `E = ℝ`, but the `‖·‖_p`-type norm on `Cᵐ[a, b]` and the density of `Cᵐ[a, b]` in
+`W^{m,p}(a, b)` are not built; see the plan of this section. Example 1.2.19 is Theorem 1.5.6
 restated for a bounded `Ω`, and is recorded with it in §1.5.
 
 The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
@@ -169,10 +172,6 @@ theorem example_1_2_4 :
     simp [Real.norm_eq_abs]
 
 section Periodic
-
-/-- `2π` is positive, which is what makes `AddCircle (2π)` a compact space and `C_p(2π)` a normed
-space. -/
-local instance instFactTwoPiPos : Fact (0 < 2 * π) := Fact.mk Real.two_pi_pos
 
 /-- **Example 1.2.5** (a). The standard norm of `C[a, b]` is the maximum norm
 `‖f‖_∞ = max_{a ≤ x ≤ b} |f x|`, and the same formula is the standard norm of `C_p(2π)`, the

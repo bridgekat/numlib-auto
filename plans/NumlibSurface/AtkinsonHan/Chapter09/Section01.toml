@@ -4,9 +4,6 @@ namespace = "AtkinsonHan"
 id = "Chapter09.corollary_9_1_4"
 
 [[node]]
-id = "Chapter09.existsUnique_solution"
-
-[[node]]
 id = "Chapter09.galerkin_eq_energyProjection"
 
 [[node]]

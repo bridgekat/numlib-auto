@@ -44,7 +44,11 @@ Still open, and *not* unblocked by `C¹[0, 1]` now existing.  The underlying spa
 (`Numlib.Analysis.Calculus.ContDiffMapIcc`), but two things are missing.  The norm here is the
 `H¹` *inner product* norm `(‖v‖₂² + ‖v'‖₂²)^{1/2}`, not the supremum norm `‖v‖_∞ + ‖v'‖_∞` that
 `ContDiffMapIcc` carries, so it would have to be put on the same carrier as a second normed
-structure; and the target of the extension, `H¹(0, 1)`, needs Sobolev spaces on an interval, for
-which Mathlib has no weak derivative on an open subset of `ℝ`.  So the remaining obstruction is
-`H¹(0, 1)` alone, as §2.4's module doc records.'''
+structure; and the target of the extension, `H¹(0, 1)`, is the backbone's `SobolevMultiIndex`
+of `Numlib/Analysis/Sobolev/MultiIndex.lean` on `E = ℝ` — the planned `SobolevInterval 1 0 1` of
+`Numlib/Analysis/Sobolev/Interval` — and identifying it with the completion is the density of
+`C¹[0, 1]` in `H¹(0, 1)`, which is the one-dimensional case of Meyers–Serrin
+(`Numlib/Analysis/Sobolev/Density.lean` has it on any open set for `C^∞ ∩ W^{k,p}`, not for
+functions smooth up to the boundary).  So the remaining obstruction is the density statement,
+not the space.'''
 deps = ["theorem_2_4_1"]

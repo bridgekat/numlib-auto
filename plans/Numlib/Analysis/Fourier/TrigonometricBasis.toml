@@ -51,3 +51,9 @@ id = "norm_sub_trigPartialSum_sq"
 
 [[node]]
 id = "hasSum_sq_realFourierCoeff_compl"
+
+[[node]]
+id = "exists_mem_span_trigFun_norm_sub_lt"
+
+[[node]]
+id = "span_trigFun_closure_eq_top"

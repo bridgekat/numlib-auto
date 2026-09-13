@@ -10,6 +10,7 @@ import Mathlib.Topology.ContinuousMap.Weierstrass
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.LinearAlgebra.Matrix.Cauchy
 
 /-!
@@ -32,12 +33,11 @@ Analysis Framework*, 3rd edition, Springer, 2009, §3.1.
 The first two are Mathlib's. Corollary 3.1.3 is Theorem 3.1.2 applied to the image of
 `MvPolynomial (Fin d) ℝ` in `C(D, ℝ)`, which contains the constants and separates points because
 the coordinate functions do; `ℝ^d` is read as `Fin d → ℝ`, and by Theorem 1.2.14 the choice of
-norm on it does not matter, only the topology. Corollary 3.1.4 is
+norm on it does not matter, only the topology. Corollary 3.1.4 is the backbone's
+`exists_mem_span_trigFun_norm_sub_lt` of `Numlib/Analysis/Fourier/TrigonometricBasis`:
 `span_fourier_closure_eq_top` — the density of the *complex* exponentials in `C(AddCircle T, ℂ)` —
-carried to the real system `trigFun` of `Numlib/Analysis/Fourier/TrigonometricBasis` by taking real
-parts: the real and imaginary parts of a complex trigonometric polynomial are real trigonometric
-polynomials, and taking real parts does not increase the uniform norm. It is what makes the
-trigonometric system complete in Theorem 1.3.13 and what Theorem 4.1.2 needs.
+carried to the real system `trigFun` by taking real parts. It is what makes the trigonometric
+system complete in Theorem 1.3.13 and what Theorem 4.1.2 needs.
 
 `C_p(2π)`, the continuous `2π`-periodic functions with the uniform norm, is `C(AddCircle (2π), ℝ)`,
 as everywhere in this surface.
@@ -62,8 +62,9 @@ The rest is real analysis of that product. Since `1 - (λᵢ - a)/(λᵢ + a + 1
 is comparable to `1/λᵢ`, the product tends to `0` exactly when `∑ 1/λᵢ` diverges: `1 - x ≤ exp (-x)`
 for the vanishing, the Weierstrass product inequality `1 - ∑ bᵢ ≤ ∏ (1 - bᵢ)` for the lower bound.
 For the *if* direction the vanishing is applied at every natural number `a = m` and closed against
-`dense_span_monomials`, the density of the polynomials in `L²(0, 1)`, which is Theorem 3.1.1
-together with the density of the bounded continuous functions in `L²`. For the *only if* direction
+`dense_span_monomials`, the density of the polynomials in `L²(0, 1)`, which is the backbone's
+`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ` of `Numlib/Approximation/OrthogonalPolynomial`
+for Lebesgue measure on `(0, 1)`. For the *only if* direction
 the lower bound is applied at one `a` outside the sequence, namely a point between `λ₁` and `λ₂`.
 -/
 
@@ -118,123 +119,16 @@ section Trigonometric
 
 variable {T : ℝ}
 
-/-- Taking real parts, as a real-linear map on continuous complex-valued functions. -/
-private noncomputable def reMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
-  (Complex.reCLM.compLeftContinuous ℝ X).toLinearMap
-
-/-- Taking imaginary parts, as a real-linear map on continuous complex-valued functions. -/
-private noncomputable def imMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
-  (Complex.imCLM.compLeftContinuous ℝ X).toLinearMap
-
-@[simp]
-private theorem reMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x : X) :
-    reMap X P x = (P x).re :=
-  rfl
-
-@[simp]
-private theorem imMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x : X) :
-    imMap X P x = (P x).im :=
-  rfl
-
-/-- The real trigonometric polynomials: the real span of the system `trigFun` of
-`Numlib/Analysis/Fourier/TrigonometricBasis`, that is, of `1`, `cos (2 π n x / T)` and
-`sin (2 π n x / T)`. -/
-private def trigPoly (T : ℝ) : Submodule ℝ C(AddCircle T, ℝ) :=
-  span ℝ (Set.range (trigFun T))
-
-private theorem sqrt_two_ne_zero : (√2 : ℝ) ≠ 0 := Real.sqrt_ne_zero'.mpr (by norm_num)
-
-/-- The real and imaginary parts of a complex exponential are real trigonometric polynomials. -/
-private theorem reMap_imMap_fourier_mem (n : ℤ) :
-    reMap (AddCircle T) (fourier n) ∈ trigPoly T ∧
-      imMap (AddCircle T) (fourier n) ∈ trigPoly T := by
-  have hgen : ∀ m : ℤ, trigFun T m ∈ trigPoly T := fun m => subset_span ⟨m, rfl⟩
-  have hre : ∀ m : ℤ, 0 < m →
-      reMap (AddCircle T) (fourier m) = (√2 : ℝ)⁻¹ • trigFun T m := by
-    intro m hm
-    ext x
-    rw [reMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_pos hm, re_ofReal_mul,
-      smul_eq_mul, inv_mul_cancel_left₀ sqrt_two_ne_zero]
-  have him : ∀ m : ℤ, 0 < m →
-      imMap (AddCircle T) (fourier m) = (√2 : ℝ)⁻¹ • trigFun T (-m) := by
-    intro m hm
-    ext x
-    rw [imMap_apply, ContinuousMap.smul_apply, trigFun_apply, trigWeight_of_neg (by omega),
-      mul_assoc, re_ofReal_mul, fourier_neg, smul_eq_mul, Complex.I_mul_re, Complex.conj_im,
-      neg_neg, inv_mul_cancel_left₀ sqrt_two_ne_zero]
-  have hconj : ∀ m : ℤ, reMap (AddCircle T) (fourier (-m)) = reMap (AddCircle T) (fourier m) ∧
-      imMap (AddCircle T) (fourier (-m)) = -imMap (AddCircle T) (fourier m) := by
-    refine fun m => ⟨?_, ?_⟩
-    · ext x
-      rw [reMap_apply, reMap_apply, fourier_neg, Complex.conj_re]
-    · ext x
-      rw [ContinuousMap.neg_apply, imMap_apply, imMap_apply, fourier_neg, Complex.conj_im]
-  rcases lt_trichotomy n 0 with hn | rfl | hn
-  · obtain ⟨hr, hi⟩ := hconj (-n)
-    rw [neg_neg] at hr hi
-    refine ⟨?_, ?_⟩
-    · rw [hr, hre (-n) (by omega)]
-      exact smul_mem _ _ (hgen _)
-    · rw [hi, him (-n) (by omega)]
-      exact neg_mem (smul_mem _ _ (hgen _))
-  · refine ⟨?_, ?_⟩
-    · have : reMap (AddCircle T) (fourier (0 : ℤ)) = trigFun T 0 := by
-        ext x; simp
-      rw [this]; exact hgen 0
-    · have : imMap (AddCircle T) (fourier (0 : ℤ)) = 0 := by
-        ext x; simp
-      rw [this]; exact zero_mem _
-  · exact ⟨by rw [hre n hn]; exact smul_mem _ _ (hgen _),
-      by rw [him n hn]; exact smul_mem _ _ (hgen _)⟩
-
-/-- The real and imaginary parts of a complex trigonometric polynomial are real trigonometric
-polynomials. The two halves have to be proved together, because a complex scalar multiple mixes
-them. -/
-private theorem reMap_imMap_mem_of_mem_span {P : C(AddCircle T, ℂ)}
-    (hP : P ∈ span ℂ (Set.range (fourier (T := T)))) :
-    reMap (AddCircle T) P ∈ trigPoly T ∧ imMap (AddCircle T) P ∈ trigPoly T := by
-  induction hP using Submodule.span_induction with
-  | mem P hP => obtain ⟨n, rfl⟩ := hP; exact reMap_imMap_fourier_mem n
-  | zero => simp only [map_zero]; exact ⟨zero_mem _, zero_mem _⟩
-  | add P Q _ _ ihP ihQ =>
-      rw [map_add, map_add]
-      exact ⟨add_mem ihP.1 ihQ.1, add_mem ihP.2 ihQ.2⟩
-  | smul c P _ ih =>
-      have hre : reMap (AddCircle T) (c • P)
-          = c.re • reMap (AddCircle T) P - c.im • imMap (AddCircle T) P := by
-        ext x; simp [Complex.mul_re]
-      have him : imMap (AddCircle T) (c • P)
-          = c.re • imMap (AddCircle T) P + c.im • reMap (AddCircle T) P := by
-        ext x; simp [Complex.mul_im]
-      rw [hre, him]
-      exact ⟨sub_mem (smul_mem _ _ ih.1) (smul_mem _ _ ih.2),
-        add_mem (smul_mem _ _ ih.2) (smul_mem _ _ ih.1)⟩
-
 /-- **Corollary 3.1.4.** The trigonometric polynomials are dense in `C_p(2π)`, the continuous
 `2π`-periodic functions with the uniform norm: every such `f` is uniformly within `ε` of a real
 linear combination of `1`, `cos (j x)` and `sin (j x)`.
 
 Stated on `C(AddCircle T, ℝ)` for any period `T > 0`; the book's `C_p(2π)` is `T = 2π`. The system
 `trigFun T` is the one of Theorem 1.3.13, so its real span is exactly the trigonometric
-polynomials. -/
+polynomials; the density is the backbone's `exists_mem_span_trigFun_norm_sub_lt`. -/
 theorem corollary_3_1_4 [Fact (0 < T)] (f : C(AddCircle T, ℝ)) {ε : ℝ} (hε : 0 < ε) :
-    ∃ p ∈ span ℝ (Set.range (trigFun T)), ‖p - f‖ < ε := by
-  -- the complexification of `f`
-  set F : C(AddCircle T, ℂ) := ⟨fun x => (f x : ℂ), Complex.continuous_ofReal.comp f.continuous⟩
-    with hF
-  have hFtop : F ∈ (span ℂ (Set.range (fourier (T := T)))).topologicalClosure := by
-    rw [span_fourier_closure_eq_top]; trivial
-  rw [← SetLike.mem_coe, Submodule.topologicalClosure_coe, Metric.mem_closure_iff] at hFtop
-  obtain ⟨P, hPmem, hPdist⟩ := hFtop ε hε
-  refine ⟨reMap (AddCircle T) P, (reMap_imMap_mem_of_mem_span hPmem).1, ?_⟩
-  have hle : ‖reMap (AddCircle T) P - f‖ ≤ ‖P - F‖ := by
-    refine (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun x => ?_
-    have h1 : (reMap (AddCircle T) P - f) x = (P x - F x).re := by
-      simp [hF, Complex.sub_re]
-    rw [h1, Real.norm_eq_abs]
-    exact (Complex.abs_re_le_norm _).trans (ContinuousMap.norm_coe_le_norm (P - F) x)
-  rw [dist_eq_norm, norm_sub_rev] at hPdist
-  exact lt_of_le_of_lt hle hPdist
+    ∃ p ∈ span ℝ (Set.range (trigFun T)), ‖p - f‖ < ε :=
+  exists_mem_span_trigFun_norm_sub_lt f hε
 
 end Trigonometric
 
@@ -539,80 +433,37 @@ end Products
 
 /-! #### The polynomials are dense in `L²(0, 1)` -/
 
-/-- The representative of a finite combination of monomials. -/
-private theorem coeFn_polySum (s : Finset ℕ) (c : ℕ → ℝ) :
-    ⇑(∑ m ∈ s, c m • powerL2 (m : ℝ)) =ᵐ[μ₁] fun t ↦ ∑ m ∈ s, c m * t ^ (m : ℝ) := by
-  induction s using Finset.induction with
-  | empty => simp only [Finset.sum_empty]; exact Lp.coeFn_zero ℝ 2 μ₁
-  | insert m s hm ih =>
-      rw [Finset.sum_insert hm]
-      filter_upwards [Lp.coeFn_add (c m • powerL2 (m : ℝ)) (∑ k ∈ s, c k • powerL2 (k : ℝ)),
-        Lp.coeFn_smul (c m) (powerL2 (m : ℝ)),
-        coeFn_powerL2 (l := (m : ℝ)) (by have : (0:ℝ) ≤ m := Nat.cast_nonneg m; linarith),
-        ih] with t h1 h2 h3 h4
-      rw [h1, Finset.sum_insert hm]
-      simp only [Pi.add_apply, h2, h4, Pi.smul_apply, h3, smul_eq_mul]
+/-- Lebesgue measure on `(0, 1)` is a weight in the sense of `OrthogonalPolynomial.IsWeight`, so
+the polynomials lie in `L²(0, 1)` and are dense there. -/
+private theorem isWeight_unit : OrthogonalPolynomial.IsWeight μ₁ :=
+  OrthogonalPolynomial.isWeight_volume_restrict_Ioo zero_lt_one
 
-/-- A polynomial as an element of `L²(0, 1)`, presented as a combination of the monomials. -/
-private noncomputable def polyL2 (p : ℝ[X]) : Lp ℝ 2 μ₁ :=
-  ∑ m ∈ Finset.range (p.natDegree + 1), p.coeff m • powerL2 (m : ℝ)
+/-- The `L²(0, 1)` class of the monomial `X ^ m` is `powerL2 m`. -/
+private theorem toLpₗ_X_pow (m : ℕ) :
+    isWeight_unit.toLpₗ (Polynomial.X ^ m) = powerL2 (m : ℝ) := by
+  refine Lp.ext ?_
+  filter_upwards [isWeight_unit.coeFn_toLpₗ (Polynomial.X ^ m),
+    coeFn_powerL2 (l := (m : ℝ)) (by have : (0 : ℝ) ≤ m := Nat.cast_nonneg m; linarith)]
+    with t h1 h2
+  rw [h1, h2, Polynomial.eval_pow, Polynomial.eval_X, Real.rpow_natCast]
 
-/-- `polyL2 p` lies in the span of the monomials. -/
-private theorem polyL2_mem (p : ℝ[X]) :
-    polyL2 p ∈ Submodule.span ℝ (Set.range fun m : ℕ ↦ powerL2 (m : ℝ)) :=
-  Submodule.sum_mem _ fun m _ ↦ Submodule.smul_mem _ _ (Submodule.subset_span ⟨m, rfl⟩)
-
-/-- `polyL2 p` is represented by `t ↦ p t`. -/
-private theorem coeFn_polyL2 (p : ℝ[X]) : ⇑(polyL2 p) =ᵐ[μ₁] fun t ↦ p.eval t := by
-  filter_upwards [coeFn_polySum (Finset.range (p.natDegree + 1)) p.coeff,
-    ae_restrict_mem measurableSet_Ioo] with t h ht
-  simp only [polyL2]
-  rw [h, Polynomial.eval_eq_sum_range]
-  exact Finset.sum_congr rfl fun m _ ↦ by rw [Real.rpow_natCast]
-
-/-- The unit interval has measure one. -/
-private theorem measureUnivNNReal_unit : measureUnivNNReal μ₁ = 1 := by
-  simp [measureUnivNNReal]
-
-/-- The monomials span a dense subspace of `L²(0, 1)`: bounded continuous functions are dense in
-`L²`, and Theorem 3.1.1 approximates them uniformly on `[0, 1]` by polynomials. -/
+/-- The monomials span a dense subspace of `L²(0, 1)`: the polynomials are dense in `L²` of a
+weight carried by a compact interval (`OrthogonalPolynomial.IsWeight.denseRange_toLpₗ`, which is
+Theorem 3.1.1 together with the density of the bounded continuous functions in `L²`), and every
+polynomial is a combination of the monomials. -/
 theorem dense_span_monomials :
     Dense ((Submodule.span ℝ (Set.range fun m : ℕ ↦ powerL2 (m : ℝ)) :
       Submodule ℝ (Lp ℝ 2 μ₁)) : Set (Lp ℝ 2 μ₁)) := by
-  have : (MeasureTheory.volume.restrict (Set.Ioo (0:ℝ) 1)).WeaklyRegular :=
-    MeasureTheory.Measure.WeaklyRegular.restrict_of_measure_ne_top
-      (by rw [Real.volume_Ioo]; exact ENNReal.ofReal_ne_top)
-  have : IsFiniteMeasure μ₁ := ⟨by simp⟩
-  intro f
-  refine Metric.mem_closure_iff.2 fun ε hε ↦ ?_
-  obtain ⟨g, hg, gmem⟩ := (Lp.memLp f).exists_boundedContinuous_eLpNorm_sub_le
-    (p := 2) (by norm_num) (ε := ENNReal.ofReal (ε / 3)) (by simp; linarith)
-  have hae : ⇑(f - gmem.toLp ⇑g) =ᵐ[μ₁] ⇑f - ⇑g := by
-    filter_upwards [Lp.coeFn_sub f (gmem.toLp ⇑g), gmem.coeFn_toLp] with t h1 h2
-    rw [h1, Pi.sub_apply, Pi.sub_apply, h2]
-  have hfg : ‖f - gmem.toLp ⇑g‖ ≤ ε / 3 := by
-    rw [Lp.norm_def, eLpNorm_congr_ae hae]
-    calc (eLpNorm (⇑f - ⇑g) 2 μ₁).toReal ≤ (ENNReal.ofReal (ε / 3)).toReal :=
-          ENNReal.toReal_mono (by simp) hg
-      _ = ε / 3 := ENNReal.toReal_ofReal (by linarith)
-  set G : C(Set.Icc (0:ℝ) 1, ℝ) := ⟨fun x ↦ g x, g.continuous.comp continuous_subtype_val⟩ with hG
-  obtain ⟨q, hq⟩ := theorem_3_1_1 0 1 G (show (0:ℝ) < ε / 3 by linarith)
-  have hgq : ‖gmem.toLp ⇑g - polyL2 q‖ ≤ ε / 3 := by
-    have hb : ∀ᵐ t ∂μ₁, ‖(gmem.toLp ⇑g - polyL2 q) t‖ ≤ ε / 3 := by
-      filter_upwards [Lp.coeFn_sub (gmem.toLp ⇑g) (polyL2 q), gmem.coeFn_toLp, coeFn_polyL2 q,
-        ae_restrict_mem measurableSet_Ioo] with t h1 h2 h3 ht
-      have hmem : t ∈ Set.Icc (0:ℝ) 1 := ⟨ht.1.le, ht.2.le⟩
-      have hbd := (ContinuousMap.norm_coe_le_norm (q.toContinuousMapOn (Set.Icc (0:ℝ) 1) - G)
-        ⟨t, hmem⟩).trans hq.le
-      rw [h1, Pi.sub_apply, h2, h3]
-      simpa [hG, Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply,
-        abs_sub_comm] using hbd
-    simpa [measureUnivNNReal_unit] using
-      Lp.norm_le_of_ae_bound (p := 2) (μ := μ₁) (by linarith : (0:ℝ) ≤ ε / 3) hb
-  refine ⟨polyL2 q, polyL2_mem q, ?_⟩
-  calc dist f (polyL2 q) ≤ ‖f - gmem.toLp ⇑g‖ + ‖gmem.toLp ⇑g - polyL2 q‖ := by
-        rw [dist_eq_norm]; exact norm_sub_le_norm_sub_add_norm_sub _ _ _
-    _ < ε := by linarith
+  have hsupp : μ₁ (Set.Icc (0 : ℝ) 1)ᶜ = 0 := by
+    rw [Measure.restrict_apply measurableSet_Icc.compl]
+    exact measure_mono_null (fun x hx ↦ (hx.1 (Set.Ioo_subset_Icc_self hx.2)).elim) measure_empty
+  refine (isWeight_unit.denseRange_toLpₗ hsupp).mono ?_
+  rintro _ ⟨p, rfl⟩
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => rw [map_add]; exact Submodule.add_mem _ hp hq
+  | monomial n a =>
+    rw [← Polynomial.smul_X_eq_monomial, map_smul, toLpₗ_X_pow]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨n, rfl⟩)
 
 /-! #### The theorem -/
 

@@ -5,6 +5,12 @@ id = "ContractingWith.dist_iterate_succ_fixedPoint_le"
 id = "ContractingWith.existsUnique_eq_self"
 
 [[node]]
+id = "IsStronglyMonotoneWith"
+
+[[node]]
+id = "IsStronglyMonotoneOnWith"
+
+[[node]]
 id = "contractingWith_damped"
 
 [[node]]

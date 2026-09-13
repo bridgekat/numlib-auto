@@ -345,8 +345,6 @@ end Hilbert
 
 section Trigonometric
 
-local instance instTwoPiPos : Fact (0 < 2 * π) := Fact.mk Real.two_pi_pos
-
 /-- **Theorem 1.3.13.** The real trigonometric system is an orthonormal basis of `L²(-π, π)`: it
 is orthonormal and its span is dense. Its members, listed as `trigFun (2π) n` for `n : ℤ`, are the
 constant, the cosines `√2 cos (j x)` and the sines `√2 sin (j x)`; these are the book's
@@ -360,16 +358,11 @@ theorem theorem_1_3_13 :
         trigFun (2 * π) j (x : AddCircle (2 * π)) = √2 * Real.cos (j * x)) ∧
       (∀ j : ℤ, 0 < j → ∀ x : ℝ,
         trigFun (2 * π) (-j) (x : AddCircle (2 * π)) = √2 * Real.sin (j * x)) := by
-  have hπ : (2 * π) ≠ 0 := ne_of_gt Real.two_pi_pos
   refine ⟨(trigBasis (2 * π)).orthonormal, (trigBasis (2 * π)).dense_span, fun x => by simp,
-    fun j hj x => ?_, fun j hj x => ?_⟩
-  · rw [trigFun_coe_apply_of_pos hj x]
-    congr 2
-    field_simp
-  · rw [trigFun_coe_apply_of_neg (by omega : (-j : ℤ) < 0) x]
-    congr 2
-    push_cast
-    field_simp
+    fun j hj x => trigFun_coe_of_pos hj x, fun j hj x => ?_⟩
+  rw [trigFun_coe_of_neg (by omega : (-j : ℤ) < 0) x]
+  push_cast
+  ring_nf
 
 /-- **Example 1.3.14.** The half-range cosine system `e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` for
 `k ≥ 1` is an orthonormal basis of `L²(0, π)`: it is orthonormal, its span is dense, and its

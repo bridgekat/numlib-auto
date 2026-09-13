@@ -386,8 +386,6 @@ end PiecewiseLinear
 
 section Trigonometric
 
-local instance instTwoPiPos : Fact (0 < 2 * π) := Fact.mk Real.two_pi_pos
-
 /-- A sum over the symmetric range `Icc (-n) n` in `ℤ`, split into its middle term and the pairs
 `± j`. -/
 private theorem sum_Icc_neg (g : ℤ → ℝ) (n : ℕ) :
@@ -412,23 +410,14 @@ private theorem sum_Icc_neg (g : ℤ → ℝ) (n : ℕ) :
 system is `√2 cos (j t)`. -/
 private theorem trigFun_two_pi_cos {j : ℕ} (hj : 1 ≤ j) (t : ℝ) :
     trigFun (2 * π) (j : ℤ) (↑t : AddCircle (2 * π)) = √2 * Real.cos (j * t) := by
-  have h2pi : (2 * π : ℝ) ≠ 0 := by positivity
-  have hjpos : (0 : ℤ) < (j : ℤ) := by exact_mod_cast hj
-  rw [trigFun_coe_apply_of_pos hjpos]
-  congr 2
-  rw [show 2 * π * ((j : ℤ) : ℝ) * t = 2 * π * (((j : ℕ) : ℝ) * t) by push_cast; ring,
-    mul_div_cancel_left₀ _ h2pi]
+  rw [trigFun_coe_of_pos (by exact_mod_cast hj) t, Int.cast_natCast]
 
 /-- On the circle of circumference `2 π` the member of index `-j` for `j ≥ 1` is `√2 sin (j t)`. -/
 private theorem trigFun_two_pi_sin {j : ℕ} (hj : 1 ≤ j) (t : ℝ) :
     trigFun (2 * π) (-(j : ℤ)) (↑t : AddCircle (2 * π)) = √2 * Real.sin (j * t) := by
-  have h2pi : (2 * π : ℝ) ≠ 0 := by positivity
-  have hjneg : (-(j : ℤ)) < 0 := by omega
-  rw [trigFun_coe_apply_of_neg hjneg]
-  congr 2
-  rw [show -(2 * π * ((-(j : ℤ) : ℤ) : ℝ) * t / (2 * π))
-      = 2 * π * (((j : ℕ) : ℝ) * t) / (2 * π) by push_cast; ring,
-    mul_div_cancel_left₀ _ h2pi]
+  rw [trigFun_coe_of_neg (by omega) t]
+  push_cast
+  ring_nf
 
 /-- The value at `↑t` of a combination of the real trigonometric system of degree at most `n`. -/
 private theorem sum_trigFun_two_pi_coe (d : ℤ → ℝ) (n : ℕ) (t : ℝ) :

@@ -151,8 +151,7 @@ theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerc
     ContractingWith (Real.toNNReal (Real.sqrt (1 - 2 * θ * c + θ ^ 2 * ‖a‖ ^ 2)))
       (fun u => u - (θ : 𝕜) • (toOperator a u - rieszRep ℓ)) := by
   have hcoer := (a.isCoerciveWith_iff_toOperator c).mp ha
-  have hmono : ∀ x y : V, c * ‖x - y‖ ^ 2 ≤
-      RCLike.re (inner 𝕜 (toOperator a x - toOperator a y) (x - y)) := by
+  have hmono : IsStronglyMonotoneWith 𝕜 (toOperator a) c := by
     intro x y
     rw [← map_sub]
     exact hcoer (x - y)

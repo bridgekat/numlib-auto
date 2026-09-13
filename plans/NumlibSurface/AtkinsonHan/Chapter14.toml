@@ -42,8 +42,14 @@ What is skipped, and what each would need:
   with a discretization on top.
 * **Section 14.4, (14.4.1)–(14.4.7), (14.4.10)–(14.4.13) and Exercises 14.4.2–14.4.3** — the weak
   formulation in `H¹₀(𝔹₂)`, the Galerkin method on `X_n`, its Céa estimate, and the Green's
-  function of the disk. `H¹₀(Ω)` does not exist: Mathlib has no weak derivative on an open set.
-  The abstract halves are covered elsewhere in this surface — Lax–Milgram is
-  `AtkinsonHan.Chapter08.Section03` and Céa's inequality `AtkinsonHan.Chapter09.Section01` — so
-  only the space is missing.
+  function of the disk. `H¹₀(Ω)` exists — it is `SobolevZero ℝ 1 2 Ω volume` of
+  `Numlib/Analysis/Sobolev/Space.lean`, the book's Definition 7.2.9 as
+  `AtkinsonHan.Chapter07.definition_7_2_9` — and the abstract halves are covered elsewhere in
+  this surface: Lax–Milgram is `AtkinsonHan.Chapter08.Section03` and Céa's inequality
+  `AtkinsonHan.Chapter09.Section01`. What is missing is the Dirichlet form `∫ ∇u · ∇v` as a
+  bounded coercive bilinear form on that space, whose ambient `PiLp` of `Lp` spaces of
+  multilinear maps carries no inner product (the multi-index reading `SobolevMultiIndex` of
+  `Numlib/Analysis/Sobolev/MultiIndex.lean` is a Hilbert space, but its zero-boundary subspace
+  `SobolevMultiIndexZero` is only planned), with the Poincaré inequality on the disk, and the
+  Green's function, which needs the boundary.
 '''

@@ -47,7 +47,8 @@ recurrence, the orthonormal family obtained by scaling it, and the truncated exp
   `OrthogonalPolynomial.isBestApprox_truncation_of_degree_eq` the same for a family that is already
   orthonormal.
 * `OrthogonalPolynomial.IsWeight.denseRange_toLpₗ`: for a weight carried by a compact interval the
-  polynomials are dense in `L²(μ)`, by Weierstrass; hence
+  polynomials are dense in `L²(μ)`, by Weierstrass — in particular for Lebesgue measure on a
+  bounded interval, `OrthogonalPolynomial.isWeight_volume_restrict_Ioo`; hence
   `OrthogonalPolynomial.hilbertBasis`, the orthonormal polynomials as a Hilbert basis of `L²(μ)`,
   and `OrthogonalPolynomial.hilbertBasisOfDegreeEq` for any orthonormal family with one polynomial
   of each degree.
@@ -216,6 +217,21 @@ theorem integral_eval_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0)
   simpa [Filter.EventuallyEq, ae_iff] using hae
 
 end IsWeight
+
+/-- Lebesgue measure on a bounded open interval is a weight: every polynomial is integrable on a
+bounded interval, and a finite set has Lebesgue measure zero. This is the weight of `L²(a, b)`,
+for which the polynomials are dense by `IsWeight.denseRange_toLpₗ`. -/
+theorem isWeight_volume_restrict_Ioo {a b : ℝ} (hab : a < b) :
+    IsWeight (volume.restrict (Set.Ioo a b)) := by
+  constructor
+  · intro n
+    exact ((continuous_pow n).continuousOn.integrableOn_Icc (a := a) (b := b)).mono_set
+      Set.Ioo_subset_Icc_self
+  · intro s hs hzero
+    rw [Measure.restrict_apply hs.measurableSet.compl] at hzero
+    rw [show sᶜ ∩ Set.Ioo a b = Set.Ioo a b \ s by ext x; simp [and_comm],
+      measure_sdiff_null (hs.measure_zero volume), Real.volume_Ioo] at hzero
+    exact (ENNReal.ofReal_pos.2 (sub_pos.2 hab)).ne' hzero
 
 /-! ### The family -/
 
@@ -1520,16 +1536,8 @@ theorem integral_legendreMeasure (f : ℝ → ℝ) :
     ← MeasureTheory.integral_Ioc_eq_integral_Ioo]
 
 /-- The Legendre weight has finite moments and infinite support. -/
-theorem isWeight_legendreMeasure : IsWeight legendreMeasure := by
-  constructor
-  · intro n
-    exact (((continuous_pow n).continuousOn.integrableOn_Icc
-      (a := (-1 : ℝ)) (b := 1)).mono_set Set.Ioo_subset_Icc_self)
-  · intro s hs hzero
-    rw [legendreMeasure, Measure.restrict_apply hs.measurableSet.compl] at hzero
-    rw [show sᶜ ∩ Set.Ioo (-1 : ℝ) 1 = Set.Ioo (-1 : ℝ) 1 \ s by ext x; simp [and_comm],
-      measure_sdiff_null (hs.measure_zero volume), Real.volume_Ioo] at hzero
-    norm_num at hzero
+theorem isWeight_legendreMeasure : IsWeight legendreMeasure :=
+  isWeight_volume_restrict_Ioo (by norm_num)
 
 /-- The Legendre polynomials are orthogonal to every polynomial of lower degree. -/
 theorem integral_legendre_mul_of_degree_lt {n : ℕ} {p : ℝ[X]} (hp : p.degree < n) :

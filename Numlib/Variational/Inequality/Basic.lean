@@ -46,9 +46,10 @@ representation.
 notation on a hypothesis of either type can resolve in the wrong namespace; write the lemma names
 out in full.
 
-Strong monotonicity is bundled here as `IsStronglyMonotoneWith`, whose unfolding is exactly the
-hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no translation
-lemma.
+Strong monotonicity is the bundle `IsStronglyMonotoneWith` of `Numlib/Nonlinear/FixedPoint.lean`,
+the hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no
+translation lemma; `LinearMap.IsCoerciveWith.isStronglyMonotoneWith` below is the bridge from the
+linear theory.
 
 The material is Chapter 11 of [han2009theoretical]: (11.3.3), (11.3.8), (11.3.9) and
 (11.3.12)–(11.3.14) for the problem, Theorem 11.2.2 for the equivalence with minimization, Theorem
@@ -58,61 +59,9 @@ specializations, Lemma 11.3.8 for Minty's lemma, and Exercises 11.3.3 and 11.3.1
 
 open Filter Set Topology
 
-/-- **Strong monotonicity.**  `IsStronglyMonotoneWith 𝕜 A c` is `c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫`
-for all `x, y`: the nonlinear counterpart of coercivity of an operator, and the hypothesis of
-Zarantonello's theorem and of the existence theory for variational inequalities.  For a linear `A`
-it is `LinearMap.IsCoerciveWith`.
-
-The scalar field is an explicit argument, as in `inner 𝕜 x y`, because it is not determined by `A :
-E → E`. -/
-def IsStronglyMonotoneWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] (A : E → E) (c : ℝ) : Prop :=
-  ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
-
-/-- **Strong monotonicity on a set.**  `IsStronglyMonotoneOnWith 𝕜 A s c` asks for
-`c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫` at points of `s` only.
-
-The existence theory for a variational inequality over `K` never evaluates `A` outside `K`, so this
-is the hypothesis it really consumes ([han2009theoretical], Remark 11.3.2), and it is what the
-locally Lipschitz form of that theory needs, where the global condition is unavailable. -/
-def IsStronglyMonotoneOnWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] (A : E → E) (s : Set E) (c : ℝ) : Prop :=
-  ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
-
 section StronglyMonotone
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
-/-- Strong monotonicity only weakens as its constant shrinks. -/
-theorem IsStronglyMonotoneWith.mono {A : E → E} {c c' : ℝ} (h : IsStronglyMonotoneWith 𝕜 A c)
-    (hc : c' ≤ c) : IsStronglyMonotoneWith 𝕜 A c' := fun x y =>
-  (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x y)
-
-/-- A strongly monotone operator is strongly monotone on every set. -/
-theorem IsStronglyMonotoneWith.isStronglyMonotoneOnWith {A : E → E} {c : ℝ}
-    (h : IsStronglyMonotoneWith 𝕜 A c) (s : Set E) : IsStronglyMonotoneOnWith 𝕜 A s c :=
-  fun x _ y _ => h x y
-
-/-- Strong monotonicity on a set only weakens as its constant shrinks. -/
-theorem IsStronglyMonotoneOnWith.mono {A : E → E} {s : Set E} {c c' : ℝ}
-    (h : IsStronglyMonotoneOnWith 𝕜 A s c) (hc : c' ≤ c) : IsStronglyMonotoneOnWith 𝕜 A s c' :=
-  fun x hx y hy => (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x hx y hy)
-
-/-- Real spaces: strong monotonicity on a set, without `re`. -/
-theorem isStronglyMonotoneOnWith_real_iff {F : Type*} [NormedAddCommGroup F]
-    [InnerProductSpace ℝ F] (A : F → F) (s : Set F) (c : ℝ) :
-    IsStronglyMonotoneOnWith ℝ A s c ↔
-      ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ inner ℝ (A x - A y) (x - y) := Iff.rfl
-
-/-- Real spaces: strong monotonicity without `re`. -/
-theorem isStronglyMonotoneWith_real_iff {F : Type*} [NormedAddCommGroup F]
-    [InnerProductSpace ℝ F] (A : F → F) (c : ℝ) :
-    IsStronglyMonotoneWith ℝ A c ↔ ∀ x y, c * ‖x - y‖ ^ 2 ≤ inner ℝ (A x - A y) (x - y) :=
-  Iff.rfl
-
-/-- The identity is strongly monotone with constant `1`. -/
-theorem isStronglyMonotoneWith_id : IsStronglyMonotoneWith 𝕜 (fun x : E => x) 1 := fun x y => by
-  rw [one_mul, inner_self_eq_norm_sq]
 
 /-- A coercive operator is strongly monotone with the same constant. -/
 theorem LinearMap.IsCoerciveWith.isStronglyMonotoneWith {A : E →ₗ[𝕜] E} {c : ℝ}

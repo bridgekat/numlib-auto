@@ -413,11 +413,11 @@ section WeakLsc
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
 /-- **Example 3.3.5.** The norm is weakly sequentially lower semicontinuous:
-`vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. The book proves the same statement again as
-Exercise 2.7.2; both specialize the backbone's `norm_le_liminf_norm_of_weak_tendsto`. -/
+`vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. The book proved the same statement already as
+Exercise 2.7.2, `Chapter02.exercise_2_7_2`, which this restates. -/
 theorem example_3_3_5 (v : ℕ → V) (u : V) (hweak : Chapter02.WeakSeqTendsto 𝕜 v u) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
-  norm_le_liminf_norm_of_weak_tendsto (Chapter02.tendsto_toWeakSpace_iff_weakSeqTendsto.2 hweak)
+  Chapter02.exercise_2_7_2 hweak
 
 end WeakLsc
 

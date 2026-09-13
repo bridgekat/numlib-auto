@@ -13,6 +13,10 @@ posteriori and linear-rate bounds ([han2009theoretical] Thm 5.1.3, estimates (5.
 ([kress1998numerical] Thm 6.8; [han2009theoretical] give the scalar case in the remark following
 their Thm 5.2.1), and Zarantonello's theorem for strongly monotone Lipschitz maps on Hilbert spaces
 ([han2009theoretical] Thm 5.1.4, the nonlinear Lax–Milgram).
+
+Strong monotonicity is the bundle `IsStronglyMonotoneWith 𝕜 A c`, together with its restriction
+`IsStronglyMonotoneOnWith 𝕜 A s c` to a set; the Zarantonello theorems take it, and so does the
+existence theory for variational inequalities in `Numlib/Variational/Inequality/Basic.lean`.
 -/
 
 open Filter Topology
@@ -171,6 +175,65 @@ theorem lipschitzOnWith_of_hasFDerivWithinAt {T : E → E} {T' : E → E →L[�
 
 end Derivative
 
+section StronglyMonotone
+
+/-- **Strong monotonicity.**  `IsStronglyMonotoneWith 𝕜 A c` is `c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫`
+for all `x, y`: the nonlinear counterpart of coercivity of an operator, and the hypothesis of
+Zarantonello's theorem and of the existence theory for variational inequalities.  For a linear `A`
+it is `LinearMap.IsCoerciveWith` (`LinearMap.IsCoerciveWith.isStronglyMonotoneWith`, in
+`Numlib/Variational/Inequality/Basic.lean`).
+
+The scalar field is an explicit argument, as in `inner 𝕜 x y`, because it is not determined by `A :
+E → E`. -/
+def IsStronglyMonotoneWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] (A : E → E) (c : ℝ) : Prop :=
+  ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
+
+/-- **Strong monotonicity on a set.**  `IsStronglyMonotoneOnWith 𝕜 A s c` asks for
+`c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫` at points of `s` only.
+
+The existence theory for a variational inequality over `K` never evaluates `A` outside `K`, so this
+is the hypothesis it really consumes ([han2009theoretical], Remark 11.3.2), and it is what the
+locally Lipschitz form of that theory needs, where the global condition is unavailable. -/
+def IsStronglyMonotoneOnWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] (A : E → E) (s : Set E) (c : ℝ) : Prop :=
+  ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+
+/-- Strong monotonicity only weakens as its constant shrinks. -/
+theorem IsStronglyMonotoneWith.mono {A : E → E} {c c' : ℝ} (h : IsStronglyMonotoneWith 𝕜 A c)
+    (hc : c' ≤ c) : IsStronglyMonotoneWith 𝕜 A c' := fun x y =>
+  (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x y)
+
+/-- A strongly monotone operator is strongly monotone on every set. -/
+theorem IsStronglyMonotoneWith.isStronglyMonotoneOnWith {A : E → E} {c : ℝ}
+    (h : IsStronglyMonotoneWith 𝕜 A c) (s : Set E) : IsStronglyMonotoneOnWith 𝕜 A s c :=
+  fun x _ y _ => h x y
+
+/-- Strong monotonicity on a set only weakens as its constant shrinks. -/
+theorem IsStronglyMonotoneOnWith.mono {A : E → E} {s : Set E} {c c' : ℝ}
+    (h : IsStronglyMonotoneOnWith 𝕜 A s c) (hc : c' ≤ c) : IsStronglyMonotoneOnWith 𝕜 A s c' :=
+  fun x hx y hy => (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x hx y hy)
+
+/-- Real spaces: strong monotonicity on a set, without `re`. -/
+theorem isStronglyMonotoneOnWith_real_iff {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace ℝ F] (A : F → F) (s : Set F) (c : ℝ) :
+    IsStronglyMonotoneOnWith ℝ A s c ↔
+      ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ inner ℝ (A x - A y) (x - y) := Iff.rfl
+
+/-- Real spaces: strong monotonicity without `re`. -/
+theorem isStronglyMonotoneWith_real_iff {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace ℝ F] (A : F → F) (c : ℝ) :
+    IsStronglyMonotoneWith ℝ A c ↔ ∀ x y, c * ‖x - y‖ ^ 2 ≤ inner ℝ (A x - A y) (x - y) :=
+  Iff.rfl
+
+/-- The identity is strongly monotone with constant `1`. -/
+theorem isStronglyMonotoneWith_id : IsStronglyMonotoneWith 𝕜 (fun x : E => x) 1 := fun x y => by
+  rw [one_mul, inner_self_eq_norm_sq]
+
+end StronglyMonotone
+
 section Zarantonello
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [CompleteSpace E]
@@ -205,7 +268,7 @@ This is the estimate `contractingWith_damped` makes globally, and it is what a f
 confined to a closed convex set needs: the iterates never leave the set, so the hypotheses on `T`
 are only ever used there.  See `existsUnique_isVariationalInequalitySolution_on`. -/
 theorem norm_sub_damped_le {T : E → E} {s : Set E} {c L θ : ℝ} (hθ : 0 ≤ θ)
-    (hmono : ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
+    (hmono : IsStronglyMonotoneOnWith 𝕜 T s c)
     (hlip : ∀ x ∈ s, ∀ y ∈ s, ‖T x - T y‖ ≤ L * ‖x - y‖) (b : E) {x y : E} (hx : x ∈ s)
     (hy : y ∈ s) :
     ‖x - (θ : 𝕜) • (T x - b) - (y - (θ : 𝕜) • (T y - b))‖
@@ -232,8 +295,8 @@ set_option linter.unusedSectionVars false in
 monotonicity into an application of the Banach fixed-point theorem: it is the proof of
 [han2009theoretical], Thm 5.1.4, and also their first proof of the Lax–Milgram lemma. -/
 theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < L)
-    (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
-    (hlip : LipschitzWith (Real.toNNReal L) T) (b : E) {θ : ℝ} (hθ : 0 < θ)
+    (hmono : IsStronglyMonotoneWith 𝕜 T c) (hlip : LipschitzWith (Real.toNNReal L) T) (b : E)
+    {θ : ℝ} (hθ : 0 < θ)
     (hθ' : θ < 2 * c / L ^ 2) :
     ContractingWith (Real.toNNReal (Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2)))
       (fun x => x - (θ : 𝕜) • (T x - b)) := by
@@ -248,14 +311,13 @@ theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < 
       have h := hlip.dist_le_mul u v
       rwa [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hL.le] at h
     rw [Real.coe_toNNReal _ (Real.sqrt_nonneg _), dist_eq_norm, dist_eq_norm]
-    exact norm_sub_damped_le (𝕜 := 𝕜) hθ.le (fun u _ v _ => hmono u v) hw b (Set.mem_univ x)
-      (Set.mem_univ y)
+    exact norm_sub_damped_le (𝕜 := 𝕜) hθ.le (hmono.isStronglyMonotoneOnWith _) hw b
+      (Set.mem_univ x) (Set.mem_univ y)
 
 /-- Zarantonello's theorem ([han2009theoretical], Thm 5.1.4): a strongly monotone Lipschitz map on a
 Hilbert space is bijective, with `‖x₁ - x₂‖ ≤ ‖T x₁ - T x₂‖ / c`.  It is the nonlinear counterpart
 of Lax–Milgram: strong monotonicity plays the role of coercivity. -/
-theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c)
-    (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
+theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c) (hmono : IsStronglyMonotoneWith 𝕜 T c)
     (hlip : LipschitzWith (Real.toNNReal L) T) (b : E) : ∃! x, T x = b := by
   -- replace `L` by `L' = max L 1 > 0` so that the damping parameter `θ = c / L'²` makes sense
   have hL' : (0 : ℝ) < max L 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
@@ -279,8 +341,8 @@ set_option linter.unusedSectionVars false in
 /-- Lipschitz dependence on the right-hand side: the inverse of a strongly monotone map is `1 /
 c`-Lipschitz ([han2009theoretical], (5.1.11)). -/
 theorem norm_sub_le_of_strongly_monotone {T : E → E} {c : ℝ} (hc : 0 < c)
-    (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y))) {x₁ x₂ b₁ b₂ : E}
-    (h₁ : T x₁ = b₁) (h₂ : T x₂ = b₂) : ‖x₁ - x₂‖ ≤ ‖b₁ - b₂‖ / c := by
+    (hmono : IsStronglyMonotoneWith 𝕜 T c) {x₁ x₂ b₁ b₂ : E} (h₁ : T x₁ = b₁) (h₂ : T x₂ = b₂) :
+    ‖x₁ - x₂‖ ≤ ‖b₁ - b₂‖ / c := by
   have hkey : c * ‖x₁ - x₂‖ ^ 2 ≤ ‖b₁ - b₂‖ * ‖x₁ - x₂‖ := by
     calc c * ‖x₁ - x₂‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x₁ - T x₂) (x₁ - x₂)) := hmono x₁ x₂
       _ ≤ ‖inner 𝕜 (b₁ - b₂) (x₁ - x₂)‖ := by rw [h₁, h₂]; exact RCLike.re_le_norm _

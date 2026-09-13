@@ -60,4 +60,7 @@ id = "MeasureTheory.enorm_integral_smul_le_of_bound"
 id = "MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply"
 
 [[node]]
+id = "MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply"
+
+[[node]]
 id = "MeasureTheory.LocallyIntegrableOn.convolutionExistsAt"

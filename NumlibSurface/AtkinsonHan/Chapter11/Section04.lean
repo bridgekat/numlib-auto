@@ -76,10 +76,6 @@ section
 
 variable {A : V → V} {c₀ M : ℝ} {j jh : V → ℝ} {f u uh : V} {K Kh : Set V}
 
-/-- The book's (11.3.1) in the shape the backbone takes it. -/
-private theorem isStronglyMonotoneWith_of (hmono : Chapter05.StronglyMonotoneWith A c₀) :
-    IsStronglyMonotoneWith ℝ A c₀ := Chapter05.stronglyMonotoneWith_iff.1 hmono
-
 /-- The constant `c` of the square-rooted error bounds (11.4.7) and (11.4.27). -/
 private noncomputable def falkConst (c₀ M : ℝ) : ℝ := max (M / c₀) (Real.sqrt (2 / c₀))
 
@@ -151,7 +147,7 @@ theorem theorem_11_4_1 {Kh : ℕ → Set V} {uh : ℕ → V} (hc₀ : 0 < c₀) 
     (hu : IsVariationalInequalitySolution A j f K u)
     (huh : ∀ n, IsVariationalInequalitySolution A j f (Kh n) (uh n)) :
     Tendsto uh atTop (𝓝 u) :=
-  tendsto_of_isVariationalInequalitySolution hc₀ (isStronglyMonotoneWith_of hmono)
+  tendsto_of_isVariationalInequalitySolution hc₀ hmono
     ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hKcv hjcv hjc happrox hweak hu huh
 
 /-! ### Theorem 11.4.2: Falk's generalized Céa lemma -/
@@ -179,7 +175,7 @@ theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.Stro
   have hfalk : ∀ (v : K) (vh : Kh), c₀ / 2 * ‖u - uh‖ ^ 2 ≤ residual A j j f u v uh
       + (residual A j j f u vh u + M ^ 2 / (2 * c₀) * ‖u - vh‖ ^ 2) := by
     intro v vh
-    have h := norm_sub_le_of_isVariationalInequalitySolution hc₀ (isStronglyMonotoneWith_of hmono)
+    have h := norm_sub_le_of_isVariationalInequalitySolution hc₀ hmono
       ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh v.2 vh.2
     simp only [residual]
     linarith
@@ -211,7 +207,7 @@ theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     Real.mul_iInf_of_nonneg (falkConst_nonneg hc₀ hM)]
   refine le_ciInf fun vh => norm_le_falkConst hc₀ hM (norm_nonneg _) (norm_nonneg _) ?_
   have h := norm_sub_le_of_isVariationalInequalitySolution_of_subset hc₀
-    (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
+    hmono ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
     (hsub huh.1) vh.2
   simp only [residual]
   linarith
@@ -251,12 +247,13 @@ theorem exercise_11_4_2 {Vh : ℕ → Submodule ℝ V} [∀ n, FiniteDimensional
     calc ‖‖u - w n‖‖ = ‖u - w n‖ := by rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
       _ ≤ ‖u - z‖ := (hw n).2 z hzn
       _ < ε := by rwa [dist_eq_norm] at hzd
-  exact tendsto_of_isVariationalInequalitySolution_of_subset hc₀ (isStronglyMonotoneWith_of hmono)
+  exact tendsto_of_isVariationalInequalitySolution_of_subset hc₀ hmono
     ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) (fun n => subset_univ _) hjc.continuousOn hu
     huh hwmem hwlim
 
 /-! ### Exercise 11.4.3: the regularized problem -/
 
+omit [CompleteSpace V] in
 /-- **Exercise 11.4.3**, the a priori bound (11.4.20) with `β = 1/2`.  If the regularization
 satisfies `|j_ε(v) - j(v)| ≤ c₁ ε` for every `v` — the book's (11.4.32) — then the solution `u_ε`
 of the regularized inequality of the second kind is within `√(2 c₁ ε / c₀)` of the solution `u` of
@@ -270,7 +267,7 @@ theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0
     (hu : IsVariationalInequalitySolution A j f univ u)
     (hueps : IsVariationalInequalitySolution A jeps f univ ueps)
     (hreg : ∀ v : V, |jeps v - j v| ≤ c₁ * ε) : ‖u - ueps‖ ≤ Real.sqrt (2 * c₁ * ε / c₀) :=
-  norm_sub_le_of_regularization hc₀ (isStronglyMonotoneWith_of hmono) hu hueps hreg
+  norm_sub_le_of_regularization hc₀ hmono hu hueps hreg
 
 /-! ### Theorem 11.4.6: the method of numerical integration -/
 
@@ -307,7 +304,7 @@ theorem theorem_11_4_6 {jh : ℕ → V → ℝ} {uh : ℕ → V} {U : Set V} {Vh
     (hu : IsVariationalInequalitySolution A j f univ u)
     (huh : ∀ n, IsVariationalInequalitySolution A (jh n) f (Vh n : Set V) (uh n)) :
     Tendsto uh atTop (𝓝 u) :=
-  tendsto_of_isVariationalInequalitySolution_of_mosco hc₀ (isStronglyMonotoneWith_of hmono)
+  tendsto_of_isVariationalInequalitySolution_of_mosco hc₀ hmono
     ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) convex_univ isClosed_univ hjcv
     (ConvexOn.continuous_of_lowerSemicontinuous hjcv hjlsc) (fun _ => subset_univ _) hproper
     hliminf (fun v _ => hU v)
@@ -337,7 +334,7 @@ theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     Real.mul_iInf_of_nonneg (falkConst_nonneg hc₀ hM)]
   refine le_ciInf fun vh => norm_le_falkConst hc₀ hM (norm_nonneg _) (norm_nonneg _) ?_
   have h := norm_sub_le_of_isVariationalInequalitySolution_of_le hc₀
-    (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
+    hmono ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
     (mem_univ uh) (hjle uh huh.1) vh.2
   simp only [residual]
   linarith

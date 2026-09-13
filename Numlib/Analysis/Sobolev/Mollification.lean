@@ -35,8 +35,6 @@ Sobolev Spaces and Partial Differential Equations*, Springer, 2011, §4.4 and §
 * `TestFunction.compConstSub`: the reflected translate of a bump, bundled as a test function on
   `Ω`. This is what turns a convolution into an instance of the defining identity of the weak
   derivative.
-* `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`: differentiating a
-  convolution moves the derivative onto the smooth factor, at every order.
 * `HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv`: the identity
   `(∂^y φ) ⋆ f = φ ⋆ (∂^y f)`, an integration by parts under the integral sign and nothing more.
 * `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` and
@@ -268,46 +266,6 @@ theorem compConstSub_coe (Ω : Opens E) {φ : E → ℝ} (hφ : ContDiff ℝ ∞
   rfl
 
 end TestFunction
-
-/-! ### Derivatives of a convolution
-
-The first-order statement `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` and the
-existence criterion `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt` are in
-`Numlib/Analysis/Convolution/Lp.lean`; the iterated form stays here because its induction runs on
-`ContDiff.iteratedFDeriv_succ_apply_left'` of `Numlib/Analysis/Sobolev/WeakDeriv.lean`, which that
-file does not import. -/
-
-section Convolution
-
-variable {E₁ E₂ : Type*} [NormedAddCommGroup E₁] [NormedSpace ℝ E₁]
-  [NormedAddCommGroup E₂] [NormedSpace ℝ E₂] [MeasurableSpace E] [FiniteDimensional ℝ E]
-  [BorelSpace E] [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure]
-  {L : E₁ →L[ℝ] E₂ →L[ℝ] F} {g : E → E₂}
-
-omit [CompleteSpace F] in
-/-- Differentiating a convolution `n` times along a tuple of directions moves all `n` derivatives
-onto the smooth, compactly supported factor. -/
-theorem MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply
-    (hg : LocallyIntegrable g μ) :
-    ∀ (n : ℕ) {φ : E → E₁}, HasCompactSupport φ → ContDiff ℝ ∞ φ → ∀ (x : E) (y : Fin n → E),
-      _root_.iteratedFDeriv ℝ n (φ ⋆[L, μ] g) x y
-        = ((fun z ↦ _root_.iteratedFDeriv ℝ n φ z y) ⋆[L, μ] g) x := by
-  intro n
-  induction n with
-  | zero => intro φ _ _ x y; simp [iteratedFDeriv_zero_apply]
-  | succ n ih =>
-    intro φ hcφ hφ x y
-    have hconv : ContDiff ℝ ∞ (φ ⋆[L, μ] g) := hcφ.contDiff_convolution_left L hφ hg
-    set ψ : E → E₁ := fun t ↦ fderiv ℝ φ t (y 0) with hψ
-    have hψc : ContDiff ℝ ∞ ψ := (hφ.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
-    have hψs : HasCompactSupport ψ := hcφ.fderiv_apply ℝ (y 0)
-    have hfun : (fun z ↦ fderiv ℝ (φ ⋆[L, μ] g) z (y 0)) = ψ ⋆[L, μ] g :=
-      funext fun z ↦ hg.fderiv_convolution_left_apply hcφ hφ z (y 0)
-    rw [hconv.iteratedFDeriv_succ_apply_left' n y x, hfun, ih hψs hψc x (Fin.tail y)]
-    exact congrArg (fun h ↦ (h ⋆[L, μ] g) x)
-      (funext fun z ↦ (hφ.iteratedFDeriv_succ_apply_left' n y z).symm)
-
-end Convolution
 
 /-! ### The weak derivative commutes with mollification -/
 

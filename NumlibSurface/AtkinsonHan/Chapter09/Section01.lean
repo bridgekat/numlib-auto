@@ -53,13 +53,10 @@ variable {a : BilinForm V} {M α c₀ : ℝ} {ℓ : StrongDual ℝ V} {VN : Subm
 theorem galerkinProblem_iff (hM : a.IsBoundedWith M) :
     GalerkinProblem a ℓ VN uN ↔ IsGalerkinSolution (a.toCLM hM) ℓ VN uN := Iff.rfl
 
-/-! ### Well-posedness -/
+/-! ### Well-posedness
 
-/-- (9.1.1): under (9.1.2) and (9.1.3) the continuous problem has a unique solution; this is
-Lax–Milgram. -/
-theorem existsUnique_solution [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
-    (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v :=
-  Chapter08.theorem_8_3_4 hM hc₀ ha ℓ
+That (9.1.1) itself is uniquely solvable under (9.1.2) and (9.1.3) is Lax–Milgram,
+`Chapter08.theorem_8_3_4`, and is not restated here. -/
 
 /-- (9.1.4) is uniquely solvable on any finite-dimensional subspace `V_N`: the form restricted to
 `V_N` is still bounded and `V_N`-elliptic with the same constants, so Lax–Milgram applies there.
