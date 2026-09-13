@@ -19,10 +19,6 @@ id = "equation_1_2"
 id = "trace_eq_sum_eigenvalues"
 
 [[node]]
-id = "lpOpNorm_one"
-deprecated = '''Replaced by the backbone's `Matrix.lpOpNorm_one_eq_sup_sum_norm` (Numlib/Analysis/Matrix/OperatorNorm); the Saad surface delegates to it.'''
-
-[[node]]
 id = "equation_1_14"
 
 [[node]]
@@ -33,9 +29,6 @@ id = "spectralRadius_eq_l2_opNNNorm_of_isHermitian"
 
 [[node]]
 id = "equation_1_16"
-
-[[node]]
-id = "spectralRadius_le_lpOpNorm"
 
 [[node]]
 id = "example_1_1"

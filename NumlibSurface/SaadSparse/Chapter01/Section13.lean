@@ -10,17 +10,19 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` of §1.13.2, the first-order perturbation theory (1.74)–(1.75), the relative
 perturbation bound (1.76), the residual–error relation, and Example 1.5.
 
-The matrix `p`-norm `‖A‖_p` itself is not defined here: it is (1.7) of §1.5, so `Matrix.lpCLM` and
-`Matrix.lpOpNorm` live in `Chapter01/Basics.lean` with the rest of §1.5, and this file builds the
-condition number on them.
+The matrix `p`-norm `‖A‖_p` of (1.7) and the condition number `κ_p(A)` are the backbone's
+`Matrix.lpOpNorm` and `Matrix.condNumberLp` of `Numlib/Analysis/Matrix/OperatorNorm`, together
+with the scaling invariance `Matrix.condNumberLp_smul`, the bound `Matrix.one_le_condNumberLp` and
+`Matrix.condNumberLp_smul_one` (`κ_p(α I) = 1`) of §1.13.2; this file states the book's
+perturbation bounds on them.
 
 The condition number is the backbone's `NormedRing.condNumber` of the operator
-`x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, and the perturbation bounds are
-`relative_error_le_condNumber`, `relative_error_le_condNumber_mul_relative_residual` and
-`hasDerivAt_perturbed_solution` of `Numlib/LinearSolve/Perturbation.lean`.  The bridge that
-carries the last of these to matrices is `Matrix.ringInverse_lpCLM`: the matrix inverse and the
-ring inverse of the induced operator agree, junk values and all, because `Matrix.lpCLM` reflects
-invertibility (`Matrix.isUnit_lpCLM_iff`).
+`x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)` (`Matrix.condNumberLp_eq_condNumber`), and the
+perturbation bounds are `relative_error_le_condNumber`,
+`relative_error_le_condNumber_mul_relative_residual` and `hasDerivAt_perturbed_solution` of
+`Numlib/LinearSolve/Perturbation.lean`.  The bridge that carries the last of these to matrices is
+`Matrix.ringInverse_lpCLM`: the matrix inverse and the ring inverse of the induced operator agree,
+junk values and all, because `Matrix.lpCLM` reflects invertibility (`Matrix.isUnit_lpCLM_iff`).
 
 Example 1.5 is stated with Saad's `‖·‖_∞`, the maximum absolute row sum, which is Mathlib's
 scoped `Matrix.Norms.Operator` instance rather than `Matrix.lpOpNorm ⊤`: `PiLp ⊤` carries no
@@ -84,111 +86,8 @@ section Lp
 
 variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- Saad §1.13.2: the condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p`. -/
-noncomputable def condNumberLp (A : Matrix (Fin n) (Fin n) 𝕜) : ℝ :=
-  lpOpNorm p A * lpOpNorm p A⁻¹
-
-/-- `A` invertible as a matrix, as a continuous linear equivalence of `PiLp p`. -/
-noncomputable def lpEquiv {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
-    PiLp p (fun _ : Fin n => 𝕜) ≃L[𝕜] PiLp p (fun _ : Fin n => 𝕜) :=
-  LinearEquiv.toContinuousLinearEquiv
-    (LinearEquiv.ofLinearMap (toLpLin p p A) (toLpLin p p A⁻¹)
-      (by rw [← toLpLin_mul_same, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA),
-        toLpLin_one])
-      (by rw [← toLpLin_mul_same, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA),
-        toLpLin_one]))
-
-@[simp]
-theorem lpEquiv_apply {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A)
-    (x : PiLp p (fun _ : Fin n => 𝕜)) : lpEquiv p hA x = WithLp.toLp p (A *ᵥ WithLp.ofLp x) := rfl
-
-@[simp]
-theorem lpEquiv_symm_apply {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A)
-    (x : PiLp p (fun _ : Fin n => 𝕜)) :
-    (lpEquiv p hA).symm x = WithLp.toLp p (A⁻¹ *ᵥ WithLp.ofLp x) := rfl
-
-theorem coe_lpEquiv {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
-    ((lpEquiv p hA : PiLp p (fun _ : Fin n => 𝕜) →L[𝕜] PiLp p (fun _ : Fin n => 𝕜)))
-      = lpCLM p A := by
-  ext x i; simp
-
-theorem coe_lpEquiv_symm {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
-    (((lpEquiv p hA).symm : PiLp p (fun _ : Fin n => 𝕜) →L[𝕜] PiLp p (fun _ : Fin n => 𝕜)))
-      = lpCLM p A⁻¹ := by
-  ext x i; simp
-
-/-- The operator `x ↦ A x` on `PiLp p` is invertible exactly when `A` is: a nonzero vector in the
-kernel of a singular `A` is one in the kernel of the operator, and an invertible `A` gives
-`lpEquiv`. -/
-theorem isUnit_lpCLM_iff (M : Matrix (Fin n) (Fin n) 𝕜) : IsUnit (lpCLM p M) ↔ IsUnit M := by
-  refine ⟨fun hu => ?_, fun hM => ?_⟩
-  · by_contra hM
-    have hdet : M.det = 0 := by
-      by_contra h
-      exact hM ((isUnit_iff_isUnit_det M).2 (isUnit_iff_ne_zero.2 h))
-    obtain ⟨v, hv0, hv⟩ := Matrix.exists_mulVec_eq_zero_iff.2 hdet
-    have hinj := (ContinuousLinearMap.isHomeomorph_of_isUnit hu).bijective.injective
-    have h0 : lpCLM p M (WithLp.toLp p v) = lpCLM p M 0 := by simp [hv]
-    exact hv0 (by simpa using congrArg WithLp.ofLp (hinj h0))
-  · rw [← coe_lpEquiv p hM]
-    exact ⟨(lpEquiv p hM).toUnit, rfl⟩
-
-/-- The matrix inverse and the ring inverse of the induced operator agree, junk values included:
-both vanish exactly when the matrix is singular. -/
-theorem ringInverse_lpCLM (M : Matrix (Fin n) (Fin n) 𝕜) :
-    Ring.inverse (lpCLM p M) = lpCLM p M⁻¹ := by
-  by_cases hM : IsUnit M
-  · have hdet : IsUnit M.det := (isUnit_iff_isUnit_det M).1 hM
-    exact Ring.inverse_unit ⟨lpCLM p M, lpCLM p M⁻¹,
-      by rw [← lpCLM_mul, mul_nonsing_inv _ hdet, lpCLM_one],
-      by rw [← lpCLM_mul, nonsing_inv_mul _ hdet, lpCLM_one]⟩
-  · rw [Ring.inverse_non_unit _ ((isUnit_lpCLM_iff p M).not.2 hM),
-      nonsing_inv_apply_not_isUnit _ fun h => hM ((isUnit_iff_isUnit_det _).2 h), lpCLM_zero]
-
-/-- The condition number `κ_p(A)` is the backbone's `NormedRing.condNumber` of the operator
-`x ↦ A x` on `PiLp p`. -/
-theorem condNumberLp_eq_condNumber {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
-    condNumberLp p A = κ (lpCLM p A) := by
-  rw [condNumberLp, lpOpNorm, lpOpNorm, ← coe_lpEquiv p hA, ← coe_lpEquiv_symm p hA,
-    ContinuousLinearEquiv.condNumber_eq]
-
-/-! ### Properties of the condition number (§1.13.2) -/
-
-/-- Saad §1.13.2: `κ_p` is invariant under scaling. -/
-theorem condNumberLp_smul {c : 𝕜} (hc : c ≠ 0) (A : Matrix (Fin n) (Fin n) 𝕜) :
-    condNumberLp p (c • A) = condNumberLp p A := by
-  by_cases hA : IsUnit A
-  · have hcA : IsUnit (c • A) := by
-      rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero]
-      exact mul_ne_zero (pow_ne_zero _ hc)
-        (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det A).mp hA))
-    rw [condNumberLp_eq_condNumber p hcA, condNumberLp_eq_condNumber p hA, lpCLM_smul,
-      NormedRing.condNumber_smul hc]
-  · have hcA : ¬ IsUnit (c • A) := by
-      intro h
-      refine hA ?_
-      have hAeq : A = c⁻¹ • (c • A) := by rw [smul_smul, inv_mul_cancel₀ hc, one_smul]
-      rw [hAeq, isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero]
-      exact mul_ne_zero (pow_ne_zero _ (inv_ne_zero hc))
-        (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det _).mp h))
-    rw [condNumberLp, condNumberLp, nonsing_inv_apply_not_isUnit _
-        (fun h => hcA ((isUnit_iff_isUnit_det _).mpr h)),
-      nonsing_inv_apply_not_isUnit _ (fun h => hA ((isUnit_iff_isUnit_det _).mpr h)),
-      lpOpNorm_zero, mul_zero, mul_zero]
-
-/-- Saad §1.13.2: `κ_p(A) ≥ 1` for a nonsingular `A`. -/
-theorem one_le_condNumberLp [NeZero n] {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
-    1 ≤ condNumberLp p A := by
-  rw [condNumberLp_eq_condNumber p hA]
-  exact NormedRing.one_le_condNumber ((coe_lpEquiv p hA) ▸ (lpEquiv p hA).toUnit.isUnit)
-
-/-- Saad §1.13.2: `κ_p(α I) = 1` although `det (α I) = αⁿ`. -/
-theorem condNumberLp_smul_one [NeZero n] {c : 𝕜} (hc : c ≠ 0) :
-    condNumberLp p (c • (1 : Matrix (Fin n) (Fin n) 𝕜)) = 1 := by
-  rw [condNumberLp_smul p hc, condNumberLp, lpOpNorm, lpOpNorm, inv_one, lpCLM_one, norm_one,
-    mul_one]
-
-/-- Saad §1.13.2: `det (α I) = αⁿ`, so the determinant is no indication of conditioning. -/
+/-- Saad §1.13.2: `det (α I) = αⁿ` while `κ_p(α I) = 1` (`Matrix.condNumberLp_smul_one`), so the
+determinant is no indication of conditioning. -/
 theorem det_smul_one (c : 𝕜) : (c • (1 : Matrix (Fin n) (Fin n) 𝕜)).det = c ^ n := by
   rw [det_smul, det_one, mul_one, Fintype.card_fin]
 
@@ -213,7 +112,7 @@ theorem relative_error_le_of_perturbed (hA : IsUnit A) (ΔA : Matrix (Fin n) (Fi
     (x := x) (y := y) (by rw [← hx]; rfl) (by rw [← hy, lpCLM_add]; rfl)
     (by rw [hsym]; exact hsmall) hx0 hb
   rw [hsym, coe_lpEquiv p hA] at h
-  rw [condNumberLp_eq_condNumber p hA]
+  rw [condNumberLp_eq_condNumber p A]
   exact h
 
 /-- **Saad (1.74)–(1.75)**: the solution `x(ε) = (A + ε E)⁻¹ (b + ε e)` of a linearly perturbed
@@ -245,7 +144,7 @@ theorem relative_error_le_condNumberLp (hA : IsUnit A) {b x : Fin n → 𝕜} (h
     rw [lpEquiv_apply]; congr 1
   have h := relative_error_le_condNumber_mul_relative_residual (lpEquiv p hA) hAx hb
     (y := WithLp.toLp p y)
-  rw [condNumberLp_eq_condNumber p hA, ← coe_lpEquiv p hA]
+  rw [condNumberLp_eq_condNumber p A, ← coe_lpEquiv p hA]
   exact h
 
 end Lp

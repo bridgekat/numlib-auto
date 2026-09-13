@@ -1,4 +1,5 @@
 import Mathlib.Analysis.CStarAlgebra.Spectrum
+import Numlib.Analysis.Matrix.OperatorNorm
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -29,73 +30,16 @@ standard notion and is what Proposition 1.4 is about.  And the book prints (1.18
 The matrix norms of §1.5 use Mathlib's scoped instances, one per norm, opened declaration by
 declaration: `Matrix.Norms.Operator` for `‖·‖_∞`, `Matrix.Norms.L2Operator` for `‖·‖₂` and
 `Matrix.Norms.Frobenius` for `‖·‖_F`.  The remaining induced norms `‖·‖_p` of (1.7) are the
-surface's own `Matrix.lpCLM` and `Matrix.lpOpNorm`, defined here because §1.5 is where the book
-introduces them; §1.13.2 builds the condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` on top of them.
+backbone's `Matrix.lpOpNorm p` of `Numlib/Analysis/Matrix/OperatorNorm`, the operator norm of
+`Matrix.lpCLM p A : PiLp p _ →L[𝕜] PiLp p _`; the column-sum formula (1.13) for `‖·‖₁` is its
+`Matrix.lpOpNorm_one_eq_sup_sum_norm`, the remark of §1.5 that a consistent norm dominates the
+spectral radius is its `Matrix.complexSpectralRadius_le_lpOpNorm`, and §1.13.2 builds the
+condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` (`Matrix.condNumberLp`) on top of them.
 -/
 
 open Matrix Finset Polynomial
 
 open scoped SaadSparse ENNReal NNReal
-
-/-! ### §1.5 The induced matrix `p`-norms (1.7)
-
-Saad's `‖A‖_p = max_{x ≠ 0} ‖A x‖_p / ‖x‖_p` is the operator norm of `x ↦ A x` read on `PiLp p`.
-Mathlib carries the induced norm for `p = ∞` (`Matrix.Norms.Operator`) and `p = 2`
-(`Matrix.Norms.L2Operator`) only, so the general one is defined here, in the section that
-introduces it, and §1.13.2 uses it for the condition number. -/
-
-namespace Matrix
-
-section Lp
-
-variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)]
-
-/-- The operator `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, whose norm is the matrix `p`-norm
-`‖A‖_p` induced by the vector `p`-norm. -/
-noncomputable def lpCLM (A : Matrix (Fin n) (Fin n) 𝕜) :
-    PiLp p (fun _ : Fin n => 𝕜) →L[𝕜] PiLp p (fun _ : Fin n => 𝕜) :=
-  LinearMap.toContinuousLinearMap (toLpLin p p A)
-
-@[simp]
-theorem lpCLM_apply (A : Matrix (Fin n) (Fin n) 𝕜) (x : PiLp p (fun _ : Fin n => 𝕜)) :
-    lpCLM p A x = WithLp.toLp p (A *ᵥ WithLp.ofLp x) := rfl
-
-theorem lpCLM_one : lpCLM p (1 : Matrix (Fin n) (Fin n) 𝕜) = 1 := by
-  ext x i; simp
-
-theorem lpCLM_mul (A B : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (A * B) = lpCLM p A * lpCLM p B := by
-  ext x i; simp [← mulVec_mulVec]
-
-theorem lpCLM_add (A B : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (A + B) = lpCLM p A + lpCLM p B := by
-  ext x i; simp [add_mulVec]
-
-theorem lpCLM_smul (c : 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (c • A) = c • lpCLM p A := by
-  ext x i; simp [smul_mulVec]
-
-@[simp]
-theorem lpCLM_zero : lpCLM p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
-  ext x i; simp
-
-/-- **Saad (1.7)** at `q = p`: `‖A‖_p`, the matrix norm induced by the vector `p`-norm,
-`‖A‖_p = max_{x ≠ 0} ‖A x‖_p / ‖x‖_p`.  It is the operator norm of `Matrix.lpCLM p A`, and the
-condition number `κ_p(A)` of §1.13.2 is built from it. -/
-noncomputable def lpOpNorm (A : Matrix (Fin n) (Fin n) 𝕜) : ℝ := ‖lpCLM p A‖
-
-@[simp]
-theorem lpOpNorm_zero : lpOpNorm p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
-  rw [lpOpNorm, lpCLM_zero, norm_zero]
-
-open scoped Matrix.Norms.L2Operator in
-/-- For `p = 2` the induced norm is Mathlib's scoped `L2Operator` matrix norm. -/
-theorem lpOpNorm_two (A : Matrix (Fin n) (Fin n) 𝕜) : lpOpNorm 2 A = ‖A‖ :=
-  (l2_opNorm_def A).symm
-
-end Lp
-
-end Matrix
 
 namespace SaadSparse.Chapter01
 
@@ -200,55 +144,13 @@ section MatrixNorms
 
 open scoped Matrix.Norms.Operator
 
-/-- The `1`-norm operator norm `‖A‖₁ = max_j ∑_i |a_{ij}|` of **Saad (1.13)**: the largest
-absolute column sum.  Mathlib carries only the infinity-operator norm, so this is proved here
-from the definition of the operator norm on `PiLp 1`. -/
-theorem lpOpNorm_one (A : Matrix (Fin n) (Fin n) 𝕜) :
-    Matrix.lpOpNorm 1 A = ↑(univ.sup fun j => ∑ i, ‖A i j‖₊) := by
-  classical
-  refine le_antisymm ?_ ?_
-  · refine ContinuousLinearMap.opNorm_le_bound _
-      (univ.sup fun j => ∑ i, ‖A i j‖₊).coe_nonneg fun x => ?_
-    rw [Matrix.lpCLM_apply, PiLp.norm_eq_of_L1, PiLp.norm_eq_of_L1]
-    calc ∑ i, ‖(A *ᵥ WithLp.ofLp x) i‖
-        ≤ ∑ i, ∑ j, ‖A i j‖ * ‖WithLp.ofLp x j‖ := by
-          refine Finset.sum_le_sum fun i _ => ?_
-          rw [Matrix.mulVec_apply_eq_sum]
-          exact (norm_sum_le _ _).trans (Finset.sum_le_sum fun j _ => norm_mul_le _ _)
-      _ = ∑ j, (∑ i, ‖A i j‖) * ‖WithLp.ofLp x j‖ := by
-          rw [Finset.sum_comm]
-          exact Finset.sum_congr rfl fun j _ => (Finset.sum_mul _ _ _).symm
-      _ ≤ ∑ j, ((univ.sup fun j => ∑ i, ‖A i j‖₊ : ℝ≥0) : ℝ) * ‖WithLp.ofLp x j‖ := by
-          refine Finset.sum_le_sum fun j _ => ?_
-          gcongr
-          have h : (∑ i, ‖A i j‖₊) ≤ univ.sup fun j => ∑ i, ‖A i j‖₊ :=
-            Finset.le_sup (f := fun j => ∑ i, ‖A i j‖₊) (mem_univ j)
-          have h' := NNReal.coe_le_coe.mpr h
-          push_cast at h'
-          exact h'
-      _ = _ := by rw [Finset.mul_sum]
-  · have key : ∀ j : Fin n, ((∑ i, ‖A i j‖₊ : ℝ≥0) : ℝ) ≤ ‖Matrix.lpCLM 1 A‖ := by
-      intro j
-      have hx : ‖(WithLp.toLp 1 (Pi.single j (1 : 𝕜)) : PiLp 1 fun _ : Fin n => 𝕜)‖ = 1 := by
-        rw [PiLp.norm_eq_of_L1]
-        simp [Pi.single_apply, apply_ite (‖·‖ : 𝕜 → ℝ), Finset.sum_ite_eq']
-      have hle := (Matrix.lpCLM 1 A).le_opNorm
-        (WithLp.toLp 1 (Pi.single j (1 : 𝕜)) : PiLp 1 fun _ : Fin n => 𝕜)
-      rw [hx, mul_one, Matrix.lpCLM_apply, PiLp.norm_eq_of_L1] at hle
-      simp only [Matrix.mulVec_single_one, Matrix.col_apply] at hle
-      push_cast
-      exact hle
-    have hsup : (univ.sup fun j => ∑ i, ‖A i j‖₊) ≤ ‖Matrix.lpCLM 1 A‖₊ :=
-      Finset.sup_le fun j _ => by rw [← NNReal.coe_le_coe, coe_nnnorm]; exact key j
-    rw [Matrix.lpOpNorm, ← coe_nnnorm]
-    exact_mod_cast hsup
-
 /-- **Saad (1.13)–(1.14)**: `‖A‖_∞` is the largest absolute row sum and `‖A‖₁` the largest
-absolute column sum, so that `‖A‖₁ = ‖Aᵀ‖_∞`. -/
+absolute column sum, so that `‖A‖₁ = ‖Aᵀ‖_∞`.  The column-sum formula is the backbone's
+`Matrix.lpOpNorm_one_eq_sup_sum_norm`. -/
 theorem equation_1_14 (A : Matrix (Fin n) (Fin n) 𝕜) :
     ‖A‖ = ↑(univ.sup fun i => ∑ j, ‖A i j‖₊) ∧ Matrix.lpOpNorm 1 A = ‖Aᵀ‖ := by
   refine ⟨Matrix.linfty_opNorm_def A, ?_⟩
-  rw [lpOpNorm_one, Matrix.linfty_opNorm_def]
+  rw [Matrix.lpOpNorm_one_eq_sup_sum_norm, Matrix.linfty_opNorm_def]
   rfl
 
 end MatrixNorms
@@ -320,27 +222,6 @@ theorem equation_1_16 (A : Matrix (Fin n) (Fin n) 𝕜) :
       rw [Matrix.conjTranspose_apply, norm_star]
 
 end Frobenius
-
-/-- **Saad §1.5**: a consistent matrix norm dominates the spectral radius.  Stated for the
-induced `p`-norms `‖·‖_p` of §1.13, which are submultiplicative, absolutely homogeneous and
-positive definite — the three hypotheses of
-`Matrix.complexSpectralRadius_le_of_norm`, of which only positive definiteness is a real
-restriction. -/
-theorem spectralRadius_le_lpOpNorm (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin n) (Fin n) ℝ) :
-    A.complexSpectralRadius ≤ ENNReal.ofReal (Matrix.lpOpNorm p A) := by
-  classical
-  have hzero : ∀ B : Matrix (Fin n) (Fin n) ℝ, ‖Matrix.lpCLM p B‖₊ = 0 → B = 0 := by
-    intro B hB
-    have h : Matrix.lpCLM p B = 0 := by simpa using hB
-    ext i j
-    have h2 : (Matrix.lpCLM p B) (WithLp.toLp p (Pi.single j (1 : ℝ))) = 0 := by simp [h]
-    have h3 := congrArg (fun y : PiLp p (fun _ : Fin n => ℝ) =>
-      (WithLp.ofLp y : Fin n → ℝ) i) h2
-    simpa [Matrix.mulVec_single_one, Matrix.col_apply] using h3
-  have hle := Matrix.complexSpectralRadius_le_of_norm (fun B => ‖Matrix.lpCLM p B‖₊) A
-    (fun B C => by rw [Matrix.lpCLM_mul]; exact nnnorm_mul_le _ _)
-    (fun r B => by rw [Matrix.lpCLM_smul]; exact nnnorm_smul _ _) hzero
-  rwa [Matrix.lpOpNorm, ofReal_norm, enorm_eq_nnnorm]
 
 /-- **Saad Example 1.1**: the spectral radius is not a matrix norm.  It vanishes on the nonzero
 matrix `!![0, 1; 0, 0]`, and it is not subadditive, since that matrix and its transpose both have

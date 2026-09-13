@@ -1,41 +1,4 @@
 namespace = "Matrix"
-desc = '''
-The matrix norm induced by a vector norm, for an *arbitrary* vector norm and not only for
-Mathlib's three scoped instances (`Matrix.Norms.Operator` = `‖·‖_∞`, `Matrix.Norms.L2Operator`
-= `‖·‖₂`, `Matrix.Norms.Frobenius`). A vector norm on `n → 𝕜` is a definite `Seminorm 𝕜 (n → 𝕜)`
-(unbundled, exactly as `Numlib/Analysis/Normed/Module/NormEquivalence` and
-`Numlib/LinearAlgebra/Matrix/EpsilonNorm` already do, because a second `NormedAddCommGroup`
-instance on the same type is not an option); the induced norm is
-`inducedNorm q p A = ⨆ x with p x ≤ 1, q (A *ᵥ x)`, a function `Matrix m n 𝕜 → ℝ`, bundled on
-demand as a `Seminorm` (rectangular) or an `AlgebraNorm` (square), which is the form
-`spectralRadius_le_algebraNorm` and `tendsto_pow_of_algebraNorm_lt_one` already consume.
-
-Contents, in order: consistency of a matrix norm with a pair of vector norms
-(`Matrix.IsConsistent`); the induced norm, its equality with `sup_{x ≠ 0} q(Ax)/p(x)`, attainment
-on the unit sphere, the seminorm axioms and definiteness (Quarteroni–Sacco–Saleri, *Numerical
-Mathematics*, Theorem 1.1), consistency, `‖I‖ = 1` and submultiplicativity (their Theorem 1.3); the
-vector `p`-norms as seminorms and the induced `p`-norms `Matrix.lpOpNorm p` **moved here from
-`NumlibSurface/SaadSparse/Chapter01/Basics.lean`** together with `Matrix.lpCLM`, `lpOpNorm_one`
-(the column-sum formula) and `lpOpNorm_two`, so that a second surface can use them (surfaces do
-not import each other); the row/column-sum formulas and `‖A‖₁ = ‖Aᵀ‖_∞`; the spectral norm
-(their Theorem 1.2): `‖A‖₂² = ρ(Aᴴ A) = ρ(A Aᴴ)`, `‖A‖₂ = σ_max(A)` (the module `SVD` has it for square matrices; its statement generalizes to rectangular ones in place, see the SVD EXT),
-`‖A‖₂ = ρ(A)` for Hermitian and for normal `A`, `‖U‖₂ = 1` for unitary `U`, unitary invariance of
-`‖·‖₂` and `‖·‖_F`; the comparison inequalities between `‖·‖₁`, `‖·‖₂`, `‖·‖_∞`, `‖·‖_F` and the
-entrywise maximum (their §1.11 and Exercise 17), including `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)` and
-`‖A‖_F² = ∑ σ_i²`; a consistent norm bounds the spectral radius (their Theorem 1.4, the
-*consistency* hypothesis being weaker than the submultiplicativity of
-`spectralRadius_le_algebraNorm`); the induced-norm form of the ε-norm of
-`Numlib/LinearAlgebra/Matrix/EpsilonNorm` (their Property 1.13) and `ρ(A) = inf ‖A‖` over the
-induced norms (their (1.23)); a submultiplicative matrix norm always has a consistent vector norm
-`x ↦ N (x yᴴ)`; and the Frobenius norm is consistent with `‖·‖₂` (their Example 1.7).
-
-Everything is stated over `RCLike 𝕜` with `Fintype` index types where the proof allows; the
-spectral-radius statements come in a complex form (`spectralRadius ℂ A`) and a real form
-(`Matrix.complexSpectralRadius A` of `Numlib/LinearAlgebra/Matrix/Complexify`), as elsewhere in the
-backbone. Consumers: Quarteroni–Sacco–Saleri chapters 1, 2 (`K_p(A)`), 3 (perturbation bounds in
-`‖·‖_p`), 4 (`‖B‖ < 1` criteria) and 5; Saad's `SaadSparse.Chapter01` (which should then delegate
-its `lpOpNorm` block here) and its §1.13 condition number `condNumberLp`.
-'''
 
 [[node]]
 id = "IsConsistent"
@@ -129,15 +92,24 @@ deps = ["Matrix.lpOpNorm", "Matrix.inducedNorm", "Matrix.lpSeminorm", "Matrix.in
 
 [[node]]
 id = "lpOpNorm_mul_le"
-kind = "theorem"
-desc = '''`lpOpNorm r (A * B) ≤ lpOpNorm r A * lpOpNorm r B` (rectangular `A : Matrix l m 𝕜`, `B : Matrix m n 𝕜`): the `p`-norms are submultiplicative, Quarteroni–Sacco–Saleri §1.11 after Theorem 1.3. From `lpCLM_mul` and `ContinuousLinearMap.opNorm_comp_le`. ★'''
-deps = ["Matrix.lpOpNorm", "Matrix.lpCLM"]
 
 [[node]]
 id = "lpOpNorm_one_eq_sup_sum_norm"
-kind = "theorem"
-desc = '''Renamed copy of the Saad surface's `lpOpNorm_one`: `lpOpNorm 1 A = ↑(univ.sup fun j => ∑ i, ‖A i j‖₊)`, the largest absolute column sum (Quarteroni–Sacco–Saleri §1.11, "column sum norm"), for rectangular `A`. The existing proof (bound on `PiLp 1`, attained at `Pi.single j 1`) transfers verbatim. ★'''
-deps = ["Matrix.lpOpNorm"]
+
+[[node]]
+id = "complexSpectralRadius_le_lpOpNorm"
+
+[[node]]
+id = "condNumberLp"
+
+[[node]]
+id = "lpEquiv"
+
+[[node]]
+id = "isUnit_lpCLM_iff"
+
+[[node]]
+id = "ringInverse_lpCLM"
 
 [[node]]
 id = "lpOpNorm_top"

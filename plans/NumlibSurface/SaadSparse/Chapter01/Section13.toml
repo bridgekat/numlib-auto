@@ -1,15 +1,6 @@
 namespace = "Matrix"
 
 [[node]]
-id = "condNumberLp"
-
-[[node]]
-id = "isUnit_lpCLM_iff"
-
-[[node]]
-id = "ringInverse_lpCLM"
-
-[[node]]
 id = "equation_1_75"
 
 [[node]]
