@@ -1,220 +1,199 @@
 namespace = "OrthogonalPolynomial"
-desc = '''
-The classical weights and their orthogonal polynomials, beyond the Legendre family of
-`Numlib/Approximation/OrthogonalPolynomial`: the Chebyshev weight `(1 - x²)^{-1/2}` on `(-1, 1)`
-(Mathlib's `Polynomial.Chebyshev.measureT`), the Jacobi weights `(1 - x)^α (1 + x)^β`, the Laguerre
-weight `e^{-x}` on `(0, ∞)` and the Hermite weight `e^{-x²}` on `ℝ`. Each is shown to satisfy
-`IsWeight` — finite moments and infinite support — so that `family`, `exists_gauss` and the whole
-of the general theory apply; the classical polynomials (`T_n`, `Polynomial.laguerre`,
-`Polynomial.physHermite`) are identified with the monic `family` up to their leading coefficients,
-and the recurrence coefficients `alpha`, `beta` are computed in closed form (the coefficients
-Quarteroni–Sacco–Saleri's Programs 82–84 tabulate).
 
-Mathlib's `Polynomial.hermite` is the probabilists' family `He_n` (monic, weight `e^{-x²/2}`); the
-physicists' `H_n = (-1)^n e^{x²} (e^{-x²})^{(n)}` of the textbooks, with leading coefficient `2^n`
-and weight `e^{-x²}`, is defined here as `Polynomial.physHermite` and related to `He_n` by
-`H_n(x) = 2^{n/2} He_n(√2 x)`. Mathlib has no Laguerre polynomial (grep `laguerre`: no hits).
+[[node]]
+id = "isWeight_of_absolutelyContinuous"
 
-Consumers: Quarteroni–Sacco–Saleri §10.1.1, §10.5, §9.8 (Gauss–Laguerre/Hermite quadrature on
-unbounded intervals; chapter 9's agent also needs `laguerreMeasure`, `hermiteMeasure`), Remark
-10.1–10.2 (Jacobi), and `Numlib/Approximation/GaussLobatto`.
-'''
+[[node]]
+id = "ne_zero_of_integral_ne_zero"
+
+[[node]]
+id = "integral_withDensity_ofReal"
+
+[[node]]
+id = "integrable_withDensity_ofReal_iff"
 
 [[node]]
 id = "chebyshevMeasure"
-kind = "definition"
-desc = '''`chebyshevMeasure : Measure ℝ := Polynomial.Chebyshev.measureT`, Lebesgue measure on `(-1, 1]`
-with density `(1 - x²)^{-1/2}`; an `abbrev` so that Mathlib's `integral_measureT`,
-`integral_measureT_eq_integral_cos` and the orthogonality lemmas apply unchanged. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.9)"
+
+[[node]]
+id = "integral_one_chebyshevMeasure"
 
 [[node]]
 id = "isWeight_chebyshevMeasure"
-kind = "theorem"
-desc = '''`IsWeight chebyshevMeasure`: moments are finite by `Polynomial.Chebyshev.integrable_measureT`
-(continuous integrands), and a finite set has complement of positive measure since the density
-is positive on `(-1, 1)`. ★'''
-deps = ["OrthogonalPolynomial.chebyshevMeasure", "OrthogonalPolynomial.IsWeight"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.1.1"
 
 [[node]]
 id = "family_chebyshevMeasure_eq"
-kind = "theorem"
-desc = '''`family chebyshevMeasure n = C (2 : ℝ)^(1 - n) * T ℝ n` for `1 ≤ n` (and `= 1` at `n = 0`): the
-monic orthogonal polynomial of the Chebyshev weight is the monic rescaling of `T_n`. Uniqueness of
-the monic polynomial of degree `n` orthogonal to `P_{n-1}` (as in `family_eq_legendre`), with
-`Polynomial.Chebyshev.integral_T_mul_T_div_sqrt` and `leadingCoeff_T`. ★★'''
-deps = ["OrthogonalPolynomial.chebyshevMeasure", "OrthogonalPolynomial.isWeight_chebyshevMeasure", "OrthogonalPolynomial.family", "Polynomial.Chebyshev.integral_T_mul_T_div_sqrt"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.1.1"
 
 [[node]]
 id = "jacobiMeasure"
-kind = "definition"
-desc = '''The Jacobi weight, `jacobiMeasure α β : Measure ℝ := (volume.restrict (Ioo (-1) 1)).withDensity
-(fun x => ENNReal.ofReal ((1 - x)^α * (1 + x)^β))` with real powers (`Real.rpow`). ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.1"
+
+[[node]]
+id = "integral_jacobiMeasure"
+
+[[node]]
+id = "integrable_jacobiMeasure_iff"
 
 [[node]]
 id = "isWeight_jacobiMeasure"
-kind = "theorem"
-desc = '''For `-1 < α` and `-1 < β`, `IsWeight (jacobiMeasure α β)` (Quarteroni–Sacco–Saleri Remark
-10.1). Finite moments: `x^n (1-x)^α (1+x)^β` is integrable on `(-1, 1)` — split at `0` and compare
-with `(1 - x)^α` near `1` and `(1 + x)^β` near `-1`, `intervalIntegrable_rpow'` (`-1 < r`). Infinite
-support: the density is positive on `(-1, 1)`. ★★'''
-deps = ["OrthogonalPolynomial.jacobiMeasure", "OrthogonalPolynomial.IsWeight"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.1"
 
 [[node]]
 id = "jacobiMeasure_zero_zero"
-kind = "theorem"
-desc = '`jacobiMeasure 0 0 = legendreMeasure` (`rpow_zero`, `withDensity_one`). ★'
-deps = ["OrthogonalPolynomial.jacobiMeasure", "OrthogonalPolynomial.legendreMeasure"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.1"
 
 [[node]]
 id = "jacobiMeasure_neg_half_neg_half"
-kind = "theorem"
-desc = '''`jacobiMeasure (-1/2) (-1/2) = chebyshevMeasure`: `(1-x)^{-1/2} (1+x)^{-1/2} = (√(1 - x²))⁻¹` on
-`(-1, 1)`, and `measureT` is the same density on `Ioc (-1) 1`, whose extra point `1` is null for the
-density measure. ★'''
-deps = ["OrthogonalPolynomial.jacobiMeasure", "OrthogonalPolynomial.chebyshevMeasure"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.1"
 
 [[node]]
 id = "laguerreMeasure"
-kind = "definition"
-desc = '''The Laguerre weight, `laguerreMeasure : Measure ℝ := (volume.restrict (Ioi 0)).withDensity (fun x
-=> ENNReal.ofReal (Real.exp (-x)))`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "integral_laguerreMeasure"
+
+[[node]]
+id = "integrable_laguerreMeasure_iff"
 
 [[node]]
 id = "isWeight_laguerreMeasure"
-kind = "theorem"
-desc = '''`IsWeight laguerreMeasure`: `x^n e^{-x}` is integrable on `(0, ∞)`
-(`Real.GammaIntegral_convergent` at `s = n + 1`, or `integrableOn_rpow_mul_exp_neg`), and the
-density is positive on `(0, ∞)`. ★★'''
-deps = ["OrthogonalPolynomial.laguerreMeasure", "OrthogonalPolynomial.IsWeight"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "_root_.Polynomial.laguerre"
-kind = "definition"
-desc = '''The (unnormalized) Laguerre polynomials of Quarteroni–Sacco–Saleri §10.5, by the recurrence
-`ℒ_0 = 1`, `ℒ_1 = 1 - X`, `ℒ_{n+2} = (2n + 3 - X) ℒ_{n+1} - (n+1)² ℒ_n`, as `Polynomial.laguerre : ℕ →
-ℝ[X]`; equivalently `ℒ_n = ∑_{j ≤ n} (-1)^j (n!/j!) C(n,j) X^j`, leading coefficient `(-1)^n`,
-`ℒ_n(0) = n!`. (The normalized `L_n = ℒ_n / n!` of most references is not the book's.) ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "_root_.Polynomial.laguerre_succ_succ"
-kind = "theorem"
-desc = '''The recurrence `laguerre (n+2) = (C (2n+3) - X) * laguerre (n+1) - C ((n+1)^2) * laguerre n`, by
-definition, with `laguerre_zero`, `laguerre_one`, `degree_laguerre`, `leadingCoeff_laguerre = (-1)^n`.
-★'''
-deps = ["Polynomial.laguerre"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "_root_.Polynomial.degree_laguerre"
+
+[[node]]
+id = "_root_.Polynomial.leadingCoeff_laguerre"
 
 [[node]]
 id = "_root_.Polynomial.laguerre_eq_deriv_exp_mul"
-kind = "theorem"
-desc = '''Rodrigues' formula: `(laguerre n).eval x = Real.exp x * deriv^[n] (fun y => Real.exp (-y) * y^n) x`.
-By induction, mirroring Mathlib's `deriv_gaussian_eq_hermite_mul_gaussian`: show
-`deriv^[n] (e^{-y} y^n) = e^{-y} ℒ_n(y)` via the Leibniz rule
-`deriv^[n] (e^{-y} y^n) = ∑_k C(n,k) (-1)^{n-k} e^{-y} (n!/(n-k)!) y^{n-k}` and match the explicit
-sum of `laguerre`. ★★'''
-deps = ["Polynomial.laguerre"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "_root_.Polynomial.integral_exp_neg_mul_pow"
 
 [[node]]
 id = "_root_.Polynomial.integral_laguerre_mul_laguerre"
-kind = "theorem"
-desc = '''Orthogonality: `∫ x in Ioi 0, (laguerre n).eval x * (laguerre m).eval x * Real.exp (-x) = if n = m
-then (n !)^2 else 0`. Proof: for `deg p < n`, `∫_0^∞ p · e^{-x} ℒ_n = ∫_0^∞ p · (e^{-x} x^n)^{(n)}`
-(Rodrigues) `= (-1)^n ∫_0^∞ p^{(n)} e^{-x} x^n = 0` after `n` integrations by parts on `(0, ∞)`
-(`MeasureTheory.integral_Ioi_mul_deriv_eq_deriv_mul` style; the boundary terms vanish since
-`(e^{-x} x^n)^{(k)} = e^{-x} x^{n-k} · poly` is `0` at `0` for `k < n` and decays at `∞`); the norm
-`∫ ℒ_n² e^{-x} = (-1)^n ∫ ℒ_n^{(n)} e^{-x} x^n = n! ∫ x^n e^{-x} = (n!)²` (leading coefficient
-`(-1)^n`, `Real.Gamma_nat_eq_factorial`). ★★★'''
-deps = ["Polynomial.laguerre_eq_deriv_exp_mul", "OrthogonalPolynomial.laguerreMeasure"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "family_laguerreMeasure_eq"
-kind = "theorem"
-desc = '''`family laguerreMeasure n = C ((-1 : ℝ)^n) * laguerre n`: the monic rescaling of `ℒ_n` is the
-monic orthogonal polynomial (uniqueness as in `family_eq_legendre`). Hence the Gauss–Laguerre
-nodes are the zeros of `ℒ_n` (Quarteroni–Sacco–Saleri (10.41)). ★★'''
-deps = ["OrthogonalPolynomial.isWeight_laguerreMeasure", "Polynomial.integral_laguerre_mul_laguerre", "OrthogonalPolynomial.family"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41)"
+
+[[node]]
+id = "normSq_laguerreMeasure_zero"
+
+[[node]]
+id = "normSq_laguerreMeasure"
+
+[[node]]
+id = "family_laguerreMeasure_recurrence"
+
+[[node]]
+id = "alpha_laguerreMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 83"
+
+[[node]]
+id = "beta_laguerreMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 83"
 
 [[node]]
 id = "hermiteMeasure"
-kind = "definition"
-desc = '''The Hermite weight, `hermiteMeasure : Measure ℝ := volume.withDensity (fun x => ENNReal.ofReal
-(Real.exp (-x^2)))`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "integral_hermiteMeasure"
+
+[[node]]
+id = "integrable_hermiteMeasure_iff"
 
 [[node]]
 id = "isWeight_hermiteMeasure"
-kind = "theorem"
-desc = '''`IsWeight hermiteMeasure`: `x^n e^{-x²}` is integrable (`integrable_rpow_mul_exp_neg_mul_sq` at
-`b = 1`, `s = n`, or `integrable_pow_mul_exp_neg_mul_sq`), and the density is everywhere
-positive. ★'''
-deps = ["OrthogonalPolynomial.hermiteMeasure", "OrthogonalPolynomial.IsWeight"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "_root_.Polynomial.physHermite"
-kind = "definition"
-desc = '''The physicists' Hermite polynomials `H_n` of Quarteroni–Sacco–Saleri §10.5, by the recurrence
-`H_0 = 1`, `H_1 = 2X`, `H_{n+2} = 2X H_{n+1} - 2(n+1) H_n`, as `Polynomial.physHermite : ℕ → ℝ[X]`;
-leading coefficient `2^n`. Related to Mathlib's probabilists' `Polynomial.hermite` by
-`physHermite_eq_hermite_comp : (physHermite n).eval x = 2^(n/2 : ℝ) * aeval (√2 * x) (hermite n)`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "_root_.Polynomial.derivative_physHermite_succ"
 
 [[node]]
 id = "_root_.Polynomial.physHermite_succ_succ"
-kind = "theorem"
-desc = '''`physHermite (n+2) = 2 * X * physHermite (n+1) - C (2 * (n+1)) * physHermite n`, by definition,
-with `physHermite_zero`, `physHermite_one`, `degree_physHermite`, `leadingCoeff_physHermite = 2^n`.
-★'''
-deps = ["Polynomial.physHermite"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
+
+[[node]]
+id = "_root_.Polynomial.degree_physHermite"
+
+[[node]]
+id = "_root_.Polynomial.leadingCoeff_physHermite"
 
 [[node]]
 id = "_root_.Polynomial.physHermite_eq_deriv_gaussian"
-kind = "theorem"
-desc = '''Rodrigues' formula `(physHermite n).eval x = (-1)^n * Real.exp (x^2) * deriv^[n] (fun y =>
-Real.exp (-y^2)) x`. Either by induction as Mathlib's `deriv_gaussian_eq_hermite_mul_gaussian`, or
-from that lemma and the scaling `physHermite_eq_hermite_comp` with the chain rule for
-`y ↦ √2 y`. ★★'''
-deps = ["Polynomial.physHermite"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "_root_.Polynomial.integral_physHermite_mul_physHermite"
-kind = "theorem"
-desc = '''Orthogonality: `∫ x, (physHermite n).eval x * (physHermite m).eval x * Real.exp (-x^2) = if n = m
-then 2^n * n ! * √π else 0`. The same integration-by-parts argument as
-`integral_laguerre_mul_laguerre` on the whole line (`MeasureTheory.integral_mul_deriv_eq_deriv_mul`
-with decay of `e^{-x²} · poly` at `±∞`), and `integral_gaussian` for the norm. ★★★'''
-deps = ["Polynomial.physHermite_eq_deriv_gaussian", "OrthogonalPolynomial.hermiteMeasure"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 10.5"
 
 [[node]]
 id = "family_hermiteMeasure_eq"
-kind = "theorem"
-desc = '''`family hermiteMeasure n = C ((2 : ℝ)^n)⁻¹ * physHermite n`, so the Gauss–Hermite nodes are the
-zeros of `H_n` (Quarteroni–Sacco–Saleri (10.42)). ★★'''
-deps = ["OrthogonalPolynomial.isWeight_hermiteMeasure", "Polynomial.integral_physHermite_mul_physHermite", "OrthogonalPolynomial.family"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.42)"
+
+[[node]]
+id = "normSq_hermiteMeasure_zero"
+
+[[node]]
+id = "normSq_hermiteMeasure"
+
+[[node]]
+id = "family_hermiteMeasure_recurrence"
+
+[[node]]
+id = "alpha_hermiteMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 84"
+
+[[node]]
+id = "beta_hermiteMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 84"
+
+[[node]]
+id = "leadingCoeff_legendre_succ"
+
+[[node]]
+id = "family_legendreMeasure_recurrence"
+
+[[node]]
+id = "alpha_legendreMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 82"
+
+[[node]]
+id = "beta_legendreMeasure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 82"
+
+[[node]]
+id = "normSq_legendreMeasure_zero"
 
 [[node]]
 id = "alpha_beta_legendreMeasure"
-kind = "theorem"
-desc = '''The recurrence coefficients of the Legendre weight (Program 82): `alpha legendreMeasure k = 0`
-and `beta legendreMeasure k = (k+1)^2 / (4 (k+1)^2 - 1)` (`= 1/(4 - 1/(k+1)^2)`), with
-`normSq legendreMeasure 0 = 2`. From `family_eq_legendre`, `legendre_recurrence` and
-`integral_legendre_mul_legendre`. ★★'''
-deps = ["OrthogonalPolynomial.family_eq_legendre", "OrthogonalPolynomial.alpha", "OrthogonalPolynomial.beta", "Polynomial.legendre_recurrence", "Polynomial.integral_legendre_mul_legendre"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 82"
 
 [[node]]
 id = "alpha_beta_laguerreMeasure"
-kind = "theorem"
-desc = '''The recurrence coefficients of the Laguerre weight (Program 83): `alpha laguerreMeasure k = 2k
-+ 1` and `beta laguerreMeasure k = (k+1)^2`, `normSq laguerreMeasure 0 = 1`. From
-`family_laguerreMeasure_eq` and `laguerre_succ_succ`. ★★'''
-deps = ["OrthogonalPolynomial.family_laguerreMeasure_eq", "OrthogonalPolynomial.alpha", "OrthogonalPolynomial.beta", "Polynomial.laguerre_succ_succ"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 83"
 
 [[node]]
 id = "alpha_beta_hermiteMeasure"
-kind = "theorem"
-desc = '''The recurrence coefficients of the Hermite weight (Program 84): `alpha hermiteMeasure k = 0` and
-`beta hermiteMeasure k = (k+1)/2`, `normSq hermiteMeasure 0 = √π`. From `family_hermiteMeasure_eq`
-and `physHermite_succ_succ`. ★★'''
-deps = ["OrthogonalPolynomial.family_hermiteMeasure_eq", "OrthogonalPolynomial.alpha", "OrthogonalPolynomial.beta", "Polynomial.physHermite_succ_succ"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 84"

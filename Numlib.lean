@@ -202,6 +202,7 @@ import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Extrapolation
+import Numlib.Approximation.GaussLobatto
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
@@ -214,6 +215,7 @@ import Numlib.Approximation.NewtonForm
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
+import Numlib.Approximation.OrthogonalPolynomial.Classical
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial

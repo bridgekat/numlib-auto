@@ -2,6 +2,7 @@ import Mathlib.Algebra.Polynomial.Sequence
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
@@ -40,8 +41,15 @@ recurrence, the orthonormal family obtained by scaling it, and the truncated exp
   is orthogonal to every polynomial of lower degree.
 * `OrthogonalPolynomial.three_term_recurrence`: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`, and
   `OrthogonalPolynomial.orthonormalFamily_recurrence` for the orthonormal family.
+* `OrthogonalPolynomial.christoffel_darboux`: the Christoffel–Darboux identity for the monic family
+  in polynomial form, `‖p_N‖² (X - t) K_N(t) = p_{N+1} p_N(t) - p_N p_{N+1}(t)` with the kernel
+  `OrthogonalPolynomial.cdKernel μ N t = ∑_{k ≤ N} (p_k(t)/‖p_k‖²) p_k`, whose integral is `1`.
 * `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real roots —
-  the nodes of the `n`-point Gauss quadrature rule of `μ`.
+  the nodes of the `n`-point Gauss quadrature rule of `μ` — and
+  `OrthogonalPolynomial.root_family_mem_Ioo` puts them strictly inside any interval carrying `μ`.
+* `OrthogonalPolynomial.charpoly_jacobiMatrix`: the characteristic polynomial of the symmetric
+  tridiagonal `OrthogonalPolynomial.jacobiMatrix μ n` built from `alpha` and `√beta` is
+  `family μ n`, so the Gauss nodes are its eigenvalues (Golub–Welsch).
 * `OrthogonalPolynomial.isBestApprox_truncation`: the truncated expansion is the best `L²(μ)`
   approximation by polynomials of degree at most `N`, and
   `OrthogonalPolynomial.isBestApprox_truncation_of_degree_eq` the same for a family that is already
@@ -52,14 +60,16 @@ recurrence, the orthonormal family obtained by scaling it, and the truncated exp
   `OrthogonalPolynomial.hilbertBasis`, the orthonormal polynomials as a Hilbert basis of `L²(μ)`,
   and `OrthogonalPolynomial.hilbertBasisOfDegreeEq` for any orthonormal family with one polynomial
   of each degree.
-* `Polynomial.legendre_recurrence`, `Polynomial.legendre_ode` and
+* `Polynomial.legendre_eq_sum` is the explicit form of the Legendre polynomial;
+  `Polynomial.legendre_recurrence`, `Polynomial.legendre_ode` and
   `Polynomial.integral_legendre_mul_legendre` for the Legendre family, with
   `OrthogonalPolynomial.family_eq_legendre` identifying its monic rescaling with the general
   construction; `Polynomial.Chebyshev.integral_T_mul_T_div_sqrt` is the Chebyshev instance.
 
 ## References
 
-The material is [han2009theoretical] §3.5 and [kress1998numerical] §9.3.
+The material is [han2009theoretical] §3.5, [kress1998numerical] §9.3 and [quarteroni2000numerical]
+§10.1–10.2, §10.6.
 -/
 
 open MeasureTheory Polynomial
@@ -208,6 +218,22 @@ theorem integral_eval_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0)
   refine lt_of_le_of_ne (integral_nonneg hnn) fun h => ?_
   have hae : (fun x => p.eval x) =ᵐ[μ] 0 :=
     (integral_eq_zero_iff_of_nonneg hnn (hw.integrable_eval p)).1 h.symm
+  have hsub : (↑p.roots.toFinset : Set ℝ)ᶜ ⊆ {x | p.eval x ≠ 0} := by
+    intro x hx
+    simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
+    exact fun h0 => hx ((mem_roots hp).2 (by simpa [IsRoot] using h0))
+  refine hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet ?_
+  refine measure_mono_null hsub ?_
+  simpa [Filter.EventuallyEq, ae_iff] using hae
+
+/-- The integral of a nonzero polynomial that is nonnegative `μ`-almost everywhere is positive:
+it vanishes only on a finite set, and `μ` charges the complement of every finite set. This is
+`OrthogonalPolynomial.IsWeight.integral_eval_pos` with an almost-everywhere hypothesis. -/
+theorem integral_eval_pos_of_ae_nonneg (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0)
+    (hnn : ∀ᵐ x ∂μ, 0 ≤ p.eval x) : 0 < ∫ x, p.eval x ∂μ := by
+  refine lt_of_le_of_ne (integral_nonneg_of_ae hnn) fun h => ?_
+  have hae : (fun x => p.eval x) =ᵐ[μ] 0 :=
+    (integral_eq_zero_iff_of_nonneg_ae hnn (hw.integrable_eval p)).1 h.symm
   have hsub : (↑p.roots.toFinset : Set ℝ)ᶜ ⊆ {x | p.eval x ≠ 0} := by
     intro x hx
     simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
@@ -580,6 +606,53 @@ theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
         Finset.prod_image fun i _ j _ h =>
           (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective h
 
+/-- **The roots of an orthogonal polynomial lie inside the interval carrying the weight.** If
+`μ (Icc a b)ᶜ = 0` and `x₀` is a root of `family μ n`, then `a < x₀ < b`.
+
+Write `family μ n = (X - x₀) q` with `q` of degree `n - 1`; orthogonality of `family μ n` to `q`
+gives `∫ (t - x₀) q(t)² ∂μ = 0`. Were `x₀ ≤ a`, the integrand would be nonnegative `μ`-almost
+everywhere, so the nonzero polynomial `(X - x₀) q²` would integrate to zero against a weight,
+which `OrthogonalPolynomial.IsWeight.integral_eval_pos_of_ae_nonneg` forbids; symmetrically for
+`b ≤ x₀`.
+
+Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
+theorem root_family_mem_Ioo (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {n : ℕ}
+    {x₀ : ℝ} (hx₀ : (family μ n).eval x₀ = 0) : x₀ ∈ Set.Ioo a b := by
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
+    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
+  have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
+  have hqdeg : q.degree < n := by
+    have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
+    rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
+    exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
+  have hzero : ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
+    rw [← integral_family_mul_of_degree_lt hw hqdeg]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+    rw [hq]
+    simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+    ring
+  have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
+  constructor
+  · by_contra h
+    push Not at h
+    refine (hw.integral_eval_pos_of_ae_nonneg hne ?_).ne' hzero
+    filter_upwards [hae] with t ht
+    simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+    exact mul_nonneg (by linarith [ht.1]) (sq_nonneg _)
+  · by_contra h
+    push Not at h
+    have hzero' : ∫ t, (-((X - C x₀) * q ^ 2)).eval t ∂μ = 0 := by
+      simp only [eval_neg]
+      rw [integral_neg, hzero, neg_zero]
+    refine (hw.integral_eval_pos_of_ae_nonneg (neg_ne_zero.mpr hne) ?_).ne' hzero'
+    filter_upwards [hae] with t ht
+    simp only [eval_neg, eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+    rw [neg_mul_eq_neg_mul]
+    exact mul_nonneg (by linarith [ht.2]) (sq_nonneg _)
+
 /-! ### The three-term recurrence -/
 
 /-- The coefficient `a_n = ⟪x p_n, p_n⟫ / ‖p_n‖²` of the three-term recurrence. -/
@@ -707,6 +780,131 @@ theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
       simp only [alpha]
       rw [div_mul_cancel₀ _ (normSq_ne_zero hw (n + 1))]
       ring
+
+/-! ### Reading the recurrence coefficients off a recurrence -/
+
+/-- The first recurrence coefficient is determined by the first orthogonal polynomial: if
+`family μ 1 = X - C a` then `alpha μ 0 = a`. -/
+theorem alpha_zero_eq_of_family_one {a : ℝ} (h : family μ 1 = X - C a) : alpha μ 0 = a := by
+  have h1 := family_one μ
+  rw [h] at h1
+  have := congrArg (fun p : ℝ[X] => p.coeff 0) h1
+  simpa using this.symm
+
+/-- **A three-term recurrence determines the recurrence coefficients.** If the monic family
+satisfies `p_{n+2} = (X - a) p_{n+1} - b p_n` for some reals `a`, `b`, then `a = alpha μ (n + 1)`
+and `b = beta μ n`: subtracting `OrthogonalPolynomial.three_term_recurrence` leaves
+`C (alpha - a) * p_{n+1} = C (beta - b) * p_n`, whose two sides have different degrees unless both
+vanish. This is how the recurrence coefficients of the classical weights are computed from the
+classical recurrences, without integrating anything. -/
+theorem alpha_succ_eq_and_beta_eq_of_recurrence (hw : IsWeight μ) {n : ℕ} {a b : ℝ}
+    (h : family μ (n + 2) = (X - C a) * family μ (n + 1) - C b * family μ n) :
+    alpha μ (n + 1) = a ∧ beta μ n = b := by
+  have hrec := three_term_recurrence hw n
+  rw [h] at hrec
+  have hkey : C (alpha μ (n + 1) - a) * family μ (n + 1) = C (b - beta μ n) * family μ n := by
+    simp only [C_sub]
+    linear_combination hrec
+  have ha : alpha μ (n + 1) = a := by
+    by_contra hne
+    have hne' : alpha μ (n + 1) - a ≠ 0 := sub_ne_zero.mpr hne
+    have hdeg := congrArg Polynomial.degree hkey
+    rw [degree_C_mul hne', degree_family] at hdeg
+    have hle : (C (b - beta μ n) * family μ n).degree ≤ n := by
+      refine (degree_mul_le _ _).trans ?_
+      rw [degree_family]
+      calc (C (b - beta μ n) : ℝ[X]).degree + (n : WithBot ℕ) ≤ 0 + (n : WithBot ℕ) := by
+            gcongr; exact degree_C_le
+        _ = (n : WithBot ℕ) := zero_add _
+    rw [← hdeg] at hle
+    exact absurd hle (by exact_mod_cast Nat.not_succ_le_self n)
+  refine ⟨ha, ?_⟩
+  rw [ha, sub_self, C_0, zero_mul] at hkey
+  rcases mul_eq_zero.mp hkey.symm with h0 | h0
+  · exact (sub_eq_zero.mp (C_eq_zero.mp h0)).symm
+  · exact absurd h0 (family_ne_zero μ n)
+
+/-! ### The Christoffel–Darboux identity -/
+
+/-- The **Christoffel–Darboux kernel** of the monic family at the parameter `t`, as a polynomial
+in `X`: `K_N(t) = ∑_{k ≤ N} (p_k(t) / ‖p_k‖²) p_k`. Its value at `x` is the reproducing kernel
+`∑_{k ≤ N} p_k(x) p_k(t) / ‖p_k‖²` of the polynomials of degree at most `N` in `L²(μ)`. -/
+def cdKernel (μ : Measure ℝ) (N : ℕ) (t : ℝ) : ℝ[X] :=
+  ∑ k ∈ Finset.range (N + 1), C ((family μ k).eval t / normSq μ k) * family μ k
+
+/-- `normSq μ (N + 1) = beta μ N * normSq μ N`. -/
+theorem normSq_succ (hw : IsWeight μ) (N : ℕ) :
+    normSq μ (N + 1) = beta μ N * normSq μ N := by
+  rw [beta, div_mul_cancel₀ _ (normSq_ne_zero hw N)]
+
+/-- **The Christoffel–Darboux identity** for the monic orthogonal polynomials, in polynomial
+form: `‖p_N‖² (X - t) K_N(t) = p_{N+1} p_N(t) - p_N p_{N+1}(t)`. It follows from the three-term
+recurrence by induction on `N`, the step being
+`p_{N+2} p_{N+1}(t) - p_{N+1} p_{N+2}(t) = (X - t) p_{N+1} p_{N+1}(t) + β_N (p_{N+1} p_N(t) - p_N
+p_{N+1}(t))`.
+
+Reference: [han2009theoretical] Theorem 3.7.3 (for the orthonormal family). -/
+theorem christoffel_darboux (hw : IsWeight μ) (N : ℕ) (t : ℝ) :
+    C (normSq μ N) * ((X - C t) * cdKernel μ N t) =
+      family μ (N + 1) * C ((family μ N).eval t) - family μ N * C ((family μ (N + 1)).eval t) := by
+  induction N with
+  | zero =>
+    rw [cdKernel, zero_add, Finset.sum_range_one, family_zero, family_one]
+    simp only [eval_one, one_div, mul_one, eval_sub, eval_X, eval_C, C_sub, C_1]
+    rw [show C (normSq μ 0) * ((X - C t) * C (normSq μ 0)⁻¹) =
+      (C (normSq μ 0) * C (normSq μ 0)⁻¹) * (X - C t) by ring, ← C_mul,
+      mul_inv_cancel₀ (normSq_ne_zero hw 0), C_1]
+    ring
+  | succ N ih =>
+    have hne : normSq μ (N + 1) ≠ 0 := normSq_ne_zero hw (N + 1)
+    have hK : cdKernel μ (N + 1) t = cdKernel μ N t +
+        C ((family μ (N + 1)).eval t / normSq μ (N + 1)) * family μ (N + 1) := by
+      rw [cdKernel, Finset.sum_range_succ]
+      rfl
+    have e1 : C (normSq μ (N + 1)) * ((X - C t) *
+        (C ((family μ (N + 1)).eval t / normSq μ (N + 1)) * family μ (N + 1))) =
+        (X - C t) * (C ((family μ (N + 1)).eval t) * family μ (N + 1)) := by
+      rw [show C (normSq μ (N + 1)) * ((X - C t) *
+          (C ((family μ (N + 1)).eval t / normSq μ (N + 1)) * family μ (N + 1))) =
+          (X - C t) * ((C (normSq μ (N + 1)) *
+            C ((family μ (N + 1)).eval t / normSq μ (N + 1))) * family μ (N + 1)) by ring,
+        ← C_mul, mul_div_cancel₀ _ hne]
+    have e2 : C (normSq μ (N + 1)) * ((X - C t) * cdKernel μ N t) =
+        C (beta μ N) * (family μ (N + 1) * C ((family μ N).eval t) -
+          family μ N * C ((family μ (N + 1)).eval t)) := by
+      rw [normSq_succ hw N, C_mul, mul_assoc, ih]
+    rw [hK, mul_add, mul_add, e1, e2, three_term_recurrence hw N]
+    simp only [eval_sub, eval_mul, eval_X, eval_C, C_sub, C_mul]
+    ring
+
+/-- The value of the Christoffel–Darboux kernel at its own parameter is positive: it is a sum of
+squares over positive weights whose first term is `1 / ‖p_0‖²`. -/
+theorem eval_cdKernel_self_pos (hw : IsWeight μ) (N : ℕ) (t : ℝ) :
+    0 < (cdKernel μ N t).eval t := by
+  rw [cdKernel, eval_finsetSum, Finset.sum_range_succ']
+  simp only [eval_mul, eval_C, family_zero, eval_one, mul_one]
+  refine add_pos_of_nonneg_of_pos (Finset.sum_nonneg fun k _ => ?_) ?_
+  · rw [div_mul_eq_mul_div, ← sq]
+    exact div_nonneg (sq_nonneg _) (normSq_pos hw _).le
+  · exact one_div_pos.mpr (normSq_pos hw 0)
+
+/-- The integral of the Christoffel–Darboux kernel is `1`: only the constant term `p_0 / ‖p_0‖²`
+survives, the other members of the family being orthogonal to the constants. -/
+theorem integral_eval_cdKernel (hw : IsWeight μ) (N : ℕ) (t : ℝ) :
+    ∫ x, (cdKernel μ N t).eval x ∂μ = 1 := by
+  simp only [cdKernel, eval_finsetSum, eval_mul, eval_C]
+  rw [integral_finsetSum _ fun k _ => (hw.integrable_eval _).const_mul _, Finset.sum_range_succ']
+  simp only [integral_const_mul, family_zero, eval_one, one_div]
+  rw [Finset.sum_eq_zero fun k _ => ?_, zero_add]
+  · have h0 : ∫ x, (1 : ℝ) ∂μ = normSq μ 0 := by
+      rw [normSq, family_zero]
+      simp
+    rw [h0, inv_mul_cancel₀ (normSq_ne_zero hw 0)]
+  · have h : ∫ x, (family μ (k + 1)).eval x ∂μ = 0 := by
+      have := integral_family_mul_of_degree_lt hw (n := k + 1) (q := 1)
+        (by rw [degree_one]; exact_mod_cast Nat.succ_pos k)
+      simpa using this
+    rw [h, mul_zero]
 
 /-! ### The orthonormal polynomials -/
 
@@ -850,6 +1048,146 @@ theorem cdC_mul_cdA (hw : IsWeight μ) (n : ℕ) : cdC μ (n + 1) * cdA μ n = c
   rw [cdC, cdA, cdA]
   simp only [Nat.add_sub_cancel]
   field_simp
+
+/-! ### The Jacobi matrix -/
+
+/-- **The Jacobi matrix** of a weight: the symmetric tridiagonal `n × n` matrix with the
+recurrence coefficients `alpha μ i` on the diagonal and `√(beta μ i)` on the two neighbouring
+diagonals, at positions `(i, i + 1)` and `(i + 1, i)`. Its characteristic polynomial is the `n`-th
+monic orthogonal polynomial (`OrthogonalPolynomial.charpoly_jacobiMatrix`), so that the Gauss
+nodes of `μ` are its eigenvalues — the Golub–Welsch route to the nodes, which
+[quarteroni2000numerical] §10.6 (Programs 85–87) follows. -/
+def jacobiMatrix (μ : Measure ℝ) (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
+  Matrix.of fun i j =>
+    if (i : ℕ) = j then alpha μ i
+    else if (j : ℕ) = i + 1 then Real.sqrt (beta μ i)
+    else if (i : ℕ) = j + 1 then Real.sqrt (beta μ j)
+    else 0
+
+theorem jacobiMatrix_apply (μ : Measure ℝ) {n : ℕ} (i j : Fin n) :
+    jacobiMatrix μ n i j =
+      if (i : ℕ) = j then alpha μ i
+      else if (j : ℕ) = i + 1 then Real.sqrt (beta μ i)
+      else if (i : ℕ) = j + 1 then Real.sqrt (beta μ j)
+      else 0 := rfl
+
+/-- The Jacobi matrix is symmetric. -/
+theorem jacobiMatrix_isSymm (μ : Measure ℝ) (n : ℕ) : (jacobiMatrix μ n).IsSymm := by
+  ext i j
+  rw [Matrix.transpose_apply]
+  rcases eq_or_ne (i : ℕ) j with h | h
+  · rw [Fin.ext h]
+  · simp only [jacobiMatrix_apply, h, Ne.symm h, ite_false]
+    split_ifs <;> first | rfl | (exfalso; omega)
+
+/-- The determinant of a bordered matrix whose last row and last column vanish outside their
+last two entries: Laplace expansion along the last row, then along the last column of the
+off-diagonal minor. -/
+private theorem det_succ_succ_of_last_row_col {R : Type*} [CommRing R] {n : ℕ}
+    (M : Matrix (Fin (n + 2)) (Fin (n + 2)) R)
+    (hrow : ∀ i : Fin n, M (Fin.last (n + 1)) (Fin.castSucc (Fin.castSucc i)) = 0)
+    (hcol : ∀ i : Fin n, M (Fin.castSucc (Fin.castSucc i)) (Fin.last (n + 1)) = 0) :
+    M.det = M (Fin.last (n + 1)) (Fin.last (n + 1)) *
+        (M.submatrix Fin.castSucc Fin.castSucc).det -
+      M (Fin.last (n + 1)) (Fin.castSucc (Fin.last n)) *
+        M (Fin.castSucc (Fin.last n)) (Fin.last (n + 1)) *
+        (M.submatrix (Fin.castSucc ∘ Fin.castSucc) (Fin.castSucc ∘ Fin.castSucc)).det := by
+  rw [Matrix.det_succ_row M (Fin.last (n + 1)), Fin.sum_univ_castSucc, Fin.sum_univ_castSucc]
+  simp only [hrow, mul_zero, zero_mul, Finset.sum_const_zero, zero_add, Fin.succAbove_last]
+  have hsign1 : ((-1 : R) ^ ((Fin.last (n + 1) : ℕ) + (Fin.last (n + 1) : ℕ))) = 1 := by
+    rw [Fin.val_last, ← two_mul, pow_mul]; simp
+  have hsign2 : ((-1 : R) ^ ((Fin.last (n + 1) : ℕ) + (Fin.castSucc (Fin.last n) : ℕ))) = -1 := by
+    rw [Fin.val_last, Fin.val_castSucc, Fin.val_last, show n + 1 + n = 2 * n + 1 by ring,
+      pow_succ, pow_mul]
+    simp
+  rw [hsign1, hsign2, one_mul]
+  -- expand the off-diagonal minor along its last column
+  rw [Matrix.det_succ_column (M.submatrix Fin.castSucc (Fin.castSucc (Fin.last n)).succAbove)
+    (Fin.last n), Fin.sum_univ_castSucc]
+  simp only [Matrix.submatrix_apply, Fin.succAbove_castSucc_self, Fin.succ_last, hcol, mul_zero,
+    zero_mul, Finset.sum_const_zero, zero_add, Fin.succAbove_last, Matrix.submatrix_submatrix]
+  have hsign3 : ((-1 : R) ^ ((Fin.last n : ℕ) + (Fin.last n : ℕ))) = 1 := by
+    rw [Fin.val_last, ← two_mul, pow_mul]; simp
+  rw [hsign3, one_mul]
+  have hsub : ((Fin.castSucc (Fin.last n)).succAbove ∘ Fin.castSucc : Fin n → Fin (n + 2)) =
+      Fin.castSucc ∘ Fin.castSucc := by
+    funext i
+    simp only [Function.comp_apply]
+    exact Fin.succAbove_castSucc_of_lt _ _ (Fin.castSucc_lt_last i)
+  rw [hsub]
+  ring
+
+/-- The characteristic matrix of the Jacobi matrix restricted to the leading rows and columns is
+the characteristic matrix of the smaller Jacobi matrix. -/
+private theorem charmatrix_jacobiMatrix_submatrix (μ : Measure ℝ) (n : ℕ) :
+    (Matrix.charmatrix (jacobiMatrix μ (n + 1))).submatrix Fin.castSucc Fin.castSucc =
+      Matrix.charmatrix (jacobiMatrix μ n) := by
+  ext i j
+  simp only [Matrix.submatrix_apply, Matrix.charmatrix_apply, Matrix.diagonal_apply,
+    Fin.castSucc_inj, jacobiMatrix_apply, Fin.val_castSucc]
+
+/-- **The characteristic polynomial of the Jacobi matrix is the orthogonal polynomial**:
+`(jacobiMatrix μ n).charpoly = family μ n`, so the Gauss nodes of `μ` are the eigenvalues of its
+Jacobi matrix (Golub–Welsch).
+
+Laplace expansion of the tridiagonal determinant along its last row gives the recurrence
+`D_{n+2} = (X - α_{n+1}) D_{n+1} - β_n D_n`, the square of the off-diagonal entry `√β_n` being
+`β_n`, and this is the three-term recurrence `OrthogonalPolynomial.three_term_recurrence` of
+the monic family, with the same two initial values `1` and `X - α_0`.
+
+Reference: [quarteroni2000numerical] §10.6, Programs 85–87. -/
+theorem charpoly_jacobiMatrix (hw : IsWeight μ) (n : ℕ) :
+    (jacobiMatrix μ n).charpoly = family μ n := by
+  have hrec : ∀ m, (jacobiMatrix μ (m + 2)).charpoly =
+      (X - C (alpha μ (m + 1))) * (jacobiMatrix μ (m + 1)).charpoly -
+        C (beta μ m) * (jacobiMatrix μ m).charpoly := by
+    intro m
+    have hβ : 0 ≤ beta μ m := (div_pos (normSq_pos hw _) (normSq_pos hw _)).le
+    have hdet : ∀ k, (jacobiMatrix μ k).charpoly = (Matrix.charmatrix (jacobiMatrix μ k)).det :=
+      fun k => rfl
+    rw [hdet, hdet, hdet, det_succ_succ_of_last_row_col]
+    · rw [charmatrix_jacobiMatrix_submatrix, ← Matrix.submatrix_submatrix,
+        charmatrix_jacobiMatrix_submatrix, charmatrix_jacobiMatrix_submatrix]
+      have h1 : Matrix.charmatrix (jacobiMatrix μ (m + 2)) (Fin.last (m + 1)) (Fin.last (m + 1)) =
+          X - C (alpha μ (m + 1)) := by
+        simp [Matrix.charmatrix_apply_eq, jacobiMatrix_apply]
+      have hne : Fin.last (m + 1) ≠ Fin.castSucc (Fin.last m) := by simp [Fin.ext_iff]
+      have h2 : Matrix.charmatrix (jacobiMatrix μ (m + 2)) (Fin.last (m + 1))
+          (Fin.castSucc (Fin.last m)) = -C (Real.sqrt (beta μ m)) := by
+        simp only [Matrix.charmatrix_apply_ne _ _ _ hne, jacobiMatrix_apply, Fin.val_last,
+          Fin.val_castSucc]
+        rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_true]
+      have h3 : Matrix.charmatrix (jacobiMatrix μ (m + 2)) (Fin.castSucc (Fin.last m))
+          (Fin.last (m + 1)) = -C (Real.sqrt (beta μ m)) := by
+        simp only [Matrix.charmatrix_apply_ne _ _ _ hne.symm, jacobiMatrix_apply, Fin.val_last,
+          Fin.val_castSucc]
+        rw [ite_eq_right (by omega), ite_true]
+      rw [h1, h2, h3, neg_mul_neg, ← C_mul, Real.mul_self_sqrt hβ]
+    · intro i
+      have hne : Fin.last (m + 1) ≠ Fin.castSucc (Fin.castSucc i) := by
+        simp only [ne_eq, Fin.ext_iff, Fin.val_last, Fin.val_castSucc]; omega
+      simp only [Matrix.charmatrix_apply_ne _ _ _ hne, jacobiMatrix_apply, Fin.val_last,
+        Fin.val_castSucc]
+      rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), map_zero,
+        neg_zero]
+    · intro i
+      have hne : Fin.castSucc (Fin.castSucc i) ≠ Fin.last (m + 1) := by
+        simp only [ne_eq, Fin.ext_iff, Fin.val_last, Fin.val_castSucc]; omega
+      simp only [Matrix.charmatrix_apply_ne _ _ _ hne, jacobiMatrix_apply, Fin.val_last,
+        Fin.val_castSucc]
+      rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), map_zero,
+        neg_zero]
+  have h0 : (jacobiMatrix μ 0).charpoly = family μ 0 := by
+    rw [family_zero, Matrix.charpoly, Matrix.det_isEmpty]
+  have h1 : (jacobiMatrix μ 1).charpoly = family μ 1 := by
+    rw [family_one, Matrix.charpoly, Matrix.det_fin_one]
+    simp [Matrix.charmatrix_apply_eq, jacobiMatrix_apply]
+  suffices h : ∀ m, (jacobiMatrix μ m).charpoly = family μ m ∧
+      (jacobiMatrix μ (m + 1)).charpoly = family μ (m + 1) from (h n).1
+  intro m
+  induction m with
+  | zero => exact ⟨h0, h1⟩
+  | succ m ih => exact ⟨ih.2, by rw [hrec, ih.1, ih.2, three_term_recurrence hw]⟩
 
 /-! ### The truncated expansion as a best approximation -/
 
@@ -1342,6 +1680,58 @@ theorem natDegree_legendre (n : ℕ) : (legendre n).natDegree = n := by
 theorem degree_legendre (n : ℕ) : (legendre n).degree = n := by
   rw [degree_eq_natDegree (legendre_ne_zero n), natDegree_legendre]
 
+/-- **The explicit form of the Legendre polynomial**:
+`L_k = 2^{-k} ∑_{l ≤ k/2} (-1)^l C(k, l) C(2k - 2l, k) X^{k - 2l}`, obtained from Rodrigues' formula
+by expanding `(X² - 1)^k` binomially and differentiating `k` times term by term; the terms with
+`2l > k` are killed by the derivative.
+
+Reference: [quarteroni2000numerical] (10.12). -/
+theorem legendre_eq_sum (k : ℕ) :
+    legendre k = C ((2 : ℝ) ^ k)⁻¹ * ∑ l ∈ Finset.range (k / 2 + 1),
+      C ((-1) ^ l * (k.choose l : ℝ) * ((2 * k - 2 * l).choose k : ℝ)) * X ^ (k - 2 * l) := by
+  have hexp : ((X : ℝ[X]) ^ 2 - 1) ^ k = ∑ m ∈ Finset.range (k + 1),
+      C ((-1) ^ (m + k) * (k.choose m : ℝ)) * X ^ (2 * m) := by
+    rw [sub_pow]
+    refine Finset.sum_congr rfl fun m _ => ?_
+    simp only [C_mul, C_pow, C_neg, C_1, map_natCast, one_pow, mul_one, pow_mul]
+    ring
+  have hder : derivative^[k] (((X : ℝ[X]) ^ 2 - 1) ^ k) = ∑ m ∈ Finset.range (k + 1),
+      C ((-1) ^ (m + k) * (k.choose m : ℝ) * ((2 * m).descFactorial k : ℝ)) * X ^ (2 * m - k) := by
+    rw [hexp, iterate_derivative_sum]
+    refine Finset.sum_congr rfl fun m _ => ?_
+    rw [iterate_derivative_C_mul, iterate_derivative_X_pow_eq_C_mul, ← mul_assoc, ← C_mul]
+  have hsub : Finset.range (k / 2 + 1) ⊆ Finset.range (k + 1) :=
+    Finset.range_subset_range.mpr (by omega)
+  have hvanish : ∀ l ∈ Finset.range (k + 1), l ∉ Finset.range (k / 2 + 1) →
+      C ((-1) ^ l * (k.choose l : ℝ) * ((2 * k - 2 * l).choose k : ℝ)) * X ^ (k - 2 * l) = 0 := by
+    intro l hl hl'
+    have : 2 * k - 2 * l < k := by
+      rw [Finset.mem_range] at hl hl'
+      omega
+    rw [Nat.choose_eq_zero_of_lt this]
+    simp
+  rw [Finset.sum_subset hsub hvanish, legendre, hder, Finset.mul_sum, Finset.mul_sum]
+  conv_lhs => rw [← Finset.sum_range_reflect]
+  refine Finset.sum_congr rfl fun l hl => ?_
+  simp only [add_tsub_cancel_right]
+  have hlk : l ≤ k := by
+    simp only [Finset.mem_range] at hl
+    omega
+  have hfac : ((k ! : ℕ) : ℝ) ≠ 0 := by exact_mod_cast k.factorial_ne_zero
+  by_cases h2 : 2 * l ≤ k
+  · have e1 : 2 * (k - l) - k = k - 2 * l := by omega
+    have e2 : 2 * (k - l) = 2 * k - 2 * l := by omega
+    have e3 : k - l + k = l + 2 * (k - l) := by omega
+    rw [e1, e2, e3, pow_add, pow_mul, neg_one_sq, one_pow, mul_one, Nat.choose_symm hlk,
+      Nat.descFactorial_eq_factorial_mul_choose, ← mul_assoc, ← mul_assoc, ← C_mul, ← C_mul]
+    congr 2
+    push_cast
+    field_simp
+  · have h3 : 2 * (k - l) < k := by omega
+    have h4 : 2 * k - 2 * l < k := by omega
+    rw [Nat.descFactorial_eq_zero_iff_lt.mpr h3, Nat.choose_eq_zero_of_lt h4]
+    simp
+
 /-! ### Value at the right endpoint -/
 
 /-- `Pₙ(1) = 1`. -/
@@ -1539,70 +1929,105 @@ theorem integral_legendreMeasure (f : ℝ → ℝ) :
 theorem isWeight_legendreMeasure : IsWeight legendreMeasure :=
   isWeight_volume_restrict_Ioo (by norm_num)
 
-/-- The Legendre polynomials are orthogonal to every polynomial of lower degree. -/
-theorem integral_legendre_mul_of_degree_lt {n : ℕ} {p : ℝ[X]} (hp : p.degree < n) :
-    ∫ x, (legendre n).eval x * p.eval x ∂legendreMeasure = 0 := by
+/-! ### Identifying a classical family with the monic family -/
+
+variable {μ : Measure ℝ}
+
+/-- A family of pairwise orthogonal polynomials with one member of each degree is orthogonal to
+every polynomial of lower degree: such a polynomial is a linear combination of the members of
+lower degree. -/
+theorem integral_mul_of_degree_lt_of_orthogonal (hw : IsWeight μ) {q : ℕ → ℝ[X]}
+    (hdeg : ∀ n, (q n).degree = n)
+    (horth : ∀ m n, m < n → ∫ x, (q n).eval x * (q m).eval x ∂μ = 0) {n : ℕ} {p : ℝ[X]}
+    (hp : p.degree < n) : ∫ x, (q n).eval x * p.eval x ∂μ = 0 := by
+  have hunit : ∀ i, IsUnit (q i).leadingCoeff := fun i =>
+    isUnit_iff_ne_zero.2 (leadingCoeff_ne_zero.2 fun h => by
+      have := hdeg i
+      rw [h, degree_zero] at this
+      exact absurd this (by simp))
   have hmem : p ∈ Polynomial.degreeLT ℝ n := Polynomial.mem_degreeLT.mpr hp
-  rw [← Polynomial.Sequence.span_degreeLT (⟨legendre, degree_legendre⟩ : Polynomial.Sequence ℝ)
-      (fun i _ => isUnit_iff_ne_zero.2 (leadingCoeff_ne_zero.2 (legendre_ne_zero i))),
-    show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
+  rw [← Polynomial.Sequence.span_degreeLT (⟨q, hdeg⟩ : Polynomial.Sequence ℝ)
+      (fun i _ => hunit i), show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
     Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
   obtain ⟨c, hc⟩ := hmem
-  have hev : ∀ x : ℝ, (legendre n).eval x * p.eval x =
-      ∑ k ∈ Finset.range n, c k * ((legendre n).eval x * (legendre k).eval x) := by
+  have hev : ∀ x : ℝ, (q n).eval x * p.eval x =
+      ∑ k ∈ Finset.range n, c k * ((q n).eval x * (q k).eval x) := by
     intro x
     rw [← hc]
     simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
   simp only [hev]
-  rw [integral_finsetSum _ fun k _ =>
-    ((isWeight_legendreMeasure.integrable_eval_mul _ _).const_mul _)]
+  rw [integral_finsetSum _ fun k _ => (hw.integrable_eval_mul _ _).const_mul _]
   refine Finset.sum_eq_zero fun k hk => ?_
-  rw [integral_const_mul, integral_legendreMeasure,
-    integral_legendre_mul_legendre_of_ne (Nat.ne_of_gt (Finset.mem_range.mp hk)), mul_zero]
+  rw [integral_const_mul, horth k n (Finset.mem_range.mp hk), mul_zero]
 
-/-- The monic rescaling of `Polynomial.legendre n` is the `n`-th orthogonal polynomial of Lebesgue
-measure on `(-1, 1)`: the Legendre family is an instance of the general theory. -/
-theorem family_eq_legendre (n : ℕ) :
-    family legendreMeasure n = C ((legendre n).leadingCoeff)⁻¹ * legendre n := by
-  have hlc : (legendre n).leadingCoeff ≠ 0 := leadingCoeff_ne_zero.2 (legendre_ne_zero n)
-  have hdeg : (C ((legendre n).leadingCoeff)⁻¹ * legendre n).degree = (n : WithBot ℕ) := by
-    rw [degree_mul, degree_C (inv_ne_zero hlc), zero_add, degree_legendre]
-  have hmonic : (C ((legendre n).leadingCoeff)⁻¹ * legendre n).Monic := by
+/-- **A pairwise orthogonal family with one member of each degree is the monic family of the
+weight, up to leading coefficients**: `family μ n = C (q n).leadingCoeff⁻¹ * q n`. The difference
+of the two monic polynomials of degree `n` has lower degree and is orthogonal to every polynomial
+of degree `< n`, hence to itself, hence vanishes. This is the identification used for the Legendre,
+Chebyshev, Laguerre and Hermite families. -/
+theorem family_eq_of_orthogonal (hw : IsWeight μ) {q : ℕ → ℝ[X]} (hdeg : ∀ n, (q n).degree = n)
+    (horth : ∀ m n, m < n → ∫ x, (q n).eval x * (q m).eval x ∂μ = 0) (n : ℕ) :
+    family μ n = C ((q n).leadingCoeff)⁻¹ * q n := by
+  have hne : q n ≠ 0 := fun h => by
+    have := hdeg n
+    rw [h, degree_zero] at this
+    exact absurd this (by simp)
+  have hlc : (q n).leadingCoeff ≠ 0 := leadingCoeff_ne_zero.2 hne
+  have hdeg' : (C ((q n).leadingCoeff)⁻¹ * q n).degree = (n : WithBot ℕ) := by
+    rw [degree_mul, degree_C (inv_ne_zero hlc), zero_add, hdeg]
+  have hmonic : (C ((q n).leadingCoeff)⁻¹ * q n).Monic := by
     rw [Monic, leadingCoeff_mul, leadingCoeff_C, inv_mul_cancel₀ hlc]
-  refine sub_eq_zero.mp (eq_zero_of_degree_lt isWeight_legendreMeasure (n := n) ?_ ?_)
-  · have h := degree_sub_lt_left (p := family legendreMeasure n)
-      (q := C ((legendre n).leadingCoeff)⁻¹ * legendre n)
-      (by rw [degree_family, hdeg]) (family_ne_zero _ n)
-      (by rw [(monic_family legendreMeasure n).leadingCoeff, hmonic.leadingCoeff])
+  refine sub_eq_zero.mp (eq_zero_of_degree_lt hw (n := n) ?_ ?_)
+  · have h := degree_sub_lt_left (p := family μ n) (q := C ((q n).leadingCoeff)⁻¹ * q n)
+      (by rw [degree_family, hdeg']) (family_ne_zero _ n)
+      (by rw [(monic_family μ n).leadingCoeff, hmonic.leadingCoeff])
     rwa [degree_family] at h
   · intro k hk
-    have h1 : ∫ x, (family legendreMeasure n).eval x * (family legendreMeasure k).eval x
-        ∂legendreMeasure = 0 :=
-      integral_family_mul_family isWeight_legendreMeasure (Nat.ne_of_gt hk)
-    have h2 : ∫ x, (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
-        (family legendreMeasure k).eval x ∂legendreMeasure = 0 := by
-      have hev : ∀ x : ℝ, (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
-          (family legendreMeasure k).eval x =
-          ((legendre n).leadingCoeff)⁻¹ *
-            ((legendre n).eval x * (family legendreMeasure k).eval x) := by
+    have h1 : ∫ x, (family μ n).eval x * (family μ k).eval x ∂μ = 0 :=
+      integral_family_mul_family hw (Nat.ne_of_gt hk)
+    have h2 : ∫ x, (C ((q n).leadingCoeff)⁻¹ * q n).eval x * (family μ k).eval x ∂μ = 0 := by
+      have hev : ∀ x : ℝ, (C ((q n).leadingCoeff)⁻¹ * q n).eval x * (family μ k).eval x =
+          ((q n).leadingCoeff)⁻¹ * ((q n).eval x * (family μ k).eval x) := by
         intro x
         simp only [eval_mul, eval_C]
         ring
       simp only [hev]
-      rw [integral_const_mul,
-        integral_legendre_mul_of_degree_lt (by rw [degree_family]; exact_mod_cast hk), mul_zero]
-    have hev : ∀ x : ℝ, (family legendreMeasure n -
-        C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
-          (family legendreMeasure k).eval x =
-        (family legendreMeasure n).eval x * (family legendreMeasure k).eval x -
-          (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
-            (family legendreMeasure k).eval x := by
+      rw [integral_const_mul, integral_mul_of_degree_lt_of_orthogonal hw hdeg horth
+        (by rw [degree_family]; exact_mod_cast hk), mul_zero]
+    have hev : ∀ x : ℝ, (family μ n - C ((q n).leadingCoeff)⁻¹ * q n).eval x *
+        (family μ k).eval x =
+        (family μ n).eval x * (family μ k).eval x -
+          (C ((q n).leadingCoeff)⁻¹ * q n).eval x * (family μ k).eval x := by
       intro x
       simp only [eval_sub]
       ring
     simp only [hev]
-    rw [integral_sub (isWeight_legendreMeasure.integrable_eval_mul _ _)
-      (isWeight_legendreMeasure.integrable_eval_mul _ _), h1, h2, sub_zero]
+    rw [integral_sub (hw.integrable_eval_mul _ _) (hw.integrable_eval_mul _ _), h1, h2, sub_zero]
+
+/-- The squared norm of the monic family in terms of a classical family it is a rescaling of. -/
+theorem normSq_eq_of_family_eq {q : ℝ[X]} {c : ℝ} {n : ℕ} (h : family μ n = C c * q) :
+    normSq μ n = c ^ 2 * ∫ x, q.eval x ^ 2 ∂μ := by
+  rw [normSq, ← integral_const_mul]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+  simp only [h, eval_mul, eval_C]
+  ring
+
+/-- The Legendre polynomials are orthogonal to every polynomial of lower degree. -/
+theorem integral_legendre_mul_of_degree_lt {n : ℕ} {p : ℝ[X]} (hp : p.degree < n) :
+    ∫ x, (legendre n).eval x * p.eval x ∂legendreMeasure = 0 :=
+  integral_mul_of_degree_lt_of_orthogonal isWeight_legendreMeasure degree_legendre
+    (fun m n hmn => by
+      rw [integral_legendreMeasure]
+      exact integral_legendre_mul_legendre_of_ne (Nat.ne_of_gt hmn)) hp
+
+/-- The monic rescaling of `Polynomial.legendre n` is the `n`-th orthogonal polynomial of Lebesgue
+measure on `(-1, 1)`: the Legendre family is an instance of the general theory. -/
+theorem family_eq_legendre (n : ℕ) :
+    family legendreMeasure n = C ((legendre n).leadingCoeff)⁻¹ * legendre n :=
+  family_eq_of_orthogonal isWeight_legendreMeasure degree_legendre
+    (fun m n hmn => by
+      rw [integral_legendreMeasure]
+      exact integral_legendre_mul_legendre_of_ne (Nat.ne_of_gt hmn)) n
 
 end OrthogonalPolynomial
 

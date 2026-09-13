@@ -3,6 +3,7 @@ import Mathlib.Tactic.Positivity.Finset
 import Mathlib.Topology.ContinuousMap.Weierstrass
 import Mathlib.Topology.TietzeExtension
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
+import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.OrthogonalPolynomial
 
@@ -13,7 +14,9 @@ A quadrature rule is the bounded linear functional `f ↦ ∑ i, w i * f (x i)` 
 functions of a compact space: finitely many *nodes* `x i` with *weights* `w i`, approximating an
 integral. This file has the rule itself, its norm, the criterion by which a sequence of rules
 converges for every continuous integrand, and Peano's kernel representation of the error of a
-single rule. The material is [han2009theoretical] §2.4 and [kress1998numerical] §9.1--§9.3.
+single rule, then the Gauss theory with respect to a weight: Jacobi's characterization of the
+degree of exactness, the discrete inner product of a rule and the Gauss remainder. The material is
+[han2009theoretical] §2.4, [kress1998numerical] §9.1--§9.3 and [quarteroni2000numerical] §10.2.
 
 ## Main definitions
 
@@ -25,6 +28,10 @@ single rule. The material is [han2009theoretical] §2.4 and [kress1998numerical]
 * `Quadrature.truncPow m y t` is the truncated power `(y - t)_+^m`, and
   `Quadrature.peanoKernel a b w z m` is the Peano kernel of the rule with weights `w` at nodes `z`:
   the error functional applied to `(· - t)_+^m`, divided by `m!`.
+* `Quadrature.IsExactOnMeasure μ w x d` and `Quadrature.IsInterpolatoryMeasure μ w x` are the
+  same two notions at the level of a measure `μ` on `ℝ` and polynomials, the form the Gauss theory
+  is stated in; `Quadrature.discreteInner w x f g` is the discrete inner product `∑ w i f (x i) g
+  (x i)` of a rule.
 
 ## Main results
 
@@ -46,6 +53,19 @@ single rule. The material is [han2009theoretical] §2.4 and [kress1998numerical]
   and `Quadrature.not_forall_eq_integral_of_degree_le` says that no `n`-point rule does better. Both
   are stated about polynomials and a measure rather than through `IsExactOn`, which lives on `C(X,
   ℝ)` for a compact `X` and would need the weight to be carried by `X`.
+* `Quadrature.isExactOnMeasure_add_iff` is **Jacobi's theorem**: a rule with `n + 1` distinct
+  nodes is exact to degree `n + m` for `μ` exactly when it is interpolatory and its nodal polynomial
+  is `μ`-orthogonal to the polynomials of degree at most `m - 1`;
+  `Quadrature.isExactOnMeasure_two_mul_add_one_iff` is the case `m = n + 1`, characterizing the
+  Gauss nodes as the roots of the orthogonal polynomial, and
+  `Quadrature.not_isExactOnMeasure_two_mul_add_two` the impossibility of degree `2n + 2`.
+  `Quadrature.isExactOnMeasure_iff_isExactOn` bridges to the functional level, and
+  `Quadrature.isExactOnMeasure_map_affine` transports a rule along an affine change of interval.
+* `Quadrature.interpolate_eq_sum_discreteInner_smul`: for a rule exact to degree `2n - 1` the
+  interpolant at its `n + 1` nodes is the discrete truncation `∑ (f, p_k)_n / (p_k, p_k)_n · p_k`
+  of the orthogonal expansion — the discrete Chebyshev and Legendre transforms are its instances.
+* `Quadrature.exists_gauss_error_eq` is the **Gauss remainder** `f^{(2n)}(ξ)/(2n)! · ∫ p_n² ∂μ`,
+  proved through the Hermite interpolant with double nodes.
 * `Quadrature.error_eq_integral_peanoKernel` is **Peano's kernel theorem**: a rule exact on the
   polynomials of degree at most `m` has, at an integrand of class `C^{m+1}`, the error
   `∫_a^b K(t) f^{(m+1)}(t) dt` with `K` the Peano kernel; and
@@ -483,6 +503,592 @@ theorem not_forall_eq_integral_of_degree_le (hw : IsWeight μ) {n : ℕ} (x w : 
   exact absurd hpos (lt_irrefl 0)
 
 end Gauss
+
+/-! ### Exactness with respect to a weight -/
+
+section ExactnessMeasure
+
+open OrthogonalPolynomial Polynomial MeasureTheory
+
+variable {μ : Measure ℝ} {n : ℕ}
+
+/-- A rule with weights `w` at nodes `x` is **exact to degree `d` for the weight `μ`** when it
+integrates every polynomial of degree at most `d` exactly against `μ`. This is the polynomial-level
+degree of exactness of [quarteroni2000numerical] §10.2, stated for a measure on `ℝ` rather than
+for a functional on `C(X, ℝ)` as `Quadrature.IsExactOn` is, so that it can host a weight of
+unbounded support (the Laguerre and Hermite weights). -/
+def IsExactOnMeasure (μ : Measure ℝ) {n : ℕ} (w x : Fin n → ℝ) (d : ℕ) : Prop :=
+  ∀ p : ℝ[X], p.degree ≤ d → ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ
+
+/-- Exactness to a degree implies exactness to every smaller degree. -/
+theorem IsExactOnMeasure.mono {w x : Fin n → ℝ} {d e : ℕ} (h : IsExactOnMeasure μ w x d)
+    (hed : e ≤ d) : IsExactOnMeasure μ w x e := fun p hp =>
+  h p (hp.trans (by exact_mod_cast hed))
+
+/-- `degree < d + 1` is `degree ≤ d`, for the degree of a polynomial. -/
+private theorem degree_lt_succ_iff {p : ℝ[X]} {d : ℕ} :
+    p.degree < ((d + 1 : ℕ) : WithBot ℕ) ↔ p.degree ≤ d := by
+  rcases eq_or_ne p 0 with rfl | hp
+  · simp
+  · rw [degree_eq_natDegree hp]
+    exact_mod_cast Nat.lt_succ_iff
+
+/-- Exactness to degree `d` in the strict form `degree < d + 1` used by `Quadrature.exists_gauss`.
+-/
+theorem isExactOnMeasure_iff_forall_degree_lt {w x : Fin n → ℝ} {d : ℕ} :
+    IsExactOnMeasure μ w x d ↔ ∀ p : ℝ[X], p.degree < ((d + 1 : ℕ) : WithBot ℕ) →
+      ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ :=
+  forall_congr' fun _ => imp_congr_left degree_lt_succ_iff.symm
+
+/-- A rule with `n + 1` nodes is **interpolatory for the weight `μ`** when its weights are the
+integrals of the Lagrange basis polynomials of its nodes, so that the rule is the integral of the
+Lagrange interpolant. This is [quarteroni2000numerical] (10.14), the measure-level twin of
+`Quadrature.IsInterpolatory`. -/
+def IsInterpolatoryMeasure (μ : Measure ℝ) (w x : Fin (n + 1) → ℝ) : Prop :=
+  ∀ i, w i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ
+
+/-- The value of a rule at a Lagrange basis polynomial of its own nodes is the corresponding
+weight. -/
+private theorem sum_mul_eval_basis {w x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
+    (i : Fin (n + 1)) : ∑ j, w j * (Lagrange.basis Finset.univ x i).eval (x j) = w i := by
+  rw [Finset.sum_eq_single i]
+  · rw [Lagrange.eval_basis_self hx.injOn (Finset.mem_univ i), mul_one]
+  · intro j _ hji
+    rw [Lagrange.eval_basis_of_ne (Ne.symm hji) (Finset.mem_univ j), mul_zero]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
+/-- **An `n + 1`-point rule at distinct nodes is interpolatory for `μ` exactly when it is exact to
+degree `n` for `μ`.** Exactness applied to a Lagrange basis polynomial reads off the weight; and
+conversely every polynomial of degree at most `n` is its own Lagrange interpolant.
+
+Reference: [quarteroni2000numerical] §10.2, (10.14); [kress1998numerical] §9.1. -/
+theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) : IsInterpolatoryMeasure μ w x ↔ IsExactOnMeasure μ w x n := by
+  have hcard : (Finset.univ : Finset (Fin (n + 1))).card = n + 1 := by simp
+  constructor
+  · intro h p hp
+    have heq : p = Lagrange.interpolate Finset.univ x fun i => p.eval (x i) :=
+      Lagrange.eq_interpolate hx.injOn (by rw [hcard]; exact degree_lt_succ_iff.mpr hp)
+    have hev : ∀ t : ℝ,
+        p.eval t = ∑ i, p.eval (x i) * (Lagrange.basis Finset.univ x i).eval t := by
+      intro t
+      conv_lhs => rw [heq]
+      rw [Lagrange.interpolate_apply, eval_finsetSum]
+      exact Finset.sum_congr rfl fun i _ => by rw [eval_mul, eval_C]
+    rw [integral_congr_ae (Filter.Eventually.of_forall hev),
+      integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
+    refine (Finset.sum_congr rfl fun i _ => ?_).symm
+    rw [integral_const_mul, h i]
+    ring
+  · intro h i
+    have hdeg : (Lagrange.basis Finset.univ x i).degree ≤ n := by
+      rw [Lagrange.degree_basis hx.injOn (Finset.mem_univ i), hcard]
+      simp
+    rw [← h _ hdeg, sum_mul_eval_basis hx]
+
+/-- Division with remainder by the nodal polynomial of `n + 1` nodes: a polynomial of degree at
+most `n + m` is `ω q + r` with `q` of degree at most `m - 1` and `r` of degree at most `n`. -/
+private theorem exists_nodal_mul_add {x : Fin (n + 1) → ℝ} {m : ℕ} (hm : 1 ≤ m) {p : ℝ[X]}
+    (hp : p.degree ≤ ((n + m : ℕ) : WithBot ℕ)) :
+    ∃ q r : ℝ[X], p = Lagrange.nodal Finset.univ x * q + r ∧
+      q.degree ≤ ((m - 1 : ℕ) : WithBot ℕ) ∧ r.degree ≤ n := by
+  have hmonic : (Lagrange.nodal Finset.univ x).Monic := Lagrange.nodal_monic
+  have hnat : (Lagrange.nodal Finset.univ x).natDegree = n + 1 := by
+    rw [Lagrange.natDegree_nodal]; simp
+  refine ⟨p /ₘ Lagrange.nodal Finset.univ x, p %ₘ Lagrange.nodal Finset.univ x, ?_, ?_, ?_⟩
+  · rw [add_comm]
+    exact (modByMonic_add_div p _).symm
+  · refine degree_le_natDegree.trans ?_
+    rw [natDegree_divByMonic p hmonic, hnat]
+    have hpnat : p.natDegree ≤ n + m := natDegree_le_iff_degree_le.mpr hp
+    exact_mod_cast (by omega : p.natDegree - (n + 1) ≤ m - 1)
+  · have h := degree_modByMonic_lt p hmonic
+    rw [degree_eq_natDegree hmonic.ne_zero, hnat] at h
+    exact degree_lt_succ_iff.mp h
+
+/-- **Jacobi's theorem.** For `m ≥ 1`, a rule with `n + 1` distinct nodes is exact to degree
+`n + m` for the weight `μ` if and only if it is interpolatory and its nodal polynomial
+`ω = ∏ (X - x i)` is `μ`-orthogonal to every polynomial of degree at most `m - 1`.
+
+Sufficiency: divide `f ∈ P_{n+m}` by the monic `ω`, `f = ω q + r` with `deg q ≤ m - 1` and
+`deg r ≤ n`; the rule kills `ω q`, which vanishes at the nodes, the integral kills it by the
+orthogonality, and on `r` an interpolatory rule is exact. Necessity: exactness to degree `n + m ≥
+n` makes the rule interpolatory, and for `p ∈ P_{m-1}` the polynomial `ω p ∈ P_{n+m}` vanishes at
+the nodes, so its integral is the value of the rule at it, namely `0`.
+
+Reference: [quarteroni2000numerical] Theorem 10.1. -/
+theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
+    {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
+    IsExactOnMeasure μ w x (n + m) ↔
+      IsInterpolatoryMeasure μ w x ∧ ∀ p : ℝ[X], p.degree ≤ ((m - 1 : ℕ) : WithBot ℕ) →
+        ∫ t, (Lagrange.nodal Finset.univ x).eval t * p.eval t ∂μ = 0 := by
+  have hroot : ∀ i, (Lagrange.nodal Finset.univ x).eval (x i) = 0 := fun i =>
+    Lagrange.eval_nodal_at_node (Finset.mem_univ i)
+  have hnodaldeg : (Lagrange.nodal Finset.univ x).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
+    rw [Lagrange.degree_nodal]; simp
+  constructor
+  · intro h
+    refine ⟨(isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mpr (h.mono (by omega)),
+      fun p hp => ?_⟩
+    have hdeg : (Lagrange.nodal Finset.univ x * p).degree ≤ ((n + m : ℕ) : WithBot ℕ) := by
+      refine (degree_mul_le _ _).trans ?_
+      rw [hnodaldeg]
+      calc ((n + 1 : ℕ) : WithBot ℕ) + p.degree
+          ≤ ((n + 1 : ℕ) : WithBot ℕ) + ((m - 1 : ℕ) : WithBot ℕ) := by gcongr
+        _ = ((n + m : ℕ) : WithBot ℕ) := by
+            norm_cast
+            omega
+    have h2 : ∑ i, w i * (Lagrange.nodal Finset.univ x * p).eval (x i) = 0 :=
+      Finset.sum_eq_zero fun i _ => by rw [eval_mul, hroot i]; ring
+    calc ∫ t, (Lagrange.nodal Finset.univ x).eval t * p.eval t ∂μ
+        = ∫ t, (Lagrange.nodal Finset.univ x * p).eval t ∂μ :=
+          integral_congr_ae (Filter.Eventually.of_forall fun t => (eval_mul).symm)
+      _ = 0 := (h _ hdeg).symm.trans h2
+  · rintro ⟨hint, horth⟩ p hp
+    obtain ⟨q, r, rfl, hq, hr⟩ := exists_nodal_mul_add (x := x) hm hp
+    have hsum : ∑ i, w i * (Lagrange.nodal Finset.univ x * q + r).eval (x i) =
+        ∑ i, w i * r.eval (x i) :=
+      Finset.sum_congr rfl fun i _ => by rw [eval_add, eval_mul, hroot i]; ring
+    have hev : ∀ t : ℝ, (Lagrange.nodal Finset.univ x * q + r).eval t =
+        (Lagrange.nodal Finset.univ x).eval t * q.eval t + r.eval t := fun t => by
+      rw [eval_add, eval_mul]
+    rw [hsum, integral_congr_ae (Filter.Eventually.of_forall hev),
+      integral_add (hw.integrable_eval_mul _ _) (hw.integrable_eval r), horth q hq, zero_add]
+    exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mp hint r hr
+
+/-- **No rule with `n + 1` nodes is exact to degree `2n + 2`**; the Gauss rule's degree `2n + 1`
+is the maximum. This is `Quadrature.not_forall_eq_integral_of_degree_le` restated.
+
+Reference: [quarteroni2000numerical] Corollary 10.1. -/
+theorem not_isExactOnMeasure_two_mul_add_two (hw : IsWeight μ) (w x : Fin (n + 1) → ℝ) :
+    ¬ IsExactOnMeasure μ w x (2 * n + 2) := fun h =>
+  not_forall_eq_integral_of_degree_le hw x w fun p hp =>
+    h p (hp.trans (by exact_mod_cast (by omega : 2 * n + 2 ≤ 2 * (n + 1))))
+
+/-- **The Gauss nodes are the roots of the orthogonal polynomial.** A rule with `n + 1` distinct
+nodes is exact to degree `2n + 1` for the weight `μ` exactly when its nodal polynomial is the monic
+orthogonal polynomial `family μ (n + 1)` — so that its nodes are the roots of that polynomial —
+and it is interpolatory.
+
+This is Jacobi's theorem at `m = n + 1`: a monic polynomial of degree `n + 1` orthogonal to every
+polynomial of degree at most `n` differs from `family μ (n + 1)` by a polynomial of degree at most
+`n` orthogonal to all of `P_n`, hence zero.
+
+Reference: [quarteroni2000numerical] (10.16). -/
+theorem isExactOnMeasure_two_mul_add_one_iff (hw : IsWeight μ) {x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
+    IsExactOnMeasure μ w x (2 * n + 1) ↔
+      Lagrange.nodal Finset.univ x = family μ (n + 1) ∧ IsInterpolatoryMeasure μ w x := by
+  have hnodaldeg : (Lagrange.nodal Finset.univ x).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
+    rw [Lagrange.degree_nodal]; simp
+  have h2 : 2 * n + 1 = n + (n + 1) := by omega
+  rw [h2, isExactOnMeasure_add_iff hw (by omega) hx w, Nat.add_sub_cancel, and_comm]
+  refine and_congr_left fun _ => ⟨fun h => ?_, fun h p hp => ?_⟩
+  · refine sub_eq_zero.mp (eq_zero_of_degree_lt hw (n := n + 1) ?_ ?_)
+    · have := degree_sub_lt_left (p := Lagrange.nodal Finset.univ x) (q := family μ (n + 1))
+        (by rw [hnodaldeg, degree_family]) Lagrange.nodal_ne_zero
+        (by rw [Lagrange.nodal_monic.leadingCoeff, (monic_family μ (n + 1)).leadingCoeff])
+      rwa [hnodaldeg] at this
+    · intro k hk
+      have hkdeg : (family μ k).degree ≤ n := by
+        rw [degree_family]; exact_mod_cast Nat.lt_succ_iff.mp hk
+      have hev : ∀ t : ℝ, (Lagrange.nodal Finset.univ x - family μ (n + 1)).eval t *
+          (family μ k).eval t = (Lagrange.nodal Finset.univ x).eval t * (family μ k).eval t -
+            (family μ (n + 1)).eval t * (family μ k).eval t := fun t => by
+        rw [eval_sub, sub_mul]
+      rw [integral_congr_ae (Filter.Eventually.of_forall hev),
+        integral_sub (hw.integrable_eval_mul _ _) (hw.integrable_eval_mul _ _), h _ hkdeg,
+        integral_family_mul_family hw (by omega), sub_zero]
+  · rw [h]
+    exact integral_family_mul_of_degree_lt hw (degree_lt_succ_iff.mpr hp)
+
+/-- **The bridge to the functional level.** For a finite weight carried by `[a, b]`, nodes in
+`[a, b]`, and `L` the functional `f ↦ ∫ f ∂μ` on `C([a, b], ℝ)`, exactness for `μ` at the
+polynomial level is exactness for `L` in the sense of `Quadrature.IsExactOn`. This is what lets the
+Szegő–Pólya criterion `Quadrature.tendsto_of_nonneg` apply to the Gauss and Gauss–Lobatto rules,
+which are stated at the measure level. -/
+theorem isExactOnMeasure_iff_isExactOn {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
+    (w : Fin n → ℝ) (x : Fin n → Set.Icc a b) {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ}
+    (hL : ∀ f : C(Set.Icc a b, ℝ), L f = ∫ t, f t ∂(μ.comap Subtype.val)) (d : ℕ) :
+    IsExactOnMeasure μ w (Subtype.val ∘ x) d ↔ IsExactOn L w x d := by
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  have hint : ∀ P : ℝ[X], ∫ t : Set.Icc a b, P.eval (t : ℝ) ∂(μ.comap Subtype.val) =
+      ∫ t, P.eval t ∂μ := by
+    intro P
+    have h1 := integral_subtype_comap (μ := μ) (s := Set.Icc a b) measurableSet_Icc
+      fun t => P.eval t
+    rwa [Measure.restrict_eq_self_of_ae_mem hae] at h1
+  constructor
+  · intro h f hf
+    obtain ⟨P, hP, hfP⟩ := mem_polyLE_iff.mp hf
+    rw [functional_apply, hL]
+    have hfun : (fun t : Set.Icc a b => f t) = fun t : Set.Icc a b => P.eval (t : ℝ) :=
+      funext hfP
+    rw [hfun, hint, ← h P hP]
+    exact Finset.sum_congr rfl fun i _ => by rw [hfP]; rfl
+  · intro h P hP
+    have hmem : P.toContinuousMapOn (Set.Icc a b) ∈ polyLE (Set.Icc a b) d :=
+      mem_polyLE_iff.mpr ⟨P, hP, fun t => by simp⟩
+    have h1 := h _ hmem
+    rw [functional_apply, hL] at h1
+    simp only [Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply] at h1
+    rw [hint] at h1
+    exact h1
+
+/-- **Change of interval.** A rule exact to degree `r` for `μ` transports along an affine map
+`φ t = c * t + d` to a rule exact to degree `r` for the image measure `μ.map φ`, with nodes `φ ∘ x`
+and the same weights: `p ∘ φ` is a polynomial of degree at most that of `p`.
+
+Reference: [quarteroni2000numerical] Remark 10.3. -/
+theorem isExactOnMeasure_map_affine {w x : Fin n → ℝ} {r : ℕ} (h : IsExactOnMeasure μ w x r)
+    (c d : ℝ) :
+    IsExactOnMeasure (μ.map fun t => c * t + d) w ((fun t => c * t + d) ∘ x) r := by
+  intro p hp
+  have hφ : Measurable fun t : ℝ => c * t + d := by fun_prop
+  rw [integral_map hφ.aemeasurable p.continuous.aestronglyMeasurable]
+  have hcomp : ∀ t : ℝ, p.eval (c * t + d) = (p.comp (C c * X + C d)).eval t := fun t => by
+    simp [eval_comp]
+  simp only [Function.comp_apply, hcomp]
+  refine h _ ?_
+  refine degree_le_natDegree.trans ?_
+  rw [natDegree_comp]
+  have h1 : (C c * X + C d : ℝ[X]).natDegree ≤ 1 := by
+    refine (natDegree_add_le _ _).trans (max_le ?_ (by simp))
+    exact (natDegree_C_mul_le _ _).trans (by simp)
+  have h2 : p.natDegree ≤ r := natDegree_le_iff_degree_le.mpr hp
+  exact_mod_cast (Nat.mul_le_mul h2 h1).trans (by omega)
+
+/-- **Change of interval for Lebesgue measure**: a rule on `[-1, 1]` with nodes `ξ j` and weights
+`β j`, exact to degree `r`, gives on `[a, b]` the rule with nodes `((b - a)/2) ξ j + (a + b)/2` and
+weights `((b - a)/2) β j`, exact to the same degree.
+
+Reference: [quarteroni2000numerical] Remark 10.3 (with the affine map corrected to
+`φ(ξ) = ((b - a)/2) ξ + (a + b)/2`). -/
+theorem isExactOnMeasure_volume_Icc_of_affine {a b : ℝ} (hab : a < b) {w x : Fin n → ℝ} {r : ℕ}
+    (h : IsExactOnMeasure (volume.restrict (Set.Icc (-1 : ℝ) 1)) w x r) :
+    IsExactOnMeasure (volume.restrict (Set.Icc a b)) (fun i => (b - a) / 2 * w i)
+      (fun i => (b - a) / 2 * x i + (a + b) / 2) r := by
+  intro p hp
+  have hc : (b - a) / 2 ≠ 0 := by
+    have : 0 < b - a := sub_pos.mpr hab
+    positivity
+  have hcomp : ∀ t : ℝ, p.eval ((b - a) / 2 * t + (a + b) / 2) =
+      (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).eval t := fun t => by simp [eval_comp]
+  have hdeg : (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).degree ≤ r := by
+    refine degree_le_natDegree.trans ?_
+    rw [natDegree_comp]
+    have h1 : (C ((b - a) / 2) * X + C ((a + b) / 2) : ℝ[X]).natDegree ≤ 1 := by
+      refine (natDegree_add_le _ _).trans (max_le ?_ (by simp))
+      exact (natDegree_C_mul_le _ _).trans (by simp)
+    have h2 : p.natDegree ≤ r := natDegree_le_iff_degree_le.mpr hp
+    exact_mod_cast (Nat.mul_le_mul h2 h1).trans (by omega)
+  have hrule := h _ hdeg
+  simp only [hcomp]
+  calc ∑ i, (b - a) / 2 * w i * (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).eval (x i)
+      = (b - a) / 2 * ∑ i, w i * (p.comp (C ((b - a) / 2) * X + C ((a + b) / 2))).eval (x i) := by
+        rw [Finset.mul_sum]
+        exact Finset.sum_congr rfl fun i _ => by ring
+    _ = (b - a) / 2 * ∫ t in (-1 : ℝ)..1, p.eval ((b - a) / 2 * t + (a + b) / 2) := by
+        rw [hrule, integral_Icc_eq_integral_Ioc,
+          ← intervalIntegral.integral_of_le (by norm_num : (-1 : ℝ) ≤ 1)]
+        simp only [hcomp]
+    _ = ∫ t in ((b - a) / 2 * (-1) + (a + b) / 2)..((b - a) / 2 * 1 + (a + b) / 2), p.eval t := by
+        rw [← intervalIntegral.smul_integral_comp_mul_add, smul_eq_mul]
+    _ = ∫ t in Set.Icc a b, p.eval t := by
+        rw [show (b - a) / 2 * (-1) + (a + b) / 2 = a by ring,
+          show (b - a) / 2 * 1 + (a + b) / 2 = b by ring, intervalIntegral.integral_of_le hab.le,
+          integral_Icc_eq_integral_Ioc]
+
+end ExactnessMeasure
+
+/-! ### The discrete inner product -/
+
+section DiscreteInner
+
+open OrthogonalPolynomial Polynomial MeasureTheory
+
+variable {μ : Measure ℝ} {n : ℕ}
+
+/-- **The discrete inner product** of a rule: `(f, g)_n = ∑ i, w i * f (x i) * g (x i)`, the rule
+applied to the product `f g`. It is a symmetric bilinear form, positive semidefinite for positive
+weights, and an inner product on the polynomials of degree less than the number of distinct nodes
+(`Quadrature.discreteInner_self_pos`).
+
+Reference: [quarteroni2000numerical] (10.28), (10.51). -/
+def discreteInner (w x : Fin n → ℝ) (f g : ℝ → ℝ) : ℝ :=
+  ∑ i, w i * f (x i) * g (x i)
+
+theorem discreteInner_comm (w x : Fin n → ℝ) (f g : ℝ → ℝ) :
+    discreteInner w x f g = discreteInner w x g f :=
+  Finset.sum_congr rfl fun i _ => by ring
+
+theorem discreteInner_add_left (w x : Fin n → ℝ) (f₁ f₂ g : ℝ → ℝ) :
+    discreteInner w x (f₁ + f₂) g = discreteInner w x f₁ g + discreteInner w x f₂ g := by
+  simp only [discreteInner, Pi.add_apply, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
+theorem discreteInner_smul_left (w x : Fin n → ℝ) (c : ℝ) (f g : ℝ → ℝ) :
+    discreteInner w x (c • f) g = c * discreteInner w x f g := by
+  simp only [discreteInner, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
+theorem discreteInner_sum_left (w x : Fin n → ℝ) {ι : Type*} (s : Finset ι) (f : ι → ℝ → ℝ)
+    (g : ℝ → ℝ) : discreteInner w x (∑ k ∈ s, f k) g = ∑ k ∈ s, discreteInner w x (f k) g := by
+  simp only [discreteInner, Finset.sum_apply, Finset.mul_sum, Finset.sum_mul]
+  rw [Finset.sum_comm]
+
+/-- The discrete inner product only sees the values at the nodes. -/
+theorem discreteInner_congr (w x : Fin n → ℝ) {f f' g g' : ℝ → ℝ} (hf : ∀ i, f (x i) = f' (x i))
+    (hg : ∀ i, g (x i) = g' (x i)) : discreteInner w x f g = discreteInner w x f' g' :=
+  Finset.sum_congr rfl fun i _ => by rw [hf i, hg i]
+
+/-- For nonnegative weights the discrete inner product of a function with itself is nonnegative. -/
+theorem discreteInner_self_nonneg {w x : Fin n → ℝ} (hw : ∀ i, 0 ≤ w i) (f : ℝ → ℝ) :
+    0 ≤ discreteInner w x f f :=
+  Finset.sum_nonneg fun i _ => by rw [mul_assoc, ← sq]; exact mul_nonneg (hw i) (sq_nonneg _)
+
+/-- **The discrete inner product is an inner product on the polynomials of degree less than the
+number of nodes**: for positive weights at distinct nodes, `(p, p)_n > 0` for every nonzero
+polynomial `p` of degree `< n`, since such a polynomial cannot vanish at all `n` nodes.
+
+Reference: [quarteroni2000numerical] Exercise 10.4. -/
+theorem discreteInner_self_pos {w x : Fin n → ℝ} (hw : ∀ i, 0 < w i) (hx : Function.Injective x)
+    {p : ℝ[X]} (hp : p ≠ 0) (hdeg : p.degree < n) :
+    0 < discreteInner w x (fun t => p.eval t) fun t => p.eval t := by
+  classical
+  have hne : ∃ i, p.eval (x i) ≠ 0 := by
+    by_contra hall
+    push Not at hall
+    refine hp (Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ hx.injOn
+      (by simpa using hdeg) fun i _ => hall i)
+  obtain ⟨i, hi⟩ := hne
+  refine Finset.sum_pos' (fun j _ => ?_) ⟨i, Finset.mem_univ i, ?_⟩
+  · rw [mul_assoc, ← sq]; exact mul_nonneg (hw j).le (sq_nonneg _)
+  · rw [mul_assoc, ← sq]; exact mul_pos (hw i) (by positivity)
+
+/-- The discrete inner product of two polynomials agrees with the weighted `L²(μ)` inner product
+as long as the rule integrates their product exactly. -/
+theorem discreteInner_eq_integral_of_degree_le {w x : Fin n → ℝ} {d : ℕ}
+    (h : IsExactOnMeasure μ w x d) {p q : ℝ[X]} (hpq : p.degree + q.degree ≤ d) :
+    discreteInner w x (fun t => p.eval t) (fun t => q.eval t) = ∫ t, p.eval t * q.eval t ∂μ := by
+  rw [← degree_mul] at hpq
+  have h1 := h _ hpq
+  simp only [eval_mul] at h1
+  rw [← h1]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
+/-- **Discrete orthogonality.** For a rule with `n + 1` nodes exact to degree `2n - 1`, the monic
+orthogonal polynomials `p_0, …, p_n` of the weight are orthogonal for the discrete inner product:
+`(p_j, p_k)_n = 0` for `j ≠ k` with `j, k ≤ n`, because `p_j p_k` then has degree at most
+`2n - 1`. The rule need not integrate `p_n²` exactly, and `(p_n, p_n)_n` is where the Gauss and
+Gauss–Lobatto rules differ.
+
+Reference: [quarteroni2000numerical] §10.1, §10.3. -/
+theorem discreteInner_family_family (hw : IsWeight μ) (hn : 1 ≤ n) {w x : Fin (n + 1) → ℝ}
+    (hexact : IsExactOnMeasure μ w x (2 * n - 1)) {j k : ℕ} (hjk : j ≠ k) (hj : j ≤ n)
+    (hk : k ≤ n) :
+    discreteInner w x (fun t => (family μ j).eval t) (fun t => (family μ k).eval t) = 0 := by
+  rw [discreteInner_eq_integral_of_degree_le hexact, integral_family_mul_family hw hjk]
+  rw [degree_family, degree_family]
+  norm_cast
+  omega
+
+/-- The discrete norm of `p_k` for `k < n` is its `L²(μ)` norm: the rule integrates `p_k²` exactly.
+-/
+theorem discreteInner_family_self (hn : 1 ≤ n) {w x : Fin (n + 1) → ℝ}
+    (hexact : IsExactOnMeasure μ w x (2 * n - 1)) {k : ℕ} (hk : k < n) :
+    discreteInner w x (fun t => (family μ k).eval t) (fun t => (family μ k).eval t) =
+      normSq μ k := by
+  rw [discreteInner_eq_integral_of_degree_le hexact, normSq]
+  · exact integral_congr_ae (Filter.Eventually.of_forall fun t => (sq _).symm)
+  · rw [degree_family]
+    norm_cast
+    omega
+
+/-- **The interpolant at the nodes of a rule is the discrete truncation of the orthogonal
+expansion.** For a rule with `n + 1` distinct nodes, positive weights and degree of exactness
+`2n - 1`, the Lagrange interpolant of `f` at the nodes is `∑_{k ≤ n} f̃_k p_k` with the discrete
+Fourier coefficients `f̃_k = (f, p_k)_n / (p_k, p_k)_n`: expand the interpolant in the basis
+`p_0, …, p_n` of `P_n` and pair with `p_j` in the discrete inner product, where the basis is
+orthogonal by `Quadrature.discreteInner_family_family` and the interpolant agrees with `f` at the
+nodes.
+
+Reference: [quarteroni2000numerical] (10.4)–(10.5), (10.29), (10.38), §10.7. -/
+theorem interpolate_eq_sum_discreteInner_smul (hw : IsWeight μ) (hn : 1 ≤ n)
+    {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {w : Fin (n + 1) → ℝ} (hwpos : ∀ i, 0 < w i)
+    (hexact : IsExactOnMeasure μ w x (2 * n - 1)) (f : ℝ → ℝ) :
+    Lagrange.interpolate Finset.univ x (fun i => f (x i)) =
+      ∑ k : Fin (n + 1),
+        C (discreteInner w x f (fun t => (family μ k).eval t) /
+            discreteInner w x (fun t => (family μ k).eval t) (fun t => (family μ k).eval t)) *
+          family μ k := by
+  classical
+  set P : ℝ[X] := Lagrange.interpolate Finset.univ x (fun i => f (x i)) with hP
+  have hPdeg : P.degree < ((n + 1 : ℕ) : WithBot ℕ) := by
+    have := Lagrange.degree_interpolate_lt (s := (Finset.univ : Finset (Fin (n + 1))))
+      (r := fun i => f (x i)) hx.injOn
+    rwa [Finset.card_univ, Fintype.card_fin] at this
+  have hPnode : ∀ i, P.eval (x i) = f (x i) := fun i =>
+    Lagrange.eval_interpolate_at_node _ hx.injOn (Finset.mem_univ i)
+  obtain ⟨c, hc⟩ := exists_eq_sum_family μ hPdeg
+  have hcoeff : ∀ j : Fin (n + 1), c j =
+      discreteInner w x f (fun t => (family μ j).eval t) /
+        discreteInner w x (fun t => (family μ j).eval t) (fun t => (family μ j).eval t) := by
+    intro j
+    have hpos : 0 < discreteInner w x (fun t => (family μ j).eval t)
+        (fun t => (family μ j).eval t) :=
+      discreteInner_self_pos hwpos hx (family_ne_zero μ j)
+        (by rw [degree_family]; exact_mod_cast j.2)
+    rw [eq_div_iff hpos.ne']
+    have h1 : discreteInner w x (fun t => P.eval t) (fun t => (family μ j).eval t) =
+        discreteInner w x f (fun t => (family μ j).eval t) :=
+      discreteInner_congr w x (fun i => hPnode i) fun _ => rfl
+    rw [← h1, hc]
+    have hev : (fun t => (∑ k ∈ Finset.range (n + 1), c k • family μ k).eval t) =
+        ∑ k ∈ Finset.range (n + 1), c k • fun t => (family μ k).eval t := by
+      funext t
+      simp [eval_finsetSum]
+    rw [hev, discreteInner_sum_left, Finset.sum_eq_single (j : ℕ)]
+    · rw [discreteInner_smul_left]
+    · intro k hk hkj
+      rw [discreteInner_smul_left,
+        discreteInner_family_family hw hn hexact hkj (Nat.lt_succ_iff.mp (Finset.mem_range.mp hk))
+          (Nat.lt_succ_iff.mp j.2), mul_zero]
+    · intro hj
+      exact absurd (Finset.mem_range.mpr j.2) hj
+  rw [hc, ← Fin.sum_univ_eq_sum_range (fun k => c k • family μ k) (n + 1)]
+  exact Finset.sum_congr rfl fun j _ => by rw [hcoeff j, smul_eq_C_mul]
+
+end DiscreteInner
+
+/-! ### The Gauss remainder -/
+
+section GaussError
+
+open OrthogonalPolynomial Polynomial MeasureTheory
+
+variable {μ : Measure ℝ}
+
+/-- A continuous function is integrable for a finite measure carried by a compact interval. -/
+private theorem integrable_of_continuous_of_compl_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {f : ℝ → ℝ} (hf : Continuous f) : Integrable f μ := by
+  obtain ⟨C, hC⟩ := (isCompact_Icc.image hf).isBounded.exists_norm_le
+  refine Integrable.mono' (integrable_const C) hf.aestronglyMeasurable ?_
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  filter_upwards [hae] with t ht
+  exact hC _ ⟨t, ht, rfl⟩
+
+/-- **The Gauss remainder.** For a weight carried by `[a, b]`, an `n`-point rule at distinct
+nodes of `[a, b]` exact on the polynomials of degree less than `2n` — the Gauss rule of
+`Quadrature.exists_gauss` — and an integrand `f` of class `C^{2n}`, the error is
+`f^{(2n)}(ξ) / (2n)! · ∫ p_n² ∂μ` for some `ξ ∈ [a, b]`, where `p_n = family μ n` is the nodal
+polynomial of the rule.
+
+The rule is exact on the Hermite interpolant `H` of `f` with double nodes at the `x i`, which has
+degree less than `2n` and agrees with `f` at the nodes, so the error is `∫ (f - H) ∂μ`;
+`Hermite.exists_sub_interpolate_eq` writes `f t - H t = f^{(2n)}(ξ_t)/(2n)! · p_n(t)²`, so the
+error lies between the minimum and the maximum of `f^{(2n)}/(2n)!` on `[a, b]` times `∫ p_n² ∂μ`,
+and the intermediate value theorem produces `ξ`. At `n = 0` the statement is the mean value
+theorem for integrals.
+
+Reference: [quarteroni2000numerical] (10.41)–(10.42); [kress1998numerical] §9.3. -/
+theorem exists_gauss_error_eq (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
+    {n : ℕ} {x w : Fin n → ℝ} (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b)
+    (hexact : ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
+      ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ)
+    {f : ℝ → ℝ} (hf : ContDiff ℝ ((2 * n : ℕ) : WithTop ℕ∞) f) :
+    ∃ ξ ∈ Set.Icc a b, (∫ t, f t ∂μ) - ∑ i, w i * f (x i) =
+      iteratedDeriv (2 * n) f ξ / (2 * n).factorial * normSq μ n := by
+  classical
+  have := hw.isFiniteMeasure
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  -- the interval is nonempty, since the weight charges the complement of the empty set
+  have hne : (Set.Icc a b).Nonempty := by
+    by_contra h
+    rw [Set.not_nonempty_iff_eq_empty] at h
+    rw [h, Set.compl_empty] at hsupp
+    exact hw.measure_compl_ne_zero Set.finite_empty (by rwa [Set.compl_empty])
+  -- the scaled top derivative, its minimum and its maximum
+  set D : ℝ → ℝ := fun ξ => iteratedDeriv (2 * n) f ξ / (2 * n).factorial with hD
+  have hDcont : Continuous D := (hf.continuous_iteratedDeriv (2 * n) le_rfl).div_const _
+  obtain ⟨ξ₁, hξ₁, hmin⟩ := isCompact_Icc.exists_isMinOn hne hDcont.continuousOn
+  obtain ⟨ξ₂, hξ₂, hmax⟩ := isCompact_Icc.exists_isMaxOn hne hDcont.continuousOn
+  -- the Hermite interpolant with double nodes
+  set H : ℝ[X] := Hermite.interpolate x (fun _ => 1) f with hH
+  have hHdeg : H.degree < ((2 * n : ℕ) : WithBot ℕ) := by
+    have := Hermite.degree_interpolate_lt hx (fun _ => 1) f
+    simpa [Finset.sum_const, mul_comm] using this
+  have hHnode : ∀ i, H.eval (x i) = f (x i) := by
+    intro i
+    have := Hermite.eval_iterate_derivative_interpolate (f := f) (m := fun _ => 1) hx i
+      (Nat.zero_le 1)
+    simpa using this
+  -- the pointwise error formula
+  have hpt : ∀ t ∈ Set.Icc a b, ∃ ξ ∈ Set.Icc a b,
+      f t - H.eval t = D ξ * (family μ n).eval t ^ 2 := by
+    intro t ht
+    cases n with
+    | zero =>
+      refine ⟨t, ht, ?_⟩
+      have hH0 : H = 0 := by
+        rw [← degree_eq_bot]
+        exact Nat.WithBot.lt_zero_iff.mp (by simpa using hHdeg)
+      simp [hH0, hD]
+    | succ m =>
+      have hf' : ContDiff ℝ ((2 * m + 1 + 1 : ℕ) : WithTop ℕ∞) f := by
+        rw [show 2 * m + 1 + 1 = 2 * (m + 1) by ring]; exact hf
+      obtain ⟨ξ, hξ, hξeq⟩ := Hermite.exists_sub_interpolate_eq (N := 2 * m + 1) hf' hx hxmem
+        (m := fun _ => 1) (by simp; ring) ht
+      refine ⟨ξ, hξ, ?_⟩
+      have hnodal : Lagrange.nodal Finset.univ x = family μ (m + 1) :=
+        ((isExactOnMeasure_two_mul_add_one_iff hw hx w).mp
+          (isExactOnMeasure_iff_forall_degree_lt.mpr
+            (by rw [show 2 * m + 1 + 1 = 2 * (m + 1) by ring]; exact hexact))).1
+      rw [hξeq, ← hnodal, Lagrange.eval_nodal, hD]
+      simp only [show 2 * m + 1 + 1 = 2 * (m + 1) by ring, Finset.prod_pow]
+  -- integrability
+  have hint_f : Integrable f μ := integrable_of_continuous_of_compl_eq_zero hsupp hf.continuous
+  have hint_H : Integrable (fun t => H.eval t) μ := hw.integrable_eval H
+  have hIpos : 0 < normSq μ n := normSq_pos hw n
+  have hIeq : ∀ c : ℝ, ∫ t, c * (family μ n).eval t ^ 2 ∂μ = c * normSq μ n := fun c => by
+    rw [integral_const_mul]; rfl
+  -- the error is squeezed between the extreme values of `D` times `∫ p_n²`
+  have hlow : D ξ₁ * normSq μ n ≤ ∫ t, (f t - H.eval t) ∂μ := by
+    rw [← hIeq]
+    refine integral_mono_ae ((hw.integrable_eval_sq _).const_mul _) (hint_f.sub hint_H) ?_
+    filter_upwards [hae] with t ht
+    obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
+    rw [hξeq]
+    exact mul_le_mul_of_nonneg_right (hmin hξ) (sq_nonneg _)
+  have hupp : ∫ t, (f t - H.eval t) ∂μ ≤ D ξ₂ * normSq μ n := by
+    rw [← hIeq]
+    refine integral_mono_ae (hint_f.sub hint_H) ((hw.integrable_eval_sq _).const_mul _) ?_
+    filter_upwards [hae] with t ht
+    obtain ⟨ξ, hξ, hξeq⟩ := hpt t ht
+    rw [hξeq]
+    exact mul_le_mul_of_nonneg_right (hmax hξ) (sq_nonneg _)
+  -- the intermediate value theorem
+  have hmem : (∫ t, (f t - H.eval t) ∂μ) / normSq μ n ∈ Set.uIcc (D ξ₁) (D ξ₂) := by
+    rw [Set.mem_uIcc]
+    exact Or.inl ⟨(le_div_iff₀ hIpos).mpr hlow, (div_le_iff₀ hIpos).mpr hupp⟩
+  obtain ⟨ξ, hξmem, hξeq⟩ := intermediate_value_uIcc hDcont.continuousOn hmem
+  refine ⟨ξ, Set.uIcc_subset_Icc hξ₁ hξ₂ hξmem, ?_⟩
+  have hsum : ∑ i, w i * f (x i) = ∫ t, H.eval t ∂μ := by
+    rw [← hexact H hHdeg]
+    exact Finset.sum_congr rfl fun i _ => by rw [hHnode i]
+  rw [hsum, ← integral_sub hint_f hint_H]
+  change _ = D ξ * normSq μ n
+  rw [hξeq, div_mul_cancel₀ _ hIpos.ne']
+
+end GaussError
+
 
 /-! ### Peano's kernel theorem -/
 
