@@ -1,112 +1,65 @@
 namespace = "QuarteroniSaccoSaleri.Chapter01"
-desc = '''
-Quarteroni–Sacco–Saleri §1.10, scalar product and norms in vector spaces. Definition 1.16 is
-Mathlib's `InnerProductSpace 𝕜 V` — with the convention warning that the book's `(x, y)` is linear
-in `x`, hence Mathlib's `inner 𝕜 y x` — and Definition 1.17 (norm, seminorm, normed space, unit
-vector) is `NormedAddCommGroup`/`NormedSpace`, `Seminorm`, `‖v‖ = 1`; neither carries a
-declaration beyond the alignment `definition_1_17`. Stated: the Euclidean scalar product, the
-adjoint identity (1.12), Property 1.8 (unitary invariance of the inner product), the `p`-norms
-(1.13) on `PiLp p` with the limit `p → ∞`, Cauchy–Schwarz with its equality case (Property 1.9,
-corrected), Hölder, continuity of norms (Property 1.10, read as intended), `‖A x‖` as a norm
-(Property 1.11, rectangular as in Exercise 15), equivalence of norms (Definition 1.18) with the
-constants of Table 1.1 from `Numlib/Analysis/Normed/Lp/PiLp`, componentwise convergence (1.15)
-and Property 1.12.
-'''
+
+[[node]]
+id = "definition_1_16"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.16'
 
 [[node]]
 id = "inner_eq_star_dotProduct"
-kind = "theorem"
-desc = '''The Euclidean scalar product `(x, y) = yᴴ x = ∑ x_i conj(y_i)` of §1.10 is `inner 𝕜 y x` on `EuclideanSpace 𝕜 (Fin n)`: `inner 𝕜 y x = star (ofLp y) ⬝ᵥ ofLp x = ∑ i, x i * conj (y i)` (`EuclideanSpace.inner_eq_star_dotProduct`, `dotProduct_comm`). This fixes the argument order used in every statement of the surface. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.16'
 
 [[node]]
 id = "equation_1_12"
-kind = "theorem"
-desc = '''`(A x, y) = (x, Aᴴ y)`: `inner 𝕜 y (toEuclideanLin A x) = inner 𝕜 (toEuclideanLin Aᴴ y) x` for `A : Matrix (Fin n) (Fin n) 𝕜` (backbone `Matrix.toEuclideanLin_conjTranspose` and `LinearMap.adjoint_inner_left`), and therefore `(Q x, Q y) = (x, Qᴴ Q y)`. ★'''
-deps = ["Matrix.toEuclideanLin_conjTranspose"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.12)'
 
 [[node]]
 id = "property_1_8"
-kind = "theorem"
-desc = '''Unitary matrices preserve the Euclidean scalar product: for `Q ∈ unitaryGroup (Fin n) 𝕜` and all `x y`, `inner 𝕜 (toLp 2 (Q *ᵥ y)) (toLp 2 (Q *ᵥ x)) = inner 𝕜 (toLp 2 y) (toLp 2 x)`. Backbone `Matrix.inner_toLp_mulVec_of_mem_unitaryGroup`. ★'''
-deps = ["Matrix.inner_toLp_mulVec_of_mem_unitaryGroup"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.8'
 
 [[node]]
 id = "definition_1_17"
-kind = "theorem"
-desc = '''A vector norm in the sense of Definition 1.17 is a definite seminorm: for `p : Seminorm 𝕜 V` with `hp : ∀ v, p v = 0 → v = 0`, (1) `0 ≤ p v` and `p v = 0 ↔ v = 0`, (2) `p (α • v) = ‖α‖ * p v`, (3) `p (v + w) ≤ p v + p w` (`apply_nonneg`, `map_zero`, `Seminorm.map_smul_eq_mul`, `map_add_le_add`); conversely a `NormedSpace` norm is such a seminorm (`normSeminorm 𝕜 V`). A seminorm is a `Seminorm` without `hp`. This is the representation every statement about "an arbitrary norm" in §1.10–1.11 uses. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.17'
 
 [[node]]
 id = "equation_1_13"
-kind = "theorem"
-desc = '''The `p`-norms on `PiLp p (fun _ : Fin n => 𝕜)`: `‖x‖ = (∑ i, ‖x i‖ ^ p) ^ (1/p)` for `1 ≤ p < ∞` (`PiLp.norm_eq_sum`), `‖x‖ = ⨆ i, ‖x i‖` for `p = ∞` (`PiLp.norm_eq_ciSup`), and `‖x‖ = √(∑ i, ‖x i‖ ^ 2) = √(inner x x)` for `p = 2` (`EuclideanSpace.norm_eq`, `inner_self_eq_norm_sq`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.13)'
 
 [[node]]
 id = "tendsto_norm_lp_atTop"
-kind = "theorem"
-desc = '''`‖x‖_p → ‖x‖_∞` as `p → ∞`: `Tendsto (fun p : ℝ => ‖toLp (ENNReal.ofReal p) x‖) atTop (𝓝 (⨆ i, ‖x i‖))`. Backbone `PiLp.tendsto_norm_toLp_atTop`. ★'''
-deps = ["PiLp.tendsto_norm_toLp_atTop"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.10'
 
 [[node]]
 id = "property_1_9"
-kind = "theorem"
-desc = '''Cauchy–Schwarz on `EuclideanSpace ℝ (Fin n)`: `|inner ℝ y x| ≤ ‖x‖ * ‖y‖` (`abs_real_inner_le_norm`), with equality iff `x` and `y` are linearly dependent, i.e. `x = 0 ∨ ∃ α : ℝ, y = α • x` (`abs_real_inner_div_norm_mul_norm_eq_one_iff` for `x, y ≠ 0`, the degenerate cases by hand). Book erratum: the text says equality holds "iff `y = α x` for some `α`", which fails for `x = 0`, `y ≠ 0`; the reading is linear dependence. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.9'
 
 [[node]]
 id = "holder_inequality"
-kind = "theorem"
-desc = '''Hölder's inequality in `ℝⁿ`: for `p.HolderConjugate q` (`1/p + 1/q = 1`, `1 ≤ p`), `|∑ i, x i * y i| ≤ ‖toLp p x‖ * ‖toLp q y‖` (`Real.inner_le_Lp_mul_Lq` after `abs_sum_le_sum_abs`, with `PiLp.norm_eq_sum`); the endpoint `p = 1, q = ∞` separately. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.10'
 
 [[node]]
 id = "property_1_10"
-kind = "theorem"
-desc = '''Continuity of a norm on a finite-dimensional space `V`: for every seminorm `p : Seminorm ℝ V` there is `C > 0` with `|p x - p x̂| ≤ C * ‖x - x̂‖` for all `x x̂` (so `‖x - x̂‖ ≤ ε → |p x - p x̂| ≤ C ε`), and `p` is continuous. Backbone `Seminorm.exists_le_mul_norm` with `Seminorm.continuous_of_finiteDimensional` (`Numlib/Analysis/Normed/Module/NormEquivalence`). Book reading: as printed, with the *same* norm on both sides, the statement is the reverse triangle inequality with `C = 1` (`abs_norm_sub_norm_le`); Exercise 14's proof shows the intended content is the bound against the component (`∞`-) norm, which is what is stated here. ★'''
-deps = ["Seminorm.exists_le_mul_norm", "Seminorm.continuous_of_finiteDimensional"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.10'
 
 [[node]]
 id = "property_1_11"
-kind = "theorem"
-desc = '''For a definite seminorm `p` on `Fin m → ℝ` and `A : Matrix (Fin m) (Fin n) ℝ` with linearly independent columns (`LinearIndependent ℝ Aᵀ`, i.e. `Function.Injective A.mulVecLin`), `x ↦ p (A *ᵥ x)` — the seminorm `p.comp A.mulVecLin` — is definite, hence a norm on `Fin n → ℝ`. Rectangular as in Exercise 15; the book's square case has `m = n`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.11'
 
 [[node]]
 id = "definition_1_18"
-kind = "theorem"
-desc = '''Two definite seminorms `p q` on `V` are equivalent when `∃ c C > 0, ∀ x, c * q x ≤ p x ∧ p x ≤ C * q x`; in a finite-dimensional space all norms are equivalent: for definite `p`, `∃ c C > 0, ∀ x, c * ‖x‖ ≤ p x ∧ p x ≤ C * ‖x‖` (backbone `Seminorm.exists_bounds`), and any two definite seminorms are equivalent by composing the two bounds. ★'''
-deps = ["Seminorm.exists_bounds"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.18'
 
 [[node]]
 id = "table_1_1"
-kind = "theorem"
-desc = '''The equivalence constants for `‖·‖₁`, `‖·‖₂`, `‖·‖_∞` on `ℝⁿ`: `‖x‖₂ ≤ ‖x‖₁ ≤ √n ‖x‖₂`, `‖x‖_∞ ≤ ‖x‖₂ ≤ √n ‖x‖_∞`, `‖x‖_∞ ≤ ‖x‖₁ ≤ n ‖x‖_∞` (`x` read on `PiLp 1`, `PiLp 2`, `PiLp ⊤` through `WithLp.toLp`). Backbone `PiLp.norm_le_norm_of_le` (the `1`s) and `PiLp.norm_le_card_rpow_mul_norm` (the `√n`, `n`). ★'''
-deps = ["PiLp.norm_le_norm_of_le", "PiLp.norm_le_card_rpow_mul_norm"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 1.1'
 
 [[node]]
 id = "equation_1_15"
-kind = "theorem"
-desc = '''Convergence of vectors is componentwise: for `x : ℕ → (Fin n → ℝ)`, `Tendsto x atTop (𝓝 y) ↔ ∀ i, Tendsto (fun k => x k i) atTop (𝓝 (y i))` (`tendsto_pi_nhds`), and the limit is unique (`tendsto_nhds_unique`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.15)'
 
 [[node]]
+id = "tendsto_seminorm_iff_tendsto_norm"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.10'
+
+[[node]]
 id = "property_1_12"
-kind = "theorem"
-desc = '''For a definite seminorm `p` on a finite-dimensional `V` and `x : ℕ → V`: `Tendsto x atTop (𝓝 y) ↔ Tendsto (fun k => p (y - x k)) atTop (𝓝 0)`; in particular `p (x k) → 0 ↔ q (x k) → 0` for any two norms (the "topological equivalence" preceding the property). From `tendsto_iff_norm_sub_tendsto_zero` and the two-sided bound `Seminorm.exists_bounds`. ★'''
-deps = ["Seminorm.exists_bounds"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.12'

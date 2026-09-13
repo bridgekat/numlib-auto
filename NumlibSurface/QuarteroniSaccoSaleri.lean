@@ -1,3 +1,6 @@
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Basics
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section10
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section11
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section05
