@@ -63,9 +63,9 @@ id = "iterativeRefinement_convergence"
 kind = "theorem"
 desc = '''§3.12.2, the exact-arithmetic content of the convergence claim: the iteration is the stationary
 iteration with matrix `1 - C A` (`Refinement.step_eq_stationary_step`), so the error is multiplied by
-at most `‖1 - C A‖` per step when `‖1 - C A‖ < 1` (`Refinement.norm_iterate_sub_le`) and it
-converges for every start iff `ρ(1 - C A) < 1` (`Refinement.forall_tendsto_iff_spectralRadius_lt_one`).
-★'''
+at most `‖1 - C A‖` per step (`Refinement.norm_iterate_sub_le`, no smallness hypothesis) and, for
+an approximate inverse `C` that is onto (`C = 0` is a counterexample otherwise), it converges for
+every start iff `ρ(1 - C A) < 1` (`Refinement.forall_tendsto_iff_spectralRadius_lt_one`). ★'''
 deps = ["Refinement.step_eq_stationary_step", "Refinement.norm_iterate_sub_le", "Refinement.forall_tendsto_iff_spectralRadius_lt_one", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
 

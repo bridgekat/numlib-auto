@@ -27,109 +27,39 @@ id = "hasDerivAt_perturbed_solution"
 
 [[node]]
 id = "NormedRing.norm_le_of_not_isUnit_add"
-kind = "theorem"
-desc = '''The lower half of Kahan's distance-to-singularity formula, QSS Remark 3.1: in a complete normed ring
-with `NormOneClass`, if `IsUnit a` and `¬ IsUnit (a + t)` then `‖(Ring.inverse a)‖⁻¹ ≤ ‖t‖`, i.e.
-`‖t‖ / ‖a‖ ≥ 1 / κ a`. Contrapositive of `Units.isUnit_add_of_norm_lt` of
-`Analysis/Normed/Ring/Inverse`. This is also the corrected (3.7): a perturbation with `‖δA‖ ‖A⁻¹‖ <
-1` leaves `A + δA` nonsingular (the printed (3.7) has `‖A‖` for `‖A⁻¹‖` and the implication
-backwards; see the chapter's errata). ★'''
-deps = ["NormedRing.condNumber"]
 
 [[node]]
 id = "ContinuousLinearEquiv.exists_not_isUnit_add_norm_le"
-kind = "theorem"
-desc = '''The upper half of Kahan's formula: for `A : E ≃L[𝕜] E` on a finite-dimensional normed space over
-`RCLike 𝕜` (finite dimension so that `‖A⁻¹‖` is attained), there is a rank-one `t : E →L[𝕜] E` with
-`¬ IsUnit ((A : E →L[𝕜] E) + t)` and `‖t‖ = ‖(A.symm : E →L[𝕜] E)‖⁻¹`. Construction: pick `y` with
-`‖A⁻¹ y‖ = ‖A⁻¹‖ ‖y‖`, `y ≠ 0`, set `x = A⁻¹ y` and a norming functional `φ` of `x` (`exists_dual_vector`:
-`‖φ‖ = 1`, `φ x = ‖x‖`), and `t = -(‖x‖⁻¹) • (φ.smulRight y)`; then `(A + t) x = y - y = 0` and `‖t‖
-= ‖y‖ / ‖x‖ = ‖A⁻¹‖⁻¹`. In infinite dimension state the `ε`-version. ★★'''
-deps = []
 
 [[node]]
 id = "ContinuousLinearEquiv.isLeast_dist_singular"
-kind = "theorem"
-desc = '''QSS Remark 3.1, (3.6) (Kahan 1966, Gastinel): in finite dimension over `RCLike 𝕜`, `IsLeast {r | ∃ t,
-¬ IsUnit ((A : E →L[𝕜] E) + t) ∧ ‖t‖ / ‖(A : E →L[𝕜] E)‖ = r} (1 / κ A)` — the relative distance to
-the singular operators is the reciprocal of the condition number, in *any* operator norm. The two
-halves above. ★'''
-deps = ["NormedRing.norm_le_of_not_isUnit_add", "ContinuousLinearEquiv.exists_not_isUnit_add_norm_le", "ContinuousLinearEquiv.condNumber"]
 
 [[node]]
 id = "ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error"
-kind = "theorem"
-desc = '''QSS Theorem 3.2, the lower inequality of (3.11): for `L : E ≃L[𝕜] F`, `L v = w`, `L v' = w'`, `v ≠
-0`: `‖w - w'‖ / ‖w‖ ≤ κ L * (‖v - v'‖ / ‖v‖)`, i.e. `(1/κ) ‖δb‖/‖b‖ ≤ ‖δx‖/‖x‖`. It is
-`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual` applied to `L.symm`,
-with `ContinuousLinearEquiv.condNumber_symm`. ★'''
-deps = ["ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual"]
 
 [[node]]
 id = "relative_error_le_of_norm_le_mul"
-kind = "theorem"
-desc = '''QSS Theorem 3.3, (3.13): if `A x = b`, `(A + ΔA) y = b + Δb`, `‖ΔA‖ ≤ γ ‖A‖`, `‖Δb‖ ≤ γ ‖b‖`, `0 ≤
-γ`, `γ * κ A < 1`, `b ≠ 0`, then `‖y - x‖ / ‖x‖ ≤ 2 γ / (1 - γ κ A) * κ A`. From
-`relative_error_le_condNumber` since `‖A⁻¹‖ ‖ΔA‖ ≤ γ κ A`. ★'''
-deps = ["relative_error_le_condNumber", "NormedRing.condNumber"]
 
 [[node]]
 id = "norm_add_div_le_of_norm_le_mul"
-kind = "theorem"
-desc = '''QSS Theorem 3.3, (3.12): under the same hypotheses, `‖y‖ / ‖x‖ ≤ (1 + γ κ A) / (1 - γ κ A)` (the
-book's `‖x + δx‖ / ‖x‖`). Triangle inequality on (3.13): `1 + 2γκ/(1 - γκ) = (1 + γκ)/(1 - γκ)`.
-★'''
-deps = ["relative_error_le_of_norm_le_mul"]
 
 [[node]]
 id = "NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt"
-kind = "theorem"
-desc = '''QSS Property 3.1, first bound: in a complete normed ring with `NormOneClass`, for `IsUnit a` and `r
-:= a * c - 1` with `‖r‖ < 1`, `‖Ring.inverse a‖ ≤ ‖c‖ / (1 - ‖r‖)`. Since `a c = 1 + r` is a unit
-(`NormedRing.isUnit_one_sub_of_norm_lt_one` on `-r`), `a⁻¹ = c (1 + r)⁻¹` and
-`NormedRing.norm_inverse_one_sub_le`. ★'''
-deps = []
 
 [[node]]
 id = "NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt"
-kind = "theorem"
-desc = '''QSS Property 3.1, upper bound of the second display: `‖c - Ring.inverse a‖ ≤ ‖c‖ ‖r‖ / (1 - ‖r‖)`,
-from `c - a⁻¹ = -a⁻¹ r`… more precisely `c - a⁻¹ = c - c (1 + r)⁻¹ = c ((1 + r) - 1)(1 + r)⁻¹ = c r
-(1 + r)⁻¹`, and `NormedRing.norm_inverse_one_sub_le`. ★'''
-deps = ["NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt"]
 
 [[node]]
 id = "NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse"
-kind = "theorem"
-desc = '''QSS Property 3.1, lower bound: for `IsUnit a`, `‖a * c - 1‖ / ‖a‖ ≤ ‖c - Ring.inverse a‖`, because
-`a c - 1 = a (c - a⁻¹)`. Needs only `IsUnit a` and `a ≠ 0`. ★'''
-deps = []
 
 [[node]]
 id = "isUnit_of_norm_mul_sub_one_lt"
-kind = "theorem"
-desc = '''QSS Property 3.1, "then `A` and `C` are nonsingular": in a complete normed ring with `NormOneClass`
-that is Dedekind-finite (`IsDedekindFiniteMonoid R`, which matrices and endomorphisms of a
-finite-dimensional space satisfy — for `Matrix n n 𝕜` through `Matrix.mul_eq_one_comm`), `‖a * c -
-1‖ < 1 → IsUnit a ∧ IsUnit c`: `a c` is a unit, and in a Dedekind-finite ring a one-sided inverse
-is two-sided. State the matrix instance `Matrix.isUnit_of_norm_mul_sub_one_lt` separately if the
-class route is awkward. ★'''
-deps = []
 
 [[node]]
 id = "NormedRing.norm_sub_le_of_norm_mul_sub_one_lt"
-kind = "theorem"
-desc = '''QSS (3.19), the backward reading of Property 3.1 with the roles of `A` and `C` exchanged: if
-`IsUnit c` and `‖a * c - 1‖ < 1` then `δa := Ring.inverse c - a` satisfies `‖δa‖ ≤ ‖a c - 1‖ ‖a‖ /
-(1 - ‖a c - 1‖)`. From `δa = -(a c - 1) c⁻¹` and the first bound applied to `c` (whose `r` is `c a -
-1`; note `‖c a - 1‖` and `‖a c - 1‖` differ in general — state with the hypothesis on the product
-the proof uses, `‖c * a - 1‖ < 1`, and record the asymmetry). ★'''
-deps = ["NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt"]
 
 [[node]]
 id = "norm_error_le_of_norm_mul_sub_one_lt"
-kind = "theorem"
-desc = '''QSS (3.20), a posteriori: for `A : E ≃L[𝕜] E`, `C : E →L[𝕜] E` with `‖A ∘ C - 1‖ < 1`, `A x = b` and
-any `y`, `‖y - x‖ ≤ ‖b - A y‖ ‖C‖ / (1 - ‖A ∘ C - 1‖)`: `e = -A⁻¹ r` and
-`NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt` in the ring `E →L[𝕜] E`. ★'''
-deps = ["NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt"]
+
+[[node]]
+id = "ContinuousLinearMap.exists_norm_eq_one_and_norm_apply_eq"

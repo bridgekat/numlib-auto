@@ -228,8 +228,10 @@ import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet
 import Numlib.Conditioning.LinearSystem
+import Numlib.Conditioning.LinearSystem.Componentwise
 import Numlib.Conditioning.Method
 import Numlib.Conditioning.Problem
+import Numlib.Direct.Refinement
 import Numlib.Direct.Substitution
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
@@ -249,8 +251,10 @@ import Numlib.Eigen.Sturm
 import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct
+import Numlib.FloatingPoint.LU
 import Numlib.FloatingPoint.Model
 import Numlib.FloatingPoint.Stationary
+import Numlib.FloatingPoint.Substitution
 import Numlib.FloatingPoint.System
 import Numlib.Geometry.Euclidean.TriangleShape
 import Numlib.IntegralEquations.Basic
@@ -295,6 +299,7 @@ import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
+import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse

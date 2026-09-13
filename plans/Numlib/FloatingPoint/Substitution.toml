@@ -1,92 +1,43 @@
 namespace = "FloatingPoint"
-desc = '''
-The backward error of triangular solves by substitution in the relational rounding model of
-`FloatingPoint/Model`, in the style of `FloatingPoint/InnerProduct`: Quarteroni–Sacco–Saleri §3.2.2,
-Higham §8.1–8.2.
-
-The algorithm is described by *what is rounded*, not by an evaluation order: `RoundsForwardSubst m
-T b x̂` says that each `x̂ i` is an admissible rounding of `fl((b i - fl(∑_{j<i} T i j x̂ j)) / T i i)`
-with the inner product accumulated in any order (`RoundsDot` over the subtype `{j // j < i}`), so
-the theorems cover the row- and column-oriented Programs 1–3 alike, as Higham's Lemma 8.4 and
-Theorem 8.5 do. The scalar core is Lemma 8.4: `ŷ = fl((c - ∑_{i<k} a_i b_i) / b_k)` satisfies `b_k
-(1 + θ_k) ŷ = c - ∑ a_i b_i (1 + θ_k^{(i)})` with all `|θ| ≤ γ_k`, which is
-`abs_sub_le_of_roundsDot` followed by two more roundings.
-
-Results, in the entrywise order of `LinearAlgebra/Matrix/Order` over an ordered field `K`:
-
-* Theorem 8.5 = QSS (3.24): `(T + ΔT) x̂ = b` with `|ΔT| ≤ γ_n |T|`, forward and backward;
-* Theorem 8.7 = QSS §3.2.2's improved bound: when `|u_ii| ≥ |u_ij|` for `j > i`, `|x_i - x̂_i| ≤
-  2^{n-i+1} γ_n max_{j ≥ i} |x̂_j|`, from Lemma 8.6 (`Direct/Substitution`); its row
-  diagonally dominant sibling from Lemma 8.8.
-
-The normwise consequence QSS (3.25) needs a norm and is a surface statement over `ℝ` through
-`relative_error_le_condNumber` and the monotonicity of `‖·‖_∞` in the entrywise order. This fills
-the gap `FloatingPoint/Stationary` records ("a model of substitution is missing"), and lets the
-splitting form `M x_{k+1} = N x_k + b` with triangular `M` be analysed there later.
-Prototype: `notes/qss/ch03/proto/ProtoFloatingPoint.lean`.
-'''
 
 [[node]]
 id = "exists_rounds_sub_dot_div_eq"
-kind = "theorem"
-desc = '''Higham Lemma 8.4, the scalar core: if `s` is a `RoundsDot` of `a` and `b'` over an index type of
-cardinality `k - 1`, `m.Rounds (c - s) t` and `m.Rounds (t / d) y` with `d ≠ 0`, `m.u < 1`, `k u < 1`,
-then there are `θ` with `|θ| ≤ gamma m.u k` and `θ' : ι → K` with `|θ' i| ≤ gamma m.u k` such that `d
-* (1 + θ) * y = c - ∑ i, a i * b' i * (1 + θ' i)`. From `abs_sub_le_of_roundsDot` (order `k - 1`),
-one rounding for the subtraction and one for the division, composed with `IsRelPert.trans`/`.div`.
-★★'''
-deps = ["FloatingPoint.RoundsDot", "FloatingPoint.abs_sub_le_of_roundsDot", "FloatingPoint.IsRelPert"]
 
 [[node]]
 id = "RoundsForwardSubst"
-kind = "definition"
-desc = '''`RoundsForwardSubst m T b x̂ : Prop := ∀ i, ∃ s t, RoundsDot m (fun j : {j // j < i} => T i j) (fun j
-=> x̂ j) s ∧ m.Rounds (b i - s) t ∧ m.Rounds (t / T i i) (x̂ i)`, for `T : Matrix n n K` on a finite
-linear order `n`: `x̂` is an admissible computed solution of `T x = b` by forward substitution, in
-any accumulation order (elaborated in the prototype). ★'''
-deps = ["FloatingPoint.RoundsDot"]
 
 [[node]]
 id = "RoundsBackSubst"
-kind = "definition"
-desc = '''The same with `{j // i < j}`; equivalently `RoundsForwardSubst (n := nᵒᵈ)`
-(`roundsBackSubst_iff_roundsForwardSubst_toDual`), which is how the prototype states the LU solve.
-★'''
-deps = ["FloatingPoint.RoundsForwardSubst"]
 
 [[node]]
 id = "exists_roundsForwardSubst_eq"
-kind = "theorem"
-desc = '''Higham Theorem 8.5 = QSS (3.24): `m.u < 1`, `card n * u < 1`, `RoundsForwardSubst m T b x̂` (with `T
-i i ≠ 0`) give `∃ ΔT, (∀ i j, |ΔT i j| ≤ gamma m.u (card n) * |T i j|) ∧ (T + ΔT) *ᵥ x̂ = b`. Row `i`
-of the conclusion is `exists_rounds_sub_dot_div_eq` with `k = #{j | j ≤ i} ≤ card n` and
-`gamma_mono`; `ΔT i j = T i j * θ' j` for `j < i`, `ΔT i i = T i i * θ`, `0` above. The statement
-holds for any `T`, triangular or not — only the entries `j ≤ i` are read. Note the constant is
-`γ_n` and not the book's `n u / (1 - n u)` name for the same quantity. ★★'''
-deps = ["FloatingPoint.RoundsForwardSubst", "FloatingPoint.exists_rounds_sub_dot_div_eq", "FloatingPoint.gamma_mono"]
 
 [[node]]
 id = "exists_roundsBackSubst_eq"
-kind = "theorem"
-desc = '''The backward version: `RoundsBackSubst m U b x̂ → ∃ ΔU, |ΔU| ≤ γ_n |U| ∧ (U + ΔU) *ᵥ x̂ = b`, by
-transport along `nᵒᵈ`. ★'''
-deps = ["FloatingPoint.RoundsBackSubst", "FloatingPoint.exists_roundsForwardSubst_eq"]
 
 [[node]]
 id = "abs_sub_le_of_roundsBackSubst_of_abs_le_diag"
-kind = "theorem"
-desc = '''Higham Theorem 8.7 = QSS §3.2.2's improved bound: over `ℝ`, if `U` is upper triangular with `∀ i j,
-i < j → |U i j| ≤ |U i i|` and nonzero diagonal, `U *ᵥ x = b` and `RoundsBackSubst m U b x̂`, then `∀
-i, |x i - x̂ i| ≤ 2 ^ (#{j | i ≤ j}) * gamma m.u (card n) * ⨆ j ≥ i, |x̂ j|` (`2^{n-i+1}` on `Fin n`
-with `1`-based `i`). From `|x - x̂| = |U⁻¹ ΔU x̂| ≤ γ_n |U⁻¹| |U| |x̂|` and
-`Matrix.abs_inv_mul_abs_apply_le_two_pow` of `Direct/Substitution`. The lower triangular
-statement (`|l_ii| ≥ |l_ij|` for `j < i`) is the transported version. ★★'''
-deps = ["FloatingPoint.exists_roundsBackSubst_eq", "Matrix.abs_inv_mul_abs_apply_le_two_pow"]
 
 [[node]]
 id = "abs_sub_le_of_roundsBackSubst_of_isDiagDominant"
-kind = "theorem"
-desc = '''The "or if `L` and `U` are diagonally dominant" clause of QSS §3.2.2: under row diagonal dominance
-of the triangular `U`, `|x i - x̂ i| ≤ (2 n - 1) γ_n ‖x̂‖_∞` — Theorem 8.5 with Higham Lemma 8.8
-(`Matrix.abs_inv_mul_abs_apply_le_of_isDiagDominant`). ★'''
-deps = ["FloatingPoint.exists_roundsBackSubst_eq", "Matrix.abs_inv_mul_abs_apply_le_of_isDiagDominant"]
+
+[[node]]
+id = "abs_one_add_mul_one_add_sub_one_le_gamma"
+
+[[node]]
+id = "abs_one_add_div_one_add_sub_one_le_gamma"
+
+[[node]]
+id = "exists_roundsSumFrom_map_eq"
+
+[[node]]
+id = "exists_roundsForwardSubst_row_eq"
+
+[[node]]
+id = "roundsBackSubst_iff_roundsForwardSubst_toDual"
+
+[[node]]
+id = "abs_sub_le_of_mulVec_eq_of_abs_le"
+
+[[node]]
+id = "abs_sub_apply_le_of_mulVec_eq_of_abs_le"
