@@ -1,6 +1,7 @@
 import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Iterate
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.Projection.Basic
 
@@ -535,11 +536,10 @@ omit [DecidableEq n] in
 /-- The right preconditioner sends a consistent guess to `(f; U_S y)`. -/
 theorem blockUpper_mulVec_consistentGuess (hB : IsUnit B) (f : m → R) (y : n → R) :
     blockUpper B E US *ᵥ consistentGuess B E f y = Sum.elim f (US *ᵥ y) := by
-  have hBB : B * B⁻¹ = 1 := Matrix.mul_nonsing_inv B ((Matrix.isUnit_iff_isUnit_det B).1 hB)
   rw [blockUpper, consistentGuess, Matrix.fromBlocks_mulVec]
   simp only [Sum.elim_comp_inl, Sum.elim_comp_inr, Matrix.zero_mulVec, zero_add]
   refine congrArg₂ Sum.elim ?_ rfl
-  rw [Matrix.mulVec_mulVec, hBB, Matrix.one_mulVec]
+  rw [Matrix.mulVec_nonsing_inv_mulVec hB]
   abel
 
 /-- **[saad2003iterative], (14.51)**: the inverse of the right preconditioner sends `(f; U_S y)`
@@ -549,13 +549,12 @@ the consistent guesses and the vectors with first block `f`, which is why every 
 preconditioned method has the form `x_m = (B⁻¹(f - E y_m); y_m)`. -/
 theorem blockUpper_inv_mulVec (hB : IsUnit B) (hUS : IsUnit US) (f : m → R) (y : n → R) :
     (blockUpper B E US)⁻¹ *ᵥ Sum.elim f (US *ᵥ y) = consistentGuess B E f y := by
-  have hUU : US⁻¹ * US = 1 := Matrix.nonsing_inv_mul US ((Matrix.isUnit_iff_isUnit_det US).1 hUS)
   rw [inv_blockUpper hB hUS, consistentGuess, Matrix.fromBlocks_mulVec]
   simp only [Sum.elim_comp_inl, Sum.elim_comp_inr, Matrix.zero_mulVec, zero_add,
-    Matrix.mulVec_mulVec, hUU, Matrix.one_mulVec]
+    Matrix.nonsing_inv_mulVec_mulVec hUS]
   refine congrArg₂ Sum.elim ?_ rfl
-  rw [Matrix.neg_mul, Matrix.neg_mulVec, Matrix.mulVec_sub, Matrix.mul_assoc, Matrix.mulVec_mulVec,
-    Matrix.mul_assoc, hUU, Matrix.mul_one]
+  rw [Matrix.neg_mulVec, ← Matrix.mulVec_mulVec, Matrix.nonsing_inv_mulVec_mulVec hUS,
+    ← Matrix.mulVec_mulVec, Matrix.mulVec_sub]
   abel
 
 /-- The left preconditioner turns the right-hand side into `(f; L_S⁻¹ g')`. -/
@@ -708,9 +707,8 @@ theorem exists_isMinResidual_schurComplement (hB : IsUnit B) (hLS : IsUnit LS) (
   have hcomm := precondMatrix_comp_prolong (E := E) (F := F) (C := C) hB hLS hUS
   obtain ⟨w, hw, hwu⟩ := exists_isMinResidualIterate_of_isMinResidualIterate_map
     (inner_prolong_prolong 𝕜 m n) hcomm (residual_consistentGuess hB hLS hUS f g y₀) k hu
-  have hUS' : US *ᵥ (US⁻¹ *ᵥ WithLp.ofLp w) = WithLp.ofLp w := by
-    rw [Matrix.mulVec_mulVec,
-      Matrix.mul_nonsing_inv US ((Matrix.isUnit_iff_isUnit_det US).1 hUS), Matrix.one_mulVec]
+  have hUS' : US *ᵥ (US⁻¹ *ᵥ WithLp.ofLp w) = WithLp.ofLp w :=
+    Matrix.mulVec_nonsing_inv_mulVec hUS _
   refine ⟨US⁻¹ *ᵥ WithLp.ofLp w, by rwa [hUS'], ?_⟩
   rw [blockUpper_mulVec_consistentGuess hB, hUS', hwu,
     blockUpper_mulVec_consistentGuess (E := E) (US := US) hB,

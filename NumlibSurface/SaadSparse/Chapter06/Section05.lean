@@ -248,9 +248,8 @@ theorem lsq_nonneg {m : ℕ} (y : Fin m → 𝕜) : 0 ≤ lsq h β m y := norm_n
 
 /-- The triangular system `R_m y = g_m` of Proposition 6.9(2) is solved by `y = R_m⁻¹ g_m`. -/
 theorem mulVec_R_inv_mulVec_g {m : ℕ} (hR : IsUnit (R h m)) :
-    R h m *ᵥ ((R h m)⁻¹ *ᵥ g h β m) = g h β m := by
-  rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hR),
-    Matrix.one_mulVec]
+    R h m *ᵥ ((R h m)⁻¹ *ᵥ g h β m) = g h β m :=
+  Matrix.mulVec_nonsing_inv_mulVec hR _
 
 /-! ### (6.35), (6.36), (6.80): the rotations are unitary -/
 
@@ -896,8 +895,7 @@ theorem problem_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m
   have hN : IsUnit ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) := by
     rw [Hbar_eq_hessenbergOf]
     exact isUnit_conjTranspose_mul_self_hessenbergOf _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hρ hR
-  rw [← normal_equations_gmresY A b x₀ hR, Matrix.mulVec_mulVec,
-    Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1 hN), Matrix.one_mulVec]
+  rw [← normal_equations_gmresY A b x₀ hR, Matrix.nonsing_inv_mulVec_mulVec hN]
 
 /-! ### Proposition 6.10 and the "at most `n` steps" remark -/
 
@@ -1377,8 +1375,7 @@ approximation rather than an arbitrary element of the affine space. -/
 theorem hessenbergSqOf_mulVec_iomOfBasisY {h : ℕ → ℕ → 𝕜} {β : 𝕜} {m : ℕ}
     (hH : IsUnit (Krylov.hessenbergSqOf h m)) :
     Krylov.hessenbergSqOf h m *ᵥ iomOfBasisY h β m = Krylov.firstVec β m := by
-  rw [iomOfBasisY, Matrix.mulVec_mulVec,
-    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hH), Matrix.one_mulVec]
+  rw [iomOfBasisY, Matrix.mulVec_nonsing_inv_mulVec hH]
 
 /-- **Proposition 6.7 in the basis `u`**: `r_m^I = -h_{m+1,m}(e_mᵀ y_m^I) v_{m+1}`.  Like (6.50)
 this uses only the Hessenberg relation, so the loss of orthogonality is immaterial — the book's
@@ -2353,9 +2350,7 @@ private theorem sub_snoc_eq_smul (h : ℕ → ℕ → ℝ) (hh : ∀ i j : ℕ, 
   have hw : Rtilde h (m + 1) *ᵥ
       (ytilde h t (m + 1) - (Fin.snoc yp (0 : ℝ) : Fin (m + 1) → ℝ))
       = Pi.single (Fin.last m) (Krylov.gamma h t m) := by
-    rw [Matrix.mulVec_sub, ytilde, Matrix.mulVec_mulVec,
-      Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hRt), Matrix.one_mulVec,
-      hRtz, hRz]
+    rw [Matrix.mulVec_sub, ytilde, Matrix.mulVec_nonsing_inv_mulVec hRt, hRtz, hRz]
     funext i
     rcases eq_or_ne i (Fin.last m) with rfl | hi
     · rw [Pi.sub_apply, Pi.sub_apply, gtilde_last, g_apply, Fin.val_last, Pi.single_eq_same,

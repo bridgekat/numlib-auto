@@ -1,4 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Stationary.Block
 import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
@@ -103,26 +104,16 @@ theorem mulVec_eq_sum_erase (A : Matrix (Fin n) (Fin n) ℝ) (y : Fin n → ℝ)
     (A *ᵥ y) i = A i i * y i + ∑ j ∈ univ.erase i, A i j * y j := by
   rw [mulVec, dotProduct, ← Finset.add_sum_erase _ _ (mem_univ i)]
 
-/-! ### Elementary facts about matrix inverses used throughout -/
+/-! ### Elementary facts about matrix inverses used throughout
+
+The vector-level cancellations `M⁻¹ (M u) = u`, `M (M⁻¹ u) = u` and "`M v = u` solves to
+`v = M⁻¹ u`" are the backbone's `Matrix.nonsing_inv_mulVec_mulVec`,
+`Matrix.mulVec_nonsing_inv_mulVec` and `Matrix.nonsing_inv_mulVec_eq`. -/
 
 private theorem isUnit_smul_of_isUnit {c : ℝ} (hc : c ≠ 0) {M : Matrix (Fin n) (Fin n) ℝ}
     (hM : IsUnit M) : IsUnit (c • M) := by
   rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero]
   exact mul_ne_zero (pow_ne_zero _ hc) (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det M).mp hM))
-
-/-- `M⁻¹ (M u) = u` for an invertible `M`. -/
-theorem inv_mulVec_mulVec {M : Matrix (Fin n) (Fin n) ℝ} (hM : IsUnit M) (u : Fin n → ℝ) :
-    M⁻¹ *ᵥ (M *ᵥ u) = u := by
-  rw [mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det M).mp hM), one_mulVec]
-
-/-- `M (M⁻¹ u) = u` for an invertible `M`. -/
-theorem mulVec_inv_mulVec {M : Matrix (Fin n) (Fin n) ℝ} (hM : IsUnit M) (u : Fin n → ℝ) :
-    M *ᵥ (M⁻¹ *ᵥ u) = u := by
-  rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det M).mp hM), one_mulVec]
-
-/-- Solving `M v = u` for an invertible `M`. -/
-theorem inv_mulVec_eq {M : Matrix (Fin n) (Fin n) ℝ} (hM : IsUnit M) {u v : Fin n → ℝ}
-    (h : M *ᵥ v = u) : M⁻¹ *ᵥ u = v := by rw [← h, inv_mulVec_mulVec hM]
 
 /-! ### General splittings and the affine iteration (4.10)–(4.11), (4.18)–(4.23) -/
 
@@ -147,7 +138,7 @@ theorem Splitting.step_eq (s : Splitting A) (b x : Fin n → ℝ) :
 /-- The step of a splitting is characterized by `M (x' - x) = b - A x`. -/
 theorem Splitting.step_eq_of_mulVec (s : Splitting A) (b x y : Fin n → ℝ)
     (h : s.m *ᵥ (y - x) = b - A *ᵥ x) : Splitting.step s b x = y := by
-  rw [Splitting.step_eq, inv_mulVec_eq s.isUnit h]
+  rw [Splitting.step_eq, nonsing_inv_mulVec_eq s.isUnit h]
   abel
 
 /-- Saad (4.20): the iteration operator of a splitting is `G = I - M⁻¹ A`. -/
@@ -165,7 +156,7 @@ theorem step_fixed_iff (s : Splitting A) (b x : Fin n → ℝ) :
       have := congrArg (fun z => z - x) h
       simpa using this
     have := congrArg (fun z => s.m *ᵥ z) h0
-    simp only [mulVec_inv_mulVec s.isUnit, mulVec_zero] at this
+    simp only [mulVec_nonsing_inv_mulVec s.isUnit, mulVec_zero] at this
     have hx := sub_eq_zero.mp this
     exact hx.symm
   · intro h
@@ -179,7 +170,7 @@ theorem preconditioned_iff {M : Matrix (Fin n) (Fin n) ℝ} (hM : IsUnit M)
   constructor
   · intro h
     have := congrArg (fun z => M *ᵥ z) h
-    simpa only [mulVec_inv_mulVec hM] using this
+    simpa only [mulVec_nonsing_inv_mulVec hM] using this
   · intro h; rw [h]
 
 /-! ### Jacobi (4.3)–(4.5) -/
@@ -226,7 +217,7 @@ theorem jacobiStep_eq_vec (h : IsUnit (diagPart A)) (b x : Fin n → ℝ) :
   have hD : IsUnit (D A) := h
   rw [jacobiStep_eq h, Splitting.step_eq]
   have hm : (jacobiSplitting A h).m = D A := rfl
-  rw [hm, E_add_F, sub_mulVec, mulVec_sub, mulVec_sub, inv_mulVec_mulVec hD]
+  rw [hm, E_add_F, sub_mulVec, mulVec_sub, mulVec_sub, nonsing_inv_mulVec_mulVec hD]
   abel
 
 /-! ### Gauss–Seidel (4.6)–(4.9) -/
@@ -246,12 +237,12 @@ noncomputable def symmetricGsStep (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n �
 /-- Saad (4.6): the Gauss–Seidel step solves `(D - E) x' = F x + b`. -/
 theorem gsStep_spec (h : IsUnit (diagPart A)) (b x : Fin n → ℝ) :
     (D A - E A) *ᵥ gsStep A b x = F A *ᵥ x + b :=
-  mulVec_inv_mulVec (isUnit_D_sub_E h) _
+  mulVec_nonsing_inv_mulVec (isUnit_D_sub_E h) _
 
 /-- Saad (4.9): the backward Gauss–Seidel step solves `(D - F) x' = E x + b`. -/
 theorem backwardGsStep_spec (h : IsUnit (diagPart A)) (b x : Fin n → ℝ) :
     (D A - F A) *ᵥ backwardGsStep A b x = E A *ᵥ x + b :=
-  mulVec_inv_mulVec (isUnit_D_sub_F h) _
+  mulVec_nonsing_inv_mulVec (isUnit_D_sub_F h) _
 
 /-- Saad (4.7): the componentwise Gauss–Seidel recursion, which uses the already updated
 components `j < i`. -/
@@ -343,12 +334,12 @@ theorem isUnit_D_sub_smul_F (h : IsUnit (diagPart A)) (_hω : ω ≠ 0) :
 /-- Saad (4.12): the SOR step solves `(D - ω E) x' = [ω F + (1 - ω) D] x + ω b`. -/
 theorem sorStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (D A - ω • E A) *ᵥ sorStep A ω b x = (ω • F A + (1 - ω) • D A) *ᵥ x + ω • b :=
-  mulVec_inv_mulVec (isUnit_D_sub_smul_E h hω) _
+  mulVec_nonsing_inv_mulVec (isUnit_D_sub_smul_E h hω) _
 
 /-- Saad §4.1: the backward SOR step solves `(D - ω F) x' = [ω E + (1 - ω) D] x + ω b`. -/
 theorem backwardSORStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (D A - ω • F A) *ᵥ backwardSORStep A ω b x = (ω • E A + (1 - ω) • D A) *ᵥ x + ω • b :=
-  mulVec_inv_mulVec (isUnit_D_sub_smul_F h hω) _
+  mulVec_nonsing_inv_mulVec (isUnit_D_sub_smul_F h hω) _
 
 /-- Saad §4.1: SOR with `ω = 1` is Gauss–Seidel. -/
 theorem sorStep_one (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
@@ -438,7 +429,7 @@ private theorem ssor_key (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω �
     rw [hsplit, mulVec_add, hv', ← add_mulVec,
       show (ω • F A + (1 - ω) • D A) + (D A - ω • F A) = (2 - ω) • D A by module, smul_mulVec]
   rw [M_ssor, smul_mulVec, ← mulVec_mulVec, ← mulVec_mulVec, hsum, mulVec_smul,
-    inv_mulVec_mulVec hD, mulVec_smul, hu, smul_smul, smul_smul,
+    nonsing_inv_mulVec_mulVec hD, mulVec_smul, hu, smul_smul, smul_smul,
     show (ω * (2 - ω))⁻¹ * (2 - ω) * ω = 1 by field_simp, one_smul]
 
 /-- Saad (4.13)–(4.14), (4.27): the SSOR sweep is the splitting with `M = M_SSOR`. -/
@@ -534,7 +525,7 @@ all blocks at once, `x' = x + D⁻¹ (b - A x)`. -/
 theorem equation_4_17 (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
     blockJacobiStep π A b x = x + (blockD π A)⁻¹ *ᵥ (b - A *ᵥ x) := by
   rw [blockJacobiStep, blockE_add_blockF, sub_mulVec, mulVec_add, mulVec_sub, mulVec_sub,
-    inv_mulVec_mulVec h]
+    nonsing_inv_mulVec_mulVec h]
   abel
 
 /-- Saad (4.16)–(4.17): the block Jacobi sweep is the splitting with `M = D`, the block diagonal. -/
@@ -553,7 +544,7 @@ theorem blockGaussSeidelStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
   have hm : (blockGaussSeidelSplitting π A h).m = blockD π A - blockE π A := by
     rw [blockD, blockE, sub_neg_eq_add]; rfl
   rw [hm, mulVec_sub, blockGaussSeidelStep,
-    mulVec_inv_mulVec (isUnit_blockD_sub_blockE h), blockD_sub_blockE_eq, add_mulVec]
+    mulVec_nonsing_inv_mulVec (isUnit_blockD_sub_blockE h), blockD_sub_blockE_eq, add_mulVec]
   abel
 
 /-- Saad §5.4: **one block Jacobi sweep is one step of the additive projection process** over the

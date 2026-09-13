@@ -829,7 +829,7 @@ theorem equation_13_29 (n : ℕ) (k : Fin n) :
     rw [e0, e2, Real.sin_sub, Real.sin_add]
     ring
   rw [gaussSeidel1D_eq, sub_mulVec, one_mulVec, ← mulVec_mulVec, key, Matrix.mulVec_smul,
-    Chapter04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n))]
+    nonsing_inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n))]
   module
 
 /-- The Gauss–Seidel eigenvector of (13.29) is nonzero exactly when `cos θ_k ≠ 0`. -/
@@ -861,7 +861,7 @@ theorem gaussSeidel1D_mulVec_single (n : ℕ) (hn : 0 < n) :
     rw [laplacian1D_mulVec_apply, gsLower_mulVec_apply, h2]
     ring
   rw [gaussSeidel1D_eq, sub_mulVec, one_mulVec, ← mulVec_mulVec, hkey,
-    Chapter04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n)),
+    nonsing_inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n)),
     sub_self]
 
 /-- The Jacobi iteration matrix of the one-dimensional model problem is `tridiag(1/2, 0, 1/2)`,

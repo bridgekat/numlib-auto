@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.IsDiag
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 
 /-!
@@ -53,9 +54,6 @@ theorem equation_12_18 (hD₁ : IsUnit D₁) (b₁ : m → R) (b₂ : n → R) (
     fromBlocks D₁ F E D₂ *ᵥ Sum.elim x₁ x₂ = Sum.elim b₁ b₂
       ↔ (fromBlocks D₁ F E D₂).schurComplement *ᵥ x₂ = b₂ - E *ᵥ (D₁⁻¹ *ᵥ b₁)
           ∧ x₁ = D₁⁻¹ *ᵥ (b₁ - F *ᵥ x₂) := by
-  have hdet : IsUnit D₁.det := (Matrix.isUnit_iff_isUnit_det _).1 hD₁
-  have hDD : D₁ * D₁⁻¹ = 1 := Matrix.mul_nonsing_inv _ hdet
-  have hDD' : D₁⁻¹ * D₁ = 1 := Matrix.nonsing_inv_mul _ hdet
   have helim : ∀ (u : m → R) (v : n → R),
       Sum.elim u v = Sum.elim b₁ b₂ ↔ u = b₁ ∧ v = b₂ := by
     refine fun u v => ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i),
@@ -65,8 +63,8 @@ theorem equation_12_18 (hD₁ : IsUnit D₁) (b₁ : m → R) (b₂ : n → R) (
   have hred : D₁ *ᵥ x₁ + F *ᵥ x₂ = b₁ ↔ x₁ = D₁⁻¹ *ᵥ (b₁ - F *ᵥ x₂) := by
     rw [← eq_sub_iff_add_eq]
     refine ⟨fun h => ?_, fun h => ?_⟩
-    · rw [← h, Matrix.mulVec_mulVec, hDD', Matrix.one_mulVec]
-    · rw [h, Matrix.mulVec_mulVec, hDD, Matrix.one_mulVec]
+    · rw [← h, Matrix.nonsing_inv_mulVec_mulVec hD₁]
+    · rw [h, Matrix.mulVec_nonsing_inv_mulVec hD₁]
   have hblack : E *ᵥ (D₁⁻¹ *ᵥ (b₁ - F *ᵥ x₂)) + D₂ *ᵥ x₂ = b₂
       ↔ (fromBlocks D₁ F E D₂).schurComplement *ᵥ x₂ = b₂ - E *ᵥ (D₁⁻¹ *ᵥ b₁) := by
     rw [Matrix.schurComplement_fromBlocks]

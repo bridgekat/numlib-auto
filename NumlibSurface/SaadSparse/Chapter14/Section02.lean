@@ -1,4 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Sqrt
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import NumlibSurface.SaadSparse.Common
 
@@ -143,19 +144,12 @@ theorem proposition_14_1_3 (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C)) (y
 theorem blockGaussianElimination_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C))
     (f : Fin p → ℝ) (g : Fin q → ℝ) :
     fromBlocks B E F C *ᵥ blockGaussianElimination B E F C f g = Sum.elim f g := by
-  have hBdet : IsUnit B.det := (isUnit_iff_isUnit_det _).1 hB
-  have hSdet : IsUnit (schurComplement B E F C).det :=
-    (isUnit_iff_isUnit_det _).1 (proposition_14_1_1 hB hA)
-  have hBB : B * B⁻¹ = 1 := mul_nonsing_inv B hBdet
-  have hSS : schurComplement B E F C * (schurComplement B E F C)⁻¹ = 1 := mul_nonsing_inv _ hSdet
-  have hy : schurComplement B E F C *ᵥ interfaceSolution B E F C f g = reducedRhs B F f g := by
-    rw [show interfaceSolution B E F C f g
-        = (schurComplement B E F C)⁻¹ *ᵥ reducedRhs B F f g from rfl,
-      Matrix.mulVec_mulVec, hSS, Matrix.one_mulVec]
+  have hy : schurComplement B E F C *ᵥ interfaceSolution B E F C f g = reducedRhs B F f g :=
+    mulVec_nonsing_inv_mulVec (proposition_14_1_1 hB hA) _
   rw [blockGaussianElimination, Matrix.fromBlocks_mulVec]
   refine congrArg₂ Sum.elim ?_ ?_
-  · simp only [Sum.elim_comp_inl, Sum.elim_comp_inr, Matrix.mulVec_sub, Matrix.mulVec_mulVec,
-      ← Matrix.mul_assoc, hBB, Matrix.one_mul, Matrix.one_mulVec]
+  · simp only [Sum.elim_comp_inl, Sum.elim_comp_inr, Matrix.mulVec_sub, ← Matrix.mulVec_mulVec,
+      mulVec_nonsing_inv_mulVec hB]
     abel
   · simp only [Sum.elim_comp_inl, Sum.elim_comp_inr, Matrix.mulVec_sub, Matrix.mulVec_mulVec,
       ← Matrix.mul_assoc]

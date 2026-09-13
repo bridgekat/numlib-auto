@@ -1265,8 +1265,7 @@ theorem equation_7_76 {δ : ℕ → 𝕜} (m : ℕ) (hα : ∀ i < m, tfqmrAlpha
   refine ⟨hmul, hunit, ?_⟩
   have hinv : (Krylov.hessenbergSqOf (tfqmrCoeff (tfqmrAlpha A b x₀ rs₀) δ) m)⁻¹
       *ᵥ Krylov.firstVec (δ 0) m = fun j : Fin m => tfqmrAlpha A b x₀ rs₀ (j : ℕ) := by
-    rw [← hmul, Matrix.mulVec_mulVec,
-      Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1 hunit), Matrix.one_mulVec]
+    rw [← hmul, Matrix.nonsing_inv_mulVec_mulVec hunit]
   rw [hinv, cgsHalfIterate, Fin.sum_univ_eq_sum_range
     (fun i => tfqmrAlpha A b x₀ rs₀ i • tfqmrU A b x₀ rs₀ i) m]
 

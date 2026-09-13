@@ -198,10 +198,9 @@ private theorem mulVec_add_eq_iff {m : Type*} [Fintype m] [DecidableEq m] {M : M
     (hM : IsUnit M) (x c d : m → 𝕜) : M *ᵥ x + c = d ↔ x = M⁻¹ *ᵥ (d - c) := by
   constructor
   · rintro rfl
-    rw [add_sub_cancel_right, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hM),
-      one_mulVec]
+    rw [add_sub_cancel_right, nonsing_inv_mulVec_mulVec hM]
   · rintro rfl
-    rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM), one_mulVec]
+    rw [mulVec_nonsing_inv_mulVec hM]
     abel
 
 end Plumbing
@@ -571,8 +570,7 @@ theorem isConsistent_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUn
     V.IsConsistent b (V.schwarzSweep b z) := by
   set d := V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z) with hd
   have hLd : V.globalLower *ᵥ d = b - V.globalMatrix *ᵥ z := by
-    rw [hd, mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1
-      (isUnit_globalLower V hB hS)), one_mulVec]
+    rw [hd, mulVec_nonsing_inv_mulVec (isUnit_globalLower V hB hS)]
   have hAd : (V.globalMatrix *ᵥ d) ∘ Sum.inl = (V.globalLower *ᵥ d) ∘ Sum.inl := by
     rw [globalMatrix, comp_inl_fromBlocks_mulVec, globalLower_eq, comp_inl_fromBlocks_mulVec]
   have hr0 : (b - V.globalMatrix *ᵥ z) ∘ Sum.inl = 0 := by

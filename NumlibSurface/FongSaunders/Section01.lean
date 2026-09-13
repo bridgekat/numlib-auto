@@ -85,7 +85,7 @@ theorem inner_mulVecE (A : Matrix (Fin n) (Fin n) ℝ) (x y : Vec n) :
 /-- A symmetric matrix induces a symmetric operator on `Vec n`. -/
 theorem isSymmetric_toEuclideanLin (hA : A.IsSymm) :
     (Matrix.toEuclideanLin A).IsSymmetric :=
-  Matrix.isSymmetric_toEuclideanLin_iff.2 (Matrix.isHermitian_iff_isSymm.2 hA)
+  hA.isSymmetric_toEuclideanLin
 
 /-- Symmetry moves `A` across the inner product: `xᵀ A y = (A x)ᵀ y`. -/
 theorem inner_mulVecE_comm (hA : A.IsSymm) (x y : Vec n) : ⟪x, A ⬝ y⟫_ℝ = ⟪A ⬝ x, y⟫_ℝ :=

@@ -1,5 +1,6 @@
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Conditioning.LinearSystem
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import NumlibSurface.SaadSparse.Chapter01.Basics
 
 /-!
@@ -44,9 +45,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 theorem existsUnique_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : IsUnit A) (b : Fin n → 𝕜) :
     ∃! x, A *ᵥ x = b := by
   refine ⟨A⁻¹ *ᵥ b, ?_, fun y hy => ?_⟩
-  · change A *ᵥ (A⁻¹ *ᵥ b) = b
-    rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
-  · rw [← hy, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
+  · exact mulVec_nonsing_inv_mulVec hA b
+  · exact (nonsing_inv_mulVec_eq hA hy).symm
 
 /-- Saad §1.13.1, Case 2: when `b` is attained, the solution set is the coset `x₀ + Null A`. -/
 theorem setOf_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) {b x₀ : Fin n → 𝕜} (hx₀ : A *ᵥ x₀ = b) :

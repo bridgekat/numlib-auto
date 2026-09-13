@@ -1,4 +1,5 @@
 import Numlib.Approximation.MvPolynomial
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 
 /-!
@@ -116,8 +117,8 @@ theorem affineSubst_affineSubst_inv {d : ℕ} {M : Matrix (Fin d) (Fin d) ℝ} (
   refine MvPolynomial.funext fun x => ?_
   rw [eval_affineSubst, eval_affineSubst]
   congr 1
-  simp only [Matrix.mulVec_add, Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ hM,
-    Matrix.one_mulVec]
+  simp only [Matrix.mulVec_add,
+    Matrix.nonsing_inv_mulVec_mulVec ((Matrix.isUnit_iff_isUnit_det M).2 hM)]
   abel_nf
 
 theorem affineSubst_inv_affineSubst {d : ℕ} {M : Matrix (Fin d) (Fin d) ℝ} (hM : IsUnit M.det)
@@ -126,8 +127,8 @@ theorem affineSubst_inv_affineSubst {d : ℕ} {M : Matrix (Fin d) (Fin d) ℝ} (
   refine MvPolynomial.funext fun x => ?_
   rw [eval_affineSubst, eval_affineSubst]
   congr 1
-  simp only [Matrix.mulVec_add, Matrix.mulVec_neg, Matrix.mulVec_mulVec,
-    Matrix.mul_nonsing_inv _ hM, Matrix.one_mulVec]
+  simp only [Matrix.mulVec_add, Matrix.mulVec_neg,
+    Matrix.mulVec_nonsing_inv_mulVec ((Matrix.isUnit_iff_isUnit_det M).2 hM)]
   abel_nf
 
 /-- **Exercise 14.1.1**: an invertible affine change of variables `x ↦ M x + v` carries `Π_n^d`

@@ -261,8 +261,7 @@ private theorem eq_zero_of_apply_mem_orthogonal {v w : EuclideanSpace 𝕜 (Fin 
     exact Finset.sum_congr rfl fun j _ => mul_comm _ _
   have hy0 : y = 0 := by
     have h1 : (T A v w m)⁻¹ *ᵥ (T A v w m *ᵥ y) = 0 := by rw [hTy, Matrix.mulVec_zero]
-    rwa [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1 hT),
-      Matrix.one_mulVec] at h1
+    rwa [Matrix.nonsing_inv_mulVec_mulVec hT] at h1
   rw [← hy, hy0]
   simp
 

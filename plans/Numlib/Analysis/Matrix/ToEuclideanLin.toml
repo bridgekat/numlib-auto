@@ -7,6 +7,9 @@ id = "IsHermitian.hasEigenvalue_toEuclideanLin_iff"
 id = "IsHermitian.isSymmetricBoundedBy_toEuclideanLin"
 
 [[node]]
+id = "IsSymm.isSymmetric_toEuclideanLin"
+
+[[node]]
 id = "hasEigenvalue_toEuclideanLin_iff"
 
 [[node]]

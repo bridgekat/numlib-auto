@@ -88,9 +88,7 @@ system of Algorithm 7.2. -/
 theorem T_mulVec_lanczosSolveY {m : ℕ} (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
     T A (Chapter06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m
       = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m := by
-  rw [lanczosSolveY, Matrix.mulVec_mulVec,
-    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hT), Matrix.one_mulVec,
-    Chapter06.smul_e₁_eq_firstVec]
+  rw [lanczosSolveY, Matrix.mulVec_nonsing_inv_mulVec hT, Chapter06.smul_e₁_eq_firstVec]
 
 end Algorithm
 

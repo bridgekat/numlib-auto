@@ -15,7 +15,9 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 Glue between `Matrix m n 𝕜` and `Matrix.toEuclideanLin A : EuclideanSpace 𝕜 n →ₗ EuclideanSpace 𝕜 m`
 used by every matrix-level surface statement: multiplicativity, powers, adjoint = conjugate
 transpose, eigenvalues, and the `‖A‖₂ = ‖toEuclideanLin A‖` identification. (Symmetric ↔ Hermitian
-is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, `Matrix.PosDef` ↔ symmetric coercive is
+is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, and its one-directional form for a symmetric
+matrix over a trivial-star field — the real symmetric case — is
+`Matrix.IsSymm.isSymmetric_toEuclideanLin` here; `Matrix.PosDef` ↔ symmetric coercive is
 `Matrix.posDef_iff_isSymmetricCoercive`; reading a Krylov subspace of `toEuclideanLin A` as a span
 of columns is `Matrix.krylov_subspace_toEuclideanLin` in `Numlib.Krylov.ToEuclideanLin`, which this
 module cannot depend on.)
@@ -96,6 +98,14 @@ theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [Decida
     (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
     inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
   rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_right]
+
+/-- A symmetric matrix over a field with trivial star — a real symmetric matrix, in practice —
+acts as a symmetric operator on `EuclideanSpace`. This is the direction of Mathlib's
+`Matrix.isSymmetric_toEuclideanLin_iff` that a real statement needs, with the symmetric-is-Hermitian
+step (`Matrix.isHermitian_iff_isSymm`) already taken. -/
+theorem IsSymm.isSymmetric_toEuclideanLin [TrivialStar 𝕜] {A : Matrix n n 𝕜} (hA : A.IsSymm) :
+    (toEuclideanLin A).IsSymmetric :=
+  isSymmetric_toEuclideanLin_iff.mpr (isHermitian_iff_isSymm.mpr hA)
 
 /-- Eigenvalues of the operator are the eigenvalues of the matrix. -/
 theorem hasEigenvalue_toEuclideanLin_iff (A : Matrix n n 𝕜) (μ : 𝕜) :

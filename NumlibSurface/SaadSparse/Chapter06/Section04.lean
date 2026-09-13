@@ -2,6 +2,7 @@ import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Subspace
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Common
 import NumlibSurface.SaadSparse.Chapter06.Section03
@@ -86,9 +87,7 @@ theorem fomFixed_eq_add_sum (m : ℕ) :
 /-- `H_m y_m = β e_1` whenever `H_m` is nonsingular: `y_m` really solves (6.17). -/
 theorem H_mulVec_fomY {m : ℕ} (hH : FOMDefined A b x₀ m) :
     H A (v₁ A b x₀) m *ᵥ fomY A b x₀ m = Krylov.firstVec (β A b x₀ : 𝕜) m := by
-  rw [fomY, Matrix.mulVec_mulVec,
-    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hH), Matrix.one_mulVec,
-    smul_e₁_eq_firstVec]
+  rw [fomY, Matrix.mulVec_nonsing_inv_mulVec hH, smul_e₁_eq_firstVec]
 
 /-- **(6.16)–(6.17)**: the FOM iterate is the Galerkin iterate on `𝒦_m(A, r_0)`, the
 orthogonal projection method (6.15) of §6.4.1. -/
@@ -462,9 +461,7 @@ theorem smul_iop_zero : (β A b x₀ : 𝕜) • iop A (v₁ A b x₀) k 0 = b -
 
 theorem HI_mulVec_iomY {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) :
     HI A (v₁ A b x₀) k m *ᵥ iomY A b x₀ k m = Krylov.firstVec (β A b x₀ : 𝕜) m := by
-  rw [iomY, Matrix.mulVec_mulVec,
-    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hH), Matrix.one_mulVec,
-    smul_e₁_eq_firstVec]
+  rw [iomY, Matrix.mulVec_nonsing_inv_mulVec hH, smul_e₁_eq_firstVec]
 
 /-- **Proposition 6.7 for IOM** (§6.4.2, "the result of Proposition 6.7 is still valid"):
 `b - A x_m = -h_{m+1,m} (e_mᵀ y_m) v_{m+1}`. -/
@@ -839,8 +836,7 @@ theorem hessU_mulVec_diomY {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     hessU (iopCoeff A (v₁ A b x₀) k) m *ᵥ diomY A b x₀ k m
       = fun j : Fin m => diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) (j : ℕ) := by
-  rw [diomY, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _
-    ((Matrix.isUnit_iff_isUnit_det _).1 (isUnit_hessU _ hpiv)), Matrix.one_mulVec]
+  rw [diomY, Matrix.mulVec_nonsing_inv_mulVec (isUnit_hessU _ hpiv)]
 
 theorem isUnit_HI_of_pivots {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A v k) l l ≠ 0) : IsUnit (HI A v k m) :=
@@ -855,9 +851,8 @@ theorem HI_mulVec_diomY {m : ℕ}
 theorem diomY_eq_iomY {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diomY A b x₀ k m = iomY A b x₀ k m := by
-  rw [iomY, smul_e₁_eq_firstVec, ← HI_mulVec_diomY A b x₀ k hpiv, Matrix.mulVec_mulVec,
-    Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1
-      (isUnit_HI_of_pivots A (v₁ A b x₀) k hpiv)), Matrix.one_mulVec]
+  rw [iomY, smul_e₁_eq_firstVec, ← HI_mulVec_diomY A b x₀ k hpiv,
+    Matrix.nonsing_inv_mulVec_mulVec (isUnit_HI_of_pivots A (v₁ A b x₀) k hpiv)]
 
 /-- **(6.20)–(6.21)**: Algorithm 6.8 computes the IOM iterates — `x_m = x_0 + P_m z_m` is
 `x_0 + V_m y_m`. -/

@@ -7,7 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
-import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # Oblique projectors
@@ -200,25 +200,17 @@ private theorem inner_sum_smul (V W : ι → E) (c : ι → 𝕜) :
 variable (V W : ι → E) (hVW : IsUnit (crossGram 𝕜 V W))
 include hVW
 
-private theorem crossGram_inv_mul : (crossGram 𝕜 V W)⁻¹ * crossGram 𝕜 V W = 1 :=
-  Matrix.nonsing_inv_mul _ (Matrix.isUnit_iff_isUnit_det _ |>.1 hVW)
-
-private theorem crossGram_mul_inv : crossGram 𝕜 V W * (crossGram 𝕜 V W)⁻¹ = 1 :=
-  Matrix.mul_nonsing_inv _ (Matrix.isUnit_iff_isUnit_det _ |>.1 hVW)
-
 /-- The projector fixes every `V`-combination. -/
 private theorem apply_sum_smul (c : ι → 𝕜) :
     obliqueProjectionOfBases 𝕜 V W (∑ k, c k • V k) = ∑ k, c k • V k := by
-  rw [obliqueProjectionOfBases_apply, inner_sum_smul, Matrix.mulVec_mulVec,
-    crossGram_inv_mul V W hVW, Matrix.one_mulVec]
+  rw [obliqueProjectionOfBases_apply, inner_sum_smul, Matrix.nonsing_inv_mulVec_mulVec hVW]
 
 /-- The projector does not change the `W`-coordinates. -/
 private theorem inner_apply_eq (x : E) (i : ι) :
     inner 𝕜 (W i) (obliqueProjectionOfBases 𝕜 V W x) = inner 𝕜 (W i) x := by
   have h := congrFun (inner_sum_smul V W ((crossGram 𝕜 V W)⁻¹.mulVec
     (fun k => inner 𝕜 (W k) x))) i
-  rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_mulVec, crossGram_mul_inv V W hVW,
-    Matrix.one_mulVec]
+  rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_nonsing_inv_mulVec hVW]
 
 /-- `V (Wᴴ V)⁻¹ Wᴴ` really is a projector, as soon as the cross Gram matrix `Wᴴ V` is invertible; it
 fixes every `V`-combination, and its own values are `V`-combinations. -/

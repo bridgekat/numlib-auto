@@ -4,6 +4,7 @@ import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.LinearAlgebra.Matrix.DiagDominant
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Stationary.Splitting
 
 /-!
@@ -103,14 +104,14 @@ private theorem sassenfeld_def (A : Matrix n n 𝕜) :
 
 /-- The Sassenfeld matrix is lower triangular with `|a_ii|` on its diagonal, hence nonsingular
 whenever the diagonal of `A` is. -/
-private theorem isUnit_det_sassenfeldMatrix {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
-    IsUnit (sassenfeldMatrix A).det := by
+private theorem isUnit_sassenfeldMatrix {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
+    IsUnit (sassenfeldMatrix A) := by
   have hd := (isUnit_diagPart_iff A).mp h
   have hlt : (sassenfeldMatrix A).IsLowerTriangular := by
     intro i j hij
     have hij' : i < j := OrderDual.toDual_lt_toDual.mp hij
     simp [sassenfeldMatrix_apply, hij'.ne, asymm hij']
-  rw [det_of_isLowerTriangular _ hlt, isUnit_iff_ne_zero]
+  rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular _ hlt, isUnit_iff_ne_zero]
   exact Finset.prod_ne_zero_iff.mpr fun i _ => by
     simpa [sassenfeldMatrix_apply] using norm_ne_zero_iff.mpr (hd i)
 
@@ -121,8 +122,7 @@ theorem sassenfeld_eq {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
   have hd := (isUnit_diagPart_iff A).mp h
   have hsolve : sassenfeldMatrix A *ᵥ sassenfeld A =
       fun i => ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖ := by
-    rw [sassenfeld_def, mulVec_mulVec, mul_nonsing_inv _ (isUnit_det_sassenfeldMatrix h),
-      one_mulVec]
+    rw [sassenfeld_def, mulVec_nonsing_inv_mulVec (isUnit_sassenfeldMatrix h)]
   have hi := congrFun hsolve i
   rw [mulVec, dotProduct] at hi
   have hsplit : ∀ j, sassenfeldMatrix A i j * sassenfeld A j =

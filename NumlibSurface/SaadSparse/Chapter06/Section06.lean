@@ -461,7 +461,7 @@ variable {n : ℕ}
 /-- Over `ℝ` a symmetric matrix induces a symmetric operator on `ℝⁿ`. -/
 theorem isSymmetric_op_of_isSymm {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     (op A).IsSymmetric :=
-  Matrix.isSymmetric_toEuclideanLin_iff.mpr (Matrix.isHermitian_iff_isSymm.mpr hA)
+  hA.isSymmetric_toEuclideanLin
 
 variable (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : EuclideanSpace ℝ (Fin n))
 

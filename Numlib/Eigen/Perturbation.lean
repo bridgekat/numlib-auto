@@ -13,6 +13,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Topology.Algebra.Polynomial
 
 /-!
@@ -928,9 +929,8 @@ theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : M
     simp
   have hXd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).mp hX
   have hXinvX : X⁻¹ * X = 1 := Matrix.nonsing_inv_mul X hXd
-  have hXXinv : X * X⁻¹ = 1 := Matrix.mul_nonsing_inv X hXd
   set w := X⁻¹ *ᵥ v with hw
-  have hvw : X *ᵥ w = v := by rw [hw, Matrix.mulVec_mulVec, hXXinv, Matrix.one_mulVec]
+  have hvw : X *ᵥ w = v := by rw [hw, Matrix.mulVec_nonsing_inv_mulVec hX]
   have hw0 : w ≠ 0 := fun h => hv0 (by rw [← hvw, h, Matrix.mulVec_zero])
   have key : N *ᵥ w = (X⁻¹ * ΔA * X) *ᵥ w := by
     have e1 : (X⁻¹ * ΔA * X) *ᵥ w = X⁻¹ *ᵥ (ΔA *ᵥ v) := by

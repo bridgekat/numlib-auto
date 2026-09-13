@@ -585,7 +585,7 @@ theorem lanczosBeta_succ_v₁ (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : �
 theorem mulVec_lanczosMethodY {m : ℕ} (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     T A (v₁ A b x₀) m *ᵥ lanczosMethodY A b x₀ m
       = Krylov.firstVec ‖b - op A x₀‖ m := by
-  rw [lanczosMethodY_def, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hT, Matrix.one_mulVec]
+  rw [lanczosMethodY_def, Matrix.mulVec_nonsing_inv_mulVec ((Matrix.isUnit_iff_isUnit_det _).2 hT)]
 
 private theorem lanczosMethodAt_eq_sum (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (m : ℕ) :
     lanczosMethodAt A b x₀ m =

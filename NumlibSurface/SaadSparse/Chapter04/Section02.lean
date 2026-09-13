@@ -182,7 +182,7 @@ theorem theorem_4_1_mp (hG : complexSpectralRadius G < 1) :
   have hu := Chapter01.theorem_1_11_isUnit hG
   refine ⟨hu, fun f x₀ => tendsto_affineStep_of_complexSpectralRadius_lt_one hG f x₀ ?_⟩
   rw [affineStep_fixed_iff]
-  exact mulVec_inv_mulVec hu f
+  exact mulVec_nonsing_inv_mulVec hu f
 
 /-- Saad, Theorem 4.1 (⇐): if (4.28) converges for every `f` and every `x₀` then `ρ(G) < 1`. -/
 theorem theorem_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
@@ -221,7 +221,7 @@ theorem Splitting.tendsto_step (s : Splitting A)
   have hstep : Splitting.step s b = affineStep s.iterationOperator (s.m⁻¹ *ᵥ b) := rfl
   rw [hstep]
   exact tendsto_affineStep_of_complexSpectralRadius_lt_one hs _ x₀
-    ((step_fixed_iff s b _).mpr (mulVec_inv_mulVec hA b))
+    ((step_fixed_iff s b _).mpr (mulVec_nonsing_inv_mulVec hA b))
 
 /-! ### Corollary 4.2 -/
 
@@ -827,7 +827,7 @@ theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit
     obtain ⟨x, hx⟩ := hconv ((A.sorSplitting h hω0.ne').m *ᵥ f) x₀
     refine ⟨x, ?_⟩
     rw [sorStep_eq h hω0.ne', Splitting.step,
-      inv_mulVec_mulVec (A.sorSplitting h hω0.ne').isUnit f] at hx
+      nonsing_inv_mulVec_mulVec (A.sorSplitting h hω0.ne').isUnit f] at hx
     exact hx
   · intro hρ b x₀
     rw [sorStep_eq h hω0.ne']

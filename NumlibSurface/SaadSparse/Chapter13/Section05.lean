@@ -339,10 +339,8 @@ theorem isSymmetricCoercive_inv_diagPart (hA : A.PosDef) :
 /-- `D⁻¹` is a right inverse of `D`, the hypothesis of
 `Multigrid.isDualSeminormPair_energy`. -/
 theorem toEuclideanLin_diagPart_inv (hA : A.PosDef) (u : EuclideanSpace ℝ (Fin n)) :
-    (diagPart A ⬝ ((diagPart A)⁻¹ ⬝ u)) = u := by
-  rw [← mul_act, Matrix.mul_nonsing_inv _
-    ((Matrix.isUnit_iff_isUnit_det _).1 (isUnit_diagPart_of_posDef hA))]
-  exact congrFun (congrArg _ (Matrix.toLpLin_one 2)) u
+    (diagPart A ⬝ ((diagPart A)⁻¹ ⬝ u)) = u :=
+  Matrix.toEuclideanLin_mul_nonsing_inv_apply (isUnit_diagPart_of_posDef hA) u
 
 /-- **Saad §13.5.2**: `‖x‖_D² = ∑ a_ii x_i²`. -/
 theorem normD_sq (hA : A.PosDef) (x : EuclideanSpace ℝ (Fin n)) :
