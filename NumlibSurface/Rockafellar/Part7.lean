@@ -28,5 +28,5 @@ introduced.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §§33–37.
+* [rockafellar1970convex] §§33–37.
 -/

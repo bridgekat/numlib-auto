@@ -40,7 +40,7 @@ through `PolyhedralFn.add`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19.
+* [rockafellar1970convex] §19.
 -/
 
 open Set

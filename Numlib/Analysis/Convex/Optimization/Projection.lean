@@ -31,7 +31,7 @@ nonempty closed convex set — is Mathlib's `exists_norm_eq_iInf_of_complete_con
 finite-dimensional hypothesis here comes from `prox`, whose attainment argument is
 finite-dimensional, not from the projection.
 
-Sources: Rockafellar, *Convex Analysis*, §27 (the nearest-point problem as the first application of
+Sources: [rockafellar1970convex] §27 (the nearest-point problem as the first application of
 Theorem 27.4: `a - x` is normal to `C` at `x`) and §31 (the remark following Theorem 31.5: for the
 indicator of a nonempty closed convex set `C`, `prox (z | f)` is the point of `C` nearest to `z`);
 Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 3.4.1.

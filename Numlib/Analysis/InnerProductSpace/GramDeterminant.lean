@@ -55,10 +55,9 @@ squared error through the normal equations, and it needs no hypothesis on `v`.
 
 ## References
 
-* [F. R. Gantmacher, *The Theory of Matrices*, Volume 1, Chelsea, 1959], Chapter IX §5, where the
-  formula is the recursion satisfied by the Gram determinants of a nested family.
-* [K. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
-  edition, Springer, 2009], §3.1, where it is the engine of the Müntz–Szász theorem.
+* [gantmacher1959theory] Chapter IX §5, where the formula is the recursion satisfied by the Gram
+  determinants of a nested family.
+* [han2009theoretical] §3.1, where it is the engine of the Müntz–Szász theorem.
 -/
 
 open scoped InnerProductSpace

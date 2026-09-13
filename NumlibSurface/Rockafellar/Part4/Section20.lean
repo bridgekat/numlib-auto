@@ -33,7 +33,7 @@ backbone's functional-indexed `Polyhedral` by `isPolyhedral_iff_polyhedral`; a p
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20.
+* [rockafellar1970convex] §20.
 -/
 
 open Set Pointwise

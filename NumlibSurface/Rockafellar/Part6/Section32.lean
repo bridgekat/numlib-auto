@@ -50,7 +50,7 @@ to `conv S`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §32 (pp. 342–348).
+* [rockafellar1970convex] §32 (pp. 342–348).
 -/
 
 open scoped Pointwise

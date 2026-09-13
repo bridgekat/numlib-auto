@@ -41,7 +41,7 @@ chains at all.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §24.
+* [rockafellar1970convex] §24.
 -/
 
 open Set Filter Topology

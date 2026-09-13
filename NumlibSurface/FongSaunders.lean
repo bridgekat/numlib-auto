@@ -8,11 +8,10 @@ import NumlibSurface.FongSaunders.Section05
 # Fong–Saunders, *CG versus MINRES: an empirical comparison*
 
 The surface library for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R): five modules, one
-per section of the paper. Each states the paper's results in the paper's own terms and proves them
-from `Numlib`, the general backbone. Little is proved here that is not proved there — the surface
-exists to test the backbone against a published account of the subject, and to give a reader of the
-paper a Lean name for every result in it.
+comparison* [fong2012cg]: five modules, one per section of the paper. Each states the paper's
+results in the paper's own terms and proves them from `Numlib`, the general backbone. Little is
+proved here that is not proved there — the surface exists to test the backbone against a published
+account of the subject, and to give a reader of the paper a Lean name for every result in it.
 
 **All six numbered theorems of the paper are formalized** — Theorems 2.1–2.5 and Theorem 3.1 —
 together with the displayed equations (2.2), (3.2)–(3.6) and (4.1), the definitions (2.1) of a
@@ -114,7 +113,5 @@ other papers.
 
 ## References
 
-* D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU Journal for
-  Science **17** (2012) 44–62; also Report SOL 2011-2R, Department of Management Science and
-  Engineering, Stanford University, 2011.
+* [fong2012cg]; also Report SOL 2011-2R, Stanford University, 2011.
 -/

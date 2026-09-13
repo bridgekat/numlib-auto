@@ -37,7 +37,7 @@ forms a sum of infinities, needs no hypothesis at all.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §30 for the concave
+* [rockafellar1970convex] §30 for the concave
   conventions, §4 for the convex statements being mirrored.
 -/
 

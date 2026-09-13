@@ -34,7 +34,7 @@ translate-and-scale form.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §13.
+* [rockafellar1970convex] §13.
 -/
 
 open Set Pointwise

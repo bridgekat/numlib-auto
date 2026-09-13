@@ -46,7 +46,7 @@ kept inline as `∀ x, f x ≠ ⊥`. Positive homogeneity is not stated with a s
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §2 and §4.
+* [rockafellar1970convex] §2 and §4.
 -/
 
 open Set Pointwise

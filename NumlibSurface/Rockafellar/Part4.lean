@@ -8,7 +8,7 @@ import NumlibSurface.Rockafellar.Part4.Section22
 /-!
 # Rockafellar, Part IV: Representation and Inequalities
 
-R. T. Rockafellar, *Convex Analysis* (Princeton, 1970), §§17–22. This module imports the six
+[rockafellar1970convex] §§17–22. This module imports the six
 section modules and adds nothing of its own.
 
 | § | module | subject |

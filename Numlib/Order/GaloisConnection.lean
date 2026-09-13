@@ -20,7 +20,7 @@ them, with one side an `OrderDual` — so the correspondences are order *anti*-i
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12, §14.
+* [rockafellar1970convex] §12, §14.
 -/
 
 namespace GaloisConnection

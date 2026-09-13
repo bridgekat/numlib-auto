@@ -58,7 +58,7 @@ carries its own copy of the homogenisation dictionary.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §17.
+* [rockafellar1970convex] §17.
 -/
 
 open Set

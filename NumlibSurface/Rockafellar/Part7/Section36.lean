@@ -23,7 +23,7 @@ is a separate conclusion, drawn where the book draws it, in Corollary 36.3.1.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §36, pp. 379–387.
+* [rockafellar1970convex] §36, pp. 379–387.
 -/
 
 namespace Rockafellar

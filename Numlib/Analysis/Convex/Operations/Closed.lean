@@ -14,7 +14,7 @@ survives precomposition because `(fun _ => ⊥) ∘ A` is again constant.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5, §7.
+* [rockafellar1970convex] §5, §7.
 -/
 
 namespace ConvexAnalysis

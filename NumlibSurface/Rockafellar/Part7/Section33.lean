@@ -27,7 +27,7 @@ against.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33, pp. 349–358.
+* [rockafellar1970convex] §33, pp. 349–358.
 -/
 
 open Set

@@ -27,7 +27,7 @@ when `S` is convex, and the forward lemmas do not need that hypothesis.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §4.
+* [rockafellar1970convex] §4.
 -/
 
 namespace ConvexAnalysis

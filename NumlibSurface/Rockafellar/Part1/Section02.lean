@@ -26,7 +26,7 @@ things.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §2.
+* [rockafellar1970convex] §2.
 -/
 
 namespace Rockafellar

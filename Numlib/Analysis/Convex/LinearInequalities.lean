@@ -37,7 +37,7 @@ alternative for a system of convex inequalities with affine side constraints.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §22.
+* [rockafellar1970convex] §22.
 -/
 open Set
 

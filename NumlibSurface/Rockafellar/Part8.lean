@@ -21,5 +21,5 @@ numbered.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §§38–39.
+* [rockafellar1970convex] §§38–39.
 -/

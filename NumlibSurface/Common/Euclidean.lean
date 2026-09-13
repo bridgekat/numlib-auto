@@ -57,7 +57,7 @@ use self-duality silently.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
+* [rockafellar1970convex].
 -/
 
 namespace NumlibSurface

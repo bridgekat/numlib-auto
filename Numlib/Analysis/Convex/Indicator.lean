@@ -17,7 +17,7 @@ which every statement about convex *sets* becomes an instance of a statement abo
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §4.
+* [rockafellar1970convex] §4.
 -/
 
 open Set Pointwise

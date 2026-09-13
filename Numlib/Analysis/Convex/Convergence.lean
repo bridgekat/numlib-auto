@@ -53,7 +53,7 @@ because `ℕ → ℝ` is first countable.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §10.
+* [rockafellar1970convex] §10.
 -/
 open Set Filter Topology Metric
 open scoped NNReal Pointwise

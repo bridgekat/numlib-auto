@@ -28,7 +28,7 @@ writes is what `corollary_1_4_1` makes explicit, through a basis of `L⊥`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §1.
+* [rockafellar1970convex] §1.
 -/
 
 namespace Rockafellar

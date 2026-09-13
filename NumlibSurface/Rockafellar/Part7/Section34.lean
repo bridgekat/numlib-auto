@@ -28,7 +28,7 @@ Corollary 34.2.4 asks only for separate continuity of the slices where the book 
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §34, pp. 359–369.
+* [rockafellar1970convex] §34, pp. 359–369.
 -/
 
 namespace Rockafellar

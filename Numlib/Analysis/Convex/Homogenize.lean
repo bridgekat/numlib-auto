@@ -53,7 +53,7 @@ on `f0 = δ(· | 0)` is likewise not decoration: for `f ≡ +∞`, `epi f = ∅`
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5.
+* [rockafellar1970convex] §5.
 -/
 
 open Set Pointwise

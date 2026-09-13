@@ -46,7 +46,7 @@ functional on `E*` with a point of `E`, which produces the point of contact, use
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18.
+* [rockafellar1970convex] §18.
 -/
 
 open Set Bornology

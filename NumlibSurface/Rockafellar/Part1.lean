@@ -7,7 +7,7 @@ import NumlibSurface.Rockafellar.Part1.Section05
 /-!
 # Rockafellar, Part I: Basic Concepts
 
-R. T. Rockafellar, *Convex Analysis* (Princeton, 1970), §§1–5. All 49 numbered results of Part I
+[rockafellar1970convex] §§1–5. All 49 numbered results of Part I
 are formalized. This module only imports the five section modules.
 
 | § | module | subject |

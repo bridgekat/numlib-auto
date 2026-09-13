@@ -350,6 +350,5 @@ the gap it once was.
 
 ## References
 
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
+* [han2009theoretical].
 -/

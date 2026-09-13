@@ -15,7 +15,7 @@ without any two of them cancelling, so it is stated on the family, and the two-s
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §9.
+* [rockafellar1970convex] §9.
 -/
 
 open Set

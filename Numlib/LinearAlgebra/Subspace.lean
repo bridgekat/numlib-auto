@@ -13,7 +13,7 @@ stated for an arbitrary module over a field; nothing here is about convexity.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §1.
+* [rockafellar1970convex] §1.
 -/
 
 variable {K E : Type*} [Field K] [AddCommGroup E] [Module K E]

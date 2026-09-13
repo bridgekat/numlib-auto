@@ -33,7 +33,7 @@ its proof not using it; `theorem_3_8_add` keeps it.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §3.
+* [rockafellar1970convex] §3.
 -/
 
 namespace Rockafellar

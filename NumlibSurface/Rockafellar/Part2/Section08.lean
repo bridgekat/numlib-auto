@@ -32,7 +32,7 @@ properly smaller in general — for `f x = ⟪a, x⟫` with `a ≠ 0` one has `0
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §8.
+* [rockafellar1970convex] §8.
 -/
 
 open Bornology Filter Set Topology

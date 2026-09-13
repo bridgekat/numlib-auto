@@ -28,7 +28,7 @@ generating set by choosing a direction vector for each half-line face.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18 and §19.
+* [rockafellar1970convex] §18 and §19.
 -/
 
 open Set

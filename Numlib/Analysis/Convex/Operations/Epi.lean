@@ -32,7 +32,7 @@ and nor need the convex hull of a union. Those modules carry it as a hypothesis.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5.
+* [rockafellar1970convex] §5.
 -/
 
 open Set

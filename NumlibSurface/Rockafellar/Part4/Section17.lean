@@ -25,7 +25,7 @@ so `theorem_17_3` carries that hypothesis; the book's `x* ≠ 0` is conversely u
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §17.
+* [rockafellar1970convex] §17.
 -/
 
 namespace Rockafellar

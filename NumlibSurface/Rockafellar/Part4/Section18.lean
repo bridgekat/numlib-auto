@@ -27,7 +27,7 @@ origin, and Corollary 18.7.1 is printed with no proof at all.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18.
+* [rockafellar1970convex] §18.
 -/
 
 open Set

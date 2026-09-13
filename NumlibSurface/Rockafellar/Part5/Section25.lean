@@ -29,7 +29,7 @@ the continuity and measure-zero clauses of Theorems 25.4 and 25.5.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §25.
+* [rockafellar1970convex] §25.
 -/
 
 open Filter MeasureTheory Topology

@@ -36,7 +36,7 @@ through it.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12, §30, §31.
+* [rockafellar1970convex] §12, §30, §31.
 -/
 
 namespace ConvexAnalysis

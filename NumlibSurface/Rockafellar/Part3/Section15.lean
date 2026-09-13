@@ -38,7 +38,7 @@ display `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §15.
+* [rockafellar1970convex] §15.
 -/
 
 open Set Pointwise Bornology

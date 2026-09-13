@@ -18,7 +18,7 @@ perspective function under its other name.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
+* [rockafellar1970convex].
 -/
 
 namespace ConvexAnalysis

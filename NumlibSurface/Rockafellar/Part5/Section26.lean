@@ -38,7 +38,7 @@ hypothesis cannot be dropped.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §26.
+* [rockafellar1970convex] §26.
 -/
 
 open Filter Set Topology

@@ -27,7 +27,7 @@ Corollaries 27.2.1 and 27.2.2 are about minimising *sequences* and are stated th
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §27 (pp. 263–272).
+* [rockafellar1970convex] §27 (pp. 263–272).
   Corollary 27.2.1 is stated there with no printed proof, and the polyhedral clause of Theorem 27.3
   is proved there from Helly's theorem.
 -/

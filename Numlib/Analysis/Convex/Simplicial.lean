@@ -43,7 +43,7 @@ affine independence, and the only use of a topology: no metric, no finite dimens
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §10.
+* [rockafellar1970convex] §10.
 -/
 
 open Set Filter

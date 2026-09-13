@@ -35,7 +35,7 @@ polarity is order-inverting; and that `C° = D°` for `D = cl (conv (C ∪ {0}))
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14.
+* [rockafellar1970convex] §14.
 -/
 
 open Set Pointwise

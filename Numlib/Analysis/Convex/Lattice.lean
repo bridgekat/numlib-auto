@@ -33,7 +33,7 @@ pointwise one.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5.
+* [rockafellar1970convex] §5.
 -/
 
 open Set

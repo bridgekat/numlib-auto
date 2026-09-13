@@ -32,7 +32,7 @@ that case split meets §4's `0 · ∞ = 0`, and the two agree.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5.
+* [rockafellar1970convex] §5.
 -/
 
 open Set Pointwise

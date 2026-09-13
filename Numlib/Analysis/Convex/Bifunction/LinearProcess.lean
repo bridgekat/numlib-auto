@@ -23,7 +23,7 @@ without it the adjoint process is single-valued only up to the annihilator of `U
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §39.
+* [rockafellar1970convex] §39.
 -/
 
 open Set

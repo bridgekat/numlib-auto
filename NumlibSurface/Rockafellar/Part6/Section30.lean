@@ -35,7 +35,7 @@ Fenchel–Moreau for `inf F`, and the adjoint cannot tell `F` from `cl F`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §30 (pp. 307–326).
+* [rockafellar1970convex] §30 (pp. 307–326).
 -/
 
 open Filter Set Topology

@@ -46,7 +46,7 @@ theorem and that file is downstream of this one.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §24.
+* [rockafellar1970convex] §24.
 * R. T. Rockafellar, *Characterization of the subdifferentials of convex functions*, Pacific J.
   Math. **17** (1966) 497–510.
 -/

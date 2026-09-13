@@ -39,7 +39,7 @@ Mathlib's `ConvexOn.convex_epigraph`, which uses the codomain of the function.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §4.
+* [rockafellar1970convex] §4.
 -/
 
 open Set

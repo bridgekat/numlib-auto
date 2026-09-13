@@ -34,7 +34,7 @@ quantifies over all `ε > 0`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §35, pp. 370–378.
+* [rockafellar1970convex] §35, pp. 370–378.
 -/
 
 open Set Filter Topology MeasureTheory

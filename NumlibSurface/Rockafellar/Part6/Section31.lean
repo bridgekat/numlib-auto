@@ -48,7 +48,7 @@ Theorem 31.2's properness clause needs no relative-interior hypothesis; and Coro
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31 (pp. 327–341).
+* [rockafellar1970convex] §31 (pp. 327–341).
 * J.-J. Moreau, *Proximité et dualité dans un espace hilbertien*, Bull. Soc. Math. France **93**
   (1965), 273–299 — Theorem 31.5 and Corollary 31.5.2.
 -/

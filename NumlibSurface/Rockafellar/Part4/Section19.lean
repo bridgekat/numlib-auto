@@ -35,7 +35,7 @@ clause (c) instead; Theorem 19.6 is printed with no proof paragraph at all.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19.
+* [rockafellar1970convex] §19.
 -/
 
 namespace Rockafellar

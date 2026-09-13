@@ -48,7 +48,7 @@ every dimension, and only the unbounded case uses `dim C' ≤ 1`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18.
+* [rockafellar1970convex] §18.
 -/
 
 open Set Bornology

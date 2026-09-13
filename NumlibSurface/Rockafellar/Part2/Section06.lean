@@ -33,7 +33,7 @@ intersection of `ri [0, 1 + α]` over all `α > 0` is the book's own counterexam
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §6.
+* [rockafellar1970convex] §6.
 -/
 
 namespace Rockafellar

@@ -52,8 +52,8 @@ in finite dimensions.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12.
-* H. H. Schaefer, *Topological Vector Spaces*, Springer, 1966, Chapter IV (dual pairs).
+* [rockafellar1970convex] §12.
+* [schaefer1971topological] Chapter IV (dual pairs).
 -/
 
 open Set

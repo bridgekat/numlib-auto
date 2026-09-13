@@ -38,7 +38,7 @@ homeomorphism comes out as `(u − u*, v* + v)` where the book prints `(u − u*
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §37, pp. 388–400.
+* [rockafellar1970convex] §37, pp. 388–400.
 -/
 
 namespace Rockafellar

@@ -44,8 +44,8 @@ because `⊤` and `⊥` are available there.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §36.
-* K. Atkinson and W. Han, *Theoretical Numerical Analysis*, 3rd ed., Springer, 2009, §8.6.
+* [rockafellar1970convex] §36.
+* [han2009theoretical] §8.6.
 -/
 
 open Set

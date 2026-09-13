@@ -29,7 +29,7 @@ regardless. The classical convention makes polyhedral convex functions proper.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19.
+* [rockafellar1970convex] §19.
 -/
 
 open Set

@@ -7,7 +7,7 @@ import NumlibSurface.Rockafellar.Part2.Section10
 /-!
 # Rockafellar, Part II: Topological Properties
 
-R. T. Rockafellar, *Convex Analysis* (Princeton, 1970), §§6–10. This module only imports the five
+[rockafellar1970convex] §§6–10. This module only imports the five
 section modules. All 84 numbered results of Part II are formalized. Part II is where the
 development becomes irreducibly finite-dimensional, resting on Theorem 6.2: a non-empty convex set
 has a non-empty relative interior.

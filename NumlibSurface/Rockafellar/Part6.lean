@@ -8,7 +8,7 @@ import NumlibSurface.Rockafellar.Part6.Section32
 /-!
 # Rockafellar, Part VI: Constrained Extremum Problems
 
-R. T. Rockafellar, *Convex Analysis* (Princeton, 1970), sections 27 to 32. This module imports the
+[rockafellar1970convex] sections 27 to 32. This module imports the
 six section modules and adds nothing of its own.
 
 | section | module | subject |
@@ -24,5 +24,5 @@ All 63 numbered results of Part VI are formalized.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, Part VI.
+* [rockafellar1970convex] Part VI.
 -/

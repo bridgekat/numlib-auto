@@ -30,7 +30,7 @@ intended reference is Corollary 21.3.2, Helly's theorem.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §21.
+* [rockafellar1970convex] §21.
 -/
 
 open Set

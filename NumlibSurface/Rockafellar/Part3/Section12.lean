@@ -32,7 +32,7 @@ and Fenchel–Moreau finishes.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12.
+* [rockafellar1970convex] §12.
 -/
 
 namespace Rockafellar

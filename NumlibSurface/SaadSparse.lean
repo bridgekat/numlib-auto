@@ -70,10 +70,10 @@ import NumlibSurface.SaadSparse.Common
 /-!
 # Saad, *Iterative Methods for Sparse Linear Systems*
 
-The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition
-(SIAM, 2003): sixty-eight modules, one per section of the book the project covers, reaching every
-chapter that states a numbered result. Each module states the book's results in the book's own
-terms — Saad's non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms
+The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*
+[saad2003iterative]: sixty-eight modules, one per section of the book the project covers, reaching
+every chapter that states a numbered result. Each module states the book's results in the book's
+own terms — Saad's non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms
 written out as Lean functions — and proves them by specializing the general backbone under
 `Numlib/`. Almost nothing is proved here that is not proved there: the surface exists to test the
 backbone against a published account of the subject, and to give a reader of the book a Lean name
@@ -329,5 +329,5 @@ inner product that the pattern condition forces to vanish.
 
 ## References
 
-* Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003.
+* [saad2003iterative].
 -/

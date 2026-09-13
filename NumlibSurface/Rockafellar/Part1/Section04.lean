@@ -41,7 +41,7 @@ The conventions §4 lays down are content, not boilerplate.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §4.
+* [rockafellar1970convex] §4.
 -/
 
 namespace Rockafellar

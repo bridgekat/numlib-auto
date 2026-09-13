@@ -36,7 +36,7 @@ and it is not discharged.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §38, pp. 401–412.
+* [rockafellar1970convex] §38, pp. 401–412.
 -/
 
 open Set

@@ -80,7 +80,7 @@ proofs for their numerical approximation need; see [han2009theoretical], Chapter
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §10.
+* [rockafellar1970convex] §10.
 -/
 
 open Pointwise Set

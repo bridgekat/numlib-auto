@@ -33,7 +33,7 @@ boundary point of `dom fᵢ` and `0 · ∅ = ∅ ≠ {0}`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §28 (pp. 273–290).
+* [rockafellar1970convex] §28 (pp. 273–290).
   Corollaries 28.2.2, 28.3.1 and 28.4.1 are stated there with no printed proof.
 -/
 

@@ -24,7 +24,7 @@ definition of a Kuhn–Tucker vector into a statement about `L`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §29.
+* [rockafellar1970convex] §29.
 -/
 
 namespace ConvexAnalysis

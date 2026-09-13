@@ -6,7 +6,7 @@ import NumlibSurface.Rockafellar.Part5.Section26
 /-!
 # Rockafellar, Part V: Differential Theory
 
-R. T. Rockafellar, *Convex Analysis* (Princeton, 1970), §§23–26. This module imports the four
+[rockafellar1970convex] §§23–26. This module imports the four
 section modules and adds nothing of its own.
 
 | § | module | subject |

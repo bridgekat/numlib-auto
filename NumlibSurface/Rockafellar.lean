@@ -10,7 +10,7 @@ import NumlibSurface.Rockafellar.Part8
 /-!
 # Rockafellar, *Convex Analysis*
 
-The surface library for R. T. Rockafellar, *Convex Analysis* (Princeton University Press, 1970):
+The surface library for R. T. Rockafellar, *Convex Analysis* [rockafellar1970convex]:
 thirty-nine modules, one per section of the book, grouped into its eight Parts. Each states the
 book's results in the book's own terms and proves them from `Numlib.Analysis.Convex`, the general
 backbone. Little is proved here that is not proved there — the surface exists to test the backbone
@@ -113,5 +113,5 @@ of its subject. Those five results are the whole of the gap.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
+* [rockafellar1970convex].
 -/

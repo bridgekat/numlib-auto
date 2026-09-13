@@ -41,7 +41,7 @@ both halves with "if `A` is closed": that half is Corollary 33.2.1.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §39, pp. 413–424.
+* [rockafellar1970convex] §39, pp. 413–424.
 -/
 
 namespace Rockafellar

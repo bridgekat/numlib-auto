@@ -32,7 +32,7 @@ other clause of the corollary holds as printed and is proved here.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §29 (pp. 291–306).
+* [rockafellar1970convex] §29 (pp. 291–306).
   Corollary 29.4.1 is stated there with no printed proof.
 -/
 

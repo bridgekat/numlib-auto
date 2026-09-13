@@ -32,7 +32,7 @@ every use of it goes through `epi_lscHull` or through properness.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §7.
+* [rockafellar1970convex] §7.
 -/
 
 open Set Filter Topology

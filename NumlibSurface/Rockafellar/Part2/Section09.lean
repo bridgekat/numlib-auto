@@ -33,7 +33,7 @@ theorem below reduces to the backbone form rather than unfolding the convention;
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §9.
+* [rockafellar1970convex] §9.
 -/
 
 open Set Pointwise

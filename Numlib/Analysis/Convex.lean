@@ -232,5 +232,5 @@ and `ae_differentiableAtFn` in `Subdifferential.Rademacher`.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
+* [rockafellar1970convex].
 -/

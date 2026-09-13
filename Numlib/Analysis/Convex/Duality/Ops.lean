@@ -52,7 +52,7 @@ convex inputs.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16.
+* [rockafellar1970convex] §16.
 -/
 
 open Pointwise Set

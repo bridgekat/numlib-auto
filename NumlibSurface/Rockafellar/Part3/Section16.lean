@@ -36,7 +36,7 @@ backbone statement it specialises does. `λf` is `fun x => (l : EReal) * f x` an
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16.
+* [rockafellar1970convex] §16.
 -/
 
 open Set Pointwise

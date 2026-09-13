@@ -39,7 +39,7 @@ hypothesis anyway.
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §11.
+* [rockafellar1970convex] §11.
 -/
 
 open Set Pointwise

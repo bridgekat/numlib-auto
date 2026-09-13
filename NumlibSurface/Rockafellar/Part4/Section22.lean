@@ -27,7 +27,7 @@ in a parenthesis far ahead of the theorem that uses it; `posIntervalCombo` recor
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §22.
+* [rockafellar1970convex] §22.
 -/
 
 open Set Pointwise

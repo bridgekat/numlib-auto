@@ -28,7 +28,7 @@ mapping `∂f` as a `SetRel`, so that Corollary 23.5.1 is `SetRel.inv` applied t
 
 ## References
 
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §23.
+* [rockafellar1970convex] §23.
 -/
 
 open Set Pointwise
