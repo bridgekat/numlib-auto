@@ -1,150 +1,156 @@
 namespace = "EllipticInterval"
-desc = '''
-The weak formulation of the one-dimensional elliptic problem
-`-(α u')' + β u' + γ u = f` on `(a, b)` with Dirichlet, Neumann or mixed boundary conditions, as
-a bounded bilinear form on `H^1(a, b)` (`Numlib/Analysis/Sobolev/Interval.lean`), its boundedness
-and coercivity constants, the Lax–Milgram existence theory, the Galerkin approximation in a
-finite-dimensional subspace, and the `H²` regularity of the weak solution that the Aubin–Nitsche
-`L²` estimate needs. Quarteroni–Sacco–Saleri §12.4.1, §12.4.3–12.4.4; the same form with
-`α = ν`, `β = γ = 0` is the spatial operator of the heat equation in §13.2–13.3 (chapter 13's
-`Variational/Evolution`), and with `α = 1`, `β = 0`, `γ = 1` it is the `H¹(a, b)` inner product of
-Atkinson–Han Example 2.5.9.
 
-Design. The form is `EllipticInterval.form hab α β γ : SesqForm ℝ (SobolevInterval 1 a b)`, that
-is `V →L[ℝ] V →L[ℝ] ℝ` with `a(u, v) = ∫_a^b (α u' v' + β u' v + γ u v)`, for coefficients
-`α β γ : ℝ → ℝ` bounded and measurable on `(a, b)` (the book has them continuous on `[0, 1]`;
-`L^∞` costs nothing and covers the piecewise constant coefficients of Program 95). Everything
-downstream is a statement about `SesqForm` on the Hilbert space `H^1_0(a, b)` or `H^1(a, b)`, so
-`Numlib/Variational/{Forms,LaxMilgram,Galerkin}.lean` apply unchanged: Lax–Milgram is
-`SesqForm.laxMilgram`, Céa is `IsGalerkinSolution.norm_sub_le_infDist`, Aubin–Nitsche is
-`norm_map_sq_le_of_dual`. The book's constants are for the seminorm `|·|_{H¹}`, which is a norm on
-`H^1_0` (Poincaré); those are stated with `SobolevInterval.seminorm` and consumed by the seminorm
-forms of Céa and Strang (EXT of `Galerkin.lean`).
-'''
+[[node]]
+id = "_root_.SesqForm.restrict"
+
+[[node]]
+id = "_root_.SesqForm.restrict_apply"
+
+[[node]]
+id = "mulL"
+
+[[node]]
+id = "coeFn_mulL"
+
+[[node]]
+id = "norm_mulL_apply_le"
+
+[[node]]
+id = "pairing"
+
+[[node]]
+id = "pairing_apply"
 
 [[node]]
 id = "form"
-kind = "definition"
-desc = '''`EllipticInterval.form hab α β γ : SesqForm ℝ (SobolevInterval 1 a b)` for `hab : a < b` and
-bounded measurable `α β γ : ℝ → ℝ` (hypotheses bundled as `IsBoundedCoeff α a b := ∃ C, ∀ᵐ x ∂(volume.restrict
-(Ioo a b)), |α x| ≤ C`, with `AEStronglyMeasurable`): `form u v = ∫ x in Ioo a b, (α x * u' x * v' x + β x *
-u' x * v x + γ x * u x * v x)`, the bilinear form (12.44), with `form_apply`. Built from the three
-`L²` pairings `(αu', v')`, `(βu', v)`, `(γu, v)` of the components `SobolevInterval.deriv u 1`,
-`deriv u 0`, each a bounded bilinear map on `L²` since the coefficient is bounded; continuity in
-both slots is what makes it a `SesqForm`. Also `EllipticInterval.load hab f : SobolevInterval 1 a b →L[ℝ] ℝ`,
-`v ↦ ∫ f v` for `f ∈ L²(a, b)`, with `‖load f‖ ≤ ‖f‖_{L²}`. ★★'''
-deps = ["SobolevInterval", "SobolevInterval.deriv", "SesqForm"]
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.44)'
+
+[[node]]
+id = "form_apply_inner"
+
+[[node]]
+id = "inner_mulL_eq_integral"
+
+[[node]]
+id = "integrable_mul_mul"
+
+[[node]]
+id = "form_apply"
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.44)'
+
+[[node]]
+id = "load"
+
+[[node]]
+id = "load_apply_inner"
+
+[[node]]
+id = "load_apply"
+
+[[node]]
+id = "abs_load_le"
+
+[[node]]
+id = "norm_load_le"
+
+[[node]]
+id = "abs_pairing_mulL_le"
 
 [[node]]
 id = "form_isBoundedWith"
-kind = "theorem"
-desc = '''Boundedness (12.55): `(form hab α β γ).IsBoundedWith (‖α‖_∞ + ‖β‖_∞ + ‖γ‖_∞)` in the `H^1` norm,
-and the seminorm form for `β = 0`: `|form u v| ≤ (‖α‖_∞ + C_P² ‖γ‖_∞) * seminorm u * seminorm v` for
-`u v ∈ SobolevIntervalZero a b`, `C_P = (b - a)/√2` (`SobolevIntervalZero.norm_deriv_zero_le`); and with
-`β`: the constant `‖α‖_∞ + C_P ‖β‖_∞ + C_P² ‖γ‖_∞` (the `M_h = ε_h + |β| C_P` of Theorem 12.4's proof).
-`‖·‖_∞` is the essential supremum on `(a, b)`, `eLpNorm α ⊤ _`, taken as a real bound `C` in the
-statement. ★'''
-deps = ["EllipticInterval.form", "SobolevIntervalZero.norm_deriv_zero_le", "SobolevInterval.seminorm", "SesqForm.IsBoundedWith"]
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.55)'
+
+[[node]]
+id = "abs_form_le_seminorm"
 
 [[node]]
 id = "form_isCoerciveWith_seminorm"
-kind = "theorem"
-desc = '''Coercivity in the seminorm (the case `β = 0`, `γ ≥ 0` of §12.4.4): if `α ≥ α₀ > 0` and `γ ≥ 0`
-a.e. on `(a, b)`, then `α₀ * seminorm 1 a b v ^ 2 ≤ form hab α 0 γ v v` for every `v : SobolevInterval 1
-a b`. Immediate from `form_apply`. Corollaries on `H^1_0`: `form_isCoerciveWith`:
-`(form hab α 0 γ).IsCoerciveWith (α₀ / (1 + C_P²))` in the `H^1` norm on `SobolevIntervalZero a b`
-(through `SobolevIntervalZero.norm_le_seminorm`), which is what `SesqForm.laxMilgram` and
-`IsGalerkinSolution.existsUnique` consume; and on all of `H^1` when `γ ≥ γ₀ > 0`:
-`IsCoerciveWith (min α₀ γ₀)` (the Neumann problem). ★'''
-deps = ["EllipticInterval.form", "SobolevInterval.seminorm", "SobolevIntervalZero.norm_le_seminorm", "SesqForm.IsCoerciveWith"]
 
 [[node]]
-id = "form_isCoerciveWith_seminorm_of_le"
-kind = "theorem"
-desc = '''Coercivity under the book's condition (12.50): if `α ≥ α₀ > 0`, `β` is `C¹` on `Icc a b` and
-`-β'/2 + γ ≥ 0` on `Icc a b`, then `α₀ * seminorm 1 a b v ^ 2 ≤ form hab α β γ v v` for all
-`v ∈ SobolevIntervalZero a b`. Proof: `∫ β v' v = ½ ∫ β (v²)' = -½ ∫ β' v²` by the product rule
-`SobolevInterval.memSobolevInterval_mul` and integration by parts against the `C¹` factor
-`SobolevInterval.integral_deriv_mul_contDiffOn`, the boundary term vanishing by
-`SobolevIntervalZero.toContinuousMap_eq_zero`; so `form v v = ∫ α v'² + ∫ (-β'/2 + γ) v² ≥ α₀ |v|²`.
-For constant `β` this is the identity `a_h(v, v) = ε_h |v|₁²` asserted in §12.5.3. ★★'''
-deps = ["EllipticInterval.form", "SobolevInterval.integral_deriv_mul_add_mul_deriv", "SobolevIntervalZero.toContinuousMap_eq_zero", "SobolevInterval.seminorm"]
+id = "form_isCoerciveWith_restrict"
 
 [[node]]
-id = "isWeakSolution_of_classical"
-kind = "theorem"
-desc = '''**Classical solutions are weak solutions** (the derivation of (12.43)): let `a < b`, `α` be `C¹` on
-`Icc a b`, `β γ f` continuous on `Icc a b`, and `u` be `C²` on `Icc a b` with `-(α u')' + β u' + γ u = f`
-on `Ioo a b` and `u a = u b = 0`. Then the element `U := ContDiffMapIcc.toSobolevInterval u` of
-`H^1(a, b)` lies in `SobolevIntervalZero a b` and satisfies `form hab α β γ U v = load hab f v` for every
-`v ∈ SobolevIntervalZero a b`. Proof: multiply by `v`, integrate; `∫ (α u')' v = [α u' g_v]_a^b - ∫ α u' v'`
-by `SobolevInterval.integral_deriv_mul_contDiffOn` (the `C¹` factor is `α u'`), and the boundary term
-vanishes since `g_v(a) = g_v(b) = 0`. Membership of `U` in `H^1_0` is
-`mem_sobolevIntervalZero_of_toContinuousMap_eq_zero`. The book takes `v ∈ C¹` first and then
-`v ∈ H^1_0`; the `H^1_0` form is the one the Galerkin theory uses. ★★'''
-deps = ["EllipticInterval.form", "ContDiffMapIcc.toSobolevInterval", "SobolevInterval.integral_deriv_mul_add_mul_deriv", "mem_sobolevIntervalZero_of_toContinuousMap_eq_zero"]
+id = "form_isCoerciveWith_of_pos"
 
 [[node]]
-id = "isWeakSolution_of_classical_neumann"
-kind = "theorem"
-desc = '''The Neumann and mixed cases (§12.4.1's last paragraph and Exercise 12.12): under the hypotheses
-of `isWeakSolution_of_classical` but with `α u'(a) = w₀`, `α u'(b) = w₁` instead of the Dirichlet
-conditions, `form hab α β γ U v = load hab f v + w₁ * g_v b - w₀ * g_v a` for every `v : SobolevInterval 1
-a b` (`g_v = toContinuousMap hab v`); the homogeneous Neumann problem is `w₀ = w₁ = 0`, and the mixed
-problem `α u'(a) = w₀`, `u(b) = u₁` tests against `{v ∈ H^1 : g_v b = 0}`. Also the nonhomogeneous
-Dirichlet lifting after (12.44): with `ū(x) = ((x - a) u₁ + (b - x) u₀)/(b - a)`, `ů = u - ū ∈ H^1_0` and
-`form ů v = load f v - form ū v` for `v ∈ H^1_0`. ★'''
-deps = ["EllipticInterval.isWeakSolution_of_classical"]
+id = "seminorm_le_of_isGalerkinSolution"
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.51)'
 
 [[node]]
 id = "existsUnique_isWeakSolution"
-kind = "theorem"
-desc = '''**Existence and uniqueness of the weak solution** (the Lax–Milgram paragraph of §12.4.4): for `α ≥
-α₀ > 0`, `γ ≥ 0`, `β = 0` (or (12.50)), and `f ∈ L²(a, b)`, there is a unique `u ∈ SobolevIntervalZero a b`
-with `form hab α β γ u v = load hab f v` for all `v ∈ SobolevIntervalZero a b`, and it satisfies the
-stability estimate `seminorm 1 a b u ≤ (C_P / α₀) * ‖f‖_{L²}` — the book's (12.51) for the continuous
-problem (and identically for the Galerkin solution in any subspace, `IsGalerkinSolution` form:
-`galerkin_seminorm_le`). From `SesqForm.laxMilgram` on the Hilbert space `SobolevIntervalZero a b`
-(the form restricted to the closed subspace, `SesqForm.restrict`) with the coercivity constant of
-`form_isCoerciveWith_seminorm`; the estimate is `α₀ |u|² ≤ a(u, u) = (f, u) ≤ ‖f‖ ‖u‖_{L²} ≤ ‖f‖ C_P |u|`.
-★'''
-deps = ["EllipticInterval.form_isCoerciveWith_seminorm", "EllipticInterval.form_isBoundedWith", "SesqForm.laxMilgram", "SobolevIntervalZero.norm_deriv_zero_le"]
 
 [[node]]
-id = "isWeakSolution_mem_sobolevInterval_two"
-kind = "theorem"
-desc = '''**`H²` regularity in one dimension**: if `α` is `C¹` on `Icc a b` with `α ≥ α₀ > 0`, `β γ` bounded,
-`f ∈ L²(a, b)`, and `u ∈ SobolevIntervalZero a b` is the weak solution, then `MemSobolevInterval (fn u) 2 a
-b`, with `‖u‖_{H²} ≤ C (‖f‖_{L²} + ‖u‖_{H¹})` for a `C` depending on `α₀`, `‖α‖_{C¹}`, `‖β‖_∞`, `‖γ‖_∞`.
-Proof: testing against test functions, `α u'` has weak derivative `β u' + γ u - f ∈ L²`, so `α u'` has
-an absolutely continuous representative (`HasWeakDerivOn.exists_ae_eq_integral`); then `u' = (α u')/α`
-is a product of `H^1` functions (`1/α` is `C¹`), hence in `H^1` by the product rule, with
-`u'' = ((αu')' - α' u')/α`. This is what the Aubin–Nitsche `L²` estimate (12.60) needs for the dual
-problem; the book quotes (12.60) from [QV94]. ★★★'''
-deps = ["EllipticInterval.existsUnique_isWeakSolution", "HasWeakDerivOn.exists_ae_eq_integral", "SobolevInterval.integral_deriv_mul_add_mul_deriv", "memSobolevInterval_succ_iff"]
+id = "seminorm_sub_le_of_galerkin_orthogonal"
 
 [[node]]
 id = "galerkin_seminorm_sub_le"
-kind = "theorem"
-desc = '''**Céa's lemma with the book's constant**, Quarteroni–Sacco–Saleri Theorem 12.3: for `α ≥ α₀ > 0`,
-`γ ≥ 0`, `β = 0`, a submodule `K ≤ SobolevIntervalZero a b`, the weak solution `u` and a Galerkin
-solution `uh` (`IsGalerkinSolution (form …) (load f) K uh`), `seminorm 1 a b (u - uh) ≤ (α₀⁻¹ * (‖α‖_∞ +
-C_P² ‖γ‖_∞)) * seminorm 1 a b (u - w)` for every `w ∈ K`. From `seminorm_sub_le_of_galerkin_orthogonal`
-with `form_isBoundedWith` (seminorm form) and `form_isCoerciveWith_seminorm`; Galerkin orthogonality
-`IsGalerkinSolution.apply_sub_eq_zero`. The `H^1`-norm Céa (12.56) with `M / α₀` is
-`IsGalerkinSolution.norm_sub_le_infDist` directly. ★'''
-deps = ["EllipticInterval.form_isBoundedWith", "EllipticInterval.form_isCoerciveWith_seminorm", "seminorm_sub_le_of_galerkin_orthogonal", "IsGalerkinSolution.apply_sub_eq_zero"]
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, Theorem 12.3'
+
+[[node]]
+id = "integrableOn_continuousOn_mul"
+
+[[node]]
+id = "ofContDiffMapIcc"
+
+[[node]]
+id = "deriv_ofContDiffMapIcc_zero"
+
+[[node]]
+id = "deriv_ofContDiffMapIcc_one"
+
+[[node]]
+id = "rep_ofContDiffMapIcc"
+
+[[node]]
+id = "intervalIntegral_eq_setIntegral_Ioo"
+
+[[node]]
+id = "form_ofContDiffMapIcc_eq"
+
+[[node]]
+id = "isWeakSolution_of_classical"
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.43)'
+
+[[node]]
+id = "isWeakSolution_of_classical_neumann"
+
+[[node]]
+id = "form_sub_eq_of_forall"
+
+[[node]]
+id = "integral_mul_deriv_mul_rep_eq"
+
+[[node]]
+id = "form_isCoerciveWith_seminorm_of_le"
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.50)'
+
+[[node]]
+id = "deriv_ae_eq_of_fn_ae_eq"
+
+[[node]]
+id = "hasWeakDerivOn_mulL_deriv"
+
+[[node]]
+id = "isWeakSolution_mem_sobolevInterval_two"
+
+[[node]]
+id = "Lp.norm_le_of_abs_le"
+
+[[node]]
+id = "exists_sobolevInterval_two"
+
+[[node]]
+id = "exists_sobolevInterval_of_contDiffOn"
+
+[[node]]
+id = "exists_sobolevInterval_two_of_isWeakSolution"
+
+[[node]]
+id = "form_comm"
+
+[[node]]
+id = "norm_le_sum_norm_deriv"
 
 [[node]]
 id = "galerkin_norm_sub_le_l2"
-kind = "theorem"
-desc = '''**The Aubin–Nitsche `L²` estimate** in one dimension, the engine of (12.60): under the hypotheses
-of `isWeakSolution_mem_sobolevInterval_two` and for a submodule `K ≤ SobolevIntervalZero a b` with an
-approximation property `∀ w ∈ H² ∩ H^1_0, ∃ v ∈ K, |w - v|_{H¹} ≤ δ ‖w‖_{H²}`, the Galerkin error
-satisfies `‖u - uh‖_{L²} ≤ C δ |u - uh|_{H¹}`. From `norm_map_sq_le_of_dual` of `Numlib/Variational/Galerkin.lean`
-with `ι : H^1_0 → L²` the inclusion `deriv · 0`, the dual problem `form v φ = (v, e)_{L²}` solved by
-Lax–Milgram (the adjoint form has the same coefficients with `β` negated and `(βv)'` expanded, hence
-again `H²` regular), and `‖φ‖_{H²} ≤ C ‖e‖_{L²}`. With the finite element approximation property
-(`δ = C h`, chapter 8's Theorem 8.3) this is Property 12.1's `‖u - u_h‖_{L²} ≤ C h^{l+1} ‖u‖_{H^{l+1}}`.
-★★★'''
-deps = ["EllipticInterval.isWeakSolution_mem_sobolevInterval_two", "EllipticInterval.galerkin_seminorm_sub_le", "norm_map_sq_le_of_dual"]
+source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.60)'

@@ -177,6 +177,7 @@ import Numlib.Analysis.ODE.Gronwall
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
+import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
@@ -334,6 +335,7 @@ import Numlib.Stationary.SPD
 import Numlib.Stationary.Splitting
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
+import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation

@@ -43,7 +43,12 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
 * `SobolevMultiIndex F b k p Ω μ`, the Sobolev space itself, a submodule of that product, with
   `SobolevMultiIndex.fn` and `SobolevMultiIndex.weakDeriv`;
 * `MemSobolevMultiIndex b f k p Ω μ`, the same space as a predicate on functions, with
-  `MemSobolevMultiIndex.congr_ae` saying that it only sees the function up to a null set of `Ω`.
+  `MemSobolevMultiIndex.congr_ae` saying that it only sees the function up to a null set of `Ω`;
+* `SobolevMultiIndex.testFunctions F b k p Ω μ`, the image of the test functions `C_0^∞(Ω)` in
+  `W^{k,p}(Ω)`, and `SobolevMultiIndexZero F b k p Ω μ`, its closure, the space `W_0^{k,p}(Ω)`
+  of Atkinson–Han, Definition 7.2.9, in the multi-index formulation — a closed subspace, hence a
+  Hilbert space at `p = 2`, which is what `Numlib/Analysis/Sobolev/Interval.lean` takes as
+  `H^1_0(a, b)`.
 
 ## Main statements
 
@@ -746,3 +751,82 @@ theorem SobolevMultiIndex.inner_eq (u v : SobolevMultiIndex F b k 2 Ω μ) :
   exact Finset.sum_congr rfl fun α _ ↦ L2.inner_def _ _
 
 end Hilbert
+
+/-! ### The subspace `W_0^{k,p}(Ω)` -/
+
+section Zero
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} {Ω : Opens E}
+  {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+variable (F b k p Ω μ) in
+/-- The image of the test functions `C_0^∞(Ω)` in `W^{k,p}(Ω)`, in the multi-index formulation:
+the elements whose function agrees, off a null set of `Ω`, with a test function on `Ω`. Every test
+function does occur, by `TestFunction.exists_mem_sobolevMultiIndex_testFunctions`; this is the
+twin of `Sobolev.testFunctions` of `Numlib/Analysis/Sobolev/Space.lean`. -/
+def testFunctions : Submodule ℝ (SobolevMultiIndex F b k p Ω μ) where
+  carrier := {u | ∃ φ : 𝓓(Ω, F), fn u =ᵐ[μ.restrict (Ω : Set E)] φ}
+  zero_mem' := ⟨0, fn_zero⟩
+  add_mem' := fun {u v} ⟨φ, hφ⟩ ⟨ψ, hψ⟩ ↦ ⟨φ + ψ, (fn_add u v).trans (hφ.add hψ)⟩
+  smul_mem' := fun c u ⟨φ, hφ⟩ ↦ ⟨c • φ, (fn_smul c u).trans (hφ.const_smul c)⟩
+
+/-- Membership of `SobolevMultiIndex.testFunctions` unfolded: the function of the element agrees
+with a test function off a null set of `Ω`. -/
+theorem mem_testFunctions {u : SobolevMultiIndex F b k p Ω μ} :
+    u ∈ testFunctions F b k p Ω μ ↔ ∃ φ : 𝓓(Ω, F), fn u =ᵐ[μ.restrict (Ω : Set E)] φ :=
+  Iff.rfl
+
+/-- Every test function on `Ω` is the function of an element of
+`SobolevMultiIndex.testFunctions`, so that submodule really is the image of `C_0^∞(Ω)` in
+`W^{k,p}(Ω)`: a test function is smooth with compact support, so all its derivatives `∂^α` are
+continuous with compact support and lie in `L^p(Ω)`. -/
+theorem _root_.TestFunction.exists_mem_sobolevMultiIndex_testFunctions [Fact (1 ≤ p)]
+    [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
+    (φ : 𝓓(Ω, F)) :
+    ∃ u ∈ testFunctions F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] φ :=
+  let ⟨u, hu⟩ :=
+    (TestFunction.memSobolev φ).memSobolevMultiIndex (b := b).exists_sobolevMultiIndex
+  ⟨u, ⟨φ, hu⟩, hu⟩
+
+end SobolevMultiIndex
+
+variable [Fact (1 ≤ p)]
+
+variable (F b k p Ω μ) in
+/-- **The Sobolev space `W_0^{k,p}(Ω)` in the multi-index formulation**, the closure of
+`C_0^∞(Ω)` in `SobolevMultiIndex F b k p Ω μ`: Atkinson and Han, *Theoretical Numerical
+Analysis: A Functional Analysis Framework*, 3rd edition, Definition 7.2.9, on the space whose
+norm is that of Definition 7.2.2. `SobolevZero` of `Numlib/Analysis/Sobolev/Space.lean` is the
+same closure on the tensor formulation; that type is not an inner product space, while at `p = 2`
+this one is a closed subspace of the Hilbert space `H^k(Ω)` (`SobolevMultiIndex.inner_eq`) and so
+a Hilbert space itself, which is what the variational theory of `Numlib/Variational/` needs of
+`H^1_0(a, b)` in `Numlib/Analysis/Sobolev/Interval.lean`. No comparison between the two closures
+is made: the two types carry different, though equivalent, norms. -/
+noncomputable def SobolevMultiIndexZero : Submodule ℝ (SobolevMultiIndex F b k p Ω μ) :=
+  (SobolevMultiIndex.testFunctions F b k p Ω μ).topologicalClosure
+
+namespace SobolevMultiIndexZero
+
+/-- `W_0^{k,p}(Ω)` is a closed subspace of `W^{k,p}(Ω)`, being a closure. -/
+theorem isClosed :
+    IsClosed (SobolevMultiIndexZero F b k p Ω μ : Set (SobolevMultiIndex F b k p Ω μ)) :=
+  Submodule.isClosed_topologicalClosure _
+
+/-- The test functions lie in `W_0^{k,p}(Ω)`. -/
+theorem testFunctions_le :
+    SobolevMultiIndex.testFunctions F b k p Ω μ ≤ SobolevMultiIndexZero F b k p Ω μ :=
+  Submodule.le_topologicalClosure _
+
+/-- **`W_0^{k,p}(Ω)` is a Banach space**, and at `p = 2` a Hilbert space: a closed subspace of
+the complete space `W^{k,p}(Ω)`. -/
+instance instCompleteSpace [CompleteSpace F] [IsFiniteMeasureOnCompacts μ]
+    [IsLocallyFiniteMeasure μ] : CompleteSpace (SobolevMultiIndexZero F b k p Ω μ) :=
+  isClosed.completeSpace_coe
+
+end SobolevMultiIndexZero
+
+end Zero
