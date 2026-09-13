@@ -1,18 +1,13 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.10, stiff problems: the stiffness quotient (11.86). Definition 11.14 (Lambert's
-characterization of stiffness by the behaviour of methods with bounded stability regions) is
-informal and gets no node; the decomposition of the solution of `y' = Ay + φ` into transient and
-steady state, the fixed-point constraint `L ≥ max |λ_i|`, and the `A(t)` counterexample of the
-linearization discussion are unnumbered prose or examples without a numbered statement.
-'''
 
 [[node]]
 id = "stiffnessQuotient"
-kind = "definition"
-desc = '''(11.86): for a linear system with constant matrix `A` whose eigenvalues satisfy
-`σ ≤ Re λ_j ≤ τ < 0`, the stiffness quotient `r_s = σ / τ`, `ODE.stiffnessQuotient A` (on the
-complexified matrix); the system is called stiff when `r_s ≫ 1`, which is not a definition. With
-`one_le_stiffnessQuotient` when all real parts are negative.'''
-deps = ["ODE.stiffnessQuotient", "ODE.one_le_stiffnessQuotient"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.86'
+
+[[node]]
+id = "stiffnessQuotient_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.86'
+
+[[node]]
+id = "one_le_stiffnessQuotient"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.86'

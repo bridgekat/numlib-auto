@@ -1,217 +1,185 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.3, analysis of one-step methods: the increment function and the local truncation error
-(11.11)–(11.14), zero-stability (Definition 11.4, Theorem 11.1, the discrete Gronwall Lemma
-11.2), convergence (Definition 11.5, Theorem 11.2, the forward Euler bound (11.22)), and
-absolute stability on the test equation (Definition 11.6, the regions of the four methods,
-A-stability, Examples 11.1–11.2, Remarks 11.1–11.2). Scalar restatements of `Numlib/ODE/OneStep`
-and `Numlib/ODE/Gronwall`; the test equation is read on `ℂ`.
-
-Skipped: Remark 11.1 (prose on the dependence of `C` on `T`; the definition already allows it),
-the rounding-error display after (11.23) (unnumbered).
-'''
 
 [[node]]
 id = "equation_11_11"
-kind = "definition"
-desc = '''The general explicit one-step method `u_{n+1} = u_n + h Φ(t_n, u_n, f_n; h)`, `u_0 = y_0`:
-for `Φ : ODE.OneStep.Increment ℝ` with `ODE.OneStep.IsExplicit Φ`, the orbit
-`ODE.OneStep.IsOrbit (ODE.OneStep.ofIncrement Φ) h t₀ u ∧ u 0 = y₀`, equivalently
-`u n = (ODE.OneStep.iterate Φ h t₀ y₀ n).2` (`ODE.OneStep.isOrbit_iterate`). The book's `f_n`
-argument is absorbed into `Φ`: forward Euler is `Φ = f t u`, Heun is
-`Φ = (f t u + f (t + h) (u + h f t u))/2`, as the text says. ★'''
-deps = ["ODE.OneStep.IsOrbit", "ODE.OneStep.ofIncrement", "ODE.OneStep.isOrbit_iterate", "QuarteroniSaccoSaleri.Chapter11.equation_11_7", "QuarteroniSaccoSaleri.Chapter11.equation_11_10"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.11'
 
 [[node]]
 id = "equation_11_12"
-kind = "definition"
-desc = '''The local truncation error `τ_{n+1}(h)` defined by `y_{n+1} = y_n + h Φ(t_n, y_n, f(t_n, y_n); h) + h τ_{n+1}(h)`
-(11.12): `equation_11_12 Φ h y n := ODE.OneStep.lte Φ h y (ODE.node t₀ h n)`, and the global
-truncation error `τ(h) = max_{0 ≤ n ≤ N_h - 1} |τ_{n+1}(h)|` as `ODE.OneStep.globalLte Φ t₀ T y h`.'''
-deps = ["ODE.OneStep.lte", "ODE.OneStep.globalLte"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.12'
 
 [[node]]
 id = "consistent"
-kind = "definition"
-desc = '''§11.3: the method is consistent (along the solution `y`) if `τ(h) → 0` as `h → 0`:
-`ODE.OneStep.IsConsistentFor Φ t₀ T y`; it has order `p` if `τ(h) = O(h^p)` (11.14):
-`ODE.OneStep.HasOrderFor Φ t₀ T y p` (`equation_11_14`).'''
-deps = ["ODE.OneStep.IsConsistentFor", "ODE.OneStep.HasOrderFor", "QuarteroniSaccoSaleri.Chapter11.equation_11_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.14'
 
 [[node]]
 id = "equation_11_13"
-kind = "theorem"
-desc = '''The consistency criterion: if `y ∈ C¹` solves the Cauchy problem on `Icc t₀ (t₀ + T)` and
-`Φ(t, y t, f(t, y t); h) → f(t, y t)` as `h → 0`, uniformly in `t ∈ Icc t₀ (t₀ + T)`, then the method
-is consistent along `y`. `ODE.OneStep.isConsistentFor_of_tendsto_increment`; the book's pointwise
-"`∀ t_n`" is read as uniform, which is what `τ(h) = max_n … → 0` needs. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.OneStep.isConsistentFor_of_tendsto_increment"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.13'
 
 [[node]]
 id = "forwardEuler_order_one"
-kind = "theorem"
-desc = '''§11.3: forward Euler has order 1 along a `C²` solution — `|τ_{n+1}(h)| ≤ (h/2) max |y''|`
-(the display before (11.22)) and `HasOrderFor (forwardEuler f) t₀ T y 1`.
-`ODE.OneStep.norm_lte_forwardEuler_le`, `ODE.OneStep.hasOrderFor_forwardEuler`. The Heun
-statement "order 2" is `exercise_11_1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.OneStep.norm_lte_forwardEuler_le", "ODE.OneStep.hasOrderFor_forwardEuler", "QuarteroniSaccoSaleri.Chapter11.equation_11_7"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
 
 [[node]]
 id = "definition_11_4"
-kind = "definition"
-desc = '''Zero-stability of the one-step method (11.11) for the Cauchy problem with datum `y₀` on
-`[t₀, t₀ + T]`: `ODE.OneStep.IsZeroStable (ODE.OneStep.ofIncrement Φ) t₀ T y₀` — there are
-`h₀ > 0`, `C > 0` with `|z_n^{(h)} - u_n^{(h)}| ≤ C ε` for all `h ∈ (0, h₀]`, `n ≤ N_h`, whenever
-`|δ_k| ≤ ε` for `k ≤ N_h`, `z` solving (11.16) and `u` solving (11.17) (11.15).'''
-deps = ["ODE.OneStep.IsZeroStable", "QuarteroniSaccoSaleri.Chapter11.equation_11_11"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.4'
 
 [[node]]
 id = "theorem_11_1"
-kind = "theorem"
-desc = '''Zero-stability: if the increment `Φ` of the explicit method (11.11) is Lipschitz in its
-second argument with a constant `Λ` independent of `h ∈ (0, h₀]` and of `t_j ∈ [t₀, t₀ + T]`
-(11.18) — `ODE.OneStep.LipschitzIncrement Φ t₀ T h₀ Λ` — then the method is zero-stable, with
-`C = (1 + T) e^{ΛT}`; and the estimate `|w_n^{(h)}| ≤ (1 + h n) ε e^{n h Λ}` of the proof
-(`theorem_11_1_estimate`). `ODE.OneStep.isZeroStable_of_lipschitzIncrement`,
-`ODE.OneStep.norm_sub_le_of_lipschitzIncrement`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_4", "ODE.OneStep.isZeroStable_of_lipschitzIncrement", "ODE.OneStep.norm_sub_le_of_lipschitzIncrement", "ODE.OneStep.LipschitzIncrement"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.1'
 
 [[node]]
 id = "lemma_11_2"
-kind = "theorem"
-desc = '''Discrete Gronwall lemma: if `k_n ≥ 0`, `g₀ ≥ 0`, `p_n ≥ 0`, `φ_0 ≤ g₀` and
-`φ_n ≤ g₀ + ∑_{s<n} p_s + ∑_{s<n} k_s φ_s` for `n ≥ 1`, then
-`φ_n ≤ (g₀ + ∑_{s<n} p_s) exp (∑_{s<n} k_s)` for `n ≥ 1`. `Gronwall.discrete_sum`. ★'''
-deps = ["Gronwall.discrete_sum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 11.2'
 
 [[node]]
 id = "definition_11_5"
-kind = "definition"
-desc = '''Convergence: `|u_n - y_n| ≤ C(h)` for all `n ≤ N_h` with `C(h)` infinitesimal in `h`, and
-convergence with order `p` when `C(h) = 𝒞 h^p`: `ODE.OneStep.IsConvergentFor S t₀ T y₀ y` and
-`ODE.OneStep.IsConvergentWithOrderFor S t₀ T y₀ y p` (`definition_11_5_order`), for the orbits
-from `u₀ = y₀`.'''
-deps = ["ODE.OneStep.IsConvergentFor", "ODE.OneStep.IsConvergentWithOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.5'
 
 [[node]]
 id = "theorem_11_2"
-kind = "theorem"
-desc = '''Convergence, the estimate (11.20): under the hypotheses of Theorem 11.1,
-`|y_n - u_n| ≤ (|y₀ - u₀| + n h τ(h)) e^{n h Λ}` for `1 ≤ n ≤ N_h`
-(`ODE.OneStep.norm_sub_le_globalLte`); hence (`theorem_11_2_convergent`) if the method is
-consistent along `y` and `u₀ = y₀` it is convergent, and (`theorem_11_2_order`) if it has order
-`p` it is convergent with order `p`. `ODE.OneStep.isConvergentFor_of_isConsistentFor`,
-`ODE.OneStep.isConvergentWithOrderFor_of_hasOrderFor`. The book's "`|y₀ - u₀| → 0`" is the
-general starting error of (11.20); Definition 11.5 sets `u₀ = y₀`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.theorem_11_1", "QuarteroniSaccoSaleri.Chapter11.definition_11_5", "QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.OneStep.norm_sub_le_globalLte", "ODE.OneStep.isConvergentFor_of_isConsistentFor", "ODE.OneStep.isConvergentWithOrderFor_of_hasOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.2'
 
 [[node]]
 id = "equation_11_22"
-kind = "theorem"
-desc = '''The forward Euler error bound: for `f` `L`-Lipschitz in `y` on the interval, `y ∈ C²` with
-`|y''| ≤ M`, and `u₀ = y₀`, `|e_{n+1}| ≤ ((e^{L(t_{n+1} - t₀)} - 1)/L) (M/2) h` for all `n + 1 ≤ N_h`.
-`ODE.OneStep.norm_sub_le_forwardEuler`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.forwardEuler_order_one", "ODE.OneStep.norm_sub_le_forwardEuler"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.22'
 
 [[node]]
 id = "testProblem"
-kind = "definition"
-desc = '''The test problem (11.24) `y' = λ y`, `y(0) = 1`, `λ ∈ ℂ`: `ODE.testField λ` with datum `1`,
-solution `e^{λt}` (`testProblem_solution`), and `|y t| → 0` iff `Re λ < 0` (`testProblem_tendsto_iff`). ★'''
-deps = ["ODE.testField"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.24'
 
 [[node]]
 id = "definition_11_6"
-kind = "definition"
-desc = '''Absolute stability: a method for (11.24) is absolutely stable if `|u_n| → 0` as
-`t_n → +∞` (11.25): `ODE.OneStep.IsAbsStable (M (ODE.testField λ)) h`; the region of absolute
-stability `𝒜 = {z = hλ ∈ ℂ : (11.25) holds}` (11.26) is `ODE.OneStep.absStabilityRegion M`
-(`equation_11_26`).'''
-deps = ["ODE.OneStep.IsAbsStable", "ODE.OneStep.absStabilityRegion", "QuarteroniSaccoSaleri.Chapter11.testProblem"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.6'
 
 [[node]]
 id = "equation_11_27"
-kind = "theorem"
-desc = '''Forward Euler on the test problem: `u_n = (1 + hλ)^n`, absolutely stable iff `|1 + hλ| < 1`,
-i.e. iff `hλ ∈ ℂ⁻` and `0 < h < -2 Re λ / |λ|²` (11.27). `ODE.OneStep.forwardEuler_testField_orbit`,
-`ODE.OneStep.mem_absStabilityRegion_forwardEuler_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_6", "QuarteroniSaccoSaleri.Chapter11.equation_11_7", "ODE.OneStep.forwardEuler_testField_orbit", "ODE.OneStep.mem_absStabilityRegion_forwardEuler_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.27'
 
 [[node]]
 id = "example_11_1"
-kind = "theorem"
-desc = '''For `y' = -5y`, `y(0) = 1`, forward Euler is absolutely stable iff `0 < h < 2/5`.
-`equation_11_27` at `λ = -5`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_27"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.1'
 
 [[node]]
 id = "backwardEuler_absStabilityRegion"
-kind = "theorem"
-desc = '''Backward Euler on the test problem: `u_n = (1 - hλ)^{-n}`, absolutely stable iff `hλ` lies
-outside the closed unit disc about `1`: `z ∈ 𝒜 ↔ 1 < |1 - z|`.
-`ODE.OneStep.mem_absStabilityRegion_backwardEuler_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_6", "QuarteroniSaccoSaleri.Chapter11.equation_11_8", "ODE.OneStep.mem_absStabilityRegion_backwardEuler_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
 
 [[node]]
 id = "example_11_2"
-kind = "theorem"
-desc = '''Backward Euler applied to `y' = 5y`, `y(0) = 1`, produces a solution decaying to zero
-whenever `h > 2/5`, although the exact solution `e^{5t}` tends to infinity: `5h ∈ 𝒜_BE ↔ h > 2/5`
-(from `1 < |1 - 5h| ↔ h > 2/5` for `h > 0`); and for `y' = -5y` the backward Euler orbit
-`(1 + 5h)^{-n}` is positive and decreasing for every `h > 0` (no oscillation). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.backwardEuler_absStabilityRegion"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.2'
 
 [[node]]
 id = "crankNicolson_absStabilityRegion"
-kind = "theorem"
-desc = '''Crank–Nicolson on the test problem: `u_n = ((1 + hλ/2)/(1 - hλ/2))^n`, absolutely stable
-iff `hλ ∈ ℂ⁻`. `ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_6", "QuarteroniSaccoSaleri.Chapter11.equation_11_9", "ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
 
 [[node]]
 id = "heun_absStabilityRegion"
-kind = "theorem"
-desc = '''Heun on the test problem: `u_n = (1 + hλ + (hλ)²/2)^n`, `z ∈ 𝒜 ↔ |1 + z + z²/2| < 1`, and
-its restriction to the real axis is `(-2, 0)`, the same as forward Euler's.
-`ODE.OneStep.mem_absStabilityRegion_heun_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_6", "QuarteroniSaccoSaleri.Chapter11.equation_11_10", "ODE.OneStep.mem_absStabilityRegion_heun_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
 
 [[node]]
 id = "aStable"
-kind = "definition"
-desc = '''A-stability: `𝒜 ∩ ℂ⁻ = ℂ⁻`, i.e. `∀ z, Re z < 0 → z ∈ 𝒜`: `ODE.OneStep.IsAStable M`; with
-`aStable_backwardEuler`, `aStable_crankNicolson` and `not_aStable_forwardEuler`,
-`not_aStable_heun` ("conditionally stable"). ★'''
-deps = ["ODE.OneStep.IsAStable", "ODE.OneStep.isAStable_backwardEuler", "ODE.OneStep.isAStable_crankNicolson", "ODE.OneStep.not_isAStable_forwardEuler"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
 
 [[node]]
 id = "remark_11_2"
-kind = "theorem"
-desc = '''"There are no explicit unconditionally absolutely stable schemes [Wid67]", stated for the
-explicit one-step schemes of the book's own general form, the explicit Runge–Kutta methods of
-§11.8: an explicit consistent Butcher tableau is never A-stable and its region of absolute
-stability is bounded (`ODE.ButcherTableau.not_isAStable_of_isExplicit`). The remark for arbitrary
-explicit one-step schemes (Widlund's theorem) is not formalized: the book cites it without proof
-and it needs a definition of "explicit scheme" broader than any in this library.'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.aStable", "ODE.ButcherTableau.not_isAStable_of_isExplicit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 11.2'
+
+[[node]]
+id = "hasDerivWithinAt_derivWithin_of_contDiffOn_two"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
+
+[[node]]
+id = "derivWithin_eq_of_cauchyProblem"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
+
+[[node]]
+id = "equation_11_11_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.11'
+
+[[node]]
+id = "equation_11_11_iterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.11'
+
+[[node]]
+id = "equation_11_12_spec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.12'
+
+[[node]]
+id = "globalTruncationError"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
+
+[[node]]
+id = "equation_11_14"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.14'
+
+[[node]]
+id = "forwardEuler_order_one_lte"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
+
+[[node]]
+id = "definition_11_4_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.4'
+
+[[node]]
+id = "equation_11_18"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.18'
+
+[[node]]
+id = "theorem_11_1_estimate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.1'
+
+[[node]]
+id = "definition_11_5_order"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.5'
+
+[[node]]
+id = "theorem_11_2_convergent"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.2'
+
+[[node]]
+id = "theorem_11_2_order"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.2'
+
+[[node]]
+id = "testProblem_solution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.24'
+
+[[node]]
+id = "testProblem_tendsto_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.24'
+
+[[node]]
+id = "equation_11_26"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.26'
+
+[[node]]
+id = "equation_11_27_orbit"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.27'
+
+[[node]]
+id = "example_11_2_decay"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.2'
+
+[[node]]
+id = "example_11_2_no_oscillation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.2'
+
+[[node]]
+id = "aStable_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
+
+[[node]]
+id = "aStable_backwardEuler"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
+
+[[node]]
+id = "aStable_crankNicolson"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
+
+[[node]]
+id = "not_aStable_forwardEuler"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'
+
+[[node]]
+id = "not_aStable_heun"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3.3'

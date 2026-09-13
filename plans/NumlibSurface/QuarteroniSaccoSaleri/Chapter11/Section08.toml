@@ -129,8 +129,8 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.77'
 id = "rungeKutta_absStable_iff"
 kind = "theorem"
 desc = '''The RK method is absolutely stable iff `|R(hλ)| < 1`, and its region is
-`𝒜 = {z : |R(z)| < 1}` (with `I - zA` invertible): `ODE.ButcherTableau.mem_absStabilityRegion_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_77", "QuarteroniSaccoSaleri.Chapter11.definition_11_6", "ODE.ButcherTableau.mem_absStabilityRegion_iff"]
+`𝒜 = {z : |R(z)| < 1}` (with `I - zA` invertible — genuinely needed, see the backbone's counterexample): `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit`; for an explicit tableau `mem_absStabilityRegion_iff_of_isExplicit`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_77", "QuarteroniSaccoSaleri.Chapter11.definition_11_6", "ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8.4'
 
 [[node]]

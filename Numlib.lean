@@ -174,7 +174,9 @@ import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
+import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
@@ -314,6 +316,7 @@ import Numlib.Nonlinear.ScalarNewton
 import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.Gronwall
 import Numlib.ODE.OneStep
+import Numlib.ODE.RungeKutta
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse

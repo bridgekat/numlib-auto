@@ -1,56 +1,25 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.9, systems of ODEs: the vector Cauchy problem (11.78)–(11.79), global existence and
-uniqueness under a Lipschitz condition (Property 11.5), the linear system `y' = Ay` with
-distinct eigenvalues (11.82), its decay when all eigenvalues have negative real part
-(11.83)–(11.84), and the diagonalization `z' = Λz` (11.85). Restatements of
-`Numlib/Analysis/ODE/Cauchy` and `Numlib/Analysis/ODE/LinearSystem` on `EuclideanSpace ℝ (Fin n)`
-and, for the eigen-decomposition, on `Fin n → ℂ`.
-'''
 
 [[node]]
 id = "equation_11_78"
-kind = "definition"
-desc = '''The system `y' = F(t, y)`, `y(t₀) = y₀` for `F : ℝ → (EuclideanSpace ℝ (Fin n)) → EuclideanSpace ℝ (Fin n)`:
-`ODE.IsSolutionOn F t₀ y₀ I y`; the vector `cauchyProblem`.'''
-deps = ["ODE.IsSolutionOn", "QuarteroniSaccoSaleri.Chapter11.cauchyProblem"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.78'
 
 [[node]]
 id = "property_11_5"
-kind = "theorem"
-desc = '''Let `F` be continuous on `D = [t₀, T] × ℝⁿ` and `‖F(t, y) - F(t, ȳ)‖ ≤ L ‖y - ȳ‖` on `D`
-(11.80). Then for every `y₀ ∈ ℝⁿ` there is a unique `y`, continuous and differentiable on `[t₀, T]`,
-solving (11.78)–(11.79). `ODE.existsUnique_isSolutionOn_of_lipschitz` at `E = EuclideanSpace ℝ (Fin n)`
-(any norm on `ℝⁿ` gives the same statement up to the constant `L`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_78", "ODE.existsUnique_isSolutionOn_of_lipschitz"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.5'
 
 [[node]]
 id = "equation_11_82"
-kind = "theorem"
-desc = '''If `A ∈ ℝ^{n×n}` has `n` distinct eigenvalues `λ_j` with eigenvectors `v_j`, every solution
-of `y' = Ay` (11.81) is `y(t) = ∑_j C_j e^{λ_j t} v_j` for constants `C_j` fixed by `y(t₀)`. Over
-`ℂ` with `A = Q Λ Q⁻¹` (distinct eigenvalues give a diagonalization, `Matrix.IsHermitian` not
-needed: `Module.End.eigenvectors_linearIndependent` / the eigenvector matrix is invertible):
-`ODE.linear_solution_eq_sum_exp_smul` applied to `A.map ofReal` and the complexified solution. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_78", "ODE.linear_solution_eq_sum_exp_smul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.82'
 
 [[node]]
 id = "equation_11_83"
-kind = "theorem"
-desc = '''If all eigenvalues of `A` have negative real part then every solution of `y' = Ay`
-satisfies `‖y(t)‖ → 0` as `t → ∞` (11.83), because `e^{λ_j t} = e^{Re λ_j t}(cos(Im λ_j t) + i sin(Im λ_j t)) → 0`
-(11.84). `ODE.linear_tendsto_zero_of_re_lt_zero`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_82", "ODE.linear_tendsto_zero_of_re_lt_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.83'
 
 [[node]]
 id = "equation_11_85"
-kind = "theorem"
-desc = '''With `Λ = Q⁻¹ A Q` diagonal and `z = Q⁻¹ y`, the system becomes `z' = Λ z`, `n` decoupled
-scalar test equations, so the scalar absolute-stability analysis applies componentwise.
-`ODE.linear_diagonalized_isSolutionOn`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_82", "ODE.linear_diagonalized_isSolutionOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.85'
+
+[[node]]
+id = "linearSystem_complexify"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.81'

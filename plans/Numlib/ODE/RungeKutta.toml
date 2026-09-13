@@ -1,202 +1,52 @@
 namespace = "ODE"
-desc = '''
-Runge–Kutta methods (Quarteroni–Sacco–Saleri §11.8; Kress §10.2 has the same two-stage
-derivation; Hairer–Nørsett–Wanner II is the reference for everything the book quotes without
-proof).
-
-**Tableaux.** `ButcherTableau s` is `A : Matrix (Fin s) (Fin s) ℝ`, `b c : Fin s → ℝ`.
-`IsExplicit` (`a_ij = 0` for `j ≥ i`), `IsSemiImplicit` (DIRK, `a_ij = 0` for `j > i`), `IsRowSum`
-(11.72). The stage relation (11.71) `IsStages f h t u K ↔ ∀ i, K i = f (t + c_i h) (u + h ∑_j a_ij K_j)`
-and the step relation `stepRel f h t u v ↔ ∃ K, IsStages f h t u K ∧ v = u + h ∑ b_i K_i`, a
-`OneStep.Method` — so the whole one-step theory of `ODE/OneStep` (zero-stability, convergence,
-absolute stability, A-stability) applies to every Runge–Kutta method by instantiation. For an
-explicit tableau the stages are computed by strong recursion (`explicitStages`), are the unique
-stages, and `stepRel = OneStep.ofIncrement explicitIncrement` with
-`explicitIncrement f t u _ h = ∑ b_i K_i`; the Lipschitz constant of the increment is
-`L ∑_i |b_i| ∏ (1 + h L |a|)`-type, which gives Theorem 11.1 and hence convergence from
-consistency ("since RK methods are one-step methods, consistency implies stability and
-convergence").
-
-**Order.** Consistency is `∑ b_i = 1` (both directions: the forward one along `C¹` solutions of
-Lipschitz problems, the converse on `y' = 1`). The two-stage order-two conditions
-`b₁ + b₂ = 1`, `c₂ b₂ = 1/2` of §11.8.1 are proved by Taylor expansion of `K₂` in the pair
-`(t, y)`, which in a normed space is the Fréchet derivative of `f : ℝ × E → E`; `y'' = f_t + f_y f`
-is the chain rule. Heun and the modified Euler method (11.91) are the two-stage instances
-(Exercise 12). The classical method (11.73) is `rk4`; its fourth order is the single most
-expensive Taylor verification in the chapter — the expansions of `K₂, K₃, K₄` to `O(h⁴)` involve
-the elementary differentials `f, f_y f, f_yy(f,f), f_y f_y f, …` of orders up to four (eight
-rooted trees), each to be matched against `y^{(k)}`; it is planned at ★★★ with the honest note
-that a formalizer should first do the autonomous scalar case, where `iteratedDeriv` and
-`taylor_mean_remainder_bound` suffice and the bookkeeping is a large but mechanical `ring`/`linarith`
-session, and only then the `E`-valued case, for which a rooted-tree (B-series) framework would be
-the right investment and is *not* planned here. Property 11.4 (Butcher's barrier: order `≤ s`,
-no order `s ≥ 5` with `s` stages) is not formalized.
-
-**Adaptivity** (§11.8.2): `EmbeddedPair s` is a tableau with a second weight vector `b̂`, the
-error indicator `h ∑ (b_i - b̂_i) K_i`, and the Runge–Kutta–Fehlberg 4(5) coefficients as data;
-the step-doubling estimate (11.74)–(11.75) is an asymptotic heuristic and gets no theorem.
-
-**Implicit families** (§11.8.3): the implicit midpoint rule and the two-stage Gauss–Legendre
-tableau, backward Euler and Crank–Nicolson as one-stage Radau / two-stage Lobatto IIIA tableaux,
-the two-stage Radau IIA tableau of order 3, and the three-stage DIRK tableau with parameter `μ`;
-the collocation orders `2s`, `2s - 1`, `2s - 2` are quoted, not proved (only the concrete orders
-of the one- and two-stage tableaux through the order conditions are planned).
-
-**Stability function** (§11.8.4): `stabilityFunction z = 1 + z bᵀ (I - z A)⁻¹ 𝟙`; on the test
-equation one step multiplies by `R(hλ)` when `I - hλ A` is invertible, so
-`absStabilityRegion = {z | IsUnit (1 - z A) ∧ ‖R z‖ < 1}`; for explicit tableaux `det (I - zA) = 1`,
-`R` is the polynomial `det (I - zA + z 𝟙 bᵀ)` (the matrix determinant lemma,
-`Matrix.det_one_add_replicateCol_mul_replicateRow`), hence unbounded, hence no explicit method is
-A-stable (Remark 11.2 for RK methods); an explicit `s`-stage method of order `s` has
-`R(z) = ∑_{k ≤ s} z^k / k!`, proved from the test problem `y' = y` alone.
-'''
 
 [[node]]
 id = "ButcherTableau"
-kind = "definition"
-desc = '''`structure ODE.ButcherTableau (s : ℕ)` with `A : Matrix (Fin s) (Fin s) ℝ`, `b : Fin s → ℝ`,
-`c : Fin s → ℝ`: the Butcher array of an `s`-stage Runge–Kutta method (11.70)–(11.71).'''
-deps = []
 
 [[node]]
 id = "ButcherTableau.IsExplicit"
-kind = "definition"
-desc = '''`tab.IsExplicit ↔ ∀ i j, i ≤ j → tab.A i j = 0` (strictly lower triangular `A`);
-`tab.IsSemiImplicit ↔ ∀ i j, i < j → tab.A i j = 0` (DIRK); `tab.IsRowSum ↔ ∀ i, tab.c i = ∑ j, tab.A i j`
-(11.72).'''
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.IsRowSum"
-kind = "definition"
-desc = '(11.72): `∀ i, tab.c i = ∑ j, tab.A i j`.'
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.IsStages"
-kind = "definition"
-desc = '''(11.71): `tab.IsStages f h t u K ↔ ∀ i, K i = f (t + tab.c i * h) (u + h • ∑ j, tab.A i j • K j)`
-for `K : Fin s → E`.'''
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.stepRel"
-kind = "definition"
-desc = '''`tab.stepRel : OneStep.Method E := fun f h t u v => ∃ K, tab.IsStages f h t u K ∧ v = u + h • ∑ i, tab.b i • K i`,
-(11.70) with `F = ∑ b_i K_i`. Every result of `ODE/OneStep` about a `Method` applies.'''
-deps = ["ODE.ButcherTableau.IsStages", "ODE.OneStep.Method"]
 
 [[node]]
 id = "ButcherTableau.explicitStages"
-kind = "definition"
-desc = '''`tab.explicitStages f h t u : Fin s → E`, by strong recursion on the stage index:
-`K_i = f (t + c_i h) (u + h ∑_{j<i} a_ij K_j)`; `isStages_explicitStages : tab.IsExplicit → tab.IsStages f h t u (tab.explicitStages f h t u)`
-and `eq_explicitStages_of_isStages : tab.IsExplicit → tab.IsStages f h t u K → K = tab.explicitStages f h t u`
-(induction on `i`). ★'''
-deps = ["ODE.ButcherTableau.IsStages", "ODE.ButcherTableau.IsExplicit"]
 
 [[node]]
 id = "ButcherTableau.explicitIncrement"
-kind = "definition"
-desc = '''`tab.explicitIncrement f : OneStep.Increment E := fun t u _ h => ∑ i, tab.b i • tab.explicitStages f h t u i`,
-the increment function `F(t, u, h; f)` of (11.71) for an explicit tableau, with
-`stepRel_eq_ofIncrement : tab.IsExplicit → tab.stepRel f = OneStep.ofIncrement (tab.explicitIncrement f)`
-and `OneStep.IsExplicit (tab.explicitIncrement f)`. ★'''
-deps = ["ODE.ButcherTableau.explicitStages", "ODE.ButcherTableau.stepRel", "ODE.OneStep.ofIncrement"]
 
 [[node]]
 id = "ButcherTableau.lipschitzIncrement_explicit"
-kind = "theorem"
-desc = '''If `tab.IsExplicit` and `f t` is `L`-Lipschitz for `t ∈ Icc t₀ (t₀ + T + h₀)` (the stages
-evaluate `f` at `t + c_i h ≤ t + h₀ max c_i`; take `c_i ∈ [0, 1]` or pad accordingly), then
-`OneStep.LipschitzIncrement (tab.explicitIncrement f) t₀ T h₀ Λ` with
-`Λ = (∑ i, |b_i|) * L * (1 + h₀ L ‖A‖_∞)^s`: by induction on the stage index each `K_i` is
-Lipschitz in `u` with constant `L (1 + h₀ L ∑_j |a_ij|)^i`. Hence every explicit Runge–Kutta
-method is zero-stable (`OneStep.isZeroStable_of_lipschitzIncrement`) and, when consistent along
-the solution, convergent (`OneStep.isConvergentFor_of_isConsistentFor`) — the book's "consistency
-implies stability and, in turn, convergence" for RK methods. ★★'''
-deps = ["ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.LipschitzIncrement", "ODE.OneStep.isZeroStable_of_lipschitzIncrement", "ODE.OneStep.isConvergentFor_of_isConsistentFor"]
 
 [[node]]
 id = "ButcherTableau.IsConsistent"
-kind = "definition"
-desc = 'The consistency condition of §11.8: `tab.IsConsistent ↔ ∑ i, tab.b i = 1`.'
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.isConsistentFor_of_sum_b_eq_one"
-kind = "theorem"
-desc = '''`∑ b_i = 1` implies consistency along every `C¹` solution: if `tab.IsExplicit`,
-`∑ i, b i = 1`, `f` is continuous on `Icc t₀ (t₀ + T + 1) ×ˢ univ` and Lipschitz in the state, and
-`y` is a `C¹` solution there, then `OneStep.IsConsistentFor (tab.explicitIncrement f) t₀ T y`.
-Proof: each stage `K_i(t, y t; h) → f(t, y t)` as `h → 0⁺` uniformly in `t` (induction on `i`,
-using uniform continuity of `f` on the compact `Icc × (image of y)` — a compact set since `y`
-is continuous; the Lipschitz bound handles the state argument), so `∑ b_i K_i → f(t, y t)` and
-`OneStep.isConsistentFor_of_tendsto_increment` applies. ★★'''
-deps = ["ODE.ButcherTableau.IsConsistent", "ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.isConsistentFor_of_tendsto_increment"]
 
 [[node]]
 id = "ButcherTableau.sum_b_eq_one_of_isConsistentFor"
-kind = "theorem"
-desc = '''The converse: if the explicit method is consistent along the solution `y t = t` of
-`y' = 1` (`f = fun _ _ => 1`) on some `[t₀, t₀ + T]`, `T > 0`, then `∑ i, b i = 1`: there all stages
-equal `1` and `lte = 1 - ∑ b_i` is constant, so `τ(h) → 0` forces it to vanish. Together: the
-"iff" of §11.8, quantified over all Lipschitz problems with `C¹` solutions. ★'''
-deps = ["ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.IsConsistentFor"]
 
 [[node]]
 id = "ButcherTableau.heun"
-kind = "definition"
-desc = '''Exercise 12: Heun's method (11.10) as the two-stage explicit tableau
-`A = !![0, 0; 1, 0]`, `b = ![1/2, 1/2]`, `c = ![0, 1]`, with
-`explicitIncrement_heun : ButcherTableau.heun.explicitIncrement f = OneStep.heun f` (`rfl` up to
-`Fin.sum_univ_two`). ★'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.heun"]
 
 [[node]]
 id = "ButcherTableau.modifiedEuler"
-kind = "definition"
-desc = '''Exercise 12, (11.91), the modified Euler method `u_{n+1} = u_n + h f(t_n + h/2, u_n + (h/2) f_n)`:
-`A = !![0, 0; 1/2, 0]`, `b = ![0, 1]`, `c = ![0, 1/2]`; `explicitIncrement_modifiedEuler`
-unfolds it to the displayed formula. ★'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.explicitIncrement"]
 
 [[node]]
 id = "ButcherTableau.hasOrderFor_two_of"
-kind = "theorem"
-desc = '''§11.8.1, the second-order conditions for a two-stage explicit method: let `tab : ButcherTableau 2`
-be explicit with `c 1 = A 1 0` (11.72), `b 0 + b 1 = 1` and `c 1 * b 1 = 1/2`; let `f : ℝ → E → E`
-be such that `(t, v) ↦ f t v` is `C²` on `Icc t₀ (t₀ + T + 1) ×ˢ univ` with bounded first and
-second Fréchet derivatives there, and let `y` be a solution on `Icc t₀ (t₀ + T + 1)`. Then
-`OneStep.HasOrderFor (tab.explicitIncrement f) t₀ T y 2`. Proof: with `F(t, v) = f t v` on
-`ℝ × E`, `y' = F(t, y)`, `y'' = D F(t, y)(1, F(t, y))` (chain rule), `y^{(3)} ` bounded; the stage
-`K₂ = F((t, y t) + h c₂ (1, K₁))` expands as `F + h c₂ DF(1, F) + O(h²)` by Taylor's theorem for
-`F` along the segment (`taylor_mean_remainder_bound` applied to `s ↦ F((t, y t) + s c₂ (1, K₁))`,
-or the mean value inequality for `DF`); `u_{n+1} - y_n = h (b₁ + b₂) F + h² c₂ b₂ DF(1, F) + O(h³)`
-against `y_{n+1} - y_n = h F + (h²/2) DF(1, F) + O(h³)`; the two conditions cancel the `h` and
-`h²` terms. ★★★ (the analysis is routine but the Fréchet-derivative bookkeeping in `ℝ × E` is
-long; the scalar case `E = ℝ` with `fderiv`/partial derivatives is a good first target).'''
-deps = ["ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.HasOrderFor", "ODE.ButcherTableau.IsRowSum"]
 
 [[node]]
 id = "ButcherTableau.orderTwoConditions_of_hasOrderFor"
-kind = "theorem"
-desc = '''The converse of the two-stage derivation, on test problems: if the two-stage explicit
-method has order 2 along the solution of `y' = 1` and of `y' = 2t` (solutions `t`, `t²`) then
-`b₀ + b₁ = 1` and `c₁ b₁ = 1/2`: the first problem gives `1 - (b₀ + b₁) = O(h)`, the second
-`h(1 - 2 c₁ b₁) + … = O(h²)` after the first. Hence "the coefficients *must* satisfy" the two
-conditions, as the book says. ★★'''
-deps = ["ODE.ButcherTableau.explicitIncrement", "ODE.OneStep.HasOrderFor"]
 
 [[node]]
 id = "rk4"
-kind = "definition"
-desc = '''(11.73), Exercise 13: the classical fourth-order method,
-`A = !![0,0,0,0; 1/2,0,0,0; 0,1/2,0,0; 0,0,1,0]`, `b = ![1/6, 1/3, 1/3, 1/6]`, `c = ![0, 1/2, 1/2, 1]`,
-with `rk4_isExplicit`, `rk4_isRowSum`, `rk4_isConsistent` (`fin_cases`/`norm_num`) and the
-unfolded increment `explicitIncrement_rk4 : rk4.explicitIncrement f t u _ h = (1/6) • (K₁ + 2 K₂ + 2 K₃ + K₄)`
-with the four displayed stages. ★'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.IsExplicit", "ODE.ButcherTableau.explicitIncrement"]
 
 [[node]]
 id = "rk4_hasOrderFor"
@@ -216,82 +66,50 @@ of `f` at `y t` and the comparison is a polynomial identity; the `E`-valued nona
 multiplies the bookkeeping by the multilinear-map API. Recommended split: (i) the eight algebraic
 order conditions for `rk4` as a separate ★ node `rk4_orderConditions`; (ii) the scalar autonomous
 case; (iii) the general case only if a B-series framework is built (not planned). The one-step
-theory then gives fourth-order convergence.'''
+theory then gives fourth-order convergence.
+
+Blocked: not attempted this round. The two-stage theorem `ButcherTableau.hasOrderFor_two_of`
+fixes the pattern (explicit Fréchet derivatives `F'`, `F''` of `(t, v) ↦ f t v` on `ℝ × E`, the
+Taylor bounds `norm_sub_sub_smul_apply_le_of_hasFDerivAt` along a segment and
+`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` for the curve, the chain rule
+`y'' = F'(t, y)(1, y')` by `UniqueDiffWithinAt.eq_deriv`); order four needs the same with the
+third and fourth Fréchet derivatives, a fifth-order Taylor bound for `y`, the expansions of
+`K₂, K₃, K₄` to `O(h⁴)` and the identification of the third and fourth derivatives of `y` with
+the elementary differentials, then the eight conditions `rk4_orderConditions`. Estimate: 400–600 lines with
+the present tools; a B-series framework would be the right investment before attempting it.'''
 deps = ["ODE.rk4", "ODE.OneStep.HasOrderFor"]
 
 [[node]]
 id = "EmbeddedPair"
-kind = "definition"
-desc = '''§11.8.2, (11.76): `structure ODE.EmbeddedPair (s : ℕ) extends ButcherTableau s` with a second
-weight vector `bhat : Fin s → ℝ`; `toTableauHat` swaps in `bhat`; `errorIndicator f h t u :=
-h • ∑ i, (b i - bhat i) • explicitStages f h t u i`, the difference `u_{n+1} - û_{n+1}` of the two
-solutions sharing the stages (`errorIndicator_eq_sub`, ★). The lower-order solution is `u_{n+1}`,
-the higher-order one `û_{n+1}`; which one propagates is the user's choice ("local extrapolation").'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.explicitStages"]
 
 [[node]]
 id = "rkf45"
-kind = "definition"
-desc = '''The Runge–Kutta–Fehlberg 4(5) pair of §11.8.2 as an `EmbeddedPair 6`:
-`c = ![0, 1/4, 3/8, 12/13, 1, 1/2]`; `A` rows `[1/4]`, `[3/32, 9/32]`, `[1932/2197, -7200/2197, 7296/2197]`,
-`[439/216, -8, 3680/513, -845/4104]`, `[-8/27, 2, -3544/2565, 1859/4104, -11/40]`;
-`b = ![25/216, 0, 1408/2565, 2197/4104, -1/5, 0]` (order 4), `bhat = ![16/135, 0, 6656/12825, 28561/56430, -9/50, 2/55]`
-(order 5), so `E = b - bhat = ![1/360, 0, -128/4275, -2197/75240, 1/50, 2/55]`. The source's
-table is OCR-damaged (denominators of `1932/2197`, `7296/2197`, `439/216`, `3680/513`, `16/135`,
-`28561/56430` are missing and the first entry of `E` is printed as `5`); the values above are the
-standard ones. Only `IsExplicit`, `IsRowSum` and `∑ b = ∑ bhat = 1` are planned as theorems; the
-orders 4 and 5 are not (they need the order-5 conditions, seventeen of them).'''
-deps = ["ODE.EmbeddedPair"]
 
 [[node]]
 id = "ButcherTableau.implicitMidpoint"
-kind = "definition"
-desc = '''§11.8.3, the one-stage Gauss–Legendre method: `A = !![1/2]`, `b = ![1]`, `c = ![1/2]`, the
-implicit midpoint rule `u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)` (`stepRel_implicitMidpoint_iff`
-unfolds the stage equation to this form, ★). Its order 2 is the two-stage-style Taylor argument
-for one implicit stage — planned only as the order conditions `∑ b = 1`, `∑ b c = 1/2` (★), not as
-`HasOrderFor`.'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.stepRel"]
 
 [[node]]
 id = "ButcherTableau.gaussLegendre2"
-kind = "definition"
-desc = '''The two-stage Gauss–Legendre tableau of order 4: `c = ![1/2 - √3/6, 1/2 + √3/6]`,
-`A = !![1/4, 1/4 - √3/6; 1/4 + √3/6, 1/4]`, `b = ![1/2, 1/2]`; the nodes are the roots of the
-Legendre polynomial `L₂` in `x = 2c - 1` (`Numlib/Approximation/OrthogonalPolynomial`'s `legendre 2`),
-and the book's systems `∑_j c_j^{k-1} a_ij = c_i^k / k`, `∑_j c_j^{k-1} b_j = 1/k` for `k = 1, 2`
-hold (`gaussLegendre2_collocation`, `norm_num` with `Real.sq_sqrt`). The tableau is legible in
-the source; the Radau and Lobatto arrays of §11.8.3 are images in the markdown and are
-transcribed from the standard tables: `radauIIA1 = backward Euler` (`A = !![1]`, `c = ![1]`),
-`radauIIA2` (`c = ![1/3, 1]`, `A = !![5/12, -1/12; 3/4, 1/4]`, `b = ![3/4, 1/4]`, order 3),
-`lobattoIIIA2 = Crank–Nicolson` (`c = ![0, 1]`, `A = !![0, 0; 1/2, 1/2]`, `b = ![1/2, 1/2]`), and the
-three-stage DIRK tableau with parameter `μ` (`3μ³ - 3μ - 1 = 0`):
-`c = ![(1+μ)/2, 1/2, (1-μ)/2]`, `A = !![(1+μ)/2, 0, 0; -μ/2, (1+μ)/2, 0; 1+μ, -1-2μ, (1+μ)/2]`,
-`b = ![1/(6μ²), 1 - 1/(3μ²), 1/(6μ²)]`. All data nodes; the quoted maximal orders `2s`, `2s-1`,
-`2s-2` are not formalized.'''
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.stabilityFunction"
-kind = "definition"
-desc = '''§11.8.4: `tab.stabilityFunction (z : ℂ) : ℂ := 1 + z * (b ⬝ᵥ ((1 - z • A.map (algebraMap ℝ ℂ))⁻¹ *ᵥ 1))`
-with `b`, `1` read in `Fin s → ℂ` — `R(z) = 1 + z bᵀ (I - z A)⁻¹ 𝟙`, using Mathlib's
-`Matrix.inv` (which is `0` for a singular matrix; the formula is meaningful when `IsUnit (1 - z A)`).'''
-deps = ["ODE.ButcherTableau"]
 
 [[node]]
 id = "ButcherTableau.stepRel_testField_iff"
-kind = "theorem"
-desc = '''On the test equation, one step multiplies by `R(hλ)`: if `IsUnit (1 - (h * lam) • A.map _)`
-then `tab.stepRel (testField lam) h t u v ↔ v = tab.stabilityFunction (h * lam) * u`. Proof:
-(11.77) `K = u 𝟙 + hλ A K` has the unique solution `K = (I - hλ A)⁻¹ 𝟙 u` (`Matrix.mulVec`,
-`Matrix.nonsing_inv_mul`), then `v = u + hλ bᵀ K`. Hence every orbit is `u n = R(hλ)^n u 0`
-(`isOrbit_testField_iff`). ★★'''
-deps = ["ODE.ButcherTableau.stabilityFunction", "ODE.ButcherTableau.stepRel", "ODE.testField"]
 
 [[node]]
 id = "ButcherTableau.mem_absStabilityRegion_iff"
 kind = "theorem"
+wrong = '''False as stated: the invertibility clause is not necessary for absolute stability.
+Counterexample: `A = !![0, 1; 1, 0]`, `b = (1/2, 1/2)`, `z = -1`: `I - zA = !![1, 1; 1, 1]` is
+singular, but the stage system `K₁ + K₂ = z u` is solvable for every datum and every solution
+gives the same step `v = u (1 + z/2)`, so every datum has an orbit and every orbit is
+`(1/2)^n u₀ → 0`: `z ∈ absStabilityRegion` in the sense of `OneStep.IsAbsStable`, while
+`R(z) = 1` with Mathlib's `Matrix.inv` (which is `0` on a singular matrix). The corrected
+statement is `mem_absStabilityRegion_iff_of_isUnit`, the equivalence under the invertibility
+hypothesis, together with `mem_absStabilityRegion_iff_of_isExplicit` (no clause needed for an
+explicit tableau) and `not_mem_absStabilityRegion_of_forall_ne` for the singular case in which
+the stage system has no solution.'''
 desc = '''`z ∈ OneStep.absStabilityRegion tab.stepRel ↔ IsUnit (1 - z • A.map _) ∧ ‖tab.stabilityFunction z‖ < 1`
 (the region of §11.8.4; the invertibility clause is the existence clause of `IsAbsStable`, which
 fails exactly when `1 - zA` is singular — then some datum has no orbit or the stage system has
@@ -302,63 +120,228 @@ deps = ["ODE.ButcherTableau.stepRel_testField_iff", "ODE.OneStep.absStabilityReg
 
 [[node]]
 id = "ButcherTableau.stabilityFunction_eq_det_of_isExplicit"
-kind = "theorem"
-desc = '''For an explicit tableau `det (1 - z • A) = 1` (strictly lower triangular ⇒ unipotent;
-`Matrix.det_of_lowerTriangular` or `Matrix.det_one_add_of_nilpotent`-type argument via
-`Matrix.BlockTriangular`) and
-`tab.stabilityFunction z = (1 - z • A.map _ + z • replicateCol Unit 1 * replicateRow Unit b).det`
-— the matrix determinant lemma `Matrix.det_one_add_replicateCol_mul_replicateRow` after factoring
-`(1 - zA)`, i.e. `det (M + z 𝟙 bᵀ) = det M (1 + z bᵀ M⁻¹ 𝟙)` with `det M = 1`. Hence `R` is a
-polynomial in `z` of degree `≤ s` (`stabilityFunction_eq_eval_of_isExplicit`: there is `P : ℂ[X]`
-with `natDegree ≤ s` and `R z = P.eval z`, from `Matrix.det` of a matrix with polynomial entries,
-`Polynomial.natDegree_det_le`-type bound or by the explicit expansion `R(z) = 1 + ∑_{k ≥ 1} z^k bᵀ A^{k-1} 𝟙`
-with `A^s = 0`, which is the shorter proof: `(1 - zA)⁻¹ = ∑_{k<s} z^k A^k` for nilpotent `A`). ★★'''
-deps = ["ODE.ButcherTableau.stabilityFunction", "ODE.ButcherTableau.IsExplicit"]
 
 [[node]]
 id = "ButcherTableau.stabilityFunction_eq_sum_of_isExplicit"
-kind = "theorem"
-desc = '''The nilpotent expansion, the form actually used: for explicit `tab`,
-`tab.stabilityFunction z = 1 + ∑ k ∈ range s, z ^ (k+1) * (b ⬝ᵥ ((A.map _) ^ k *ᵥ 1))`, since
-`A^s = 0` and `(1 - zA)⁻¹ = ∑_{k<s} (zA)^k`. ★★'''
-deps = ["ODE.ButcherTableau.stabilityFunction", "ODE.ButcherTableau.IsExplicit"]
 
 [[node]]
 id = "ButcherTableau.not_isAStable_of_isExplicit"
-kind = "theorem"
-desc = '''Remark 11.2 for Runge–Kutta methods and the last paragraph of §11.8.4: an explicit
-consistent method is never A-stable, and its region of absolute stability is bounded:
-`tab.IsExplicit → ∑ b = 1 → ¬ OneStep.IsAStable tab.stepRel`, and
-`Bornology.IsBounded (OneStep.absStabilityRegion tab.stepRel)`. Proof: `R` is a polynomial with
-`R(0) = 1`, `R'(0) = ∑ b_i = 1`, so nonconstant, hence `‖R z‖ → ∞` as `‖z‖ → ∞`
-(`Polynomial.tendsto_norm_atTop`), so `‖R z‖ < 1` fails on `{Re z < 0}` far from the origin and the
-region lies in some disc. The general Remark 11.2 (for *all* explicit one-step schemes, [Wid67])
-is out of scope; the RK statement is what the book's own §11.8.4 proves. ★★'''
-deps = ["ODE.ButcherTableau.stabilityFunction_eq_sum_of_isExplicit", "ODE.ButcherTableau.mem_absStabilityRegion_iff", "ODE.OneStep.IsAStable"]
 
 [[node]]
 id = "ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder"
-kind = "theorem"
-desc = '''§11.8.4: an explicit `s`-stage method with `s ≤ 4` and order `s` has
-`R(z) = ∑ k ∈ range (s+1), z^k / k!`. Hypothesis: `OneStep.HasOrderFor (tab.explicitIncrement (fun _ y => y)) 0 1 Real.exp s`
-(order `s` along the solution `e^t` of the real problem `y' = y`). Proof: on `y' = y` the increment
-is `(R(h) - 1)/h · y` with `R` the polynomial of `stabilityFunction_eq_sum_of_isExplicit` (real
-coefficients), so `lte = ((e^h - R(h))/h) e^t` and order `s` means `e^h - R(h) = O(h^{s+1})` as
-`h → 0⁺`; a real polynomial of degree `≤ s` agreeing with `e^h` to that order has the Taylor
-coefficients of `exp` (`Real.exp` Taylor expansion `Real.exp_bound`/`taylorWithinEval` of `exp`,
-and a polynomial that is `O(h^{s+1})` at `0` has zero coefficients below `s+1`:
-`Polynomial.eval` of a polynomial with a nonzero low coefficient is not `o` of a higher power).
-The hypothesis `s ≤ 4` is not needed for this implication (it is where such methods exist,
-Property 11.4). ★★'''
-deps = ["ODE.ButcherTableau.stabilityFunction_eq_sum_of_isExplicit", "ODE.OneStep.HasOrderFor", "ODE.ButcherTableau.explicitIncrement"]
 
 [[node]]
 id = "stabilityFunction_rk4"
-kind = "theorem"
-desc = '''`rk4.stabilityFunction z = 1 + z + z^2/2 + z^3/6 + z^4/24`: direct from
-`stabilityFunction_eq_sum_of_isExplicit` and `norm_num [Matrix.mulVec, Fin.sum_univ_four]`; so
-`z ∈ absStabilityRegion rk4 ↔ ‖1 + z + z²/2 + z³/6 + z⁴/24‖ < 1` (Figure 11.10, `s = 4`). Likewise
-`stabilityFunction_heun = 1 + z + z²/2` (matching `OneStep.mem_absStabilityRegion_heun_iff`) and
-`stabilityFunction_implicitMidpoint z = (1 + z/2)/(1 - z/2)` for `z ≠ 2` (matching Crank–Nicolson's
-region). ★'''
-deps = ["ODE.rk4", "ODE.ButcherTableau.stabilityFunction_eq_sum_of_isExplicit", "ODE.ButcherTableau.implicitMidpoint"]
+
+[[node]]
+id = "ButcherTableau.IsSemiImplicit"
+
+[[node]]
+id = "ButcherTableau.isStages_explicitStages"
+
+[[node]]
+id = "ButcherTableau.eq_explicitStages_of_isStages"
+
+[[node]]
+id = "ButcherTableau.stepRel_eq_ofIncrement"
+
+[[node]]
+id = "ButcherTableau.isExplicit_explicitIncrement"
+
+[[node]]
+id = "ButcherTableau.entrySum"
+
+[[node]]
+id = "ButcherTableau.norm_explicitStages_sub_le"
+
+[[node]]
+id = "ButcherTableau.isZeroStable_explicit"
+
+[[node]]
+id = "ButcherTableau.isConvergentFor_explicit"
+
+[[node]]
+id = "ButcherTableau.norm_explicitStages_le"
+
+[[node]]
+id = "ButcherTableau.exists_forall_norm_explicitStages_sub_le"
+
+[[node]]
+id = "ButcherTableau.explicitStages_const"
+
+[[node]]
+id = "ButcherTableau.explicitStages_of_forall_eq"
+
+[[node]]
+id = "ButcherTableau.heun_isExplicit"
+
+[[node]]
+id = "ButcherTableau.explicitIncrement_heun"
+
+[[node]]
+id = "ButcherTableau.explicitIncrement_modifiedEuler"
+
+[[node]]
+id = "rk4_isExplicit"
+
+[[node]]
+id = "rk4_isRowSum"
+
+[[node]]
+id = "rk4_isConsistent"
+
+[[node]]
+id = "rk4_c_mem_Icc"
+
+[[node]]
+id = "explicitIncrement_rk4"
+
+[[node]]
+id = "rk4_orderConditions"
+
+[[node]]
+id = "EmbeddedPair.toTableauHat"
+
+[[node]]
+id = "ButcherTableau.explicitStages_congr"
+
+[[node]]
+id = "EmbeddedPair.errorIndicator"
+
+[[node]]
+id = "EmbeddedPair.errorIndicator_eq_sub"
+
+[[node]]
+id = "rkf45_isExplicit"
+
+[[node]]
+id = "rkf45_isRowSum"
+
+[[node]]
+id = "rkf45_sum_b"
+
+[[node]]
+id = "rkf45_bhat_sub_b"
+
+[[node]]
+id = "ButcherTableau.stepRel_implicitMidpoint_iff"
+
+[[node]]
+id = "ButcherTableau.implicitMidpoint_orderConditions"
+
+[[node]]
+id = "ButcherTableau.gaussLegendre2_collocation"
+
+[[node]]
+id = "ButcherTableau.gaussLegendre2_isRowSum"
+
+[[node]]
+id = "ButcherTableau.radauIIA1"
+
+[[node]]
+id = "ButcherTableau.radauIIA2"
+
+[[node]]
+id = "ButcherTableau.lobattoIIIA2"
+
+[[node]]
+id = "ButcherTableau.dirk3"
+
+[[node]]
+id = "ButcherTableau.dirk3_isSemiImplicit"
+
+[[node]]
+id = "ButcherTableau.stepRel_radauIIA1"
+
+[[node]]
+id = "ButcherTableau.stepRel_lobattoIIIA2"
+
+[[node]]
+id = "ButcherTableau.complexA"
+
+[[node]]
+id = "ButcherTableau.complexB"
+
+[[node]]
+id = "ButcherTableau.isStages_testField_iff"
+
+[[node]]
+id = "ButcherTableau.testField_orbit"
+
+[[node]]
+id = "ButcherTableau.isOrbit_testField"
+
+[[node]]
+id = "ButcherTableau.stepRel_testField_smul_iff"
+
+[[node]]
+id = "ButcherTableau.testField_scaleInvariant"
+
+[[node]]
+id = "ButcherTableau.mem_absStabilityRegion_iff_of_isUnit"
+
+[[node]]
+id = "ButcherTableau.not_mem_absStabilityRegion_of_forall_ne"
+
+[[node]]
+id = "ButcherTableau.complexA_pow_apply_eq_zero"
+
+[[node]]
+id = "ButcherTableau.complexA_pow_eq_zero"
+
+[[node]]
+id = "ButcherTableau.inv_one_sub_smul_complexA"
+
+[[node]]
+id = "ButcherTableau.isUnit_one_sub_smul_complexA"
+
+[[node]]
+id = "ButcherTableau.det_one_sub_smul_complexA"
+
+[[node]]
+id = "ButcherTableau.mem_absStabilityRegion_iff_of_isExplicit"
+
+[[node]]
+id = "ButcherTableau.stabilityPolynomial"
+
+[[node]]
+id = "ButcherTableau.stabilityFunction_eq_eval"
+
+[[node]]
+id = "ButcherTableau.stabilityPolynomial_coeff_one"
+
+[[node]]
+id = "ButcherTableau.degree_stabilityPolynomial_pos"
+
+[[node]]
+id = "ButcherTableau.isBounded_absStabilityRegion"
+
+[[node]]
+id = "mem_absStabilityRegion_rk4_iff"
+
+[[node]]
+id = "ButcherTableau.stabilityFunction_heun"
+
+[[node]]
+id = "ButcherTableau.stabilityFunction_implicitMidpoint"
+
+[[node]]
+id = "_root_.eq_zero_of_isBigO_pow_succ"
+
+[[node]]
+id = "_root_.Polynomial.eq_zero_of_isBigO_pow_succ"
+
+[[node]]
+id = "ButcherTableau.sum_b_mul_c_eq_half_of_hasOrderFor"
+
+[[node]]
+id = "ButcherTableau.isStages_testField_one_ofReal"
+
+[[node]]
+id = "ButcherTableau.stabilityFunction_ofReal"
+
+[[node]]
+id = "_root_.norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six"
+
+[[node]]
+id = "_root_.norm_sub_sub_smul_apply_le_of_hasFDerivAt"

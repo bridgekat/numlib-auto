@@ -1,89 +1,37 @@
 namespace = "ODE"
-desc = '''
-The linear system `y' = A y` with a constant matrix, as used by the absolute-stability and
-stiffness discussion of Quarteroni–Sacco–Saleri §11.9–11.10: the solution `y(t) = exp(tA) y₀`,
-its expansion `∑ C_j e^{λ_j t} v_j` in an eigenvector basis when `A` is diagonalizable (11.82),
-the decay `‖y t‖ → 0` when every eigenvalue has negative real part (11.83)–(11.84), the
-diagonalizing change of variables `z = Q⁻¹ y`, `z' = Λ z` (11.85), and the stiffness quotient
-`r_s = σ / τ` of (11.86), where `σ ≤ Re λ_j ≤ τ < 0`.
-
-Mathlib has the matrix exponential (`Matrix.exp` in
-`Mathlib/Analysis/Normed/Algebra/MatrixExponential.lean`, with `exp_diagonal`, `exp_conj`) and
-the derivative `hasDerivAt_exp_smul_const` (`Mathlib/Analysis/SpecialFunctions/Exponential.lean`),
-so `t ↦ exp (t • A) y₀` is a solution by one rewrite, and uniqueness is `ODE_solution_unique` for
-the Lipschitz field `v ↦ A v`. Everything is stated over `ℂ` on `Fin n → ℂ` (or `n → ℂ` for a
-`Fintype n`), because the eigenvalues of a real matrix are complex; the real system is read
-through `Matrix.complexify` (`Numlib/LinearAlgebra/Matrix/Complexify`). Diagonalizability is the
-hypothesis `A = Q * diagonal λ * Q⁻¹` with `IsUnit Q`, not "`n` distinct eigenvalues" — the book's
-hypothesis implies it and is what it actually uses.
-
-The stiffness quotient is a definition on the spectrum; the book's "stiff iff `r_s ≫ 1`" and its
-Definition 11.14 are informal and get no node.
-'''
 
 [[node]]
 id = "linear_isSolutionOn_exp_smul"
-kind = "theorem"
-desc = '''For `A : Matrix n n ℂ` (`Fintype n`, `DecidableEq n`) and `y₀ : n → ℂ`, the curve
-`y t = (Matrix.exp ((t : ℂ) • A)).mulVec y₀` satisfies `IsSolutionOn (fun _ v => A.mulVec v) 0 y₀ univ y`
-(derivative `A.mulVec (y t)` at every `t`, hence within any set). From
-`hasDerivAt_exp_smul_const` in the normed algebra `Matrix n n ℂ` (with `Matrix.linftyOpNormedAlgebra`
-or any normed-algebra instance placed locally), composed with the linear map `mulVec · y₀`. ★'''
-deps = ["ODE.IsSolutionOn"]
 
 [[node]]
 id = "linear_isSolutionOn_unique"
-kind = "theorem"
-desc = '''Every solution of `y' = A y`, `y 0 = y₀` on `Icc 0 T` agrees there with
-`t ↦ exp (t • A) y₀`: `ODE_solution_unique` with the Lipschitz constant `‖A‖` of `v ↦ A.mulVec v`
-(`Matrix.linfty_opNorm_mulVec` or the bound through `Matrix.mulVecLin`). ★'''
-deps = ["ODE.linear_isSolutionOn_exp_smul", "ODE.isSolutionOn_unique_of_lipschitz"]
 
 [[node]]
 id = "linear_solution_eq_sum_exp_smul"
-kind = "theorem"
-desc = '''(11.82). If `A = Q * Matrix.diagonal μ * Q⁻¹` with `IsUnit Q` (the columns of `Q` are
-an eigenvector basis `v_j`, `μ j = λ_j`), then every solution `y` of `y' = A y` on `Icc 0 T`
-satisfies `y t = ∑ j, C j * Complex.exp (μ j * t) • (fun i => Q i j)` on `Icc 0 T`, where
-`C = Q⁻¹.mulVec (y 0)`. Proof: `Matrix.exp_conj` and `Matrix.exp_diagonal` give
-`exp (t • A) = Q * diagonal (fun j => exp (t μ_j)) * Q⁻¹`, then expand `mulVec` in columns, and
-use `linear_isSolutionOn_unique`. ★★'''
-deps = ["ODE.linear_isSolutionOn_unique"]
 
 [[node]]
 id = "linear_tendsto_zero_of_re_lt_zero"
-kind = "theorem"
-desc = '''(11.83)–(11.84). Under the diagonalizability hypothesis of `linear_solution_eq_sum_exp_smul`,
-if `(μ j).re < 0` for every `j`, then every solution `y` of `y' = A y` on `Ici 0` satisfies
-`Tendsto (fun t => ‖y t‖) atTop (𝓝 0)`. Proof: each term `exp (μ_j t) = e^{Re μ_j t}(cos + i sin)`
-has norm `e^{Re μ_j t} → 0` (`Complex.norm_exp`, `Real.tendsto_exp_atBot` composed with
-`t ↦ Re μ_j t`), and a finite sum of terms tending to zero tends to zero. ★'''
-deps = ["ODE.linear_solution_eq_sum_exp_smul"]
 
 [[node]]
 id = "linear_diagonalized_isSolutionOn"
-kind = "theorem"
-desc = '''(11.85), the change of variables: if `A = Q * diagonal μ * Q⁻¹` with `IsUnit Q` and `y`
-solves `y' = A y` on `I`, then `z = Q⁻¹.mulVec ∘ y` solves `z' = diagonal μ *ᵥ z` on `I`, i.e.
-componentwise `z_j' = μ_j z_j`; conversely `y = Q.mulVec ∘ z`. So the scalar test-equation
-analysis applies to each component. Linearity of `HasDerivWithinAt` under `mulVec`. ★'''
-deps = ["ODE.IsSolutionOn"]
 
 [[node]]
 id = "stiffnessQuotient"
-kind = "definition"
-desc = '''(11.86), the stiffness quotient of `A : Matrix n n ℂ`:
-`stiffnessQuotient A = (⨅ λ ∈ spectrum ℂ A, λ.re) / (⨆ λ ∈ spectrum ℂ A, λ.re)`, i.e. `σ / τ`
-with `σ = min Re λ_j`, `τ = max Re λ_j`; a real number, meaningful when every `Re λ_j < 0` (then
-`r_s ≥ 1`). For a nonempty finite spectrum the `⨅`/`⨆` over the set are the min/max. The book's
-"stiff if `Re λ_j < 0` for all `j` and `r_s ≫ 1`", and Definition 11.14, are informal; only the
-quotient is a definition. Consumers: the arterial-wall application §11.11.2 (no node) and
-chapter 13's θ-method discussion.'''
-deps = []
 
 [[node]]
 id = "one_le_stiffnessQuotient"
-kind = "theorem"
-desc = '''If the spectrum of `A` is nonempty and every eigenvalue has negative real part, then
-`1 ≤ stiffnessQuotient A`: `σ ≤ τ < 0` gives `σ / τ ≥ 1`. ★'''
-deps = ["ODE.stiffnessQuotient"]
+
+[[node]]
+id = "hasDerivWithinAt_mulVec"
+
+[[node]]
+id = "hasDerivAt_exp_smul_mulVec"
+
+[[node]]
+id = "exp_smul_eq_of_eq_mul_diagonal"
+
+[[node]]
+id = "linear_isSolutionOn_of_diagonalized"
+
+[[node]]
+id = "isSolutionOn_diagonal_iff"
