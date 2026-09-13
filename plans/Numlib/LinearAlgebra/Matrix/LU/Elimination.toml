@@ -8,57 +8,42 @@ id = "elimMul"
 
 [[node]]
 id = "gaussTransform"
-kind = "definition"
-desc = '''`gaussTransform M p = 1 - elimMultipliers M p`, the `p`-th Gaussian transformation matrix
-`M_p = 1 - m_p e_pᵀ` of QSS §3.3.1; `gaussTransform M p * elimMul M p = 1` and conversely
-(`gaussTransform_mul_elimMul`, from `elimMultipliers_mul_self = 0`, which is (3.36)
-`M_k⁻¹ = 2 I - M_k`). ★'''
-deps = ["Matrix.elimMultipliers", "Matrix.elimMul"]
+
+[[node]]
+id = "gaussTransform_mul"
 
 [[node]]
 id = "elimStep"
 
 [[node]]
 id = "gemStage"
-kind = "definition"
-desc = '''The stages of GEM on `Fin N`, QSS (3.29): `gemStage A 0 = A`, `gemStage A (k+1) = if h : k < N
-then elimStep (gemStage A k) ⟨k, h⟩ else gemStage A k`. So `gemStage A k = A^{(k+1)}` in the book's
-numbering and `gemStage A N = U`. ★'''
-deps = ["Matrix.elimStep"]
 
 [[node]]
 id = "gemStage_succ_eq_gaussTransform_mul"
-kind = "theorem"
-desc = '''QSS (3.35): `k < N → gemStage A (k+1) = gaussTransform (gemStage A k) ⟨k, h⟩ * gemStage A k`. ★'''
-deps = ["Matrix.gemStage", "Matrix.gaussTransform", "Matrix.elimStep"]
+
+[[node]]
+id = "gemStage_apply_of_le"
 
 [[node]]
 id = "gemStage_apply_eq_zero_of_lt"
-kind = "theorem"
-desc = '''The shape of `A^{(k)}` in (3.29): if the pivots `gemStage A j ⟨j, _⟩ ⟨j, _⟩` are nonzero for
-`j < k`, then `gemStage A k i j = 0` whenever `(j : ℕ) < k` and `j < i` (zeros below the diagonal in
-the first `k` columns), and rows `i ≤ k` of `gemStage A k` no longer change (`gemStage_apply_of_le`).
-Induction on `k` with `elimStep_apply_pivot` and `elimStep_apply_of_pivot_row_eq_zero`. ★★'''
-deps = ["Matrix.gemStage", "Matrix.elimStep"]
 
 [[node]]
 id = "gemLower"
-kind = "definition"
-desc = '''The multiplier matrix of GEM, QSS (3.37): `gemLower A = of fun i j => if j < i then gemStage A j i
-j / gemStage A j j j else if i = j then 1 else 0`, the unit lower triangular matrix whose strict
-lower part holds the multipliers `m_ij` produced at stage `j`. ★'''
-deps = ["Matrix.gemStage"]
+
+[[node]]
+id = "isUnitLowerTriangular_gemLower"
+
+[[node]]
+id = "gemLowerStage"
+
+[[node]]
+id = "gemLowerStage_mul_gemStage"
 
 [[node]]
 id = "isLU_gemLower_gemStage"
-kind = "theorem"
-desc = '''GEM as a factorization method, QSS §3.3.1 and (3.37): if every pivot is nonzero, `∀ k : Fin N,
-gemStage A k k k ≠ 0`, then `IsLU A (gemLower A) (gemStage A N)`. Proof: `gemStage A N = M_{N-1} ⋯
-M_0 A` by `gemStage_succ_eq_gaussTransform_mul`, and the product of the `elimMul`s is
-`1 + ∑ m_i e_iᵀ = gemLower A` because `(m_i e_iᵀ)(m_j e_jᵀ) = 0` for `i ≠ j`
-(`elimMultipliers_mul_elimMultipliers_of_ne`, QSS's remark after (3.36)). Upper triangularity of
-the last stage is `gemStage_apply_eq_zero_of_lt` at `k = N`. ★★'''
-deps = ["Matrix.gemStage", "Matrix.gemLower", "Matrix.gemStage_succ_eq_gaussTransform_mul", "Matrix.gemStage_apply_eq_zero_of_lt", "Matrix.IsLU"]
+
+[[node]]
+id = "isLU_leadingPrincipalSubmatrix_gemStage"
 
 [[node]]
 id = "gemStage_pivot_ne_zero_iff"
@@ -70,57 +55,41 @@ Forward by `isLU_gemLower_gemStage` and `IsLU.det_leadingPrincipalSubmatrix`; ba
 induction: the first `k` stages only depend on the leading block, so a zero pivot at `k` makes
 `det A(≤ k) = 0`. This is the book's sentence after (3.33). ★★'''
 deps = ["Matrix.gemStage", "Matrix.isLU_gemLower_gemStage", "Matrix.IsLU.det_leadingPrincipalSubmatrix", "Matrix.strictLeadingPrincipalSubmatrix"]
+wrong = '''False as stated: the last pivot `gemStage A (N-1) (N-1) (N-1) = det A / det A(< N-1)` vanishes for a singular `A` whose strict leading principal submatrices are all nonsingular (`N = 1`, `A = 0`: the strict block is empty, a unit, and the pivot is `0`; Example 3.3's `B = !![1, 2; 1, 2]` likewise). The book's condition is on the pivots `k = 1, …, n - 1` only. Corrected as `gemStage_pivots_ne_zero_iff`, which quantifies over the pivots `k` with `k + 1 < N`, the ones the elimination divides by.'''
+
+
+[[node]]
+id = "gemStage_pivots_ne_zero_iff"
 
 [[node]]
 id = "luPacked"
-kind = "definition"
-desc = '''The Doolittle recurrence (3.43) as one total function on a finite linear order, in packed form:
-`luPacked A i j = A i j - ∑_{r<i} luPacked A i r * luPacked A r j` for `i ≤ j` (this is `U i j`) and
-`= (A i j - ∑_{r<j} luPacked A i r * luPacked A r j) / luPacked A j j` for `j < i` (this is `L i j`).
-Well-founded on `(#{k | k < min i j}, [j < i])` lexicographically — the prototype's `termination_by`
-with the `decreasing_by` obligations left to the formalizer (each recursive call has a strictly
-smaller `min`, or the same `min` and goes from the `L` branch to the `U` branch). Junk at a zero
-pivot (`x / 0 = 0`), so no hypotheses in the definition. ★★'''
-deps = []
+
+[[node]]
+id = "luPacked_of_le"
+
+[[node]]
+id = "luPacked_of_lt"
 
 [[node]]
 id = "luLower"
-kind = "definition"
-desc = '`luLower A = of fun i j => if j < i then luPacked A i j else if i = j then 1 else 0`. ★'
-deps = ["Matrix.luPacked"]
 
 [[node]]
 id = "luUpper"
-kind = "definition"
-desc = '`luUpper A = of fun i j => if i ≤ j then luPacked A i j else 0`. ★'
-deps = ["Matrix.luPacked"]
+
+[[node]]
+id = "luPacked_eq"
 
 [[node]]
 id = "isLU_luLower_luUpper"
-kind = "theorem"
-desc = '''Correctness of Doolittle: `(∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) → IsLU A (luLower A)
-(luUpper A)`. Proof: `(luLower A * luUpper A) i j` is the sum over `r ≤ min i j` of the packed
-entries, which is `A i j` by unfolding one step of the recurrence *provided* the pivot `luPacked A
-j j ≠ 0` in the `L` branch; the pivots are nonzero by `IsLU.det_leadingPrincipalSubmatrix` applied to
-the leading blocks, proved together with the correctness by strong induction along the order (the
-recurrence restricted to `{i // i ≤ k}` is the recurrence of the leading block,
-`luPacked_toBlock`). This also proves the existence half of Theorem 3.4. ★★★'''
-deps = ["Matrix.luLower", "Matrix.luUpper", "Matrix.luPacked", "Matrix.IsLU", "Matrix.strictLeadingPrincipalSubmatrix", "Matrix.IsLU.det_leadingPrincipalSubmatrix"]
 
 [[node]]
 id = "luLower_eq_gemLower"
-kind = "theorem"
-desc = '''Every loop order computes the same factors: on `Fin N` with nonzero pivots, `luLower A = gemLower
-A` and `luUpper A = gemStage A N`. Immediate from `IsLU.unique` given `isLU_luLower_luUpper` and
-`isLU_gemLower_gemStage`; this is QSS's "the Doolittle factorization is nothing but the `ijk`
-version of GEM". ★'''
-deps = ["Matrix.isLU_luLower_luUpper", "Matrix.isLU_gemLower_gemStage", "Matrix.IsLU.unique"]
 
 [[node]]
 id = "croutLower"
-kind = "definition"
-desc = '''The Crout factorization (§3.3.4, `u_kk = 1`) by transposition: `croutLower A = (luUpper Aᵀ)ᵀ`,
-`croutUpper A = (luLower Aᵀ)ᵀ`, so that `croutLower A * croutUpper A = A` with `croutUpper` unit
-upper triangular under the same hypothesis (`crout_mul_eq`, from `isLU_luLower_luUpper` for `Aᵀ`,
-whose strict leading principal submatrices are the transposes of those of `A`). ★'''
-deps = ["Matrix.luLower", "Matrix.luUpper"]
+
+[[node]]
+id = "croutUpper"
+
+[[node]]
+id = "croutLower_mul_croutUpper"

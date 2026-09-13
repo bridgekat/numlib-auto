@@ -1,327 +1,181 @@
 namespace = "Matrix"
-desc = '''
-The LU factorization as a *specification*: leading principal submatrices and minors, the predicate
-`IsLU A L U` (`L` unit lower triangular, `U` upper triangular, `L * U = A`), and everything that is
-true of the factorization independently of how it is computed — existence and uniqueness iff the
-strict leading principal submatrices are nonsingular (Quarteroni–Sacco–Saleri Theorem 3.4,
-Higham Theorem 9.1), the pivots as ratios of leading minors, `LDMᵀ` and `LDLᵀ`, existence under
-diagonal dominance (QSS Property 3.2, Higham Theorem 9.9), band and envelope preservation (QSS
-Property 3.4, (3.60)), the bidiagonal factors of a tridiagonal matrix (the Thomas identities
-(3.53)), and block LU along a labelling of the index set (QSS Theorem 3.7).
-
-Index type: `[Fintype n] [LinearOrder n]`, never `Fin N` — the order is all a triangular
-factorization uses, and `Matrix.toBlock (· < k) (· < k)` is the strict leading principal submatrix
-of order `k` without any arithmetic on indices (prototype: `notes/qss/ch03/proto/ProtoLU.lean`). Lower
-triangular is Mathlib's `Matrix.IsLowerTriangular = BlockTriangular toDual`, upper triangular is
-`Matrix.IsUpperTriangular = BlockTriangular id`; `Matrix.BlockTriangular b` for a labelling
-`b : n → α` gives block triangularity for free, so block LU is the same structure with `id`
-replaced by `b`.
-
-The algorithms — the Doolittle recurrence, the elimination stages of GEM, pivoting and the growth
-factor — are `LinearAlgebra/Matrix/LU/Elimination` and `LinearAlgebra/Matrix/LU/Pivoting`; the
-substitution solves are `Direct/Substitution`; the rounding-error analysis is
-`FloatingPoint/LU`. Cholesky is `LinearAlgebra/Matrix/Cholesky`.
-
-Sources: Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §3.3–3.4, 3.7–3.8; Higham, *Accuracy and
-Stability of Numerical Algorithms*, §9.1, 9.5–9.6; Golub–Van Loan §3.2, 4.1, 4.3.
-'''
 
 [[node]]
 id = "leadingPrincipalSubmatrix"
-kind = "definition"
-desc = '''`A.leadingPrincipalSubmatrix k = A.toBlock (· ≤ k) (· ≤ k)`, indexed by `{i // i ≤ k}`. On `Fin N`
-with `k = ⟨i, _⟩` this is the book's `A_{i+1}`, the leading principal submatrix of order `i + 1`. ★'''
-deps = []
 
 [[node]]
 id = "strictLeadingPrincipalSubmatrix"
-kind = "definition"
-desc = '''`A.strictLeadingPrincipalSubmatrix k = A.toBlock (· < k) (· < k)`, indexed by `{i // i < k}`. As `k`
-ranges over `n` these are exactly the leading principal submatrices of orders `0, …, N - 1`, which
-is the hypothesis of Theorem 3.4 ("`A_i` nonsingular for `i = 1, …, n - 1`"; order `0` is the empty
-matrix, trivially a unit). ★'''
-deps = []
 
 [[node]]
 id = "leadingPrincipalMinor"
-kind = "definition"
-desc = '''`A.leadingPrincipalMinor k = (A.leadingPrincipalSubmatrix k).det`, the book's `d_k`. ★'''
-deps = ["Matrix.leadingPrincipalSubmatrix"]
 
 [[node]]
-id = "IsUnitLowerTriangular"
-kind = "definition"
-desc = '''Structure: `L.IsLowerTriangular` and `∀ i, L i i = 1`. Companion lemmas worth tracking as they
-arise: `IsUnitLowerTriangular.det_eq_one`, `.isUnit`, `.mul` (closed under products),
-`.inv` (the inverse is unit lower triangular, from Mathlib's
-`Matrix.blockTriangular_inv_of_blockTriangular` and `Matrix.BlockTriangular.inv_toBlock`). ★'''
-deps = []
+id = "isUnit_strictLeadingPrincipalSubmatrix_of_forall_isUnit"
 
 [[node]]
 id = "IsLU"
-kind = "definition"
-desc = '''`IsLU A L U`: `L.IsUnitLowerTriangular`, `U.IsUpperTriangular`, `L * U = A`. This is the
-specification every LU algorithm satisfies; theorems about "the LU factorization" are theorems about
-any pair satisfying it. Over a `Semiring`. ★'''
-deps = ["Matrix.IsUnitLowerTriangular"]
 
 [[node]]
 id = "IsLU.apply_eq_sum"
-kind = "theorem"
-desc = '''QSS (3.42): if `IsLU A L U` then `A i j = ∑ r ∈ univ.filter (· ≤ min i j), L i r * U r j` — the
-sum in `(L * U) i j` is supported on `r ≤ i` (lower) and `r ≤ j` (upper). ★'''
-deps = ["Matrix.IsLU"]
 
 [[node]]
-id = "IsLU.toBlock_le"
-kind = "theorem"
-desc = '''An LU factorization restricts to every leading principal block: `IsLU A L U →
-IsLU (A.leadingPrincipalSubmatrix k) (L.leadingPrincipalSubmatrix k) (U.leadingPrincipalSubmatrix k)`,
-and likewise for the strict blocks. This is (3.38) read downwards: the product of the leading blocks
-is the leading block of the product because `L` vanishes above and `U` below the diagonal. Proof:
-`Matrix.toBlock_mul_eq_add` with the off-block term zero. ★'''
-deps = ["Matrix.IsLU", "Matrix.leadingPrincipalSubmatrix", "Matrix.strictLeadingPrincipalSubmatrix"]
+id = "IsLU.upper_apply_eq"
 
 [[node]]
-id = "IsLU.det_leadingPrincipalSubmatrix"
-kind = "theorem"
-desc = '''QSS (3.39): `IsLU A L U → (A.leadingPrincipalSubmatrix k).det = ∏ i ∈ univ.filter (· ≤ k), U i i`.
-From `IsLU.toBlock_le`, `Matrix.det_mul`, `Matrix.det_of_isLowerTriangular` (`= 1`) and
-`Matrix.det_of_isUpperTriangular`. Over a `CommRing`. ★'''
-deps = ["Matrix.IsLU.toBlock_le", "Matrix.leadingPrincipalSubmatrix"]
-
-[[node]]
-id = "IsLU.det_eq_prod_diag"
-kind = "theorem"
-desc = '`IsLU A L U → A.det = ∏ i, U i i` (QSS, after Example 3.3). ★'
-deps = ["Matrix.IsLU"]
-
-[[node]]
-id = "IsLU.diag_upper_eq_div_leadingPrincipalMinor"
-kind = "theorem"
-desc = '''The pivots are ratios of consecutive leading principal minors: over a field, if `IsLU A L U` and
-`(A.strictLeadingPrincipalSubmatrix k).det ≠ 0`, then
-`U k k = (A.leadingPrincipalSubmatrix k).det / (A.strictLeadingPrincipalSubmatrix k).det`. From
-`IsLU.det_leadingPrincipalSubmatrix` for `k` and for the strict block (whose determinant is the
-product over `i < k`). ★'''
-deps = ["Matrix.IsLU.det_leadingPrincipalSubmatrix", "Matrix.leadingPrincipalMinor"]
-
-[[node]]
-id = "existsUnique_isLU_iff"
-kind = "theorem"
-desc = '''QSS Theorem 3.4, Higham Theorem 9.1: over a field, `(∃! LU : Matrix n n K × Matrix n n K,
-IsLU A LU.1 LU.2) ↔ ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`.
-
-Proof (the book's, by induction along the order rather than by running GEM). `⇐`: strong induction
-on `k` for the leading block `A(≤ k)`; partition it as `[[A(< k), c], [dᵀ, a_kk]]` and, with the
-unique factorization `L' U'` of the nonsingular `A(< k)`, the new border is forced: `L' u = c`,
-`lᵀ U' = dᵀ`, `u_kk = a_kk - lᵀ u`, each uniquely solvable because `L'` and `U'` are nonsingular
-(`det A(< k) = det U' ≠ 0`). `⇒`: if some `A(< k)` were singular, the first zero pivot `u_jj`
-(which exists by `IsLU.det_leadingPrincipalSubmatrix`) sits at a `j < k`, and then `l` in the
-bordering at any later step is not unique — the book's argument; alternatively exhibit a second
-factorization by perturbing column `j` of `L` below the diagonal, as in Example 3.3's `D = L_β U_β`.
-Existence alone (`∃ L U, IsLU A L U`) under the same hypothesis is a separate node,
-`exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix`, which is all the algorithms need.
-★★★ (the induction over `{i // i ≤ k}` block decompositions is the engineering; a cleaner route
-is to prove `isLU_luLower_luUpper` in `LU/Elimination` first and derive existence from it).'''
-deps = ["Matrix.IsLU", "Matrix.strictLeadingPrincipalSubmatrix", "Matrix.IsLU.det_leadingPrincipalSubmatrix", "Matrix.IsLU.toBlock_le"]
-
-[[node]]
-id = "exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix"
-kind = "theorem"
-desc = '''The existence half of Theorem 3.4 on its own: `(∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k))
-→ ∃ L U, IsLU A L U`. Either the induction of `existsUnique_isLU_iff` or
-`LU/Elimination.isLU_luLower_luUpper`. ★★'''
-deps = ["Matrix.IsLU", "Matrix.strictLeadingPrincipalSubmatrix"]
-
-[[node]]
-id = "IsLU.unique"
-kind = "theorem"
-desc = '''The uniqueness half of Theorem 3.4 in the form consumers use: `IsLU A L₁ U₁ → IsLU A L₂ U₂ →
-(∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) → L₁ = L₂ ∧ U₁ = U₂`. Proof: `L₂⁻¹ L₁ = U₂ U₁⁻¹`
-on the block where both `U`s are invertible, unit lower = upper forces the identity; or the
-bordering induction. ★★'''
-deps = ["Matrix.IsLU", "Matrix.existsUnique_isLU_iff"]
-
-[[node]]
-id = "IsLDM"
-kind = "definition"
-desc = '''`IsLDM A L D M`: `L.IsUnitLowerTriangular`, `D` diagonal (`D = diagonal D.diag`),
-`Mᵀ.IsUnitUpperTriangular` (i.e. `M.IsUnitLowerTriangular`), `L * D * Mᵀ = A` — the `LDMᵀ`
-factorization of QSS §3.4.1. ★'''
-deps = ["Matrix.IsUnitLowerTriangular"]
-
-[[node]]
-id = "existsUnique_isLDM"
-kind = "theorem"
-desc = '''QSS Theorem 3.5: if every leading principal submatrix of `A` (orders `1, …, n`, i.e. `∀ k, IsUnit
-(A.leadingPrincipalSubmatrix k)`) is nonsingular, then `∃! LDM, IsLDM A LDM.1 LDM.2.1 LDM.2.2`.
-Reading of the hypothesis: the book says "all the principal minors are nonzero", but its proof uses
-only the *leading* ones, and needs the last one (`det A ≠ 0`) for `D` to be invertible; we take the
-leading principal minors of all orders `1..n`. Proof: `A = L U` by `existsUnique_isLU_iff`,
-`D = diagonal U.diag` (nonzero since `det U = det A ≠ 0`), `Mᵀ = D⁻¹ U`; uniqueness from
-`IsLU.unique` since `L (D Mᵀ)` is an LU factorization. ★'''
-deps = ["Matrix.IsLDM", "Matrix.existsUnique_isLU_iff", "Matrix.IsLU.unique", "Matrix.leadingPrincipalSubmatrix"]
-
-[[node]]
-id = "IsLDM.eq_of_isSymm"
-kind = "theorem"
-desc = '''The `LDLᵀ` factorization (QSS §3.4.2, first paragraph): if `IsLDM A L D M`, `A.IsSymm` and the
-leading principal submatrices are nonsingular, then `M = L`. Transposing `A = L D Mᵀ` gives `A = M D
-Lᵀ`, another `LDMᵀ` factorization, and uniqueness identifies them. ★'''
-deps = ["Matrix.IsLDM", "Matrix.existsUnique_isLDM"]
-
-[[node]]
-id = "IsLDM.diag_pos_of_posDef"
-kind = "theorem"
-desc = '''If `IsLDM A L D L` (the symmetric case) and `A.PosDef` (real symmetric positive definite), then
-`∀ i, 0 < D i i`: `D = L⁻¹ A L⁻ᵀ` is congruent to `A`, hence positive definite, and the diagonal of
-a positive definite matrix is positive. (QSS §3.4.2: "the diagonal entries of D … are positive".)
-★'''
-deps = ["Matrix.IsLDM"]
-
-[[node]]
-id = "exists_isLU_of_isDiagDominant"
-kind = "theorem"
-desc = '''QSS Property 3.2 (rows), Higham Theorem 9.9 (Wilkinson): a *nonsingular* matrix that is (weakly)
-diagonally dominant by rows, `Matrix.IsDiagDominant A` of `LinearAlgebra/Matrix/DiagDominant`,
-has an LU factorization: `∃ L U, IsLU A L U`. Nonsingularity is not in the book's statement and is
-needed: `!![0, 0; 1, 1]` is weakly row dominant and has no unit-lower LU factorization
-(`u₁₁ = 0` forces `l₂₁ · 0 = 1`). Proof: the strict leading principal submatrices of a
-nonsingular weakly row-dominant matrix are nonsingular — Higham's route is that one elimination
-step preserves row dominance of the trailing matrix (Schur complement) — then Theorem 3.4.
-★★★ (the Schur-complement-preserves-dominance lemma is the work; state it separately as
-`schurComplementSingle_isDiagDominant`, on `Matrix.schurComplementSingle` of
-`LinearAlgebra/Matrix/SchurComplement`).'''
-deps = ["Matrix.IsLU", "Matrix.existsUnique_isLU_iff", "Matrix.IsDiagDominant"]
-
-[[node]]
-id = "exists_isLU_of_isColDiagDominant"
-kind = "theorem"
-desc = '''QSS Property 3.2 (columns), Higham Theorem 9.9: a nonsingular matrix diagonally dominant by
-columns (`Matrix.IsColDiagDominant A`) has an LU factorization with `∀ i j, ‖L i j‖ ≤ 1`. Column
-dominance of the trailing Schur complement is inherited (Higham Theorem 13.8 with `1 × 1` blocks),
-and the multipliers `a_ik / a_kk` are bounded by `1` by column dominance of the current stage.
-★★★'''
-deps = ["Matrix.IsLU", "Matrix.existsUnique_isLU_iff", "Matrix.IsColDiagDominant"]
-
-[[node]]
-id = "IsLU.hasLowerBandwidth"
-kind = "theorem"
-desc = '''QSS Property 3.4 (lower half): if `IsLU A L U`, the strict leading principal submatrices of `A`
-are nonsingular (so the factorization is the unique one — without uniqueness the claim fails:
-`!![0, 1; 0, 2] = L_β U_β` for every `β`, and `L_β` is not upper triangular), and
-`A.HasLowerBandwidth p` (`LinearAlgebra/Matrix/Hessenberg` EXT), then `L.HasLowerBandwidth p`.
-Proof through the Doolittle recurrence `LU/Elimination.luPacked`: for `j < i` with more than `p`
-indices in `[j, i)`, `A i j = 0` and every `L i r`, `r < j`, vanishes by induction, so `L i j = 0`.
-★★'''
-deps = ["Matrix.IsLU", "Matrix.IsLU.unique", "Matrix.HasLowerBandwidth"]
-
-[[node]]
-id = "IsLU.hasUpperBandwidth"
-kind = "theorem"
-desc = '''QSS Property 3.4 (upper half): under the same hypotheses, `A.HasUpperBandwidth q →
-U.HasUpperBandwidth q`. Same induction, on the rows of `U`. ★★'''
-deps = ["Matrix.IsLU", "Matrix.IsLU.unique", "Matrix.HasUpperBandwidth"]
-
-[[node]]
-id = "envelope"
-kind = "definition"
-desc = '''The (lower) envelope, QSS (3.59): `A.envelope = {(i, j) | j < i ∧ ∃ j₀ ≤ j, A i j₀ ≠ 0}`, the set of
-strictly-lower positions from the first nonzero of each row to the diagonal. On `Fin N` this is
-`{(i, j) : 0 < i - j ≤ m_i(A)}` with `m_i(A) = i - min {j < i : a_ij ≠ 0}` (`m_i = 0` when the
-strict lower part of row `i` is empty; the book leaves that case implicit). Stated over `[Zero R]`.
-★'''
-deps = []
-
-[[node]]
-id = "IsLU.envelope_eq"
-kind = "theorem"
-desc = '''QSS (3.60), no fill outside the envelope and none missing on its boundary: if `IsLU A L U` with
-nonsingular strict leading principal submatrices, then `L.envelope = A.envelope`, more precisely
-`∀ i j, j < i → (L i j ≠ 0 → (i, j) ∈ A.envelope)` and `L i j₀ ≠ 0` at the first nonzero `j₀` of
-row `i` of `A`. Proof: Doolittle, `L i j = (A i j - ∑_{r<j} L i r U r j) / U j j`; below the first
-nonzero all terms vanish inductively, and at `j₀` the sum is empty so `L i j₀ = A i j₀ / U j₀ j₀ ≠
-0`. For a symmetric positive definite `A` with Cholesky factor `H` (upper), `Hᵀ = L D^{1/2}` has the
-pattern of `L`, which is the book's `E(A) = E(H + Hᵀ)`. ★★'''
-deps = ["Matrix.IsLU", "Matrix.envelope", "Matrix.IsLU.unique"]
-
-[[node]]
-id = "thomasAlpha"
-kind = "definition"
-desc = '''The Thomas recurrence (3.53) for a tridiagonal matrix given by its diagonals `a : Fin N → K`,
-`b c : Fin N → K` (`b` the subdiagonal, `b 0` unused; `c` the superdiagonal, `c (N-1)` unused):
-`thomasAlpha a b c 0 = a 0`, `thomasAlpha a b c (i+1) = a (i+1) - thomasBeta a b c (i+1) * c i`. ★'''
-deps = []
-
-[[node]]
-id = "thomasBeta"
-kind = "definition"
-desc = '''`thomasBeta a b c (i+1) = b (i+1) / thomasAlpha a b c i` (and `0` at `i = 0`); the two are one
-mutual recursion on `ℕ`. ★'''
-deps = ["Matrix.thomasAlpha"]
-
-[[node]]
-id = "isLU_tridiagonal_thomas"
-kind = "theorem"
-desc = '''QSS §3.7.1: for the tridiagonal `A` with diagonals `a b c` (build it as
-`Matrix.of fun i j => if i = j then a i else if j + 1 = i then b i else if i + 1 = j then c i else 0`
-on `Fin N`), if `∀ i, thomasAlpha a b c i ≠ 0`, then `IsLU A L U` with `L` unit lower bidiagonal
-(`L (i+1) i = thomasBeta a b c (i+1)`) and `U` upper bidiagonal (`U i i = thomasAlpha a b c i`,
-`U i (i+1) = c i`). Direct multiplication, three cases. The zero-pivot-free hypothesis is
-equivalent to the nonsingularity of the strict leading principal submatrices by
-`IsLU.diag_upper_eq_div_leadingPrincipalMinor`. ★★'''
-deps = ["Matrix.IsLU", "Matrix.thomasAlpha", "Matrix.thomasBeta"]
-
-[[node]]
-id = "thomasGamma"
-kind = "definition"
-desc = '''The division-free variant of §3.7.2, `γ_i = (a_i - b_i γ_{i-1} c_{i-1})⁻¹`, `γ_0 := 0`; it is
-`(thomasAlpha a b c i)⁻¹` (`thomasGamma_eq_inv_thomasAlpha`), and the factorization
-`A = L D Mᵀ` displayed there is `IsLDM` with `D = diagonal γ`, `L i i = γ_i⁻¹`, `L (i+1) i = b (i+1)`,
-`Mᵀ i (i+1) = c i` — note that this `L` is *not* unit lower triangular, so it is the display's
-factorization and not `IsLDM`; record it as `tridiagonal_eq_mul_diagonal_mul` instead. ★'''
-deps = ["Matrix.thomasAlpha"]
+id = "IsLU.lower_apply_mul_diag_eq"
 
 [[node]]
 id = "IsBlockUnitLowerTriangular"
-kind = "definition"
-desc = '''For a labelling `b : n → α` with `[LinearOrder α]`: `L.BlockTriangular (OrderDual.toDual ∘ b)`
-(block lower triangular) and `∀ i j, b i = b j → L i j = (1 : Matrix n n R) i j` (identity diagonal
-blocks). `b = id` recovers `IsUnitLowerTriangular` (`isBlockUnitLowerTriangular_id_iff`). ★'''
-deps = ["Matrix.IsUnitLowerTriangular"]
 
 [[node]]
 id = "IsBlockLU"
-kind = "definition"
-desc = '''`IsBlockLU b A L U`: `IsBlockUnitLowerTriangular b L`, `U.BlockTriangular b`, `L * U = A` — the
-block LU factorization of QSS Theorem 3.7 along the block labelling `b`; `IsBlockLU id A L U ↔ IsLU
-A L U` (`isBlockLU_id_iff`, checked in the prototype). The book's `m × m` blocks of sizes
-`n₁, …, n_m` are `b : Fin N → Fin m` monotone; a general labelling costs nothing and covers the
-substructuring orderings of §3.9.2. ★'''
-deps = ["Matrix.IsBlockUnitLowerTriangular"]
+
+[[node]]
+id = "isBlockUnitLowerTriangular_id_iff"
+
+[[node]]
+id = "isBlockLU_id_iff"
+
+[[node]]
+id = "isBlockLU_comp_iff"
+
+[[node]]
+id = "IsBlockUnitLowerTriangular.mul"
+
+[[node]]
+id = "IsBlockUnitLowerTriangular.det_eq_one"
+
+[[node]]
+id = "IsBlockLU.toBlock"
+
+[[node]]
+id = "IsBlockLU.toBlock_not_left"
+
+[[node]]
+id = "IsBlockLU.toBlock_not_right"
+
+[[node]]
+id = "IsBlockLU.toBlock_not_not"
+
+[[node]]
+id = "IsLU.toBlock_le"
+
+[[node]]
+id = "IsLU.toBlock_lt"
+
+[[node]]
+id = "IsLU.det_eq_prod_diag"
+
+[[node]]
+id = "IsLU.det_leadingPrincipalSubmatrix"
+
+[[node]]
+id = "IsLU.det_strictLeadingPrincipalSubmatrix"
+
+[[node]]
+id = "IsLU.diag_upper_ne_zero_of_lt"
+
+[[node]]
+id = "IsLU.diag_upper_eq_div_leadingPrincipalMinor"
+
+[[node]]
+id = "isBlockLU_fromBlocks"
+
+[[node]]
+id = "exists_isBlockLU_of_forall_isUnit"
+
+[[node]]
+id = "IsBlockLU.unique"
+
+[[node]]
+id = "IsBlockLU.exists_ne_of_not_isUnit"
 
 [[node]]
 id = "existsUnique_isBlockLU_iff"
-kind = "theorem"
-desc = '''QSS Theorem 3.7 (and Theorem 3.4 as `b = id`): over a field, `(∃! LU, IsBlockLU b A LU.1 LU.2) ↔
-∀ a ∈ Set.range b, IsUnit (A.toBlock (b · < a) (b · < a))` — the leading principal *block*
-submatrices are nonsingular. The book says "the `m - 1` dominant principal block minors"; the block
-for the smallest label is the empty matrix and the block for the largest label is `A` without its
-last block row/column, so the range condition is exactly the book's `m - 1` blocks. Same
-bordering induction as `existsUnique_isLU_iff`, one block at a time (`L' U'' = C`, `L'' U' = Dᵀ`
-solved by nonsingularity of `L'`, `U'`, and `U_aa = A_aa - L'' U''` arbitrary square). ★★★ — but
-once `existsUnique_isLU_iff` is done along `{i // i < k}` blocks, this is the same proof with `b ·
-< a` in place of `· < k`; consider proving this one first and deriving Theorem 3.4 by `b = id`.'''
-deps = ["Matrix.IsBlockLU", "Matrix.existsUnique_isLU_iff"]
 
 [[node]]
-id = "IsBlockLU.toBlocks_eq_schurComplement"
-kind = "theorem"
-desc = '''The two-block case is the Schur complement: for `A : Matrix (m ⊕ p) (m ⊕ p) K` with
-`IsUnit A.toBlocks₁₁`, the factorization `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement` of
-`LinearAlgebra/Matrix/SchurComplement` is `IsBlockLU Sum.isRight`-shaped with
-`U.toBlocks₂₂ = A.schurComplement`; state it as `IsBlockLU (Sum.elim (fun _ => 0) (fun _ => 1)) A
-(fromBlocks 1 0 (F B⁻¹) 1) (fromBlocks B E 0 S)`. QSS §3.8.1's display with `A₁₁ = L₁₁ D₁ R₁₁` is
-this identity with `B` refactored. ★'''
-deps = ["Matrix.IsBlockLU", "Matrix.schurComplement", "Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement"]
+id = "exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix"
+
+[[node]]
+id = "IsLU.unique"
+
+[[node]]
+id = "existsUnique_isLU_iff"
+
+[[node]]
+id = "IsLDM"
+
+[[node]]
+id = "IsLDM.isLU"
+
+[[node]]
+id = "existsUnique_isLDM"
+
+[[node]]
+id = "IsLDM.eq_of_isSymm"
+
+[[node]]
+id = "IsLDM.diag_pos_of_posDef"
+
+[[node]]
+id = "isUnit_schurComplementSingle_of_isUnit"
+
+[[node]]
+id = "luLowerOfSchur"
+
+[[node]]
+id = "luUpperOfSchur"
+
+[[node]]
+id = "isLU_luLowerOfSchur_luUpperOfSchur"
+
+[[node]]
+id = "exists_isLU_of_isDiagDominant"
+
+[[node]]
+id = "exists_isLU_of_isColDiagDominant"
+
+[[node]]
+id = "IsLU.hasUpperBandwidth"
+
+[[node]]
+id = "IsLU.hasLowerBandwidth"
+
+[[node]]
+id = "envelope"
+
+[[node]]
+id = "IsLU.lower_apply_eq_zero_of_forall_le"
+
+[[node]]
+id = "IsLU.envelope_eq"
+
+[[node]]
+id = "isBlockLU_fromBlocks_schurComplement"
+
+[[node]]
+id = "tridiagonalOfNat"
+
+[[node]]
+id = "tridiagonalOfNat_eq_tridiagonalOf"
+
+[[node]]
+id = "thomasAlpha"
+
+[[node]]
+id = "thomasBeta"
+
+[[node]]
+id = "thomasLower"
+
+[[node]]
+id = "thomasUpper"
+
+[[node]]
+id = "isLU_tridiagonal_thomas"
+
+[[node]]
+id = "thomasGamma"
+
+[[node]]
+id = "thomasGamma_eq_inv_thomasAlpha"

@@ -277,6 +277,7 @@ import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
+import Numlib.LinearAlgebra.Matrix.LU
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse

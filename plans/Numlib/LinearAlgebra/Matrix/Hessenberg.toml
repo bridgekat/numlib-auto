@@ -38,102 +38,86 @@ id = "strictUpper_blockTriangular"
 
 [[node]]
 id = "hasLowerBandwidth_zero_iff"
-kind = "theorem"
-desc = '''The named shapes of §1.6.2–1.6.3 as bandwidths, for square `A : Matrix (Fin n) (Fin n) R`: `A.HasLowerBandwidth 0 ↔ A.IsUpperTriangular` (Mathlib's `Matrix.IsUpperTriangular = BlockTriangular A id`), `A.HasUpperBandwidth 0 ↔ A.IsLowerTriangular`, `A.HasLowerBandwidth 0 ∧ A.HasUpperBandwidth 0 ↔ A.IsDiag`, `A.HasLowerBandwidth 1 ↔ A.IsUpperHessenberg` (`isUpperHessenberg_iff_hasLowerBandwidth_one`), `A.IsTridiagonal ↔ A.HasLowerBandwidth 1 ∧ A.HasUpperBandwidth 1` (`isTridiagonal_iff_hasBandwidth_one`); for rectangular `A`, `HasLowerBandwidth 0` is "upper trapezoidal" and `HasUpperBandwidth 0` "lower trapezoidal", and every matrix has bands `m - 1` and `n - 1`. Each is an unfolding plus `omega`. ★'''
-deps = ["Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth", "Matrix.IsUpperHessenberg", "Matrix.IsTridiagonal"]
+
+[[node]]
+id = "hasUpperBandwidth_zero_iff"
+
+[[node]]
+id = "isDiag_iff_hasBandwidth_zero"
+
+[[node]]
+id = "hasLowerBandwidth_iff_fin"
 
 [[node]]
 id = "HasLowerBandwidth.add"
-kind = "theorem"
-desc = '''Bands are preserved by sums, scalar multiples and the triangular parts: `(A + B).HasLowerBandwidth (max p p')`, `(c • A).HasLowerBandwidth p`, `A.strictLower`, `A.strictUpper`, `A.diagPart` inherit `A`'s bands (with `diagPart` and `strictUpper` having lower band `0`), and the same for upper bands. Routine; kept so that band bookkeeping in chapters 3 and 4 is by `simp`. ★'''
-deps = ["Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth", "Matrix.strictLower", "Matrix.strictUpper", "Matrix.diagPart"]
+
+[[node]]
+id = "BlockTriangular.mul_apply_self_of_injective"
+
+[[node]]
+id = "IsUnitLowerTriangular"
 
 [[node]]
 id = "IsUnitLowerTriangular.mul"
-kind = "theorem"
-desc = '''The diagonal of a product of two lower (or two upper) triangular square matrices is the product of the diagonals, `(A * B) i i = A i i * B i i`; hence the product of two *unit* lower triangular matrices (lower triangular with `∀ i, A i i = 1`) is unit lower triangular, Quarteroni–Sacco–Saleri §1.6.2 last bullet. Whether to bundle "unit lower triangular" as a predicate (`IsUnitLowerTriangular A := A.IsLowerTriangular ∧ ∀ i, A i i = 1`, which chapter 3's LU factors satisfy) is the chapter-3 agent's call; the diagonal identity is the content either way. ★'''
-deps = []
+
+[[node]]
+id = "IsUnitLowerTriangular.det_eq_one"
+
+[[node]]
+id = "IsUnitLowerTriangular.isUnit"
+
+[[node]]
+id = "IsUnitLowerTriangular.inv"
 
 [[node]]
 id = "tridiagonalOf"
-kind = "definition"
-desc = '''`Matrix.tridiagonalOf (b : Fin n → R) (d : Fin (n+1) → R) (c : Fin n → R) : Matrix (Fin (n+1)) (Fin (n+1)) R`, the book's `tridiag_{n+1}(b, d, c)`: `d` on the diagonal, `b` on the subdiagonal (`(i+1, i) ↦ b i`), `c` on the superdiagonal (`(i, i+1) ↦ c i`), `0` elsewhere (Quarteroni–Sacco–Saleri §1.6.3; the book's `b₁, …, b_{n-1}`, `d₁, …, d_n` are `0`-indexed here). API: the three `tridiagonalOf_apply_*` lemmas, `isTridiagonal_tridiagonalOf`, `tridiagonalOf_transpose : (tridiagonalOf b d c)ᵀ = tridiagonalOf c d b`, `tridiagonalOf_mulVec` (the three-term formula `(T x)_i = b_{i-1} x_{i-1} + d_i x_i + c_i x_{i+1}`). Used by chapter 3 (Thomas algorithm, §3.7.1), chapter 8 (spline systems (8.40)–(8.42)) and chapter 12. ★'''
-deps = ["Matrix.IsTridiagonal"]
 
 [[node]]
-id = "tridiagonalOf_const"
-kind = "theorem"
-desc = '''The book's constant-coefficient `tridiag_n(β, δ, γ)` already exists as the real `Matrix.tridiagonalToeplitz n β δ γ` (`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`, `β` on the subdiagonal, `δ` on the diagonal, `γ` on the superdiagonal — the book's argument order — with `symmTridiagonalToeplitz_eq_tridiagonalToeplitz` and its eigenvalue formulas). This node is the bridge: `tridiagonalOf (fun _ => β) (fun _ => δ) (fun _ => γ) = tridiagonalToeplitz (n + 1) β δ γ` over `ℝ`, so that the variable-coefficient API applies to the book's `tridiag_n(-1, 2, -1)` of chapters 4 and 12. ★'''
-deps = ["Matrix.tridiagonalOf", "Matrix.tridiagonalToeplitz"]
+id = "isTridiagonal_tridiagonalOf"
+
+[[node]]
+id = "tridiagonalOf_transpose"
+
+[[node]]
+id = "tridiagonalOf_mulVec"
 
 [[node]]
 id = "HasLowerBandwidth"
-kind = "definition"
-desc = '''`A.HasLowerBandwidth p`: `∀ i j, p < #{k | j ≤ k ∧ k < i} → A i j = 0` — an entry vanishes when more
-than `p` indices lie in `[j, i)`, which on `Fin N` is `i - j > p`. Stated on a `LinearOrder` with
-`[Fintype n]` so that the count exists, in the spirit of `Matrix.IsUpperHessenberg`. `p = 0` is
-upper triangularity (`hasLowerBandwidth_zero_iff_isUpperTriangular`). ★'''
-deps = []
 
 [[node]]
 id = "HasUpperBandwidth"
-kind = "definition"
-desc = '''`A.HasUpperBandwidth q`: `∀ i j, q < #{k | i ≤ k ∧ k < j} → A i j = 0`; `q = 0` is lower
-triangularity, and `A.HasUpperBandwidth q ↔ Aᵀ.HasLowerBandwidth q`. ★'''
-deps = []
 
 [[node]]
 id = "isTridiagonal_iff_hasBandwidth_one"
-kind = "theorem"
-desc = '''`A.IsTridiagonal ↔ A.HasLowerBandwidth 1 ∧ A.HasUpperBandwidth 1`, and `A.IsUpperHessenberg ↔
-A.HasLowerBandwidth 1`: "some `k` strictly between `j` and `i`" is "at least two indices in `[j,
-i)`". ★'''
-deps = ["Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth", "Matrix.IsTridiagonal", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "isUpperHessenberg_iff_hasLowerBandwidth_one"
 
 [[node]]
 id = "HasLowerBandwidth.mul"
-kind = "theorem"
-desc = '''Bandwidths add under products: `A.HasLowerBandwidth p → B.HasLowerBandwidth p' → (A * B).HasLowerBandwidth
-(p + p')`, and the upper version (QSS §1.6.3; used to read `L U` back in banded storage). Count
-the indices of `[j, i)` on either side of the summation index. ★★'''
-deps = ["Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
+
+[[node]]
+id = "HasUpperBandwidth.mul"
 
 [[node]]
 id = "IsUpperTriangular.mul_isUpperHessenberg"
-kind = "theorem"
-desc = '''Over a `NonUnitalNonAssocSemiring` with `[LinearOrder n] [Fintype n]`: `R.IsUpperTriangular →
-H.IsUpperHessenberg → (R * H).IsUpperHessenberg`, and `IsUpperHessenberg.mul_isUpperTriangular :
-H.IsUpperHessenberg → R.IsUpperTriangular → (H * R).IsUpperHessenberg`. Entry `(i, j)` of the
-product is `∑_k R i k H k j`; for `i > j + 1` every term has `k < i` (else `R i k = 0`) and then
-`k > j + 1`… i.e. `R i k ≠ 0` forces `i ≤ k`, and `H k j ≠ 0` forces `k ≤ j + 1` (no index strictly
-between `j` and `k`), so `i ≤ j + 1`. Quarteroni–Sacco–Saleri §5.6.3–5.6.4: `Q = H R⁻¹` and `R Q`
-are Hessenberg. ★'''
-deps = ["Matrix.IsUpperHessenberg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.4'
 
 [[node]]
 id = "IsUpperHessenberg.mul_isUpperTriangular"
-kind = "theorem"
-desc = 'See `IsUpperTriangular.mul_isUpperHessenberg`. ★'
-deps = ["Matrix.IsUpperHessenberg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.3'
 
 [[node]]
 id = "IsUpperHessenberg.isTridiagonal_of_isHermitian"
-kind = "theorem"
-desc = '''A Hermitian (or symmetric, `IsSymm`) upper Hessenberg matrix is tridiagonal: an entry above the
-first superdiagonal is the conjugate of one below the first subdiagonal, which is zero.
-Quarteroni–Sacco–Saleri Remark 5.4. Also stated as `IsUpperHessenberg.isTridiagonal_of_isSymm`. ★'''
-deps = ["Matrix.IsUpperHessenberg", "Matrix.IsTridiagonal"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
+
+[[node]]
+id = "IsUpperHessenberg.isTridiagonal_of_isSymm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
 
 [[node]]
 id = "IsUpperBidiagonal"
-kind = "definition"
-desc = '''`IsUpperBidiagonal (B : Matrix n n R) : Prop := ∀ i j, i ≠ j → ¬ (i < j ∧ ∀ k, ¬ (i < k ∧ k <
-j)) → B i j = 0`, zero off the diagonal and the first superdiagonal, in the same "no index strictly
-between" style as `IsTridiagonal`; `IsUpperBidiagonal.isUpperTriangular` and
-`IsUpperBidiagonal.transpose_isUpperHessenberg`. The shape of the Golub–Kahan bidiagonalization
-(Quarteroni–Sacco–Saleri (5.57)). ★'''
-deps = ["Matrix.IsTridiagonal"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
+
+[[node]]
+id = "IsLowerBidiagonal"

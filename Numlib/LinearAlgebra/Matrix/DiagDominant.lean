@@ -1,7 +1,9 @@
+import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Sparse.Pattern
 
 /-!
@@ -22,6 +24,9 @@ without importing the theory of stationary iterations.
 
 * `Matrix.IsStrictDiagDominant`, `Matrix.IsStrictColDiagDominant`: `∑_{j ≠ i} |a_ij| < |a_ii|` for
   every row `i`, and the same by columns.
+* `Matrix.IsDiagDominant`, `Matrix.IsColDiagDominant`: the weak forms `∑_{j ≠ i} |a_ij| ≤ |a_ii|`
+  of [quarteroni2000numerical] Definition 1.24, which the strict and the irreducible forms both
+  imply.
 * `Matrix.IsIrreduciblyDiagDominant`, `Matrix.IsIrreduciblyColDiagDominant`: [saad2003iterative]
   Definition 4.5, the irreducible relaxation — weak dominance in every row, strict dominance in at
   least one, and a strongly connected nonzero pattern (`Matrix.IsPatternIrreducible` of
@@ -42,12 +47,24 @@ without importing the theory of stationary iterations.
   of every disc.  The engine is stated for a matrix `B` dominated off the diagonal by an
   irreducible `A`, because the convergence proofs apply it to a *pencil* (the matrix with its
   diagonal, or its lower triangle, scaled by an eigenvalue) rather than to the matrix itself.
+* `Matrix.IsStrictDiagDominant.posDef`: a Hermitian strictly row dominant matrix with positive
+  diagonal is positive definite ([quarteroni2000numerical] §1.12), by Gershgorin's theorem.
+* `Matrix.IsColDiagDominant.schurComplementSingle`, `Matrix.IsDiagDominant.schurComplementSingle`:
+  one step of Gaussian elimination (`Matrix.schurComplementSingle` of
+  `Numlib/LinearAlgebra/Matrix/SchurComplement.lean`) preserves weak column and weak row dominance
+  ([higham2002accuracy] Theorem 13.8 with `1 × 1` blocks; Wilkinson), and a nonsingular weakly
+  dominant matrix has a nowhere-zero diagonal (`Matrix.IsDiagDominant.diag_ne_zero_of_isUnit`).
+  These are the two facts behind the existence of the LU factorization of a nonsingular
+  diagonally dominant matrix ([quarteroni2000numerical] Property 3.2, [higham2002accuracy]
+  Theorem 9.9) in `Numlib/LinearAlgebra/Matrix/LU.lean`.
 * `Matrix.isStrictDiagDominant_complexify`, `Matrix.isIrreduciblyDiagDominant_complexify`,
   `Matrix.isPatternIrreducible_complexify`: complexification changes no entrywise absolute value,
   so it preserves all three notions.  The last is here, rather than in
   `Numlib/LinearAlgebra/Sparse/Pattern.lean` or `Numlib/LinearAlgebra/Matrix/Complexify.lean`,
   because this is the first module that imports both.
 -/
+
+open scoped ComplexOrder
 
 namespace Matrix
 
@@ -245,6 +262,80 @@ theorem IsIrreduciblyDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜}
 
 end Irreducible
 
+section Weak
+
+/-- Weak row diagonal dominance ([quarteroni2000numerical] Definition 1.24):
+`∑_{j ≠ i} |a_ij| ≤ |a_ii|` for every row `i`. This is the `dominant` field of
+`Matrix.IsIrreduciblyDiagDominant`, factored out. -/
+def IsDiagDominant (A : Matrix n n 𝕜) : Prop :=
+  ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖
+
+/-- Weak column diagonal dominance ([quarteroni2000numerical] Definition 1.24):
+`∑_{i ≠ j} |a_ij| ≤ |a_jj|` for every column `j`. -/
+def IsColDiagDominant (A : Matrix n n 𝕜) : Prop :=
+  ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ ≤ ‖A j j‖
+
+variable {A : Matrix n n 𝕜}
+
+/-- The row form of strict diagonal dominance, unfolded. -/
+theorem isStrictDiagDominant_iff :
+    A.IsStrictDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖ := Iff.rfl
+
+/-- The column form of strict diagonal dominance, unfolded. -/
+theorem isStrictColDiagDominant_iff :
+    A.IsStrictColDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A j i‖ < ‖A i i‖ := Iff.rfl
+
+/-- Weak row dominance, unfolded. -/
+theorem isDiagDominant_iff :
+    A.IsDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖ := Iff.rfl
+
+/-- Weak column dominance, unfolded. -/
+theorem isColDiagDominant_iff :
+    A.IsColDiagDominant ↔ ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A j i‖ ≤ ‖A i i‖ := Iff.rfl
+
+/-- Weak column dominance of `A` is weak row dominance of `Aᵀ`. -/
+theorem IsColDiagDominant.transpose_iff : Aᵀ.IsDiagDominant ↔ A.IsColDiagDominant := Iff.rfl
+
+/-- Weak row dominance of `A` is weak column dominance of `Aᵀ`. -/
+theorem IsDiagDominant.transpose_iff : Aᵀ.IsColDiagDominant ↔ A.IsDiagDominant := Iff.rfl
+
+/-- Strict row dominance is weak row dominance. -/
+theorem IsStrictDiagDominant.isDiagDominant (hA : A.IsStrictDiagDominant) : A.IsDiagDominant :=
+  fun i => (hA i).le
+
+/-- Strict column dominance is weak column dominance. -/
+theorem IsStrictColDiagDominant.isColDiagDominant (hA : A.IsStrictColDiagDominant) :
+    A.IsColDiagDominant := fun j => (hA j).le
+
+/-- Irreducible row dominance is weak row dominance. -/
+theorem IsIrreduciblyDiagDominant.isDiagDominant (hA : A.IsIrreduciblyDiagDominant) :
+    A.IsDiagDominant := hA.dominant
+
+/-- A zero diagonal entry of a weakly row dominant matrix forces its whole row to vanish. -/
+theorem IsDiagDominant.apply_eq_zero_of_diag_eq_zero (hA : A.IsDiagDominant) {i : n}
+    (hi : A i i = 0) (j : n) : A i j = 0 := by
+  rcases eq_or_ne j i with rfl | hj
+  · exact hi
+  have hsum := hA i
+  rw [hi, norm_zero] at hsum
+  have hall := (Finset.sum_eq_zero_iff_of_nonneg fun j _ => norm_nonneg (A i j)).mp
+    (le_antisymm hsum (Finset.sum_nonneg fun _ _ => norm_nonneg _))
+  exact norm_eq_zero.mp (hall j (Finset.mem_erase.mpr ⟨hj, Finset.mem_univ j⟩))
+
+/-- A nonsingular weakly row dominant matrix has a nowhere-zero diagonal: a zero diagonal entry
+forces a zero row (the parenthesis in the proof of [higham2002accuracy] Theorem 9.9). -/
+theorem IsDiagDominant.diag_ne_zero_of_isUnit (hA : A.IsDiagDominant) (hu : IsUnit A) (i : n) :
+    A i i ≠ 0 := fun hi =>
+  ((isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det A).mp hu)))
+    (det_eq_zero_of_row_eq_zero i (hA.apply_eq_zero_of_diag_eq_zero hi))
+
+/-- A nonsingular weakly column dominant matrix has a nowhere-zero diagonal. -/
+theorem IsColDiagDominant.diag_ne_zero_of_isUnit (hA : A.IsColDiagDominant) (hu : IsUnit A)
+    (i : n) : A i i ≠ 0 :=
+  (IsColDiagDominant.transpose_iff.mpr hA).diag_ne_zero_of_isUnit ((isUnit_transpose A).mpr hu) i
+
+end Weak
+
 section Gershgorin
 
 /-- **[saad2003iterative] Theorem 4.7**: if `A` is irreducible and an eigenvalue of `A` lies on the
@@ -288,6 +379,34 @@ theorem IsPatternIrreducible.norm_sub_eq_of_mem_frontier {A : Matrix n n ℂ}
 
 end Gershgorin
 
+section PosDef
+
+variable {A : Matrix n n 𝕜}
+
+/-- A Hermitian, strictly row diagonally dominant matrix with positive diagonal is positive
+definite ([quarteroni2000numerical] §1.12, after Definition 1.24, for real symmetric matrices).
+By Gershgorin's theorem every eigenvalue lies in a disc centred at some `a_kk > 0` of radius
+`∑_{j ≠ k} |a_kj| < a_kk`, hence is positive; a Hermitian matrix with positive eigenvalues is
+positive definite. -/
+theorem IsStrictDiagDominant.posDef (hA : A.IsHermitian) (hd : A.IsStrictDiagDominant)
+    (hpos : ∀ i, 0 < RCLike.re (A i i)) : A.PosDef := by
+  rw [hA.posDef_iff_eigenvalues_pos]
+  intro i
+  have hev : Module.End.HasEigenvalue (Matrix.toLin' A) (hA.eigenvalues i : 𝕜) := by
+    refine Module.End.hasEigenvalue_of_hasEigenvector (x := ⇑(hA.eigenvectorBasis i)) ⟨?_, ?_⟩
+    · rw [Module.End.mem_eigenspace_iff, toLin'_apply, hA.mulVec_eigenvectorBasis,
+        RCLike.real_smul_eq_coe_smul (K := 𝕜)]
+    · exact fun h => hA.eigenvectorBasis.orthonormal.ne_zero i ((WithLp.ofLp_eq_zero 2).mp h)
+  obtain ⟨k, hk⟩ := eigenvalue_mem_ball hev
+  rw [Metric.mem_closedBall, dist_eq_norm] at hk
+  have hlt := hk.trans_lt (hd k)
+  rw [← hA.coe_re_apply_self k, ← RCLike.ofReal_sub, RCLike.norm_ofReal, RCLike.norm_ofReal,
+    abs_of_pos (hpos k)] at hlt
+  have := (abs_lt.mp hlt).1
+  linarith
+
+end PosDef
+
 section Complexify
 
 variable {A : Matrix n n ℝ}
@@ -327,5 +446,89 @@ theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
     exact ⟨i, by simpa using hi⟩
 
 end Complexify
+
+section Schur
+
+variable {K : Type*} [Field K]
+
+omit [Fintype n] [DecidableEq n] in
+/-- The transpose of a one-step Schur complement is the Schur complement of the transpose. -/
+theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
+    (A.schurComplementSingle p)ᵀ = Aᵀ.schurComplementSingle p := by
+  ext i j
+  simp only [transpose_apply, schurComplementSingle_apply]
+  ring
+
+variable {A : Matrix n n 𝕜}
+
+/-- A sum over a subtype with one element removed, as a sum over the ambient type. -/
+theorem sum_erase_subtype_eq {p : n → Prop} [DecidablePred p] (j : {i // p i}) (f : n → ℝ) :
+    ∑ i ∈ (Finset.univ : Finset {i // p i}).erase j, f i =
+      ∑ i ∈ (Finset.univ.filter p).erase j.1, f i := by
+  rw [Finset.sum_erase_eq_sub (Finset.mem_univ j),
+    Finset.sum_erase_eq_sub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, j.2⟩),
+    Finset.sum_subtype (p := p) (Finset.univ.filter p) (fun i => by simp) f]
+
+/-- The one-step Schur complement of a weakly column dominant matrix, before the reindexing: for
+`j ≠ p` the column `j` of `A i j - A i p (A p p)⁻¹ A p j` is dominated by its diagonal entry
+([higham2002accuracy] Theorem 13.8 with `1 × 1` blocks; Wilkinson). -/
+theorem IsColDiagDominant.sum_norm_sub_le (hA : A.IsColDiagDominant) {p j : n} (hp : A p p ≠ 0)
+    (hj : j ≠ p) :
+    ∑ i ∈ (Finset.univ.erase p).erase j, ‖A i j - A i p * (A p p)⁻¹ * A p j‖ ≤
+      ‖A j j - A j p * (A p p)⁻¹ * A p j‖ := by
+  set T := (Finset.univ.erase p).erase j with hT
+  have ha : 0 < ‖A p p‖ := norm_pos_iff.mpr hp
+  set a := ‖A p p‖
+  set x := ‖A p j‖
+  set y := ‖A j p‖
+  set t := x / a with ht
+  have ht0 : 0 ≤ t := div_nonneg (norm_nonneg _) ha.le
+  have hat : a * t = x := by rw [ht, mul_div_cancel₀ _ ha.ne']
+  -- the two dominance inequalities, restricted to `T`
+  have hSj : (∑ i ∈ T, ‖A i j‖) + x ≤ ‖A j j‖ := by
+    have h := hA j
+    rw [← Finset.sum_erase_add _ _ (Finset.mem_erase.mpr ⟨Ne.symm hj, Finset.mem_univ p⟩),
+      Finset.erase_right_comm] at h
+    exact h
+  have hSp : (∑ i ∈ T, ‖A i p‖) + y ≤ a := by
+    have h := hA p
+    rw [← Finset.sum_erase_add _ _ (Finset.mem_erase.mpr ⟨hj, Finset.mem_univ j⟩)] at h
+    exact h
+  have hnorm : ∀ i, ‖A i p * (A p p)⁻¹ * A p j‖ = ‖A i p‖ * t := fun i => by
+    rw [norm_mul, norm_mul, norm_inv, ht, mul_assoc, div_eq_inv_mul]
+  have hterm : ∀ i, ‖A i j - A i p * (A p p)⁻¹ * A p j‖ ≤ ‖A i j‖ + ‖A i p‖ * t := fun i =>
+    (norm_sub_le _ _).trans_eq (by rw [hnorm])
+  calc ∑ i ∈ T, ‖A i j - A i p * (A p p)⁻¹ * A p j‖
+      ≤ ∑ i ∈ T, (‖A i j‖ + ‖A i p‖ * t) := Finset.sum_le_sum fun i _ => hterm i
+    _ = (∑ i ∈ T, ‖A i j‖) + (∑ i ∈ T, ‖A i p‖) * t := by
+        rw [Finset.sum_add_distrib, Finset.sum_mul]
+    _ ≤ (‖A j j‖ - x) + (a - y) * t := by
+        gcongr
+        · linarith
+        · linarith
+    _ = ‖A j j‖ - y * t := by rw [sub_mul, hat]; ring
+    _ = ‖A j j‖ - ‖A j p * (A p p)⁻¹ * A p j‖ := by rw [hnorm]
+    _ ≤ ‖A j j - A j p * (A p p)⁻¹ * A p j‖ := norm_sub_norm_le _ _
+
+/-- One step of Gaussian elimination preserves weak column dominance ([higham2002accuracy]
+Theorem 13.8 with `1 × 1` blocks; Wilkinson): the Schur complement at a nonzero pivot of a
+weakly column dominant matrix is weakly column dominant. This is the lemma behind the existence
+of an LU factorization for column dominant matrices and the bound `2` on their growth factor. -/
+theorem IsColDiagDominant.schurComplementSingle (hA : A.IsColDiagDominant) {p : n}
+    (hp : A p p ≠ 0) : (A.schurComplementSingle p).IsColDiagDominant := by
+  intro j
+  simp only [schurComplementSingle_apply]
+  refine (sum_erase_subtype_eq j fun i => ‖A i j - A i p * (A p p)⁻¹ * A p j‖).trans_le ?_
+  rw [Finset.filter_ne']
+  exact hA.sum_norm_sub_le hp j.2
+
+/-- One step of Gaussian elimination preserves weak row dominance: the transpose of the Schur
+complement is the Schur complement of the transpose. -/
+theorem IsDiagDominant.schurComplementSingle (hA : A.IsDiagDominant) {p : n} (hp : A p p ≠ 0) :
+    (A.schurComplementSingle p).IsDiagDominant := by
+  rw [← IsDiagDominant.transpose_iff, schurComplementSingle_transpose]
+  exact (IsDiagDominant.transpose_iff.mpr hA).schurComplementSingle hp
+
+end Schur
 
 end Matrix

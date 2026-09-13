@@ -47,6 +47,9 @@ id = "tridiagonalToeplitz_apply"
 id = "symmTridiagonalToeplitz_eq_tridiagonalToeplitz"
 
 [[node]]
+id = "tridiagonalToeplitz_eq_tridiagonalOf"
+
+[[node]]
 id = "tridiagonalToeplitz_transpose"
 
 [[node]]

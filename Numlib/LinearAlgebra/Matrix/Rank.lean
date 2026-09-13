@@ -11,12 +11,14 @@ import Mathlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 
 /-!
-# The nullity of a matrix
+# The nullity of a matrix, and the rank as the largest nonvanishing minor
 
 The *nullity* of a square matrix `A` over a field is the dimension of its null space
 `LinearMap.ker A.mulVecLin`, the `Null A` of numerical linear algebra. Mathlib has `Matrix.rank`,
 the dimension of the range, but not the rank–nullity relation between the two, nor the invariance
-of the null space dimension under the operations that leave the rank alone.
+of the null space dimension under the operations that leave the rank alone. Nor does it have the
+classical characterization of the rank as the largest order of a nonvanishing minor
+([quarteroni2000numerical] Definition 1.12), which is the last section.
 
 ## Main statements
 
@@ -27,6 +29,9 @@ of the null space dimension under the operations that leave the rank alone.
 * `Matrix.finrank_ker_mulVecLin_blockDiagonal'`: the nullity of a block diagonal matrix is the sum
   of the nullities of its blocks, since its null space is the product of theirs
   (`Matrix.kerMulVecLinBlockDiagonal'Equiv`).
+* `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`: the rank of a rectangular matrix is the
+  largest `k` for which some `k × k` submatrix has nonzero determinant; the two inequalities are
+  `Matrix.card_le_rank_of_det_submatrix_ne_zero` and `Matrix.exists_det_submatrix_ne_zero`.
 -/
 
 open Module
@@ -112,5 +117,79 @@ theorem finrank_ker_mulVecLin_blockDiagonal' (M : ∀ i, Matrix (m i) (m i) K) :
   rw [(kerMulVecLinBlockDiagonal'Equiv M).finrank_eq, Module.finrank_pi_fintype]
 
 end BlockDiagonal
+
+section Minor
+
+variable {m n : Type*} [Fintype n] (A : Matrix m n K)
+
+/-- A nonvanishing minor of order `k` forces rank at least `k`: the `k × k` submatrix is a unit,
+so its rank is `k`, and the rank of a submatrix is at most the rank. -/
+theorem card_le_rank_of_det_submatrix_ne_zero {k : ℕ} {r : Fin k → m} {c : Fin k → n}
+    (h : (A.submatrix r c).det ≠ 0) : k ≤ A.rank := by
+  have hu : IsUnit (A.submatrix r c) := (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 h)
+  have := rank_submatrix_le A r c
+  rwa [rank_of_isUnit _ hu, Fintype.card_fin] at this
+
+omit [Fintype n] in
+/-- The row selection of a nonvanishing minor is injective: two equal rows give a zero
+determinant. -/
+theorem injective_of_det_submatrix_ne_zero_left {k : ℕ} {r : Fin k → m} {c : Fin k → n}
+    (h : (A.submatrix r c).det ≠ 0) : Function.Injective r := fun a b hab => by
+  by_contra hne
+  exact h (det_zero_of_row_eq hne (funext fun j => by simp [hab]))
+
+omit [Fintype n] in
+/-- The column selection of a nonvanishing minor is injective. -/
+theorem injective_of_det_submatrix_ne_zero_right {k : ℕ} {r : Fin k → m} {c : Fin k → n}
+    (h : (A.submatrix r c).det ≠ 0) : Function.Injective c := fun a b hab => by
+  by_contra hne
+  exact h (det_zero_of_column_eq hne fun i => by simp [hab])
+
+/-- A matrix of rank `k` has `k` linearly independent columns. -/
+theorem exists_linearIndependent_col {k : ℕ} (h : A.rank = k) :
+    ∃ c : Fin k → n, LinearIndependent K (A.col ∘ c) := by
+  obtain ⟨t, ht, hsp, hli⟩ := exists_linearIndependent K (Set.range A.col)
+  have htf : t.Finite := (Set.finite_range A.col).subset ht
+  have : Fintype t := htf.fintype
+  have hcard : Fintype.card t = k := by
+    rw [← h, rank_eq_finrank_span_cols, ← hsp, finrank_span_set_eq_card hli, Set.toFinset_card]
+  let e : Fin k ≃ t := (Fintype.equivFinOfCardEq hcard).symm
+  choose c hc using fun x : t => ht x.2
+  refine ⟨c ∘ e, ?_⟩
+  have : A.col ∘ (c ∘ e) = ((↑) : t → m → K) ∘ e := funext fun i => hc (e i)
+  rw [this]
+  exact hli.comp e e.injective
+
+/-- A matrix of rank `k` has a nonsingular `k × k` submatrix: choose `k` linearly independent
+columns, then `k` linearly independent rows of the resulting `m × k` matrix (which has rank `k`
+as well); a square matrix with linearly independent rows is a unit. -/
+theorem exists_det_submatrix_ne_zero [Finite m] :
+    ∃ (r : Fin A.rank → m) (c : Fin A.rank → n), (A.submatrix r c).det ≠ 0 := by
+  have := Fintype.ofFinite m
+  obtain ⟨c, hc⟩ := exists_linearIndependent_col A rfl
+  have hB : (A.submatrix id c)ᵀ.rank = A.rank := by
+    rw [rank_transpose, rank_eq_finrank_span_cols]
+    have : (A.submatrix id c).col = A.col ∘ c := rfl
+    rw [this, finrank_span_eq_card hc, Fintype.card_fin]
+  obtain ⟨r, hr⟩ := exists_linearIndependent_col _ hB
+  refine ⟨r, c, ?_⟩
+  rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, ← linearIndependent_rows_iff_isUnit]
+  exact hr
+
+/-- [quarteroni2000numerical] Definition 1.12 as a theorem: the rank is the largest order of a
+nonvanishing minor. The set of orders is bounded by the rank
+(`Matrix.card_le_rank_of_det_submatrix_ne_zero`) and attains it
+(`Matrix.exists_det_submatrix_ne_zero`). -/
+theorem rank_eq_sup_card_det_submatrix_ne_zero [Finite m] :
+    A.rank = sSup {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0} := by
+  have hub : ∀ k ∈ {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0},
+      k ≤ A.rank := fun k ⟨_, _, h⟩ => card_le_rank_of_det_submatrix_ne_zero A h
+  have hmem : A.rank ∈ {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0} := by
+    obtain ⟨r, c, h⟩ := exists_det_submatrix_ne_zero A
+    exact ⟨⟨r, injective_of_det_submatrix_ne_zero_left A h⟩,
+      ⟨c, injective_of_det_submatrix_ne_zero_right A h⟩, h⟩
+  exact le_antisymm (le_csSup ⟨A.rank, hub⟩ hmem) (csSup_le ⟨_, hmem⟩ hub)
+
+end Minor
 
 end Matrix

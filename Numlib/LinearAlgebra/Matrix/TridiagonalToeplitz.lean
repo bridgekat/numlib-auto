@@ -596,6 +596,15 @@ theorem symmTridiagonalToeplitz_eq_tridiagonalToeplitz (n : ℕ) (a b : ℝ) :
   rw [symmTridiagonalToeplitz_apply', tridiagonalToeplitz_apply]
   split_ifs with h1 h2 h3 h4 <;> first | rfl | omega
 
+/-- The constant-coefficient tridiagonal matrix is the variable-coefficient
+`Matrix.tridiagonalOf` of `Numlib/LinearAlgebra/Matrix/Hessenberg` with constant bands, so that
+its API (products, bandwidths, `mulVec`) applies to `tridiag(β, δ, γ)`. -/
+theorem tridiagonalToeplitz_eq_tridiagonalOf (N : ℕ) (β δ γ : ℝ) :
+    tridiagonalToeplitz (N + 1) β δ γ = tridiagonalOf (fun _ => β) (fun _ => δ) fun _ => γ := by
+  ext i j
+  simp only [tridiagonalToeplitz_apply, tridiagonalOf, of_apply]
+  split_ifs <;> first | rfl | omega
+
 /-- Transposition exchanges the two off-diagonals. -/
 theorem tridiagonalToeplitz_transpose (n : ℕ) (a b c : ℝ) :
     (tridiagonalToeplitz n a b c)ᵀ = tridiagonalToeplitz n c b a := by
