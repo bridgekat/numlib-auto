@@ -76,6 +76,8 @@ import NumlibSurface.FongSaunders.Section03
 import NumlibSurface.FongSaunders.Section04
 import NumlibSurface.FongSaunders.Section05
 import NumlibSurface.QuarteroniSaccoSaleri
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section01
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section05
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section12

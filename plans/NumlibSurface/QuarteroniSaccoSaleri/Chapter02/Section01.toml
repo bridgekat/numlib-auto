@@ -1,237 +1,101 @@
 namespace = "QuarteroniSaccoSaleri.Chapter02"
-desc = '''
-Quarteroni–Sacco–Saleri §2.1: well-posedness and condition number of a problem.
-
-Definition 2.1 is restated under its number and identified with `Conditioning.relCondNumberOn` /
-`Conditioning.absCondNumberOn`; the first-order formula (2.7) is `Conditioning.absCondNumber_eq_enorm_fderiv`
-read over `ℝ`, with a Jacobian form for `ℝⁿ → ℝᵐ` in the Euclidean norms. Examples 2.1–2.4 each
-state a computable fact and are theorems: the root count of `x⁴ - x²(2a - 1) + a(a - 1)`, the
-condition number `|p| / √(p² - 1)` of the quadratic `x² - 2px + 1` and the value `1` after the
-reparametrization by `t = p + √(p² - 1)`, the bound `K ≤ κ(A)` for a linear system perturbed in
-its right-hand side, and `K_abs = |φ'(x)|⁻¹` for the root of `φ(x) = d`. Remark 2.1 is the double
-root at `p = 1`: continuous dependence on `[1, ∞)` with infinite condition number. The unnumbered
-example `G d = cos d - 1` closing the section, where `G'(0) = 0` but `K_abs(0) = 2/π` over
-`(-π/2, π/2)`, is the node `cosSubOne_absCondNumberWithin`.
-
-Condition numbers are `ℝ≥0∞`-valued as in the backbone; the book's real values appear through
-`ENNReal.ofReal`.
-'''
 
 [[node]]
 id = "example_2_1_polynomial"
-kind = "definition"
-desc = '''`example_2_1_polynomial (a : ℝ) : ℝ[X] := X ^ 4 - C (2 * a - 1) * X ^ 2 + C (a * (a - 1))`,
-the polynomial of Example 2.1. ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
+
+[[node]]
+id = "card_roots_X_sq_sub_C"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
 
 [[node]]
 id = "example_2_1"
-kind = "theorem"
-desc = '''**Example 2.1**: the number of real roots, counted with multiplicity, of `x⁴ - x²(2a - 1) + a(a
-- 1)` is `4` if `1 ≤ a`, `2` if `0 ≤ a < 1` and `0` if `a < 0`: `Multiset.card (example_2_1_polynomial
-a).roots = if 1 ≤ a then 4 else if 0 ≤ a then 2 else 0`. Factor as `(X² - C a) (X² - C (a - 1))`
-(`ring`), `Polynomial.roots_mul` (`Mathlib/Algebra/Polynomial/Roots.lean:181`), and `X² - C c` has
-two real roots counted with multiplicity when `c ≥ 0` (`±√c`; a double root `0` at `c = 0`) and
-none when `c < 0`. The discontinuity of `a ↦ card` at `0` and `1` — the ill-posedness the example
-illustrates — is immediate from the formula. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_1_polynomial"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.1'
 
 [[node]]
 id = "definition_2_1_rel"
-kind = "definition"
-desc = '''**Definition 2.1, (2.4)**: for a resolvent `G : D → X` between real normed groups, a set `N` of
-admissible perturbations and a datum `d`, `definition_2_1_rel G N d : ℝ≥0∞ := ⨆ (δd ∈ N) (_ : δd ≠ 0),
-(‖G (d + δd) - G d‖ₑ / ‖G d‖ₑ) / (‖δd‖ₑ / ‖d‖ₑ)`, the relative condition number `K(d)`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.1'
 
 [[node]]
 id = "definition_2_1_rel_eq"
-kind = "theorem"
-desc = '`definition_2_1_rel G N d = Conditioning.relCondNumberOn G N d`, by `rfl`. ★'
-deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel", "Conditioning.relCondNumberOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.1'
 
 [[node]]
 id = "definition_2_1_abs"
-kind = "definition"
-desc = '''**Definition 2.1, (2.5)**: `definition_2_1_abs G N d : ℝ≥0∞ := ⨆ (δd ∈ N) (_ : δd ≠ 0), ‖G (d +
-δd) - G d‖ₑ / ‖δd‖ₑ`, the absolute condition number `K_abs(d)`, "necessary whenever `d = 0` or `x =
-0`". ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.1'
 
 [[node]]
 id = "definition_2_1_abs_eq"
-kind = "theorem"
-desc = '`definition_2_1_abs G N d = Conditioning.absCondNumberOn G N d`, by `rfl`. ★'
-deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs", "Conditioning.absCondNumberOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.1'
 
 [[node]]
 id = "definition_2_1_rel_eq_abs_mul"
-kind = "theorem"
-desc = '''For `d ≠ 0` and `G d ≠ 0`, `definition_2_1_rel G N d = definition_2_1_abs G N d * (‖d‖ₑ / ‖G d‖ₑ)`
-(`Conditioning.relCondNumberOn_eq`): the two numbers of Definition 2.1 differ by the scale factor,
-which is why the absolute one is needed exactly when `d = 0` or `x = 0`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq", "QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs_eq", "Conditioning.relCondNumberOn_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.1'
 
 [[node]]
 id = "equation_2_3_iff"
-kind = "theorem"
-desc = '''**(2.3) is finiteness of the condition number**: for a resolvent `G` on admissible data `S` and
-`η > 0`, `(∃ K : ℝ, ∀ δd, ‖δd‖ < η → d + δd ∈ S → ‖G (d + δd) - G d‖ ≤ K * ‖δd‖) ↔
-Conditioning.absCondNumberWithin G S d η ≠ ⊤`: the continuous-dependence condition (2.3) with
-constant `K(η, d)` is exactly `K_abs < ∞` over the perturbations of size `< η`
-(`Conditioning.absCondNumberWithin_ne_top_iff`). ★'''
-deps = ["Conditioning.absCondNumberWithin_ne_top_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.3)'
 
 [[node]]
 id = "example_2_2_resolvent"
-kind = "definition"
-desc = '''`example_2_2_resolvent (p : ℝ) : EuclideanSpace ℝ (Fin 2) := !₂[p + √(p² - 1), p - √(p² - 1)]`,
-the map `G : p ↦ (x₊, x₋)` of Example 2.2 (a genuine resolvent of `x² - 2px + 1 = 0` for `p ≥ 1`;
-`Real.sqrt` is `0` on negatives, so it is total). ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.2'
+
+[[node]]
+id = "example_2_2_hasDerivAt"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.2'
 
 [[node]]
 id = "example_2_2"
-kind = "theorem"
-desc = '''**Example 2.2, (2.8)**, made exact: for `1 < p`, `Conditioning.relCondNumber example_2_2_resolvent
-univ p = ENNReal.ofReal (|p| / √(p² - 1))` in the Euclidean norm on `ℝ²`. By (2.7)
-(`Conditioning.relCondNumber_eq_enorm_fderiv`): `G'(p) = (1 + q, 1 - q)` with `q = p / √(p² - 1)`
-(`Real.hasDerivAt_sqrt`, `HasDerivAt` into `EuclideanSpace` componentwise), `‖G'(p)‖² = 2 + 2q² =
-2(2p² - 1)/(p² - 1)` and `‖G(p)‖² = 4p² - 2`, so `‖G'(p)‖ |p| / ‖G(p)‖ = |p| / √(p² - 1)` exactly (the
-book writes `≃`; in the `2`-norm it is an identity). The operator norm of a map `ℝ →L ℝ²` is the
-norm of the image of `1` (`ContinuousLinearMap.opNorm_smulRight`-type lemma or `norm_toSpanSingleton`).
-★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_2_resolvent", "Conditioning.relCondNumber_eq_enorm_fderiv"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.2'
 
 [[node]]
 id = "example_2_2_le_sqrt_two"
-kind = "theorem"
-desc = '''**Example 2.2, separated roots**: for `√2 ≤ p`, `Conditioning.relCondNumber example_2_2_resolvent
-univ p ≤ ENNReal.ofReal (√2)` ("if `p ≥ √2` the problem is well conditioned"): `|p| / √(p² - 1) ≤ √2
-⟺ p² ≤ 2(p² - 1) ⟺ 2 ≤ p²`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.2'
 
 [[node]]
 id = "example_2_2_reparam"
-kind = "theorem"
-desc = '''**Example 2.2, the reparametrized problem**: for `t ≠ 0`, `Conditioning.relCondNumber (fun t : ℝ
-=> (!₂[t, 1 / t] : EuclideanSpace ℝ (Fin 2))) univ t = 1`: with `t = p + √(p² - 1)` the roots are `t`
-and `1/t`, and `‖G'(t)‖ |t| / ‖G(t)‖ = √(1 + t⁻⁴) |t| / √(t² + t⁻²) = 1` exactly (the book: `K(t) ≃
-1`). ★★'''
-deps = ["Conditioning.relCondNumber_eq_enorm_fderiv"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.2'
 
 [[node]]
 id = "remark_2_1"
-kind = "theorem"
-desc = '''**Remark 2.1 (a well-posed problem with infinite condition number)**: `ContinuousOn
-example_2_2_resolvent (Ici 1) ∧ Conditioning.absCondNumber example_2_2_resolvent (Ici 1) 1 = ⊤`. The
-roots of `x² - 2px + 1` depend continuously on `p ∈ [1, ∞)`, so the problem is well posed on the
-admissible data `Ici 1`, but at the double root `p = 1` the amplification `‖G(1 + h) - G(1)‖ / h ≥
-√(2h + h²) / h ≥ √(2 / h)` is unbounded as `h → 0⁺`, so `K_abs(1) = ⊤`. Either directly, or as
-the instance `φ(x) = (x² + 1) / (2x)`, `φ'(1) = 0`, of
-`Conditioning.absCondNumber_eq_top_of_deriv_eq_zero` within `S = Ici 1`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_2_resolvent", "Conditioning.absCondNumber", "Conditioning.absCondNumber_eq_top_of_deriv_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 2.1'
 
 [[node]]
 id = "equation_2_7_abs"
-kind = "theorem"
-desc = '''**(2.7), absolute form**: for `G : D → X` between real normed spaces, `HasFDerivAt G G' d` and
-`S ∈ 𝓝 d`, `Conditioning.absCondNumber G S d = ‖G'‖ₑ`, "`K_abs(d) ≃ ‖G'(d)‖`" — an equality for the
-first-order (limit) condition number. `Conditioning.absCondNumber_eq_enorm_fderiv` over `ℝ`. ★'''
-deps = ["Conditioning.absCondNumber_eq_enorm_fderiv"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.7)'
 
 [[node]]
 id = "equation_2_7_rel"
-kind = "theorem"
-desc = '''**(2.7), relative form**: under the same hypotheses with `d ≠ 0`, `G d ≠ 0`,
-`Conditioning.relCondNumber G S d = ‖G'‖ₑ * (‖d‖ₑ / ‖G d‖ₑ)`, "`K(d) ≃ ‖G'(d)‖ ‖d‖ / ‖G(d)‖`".
-`Conditioning.relCondNumber_eq_enorm_fderiv` over `ℝ`. ★'''
-deps = ["Conditioning.relCondNumber_eq_enorm_fderiv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.7)'
+
+[[node]]
+id = "equation_2_7_rel_deriv"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.7)'
 
 [[node]]
 id = "equation_2_7_jacobian"
-kind = "theorem"
-desc = '''**(2.7) for `G : ℝⁿ → ℝᵐ`** in the Euclidean norms: if `HasFDerivAt G (LinearMap.toContinuousLinearMap
-(Matrix.toEuclideanLin J)) d` for a Jacobian matrix `J : Matrix (Fin m) (Fin n) ℝ`, then
-`Conditioning.absCondNumber G S d = ENNReal.ofReal ‖J‖` with `‖J‖` the `2`-operator norm (`open scoped
-Matrix.Norms.L2Operator`; `Matrix.l2_opNorm_def`, Mathlib `Analysis/CStarAlgebra/Matrix.lean:198`)
-— "the matrix norm associated with the vector norm (1.19)". From `equation_2_7_abs`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.equation_2_7_abs"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.7)'
 
 [[node]]
 id = "example_2_3_eq"
-kind = "theorem"
-desc = '''**Example 2.3, the first equality of (2.9)**: for an invertible `A : Matrix (Fin n) (Fin n) ℝ`
-(`IsUnit A`) and `b : EuclideanSpace ℝ (Fin n)`, `b ≠ 0`, the problem `A x = b` perturbed in `b`
-alone has resolvent `Matrix.toEuclideanCLM A⁻¹` and `Conditioning.relCondNumber (Matrix.toEuclideanCLM
-A⁻¹) univ b = ENNReal.ofReal (‖A⁻¹‖ * ‖b‖ / ‖Matrix.toEuclideanCLM A⁻¹ b‖)` in the Euclidean norms
-(`Matrix.Norms.L2Operator`). `Conditioning.relCondNumberWithin_continuousLinearMap` with
-`Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean:102`). ★'''
-deps = ["Conditioning.relCondNumber", "Conditioning.relCondNumberWithin_continuousLinearMap", "Conditioning.relCondNumber_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.3'
 
 [[node]]
 id = "example_2_3"
-kind = "theorem"
-desc = '''**Example 2.3, (2.9)**: under the same hypotheses, `Conditioning.relCondNumber (Matrix.toEuclideanCLM
-A⁻¹) univ b ≤ ENNReal.ofReal (NormedRing.condNumber A)`, with `κ(A) = ‖A‖ ‖A⁻¹‖` in the Euclidean
-operator norm: solving `A x = b` is a well-conditioned problem with respect to `b` when `A` is well
-conditioned. `Conditioning.relCondNumber_symm_le_condNumber` on the equivalence `Matrix.toEuclideanCLM
-A` (units of the algebra equivalence; `Matrix.toEuclideanCLM_ringInverse`,
-`Numlib/Analysis/Matrix/ToEuclideanLin.lean:199`) and `NormedRing.condNumber` transported along
-`toEuclideanCLM` (an isometry for the `L2Operator` norm). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_3_eq", "Conditioning.relCondNumber_symm_le_condNumber", "NormedRing.condNumber"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.3'
 
 [[node]]
 id = "example_2_4"
-kind = "theorem"
-desc = '''**Example 2.4, (2.10)–(2.11)**: for `φ : ℝ → ℝ` of class `C¹` (`ContDiff ℝ 1 φ`), `G : ℝ → ℝ`
-continuous at `d` with `φ (G y) = y` near `d` (`G = φ⁻¹` locally, the resolvent of `φ(x) - d =
-0`), and `deriv φ (G d) ≠ 0`: `Conditioning.absCondNumber G univ d = ENNReal.ofReal |deriv φ (G d)|⁻¹`
-((2.11), "`K_abs(d) ≃ |[φ'(x)]⁻¹|`") and, for `d ≠ 0`, `G d ≠ 0`, `Conditioning.relCondNumber G univ d =
-ENNReal.ofReal (|d| / |G d| * |deriv φ (G d)|⁻¹)` ((2.10)). `C¹` gives `HasStrictDerivAt`
-(`ContDiffAt.hasStrictDerivAt`); then `Conditioning.absCondNumber_of_local_left_inverse` and
-`relCondNumber_of_local_left_inverse`. ★'''
-deps = ["Conditioning.absCondNumber_of_local_left_inverse", "Conditioning.relCondNumber_of_local_left_inverse"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.4'
+
+[[node]]
+id = "example_2_4_rel"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.4'
 
 [[node]]
 id = "example_2_4_multiple_root"
-kind = "theorem"
-desc = '''**Example 2.4, the multiple root**: with `φ`, `G` as in `example_2_4` but `deriv φ (G d) = 0`,
-`Conditioning.absCondNumber G univ d = ⊤` — "the problem is thus ill posed if `x` is a multiple root":
-read as infinite conditioning, since `G` may well be continuous (Remark 2.1).
-`Conditioning.absCondNumber_eq_top_of_deriv_eq_zero` with `S = univ`. ★'''
-deps = ["Conditioning.absCondNumber_eq_top_of_deriv_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.4'
 
 [[node]]
 id = "cosSubOne_absCondNumberWithin"
-kind = "theorem"
-desc = '''**The first-order condition number can underestimate the true one** (the unnumbered example
-closing §2.1): for `G d = cos d - 1`, `deriv G 0 = 0` while `Conditioning.absCondNumberWithin G univ 0
-(π / 2) = ENNReal.ofReal (2 / π)`: over the perturbations `|d| < π/2`, `K_abs(0) = 2/π`. The ratio
-`(1 - cos d) / |d|` is even and increasing on `(0, π/2)` (its derivative has the sign of `d sin d -
-(1 - cos d)`, which vanishes at `0` and has derivative `d cos d > 0`), so its supremum over the open
-interval is the limit `(1 - 0) / (π/2) = 2/π`, not attained. Consistent with
-`Conditioning.enorm_fderiv_le_absCondNumberWithin` (`0 ≤ 2/π`) and with `Conditioning.absCondNumber
-G univ 0 = 0` from (2.7). ★★'''
-deps = ["Conditioning.absCondNumberWithin", "Conditioning.enorm_fderiv_le_absCondNumberWithin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.1, the example after Example 2.4'
