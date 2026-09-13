@@ -86,7 +86,8 @@ variable [Preorder α] {A B C : Matrix m n α}
 /-- The entrywise order is reflexive. -/
 @[refl] theorem EntrywiseLE.refl (A : Matrix m n α) : A ≤ₑ A := fun _ _ => le_rfl
 
-/-- The entrywise order is reflexive. -/
+/-- The entrywise order is reflexive, with the matrix implicit: the form of
+`Matrix.EntrywiseLE.refl` for `exact` and for term-mode arguments, as `le_rfl` is to `le_refl`. -/
 theorem EntrywiseLE.rfl : A ≤ₑ A := EntrywiseLE.refl A
 
 /-- The entrywise order is transitive. -/

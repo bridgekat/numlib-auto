@@ -22,9 +22,6 @@ id = "lambdaMin_le_lambdaMax"
 id = "norm_complexify_mulVec"
 
 [[node]]
-id = "ofLp_toEuclideanLin"
-
-[[node]]
 id = "real_inner_apply"
 
 [[node]]
@@ -38,9 +35,6 @@ id = "real_inner_toEuclideanLin'"
 
 [[node]]
 id = "real_norm_sq_eq_dotProduct"
-
-[[node]]
-id = "toEuclideanLin_toLp"
 
 [[node]]
 id = "toLp_injective"

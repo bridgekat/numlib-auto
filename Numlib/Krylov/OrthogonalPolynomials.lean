@@ -9,6 +9,7 @@ import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Lanczos
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # The Lanczos process as orthogonal polynomials
@@ -1115,10 +1116,10 @@ private theorem re_inner_residual_sum_eq (hA : A.IsSymmetricCoercive) {m : ℕ}
       = ‖b - A x₀‖ ^ 2 * tridiagInvFirst A (b - A x₀) m := by
   set T := tridiag A (b - A x₀) m with hT
   have hTu : IsUnit T := isUnit_tridiag hA hm
-  have hTdet : IsUnit T.det := (Matrix.isUnit_iff_isUnit_det T).1 hTu
   set y' : Fin m → ℝ := (T⁻¹).mulVec (Krylov.firstVec ‖b - A x₀‖ m) with hy'def
   have hTy' : T.mulVec y' = Krylov.firstVec ‖b - A x₀‖ m := by
-    rw [hy'def, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hTdet, Matrix.one_mulVec]
+    rw [hy'def]
+    exact Matrix.mulVec_nonsing_inv_mulVec hTu _
   have hmapfirst : ∀ i : Fin m,
       Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m i
         = algebraMap ℝ 𝕜 (Krylov.firstVec ‖b - A x₀‖ m i) := by

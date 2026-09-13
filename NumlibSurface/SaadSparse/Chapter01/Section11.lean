@@ -143,7 +143,7 @@ theorem isSelfAdjointWrt_of_isSymm_mul {A : Matrix (Fin n) (Fin n) ℝ} (hB : B.
     intro u v
     rw [mulVec_mulVec, mulVec_dotProduct_transpose, h,
       mulVec_dotProduct_transpose B u (A *ᵥ v), hB, mulVec_mulVec]
-  simp only [energyInner, SaadSparse.real_inner_toEuclideanLin', SaadSparse.ofLp_toEuclideanLin]
+  simp only [energyInner, SaadSparse.real_inner_toEuclideanLin', Matrix.ofLp_toEuclideanLin]
   exact key _ _
 
 /-- With `C` symmetric and `B` symmetric positive definite, `A = B⁻¹ C` is self-adjoint for the

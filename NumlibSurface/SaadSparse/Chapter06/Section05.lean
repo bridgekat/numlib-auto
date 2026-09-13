@@ -770,11 +770,6 @@ noncomputable def gmresRestarted (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m
 
 theorem J_nonneg {m : ℕ} (y : Fin m → 𝕜) : 0 ≤ J A b x₀ m y := norm_nonneg _
 
-/-- The Hessenberg structure of the GMRES coefficients, packaged for the Givens lemmas. -/
-private theorem hessenberg_coeffs :
-    ∀ i j : ℕ, j + 1 < i → arnoldiCoeff A (v₁ A b x₀) i j = 0 :=
-  fun _ _ hij => arnoldiCoeff_v₁_eq_zero_of_lt A b x₀ hij
-
 /-- (6.43) for GMRES: `J(y)² = |γ_{m+1}|² + ‖g_m - R_m y‖₂²`. -/
 theorem sq_J_eq {m : ℕ}
     (hρ : ∀ k < m, Krylov.givensRho (arnoldiCoeff A (v₁ A b x₀)) k ≠ 0) (y : Fin m → 𝕜) :
@@ -782,7 +777,7 @@ theorem sq_J_eq {m : ℕ}
       ‖(WithLp.toLp 2 (g (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m -
         R (arnoldiCoeff A (v₁ A b x₀)) m *ᵥ y) : EuclideanSpace 𝕜 (Fin m))‖ ^ 2 := by
   rw [J, smul_e₁_eq_firstVec, Hbar_eq_hessenbergOf]
-  exact norm_sq_firstVec_sub_mulVec _ _ (hessenberg_coeffs A b x₀) hρ y
+  exact norm_sq_firstVec_sub_mulVec _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hρ y
 
 /-- `J` is the least-squares function `lsq` of the Givens part above, at the Arnoldi
 coefficients. -/
@@ -801,7 +796,7 @@ theorem proposition_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x�
     IsMinOn (J A b x₀ m) Set.univ (gmresY A b x₀ m) ∧
       ∀ y, IsMinOn (J A b x₀ m) Set.univ y → y = gmresY A b x₀ m := by
   rw [J_eq_lsq]
-  exact isMinOn_lsq _ _ (hessenberg_coeffs A b x₀) hR
+  exact isMinOn_lsq _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hR
 
 /-- Algorithm 6.9 computes a GMRES approximation. -/
 theorem gmresFixed_isGMRESIterate {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
@@ -827,7 +822,7 @@ theorem isUnit_R_of_isUnit {m : ℕ} (hA : IsUnit A) (hm : m ≤ grade A (v₁ A
     IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m) := by
   have hinj : Function.Injective (op A) := injective_op_of_isUnit hA
   have hm' : m ≤ Krylov.grade (op A) (r₀ A b x₀) := by rwa [← grade_v₁]
-  refine (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).2 fun k hk => ?_
+  refine (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).2 fun k hk => ?_
   rw [arnoldiCoeff_v₁]
   rcases lt_or_ge (k + 1) (Krylov.grade (op A) (r₀ A b x₀)) with h1 | h1
   · exact Krylov.givensRho_arnoldi_ne_zero h1
@@ -850,7 +845,7 @@ theorem equation_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀))
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
         (WithLp.toLp 2 ((Qrot (arnoldiCoeff A (v₁ A b x₀)) m)ᴴ *ᵥ
           Pi.single (Fin.last m) (γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m))) := by
-  have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
+  have hρ := (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).1 hR
   have hQ := Qrot_mem_unitaryGroup (arnoldiCoeff A (v₁ A b x₀)) m hρ
   have h1 : (Qrot (arnoldiCoeff A (v₁ A b x₀)) m)ᴴ * Qrot (arnoldiCoeff A (v₁ A b x₀)) m = 1 := by
     have h := (Matrix.mem_unitaryGroup_iff' (A := Qrot (arnoldiCoeff A (v₁ A b x₀)) m)).1 hQ
@@ -860,7 +855,7 @@ theorem equation_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀))
   conv_lhs => rw [← Matrix.one_mulVec (Krylov.firstVec (β A b x₀ : 𝕜) (m + 1) -
     Krylov.hessenbergOf (arnoldiCoeff A (v₁ A b x₀)) m *ᵥ gmresY A b x₀ m), ← h1]
   rw [← Matrix.mulVec_mulVec, Qrot_mulVec_firstVec_sub,
-    gbar_sub_Rbar_mulVec _ _ (hessenberg_coeffs A b x₀) (mulVec_R_gmresY A b x₀ hR)]
+    gbar_sub_Rbar_mulVec _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) (mulVec_R_gmresY A b x₀ hR)]
 
 /-- **(6.42)**: `‖b - A x_m‖₂ = |γ_{m+1}|`, the residual norm read off the rotated right-hand
 side. -/
@@ -868,7 +863,7 @@ theorem equation_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ‖b - op A (gmresFixed A b x₀ m)‖ =
       ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m‖ := by
-  have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
+  have hρ := (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).1 hR
   rw [arnoldiCoeff_v₁] at hρ ⊢
   exact Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero
     (by rwa [← grade_v₁]) hρ (gmresFixed_isMinResidualIterate A b x₀ hm hR)
@@ -889,18 +884,18 @@ formula Saad (5.7) with `V = V_m` and `W = A V_m`. -/
 theorem normal_equations_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) *ᵥ gmresY A b x₀ m
       = (Hbar A (v₁ A b x₀) m)ᴴ *ᵥ ((β A b x₀ : 𝕜) • e₁ (m + 1)) := by
-  have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
+  have hρ := (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).1 hR
   rw [Hbar_eq_hessenbergOf, smul_e₁_eq_firstVec]
-  exact normal_equations _ _ (hessenberg_coeffs A b x₀) hρ (mulVec_R_gmresY A b x₀ hR)
+  exact normal_equations _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hρ (mulVec_R_gmresY A b x₀ hR)
 
 /-- **P-6.5**: `y_m = (H̄_mᴴ H̄_m)⁻¹ H̄_mᴴ (β e_1)`. -/
 theorem problem_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     gmresY A b x₀ m = ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m)⁻¹ *ᵥ
       ((Hbar A (v₁ A b x₀) m)ᴴ *ᵥ ((β A b x₀ : 𝕜) • e₁ (m + 1))) := by
-  have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
+  have hρ := (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).1 hR
   have hN : IsUnit ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) := by
     rw [Hbar_eq_hessenbergOf]
-    exact isUnit_conjTranspose_mul_self_hessenbergOf _ (hessenberg_coeffs A b x₀) hρ hR
+    exact isUnit_conjTranspose_mul_self_hessenbergOf _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hρ hR
   rw [← normal_equations_gmresY A b x₀ hR, Matrix.mulVec_mulVec,
     Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1 hN), Matrix.one_mulVec]
 
@@ -1177,11 +1172,6 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
-/-! ### Coordinate helpers -/
-
-private theorem toEuclideanLin_toLp {m : ℕ} (M : Matrix (Fin n) (Fin m) 𝕜) (v : Fin m → 𝕜) :
-    Matrix.toEuclideanLin M (WithLp.toLp 2 v) = WithLp.toLp 2 (M *ᵥ v) := rfl
-
 /-! ### Algorithm 6.12 (QGMRES) and the quantities of (6.52) -/
 
 /-- The coordinates `y_m = R_m⁻¹ g_m` computed by **Algorithm 6.12** (QGMRES); the same formula
@@ -1210,7 +1200,7 @@ noncomputable def quasiResidualNorm (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : 
 theorem z_eq (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     z u h m = Matrix.toEuclideanLin (colMatrix u (m + 1))
       (WithLp.toLp 2 ((Qrot h m)ᴴ *ᵥ Pi.single (Fin.last m) 1)) := by
-  rw [z, Z, toEuclideanLin_toLp, toEuclideanLin_toLp, Matrix.mulVec_mulVec]
+  rw [z, Z, Matrix.toEuclideanLin_toLp, Matrix.toEuclideanLin_toLp, Matrix.mulVec_mulVec]
 
 /-- (6.49): QGMRES minimizes the *quasi*-residual norm `‖β e_1 - H̄_m y‖₂`, whose value at the
 minimizer is `|γ_{m+1}|`. Without orthogonality this is no longer the residual norm. -/
@@ -1237,7 +1227,7 @@ theorem equation_6_50 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
   rw [qgmres, toEuclideanLin_colMatrix_apply,
     hu.residual_eq hr m (qgmresY h β m), ← toEuclideanLin_colMatrix_apply u, qgmresY,
     firstVec_sub_mulVec_eq h β hh hρ (mulVec_R_inv_mulVec_g h β hR), hsingle, z_eq,
-    toEuclideanLin_toLp, toEuclideanLin_toLp, Matrix.mulVec_smul, Matrix.mulVec_smul]
+    Matrix.toEuclideanLin_toLp, Matrix.toEuclideanLin_toLp, Matrix.mulVec_smul, Matrix.mulVec_smul]
   rfl
 
 /-- With the full Arnoldi data QGMRES is GMRES: the book's "QGMRES coincides with GMRES when
@@ -1551,8 +1541,7 @@ theorem theorem_6_11 {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : 𝔼) {u : ℕ 
     rw [hw]
     abel
   rw [hxG]
-  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul
-    (Krylov.HessenbergRelation₂.of_hessenbergRelation hu) hr hc0 hc hC
+  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul hu hr hc0 hc hC
     (qgmres_isQuasiMinResidualIterate x₀ u h β hu.eq_zero_of_lt hR) w
 
 /-! ### Algorithm 6.13 (DQGMRES) -/
@@ -1831,16 +1820,11 @@ noncomputable def ρFmin (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : 
 
 /-! ### Nonsingularity of `R_m` and `R̃_m` -/
 
-/-- The Arnoldi coefficients are Hessenberg, the standing hypothesis of the Givens layer. -/
-theorem arnoldiCoeff_hessenberg :
-    ∀ i j : ℕ, j + 1 < i → arnoldiCoeff A (v₁ A b x₀) i j = 0 :=
-  fun _ _ hij => arnoldiCoeff_v₁_eq_zero_of_lt A b x₀ hij
-
 /-- Below the grade no rotation degenerates, so `R_m` is nonsingular with no hypothesis on
 `A`. -/
 theorem isUnit_R_of_lt_grade {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
     IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m) := by
-  refine (isUnit_R_iff _ (arnoldiCoeff_hessenberg A b x₀)).2 fun k hk => ?_
+  refine (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).2 fun k hk => ?_
   rw [arnoldiCoeff_v₁]
   exact Krylov.givensRho_arnoldi_ne_zero (by rw [← grade_v₁]; omega)
 
@@ -1874,7 +1858,7 @@ the earlier rotations are nondegenerate below the grade, the last one because it
 `ξ_m ≠ 0`. -/
 theorem isUnit_R_of_fomDefined {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hH : FOMDefined A b x₀ m) : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m) := by
-  refine (isUnit_R_iff _ (arnoldiCoeff_hessenberg A b x₀)).2 fun k hk => ?_
+  refine (isUnit_R_iff _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)).2 fun k hk => ?_
   rcases Nat.lt_or_ge (k + 1) m with h1 | h1
   · rw [arnoldiCoeff_v₁]
     exact Krylov.givensRho_arnoldi_ne_zero (by rw [← grade_v₁]; omega)
@@ -1887,10 +1871,10 @@ theorem isUnit_Rtilde_of_fomDefined {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b 
     (hH : FOMDefined A b x₀ (m + 1)) :
     IsUnit (Rtilde (arnoldiCoeff A (v₁ A b x₀)) (m + 1)) := by
   rw [Rtilde, Nat.add_sub_cancel]
-  refine Krylov.isUnit_hessenbergSqOf_rotated _ (arnoldiCoeff_hessenberg A b x₀)
+  refine Krylov.isUnit_hessenbergSqOf_rotated _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)
     (le_refl (m + 1)) fun j hj => ?_
   rcases Nat.lt_or_ge j m with h1 | h1
-  · rw [Krylov.rotated_diag _ (arnoldiCoeff_hessenberg A b x₀) h1]
+  · rw [Krylov.rotated_diag _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) h1]
     have hρ : Krylov.givensRho (arnoldiCoeff A (v₁ A b x₀)) j ≠ 0 := by
       rw [arnoldiCoeff_v₁]
       exact Krylov.givensRho_arnoldi_ne_zero (by rw [← grade_v₁]; omega)
@@ -2437,7 +2421,7 @@ theorem lemma_6_16 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
   have hyp := mulVec_R_gmresY A b x₀
     (isUnit_R_of_lt_grade A b x₀ (show m < grade A (v₁ A b x₀) by omega))
   simp only [RCLike.ofReal_real_eq_id, id_eq] at hy hyp
-  exact sub_snoc_eq_smul (arnoldiCoeff A (v₁ A b x₀)) (arnoldiCoeff_hessenberg A b x₀)
+  exact sub_snoc_eq_smul (arnoldiCoeff A (v₁ A b x₀)) (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀)
     (β A b x₀) (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
     (isUnit_Rtilde_of_fomDefined A b x₀ hm hH) _ _ hy hyp
 

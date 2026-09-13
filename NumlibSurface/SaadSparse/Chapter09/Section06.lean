@@ -105,7 +105,7 @@ theorem isSkewAdjoint_energy {N : Matrix (Fin n) (Fin n) 𝕜} (hN : Nᴴ = -N)
   obtain ⟨x, rfl⟩ := hM.toEnergy.surjective u
   obtain ⟨y, rfl⟩ := hM.toEnergy.surjective v
   rw [hM.inner_energyEnd_left (op N), hM.inner_energyEnd_right (op N),
-    inner_op_conjTranspose N x y, hN]
+    Chapter07.inner_op_conjTranspose N x y, hN]
   have hneg : (op (-N) : 𝔼 →ₗ[𝕜] 𝔼) = -op N := map_neg Matrix.toEuclideanLin N
   rw [hneg, LinearMap.neg_apply, inner_neg_right]
 

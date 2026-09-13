@@ -7,13 +7,10 @@ import Numlib.Krylov.Hessenberg
 What a Krylov method can still prove when the basis in which it expands the residual is **not**
 orthonormal.
 
-* `Krylov.HessenbergRelation₂ A z v h`: the relation `A z_j = ∑_{i ≤ j+1} h_ij v_i` for two
-  *unrelated* families, the iterate basis `z` on the left and the residual basis `v` on the right.
-  `Krylov.HessenbergRelation` is the diagonal case `z = v`
-  (`Krylov.HessenbergRelation₂.of_hessenbergRelation`); flexible GMRES ([saad2003iterative] (9.22),
-  where `z_j = M_j⁻¹ v_j` for a step-dependent preconditioner) and TFQMR ([saad2003iterative]
-  (7.70)) are genuinely two-family, and the residual formulas `residual_eq`,
-  `residual_eq_of_mulVec_eq` hold verbatim at this generality.
+Throughout, the iterate basis `z` and the residual basis `v` are tied by the two-family Hessenberg
+relation `Krylov.HessenbergRelation₂ A z v h` of `Numlib/Krylov/Hessenberg`, whose residual formulas
+`Krylov.HessenbergRelation₂.residual_eq` and `residual_eq_of_mulVec_eq` hold at this generality.
+
 * `Krylov.quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, and the specification
   `Krylov.IsQuasiMinResidualIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
   quasi-residual": QMR ([freund1991qmr]; [saad2003iterative] Algorithm 7.4), TFQMR (Algorithm 7.8),
@@ -49,121 +46,6 @@ open Krylov Finset
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 namespace Krylov
-
-/-! ### The two-family Hessenberg relation -/
-
-/-- A pair of sequences `z`, `v` satisfying the two-family Hessenberg relation `A z_j = ∑_{i ≤ j+1}
-h i j v_i` with `h` upper Hessenberg: the iterate basis `z` on the left, the residual basis `v` on
-the right ([saad2003iterative], (9.22) for FGMRES and (7.70) for TFQMR). `Krylov.HessenbergRelation`
-is the diagonal case `z = v`, embedded by `Krylov.HessenbergRelation₂.of_hessenbergRelation`. -/
-structure HessenbergRelation₂ (A : E →ₗ[𝕜] E) (z v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
-  /-- The expansion of `A z_j` in the residual basis up to `v_{j+1}`. -/
-  apply_eq : ∀ j, A (z j) = ∑ i ∈ range (j + 2), h i j • v i
-  /-- The coefficients are upper Hessenberg. -/
-  eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0
-
-namespace HessenbergRelation₂
-
-/-- A one-family Hessenberg relation is the two-family relation with `z = v`. -/
-theorem of_hessenbergRelation {A : E →ₗ[𝕜] E} {v : ℕ → E} {h : ℕ → ℕ → 𝕜}
-    (hv : HessenbergRelation A v h) : HessenbergRelation₂ A v v h :=
-  ⟨hv.apply_eq, hv.eq_zero_of_lt⟩
-
-variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation₂ A z v h)
-include hv
-
-/-- The matrix `H̄_m` cut out of the coefficients of a two-family relation is upper Hessenberg. -/
-theorem hessenbergOf_isUpperHessenbergRect (m : ℕ) : (hessenbergOf h m).IsUpperHessenbergRect :=
-  fun i j hij => hv.eq_zero_of_lt i j hij
-
-/-- The Hessenberg expansion of `A z_j` may be taken over any range containing `j + 2`. -/
-private theorem apply_eq_range (j N : ℕ) (hj : j + 2 ≤ N) :
-    A (z j) = ∑ i ∈ range N, h i j • v i := by
-  rw [hv.apply_eq j]
-  refine Finset.sum_subset (by simpa using hj) fun i hi hi' => ?_
-  rw [Finset.mem_range] at hi'
-  rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
-
-/-- `A Z_m = V_{m+1} H̄_m` ([saad2003iterative], (9.22)) in coordinates. -/
-theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
-    A (∑ j, y j • z j) = ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
-  rw [map_sum]
-  have hleft : ∀ j : Fin m, A (y j • z j) = ∑ i : Fin (m + 1), (y j * h i j) • v i := by
-    intro j
-    rw [map_smul, hv.apply_eq_range (j : ℕ) (m + 1) (by omega), Finset.smul_sum,
-      ← Fin.sum_univ_eq_sum_range (fun i => y j • h i (j : ℕ) • v i) (m + 1)]
-    exact Finset.sum_congr rfl fun i _ => smul_smul _ _ _
-  rw [Finset.sum_congr rfl fun j _ => hleft j, Finset.sum_comm]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  simp only [hessenbergOf, Matrix.mulVec, dotProduct, Matrix.of_apply]
-  rw [Finset.sum_smul]
-  exact Finset.sum_congr rfl fun j _ => by rw [mul_comm]
-
-/-- [saad2003iterative], (9.25): with `r₀ = β v₀`, the residual of `x₀ + Z_m y` is `V_{m+1} (β e₁ -
-H̄_m y)`. The two-family form of `Krylov.HessenbergRelation.residual_eq`; it is [saad2003iterative]
-(7.16) for QMR, (7.75) for TFQMR and (9.25) for FGMRES. -/
-theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
-    b - A (x₀ + ∑ j, y j • z j) =
-      ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i := by
-  have hfirst : ∑ i : Fin (m + 1), firstVec β (m + 1) i • v i = β • v 0 := by
-    rw [Finset.sum_eq_single (⟨0, Nat.succ_pos m⟩ : Fin (m + 1))]
-    · rfl
-    · intro i _ hi
-      have : (i : ℕ) ≠ 0 := fun hc => hi (Fin.ext hc)
-      simp [firstVec, this]
-    · intro hc; exact absurd (Finset.mem_univ _) hc
-  have hAx : A (x₀ + ∑ j, y j • z j) = A x₀ + ∑ i : Fin (m + 1),
-      (hessenbergOf h m).mulVec y i • v i := by
-    rw [map_add, hv.apply_sum m y]
-  have hsplit : ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i
-      = β • v 0 - ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
-    rw [← hfirst, ← Finset.sum_sub_distrib]
-    exact Finset.sum_congr rfl fun i _ => by rw [Pi.sub_apply, sub_smul]
-  rw [hsplit, hAx, ← hr]
-  abel
-
-/-- [saad2003iterative], (7.76) and (9.23): if `H_m y = β e₁` then the residual of `x₀ + Z_m y` is
-`-(h_{m,m-1} y_{m-1}) v_m`. The two-family form of
-`Krylov.HessenbergRelation.residual_eq_of_mulVec_eq`. -/
-theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
-    (hm : 0 < m) (y : Fin m → 𝕜) (hy : (hessenbergSqOf h m).mulVec y = firstVec β m) :
-    b - A (x₀ + ∑ j, y j • z j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
-  rw [hv.residual_eq hr m y]
-  have hzero : ∀ i : Fin (m + 1), (i : ℕ) < m →
-      (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i = 0 := by
-    intro i hi
-    have h1 : (hessenbergOf h m).mulVec y i = (hessenbergSqOf h m).mulVec y ⟨i, hi⟩ := by
-      simp [Matrix.mulVec, dotProduct, hessenbergOf, hessenbergSqOf]
-    have h2 : firstVec β (m + 1) i = firstVec β m ⟨i, hi⟩ := by simp [firstVec]
-    simp only [Pi.sub_apply, h1, h2, hy, sub_self]
-  have hlast : (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) ⟨m, Nat.lt_succ_self m⟩ =
-      -(h m (m - 1) * y ⟨m - 1, by omega⟩) := by
-    have hfv : firstVec β (m + 1) (⟨m, Nat.lt_succ_self m⟩ : Fin (m + 1)) = 0 := by
-      simp [firstVec, hm.ne']
-    have hmv : (hessenbergOf h m).mulVec y (⟨m, Nat.lt_succ_self m⟩ : Fin (m + 1)) =
-        h m (m - 1) * y ⟨m - 1, by omega⟩ := by
-      simp only [Matrix.mulVec, dotProduct]
-      rw [Finset.sum_eq_single (⟨m - 1, by omega⟩ : Fin m)]
-      · rfl
-      · intro j _ hj
-        have : (j : ℕ) + 1 < m := by
-          have := j.isLt
-          have : (j : ℕ) ≠ m - 1 := fun hc => hj (Fin.ext hc)
-          omega
-        rw [hessenbergOf, Matrix.of_apply, hv.eq_zero_of_lt m j (by omega), zero_mul]
-      · intro hc; exact absurd (Finset.mem_univ _) hc
-    simp only [Pi.sub_apply, hfv, hmv, zero_sub]
-  rw [Finset.sum_eq_single (⟨m, Nat.lt_succ_self m⟩ : Fin (m + 1))]
-  · rw [hlast]
-  · intro i _ hi
-    have : (i : ℕ) < m := by
-      have := i.isLt
-      have : (i : ℕ) ≠ m := fun hc => hi (Fin.ext hc)
-      omega
-    rw [hzero i this, zero_smul]
-  · intro hc; exact absurd (Finset.mem_univ _) hc
-
-end HessenbergRelation₂
 
 /-! ### The quasi-residual -/
 

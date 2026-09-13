@@ -326,15 +326,6 @@ theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) 
 
 /-! ### Theorem 5.7 in matrix form (§5.2.3) -/
 
-/-- Matrices act on Euclidean space by composition. -/
-private theorem toEuclideanLin_comp {p q r : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
-    (N : Matrix (Fin q) (Fin r) ℝ) (z : EuclideanSpace ℝ (Fin r)) :
-    (M ⬝ (N ⬝ z)) = ((M * N) ⬝ z) :=
-  congrArg (WithLp.toLp 2) (mulVec_mulVec (WithLp.ofLp z) M N)
-
-private theorem ofLp_toEuclideanLin' {p q : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
-    (z : EuclideanSpace ℝ (Fin q)) : WithLp.ofLp (M ⬝ z) = M *ᵥ WithLp.ofLp z := rfl
-
 /-- Saad §1.12.2: the projector onto `K` orthogonally to `K` itself is the orthogonal
 projector. -/
 theorem obliqueProjection_self (h : K ⊓ Kᗮ = ⊥) (z : E n) :
@@ -350,7 +341,7 @@ variable {V : Matrix (Fin n) (Fin m) ℝ}
 coordinate form of Theorem 5.7 say the same thing as the vector form. -/
 theorem norm_toEuclideanLin_of_orthonormal (hV : Vᵀ * V = 1) (y : E m) : ‖(V ⬝ y)‖ = ‖y‖ := by
   refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp ?_
-  rw [real_norm_sq_eq_dotProduct, real_norm_sq_eq_dotProduct, ofLp_toEuclideanLin',
+  rw [real_norm_sq_eq_dotProduct, real_norm_sq_eq_dotProduct, Matrix.ofLp_toEuclideanLin,
     dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, hV, one_mulVec]
 
 /-- **Theorem 5.7 in matrix form**, the identity behind it: with `L = K` and `V` an orthonormal
@@ -363,15 +354,15 @@ theorem theorem_5_7_matrix_eq (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K �
   have hP : ∀ z : E n, ((V * Vᵀ) ⬝ z) = K.starProjection z := fun z =>
     LinearMap.congr_fun hVVt z
   have h1 : (V ⬝ (Vᵀ ⬝ b)) = b := by
-    rw [toEuclideanLin_comp, hP]
+    rw [← Matrix.toEuclideanLin_mul_apply, hP]
     exact Submodule.starProjection_eq_self_iff.mpr hb
   have h2 : (V ⬝ ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))) = K.starProjection (A ⬝ K.starProjection x) := by
     have e1 : (V ⬝ ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))) = ((V * (Vᵀ * A * V) * Vᵀ) ⬝ x) := by
-      rw [toEuclideanLin_comp, toEuclideanLin_comp]
+      rw [← Matrix.toEuclideanLin_mul_apply, ← Matrix.toEuclideanLin_mul_apply]
     have e2 : V * (Vᵀ * A * V) * Vᵀ = (V * Vᵀ) * A * (V * Vᵀ) := by
       simp only [Matrix.mul_assoc]
     have e3 : (((V * Vᵀ) * A * (V * Vᵀ)) ⬝ x) = ((V * Vᵀ) ⬝ (A ⬝ ((V * Vᵀ) ⬝ x))) := by
-      rw [toEuclideanLin_comp, toEuclideanLin_comp]
+      rw [← Matrix.toEuclideanLin_mul_apply, ← Matrix.toEuclideanLin_mul_apply]
     rw [e1, e2, e3, hP, hP]
   have hAm : A_m A K K rfl h x
       = SaadSparse.obliqueProjection K K rfl h (A ⬝ K.starProjection x) := rfl

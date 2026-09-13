@@ -55,9 +55,6 @@ id = "complexSpectralRadius_le_algebraNorm"
 id = "corollary_4_2"
 
 [[node]]
-id = "tendsto_generalFactor"
-
-[[node]]
 id = "exists_specific_eq"
 
 [[node]]

@@ -40,6 +40,24 @@ id = "toEuclideanLin_conjTranspose"
 id = "toEuclideanLin_mul"
 
 [[node]]
+id = "toEuclideanLin_mul_apply"
+
+[[node]]
+id = "toEuclideanLin_conjTranspose_inner_left"
+
+[[node]]
+id = "toEuclideanLin_conjTranspose_inner_right"
+
+[[node]]
+id = "ofLp_toEuclideanLin"
+
+[[node]]
+id = "toEuclideanLin_toLp"
+
+[[node]]
+id = "toEuclideanLin_apply"
+
+[[node]]
 id = "toEuclideanLin_mul_nonsing_inv_apply"
 
 [[node]]

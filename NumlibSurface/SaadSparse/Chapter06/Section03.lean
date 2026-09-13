@@ -1236,8 +1236,9 @@ theorem H_v₁ (m : ℕ) : H A (v₁ A b x₀) m = Arnoldi.hessenbergSq (op A) (
   rw [H_apply, arnoldiCoeff_v₁]
   rfl
 
-/-- The Hessenberg structure of the coefficients, with no hypothesis on `v_1`. -/
-theorem arnoldiCoeff_v₁_eq_zero_of_lt {i j : ℕ} (hij : j + 1 < i) :
+/-- The Hessenberg structure of the coefficients, with no hypothesis on `v_1`; the standing
+hypothesis of the Givens layer of §6.5. -/
+theorem arnoldiCoeff_v₁_eq_zero_of_lt (i j : ℕ) (hij : j + 1 < i) :
     arnoldiCoeff A (v₁ A b x₀) i j = 0 := by
   rw [arnoldiCoeff_v₁]
   exact Arnoldi.coeff_eq_zero_of_lt (op A) _ hij

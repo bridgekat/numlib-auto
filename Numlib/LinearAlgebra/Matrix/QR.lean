@@ -10,6 +10,7 @@ import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.LinearAlgebra.UnitaryGroup
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # Householder reflectors and the QR factorization
@@ -671,8 +672,7 @@ theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
     rw [hQRc, mulVec_zero] at h1
     exact h1.symm
   have h2 : c = 0 := by
-    have := congrArg (fun v => R⁻¹ *ᵥ v) hRc
-    simpa [mulVec_mulVec, nonsing_inv_mul R hdet] using this
+    rw [← nonsing_inv_mulVec_mulVec ((isUnit_iff_isUnit_det R).2 hdet) c, hRc, mulVec_zero]
   exact fun i => congrFun h2 i
 
 end GramSchmidt

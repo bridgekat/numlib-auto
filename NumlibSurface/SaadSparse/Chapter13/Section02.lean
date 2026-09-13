@@ -362,8 +362,7 @@ theorem kroneckerVec_sineVec_eq_sin_grid (n m : ℕ) (k : Fin n) (l : Fin m)
 private theorem toEuclideanLin_toLp_smul_eq {N : Type*} [Fintype N] [DecidableEq N]
     {A : Matrix N N ℝ} {v : N → ℝ} {μ : ℝ} (h : A *ᵥ v = μ • v) (c : ℝ) :
     toEuclideanLin A (WithLp.toLp 2 (c • v)) = μ • WithLp.toLp 2 (c • v) := by
-  have h1 : toEuclideanLin A (WithLp.toLp 2 (c • v)) = WithLp.toLp 2 (A *ᵥ (c • v)) := rfl
-  rw [h1, Matrix.mulVec_smul, h, smul_comm]
+  rw [Matrix.toEuclideanLin_toLp, Matrix.mulVec_smul, h, smul_comm]
   rfl
 
 /-- A symmetric operator diagonalized by an orthonormal basis has exactly the listed eigenvalues:

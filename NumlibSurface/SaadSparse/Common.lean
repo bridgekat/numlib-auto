@@ -15,7 +15,9 @@ Conventions used throughout the library:
   and the book's `A x` is `Matrix.toEuclideanLin A x`, written `A ⬝ x` with the scoped notation
   below;
 * componentwise statements use the plain function type `Fin n → 𝕜` with `A *ᵥ x` and `x ⬝ᵥ y`,
-  which are related to the Euclidean picture by `WithLp.toLp 2` / `WithLp.ofLp`;
+  which are related to the Euclidean picture by `WithLp.toLp 2` / `WithLp.ofLp`
+  (`Matrix.ofLp_toEuclideanLin`, `Matrix.toEuclideanLin_toLp` of
+  `Numlib/Analysis/Matrix/ToEuclideanLin`);
 * Saad's inner product `(x, y) = ∑ xᵢ ȳᵢ` is Mathlib's `inner 𝕜 y x` (Mathlib's inner product is
   conjugate-linear in the *first* slot, Saad's in the second); over `ℝ` the two agree;
 * `λ_min(H)`, `λ_max(H)` of a Hermitian matrix are `lambdaMin`, `lambdaMax` below, the extreme
@@ -41,14 +43,6 @@ scoped notation:75 A " ⬝ " x => Matrix.toEuclideanLin A x
 section Glue
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
-
-/-- The action of a matrix on a Euclidean vector is `Matrix.mulVec` under `WithLp.ofLp`. -/
-theorem ofLp_toEuclideanLin (A : Matrix (Fin n) (Fin n) 𝕜) (x : EuclideanSpace 𝕜 (Fin n)) :
-    WithLp.ofLp (A ⬝ x) = A *ᵥ WithLp.ofLp x := rfl
-
-/-- The action of a matrix on a Euclidean vector, in the `WithLp.toLp` direction. -/
-theorem toEuclideanLin_toLp (A : Matrix (Fin n) (Fin n) 𝕜) (x : Fin n → 𝕜) :
-    (A ⬝ WithLp.toLp 2 x) = WithLp.toLp 2 (A *ᵥ x) := rfl
 
 /-- Saad's `(A u, u)` for real `A` is the `dotProduct` `(A *ᵥ u) ⬝ᵥ u`. -/
 theorem real_inner_toEuclideanLin (A : Matrix (Fin n) (Fin n) ℝ) (u : EuclideanSpace ℝ (Fin n)) :

@@ -126,7 +126,7 @@ theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b)
           Vec (k + 1))‖) Set.univ y := by
   have hK := Krylov.isMinResidualIterate_iff_isMinOn (A := Matrix.toEuclideanLin A) (b := b) (x₀ := 0)
     (m := k) (by rwa [sub_mulVecE_zero]) y
-  rw [sub_mulVecE_zero, hessenberg_eq_lanczosT (isSymm_of_posDef hA),
+  rw [sub_mulVecE_zero, hessenberg_eq_lanczosT (hA.isSymm),
     RCLike.ofReal_real_eq_id, id_eq] at hK
   rw [isMINRESIterate_iff, ← hK, zero_add]
 

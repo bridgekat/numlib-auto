@@ -270,12 +270,12 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 /-- The Schur complement acts as `Bᴴ ∘ A⁻¹ ∘ B`. -/
 theorem schur_apply (y : EuclideanSpace 𝕜 (Fin m)) :
     (schur A B ⬝ y) = (Bᴴ ⬝ (A⁻¹ ⬝ (B ⬝ y))) := by
-  rw [schur, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply]
+  rw [schur, Matrix.toEuclideanLin_mul_apply, Matrix.toEuclideanLin_mul_apply]
 
 private theorem conjTranspose_inv_sub (b : EuclideanSpace 𝕜 (Fin n))
     (y : EuclideanSpace 𝕜 (Fin m)) :
     (Bᴴ ⬝ (A⁻¹ ⬝ (b - (B ⬝ y)))) = ((Bᴴ * A⁻¹) ⬝ b) - (schur A B ⬝ y) := by
-  rw [schur_apply, toEuclideanLin_mul_apply,
+  rw [schur_apply, Matrix.toEuclideanLin_mul_apply,
     show (Matrix.toEuclideanLin A⁻¹) (b - (B ⬝ y)) = (A⁻¹ ⬝ b) - (A⁻¹ ⬝ (B ⬝ y)) from
       map_sub _ _ _,
     show (Matrix.toEuclideanLin Bᴴ) ((A⁻¹ ⬝ b) - (A⁻¹ ⬝ (B ⬝ y)))
@@ -481,7 +481,7 @@ theorem regularizedSchur_eq (ρ : 𝕜) :
 /-- The regularized Schur complement acts as `Bᴴ ∘ (ρ - A⁻¹) ∘ B`. -/
 theorem regularizedSchur_apply (ρ : 𝕜) (y : EuclideanSpace 𝕜 (Fin m)) :
     (regularizedSchur A B ρ ⬝ y) = (Bᴴ ⬝ (ρ • (B ⬝ y) - (A⁻¹ ⬝ (B ⬝ y)))) := by
-  rw [regularizedSchur_eq, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply]
+  rw [regularizedSchur_eq, Matrix.toEuclideanLin_mul_apply, Matrix.toEuclideanLin_mul_apply]
   refine congrArg (fun z => (Bᴴ ⬝ z)) ?_
   rw [map_sub, map_smul, Matrix.toEuclideanLin_one]
   rfl
@@ -689,7 +689,7 @@ theorem problem_8_6_projector (hB : Function.Injective (Matrix.toEuclideanLin B)
   refine (Submodule.eq_starProjection_of_mem_orthogonal ?_ ?_).symm
   · rw [LinearMap.mem_ker,
       show (Matrix.toEuclideanLin Bᴴ) ((Matrix.toEuclideanLin (constraintProjector B)) u)
-        = ((Bᴴ * constraintProjector B) ⬝ u) from (toEuclideanLin_mul_apply _ _ _).symm,
+        = ((Bᴴ * constraintProjector B) ⬝ u) from (Matrix.toEuclideanLin_mul_apply _ _ _).symm,
       constraintProjector, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc,
       ← Matrix.mul_assoc, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hu),
       Matrix.one_mul, sub_self, map_zero]
@@ -697,7 +697,7 @@ theorem problem_8_6_projector (hB : Function.Injective (Matrix.toEuclideanLin B)
   · rw [orthogonal_ker_eq_range B]
     refine ⟨(((Bᴴ * B)⁻¹ * Bᴴ) ⬝ u), ?_⟩
     rw [show (Matrix.toEuclideanLin B) (((Bᴴ * B)⁻¹ * Bᴴ) ⬝ u)
-        = ((B * ((Bᴴ * B)⁻¹ * Bᴴ)) ⬝ u) from (toEuclideanLin_mul_apply _ _ _).symm,
+        = ((B * ((Bᴴ * B)⁻¹ * Bᴴ)) ⬝ u) from (Matrix.toEuclideanLin_mul_apply _ _ _).symm,
       show (Matrix.toEuclideanLin (constraintProjector B)) u
         = (constraintProjector B ⬝ u) from rfl, constraintProjector, Matrix.mul_assoc]
     rw [show ((1 - B * ((Bᴴ * B)⁻¹ * Bᴴ)) ⬝ u)
@@ -793,14 +793,14 @@ theorem problem_8_6_cg_subspace (hB : Function.Injective (Matrix.toEuclideanLin 
     rw [LinearMap.mem_ker, show (Matrix.toEuclideanLin Bᴴ)
         ((Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B)) w)
       = ((Bᴴ * (constraintProjector B * A * constraintProjector B)) ⬝ w) from
-        (toEuclideanLin_mul_apply _ _ _).symm,
+        (Matrix.toEuclideanLin_mul_apply _ _ _).symm,
       ← Matrix.mul_assoc, ← Matrix.mul_assoc, hBP, Matrix.zero_mul, Matrix.zero_mul]
     exact toEuclideanLin_zero_apply w
   have hv : Matrix.toEuclideanLin (constraintProjector B) b
       ∈ LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := by
     rw [LinearMap.mem_ker, show (Matrix.toEuclideanLin Bᴴ)
         ((Matrix.toEuclideanLin (constraintProjector B)) b)
-      = ((Bᴴ * constraintProjector B) ⬝ b) from (toEuclideanLin_mul_apply _ _ _).symm, hBP]
+      = ((Bᴴ * constraintProjector B) ⬝ b) from (Matrix.toEuclideanLin_mul_apply _ _ _).symm, hBP]
     exact toEuclideanLin_zero_apply b
   have hpow : ∀ j : ℕ,
       ((Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B)) ^ j)

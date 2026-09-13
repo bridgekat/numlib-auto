@@ -4,6 +4,7 @@ import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.PosDef
 
 /-!
 # Fong–Saunders §1: the setting, Krylov subspaces and the Lanczos process
@@ -71,20 +72,15 @@ theorem mulVecE_sub : A ⬝ (x - y) = A ⬝ x - A ⬝ y := map_sub _ _ _
   rw [map_zero, LinearMap.zero_apply]
 
 /-- The paper's product is the backbone's operator applied to `x`.  `mulVecE` is reducible, so
-this is `rfl`; it is stated so that `rw` and `simp only` can normalise towards the backbone. -/
+this is `rfl`; it is stated so that `rw` and `simp only` can normalise towards the backbone, after
+which the coordinate form `A *ᵥ x` is `Matrix.ofLp_toEuclideanLin`. -/
 theorem mulVecE_eq (A : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     A ⬝ x = Matrix.toEuclideanLin A x := rfl
-
-/-- The product in coordinates: `A ⬝ x` is `Matrix.mulVec`. -/
-theorem ofLp_mulVecE : WithLp.ofLp (A ⬝ x) = A *ᵥ WithLp.ofLp x := rfl
 
 /-- `⟪x, A y⟫ = xᵀ (A y)`. -/
 theorem inner_mulVecE (A : Matrix (Fin n) (Fin n) ℝ) (x y : Vec n) :
     ⟪x, A ⬝ y⟫_ℝ = WithLp.ofLp x ⬝ᵥ (A *ᵥ WithLp.ofLp y) := by
   simp [PiLp.inner_apply, dotProduct, mul_comm]
-
-/-- A positive definite matrix is symmetric (Mathlib's `PosDef` bundles `IsHermitian`). -/
-theorem isSymm_of_posDef (hA : A.PosDef) : A.IsSymm := Matrix.isHermitian_iff_isSymm.1 hA.1
 
 /-- A symmetric matrix induces a symmetric operator on `Vec n`. -/
 theorem isSymmetric_toEuclideanLin (hA : A.IsSymm) :

@@ -65,9 +65,9 @@ desc = '''The Lanczos method for unsymmetric systems and its residual: with `v�
 iterate `x = x₀ + V_m y` has residual `b - op A x = -(γ_{m+1} y_m) • v_{m+1}`, hence
 `‖b - op A x‖ = |γ_{m+1} * y_m| * ‖v_{m+1}‖` (the book's stopping formula, the book's `1`-based `e_mᵀ y_m`
 being the last component). The bi-Lanczos basis satisfies the Hessenberg relation without
-orthonormality (`BiLanczos.hessenbergRelation`), so `Krylov.HessenbergRelation.residual_eq_of_mulVec_eq`
+orthonormality (`BiLanczos.hessenbergRelation`), so `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq`
 applies verbatim; `‖v_{m+1}‖` is not `1` here, which is why the book keeps it. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos_eq", "BiLanczos.hessenbergRelation", "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"]
+deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos_eq", "BiLanczos.hessenbergRelation", "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
 
 [[node]]

@@ -11,6 +11,7 @@ import Numlib.LinearSolve.Stationary.DiagDominant
 import Numlib.LinearSolve.Stationary.RegularSplitting
 import Numlib.LinearSolve.Stationary.SPD
 import Numlib.LinearSolve.Stationary.Splitting
+import NumlibSurface.SaadSparse.Chapter01.Section08
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter04.Section01
 
@@ -164,22 +165,6 @@ theorem affineStep_iterate_succ_sub (G : Matrix (Fin n) (Fin n) ℝ) (f x₀ : F
 
 /-! ### Theorem 4.1 -/
 
-/-- `ρ(G) < 1` makes `I - G` nonsingular (Saad, Thm 4.1, first half; Thm 1.11). -/
-theorem isUnit_one_sub_of_complexSpectralRadius_lt_one (hG : complexSpectralRadius G < 1) :
-    IsUnit (1 - G) := by
-  have h1 : (1 : ℂ) ∉ spectrum ℂ (complexify G) := by
-    intro hmem
-    have hle : (1 : ENNReal) ≤ complexSpectralRadius G := by
-      have h2 : ((‖(1 : ℂ)‖₊ : ENNReal)) ≤ complexSpectralRadius G := by
-        rw [complexSpectralRadius, spectralRadius]
-        exact le_iSup₂ (α := ENNReal) (1 : ℂ) hmem
-      simpa using h2
-    exact absurd hG (not_lt.mpr hle)
-  rw [spectrum.notMem_iff] at h1
-  simp only [map_one] at h1
-  rw [← complexify_one, ← complexify_sub, isUnit_complexify_iff] at h1
-  exact h1
-
 /-- Saad, Thm 4.1 (⇒): if `ρ(G) < 1` the iteration converges to any fixed point. -/
 theorem tendsto_affineStep_of_complexSpectralRadius_lt_one (hG : complexSpectralRadius G < 1)
     (f x₀ : Fin n → ℝ) {x' : Fin n → ℝ} (hfix : affineStep G f x' = x') :
@@ -194,7 +179,7 @@ to `(I - G)⁻¹ f` for every `f` and every `x₀`. -/
 theorem theorem_4_1_mp (hG : complexSpectralRadius G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) := by
-  have hu := isUnit_one_sub_of_complexSpectralRadius_lt_one hG
+  have hu := Chapter01.theorem_1_11_isUnit hG
   refine ⟨hu, fun f x₀ => tendsto_affineStep_of_complexSpectralRadius_lt_one hG f x₀ ?_⟩
   rw [affineStep_fixed_iff]
   exact mulVec_inv_mulVec hu f
@@ -226,7 +211,7 @@ theorem Splitting.tendsto_step (s : Splitting A)
     (hs : complexSpectralRadius s.iterationOperator < 1) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (Splitting.step s b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hu : IsUnit (1 - s.iterationOperator) :=
-    isUnit_one_sub_of_complexSpectralRadius_lt_one hs
+    Chapter01.theorem_1_11_isUnit hs
   have hGA : (1 : Matrix (Fin n) (Fin n) ℝ) - s.iterationOperator = s.m⁻¹ * A := by
     rw [iterationOperator_eq_one_sub, sub_sub_cancel]
   have hA : IsUnit A := by
@@ -617,14 +602,6 @@ theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) := by
   refine theorem_4_1_mp ((complexSpectralRadius_le_algebraNorm N G).trans_lt ?_)
   exact ENNReal.ofReal_lt_one.mpr hG
-
-open scoped Matrix.Norms.L2Operator in
-/-- Saad §4.2.1: the *general convergence factor* `φ = lim ‖G^k‖^{1/k}` is the spectral radius of
-`G` — Gelfand's formula for a real matrix, under the `l²` operator norm. -/
-theorem tendsto_generalFactor (G : Matrix (Fin n) (Fin n) ℝ) :
-    Tendsto (fun k : ℕ => ‖G ^ k‖ ^ (1 / k : ℝ)) atTop
-      (𝓝 (complexSpectralRadius G).toReal) :=
-  Matrix.tendsto_pow_rpow_complexSpectralRadius G
 
 /-- Saad §4.2.1: the general convergence factor is *attained* — some initial error `d₀` decays
 exactly at the rate `ρ(G)`. -/

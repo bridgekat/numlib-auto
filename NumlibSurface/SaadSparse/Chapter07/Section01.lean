@@ -349,9 +349,8 @@ structure NoSeriousBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- `op Aᴴ` is the adjoint of `op A`. -/
 theorem inner_op_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜)
-    (x y : EuclideanSpace 𝕜 (Fin n)) : inner 𝕜 (op A x) y = inner 𝕜 x (op Aᴴ y) := by
-  have hadj : (op Aᴴ) = LinearMap.adjoint (op A) := Matrix.toEuclideanLin_conjTranspose A
-  rw [hadj, LinearMap.adjoint_inner_right]
+    (x y : EuclideanSpace 𝕜 (Fin n)) : inner 𝕜 (op A x) y = inner 𝕜 x (op Aᴴ y) :=
+  (Matrix.toEuclideanLin_conjTranspose_inner_right A x y).symm
 
 private theorem zeta_eq (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n))
     (j : ℕ) : inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j)

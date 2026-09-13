@@ -519,8 +519,7 @@ theorem proposition_7_3 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁
   have hprod := (equation_7_18 (A := A) (b := b) (x₀ := x₀) (w₁ := w₁) m).1
   rw [quasiResidualNorm_eq] at hprod
   rw [← hprod]
-  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le
-    (Krylov.HessenbergRelation₂.of_hessenbergRelation (bilanczos_hessenbergRelation h))
+  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le (bilanczos_hessenbergRelation h)
     (smul_qmrV_zero A b x₀ w₁)
     ((Chapter06.isUnit_R_iff _ (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij)).1 hR) hC
     (qmr_isQuasiMinResidualIterate hR)

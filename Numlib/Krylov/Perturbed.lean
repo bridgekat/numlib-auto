@@ -63,7 +63,7 @@ private theorem apply_eq_range {j : ℕ} (hj : j < m) (N : ℕ) (hN : j + 2 ≤ 
   rw [Finset.mem_range] at hi'
   rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
 
-/-- **The perturbed form of `Krylov.HessenbergRelation.apply_sum`**: `A V_m = V_{m+1} H̄_m + Δ`,
+/-- **The perturbed form of `Krylov.HessenbergRelation₂.apply_sum`**: `A V_m = V_{m+1} H̄_m + Δ`,
 where the defect `Δ = ∑_j y_j F_j` is the residual combination. -/
 theorem apply_sum (y : Fin m → 𝕜) :
     A (∑ j, y j • v j)
@@ -85,9 +85,9 @@ theorem apply_sum (y : Fin m → 𝕜) :
   simp only [hessenbergOf, Matrix.mulVec, dotProduct, Matrix.of_apply]
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-- **The perturbed form of `Krylov.HessenbergRelation.residual_eq`** ([saad2003iterative], (6.27)):
-with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ - H̄_m y)` minus the residual
-combination `∑_j y_j F_j`. -/
+/-- **The perturbed form of `Krylov.HessenbergRelation₂.residual_eq`** ([saad2003iterative],
+(6.27)): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ - H̄_m y)` minus the
+residual combination `∑_j y_j F_j`. -/
 theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • v j)
       = (∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i)

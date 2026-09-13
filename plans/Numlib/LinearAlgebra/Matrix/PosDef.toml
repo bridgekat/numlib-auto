@@ -1,0 +1,7 @@
+namespace = "Matrix"
+
+[[node]]
+id = "PosSemidef.isSymm"
+
+[[node]]
+id = "PosDef.isSymm"

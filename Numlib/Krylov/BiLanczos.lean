@@ -1,4 +1,5 @@
 import Numlib.Krylov.Hessenberg
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # The two-sided Lanczos process
@@ -21,7 +22,7 @@ The main results are [saad2003iterative] Prop 7.1: the two families are biorthog
 `BiLanczos.span_dualVec`), and `W_mᴴ A V_m = T_m` for the tridiagonal coefficient array
 (`BiLanczos.inner_dualVec_apply_vec`). The relation `A V_m = V_{m+1} T̄_m` is a
 `Krylov.HessenbergRelation` of `Numlib/Krylov/Hessenberg` with a basis that is *not* orthonormal
-(`BiLanczos.hessenbergRelation`), so the residual formula `Krylov.HessenbergRelation.residual_eq`
+(`BiLanczos.hessenbergRelation`), so the residual formula `Krylov.HessenbergRelation₂.residual_eq`
 applies verbatim.
 
 Breakdown comes in two kinds. A *lucky* one, `v̂_{j+1} = 0`, is benign: it implies
@@ -647,7 +648,7 @@ theorem NoSeriousBreakdown.apply_vec (h : NoSeriousBreakdown A B v₁ w₁) (j :
 
 /-- [saad2003iterative], (7.3): `A V_m = V_{m+1} T̄_m` is a `Krylov.HessenbergRelation` whose basis
 is biorthogonal rather than orthonormal, so the residual formula
-`Krylov.HessenbergRelation.residual_eq` applies to it verbatim. -/
+`Krylov.HessenbergRelation₂.residual_eq` applies to it verbatim. -/
 theorem hessenbergRelation (h : NoSeriousBreakdown A B v₁ w₁) :
     Krylov.HessenbergRelation A (vec A B v₁ w₁) (coeff A B v₁ w₁) where
   apply_eq j := by
@@ -1911,11 +1912,8 @@ theorem norm_quasiResidual_eq_norm_gamma {m : ℕ} {β : 𝕜}
   obtain ⟨z₀, hz₀⟩ : ∃ z₀ : Fin m → 𝕜,
       (hessenbergSqOf (rotated (BiLanczos.coeff A B v₁ w₁) m) m).mulVec z₀ =
         fun i : Fin m => gvec (BiLanczos.coeff A B v₁ w₁) β (i : ℕ) := by
-    have hU := isUnit_hessenbergSqOf_rotated_self (BiLanczos.coeff A B v₁ w₁) hh hρ
-    rw [Matrix.isUnit_iff_isUnit_det] at hU
-    refine ⟨(hessenbergSqOf (rotated (BiLanczos.coeff A B v₁ w₁) m) m)⁻¹.mulVec
-      (fun i : Fin m => gvec (BiLanczos.coeff A B v₁ w₁) β (i : ℕ)), ?_⟩
-    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hU, Matrix.one_mulVec]
+    exact ⟨_, Matrix.mulVec_nonsing_inv_mulVec
+      (isUnit_hessenbergSqOf_rotated_self (BiLanczos.coeff A B v₁ w₁) hh hρ) _⟩
   have h0 : ‖quasiResidual A B v₁ w₁ β m z₀‖ = ‖gamma (BiLanczos.coeff A B v₁ w₁) β m‖ := by
     have hsq := hsplit z₀
     rw [hz₀, sub_self] at hsq

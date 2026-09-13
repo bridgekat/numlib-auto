@@ -130,7 +130,7 @@ private theorem rho2_zero : (cg A2 b2 0).ρ = 10 := by
 private theorem rho2_one : (cg A2 b2 1).ρ = 160 / 9 := by
   rw [cg_succ, cg_zero]
   simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
-    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b2, A2,
+    WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b2, A2,
     Fin.sum_univ_two, mulVec_diagonal, cons_val_zero, cons_val_one]
   norm_num
 
@@ -160,16 +160,15 @@ private theorem posDef_A3 : A3.PosDef := by
 private theorem cg3_one_x : WithLp.ofLp (cg A3 b3 1).x = ![3 / 38, 15 / 38, 3 / 38] := by
   rw [cg_succ, cg_zero]
   simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_add,
-    WithLp.ofLp_sub, WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul,
-    b3, A3,
-    Fin.sum_univ_three, mulVec_diagonal, cons_val_two, tail_cons, head_cons]
+    WithLp.ofLp_sub, WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin, Pi.sub_apply, Pi.smul_apply,
+    smul_eq_mul, b3, A3, Fin.sum_univ_three, mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
   fin_cases i <;> norm_num [mulVec_diagonal, cons_val_two, tail_cons, head_cons]
 
 private theorem cg3_one_r : WithLp.ofLp (cg A3 b3 1).r = ![35 / 38, -5 / 38, -5 / 19] := by
   rw [cg_succ, cg_zero]
   simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
-    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
+    WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
     Fin.sum_univ_three,
     mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
@@ -179,7 +178,7 @@ private theorem cg3_one_p :
     WithLp.ofLp (cg A3 b3 1).p = ![345 / 361, 15 / 361, -165 / 722] := by
   rw [cg_succ, cg_zero]
   simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_add, WithLp.ofLp_sub,
-    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul,
+    WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin, Pi.sub_apply, Pi.smul_apply, smul_eq_mul,
     b3, A3, Fin.sum_univ_three, mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
   fin_cases i <;>
@@ -188,7 +187,7 @@ private theorem cg3_one_p :
 private theorem cg3_one_rho : (cg A3 b3 1).ρ = 675 / 722 := by
   rw [cg_succ, cg_zero]
   simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
-    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
+    WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
     Fin.sum_univ_three,
     mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   norm_num
@@ -197,7 +196,7 @@ private theorem cg3_two : cg A3 b3 2 = cgStep A3 (cg A3 b3 1) := cg_succ 1
 
 private theorem cg3_two_x : WithLp.ofLp (cg A3 b3 2).x = ![7 / 12, 5 / 12, -1 / 24] := by
   rw [cg3_two]
-  simp only [cgStep, inner_eq, WithLp.ofLp_add, WithLp.ofLp_smul, ofLp_mulVecE,
+  simp only [cgStep, inner_eq, WithLp.ofLp_add, WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin,
     cg3_one_x, cg3_one_p, cg3_one_rho]
   simp only [A3, Fin.sum_univ_three, mulVec_diagonal, cons_val_zero, cons_val_one, cons_val_two,
     tail_cons, head_cons]
@@ -207,8 +206,8 @@ private theorem cg3_two_x : WithLp.ofLp (cg A3 b3 2).x = ![7 / 12, 5 / 12, -1 / 
 
 private theorem cg3_two_r : WithLp.ofLp (cg A3 b3 2).r = ![5 / 12, -5 / 12, 5 / 3] := by
   rw [cg3_two]
-  simp only [cgStep, inner_eq, WithLp.ofLp_sub, WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply,
-    Pi.smul_apply, smul_eq_mul, cg3_one_r, cg3_one_p, cg3_one_rho]
+  simp only [cgStep, inner_eq, WithLp.ofLp_sub, WithLp.ofLp_smul, Matrix.ofLp_toEuclideanLin,
+    Pi.sub_apply, Pi.smul_apply, smul_eq_mul, cg3_one_r, cg3_one_p, cg3_one_rho]
   simp only [A3, Fin.sum_univ_three, mulVec_diagonal, cons_val_zero, cons_val_one, cons_val_two,
     tail_cons, head_cons]
   funext i
@@ -299,12 +298,12 @@ private theorem injective_A4 : Function.Injective (Matrix.toEuclideanLin A4) := 
     Matrix.mulVec_injective_iff_isUnit.2 ((isUnit_iff_isUnit_det A4).2 isUnit_det_A4)
   intro u v huv
   refine WithLp.ofLp_injective 2 (h ?_)
-  rw [← ofLp_mulVecE, ← ofLp_mulVecE]
+  rw [← Matrix.ofLp_toEuclideanLin, ← Matrix.ofLp_toEuclideanLin]
   exact congrArg WithLp.ofLp huv
 
 /-- `A b = (2, 1, 3)ᵀ`. -/
 private theorem ofLp_A4_b4 : WithLp.ofLp (A4 ⬝ b4) = ![2, 1, 3] := by
-  rw [ofLp_mulVecE]
+  rw [Matrix.ofLp_toEuclideanLin]
   funext i
   fin_cases i <;>
     norm_num [A4, b4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
@@ -312,7 +311,7 @@ private theorem ofLp_A4_b4 : WithLp.ofLp (A4 ⬝ b4) = ![2, 1, 3] := by
 
 /-- `A² b = (8, 5, 9)ᵀ`. -/
 private theorem ofLp_A4_A4_b4 : WithLp.ofLp (A4 ⬝ (A4 ⬝ b4)) = ![8, 5, 9] := by
-  rw [ofLp_mulVecE, ofLp_A4_b4]
+  rw [Matrix.ofLp_toEuclideanLin, ofLp_A4_b4]
   funext i
   fin_cases i <;>
     norm_num [A4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
@@ -320,7 +319,7 @@ private theorem ofLp_A4_A4_b4 : WithLp.ofLp (A4 ⬝ (A4 ⬝ b4)) = ![8, 5, 9] :=
 
 /-- The residual of `x_1`: `r_1 = (−4/7, 5/7, 1/7)ᵀ`. -/
 private theorem ofLp_res_one : WithLp.ofLp (b4 - A4 ⬝ x4one) = ![-4 / 7, 5 / 7, 1 / 7] := by
-  rw [WithLp.ofLp_sub, ofLp_mulVecE]
+  rw [WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin]
   funext i
   fin_cases i <;>
     norm_num [A4, b4, x4one, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two,
@@ -328,7 +327,7 @@ private theorem ofLp_res_one : WithLp.ofLp (b4 - A4 ⬝ x4one) = ![-4 / 7, 5 / 7
 
 /-- The residual of `x_2`: `r_2 = (−12/19, 12/19, 4/19)ᵀ`. -/
 private theorem ofLp_res_two : WithLp.ofLp (b4 - A4 ⬝ x4two) = ![-12 / 19, 12 / 19, 4 / 19] := by
-  rw [WithLp.ofLp_sub, ofLp_mulVecE]
+  rw [WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin]
   funext i
   fin_cases i <;>
     norm_num [A4, b4, x4two, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two,
@@ -431,10 +430,10 @@ theorem indefinite_witness :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (u w : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
       0 < ⟪u, A ⬝ u⟫_ℝ ∧ ⟪w, A ⬝ w⟫_ℝ < 0 := by
   refine ⟨A4, !₂[1, 0, 0], !₂[1, -2, 1], isSymm_A4, isUnit_det_A4, ?_, ?_⟩
-  · rw [inner_eq, ofLp_mulVecE]
+  · rw [inner_eq, Matrix.ofLp_toEuclideanLin]
     norm_num [A4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
       head_cons]
-  · rw [inner_eq, ofLp_mulVecE]
+  · rw [inner_eq, Matrix.ofLp_toEuclideanLin]
     norm_num [A4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
       head_cons]
 

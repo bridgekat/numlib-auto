@@ -5,6 +5,7 @@ import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Subspace
+import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Section04
 import NumlibSurface.SaadSparse.Chapter06.Section06
@@ -801,10 +802,6 @@ theorem dLanczosX_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (
 
 /-! ### §6.7.1: the three algorithms compute the same iterates -/
 
-/-- A real positive definite matrix is symmetric. -/
-theorem isSymm_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) : A.IsSymm :=
-  Matrix.isHermitian_iff_isSymm.1 hA.1
-
 /-- The Galerkin iterate is unique for positive definite `A`. -/
 theorem galerkin_unique (hA : A.PosDef) {m : ℕ} {x y : 𝔼}
     (hx : Krylov.IsGalerkinIterate (op A) b x₀ m x)
@@ -825,15 +822,15 @@ theorem cgX_eq_dLanczosX (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) (m : ℕ)
     (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) :
     cgX A b x₀ m = dLanczosX A b x₀ m :=
   galerkin_unique hA (cgX_isGalerkinIterate hA m)
-    (dLanczosX_isGalerkinIterate (isSymm_of_posDef hA) hb m hη)
+    (dLanczosX_isGalerkinIterate hA.isSymm hb m hη)
 
 /-- §6.7.1: Algorithm 6.17 delivers the iterate of Algorithm 6.16. -/
 theorem dLanczosX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0)
     (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     dLanczosX A b x₀ m = lanczosMethodAt A b x₀ m :=
-  galerkin_unique hA (dLanczosX_isGalerkinIterate (isSymm_of_posDef hA) hb m hη)
-    (lanczosMethodAt_isGalerkinIterate (isSymm_of_posDef hA) hb hm hT)
+  galerkin_unique hA (dLanczosX_isGalerkinIterate hA.isSymm hb m hη)
+    (lanczosMethodAt_isGalerkinIterate hA.isSymm hb hm hT)
 
 /-- §6.7: **Algorithm 6.16 is the Full Orthogonalization Method for symmetric `A`.** Both
 `lanczosMethod` and `fom` are *the* Galerkin iterate on `𝒦_m(A, r_0)`, so they agree; the book's
@@ -860,7 +857,7 @@ theorem cgX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : �
     (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     cgX A b x₀ m = lanczosMethodAt A b x₀ m :=
   galerkin_unique hA (cgX_isGalerkinIterate hA m)
-    (lanczosMethodAt_isGalerkinIterate (isSymm_of_posDef hA) hb hm hT)
+    (lanczosMethodAt_isGalerkinIterate hA.isSymm hb hm hT)
 
 /-- `(v_k, p_j) = 0` for `k > j`: the auxiliary vectors of Algorithm 6.17 lie in `𝒦_{j+1}`. -/
 theorem inner_lanczosV_dlP_eq_zero (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) :
@@ -919,7 +916,7 @@ theorem lanczosV_eq_smul_cgR (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
   have h := CG.arnoldi_vec_eq b x₀ (isSymmetricCoercive_op_of_posDef hA) k
     (by rwa [cgR_eq_CG A b x₀ hs] at hr)
-  rw [lanczosV_v₁ (isSymm_of_posDef hA) hb, cgR_eq_CG A b x₀ hs]
+  rw [lanczosV_v₁ hA.isSymm hb, cgR_eq_CG A b x₀ hs]
   simpa using h
 
 /-- (6.99): the CG residual `r_j` is a nonzero multiple of the Lanczos vector `v_{j+1}`. -/
@@ -1041,7 +1038,7 @@ theorem equation_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
     lanczosAlpha A (v₁ A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
   have hb : b - op A x₀ ≠ 0 := hr
   have hn : ‖cgR A b x₀ 0‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
+  rw [lanczosAlpha_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
     inner_cgR_apply_cgR_zero hA hr]
   field_simp
@@ -1052,7 +1049,7 @@ theorem equation_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 
       1 / cgAlpha A b x₀ (k + 1) + cgBeta A b x₀ k / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
   have hn : ‖cgR A b x₀ (k + 1)‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
+  rw [lanczosAlpha_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
     inner_cgR_apply_cgR_succ hA hr, ← mul_assoc, sign_norm_sq]
   field_simp
@@ -1070,7 +1067,7 @@ theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 
   have hsqrt : Real.sqrt (cgBeta A b x₀ k) = ‖cgR A b x₀ (k + 1)‖ / ‖cgR A b x₀ k‖ := by
     rw [hbeta, ← div_pow, Real.sqrt_sq (by positivity)]
   have hα : cgAlpha A b x₀ k ≠ 0 := cgAlpha_ne_zero hA hrk
-  rw [lanczosBeta_succ_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
+  rw [lanczosBeta_succ_eq_inner_real A _ hA.isSymm (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, lanczosV_eq_smul_cgR hA hrk, map_smul, real_inner_smul_left,
     real_inner_smul_right, inner_cgR_succ_apply_cgR hA hr, ← mul_assoc, sign_norm_mul,
     hsqrt]
@@ -1084,7 +1081,7 @@ theorem cgP_smul_dlP (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {j : ℕ} (hr : 
   have hα := cgAlpha_ne_zero hA hr
   have hxj := cgX_eq_dLanczosX hA hb j fun i hi => hη i (by omega)
   have hxj1 := cgX_eq_dLanczosX hA hb (j + 1) hη
-  have hres := residual_dLanczosX (isSymm_of_posDef hA) hb j fun i hi => hη i (by omega)
+  have hres := residual_dLanczosX hA.isSymm hb j fun i hi => hη i (by omega)
   have hζ : dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ j ≠ 0 := by
     intro h0
     rw [h0, zero_smul] at hres

@@ -5,11 +5,15 @@ import Numlib.Krylov.Relations
 /-!
 # Hessenberg relations, FOM/GMRES coordinates and Givens rotations
 
-* `Krylov.HessenbergRelation A v h`: a sequence `v` with `A v_j = ∑_{i ≤ j+1} h i j v_i`
-  ([saad2003iterative] (6.6)–(6.7)), *without* orthogonality, so that the residual formulas
-  [saad2003iterative] (6.18), (6.27) and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and
-  ([saad2003iterative] Ch. 7) to the bi-Lanczos basis of QMR; Arnoldi is the instance
-  `Arnoldi.hessenbergRelation`.
+* `Krylov.HessenbergRelation₂ A z v h`: the relation `A z_j = ∑_{i ≤ j+1} h i j v_i` for two
+  *unrelated* families, the iterate basis `z` on the left and the residual basis `v` on the right,
+  *without* orthogonality; flexible GMRES ([saad2003iterative] (9.22), where `z_j = M_j⁻¹ v_j` for a
+  step-dependent preconditioner) and TFQMR ([saad2003iterative] (7.70)) are genuinely two-family.
+  `Krylov.HessenbergRelation A v h` is the diagonal case `z = v` ([saad2003iterative] (6.6)–(6.7)),
+  so that the residual formulas `Krylov.HessenbergRelation₂.residual_eq` and
+  `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` ([saad2003iterative] (6.18), (6.27) and
+  Prop 6.7) apply verbatim to IOM/DIOM/DQGMRES and ([saad2003iterative] Ch. 7) to the bi-Lanczos
+  basis of QMR; Arnoldi is the instance `Arnoldi.hessenbergRelation`.
 * FOM and GMRES in coordinates ([saad2003iterative] (6.16)–(6.17), (6.28)–(6.30)): for `m ≤ grade`,
   the Galerkin iterate is `x₀ + V_m y` with `H_m y = β e₁`, exists uniquely iff `H_m` is a unit, and
   the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of `H̄_m y ≈ β
@@ -53,36 +57,45 @@ def hessenbergSqOf (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m)
 /-- `β e₁ ∈ 𝕜^m`. -/
 def firstVec (β : 𝕜) (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0 then β else 0
 
-/-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h` upper
-Hessenberg ([saad2003iterative], (6.6)–(6.9) without orthogonality). -/
-structure HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
-  /-- The expansion of `A v_j` in the vectors up to `v_{j+1}`. -/
-  apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i
+/-- A pair of sequences `z`, `v` satisfying the two-family Hessenberg relation `A z_j = ∑_{i ≤ j+1}
+h i j v_i` with `h` upper Hessenberg: the iterate basis `z` on the left, the residual basis `v` on
+the right ([saad2003iterative], (9.22) for FGMRES and (7.70) for TFQMR). `Krylov.HessenbergRelation`
+is the diagonal case `z = v`. -/
+structure HessenbergRelation₂ (A : E →ₗ[𝕜] E) (z v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
+  /-- The expansion of `A z_j` in the residual basis up to `v_{j+1}`. -/
+  apply_eq : ∀ j, A (z j) = ∑ i ∈ range (j + 2), h i j • v i
   /-- The coefficients are upper Hessenberg. -/
   eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0
 
-namespace HessenbergRelation
+/-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h` upper
+Hessenberg ([saad2003iterative], (6.6)–(6.9) without orthogonality): the diagonal case `z = v` of
+`Krylov.HessenbergRelation₂`, so that every lemma about the two-family relation applies to it by
+dot notation (`hv.residual_eq`, `hv.apply_eq`, …). -/
+abbrev HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop :=
+  HessenbergRelation₂ A v v h
 
-variable {A : E →ₗ[𝕜] E} {v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation A v h)
+namespace HessenbergRelation₂
+
+variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation₂ A z v h)
 include hv
 
-/-- The matrix `H̄_m` cut out of the coefficients of a Hessenberg relation is upper Hessenberg. -/
+/-- The matrix `H̄_m` cut out of the coefficients of a two-family relation is upper Hessenberg. -/
 theorem hessenbergOf_isUpperHessenbergRect (m : ℕ) : (hessenbergOf h m).IsUpperHessenbergRect :=
   fun i j hij => hv.eq_zero_of_lt i j hij
 
-/-- The Hessenberg expansion of `A v_j` may be taken over any range containing `j + 2`. -/
+/-- The Hessenberg expansion of `A z_j` may be taken over any range containing `j + 2`. -/
 private theorem apply_eq_range (j N : ℕ) (hj : j + 2 ≤ N) :
-    A (v j) = ∑ i ∈ range N, h i j • v i := by
+    A (z j) = ∑ i ∈ range N, h i j • v i := by
   rw [hv.apply_eq j]
   refine Finset.sum_subset (by simpa using hj) fun i hi hi' => ?_
   rw [Finset.mem_range] at hi'
   rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
 
-/-- `A V_m = V_{m+1} H̄_m` ([saad2003iterative], (6.7)) in coordinates. -/
+/-- `A Z_m = V_{m+1} H̄_m` ([saad2003iterative], (6.7) and (9.22)) in coordinates. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
-    A (∑ j, y j • v j) = ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
+    A (∑ j, y j • z j) = ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
   rw [map_sum]
-  have hleft : ∀ j : Fin m, A (y j • v j) = ∑ i : Fin (m + 1), (y j * h i j) • v i := by
+  have hleft : ∀ j : Fin m, A (y j • z j) = ∑ i : Fin (m + 1), (y j * h i j) • v i := by
     intro j
     rw [map_smul, hv.apply_eq_range (j : ℕ) (m + 1) (by omega), Finset.smul_sum,
       ← Fin.sum_univ_eq_sum_range (fun i => y j • h i (j : ℕ) • v i) (m + 1)]
@@ -93,10 +106,11 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
   rw [Finset.sum_smul]
   exact Finset.sum_congr rfl fun j _ => by rw [mul_comm]
 
-/-- [saad2003iterative], (6.27): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ -
-H̄_m y)`. -/
+/-- [saad2003iterative], (6.27) and (9.25): with `r₀ = β v₀`, the residual of `x₀ + Z_m y` is
+`V_{m+1} (β e₁ - H̄_m y)`. In the one-family case it is [saad2003iterative] (6.27) for FOM/GMRES and
+(7.16) for QMR; in the two-family case (7.75) for TFQMR and (9.25) for FGMRES. -/
 theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
-    b - A (x₀ + ∑ j, y j • v j) =
+    b - A (x₀ + ∑ j, y j • z j) =
       ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i := by
   have hfirst : ∑ i : Fin (m + 1), firstVec β (m + 1) i • v i = β • v 0 := by
     rw [Finset.sum_eq_single (⟨0, Nat.succ_pos m⟩ : Fin (m + 1))]
@@ -105,7 +119,7 @@ theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m :
       have : (i : ℕ) ≠ 0 := fun hc => hi (Fin.ext hc)
       simp [firstVec, this]
     · intro hc; exact absurd (Finset.mem_univ _) hc
-  have hAx : A (x₀ + ∑ j, y j • v j) = A x₀ + ∑ i : Fin (m + 1),
+  have hAx : A (x₀ + ∑ j, y j • z j) = A x₀ + ∑ i : Fin (m + 1),
       (hessenbergOf h m).mulVec y i • v i := by
     rw [map_add, hv.apply_sum m y]
   have hsplit : ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i
@@ -115,11 +129,11 @@ theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m :
   rw [hsplit, hAx, ← hr]
   abel
 
-/-- [saad2003iterative], Prop 6.7 / (6.18): if `H_m y = β e₁` then the residual of `x₀ + V_m y` is
-`-(h_{m,m-1} y_{m-1}) v_m`. -/
+/-- [saad2003iterative], Prop 6.7 / (6.18), (7.76) and (9.23): if `H_m y = β e₁` then the residual
+of `x₀ + Z_m y` is `-(h_{m,m-1} y_{m-1}) v_m`. -/
 theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     (hm : 0 < m) (y : Fin m → 𝕜) (hy : (hessenbergSqOf h m).mulVec y = firstVec β m) :
-    b - A (x₀ + ∑ j, y j • v j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
+    b - A (x₀ + ∑ j, y j • z j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
   rw [hv.residual_eq hr m y]
   have hzero : ∀ i : Fin (m + 1), (i : ℕ) < m →
       (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i = 0 := by
@@ -155,7 +169,7 @@ theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β 
     rw [hzero i this, zero_smul]
   · intro hc; exact absurd (Finset.mem_univ _) hc
 
-end HessenbergRelation
+end HessenbergRelation₂
 
 end Krylov
 

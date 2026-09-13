@@ -1,5 +1,6 @@
 import Numlib.Krylov.NormalEquations
 import NumlibSurface.SaadSparse.Chapter06.Section02
+import NumlibSurface.SaadSparse.Chapter07.Section01
 import NumlibSurface.SaadSparse.Chapter08.Section01
 
 /-!
@@ -50,12 +51,6 @@ theorem inner_op_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) (u v : 𝔼) :
     inner 𝕜 (op Aᴴ u) v = inner 𝕜 u (op A v) :=
   inner_conjTranspose A u v
 
-/-- The same with the roles of `A` and `Aᴴ` exchanged: `A` acts as the adjoint of `Aᴴ`. -/
-theorem inner_op_self (A : Matrix (Fin n) (Fin n) 𝕜) (u v : 𝔼) :
-    inner 𝕜 (op A u) v = inner 𝕜 u (op Aᴴ v) := by
-  have h := inner_conjTranspose Aᴴ u v
-  rwa [Matrix.conjTranspose_conjTranspose] at h
-
 /-- A matrix product acts as the composite of the two actions. -/
 private theorem op_mul (B C : Matrix (Fin n) (Fin n) 𝕜) : op (B * C) = op B ∘ₗ op C :=
   Matrix.toEuclideanLin_mul B C
@@ -75,7 +70,7 @@ theorem isSymmetricCoercive_normal {A : Matrix (Fin n) (Fin n) 𝕜}
 hypothesis under which CGNE is well defined. -/
 theorem isSymmetricCoercive_normal' {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : Function.Injective (op Aᴴ)) : (op A ∘ₗ op Aᴴ).IsSymmetricCoercive :=
-  Krylov.adjoint_comp_isSymmetricCoercive_of_injective (inner_op_self A) hA
+  Krylov.adjoint_comp_isSymmetricCoercive_of_injective (Chapter07.inner_op_conjTranspose A) hA
 
 /-! ### Algorithm 8.4: CGNR -/
 

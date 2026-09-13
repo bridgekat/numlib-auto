@@ -78,18 +78,12 @@ theorem P_i_eq_obliqueProj (i : Fin 𝒱.p) :
 theorem mul_corrector (i : Fin 𝒱.p) : A * corrector 𝒱 A i = P_i 𝒱 A i := by
   rw [corrector, P_i, ← Matrix.mul_assoc, ← Matrix.mul_assoc]
 
-/-- Matrices act on `ℝⁿ` through `toEuclideanLin` multiplicatively. -/
-theorem toEuclideanLin_mul_apply (M N : Matrix (Fin n) (Fin n) ℝ) (z : E n) :
-    ((M * N) ⬝ z) = M ⬝ (N ⬝ z) := by
-  have h : (M * N) *ᵥ WithLp.ofLp z = M *ᵥ (N *ᵥ WithLp.ofLp z) := (mulVec_mulVec _ _ _).symm
-  exact congrArg (WithLp.toLp 2) h
-
 /-- Saad (5.23): the residual of the additive procedure is `r_{k+1} = (I - ∑ ω_i P_i) r_k`. -/
 theorem residual_additiveStep (ω : Fin 𝒱.p → ℝ) (b x : E n) :
     b - (A ⬝ additiveStep 𝒱 A ω b x) =
       (b - (A ⬝ x)) - ∑ i, ω i • ((P_i 𝒱 A i) ⬝ (b - (A ⬝ x))) := by
   rw [additiveStep, map_add, map_sum]
-  simp only [map_smul, ← toEuclideanLin_mul_apply, mul_corrector]
+  simp only [map_smul, ← Matrix.toEuclideanLin_mul_apply, mul_corrector]
   abel
 
 /-- Saad §5.4: (4.17), the block-relaxation correction, is the projection step (5.7) with

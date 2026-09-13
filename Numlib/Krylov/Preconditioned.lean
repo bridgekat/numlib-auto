@@ -2,6 +2,7 @@ import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
 import Numlib.Krylov.QuasiMinRes
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # Preconditioned Krylov methods
@@ -583,7 +584,8 @@ theorem apply_eq_of_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : 
     A (x₀ + ∑ i, y i • z i) = b := by
   set y' : Fin m → 𝕜 := (hessenbergSqOf h m)⁻¹.mulVec (firstVec β m) with hy'
   have hy'eq : (hessenbergSqOf h m).mulVec y' = firstVec β m := by
-    rw [hy', Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hH, Matrix.one_mulVec]
+    rw [hy']
+    exact Matrix.mulVec_nonsing_inv_mulVec ((Matrix.isUnit_iff_isUnit_det _).2 hH) _
   have hq' : quasiResidual h β m y' = 0 := by
     refine (quasiResidual_eq_zero_iff h β m y').2 fun i => ?_
     rcases eq_or_lt_of_le (Nat.lt_succ_iff.1 i.isLt) with heq | hlt
@@ -657,7 +659,8 @@ theorem apply_eq_iff_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h :
   · intro hzero
     set y' : Fin j → 𝕜 := (hessenbergSqOf h j)⁻¹.mulVec (firstVec β j) with hy'
     have hy'eq : (hessenbergSqOf h j).mulVec y' = firstVec β j := by
-      rw [hy', Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hH, Matrix.one_mulVec]
+      rw [hy']
+      exact Matrix.mulVec_nonsing_inv_mulVec ((Matrix.isUnit_iff_isUnit_det _).2 hH) _
     have hq' : quasiResidual h β j y' = 0 := by
       refine (hqz y').2 fun i => ?_
       rcases eq_or_lt_of_le (Nat.lt_succ_iff.1 i.isLt) with heq | hlt

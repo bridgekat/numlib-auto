@@ -67,7 +67,7 @@ theorem isSymmetric_conjTranspose_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (Aᴴ * A)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Chapter08.inner_op_conjTranspose, Chapter08.inner_op_self]
+  rw [Chapter08.inner_op_conjTranspose, Chapter07.inner_op_conjTranspose]
 
 /-- `A Aᴴ` is a symmetric operator: the coefficient operator of the system Algorithm 9.8
 preconditions. -/
@@ -75,13 +75,13 @@ theorem isSymmetric_mul_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (A * Aᴴ)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Chapter08.inner_op_self, Chapter08.inner_op_conjTranspose]
+  rw [Chapter07.inner_op_conjTranspose, Chapter08.inner_op_conjTranspose]
 
 /-- `(Aᴴ A p, p) = ‖A p‖₂²`: the denominator of Algorithm 9.7, line 4, is the one Algorithm 9.1
 would form. -/
 private theorem inner_conjTranspose_mul_self (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝔼) :
     inner 𝕜 p (op (Aᴴ * A) p) = (‖op A p‖ : 𝕜) ^ 2 := by
-  rw [op_mul_apply, ← Chapter08.inner_op_self, inner_self_eq_norm_sq_to_K]
+  rw [op_mul_apply, ← Chapter07.inner_op_conjTranspose, inner_self_eq_norm_sq_to_K]
 
 /-- `(A Aᴴ q, q) = (Aᴴ q, Aᴴ q)`: the denominator of Algorithm 9.8, line 4, is the one
 Algorithm 9.1 would form, read through `p = Aᴴ q`. -/
@@ -421,7 +421,8 @@ theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : 
   have hres : b - op (A * Aᴴ) u₀ = b - op A x₀ := by rw [op_mul_apply, hu₀]
   have hcoer' : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x)
       ≤ RCLike.re (inner 𝕜 (op (A * Aᴴ) x) x) := fun x => by
-    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter08.inner_op_self A) x, RCLike.ofReal_re]
+    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter07.inner_op_conjTranspose A) x,
+      RCLike.ofReal_re]
     exact hcoer x
   have h := pcg_isGalerkinIterate (A := A * Aᴴ) (M := M) hM (isSymmetric_mul_conjTranspose A)
     hc hcoer' b u₀ m
@@ -536,7 +537,7 @@ theorem isSymmetric_centredNR (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin
     (hMinv : (op M⁻¹).IsSymmetric) : (op (Aᴴ * (M⁻¹ * A))).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Chapter08.inner_op_conjTranspose, hMinv, Chapter08.inner_op_self]
+  rw [Chapter08.inner_op_conjTranspose, hMinv, Chapter07.inner_op_conjTranspose]
 
 /-- **P-9.5**: `A M⁻¹ Aᴴ` is symmetric whenever `M⁻¹` is. This is the coefficient operator of the
 centred NE system `A M⁻¹ Aᴴ u = b`. -/
@@ -544,7 +545,7 @@ theorem isSymmetric_centredNE (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin
     (hMinv : (op M⁻¹).IsSymmetric) : (op (A * (M⁻¹ * Aᴴ))).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Chapter08.inner_op_self, hMinv, Chapter08.inner_op_conjTranspose]
+  rw [Chapter07.inner_op_conjTranspose, hMinv, Chapter08.inner_op_conjTranspose]
 
 /-- The operation list of the centred NR step: `Aᴴ M⁻¹ A p` is one product with `A`, one solve
 with `M` and one product with `Aᴴ`; neither `Aᴴ M⁻¹ A` nor `M⁻¹` is ever formed. -/

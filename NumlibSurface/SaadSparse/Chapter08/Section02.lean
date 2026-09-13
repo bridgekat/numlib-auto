@@ -117,7 +117,7 @@ theorem inner_transpose' (M : Matrix (Fin n) (Fin n) ℝ) (u v : E n) :
 of the corresponding column of `A`. -/
 theorem inner_normal_coordVec (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) = ‖A ⬝ coordVec i‖ ^ 2 := by
-  rw [Chapter05.toEuclideanLin_mul_apply, inner_transpose', real_inner_self_eq_norm_sq]
+  rw [Matrix.toEuclideanLin_mul_apply, inner_transpose', real_inner_self_eq_norm_sq]
 
 /-- The quadratic form of `A Aᵀ` on a coordinate axis is the squared norm of the corresponding
 row of `A`. -/
@@ -128,7 +128,7 @@ theorem inner_normal'_coordVec (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
 /-- The normal-equations residual is `Aᵀ` of the residual. -/
 theorem normal_residual (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     (Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x) = (Aᵀ ⬝ (b - (A ⬝ x))) := by
-  rw [Chapter05.toEuclideanLin_mul_apply, ← map_sub]
+  rw [Matrix.toEuclideanLin_mul_apply, ← map_sub]
 
 /-! ### One-dimensional Petrov–Galerkin pairs -/
 
@@ -388,7 +388,7 @@ theorem equation_8_25 (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
       = ω • ∑ i, (ℝ ∙ (A ⬝ coordVec i)).starProjection (b - (A ⬝ x)) := by
     rw [hstep]; abel
   have hinv : (A⁻¹ ⬝ (A ⬝ (cimmino A b ω x - x))) = cimmino A b ω x - x := by
-    rw [← Chapter05.toEuclideanLin_mul_apply,
+    rw [← Matrix.toEuclideanLin_mul_apply,
       Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det A).1 hA), Matrix.toEuclideanLin_one]
     rfl
   have hd : (A⁻¹ ⬝ (A ⬝ (cimmino A b ω x - x)))
@@ -540,7 +540,7 @@ theorem cimminoNE_eq_jacobi (u : E n) :
   rw [map_add, map_smul, colNormDiagInv, diagonal_apply_eq_sum, map_sum, Finset.smul_sum,
     cimminoNE]
   refine congrArg (fun z : E n => (Aᵀ ⬝ u) + z) (Finset.sum_congr rfl fun i _ => ?_)
-  rw [map_smul, smul_smul, Chapter05.toEuclideanLin_mul_apply, div_eq_mul_inv]
+  rw [map_smul, smul_smul, Matrix.toEuclideanLin_mul_apply, div_eq_mul_inv]
   congr 1
   ring
 
@@ -568,7 +568,7 @@ theorem blockCimmino_eq_additiveStep (𝒱 : Chapter05.ProjFamily n) (x : E n) :
       = (𝒱.V i * ((𝒱.V i)ᵀ * (Aᵀ * A) * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ) * Aᵀ := by
     rw [Matrix.transpose_mul]
     simp only [Matrix.mul_assoc]
-  rw [Chapter05.corrector, normal_residual, ← Chapter05.toEuclideanLin_mul_apply, hmat]
+  rw [Chapter05.corrector, normal_residual, ← Matrix.toEuclideanLin_mul_apply, hmat]
 
 /-- **Saad (8.26)–(8.27)**: the block correction `d_i` solves the least-squares problem
 `min_d ‖r - A_i d‖₂`, so each substep reduces the residual as far as the columns of `A_i`
@@ -581,7 +581,7 @@ theorem blockCimmino_isMinResidual {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱
   have hH : (A * 𝒱.V i)ᴴ = (A * 𝒱.V i)ᵀ := Chapter05.conjTranspose_eq_transpose _
   have hnormal : (((A * 𝒱.V i)ᴴ * (A * 𝒱.V i))
       ⬝ ((((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ r)) = ((A * 𝒱.V i)ᴴ ⬝ r) := by
-    rw [hH, ← toEuclideanLin_mul_apply, ← Matrix.mul_assoc,
+    rw [hH, ← Matrix.toEuclideanLin_mul_apply, ← Matrix.mul_assoc,
       Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 h), Matrix.one_mul]
   exact (equation_8_1 (A * 𝒱.V i) r _).1 hnormal
 
@@ -784,7 +784,7 @@ theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ :
       have hzero : (Aᵀ * A) *ᵥ WithLp.ofLp (coordVec i) = (Aᵀ * A) *ᵥ 0 := by
         rw [Matrix.mulVec_zero, show ((Aᵀ * A) *ᵥ WithLp.ofLp (coordVec i))
             = WithLp.ofLp ((Aᵀ * A) ⬝ coordVec i) from rfl,
-          Chapter05.toEuclideanLin_mul_apply,
+          Matrix.toEuclideanLin_mul_apply,
           show (Matrix.toEuclideanLin A) (coordVec i) = (A ⬝ coordVec i) from rfl, h, map_zero]
         rfl
       exact absurd (congrFun (hinjVec hzero) i) (by simp [coordVec])

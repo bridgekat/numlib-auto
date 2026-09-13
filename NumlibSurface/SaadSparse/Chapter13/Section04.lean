@@ -754,7 +754,7 @@ theorem example_13_6_truncation {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : 
   have hAu : WithLp.ofLp (Chapter02.laplacian1D n h ⬝ gridSample n h u) i
       = (-u ((((i : ℕ) : ℝ) + 1) * h - h) + 2 * u ((((i : ℕ) : ℝ) + 1) * h)
           - u ((((i : ℕ) : ℝ) + 1) * h + h)) / h ^ 2 := by
-    rw [ofLp_toEuclideanLin, Chapter02.laplacian1D_mulVec_apply,
+    rw [Matrix.ofLp_toEuclideanLin, Chapter02.laplacian1D_mulVec_apply,
       dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) ≤ n + 1),
       dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) + 1 ≤ n + 1),
       dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) + 2 ≤ n + 1)]

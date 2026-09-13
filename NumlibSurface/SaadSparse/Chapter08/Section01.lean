@@ -41,27 +41,13 @@ variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-- `(Aᴴ u, v) = (u, A v)`: the conjugate transpose acts as the adjoint. -/
 theorem inner_conjTranspose (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin n))
-    (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 (Aᴴ ⬝ u) v = inner 𝕜 u (A ⬝ v) := by
-  rw [toEuclideanLin_conjTranspose_eq_adjoint]
-  exact LinearMap.adjoint_inner_left _ _ _
+    (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 (Aᴴ ⬝ u) v = inner 𝕜 u (A ⬝ v) :=
+  Matrix.toEuclideanLin_conjTranspose_inner_left A v u
 
 /-- `(v, Aᴴ u) = (A v, u)`, the companion of `SaadSparse.Chapter08.inner_conjTranspose`. -/
 theorem inner_conjTranspose' (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin n))
-    (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 v (Aᴴ ⬝ u) = inner 𝕜 (A ⬝ v) u := by
-  rw [← inner_conj_symm, inner_conjTranspose, inner_conj_symm]
-
-/-- A product of rectangular matrices acts as the composite of the two actions. -/
-theorem toEuclideanLin_mul_apply {k : ℕ} (B : Matrix (Fin n) (Fin m) 𝕜)
-    (C : Matrix (Fin m) (Fin k) 𝕜) (x : EuclideanSpace 𝕜 (Fin k)) :
-    ((B * C) ⬝ x) = (B ⬝ (C ⬝ x)) := by
-  rw [show (B * C).toEuclideanLin = B.toEuclideanLin ∘ₗ C.toEuclideanLin from
-    Matrix.toLpLin_mul 2 2 2 B C]
-  rfl
-
-/-- The action of a rectangular matrix on a Euclidean vector is `Matrix.mulVec` under
-`WithLp.ofLp`; the rectangular companion of `SaadSparse.ofLp_toEuclideanLin`. -/
-theorem ofLp_toEuclideanLin {k l : ℕ} (B : Matrix (Fin k) (Fin l) 𝕜)
-    (x : EuclideanSpace 𝕜 (Fin l)) : WithLp.ofLp (B ⬝ x) = B *ᵥ WithLp.ofLp x := rfl
+    (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 v (Aᴴ ⬝ u) = inner 𝕜 (A ⬝ v) u :=
+  Matrix.toEuclideanLin_conjTranspose_inner_right A v u
 
 /-- The range of `A`: the space over which `min ‖b - A x‖₂` searches. -/
 private def ran (A : Matrix (Fin n) (Fin m) 𝕜) : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
@@ -90,7 +76,7 @@ theorem equation_8_1 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 
     (x : EuclideanSpace 𝕜 (Fin m)) :
     ((Aᴴ * A) ⬝ x) = (Aᴴ ⬝ b) ↔ ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
   have hres : ((Aᴴ * A) ⬝ x) = (Aᴴ ⬝ b) ↔ (Aᴴ ⬝ (b - (A ⬝ x))) = 0 := by
-    rw [toEuclideanLin_mul_apply, map_sub, sub_eq_zero]
+    rw [Matrix.toEuclideanLin_mul_apply, map_sub, sub_eq_zero]
     exact eq_comm
   rw [hres, conjTranspose_apply_eq_zero_iff]
   constructor
@@ -110,11 +96,10 @@ theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) �
     (hA : Function.Injective (toEuclideanLin A)) :
     (toEuclideanLin (Aᴴ * A)).IsSymmetricCoercive where
   isSymmetric x y := by
-    rw [toEuclideanLin_mul_apply, toEuclideanLin_mul_apply, inner_conjTranspose,
+    rw [Matrix.toEuclideanLin_mul_apply, Matrix.toEuclideanLin_mul_apply, inner_conjTranspose,
       inner_conjTranspose']
   isCoercive := (LinearMap.isCoercive_iff_forall_pos _).2 fun x hx => by
-    rw [show (toEuclideanLin (Aᴴ * A)) x = (Aᴴ ⬝ (A ⬝ x)) from toEuclideanLin_mul_apply Aᴴ A x,
-      inner_conjTranspose, inner_self_eq_norm_sq_to_K]
+    rw [Matrix.toEuclideanLin_mul_apply, inner_conjTranspose, inner_self_eq_norm_sq_to_K]
     have hAx : (A ⬝ x) ≠ 0 := fun h => hx (hA (by rw [h, map_zero]))
     simpa using by positivity
 
@@ -142,7 +127,7 @@ theorem problem_8_10 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 
       ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
   have hn : ((Aᴴ * A) ⬝ xstar) = (Aᴴ ⬝ b) := (equation_8_1 A b xstar).2 hstar
   have hr : (Aᴴ ⬝ (b - (A ⬝ xstar))) = 0 := by
-    rw [map_sub, ← toEuclideanLin_mul_apply, hn, sub_self]
+    rw [map_sub, ← Matrix.toEuclideanLin_mul_apply, hn, sub_self]
   have hb : (Aᴴ ⬝ (b + α • (b - (A ⬝ xstar)))) = (Aᴴ ⬝ b) := by
     rw [map_add, map_smul, hr, smul_zero, add_zero]
   rw [← equation_8_1, ← equation_8_1, hb]
@@ -158,7 +143,7 @@ theorem equation_8_3 (A : Matrix (Fin n) (Fin m) 𝕜) {b u : EuclideanSpace �
     (A ⬝ (Aᴴ ⬝ u)) = b ∧ (∀ y, (A ⬝ y) = b → ‖(Aᴴ ⬝ u)‖ ≤ ‖y‖) ∧
       ∀ xstar, (A ⬝ xstar) = b →
         IsMinError xstar 0 (LinearMap.range (toEuclideanLin Aᴴ)) (Aᴴ ⬝ u) := by
-  have hsol : (A ⬝ (Aᴴ ⬝ u)) = b := by rw [← toEuclideanLin_mul_apply, hu]
+  have hsol : (A ⬝ (Aᴴ ⬝ u)) = b := by rw [← Matrix.toEuclideanLin_mul_apply, hu]
   have horth : ∀ xstar : EuclideanSpace 𝕜 (Fin m), (A ⬝ xstar) = b →
       ∀ w ∈ LinearMap.range (toEuclideanLin Aᴴ),
         inner 𝕜 (xstar - (Aᴴ ⬝ u)) w = (0 : 𝕜) := by
@@ -196,15 +181,15 @@ theorem equation_8_5 (A : Matrix (Fin n) (Fin m) 𝕜) (b r : EuclideanSpace �
     constructor
     · intro h
       refine WithLp.ofLp_injective 2 ?_
-      rw [WithLp.ofLp_sub, ofLp_toEuclideanLin]
+      rw [WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin]
       exact eq_sub_of_add_eq h
     · intro h
-      rw [h, WithLp.ofLp_sub, ofLp_toEuclideanLin, sub_add_cancel]
+      rw [h, WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin, sub_add_cancel]
   rw [hblk, Sum.elim_eq_iff, h1]
   refine and_congr_right fun hr => ?_
   have h2 : Aᴴ *ᵥ WithLp.ofLp r = WithLp.ofLp (Aᴴ ⬝ (b - (A ⬝ x))) := by rw [hr]; rfl
   rw [h2, ← WithLp.ofLp_zero (p := 2), (WithLp.ofLp_injective 2).eq_iff,
-    ← equation_8_1, toEuclideanLin_mul_apply, map_sub, sub_eq_zero]
+    ← equation_8_1, Matrix.toEuclideanLin_mul_apply, map_sub, sub_eq_zero]
   exact eq_comm
 
 /-! ### (8.8): the squared condition number -/

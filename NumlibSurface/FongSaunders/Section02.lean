@@ -385,7 +385,7 @@ theorem two_phi_eq {xstar x : Vec n} (hstar : A ⬝ xstar = b) :
 theorem energyNorm_sq_eq_two_phi_add (hA : A.PosDef) {xstar x : Vec n} (hstar : A ⬝ xstar = b) :
     energyNorm A (xstar - x) ^ 2 = 2 * phi A b x + ⟪xstar, A ⬝ xstar⟫_ℝ := by
   have h1 : ⟪xstar, A ⬝ x⟫_ℝ = ⟪x, A ⬝ xstar⟫_ℝ :=
-    (inner_mulVecE_comm (isSymm_of_posDef hA) xstar x).trans (real_inner_comm x (A ⬝ xstar))
+    (inner_mulVecE_comm (hA.isSymm) xstar x).trans (real_inner_comm x (A ⬝ xstar))
   rw [energyNorm_sq hA, two_phi_eq hstar, mulVecE_sub, inner_sub_left, inner_sub_right,
     inner_sub_right, h1]
   ring
@@ -766,7 +766,7 @@ theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
   have hsq : energyNorm A (xstar - (cr A b (k + 1)).x) ^ 2
       < energyNorm A (xstar - (cr A b k).x) ^ 2 := by
     rw [energyNorm_sq hA, energyNorm_sq hA, hsplit,
-      inner_mulVecE_add_smul (isSymm_of_posDef hA), hAe]
+      inner_mulVecE_add_smul (hA.isSymm), hAe]
     linarith
   nlinarith [energyNorm_nonneg A (xstar - (cr A b k).x),
     energyNorm_nonneg A (xstar - (cr A b (k + 1)).x)]

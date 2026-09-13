@@ -162,19 +162,19 @@ id = "equation_4_63"
 kind = "theorem"
 desc = '''The residual formula before (4.63): if `x = x₀ + V_k z` with `H_k z = ‖r₀‖ e₁` and `k < degree A r₀`,
 then `‖b - op A x‖ = h_{k+1,k} * |z_k|` (last components, `1`-based), because the residual is
-`-(h_{k+1,k} z_k) v_{k+1}` with `‖v_{k+1}‖ = 1`. `Krylov.residual_galerkin_eq` / `Krylov.HessenbergRelation.residual_eq_of_mulVec_eq`
+`-(h_{k+1,k} z_k) v_{k+1}` with `‖v_{k+1}‖ = 1`. `Krylov.residual_galerkin_eq` / `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq`
 and `Arnoldi.norm_vec_eq_one_of_lt_grade`; the stopping test (4.63) is this quantity divided by
 `‖r₀‖`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_57", "Krylov.residual_galerkin_eq", "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq", "Arnoldi.norm_vec_eq_one_of_lt_grade"]
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_57", "Krylov.residual_galerkin_eq", "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq", "Arnoldi.norm_vec_eq_one_of_lt_grade"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.63'
 
 [[node]]
 id = "equation_4_65"
 kind = "theorem"
 desc = '''(4.64)–(4.65): for `x = x₀ + V_k z` and `k ≤ degree A r₀`, `b - op A x = r₀ - A V_k z = V_{k+1} (‖r₀‖ e₁ - Ĥ_k z)`,
-the residual expanded in the Arnoldi basis. `Krylov.HessenbergRelation.residual_eq` for
+the residual expanded in the Arnoldi basis. `Krylov.HessenbergRelation₂.residual_eq` for
 `Arnoldi.hessenbergRelation`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_56", "Krylov.HessenbergRelation.residual_eq", "Arnoldi.hessenbergRelation"]
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_56", "Krylov.HessenbergRelation₂.residual_eq", "Arnoldi.hessenbergRelation"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.65'
 
 [[node]]

@@ -2,6 +2,7 @@ import Numlib.Krylov.CR
 import Numlib.Krylov.Preconditioned
 import NumlibSurface.SaadSparse.Chapter04.Section01
 import NumlibSurface.SaadSparse.Chapter06.Common
+import NumlibSurface.SaadSparse.Chapter07.Section01
 import NumlibSurface.SaadSparse.Chapter09.Section01
 
 /-!
@@ -70,12 +71,6 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-! ### Preliminaries: adjoints, products and preconditioners -/
-
-/-- `(B x, y) = (x, Bᴴ y)`: the conjugate transpose acts as the adjoint. -/
-theorem inner_op_conjTranspose (B : Matrix (Fin n) (Fin n) 𝕜) (x y : 𝔼) :
-    inner 𝕜 (op B x) y = inner 𝕜 x (op Bᴴ y) := by
-  have hadj : (op Bᴴ) = LinearMap.adjoint (op B) := Matrix.toEuclideanLin_conjTranspose B
-  rw [hadj, LinearMap.adjoint_inner_right]
 
 /-- A matrix product acts as the composite of the two actions. -/
 theorem op_mul (B C : Matrix (Fin n) (Fin n) 𝕜) : op (B * C) = op B ∘ₗ op C :=
@@ -399,7 +394,7 @@ private theorem inner_op_inv_split {M : Matrix (Fin n) (Fin n) 𝕜} (hM : M = L
     inner 𝕜 (op M⁻¹ x) y = inner 𝕜 (op L⁻¹ x) (op L⁻¹ y) := by
   have hc : (((Lᴴ)⁻¹)ᴴ) = L⁻¹ := by
     rw [Matrix.conjTranspose_nonsing_inv, Matrix.conjTranspose_conjTranspose]
-  rw [← op_inv_split hM, inner_op_conjTranspose, hc]
+  rw [← op_inv_split hM, Chapter07.inner_op_conjTranspose, hc]
 
 private theorem splitPcgStep_eq_pcgStep {M : Matrix (Fin n) (Fin n) 𝕜} (hM : M = L * Lᴴ)
     (s : 𝔼 × 𝔼 × 𝔼) :
@@ -456,7 +451,7 @@ theorem splitPcg_eq_cg (hA : (op A).IsSymmetric) (hL : IsUnit L) (b x₀ : 𝔼)
       = inner 𝕜 p (op A p) := fun p => by
     have hc : (((L : Matrix (Fin n) (Fin n) 𝕜)⁻¹)ᴴ) = (Lᴴ)⁻¹ :=
       Matrix.conjTranspose_nonsing_inv L
-    rw [hAhat, inner_op_conjTranspose, hc, hinv, hA]
+    rw [hAhat, Chapter07.inner_op_conjTranspose, hc, hinv, hA]
   induction j with
   | zero =>
     refine ⟨rfl, ?_, ?_⟩

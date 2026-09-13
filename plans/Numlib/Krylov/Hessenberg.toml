@@ -5,13 +5,16 @@ id = "Arnoldi.hessenbergRelation"
 id = "Krylov.HessenbergRelation"
 
 [[node]]
-id = "Krylov.HessenbergRelation.apply_sum"
+id = "Krylov.HessenbergRelation₂"
 
 [[node]]
-id = "Krylov.HessenbergRelation.residual_eq"
+id = "Krylov.HessenbergRelation₂.apply_sum"
 
 [[node]]
-id = "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"
+id = "Krylov.HessenbergRelation₂.residual_eq"
+
+[[node]]
+id = "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq"
 
 [[node]]
 id = "Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC"

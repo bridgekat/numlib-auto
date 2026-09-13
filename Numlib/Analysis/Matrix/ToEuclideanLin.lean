@@ -12,7 +12,7 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 /-!
 # Matrices as operators on `EuclideanSpace`
 
-Glue between `Matrix n n 𝕜` and `Matrix.toEuclideanLin A : EuclideanSpace 𝕜 n →ₗ EuclideanSpace 𝕜 n`
+Glue between `Matrix m n 𝕜` and `Matrix.toEuclideanLin A : EuclideanSpace 𝕜 n →ₗ EuclideanSpace 𝕜 m`
 used by every matrix-level surface statement: multiplicativity, powers, adjoint = conjugate
 transpose, eigenvalues, and the `‖A‖₂ = ‖toEuclideanLin A‖` identification. (Symmetric ↔ Hermitian
 is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, `Matrix.PosDef` ↔ symmetric coercive is
@@ -20,12 +20,19 @@ is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, `Matrix.PosDef` ↔ symmet
 of columns is `Matrix.krylov_subspace_toEuclideanLin` in `Numlib.Krylov.ToEuclideanLin`, which this
 module cannot depend on.)
 
+Everything that makes sense for a rectangular matrix is stated for one, over arbitrary `Fintype`
+index types: composition `toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B` and its
+applied form, the adjoint identities `⟪Aᴴ y, x⟫ = ⟪y, A x⟫` and `⟪x, Aᴴ y⟫ = ⟪A x, y⟫`, and the
+coordinate identifications `WithLp.ofLp (toEuclideanLin A x) = A *ᵥ WithLp.ofLp x` and
+`toEuclideanLin A (WithLp.toLp 2 v) = WithLp.toLp 2 (A *ᵥ v)`, which are `rfl` but are what `rw`
+needs to move between the operator picture and `Matrix.mulVec`.
+
 It also contains the fact that a unitary matrix acts as an isometry of `EuclideanSpace`,
 `‖U *ᵥ v‖₂ = ‖v‖₂`: transport `U` along the star algebra equivalence `Matrix.toEuclideanCLM`
 and use that a unitary continuous linear endomorphism of a Hilbert space preserves the norm
 (`ContinuousLinearMap.norm_map_of_mem_unitary`).
 
-Three further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
+Four further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
 transported to the operator picture:
 
 * the *applied* forms of the linear-equivalence laws, `toEuclideanLin (A - B) v =
@@ -37,7 +44,10 @@ transported to the operator picture:
   `toEuclideanLin A⁻¹ (toEuclideanLin A z) = z` it gives;
 * the *shift* `A + r I` of a matrix by a multiple of the identity, the shape of a resolvent and of
   every regularized or shifted system, whose image is the shift `toEuclideanCLM A + r • 1` of the
-  operator.
+  operator;
+* *injectivity* of `Matrix.toEuclideanCLM` for the coercion its applications use
+  (`Matrix.toEuclideanCLM_injective`), because `StarAlgEquiv.injective` speaks about the underlying
+  ring equivalence and leaves a goal phrased in `toRingEquiv`.
 -/
 
 namespace Matrix
@@ -49,11 +59,18 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 theorem toEuclideanLin_one : toEuclideanLin (1 : Matrix n n 𝕜) = LinearMap.id :=
   toLpLin_one 2
 
-/-- Matrix multiplication is composition of the operators, so `toEuclideanLin` is a morphism of
-algebras and not merely a linear map. -/
-theorem toEuclideanLin_mul (A B : Matrix n n 𝕜) :
-    toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B :=
+/-- Matrix multiplication is composition of the operators, for rectangular matrices as well; on
+square ones it makes `toEuclideanLin` a morphism of algebras and not merely a linear map. -/
+theorem toEuclideanLin_mul {m o : Type*} [Fintype o] [DecidableEq o] (A : Matrix m n 𝕜)
+    (B : Matrix n o 𝕜) : toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B :=
   toLpLin_mul_same 2 A B
+
+/-- Applying a product of matrices is applying them one after the other: the applied form of
+`Matrix.toEuclideanLin_mul`. -/
+theorem toEuclideanLin_mul_apply {m o : Type*} [Fintype o] [DecidableEq o] (A : Matrix m n 𝕜)
+    (B : Matrix n o 𝕜) (x : EuclideanSpace 𝕜 o) :
+    toEuclideanLin (A * B) x = toEuclideanLin A (toEuclideanLin B x) := by
+  rw [toEuclideanLin_mul, LinearMap.comp_apply]
 
 /-- Powers of a matrix act as powers of the operator; this is what lets a Krylov subspace of a
 matrix be read as a Krylov subspace of `toEuclideanLin A`. -/
@@ -62,9 +79,23 @@ theorem toEuclideanLin_pow (A : Matrix n n 𝕜) (k : ℕ) :
   toLpLin_pow 2 A k
 
 /-- The adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`. -/
-theorem toEuclideanLin_conjTranspose (A : Matrix n n 𝕜) :
+theorem toEuclideanLin_conjTranspose {m : Type*} [Fintype m] [DecidableEq m] (A : Matrix m n 𝕜) :
     toEuclideanLin Aᴴ = LinearMap.adjoint (toEuclideanLin A) :=
   toEuclideanLin_conjTranspose_eq_adjoint A
+
+/-- `⟪Aᴴ y, x⟫ = ⟪y, A x⟫`: the conjugate transpose moves across the inner product as the adjoint
+does (`LinearMap.adjoint_inner_left`). -/
+theorem toEuclideanLin_conjTranspose_inner_left {m : Type*} [Fintype m] [DecidableEq m]
+    (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
+    inner 𝕜 (toEuclideanLin Aᴴ y) x = inner 𝕜 y (toEuclideanLin A x) := by
+  rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_left]
+
+/-- `⟪x, Aᴴ y⟫ = ⟪A x, y⟫`: the conjugate transpose moves across the inner product as the adjoint
+does (`LinearMap.adjoint_inner_right`). -/
+theorem toEuclideanLin_conjTranspose_inner_right {m : Type*} [Fintype m] [DecidableEq m]
+    (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) (y : EuclideanSpace 𝕜 m) :
+    inner 𝕜 x (toEuclideanLin Aᴴ y) = inner 𝕜 (toEuclideanLin A x) y := by
+  rw [toEuclideanLin_conjTranspose, LinearMap.adjoint_inner_right]
 
 /-- Eigenvalues of the operator are the eigenvalues of the matrix. -/
 theorem hasEigenvalue_toEuclideanLin_iff (A : Matrix n n 𝕜) (μ : 𝕜) :
@@ -87,15 +118,40 @@ theorem IsHermitian.isSymmetricBoundedBy_toEuclideanLin {A : Matrix n n 𝕜} (h
   obtain ⟨i, rfl⟩ := (hA.hasEigenvalue_toEuclideanLin_iff μ).mp hμ
   simpa using h i
 
+section Coordinates
+
+/-! ### Coordinates
+
+`Matrix.toEuclideanLin A` is `Matrix.mulVec` transported along `WithLp.toLp 2` / `WithLp.ofLp`, for
+a rectangular `A` as well as a square one. The identifications are definitional, and are stated so
+that `rw` and `simp only` can pass between the operator picture and the coordinate one in either
+direction. -/
+
+variable {m : Type*}
+
+/-- `Matrix.toEuclideanLin` in coordinates: under `WithLp.ofLp`, the action of a matrix on a
+Euclidean vector is `Matrix.mulVec`. -/
+theorem ofLp_toEuclideanLin (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) :
+    WithLp.ofLp (toEuclideanLin A x) = A *ᵥ WithLp.ofLp x := rfl
+
+/-- `Matrix.toEuclideanLin` in coordinates, in the `WithLp.toLp` direction. -/
+theorem toEuclideanLin_toLp (A : Matrix m n 𝕜) (v : n → 𝕜) :
+    toEuclideanLin A (WithLp.toLp 2 v) = WithLp.toLp 2 (A *ᵥ v) := rfl
+
+/-- `Matrix.toEuclideanLin` unfolded on an arbitrary vector. -/
+theorem toEuclideanLin_apply (A : Matrix m n 𝕜) (x : EuclideanSpace 𝕜 n) :
+    toEuclideanLin A x = WithLp.toLp 2 (A *ᵥ WithLp.ofLp x) := rfl
+
 omit [Fintype n] [DecidableEq n] in
 /-- `V y = ∑ y_j • (column j of V)`: moving between the book's `V_m y` and the backbone's
 `∑ y_j • vec j`. -/
-theorem toEuclideanLin_apply_eq_sum {m : Type*} [Fintype m] [DecidableEq m] (V : Matrix n m 𝕜)
-    (y : m → 𝕜) :
+theorem toEuclideanLin_apply_eq_sum [Fintype m] [DecidableEq m] (V : Matrix n m 𝕜) (y : m → 𝕜) :
     toEuclideanLin V (WithLp.toLp 2 y) =
       ∑ j, y j • (WithLp.toLp 2 (Vᵀ j) : EuclideanSpace 𝕜 n) := by
   ext i
   simp [toLpLin_apply, mulVec, dotProduct, mul_comm]
+
+end Coordinates
 
 open scoped Matrix.Norms.L2Operator in
 /-- The `2`-operator norm of a matrix is the operator norm of `toEuclideanLin A`. -/
@@ -214,17 +270,15 @@ theorem toEuclideanCLM_nonsing_inv {A : Matrix n n 𝕜} (hA : IsUnit A) :
 form of `Matrix.mul_nonsing_inv`. -/
 theorem toEuclideanLin_mul_nonsing_inv_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A (toEuclideanLin A⁻¹ z) = z := by
-  have h : toEuclideanLin A (toEuclideanLin A⁻¹ z) = toEuclideanLin (A * A⁻¹) z := by
-    rw [toEuclideanLin_mul]; rfl
-  rw [h, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), toEuclideanLin_one_apply]
+  rw [← toEuclideanLin_mul_apply, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA),
+    toEuclideanLin_one_apply]
 
 /-- Applying the inverse of an invertible matrix undoes applying the matrix, on `EuclideanSpace`:
 the applied form of `Matrix.nonsing_inv_mul`. -/
 theorem toEuclideanLin_nonsing_inv_mul_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
     (z : EuclideanSpace 𝕜 n) : toEuclideanLin A⁻¹ (toEuclideanLin A z) = z := by
-  have h : toEuclideanLin A⁻¹ (toEuclideanLin A z) = toEuclideanLin (A⁻¹ * A) z := by
-    rw [toEuclideanLin_mul]; rfl
-  rw [h, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), toEuclideanLin_one_apply]
+  rw [← toEuclideanLin_mul_apply, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA),
+    toEuclideanLin_one_apply]
 
 end Inverse
 

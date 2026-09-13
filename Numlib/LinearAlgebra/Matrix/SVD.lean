@@ -454,12 +454,6 @@ theorem pinv_unique {B : Matrix n m 𝕜} (h1 : A * B * A = A) (h2 : B * A * B =
 
 section LeastSquares
 
-/-- Applying a product of matrices is applying them one after the other. -/
-theorem toEuclideanLin_mul_apply {l k p : Type*} [Fintype k] [DecidableEq k] [Fintype p]
-    [DecidableEq p] (M : Matrix l k 𝕜) (N : Matrix k p 𝕜) (x : EuclideanSpace 𝕜 p) :
-    toEuclideanLin (M * N) x = toEuclideanLin M (toEuclideanLin N x) := by
-  rw [toLpLin_mul_same, LinearMap.comp_apply]
-
 /-- A Hermitian matrix acts as a self-adjoint operator on Euclidean space. -/
 theorem inner_toEuclideanLin_of_isHermitian {M : Matrix n n 𝕜} (hM : M.IsHermitian)
     (u z : EuclideanSpace 𝕜 n) :

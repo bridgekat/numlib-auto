@@ -616,7 +616,7 @@ omit [NeZero n] in
 private theorem real_inner_single_apply_single (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     inner ℝ (EuclideanSpace.single i (1 : ℝ) : E n) (A ⬝ (EuclideanSpace.single i (1 : ℝ) : E n))
       = A i i := by
-  rw [real_inner_single_left, ofLp_toEuclideanLin]
+  rw [real_inner_single_left, Matrix.ofLp_toEuclideanLin]
   simp
 
 omit [NeZero n] in
