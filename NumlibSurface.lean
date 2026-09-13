@@ -76,6 +76,10 @@ import NumlibSurface.FongSaunders.Section03
 import NumlibSurface.FongSaunders.Section04
 import NumlibSurface.FongSaunders.Section05
 import NumlibSurface.QuarteroniSaccoSaleri
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section12
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section01
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section08
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section01
 import NumlibSurface.Rockafellar
 import NumlibSurface.Rockafellar.Part1
 import NumlibSurface.Rockafellar.Part1.Section01

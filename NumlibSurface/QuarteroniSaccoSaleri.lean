@@ -1,3 +1,8 @@
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section12
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section01
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section08
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section01
+
 /-!
 # Quarteroni, Sacco and Saleri, *Numerical Mathematics*
 

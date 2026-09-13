@@ -1,64 +1,41 @@
 namespace = "QuarteroniSaccoSaleri.Chapter09"
-desc = '''
-§9.1, quadrature formulae: the error bound `|E_n(f)| ≤ (b - a) ‖f - f_n‖_∞` for a rule obtained by
-integrating an approximant, the Lagrange quadrature formula (9.2) as the general rule (9.3) with
-weights `∫ l_i`, and the equivalence "interpolatory ⇔ degree of exactness ≥ n" for `n + 1` distinct
-nodes, which is `Quadrature.isInterpolatory_iff_isExactOn` of `Numlib/Approximation/Quadrature`.
-'''
 
 [[node]]
 id = "quadratureError_le"
-kind = "theorem"
-desc = '''The unnumbered estimate of §9.1: for `a ≤ b`, `f` and `f_n` continuous on `Icc a b`,
-`|∫_a^b f - ∫_a^b f_n| ≤ (b - a) * ⨆ x ∈ Icc a b, |f x - f_n x|` (state with a bound `M` on
-`|f - f_n|`: `(∀ x ∈ Icc a b, |f x - f_n x| ≤ M) → |∫ f - ∫ f_n| ≤ (b - a) * M`).
-`intervalIntegral.norm_integral_le_of_norm_le_const`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (unnumbered estimate)'
 
 [[node]]
 id = "lagrangeQuadrature"
-kind = "definition"
-desc = '''The Lagrange quadrature formula (9.2) at distinct nodes `x : Fin (n + 1) → ℝ` on `[a, b]`:
-`lagrangeQuadrature x a b f := ∑ i, (∫ t in a..b, (Lagrange.basis Finset.univ x i).eval t) * f (x i)`,
-an instance of (9.3) with `α_i = ∫ l_i`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.2)'
 
 [[node]]
 id = "lagrangeQuadrature_eq_integral_interpolate"
-kind = "theorem"
-desc = '''(9.1)–(9.2): the Lagrange quadrature formula is the integral of the interpolant,
-`lagrangeQuadrature x a b f = ∫ t in a..b, (Lagrange.interpolate Finset.univ x (fun i => f (x i))).eval t`.
-Linearity of the integral over `Lagrange.interpolate_apply`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.1)–(9.2)'
 
 [[node]]
 id = "isInterpolatory_lagrangeQuadrature"
-kind = "theorem"
-desc = '''The Lagrange quadrature formula is interpolatory in the sense of `Quadrature.IsInterpolatory`
-on `X = Set.Icc a b` with `L f = ∫ f`: the weights `∫ l_i` are `L` at the basis functions
-`Lagrange.basisCM`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature", "Quadrature.IsInterpolatory"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (interpolatory quadrature)'
 
 [[node]]
 id = "degreeOfExactness_ge_of_interpolatory"
-kind = "theorem"
-desc = '''"Any interpolatory quadrature formula that makes use of `n + 1` distinct nodes has degree
-of exactness at least `n`": for injective `x`, `p : ℝ[X]` with `p.degree ≤ n`,
-`∫_a^b p = lagrangeQuadrature x a b (fun t => p.eval t)`; in the functional vocabulary,
-`Quadrature.IsExactOn L w x n` from `Quadrature.isInterpolatory_iff_isExactOn`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.isInterpolatory_lagrangeQuadrature", "Quadrature.IsInterpolatory"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (degree of exactness of interpolatory formulae)'''
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (degree of exactness of interpolatory formulae)'
 
 [[node]]
 id = "isInterpolatory_of_degreeOfExactness"
-kind = "theorem"
-desc = '''The converse the book quotes from [IK66] p. 316: a rule `∑ α_i f(x_i)` with `n + 1` distinct
-nodes in `[a, b]` exact on `ℙ_n` has `α_i = ∫ l_i`, i.e. is the Lagrange quadrature formula. The
-`mpr` direction of `Quadrature.isInterpolatory_iff_isExactOn`, read back through
-`Quadrature.functional` on `C(Icc a b, ℝ)`; or directly, apply exactness to `l_i`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature", "Quadrature.IsInterpolatory"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (converse, [IK66] p. 316)'
+
+[[node]]
+id = "quadratureError_le_integral_abs"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (unnumbered estimate, first half)'
+
+[[node]]
+id = "lagrangeWeights"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.2)–(9.3)'
+
+[[node]]
+id = "lagrangeQuadrature_eq_functional"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.3)'
+
+[[node]]
+id = "isExactOn_integralIccCLM_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (degree of exactness)'
