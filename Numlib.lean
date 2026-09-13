@@ -1,3 +1,4 @@
+import Numlib.Algebra.LinearRecurrence
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
@@ -308,6 +309,7 @@ import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import Numlib.Nonlinear.Order
 import Numlib.Nonlinear.ScalarNewton
+import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.Gronwall
 import Numlib.ODE.OneStep
 import Numlib.Order.EReal

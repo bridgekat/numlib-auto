@@ -1,134 +1,113 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.4, linear difference equations: the equation (11.28) and its characteristic polynomial
-(11.30), the fundamental solutions `r_j^n` (11.31)–(11.32), the multiple-root solutions (11.33),
-the fundamental solutions `ψ_j` with Kronecker initial data (11.34)–(11.37), the discrete
-Duhamel formula (11.42), and Examples 11.3–11.7. Restatements of `Numlib/Algebra/LinearRecurrence`
-over `ℝ` and `ℂ`; the book's `u_{n+k} + α_{k-1} u_{n+k-1} + … + α_0 u_n = φ_{n+k}` is Mathlib's
-`LinearRecurrence` with `coeffs i = -α_i` and `IsSolutionWith φ`.
-
-Skipped: the generating-function method (11.38)–(11.40) (a technique, no stated result; Example
-11.6, its worked example, is kept as the closed form it produces).
-'''
 
 [[node]]
 id = "equation_11_28"
-kind = "definition"
-desc = '''The linear difference equation of order `k` with constant coefficients `α_0 ≠ 0, …, α_{k-1}`
-and right-hand side `φ`: `equation_11_28 α : LinearRecurrence ℝ := ⟨k, fun i => -α i⟩`, a
-sequence `u` being a solution iff `(equation_11_28 α).IsSolutionWith φ u` (homogeneous (11.29):
-`IsSolution u`). The book's variable-coefficient case (11.38) is not formalized beyond Example 11.6.'''
-deps = ["LinearRecurrence.IsSolutionWith"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.28'
 
 [[node]]
+id = "equation_11_28_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.28'
+
+[[node]]
+id = "equation_11_29_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.29'
+
+[[node]]
 id = "equation_11_30"
-kind = "definition"
-desc = '''The characteristic polynomial `Π(r) = r^k + α_{k-1} r^{k-1} + … + α_0`:
-`(equation_11_28 α).charPoly`, with `equation_11_30_eq : (equation_11_28 α).charPoly = X^k + ∑ i, C (α i) * X^i`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.30'
+
+[[node]]
+id = "equation_11_30_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.30'
+
+[[node]]
+id = "equation_11_30_eval_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.30'
 
 [[node]]
 id = "equation_11_31"
-kind = "theorem"
-desc = '''For every root `r_j` of `Π`, the sequence `n ↦ r_j^n` solves (11.29); conversely a
-geometric sequence solves it only for a root. Mathlib's `LinearRecurrence.geom_sol_iff_root_charPoly`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_30"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.31'
 
 [[node]]
 id = "equation_11_32"
-kind = "theorem"
-desc = '''Every combination `u_n = ∑_j γ_j r_j^n` solves (11.29) (`solSpace` is a submodule), and when
-all roots of `Π` are simple every solution has this form for a unique `γ`, determined by the
-initial values (Exercise 4). Over `ℂ` (where `Π` splits): `LinearRecurrence.eq_sum_smul_pow_of_injective_roots`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_31", "LinearRecurrence.eq_sum_smul_pow_of_injective_roots"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.32'
 
 [[node]]
-id = "equation_11_33"
-kind = "theorem"
-desc = '''Multiple roots: if `r_j` has multiplicity `m_j` then `n^s r_j^n`, `s < m_j`, solve (11.29)
-(`LinearRecurrence.isSolution_pow_mul_pow`), and over `ℂ` every solution is
-`u_n = ∑_j (∑_{s < m_j} γ_{sj} n^s) r_j^n` (`LinearRecurrence.span_fundamentalSol_eq_solSpace`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_31", "LinearRecurrence.isSolution_pow_mul_pow", "LinearRecurrence.span_fundamentalSol_eq_solSpace"]
+id = "equation_11_32_existsUnique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.32 and Exercise 4 of chapter 11'
+
+[[node]]
+id = "equation_11_33_isSolution"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.33'
 
 [[node]]
-id = "example_11_3"
-kind = "theorem"
-desc = '''`u_{n+2} - u_n = 0`: `Π = r² - 1`, roots `-1, 1`, and the solution with initial values
-`u₀, u₁` is `u_n = ((u₀ - u₁)/2) (-1)^n + (u₀ + u₁)/2`. Verify the closed form solves the recurrence
-with those initial values and use uniqueness (`LinearRecurrence.eq_iff_eqOn_range_order`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28"]
+id = "equation_11_33"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.33'
+
+[[node]]
+id = "example_11_3_charPoly"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.3'
 
 [[node]]
-id = "example_11_4"
-kind = "theorem"
-desc = '''`u_{n+3} - 2u_{n+2} - 7u_{n+1} - 4u_n = 0`: `Π = r³ - 2r² - 7r - 4 = (r + 1)²(r - 4)`, and the
-solution with initial values `u₀, u₁, u₂` is `u_n = (γ₀₀ + n γ₁₀)(-1)^n + γ₀₁ 4^n` with
-`γ₀₀ = (24u₀ - 2u₁ - u₂)/25`, `γ₁₀ = (u₂ - 3u₁ - 4u₀)/5`, `γ₀₁ = (2u₁ + u₀ + u₂)/25`. Check the
-recurrence (`ring` after `pow_succ`) and the three initial values, then uniqueness. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28"]
+id = "example_11_3"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.3'
+
+[[node]]
+id = "example_11_4_charPoly"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.4'
 
 [[node]]
+id = "example_11_4"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.4'
+
+[[node]]
+id = "equation_11_34"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.34'
+
+[[node]]
+id = "equation_11_34_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.34'
+
+[[node]]
 id = "equation_11_35"
-kind = "theorem"
-desc = '''The fundamental solutions `ψ_j` with `ψ_j^{(i)} = δ_{ij}` (11.34), `LinearRecurrence.kroneckerSol`,
-and the representation `u_n = ∑_{j<k} u_j ψ_j^{(n)}` (11.35) of every solution of (11.29):
-`LinearRecurrence.eq_sum_kroneckerSol`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28", "LinearRecurrence.kroneckerSol", "LinearRecurrence.eq_sum_kroneckerSol"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.35'
 
 [[node]]
-id = "equation_11_37"
-kind = "theorem"
-desc = '''For simple roots, `ψ_j^{(n)} = ∑_m β_{j,m} r_m^n` (11.36) where the columns `b_j` solve
-`R b_j = e_j` with `R = (r_m^i)` (11.37), and `R` is nonsingular (Exercise 5):
-`(Matrix.vandermonde r).transpose.det ≠ 0` for injective `r`, `LinearRecurrence.det_vandermonde_transpose_ne_zero`,
-so `b_j = R⁻¹ e_j` and (11.36) follows from `equation_11_32` applied to `ψ_j`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_35", "QuarteroniSaccoSaleri.Chapter11.equation_11_32", "LinearRecurrence.det_vandermonde_transpose_ne_zero"]
+id = "equation_11_36"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.36'
+
+[[node]]
+id = "equation_11_37_matrix"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.37'
 
 [[node]]
+id = "equation_11_37_det_ne_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.37 and Exercise 5 of chapter 11'
+
+[[node]]
+id = "equation_11_37"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.37'
+
+[[node]]
+id = "example_11_5_matrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.5'
+
+[[node]]
 id = "example_11_5"
-kind = "theorem"
-desc = '''For the recurrence of Example 11.4, `R = !![1, 0, 1; -1, -1, 4; 1, 2, 16]` and
-`ψ₀^{(n)} = (24/25)(-1)^n - (4/5) n (-1)^n + (1/25) 4^n`, `ψ₁^{(n)} = -(2/25)(-1)^n - (3/5) n (-1)^n + (2/25) 4^n`,
-`ψ₂^{(n)} = -(1/25)(-1)^n + (1/5) n (-1)^n + (1/25) 4^n`; and `∑_j u_j ψ_j^{(n)}` is the solution
-of Example 11.4. Each `ψ_j` is checked as in `example_11_4`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.example_11_4", "QuarteroniSaccoSaleri.Chapter11.equation_11_35"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.5'
 
 [[node]]
 id = "example_11_6"
-kind = "theorem"
-desc = '''The variable-coefficient equation (11.41) `(n+2)(n+1) u_{n+2} - 2(n+1) u_{n+1} - 3 u_n = 0`
-with `u₀ = u₁ = 2` has the solution `u_n = ((-1)^n + 3^n)/n!`. Direct verification of the recurrence
-(`Nat.factorial_succ`, `field_simp`, `ring`) and of the initial values, plus uniqueness by strong
-induction (the leading coefficient `(n+2)(n+1)` is nonzero). The generating-function derivation is
-not formalized. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.6'
 
 [[node]]
 id = "example_11_7"
-kind = "theorem"
-desc = '''`u_n = 2^n (n²/5 - 36n/25 + 358/125)` is a particular solution of
-`u_{n+3} - u_{n+2} + u_{n+1} - u_n = 2^n n²`: `(equation_11_28 ![1, -1, 1]).IsSolutionWith (fun n => 2^(n-3) * (n-3)^2) u`
-in the book's indexing (`φ_{n+3} = 2^n n²`) — state it directly as the identity
-`u (n+3) - u (n+2) + u (n+1) - u n = 2^n * n^2` for all `n`, `ring` after expanding `2^(n+3)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.7'
+
+[[node]]
+id = "example_11_7_isSolutionWith"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.7'
 
 [[node]]
 id = "equation_11_42"
-kind = "theorem"
-desc = '''The solution of the inhomogeneous equation (11.28):
-`u_n = ∑_{j<k} u_j ψ_j^{(n)} + ∑_{l=k}^n φ_l ψ_{k-1}^{(n-l+k-1)}` with `ψ_{k-1}^{(i)} = 0` for `i < 0`.
-`LinearRecurrence.eq_sum_kroneckerSol_add_sum`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_35", "LinearRecurrence.eq_sum_kroneckerSol_add_sum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.42'

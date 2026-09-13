@@ -83,6 +83,7 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section12
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section08
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section01
 import NumlibSurface.Rockafellar
 import NumlibSurface.Rockafellar.Part1
