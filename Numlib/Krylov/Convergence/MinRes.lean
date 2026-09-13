@@ -13,9 +13,9 @@ the quadratic that folds the two onto it; that is
 `Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc` of
 `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`, and the only work left here is to feed it to
 the optimality of a minimal-residual iterate.  The resulting bound
-(`Krylov.IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`) is on the *even* steps,
-because the competitor polynomial has degree `2k`, and its rate is governed by the two products of
-endpoints across the origin: the outer one `|a₁ b₂|` and the inner one `|b₁ a₂|`.
+(`Krylov.IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`) is on the *even*
+steps, because the competitor polynomial has degree `2k`, and its rate is governed by the two
+products of endpoints across the origin: the outer one `|a₁ b₂|` and the inner one `|b₁ a₂|`.
 
 This is [greenbaum1997iterative] Thm 3.1.1, the estimate [choi2006iterative] §2.4 and [fong2012cg]
 §1 quote for MINRES.

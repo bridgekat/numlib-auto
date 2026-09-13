@@ -273,7 +273,8 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : EuclideanSpace 𝕜 (Fin n)
 `x_0 + 𝒦_m(Aᴴ A, Aᴴ r_0)`. It is the same minimization GMRES performs, over a different
 subspace. -/
 theorem cgnr_isMinResidual (hA : Function.Injective (op A)) (m : ℕ) :
-    IsMinResidual (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgnr A b x₀ m).x := by
+    IsMinResidual (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m)
+      (cgnr A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate (op Aᴴ b) x₀ (isSymmetricCoercive_normal hA) m
   rw [cgnr_eq, krylov_conjTranspose_mul]
   exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual (inner_op_conjTranspose A) b x₀ m

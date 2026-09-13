@@ -256,8 +256,8 @@ on which MINRES gives non-monotonic solution norms, and hence non-monotonic back
 `A ≻ 0`, and this is the witness that the hypothesis cannot be dropped.
 
 `A` is nonsingular (`det A = −2`), so the MINRES iterate is unique at every step
-(`Krylov.existsUnique_isMinResidualIterate_of_injective`) and the two theorems below can be quantified
-over *every* sequence of MINRES iterates without assuming positive definiteness anywhere.
+(`Krylov.existsUnique_isMinResidualIterate_of_injective`) and the two theorems below can be
+quantified over *every* sequence of MINRES iterates without assuming positive definiteness anywhere.
 -/
 
 section Indefinite

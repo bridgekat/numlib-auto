@@ -206,7 +206,8 @@ theorem norm_residual_le {K' : Submodule 𝕜 E} {x' : E} (hx : IsMinResidual A 
   hx'.min x (hKK' hx.mem)
 
 /-- Exactness: if some `y ∈ x₀ + K` solves the system, so does every minimal-residual iterate. -/
-theorem apply_eq_of_exists (hx : IsMinResidual A b x₀ K x) {y : E} (hy : y - x₀ ∈ K) (hAy : A y = b) :
+theorem apply_eq_of_exists (hx : IsMinResidual A b x₀ K x) {y : E} (hy : y - x₀ ∈ K)
+    (hAy : A y = b) :
     A x = b := by
   have h := hx.min y hy
   rw [hAy, sub_self, norm_zero] at h

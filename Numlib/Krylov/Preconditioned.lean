@@ -25,9 +25,9 @@ proves therefore transports.
 ## Main statements
 
 * `Krylov.IsPreconditioner.isGalerkin_energyEnd_iff` and
-  `Krylov.IsPreconditioner.isMinResidual_energyEnd_iff`: the Galerkin condition for `M⁻¹ A x = M⁻¹ b` in
-  the `M`-inner product *is* the Galerkin condition for `A x = b` in the original one, and the
-  minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
+  `Krylov.IsPreconditioner.isMinResidual_energyEnd_iff`: the Galerkin condition for
+  `M⁻¹ A x = M⁻¹ b` in the `M`-inner product *is* the Galerkin condition for `A x = b` in the
+  original one, and the minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
 * `Krylov.PCG.iterate_eq_CG_iterate_withEnergy`: the preconditioned conjugate gradient iteration is
   `CG.iterate` for `M⁻¹ A` in that space — this is the one-line statement "PCG is CG on the
   preconditioned system";
@@ -36,10 +36,10 @@ proves therefore transports.
   with the condition number of the *generalized* eigenvalue problem `A x = λ M x`, which is the
   condition number of `M⁻¹ A`;
 * `Krylov.exists_aeval_of_isMinResidualIterate_preconditioned` and
-  `Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned` ([saad2003iterative], Proposition 9.1):
-  left and right preconditioning search the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and
-  differ only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
-  right;
+  `Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned` ([saad2003iterative],
+  Proposition 9.1): left and right preconditioning search the *same* affine space
+  `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and differ only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖`
+  on the left, `‖b - A x‖` on the right;
 * `Krylov.FGMRES.isMinResidual` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: [saad2003iterative]
   Propositions 9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all,
   with `Krylov.FGMRES.apply_eq_of_coeff_eq_zero` the half of the latter that needs no orthonormal

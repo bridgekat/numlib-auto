@@ -143,8 +143,8 @@ theorem proposition_14_11 (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ y : Fin q 
         (WithLp.toLp 2 (blockUpper B E 1 *ᵥ consistentGuess B E f y))
       ↔ Krylov.IsMinResidualIterate (toEuclideanLin (schurComplement B E F C))
         (WithLp.toLp 2 (reducedRhs B F f g)) (WithLp.toLp 2 y₀) k (WithLp.toLp 2 y) := by
-  have h := isMinResidual_iff_isMinResidual_schurComplement (E := E) (F := F) (C := C) (LS := 1) (US := 1)
-    hB isUnit_one isUnit_one f g y₀ y k
+  have h := isMinResidual_iff_isMinResidual_schurComplement (E := E) (F := F) (C := C) (LS := 1)
+    (US := 1) hB isUnit_one isUnit_one f g y₀ y k
   rw [precondSchurComplement_one_one, ← reducedRhs_eq] at h
   simpa only [inv_one, Matrix.one_mulVec] using h
 

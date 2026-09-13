@@ -24,13 +24,13 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   (`Krylov.IsMinResidualIterate.residual_mem_orthogonal_range_of_grade_le`), so the iterate already
   solves the least-squares problem over the whole space.  The minimum-norm minimal-residual iterate
   — the MINRES-QLP specification — is in addition orthogonal to `ker A`, so it is the minimum-norm
-  least-squares solution `A⁺ b` (`Krylov.IsMinNormMinResidualIterate.isLeast_norm_of_grade_le`).  Every
-  minimal-residual iterate is `X b` for a `{2,3}`-inverse `X` of `A`
+  least-squares solution `A⁺ b` (`Krylov.IsMinNormMinResidualIterate.isLeast_norm_of_grade_le`).
+  Every minimal-residual iterate is `X b` for a `{2,3}`-inverse `X` of `A`
   (`Krylov.IsMinResidualIterate.exists_generalizedInverse`).
 * **Residual norms and the tridiagonal matrix.** The Lanczos reading of the Givens layer of
   `Numlib/Krylov/Hessenberg`: `‖r_m‖ = ‖r₀‖ ∏_{k<m} |s_k|`
-  (`Krylov.IsMinResidualIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited by
-  the tridiagonal matrices `T̄_m` and `T_m` (`Lanczos.norm_toEuclideanLin_tridiagExt_le`,
+  (`Krylov.IsMinResidualIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited
+  by the tridiagonal matrices `T̄_m` and `T_m` (`Lanczos.norm_toEuclideanLin_tridiagExt_le`,
   `Lanczos.norm_toEuclideanLin_tridiag_le`).
 * **The residual recurrence.** `Lanczos.residual_minRes_succ_eq` is [choi2006iterative] Lemma 2.18,
   `r_{m+1} = |s_m|² r_m - (s_m g_m) v_{m+1}`, the *vector* refinement of the norm identity above.
@@ -43,9 +43,9 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   orthogonality of `A r_m` to the Krylov space, and this is where the Hermitian symmetry of
   `Arnoldi.coeff` for symmetric `A` is used.
 
-Everything about the specification level (`Krylov.IsMinResidualIterate`, `Krylov.IsMinNormMinResidualIterate`
-of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite grade; the eigenvalue counts and
-the `T̄_m` bounds are where finite dimension enters.
+Everything about the specification level (`Krylov.IsMinResidualIterate`,
+`Krylov.IsMinNormMinResidualIterate` of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and
+finite grade; the eigenvalue counts and the `T̄_m` bounds are where finite dimension enters.
 -/
 
 open Polynomial Krylov
@@ -149,7 +149,8 @@ private theorem isMinResidual_of_isMinResidualIterate_zero (hx : IsMinResidualIt
   have h : IsMinResidual A b 0 (subspace A (b - A 0) m) x := hx
   rwa [map_zero, sub_zero] at h
 
-private theorem isMinResidualIterate_zero_iff_sub_mem (hx : IsMinResidualIterate A b 0 m x) {y : E} :
+private theorem isMinResidualIterate_zero_iff_sub_mem
+    (hx : IsMinResidualIterate A b 0 m x) {y : E} :
     IsMinResidualIterate A b 0 m y ↔ y - x ∈ subspace A b m ⊓ LinearMap.ker A := by
   have h := isMinResidualIterate_iff_sub_mem (A := A) (b := b) (x₀ := 0) (m := m) (x := y) hx
   rwa [map_zero, sub_zero] at h
@@ -177,8 +178,8 @@ namespace IsMinResidualIterate
 
 /-- [choi2006iterative], Theorem 2.25, exactness half: a compatible singular system is solved
 exactly at termination. Symmetry supplies the injectivity of `A` on `𝒦_grade` that
-`Krylov.IsMinResidualIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole Krylov
-space in `(ker A)ᗮ`. -/
+`Krylov.IsMinResidualIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole
+Krylov space in `(ker A)ᗮ`. -/
 theorem apply_eq_of_mem_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     (hA : A.IsSymmetric) (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m)
     (hx : IsMinResidualIterate A b 0 m x) : A x = b := by

@@ -58,8 +58,8 @@ theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
 omit hA [FiniteDimensional 𝕜 E] in
 /-- [choi2006iterative], Lemma 2.20: for minimal-residual iterates from `x₀ = 0`, `‖A x_k‖` is
 nondecreasing in `k`. Indeed `A x_k ∈ A 𝒦_k` while `r_k = b - A x_k ⟂ A 𝒦_k`, so `‖A x_k‖² = ‖b‖² -
-‖r_k‖²`, and `‖r_k‖` is nonincreasing (`Krylov.IsMinResidualIterate.norm_residual_antitone`).  Neither
-symmetry nor coercivity of `A` is used. -/
+‖r_k‖²`, and `‖r_k‖` is nonincreasing (`Krylov.IsMinResidualIterate.norm_residual_antitone`).
+Neither symmetry nor coercivity of `A` is used. -/
 theorem norm_apply_monotone {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b 0 k (x k)) :
     Monotone fun k => ‖A (x k)‖ := by
   have key : ∀ k, ‖A (x k)‖ ^ 2 + ‖b - A (x k)‖ ^ 2 = ‖b‖ ^ 2 := by

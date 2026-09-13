@@ -14,8 +14,8 @@ Both preconditioned algorithms are Algorithm 6.9 at another operator.
   preconditioned residual `‖M⁻¹(b - A x)‖₂` over `x₀ + 𝒦_m(M⁻¹A, M⁻¹ r₀)`
   (`gmresLeft_isMinResidual`).
 * **Algorithm 9.5** (`gmresRight`) is GMRES for `A M⁻¹ u = b` started at `u₀ = M x₀`, with the
-  iterate returned as `x_m = x₀ + M⁻¹ V_m y_m`; `gmresRight_isMinResidual` says that it minimizes the
-  *true* residual `‖b - A x‖₂` over the *same* affine space.
+  iterate returned as `x_m = x₀ + M⁻¹ V_m y_m`; `gmresRight_isMinResidual` says that it minimizes
+  the *true* residual `‖b - A x‖₂` over the *same* affine space.
 
 The two search spaces agree because of (9.18), `s(M⁻¹A) M⁻¹ r = M⁻¹ s(A M⁻¹) r`
 (`equation_9_18`, which is **P-9.11**), and `proposition_9_1` is the resulting common form
@@ -99,7 +99,8 @@ theorem gmresRight_isMinResidual (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ
     (Chapter06.isUnit_R_of_isUnit _ _ _ hAM hm)
   rw [show op (rightPreconditioned M A) = op A ∘ₗ op M⁻¹ from op_mul A M⁻¹] at hu
   rw [gmresRight_eq hM]
-  exact Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned (inv_apply_apply' hM x₀).symm hu
+  exact Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned
+    (inv_apply_apply' hM x₀).symm hu
 
 /-! ### (9.18) and Proposition 9.1 -/
 
@@ -144,7 +145,8 @@ theorem proposition_9_1 {b x₀ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
   have hL : op (leftPreconditioned M A) = op M⁻¹ ∘ₗ op A := op_mul M⁻¹ A
   rw [hL] at hx
   have hb : op M⁻¹ b = op M⁻¹ b := rfl
-  obtain ⟨s, hs, hxs⟩ := Krylov.exists_aeval_of_isMinResidualIterate_preconditioned (b := b) (hb ▸ hx)
+  obtain ⟨s, hs, hxs⟩ :=
+    Krylov.exists_aeval_of_isMinResidualIterate_preconditioned (b := b) (hb ▸ hx)
   refine ⟨s, hs, by rw [hL]; exact hxs, ?_⟩
   rw [hxs, ← hL, (equation_9_18 (A := A) (M := M) s (b - op A x₀) m).1]
 

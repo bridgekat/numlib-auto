@@ -30,11 +30,11 @@ equivalence" of Algorithms 6.23 and 6.24, and it is the flag-uniqueness principl
 `Numlib/Analysis/InnerProductSpace/GramSchmidt`.
 
 The residual formula `B - A X = V_{m+p} (E₁ R - H̄_m Y)` ([saad2011numerical], (6.135)) holds column
-by column for any band relation, so block FOM and block GMRES — `IsGalerkin` and `IsMinResidual` on the
-block subspace, one right-hand side at a time — are the small banded systems (6.135)–(6.136):
-`BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinResidual_iff`. Ruhe's variant makes sense
-at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it builds with
-the block Krylov subspace exactly at the multiples of `p`.
+by column for any band relation, so block FOM and block GMRES — `IsGalerkin` and `IsMinResidual` on
+the block subspace, one right-hand side at a time — are the small banded systems (6.135)–(6.136):
+`BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinResidual_iff`. Ruhe's variant makes
+sense at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it builds
+with the block Krylov subspace exactly at the multiples of `p`.
 -/
 
 open InnerProductSpace
@@ -667,8 +667,8 @@ theorem isGalerkin_blockSubspace_iff {n : ℕ}
   rw [← span_vec_eq_blockSubspace]
   exact isGalerkin_iff_mulVec_eq A v hon hr y
 
-/-- Block GMRES on the block Krylov subspace itself: `BlockArnoldi.isMinResidual_iff` at a multiple of
-`p`. -/
+/-- Block GMRES on the block Krylov subspace itself: `BlockArnoldi.isMinResidual_iff` at a multiple
+of `p`. -/
 theorem isMinResidual_blockSubspace_iff {n : ℕ}
     (hon : Orthonormal 𝕜 fun i : Fin (n * p + p) => vec A v (i : ℕ))
     (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • vec A v i) (y : Fin (n * p) → 𝕜) :

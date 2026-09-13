@@ -30,9 +30,9 @@ degenerate case being one where `A` is a scalar and the iterates are exact from 
 * `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`: the one-step Kantorovich contraction
   ([han2009theoretical] (5.6.4)), and `Krylov.sqrt_ratio_le_ratio` the comparison of the two rates
   ([han2009theoretical] (5.6.6));
-* `Krylov.IsMinResidualIterate.norm_residual_le_of_isCoerciveWith` and `Krylov.restarted_minRes_tendsto`:
-  convergence of restarted minimal-residual iterations for a bounded coercive `A`
-  ([saad2003iterative] Thm 6.30).
+* `Krylov.IsMinResidualIterate.norm_residual_le_of_isCoerciveWith` and
+  `Krylov.restarted_minRes_tendsto`: convergence of restarted minimal-residual iterations for a
+  bounded coercive `A` ([saad2003iterative] Thm 6.30).
 -/
 
 open Polynomial Polynomial.Chebyshev Krylov
@@ -238,7 +238,8 @@ theorem IsGalerkinIterate.energyNorm_error_le {m : ℕ} {x xstar : E}
 
 /-- Minimal-residual iterates on symmetric coercive systems: the same Chebyshev bound for the
 residual norm, again with no strict spectral gap. -/
-theorem IsMinResidualIterate.norm_residual_le {m : ℕ} {x : E} (hx : IsMinResidualIterate A b x₀ m x) :
+theorem IsMinResidualIterate.norm_residual_le {m : ℕ} {x : E}
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m * ‖b - A x₀‖ := by
   rcases hll.lt_or_eq with hlt | rfl

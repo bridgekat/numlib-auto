@@ -26,8 +26,8 @@ block Krylov subspace `blockKrylov`, which is the sense in which the equivalence
 is a multiple of `p`".
 
 The band relation (6.129)–(6.130) is the backbone's `Krylov.BandRelation`, of bandwidth `p`, and
-not `Krylov.HessenbergRelation`, whose bandwidth is `1`. Block FOM and block GMRES are
-`IsGalerkin` and `IsMinResidual` over `x₀^{(i)} + span {v_1, …, v_m}`, one right-hand side at a time;
+not `Krylov.HessenbergRelation`, whose bandwidth is `1`. Block FOM and block GMRES are `IsGalerkin`
+and `IsMinResidual` over `x₀^{(i)} + span {v_1, …, v_m}`, one right-hand side at a time;
 (6.135)–(6.136) and the coordinate forms `blockFOM_iff` and `blockGMRES_iff` are the small banded
 systems they amount to. The Givens elimination with `p` rotations per column, for which the book
 states no result, is not formalized.

@@ -46,9 +46,9 @@ The two methods built on the process are here as well. `BCG` is the biconjugate 
 (`BCG.inner_residual_dualResidual_eq_zero`, `BCG.inner_dualDirection_apply_direction_eq_zero`, Prop
 7.2), which makes its iterate the Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, r*₀)`
 (`BCG.isPetrovGalerkin`). `QMR` minimizes the *quasi*-residual `‖β e₁ - T̄_m y‖` rather than the
-residual itself (`QMR.IsQuasiMinResidual`, (7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is
-Prop 7.3 and `QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖` with
-the GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
+residual itself (`QMR.IsQuasiMinResidual`, (7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual`
+is Prop 7.3 and `QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖`
+with the GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
 singular-value bounds `c ‖z‖ ≤ ‖∑ z_i v_i‖ ≤ C ‖z‖` on the coordinate map are hypotheses and
 `κ₂(V_{m+1})` is `C / c`.
 

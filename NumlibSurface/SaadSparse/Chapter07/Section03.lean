@@ -400,8 +400,8 @@ specification for the two-sided Lanczos data — it is `x_0 + V_m y` with `y` mi
 quasi-residual `‖β e_1 - T̄_m y‖₂`. Everything after (7.17) is this identification plus a
 theorem of `Numlib/Krylov/QuasiMinRes.lean`. -/
 theorem qmr_isQuasiMinResidualIterate {m : ℕ} (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
-    Krylov.IsQuasiMinResidualIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) x₀ m
-      (qmr A b x₀ w₁ m) :=
+    Krylov.IsQuasiMinResidualIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜)
+      x₀ m (qmr A b x₀ w₁ m) :=
   Chapter06.qgmres_isQuasiMinResidualIterate x₀ _ _ _
     (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hR
 

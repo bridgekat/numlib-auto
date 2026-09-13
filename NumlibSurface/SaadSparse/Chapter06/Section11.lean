@@ -72,8 +72,8 @@ Everything here is a specialization of the backbone:
   (`gmres_isMinResidualIterate`), and to identify the book's constants `μ = λ_min((A + Aᵀ)/2)` and
   `σ = ‖A‖₂` with the backbone's coercivity constant and operator norm.
 * Lemma 6.31 is `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval` through the GMRES
-  identification `gmresFixed_isMinResidualIterate` of `Chapter06/Section05.lean`, and Proposition 6.32
-  adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
+  identification `gmresFixed_isMinResidualIterate` of `Chapter06/Section05.lean`, and Proposition
+  6.32 adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
 -/
 
 open scoped Polynomial

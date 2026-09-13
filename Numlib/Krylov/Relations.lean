@@ -436,7 +436,8 @@ private theorem exists_isGalerkin_of_injective_compression {K : Submodule 𝕜 E
 stagnates at step `m + 1` (`‖r_{m+1}^G‖ = ‖r_m^G‖ ≠ 0`) iff no Galerkin iterate exists at step `m +
 1`. -/
 theorem norm_residual_minRes_eq_iff_not_exists_galerkin {m : ℕ}
-    {xG xG' : E} (hG : IsMinResidualIterate A b x₀ m xG) (hG' : IsMinResidualIterate A b x₀ (m + 1) xG')
+    {xG xG' : E} (hG : IsMinResidualIterate A b x₀ m xG)
+    (hG' : IsMinResidualIterate A b x₀ (m + 1) xG')
     (h0 : b - A xG' ≠ 0) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hm : m + 1 ≤ grade A (b - A x₀)) :
     ‖b - A xG'‖ = ‖b - A xG‖ ↔ ¬∃ xF, IsGalerkinIterate A b x₀ (m + 1) xF := by
@@ -541,8 +542,8 @@ set_option linter.unusedVariables false in
 /-- [saad2003iterative], §6.5.8 ([weiss1990convergence]; [zhou1994residual], *Residual smoothing
 techniques for iterative methods*): minimal-residual smoothing of the Galerkin (FOM) iterates
 produces the minimal-residual (GMRES) iterates. -/
-theorem IsGalerkinIterate.mrs_isMinResidualIterate {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
-    (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
+theorem IsGalerkinIterate.mrs_isMinResidualIterate {xO : ℕ → E} (hinj : Function.Injective A)
+    (m : ℕ) (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
     IsMinResidualIterate A b x₀ m (mrs A b xO m) := by
   induction m with
   | zero =>

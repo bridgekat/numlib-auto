@@ -14,10 +14,10 @@ the original variables, a minimal-residual specification for `A x = b`
 (`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`, CGNR) and a minimal-error specification
 (`Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`, CGNE) — [saad2003iterative] two optimality
 properties of §8.3. Every convergence theorem of the CG layer then applies with the spectrum of `Aᴴ
-A`, that is with `κ(A)²` in place of `κ(A)` (`Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp`).
-`Krylov.CGNR.iterate` and `Krylov.CGNE.iterate` are the two recurrences as a program writes them —
-one application of `A` and one of `Aᴴ` per step, never forming a product — identified with the
-corresponding CG iterates.
+A`, that is with `κ(A)²` in place of `κ(A)`
+(`Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp`). `Krylov.CGNR.iterate` and
+`Krylov.CGNE.iterate` are the two recurrences as a program writes them — one application of `A` and
+one of `Aᴴ` per step, never forming a product — identified with the corresponding CG iterates.
 
 The adjoint enters as a *hypothesis* `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` on a second operator rather than
 as `LinearMap.adjoint A`, so that the module needs neither finite-dimensionality nor completeness;

@@ -14,9 +14,9 @@ once.
 
 ## Main statements
 
-* `CR.isMinResidualIterate`: CR realises the minimal-residual specification of `Numlib/Krylov/Iterate`,
-  and `CR.isMinResidualIterate_of_no_breakdown` is the same for a symmetric, possibly indefinite or
-  singular `A` as long as no breakdown occurs;
+* `CR.isMinResidualIterate`: CR realises the minimal-residual specification of
+  `Numlib/Krylov/Iterate`, and `CR.isMinResidualIterate_of_no_breakdown` is the same for a
+  symmetric, possibly indefinite or singular `A` as long as no breakdown occurs;
 * `CR.inner_apply_direction_eq_zero`, `CR.inner_residual_apply_direction_eq_zero`,
   `CR.inner_residual_apply_residual_eq_zero`: the orthogonality relations ([fong2012cg] Thm 2.1 /
   Luenberger);
@@ -73,9 +73,10 @@ applications of `CR.step` to `CR.init`. The approximate solution is `(iterate A 
 On a symmetric coercive `A` this state realises the minimal-residual specification over `x₀ + 𝒦_k(A,
 r₀)` (`CR.isMinResidualIterate`). The specification, not this recurrence, is the canonical object:
 everything proved of it holds of any method that meets it. On an indefinite `A` the recurrence can
-break down while the minimal-residual iterate still exists, and `CR.isMinResidualIterate_of_no_breakdown`
-is what survives there. The definition is total either way, since Lean's `x / 0 = 0` gives the
-degenerate steps a value; once the residual vanishes the state stops moving. -/
+break down while the minimal-residual iterate still exists, and
+`CR.isMinResidualIterate_of_no_breakdown` is what survives there. The definition is total either
+way, since Lean's `x / 0 = 0` gives the degenerate steps a value; once the residual vanishes the
+state stops moving. -/
 noncomputable def iterate (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State E :=
   (step A)^[k] (init A b x₀)
 
@@ -523,10 +524,10 @@ private theorem subspace_le_dirSpan (k : ℕ)
 
 /-- The first `k` conjugate residual directions span the Krylov space: `span {p_0, …, p_{k-1}} =
 𝒦_k(A, r₀)`. This is what turns the orthogonality relations — which only say that `r_k` is
-`A`-orthogonal to the earlier directions — into the minimal-residual property `CR.isMinResidualIterate`,
-since orthogonality to the span is what the specification asks for. Degenerate steps cost nothing: a
-direction whose image under `A` dies contributes no new dimension, and the residuals, which lie in
-the same span, still fill the Krylov space out. -/
+`A`-orthogonal to the earlier directions — into the minimal-residual property
+`CR.isMinResidualIterate`, since orthogonality to the span is what the specification asks for.
+Degenerate steps cost nothing: a direction whose image under `A` dies contributes no new dimension,
+and the residuals, which lie in the same span, still fill the Krylov space out. -/
 theorem span_direction_eq (k : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin k => (iterate A b x₀ i).p) =
       subspace A (b - A x₀) k :=

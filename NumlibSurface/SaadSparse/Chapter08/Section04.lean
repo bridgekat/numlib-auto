@@ -829,11 +829,11 @@ reduced system (8.32) is one: if `y` solves `S y = g` then `x = A⁻¹ (b - B y)
 solution of the block system, for `c = 0` and for `c ≠ 0` alike.
 
 For `c = 0` the reduced system is the system of normal equations of `min_y ‖b - B y‖_{A⁻¹}`
-(`equation_8_32_isMinResidual`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner product;
-forming `S y` costs one solve with `A`, which is what the problem's hint asks for.  Compared with
-Uzawa's method (`uzawa`, `uzawa_snd_eq_richardson`), which is Richardson's iteration for the same
-reduced system with a fixed `ω`, this replaces the fixed step length by the conjugate gradient
-one at the same cost per step. -/
+(`equation_8_32_isMinResidual`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner
+product; forming `S y` costs one solve with `A`, which is what the problem's hint asks for.
+Compared with Uzawa's method (`uzawa`, `uzawa_snd_eq_richardson`), which is Richardson's iteration
+for the same reduced system with a fixed `ω`, this replaces the fixed step length by the conjugate
+gradient one at the same cost per step. -/
 theorem problem_8_5b (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n))
     (c y : EuclideanSpace 𝕜 (Fin m)) (hy : (schur A B ⬝ y) = schurRhs A B b c) :
     saddleMatrix A B 0 *ᵥ Sum.elim (WithLp.ofLp (A⁻¹ ⬝ (b - (B ⬝ y)))) (WithLp.ofLp y)

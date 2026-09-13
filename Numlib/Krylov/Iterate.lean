@@ -11,8 +11,8 @@ at the grade of `r₀`.
 
 ## Main definitions
 
-* `Krylov.IsMinResidualIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m` minimizes the residual (GMRES, MINRES, CR,
-  GCR, ORTHOMIN/ORTHODIR full versions, MINRES-QLP on nonsingular systems);
+* `Krylov.IsMinResidualIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m` minimizes the residual (GMRES, MINRES,
+  CR, GCR, ORTHOMIN/ORTHODIR full versions, MINRES-QLP on nonsingular systems);
 * `Krylov.IsGalerkinIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m`, `r ⟂ 𝒦_m` (FOM, CG, D-Lanczos, the Lanczos
   method);
 * `Krylov.IsMinErrorIterate A xstar x₀ m x`: minimal Euclidean error `‖xstar - x‖` over `x₀ + A
@@ -28,9 +28,9 @@ at the grade of `r₀`.
   ([saad2003iterative] Lemma 6.28 and Lemma 6.31);
 * `Krylov.IsGalerkinIterate.residual_mem_span`: the Galerkin residual is a multiple of the next
   Arnoldi vector ([saad2003iterative] Prop 6.7);
-* `Krylov.IsMinResidualIterate.apply_eq_of_grade_le`, `Krylov.IsGalerkinIterate.apply_eq_of_grade_le` and
-  `Krylov.grade_le_of_apply_eq`: lucky breakdown and exactness at the grade ([saad2003iterative]
-  Prop 6.10);
+* `Krylov.IsMinResidualIterate.apply_eq_of_grade_le`,
+  `Krylov.IsGalerkinIterate.apply_eq_of_grade_le` and `Krylov.grade_le_of_apply_eq`: lucky breakdown
+  and exactness at the grade ([saad2003iterative] Prop 6.10);
 * `Krylov.existsUnique_isMinNormMinResidualIterate`: the MINRES-QLP iterate is well defined with no
   hypothesis on `A`;
 * `Krylov.norm_le_of_apply_eq`: an exact Krylov solution of a compatible symmetric system is the
@@ -253,8 +253,8 @@ theorem grade_le_of_apply_eq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀
 
 /-- The MINRES-QLP specification: the minimum-norm element of the set of minimal-residual iterates
 over `x₀ + 𝒦_m`.  On a singular system that set is a whole affine subspace
-(`Krylov.isMinResidualIterate_iff_sub_mem`) and the plain minimal-residual specification does not pin the
-iterate down; asking in addition for least norm does, with no hypothesis on `A`
+(`Krylov.isMinResidualIterate_iff_sub_mem`) and the plain minimal-residual specification does not
+pin the iterate down; asking in addition for least norm does, with no hypothesis on `A`
 (`Krylov.existsUnique_isMinNormMinResidualIterate`).  When `A` is injective this is just
 `Krylov.IsMinResidualIterate` again, since that already has a unique solution. -/
 structure IsMinNormMinResidualIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) (x : E) : Prop where
@@ -285,7 +285,8 @@ theorem isMinResidualIterate_iff_sub_mem {x₁ : E} (hx₁ : IsMinResidualIterat
 
 /-- The minimum-norm minimal-residual iterate is the best approximation of `0` from the affine
 subspace of minimal-residual iterates. -/
-private theorem isMinNormMinResidualIterate_iff_isMinError {x₁ : E} (hx₁ : IsMinResidualIterate A b x₀ m x₁) :
+private theorem isMinNormMinResidualIterate_iff_isMinError {x₁ : E}
+    (hx₁ : IsMinResidualIterate A b x₀ m x₁) :
     IsMinNormMinResidualIterate A b x₀ m x ↔
       IsMinError 0 x₁ (subspace A (b - A x₀) m ⊓ LinearMap.ker A) x := by
   have hnorm : ∀ y : E, ‖(0 : E) - y‖ = ‖y‖ := fun y => by rw [zero_sub, norm_neg]
@@ -331,8 +332,8 @@ theorem exists_isMinErrorIterate (A : E →ₗ[𝕜] E) (xstar x₀ : E) (m : �
 
 /-- The minimal-error iterate is unique, with no hypothesis on `A` at all: it is the nearest point
 of the affine space `x₀ + A 𝒦_m` to `x*`, and nearest points are unique by the parallelogram law
-however degenerate `A` is. Contrast `existsUnique_isMinResidualIterate_of_injective`, where uniqueness of
-the *iterate* costs an injectivity assumption. -/
+however degenerate `A` is. Contrast `existsUnique_isMinResidualIterate_of_injective`, where
+uniqueness of the *iterate* costs an injectivity assumption. -/
 theorem IsMinErrorIterate.unique {xstar x' : E} (hx : IsMinErrorIterate A xstar x₀ m x)
     (hx' : IsMinErrorIterate A xstar x₀ m x') : x = x' :=
   IsMinError.unique hx hx'
@@ -367,12 +368,12 @@ private theorem error_eq_aeval (hA : A.IsSymmetricCoercive) {xstar y : E} (hstar
   have hl : b - A y = A (xstar - y) := by rw [map_sub, hstar]
   rw [← hl, hres, hr, aeval_apply_comm]
 
-/-- Energy-norm counterpart of `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval`, for symmetric
-coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with `p 0 = 1`. A
-competitor's residual polynomial doubles as its error polynomial, because `A` commutes with `p(A)`,
-so the energy-optimality of the Galerkin iterate turns each such `p` into a bound. This is the half
-of `energyNorm_error_eq_iInf` ([saad2003iterative], Lemma 6.28) that the Chebyshev convergence
-bounds consume. -/
+/-- Energy-norm counterpart of `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval`, for
+symmetric coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with
+`p 0 = 1`. A competitor's residual polynomial doubles as its error polynomial, because `A` commutes
+with `p(A)`, so the energy-optimality of the Galerkin iterate turns each such `p` into a bound. This
+is the half of `energyNorm_error_eq_iInf` ([saad2003iterative], Lemma 6.28) that the Chebyshev
+convergence bounds consume. -/
 theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
     (hx : IsGalerkinIterate A b x₀ m x) {xstar : E} (hstar : A xstar = b) (p : 𝕜[X])
     (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :

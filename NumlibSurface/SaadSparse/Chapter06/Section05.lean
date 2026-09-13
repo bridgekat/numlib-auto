@@ -88,10 +88,10 @@ truncation supplies through the orthonormality of the first `k + 1` vectors of t
 orthogonalization process, which lives in `Chapter06/Section04.lean`.
 
 **Theorem 6.11** (Freund–Nachtigal) is `theorem_6_11`, two lines of
-`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` once `qgmres_isQuasiMinResidualIterate` identifies
-Algorithm 6.12 as a quasi-minimal-residual iterate. The book factors `V_{m+1} = W S` with `W`
-orthonormal, which needs `V_{m+1}` to have full rank; the backbone needs only the two-sided bound
-`c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂`, whose ratio `C/c` is `κ₂(V_{m+1})`, and no factorization.
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` once `qgmres_isQuasiMinResidualIterate`
+identifies Algorithm 6.12 as a quasi-minimal-residual iterate. The book factors `V_{m+1} = W S` with
+`W` orthonormal, which needs `V_{m+1}` to have full rank; the backbone needs only the two-sided
+bound `c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂`, whose ratio `C/c` is `κ₂(V_{m+1})`, and no factorization.
 
 (6.56)–(6.58) compare the quasi-residual with the residual of the *Galerkin* iterate built on the
 same basis — IOM or DIOM for the incomplete orthogonalization, FOM for the Arnoldi basis. That
@@ -2915,7 +2915,8 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
     mrsX (fomFixed A b x₀) rO m = gmresFixed A b x₀ m := by
   have hgal : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (fomFixed A b x₀ i) :=
     fun i hi => fomFixed_isGalerkin A b x₀ (hi.trans hm) (hH i hi)
-  have hG := gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl))
+  have hG := gmresFixed_isMinResidualIterate A b x₀ hm
+    (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl))
   have hrne : ∀ j ≤ m, rO j ≠ 0 := by
     intro j hj hz
     rw [hr j] at hz
