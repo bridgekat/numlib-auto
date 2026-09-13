@@ -1,122 +1,59 @@
 namespace = "QuarteroniSaccoSaleri.Chapter06"
-desc = '''
-§6.2, the geometric methods: bisection (Property 6.1, the sequence of §6.2.1, (6.8)–(6.9)), and
-the chord (6.12), secant (6.13)–(6.14) with Property 6.2, regula falsi (6.15) and Newton (6.16)
-iterations of §6.2.2 as instances of the backbone's `Bisection`, `Chord`, `Secant`, `RegulaFalsi`
-and `Newton.scalarStep`. The convergence statements the book defers to §6.3.1 (chord linear, Newton
-quadratic) are in `Section03`. Examples 6.3–6.5 are numerical runs and Figure-based; (6.10) is a
-negative remark (bisection need not reduce the error monotonically) illustrated by a figure, and
-(6.11) is the mean value theorem used as motivation; none is a node. §6.2.3 (Dekker–Brent) states
-nothing provable about the algorithm and has no node.
-'''
 
 [[node]]
 id = "property_6_1"
-kind = "theorem"
-desc = '''**Property 6.1 (theorem of zeros for continuous functions):** `a ≤ b`, `ContinuousOn f (Icc a b)`,
-`f a * f b < 0` ⟹ `∃ α ∈ Ioo a b, f α = 0`. Restatement of the backbone's
-`exists_eq_zero_Ioo_of_mul_neg` (`Nonlinear/Bisection`), itself Mathlib's `intermediate_value_Ioo`
-/ `intermediate_value_Ioo'`. ★'''
-deps = ["exists_eq_zero_Ioo_of_mul_neg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.1'
 
 [[node]]
+id = "bisectionInterval"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.1'
+
+[[node]]
 id = "bisection"
-kind = "definition"
-desc = '''The bisection sequence of §6.2.1: `bisection f a b k := Bisection.iterate f a b k`, with
-`bisectionInterval f a b k := Bisection.bracket f a b k` the interval `I_k = [a^{(k)}, b^{(k)}]`;
-`x^{(k)}` is the midpoint of `I_k`. The tie-breaking when `f(x^{(k)}) = 0`, which the book's prose
-leaves undefined, follows its Program 46 (`b := x^{(k)}`). ★'''
-deps = ["Bisection.iterate", "Bisection.bracket"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.1'
 
 [[node]]
 id = "equation_6_8"
-kind = "theorem"
-desc = '''**(6.8):** `|I_k| = (b - a) / 2^k`, i.e. `(bisectionInterval f a b k).2 - (bisectionInterval
-f a b k).1 = (b - a) / 2 ^ k`, and the nesting `I_k ⊂ I_{k-1}` with the sign property
-`f(a^{(k)}) f(b^{(k)}) ≤ 0` (the book writes `< 0`, which fails as soon as an iterate is an exact
-root). `Bisection.bracket_sub`, `Bisection.bracket_nested`, `Bisection.bracket_mul_nonpos`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.bisection", "Bisection.bracket_sub", "Bisection.bracket_nested", "Bisection.bracket_mul_nonpos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.8)'
 
 [[node]]
 id = "bisection_tendsto"
-kind = "theorem"
-desc = '''**Global convergence of bisection** (the sentences after (6.8)): for `a ≤ b`, `f` continuous
-on `[a, b]` with `f a * f b < 0`, there is a root `α ∈ (a, b)` with `|bisection f a b k - α| ≤
-(b - a) / 2 ^ k` for all `k` (the book's bound; the backbone gives `/ 2^(k+1)`) and
-`bisection f a b k → α`. `Bisection.exists_tendsto_iterate`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.bisection", "Bisection.exists_tendsto_iterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.1'
 
 [[node]]
 id = "equation_6_9"
-kind = "theorem"
-desc = '''**(6.9):** with `α` the root of `bisection_tendsto` and `ε > 0`, if
-`Real.logb 2 (b - a) - Real.logb 2 ε ≤ m` then `|bisection f a b m - α| ≤ ε`. From
-`Bisection.abs_iterate_sub_le_of_le_logb` (which needs only `≤ m + 1`) and
-`Real.logb_div`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.bisection_tendsto", "Bisection.abs_iterate_sub_le_of_le_logb"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.9)'
 
 [[node]]
 id = "chord"
-kind = "definition"
-desc = '''**(6.12), the chord method:** `chord f a b x₀ k := (Chord.step f ((f b - f a) / (b - a)))^[k] x₀`,
-`x^{(k+1)} = x^{(k)} - (b - a) / (f b - f a) · f(x^{(k)})`. ★'''
-deps = ["Chord.step"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.12)'
+
+[[node]]
+id = "chord_succ"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.12)'
 
 [[node]]
 id = "chord_eq_chordIterate"
-kind = "theorem"
-desc = '''The chord method is the backbone's Banach-space chord method `Newton.chordIterate` with the
-frozen derivative `q = (f b - f a)/(b - a)` (as `A : ℝ ≃L[ℝ] ℝ`, `A 1 = q`, for `q ≠ 0`):
-`chord f a b x₀ k = Newton.chordIterate f A x₀ k`. `Chord.step_eq_chordStep` and induction. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.chord", "Chord.step_eq_chordStep", "Newton.chordIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.12)'
 
 [[node]]
 id = "secant"
-kind = "definition"
-desc = '''**(6.13)–(6.14), the secant method:** `secant f xm1 x₀ k := Secant.iterate f xm1 x₀ k`, with
-`x^{(-1)} = xm1`, `x^{(0)} = x₀` and
-`x^{(k+1)} = x^{(k)} - (x^{(k)} - x^{(k-1)}) / (f(x^{(k)}) - f(x^{(k-1)})) · f(x^{(k)})`
-(`Secant.iterate_succ`; the slope `q_k` of (6.13) is the divided difference `f[x^{(k-1)}, x^{(k)}]`,
-`DividedDifference.newton f ![x^{(k-1)}, x^{(k)}]`). ★'''
-deps = ["Secant.iterate", "Secant.iterate_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.14)'
+
+[[node]]
+id = "secant_succ"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.14)'
 
 [[node]]
 id = "property_6_2"
-kind = "theorem"
-desc = '''**Property 6.2:** let `f ∈ C²(J)` on a neighbourhood `J` of a root `α` (`ContDiffAt ℝ 2 f α`)
-with `f'(α) ≠ 0` and `f''(α) ≠ 0`. Then there is `ε > 0` such that for all initial data
-`x^{(-1)}, x^{(0)} ∈ (α - ε, α + ε)` — distinct and different from `α` — the sequence (6.14)
-converges to `α` with order `p = (1 + √5)/2`: `definition_6_1 (secant f xm1 x₀) α goldenRatio`.
-The book does not list `f'(α) ≠ 0`; it is implicit in "root" being simple (with `f'(α) = 0`,
-`f''(α) ≠ 0` the secant method is only linear). `Secant.exists_ball_convergesWithOrder_goldenRatio`
-with `definition_6_1_iff` and `one_lt_goldenRatio`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.secant", "Secant.exists_ball_convergesWithOrder_goldenRatio", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.2'
 
 [[node]]
 id = "regulaFalsi"
-kind = "definition"
-desc = '''**(6.15), the regula falsi method:** `regulaFalsi f xm1 x₀ k := RegulaFalsi.iterate f xm1 x₀ k`,
-the secant step through `x^{(k)}` and the latest earlier iterate `x^{(k')}` with
-`f(x^{(k')}) f(x^{(k)}) < 0`. ★'''
-deps = ["RegulaFalsi.iterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.15)'
 
 [[node]]
 id = "regulaFalsi_mem_uIcc"
-kind = "theorem"
-desc = '''"Unlike the secant method, the iterates generated by (6.15) are all contained within the
-starting interval `[x^{(-1)}, x^{(0)}]`": for `f x₀ * f xm1 < 0`, `∀ k, regulaFalsi f xm1 x₀ k ∈
-uIcc xm1 x₀`. `RegulaFalsi.iterate_mem_uIcc`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.regulaFalsi", "RegulaFalsi.iterate_mem_uIcc"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.2'
 
 [[node]]
@@ -125,24 +62,21 @@ kind = "theorem"
 desc = '''"The Regula Falsi method … has linear convergence order" (cited from Ralston–Rabinowitz):
 for `f` continuous on `uIcc xm1 x₀` with `f x₀ * f xm1 < 0`, `C²` at the unique root `α` there with
 `f'(α) ≠ 0`, `f''(α) ≠ 0`: `regulaFalsi f xm1 x₀ → α` and `definition_6_1 (regulaFalsi f xm1 x₀) α 1`.
-`RegulaFalsi.tendsto_iterate`, a ★★★ backbone node; this restatement is ★ once it exists.'''
+`RegulaFalsi.tendsto_iterate`, a ★★★ backbone node; this restatement is ★ once it exists.
+
+Blocked: waits on the backbone node `RegulaFalsi.tendsto_iterate` (`Nonlinear/Secant`), left open
+with its own `Blocked:` note; nothing else is missing.'''
 deps = ["QuarteroniSaccoSaleri.Chapter06.regulaFalsi", "RegulaFalsi.tendsto_iterate", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.2'
 
 [[node]]
 id = "newton"
-kind = "definition"
-desc = '''**(6.16), Newton's method:** `newton f f' x₀ k := (Newton.scalarStep f f')^[k] x₀`,
-`x^{(k+1)} = x^{(k)} - f(x^{(k)}) / f'(x^{(k)})`; `f'` is passed as a function, as in the book's
-Program 50 (`dfun`), and the theorems take `f' = deriv f`. ★'''
-deps = ["Newton.scalarStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.16)'
+
+[[node]]
+id = "newton_succ"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.16)'
 
 [[node]]
 id = "newton_eq_iterate"
-kind = "theorem"
-desc = '''`newton f f' x₀ k = Newton.iterate f (fun x => f' x • ContinuousLinearMap.id ℝ ℝ) x₀ k`: the
-scalar Newton method is the Banach-space one of `Nonlinear/Newton`. `Newton.scalarStep_eq_step` and
-`Newton.iterate_succ`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.newton", "Newton.scalarStep_eq_step", "Newton.iterate", "Newton.iterate_succ"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.16)'

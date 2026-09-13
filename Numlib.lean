@@ -310,12 +310,14 @@ import Numlib.LinearAlgebra.Subspace
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.TwoGrid
+import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import Numlib.Nonlinear.Order
 import Numlib.Nonlinear.ScalarNewton
+import Numlib.Nonlinear.Secant
 import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.Gronwall
 import Numlib.ODE.OneStep
@@ -334,7 +336,9 @@ import Numlib.Projection.Optimality
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+import Numlib.RingTheory.Polynomial.Horner
 import Numlib.RingTheory.Polynomial.KernelPolynomial
+import Numlib.RingTheory.Polynomial.RuleOfSigns
 import Numlib.Stationary.ADI
 import Numlib.Stationary.Basic
 import Numlib.Stationary.Block

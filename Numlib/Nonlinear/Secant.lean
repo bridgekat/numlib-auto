@@ -1,0 +1,861 @@
+import Mathlib.NumberTheory.Real.GoldenRatio
+import Numlib.Approximation.DividedDifference
+import Numlib.Nonlinear.ScalarNewton
+
+/-!
+# The chord, secant, regula falsi and Muller methods
+
+The derivative-free one-dimensional rootfinders that replace `f'(x_k)` in Newton's step by a slope
+`q_k` ([quarteroni2000numerical] §6.2.2, §6.3.1, §6.4.3; [kress1998numerical] §6.2;
+[isaacson1994analysis] §3.3): the chord method (`q_k = q` fixed; namespace `Chord`), the secant
+method (`q_k` the difference quotient over the last two iterates; `Secant`), regula falsi (the
+difference quotient over the last two iterates bracketing the root; `RegulaFalsi`) and Muller's
+method (the zero of the quadratic interpolant through the last three iterates; `Muller`).
+
+The secant and regula falsi iterations carry state (a pair of points), so they are `step` functions
+on `ℝ × ℝ` with `iterate f x₋₁ x₀ k` reading off the `k`-th point, as `Numlib/Nonlinear/Bisection`
+does with brackets. Lean's `a / 0 = 0` makes a secant step with `f x_k = f x_{k-1}` stall at `x_k`;
+the theorems assume what excludes it.
+
+## The secant error analysis
+
+The whole analysis rests on the divided-difference identity
+`x_{k+1} - α = (x_k - α)(x_{k-1} - α) f[x_{k-1}, x_k, α] / f[x_{k-1}, x_k]`
+(`Secant.sub_root_eq_mul_newton`), an algebraic identity in the values of `f` with
+`DividedDifference.newton` of `Numlib/Approximation/DividedDifference` — the interpolation-error
+formula `DividedDifference.sub_eval_interpolate_eq_newton` of the secant line at the node `α`.
+Near a simple root of a `C²` function the first divided difference is bounded away from `0` and
+the second is bounded (`exists_ball_bounds`), both by the mean value inequality
+(`exists_ball_abs_slope_sub_deriv_le`) — for the second one through the identity
+`f[x, y, α] = g[x, y]` with `g = dslope f α`, which is `C¹` by Hadamard's lemma
+(`Numlib/Analysis/Calculus/RootMultiplicity`). The two-sided bound
+`c |e_k| |e_{k-1}| ≤ |e_{k+1}| ≤ C |e_k| |e_{k-1}|` then gives local convergence
+(`exists_ball_tendsto_iterate`, through the Fibonacci decay `E_k ≤ θ^{F_{k+1}}`) and, when
+`f''(α) ≠ 0`, the order `(1 + √5) / 2` (`exists_ball_convergesWithOrder_goldenRatio`,
+[quarteroni2000numerical] Property 6.2): in logarithmic variables `s_k = log(|e_{k+1}| / |e_k|^φ)`
+the two bounds combine into the linear recursion `s_{k+2} ≤ log A + θ s_k` with `θ = 1 - 1/φ < 1`,
+whose solutions are bounded above ([isaacson1994analysis] pp. 99–101, in the bound form rather
+than the limit form). The hypothesis `f'(α) ≠ 0`, missing from the book's Property 6.2, is needed:
+at a multiple root the secant method is only linear.
+
+Chord convergence is the scalar Ostrowski theorem (`Numlib/Nonlinear/FixedPoint`) applied to
+`φ_chord = x - f x / q`; it is the `𝕜 = ℝ` case of `Newton.chordStep` (`Chord.step_eq_chordStep`).
+Muller's method is a definition only, in real arithmetic; its order `p ≈ 1.84` is not formalized.
+-/
+
+open Filter Topology Set
+
+namespace DividedDifference
+
+-- TODO(orchestrator): the three explicit formulas below belong in
+-- `Numlib/Approximation/DividedDifference`, beside `newton_pair`.
+
+variable (f : ℝ → ℝ) {x y z : ℝ}
+
+/-- The Newton divided difference at two nodes, explicitly: `f[x, y] = (f y - f x) / (y - x)`. -/
+theorem newton_two_eq (hxy : x ≠ y) : newton f ![x, y] = (f y - f x) / (y - x) := by
+  have hne : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  rw [newton, Fin.sum_univ_two]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+  rw [show (Finset.univ.erase (0 : Fin 2)) = {1} from rfl,
+    show (Finset.univ.erase (1 : Fin 2)) = {0} from rfl]
+  simp only [Finset.prod_singleton, Matrix.cons_val_zero, Matrix.cons_val_one]
+  field_simp
+  ring
+
+/-- The Newton divided difference at three nodes, explicitly. -/
+theorem newton_three_eq :
+    newton f ![x, y, z] = f x / ((x - y) * (x - z)) + f y / ((y - x) * (y - z)) +
+      f z / ((z - x) * (z - y)) := by
+  rw [newton, Fin.sum_univ_three]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two]
+  rw [show (Finset.univ.erase (0 : Fin 3)) = {1, 2} from rfl,
+    show (Finset.univ.erase (1 : Fin 3)) = {0, 2} from rfl,
+    show (Finset.univ.erase (2 : Fin 3)) = {0, 1} from rfl]
+  simp
+
+/-- **A divided difference through a node `a` is a divided difference of `dslope f a`**:
+`f[x, y, a] = g[x, y]` with `g = dslope f a`, for distinct `x, y, a`. This is the recursive
+definition of divided differences read with `a` as the first node. -/
+theorem newton_three_eq_newton_two_dslope (a : ℝ) (hxy : x ≠ y) (hxa : x ≠ a) (hya : y ≠ a) :
+    newton f ![x, y, a] = newton (dslope f a) ![x, y] := by
+  rw [newton_three_eq, newton_two_eq _ hxy, dslope_of_ne f hxa, dslope_of_ne f hya,
+    slope_def_field, slope_def_field]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - a ≠ 0 := sub_ne_zero.2 hxa
+  have h3 : y - a ≠ 0 := sub_ne_zero.2 hya
+  have h4 : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h5 : a - x ≠ 0 := sub_ne_zero.2 hxa.symm
+  have h6 : a - y ≠ 0 := sub_ne_zero.2 hya.symm
+  field_simp
+  ring
+
+end DividedDifference
+
+section MeanValue
+
+-- TODO(orchestrator): a general fact about `C¹` functions; natural home `Numlib/Analysis/Calculus`.
+
+/-- **Difference quotients of a `C¹` function are close to its derivative** near a point: for every
+`ε > 0` there is a ball around `a` on which `|(h y - h x) / (y - x) - h'(a)| ≤ ε` for all `x ≠ y`.
+The mean value inequality for `h - h'(a) · id`, whose derivative is small on the ball. -/
+theorem exists_ball_abs_slope_sub_deriv_le {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) {ε : ℝ}
+    (hε : 0 < ε) : ∃ δ > 0, ∀ x ∈ Metric.ball a δ, ∀ y ∈ Metric.ball a δ, x ≠ y →
+      |(h y - h x) / (y - x) - deriv h a| ≤ ε := by
+  have hd := hh.eventually_hasDerivAt
+  have hc := hh.continuousAt_deriv.eventually (Metric.closedBall_mem_nhds (deriv h a) hε)
+  obtain ⟨δ, hδ, hball⟩ := Metric.eventually_nhds_iff.1 (hd.and hc)
+  refine ⟨δ, hδ, fun x hx y hy hxy => ?_⟩
+  have hne : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have key : ‖(h y - deriv h a * y) - (h x - deriv h a * x)‖ ≤ ε * ‖y - x‖ := by
+    refine (convex_ball a δ).norm_image_sub_le_of_norm_hasDerivWithin_le
+      (f := fun z => h z - deriv h a * z) (f' := fun z => deriv h z - deriv h a)
+      (fun z hz => ?_) (fun z hz => ?_) hx hy
+    · exact ((hball (Metric.mem_ball.1 hz)).1.sub ((hasDerivAt_id z).const_mul _)).hasDerivWithinAt
+        |>.congr_deriv (by ring)
+    · have := (hball (Metric.mem_ball.1 hz)).2
+      rwa [dist_eq_norm] at this
+  rw [Real.norm_eq_abs, Real.norm_eq_abs] at key
+  rw [show (h y - h x) / (y - x) - deriv h a =
+      ((h y - deriv h a * y) - (h x - deriv h a * x)) / (y - x) by field_simp; ring, abs_div,
+    div_le_iff₀ (abs_pos.2 hne)]
+  exact key
+
+end MeanValue
+
+namespace Chord
+
+variable {f : ℝ → ℝ} {q : ℝ}
+
+/-- One step of the **chord method** with fixed slope `q`, `x ↦ x - f x / q`
+([quarteroni2000numerical] (6.12), where the book's slope is `q = (f b - f a) / (b - a)`). -/
+noncomputable def step (f : ℝ → ℝ) (q : ℝ) (x : ℝ) : ℝ := x - f x / q
+
+/-- The scalar chord method is the Banach-space chord method `Newton.chordStep` of
+`Numlib/Nonlinear/Newton` with the frozen derivative `A : ℝ ≃L[ℝ] ℝ`, `A 1 = q` (multiplication by
+`q`): `A.symm y = y / q`. Through this identity `Newton.tendsto_chordIterate` applies to the scalar
+chord method. -/
+theorem step_eq_chordStep (A : ℝ ≃L[ℝ] ℝ) (hA : A 1 = q) (x : ℝ) :
+    step f q x = Newton.chordStep f A x := by
+  have hq : q ≠ 0 := by
+    rintro rfl
+    simp at hA
+  have hAy : ∀ y : ℝ, A y = y * q := fun y => by
+    conv_lhs => rw [← mul_one y, ← smul_eq_mul, A.map_smul, hA, smul_eq_mul]
+  unfold step Newton.chordStep
+  congr 1
+  symm
+  rw [A.symm_apply_eq, hAy, div_mul_cancel₀ _ hq]
+
+/-- The derivative of the chord iteration function: `HasDerivAt f f' x` gives
+`φ_chord'(x) = 1 - f' / q`; at a root `α`, `φ_chord'(α) = 1 - f'(α) / q`, which is `1` when
+`f'(α) = 0` ([quarteroni2000numerical] §6.3.1). -/
+theorem hasDerivAt_step {f' x : ℝ} (hf : HasDerivAt f f' x) :
+    HasDerivAt (step f q) (1 - f' / q) x :=
+  (hasDerivAt_id x).sub (hf.div_const q)
+
+/-- The local convergence condition of the chord method in the book's form: `|1 - f' / q| < 1`
+iff `0 < f' / q < 2`, i.e. `q` has the sign of `f'` and `|q| > |f'| / 2`
+([quarteroni2000numerical] §6.3.1). -/
+theorem abs_one_sub_div_lt_one_iff {f' q : ℝ} : |1 - f' / q| < 1 ↔ 0 < f' / q ∧ f' / q < 2 := by
+  rw [abs_lt]
+  constructor
+  · rintro ⟨h1, h2⟩; constructor <;> linarith
+  · rintro ⟨h1, h2⟩; constructor <;> linarith
+
+/-- **Local linear convergence of the chord method** ([quarteroni2000numerical] §6.3.1): if
+`f α = 0`, `f` is differentiable at `α` and `0 < f'(α) / q < 2`, then every orbit of
+`x ↦ x - f x / q` started close enough to `α` converges to `α`. Ostrowski's theorem
+(`tendsto_iterate_of_abs_deriv_lt_one`) for `φ_chord`, whose derivative at `α` is
+`1 - f'(α) / q`. -/
+theorem tendsto_iterate {α f' : ℝ} (hα : f α = 0) (hf : HasDerivAt f f' α) (h0 : 0 < f' / q)
+    (h2 : f' / q < 2) :
+    ∃ δ > 0, ∀ x₀, |x₀ - α| < δ → Tendsto (fun k => (step f q)^[k] x₀) atTop (𝓝 α) :=
+  tendsto_iterate_of_abs_deriv_lt_one (by simp [step, hα]) (hasDerivAt_step hf)
+    (abs_one_sub_div_lt_one_iff.2 ⟨h0, h2⟩)
+
+/-- **The error ratios of the chord method** tend to `1 - f'(α) / q` along a convergent orbit
+avoiding `α` ((6.18) of [quarteroni2000numerical] Theorem 6.1 for `φ_chord`): linear convergence
+with factor `|1 - f'(α) / q|`, and the "lucky case" `f'(α) = q` of superlinear convergence. -/
+theorem tendsto_sub_div_sub {α f' : ℝ} (hα : f α = 0) (hf : HasDerivAt f f' α) {x : ℕ → ℝ}
+    (hx : ∀ k, x (k + 1) = step f q (x k)) (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
+    Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 (1 - f' / q)) :=
+  tendsto_sub_div_sub_of_hasDerivAt (hasDerivAt_step hf) (by simp [step, hα]) hx hne hlim
+
+end Chord
+
+namespace Secant
+
+variable {f : ℝ → ℝ} {α : ℝ}
+
+/-- One secant step on the pair `(x_{k-1}, x_k)`: the new pair is `(x_k, x_{k+1})` with
+`x_{k+1} = x_k - (x_k - x_{k-1}) / (f x_k - f x_{k-1}) * f x_k` ([quarteroni2000numerical] (6.14)).
+When `f x_k = f x_{k-1}` Lean's `a / 0 = 0` makes the step stall at `x_k`. -/
+noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ :=
+  (s.2, s.2 - (s.2 - s.1) / (f s.2 - f s.1) * f s.2)
+
+/-- The secant iterates: `iterate f xm1 x₀ k = x_k`, with `x_{-1} = xm1`, `x_0 = x₀` the two
+initial values. -/
+noncomputable def iterate (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
+  ((step f)^[k] (xm1, x₀)).2
+
+/-- The secant iterate of index `0` is the initial value `x₀`. -/
+@[simp]
+theorem iterate_zero (f : ℝ → ℝ) (xm1 x₀ : ℝ) : iterate f xm1 x₀ 0 = x₀ := rfl
+
+/-- The first component of the `(k+1)`-st pair is the `k`-th iterate: the pairs are
+`(x_{k-1}, x_k)`. -/
+theorem fst_iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
+    ((step f)^[k + 1] (xm1, x₀)).1 = iterate f xm1 x₀ k := by
+  rw [Function.iterate_succ_apply']
+  rfl
+
+/-- **The secant recurrence** ([quarteroni2000numerical] (6.14)) in terms of the pair
+`(x_{k-1}, x_k) = (step f)^[k] (xm1, x₀)`. -/
+theorem iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
+    iterate f xm1 x₀ (k + 1) = ((step f)^[k] (xm1, x₀)).2 -
+      (((step f)^[k] (xm1, x₀)).2 - ((step f)^[k] (xm1, x₀)).1) /
+        (f ((step f)^[k] (xm1, x₀)).2 - f ((step f)^[k] (xm1, x₀)).1) *
+        f ((step f)^[k] (xm1, x₀)).2 := by
+  simp [iterate, Function.iterate_succ_apply', step]
+
+/-- The first secant iterate from the two initial values. -/
+theorem iterate_one (f : ℝ → ℝ) (xm1 x₀ : ℝ) :
+    iterate f xm1 x₀ 1 = x₀ - (x₀ - xm1) / (f x₀ - f xm1) * f x₀ :=
+  iterate_succ f xm1 x₀ 0
+
+/-- **The secant recurrence in terms of the iterates** ([quarteroni2000numerical] (6.14)):
+`x_{k+2} = x_{k+1} - (x_{k+1} - x_k) / (f x_{k+1} - f x_k) * f x_{k+1}`. -/
+theorem iterate_add_two (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
+    iterate f xm1 x₀ (k + 2) = iterate f xm1 x₀ (k + 1) -
+      (iterate f xm1 x₀ (k + 1) - iterate f xm1 x₀ k) /
+        (f (iterate f xm1 x₀ (k + 1)) - f (iterate f xm1 x₀ k)) * f (iterate f xm1 x₀ (k + 1)) := by
+  rw [iterate_succ f xm1 x₀ (k + 1), fst_iterate_succ]
+  rfl
+
+/-- **The secant error identity.** For a root `α` of `f` and distinct `x, y`, both different from
+`α`, with `f x ≠ f y`, the new iterate `z = y - (y - x) / (f y - f x) * f y` satisfies
+`z - α = (y - α) (x - α) f[x, y, α] / f[x, y]`. It is the divided-difference form of the error of
+the secant line (the interpolant of `f` at `x, y`) at the node `α`, and needs no smoothness: an
+algebraic identity in the values `f x, f y` and `f α = 0`. -/
+theorem sub_root_eq_mul_newton (hα : f α = 0) {x y : ℝ} (hxy : x ≠ y) (hxα : x ≠ α)
+    (hyα : y ≠ α) (hf : f x ≠ f y) :
+    (y - (y - x) / (f y - f x) * f y) - α =
+      (y - α) * (x - α) * DividedDifference.newton f ![x, y, α] /
+        DividedDifference.newton f ![x, y] := by
+  rw [DividedDifference.newton_three_eq, DividedDifference.newton_two_eq _ hxy, hα]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - α ≠ 0 := sub_ne_zero.2 hxα
+  have h3 : y - α ≠ 0 := sub_ne_zero.2 hyα
+  have h4 : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h5 : f y - f x ≠ 0 := sub_ne_zero.2 hf.symm
+  field_simp
+  ring
+
+/-- **The upper error bound of a secant step.** Under the hypotheses of `sub_root_eq_mul_newton`,
+if `0 < m₁ ≤ |f[x, y]|` and `|f[x, y, α]| ≤ M₂`, then `|z - α| ≤ (M₂ / m₁) |y - α| |x - α|`. -/
+theorem abs_sub_root_le (hα : f α = 0) {x y m₁ M₂ : ℝ} (hxy : x ≠ y) (hxα : x ≠ α) (hyα : y ≠ α)
+    (hm : 0 < m₁) (h1 : m₁ ≤ |DividedDifference.newton f ![x, y]|)
+    (h2 : |DividedDifference.newton f ![x, y, α]| ≤ M₂) :
+    |(y - (y - x) / (f y - f x) * f y) - α| ≤ M₂ / m₁ * (|y - α| * |x - α|) := by
+  have hf : f x ≠ f y := by
+    intro h
+    rw [DividedDifference.newton_two_eq _ hxy, h, sub_self, zero_div, abs_zero] at h1
+    exact absurd h1 (not_le.2 hm)
+  rw [sub_root_eq_mul_newton hα hxy hxα hyα hf, abs_div, abs_mul, abs_mul,
+    div_le_iff₀ (lt_of_lt_of_le hm h1)]
+  calc |y - α| * |x - α| * |DividedDifference.newton f ![x, y, α]|
+      ≤ |y - α| * |x - α| * M₂ := by gcongr
+    _ = M₂ / m₁ * (|y - α| * |x - α|) * m₁ := by field_simp
+    _ ≤ M₂ / m₁ * (|y - α| * |x - α|) * |DividedDifference.newton f ![x, y]| := by
+        gcongr
+        have : 0 ≤ M₂ := le_trans (abs_nonneg _) h2
+        positivity
+
+/-- **The lower error bound of a secant step.** Under the hypotheses of `sub_root_eq_mul_newton`,
+if `|f[x, y]| ≤ M₁` with `0 < M₁` and `m₂ ≤ |f[x, y, α]|`, then
+`(m₂ / M₁) |y - α| |x - α| ≤ |z - α|`. With `0 < m₂` this makes `z ≠ α`. -/
+theorem le_abs_sub_root (hα : f α = 0) {x y M₁ m₂ : ℝ} (hxy : x ≠ y) (hxα : x ≠ α) (hyα : y ≠ α)
+    (hf : f x ≠ f y) (hM : 0 < M₁) (h1 : |DividedDifference.newton f ![x, y]| ≤ M₁)
+    (h2 : m₂ ≤ |DividedDifference.newton f ![x, y, α]|) :
+    m₂ / M₁ * (|y - α| * |x - α|) ≤ |(y - (y - x) / (f y - f x) * f y) - α| := by
+  have hN : DividedDifference.newton f ![x, y] ≠ 0 := by
+    rw [DividedDifference.newton_two_eq _ hxy]
+    exact div_ne_zero (sub_ne_zero.2 hf.symm) (sub_ne_zero.2 hxy.symm)
+  rw [sub_root_eq_mul_newton hα hxy hxα hyα hf, abs_div, abs_mul, abs_mul,
+    le_div_iff₀ (abs_pos.2 hN)]
+  rcases le_or_gt m₂ 0 with hm₂ | hm₂
+  · calc m₂ / M₁ * (|y - α| * |x - α|) * |DividedDifference.newton f ![x, y]| ≤ 0 := by
+          have : m₂ / M₁ ≤ 0 := div_nonpos_of_nonpos_of_nonneg hm₂ hM.le
+          have : 0 ≤ |y - α| * |x - α| * |DividedDifference.newton f ![x, y]| := by positivity
+          nlinarith
+      _ ≤ _ := by positivity
+  · calc m₂ / M₁ * (|y - α| * |x - α|) * |DividedDifference.newton f ![x, y]|
+        ≤ m₂ / M₁ * (|y - α| * |x - α|) * M₁ := by gcongr
+      _ = |y - α| * |x - α| * m₂ := by field_simp
+      _ ≤ |y - α| * |x - α| * |DividedDifference.newton f ![x, y, α]| := by gcongr
+
+section Local
+
+open DividedDifference
+
+variable {ε m₁ M₁ m₂ M₂ : ℝ}
+
+/-- **Local bounds on the divided differences near a simple root of a `C²` function.** If
+`f'(α) ≠ 0` then, for every `η > 0`, on a ball around `α` the first divided difference at distinct
+nodes satisfies `|f'(α)| / 2 ≤ |f[x, y]| ≤ 3 |f'(α)| / 2` and the second divided difference at
+distinct nodes different from `α` satisfies `|f[x, y, α] - f''(α) / 2| ≤ η`. The first is
+`exists_ball_abs_slope_sub_deriv_le` for `f`; the second is the same lemma for `g = dslope f α`,
+which is `C¹` at `α` with `g'(α) = f''(α) / 2` by Hadamard's lemma, through
+`f[x, y, α] = g[x, y]`. -/
+theorem exists_ball_bounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) {η : ℝ} (hη : 0 < η) :
+    ∃ δ > 0, ∀ x ∈ Metric.ball α δ, ∀ y ∈ Metric.ball α δ, x ≠ y →
+      (|deriv f α| / 2 ≤ |newton f ![x, y]| ∧ |newton f ![x, y]| ≤ 3 * |deriv f α| / 2) ∧
+      (x ≠ α → y ≠ α → |newton f ![x, y, α] - iteratedDeriv 2 f α / 2| ≤ η) := by
+  have hf1 : ContDiffAt ℝ 1 f α := hf.of_le (by norm_num)
+  have hf2 : ContDiffAt ℝ (1 + 1 : ℕ) f α := by simpa using hf
+  have hg : ContDiffAt ℝ 1 (dslope f α) α := ContDiffAt.dslope_same (n := 1) hf2
+  have hg' : deriv (dslope f α) α = iteratedDeriv 2 f α / 2 := by
+    rw [← iteratedDeriv_one, iteratedDeriv_dslope_same hf2,
+      show ((1 : ℕ) : ℝ) + 1 = 2 by norm_num]
+  obtain ⟨δ₁, hδ₁, h₁⟩ := exists_ball_abs_slope_sub_deriv_le hf1 (half_pos (abs_pos.2 hf'))
+  obtain ⟨δ₂, hδ₂, h₂⟩ := exists_ball_abs_slope_sub_deriv_le hg hη
+  refine ⟨min δ₁ δ₂, lt_min hδ₁ hδ₂, fun x hx y hy hxy => ⟨?_, fun hxα hyα => ?_⟩⟩
+  · have hx' := Metric.ball_subset_ball (min_le_left δ₁ δ₂) hx
+    have hy' := Metric.ball_subset_ball (min_le_left δ₁ δ₂) hy
+    have := h₁ x hx' y hy' hxy
+    rw [newton_two_eq _ hxy]
+    have h1 := abs_sub_abs_le_abs_sub ((f y - f x) / (y - x)) (deriv f α)
+    have h2 := abs_sub_abs_le_abs_sub (deriv f α) ((f y - f x) / (y - x))
+    rw [abs_sub_comm] at h2
+    constructor <;> linarith
+  · have hx' := Metric.ball_subset_ball (min_le_right δ₁ δ₂) hx
+    have hy' := Metric.ball_subset_ball (min_le_right δ₁ δ₂) hy
+    have := h₂ x hx' y hy' hxy
+    rwa [newton_three_eq_newton_two_dslope _ α hxy hxα hyα, newton_two_eq _ hxy, ← hg']
+
+/-- **The local bounds driving the secant analysis** on `ball α ε`: the first divided difference at
+distinct nodes lies in `[m₁, M₁]` in absolute value, and the second divided difference through
+`α` at distinct nodes different from `α` lies in `[m₂, M₂]`. `exists_localBounds` produces them
+near a simple root of a `C²` function. -/
+structure LocalBounds (f : ℝ → ℝ) (α ε m₁ M₁ m₂ M₂ : ℝ) : Prop where
+  /-- The two-sided bound on `|f[x, y]|`. -/
+  two : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y →
+    m₁ ≤ |newton f ![x, y]| ∧ |newton f ![x, y]| ≤ M₁
+  /-- The two-sided bound on `|f[x, y, α]|`. -/
+  three : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y → x ≠ α → y ≠ α →
+    m₂ ≤ |newton f ![x, y, α]| ∧ |newton f ![x, y, α]| ≤ M₂
+
+/-- Local bounds persist on a smaller ball. -/
+theorem LocalBounds.mono (hb : LocalBounds f α ε m₁ M₁ m₂ M₂) {ε' : ℝ} (h : ε' ≤ ε) :
+    LocalBounds f α ε' m₁ M₁ m₂ M₂ :=
+  ⟨fun x hx y hy => hb.two x (Metric.ball_subset_ball h hx) y (Metric.ball_subset_ball h hy),
+    fun x hx y hy => hb.three x (Metric.ball_subset_ball h hx) y (Metric.ball_subset_ball h hy)⟩
+
+/-- Near a simple root of a `C²` function, for every `η > 0` there are local bounds with
+`m₁ = |f'(α)| / 2`, `M₁ = 3 |f'(α)| / 2`, `m₂ = |f''(α)| / 2 - η` and `M₂ = |f''(α)| / 2 + η`;
+`m₂ > 0` when `f''(α) ≠ 0` and `η < |f''(α)| / 2`. -/
+theorem exists_localBounds (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) {η : ℝ}
+    (hη : 0 < η) :
+    ∃ ε > 0, LocalBounds f α ε (|deriv f α| / 2) (3 * |deriv f α| / 2)
+      (|iteratedDeriv 2 f α| / 2 - η) (|iteratedDeriv 2 f α| / 2 + η) := by
+  obtain ⟨δ, hδ, h⟩ := exists_ball_bounds hf hf' hη
+  refine ⟨δ, hδ, fun x hx y hy hxy => (h x hx y hy hxy).1, fun x hx y hy hxy hxα hyα => ?_⟩
+  have := (h x hx y hy hxy).2 hxα hyα
+  have h1 := abs_sub_abs_le_abs_sub (newton f ![x, y, α]) (iteratedDeriv 2 f α / 2)
+  have h2 := abs_sub_abs_le_abs_sub (iteratedDeriv 2 f α / 2) (newton f ![x, y, α])
+  rw [abs_sub_comm] at h2
+  rw [abs_div, abs_two] at h1 h2
+  constructor <;> linarith
+
+/-- A pair `(x_{k-1}, x_k)` of consecutive secant iterates is **admissible** in `ball α ε` when
+both points lie in the ball, are distinct, and differ from `α`: exactly what the error identity
+`sub_root_eq_mul_newton` needs. A start equal to `α` stops the method at once, and two equal
+starts make the step stall. -/
+structure IsAdmissible (α ε : ℝ) (s : ℝ × ℝ) : Prop where
+  /-- The older point is in the ball. -/
+  fst_mem : s.1 ∈ Metric.ball α ε
+  /-- The newer point is in the ball. -/
+  snd_mem : s.2 ∈ Metric.ball α ε
+  /-- The two points are distinct. -/
+  ne : s.1 ≠ s.2
+  /-- The older point is not the root. -/
+  fst_ne : s.1 ≠ α
+  /-- The newer point is not the root. -/
+  snd_ne : s.2 ≠ α
+
+/-- The last iterate of an admissible pair is not a root of `f` when `f` is injective on the ball
+in the sense of the lower bound `0 < m₁ ≤ |f[x, y]|`. -/
+theorem LocalBounds.apply_ne_zero (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
+    (hε : 0 < ε) (hm₁ : 0 < m₁) {v : ℝ} (hv : v ∈ Metric.ball α ε) (hvα : v ≠ α) : f v ≠ 0 := by
+  intro h0
+  have := (hb.two α (Metric.mem_ball_self hε) v hv hvα.symm).1
+  rw [newton_two_eq _ hvα.symm, h0, hα, sub_self, zero_div, abs_zero] at this
+  exact absurd this (not_le.2 hm₁)
+
+/-- **One secant step from an admissible pair.** Under local bounds with `0 < m₁`, `0 < M₁` and
+`(M₂ / m₁) ε ≤ 1`, the new point `w = (step f s).2` satisfies the two-sided error bound
+`(m₂ / M₁) |v - α| |u - α| ≤ |w - α| ≤ (M₂ / m₁) |v - α| |u - α|`, lies in the ball, and differs
+from `v`. It differs from `α` too when `0 < m₂` (`LocalBounds.isAdmissible_step`). -/
+theorem LocalBounds.step_bounds (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂) (hε : 0 < ε)
+    (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hCε : M₂ / m₁ * ε ≤ 1) {s : ℝ × ℝ}
+    (hs : IsAdmissible α ε s) :
+    m₂ / M₁ * (|s.2 - α| * |s.1 - α|) ≤ |(step f s).2 - α| ∧
+      |(step f s).2 - α| ≤ M₂ / m₁ * (|s.2 - α| * |s.1 - α|) ∧
+      (step f s).2 ∈ Metric.ball α ε ∧ (step f s).2 ≠ s.2 := by
+  obtain ⟨hu, hv, huv, huα, hvα⟩ := hs
+  obtain ⟨h1, h1'⟩ := hb.two _ hu _ hv huv
+  obtain ⟨h2, h2'⟩ := hb.three _ hu _ hv huv huα hvα
+  have hf : f s.1 ≠ f s.2 := by
+    intro h
+    rw [newton_two_eq _ huv, h, sub_self, zero_div, abs_zero] at h1
+    exact absurd h1 (not_le.2 hm₁)
+  have hupper := abs_sub_root_le hα huv huα hvα hm₁ h1 h2'
+  have hlower := le_abs_sub_root hα huv huα hvα hf hM₁ h1' h2
+  have hM₂ : 0 ≤ M₂ := (abs_nonneg _).trans h2'
+  refine ⟨hlower, hupper, ?_, ?_⟩
+  · rw [Metric.mem_ball, Real.dist_eq]
+    have hv' : |s.2 - α| ≤ ε := by rw [← Real.dist_eq]; exact (Metric.mem_ball.1 hv).le
+    have hu' : |s.1 - α| < ε := by rw [← Real.dist_eq]; exact Metric.mem_ball.1 hu
+    calc |(step f s).2 - α| ≤ M₂ / m₁ * (|s.2 - α| * |s.1 - α|) := hupper
+      _ ≤ M₂ / m₁ * (ε * |s.1 - α|) := by gcongr
+      _ = M₂ / m₁ * ε * |s.1 - α| := by ring
+      _ ≤ 1 * |s.1 - α| := by gcongr
+      _ < ε := by rw [one_mul]; exact hu'
+  · have hfv : f s.2 ≠ 0 := hb.apply_ne_zero hα hε hm₁ hv hvα
+    simp only [step]
+    intro h
+    rw [sub_eq_self, mul_eq_zero, div_eq_zero_iff, sub_eq_zero, sub_eq_zero] at h
+    rcases h with (h | h) | h
+    · exact huv h.symm
+    · exact hf h.symm
+    · exact hfv h
+
+/-- After a secant step from an admissible pair, the new pair is admissible iff the new point is
+not the root. -/
+theorem LocalBounds.isAdmissible_step_iff (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
+    (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hCε : M₂ / m₁ * ε ≤ 1) {s : ℝ × ℝ}
+    (hs : IsAdmissible α ε s) : IsAdmissible α ε (step f s) ↔ (step f s).2 ≠ α := by
+  obtain ⟨-, -, hmem, hne⟩ := hb.step_bounds hα hε hm₁ hM₁ hCε hs
+  exact ⟨fun h => h.snd_ne, fun h => ⟨hs.snd_mem, hmem, hne.symm, hs.snd_ne, h⟩⟩
+
+/-- With `0 < m₂` (the second divided difference bounded away from `0`, as near a root with
+`f''(α) ≠ 0`), admissibility is preserved by the secant step. -/
+theorem LocalBounds.isAdmissible_step (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
+    (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hm₂ : 0 < m₂) (hCε : M₂ / m₁ * ε ≤ 1)
+    {s : ℝ × ℝ} (hs : IsAdmissible α ε s) : IsAdmissible α ε (step f s) := by
+  rw [hb.isAdmissible_step_iff hα hε hm₁ hM₁ hCε hs]
+  obtain ⟨hlower, -, -, -⟩ := hb.step_bounds hα hε hm₁ hM₁ hCε hs
+  intro h
+  rw [h, sub_self, abs_zero] at hlower
+  have : 0 < m₂ / M₁ * (|s.2 - α| * |s.1 - α|) := by
+    have := abs_pos.2 (sub_ne_zero.2 hs.snd_ne)
+    have := abs_pos.2 (sub_ne_zero.2 hs.fst_ne)
+    positivity
+  linarith
+
+/-- Once an iterate is the root, all later ones are: `f α = 0` makes the step stall at `α`. -/
+theorem snd_step_eq_of_snd_eq (hα : f α = 0) {s : ℝ × ℝ} (h : s.2 = α) : (step f s).2 = α := by
+  simp [step, h, hα]
+
+end Local
+
+section Sequences
+
+/-- **Fibonacci decay.** If `0 ≤ E k`, `E 0, E 1 ≤ θ < 1` and `E (k+2) ≤ E (k+1) E k`, then
+`E k ≤ θ ^ fib (k+1)` and so `E k → 0`. This is how the upper bound
+`|e_{k+1}| ≤ C |e_k| |e_{k-1}|` alone gives convergence of the secant method (an R-order, not yet
+the order of Definition 6.1). -/
+theorem tendsto_zero_of_le_mul {E : ℕ → ℝ} {θ : ℝ} (hE : ∀ k, 0 ≤ E k) (hθ : θ < 1)
+    (h0 : E 0 ≤ θ) (h1 : E 1 ≤ θ) (hrec : ∀ k, E (k + 2) ≤ E (k + 1) * E k) :
+    Tendsto E atTop (𝓝 0) := by
+  have hθ0 : 0 ≤ θ := (hE 0).trans h0
+  have hfib : ∀ k, E k ≤ θ ^ Nat.fib (k + 1) ∧ E (k + 1) ≤ θ ^ Nat.fib (k + 2) := by
+    intro k
+    induction k with
+    | zero => exact ⟨by simpa using h0, by simpa using h1⟩
+    | succ k ih =>
+      refine ⟨ih.2, ?_⟩
+      calc E (k + 1 + 1) ≤ E (k + 1) * E k := hrec k
+        _ ≤ θ ^ Nat.fib (k + 2) * θ ^ Nat.fib (k + 1) :=
+            mul_le_mul ih.2 ih.1 (hE k) (by positivity)
+        _ = θ ^ Nat.fib (k + 1 + 2) := by
+            rw [← pow_add, Nat.fib_add_two (n := k + 1), add_comm]
+  have hlim : Tendsto (fun k => θ ^ Nat.fib (k + 1)) atTop (𝓝 0) := by
+    refine (tendsto_pow_atTop_nhds_zero_of_lt_one hθ0 hθ).comp ?_
+    refine tendsto_atTop_atTop.2 fun b => ⟨b + 4, fun n hn => ?_⟩
+    exact (by omega : b ≤ n + 1).trans (Nat.le_fib_self (by omega))
+  exact squeeze_zero hE (fun k => (hfib k).1) hlim
+
+/-- **The golden-ratio order from a two-sided product recursion.** If a positive sequence
+satisfies `c e_{k+1} e_k ≤ e_{k+2} ≤ C e_{k+1} e_k` with `0 < c`, then
+`e_{k+1} ≤ B e_k ^ φ` for all `k`, `φ = (1 + √5) / 2`. In the logarithmic variables
+`u_k = log e_k` and `s_k = u_{k+1} - φ u_k`, the upper bound gives
+`s_{k+2} ≤ log C + u_{k+1} - φ⁻¹ u_{k+2}` (since `1 - φ = -φ⁻¹`) and the lower bound turns this
+into `s_{k+2} ≤ L + θ s_k` with `θ = 1 - φ⁻¹ ∈ (0, 1)` (since `φ θ = φ⁻¹`), a recursion whose
+solutions stay below `max (L / (1 - θ)) (max s_0 s_1)`, `1 - θ = φ⁻¹`. [isaacson1994analysis]
+pp. 99–101 give the limit form; this is the bound form the order of Definition 6.1 asks for. -/
+theorem exists_le_mul_rpow_goldenRatio {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c) (hpos : ∀ k, 0 < e k)
+    (hupper : ∀ k, e (k + 2) ≤ C * (e (k + 1) * e k))
+    (hlower : ∀ k, c * (e (k + 1) * e k) ≤ e (k + 2)) :
+    ∃ B > 0, ∀ k, e (k + 1) ≤ B * e k ^ Real.goldenRatio := by
+  have hC : 0 < C := by
+    by_contra hC
+    push Not at hC
+    have := mul_nonpos_of_nonpos_of_nonneg hC (mul_pos (hpos 1) (hpos 0)).le
+    linarith [hupper 0, hpos 2]
+  set φ := Real.goldenRatio with hφ
+  have hφ1 : 1 < φ := Real.one_lt_goldenRatio
+  have hφinv : φ⁻¹ = φ - 1 := by
+    have h := Real.goldenRatio_sq
+    field_simp
+    nlinarith
+  have hθ0 : 0 < 1 - φ⁻¹ := by rw [hφinv]; linarith [Real.goldenRatio_lt_two]
+  have hθ1 : 1 - φ⁻¹ < 1 := by rw [hφinv]; linarith
+  have hφθ : φ * (1 - φ⁻¹) = φ⁻¹ := by rw [hφinv]; nlinarith [Real.goldenRatio_sq]
+  set u : ℕ → ℝ := fun k => Real.log (e k) with hu
+  have hu_up : ∀ k, u (k + 2) ≤ Real.log C + (u (k + 1) + u k) := fun k => by
+    have := Real.log_le_log (hpos _) (hupper k)
+    rwa [Real.log_mul hC.ne' (mul_pos (hpos _) (hpos _)).ne',
+      Real.log_mul (hpos _).ne' (hpos _).ne'] at this
+  have hu_lo : ∀ k, Real.log c + (u (k + 1) + u k) ≤ u (k + 2) := fun k => by
+    have := Real.log_le_log (mul_pos hc (mul_pos (hpos _) (hpos _))) (hlower k)
+    rwa [Real.log_mul hc.ne' (mul_pos (hpos _) (hpos _)).ne',
+      Real.log_mul (hpos _).ne' (hpos _).ne'] at this
+  set s : ℕ → ℝ := fun k => u (k + 1) - φ * u k with hs
+  set L : ℝ := Real.log C - φ⁻¹ * Real.log c with hL
+  have hrec : ∀ k, s (k + 2) ≤ L + (1 - φ⁻¹) * s k := fun k => by
+    have h1 := hu_up (k + 1)
+    have h2 := mul_le_mul_of_nonneg_left (hu_lo k) (inv_pos.2 (zero_lt_one.trans hφ1)).le
+    have h3 : φ * u (k + 2) = u (k + 2) + φ⁻¹ * u (k + 2) := by rw [hφinv]; ring
+    have h4 : (1 - φ⁻¹) * (u (k + 1) - φ * u k) = u (k + 1) - φ⁻¹ * u (k + 1) - φ⁻¹ * u k := by
+      rw [show (1 - φ⁻¹) * (u (k + 1) - φ * u k) = (1 - φ⁻¹) * u (k + 1) - φ * (1 - φ⁻¹) * u k
+        by ring, hφθ]
+      ring
+    simp only [hs, hL]
+    rw [h4]
+    linarith
+  set S : ℝ := max (L / φ⁻¹) (max (s 0) (s 1)) with hS
+  have hbound : ∀ k, s k ≤ S ∧ s (k + 1) ≤ S := by
+    intro k
+    induction k with
+    | zero => exact ⟨(le_max_left _ _).trans (le_max_right _ _),
+        (le_max_right _ _).trans (le_max_right _ _)⟩
+    | succ k ih =>
+      refine ⟨ih.2, ?_⟩
+      have hLS : L ≤ φ⁻¹ * S := by
+        have := le_max_left (L / φ⁻¹) (max (s 0) (s 1))
+        rwa [div_le_iff₀ (inv_pos.2 (zero_lt_one.trans hφ1)), mul_comm] at this
+      calc s (k + 1 + 1) ≤ L + (1 - φ⁻¹) * s k := hrec k
+        _ ≤ L + (1 - φ⁻¹) * S := by gcongr; exact ih.1
+        _ ≤ φ⁻¹ * S + (1 - φ⁻¹) * S := by gcongr
+        _ = S := by ring
+  refine ⟨Real.exp S, Real.exp_pos S, fun k => ?_⟩
+  have hk : u (k + 1) ≤ S + φ * u k := by
+    have := (hbound k).1
+    simp only [hs] at this
+    linarith
+  calc e (k + 1) = Real.exp (u (k + 1)) := (Real.exp_log (hpos _)).symm
+    _ ≤ Real.exp (S + φ * u k) := Real.exp_le_exp.2 hk
+    _ = Real.exp S * e k ^ φ := by
+        rw [Real.exp_add, Real.rpow_def_of_pos (hpos k), mul_comm (Real.log _)]
+
+end Sequences
+
+section Convergence
+
+open DividedDifference
+
+variable {ε m₁ M₁ m₂ M₂ xm1 x₀ : ℝ}
+
+/-- The errors of the pair sequence: `E k = |((step f)^[k] (xm1, x₀)).1 - α|`, so that
+`E 0 = |xm1 - α|` and `E (k + 1) = |iterate f xm1 x₀ k - α|`. -/
+theorem abs_fst_iterate_succ_sub (f : ℝ → ℝ) (xm1 x₀ α : ℝ) (k : ℕ) :
+    |((step f)^[k + 1] (xm1, x₀)).1 - α| = |iterate f xm1 x₀ k - α| := by
+  rw [fst_iterate_succ]
+
+/-- **Convergence from an admissible start under local bounds with `(M₂ / m₁) ε ≤ 1 / 2`.** Either
+every pair stays admissible, and the Fibonacci decay of `E_k = (M₂ / m₁) |e_{k-1}|` gives
+convergence, or some iterate is exactly the root and the method stays there. -/
+theorem LocalBounds.tendsto_iterate (hα : f α = 0) (hb : LocalBounds f α ε m₁ M₁ m₂ M₂)
+    (hε : 0 < ε) (hm₁ : 0 < m₁) (hM₁ : 0 < M₁) (hM₂ : 0 < M₂) (hCε : M₂ / m₁ * ε ≤ 1 / 2)
+    (hs : IsAdmissible α ε (xm1, x₀)) :
+    (∀ k, iterate f xm1 x₀ k ∈ Metric.ball α ε) ∧ Tendsto (iterate f xm1 x₀) atTop (𝓝 α) := by
+  have hCε' : M₂ / m₁ * ε ≤ 1 := hCε.trans (by norm_num)
+  have hC : 0 < M₂ / m₁ := div_pos hM₂ hm₁
+  by_cases hall : ∀ k, IsAdmissible α ε ((step f)^[k] (xm1, x₀))
+  · -- every pair admissible: Fibonacci decay
+    set E : ℕ → ℝ := fun k => M₂ / m₁ * |((step f)^[k] (xm1, x₀)).1 - α| with hE
+    have hE0 : ∀ k, 0 ≤ E k := fun k => by positivity
+    have hEθ : ∀ k, E k ≤ 1 / 2 := fun k => by
+      have hmem := (hall k).fst_mem
+      rw [Metric.mem_ball, Real.dist_eq] at hmem
+      calc E k ≤ M₂ / m₁ * ε := by simp only [hE]; gcongr
+        _ ≤ 1 / 2 := hCε
+    have hrec : ∀ k, E (k + 2) ≤ E (k + 1) * E k := fun k => by
+      obtain ⟨-, hup, -, -⟩ := hb.step_bounds hα hε hm₁ hM₁ hCε' (hall k)
+      simp only [hE, Function.iterate_succ_apply']
+      calc M₂ / m₁ * |(step f (step f ((step f)^[k] (xm1, x₀)))).1 - α|
+          = M₂ / m₁ * |(step f ((step f)^[k] (xm1, x₀))).2 - α| := rfl
+        _ ≤ M₂ / m₁ * (M₂ / m₁ * (|((step f)^[k] (xm1, x₀)).2 - α| *
+            |((step f)^[k] (xm1, x₀)).1 - α|)) := by gcongr
+        _ = M₂ / m₁ * |(step f ((step f)^[k] (xm1, x₀))).1 - α| *
+            (M₂ / m₁ * |((step f)^[k] (xm1, x₀)).1 - α|) := by
+            simp only [step]; ring
+    have hlim := tendsto_zero_of_le_mul hE0 (by norm_num) (hEθ 0) (hEθ 1) hrec
+    refine ⟨fun k => (hall k).snd_mem, ?_⟩
+    refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
+    have := (hlim.comp (tendsto_add_atTop_nat 1)).const_mul (M₂ / m₁)⁻¹
+    rw [mul_zero] at this
+    refine this.congr fun k => ?_
+    simp only [Function.comp, hE, Real.norm_eq_abs, ← abs_fst_iterate_succ_sub f xm1 x₀ α k]
+    field_simp
+  · -- some pair is not admissible: the method has landed on the root
+    classical
+    push Not at hall
+    have hk := Nat.find_spec hall
+    have hmin : ∀ j < Nat.find hall, IsAdmissible α ε ((step f)^[j] (xm1, x₀)) := fun j hj =>
+      not_not.1 (Nat.find_min hall hj)
+    obtain ⟨j, hj⟩ : ∃ j, Nat.find hall = j + 1 := by
+      refine ⟨Nat.find hall - 1, (Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.2 fun h => ?_)).symm⟩
+      rw [h] at hk
+      exact hk hs
+    have hadm : IsAdmissible α ε ((step f)^[j] (xm1, x₀)) := hmin j (by omega)
+    have hroot : ((step f)^[j + 1] (xm1, x₀)).2 = α := by
+      rw [Function.iterate_succ_apply']
+      by_contra h
+      exact hk (by
+        rw [hj, Function.iterate_succ_apply']
+        exact (hb.isAdmissible_step_iff hα hε hm₁ hM₁ hCε' hadm).2 h)
+    have hconst : ∀ i ≥ j + 1, iterate f xm1 x₀ i = α := by
+      intro i hi
+      obtain ⟨d, rfl⟩ : ∃ d, i = j + 1 + d := ⟨i - (j + 1), by omega⟩
+      induction d with
+      | zero => exact hroot
+      | succ d ih =>
+        rw [iterate, show j + 1 + (d + 1) = j + 1 + d + 1 by omega, Function.iterate_succ_apply']
+        exact snd_step_eq_of_snd_eq hα (ih (by omega))
+    refine ⟨fun i => ?_, tendsto_atTop_of_eventually_const hconst⟩
+    rcases lt_or_ge i (j + 1) with hi | hi
+    · exact (hmin i (by rw [hj]; omega)).snd_mem
+    · rw [hconst i hi]
+      exact Metric.mem_ball_self hε
+
+/-- **Local convergence of the secant method** ([quarteroni2000numerical] §6.2.2): if `f α = 0`,
+`f` is `C²` at `α` and `f'(α) ≠ 0`, then there is `ε > 0` such that from any two distinct
+starting values in `(α - ε, α + ε)` different from `α` the secant iterates stay in the interval and
+converge to `α`. The two "`≠ α`" hypotheses exclude the trivial case in which the method stops at
+the root immediately; convergence holds there too, but the pair is not admissible. -/
+theorem exists_ball_tendsto_iterate (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
+    (hf' : deriv f α ≠ 0) :
+    ∃ ε > 0, ∀ xm1 ∈ Metric.ball α ε, ∀ x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
+      (∀ k, iterate f xm1 x₀ k ∈ Metric.ball α ε) ∧ Tendsto (iterate f xm1 x₀) atTop (𝓝 α) := by
+  obtain ⟨δ, hδ, hb⟩ := exists_localBounds hf hf' one_pos
+  set m₁ := |deriv f α| / 2 with hm₁def
+  set M₂ := |iteratedDeriv 2 f α| / 2 + 1 with hM₂def
+  have hm₁ : 0 < m₁ := half_pos (abs_pos.2 hf')
+  have hM₁ : 0 < 3 * |deriv f α| / 2 := by have := abs_pos.2 hf'; positivity
+  have hM₂ : 0 < M₂ := by rw [hM₂def]; positivity
+  have hC : 0 < M₂ / m₁ := by positivity
+  set ε := min δ (1 / (2 * (M₂ / m₁))) with hεdef
+  have hε : 0 < ε := lt_min hδ (by positivity)
+  have hCε : M₂ / m₁ * ε ≤ 1 / 2 := by
+    calc M₂ / m₁ * ε ≤ M₂ / m₁ * (1 / (2 * (M₂ / m₁))) := by gcongr; exact min_le_right _ _
+      _ = 1 / 2 := by rw [mul_one_div, mul_comm 2, ← div_div, div_self hC.ne']
+  refine ⟨ε, hε, fun xm1 hxm1 x₀ hx₀ hne h1 h2 => ?_⟩
+  exact (hb.mono (min_le_left _ _)).tendsto_iterate hα hε hm₁ hM₁ hM₂ hCε
+    ⟨hxm1, hx₀, hne, h1, h2⟩
+
+/-- **Property 6.2 of [quarteroni2000numerical]: the secant method has order `(1 + √5) / 2`.** If
+`f α = 0`, `f` is `C²` at `α`, `f'(α) ≠ 0` and `f''(α) ≠ 0`, then there is `ε > 0` such that from
+any two distinct starting values in `(α - ε, α + ε)` different from `α` the secant iterates
+converge to `α` with order the golden ratio in the sense of `ConvergesWithOrder`. The book cites
+[isaacson1994analysis] pp. 99–101 without proof and omits `f'(α) ≠ 0`, which is needed: at a
+multiple root the method is linear. With `f''(α) ≠ 0` every pair of iterates stays admissible
+(`LocalBounds.isAdmissible_step`), the two-sided bound holds at every step, and
+`exists_le_mul_rpow_goldenRatio` turns it into the order bound. -/
+theorem exists_ball_convergesWithOrder_goldenRatio (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
+    (hf' : deriv f α ≠ 0) (hf'' : iteratedDeriv 2 f α ≠ 0) :
+    ∃ ε > 0, ∀ xm1 ∈ Metric.ball α ε, ∀ x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
+      ConvergesWithOrder (iterate f xm1 x₀) α Real.goldenRatio := by
+  have hη : 0 < |iteratedDeriv 2 f α| / 4 := by have := abs_pos.2 hf''; positivity
+  obtain ⟨δ, hδ, hb⟩ := exists_localBounds hf hf' hη
+  set m₁ := |deriv f α| / 2 with hm₁def
+  set M₁ := 3 * |deriv f α| / 2 with hM₁def
+  set m₂ := |iteratedDeriv 2 f α| / 2 - |iteratedDeriv 2 f α| / 4 with hm₂def
+  set M₂ := |iteratedDeriv 2 f α| / 2 + |iteratedDeriv 2 f α| / 4 with hM₂def
+  have hm₁ : 0 < m₁ := half_pos (abs_pos.2 hf')
+  have hM₁ : 0 < M₁ := by have := abs_pos.2 hf'; positivity
+  have hm₂ : 0 < m₂ := by have := abs_pos.2 hf''; simp only [hm₂def]; linarith
+  have hM₂ : 0 < M₂ := by rw [hM₂def]; positivity
+  have hC : 0 < M₂ / m₁ := by positivity
+  set ε := min δ (1 / (2 * (M₂ / m₁))) with hεdef
+  have hε : 0 < ε := lt_min hδ (by positivity)
+  have hCε : M₂ / m₁ * ε ≤ 1 / 2 := by
+    calc M₂ / m₁ * ε ≤ M₂ / m₁ * (1 / (2 * (M₂ / m₁))) := by gcongr; exact min_le_right _ _
+      _ = 1 / 2 := by rw [mul_one_div, mul_comm 2, ← div_div, div_self hC.ne']
+  have hCε' : M₂ / m₁ * ε ≤ 1 := hCε.trans (by norm_num)
+  have hb' : LocalBounds f α ε m₁ M₁ m₂ M₂ := hb.mono (min_le_left _ _)
+  refine ⟨ε, hε, fun xm1 hxm1 x₀ hx₀ hne h1 h2 => ?_⟩
+  have hs : IsAdmissible α ε (xm1, x₀) := ⟨hxm1, hx₀, hne, h1, h2⟩
+  refine ⟨(hb'.tendsto_iterate hα hε hm₁ hM₁ hM₂ hCε hs).2, ?_⟩
+  have hall : ∀ k, IsAdmissible α ε ((step f)^[k] (xm1, x₀)) := fun k => by
+    induction k with
+    | zero => exact hs
+    | succ k ih =>
+      rw [Function.iterate_succ_apply']
+      exact hb'.isAdmissible_step hα hε hm₁ hM₁ hm₂ hCε' ih
+  set e : ℕ → ℝ := fun k => |((step f)^[k] (xm1, x₀)).1 - α| with he
+  have hpos : ∀ k, 0 < e k := fun k => abs_pos.2 (sub_ne_zero.2 (hall k).fst_ne)
+  have hstep : ∀ k, m₂ / M₁ * (e (k + 1) * e k) ≤ e (k + 2) ∧
+      e (k + 2) ≤ M₂ / m₁ * (e (k + 1) * e k) := fun k => by
+    obtain ⟨hlo, hup, -, -⟩ := hb'.step_bounds hα hε hm₁ hM₁ hCε' (hall k)
+    simp only [he, Function.iterate_succ_apply']
+    exact ⟨hlo, hup⟩
+  obtain ⟨B, hB, hbound⟩ := exists_le_mul_rpow_goldenRatio (by positivity) hpos
+    (fun k => (hstep k).2) (fun k => (hstep k).1)
+  refine ⟨B, hB, Eventually.of_forall fun k => ?_⟩
+  have := hbound (k + 1)
+  simp only [he, abs_fst_iterate_succ_sub] at this
+  simpa [Real.norm_eq_abs] using this
+
+end Convergence
+
+end Secant
+
+namespace RegulaFalsi
+
+variable {f : ℝ → ℝ} {xm1 x₀ : ℝ}
+
+/-- The secant point of a pair `(x, x')`: the zero `x - (x - x') / (f x - f x') * f x` of the
+secant line through `(x, f x)` and `(x', f x')`. -/
+noncomputable def secantPoint (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ :=
+  s.1 - (s.1 - s.2) / (f s.1 - f s.2) * f s.1
+
+/-- One **regula falsi** step on the state `(x_k, x_{k'})`, `x_{k'}` the latest earlier iterate
+with `f x_{k'} f x_k < 0` ([quarteroni2000numerical] (6.15)): the new iterate is the secant
+point `z`, and the bracket partner becomes `x_k` if `f z · f x_k < 0` and stays `x_{k'}`
+otherwise — the book's "maximum index `k' < k + 1` with `f(x_{k'}) f(x_{k+1}) < 0`", since
+`f z · f x_{k'} < 0` exactly when `f z · f x_k ≥ 0` and `f z ≠ 0`. -/
+noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ :=
+  if f (secantPoint f s) * f s.1 < 0 then (secantPoint f s, s.1) else (secantPoint f s, s.2)
+
+/-- The regula falsi iterates: `iterate f xm1 x₀ k = x_k` from the bracketing pair
+`x_{-1} = xm1`, `x_0 = x₀`. -/
+noncomputable def iterate (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
+  ((step f)^[k] (x₀, xm1)).1
+
+/-- The regula falsi iterate of index `0` is the initial value `x₀`. -/
+@[simp]
+theorem iterate_zero (f : ℝ → ℝ) (xm1 x₀ : ℝ) : iterate f xm1 x₀ 0 = x₀ := rfl
+
+/-- The new iterate is the secant point, whichever partner is kept. -/
+theorem fst_step (f : ℝ → ℝ) (s : ℝ × ℝ) : (step f s).1 = secantPoint f s := by
+  unfold step
+  split_ifs <;> rfl
+
+/-- The recurrence: `x_{k+1}` is the secant point of the `k`-th state. -/
+theorem iterate_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
+    iterate f xm1 x₀ (k + 1) = secantPoint f ((step f)^[k] (x₀, xm1)) := by
+  rw [iterate, Function.iterate_succ_apply', fst_step]
+
+/-- **The secant point of a bracketing pair lies between its points**: for `f x · f x' < 0`,
+`secantPoint f (x, x') ∈ [[x, x']]`. It is `x + t (x' - x)` with the weight
+`t = f x / (f x - f x') ∈ [0, 1]`. -/
+theorem secantPoint_mem_uIcc {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) :
+    secantPoint f s ∈ uIcc s.1 s.2 := by
+  have heq : secantPoint f s = s.1 + (f s.1 / (f s.1 - f s.2)) • (s.2 - s.1) := by
+    simp only [secantPoint, smul_eq_mul]
+    ring
+  rw [heq]
+  refine (convex_uIcc s.1 s.2).add_smul_sub_mem left_mem_uIcc right_mem_uIcc ⟨?_, ?_⟩
+  · rcases mul_neg_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · exact div_nonneg h1.le (by linarith)
+    · exact div_nonneg_of_nonpos h1.le (by linarith)
+  · rcases mul_neg_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · rw [div_le_one (by linarith)]; linarith
+    · rw [div_le_one_of_neg (by linarith)]; linarith
+
+/-- **Bracketing is preserved by one step** when the secant point is not an exact root: from
+`f x · f x' < 0` and `f z ≠ 0`, the new state again has `f · f < 0`. -/
+theorem mul_neg_step {s : ℝ × ℝ} (h : f s.1 * f s.2 < 0) (hz : f (secantPoint f s) ≠ 0) :
+    f (step f s).1 * f (step f s).2 < 0 := by
+  unfold step
+  split_ifs with hlt
+  · exact hlt
+  · simp only
+    have h1 : f s.1 ≠ 0 := fun h0 => by simp [h0] at h
+    have hpos : 0 < f (secantPoint f s) * f s.1 :=
+      lt_of_le_of_ne (not_lt.1 hlt) (Ne.symm (mul_ne_zero hz h1))
+    nlinarith [mul_pos hpos (neg_pos.2 h), sq_nonneg (f s.1)]
+
+/-- **Bracketing is preserved** ([quarteroni2000numerical] §6.2.2): if `f x₀ · f x_{-1} < 0` and no
+iterate is an exact root, every state `(x_k, x_{k'})` has `f x_k · f x_{k'} < 0`. -/
+theorem mul_neg_iterate (h : f x₀ * f xm1 < 0) (hroot : ∀ k, f (iterate f xm1 x₀ k) ≠ 0) (k : ℕ) :
+    f ((step f)^[k] (x₀, xm1)).1 * f ((step f)^[k] (x₀, xm1)).2 < 0 := by
+  induction k with
+  | zero => simpa using h
+  | succ k ih =>
+    rw [Function.iterate_succ_apply']
+    have hz := hroot (k + 1)
+    rw [iterate_succ] at hz
+    exact mul_neg_step ih hz
+
+/-- **The iterates stay in the starting interval** ([quarteroni2000numerical] §6.2.2, "unlike the
+secant method, the iterates generated by (6.15) are all contained within the starting interval
+`[x^{(-1)}, x^{(0)}]`"): for `f x₀ · f x_{-1} < 0`, every state pair lies in `[[xm1, x₀]]`, and
+each state either brackets the root or has an exact root as its iterate (in which case the method
+stays there). -/
+theorem iterate_mem_uIcc (h : f x₀ * f xm1 < 0) (k : ℕ) :
+    iterate f xm1 x₀ k ∈ uIcc xm1 x₀ := by
+  suffices H : ∀ k, ((step f)^[k] (x₀, xm1)).1 ∈ uIcc xm1 x₀ ∧
+      ((step f)^[k] (x₀, xm1)).2 ∈ uIcc xm1 x₀ ∧
+      (f ((step f)^[k] (x₀, xm1)).1 = 0 ∨
+        f ((step f)^[k] (x₀, xm1)).1 * f ((step f)^[k] (x₀, xm1)).2 < 0) from (H k).1
+  intro k
+  induction k with
+  | zero => exact ⟨right_mem_uIcc, left_mem_uIcc, Or.inr h⟩
+  | succ k ih =>
+    obtain ⟨h1, h2, h3⟩ := ih
+    rw [Function.iterate_succ_apply']
+    set s := (step f)^[k] (x₀, xm1) with hs
+    rcases h3 with h3 | h3
+    · -- the iterate is an exact root: the step stalls
+      have hz : secantPoint f s = s.1 := by simp [secantPoint, h3]
+      have hstep : step f s = (s.1, s.2) := by
+        unfold step
+        rw [hz, h3, mul_zero]
+        simp
+      rw [hstep]
+      exact ⟨h1, h2, Or.inl h3⟩
+    · have hz : secantPoint f s ∈ uIcc xm1 x₀ :=
+        uIcc_subset_uIcc h1 h2 (secantPoint_mem_uIcc h3)
+      refine ⟨by rw [fst_step]; exact hz, ?_, ?_⟩
+      · unfold step
+        split_ifs
+        · exact h1
+        · exact h2
+      · by_cases hfz : f (secantPoint f s) = 0
+        · exact Or.inl (by rw [fst_step]; exact hfz)
+        · exact Or.inr (mul_neg_step h3 hfz)
+
+end RegulaFalsi
+
+namespace Muller
+
+/-- One **Muller step** ([quarteroni2000numerical] (6.30)) from the triple `(x_{k-2}, x_{k-1}, x_k)`
+to `(x_{k-1}, x_k, x_{k+1})`: with `d = f[x_k, x_{k-1}, x_{k-2}]`,
+`w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d` and the zero of the quadratic interpolant nearest to
+`x_k`, `x_{k+1} = x_k - 2 f(x_k) / (w ± √(w² - 4 f(x_k) d))`, the sign maximizing the modulus of
+the denominator. Real arithmetic only: the square root is `Real.sqrt`, junk `0` for a negative
+radicand (a complex pair of zeros of the parabola), where the complex version that finds complex
+roots of polynomials would continue with `Complex.cpow`. A definition only; the book states no
+theorem about it beyond the cited order `p ≈ 1.84`. -/
+noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : ℝ × ℝ × ℝ :=
+  let d := DividedDifference.newton f ![s.2.2, s.2.1, s.1]
+  let w := DividedDifference.newton f ![s.2.2, s.2.1] + (s.2.2 - s.2.1) * d
+  let r := Real.sqrt (w ^ 2 - 4 * f s.2.2 * d)
+  let den := if |w - r| ≤ |w + r| then w + r else w - r
+  (s.2.1, s.2.2, s.2.2 - 2 * f s.2.2 / den)
+
+end Muller

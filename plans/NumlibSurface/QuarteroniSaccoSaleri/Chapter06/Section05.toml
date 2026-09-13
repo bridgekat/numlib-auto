@@ -1,34 +1,13 @@
 namespace = "QuarteroniSaccoSaleri.Chapter06"
-desc = '''
-§6.5, stopping criteria: the residual test with its error estimate (the display after
-"Applying the estimate (6.6)") and the increment test (6.31), both as limits along a converging
-sequence. Example 6.9 is a numerical run and has no node; the three qualitative conclusions about
-`|f'(α)| ≃ 1`, `≪ 1`, `≫ 1` are prose readings of the residual estimate.
-'''
 
 [[node]]
 id = "residualTest"
-kind = "theorem"
-desc = '''**The residual test's error estimate** (the display after item 1 of §6.5): if `x^{(k)} → α`,
-`x^{(k)} ≠ α`, `α ≠ 0` is a root of `f ∈ C^m` of multiplicity `m` (`IsRootOfMultiplicity f α m`),
-then `|e^{(k)}| / |α| ≲ (m! / (|f^{(m)}(α)| |α|^m))^{1/m} |f(x^{(k)})|^{1/m}` in the sense
-`Tendsto (fun k => (|x k - α| / |α|) / |f (x k)| ^ (1/m)) atTop (𝓝 ((m! / (|f^{(m)}(α)| |α|^m))^{1/m}))`;
-in particular, for a simple root, `|x k - α| / |f (x k)| → 1 / |f'(α)|`: "the error is bound to the
-residual by the factor `1/|f'(α)|`". `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow` composed
-with `x → α` in `𝓝[≠] α` (`tendsto_nhdsWithin_iff`). ★'''
-deps = ["IsRootOfMultiplicity", "IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow", "QuarteroniSaccoSaleri.Chapter06.equation_6_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.5'
+
+[[node]]
+id = "residualTest_simple"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.5'
 
 [[node]]
 id = "equation_6_31"
-kind = "theorem"
-desc = '''**(6.31), the increment test:** for a fixed-point orbit `x^{(k+1)} = φ(x^{(k)})` converging
-to `α = φ(α)` with `x^{(k)} ≠ α`, `φ` differentiable at `α` with `φ'(α) ≠ 1`:
-`Tendsto (fun k => (α - x k) / (x (k+1) - x k)) atTop (𝓝 (1 / (1 - φ'(α))))` — the book's
-`e^{(k)} ≃ (x^{(k+1)} - x^{(k)}) / (1 - φ'(α))` with its convention `e^{(k)} = α - x^{(k)}`, read as
-a limit of ratios. `tendsto_sub_div_sub_succ_of_hasDerivAt`
-(`Nonlinear/Order`). The consequences — the test is unreliable when `φ'(α) ≈ 1`, optimal when
-`φ'(α) = 0` (Newton), still satisfactory for `-1 < φ'(α) < 0` — are readings of the factor
-`1/(1 - φ'(α))`. ★'''
-deps = ["tendsto_sub_div_sub_succ_of_hasDerivAt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.31)'

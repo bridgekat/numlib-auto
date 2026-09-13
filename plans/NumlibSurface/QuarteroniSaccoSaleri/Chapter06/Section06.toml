@@ -1,148 +1,73 @@
 namespace = "QuarteroniSaccoSaleri.Chapter06"
-desc = '''
-§6.6, post-processing: Aitken's Δ² acceleration ((6.33)–(6.38), Property 6.7) and the techniques
-for multiple roots ((6.39)–(6.40)), with Exercise 6.5 (Steffensen's method) attached because it is
-the concrete instance of Property 6.7's `p = 1` case and the correct reading of its last clause.
-(6.32) and (6.35) are the heuristic derivation of the formula and are not nodes; Examples 6.10 and
-6.11 are numerical runs (Example 6.10's side facts `|φ₀'(1)| = 2` and the orders of `φ₁`, `φ₂` are
-derivative computations no later text uses) and have no node.
-'''
 
 [[node]]
 id = "equation_6_33"
-kind = "definition"
-desc = '''**(6.33):** `equation_6_33 (x : ℕ → ℝ) (k : ℕ) : ℝ := (x k - x (k - 1)) / (x (k - 1) - x (k - 2))`,
-the increment ratio `λ^{(k)}` for `k ≥ 2`; `equation_6_33 x (k + 2) = aitkenRatio x k`. ★'''
-deps = ["aitkenRatio"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.33)'
+
+[[node]]
+id = "equation_6_33_eq"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.33)'
 
 [[node]]
 id = "equation_6_34"
-kind = "theorem"
-desc = '''**(6.34):** for a fixed-point orbit `x^{(k+1)} = φ(x^{(k)})` converging to `α = φ(α)` with
-`x^{(k)} ≠ α`, `φ` differentiable at `α` with `φ'(α) ≠ 1`: `Tendsto (equation_6_33 x) atTop (𝓝 (φ'(α)))`.
-The book's derivation assumes linear convergence, `φ'(α) ≠ 1` is what it needs (for `φ'(α) = 0`,
-e.g. Newton, the limit is `0` and still holds). `tendsto_aitkenRatio` with
-`tendsto_sub_div_sub_of_hasDerivAt`, shifted by two indices. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_33", "tendsto_aitkenRatio", "tendsto_sub_div_sub_of_hasDerivAt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.34)'
 
 [[node]]
 id = "equation_6_36"
-kind = "definition"
-desc = '''**(6.36), Aitken's extrapolation formula:** `equation_6_36 (x : ℕ → ℝ) (k : ℕ) : ℝ :=
-x k - (x k - x (k - 1)) ^ 2 / ((x k - x (k - 1)) - (x (k - 1) - x (k - 2)))` for `k ≥ 2`, the
-improved approximation `x̂^{(k)}`; `equation_6_36 x (k + 2) = aitkenExtrapolation x k`. ★'''
-deps = ["aitkenExtrapolation"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.36)'
+
+[[node]]
+id = "equation_6_36_eq"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.36)'
 
 [[node]]
 id = "equation_6_37"
-kind = "theorem"
-desc = '''**(6.37), the Δ² form:** with `Δx^{(k)} = x^{(k)} - x^{(k-1)}` and
-`Δ²x^{(k)} = Δx^{(k+1)} - Δx^{(k)}`, `x̂^{(k)} = x^{(k)} - (Δx^{(k)})² / Δ²x^{(k-1)}`: for `k ≥ 2`,
-`equation_6_36 x k = x k - (Δ_[1] x (k - 1)) ^ 2 / (Δ_[1]^[2] x (k - 2))` in Mathlib's forward
-difference `fwdDiff` (`Δ_[1] x (k-1) = x k - x (k-1)`). `aitkenExtrapolation_eq_sub_div_fwdDiff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_36", "aitkenExtrapolation_eq_sub_div_fwdDiff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.37)'
 
 [[node]]
 id = "equation_6_38"
-kind = "definition"
-desc = '''**(6.38), the iteration function of Aitken's method:** `equation_6_38 (φ : ℝ → ℝ) : ℝ → ℝ :=
-aitkenIterationFunction φ`, `φ_Δ(x) = (x φ(φ(x)) - φ(x)²) / (φ(φ(x)) - 2 φ(x) + x)`, extended by
-continuity at points where the denominator vanishes (at `α` itself, by `x`). Aitken's method is the
-fixed-point iteration `x^{(k+1)} = φ_Δ(x^{(k)})`, `(equation_6_38 φ)^[k] x₀` (Program 55). ★'''
-deps = ["aitkenIterationFunction"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.38)'
 
 [[node]]
 id = "equation_6_38_fixedPoints"
-kind = "theorem"
-desc = '''The two remarks after (6.38): (i) if `φ` is differentiable at `α = φ(α)` with `φ'(α) ≠ 1`
-then `φ_Δ` is continuous at `α` with `φ_Δ(α) = α` (`lim_{x → α} φ_Δ(x) = α`, the book's L'Hôpital
-argument) — `hasDerivAt_aitkenIterationFunction_zero`; (ii) the fixed points of `φ_Δ` coincide with
-those of `φ` (where the denominator is nonzero) — `aitkenIterationFunction_eq_self_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_38", "hasDerivAt_aitkenIterationFunction_zero", "aitkenIterationFunction_eq_self_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.6.1'
 
 [[node]]
 id = "property_6_7_one"
-kind = "theorem"
-desc = '''**Property 6.7, `p = 1`:** let `x^{(k+1)} = φ(x^{(k)})` be a fixed-point iteration of order 1
-for a simple zero `α` of `f` — read: `φ(α) = α`, `φ` twice differentiable at `α`, `φ'(α) ≠ 1` (order
-1 with factor `|φ'(α)| < 1`, or, "convergent even if the fixed-point method is not", any
-`φ'(α) ≠ 1`). Then Aitken's method converges to `α` with order 2: `∃ ε > 0, ∀ x₀ ∈ ball α ε,
-definition_6_1 (fun k => (equation_6_38 φ)^[k] x₀) α 2`. `hasIterationOrder_aitkenIterationFunction_two`
-with `definition_6_1_iff`. The limit constant is `φ'(α) φ''(α) / (2 (φ'(α) - 1))`
-(`tendsto_aitkenIterationFunction_sub_div_sq`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_38", "hasIterationOrder_aitkenIterationFunction_two", "tendsto_aitkenIterationFunction_sub_div_sq", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.7'
 
 [[node]]
 id = "property_6_7_higher"
-kind = "theorem"
-desc = '''**Property 6.7, `p ≥ 2`:** if the fixed-point iteration has order `p ≥ 2` at the simple
-zero `α` in the sense of Property 6.4 (`φ ∈ C^{2p}` near `α`, `φ^{(i)}(α) = 0` for `1 ≤ i < p`,
-`φ^{(p)}(α) ≠ 0`), then Aitken's method has order `2p - 1`:
-`∃ ε > 0, ∀ x₀ ∈ ball α ε, definition_6_1 (fun k => (equation_6_38 φ)^[k] x₀) α (2 p - 1)`.
-`hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero`, a ★★★ backbone node stated
-by the book without proof (Isaacson–Keller); ★ once it exists.'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_38", "hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.7'
 
 [[node]]
-id = "property_6_7_multiple"
-kind = "theorem"
-desc = '''**Property 6.7, last clause:** "if `α` has multiplicity `m ≥ 2` and the method is first-order
-convergent, then Aitken's method converges linearly with factor `C = 1 - 1/m`". As printed this is
-false for any `φ` with `φ'(α) ≠ 1` (Aitken's method is then superlinear, `property_6_7_one`); the
-statement Isaacson–Keller make, and the one formalized, is for the iteration function `φ = id + f`
-whose derivative at a multiple root is `1`, i.e. Steffensen's method: for `IsRootOfMultiplicity f α m`,
-`m ≥ 2`, `f ∈ C^{m+1}` near `α`, the Steffensen iterates satisfy
-`(x^{(k+1)} - α)/(x^{(k)} - α) → 1 - 1/m`. `tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`
-(★★★ backbone node; ★ here). Recorded as a book erratum in the chapter report.'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.exercise_6_5", "tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity", "IsRootOfMultiplicity"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.7'
-
-[[node]]
-id = "exercise_6_5"
-kind = "theorem"
-desc = '''**Exercise 6.5, Steffensen's method:** `steffensen f x₀ k := (steffensenStep f)^[k] x₀`,
-`x^{(k+1)} = x^{(k)} - f(x^{(k)}) / ϕ(x^{(k)})`, `ϕ(x) = (f(x + f(x)) - f(x)) / f(x)`, is a second-order
-method at a simple root: `f α = 0`, `ContDiffAt ℝ 2 f α`, `deriv f α ≠ 0` ⟹ `∃ ε > 0, ∀ x₀ ∈ ball α ε,
-definition_6_1 (steffensen f x₀) α 2`. `hasIterationOrder_steffensenStep_two`, via
-`steffensenStep_eq_aitkenIterationFunction` (Steffensen is Aitken's Δ² for `φ = id + f`). The
-exercise's MATLAB part is not a node. ★'''
-deps = ["steffensenStep", "hasIterationOrder_steffensenStep_two", "steffensenStep_eq_aitkenIterationFunction", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
+id = "steffensen"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 6.5'
 
 [[node]]
+id = "exercise_6_5"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 6.5'
+
+[[node]]
+id = "property_6_7_multiple"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.7'
+
+[[node]]
 id = "equation_6_40"
-kind = "definition"
-desc = '''**(6.40), the multiplicity estimate:** `equation_6_40 (x : ℕ → ℝ) (k : ℕ) : ℝ :=
-1 / (1 - equation_6_33 x k) = (x (k-1) - x (k-2)) / (2 x (k-1) - x k - x (k-2))` for `k ≥ 2`;
-`equation_6_40 x (k + 2) = Newton.multiplicityEstimate x k`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_33", "Newton.multiplicityEstimate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.40)'
+
+[[node]]
+id = "equation_6_40_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.40)'
+
+[[node]]
+id = "equation_6_40_eq_div"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.40)'
 
 [[node]]
 id = "equation_6_40_tendsto"
-kind = "theorem"
-desc = '''"`m^{(k)}` tends to `m` as `k → ∞`": for a Newton orbit `x^{(k+1)} = x^{(k)} - f(x^{(k)})/f'(x^{(k)})`
-converging to a root `α` of multiplicity `m ≥ 2` (`IsRootOfMultiplicity f α m`, `f ∈ C^{m+1}`) with
-`x^{(k)} ≠ α`, `Tendsto (equation_6_40 x) atTop (𝓝 m)`. From `equation_6_34` with (6.22)
-`φ'(α) = 1 - 1/m`: `Newton.tendsto_multiplicityEstimate`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_40", "QuarteroniSaccoSaleri.Chapter06.equation_6_34", "QuarteroniSaccoSaleri.Chapter06.equation_6_22", "Newton.tendsto_multiplicityEstimate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.6.2'
 
 [[node]]
 id = "equation_6_39"
-kind = "definition"
-desc = '''**(6.39), the adaptive Newton method:** `adaptiveNewton f f' x₀ x₁ x₂ k :=
-((Newton.adaptiveStep f f')^[k] (x₀, x₁, x₂)).2.2`,
-`x^{(k+1)} = x^{(k)} - m^{(k)} f(x^{(k)}) / f'(x^{(k)})` for `k ≥ 2` with `m^{(k)}` the estimate (6.40)
-from the last three iterates (the first two Newton steps that produce `x^{(1)}, x^{(2)}` are taken
-with `m = 1`, as in Program 56). A definition only; the book proves nothing about it. ★'''
-deps = ["Newton.adaptiveStep", "QuarteroniSaccoSaleri.Chapter06.equation_6_40"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.39)'

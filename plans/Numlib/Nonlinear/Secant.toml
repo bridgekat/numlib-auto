@@ -1,191 +1,140 @@
-desc = '''
-The derivative-free one-dimensional rootfinders that replace `f'(x_k)` in Newton's step by a
-slope `q_k`: the chord method (`q_k = q` fixed; namespace `Chord`), the secant method (`q_k` the
-difference quotient over the last two iterates; `Secant`), regula falsi (the difference quotient
-over the last two iterates bracketing the root; `RegulaFalsi`) and Muller's method (the zero of
-the quadratic interpolant through the last three iterates; `Muller`).
+[[node]]
+id = "_root_.DividedDifference.newton_two_eq"
 
-The secant and regula falsi iterations carry state (a pair of points), so they are `step`
-functions on `ℝ × ℝ` with `iterate f x₋₁ x₀ k` reading off the `k`-th point, as `Bisection`
-does with brackets. The error analysis of the secant method is the divided-difference identity
-`x_{k+1} - α = (x_k - α)(x_{k-1} - α) f[x_k, x_{k-1}, α] / f[x_k, x_{k-1}]`, which is
-`DividedDifference.sub_eval_interpolate_eq_newton` (`Numlib/Approximation/DividedDifference`) at
-the node `α`; from its two-sided bound the order `(1 + √5)/2` follows by the ratio recursion of
-Isaacson–Keller, pp. 99–101, with Mathlib's `goldenRatio` (`Mathlib/NumberTheory/Real/GoldenRatio`).
-Lean's `a / 0 = 0` makes a secant step with `f x_k = f x_{k-1}` stall at `x_k`; the theorems
-assume what excludes it. The prototype `notes/qss/ch06/proto/Secant.lean` elaborates the definitions and
-the statements.
+[[node]]
+id = "_root_.DividedDifference.newton_three_eq"
 
-Chord convergence is the scalar Ostrowski theorem (`Nonlinear/FixedPoint`) applied to
-`φ_chord = x - f x / q`; it is the `𝕜 = ℝ` case of `Newton.chordStep`, and the surface may relate
-the two. Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2 ((6.12)–(6.16), Property
-6.2), §6.3.1 (chord), §6.4.3 ((6.30), Muller); Kress, Numerical Analysis, §6.2 (6.9) and Problem
-6.10; Isaacson–Keller §3.3; Ralston–Rabinowitz §8.3 (regula falsi).
-'''
+[[node]]
+id = "_root_.DividedDifference.newton_three_eq_newton_two_dslope"
+
+[[node]]
+id = "exists_ball_abs_slope_sub_deriv_le"
 
 [[node]]
 id = "Chord.step"
-kind = "definition"
-desc = '''`Chord.step (f : ℝ → ℝ) (q : ℝ) (x : ℝ) : ℝ := x - f x / q`: one step of the chord method
-with fixed slope `q`; the book's chord is `q = (f b - f a) / (b - a)`, (6.12). ★'''
-deps = []
 
 [[node]]
 id = "Chord.step_eq_chordStep"
-kind = "theorem"
-desc = '''For `q ≠ 0`: `Chord.step f q x = Newton.chordStep f A x` for any `A : ℝ ≃L[ℝ] ℝ` with
-`A 1 = q` (there is exactly one, multiplication by `q`, e.g. `ContinuousLinearEquiv.unitsEquivAut ℝ ℝ
-(Units.mk0 q hq)`; `A.symm y = y / q`). The scalar chord
-method is the Banach-space chord method of `Nonlinear/Newton` with the frozen derivative `q · id`,
-so `Newton.tendsto_chordIterate` gives its linear convergence when `|1 - f'(α) / q| < 1`. ★'''
-deps = ["Chord.step", "Newton.chordStep"]
 
 [[node]]
 id = "Chord.hasDerivAt_step"
-kind = "theorem"
-desc = '''`HasDerivAt f f' x → HasDerivAt (Chord.step f q) (1 - f' / q) x`; in particular
-`φ_chord'(α) = 1 - f'(α) / q` and `φ_chord'(α) = 1` when `f'(α) = 0` (§6.3.1). ★'''
-deps = ["Chord.step"]
 
 [[node]]
 id = "Chord.abs_one_sub_div_lt_one_iff"
-kind = "theorem"
-desc = '''`|1 - f' / q| < 1 ↔ 0 < f' / q ∧ f' / q < 2`, the book's reformulation of the local
-convergence condition of the chord method: `q` has the sign of `f'(α)` and `|q| > |f'(α)| / 2`, i.e.
-`(b - a) < 2 (f b - f a) / f'(α)` for the book's `q`. `abs_sub_lt_iff` and arithmetic. ★'''
-deps = []
 
 [[node]]
 id = "Chord.tendsto_iterate"
-kind = "theorem"
-desc = '''**Local linear convergence of the chord method:** if `f α = 0`, `HasDerivAt f f' α` and
-`0 < f' / q < 2`, then `∃ δ > 0, ∀ x₀ ∈ Metric.ball α δ, Tendsto (fun k => (Chord.step f q)^[k] x₀)
-atTop (𝓝 α)`, and the ratio `(x_{k+1} - α)/(x_k - α) → 1 - f'/q` along orbits avoiding `α`. From
-`tendsto_iterate_of_abs_deriv_lt_one` (Ostrowski) and `tendsto_sub_div_sub_of_hasDerivAt`. The
-"lucky case" `f'(α) = q` gives `φ_chord'(α) = 0`, superlinear. ★'''
-deps = ["Chord.step", "Chord.hasDerivAt_step", "Chord.abs_one_sub_div_lt_one_iff", "tendsto_iterate_of_abs_deriv_lt_one", "tendsto_sub_div_sub_of_hasDerivAt"]
+
+[[node]]
+id = "Chord.tendsto_sub_div_sub"
 
 [[node]]
 id = "Secant.step"
-kind = "definition"
-desc = '''`Secant.step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ := (s.2, s.2 - (s.2 - s.1) / (f s.2 - f s.1) * f s.2)`:
-from the pair `(x_{k-1}, x_k)` to `(x_k, x_{k+1})` by (6.14). ★'''
-deps = []
 
 [[node]]
 id = "Secant.iterate"
-kind = "definition"
-desc = '''`Secant.iterate f xm1 x₀ k : ℝ := ((Secant.step f)^[k] (xm1, x₀)).2`, the `k`-th secant
-iterate from the two initial values `x^{(-1)} = xm1`, `x^{(0)} = x₀`; `iterate_zero : iterate f xm1
-x₀ 0 = x₀` (rfl) and `iterate_succ` unfolding one step (both in the prototype). ★'''
-deps = ["Secant.step"]
+
+[[node]]
+id = "Secant.iterate_zero"
+
+[[node]]
+id = "Secant.fst_iterate_succ"
 
 [[node]]
 id = "Secant.iterate_succ"
-kind = "theorem"
-desc = '''`Secant.iterate f xm1 x₀ (k + 1) = x_k - (x_k - x_{k-1}) / (f x_k - f x_{k-1}) * f x_k`
-where `(x_{k-1}, x_k) = (Secant.step f)^[k] (xm1, x₀)`; and the first component of the `k+1`-st
-pair is `Secant.iterate f xm1 x₀ k`. Proved in the prototype by `simp [iterate,
-Function.iterate_succ_apply', step]`. ★'''
-deps = ["Secant.iterate"]
+
+[[node]]
+id = "Secant.iterate_one"
+
+[[node]]
+id = "Secant.iterate_add_two"
 
 [[node]]
 id = "Secant.sub_root_eq_mul_newton"
-kind = "theorem"
-desc = '''**The secant error identity.** For `f α = 0`, `x ≠ y`, `x ≠ α`, `y ≠ α` and `f x ≠ f y`:
-`(y - (y - x) / (f y - f x) * f y) - α = (y - α) * (x - α) * DividedDifference.newton f ![x, y, α] /
-DividedDifference.newton f ![x, y]`. The secant line is the Lagrange interpolant of `f` at `x, y`,
-so `DividedDifference.sub_eval_interpolate_eq_newton` at `t = α` gives
-`0 - ℓ(α) = (α - x)(α - y) f[x, y, α]`, and `ℓ(α) = f y + f[x, y] (α - y)`; solve for `α`. Needs
-`f[x, y] ≠ 0`, which is `f x ≠ f y`. No smoothness at all: it is an algebraic identity in the
-values of `f`. ★★'''
-deps = ["DividedDifference.newton", "DividedDifference.sub_eval_interpolate_eq_newton"]
 
 [[node]]
 id = "Secant.abs_sub_root_le"
-kind = "theorem"
-desc = '''**The two-sided error bound.** Under the hypotheses of `sub_root_eq_mul_newton`, if
-`0 < m₁ ≤ |f[x, y]| ≤ M₁` and `m₂ ≤ |f[x, y, α]| ≤ M₂` then
-`m₂ / M₁ * |y - α| * |x - α| ≤ |z - α| ≤ M₂ / m₁ * |y - α| * |x - α|` for the new iterate `z`. For
-`f ∈ C²` near `α` with `f'(α) ≠ 0` and `f''(α) ≠ 0`, such constants exist on a small ball
-(`f[x, y] = f'(ξ)`, `f[x, y, α] = f''(η) / 2` by the mean value forms of the divided differences,
-`DividedDifference.firstOrder`/`secondOrder` or `taylor_mean_remainder_lagrange`), with
-`M₂ / m₁ ≈ |f''(α)| / (2 |f'(α)|)`. ★★'''
-deps = ["Secant.sub_root_eq_mul_newton"]
+
+[[node]]
+id = "Secant.le_abs_sub_root"
+
+[[node]]
+id = "Secant.exists_ball_bounds"
+
+[[node]]
+id = "Secant.LocalBounds"
+
+[[node]]
+id = "Secant.LocalBounds.mono"
+
+[[node]]
+id = "Secant.exists_localBounds"
+
+[[node]]
+id = "Secant.IsAdmissible"
+
+[[node]]
+id = "Secant.LocalBounds.apply_ne_zero"
+
+[[node]]
+id = "Secant.LocalBounds.step_bounds"
+
+[[node]]
+id = "Secant.LocalBounds.isAdmissible_step_iff"
+
+[[node]]
+id = "Secant.LocalBounds.isAdmissible_step"
+
+[[node]]
+id = "Secant.snd_step_eq_of_snd_eq"
+
+[[node]]
+id = "Secant.tendsto_zero_of_le_mul"
+
+[[node]]
+id = "Secant.exists_le_mul_rpow_goldenRatio"
+
+[[node]]
+id = "Secant.abs_fst_iterate_succ_sub"
+
+[[node]]
+id = "Secant.LocalBounds.tendsto_iterate"
 
 [[node]]
 id = "Secant.exists_ball_tendsto_iterate"
-kind = "theorem"
-desc = '''**Local convergence of the secant method.** If `f α = 0`, `ContDiffAt ℝ 2 f α` and
-`deriv f α ≠ 0`, then `∃ ε > 0, ∀ xm1 x₀ ∈ Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α →
-Tendsto (Secant.iterate f xm1 x₀) atTop (𝓝 α)`, with all iterates in the ball, pairwise distinct
-consecutive iterates, none equal to `α`, and `|e_{k+1}| ≤ M |e_k| |e_{k-1}|`. From the upper bound of
-`abs_sub_root_le` with `M ε < 1`: writing `E_k = M |e_k| < 1`, `E_{k+1} ≤ E_k E_{k-1}` gives
-`E_k ≤ δ ^ fib (k + 1)` for `δ = max E_{-1} E_0 < 1` (Mathlib `Nat.fib`), hence convergence. An
-initial value equal to `α` makes the method stop there; the two "`≠ α`" hypotheses exclude that
-trivial case and are what the divided-difference identity needs. ★★'''
-deps = ["Secant.iterate", "Secant.abs_sub_root_le"]
 
 [[node]]
 id = "Secant.exists_ball_convergesWithOrder_goldenRatio"
-kind = "theorem"
-desc = '''**Property 6.2: the secant method has order `(1 + √5) / 2`.** If `f α = 0`,
-`ContDiffAt ℝ 2 f α`, `deriv f α ≠ 0` and `iteratedDeriv 2 f α ≠ 0`, then `∃ ε > 0, ∀ xm1 x₀ ∈
-Metric.ball α ε, xm1 ≠ x₀ → xm1 ≠ α → x₀ ≠ α → ConvergesWithOrder (Secant.iterate f xm1 x₀) α
-goldenRatio`. Route (Isaacson–Keller pp. 99–101, in the bound form rather than the limit form): with
-the two-sided bound `m |e_k| |e_{k-1}| ≤ |e_{k+1}| ≤ M |e_k| |e_{k-1}|` (`0 < m` needs
-`f''(α) ≠ 0`, which keeps `|f[x, y, α]|` away from `0` on a small ball) put
-`r_k = |e_{k+1}| / |e_k| ^ φ`, `φ = goldenRatio`. Using `φ² = φ + 1` (`goldenRatio_sq`), i.e.
-`1 - φ = -1/φ`, the upper bound gives `r_k ≤ M r_{k-1} ^ (-1/φ)` and the lower bound
-`r_{k-1} ≥ m r_{k-2} ^ (-1/φ)`, hence `r_k ≤ M m ^ (-1/φ) r_{k-2} ^ (1/φ²)`. Since `1/φ² < 1`,
-the recursion `r_k ≤ A r_{k-2} ^ θ`, `θ < 1`, keeps `r_k ≤ max (A ^ (1/(1-θ))) r_0 r_1`-type
-bounds, so `r_k` is bounded, which is (6.2) with `p = φ`. Convergence is
-`exists_ball_tendsto_iterate`. The limit form
-`|e_{k+1}| / |e_k|^φ → |f''(α)/(2 f'(α))|^{1/φ}` is not claimed by the book and not planned. The
-book cites Isaacson–Keller without proof; it is the one genuinely delicate proof of the chapter.
-★★★'''
-deps = ["ConvergesWithOrder", "Secant.iterate", "Secant.abs_sub_root_le", "Secant.exists_ball_tendsto_iterate"]
+
+[[node]]
+id = "RegulaFalsi.secantPoint"
 
 [[node]]
 id = "RegulaFalsi.step"
-kind = "definition"
-desc = '''`RegulaFalsi.step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ := let z := s.1 - (s.1 - s.2) / (f s.1 -
-f s.2) * f s.1; if f z * f s.1 < 0 then (z, s.1) else (z, s.2)`: the state is
-`(x_k, x_{k'})` with `x_{k'}` the latest earlier iterate at which `f` has the opposite sign; the new
-iterate is the secant intersection `z` (6.15), and the partner becomes `x_k` when `f z · f x_k < 0`
-and stays `x_{k'}` otherwise (which is the book's "maximum index `k' < k+1` with
-`f(x_{k'}) f(x_{k+1}) < 0`", since `f z · f x_{k'} < 0` exactly when `f z · f x_k ≥ 0` and
-`f z ≠ 0`). ★'''
-deps = []
 
 [[node]]
 id = "RegulaFalsi.iterate"
-kind = "definition"
-desc = '''`RegulaFalsi.iterate f xm1 x₀ k : ℝ := ((RegulaFalsi.step f)^[k] (x₀, xm1)).1`, the `k`-th
-iterate from the bracketing pair `x^{(-1)}, x^{(0)}`. ★'''
-deps = ["RegulaFalsi.step"]
+
+[[node]]
+id = "RegulaFalsi.iterate_zero"
+
+[[node]]
+id = "RegulaFalsi.fst_step"
+
+[[node]]
+id = "RegulaFalsi.iterate_succ"
+
+[[node]]
+id = "RegulaFalsi.secantPoint_mem_uIcc"
+
+[[node]]
+id = "RegulaFalsi.mul_neg_step"
 
 [[node]]
 id = "RegulaFalsi.mul_neg_iterate"
-kind = "theorem"
-desc = '''**Bracketing is preserved:** if `f x₀ * f xm1 < 0` and no iterate is an exact root
-(`∀ k, f (RegulaFalsi.iterate f xm1 x₀ k) ≠ 0`), then for every `k` the state `(x, x')`
-`= (RegulaFalsi.step f)^[k] (x₀, xm1)` has `f x * f x' < 0`. Induction: the secant point `z` of a
-bracketing pair has `f z ≠ 0`, so exactly one of `f z · f x < 0`, `f z · f x' < 0` holds. ★'''
-deps = ["RegulaFalsi.step", "RegulaFalsi.iterate"]
 
 [[node]]
 id = "RegulaFalsi.iterate_mem_uIcc"
-kind = "theorem"
-desc = '''**The iterates stay in the starting interval:** if `f x₀ * f xm1 < 0` then
-`∀ k, RegulaFalsi.iterate f xm1 x₀ k ∈ Set.uIcc xm1 x₀`, and more precisely every state pair lies
-in `uIcc xm1 x₀` with the secant point of a pair `(x, x')` with `f x · f x' < 0` in `uIcc x x'`
-(the secant line through points of opposite sign crosses zero between them: convexity of the
-interval, `Convex.combo_self`-style argument on the weights `f x' / (f x' - f x)`,
-`-f x / (f x' - f x)` which lie in `[0, 1]`). This is the book's "unlike the secant method, the
-iterates are all contained within the starting interval"; if an iterate is an exact root the
-state stops moving and the claim still holds. ★'''
-deps = ["RegulaFalsi.step", "RegulaFalsi.iterate", "RegulaFalsi.mul_neg_iterate"]
 
 [[node]]
 id = "RegulaFalsi.tendsto_iterate"
@@ -203,22 +152,23 @@ endpoint of the bracket is retained forever and the method *is* the chord method
 with a variable slope converging to `q`. Long case analysis; low priority — the book only quotes
 the order and nothing downstream uses it. If a formalizer finds the general statement too costly,
 state and prove the case in which `f` is convex or concave on the interval (the "one fixed
-endpoint" case of Figure 6.3, left), which is the honest content. ★★★'''
+endpoint" case of Figure 6.3, left), which is the honest content. ★★★
+
+Blocked: not attempted beyond the bracketing invariants. What exists: `RegulaFalsi.mul_neg_step`,
+`secantPoint_mem_uIcc` (the secant point is `x + t (x' - x)` with `t = f x / (f x - f x') ∈ [0, 1]`),
+and the secant error identity `Secant.sub_root_eq_mul_newton`, which gives
+`|e_{k+1}| = |e_k| |e_{k'}| |f[x_k, x_{k'}, α] / f[x_k, x_{k'}]|`. What is missing is the
+nested-bracket argument: the sorted brackets `[l_k, r_k]` are nested, `l = lim l_k ≤ r = lim r_k`;
+if `l < r` and both `f l, f r ≠ 0` the secant points converge to a point strictly inside `(l, r)`
+while each becomes an endpoint — contradiction; with the unique root `α` one of `l, r` is `α` and
+eventually every secant point replaces the same endpoint, so `x_k → α`; then the ratio
+`|e_{k+1}| / |e_k| → |f[α, x_{k'}, α] / f[α, x_{k'}]|` with the eventually fixed partner `x_{k'}`,
+which gives `ConvergesWithOrder … 1`. Estimate: 150–250 lines, one focused session; the
+convex/concave case is not shorter, because the fixed endpoint still has to be identified.'''
 deps = ["ConvergesWithOrder", "RegulaFalsi.iterate", "RegulaFalsi.iterate_mem_uIcc", "RegulaFalsi.mul_neg_iterate", "Secant.sub_root_eq_mul_newton", "Chord.tendsto_iterate"]
 
 [[node]]
 id = "Muller.step"
-kind = "definition"
-desc = '''`Muller.step (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : ℝ × ℝ × ℝ`: from `(x_{k-2}, x_{k-1}, x_k)` to
-`(x_{k-1}, x_k, x_{k+1})` with, in the book's notation, `d = f[x_k, x_{k-1}, x_{k-2}]`
-(`DividedDifference.newton f ![x_k, x_{k-1}, x_{k-2}]`), `w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d`,
-and `x_{k+1} = x_k - 2 f x_k / (w ± √(w² - 4 f x_k d))` with the sign making `|w ± √·|` largest
-(6.30), `√` being `Real.sqrt` (so a negative radicand — a complex pair of roots of the parabola —
-produces the real junk value `√ = 0`; the complex version, which is the point of Muller's method
-for polynomials, is a `ℂ`-valued copy with `Complex.cpow · (1/2)` and is left as an open question
-in the chapter report). Only a definition is planned; the book states no theorem about it beyond
-the cited order. ★'''
-deps = ["DividedDifference.newton"]
 
 [[node]]
 id = "Muller.exists_ball_convergesWithOrder"

@@ -1,120 +1,53 @@
-desc = '''
-The bisection method for a real root: the theorem of zeros for continuous functions (Mathlib's
-intermediate value theorem in the sign-change form), the bracket iteration `Bisection.step` on
-pairs `(a, b)`, its invariants (the length halves, the sign condition persists, the brackets are
-nested), and global convergence to a root with the a priori bound `|x_k - α| ≤ (b - a) / 2^(k+1)`
-(the book prints `(b - a) / 2^k`, which the midpoint choice improves by a factor two), plus the
-iteration-count bound (6.9).
-
-The step follows the book's Program 46 rather than its prose: `a := m` when `f a · f m > 0`, and
-`b := m` otherwise — so an exact hit `f m = 0` closes the bracket on the right and keeps `m` as
-`b`. The prose's two strict cases leave `f m = 0` undefined. Only `f a * f b ≤ 0` is needed for
-everything, not the book's `< 0`. The prototype `notes/qss/ch06/proto/Bisection.lean` proves the theorem of
-zeros and `bracket_sub` outright.
-
-Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.1 (Property 6.1, (6.8), (6.9));
-Kress, Numerical Analysis, §6.1 (bisection); Atkinson–Han §5.2.
-'''
-
 [[node]]
 id = "exists_eq_zero_Ioo_of_mul_neg"
-kind = "theorem"
-desc = '''**The theorem of zeros for continuous functions (Property 6.1):** for `a ≤ b`,
-`ContinuousOn f (Icc a b)` and `f a * f b < 0`, `∃ α ∈ Ioo a b, f α = 0`. It is Mathlib's
-`intermediate_value_Ioo` / `intermediate_value_Ioo'` (`Mathlib/Topology/Order/IntermediateValue.lean:642,651`)
-after `mul_neg_iff` splits the sign case; the wrapper exists because every rootfinding text states
-it in the product form. Proved in the prototype. ★'''
-deps = []
 
 [[node]]
 id = "exists_eq_zero_Icc_of_mul_nonpos"
-kind = "theorem"
-desc = '''The closed form used by the invariants: for `a ≤ b`, `ContinuousOn f (Icc a b)` and
-`f a * f b ≤ 0`, `∃ α ∈ Icc a b, f α = 0`. Either an endpoint is a root or
-`exists_eq_zero_Ioo_of_mul_neg` applies. ★'''
-deps = ["exists_eq_zero_Ioo_of_mul_neg"]
 
 [[node]]
 id = "Bisection.step"
-kind = "definition"
-desc = '''`Bisection.step (f : ℝ → ℝ) (s : ℝ × ℝ) : ℝ × ℝ := if 0 < f s.1 * f ((s.1 + s.2) / 2) then
-((s.1 + s.2) / 2, s.2) else (s.1, (s.1 + s.2) / 2)`: one bisection of the bracket `[a, b]` at its
-midpoint, keeping the half on which `f` changes sign (Program 46's rule). ★'''
-deps = []
 
 [[node]]
 id = "Bisection.bracket"
-kind = "definition"
-desc = '''`Bisection.bracket f a b k : ℝ × ℝ := (Bisection.step f)^[k] (a, b)`, the `k`-th bracket
-`[a^{(k)}, b^{(k)}]`. ★'''
-deps = ["Bisection.step"]
 
 [[node]]
 id = "Bisection.iterate"
-kind = "definition"
-desc = '''`Bisection.iterate f a b k : ℝ := ((bracket f a b k).1 + (bracket f a b k).2) / 2`, the
-`k`-th iterate `x^{(k)}`, the midpoint of the `k`-th bracket. ★'''
-deps = ["Bisection.bracket"]
+
+[[node]]
+id = "Bisection.bracket_succ"
 
 [[node]]
 id = "Bisection.bracket_sub"
-kind = "theorem"
-desc = '''**(6.8):** `(bracket f a b k).2 - (bracket f a b k).1 = (b - a) / 2 ^ k` for every `k`
-(no hypothesis on `f`, `a`, `b`). Induction; proved in the prototype. ★'''
-deps = ["Bisection.bracket"]
 
 [[node]]
 id = "Bisection.bracket_fst_le_snd"
-kind = "theorem"
-desc = '`a ≤ b → (bracket f a b k).1 ≤ (bracket f a b k).2`; immediate from `bracket_sub`. ★'
-deps = ["Bisection.bracket_sub"]
 
 [[node]]
 id = "Bisection.bracket_mul_nonpos"
-kind = "theorem"
-desc = '''**The sign invariant:** `f a * f b ≤ 0 → ∀ k, f (bracket f a b k).1 * f (bracket f a b k).2 ≤ 0`.
-Induction on `k` through `step`: if `f a_k · f m > 0` then `f m` has the sign of `f a_k`, so
-`f m · f b_k ≤ 0`; otherwise `f a_k · f m ≤ 0` directly (`mul_pos_iff`, `mul_nonpos_iff`). ★'''
-deps = ["Bisection.bracket", "Bisection.step"]
 
 [[node]]
 id = "Bisection.bracket_nested"
-kind = "theorem"
-desc = '''For `a ≤ b`, `Icc (bracket f a b (k+1)).1 (bracket f a b (k+1)).2 ⊆
-Icc (bracket f a b k).1 (bracket f a b k).2`; equivalently `Monotone (fun k => (bracket f a b k).1)`
-and `Antitone (fun k => (bracket f a b k).2)`, both with values in `Icc a b`. Each step keeps one
-endpoint and replaces the other by the midpoint. ★'''
-deps = ["Bisection.bracket", "Bisection.bracket_fst_le_snd"]
+
+[[node]]
+id = "Bisection.monotone_bracket_fst"
+
+[[node]]
+id = "Bisection.antitone_bracket_snd"
+
+[[node]]
+id = "Bisection.bracket_subset_Icc"
 
 [[node]]
 id = "Bisection.exists_root_mem_bracket"
-kind = "theorem"
-desc = '''Every bracket contains a root: for `a ≤ b`, `ContinuousOn f (Icc a b)` and
-`f a * f b ≤ 0`, `∀ k, ∃ α ∈ Icc (bracket f a b k).1 (bracket f a b k).2, f α = 0`. From
-`bracket_mul_nonpos`, `bracket_nested` (continuity restricts) and `exists_eq_zero_Icc_of_mul_nonpos`. ★'''
-deps = ["Bisection.bracket_mul_nonpos", "Bisection.bracket_nested", "exists_eq_zero_Icc_of_mul_nonpos"]
+
+[[node]]
+id = "Bisection.bracket_fst_le_bracket_snd"
 
 [[node]]
 id = "Bisection.exists_tendsto_iterate"
-kind = "theorem"
-desc = '''**Global convergence of bisection with the a priori bound.** For `a ≤ b`,
-`ContinuousOn f (Icc a b)` and `f a * f b ≤ 0` there is `α ∈ Icc a b` with `f α = 0`,
-`Tendsto (Bisection.iterate f a b) atTop (𝓝 α)`, `∀ k, α ∈ Icc (bracket f a b k).1 (bracket f a b k).2`
-and `∀ k, |Bisection.iterate f a b k - α| ≤ (b - a) / 2 ^ (k + 1)`. Proof: the left endpoints form
-a bounded monotone sequence with limit `α`; the right endpoints converge to the same `α` since the
-lengths `(b - a) / 2^k → 0` (`bracket_sub`); `α` lies in every bracket by monotonicity; `f α = 0`
-because `f a_k · f b_k ≤ 0` passes to the limit (`bracket_mul_nonpos`, continuity, `le_of_tendsto`);
-the midpoint is within half a bracket length of any point of the bracket. The book's (6.8)
-conclusion `|e_k| ≤ (b - a) / 2^k` follows. ★★'''
-deps = ["Bisection.iterate", "Bisection.bracket_sub", "Bisection.bracket_mul_nonpos", "Bisection.bracket_nested"]
+
+[[node]]
+id = "Bisection.div_two_pow_le_of_logb_le"
 
 [[node]]
 id = "Bisection.abs_iterate_sub_le_of_le_logb"
-kind = "theorem"
-desc = '''**(6.9), the iteration count:** with `α` the root produced by `exists_tendsto_iterate` and
-`ε > 0`, if `Real.logb 2 ((b - a) / ε) ≤ m + 1` then `|Bisection.iterate f a b m - α| ≤ ε`
-(with the sharp bound; the book's `log₂((b - a)/ε) ≤ m` works for its weaker `(b - a)/2^m`). By
-`Real.logb_le_iff_le_rpow` and `exists_tendsto_iterate`. State it for the root of the theorem
-(`∃ α, … ∧ ∀ m ε, … → |x_m - α| ≤ ε`) rather than for an arbitrary root, since brackets may contain
-several roots. ★'''
-deps = ["Bisection.exists_tendsto_iterate"]
