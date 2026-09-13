@@ -2,6 +2,7 @@ import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
 import Numlib.Analysis.Convex.Bifunction.Algebra
@@ -304,6 +305,8 @@ import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
+import Numlib.Nonlinear.Order
+import Numlib.Nonlinear.ScalarNewton
 import Numlib.ODE.Gronwall
 import Numlib.ODE.OneStep
 import Numlib.Order.EReal

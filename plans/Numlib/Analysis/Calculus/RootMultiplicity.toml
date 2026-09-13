@@ -1,80 +1,59 @@
-desc = '''
-Roots of multiplicity `m` of a real function of one variable: `IsRootOfMultiplicity f α m` says
-`f^{(i)}(α) = 0` for `i < m` and `f^{(m)}(α) ≠ 0`. The one theorem is the Taylor factorization
-`f x = (x - α)^m h x` with `h` continuous (`C¹`, `C²` when `f` is `C^{m+1}`, `C^{m+2}`) and
-`h α = f^{(m)}(α) / m!`, from which everything about multiple roots in the rootfinding chapters
-follows: the residual-to-error estimate `|x - α| ≈ (m! / |f^{(m)}(α)|)^{1/m} |f x|^{1/m}` that
-drives the conditioning of a root (Quarteroni–Sacco–Saleri §6.1, (6.4)–(6.7)) and the residual
-stopping test (§6.5), the linear convergence of Newton's method with factor `1 - 1/m`
-(`Nonlinear/ScalarNewton`), and the identification with Mathlib's `Polynomial.rootMultiplicity`
-for polynomials. Mathlib has `analyticOrderAt` for analytic functions (`Analysis/Analytic/Order`)
-and `Polynomial.rootMultiplicity`, but no notion for merely `C^m` functions; hence this module,
-placed with the other differential-calculus supplements of `Numlib/Analysis/Calculus`.
-
-The book writes the multiple-root conditioning as a heuristic `K_abs ≃ |m! δd / f^{(m)}(α)|^{1/m}
-/ |δd|`, which is not a limit (it depends on `δd`); its rigorous content is the two-sided
-asymptotic `|δα| ~ (m!/|f^{(m)}(α)|)^{1/m} |δd|^{1/m}` below, together with
-`Conditioning.absCondNumber_eq_top_of_deriv_eq_zero` (chapter 2's plan) for the statement that the
-first-order condition number of a multiple root is infinite.
-
-Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.1, §6.3.1, §6.5, §6.6.2, Exercise
-6.2; Isaacson–Keller §3.2 (multiple roots).
-'''
-
 [[node]]
 id = "IsRootOfMultiplicity"
-kind = "definition"
-desc = '''`IsRootOfMultiplicity (f : ℝ → ℝ) (α : ℝ) (m : ℕ) : Prop := (∀ i < m, iteratedDeriv i f α = 0)
-∧ iteratedDeriv m f α ≠ 0`. `m = 1` is a simple root (`f α = 0`, `deriv f α ≠ 0`); `m = 0` says
-`f α ≠ 0`, so theorems assume `1 ≤ m`. Hypotheses on smoothness (`ContDiffAt ℝ n f α` with `n ≥ m`)
-accompany it in every theorem, as Mathlib does with `iteratedDeriv`. ★'''
-deps = []
 
 [[node]]
 id = "IsRootOfMultiplicity.exists_eq_pow_mul"
-kind = "theorem"
-desc = '''**Taylor factorization at a multiple root.** If `ContDiffAt ℝ (m + n) f α` and
-`IsRootOfMultiplicity f α m` with `1 ≤ m`, there is `h : ℝ → ℝ` with `ContDiffAt ℝ n h α`,
-`h α = iteratedDeriv m f α / m!` (so `h α ≠ 0`) and `∀ᶠ x in 𝓝 α, f x = (x - α) ^ m * h x`. Take
-`h x = f x / (x - α)^m` off `α` and `f^{(m)}(α)/m!` at `α`; the regularity is Taylor's theorem
-with integral remainder, `f x = (x - α)^m ∫₀¹ (1-t)^{m-1}/(m-1)! f^{(m)}(α + t (x - α)) dt`, i.e.
-`h x = ∫₀¹ (1-t)^{m-1}/(m-1)! f^{(m)}(α + t(x - α)) dt`, a parameter integral of a `C^n` function
-(`taylor_mean_remainder`'s integral form in `Mathlib/Analysis/Calculus/Taylor.lean`; the backbone's
-`DividedDifference.firstOrder` / `secondOrder` are the cases `m = 1, 2` and show the technique —
-`continuous_firstOrder`). The cases actually needed downstream are `n ∈ {0, 1, 2}`. ★★'''
-deps = ["IsRootOfMultiplicity"]
 
 [[node]]
 id = "IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow"
-kind = "theorem"
-desc = '''**Error versus residual at a root of multiplicity `m`, the asymptotic form of (6.4)/(6.6):**
-if `ContDiffAt ℝ m f α`, `IsRootOfMultiplicity f α m`, `1 ≤ m`, then
-`Tendsto (fun x => |x - α| / |f x| ^ (1 / (m : ℝ))) (𝓝[≠] α) (𝓝 ((m ! / |iteratedDeriv m f α|) ^ (1 / (m : ℝ))))`,
-and `f x ≠ 0` for `x ≠ α` near `α`. From the factorization with continuous `h`:
-`|f x|^{1/m} = |x - α| |h x|^{1/m}` and `|h x| → |f^{(m)}(α)| / m! ≠ 0`. For `m = 1` this is
-`|x - α| / |f x| → 1 / |f'(α)|`, the statement behind `K_abs ≃ 1 / |f'(α)|` in (6.3) and the residual
-test of §6.5 ("the error is bound to the residual by the factor `1/|f'(α)|`"). ★'''
-deps = ["IsRootOfMultiplicity", "IsRootOfMultiplicity.exists_eq_pow_mul"]
 
 [[node]]
 id = "IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow"
-kind = "theorem"
-desc = '''**The residual bound (6.5)/(6.6) as an inequality:** under the hypotheses of
-`tendsto_abs_sub_div_abs_rpow`, for every `c > (m ! / |iteratedDeriv m f α|) ^ (1 / m)`,
-`∀ᶠ x in 𝓝 α, |x - α| ≤ c * |f x| ^ (1 / (m : ℝ))`. Immediate from the limit
-(`Filter.Tendsto.eventually_lt_const`); the book's `≲` is exactly this "for every constant above the
-asymptotic one, eventually". For `m = 1`: `∀ c > 1 / |f'(α)|, ∀ᶠ x, |x - α| ≤ c |f x|`. ★'''
-deps = ["IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow"]
 
 [[node]]
 id = "Polynomial.isRootOfMultiplicity_eval_iff"
-kind = "theorem"
-desc = '''For `p : ℝ[X]`, `p ≠ 0` and `1 ≤ m`: `IsRootOfMultiplicity (fun x => p.eval x) α m ↔
-p.rootMultiplicity α = m`. `iteratedDeriv i (fun x => p.eval x) = fun x => (derivative^[i] p).eval x`
-(induction with `Polynomial.deriv`, `Mathlib/Analysis/Calculus/Deriv/Polynomial.lean:107`), then
-Mathlib's `Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative`
-(`Algebra/Polynomial/FieldDivision.lean:174`) for the vanishing and
-`eval_iterate_derivative_rootMultiplicity` (`:72`) with `eval_divByMonic_pow_rootMultiplicity_ne_zero`
-(`Algebra/Polynomial/Div.lean:644`) for the non-vanishing of the `m`-th derivative. This is what
-lets (6.7) speak of the multiplicity of a polynomial root in Mathlib's vocabulary. ★★'''
-deps = ["IsRootOfMultiplicity"]
+
+[[node]]
+id = "ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen"
+
+[[node]]
+id = "ContDiffOn.continuousOn_iteratedDeriv_of_isOpen"
+
+[[node]]
+id = "contDiffOn_of_hasDerivAt_chain"
+
+[[node]]
+id = "ContDiffAt.dslope_same"
+
+[[node]]
+id = "iteratedDeriv_dslope_same"
+
+[[node]]
+id = "ContDiffAt.iterate_dslope_same"
+
+[[node]]
+id = "iteratedDeriv_iterate_dslope_same"
+
+[[node]]
+id = "iterate_dslope_same_apply"
+
+[[node]]
+id = "IsRootOfMultiplicity.eq_zero"
+
+[[node]]
+id = "isRootOfMultiplicity_one_iff"
+
+[[node]]
+id = "IsRootOfMultiplicity.deriv"
+
+[[node]]
+id = "IsRootOfMultiplicity.iteratedDeriv_div_factorial_ne_zero"
+
+[[node]]
+id = "IsRootOfMultiplicity.eventually_ne_zero"
+
+[[node]]
+id = "Polynomial.iteratedDeriv_eval"
+
+[[node]]
+id = "IsRootOfMultiplicity.exists_eq_pow_mul_deriv"

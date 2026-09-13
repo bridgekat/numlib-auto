@@ -1,132 +1,70 @@
 namespace = "Newton"
-desc = '''
-Newton's method for a real function of one real variable, `x ↦ x - f x / f' x`, as the scalar
-instance of the Banach-space `Newton.step` of `Nonlinear/Newton` (the two agree everywhere,
-including where `f' x = 0`, since `ContinuousLinearMap.inverse 0 = 0` and `a / 0 = 0`), with what
-the scalar setting adds: the iteration function `φ_Newt` and its derivatives at a simple root
-(`φ' = 0`, `φ'' = f''/f'`), the behaviour at a *multiple* root — linear convergence with factor
-`1 - 1/m` — and the two repairs, the modified Newton method `x - m f x / f' x` (quadratic again
-when `m` is known) and the adaptive Newton method that estimates `m` from the increment ratios.
-
-Multiplicity is `IsRootOfMultiplicity f α m` of `Analysis/Calculus/RootMultiplicity`, whose
-factorization `f x = (x - α)^m h x` is what every proof here uses (the book's Exercise 6.2 hint).
-The prototype `notes/qss/ch06/proto/ScalarNewton.lean` elaborates the definitions and statements.
-
-Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2 (6.16), §6.3.1 ((6.22)–(6.23)),
-§6.6.2 ((6.39)–(6.40)), Exercise 6.2; Kress, Numerical Analysis, §6.2; Atkinson–Han §5.4.
-'''
 
 [[node]]
 id = "scalarStep"
-kind = "definition"
-desc = '''`Newton.scalarStep (f f' : ℝ → ℝ) (x : ℝ) : ℝ := x - f x / f' x`, one Newton step (6.16); the
-iteration function `φ_Newt` of §6.3.1 is `scalarStep f f'` itself. `scalarIterate f f' x₀ k :=
-(scalarStep f f')^[k] x₀` may be added as an abbreviation. ★'''
-deps = []
+
+[[node]]
+id = "scalarStep_apply_of_eq_zero"
 
 [[node]]
 id = "scalarStep_eq_step"
-kind = "theorem"
-desc = '''`Newton.scalarStep f f' x = Newton.step f (fun x => f' x • ContinuousLinearMap.id ℝ ℝ) x`,
-for every `x` — also when `f' x = 0`, where both sides equal `x` (`ContinuousLinearMap.inverse` of a
-non-invertible map is `0`; `inverse_equiv` for the invertible case with `(f' x • id)⁻¹ = (f' x)⁻¹ • id`).
-Through this every Banach-space theorem of `Nonlinear/Newton` (local quadratic convergence
-`Newton.exists_ball_norm_step_sub_le`, `Newton.tendsto_iterate`, Kantorovich) is available to the
-scalar surface without restating it. ★'''
-deps = ["Newton.scalarStep", "Newton.step"]
 
 [[node]]
 id = "hasDerivAt_scalarStep"
-kind = "theorem"
-desc = '''If `HasDerivAt f (f' x) x`, `HasDerivAt f' (f'' x) x` and `f' x ≠ 0`, then
-`HasDerivAt (scalarStep f f') (f x * f'' x / (f' x) ^ 2) x`. Quotient rule. At a simple root
-`f α = 0`, `f' α ≠ 0`: `φ_Newt'(α) = 0`, the first display of §6.3.1. ★'''
-deps = ["Newton.scalarStep"]
 
 [[node]]
-id = "deriv2_scalarStep_root"
-kind = "theorem"
-desc = '''At a simple root, `φ_Newt''(α) = f''(α) / f'(α)`: if `ContDiffAt ℝ 3 f α`, `f α = 0` and
-`deriv f α ≠ 0`, then `iteratedDeriv 2 (scalarStep f (deriv f)) α = iteratedDeriv 2 f α / deriv f α`.
-Differentiate `φ' = f f'' / f'²` once more and evaluate with `f α = 0`; `C³` is what makes `f''`
-differentiable. With `hasDerivAt_scalarStep` and Property 6.4
-(`tendsto_sub_div_pow_of_iteratedDeriv_eq_zero`, `p = 1`) this gives the classical limit
-`(x_{k+1} - α)/(x_k - α)² → f''(α) / (2 f'(α))`. ★★'''
-deps = ["Newton.scalarStep", "Newton.hasDerivAt_scalarStep"]
+id = "_root_.ContDiffAt.eventually_hasDerivAt"
 
 [[node]]
-id = "hasIterationOrder_scalarStep_two"
-kind = "theorem"
-desc = '''**Newton's method is of order 2 at a simple root** in the sense of Definition 6.1: if
-`f α = 0`, `ContDiffAt ℝ 2 f α` and `deriv f α ≠ 0`, then
-`HasIterationOrder (scalarStep f (deriv f)) α 2`. Either from `scalarStep_eq_step` and
-`Newton.exists_ball_norm_step_sub_le` (`f'` is Lipschitz near `α` because `f''` is continuous there;
-the constant is `L |1/f'(α)| / 2 ≈ |f''(α)| / (2 |f'(α)|)`, the book's), or from
-`hasIterationOrder_of_iteratedDeriv_eq_zero` with `p = 1` and `hasDerivAt_scalarStep`. ★'''
-deps = ["Newton.scalarStep", "Newton.scalarStep_eq_step", "Newton.exists_ball_norm_step_sub_le", "HasIterationOrder", "Newton.hasDerivAt_scalarStep"]
+id = "_root_.ContDiffAt.continuousAt_deriv"
+
+[[node]]
+id = "deriv_eq_of_eq_pow_mul"
+
+[[node]]
+id = "tendsto_const_mul_add_sub_mul_deriv"
 
 [[node]]
 id = "tendsto_scalarStep_sub_div_of_isRootOfMultiplicity"
-kind = "theorem"
-desc = '''**(6.22): at a root of multiplicity `m` Newton's method is linear with factor `1 - 1/m`.**
-If `1 ≤ m`, `ContDiffAt ℝ (m + 1) f α` and `IsRootOfMultiplicity f α m`, then
-`Tendsto (fun x => (scalarStep f (deriv f) x - α) / (x - α)) (𝓝[≠] α) (𝓝 (1 - 1 / m))`, and hence
-`HasIterationOrder (scalarStep f (deriv f)) α 1` with convergence factor `1 - 1/m` when `m ≥ 2`
-(Ostrowski, `tendsto_iterate_of_abs_deriv_lt_one`-style, from the ratio limit `< 1`). Proof
-(Exercise 6.2's hint): `f x = e^m h x` with `h` continuous, `h α ≠ 0`, `h ∈ C¹`
-(`IsRootOfMultiplicity.exists_eq_pow_mul`), so `f' x = e^{m-1} (m h x + e h' x)` and
-`(φ x - α)/e = 1 - h x / (m h x + e h' x) → 1 - 1/m`. The limit form is stated rather than a
-derivative of `φ_Newt` at `α`, since `φ_Newt α = α - 0/0 = α` in Lean but `φ_Newt` is defined at
-`α` only by that junk value; the ratio form is what the book's (6.22) and §6.6.2 use. ★★'''
-deps = ["Newton.scalarStep", "IsRootOfMultiplicity", "IsRootOfMultiplicity.exists_eq_pow_mul"]
+
+[[node]]
+id = "hasIterationOrder_scalarStep_one_of_isRootOfMultiplicity"
 
 [[node]]
 id = "modifiedScalarStep"
-kind = "definition"
-desc = '''`Newton.modifiedScalarStep (f f' : ℝ → ℝ) (m : ℕ) (x : ℝ) : ℝ := x - m * (f x / f' x)`, the
-modified Newton method (6.23) for a root of known multiplicity `m`. ★'''
-deps = []
+
+[[node]]
+id = "modifiedScalarStep_one"
+
+[[node]]
+id = "modifiedScalarStep_apply_of_eq_zero"
+
+[[node]]
+id = "tendsto_modifiedScalarStep_sub_div_sq"
 
 [[node]]
 id = "exists_ball_abs_modifiedScalarStep_sub_le"
-kind = "theorem"
-desc = '''**Exercise 6.2: the modified Newton method is second order at a root of multiplicity `m`.**
-If `1 ≤ m`, `ContDiffAt ℝ (m + 2) f α` and `IsRootOfMultiplicity f α m`, then
-`∃ ε > 0, ∃ C, ∀ x ∈ Metric.ball α ε, |modifiedScalarStep f (deriv f) m x - α| ≤ C * |x - α| ^ 2`,
-hence `HasIterationOrder (modifiedScalarStep f (deriv f) m) α 2`. With `f = e^m h`, `h ∈ C²`
-(`ContDiffAt (m+2)` gives that through the factorization), the step is
-`x - m e h / (m h + e h') = x - e + e² h' / (m h + e h')`, so the new error is
-`e² h'(x) / (m h x + e h' x)` and `|·| ≤ C e²` on a ball where `|m h| ≥ |m h(α)| / 2`. ★★'''
-deps = ["Newton.modifiedScalarStep", "IsRootOfMultiplicity", "IsRootOfMultiplicity.exists_eq_pow_mul", "HasIterationOrder"]
+
+[[node]]
+id = "hasIterationOrder_modifiedScalarStep_two"
+
+[[node]]
+id = "tendsto_scalarStep_sub_div_sq"
+
+[[node]]
+id = "hasIterationOrder_scalarStep_two"
+
+[[node]]
+id = "deriv2_scalarStep_root"
 
 [[node]]
 id = "multiplicityEstimate"
-kind = "definition"
-desc = '''`Newton.multiplicityEstimate (x : ℕ → ℝ) (k : ℕ) : ℝ := 1 / (1 - aitkenRatio x k)`, the
-multiplicity estimate `m^{(k+2)}` of (6.40): `(x (k+1) - x k) / (2 x (k+1) - x (k+2) - x k)`
-(`field_simp; ring` shows the two forms agree). ★'''
-deps = ["aitkenRatio"]
+
+[[node]]
+id = "multiplicityEstimate_eq"
 
 [[node]]
 id = "tendsto_multiplicityEstimate"
-kind = "theorem"
-desc = '''**The estimate finds the multiplicity:** if `2 ≤ m`, `ContDiffAt ℝ (m + 1) f α`,
-`IsRootOfMultiplicity f α m`, and `x` is a Newton orbit `x (k+1) = scalarStep f (deriv f) (x k)`
-converging to `α` with `x k ≠ α` for all `k`, then `Tendsto (multiplicityEstimate x) atTop (𝓝 m)`.
-The error ratios tend to `1 - 1/m ≠ 1` (`tendsto_scalarStep_sub_div_of_isRootOfMultiplicity`
-composed with `x → α` in `𝓝[≠] α`), so `aitkenRatio x → 1 - 1/m` by `tendsto_aitkenRatio`, and
-`1 / (1 - (1 - 1/m)) = m`. ★'''
-deps = ["Newton.multiplicityEstimate", "Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity", "tendsto_aitkenRatio", "IsRootOfMultiplicity"]
 
 [[node]]
 id = "adaptiveStep"
-kind = "definition"
-desc = '''`Newton.adaptiveStep (f f' : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : ℝ × ℝ × ℝ`: the adaptive Newton
-method (6.39) as a step on the last three iterates `(x_{k-2}, x_{k-1}, x_k)`, producing
-`(x_{k-1}, x_k, x_k - m_k * (f x_k / f' x_k))` with `m_k = (x_{k-1} - x_{k-2}) / (2 x_{k-1} - x_k -
-x_{k-2})` the estimate (6.40) (junk `m_k = 0` when the denominator vanishes; the book's Program 56
-freezes the previous estimate instead and only updates it when the ratio has settled, a safeguard
-that belongs to the implementation, not the method). A definition only: the book proves nothing
-about the adaptive iteration and its example shows it converging slower than the modified method.
-★'''
-deps = []

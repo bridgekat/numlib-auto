@@ -1,280 +1,122 @@
-desc = '''
-Order of convergence of a sequence and of a fixed-point iteration, the ratio lemmas behind the
-convergence-order theory of one-step iterations, Aitken's Δ² extrapolation and Steffensen's method,
-and the two stopping criteria (increment and residual) for iterations converging to a root.
-
-Definitions are stated for a sequence in a normed group (`ConvergesWithOrder x α p`, with `p : ℝ`)
-so that chapter 7's `ℝⁿ` methods reuse them; the derivative-based results are scalar (`ℝ → ℝ`),
-where the mean value theorem and Taylor's theorem with Lagrange remainder give the limits of the
-error ratios. `x k ≠ α` hypotheses are essential wherever an error ratio appears: an orbit that
-hits the fixed point exactly is constant from then on and the ratios are `0 / 0`; the books never
-say so and the formal statements must. The prototype
-`notes/qss/ch06/proto/Order.lean` elaborates every definition and statement below; `tendsto_sub_div_sub_of_hasDerivAt`
-is proved there in four lines from `hasDerivAt_iff_tendsto_slope`.
-
-Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 6.1, Theorem 6.1 (6.18),
-Property 6.4, §6.5, §6.6.1 (Property 6.7), Exercise 6.5; Isaacson–Keller, Analysis of Numerical
-Methods, §3.3 (Aitken's Δ² and Steffensen).
-'''
-
 [[node]]
 id = "ConvergesWithOrder"
-kind = "definition"
-desc = '''`ConvergesWithOrder (x : ℕ → E) (α : E) (p : ℝ) : Prop := Tendsto x atTop (𝓝 α) ∧ ∃ C > 0,
-∀ᶠ k in atTop, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖ ^ p` for `E` a normed additive group (`^` is the real
-power `rpow`, so non-integer orders such as the golden ratio are allowed). The eventual inequality is
-(6.2) of Quarteroni–Sacco–Saleri Definition 6.1 and the first conjunct is the word "converges" in
-it; the definition itself does not force `p ≥ 1`. ★'''
-deps = []
 
 [[node]]
 id = "HasIterationOrder"
-kind = "definition"
-desc = '''`HasIterationOrder (φ : E → E) (α : E) (p : ℝ) : Prop := ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε,
-ConvergesWithOrder (fun k => φ^[k] x₀) α p`: the fixed-point iteration `x ↦ φ x` has (local)
-order `p` at `α`, the sense in which the book says "a fixed-point method has order `p`" (the
-sentence before Property 6.4). ★'''
-deps = ["ConvergesWithOrder"]
+
+[[node]]
+id = "ConvergesWithOrder.tendsto"
 
 [[node]]
 id = "tendsto_of_eventually_norm_sub_succ_le"
-kind = "theorem"
-desc = '''If `C < 1` and `∀ᶠ k, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖`, then `Tendsto x atTop (𝓝 α)`: a
-linear error bound with factor below one is sufficient for convergence (the remark after
-Definition 6.1, whose word "necessary" is a slip — see the chapter report). Geometric decay from the
-threshold `k₀`, `‖x (k₀ + n) - α‖ ≤ C ^ n ‖x k₀ - α‖`, then `tendsto_pow_atTop_nhds_zero_of_lt_one`.
-For `C ≤ 0` the sequence is eventually constant. ★'''
-deps = []
 
 [[node]]
 id = "convergesWithOrder_one_of_eventually_norm_sub_succ_le"
-kind = "theorem"
-desc = '''If `0 < C < 1` and `∀ᶠ k, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖` then `ConvergesWithOrder x α 1`,
-with `C` the convergence factor. Immediate from `tendsto_of_eventually_norm_sub_succ_le` and
-`rpow_one`. ★'''
-deps = ["ConvergesWithOrder", "tendsto_of_eventually_norm_sub_succ_le"]
 
 [[node]]
 id = "exists_eventually_norm_sub_succ_le_of_tendsto_ratio"
-kind = "theorem"
-desc = '''If `x k ≠ α` for all `k` and the error ratio `‖x (k + 1) - α‖ / ‖x k - α‖ ^ p` tends to a
-finite limit `c`, then `∃ C > 0, ∀ᶠ k, ‖x (k + 1) - α‖ ≤ C * ‖x k - α‖ ^ p` (take `C = c + 1`,
-the ratio is eventually `< c + 1`, and `‖x k - α‖ ^ p > 0`). This is how every ratio-limit theorem
-below yields an order in the sense of `ConvergesWithOrder`. ★'''
-deps = []
 
 [[node]]
 id = "ConvergesWithOrder.of_le"
-kind = "theorem"
-desc = '''Order `p` implies order `q` whenever `1 ≤ q ≤ p`: from `ConvergesWithOrder x α p` derive
-`ConvergesWithOrder x α q`. Since `x → α`, eventually `‖x k - α‖ ≤ 1`, and then
-`‖x k - α‖ ^ p ≤ ‖x k - α‖ ^ q` (`Real.rpow_le_rpow_of_exponent_ge`). This is why Definition 6.1
-speaks of "order at least `p`" in practice. ★'''
-deps = ["ConvergesWithOrder"]
+
+[[node]]
+id = "hasIterationOrder_of_eventually_of_tendsto"
+
+[[node]]
+id = "hasIterationOrder_of_eventually_norm_sub_le"
+
+[[node]]
+id = "eventually_abs_sub_le_mul_abs_pow_of_tendsto"
+
+[[node]]
+id = "hasIterationOrder_of_tendsto_sub_div_pow"
+
+[[node]]
+id = "hasIterationOrder_one_of_tendsto_sub_div"
 
 [[node]]
 id = "tendsto_sub_div_sub_of_hasDerivAt"
-kind = "theorem"
-desc = '''**(6.18) of Theorem 6.1, from differentiability at the fixed point alone.** If
-`HasDerivAt φ φ' α`, `φ α = α`, `x (k + 1) = φ (x k)` for all `k`, `x k ≠ α` for all `k` and
-`Tendsto x atTop (𝓝 α)`, then `Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 φ')`.
-Proof: `hasDerivAt_iff_tendsto_slope` composed with `x → α` in `𝓝[≠] α` (proved in the prototype,
-four lines). The book derives it with the mean value theorem under `φ ∈ C¹[a, b]`; neither `C¹` nor
-the interval is needed. ★'''
-deps = []
+
+[[node]]
+id = "eventually_sub_succ_ne_zero_of_tendsto_ratio"
+
+[[node]]
+id = "tendsto_sub_div_sub_succ_of_tendsto_ratio"
 
 [[node]]
 id = "tendsto_sub_div_sub_succ_of_hasDerivAt"
-kind = "theorem"
-desc = '''**The increment test, (6.31) made rigorous.** Under the hypotheses of
-`tendsto_sub_div_sub_of_hasDerivAt` and `φ' ≠ 1`, the increments are eventually nonzero and
-`Tendsto (fun k => (α - x k) / (x (k + 1) - x k)) atTop (𝓝 (1 / (1 - φ')))`: the error
-`e_k = α - x_k` (the book's sign convention, kept here because it makes the constant come out as
-printed) is asymptotically `1 / (1 - φ'(α))` times the last increment. From
-`x (k+1) - x k = (x (k+1) - α) - (x k - α)`, so `(α - x k)/(x (k+1) - x k) = 1 / (1 - r_k)` with
-`r_k = (x (k+1) - α)/(x k - α) → φ'`. ★'''
-deps = ["tendsto_sub_div_sub_of_hasDerivAt"]
+
+[[node]]
+id = "tendsto_sub_taylor_div_pow"
+
+[[node]]
+id = "tendsto_sub_div_pow_nhdsNE_of_iteratedDeriv_eq_zero"
 
 [[node]]
 id = "tendsto_sub_div_pow_of_iteratedDeriv_eq_zero"
-kind = "theorem"
-desc = '''**Property 6.4, the limit (6.21).** Let `p : ℕ`, `ContDiffAt ℝ (p + 1) φ α` (the book asks
-`C^{p+1}` on a neighbourhood, which `ContDiffAt` gives), `φ α = α`, `iteratedDeriv i φ α = 0` for
-`1 ≤ i ≤ p` (the book's range `0 ≤ i ≤ p` is a misprint: `i = 0` would say `φ α = 0`), and let `x`
-be an orbit `x (k + 1) = φ (x k)` with `x k ≠ α` for all `k` converging to `α`. Then
-`Tendsto (fun k => (x (k + 1) - α) / (x k - α) ^ (p + 1)) atTop (𝓝 (iteratedDeriv (p + 1) φ α / (p + 1)!))`.
-Proof: Taylor's theorem with Lagrange remainder `taylor_mean_remainder_lagrange` on `uIcc α (x k)`
-(the `p + 1`-st derivative exists on a neighbourhood by `ContDiffAt`), all lower terms vanish, and
-the remainder point `η_k` between `α` and `x k` tends to `α` where `iteratedDeriv (p + 1) φ` is
-continuous. For `p = 0` this is `tendsto_sub_div_sub_of_hasDerivAt`. Hypothesis
-`iteratedDeriv (p + 1) φ α ≠ 0` is not needed for the limit; it makes the order *exactly* `p + 1`.
-★★'''
-deps = ["tendsto_sub_div_sub_of_hasDerivAt"]
 
 [[node]]
 id = "hasIterationOrder_of_iteratedDeriv_eq_zero"
-kind = "theorem"
-desc = '''**Property 6.4, the order statement.** For `1 ≤ p`, `ContDiffAt ℝ (p + 1) φ α`, `φ α = α`
-and `iteratedDeriv i φ α = 0` for `1 ≤ i ≤ p`: `HasIterationOrder φ α (p + 1)`. Since `φ'(α) = 0`,
-Ostrowski (`tendsto_iterate_of_abs_deriv_lt_one` in `Nonlinear/FixedPoint`) gives local
-convergence; on the ball the Taylor bound `|φ x - α| ≤ M / (p + 1)! * |x - α| ^ (p + 1)` with
-`M` a bound of `|iteratedDeriv (p + 1) φ|` gives the eventual inequality directly (no `x k ≠ α`
-needed for the bound form). The `p = 0` case is excluded because the property presupposes
-convergence, which `|φ'(α)| < 1` alone supplies. ★★'''
-deps = ["HasIterationOrder", "tendsto_iterate_of_abs_deriv_lt_one"]
 
 [[node]]
 id = "aitkenRatio"
-kind = "definition"
-desc = '''`aitkenRatio (x : ℕ → ℝ) (k : ℕ) : ℝ := (x (k + 2) - x (k + 1)) / (x (k + 1) - x k)`, the
-ratio `λ^{(k+2)}` of successive increments, (6.33) shifted to start at `k = 0`. It is what
-estimates the asymptotic convergence factor from the iterates alone (and, in §6.6.2, the
-multiplicity of a root). ★'''
-deps = []
 
 [[node]]
 id = "tendsto_aitkenRatio"
-kind = "theorem"
-desc = '''**(6.34).** If `Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 λ)` with `λ ≠ 1`
-and `x k ≠ α` for all `k`, then the increments are eventually nonzero and
-`Tendsto (aitkenRatio x) atTop (𝓝 λ)`. With `r_k = (x (k+1) - α)/(x k - α)`,
-`(x (k+2) - x (k+1)) / (x (k+1) - x k) = r_k (r_{k+1} - 1) / (r_k - 1)` (divide numerator and
-denominator by `x k - α`), which tends to `λ (λ - 1) / (λ - 1) = λ`; `r_k - 1 → λ - 1 ≠ 0` is what
-makes the increments eventually nonzero. Combine with `tendsto_sub_div_sub_of_hasDerivAt` for a
-fixed-point orbit (the book's derivation). ★'''
-deps = ["aitkenRatio"]
 
 [[node]]
 id = "aitkenExtrapolation"
-kind = "definition"
-desc = '''`aitkenExtrapolation (x : ℕ → ℝ) (k : ℕ) : ℝ := x (k + 2) - (x (k + 2) - x (k + 1)) ^ 2 /
-((x (k + 2) - x (k + 1)) - (x (k + 1) - x k))`: Aitken's extrapolation formula (6.36) producing
-`x̂^{(k+2)}` from `x^{(k)}, x^{(k+1)}, x^{(k+2)}`. Lean's `a / 0 = 0` returns `x (k + 2)` itself when
-the second difference vanishes. ★'''
-deps = []
 
 [[node]]
 id = "aitkenExtrapolation_eq_sub_div_fwdDiff"
-kind = "theorem"
-desc = '''**(6.37), the Δ² form:** `aitkenExtrapolation x k = x (k + 2) - (Δ_[1] x (k + 1)) ^ 2 /
-(Δ_[1]^[2] x k)` with Mathlib's forward difference `fwdDiff` (`Mathlib/Algebra/Group/ForwardDiff`,
-notation `Δ_[h]`, scoped `fwdDiff`). The book writes the same identity with its backward-shifted
-convention `Δx^{(k)} = x^{(k)} - x^{(k-1)}`. By `unfold fwdDiff; ring`. ★'''
-deps = ["aitkenExtrapolation"]
 
 [[node]]
 id = "aitkenIterationFunction"
-kind = "definition"
-desc = '''`aitkenIterationFunction (φ : ℝ → ℝ) (x : ℝ) : ℝ := if φ (φ x) - 2 * φ x + x = 0 then x
-else (x * φ (φ x) - φ x ^ 2) / (φ (φ x) - 2 * φ x + x)`: the iteration function `φ_Δ` of (6.38),
-Aitken's formula applied to `x, φ x, φ (φ x)`, extended by `x` itself where the denominator
-vanishes (so that a fixed point of `φ`, where `0 / 0` occurs, is a fixed point of `φ_Δ`; Lean's
-`x / 0 = 0` would send it to `0` otherwise). One step of the Aitken-accelerated method is
-`aitkenIterationFunction φ x = aitkenExtrapolation ![x, φ x, φ (φ x)] 0` up to the guard. ★'''
-deps = []
+
+[[node]]
+id = "aitkenIterationFunction_apply_self"
 
 [[node]]
 id = "aitkenIterationFunction_eq_self_iff"
-kind = "theorem"
-desc = '''When `φ (φ x) - 2 * φ x + x ≠ 0`: `aitkenIterationFunction φ x = x ↔ φ x = x`. Indeed
-`φ_Δ x - x = -(φ x - x) ^ 2 / (φ (φ x) - 2 φ x + x)`. This is the book's remark that the fixed
-points of (6.38) coincide with those of `φ` (Isaacson–Keller, pp. 104–106, including the multiple
-root case, where it is still this algebraic identity). ★'''
-deps = ["aitkenIterationFunction"]
+
+[[node]]
+id = "aitkenIterationFunction_sub_eq"
+
+[[node]]
+id = "aitkenIterationFunction_sub_eq_dslope"
+
+[[node]]
+id = "tendsto_dslope_aitken"
+
+[[node]]
+id = "eventually_aitken_denom_ne_zero"
 
 [[node]]
 id = "hasDerivAt_aitkenIterationFunction_zero"
-kind = "theorem"
-desc = '''**`φ_Δ` is differentiable at `α` with derivative `0`, from differentiability of `φ` at `α`
-with `φ'(α) ≠ 1`.** Given `HasDerivAt φ φ' α`, `φ α = α`, `φ' ≠ 1`:
-`HasDerivAt (aitkenIterationFunction φ) 0 α`, in particular `φ_Δ` is continuous at `α` (the
-book's "continuous extension at `α`" via L'Hôpital). Proof: with `e = x - α`,
-`φ x - α = φ' e + o(e)`, `φ (φ x) - α = φ'² e + o(e)`, and the identity
-`φ_Δ x - α = ((x - α)(φ (φ x) - α) - (φ x - α)²) / (φ (φ x) - 2 φ x + x)` (check by `ring`) has
-numerator `o(e²)` and denominator `(φ' - 1)² e + o(e)`, so `φ_Δ x - α = o(e)`. The guard branch is
-taken only on a set where `φ x = x` is forced near `α` (denominator `= (φ'-1)² e + o(e) ≠ 0` for
-small `e ≠ 0`), so it does not disturb the limit. ★★'''
-deps = ["aitkenIterationFunction"]
 
 [[node]]
 id = "tendsto_aitkenIterationFunction_sub_div_sq"
-kind = "theorem"
-desc = '''**Property 6.7, `p = 1`, the sharp constant.** If `φ` is twice differentiable at `α`
-(second-order Peano expansion, e.g. `ContDiffAt ℝ 2 φ α`), `φ α = α`, `φ'(α) ≠ 1`, then
-`Tendsto (fun x => (aitkenIterationFunction φ x - α) / (x - α) ^ 2) (𝓝[≠] α)
-(𝓝 (φ'(α) φ''(α) / (2 (φ'(α) - 1))))`. Same identity as in `hasDerivAt_aitkenIterationFunction_zero`
-with one more Taylor term: with `λ = φ'(α)`, `μ = φ''(α) / 2`, the numerator is
-`λ μ (λ - 1) e³ + o(e³)` and the denominator `(λ - 1)² e + o(e)`. Hence Aitken's method has order
-exactly `2` when `φ'(α) φ''(α) ≠ 0`, and it converges (locally) *even when `|φ'(α)| > 1`*, which is
-the book's "convergent even if the fixed-point method is not". ★★'''
-deps = ["aitkenIterationFunction", "hasDerivAt_aitkenIterationFunction_zero"]
 
 [[node]]
 id = "hasIterationOrder_aitkenIterationFunction_two"
-kind = "theorem"
-desc = '''**Property 6.7, `p = 1`, as an order statement:** under the hypotheses of
-`tendsto_aitkenIterationFunction_sub_div_sq`, `HasIterationOrder (aitkenIterationFunction φ) α 2`.
-Local convergence from `hasDerivAt_aitkenIterationFunction_zero` and Ostrowski
-(`tendsto_iterate_of_abs_deriv_lt_one`); the quadratic bound on the ball from the ratio limit
-(`exists_eventually_norm_sub_succ_le_of_tendsto_ratio`, orbits with `x k ≠ α`; orbits hitting `α`
-are eventually constant and satisfy the bound trivially). ★★'''
-deps = ["HasIterationOrder", "tendsto_aitkenIterationFunction_sub_div_sq", "hasDerivAt_aitkenIterationFunction_zero", "tendsto_iterate_of_abs_deriv_lt_one", "exists_eventually_norm_sub_succ_le_of_tendsto_ratio"]
+
+[[node]]
+id = "tendsto_aitkenIterationFunction_sub_div_pow_of_iteratedDeriv_eq_zero"
 
 [[node]]
 id = "hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero"
-kind = "theorem"
-desc = '''**Property 6.7, `p ≥ 2`:** if `2 ≤ p`, `ContDiffAt ℝ (2 p) φ α`, `φ α = α`,
-`iteratedDeriv i φ α = 0` for `1 ≤ i < p` and `iteratedDeriv p φ α ≠ 0` (so the iteration has
-order `p` by `hasIterationOrder_of_iteratedDeriv_eq_zero`), then
-`HasIterationOrder (aitkenIterationFunction φ) α (2 * p - 1)`. Route: with
-`φ x - α = c e^p + O(e^{p+1})`, `c = φ^{(p)}(α)/p!`, one has `φ(φ x) - α = c^{p+1} e^{p²} + …`
-which is `O(e^{2p})` for `p ≥ 2`, the numerator
-`(x - α)(φ(φ x) - α) - (φ x - α)²` is `-c² e^{2p} + O(e^{2p+1})` and the denominator is
-`e - 2 c e^p + O(e^{p+1}) = e (1 + O(e^{p-1}))`, so `φ_Δ x - α = -c² e^{2p-1} + O(e^{2p})`. Heavy
-but elementary Taylor bookkeeping through `taylor_mean_remainder_lagrange` or `IsBigO` calculus. The
-book states it without proof (Isaacson–Keller pp. 104–108). ★★★'''
-deps = ["HasIterationOrder", "aitkenIterationFunction", "hasIterationOrder_of_iteratedDeriv_eq_zero"]
 
 [[node]]
 id = "steffensenStep"
-kind = "definition"
-desc = '''`steffensenStep (f : ℝ → ℝ) (x : ℝ) : ℝ := x - f x / ((f (x + f x) - f x) / f x)`,
-Steffensen's method (Exercise 6.5): Newton's step with `f'(x)` replaced by the difference quotient
-over the step `f x`. ★'''
-deps = []
+
+[[node]]
+id = "steffensenStep_apply_self"
 
 [[node]]
 id = "steffensenStep_eq_aitkenIterationFunction"
-kind = "theorem"
-desc = '''Steffensen is Aitken's Δ² applied to the iteration function `x ↦ x + f x`: if
-`f (x + f x) - f x ≠ 0` then `steffensenStep f x = aitkenIterationFunction (fun y => y + f y) x`
-(the denominators agree: `φ(φ x) - 2 φ x + x = f (x + f x) - f x`, and the numerators after
-clearing `f x`). By `field_simp; ring`. ★'''
-deps = ["steffensenStep", "aitkenIterationFunction"]
 
 [[node]]
 id = "hasIterationOrder_steffensenStep_two"
-kind = "theorem"
-desc = '''**Exercise 6.5: Steffensen's method is second order at a simple root.** If `f α = 0`,
-`ContDiffAt ℝ 2 f α` and `deriv f α ≠ 0`, then `HasIterationOrder (steffensenStep f) α 2`. With
-`φ = id + f`, `φ'(α) = 1 + f'(α) ≠ 1`, so `hasIterationOrder_aitkenIterationFunction_two` applies
-through `steffensenStep_eq_aitkenIterationFunction` (the denominator `f (x + f x) - f x =
-f'(ξ) f x` is nonzero for `x` near `α`, `x ≠ α`). The asymptotic constant is
-`(1 + f'(α)) f''(α) / (2 f'(α))`. ★★'''
-deps = ["HasIterationOrder", "steffensenStep", "steffensenStep_eq_aitkenIterationFunction", "hasIterationOrder_aitkenIterationFunction_two"]
 
 [[node]]
 id = "tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity"
-kind = "theorem"
-desc = '''**Property 6.7, last clause, read correctly:** at a root of multiplicity `m ≥ 2`
-(`IsRootOfMultiplicity f α m`, `f ∈ C^{m+1}` near `α`) Steffensen's iteration converges only
-linearly, `Tendsto (fun x => (steffensenStep f x - α) / (x - α)) (𝓝[≠] α) (𝓝 (1 - 1 / m))`, i.e.
-with factor `1 - 1/m`. This is the Isaacson–Keller statement the book paraphrases; as printed
-("the method `x ↦ φ x` is first-order convergent") it cannot be right, since for any `φ` with
-`φ'(α) ≠ 1` Aitken's method is superlinear by `hasDerivAt_aitkenIterationFunction_zero` — the
-multiple-root degeneracy occurs precisely because `φ = id + f` has `φ'(α) = 1` there. Route: write
-`f x = e^m h x` (`IsRootOfMultiplicity.exists_eq_pow_mul`), expand
-`f (x + f x) - f x = f x (f'(x) + O(f x))`, so the step is
-`x - f x / (f'(x) + O(e^m)) = x - e h /(m h + e h' + O(e^m))`, whose error ratio tends to
-`1 - 1/m`. Not needed by anything downstream; lowest priority. ★★★'''
-deps = ["steffensenStep", "IsRootOfMultiplicity", "IsRootOfMultiplicity.exists_eq_pow_mul"]
