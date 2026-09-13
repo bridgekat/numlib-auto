@@ -40,20 +40,3 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.5)"
 [[node]]
 id = "newton_pair"
 
-[[node]]
-id = "hasDerivAt_newton_snoc"
-kind = "theorem"
-desc = '''**The derivative of a divided difference in its last argument** ([quarteroni2000numerical]
-(9.22), Exercise 9.4): for `f` of class `C¹` (or `C^{n+2}`, the book's setting), distinct nodes
-`v : Fin (n + 1) → ℝ` and `x ∉ range v`,
-`HasDerivAt (fun x => newton f (Fin.snoc v x)) (newton₂ f v x) x`, where the value is the
-*confluent* divided difference `f[v_0, …, v_n, x, x]`, defined as the coefficient of `X^{n+2}` in
-the Hermite interpolant of `f` at `v` with simple nodes and at `x` with multiplicity `2`
-(`Hermite.interpolate (Fin.snoc v x) (Fin.snoc 0 1) f`). Proof from the explicit form
-`newton f (Fin.snoc v x) = f x / ω(x) + ∑ i, f(v_i)/((v_i - x) ∏_{j ≠ i}(v_i - v_j))`: it is
-differentiable in `x` away from the nodes with derivative
-`(f'(x) ω(x) - f(x) ω'(x))/ω(x)² + ∑ f(v_i)/((v_i - x)² ∏…)`, which is the explicit form of
-`f[v, x, x]` (partial fractions of `1/((t - x)² ω(t))`). With the mean value form
-`f[v, x, x] = f^{(n+2)}(ξ)/(n+2)!` (`Hermite.exists_sub_interpolate_eq`) this is the identity the
-book's proof of Theorem 9.2 needs. ★★★'''
-deps = ["DividedDifference.newton", "Hermite.interpolate"]

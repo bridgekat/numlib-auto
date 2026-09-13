@@ -1,120 +1,45 @@
 namespace = "QuarteroniSaccoSaleri.Chapter08"
-desc = '''
-QSS §8.2: the Newton form of the interpolating polynomial and Newton divided differences — the
-defining formula (8.14), the recursion in the degree (8.16), the Newton formula (8.17), the
-explicit representation (8.18) and its four consequences (symmetry, linearity, Leibniz, the
-recursion (8.19) of Exercise 7), the vanishing on `𝒫_{n-1}`, and the interpolation error in
-divided-difference form (8.20)–(8.21).
-
-The divided difference `f[x_0, …, x_n]` is `DividedDifference.newton f x` of
-`Numlib/Approximation/DividedDifference`, defined by (8.18); the book defines it by (8.14), so
-`equation_8_14` is the equivalence of the two definitions. Everything else is
-`Numlib/Approximation/NewtonForm`. Examples 8.3 and 8.4 are tables of computed divided
-differences and are skipped.
-'''
 
 [[node]]
 id = "equation_8_14"
-kind = "theorem"
-desc = '''(8.14)–(8.15): for injective `x : Fin (n + 2) → ℝ` (the book's `x_0, …, x_n` with `n ≥ 1`,
-here `x = Fin.snoc x' x_n`), `DividedDifference.newton f x = (f (x_n) - (Π_{n-1} f).eval x_n) / ω_n(x_n)`
-where `Π_{n-1} f = Lagrange.interpolate Finset.univ (Fin.init x) (f ∘ Fin.init x)` and
-`ω_n(x_n) = ∏ i, (x_n - x i.castSucc)`. `DividedDifference.eval_interpolate_snoc_sub`. ★'''
-deps = ["DividedDifference.eval_interpolate_snoc_sub"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.14)–(8.15)'
 
 [[node]]
 id = "equation_8_16"
-kind = "theorem"
-desc = '''(8.16): `Π_n f = Π_{n-1} f + ω_n · f[x_0, …, x_n]` as polynomials, for injective
-`x : Fin (n + 2) → ℝ`: `Lagrange.interpolate Finset.univ x (f ∘ x) = Lagrange.interpolate Finset.univ (Fin.init x) (f ∘ Fin.init x) + C (DividedDifference.newton f x) * Lagrange.nodal Finset.univ (Fin.init x)`.
-`DividedDifference.interpolate_snoc_eq` with `x = Fin.snoc (Fin.init x) (x (Fin.last _))`. ★'''
-deps = ["DividedDifference.interpolate_snoc_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.16)'
 
 [[node]]
 id = "equation_8_17"
-kind = "theorem"
-desc = '''(8.17), the Newton divided difference formula: for injective `x : Fin (n + 1) → ℝ`,
-`Lagrange.interpolate Finset.univ x (f ∘ x) = ∑ k : Fin (n + 1), C (f[x_0, …, x_k]) * ω_k` with
-`f[x_0, …, x_k] = DividedDifference.newton f (DividedDifference.prefixNodes x k)` and
-`ω_k = DividedDifference.prefixNodal x k` (`ω_0 = 1`).
-`DividedDifference.interpolate_eq_sum_newton_mul_prefixNodal`. ★'''
-deps = ["DividedDifference.interpolate_eq_sum_newton_mul_prefixNodal"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.17)'
 
 [[node]]
 id = "equation_8_18"
-kind = "theorem"
-desc = '''(8.18): `DividedDifference.newton f x = ∑ i, f (x i) / (derivative (Lagrange.nodal Finset.univ x)).eval (x i)`
-for injective `x`; unfold `DividedDifference.newton` and rewrite the denominators with
-`exercise_8_3`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.exercise_8_3", "DividedDifference.newton"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.18)'
 
 [[node]]
 id = "dividedDifference_perm"
-kind = "theorem"
-desc = '''§8.2.1, property 1: `DividedDifference.newton f (x ∘ σ) = DividedDifference.newton f x` for every
-permutation `σ` of the indices. `DividedDifference.newton_comp_perm`. ★'''
-deps = ["DividedDifference.newton_comp_perm"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.2.1 property 1'
 
 [[node]]
 id = "dividedDifference_linear"
-kind = "theorem"
-desc = '''§8.2.1, property 2: for `f = α g + β h`,
-`DividedDifference.newton f x = α * DividedDifference.newton g x + β * DividedDifference.newton h x`.
-`DividedDifference.newton_add` and `newton_smul`. ★'''
-deps = ["DividedDifference.newton_add", "DividedDifference.newton_smul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.2.1 property 2'
 
 [[node]]
 id = "dividedDifference_leibniz"
-kind = "theorem"
-desc = '''§8.2.1, property 3, the Leibniz formula: for injective `x : Fin (n + 1) → ℝ` and `f = g h`,
-`DividedDifference.newton f x = ∑ j, DividedDifference.newton g (prefixNodes x j) * DividedDifference.newton h (suffixNodes x j)`.
-`DividedDifference.newton_mul`. ★'''
-deps = ["DividedDifference.newton_mul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.2.1 property 3'
 
 [[node]]
 id = "equation_8_19"
-kind = "theorem"
-desc = '''(8.19), the recursive formula (Exercise 8.7 asks for its proof): for injective
-`x : Fin (n + 2) → ℝ`,
-`DividedDifference.newton f x = (DividedDifference.newton f (Fin.tail x) - DividedDifference.newton f (Fin.init x)) / (x (Fin.last (n + 1)) - x 0)`.
-`DividedDifference.newton_succ`. ★'''
-deps = ["DividedDifference.newton_succ"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.19) and Exercise 8.7'
 
 [[node]]
 id = "dividedDifference_eq_zero_of_mem_polyLT"
-kind = "theorem"
-desc = '''§8.2.1, after Example 8.3: `f[x_0, …, x_n] = 0` for every `f ∈ 𝒫_{n-1}`: for `p : ℝ[X]` with
-`p.degree < n` and injective `x : Fin (n + 1) → ℝ`, `DividedDifference.newton (fun t => p.eval t) x = 0`.
-`DividedDifference.newton_eq_zero_of_degree_lt`. ★'''
-deps = ["DividedDifference.newton_eq_zero_of_degree_lt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.2.1'
 
 [[node]]
 id = "equation_8_20"
-kind = "theorem"
-desc = '''(8.20), the interpolation error in divided-difference form: for injective
-`x : Fin (n + 1) → ℝ` and `t` distinct from every node,
-`f t - (Lagrange.interpolate Finset.univ x (f ∘ x)).eval t = (∏ i, (t - x i)) * DividedDifference.newton f (Fin.snoc x t)`.
-`DividedDifference.sub_eval_interpolate_eq_newton`, already in the backbone. ★'''
-deps = ["DividedDifference.sub_eval_interpolate_eq_newton"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.20)'
 
 [[node]]
 id = "equation_8_21"
-kind = "theorem"
-desc = '''(8.21): under the hypotheses of `theorem_8_2` (`f` of class `C^{n+1}` near
-`I_t`, `t` not a node), there is `ξ ∈ I_t` with
-`DividedDifference.newton f (Fin.snoc x t) = iteratedDeriv (n + 1) f ξ / (n + 1)!`.
-`DividedDifference.exists_newton_eq_iteratedDeriv_div` at the `n + 2` nodes `Fin.snoc x t` (the
-book derives it by comparing (8.20) with (8.7); the backbone proves it directly by Rolle, which
-also covers `t` a node). ★'''
-deps = ["DividedDifference.exists_newton_eq_iteratedDeriv_div", "QuarteroniSaccoSaleri.Chapter08.theorem_8_2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.21)'

@@ -1,165 +1,75 @@
 namespace = "QuarteroniSaccoSaleri.Chapter08"
-desc = '''
-QSS §8.1: Lagrange interpolation — existence and uniqueness (Theorem 8.1), the Lagrange form and
-the nodal polynomial, the error formula (Theorem 8.2), the interpolation matrix, the Lebesgue
-constant and the comparison with the best approximation (Property 8.1), the growth of Lebesgue
-constants, Runge's counterexample (Example 8.1) and the stability estimate of §8.1.3; with the
-cited Exercises 1–3.
-
-Conventions: nodes are `x : Fin (n + 1) → ℝ`, injective (the book's "distinct"); the interpolant
-of data `y` is Mathlib's `Lagrange.interpolate Finset.univ x y : ℝ[X]`, of a function `f` it is
-`Lagrange.interpolate Finset.univ x (f ∘ x)`; `𝒫_n` on `[a, b]` is `polyLE (Icc a b) n`; the
-interpolation operator on `C(Icc a b, ℝ)` is `Lagrange.interpolateCLM` of
-`Numlib/Approximation/Interpolation`, whose nodes are points of the subtype `Icc a b`.
-'''
 
 [[node]]
 id = "theorem_8_1"
-kind = "theorem"
-desc = '''Theorem 8.1: for injective `x : Fin (n + 1) → ℝ` and any `y : Fin (n + 1) → ℝ` there is exactly
-one `p : ℝ[X]` with `p.degree ≤ n` and `p.eval (x i) = y i` for all `i`. Existence is
-`Lagrange.interpolate Finset.univ x y` with `Lagrange.eval_interpolate_at_node` and
-`Lagrange.degree_interpolate_le`; uniqueness is `Lagrange.eq_interpolate_of_eval_eq`
-(a polynomial of degree `≤ n` vanishing at `n + 1` points is zero). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 8.1'
 
 [[node]]
 id = "theorem_8_1_isUnisolvent"
-kind = "theorem"
-desc = '''Theorem 8.1 in the abstract form of the backbone: for injective nodes `x : Fin (n + 1) → Icc a b`,
-the point evaluations at the nodes are unisolvent over `polyLE (Icc a b) n`,
-`Approximation.IsUnisolvent (polyLE (Icc a b) n) (fun i => evalCLM (x i))`; this is
-`Lagrange.isUnisolvent_polyLE`. ★'''
-deps = ["Lagrange.isUnisolvent_polyLE"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 8.1'
 
 [[node]]
 id = "equation_8_3"
-kind = "theorem"
-desc = '''(8.3): the characteristic polynomials `l_i = Lagrange.basis Finset.univ x i` (Mathlib's
-`∏_{j ≠ i} (X - C (x j)) / (x i - x j)`) satisfy `(l_i).eval (x j) = if i = j then 1 else 0` for
-injective `x`; `Lagrange.eval_basis_self` and `Lagrange.eval_basis_of_ne`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.3)'
 
 [[node]]
 id = "equation_8_4"
-kind = "theorem"
-desc = '''(8.4), the Lagrange form: `Lagrange.interpolate Finset.univ x y = ∑ i, C (y i) * Lagrange.basis Finset.univ x i`;
-`Lagrange.interpolate_apply`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.4)'
 
 [[node]]
 id = "exercise_8_1"
-kind = "theorem"
-desc = '''Exercise 8.1 (used in the proof of Theorem 8.1): for injective `x : Fin (n + 1) → ℝ` the
-characteristic polynomials form a basis of `𝒫_n`: there is `B : Module.Basis (Fin (n + 1)) ℝ (Polynomial.degreeLT ℝ (n + 1))`
-with `B i = Lagrange.basis Finset.univ x i`. Linear independence: evaluate a vanishing combination
-at `x j` with `equation_8_3`; spanning by dimension (`Polynomial.degreeLT` has dimension `n + 1`,
-`Polynomial.degreeLTEquiv`), or through `Lagrange.funEquivDegreeLT`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.1'
 
 [[node]]
 id = "exercise_8_2"
-kind = "theorem"
-desc = '''Exercise 8.2: the Vandermonde matrix `X = (x_i^j)` of the nodes has
-`det (Matrix.vandermonde x) = ∏ i, ∏ j ∈ Ioi i, (x j - x i)`, and is nonsingular iff the nodes are
-distinct: `Matrix.det_vandermonde` and `Matrix.det_vandermonde_ne_zero_iff`
-(`Mathlib/LinearAlgebra/Vandermonde.lean`). State both clauses (`exercise_8_2_det`,
-`exercise_8_2_ne_zero`). ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.2'
+
+[[node]]
+id = "exercise_8_2_det"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.2'
 
 [[node]]
 id = "equation_8_6"
-kind = "theorem"
-desc = '''(8.6): the nodal polynomial `ω_{n+1} = Lagrange.nodal Finset.univ x` (Mathlib) evaluates to
-`(Lagrange.nodal Finset.univ x).eval t = ∏ i, (t - x i)`; `Lagrange.eval_nodal`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.6)'
 
 [[node]]
 id = "exercise_8_3"
-kind = "theorem"
-desc = '''Exercise 8.3: `(derivative (Lagrange.nodal Finset.univ x)).eval (x i) = ∏ j ∈ univ.erase i, (x i - x j)`;
-`Lagrange.eval_nodal_derivative_eval_node_eq` (Mathlib), and its consequence (8.5) as
-`equation_8_5`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_6"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.3'
 
 [[node]]
 id = "equation_8_5"
-kind = "theorem"
-desc = '''(8.5): for injective `x` and `t` distinct from every node,
-`(Lagrange.interpolate Finset.univ x y).eval t = ∑ i, (Lagrange.nodal Finset.univ x).eval t / ((t - x i) * (derivative (Lagrange.nodal Finset.univ x)).eval (x i)) * y i`;
-`Lagrange.eval_interpolate_not_at_node` with `Lagrange.nodalWeight_eq_eval_derivative_nodal`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.exercise_8_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.5)'
 
 [[node]]
 id = "theorem_8_2"
-kind = "theorem"
-desc = '''Theorem 8.2, the interpolation error: for injective `x : Fin (n + 1) → ℝ`, a point `t`, and
-`f` of class `C^{n+1}` on an open set containing `I_t := Icc (min t (⨅ i, x i)) (max t (⨆ i, x i))`
-(the smallest interval containing the nodes and `t`), there is `ξ ∈ I_t` with
-`f t - (Lagrange.interpolate Finset.univ x (f ∘ x)).eval t = iteratedDeriv (n + 1) f ξ / (n + 1)! * ∏ i, (t - x i)`.
-Backbone: `Lagrange.exists_sub_interpolate_eq_of_contDiffOn` on `[a, b] = I_t` when `I_t` has
-nonempty interior; when `I_t` is a single point (`n = 0`, `t = x 0`) both sides vanish and any `ξ`
-works. The book's `f ∈ C^{n+1}(I_x)` on a closed interval is read as `ContDiffOn` on an open
-neighbourhood, as `AtkinsonHan.Chapter03.proposition_3_2_4` reads the same statement (with a
-global `ContDiff`). ★★'''
-deps = ["Lagrange.exists_sub_interpolate_eq_of_contDiffOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 8.2'
 
 [[node]]
 id = "IsInterpMatrix"
-kind = "definition"
-desc = '''The interpolation matrix on `[a, b]` of §8.1.2: `X : ℕ → ℕ → Icc a b` such that for every
-`n` the row `fun j : Fin (n + 1) => X n j` is injective (the entries beyond `j = n` are unused,
-which is the "lower triangular" of the book). `IsInterpMatrix X` is that property. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2'
 
 [[node]]
 id = "interpRow"
-kind = "definition"
-desc = '''`interpRow X n := Lagrange.interpolateCLM (fun j : Fin (n + 1) => X n j) : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)`,
-the interpolation operator `Π_n` of the `(n+1)`-st row of `X`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.IsInterpMatrix", "Lagrange.interpolateCLM"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2'
 
 [[node]]
 id = "lebesgueConstant"
-kind = "definition"
-desc = '''(8.11): `lebesgueConstant X n := sSup (Set.range fun t : Icc a b => ∑ j, |Lagrange.basisCM (row n) j t|)`,
-the maximum over `[a, b]` of the Lebesgue function `∑_j |l_j^{(n)}|`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.IsInterpMatrix", "Lagrange.basisCM"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.11)'
 
 [[node]]
 id = "lebesgueConstant_eq_norm"
-kind = "theorem"
-desc = '''For `hX : IsInterpMatrix X` and `a < b`, `lebesgueConstant X n = ‖interpRow X n‖`:
-`Lagrange.norm_interpolateCLM`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant", "QuarteroniSaccoSaleri.Chapter08.interpRow", "Lagrange.norm_interpolateCLM"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.11)'
+
+[[node]]
+id = "sum_abs_basisCM_le_lebesgueConstant"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.11)'
 
 [[node]]
 id = "property_8_1"
-kind = "theorem"
-desc = '''Property 8.1: for `a < b`, `hX : IsInterpMatrix X`, `f : C(Icc a b, ℝ)` and every `n`,
-`‖f - interpRow X n f‖ ≤ (1 + lebesgueConstant X n) * Metric.infDist f (polyLE (Icc a b) n)`
-— `E_{n,∞}(X) ≤ E_n^* (1 + Λ_n(X))`, with `E_n^* = ‖f - p_n^*‖_∞ = infDist f 𝒫_n` (the best
-approximation `p_n^*` exists and is unique by `existsUnique_isBestApprox_polyLE` of
-`Numlib/Approximation/Chebyshev`; state `property_8_1_bestApprox` with `‖f - p‖` for the best
-approximation `p` as a second clause). The Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem`
-for the projection `interpRow X n` (`Lagrange.isIdempotentElem_interpolateCLM`), whose range is
-`polyLE (Icc a b) n` (`Lagrange.range_interpolateCLM`) and whose norm is the Lebesgue constant
-(`lebesgueConstant_eq_norm`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.interpRow", "QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_eq_norm", "norm_sub_apply_le_of_isIdempotentElem", "Lagrange.isIdempotentElem_interpolateCLM", "Lagrange.range_interpolateCLM", "existsUnique_isBestApprox_polyLE"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1'
+
+[[node]]
+id = "property_8_1_bestApprox"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1'
 
 [[node]]
@@ -209,20 +119,17 @@ monotone-on-pieces integrands show the exponent is `(n/10)(φ(t) - ψ) - O(log n
 (iv) at `t = √20 ≈ 4.47` (irrational, so never a node), `φ(t) ≈ 11.0 > ψ` with margin `≈ 2`, which
 crude bounds on `log` and `arctan` certify. The exact threshold `3.6334…` is where `φ(t) = ψ` and is
 not part of the statement. ★★★ (500–800 lines; the book quotes the fact without proof, and it is
-optional — see the report's open questions)'''
+optional — see the report's open questions)
+
+Blocked: not attempted this round; the engine `DividedDifference.newton_inv_sub` (real) and
+`DividedDifference.newtonOn_inv_sub` (any field, so over `ℂ` with `Finset.univ`) now exist in
+`Numlib/Approximation/NewtonForm`, and what remains is the Riemann-sum estimate of the exponent and
+the certified margin at `t = √20`, 500–800 lines that nothing downstream uses.'''
 deps = ["DividedDifference.sub_eval_interpolate_eq_newton", "DividedDifference.newton_inv_sub"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
 
 [[node]]
 id = "interpRow_sub_le_lebesgueConstant"
-kind = "theorem"
-desc = '''The stability estimate of §8.1.3: for `hX : IsInterpMatrix X` and `f g : C(Icc a b, ℝ)`,
-`‖interpRow X n f - interpRow X n g‖ ≤ lebesgueConstant X n * (⨆ i : Fin (n + 1), |f (X n i) - g (X n i)|)`
-(the supremum over the finitely many nodes is a maximum). Pointwise:
-`|∑_j (f(x_j) - g(x_j)) l_j(t)| ≤ max_j |f(x_j) - g(x_j)| · ∑_j |l_j(t)|` and `∑_j |l_j(t)| ≤ Λ_n`
-by `le_csSup` (`Lagrange.interpolateCLM_apply`, `bddAbove` of the Lebesgue function on a compact
-set). The book's remark that `Λ_n` "plays the role of the condition number" is this bound. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.interpRow", "QuarteroniSaccoSaleri.Chapter08.lebesgueConstant", "Lagrange.interpolateCLM_apply"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3'
 
 [[node]]

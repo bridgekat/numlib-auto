@@ -1,195 +1,142 @@
 namespace = "DividedDifference"
-desc = '''
-# The Newton form of the interpolating polynomial
 
-The Newton divided difference `f[x_0, …, x_m]` exists in `Numlib/Approximation/DividedDifference`
-as `DividedDifference.newton`, in its explicit symmetric form `∑ᵢ f(xᵢ)/∏_{j≠i}(xᵢ - xⱼ)`, together
-with `newton_eq_coeff` (it is the coefficient of `X^m` in the interpolant) and the
-divided-difference error form `sub_eval_interpolate_eq_newton`. This module is the rest of the
-classical theory of that object, Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §8.2, and Kress
-§8.2: the Newton form of the interpolant, the recursion in the nodes, the algebraic rules
-(symmetry, linearity, Leibniz), the mean-value form `f[x_0, …, x_m] = f^{(m)}(ξ)/m!`, the divided
-differences of `t ↦ 1/(z - t)` (the engine of Runge-type divergence arguments), and confluent
-divided differences at repeated nodes, which B-splines with coincident knots need.
+[[node]]
+id = "_root_.Polynomial.iterate_derivative_eq_C_of_natDegree_le"
 
-It is a new module rather than an extension of `DividedDifference` because that module is done and
-its first half is about the two-node Hermite–Genocchi integrals; nothing there needs any of this.
+[[node]]
+id = "_root_.Lagrange.interpolate_map"
 
-## Conventions
+[[node]]
+id = "_root_.Lagrange.nodal_map"
 
-Nodes are `v : Fin (m + 1) → ℝ`; `Fin.init v`, `Fin.tail v` and `Fin.snoc v t` drop the last, drop
-the first and append a node, so that the recursion (8.19) reads
-`newton f v = (newton f (Fin.tail v) - newton f (Fin.init v)) / (v (last) - v 0)`. The truncations
-`prefixNodes v k = (x_0, …, x_k)` and `suffixNodes v k = (x_k, …, x_m)` carry the Newton sum and the
-Leibniz formula. The interpolant is Mathlib's `Lagrange.interpolate Finset.univ v (f ∘ v)` and the
-nodal polynomial is `Lagrange.nodal Finset.univ v`, as in `DividedDifference`.
+[[node]]
+id = "_root_.Lagrange.interpolate_insert_eq"
 
-Prototype: `notes/qss/ch08/proto/NewtonForm.lean` of the chapter 8 planning pass elaborates every statement below
-with `sorry`.
-'''
+[[node]]
+id = "newtonOn"
+
+[[node]]
+id = "newton_eq_newtonOn"
+
+[[node]]
+id = "newtonOn_map"
+
+[[node]]
+id = "newtonOn_eq_coeff"
+
+[[node]]
+id = "newtonOn_eval_eq_coeff"
+
+[[node]]
+id = "newtonOn_add"
+
+[[node]]
+id = "newtonOn_smul"
+
+[[node]]
+id = "newtonOn_eq_sub_div"
+
+[[node]]
+id = "interpolate_insert_eq_newtonOn"
+
+[[node]]
+id = "interpolate_eq_sum_newtonOn_mul_nodal"
+
+[[node]]
+id = "interpolate_eq_sum_newtonOn_mul_nodal'"
+
+[[node]]
+id = "newtonOn_mul"
+
+[[node]]
+id = "newtonOn_inv_sub"
 
 [[node]]
 id = "prefixNodes"
-kind = "definition"
-desc = '''`prefixNodes v k : Fin (k + 1) → ℝ` is the first `k + 1` nodes `x_0, …, x_k` of
-`v : Fin (m + 1) → ℝ`, for `k : Fin (m + 1)`; `fun i => v (Fin.castLE k.isLt i)`. ★'''
-deps = []
 
 [[node]]
 id = "suffixNodes"
-kind = "definition"
-desc = '`suffixNodes v k : Fin (m - k + 1) → ℝ` is the last nodes `x_k, …, x_m` of `v`. ★'
-deps = []
 
 [[node]]
 id = "prefixNodal"
-kind = "definition"
-desc = '''`prefixNodal v k = ∏_{j < k} (X - C (v j))`, the nodal polynomial `ω_k` of the first `k`
-nodes, with `ω_0 = 1`; `prefixNodal v (Fin.last m) * (X - C (v (Fin.last m)))` is
-`Lagrange.nodal Finset.univ v`. ★'''
-deps = []
+
+[[node]]
+id = "newton_prefixNodes"
+
+[[node]]
+id = "newton_suffixNodes"
+
+[[node]]
+id = "prefixNodal_eq_nodal"
+
+[[node]]
+id = "prefixNodal_last_mul"
+
+[[node]]
+id = "newton_tail"
+
+[[node]]
+id = "newton_init"
 
 [[node]]
 id = "interpolate_snoc_eq"
-kind = "theorem"
-desc = '''**Adding a node** (QSS (8.16)): for `v : Fin (m + 1) → ℝ` and `t` such that `Fin.snoc v t`
-is injective, `Lagrange.interpolate Finset.univ (Fin.snoc v t) (f ∘ Fin.snoc v t) =
-Lagrange.interpolate Finset.univ v (f ∘ v) + C (newton f (Fin.snoc v t)) * Lagrange.nodal Finset.univ v`.
-Proof: the difference of the two interpolants vanishes at `x_0, …, x_m` and has degree `≤ m + 1`,
-so it is `c · ω_{m+1}` with `c` the coefficient of `X^{m+1}`, which is `newton f (Fin.snoc v t)` by
-`newton_eq_coeff` (the lower interpolant has degree `≤ m`). This is the argument already inside
-`sub_eval_interpolate_eq_newton`, now stated as a polynomial identity. ★★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_eq_coeff"]
 
 [[node]]
 id = "eval_interpolate_snoc_sub"
-kind = "theorem"
-desc = '''QSS (8.14): with the hypotheses of `interpolate_snoc_eq`,
-`newton f (Fin.snoc v t) = (f t - (Lagrange.interpolate Finset.univ v (f ∘ v)).eval t) / ∏ i, (t - v i)`;
-evaluate `interpolate_snoc_eq` at `t`, where the enlarged interpolant takes the value `f t`, and
-divide by the nonzero `ω_{m+1}(t)`. ★'''
-deps = ["DividedDifference.interpolate_snoc_eq"]
 
 [[node]]
 id = "interpolate_eq_sum_newton_mul_prefixNodal"
-kind = "theorem"
-desc = '''**The Newton divided difference formula** (QSS (8.17)): for injective `v : Fin (m + 1) → ℝ`,
-`Lagrange.interpolate Finset.univ v (f ∘ v) = ∑ k : Fin (m + 1), C (newton f (prefixNodes v k)) * prefixNodal v k`.
-Induction on `m` with `interpolate_snoc_eq` applied to `Fin.init v` and `v (Fin.last m)`. ★★'''
-deps = ["DividedDifference.interpolate_snoc_eq", "DividedDifference.prefixNodes", "DividedDifference.prefixNodal"]
 
 [[node]]
 id = "newton_succ"
-kind = "theorem"
-desc = '''**The recursion** (QSS (8.19), Exercise 8.7): for injective `v : Fin (m + 2) → ℝ`,
-`newton f v = (newton f (Fin.tail v) - newton f (Fin.init v)) / (v (Fin.last (m + 1)) - v 0)`.
-Proof: the polynomial `(X - x_0) Π[x_1..x_{m+1}] - (X - x_{m+1}) Π[x_0..x_m]` has degree `≤ m + 1`
-and takes the value `(x_{m+1} - x_0) f(x_i)` at every node, so by uniqueness it is
-`(x_{m+1} - x_0) Π[x_0..x_{m+1}]`; compare the coefficients of `X^{m+1}` with `newton_eq_coeff`
-three times. Alternatively a direct manipulation of the explicit sum, splitting off the terms
-`i = 0` and `i = m + 1`. ★★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_eq_coeff"]
 
 [[node]]
 id = "newton_comp_perm"
-kind = "theorem"
-desc = '''**Symmetry** (QSS §8.2.1, property 1): `newton f (v ∘ σ) = newton f v` for every permutation
-`σ : Equiv.Perm (Fin (m + 1))` — no injectivity needed, since the explicit sum is visibly symmetric:
-`Equiv.sum_comp` and `Finset.prod_equiv` on the erased set. ★'''
-deps = ["DividedDifference.newton"]
 
 [[node]]
 id = "newton_add"
-kind = "theorem"
-desc = '''**Linearity** (QSS §8.2.1, property 2): `newton (f + g) v = newton f v + newton g v`;
-`Finset.sum_add_distrib` and `add_div`. ★'''
-deps = ["DividedDifference.newton"]
 
 [[node]]
 id = "newton_smul"
-kind = "theorem"
-desc = '`newton (fun t => c * f t) v = c * newton f v`; `Finset.mul_sum`. ★'
-deps = ["DividedDifference.newton"]
 
 [[node]]
 id = "newton_mul"
-kind = "theorem"
-desc = '''**The Leibniz formula** (QSS §8.2.1, property 3): for injective `v : Fin (m + 1) → ℝ`,
-`newton (fun t => g t * h t) v = ∑ j : Fin (m + 1), newton g (prefixNodes v j) * newton h (suffixNodes v j)`.
-Proof (Steffensen): let `q` be the product of the Newton form of `Π_m g` at `x_0, x_1, …` and the
-Newton form of `Π_m h` at `x_m, x_{m-1}, …` (the reversed nodes; `newton_comp_perm` identifies the
-reversed divided differences with `newton h (suffixNodes v j)`). At a node `x_i` the term
-`ω_j(x_i) ω̃_l(x_i)` vanishes unless `j ≤ i ≤ l`, so the terms with `j > l` vanish at every node;
-dropping them leaves a polynomial of degree `≤ m` taking the values `g(x_i) h(x_i)`, hence equal to
-`Π_m(gh)`, and its coefficient of `X^m` comes only from the terms `j = l`, which is the displayed
-sum; conclude with `newton_eq_coeff`. ★★★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_eq_coeff", "DividedDifference.interpolate_eq_sum_newton_mul_prefixNodal", "DividedDifference.newton_comp_perm", "DividedDifference.prefixNodes", "DividedDifference.suffixNodes"]
+
+[[node]]
+id = "newton_eval_eq_coeff"
 
 [[node]]
 id = "newton_eq_zero_of_degree_lt"
-kind = "theorem"
-desc = '''For a polynomial `p` with `p.degree < m` and injective `v : Fin (m + 1) → ℝ`,
-`newton (fun t => p.eval t) v = 0` (QSS §8.2.1, the remark after Example 8.3): the interpolant of `p`
-at `m + 1` nodes is `p` itself (`Lagrange.eq_interpolate_of_eval_eq`), whose coefficient of `X^m` is
-`0`; `newton_eq_coeff`. State also `newton_eq_leadingCoeff` for `p.degree = m`. ★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_eq_coeff"]
+
+[[node]]
+id = "newton_eval_eq_leadingCoeff"
+
+[[node]]
+id = "exists_newton_eq_iteratedDeriv_div_of_contDiffOn"
 
 [[node]]
 id = "exists_newton_eq_iteratedDeriv_div"
-kind = "theorem"
-desc = '''**The mean-value form** (QSS (8.21), Kress Thm 8.9): for `a < b`, `f` of class `C^m`,
-injective `v : Fin (m + 1) → ℝ` with `v i ∈ Icc a b`, there is `ξ ∈ Icc a b` with
-`newton f v = iteratedDeriv m f ξ / m!`. Proof: `f - Π_m f` vanishes at the `m + 1` nodes, so by the
-generalized Rolle theorem `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` (with `n := m - 1`) its
-`m`-th derivative vanishes at some `ξ ∈ Ioo a b`; `(Π_m f)^{(m)} = m! · coeff m = m! · newton f v` by
-`newton_eq_coeff` and `Polynomial.iteratedDeriv_eval` for a polynomial of degree `≤ m`. The case
-`m = 0` is `newton f v = f (v 0)`. The book's (8.21) is this at the `n + 2` nodes `x_0, …, x_n, x`,
-combined with `sub_eval_interpolate_eq_newton`. ★★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_eq_coeff", "exists_iteratedDeriv_eq_zero_of_forall_eq_zero"]
+
+[[node]]
+id = "exists_newton_eq_iteratedDeriv_div_of_contDiff"
 
 [[node]]
 id = "abs_newton_le"
-kind = "theorem"
-desc = '''The bound read off `exists_newton_eq_iteratedDeriv_div`: if `|f^{(m)}| ≤ M` on `Icc a b`
-then `|newton f v| ≤ M / m!`. ★'''
-deps = ["DividedDifference.exists_newton_eq_iteratedDeriv_div"]
 
 [[node]]
 id = "newton_inv_sub"
-kind = "theorem"
-desc = '''**Divided differences of a Cauchy kernel**, stated over a field `K` (the definition of
-`newton` generalizes verbatim; state this one for `K` or restate `newton` over `K` when the module
-is written): for `z` distinct from every node, `newton (fun t => 1 / (z - t)) v = 1 / ∏ i, (z - v i)`.
-Induction with `newton_succ`. With `K = ℂ` and `z = i` it turns the Lagrange error of Runge's
-function `1/(1 + t²) = Re (1/(1 - i t))` into the ratio `ω_{n+1}(x) / ω_{n+1}(i)`, which is the
-real-variable route to Runge's divergence (QSS Example 8.1). ★★'''
-deps = ["DividedDifference.newton", "DividedDifference.newton_succ"]
+
+[[node]]
+id = "hasDerivAt_newton_snoc"
 
 [[node]]
 id = "confluent"
-kind = "definition"
-desc = '''**Confluent divided differences** (QSS Remark 8.3, with the corrected diagonal value): by
-recursion on `m`, `confluent f v = f (v 0)` for one node, and for `v : Fin (m + 2) → ℝ`
-`confluent f v = iteratedDeriv (m + 1) f (v 0) / (m + 1)!` when `v 0 = v (Fin.last (m + 1))` (so,
-for nondecreasing `v`, when all nodes coincide) and `(confluent f (Fin.tail v) - confluent f (Fin.init v)) /
-(v (last) - v 0)` otherwise. The book prints `f^{(n+1)}(x_0)/(n+1)!` for `n + 1` coincident nodes
-`x_0 = ⋯ = x_n`; the correct value of that `n`-th divided difference is `f^{(n)}(x_0)/n!`
-(`notes/book-errata.md`). ★'''
-deps = []
 
 [[node]]
 id = "confluent_eq_newton"
-kind = "theorem"
-desc = '''At injective nodes the confluent divided difference is `newton f v`: induction with
-`newton_succ`, the diagonal branch never firing. ★'''
-deps = ["DividedDifference.confluent", "DividedDifference.newton_succ"]
 
 [[node]]
 id = "confluent_const"
-kind = "theorem"
-desc = '''At `m + 1` copies of one node `x`, `confluent f (fun _ => x) = iteratedDeriv m f x / m!`
-(for `m = 0`, `f x`). ★'''
-deps = ["DividedDifference.confluent"]
 
 [[node]]
 id = "continuous_confluent"
@@ -200,5 +147,9 @@ Hermite–Genocchi representation `confluent f v = ∫_{Δ_m} f^{(m)}(∑ θ_i v
 simplex, continuous in `v` by dominated convergence; the two-node case is
 `DividedDifference.firstOrder` and `continuous_firstOrder`. Worth stating as
 `confluent_eq_integral_simplex` when written. ★★★ (no book statement of chapter 8 needs it;
-optional)'''
+optional)
+
+Blocked: not attempted this round, being optional and a development of its own (the simplex
+integral and its dominated-convergence continuity, roughly 300 lines); the rest of the module
+does not depend on it.'''
 deps = ["DividedDifference.confluent", "DividedDifference.exists_newton_eq_iteratedDeriv_div"]

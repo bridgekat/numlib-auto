@@ -1,126 +1,56 @@
-desc = '''
-# Bernstein polynomials and Bézier curves
-
-The recursion `b_{n,k} = (1 - t) b_{n-1,k} + t b_{n-1,k-1}` of the Bernstein polynomials, their
-degree bound and their basis property, and Bézier curves `B_n(P; t) = ∑_k b_{n,k}(t) P_k` with de
-Casteljau's evaluation, the endpoint, reversal, convex-hull and affine-equivariance properties.
-Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §8.7.1; Farin, *Curves and Surfaces for CAGD*,
-chapters 4–5.
-
-Mathlib has `bernsteinPolynomial R n ν : R[X]` (`Mathlib/RingTheory/Polynomial/Bernstein.lean`)
-with `eval_at_0`, `eval_at_1`, `derivative_succ`, `sum` (`∑_ν b_{n,ν} = 1`), `linearIndependent`,
-and the probabilistic `bernstein n ν : C(I, ℝ)` with `bernsteinApproximation` and its uniform
-convergence (`Mathlib/Analysis/SpecialFunctions/Bernstein.lean`); it has neither the recursion nor
-a basis statement nor any curve. The three polynomial lemmas below are Mathlib-shaped and belong in
-the `bernsteinPolynomial` namespace; the curve is `Bezier.curve` in a real vector space `E`.
-
-Separate from `Numlib/Approximation/BSpline` because nothing here needs a knot sequence — the
-Bernstein basis is the B-spline basis on the two knots `0, 1` each of multiplicity `n + 1`, a fact
-that can be recorded later as `BSpline.bspline_eq_bernstein` without either module importing the
-other.
-
-Prototype: `notes/qss/ch08/proto/Bezier.lean` of the chapter 8 planning pass elaborates every statement below
-with `sorry`.
-'''
-
 [[node]]
 id = "bernsteinPolynomial.succ_succ"
-kind = "theorem"
-desc = '''**The Bernstein recursion** (QSS §8.7.1): over a commutative ring,
-`bernsteinPolynomial R (n + 1) (k + 1) = (1 - X) * bernsteinPolynomial R n (k + 1) + X * bernsteinPolynomial R n k`,
-and `bernsteinPolynomial.succ_zero : bernsteinPolynomial R (n + 1) 0 = (1 - X) * bernsteinPolynomial R n 0`.
-Unfold `bernsteinPolynomial` (`C (n.choose k) * X^k * (1 - X)^(n - k)`) and use Pascal's rule
-`Nat.choose_succ_succ`; the case `k + 1 > n` is `bernsteinPolynomial.eq_zero_of_lt`. ★'''
-deps = []
+
+[[node]]
+id = "bernsteinPolynomial.succ_zero"
 
 [[node]]
 id = "bernsteinPolynomial.degree_le"
-kind = "theorem"
-desc = '''`(bernsteinPolynomial R n k).degree ≤ n` for a nontrivial `R`; `Polynomial.degree_mul_le`,
-`degree_pow_le`. ★'''
-deps = []
+
+[[node]]
+id = "bernsteinPolynomial.linearIndependent'"
+
+[[node]]
+id = "Polynomial.toContinuousMapOnAlgHom_injective"
+
+[[node]]
+id = "finrank_polyLE"
+
+[[node]]
+id = "bernsteinPolynomial.toPolyLE"
 
 [[node]]
 id = "bernsteinPolynomial.exists_basis_polyLE"
-kind = "theorem"
-desc = '''**The Bernstein basis** ("`{b_{n,k}}` provides a basis for `P_n`"): there is a
-`Module.Basis (Fin (n + 1)) ℝ (polyLE (Icc (0:ℝ) 1) n)` whose `k`-th vector is
-`t ↦ (bernsteinPolynomial ℝ n k).eval t`. From `bernsteinPolynomial.linearIndependent` (Mathlib,
-in `ℝ[X]`) transported to `polyLE` through `Polynomial.toContinuousMapOnAlgHom`, which is injective
-on an infinite set, and `finrank (polyLE X n) = n + 1` for an infinite `X` (no such lemma is stated in the backbone —
-`Lagrange.range_interpolateCLM` of `Numlib/Approximation/Interpolation` exhibits `polyLE X n` as
-the range of a rank-`(n+1)` projection, or transport `Polynomial.degreeLT`'s dimension through the
-injective `Polynomial.toContinuousMapOnAlgHom`; state `finrank_polyLE` as a helper). ★★'''
-deps = ["bernsteinPolynomial.degree_le", "polyLE"]
 
 [[node]]
 id = "Bezier.curve"
-kind = "definition"
-desc = '''**The Bézier curve** (QSS (8.58)): `Bezier.curve P t = ∑ k : Fin (n + 1), (bernsteinPolynomial ℝ n k).eval t • P k : E`
-for control points `P : Fin (n + 1) → E` in a real vector space `E`. ★'''
-deps = []
 
 [[node]]
 id = "Bezier.casteljauStep"
-kind = "definition"
-desc = '''`Bezier.casteljauStep t P i = (1 - t) • P i.castSucc + t • P i.succ` for `P : Fin (n + 2) → E`,
-the points `P_{i,1}(t)` of QSS §8.7.1. ★'''
-deps = []
 
 [[node]]
 id = "Bezier.casteljau"
-kind = "definition"
-desc = '''**De Casteljau's algorithm**: `Bezier.casteljau t P : E` by recursion on `n`, `P 0` for a single
-point and `casteljau t (casteljauStep t P)` otherwise — the point `P_{0,n}(t)`. ★'''
-deps = ["Bezier.casteljauStep"]
 
 [[node]]
 id = "Bezier.curve_succ"
-kind = "theorem"
-desc = '''**The Bézier recursion**: for `P : Fin (n + 2) → E`,
-`curve P t = (1 - t) • curve (Fin.init P) t + t • curve (Fin.tail P) t`; from
-`bernsteinPolynomial.succ_succ` and `succ_zero`, splitting the sum with `Fin.sum_univ_castSucc` /
-`Fin.sum_univ_succ`. ★★'''
-deps = ["Bezier.curve", "bernsteinPolynomial.succ_succ"]
+
+[[node]]
+id = "Bezier.curve_casteljauStep"
 
 [[node]]
 id = "Bezier.casteljau_eq_curve"
-kind = "theorem"
-desc = '''**De Casteljau evaluates the Bézier curve** (QSS §8.7.1, "`P_{0,n}(t) = B_n(P_0, …, P_n; t)`"):
-`casteljau t P = curve P t`. Induction on `n`: `curve (casteljauStep t P) t = curve P t` is
-`curve_succ` read for the curve of the stepped polygon, i.e. the identity
-`∑_k b_{n,k} ((1-t) P_k + t P_{k+1}) = ∑_k b_{n+1,k} P_k`, which is again the recursion. ★★'''
-deps = ["Bezier.casteljau", "Bezier.curve_succ"]
 
 [[node]]
 id = "Bezier.curve_zero"
-kind = "theorem"
-desc = '''`curve P 0 = P 0` and `Bezier.curve_one : curve P 1 = P (Fin.last n)`;
-`bernsteinPolynomial.eval_at_0`, `eval_at_1`. ★'''
-deps = ["Bezier.curve"]
+
+[[node]]
+id = "Bezier.curve_one"
 
 [[node]]
 id = "Bezier.curve_rev"
-kind = "theorem"
-desc = '''**Reversal** (QSS §8.7.1: "`B_n(P_0, …, P_n; t)` coincides with `B_n(P_n, …, P_0; t)` apart
-from the orientation"): `curve (P ∘ Fin.rev) t = curve P (1 - t)`; `bernsteinPolynomial.flip`
-(`b_{n,k}(1 - t) = b_{n,n-k}(t)`) and reindexing the sum by `Fin.rev`. ★'''
-deps = ["Bezier.curve"]
 
 [[node]]
 id = "Bezier.curve_mem_convexHull"
-kind = "theorem"
-desc = '''**Convex hull property** (QSS §8.7.1, "a weighted average of the points `P_k`"): for
-`t ∈ Icc 0 1`, `curve P t ∈ convexHull ℝ (Set.range P)`: the weights `b_{n,k}(t)` are nonnegative
-on `[0, 1]` (`bernstein_nonneg` in `Mathlib/Analysis/SpecialFunctions/Bernstein.lean`, or directly)
-and sum to `1` (`bernsteinPolynomial.sum`); `Convex.sum_mem (convex_convexHull ℝ _)`. ★'''
-deps = ["Bezier.curve"]
 
 [[node]]
 id = "Bezier.curve_affine"
-kind = "theorem"
-desc = '''**Affine equivariance**: for `L : E →ₗ[ℝ] F` and `c : F`,
-`curve (fun k => L (P k) + c) t = L (curve P t) + c`; linearity of the sum and
-`bernsteinPolynomial.sum`. It is the invariance under changes of the coordinate system that
-motivates parametric curves in QSS §8.7. ★'''
-deps = ["Bezier.curve"]
