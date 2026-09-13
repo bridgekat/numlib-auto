@@ -35,54 +35,39 @@ id = "peacemanRachfordConst"
 
 [[node]]
 id = "peacemanRachfordTwo"
-kind = "definition"
-desc = '''The two-parameter Peaceman–Rachford sweep of Quarteroni–Sacco–Saleri (4.50): for `H V : E →L[𝕜] E`
-and `r₁ r₂ : ℝ`, the operator of the composition of `(H + r₁) x_{k+1/2} = (r₁ - V) x_k + b` and
-`(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b`, namely
-`peacemanRachfordTwo H V r₁ r₂ = Ring.inverse (V + r₂ • 1) * (H - r₂ • 1) * Ring.inverse (H + r₁ • 1) * (V - r₁ • 1)`
-(the book's `α_i = 1/r_i`, `A₁ = H`, `A₂ = V`, up to the sign convention `(I - α A) = -α (A - 1/α)`
-which cancels between the two factors), together with its constant term
-`peacemanRachfordTwoConst H V r₁ r₂ b`. `peacemanRachford H V r = peacemanRachfordTwo H V r r`
-(`peacemanRachfordTwo_self`). ★'''
-deps = ["Stationary.peacemanRachford", "Stationary.peacemanRachfordConst"]
+
+[[node]]
+id = "peacemanRachfordTwoConst"
+
+[[node]]
+id = "peacemanRachfordTwoSweep"
+
+[[node]]
+id = "peacemanRachfordTwo_step_eq"
 
 [[node]]
 id = "peacemanRachfordTwo_self"
-kind = "theorem"
-desc = '''`peacemanRachfordTwo H V r r = peacemanRachford H V r`, and likewise for the constants; `rfl` up to
-unfolding. ★'''
-deps = ["Stationary.peacemanRachfordTwo", "Stationary.peacemanRachford"]
+
+[[node]]
+id = "peacemanRachfordTwoConst_self"
+
+[[node]]
+id = "peacemanRachfordTwo_conj"
+
+[[node]]
+id = "spectralRadius_le_nnnorm_conj"
+
+[[node]]
+id = "le_of_mem_spectrum_real_of_isCoerciveWith"
+
+[[node]]
+id = "mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy"
 
 [[node]]
 id = "norm_cayleyTwo_le"
-kind = "theorem"
-desc = '''For a symmetric `A : E →L[ℂ] E` on a finite-dimensional space with spectrum in `[γ, δ]` and
-`r₁, r₂ > 0`, `‖(A - r₂ • 1) * Ring.inverse (A + r₁ • 1)‖ ≤ sSup ((fun t => |t - r₂| / (t + r₁)) '' spectrum ℝ A)`
-(equality in fact): a rational function of a symmetric operator is symmetric with the transformed
-spectrum, and the norm of a symmetric operator is its spectral radius. The one-parameter case is
-the strict contraction `norm_cayley_lt_one`; this is its two-parameter, spectral form. ★★'''
-deps = ["Stationary.norm_cayley_lt_one"]
 
 [[node]]
 id = "spectralRadius_peacemanRachfordTwo_le"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri §4.3.6, the bound on `ρ(B)`: for symmetric coercive `H`, `V` on a
-finite-dimensional complex inner product space and `r₁, r₂ > 0`,
-`spectralRadius ℂ (peacemanRachfordTwo H V r₁ r₂) ≤ (⨆ λ ∈ σ(H), |λ - r₂| / (λ + r₁)) * (⨆ μ ∈ σ(V), |μ - r₁| / (μ + r₂))`
-(in the book's `α_i = 1/r_i` these are `|1 - α₂ λ|/|1 + α₁ λ|` and `|1 - α₁ μ|/|1 + α₂ μ|`, with
-`ENNReal.ofReal` around the product). `B` is similar (conjugate by `V + r₂`) to
-`(H - r₂)(H + r₁)⁻¹ (V - r₁)(V + r₂)⁻¹`, whose norm is at most the product of the two norms of
-`norm_cayleyTwo_le`; `spectralRadius_le_opNorm`. No commutativity of `H` and `V` is used, as in the
-one-parameter proof. ★★'''
-deps = ["Stationary.peacemanRachfordTwo", "Stationary.norm_cayleyTwo_le", "Stationary.spectralRadius_peacemanRachford_lt_one"]
 
 [[node]]
 id = "spectralRadius_peacemanRachford_le_of_spectrum_subset"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri §4.3.6, last display: if `H`, `V` are symmetric with spectra in `[γ, δ]`,
-`0 < γ ≤ δ`, then for `r = √(γ δ)` (the book's `α₁ = α₂ = 1/√(δγ)`)
-`spectralRadius ℂ (peacemanRachford H V r) ≤ ENNReal.ofReal (((1 - √(γ/δ)) / (1 + √(γ/δ))) ^ 2)`.
-From `spectralRadius_peacemanRachfordTwo_le` at `r₁ = r₂ = r`: `t ↦ |t - r|/(t + r)` on `[γ, δ]`
-is maximized at the endpoints, where it equals `(1 - √(γ/δ))/(1 + √(γ/δ))` at both. The book's
-proviso "provided `γ/δ → 0` as the size grows" is not a hypothesis of the inequality. ★★'''
-deps = ["Stationary.spectralRadius_peacemanRachfordTwo_le", "Stationary.peacemanRachfordTwo_self"]

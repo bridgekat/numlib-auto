@@ -44,14 +44,6 @@ id = "IsConsistentlyOrdered.spectralRadius_sor_lt_one"
 
 [[node]]
 id = "IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor"
-kind = "theorem"
-desc = '''The forward direction of Quarteroni–Sacco–Saleri Property 4.4 (and of Kress Thm 4.15's
-"if and only if"): for a consistently ordered `A : Matrix n n ℂ` whose Jacobi iteration matrix `B`
-has real spectrum, `0 < ω < 2` (the other range being excluded by Kahan) and
-`spectralRadius ℂ (sorIterationMatrix A ω) < 1` imply `spectralRadius ℂ B < 1`. By Young's formula
-`spectralRadius_sor_eq`, `ρ(G_ω) = youngRadius ω ρ(B)`; if `r = ρ(B) ≥ 1` then with `t = ω r / 2`
-the discriminant `d = t² - (ω - 1) ≥ (ω/2 - 1)² ≥ 0` and
-`youngRadius ω r = (t + √d)² ≥ (ω/2 + |1 - ω/2|)² ≥ 1`, contradiction. Together with
-`spectralRadius_sor_lt_one` (the converse) and `lt_two_of_sorSplitting_complexSpectralRadius_lt_one`
-this gives the book's equivalence "SOR converges ⟺ `ρ(B_J) < 1` and `0 < ω < 2`". ★★'''
-deps = ["Matrix.IsConsistentlyOrdered", "Matrix.IsConsistentlyOrdered.spectralRadius_sor_eq", "Matrix.youngRadius", "Matrix.sorIterationMatrix", "Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one"]
+
+[[node]]
+id = "one_le_youngRadius"

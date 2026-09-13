@@ -270,15 +270,6 @@ private theorem isUnit_smul_iff {c : ℂ} (hc : c ≠ 0) (M : Matrix n n ℂ) :
     rw [Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
   rw [hsm, ← hc'.unit_spec, Units.isUnit_units_mul]
 
-/-- `D + ω L'` is a unit, being `ω` times the `M` factor of the SOR splitting. -/
-private theorem isUnit_diagPart_add_smul_strictLower {A : Matrix n n ℂ} (h : IsUnit (diagPart A))
-    {ω : ℂ} (hω : ω ≠ 0) : IsUnit (diagPart A + ω • strictLower A) := by
-  have hm : diagPart A + ω • strictLower A = ω • (sorSplitting A h hω).m := by
-    change _ = ω • (ω⁻¹ • diagPart A + strictLower A)
-    rw [smul_add, smul_smul, mul_inv_cancel₀ hω, one_smul]
-  rw [hm, isUnit_smul_iff hω]
-  exact (sorSplitting A h hω).isUnit
-
 /-- The pencil identity behind Young's theory: `λ 1 - G_ω` is `(D - ω E)⁻¹ D` times the pencil `(λ +
 ω - 1) 1 - ω (λ L + U)`, in which the parameter `λ` appears only in front of `L`. -/
 theorem smul_one_sub_sor_iterationOperator (A : Matrix n n ℂ) (h : IsUnit (diagPart A)) {ω : ℂ}
@@ -286,7 +277,7 @@ theorem smul_one_sub_sor_iterationOperator (A : Matrix n n ℂ) (h : IsUnit (dia
     l • (1 : Matrix n n ℂ) - (sorSplitting A h hω).iterationOperator =
       (diagPart A + ω • strictLower A)⁻¹ * diagPart A *
         ((l + ω - 1) • (1 : Matrix n n ℂ) - ω • (l • jacobiLower A + jacobiUpper A)) := by
-  have hM := isUnit_diagPart_add_smul_strictLower h hω
+  have hM := isUnit_diagPart_add_smul_strictLower h ω
   have hMinv : (diagPart A + ω • strictLower A)⁻¹ * (diagPart A + ω • strictLower A) = 1 :=
     nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp hM)
   have hinner : diagPart A *
@@ -309,7 +300,7 @@ theorem mem_spectrum_sor_iff (A : Matrix n n ℂ) (h : IsUnit (diagPart A)) {ω 
     l ∈ spectrum ℂ (sorSplitting A h hω).iterationOperator ↔
       ¬ IsUnit ((l + ω - 1) • (1 : Matrix n n ℂ) -
         ω • (l • jacobiLower A + jacobiUpper A)) := by
-  have hM := isUnit_diagPart_add_smul_strictLower h hω
+  have hM := isUnit_diagPart_add_smul_strictLower h ω
   have hMinv : IsUnit ((diagPart A + ω • strictLower A)⁻¹) := by
     rw [isUnit_iff_isUnit_det, det_nonsing_inv]
     exact ((isUnit_iff_isUnit_det _).mp hM).ringInverse
@@ -455,6 +446,24 @@ theorem youngRadius_mono {ω : ℝ} (hω : 0 ≤ ω) {r₁ r₂ : ℝ} (hr₁ : 
   have hsqrt := Real.sqrt_le_sqrt hsq
   nlinarith [Real.sqrt_nonneg ((ω * r₁ / 2) ^ 2 - (ω - 1)),
     Real.sqrt_nonneg ((ω * r₂ / 2) ^ 2 - (ω - 1))]
+
+/-- Young's radius is at least `1` when the Jacobi eigenvalue has modulus at least `1` and
+`0 < ω < 2`: with `t = ω r / 2 ≥ ω / 2` the discriminant `t² - (ω - 1)` is at least `(ω/2 - 1)²`,
+so `t + √(t² - (ω - 1)) ≥ ω/2 + (1 - ω/2) = 1`.  This is what makes SOR convergence *necessary*
+for Jacobi convergence on a consistently ordered matrix
+(`Matrix.IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor`). -/
+theorem one_le_youngRadius {ω r : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) (hr : 1 ≤ r) :
+    1 ≤ youngRadius ω r := by
+  have ht : ω / 2 ≤ ω * r / 2 := by nlinarith
+  have hd : (ω / 2 - 1) ^ 2 ≤ (ω * r / 2) ^ 2 - (ω - 1) := by
+    nlinarith [mul_nonneg (sub_nonneg.2 ht) (by positivity : (0 : ℝ) ≤ ω * r / 2 + ω / 2)]
+  have hd0 : ω - 1 ≤ (ω * r / 2) ^ 2 := by nlinarith [sq_nonneg (ω / 2 - 1)]
+  rw [youngRadius_of_le (by positivity) hd0]
+  have hsqrt : 1 - ω / 2 ≤ Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1)) := by
+    calc 1 - ω / 2 = |ω / 2 - 1| := by rw [abs_of_neg (by linarith)]; ring
+      _ = Real.sqrt ((ω / 2 - 1) ^ 2) := (Real.sqrt_sq_eq_abs _).symm
+      _ ≤ _ := Real.sqrt_le_sqrt hd
+  nlinarith [Real.sqrt_nonneg ((ω * r / 2) ^ 2 - (ω - 1))]
 
 /-- **The modulus bound of Young's quadratic.**  Any root `λ` of `(λ + ω - 1)² = λ (2t)²` has
 modulus at most `max ((t + √(t² - (ω - 1)))², ω - 1)`.  Writing `λ = z²` and choosing the sign of
@@ -872,6 +881,28 @@ theorem IsConsistentlyOrdered.spectralRadius_sor_lt_one
   calc ENNReal.ofReal (youngRadius ω r) < ENNReal.ofReal 1 :=
         (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).mpr (youngRadius_lt_one hr0 hr1 hω0 hω2)
     _ = 1 := ENNReal.ofReal_one
+
+/-- **SOR convergence forces Jacobi convergence** on a consistently ordered matrix
+([quarteroni2000numerical] Property 4.4, the "only if"; [kress1998numerical] Thm 4.15): for a
+consistently ordered matrix whose Jacobi iteration matrix has real eigenvalues and `0 < ω < 2` (the
+other values being excluded by Kahan's condition), `ρ(G_ω) < 1` implies `ρ(B_J) < 1`.  By Young's
+formula `Matrix.IsConsistentlyOrdered.spectralRadius_sor_eq`, `ρ(G_ω) = youngRadius ω ρ(B_J)`, and
+`Matrix.one_le_youngRadius` makes this at least `1` when `ρ(B_J) ≥ 1`.  With
+`Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one` this is the equivalence "SOR converges iff
+`ρ(B_J) < 1`" on `0 < ω < 2`. -/
+theorem IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor
+    (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A))
+    (hreal : ∀ μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator, μ.im = 0) {ω : ℝ}
+    (hω0 : 0 < ω) (hω2 : ω < 2) (hsor : spectralRadius ℂ (sorIterationMatrix A (ω : ℂ)) < 1) :
+    spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
+  rw [hA.spectralRadius_sor_eq h hreal hω0, ENNReal.ofReal_lt_one] at hsor
+  by_contra hcon
+  rw [not_lt] at hcon
+  obtain ⟨μ₀, -, hρ, -⟩ := exists_norm_eq_spectralRadius _
+    (spectrum_nonempty (jacobiSplitting A h).iterationOperator)
+  rw [hρ, ENNReal.one_le_ofReal] at hcon
+  rw [hρ, ENNReal.toReal_ofReal (norm_nonneg _)] at hsor
+  exact absurd hsor (not_lt.2 (one_le_youngRadius hω0 hω2 hcon))
 
 end Matrices
 

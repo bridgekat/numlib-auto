@@ -21,6 +21,21 @@ faster than `ρ(G)` in the sense of the limsup of `(‖G^k d₀‖/‖d₀‖)^{
 (`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an eigenvector
 of a dominant eigenvalue attains it
 (`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`).
+
+Three further groups of facts about the affine iteration:
+
+* the *increments* `x_{k+1} - x_k = G^k (x₁ - x₀)` (`Stationary.step_iterate_succ_sub`) and the
+  closed form `x_k = G^k x₀ + ∑_{j<k} G^j f` (`Stationary.step_iterate_eq_pow_add_sum`);
+* the *convergence factor* `‖G^m‖`, the *average convergence factor* `‖G^m‖^{1/m}` and the
+  *average convergence rate* `R_m(G) = -(1/m) log ‖G^m‖` of [quarteroni2000numerical] Definition
+  4.2, with Gelfand's formula read as their limits: `‖G^m‖^{1/m} → ρ(G)`
+  (`Stationary.tendsto_averageConvergenceFactor`) and `R_m(G) → R(G) = -log ρ(G)`
+  (`Stationary.tendsto_averageConvergenceRate`, [quarteroni2000numerical] (4.5));
+* the iteration with a step-dependent forcing term `x_{k+1} = G x_k + f_k`
+  (`Stationary.forcedIterate`), the shape of a stationary iteration run in finite precision, with
+  its discrete variation-of-constants formula (`Stationary.forcedIterate_eq`) and the error
+  decomposition `x* - x̂_{k+1} = G^{k+1} (x* - x₀) + ∑_{j≤k} G^j ζ_{k-j}`
+  (`Stationary.sub_forcedIterate_eq`, [quarteroni2000numerical] §4.2.4).
 -/
 
 open Filter Topology
@@ -108,6 +123,149 @@ theorem norm_iterate_sub_le' [CompleteSpace E] (hG : ‖G‖ < 1) {x' : E} (hfix
         gcongr
         exact norm_sub_fixed_le G f hG hfix y
     _ = ‖G‖ / (1 - ‖G‖) * ‖step G f y - y‖ := by ring
+
+/-- The error after `k` steps is bounded by the norm of `G^k` times the initial error:
+`‖x_k - x*‖ ≤ ‖G^k‖ ‖x₀ - x*‖`.  This is the estimate `‖e_k‖ / ‖e_0‖ ≤ ‖G^k‖` that names `‖G^k‖`
+the convergence factor after `k` steps ([quarteroni2000numerical] Definition 4.2 and §4.6). -/
+theorem norm_step_iterate_sub_le {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
+    ‖(step G f)^[k] x₀ - x'‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := by
+  rw [step_iterate_sub G f hfix]
+  exact (G ^ k).le_opNorm _
+
+/-- **The increment recursion**: `x_{k+1} - x_k = G^k (x₁ - x₀)`, so that consecutive increments
+satisfy `x_{k+1} - x_k = G (x_k - x_{k-1})`.  No fixed point is needed; this is what makes the
+increments a computable proxy for the error ([quarteroni2000numerical] §4.6.1, `δ_{k+1} ≤ ‖G‖
+δ_k`). -/
+theorem step_iterate_succ_sub (x₀ : E) (k : ℕ) :
+    (step G f)^[k + 1] x₀ - (step G f)^[k] x₀ = (G ^ k) (step G f x₀ - x₀) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have h1 : (step G f)^[k + 1 + 1] x₀ = step G f ((step G f)^[k + 1] x₀) :=
+      Function.iterate_succ_apply' _ _ _
+    have h2 : (step G f)^[k + 1] x₀ = step G f ((step G f)^[k] x₀) :=
+      Function.iterate_succ_apply' _ _ _
+    rw [h1, pow_succ', mul_apply_eq_comp, ← ih, h2]
+    simp only [step]
+    rw [add_sub_add_right_eq_sub, map_sub]
+
+/-- **The closed form of the affine iteration**: `x_k = G^k x₀ + ∑_{j<k} G^j f`; in particular
+`k` steps from `0` give the truncated Neumann series `∑_{j<k} G^j f`.  This is what turns `m`
+inner sweeps of a stationary method started from `0` into a single composite step
+([quarteroni2000numerical] Exercise 7.1 and the Newton–SOR step (7.8)). -/
+theorem step_iterate_eq_pow_add_sum (x₀ : E) (k : ℕ) :
+    (step G f)^[k] x₀ = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) f := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [Function.iterate_succ_apply', ih, step, map_add, map_sum, Finset.sum_range_succ', pow_zero,
+      one_apply_eq_self, ← mul_apply_eq_comp, ← pow_succ']
+    simp only [← mul_apply_eq_comp, ← pow_succ']
+    abel
+
+/-! ### The iteration with a step-dependent forcing term -/
+
+/-- The affine iteration with a step-dependent forcing term: `x₀` given, `x_{k+1} = G x_k + f_k`.
+It is the shape of a stationary iteration run in finite precision — [quarteroni2000numerical]
+(4.20), `P x̂_{k+1} = N x̂_k + b - ζ_k`, is `f_k = P⁻¹ b - P⁻¹ ζ_k` — and of a stationary
+iteration with a variable right-hand side; `Stationary.step G f` is the constant case
+(`Stationary.forcedIterate_const`). -/
+noncomputable def forcedIterate (f : ℕ → E) (x₀ : E) : ℕ → E
+  | 0 => x₀
+  | k + 1 => G (forcedIterate f x₀ k) + f k
+
+/-- The forced iteration starts at `x₀`. -/
+@[simp]
+theorem forcedIterate_zero (f : ℕ → E) (x₀ : E) : forcedIterate G f x₀ 0 = x₀ := rfl
+
+/-- One step of the forced iteration: `x_{k+1} = G x_k + f_k`. -/
+theorem forcedIterate_succ (f : ℕ → E) (x₀ : E) (k : ℕ) :
+    forcedIterate G f x₀ (k + 1) = G (forcedIterate G f x₀ k) + f k := rfl
+
+/-- With a constant forcing term the forced iteration is the affine iteration `Stationary.step`. -/
+theorem forcedIterate_const (x₀ : E) (k : ℕ) :
+    forcedIterate G (fun _ => f) x₀ k = (step G f)^[k] x₀ := by
+  induction k with
+  | zero => rfl
+  | succ k ih => rw [forcedIterate_succ, ih, Function.iterate_succ_apply', step]
+
+/-- **Discrete variation of constants**: `x_k = G^k x₀ + ∑_{j<k} G^j f_{k-1-j}`
+([quarteroni2000numerical] §4.2.4, the display for `x̂^{(k+1)}`). -/
+theorem forcedIterate_eq (f : ℕ → E) (x₀ : E) (k : ℕ) :
+    forcedIterate G f x₀ k = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) (f (k - 1 - j)) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hs : ∑ j ∈ Finset.range k, (G ^ (j + 1)) (f (k + 1 - 1 - (j + 1)))
+        = ∑ j ∈ Finset.range k, G ((G ^ j) (f (k - 1 - j))) := by
+      refine Finset.sum_congr rfl fun j _ => ?_
+      rw [pow_succ', mul_apply_eq_comp, show k + 1 - 1 - (j + 1) = k - 1 - j by omega]
+    rw [forcedIterate_succ, ih, map_add, map_sum, Finset.sum_range_succ', hs, pow_zero,
+      one_apply_eq_self, Nat.add_sub_cancel, Nat.sub_zero, pow_succ', mul_apply_eq_comp, add_assoc]
+
+/-- **The error of a perturbed stationary iteration** ([quarteroni2000numerical] §4.2.4): if `x*`
+is a fixed point of `x ↦ G x + f` and the computed sequence obeys `x̂_{k+1} = G x̂_k + f - ζ_k`,
+then `x* - x̂_{k+1} = G^{k+1} (x* - x₀) + ∑_{j≤k} G^j ζ_{k-j}`.  The first term is the
+exact-arithmetic error (`Stationary.step_iterate_sub`), the second the propagated perturbation,
+which `‖G‖ < 1` and `‖ζ_j‖ ≤ ε` bound by `ε / (1 - ‖G‖)`. -/
+theorem sub_forcedIterate_eq {x' : E} (hfix : G x' + f = x') (ζ : ℕ → E) (x₀ : E) (k : ℕ) :
+    x' - forcedIterate G (fun j => f - ζ j) x₀ (k + 1) =
+      (G ^ (k + 1)) (x' - x₀) + ∑ j ∈ Finset.range (k + 1), (G ^ j) (ζ (k - j)) := by
+  induction k with
+  | zero =>
+    simp only [forcedIterate_succ, forcedIterate_zero, zero_add, pow_one, Finset.sum_range_one,
+      pow_zero, one_apply_eq_self, Nat.sub_self]
+    rw [map_sub]
+    have : x' = G x' + f := hfix.symm
+    conv_lhs => rw [this]
+    abel
+  | succ k ih =>
+    have hsub : ∀ j ∈ Finset.range (k + 1),
+        (G ^ (j + 1)) (ζ (k + 1 - (j + 1))) = G ((G ^ j) (ζ (k - j))) := by
+      intro j _
+      rw [pow_succ', mul_apply_eq_comp, Nat.add_sub_add_right]
+    rw [forcedIterate_succ, Finset.sum_range_succ', pow_zero, one_apply_eq_self, Nat.sub_zero,
+      Finset.sum_congr rfl hsub, ← map_sum, pow_succ' G (k + 1), mul_apply_eq_comp, ← add_assoc,
+      ← map_add, ← ih, map_sub]
+    have : x' = G x' + f := hfix.symm
+    conv_lhs => rw [this]
+    abel
+
+/-! ### Convergence factors and rates -/
+
+/-- The convergence factor after `m` steps, `‖G^m‖` ([quarteroni2000numerical] Definition 4.2 (1)):
+the worst-case reduction of the error over `m` steps, `‖x_m - x*‖ ≤ ‖G^m‖ ‖x₀ - x*‖`
+(`Stationary.norm_step_iterate_sub_le`).  For a matrix `G` acting on `EuclideanSpace` through
+`Matrix.toEuclideanCLM` it is the `ℓ²` operator norm of `G^m`
+(`Matrix.l2_opNorm_eq_norm_toEuclideanLin`). -/
+noncomputable def convergenceFactor (m : ℕ) : ℝ := ‖G ^ m‖
+
+/-- The average convergence factor after `m` steps, `‖G^m‖^{1/m}` ([quarteroni2000numerical]
+Definition 4.2 (2)).  At `m = 0` the real power is `‖1‖^0 = 1`, a harmless junk value. -/
+noncomputable def averageConvergenceFactor (m : ℕ) : ℝ := ‖G ^ m‖ ^ (1 / m : ℝ)
+
+/-- The average convergence rate after `m` steps, `R_m(G) = -(1/m) log ‖G^m‖`
+([quarteroni2000numerical] Definition 4.2 (3)).  Since `Real.log 0 = 0`, a nilpotent `G` gets the
+value `0` where the book's quantity is `+∞`; statements about it therefore carry `ρ(G) ≠ 0`. -/
+noncomputable def averageConvergenceRate (m : ℕ) : ℝ := -(1 / m : ℝ) * Real.log ‖G ^ m‖
+
+/-- The average convergence factor is the `m`-th root of the convergence factor. -/
+theorem averageConvergenceFactor_eq (m : ℕ) :
+    averageConvergenceFactor G m = convergenceFactor G m ^ (1 / m : ℝ) := rfl
+
+/-- The average convergence rate in terms of the convergence factor. -/
+theorem averageConvergenceRate_eq (m : ℕ) :
+    averageConvergenceRate G m = -(1 / m : ℝ) * Real.log (convergenceFactor G m) := rfl
+
+/-- The average convergence rate is minus the logarithm of the average convergence factor, for
+`m ≠ 0` (also when `‖G^m‖ = 0`, where both sides vanish). -/
+theorem averageConvergenceRate_eq_neg_log {m : ℕ} (hm : m ≠ 0) :
+    averageConvergenceRate G m = -Real.log (averageConvergenceFactor G m) := by
+  rw [averageConvergenceRate, averageConvergenceFactor]
+  rcases (norm_nonneg (G ^ m)).eq_or_lt with h0 | h0
+  · rw [← h0, Real.log_zero, mul_zero, Real.zero_rpow (one_div_ne_zero (Nat.cast_ne_zero.2 hm)),
+      Real.log_zero, neg_zero]
+  · rw [Real.log_rpow h0, neg_mul]
 
 section Complex
 
@@ -315,6 +473,33 @@ theorem exists_limsup_norm_pow_apply_rpow_eq_spectralRadius [FiniteDimensional �
       one_div, Real.pow_rpow_inv_natCast (norm_nonneg μ) (by omega)]
   rw [Filter.limsup_congr (v := fun _ : ℕ => ‖μ‖) hconst, limsup_const, ← hμρ]
   simp
+
+/-- The asymptotic convergence rate `R(G) = -log ρ(G)` ([quarteroni2000numerical] (4.5)), over `ℂ`
+because the spectral radius has to be the complex one — a real matrix reaches it through
+`Matrix.complexify` and `Matrix.toEuclideanCLM`.  `Real.log 0 = 0` gives a nilpotent `G` the value
+`0` where the book's is `+∞`. -/
+noncomputable def asymptoticConvergenceRate (G : F →L[ℂ] F) : ℝ :=
+  -Real.log (spectralRadius ℂ G).toReal
+
+/-- **Gelfand's formula as a statement about the average convergence factor**: `‖G^m‖^{1/m} → ρ(G)`
+([quarteroni2000numerical] Property 1.13 and the sentence after Definition 4.2), so the spectral
+radius is the asymptotic convergence factor.  On a trivial `F` both sides are `0`. -/
+theorem tendsto_averageConvergenceFactor [CompleteSpace F] (G : F →L[ℂ] F) :
+    Tendsto (averageConvergenceFactor G) atTop (𝓝 (spectralRadius ℂ G).toReal) :=
+  spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius G
+
+/-- **The average convergence rate tends to the asymptotic one**, `R_m(G) → R(G) = -log ρ(G)`
+([quarteroni2000numerical] (4.5)), provided `ρ(G) ≠ 0`: it is Gelfand's formula composed with the
+continuity of `log` at the positive limit. -/
+theorem tendsto_averageConvergenceRate [CompleteSpace F] (G : F →L[ℂ] F)
+    (hρ : spectralRadius ℂ G ≠ 0) :
+    Tendsto (averageConvergenceRate G) atTop (𝓝 (asymptoticConvergenceRate G)) := by
+  have hρ' : 0 < (spectralRadius ℂ G).toReal :=
+    ENNReal.toReal_pos hρ (spectrum.spectralRadius_ne_top G)
+  refine (((Real.continuousAt_log hρ'.ne').tendsto.comp
+    (tendsto_averageConvergenceFactor G)).neg).congr' ?_
+  filter_upwards [eventually_ne_atTop 0] with m hm
+  exact (averageConvergenceRate_eq_neg_log G hm).symm
 
 end Complex
 

@@ -347,8 +347,10 @@ import Numlib.Stationary.Block
 import Numlib.Stationary.ConsistentlyOrdered
 import Numlib.Stationary.DiagDominant
 import Numlib.Stationary.RegularSplitting
+import Numlib.Stationary.Richardson
 import Numlib.Stationary.SPD
 import Numlib.Stationary.Splitting
+import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Variational.EllipticInterval

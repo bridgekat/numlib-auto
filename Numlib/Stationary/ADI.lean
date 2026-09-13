@@ -1,3 +1,6 @@
+import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Basic
+import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Isometric
+import Mathlib.Analysis.CStarAlgebra.ContinuousLinearMap
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Stationary.Splitting
 
@@ -45,6 +48,20 @@ and should move beside the coercivity API as soon as a second consumer appears.
 
 This is [saad2003iterative], §4.3: Algorithm 4.3 and the identities (4.50)–(4.52).  The book states
 no numbered result there and asserts the convergence claim in one sentence.
+
+**Two parameters.**  [quarteroni2000numerical] §4.3.6 writes the two half-steps with different
+parameters `α₁`, `α₂` — here `r₁ = 1/α₁`, `r₂ = 1/α₂` — which gives the sweep operator
+`Stationary.peacemanRachfordTwo H V r₁ r₂ = (V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)`, the
+one-parameter sweep being its diagonal (`Stationary.peacemanRachfordTwo_self`).  For symmetric
+positive definite `H`, `V` the spectral radius is bounded by the product of the maxima of
+`|λ - r₂| / (λ + r₁)` over the spectrum of `H` and of `|μ - r₁| / (μ + r₂)` over the spectrum of
+`V` (`Stationary.spectralRadius_peacemanRachfordTwo_le`, the book's display), because the
+conjugated sweep is the product of two Cayley transforms `(A - r₂)(A + r₁)⁻¹`, whose norm is the
+maximum of `|t - r₂| / |t + r₁|` over the spectrum by the continuous functional calculus of a
+self-adjoint operator (`Stationary.norm_cayleyTwo_le`).  When both spectra lie in `[γ, δ]` with
+`γ > 0`, the parameter `r = √(γ δ)` gives `ρ ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`
+(`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset`, the book's last display,
+without the proviso "`γ/δ → 0`", which is not a hypothesis of the bound).
 -/
 
 open Filter Topology
@@ -493,5 +510,232 @@ theorem tendsto_peacemanRachford (hH : (H : E →ₗ[𝕜] E).IsCoercive)
   exact mul_le_mul_of_nonneg_right (norm_pow_conj_le hP k) (norm_nonneg _)
 
 end Convergence
+
+/-! ### The two-parameter sweep -/
+
+section Two
+
+variable (H V : E →L[𝕜] E) (r₁ r₂ : ℝ)
+
+/-- The Peaceman–Rachford sweep with two parameters: the composition of `(H + r₁) x_{k+1/2} = (r₁ -
+V) x_k + b` and `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b` has the iteration operator
+`(V + r₂)⁻¹ (H - r₂) (H + r₁)⁻¹ (V - r₁)` ([quarteroni2000numerical] (4.50) with `A₁ = H`, `A₂ = V`
+and `α_i = 1 / r_i`; the sign convention `1 - α A = -α (A - 1/α)` cancels between the two factors).
+`Stationary.peacemanRachford` is the diagonal `r₁ = r₂` (`Stationary.peacemanRachfordTwo_self`). -/
+noncomputable def peacemanRachfordTwo : E →L[𝕜] E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
+    (V - (r₁ : 𝕜) • 1)
+
+/-- The affine part of the two-parameter Peaceman–Rachford sweep, `(V + r₂)⁻¹ (1 - (H - r₂)(H +
+r₁)⁻¹) b` ([quarteroni2000numerical] §4.3.6, the vector `f`). -/
+noncomputable def peacemanRachfordTwoConst (b : E) : E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1) ((1 - (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) b)
+
+/-- The two half-steps of the two-parameter sweep, written as such: solve `(H + r₁) x_{k+1/2} =
+(r₁ - V) x_k + b`, then `(V + r₂) x_{k+1} = (r₂ - H) x_{k+1/2} + b`. -/
+noncomputable def peacemanRachfordTwoSweep (b x : E) : E :=
+  Ring.inverse (V + (r₂ : 𝕜) • 1)
+    (((r₂ : 𝕜) • 1 - H) (Ring.inverse (H + (r₁ : 𝕜) • 1) (((r₁ : 𝕜) • 1 - V) x + b)) + b)
+
+/-- The two half-steps, composed, are the affine step of `Stationary.peacemanRachfordTwo`. -/
+theorem peacemanRachfordTwo_step_eq (b x : E) :
+    step (peacemanRachfordTwo H V r₁ r₂) (peacemanRachfordTwoConst H V r₁ r₂ b) x
+      = peacemanRachfordTwoSweep H V r₁ r₂ b x := by
+  simp only [step, peacemanRachfordTwo, peacemanRachfordTwoConst, peacemanRachfordTwoSweep,
+    mul_apply_eq_comp, sub_apply, smul_apply, one_apply_eq_self, map_add, map_sub, map_smul]
+  module
+
+/-- With equal parameters the two-parameter sweep is the one-parameter one. -/
+theorem peacemanRachfordTwo_self (r : ℝ) :
+    peacemanRachfordTwo H V r r = peacemanRachford H V r := rfl
+
+/-- With equal parameters the affine part of the two-parameter sweep is the one-parameter one. -/
+theorem peacemanRachfordTwoConst_self (r : ℝ) (b : E) :
+    peacemanRachfordTwoConst H V r r b = peacemanRachfordConst H V r b := rfl
+
+/-- Conjugating the two-parameter sweep operator by `V + r₂` turns it into the product of the two
+Cayley transforms `(H - r₂)(H + r₁)⁻¹` and `(V - r₁)(V + r₂)⁻¹`. -/
+theorem peacemanRachfordTwo_conj (hV : IsUnit (V + (r₂ : 𝕜) • (1 : E →L[𝕜] E))) :
+    (V + (r₂ : 𝕜) • 1) * peacemanRachfordTwo H V r₁ r₂ * Ring.inverse (V + (r₂ : 𝕜) • 1)
+      = ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1)) *
+        ((V - (r₁ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) := by
+  rw [peacemanRachfordTwo]
+  calc (V + (r₂ : 𝕜) • 1) *
+        (Ring.inverse (V + (r₂ : 𝕜) • 1) * (H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) *
+          (V - (r₁ : 𝕜) • 1)) * Ring.inverse (V + (r₂ : 𝕜) • 1)
+      = ((V + (r₂ : 𝕜) • 1) * Ring.inverse (V + (r₂ : 𝕜) • 1)) *
+          ((H - (r₂ : 𝕜) • 1) * Ring.inverse (H + (r₁ : 𝕜) • 1) * (V - (r₁ : 𝕜) • 1) *
+            Ring.inverse (V + (r₂ : 𝕜) • 1)) := by noncomm_ring
+    _ = _ := by rw [Ring.mul_inverse_cancel _ hV, one_mul]; noncomm_ring
+
+end Two
+
+/-- The spectral radius of an operator is at most the norm of any conjugate `v P v⁻¹` of it:
+similarity preserves the spectrum, and the spectral radius is at most the norm. -/
+theorem spectralRadius_le_nnnorm_conj [CompleteSpace E] {v : E →L[𝕜] E} (hv : IsUnit v)
+    (P : E →L[𝕜] E) : spectralRadius 𝕜 P ≤ ‖v * P * Ring.inverse v‖₊ := by
+  obtain ⟨u, rfl⟩ := hv
+  rw [Ring.inverse_unit]
+  rcases subsingleton_or_nontrivial E with _ | _
+  · have : Subsingleton (E →L[𝕜] E) := ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
+    simp [spectralRadius]
+  · rw [spectralRadius, ← spectrum.units_conjugate (a := P) (u := u), ← spectralRadius]
+    exact spectrum.spectralRadius_le_nnnorm _
+
+/-! ### The spectral bounds for symmetric positive definite `H` and `V`
+
+These are stated on a complex Hilbert space, where the continuous functional calculus of a
+self-adjoint operator is available; a real symmetric matrix reaches them through
+`Matrix.complexify` and `Matrix.toEuclideanCLM`. -/
+
+section Complex
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
+
+/-- The real spectrum of a coercive operator with constant `c` lies in `[c, ∞)`: for `t < c` the
+shift `A - t` is coercive, hence invertible by Lax–Milgram. -/
+theorem le_of_mem_spectrum_real_of_isCoerciveWith {A : F →L[ℂ] F} {c : ℝ}
+    (hA : (A : F →ₗ[ℂ] F).IsCoerciveWith c) {t : ℝ} (ht : t ∈ spectrum ℝ A) : c ≤ t := by
+  by_contra hlt
+  rw [not_le] at hlt
+  have hcoer := isCoerciveWith_add_smul_one hA (r := -t)
+  obtain ⟨e, he, -⟩ :=
+    ContinuousLinearMap.exists_equiv_of_isCoerciveWith (by linarith : (0 : ℝ) < c + -t) hcoer
+  have hu : IsUnit (e : F →L[ℂ] F) :=
+    ⟨(ContinuousLinearEquiv.unitsEquiv ℂ F).symm e, by
+      ext x
+      rw [← ContinuousLinearEquiv.unitsEquiv_apply ℂ F, MulEquiv.apply_symm_apply]
+      rfl⟩
+  rw [he] at hu
+  refine spectrum.notMem_iff.mpr ?_ ht
+  have : algebraMap ℝ (F →L[ℂ] F) t - A = -(A + ((-t : ℝ) : ℂ) • (1 : F →L[ℂ] F)) := by
+    rw [Algebra.algebraMap_eq_smul_one, Complex.coe_smul]
+    module
+  rw [this]
+  exact hu.neg
+
+/-- The real spectrum of an operator whose quadratic form is enclosed in `[γ, δ]` lies in `[γ, δ]`
+(both bounds by `Stationary.le_of_mem_spectrum_real_of_isCoerciveWith`, the upper one applied to
+`-A`); no finite dimension is needed. -/
+theorem mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy {A : F →L[ℂ] F} {γ δ : ℝ}
+    (hA : (A : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ) {t : ℝ} (ht : t ∈ spectrum ℝ A) :
+    t ∈ Set.Icc γ δ := by
+  refine ⟨le_of_mem_spectrum_real_of_isCoerciveWith hA.isCoerciveWith ht, ?_⟩
+  have hneg : ((-A : F →L[ℂ] F) : F →ₗ[ℂ] F).IsCoerciveWith (-δ) := fun x => by
+    have := hA.re_inner_le x
+    simp only [ContinuousLinearMap.coe_coe, neg_apply, inner_neg_left, map_neg] at this ⊢
+    linarith
+  have h := le_of_mem_spectrum_real_of_isCoerciveWith hneg (t := -t) (by
+    rw [← spectrum.neg_eq, Set.mem_neg, neg_neg]; exact ht)
+  linarith
+
+/-- **The norm of the two-parameter Cayley transform of a self-adjoint operator** is bounded by any
+bound `M` of `|t - r₂| / |t + r₁|` over the real spectrum (it is in fact the maximum): `(A -
+r₂)(A + r₁)⁻¹` is the continuous functional calculus of `t ↦ (t - r₂)/(t + r₁)` at `A`, and the
+calculus is isometric (`norm_cfc_le`).  The one-parameter case with `r₁ = r₂` is the strict
+contraction `Stationary.norm_cayley_lt_one`, which needs no functional calculus. -/
+theorem norm_cayleyTwo_le {A : F →L[ℂ] F} (hA : IsSelfAdjoint A) {r₁ r₂ : ℝ}
+    (hr : ∀ t ∈ spectrum ℝ A, t + r₁ ≠ 0) {M : ℝ} (hM : 0 ≤ M)
+    (h : ∀ t ∈ spectrum ℝ A, |t - r₂| / |t + r₁| ≤ M) :
+    ‖(A - (r₂ : ℂ) • 1) * Ring.inverse (A + (r₁ : ℂ) • 1)‖ ≤ M := by
+  have hcont : ContinuousOn (fun t : ℝ => (t + r₁)⁻¹) (spectrum ℝ A) :=
+    ContinuousOn.inv₀ (by fun_prop) hr
+  have hsmul : ∀ r : ℝ, (r : ℂ) • (1 : F →L[ℂ] F) = algebraMap ℝ (F →L[ℂ] F) r := fun r => by
+    rw [Algebra.algebraMap_eq_smul_one, RCLike.real_smul_eq_coe_smul (K := ℂ)]
+    rfl
+  have h1 : A - (r₂ : ℂ) • 1 = cfc (fun t : ℝ => t - r₂) A := by
+    rw [cfc_sub (f := fun t : ℝ => t) (g := fun _ => r₂) (a := A), cfc_id' ℝ A, cfc_const r₂ A,
+      hsmul]
+  have h2 : Ring.inverse (A + (r₁ : ℂ) • 1) = cfc (fun t : ℝ => (t + r₁)⁻¹) A := by
+    rw [cfc_inv (f := fun t : ℝ => t + r₁) (a := A) hr (by fun_prop) hA,
+      cfc_add (a := A) (fun t : ℝ => t) (fun _ => r₁), cfc_id' ℝ A, cfc_const r₁ A, hsmul]
+  rw [h1, h2, ← cfc_mul _ _ A (by fun_prop) hcont]
+  refine norm_cfc_le hM fun t ht => ?_
+  rw [Real.norm_eq_abs, abs_mul, abs_inv, ← div_eq_mul_inv]
+  exact h t ht
+
+/-- **The spectral radius bound for the two-parameter ADI sweep** ([quarteroni2000numerical]
+§4.3.6, the display after (4.50), in the letters `r_i = 1/α_i`): for symmetric positive definite
+`H`, `V` and `r₁, r₂ > 0`, if `|λ - r₂| / (λ + r₁) ≤ M₁` on the spectrum of `H` and `|μ - r₁| /
+(μ + r₂) ≤ M₂` on the spectrum of `V`, then `ρ(B) ≤ M₁ M₂`; the book's statement is the case of
+the two maxima.  `B` is similar to the product of the two Cayley transforms
+(`Stationary.peacemanRachfordTwo_conj`), each bounded by `Stationary.norm_cayleyTwo_le`. -/
+theorem spectralRadius_peacemanRachfordTwo_le {H V : F →L[ℂ] F}
+    (hH : (H : F →ₗ[ℂ] F).IsSymmetricCoercive) (hV : (V : F →ₗ[ℂ] F).IsSymmetricCoercive)
+    {r₁ r₂ : ℝ} (hr₁ : 0 < r₁) (hr₂ : 0 < r₂) {M₁ M₂ : ℝ} (hM₁ : 0 ≤ M₁) (hM₂ : 0 ≤ M₂)
+    (h₁ : ∀ t ∈ spectrum ℝ H, |t - r₂| / (t + r₁) ≤ M₁)
+    (h₂ : ∀ t ∈ spectrum ℝ V, |t - r₁| / (t + r₂) ≤ M₂) :
+    spectralRadius ℂ (peacemanRachfordTwo H V r₁ r₂) ≤ ENNReal.ofReal (M₁ * M₂) := by
+  obtain ⟨c₁, hc₁, hH'⟩ := hH.isCoercive
+  obtain ⟨c₂, hc₂, hV'⟩ := hV.isCoercive
+  have hHpos : ∀ t ∈ spectrum ℝ H, 0 < t + r₁ := fun t ht => by
+    linarith [le_of_mem_spectrum_real_of_isCoerciveWith hH' ht]
+  have hVpos : ∀ t ∈ spectrum ℝ V, 0 < t + r₂ := fun t ht => by
+    linarith [le_of_mem_spectrum_real_of_isCoerciveWith hV' ht]
+  have hCH : ‖(H - (r₂ : ℂ) • 1) * Ring.inverse (H + (r₁ : ℂ) • 1)‖ ≤ M₁ := by
+    refine norm_cayleyTwo_le hH.isSymmetric.isSelfAdjoint (fun t ht => (hHpos t ht).ne') hM₁
+      fun t ht => ?_
+    rw [abs_of_pos (hHpos t ht)]
+    exact h₁ t ht
+  have hCV : ‖(V - (r₁ : ℂ) • 1) * Ring.inverse (V + (r₂ : ℂ) • 1)‖ ≤ M₂ := by
+    refine norm_cayleyTwo_le hV.isSymmetric.isSelfAdjoint (fun t ht => (hVpos t ht).ne') hM₂
+      fun t ht => ?_
+    rw [abs_of_pos (hVpos t ht)]
+    exact h₂ t ht
+  have hVu : IsUnit (V + (r₂ : ℂ) • (1 : F →L[ℂ] F)) := isUnit_add_smul_one hc₂ hV' hr₂
+  have hconj := peacemanRachfordTwo_conj H V r₁ r₂ hVu
+  refine (spectralRadius_le_nnnorm_conj hVu _).trans ?_
+  refine le_of_eq_of_le (congrArg (fun T : F →L[ℂ] F => ((‖T‖₊ : NNReal) : ENNReal)) hconj) ?_
+  rw [← enorm_eq_nnnorm, ← ofReal_norm]
+  exact ENNReal.ofReal_le_ofReal
+    ((norm_mul_le _ _).trans (mul_le_mul hCH hCV (norm_nonneg _) hM₁))
+
+/-- On `[a², b²]` the function `t ↦ |t - ab| / (t + ab)` is at most `(b - a)/(b + a)`, the common
+value at the two endpoints. -/
+private theorem abs_sub_div_add_le {a b t : ℝ} (ha : 0 < a) (hab : a ≤ b) (ht : a ^ 2 ≤ t)
+    (ht' : t ≤ b ^ 2) : |t - a * b| / (t + a * b) ≤ (b - a) / (b + a) := by
+  have hb : 0 < b := ha.trans_le hab
+  have htpos : 0 < t + a * b := by nlinarith
+  rw [div_le_div_iff₀ htpos (by linarith)]
+  rcases le_or_gt (a * b) t with h | h
+  · rw [abs_of_nonneg (by linarith)]
+    nlinarith [mul_le_mul_of_nonneg_left ht' ha.le]
+  · rw [abs_of_neg (by linarith)]
+    nlinarith [mul_le_mul_of_nonneg_left ht hb.le]
+
+/-- **The ADI bound for spectra in `[γ, δ]`** ([quarteroni2000numerical] §4.3.6, last display):
+if the quadratic forms of `H` and `V` are enclosed in `[γ, δ]` with `0 < γ ≤ δ`, the parameter
+`r = √(γ δ)` (the book's `α₁ = α₂ = 1/√(δ γ)`) gives
+`ρ(B) ≤ ((1 - √(γ/δ)) / (1 + √(γ/δ)))²`.  It is `Stationary.spectralRadius_peacemanRachfordTwo_le`
+at `r₁ = r₂ = r`: on `[γ, δ]` the function `t ↦ |t - r| / (t + r)` is largest at the endpoints,
+where it equals `(√δ - √γ)/(√δ + √γ)`.  The book's proviso "provided `γ/δ → 0` as the size grows"
+is not a hypothesis of the inequality. -/
+theorem spectralRadius_peacemanRachford_le_of_spectrum_subset {H V : F →L[ℂ] F} {γ δ : ℝ}
+    (hγ : 0 < γ) (hγδ : γ ≤ δ) (hH : (H : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ)
+    (hV : (V : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ) :
+    spectralRadius ℂ (peacemanRachford H V (Real.sqrt (γ * δ))) ≤
+      ENNReal.ofReal (((1 - Real.sqrt (γ / δ)) / (1 + Real.sqrt (γ / δ))) ^ 2) := by
+  set a := Real.sqrt γ with ha_def
+  set b := Real.sqrt δ with hb_def
+  have ha : 0 < a := Real.sqrt_pos.mpr hγ
+  have hab : a ≤ b := Real.sqrt_le_sqrt hγδ
+  have hb : 0 < b := ha.trans_le hab
+  have ha2 : a ^ 2 = γ := Real.sq_sqrt hγ.le
+  have hb2 : b ^ 2 = δ := Real.sq_sqrt (hγ.le.trans hγδ)
+  have hr : Real.sqrt (γ * δ) = a * b := Real.sqrt_mul hγ.le δ
+  have hK : (1 - Real.sqrt (γ / δ)) / (1 + Real.sqrt (γ / δ)) = (b - a) / (b + a) := by
+    rw [Real.sqrt_div hγ.le, ← ha_def, ← hb_def]
+    field_simp
+  have hK0 : 0 ≤ (b - a) / (b + a) := div_nonneg (by linarith) (by linarith)
+  have hbound : ∀ {A : F →L[ℂ] F}, (A : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ →
+      ∀ t ∈ spectrum ℝ A, |t - a * b| / (t + a * b) ≤ (b - a) / (b + a) := by
+    intro A hA t ht
+    obtain ⟨h1, h2⟩ := mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy hA ht
+    exact abs_sub_div_add_le ha hab (ha2 ▸ h1) (hb2 ▸ h2)
+  rw [hK, hr, sq, ← peacemanRachfordTwo_self]
+  exact spectralRadius_peacemanRachfordTwo_le (hH.isSymmetricCoercive hγ)
+    (hV.isSymmetricCoercive hγ) (mul_pos ha hb) (mul_pos ha hb) hK0 hK0 (hbound hH) (hbound hV)
+
+end Complex
 
 end Stationary

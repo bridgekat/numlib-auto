@@ -56,15 +56,6 @@ id = "IsIrreduciblyDiagDominant.gaussSeidel_complexSpectralRadius_lt_one"
 
 [[node]]
 id = "sorSplitting_spectralRadius_lt_one_of_le_one"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri, Property 4.3, last sentence: for `A : Matrix n n 𝕜` strictly row
-diagonally dominant and `0 < ω ≤ 1`, `spectralRadius ℂ (sorSplitting A h hω).iterationOperator < 1`
-(with the real-matrix corollary `sorSplitting_complexSpectralRadius_lt_one_of_le_one`). The pencil
-argument of `gaussSeidel_spectralRadius_lt_one`: an eigenpair `G_ω x = λ x` with `|λ| ≥ 1` gives
-`λ (D + ωL) x = ((1 - ω) D - ωU) x`; at a row `i` where `|x_i| = ‖x‖_∞`,
-`|λ - (1 - ω)| |a_ii| |x_i| ≤ ω |λ| σ₁ |x_i| + ω σ₂ |x_i|` with `σ₁ = ∑_{j<i} |a_ij|`,
-`σ₂ = ∑_{j>i} |a_ij|`, and `|λ - (1 - ω)| ≥ |λ| - (1 - ω) ≥ ω |λ|` for `|λ| ≥ 1`, `0 < ω ≤ 1`, so
-`ω |λ| |a_ii| ≤ ω |λ| (σ₁ + σ₂) < ω |λ| |a_ii|`, a contradiction. Equivalently: the pencil
-`(λ - (1 - ω)) D + λ ω L + ω U` is strictly diagonally dominant for `|λ| ≥ 1`, hence nonsingular
-(`IsStrictDiagDominant.isUnit`), yet annihilates `x`. ★★'''
-deps = ["Matrix.IsStrictDiagDominant", "Matrix.IsStrictDiagDominant.isUnit", "Matrix.gaussSeidel_spectralRadius_lt_one", "Matrix.sorSplitting_iterationOperator"]
+
+[[node]]
+id = "sorSplitting_complexSpectralRadius_lt_one_of_le_one"

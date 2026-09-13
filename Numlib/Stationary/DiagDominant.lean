@@ -6,6 +6,7 @@ import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Stationary.Splitting
+import Numlib.Stationary.Sweep
 
 /-!
 # Convergence of Jacobi and Gauss–Seidel for diagonally dominant matrices
@@ -146,12 +147,6 @@ private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v :
   simp only [mulVec, dotProduct, add_apply, diagPart_apply, strictLower_apply, add_mul, ite_mul,
     zero_mul, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.mem_univ, ite_true,
     ← Finset.sum_filter]
-
-omit [DecidableEq n] in
-/-- Row `i` of `strictUpper A *ᵥ v`. -/
-private theorem strictUpper_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
-    (strictUpper A *ᵥ v) i = ∑ j ∈ Finset.univ.filter (i < ·), A i j * v j := by
-  simp only [mulVec, dotProduct, strictUpper_apply, ite_mul, zero_mul, ← Finset.sum_filter]
 
 omit [Fintype n] [DecidableEq n] [LinearOrder n] in
 /-- `‖∑_{j ∈ s} a_ij x_j‖ ≤ (∑_{j ∈ s} ‖a_ij‖) ‖x‖_∞`. -/
@@ -617,6 +612,88 @@ private theorem spectralRadius_lt_one_of_forall_lt {M : Matrix n n ℂ}
       exact fun μ hμ => h μ (hfin.mem_toFinset.mp hμ)
     · exact fun μ hμ => Finset.le_sup' (fun μ => ‖μ‖) (hfin.mem_toFinset.mpr hμ)
 
+/-- **SOR under strict row dominance** ([quarteroni2000numerical] Property 4.3, last sentence): for
+a strictly row diagonally dominant `A` and `0 < ω ≤ 1`, `ρ(G_ω) < 1`.  The pencil argument of
+`Matrix.gaussSeidel_spectralRadius_lt_one`: an eigenpair `G_ω x = λ x` gives
+`((1 - ω) D - ω U) x = λ (D + ω L) x`, and at a row `i` where `‖x‖_∞` is attained
+`|λ - (1 - ω)| |a_ii| ≤ ω σ₂ + |λ| ω σ₁` with `σ₁ = ∑_{j<i} |a_ij|`, `σ₂ = ∑_{j>i} |a_ij|`; for
+`|λ| ≥ 1` the left side is at least `ω |λ| |a_ii|` and the right side at most `ω |λ| (σ₁ + σ₂)`,
+contradicting strict dominance. -/
+theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
+    (hA : A.IsStrictDiagDominant) (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
+    spectralRadius ℂ
+      (sorSplitting A h (Complex.ofReal_ne_zero.mpr hω0.ne')).iterationOperator < 1 := by
+  set hω : (ω : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hω0.ne'
+  rcases isEmpty_or_nonempty n with _ | _
+  · exact spectralRadius_lt_one_of_isEmpty _
+  refine spectralRadius_lt_one_of_forall_lt fun μ hμ => ?_
+  by_contra hcon
+  rw [not_lt] at hcon
+  -- `(D + ω L) G_ω = (1 - ω) D - ω U`
+  have hML : (diagPart A + (ω : ℂ) • strictLower A) * (sorSplitting A h hω).iterationOperator =
+      (1 - (ω : ℂ)) • diagPart A - (ω : ℂ) • strictUpper A := by
+    rw [sorSplitting_iterationOperator, mul_nonsing_inv_cancel_left _ _
+      ((isUnit_iff_isUnit_det _).mp (isUnit_diagPart_add_smul_strictLower h _))]
+  obtain ⟨v, hveig, hvne⟩ := (hasEigenvalue_toLin'_of_mem_spectrum hμ).exists_hasEigenvector
+  have hGv : (sorSplitting A h hω).iterationOperator *ᵥ v = μ • v :=
+    Module.End.mem_eigenspace_iff.mp hveig
+  have hkey : ((1 - (ω : ℂ)) • diagPart A - (ω : ℂ) • strictUpper A) *ᵥ v =
+      μ • ((diagPart A + (ω : ℂ) • strictLower A) *ᵥ v) := by
+    rw [← hML, ← mulVec_mulVec, hGv, mulVec_smul]
+  -- the row where `‖v‖_∞` is attained
+  obtain ⟨i, -, hi⟩ := Finset.exists_mem_eq_sup' Finset.univ_nonempty fun j => ‖v j‖
+  have hle : ∀ j, ‖v j‖ ≤ ‖v i‖ := fun j =>
+    hi ▸ Finset.le_sup' (fun j => ‖v j‖) (Finset.mem_univ j)
+  have hvi : v i ≠ 0 := by
+    contrapose! hvne
+    ext j
+    rw [Pi.zero_apply, ← norm_le_zero_iff]
+    exact (hle j).trans (norm_le_zero_iff.mpr hvne)
+  have hvipos : 0 < ‖v i‖ := norm_pos_iff.mpr hvi
+  set s1 := ∑ j ∈ Finset.univ.filter (· < i), ‖A i j‖ with hs1
+  set s2 := ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖ with hs2
+  have hs1nn : 0 ≤ s1 := Finset.sum_nonneg fun _ _ => norm_nonneg _
+  have hs2nn : 0 ≤ s2 := Finset.sum_nonneg fun _ _ => norm_nonneg _
+  -- the scalar identity in row `i`
+  have hrow : (μ - (1 - (ω : ℂ))) * (A i i * v i) =
+      -((ω : ℂ) * ∑ j ∈ Finset.univ.filter (i < ·), A i j * v j) -
+        μ * (ω : ℂ) * ∑ j ∈ Finset.univ.filter (· < i), A i j * v j := by
+    have := congrFun hkey i
+    simp only [sub_mulVec, add_mulVec, smul_mulVec, Pi.sub_apply, Pi.add_apply, Pi.smul_apply,
+      diagPart_mulVec_apply, strictLower_mulVec_apply, strictUpper_mulVec_apply,
+      smul_eq_mul] at this
+    linear_combination -this
+  -- the resulting inequality between the row sums
+  have hbound : ‖μ - (1 - (ω : ℂ))‖ * ‖A i i‖ * ‖v i‖ ≤
+      ω * (s2 * ‖v i‖) + ‖μ‖ * ω * (s1 * ‖v i‖) := by
+    have h1 : ‖(μ - (1 - (ω : ℂ))) * (A i i * v i)‖ = ‖μ - (1 - (ω : ℂ))‖ * ‖A i i‖ * ‖v i‖ := by
+      rw [norm_mul, norm_mul, mul_assoc]
+    rw [← h1, hrow]
+    refine (norm_sub_le _ _).trans ?_
+    rw [norm_neg, norm_mul, norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_pos hω0]
+    gcongr
+    · exact norm_sum_mul_le A v i _ hle
+    · exact norm_sum_mul_le A v i _ hle
+  have hmul : ‖μ - (1 - (ω : ℂ))‖ * ‖A i i‖ ≤ ω * s2 + ‖μ‖ * ω * s1 := by
+    have := hbound
+    nlinarith [hvipos]
+  -- `|μ - (1 - ω)| ≥ ω |μ|` for `|μ| ≥ 1` and `ω ≤ 1`
+  have hlow : ω * ‖μ‖ ≤ ‖μ - (1 - (ω : ℂ))‖ := by
+    have h1 : ‖μ‖ - ‖(1 - (ω : ℂ))‖ ≤ ‖μ - (1 - (ω : ℂ))‖ := norm_sub_norm_le _ _
+    have h2 : ‖(1 - (ω : ℂ))‖ = 1 - ω := by
+      rw [show (1 - (ω : ℂ)) = ((1 - ω : ℝ) : ℂ) by push_cast; ring, Complex.norm_real,
+        Real.norm_eq_abs, abs_of_nonneg (by linarith)]
+    nlinarith
+  -- strict dominance, in the split form
+  have hdom : s1 + s2 < ‖A i i‖ := by
+    have := hA i
+    rwa [sum_erase_eq_sum_lt_add_sum_gt] at this
+  have hμpos : 0 < ‖μ‖ := by linarith
+  nlinarith [mul_le_mul_of_nonneg_right hlow (norm_nonneg (A i i)),
+    mul_le_mul_of_nonneg_left hcon (mul_nonneg hω0.le hs2nn),
+    mul_lt_mul_of_pos_left hdom (mul_pos hω0 hμpos)]
+
 /-- [saad2003iterative], Thm 4.9, the irreducible half for Jacobi: an irreducibly diagonally
 dominant matrix has `ρ(G_J) < 1`.  An eigenvalue `μ` of `G_J` with `‖μ‖ ≥ 1` would make the pencil
 `μ D + E' + F'` — the matrix `A` with its diagonal scaled by `μ` — irreducibly diagonally dominant,
@@ -714,6 +791,16 @@ theorem gaussSeidel_complexSpectralRadius_lt_one (hA : A.IsStrictDiagDominant)
   have h' := isUnit_diagPart_complexify h
   rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A h h']
   exact gaussSeidel_spectralRadius_lt_one _ (isStrictDiagDominant_complexify hA) h'
+
+/-- **SOR under strict row dominance, for a real matrix** ([quarteroni2000numerical] Property 4.3,
+last sentence): `ρ(G_ω) < 1` for `0 < ω ≤ 1`. -/
+theorem sorSplitting_complexSpectralRadius_lt_one_of_le_one (hA : A.IsStrictDiagDominant)
+    (h : IsUnit (diagPart A)) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
+    complexSpectralRadius (sorSplitting A h hω0.ne').iterationOperator < 1 := by
+  have h' := isUnit_diagPart_complexify h
+  rw [complexSpectralRadius, complexify_sor_iterationOperator A h h']
+  exact sorSplitting_spectralRadius_lt_one_of_le_one _ (isStrictDiagDominant_complexify hA) h'
+    hω0 hω1
 
 /-- Jacobi under strict *column* dominance, for a real matrix
 (`Matrix.jacobi_spectralRadius_lt_one_of_col`). -/

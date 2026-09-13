@@ -41,119 +41,42 @@ id = "norm_iterate_sub_le'"
 
 [[node]]
 id = "norm_step_iterate_sub_le"
-kind = "theorem"
-desc = '''For `G : E →L[𝕜] E`, `f : E`, a fixed point `x'` of `x ↦ G x + f` and any `x₀`, `k`:
-`‖(step G f)^[k] x₀ - x'‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖`. Immediate from `step_iterate_sub` and
-`ContinuousLinearMap.le_opNorm`; it is the estimate `‖e_k‖/‖e_0‖ ≤ ‖B^k‖` that opens the
-stopping-criteria discussion of Quarteroni–Sacco–Saleri §4.6. ★'''
-deps = ["Stationary.step", "Stationary.step_iterate_sub"]
 
 [[node]]
 id = "step_iterate_succ_sub"
-kind = "theorem"
-desc = '''The increment recursion: `(step G f)^[k + 1] x₀ - (step G f)^[k] x₀ = (G ^ k) (step G f x₀ - x₀)`,
-for every `G : E →L[𝕜] E`, `f`, `x₀`, `k`; in particular consecutive increments satisfy
-`x_{k+1} - x_k = G (x_k - x_{k-1})`. Induction on `k`; no fixed point is needed. Currently proved in
-the Saad surface as `SaadSparse.Chapter04.affineStep_iterate_succ_sub` for `Fin n → ℝ`; both
-surfaces need it (QSS §4.6.1 reads `δ_{k+1} ≤ ‖B‖ δ_k` off it). ★'''
-deps = ["Stationary.step"]
 
 [[node]]
 id = "convergenceFactor"
-kind = "definition"
-desc = '''`convergenceFactor G m = ‖G ^ m‖`, the convergence factor after `m` steps of the stationary
-iteration with operator `G : E →L[𝕜] E` (Quarteroni–Sacco–Saleri, Definition 4.2 (1)). Stated for
-the operator norm; a matrix reaches it through `Matrix.toEuclideanCLM`, and
-`Matrix.l2_opNorm_eq_norm_toEuclideanLin` identifies the value with the `ℓ²` operator norm of the
-matrix. ★'''
-deps = ["Stationary.step"]
 
 [[node]]
 id = "averageConvergenceFactor"
-kind = "definition"
-desc = '''`averageConvergenceFactor G m = ‖G ^ m‖ ^ (1 / m : ℝ)`, the average convergence factor after `m`
-steps (Quarteroni–Sacco–Saleri, Definition 4.2 (2)). At `m = 0` the real power `x ^ (1/0) = x ^ 0 = 1`
-is a harmless junk value. ★'''
-deps = ["Stationary.convergenceFactor"]
 
 [[node]]
 id = "averageConvergenceRate"
-kind = "definition"
-desc = '''`averageConvergenceRate G m = -(1 / m : ℝ) * Real.log ‖G ^ m‖`, the average convergence rate
-`R_m(G)` after `m` steps (Quarteroni–Sacco–Saleri, Definition 4.2 (3)). `Real.log 0 = 0` makes the
-value `0` for a nilpotent `G` at large `m`, where the book's quantity is `+∞`; every statement about
-it therefore carries `‖G ^ m‖ ≠ 0` or `ρ(G) ≠ 0`. ★'''
-deps = ["Stationary.convergenceFactor"]
+
+[[node]]
+id = "averageConvergenceRate_eq_neg_log"
 
 [[node]]
 id = "asymptoticConvergenceRate"
-kind = "definition"
-desc = '''`asymptoticConvergenceRate G = -Real.log (spectralRadius ℂ G).toReal` for `G : F →L[ℂ] F`,
-the asymptotic convergence rate `R(G) = -log ρ(G)` of Quarteroni–Sacco–Saleri (4.5). Over `ℂ`
-because the spectral radius must be the complex one (`Numlib/LinearAlgebra/Matrix/Complexify`). ★'''
-deps = ["Stationary.averageConvergenceRate"]
 
 [[node]]
 id = "tendsto_averageConvergenceFactor"
-kind = "theorem"
-desc = '''Gelfand's formula read as a statement about the average convergence factor: for
-`G : F →L[ℂ] F` on a complete normed space, `averageConvergenceFactor G m → (spectralRadius ℂ G).toReal`
-as `m → ∞`. This is Mathlib's `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` in the
-Banach algebra `F →L[ℂ] F` (which needs `[Nontrivial F]` for `NormOneClass`; on a trivial `F` both
-sides are `0` after the first term). ★'''
-deps = ["Stationary.averageConvergenceFactor"]
 
 [[node]]
 id = "tendsto_averageConvergenceRate"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri (4.5): if `spectralRadius ℂ G ≠ 0` then
-`averageConvergenceRate G m → asymptoticConvergenceRate G`. Compose `tendsto_averageConvergenceFactor`
-with the continuity of `Real.log` at the positive limit, using
-`-(1/m) log ‖G^m‖ = -log (‖G^m‖ ^ (1/m))` for `‖G^m‖ > 0` (which holds eventually since the
-`m`-th roots tend to a positive limit). ★'''
-deps = ["Stationary.averageConvergenceRate", "Stationary.asymptoticConvergenceRate", "Stationary.tendsto_averageConvergenceFactor"]
 
 [[node]]
 id = "forcedIterate"
-kind = "definition"
-desc = '''The affine iteration with a step-dependent forcing term: `forcedIterate G f x₀ 0 = x₀`,
-`forcedIterate G f x₀ (k + 1) = G (forcedIterate G f x₀ k) + f k`, for `G : E →L[𝕜] E` and
-`f : ℕ → E`. It is the shape of a stationary iteration run in finite precision
-(Quarteroni–Sacco–Saleri (4.20): `P x̂_{k+1} = N x̂_k + b - ζ_k`, i.e. `f k = P⁻¹ b - P⁻¹ ζ_k`), and
-of a stationary iteration with a variable right-hand side. `step G f` is the constant case
-`forcedIterate G (fun _ => f)`. The perturbed sequences of `Numlib/FloatingPoint/Stationary`
-(`Stationary.norm_perturbed_iterate_sub_le`, hypothesis `hstep`) are exactly its values. ★'''
-deps = ["Stationary.step"]
+
+[[node]]
+id = "forcedIterate_const"
 
 [[node]]
 id = "forcedIterate_eq"
-kind = "theorem"
-desc = '''Discrete variation of constants:
-`forcedIterate G f x₀ k = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) (f (k - 1 - j))`. Induction on
-`k`, using `Finset.sum_range_succ` and `pow_succ`. This is the unnumbered display of
-Quarteroni–Sacco–Saleri §4.2.4 for `x̂^{(k+1)}`. ★'''
-deps = ["Stationary.forcedIterate"]
 
 [[node]]
 id = "sub_forcedIterate_eq"
-kind = "theorem"
-desc = '''The error decomposition of Quarteroni–Sacco–Saleri §4.2.4: if `G x' + f = x'` and the computed
-sequence is `x̂ = forcedIterate G (fun j => f - ζ j) x₀`, then
-`x' - x̂ (k + 1) = (G ^ (k + 1)) (x' - x₀) + ∑ j ∈ Finset.range (k + 1), (G ^ j) (ζ (k - j))`.
-The first term is the exact-arithmetic error (`step_iterate_sub`), the second the propagated
-perturbation; `Stationary.norm_perturbed_iterate_sub_le` of `Numlib/FloatingPoint/Stationary` bounds
-the second by `ε / (1 - ‖G‖)` when `‖ζ_j‖ ≤ ε` and `‖G‖ < 1`. From `forcedIterate_eq` and
-`step_iterate_sub`, or by direct induction. ★'''
-deps = ["Stationary.forcedIterate", "Stationary.forcedIterate_eq", "Stationary.step_iterate_sub"]
 
 [[node]]
 id = "step_iterate_eq_pow_add_sum"
-kind = "theorem"
-desc = '''The closed form of `k` steps of the affine iteration from an arbitrary start:
-`(step G f)^[k] x₀ = (G ^ k) x₀ + ∑ j ∈ Finset.range k, (G ^ j) f`, in particular
-`(step G f)^[k] 0 = ∑ j < k, (G ^ j) f`. Proof by induction with `Function.iterate_succ_apply'`
-and `Finset.sum_range_succ`. It is the hint of Quarteroni–Sacco–Saleri Exercise 7.1 (their display
-`x^{(k+1)} = x^{(0)} + (M^{k+1} - I) x^{(0)} + (M^k + … + I) B⁻¹ b`) and what turns `m` inner SOR
-(or Richardson) sweeps started from `δx = 0` into the composite Newton–SOR step (7.8); chapter 4's
-truncated stationary iterations use the same identity. ★'''
-deps = ["Stationary.step", "Stationary.step_iterate_sub"]

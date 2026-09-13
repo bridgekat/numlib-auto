@@ -63,43 +63,72 @@ id = "Matrix.complexify_gaussSeidel_iterationOperator"
 
 [[node]]
 id = "Matrix.backwardSorSplitting"
-kind = "definition"
-desc = '''The backward SOR splitting `M = ω⁻¹ • diagPart A + strictUpper A` (Saad's letters
-`ω⁻¹ (D - ω F)`), for `A : Matrix n n 𝕜` over a field with `[LinearOrder n]`, `IsUnit (diagPart A)`
-and `ω ≠ 0`; `Matrix.backwardGaussSeidelSplitting` is the case `ω = 1`. Its step is
-Quarteroni–Sacco–Saleri's backward SOR `(D - ωF) x_{k+1} = [ωE + (1 - ω) D] x_k + ω b` (§4.2.6).
-Invertibility as for `sorSplitting`, with the upper triangle. ★'''
-deps = ["Matrix.sorSplitting", "Matrix.backwardGaussSeidelSplitting"]
 
 [[node]]
 id = "Matrix.backwardSorSplitting_iterationOperator"
-kind = "theorem"
-desc = '''`(backwardSorSplitting A h hω).iterationOperator = (diagPart A + ω • strictUpper A)⁻¹ * ((1 - ω) • diagPart A - ω • strictLower A)`,
-the mirror image of `sorSplitting_iterationOperator`. ★'''
-deps = ["Matrix.backwardSorSplitting", "Matrix.sorSplitting_iterationOperator"]
 
 [[node]]
 id = "Matrix.backwardSorSplitting_one"
-kind = "theorem"
-desc = '''`backwardSorSplitting A h one_ne_zero = backwardGaussSeidelSplitting A h` (`Splitting.ext`). ★'''
-deps = ["Matrix.backwardSorSplitting", "Matrix.backwardGaussSeidelSplitting"]
+
+[[node]]
+id = "Matrix.sorSplitting_m_add_backwardSorSplitting_m_sub"
+
+[[node]]
+id = "Matrix.ringInverse_ssorSplitting_m"
 
 [[node]]
 id = "Matrix.ssorSplitting_iterationOperator_eq_mul"
-kind = "theorem"
-desc = '''The SSOR iteration matrix is the product of the backward and the forward SOR iteration matrices:
-`(ssorSplitting A h hω hω2).iterationOperator = (backwardSorSplitting A h hω).iterationOperator * (sorSplitting A h hω).iterationOperator`.
-This is Quarteroni–Sacco–Saleri's derivation of `B_s(ω)` in §4.2.6 (and of `B_SGS`, (4.21), at
-`ω = 1`) by eliminating the half-step `x^{(k+1/2)}`: with `M_f = ω⁻¹(D - ωE)`, `M_b = ω⁻¹(D - ωF)`,
-`G_b G_f = 1 - M_b⁻¹ A - M_f⁻¹ A + M_b⁻¹ A M_f⁻¹ A = 1 - M⁻¹ A` for `M⁻¹ = M_f⁻¹ + M_b⁻¹ - M_b⁻¹ A M_f⁻¹`,
-and `M_f + M_b - A = (2/ω - 1) D` identifies `M = M_f ((2/ω - 1) D)⁻¹ M_b = ssorSplitting.m`.
-Ring algebra with inverses of the two triangular factors. ★★'''
-deps = ["Matrix.ssorSplitting", "Matrix.backwardSorSplitting_iterationOperator", "Matrix.sorSplitting_iterationOperator"]
 
 [[node]]
 id = "Matrix.ssorSplitting_one_m"
-kind = "theorem"
-desc = '''At `ω = 1` the SSOR preconditioner is the symmetric Gauss–Seidel one:
-`(ssorSplitting A h one_ne_zero (by norm_num)).m = (diagPart A + strictLower A) * (diagPart A)⁻¹ * (diagPart A + strictUpper A)`,
-Quarteroni–Sacco–Saleri's `P_SGS = (D - E) D⁻¹ (D - F)` after (4.21). Unfold and `simp`. ★'''
-deps = ["Matrix.ssorSplitting"]
+
+[[node]]
+id = "Stationary.Splitting.iterationOperator_eq_mul_of_inverse_m_eq"
+
+[[node]]
+id = "Stationary.Splitting.inverse_m_eq_iterationOperator_mul_inverse_add"
+
+[[node]]
+id = "Matrix.isUnit_smul_diagPart_add_smul_strictLower"
+
+[[node]]
+id = "Matrix.isUnit_smul_diagPart_add_smul_strictUpper"
+
+[[node]]
+id = "Matrix.isUnit_diagPart_add_smul_strictLower"
+
+[[node]]
+id = "Matrix.isUnit_diagPart_add_smul_strictUpper"
+
+[[node]]
+id = "Matrix.isUnit_diagPart_add_strictUpper"
+
+[[node]]
+id = "Matrix.jorSplitting"
+
+[[node]]
+id = "Matrix.jorSplitting_iterationOperator"
+
+[[node]]
+id = "Matrix.jorSplitting_one"
+
+[[node]]
+id = "Matrix.jorSplitting_iterationOperator_eq_one_sub"
+
+[[node]]
+id = "Stationary.Splitting.map"
+
+[[node]]
+id = "Stationary.Splitting.map_iterationOperator"
+
+[[node]]
+id = "Stationary.Splitting.complexify"
+
+[[node]]
+id = "Stationary.Splitting.complexify_iterationOperator"
+
+[[node]]
+id = "Stationary.Splitting.complexSpectralRadius_iterationOperator"
+
+[[node]]
+id = "Matrix.complexify_sor_iterationOperator"
