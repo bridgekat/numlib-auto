@@ -1,0 +1,67 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'lowerSemicontinuous_iff_isClosed_epi'
+
+[[node]]
+id = 'lowerSemicontinuous_iff_isClosed_le'
+
+[[node]]
+id = 'lscHull'
+
+[[node]]
+id = 'clFn'
+
+[[node]]
+id = 'ClosedFn'
+
+[[node]]
+id = 'epi_lscHull'
+
+[[node]]
+id = 'isGreatest_lscHull'
+
+[[node]]
+id = 'closedFn_iff'
+
+[[node]]
+id = 'iInf_clFn_eq_iInf'
+
+[[node]]
+id = 'lscHull_le_setOf'
+
+[[node]]
+id = 'lscHullClosure'
+
+[[node]]
+id = 'clFnClosure'
+
+[[node]]
+id = 'ConvexFn.eq_bot_or_eq_top'
+
+[[node]]
+id = 'posHomogeneous_lscHull'
+
+[[node]]
+id = 'posHomogeneous_clFn'
+
+[[node]]
+id = 'ClosedProperConvexFn'
+
+[[node]]
+id = 'closedProperConvexFn_coe_affineMap'
+
+[[node]]
+id = 'exists_affine_le_of_closed_proper'
+
+[[node]]
+id = 'tendsto_lscHull_along_segment'
+
+[[node]]
+id = 'tendsto_along_segment_of_closed_proper'
+
+[[node]]
+id = 'lscHull_eq_liminf'
+
+[[node]]
+id = 'clFn_eq_liminf_or'

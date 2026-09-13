@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing'
+
+[[node]]
+id = 'exists_iInf_mem_neg_polarCone_eq_of_cofinite'
+
+[[node]]
+id = 'exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite'
+
+[[node]]
+id = 'exists_iInf_mem_eq_coe_of_cofinite'
+
+[[node]]
+id = 'exists_iInf_mem_eq_of_cofinite'

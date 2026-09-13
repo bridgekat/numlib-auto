@@ -1,0 +1,43 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'not_exists_forall_neg_of_forall_zero_le_weighted'
+
+[[node]]
+id = 'alternative_of_convex_system'
+
+[[node]]
+id = 'alternative_of_convex_system_affine'
+
+[[node]]
+id = 'helly_finite'
+
+[[node]]
+id = 'exists_mem_of_forall_subsystem'
+
+[[node]]
+id = 'exists_mem_of_forall_subsystem_lt'
+
+[[node]]
+id = 'sparse_alternative_of_convex_system'
+
+[[node]]
+id = 'finrank_eq_of_isCompatiblePairing'
+
+[[node]]
+id = 'exists_multipliers_of_posHomGen_convFn_conj_eq_bot'
+
+[[node]]
+id = 'alternative_infinite_system_univ'
+
+[[node]]
+id = 'alternative_infinite_system'
+
+[[node]]
+id = 'exists_forall_le_zero_of_forall_subsystem'
+
+[[node]]
+id = 'helly_of_no_common_recession'
+
+[[node]]
+id = 'helly_of_exists_isBounded_biInter'

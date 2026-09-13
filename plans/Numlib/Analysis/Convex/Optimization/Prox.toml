@@ -1,0 +1,43 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'moreauObj'
+
+[[node]]
+id = 'subgradient_quadFn_sub'
+
+[[node]]
+id = 'recessionFn_quadFn_sub'
+
+[[node]]
+id = 'prox'
+
+[[node]]
+id = 'argmin_moreauObj_nonempty'
+
+[[node]]
+id = 'mem_argmin_moreauObj_iff'
+
+[[node]]
+id = 'existsUnique_sub_mem_subgradient'
+
+[[node]]
+id = 'prox_eq_iff'
+
+[[node]]
+id = 'prox_add_prox_conj'
+
+[[node]]
+id = 'pairingNorm_prox_sub_le'
+
+[[node]]
+id = 'subgradientRelHomeomorph'
+
+[[node]]
+id = 'isMaximalMonotoneRel_subgradientRel'
+
+[[node]]
+id = 'dist_prox_prox_le'
+
+[[node]]
+id = 'lipschitzWith_prox'

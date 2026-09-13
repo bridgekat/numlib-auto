@@ -1,0 +1,7 @@
+desc = '''
+The duality layer. `Pairing` fixes the dual pair every conjugate is taken against, `Conjugate` and
+`Support` are the two basic transforms, `Polar` and `Gauge` their set-valued forms, and `Ops` is
+the table matching each functional operation with its conjugate. `Relint`, `Continuity` and
+`Exact` are the constraint qualifications under which a closure may be dropped from a duality
+formula — cite one of them rather than proving a closure away by hand.
+'''

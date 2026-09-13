@@ -1,0 +1,34 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ConcaveConvexOn'
+
+[[node]]
+id = 'exists_forall_abs_le_and_lipschitzOnWith_prod'
+
+[[node]]
+id = 'ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact'
+
+[[node]]
+id = 'exists_isCompact_mem_nhdsWithin_relint'
+
+[[node]]
+id = 'exists_isCompact_collar_relint'
+
+[[node]]
+id = 'uniformCauchySeqOn_of_equiLipschitz'
+
+[[node]]
+id = 'exists_tendstoUniformlyOn_prod_of_dense'
+
+[[node]]
+id = 'tendstoUniformlyOn_prod_of_tendsto'
+
+[[node]]
+id = 'exists_subseq_tendstoUniformlyOn_prod'
+
+[[node]]
+id = 'continuousOn_prod_of_concaveConvexOn'
+
+[[node]]
+id = "continuousOn_prod_of_concaveConvexOn'"

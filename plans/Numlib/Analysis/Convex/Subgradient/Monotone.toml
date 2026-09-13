@@ -1,0 +1,28 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsMonotoneRel'
+
+[[node]]
+id = 'IsCyclicallyMonotone'
+
+[[node]]
+id = 'IsMaximalMonotoneRel'
+
+[[node]]
+id = 'IsMaximalCyclicallyMonotone'
+
+[[node]]
+id = 'cyclicPotential'
+
+[[node]]
+id = 'isCyclicallyMonotone_iff_exists_convexFn'
+
+[[node]]
+id = 'isClosed_subgradientRel'
+
+[[node]]
+id = 'eq_add_coe_of_subgradientRel_subset'
+
+[[node]]
+id = 'isMaximalCyclicallyMonotone_iff_exists_closedProperConvexFn'

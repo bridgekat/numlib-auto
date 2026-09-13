@@ -1,0 +1,23 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'coneOver'
+
+[[node]]
+id = 'slice_hull_union'
+
+[[node]]
+id = 'Polyhedral'
+
+[[node]]
+id = 'FinitelyGenerated'
+
+[[node]]
+id = 'Polyhedral.convex'
+desc = 'A polyhedral set is convex.'
+
+[[node]]
+id = 'polyhedral_iff_finitelyGenerated'
+
+[[node]]
+id = 'Polyhedral.isClosed'

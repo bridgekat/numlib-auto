@@ -1,0 +1,41 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'infConv'
+
+[[node]]
+id = 'subset_epi_infConv'
+desc = 'The sum of the two epigraphs is contained in the epigraph of the infimal convolution.'
+
+[[node]]
+id = 'epi_infConv'
+
+[[node]]
+id = 'dom_infConv'
+
+[[node]]
+id = 'infConv_le_add'
+
+[[node]]
+id = 'infConv_apply'
+
+[[node]]
+id = 'infConv_indicatorFn_singleton'
+
+[[node]]
+id = 'convexFn_infConv'
+
+[[node]]
+id = 'InfConvFn'
+
+[[node]]
+id = 'InfConvFn.instAddCommMonoid'
+
+[[node]]
+id = 'convexFn_sum_toInfConvFn'
+
+[[node]]
+id = 'sum_toInfConvFn_apply_le'
+
+[[node]]
+id = 'sum_toInfConvFn_le_sum'

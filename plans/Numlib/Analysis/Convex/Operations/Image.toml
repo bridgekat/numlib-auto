@@ -1,0 +1,32 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'mapLin'
+
+[[node]]
+id = 'compLin'
+
+[[node]]
+id = 'gc_compLin_mapLin'
+
+[[node]]
+id = 'convexFn_compLin'
+
+[[node]]
+id = 'ConvexFn.comp_affine'
+
+[[node]]
+id = 'mapLin_eq_ofEpi'
+
+[[node]]
+id = 'convexFn_mapLin'
+
+[[node]]
+id = 'ConvexFn.slice_left'
+
+[[node]]
+id = 'ConvexFn.slice_right'
+desc = 'Fixing the second argument of a jointly convex function of a pair leaves a convex function.'
+
+[[node]]
+id = 'convexFn_iInf_right'

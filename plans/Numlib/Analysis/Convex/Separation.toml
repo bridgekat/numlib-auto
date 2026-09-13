@@ -1,0 +1,67 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'Separates'
+
+[[node]]
+id = 'SeparatesProperly'
+
+[[node]]
+id = 'SeparatesStrongly'
+
+[[node]]
+id = 'separates_iff_iSup_le_iInf'
+
+[[node]]
+id = 'exists_separatesProperly_iff_iSup_le_iInf'
+
+[[node]]
+id = 'exists_separatesStrongly_iff_iSup_lt_iInf'
+
+[[node]]
+id = 'separatesStrongly_iff_exists_gap'
+
+[[node]]
+id = 'separatesStrongly_iff_exists_nhds'
+
+[[node]]
+id = 'exists_separates_of_isOpen_of_disjoint_affine'
+
+[[node]]
+id = 'IsSupporting'
+
+[[node]]
+id = 'exists_isSupporting_iff_disjoint_interior'
+
+[[node]]
+id = 'separatesStrongly_iff_exists_closedBall'
+
+[[node]]
+id = 'halfSpaceCone'
+
+[[node]]
+id = 'SeparatesProperly.zero_of_isCone_left'
+
+[[node]]
+id = 'separatesStrongly_iff_zero_notMem_closure_sub'
+
+[[node]]
+id = 'separatesStrongly_of_disjoint_isCompact_isClosed'
+
+[[node]]
+id = 'exists_separating_of_notMem_closed_convex'
+
+[[node]]
+id = 'mem_iff_forall_le_halfSpace'
+
+[[node]]
+id = 'isClosed_convex_eq_iInter_halfspaces'
+
+[[node]]
+id = 'closure_convexHull_eq_iInter_halfspaces'
+
+[[node]]
+id = 'exists_affine_lt_of_notMem'
+
+[[node]]
+id = 'exists_affine_le_of_isClosed_epi'

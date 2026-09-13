@@ -1,0 +1,82 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'Bifun'
+
+[[node]]
+id = 'graphFn'
+
+[[node]]
+id = 'infBifun'
+
+[[node]]
+id = 'domBifun'
+
+[[node]]
+id = 'dom_infBifun'
+
+[[node]]
+id = 'ConvexBifun'
+
+[[node]]
+id = 'convexFn_infBifun'
+
+[[node]]
+id = 'Consistent'
+
+[[node]]
+id = 'StronglyConsistent'
+
+[[node]]
+id = 'StrictlyConsistent'
+
+[[node]]
+id = 'KuhnTucker'
+
+[[node]]
+id = 'mem_kuhnTucker_iff_neg_mem_subgradient'
+
+[[node]]
+id = 'kuhnTucker_eq_neg_subgradient'
+
+[[node]]
+id = 'convex_kuhnTucker'
+
+[[node]]
+id = 'isClosed_kuhnTucker'
+
+[[node]]
+id = 'kuhnTucker_nonempty_of_stronglyConsistent'
+
+[[node]]
+id = 'supportFn_kuhnTucker'
+
+[[node]]
+id = 'infBifun_eq_bot_of_mem_relint'
+
+[[node]]
+id = 'kuhnTucker_eq_empty_iff'
+
+[[node]]
+id = 'continuousOn_infBifun_interior'
+
+[[node]]
+id = 'dirDeriv_infBifun_eq'
+
+[[node]]
+id = 'isCompact_kuhnTucker_of_strictlyConsistent'
+
+[[node]]
+id = 'kuhnTucker_eq_singleton_of_hasGradientAt'
+
+[[node]]
+id = 'PolyhedralBifun'
+
+[[node]]
+id = 'PolyhedralBifun.polyhedralFn_infBifun'
+
+[[node]]
+id = 'kuhnTucker_nonempty_of_polyhedralBifun'
+
+[[node]]
+id = 'argmin_nonempty_of_polyhedralBifun'

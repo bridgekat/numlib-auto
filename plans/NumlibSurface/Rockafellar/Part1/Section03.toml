@@ -1,0 +1,66 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_3_1'
+source = 'Rockafellar 1970, Theorem 3.1'
+
+[[node]]
+id = 'theorem_3_2'
+source = 'Rockafellar 1970, Theorem 3.2'
+
+[[node]]
+id = 'convexCombinations'
+
+[[node]]
+id = 'theorem_3_3'
+source = 'Rockafellar 1970, Theorem 3.3'
+
+[[node]]
+id = 'theorem_3_4_image'
+source = 'Rockafellar 1970, Theorem 3.4'
+
+[[node]]
+id = 'theorem_3_4_preimage'
+source = 'Rockafellar 1970, Theorem 3.4'
+
+[[node]]
+id = 'corollary_3_4_1'
+source = 'Rockafellar 1970, Corollary 3.4.1'
+
+[[node]]
+id = 'theorem_3_5'
+source = 'Rockafellar 1970, Theorem 3.5'
+
+[[node]]
+id = 'partialAdd'
+
+[[node]]
+id = 'theorem_3_6'
+source = 'Rockafellar 1970, Theorem 3.6'
+
+[[node]]
+id = 'invSum'
+
+[[node]]
+id = 'mem_invSum_iff_exists'
+
+[[node]]
+id = 'invSum_eq_iUnion_singleton'
+
+[[node]]
+id = 'theorem_3_7'
+source = 'Rockafellar 1970, Theorem 3.7'
+
+[[node]]
+id = 'coneLift'
+
+[[node]]
+id = 'invSum_eq_partialAdd_coneLift'
+
+[[node]]
+id = 'theorem_3_8_add'
+source = 'Rockafellar 1970, Theorem 3.8'
+
+[[node]]
+id = 'theorem_3_8_invSum'
+source = 'Rockafellar 1970, Theorem 3.8'

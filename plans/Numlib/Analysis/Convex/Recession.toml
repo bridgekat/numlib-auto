@@ -1,0 +1,5 @@
+desc = '''
+Recession cones and recession functions, lineality and constancy spaces, and the closedness
+criteria for images and sums they govern. `Closedness` is what to cite when an argument needs a
+linear image or a sum of convex sets to be closed.
+'''

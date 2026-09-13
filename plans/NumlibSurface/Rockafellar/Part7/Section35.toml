@@ -1,0 +1,86 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_35_1_continuousOn'
+source = 'Rockafellar 1970, Theorem 35.1'
+
+[[node]]
+id = 'theorem_35_1_lipschitzian'
+source = 'Rockafellar 1970, Theorem 35.1'
+
+[[node]]
+id = 'theorem_35_2'
+source = 'Rockafellar 1970, Theorem 35.2'
+
+[[node]]
+id = 'theorem_35_3'
+source = 'Rockafellar 1970, Theorem 35.3'
+
+[[node]]
+id = 'theorem_35_4'
+source = 'Rockafellar 1970, Theorem 35.4'
+
+[[node]]
+id = 'theorem_35_5'
+source = 'Rockafellar 1970, Theorem 35.5'
+
+[[node]]
+id = 'subgrad₁'
+
+[[node]]
+id = 'subgrad₂'
+
+[[node]]
+id = 'subgrad'
+
+[[node]]
+id = 'theorem_35_6'
+source = 'Rockafellar 1970, Theorem 35.6'
+
+[[node]]
+id = 'theorem_35_7_fst'
+source = 'Rockafellar 1970, Theorem 35.7'
+
+[[node]]
+id = 'theorem_35_7_snd'
+source = 'Rockafellar 1970, Theorem 35.7'
+
+[[node]]
+id = 'theorem_35_7_subgrad'
+source = 'Rockafellar 1970, Theorem 35.7'
+
+[[node]]
+id = 'corollary_35_7_1_fst'
+source = 'Rockafellar 1970, Corollary 35.7.1'
+
+[[node]]
+id = 'corollary_35_7_1_snd'
+source = 'Rockafellar 1970, Corollary 35.7.1'
+
+[[node]]
+id = 'corollary_35_7_1_subgrad'
+source = 'Rockafellar 1970, Corollary 35.7.1'
+
+[[node]]
+id = 'theorem_35_8'
+source = 'Rockafellar 1970, Theorem 35.8'
+
+[[node]]
+id = 'corollary_35_8_1'
+source = 'Rockafellar 1970, Corollary 35.8.1'
+
+[[node]]
+id = 'theorem_35_9_measure'
+source = 'Rockafellar 1970, Theorem 35.9'
+
+[[node]]
+id = 'theorem_35_9_dense'
+source = 'Rockafellar 1970, Theorem 35.9'
+
+[[node]]
+id = 'theorem_35_9_continuousOn'
+source = 'Rockafellar 1970, Theorem 35.9'
+
+[[node]]
+id = 'theorem_35_10'
+source = 'Rockafellar 1970, Theorem 35.10'

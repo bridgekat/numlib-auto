@@ -1,0 +1,47 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'conj_add_le_infConv'
+
+[[node]]
+id = 'IsExactSum'
+
+[[node]]
+id = 'IsExactSum.proper_add'
+
+[[node]]
+id = 'IsExactSum.conj_add'
+
+[[node]]
+id = 'IsExactSum.exists_conj_add_eq'
+
+[[node]]
+id = 'conj_finsetSum_le_sum_toInfConvFn'
+
+[[node]]
+id = 'IsExactFinsetSum'
+
+[[node]]
+id = 'IsExactFinsetSum.proper_finsetSum'
+
+[[node]]
+id = 'IsExactFinsetSum.conj_finsetSum'
+
+[[node]]
+id = 'IsExactFinsetSum.singleton'
+
+[[node]]
+id = 'conj_compLin_le_mapLin'
+
+[[node]]
+id = 'IsExactImage'
+
+[[node]]
+id = 'IsExactImage.proper_compLin'
+desc = 'A function that pulls back exactly along `A` has proper pullback.'
+
+[[node]]
+id = 'IsExactImage.conj_compLin'
+
+[[node]]
+id = 'IsExactImage.exists_conj_compLin_eq'

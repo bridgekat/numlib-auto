@@ -1,0 +1,152 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_23_1_monotone'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_1_iInf'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_1_posHomogeneous'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_1_convex'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_1_zero'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_1_neg_le'
+source = 'Rockafellar 1970, Theorem 23.1'
+
+[[node]]
+id = 'theorem_23_2'
+source = 'Rockafellar 1970, Theorem 23.2'
+
+[[node]]
+id = 'theorem_23_3_proper'
+source = 'Rockafellar 1970, Theorem 23.3'
+
+[[node]]
+id = 'theorem_23_3_two_sided'
+source = 'Rockafellar 1970, Theorem 23.3'
+
+[[node]]
+id = 'theorem_23_3_relint'
+source = 'Rockafellar 1970, Theorem 23.3'
+
+[[node]]
+id = 'theorem_23_4_notMem_dom'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_nonempty'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_proper'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_closed'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_supportFn'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_isBounded_iff'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'theorem_23_4_finite_iff'
+source = 'Rockafellar 1970, Theorem 23.4'
+
+[[node]]
+id = 'nonsmoothMaxFn'
+
+[[node]]
+id = 'theorem_23_5_a'
+source = 'Rockafellar 1970, Theorem 23.5'
+
+[[node]]
+id = 'theorem_23_5_b'
+source = 'Rockafellar 1970, Theorem 23.5'
+
+[[node]]
+id = 'theorem_23_5_c'
+source = 'Rockafellar 1970, Theorem 23.5'
+
+[[node]]
+id = 'theorem_23_5_d'
+source = 'Rockafellar 1970, Theorem 23.5'
+
+[[node]]
+id = 'corollary_23_5_1'
+source = 'Rockafellar 1970, Corollary 23.5.1'
+
+[[node]]
+id = 'corollary_23_5_2_clFn'
+source = 'Rockafellar 1970, Corollary 23.5.2'
+
+[[node]]
+id = 'corollary_23_5_2_subgradient'
+source = 'Rockafellar 1970, Corollary 23.5.2'
+
+[[node]]
+id = 'corollary_23_5_3'
+source = 'Rockafellar 1970, Corollary 23.5.3'
+
+[[node]]
+id = 'corollary_23_5_4'
+source = 'Rockafellar 1970, Corollary 23.5.4'
+
+[[node]]
+id = 'theorem_23_6'
+source = 'Rockafellar 1970, Theorem 23.6'
+
+[[node]]
+id = 'theorem_23_7'
+source = 'Rockafellar 1970, Theorem 23.7'
+
+[[node]]
+id = 'corollary_23_7_1'
+source = 'Rockafellar 1970, Corollary 23.7.1'
+
+[[node]]
+id = 'theorem_23_8'
+source = 'Rockafellar 1970, Theorem 23.8'
+
+[[node]]
+id = 'corollary_23_8_1'
+source = 'Rockafellar 1970, Corollary 23.8.1'
+
+[[node]]
+id = 'theorem_23_9'
+source = 'Rockafellar 1970, Theorem 23.9'
+
+[[node]]
+id = 'theorem_23_10_nonempty'
+source = 'Rockafellar 1970, Theorem 23.10'
+
+[[node]]
+id = 'theorem_23_10_polyhedral'
+source = 'Rockafellar 1970, Theorem 23.10'
+
+[[node]]
+id = 'theorem_23_10_dirDeriv_polyhedral'
+source = 'Rockafellar 1970, Theorem 23.10'
+
+[[node]]
+id = 'theorem_23_10_dirDeriv_proper'
+source = 'Rockafellar 1970, Theorem 23.10'
+
+[[node]]
+id = 'theorem_23_10_supportFn'
+source = 'Rockafellar 1970, Theorem 23.10'

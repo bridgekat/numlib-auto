@@ -1,0 +1,29 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ofEpi'
+
+[[node]]
+id = 'subset_epi_iff_le_ofEpi'
+
+[[node]]
+id = 'ofEpi_epi'
+
+[[node]]
+id = 'gc_ofEpi_epi'
+desc = '`epi` and `ofEpi` form an antitone Galois connection between functions and sets in `E × ℝ`.'
+
+[[node]]
+id = 'epiClosure'
+
+[[node]]
+id = 'IsEpiLike'
+
+[[node]]
+id = 'epi_ofEpi'
+
+[[node]]
+id = 'IsEpiLike.iInter'
+
+[[node]]
+id = 'convexFn_ofEpi'

@@ -1,0 +1,51 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'IsPolyhedral'
+
+[[node]]
+id = 'SeparableProperlyNotContaining'
+
+[[node]]
+id = 'theorem_20_1_pair_exact'
+source = 'Rockafellar 1970, Theorem 20.1'
+
+[[node]]
+id = 'theorem_20_1_pair_attained'
+source = 'Rockafellar 1970, Theorem 20.1'
+
+[[node]]
+id = 'theorem_20_1_exact'
+source = 'Rockafellar 1970, Theorem 20.1'
+
+[[node]]
+id = 'theorem_20_1_attained'
+source = 'Rockafellar 1970, Theorem 20.1'
+
+[[node]]
+id = 'corollary_20_1_1'
+source = 'Rockafellar 1970, Corollary 20.1.1'
+
+[[node]]
+id = 'theorem_20_2'
+source = 'Rockafellar 1970, Theorem 20.2'
+
+[[node]]
+id = 'corollary_20_2_1'
+source = 'Rockafellar 1970, Corollary 20.2.1'
+
+[[node]]
+id = 'theorem_20_3'
+source = 'Rockafellar 1970, Theorem 20.3'
+
+[[node]]
+id = 'corollary_20_3_1'
+source = 'Rockafellar 1970, Corollary 20.3.1'
+
+[[node]]
+id = 'theorem_20_4'
+source = 'Rockafellar 1970, Theorem 20.4'
+
+[[node]]
+id = 'theorem_20_5'
+source = 'Rockafellar 1970, Theorem 20.5'

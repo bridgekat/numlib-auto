@@ -1,0 +1,22 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ConcaveConvexOn.exists_lipschitzOnWith_ball'
+
+[[node]]
+id = 'ae_differentiableAt_of_concaveConvexOn'
+
+[[node]]
+id = 'measure_diff_differentiableAt_of_concaveConvexOn'
+
+[[node]]
+id = 'subset_closure_differentiableAt_of_concaveConvexOn'
+
+[[node]]
+id = 'continuousOn_saddleGradient'
+
+[[node]]
+id = 'tendsto_of_hasSaddleGradientAt'
+
+[[node]]
+id = 'tendstoUniformlyOn_saddleGradient'

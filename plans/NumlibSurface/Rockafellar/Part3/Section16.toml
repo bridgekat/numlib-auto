@@ -1,0 +1,129 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_16_1_left'
+source = 'Rockafellar 1970, Theorem 16.1'
+
+[[node]]
+id = 'theorem_16_1_right'
+source = 'Rockafellar 1970, Theorem 16.1'
+
+[[node]]
+id = 'corollary_16_1_1'
+source = 'Rockafellar 1970, Corollary 16.1.1'
+
+[[node]]
+id = 'corollary_16_1_2'
+source = 'Rockafellar 1970, Corollary 16.1.2'
+
+[[node]]
+id = 'lemma_16_2'
+source = 'Rockafellar 1970, Lemma 16.2'
+
+[[node]]
+id = 'corollary_16_2_1'
+source = 'Rockafellar 1970, Corollary 16.2.1'
+
+[[node]]
+id = 'corollary_16_2_2'
+source = 'Rockafellar 1970, Corollary 16.2.2'
+
+[[node]]
+id = 'theorem_16_3_image'
+source = 'Rockafellar 1970, Theorem 16.3'
+
+[[node]]
+id = 'theorem_16_3_closure'
+source = 'Rockafellar 1970, Theorem 16.3'
+
+[[node]]
+id = 'theorem_16_3_exact'
+source = 'Rockafellar 1970, Theorem 16.3'
+
+[[node]]
+id = 'theorem_16_3_attained'
+source = 'Rockafellar 1970, Theorem 16.3'
+
+[[node]]
+id = 'theorem_16_3_polyhedral'
+source = 'Rockafellar 1970, Theorem 16.3'
+
+[[node]]
+id = 'corollary_16_3_1_image'
+source = 'Rockafellar 1970, Corollary 16.3.1'
+
+[[node]]
+id = 'corollary_16_3_1_closure'
+source = 'Rockafellar 1970, Corollary 16.3.1'
+
+[[node]]
+id = 'corollary_16_3_1_exact'
+source = 'Rockafellar 1970, Corollary 16.3.1'
+
+[[node]]
+id = 'corollary_16_3_2_image'
+source = 'Rockafellar 1970, Corollary 16.3.2'
+
+[[node]]
+id = 'corollary_16_3_2_preimage'
+source = 'Rockafellar 1970, Corollary 16.3.2'
+
+[[node]]
+id = 'theorem_16_4_infConv'
+source = 'Rockafellar 1970, Theorem 16.4'
+
+[[node]]
+id = 'theorem_16_4_closure'
+source = 'Rockafellar 1970, Theorem 16.4'
+
+[[node]]
+id = 'theorem_16_4_exact'
+source = 'Rockafellar 1970, Theorem 16.4'
+
+[[node]]
+id = 'theorem_16_4_attained'
+source = 'Rockafellar 1970, Theorem 16.4'
+
+[[node]]
+id = 'corollary_16_4_1_add'
+source = 'Rockafellar 1970, Corollary 16.4.1'
+
+[[node]]
+id = 'corollary_16_4_1_closure'
+source = 'Rockafellar 1970, Corollary 16.4.1'
+
+[[node]]
+id = 'corollary_16_4_1_exact'
+source = 'Rockafellar 1970, Corollary 16.4.1'
+
+[[node]]
+id = 'corollary_16_4_2_add'
+source = 'Rockafellar 1970, Corollary 16.4.2'
+
+[[node]]
+id = 'corollary_16_4_1_attained_finset'
+source = 'Rockafellar 1970, Corollary 16.4.1'
+
+[[node]]
+id = 'theorem_16_5_convFn'
+source = 'Rockafellar 1970, Theorem 16.5'
+
+[[node]]
+id = 'theorem_16_5_closure'
+source = 'Rockafellar 1970, Theorem 16.5'
+
+[[node]]
+id = 'corollary_16_5_1_hull'
+source = 'Rockafellar 1970, Corollary 16.5.1'
+
+[[node]]
+id = 'corollary_16_5_1_closure'
+source = 'Rockafellar 1970, Corollary 16.5.1'
+
+[[node]]
+id = 'corollary_16_5_2_hull'
+source = 'Rockafellar 1970, Corollary 16.5.2'
+
+[[node]]
+id = 'corollary_16_5_2_inter'
+source = 'Rockafellar 1970, Corollary 16.5.2'

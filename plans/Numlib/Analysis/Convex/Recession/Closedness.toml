@@ -1,0 +1,61 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'image_recessionCone_subset'
+
+[[node]]
+id = 'isClosed_image_of_recessionCone_inter_ker'
+
+[[node]]
+id = 'recessionCone_image_of_recessionCone_inter_ker'
+
+[[node]]
+id = 'Convex.closure_image_eq_and_recessionCone'
+
+[[node]]
+id = 'Convex.isClosed_add'
+
+[[node]]
+id = 'Convex.closure_add_eq'
+
+[[node]]
+id = 'Convex.recessionCone_add'
+
+[[node]]
+id = 'closedProperConvexFn_mapLin'
+
+[[node]]
+id = 'closedProperConvexFn_infConv_of_recessionFn_symm'
+
+[[node]]
+id = 'closedProperConvexFn_infConv'
+
+[[node]]
+id = 'ClosedProperConvexFn.add'
+
+[[node]]
+id = 'closedProperConvexFn_finsetSum'
+
+[[node]]
+id = 'recessionFn_add'
+
+[[node]]
+id = 'clFn_add'
+
+[[node]]
+id = 'isClosed_epi_iSup'
+
+[[node]]
+id = 'recessionFn_iSup'
+
+[[node]]
+id = 'lscHull_iSup'
+
+[[node]]
+id = 'isClosed_epi_compLin'
+
+[[node]]
+id = 'recessionFn_compLin'
+
+[[node]]
+id = 'clFn_compLin'

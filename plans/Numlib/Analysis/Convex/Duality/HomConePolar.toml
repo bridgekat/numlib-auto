@@ -1,0 +1,22 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'homConePairing'
+
+[[node]]
+id = 'homCoord'
+
+[[node]]
+id = 'negSwapEnds'
+
+[[node]]
+id = 'conj_le_coe_iff_forall_mem_epi'
+
+[[node]]
+id = 'polarCone_homCone'
+
+[[node]]
+id = 'mem_homCone_conj_iff_of_pos'
+
+[[node]]
+id = 'closure_homCone_conj'

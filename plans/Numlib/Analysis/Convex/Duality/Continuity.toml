@@ -1,0 +1,4 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsExactSum.of_continuousAt'

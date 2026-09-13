@@ -1,0 +1,5 @@
+[[node]]
+id = 'vectorSpan_eq_span_of_zero_mem'
+
+[[node]]
+id = 'vectorSpan_eq_of_affineSpan_eq'

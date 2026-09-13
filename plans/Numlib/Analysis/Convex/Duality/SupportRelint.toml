@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'supportFn_neg_eq_neg_iff'
+
+[[node]]
+id = 'neg_supportFn_neg_eq_iff'
+
+[[node]]
+id = 'mem_relint_iff_lt_supportFn'
+
+[[node]]
+id = 'mem_interior_iff_lt_supportFn'
+
+[[node]]
+id = 'mem_affineSpan_iff_eq_supportFn'
+
+[[node]]
+id = 'isBounded_iff_forall_bddAbove'

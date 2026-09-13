@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'recessionFn_conj'
+
+[[node]]
+id = 'constancySpace_conj'
+
+[[node]]
+id = 'recessionConeFn_conj'
+
+[[node]]
+id = 'recessionConeFn_conj_hull'
+
+[[node]]
+id = 'recessionConeFn_eq_polarCone_dom_conj'
+
+[[node]]
+id = 'polarCone_recessionConeFn'
+
+[[node]]
+id = 'zero_mem_interior_iff_polarCone_eq_zero'
+
+[[node]]
+id = 'isBounded_setOf_le_iff_zero_mem_interior_dom_conj'

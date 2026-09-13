@@ -1,0 +1,115 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'Convex.subset_closure_inter_setOf_pos'
+
+[[node]]
+id = 'Convex.closure_inter_setOf_pos'
+
+[[node]]
+id = 'mem_intrinsicInterior_iff'
+
+[[node]]
+id = 'Convex.segment_mem_relint'
+
+[[node]]
+id = 'Convex.relint_nonempty'
+
+[[node]]
+id = 'Convex.affineSpan_relint'
+
+[[node]]
+id = 'Convex.interior_subset_relint'
+
+[[node]]
+id = 'Convex.closure_relint'
+
+[[node]]
+id = 'Convex.relint_closure'
+
+[[node]]
+id = 'Convex.closure_eq_iff_relint_eq'
+
+[[node]]
+id = 'Convex.relint_inter_nonempty_of_isOpen'
+
+[[node]]
+id = 'Convex.mem_relint_iff_prolong'
+
+[[node]]
+id = 'Convex.closure_iInter'
+
+[[node]]
+id = 'Convex.relint_iInter'
+
+[[node]]
+id = 'Convex.relint_inter_affine'
+
+[[node]]
+id = 'Convex.relint_subset_relint_of_subset_closure'
+
+[[node]]
+id = 'Convex.relint_image'
+
+[[node]]
+id = 'Convex.relint_smul'
+
+[[node]]
+id = 'Convex.relint_add'
+
+[[node]]
+id = 'Convex.relint_preimage'
+
+[[node]]
+id = 'Convex.closure_preimage'
+
+[[node]]
+id = 'Convex.mem_relint_prod_iff'
+
+[[node]]
+id = 'Convex.relint_cone_prodMk_one'
+
+[[node]]
+id = 'Convex.relint_convexHull_union'
+
+[[node]]
+id = 'ConvexFn.relint_epi'
+
+[[node]]
+id = 'ConvexFn.eq_bot_of_mem_relint_dom'
+
+[[node]]
+id = 'ConvexFn.proper_clFn'
+
+[[node]]
+id = 'ConvexFn.clFn_eq_of_mem_relint_dom'
+
+[[node]]
+id = 'ConvexFn.relint_dom_clFn'
+
+[[node]]
+id = 'ConvexFn.interior_dom_clFn'
+
+[[node]]
+id = 'ConvexFn.le_of_mem_closure'
+
+[[node]]
+id = 'ConvexFn.tendsto_lscHull_along_segment_relint'
+
+[[node]]
+id = 'ConvexFn.exists_mem_relint_dom_lt'
+
+[[node]]
+id = 'ConvexFn.relint_setOf_le'
+
+[[node]]
+id = 'ConvexFn.closure_setOf_le'
+
+[[node]]
+id = 'ConvexFn.closure_setOf_lt_eq'
+
+[[node]]
+id = 'ConvexFn.relint_setOf_lt_eq'
+
+[[node]]
+id = 'exists_separatesProperly_iff_disjoint_relint'

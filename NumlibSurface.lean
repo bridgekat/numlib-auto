@@ -68,12 +68,61 @@ import NumlibSurface.AtkinsonHan.Chapter14.Section01
 import NumlibSurface.AtkinsonHan.Chapter14.Section02
 import NumlibSurface.AtkinsonHan.Chapter14.Section03
 import NumlibSurface.AtkinsonHan.Chapter14.Section04
+import NumlibSurface.Common.Euclidean
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
 import NumlibSurface.FongSaunders.Section02
 import NumlibSurface.FongSaunders.Section03
 import NumlibSurface.FongSaunders.Section04
 import NumlibSurface.FongSaunders.Section05
+import NumlibSurface.Rockafellar
+import NumlibSurface.Rockafellar.Part1
+import NumlibSurface.Rockafellar.Part1.Section01
+import NumlibSurface.Rockafellar.Part1.Section02
+import NumlibSurface.Rockafellar.Part1.Section03
+import NumlibSurface.Rockafellar.Part1.Section04
+import NumlibSurface.Rockafellar.Part1.Section05
+import NumlibSurface.Rockafellar.Part2
+import NumlibSurface.Rockafellar.Part2.Section06
+import NumlibSurface.Rockafellar.Part2.Section07
+import NumlibSurface.Rockafellar.Part2.Section08
+import NumlibSurface.Rockafellar.Part2.Section09
+import NumlibSurface.Rockafellar.Part2.Section10
+import NumlibSurface.Rockafellar.Part3
+import NumlibSurface.Rockafellar.Part3.Section11
+import NumlibSurface.Rockafellar.Part3.Section12
+import NumlibSurface.Rockafellar.Part3.Section13
+import NumlibSurface.Rockafellar.Part3.Section14
+import NumlibSurface.Rockafellar.Part3.Section15
+import NumlibSurface.Rockafellar.Part3.Section16
+import NumlibSurface.Rockafellar.Part4
+import NumlibSurface.Rockafellar.Part4.Section17
+import NumlibSurface.Rockafellar.Part4.Section18
+import NumlibSurface.Rockafellar.Part4.Section19
+import NumlibSurface.Rockafellar.Part4.Section20
+import NumlibSurface.Rockafellar.Part4.Section21
+import NumlibSurface.Rockafellar.Part4.Section22
+import NumlibSurface.Rockafellar.Part5
+import NumlibSurface.Rockafellar.Part5.Section23
+import NumlibSurface.Rockafellar.Part5.Section24
+import NumlibSurface.Rockafellar.Part5.Section25
+import NumlibSurface.Rockafellar.Part5.Section26
+import NumlibSurface.Rockafellar.Part6
+import NumlibSurface.Rockafellar.Part6.Section27
+import NumlibSurface.Rockafellar.Part6.Section28
+import NumlibSurface.Rockafellar.Part6.Section29
+import NumlibSurface.Rockafellar.Part6.Section30
+import NumlibSurface.Rockafellar.Part6.Section31
+import NumlibSurface.Rockafellar.Part6.Section32
+import NumlibSurface.Rockafellar.Part7
+import NumlibSurface.Rockafellar.Part7.Section33
+import NumlibSurface.Rockafellar.Part7.Section34
+import NumlibSurface.Rockafellar.Part7.Section35
+import NumlibSurface.Rockafellar.Part7.Section36
+import NumlibSurface.Rockafellar.Part7.Section37
+import NumlibSurface.Rockafellar.Part8
+import NumlibSurface.Rockafellar.Part8.Section38
+import NumlibSurface.Rockafellar.Part8.Section39
 import NumlibSurface.SaadSparse
 import NumlibSurface.SaadSparse.Chapter01.Basics
 import NumlibSurface.SaadSparse.Chapter01.Section07
@@ -167,8 +216,11 @@ ed., 2003) in fifty-seven modules, reaching every chapter of it that states a nu
 comparison* (2012), complete, in five. `NumlibSurface.AtkinsonHan` is K. Atkinson and W. Han,
 *Theoretical Numerical Analysis: A Functional Analysis Framework* (Springer, 3rd ed., 2009) in
 fifty, covering Chapters 1 to 6 and 8 to 12 apart from what needs Sobolev spaces on a domain.
-Each book's root module is its index: the section-by-section outline, the ambient conventions,
-what is deferred, and the places where formalizing the book corrected it.
+`NumlibSurface.Rockafellar` is R. T. Rockafellar, *Convex Analysis* (Princeton University Press,
+1970), all thirty-nine sections in thirty-nine modules, over `Numlib.Analysis.Convex`;
+`NumlibSurface.Common` holds what the `ℝⁿ` surfaces share. Each book's root module is its index:
+the section-by-section outline, the ambient conventions, what is deferred, and the places where
+formalizing the book corrected it.
 
 ## How it is organized
 
@@ -194,5 +246,6 @@ ambiguously is collected separately, in `notes/book-errata.md`.
   edition, Springer, 2009.
 * D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU Journal for
   Science 17 (2012) 44–62.
+* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
 * Y. Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003.
 -/

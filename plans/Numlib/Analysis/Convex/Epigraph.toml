@@ -1,0 +1,55 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'epi'
+
+[[node]]
+id = 'dom'
+
+[[node]]
+id = 'Proper'
+
+[[node]]
+id = 'restrict'
+
+[[node]]
+id = 'dom_coe_mul'
+
+[[node]]
+id = 'proper_coe_mul'
+
+[[node]]
+id = 'ConvexFn'
+
+[[node]]
+id = 'convexFn_add_coe'
+
+[[node]]
+id = 'ConvexFn.comp_add_left'
+
+[[node]]
+id = 'scaleSnd'
+
+[[node]]
+id = 'convexFn_coe_mul'
+
+[[node]]
+id = 'convexFn_iff_forall_lt'
+
+[[node]]
+id = 'convexFn_iff_le'
+
+[[node]]
+id = 'ConvexFn.convex_lt'
+
+[[node]]
+id = 'ConvexFn.convex_le'
+
+[[node]]
+id = 'ConvexFn.convex_dom'
+
+[[node]]
+id = 'convexOn_iff_convexFn'
+
+[[node]]
+id = 'ConvexFn.sum_le'

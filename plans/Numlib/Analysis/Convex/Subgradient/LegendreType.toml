@@ -1,0 +1,34 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'gradientRange'
+
+[[node]]
+id = 'hasGradientAt_toDual_iff_mem_subgradient'
+
+[[node]]
+id = 'gradientRange_eq_domSubgradient_conj'
+
+[[node]]
+id = 'relint_dom_conj_subset_gradientRange'
+
+[[node]]
+id = 'gradientRange_subset_dom_conj'
+
+[[node]]
+id = 'LegendreType'
+
+[[node]]
+id = 'legendreType_conj_iff'
+
+[[node]]
+id = 'bijOn_gradient_of_legendreType'
+
+[[node]]
+id = 'continuousOn_gradient_interior_dom'
+
+[[node]]
+id = 'bijOn_gradient_univ_iff'
+
+[[node]]
+id = 'conj_finite_of_bijOn_gradient_univ'

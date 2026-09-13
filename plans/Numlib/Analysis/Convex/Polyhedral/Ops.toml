@@ -1,0 +1,40 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'Polyhedral.inter'
+
+[[node]]
+id = 'polyhedral_biInter'
+
+[[node]]
+id = 'polyhedral_iInter'
+
+[[node]]
+id = 'Polyhedral.comap'
+
+[[node]]
+id = 'Polyhedral.image'
+
+[[node]]
+id = 'Polyhedral.add'
+
+[[node]]
+id = 'finitelyGeneratedCone_hull_of_zero_mem'
+
+[[node]]
+id = 'separatesStrongly_of_polyhedral'
+
+[[node]]
+id = 'recessionCone_polyhedral_system'
+
+[[node]]
+id = 'Polyhedral.polyhedralCone_recessionCone'
+
+[[node]]
+id = 'finitelyGenerated_closure_convexHull_union'
+
+[[node]]
+id = 'finitelyGenerated_closure_convexHull_biUnion'
+
+[[node]]
+id = 'finitelyGeneratedCone_closure_coe_hull'

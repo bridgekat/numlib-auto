@@ -1,0 +1,49 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'adjointBifun'
+
+[[node]]
+id = 'adjointBifun_eq_neg_conj_graphFn'
+
+[[node]]
+id = 'ConcaveBifun'
+
+[[node]]
+id = 'concaveFn_graphFn_adjointBifun'
+
+[[node]]
+id = 'closedConcaveFn_graphFn_adjointBifun'
+
+[[node]]
+id = 'clBifun'
+
+[[node]]
+id = 'ClosedBifun'
+
+[[node]]
+id = 'clBifun_apply_eq_clFn'
+
+[[node]]
+id = 'infBifun_clBifun_eq'
+
+[[node]]
+id = 'ImageClosedBifun'
+
+[[node]]
+id = 'concaveAdjointBifun'
+
+[[node]]
+id = 'concaveAdjointBifun_adjointBifun_eq_clBifun'
+
+[[node]]
+id = 'properConcave_graphFn_adjointBifun_iff'
+
+[[node]]
+id = 'adjointBifun_zero_eq_concaveConj'
+
+[[node]]
+id = 'adjointBifun_zero_le'
+
+[[node]]
+id = 'mem_kuhnTucker_iff_adjointBifun_zero_eq'

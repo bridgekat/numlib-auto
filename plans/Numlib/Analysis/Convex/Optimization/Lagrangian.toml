@@ -1,0 +1,13 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'lagrangian'
+
+[[node]]
+id = 'lagrangian_eq_concaveConj'
+
+[[node]]
+id = 'iInf_lagrangian'
+
+[[node]]
+id = 'mem_kuhnTucker_iff_iInf_lagrangian'

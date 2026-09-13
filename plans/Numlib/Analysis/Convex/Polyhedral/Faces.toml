@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'FinitelyGenerated.of_isFace'
+
+[[node]]
+id = 'FinitelyGenerated.finite_setOf_isFace'
+
+[[node]]
+id = 'finitelyGenerated_of_finite_setOf_isFace_of_containsNoLine'
+
+[[node]]
+id = 'polyhedral_of_finite_setOf_isFace'
+
+[[node]]
+id = 'finitelyGenerated_of_finite_setOf_isFace'
+
+[[node]]
+id = 'polyhedral_iff_isClosed_finite_setOf_isFace'

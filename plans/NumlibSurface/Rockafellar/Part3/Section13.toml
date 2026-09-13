@@ -1,0 +1,113 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'supportFn_apply_rn'
+
+[[node]]
+id = 'barrierCone'
+
+[[node]]
+id = 'barrierCone_eq_dom_supportFn'
+
+[[node]]
+id = 'mem_barrierCone_iff'
+
+[[node]]
+id = 'rankFn'
+
+[[node]]
+id = 'infimum_eq_neg_supportFn_neg'
+
+[[node]]
+id = 'subset_halfspace_iff'
+
+[[node]]
+id = 'eq_setOf_le_supportFn'
+
+[[node]]
+id = 'theorem_13_1_cl'
+source = 'Rockafellar 1970, Theorem 13.1'
+
+[[node]]
+id = 'theorem_13_1_ri'
+source = 'Rockafellar 1970, Theorem 13.1'
+
+[[node]]
+id = 'theorem_13_1_int'
+source = 'Rockafellar 1970, Theorem 13.1'
+
+[[node]]
+id = 'theorem_13_1_aff'
+source = 'Rockafellar 1970, Theorem 13.1'
+
+[[node]]
+id = 'corollary_13_1_1'
+source = 'Rockafellar 1970, Corollary 13.1.1'
+
+[[node]]
+id = 'theorem_13_2'
+source = 'Rockafellar 1970, Theorem 13.2'
+
+[[node]]
+id = 'theorem_13_2_correspondence'
+source = 'Rockafellar 1970, Theorem 13.2'
+
+[[node]]
+id = 'corollary_13_2_1'
+source = 'Rockafellar 1970, Corollary 13.2.1'
+
+[[node]]
+id = 'corollary_13_2_2'
+source = 'Rockafellar 1970, Corollary 13.2.2'
+
+[[node]]
+id = 'theorem_13_3'
+source = 'Rockafellar 1970, Theorem 13.3'
+
+[[node]]
+id = 'corollary_13_3_1'
+source = 'Rockafellar 1970, Corollary 13.3.1'
+
+[[node]]
+id = 'corollary_13_3_2'
+source = 'Rockafellar 1970, Corollary 13.3.2'
+
+[[node]]
+id = 'corollary_13_3_3'
+source = 'Rockafellar 1970, Corollary 13.3.3'
+
+[[node]]
+id = 'corollary_13_3_4_a'
+source = 'Rockafellar 1970, Corollary 13.3.4'
+
+[[node]]
+id = 'corollary_13_3_4_b'
+source = 'Rockafellar 1970, Corollary 13.3.4'
+
+[[node]]
+id = 'corollary_13_3_4_c'
+source = 'Rockafellar 1970, Corollary 13.3.4'
+
+[[node]]
+id = 'corollary_13_3_4_d'
+source = 'Rockafellar 1970, Corollary 13.3.4'
+
+[[node]]
+id = 'theorem_13_4'
+source = 'Rockafellar 1970, Theorem 13.4'
+
+[[node]]
+id = 'corollary_13_4_1'
+source = 'Rockafellar 1970, Corollary 13.4.1'
+
+[[node]]
+id = 'corollary_13_4_2'
+source = 'Rockafellar 1970, Corollary 13.4.2'
+
+[[node]]
+id = 'theorem_13_5'
+source = 'Rockafellar 1970, Theorem 13.5'
+
+[[node]]
+id = 'corollary_13_5_1'
+source = 'Rockafellar 1970, Corollary 13.5.1'

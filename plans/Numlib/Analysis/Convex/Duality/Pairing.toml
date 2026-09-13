@@ -1,0 +1,62 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'affineFn'
+
+[[node]]
+id = 'convexFn_affineFn'
+desc = 'An affine function of the pairing is convex.'
+
+[[node]]
+id = 'affineFn_le_iff'
+
+[[node]]
+id = 'closedFn_affineFn'
+
+[[node]]
+id = 'IsAdjointPair'
+
+[[node]]
+id = 'isAdjointPair_adjoint'
+
+[[node]]
+id = 'isAdjointPair_topDualPairing'
+
+[[node]]
+id = 'prodPairing'
+
+[[node]]
+id = 'negFst'
+
+[[node]]
+id = 'exists_unique_dual_prod'
+
+[[node]]
+id = 'IsContinuousPairing'
+
+[[node]]
+id = 'continuous_pairing'
+desc = 'Under `IsContinuousPairing`, the pairing against a fixed `y` is continuous.'
+
+[[node]]
+id = 'evalCLM'
+
+[[node]]
+id = 'IsCompatiblePairing'
+
+[[node]]
+id = 'exists_pairing_eq'
+desc = 'Under `IsCompatiblePairing`, every continuous linear functional is `⟨·, y⟩` for some `y`.'
+
+[[node]]
+id = 'instIsCompatiblePairingTopDual'
+
+[[node]]
+id = 'instIsContinuousPairingProd'
+desc = 'A product of continuous pairings is a continuous pairing.'
+
+[[node]]
+id = 'instIsCompatiblePairingProd'
+
+[[node]]
+id = 'isContinuousPairing_prodPairing_flip'

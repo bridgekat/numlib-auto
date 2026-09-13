@@ -1,0 +1,70 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'dom₁'
+
+[[node]]
+id = 'dom₂'
+
+[[node]]
+id = 'ConcaveConvexFn'
+
+[[node]]
+id = 'ConvexConcaveFn'
+
+[[node]]
+id = 'SaddleFn'
+
+[[node]]
+id = 'partialConj₂'
+
+[[node]]
+id = 'partialCl₂'
+
+[[node]]
+id = 'partialCl₁'
+
+[[node]]
+id = 'ConvexClosedFn'
+
+[[node]]
+id = 'ConcaveClosedFn'
+
+[[node]]
+id = 'bracket'
+
+[[node]]
+id = 'closedFn_bracket'
+
+[[node]]
+id = 'concaveConvexFn_bracket'
+
+[[node]]
+id = 'clFn_eq_conj_bracket'
+
+[[node]]
+id = 'bifunOfSaddle'
+
+[[node]]
+id = 'convexBifun_bifunOfSaddle'
+
+[[node]]
+id = 'bracket_bifunOfSaddle'
+
+[[node]]
+id = 'convexFn_partialCl₂'
+
+[[node]]
+id = 'concaveFn_partialCl₁'
+
+[[node]]
+id = 'concaveBracket'
+
+[[node]]
+id = 'concaveBracket_adjointBifun_eq_partialCl₁'
+
+[[node]]
+id = 'partialCl₂_concaveBracket_adjointBifun'
+
+[[node]]
+id = 'concaveConvexFn_partialCl₂'

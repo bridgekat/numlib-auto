@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'FinitelyGeneratedCone.polyhedralCone'
+
+[[node]]
+id = 'PolyhedralCone.isClosed'
+
+[[node]]
+id = 'FinitelyGeneratedCone.isClosed'
+
+[[node]]
+id = 'PolyhedralCone.finitelyGeneratedCone'
+
+[[node]]
+id = 'polyhedralCone_iff_finitelyGeneratedCone'

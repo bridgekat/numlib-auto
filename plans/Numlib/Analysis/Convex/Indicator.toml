@@ -1,0 +1,20 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'dom_indicatorFn'
+desc = 'The effective domain of the indicator of `s` is `s`.'
+
+[[node]]
+id = 'proper_indicatorFn'
+
+[[node]]
+id = 'indicatorFn_add'
+
+[[node]]
+id = 'indicatorFn_finsetSum'
+
+[[node]]
+id = 'epi_indicatorFn'
+
+[[node]]
+id = 'convexFn_indicatorFn'

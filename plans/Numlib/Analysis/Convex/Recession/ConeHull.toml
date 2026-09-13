@@ -1,0 +1,52 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'coe_hull_of_convex'
+
+[[node]]
+id = 'coe_hull_convexHull'
+
+[[node]]
+id = 'closedConeOver'
+
+[[node]]
+id = 'closure_coe_hull_prodMk_one'
+
+[[node]]
+id = 'closure_coe_hull'
+
+[[node]]
+id = 'isClosed_coe_hull_of_isBounded'
+
+[[node]]
+id = 'posHomGen'
+
+[[node]]
+id = 'posHomGen_isGreatest'
+
+[[node]]
+id = 'epi_lscHull_posHomGen'
+
+[[node]]
+id = 'lscHull_posHomGen'
+
+[[node]]
+id = 'proper_posHomGen'
+
+[[node]]
+id = 'lscHull_posHomGen_eq'
+
+[[node]]
+id = 'posHomGen_eq_iInf_smulRight'
+
+[[node]]
+id = 'closure_convexHull_union'
+
+[[node]]
+id = 'recessionCone_closure_convexHull_union'
+
+[[node]]
+id = 'isClosed_convexHull_union_of_recessionCone_eq'
+
+[[node]]
+id = 'closedProperConvexFn_convFn₂'

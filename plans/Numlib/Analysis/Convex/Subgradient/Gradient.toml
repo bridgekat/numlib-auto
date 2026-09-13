@@ -1,0 +1,31 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'subgradient_eq_singleton_of_dirDeriv_eq'
+
+[[node]]
+id = 'clFn_dirDeriv_eq_of_subgradient_eq_singleton'
+
+[[node]]
+id = 'eq_of_mem_subgradient_of_hasFDerivAt'
+
+[[node]]
+id = 'subgradient_eq_singleton_of_hasFDerivAt'
+
+[[node]]
+id = 'HasGradientAt'
+
+[[node]]
+id = 'DifferentiableAtFn'
+
+[[node]]
+id = 'differentiableAtFn_iff_exists_dirDeriv_eq'
+
+[[node]]
+id = 'differentiableAtFn_of_forall_basis_dirDeriv_eq'
+
+[[node]]
+id = 'mem_exposedPoints_epi_conj_iff'
+
+[[node]]
+id = 'mem_exposedPoints_supportSet_iff'

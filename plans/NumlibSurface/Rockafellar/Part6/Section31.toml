@@ -1,0 +1,154 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'ClosedProperConcaveFn'
+
+[[node]]
+id = 'closedProperConcaveFn_iff_neg'
+
+[[node]]
+id = 'theorem_31_1_weak'
+source = 'Rockafellar 1970, Theorem 31.1'
+
+[[node]]
+id = 'theorem_31_1_a'
+source = 'Rockafellar 1970, Theorem 31.1'
+
+[[node]]
+id = 'theorem_31_1_b'
+source = 'Rockafellar 1970, Theorem 31.1'
+
+[[node]]
+id = 'theorem_31_1_finite'
+source = 'Rockafellar 1970, Theorem 31.1'
+
+[[node]]
+id = 'corollary_31_2_1_a'
+source = 'Rockafellar 1970, Corollary 31.2.1'
+
+[[node]]
+id = 'corollary_31_2_1_a_polyhedral_right'
+source = 'Rockafellar 1970, Corollary 31.2.1'
+
+[[node]]
+id = 'corollary_31_2_1_a_polyhedral_left'
+source = 'Rockafellar 1970, Corollary 31.2.1'
+
+[[node]]
+id = 'theorem_31_3'
+source = 'Rockafellar 1970, Theorem 31.3'
+
+[[node]]
+id = 'corollary_31_3_1'
+source = 'Rockafellar 1970, Corollary 31.3.1'
+
+[[node]]
+id = 'theorem_31_4_dualCone'
+source = 'Rockafellar 1970, Theorem 31.4'
+
+[[node]]
+id = 'theorem_31_4_a'
+source = 'Rockafellar 1970, Theorem 31.4'
+
+[[node]]
+id = 'theorem_31_4_b'
+source = 'Rockafellar 1970, Theorem 31.4'
+
+[[node]]
+id = 'theorem_31_4_optimality'
+source = 'Rockafellar 1970, Theorem 31.4'
+
+[[node]]
+id = 'theorem_31_4_weak'
+source = 'Rockafellar 1970, Theorem 31.4'
+
+[[node]]
+id = 'corollary_31_4_1_a'
+source = 'Rockafellar 1970, Corollary 31.4.1'
+
+[[node]]
+id = 'corollary_31_4_1_b'
+source = 'Rockafellar 1970, Corollary 31.4.1'
+
+[[node]]
+id = 'corollary_31_4_1_optimality'
+source = 'Rockafellar 1970, Corollary 31.4.1'
+
+[[node]]
+id = 'corollary_31_4_2_a'
+source = 'Rockafellar 1970, Corollary 31.4.2'
+
+[[node]]
+id = 'corollary_31_4_2_b_attained'
+source = 'Rockafellar 1970, Corollary 31.4.2'
+
+[[node]]
+id = 'corollary_31_4_2_optimality'
+source = 'Rockafellar 1970, Corollary 31.4.2'
+
+[[node]]
+id = 'corollary_31_4_3'
+source = 'Rockafellar 1970, Corollary 31.4.3'
+
+[[node]]
+id = 'theorem_31_5'
+source = 'Rockafellar 1970, Theorem 31.5'
+
+[[node]]
+id = 'corollary_31_5_1'
+source = 'Rockafellar 1970, Corollary 31.5.1'
+
+[[node]]
+id = 'corollary_31_5_2'
+source = 'Rockafellar 1970, Corollary 31.5.2'
+
+[[node]]
+id = 'fenchelBifun'
+
+[[node]]
+id = 'theorem_31_2_convex'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_proper'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_closed'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_infBifun'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_domBifun'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_relint_domBifun'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_stronglyConsistent_iff'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_adjoint'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_supBifun_adjoint'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_domConcaveBifun_adjoint'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'theorem_31_2_concaveStronglyConsistent_iff'
+source = 'Rockafellar 1970, Theorem 31.2'
+
+[[node]]
+id = 'corollary_31_2_1_b'
+source = 'Rockafellar 1970, Corollary 31.2.1'

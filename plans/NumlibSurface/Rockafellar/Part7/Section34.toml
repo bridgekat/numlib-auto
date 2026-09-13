@@ -1,0 +1,172 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'Ω'
+
+[[node]]
+id = 'theorem_34_2_lower_mem'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_upper_mem'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_cl₂'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_cl₁'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_closed'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_equiv'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_maximal'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_converse'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_mem_self'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_dom₁'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_dom₂'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_dom'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_bifunOfSaddleFn'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_bifun_apply'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_adjoint'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_eq_of_mem_relint_dom₁'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_2_eq_of_mem_relint_dom₂'
+source = 'Rockafellar 1970, Theorem 34.2'
+
+[[node]]
+id = 'theorem_34_1_lower'
+source = 'Rockafellar 1970, Theorem 34.1'
+
+[[node]]
+id = 'theorem_34_1_upper'
+source = 'Rockafellar 1970, Theorem 34.1'
+
+[[node]]
+id = 'corollary_34_2_1_dom'
+source = 'Rockafellar 1970, Corollary 34.2.1'
+
+[[node]]
+id = 'corollary_34_2_1_eq_of_mem_relint_dom₁'
+source = 'Rockafellar 1970, Corollary 34.2.1'
+
+[[node]]
+id = 'corollary_34_2_1_eq_of_mem_relint_dom₂'
+source = 'Rockafellar 1970, Corollary 34.2.1'
+
+[[node]]
+id = 'corollary_34_2_2_of_lowerClosed'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_of_upperClosed'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_of_fullyClosed'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_lower_exists'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_upper_exists'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_lower_unique'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_upper_unique'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_least'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_2_greatest'
+source = 'Rockafellar 1970, Corollary 34.2.2'
+
+[[node]]
+id = 'corollary_34_2_3'
+source = 'Rockafellar 1970, Corollary 34.2.3'
+
+[[node]]
+id = 'corollary_34_2_4_mem_iff'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'corollary_34_2_4_closed'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'corollary_34_2_4_proper'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'corollary_34_2_4_equiv'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'corollary_34_2_4_least'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'corollary_34_2_4_greatest'
+source = 'Rockafellar 1970, Corollary 34.2.4'
+
+[[node]]
+id = 'theorem_34_3'
+source = 'Rockafellar 1970, Theorem 34.3'
+
+[[node]]
+id = 'theorem_34_4'
+source = 'Rockafellar 1970, Theorem 34.4'
+
+[[node]]
+id = 'theorem_34_5'
+source = 'Rockafellar 1970, Theorem 34.5'
+
+[[node]]
+id = 'corollary_34_5_1'
+source = 'Rockafellar 1970, Corollary 34.5.1'

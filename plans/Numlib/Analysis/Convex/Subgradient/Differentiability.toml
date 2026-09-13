@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'continuousAt_rightDeriv_iff'
+
+[[node]]
+id = 'countable_leftDeriv_ne_rightDeriv'
+
+[[node]]
+id = 'differentiableAtFn_iff_leftDeriv_eq_rightDeriv'
+
+[[node]]
+id = 'countable_not_differentiableAtFn'
+
+[[node]]
+id = 'continuousAt_rightDeriv_of_differentiableAtFn'
+
+[[node]]
+id = 'subset_closure_differentiableAtFn'
+
+[[node]]
+id = 'continuousAt_dirDeriv_iff'
+
+[[node]]
+id = 'subset_closure_twoSided_dirDeriv'

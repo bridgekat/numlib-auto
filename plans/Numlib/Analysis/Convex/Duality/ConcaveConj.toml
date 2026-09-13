@@ -1,0 +1,41 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'concaveConj'
+
+[[node]]
+id = 'biconcaveConj'
+desc = 'The concave biconjugate: the concave conjugate against `B`, then against `B.flip`.'
+
+[[node]]
+id = 'neg_concaveConj'
+
+[[node]]
+id = 'concaveConj_eq_neg_conj_neg'
+
+[[node]]
+id = 'conj_eq_neg_concaveConj_neg'
+
+[[node]]
+id = 'coe_le_concaveConj_iff'
+
+[[node]]
+id = 'le_concaveConj_iff'
+
+[[node]]
+id = 'add_concaveConj_le'
+
+[[node]]
+id = 'concaveFn_concaveConj'
+
+[[node]]
+id = 'biconcaveConj_eq_neg_biconj_neg'
+
+[[node]]
+id = 'clConcave'
+
+[[node]]
+id = 'ClosedConcaveFn'
+
+[[node]]
+id = 'biconcaveConj_eq_clConcave'

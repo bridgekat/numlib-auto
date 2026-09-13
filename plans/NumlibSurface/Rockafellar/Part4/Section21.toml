@@ -1,0 +1,53 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'ConvexSystem'
+
+[[node]]
+id = 'ConvexSystem.solutions'
+
+[[node]]
+id = 'ConvexSystem.Consistent'
+
+[[node]]
+id = 'theorem_21_1'
+source = 'Rockafellar 1970, Theorem 21.1'
+
+[[node]]
+id = 'theorem_21_2'
+source = 'Rockafellar 1970, Theorem 21.2'
+
+[[node]]
+id = 'theorem_21_3'
+source = 'Rockafellar 1970, Theorem 21.3'
+
+[[node]]
+id = 'corollary_21_3_1'
+source = 'Rockafellar 1970, Corollary 21.3.1'
+
+[[node]]
+id = 'corollary_21_3_2'
+source = 'Rockafellar 1970, Corollary 21.3.2'
+
+[[node]]
+id = 'IsAffineFn'
+
+[[node]]
+id = 'theorem_21_4'
+source = 'Rockafellar 1970, Theorem 21.4'
+
+[[node]]
+id = 'theorem_21_5'
+source = 'Rockafellar 1970, Theorem 21.5'
+
+[[node]]
+id = 'theorem_21_6'
+source = 'Rockafellar 1970, Theorem 21.6'
+
+[[node]]
+id = 'corollary_21_6_1'
+source = 'Rockafellar 1970, Corollary 21.6.1'
+
+[[node]]
+id = 'corollary_21_6_2'
+source = 'Rockafellar 1970, Corollary 21.6.2'

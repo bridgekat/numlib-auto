@@ -1,0 +1,76 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'argmin'
+
+[[node]]
+id = 'mem_argmin_iff_zero_mem_subgradient'
+
+[[node]]
+id = 'conj_zero_eq_neg_iInf'
+
+[[node]]
+id = 'dom_sepSum'
+
+[[node]]
+id = 'argmin_sepSum'
+
+[[node]]
+id = 'argmin_eq_subgradient_conj_zero'
+
+[[node]]
+id = 'recessionCone_setOf_le_eq_polarCone_dom_conj'
+
+[[node]]
+id = 'le_of_mem_subgradient_of_neg_mem_normalCone'
+
+[[node]]
+id = 'exists_mem_subgradient_neg_mem_normalCone'
+
+[[node]]
+id = 'isCompact_setOf_le'
+
+[[node]]
+id = 'argmin_nonempty_of_recessionConeFn_eq_zero'
+
+[[node]]
+id = 'isCompact_argmin_of_recessionConeFn_eq_zero'
+
+[[node]]
+id = 'exists_pos_forall_exists_mem_argmin_dist_lt'
+
+[[node]]
+id = 'tendsto_infDist_argmin'
+
+[[node]]
+id = 'tendsto_of_argmin_eq_singleton'
+
+[[node]]
+id = 'exists_forall_le_of_recessionConeFn_inter_eq_zero'
+
+[[node]]
+id = 'exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace'
+
+[[node]]
+id = 'exists_forall_le_of_polyhedral_of_inter_subset_constancySpace'
+
+[[node]]
+id = 'argmin_nonempty_of_polyhedralFn'
+
+[[node]]
+id = 'argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj'
+
+[[node]]
+id = 'supportFn_setOf_le'
+
+[[node]]
+id = 'supportFn_argmin'
+
+[[node]]
+id = 'iInf_supportFn_setOf_le'
+
+[[node]]
+id = 'iInf_ne_bot_and_argmin_eq_empty_iff'
+
+[[node]]
+id = 'argmin_eq_singleton_iff_hasGradientAt_conj_zero'

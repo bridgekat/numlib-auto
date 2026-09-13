@@ -1,0 +1,77 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'IsCone'
+
+[[node]]
+id = 'isCone_iff_smul_set_eq'
+
+[[node]]
+id = 'theorem_2_1'
+source = 'Rockafellar 1970, Theorem 2.1'
+
+[[node]]
+id = 'corollary_2_1_1'
+source = 'Rockafellar 1970, Corollary 2.1.1'
+
+[[node]]
+id = 'theorem_2_5'
+source = 'Rockafellar 1970, Theorem 2.5'
+
+[[node]]
+id = 'corollary_2_5_1'
+source = 'Rockafellar 1970, Corollary 2.5.1'
+
+[[node]]
+id = 'theorem_2_2'
+source = 'Rockafellar 1970, Theorem 2.2'
+
+[[node]]
+id = 'theorem_2_3'
+source = 'Rockafellar 1970, Theorem 2.3'
+
+[[node]]
+id = 'corollary_2_3_1'
+source = 'Rockafellar 1970, Corollary 2.3.1'
+
+[[node]]
+id = 'theorem_2_4'
+source = 'Rockafellar 1970, Theorem 2.4'
+
+[[node]]
+id = 'theorem_2_6'
+source = 'Rockafellar 1970, Theorem 2.6'
+
+[[node]]
+id = 'posCombinations'
+
+[[node]]
+id = 'corollary_2_6_1'
+source = 'Rockafellar 1970, Corollary 2.6.1'
+
+[[node]]
+id = 'corollary_2_6_2'
+source = 'Rockafellar 1970, Corollary 2.6.2'
+
+[[node]]
+id = 'corollary_2_6_3'
+source = 'Rockafellar 1970, Corollary 2.6.3'
+
+[[node]]
+id = 'toPointedCone'
+
+[[node]]
+id = 'theorem_2_7_greatest'
+source = 'Rockafellar 1970, Theorem 2.7'
+
+[[node]]
+id = 'theorem_2_7_least'
+source = 'Rockafellar 1970, Theorem 2.7'
+
+[[node]]
+id = 'theorem_2_7_sub'
+source = 'Rockafellar 1970, Theorem 2.7'
+
+[[node]]
+id = 'theorem_2_7_aff'
+source = 'Rockafellar 1970, Theorem 2.7'

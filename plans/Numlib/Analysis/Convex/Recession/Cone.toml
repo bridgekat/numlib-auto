@@ -1,0 +1,58 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'recessionCone'
+
+[[node]]
+id = 'recessionPointedCone'
+
+[[node]]
+id = 'recessionCone_eq_add_subset'
+
+[[node]]
+id = 'linealitySpace'
+
+[[node]]
+id = 'linealitySubmodule'
+
+[[node]]
+id = 'eq_add_inter_of_isCompl'
+
+[[node]]
+id = 'lineality'
+
+[[node]]
+id = 'recessionCone_coe_affineSubspace'
+
+[[node]]
+id = 'recessionCone_setOf_forall_le'
+
+[[node]]
+id = 'recessionCone_prod'
+
+[[node]]
+id = 'recessionCone_pi'
+
+[[node]]
+id = 'isClosed_recessionCone'
+
+[[node]]
+id = 'mem_recessionCone_iff_exists_tendsto'
+
+[[node]]
+id = 'mem_recessionCone_of_exists_ray'
+
+[[node]]
+id = 'recessionCone_iInter'
+
+[[node]]
+id = 'recessionCone_preimage'
+
+[[node]]
+id = 'isBounded_iff_recessionCone_eq_zero'
+
+[[node]]
+id = 'isBounded_inter_of_direction_eq'
+
+[[node]]
+id = 'iInter_recessionCone_eq_zero_iff_exists_isBounded'

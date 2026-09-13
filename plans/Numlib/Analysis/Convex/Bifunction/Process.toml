@@ -1,0 +1,76 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ConvexProcess'
+
+[[node]]
+id = 'ConvexProcess.eval'
+
+[[node]]
+id = 'ConvexProcess.dom'
+
+[[node]]
+id = 'ConvexProcess.range'
+
+[[node]]
+id = 'ConvexProcess.image'
+
+[[node]]
+id = 'ConvexProcess.ofLinearMap'
+
+[[node]]
+id = 'ConvexProcess.inv'
+
+[[node]]
+id = 'ConvexProcess.indicatorBifun'
+
+[[node]]
+id = 'ConvexProcess.comp'
+
+[[node]]
+id = 'ConvexProcess.adjointProcess'
+
+[[node]]
+id = 'ConvexProcess.coadjointProcess'
+
+[[node]]
+id = 'ConvexProcess.adjointProcess_smul'
+
+[[node]]
+id = 'ConvexProcess.isClosed_graph_adjointProcess'
+
+[[node]]
+id = 'ConvexProcess.coadjointProcess_adjointProcess_eq_self_iff'
+
+[[node]]
+id = 'ConvexProcess.bracket_indicatorBifun'
+
+[[node]]
+id = 'ConvexProcess.adjointProcess_add'
+
+[[node]]
+id = 'exists_pairing_sandwich'
+
+[[node]]
+id = 'ConvexProcess.adjointProcess_comp'
+
+[[node]]
+id = 'ConvexProcess.conj_imageBifun_indicatorBifun'
+
+[[node]]
+id = 'ConvexProcess.exists_linearMap_of_isBounded'
+
+[[node]]
+id = 'ConvexProcess.isClosed_image'
+
+[[node]]
+id = 'ConvexProcess.reflect'
+
+[[node]]
+id = 'ConvexProcess.isClosed_graph_add'
+
+[[node]]
+id = 'ConvexProcess.graph_adjointProcess_add_eq_closure'
+
+[[node]]
+id = 'ConvexProcess.coBracket'

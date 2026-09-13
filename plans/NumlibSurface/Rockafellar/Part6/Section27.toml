@@ -1,0 +1,112 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'IsDirectionOfRecession'
+
+[[node]]
+id = 'theorem_27_1_a'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_b'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_c'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_d'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_e'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_f_setOf_le'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_f_argmin'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_f_polarCone'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_g_setOf_le'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_g_argmin'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_h'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_i'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_1_ai'
+source = 'Rockafellar 1970, Theorem 27.1'
+
+[[node]]
+id = 'theorem_27_2_finite'
+source = 'Rockafellar 1970, Theorem 27.2'
+
+[[node]]
+id = 'theorem_27_2_attained'
+source = 'Rockafellar 1970, Theorem 27.2'
+
+[[node]]
+id = 'theorem_27_2_argmin'
+source = 'Rockafellar 1970, Theorem 27.2'
+
+[[node]]
+id = 'theorem_27_2_wellPosed'
+source = 'Rockafellar 1970, Theorem 27.2'
+
+[[node]]
+id = 'corollary_27_2_1_isBounded'
+source = 'Rockafellar 1970, Corollary 27.2.1'
+
+[[node]]
+id = 'corollary_27_2_1_clusterPt'
+source = 'Rockafellar 1970, Corollary 27.2.1'
+
+[[node]]
+id = 'corollary_27_2_1_infDist'
+source = 'Rockafellar 1970, Corollary 27.2.1'
+
+[[node]]
+id = 'corollary_27_2_2'
+source = 'Rockafellar 1970, Corollary 27.2.2'
+
+[[node]]
+id = 'theorem_27_3'
+source = 'Rockafellar 1970, Theorem 27.3'
+
+[[node]]
+id = 'corollary_27_3_1'
+source = 'Rockafellar 1970, Corollary 27.3.1'
+
+[[node]]
+id = 'corollary_27_3_2'
+source = 'Rockafellar 1970, Corollary 27.3.2'
+
+[[node]]
+id = 'corollary_27_3_3'
+source = 'Rockafellar 1970, Corollary 27.3.3'
+
+[[node]]
+id = 'theorem_27_4_sufficient'
+source = 'Rockafellar 1970, Theorem 27.4'
+
+[[node]]
+id = 'theorem_27_4_necessary'
+source = 'Rockafellar 1970, Theorem 27.4'

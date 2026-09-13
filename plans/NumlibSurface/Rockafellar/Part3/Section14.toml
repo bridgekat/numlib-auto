@@ -1,0 +1,123 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'mem_polarCone_rn'
+
+[[node]]
+id = 'mem_polarSet_rn'
+
+[[node]]
+id = 'polarCone_eq_polarSet_rn'
+
+[[node]]
+id = 'theorem_14_1_nonempty'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_1_convex'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_1_isCone'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_1_isClosed'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_1_bipolar'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_1_conj'
+source = 'Rockafellar 1970, Theorem 14.1'
+
+[[node]]
+id = 'theorem_14_2'
+source = 'Rockafellar 1970, Theorem 14.2'
+
+[[node]]
+id = 'corollary_14_2_1'
+source = 'Rockafellar 1970, Corollary 14.2.1'
+
+[[node]]
+id = 'corollary_14_2_2'
+source = 'Rockafellar 1970, Corollary 14.2.2'
+
+[[node]]
+id = 'theorem_14_3'
+source = 'Rockafellar 1970, Theorem 14.3'
+
+[[node]]
+id = 'triple'
+
+[[node]]
+id = 'endsReflection'
+
+[[node]]
+id = 'theorem_14_4'
+source = 'Rockafellar 1970, Theorem 14.4'
+
+[[node]]
+id = 'theorem_14_5_isClosed'
+source = 'Rockafellar 1970, Theorem 14.5'
+
+[[node]]
+id = 'theorem_14_5_convex'
+source = 'Rockafellar 1970, Theorem 14.5'
+
+[[node]]
+id = 'theorem_14_5_zero_mem'
+source = 'Rockafellar 1970, Theorem 14.5'
+
+[[node]]
+id = 'theorem_14_5_bipolar'
+source = 'Rockafellar 1970, Theorem 14.5'
+
+[[node]]
+id = 'theorem_14_5_gauge'
+source = 'Rockafellar 1970, Theorem 14.5'
+
+[[node]]
+id = 'corollary_14_5_1'
+source = 'Rockafellar 1970, Corollary 14.5.1'
+
+[[node]]
+id = 'theorem_14_6_recession'
+source = 'Rockafellar 1970, Theorem 14.6'
+
+[[node]]
+id = 'theorem_14_6_lineality'
+source = 'Rockafellar 1970, Theorem 14.6'
+
+[[node]]
+id = 'rankSet'
+
+[[node]]
+id = 'corollary_14_6_1_dim'
+source = 'Rockafellar 1970, Corollary 14.6.1'
+
+[[node]]
+id = 'corollary_14_6_1_lineality'
+source = 'Rockafellar 1970, Corollary 14.6.1'
+
+[[node]]
+id = 'corollary_14_6_1_rank'
+source = 'Rockafellar 1970, Corollary 14.6.1'
+
+[[node]]
+id = 'theorem_14_7_conj_nonneg'
+source = 'Rockafellar 1970, Theorem 14.7'
+
+[[node]]
+id = 'theorem_14_7_conj_zero'
+source = 'Rockafellar 1970, Theorem 14.7'
+
+[[node]]
+id = 'theorem_14_7_left'
+source = 'Rockafellar 1970, Theorem 14.7'
+
+[[node]]
+id = 'theorem_14_7_right'
+source = 'Rockafellar 1970, Theorem 14.7'

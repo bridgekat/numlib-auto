@@ -1,0 +1,22 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'closedProperConvexFn_infConv_quadFn'
+
+[[node]]
+id = 'conj_infConv_quadFn'
+
+[[node]]
+id = 'subgradient_infConv_quadFn'
+
+[[node]]
+id = 'hasGradientAt_infConv_quadFn'
+
+[[node]]
+id = 'hasGradientAt_infConv_conj_quadFn'
+
+[[node]]
+id = 'gradient_infConv_quadFn'
+
+[[node]]
+id = 'gradient_infConv_conj_quadFn'

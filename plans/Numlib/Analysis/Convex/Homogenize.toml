@@ -1,0 +1,76 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'smulRight'
+
+[[node]]
+id = 'smulRight_apply_pos'
+
+[[node]]
+id = 'epi_smulRight'
+
+[[node]]
+id = 'smulRight_zero'
+
+[[node]]
+id = 'convexFn_smulRight'
+
+[[node]]
+id = 'smulRight_one'
+
+[[node]]
+id = 'posHomogeneous_iff_smulRight_eq'
+
+[[node]]
+id = 'smulRight_smulRight'
+
+[[node]]
+id = 'smulRightHom'
+
+[[node]]
+id = 'levelOneLift'
+
+[[node]]
+id = 'hom'
+
+[[node]]
+id = 'hom_apply_pos'
+
+[[node]]
+id = 'hom_apply_one'
+
+[[node]]
+id = 'hom_apply_neg'
+
+[[node]]
+id = 'hom_ne_bot'
+
+[[node]]
+id = 'hom_apply_smul'
+
+[[node]]
+id = 'posHomogeneous_hom'
+
+[[node]]
+id = 'homCone'
+
+[[node]]
+id = 'hom_eq_ofEpi_homCone'
+
+[[node]]
+id = 'convexFn_hom'
+
+[[node]]
+id = 'hom_isGreatest'
+
+[[node]]
+id = 'epi_hom'
+
+[[node]]
+id = 'homEpiCone'
+
+[[node]]
+id = 'homCone_eq_preimage'
+
+[[node]]
+id = 'prodAssoc_image_homCone'

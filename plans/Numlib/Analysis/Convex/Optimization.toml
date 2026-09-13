@@ -1,0 +1,7 @@
+desc = '''
+Extremum problems: the minimum and the maximum of a convex function, ordinary and generalized
+convex programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality
+gaps, Fenchel's theorem, and the Moreau envelope with its proximal mapping. An algorithmic project
+attaches here — `Prox` and `Minimum` are the statements an iteration is proved to converge to, and
+`Perturbation` is the general form a new duality scheme should instantiate.
+'''

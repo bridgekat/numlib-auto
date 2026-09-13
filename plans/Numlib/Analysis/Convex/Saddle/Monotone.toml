@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'partialInvertEquiv'
+
+[[node]]
+id = 'prodPairing_sub_partialInvertEquiv'
+
+[[node]]
+id = 'IsMaximalMonotoneRel.preimage_partialInvertEquiv'
+
+[[node]]
+id = 'partialInvertNegHomeomorph'
+
+[[node]]
+id = 'saddleMonotoneRel'
+
+[[node]]
+id = 'saddleSubgradientHomeomorph'
+
+[[node]]
+id = 'isMaximalMonotoneRel_saddleMonotoneRel'
+
+[[node]]
+id = 'isMaximalMonotoneRel_setOf_hasSaddleGradientAt'

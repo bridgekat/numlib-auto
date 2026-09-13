@@ -1,0 +1,58 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'swapAdjointBifun'
+
+[[node]]
+id = 'adjointBifun_swapAdjointBifun'
+
+[[node]]
+id = 'saddleSwap_mem_bifunSaddleClass'
+
+[[node]]
+id = 'upperConjSaddle_saddleSwap'
+
+[[node]]
+id = 'lowerConjSaddle_saddleSwap'
+
+[[node]]
+id = 'proper_graphFn_of_properSaddleFn'
+
+[[node]]
+id = 'zero_mem_interior_dom₁_lowerConjSaddle_iff'
+
+[[node]]
+id = 'hasSaddleValue_of_no_common_direction_of_recession_neg'
+
+[[node]]
+id = 'hasSaddleValue_of_isBounded_dom₁'
+
+[[node]]
+id = 'exists_isSaddlePoint_of_no_common_direction_of_recession'
+
+[[node]]
+id = 'exists_isSaddlePoint_of_isBounded_domSaddle'
+
+[[node]]
+id = 'saddleStructure_lowerSimpleExt'
+
+[[node]]
+id = 'maximin_lowerSimpleExt'
+
+[[node]]
+id = 'exists_bifunSaddleClass_lowerSimpleExt'
+
+[[node]]
+id = 'biSup_biInf_eq_biInf_biSup_of_isBounded_right'
+
+[[node]]
+id = 'exists_saddlePoint_of_isBounded'
+
+[[node]]
+id = 'isBifunSubgradientPair_iff_mem_subgradient_graphFn'
+
+[[node]]
+id = 'setOf_mem_saddleSubgradient_eq_preimage'
+
+[[node]]
+id = 'isClosed_setOf_mem_saddleSubgradient'

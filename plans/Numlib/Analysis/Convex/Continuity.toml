@@ -1,3 +1,44 @@
+namespace = 'ConvexAnalysis'
+
 [[node]]
-id = "ConvexOn.continuous_of_lowerSemicontinuous"
+id = '_root_.ConvexOn.continuous_of_lowerSemicontinuous'
 source = "Atkinson–Han, Theoretical Numerical Analysis, the standing hypotheses on j of Section 11.4"
+
+[[node]]
+id = 'intrinsicInterior_vadd'
+
+[[node]]
+id = 'relint_eq_vadd_image_interior'
+
+[[node]]
+id = 'exists_chart_retraction'
+
+[[node]]
+id = 'ConvexFn.continuousOn_toReal_relint_dom'
+
+[[node]]
+id = 'ConvexFn.continuousOn_relint_dom'
+
+[[node]]
+id = 'ConvexFn.continuous_of_dom_eq_univ'
+
+[[node]]
+id = 'ConvexOn.lipschitzOnWith_of_abs_le_of_cthickening_subset'
+
+[[node]]
+id = 'ConvexOn.exists_lipschitzOnWith_of_isCompact'
+
+[[node]]
+id = 'ConvexFn.exists_lipschitzOnWith_of_isCompact'
+
+[[node]]
+id = 'ConvexFn.exists_lipschitzWith_of_recessionFn_ne_top'
+
+[[node]]
+id = 'ConvexFn.uniformContinuous_toReal_iff'
+
+[[node]]
+id = 'ConvexFn.exists_lipschitzWith_of_frequently_le'
+
+[[node]]
+id = 'ConvexFn.exists_lipschitzWith_of_le_lipschitz'

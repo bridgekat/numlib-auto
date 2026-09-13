@@ -1,0 +1,7 @@
+desc = '''
+Subgradients, normal cones and directional derivatives; gradients and where a convex function is
+differentiable; monotonicity and cyclic monotonicity of `∂f`; the Legendre transformation,
+essential smoothness and essential strict convexity. `Defs` is the entry point, and `∂f` is
+available both pointwise (`subgradient`) and as a relation (`subgradientRel`); the monotonicity and
+Legendre theory is about the relation.
+'''

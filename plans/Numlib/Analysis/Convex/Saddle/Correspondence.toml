@@ -1,0 +1,37 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'eq_of_bracket_eq'
+
+[[node]]
+id = 'lowerClosedFn_bracket'
+
+[[node]]
+id = 'exists_unique_convexBifun_bracket_eq'
+
+[[node]]
+id = 'le_of_partialCl₂_eq'
+
+[[node]]
+id = 'exists_unique_bifun_of_closure_pair'
+
+[[node]]
+id = 'saddleOfBifun'
+
+[[node]]
+id = 'bifunSaddleEquiv'
+
+[[node]]
+id = 'polyhedralFn_bracket'
+
+[[node]]
+id = 'polyhedralFn_neg_bracket'
+
+[[node]]
+id = 'imageClosedBifun_of_polyhedralBifun'
+
+[[node]]
+id = 'eq_conj_bracket_of_polyhedralBifun'
+
+[[node]]
+id = 'lowerUpperClosedEquiv'

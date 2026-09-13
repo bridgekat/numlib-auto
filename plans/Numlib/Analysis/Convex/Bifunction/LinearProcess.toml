@@ -1,0 +1,26 @@
+namespace = 'ConvexAnalysis.ConvexProcess'
+
+[[node]]
+id = 'image_ofLinearMap'
+desc = 'The process of a linear map takes the images that map takes.'
+
+[[node]]
+id = 'range_ofLinearMap'
+desc = 'The range of the process of `T` is the range of `T`.'
+
+[[node]]
+id = 'comp_ofLinearMap'
+desc = 'Composing linear maps and then passing to processes is composing the processes.'
+
+[[node]]
+id = 'ofLinearMap_injective'
+desc = 'Distinct linear maps give distinct convex processes.'
+
+[[node]]
+id = 'imageBifun_indicatorBifun_ofLinearMap'
+
+[[node]]
+id = 'adjointProcess_ofLinearMap'
+
+[[node]]
+id = 'coadjointProcess_ofLinearMap'

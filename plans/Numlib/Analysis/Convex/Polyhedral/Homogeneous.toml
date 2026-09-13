@@ -1,0 +1,13 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'epi_posHomGen_of_epi_eq'
+
+[[node]]
+id = 'polyhedralFn_posHomGen_of_epi_eq'
+
+[[node]]
+id = 'epi_convFn_of_epi_eq'
+
+[[node]]
+id = 'polyhedralFn_posHomGen_convFn'

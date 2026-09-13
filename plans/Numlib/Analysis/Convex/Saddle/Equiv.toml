@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'SaddleEquiv'
+
+[[node]]
+id = 'ClosedSaddleFn'
+
+[[node]]
+id = 'saddleClass'
+
+[[node]]
+id = 'partialCl₂_eq_of_mem_saddleClass'
+
+[[node]]
+id = 'closedSaddleFn_of_mem_saddleClass'
+
+[[node]]
+id = 'exists_unique_bifun_of_closedSaddleFn'

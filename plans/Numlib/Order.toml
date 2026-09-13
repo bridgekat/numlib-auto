@@ -1,0 +1,5 @@
+desc = '''
+Extended-real arithmetic and order-theoretic lemmas the backbone needs and Mathlib does not have.
+`Numlib/Order/EReal` is the file to extend when a proof stalls on `⊤ - ⊤` or `0 * ⊤`, rather than
+repeating the case split in place. Candidates to upstream.
+'''

@@ -1,0 +1,46 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsFace'
+
+[[node]]
+id = 'IsFace.subset_of_relint_inter_nonempty'
+
+[[node]]
+id = 'IsFace.eq_inter_closure'
+
+[[node]]
+id = 'IsFace.eq_of_relint_inter_nonempty'
+
+[[node]]
+id = 'IsFace.disjoint_relint'
+
+[[node]]
+id = 'IsFace.subset_intrinsicFrontier'
+
+[[node]]
+id = 'IsFace.finrank_vectorSpan_lt'
+
+[[node]]
+id = 'exists_isFace_subset_relint'
+
+[[node]]
+id = 'exists_isFace_mem_relint'
+
+[[node]]
+id = 'eq_iUnion_relint_isFace'
+
+[[node]]
+id = 'IsFace.relint_pairwise_disjoint'
+
+[[node]]
+id = 'IsFace.relint_maximal'
+
+[[node]]
+id = 'exists_notMem_relint_mem_segment'
+
+[[node]]
+id = 'convexHull_extremePoints'
+
+[[node]]
+id = 'extremePoints_nonempty'

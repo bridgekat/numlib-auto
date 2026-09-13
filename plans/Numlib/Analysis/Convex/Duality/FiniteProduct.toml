@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'piPairing'
+
+[[node]]
+id = 'supportFn_univ_pi'
+
+[[node]]
+id = 'conj_piFn'
+
+[[node]]
+id = 'iInter_relint_nonempty_iff_supportFn'
+
+[[node]]
+id = 'iInter_relint_dom_nonempty_iff'

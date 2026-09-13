@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'mem_interior_dom_of_subgradient_eq_singleton'
+
+[[node]]
+id = 'hasGradientAt_iff_subgradient_eq_singleton'
+
+[[node]]
+id = 'differentiableAtFn_iff_exists_subgradient_eq_singleton'
+
+[[node]]
+id = 'hasGradientAt_clFn_iff'
+
+[[node]]
+id = 'mem_exposedPoints_epi_conj_iff_hasGradientAt'
+
+[[node]]
+id = 'mem_exposedPoints_supportSet_iff_hasGradientAt'

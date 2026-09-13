@@ -1,0 +1,67 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'coordFunctional'
+
+[[node]]
+id = 'theorem_5_1'
+source = 'Rockafellar 1970, Theorem 5.1'
+
+[[node]]
+id = 'theorem_5_2'
+source = 'Rockafellar 1970, Theorem 5.2'
+
+[[node]]
+id = 'theorem_5_3'
+source = 'Rockafellar 1970, Theorem 5.3'
+
+[[node]]
+id = 'sumLin'
+
+[[node]]
+id = 'theorem_5_4'
+source = 'Rockafellar 1970, Theorem 5.4'
+
+[[node]]
+id = 'theorem_5_5'
+source = 'Rockafellar 1970, Theorem 5.5'
+
+[[node]]
+id = 'theorem_5_6'
+source = 'Rockafellar 1970, Theorem 5.6'
+
+[[node]]
+id = 'theorem_5_7_gA'
+source = 'Rockafellar 1970, Theorem 5.7'
+
+[[node]]
+id = 'theorem_5_7_Ah'
+source = 'Rockafellar 1970, Theorem 5.7'
+
+[[node]]
+id = 'homSumLin'
+
+[[node]]
+id = 'coordHomLin'
+
+[[node]]
+id = 'theorem_5_8_f'
+source = 'Rockafellar 1970, Theorem 5.8'
+
+[[node]]
+id = 'theorem_5_8_g'
+source = 'Rockafellar 1970, Theorem 5.8'
+
+[[node]]
+id = 'theorem_5_8_h'
+source = 'Rockafellar 1970, Theorem 5.8'
+
+[[node]]
+id = 'sumPairLin'
+
+[[node]]
+id = 'coordPairLin'
+
+[[node]]
+id = 'theorem_5_8_k'
+source = 'Rockafellar 1970, Theorem 5.8'

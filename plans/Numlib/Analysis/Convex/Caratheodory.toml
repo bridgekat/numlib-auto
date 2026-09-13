@@ -1,0 +1,64 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'mem_convexHull_iff_exists_fin_finrank_succ'
+
+[[node]]
+id = 'IsCompact.isCompact_convexHull'
+
+[[node]]
+id = 'Bornology.IsBounded.closure_convexHull'
+
+[[node]]
+id = 'closedProperConvexFn_convHullFn_restrict'
+
+[[node]]
+id = 'exists_linearIndepOn_of_mem_coneHull'
+
+[[node]]
+id = 'exists_card_le_finrank_of_mem_coneHull'
+
+[[node]]
+id = 'exists_finset_liftPD_eq'
+
+[[node]]
+id = 'lift_mem_coneHull_liftPD'
+
+[[node]]
+id = 'exists_linearIndepOn_subset_liftPD'
+
+[[node]]
+id = 'exists_linearIndepOn_of_mem_convexHull_add_coneHull'
+
+[[node]]
+id = 'exists_of_mem_convexHull_add_coneHull'
+
+[[node]]
+id = 'exists_subset_linearIndepOn_of_sum'
+
+[[node]]
+id = 'exists_subset_affineIndependent_of_sum'
+
+[[node]]
+id = 'exists_coalesced_sum'
+
+[[node]]
+id = 'exists_linearIndepOn_of_mem_coneHull_iUnion'
+
+[[node]]
+id = 'exists_affineIndependent_of_mem_convexHull_iUnion'
+
+[[node]]
+id = 'exists_affineIndependent_of_convFn_lt'
+
+[[node]]
+id = 'convFn_apply_affineIndependent'
+
+[[node]]
+id = 'convHullFn_apply_fin'
+
+[[node]]
+id = 'inequalitySet'
+
+[[node]]
+id = 'inequalitySet_subset_halfSpace_iff'

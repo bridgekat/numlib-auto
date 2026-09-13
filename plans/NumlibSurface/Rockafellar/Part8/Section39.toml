@@ -1,0 +1,100 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_39_1'
+source = 'Rockafellar 1970, Theorem 39.1'
+
+[[node]]
+id = 'PolyhedralConvexProcess'
+
+[[node]]
+id = 'imageFn'
+
+[[node]]
+id = 'convexProcessEquivGraph'
+
+[[node]]
+id = 'convexProcessCompleteLattice'
+
+[[node]]
+id = 'Orientation'
+
+[[node]]
+id = 'Orientation.flip'
+
+[[node]]
+id = 'Orientation.bracketSet'
+
+[[node]]
+id = 'OrientedProcess'
+
+[[node]]
+id = 'Orientation.adjointProcess'
+
+[[node]]
+id = 'OrientedProcess.inv'
+
+[[node]]
+id = 'OrientedProcess.adjoint'
+
+[[node]]
+id = 'OrientedProcess.comp'
+
+[[node]]
+id = 'OrientedProcess.bracket'
+
+[[node]]
+id = 'theorem_39_2'
+source = 'Rockafellar 1970, Theorem 39.2'
+
+[[node]]
+id = 'theorem_39_3_posHomogeneous'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_convexFn'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_closedFn'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_concaveFn'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_closedConcaveFn'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_cl'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_3_relint_dom'
+source = 'Rockafellar 1970, Theorem 39.3'
+
+[[node]]
+id = 'theorem_39_4'
+source = 'Rockafellar 1970, Theorem 39.4'
+
+[[node]]
+id = 'theorem_39_5'
+source = 'Rockafellar 1970, Theorem 39.5'
+
+[[node]]
+id = 'theorem_39_6'
+source = 'Rockafellar 1970, Theorem 39.6'
+
+[[node]]
+id = 'theorem_39_7'
+source = 'Rockafellar 1970, Theorem 39.7'
+
+[[node]]
+id = 'corollary_39_7_1'
+source = 'Rockafellar 1970, Corollary 39.7.1'
+
+[[node]]
+id = 'theorem_39_8'
+source = 'Rockafellar 1970, Theorem 39.8'

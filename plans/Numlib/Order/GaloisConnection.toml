@@ -1,0 +1,4 @@
+namespace = 'GaloisConnection'
+
+[[node]]
+id = 'closedsOrderIso'

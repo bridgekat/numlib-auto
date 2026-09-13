@@ -1,0 +1,76 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ContainsNoLine'
+
+[[node]]
+id = 'IsExtremeDirection'
+
+[[node]]
+id = 'extremeDirections'
+
+[[node]]
+id = 'isFace_recessionCone'
+
+[[node]]
+id = 'isExtremeDirection_recessionCone'
+
+[[node]]
+id = 'IsFace.linealitySpace_subset'
+
+[[node]]
+id = 'isFaceEquivInter'
+
+[[node]]
+id = 'extremePoints_convexHullPD_subset'
+
+[[node]]
+id = 'finite_extremePoints_convexHullPD'
+
+[[node]]
+id = 'containsNoLine_inter_of_isCompl'
+
+[[node]]
+id = 'extremeDirections_subset_extremeDirections_recessionCone'
+
+[[node]]
+id = 'exists_notMem_relint_mem_segment_of_isBounded'
+
+[[node]]
+id = 'exists_notMem_relint_mem_segment_of_not_convex'
+
+[[node]]
+id = 'IsAffineHalf'
+
+[[node]]
+id = 'isAffineHalf_of_convex_sdiff_relint'
+
+[[node]]
+id = 'exists_notMem_relint_mem_segment_of_not_isAffineHalf'
+
+[[node]]
+id = 'IsFace.eq_convexHullPD'
+
+[[node]]
+id = 'exists_mem_eq_smul_of_mem_extremeDirections'
+
+[[node]]
+id = 'convexHullPD_extremePoints_extremeDirections'
+
+[[node]]
+id = 'extremePoints_nonempty_of_containsNoLine'
+
+[[node]]
+id = 'coneHull_extremeDirections_eq'
+
+[[node]]
+id = 'coneHull_of_forall_extremeDirection'
+
+[[node]]
+id = 'mem_exposedPoints_of_forall_norm_sub_le'
+
+[[node]]
+id = 'extremePoints_subset_closure_exposedPoints'
+
+[[node]]
+id = 'closure_convexHull_exposedPoints'

@@ -1,0 +1,13 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'StrictConvexOnFn.add_convexFn'
+
+[[node]]
+id = 'StrictConvexOnFn.compLin'
+
+[[node]]
+id = 'IsExactSum.essentiallySmooth_infConv'
+
+[[node]]
+id = 'IsExactImage.essentiallySmooth_mapLin'

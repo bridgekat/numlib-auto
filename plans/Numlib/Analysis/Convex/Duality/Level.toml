@@ -1,0 +1,55 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'posHomGenCone'
+
+[[node]]
+id = 'posHomGen_eq_ofEpi'
+
+[[node]]
+id = 'posHomGen_apply_of_ne_zero'
+
+[[node]]
+id = 'setOf_clFn_posHomGen_le_zero'
+
+[[node]]
+id = 'conj_posHomGen'
+
+[[node]]
+id = 'conj_apply_zero'
+
+[[node]]
+id = 'iInf_conj_eq_neg_apply_zero'
+
+[[node]]
+id = 'clFn_posHomGen'
+
+[[node]]
+id = 'supportFn_setOf_le_zero'
+
+[[node]]
+id = 'clFn_hom'
+
+[[node]]
+id = 'mem_linealitySpaceFn_conj_iff'
+
+[[node]]
+id = 'linealitySpaceFn_conj_eq_annihilator'
+
+[[node]]
+id = 'Cofinite'
+
+[[node]]
+id = 'recessionFn_eq_supportFn_dom_conj'
+
+[[node]]
+id = 'closure_dom_conj_eq_univ_iff'
+
+[[node]]
+id = 'mem_closure_dom_conj_iff'
+
+[[node]]
+id = 'cofinite_iff_dom_conj_eq_univ'
+
+[[node]]
+id = 'interior_dom_conj_nonempty_iff'

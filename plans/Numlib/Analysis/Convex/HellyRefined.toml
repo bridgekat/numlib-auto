@@ -1,0 +1,43 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'conj_affineFn'
+
+[[node]]
+id = 'epi_conj_affineFn'
+
+[[node]]
+id = 'PosHomogeneous.add_le_add_of_ne_top'
+
+[[node]]
+id = 'conj_posHomGen_convFn_conj'
+
+[[node]]
+id = 'polyhedralFn_posHomGen_convFn_conj_affineFn'
+
+[[node]]
+id = 'nonempty_neg_dom_inter_relint_dom'
+
+[[node]]
+id = 'apply_zero_eq_bot_of_le_of_le'
+
+[[node]]
+id = 'recessionFn_affineFn_nonpos_iff'
+
+[[node]]
+id = 'Polyhedral.exists_finset_pairing'
+
+[[node]]
+id = 'mem_recessionCone_of_forall_pairing_nonpos'
+
+[[node]]
+id = 'constancySpace_indicatorFn'
+
+[[node]]
+id = 'alternative_infinite_system_univ_of_affine_tail'
+
+[[node]]
+id = 'exists_forall_le_zero_of_forall_subsystem_of_affine_tail'
+
+[[node]]
+id = 'helly_of_polyhedral_tail'

@@ -1,0 +1,64 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'convexOn_ciSup'
+
+[[node]]
+id = 'bddAbove_range_of_subset_convexHull_closure'
+
+[[node]]
+id = 'exists_forall_le_of_isCompact'
+
+[[node]]
+id = 'exists_forall_ge_of_isBounded'
+
+[[node]]
+id = 'exists_forall_abs_le_of_isCompact'
+
+[[node]]
+id = 'exists_forall_lipschitzOnWith_of_isCompact'
+
+[[node]]
+id = 'uniformCauchySeqOn_of_dense'
+
+[[node]]
+id = 'exists_tendstoUniformlyOn_of_dense'
+
+[[node]]
+id = 'tendstoUniformlyOn_of_tendsto'
+
+[[node]]
+id = 'eventually_forall_le_add_of_eventually_le'
+
+[[node]]
+id = 'exists_subseq_tendstoUniformlyOn'
+
+[[node]]
+id = 'continuousOn_prod_of_convexOn'
+
+[[node]]
+id = 'convexOn_chart'
+
+[[node]]
+id = 'mem_relint_of_mem_interior_chart'
+
+[[node]]
+id = 'mem_interior_chart_of_mem_relint'
+
+[[node]]
+id = 'chart_subset_interior_chart'
+
+[[node]]
+id = 'interior_chart_subset_closure_chart'
+
+[[node]]
+id = 'exists_tendstoUniformlyOn_of_dense_relint'
+
+[[node]]
+id = 'exists_subseq_tendstoUniformlyOn_relint'
+
+[[node]]
+id = 'continuousOn_prod_of_convexOn_relint'
+
+[[node]]
+id = 'exists_forall_abs_le_and_lipschitzOnWith_of_isCompact_relint'

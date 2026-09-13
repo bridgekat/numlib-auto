@@ -1,0 +1,34 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsExactSum.of_polyhedral_pair'
+
+[[node]]
+id = 'relint_inter_relint_nonempty_of_subset_affineSpan'
+
+[[node]]
+id = 'IsExactSum.of_polyhedral_closed'
+
+[[node]]
+id = 'IsExactSum.of_polyhedral'
+
+[[node]]
+id = 'polyhedralFn_finsetSum'
+
+[[node]]
+id = 'IsExactFinsetSum.of_polyhedral'
+
+[[node]]
+id = 'epi_mapLin_of_polyhedralFn'
+
+[[node]]
+id = 'polyhedralFn_mapLin'
+
+[[node]]
+id = 'polyhedralFn_compLin'
+
+[[node]]
+id = 'exists_mapLin_eq_of_polyhedralFn'
+
+[[node]]
+id = 'IsExactImage.of_polyhedral'

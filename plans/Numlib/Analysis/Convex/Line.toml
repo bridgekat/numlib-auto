@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'convexOn_comp_line'
+
+[[node]]
+id = 'concaveOn_comp_line'
+
+[[node]]
+id = 'convexOn_iff_lines'
+
+[[node]]
+id = 'concaveOn_iff_lines'
+
+[[node]]
+id = 'isOpen_line_steps'
+
+[[node]]
+id = 'continuousAt_comp_line_of_convexOn'

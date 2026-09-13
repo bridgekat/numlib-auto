@@ -1,0 +1,43 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'concaveSubgradient'
+
+[[node]]
+id = 'mem_concaveSubgradient_iff_neg_mem_subgradient_neg'
+
+[[node]]
+id = 'mem_concaveSubgradient_iff_concaveConj_eq'
+
+[[node]]
+id = 'concaveSubgradient_nonempty_of_mem_relint_domConcave'
+
+[[node]]
+id = 'saddleSubgradient'
+
+[[node]]
+id = 'domSaddleSubgradient'
+
+[[node]]
+id = 'saddleTilt'
+
+[[node]]
+id = 'mem_saddleSubgradient_iff_isSaddlePoint'
+
+[[node]]
+id = 'kernelSet_subset_domSaddleSubgradient_subset_domSaddle'
+
+[[node]]
+id = 'IsBifunSubgradientPair'
+
+[[node]]
+id = 'mem_saddleSubgradient_iff_isBifunSubgradientPair'
+
+[[node]]
+id = 'mem_saddleSubgradient_upperConjSaddle_iff'
+
+[[node]]
+id = 'mem_saddleSubgradient_upperConjSaddle_zero_iff'
+
+[[node]]
+id = 'exists_isSaddlePoint_of_zero_mem_kernelSet_upperConjSaddle'

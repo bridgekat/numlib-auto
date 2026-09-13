@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis.ConvexProcess'
+
+[[node]]
+id = 'closedBifun_indicatorBifun_iff'
+
+[[node]]
+id = 'isClosed_eval'
+
+[[node]]
+id = 'domConcaveBifun_adjointBifun_indicatorBifun'
+
+[[node]]
+id = 'partialCl₂_concaveBracket_adjointBifun_indicatorBifun'
+
+[[node]]
+id = '_root_.ConvexAnalysis.bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun'
+
+[[node]]
+id = 'bracket_eq_concaveBracket_of_mem_relint_dom'
+
+[[node]]
+id = '_root_.ConvexAnalysis.exists_unique_convexProcess_bracket_indicatorBifun_eq'
+
+[[node]]
+id = 'closedFn_imageBifun_indicatorBifun'

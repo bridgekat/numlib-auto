@@ -1,0 +1,100 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'SeparatesRn'
+
+[[node]]
+id = 'SeparatesProperlyRn'
+
+[[node]]
+id = 'SeparatesStrictlyRn'
+
+[[node]]
+id = 'SeparatesStronglyRn'
+
+[[node]]
+id = 'separatesStronglyRn_iff'
+
+[[node]]
+id = 'SeparableProperly'
+
+[[node]]
+id = 'SeparableStrongly'
+
+[[node]]
+id = 'theorem_11_1_ab'
+source = 'Rockafellar 1970, Theorem 11.1'
+
+[[node]]
+id = 'theorem_11_1_c'
+source = 'Rockafellar 1970, Theorem 11.1'
+
+[[node]]
+id = 'theorem_11_2'
+source = 'Rockafellar 1970, Theorem 11.2'
+
+[[node]]
+id = 'theorem_11_3'
+source = 'Rockafellar 1970, Theorem 11.3'
+
+[[node]]
+id = 'theorem_11_4'
+source = 'Rockafellar 1970, Theorem 11.4'
+
+[[node]]
+id = 'corollary_11_4_1'
+source = 'Rockafellar 1970, Corollary 11.4.1'
+
+[[node]]
+id = 'corollary_11_4_2'
+source = 'Rockafellar 1970, Corollary 11.4.2'
+
+[[node]]
+id = 'theorem_11_5'
+source = 'Rockafellar 1970, Theorem 11.5'
+
+[[node]]
+id = 'corollary_11_5_1'
+source = 'Rockafellar 1970, Corollary 11.5.1'
+
+[[node]]
+id = 'corollary_11_5_2'
+source = 'Rockafellar 1970, Corollary 11.5.2'
+
+[[node]]
+id = 'IsSupportingHalfSpace'
+
+[[node]]
+id = 'isSupportingHalfSpace_iff'
+
+[[node]]
+id = 'theorem_11_6'
+source = 'Rockafellar 1970, Theorem 11.6'
+
+[[node]]
+id = 'corollary_11_6_1'
+source = 'Rockafellar 1970, Corollary 11.6.1'
+
+[[node]]
+id = 'corollary_11_6_2'
+source = 'Rockafellar 1970, Corollary 11.6.2'
+
+[[node]]
+id = 'theorem_11_7'
+source = 'Rockafellar 1970, Theorem 11.7'
+
+[[node]]
+id = "theorem_11_7'"
+source = 'Rockafellar 1970, Theorem 11.7'
+
+[[node]]
+id = 'corollary_11_7_1'
+source = 'Rockafellar 1970, Corollary 11.7.1'
+
+[[node]]
+id = 'corollary_11_7_2'
+source = 'Rockafellar 1970, Corollary 11.7.2'
+
+[[node]]
+id = 'corollary_11_7_3'
+source = 'Rockafellar 1970, Corollary 11.7.3'

@@ -1,0 +1,133 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'relbd'
+
+[[node]]
+id = 'relbd_eq_intrinsicFrontier'
+
+[[node]]
+id = 'IsRelativelyOpen'
+
+[[node]]
+id = 'theorem_6_1'
+source = 'Rockafellar 1970, Theorem 6.1'
+
+[[node]]
+id = 'theorem_6_2_convex_cl'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_convex_ri'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_aff_cl'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_aff_ri'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_dim_cl'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_dim_ri'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_2_nonempty'
+source = 'Rockafellar 1970, Theorem 6.2'
+
+[[node]]
+id = 'theorem_6_3_cl_ri'
+source = 'Rockafellar 1970, Theorem 6.3'
+
+[[node]]
+id = 'theorem_6_3_ri_cl'
+source = 'Rockafellar 1970, Theorem 6.3'
+
+[[node]]
+id = 'corollary_6_3_1'
+source = 'Rockafellar 1970, Corollary 6.3.1'
+
+[[node]]
+id = 'corollary_6_3_2'
+source = 'Rockafellar 1970, Corollary 6.3.2'
+
+[[node]]
+id = 'corollary_6_3_3'
+source = 'Rockafellar 1970, Corollary 6.3.3'
+
+[[node]]
+id = 'theorem_6_4'
+source = 'Rockafellar 1970, Theorem 6.4'
+
+[[node]]
+id = 'corollary_6_4_1'
+source = 'Rockafellar 1970, Corollary 6.4.1'
+
+[[node]]
+id = 'theorem_6_5_cl'
+source = 'Rockafellar 1970, Theorem 6.5'
+
+[[node]]
+id = 'theorem_6_5_ri'
+source = 'Rockafellar 1970, Theorem 6.5'
+
+[[node]]
+id = 'corollary_6_5_1_ri'
+source = 'Rockafellar 1970, Corollary 6.5.1'
+
+[[node]]
+id = 'corollary_6_5_1_cl'
+source = 'Rockafellar 1970, Corollary 6.5.1'
+
+[[node]]
+id = 'corollary_6_5_2'
+source = 'Rockafellar 1970, Corollary 6.5.2'
+
+[[node]]
+id = 'theorem_6_6_ri'
+source = 'Rockafellar 1970, Theorem 6.6'
+
+[[node]]
+id = 'theorem_6_6_cl'
+source = 'Rockafellar 1970, Theorem 6.6'
+
+[[node]]
+id = 'corollary_6_6_1'
+source = 'Rockafellar 1970, Corollary 6.6.1'
+
+[[node]]
+id = 'corollary_6_6_2_ri'
+source = 'Rockafellar 1970, Corollary 6.6.2'
+
+[[node]]
+id = 'corollary_6_6_2_cl'
+source = 'Rockafellar 1970, Corollary 6.6.2'
+
+[[node]]
+id = 'theorem_6_7_ri'
+source = 'Rockafellar 1970, Theorem 6.7'
+
+[[node]]
+id = 'theorem_6_7_cl'
+source = 'Rockafellar 1970, Theorem 6.7'
+
+[[node]]
+id = 'theorem_6_8'
+source = 'Rockafellar 1970, Theorem 6.8'
+
+[[node]]
+id = 'coneOver'
+
+[[node]]
+id = 'corollary_6_8_1'
+source = 'Rockafellar 1970, Corollary 6.8.1'
+
+[[node]]
+id = 'theorem_6_9'
+source = 'Rockafellar 1970, Theorem 6.9'

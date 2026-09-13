@@ -1,0 +1,99 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'IsPolytope'
+
+[[node]]
+id = 'FinitelyGeneratedFn'
+
+[[node]]
+id = 'theorem_19_1'
+source = 'Rockafellar 1970, Theorem 19.1'
+
+[[node]]
+id = 'corollary_19_1_1_extremePoints'
+source = 'Rockafellar 1970, Corollary 19.1.1'
+
+[[node]]
+id = 'corollary_19_1_1_extremeDirections'
+source = 'Rockafellar 1970, Corollary 19.1.1'
+
+[[node]]
+id = 'corollary_19_1_2'
+source = 'Rockafellar 1970, Corollary 19.1.2'
+
+[[node]]
+id = 'theorem_19_2'
+source = 'Rockafellar 1970, Theorem 19.2'
+
+[[node]]
+id = 'corollary_19_2_1'
+source = 'Rockafellar 1970, Corollary 19.2.1'
+
+[[node]]
+id = 'corollary_19_2_2'
+source = 'Rockafellar 1970, Corollary 19.2.2'
+
+[[node]]
+id = 'theorem_19_3_image'
+source = 'Rockafellar 1970, Theorem 19.3'
+
+[[node]]
+id = 'theorem_19_3_preimage'
+source = 'Rockafellar 1970, Theorem 19.3'
+
+[[node]]
+id = 'corollary_19_3_1_image'
+source = 'Rockafellar 1970, Corollary 19.3.1'
+
+[[node]]
+id = 'corollary_19_3_1_attained'
+source = 'Rockafellar 1970, Corollary 19.3.1'
+
+[[node]]
+id = 'corollary_19_3_1_preimage'
+source = 'Rockafellar 1970, Corollary 19.3.1'
+
+[[node]]
+id = 'corollary_19_3_2'
+source = 'Rockafellar 1970, Corollary 19.3.2'
+
+[[node]]
+id = 'corollary_19_3_3'
+source = 'Rockafellar 1970, Corollary 19.3.3'
+
+[[node]]
+id = 'corollary_19_3_4'
+source = 'Rockafellar 1970, Corollary 19.3.4'
+
+[[node]]
+id = 'theorem_19_4'
+source = 'Rockafellar 1970, Theorem 19.4'
+
+[[node]]
+id = 'theorem_19_5_smul'
+source = 'Rockafellar 1970, Theorem 19.5'
+
+[[node]]
+id = 'theorem_19_5_recession'
+source = 'Rockafellar 1970, Theorem 19.5'
+
+[[node]]
+id = 'theorem_19_5_generators'
+source = 'Rockafellar 1970, Theorem 19.5'
+
+[[node]]
+id = 'corollary_19_5_1'
+source = 'Rockafellar 1970, Corollary 19.5.1'
+
+[[node]]
+id = 'theorem_19_6'
+source = 'Rockafellar 1970, Theorem 19.6'
+
+[[node]]
+id = 'theorem_19_7'
+source = 'Rockafellar 1970, Theorem 19.7'
+
+[[node]]
+id = 'corollary_19_7_1'
+source = 'Rockafellar 1970, Corollary 19.7.1'

@@ -1,0 +1,34 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ConvexFns'
+
+[[node]]
+id = 'ConvexFns.instCompleteLattice'
+
+[[node]]
+id = 'ConvexFns.coeOrderEmbedding'
+
+[[node]]
+id = 'ConvexFns.coe_sSup'
+
+[[node]]
+id = 'ConvexFns.coe_sup'
+
+[[node]]
+id = 'ConvexFns.coeSSupHom'
+
+[[node]]
+id = 'ConvexFns.coe_iInf'
+
+[[node]]
+id = 'ConvexFns.coe_inf'
+
+[[node]]
+id = 'ConvexFns.coe_top'
+
+[[node]]
+id = 'ConvexFns.coe_bot'
+
+[[node]]
+id = 'ConvexFns.not_coe_inf_eq_inf'

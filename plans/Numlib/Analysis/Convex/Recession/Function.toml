@@ -1,0 +1,67 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'recessionFn'
+
+[[node]]
+id = 'posHomogeneous_recessionFn'
+
+[[node]]
+id = 'convexFn_recessionFn'
+
+[[node]]
+id = 'proper_recessionFn'
+
+[[node]]
+id = 'recessionFn_apply_eq_iSup_sub'
+
+[[node]]
+id = 'recessionFn_isLeast'
+
+[[node]]
+id = 'forall_antitone_iff_recessionFn_nonpos'
+
+[[node]]
+id = 'antitone_along_of_liminf_lt_top'
+
+[[node]]
+id = 'ConvexFn.eq_of_le_on_affineSubspace'
+
+[[node]]
+id = 'recessionConeFn'
+
+[[node]]
+id = 'recessionPointedConeFn'
+
+[[node]]
+id = 'constancySpace'
+
+[[node]]
+id = 'constancySubmodule'
+
+[[node]]
+id = 'forall_eq_add_iff_mk_mem_linealitySpace_epi'
+
+[[node]]
+id = 'linealitySpaceFn'
+
+[[node]]
+id = 'linealitySpaceFn_eq_image'
+
+[[node]]
+id = 'linealitySubmoduleFn'
+
+[[node]]
+id = 'linealityFn'
+
+[[node]]
+id = 'recessionCone_setOf_le'
+
+[[node]]
+id = 'linealitySpace_setOf_le'
+
+[[node]]
+id = 'tendsto_smulRight_recessionFn'
+
+[[node]]
+id = 'isBounded_setOf_le'

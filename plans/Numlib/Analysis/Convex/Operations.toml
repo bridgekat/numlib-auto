@@ -1,0 +1,6 @@
+desc = '''
+Sums, suprema, images and inverse images, infimal convolution: which operations preserve convexity
+(`Basic`, `Hull`, `Image`, `InfConv`) and which preserve closedness (`Closed`). `Epi` is the
+translation between a function and the set that is its epigraph, and carries the induction
+principle most of the rest is proved by.
+'''

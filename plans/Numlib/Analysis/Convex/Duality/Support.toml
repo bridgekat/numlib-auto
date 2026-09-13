@@ -1,0 +1,54 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'supportFn'
+
+[[node]]
+id = 'supportFn_eq_conj_indicatorFn'
+
+[[node]]
+id = 'supportFn_singleton'
+desc = 'The support function of a singleton is the pairing against that point.'
+
+[[node]]
+id = 'supportFn_union'
+desc = 'The support function of a union is the pointwise supremum of the two support functions.'
+
+[[node]]
+id = 'supportFn_convexHull'
+
+[[node]]
+id = 'supportFn_smul'
+
+[[node]]
+id = 'supportFn_add'
+
+[[node]]
+id = 'supportSet'
+
+[[node]]
+id = 'conj_eq_indicatorFn_of_posHomogeneous'
+
+[[node]]
+id = 'supportFn_closure'
+
+[[node]]
+id = 'mem_closure_convexHull_iff_le_supportFn'
+
+[[node]]
+id = 'clFn_eq_supportFn_of_posHomogeneous'
+
+[[node]]
+id = 'supportSet_clFn'
+
+[[node]]
+id = 'conj_supportFn'
+
+[[node]]
+id = 'exists_supportFn_iff'
+
+[[node]]
+id = 'supportEquiv'
+
+[[node]]
+id = 'exists_supportFn_finite_iff'

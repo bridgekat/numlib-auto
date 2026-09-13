@@ -1,0 +1,47 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_22_1'
+source = 'Rockafellar 1970, Theorem 22.1'
+
+[[node]]
+id = 'theorem_22_2'
+source = 'Rockafellar 1970, Theorem 22.2'
+
+[[node]]
+id = 'IsConsequence'
+
+[[node]]
+id = 'theorem_22_3'
+source = 'Rockafellar 1970, Theorem 22.3'
+
+[[node]]
+id = 'corollary_22_3_1'
+source = 'Rockafellar 1970, Corollary 22.3.1'
+
+[[node]]
+id = 'IsRowsOf'
+
+[[node]]
+id = 'IsRealInterval'
+
+[[node]]
+id = 'rectangle'
+
+[[node]]
+id = 'intervalCombo'
+
+[[node]]
+id = 'posIntervalCombo'
+
+[[node]]
+id = 'intervalVector'
+
+[[node]]
+id = 'intervalSubspace'
+
+[[node]]
+id = 'leIntervals'
+
+[[node]]
+id = 'nonnegEqIntervals'

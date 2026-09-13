@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'maxAffineFn'
+
+[[node]]
+id = 'polyhedralFn_maxAffineFn'
+
+[[node]]
+id = 'polyhedralFn_maxAffineFn_add_indicatorFn'
+
+[[node]]
+id = 'PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom'
+
+[[node]]
+id = 'polyhedralFn_iff_maxAffineFn_add_indicatorFn'

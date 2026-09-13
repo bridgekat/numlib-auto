@@ -1,0 +1,19 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'monotoneCurve'
+
+[[node]]
+id = 'isMaximalMonotoneRel_monotoneCurve'
+
+[[node]]
+id = 'subgradientRel_eq_monotoneCurve_rightDeriv'
+
+[[node]]
+id = 'exists_monotone_ne_bot_ne_top_monotoneCurve_eq'
+
+[[node]]
+id = 'exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq'
+
+[[node]]
+id = 'exists_closedProperConvexFn_forall_le_le'

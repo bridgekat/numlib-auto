@@ -1,0 +1,54 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'convFn'
+
+[[node]]
+id = 'convexFn_convFn'
+
+[[node]]
+id = 'convFn_le'
+desc = 'The convex hull of a family is a minorant of every member of the family.'
+
+[[node]]
+id = 'le_convFn'
+
+[[node]]
+id = 'isGreatest_convFn'
+desc = 'The convex hull of a family is its greatest convex minorant.'
+
+[[node]]
+id = 'convFn_le_iInf'
+
+[[node]]
+id = 'convHullFn'
+
+[[node]]
+id = 'gci_val_convHullFn'
+
+[[node]]
+id = 'convFn_eq_convHullFn_iInf'
+
+[[node]]
+id = 'convFn_unit'
+
+[[node]]
+id = 'convFn₂'
+
+[[node]]
+id = 'convFn₂_indicatorFn_lt_inf'
+
+[[node]]
+id = 'convFn₂_apply'
+
+[[node]]
+id = 'IsEpiLike.mem_convexHull_of_le'
+
+[[node]]
+id = 'epi_convFn₂'
+
+[[node]]
+id = 'convFn_apply'
+
+[[node]]
+id = 'isEpiLike_convexHull_epi_union'

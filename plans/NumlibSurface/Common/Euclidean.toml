@@ -1,0 +1,41 @@
+namespace = 'NumlibSurface'
+
+[[node]]
+id = 'Rn'
+
+[[node]]
+id = 'pairing'
+
+[[node]]
+id = 'flip_pairing'
+
+[[node]]
+id = 'pairing_comm'
+
+[[node]]
+id = 'forall_pairing_le_comm'
+
+[[node]]
+id = 'forall_pairing_lt_comm'
+
+[[node]]
+id = 'pairingProd'
+
+[[node]]
+id = 'pairingAdjoint'
+
+[[node]]
+id = 'pairingProd_euclideanProdEquiv'
+
+[[node]]
+id = 'conj_flip_pairing'
+desc = 'The Euclidean pairing is its own flip, so conjugating against the flip changes nothing.'
+
+[[node]]
+id = 'linFn'
+
+[[node]]
+id = 'exists_linFn'
+
+[[node]]
+id = 'linFn_eq_toDual'

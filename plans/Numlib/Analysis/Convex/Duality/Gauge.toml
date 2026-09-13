@@ -1,0 +1,94 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'UpClosed'
+
+[[node]]
+id = 'gaugeFn'
+
+[[node]]
+id = 'IsGauge'
+
+[[node]]
+id = 'isGauge_iff'
+
+[[node]]
+id = 'gaugeEquiv'
+
+[[node]]
+id = 'recessionCone_eq_polarCone_polarSet'
+
+[[node]]
+id = 'polarCone_linealitySpace'
+
+[[node]]
+id = 'finrank_vectorSpan_polarSet_add_lineality'
+
+[[node]]
+id = 'polarSet_setOf_le_subset_and_subset'
+
+[[node]]
+id = 'polarGauge'
+
+[[node]]
+id = 'polarGauge_eq_supportFn'
+
+[[node]]
+id = 'epiPairing'
+
+[[node]]
+id = 'vNeg'
+
+[[node]]
+id = 'polarFn'
+
+[[node]]
+id = 'polarFn_apply_eq'
+
+[[node]]
+id = 'polarFn_polarFn'
+
+[[node]]
+id = 'IsPolarFn'
+
+[[node]]
+id = 'polarFnEquiv'
+
+[[node]]
+id = 'polarGauge_polarGauge'
+
+[[node]]
+id = 'polarGaugeEquiv'
+
+[[node]]
+id = 'obverse'
+
+[[node]]
+id = 'obverse_obverse'
+
+[[node]]
+id = 'conj_eq_obverse_polarFn'
+
+[[node]]
+id = 'polarFn_eq_obverse_conj'
+
+[[node]]
+id = 'polarFn_conj_eq_conj_polarFn'
+
+[[node]]
+id = 'setOf_polarFn_le'
+
+[[node]]
+id = 'AbsorbsAll'
+
+[[node]]
+id = 'RayFree'
+
+[[node]]
+id = 'IsNorm'
+
+[[node]]
+id = 'isNorm_iff'
+
+[[node]]
+id = 'IsNorm.toSeminorm'

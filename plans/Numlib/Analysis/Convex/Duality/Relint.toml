@@ -1,0 +1,28 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsExactImage.of_relint_closed'
+
+[[node]]
+id = 'IsExactSum.of_relint_closed'
+
+[[node]]
+id = 'TendstoClFnAlongSegment'
+
+[[node]]
+id = 'proper_conj_of_proper'
+
+[[node]]
+id = 'conj_add_eq_conj_clFn_add_clFn'
+
+[[node]]
+id = 'IsExactSum.of_relint'
+
+[[node]]
+id = 'conj_compLin_eq_conj_compLin_clFn'
+
+[[node]]
+id = 'IsExactImage.of_relint'
+
+[[node]]
+id = 'IsExactFinsetSum.of_relint'

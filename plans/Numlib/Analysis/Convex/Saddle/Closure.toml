@@ -1,0 +1,31 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'lowerCl'
+
+[[node]]
+id = 'upperCl'
+
+[[node]]
+id = 'LowerClosedFn'
+
+[[node]]
+id = 'UpperClosedFn'
+
+[[node]]
+id = 'FullyClosedFn'
+
+[[node]]
+id = 'fullyClosedFn_iff'
+
+[[node]]
+id = 'saddleSwap'
+
+[[node]]
+id = 'saddleSwapOrderIso'
+
+[[node]]
+id = 'upperClosedFn_upperCl'
+
+[[node]]
+id = 'lowerClosedFn_lowerCl'

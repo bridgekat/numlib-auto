@@ -1,0 +1,31 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'mem_pointedCone_hull_range_iff'
+
+[[node]]
+id = 'isClosed_coe_pointedCone_hull_range'
+
+[[node]]
+id = 'farkas_of_pairing'
+
+[[node]]
+id = 'farkas'
+
+[[node]]
+id = 'exists_multipliers_of_infeasible'
+
+[[node]]
+id = 'alternative_linear_system'
+
+[[node]]
+id = 'eq_zero_of_forall_pairing_eq_zero'
+
+[[node]]
+id = 'eq_zero_and_nonpos_of_forall_nonneg'
+
+[[node]]
+id = 'alternative_linear_system_strict'
+
+[[node]]
+id = 'le_consequence_iff'

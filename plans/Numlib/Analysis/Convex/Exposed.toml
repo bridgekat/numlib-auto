@@ -1,0 +1,28 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsExposedDirection'
+
+[[node]]
+id = 'exposedDirections'
+
+[[node]]
+id = 'isExposed_recessionCone'
+
+[[node]]
+id = 'isExposedDirection_recessionCone'
+
+[[node]]
+id = 'exposedDirections_subset_exposedDirections_recessionCone'
+
+[[node]]
+id = 'exists_forall_sub_le_mul_sub'
+
+[[node]]
+id = 'closure_convexHullPD_exposedPoints_exposedDirections'
+
+[[node]]
+id = 'closure_coneHull_exposedDirections'
+
+[[node]]
+id = 'closure_coneHull_of_forall_exposedDirection'

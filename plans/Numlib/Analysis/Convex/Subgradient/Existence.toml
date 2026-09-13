@@ -1,0 +1,31 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'dirDeriv_eq_supportFn_of_mem_relint_dom'
+
+[[node]]
+id = 'subgradient_nonempty_of_mem_relint_dom'
+
+[[node]]
+id = 'bddAbove_subgradient_iff_mem_interior_dom'
+
+[[node]]
+id = 'subgradient_eq_empty_iff_exists_dirDeriv_eq_bot'
+
+[[node]]
+id = 'dirDeriv_eq_supportFn_of_polyhedralFn'
+
+[[node]]
+id = 'subgradient_nonempty_of_polyhedralFn'
+
+[[node]]
+id = 'polyhedral_subgradient_of_polyhedralFn'
+
+[[node]]
+id = 'normalCone_setOf_le_eq_closure_coe_hull_subgradient'
+
+[[node]]
+id = 'normalCone_setOf_le_eq_coe_hull_subgradient'
+
+[[node]]
+id = 'mem_interior_of_normalCone_eq_zero'

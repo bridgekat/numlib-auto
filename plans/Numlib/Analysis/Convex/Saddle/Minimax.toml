@@ -1,0 +1,76 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsSaddlePoint'
+
+[[node]]
+id = 'IsSaddlePointOn'
+
+[[node]]
+id = 'maximin'
+
+[[node]]
+id = 'minimax'
+
+[[node]]
+id = 'HasSaddleValue'
+
+[[node]]
+id = 'maximin_le_minimax'
+
+[[node]]
+id = 'isSaddlePoint_iff_iSup_eq_iInf'
+
+[[node]]
+id = 'isSaddlePoint_iff_attained'
+
+[[node]]
+id = 'SaddleEquiv.maximin_eq'
+
+[[node]]
+id = 'IsSaddlePoint.mem_domSaddle'
+
+[[node]]
+id = 'maximin_eq_biSup_biInf'
+
+[[node]]
+id = 'isSaddlePoint_iff_isSaddlePointOn_dom'
+
+[[node]]
+id = 'saddleLagrangian'
+
+[[node]]
+id = 'isSaddlePoint_lagrangian_iff'
+
+[[node]]
+id = 'isSaddlePoint_lagrangian_iff_normal_and_optimal'
+
+[[node]]
+id = 'mem_argmin_iff_exists_isSaddlePoint_lagrangian'
+
+[[node]]
+id = 'flipBifun'
+
+[[node]]
+id = 'exists_unique_closedBifun_saddleLagrangian_eq'
+
+[[node]]
+id = 'lowerConjSaddle'
+
+[[node]]
+id = 'upperConjSaddle'
+
+[[node]]
+id = 'bifunSaddleClass'
+
+[[node]]
+id = 'hasSaddleValue_iff_conjSaddle_zero_eq'
+
+[[node]]
+id = 'upperConjSaddle_eq_saddleLagrangian'
+
+[[node]]
+id = 'lowerConjSaddle_eq_bracket_inverseBifun'
+
+[[node]]
+id = 'concaveConvexFn_upperConjSaddle'

@@ -1,0 +1,109 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'OrdinaryConvexProgram'
+
+[[node]]
+id = 'OrdinaryConvexProgram.feasibleSet'
+
+[[node]]
+id = 'OrdinaryConvexProgram.constraintSet'
+
+[[node]]
+id = 'OrdinaryConvexProgram.objective'
+
+[[node]]
+id = 'OrdinaryConvexProgram.optimalValue'
+
+[[node]]
+id = 'OrdinaryConvexProgram.optimalSolutions'
+
+[[node]]
+id = 'OrdinaryConvexProgram.lagrangeFn'
+
+[[node]]
+id = 'OrdinaryConvexProgram.IsKuhnTuckerVector'
+
+[[node]]
+id = 'OrdinaryConvexProgram.lagrangeSummand'
+
+[[node]]
+id = 'theorem_28_1'
+source = 'Rockafellar 1970, Theorem 28.1'
+
+[[node]]
+id = 'corollary_28_1_1'
+source = 'Rockafellar 1970, Corollary 28.1.1'
+
+[[node]]
+id = 'OrdinaryConvexProgram.ineqBifun'
+
+[[node]]
+id = 'OrdinaryConvexProgram.perturbFn'
+
+[[node]]
+id = 'theorem_28_2'
+source = 'Rockafellar 1970, Theorem 28.2'
+
+[[node]]
+id = 'corollary_28_2_1'
+source = 'Rockafellar 1970, Corollary 28.2.1'
+
+[[node]]
+id = 'linConstraint'
+
+[[node]]
+id = 'corollary_28_2_2'
+source = 'Rockafellar 1970, Corollary 28.2.2'
+
+[[node]]
+id = 'OrdinaryConvexProgram.multiplierCone'
+
+[[node]]
+id = 'OrdinaryConvexProgram.unitVec'
+
+[[node]]
+id = 'OrdinaryConvexProgram.programLagrangian'
+
+[[node]]
+id = 'OrdinaryConvexProgram.saddleFn'
+
+[[node]]
+id = 'activeIndices'
+
+[[node]]
+id = 'OrdinaryConvexProgram.theorem_28_3'
+source = 'Rockafellar 1970, Theorem 28.3'
+
+[[node]]
+id = 'OrdinaryConvexProgram.corollary_28_3_1'
+source = 'Rockafellar 1970, Corollary 28.3.1'
+
+[[node]]
+id = 'OrdinaryConvexProgram.dualFn'
+
+[[node]]
+id = 'OrdinaryConvexProgram.theorem_28_4'
+source = 'Rockafellar 1970, Theorem 28.4'
+
+[[node]]
+id = 'OrdinaryConvexProgram.corollary_28_4_1'
+source = 'Rockafellar 1970, Corollary 28.4.1'
+
+[[node]]
+id = 'coordAffine'
+
+[[node]]
+id = 'ex1Constraint₁'
+
+[[node]]
+id = 'ex1Constraint₂'
+
+[[node]]
+id = 'ex1'
+
+[[node]]
+id = 'ex2Set'
+
+[[node]]
+id = 'ex2'

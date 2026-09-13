@@ -1,0 +1,123 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_24_1_monotone_rightDeriv'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_monotone_leftDeriv'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_finite_iff'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_chain'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_tendsto_rightDeriv_Ioi'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_tendsto_rightDeriv_Iio'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_tendsto_leftDeriv_Ioi'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_tendsto_leftDeriv_Iio'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_1_subgradient'
+source = 'Rockafellar 1970, Theorem 24.1'
+
+[[node]]
+id = 'theorem_24_2'
+source = 'Rockafellar 1970, Theorem 24.2'
+
+[[node]]
+id = 'corollary_24_2_1_rightDeriv'
+source = 'Rockafellar 1970, Corollary 24.2.1'
+
+[[node]]
+id = 'corollary_24_2_1_leftDeriv'
+source = 'Rockafellar 1970, Corollary 24.2.1'
+
+[[node]]
+id = 'IsCompleteNonDecreasingCurve'
+
+[[node]]
+id = 'theorem_24_3'
+source = 'Rockafellar 1970, Theorem 24.3'
+
+[[node]]
+id = 'theorem_24_4'
+source = 'Rockafellar 1970, Theorem 24.4'
+
+[[node]]
+id = 'theorem_24_5_lt'
+source = 'Rockafellar 1970, Theorem 24.5'
+
+[[node]]
+id = 'theorem_24_5_limsup'
+source = 'Rockafellar 1970, Theorem 24.5'
+
+[[node]]
+id = 'theorem_24_5_subgradient'
+source = 'Rockafellar 1970, Theorem 24.5'
+
+[[node]]
+id = 'corollary_24_5_1_upperSemicontinuous'
+source = 'Rockafellar 1970, Corollary 24.5.1'
+
+[[node]]
+id = 'corollary_24_5_1_subgradient'
+source = 'Rockafellar 1970, Corollary 24.5.1'
+
+[[node]]
+id = 'subgradientNormal'
+
+[[node]]
+id = 'theorem_24_6_lt'
+source = 'Rockafellar 1970, Theorem 24.6'
+
+[[node]]
+id = 'theorem_24_6_limsup'
+source = 'Rockafellar 1970, Theorem 24.6'
+
+[[node]]
+id = 'theorem_24_6_subgradient'
+source = 'Rockafellar 1970, Theorem 24.6'
+
+[[node]]
+id = 'theorem_24_7_bound'
+source = 'Rockafellar 1970, Theorem 24.7'
+
+[[node]]
+id = 'theorem_24_7_nonempty'
+source = 'Rockafellar 1970, Theorem 24.7'
+
+[[node]]
+id = 'theorem_24_7_isCompact'
+source = 'Rockafellar 1970, Theorem 24.7'
+
+[[node]]
+id = 'theorem_24_7_isClosed'
+source = 'Rockafellar 1970, Theorem 24.7'
+
+[[node]]
+id = 'theorem_24_7_isBounded'
+source = 'Rockafellar 1970, Theorem 24.7'
+
+[[node]]
+id = 'theorem_24_8'
+source = 'Rockafellar 1970, Theorem 24.8'
+
+[[node]]
+id = 'theorem_24_9'
+source = 'Rockafellar 1970, Theorem 24.9'

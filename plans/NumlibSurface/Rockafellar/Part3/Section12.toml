@@ -1,0 +1,87 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_12_1'
+source = 'Rockafellar 1970, Theorem 12.1'
+
+[[node]]
+id = 'corollary_12_1_1'
+source = 'Rockafellar 1970, Corollary 12.1.1'
+
+[[node]]
+id = 'corollary_12_1_2'
+source = 'Rockafellar 1970, Corollary 12.1.2'
+
+[[node]]
+id = 'theorem_12_2_convex'
+source = 'Rockafellar 1970, Theorem 12.2'
+
+[[node]]
+id = 'theorem_12_2_closed'
+source = 'Rockafellar 1970, Theorem 12.2'
+
+[[node]]
+id = 'theorem_12_2_proper'
+source = 'Rockafellar 1970, Theorem 12.2'
+
+[[node]]
+id = 'theorem_12_2_conj_clFn'
+source = 'Rockafellar 1970, Theorem 12.2'
+
+[[node]]
+id = 'theorem_12_2_biconj'
+source = 'Rockafellar 1970, Theorem 12.2'
+
+[[node]]
+id = 'corollary_12_2_1'
+source = 'Rockafellar 1970, Corollary 12.2.1'
+
+[[node]]
+id = 'corollary_12_2_2'
+source = 'Rockafellar 1970, Corollary 12.2.2'
+
+[[node]]
+id = 'fenchel_inequality'
+
+[[node]]
+id = 'theorem_12_3'
+source = 'Rockafellar 1970, Theorem 12.3'
+
+[[node]]
+id = 'IsOrthogonalEquiv'
+
+[[node]]
+id = 'SymmetricWrt'
+
+[[node]]
+id = 'corollary_12_3_1'
+source = 'Rockafellar 1970, Corollary 12.3.1'
+
+[[node]]
+id = 'nonnegOrthant'
+
+[[node]]
+id = 'posPart'
+
+[[node]]
+id = 'maskNonneg'
+
+[[node]]
+id = 'MonotoneOrthantFn'
+
+[[node]]
+id = 'monotoneConjOrthant'
+
+[[node]]
+id = 'monotoneConjOrthant_apply'
+
+[[node]]
+id = 'conj_posPart'
+
+[[node]]
+id = 'theorem_12_4_mem'
+source = 'Rockafellar 1970, Theorem 12.4'
+
+[[node]]
+id = 'theorem_12_4_involutive'
+source = 'Rockafellar 1970, Theorem 12.4'

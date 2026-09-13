@@ -1,0 +1,30 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsInnerPairing'
+
+[[node]]
+id = 'self_pairing_add'
+desc = 'The expansion of `B (x + y) (x + y)` for a self-pairing of inner-product type.'
+
+[[node]]
+id = 'self_pairing_sub'
+desc = 'The expansion of `B (x - y) (x - y)` for a self-pairing of inner-product type.'
+
+[[node]]
+id = 'self_pairing_combo_le'
+
+[[node]]
+id = 'pairing_sq_le_mul'
+
+[[node]]
+id = 'pairingNorm'
+
+[[node]]
+id = 'pairingNorm_add_le'
+
+[[node]]
+id = 'IsContinuousInnerPairing'
+
+[[node]]
+id = 'exists_pairingNorm_le_and_le_pairingNorm'

@@ -41,3 +41,7 @@ Examples that may go into the surface:
 Both the backbone and the surface libraries are covered by structured plans in [`plans/`](plans/). They are TOML files that can either index into finished Lean code, or represent desired Lean modules/declarations not yet written.
 
 To start new plans for a formalization project or complete open items in existing plans, refer to [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Provenance
+
+`Numlib/Analysis/Convex` (with `Numlib/Order` and `Numlib/LinearAlgebra/Subspace`) and `NumlibSurface/Rockafellar` (with `NumlibSurface/Common`) were merged from the [tdaf](https://github.com/bridgekat/tdaf) repository at its commit `a44b1de`, under the MIT licence, Copyright (c) 2026 Great Bay University; the licence text is in [`LICENSE-tdaf`](LICENSE-tdaf).

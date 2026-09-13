@@ -1,0 +1,131 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'gaugeFn_apply_rn'
+
+[[node]]
+id = 'gauge_iff_exists_gaugeFn'
+
+[[node]]
+id = 'polarGauge_apply_rn'
+
+[[node]]
+id = 'polarFn_apply_rn'
+
+[[node]]
+id = 'obverse_apply_rn'
+
+[[node]]
+id = 'theorem_15_1_gaugeFn'
+source = 'Rockafellar 1970, Theorem 15.1'
+
+[[node]]
+id = 'theorem_15_1_isGauge'
+source = 'Rockafellar 1970, Theorem 15.1'
+
+[[node]]
+id = 'theorem_15_1_closedFn'
+source = 'Rockafellar 1970, Theorem 15.1'
+
+[[node]]
+id = 'theorem_15_1_polar_polar'
+source = 'Rockafellar 1970, Theorem 15.1'
+
+[[node]]
+id = 'corollary_15_1_1_gaugeEquiv'
+source = 'Rockafellar 1970, Corollary 15.1.1'
+
+[[node]]
+id = 'corollary_15_1_1'
+source = 'Rockafellar 1970, Corollary 15.1.1'
+
+[[node]]
+id = 'corollary_15_1_2'
+source = 'Rockafellar 1970, Corollary 15.1.2'
+
+[[node]]
+id = 'theorem_15_2_isNorm'
+source = 'Rockafellar 1970, Theorem 15.2'
+
+[[node]]
+id = 'theorem_15_2_setOf_le_one'
+source = 'Rockafellar 1970, Theorem 15.2'
+
+[[node]]
+id = 'theorem_15_2_gaugeFn'
+source = 'Rockafellar 1970, Theorem 15.2'
+
+[[node]]
+id = 'theorem_15_2_setOf_gaugeFn_le_one'
+source = 'Rockafellar 1970, Theorem 15.2'
+
+[[node]]
+id = 'theorem_15_2_polar'
+source = 'Rockafellar 1970, Theorem 15.2'
+
+[[node]]
+id = 'IsMinkowskiMetric'
+
+[[node]]
+id = 'theorem_15_3'
+source = 'Rockafellar 1970, Theorem 15.3'
+
+[[node]]
+id = 'corollary_15_3_1'
+source = 'Rockafellar 1970, Corollary 15.3.1'
+
+[[node]]
+id = 'corollary_15_3_2'
+source = 'Rockafellar 1970, Corollary 15.3.2'
+
+[[node]]
+id = 'theorem_15_4_nonneg'
+source = 'Rockafellar 1970, Theorem 15.4'
+
+[[node]]
+id = 'theorem_15_4_map_zero'
+source = 'Rockafellar 1970, Theorem 15.4'
+
+[[node]]
+id = 'theorem_15_4_convexFn'
+source = 'Rockafellar 1970, Theorem 15.4'
+
+[[node]]
+id = 'theorem_15_4_closedFn'
+source = 'Rockafellar 1970, Theorem 15.4'
+
+[[node]]
+id = 'theorem_15_4_polar_polar'
+source = 'Rockafellar 1970, Theorem 15.4'
+
+[[node]]
+id = 'corollary_15_4_1'
+source = 'Rockafellar 1970, Corollary 15.4.1'
+
+[[node]]
+id = 'theorem_15_5_isPolarFn'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'theorem_15_5_obverse_obverse'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'theorem_15_5_polarFn_eq_conj_obverse'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'theorem_15_5_conj_eq_polarFn_obverse'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'theorem_15_5_conj_eq_obverse_polarFn'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'theorem_15_5_polarFn_eq_obverse_conj'
+source = 'Rockafellar 1970, Theorem 15.5'
+
+[[node]]
+id = 'corollary_15_5_1'
+source = 'Rockafellar 1970, Corollary 15.5.1'

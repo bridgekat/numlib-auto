@@ -1,0 +1,79 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'clFn_eq_of_eqOn_relint_dom'
+
+[[node]]
+id = 'clConcave_eq_of_eqOn_relint_domConcave'
+
+[[node]]
+id = 'domSaddle'
+
+[[node]]
+id = 'ProperSaddleFn'
+
+[[node]]
+id = 'SaddleEquiv.eq_of_mem_relint_dom₁'
+
+[[node]]
+id = 'ConvexSliceStructure'
+
+[[node]]
+id = 'SaddleStructure'
+
+[[node]]
+id = 'closedSaddleFn_iff_saddleStructure'
+
+[[node]]
+id = 'kernelSet'
+
+[[node]]
+id = 'kernel'
+
+[[node]]
+id = 'saddleEquiv_iff_kernel_eq'
+
+[[node]]
+id = 'lowerCl_idem'
+
+[[node]]
+id = 'upperCl_idem'
+
+[[node]]
+id = 'SimpleSaddleFn'
+
+[[node]]
+id = 'SimpleSaddleFn.partialCl₂'
+
+[[node]]
+id = 'kernel_partialCl₂'
+
+[[node]]
+id = 'SimpleSaddleFn.partialCl₁'
+
+[[node]]
+id = 'kernel_partialCl₁'
+
+[[node]]
+id = 'exists_unique_saddleEquiv_class_of_kernel'
+
+[[node]]
+id = 'lowerSimpleExt'
+
+[[node]]
+id = 'exists_unique_saddleEquiv_class_of_finite'
+
+[[node]]
+id = 'upperSimpleExt'
+
+[[node]]
+id = 'mem_saddleClass_simpleExt_iff_saddleEquiv'
+
+[[node]]
+id = 'domConcave_bracket'
+
+[[node]]
+id = 'bracket_eq_concaveBracket_adjointBifun_of_polyhedral'
+
+[[node]]
+id = 'exists_unique_bifun_of_simpleExt'

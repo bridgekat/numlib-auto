@@ -1,0 +1,133 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_8_1_cone'
+source = 'Rockafellar 1970, Theorem 8.1'
+
+[[node]]
+id = 'theorem_8_1_add_subset'
+source = 'Rockafellar 1970, Theorem 8.1'
+
+[[node]]
+id = 'theorem_8_2_isClosed'
+source = 'Rockafellar 1970, Theorem 8.2'
+
+[[node]]
+id = 'theorem_8_2_mem_iff'
+source = 'Rockafellar 1970, Theorem 8.2'
+
+[[node]]
+id = 'theorem_8_2_closure_cone'
+source = 'Rockafellar 1970, Theorem 8.2'
+
+[[node]]
+id = 'theorem_8_3'
+source = 'Rockafellar 1970, Theorem 8.3'
+
+[[node]]
+id = 'corollary_8_3_1'
+source = 'Rockafellar 1970, Corollary 8.3.1'
+
+[[node]]
+id = 'corollary_8_3_2_iInter'
+source = 'Rockafellar 1970, Corollary 8.3.2'
+
+[[node]]
+id = 'corollary_8_3_2_forall'
+source = 'Rockafellar 1970, Corollary 8.3.2'
+
+[[node]]
+id = 'corollary_8_3_3'
+source = 'Rockafellar 1970, Corollary 8.3.3'
+
+[[node]]
+id = 'corollary_8_3_4'
+source = 'Rockafellar 1970, Corollary 8.3.4'
+
+[[node]]
+id = 'theorem_8_4'
+source = 'Rockafellar 1970, Theorem 8.4'
+
+[[node]]
+id = 'corollary_8_4_1'
+source = 'Rockafellar 1970, Corollary 8.4.1'
+
+[[node]]
+id = 'theorem_8_5_posHomogeneous'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'theorem_8_5_convex'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'theorem_8_5_proper'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'theorem_8_5_sup'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'theorem_8_5_closed'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'theorem_8_5_lim'
+source = 'Rockafellar 1970, Theorem 8.5'
+
+[[node]]
+id = 'corollary_8_5_1'
+source = 'Rockafellar 1970, Corollary 8.5.1'
+
+[[node]]
+id = 'corollary_8_5_2'
+source = 'Rockafellar 1970, Corollary 8.5.2'
+
+[[node]]
+id = 'theorem_8_6_antitone'
+source = 'Rockafellar 1970, Theorem 8.6'
+
+[[node]]
+id = 'theorem_8_6_iff'
+source = 'Rockafellar 1970, Theorem 8.6'
+
+[[node]]
+id = 'theorem_8_6_closed'
+source = 'Rockafellar 1970, Theorem 8.6'
+
+[[node]]
+id = 'corollary_8_6_1'
+source = 'Rockafellar 1970, Corollary 8.6.1'
+
+[[node]]
+id = 'corollary_8_6_2'
+source = 'Rockafellar 1970, Corollary 8.6.2'
+
+[[node]]
+id = 'theorem_8_7_recessionCone'
+source = 'Rockafellar 1970, Theorem 8.7'
+
+[[node]]
+id = 'theorem_8_7_linealitySpace'
+source = 'Rockafellar 1970, Theorem 8.7'
+
+[[node]]
+id = 'corollary_8_7_1'
+source = 'Rockafellar 1970, Corollary 8.7.1'
+
+[[node]]
+id = 'theorem_8_8_a_iff_b'
+source = 'Rockafellar 1970, Theorem 8.8'
+
+[[node]]
+id = 'theorem_8_8_b_iff_c'
+source = 'Rockafellar 1970, Theorem 8.8'
+
+[[node]]
+id = 'theorem_8_8_a_iff_c'
+source = 'Rockafellar 1970, Theorem 8.8'
+
+[[node]]
+id = 'theorem_8_8_closed'
+source = 'Rockafellar 1970, Theorem 8.8'

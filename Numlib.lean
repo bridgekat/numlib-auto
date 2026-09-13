@@ -2,10 +2,132 @@ import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Complex.Harmonic
+import Numlib.Analysis.Convex
+import Numlib.Analysis.Convex.Bifunction.Algebra
+import Numlib.Analysis.Convex.Bifunction.Cofinite
+import Numlib.Analysis.Convex.Bifunction.LinearProcess
+import Numlib.Analysis.Convex.Bifunction.Process
+import Numlib.Analysis.Convex.Bifunction.ProcessDuality
+import Numlib.Analysis.Convex.Caratheodory
+import Numlib.Analysis.Convex.Closure
+import Numlib.Analysis.Convex.Concave
 import Numlib.Analysis.Convex.Continuity
+import Numlib.Analysis.Convex.Convergence
+import Numlib.Analysis.Convex.Duality.Barrier
+import Numlib.Analysis.Convex.Duality.ConcaveConj
+import Numlib.Analysis.Convex.Duality.ConcaveOps
+import Numlib.Analysis.Convex.Duality.Conjugate
+import Numlib.Analysis.Convex.Duality.Continuity
+import Numlib.Analysis.Convex.Duality.Exact
+import Numlib.Analysis.Convex.Duality.FiniteProduct
+import Numlib.Analysis.Convex.Duality.Gauge
+import Numlib.Analysis.Convex.Duality.GaugeLike
+import Numlib.Analysis.Convex.Duality.HomConePolar
+import Numlib.Analysis.Convex.Duality.InnerPairing
+import Numlib.Analysis.Convex.Duality.Level
+import Numlib.Analysis.Convex.Duality.Ops
+import Numlib.Analysis.Convex.Duality.Pairing
+import Numlib.Analysis.Convex.Duality.Polar
+import Numlib.Analysis.Convex.Duality.PolarBounded
+import Numlib.Analysis.Convex.Duality.Relint
+import Numlib.Analysis.Convex.Duality.RelintSeparation
+import Numlib.Analysis.Convex.Duality.Support
+import Numlib.Analysis.Convex.Duality.SupportRelint
+import Numlib.Analysis.Convex.Epigraph
+import Numlib.Analysis.Convex.Eponyms
+import Numlib.Analysis.Convex.EuclideanProd
+import Numlib.Analysis.Convex.Exposed
+import Numlib.Analysis.Convex.Face
 import Numlib.Analysis.Convex.Gateaux
+import Numlib.Analysis.Convex.Helly
+import Numlib.Analysis.Convex.HellyRefined
+import Numlib.Analysis.Convex.Homogeneous
+import Numlib.Analysis.Convex.Homogenize
+import Numlib.Analysis.Convex.HullDirections
+import Numlib.Analysis.Convex.Indicator
+import Numlib.Analysis.Convex.Lattice
+import Numlib.Analysis.Convex.Line
+import Numlib.Analysis.Convex.LinearInequalities
+import Numlib.Analysis.Convex.Operations.Basic
+import Numlib.Analysis.Convex.Operations.Closed
+import Numlib.Analysis.Convex.Operations.Epi
+import Numlib.Analysis.Convex.Operations.Hull
+import Numlib.Analysis.Convex.Operations.Image
+import Numlib.Analysis.Convex.Operations.InfConv
+import Numlib.Analysis.Convex.Optimization.Adjoint
+import Numlib.Analysis.Convex.Optimization.ConeDuality
+import Numlib.Analysis.Convex.Optimization.Fenchel
+import Numlib.Analysis.Convex.Optimization.Lagrangian
+import Numlib.Analysis.Convex.Optimization.Maximum
+import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Optimization.Moreau
+import Numlib.Analysis.Convex.Optimization.MoreauGradient
+import Numlib.Analysis.Convex.Optimization.Normal
+import Numlib.Analysis.Convex.Optimization.Perturbation
+import Numlib.Analysis.Convex.Optimization.Program
+import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Polyhedral.Closedness
+import Numlib.Analysis.Convex.Polyhedral.Cone
+import Numlib.Analysis.Convex.Polyhedral.Conjugate
+import Numlib.Analysis.Convex.Polyhedral.Defs
+import Numlib.Analysis.Convex.Polyhedral.Duality
+import Numlib.Analysis.Convex.Polyhedral.Faces
+import Numlib.Analysis.Convex.Polyhedral.Function
+import Numlib.Analysis.Convex.Polyhedral.Homogeneous
+import Numlib.Analysis.Convex.Polyhedral.NormalForm
+import Numlib.Analysis.Convex.Polyhedral.Ops
+import Numlib.Analysis.Convex.Polyhedral.Recession
+import Numlib.Analysis.Convex.Polyhedral.Separation
+import Numlib.Analysis.Convex.Polyhedral.Simplicial
+import Numlib.Analysis.Convex.Recession.Closedness
+import Numlib.Analysis.Convex.Recession.Cone
+import Numlib.Analysis.Convex.Recession.ConeHull
+import Numlib.Analysis.Convex.Recession.Conjugate
+import Numlib.Analysis.Convex.Recession.Function
+import Numlib.Analysis.Convex.Recession.PiSum
+import Numlib.Analysis.Convex.RelativeInterior
+import Numlib.Analysis.Convex.Representation
+import Numlib.Analysis.Convex.Saddle.Closure
+import Numlib.Analysis.Convex.Saddle.Conjugate
+import Numlib.Analysis.Convex.Saddle.Continuity
+import Numlib.Analysis.Convex.Saddle.Correspondence
+import Numlib.Analysis.Convex.Saddle.Defs
+import Numlib.Analysis.Convex.Saddle.Differential
+import Numlib.Analysis.Convex.Saddle.Equiv
+import Numlib.Analysis.Convex.Saddle.Existence
+import Numlib.Analysis.Convex.Saddle.Kernel
+import Numlib.Analysis.Convex.Saddle.Minimax
+import Numlib.Analysis.Convex.Saddle.Monotone
+import Numlib.Analysis.Convex.Saddle.Rademacher
+import Numlib.Analysis.Convex.Saddle.Subgradient
 import Numlib.Analysis.Convex.SaddlePoint
+import Numlib.Analysis.Convex.Separation
+import Numlib.Analysis.Convex.Simplicial
 import Numlib.Analysis.Convex.StrictConvexSpace
+import Numlib.Analysis.Convex.Subgradient.Approx
+import Numlib.Analysis.Convex.Subgradient.BoundaryDirDeriv
+import Numlib.Analysis.Convex.Subgradient.Bounded
+import Numlib.Analysis.Convex.Subgradient.Calculus
+import Numlib.Analysis.Convex.Subgradient.Cofinite
+import Numlib.Analysis.Convex.Subgradient.Convergence
+import Numlib.Analysis.Convex.Subgradient.Defs
+import Numlib.Analysis.Convex.Subgradient.Differentiability
+import Numlib.Analysis.Convex.Subgradient.EssentiallySmooth
+import Numlib.Analysis.Convex.Subgradient.Existence
+import Numlib.Analysis.Convex.Subgradient.Gradient
+import Numlib.Analysis.Convex.Subgradient.GradientLimit
+import Numlib.Analysis.Convex.Subgradient.Integral
+import Numlib.Analysis.Convex.Subgradient.Legendre
+import Numlib.Analysis.Convex.Subgradient.LegendreType
+import Numlib.Analysis.Convex.Subgradient.Monotone
+import Numlib.Analysis.Convex.Subgradient.OneDim
+import Numlib.Analysis.Convex.Subgradient.Preservation
+import Numlib.Analysis.Convex.Subgradient.Primitive
+import Numlib.Analysis.Convex.Subgradient.Rademacher
+import Numlib.Analysis.Convex.Subgradient.Reconstruction
+import Numlib.Analysis.Convex.Subgradient.StrictlyConvex
+import Numlib.Analysis.Convex.Subgradient.Uniqueness
+import Numlib.Analysis.Convex.Tangent
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Convolution.Lp
 import Numlib.Analysis.Fourier.CosineBasis
@@ -161,6 +283,7 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
+import Numlib.LinearAlgebra.Subspace
 import Numlib.LinearSolve.DomainDecomposition.Schur
 import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import Numlib.LinearSolve.Multigrid.Basic
@@ -188,6 +311,8 @@ import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
+import Numlib.Order.EReal
+import Numlib.Order.GaloisConnection
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
@@ -224,7 +349,9 @@ imports no surface, and nothing here may be justified by a book's own numbering.
 
 The layer is organized by subject, not by book. `Numlib.Analysis`, `Numlib.LinearAlgebra` and
 `Numlib.RingTheory` are Mathlib-shaped material that Mathlib lacks, on paths mirroring where each
-would go if contributed. The rest is the subject matter: `Numlib.LinearSolve` for perturbation
+would go if contributed; `Numlib.Analysis.Convex` is the general convex analysis, at four levels of
+generality, with `Numlib.Order` and `Numlib.LinearAlgebra.Subspace` as its small standing pieces.
+The rest is the subject matter: `Numlib.LinearSolve` for perturbation
 theory, stationary iterations and projection methods; `Numlib.Krylov` for the Krylov spine;
 `Numlib.Variational` for sesquilinear forms, Lax–Milgram and Galerkin; `Numlib.Nonlinear` for fixed
 points and Newton's method; `Numlib.Approximation` and `Numlib.Eigen` for best approximation and the
@@ -239,8 +366,8 @@ proved in an arbitrary inner product space with no functional calculus and no fi
 
 ## What stands on it
 
-The three surfaces of `NumlibSurface` — Saad's *Iterative Methods for Sparse Linear Systems*, Fong
-and Saunders' *CG versus MINRES*, and Atkinson and Han's *Theoretical Numerical Analysis* — are that
-library's index, and each names its own sources. What a backbone module cites, it cites in full, in
-its own references section.
+The four surfaces of `NumlibSurface` — Saad's *Iterative Methods for Sparse Linear Systems*, Fong
+and Saunders' *CG versus MINRES*, Atkinson and Han's *Theoretical Numerical Analysis*, and
+Rockafellar's *Convex Analysis* — are that library's index, and each names its own sources. What a
+backbone module cites, it cites in full, in its own references section.
 -/

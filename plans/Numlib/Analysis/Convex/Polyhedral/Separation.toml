@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'levelSet'
+
+[[node]]
+id = 'disjoint_relint_of_separates_of_not_subset'
+
+[[node]]
+id = 'exists_separates_not_subset_iff_disjoint_relint'
+
+[[node]]
+id = 'supportFn_le_neg_supportFn_neg_iff'
+
+[[node]]
+id = 'nonempty_inter_relint_iff_forall_supportFn'

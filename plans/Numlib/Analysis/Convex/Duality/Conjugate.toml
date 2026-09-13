@@ -1,0 +1,81 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'conj'
+
+[[node]]
+id = 'biconj'
+
+[[node]]
+id = 'sub_le_conj'
+
+[[node]]
+id = 'conj_le_coe_iff'
+
+[[node]]
+id = 'conj_le_iff'
+
+[[node]]
+id = 'le_add_conj'
+
+[[node]]
+id = 'convexFn_conj'
+
+[[node]]
+id = 'closedFn_conj'
+
+[[node]]
+id = 'conj_clFn'
+
+[[node]]
+id = 'exists_affineFn_le_of_lt'
+
+[[node]]
+id = 'eq_biSup_affineFn'
+
+[[node]]
+id = 'biconj_eq_clFn'
+
+[[node]]
+id = 'proper_conj_iff'
+desc = 'For a closed convex `f`, the conjugate is proper exactly when `f` is.'
+
+[[node]]
+id = 'gc_conj_conj'
+desc = 'Conjugation against `B` and against `B.flip` form an antitone Galois connection.'
+
+[[node]]
+id = 'conjClosure'
+
+[[node]]
+id = 'conjOrderIso'
+
+[[node]]
+id = 'conjEquiv'
+
+[[node]]
+id = 'conj_comp_sub'
+
+[[node]]
+id = 'conj_comp_add'
+
+[[node]]
+id = 'conj_add_pairing'
+
+[[node]]
+id = 'conj_sub_pairing'
+
+[[node]]
+id = 'conj_add_const'
+
+[[node]]
+id = 'conj_comp_linearEquiv'
+
+[[node]]
+id = 'conj_comp_affine'
+
+[[node]]
+id = 'biconj_eq_clFn_topDual'
+
+[[node]]
+id = 'biconj_eq_clFn_inner'

@@ -1,0 +1,178 @@
+namespace = 'EReal'
+
+[[node]]
+id = 'le_coe_of_forall_lt'
+
+[[node]]
+id = 'exists_real_btwn_of_lt_coe'
+
+[[node]]
+id = 'coe_mul_coe'
+
+[[node]]
+id = 'eq_bot_of_forall_le_coe'
+
+[[node]]
+id = 'exists_coe_of_ne_bot_of_lt_top'
+
+[[node]]
+id = 'neg_add_of_ne_top'
+
+[[node]]
+id = 'coe_mul_ne_top'
+
+[[node]]
+id = 'neg_combo'
+
+[[node]]
+id = 'coe_mul_le_coe_mul_iff'
+
+[[node]]
+id = 'le_zero_of_forall_le_pos'
+
+[[node]]
+id = 'coe_mul_add_coe'
+
+[[node]]
+id = 'coe_mul_add_coe_le_coe_mul_iff'
+
+[[node]]
+id = 'eq_of_forall_le_coe_iff'
+
+[[node]]
+id = 'eq_zero_or_eq_top_or_eq_bot'
+
+[[node]]
+id = 'eq_zero_of_neg_eq'
+
+[[node]]
+id = 'neg_le_of_zero_le_add'
+
+[[node]]
+id = 'sum_ne_bot'
+
+[[node]]
+id = 'coe_mul_le_coe_iff'
+
+[[node]]
+id = 'coe_le_coe_mul_iff'
+
+[[node]]
+id = 'coe_sum'
+
+[[node]]
+id = 'coe_mul_ne_bot'
+
+[[node]]
+id = 'forall_ne_top_of_sum_ne_top'
+
+[[node]]
+id = 'coe_sub_eq_bot_iff'
+
+[[node]]
+id = 'add_coe_le_coe_iff'
+
+[[node]]
+id = 'coe_sub_ne_bot'
+
+[[node]]
+id = 'coe_sub_le_comm'
+
+[[node]]
+id = 'le_coe_sub_comm'
+
+[[node]]
+id = 'coe_sub_coe_sub'
+
+[[node]]
+id = 'le_of_forall_coe_le'
+
+[[node]]
+id = 'coe_mul_iInf'
+
+[[node]]
+id = 'sub_div_le_coe_iff'
+
+[[node]]
+id = 'coe_le_sub_div_iff'
+
+[[node]]
+id = 'neg_iSup'
+
+[[node]]
+id = 'neg_iInf'
+
+[[node]]
+id = 'neg_coe_sub'
+
+[[node]]
+id = 'neg_sub_comm'
+
+[[node]]
+id = "neg_sub_comm'"
+
+[[node]]
+id = 'coe_mul_iSup'
+
+[[node]]
+id = 'iSup_add_coe'
+
+[[node]]
+id = 'iSup_sub_of_ne_bot'
+
+[[node]]
+id = 'iInf_add_coe'
+
+[[node]]
+id = 'biSup_add_coe'
+
+[[node]]
+id = 'add_coe_right_cancel'
+
+[[node]]
+id = 'biInf_add_coe'
+
+[[node]]
+id = 'biSup_add_of_ne_bot'
+
+[[node]]
+id = 'biSup_add_biSup'
+
+[[node]]
+id = 'coe_add_iInf'
+
+[[node]]
+id = 'coe_sub_iInf'
+
+[[node]]
+id = 'add_iInf_of_ne_bot'
+
+[[node]]
+id = 'iInf_add_of_ne_bot'
+
+[[node]]
+id = 'iInf_add_eq_bot'
+
+[[node]]
+id = 'iInf_add_iInf_of_ne_bot'
+
+[[node]]
+id = 'iInf_prod_add'
+
+[[node]]
+id = 'coe_add_sub'
+
+[[node]]
+id = 'coe_sub_add_coe'
+
+[[node]]
+id = "coe_sub_add_coe'"
+
+[[node]]
+id = 'coe_mul_sub_add_coe_mul_sub'
+
+[[node]]
+id = 'le_coe_of_add_le_coe_add'
+
+[[node]]
+id = 'le_coe_of_sum_le_coe_sum'

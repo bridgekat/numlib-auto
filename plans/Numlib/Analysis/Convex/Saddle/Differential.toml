@@ -1,0 +1,55 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'dirDerivReal'
+
+[[node]]
+id = 'tendsto_slope_dirDerivReal_prod'
+
+[[node]]
+id = 'dirDerivReal_prod'
+
+[[node]]
+id = 'concaveConvexOn_dirDerivReal'
+
+[[node]]
+id = 'subgradientFst'
+
+[[node]]
+id = 'subgradientSnd'
+
+[[node]]
+id = 'subgradientSaddle'
+
+[[node]]
+id = 'eventually_dirDerivReal_snd_lt'
+
+[[node]]
+id = 'eventually_lt_dirDerivReal_fst'
+
+[[node]]
+id = 'eventually_subgradientSaddle_subset'
+
+[[node]]
+id = 'lowerSemicontinuousAt_dirDerivReal_fst'
+
+[[node]]
+id = 'upperSemicontinuousAt_dirDerivReal_snd'
+
+[[node]]
+id = 'eventually_nhds_subgradientSaddle_subset'
+
+[[node]]
+id = 'prodInnerL'
+
+[[node]]
+id = 'HasSaddleGradientAt'
+
+[[node]]
+id = 'hasSaddleGradientAt_iff_subgradientSaddle_eq_singleton'
+
+[[node]]
+id = 'differentiableAt_iff_exists_subgradientSaddle_eq_singleton'
+
+[[node]]
+id = 'differentiableAt_iff_isLinearMap_dirDerivReal'

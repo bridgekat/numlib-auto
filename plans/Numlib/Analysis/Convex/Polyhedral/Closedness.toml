@@ -1,0 +1,10 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'nonempty_dom_supportFn_inter_relint'
+
+[[node]]
+id = 'isClosed_add_of_polyhedral'
+
+[[node]]
+id = 'separatesStrongly_of_polyhedral_of_recession'

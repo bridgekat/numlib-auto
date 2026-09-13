@@ -1,0 +1,87 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'HasGradientVecAt'
+
+[[node]]
+id = 'gradientVec'
+
+[[node]]
+id = 'theorem_25_1'
+source = 'Rockafellar 1970, Theorem 25.1'
+
+[[node]]
+id = 'corollary_25_1_1_proper'
+source = 'Rockafellar 1970, Corollary 25.1.1'
+
+[[node]]
+id = 'corollary_25_1_1_mem_interior'
+source = 'Rockafellar 1970, Corollary 25.1.1'
+
+[[node]]
+id = 'corollary_25_1_2'
+source = 'Rockafellar 1970, Corollary 25.1.2'
+
+[[node]]
+id = 'corollary_25_1_3'
+source = 'Rockafellar 1970, Corollary 25.1.3'
+
+[[node]]
+id = 'theorem_25_2'
+source = 'Rockafellar 1970, Theorem 25.2'
+
+[[node]]
+id = 'theorem_25_3_differentiableAtFn_iff'
+source = 'Rockafellar 1970, Theorem 25.3'
+
+[[node]]
+id = 'theorem_25_3_countable'
+source = 'Rockafellar 1970, Theorem 25.3'
+
+[[node]]
+id = 'theorem_25_3_dense'
+source = 'Rockafellar 1970, Theorem 25.3'
+
+[[node]]
+id = 'theorem_25_3_continuousAt'
+source = 'Rockafellar 1970, Theorem 25.3'
+
+[[node]]
+id = 'theorem_25_3_monotone'
+source = 'Rockafellar 1970, Theorem 25.3'
+
+[[node]]
+id = 'theorem_25_4_continuousAt_iff'
+source = 'Rockafellar 1970, Theorem 25.4'
+
+[[node]]
+id = 'theorem_25_4_dense'
+source = 'Rockafellar 1970, Theorem 25.4'
+
+[[node]]
+id = 'theorem_25_4_measure'
+source = 'Rockafellar 1970, Theorem 25.4'
+
+[[node]]
+id = 'theorem_25_5_dense'
+source = 'Rockafellar 1970, Theorem 25.5'
+
+[[node]]
+id = 'theorem_25_5_measure'
+source = 'Rockafellar 1970, Theorem 25.5'
+
+[[node]]
+id = 'theorem_25_5_continuousOn'
+source = 'Rockafellar 1970, Theorem 25.5'
+
+[[node]]
+id = 'corollary_25_5_1'
+source = 'Rockafellar 1970, Corollary 25.5.1'
+
+[[node]]
+id = 'theorem_25_6'
+source = 'Rockafellar 1970, Theorem 25.6'
+
+[[node]]
+id = 'theorem_25_7'
+source = 'Rockafellar 1970, Theorem 25.7'

@@ -1,0 +1,138 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'convexAdd'
+
+[[node]]
+id = 'concaveAdd'
+
+[[node]]
+id = 'HasInnerProduct'
+
+[[node]]
+id = 'innerProduct'
+
+[[node]]
+id = 'theorem_38_1_convex'
+source = 'Rockafellar 1970, Theorem 38.1'
+
+[[node]]
+id = 'theorem_38_1_dom'
+source = 'Rockafellar 1970, Theorem 38.1'
+
+[[node]]
+id = 'theorem_38_1_bracket'
+source = 'Rockafellar 1970, Theorem 38.1'
+
+[[node]]
+id = 'theorem_38_2'
+source = 'Rockafellar 1970, Theorem 38.2'
+
+[[node]]
+id = 'IsExactSumCor3821'
+
+[[node]]
+id = 'corollary_38_2_1_closed'
+source = 'Rockafellar 1970, Corollary 38.2.1'
+
+[[node]]
+id = 'corollary_38_2_1_adjoint'
+source = 'Rockafellar 1970, Corollary 38.2.1'
+
+[[node]]
+id = 'theorem_38_3_convex'
+source = 'Rockafellar 1970, Theorem 38.3'
+
+[[node]]
+id = 'theorem_38_3_bracket'
+source = 'Rockafellar 1970, Theorem 38.3'
+
+[[node]]
+id = 'theorem_38_3_adjoint'
+source = 'Rockafellar 1970, Theorem 38.3'
+
+[[node]]
+id = 'theorem_38_3_closed'
+source = 'Rockafellar 1970, Theorem 38.3'
+
+[[node]]
+id = 'theorem_38_3_proper'
+source = 'Rockafellar 1970, Theorem 38.3'
+
+[[node]]
+id = 'theorem_38_4_convex'
+source = 'Rockafellar 1970, Theorem 38.4'
+
+[[node]]
+id = 'theorem_38_4_conj'
+source = 'Rockafellar 1970, Theorem 38.4'
+
+[[node]]
+id = 'theorem_38_4_attained'
+source = 'Rockafellar 1970, Theorem 38.4'
+
+[[node]]
+id = 'IsExactSumCor3841'
+
+[[node]]
+id = 'corollary_38_4_1_closed'
+source = 'Rockafellar 1970, Corollary 38.4.1'
+
+[[node]]
+id = 'corollary_38_4_1_attained'
+source = 'Rockafellar 1970, Corollary 38.4.1'
+
+[[node]]
+id = 'corollary_38_4_1_conj'
+source = 'Rockafellar 1970, Corollary 38.4.1'
+
+[[node]]
+id = 'theorem_38_5_convex'
+source = 'Rockafellar 1970, Theorem 38.5'
+
+[[node]]
+id = 'theorem_38_5_adjoint'
+source = 'Rockafellar 1970, Theorem 38.5'
+
+[[node]]
+id = 'theorem_38_5_attained'
+source = 'Rockafellar 1970, Theorem 38.5'
+
+[[node]]
+id = 'IsExactSumCor3851'
+
+[[node]]
+id = 'corollary_38_5_1_closed'
+source = 'Rockafellar 1970, Corollary 38.5.1'
+
+[[node]]
+id = 'corollary_38_5_1_attained'
+source = 'Rockafellar 1970, Corollary 38.5.1'
+
+[[node]]
+id = 'corollary_38_5_1_adjoint'
+source = 'Rockafellar 1970, Corollary 38.5.1'
+
+[[node]]
+id = 'lemma_38_6'
+source = 'Rockafellar 1970, Lemma 38.6'
+
+[[node]]
+id = 'corollary_38_7_1'
+source = 'Rockafellar 1970, Corollary 38.7.1'
+
+[[node]]
+id = 'theorem_38_7'
+source = 'Rockafellar 1970, Theorem 38.7'
+
+[[node]]
+id = 'corollary_38_7_2_exists'
+source = 'Rockafellar 1970, Corollary 38.7.2'
+
+[[node]]
+id = 'corollary_38_7_2_first'
+source = 'Rockafellar 1970, Corollary 38.7.2'
+
+[[node]]
+id = 'corollary_38_7_2_second'
+source = 'Rockafellar 1970, Corollary 38.7.2'

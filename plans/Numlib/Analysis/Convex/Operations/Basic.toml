@@ -1,0 +1,36 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'epi_iSup'
+
+[[node]]
+id = 'dom_add'
+
+[[node]]
+id = 'convexFn_iSup'
+
+[[node]]
+id = 'ConvexFn.sup'
+desc = 'A pointwise maximum of two convex functions is convex.'
+
+[[node]]
+id = 'ConvexFn.add'
+
+[[node]]
+id = 'ConvexFn.sum'
+
+[[node]]
+id = 'ConvexFn.smul'
+
+[[node]]
+id = 'ConvexFn.comp'
+
+[[node]]
+id = 'ConvexFn.comp_extendTop'
+
+[[node]]
+id = 'ConvexFn.restrict'
+desc = 'A convex function restricted to a convex set, extended by the top value, is convex.'
+
+[[node]]
+id = 'ConvexFn.add_indicatorFn'

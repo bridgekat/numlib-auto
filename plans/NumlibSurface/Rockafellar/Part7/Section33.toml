@@ -1,0 +1,117 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'cl₂'
+
+[[node]]
+id = 'cl₁'
+
+[[node]]
+id = 'conjBracket'
+
+[[node]]
+id = 'concaveConjBracket'
+
+[[node]]
+id = 'bifunBracket'
+
+[[node]]
+id = 'concaveBifunBracket'
+
+[[node]]
+id = 'adjointBracket'
+
+[[node]]
+id = 'bifunOfSaddleFn'
+
+[[node]]
+id = 'theorem_33_1_concaveConvex'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'theorem_33_1_convexClosed'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'theorem_33_1_inversion'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'theorem_33_1_convexBifun'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'theorem_33_1_imageClosed'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'theorem_33_1_bracket_eq'
+source = 'Rockafellar 1970, Theorem 33.1'
+
+[[node]]
+id = 'corollary_33_1_1_cl₁_concaveConvex'
+source = 'Rockafellar 1970, Corollary 33.1.1'
+
+[[node]]
+id = 'corollary_33_1_1_cl₂_concaveConvex'
+source = 'Rockafellar 1970, Corollary 33.1.1'
+
+[[node]]
+id = 'corollary_33_1_1_cl₁_concaveClosed'
+source = 'Rockafellar 1970, Corollary 33.1.1'
+
+[[node]]
+id = 'corollary_33_1_1_cl₂_convexClosed'
+source = 'Rockafellar 1970, Corollary 33.1.1'
+
+[[node]]
+id = 'corollary_33_1_2'
+source = 'Rockafellar 1970, Corollary 33.1.2'
+
+[[node]]
+id = 'corollary_33_1_3_convex'
+source = 'Rockafellar 1970, Corollary 33.1.3'
+
+[[node]]
+id = 'corollary_33_1_3_concave'
+source = 'Rockafellar 1970, Corollary 33.1.3'
+
+[[node]]
+id = 'corollary_33_1_3_inversion'
+source = 'Rockafellar 1970, Corollary 33.1.3'
+
+[[node]]
+id = 'theorem_33_2_first'
+source = 'Rockafellar 1970, Theorem 33.2'
+
+[[node]]
+id = 'theorem_33_2_second'
+source = 'Rockafellar 1970, Theorem 33.2'
+
+[[node]]
+id = 'corollary_33_2_1_primal'
+source = 'Rockafellar 1970, Corollary 33.2.1'
+
+[[node]]
+id = 'corollary_33_2_1_dual'
+source = 'Rockafellar 1970, Corollary 33.2.1'
+
+[[node]]
+id = 'corollary_33_2_2'
+source = 'Rockafellar 1970, Corollary 33.2.2'
+
+[[node]]
+id = 'theorem_33_3'
+source = 'Rockafellar 1970, Theorem 33.3'
+
+[[node]]
+id = 'corollary_33_3_1'
+source = 'Rockafellar 1970, Corollary 33.3.1'
+
+[[node]]
+id = 'corollary_33_3_2'
+source = 'Rockafellar 1970, Corollary 33.3.2'
+
+[[node]]
+id = 'corollary_33_3_3'
+source = 'Rockafellar 1970, Corollary 33.3.3'

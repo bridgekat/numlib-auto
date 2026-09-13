@@ -1,0 +1,57 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'IsAffineSet'
+
+[[node]]
+id = 'IsAffineSet.toSubmodule'
+
+[[node]]
+id = 'theorem_1_1'
+source = 'Rockafellar 1970, Theorem 1.1'
+
+[[node]]
+id = 'IsAffineSet.toAffineSubspace'
+
+[[node]]
+id = 'isAffineSet_iff_coe_affineSpan'
+
+[[node]]
+id = 'theorem_1_2'
+source = 'Rockafellar 1970, Theorem 1.2'
+
+[[node]]
+id = 'dim'
+
+[[node]]
+id = 'dim_eq_finrank_direction'
+
+[[node]]
+id = 'IsHyperplane'
+
+[[node]]
+id = 'theorem_1_3'
+source = 'Rockafellar 1970, Theorem 1.3'
+
+[[node]]
+id = 'theorem_1_4'
+source = 'Rockafellar 1970, Theorem 1.4'
+
+[[node]]
+id = 'corollary_1_4_1'
+source = 'Rockafellar 1970, Corollary 1.4.1'
+
+[[node]]
+id = 'IsAffineMap'
+
+[[node]]
+id = 'theorem_1_5'
+source = 'Rockafellar 1970, Theorem 1.5'
+
+[[node]]
+id = 'theorem_1_6'
+source = 'Rockafellar 1970, Theorem 1.6'
+
+[[node]]
+id = 'corollary_1_6_1'
+source = 'Rockafellar 1970, Corollary 1.6.1'

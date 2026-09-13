@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'exists_pairing_le_iff_disjoint_relint'
+
+[[node]]
+id = 'submodule_inter_relint_nonempty_iff'
+
+[[node]]
+id = 'submodule_inter_relint_nonempty_iff_supportFn'
+
+[[node]]
+id = 'submodule_inter_relint_dom_nonempty_iff'
+
+[[node]]
+id = 'exists_apply_mem_relint_dom_iff'

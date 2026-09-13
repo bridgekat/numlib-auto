@@ -1,0 +1,16 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'exists_polyhedral_isBounded_mem_nhds'
+
+[[node]]
+id = 'Polyhedral.exists_finset_convexHull'
+
+[[node]]
+id = 'isSimplex_convexHull_coe'
+
+[[node]]
+id = 'Polyhedral.locallySimplicial'
+
+[[node]]
+id = 'exists_polyhedral_between'

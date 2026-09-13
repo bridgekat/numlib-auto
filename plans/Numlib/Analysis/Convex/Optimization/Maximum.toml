@@ -1,0 +1,46 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'ConvexFn.eq_of_isMaxOn_mem_relint'
+
+[[node]]
+id = 'exists_isFace_forall_eq_of_isMaxOn'
+
+[[node]]
+id = 'ConvexFn.iSup_convexHull'
+
+[[node]]
+id = 'exists_eq_of_isMaxOn_convexHull'
+
+[[node]]
+id = 'ConvexFn.iSup_sdiff_relint'
+
+[[node]]
+id = 'exists_notMem_relint_eq_of_isMaxOn'
+
+[[node]]
+id = 'BddAboveOnRays'
+
+[[node]]
+id = 'ConvexFn.iSup_extremePoints_of_containsNoLine'
+
+[[node]]
+id = 'ConvexFn.iSup_extremePoints_add_coneHull'
+
+[[node]]
+id = 'ConvexFn.iSup_extremePoints_inter_of_isCompl'
+
+[[node]]
+id = 'exists_mem_extremePoints_isMaxOn_of_finitelyGenerated'
+
+[[node]]
+id = 'exists_isMaxOn_of_polyhedral_of_bddAboveOnRays'
+
+[[node]]
+id = 'ConvexFn.iSup_extremePoints'
+
+[[node]]
+id = 'exists_mem_extremePoints_isMaxOn_of_isCompact'
+
+[[node]]
+id = 'mem_normalCone_of_mem_subgradient_of_isMaxOn'

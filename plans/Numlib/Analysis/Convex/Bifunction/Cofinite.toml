@@ -1,0 +1,41 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'CofiniteBifun'
+
+[[node]]
+id = 'CofiniteBifun.domBifun_eq_univ'
+
+[[node]]
+id = 'CofiniteBifun.proper'
+desc = 'The graph function of a co-finite bifunction is proper.'
+
+[[node]]
+id = 'CofiniteBifun.bracket_lt_top'
+
+[[node]]
+id = 'cofiniteBifun_of_forall_bracket_lt_top'
+
+[[node]]
+id = 'cofinite_infConv'
+
+[[node]]
+id = 'cofiniteBifun_infConvBifun'
+
+[[node]]
+id = 'adjointBifun_infConvBifun_of_cofinite'
+
+[[node]]
+id = 'CofiniteBifun.bracket_eq_concaveBracket_adjointBifun'
+
+[[node]]
+id = 'cofinite_smulRight'
+
+[[node]]
+id = 'cofiniteBifun_smulRightBifun'
+
+[[node]]
+id = 'cofiniteBifun_iff_domBifun_eq_univ'
+
+[[node]]
+id = 'bracket_compBifun_eq_concaveBracket_concaveCompBifun'

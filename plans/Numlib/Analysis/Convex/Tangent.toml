@@ -1,0 +1,13 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsSupportingAt'
+
+[[node]]
+id = 'IsTangentAt'
+
+[[node]]
+id = 'exists_isTangentAt_lt_of_zero_mem_interior'
+
+[[node]]
+id = 'eq_iInter_tangent_halfSpaces'

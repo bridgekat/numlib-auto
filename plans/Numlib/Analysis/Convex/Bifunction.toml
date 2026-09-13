@@ -1,0 +1,5 @@
+desc = '''
+Convex bifunctions and the algebra on them — addition, scalar multiplication, application,
+composition, adjoints — and convex processes, the multivalued maps whose graphs are convex cones
+through the origin. `Process` is where a linear-operator theory built on this would start.
+'''

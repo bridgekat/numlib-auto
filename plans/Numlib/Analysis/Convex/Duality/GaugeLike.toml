@@ -1,0 +1,64 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'MonotoneHalfLineFn'
+
+[[node]]
+id = 'monotoneConj'
+
+[[node]]
+id = 'monotoneHalfLineFn_monotoneConj'
+
+[[node]]
+id = 'monotoneConj_monotoneConj'
+
+[[node]]
+id = 'monotoneComp'
+
+[[node]]
+id = 'levelSup'
+
+[[node]]
+id = 'setOf_monotoneComp_le_eq_smul'
+
+[[node]]
+id = 'conj_monotoneComp'
+
+[[node]]
+id = 'closedProperConvexFn_monotoneComp'
+
+[[node]]
+id = 'powHalfLine'
+
+[[node]]
+id = 'monotoneConj_powHalfLine'
+
+[[node]]
+id = 'PosHomogeneousDeg'
+
+[[node]]
+id = 'degGauge'
+
+[[node]]
+id = 'posHomogeneousDeg_iff_exists_isGauge'
+
+[[node]]
+id = 'conj_monotoneComp_powHalfLine'
+
+[[node]]
+id = 'polarGauge_degGauge'
+
+[[node]]
+id = 'pairing_le_rpow_mul_rpow'
+
+[[node]]
+id = 'polarSet_setOf_le_inv'
+
+[[node]]
+id = 'IsGaugeLike'
+
+[[node]]
+id = 'IsGaugeLike.exists_eq_monotoneComp'
+
+[[node]]
+id = 'closedProperConvexFn_and_isGaugeLike_iff'

@@ -1,0 +1,150 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'dualProgram'
+
+[[node]]
+id = 'theorem_30_1_concave'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_closed'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_proper'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_biadjoint'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_injective'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_surjective'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_1_polyhedral'
+source = 'Rockafellar 1970, Theorem 30.1'
+
+[[node]]
+id = 'theorem_30_2_first'
+source = 'Rockafellar 1970, Theorem 30.2'
+
+[[node]]
+id = 'theorem_30_2_second'
+source = 'Rockafellar 1970, Theorem 30.2'
+
+[[node]]
+id = 'theorem_30_2_third'
+source = 'Rockafellar 1970, Theorem 30.2'
+
+[[node]]
+id = 'theorem_30_2_fourth'
+source = 'Rockafellar 1970, Theorem 30.2'
+
+[[node]]
+id = 'corollary_30_2_1_dual'
+source = 'Rockafellar 1970, Corollary 30.2.1'
+
+[[node]]
+id = "corollary_30_2_1_dual'"
+source = 'Rockafellar 1970, Corollary 30.2.1'
+
+[[node]]
+id = 'corollary_30_2_1_primal'
+source = 'Rockafellar 1970, Corollary 30.2.1'
+
+[[node]]
+id = "corollary_30_2_1_primal'"
+source = 'Rockafellar 1970, Corollary 30.2.1'
+
+[[node]]
+id = 'corollary_30_2_2_first'
+source = 'Rockafellar 1970, Corollary 30.2.2'
+
+[[node]]
+id = 'corollary_30_2_2_second'
+source = 'Rockafellar 1970, Corollary 30.2.2'
+
+[[node]]
+id = 'corollary_30_2_2_weak'
+source = 'Rockafellar 1970, Corollary 30.2.2'
+
+[[node]]
+id = 'corollary_30_2_3_first'
+source = 'Rockafellar 1970, Corollary 30.2.3'
+
+[[node]]
+id = 'corollary_30_2_3_second'
+source = 'Rockafellar 1970, Corollary 30.2.3'
+
+[[node]]
+id = 'theorem_30_3'
+source = 'Rockafellar 1970, Theorem 30.3'
+
+[[node]]
+id = 'theorem_30_4_a'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = "theorem_30_4_a'"
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_b'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_c'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_d'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_e'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_f'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_g'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_h'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_i'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_4_j'
+source = 'Rockafellar 1970, Theorem 30.4'
+
+[[node]]
+id = 'theorem_30_5'
+source = 'Rockafellar 1970, Theorem 30.5'
+
+[[node]]
+id = 'corollary_30_5_1'
+source = 'Rockafellar 1970, Corollary 30.5.1'
+
+[[node]]
+id = 'corollary_30_5_2'
+source = 'Rockafellar 1970, Corollary 30.5.2'
+
+[[node]]
+id = 'abnormalBifun'
+
+[[node]]
+id = 'noDualSolutionBifun'

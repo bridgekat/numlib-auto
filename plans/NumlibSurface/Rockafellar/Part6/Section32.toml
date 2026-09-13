@@ -1,0 +1,101 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_32_1'
+source = 'Rockafellar 1970, Theorem 32.1'
+
+[[node]]
+id = 'maximumSet'
+
+[[node]]
+id = 'corollary_32_1_1'
+source = 'Rockafellar 1970, Corollary 32.1.1'
+
+[[node]]
+id = 'theorem_32_2'
+source = 'Rockafellar 1970, Theorem 32.2'
+
+[[node]]
+id = 'corollary_32_2_1'
+source = 'Rockafellar 1970, Corollary 32.2.1'
+
+[[node]]
+id = 'NoUnboundedHalfLine'
+
+[[node]]
+id = 'bddAboveOnRays_iff'
+
+[[node]]
+id = 'theorem_32_3'
+source = 'Rockafellar 1970, Theorem 32.3'
+
+[[node]]
+id = 'corollary_32_3_1'
+source = 'Rockafellar 1970, Corollary 32.3.1'
+
+[[node]]
+id = 'corollary_32_3_2'
+source = 'Rockafellar 1970, Corollary 32.3.2'
+
+[[node]]
+id = 'corollary_32_3_2_finite'
+source = 'Rockafellar 1970, Corollary 32.3.2'
+
+[[node]]
+id = 'corollary_32_3_3'
+source = 'Rockafellar 1970, Corollary 32.3.3'
+
+[[node]]
+id = 'corollary_32_3_4'
+source = 'Rockafellar 1970, Corollary 32.3.4'
+
+[[node]]
+id = 'linearSystem'
+
+[[node]]
+id = 'corollary_32_3_4_linearSystem'
+source = 'Rockafellar 1970, Corollary 32.3.4'
+
+[[node]]
+id = 'theorem_32_4_proper'
+source = 'Rockafellar 1970, Theorem 32.4'
+
+[[node]]
+id = 'theorem_32_4_nonempty'
+source = 'Rockafellar 1970, Theorem 32.4'
+
+[[node]]
+id = 'theorem_32_4_normal'
+source = 'Rockafellar 1970, Theorem 32.4'
+
+[[node]]
+id = 'theorem_32_4_ne_zero'
+source = 'Rockafellar 1970, Theorem 32.4'
+
+[[node]]
+id = 'corollary_32_4_1'
+source = 'Rockafellar 1970, Corollary 32.4.1'
+
+[[node]]
+id = 'theorem_32_4_ball'
+source = 'Rockafellar 1970, Theorem 32.4'
+
+[[node]]
+id = 'parabolicSet'
+
+[[node]]
+id = 'parabolicFn'
+
+[[node]]
+id = 'parabolicCap'
+
+[[node]]
+id = 'quarticCap'
+
+[[node]]
+id = 'corollary_32_3_2_not_attained_of_subset_dom'
+source = 'Rockafellar 1970, Corollary 32.3.2'
+
+[[node]]
+id = 'corollary_32_3_2_not_bddAbove_of_subset_dom'
+source = 'Rockafellar 1970, Corollary 32.3.2'

@@ -1,0 +1,45 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'theorem_4_1'
+source = 'Rockafellar 1970, Theorem 4.1'
+
+[[node]]
+id = 'theorem_4_2'
+source = 'Rockafellar 1970, Theorem 4.2'
+
+[[node]]
+id = 'theorem_4_3'
+source = 'Rockafellar 1970, Theorem 4.3'
+
+[[node]]
+id = 'theorem_4_4'
+source = 'Rockafellar 1970, Theorem 4.4'
+
+[[node]]
+id = 'theorem_4_5'
+source = 'Rockafellar 1970, Theorem 4.5'
+
+[[node]]
+id = 'theorem_4_6'
+source = 'Rockafellar 1970, Theorem 4.6'
+
+[[node]]
+id = 'corollary_4_6_1'
+source = 'Rockafellar 1970, Corollary 4.6.1'
+
+[[node]]
+id = 'theorem_4_7'
+source = 'Rockafellar 1970, Theorem 4.7'
+
+[[node]]
+id = 'corollary_4_7_1'
+source = 'Rockafellar 1970, Corollary 4.7.1'
+
+[[node]]
+id = 'corollary_4_7_2'
+source = 'Rockafellar 1970, Corollary 4.7.2'
+
+[[node]]
+id = 'theorem_4_8'
+source = 'Rockafellar 1970, Theorem 4.8'

@@ -1,0 +1,46 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'convexHullPD'
+
+[[node]]
+id = 'isLeast_convexHullPD'
+
+[[node]]
+id = 'halfLine'
+
+[[node]]
+id = 'coneOverPD'
+
+[[node]]
+id = 'convexHullPD_eq_slice'
+
+[[node]]
+id = 'exists_of_mem_convexHullPD'
+
+[[node]]
+id = 'IsCompact.isClosed_convexHullPD'
+
+[[node]]
+id = 'affineSpanPD'
+
+[[node]]
+id = 'finrankPD'
+
+[[node]]
+id = 'AffineIndepPD'
+
+[[node]]
+id = 'IsSimplexPD'
+
+[[node]]
+id = 'finrank_span_liftPD'
+
+[[node]]
+id = 'finrankPD_add_one_of_affineIndepPD'
+
+[[node]]
+id = 'finrank_vectorSpan_of_isSimplexPD'
+
+[[node]]
+id = 'convexHullPD_eq_iUnion_simplex'

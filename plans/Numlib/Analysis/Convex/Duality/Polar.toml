@@ -1,0 +1,74 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'polarCone'
+
+[[node]]
+id = 'polarSet'
+
+[[node]]
+id = 'polarSet_union'
+desc = 'The polar of a union is the intersection of the polars.'
+
+[[node]]
+id = 'gc_polarCone_polarCone'
+
+[[node]]
+id = 'gc_polarSet_polarSet'
+
+[[node]]
+id = 'polarConeClosure'
+
+[[node]]
+id = 'polarSetClosure'
+
+[[node]]
+id = 'polarPointedCone'
+
+[[node]]
+id = 'polarSet_convexHull'
+
+[[node]]
+id = 'polarSet_smul'
+
+[[node]]
+id = 'polarCone_add'
+
+[[node]]
+id = 'conj_indicatorFn_eq_indicatorFn_polarCone'
+
+[[node]]
+id = 'polarCone_eq_setOf_supportFn_le_zero'
+
+[[node]]
+id = 'isClosed_polarCone'
+
+[[node]]
+id = 'polarSet_closure'
+
+[[node]]
+id = 'polarCone_polarCone'
+
+[[node]]
+id = 'neg_polarCone_neg_polarCone'
+
+[[node]]
+id = 'polarSet_polarSet'
+
+[[node]]
+id = 'polarCone_coe_submodule'
+
+[[node]]
+id = 'polarSubmodule'
+
+[[node]]
+id = 'polarCone_hull_range'
+
+[[node]]
+id = 'conj_partialAffineFn'
+
+[[node]]
+id = 'polarCone_setOf_forall_le_zero'
+
+[[node]]
+id = 'polarCone_nonnegOrthant'

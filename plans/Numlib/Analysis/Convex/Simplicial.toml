@@ -1,0 +1,22 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsSimplex'
+
+[[node]]
+id = 'LocallySimplicial'
+
+[[node]]
+id = 'ConvexFn.upperSemicontinuousWithinAt_convexHull_range'
+
+[[node]]
+id = 'ConvexFn.upperSemicontinuousOn_of_locallySimplicial'
+
+[[node]]
+id = 'ConvexFn.continuousOn_of_locallySimplicial'
+
+[[node]]
+id = 'eqOn_of_continuousOn_of_eqOn_relint'
+
+[[node]]
+id = 'exists_closedFn_continuousOn_of_locallySimplicial'

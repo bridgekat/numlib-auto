@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'feasibleSet'
+
+[[node]]
+id = 'programLagrangian'
+
+[[node]]
+id = 'optimalValue'
+
+[[node]]
+id = 'IsKuhnTuckerVector'
+
+[[node]]
+id = 'exists_isKuhnTuckerVector_of_slater'
+
+[[node]]
+id = 'exists_isKuhnTuckerVector_of_affine'
+
+[[node]]
+id = 'exists_isKuhnTuckerVector_of_mem_dom'
+
+[[node]]
+id = 'exists_multipliers_of_slater_eq'

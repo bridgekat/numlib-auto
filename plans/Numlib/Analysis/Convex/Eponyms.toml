@@ -1,0 +1,28 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'fenchel_moreau'
+
+[[node]]
+id = 'fenchel_inequality'
+
+[[node]]
+id = 'jensen'
+
+[[node]]
+id = 'caratheodory'
+
+[[node]]
+id = 'krein_milman'
+
+[[node]]
+id = 'minkowski_weyl'
+
+[[node]]
+id = 'moreau_decomposition'
+
+[[node]]
+id = 'subgradient_maximalMonotone'
+
+[[node]]
+id = 'perspective'
