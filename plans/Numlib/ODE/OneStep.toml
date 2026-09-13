@@ -1,532 +1,334 @@
 namespace = "ODE"
-desc = '''
-One-step methods for the Cauchy problem on a real normed space `E` (Quarteroni–Sacco–Saleri
-§11.2–11.3; Kress §10.2 states the same theory).
 
-**The grid.** `node t₀ h n = t₀ + n h` and `gridCount T h = ⌊T / h⌋₊`, the book's `t_n` and
-`N_h`, the largest `n` with `t_n ≤ t₀ + T`.
+[[node]]
+id = "_root_.hasDerivWithinAt_comp_const_sub_Icc"
 
-**Methods.** An *increment function* `Φ : ℝ → E → E → ℝ → E`, `Φ t u v h`, defines the method
-`u_{n+1} = u_n + h Φ(t_n, u_n, u_{n+1}; h)`; it is *explicit* when it ignores `v` (Definition
-11.3). The book's `Φ(t_n, u_n, f_n; h)` carries `f_n = f(t_n, u_n)` as a separate argument; here
-`f` is baked into `Φ` (`forwardEuler f`, `heun f`, …), which is the same information. Behind the
-increment functions sits the *step relation* `S h t u v : Prop` ("`v` is admissible at `t + h`
-from `u` at `t`"), `OneStep.ofIncrement Φ h t u v ↔ v = u + h • Φ t u v h`, because an implicit
-method's step is the solution of an equation that may have none or several, and because
-implicit Runge–Kutta methods (`ODE/RungeKutta`) are relations by nature. A `Method` is a rule
-`(ℝ → E → E) → StepRel E` from the field to the relation; the four elementary methods are
-`Method`s. The explicit `State`/`step`/`iterate` of the rest of the library is
-`OneStep.step`/`OneStep.iterate` on states `(t, u)`, with `isOrbit_iterate` connecting it to the
-relational orbit.
+[[node]]
+id = "_root_.norm_sub_sub_smul_le_mul_sq_div_two"
 
-**Orbits.** `IsOrbitWith S h t₀ δ z` is the perturbed recursion (11.16),
-`S h t_n (z n) (z (n+1) - h δ_{n+1})`, and `IsOrbit S h t₀ u = IsOrbitWith S h t₀ 0 u` is
-(11.17)/(11.11). For an implicit increment the perturbation is applied after the step is closed,
-which agrees with (11.16) for explicit methods, the only ones Theorem 11.1 speaks about.
+[[node]]
+id = "_root_.norm_sub_sub_smul_le_mul_sq_div_two'"
 
-**Truncation error.** `lte Φ h y t = (y (t + h) - y t) / h - Φ t (y t) (y (t + h)) h` is the local
-truncation error `τ_{n+1}(h)` of (11.12) at `t = t_n`, `globalLte Φ t₀ T y h = ⨆_{n < N_h} ‖lte …‖`
-is `τ(h)`; consistency along `y` is `τ(h) → 0` along `𝓝[>] 0`, order `p` is `τ(h) = O(h^p)`.
-These are properties of the pair (method, curve) — the curve is the solution of the Cauchy
-problem in every use, but nothing here needs it to be.
-
-**Zero-stability and convergence.** `IsZeroStable S t₀ T y₀` is Definition 11.4 verbatim:
-`∃ h₀ C, ∀ h ≤ h₀, ∀ ε δ, ‖δ_k‖ ≤ ε → ‖z_n - u_n‖ ≤ C ε` for the orbit from `y₀` and the perturbed
-orbit from `y₀ + δ₀`. `LipschitzIncrement Φ t₀ T h₀ Λ` is hypothesis (11.18). Theorem 11.1 is the
-discrete Gronwall lemma (`ODE/Gronwall`) applied to `‖z_n - u_n‖`; Theorem 11.2 is the same
-computation with `δ_{n+1} = τ_{n+1}(h)`, giving (11.20) and then convergence (Definition 11.5,
-`IsConvergentFor`) and convergence with order `p`.
-
-**The four methods** forward Euler, backward Euler, Crank–Nicolson and Heun, their Lipschitz
-constants in terms of that of `f`, and their orders from Taylor's theorem
-(`taylor_mean_remainder_bound`): forward and backward Euler order 1 with constant `M₂/2`,
-Crank–Nicolson order 2 with `M₃/12` (Exercise 2, (11.90)), Heun order 2 (Exercise 1).
-
-**Absolute stability** (§11.3.3). The test equation `testField λ = fun _ y => λ * y` on `ℂ`;
-`IsAbsStable S h` says every initial value has an orbit and every orbit tends to zero
-(Definition 11.6). The region of absolute stability (11.26) is
-`absStabilityRegion M = {z | ∀ h > 0, IsAbsStable (M (testField (z / h))) h}` — the set of `z` such
-that *every* factorization `z = h λ` is absolutely stable, which is the honest reading of "the
-set of `hλ` for which (11.25) holds" for a method that might not depend on `hλ` alone; for the
-methods of this file and for Runge–Kutta and multistep methods it coincides with the `h = 1`
-slice, recorded as `absStabilityRegion_eq_of_scaleInvariant`. `IsAStable M` is
-`{z | z.re < 0} ⊆ absStabilityRegion M`. The four regions: `‖1 + z‖ < 1`, `‖1 - z‖ > 1`,
-`Re z < 0`, `‖1 + z + z²/2‖ < 1`; backward Euler and Crank–Nicolson are A-stable, forward Euler
-and Heun are not.
-'''
+[[node]]
+id = "_root_.norm_sub_sub_smul_add_le_mul_pow_three_div_twelve"
 
 [[node]]
 id = "gridCount"
-kind = "definition"
-desc = '''`ODE.gridCount T h : ℕ := ⌊T / h⌋₊`, the number `N_h` of steps of size `h` whose nodes
-`t₀ + n h`, `n ≤ N_h`, lie in `[t₀, t₀ + T]`; with `gridCount_mul_le : (gridCount T h : ℝ) * h ≤ T`
-for `0 < h`, `0 ≤ T`, and `le_gridCount_iff`.'''
-deps = []
+
+[[node]]
+id = "le_gridCount_iff"
+
+[[node]]
+id = "gridCount_mul_le"
+
+[[node]]
+id = "gridCount_eq_zero_of_neg"
+
+[[node]]
+id = "nonneg_of_lt_gridCount"
+
+[[node]]
+id = "mul_le_of_le_gridCount"
 
 [[node]]
 id = "node"
-kind = "definition"
-desc = '''`ODE.node t₀ h n : ℝ := t₀ + n * h`, the grid node `t_n`; `node_succ`, `node_zero`,
-`node_mem_Icc : n ≤ gridCount T h → node t₀ h n ∈ Icc t₀ (t₀ + T)` for `0 < h`.'''
-deps = ["ODE.gridCount"]
+
+[[node]]
+id = "node_succ"
+
+[[node]]
+id = "node_mem_Icc"
+
+[[node]]
+id = "node_mem_Icc_of_lt"
+
+[[node]]
+id = "node_add_mem_Icc_of_lt"
 
 [[node]]
 id = "OneStep.Increment"
-kind = "definition"
-desc = '''`ODE.OneStep.Increment E := ℝ → E → E → ℝ → E` (an `abbrev`): an increment function
-`Φ t u v h` for the method `u_{n+1} = u_n + h Φ(t_n, u_n, u_{n+1}; h)` (11.11), with the new value
-`v = u_{n+1}` available so that implicit methods are increment functions too.'''
-deps = []
 
 [[node]]
 id = "OneStep.IsExplicit"
-kind = "definition"
-desc = '''Definition 11.3: `IsExplicit Φ ↔ ∀ t u v w h, Φ t u v h = Φ t u w h` — the increment does
-not depend on the new value, so `u_{n+1}` is computed directly from `u_n`. A method is implicit
-when it is not explicit.'''
-deps = ["ODE.OneStep.Increment"]
 
 [[node]]
 id = "OneStep.StepRel"
-kind = "definition"
-desc = '''`ODE.OneStep.StepRel E := ℝ → ℝ → E → E → Prop` (an `abbrev`): `S h t u v` says that `v` is
-an admissible value at time `t + h` given the value `u` at time `t`. The general form of a
-one-step method (Definition 11.2: `u_{n+1}` depends only on `u_n`), used for implicit methods
-whose step is defined by an equation.'''
-deps = []
 
 [[node]]
 id = "OneStep.Method"
-kind = "definition"
-desc = '''`ODE.OneStep.Method E := (ℝ → E → E) → StepRel E` (an `abbrev`): a numerical method is the
-rule producing the step relation from the vector field `f`. `fun f => ofIncrement (forwardEuler f)`
-is the forward Euler method; `ButcherTableau.stepRel` in `ODE/RungeKutta` is a `Method`.'''
-deps = ["ODE.OneStep.StepRel"]
 
 [[node]]
 id = "OneStep.ofIncrement"
-kind = "definition"
-desc = '''`ofIncrement Φ : StepRel E := fun h t u v => v = u + h • Φ t u v h`: the step relation of an
-increment function.'''
-deps = ["ODE.OneStep.Increment", "ODE.OneStep.StepRel"]
 
 [[node]]
 id = "OneStep.step"
-kind = "definition"
-desc = '''One explicit step on the state `(t, u) : ℝ × E`: `step Φ h (t, u) = (t + h, u + h • Φ t u u h)`.
-For an explicit `Φ` the third argument is irrelevant; for an implicit one this is the
-"predictor" evaluation and not the method.'''
-deps = ["ODE.OneStep.Increment"]
 
 [[node]]
 id = "OneStep.iterate"
-kind = "definition"
-desc = '''`iterate Φ h t₀ y₀ n : ℝ × E := (step Φ h)^[n] (t₀, y₀)`, the `n`-th state `(t_n, u_n)` of
-the explicit iteration, with `iterate_zero`, `iterate_succ` (`Function.iterate_succ_apply'`) and
-`iterate_fst : (iterate Φ h t₀ y₀ n).1 = node t₀ h n`.'''
-deps = ["ODE.OneStep.step", "ODE.node"]
+
+[[node]]
+id = "OneStep.iterate_fst"
 
 [[node]]
 id = "OneStep.IsOrbitWith"
-kind = "definition"
-desc = '''The perturbed orbit (11.16): `IsOrbitWith S h t₀ δ z ↔ ∀ n, S h (node t₀ h n) (z n) (z (n + 1) - h • δ (n + 1))`,
-i.e. `z_{n+1} = (the step from z_n) + h δ_{n+1}`. Only `δ (n+1)` for `n ≥ 0` enters; `δ 0` is the
-perturbation of the initial datum, `z 0 = y₀ + δ 0`, imposed separately.'''
-deps = ["ODE.OneStep.StepRel", "ODE.node"]
 
 [[node]]
 id = "OneStep.IsOrbit"
-kind = "definition"
-desc = '''`IsOrbit S h t₀ u := IsOrbitWith S h t₀ 0 u`, the unperturbed recursion (11.11)/(11.17):
-`∀ n, S h (node t₀ h n) (u n) (u (n + 1))` after `simp`.'''
-deps = ["ODE.OneStep.IsOrbitWith"]
 
 [[node]]
 id = "OneStep.isOrbit_ofIncrement_iff"
-kind = "theorem"
-desc = '''`IsOrbit (ofIncrement Φ) h t₀ u ↔ ∀ n, u (n + 1) = u n + h • Φ (node t₀ h n) (u n) (u (n + 1)) h`.
-`simp [IsOrbit, IsOrbitWith, ofIncrement]`. ★'''
-deps = ["ODE.OneStep.IsOrbit", "ODE.OneStep.ofIncrement"]
+
+[[node]]
+id = "OneStep.isOrbitWith_ofIncrement_iff"
 
 [[node]]
 id = "OneStep.isOrbit_iterate"
-kind = "theorem"
-desc = '''For an explicit increment, the iterate is an orbit:
-`IsExplicit Φ → IsOrbit (ofIncrement Φ) h t₀ fun n => (iterate Φ h t₀ y₀ n).2`; and conversely
-`isOrbit_ofIncrement_iff` with `IsExplicit` gives `u n = (iterate Φ h t₀ (u 0) n).2` by induction
-(`eq_iterate_of_isOrbit`). ★'''
-deps = ["ODE.OneStep.iterate", "ODE.OneStep.isOrbit_ofIncrement_iff", "ODE.OneStep.IsExplicit"]
+
+[[node]]
+id = "OneStep.eq_iterate_of_isOrbit"
 
 [[node]]
 id = "OneStep.lte"
-kind = "definition"
-desc = '''The local truncation error (11.12): `lte Φ h y t : E := h⁻¹ • (y (t + h) - y t) - Φ t (y t) (y (t + h)) h`,
-so that `y (t + h) = y t + h • Φ t (y t) (y (t + h)) h + h • lte Φ h y t` for `h ≠ 0`
-(`lte_spec`). At `t = node t₀ h n` this is the book's `τ_{n+1}(h)`.'''
-deps = ["ODE.OneStep.Increment"]
+
+[[node]]
+id = "OneStep.lte_spec"
+
+[[node]]
+id = "OneStep.lte_eq_inv_smul"
 
 [[node]]
 id = "OneStep.globalLte"
-kind = "definition"
-desc = '''The global truncation error `τ(h) = max_{0 ≤ n ≤ N_h - 1} ‖τ_{n+1}(h)‖`:
-`globalLte Φ t₀ T y h : ℝ := ⨆ n : Fin (gridCount T h), ‖lte Φ h y (node t₀ h n)‖` (a finite
-supremum; `0` when `N_h = 0`). With `norm_lte_le_globalLte : n < gridCount T h → ‖lte Φ h y (node t₀ h n)‖ ≤ globalLte Φ t₀ T y h`
-and `globalLte_nonneg`.'''
-deps = ["ODE.OneStep.lte", "ODE.gridCount", "ODE.node"]
+
+[[node]]
+id = "OneStep.norm_lte_le_globalLte"
+
+[[node]]
+id = "OneStep.globalLte_nonneg"
+
+[[node]]
+id = "OneStep.globalLte_le"
 
 [[node]]
 id = "OneStep.IsConsistentFor"
-kind = "definition"
-desc = '''Consistency of `Φ` along the curve `y` on `[t₀, t₀ + T]` (§11.3, "the LTE is
-infinitesimal with respect to `h`"): `Tendsto (globalLte Φ t₀ T y) (𝓝[>] 0) (𝓝 0)`.'''
-deps = ["ODE.OneStep.globalLte"]
 
 [[node]]
 id = "OneStep.HasOrderFor"
-kind = "definition"
-desc = '''Order `p` along `y` (11.14): `globalLte Φ t₀ T y =O[𝓝[>] 0] fun h => h ^ p`. With
-`HasOrderFor.isConsistentFor : 1 ≤ p → HasOrderFor Φ t₀ T y p → IsConsistentFor Φ t₀ T y`
-(`IsBigO.trans_tendsto` with `h^p → 0`). ★'''
-deps = ["ODE.OneStep.globalLte", "ODE.OneStep.IsConsistentFor"]
+
+[[node]]
+id = "OneStep.HasOrderFor.isConsistentFor"
+
+[[node]]
+id = "OneStep.hasOrderFor_of_forall_norm_lte_le"
+
+[[node]]
+id = "OneStep.exists_forall_norm_sub_smul_le_of_continuousOn"
 
 [[node]]
 id = "OneStep.isConsistentFor_of_tendsto_increment"
-kind = "theorem"
-desc = '''The book's consistency criterion (11.13): if `y` is `C¹` on `Icc t₀ (t₀ + T)` with
-`y' t = f t (y t)` there, and `Φ t (y t) (y (t + h)) h → f t (y t)` as `h → 0⁺` *uniformly in*
-`t ∈ Icc t₀ (t₀ + T)` (the book's `∀ t_n` needs uniformity for `τ(h) = max_n |τ_{n+1}| → 0`), then
-`IsConsistentFor Φ t₀ T y`. Proof: `(y (t+h) - y t)/h → y' t = f t (y t)` uniformly on the compact
-interval (uniform continuity of `y'`, mean value inequality), subtract. ★★'''
-deps = ["ODE.OneStep.IsConsistentFor"]
 
 [[node]]
 id = "OneStep.IsZeroStable"
-kind = "definition"
-desc = '''Definition 11.4, zero-stability of the step relation `S` for the problem with datum `y₀`
-on the horizon `T`: `∃ h₀ > 0, ∃ C > 0, ∀ h ∈ Ioc 0 h₀, ∀ ε ≥ 0, ∀ δ : ℕ → E,
-(∀ k ≤ gridCount T h, ‖δ k‖ ≤ ε) → ∀ u z, IsOrbit S h t₀ u → u 0 = y₀ → IsOrbitWith S h t₀ δ z →
-z 0 = y₀ + δ 0 → ∀ n ≤ gridCount T h, ‖z n - u n‖ ≤ C * ε` (11.15). `C` may depend on `T`
-(Remark 11.1) but not on `h`, `ε`, `δ`.'''
-deps = ["ODE.OneStep.IsOrbit", "ODE.OneStep.IsOrbitWith", "ODE.gridCount"]
 
 [[node]]
 id = "OneStep.LipschitzIncrement"
-kind = "definition"
-desc = '''Hypothesis (11.18) of Theorem 11.1: `LipschitzIncrement Φ t₀ T h₀ Λ ↔ ∀ h ∈ Ioc 0 h₀,
-∀ t ∈ Icc t₀ (t₀ + T), ∀ u v w w', ‖Φ t u w h - Φ t v w' h‖ ≤ Λ * ‖u - v‖` — `Λ`-Lipschitz in the
-second argument, uniformly in the time, the step and the third argument. For an explicit
-increment the third argument is inert; for an implicit one the definition asks that the
-dependence on the new value be absorbed, which is what the theorem's proof needs
-(`Λ` is then a bound on the *total* variation of the closed step, cf. Kress Thm 10.9 where the
-implicit increment is made explicit first). Explicit `Φ` is the intended use.'''
-deps = ["ODE.OneStep.Increment"]
+
+[[node]]
+id = "OneStep.norm_sub_le_of_lipschitzIncrement_of_succ_eq"
 
 [[node]]
 id = "OneStep.norm_sub_le_of_lipschitzIncrement"
-kind = "theorem"
-desc = '''Theorem 11.1, quantitative form. Let `0 < T`, `LipschitzIncrement Φ t₀ T h₀ Λ`,
-`h ∈ Ioc 0 h₀`, `‖δ k‖ ≤ ε` for `k ≤ gridCount T h`, `u` an orbit of `ofIncrement Φ` with
-`u 0 = y₀` and `z` a `δ`-perturbed orbit with `z 0 = y₀ + δ 0`. Then for `n ≤ gridCount T h`,
-`‖z n - u n‖ ≤ (1 + n * h) * ε * Real.exp (n * h * Λ)`.
-Proof: `w_n = z_n - u_n` satisfies `w_{n+1} = w_n + h (Φ(t_n, z_n, ·) - Φ(t_n, u_n, ·)) + h δ_{n+1}`,
-sum to `w_n = w_0 + h ∑_{j<n} δ_{j+1} + h ∑_{j<n} (Φ… - Φ…)`, so
-`‖w_n‖ ≤ ε + n h ε + h Λ ∑_{j<n} ‖w_j‖` (11.19) — the nodes `t_j`, `j < n ≤ N_h`, lie in the
-interval by `node_mem_Icc` — and `Gronwall.discrete_sum_const` with `g₀ = ε`, `δ := ε`. ★★'''
-deps = ["ODE.OneStep.LipschitzIncrement", "ODE.OneStep.IsOrbitWith", "ODE.OneStep.isOrbit_ofIncrement_iff", "Gronwall.discrete_sum_const", "ODE.node"]
 
 [[node]]
 id = "OneStep.isZeroStable_of_lipschitzIncrement"
-kind = "theorem"
-desc = '''Theorem 11.1: `0 < T → 0 < h₀ → LipschitzIncrement Φ t₀ T h₀ Λ → IsZeroStable (ofIncrement Φ) t₀ T y₀`
-for every `y₀`, with `C = (1 + T) exp (Λ T)`; from the previous node and `n h ≤ T`
-(`gridCount_mul_le`). ★'''
-deps = ["ODE.OneStep.norm_sub_le_of_lipschitzIncrement", "ODE.OneStep.IsZeroStable", "ODE.gridCount"]
 
 [[node]]
 id = "OneStep.IsConvergentFor"
-kind = "definition"
-desc = '''Definition 11.5: `IsConvergentFor S t₀ T y₀ y ↔ ∃ C : ℝ → ℝ, Tendsto C (𝓝[>] 0) (𝓝 0) ∧
-∀ h > 0, ∀ u, IsOrbit S h t₀ u → u 0 = y₀ → ∀ n ≤ gridCount T h, ‖u n - y (node t₀ h n)‖ ≤ C h`:
-every orbit from `y₀` is within `C(h)` of the curve `y` at every grid node, `C(h) → 0`.'''
-deps = ["ODE.OneStep.IsOrbit", "ODE.gridCount", "ODE.node"]
 
 [[node]]
 id = "OneStep.IsConvergentWithOrderFor"
-kind = "definition"
-desc = '''Convergence with order `p` (Definition 11.5, second clause): `∃ C > 0, ∀ h > 0, ∀ u,
-IsOrbit S h t₀ u → u 0 = y₀ → ∀ n ≤ gridCount T h, ‖u n - y (node t₀ h n)‖ ≤ C * h ^ p`. With
-`IsConvergentWithOrderFor.isConvergentFor` for `1 ≤ p`. ★'''
-deps = ["ODE.OneStep.IsConvergentFor"]
+
+[[node]]
+id = "OneStep.IsConvergentWithOrderFor.isConvergentFor"
 
 [[node]]
 id = "OneStep.norm_sub_le_globalLte"
-kind = "theorem"
-desc = '''Theorem 11.2, the estimate (11.20): let `0 < T`, `LipschitzIncrement Φ t₀ T h₀ Λ`,
-`h ∈ Ioc 0 h₀`, `u` an orbit of `ofIncrement Φ`, and `y : ℝ → E` any curve. Then for
-`n ≤ gridCount T h`,
-`‖y (node t₀ h n) - u n‖ ≤ (‖y t₀ - u 0‖ + n * h * globalLte Φ t₀ T y h) * Real.exp (n * h * Λ)`.
-Proof: `y` is a perturbed orbit with `δ_{n+1} = lte Φ h y (node t₀ h n)` (`lte_spec`), bounded by
-`globalLte` for `n < N_h`; the same summation as in Theorem 11.1 and `Gronwall.discrete_sum_const`
-with `g₀ = ‖y t₀ - u 0‖`. No hypothesis on `y` beyond being a function: the curve enters only
-through its truncation errors. ★★'''
-deps = ["ODE.OneStep.lte", "ODE.OneStep.globalLte", "ODE.OneStep.norm_sub_le_of_lipschitzIncrement", "Gronwall.discrete_sum_const"]
 
 [[node]]
 id = "OneStep.isConvergentFor_of_isConsistentFor"
-kind = "theorem"
-desc = '''Theorem 11.2: `0 < T → 0 < h₀ → LipschitzIncrement Φ t₀ T h₀ Λ → IsConsistentFor Φ t₀ T y →
-IsConvergentFor (ofIncrement Φ) t₀ T (y t₀) y`, with `C h = T * globalLte Φ t₀ T y h * exp (Λ T)`
-for `h ≤ h₀` (and, say, `C h = 0` beyond `h₀`, where the bound is not asserted — or restrict the
-definition of convergence to `h ≤ h₀`; the plan takes `C h := T τ(h) e^{ΛT}` for all `h > 0`,
-which is fine since for `h > h₀` the orbits are still covered by the estimate with the same `Λ`
-only if `Λ` works there; to avoid the issue, state convergence with an `h₀`: see the desc of
-`IsConvergentFor` — the formalizer should add `∃ h₀ > 0` in front of `∀ h ∈ Ioc 0 h₀`, matching
-Definition 11.4, and this plan's `IsConvergentFor` is to be read with that quantifier). The book's
-"`|y₀ - u₀| → 0`" is the case `u 0 = y t₀` here; the general starting error is in
-`norm_sub_le_globalLte`. ★'''
-deps = ["ODE.OneStep.norm_sub_le_globalLte", "ODE.OneStep.IsConsistentFor", "ODE.OneStep.IsConvergentFor"]
 
 [[node]]
 id = "OneStep.isConvergentWithOrderFor_of_hasOrderFor"
-kind = "theorem"
-desc = '''Theorem 11.2, order: `0 < T → 0 < h₀ → LipschitzIncrement Φ t₀ T h₀ Λ → HasOrderFor Φ t₀ T y p →
-IsConvergentWithOrderFor (ofIncrement Φ) t₀ T (y t₀) y p`. The `O(h^p)` bound on `τ(h)` holds
-eventually along `𝓝[>] 0`, i.e. for `h ≤ h₁`; combine with `norm_sub_le_globalLte` and shrink
-`h₀`. ★'''
-deps = ["ODE.OneStep.norm_sub_le_globalLte", "ODE.OneStep.HasOrderFor", "ODE.OneStep.IsConvergentWithOrderFor"]
 
 [[node]]
 id = "OneStep.forwardEuler"
-kind = "definition"
-desc = '''(11.7): `forwardEuler f : Increment E := fun t u _ _ => f t u`, explicit
-(`isExplicit_forwardEuler`).'''
-deps = ["ODE.OneStep.Increment"]
 
 [[node]]
 id = "OneStep.backwardEuler"
-kind = "definition"
-desc = '(11.8): `backwardEuler f : Increment E := fun t _ v h => f (t + h) v`, implicit.'
-deps = ["ODE.OneStep.Increment"]
 
 [[node]]
 id = "OneStep.crankNicolson"
-kind = "definition"
-desc = '''(11.9), the trapezoidal method: `crankNicolson f := fun t u v h => (2⁻¹ : ℝ) • (f t u + f (t + h) v)`,
-implicit.'''
-deps = ["ODE.OneStep.Increment"]
 
 [[node]]
 id = "OneStep.heun"
-kind = "definition"
-desc = '''(11.10): `heun f := fun t u _ h => (2⁻¹ : ℝ) • (f t u + f (t + h) (u + h • f t u))`, explicit
-(`isExplicit_heun`); Crank–Nicolson with the new value predicted by forward Euler.'''
-deps = ["ODE.OneStep.Increment"]
-
-[[node]]
-id = "OneStep.lipschitzIncrement_forwardEuler"
-kind = "theorem"
-desc = '''If `f t` is `L`-Lipschitz for `t ∈ Icc t₀ (t₀ + T)` then
-`LipschitzIncrement (forwardEuler f) t₀ T h₀ L` for every `h₀`. ★'''
-deps = ["ODE.OneStep.forwardEuler", "ODE.OneStep.LipschitzIncrement"]
-
-[[node]]
-id = "OneStep.lipschitzIncrement_heun"
-kind = "theorem"
-desc = '''If `f t` is `L`-Lipschitz for `t ∈ Icc t₀ (t₀ + T + h₀)` then
-`LipschitzIncrement (heun f) t₀ T h₀ (L * (1 + h₀ * L / 2))`, or the cruder `L (1 + h₀ L)`; the
-inner evaluation is at `t + h ≤ t₀ + T + h₀`, hence the enlarged interval. ★'''
-deps = ["ODE.OneStep.heun", "ODE.OneStep.LipschitzIncrement"]
-
-[[node]]
-id = "OneStep.norm_lte_forwardEuler_le"
-kind = "theorem"
-desc = '''Forward Euler has order one: if `y` is `C²` on `Icc t₀ (t₀ + T)`,
-`HasDerivWithinAt y (f t (y t)) (Icc t₀ (t₀ + T)) t` there, and `‖y'' t‖ ≤ M` there
-(`iteratedDerivWithin 2`), then for `0 < h`, `t, t + h ∈ Icc t₀ (t₀ + T)`,
-`‖lte (forwardEuler f) h y t‖ ≤ h / 2 * M` — the book's `τ_{n+1}(h) = (h/2) y''(ξ)` in norm form,
-which is what a normed space allows. `taylor_mean_remainder_bound` with `n = 1` on `[t, t + h]`,
-divided by `h`. ★★'''
-deps = ["ODE.OneStep.forwardEuler", "ODE.OneStep.lte"]
-
-[[node]]
-id = "OneStep.hasOrderFor_forwardEuler"
-kind = "theorem"
-desc = '''Under the hypotheses of `norm_lte_forwardEuler_le` (a `C²` solution on the closed interval),
-`HasOrderFor (forwardEuler f) t₀ T y 1`: `globalLte ≤ (M/2) h` for every `h > 0`, since every
-node `t_n` with `n < N_h` has `t_n + h = t_{n+1} ∈ Icc t₀ (t₀ + T)`. ★'''
-deps = ["ODE.OneStep.norm_lte_forwardEuler_le", "ODE.OneStep.HasOrderFor"]
-
-[[node]]
-id = "OneStep.norm_sub_le_forwardEuler"
-kind = "theorem"
-desc = '''(11.22), the direct forward Euler error bound without the discrete Gronwall lemma: if
-`f t` is `L`-Lipschitz on the interval (`0 < L`), `y` is a `C²` solution with `‖y''‖ ≤ M`, and `u`
-is the forward Euler orbit with `u 0 = y t₀`, then for `n + 1 ≤ gridCount T h`,
-`‖y (node t₀ h (n+1)) - u (n+1)‖ ≤ (Real.exp (L * ((n+1) * h)) - 1) / L * (M / 2 * h)`.
-Proof: `‖e_{n+1}‖ ≤ h τ(h) + (1 + hL) ‖e_n‖`, unroll the geometric sum
-`((1+hL)^{n+1} - 1)/L` (`geom_sum_eq`) and `1 + hL ≤ e^{hL}` (`Real.add_one_le_exp`). Sharper
-than (11.20) by the factor `(e^{Ls} - 1)/(L s) ≤ e^{Ls}`; kept because the book derives it and
-chapter 13 quotes it. ★★'''
-deps = ["ODE.OneStep.norm_lte_forwardEuler_le", "ODE.OneStep.isOrbit_ofIncrement_iff"]
-
-[[node]]
-id = "OneStep.norm_lte_backwardEuler_le"
-kind = "theorem"
-desc = '''Backward Euler has order one: under the hypotheses of `norm_lte_forwardEuler_le`,
-`‖lte (backwardEuler f) h y t‖ ≤ h / 2 * M`; Taylor at `t + h` backwards. ★★'''
-deps = ["ODE.OneStep.backwardEuler", "ODE.OneStep.lte"]
-
-[[node]]
-id = "OneStep.norm_lte_crankNicolson_le"
-kind = "theorem"
-desc = '''Exercise 2, (11.90): if `y` is `C³` on the interval with `‖y^{(3)} t‖ ≤ M₃` there and
-`y' t = f t (y t)`, then `‖lte (crankNicolson f) h y t‖ ≤ h ^ 2 / 12 * M₃`, so Crank–Nicolson has
-order 2 (`hasOrderFor_crankNicolson`). The book writes the remainder as `(h²/12) f''(ξ, y(ξ))`,
-meaning the second derivative of `s ↦ f(s, y(s)) = y'(s)`, i.e. `y^{(3)}(ξ)/12 h²`. Proof: the
-trapezoidal rule's Peano-kernel error for `∫_t^{t+h} y' = y(t+h) - y(t)` —
-`Quadrature.error_eq_integral_peanoKernel` in `Numlib/Approximation/Quadrature` with the kernel
-of the two-point rule, or directly Taylor at the midpoint `t + h/2` to third order for both `y`
-and `y'`, which is shorter in a normed space. ★★'''
-deps = ["ODE.OneStep.crankNicolson", "ODE.OneStep.lte"]
-
-[[node]]
-id = "OneStep.norm_lte_heun_le"
-kind = "theorem"
-desc = '''Exercise 1: if `y` is `C³` with `‖y^{(3)}‖ ≤ M₃` and `‖y''‖ ≤ M₂` on the interval,
-`y' t = f t (y t)`, and `f t` is `L`-Lipschitz for `t` in the interval, then
-`‖lte (heun f) h y t‖ ≤ h ^ 2 / 12 * M₃ + h ^ 2 / 4 * L * M₂`, so Heun has order 2
-(`hasOrderFor_heun`). Proof, as the book's hint: `h τ = E₁ + E₂` with `E₁` the Crank–Nicolson
-residual (previous node) and `E₂ = (h/2) (f(t+h, y(t+h)) - f(t+h, y t + h f(t, y t)))`, bounded by
-`(h/2) L ‖y(t+h) - y(t) - h y'(t)‖ ≤ (h/2) L (h²/2) M₂` (forward Euler's Taylor remainder). ★★'''
-deps = ["ODE.OneStep.heun", "ODE.OneStep.norm_lte_crankNicolson_le", "ODE.OneStep.norm_lte_forwardEuler_le"]
-
-[[node]]
-id = "testField"
-kind = "definition"
-desc = '''The test equation (11.24): `ODE.testField (lam : ℂ) : ℝ → ℂ → ℂ := fun _ y => lam * y`,
-with solution `exp (lam t)` (`testField_isSolutionOn_exp`, a one-liner from `Complex.hasDerivAt_exp`)
-and `‖exp (lam t)‖ → 0` iff `Re lam < 0`.'''
-deps = []
-
-[[node]]
-id = "OneStep.IsAbsStable"
-kind = "definition"
-desc = '''Definition 11.6 for a step relation on `ℂ` with step `h` (meant to be a method applied to
-`testField lam`): `IsAbsStable S h ↔ (∀ u₀, ∃ u, IsOrbit S h 0 u ∧ u 0 = u₀) ∧ ∀ u, IsOrbit S h 0 u → Tendsto u atTop (𝓝 0)`
-— the method produces solutions from every datum, and all of them decay (11.25). The existence
-clause matters for implicit methods at the singular parameter (backward Euler at `hλ = 1` has no
-orbit from `u₀ ≠ 0`, and must not count as stable by vacuity).'''
-deps = ["ODE.OneStep.IsOrbit"]
-
-[[node]]
-id = "OneStep.absStabilityRegion"
-kind = "definition"
-desc = '''The region of absolute stability (11.26) of a method `M : Method ℂ`:
-`absStabilityRegion M : Set ℂ := {z | ∀ h > 0, IsAbsStable (M (testField (z / h))) h}` — the set of
-`z = hλ` such that the method applied to `y' = λ y` with step `h` is absolutely stable for every
-factorization of `z`. See the module description for why the quantifier is there.'''
-deps = ["ODE.OneStep.IsAbsStable", "ODE.OneStep.Method", "ODE.testField"]
-
-[[node]]
-id = "OneStep.absStabilityRegion_eq_of_scaleInvariant"
-kind = "theorem"
-desc = '''If a method's orbits on the test equation depend on `(h, λ)` only through `hλ` — formally
-`∀ h > 0, ∀ lam u, IsOrbit (M (testField lam)) h 0 u ↔ IsOrbit (M (testField (h * lam))) 1 0 u` —
-then `absStabilityRegion M = {z | IsAbsStable (M (testField z)) 1}`; and then
-`IsAbsStable (M (testField lam)) h ↔ h * lam ∈ absStabilityRegion M` for `h > 0`. Every method
-of this file, every Runge–Kutta method and every linear multistep method satisfies the hypothesis
-(the recursion involves `h` and `f` only through `h f = hλ ·`). ★'''
-deps = ["ODE.OneStep.absStabilityRegion"]
-
-[[node]]
-id = "OneStep.IsAStable"
-kind = "definition"
-desc = '''A-stability (§11.3.3): `IsAStable M ↔ ∀ z : ℂ, z.re < 0 → z ∈ absStabilityRegion M`, i.e.
-`𝒜 ∩ ℂ⁻ = ℂ⁻`.'''
-deps = ["ODE.OneStep.absStabilityRegion"]
-
-[[node]]
-id = "OneStep.forwardEuler_testField_orbit"
-kind = "theorem"
-desc = '''Forward Euler on the test equation: an orbit satisfies `u n = (1 + h * lam) ^ n * u 0`.
-Induction from `isOrbit_ofIncrement_iff`. Likewise `backwardEuler_testField_orbit`
-(`u n = (1 - h lam)⁻¹ ^ n * u 0` when `h lam ≠ 1`; when `h lam = 1` the only orbit is `0`),
-`crankNicolson_testField_orbit` (`((1 + h lam/2)/(1 - h lam/2))^n u 0` when `h lam ≠ 2`) and
-`heun_testField_orbit` (`(1 + h lam + (h lam)²/2)^n u 0`), the four closed forms of §11.3.3. ★'''
-deps = ["ODE.OneStep.forwardEuler", "ODE.OneStep.isOrbit_ofIncrement_iff", "ODE.testField"]
-
-[[node]]
-id = "OneStep.mem_absStabilityRegion_forwardEuler_iff"
-kind = "theorem"
-desc = '''(11.27): `z ∈ absStabilityRegion (fun f => ofIncrement (forwardEuler f)) ↔ ‖1 + z‖ < 1`, the
-open disc of radius 1 about `-1`; equivalently `Re z < 0 ∧ 0 < h < -2 Re λ / |λ|²` when `z = hλ`.
-From the closed form and `tendsto_pow_atTop_nhds_zero_iff_norm_lt_one` (the `u 0 = 1` orbit
-witnesses the converse). ★'''
-deps = ["ODE.OneStep.forwardEuler_testField_orbit", "ODE.OneStep.absStabilityRegion", "ODE.OneStep.absStabilityRegion_eq_of_scaleInvariant"]
-
-[[node]]
-id = "OneStep.mem_absStabilityRegion_backwardEuler_iff"
-kind = "theorem"
-desc = '''`z ∈ absStabilityRegion (backward Euler) ↔ 1 < ‖1 - z‖`: the exterior of the closed disc of
-radius 1 about `1`. The point `z = 1` is excluded by the existence clause of `IsAbsStable`. ★'''
-deps = ["ODE.OneStep.backwardEuler", "ODE.OneStep.forwardEuler_testField_orbit", "ODE.OneStep.absStabilityRegion"]
-
-[[node]]
-id = "OneStep.mem_absStabilityRegion_crankNicolson_iff"
-kind = "theorem"
-desc = '''`z ∈ absStabilityRegion (Crank–Nicolson) ↔ z.re < 0`: `|1 + z/2| < |1 - z/2| ↔ Re z < 0`
-(expand the squared norms), and `z = 2` is excluded by existence. ★'''
-deps = ["ODE.OneStep.crankNicolson", "ODE.OneStep.forwardEuler_testField_orbit", "ODE.OneStep.absStabilityRegion"]
-
-[[node]]
-id = "OneStep.mem_absStabilityRegion_heun_iff"
-kind = "theorem"
-desc = '''`z ∈ absStabilityRegion (Heun) ↔ ‖1 + z + z ^ 2 / 2‖ < 1`; its intersection with the real
-axis is `Ioo (-2) 0`, the same as forward Euler's (`absStabilityRegion_heun_inter_real`). ★'''
-deps = ["ODE.OneStep.heun", "ODE.OneStep.forwardEuler_testField_orbit", "ODE.OneStep.absStabilityRegion"]
-
-[[node]]
-id = "OneStep.isAStable_backwardEuler"
-kind = "theorem"
-desc = 'Backward Euler is A-stable: `Re z < 0 → 1 < ‖1 - z‖`. ★'
-deps = ["ODE.OneStep.mem_absStabilityRegion_backwardEuler_iff", "ODE.OneStep.IsAStable"]
-
-[[node]]
-id = "OneStep.isAStable_crankNicolson"
-kind = "theorem"
-desc = 'Crank–Nicolson is A-stable. ★'
-deps = ["ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff", "ODE.OneStep.IsAStable"]
-
-[[node]]
-id = "OneStep.not_isAStable_forwardEuler"
-kind = "theorem"
-desc = '''Forward Euler and Heun are only conditionally absolutely stable: `¬ IsAStable` for both
-(`z = -3` is in the left half-plane and outside both regions); and for `Re λ < 0` forward Euler
-is absolutely stable with step `h` iff `0 < h < -2 Re λ / ‖λ‖²`, the second form of (11.27). ★'''
-deps = ["ODE.OneStep.mem_absStabilityRegion_forwardEuler_iff", "ODE.OneStep.mem_absStabilityRegion_heun_iff", "ODE.OneStep.IsAStable"]
 
 [[node]]
 id = "OneStep.theta"
-kind = "definition"
-desc = '''The θ-method, `theta f θ : Increment E := fun t u v h => (1 - θ) • f t u + θ • f (t + h) v`
-(Quarteroni–Sacco–Saleri, the one-parameter family behind their forward Euler, backward Euler and
-Crank–Nicolson methods, and the time discretization of §13.2–13.3): explicit for `θ = 0`, implicit
-otherwise, with `theta f 0 = forwardEuler f`, `theta f 1 = backwardEuler f` and `theta f (1/2) =
-crankNicolson f` (`theta_zero`, `theta_one`, `theta_half`, each `ext` and `simp`/`ring`). ★'''
-deps = ["ODE.OneStep.Increment", "ODE.OneStep.forwardEuler", "ODE.OneStep.backwardEuler", "ODE.OneStep.crankNicolson"]
+
+[[node]]
+id = "OneStep.isExplicit_forwardEuler"
+
+[[node]]
+id = "OneStep.isExplicit_heun"
+
+[[node]]
+id = "OneStep.theta_zero"
+
+[[node]]
+id = "OneStep.theta_one"
+
+[[node]]
+id = "OneStep.theta_half"
+
+[[node]]
+id = "OneStep.lipschitzIncrement_forwardEuler"
+
+[[node]]
+id = "OneStep.lipschitzIncrement_heun"
+
+[[node]]
+id = "OneStep.norm_lte_forwardEuler_le"
+
+[[node]]
+id = "OneStep.norm_lte_backwardEuler_le"
+
+[[node]]
+id = "OneStep.norm_lte_crankNicolson_le"
+
+[[node]]
+id = "OneStep.norm_lte_heun_le"
 
 [[node]]
 id = "OneStep.norm_lte_theta_le"
-kind = "theorem"
-desc = '''Local truncation error of the θ-method. If `y` is of class `C³` on the interval with
-`‖iteratedDeriv 2 y‖ ≤ M₂`, `‖iteratedDeriv 3 y‖ ≤ M₃` and `deriv y t = f t (y t)`, then
-`‖lte (theta f θ) h y t‖ ≤ |θ - 1/2| * M₂ * h + h ^ 2 / 12 * M₃`
-(for `θ = 1/2` the first term vanishes and the bound is `norm_lte_crankNicolson_le`): the θ-method
-has order 1 for `θ ≠ 1/2` and order 2 for `θ = 1/2` (`hasOrderFor_theta`). Proof: the residual of
-`theta f θ` is the affine combination `(1 - 2θ) • (forward Euler residual) + 2θ • (Crank–Nicolson
-residual)`, so the bound is the same combination of `norm_lte_forwardEuler_le` and
-`norm_lte_crankNicolson_le` for `θ ≤ 1/2`, and of `norm_lte_backwardEuler_le` and
-`norm_lte_crankNicolson_le` for `θ ≥ 1/2`; or directly Taylor at `t` to second order. This is the
-time half of the truncation-error estimate `|τ| ≤ C (Δt + h²)` (`C (Δt² + h²)` for `θ = 1/2`) of
-Quarteroni–Sacco–Saleri Exercise 13.1. ★★'''
-deps = ["ODE.OneStep.theta", "ODE.OneStep.lte", "ODE.OneStep.norm_lte_forwardEuler_le", "ODE.OneStep.norm_lte_crankNicolson_le", "ODE.OneStep.norm_lte_backwardEuler_le"]
+
+[[node]]
+id = "OneStep.hasOrderFor_forwardEuler"
+
+[[node]]
+id = "OneStep.hasOrderFor_backwardEuler"
+
+[[node]]
+id = "OneStep.hasOrderFor_crankNicolson"
+
+[[node]]
+id = "OneStep.hasOrderFor_heun"
+
+[[node]]
+id = "OneStep.hasOrderFor_theta"
+
+[[node]]
+id = "OneStep.norm_sub_le_forwardEuler"
+
+[[node]]
+id = "testField"
+
+[[node]]
+id = "hasDerivAt_exp_testField"
+
+[[node]]
+id = "OneStep.IsAbsStable"
+
+[[node]]
+id = "OneStep.absStabilityRegion"
+
+[[node]]
+id = "OneStep.IsAStable"
+
+[[node]]
+id = "OneStep.isAbsStable_congr"
+
+[[node]]
+id = "OneStep.absStabilityRegion_eq_of_scaleInvariant"
+
+[[node]]
+id = "OneStep.isAbsStable_iff_mem_absStabilityRegion"
+
+[[node]]
+id = "OneStep.isAbsStable_iff_norm_lt_one"
+
+[[node]]
+id = "OneStep.not_isAbsStable_of_forall_eq_zero"
+
+[[node]]
+id = "OneStep.forwardEuler_testField_orbit"
+
+[[node]]
+id = "OneStep.isOrbit_forwardEuler_testField"
+
+[[node]]
+id = "OneStep.forwardEuler_scaleInvariant"
+
+[[node]]
+id = "OneStep.mem_absStabilityRegion_forwardEuler_iff"
+
+[[node]]
+id = "OneStep.isAbsStable_forwardEuler_iff"
+
+[[node]]
+id = "OneStep.backwardEuler_testField_orbit"
+
+[[node]]
+id = "OneStep.backwardEuler_testField_orbit_eq_zero"
+
+[[node]]
+id = "OneStep.isOrbit_backwardEuler_testField"
+
+[[node]]
+id = "OneStep.backwardEuler_scaleInvariant"
+
+[[node]]
+id = "OneStep.mem_absStabilityRegion_backwardEuler_iff"
+
+[[node]]
+id = "OneStep.isAStable_backwardEuler"
+
+[[node]]
+id = "OneStep.crankNicolson_testField_orbit"
+
+[[node]]
+id = "OneStep.crankNicolson_testField_orbit_eq_zero"
+
+[[node]]
+id = "OneStep.isOrbit_crankNicolson_testField"
+
+[[node]]
+id = "OneStep.crankNicolson_scaleInvariant"
+
+[[node]]
+id = "OneStep.mem_absStabilityRegion_crankNicolson_iff"
+
+[[node]]
+id = "OneStep.isAStable_crankNicolson"
+
+[[node]]
+id = "OneStep.heun_testField_orbit"
+
+[[node]]
+id = "OneStep.isOrbit_heun_testField"
+
+[[node]]
+id = "OneStep.heun_scaleInvariant"
+
+[[node]]
+id = "OneStep.mem_absStabilityRegion_heun_iff"
+
+[[node]]
+id = "OneStep.not_isAStable_forwardEuler"
+
+[[node]]
+id = "OneStep.not_isAStable_heun"
+
+[[node]]
+id = "OneStep.ofReal_mem_absStabilityRegion_forwardEuler_iff"
+
+[[node]]
+id = "OneStep.ofReal_mem_absStabilityRegion_heun_iff"

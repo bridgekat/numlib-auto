@@ -1,51 +1,16 @@
 namespace = "Gronwall"
-desc = '''
-The discrete Gronwall lemma in the *summed* form the numerical-analysis books state it
-(Quarteroni–Sacco–Saleri Lemma 11.2, Quarteroni–Valli Lemma 1.4.2): from
-`φ_n ≤ g₀ + ∑_{s<n} p_s + ∑_{s<n} k_s φ_s` conclude `φ_n ≤ (g₀ + ∑_{s<n} p_s) exp (∑_{s<n} k_s)`.
-
-Mathlib already has the *recursive* form, `discrete_gronwall` in
-`Mathlib/Analysis/ODE/DiscreteGronwall.lean`: from `u (n+1) ≤ (1 + c n) * u n + b n` conclude
-`u n ≤ (u n₀ + ∑ b) * exp (∑ c)`, and the product form `discrete_gronwall_prod_general` over any
-ordered semiring. The summed form is a corollary: the majorant
-`ψ_n = g₀ + ∑_{s<n} p_s + ∑_{s<n} k_s φ_s` satisfies `φ_n ≤ ψ_n` and
-`ψ_{n+1} = ψ_n + p_n + k_n φ_n ≤ (1 + k_n) ψ_n + p_n`, so Mathlib's lemma applied to `ψ` gives the
-bound. That is the whole module, plus the two specializations the ODE theorems use: constant
-`k_s = h Λ` and constant `p_s = h δ`, giving `(g₀ + n h δ) exp (n h Λ)`, and the norm form for a
-sequence in a normed space. Consumers: `ODE/OneStep` (Theorems 11.1, 11.2), `ODE/Multistep`
-(Theorem 11.4), and the θ-method energy estimates of chapter 13 (`FiniteDifference/Parabolic`).
-'''
 
 [[node]]
 id = "discrete_sum"
-kind = "theorem"
-desc = '''Discrete Gronwall lemma, summed form (Quarteroni–Sacco–Saleri Lemma 11.2). Let
-`φ k p : ℕ → ℝ`, `g₀ : ℝ` with `0 ≤ g₀`, `0 ≤ k s` and `0 ≤ p s` for all `s`, and suppose
-`φ 0 ≤ g₀` and, for every `n ≥ 1`, `φ n ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * φ s`.
-Then for every `n` (the case `n = 0` included, where the sums are empty),
-`φ n ≤ (g₀ + ∑ s ∈ range n, p s) * Real.exp (∑ s ∈ range n, k s)`.
-Proof: apply Mathlib's `discrete_gronwall` (recursive form, `n₀ = 0`) to the majorant
-`ψ n = g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * φ s`, which satisfies `φ n ≤ ψ n`,
-`ψ 0 = g₀ ≥ 0` and `ψ (n+1) = ψ n + p n + k n * φ n ≤ (1 + k n) * ψ n + p n`. No sign condition
-on `φ` is needed. ★'''
-deps = []
+
+[[node]]
+id = "discrete_sum_of_le"
 
 [[node]]
 id = "discrete_sum_const"
-kind = "theorem"
-desc = '''The constant-coefficient case used by the one-step theorems: if `0 ≤ g₀`, `0 ≤ h`,
-`0 ≤ δ`, `0 ≤ Λ`, `φ 0 ≤ g₀` and `φ n ≤ g₀ + ∑ s ∈ range n, h * δ + ∑ s ∈ range n, h * Λ * φ s`
-for `n ≥ 1`, then `φ n ≤ (g₀ + n * h * δ) * Real.exp (n * h * Λ)` for every `n`. This is
-`discrete_sum` with `p s = h δ`, `k s = h Λ` and the sums evaluated; it is the shape of (11.20)
-and of the bound in the proof of Theorem 11.1. ★'''
-deps = ["Gronwall.discrete_sum"]
+
+[[node]]
+id = "discrete_sum_const_of_le"
 
 [[node]]
 id = "norm_discrete_sum"
-kind = "theorem"
-desc = '''Norm form in a normed space `E`: if `w : ℕ → E`, `0 ≤ g₀`, `0 ≤ k s`, `0 ≤ p s`,
-`‖w 0‖ ≤ g₀` and `‖w n‖ ≤ g₀ + ∑ s ∈ range n, p s + ∑ s ∈ range n, k s * ‖w s‖` for `n ≥ 1`, then
-`‖w n‖ ≤ (g₀ + ∑ s ∈ range n, p s) * Real.exp (∑ s ∈ range n, k s)`. Immediate from
-`discrete_sum` with `φ = ‖w ·‖`; recorded because every consumer applies it to a difference of
-two orbits. ★'''
-deps = ["Gronwall.discrete_sum"]
