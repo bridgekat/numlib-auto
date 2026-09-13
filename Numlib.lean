@@ -191,6 +191,7 @@ import Numlib.Analysis.Sobolev.Tempered
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
+import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
@@ -200,6 +201,7 @@ import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
+import Numlib.Approximation.Extrapolation
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
@@ -207,6 +209,7 @@ import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
 import Numlib.Approximation.LeastSquares
 import Numlib.Approximation.MvPolynomial
+import Numlib.Approximation.NewtonCotes
 import Numlib.Approximation.NewtonForm
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
@@ -353,6 +356,7 @@ import Numlib.Stationary.Splitting
 import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
+import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin

@@ -476,9 +476,11 @@ weights `(1/6, 4/6, 1/6)` at the two endpoints and the midpoint of the panel. -/
 noncomputable def simpsonSum (g : ℝ → ℝ) (a h : ℝ) (N : ℕ) : ℝ :=
   ∑ j ∈ Finset.range N, h / 6 * (g (a + j * h) + 4 * g (a + j * h + h / 2) + g (a + (j + 1) * h))
 
-/-- The shape shared by the uniform mesh convergence proofs: the partition `x_j = a + j h_n` of
-`[a, b]` into `N n` panels satisfies the hypotheses of `tendsto_compositeSum`. -/
-private theorem tendsto_uniformMesh {N : ℕ → ℕ} {hs : ℕ → ℝ} {m : ℕ} {ω : Fin m → ℝ}
+/-- **Convergence of a composite rule on the uniform mesh.** The shape shared by the uniform mesh
+convergence proofs: the partition `x_j = a + j h_n` of `[a, b]` into `N n` panels satisfies the
+hypotheses of `tendsto_compositeSum`, for a panel rule with nonnegative weights `ω` summing to one
+at the nodes `x_j + c i h_n`, `c i ∈ [0, 1]`. -/
+theorem tendsto_uniformMesh {N : ℕ → ℕ} {hs : ℕ → ℝ} {m : ℕ} {ω : Fin m → ℝ}
     {c : Fin m → ℝ} (hab : a ≤ b) (hg : ContinuousOn g (Set.Icc a b)) (hN : ∀ n, 0 < N n)
     (hhs : ∀ n, hs n = (b - a) / N n) (hlim : Tendsto hs atTop (𝓝 0)) (hω : ∀ i, 0 ≤ ω i)
     (hωsum : ∑ i, ω i = 1) (hc : ∀ i, c i ∈ Set.Icc (0 : ℝ) 1) :

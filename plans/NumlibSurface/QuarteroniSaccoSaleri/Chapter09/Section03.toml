@@ -64,7 +64,7 @@ kind = "theorem"
 desc = '''Theorem 9.2, closed formulae, odd `n` (9.20): for odd `n`, `f ∈ C^{n+1}([a, b])`,
 `∃ η ∈ Ioo a b, ∫_a^b f - closedNewtonCotes n f a b = K_n/(n + 1)! * h^{n+2} * f^{(n+1)}(η)`,
 `K_n = ∫_0^n π_{n+1} < 0`. Stated by the book without proof. ★'''
-deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_even", "Quadrature.newtonCotesM_neg"]
+deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_odd", "Quadrature.newtonCotesK_neg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.20), closed'
 
 [[node]]
@@ -74,7 +74,7 @@ desc = '''Theorem 9.2, open formulae, even `n` (9.19): `∃ ξ ∈ Ioo a b, ∫_
 = M_n/(n + 2)! * h^{n+3} * f^{(n+2)}(ξ)` with `h = (b - a)/(n + 2)` and
 `M_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt > 0`; for `n = 0` this is (9.6). Stated by the book without
 proof. ★'''
-deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_even", "Quadrature.newtonCotesM_neg"]
+deps = ["Quadrature.exists_sub_openNewtonCotes_eq_of_even", "Quadrature.openNewtonCotesM_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.19), open'
 
 [[node]]
@@ -83,7 +83,7 @@ kind = "theorem"
 desc = '''Theorem 9.2, open formulae, odd `n` (9.20): `∃ η ∈ Ioo a b, ∫_a^b f - openNewtonCotes n f a b
 = K_n/(n + 1)! * h^{n+2} * f^{(n+1)}(η)`, `K_n = ∫_{-1}^{n+1} π_{n+1} > 0`. Stated by the book
 without proof. ★'''
-deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_even", "Quadrature.newtonCotesM_neg"]
+deps = ["Quadrature.exists_sub_openNewtonCotes_eq_of_odd", "Quadrature.openNewtonCotesK_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.20), open'
 
 [[node]]

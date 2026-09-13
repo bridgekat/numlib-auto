@@ -96,3 +96,6 @@ id = "abs_sub_simpson_le"
 
 [[node]]
 id = "integral_eq_simpson_of_natDegree_le"
+
+[[node]]
+id = "tendsto_uniformMesh"
