@@ -75,7 +75,7 @@ id = "property_7_1"
 kind = "theorem"
 desc = '''Property 7.1, first part, on `EuclideanSpace ℝ (Fin n)`: under the hypotheses of
 `theorem_7_1` (with the Euclidean norm; the book's `‖·‖₁` only changes constants, see
-`Matrix.opNorm_toEuclideanLin_differenceJacobian_sub_le`), `∃ ε > 0, ∃ η > 0`, such that for every
+`Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`), `∃ ε > 0, ∃ η > 0`, such that for every
 increment sequence `h : ℕ → Fin n → ℝ` with `∀ k j, 0 < |h k j| ∧ |h k j| ≤ η` and every
 `x₀ ∈ ball xstar ε`, the sequence (7.10)
 `x (k+1) = x k - (toEuclideanLin (differenceJacobian F (x k) (h k))).inverse (F (x k))` is well
@@ -83,10 +83,10 @@ defined (every difference Jacobian is invertible) and converges linearly to `xst
 (`‖x (k+1) - xstar‖ ≤ ‖x k - xstar‖ / 2` and `Tendsto`). Proof:
 `Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` with
 `B k = toEuclideanLin (differenceJacobian F (x k) (h k))` and the error bound
-`‖B k - F' (x k)‖ ≤ √n (L/2) η` from `Matrix.opNorm_toEuclideanLin_differenceJacobian_sub_le`,
+`‖B k - F' (x k)‖ ≤ √n (L/2) η` from `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`,
 choosing `η` so that this is below the backbone's threshold. The book states the result without
 proof. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.theorem_7_1", "QuarteroniSaccoSaleri.Chapter07.equation_7_9", "Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le", "Matrix.opNorm_toEuclideanLin_differenceJacobian_sub_le"]
+deps = ["QuarteroniSaccoSaleri.Chapter07.theorem_7_1", "QuarteroniSaccoSaleri.Chapter07.equation_7_9", "Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le", "Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
 
 [[node]]

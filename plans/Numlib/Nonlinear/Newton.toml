@@ -58,60 +58,16 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 5.4.5; Kress,
 
 [[node]]
 id = "forall_norm_iterate_succ_sub_le_of_mem_ball"
-kind = "theorem"
-desc = '''Theorem 7.1 of Quarteroni–Sacco–Saleri with its explicit radius and constant, in the
-typeclass context of `Newton.norm_step_sub_le`. Hypotheses: `Fn xstar = 0`; `e : E ≃L[𝕜] F` with
-`(e : E →L F) = F' xstar` and `‖e.symm‖ ≤ K`; `0 < r`, `0 < L`;
-`∀ x ∈ ball xstar r, HasFDerivAt Fn (F' x) x`; `F'` is `L`-Lipschitz on `ball xstar r`. Set
-`δ := min r (1 / (2 * K * L))`. Conclusion, for every `x₀ ∈ ball xstar δ` and every `k`, writing
-`x k := Newton.iterate Fn F' x₀ k`: (i) `x k ∈ ball xstar δ`; (ii) `∃ e' : E ≃L[𝕜] F,
-(e' : E →L F) = F' (x k) ∧ ‖e'.symm‖ ≤ 2 * K`; (iii) `‖x (k+1) - xstar‖ ≤ K * L * ‖x k - xstar‖ ^ 2`;
-(iv) `‖x (k+1) - xstar‖ ≤ ‖x k - xstar‖ / 2`. Proof: the induction of `Newton.tendsto_iterate`
-with the constants kept — the Neumann bound `‖(F' x)⁻¹‖ ≤ 2K` from `K * L * ‖x - xstar‖ ≤ 1/2`
-and `Newton.norm_step_sub_le` give `2K * L/2 = K L`. This is the statement both the book's
-Theorem 7.1 and Atkinson–Han's Theorem 5.4.1 (`NumlibSurface/AtkinsonHan/Chapter05/Section04`,
-which currently redoes the radius argument) delegate to. ★★'''
-deps = ["Newton.norm_step_sub_le", "Newton.exists_ball_norm_step_sub_le", "Newton.iterate_succ"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.1; Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.4.1"
 
 [[node]]
 id = "norm_approxStep_sub_le"
-kind = "theorem"
-desc = '''One step of a Newton-like iteration with an approximate derivative. Same context as
-`Newton.norm_step_sub_le`: `Fn xstar = 0`, `HasFDerivAt Fn (F' x) x` on `ball xstar r`, `F'`
-`L`-Lipschitz there, `x ∈ ball xstar r`, and an invertible `B : E ≃L[𝕜] F` with
-`‖(B : E →L F) - F' x‖ ≤ η`. Then
-`‖x - B.symm (Fn x) - xstar‖ ≤ ‖(B.symm : F →L E)‖ * (η * ‖x - xstar‖ + L / 2 * ‖x - xstar‖ ^ 2)`.
-Proof: `x - B⁻¹ Fn x - xstar = B⁻¹ ((B - F' x) (x - xstar) + (F' x (x - xstar) - Fn x + Fn xstar))`
-and the sharp Taylor bound `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`. The chord
-method (`η = ‖A - F' x‖`) and the difference-Jacobian method are instances. ★★'''
-deps = ["Newton.norm_step_sub_le"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1; Kress, Numerical Analysis, Theorem 6.21"
 
 [[node]]
 id = "tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le"
-kind = "theorem"
-desc = '''Linear convergence of Newton-like iterations with approximate derivatives (the content of
-Quarteroni–Sacco–Saleri Property 7.1, first part). Context of `Newton.exists_ball_norm_step_sub_le`
-(`CompleteSpace E`). Hypotheses: `Fn xstar = 0`, `e : E ≃L[𝕜] F` with `(e : E →L F) = F' xstar`,
-`0 < r`, differentiability and `L`-Lipschitz `F'` on `ball xstar r`. Conclusion:
-`∃ δ > 0, ∃ η > 0, ∀ (x : ℕ → E) (B : ℕ → E →L[𝕜] F), x 0 ∈ ball xstar δ →
-(∀ k, ‖B k - F' (x k)‖ ≤ η) → (∀ k, x (k+1) = x k - (B k).inverse (Fn (x k))) →
-(∀ k, ∃ e' : E ≃L[𝕜] F, (e' : E →L F) = B k) ∧ (∀ k, ‖x (k+1) - xstar‖ ≤ ‖x k - xstar‖ / 2) ∧
-Tendsto x atTop (𝓝 xstar)`. The step is written with the junk-valued `ContinuousLinearMap.inverse`
-exactly as `Newton.step`, so invertibility of every `B k` is a conclusion (Neumann series:
-`‖B k - F' xstar‖ ≤ η + L δ ≤ 1 / (2 ‖e.symm‖)`). Proof: `norm_approxStep_sub_le` with
-`‖(B k)⁻¹‖ ≤ 2 ‖e.symm‖` and `2 ‖e.symm‖ (η + L δ / 2) ≤ 1/2`, then the geometric induction of
-`Newton.tendsto_iterate`. ★★'''
-deps = ["Newton.norm_approxStep_sub_le", "Newton.tendsto_iterate"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1"
 
 [[node]]
 id = "norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul"
-kind = "theorem"
-desc = '''Quadratic convergence of Newton-like iterations whose derivative error is first order in
-the error (Property 7.1, second part). Under the hypotheses and in the situation of
-`tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` (so `x k ∈ ball xstar δ` and
-`‖(B k)⁻¹‖ ≤ 2 K` with `K = ‖e.symm‖`), if moreover `‖B k - F' (x k)‖ ≤ C * ‖x k - xstar‖` for
-every `k`, then `‖x (k+1) - xstar‖ ≤ 2 * K * (C + L / 2) * ‖x k - xstar‖ ^ 2`. Immediate from
-`norm_approxStep_sub_le` with `η = C ‖x k - xstar‖`. The variant with the residual,
-`‖B k - F' (x k)‖ ≤ c * ‖Fn (x k)‖`, follows because `‖Fn x‖ ≤ (‖F' xstar‖ + L r) ‖x - xstar‖` on
-the ball (mean value inequality), and is left to the surface. ★'''
-deps = ["Newton.norm_approxStep_sub_le", "Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1"

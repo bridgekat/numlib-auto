@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Nonlinear.FixedPoint
+import Numlib.Nonlinear.Order
 
 /-!
 # Newton's method in Banach spaces
@@ -272,6 +273,280 @@ theorem tendsto_iterate {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} (
   simpa using
     (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num)
       (by norm_num)).mul_const ‖x₀ - xstar‖
+
+
+/-! ### Theorem 7.1 with explicit constants, and approximate derivatives
+
+The remaining results of this section keep the constants of the induction of
+`Newton.tendsto_iterate` visible, so that a textbook statement with a named radius and a named
+constant is an instantiation rather than a re-proof, and then replace the exact derivative
+`F' (x k)` by an arbitrary approximation `B k`, of which the chord method, the difference-Jacobian
+method and the truncated Newton–SOR/Krylov methods are instances. -/
+
+omit [CompleteSpace F] in
+/-- **Newton's method with its explicit radius and constant** ([quarteroni2000numerical] Theorem
+7.1; [han2009theoretical] Theorem 5.4.1). If `F'(x*)` is invertible with `‖F'(x*)⁻¹‖ ≤ K` and `F'`
+is `L`-Lipschitz on `ball x* r`, then from every start in the ball of radius
+`δ = min r (1 / (2 K L))` the Newton iterates stay in that ball, every `F' (x k)` is invertible
+with `‖(F' (x k))⁻¹‖ ≤ 2 K` (Neumann series), and the errors satisfy both
+`‖x (k+1) - x*‖ ≤ K L ‖x k - x*‖²` and `‖x (k+1) - x*‖ ≤ ‖x k - x*‖ / 2`.
+
+No sign hypotheses on `r`, `K` or `L` are needed: if `K L ≤ 0` or `r ≤ 0` the ball is empty and the
+statement is vacuous. -/
+theorem forall_norm_iterate_succ_sub_le_of_mem_ball {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E}
+    (hstar : Fn xstar = 0) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' xstar) {K r L : ℝ}
+    (hK : ‖(e.symm : F →L[𝕜] E)‖ ≤ K)
+    (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
+    (hL : ∀ x ∈ Metric.ball xstar r, ∀ y ∈ Metric.ball xstar r, ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    {x₀ : E} (hx₀ : x₀ ∈ Metric.ball xstar (min r (1 / (2 * K * L)))) (k : ℕ) :
+    iterate Fn F' x₀ k ∈ Metric.ball xstar (min r (1 / (2 * K * L))) ∧
+      (∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = F' (iterate Fn F' x₀ k) ∧
+        ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * K) ∧
+      ‖iterate Fn F' x₀ (k + 1) - xstar‖ ≤ K * L * ‖iterate Fn F' x₀ k - xstar‖ ^ 2 ∧
+      ‖iterate Fn F' x₀ (k + 1) - xstar‖ ≤ ‖iterate Fn F' x₀ k - xstar‖ / 2 := by
+  set δ := min r (1 / (2 * K * L)) with hδdef
+  have hK0 : 0 ≤ K := (norm_nonneg _).trans hK
+  have hδpos : 0 < δ := lt_of_le_of_lt dist_nonneg (Metric.mem_ball.mp hx₀)
+  have hr : 0 < r := lt_of_lt_of_le hδpos (min_le_left _ _)
+  have hKL : 0 < K * L := by
+    have h : 0 < 1 / (2 * K * L) := lt_of_lt_of_le hδpos (min_le_right _ _)
+    rw [one_div_pos] at h
+    linarith
+  have hL0 : 0 < L := by
+    rcases pos_and_pos_or_neg_and_neg_of_mul_pos hKL with ⟨-, h⟩ | ⟨h, -⟩
+    · exact h
+    · exact absurd h (not_lt.2 hK0)
+  -- one step from a point of the ball
+  have hstep : ∀ x ∈ Metric.ball xstar δ,
+      (∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = F' x ∧ ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * K) ∧
+        ‖step Fn F' x - xstar‖ ≤ K * L * ‖x - xstar‖ ^ 2 ∧
+        ‖step Fn F' x - xstar‖ ≤ ‖x - xstar‖ / 2 ∧ step Fn F' x ∈ Metric.ball xstar δ := by
+    intro x hx
+    have hxr : x ∈ Metric.ball xstar r := Metric.ball_subset_ball (min_le_left _ _) hx
+    have hxδ : ‖x - xstar‖ < δ := by rw [← dist_eq_norm]; exact hx
+    have hd : ‖x - xstar‖ < 1 / (2 * K * L) := lt_of_lt_of_le hxδ (min_le_right _ _)
+    have hd' : K * L * ‖x - xstar‖ ≤ 1 / 2 := by
+      rw [lt_div_iff₀ (by linarith : (0 : ℝ) < 2 * K * L)] at hd
+      linarith
+    have hclose : K * ‖(e : E →L[𝕜] F) - F' x‖ ≤ 1 / 2 := by
+      have h1 : ‖(e : E →L[𝕜] F) - F' x‖ ≤ L * ‖x - xstar‖ := by
+        rw [he, norm_sub_rev x xstar]
+        exact hL xstar (Metric.mem_ball_self hr) x hxr
+      calc K * ‖(e : E →L[𝕜] F) - F' x‖ ≤ K * (L * ‖x - xstar‖) := by gcongr
+        _ = K * L * ‖x - xstar‖ := by ring
+        _ ≤ 1 / 2 := hd'
+    obtain ⟨B, hB, hBnorm⟩ := exists_equiv_of_norm_le e hK hclose
+    have hBle : ‖(B.symm : F →L[𝕜] E)‖ ≤ 2 * K :=
+      ContinuousLinearMap.opNorm_le_bound _ (by linarith) hBnorm
+    have h3 : ‖step Fn F' x - xstar‖ ≤ K * L * ‖x - xstar‖ ^ 2 := by
+      calc ‖step Fn F' x - xstar‖
+          ≤ L * ‖(B.symm : F →L[𝕜] E)‖ / 2 * ‖x - xstar‖ ^ 2 :=
+            norm_step_sub_le hstar hF hL hxr B hB
+        _ ≤ L * (2 * K) / 2 * ‖x - xstar‖ ^ 2 := by gcongr
+        _ = K * L * ‖x - xstar‖ ^ 2 := by ring
+    have h4 : ‖step Fn F' x - xstar‖ ≤ ‖x - xstar‖ / 2 := by
+      calc ‖step Fn F' x - xstar‖ ≤ K * L * ‖x - xstar‖ ^ 2 := h3
+        _ = K * L * ‖x - xstar‖ * ‖x - xstar‖ := by ring
+        _ ≤ 1 / 2 * ‖x - xstar‖ := mul_le_mul_of_nonneg_right hd' (norm_nonneg _)
+        _ = ‖x - xstar‖ / 2 := by ring
+    refine ⟨⟨B, hB, hBle⟩, h3, h4, ?_⟩
+    rw [Metric.mem_ball, dist_eq_norm]
+    linarith [norm_nonneg (x - xstar)]
+  have hmem : ∀ k, iterate Fn F' x₀ k ∈ Metric.ball xstar δ := by
+    intro k
+    induction k with
+    | zero => exact hx₀
+    | succ k ih => rw [iterate_succ]; exact (hstep _ ih).2.2.2
+  obtain ⟨h1, h2, h3, -⟩ := hstep _ (hmem k)
+  exact ⟨hmem k, h1, by rw [iterate_succ]; exact h2, by rw [iterate_succ]; exact h3⟩
+
+omit [CompleteSpace E] [CompleteSpace F] in
+/-- **One step of a Newton-like iteration with an approximate derivative.** If `B` is an
+invertible operator within `η` of `F' x`, then the step `x ↦ x - B⁻¹ (F x)` satisfies
+`‖x - B⁻¹ (F x) - x*‖ ≤ ‖B⁻¹‖ (η ‖x - x*‖ + (L / 2) ‖x - x*‖²)`: a first-order term from the
+derivative error and the second-order Taylor remainder. The chord method (`η = ‖A - F' x‖`), the
+difference-Jacobian method of [quarteroni2000numerical] §7.1.2 and truncated Newton–SOR/Krylov
+methods are instances; `Newton.norm_step_sub_le` is the case `η = 0`. -/
+theorem norm_approxStep_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E}
+    (hstar : Fn xstar = 0) {r L : ℝ} (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
+    (hL : ∀ x ∈ Metric.ball xstar r, ∀ y ∈ Metric.ball xstar r, ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    {x : E} (hx : x ∈ Metric.ball xstar r) (B : E ≃L[𝕜] F) {η : ℝ}
+    (hB : ‖(B : E →L[𝕜] F) - F' x‖ ≤ η) :
+    ‖x - B.symm (Fn x) - xstar‖
+      ≤ ‖(B.symm : F →L[𝕜] E)‖ * (η * ‖x - xstar‖ + L / 2 * ‖x - xstar‖ ^ 2) := by
+  have htay : ‖Fn xstar - Fn x - F' x (xstar - x)‖ ≤ L / 2 * ‖xstar - x‖ ^ 2 :=
+    norm_sub_apply_le hF hL hx
+  rw [norm_sub_rev xstar x] at htay
+  have hsplit : ((B : E →L[𝕜] F) - F' x) (x - xstar) + (Fn xstar - Fn x - F' x (xstar - x))
+      = B (x - xstar) - Fn x := by
+    rw [hstar, sub_apply, ContinuousLinearEquiv.coe_coe,
+      show xstar - x = -(x - xstar) by abel, map_neg]
+    abel
+  have hkey : x - B.symm (Fn x) - xstar = B.symm (B (x - xstar) - Fn x) := by
+    rw [map_sub, B.symm_apply_apply]
+    abel
+  rw [hkey, ← hsplit]
+  calc ‖B.symm (((B : E →L[𝕜] F) - F' x) (x - xstar) + (Fn xstar - Fn x - F' x (xstar - x)))‖
+      ≤ ‖(B.symm : F →L[𝕜] E)‖ *
+          ‖((B : E →L[𝕜] F) - F' x) (x - xstar) + (Fn xstar - Fn x - F' x (xstar - x))‖ :=
+        ContinuousLinearMap.le_opNorm (B.symm : F →L[𝕜] E) _
+    _ ≤ ‖(B.symm : F →L[𝕜] E)‖ *
+          (‖((B : E →L[𝕜] F) - F' x) (x - xstar)‖ + ‖Fn xstar - Fn x - F' x (xstar - x)‖) := by
+        gcongr
+        exact norm_add_le _ _
+    _ ≤ ‖(B.symm : F →L[𝕜] E)‖ * (η * ‖x - xstar‖ + L / 2 * ‖x - xstar‖ ^ 2) := by
+        gcongr
+        exact (ContinuousLinearMap.le_opNorm _ _).trans
+          (mul_le_mul_of_nonneg_right hB (norm_nonneg _))
+
+omit [CompleteSpace F] in
+/-- **Linear convergence of Newton-like iterations with approximate derivatives**
+([quarteroni2000numerical] Property 7.1, first part; [kress1998numerical] Theorem 6.21). Near a
+root `x*` with `F'(x*)` invertible and `F'` Lipschitz there are `δ, η > 0` such that *every*
+sequence `x (k+1) = x k - (B k)⁻¹ (F (x k))` started in `ball x* δ` with `‖B k - F' (x k)‖ ≤ η`
+for all `k` stays in the ball, has every `B k` invertible with `‖(B k)⁻¹‖ ≤ 2 ‖F'(x*)⁻¹‖`, halves
+its error at every step and converges to `x*`.
+
+The step is written with the junk-valued `ContinuousLinearMap.inverse`, as `Newton.step` is, so
+that invertibility of the `B k` is a conclusion (by the Neumann series, since
+`‖B k - F'(x*)‖ ≤ η + L δ` is small) and not a hypothesis. The approximations `B k` are an
+arbitrary sequence of operators rather than a function of `x k`, because in the applications
+(Broyden's method, truncated inner iterations) they depend on the whole history. -/
+theorem tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le {Fn : E → F}
+    {F' : E → E →L[𝕜] F} {xstar : E} (hstar : Fn xstar = 0) (e : E ≃L[𝕜] F)
+    (he : (e : E →L[𝕜] F) = F' xstar) {r L : ℝ} (hr : 0 < r)
+    (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
+    (hL : ∀ x ∈ Metric.ball xstar r, ∀ y ∈ Metric.ball xstar r, ‖F' x - F' y‖ ≤ L * ‖x - y‖) :
+    ∃ δ > 0, δ ≤ r ∧ ∃ η > 0, ∀ (x : ℕ → E) (B : ℕ → E →L[𝕜] F), x 0 ∈ Metric.ball xstar δ →
+      (∀ k, ‖B k - F' (x k)‖ ≤ η) → (∀ k, x (k + 1) = x k - (B k).inverse (Fn (x k))) →
+      (∀ k, x k ∈ Metric.ball xstar δ) ∧
+        (∀ k, ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = B k ∧
+          ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * ‖(e.symm : F →L[𝕜] E)‖) ∧
+        (∀ k, ‖x (k + 1) - xstar‖ ≤ ‖x k - xstar‖ / 2) ∧ Tendsto x atTop (𝓝 xstar) := by
+  set K : ℝ := ‖(e.symm : F →L[𝕜] E)‖ with hKdef
+  set L' : ℝ := max L 0 with hL'def
+  have hK0 : 0 ≤ K := norm_nonneg _
+  have hL'0 : 0 ≤ L' := le_max_right _ _
+  have hLL' : L ≤ L' := le_max_left _ _
+  have h8 : (0 : ℝ) < 8 * (K + 1) * (L' + 1) := by positivity
+  have h8' : (0 : ℝ) < 8 * (K + 1) := by positivity
+  refine ⟨min r (1 / (8 * (K + 1) * (L' + 1))), lt_min hr (one_div_pos.2 h8), min_le_left _ _,
+    1 / (8 * (K + 1)), one_div_pos.2 h8', fun x B hx0 hB hstep => ?_⟩
+  set δ : ℝ := min r (1 / (8 * (K + 1) * (L' + 1))) with hδdef
+  set η : ℝ := 1 / (8 * (K + 1)) with hηdef
+  have hδr : δ ≤ r := min_le_left _ _
+  have hKη : K * η ≤ 1 / 8 := by
+    rw [hηdef, mul_one_div, div_le_div_iff₀ h8' (by norm_num)]
+    nlinarith
+  have hKLδ : K * L' * δ ≤ 1 / 8 := by
+    calc K * L' * δ ≤ K * L' * (1 / (8 * (K + 1) * (L' + 1))) := by
+          gcongr
+          exact min_le_right _ _
+      _ ≤ 1 / 8 := by
+          rw [mul_one_div, div_le_div_iff₀ h8 (by norm_num)]
+          nlinarith [mul_nonneg hK0 hL'0]
+  -- one step from a point of the ball
+  have hone : ∀ k, x k ∈ Metric.ball xstar δ →
+      (∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = B k ∧ ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * K) ∧
+        ‖x (k + 1) - xstar‖ ≤ ‖x k - xstar‖ / 2 := by
+    intro k hxk
+    have hxr : x k ∈ Metric.ball xstar r := Metric.ball_subset_ball hδr hxk
+    have hd : ‖x k - xstar‖ < δ := by rw [← dist_eq_norm]; exact hxk
+    have hn : 0 ≤ ‖x k - xstar‖ := norm_nonneg _
+    have hclose : K * ‖(e : E →L[𝕜] F) - B k‖ ≤ 1 / 2 := by
+      have h1 : ‖(e : E →L[𝕜] F) - B k‖ ≤ L' * ‖x k - xstar‖ + η := by
+        calc ‖(e : E →L[𝕜] F) - B k‖ = ‖(F' xstar - F' (x k)) + (F' (x k) - B k)‖ := by
+              rw [he]; congr 1; abel
+          _ ≤ ‖F' xstar - F' (x k)‖ + ‖F' (x k) - B k‖ := norm_add_le _ _
+          _ ≤ L * ‖xstar - x k‖ + η := by
+              gcongr
+              · exact hL xstar (Metric.mem_ball_self hr) (x k) hxr
+              · rw [norm_sub_rev]; exact hB k
+          _ ≤ L' * ‖x k - xstar‖ + η := by
+              rw [norm_sub_rev xstar]
+              gcongr
+      calc K * ‖(e : E →L[𝕜] F) - B k‖ ≤ K * (L' * ‖x k - xstar‖ + η) := by gcongr
+        _ ≤ K * (L' * δ + η) := by gcongr
+        _ = K * L' * δ + K * η := by ring
+        _ ≤ 1 / 2 := by linarith
+    obtain ⟨e', he', he'n⟩ := exists_equiv_of_norm_le e hKdef.ge hclose
+    have he'le : ‖(e'.symm : F →L[𝕜] E)‖ ≤ 2 * K :=
+      ContinuousLinearMap.opNorm_le_bound _ (by linarith) he'n
+    have hinv : (B k).inverse = (e'.symm : F →L[𝕜] E) := by
+      rw [← he', ContinuousLinearMap.inverse_equiv]
+    have hxsucc : x (k + 1) = x k - e'.symm (Fn (x k)) := by rw [hstep k, hinv]; rfl
+    refine ⟨⟨e', he', he'le⟩, ?_⟩
+    have hsq : ‖x k - xstar‖ ^ 2 ≤ δ * ‖x k - xstar‖ := by
+      rw [sq]; exact mul_le_mul_of_nonneg_right hd.le hn
+    calc ‖x (k + 1) - xstar‖ = ‖x k - e'.symm (Fn (x k)) - xstar‖ := by rw [hxsucc]
+      _ ≤ ‖(e'.symm : F →L[𝕜] E)‖ * (η * ‖x k - xstar‖ + L / 2 * ‖x k - xstar‖ ^ 2) :=
+          norm_approxStep_sub_le hstar hF hL hxr e' (by rw [he']; exact hB k)
+      _ ≤ 2 * K * (η * ‖x k - xstar‖ + L' / 2 * (δ * ‖x k - xstar‖)) := by
+          have hL0 : 0 ≤ L * ‖x k - xstar‖ :=
+            (norm_nonneg _).trans (hL (x k) hxr xstar (Metric.mem_ball_self hr))
+          have hη0 : 0 < η := one_div_pos.2 h8'
+          have hc0 : 0 ≤ η * ‖x k - xstar‖ + L / 2 * ‖x k - xstar‖ ^ 2 := by
+            nlinarith [mul_nonneg hL0 hn, mul_nonneg hη0.le hn]
+          refine mul_le_mul he'le (add_le_add le_rfl (mul_le_mul (by linarith) hsq
+            (by positivity) (by linarith))) hc0 (by linarith)
+      _ = (2 * (K * η) + K * L' * δ) * ‖x k - xstar‖ := by ring
+      _ ≤ (2 * (1 / 8) + 1 / 8) * ‖x k - xstar‖ :=
+          mul_le_mul_of_nonneg_right (by linarith) hn
+      _ ≤ ‖x k - xstar‖ / 2 := by linarith
+  have hmem : ∀ k, x k ∈ Metric.ball xstar δ := by
+    intro k
+    induction k with
+    | zero => exact hx0
+    | succ k ih =>
+      have h := (hone k ih).2
+      have hd : ‖x k - xstar‖ < δ := by rw [← dist_eq_norm]; exact ih
+      rw [Metric.mem_ball, dist_eq_norm]
+      linarith [norm_nonneg (x k - xstar)]
+  refine ⟨hmem, fun k => (hone k (hmem k)).1, fun k => (hone k (hmem k)).2, ?_⟩
+  refine tendsto_of_eventually_norm_sub_succ_le (by norm_num : (1 / 2 : ℝ) < 1)
+    (Filter.Eventually.of_forall fun k => ?_)
+  have h := (hone k (hmem k)).2
+  linarith
+
+omit [CompleteSpace E] [CompleteSpace F] in
+/-- **Quadratic convergence of Newton-like iterations whose derivative error is first order in the
+error** ([quarteroni2000numerical] Property 7.1, second part). For a sequence
+`x (k+1) = x k - (B k)⁻¹ (F (x k))` staying in the ball where `F'` is `L`-Lipschitz, with every
+`B k` invertible, `‖(B k)⁻¹‖ ≤ K` and `‖B k - F' (x k)‖ ≤ C ‖x k - x*‖`, one has
+`‖x (k+1) - x*‖ ≤ K (C + L / 2) ‖x k - x*‖²`.
+
+The hypotheses are exactly the conclusions of
+`Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` (there `K = 2 ‖F'(x*)⁻¹‖`),
+so that result supplies the linear convergence and this one upgrades it to quadratic. The residual
+variant `‖B k - F' (x k)‖ ≤ c ‖F (x k)‖` reduces to this one through
+`‖F x‖ ≤ (‖F'(x*)‖ + L r) ‖x - x*‖` on the ball. -/
+theorem norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul {Fn : E → F} {F' : E → E →L[𝕜] F}
+    {xstar : E} (hstar : Fn xstar = 0) {r L : ℝ}
+    (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
+    (hL : ∀ x ∈ Metric.ball xstar r, ∀ y ∈ Metric.ball xstar r, ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    {x : ℕ → E} {B : ℕ → E →L[𝕜] F} {K C : ℝ} (hx : ∀ k, x k ∈ Metric.ball xstar r)
+    (hB : ∀ k, ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = B k ∧ ‖(e'.symm : F →L[𝕜] E)‖ ≤ K)
+    (hstep : ∀ k, x (k + 1) = x k - (B k).inverse (Fn (x k)))
+    (hC : ∀ k, ‖B k - F' (x k)‖ ≤ C * ‖x k - xstar‖) (k : ℕ) :
+    ‖x (k + 1) - xstar‖ ≤ K * (C + L / 2) * ‖x k - xstar‖ ^ 2 := by
+  obtain ⟨e', he', he'n⟩ := hB k
+  have hr : 0 < r := lt_of_le_of_lt dist_nonneg (Metric.mem_ball.mp (hx k))
+  have hn : 0 ≤ ‖x k - xstar‖ := norm_nonneg _
+  have hC0 : 0 ≤ C * ‖x k - xstar‖ := (norm_nonneg _).trans (hC k)
+  have hL0 : 0 ≤ L * ‖x k - xstar‖ :=
+    (norm_nonneg _).trans (hL _ (hx k) _ (Metric.mem_ball_self hr))
+  have hnn : 0 ≤ C * ‖x k - xstar‖ * ‖x k - xstar‖ + L / 2 * ‖x k - xstar‖ ^ 2 := by
+    nlinarith
+  have hinv : (B k).inverse = (e'.symm : F →L[𝕜] E) := by
+    rw [← he', ContinuousLinearMap.inverse_equiv]
+  have hxsucc : x (k + 1) = x k - e'.symm (Fn (x k)) := by rw [hstep k, hinv]; rfl
+  calc ‖x (k + 1) - xstar‖ = ‖x k - e'.symm (Fn (x k)) - xstar‖ := by rw [hxsucc]
+    _ ≤ ‖(e'.symm : F →L[𝕜] E)‖ *
+          (C * ‖x k - xstar‖ * ‖x k - xstar‖ + L / 2 * ‖x k - xstar‖ ^ 2) :=
+        norm_approxStep_sub_le hstar hF hL (hx k) e' (by rw [he']; exact hC k)
+    _ ≤ K * (C * ‖x k - xstar‖ * ‖x k - xstar‖ + L / 2 * ‖x k - xstar‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right he'n hnn
+    _ = K * (C + L / 2) * ‖x k - xstar‖ ^ 2 := by ring
 
 end Quadratic
 

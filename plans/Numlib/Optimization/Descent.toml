@@ -1,118 +1,47 @@
 namespace = "Descent"
-desc = '''
-Descent methods for the minimization of `f : E → ℝ` on a real normed space (Quarteroni–Sacco–Saleri
-§7.2, §7.2.2, §7.2.6 and Properties 7.9–7.10 of §7.3): descent directions and the descent
-iteration `x_{k+1} = x_k + α_k d_k` as a relational specification on the three sequences, the
-decrease of `f` along a descent direction for small steps, the exact-line-search orthogonality
-(Theorem 7.3), the first- and second-order optimality conditions (Property 7.4; the first-order one
-is Mathlib's `IsLocalMin.hasFDerivAt_eq_zero`), the variational inequality at a local minimizer
-on a convex set (Property 7.9, whose convex converse is
-`isMinOn_iff_forall_lineDeriv_nonneg` in `Numlib/Analysis/Convex/Gateaux`), and the compactness
-fact behind Property 7.8. Derivatives are data, `f' : E → E →L[ℝ] ℝ`, with `HasFDerivAt` hypotheses;
-gradients enter only through `InnerProductSpace.toDual`. Hessians are `f'' : E → E →L[ℝ] E →L[ℝ] ℝ`
-with `HasFDerivAt f' (f'' x) x`, and positive definiteness is coercivity `c ‖v‖² ≤ f'' x v v`,
-which is `Matrix.PosDef` of the Hessian matrix in finite dimension
-(`Matrix.posDef_iff_isSymmetricCoercive`).
-'''
 
 [[node]]
 id = "IsDescentDirection"
-kind = "definition"
-desc = '''`Descent.IsDescentDirection (f' : E → E →L[ℝ] ℝ) (x d : E) : Prop := f' x d < 0`, the
-book's (7.26) in its nondegenerate half. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.26"
 
 [[node]]
 id = "IsDescentSequence"
-kind = "definition"
-desc = '''`structure Descent.IsDescentSequence (f' : E → E →L[ℝ] ℝ) (x d : ℕ → E) (α : ℕ → ℝ) : Prop`
-with fields `step : ∀ k, x (k+1) = x k + α k • d k`, `pos : ∀ k, 0 < α k`,
-`descent : ∀ k, IsDescentDirection f' (x k) (d k)` — the descent method (7.25)–(7.26) as a
-specification any concrete method (gradient, Newton, quasi-Newton, nonlinear CG) satisfies until
-it hits a critical point. The book's second clause of (7.26), `d k = 0` when `∇f (x k) = 0`, is
-the termination case and is excluded here by `descent`. ★'''
-deps = ["Descent.IsDescentDirection"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equations 7.25–7.26"
+
+[[node]]
+id = "eventually_lt_add_mul_of_hasDerivAt_lt"
 
 [[node]]
 id = "exists_forall_lt_of_isDescentDirection"
-kind = "theorem"
-desc = '''(7.27)–(7.28): if `HasFDerivAt f (f' x) x` and `IsDescentDirection f' x d` then
-`∃ ε > 0, ∀ α ∈ Ioo 0 ε, f (x + α • d) < f x`. Proof: `HasFDerivAt.hasDerivAt_line` /
-`HasFDerivAt.comp` on `t ↦ f (x + t • d)` gives derivative `f' x d < 0` at `0`, and a function
-with negative derivative at `0` is smaller just to the right (`HasDerivAt` little-o). ★'''
-deps = ["Descent.IsDescentDirection"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equations 7.27–7.28"
+
+[[node]]
+id = "fderiv_apply_neg_gradient"
 
 [[node]]
 id = "isDescentDirection_neg_gradient"
-kind = "theorem"
-desc = '''The steepest-descent direction is a descent direction: on a real inner product space, if
-`g : E → E` is the gradient (`f' x = InnerProductSpace.toDual ℝ E (g x)`) and `g x ≠ 0`, then
-`IsDescentDirection f' x (-g x)`, and `f' x (-g x) = -‖g x‖ ^ 2`. ★'''
-deps = ["Descent.IsDescentDirection"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.2"
 
 [[node]]
 id = "isDescentDirection_neg_inverse_of_isCoercive"
-kind = "theorem"
-desc = '''Newton-like directions with a coercive (positive definite) operator are descent directions:
-for `B : E ≃L[ℝ] E` with `(B : E →ₗ[ℝ] E).IsCoercive` and `g x ≠ 0`,
-`IsDescentDirection f' x (-(B.symm (g x)))` where `f' x = toDual ℝ E (g x)`. Proof:
-`⟪g, -B⁻¹ g⟫ = -⟪B u, u⟫ < 0` for `u = B⁻¹ g ≠ 0`. Covers Newton's method with a positive definite
-Hessian and the quasi-Newton directions of §7.2.6. ★'''
-deps = ["Descent.IsDescentDirection"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Sections 7.2.2 and 7.2.6"
 
 [[node]]
 id = "fderiv_apply_eq_zero_of_isLocalMin_line"
-kind = "theorem"
-desc = '''Theorem 7.3 (exact line search orthogonality): if `α` is a local minimizer of
-`t ↦ f (x + t • d)` and `HasFDerivAt f (f' (x + α • d)) (x + α • d)`, then `f' (x + α • d) d = 0`.
-Proof: `IsLocalMin.hasDerivAt_eq_zero` on the line, whose derivative at `α` is `f' (x + α d) d` by
-the chain rule. With `x_{k+1} = x + α d` this is `∇f(x_{k+1})ᵀ d_k = 0`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.3"
 
 [[node]]
 id = "nonneg_apply_apply_of_isLocalMin"
-kind = "theorem"
-desc = '''Property 7.4 (b), second-order necessary condition: if `IsLocalMin f x`,
-`∀ᶠ y in 𝓝 x, HasFDerivAt f (f' y) y` and `HasFDerivAt f' f'' x` (`f'' : E →L[ℝ] E →L[ℝ] ℝ`), then
-`∀ v, 0 ≤ f'' v v`. Proof along the line `g t = f (x + t • v)`: `g' s = f' (x + s v) v` near `0`,
-`g' 0 = 0` by the first-order condition, `g' s = s f'' v v + o(s)`; the mean value theorem gives
-`g t - g 0 = t g' (θ t) = θ t² f'' v v + o(t²)` with `θ ∈ (0, 1)`, negative for small `t` if
-`f'' v v < 0`, contradicting the minimum. No continuity of `f''` near `x` is needed. ★★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.4 (b)"
 
 [[node]]
 id = "isLocalMin_of_coercive_second"
-kind = "theorem"
-desc = '''Property 7.4 (c), corrected (the book omits the hypothesis `∇f(x*) = 0`, without which the
-statement is false, e.g. `f x = x + x²` at `0`): if `f' x = 0`, `HasFDerivAt f (f' y) y` and
-`HasFDerivAt f' (f'' y) y` on `ball x r`, `ContinuousAt f'' x`, and `f'' x` is coercive,
-`∀ v, c * ‖v‖ ^ 2 ≤ f'' x v v` with `0 < c`, then `x` is a strict local minimizer:
-`∃ δ > 0, ∀ y ∈ ball x δ, y ≠ x → f x < f y`. Proof: for `ε < c / 2` pick `δ` with
-`‖f'' z - f'' x‖ ≤ ε` on `ball x δ`; the mean value inequality
-(`Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'`) applied to `g y = f y - ½ f'' x (y - x) (y - x)`,
-whose derivative `f' y - f'' x (y - x)` is within `ε ‖y - x‖` of `g' x = 0`, gives
-`|f y - f x - ½ f'' x (y-x) (y-x)| ≤ ε ‖y - x‖²`, and `½ f'' x (y-x)(y-x) ≥ (c/2) ‖y - x‖²`. ★★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.4 (c)"
 
 [[node]]
 id = "fderiv_apply_sub_nonneg_of_isLocalMinOn"
-kind = "theorem"
-desc = '''Property 7.9 (1): for a convex `Ω`, `x ∈ Ω`, `IsLocalMinOn f Ω x` and `HasFDerivAt f (f' x) x`,
-`∀ y ∈ Ω, 0 ≤ f' x (y - x)`. Proof (checked in the prototype): `y - x ∈ posTangentConeAt Ω x` by
-`sub_mem_posTangentConeAt_of_segment_subset` and `IsLocalMinOn.hasFDerivWithinAt_nonneg`. The
-convex converse, Property 7.9 (2), is `isMinOn_iff_forall_lineDeriv_nonneg` in
-`Numlib/Analysis/Convex/Gateaux`; the two together are the finite-dimensional variational
-inequality of a constrained minimizer. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.9 (1)"
 
 [[node]]
 id = "tendsto_fderiv_zero_of_forall_clusterPt"
-kind = "theorem"
-desc = '''The compactness statement behind Property 7.8: in a proper space (`[ProperSpace E]`, e.g.
-finite dimension), if `f'` is continuous, `x : ℕ → E` is bounded and every cluster point `y` of `x`
-is critical, `MapClusterPt y atTop x → f' y = 0`, then `Tendsto (fun k => f' (x k)) atTop (𝓝 0)`.
-Proof: otherwise a subsequence has `‖f' (x k)‖ ≥ ε`; it has a convergent sub-subsequence in the
-compact closure of the range, whose limit is a cluster point, hence critical, contradicting
-continuity of `f'`. Read as the book states it — a convergent sequence whose limit is critical —
-the property is the continuity of `f'` and needs no module. ★★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.8"
