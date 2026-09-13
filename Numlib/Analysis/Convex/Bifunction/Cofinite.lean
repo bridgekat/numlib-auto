@@ -138,10 +138,6 @@ omit [FiniteDimensional ℝ E] in
 theorem Cofinite.conj_lt_top (hf : Cofinite f) (y : F) : conj B f y < ⊤ :=
   (cofinite_iff_forall_conj_lt_top (B := B) hf.toClosedProperConvexFn).1 hf y
 
-omit [FiniteDimensional ℝ E] in
-theorem Cofinite.dom_conj_eq_univ (hf : Cofinite f) : dom (conj B f) = univ :=
-  (cofinite_iff_dom_conj_eq_univ (B := B) hf.toClosedProperConvexFn).1 hf
-
 /-- **The conjugates of two co-finite functions add exactly**: their effective domains are the whole
 space, so the relative-interior condition for an exact sum holds at the origin. -/
 theorem Cofinite.isExactSum_conj (hf : Cofinite f) (hg : Cofinite g) :

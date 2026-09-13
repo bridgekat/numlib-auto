@@ -880,6 +880,11 @@ theorem cofinite_iff_dom_conj_eq_univ (hf : ClosedProperConvexFn f) :
   rw [dom_conj_eq_univ_iff (B := B) hf]
   exact ⟨fun h => h.recessionFn_eq_top, fun h => { hf with recessionFn_eq_top := h }⟩
 
+/-- A co-finite function has an everywhere-finite conjugate: the forward half of
+`cofinite_iff_dom_conj_eq_univ`, as dot notation. -/
+theorem Cofinite.dom_conj_eq_univ (hf : Cofinite f) : dom (conj B f) = univ :=
+  (cofinite_iff_dom_conj_eq_univ (B := B) hf.toClosedProperConvexFn).1 hf
+
 /-- The same, in the "finite everywhere" phrasing. -/
 theorem cofinite_iff_forall_conj_lt_top (hf : ClosedProperConvexFn f) :
     Cofinite f ↔ ∀ y : F, conj B f y < ⊤ := by

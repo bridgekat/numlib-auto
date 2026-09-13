@@ -7,9 +7,6 @@ id = 'argmin'
 id = 'mem_argmin_iff_zero_mem_subgradient'
 
 [[node]]
-id = 'conj_zero_eq_neg_iInf'
-
-[[node]]
 id = 'dom_sepSum'
 
 [[node]]

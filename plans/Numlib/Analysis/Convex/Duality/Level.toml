@@ -52,4 +52,7 @@ id = 'mem_closure_dom_conj_iff'
 id = 'cofinite_iff_dom_conj_eq_univ'
 
 [[node]]
+id = 'Cofinite.dom_conj_eq_univ'
+
+[[node]]
 id = 'interior_dom_conj_nonempty_iff'

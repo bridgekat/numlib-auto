@@ -25,7 +25,7 @@ polyhedral.
 ## Main results
 
 * `mem_argmin_iff_zero_mem_subgradient` — `x` minimises `f` exactly when `0 ∈ ∂f x`.
-* `conj_zero_eq_neg_iInf`, `argmin_eq_subgradient_conj_zero`,
+* `conj_apply_zero` (of `Duality/Level`), `argmin_eq_subgradient_conj_zero`,
   `iInf_ne_bot_and_argmin_eq_empty_iff`,
   `argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj`, `supportFn_setOf_le`,
   `argmin_eq_singleton_iff_hasGradientAtFn_conj_zero`, `supportFn_argmin`,
@@ -139,22 +139,15 @@ theorem mem_argmin_iff_zero_mem_subgradient (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ
   · intro h z; simpa using h z
   · intro h z; simpa using h z
 
-/-- The conjugate at the origin is the negated infimum: `f*(0) = -inf f`. No hypothesis at all. -/
-theorem conj_zero_eq_neg_iInf (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
-    conj B f 0 = -(⨅ x, f x) := by
-  rw [EReal.neg_iInf]
-  refine iSup_congr fun x => ?_
-  simp
-
 /-- The same the other way round: `inf f = -f*(0)`. -/
 theorem iInf_eq_neg_conj_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     (⨅ x, f x) = -(conj B f 0) := by
-  rw [conj_zero_eq_neg_iInf, neg_neg]
+  rw [conj_apply_zero, neg_neg]
 
 /-- `f` is bounded below exactly when `f*` is finite at the origin. -/
 theorem zero_mem_dom_conj_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     (0 : F) ∈ dom (conj B f) ↔ (⊥ : EReal) < ⨅ x, f x := by
-  rw [mem_dom, conj_zero_eq_neg_iInf, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
+  rw [mem_dom, conj_apply_zero, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
     EReal.neg_eq_top_iff]
 
 /-- The minimum set is convex. -/
@@ -1150,7 +1143,7 @@ theorem epsSubgradient_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) (hp : Prope
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
     epsSubgradient B.flip ε (conj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
   have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_zero_eq_neg_iInf, hμ, EReal.coe_neg]
+    rw [conj_apply_zero, hμ, EReal.coe_neg]
   ext z
   rw [Set.mem_ofPred_eq, mem_epsSubgradient]
   have hstep : ∀ y : F, (conj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
@@ -1176,7 +1169,7 @@ theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper
       = dirDeriv (conj B f) 0 y := by
   have hcp : Proper (conj B f) := proper_conj ⟨hf, hc, hp⟩
   have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_zero_eq_neg_iInf, hμ, EReal.coe_neg]
+    rw [conj_apply_zero, hμ, EReal.coe_neg]
   have hepi : IsClosed (epi (conj B f)) :=
     ClosedProperConvexFn.isClosed_epi ⟨convexFn_conj B f, closedFn_conj, hcp⟩
   rw [← dirDeriv_eq_iInf_supportFn_epsSubgradient (B := B.flip) (convexFn_conj B f) hcp hepi hc0 y]
@@ -1199,7 +1192,7 @@ theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedFn f) 
       ↔ (conj B f 0 ≠ ⊤ ∧ ∃ y : F, dirDeriv (conj B f) 0 y = ⊥) := by
   have hb : conj B f 0 ≠ ⊥ := conj_ne_bot hp.dom_nonempty 0
   have hiff : (⨅ x, f x) ≠ ⊥ ↔ conj B f 0 ≠ ⊤ := by
-    rw [conj_zero_eq_neg_iInf, ne_eq, ne_eq, EReal.neg_eq_top_iff]
+    rw [conj_apply_zero, ne_eq, ne_eq, EReal.neg_eq_top_iff]
   rw [hiff, and_congr_right_iff]
   intro ht
   rw [argmin_eq_subgradient_conj_zero (B := B) hf hc,

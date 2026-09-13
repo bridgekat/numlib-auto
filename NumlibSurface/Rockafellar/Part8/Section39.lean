@@ -429,7 +429,7 @@ theorem adjoint_ofLinearMap (T : Rn m →ₗ[ℝ] Rn n) (o : Orientation) :
 /-- **Theorem 39.2**, first assertion: `A*` has the **opposite orientation** to `A`. This holds by
 construction, and it is the clause that forces the orientation to be data. -/
 theorem theorem_39_2_orientation (A : OrientedProcess m n) :
-    A.adjoint.orientation = A.orientation.flip := rfl
+    A.adjoint.orientation = A.orientation.flip := A.adjoint_orientation
 
 /-- **Theorem 39.2**, first assertion: `A*` is a **closed** convex process from `ℝⁿ` to `ℝᵐ`, in
 either orientation, being an intersection of homogeneous closed half-spaces. -/

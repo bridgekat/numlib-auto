@@ -3,6 +3,7 @@ import Numlib.Analysis.Convex.Optimization.MoreauGradient
 import Numlib.Analysis.Convex.Optimization.Normal
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import NumlibSurface.Rockafellar.Part3.Section12
+import NumlibSurface.Rockafellar.Part3.Section14
 import NumlibSurface.Rockafellar.Part3.Section16
 import NumlibSurface.Rockafellar.Part4.Section19
 
@@ -807,17 +808,8 @@ theorem corollary_31_4_1_optimality {f : Rn n → EReal} (hpf : Proper f) {x y :
 backbone's `polarCone` of a subspace is the annihilator (`polarCone_coe_submodule'`), and on `ℝⁿ`
 the annihilator *is* `Lᗮ`. -/
 theorem polarCone_coe_submodule_eq_orthogonal (M : Submodule ℝ (Rn n)) :
-    polarCone (pairing n) (M : Set (Rn n)) = ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)) := by
-  rw [polarCone_coe_submodule' (pairing n) M]
-  ext y
-  constructor
-  · intro h
-    exact (Submodule.mem_orthogonal M y).2 fun u hu => by
-      have hu' : pairing n u y = 0 := h u hu
-      rwa [pairing_apply] at hu'
-  · intro h u hu
-    have h' := (Submodule.mem_orthogonal M y).1 h u hu
-    rwa [← pairing_apply] at h'
+    polarCone (pairing n) (M : Set (Rn n)) = ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)) :=
+  polarCone_submodule_rn M
 
 /-- **Corollary 31.4.2** under condition **(a)**: for a closed proper
 convex `f` and a subspace `L` meeting `ri (dom f)`,

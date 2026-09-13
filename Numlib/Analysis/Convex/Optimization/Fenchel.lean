@@ -643,7 +643,7 @@ theorem conj_le_conj_of_mem_subgradient_of_pairing_eq_zero (hp : Proper f) (hxK 
 theorem conj_add_indicatorFn_zero_eq_iInf_mem_neg_polarCone
     (hex : IsExactSum B f (indicatorFn K)) (hK : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) :
     conj B (f + indicatorFn K) 0 = ⨅ w ∈ -(polarCone B K), conj B f w := by
-  rw [conj_zero_eq_neg_iInf, ← iInf_mem_eq_iInf_add_indicatorFn f K hex.proper_left.ne_bot,
+  rw [conj_apply_zero, ← iInf_mem_eq_iInf_add_indicatorFn f K hex.proper_left.ne_bot,
     iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK hne, neg_neg]
 
 /-- **Attainment under condition (a)**: as soon as `f` and `δ(·|K)` add exactly, the *dual*

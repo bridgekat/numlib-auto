@@ -2,6 +2,7 @@ import Numlib.Analysis.Convex.Optimization.Minimum
 import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import Numlib.Analysis.Convex.Subgradient.StrictlyConvex
+import NumlibSurface.Rockafellar.Part2.Section08
 import NumlibSurface.Rockafellar.Part5.Section25
 
 /-!
@@ -302,7 +303,7 @@ cone of `f`. This is Theorem 8.7, restated here because clause (f) is where §27
 theorem theorem_27_1_f_setOf_le (hf : ClosedProperConvexFn f) {α : ℝ}
     (hne : {x : Rn n | f x ≤ (α : EReal)}.Nonempty) :
     recessionCone {x : Rn n | f x ≤ (α : EReal)} = recessionConeFn f :=
-  recessionCone_setOf_le hf.convex hf.isClosed_epi hne
+  theorem_8_7_recessionCone hf hne
 
 /-- **Theorem 27.1(f)**, the parenthesis: the minimum set, when nonempty, is itself a level set, so
 it too has the recession cone of `f`. -/

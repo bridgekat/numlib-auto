@@ -545,7 +545,7 @@ theorem theorem_37_4 (K : Rn m × Rn n → EReal) (p q : Rn m × Rn n) :
 
 /-- `∂K (u, v)` is **convex**, with no hypothesis on `K`: it is a product of two convex sets. -/
 theorem theorem_37_4_convex (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
-    Convex ℝ (subgrad K p) := convex_saddleSubgradient
+    Convex ℝ (subgrad K p) := convex_subgrad
 
 private theorem isClosed_subgrad₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     IsClosed (subgrad₁ K p) := by

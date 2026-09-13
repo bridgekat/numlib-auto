@@ -346,7 +346,7 @@ Unlike the function statement this needs no qualification: two suprema over sets
 through an `∞ - ∞`. -/
 theorem corollary_16_4_1_add (C D : Set (Rn n)) :
     supportFn (pairing n) (C + D) = supportFn (pairing n) C + supportFn (pairing n) D :=
-  supportFn_add (pairing n) C D
+  supportFn_add_rn C D
 
 /-- **Corollary 16.4.1**, first formula in the book's `m`-ary form:
 `δ*(· | C₁ + ⋯ + Cₘ) = δ*(· | C₁) + ⋯ + δ*(· | Cₘ)`. -/

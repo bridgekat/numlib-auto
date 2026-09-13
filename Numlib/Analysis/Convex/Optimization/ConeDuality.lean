@@ -127,17 +127,12 @@ variable {E F : Type*}
   {h : E → EReal} {K : Set E}
 
 omit [FiniteDimensional ℝ E] in
-/-- A co-finite `h` has an everywhere-finite conjugate. -/
-theorem dom_conj_eq_univ_of_cofinite (hcof : Cofinite h) : dom (conj B h) = univ :=
-  (cofinite_iff_dom_conj_eq_univ (B := B) hcof.toClosedProperConvexFn).1 hcof
-
-omit [FiniteDimensional ℝ E] in
 /-- The dual objective is finite at every point: `h*` is finite everywhere, and the tilt is real. -/
 theorem exists_conj_comp_add_sub_pairing_eq_coe (hcof : Cofinite h) (z : E) (z' : F) (w : F) :
     ∃ r : ℝ, conj B h (z' + w) - ((B z w : ℝ) : EReal) = (r : EReal) := by
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
     (conj_ne_bot hcof.proper.dom_nonempty (z' + w))
-    (by rw [← mem_dom, dom_conj_eq_univ_of_cofinite (B := B) hcof]; trivial)
+    (by rw [← mem_dom, Cofinite.dom_conj_eq_univ (B := B) hcof]; trivial)
   exact ⟨s - B z w, by rw [hs, ← EReal.coe_sub]⟩
 
 omit [FiniteDimensional ℝ E] in

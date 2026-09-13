@@ -3,6 +3,8 @@ import Numlib.Analysis.Convex.Optimization.Maximum
 import Numlib.Analysis.Convex.Subgradient.Existence
 import Numlib.Analysis.Convex.Subgradient.Rademacher
 import NumlibSurface.Common.Euclidean
+import NumlibSurface.Rockafellar.Part2.Section08
+import NumlibSurface.Rockafellar.Part4.Section19
 
 /-!
 # Rockafellar, §32: The Maximum of a Convex Function
@@ -90,7 +92,7 @@ supremum over `M` is finite, attained or not. -/
 theorem theorem_32_1_affineSubspace_of_le (hf : ConvexFn f) {M : AffineSubspace ℝ (Rn n)}
     {α : ℝ} (hM : ∀ w ∈ M, f w ≤ (α : EReal)) {x z : Rn n} (hx : x ∈ M) (hz : z ∈ M) :
     f z = f x :=
-  hf.eq_of_le_on_affineSubspace hM hx hz
+  corollary_8_6_2 hf hM hx hz
 
 /-- **Corollary 32.1.1**: Rockafellar's `W`, the set of points at which the supremum of `f` relative
 to `C` is attained. -/
@@ -256,10 +258,8 @@ theorem corollary_32_3_4 (hf : ConvexFn f) (hC : Polyhedral C) (hne : C.Nonempty
 /-- **Corollary 32.3.4**: the parenthetical "(finitely many)". A polyhedral set is finitely
 generated (Theorem 19.1) and the extreme points of `conv P + cone D` lie in `P` (Corollary
 18.3.1). -/
-theorem corollary_32_3_4_finite (hC : Polyhedral C) : (C.extremePoints ℝ).Finite := by
-  obtain ⟨P, D, hCeq⟩ := hC.finitelyGenerated
-  rw [show C = convexHullPD (P : Set (Rn n)) (D : Set (Rn n)) from hCeq]
-  exact finite_extremePoints_convexHullPD P D
+theorem corollary_32_3_4_finite (hC : Polyhedral C) : (C.extremePoints ℝ).Finite :=
+  corollary_19_1_1_extremePoints hC
 
 /-- **§32**: "Theorem 32.2 can be applied to a given closed convex set `C` by representing `C` as
 the convex hull of its extreme points and extreme directions as in §18." Unlike Theorem 32.3 this

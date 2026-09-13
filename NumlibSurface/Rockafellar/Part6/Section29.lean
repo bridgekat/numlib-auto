@@ -399,7 +399,7 @@ theorem corollary_29_1_5_nonempty (hF : ConvexBifun F) (hs : StrictlyConsistent 
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors form a **closed** set. -/
 theorem corollary_29_1_5_isClosed (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     IsClosed (KuhnTucker (pairing m) F) :=
-  isClosed_kuhnTucker ht hb
+  corollary_29_1_1_isClosed ht hb
 
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors are **bounded**. This is what
 distinguishes Corollary 29.1.5 from Corollary 29.1.4: under mere *strong* consistency the
@@ -412,7 +412,7 @@ theorem corollary_29_1_5_isBounded (hF : ConvexBifun F) (hs : StrictlyConsistent
 /-- **Corollary 29.1.5**, last clause: the Kuhn–Tucker vectors form a **convex** set. -/
 theorem corollary_29_1_5_convex (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     Convex ℝ (KuhnTucker (pairing m) F) :=
-  convex_kuhnTucker ht hb
+  corollary_29_1_1_convex ht hb
 
 /-- **Corollary 29.1.5**, last clause in one piece: for a strictly consistent program with a finite
 optimal value the Kuhn–Tucker set is non-empty, compact and convex. -/
