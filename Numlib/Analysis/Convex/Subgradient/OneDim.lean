@@ -68,8 +68,8 @@ overrides to the right. -/
 theorem dirDeriv_eq_bot_of_eq_top (hx : f x = ⊤) (y : E) : dirDeriv f x y = ⊥ := by
   refine le_antisymm ?_ bot_le
   refine (dirDeriv_le f x y one_pos).trans ?_
-  rw [hx, _root_.EReal.sub_top,
-    _root_.EReal.bot_div_of_pos_ne_top (by exact_mod_cast one_pos) (_root_.EReal.coe_ne_top 1)]
+  rw [hx, EReal.sub_top,
+    EReal.bot_div_of_pos_ne_top (by exact_mod_cast one_pos) (EReal.coe_ne_top 1)]
 
 end Outside
 
@@ -120,7 +120,7 @@ theorem rightDeriv_eq_bot_of_eq_top (hx : f x = ⊤) (h : ∃ z, x < z ∧ f z <
 /-- To the left of `dom f` the left derivative is `-∞` by fiat; to the right of it, `+∞`. -/
 theorem leftDeriv_eq_top_of_eq_top (hx : f x = ⊤) (h : ∃ z, z < x ∧ f z < ⊤) :
     leftDeriv f x = ⊤ := by
-  rw [leftDeriv_of_exists h, dirDeriv_eq_bot_of_eq_top hx, _root_.EReal.neg_bot]
+  rw [leftDeriv_of_exists h, dirDeriv_eq_bot_of_eq_top hx, EReal.neg_bot]
 
 end Defs
 
@@ -169,14 +169,14 @@ theorem dirDeriv_one_le_slope {y z p q : ℝ} (hyz : y < z) (hfy : f y = (p : ER
     (hfz : f z = (q : EReal)) : dirDeriv f y 1 ≤ (((q - p) / (z - y) : ℝ) : EReal) := by
   have hle := dirDeriv_le f y 1 (by linarith : (0 : ℝ) < z - y)
   rwa [show y + (z - y) • (1 : ℝ) = z by rw [smul_eq_mul]; ring, hfy, hfz,
-    ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div] at hle
+    ← EReal.coe_sub, ← EReal.coe_div] at hle
 
 /-- The mirror image of `dirDeriv_one_le_slope`, at the right end of the interval. -/
 theorem dirDeriv_neg_one_le_slope {y z p q : ℝ} (hyz : y < z) (hfy : f y = (p : EReal))
     (hfz : f z = (q : EReal)) : dirDeriv f z (-1) ≤ (((p - q) / (z - y) : ℝ) : EReal) := by
   have hle := dirDeriv_le f z (-1) (by linarith : (0 : ℝ) < z - y)
   rwa [show z + (z - y) • (-1 : ℝ) = y by rw [smul_eq_mul]; ring, hfy, hfz,
-    ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div] at hle
+    ← EReal.coe_sub, ← EReal.coe_div] at hle
 
 /-- **The step from one point to the next**: `f'₊(y) ≤ f'₋(z)` whenever `y < z`. Together with
 `f'₋ ≤ f'₊` this is the chain `f'₊(z₁) ≤ f'₋(x) ≤ f'₊(x) ≤ f'₋(z₂)` for `z₁ < x < z₂`, and it makes
@@ -207,14 +207,14 @@ theorem rightDeriv_le_leftDeriv (hp : Proper f) {y z : ℝ} (hyz : y < z) :
   · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hfy)]; exact bot_le
   rcases lt_or_ge (f z) ⊤ with hfz | hfz
   swap
-  · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hfz), _root_.EReal.neg_bot]; exact le_top
+  · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hfz), EReal.neg_bot]; exact le_top
   obtain ⟨p, hp'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot y) hfy
   obtain ⟨q, hq'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot z) hfz
   calc dirDeriv f y 1 ≤ (((q - p) / (z - y) : ℝ) : EReal) := dirDeriv_one_le_slope hyz hp' hq'
     _ = -(((p - q) / (z - y) : ℝ) : EReal) := by
-        rw [← _root_.EReal.coe_neg]; congr 1; ring
+        rw [← EReal.coe_neg]; congr 1; ring
     _ ≤ -dirDeriv f z (-1) :=
-        _root_.EReal.neg_le_neg_iff.2 (dirDeriv_neg_one_le_slope hyz hp' hq')
+        EReal.neg_le_neg_iff.2 (dirDeriv_neg_one_le_slope hyz hp' hq')
 
 /-- `f'₊` is nondecreasing on the whole line. -/
 theorem monotone_rightDeriv (hf : ConvexFn f) (hp : Proper f) : Monotone (rightDeriv f) := by
@@ -250,7 +250,7 @@ theorem rightDeriv_lt_top_iff (hp : Proper f) :
   rcases lt_or_ge (f x) ⊤ with hx | hx
   · obtain ⟨p, hp'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
     obtain ⟨q, hq'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot z) hfz
-    exact lt_of_le_of_lt (dirDeriv_one_le_slope hz hp' hq') (_root_.EReal.coe_lt_top _)
+    exact lt_of_le_of_lt (dirDeriv_one_le_slope hz hp' hq') (EReal.coe_lt_top _)
   · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hx)]
     exact bot_lt_top
 
@@ -265,10 +265,10 @@ theorem bot_lt_leftDeriv_iff (hp : Proper f) :
   rcases lt_or_ge (f x) ⊤ with hx | hx
   · obtain ⟨q, hq'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
     obtain ⟨p, hp'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot z) hfz
-    refine lt_of_lt_of_le ?_ (_root_.EReal.neg_le_neg_iff.2 (dirDeriv_neg_one_le_slope hz hp' hq'))
-    rw [← _root_.EReal.coe_neg]
-    exact _root_.EReal.bot_lt_coe _
-  · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hx), _root_.EReal.neg_bot]
+    refine lt_of_lt_of_le ?_ (EReal.neg_le_neg_iff.2 (dirDeriv_neg_one_le_slope hz hp' hq'))
+    rw [← EReal.coe_neg]
+    exact EReal.bot_lt_coe _
+  · rw [dirDeriv_eq_bot_of_eq_top (top_le_iff.1 hx), EReal.neg_bot]
     exact bot_lt_top
 
 /-- **Both one-sided derivatives are finite exactly on the interior of `dom f`.** The two halves
@@ -320,8 +320,8 @@ theorem rightDeriv_eq_dirDeriv (hx : f x < ⊤) (hb : f x ≠ ⊥) :
   have hz : f (x + a • (1 : ℝ)) = ⊤ := by
     rw [show x + a • (1 : ℝ) = x + a by rw [smul_eq_mul]; ring]
     exact top_le_iff.1 (not_lt.1 fun hlt => h ⟨x + a, by linarith, hlt⟩)
-  rw [hz, hp', _root_.EReal.top_sub_coe,
-    _root_.EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (_root_.EReal.coe_ne_top a)]
+  rw [hz, hp', EReal.top_sub_coe,
+    EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
 
 /-- The mirror image: where `f` is finite, `f'₋(x) = -f'(x; -1)` with no guard. -/
 theorem leftDeriv_eq_neg_dirDeriv (hx : f x < ⊤) (hb : f x ≠ ⊥) :
@@ -334,9 +334,9 @@ theorem leftDeriv_eq_neg_dirDeriv (hx : f x < ⊤) (hb : f x ≠ ⊥) :
     have hz : f (x + a • (-1 : ℝ)) = ⊤ := by
       rw [show x + a • (-1 : ℝ) = x - a by rw [smul_eq_mul]; ring]
       exact top_le_iff.1 (not_lt.1 fun hlt => h ⟨x - a, by linarith, hlt⟩)
-    rw [hz, hp', _root_.EReal.top_sub_coe,
-      _root_.EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (_root_.EReal.coe_ne_top a)]
-  rw [leftDeriv_of_not_exists h, htop, _root_.EReal.neg_top]
+    rw [hz, hp', EReal.top_sub_coe,
+      EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
+  rw [leftDeriv_of_not_exists h, htop, EReal.neg_top]
 
 /-- **The subdifferential on the line is the interval between the one-sided derivatives**:
 
@@ -357,8 +357,8 @@ theorem mem_subgradient_iff_le_rightDeriv_of_lt_top (hx : f x < ⊤) (hb : f x �
     refine ⟨?_, ?_⟩
     · have h1 := h (-1)
       rw [hpair, mul_neg_one] at h1
-      have h2 := _root_.EReal.neg_le_neg_iff.2 h1
-      rwa [← _root_.EReal.coe_neg, neg_neg] at h2
+      have h2 := EReal.neg_le_neg_iff.2 h1
+      rwa [← EReal.coe_neg, neg_neg] at h2
     · have h1 := h 1
       rwa [hpair, mul_one] at h1
   · rintro ⟨hl, hr⟩ v
@@ -369,9 +369,9 @@ theorem mem_subgradient_iff_le_rightDeriv_of_lt_top (hx : f x < ⊤) (hb : f x �
         have hph := posHomogeneous_dirDeriv f x (-v) hw (-1)
         rwa [show (-v) • (-1 : ℝ) = v by rw [smul_eq_mul]; ring] at hph
       have hy : ((y * v : ℝ) : EReal) = ((-v : ℝ) : EReal) * ((-y : ℝ) : EReal) := by
-        rw [← _root_.EReal.coe_mul]; congr 1; ring
-      rw [hv1, hy, EReal.coe_mul_le_coe_mul_iff hw, _root_.EReal.coe_neg]
-      have h2 := _root_.EReal.neg_le_neg_iff.2 hl
+        rw [← EReal.coe_mul]; congr 1; ring
+      rw [hv1, hy, EReal.coe_mul_le_coe_mul_iff hw, EReal.coe_neg]
+      have h2 := EReal.neg_le_neg_iff.2 hl
       rwa [neg_neg] at h2
     · rw [dirDeriv_zero hx.ne hb]
       simp
@@ -379,7 +379,7 @@ theorem mem_subgradient_iff_le_rightDeriv_of_lt_top (hx : f x < ⊤) (hb : f x �
         have hph := posHomogeneous_dirDeriv f x v hv 1
         rwa [smul_eq_mul, mul_one] at hph
       have hy : ((y * v : ℝ) : EReal) = ((v : ℝ) : EReal) * ((y : ℝ) : EReal) := by
-        rw [← _root_.EReal.coe_mul]; congr 1; ring
+        rw [← EReal.coe_mul]; congr 1; ring
       rw [hv1, hy, EReal.coe_mul_le_coe_mul_iff hv]
       exact hr
 
@@ -391,10 +391,10 @@ theorem lt_top_of_leftDeriv_le_of_le_rightDeriv (hp : Proper f) {y : ℝ}
   have hxt : f x = ⊤ := top_le_iff.1 (not_lt.1 hcon)
   rcases em (∃ z, z < x ∧ f z < ⊤) with hl | hl
   · rw [leftDeriv_eq_top_of_eq_top hxt hl] at h₁
-    exact absurd (top_le_iff.1 h₁) (_root_.EReal.coe_ne_top y)
+    exact absurd (top_le_iff.1 h₁) (EReal.coe_ne_top y)
   rcases em (∃ z, x < z ∧ f z < ⊤) with hr | hr
   · rw [rightDeriv_eq_bot_of_eq_top hxt hr] at h₂
-    exact absurd (le_bot_iff.1 h₂) (_root_.EReal.coe_ne_bot y)
+    exact absurd (le_bot_iff.1 h₂) (EReal.coe_ne_bot y)
   obtain ⟨w, hw⟩ := hp.dom_nonempty
   rcases lt_trichotomy w x with h | h | h
   · exact hl ⟨w, h, mem_dom.1 hw⟩
@@ -468,7 +468,7 @@ Along the segment from `y` down to `x`, each interior point `z` has `μ < f'₊(
 theorem le_coe_of_lt_rightDeriv (hf : ClosedProperConvexFn f) {y : ℝ} (hxy : x < y) {q : ℝ}
     (hq : f y = (q : EReal)) {μ : ℝ} (hμ : ∀ z, x < z → (μ : EReal) < rightDeriv f z) :
     f x ≤ ((q - μ * (y - x) : ℝ) : EReal) := by
-  have hydom : y ∈ dom f := mem_dom.2 (by rw [hq]; exact _root_.EReal.coe_lt_top q)
+  have hydom : y ∈ dom f := mem_dom.2 (by rw [hq]; exact EReal.coe_lt_top q)
   have hseg := tendsto_along_segment_of_closed_proper hf hydom x
   have hzeq : ∀ t : ℝ, (1 - t) • y + t • x = y + t * (x - y) := by
     intro t; rw [smul_eq_mul, smul_eq_mul]; ring
@@ -491,16 +491,16 @@ theorem le_coe_of_lt_rightDeriv (hf : ClosedProperConvexFn f) {y : ℝ} (hxy : x
       have hslope := dirDeriv_one_le_slope hwy hr hq
       rw [hgap] at hslope
       have : (μ : EReal) < (((q - r) / (t * (y - x)) : ℝ) : EReal) := lt_of_lt_of_le hlt hslope
-      rw [_root_.EReal.coe_lt_coe_iff, lt_div_iff₀ hd] at this
-      rw [hr, _root_.EReal.coe_le_coe_iff]
+      rw [EReal.coe_lt_coe_iff, lt_div_iff₀ hd] at this
+      rw [hr, EReal.coe_le_coe_iff]
       linarith
     · rw [rightDeriv_eq_bot_of_eq_top (top_le_iff.1 hfw)
-        ⟨y, hwy, by rw [hq]; exact _root_.EReal.coe_lt_top q⟩] at hlt
+        ⟨y, hwy, by rw [hq]; exact EReal.coe_lt_top q⟩] at hlt
       exact absurd hlt (by simp)
   have hlim2 : Tendsto (fun t : ℝ => ((q - μ * (t * (y - x)) : ℝ) : EReal)) (𝓝[<] (1 : ℝ))
       (𝓝 (((q - μ * (1 * (y - x)) : ℝ) : EReal))) := by
     have hcont : Continuous fun t : ℝ => ((q - μ * (t * (y - x)) : ℝ) : EReal) :=
-      _root_.EReal.continuous_coe_iff.2 (by fun_prop)
+      EReal.continuous_coe_iff.2 (by fun_prop)
     exact (hcont.tendsto 1).mono_left nhdsWithin_le_nhds
   have hle := le_of_tendsto_of_tendsto hseg hlim2 hest
   rwa [one_mul] at hle
@@ -518,11 +518,11 @@ theorem iInf_rightDeriv_Ioi (hf : ClosedProperConvexFn f) (x : ℝ) :
   obtain ⟨w₀, hw₀, hfw₀⟩ := hex
   obtain ⟨q₀, hq₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot w₀) hfw₀
   by_contra hcon
-  obtain ⟨μ, hμ₁, hμ₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+  obtain ⟨μ, hμ₁, hμ₂⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
   have hμ : ∀ z, x < z → (μ : EReal) < rightDeriv f z := fun z hz =>
     lt_of_lt_of_le hμ₂ (iInf₂_le z hz)
   have hx : f x < ⊤ :=
-    lt_of_le_of_lt (le_coe_of_lt_rightDeriv hf hw₀ hq₀ hμ) (_root_.EReal.coe_lt_top _)
+    lt_of_le_of_lt (le_coe_of_lt_rightDeriv hf hw₀ hq₀ hμ) (EReal.coe_lt_top _)
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hx
   refine absurd hμ₁ (not_lt.2 ?_)
   rw [rightDeriv_eq_dirDeriv hx (hf.proper.ne_bot x)]
@@ -531,12 +531,12 @@ theorem iInf_rightDeriv_Ioi (hf : ClosedProperConvexFn f) (x : ℝ) :
   rcases lt_or_ge (f (x + a)) ⊤ with hfa | hfa
   · obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot _) hfa
     have hbound := le_coe_of_lt_rightDeriv hf (by linarith : x < x + a) hq hμ
-    rw [hp, _root_.EReal.coe_le_coe_iff] at hbound
-    rw [hp, hq, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, _root_.EReal.coe_le_coe_iff,
+    rw [hp, EReal.coe_le_coe_iff] at hbound
+    rw [hp, hq, ← EReal.coe_sub, ← EReal.coe_div, EReal.coe_le_coe_iff,
       le_div_iff₀ ha]
     nlinarith
-  · rw [top_le_iff.1 hfa, hp, _root_.EReal.top_sub_coe,
-      _root_.EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (_root_.EReal.coe_ne_top a)]
+  · rw [top_le_iff.1 hfa, hp, EReal.top_sub_coe,
+      EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
     exact le_top
 
 /-- **The estimate behind the left-hand limit formulas**, the mirror image of
@@ -544,7 +544,7 @@ theorem iInf_rightDeriv_Ioi (hf : ClosedProperConvexFn f) (x : ℝ) :
 theorem le_coe_of_leftDeriv_lt (hf : ClosedProperConvexFn f) {y : ℝ} (hyx : y < x) {q : ℝ}
     (hq : f y = (q : EReal)) {μ : ℝ} (hμ : ∀ z, z < x → leftDeriv f z < (μ : EReal)) :
     f x ≤ ((q + μ * (x - y) : ℝ) : EReal) := by
-  have hydom : y ∈ dom f := mem_dom.2 (by rw [hq]; exact _root_.EReal.coe_lt_top q)
+  have hydom : y ∈ dom f := mem_dom.2 (by rw [hq]; exact EReal.coe_lt_top q)
   have hseg := tendsto_along_segment_of_closed_proper hf hydom x
   have hzeq : ∀ t : ℝ, (1 - t) • y + t • x = y + t * (x - y) := by
     intro t; rw [smul_eq_mul, smul_eq_mul]; ring
@@ -568,18 +568,18 @@ theorem le_coe_of_leftDeriv_lt (hf : ClosedProperConvexFn f) {y : ℝ} (hyx : y 
       rw [hgap] at hslope
       have hneg : ((-((q - r) / (t * (x - y))) : ℝ) : EReal) < (μ : EReal) := by
         refine lt_of_le_of_lt ?_ hlt
-        rw [_root_.EReal.coe_neg]
-        exact _root_.EReal.neg_le_neg_iff.2 hslope
-      rw [_root_.EReal.coe_lt_coe_iff, neg_lt, lt_div_iff₀ hd] at hneg
-      rw [hr, _root_.EReal.coe_le_coe_iff]
+        rw [EReal.coe_neg]
+        exact EReal.neg_le_neg_iff.2 hslope
+      rw [EReal.coe_lt_coe_iff, neg_lt, lt_div_iff₀ hd] at hneg
+      rw [hr, EReal.coe_le_coe_iff]
       linarith
     · rw [leftDeriv_eq_top_of_eq_top (top_le_iff.1 hfw)
-        ⟨y, hyw, by rw [hq]; exact _root_.EReal.coe_lt_top q⟩] at hlt
+        ⟨y, hyw, by rw [hq]; exact EReal.coe_lt_top q⟩] at hlt
       exact absurd hlt (by simp)
   have hlim2 : Tendsto (fun t : ℝ => ((q + μ * (t * (x - y)) : ℝ) : EReal)) (𝓝[<] (1 : ℝ))
       (𝓝 (((q + μ * (1 * (x - y)) : ℝ) : EReal))) := by
     have hcont : Continuous fun t : ℝ => ((q + μ * (t * (x - y)) : ℝ) : EReal) :=
-      _root_.EReal.continuous_coe_iff.2 (by fun_prop)
+      EReal.continuous_coe_iff.2 (by fun_prop)
     exact (hcont.tendsto 1).mono_left nhdsWithin_le_nhds
   have hle := le_of_tendsto_of_tendsto hseg hlim2 hest
   rwa [one_mul] at hle
@@ -595,13 +595,13 @@ theorem iSup_leftDeriv_Iio (hf : ClosedProperConvexFn f) (x : ℝ) :
   obtain ⟨w₀, hw₀, hfw₀⟩ := hex
   obtain ⟨q₀, hq₀⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot w₀) hfw₀
   by_contra hcon
-  obtain ⟨μ, hμ₁, hμ₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+  obtain ⟨μ, hμ₁, hμ₂⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
   have hμ : ∀ z, z < x → leftDeriv f z < (μ : EReal) := by
     intro z hz
     refine lt_of_le_of_lt ?_ hμ₁
     exact le_iSup₂ (f := fun z (_ : z ∈ Iio x) => leftDeriv f z) z hz
   have hx : f x < ⊤ :=
-    lt_of_le_of_lt (le_coe_of_leftDeriv_lt hf hw₀ hq₀ hμ) (_root_.EReal.coe_lt_top _)
+    lt_of_le_of_lt (le_coe_of_leftDeriv_lt hf hw₀ hq₀ hμ) (EReal.coe_lt_top _)
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hx
   refine absurd hμ₂ (not_lt.2 ?_)
   rw [leftDeriv_eq_neg_dirDeriv hx (hf.proper.ne_bot x)]
@@ -611,15 +611,15 @@ theorem iSup_leftDeriv_Iio (hf : ClosedProperConvexFn f) (x : ℝ) :
     rcases lt_or_ge (f (x - a)) ⊤ with hfa | hfa
     · obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot _) hfa
       have hbound := le_coe_of_leftDeriv_lt hf (by linarith : x - a < x) hq hμ
-      rw [hp, _root_.EReal.coe_le_coe_iff] at hbound
-      rw [hp, hq, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, _root_.EReal.coe_le_coe_iff,
+      rw [hp, EReal.coe_le_coe_iff] at hbound
+      rw [hp, hq, ← EReal.coe_sub, ← EReal.coe_div, EReal.coe_le_coe_iff,
         le_div_iff₀ ha]
       nlinarith
-    · rw [top_le_iff.1 hfa, hp, _root_.EReal.top_sub_coe,
-        _root_.EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (_root_.EReal.coe_ne_top a)]
+    · rw [top_le_iff.1 hfa, hp, EReal.top_sub_coe,
+        EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
       exact le_top
-  have h2 := _root_.EReal.neg_le_neg_iff.2 hkey
-  rwa [← _root_.EReal.coe_neg, neg_neg] at h2
+  have h2 := EReal.neg_le_neg_iff.2 hkey
+  rwa [← EReal.coe_neg, neg_neg] at h2
 
 /-- **The crossed limit formula**: the *left* derivative also has `f'₊(x)` as its limit from the
 right. -/

@@ -1,6 +1,8 @@
 import Mathlib.Analysis.Calculus.ContDiff.Deriv
 import Mathlib.Analysis.Convex.Deriv
+import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.Homogeneous
+import Numlib.Analysis.Convex.Line
 import Numlib.Analysis.Convex.Saddle.Differential
 import Numlib.Analysis.Convex.Subgradient.Gradient
 import NumlibSurface.Common.Euclidean
@@ -24,7 +26,7 @@ The conventions §4 lays down are content, not boilerplate.
 * **`0 · ∞ = 0`** holds on the nose for Mathlib's `EReal`, and `theorem_4_3` depends on it: the
   book's `λ₁ f x₁ + ⋯ + λₘ f xₘ` is well defined at an index with `λᵢ = 0` and `f xᵢ = +∞` only
   because that term is `0`.
-* **`inf ∅ = +∞`** is what the backbone's `restrict`, `⨅ _ : x ∈ s, f x`, computes off `s` — the
+* **`inf ∅ = +∞`** is what the backbone's `restrictFn`, `⨅ _ : x ∈ s, f x`, computes off `s` — the
   book's own device for extending a function given on a convex set by `+∞`. `theorem_4_1` is
   stated through it.
 * **`∞ − ∞` is undefined** in the book, whereas Mathlib's `EReal` totalises it as `⊥`. Nothing
@@ -51,14 +53,14 @@ open ConvexAnalysis NumlibSurface
 /-- **Theorem 4.1.** For `f : C → (-∞, +∞]` with `C` convex, `f` is convex on `C` iff
 `f ((1 − λ) x + λ y) ≤ (1 − λ) f x + λ f y` for all `x, y ∈ C` and `0 < λ < 1`.
 
-"Convex on `C`" is `ConvexFn (restrict C f)`, the book's own convention that a function given on
+"Convex on `C`" is `ConvexFn (restrictFn C f)`, the book's own convention that a function given on
 `C` is extended to `ℝⁿ` by `+∞`. The hypothesis `∀ x, f x ≠ ⊥` is "values in `(-∞, +∞]`", which
 keeps the right-hand side from being the forbidden `∞ − ∞`. -/
 theorem theorem_4_1 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {f : Rn n → EReal}
     (hbot : ∀ x, f x ≠ ⊥) :
-    ConvexFn (restrict C f) ↔ ∀ x ∈ C, ∀ y ∈ C, ∀ a b : ℝ, 0 < a → 0 < b → a + b = 1 →
+    ConvexFn (restrictFn C f) ↔ ∀ x ∈ C, ∀ y ∈ C, ∀ a b : ℝ, 0 < a → 0 < b → a + b = 1 →
       f (a • x + b • y) ≤ (a : EReal) * f x + (b : EReal) * f y := by
-  have hrb : ∀ x, restrict C f x ≠ ⊥ := by
+  have hrb : ∀ x, restrictFn C f x ≠ ⊥ := by
     intro x
     by_cases hx : x ∈ C <;> simp [hx, hbot x]
   rw [convexFn_iff_le hrb]
@@ -66,17 +68,17 @@ theorem theorem_4_1 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {f : Rn n →
   · intro h x hx y hy a b ha hb hab
     have hmem : a • x + b • y ∈ C := hC hx hy ha.le hb.le hab
     have hkey := h x y a b ha hb hab
-    rwa [restrict_of_mem hx, restrict_of_mem hy, restrict_of_mem hmem] at hkey
+    rwa [restrictFn_of_mem hx, restrictFn_of_mem hy, restrictFn_of_mem hmem] at hkey
   · intro h x y a b ha hb hab
     by_cases hx : x ∈ C
     · by_cases hy : y ∈ C
       · have hmem : a • x + b • y ∈ C := hC hx hy ha.le hb.le hab
-        rw [restrict_of_mem hx, restrict_of_mem hy, restrict_of_mem hmem]
+        rw [restrictFn_of_mem hx, restrictFn_of_mem hy, restrictFn_of_mem hmem]
         exact h x hx y hy a b ha hb hab
-      · rw [restrict_of_notMem hy, EReal.coe_mul_top_of_pos hb,
+      · rw [restrictFn_of_notMem hy, EReal.coe_mul_top_of_pos hb,
           EReal.add_top_of_ne_bot (EReal.coe_mul_ne_bot ha.le (hrb x))]
         exact le_top
-    · rw [restrict_of_notMem hx, EReal.coe_mul_top_of_pos ha,
+    · rw [restrictFn_of_notMem hx, EReal.coe_mul_top_of_pos ha,
         EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (hrb y))]
       exact le_top
 
@@ -134,7 +136,7 @@ theorem theorem_4_3 {n : ℕ} {f : Rn n → EReal} (hbot : ∀ x, f x ≠ ⊥) :
     refine key.trans (le_of_eq ?_)
     rw [EReal.coe_sum]
     refine Finset.sum_congr rfl fun i hi => ?_
-    rw [← EReal.coe_mul_coe, ← hfin i hi]
+    rw [EReal.coe_mul, ← hfin i hi]
   · intro h
     rw [convexFn_iff_le hbot]
     intro x y a b ha hb hab
@@ -163,93 +165,45 @@ theorem theorem_4_4 {α β : ℝ} {f : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (Se
 
 /-! ### Theorem 4.5
 
-The `private` lemmas below are backbone gaps patched locally; see the module docstring. -/
+The reduction to lines is the backbone's `convexOn_iff_lines` and `isOpen_line_steps`
+(`Numlib/Analysis/Convex/Line.lean`), and the derivative of a restriction to a line is
+`HasLineDerivAt.hasDerivAt_line` (`Numlib/Analysis/Convex/Gateaux.lean`); what remains local is
+the `C²` bookkeeping of Rockafellar's "straightforward calculation" of `g''`. -/
 
 section Lines
 
-variable {n : ℕ}
+variable {n : ℕ} {C : Set (Rn n)} {f : Rn n → ℝ} {y z : Rn n}
 
-/-- The set of steps `t` with `y + t • z ∈ C` is convex when `C` is. -/
-private theorem convex_line_steps {C : Set (Rn n)} (hC : Convex ℝ C) (y z : Rn n) :
-    Convex ℝ {t : ℝ | y + t • z ∈ C} := by
-  intro t₁ h₁ t₂ h₂ a b ha hb hab
-  have key : y + (a • t₁ + b • t₂) • z = a • (y + t₁ • z) + b • (y + t₂ • z) := by
-    have hb' : a = 1 - b := by linarith
-    subst hb'
-    module
-  change y + (a • t₁ + b • t₂) • z ∈ C
-  rw [key]
-  exact hC h₁ h₂ ha hb hab
-
-/-- Convexity of `f` on `C` is equivalent to convexity of its restriction to each line, which is
-the first sentence of Rockafellar's proof of Theorem 4.5. -/
-private theorem convexOn_iff_lines {C : Set (Rn n)} (hC : Convex ℝ C) (f : Rn n → ℝ) :
-    ConvexOn ℝ C f ↔
-      ∀ y ∈ C, ∀ z : Rn n, ConvexOn ℝ {t : ℝ | y + t • z ∈ C} fun t => f (y + t • z) := by
-  refine ⟨fun h y _ z => convexOn_comp_line h y z, fun h => ⟨hC, ?_⟩⟩
-  intro x hx y hy a b ha hb hab
-  have h0 : (0 : ℝ) ∈ {t : ℝ | x + t • (y - x) ∈ C} := by simpa using hx
-  have h1 : (1 : ℝ) ∈ {t : ℝ | x + t • (y - x) ∈ C} := by
-    change x + (1 : ℝ) • (y - x) ∈ C
-    simpa using hy
-  have key : f (x + (a • (0 : ℝ) + b • (1 : ℝ)) • (y - x))
-      ≤ a • f (x + (0 : ℝ) • (y - x)) + b • f (x + (1 : ℝ) • (y - x)) :=
-    (h x hx (y - x)).2 h0 h1 ha hb hab
-  have harith : x + (a • (0 : ℝ) + b • (1 : ℝ)) • (y - x) = a • x + b • y := by
-    have hb' : a = 1 - b := by linarith
-    subst hb'
-    module
-  rw [harith] at key
-  simpa using key
-
-variable {C : Set (Rn n)} {f : Rn n → ℝ} {y z : Rn n}
-
-/-- **Backbone gap.** The steps that stay in an open `C` form an open set. -/
-private theorem isOpen_line_steps (hCopen : IsOpen C) (y z : Rn n) :
-    IsOpen {t : ℝ | y + t • z ∈ C} :=
-  hCopen.preimage (continuous_const.add (continuous_id.smul continuous_const))
-
-/-- **Backbone gap.** The line `t ↦ y + t • z` has derivative `z`. -/
-private theorem hasDerivAt_line (y z : Rn n) (t : ℝ) :
-    HasDerivAt (fun s : ℝ => y + s • z) z t := by
-  simpa using ((hasDerivAt_id t).smul_const z).const_add y
-
-/-- **Backbone gap.** A `C²` function on an open set has an honest Fréchet derivative there. -/
+/-- A `C²` function on an open set has an honest Fréchet derivative there. -/
 private theorem hasFDerivAt_of_contDiffOn (hCopen : IsOpen C) (hf : ContDiffOn ℝ 2 f C) {u : Rn n}
     (hu : u ∈ C) : HasFDerivAt f (fderiv ℝ f u) u :=
   (((hf.differentiableOn (by norm_num)) u hu).differentiableAt
     (hCopen.mem_nhds hu)).hasFDerivAt
 
-/-- **Backbone gap.** The derivative of a `C²` function is itself differentiable on the open
-set. -/
+/-- The derivative of a `C²` function is itself differentiable on the open set. -/
 private theorem hasFDerivAt_fderiv_of_contDiffOn (hCopen : IsOpen C) (hf : ContDiffOn ℝ 2 f C)
     {u : Rn n} (hu : u ∈ C) : HasFDerivAt (fderiv ℝ f) (fderiv ℝ (fderiv ℝ f) u) u :=
   ((((hf.fderiv_of_isOpen (m := 1) hCopen (by norm_num)).differentiableOn
     (by norm_num)) u hu).differentiableAt (hCopen.mem_nhds hu)).hasFDerivAt
 
-/-- **Backbone gap.** `g t = f (y + t • z)` has derivative `⟨∇f (y + t • z), z⟩`. -/
-private theorem hasDerivAt_comp_line (hCopen : IsOpen C) (hf : ContDiffOn ℝ 2 f C) {t : ℝ}
-    (ht : y + t • z ∈ C) :
-    HasDerivAt (fun s : ℝ => f (y + s • z)) (fderiv ℝ f (y + t • z) z) t :=
-  (hasFDerivAt_of_contDiffOn hCopen hf ht).comp_hasDerivAt t (hasDerivAt_line y z t)
-
-/-- **Backbone gap.** Near a step that stays in `C`, `deriv g` is given by the formula above. -/
+/-- Near a step that stays in `C`, `deriv g` for `g t = f (y + t • z)` is
+`s ↦ ⟨∇f (y + s • z), z⟩`. -/
 private theorem deriv_comp_line_eventuallyEq (hCopen : IsOpen C) (hf : ContDiffOn ℝ 2 f C) {t : ℝ}
     (ht : y + t • z ∈ C) :
     (deriv fun s : ℝ => f (y + s • z)) =ᶠ[nhds t] fun s : ℝ => fderiv ℝ f (y + s • z) z := by
-  have hopen := isOpen_line_steps hCopen y z
-  filter_upwards [hopen.mem_nhds (show t ∈ {t : ℝ | y + t • z ∈ C} from ht)] with s hs
-  exact (hasDerivAt_comp_line hCopen hf hs).deriv
+  filter_upwards [(isOpen_line_steps hCopen y z).mem_nhds
+    (show t ∈ {t : ℝ | y + t • z ∈ C} from ht)] with s hs
+  exact ((hasFDerivAt_of_contDiffOn hCopen hf hs).hasLineDerivAt z).hasDerivAt_line.deriv
 
-/-- **Backbone gap.** Rockafellar's "straightforward calculation": for `g t = f (y + t • z)`,
-`g'' t = ⟨z, Q_x z⟩` with `x = y + t • z`, where `Q_x` is the second Fréchet derivative. -/
+/-- Rockafellar's "straightforward calculation": for `g t = f (y + t • z)`, `g'' t = ⟨z, Q_x z⟩`
+with `x = y + t • z`, where `Q_x` is the second Fréchet derivative. -/
 private theorem hasDerivAt_deriv_comp_line (hCopen : IsOpen C) (hf : ContDiffOn ℝ 2 f C) {t : ℝ}
     (ht : y + t • z ∈ C) :
     HasDerivAt (deriv fun s : ℝ => f (y + s • z))
       (fderiv ℝ (fderiv ℝ f) (y + t • z) z z) t := by
   have h1 : HasDerivAt (fun s : ℝ => fderiv ℝ f (y + s • z))
       (fderiv ℝ (fderiv ℝ f) (y + t • z) z) t :=
-    (hasFDerivAt_fderiv_of_contDiffOn hCopen hf ht).comp_hasDerivAt t (hasDerivAt_line y z t)
+    ((hasFDerivAt_fderiv_of_contDiffOn hCopen hf ht).hasLineDerivAt z).hasDerivAt_line
   have h2 : HasDerivAt (fun s : ℝ => (fderiv ℝ f (y + s • z)) z)
       (fderiv ℝ (fderiv ℝ f) (y + t • z) z z) t :=
     (ContinuousLinearMap.apply ℝ ℝ z).hasFDerivAt.comp_hasDerivAt t h1
@@ -264,19 +218,22 @@ Hessian is positive semi-definite at every `x ∈ C`. Positive semi-definiteness
 theorem theorem_4_5 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) (hCopen : IsOpen C)
     {f : Rn n → ℝ} (hf : ContDiffOn ℝ 2 f C) :
     ConvexOn ℝ C f ↔ ∀ x ∈ C, ∀ z : Rn n, 0 ≤ fderiv ℝ (fderiv ℝ f) x z z := by
-  rw [convexOn_iff_lines hC f]
+  have hderiv : ∀ {y z : Rn n} {s : ℝ}, y + s • z ∈ C →
+      HasDerivAt (fun s : ℝ => f (y + s • z)) (fderiv ℝ f (y + s • z) z) s := fun hs =>
+    ((hasFDerivAt_of_contDiffOn hCopen hf hs).hasLineDerivAt _).hasDerivAt_line
+  rw [convexOn_iff_lines hC]
   constructor
   · intro h x hx z
     have h0 : x + (0 : ℝ) • z ∈ C := by simpa using hx
     have hmono : MonotoneOn (deriv fun s : ℝ => f (x + s • z)) {t : ℝ | x + t • z ∈ C} :=
-      (h x hx z).monotoneOn_deriv fun s hs => (hasDerivAt_comp_line hCopen hf hs).differentiableAt
+      (h x z).monotoneOn_deriv fun s hs => (hderiv hs).differentiableAt
     have hnn := hmono.derivWithin_nonneg (x := (0 : ℝ))
     rw [derivWithin_of_isOpen (isOpen_line_steps hCopen x z) h0,
       (hasDerivAt_deriv_comp_line hCopen hf h0).deriv] at hnn
     simpa using hnn
-  · intro h y hy z
-    refine convexOn_of_deriv2_nonneg' (convex_line_steps hC y z)
-      (fun s hs => (hasDerivAt_comp_line hCopen hf hs).differentiableAt.differentiableWithinAt)
+  · intro h y z
+    refine convexOn_of_deriv2_nonneg' (hC.line_steps y z)
+      (fun s hs => (hderiv hs).differentiableAt.differentiableWithinAt)
       (fun s hs =>
         (hasDerivAt_deriv_comp_line hCopen hf hs).differentiableAt.differentiableWithinAt)
       fun s hs => ?_

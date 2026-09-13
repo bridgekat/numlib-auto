@@ -28,3 +28,21 @@ id = 'IsContinuousInnerPairing'
 
 [[node]]
 id = 'exists_pairingNorm_le_and_le_pairingNorm'
+
+[[node]]
+id = 'separatingRight_of_isInnerPairing'
+
+[[node]]
+id = 'separatingRight_innerL'
+
+[[node]]
+id = '_root_.innerSL_eq_zero_iff'
+
+[[node]]
+id = 'toDual_eq_innerSL'
+
+[[node]]
+id = 'exists_innerSL_eq'
+
+[[node]]
+id = 'toDual_apply_eq_innerL'

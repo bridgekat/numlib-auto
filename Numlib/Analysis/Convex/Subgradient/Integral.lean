@@ -72,8 +72,8 @@ theorem sub_div_eq_coe_slope (hb : f t ≠ ⊥) (ht : f t ≠ ⊤) {z : ℝ} (hz
     (f (t + (z - t) • (1 : ℝ)) - f t) / ((z - t : ℝ) : EReal)
       = ((slope (fun w => (f w).toReal) t z : ℝ) : EReal) := by
   have hzt : t + (z - t) • (1 : ℝ) = z := by rw [smul_eq_mul, mul_one]; ring
-  rw [hzt, ← _root_.EReal.coe_toReal (mem_dom.1 hz).ne hzb, ← _root_.EReal.coe_toReal ht hb,
-    ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, slope_def_field]
+  rw [hzt, ← EReal.coe_toReal (mem_dom.1 hz).ne hzb, ← EReal.coe_toReal ht hb,
+    ← EReal.coe_sub, ← EReal.coe_div, slope_def_field]
 
 /-- At an interior point of `dom f`, the `EReal` infimum of difference quotients `rightDeriv f t`
 is the coercion of Mathlib's `derivWithin f (Ioi t) t`. Both are the infimum of the slopes
@@ -100,8 +100,8 @@ theorem rightDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : Proper f)
   refine le_antisymm ?_ ?_
   · by_contra hcon
     rw [not_le] at hcon
-    obtain ⟨m, hm1, hm2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
-    rw [hsInf, _root_.EReal.coe_lt_coe_iff] at hm1
+    obtain ⟨m, hm1, hm2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
+    rw [hsInf, EReal.coe_lt_coe_iff] at hm1
     obtain ⟨-, ⟨z, hzT, rfl⟩, hlt⟩ := exists_lt_of_csInf_lt hne hm1
     have hle := dirDeriv_le f t 1 (sub_pos.2 hzT.2)
     rw [sub_div_eq_coe_slope htbot httop hzT.1 (hp.ne_bot z)] at hle
@@ -112,11 +112,11 @@ theorem rightDeriv_eq_coe_derivWithin (hf : ConvexFn f) (hp : Proper f)
     · have hmem : t + a ∈ {z | z ∈ dom f ∧ t < z} := ⟨by rwa [hstep] at hz, by linarith⟩
       have hquot := sub_div_eq_coe_slope (f := f) htbot httop hmem.1 (hp.ne_bot _)
       rw [show t + a - t = a by ring] at hquot
-      rw [hquot, hsInf, _root_.EReal.coe_le_coe_iff]
+      rw [hquot, hsInf, EReal.coe_le_coe_iff]
       exact csInf_le hbdd ⟨t + a, hmem, rfl⟩
     · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_dom.2 h)),
-        ← _root_.EReal.coe_toReal httop htbot, _root_.EReal.top_sub_coe,
-        _root_.EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (_root_.EReal.coe_ne_top a)]
+        ← EReal.coe_toReal httop htbot, EReal.top_sub_coe,
+        EReal.top_div_of_pos_ne_top (by exact_mod_cast ha) (EReal.coe_ne_top a)]
       exact le_top
 
 end Bridge
@@ -138,7 +138,7 @@ theorem sub_eq_intervalIntegral_rightDeriv (hf : ConvexFn f) (hp : Proper f)
   rw [sub_eq_intervalIntegral_derivWithin_Ioi hg isOpen_interior hx hy]
   refine integral_congr fun t ht => ?_
   have htint : t ∈ interior (dom f) := (convex_iff_ordConnected.1 hconv).uIcc_subset hx hy ht
-  rw [rightDeriv_eq_coe_derivWithin hf hp htint, _root_.EReal.toReal_coe]
+  rw [rightDeriv_eq_coe_derivWithin hf hp htint, EReal.toReal_coe]
 
 /-- **Left-derivative half**. The two one-sided derivatives differ only on the jump set of `f'₊`,
 which is countable and therefore null. -/

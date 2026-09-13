@@ -262,7 +262,7 @@ theorem exists_reduction_of_recessionCone_inter_ker (hC : Convex ℝ C) (hne : C
 
 /-- **Closedness of a linear image**: if `cl C` recedes in no direction of `ker A` other than
 those it also recedes in backwards, then `A (cl C)` is closed. -/
-theorem Convex.isClosed_image_closure (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
+theorem _root_.Convex.isClosed_image_closure (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     IsClosed (A '' closure C) := by
   rcases Set.eq_empty_or_nonempty C with rfl | hne
@@ -273,7 +273,7 @@ theorem Convex.isClosed_image_closure (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
   exact isClosed_image_of_recessionCone_inter_ker A hDconv hDcl hred
 
 /-- **The closure of a linear image**: `cl (A C) = A (cl C)`. -/
-theorem Convex.closure_image_eq (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
+theorem _root_.Convex.closure_image_eq (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     closure (A '' C) = A '' closure C := by
   refine Set.Subset.antisymm ?_
@@ -282,7 +282,8 @@ theorem Convex.closure_image_eq (hC : Convex ℝ C) (A : E →ₗ[ℝ] G)
   exact closure_mono (Set.image_mono subset_closure)
 
 /-- **The recession cone of a linear image**: `0⁺(A (cl C)) = A (0⁺(cl C))`. -/
-theorem Convex.recessionCone_image_closure (hC : Convex ℝ C) (hne : C.Nonempty) (A : E →ₗ[ℝ] G)
+theorem _root_.Convex.recessionCone_image_closure (hC : Convex ℝ C) (hne : C.Nonempty)
+    (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     recessionCone (A '' closure C) = A '' recessionCone (closure C) := by
   obtain ⟨D, hDconv, hDcl, hDne, himg, hrec, hred⟩ :=
@@ -291,7 +292,7 @@ theorem Convex.recessionCone_image_closure (hC : Convex ℝ C) (hne : C.Nonempty
   exact recessionCone_image_of_recessionCone_inter_ker A hDconv hDcl hDne hred
 
 /-- **The closure and the recession cone of a linear image**, both conclusions together. -/
-theorem Convex.closure_image_eq_and_recessionCone (hC : Convex ℝ C) (hne : C.Nonempty)
+theorem _root_.Convex.closure_image_eq_and_recessionCone (hC : Convex ℝ C) (hne : C.Nonempty)
     (A : E →ₗ[ℝ] G)
     (h : ∀ z ∈ recessionCone (closure C), A z = 0 → z ∈ linealitySpace (closure C)) :
     closure (A '' C) = A '' closure C ∧
@@ -330,7 +331,7 @@ theorem forall_mem_linealitySpace_prod (hCne : C.Nonempty) (hDne : D.Nonempty)
 /-- **Closedness of a sum**: the sum of two closed convex sets is closed as soon as the only way a
 direction of recession of `C` and a direction of recession of `D` can cancel is inside the two
 lineality spaces. -/
-theorem Convex.isClosed_add (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
+theorem _root_.Convex.isClosed_add (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, ∀ w ∈ recessionCone D, z + w = 0 →
       z ∈ linealitySpace C ∧ w ∈ linealitySpace D) :
@@ -342,7 +343,7 @@ theorem Convex.isClosed_add (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Non
   rwa [closure_prod_eq, hCcl, hDcl, image_coprod_id_prod] at this
 
 /-- **The closure of a sum**: `cl (C + D) = cl C + cl D`. -/
-theorem Convex.closure_add_eq (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
+theorem _root_.Convex.closure_add_eq (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
     (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
       z ∈ linealitySpace (closure C) ∧ w ∈ linealitySpace (closure D)) :
@@ -352,7 +353,7 @@ theorem Convex.closure_add_eq (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Conv
   rwa [image_coprod_id_prod, closure_prod_eq, image_coprod_id_prod] at this
 
 /-- **The recession cone of a sum**: `0⁺(cl C + cl D) = 0⁺(cl C) + 0⁺(cl D)`. -/
-theorem Convex.recessionCone_add (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
+theorem _root_.Convex.recessionCone_add (hC : Convex ℝ C) (hCne : C.Nonempty) (hD : Convex ℝ D)
     (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
       z ∈ linealitySpace (closure C) ∧ w ∈ linealitySpace (closure D)) :
@@ -385,14 +386,14 @@ theorem forall_mem_linealitySpace_of_neg_notMem
 
 /-- The sum of two closed convex sets is closed as soon as no direction of recession of one is
 the opposite of a direction of recession of the other. -/
-theorem Convex.isClosed_add_of_neg_notMem_recessionCone (hC : Convex ℝ C) (hCc : IsClosed C)
+theorem _root_.Convex.isClosed_add_of_neg_notMem_recessionCone (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, -z ∈ recessionCone D → z = 0) : IsClosed (C + D) :=
   Convex.isClosed_add hC hCc hCne hD hDc hDne (forall_mem_linealitySpace_of_neg_notMem h)
 
 /-- Under the same hypothesis, `0⁺(C + D) = 0⁺C + 0⁺D`. -/
-theorem Convex.recessionCone_add_of_neg_notMem_recessionCone (hC : Convex ℝ C) (hCc : IsClosed C)
-    (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
+theorem _root_.Convex.recessionCone_add_of_neg_notMem_recessionCone (hC : Convex ℝ C)
+    (hCc : IsClosed C) (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, -z ∈ recessionCone D → z = 0) :
     recessionCone (C + D) = recessionCone C + recessionCone D := by
   have key := Convex.recessionCone_add hC hCne hD hDne
@@ -401,8 +402,9 @@ theorem Convex.recessionCone_add_of_neg_notMem_recessionCone (hC : Convex ℝ C)
 
 /-- **A bounded summand suffices**: a bounded set recedes in no direction, so the hypothesis is
 automatic and `C + D` is closed. -/
-theorem Convex.isClosed_add_of_isBounded (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
-    (hCb : Bornology.IsBounded C) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty) :
+theorem _root_.Convex.isClosed_add_of_isBounded (hC : Convex ℝ C) (hCc : IsClosed C)
+    (hCne : C.Nonempty) (hCb : Bornology.IsBounded C) (hD : Convex ℝ D) (hDc : IsClosed D)
+    (hDne : D.Nonempty) :
     IsClosed (C + D) := by
   refine Convex.isClosed_add_of_neg_notMem_recessionCone hC hCc hCne hD hDc hDne fun z hz _ => ?_
   rw [recessionCone_eq_zero_of_isBounded hCne hCb] at hz
@@ -523,7 +525,7 @@ theorem closedProperConvexFn_mapLin (hf : ConvexFn f) (hp : Proper f) (hc : IsCl
     have hconst := h w (hle.trans (by norm_num)) h₁
     have hzero : recessionFn f w = ((0 : ℝ) : EReal) :=
       ((mk_mem_linealitySpace_epi_iff hp).1 ((mk_zero_mem_linealitySpace_epi_iff hp).2 hconst)).1
-    rw [hzero, _root_.EReal.coe_le_coe_iff] at hle
+    rw [hzero, EReal.coe_le_coe_iff] at hle
     linarith
   have hdomne : (dom (mapLin A f)).Nonempty := by
     rw [dom_mapLin]
@@ -576,7 +578,7 @@ theorem forall_eq_zero_of_recessionFn_add_pos (hpf : Proper f) (hpg : Proper g)
   · exfalso
     have hsum : recessionFn f z + recessionFn g (-z) ≤ (ν : EReal) + ((-ν : ℝ) : EReal) :=
       add_le_add h₁ h₂
-    rw [← _root_.EReal.coe_add, add_neg_cancel, _root_.EReal.coe_zero] at hsum
+    rw [← EReal.coe_add, add_neg_cancel, EReal.coe_zero] at hsum
     exact absurd hsum (not_le.2 (h z hz))
 
 omit [FiniteDimensional ℝ E] in
@@ -606,17 +608,17 @@ theorem forall_mem_linealitySpace_epi_of_recessionFn_symm (hpf : Proper f) (hpg 
   have h₂ : recessionFn g (-z) ≤ ((-ν : ℝ) : EReal) := recessionFn_le_coe_iff.2 hr
   have hsum : recessionFn f z + recessionFn g (-z) ≤ 0 := by
     have hadd := add_le_add h₁ h₂
-    rwa [← _root_.EReal.coe_add, add_neg_cancel, _root_.EReal.coe_zero] at hadd
+    rwa [← EReal.coe_add, add_neg_cancel, EReal.coe_zero] at hadd
   have hsym := h z hsum
   have hA : ((-ν : ℝ) : EReal) ≤ recessionFn f (-z) :=
     le_recessionFn_of_neg_le hpf (by simp only [neg_neg]; exact h₁)
   have hB : (ν : EReal) ≤ recessionFn g z := le_recessionFn_of_neg_le hpg h₂
   have hfz : recessionFn f (-z) ≤ ((-ν : ℝ) : EReal) := by
     refine EReal.le_coe_of_add_le_coe_add hA hB ?_
-    rwa [neg_add_cancel, _root_.EReal.coe_zero]
+    rwa [neg_add_cancel, EReal.coe_zero]
   have hgz : recessionFn g z ≤ (ν : EReal) := by
     refine EReal.le_coe_of_add_le_coe_add hB hA ?_
-    rw [add_neg_cancel, _root_.EReal.coe_zero, add_comm]
+    rw [add_neg_cancel, EReal.coe_zero, add_comm]
     exact hsym
   refine ⟨mem_linealitySpace.2 ⟨hq, recessionFn_le_coe_iff.1 hfz⟩,
     mem_linealitySpace.2 ⟨hr, ?_⟩⟩
@@ -685,9 +687,9 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
       rwa [hrq] at hr
     have hsum : recessionFn f q.1 + recessionFn g (-q.1) ≤ 0 := by
       have hadd := add_le_add h₁ h₂
-      rw [← _root_.EReal.coe_add, hν] at hadd
+      rw [← EReal.coe_add, hν] at hadd
       refine hadd.trans ?_
-      rw [← _root_.EReal.coe_zero, _root_.EReal.coe_le_coe_iff]
+      rw [← EReal.coe_zero, EReal.coe_le_coe_iff]
       norm_num
     have hsym := h q.1 hsum
     have hA : ((-q.2 : ℝ) : EReal) ≤ recessionFn f (-q.1) :=
@@ -696,10 +698,10 @@ theorem closedProperConvexFn_infConv_of_recessionFn_symm (hf : ClosedProperConve
       le_recessionFn_of_neg_le hg.proper (by simp only [neg_neg]; exact h₂)
     have hcontra : (((-q.2 + -r.2 : ℝ)) : EReal) ≤ 0 := by
       refine le_trans ?_ hsym
-      rw [_root_.EReal.coe_add]
+      rw [EReal.coe_add]
       exact add_le_add hA hB
     have hval : -q.2 + -r.2 = (1 : ℝ) := by rw [← neg_add, hν]; norm_num
-    rw [hval, ← _root_.EReal.coe_zero, _root_.EReal.coe_le_coe_iff] at hcontra
+    rw [hval, ← EReal.coe_zero, EReal.coe_le_coe_iff] at hcontra
     linarith
   have hproper : Proper (infConv f g) := by
     refine ⟨?_, hnebot⟩
@@ -793,7 +795,7 @@ omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- A sum of two functions that never take `⊥` never takes `⊥`. -/
 theorem add_ne_bot (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E) : (f + g) x ≠ ⊥ := by
   rw [Pi.add_apply]
-  exact _root_.EReal.add_ne_bot_iff.2 ⟨hf x, hg x⟩
+  exact EReal.add_ne_bot_iff.2 ⟨hf x, hg x⟩
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- Properness of a sum: properness of the summands plus one common domain point. -/
@@ -813,7 +815,7 @@ theorem ClosedProperConvexFn.add (hf : ClosedProperConvexFn f) (hg : ClosedPrope
   refine ⟨hf.convex.add hg.convex hf.proper.ne_bot hg.proper.ne_bot, ?_, ⟨hne, hbot⟩⟩
   rw [closedFn_iff_lowerSemicontinuous hbot]
   exact LowerSemicontinuous.add' hf.lowerSemicontinuous hg.lowerSemicontinuous fun x =>
-    _root_.EReal.continuousAt_add (Or.inr (hg.proper.ne_bot x)) (Or.inl (hf.proper.ne_bot x))
+    EReal.continuousAt_add (Or.inr (hg.proper.ne_bot x)) (Or.inl (hf.proper.ne_bot x))
 
 omit [FiniteDimensional ℝ E] in
 /-- **A finite sum**: `f₁ + ⋯ + fₘ` is closed proper convex as soon as the summands are and their
@@ -845,7 +847,7 @@ theorem closedProperConvexFn_finsetSum {ι : Type*} {s : Finset ι} {g : ι → 
       have hi₀ : x₀ ∈ dom (g i) := hd i (Finset.mem_cons_self i t)
       have hmem : x₀ ∈ dom (g i + ∑ j ∈ t, g j) := by
         rw [mem_dom, Pi.add_apply]
-        exact _root_.EReal.add_lt_top (mem_dom.1 hi₀).ne (mem_dom.1 hdomt).ne
+        exact EReal.add_lt_top (mem_dom.1 hi₀).ne (mem_dom.1 hdomt).ne
       rw [Finset.sum_cons]
       exact ⟨ClosedProperConvexFn.add (hc i (Finset.mem_cons_self i t)) hall ⟨x₀, hmem⟩, hmem⟩
   exact (key s hg hx₀).1
@@ -871,7 +873,7 @@ theorem recessionFn_add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn
   have h3 := tendsto_coe_inv_mul_sub_atTop hsum.convex hsum.isClosed_epi hsum.proper.ne_bot hx y
   have hcont : ContinuousAt (fun r : EReal × EReal => r.1 + r.2)
       (recessionFn f y, recessionFn g y) :=
-    _root_.EReal.continuousAt_add (Or.inr (recessionFn_ne_bot hg.proper y))
+    EReal.continuousAt_add (Or.inr (recessionFn_ne_bot hg.proper y))
       (Or.inl (recessionFn_ne_bot hf.proper y))
   have hadd : Tendsto (fun a : ℝ => ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - f x)
       + ((a⁻¹ : ℝ) : EReal) * (g (x + a • y) - g x)) atTop
@@ -881,7 +883,7 @@ theorem recessionFn_add (hf : ClosedProperConvexFn f) (hg : ClosedProperConvexFn
       =ᶠ[atTop] fun a : ℝ => ((a⁻¹ : ℝ) : EReal) * ((f + g) (x + a • y) - (f + g) x) := by
     filter_upwards [eventually_gt_atTop (0 : ℝ)] with a ha
     have hx0 : (f + g) x = ((p + q : ℝ) : EReal) := by
-      rw [Pi.add_apply, hp, hq, _root_.EReal.coe_add]
+      rw [Pi.add_apply, hp, hq, EReal.coe_add]
     rw [Pi.add_apply f g (x + a • y), hx0, hp, hq]
     exact EReal.coe_mul_sub_add_coe_mul_sub (by positivity) (hf.proper.ne_bot _)
       (hg.proper.ne_bot _) p q
@@ -906,7 +908,7 @@ theorem lscHull_add (hf : ConvexFn f) (hpf : Proper f) (hg : ConvexFn g) (hpg : 
   have h2 := hg.tendsto_lscHull_along_segment_relint hxg y
   have h3 := hsum.tendsto_lscHull_along_segment_relint hx y
   have hcont : ContinuousAt (fun r : EReal × EReal => r.1 + r.2) (lscHull f y, lscHull g y) :=
-    _root_.EReal.continuousAt_add (Or.inr (hg.lscHull_ne_bot hpg y))
+    EReal.continuousAt_add (Or.inr (hg.lscHull_ne_bot hpg y))
       (Or.inl (hf.lscHull_ne_bot hpf y))
   exact tendsto_nhds_unique h3 (hcont.tendsto.comp (h1.prodMk_nhds h2))
 
@@ -963,7 +965,7 @@ above the supremum, which is what lets the closure pass inside the intersection.
 theorem lscHull_iSup (hconv : ∀ i, ConvexFn (f i)) {x : E} (hx : ∀ i, x ∈ ri (dom (f i)))
     (hfin : (⨆ i, f i x) < ⊤) :
     lscHull (fun z => ⨆ i, f i z) = fun z => ⨆ i, lscHull (f i) z := by
-  obtain ⟨μ, hμ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hfin
+  obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 hfin
   refine epi_injective ?_
   rw [epi_lscHull, epi_iSup, epi_iSup,
     Convex.closure_iInter (fun i => (hconv i).convex_epi)
@@ -999,7 +1001,7 @@ theorem recessionFn_compLin (hg : ConvexFn g) (hc : IsClosed (epi g)) (A : E →
   rw [epi_recessionFn, epi_compLin, epi_compLin, epi_recessionFn]
   refine recessionCone_preimage (prodMapId A) hg.convex_epi hc ?_
   obtain ⟨x, hx⟩ := hne
-  obtain ⟨μ, hμ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hx)
+  obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hx)
   exact ⟨(x, μ), mk_mem_epi.2 hμ.le⟩
 
 omit [FiniteDimensional ℝ E] in
@@ -1008,7 +1010,7 @@ point of `dom g`, some `(x, μ)` is carried into `ri (epi g)`. -/
 theorem preimage_relint_epi_nonempty (hg : ConvexFn g) (A : E →ₗ[ℝ] G) {x : E}
     (hx : A x ∈ ri (dom g)) : ((prodMapId A) ⁻¹' ri (epi g)).Nonempty := by
   obtain ⟨μ, hμ, -⟩ :=
-    _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
+    EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
   refine ⟨(x, μ), ?_⟩
   rw [Set.mem_preimage, hg.relint_epi]
   exact ⟨hx, hμ⟩

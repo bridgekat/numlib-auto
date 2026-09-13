@@ -99,23 +99,23 @@ theorem dirDeriv_eq_of_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : Proper f)
     dirDeriv f x v = (((rightDeriv f x).toReal * v : ℝ) : EReal) := by
   obtain ⟨hbot, htop⟩ := rightDeriv_finite_of_mem_interior_dom hf hp hx
   set c : ℝ := (rightDeriv f x).toReal with hcdef
-  have hrc : rightDeriv f x = (c : EReal) := (_root_.EReal.coe_toReal htop hbot).symm
+  have hrc : rightDeriv f x = (c : EReal) := (EReal.coe_toReal htop hbot).symm
   have hfx : f x < ⊤ := mem_dom.1 (interior_subset hx)
   have hfb : f x ≠ ⊥ := hp.ne_bot x
   have h1 : dirDeriv f x 1 = (c : EReal) := by rw [← rightDeriv_eq_dirDeriv hfx hfb, hrc]
   have hm1 : dirDeriv f x (-1) = ((-c : ℝ) : EReal) := by
     have hL := leftDeriv_eq_neg_dirDeriv hfx hfb
     rw [h, hrc] at hL
-    rw [_root_.EReal.coe_neg, hL, neg_neg]
+    rw [EReal.coe_neg, hL, neg_neg]
   rcases lt_trichotomy v 0 with hv | rfl | hv
   · have hvv : v = (-v) • (-1 : ℝ) := by rw [smul_eq_mul]; ring
-    rw [hvv, posHomogeneous_dirDeriv f x (-v) (by linarith) (-1), hm1, EReal.coe_mul_coe]
+    rw [hvv, posHomogeneous_dirDeriv f x (-v) (by linarith) (-1), hm1, ← EReal.coe_mul]
     congr 1
     ring
   · rw [dirDeriv_zero hfx.ne hfb]
     simp
   · have hvv : v = v • (1 : ℝ) := by rw [smul_eq_mul]; ring
-    rw [hvv, posHomogeneous_dirDeriv f x v hv 1, h1, EReal.coe_mul_coe]
+    rw [hvv, posHomogeneous_dirDeriv f x v hv 1, h1, ← EReal.coe_mul]
     congr 1
     ring
 
@@ -130,13 +130,13 @@ theorem differentiableAtFn_iff_leftDeriv_eq_rightDeriv (hf : ConvexFn f) (hp : P
   · rintro ⟨y₀, hy₀⟩
     have hd := hy₀.dirDeriv_eq hf
     rw [rightDeriv_eq_dirDeriv hfx hfb, leftDeriv_eq_neg_dirDeriv hfx hfb, hd 1, hd (-1),
-      ← _root_.EReal.coe_neg]
+      ← EReal.coe_neg]
     congr 1
     have hneg : y₀ (-1 : ℝ) = -y₀ (1 : ℝ) := by rw [← map_neg]
     rw [hneg, neg_neg]
   · intro h
     exact ⟨(rightDeriv f x).toReal • ContinuousLinearMap.id ℝ ℝ,
-      hasGradientAt_of_dirDeriv_eq hf hfx.ne hfb fun v => by
+      hasGradientAtFn_of_dirDeriv_eq hf hfx.ne hfb fun v => by
         rw [dirDeriv_eq_of_leftDeriv_eq_rightDeriv hf hp hx h v]
         norm_num⟩
 
@@ -235,15 +235,15 @@ theorem dirDeriv_sub_smul_le (hp : Proper f) (hfx : f x < ⊤) (y : E) {l : ℝ}
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot (x - l • y)) hu
   have h1 : dirDeriv f (x - l • y) y ≤ (((r - s) / l : ℝ) : EReal) := by
     have hq := dirDeriv_le f (x - l • y) y hl
-    rwa [show x - l • y + l • y = x from by abel, hr, hs, ← _root_.EReal.coe_sub,
-      ← _root_.EReal.coe_div] at hq
+    rwa [show x - l • y + l • y = x from by abel, hr, hs, ← EReal.coe_sub,
+      ← EReal.coe_div] at hq
   have h2 : dirDeriv f x (-y) ≤ (((s - r) / l : ℝ) : EReal) := by
     have hq := dirDeriv_le f x (-y) hl
-    rwa [show x + l • (-y) = x - l • y from by module, hr, hs, ← _root_.EReal.coe_sub,
-      ← _root_.EReal.coe_div] at hq
+    rwa [show x + l • (-y) = x - l • y from by module, hr, hs, ← EReal.coe_sub,
+      ← EReal.coe_div] at hq
   refine h1.trans ?_
-  have h3 := _root_.EReal.neg_le_neg_iff.2 h2
-  rwa [← _root_.EReal.coe_neg, show -((s - r) / l) = (r - s) / l from by ring] at h3
+  have h3 := EReal.neg_le_neg_iff.2 h2
+  rwa [← EReal.coe_neg, show -((s - r) / l) = (r - s) / l from by ring] at h3
 
 /-- **First assertion**: on the interior of `dom f`, the set where the two-sided directional
 derivative in the direction `y` exists is exactly the set where `x ↦ f'(x; y)` is continuous. The
@@ -269,11 +269,11 @@ theorem continuousAt_dirDeriv_iff [FiniteDimensional ℝ E] (hf : ConvexFn f) (h
     · have ha' : a < dirDeriv f x y := ha
       rw [h] at ha'
       have hev := upperSemicontinuousAt_dirDeriv_left hf hp hx (-y) (-a)
-        (_root_.EReal.lt_neg_of_lt_neg ha')
+        (EReal.lt_neg_of_lt_neg ha')
       filter_upwards [hev, isOpen_interior.mem_nhds hx] with z hz hzi
       have hz' : dirDeriv f z (-y) < -a := hz
       have hzt : f z < ⊤ := mem_dom.1 (interior_subset hzi)
-      exact lt_of_lt_of_le (_root_.EReal.lt_neg_of_lt_neg hz')
+      exact lt_of_lt_of_le (EReal.lt_neg_of_lt_neg hz')
         (neg_dirDeriv_neg_le hf hzt.ne (hp.ne_bot z) y)
     · have hc' : dirDeriv f x y < c := hc
       exact upperSemicontinuousAt_dirDeriv_left hf hp hx y c hc'

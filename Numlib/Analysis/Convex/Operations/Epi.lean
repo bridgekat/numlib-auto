@@ -86,7 +86,8 @@ theorem ofEpi_eq_top_iff : ofEpi F x = ⊤ ↔ ∀ μ : ℝ, (x, μ) ∉ F := by
   funext fun _ => ofEpi_eq_top_iff.2 fun _ => notMem_empty _
 
 @[simp] theorem ofEpi_univ : ofEpi (univ : Set (E × ℝ)) = ⊥ :=
-  funext fun _ => EReal.eq_bot_of_forall_le_coe fun r => ofEpi_apply_le (mem_univ (_, r))
+  funext fun _ =>
+    le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ => ofEpi_apply_le (mem_univ (_, r)))
 
 /-- No hypothesis: a vertical section of an epigraph is `∅`, `ℝ` or a closed half-line, and in each
 case its infimum is the value of `f`. -/
@@ -96,8 +97,8 @@ case its infimum is the value of `f`. -/
   · rw [h]; exact le_top
   by_cases hb : f x = ⊥
   · rw [hb, le_bot_iff]
-    exact EReal.eq_bot_of_forall_le_coe fun r =>
-      ofEpi_apply_le (mk_mem_epi.2 (hb.le.trans bot_le))
+    exact le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ =>
+      ofEpi_apply_le (mk_mem_epi.2 (hb.le.trans bot_le)))
   · obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb h
     exact hr ▸ ofEpi_apply_le (mk_mem_epi.2 hr.le)
 
@@ -115,7 +116,7 @@ theorem dom_ofEpi (F : Set (E × ℝ)) : dom (ofEpi F) = Prod.fst '' F := by
     by_contra hx'
     exact absurd (ofEpi_eq_top_iff.2 fun μ hμ => hx' ⟨(x, μ), hμ, rfl⟩) hx.ne
   · rintro ⟨⟨w, μ⟩, hw, rfl⟩
-    exact lt_of_le_of_lt (ofEpi_apply_le hw) (_root_.EReal.coe_lt_top μ)
+    exact lt_of_le_of_lt (ofEpi_apply_le hw) (EReal.coe_lt_top μ)
 
 /-! ### The Galois connection between sets and functions
 
@@ -173,7 +174,8 @@ theorem IsEpiLike.mem_of_le (h : IsEpiLike F) (hμ : (x, μ) ∈ F) (hμν : μ 
 theorem IsEpiLike.mem_of_forall_lt (h : IsEpiLike F) (hμ : ∀ ν : ℝ, μ < ν → (x, ν) ∈ F) :
     (x, μ) ∈ F := by
   obtain ⟨f, rfl⟩ := h
-  refine mk_mem_epi.2 (EReal.le_coe_of_forall_lt fun q hq => ?_)
+  refine mk_mem_epi.2 (EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_)
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   obtain ⟨ρ, hμρ, hρq⟩ := exists_between hq
   exact lt_of_le_of_lt (mk_mem_epi.1 (hμ ρ hμρ)) (by exact_mod_cast hρq)
 

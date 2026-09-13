@@ -105,7 +105,7 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 of `C` is a limit of points of `C` at which `ℓ` is positive: the segment points
 `(1 - t) x + t x₀` have `ℓ` value `(1 - t) ℓ x + t ℓ x₀ > 0` for `0 < t ≤ 1`. No continuity of `ℓ`
 is needed, the approximating points being produced explicitly. -/
-theorem Convex.subset_closure_inter_setOf_pos (hC : Convex ℝ C)
+theorem _root_.Convex.subset_closure_inter_setOf_pos (hC : Convex ℝ C)
     (hnn : ∀ x ∈ C, 0 ≤ ℓ x) (hx₀ : x₀ ∈ C) (hpos : 0 < ℓ x₀) :
     C ⊆ closure (C ∩ {x | 0 < ℓ x}) := by
   intro x hx
@@ -126,7 +126,7 @@ theorem Convex.subset_closure_inter_setOf_pos (hC : Convex ℝ C)
 
 /-- **A convex set is the closure of its strictly positive part**, under the hypotheses of
 `Convex.subset_closure_inter_setOf_pos`. -/
-theorem Convex.closure_inter_setOf_pos (hC : Convex ℝ C)
+theorem _root_.Convex.closure_inter_setOf_pos (hC : Convex ℝ C)
     (hnn : ∀ x ∈ C, 0 ≤ ℓ x) (hx₀ : x₀ ∈ C) (hpos : 0 < ℓ x₀) :
     closure (C ∩ {x | 0 < ℓ x}) = closure C :=
   subset_antisymm (closure_mono Set.inter_subset_left)
@@ -172,7 +172,8 @@ theorem intrinsicInterior_eq_interior (h : affineSpan ℝ s = ⊤) : ri s = inte
 
 /-- The relative interior of an affine set is the set itself: an affine set is relatively open. -/
 @[simp]
-theorem AffineSubspace.intrinsicInterior_coe (M : AffineSubspace ℝ E) : ri (M : Set E) = M := by
+theorem _root_.AffineSubspace.intrinsicInterior_coe (M : AffineSubspace ℝ E) :
+    ri (M : Set E) = M := by
   ext x
   rw [mem_intrinsicInterior_iff, AffineSubspace.affineSpan_coe]
   exact ⟨And.left, fun h => ⟨h, 1, one_pos, fun _ hy _ => hy⟩⟩
@@ -182,7 +183,7 @@ theorem intrinsicInterior_univ : ri (univ : Set E) = univ := by
   simpa using AffineSubspace.intrinsicInterior_coe (⊤ : AffineSubspace ℝ E)
 
 /-- An affine combination of two points of an affine subspace lies in it. -/
-theorem AffineSubspace.combo_mem {M : AffineSubspace ℝ E} {p q : E} (hp : p ∈ M) (hq : q ∈ M)
+theorem _root_.AffineSubspace.combo_mem {M : AffineSubspace ℝ E} {p q : E} (hp : p ∈ M) (hq : q ∈ M)
     (t : ℝ) : (1 - t) • p + t • q ∈ M := by
   simpa [AffineMap.lineMap_apply_module] using AffineMap.lineMap_mem (k := ℝ) t hp hq
 
@@ -203,7 +204,7 @@ theorem closure_subset_affineSpan (s : Set E) : closure s ⊆ affineSpan ℝ s :
 /-- **The line segment principle**, the engine of the whole section: the half-open segment from a
 relative interior point of a convex set towards a point of its closure stays in the relative
 interior. -/
-theorem Convex.segment_mem_relint (hC : Convex ℝ C) (hx : x ∈ ri C) (hy : y ∈ closure C)
+theorem _root_.Convex.segment_mem_relint (hC : Convex ℝ C) (hx : x ∈ ri C) (hy : y ∈ closure C)
     {a : ℝ} (ha : 0 ≤ a) (ha' : a < 1) : (1 - a) • x + a • y ∈ ri C := by
   rw [mem_intrinsicInterior_iff] at hx ⊢
   obtain ⟨hxA, ε₀, hε₀, hball⟩ := hx
@@ -257,7 +258,7 @@ theorem Convex.segment_mem_relint (hC : Convex ℝ C) (hx : x ∈ ri C) (hy : y 
 /-! ### Convexity and the affine hull of the relative interior -/
 
 /-- The relative interior of a convex set is convex. -/
-protected theorem Convex.relint (hC : Convex ℝ C) : Convex ℝ (ri C) := by
+protected theorem _root_.Convex.relint (hC : Convex ℝ C) : Convex ℝ (ri C) := by
   intro u hu v hv a b ha hb hab
   rcases eq_or_lt_of_le (show b ≤ 1 by linarith) with rfl | hb1
   · have hazero : a = 0 := by linarith
@@ -268,7 +269,7 @@ protected theorem Convex.relint (hC : Convex ℝ C) : Convex ℝ (ri C) := by
 
 /-- A nonempty convex set has a nonempty relative interior: Mathlib's
 `Set.Nonempty.intrinsicInterior`, restated with the argument order the rest of the file uses. -/
-theorem Convex.relint_nonempty (hC : Convex ℝ C) (hne : C.Nonempty) : (ri C).Nonempty :=
+theorem _root_.Convex.relint_nonempty (hC : Convex ℝ C) (hne : C.Nonempty) : (ri C).Nonempty :=
   hne.intrinsicInterior hC
 
 /-- Taking the closure never changes the affine hull. No convexity is needed; this is
@@ -280,7 +281,8 @@ theorem affineSpan_closure (s : Set E) : affineSpan ℝ (closure s) = affineSpan
 /-- Passing to the relative interior does not change the affine hull, hence does not change the
 dimension. -/
 @[simp]
-theorem Convex.affineSpan_relint (hC : Convex ℝ C) : affineSpan ℝ (ri C) = affineSpan ℝ C := by
+theorem _root_.Convex.affineSpan_relint (hC : Convex ℝ C) :
+    affineSpan ℝ (ri C) = affineSpan ℝ C := by
   refine le_antisymm (affineSpan_mono ℝ intrinsicInterior_subset) ?_
   rcases C.eq_empty_or_nonempty with rfl | hne
   · simp
@@ -298,7 +300,7 @@ theorem Convex.affineSpan_relint (hC : Convex ℝ C) : affineSpan ℝ (ri C) = a
 convex set with an interior point is full-dimensional, so the two interiors agree; `int C ⊆ ri C`
 is the half every caller uses, since it makes the relative-interior theorems applicable at an
 ordinary interior point. -/
-theorem Convex.interior_subset_relint (hC : Convex ℝ C) (hne : (interior C).Nonempty) :
+theorem _root_.Convex.interior_subset_relint (hC : Convex ℝ C) (hne : (interior C).Nonempty) :
     interior C ⊆ ri C :=
   le_of_eq (intrinsicInterior_eq_interior
     ((Convex.interior_nonempty_iff_affineSpan_eq_top hC).1 hne)).symm
@@ -372,7 +374,7 @@ theorem eq_zero_of_nonpos_of_mem_relint {φ : E →ₗ[ℝ] ℝ} {z : E}
   rwa [hz0] at hconst
 
 /-- A convex set and its relative interior have the same closure: `cl (ri C) = cl C`. -/
-theorem Convex.closure_relint (hC : Convex ℝ C) : closure (ri C) = closure C := by
+theorem _root_.Convex.closure_relint (hC : Convex ℝ C) : closure (ri C) = closure C := by
   refine Subset.antisymm (closure_mono intrinsicInterior_subset) ?_
   rcases C.eq_empty_or_nonempty with rfl | hne
   · simp
@@ -386,7 +388,7 @@ theorem Convex.closure_relint (hC : Convex ℝ C) : closure (ri C) = closure C :
   exact closure_mono hopen (segment_subset_closure_openSegment (right_mem_segment ℝ z w))
 
 /-- A convex set and its closure have the same relative interior: `ri (cl C) = ri C`. -/
-theorem Convex.relint_closure (hC : Convex ℝ C) : ri (closure C) = ri C := by
+theorem _root_.Convex.relint_closure (hC : Convex ℝ C) : ri (closure C) = ri C := by
   refine Subset.antisymm ?_ (fun z hz => ?_)
   · rcases C.eq_empty_or_nonempty with rfl | hne
     · simp
@@ -404,13 +406,13 @@ theorem Convex.relint_closure (hC : Convex ℝ C) : ri (closure C) = ri C := by
     exact ⟨hzA, ε, hε, fun y hy hd => subset_closure (hball y hy hd)⟩
 
 /-- The relative interior is idempotent: `ri (ri C) = ri C`, so `ri C` is relatively open. -/
-theorem Convex.relint_relint (hC : Convex ℝ C) : ri (ri C) = ri C := by
+theorem _root_.Convex.relint_relint (hC : Convex ℝ C) : ri (ri C) = ri C := by
   calc ri (ri C) = ri (closure (ri C)) := (Convex.relint_closure (Convex.relint hC)).symm
     _ = ri (closure C) := by rw [Convex.closure_relint hC]
     _ = ri C := Convex.relint_closure hC
 
 /-- Two convex sets have the same closure exactly when they have the same relative interior. -/
-theorem Convex.closure_eq_iff_relint_eq (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
+theorem _root_.Convex.closure_eq_iff_relint_eq (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
     closure C₁ = closure C₂ ↔ ri C₁ = ri C₂ := by
   constructor
   · intro h
@@ -419,13 +421,13 @@ theorem Convex.closure_eq_iff_relint_eq (h₁ : Convex ℝ C₁) (h₂ : Convex 
     rw [← Convex.closure_relint h₁, ← Convex.closure_relint h₂, h]
 
 /-- A set sandwiched between `ri C` and `cl C` has the same closure as `C`. -/
-theorem Convex.closure_eq_of_relint_subset_of_subset_closure (h₁ : Convex ℝ C₁)
+theorem _root_.Convex.closure_eq_of_relint_subset_of_subset_closure (h₁ : Convex ℝ C₁)
     (hsub : ri C₁ ⊆ C₂) (hsup : C₂ ⊆ closure C₁) : closure C₂ = closure C₁ :=
   Subset.antisymm (closure_minimal hsup isClosed_closure)
     (Convex.closure_relint h₁ ▸ closure_mono hsub)
 
 /-- An open set meeting `cl C` already meets `ri C`. -/
-theorem Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : Set E} (hU : IsOpen U)
+theorem _root_.Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : Set E} (hU : IsOpen U)
     (h : (U ∩ closure C).Nonempty) : (U ∩ ri C).Nonempty := by
   rw [← Convex.closure_relint hC] at h
   obtain ⟨p, hpU, hpC⟩ := h
@@ -435,7 +437,7 @@ theorem Convex.relint_inter_nonempty_of_isOpen (hC : Convex ℝ C) {U : Set E} (
 
 /-- **The prolongation principle**: `z` is a relative interior point of a nonempty convex set `C`
 exactly when every segment in `C` ending at `z` can be prolonged slightly beyond `z` inside `C`. -/
-theorem Convex.mem_relint_iff_prolong (hC : Convex ℝ C) (hne : C.Nonempty) {z : E} :
+theorem _root_.Convex.mem_relint_iff_prolong (hC : Convex ℝ C) (hne : C.Nonempty) {z : E} :
     z ∈ ri C ↔ ∀ x ∈ C, ∃ μ > (1 : ℝ), (1 - μ) • x + μ • z ∈ C := by
   constructor
   · intro hz x hx
@@ -451,7 +453,7 @@ theorem Convex.mem_relint_iff_prolong (hC : Convex ℝ C) (hne : C.Nonempty) {z 
 /-- A point is *interior* to a convex set exactly when the set absorbs every direction at that
 point. The prolongation principle gives the relative-interior version; absorbing every direction
 forces the affine hull to be everything, where `ri` and `int` agree. -/
-theorem Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
+theorem _root_.Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
     z ∈ interior C ↔ ∀ y : E, ∃ ε : ℝ, 0 < ε ∧ z + ε • y ∈ C := by
   constructor
   · intro hz y
@@ -487,7 +489,7 @@ theorem Convex.mem_interior_iff_absorbs (hC : Convex ℝ C) {z : E} :
 
 /-- The technical core of the intersection theorem: from a common relative interior point, every
 point common to all the closures is a limit of points common to all the relative interiors. -/
-theorem Convex.iInter_closure_subset_closure_iInter_relint {ι : Type*} {C : ι → Set E}
+theorem _root_.Convex.iInter_closure_subset_closure_iInter_relint {ι : Type*} {C : ι → Set E}
     (hC : ∀ i, Convex ℝ (C i)) (h : (⋂ i, ri (C i)).Nonempty) :
     ⋂ i, closure (C i) ⊆ closure (⋂ i, ri (C i)) := by
   obtain ⟨x, hx⟩ := h
@@ -504,14 +506,14 @@ theorem Convex.iInter_closure_subset_closure_iInter_relint {ι : Type*} {C : ι 
 
 /-- When the relative interiors have a common point, closure commutes with intersection. No
 finiteness is needed. -/
-theorem Convex.closure_iInter {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
+theorem _root_.Convex.closure_iInter {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
     (h : (⋂ i, ri (C i)).Nonempty) : closure (⋂ i, C i) = ⋂ i, closure (C i) := by
   refine Subset.antisymm (fun p hp => mem_iInter.2 fun i => closure_mono (iInter_subset _ i) hp) ?_
   exact (Convex.iInter_closure_subset_closure_iInter_relint hC h).trans
     (closure_mono (iInter_mono fun _ => intrinsicInterior_subset))
 
 /-- The easy inclusion `ri (⋂ i, C i) ⊆ ⋂ i, ri (C i)`, valid for an arbitrary index set. -/
-theorem Convex.relint_iInter_subset {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
+theorem _root_.Convex.relint_iInter_subset {ι : Type*} {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
     (h : (⋂ i, ri (C i)).Nonempty) : ri (⋂ i, C i) ⊆ ⋂ i, ri (C i) := by
   have hcl : closure (⋂ i, ri (C i)) = closure (⋂ i, C i) :=
     Subset.antisymm (closure_mono (iInter_mono fun _ => intrinsicInterior_subset))
@@ -525,8 +527,8 @@ theorem Convex.relint_iInter_subset {ι : Type*} {C : ι → Set E} (hC : ∀ i,
 /-- The relative interior commutes with a finite intersection whose relative interiors have a
 common point. Finiteness is essential: the intersection of `ri [0, 1 + α]` over `α > 0` is `(0, 1]`,
 not `ri [0, 1]`. -/
-theorem Convex.relint_iInter {ι : Type*} [Finite ι] {C : ι → Set E} (hC : ∀ i, Convex ℝ (C i))
-    (h : (⋂ i, ri (C i)).Nonempty) : ri (⋂ i, C i) = ⋂ i, ri (C i) := by
+theorem _root_.Convex.relint_iInter {ι : Type*} [Finite ι] {C : ι → Set E}
+    (hC : ∀ i, Convex ℝ (C i)) (h : (⋂ i, ri (C i)).Nonempty) : ri (⋂ i, C i) = ⋂ i, ri (C i) := by
   refine Subset.antisymm (Convex.relint_iInter_subset hC h) fun z hz => ?_
   rw [mem_iInter] at hz
   have hne : (⋂ i, C i).Nonempty := ⟨z, mem_iInter.2 fun i => intrinsicInterior_subset (hz i)⟩
@@ -558,7 +560,7 @@ theorem iInter_bool {α : Type*} (D : Bool → Set α) : (⋂ b, D b) = D true �
   iInf_bool_eq (f := D)
 
 /-- Closure commutes with the intersection of two convex sets whose relative interiors meet. -/
-theorem Convex.closure_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
+theorem _root_.Convex.closure_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (h : (ri C₁ ∩ ri C₂).Nonempty) : closure (C₁ ∩ C₂) = closure C₁ ∩ closure C₂ := by
   have key := Convex.closure_iInter (C := fun b : Bool => bif b then C₁ else C₂)
     (fun b => by cases b <;> assumption) (by rw [iInter_bool]; exact h)
@@ -567,7 +569,7 @@ theorem Convex.closure_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
 
 /-- The relative interior commutes with the intersection of two convex sets whose relative
 interiors meet. -/
-theorem Convex.relint_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
+theorem _root_.Convex.relint_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (h : (ri C₁ ∩ ri C₂).Nonempty) : ri (C₁ ∩ C₂) = ri C₁ ∩ ri C₂ := by
   have key := Convex.relint_iInter (C := fun b : Bool => bif b then C₁ else C₂)
     (fun b => by cases b <;> assumption) (by rw [iInter_bool]; exact h)
@@ -576,13 +578,13 @@ theorem Convex.relint_inter (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
 
 /-- Intersecting with an affine set that meets `ri C` commutes with the relative interior. This is
 the workhorse of the theory of convex functions and of recession cones. -/
-theorem Convex.relint_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
+theorem _root_.Convex.relint_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
     (h : ((M : Set E) ∩ ri C).Nonempty) : ri ((M : Set E) ∩ C) = (M : Set E) ∩ ri C := by
   have key := Convex.relint_inter M.convex hC (by rwa [AffineSubspace.intrinsicInterior_coe])
   rwa [AffineSubspace.intrinsicInterior_coe] at key
 
 /-- Intersecting with an affine set that meets `ri C` commutes with the closure. -/
-theorem Convex.closure_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
+theorem _root_.Convex.closure_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ E}
     (h : ((M : Set E) ∩ ri C).Nonempty) :
     closure ((M : Set E) ∩ C) = (M : Set E) ∩ closure C := by
   have key := Convex.closure_inter M.convex hC (by rwa [AffineSubspace.intrinsicInterior_coe])
@@ -590,7 +592,7 @@ theorem Convex.closure_inter_affine (hC : Convex ℝ C) {M : AffineSubspace ℝ 
 
 /-- A convex subset of `cl C₁` that is not entirely contained in the relative boundary of `C₁` has
 its relative interior inside `ri C₁`. -/
-theorem Convex.relint_subset_relint_of_subset_closure (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
+theorem _root_.Convex.relint_subset_relint_of_subset_closure (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂)
     (hsub : C₂ ⊆ closure C₁) (h : (C₂ ∩ ri C₁).Nonempty) : ri C₂ ⊆ ri C₁ := by
   have hfr : IsClosed (intrinsicFrontier ℝ C₁) :=
     isClosed_intrinsicFrontier (affineSpan ℝ C₁).closed_of_finiteDimensional
@@ -624,7 +626,7 @@ variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimension
 
 /-- A linear image commutes with the relative interior. Continuity of `A` is automatic in finite
 dimensions, which is why no hypothesis on `A` appears. -/
-theorem Convex.relint_image (hC : Convex ℝ C) (A : E →ₗ[ℝ] F) : ri (A '' C) = A '' ri C := by
+theorem _root_.Convex.relint_image (hC : Convex ℝ C) (A : E →ₗ[ℝ] F) : ri (A '' C) = A '' ri C := by
   have hAc : Continuous A := A.continuous_of_finiteDimensional
   have hcl : closure (A '' ri C) = closure (A '' C) := by
     refine Subset.antisymm (closure_mono (image_mono intrinsicInterior_subset))
@@ -652,7 +654,7 @@ theorem image_closure_subset (s : Set E) (A : E →ₗ[ℝ] F) :
 
 /-- Scaling commutes with the relative interior: `ri (a • C) = a • ri C` for every real `a`,
 including `a = 0`. -/
-theorem Convex.relint_smul (hC : Convex ℝ C) (a : ℝ) : ri (a • C) = a • ri C := by
+theorem _root_.Convex.relint_smul (hC : Convex ℝ C) (a : ℝ) : ri (a • C) = a • ri C := by
   have himg : ∀ D : Set E, (a • LinearMap.id : E →ₗ[ℝ] E) '' D = a • D := fun D => by
     rw [show ⇑(a • LinearMap.id : E →ₗ[ℝ] E) = fun x : E => a • x from rfl]
     exact Set.image_smul
@@ -661,7 +663,7 @@ theorem Convex.relint_smul (hC : Convex ℝ C) (a : ℝ) : ri (a • C) = a • 
 
 /-- The relative interior of a sum is the sum of the relative interiors. Mathlib's
 `intrinsicInterior_prod_eq` supplies the direct-sum half. -/
-theorem Convex.relint_add (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
+theorem _root_.Convex.relint_add (h₁ : Convex ℝ C₁) (h₂ : Convex ℝ C₂) :
     ri (C₁ + C₂) = ri C₁ + ri C₂ := by
   have hA : ∀ D₁ D₂ : Set E,
       (LinearMap.fst ℝ E E + LinearMap.snd ℝ E E) '' (D₁ ×ˢ D₂) = D₁ + D₂ := fun D₁ D₂ => by
@@ -699,7 +701,7 @@ theorem image_fst_inter_prod_univ {A : E →ₗ[ℝ] F} {M : Set (E × F)}
 carried into `ri D`. `A ⁻¹' D` is the projection of `graph A ∩ (univ ×ˢ D)`, so intersection with
 an affine set and the image theorem do all the work, the relative interior hypothesis feeding the
 former. -/
-theorem Convex.relint_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
+theorem _root_.Convex.relint_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
     (h : (A ⁻¹' ri D).Nonempty) : ri (A ⁻¹' D) = A ⁻¹' ri D := by
   obtain ⟨x₀, hx₀⟩ := h
   set M : AffineSubspace ℝ (E × F) := Submodule.toAffineSubspace (LinearMap.graph A) with hMdef
@@ -718,7 +720,7 @@ theorem Convex.relint_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ
 
 /-- The same for closures. One inclusion is continuity of `A`; the other runs through the same
 projection of the graph. -/
-theorem Convex.closure_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
+theorem _root_.Convex.closure_preimage {D : Set F} (hD : Convex ℝ D) (A : E →ₗ[ℝ] F)
     (h : (A ⁻¹' ri D).Nonempty) : closure (A ⁻¹' D) = A ⁻¹' closure D := by
   obtain ⟨x₀, hx₀⟩ := h
   refine Subset.antisymm (closure_minimal (preimage_mono subset_closure)
@@ -755,8 +757,9 @@ theorem univ_pi_eq_iInter_proj_preimage (C : ι → Set E) :
 /-- Over a `Finset`: the relative interior of a finite intersection is the intersection of the
 relative interiors, as soon as the latter has a point in common. This is `Convex.relint_iInter`
 read over the subtype `↥s`. -/
-theorem Convex.relint_biInter_finset {s : Finset ι} {C : ι → Set E} (hC : ∀ i ∈ s, Convex ℝ (C i))
-    {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i)) : ri (⋂ i ∈ s, C i) = ⋂ i ∈ s, ri (C i) := by
+theorem _root_.Convex.relint_biInter_finset {s : Finset ι} {C : ι → Set E}
+    (hC : ∀ i ∈ s, Convex ℝ (C i)) {x₀ : E} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i)) :
+    ri (⋂ i ∈ s, C i) = ⋂ i ∈ s, ri (C i) := by
   have hbi : ∀ D : ι → Set E, (⋂ i ∈ s, D i) = ⋂ i : {j // j ∈ s}, D i := by
     intro D
     ext x
@@ -767,7 +770,7 @@ theorem Convex.relint_biInter_finset {s : Finset ι} {C : ι → Set E} (hC : �
 /-- **The relative interior of a product of convex sets is the product of the relative interiors.**
 This is the `Set.pi` form of `intrinsicInterior_prod_eq`; unlike that one it needs finite dimension,
 being `Convex.relint_iInter` applied to the coordinate preimages. -/
-theorem Convex.relint_univ_pi [Finite ι] (C : ι → Set E) (hC : ∀ i, Convex ℝ (C i)) :
+theorem _root_.Convex.relint_univ_pi [Finite ι] (C : ι → Set E) (hC : ∀ i, Convex ℝ (C i)) :
     ri (univ.pi C) = univ.pi fun i => ri (C i) := by
   obtain ⟨hι⟩ := nonempty_fintype ι
   by_cases hne : ∀ i, (C i).Nonempty
@@ -799,7 +802,7 @@ end Indexed
 /-- A point of a convex subset of a product is a relative interior point exactly when its first
 coordinate is a relative interior point of the projection and its second coordinate is a relative
 interior point of the corresponding slice. -/
-theorem Convex.mem_relint_prod_iff {S : Set (E × F)} (hS : Convex ℝ S) {y : E} {z : F} :
+theorem _root_.Convex.mem_relint_prod_iff {S : Set (E × F)} (hS : Convex ℝ S) {y : E} {z : F} :
     (y, z) ∈ ri S ↔ y ∈ ri (Prod.fst '' S) ∧ z ∈ ri {w | (y, w) ∈ S} := by
   have hfst : ri (Prod.fst '' S) = Prod.fst '' ri S := by
     have h := Convex.relint_image hS (LinearMap.fst ℝ E F)
@@ -919,7 +922,7 @@ theorem image_fst_cone_prodMk_one (hne : C.Nonempty) :
 with `λ > 0` and `x ∈ λ (ri C)`. This is the product criterion with the first factor `ℝ`: the
 projection of the cone is `[0, ∞)`, whose relative interior is `(0, ∞)`, and the slice above
 `λ > 0` is `λ C`. -/
-theorem Convex.relint_cone_prodMk_one (hC : Convex ℝ C) (hne : C.Nonempty) :
+theorem _root_.Convex.relint_cone_prodMk_one (hC : Convex ℝ C) (hne : C.Nonempty) :
     ri (insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C})
       = {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • ri C} := by
   ext p
@@ -938,7 +941,7 @@ theorem Convex.relint_cone_prodMk_one (hC : Convex ℝ C) (hne : C.Nonempty) :
 
 /-- A point of `C` lies in `ri C` exactly when its lift to height one lies in the relative
 interior of the cone over `C`. -/
-theorem Convex.mem_relint_iff_mk_one_mem_relint_cone (hC : Convex ℝ C) (hne : C.Nonempty)
+theorem _root_.Convex.mem_relint_iff_mk_one_mem_relint_cone (hC : Convex ℝ C) (hne : C.Nonempty)
     {x : E} :
     x ∈ ri C ↔ ((1, x) : ℝ × E) ∈ ri (insert 0 {p : ℝ × E | 0 < p.1 ∧ p.2 ∈ p.1 • C}) := by
   rw [Convex.relint_cone_prodMk_one hC hne]
@@ -1002,7 +1005,7 @@ theorem cone_prodMk_one_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁
 the relative interiors of the convex combinations. The proof passes to the cones one dimension up,
 where the convex hull of the union becomes a *sum*, applies the formula for the relative interior
 of a sum, and reads the answer off the cone description. -/
-theorem Convex.relint_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁.Nonempty)
+theorem _root_.Convex.relint_convexHull_union (h₁ : Convex ℝ C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     ri (convexHull ℝ (C₁ ∪ C₂)) = ⋃ a ∈ Ioo (0 : ℝ) 1, ((1 - a) • ri C₁ + a • ri C₂) := by
   have hne₀ : (convexHull ℝ (C₁ ∪ C₂)).Nonempty :=
@@ -1031,7 +1034,7 @@ end Cone
 /-- The relative interior and the closure of a convex set have the same directions of recession.
 This is the statement `Numlib/Analysis/Convex/Recession/Cone.lean` defers, where
 `recessionCone_interior_eq_recessionCone_closure` is proved instead. -/
-theorem Convex.recessionCone_relint (hC : Convex ℝ C) :
+theorem _root_.Convex.recessionCone_relint (hC : Convex ℝ C) :
     recessionCone (ri C) = recessionCone (closure C) := by
   refine Subset.antisymm ?_ fun y hy x hx a ha => ?_
   · rw [← Convex.closure_relint hC]
@@ -1158,7 +1161,7 @@ theorem ConvexFn.lscHull_eq_of_mem_relint_dom (hf : ConvexFn f) {x : E}
     · rintro ⟨rfl, hmem⟩; exact ⟨rfl, hmem⟩
     · rintro ⟨rfl, hmem⟩; exact ⟨rfl, hmem⟩
   have hxd : x ∈ dom f := intrinsicInterior_subset hx
-  obtain ⟨μ₀, hμ₀, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hxd)
+  obtain ⟨μ₀, hμ₀, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hxd)
   have hne : (ri (({x} : Set E) ×ˢ (univ : Set ℝ)) ∩ ri (epi f)).Nonempty :=
     ⟨(x, μ₀), by rw [hVri]; exact ⟨rfl, mem_univ _⟩, by rw [hf.relint_epi]; exact ⟨hx, hμ₀⟩⟩
   have hkey := Convex.closure_inter hVconv hf.convex_epi hne
@@ -1312,13 +1315,13 @@ theorem ConvexFn.tendsto_lscHull_along_segment_relint (hf : ConvexFn f) {x : E}
   · filter_upwards [(tendsto_segment x y).eventually (lowerSemicontinuous_lscHull f y b hb)]
       with a ha
     exact lt_of_lt_of_le ha (lscHull_le f _)
-  · obtain ⟨β, hβ1, hβ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
-    obtain ⟨γ, hγ1, hγ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hβ2
+  · obtain ⟨β, hβ1, hβ2⟩ := EReal.lt_iff_exists_real_btwn.1 hb
+    obtain ⟨γ, hγ1, hγ2⟩ := EReal.lt_iff_exists_real_btwn.1 hβ2
     have hβγ : β < γ := by exact_mod_cast hγ1
     have hyβ : ((y, β) : E × ℝ) ∈ closure (epi f) := by
       rw [← epi_lscHull]; exact hβ1.le
     obtain ⟨α, hα, -⟩ :=
-      _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
+      EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
     have hxα : ((x, α) : E × ℝ) ∈ ri (epi f) := by rw [hf.relint_epi]; exact ⟨hx, hα⟩
     filter_upwards [(tendsto_affine_nhdsLT_one α β).eventually_lt_const hβγ,
       eventually_mem_Ico_nhdsLT_one] with a hlt ha
@@ -1362,7 +1365,7 @@ point. -/
 theorem ConvexFn.exists_mem_relint_dom_lt (hf : ConvexFn f) {α : ℝ}
     (hα : ∃ x, f x < (α : EReal)) : ∃ x ∈ ri (dom f), f x < (α : EReal) := by
   obtain ⟨x, hx⟩ := hα
-  obtain ⟨μ, hxμ, hμα⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hx
+  obtain ⟨μ, hxμ, hμα⟩ := EReal.lt_iff_exists_real_btwn.1 hx
   have hU : IsOpen {p : E × ℝ | p.2 < α} := isOpen_lt continuous_snd continuous_const
   have hmeets : ({p : E × ℝ | p.2 < α} ∩ closure (epi f)).Nonempty :=
     ⟨(x, μ), by exact_mod_cast hμα, subset_closure (mk_mem_epi.2 hxμ.le)⟩
@@ -1382,7 +1385,7 @@ theorem ConvexFn.relint_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x 
   have hTconv : Convex ℝ T := convex_univ.prod (convex_Iic α)
   have hTri : ri T = (univ : Set E) ×ˢ Iio α := by
     rw [hT, intrinsicInterior_prod_eq, intrinsicInterior_univ, intrinsicInterior_Iic]
-  obtain ⟨μ, hyμ, hμα⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hyα
+  obtain ⟨μ, hyμ, hμα⟩ := EReal.lt_iff_exists_real_btwn.1 hyα
   have hne : (ri (epi f) ∩ ri T).Nonempty := by
     refine ⟨(y, μ), ?_, ?_⟩
     · rw [hf.relint_epi]; exact ⟨hy, hyμ⟩
@@ -1401,7 +1404,7 @@ theorem ConvexFn.relint_setOf_le (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x 
   · rintro ⟨q, ⟨⟨hq1, hq2⟩, -, hq3⟩, rfl⟩
     exact ⟨hq1, hq2.trans (by exact_mod_cast (hq3 : q.2 < α))⟩
   · rintro ⟨hz1, hz2⟩
-    obtain ⟨ν, hzν, hνα⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hz2
+    obtain ⟨ν, hzν, hνα⟩ := EReal.lt_iff_exists_real_btwn.1 hz2
     exact ⟨(z, ν), ⟨⟨hz1, hzν⟩, mem_univ _, by exact_mod_cast hνα⟩, rfl⟩
 
 /-- The closure of a level set: `cl {x | f x ≤ α} = {x | (cl f) x ≤ α}`, stated for the lower
@@ -1464,7 +1467,7 @@ theorem ConvexFn.relint_setOf_le_of_relint_dom_eq (hf : ConvexFn f) (hopen : ri 
     ri {x | f x ≤ (α : EReal)} = {x | f x < (α : EReal)} := by
   rw [hf.relint_setOf_le hα, hopen]
   exact Set.ext fun z =>
-    ⟨fun hz => hz.2, fun hz => ⟨mem_dom.2 (hz.trans (_root_.EReal.coe_lt_top α)), hz⟩⟩
+    ⟨fun hz => hz.2, fun hz => ⟨mem_dom.2 (hz.trans (EReal.coe_lt_top α)), hz⟩⟩
 
 /-- For a closed proper convex function the closure of a strict level set is the corresponding
 level set. Rockafellar assumes in addition that `dom f` is relatively open; that hypothesis is

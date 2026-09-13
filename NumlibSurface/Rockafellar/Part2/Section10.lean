@@ -132,28 +132,28 @@ relatively open convex set `C` in its effective domain — in particular relativ
 which is `corollary_10_1_1`'s and Theorem 10.4's form. The improper case is not excluded. -/
 theorem theorem_10_1 {n : ℕ} {f : Rn n → EReal} (hf : ConvexFn f) {C : Set (Rn n)}
     (hC : Convex ℝ C) (hCro : ri C = C) (hCdom : C ⊆ dom f) : ContinuousOn f C := by
-  have hg : ConvexFn (restrict C f) := hf.restrict hC
-  have hdom : dom (restrict C f) = C := by
+  have hg : ConvexFn (restrictFn C f) := hf.restrictFn hC
+  have hdom : dom (restrictFn C f) = C := by
     ext x
     constructor
     · intro hx
       by_contra hxC
-      rw [mem_dom, restrict_of_notMem hxC] at hx
+      rw [mem_dom, restrictFn_of_notMem hxC] at hx
       exact absurd hx (lt_irrefl _)
     · intro hx
-      rw [mem_dom, restrict_of_mem hx]
+      rw [mem_dom, restrictFn_of_mem hx]
       exact mem_dom.1 (hCdom hx)
-  have hri : ri (dom (restrict C f)) = C := by rw [hdom, hCro]
-  by_cases hp : Proper (restrict C f)
-  · have hcont : ContinuousOn (restrict C f) C := by
+  have hri : ri (dom (restrictFn C f)) = C := by rw [hdom, hCro]
+  by_cases hp : Proper (restrictFn C f)
+  · have hcont : ContinuousOn (restrictFn C f) C := by
       have h := hg.continuousOn_relint_dom hp
       rwa [hri] at h
-    exact hcont.congr fun x hx => (restrict_of_mem hx).symm
+    exact hcont.congr fun x hx => (restrictFn_of_mem hx).symm
   · have hconst : ContinuousOn (fun _ : Rn n => (⊥ : EReal)) C := continuousOn_const
     refine hconst.congr fun x hx => ?_
-    have hx' : x ∈ ri (dom (restrict C f)) := by rw [hri]; exact hx
+    have hx' : x ∈ ri (dom (restrictFn C f)) := by rw [hri]; exact hx
     have hbot := hg.eq_bot_of_mem_relint_dom hp hx'
-    rwa [restrict_of_mem hx] at hbot
+    rwa [restrictFn_of_mem hx] at hbot
 
 /-! ### Corollary 10.1.1 -/
 

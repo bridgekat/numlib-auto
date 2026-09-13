@@ -80,10 +80,10 @@ theorem neg_concaveConj (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal) 
   rw [concaveConj_apply, EReal.neg_iInf, conj_apply]
   refine iSup_congr fun x => ?_
   have hB : ((B x (-y) : ℝ) : EReal) = -((B x y : ℝ) : EReal) := by
-    rw [map_neg, _root_.EReal.coe_neg]
+    rw [map_neg, EReal.coe_neg]
   rw [hB]
   simp only [sub_eq_add_neg]
-  rw [_root_.EReal.neg_add (.inl (_root_.EReal.coe_ne_bot _)) (.inl (_root_.EReal.coe_ne_top _))]
+  rw [EReal.neg_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _))]
   rfl
 
 /-- The dictionary, solved for the concave conjugate: `g*(y) = -(-g)*(-y)`. -/
@@ -107,7 +107,7 @@ theorem coe_le_concaveConj_iff : (c : EReal) ≤ concaveConj B g y ↔ g ≤ aff
   exact forall_congr' fun x => EReal.le_coe_sub_comm
 
 theorem concaveConj_antitone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : Antitone (concaveConj B) := fun _ _ hgh _ =>
-  le_iInf fun x => (iInf_le _ x).trans (_root_.EReal.sub_le_sub le_rfl (hgh x))
+  le_iInf fun x => (iInf_le _ x).trans (EReal.sub_le_sub le_rfl (hgh x))
 
 /-- **The adjunction.** `h ≤ g*` and `g ≤ h*` say the same thing, namely that
 `g x + h y ≤ ⟨x, y⟩` for all `x` and `y` in the `∞ - ∞`-free reading. -/
@@ -126,14 +126,14 @@ theorem le_biconcaveConj (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal)
 /-- `g*` takes the value `⊤` at a point exactly when `g ≡ -∞` — a condition independent of the
 point. -/
 theorem concaveConj_eq_top_iff : concaveConj B g y = ⊤ ↔ ∀ x, g x = ⊥ := by
-  rw [concaveConj_eq_neg_conj_neg, _root_.EReal.neg_eq_top_iff, conj_eq_bot_iff]
-  exact forall_congr' fun _ => _root_.EReal.neg_eq_top_iff
+  rw [concaveConj_eq_neg_conj_neg, EReal.neg_eq_top_iff, conj_eq_bot_iff]
+  exact forall_congr' fun _ => EReal.neg_eq_top_iff
 
 /-- **If `g` takes the value `+∞` anywhere, its concave conjugate is identically `-∞`.** -/
 theorem concaveConj_of_eq_top {x₀ : E} (hx : g x₀ = ⊤) : concaveConj B g = fun _ => ⊥ := by
   funext y
-  rw [concaveConj_eq_neg_conj_neg, conj_of_eq_bot (x₀ := x₀) (by rw [hx, _root_.EReal.neg_top]),
-    _root_.EReal.neg_top]
+  rw [concaveConj_eq_neg_conj_neg, conj_of_eq_bot (x₀ := x₀) (by rw [hx, EReal.neg_top]),
+    EReal.neg_top]
 
 theorem concaveConj_bot (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) :
     concaveConj B (fun _ => ⊥) = fun _ => (⊤ : EReal) :=
@@ -155,8 +155,8 @@ on the smaller side of the inequality, where `⊥` is harmless. -/
 theorem add_concaveConj_le (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g : E → EReal) (x : E) (y : F) :
     g x + concaveConj B g y ≤ ((B x y : ℝ) : EReal) := by
   rw [add_comm]
-  exact (_root_.EReal.le_sub_iff_add_le (.inr (_root_.EReal.coe_ne_bot _))
-    (.inr (_root_.EReal.coe_ne_top _))).1 (concaveConj_le_sub B g x y)
+  exact (EReal.le_sub_iff_add_le (.inr (EReal.coe_ne_bot _))
+    (.inr (EReal.coe_ne_top _))).1 (concaveConj_le_sub B g x y)
 
 /-! ### Concavity of the concave conjugate -/
 
@@ -177,10 +177,10 @@ theorem biconcaveConj_eq_neg_biconj_neg (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (g
     biconcaveConj B g x = -(biconj B (fun x' => -(g x')) x) := by
   have key : ∀ y : F, ((B x (-y) : ℝ) : EReal) - concaveConj B g (-y)
       = -(((B x y : ℝ) : EReal) - conj B (fun x' => -(g x')) y) := fun y => by
-    rw [concaveConj_eq_neg_conj_neg, neg_neg, map_neg, _root_.EReal.coe_neg]
+    rw [concaveConj_eq_neg_conj_neg, neg_neg, map_neg, EReal.coe_neg]
     simp only [sub_eq_add_neg]
-    rw [_root_.EReal.neg_add (.inl (_root_.EReal.coe_ne_bot _))
-      (.inl (_root_.EReal.coe_ne_top _))]
+    rw [EReal.neg_add (.inl (EReal.coe_ne_bot _))
+      (.inl (EReal.coe_ne_top _))]
     rfl
   rw [biconcaveConj_apply, biconj_apply, EReal.neg_iSup]
   refine le_antisymm (le_iInf fun y => ?_) (le_iInf fun y => ?_)
@@ -214,8 +214,8 @@ theorem clConcave_neg (f : E → EReal) (x : E) : clConcave (fun z => -(f z)) x 
 
 theorem clConcave_mono {g₁ g₂ : E → EReal} (h : g₁ ≤ g₂) : clConcave g₁ ≤ clConcave g₂ := by
   intro x
-  rw [clConcave_apply, clConcave_apply, _root_.EReal.neg_le_neg_iff]
-  exact clFn_mono (fun z => _root_.EReal.neg_le_neg_iff.2 (h z)) x
+  rw [clConcave_apply, clConcave_apply, EReal.neg_le_neg_iff]
+  exact clFn_mono (fun z => EReal.neg_le_neg_iff.2 (h z)) x
 
 /-- `g` is **concave-closed** when it equals its concave closure. -/
 def ClosedConcaveFn (g : E → EReal) : Prop := clConcave g = g
@@ -231,7 +231,7 @@ theorem closedConcaveFn_iff : ClosedConcaveFn g ↔ ClosedFn (fun z => -(g z)) :
 
 theorem le_clConcave (g : E → EReal) : g ≤ clConcave g := by
   intro x
-  rw [← _root_.EReal.neg_le_neg_iff, neg_clConcave]
+  rw [← EReal.neg_le_neg_iff, neg_clConcave]
   exact clFn_le _ x
 
 end Closure

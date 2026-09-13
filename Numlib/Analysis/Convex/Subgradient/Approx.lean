@@ -55,9 +55,10 @@ theorem iInf_add_pos_coe (z : EReal) : ⨅ ε ∈ Ioi (0 : ℝ), (z + (ε : ERea
         simp
     | top => exact le_top
     | coe c =>
-        refine EReal.le_coe_of_forall_lt fun q hq => ?_
+        refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+        replace hq := EReal.coe_lt_coe_iff.1 hq
         refine lt_of_le_of_lt (iInf₂_le ((q - c) / 2) (mem_Ioi.2 (by linarith))) ?_
-        rw [← _root_.EReal.coe_add]
+        rw [← EReal.coe_add]
         exact_mod_cast (by linarith : c + (q - c) / 2 < q)
   · have h0 : (0 : EReal) ≤ (ε : EReal) := by exact_mod_cast le_of_lt hε
     simpa using add_le_add (le_refl z) h0
@@ -71,20 +72,20 @@ theorem le_of_forall_pos_le_add {u v : EReal} (h : ∀ ε : ℝ, 0 < ε → u �
 /-- Moving a real constant across `≤` against a real coercion, on the right. -/
 theorem coe_le_add_coe_iff {s t : ℝ} {u : EReal} :
     ((s : ℝ) : EReal) ≤ u + (t : EReal) ↔ ((s - t : ℝ) : EReal) ≤ u := by
-  rw [_root_.EReal.coe_sub, _root_.EReal.sub_le_iff_le_add (.inl (_root_.EReal.coe_ne_bot t))
-    (.inl (_root_.EReal.coe_ne_top t))]
+  rw [EReal.coe_sub, EReal.sub_le_iff_le_add (.inl (EReal.coe_ne_bot t))
+    (.inl (EReal.coe_ne_top t))]
 
 /-- Slack transfer: a real constant may be moved from one side of an inequality with slack to the
 other. This is the bookkeeping behind `epsSubgradient_eq_supportSet`. -/
 theorem coe_add_le_add_coe_iff {s t c : ℝ} {u : EReal} :
     (s : EReal) + (c : EReal) ≤ u + (t : EReal) ↔ (c : EReal) ≤ u + ((t - s : ℝ) : EReal) := by
-  rw [← _root_.EReal.coe_add, coe_le_add_coe_iff, coe_le_add_coe_iff,
+  rw [← EReal.coe_add, coe_le_add_coe_iff, coe_le_add_coe_iff,
     show s + c - t = c - (t - s) from by ring]
 
 /-- Multiplying by a positive real is dividing by its reciprocal. -/
 theorem coe_mul_eq_div_coe_inv (a : ℝ) (z : EReal) :
     (a : EReal) * z = z / ((a⁻¹ : ℝ) : EReal) := by
-  rw [div_eq_mul_inv, ← _root_.EReal.coe_inv, inv_inv]
+  rw [div_eq_mul_inv, ← EReal.coe_inv, inv_inv]
   exact mul_comm _ _
 
 /-- Letting `ε ↓ 0` in `u + (ε - s)`. -/
@@ -92,7 +93,7 @@ theorem iInf_add_sub_pos_coe (u : EReal) (s : ℝ) :
     ⨅ ε ∈ Ioi (0 : ℝ), (u + ((ε - s : ℝ) : EReal)) = u + ((-s : ℝ) : EReal) := by
   have hstep : ∀ ε : ℝ, u + ((ε - s : ℝ) : EReal) = (u + ((-s : ℝ) : EReal)) + (ε : EReal) :=
     fun ε => by
-      rw [show (ε - s : ℝ) = -s + ε from by ring, _root_.EReal.coe_add, ← add_assoc]
+      rw [show (ε - s : ℝ) = -s + ε from by ring, EReal.coe_add, ← add_assoc]
   simp_rw [hstep]
   exact iInf_add_pos_coe _
 
@@ -118,7 +119,7 @@ def epsSubgradient (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ε : ℝ) (f : E → E
 @[simp] theorem epsSubgradient_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
     epsSubgradient B 0 f x = subgradient B f x := by
   ext y
-  simp only [mem_epsSubgradient, mem_subgradient, _root_.EReal.coe_zero, add_zero]
+  simp only [mem_epsSubgradient, mem_subgradient, EReal.coe_zero, add_zero]
 
 /-- The ε-subdifferentials increase with `ε`. -/
 theorem epsSubgradient_mono (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) {ε₁ ε₂ : ℝ}
@@ -153,7 +154,7 @@ omit [Module ℝ E] in
 /-- The value of `shiftFn` at the origin. -/
 theorem shiftFn_zero {r c : ℝ} (hr : f x = (r : EReal)) :
     shiftFn f x c 0 = ((r + c : ℝ) : EReal) := by
-  rw [shiftFn_apply, add_zero, hr, ← _root_.EReal.coe_add]
+  rw [shiftFn_apply, add_zero, hr, ← EReal.coe_add]
 
 /-- A translate of a convex function, raised by a constant, is convex. -/
 theorem convexFn_shiftFn (hf : ConvexFn f) (x : E) (c : ℝ) : ConvexFn (shiftFn f x c) := by
@@ -175,10 +176,10 @@ theorem proper_shiftFn (hp : Proper f) (x : E) (c : ℝ) : Proper (shiftFn f x c
   have hxz : x + (z - x) = z := by abel
   refine ⟨⟨z - x, ?_⟩, fun w => ?_⟩
   · rw [mem_dom, shiftFn_apply, hxz]
-    exact _root_.EReal.add_lt_top (mem_dom.1 hz).ne (_root_.EReal.coe_ne_top c)
-  · rw [shiftFn_apply, Ne, _root_.EReal.add_eq_bot_iff]
+    exact EReal.add_lt_top (mem_dom.1 hz).ne (EReal.coe_ne_top c)
+  · rw [shiftFn_apply, Ne, EReal.add_eq_bot_iff]
     push Not
-    exact ⟨hp.ne_bot (x + w), _root_.EReal.coe_ne_bot c⟩
+    exact ⟨hp.ne_bot (x + w), EReal.coe_ne_bot c⟩
 
 end Defs
 
@@ -280,7 +281,7 @@ omit [Module ℝ E] in
 /-- The shift written out: `shiftFn f x (-f x) w = f (x + w) - f x`. -/
 theorem shiftFn_neg_apply (hr : f x = (r : EReal)) (w : E) :
     shiftFn f x (-r) w = f (x + w) - f x := by
-  rw [shiftFn_apply, hr, _root_.EReal.coe_neg, ← sub_eq_add_neg]
+  rw [shiftFn_apply, hr, EReal.coe_neg, ← sub_eq_add_neg]
 
 /-- The rescaled values of the shift are exactly the difference quotients defining
 `f'(x; ·)`; their infimum is therefore the directional derivative. -/
@@ -294,13 +295,13 @@ theorem iInf_coe_mul_shiftFn_neg (hr : f x = (r : EReal)) (v : E) :
 and — unlike the book's own formula for `posHomGen` — no case distinction at `v = 0`. -/
 theorem posHomGen_shiftFn (hf : ConvexFn f) (hr : f x = (r : EReal)) :
     posHomGen (shiftFn f x (-r)) = dirDeriv f x := by
-  have ht : f x ≠ ⊤ := by rw [hr]; exact _root_.EReal.coe_ne_top r
-  have hb : f x ≠ ⊥ := by rw [hr]; exact _root_.EReal.coe_ne_bot r
+  have ht : f x ≠ ⊤ := by rw [hr]; exact EReal.coe_ne_top r
+  have hb : f x ≠ ⊥ := by rw [hr]; exact EReal.coe_ne_bot r
   have hle : dirDeriv f x ≤ shiftFn f x (-r) := by
     rw [Pi.le_def]
     intro w
     have hq := dirDeriv_le f x w one_pos
-    rw [one_smul, _root_.EReal.coe_one, div_one] at hq
+    rw [one_smul, EReal.coe_one, div_one] at hq
     rw [shiftFn_neg_apply hr]
     exact hq
   refine le_antisymm ?_ (le_posHomGen (posHomogeneous_dirDeriv f x) (convexFn_dirDeriv hf ht hb)
@@ -352,7 +353,7 @@ theorem closedFn_posHomGen_shiftFn (hf : ConvexFn f) (hp : Proper f) (hc : IsClo
     exact_mod_cast hε
   have hdom : shiftFn f x (ε - r) 0 ≠ ⊤ := by
     rw [hg0]
-    exact _root_.EReal.coe_ne_top ε
+    exact EReal.coe_ne_top ε
   have hproper := proper_posHomGen hgc hgp hge h0
   have hlsc := lscHull_posHomGen_eq hgc hgp hge h0 hdom
   have hcl : clFn (posHomGen (shiftFn f x (ε - r))) = posHomGen (shiftFn f x (ε - r)) := by
@@ -377,8 +378,8 @@ theorem supportFn_epsSubgradient_apply [IsCompatiblePairing B] (hf : ConvexFn f)
   rw [supportFn_epsSubgradient hf hp hc hr hε,
     posHomGen_apply_eq_iInf_div (convexFn_shiftFn hf x _) hv]
   refine iInf_congr fun b => iInf_congr fun _ => ?_
-  rw [shiftFn_apply, hr, show (ε - r : ℝ) = -r + ε from by ring, _root_.EReal.coe_add,
-    _root_.EReal.coe_neg, ← add_assoc, ← sub_eq_add_neg]
+  rw [shiftFn_apply, hr, show (ε - r : ℝ) = -r + ε from by ring, EReal.coe_add,
+    EReal.coe_neg, ← add_assoc, ← sub_eq_add_neg]
 
 /-- The support functions of the ε-subdifferentials decrease, as `ε ↓ 0`, to the directional
 derivative — *not* merely to its closure `δ*(· | ∂f x)`. Both inequalities are read off

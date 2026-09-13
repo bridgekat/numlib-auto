@@ -624,8 +624,8 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 
 private theorem add_coe_right_inj {a b : EReal} {r : ℝ} :
     a + (r : EReal) = b + (r : EReal) ↔ a = b :=
-  ⟨fun h => le_antisymm ((_root_.EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.le)
-      ((_root_.EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.ge), fun h => by rw [h]⟩
+  ⟨fun h => le_antisymm ((EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.le)
+      ((EReal.addLECancellable_coe r).add_le_add_iff_right.1 h.ge), fun h => by rw [h]⟩
 
 /-- The arithmetic behind that identification: with `e = c - d`, the equations `-b = e - a` and
 `a - c = b - d` say the same thing, both reducing to `a + d = b + c`. -/
@@ -633,12 +633,12 @@ private theorem neg_eq_coe_sub_iff_sub_coe_eq_sub_coe (a b : EReal) (c d e : ℝ
     (he : -d + c = e) :
     -b = ((e : ℝ) : EReal) - a ↔ a - ((c : ℝ) : EReal) = b - ((d : ℝ) : EReal) := by
   have hb : -b = -(b - ((0 : ℝ) : EReal)) := by
-    rw [_root_.EReal.coe_zero, sub_zero]
+    rw [EReal.coe_zero, sub_zero]
   have hkey : b + ((e : ℝ) : EReal) + ((d : ℝ) : EReal) = b + ((c : ℝ) : EReal) := by
-    rw [add_assoc, ← _root_.EReal.coe_add]
+    rw [add_assoc, ← EReal.coe_add]
     congr 2
     linarith
-  rw [hb, ← neg_sub_coe a e, _root_.neg_inj, sub_coe_eq_sub_coe_iff, _root_.EReal.coe_zero,
+  rw [hb, ← neg_sub_coe a e, _root_.neg_inj, sub_coe_eq_sub_coe_iff, EReal.coe_zero,
     add_zero, sub_coe_eq_sub_coe_iff]
   refine ⟨fun h => ?_, fun h => ?_⟩
   · rw [← h]

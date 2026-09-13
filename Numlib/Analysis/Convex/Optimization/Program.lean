@@ -1,3 +1,4 @@
+import Numlib.Analysis.Convex.Duality.Relint
 import Numlib.Analysis.Convex.Helly
 import Numlib.Analysis.Convex.Optimization.Minimum
 
@@ -29,6 +30,10 @@ existence theorem applies it directly and the affine-only case is `ι = Empty`.
   suffices.
 * `exists_multipliers_of_slater_eq` — the same for affine *equality* constraints, whose
   multipliers are then of unrestricted sign.
+* `subgradient_add_sum_coe_mul`, `mem_argmin_add_sum_coe_mul_of_zero_mem`,
+  `isKuhnTuckerVector_of_kuhnTucker` — the Kuhn–Tucker conditions (Theorem 28.3 in [^1]): the
+  subgradient of `f₀ + λ₁f₁ + ⋯ + λₘfₘ` decomposes as `∂f₀ + ∑ λᵢ ∂fᵢ`, and the conditions make
+  `x̄` optimal and `λ` a Kuhn–Tucker vector.
 
 ## Implementation notes
 
@@ -152,8 +157,8 @@ theorem programLagrangian_eq_top (hl : ∀ i, 0 ≤ l i) (hbot : ∀ i x, f i x 
     (hx : f₀ x = ⊤) : programLagrangian f₀ f b l μ x = ⊤ := by
   have hsum : (∑ i, (l i : EReal) * f i x) ≠ ⊥ :=
     EReal.sum_ne_bot fun i _ => EReal.coe_mul_ne_bot (hl i) (hbot i x)
-  rw [programLagrangian_apply, hx, _root_.EReal.top_add_of_ne_bot hsum,
-    _root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot _)]
+  rw [programLagrangian_apply, hx, EReal.top_add_of_ne_bot hsum,
+    EReal.top_add_of_ne_bot (EReal.coe_ne_bot _)]
 
 /-- The Lagrangian where objective and constraints are all finite, as a single real number. -/
 theorem programLagrangian_eq_coe {x : E} {r₀ : ℝ} (h₀ : f₀ x = (r₀ : EReal)) {r : ι → ℝ}
@@ -161,9 +166,9 @@ theorem programLagrangian_eq_coe {x : E} {r₀ : ℝ} (h₀ : f₀ x = (r₀ : E
     programLagrangian f₀ f b l μ x
       = ((r₀ + (∑ i, l i * r i) + ∑ j, μ j * b j x : ℝ) : EReal) := by
   have hterm : ∀ i, (l i : EReal) * f i x = ((l i * r i : ℝ) : EReal) := fun i => by
-    rw [hr i, EReal.coe_mul_coe]
+    rw [hr i, ← EReal.coe_mul]
   rw [programLagrangian_apply, h₀, Finset.sum_congr rfl (fun i _ => hterm i),
-    ← EReal.coe_sum, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add]
+    ← EReal.coe_sum, ← EReal.coe_add, ← EReal.coe_add]
 
 end Elementary
 
@@ -180,8 +185,8 @@ private theorem add_neg_coe_lt_zero_iff {u : EReal} {a : ℝ} :
   | bot => simp
   | top => simp
   | coe r =>
-    rw [← _root_.EReal.coe_add, ← _root_.EReal.coe_zero, _root_.EReal.coe_lt_coe_iff,
-      _root_.EReal.coe_lt_coe_iff]
+    rw [← EReal.coe_add, ← EReal.coe_zero, EReal.coe_lt_coe_iff,
+      EReal.coe_lt_coe_iff]
     constructor <;> intro h <;> linarith
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [Fintype ι] [Fintype κ] in
@@ -191,8 +196,8 @@ private theorem add_neg_coe_lt_top_iff {u : EReal} {a : ℝ} :
   | bot => simp
   | top => simp
   | coe r =>
-    rw [← _root_.EReal.coe_add]
-    exact iff_of_true (_root_.EReal.coe_lt_top _) (_root_.EReal.coe_lt_top _)
+    rw [← EReal.coe_add]
+    exact iff_of_true (EReal.coe_lt_top _) (EReal.coe_lt_top _)
 
 /-- **Existence of Kuhn–Tucker coefficients under Slater's condition.** If the optimal value is
 not `-∞` and the program has a feasible solution in `ri C`, `C = dom f₀`, satisfying *strictly*
@@ -218,14 +223,14 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
   have hgconv : ∀ i', ConvexFn (g i') := by
     rintro (_ | i)
     · have : ConvexFn (f₀ + fun _ : E => ((-α : ℝ) : EReal)) :=
-        hf₀.add (convexFn_const _) hp₀.ne_bot (fun _ => _root_.EReal.coe_ne_bot _)
+        hf₀.add (convexFn_const _) hp₀.ne_bot (fun _ => EReal.coe_ne_bot _)
       exact this
     · exact hf i
   have hgproper : ∀ i', Proper (g i') := by
     rintro (_ | i)
     · refine ⟨⟨z, ?_⟩, fun x => ?_⟩
       · exact mem_dom.2 (add_neg_coe_lt_top_iff.2 (mem_dom.1 hzC))
-      · exact _root_.EReal.add_ne_bot_iff.2 ⟨hp₀.ne_bot x, _root_.EReal.coe_ne_bot _⟩
+      · exact EReal.add_ne_bot_iff.2 ⟨hp₀.ne_bot x, EReal.coe_ne_bot _⟩
     · exact hp i
   have hgdom : ∀ i', ri (dom f₀) ⊆ dom (g i') := by
     rintro (_ | i) x hx
@@ -285,13 +290,13 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
       rw [Fintype.sum_option] at hx'
       have hnone : (c none : EReal) * g none x = ((c none * (r₀ + -α) : ℝ) : EReal) := by
         change (c none : EReal) * (f₀ x + ((-α : ℝ) : EReal)) = _
-        rw [hr₀, ← _root_.EReal.coe_add, EReal.coe_mul_coe]
+        rw [hr₀, ← EReal.coe_add, ← EReal.coe_mul]
       have hsome : ∀ i, (c (some i) : EReal) * g (some i) x = ((c (some i) * r i : ℝ) : EReal) := by
-        intro i; rw [hgsome i, hr i, EReal.coe_mul_coe]
+        intro i; rw [hgsome i, hr i, ← EReal.coe_mul]
       rw [hnone, Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => hsome i),
-        ← EReal.coe_sum, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-        ← _root_.EReal.coe_zero, _root_.EReal.coe_le_coe_iff] at hx'
-      rw [programLagrangian_eq_coe hr₀ hr, _root_.EReal.coe_le_coe_iff]
+        ← EReal.coe_sum, ← EReal.coe_add, ← EReal.coe_add,
+        ← EReal.coe_zero, EReal.coe_le_coe_iff] at hx'
+      rw [programLagrangian_eq_coe hr₀ hr, EReal.coe_le_coe_iff]
       refine le_of_mul_le_mul_left ?_ hcpos
       have hsumfield : c none * (∑ i, l i * r i) = ∑ i, c (some i) * r i := by
         rw [Finset.mul_sum]
@@ -320,8 +325,8 @@ theorem exists_isKuhnTuckerVector_of_slater (hf₀ : ConvexFn f₀) (hp₀ : Pro
     rw [← hα]
     exact le_iInf₂ fun x hx =>
       (iInf_le _ x).trans (programLagrangian_le_of_mem_feasibleSet hlnonneg hνnonneg hx)
-  exact ⟨l, ν, hlnonneg, hνnonneg, by rw [hiInf]; exact _root_.EReal.coe_ne_bot _,
-    by rw [hiInf]; exact _root_.EReal.coe_ne_top _, by rw [hiInf, hα]⟩
+  exact ⟨l, ν, hlnonneg, hνnonneg, by rw [hiInf]; exact EReal.coe_ne_bot _,
+    by rw [hiInf]; exact EReal.coe_ne_top _, by rw [hiInf, hα]⟩
 
 /-- With only affine constraints a feasible solution in `ri C` suffices: the existence theorem
 with an empty family of strict constraints. -/
@@ -431,6 +436,278 @@ theorem exists_multipliers_of_slater_eq {σ : Type*} [Fintype σ] {a : σ → E 
   rw [iInf_congr hlag, hkt.iInf_eq, optimalValue, hfeasEq]
 
 end Slater
+
+/-! ### The Kuhn–Tucker conditions
+
+Rockafellar's Theorem 28.3 (*Convex Analysis*, §28) characterises the pairs (Kuhn–Tucker vector,
+optimal solution) of an ordinary convex program by three conditions on the point `x̄` and the
+multipliers `λᵢ`: (a) `λᵢ ≥ 0`, `fᵢ(x̄) ≤ 0` and `λᵢ fᵢ(x̄) = 0` for the inequality constraints;
+(b) `fᵢ(x̄) = 0` for the (affine) equality constraints;
+(c) `0 ∈ ∂f₀(x̄) + λ₁∂f₁(x̄) + ⋯ + λₘ∂fₘ(x̄)`, the terms with `λᵢ = 0` omitted. Its general content
+is two statements about Rockafellar's `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`, the objective plus the weighted
+constraints at fixed multipliers:
+
+* `subgradient_add_sum_coe_mul` — the subgradient of `h` decomposes as in (c), by the sum rule
+  for subgradients (Theorem 23.8 in [^1]) under the constraint qualification that the effective
+  domains share a relative interior point;
+* `mem_argmin_add_sum_coe_mul_of_zero_mem` and `add_sum_coe_mul_eq_of_forall_mul_eq_zero` —
+  condition (c) makes `x̄` a minimiser of `h`, and complementary slackness makes `h(x̄) = f₀(x̄)`;
+  together these are the sufficiency half of Theorem 28.3, for any program whose Lagrange
+  function has this shape.
+
+Both are stated for one finite family of summands `λᵢ fᵢ`, each **admissible** in the sense of
+`IsLagrangeSummand`: either `fᵢ` is convex and proper and `λᵢ ≥ 0`, or `fᵢ` is affine and `λᵢ` has
+any sign — the two kinds of constraint of an ordinary convex program — and for any dual pair.
+`isKuhnTuckerVector_of_kuhnTucker` is the same sufficiency read in the vocabulary of this file,
+where the affine constraints form the separate family `b`. -/
+
+section LagrangeSummand
+
+open scoped Pointwise
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [AddCommGroup F] [Module ℝ F]
+  {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {x₀ : E}
+
+/-- The summand `λ g` of a Lagrange function is **admissible** at the reference point `x₀` when it
+is a proper convex function with `x₀` in the relative interior of its effective domain: either
+`g` is convex and proper, `λ ≥ 0` and `x₀ ∈ ri (dom g)`, or `g` is affine — its linear part
+represented through the pairing by some `v` with `⟨w, v⟩ = a.linear w` — and `λ` is arbitrary.
+These are the inequality and the equality constraints of an ordinary convex program. -/
+def IsLagrangeSummand (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (x₀ : E) (l : ℝ) (g : E → EReal) : Prop :=
+  (0 ≤ l ∧ ConvexFn g ∧ Proper g ∧ x₀ ∈ ri (dom g)) ∨
+    ∃ (a : E →ᵃ[ℝ] ℝ) (v : F), (∀ y, g y = a y) ∧ ∀ w, B w v = a.linear w
+
+/-- A real multiple of an affine function is a convex, proper, everywhere finite function. -/
+theorem convexFn_proper_coe_mul_affineMap (c : ℝ) (a : E →ᵃ[ℝ] ℝ) :
+    ConvexFn (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
+      Proper (fun y => (c : EReal) * ((a y : ℝ) : EReal)) ∧
+      dom (fun y => (c : EReal) * ((a y : ℝ) : EReal)) = univ := by
+  have hrw : (fun y => (c : EReal) * ((a y : ℝ) : EReal))
+      = fun y => (((c • a) y : ℝ) : EReal) := by
+    funext y
+    rw [← EReal.coe_mul, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
+  rw [hrw]
+  refine ⟨?_, proper_coe _, dom_coe _⟩
+  refine ConvexOn.convexFn_coe ⟨convex_univ, fun x _ y _ p q hp hq hpq => ?_⟩
+  rw [Convex.combo_affine_apply hpq]
+
+/-- An admissible summand is a proper convex function whose effective domain has `x₀` in its
+relative interior — the hypotheses of the sum rule for subgradients. -/
+theorem IsLagrangeSummand.convexFn_proper_mem_relint {c : ℝ} {g : E → EReal}
+    (h : IsLagrangeSummand B x₀ c g) :
+    ConvexFn (fun y => (c : EReal) * g y) ∧ Proper (fun y => (c : EReal) * g y) ∧
+      x₀ ∈ ri (dom fun y => (c : EReal) * g y) := by
+  rcases h with ⟨hc, hg, hp, hx₀⟩ | ⟨a, v, hga, -⟩
+  · refine ⟨convexFn_coe_mul hc hg, proper_coe_mul hc hp, ?_⟩
+    rcases hc.eq_or_lt with rfl | hpos
+    · have hdom : dom (fun y => ((0 : ℝ) : EReal) * g y) = univ :=
+        eq_univ_of_forall fun y => by simp
+      rw [hdom, intrinsicInterior_univ]
+      exact mem_univ _
+    · rwa [dom_coe_mul hpos]
+  · have hg : g = fun y => ((a y : ℝ) : EReal) := funext hga
+    subst hg
+    obtain ⟨h₁, h₂, h₃⟩ := convexFn_proper_coe_mul_affineMap c a
+    refine ⟨h₁, h₂, ?_⟩
+    rw [h₃, intrinsicInterior_univ]
+    exact mem_univ _
+
+/-- The subgradient of an admissible summand with a non-zero multiplier is the multiple of the
+subgradient: `∂(λg) = λ ∂g` for `λ > 0`, and for every `λ` when `g` is affine. -/
+theorem IsLagrangeSummand.subgradient_coe_mul (hsep : Function.Injective B.flip) {c : ℝ}
+    {g : E → EReal} (h : IsLagrangeSummand B x₀ c g) (hc : c ≠ 0) (x : E) :
+    subgradient B (fun y => (c : EReal) * g y) x = c • subgradient B g x := by
+  rcases h with ⟨hc0, -, -, -⟩ | ⟨a, v, hga, hv⟩
+  · exact ConvexAnalysis.subgradient_coe_mul (lt_of_le_of_ne hc0 (Ne.symm hc)) g x
+  · have hg : g = fun y => ((a y : ℝ) : EReal) := funext hga
+    subst hg
+    exact subgradient_coe_mul_affineMap hsep c a hv x
+
+end LagrangeSummand
+
+section KuhnTucker
+
+open scoped Pointwise
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
+  {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι : Type*} {s : Finset ι} {f₀ : E → EReal} {f : ι → E → EReal}
+  {l : ι → ℝ} {x₀ : E}
+
+/-- **The subgradient of `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`**, Theorem 23.8 applied to the summands of the
+Lagrange function: when the effective domains share a relative interior point `x₀`,
+`∂h(x) = ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the indices with `λᵢ ≠ 0`. The omission is not
+cosmetic — `∂fᵢ(x)` can be empty at a boundary point of `dom fᵢ`, and then `0 · ∂fᵢ(x)` would be
+empty rather than `{0}`. -/
+theorem subgradient_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
+    (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i)) (x : E) :
+    subgradient B (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) x
+      = subgradient B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subgradient B (f i) x := by
+  classical
+  set g : Option ι → E → EReal := fun o => o.elim f₀ fun i y => (l i : EReal) * f i y with hg
+  have hsum : (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) = ∑ o ∈ s.insertNone, g o := by
+    funext y
+    rw [Finset.sum_apply, Finset.sum_insertNone]
+    rfl
+  have hprop : ∀ o ∈ s.insertNone, ConvexFn (g o) ∧ Proper (g o) ∧ x₀ ∈ ri (dom (g o)) := by
+    intro o ho
+    cases o with
+    | none => exact ⟨hf₀, hp₀, hx₀⟩
+    | some i => exact (hf i (Finset.some_mem_insertNone.1 ho)).convexFn_proper_mem_relint
+  have hex : IsExactFinsetSum B s.insertNone g :=
+    IsExactFinsetSum.of_relint ⟨none, Finset.mem_insertNone.2 (by simp)⟩
+      (fun o ho => (hprop o ho).1) (fun o ho => (hprop o ho).2.1) fun o ho => (hprop o ho).2.2
+  rw [hsum, hex.subgradient_finsetSum x, Finset.sum_insertNone, Finset.sum_filter]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  split_ifs with hli
+  · exact (hf i hi).subgradient_coe_mul hsep hli x
+  · push Not at hli
+    change subgradient B (fun y => (l i : EReal) * f i y) x = 0
+    rw [hli, subgradient_zero_mul hsep, Set.singleton_zero]
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
+/-- **Complementary slackness**: when every product `λᵢ fᵢ(x)` vanishes, `h(x) = f₀(x)`. -/
+theorem add_sum_coe_mul_eq_of_forall_mul_eq_zero {x : E}
+    (h : ∀ i ∈ s, (l i : EReal) * f i x = 0) :
+    f₀ x + ∑ i ∈ s, (l i : EReal) * f i x = f₀ x := by
+  rw [Finset.sum_eq_zero h, add_zero]
+
+/-- **Condition (c) of the Kuhn–Tucker conditions makes `x` a minimiser of `h`**: if
+`0 ∈ ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the `λᵢ ≠ 0`, then `x ∈ argmin h`. -/
+theorem mem_argmin_add_sum_coe_mul_of_zero_mem [IsCompatiblePairing B]
+    [IsCompatiblePairing B.flip] (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀)
+    (hp₀ : Proper f₀) (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i))
+    {x : E}
+    (h : (0 : F) ∈ subgradient B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subgradient B (f i) x) :
+    x ∈ argmin fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y := by
+  rw [mem_argmin_iff_zero_mem_subgradient B, subgradient_add_sum_coe_mul hsep hf₀ hp₀ hx₀ hf]
+  exact h
+
+end KuhnTucker
+
+section KuhnTuckerProgram
+
+open scoped Pointwise
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
+  {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι κ : Type*} [Fintype ι] [Fintype κ]
+  {f₀ : E → EReal} {f : ι → E → EReal} {b : κ → E →ᵃ[ℝ] ℝ} {l : ι → ℝ} {μ : κ → ℝ}
+
+/-- The affine part `x ↦ ∑ⱼ μⱼ bⱼ(x)` of the Lagrangian, as one affine map. -/
+def affineSum (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) : E →ᵃ[ℝ] ℝ where
+  toFun y := ∑ j, μ j * b j y
+  linear := ∑ j, μ j • (b j).linear
+  map_vadd' p v := by
+    simp only [vadd_eq_add, LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul,
+      ← Finset.sum_add_distrib, ← mul_add]
+    exact Finset.sum_congr rfl fun j _ => by rw [← vadd_eq_add, AffineMap.map_vadd, vadd_eq_add]
+
+omit [FiniteDimensional ℝ E] in
+@[simp] theorem affineSum_apply (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) (y : E) :
+    affineSum b μ y = ∑ j, μ j * b j y := rfl
+
+omit [FiniteDimensional ℝ E] in
+@[simp] theorem affineSum_linear (b : κ → E →ᵃ[ℝ] ℝ) (μ : κ → ℝ) :
+    (affineSum b μ).linear = ∑ j, μ j • (b j).linear := rfl
+
+omit [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
+/-- The Lagrangian of this file is `h` for the family `f` together with the single affine summand
+`affineSum b μ`, indexed by `Option ι` with the affine part in the `none` slot and multiplier
+`1`. -/
+theorem programLagrangian_eq_add_sum_option (f₀ : E → EReal) (f : ι → E → EReal)
+    (b : κ → E →ᵃ[ℝ] ℝ) (l : ι → ℝ) (μ : κ → ℝ) :
+    programLagrangian f₀ f b l μ = fun x => f₀ x + ∑ o : Option ι,
+      ((o.elim (1 : ℝ) l : ℝ) : EReal) *
+        o.elim (fun y => ((affineSum b μ y : ℝ) : EReal)) f x := by
+  funext x
+  rw [programLagrangian_apply, Fintype.sum_option]
+  simp only [Option.elim, EReal.coe_one, one_mul]
+  rw [affineSum_apply, add_assoc, add_comm (∑ i, (l i : EReal) * f i x)]
+
+/-- **Sufficiency of the Kuhn–Tucker conditions** for the programs of this file: if `x` is
+feasible, the multipliers are non-negative with `λᵢ fᵢ(x) = 0` and `μⱼ bⱼ(x) = 0`, and
+`0 ∈ ∂f₀(x) + ∑ λᵢ ∂fᵢ(x) + {∑ μⱼ aⱼ}` — the sum over the `λᵢ ≠ 0`, the vector `aⱼ` representing
+the linear part of `bⱼ` through the pairing — then `(l, μ)` is a Kuhn–Tucker vector and `x` is an
+optimal solution: `f₀ x` is the optimal value. This is the "if" half of Rockafellar's
+Theorem 28.3, which needs no constraint qualification beyond a relative interior point `x₀` of
+`dom f₀` lying in `ri (dom fᵢ)` for every `i`. -/
+theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+    (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
+    (hf : ∀ i, ConvexFn (f i)) (hpf : ∀ i, Proper (f i)) {x₀ : E} (hx₀ : x₀ ∈ ri (dom f₀))
+    (hri : ∀ i, x₀ ∈ ri (dom (f i))) {a : κ → F} (ha : ∀ j w, B w (a j) = (b j).linear w) {x : E}
+    (hl : ∀ i, 0 ≤ l i ∧ f i x ≤ 0 ∧ (l i : EReal) * f i x = 0)
+    (hμ : ∀ j, 0 ≤ μ j ∧ b j x ≤ 0 ∧ μ j * b j x = 0)
+    (hc : (0 : F) ∈ subgradient B f₀ x + ∑ i with l i ≠ 0, l i • subgradient B (f i) x
+      + {∑ j, μ j • a j}) :
+    IsKuhnTuckerVector f₀ f b l μ ∧ x ∈ feasibleSet f b ∧ f₀ x = optimalValue f₀ f b := by
+  classical
+  -- the Lagrangian as `h` over `Option ι`
+  set l' : Option ι → ℝ := fun o => o.elim 1 l with hl'
+  set g : Option ι → E → EReal := fun o => o.elim (fun y => ((affineSum b μ y : ℝ) : EReal)) f
+    with hg
+  have hlag : programLagrangian f₀ f b l μ = fun y => f₀ y + ∑ o, (l' o : EReal) * g o y :=
+    programLagrangian_eq_add_sum_option f₀ f b l μ
+  have hlin : ∀ w, B w (∑ j, μ j • a j) = (affineSum b μ).linear w := fun w => by
+    simp only [map_sum, map_smul, smul_eq_mul, affineSum_linear, LinearMap.sum_apply,
+      LinearMap.smul_apply, ha]
+  have hadm : ∀ o ∈ (Finset.univ : Finset (Option ι)), IsLagrangeSummand B x₀ (l' o) (g o) := by
+    intro o _
+    cases o with
+    | none => exact Or.inr ⟨affineSum b μ, ∑ j, μ j • a j, fun y => rfl, hlin⟩
+    | some i => exact Or.inl ⟨(hl i).1, hf i, hpf i, hri i⟩
+  -- condition (c) in the `Option ι` shape
+  have hfilter : (Finset.univ.filter fun o : Option ι => l' o ≠ 0)
+      = insert none ((Finset.univ.filter fun i => l i ≠ 0).map Function.Embedding.some) := by
+    ext o
+    cases o <;> simp [hl']
+  have hc' : (0 : F) ∈ subgradient B f₀ x + ∑ o with l' o ≠ 0, l' o • subgradient B (g o) x := by
+    rw [hfilter, Finset.sum_insert (by simp), Finset.sum_map]
+    have hnone : subgradient B (fun y => ((affineSum b μ y : ℝ) : EReal)) x = {∑ j, μ j • a j} :=
+      subgradient_coe_affineMap hsep (affineSum b μ) hlin x
+    simp only [hl', hg, Option.elim, Function.Embedding.some_apply, one_smul]
+    rw [hnone, add_comm ({∑ j, μ j • a j} : Set F), ← add_assoc]
+    exact hc
+  have hmin : x ∈ argmin (programLagrangian f₀ f b l μ) := by
+    rw [hlag]
+    exact mem_argmin_add_sum_coe_mul_of_zero_mem hsep hf₀ hp₀ hx₀ hadm hc'
+  -- complementary slackness: `L x = f₀ x`
+  have hslack : ∀ o ∈ (Finset.univ : Finset (Option ι)), (l' o : EReal) * g o x = 0 := by
+    intro o _
+    cases o with
+    | none =>
+      have : affineSum b μ x = 0 := by
+        rw [affineSum_apply]
+        exact Finset.sum_eq_zero fun j _ => (hμ j).2.2
+      simp only [hl', hg, Option.elim, this, EReal.coe_zero, mul_zero]
+    | some i => exact (hl i).2.2
+  have hLx : programLagrangian f₀ f b l μ x = f₀ x := by
+    rw [hlag]
+    exact add_sum_coe_mul_eq_of_forall_mul_eq_zero hslack
+  -- `x` is feasible and in `dom f₀`
+  have hfeas : x ∈ feasibleSet f b := ⟨fun i => (hl i).2.1, fun j => (hμ j).2.1⟩
+  have hxdom : x ∈ dom f₀ := by
+    obtain ⟨w, hw, -, -, -⟩ := Set.mem_add.1 hc
+    obtain ⟨v₀, hv₀, -, -, -⟩ := Set.mem_add.1 hw
+    exact mem_dom_of_mem_subgradient hp₀ hv₀
+  have hinf : (⨅ y, programLagrangian f₀ f b l μ y) = f₀ x := by
+    rw [iInf_eq_of_mem_argmin hmin, hLx]
+  have hopt : f₀ x = optimalValue f₀ f b := by
+    refine le_antisymm ?_ (optimalValue_le hfeas)
+    refine le_iInf₂ fun y hy => ?_
+    calc f₀ x = programLagrangian f₀ f b l μ x := hLx.symm
+      _ ≤ programLagrangian f₀ f b l μ y := hmin y
+      _ ≤ f₀ y :=
+        programLagrangian_le_of_mem_feasibleSet (fun i => (hl i).1) (fun j => (hμ j).1) hy
+  refine ⟨⟨fun i => (hl i).1, fun j => (hμ j).1, ?_, ?_, ?_⟩, hfeas, hopt⟩
+  · rw [hinf]; exact hp₀.ne_bot x
+  · rw [hinf]; exact (mem_dom.1 hxdom).ne
+  · rw [hinf, hopt]
+
+end KuhnTuckerProgram
 
 end ConvexAnalysis
 

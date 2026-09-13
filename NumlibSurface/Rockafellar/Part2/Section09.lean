@@ -495,7 +495,7 @@ theorem corollary_9_7_1_zero {C : Set (Rn n)} (hC : Convex ℝ C) (h0 : (0 : Rn 
   · refine le_antisymm ?_ (gaugeFn_nonneg C x)
     refine le_of_forall_gt_imp_ge_of_dense fun c hc => ?_
     obtain ⟨d, hd0, hdc⟩ : ∃ d : ℝ, 0 < d ∧ (d : EReal) ≤ c := by
-      obtain ⟨d, hd₁, hd₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hc
+      obtain ⟨d, hd₁, hd₂⟩ := EReal.lt_iff_exists_real_btwn.1 hc
       exact ⟨d, by exact_mod_cast hd₁, hd₂.le⟩
     refine le_trans ?_ hdc
     have := Set.mem_iInter₂.1 hx d hd0
@@ -656,7 +656,7 @@ theorem corollary_9_8_2 {C D : Set (Rn n)} (hCc : IsClosed C) (hCb : Bornology.I
   have hcpt : IsCompact (C ∪ D) :=
     (Metric.isCompact_iff_isClosed_bounded.2 ⟨hCc, hCb⟩).union
       (Metric.isCompact_iff_isClosed_bounded.2 ⟨hDc, hDb⟩)
-  have h := IsCompact.isCompact_convexHull hcpt
+  have h := IsCompact.convexHull hcpt
   exact ⟨h.isClosed, h.isBounded⟩
 
 /-- **Corollary 9.8.3** for `m = 2`. If `f₁, f₂` are closed proper convex functions on

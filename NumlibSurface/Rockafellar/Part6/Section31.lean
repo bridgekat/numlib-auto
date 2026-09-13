@@ -298,17 +298,17 @@ theorem theorem_31_1_finite {f g : Rn n → EReal} (hpf : Proper f) (hpg : Prope
   have hlow : ((c - d : ℝ) : EReal) ≤ ⨅ x, f x - g x := by
     refine le_iInf fun x => ?_
     have h := theorem_31_1_weak f g x y₀
-    rwa [hc, hd, ← _root_.EReal.coe_sub] at h
+    rwa [hc, hd, ← EReal.coe_sub] at h
   have hbot : (⨅ x, f x - g x) ≠ ⊥ := by
     intro hcon
     rw [hcon, le_bot_iff] at hlow
-    exact _root_.EReal.coe_ne_bot _ hlow
+    exact EReal.coe_ne_bot _ hlow
   have htop : (⨅ x, f x - g x) < ⊤ := by
     refine lt_of_le_of_lt (iInf_le (fun x => f x - g x) x₀) ?_
     have h1 : f x₀ < ⊤ := hxf
     have h2 : (⊥ : EReal) < g x₀ := hxg
-    have h3 : -(g x₀) ≠ ⊤ := by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact h2.ne'
-    exact _root_.EReal.add_lt_top h1.ne h3
+    have h3 : -(g x₀) ≠ ⊤ := by rw [Ne, EReal.neg_eq_top_iff]; exact h2.ne'
+    exact EReal.add_lt_top h1.ne h3
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbot htop
   exact ⟨r, hr⟩
 
@@ -1138,7 +1138,7 @@ theorem theorem_31_2_proper (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g 
     change graphFn (fenchelBifun A f g) (w₀ - A x₀, x₀) < ⊤
     rw [hval]
     exact EReal.coe_lt_top _
-  · exact _root_.EReal.add_ne_bot_iff.2 ⟨hpf.ne_bot p.2, by simpa using hpg.ne_top (A p.2 + p.1)⟩
+  · exact EReal.add_ne_bot_iff.2 ⟨hpf.ne_bot p.2, by simpa using hpg.ne_top (A p.2 + p.1)⟩
 
 /-- **Theorem 31.2**, third assertion: `F` is closed when `f` and `g` are. -/
 theorem theorem_31_2_closed (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
@@ -1193,11 +1193,11 @@ private theorem fenchelBifun_ne_top_iff {f : Rn n → EReal} {g : Rn m → EReal
   have hb : -(g (A x + u)) ≠ ⊥ := by simpa using hpg.ne_top (A x + u)
   constructor
   · intro h
-    obtain ⟨h1, h2⟩ := (_root_.EReal.add_ne_top_iff_ne_top₂ (hpf.ne_bot x) hb).1 h
+    obtain ⟨h1, h2⟩ := (EReal.add_ne_top_iff_ne_top₂ (hpf.ne_bot x) hb).1 h
     have h2' : g (A x + u) ≠ ⊥ := by simpa using h2
     exact ⟨lt_top_iff_ne_top.2 h1, bot_lt_iff_ne_bot.2 h2'⟩
   · rintro ⟨h1, h2⟩
-    refine (_root_.EReal.add_ne_top_iff_ne_top₂ (hpf.ne_bot x) hb).2
+    refine (EReal.add_ne_top_iff_ne_top₂ (hpf.ne_bot x) hb).2
       ⟨lt_top_iff_ne_top.1 h1, ?_⟩
     simpa using (ne_of_gt h2)
 
@@ -1344,11 +1344,11 @@ private theorem adjointBifun_fenchelBifun_ne_bot_iff (A : Rn n →ₗ[ℝ] Rn m)
   rw [theorem_31_2_adjoint A hpf hpg y v, sub_eq_add_neg]
   constructor
   · intro h
-    obtain ⟨h1, h2⟩ := _root_.EReal.add_ne_bot_iff.1 h
+    obtain ⟨h1, h2⟩ := EReal.add_ne_bot_iff.1 h
     have h2' : conj (pairing n) f (LinearMap.adjoint A v + y) ≠ ⊤ := by simpa using h2
     exact ⟨bot_lt_iff_ne_bot.2 h1, lt_top_iff_ne_top.2 h2'⟩
   · rintro ⟨h1, h2⟩
-    refine _root_.EReal.add_ne_bot_iff.2 ⟨ne_of_gt h1, ?_⟩
+    refine EReal.add_ne_bot_iff.2 ⟨ne_of_gt h1, ?_⟩
     simpa using (lt_top_iff_ne_top.1 h2)
 
 /-- The concave effective domain of `F*` is `dom f* - A* (dom g*)`: the mirror of

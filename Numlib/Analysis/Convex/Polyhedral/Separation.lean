@@ -321,20 +321,20 @@ theorem supportFn_le_neg_supportFn_neg_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
     supportFn B s y ≤ -supportFn B t (-y) ↔ ∀ x₁ ∈ s, ∀ x₂ ∈ t, B x₁ y ≤ B x₂ y := by
   have hflip : ∀ x : E, -((B x (-y) : ℝ) : EReal) = ((B x y : ℝ) : EReal) := by
     intro x
-    rw [map_neg, _root_.EReal.coe_neg, neg_neg]
+    rw [map_neg, EReal.coe_neg, neg_neg]
   constructor
   · intro h x₁ hx₁ x₂ hx₂
     have h₁ : ((B x₁ y : ℝ) : EReal) ≤ supportFn B s y := le_supportFn hx₁ y
     have h₃ : -supportFn B t (-y) ≤ -((B x₂ (-y) : ℝ) : EReal) :=
-      _root_.EReal.neg_le_neg_iff.2 (le_supportFn hx₂ (-y))
+      EReal.neg_le_neg_iff.2 (le_supportFn hx₂ (-y))
     have h₅ : ((B x₁ y : ℝ) : EReal) ≤ ((B x₂ y : ℝ) : EReal) := by
       rw [← hflip x₂]
       exact (h₁.trans h).trans h₃
     exact_mod_cast h₅
   · intro h
-    rw [_root_.EReal.le_neg]
+    rw [EReal.le_neg]
     refine supportFn_le_iff.2 fun x₂ hx₂ => ?_
-    rw [_root_.EReal.le_neg, hflip x₂]
+    rw [EReal.le_neg, hflip x₂]
     exact supportFn_le_coe_iff.2 fun x₁ hx₁ => h x₁ hx₁ x₂ hx₂
 
 /-- For a nonempty polyhedral `C₁` and a nonempty convex `C₂`, `C₁` meets `ri C₂` exactly when
@@ -358,10 +358,10 @@ theorem nonempty_inter_relint_iff_forall_supportFn [IsCompatiblePairing B]
     have hub : supportFn B C₁ y ≤ ((B x₂ y : ℝ) : EReal) :=
       supportFn_le_coe_iff.2 fun z hz => hy z hz x₂ hx₂
     have hnetop : supportFn B C₁ y ≠ ⊤ :=
-      ne_top_of_le_ne_top (_root_.EReal.coe_ne_top _) hub
+      ne_top_of_le_ne_top (EReal.coe_ne_top _) hub
     have hnebot : supportFn B C₁ y ≠ ⊥ := supportFn_ne_bot ⟨x₁, hx₁⟩ y
     have hcoe : (((supportFn B C₁ y).toReal : ℝ) : EReal) = supportFn B C₁ y :=
-      _root_.EReal.coe_toReal hnetop hnebot
+      EReal.coe_toReal hnetop hnebot
     have hsep : Separates (evalCLM B y) (supportFn B C₁ y).toReal C₁ C₂ := by
       refine ⟨fun z hz => ?_, fun z hz => ?_⟩
       · have h := le_supportFn (B := B) hz y

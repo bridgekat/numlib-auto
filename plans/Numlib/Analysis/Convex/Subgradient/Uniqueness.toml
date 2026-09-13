@@ -4,16 +4,16 @@ namespace = 'ConvexAnalysis'
 id = 'mem_interior_dom_of_subgradient_eq_singleton'
 
 [[node]]
-id = 'hasGradientAt_iff_subgradient_eq_singleton'
+id = 'hasGradientAtFn_iff_subgradient_eq_singleton'
 
 [[node]]
 id = 'differentiableAtFn_iff_exists_subgradient_eq_singleton'
 
 [[node]]
-id = 'hasGradientAt_clFn_iff'
+id = 'hasGradientAtFn_clFn_iff'
 
 [[node]]
-id = 'mem_exposedPoints_epi_conj_iff_hasGradientAt'
+id = 'mem_exposedPoints_epi_conj_iff_hasGradientAtFn'
 
 [[node]]
-id = 'mem_exposedPoints_supportSet_iff_hasGradientAt'
+id = 'mem_exposedPoints_supportSet_iff_hasGradientAtFn'

@@ -73,7 +73,7 @@ theorem forall_mem_linealitySpace_pi (hne : ∀ i, (C i).Nonempty)
 /-- **Closedness of a finite sum**: a finite sum of closed convex sets is closed as soon as the
 only way finitely many directions of recession can sum to zero is inside the lineality
 spaces. -/
-theorem Convex.isClosed_sum (hC : ∀ i, Convex ℝ (C i)) (hCc : ∀ i, IsClosed (C i))
+theorem _root_.Convex.isClosed_sum (hC : ∀ i, Convex ℝ (C i)) (hCc : ∀ i, IsClosed (C i))
     (hne : ∀ i, (C i).Nonempty)
     (h : ∀ z : ι → E, (∀ i, z i ∈ recessionCone (C i)) → ∑ i, z i = 0 →
       ∀ i, z i ∈ linealitySpace (C i)) :
@@ -86,7 +86,7 @@ theorem Convex.isClosed_sum (hC : ∀ i, Convex ℝ (C i)) (hCc : ∀ i, IsClose
   rwa [image_piSum_univ_pi] at hmain
 
 /-- **Closure distributes over a finite sum**: `cl (C₁ + ⋯ + Cₘ) = cl C₁ + ⋯ + cl Cₘ`. -/
-theorem Convex.closure_sum_eq (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i).Nonempty)
+theorem _root_.Convex.closure_sum_eq (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i).Nonempty)
     (h : ∀ z : ι → E, (∀ i, z i ∈ recessionCone (closure (C i))) → ∑ i, z i = 0 →
       ∀ i, z i ∈ linealitySpace (closure (C i))) :
     closure (∑ i, C i) = ∑ i, closure (C i) := by
@@ -96,7 +96,7 @@ theorem Convex.closure_sum_eq (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i)
 
 /-- **The recession cone of a finite sum of closed convex sets**:
 `0⁺(cl C₁ + ⋯ + cl Cₘ) = 0⁺(cl C₁) + ⋯ + 0⁺(cl Cₘ)`. -/
-theorem Convex.recessionCone_sum (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i).Nonempty)
+theorem _root_.Convex.recessionCone_sum (hC : ∀ i, Convex ℝ (C i)) (hne : ∀ i, (C i).Nonempty)
     (h : ∀ z : ι → E, (∀ i, z i ∈ recessionCone (closure (C i))) → ∑ i, z i = 0 →
       ∀ i, z i ∈ linealitySpace (closure (C i))) :
     recessionCone (∑ i, closure (C i)) = ∑ i, recessionCone (closure (C i)) := by

@@ -101,14 +101,14 @@ can be `⊤ + ⊥ = ⊥` while the left is `⊤`. -/
 theorem infConv_le_add (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x y : E) :
     infConv f g x ≤ f (x - y) + g y := by
   rcases eq_top_or_lt_top (f (x - y)) with h1 | h1
-  · rw [h1, _root_.EReal.top_add_of_ne_bot (hg y)]
+  · rw [h1, EReal.top_add_of_ne_bot (hg y)]
     exact le_top
   rcases eq_top_or_lt_top (g y) with h2 | h2
-  · rw [h2, _root_.EReal.add_top_of_ne_bot (hf (x - y))]
+  · rw [h2, EReal.add_top_of_ne_bot (hf (x - y))]
     exact le_top
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf (x - y)) h1
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hg y) h2
-  rw [hp, hq, ← _root_.EReal.coe_add]
+  rw [hp, hq, ← EReal.coe_add]
   simpa using infConv_apply_le (f := f) (g := g) hp.le hq.le
 
 /-- **Rockafellar's formula for `□`**: `(f □ g) x = ⨅ y, f (x - y) + g y`, "analogous to the
@@ -119,7 +119,7 @@ theorem infConv_apply (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) (x : E
   obtain ⟨⟨a, ν⟩, ha, ⟨b, ρ⟩, hb, hab⟩ := Set.mem_add.1 hμ
   rw [Prod.mk_add_mk, Prod.mk.injEq] at hab
   refine le_trans (iInf_le (fun y => f (x - y) + g y) b) ?_
-  rw [← hab.1, add_sub_cancel_right, ← hab.2, _root_.EReal.coe_add]
+  rw [← hab.1, add_sub_cancel_right, ← hab.2, EReal.coe_add]
   exact add_le_add (mk_mem_epi.1 ha) (mk_mem_epi.1 hb)
 
 /-! ### Commutativity, associativity, monotonicity -/
@@ -135,7 +135,8 @@ theorem epi_ofEpi_add_subset (F G : Set (E × ℝ)) :
   rintro p hp
   obtain ⟨⟨w, μ⟩, hwμ, ⟨u, σ⟩, huσ, rfl⟩ := Set.mem_add.1 hp
   rw [Prod.mk_add_mk]
-  refine mk_mem_epi.2 (EReal.le_coe_of_forall_lt fun q hq => ?_)
+  refine mk_mem_epi.2 (EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_)
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   have hlt : ofEpi F w < ((μ + (q - (μ + σ)) : ℝ) : EReal) :=
     lt_of_le_of_lt (mk_mem_epi.1 hwμ)
       (by exact_mod_cast (by linarith : μ < μ + (q - (μ + σ))))
@@ -332,7 +333,7 @@ theorem sum_toInfConvFn_le_sum (hg : ∀ i ∈ s, ∀ x, g i x ≠ ⊥) (y : ι 
   have hfin : ∀ i ∈ s, g i (y i) ≠ ⊤ :=
     EReal.forall_ne_top_of_sum_ne_top s _ (fun i hi => hg i hi (y i)) htop
   have hci : ∀ i ∈ s, g i (y i) = (((g i (y i)).toReal : ℝ) : EReal) := fun i hi =>
-    (_root_.EReal.coe_toReal (hfin i hi) (hg i hi (y i))).symm
+    (EReal.coe_toReal (hfin i hi) (hg i hi (y i))).symm
   have hsum : ∑ i ∈ s, g i (y i) = ((∑ i ∈ s, (g i (y i)).toReal : ℝ) : EReal) := by
     rw [EReal.coe_sum]
     exact Finset.sum_congr rfl hci

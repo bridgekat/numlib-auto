@@ -223,18 +223,18 @@ attained: `(0, 0)` belongs to `epi (A f)` but not to the image of `epi f`, which
 theorem exists_epi_mapLin_ne_image :
     ∃ (f : ℝ → EReal) (A : ℝ →ₗ[ℝ] ℝ), ConvexFn f ∧
       epi (mapLin A f) ≠ A.prodMap (LinearMap.id : ℝ →ₗ[ℝ] ℝ) '' epi f := by
-  refine ⟨ConvexAnalysis.restrict (Ioi 0) (fun x => (x : EReal)), 0, ?_, ?_⟩
+  refine ⟨ConvexAnalysis.restrictFn (Ioi 0) (fun x => (x : EReal)), 0, ?_, ?_⟩
   · refine convexFn_of_epi_combo fun u v μ ν hu hv a b ha hb hab => ?_
     have hu0 : u ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [ConvexAnalysis.restrict_of_notMem h] at hu
+      rw [ConvexAnalysis.restrictFn_of_notMem h] at hu
       exact absurd hu (not_le.2 (EReal.coe_lt_top μ))
     have hv0 : v ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [ConvexAnalysis.restrict_of_notMem h] at hv
+      rw [ConvexAnalysis.restrictFn_of_notMem h] at hv
       exact absurd hv (not_le.2 (EReal.coe_lt_top ν))
-    rw [ConvexAnalysis.restrict_of_mem hu0] at hu
-    rw [ConvexAnalysis.restrict_of_mem hv0] at hv
+    rw [ConvexAnalysis.restrictFn_of_mem hu0] at hu
+    rw [ConvexAnalysis.restrictFn_of_mem hv0] at hv
     have hu0' : (0 : ℝ) < u := hu0
     have hv0' : (0 : ℝ) < v := hv0
     have huμ : u ≤ μ := by exact_mod_cast hu
@@ -246,18 +246,19 @@ theorem exists_epi_mapLin_ne_image :
       · have hb1 : b = 1 := by linarith
         rw [hb1]; linarith
       · nlinarith
-    rw [ConvexAnalysis.restrict_of_mem hpos]
+    rw [ConvexAnalysis.restrictFn_of_mem hpos]
     have hle : a • u + b • v ≤ a * μ + b * ν := by
       simp only [smul_eq_mul]
       nlinarith
     exact_mod_cast hle
   · intro hcontra
-    set f : ℝ → EReal := ConvexAnalysis.restrict (Ioi 0) (fun x => (x : EReal)) with hf
+    set f : ℝ → EReal := ConvexAnalysis.restrictFn (Ioi 0) (fun x => (x : EReal)) with hf
     have hmem : ((0 : ℝ), (0 : ℝ)) ∈ epi (mapLin (0 : ℝ →ₗ[ℝ] ℝ) f) := by
-      refine mk_mem_epi.2 (EReal.le_coe_of_forall_lt fun q hq => ?_)
+      refine mk_mem_epi.2 (EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_)
+      replace hq := EReal.coe_lt_coe_iff.1 hq
       refine lt_of_le_of_lt (mapLin_le (x := q / 2) (by simp)) ?_
       have hq2 : q / 2 ∈ Ioi (0 : ℝ) := by change (0 : ℝ) < q / 2; linarith
-      rw [hf, ConvexAnalysis.restrict_of_mem hq2]
+      rw [hf, ConvexAnalysis.restrictFn_of_mem hq2]
       exact_mod_cast (by linarith : q / 2 < q)
     rw [hcontra] at hmem
     obtain ⟨⟨u, μ⟩, hu, huv⟩ := hmem
@@ -266,9 +267,9 @@ theorem exists_epi_mapLin_ne_image :
     rw [h2] at hu'
     have hu0 : u ∈ Ioi (0 : ℝ) := by
       by_contra h
-      rw [hf, ConvexAnalysis.restrict_of_notMem h] at hu'
+      rw [hf, ConvexAnalysis.restrictFn_of_notMem h] at hu'
       exact absurd hu' (not_le.2 (EReal.coe_lt_top 0))
-    rw [hf, ConvexAnalysis.restrict_of_mem hu0] at hu'
+    rw [hf, ConvexAnalysis.restrictFn_of_mem hu0] at hu'
     exact absurd (by exact_mod_cast hu' : u ≤ (0 : ℝ)) (not_le.2 hu0)
 
 end Module

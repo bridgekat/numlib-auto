@@ -357,8 +357,8 @@ private theorem polyhedralFn_neg_bracket_aux (hF : PolyhedralBifun F)
     intro u
     rw [bracket_apply, EReal.neg_iSup]
     refine iInf_congr fun x => ?_
-    rw [_root_.EReal.neg_sub (.inl (_root_.EReal.coe_ne_bot _))
-        (.inl (_root_.EReal.coe_ne_top _)), hφ (u, x), _root_.EReal.coe_neg,
+    rw [EReal.neg_sub (.inl (EReal.coe_ne_bot _))
+        (.inl (EReal.coe_ne_top _)), hφ (u, x), EReal.coe_neg,
       add_comm (graphFn F (u, x))]
     rfl
   have hfun : (fun u => -(bracket Bx F u y))

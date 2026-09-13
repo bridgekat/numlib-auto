@@ -60,18 +60,18 @@ private theorem iInf_neg_comp (ψ : F → EReal) : (⨅ y : F, ψ y) = ⨅ y : F
 differences; both `∞ - ∞` collisions are absorbed on the correct side. -/
 private theorem sub_le_sub_of_le_sub_of_sub_le {a b c d : EReal} {p : ℝ}
     (h1 : a ≤ (p : EReal) - b) (h2 : (p : EReal) - c ≤ d) : a - d ≤ c - b := by
-  have hpb : ((p : ℝ) : EReal) ≠ ⊥ := _root_.EReal.coe_ne_bot _
-  have hpt : ((p : ℝ) : EReal) ≠ ⊤ := _root_.EReal.coe_ne_top _
+  have hpb : ((p : ℝ) : EReal) ≠ ⊥ := EReal.coe_ne_bot _
+  have hpt : ((p : ℝ) : EReal) ≠ ⊤ := EReal.coe_ne_top _
   have h3 : -d ≤ c - ((p : ℝ) : EReal) := by
-    refine le_trans (_root_.EReal.neg_le_neg_iff.2 h2) (le_of_eq ?_)
-    rw [_root_.EReal.neg_sub (.inl hpb) (.inl hpt), sub_eq_add_neg, add_comm]
+    refine le_trans (EReal.neg_le_neg_iff.2 h2) (le_of_eq ?_)
+    rw [EReal.neg_sub (.inl hpb) (.inl hpt), sub_eq_add_neg, add_comm]
   have hsum : a + -d ≤ (((p : ℝ) : EReal) - b) + (c - ((p : ℝ) : EReal)) := add_le_add h1 h3
   refine le_trans (le_of_eq (sub_eq_add_neg _ _)) (le_trans hsum (le_of_eq ?_))
   rw [sub_eq_add_neg ((p : ℝ) : EReal) b, sub_eq_add_neg c ((p : ℝ) : EReal),
     add_comm c (-((p : ℝ) : EReal)),
     add_add_add_comm ((p : ℝ) : EReal) (-b) (-((p : ℝ) : EReal)) c]
   have hpp : ((p : ℝ) : EReal) + -((p : ℝ) : EReal) = 0 := by
-    rw [← _root_.EReal.coe_neg, ← _root_.EReal.coe_add, add_neg_cancel, _root_.EReal.coe_zero]
+    rw [← EReal.coe_neg, ← EReal.coe_add, add_neg_cancel, EReal.coe_zero]
   rw [hpp, zero_add, add_comm (-b) c, sub_eq_add_neg]
 
 /-- **Weak duality**, pointwise: every dual value is below every primal value, by Fenchel's
@@ -87,7 +87,7 @@ theorem fenchel_duality (hex : IsExactSum B f (-g)) :
     (⨅ x, f x - g x) = ⨆ y, concaveConj B g y - conj B f y := by
   have hex' : IsExactSum B f (fun x => -(g x)) := hex
   have hne : ∀ y : F, concaveConj B g y ≠ ⊤ := fun y hc =>
-    hex'.conj_right_ne_bot (-y) (by rw [← neg_concaveConj B g y, hc, _root_.EReal.neg_top])
+    hex'.conj_right_ne_bot (-y) (by rw [← neg_concaveConj B g y, hc, EReal.neg_top])
   have hprimal : (⨅ x, f x - g x) = -(conj B (f + fun x => -(g x)) 0) := by
     rw [← iInf_eq_neg_conj_zero B]
     exact iInf_congr fun x => by rw [Pi.add_apply, sub_eq_add_neg]
@@ -96,14 +96,14 @@ theorem fenchel_duality (hex : IsExactSum B f (-g)) :
     refine iInf_congr fun y => ?_
     rw [zero_sub, neg_neg, ← neg_concaveConj B g y, sub_eq_add_neg]
   rw [hprimal, hdual, EReal.neg_iInf]
-  exact iSup_congr fun y => EReal.neg_sub_comm (hex'.conj_left_ne_bot y) (hne y)
+  exact iSup_congr fun y => EReal.neg_sub_comm (.inl (hex'.conj_left_ne_bot y)) (.inr (hne y))
 
 /-- **Attainment**: under exact addition the supremum of `g* - f*` is attained. -/
 theorem exists_concaveConj_sub_conj_eq (hex : IsExactSum B f (-g)) :
     ∃ y : F, concaveConj B g y - conj B f y = ⨅ x, f x - g x := by
   have hex' : IsExactSum B f (fun x => -(g x)) := hex
   have hne : ∀ y : F, concaveConj B g y ≠ ⊤ := fun y hc =>
-    hex'.conj_right_ne_bot (-y) (by rw [← neg_concaveConj B g y, hc, _root_.EReal.neg_top])
+    hex'.conj_right_ne_bot (-y) (by rw [← neg_concaveConj B g y, hc, EReal.neg_top])
   have hprimal : (⨅ x, f x - g x) = -(conj B (f + fun x => -(g x)) 0) := by
     rw [← iInf_eq_neg_conj_zero B]
     exact iInf_congr fun x => by rw [Pi.add_apply, sub_eq_add_neg]
@@ -114,7 +114,7 @@ theorem exists_concaveConj_sub_conj_eq (hex : IsExactSum B f (-g)) :
   subst hy2
   rw [← neg_concaveConj B g y₁, ← sub_eq_add_neg] at hval
   refine ⟨y₁, ?_⟩
-  rw [hprimal, ← hval, EReal.neg_sub_comm (hex'.conj_left_ne_bot y₁) (hne y₁)]
+  rw [hprimal, ← hval, EReal.neg_sub_comm (.inl (hex'.conj_left_ne_bot y₁)) (.inr (hne y₁))]
 
 /-- The two clauses packaged: the common value is the *greatest* dual value. -/
 theorem isGreatest_concaveConj_sub_conj (hex : IsExactSum B f (-g)) :
@@ -217,12 +217,12 @@ theorem exists_concaveConj_sub_conj_comp_eq (hA : IsAdjointPair B B' A A')
     exists_concaveConj_sub_conj_eq hex'
   have hyb : concaveConj B (compLin g A) y ≠ ⊥ := by
     intro hc
-    exact hb (by rw [← hy, hc, sub_eq_add_neg, _root_.EReal.bot_add])
+    exact hb (by rw [← hy, hc, sub_eq_add_neg, EReal.bot_add])
   have hlt : conj B (compLin (fun w => -(g w)) A) (-y) < ⊤ := by
     refine lt_of_le_of_ne le_top fun hc => hyb ?_
     rw [concaveConj_eq_neg_conj_neg]
     change -(conj B (compLin (fun w => -(g w)) A) (-y)) = ⊥
-    rw [hc, _root_.EReal.neg_top]
+    rw [hc, EReal.neg_top]
   obtain ⟨z, hz, hzeq⟩ := himg.exists_conj_compLin_eq hlt
   refine ⟨-z, ?_⟩
   have hA'z : A' (-z) = y := by rw [map_neg, hz, neg_neg]
@@ -247,7 +247,7 @@ theorem iInf_sub_eq_neg_iInf_conj_sub (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn fun x => -(g x))
     (hex : IsExactSum B.flip (conj B f) (-(concaveConj B g))) :
     (⨅ x, f x - g x) = -(⨅ y : F, conj B f y - concaveConj B g y) := by
-  have hgt : ∀ x, g x ≠ ⊤ := fun x hx => hg.proper.ne_bot x (by rw [hx, _root_.EReal.neg_top])
+  have hgt : ∀ x, g x ≠ ⊤ := fun x hx => hg.proper.ne_bot x (by rw [hx, EReal.neg_top])
   have hbi : ∀ x, conj B.flip (conj B f) x = f x := fun x =>
     congrFun (biconj_eq_self hf.convex hf.closed) x
   have hbc : ∀ x, concaveConj B.flip (concaveConj B g) x = g x := fun x =>
@@ -257,7 +257,7 @@ theorem iInf_sub_eq_neg_iInf_conj_sub (hf : ClosedProperConvexFn f)
         = ⨆ x : E, -(f x - g x) from
       iSup_congr fun x => by
         rw [hbi, hbc]
-        exact (EReal.neg_sub_comm (hf.proper.ne_bot x) (hgt x)).symm,
+        exact (EReal.neg_sub_comm (.inl (hf.proper.ne_bot x)) (.inr (hgt x))).symm,
     ← EReal.neg_iInf] at hkey
   rw [hkey, neg_neg]
 
@@ -272,14 +272,15 @@ theorem fenchel_duality_of_closed (hf : ClosedProperConvexFn f)
     exact hg.proper.dom_nonempty
   rw [iInf_sub_eq_neg_iInf_conj_sub hf hg hex, EReal.neg_iInf]
   exact iSup_congr fun y =>
-    EReal.neg_sub_comm (conj_ne_bot hf.proper.dom_nonempty y) (concaveConj_ne_top hdc y)
+    EReal.neg_sub_comm (.inl (conj_ne_bot hf.proper.dom_nonempty y))
+      (.inr (concaveConj_ne_top hdc y))
 
 /-- Under condition (b) the *infimum* of `f - g` is attained. -/
 theorem exists_sub_eq_iInf (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn fun x => -(g x))
     (hex : IsExactSum B.flip (conj B f) (-(concaveConj B g))) :
     ∃ x : E, f x - g x = ⨅ z, f z - g z := by
-  have hgt : ∀ x, g x ≠ ⊤ := fun x hx => hg.proper.ne_bot x (by rw [hx, _root_.EReal.neg_top])
+  have hgt : ∀ x, g x ≠ ⊤ := fun x hx => hg.proper.ne_bot x (by rw [hx, EReal.neg_top])
   have hbi : ∀ x, conj B.flip (conj B f) x = f x := fun x =>
     congrFun (biconj_eq_self hf.convex hf.closed) x
   have hbc : ∀ x, concaveConj B.flip (concaveConj B g) x = g x := fun x =>
@@ -288,7 +289,7 @@ theorem exists_sub_eq_iInf (hf : ClosedProperConvexFn f)
     (g := concaveConj B g) hex
   rw [hbi, hbc] at hx
   exact ⟨x, by rw [iInf_sub_eq_neg_iInf_conj_sub hf hg hex, ← hx,
-    EReal.neg_sub_comm' (hgt x) (hf.proper.ne_bot x)]⟩
+    EReal.neg_sub_comm (.inr (hf.proper.ne_bot x)) (.inl (hgt x))]⟩
 
 end Closed
 
@@ -337,7 +338,7 @@ as soon as it equals another such difference. -/
 private theorem finite_of_sub_eq {a b c d : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊤) (hc : c ≠ ⊤)
     (hd : d ≠ ⊥) (h : a - b = c - d) : a ≠ ⊤ ∧ b ≠ ⊥ ∧ c ≠ ⊥ ∧ d ≠ ⊤ := by
   induction a <;> induction b <;> induction c <;> induction d <;>
-    simp_all [← _root_.EReal.coe_sub]
+    simp_all [← EReal.coe_sub]
 
 private theorem finite_of_add_eq {a d p : EReal} (ha : a ≠ ⊥) (hd : d ≠ ⊥) (hp : p ≠ ⊤)
     (h : a + d = p) : a ≠ ⊤ ∧ d ≠ ⊤ := by
@@ -360,22 +361,22 @@ private theorem sub_eq_sub_iff_of_le {a b c d p : EReal} (ha : a ≠ ⊥) (hb : 
     obtain ⟨β, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbb (lt_top_iff_ne_top.2 hb)
     obtain ⟨γ, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hcb (lt_top_iff_ne_top.2 hc)
     obtain ⟨δ, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hd (lt_top_iff_ne_top.2 hdt)
-    rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_sub, _root_.EReal.coe_eq_coe_iff] at h
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h1
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h2
-    rw [← _root_.EReal.coe_add, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff,
-      _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_sub, ← EReal.coe_sub, EReal.coe_eq_coe_iff] at h
+    rw [← EReal.coe_add, EReal.coe_le_coe_iff] at h1
+    rw [← EReal.coe_add, EReal.coe_le_coe_iff] at h2
+    rw [← EReal.coe_add, ← EReal.coe_add, EReal.coe_eq_coe_iff,
+      EReal.coe_eq_coe_iff]
     constructor <;> linarith
   · rintro ⟨e1, e2⟩
-    obtain ⟨hat, hdt⟩ := finite_of_add_eq ha hd (_root_.EReal.coe_ne_top π) e1
-    obtain ⟨hbb, hcb⟩ := finite_of_add_eq' hb hc (_root_.EReal.coe_ne_bot π) e2
+    obtain ⟨hat, hdt⟩ := finite_of_add_eq ha hd (EReal.coe_ne_top π) e1
+    obtain ⟨hbb, hcb⟩ := finite_of_add_eq' hb hc (EReal.coe_ne_bot π) e2
     obtain ⟨α, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top ha (lt_top_iff_ne_top.2 hat)
     obtain ⟨β, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbb (lt_top_iff_ne_top.2 hb)
     obtain ⟨γ, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hcb (lt_top_iff_ne_top.2 hc)
     obtain ⟨δ, rfl⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hd (lt_top_iff_ne_top.2 hdt)
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at e1
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at e2
-    rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_sub, _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_add, EReal.coe_eq_coe_iff] at e1
+    rw [← EReal.coe_add, EReal.coe_eq_coe_iff] at e2
+    rw [← EReal.coe_sub, ← EReal.coe_sub, EReal.coe_eq_coe_iff]
     linarith
 
 /-- **Equality in the concave Fenchel inequality**: `g x + g*(y) = ⟨x, y⟩` says `-y ∈ ∂(-g) x`.
@@ -383,15 +384,15 @@ The book writes this as `x ∈ ∂g*(y)` with the superdifferential of a concave
 `-∂(-g)`. -/
 theorem neg_mem_subgradient_neg_iff_add_concaveConj_eq (hpg : Proper fun z => -(g z)) :
     -y ∈ subgradient B (fun z => -(g z)) x ↔ g x + concaveConj B g y = ((B x y : ℝ) : EReal) := by
-  have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, _root_.EReal.neg_top])
+  have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
     exact hpg.dom_nonempty
   have hct : concaveConj B g y ≠ ⊤ := concaveConj_ne_top hdc y
   have hpn : ((B x (-y) : ℝ) : EReal) = -((B x y : ℝ) : EReal) := by
-    rw [map_neg, _root_.EReal.coe_neg]
+    rw [map_neg, EReal.coe_neg]
   rw [hpg.mem_subgradient_iff_add_conj_eq, ← neg_concaveConj B g y, hpn, ← sub_eq_add_neg,
-    ← _root_.EReal.neg_add (.inr hct) (.inl hgt), neg_inj]
+    ← EReal.neg_add (.inr hct) (.inl hgt), neg_inj]
 
 /-- **The optimality conditions** at `A = id`: `x` and `y` are jointly optimal for the two problems
 of Fenchel's duality theorem exactly when `y ∈ ∂f x` and `-y ∈ ∂(-g) x`. Both are Fenchel's
@@ -400,12 +401,12 @@ inequality holding with equality, and `f x - g x = g*(y) - f*(y)` squeezes the t
 theorem sub_eq_concaveConj_sub_conj_iff (hpf : Proper f) (hpg : Proper fun z => -(g z)) :
     f x - g x = concaveConj B g y - conj B f y ↔
       y ∈ subgradient B f x ∧ -y ∈ subgradient B (fun z => -(g z)) x := by
-  have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, _root_.EReal.neg_top])
+  have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
     exact hpg.dom_nonempty
   rw [sub_eq_sub_iff_of_le (hpf.ne_bot x) hgt (concaveConj_ne_top hdc y)
-      (conj_ne_bot hpf.dom_nonempty y) (_root_.EReal.coe_ne_bot _) (_root_.EReal.coe_ne_top _)
+      (conj_ne_bot hpf.dom_nonempty y) (EReal.coe_ne_bot _) (EReal.coe_ne_top _)
       (le_add_conj (hpf.ne_bot x) hpf.dom_nonempty y) (add_concaveConj_le B g x y),
     hpf.mem_subgradient_iff_add_conj_eq, neg_mem_subgradient_neg_iff_add_concaveConj_eq hpg]
 
@@ -472,7 +473,7 @@ theorem sub_comp_eq_concaveConj_sub_conj_iff (hA : IsAdjointPair B B' A A') (hpf
     (hpg : Proper fun w => -(g w)) :
     f x - g (A x) = concaveConj B' g z - conj B f (A' z) ↔
       A' z ∈ subgradient B f x ∧ -z ∈ subgradient B' (fun w => -(g w)) (A x) := by
-  have hgt : g (A x) ≠ ⊤ := fun hc => hpg.ne_bot (A x) (by rw [hc, _root_.EReal.neg_top])
+  have hgt : g (A x) ≠ ⊤ := fun hc => hpg.ne_bot (A x) (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
     exact hpg.dom_nonempty
@@ -481,8 +482,8 @@ theorem sub_comp_eq_concaveConj_sub_conj_iff (hA : IsAdjointPair B B' A A') (hpf
     rw [← hp]
     exact add_concaveConj_le B' g (A x) z
   rw [sub_eq_sub_iff_of_le (hpf.ne_bot x) hgt (concaveConj_ne_top hdc z)
-      (conj_ne_bot hpf.dom_nonempty (A' z)) (_root_.EReal.coe_ne_bot _)
-      (_root_.EReal.coe_ne_top _)
+      (conj_ne_bot hpf.dom_nonempty (A' z)) (EReal.coe_ne_bot _)
+      (EReal.coe_ne_top _)
       (le_add_conj (hpf.ne_bot x) hpf.dom_nonempty (A' z)) h2,
     hpf.mem_subgradient_iff_add_conj_eq,
     neg_mem_subgradient_neg_iff_add_concaveConj_eq (B := B') (g := g) (x := A x) (y := z) hpg, hp]
@@ -551,7 +552,7 @@ theorem iInf_mem_eq_iInf_add_indicatorFn {α : Type*} (φ : α → EReal) (S : S
   by_cases hz : z ∈ S
   · rw [iInf_pos hz, Pi.add_apply, indicatorFn_of_mem hz, add_zero]
   · rw [iInf_neg hz, Pi.add_apply, indicatorFn_of_notMem hz]
-    exact (_root_.EReal.add_top_of_ne_bot (hb z)).symm
+    exact (EReal.add_top_of_ne_bot (hb z)).symm
 
 /-- **The cone form**: minimising a convex function over a convex cone `K` is dual to minimising
 its conjugate over `K* = -K°`. Rather than through duality with `g = -δ(· | K)`, this goes to the
@@ -582,7 +583,7 @@ theorem neg_conj_le_of_mem_neg_polarCone (hxK : x ∈ K) {w : F} (hwK : w ∈ -(
     refine le_trans (le_of_eq (zero_sub (f x)).symm) (le_trans ?_ (sub_le_conj B f x w))
     rw [sub_eq_add_neg, sub_eq_add_neg]
     exact add_le_add (by exact_mod_cast mem_neg_polarCone.1 hwK x hxK) le_rfl
-  rw [← _root_.EReal.neg_le_neg_iff, neg_neg] at hle
+  rw [← EReal.neg_le_neg_iff, neg_neg] at hle
   exact hle
 
 /-- `f x + f*(y) = 0` pins `f*(y)` to `-f x`; both values are then finite. -/
@@ -591,15 +592,15 @@ private theorem neg_conj_eq_of_add_eq_zero (hp : Proper f) (hz : f x + conj B f 
   have hcb : conj B f y ≠ ⊥ := conj_ne_bot hp.dom_nonempty y
   have hfb : f x ≠ ⊥ := hp.ne_bot x
   have hft : f x ≠ ⊤ := fun hc => by
-    rw [hc, _root_.EReal.top_add_of_ne_bot hcb] at hz
+    rw [hc, EReal.top_add_of_ne_bot hcb] at hz
     exact absurd hz (by simp)
   have hct : conj B f y ≠ ⊤ := fun hc => by
-    rw [hc, _root_.EReal.add_top_of_ne_bot hfb] at hz
+    rw [hc, EReal.add_top_of_ne_bot hfb] at hz
     exact absurd hz (by simp)
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hfb (lt_top_iff_ne_top.2 hft)
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hcb (lt_top_iff_ne_top.2 hct)
-  rw [hr, hs, ← _root_.EReal.coe_add] at hz
-  rw [hs, hr, ← _root_.EReal.coe_neg, _root_.EReal.coe_eq_coe_iff]
+  rw [hr, hs, ← EReal.coe_add] at hz
+  rw [hs, hr, ← EReal.coe_neg, EReal.coe_eq_coe_iff]
   have : r + s = 0 := by exact_mod_cast hz
   linarith
 
@@ -611,10 +612,10 @@ theorem add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero (hp : Proper f)
     f x + conj B f y = 0 ↔ y ∈ subgradient B f x ∧ (B x y : ℝ) = 0 := by
   have hxy : (0 : ℝ) ≤ B x y := mem_neg_polarCone.1 hyK x hxK
   rw [hp.mem_subgradient_iff_add_conj_eq]
-  refine ⟨fun h => ?_, fun h => by rw [h.1, h.2, _root_.EReal.coe_zero]⟩
+  refine ⟨fun h => ?_, fun h => by rw [h.1, h.2, EReal.coe_zero]⟩
   have hle : ((B x y : ℝ) : EReal) ≤ 0 := h ▸ hp.le_add_conj x y
   have hzero : (B x y : ℝ) = 0 := le_antisymm (by exact_mod_cast hle) hxy
-  exact ⟨by rw [h, hzero, _root_.EReal.coe_zero], hzero⟩
+  exact ⟨by rw [h, hzero, EReal.coe_zero], hzero⟩
 
 /-- The optimality conditions make `x` optimal for the primal cone program. Only `⟨x, y⟩ = 0` and
 `y ∈ K*` are used. -/
@@ -630,9 +631,9 @@ theorem conj_le_conj_of_mem_subgradient_of_pairing_eq_zero (hp : Proper f) (hxK 
     (hy : y ∈ subgradient B f x) (hxy : (B x y : ℝ) = 0) {w : F} (hwK : w ∈ -(polarCone B K)) :
     conj B f y ≤ conj B f w := by
   have hsum : f x + conj B f y = 0 := by
-    rw [hp.mem_subgradient_iff_add_conj_eq.1 hy, hxy, _root_.EReal.coe_zero]
+    rw [hp.mem_subgradient_iff_add_conj_eq.1 hy, hxy, EReal.coe_zero]
   have hxeq : -(conj B f y) = f x := neg_conj_eq_of_add_eq_zero hp hsum
-  rw [← _root_.EReal.neg_le_neg_iff, hxeq]
+  rw [← EReal.neg_le_neg_iff, hxeq]
   exact neg_conj_le_of_mem_neg_polarCone hxK hwK
 
 /-! ### Attainment of the two infima -/
@@ -662,7 +663,7 @@ theorem exists_mem_neg_polarCone_conj_eq_iInf (hex : IsExactSum B f (indicatorFn
     rw [indicatorFn_of_mem hy₂, add_zero] at hle
     exact ⟨y₁, hy₁, le_antisymm hle (iInf₂_le y₁ hy₁)⟩
   · rw [indicatorFn_of_notMem hy₂,
-      _root_.EReal.add_top_of_ne_bot (hex.conj_left_ne_bot y₁)] at hle
+      EReal.add_top_of_ne_bot (hex.conj_left_ne_bot y₁)] at hle
     have h0 : (0 : F) ∈ -(polarCone B K) := zero_mem_neg_polarCone B K
     have htop : (⨅ w ∈ -(polarCone B K), conj B f w) = ⊤ := top_le_iff.1 hle
     have hge : (⨅ w ∈ -(polarCone B K), conj B f w) ≤ conj B f 0 := iInf₂_le (0 : F) h0
@@ -677,8 +678,8 @@ theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_zero (hex : IsExactSum B f (indic
     (htop : (⨅ w ∈ -(polarCone B K), conj B f w) ≠ ⊤) :
     (⨅ z ∈ K, f z) + (⨅ w ∈ -(polarCone B K), conj B f w) = 0 := by
   obtain ⟨m, hm⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hbot (lt_top_iff_ne_top.2 htop)
-  rw [iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK hne, hm, ← _root_.EReal.coe_neg,
-    ← _root_.EReal.coe_add, neg_add_cancel, _root_.EReal.coe_zero]
+  rw [iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK hne, hm, ← EReal.coe_neg,
+    ← EReal.coe_add, neg_add_cancel, EReal.coe_zero]
 
 /-! ### Minimising over a subspace -/
 

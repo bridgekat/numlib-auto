@@ -75,7 +75,7 @@ theorem maxAffineFn_ne_bot (hs : s.Nonempty) (x : E) : maxAffineFn s x ≠ ⊥ :
   obtain ⟨q, hq⟩ := hs
   intro h
   have hle : ((q.1 x - q.2 : ℝ) : EReal) ≤ ⊥ := h ▸ coe_le_maxAffineFn hq
-  exact absurd (le_bot_iff.1 hle) (_root_.EReal.coe_ne_bot _)
+  exact absurd (le_bot_iff.1 hle) (EReal.coe_ne_bot _)
 
 /-- An empty family of affine functions has the constant `⊥` as its maximum. -/
 @[simp] theorem maxAffineFn_empty : maxAffineFn (∅ : Finset ((E →ₗ[ℝ] ℝ) × ℝ)) = fun _ : E => ⊥ :=
@@ -128,7 +128,7 @@ theorem polyhedralFn_maxAffineFn_add_indicatorFn (s : Finset ((E →ₗ[ℝ] ℝ
       funext x
       change maxAffineFn ∅ x + indicatorFn C x = ⊥
       rw [maxAffineFn_empty]
-      exact _root_.EReal.bot_add _
+      exact EReal.bot_add _
     rw [h]
     exact polyhedralFn_bot
   · exact PolyhedralFn.add (polyhedralFn_maxAffineFn s) (polyhedralFn_indicatorFn hC)
@@ -235,7 +235,8 @@ theorem PolyhedralFn.exists_maxAffineFn_add_indicatorFn_dom (hf : PolyhedralFn f
   have hfne : (t.filter fun q => q.1 ((0 : E), (1 : ℝ)) < 0).Nonempty := by
     rcases Finset.eq_empty_or_nonempty (t.filter fun q => q.1 ((0 : E), (1 : ℝ)) < 0) with
       hfilt | h
-    · refine absurd (EReal.eq_bot_of_forall_le_coe (z := f x₀) fun μ => ?_) (hb x₀)
+    · refine absurd (le_bot_iff.1 ((EReal.le_of_forall_lt_iff_le (y := f x₀)).1 fun μ _ => ?_))
+        (hb x₀)
       have hzero : ∀ q ∈ t, q.1 ((0 : E), (1 : ℝ)) = 0 := by
         intro q hq
         rcases lt_or_eq_of_le (hnp q hq) with hlt | heq

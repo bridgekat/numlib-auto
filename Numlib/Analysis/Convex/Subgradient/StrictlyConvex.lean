@@ -72,17 +72,17 @@ theorem strictConvexOnFn_iff_strictConvexOn {C : Set E} (hC : Convex ℝ C)
     (hbot : ∀ x ∈ C, f x ≠ ⊥) (htop : ∀ x ∈ C, f x ≠ ⊤) :
     StrictConvexOnFn f C ↔ StrictConvexOn ℝ C (fun x => (f x).toReal) := by
   have hcoe : ∀ x ∈ C, f x = (((f x).toReal : ℝ) : EReal) := fun x hx =>
-    (_root_.EReal.coe_toReal (htop x hx) (hbot x hx)).symm
+    (EReal.coe_toReal (htop x hx) (hbot x hx)).symm
   constructor
   · refine fun h => ⟨hC, fun x hx y hy hne a b ha hb hab => ?_⟩
     have hlt := h hx hy hne ha hb hab
-    rw [hcoe x hx, hcoe y hy, hcoe _ (hC hx hy ha.le hb.le hab), EReal.coe_mul_coe,
-      EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_lt_coe_iff] at hlt
+    rw [hcoe x hx, hcoe y hy, hcoe _ (hC hx hy ha.le hb.le hab), ← EReal.coe_mul,
+      ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_lt_coe_iff] at hlt
     simpa using hlt
   · intro h x hx y hy hne a b ha hb hab
     have hlt := h.2 hx hy hne ha hb hab
-    rw [hcoe x hx, hcoe y hy, hcoe _ (hC hx hy ha.le hb.le hab), EReal.coe_mul_coe,
-      EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_lt_coe_iff]
+    rw [hcoe x hx, hcoe y hy, hcoe _ (hC hx hy ha.le hb.le hab), ← EReal.coe_mul,
+      ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_lt_coe_iff]
     simpa using hlt
 
 /-- **Essential strict convexity**: `f` is strictly convex on every convex subset of `dom ∂f`.
@@ -98,8 +98,8 @@ theorem sub_le_of_mem_subgradient (hp : Proper f) {v : F} {x z : E} (h : v ∈ s
   have hle := h z
   have hxt : f x ≠ ⊤ := (mem_dom.1 (mem_dom_of_mem_subgradient hp h)).ne
   have hzt : f z ≠ ⊤ := (mem_dom.1 hz).ne
-  rw [← _root_.EReal.coe_toReal hxt (hp.ne_bot x), ← _root_.EReal.coe_toReal hzt (hp.ne_bot z),
-    ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hle
+  rw [← EReal.coe_toReal hxt (hp.ne_bot x), ← EReal.coe_toReal hzt (hp.ne_bot z),
+    ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
   exact hle
 
 /-- The subgradient inequality, in the direction that has to be *proved*: a real bound at every
@@ -109,9 +109,9 @@ theorem mem_subgradient_of_forall_sub_le (hp : Proper f) {v : F} {x : E} (hx : x
     (h : ∀ z ∈ dom f, (f x).toReal + B (z - x) v ≤ (f z).toReal) : v ∈ subgradient B f x := by
   intro z
   by_cases hz : z ∈ dom f
-  · rw [← _root_.EReal.coe_toReal (mem_dom.1 hx).ne (hp.ne_bot x),
-      ← _root_.EReal.coe_toReal (mem_dom.1 hz).ne (hp.ne_bot z), ← _root_.EReal.coe_add,
-      _root_.EReal.coe_le_coe_iff]
+  · rw [← EReal.coe_toReal (mem_dom.1 hx).ne (hp.ne_bot x),
+      ← EReal.coe_toReal (mem_dom.1 hz).ne (hp.ne_bot z), ← EReal.coe_add,
+      EReal.coe_le_coe_iff]
     exact h z hz
   · rw [top_le_iff.1 (not_lt.1 fun hlt => hz (mem_dom.2 hlt))]
     exact le_top
@@ -164,10 +164,10 @@ theorem mem_subgradient_of_combo (hf : ConvexFn f) (hp : Proper f)
   -- The combination's value is bounded by the combination of the endpoint values.
   have hcv := (convexFn_iff_le hp.ne_bot).1 hf x₁ x₂ a b ha hb hab
   have hreal : (f (a • x₁ + b • x₂)).toReal ≤ a * (f x₁).toReal + b * (f x₂).toReal := by
-    rw [← _root_.EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
-      ← _root_.EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
-      ← _root_.EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), EReal.coe_mul_coe,
-      EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hcv
+    rw [← EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
+      ← EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
+      ← EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
+      ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff] at hcv
     exact hcv
   rw [pairing_sub_combo hab z]
   have hA := mul_le_mul_of_nonneg_left (sub_le_of_mem_subgradient hp h₁ hz) ha.le
@@ -192,10 +192,10 @@ theorem le_combo_of_mem_subgradient (hp : Proper f) (h₁ : v ∈ subgradient B 
   have hB' := mul_le_mul_of_nonneg_left hs₂ hb.le
   have hsum : a * (f (a • x₁ + b • x₂)).toReal + b * (f (a • x₁ + b • x₂)).toReal
       = (f (a • x₁ + b • x₂)).toReal := by rw [← add_mul, hab, one_mul]
-  rw [← _root_.EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
-    ← _root_.EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
-    ← _root_.EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), EReal.coe_mul_coe,
-    EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+  rw [← EReal.coe_toReal (mem_dom.1 hx₁).ne (hp.ne_bot x₁),
+    ← EReal.coe_toReal (mem_dom.1 hx₂).ne (hp.ne_bot x₂),
+    ← EReal.coe_toReal (mem_dom.1 hcomb).ne (hp.ne_bot _), ← EReal.coe_mul,
+    ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff]
   linarith
 
 /-- **The converse computation**: if `f` fails to be strictly convex between `x₁` and `x₂` and has
@@ -290,10 +290,10 @@ theorem essentiallyStrictlyConvex_iff_pairwise_disjoint (hf : ConvexFn f) (hp : 
     have hx₂d : x₂ ∈ dom f := domSubgradient_subset_dom hp (hCsub hx₂)
     have hcombd : a • x₁ + b • x₂ ∈ dom f := hf.convex_dom hx₁d hx₂d ha.le hb.le hab
     have hle : a * (f x₁).toReal + b * (f x₂).toReal ≤ (f (a • x₁ + b • x₂)).toReal := by
-      rw [← _root_.EReal.coe_toReal (mem_dom.1 hx₁d).ne (hp.ne_bot x₁),
-        ← _root_.EReal.coe_toReal (mem_dom.1 hx₂d).ne (hp.ne_bot x₂),
-        ← _root_.EReal.coe_toReal (mem_dom.1 hcombd).ne (hp.ne_bot _), EReal.coe_mul_coe,
-        EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hcon
+      rw [← EReal.coe_toReal (mem_dom.1 hx₁d).ne (hp.ne_bot x₁),
+        ← EReal.coe_toReal (mem_dom.1 hx₂d).ne (hp.ne_bot x₂),
+        ← EReal.coe_toReal (mem_dom.1 hcombd).ne (hp.ne_bot _), ← EReal.coe_mul,
+        ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff] at hcon
       exact hcon
     obtain ⟨hsub₁, hsub₂⟩ :=
       mem_subgradient_endpoints_of_le_combo hp hx₁d hx₂d hv ha hb hab hle

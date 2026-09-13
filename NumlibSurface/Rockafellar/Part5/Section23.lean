@@ -93,7 +93,7 @@ theorem theorem_23_2_closure {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (
     (hb : f x ≠ ⊥) :
     clFn (dirDeriv f x) = supportFn (pairing n) (subgradient (pairing n) f x) := by
   have h := clFn_dirDeriv (B := pairing n) hf ht hb
-  rwa [supportFn_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 /-! ### Theorem 23.3: when subgradients exist -/
 
@@ -148,7 +148,7 @@ theorem theorem_23_4_supportFn {f : Rn n → EReal} (hf : ConvexFn f) (hp : Prop
     (hx : x ∈ ri (dom f)) :
     dirDeriv f x = supportFn (pairing n) (subgradient (pairing n) f x) := by
   have h := dirDeriv_eq_supportFn_of_mem_relint_dom (B := pairing n) hf hp hx
-  rwa [supportFn_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 /-- **Theorem 23.4**, last assertion: `∂f(x)` is non-empty and *bounded* iff
 `x ∈ int (dom f)`. -/
@@ -174,7 +174,7 @@ for `ξ₁ ≥ 0` and `+∞` for `ξ₁ < 0`. Its effective domain is the closed
 subdifferentiable everywhere on that half-plane **except** in the relative interior of the segment
 joining `(0, 1)` and `(0, -1)`, so `dom ∂f` is not convex. -/
 noncomputable def nonsmoothMaxFn : Rn 2 → EReal :=
-  ConvexAnalysis.restrict {x : Rn 2 | 0 ≤ x 0}
+  ConvexAnalysis.restrictFn {x : Rn 2 | 0 ≤ x 0}
     fun x => ((max (1 - Real.sqrt (x 0)) |x 1| : ℝ) : EReal)
 
 private theorem convexOn_nonsmoothMax :
@@ -218,10 +218,10 @@ private theorem convexFn_nonsmoothMaxFn : ConvexFn nonsmoothMaxFn :=
 
 private theorem nonsmoothMaxFn_of_nonneg {x : Rn 2} (hx : 0 ≤ x 0) :
     nonsmoothMaxFn x = ((max (1 - Real.sqrt (x 0)) |x 1| : ℝ) : EReal) :=
-  ConvexAnalysis.restrict_of_mem hx
+  ConvexAnalysis.restrictFn_of_mem hx
 
 private theorem nonsmoothMaxFn_of_neg {x : Rn 2} (hx : ¬ 0 ≤ x 0) : nonsmoothMaxFn x = ⊤ :=
-  ConvexAnalysis.restrict_of_notMem hx
+  ConvexAnalysis.restrictFn_of_notMem hx
 
 private noncomputable def upperPoint : Rn 2 := WithLp.toLp 2 ![(0 : ℝ), 1]
 
@@ -338,10 +338,10 @@ theorem proper_convexFn_nonsmoothMaxFn : ConvexFn nonsmoothMaxFn ∧ Proper nons
   refine ⟨convexFn_nonsmoothMaxFn, ⟨⟨0, ?_⟩, fun x => ?_⟩⟩
   · have hz0 : (0 : Rn 2) 0 = (0 : ℝ) := rfl
     rw [mem_dom, nonsmoothMaxFn_of_nonneg (by rw [hz0])]
-    exact _root_.EReal.coe_lt_top _
+    exact EReal.coe_lt_top _
   · by_cases hx : 0 ≤ x 0
     · rw [nonsmoothMaxFn_of_nonneg hx]
-      exact _root_.EReal.coe_ne_bot _
+      exact EReal.coe_ne_bot _
     · rw [nonsmoothMaxFn_of_neg hx]
       exact top_ne_bot
 
@@ -384,7 +384,7 @@ theorem theorem_23_5_a_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
     x ∈ subgradient (pairing n) (conj (pairing n) f) y ↔ y ∈ subgradient (pairing n) f x := by
   have hbi : biconj (pairing n) f x = f x := by rw [biconj_eq_clFn hf]; exact hx
   have h := mem_subgradient_conj_iff (B := pairing n) (f := f) (x := x) (y := y) hbi
-  rwa [subgradient_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 /-- **Theorem 23.5**, condition (b*): `⟨x, z*⟩ - f*(z*)` attains its supremum in `z*` at `z* = x*`,
 available when `(cl f)(x) = f(x)`. -/
@@ -416,7 +416,7 @@ theorem corollary_23_5_1_mem {f : Rn n → EReal} (hf : ConvexFn f) (hc : Closed
     {x y : Rn n} :
     x ∈ subgradient (pairing n) (conj (pairing n) f) y ↔ y ∈ subgradient (pairing n) f x := by
   have h := mem_subgradient_conj_iff_of_closedFn (B := pairing n) (x := x) (y := y) hf hc
-  rwa [subgradient_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 /-- **Corollary 23.5.2**, first assertion: if `f` is subdifferentiable at `x` then
 `(cl f)(x) = f(x)`. Properness is not needed. -/
@@ -437,7 +437,7 @@ theorem corollary_23_5_3 {C : Set (Rn n)} (hC : IsClosed C) (hCc : Convex ℝ C)
     subgradient (pairing n) (supportFn (pairing n) C) y
       = {x ∈ C | ∀ z ∈ C, pairing n z y ≤ pairing n x y} := by
   have h := subgradient_supportFn (B := pairing n) hC hCc hCne y
-  rwa [subgradient_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 private theorem normalCone_zero (C : Set (Rn n)) :
     normalCone (pairing n) C 0 = polarCone (pairing n) C := by
@@ -464,7 +464,7 @@ theorem corollary_23_5_4_inv {K : PointedCone ℝ (Rn n)} (hK : IsClosed (K : Se
   have hbi : polarCone (pairing n) (polarCone (pairing n) (K : Set (Rn n)))
       = (K : Set (Rn n)) := by
     have h := polarCone_polarCone_pointedCone (B := pairing n) K hK
-    rwa [polarCone_flip_pairing] at h
+    rwa [flip_pairing] at h
   rw [corollary_23_5_4, corollary_23_5_4 (polarPointedCone (pairing n) (K : Set (Rn n)))]
   rw [coe_polarPointedCone, hbi]
   constructor
@@ -497,7 +497,7 @@ theorem theorem_23_6 {f : Rn n → EReal} (hf : ConvexFn f) (hp : Proper f)
     ⨅ ε ∈ Ioi (0 : ℝ), supportFn (pairing n) (epsSubgradient (pairing n) ε f x) v
       = dirDeriv f x v := by
   have h := dirDeriv_eq_iInf_supportFn_epsSubgradient (B := pairing n) hf hp hc hr v
-  simpa only [supportFn_flip_pairing] using h
+  simpa only [flip_pairing] using h
 
 /-! ### Theorem 23.7: normals to a level set -/
 
@@ -687,6 +687,6 @@ theorem theorem_23_10_supportFn {f : Rn n → EReal} (hf : PolyhedralFn f) {x : 
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     dirDeriv f x = supportFn (pairing n) (subgradient (pairing n) f x) := by
   have h := dirDeriv_eq_supportFn_of_polyhedralFn (B := pairing n) hf ht hb
-  rwa [supportFn_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 end Rockafellar

@@ -28,7 +28,7 @@ polyhedral.
 * `conj_zero_eq_neg_iInf`, `argmin_eq_subgradient_conj_zero`,
   `iInf_ne_bot_and_argmin_eq_empty_iff`,
   `argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj`, `supportFn_setOf_le`,
-  `argmin_eq_singleton_iff_hasGradientAt_conj_zero`, `supportFn_argmin`,
+  `argmin_eq_singleton_iff_hasGradientAtFn_conj_zero`, `supportFn_argmin`,
   `recessionCone_setOf_le_eq_polarCone_dom_conj`, `iInf_supportFn_setOf_le` — the minimum set and
   the optimal value read off the conjugate at the origin (Theorem 27.1 in [^1], clauses (a)–(h)).
 * `isCompact_setOf_le` — a level set of a closed proper convex function with no direction of
@@ -130,7 +130,7 @@ theorem mem_argmax_iff_eq_iSup {g : E → EReal} : x ∈ argmax g ↔ g x = ⨆ 
 omit [AddCommGroup E] [Module ℝ E] in
 /-- Maximising `g` is minimising `-g`. -/
 theorem argmax_eq_argmin_neg (g : E → EReal) : argmax g = argmin fun z => -(g z) :=
-  Set.ext fun _ => forall_congr' fun _ => _root_.EReal.neg_le_neg_iff.symm
+  Set.ext fun _ => forall_congr' fun _ => EReal.neg_le_neg_iff.symm
 
 /-- Minimising is `0 ∈ ∂f x`, by the definition of a subgradient. -/
 theorem mem_argmin_iff_zero_mem_subgradient (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
@@ -155,7 +155,7 @@ theorem iInf_eq_neg_conj_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → E
 theorem zero_mem_dom_conj_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) :
     (0 : F) ∈ dom (conj B f) ↔ (⊥ : EReal) < ⨅ x, f x := by
   rw [mem_dom, conj_zero_eq_neg_iInf, lt_top_iff_ne_top, bot_lt_iff_ne_bot, ne_eq, ne_eq,
-    _root_.EReal.neg_eq_top_iff]
+    EReal.neg_eq_top_iff]
 
 /-- The minimum set is convex. -/
 theorem convex_argmin (hf : ConvexFn f) : Convex ℝ (argmin f) := by
@@ -210,7 +210,7 @@ theorem dom_sepSum (hb : ∀ i (z : E i), h i z ≠ ⊥) :
       exact Finset.sum_congr rfl fun j _ => hc j
     change ∑ j, h j (x j) < ⊤
     rw [hsum]
-    exact _root_.EReal.coe_lt_top _
+    exact EReal.coe_lt_top _
 
 /-- **A separable sum is minimised coordinatewise**: the minimum set of `x ↦ ∑ᵢ hᵢ(xᵢ)` on a finite
 product is the product of the minimum sets of the summands.
@@ -233,7 +233,7 @@ theorem argmin_sepSum (hp : ∀ i, Proper (h i)) :
     rw [EReal.coe_sum]
     exact (hx y).trans (le_of_eq (Finset.sum_congr rfl fun j _ => hr j))
   have hxdom : x ∈ dom fun w : ∀ i, E i => ∑ j, h j (w j) :=
-    lt_of_le_of_lt hxle (_root_.EReal.coe_lt_top _)
+    lt_of_le_of_lt hxle (EReal.coe_lt_top _)
   have hxpi := (dom_sepSum fun j z => (hp j).ne_bot z).subset hxdom
   choose c hc using fun j =>
     EReal.exists_coe_of_ne_bot_of_lt_top ((hp j).ne_bot (x j)) (hxpi j (mem_univ j))
@@ -251,7 +251,7 @@ theorem argmin_sepSum (hp : ∀ i, Proper (h i)) :
   rw [← Finset.add_sum_erase _ (fun j => h j (x j)) (Finset.mem_univ i),
     ← Finset.add_sum_erase _ (fun j => h j (Function.update x i z j)) (Finset.mem_univ i),
     Function.update_self, hupdsum, hrest] at hupd
-  exact (_root_.EReal.addLECancellable_coe _).add_le_add_iff_right.1 hupd
+  exact (EReal.addLECancellable_coe _).add_le_add_iff_right.1 hupd
 
 end Pi
 
@@ -272,8 +272,8 @@ theorem argmin_eq_subgradient_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) :
   have hbi : conj B.flip (conj B f) x = f x := congrFun (biconj_eq_self hf hc) x
   have hpair : ((B.flip 0 x : ℝ) : EReal) = 0 := by simp
   rw [mem_argmin_iff_le_iInf, iInf_eq_neg_conj_zero B, mem_subgradient_iff_add_conj_le, hbi,
-    hpair, ← _root_.EReal.le_sub_iff_add_le (.inr (by simp)) (.inr (by simp)), zero_sub,
-    _root_.EReal.le_neg]
+    hpair, ← EReal.le_sub_iff_add_le (.inr (by simp)) (.inr (by simp)), zero_sub,
+    EReal.le_neg]
 
 /-- Every nonempty level set of a closed proper convex function has the same recession cone, the
 polar of `dom f*`. -/
@@ -320,7 +320,7 @@ theorem mem_argmin_add_indicatorFn_of_forall (hp : Proper h) (hx : x ∈ C)
   · simpa [indicatorFn_of_mem hx, indicatorFn_of_mem hzC] using hmin z hzC
   · have hrhs : (h + indicatorFn C) z = ⊤ := by
       rw [Pi.add_apply, indicatorFn_of_notMem hzC]
-      exact _root_.EReal.add_top_of_ne_bot (hp.ne_bot z)
+      exact EReal.add_top_of_ne_bot (hp.ne_bot z)
     rw [hrhs]
     exact le_top
 
@@ -443,7 +443,7 @@ theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : Clos
       ∃ δ : ℝ, 0 < δ ∧ ∀ x, f x ≤ (⨅ z, f z) + (δ : EReal) → ∃ z ∈ argmin f, dist x z < ε := by
     intro d hd0 hd1 hout
     refine ⟨d, hd0, fun x hx => ?_⟩
-    rw [hinf, ← _root_.EReal.coe_add] at hx
+    rw [hinf, ← EReal.coe_add] at hx
     have hxL : x ∈ {z : E | f z ≤ ((μ + 1 : ℝ) : EReal)} :=
       le_trans hx (by exact_mod_cast (by linarith : μ + d ≤ μ + 1))
     refine (hmemU x).1 ?_
@@ -460,7 +460,7 @@ theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : Clos
       exact hbnot fun z => hcon z
     have hμb : (μ : EReal) < f b := lt_of_le_of_lt (by rw [← hμ]; exact ha w) hw
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot b)
-      (lt_of_le_of_lt hbK.1 (_root_.EReal.coe_lt_top (μ + 1)))
+      (lt_of_le_of_lt hbK.1 (EReal.coe_lt_top (μ + 1)))
     have hμr : μ < r := by
       rw [hr] at hμb
       exact_mod_cast hμb
@@ -469,7 +469,7 @@ theorem exists_pos_forall_exists_mem_argmin_dist_lt (hf : ConvexFn f) (hc : Clos
     have hble : ((r : ℝ) : EReal) ≤ ((μ + min 1 ((r - μ) / 2) : ℝ) : EReal) := by
       rw [← hr]
       exact le_trans (isMinOn_iff.1 hbmin x hxK) hxle
-    rw [_root_.EReal.coe_le_coe_iff] at hble
+    rw [EReal.coe_le_coe_iff] at hble
     have hhalf : min 1 ((r - μ) / 2) ≤ (r - μ) / 2 := min_le_right _ _
     linarith
 
@@ -483,7 +483,7 @@ theorem tendsto_infDist_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper 
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
   obtain ⟨δ, hδ, hmain⟩ := exists_pos_forall_exists_mem_argmin_dist_lt hf hc hp hrec hε
   have hlt : (⨅ z, f z) < (⨅ z, f z) + (δ : EReal) := by
-    rw [hμ, ← _root_.EReal.coe_add]
+    rw [hμ, ← EReal.coe_add]
     exact_mod_cast (by linarith : μ < μ + δ)
   filter_upwards [hu (Iio_mem_nhds hlt)] with i hi
   obtain ⟨z, hz, hdz⟩ := hmain (u i) (le_of_lt hi)
@@ -504,7 +504,7 @@ theorem mem_argmin_of_mapClusterPt (hf : ConvexFn f) (hc : ClosedFn f) (hp : Pro
     obtain ⟨δ, hδ, hmain⟩ :=
       exists_pos_forall_exists_mem_argmin_dist_lt hf hc hp hrec (half_pos hε)
     have hlt : (⨅ z, f z) < (⨅ z, f z) + (δ : EReal) := by
-      rw [hμ, ← _root_.EReal.coe_add]
+      rw [hμ, ← EReal.coe_add]
       exact_mod_cast (by linarith : μ < μ + δ)
     have hV : {z : E | f z < (⨅ z, f z) + (δ : EReal)} ∈ Filter.map u l :=
       hu (Iio_mem_nhds hlt)
@@ -601,7 +601,7 @@ theorem recessionConeFn_add_indicatorFn (hh : ClosedProperConvexFn h) (hC : Conv
   · rw [indicatorFn_of_mem hy, add_zero]
     simp [hy]
   · rw [indicatorFn_of_notMem hy,
-      _root_.EReal.add_top_of_ne_bot (recessionFn_ne_bot hh.proper y)]
+      EReal.add_top_of_ne_bot (recessionFn_ne_bot hh.proper y)]
     simp [hy]
 
 /-- **The non-polyhedral case**: a closed proper convex `h` attains its infimum over a nonempty
@@ -1024,7 +1024,7 @@ theorem zero_mem_relint_dom_conj_iff_recessionConeFn_subset_constancySpace (hf :
     (hc : ClosedFn f) (hp : Proper f) :
     (0 : F) ∈ ri (dom (conj B f)) ↔ recessionConeFn f ⊆ constancySpace f := by
   rw [mem_relint_dom_conj_iff (B := B) ⟨hf, hc, hp⟩ 0]
-  simp only [map_zero, _root_.EReal.coe_zero]
+  simp only [map_zero, EReal.coe_zero]
   constructor
   · rintro ⟨h1, h2⟩ y hy
     have hy0 : recessionFn f y = 0 := le_antisymm hy (h1 y)
@@ -1129,8 +1129,8 @@ theorem supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (α : ℝ) :
   ext x
   rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, conj_flip_conj_add_coe,
     show biconj B f x = f x from congrFun (biconj_eq_self hf hc) x,
-    _root_.EReal.sub_le_iff_le_add (.inl (_root_.EReal.coe_ne_bot α))
-      (.inl (_root_.EReal.coe_ne_top α)), zero_add]
+    EReal.sub_le_iff_le_add (.inl (EReal.coe_ne_bot α))
+      (.inl (EReal.coe_ne_top α)), zero_add]
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 /-- When `f` is bounded below, the support function of its minimum set is the closure of the
@@ -1150,15 +1150,15 @@ theorem epsSubgradient_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) (hp : Prope
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
     epsSubgradient B.flip ε (conj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
   have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_zero_eq_neg_iInf, hμ, _root_.EReal.coe_neg]
+    rw [conj_zero_eq_neg_iInf, hμ, EReal.coe_neg]
   ext z
   rw [Set.mem_ofPred_eq, mem_epsSubgradient]
   have hstep : ∀ y : F, (conj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
         ≤ conj B f y + (ε : EReal))
       ↔ (((B.flip y z : ℝ) : EReal) - conj B f y ≤ ((μ + ε : ℝ) : EReal)) := fun y => by
     rw [sub_zero, hc0, coe_add_le_add_coe_iff,
-      _root_.EReal.sub_le_iff_le_add (.inl (conj_ne_bot hp.dom_nonempty y))
-        (.inr (_root_.EReal.coe_ne_bot _)),
+      EReal.sub_le_iff_le_add (.inl (conj_ne_bot hp.dom_nonempty y))
+        (.inr (EReal.coe_ne_bot _)),
       add_comm (((μ + ε : ℝ) : EReal)) (conj B f y), show ε - -μ = μ + ε from by ring]
   simp only [hstep]
   have hbi : (⨆ y : F, ((B.flip y z : ℝ) : EReal) - conj B f y) = f z := by
@@ -1176,7 +1176,7 @@ theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper
       = dirDeriv (conj B f) 0 y := by
   have hcp : Proper (conj B f) := proper_conj ⟨hf, hc, hp⟩
   have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
-    rw [conj_zero_eq_neg_iInf, hμ, _root_.EReal.coe_neg]
+    rw [conj_zero_eq_neg_iInf, hμ, EReal.coe_neg]
   have hepi : IsClosed (epi (conj B f)) :=
     ClosedProperConvexFn.isClosed_epi ⟨convexFn_conj B f, closedFn_conj, hcp⟩
   rw [← dirDeriv_eq_iInf_supportFn_epsSubgradient (B := B.flip) (convexFn_conj B f) hcp hepi hc0 y]
@@ -1199,7 +1199,7 @@ theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedFn f) 
       ↔ (conj B f 0 ≠ ⊤ ∧ ∃ y : F, dirDeriv (conj B f) 0 y = ⊥) := by
   have hb : conj B f 0 ≠ ⊥ := conj_ne_bot hp.dom_nonempty 0
   have hiff : (⨅ x, f x) ≠ ⊥ ↔ conj B f 0 ≠ ⊤ := by
-    rw [conj_zero_eq_neg_iInf, ne_eq, ne_eq, _root_.EReal.neg_eq_top_iff]
+    rw [conj_zero_eq_neg_iInf, ne_eq, ne_eq, EReal.neg_eq_top_iff]
   rw [hiff, and_congr_right_iff]
   intro ht
   rw [argmin_eq_subgradient_conj_zero (B := B) hf hc,
@@ -1223,10 +1223,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- **Necessity**: if the minimum set of `f` is the single vector `x`, then `f*` is differentiable
 at the origin with `∇f*(0) = ⟨·, x⟩`. The finite-dimensionality is `F`'s, not `E`'s — it is the
 space `f*` lives on. -/
-theorem hasGradientAt_conj_zero_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedFn f)
+theorem hasGradientAtFn_conj_zero_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedFn f)
     (hp : Proper f) (h : argmin f = {x}) :
-    HasGradientAt (conj B f) (evalCLM B.flip x) 0 :=
-  hasGradientAt_evalCLM_of_subgradient_eq_singleton (B := B.flip) (convexFn_conj B f)
+    HasGradientAtFn (conj B f) (evalCLM B.flip x) 0 :=
+  hasGradientAtFn_evalCLM_of_subgradient_eq_singleton (B := B.flip) (convexFn_conj B f)
     (proper_conj ⟨hf, hc, hp⟩)
     (by rw [← argmin_eq_subgradient_conj_zero (B := B) hf hc]; exact h)
 
@@ -1239,24 +1239,24 @@ hence `f*(0)` finite, which is all the uniqueness argument consumes. The separat
 needs is free from `IsCompatiblePairing B`, and it is not an artefact — if `B x = 0` for some
 `x ≠ 0` then every level set of `f = f**` is invariant under translation by `x` and no minimum set
 is ever a singleton. Finite-dimensionality of `F` is not used on this side. -/
-theorem argmin_eq_singleton_of_hasGradientAt_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (h : HasGradientAt (conj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
+theorem argmin_eq_singleton_of_hasGradientAtFn_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
+    (h : HasGradientAtFn (conj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
   have hcf : ConvexFn (conj B f) := convexFn_conj B f
-  have hprop : Proper (conj B f) := HasGradientAt.proper hcf h
+  have hprop : Proper (conj B f) := HasGradientAtFn.proper hcf h
   rw [argmin_eq_subgradient_conj_zero (B := B) hf hc]
   refine subgradient_eq_singleton_of_dirDeriv_eq (B := B.flip)
     (injective_of_separatingDual B)
-    ((mem_dom.1 (interior_subset (HasGradientAt.mem_interior_dom h))).ne) (hprop.ne_bot 0)
+    ((mem_dom.1 (interior_subset (HasGradientAtFn.mem_interior_dom h))).ne) (hprop.ne_bot 0)
     fun v => ?_
-  rw [HasGradientAt.dirDeriv_eq hcf h v]
+  rw [HasGradientAtFn.dirDeriv_eq hcf h v]
   rfl
 
 /-- The minimum set of a closed proper convex `f` is the single vector `x` exactly when `f*` is
 differentiable at the origin with `∇f*(0) = ⟨·, x⟩`. -/
-theorem argmin_eq_singleton_iff_hasGradientAt_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
-    (hp : Proper f) : argmin f = {x} ↔ HasGradientAt (conj B f) (evalCLM B.flip x) 0 :=
-  ⟨hasGradientAt_conj_zero_of_argmin_eq_singleton hf hc hp,
-    argmin_eq_singleton_of_hasGradientAt_conj_zero hf hc⟩
+theorem argmin_eq_singleton_iff_hasGradientAtFn_conj_zero (hf : ConvexFn f) (hc : ClosedFn f)
+    (hp : Proper f) : argmin f = {x} ↔ HasGradientAtFn (conj B f) (evalCLM B.flip x) 0 :=
+  ⟨hasGradientAtFn_conj_zero_of_argmin_eq_singleton hf hc hp,
+    argmin_eq_singleton_of_hasGradientAtFn_conj_zero hf hc⟩
 
 /-- The existential form: the infimum of `f` is attained at a *unique* point exactly when `f*` is
 differentiable at the origin. Passing from the functional `∇f*(0)` to the vector `x : E`
@@ -1266,10 +1266,10 @@ theorem exists_argmin_eq_singleton_iff_differentiableAtFn_conj_zero (hf : Convex
     (∃ x : E, argmin f = {x}) ↔ DifferentiableAtFn (conj B f) 0 := by
   constructor
   · rintro ⟨x, hx⟩
-    exact ⟨_, hasGradientAt_conj_zero_of_argmin_eq_singleton hf hc hp hx⟩
+    exact ⟨_, hasGradientAtFn_conj_zero_of_argmin_eq_singleton hf hc hp hx⟩
   · rintro ⟨g, hg⟩
     obtain ⟨x, hx⟩ := IsCompatiblePairing.surjective_eval B.flip g
-    exact ⟨x, argmin_eq_singleton_of_hasGradientAt_conj_zero hf hc (by rw [hx]; exact hg)⟩
+    exact ⟨x, argmin_eq_singleton_of_hasGradientAtFn_conj_zero hf hc (by rw [hx]; exact hg)⟩
 
 end UniqueMinimiser
 

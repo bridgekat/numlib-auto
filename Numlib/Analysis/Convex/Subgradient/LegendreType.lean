@@ -20,7 +20,7 @@ cannot be improved to an equality.
 
 ## Main results
 
-* `hasGradientAt_toDual_iff_mem_subgradient` — for an essentially smooth `f`, being *the* gradient
+* `hasGradientAtFn_toDual_iff_mem_subgradient` — for an essentially smooth `f`, being *the* gradient
   at `x` and being *a* subgradient at `x` say the same thing. Everything else here is that
   equivalence combined with the inversion `∂f* = (∂f)⁻¹`.
 * `gradientRange_eq_domSubgradient_conj`, `relint_dom_conj_subset_gradientRange`,
@@ -56,26 +56,26 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 /-- The domain `D = ∇f(C)` of the Legendre conjugate, as a set of *vectors*: the preimage of
 `legendreDom f` under the Riesz isometry. -/
 def gradientRange (f : E → EReal) : Set E :=
-  {v | ∃ x, HasGradientAt f (InnerProductSpace.toDual ℝ E v) x}
+  {v | ∃ x, HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x}
 
 @[simp] theorem mem_gradientRange :
-    v ∈ gradientRange f ↔ ∃ x, HasGradientAt f (InnerProductSpace.toDual ℝ E v) x := Iff.rfl
+    v ∈ gradientRange f ↔ ∃ x, HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x := Iff.rfl
 
 theorem mem_gradientRange_iff_mem_legendreDom :
     v ∈ gradientRange f ↔ InnerProductSpace.toDual ℝ E v ∈ legendreDom f := Iff.rfl
 
-theorem HasGradientAt.mem_gradientRange (h : HasGradientAt f (InnerProductSpace.toDual ℝ E v) x) :
-    v ∈ gradientRange f := ⟨x, h⟩
+theorem HasGradientAtFn.mem_gradientRange
+    (h : HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x) : v ∈ gradientRange f := ⟨x, h⟩
 
 /-- Mathlib's `gradient` of the real trace is `∇f`. -/
-theorem HasGradientAt.gradient_toReal_eq (h : HasGradientAt f f' x) :
+theorem HasGradientAtFn.gradient_toReal_eq (h : HasGradientAtFn f f' x) :
     gradient (fun w => (f w).toReal) x = (InnerProductSpace.toDual ℝ E).symm f' := by
   unfold gradient
   rw [h.fderiv_toReal_eq]
 
 /-- At a point of differentiability, `gradient (fun w => (f w).toReal)` really is a gradient. -/
-theorem DifferentiableAtFn.hasGradientAt_gradient (h : DifferentiableAtFn f x) :
-    HasGradientAt f (InnerProductSpace.toDual ℝ E (gradient (fun w => (f w).toReal) x)) x := by
+theorem DifferentiableAtFn.hasGradientAtFn_gradient (h : DifferentiableAtFn f x) :
+    HasGradientAtFn f (InnerProductSpace.toDual ℝ E (gradient (fun w => (f w).toReal) x)) x := by
   obtain ⟨g, hg⟩ := h
   rw [hg.gradient_toReal_eq, LinearIsometryEquiv.apply_symm_apply]
   exact hg
@@ -84,9 +84,9 @@ theorem DifferentiableAtFn.hasGradientAt_gradient (h : DifferentiableAtFn f x) :
 
 /-- For an essentially smooth function, gradients and subgradients coincide. On the interior of the
 effective domain a lone subgradient is the gradient; off it, both sides are impossible. -/
-theorem hasGradientAt_toDual_iff_mem_subgradient (hf : ConvexFn f) (hp : Proper f)
+theorem hasGradientAtFn_toDual_iff_mem_subgradient (hf : ConvexFn f) (hp : Proper f)
     (hcl : ClosedFn f) (hes : EssentiallySmooth f) :
-    HasGradientAt f (InnerProductSpace.toDual ℝ E v) x ↔ v ∈ subgradient (innerₗ E) f x := by
+    HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x ↔ v ∈ subgradient (innerₗ E) f x := by
   constructor
   · intro h
     rw [subgradient_innerL_eq_singleton hf h, LinearIsometryEquiv.symm_apply_apply]
@@ -96,7 +96,7 @@ theorem hasGradientAt_toDual_iff_mem_subgradient (hf : ConvexFn f) (hp : Proper 
     · rw [subgradient_eq_singleton_of_essentiallySmooth hf hes hx, Set.mem_singleton_iff] at h
       subst h
       rw [LinearIsometryEquiv.apply_symm_apply]
-      exact (hes.differentiableAtFn hx).hasGradientAt_fderiv
+      exact (hes.differentiableAtFn hx).hasGradientAtFn_fderiv
     · rw [subgradient_eq_empty_of_essentiallySmooth hf hp hcl hes hx] at h
       exact absurd h (Set.notMem_empty v)
 
@@ -108,7 +108,7 @@ theorem gradientRange_eq_domSubgradient_conj (hf : ConvexFn f) (hp : Proper f) (
   ext w
   rw [mem_gradientRange, mem_domSubgradient, Set.nonempty_def]
   refine exists_congr fun z => ?_
-  rw [hasGradientAt_toDual_iff_mem_subgradient hf hp hcl hes]
+  rw [hasGradientAtFn_toDual_iff_mem_subgradient hf hp hcl hes]
   exact (mem_subgradient_conj_innerL_iff hf hcl z w).symm
 
 /-- `ri (dom f*) ⊆ D`: a closed proper convex function has a subgradient at every point of the
@@ -167,12 +167,12 @@ theorem LegendreType.conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
   (legendreType_conj_iff hf hp hcl).2 hleg
 
 /-- `∇f* = (∇f)⁻¹`: `v` is the gradient of `f` at `x` exactly when `x` is that of `f*` at `v`. -/
-theorem hasGradientAt_conj_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem hasGradientAtFn_conj_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hleg : LegendreType f) :
-    HasGradientAt f (InnerProductSpace.toDual ℝ E v) x ↔
-      HasGradientAt (conj (innerₗ E) f) (InnerProductSpace.toDual ℝ E x) v := by
-  rw [hasGradientAt_toDual_iff_mem_subgradient hf hp hcl hleg.1,
-    hasGradientAt_toDual_iff_mem_subgradient (convexFn_conj _ f) (proper_conj ⟨hf, hcl, hp⟩)
+    HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x ↔
+      HasGradientAtFn (conj (innerₗ E) f) (InnerProductSpace.toDual ℝ E x) v := by
+  rw [hasGradientAtFn_toDual_iff_mem_subgradient hf hp hcl hleg.1,
+    hasGradientAtFn_toDual_iff_mem_subgradient (convexFn_conj _ f) (proper_conj ⟨hf, hcl, hp⟩)
       closedFn_conj (hleg.conj hf hp hcl).1,
     mem_subgradient_conj_innerL_iff hf hcl]
 
@@ -185,11 +185,11 @@ theorem gradientRange_eq_interior_dom_conj (hf : ConvexFn f) (hp : Proper f) (hc
 
 /-- Two points with the same gradient are equal, when `f` is of Legendre type: both are gradients
 of `f*` at the common value, and a gradient is unique. -/
-theorem eq_of_hasGradientAt_of_legendreType (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem eq_of_hasGradientAtFn_of_legendreType (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hleg : LegendreType f) {x₁ x₂ : E}
-    (h₁ : HasGradientAt f (InnerProductSpace.toDual ℝ E v) x₁)
-    (h₂ : HasGradientAt f (InnerProductSpace.toDual ℝ E v) x₂) : x₁ = x₂ := by
-  rw [hasGradientAt_conj_iff hf hp hcl hleg] at h₁ h₂
+    (h₁ : HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x₁)
+    (h₂ : HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x₂) : x₁ = x₂ := by
+  rw [hasGradientAtFn_conj_iff hf hp hcl hleg] at h₁ h₂
   have h := h₁.fderiv_toReal_eq.symm.trans h₂.fderiv_toReal_eq
   exact (InnerProductSpace.toDual ℝ E).injective h
 
@@ -201,12 +201,12 @@ theorem bijOn_gradient_of_legendreType (hf : ConvexFn f) (hp : Proper f) (hcl : 
   have hrange := gradientRange_eq_interior_dom_conj hf hp hcl hleg
   refine ⟨fun z hz => ?_, fun z₁ hz₁ z₂ hz₂ h => ?_, fun w hw => ?_⟩
   · rw [← hrange]
-    exact (hleg.1.differentiableAtFn hz).hasGradientAt_gradient.mem_gradientRange
-  · refine eq_of_hasGradientAt_of_legendreType hf hp hcl hleg
+    exact (hleg.1.differentiableAtFn hz).hasGradientAtFn_gradient.mem_gradientRange
+  · refine eq_of_hasGradientAtFn_of_legendreType hf hp hcl hleg
       (v := gradient (fun w => (f w).toReal) z₁)
-      (hleg.1.differentiableAtFn hz₁).hasGradientAt_gradient ?_
+      (hleg.1.differentiableAtFn hz₁).hasGradientAtFn_gradient ?_
     rw [h]
-    exact (hleg.1.differentiableAtFn hz₂).hasGradientAt_gradient
+    exact (hleg.1.differentiableAtFn hz₂).hasGradientAtFn_gradient
   · rw [← hrange] at hw
     obtain ⟨z, hz⟩ := hw
     exact ⟨z, hz.mem_interior_dom, by
@@ -217,8 +217,8 @@ theorem gradient_conj_gradient (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn
     (hleg : LegendreType f) (hx : x ∈ interior (dom f)) :
     gradient (fun w => (conj (innerₗ E) f w).toReal)
       (gradient (fun w => (f w).toReal) x) = x := by
-  have hgrad := (hleg.1.differentiableAtFn hx).hasGradientAt_gradient
-  rw [hasGradientAt_conj_iff hf hp hcl hleg] at hgrad
+  have hgrad := (hleg.1.differentiableAtFn hx).hasGradientAtFn_gradient
+  rw [hasGradientAtFn_conj_iff hf hp hcl hleg] at hgrad
   rw [hgrad.gradient_toReal_eq, LinearIsometryEquiv.symm_apply_apply]
 
 /-- `∇f` undoes `∇f*` on `C*`. -/
@@ -227,8 +227,8 @@ theorem gradient_gradient_conj (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn
     gradient (fun w => (f w).toReal)
       (gradient (fun w => (conj (innerₗ E) f w).toReal) v) = v := by
   have hgleg := hleg.conj hf hp hcl
-  have hgrad := (hgleg.1.differentiableAtFn hv).hasGradientAt_gradient
-  rw [← hasGradientAt_conj_iff hf hp hcl hleg] at hgrad
+  have hgrad := (hgleg.1.differentiableAtFn hv).hasGradientAtFn_gradient
+  rw [← hasGradientAtFn_conj_iff hf hp hcl hleg] at hgrad
   rw [hgrad.gradient_toReal_eq, LinearIsometryEquiv.symm_apply_apply]
 
 /-! ### Continuity of the gradient mapping -/
@@ -282,7 +282,7 @@ theorem bijOn_gradient_univ_iff (hf : ConvexFn f) (hp : Proper f) (hdom : dom f 
       intro x₁ x₂ hne
       rw [Set.disjoint_left]
       intro w hw₁ hw₂
-      rw [← hasGradientAt_toDual_iff_mem_subgradient hf hp hcl hes] at hw₁ hw₂
+      rw [← hasGradientAtFn_toDual_iff_mem_subgradient hf hp hcl hes] at hw₁ hw₂
       exact hne (hbij.injOn (Set.mem_univ x₁) (Set.mem_univ x₂)
         (by rw [hw₁.gradient_toReal_eq, hw₂.gradient_toReal_eq]))
     have hleg : LegendreType f :=
@@ -295,7 +295,7 @@ theorem bijOn_gradient_univ_iff (hf : ConvexFn f) (hp : Proper f) (hdom : dom f 
       obtain ⟨z, -, hz⟩ := hbij.surjOn (Set.mem_univ w)
       refine ⟨z, ?_⟩
       rw [← hz]
-      exact (hdiff z).hasGradientAt_gradient
+      exact (hdiff z).hasGradientAtFn_gradient
     rw [hrange] at huniv
     exact Set.eq_univ_of_univ_subset (huniv.ge.trans interior_subset)
   · rintro ⟨hsc, hdc⟩

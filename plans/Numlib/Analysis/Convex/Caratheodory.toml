@@ -4,13 +4,13 @@ namespace = 'ConvexAnalysis'
 id = 'mem_convexHull_iff_exists_fin_finrank_succ'
 
 [[node]]
-id = 'IsCompact.isCompact_convexHull'
+id = '_root_.IsCompact.convexHull'
 
 [[node]]
-id = 'Bornology.IsBounded.closure_convexHull'
+id = '_root_.Bornology.IsBounded.closure_convexHull'
 
 [[node]]
-id = 'closedProperConvexFn_convHullFn_restrict'
+id = 'closedProperConvexFn_convHullFn_restrictFn'
 
 [[node]]
 id = 'exists_linearIndepOn_of_mem_coneHull'

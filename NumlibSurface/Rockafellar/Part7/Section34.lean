@@ -576,9 +576,9 @@ theorem relint_domSaddle_eq_prod (K : Rn m × Rn n → EReal) :
 /-- The **kernel** of `K`: its restriction to `ri (dom K)`. Rockafellar's kernel is a partial
 function on a rectangle that moves with `K`; here it is extended by `+∞` off the rectangle, so that
 `kernel K = kernel L` is one equation rather than a rectangle equality plus a transport. -/
-theorem kernel_eq_restrict (K : Rn m × Rn n → EReal) :
-    kernel K = ConvexAnalysis.restrict (ri (domSaddle K)) K := by
-  have h : kernel K = ConvexAnalysis.restrict (kernelSet K) K := rfl
+theorem kernel_eq_restrictFn (K : Rn m × Rn n → EReal) :
+    kernel K = ConvexAnalysis.restrictFn (ri (domSaddle K)) K := by
+  have h : kernel K = ConvexAnalysis.restrictFn (kernelSet K) K := rfl
   rw [h, kernelSet_eq_relint_domSaddle]
 
 /-- Equality of kernels unpacked into the book's two facts: the same rectangle, same values. -/
@@ -699,9 +699,9 @@ theorem corollary_34_5_1 (hC : Convex ℝ C) (hCne : C.Nonempty) (hDne : D.Nonem
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun v => K (u, v))
     (hconc : ∀ v ∈ D, ConcaveOn ℝ C fun u => K (u, v)) :
     ∃ M : Rn m × Rn n → EReal, (ClosedSaddleFn M ∧ ConcaveConvexFn M ∧ ProperSaddleFn M ∧
-      kernel M = ConvexAnalysis.restrict (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
+      kernel M = ConvexAnalysis.restrictFn (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
       ∀ L : Rn m × Rn n → EReal, ClosedSaddleFn L → ConcaveConvexFn L → ProperSaddleFn L →
-        (kernel L = ConvexAnalysis.restrict (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔
+        (kernel L = ConvexAnalysis.restrictFn (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔
           SaddleEquiv M L) :=
   exists_unique_saddleEquiv_class_of_finite hC hCne hDne hconv hconc
 

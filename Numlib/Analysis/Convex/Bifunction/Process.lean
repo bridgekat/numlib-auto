@@ -1046,23 +1046,23 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
   have hpnt : ∀ x, p x ≠ ⊤ := fun x hx => hex'.proper_right.ne_bot x (by simp [hx])
   have hinf : (0 : EReal) ≤ ⨅ x, q x - p x := by
     refine le_iInf fun x => ?_
-    rw [_root_.EReal.le_sub_iff_add_le (.inr (hqnb x)) (.inl (hpnt x)), zero_add]
+    rw [EReal.le_sub_iff_add_le (.inr (hqnb x)) (.inl (hpnt x)), zero_add]
     exact hle x
   obtain ⟨y, hy⟩ := exists_concaveConj_sub_conj_eq (B := B) hex'
   have hcc_le : concaveConj B p y ≤ 0 := by
     have h := concaveConj_le_sub B p 0 y
-    simp only [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+    simp only [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
     refine h.trans ?_
     have hz : (0 : EReal) - p 0 = -(p 0) := zero_add _
     rw [hz]
-    exact _root_.EReal.neg_le.2 (by rw [neg_zero]; exact hp0)
+    exact EReal.neg_le.2 (by rw [neg_zero]; exact hp0)
   have hconj_ge : (0 : EReal) ≤ conj B q y := by
     have h := sub_le_conj B q 0 y
-    simp only [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+    simp only [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
     refine le_trans ?_ h
     have hz : (0 : EReal) - q 0 = -(q 0) := zero_add _
     rw [hz]
-    exact _root_.EReal.le_neg.2 (by rw [neg_zero]; exact hq0)
+    exact EReal.le_neg.2 (by rw [neg_zero]; exact hq0)
   have hbne : conj B q y ≠ ⊥ := by
     intro h
     rw [h] at hconj_ge
@@ -1073,18 +1073,18 @@ theorem exists_pairing_sandwich {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {p q : E �
     exact absurd hcc_le (by simp)
   have hkey : conj B q y ≤ concaveConj B p y := by
     have h0 : (0 : EReal) ≤ concaveConj B p y - conj B q y := by rw [hy]; exact hinf
-    rwa [_root_.EReal.le_sub_iff_add_le (.inl hbne) (.inr hcne), zero_add] at h0
+    rwa [EReal.le_sub_iff_add_le (.inl hbne) (.inr hcne), zero_add] at h0
   refine ⟨y, fun x => ?_, fun x => ?_⟩
   · have hmem : ((0 : ℝ) : EReal) ≤ concaveConj B p y := by
-      rw [_root_.EReal.coe_zero]
+      rw [EReal.coe_zero]
       exact hconj_ge.trans hkey
     have h3 := coe_le_concaveConj_iff.1 hmem x
-    rwa [affineFn_apply, _root_.EReal.coe_zero, sub_zero] at h3
+    rwa [affineFn_apply, EReal.coe_zero, sub_zero] at h3
   · have hmem : conj B q y ≤ ((0 : ℝ) : EReal) := by
-      rw [_root_.EReal.coe_zero]
+      rw [EReal.coe_zero]
       exact hkey.trans hcc_le
     have h3 := conj_le_coe_iff.1 hmem x
-    rwa [affineFn_apply, _root_.EReal.coe_zero, sub_zero] at h3
+    rwa [affineFn_apply, EReal.coe_zero, sub_zero] at h3
 
 end Sandwich
 
@@ -1838,7 +1838,7 @@ theorem coBracket_eq_neg_bracket (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : Con
   refine iInf_congr fun x => ?_
   rw [EReal.neg_iSup]
   refine iInf_congr fun _ => ?_
-  rw [← _root_.EReal.coe_neg, map_neg (Bx x) y, _root_.neg_neg]
+  rw [← EReal.coe_neg, map_neg (Bx x) y, _root_.neg_neg]
 
 theorem coBracket_eq_neg_bracket_fun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (A : ConvexProcess U X) (y : Y) :
     (fun u => coBracket Bx A u y) = fun u => -(bracket Bx A.indicatorBifun u (-y)) :=
@@ -1948,7 +1948,7 @@ theorem iSup_coadjointProcess_eq_neg_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ
   refine iSup_congr fun v => ?_
   rw [EReal.neg_iInf]
   refine iSup_congr fun _ => ?_
-  rw [map_neg (Bu u) v, _root_.EReal.coe_neg]
+  rw [map_neg (Bu u) v, EReal.coe_neg]
 
 end ConvexProcess
 

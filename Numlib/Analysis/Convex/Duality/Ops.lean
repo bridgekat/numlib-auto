@@ -76,13 +76,13 @@ theorem conj_ofEpi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (S : Set (E × ℝ)) (y
   constructor
   · intro h p hp
     have hp' : affineFn B y c p.1 ≤ (p.2 : EReal) := h hp
-    rw [affineFn_eq_coe, _root_.EReal.coe_le_coe_iff] at hp'
-    rw [_root_.EReal.coe_le_coe_iff]
+    rw [affineFn_eq_coe, EReal.coe_le_coe_iff] at hp'
+    rw [EReal.coe_le_coe_iff]
     linarith
   · intro h p hp
     have hp' := h p hp
-    rw [_root_.EReal.coe_le_coe_iff] at hp'
-    rw [mem_epi, affineFn_eq_coe, _root_.EReal.coe_le_coe_iff]
+    rw [EReal.coe_le_coe_iff] at hp'
+    rw [mem_epi, affineFn_eq_coe, EReal.coe_le_coe_iff]
     linarith
 
 /-- `conj_ofEpi` for the epigraph itself: the conjugate is a supremum over the epigraph. -/
@@ -162,7 +162,7 @@ theorem conj_mapLin (hA : IsAdjointPair B B' A A') (f : E → EReal) :
   · rw [compLin_apply, conj_apply]
     refine iSup_le fun x => ?_
     rw [← hA x z]
-    exact (_root_.EReal.sub_le_sub le_rfl (mapLin_le rfl)).trans
+    exact (EReal.sub_le_sub le_rfl (mapLin_le rfl)).trans
       (sub_le_conj B' (mapLin A f) (A x) z)
 
 end Image
@@ -182,13 +182,13 @@ theorem conj_infConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E → EReal) :
   funext y
   have hadd : ∀ p q : E × ℝ, ((B (p + q).1 y - (p + q).2 : ℝ) : EReal)
       = ((B p.1 y - p.2 : ℝ) : EReal) + ((B q.1 y - q.2 : ℝ) : EReal) := fun p q => by
-    rw [← _root_.EReal.coe_add]
+    rw [← EReal.coe_add]
     congr 1
     simp only [Prod.fst_add, Prod.snd_add, map_add, LinearMap.add_apply]
     ring
   rw [Pi.add_apply, infConv_def, conj_ofEpi, conj_eq_biSup_epi B f y, conj_eq_biSup_epi B g y,
-    EReal.biSup_add_biSup (fun _ _ => _root_.EReal.coe_ne_bot _)
-      (fun _ _ => _root_.EReal.coe_ne_bot _)]
+    EReal.biSup_add_biSup (fun _ _ => EReal.coe_ne_bot _)
+      (fun _ _ => EReal.coe_ne_bot _)]
   refine le_antisymm (iSup₂_le fun r hr => ?_) (iSup₂_le fun p hp => iSup₂_le fun q hq => ?_)
   · obtain ⟨p, hp, q, hq, rfl⟩ := hr
     rw [hadd p q]

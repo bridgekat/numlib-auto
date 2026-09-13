@@ -181,7 +181,7 @@ private theorem iInf_linearIndicatorBifun_slice (A : Rn m →ₗ[ℝ] Rn n) (u v
   · by_cases hx : x = A u
     · subst hx
       rw [linearIndicatorBifun_self, zero_add, hval]
-    · rw [linearIndicatorBifun_of_ne A hx, _root_.EReal.top_add_coe]
+    · rw [linearIndicatorBifun_of_ne A hx, EReal.top_add_coe]
       exact le_top
 
 private theorem iInf_pairing_coe (w : Rn m) :
@@ -191,7 +191,7 @@ private theorem iInf_pairing_coe (w : Rn m) :
     simp
   · rw [iSup_neg hw]
     refine iInf_eq_bot.2 fun b hb => ?_
-    obtain ⟨c, -, hcb⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
+    obtain ⟨c, -, hcb⟩ := EReal.lt_iff_exists_real_btwn.1 hb
     have hpos : 0 < pairing m w w := by
       rw [pairing_apply]
       exact real_inner_self_pos.2 hw
@@ -242,8 +242,9 @@ theorem theorem_30_2_second (hF : ConvexBifun F) :
 theorem theorem_30_2_third (hF : ConvexBifun F) (hcl : ClosedBifun F) :
     conj (pairing n) (fun y => -(supBifun (dualProgram F) y)) = F 0 := by
   have h := concaveAdjointBifun_adjointBifun_eq_self (Bu := pairing m) (Bx := pairing n) hF hcl
-  rw [← conj_flip_pairing,
-    ← concaveAdjointBifun_zero_eq_conj (pairing m) (pairing n) (dualProgram F), h]
+  have h2 := concaveAdjointBifun_zero_eq_conj (pairing m) (pairing n) (dualProgram F)
+  rw [flip_pairing] at h2
+  rw [← h2, h]
 
 /-- **Theorem 30.2**, fourth formula: `(F0)* = -cl (sup F*)`. -/
 theorem theorem_30_2_fourth (hF : ConvexBifun F) (hcl : ClosedBifun F) :
@@ -254,7 +255,7 @@ theorem theorem_30_2_fourth (hF : ConvexBifun F) (hcl : ClosedBifun F) :
   rw [← theorem_30_2_third hF hcl]
   have hflip : conj (pairing n) (conj (pairing n) (fun y => -(supBifun (dualProgram F) y)))
       = biconj (pairing n).flip (fun y => -(supBifun (dualProgram F) y)) := by
-    rw [biconj, flip_pairing, conj_flip_pairing]
+    rw [biconj, flip_pairing, flip_pairing]
   rw [hflip, hbi]
   funext y
   rw [clConcave_apply]
@@ -700,7 +701,7 @@ theorem infBifun_abnormalBifun_of_pos {u : Rn 1} (hu : 0 < u 0) :
     ⟨hu.le, by rw [coord1_apply]; exact hx⟩, coord1_apply]
   have hval : u 0 * ((1 / ε) ^ 2 / u 0) = (1 / ε) ^ 2 := by field_simp
   rw [hval, Real.sqrt_sq (by positivity)]
-  exact _root_.EReal.coe_le_coe_iff.2 (exp_neg_le hε)
+  exact EReal.coe_le_coe_iff.2 (exp_neg_le hε)
 
 /-- **§30**: `inf Fu = +∞` for `u < 0` — the program is inconsistent for negative perturbations. -/
 theorem infBifun_abnormalBifun_of_neg {u : Rn 1} (hu : u 0 < 0) :
@@ -778,7 +779,7 @@ theorem noDualSolutionBifun_of_lt {u x : Rn 1} (h : u 0 < (x 0) ^ 2) :
 private theorem noDualSolutionBifun_ne_bot (u x : Rn 1) : noDualSolutionBifun u x ≠ ⊥ := by
   by_cases h : (x 0) ^ 2 ≤ u 0
   · rw [noDualSolutionBifun_of_le h]
-    exact _root_.EReal.coe_ne_bot _
+    exact EReal.coe_ne_bot _
   · rw [noDualSolutionBifun_of_lt (not_le.1 h)]
     exact top_ne_bot
 
@@ -851,7 +852,7 @@ private theorem graphFn_noDualSolutionBifun :
   · rw [indicatorFn_of_mem (s := {q : Rn 1 × Rn 1 | (q.2 0) ^ 2 ≤ q.1 0}) h, zero_add]
     exact noDualSolutionBifun_of_le h
   · rw [indicatorFn_of_notMem (s := {q : Rn 1 × Rn 1 | (q.2 0) ^ 2 ≤ q.1 0}) h,
-      _root_.EReal.top_add_coe]
+      EReal.top_add_coe]
     exact noDualSolutionBifun_of_lt (not_le.1 h)
 
 /-- The example is a convex bifunction: its graph function is a linear coordinate added to the
@@ -940,7 +941,7 @@ theorem kuhnTucker_noDualSolutionBifun :
   rw [Real.sqrt_sq hs0.le] at hb
   have hchain : ((s ^ 2 * v 0 : ℝ) : EReal)
       + infBifun noDualSolutionBifun (coord1 (s ^ 2)) ≤ ((s ^ 2 * v 0 + -s : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     exact add_le_add le_rfl hb
   have hfin : (0 : EReal) ≤ ((s ^ 2 * v 0 + -s : ℝ) : EReal) := le_trans h hchain
   have hreal : (0 : ℝ) ≤ s ^ 2 * v 0 + -s := by exact_mod_cast hfin

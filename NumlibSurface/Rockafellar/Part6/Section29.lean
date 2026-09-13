@@ -244,8 +244,8 @@ theorem corollary_29_1_1_supportFn (hF : ConvexBifun F) (ht : infBifun F 0 ≠ �
     (hb : infBifun F 0 ≠ ⊥) (u : Rn m) :
     supportFn (pairing m) (KuhnTucker (pairing m) F) u
       = clFn (dirDeriv (infBifun F) 0) (-u) := by
-  rw [← supportFn_flip_pairing]
-  exact supportFn_kuhnTucker hF ht hb u
+  have h := supportFn_kuhnTucker (B := pairing m) hF ht hb u
+  rwa [flip_pairing] at h
 
 end Corollary2911
 
@@ -276,7 +276,7 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {b : Rn m}
 when the perturbation function is differentiable at the origin. The book's hypotheses are kept even
 though its proof cites Theorem 25.1, which needs properness that "finite optimal value" does not
 give: properness is free on each side, from `proper_of_mem_subgradient` and
-`HasGradientAt.proper`. -/
+`HasGradientAtFn.proper`. -/
 theorem corollary_29_1_3 (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     (∃ v : Rn m, KuhnTucker (pairing m) F = {v}) ↔ DifferentiableAtFn (infBifun F) 0 := by
   constructor
@@ -347,7 +347,7 @@ private theorem iSup_coe_neg_eq (S : Set (Rn m)) (g : Rn m → ℝ) :
   rw [EReal.neg_iInf]
   refine iSup_congr fun v => ?_
   rw [EReal.neg_iInf]
-  exact iSup_congr fun _ => (_root_.EReal.coe_neg (g v)).symm
+  exact iSup_congr fun _ => (EReal.coe_neg (g v)).symm
 
 /-- **Corollary 29.1.4**, existence half: a strongly consistent convex program with a finite optimal
 value has a Kuhn–Tucker vector. Theorem 23.4 applied to `inf F`, proper by Theorem 7.2. -/
@@ -364,7 +364,7 @@ theorem corollary_29_1_4_dirDeriv (hF : ConvexBifun F) (hs : StronglyConsistent 
     dirDeriv (infBifun F) 0 u
       = -(⨅ v ∈ KuhnTucker (pairing m) F, ((pairing m u v : ℝ) : EReal)) := by
   have hp : Proper (infBifun F) := proper_infBifun_of_stronglyConsistent hF hs hb
-  rw [dirDeriv_infBifun_eq (B := pairing m) hF hp hs u, supportFn_flip_pairing, supportFn_apply,
+  rw [dirDeriv_infBifun_eq (B := pairing m) hF hp hs u, flip_pairing, supportFn_apply,
     ← iSup_coe_neg_eq]
   refine iSup_congr fun v => iSup_congr fun _ => ?_
   rw [map_neg, pairing_comm v u]

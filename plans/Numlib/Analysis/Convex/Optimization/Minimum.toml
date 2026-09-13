@@ -73,4 +73,4 @@ id = 'iInf_supportFn_setOf_le'
 id = 'iInf_ne_bot_and_argmin_eq_empty_iff'
 
 [[node]]
-id = 'argmin_eq_singleton_iff_hasGradientAt_conj_zero'
+id = 'argmin_eq_singleton_iff_hasGradientAtFn_conj_zero'

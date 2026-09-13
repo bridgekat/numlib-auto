@@ -21,6 +21,12 @@ definitionally; generalising the pairing costs one class and leaves the topology
 
 ## Main results
 
+* `flip_eq_self`, `separatingRight_of_isInnerPairing`, `injective_flip_of_isInnerPairing` — an
+  inner pairing is its own flip and separates on the right, which is what the duality theory asks
+  of a self-pairing.
+* `exists_innerSL_eq`, `toDual_eq_innerSL`, `innerSL_eq_zero_iff`, `toDual_apply_eq_innerL` — the
+  Fréchet–Riesz dictionary between a vector `b` and the functional `⟨·, b⟩`, in the form a
+  finite-dimensional surface reads its books through.
 * `self_pairing_add`, `self_pairing_sub`, `self_pairing_combo_le` — the quadratic expansions, and
   convexity of `½ B z z` with its defect visible. These replace `norm_add_sq_real` and friends.
 * `pairing_sq_le_mul` — **Cauchy–Schwarz** for a positive semidefinite symmetric form. Only
@@ -80,6 +86,19 @@ theorem self_pairing_nonneg (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairin
 /-- Positive definiteness in the form the analysis uses. -/
 theorem self_pairing_pos (hx : x ≠ 0) : 0 < B x x :=
   lt_of_le_of_ne (self_pairing_nonneg B x) fun h => hx (self_pairing_eq_zero_iff.1 h.symm)
+
+/-- An inner pairing **separates on the right**: `B x y = 0` for every `x` forces `y = 0`, by
+testing against `y` itself. This is the hypothesis the level-set and recession duality asks for in
+place of a book's "`y ≠ 0`". -/
+theorem separatingRight_of_isInnerPairing (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] :
+    B.SeparatingRight := fun y h => IsInnerPairing.eq_zero_of_self_eq_zero B y (h y)
+
+/-- The flip of an inner pairing is injective — the form in which the subgradient calculus asks
+for separation. -/
+theorem injective_flip_of_isInnerPairing (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) [IsInnerPairing B] :
+    Function.Injective B.flip :=
+  LinearMap.ker_eq_bot.1
+    (LinearMap.separatingRight_iff_flip_ker_eq_bot.1 (separatingRight_of_isInnerPairing B))
 
 /-- The quadratic expansion the discriminant argument runs on. -/
 theorem self_pairing_add_smul (t : ℝ) (x y : E) :
@@ -299,6 +318,41 @@ instance isContinuousInnerPairing_innerL : IsContinuousInnerPairing (innerₗ E)
       rw [innerₗ_apply_apply, real_inner_self_eq_norm_sq]
     rw [h]
     exact (continuous_norm.pow 2)
+
+/-- `innerₗ E` separates on the right. -/
+theorem separatingRight_innerL : (innerₗ E).SeparatingRight :=
+  separatingRight_of_isInnerPairing (innerₗ E)
+
+/-! #### The vector picture of a linear functional
+
+A book writes a linear function on `ℝⁿ` as `⟨·, b⟩` and quantifies over the vector `b`; the
+backbone quantifies over a continuous linear functional, which is what separation produces. The
+translation is Mathlib's `innerSL ℝ b`, which on a Hilbert space is the Fréchet–Riesz map
+`InnerProductSpace.toDual ℝ E b`. -/
+
+/-- `⟨·, b⟩` is the zero functional exactly when `b` is the zero vector: this is what makes
+`b ≠ 0` and "`{x | ⟨x, b⟩ = β}` is a hyperplane" the same condition. -/
+theorem _root_.innerSL_eq_zero_iff {b : E} : innerSL ℝ b = 0 ↔ b = 0 := by
+  rw [← map_zero (innerSL ℝ (E := E))]
+  exact innerSL_inj
+
+/-- The Fréchet–Riesz map is `innerSL`. -/
+theorem toDual_eq_innerSL [CompleteSpace E] (b : E) :
+    InnerProductSpace.toDual ℝ E b = innerSL ℝ b := rfl
+
+/-- **Fréchet–Riesz**: on a real Hilbert space every continuous linear functional is `⟨·, b⟩`. This
+is what lets a surface statement quantify over vectors while its proof quantifies over
+functionals. -/
+theorem exists_innerSL_eq [CompleteSpace E] (f : E →L[ℝ] ℝ) : ∃ b : E, innerSL ℝ b = f :=
+  ⟨(InnerProductSpace.toDual ℝ E).symm f, (InnerProductSpace.toDual ℝ E).apply_symm_apply f⟩
+
+/-- The Riesz representative of `v` evaluated at `x` is `innerₗ E x v`: every backbone result
+about `HasGradientAtFn` produces the left-hand side, and a statement in the book's `⟨x, v⟩` wants
+the right. -/
+theorem toDual_apply_eq_innerL [CompleteSpace E] (v x : E) :
+    (InnerProductSpace.toDual ℝ E v) x = innerₗ E x v := by
+  rw [InnerProductSpace.toDual_apply_apply, innerₗ_apply_apply]
+  exact real_inner_comm x v
 
 end Inner
 

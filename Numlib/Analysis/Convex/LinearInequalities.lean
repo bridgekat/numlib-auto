@@ -309,9 +309,9 @@ theorem alternative_linear_system_strict [IsCompatiblePairing B.flip]
             = (((∑ i, l i * (B x (a i) - α i) : ℝ)) : EReal) := by
           rw [EReal.coe_sum]
           exact Finset.sum_congr rfl fun i _ => by
-            rw [affineFn_eq_coe, EReal.coe_mul_coe]
+            rw [affineFn_eq_coe, ← EReal.coe_mul]
         have h := hineq' x
-        rw [h1, ← _root_.EReal.coe_add] at h
+        rw [h1, ← EReal.coe_add] at h
         have hr : (0 : ℝ) ≤ (∑ i, l i * (B x (a i) - α i))
             + ∑ j, μ j * (B x (b j) - β j) := by exact_mod_cast h
         rwa [combined_value B l a α μ b β x] at hr

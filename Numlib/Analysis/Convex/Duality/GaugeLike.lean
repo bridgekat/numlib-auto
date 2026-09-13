@@ -74,15 +74,15 @@ section RestrictClosed
 variable {E : Type*} [AddCommGroup E] [TopologicalSpace E] [IsTopologicalAddGroup E]
 
 /-- Cutting a closed function down to a closed set leaves it closed. -/
-theorem ClosedFn.restrict {f : E → EReal} {s : Set E} (hf : ClosedFn f) (hne : ∀ x, f x ≠ ⊥)
-    (hs : IsClosed s) : ClosedFn (ConvexAnalysis.restrict s f) := by
-  have hne' : ∀ x, ConvexAnalysis.restrict s f x ≠ ⊥ := fun x => by
+theorem ClosedFn.restrictFn {f : E → EReal} {s : Set E} (hf : ClosedFn f) (hne : ∀ x, f x ≠ ⊥)
+    (hs : IsClosed s) : ClosedFn (ConvexAnalysis.restrictFn s f) := by
+  have hne' : ∀ x, ConvexAnalysis.restrictFn s f x ≠ ⊥ := fun x => by
     by_cases hx : x ∈ s
-    · rw [restrict_of_mem hx]; exact hne x
-    · rw [restrict_of_notMem hx]; exact top_ne_bot
+    · rw [restrictFn_of_mem hx]; exact hne x
+    · rw [restrictFn_of_notMem hx]; exact top_ne_bot
   have hepi : IsClosed (epi f) := lowerSemicontinuous_iff_isClosed_epi.1 hf.lowerSemicontinuous
   refine (closedFn_iff_lowerSemicontinuous hne').2 ?_
-  rw [lowerSemicontinuous_iff_isClosed_epi, epi_restrict]
+  rw [lowerSemicontinuous_iff_isClosed_epi, epi_restrictFn]
   exact hepi.inter (hs.prod isClosed_univ)
 
 end RestrictClosed
@@ -157,15 +157,15 @@ end MonotoneHalfLineFn
 Like `g` itself it is taken to be `+∞` to the left of the origin, which is what makes the
 operation an involution rather than a bijection onto a smaller class. -/
 noncomputable def monotoneConj (g : ℝ → EReal) : ℝ → EReal :=
-  ConvexAnalysis.restrict (Set.Ici 0) fun s =>
+  ConvexAnalysis.restrictFn (Set.Ici 0) fun s =>
     ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t
 
 theorem monotoneConj_of_nonneg (g : ℝ → EReal) (hs : 0 ≤ s) :
     monotoneConj g s = ⨆ t : ℝ, ⨆ _ : (0 : ℝ) ≤ t, ((t * s : ℝ) : EReal) - g t :=
-  restrict_of_mem hs
+  restrictFn_of_mem hs
 
 theorem monotoneConj_of_neg (g : ℝ → EReal) (hs : s < 0) : monotoneConj g s = ⊤ :=
-  restrict_of_notMem (by simpa using hs)
+  restrictFn_of_notMem (by simpa using hs)
 
 /-- On a function that is `+∞` to the left of the origin, the supremum over the half-line and the
 supremum over the whole line agree, so the monotone conjugate is the ordinary conjugate for
@@ -181,14 +181,14 @@ theorem conj_mulPairing_apply (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s :
   · exact le_iSup (fun t : ℝ => ((mulPairing t s : ℝ) : EReal) - g t) t
 
 /-- The monotone conjugate as a restricted ordinary conjugate. -/
-theorem monotoneConj_eq_restrict_conj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
-    monotoneConj g = ConvexAnalysis.restrict (Set.Ici 0) (conj mulPairing g) := by
+theorem monotoneConj_eq_restrictFn_conj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) :
+    monotoneConj g = ConvexAnalysis.restrictFn (Set.Ici 0) (conj mulPairing g) := by
   rw [monotoneConj, funext fun s => (conj_mulPairing_apply hg s).symm]
 
 /-- On the half-line the monotone conjugate and the ordinary conjugate agree. -/
 theorem monotoneConj_of_nonneg' (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (hs : 0 ≤ s) :
     monotoneConj g s = conj mulPairing g s := by
-  rw [monotoneConj_eq_restrict_conj hg, restrict_of_mem (Set.mem_Ici.2 hs)]
+  rw [monotoneConj_eq_restrictFn_conj hg, restrictFn_of_mem (Set.mem_Ici.2 hs)]
 
 /-- The monotone conjugate dominates the ordinary one, being `+∞` where they differ. -/
 theorem conj_le_monotoneConj (hg : ∀ ⦃t : ℝ⦄, t < 0 → g t = ⊤) (s : ℝ) :
@@ -233,11 +233,11 @@ theorem monotoneHalfLineFn_monotoneConj (hg : MonotoneHalfLineFn g) :
     rw [monotoneConj_of_nonneg' hg.top_of_neg hs, monotoneConj_of_nonneg' hg.top_of_neg hs']
     exact monotone_conj_mulPairing hg.top_of_neg hss
   convex := by
-    rw [monotoneConj_eq_restrict_conj hg.top_of_neg]
-    exact (convexFn_conj mulPairing g).restrict (convex_Ici 0)
+    rw [monotoneConj_eq_restrictFn_conj hg.top_of_neg]
+    exact (convexFn_conj mulPairing g).restrictFn (convex_Ici 0)
   closed := by
-    rw [monotoneConj_eq_restrict_conj hg.top_of_neg]
-    exact closedFn_conj.restrict (fun _ => conj_ne_bot hg.proper.dom_nonempty _) isClosed_Ici
+    rw [monotoneConj_eq_restrictFn_conj hg.top_of_neg]
+    exact closedFn_conj.restrictFn (fun _ => conj_ne_bot hg.proper.dom_nonempty _) isClosed_Ici
   zero_ne_top := by
     rw [monotoneConj_zero hg]
     exact fun h => hg.ne_bot 0 (EReal.neg_eq_top_iff.1 h)
@@ -363,7 +363,7 @@ theorem proper_monotoneComp (hg : MonotoneHalfLineFn g) (hk : IsGauge k) :
     Proper (monotoneComp g k) where
   dom_nonempty := ⟨0, by
     have h : monotoneComp g k (0 : E) = g 0 :=
-      monotoneComp_of_eq_coe hg.monotoneOn le_rfl (by rw [hk.map_zero, _root_.EReal.coe_zero])
+      monotoneComp_of_eq_coe hg.monotoneOn le_rfl (by rw [hk.map_zero, EReal.coe_zero])
     change monotoneComp g k (0 : E) < ⊤
     rw [h]
     exact lt_top_iff_ne_top.2 hg.zero_ne_top⟩
@@ -448,11 +448,11 @@ theorem MonotoneHalfLineFn.exists_monotoneConj_ne_top (hg : MonotoneHalfLineFn g
     rcases le_or_gt t₂ t with hcase | hcase
     · refine le_trans (EReal.sub_le_sub (le_refl ((t * (m / 2) : ℝ) : EReal))
         (hmin t hcase)) ?_
-      rw [← _root_.EReal.coe_sub, EReal.coe_le_coe_iff]
+      rw [← EReal.coe_sub, EReal.coe_le_coe_iff]
       nlinarith
     · refine le_trans (EReal.sub_le_sub (le_refl ((t * (m / 2) : ℝ) : EReal))
         (show ((c₀ : ℝ) : EReal) ≤ g t by rw [← hc₀]; exact hg.zero_le t)) ?_
-      rw [← _root_.EReal.coe_sub, EReal.coe_le_coe_iff]
+      rw [← EReal.coe_sub, EReal.coe_le_coe_iff]
       nlinarith
   exact ne_top_of_le_ne_top (EReal.coe_ne_top _) hbound
 
@@ -482,7 +482,7 @@ theorem MonotoneHalfLineFn.exists_lt_monotoneConj (hg : MonotoneHalfLineFn g)
       (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t,
         ((t * max 1 ((c - b + 1) / ζ) : ℝ) : EReal) - g t) ζ)
   refine lt_of_lt_of_le ?_ hterm
-  rw [monotoneConj_zero hg, hb, hc, ← _root_.EReal.coe_neg, ← _root_.EReal.coe_sub,
+  rw [monotoneConj_zero hg, hb, hc, ← EReal.coe_neg, ← EReal.coe_sub,
     EReal.coe_lt_coe_iff]
   linarith
 
@@ -680,9 +680,9 @@ theorem coe_mul_polarGauge_sub_le_conj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < 
     have hfz : monotoneComp g k z ≤ (r : EReal) := by
       rw [← hr]; exact monotoneComp_le hkz
     refine le_trans ?_ (sub_le_conj B (monotoneComp g k) z y)
-    rw [_root_.EReal.coe_neg, ← sub_eq_add_neg]
+    rw [EReal.coe_neg, ← sub_eq_add_neg]
     exact EReal.sub_le_sub le_rfl hfz
-  rw [hsmul, hr, sub_eq_add_neg, ← _root_.EReal.coe_neg, supportFn_apply,
+  rw [hsmul, hr, sub_eq_add_neg, ← EReal.coe_neg, supportFn_apply,
     EReal.biSup_add_coe]
   exact iSup₂_le hbound
 
@@ -690,9 +690,9 @@ theorem coe_mul_polarGauge_sub_le_conj (hk : IsGauge k) {ζ r : ℝ} (hζ : 0 < 
 theorem sub_apply_zero_le_conj (hk : IsGauge k) (hg : MonotoneOn g (Set.Ici 0)) :
     (0 : EReal) - g 0 ≤ conj B (monotoneComp g k) y := by
   have hf0 : monotoneComp g k (0 : E) = g 0 :=
-    monotoneComp_of_eq_coe hg le_rfl (by rw [hk.map_zero, _root_.EReal.coe_zero])
+    monotoneComp_of_eq_coe hg le_rfl (by rw [hk.map_zero, EReal.coe_zero])
   have h := sub_le_conj B (monotoneComp g k) (0 : E) y
-  rwa [hf0, map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+  rwa [hf0, map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
 /-- The `≥` half of the conjugacy formula, at a point where the polar gauge is finite. -/
 theorem monotoneConj_le_conj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLineFn g)
@@ -705,14 +705,14 @@ theorem monotoneConj_le_conj_monotoneComp (hk : IsGauge k) (hg : MonotoneHalfLin
   rw [monotoneConj_of_nonneg g hc0]
   refine iSup_le fun t => iSup_le fun ht => ?_
   by_cases htop : g t = ⊤
-  · rw [htop, _root_.EReal.sub_top]; exact bot_le
+  · rw [htop, EReal.sub_top]; exact bot_le
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hg.ne_bot t)
     (lt_top_iff_ne_top.2 htop)
   rcases eq_or_lt_of_le ht with rfl | ht'
-  · rw [zero_mul, _root_.EReal.coe_zero]
+  · rw [zero_mul, EReal.coe_zero]
     exact sub_apply_zero_le_conj hk hg.monotoneOn
   · have h := coe_mul_polarGauge_sub_le_conj (B := B) (y := y) hk ht' hr
-    rwa [hc, EReal.coe_mul_coe] at h
+    rwa [hc, ← EReal.coe_mul] at h
 
 end GaugeCompLower
 
@@ -738,7 +738,7 @@ theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedFn k) {d : ℝ}
     rw [← hy, polarGauge_eq_supportFn hk.nonneg hk.posHomogeneous hk.map_zero]
   rcases eq_or_lt_of_le hc0 with rfl | hpos
   · rw [zero_mul]
-    exact pairing_nonpos_of_gauge_eq_zero hk (by rw [hx, _root_.EReal.coe_zero]) hy
+    exact pairing_nonpos_of_gauge_eq_zero hk (by rw [hx, EReal.coe_zero]) hy
   · have hkC : gaugeFn {z : E | k z ≤ 1} = k :=
       gaugeFn_level_one hk.nonneg hk.posHomogeneous hk.map_zero
     have hmem : x ∈ c • {z : E | k z ≤ 1} := by
@@ -747,7 +747,7 @@ theorem pairing_le_mul_of_gauge (hk : IsGauge k) (hkc : ClosedFn k) {d : ℝ}
       change gaugeFn {z : E | k z ≤ 1} x ≤ (c : EReal)
       rw [hkC, hx]
     have hb := le_supportFn (B := B) hmem y
-    rwa [supportFn_smul B hpos, hsupp, EReal.coe_mul_coe, EReal.coe_le_coe_iff] at hb
+    rwa [supportFn_smul B hpos, hsupp, ← EReal.coe_mul, EReal.coe_le_coe_iff] at hb
 
 /-- The `≤` half of the conjugacy formula, at a point where the polar gauge is finite.
 
@@ -763,7 +763,7 @@ theorem conj_monotoneComp_le (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneH
   rw [conj_apply, monotoneConj_of_nonneg g hc0]
   refine iSup_le fun z => ?_
   rcases eq_top_or_exists_coe_of_nonneg (hk.nonneg z) with hz | ⟨c', hc'0, hc'⟩
-  · rw [monotoneComp_of_eq_top g hz, _root_.EReal.sub_top]; exact bot_le
+  · rw [monotoneComp_of_eq_top g hz, EReal.sub_top]; exact bot_le
   have hfz : monotoneComp g k z = g c' := monotoneComp_of_eq_coe hg.monotoneOn hc'0 hc'
   have hpair : B z y ≤ c' * c := pairing_le_mul_of_gauge hk hkc hc' hc
   calc ((B z y : ℝ) : EReal) - monotoneComp g k z
@@ -795,7 +795,7 @@ theorem conj_monotoneComp (hk : IsGauge k) (hkc : ClosedFn k) (hg : MonotoneHalf
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hg.ne_bot ζ)
       (lt_top_iff_ne_top.2 hζt)
     have h := coe_mul_polarGauge_sub_le_conj (B := B) (y := y) hk hζ hr
-    rw [htop, hr, _root_.EReal.coe_mul_top_of_pos hζ, _root_.EReal.top_sub_coe] at h
+    rw [htop, hr, EReal.coe_mul_top_of_pos hζ, EReal.top_sub_coe] at h
     exact top_le_iff.1 h
   · rw [monotoneComp_of_eq_coe (monotoneHalfLineFn_monotoneConj hg).monotoneOn hc0 hc]
     exact le_antisymm (conj_monotoneComp_le hk hkc hg hc)
@@ -865,19 +865,19 @@ variable {p q ζ : ℝ}
 
 /-- The function `ζ ↦ ζ^p / p` of the half-line, extended by `+∞` to the negative axis. -/
 noncomputable def powHalfLine (p : ℝ) : ℝ → EReal :=
-  ConvexAnalysis.restrict (Set.Ici 0) fun ζ => ((ζ ^ p / p : ℝ) : EReal)
+  ConvexAnalysis.restrictFn (Set.Ici 0) fun ζ => ((ζ ^ p / p : ℝ) : EReal)
 
 @[simp] theorem powHalfLine_of_nonneg (p : ℝ) (hζ : 0 ≤ ζ) :
-    powHalfLine p ζ = ((ζ ^ p / p : ℝ) : EReal) := restrict_of_mem hζ
+    powHalfLine p ζ = ((ζ ^ p / p : ℝ) : EReal) := restrictFn_of_mem hζ
 
 theorem powHalfLine_of_neg (p : ℝ) (hζ : ζ < 0) : powHalfLine p ζ = ⊤ :=
-  restrict_of_notMem (by simpa using hζ)
+  restrictFn_of_notMem (by simpa using hζ)
 
 theorem powHalfLine_ne_top (p : ℝ) (hζ : 0 ≤ ζ) : powHalfLine p ζ ≠ ⊤ := by
   rw [powHalfLine_of_nonneg p hζ]; exact EReal.coe_ne_top _
 
 theorem powHalfLine_zero (hp : 0 < p) : powHalfLine p 0 = 0 := by
-  rw [powHalfLine_of_nonneg p le_rfl, Real.zero_rpow hp.ne', zero_div, _root_.EReal.coe_zero]
+  rw [powHalfLine_of_nonneg p le_rfl, Real.zero_rpow hp.ne', zero_div, EReal.coe_zero]
 
 /-- `ζ ↦ ζ^p / p` is nondecreasing on the half-line. -/
 theorem monotoneOn_powHalfLine (hp : 0 < p) : MonotoneOn (powHalfLine p) (Set.Ici 0) := by
@@ -919,7 +919,7 @@ theorem monotoneHalfLineFn_powHalfLine (hp : 1 ≤ p) : MonotoneHalfLineFn (powH
   closed := by
     have hcont : Continuous fun ζ : ℝ => ((ζ ^ p / p : ℝ) : EReal) :=
       EReal.continuous_coe_iff.2 ((Real.continuous_rpow_const (by linarith)).div_const p)
-    exact ClosedFn.restrict
+    exact ClosedFn.restrictFn
       ((closedFn_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
         hcont.lowerSemicontinuous)
       (fun _ => EReal.coe_ne_bot _) isClosed_Ici
@@ -939,7 +939,7 @@ theorem monotoneConj_powHalfLine (hpq : p.HolderConjugate q) :
   · rw [monotoneConj_of_neg _ hs, powHalfLine_of_neg _ hs]
   rw [monotoneConj_of_nonneg _ hs, powHalfLine_of_nonneg _ hs]
   refine le_antisymm (iSup_le fun t => iSup_le fun ht => ?_) ?_
-  · rw [powHalfLine_of_nonneg p ht, ← _root_.EReal.coe_sub, EReal.coe_le_coe_iff]
+  · rw [powHalfLine_of_nonneg p ht, ← EReal.coe_sub, EReal.coe_le_coe_iff]
     have := Real.young_inequality_of_nonneg ht hs hpq
     linarith
   · have hq1 : (0 : ℝ) < q - 1 := hpq.symm.sub_one_pos
@@ -964,7 +964,7 @@ theorem monotoneConj_powHalfLine (hpq : p.HolderConjugate q) :
           ((s ^ (q - 1) * s : ℝ) : EReal) - powHalfLine p (s ^ (q - 1))) ht₀0)
         (le_iSup (fun t : ℝ => ⨆ _ : (0 : ℝ) ≤ t,
           ((t * s : ℝ) : EReal) - powHalfLine p t) (s ^ (q - 1))))
-    rw [powHalfLine_of_nonneg p ht₀0, ← _root_.EReal.coe_sub, hval]
+    rw [powHalfLine_of_nonneg p ht₀0, ← EReal.coe_sub, hval]
 
 end PowHalfLine
 
@@ -1004,10 +1004,10 @@ theorem PosHomogeneousDeg.nonneg (hp : 1 < p) (hconv : ConvexFn f) (hne : ∀ z,
   obtain ⟨a, ha⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hne x)
     (hcon.trans (by simp : (0 : EReal) < ⊤))
   have ha0 : a < 0 := by rw [ha] at hcon; exact_mod_cast hcon
-  have hzero : f (0 : E) ≤ ((0 : ℝ) : EReal) := by rw [h0, _root_.EReal.coe_zero]
+  have hzero : f (0 : E) ≤ ((0 : ℝ) : EReal) := by rw [h0, EReal.coe_zero]
   have hcombo := hconv.epi_combo (x := x) (y := (0 : E)) (μ := a) (ν := 0) (le_of_eq ha) hzero
     (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num)
-  rw [smul_zero, add_zero, hf _ (by norm_num) x, ha, EReal.coe_mul_coe,
+  rw [smul_zero, add_zero, hf _ (by norm_num) x, ha, ← EReal.coe_mul,
     EReal.coe_le_coe_iff] at hcombo
   have hlt : ((1 : ℝ) / 2) ^ p < 1 / 2 := by
     have h := Real.rpow_lt_rpow_of_exponent_gt (by norm_num : (0 : ℝ) < 1 / 2)
@@ -1021,15 +1021,15 @@ theorem posHomogeneousDeg_monotoneComp_powHalfLine (hp : 0 < p) (hk : IsGauge k)
   intro a ha z
   rcases eq_top_or_exists_coe_of_nonneg (hk.nonneg z) with hz | ⟨c, hc0, hz⟩
   · have haz : k (a • z) = ⊤ := by
-      rw [hk.posHomogeneous a ha z, hz, _root_.EReal.coe_mul_top_of_pos ha]
+      rw [hk.posHomogeneous a ha z, hz, EReal.coe_mul_top_of_pos ha]
     rw [monotoneComp_of_eq_top _ haz, monotoneComp_of_eq_top _ hz,
-      _root_.EReal.coe_mul_top_of_pos (Real.rpow_pos_of_pos ha p)]
+      EReal.coe_mul_top_of_pos (Real.rpow_pos_of_pos ha p)]
   · have haz : k (a • z) = ((a * c : ℝ) : EReal) := by
-      rw [hk.posHomogeneous a ha z, hz, EReal.coe_mul_coe]
+      rw [hk.posHomogeneous a ha z, hz, ← EReal.coe_mul]
     rw [monotoneComp_of_eq_coe (monotoneOn_powHalfLine hp) (by positivity) haz,
       monotoneComp_of_eq_coe (monotoneOn_powHalfLine hp) hc0 hz,
       powHalfLine_of_nonneg p (by positivity : (0 : ℝ) ≤ a * c), powHalfLine_of_nonneg p hc0,
-      EReal.coe_mul_coe]
+      ← EReal.coe_mul]
     exact congrArg _ (by rw [Real.mul_rpow ha.le hc0]; ring)
 
 /-- The **gauge attached to a function positively homogeneous of degree `p`**: `(p f)^{1/p}`, with
@@ -1065,21 +1065,21 @@ theorem degGauge_nonneg (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (x : E) : 0 ≤ de
 
 omit [Module ℝ E] in
 theorem degGauge_map_zero (hp : 0 < p) (h0 : f 0 = 0) : degGauge p f 0 = 0 := by
-  rw [degGauge_of_eq_coe hp le_rfl (by rw [h0, _root_.EReal.coe_zero]), mul_zero,
-    Real.zero_rpow (by positivity), _root_.EReal.coe_zero]
+  rw [degGauge_of_eq_coe hp le_rfl (by rw [h0, EReal.coe_zero]), mul_zero,
+    Real.zero_rpow (by positivity), EReal.coe_zero]
 
 theorem posHomogeneous_degGauge (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) (hf : PosHomogeneousDeg p f) :
     PosHomogeneous (degGauge p f) := by
   intro a ha z
   rcases eq_top_or_exists_coe_of_nonneg (hnn z) with hz | ⟨c, hc0, hz⟩
   · have haz : f (a • z) = ⊤ := by
-      rw [hf a ha z, hz, _root_.EReal.coe_mul_top_of_pos (Real.rpow_pos_of_pos ha p)]
+      rw [hf a ha z, hz, EReal.coe_mul_top_of_pos (Real.rpow_pos_of_pos ha p)]
     rw [degGauge_of_eq_top p haz, degGauge_of_eq_top p hz,
-      _root_.EReal.coe_mul_top_of_pos ha]
+      EReal.coe_mul_top_of_pos ha]
   · have haz : f (a • z) = ((a ^ p * c : ℝ) : EReal) := by
-      rw [hf a ha z, hz, EReal.coe_mul_coe]
+      rw [hf a ha z, hz, ← EReal.coe_mul]
     have hac : (0 : ℝ) ≤ a ^ p * c := by positivity
-    rw [degGauge_of_eq_coe hp hac haz, degGauge_of_eq_coe hp hc0 hz, EReal.coe_mul_coe]
+    rw [degGauge_of_eq_coe hp hac haz, degGauge_of_eq_coe hp hc0 hz, ← EReal.coe_mul]
     refine congrArg _ ?_
     have hrw : p * (a ^ p * c) = a ^ p * (p * c) := by ring
     rw [hrw, Real.mul_rpow (Real.rpow_nonneg ha.le p) (by positivity), rpow_rpow_inv hp ha.le]
@@ -1092,7 +1092,7 @@ theorem setOf_degGauge_le_one (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) :
   rcases eq_top_or_exists_coe_of_nonneg (hnn z) with hz | ⟨a, ha0, hz⟩
   · simp only [Set.mem_ofPred, degGauge_of_eq_top p hz, hz]
     have h1 : ¬ ((⊤ : EReal) ≤ 1) := by
-      rw [top_le_iff, ← _root_.EReal.coe_one]
+      rw [top_le_iff, ← EReal.coe_one]
       exact EReal.coe_ne_top 1
     have h2 : ¬ ((⊤ : EReal) ≤ ((p⁻¹ : ℝ) : EReal)) := by
       rw [top_le_iff]; exact EReal.coe_ne_top _
@@ -1100,7 +1100,7 @@ theorem setOf_degGauge_le_one (hp : 0 < p) (hnn : ∀ z, 0 ≤ f z) :
   · have hpa : (0 : ℝ) ≤ p * a := by positivity
     have h1 : degGauge p f z ≤ 1 ↔ (p * a) ^ p⁻¹ ≤ 1 := by
       rw [degGauge_of_eq_coe hp ha0 hz,
-        show ((1 : EReal)) = ((1 : ℝ) : EReal) from (_root_.EReal.coe_one).symm,
+        show ((1 : EReal)) = ((1 : ℝ) : EReal) from (EReal.coe_one).symm,
         EReal.coe_le_coe_iff]
     have h2 : f z ≤ ((p⁻¹ : ℝ) : EReal) ↔ a ≤ p⁻¹ := by rw [hz, EReal.coe_le_coe_iff]
     change degGauge p f z ≤ 1 ↔ f z ≤ ((p⁻¹ : ℝ) : EReal)
@@ -1177,7 +1177,7 @@ theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedFn f) (hpr 
     intro n
     have hpos : (0 : ℝ) < 1 / (n + 1 : ℝ) := by positivity
     have h : f ((1 / (n + 1 : ℝ)) • x₀) = (((1 / (n + 1 : ℝ)) ^ p * b : ℝ) : EReal) := by
-      rw [hf _ hpos x₀, hb, EReal.coe_mul_coe]
+      rw [hf _ hpos x₀, hb, ← EReal.coe_mul]
     exact le_of_eq h
   have h1 : Filter.Tendsto (fun n : ℕ => (1 / (n + 1 : ℝ)) • x₀) Filter.atTop (nhds (0 : E)) := by
     have hc : Continuous fun r : ℝ => r • x₀ := continuous_id.smul continuous_const
@@ -1196,7 +1196,7 @@ theorem PosHomogeneousDeg.map_zero_eq_zero (hp : 0 < p) (hcl : ClosedFn f) (hpr 
   have hzero := hepi.mem_of_tendsto htend (Filter.Eventually.of_forall hmem)
   have hle : f (0 : E) ≤ 0 := by
     have h : f (0 : E) ≤ ((0 : ℝ) : EReal) := hzero
-    rwa [_root_.EReal.coe_zero] at h
+    rwa [EReal.coe_zero] at h
   rcases PosHomogeneousDeg.map_zero_trichotomy hp hf with h | h | h
   · exact h
   · rw [h] at hle; exact absurd hle (by simp)
@@ -1268,7 +1268,7 @@ theorem setOf_polarGauge_le_one (hk : IsGauge k) :
   rw [polarGauge_eq_supportFn hk.nonneg hk.posHomogeneous hk.map_zero]
   ext z
   change supportFn B {x : E | k x ≤ 1} z ≤ 1 ↔ z ∈ polarSet B {x : E | k x ≤ 1}
-  rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) from (_root_.EReal.coe_one).symm,
+  rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) from (EReal.coe_one).symm,
     supportFn_le_coe_iff, mem_polarSet]
 
 variable (hpq : p.HolderConjugate q) (hconv : ConvexFn f) (hcl : ClosedFn f) (hpr : Proper f)
@@ -1393,7 +1393,7 @@ theorem le_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, (a�
   refine le_coe_of_forall_gt_le fun d hd => ?_
   have ha₀ : a₀ < d := by
     have hr' : (a₀ : EReal) ≤ (r : EReal) := by rw [← hr]; exact hmin v
-    exact lt_of_le_of_lt (_root_.EReal.coe_le_coe_iff.1 hr') hd
+    exact lt_of_le_of_lt (EReal.coe_le_coe_iff.1 hr') hd
   obtain ⟨c, -, hset⟩ := hlev d ha₀
   have hv : k v ≤ (c : EReal) := by
     have hmem : v ∈ {x : E | f x ≤ (d : EReal)} := by
@@ -1417,7 +1417,7 @@ theorem eq_top_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, 
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot u) (lt_top_iff_ne_top.2 hne)
   have ha₀ : a₀ ≤ r := by
     have hr' : (a₀ : EReal) ≤ (r : EReal) := by rw [← hr]; exact hmin u
-    exact _root_.EReal.coe_le_coe_iff.1 hr'
+    exact EReal.coe_le_coe_iff.1 hr'
   obtain ⟨c, -, hset⟩ := hlev (r + 1) (by linarith)
   have hmem : u ∈ {x : E | f x ≤ ((r + 1 : ℝ) : EReal)} := by
     change f u ≤ ((r + 1 : ℝ) : EReal)
@@ -1427,7 +1427,7 @@ theorem eq_top_of_forall_setOf_le_eq (hbot : ∀ x, f x ≠ ⊥) (hmin : ∀ x, 
   have hc : (⊤ : EReal) ≤ (c : EReal) := by
     have hmem' : k u ≤ (c : EReal) := hmem
     rwa [hu] at hmem'
-  exact absurd (top_le_iff.1 hc) (_root_.EReal.coe_ne_top c)
+  exact absurd (top_le_iff.1 hc) (EReal.coe_ne_top c)
 
 /-- A gauge either takes the value `1` somewhere — supplying Rockafellar's ray — or takes only the
 values `0` and `+∞`, in which case its sublevel sets are a single cone. -/
@@ -1445,11 +1445,11 @@ theorem IsGauge.exists_eq_one_or_forall_eq_zero_or_eq_top (hk : IsGauge k) :
     have h := hk.nonneg x
     rw [hr] at h
     exact_mod_cast h
-  have hrne : r ≠ 0 := fun h => hne0 (by rw [hr, h, _root_.EReal.coe_zero])
+  have hrne : r ≠ 0 := fun h => hne0 (by rw [hr, h, EReal.coe_zero])
   have hrpos : 0 < r := lt_of_le_of_ne hr0 (Ne.symm hrne)
   refine hray ⟨r⁻¹ • x, ?_⟩
-  rw [hk.posHomogeneous r⁻¹ (inv_pos.2 hrpos) x, hr, EReal.coe_mul_coe,
-    inv_mul_cancel₀ hrne, _root_.EReal.coe_one]
+  rw [hk.posHomogeneous r⁻¹ (inv_pos.2 hrpos) x, hr, ← EReal.coe_mul,
+    inv_mul_cancel₀ hrne, EReal.coe_one]
 
 end IsGaugeLike
 
@@ -1502,15 +1502,16 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
     have hkray : ∀ t : ℝ, 0 ≤ t → k (t • x₁) = (t : EReal) := by
       intro t ht
       rcases eq_or_lt_of_le ht with rfl | htpos
-      · rw [zero_smul, hkg.map_zero, _root_.EReal.coe_zero]
+      · rw [zero_smul, hkg.map_zero, EReal.coe_zero]
       · rw [hkg.posHomogeneous t htpos x₁, hx₁, mul_one]
     have hAcont : Continuous ((LinearMap.toSpanSingleton ℝ E x₁ : ℝ →ₗ[ℝ] E) : ℝ → E) := by
       have hc : Continuous fun t : ℝ => t • x₁ := continuous_id.smul continuous_const
       exact hc
     set gray : ℝ → EReal :=
-      ConvexAnalysis.restrict (Set.Ici 0) (compLin f (LinearMap.toSpanSingleton ℝ E x₁)) with hgray
+      ConvexAnalysis.restrictFn (Set.Ici 0) (compLin f (LinearMap.toSpanSingleton ℝ E x₁))
+      with hgray
     have hgval : ∀ t : ℝ, 0 ≤ t → gray t = f (t • x₁) := fun t ht =>
-      restrict_of_mem (Set.mem_Ici.2 ht)
+      restrictFn_of_mem (Set.mem_Ici.2 ht)
     have hgmono : MonotoneOn gray (Set.Ici 0) := by
       intro s hs t ht hst
       rw [hgval s (Set.mem_Ici.1 hs), hgval t (Set.mem_Ici.1 ht)]
@@ -1518,10 +1519,10 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       rw [hkray s (Set.mem_Ici.1 hs), hkray t (Set.mem_Ici.1 ht)]
       exact_mod_cast hst
     have hg0 : gray 0 = (a₀ : EReal) := by rw [hgval 0 le_rfl, zero_smul, h0]
-    refine ⟨gray, k, ⟨fun t ht => restrict_of_notMem (by simpa using not_le.2 ht), hgmono,
-      ConvexFn.restrict (convexFn_compLin _ hconv) (convex_Ici 0),
-      ClosedFn.restrict (closedFn_compLin hcl hAcont) (fun _ => hpr.ne_bot _) isClosed_Ici,
-      by rw [hg0]; exact _root_.EReal.coe_ne_top a₀⟩, ⟨c₁ + 1, by linarith, ?_⟩,
+    refine ⟨gray, k, ⟨fun t ht => restrictFn_of_notMem (by simpa using not_le.2 ht), hgmono,
+      ConvexFn.restrictFn (convexFn_compLin _ hconv) (convex_Ici 0),
+      ClosedFn.restrictFn (closedFn_compLin hcl hAcont) (fun _ => hpr.ne_bot _) isClosed_Ici,
+      by rw [hg0]; exact EReal.coe_ne_top a₀⟩, ⟨c₁ + 1, by linarith, ?_⟩,
       ⟨c₁, hc₁, ?_⟩, hkg, hkc, ?_⟩
     · have hnot : ¬ k ((c₁ + 1) • x₁) ≤ (c₁ : EReal) := by
         rw [hkray _ (by linarith : (0 : ℝ) ≤ c₁ + 1)]
@@ -1536,7 +1537,7 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       rw [← hset₁] at hkm
       have hkm' : f (c₁ • x₁) ≤ ((a₀ + 1 : ℝ) : EReal) := hkm
       rw [hgval _ hc₁.le]
-      exact ne_top_of_le_ne_top (_root_.EReal.coe_ne_top _) hkm'
+      exact ne_top_of_le_ne_top (EReal.coe_ne_top _) hkm'
     · funext x
       rcases eq_top_or_exists_coe_of_nonneg (hkg.nonneg x) with hx | ⟨c, hc0, hx⟩
       · rw [monotoneComp_of_eq_top _ hx]
@@ -1547,10 +1548,10 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
         · rw [hx, hkray c hc0]
   · -- The degenerate case: the sublevel sets are a single cone, and the factor is a step function.
     set gstep : ℝ → EReal :=
-      ConvexAnalysis.restrict (Set.Icc (0 : ℝ) 1) (fun _ => (a₀ : EReal)) with hgstep
+      ConvexAnalysis.restrictFn (Set.Icc (0 : ℝ) 1) (fun _ => (a₀ : EReal)) with hgstep
     have hgin : ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) 1 → gstep t = (a₀ : EReal) :=
-      fun _ ht => restrict_of_mem ht
-    have hgout : ∀ t : ℝ, t ∉ Set.Icc (0 : ℝ) 1 → gstep t = ⊤ := fun _ ht => restrict_of_notMem ht
+      fun _ ht => restrictFn_of_mem ht
+    have hgout : ∀ t : ℝ, t ∉ Set.Icc (0 : ℝ) 1 → gstep t = ⊤ := fun _ ht => restrictFn_of_notMem ht
     have hzero : gstep 0 = (a₀ : EReal) := hgin 0 (Set.mem_Icc.2 ⟨le_rfl, zero_le_one⟩)
     have hgmono : MonotoneOn gstep (Set.Ici 0) := by
       intro s hs t _ hst
@@ -1560,19 +1561,19 @@ theorem IsGaugeLike.exists_eq_monotoneComp (hgl : IsGaugeLike f) (hconv : Convex
       · rw [hgout t htm]
         exact le_top
     refine ⟨gstep, k, ⟨fun t ht => hgout t fun h => absurd (Set.mem_Icc.1 h).1 (not_le.2 ht),
-      hgmono, ConvexFn.restrict (convexFn_const _) (convex_Icc 0 1),
-      ClosedFn.restrict ((closedFn_iff_lowerSemicontinuous
-        (fun _ => _root_.EReal.coe_ne_bot a₀)).2 lowerSemicontinuous_const)
-        (fun _ => _root_.EReal.coe_ne_bot a₀) isClosed_Icc,
-      by rw [hzero]; exact _root_.EReal.coe_ne_top a₀⟩, ⟨2, by norm_num, ?_⟩,
+      hgmono, ConvexFn.restrictFn (convexFn_const _) (convex_Icc 0 1),
+      ClosedFn.restrictFn ((closedFn_iff_lowerSemicontinuous
+        (fun _ => EReal.coe_ne_bot a₀)).2 lowerSemicontinuous_const)
+        (fun _ => EReal.coe_ne_bot a₀) isClosed_Icc,
+      by rw [hzero]; exact EReal.coe_ne_top a₀⟩, ⟨2, by norm_num, ?_⟩,
       ⟨1, one_pos, ?_⟩, hkg, hkc, ?_⟩
     · rw [hzero, hgout 2 (by norm_num)]
-      exact _root_.EReal.coe_lt_top a₀
+      exact EReal.coe_lt_top a₀
     · rw [hgin 1 (Set.mem_Icc.2 ⟨zero_le_one, le_rfl⟩)]
-      exact _root_.EReal.coe_ne_top a₀
+      exact EReal.coe_ne_top a₀
     · funext x
       rcases hcone x with hx | hx
-      · rw [monotoneComp_of_eq_coe hgmono le_rfl (by rw [hx, _root_.EReal.coe_zero]), hzero, ← h0]
+      · rw [monotoneComp_of_eq_coe hgmono le_rfl (by rw [hx, EReal.coe_zero]), hzero, ← h0]
         exact le_antisymm (hmono x 0 (by rw [hx, hkg.map_zero])) (hgl.map_zero_le x)
       · rw [monotoneComp_of_eq_top _ hx]
         exact htop x hx
@@ -1583,7 +1584,7 @@ theorem isGaugeLike_monotoneComp (hk : IsGauge k) (hkc : ClosedFn k) (hg : Monot
     (hne : ∃ t : ℝ, 0 < t ∧ g 0 < g t) (hfin : ∃ ζ : ℝ, 0 < ζ ∧ g ζ ≠ ⊤) :
     IsGaugeLike (monotoneComp g k) := by
   have h0 : monotoneComp g k (0 : E) = g 0 :=
-    monotoneComp_of_eq_coe hg.monotoneOn le_rfl (by rw [hk.map_zero, _root_.EReal.coe_zero])
+    monotoneComp_of_eq_coe hg.monotoneOn le_rfl (by rw [hk.map_zero, EReal.coe_zero])
   refine ⟨?_, ⟨{x : E | k x ≤ 1}, fun α hα => ?_⟩⟩
   · refine le_antisymm (le_iInf fun x => ?_) (iInf_le _ 0)
     rw [h0]

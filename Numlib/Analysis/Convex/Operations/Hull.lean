@@ -295,7 +295,7 @@ theorem convFn₂_le_combo (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x ≠ ⊥) {
       (subset_convexHull ℝ _ (Or.inr (mk_mem_epi.2 hν.le))) ha hb hab
     simpa [Prod.smul_mk, Prod.mk_add_mk, smul_eq_mul, hx] using hmem
   refine (ofEpi_apply_le hpt).trans (le_of_eq ?_)
-  rw [hμ, hν, EReal.coe_mul_coe, EReal.coe_mul_coe, ← EReal.coe_add]
+  rw [hμ, hν, ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add]
 
 /-- The convex hull of two proper convex functions is given by the explicit formula
 
@@ -330,7 +330,7 @@ theorem convFn₂_apply (hf : ConvexFn f) (hg : ConvexFn g) (hf' : Proper f) (hg
       ⟨a, b, p.1, q.1, ha, hb, hab, hx, rfl⟩
     refine (sInf_le hmem).trans ?_
     refine (add_le_add h₁ h₂).trans (le_of_eq ?_)
-    rw [EReal.coe_mul_coe, EReal.coe_mul_coe, ← EReal.coe_add, hμ2]
+    rw [← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add, hμ2]
 
 /-- `conv (f ⊓ g) = conv {f, g}`: both sides are the greatest convex function below `f` and `g`. -/
 theorem convHullFn_inf (f g : E → EReal) : convHullFn (f ⊓ g) = convFn₂ f g :=
@@ -433,8 +433,8 @@ theorem convFn_apply {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i)) (hf' 
       refine ⟨fun i => (f i (p i)).toReal, fun i hi => ?_⟩
       have hpos : 0 < w i := (Finset.mem_filter.1 hi).2
       have hne : f i (p i) ≠ ⊤ := fun hcon =>
-        hnetop i (hsub hi) (by rw [hcon, _root_.EReal.coe_mul_top_of_pos hpos])
-      exact (_root_.EReal.coe_toReal hne (hf' i (p i))).symm
+        hnetop i (hsub hi) (by rw [hcon, EReal.coe_mul_top_of_pos hpos])
+      exact (EReal.coe_toReal hne (hf' i (p i))).symm
     have hcm := Finset.centerMass_mem_convexHull t'
       (fun i hi => ((Finset.mem_filter.1 hi).2).le) (by rw [hw₁']; exact zero_lt_one)
       (z := fun i => ((p i, μ i) : E × ℝ))
@@ -448,7 +448,7 @@ theorem convFn_apply {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i)) (hf' 
     refine (ofEpi_apply_le hcm).trans (le_of_eq ?_)
     rw [EReal.coe_sum,
       ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
-    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, EReal.coe_mul_coe]
+    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
   -- **`≥`**: every point of the convex hull of the union comes from a representation.
   · refine le_ofEpi fun ν hν => ?_
     rw [convexHull_eq] at hν
@@ -526,7 +526,7 @@ theorem convFn_apply {f : ι → E → EReal} (hf : ∀ i, ConvexFn (f i)) (hf' 
               (by exact_mod_cast (hWpos i hi).le)
         _ = ((∑ i ∈ s'.image σ, W i * (Q i).2 : ℝ) : EReal) := by
             rw [EReal.coe_sum]
-            exact Finset.sum_congr rfl fun i _ => (EReal.coe_mul_coe _ _).symm
+            exact Finset.sum_congr rfl fun i _ => EReal.coe_mul _ _
         _ = (ν : EReal) := by rw [hν']
     have hmemS : (∑ i ∈ s'.image σ, (W i : EReal) * f i ((Q i).1)) ∈
         {z : EReal | ∃ (t : Finset ι) (w : ι → ℝ) (p : ι → E),

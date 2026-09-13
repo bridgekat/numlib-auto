@@ -14,8 +14,8 @@ linear maps — live elsewhere.
 * `ConvexFn.smul` — multiplication by a nonnegative real.
 * `ConvexFn.comp`, `ConvexFn.comp_extendTop` — composition with a nondecreasing convex function of
   one real variable.
-* `ConvexFn.restrict`, `ConvexFn.add_indicatorFn` — restriction to a convex set, the same operation
-  as adding an indicator function.
+* `ConvexFn.restrictFn`, `ConvexFn.add_indicatorFn` — restriction to a convex set, the same
+  operation as adding an indicator function.
 
 ## Implementation notes
 
@@ -60,9 +60,9 @@ theorem dom_add {f g : E → EReal} (hf : ∀ x, f x ≠ ⊥) (hg : ∀ x, g x �
     dom (f + g) = dom f ∩ dom g := by
   ext x
   simp only [mem_dom, Pi.add_apply, Set.mem_inter_iff, lt_top_iff_ne_top]
-  exact _root_.EReal.add_ne_top_iff_ne_top₂ (hf x) (hg x)
+  exact EReal.add_ne_top_iff_ne_top₂ (hf x) (hg x)
 
-theorem epi_restrict (s : Set E) (f : E → EReal) : epi (restrict s f) = epi f ∩ s ×ˢ univ := by
+theorem epi_restrictFn (s : Set E) (f : E → EReal) : epi (restrictFn s f) = epi f ∩ s ×ˢ univ := by
   ext p
   by_cases hp : p.1 ∈ s <;> simp [epi, hp]
 
@@ -81,7 +81,7 @@ theorem convexFn_const (c : EReal) : ConvexFn (fun _ : E => c) := by
   rcases eq_or_ne c ⊥ with rfl | hc
   · exact bot_le
   obtain ⟨r, rfl⟩ :=
-    EReal.exists_coe_of_ne_bot_of_lt_top hc (hx'.trans_lt (_root_.EReal.coe_lt_top μ))
+    EReal.exists_coe_of_ne_bot_of_lt_top hc (hx'.trans_lt (EReal.coe_lt_top μ))
   have h1 : r ≤ μ := by exact_mod_cast hx'
   have h2 : r ≤ ν := by exact_mod_cast hy'
   have h3 : a * r + b * r = r := by linear_combination r * hab
@@ -131,11 +131,11 @@ theorem ConvexFn.add {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
   have hy' : f y + g y ≤ (ν : EReal) := hy
   -- neither summand can be `⊤`, so all four values are real
   have hxt : f x ≠ ⊤ ∧ g x ≠ ⊤ :=
-    (_root_.EReal.add_ne_top_iff_ne_top₂ (hf' x) (hg' x)).1
-      (hx'.trans_lt (_root_.EReal.coe_lt_top μ)).ne
+    (EReal.add_ne_top_iff_ne_top₂ (hf' x) (hg' x)).1
+      (hx'.trans_lt (EReal.coe_lt_top μ)).ne
   have hyt : f y ≠ ⊤ ∧ g y ≠ ⊤ :=
-    (_root_.EReal.add_ne_top_iff_ne_top₂ (hf' y) (hg' y)).1
-      (hy'.trans_lt (_root_.EReal.coe_lt_top ν)).ne
+    (EReal.add_ne_top_iff_ne_top₂ (hf' y) (hg' y)).1
+      (hy'.trans_lt (EReal.coe_lt_top ν)).ne
   obtain ⟨p₁, hp₁⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (hf' x) (lt_top_iff_ne_top.2 hxt.1)
   obtain ⟨p₂, hp₂⟩ :=
@@ -144,12 +144,12 @@ theorem ConvexFn.add {f g : E → EReal} (hf : ConvexFn f) (hg : ConvexFn g)
     EReal.exists_coe_of_ne_bot_of_lt_top (hf' y) (lt_top_iff_ne_top.2 hyt.1)
   obtain ⟨q₂, hq₂⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (hg' y) (lt_top_iff_ne_top.2 hyt.2)
-  rw [hp₁, hp₂, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hx'
-  rw [hq₁, hq₂, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hy'
+  rw [hp₁, hp₂, ← EReal.coe_add, EReal.coe_le_coe_iff] at hx'
+  rw [hq₁, hq₂, ← EReal.coe_add, EReal.coe_le_coe_iff] at hy'
   have hfc := hf.epi_combo hp₁.le hq₁.le ha hb hab
   have hgc := hg.epi_combo hp₂.le hq₂.le ha hb hab
   have hsum := add_le_add hfc hgc
-  rw [← _root_.EReal.coe_add] at hsum
+  rw [← EReal.coe_add] at hsum
   refine hsum.trans ?_
   have h1 : a * (p₁ + p₂) ≤ a * μ := mul_le_mul_of_nonneg_left hx' ha
   have h2 : b * (q₁ + q₂) ≤ b * ν := mul_le_mul_of_nonneg_left hy' hb
@@ -194,7 +194,7 @@ theorem ConvexFn.smul {f : E → EReal} (a : ℝ) (ha : 0 ≤ a) (hf : ConvexFn 
 /-- `φ : ℝ → EReal` extended to `EReal → EReal` by `φ (+∞) = +∞` and `φ (-∞) = -∞`, the choice that
 keeps the extension monotone; the composition rule never applies `φ` at `⊥`. -/
 noncomputable def extendTop (φ : ℝ → EReal) : EReal → EReal :=
-  _root_.EReal.rec ⊥ φ ⊤
+  EReal.rec ⊥ φ ⊤
 
 @[simp] theorem extendTop_coe (φ : ℝ → EReal) (r : ℝ) : extendTop φ (r : EReal) = φ r := rfl
 
@@ -231,12 +231,12 @@ theorem ConvexFn.comp {f : E → EReal} {φ : EReal → EReal} (hf : ConvexFn f)
   have hfx : f x < ⊤ := by
     rcases eq_top_or_lt_top (f x) with h | h
     · rw [h, htop] at hx'
-      exact absurd hx' (not_le.2 (_root_.EReal.coe_lt_top μ))
+      exact absurd hx' (not_le.2 (EReal.coe_lt_top μ))
     · exact h
   have hfy : f y < ⊤ := by
     rcases eq_top_or_lt_top (f y) with h | h
     · rw [h, htop] at hy'
-      exact absurd hy' (not_le.2 (_root_.EReal.coe_lt_top ν))
+      exact absurd hy' (not_le.2 (EReal.coe_lt_top ν))
     · exact h
   obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf' x) hfx
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf' y) hfy
@@ -256,18 +256,18 @@ theorem ConvexFn.comp_extendTop {f : E → EReal} {φ : ℝ → EReal} (hf : Con
 
 /-! #### Restriction to a convex set -/
 
-theorem ConvexFn.restrict {f : E → EReal} {s : Set E} (hf : ConvexFn f) (hs : Convex ℝ s) :
-    ConvexFn (ConvexAnalysis.restrict s f) := by
+theorem ConvexFn.restrictFn {f : E → EReal} {s : Set E} (hf : ConvexFn f) (hs : Convex ℝ s) :
+    ConvexFn (ConvexAnalysis.restrictFn s f) := by
   refine ⟨?_⟩
-  rw [epi_restrict]
+  rw [epi_restrictFn]
   exact hf.convex_epi.inter (hs.prod convex_univ)
 
 /-- Adding the indicator function of a convex set is restriction to that set, and preserves
 convexity. -/
 theorem ConvexFn.add_indicatorFn {f : E → EReal} {s : Set E} (hf : ConvexFn f)
     (hf' : ∀ x, f x ≠ ⊥) (hs : Convex ℝ s) : ConvexFn (f + indicatorFn s) := by
-  rw [← restrict_eq_add_indicatorFn hf']
-  exact hf.restrict hs
+  rw [← restrictFn_eq_add_indicatorFn hf']
+  exact hf.restrictFn hs
 
 end Module
 

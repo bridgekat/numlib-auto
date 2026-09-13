@@ -3,13 +3,13 @@ import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
 /-!
 # The affine hull of a set containing the origin
 
-A set containing the origin has the same affine hull and linear hull: Mathlib's
-`vectorSpan_eq_span_vsub_set_right` subtracts a chosen base point, and when that point can be taken
-to be `0` the subtraction disappears. That is `vectorSpan_eq_span_of_zero_mem`, and it is
-**Rockafellar, Theorem 1.1** in the form its consumers use it — the affine sets through the origin
-are exactly the subspaces. Alongside it, `vectorSpan_eq_of_affineSpan_eq` turns equal affine hulls
-into equal directions, hence equal `finrank`. Stated for an arbitrary module over a field; nothing
-here is about convexity.
+Upstreaming candidate: nothing here is specific to numerical analysis.
+
+A set containing the origin has the same affine hull and linear hull. Mathlib states this for the
+*sets* as `affineSpan_insert_zero`; `vectorSpan_eq_span_of_zero_mem` is the same fact for the
+*direction*, `vectorSpan K C = span K C`, which is the form its consumers rewrite with. It is
+**Rockafellar, Theorem 1.1** — the affine sets through the origin are exactly the subspaces —
+stated for an arbitrary module over a field; nothing here is about convexity.
 
 ## References
 
@@ -18,16 +18,10 @@ here is about convexity.
 
 variable {K E : Type*} [Field K] [AddCommGroup E] [Module K E]
 
-/-- For a set containing the origin the affine hull and the linear hull agree. -/
+/-- For a set containing the origin the affine hull and the linear hull agree: the direction form
+of Mathlib's `affineSpan_insert_zero`. -/
 theorem vectorSpan_eq_span_of_zero_mem {C : Set E} (h0 : (0 : E) ∈ C) :
     vectorSpan K C = Submodule.span K C := by
-  rw [vectorSpan_eq_span_vsub_set_right K h0]
-  congr 1
-  ext x
-  simp
-
-/-- Sets with the same affine hull have the same direction. Rockafellar's Corollary 6.3.1 (`cl C`
-and `ri C` have the same dimension as `C`) is this applied to the equalities of Theorem 6.3. -/
-theorem vectorSpan_eq_of_affineSpan_eq {S T : Set E}
-    (h : affineSpan K S = affineSpan K T) : vectorSpan K S = vectorSpan K T := by
-  rw [← direction_affineSpan K S, ← direction_affineSpan K T, h]
+  have h : affineSpan K C = (Submodule.span K C).toAffineSubspace := AffineSubspace.coe_injective
+    (by rw [← Set.insert_eq_of_mem h0, affineSpan_insert_zero, Submodule.span_insert_zero]; rfl)
+  rw [← direction_affineSpan, h, Submodule.toAffineSubspace_direction]

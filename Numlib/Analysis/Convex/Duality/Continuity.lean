@@ -72,9 +72,9 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x₀) hfx₀
     obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x₀) hgx₀
     have hval : (f + g) x₀ = ((p + q : ℝ) : EReal) := by
-      rw [Pi.add_apply, hp, hq, ← _root_.EReal.coe_add]
+      rw [Pi.add_apply, hp, hq, ← EReal.coe_add]
     rw [mem_dom, hval]
-    exact _root_.EReal.coe_lt_top _
+    exact EReal.coe_lt_top _
   obtain ⟨a, ha⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (conj_ne_bot hsumdom y) hlt
   have hkey : ∀ x, ((B x y : ℝ) : EReal) - (a : EReal) ≤ f x + g x :=
@@ -83,7 +83,7 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
   have hC₂ : Convex ℝ {p : E × ℝ | g p.1 ≤ ((B p.1 y - a - p.2 : ℝ) : EReal)} := by
     rintro ⟨x, μ⟩ hx ⟨x', μ'⟩ hx' s t hs ht hst
     have hcombo := hg.epi_combo hx hx' hs ht hst
-    refine le_trans hcombo (_root_.EReal.coe_le_coe_iff.2 (le_of_eq ?_))
+    refine le_trans hcombo (EReal.coe_le_coe_iff.2 (le_of_eq ?_))
     simp only [Prod.fst_add, Prod.snd_add, Prod.smul_fst, Prod.smul_snd, smul_eq_mul, map_add,
       map_smul, LinearMap.add_apply, LinearMap.smul_apply]
     linear_combination (-a) * hst
@@ -97,17 +97,17 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
       EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x) (h1'.trans_le le_top)
     obtain ⟨q, hq⟩ :=
       EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x)
-        (lt_of_le_of_lt h2' (_root_.EReal.coe_lt_top _))
+        (lt_of_le_of_lt h2' (EReal.coe_lt_top _))
     rw [hp] at h1'
     rw [hq] at h2'
     have hpμ : p < μ := by exact_mod_cast h1'
     have hqb : q ≤ B x y - a - μ := by exact_mod_cast h2'
     have hk := hkey x
-    rw [hp, hq, ← _root_.EReal.coe_add, ← _root_.EReal.coe_sub,
-      _root_.EReal.coe_le_coe_iff] at hk
+    rw [hp, hq, ← EReal.coe_add, ← EReal.coe_sub,
+      EReal.coe_le_coe_iff] at hk
     linarith
   -- continuity gives the strict epigraph an interior
-  obtain ⟨r, hr, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hfx₀
+  obtain ⟨r, hr, -⟩ := EReal.lt_iff_exists_real_btwn.1 hfx₀
   obtain ⟨V, hVf, hVopen, hx₀V⟩ := mem_nhds_iff.1 ((tendsto_order.1 hcont).2 (r : EReal) hr)
   have hVsub : V ×ˢ Set.Ioi r ⊆ {p : E × ℝ | f p.1 < ((p.2 : ℝ) : EReal)} := by
     rintro ⟨x, μ⟩ hmem
@@ -124,7 +124,7 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
       ∈ {p : E × ℝ | g p.1 ≤ ((B p.1 y - a - p.2 : ℝ) : EReal)} := by
     have hval : g x₀ ≤ ((B x₀ y - a - (B x₀ y - a - q₀) : ℝ) : EReal) := by
       rw [hq₀]
-      exact _root_.EReal.coe_le_coe_iff.2 (le_of_eq (by ring))
+      exact EReal.coe_le_coe_iff.2 (le_of_eq (by ring))
     exact hval
   -- separate
   obtain ⟨φ, u, hφ1, hφ2⟩ := geometric_hahn_banach_open (Convex.interior hf.convex_strictEpi)
@@ -186,7 +186,7 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
     rcases eq_top_or_lt_top (f x) with hx | hx
     · rw [hx]; exact le_top
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot x) hx
-    rw [hp, _root_.EReal.coe_le_coe_iff]
+    rw [hp, EReal.coe_le_coe_iff]
     rcases le_or_gt (B x y₁ - d) p with hle | hgt
     · exact hle
     · exfalso
@@ -199,14 +199,14 @@ theorem IsExactSum.of_continuousAt (hf : ConvexFn f) (hpf : Proper f) (hg : Conv
     rcases eq_top_or_lt_top (g x) with hx | hx
     · rw [hx]; exact le_top
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot x) hx
-    rw [hp, _root_.EReal.coe_le_coe_iff]
+    rw [hp, EReal.coe_le_coe_iff]
     have hstep := hhigh x (B x y - a - p) (by rw [hp]; exact_mod_cast le_of_eq (by ring))
     have hBsub : B x (y - y₁) = B x y - B x y₁ := map_sub (B x) y y₁
     rw [hBsub]
     linarith
   calc conj B f y₁ + conj B g (y - y₁) ≤ (d : EReal) + ((a - d : ℝ) : EReal) :=
         add_le_add hA hBb
-    _ = (a : EReal) := by rw [← _root_.EReal.coe_add]; norm_num
+    _ = (a : EReal) := by rw [← EReal.coe_add]; norm_num
     _ = conj B (f + g) y := ha.symm
 
 end ContinuousAt

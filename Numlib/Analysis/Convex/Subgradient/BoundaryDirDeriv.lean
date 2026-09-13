@@ -161,9 +161,9 @@ theorem subgradient_eq_empty_iff_tendsto_norm_fderiv (hf : ConvexFn f) (hp : Pro
     obtain ⟨φ, hφ, hφb⟩ := Filter.extraction_of_frequently_atTop (Filter.not_eventually.1 hb)
     set vs : ℕ → E := fun i => (InnerProductSpace.toDual ℝ E).symm
       (fderiv ℝ (fun w => (f w).toReal) (zs i)) with hvsdef
-    have hgrad : ∀ i, HasGradientAt f (InnerProductSpace.toDual ℝ E (vs i)) (zs i) := fun i => by
+    have hgrad : ∀ i, HasGradientAtFn f (InnerProductSpace.toDual ℝ E (vs i)) (zs i) := fun i => by
       rw [hvsdef, LinearIsometryEquiv.apply_symm_apply]
-      exact (hdiff (hzs i)).hasGradientAt_fderiv
+      exact (hdiff (hzs i)).hasGradientAtFn_fderiv
     have hvsb : ∀ n, vs (φ n) ∈ closedBall (0 : E) b := fun n => by
       rw [mem_closedBall_zero_iff, hvsdef, LinearIsometryEquiv.norm_map]
       exact (not_le.1 (hφb n)).le

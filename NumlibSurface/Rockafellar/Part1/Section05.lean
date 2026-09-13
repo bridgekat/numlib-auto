@@ -173,10 +173,10 @@ theorem exists_not_proper_infimalConvolution {n : ℕ} {v : Rn n} (hv : v ≠ 0)
   have hbot : infConv (fun x : Rn n => ((pairing n v x : ℝ) : EReal))
       (fun x : Rn n => ((-(pairing n v x) : ℝ) : EReal)) 0 = ⊥ := by
     rw [infConv_apply (fun x => by simp) (fun x => by simp) 0]
-    refine EReal.eq_bot_of_forall_le_coe fun r => ?_
+    refine le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ => ?_)
     obtain ⟨y, hy⟩ := hsurj (-r / 2)
     refine le_trans (iInf_le _ y) (le_of_eq ?_)
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff, map_sub, map_zero, hy]
+    rw [← EReal.coe_add, EReal.coe_eq_coe_iff, map_sub, map_zero, hy]
     ring
   exact ⟨_, _, convexFn_coe_linearMap (pairing n v), ⟨⟨0, by simp⟩, fun x => by simp⟩,
     convexFn_coe_linearMap (-(pairing n v)), ⟨⟨0, by simp⟩, fun x => by simp⟩,

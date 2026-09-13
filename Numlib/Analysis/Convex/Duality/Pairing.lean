@@ -80,13 +80,13 @@ variable {B}
 
 theorem affineFn_eq_coe (y : F) (c : ℝ) (x : E) :
     affineFn B y c x = ((B x y - c : ℝ) : EReal) := by
-  rw [affineFn_apply, _root_.EReal.coe_sub]
+  rw [affineFn_apply, EReal.coe_sub]
 
 theorem affineFn_ne_bot (y : F) (c : ℝ) (x : E) : affineFn B y c x ≠ ⊥ := by
-  rw [affineFn_eq_coe]; exact _root_.EReal.coe_ne_bot _
+  rw [affineFn_eq_coe]; exact EReal.coe_ne_bot _
 
 theorem affineFn_ne_top (y : F) (c : ℝ) (x : E) : affineFn B y c x ≠ ⊤ := by
-  rw [affineFn_eq_coe]; exact _root_.EReal.coe_ne_top _
+  rw [affineFn_eq_coe]; exact EReal.coe_ne_top _
 
 theorem proper_affineFn (y : F) (c : ℝ) : Proper (affineFn B y c) :=
   ⟨⟨0, lt_top_iff_ne_top.2 (affineFn_ne_top y c 0)⟩, affineFn_ne_bot y c⟩
@@ -101,8 +101,8 @@ theorem affineFn_smul_add (a : ℝ) (y y' : F) (c c' : ℝ) (x : E) :
 
 theorem convexFn_affineFn (y : F) (c : ℝ) : ConvexFn (affineFn B y c) := by
   refine convexFn_of_epi_combo fun x x' μ ν hx hx' a b ha hb hab => ?_
-  rw [affineFn_eq_coe, _root_.EReal.coe_le_coe_iff] at hx hx'
-  rw [affineFn_eq_coe, _root_.EReal.coe_le_coe_iff, map_add, map_smul, map_smul,
+  rw [affineFn_eq_coe, EReal.coe_le_coe_iff] at hx hx'
+  rw [affineFn_eq_coe, EReal.coe_le_coe_iff, map_add, map_smul, map_smul,
     LinearMap.add_apply, LinearMap.smul_apply, LinearMap.smul_apply, smul_eq_mul, smul_eq_mul]
   have h1 : a * (B x y - c) ≤ a * μ := mul_le_mul_of_nonneg_left hx ha
   have h2 : b * (B x' y - c) ≤ b * ν := mul_le_mul_of_nonneg_left hx' hb
@@ -128,7 +128,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 theorem continuous_affineFn (h : Continuous fun x => B x y) : Continuous (affineFn B y c) := by
   simp only [funext (affineFn_eq_coe (B := B) y c)]
-  exact _root_.EReal.continuous_coe_iff.2 (h.sub continuous_const)
+  exact EReal.continuous_coe_iff.2 (h.sub continuous_const)
 
 theorem lowerSemicontinuous_affineFn (h : Continuous fun x => B x y) :
     LowerSemicontinuous (affineFn B y c) := (continuous_affineFn h).lowerSemicontinuous

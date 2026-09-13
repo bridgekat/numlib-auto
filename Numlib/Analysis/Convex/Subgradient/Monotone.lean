@@ -209,7 +209,7 @@ theorem le_of_chain_mem_subgradientRel :
       ih q (hl q (by simp)) (fun r hr => hl r (by simp [hr])) x
     calc f s.1 + ((chainVal B s (q :: l) x : ℝ) : EReal)
         = f s.1 + ((B (q.1 - s.1) s.2 : ℝ) : EReal) + ((chainVal B q l x : ℝ) : EReal) := by
-          rw [chainVal_cons, _root_.EReal.coe_add, add_assoc]
+          rw [chainVal_cons, EReal.coe_add, add_assoc]
       _ ≤ f q.1 + ((chainVal B q l x : ℝ) : EReal) := add_le_add h₁ (le_refl _)
       _ ≤ f x := h₂
 
@@ -225,8 +225,8 @@ theorem isCyclicallyMonotone_subgradientRel (hp : Proper f) :
     rw [subgradient_eq_empty_of_notMem_dom hp hcon] at hmem
     exact hmem
   have hcoe : (((f s.1).toReal : ℝ) : EReal) = f s.1 :=
-    _root_.EReal.coe_toReal (ne_of_lt hdom) (hp.ne_bot s.1)
-  rw [← hcoe, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hkey
+    EReal.coe_toReal (ne_of_lt hdom) (hp.ne_bot s.1)
+  rw [← hcoe, ← EReal.coe_add, EReal.coe_le_coe_iff] at hkey
   linarith
 
 /-- **The subdifferential is monotone**, the classical inequality
@@ -280,7 +280,7 @@ theorem cyclicPotential_ne_bot (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (ρ : SetRe
   intro h
   have hle := le_cyclicPotential (B := B) (ρ := ρ) (l := []) (by simp) s x
   rw [h, le_bot_iff] at hle
-  exact _root_.EReal.coe_ne_bot _ hle
+  exact EReal.coe_ne_bot _ hle
 
 /-- **Cyclic monotonicity is exactly what makes the potential finite at its base point**, where it
 vanishes. -/
@@ -296,8 +296,8 @@ theorem proper_cyclicPotential (hρ : IsCyclicallyMonotone B ρ) (hs : s ∈ ρ)
     Proper (cyclicPotential B ρ s) := by
   refine ⟨⟨s.1, ?_⟩, cyclicPotential_ne_bot B ρ s⟩
   change cyclicPotential B ρ s s.1 < ⊤
-  rw [cyclicPotential_eq_zero hρ hs, ← _root_.EReal.coe_zero]
-  exact _root_.EReal.coe_lt_top 0
+  rw [cyclicPotential_eq_zero hρ hs, ← EReal.coe_zero]
+  exact EReal.coe_lt_top 0
 
 /-- **Every pair of `ρ` is a subgradient of the potential.** A chain
 ending at `x` followed by the edge `(x, y)` is again a chain, so the supremum defining
@@ -315,13 +315,13 @@ theorem mem_subgradient_cyclicPotential {p : E × F} (hp : p ∈ ρ) :
       · rw [List.mem_singleton.1 h]
         exact hp
     have hle := le_cyclicPotential (B := B) hvalid s z
-    rw [chainVal_append_singleton, _root_.EReal.coe_add] at hle
-    exact (_root_.EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
-      (c := cyclicPotential B ρ s z) (.inl (_root_.EReal.coe_ne_bot _))
-      (.inl (_root_.EReal.coe_ne_top _))).2 hle
-  exact (_root_.EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
-    (c := cyclicPotential B ρ s z) (.inl (_root_.EReal.coe_ne_bot _))
-    (.inl (_root_.EReal.coe_ne_top _))).1 key
+    rw [chainVal_append_singleton, EReal.coe_add] at hle
+    exact (EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
+      (c := cyclicPotential B ρ s z) (.inl (EReal.coe_ne_bot _))
+      (.inl (EReal.coe_ne_top _))).2 hle
+  exact (EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
+    (c := cyclicPotential B ρ s z) (.inl (EReal.coe_ne_bot _))
+    (.inl (EReal.coe_ne_top _))).1 key
 
 end Potential
 
@@ -397,14 +397,14 @@ theorem isClosed_subgradientRel [IsTopologicalAddGroup E]
     ext p
     simp [hz]
   · set r : ℝ := (f z).toReal with hrdef
-    have hrz : ((r : ℝ) : EReal) = f z := _root_.EReal.coe_toReal hz (hp.ne_bot z)
+    have hrz : ((r : ℝ) : EReal) = f z := EReal.coe_toReal hz (hp.ne_bot z)
     have hset : {p : E × F | f p.1 + ((B (z - p.1) p.2 : ℝ) : EReal) ≤ f z}
         = (fun p : E × F => (p.1, r - B (z - p.1) p.2)) ⁻¹' epi f := by
       ext p
-      rw [Set.mem_preimage, mem_epi, Set.mem_ofPred_eq, ← hrz, _root_.EReal.coe_sub]
-      exact (_root_.EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
-        (c := ((r : ℝ) : EReal)) (.inl (_root_.EReal.coe_ne_bot _))
-        (.inl (_root_.EReal.coe_ne_top _))).symm
+      rw [Set.mem_preimage, mem_epi, Set.mem_ofPred_eq, ← hrz, EReal.coe_sub]
+      exact (EReal.le_sub_iff_add_le (b := ((B (z - p.1) p.2 : ℝ) : EReal))
+        (c := ((r : ℝ) : EReal)) (.inl (EReal.coe_ne_bot _))
+        (.inl (EReal.coe_ne_top _))).symm
     rw [hset]
     refine hepi.preimage (continuous_fst.prodMk ?_)
     exact continuous_const.sub
@@ -425,7 +425,7 @@ theorem pairing_le_sub_of_mem_subgradient {p q : E} {a b : ℝ} {u : F}
     (hp : f p = (a : EReal)) (hq : f q = (b : EReal)) (hu : u ∈ subgradient B f p) :
     B (q - p) u ≤ b - a := by
   have h := hu q
-  rw [hp, hq, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h
+  rw [hp, hq, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
   linarith
 
 /-- The other half: a subgradient at the *right* endpoint overestimates the increment. -/
@@ -433,7 +433,7 @@ theorem sub_le_pairing_of_mem_subgradient {p q : E} {a b : ℝ} {v : F}
     (hp : f p = (a : EReal)) (hq : f q = (b : EReal)) (hv : v ∈ subgradient B f q) :
     b - a ≤ B (q - p) v := by
   have h := hv p
-  rw [hq, hp, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h
+  rw [hq, hp, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
   have hexp : B (p - q) v = -(B (q - p) v) := by
     simp only [map_sub, LinearMap.sub_apply]
     ring
@@ -588,7 +588,7 @@ theorem increment_eq_of_subgradientRel_subset [IsCompatiblePairing B]
         · exact hu i hi
     have hfa : ∀ i ≤ N, f (x i) = (((f (x i)).toReal : ℝ) : EReal) := by
       intro i hi
-      refine (_root_.EReal.coe_toReal ?_ (hpf.ne_bot _)).symm
+      refine (EReal.coe_toReal ?_ (hpf.ne_bot _)).symm
       exact (mem_dom.1 (intrinsicInterior_subset (hxmem i hi))).ne
     have hgb : ∀ i ≤ N, g (x i) = (((g (x i)).toReal : ℝ) : EReal) := by
       intro i hi
@@ -629,7 +629,7 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
       ∀ y ∈ closure (dom f), g y = f y + (α : EReal) := by
   obtain ⟨z, hz⟩ := Convex.relint_nonempty hf.convex_dom hpf.dom_nonempty
   have hfinf : ∀ x ∈ ri (dom f), f x = (((f x).toReal : ℝ) : EReal) := fun x hx =>
-    (_root_.EReal.coe_toReal (mem_dom.1 (intrinsicInterior_subset hx)).ne (hpf.ne_bot x)).symm
+    (EReal.coe_toReal (mem_dom.1 (intrinsicInterior_subset hx)).ne (hpf.ne_bot x)).symm
   have hfing : ∀ x ∈ ri (dom f), g x = (((g x).toReal : ℝ) : EReal) := by
     intro x hx
     obtain ⟨u, hu⟩ := subgradient_nonempty_of_mem_relint_dom (B := B) hf hpf hx
@@ -642,7 +642,7 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
     intro x hx
     have h := increment_eq_of_subgradientRel_subset hf hpf hpg hsub hz hx
       (hfinf z hz) (hfinf x hx) (hfing z hz) (hfing x hx)
-    rw [hfinf x hx, hfing x hx, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff, hα]
+    rw [hfinf x hx, hfing x hx, ← EReal.coe_add, EReal.coe_eq_coe_iff, hα]
     linarith
   have hcf' : clFn f = f := hcf
   have claim2 : ∀ y ∈ closure (dom f), g y = f y + (α : EReal) := by
@@ -657,37 +657,37 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
     refine le_antisymm ?_ ?_
     · by_contra hcon
       rw [not_le] at hcon
-      obtain ⟨c, hc1, hc2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨c, hc1, hc2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       have hfyt : f y ≠ ⊤ := by
         intro h
-        rw [h, _root_.EReal.top_add_coe] at hc1
+        rw [h, EReal.top_add_coe] at hc1
         exact absurd hc1 not_top_lt
       obtain ⟨t, ht⟩ :=
         EReal.exists_coe_of_ne_bot_of_lt_top (hpf.ne_bot y) (lt_top_iff_ne_top.2 hfyt)
-      rw [ht, ← _root_.EReal.coe_add, _root_.EReal.coe_lt_coe_iff] at hc1
+      rw [ht, ← EReal.coe_add, EReal.coe_lt_coe_iff] at hc1
       have h1 : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), f ((1 - a) • z + a • y) < ((c - α : ℝ) : EReal) := by
         refine hftend.eventually_lt_const ?_
-        rw [ht, _root_.EReal.coe_lt_coe_iff]
+        rw [ht, EReal.coe_lt_coe_iff]
         linarith
       have h2 : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), ((c : ℝ) : EReal) < g ((1 - a) • z + a • y) :=
         (tendsto_segment z y).eventually (hlg y (c : EReal) hc2)
       obtain ⟨a, ⟨ha1, ha2⟩, ha3⟩ := ((h1.and h2).and hseg).exists
       have hlt : g ((1 - a) • z + a • y) < ((c : ℝ) : EReal) := by
         rw [ha3]
-        have h := _root_.EReal.add_lt_add_right_coe ha1 α
-        rwa [← _root_.EReal.coe_add, show c - α + α = c by ring] at h
+        have h := EReal.add_lt_add_right_coe ha1 α
+        rwa [← EReal.coe_add, show c - α + α = c by ring] at h
       exact absurd (ha2.trans hlt) (lt_irrefl _)
     · by_contra hcon
       rw [not_le] at hcon
-      obtain ⟨c, hc1, hc2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨c, hc1, hc2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       obtain ⟨s, hs⟩ :=
         EReal.exists_coe_of_ne_bot_of_lt_top (hpg.ne_bot y) (lt_top_iff_ne_top.2 hc1.ne_top)
-      have hsc : s < c := by rw [hs, _root_.EReal.coe_lt_coe_iff] at hc1; exact hc1
+      have hsc : s < c := by rw [hs, EReal.coe_lt_coe_iff] at hc1; exact hc1
       have hfy : ((c - α : ℝ) : EReal) < f y := by
         by_contra hle
         rw [not_lt] at hle
         have h : f y + (α : EReal) ≤ ((c - α : ℝ) : EReal) + (α : EReal) := add_le_add hle le_rfl
-        rw [← _root_.EReal.coe_add, show c - α + α = c by ring] at h
+        rw [← EReal.coe_add, show c - α + α = c by ring] at h
         exact absurd (hc2.trans_le h) (lt_irrefl _)
       have h1 : ∀ᶠ a : ℝ in 𝓝[<] (1 : ℝ), ((c - α : ℝ) : EReal) < f ((1 - a) • z + a • y) :=
         hftend.eventually_const_lt hfy
@@ -701,8 +701,8 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
       obtain ⟨a, ⟨ha1, ha2⟩, ha3, ha4⟩ := ((h1.and h2).and (h3.and hseg)).exists
       have hlt1 : ((c : ℝ) : EReal) < g ((1 - a) • z + a • y) := by
         rw [ha4]
-        have h := _root_.EReal.add_lt_add_right_coe ha1 α
-        rwa [← _root_.EReal.coe_add, show c - α + α = c by ring] at h
+        have h := EReal.add_lt_add_right_coe ha1 α
+        rwa [← EReal.coe_add, show c - α + α = c by ring] at h
       have hlt2 : g ((1 - a) • z + a • y) < ((c : ℝ) : EReal) :=
         lt_of_le_of_lt ha2 (by exact_mod_cast ha3)
       exact absurd (hlt1.trans hlt2) (lt_irrefl _)
@@ -713,7 +713,7 @@ theorem exists_forall_le_add_coe_of_subgradientRel_subset [IsCompatiblePairing B
     have htop : f y = ⊤ := by
       by_contra hc
       exact hyd (mem_dom.2 (lt_top_iff_ne_top.2 hc))
-    rw [htop, _root_.EReal.top_add_coe]
+    rw [htop, EReal.top_add_coe]
     exact le_top
 
 end Uniqueness
@@ -732,7 +732,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
   simp only [mem_subgradient]
   refine forall_congr' fun z => ?_
   rw [add_right_comm]
-  exact (_root_.EReal.addLECancellable_coe α).add_le_add_iff_right
+  exact (EReal.addLECancellable_coe α).add_le_add_iff_right
 
 /-- The graph form of `subgradient_add_coe`. -/
 theorem subgradientRel_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (α : ℝ) :
@@ -784,16 +784,16 @@ theorem eq_add_coe_of_subgradientRel_subset [IsCompatiblePairing B] [IsCompatibl
   have hqbot : conj B f y ≠ ⊥ := conj_ne_bot (B := B) hf.proper.dom_nonempty y
   have hqtop : conj B f y ≠ ⊤ := by
     intro hc
-    rw [hp, hc, _root_.EReal.coe_add_top] at hfx
-    exact absurd hfx.symm (_root_.EReal.coe_ne_top _)
+    rw [hp, hc, EReal.coe_add_top] at hfx
+    exact absurd hfx.symm (EReal.coe_ne_top _)
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hqbot (lt_top_iff_ne_top.2 hqtop)
   have hydom : y ∈ dom (conj B f) := mem_dom.2 (lt_top_iff_ne_top.2 hqtop)
   have hgxval : g x = ((p + α : ℝ) : EReal) := by
-    rw [heq x (subset_closure hxdom), hp, ← _root_.EReal.coe_add]
+    rw [heq x (subset_closure hxdom), hp, ← EReal.coe_add]
   have hgyval : conj B g y = ((q + β : ℝ) : EReal) := by
-    rw [heqβ y (subset_closure hydom), hq, ← _root_.EReal.coe_add]
-  rw [hp, hq, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at hfx
-  rw [hgxval, hgyval, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at hgx
+    rw [heqβ y (subset_closure hydom), hq, ← EReal.coe_add]
+  rw [hp, hq, ← EReal.coe_add, EReal.coe_eq_coe_iff] at hfx
+  rw [hgxval, hgyval, ← EReal.coe_add, EReal.coe_eq_coe_iff] at hgx
   have hβ : β = -α := by linarith
   -- Conjugating `g* ≤ (f + α)*` back to `E`.
   have hstar : conj B (fun x => f x + (α : EReal)) = fun y => conj B f y + ((-α : ℝ) : EReal) :=

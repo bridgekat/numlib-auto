@@ -36,7 +36,7 @@ formulas, the polyhedral case.
   (Theorem 29.1 in [^1]).
 * `kuhnTucker_eq_neg_subgradient`, `convex_kuhnTucker`, `isClosed_kuhnTucker`,
   `supportFn_kuhnTucker` — the Kuhn–Tucker set is closed convex with a computable support function;
-  `kuhnTucker_eq_empty_iff` — when it is empty; `kuhnTucker_eq_singleton_of_hasGradientAt` — when
+  `kuhnTucker_eq_empty_iff` — when it is empty; `kuhnTucker_eq_singleton_of_hasGradientAtFn` — when
   it is one vector; `kuhnTucker_nonempty_of_stronglyConsistent`, `dirDeriv_infBifun_eq` — existence
   and the directional-derivative formula.
 * `isCompact_kuhnTucker_of_strictlyConsistent`, `continuousOn_infBifun_interior` — what strict
@@ -207,7 +207,7 @@ def KuhnTucker (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) : Set V :=
 theorem iInf_add_infBifun_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) :
     (⨅ u, (((B u v : ℝ) : EReal) + infBifun F u)) ≤ infBifun F 0 := by
   refine le_trans (iInf_le _ 0) (le_of_eq ?_)
-  rw [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero, zero_add]
+  rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_add]
 
 /-- A Kuhn–Tucker vector is a price at which every perturbation costs at least what it saves. -/
 theorem mem_kuhnTucker_iff_forall_le :
@@ -227,8 +227,8 @@ private theorem coe_add_neg_le_iff {c p : ℝ} {w : EReal} :
   induction w with
   | bot => simp
   | coe q =>
-      rw [← _root_.EReal.coe_add, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff,
-        _root_.EReal.coe_le_coe_iff]
+      rw [← EReal.coe_add, ← EReal.coe_add, EReal.coe_le_coe_iff,
+        EReal.coe_le_coe_iff]
       constructor <;> intro h <;> linarith
   | top => simp
 
@@ -410,7 +410,7 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
       rw [hcl] at hpc
       exact hpc.ne_bot 0 rfl
     have hdom : (dom (dirDeriv (infBifun F) 0)).Nonempty :=
-      ⟨0, mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact _root_.EReal.zero_lt_top)⟩
+      ⟨0, mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)⟩
     have hy : ∃ u, dirDeriv (infBifun F) 0 u = ⊥ := by
       by_contra hcon
       push Not at hcon
@@ -418,7 +418,7 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
     obtain ⟨u, hub⟩ := hy
     refine ⟨u, hub, ?_⟩
     have hle := neg_dirDeriv_neg_le hconv ht hb u
-    rw [hub, le_bot_iff, _root_.EReal.neg_eq_bot_iff] at hle
+    rw [hub, le_bot_iff, EReal.neg_eq_bot_iff] at hle
     exact hle
   · rintro ⟨u, hu, -⟩
     rw [Set.eq_empty_iff_forall_notMem]
@@ -427,7 +427,7 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
       mem_subgradient_iff_le_dirDeriv ht hb] at hv
     have hcontra := hv u
     rw [hu, le_bot_iff] at hcontra
-    exact absurd hcontra (_root_.EReal.coe_ne_bot _)
+    exact absurd hcontra (EReal.coe_ne_bot _)
 
 end KuhnTuckerEmpty
 
@@ -558,11 +558,11 @@ variable {U X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [AddCommGroup 
 
 /-- **Fréchet form**: where the perturbation function is differentiable, the program has exactly
 one Kuhn–Tucker vector, namely `-∇(inf F)(0)`. -/
-theorem kuhnTucker_eq_singleton_of_hasGradientAt (hF : ConvexBifun F)
-    {f' : StrongDual ℝ U} (h : HasGradientAt (infBifun F) f' 0) (ht : infBifun F 0 ≠ ⊤)
+theorem kuhnTucker_eq_singleton_of_hasGradientAtFn (hF : ConvexBifun F)
+    {f' : StrongDual ℝ U} (h : HasGradientAtFn (infBifun F) f' 0) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) :
     KuhnTucker (topDualPairing ℝ U).flip F = {-f'} := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb, HasGradientAt.subgradient_eq (convexFn_infBifun hF) h]
+  rw [kuhnTucker_eq_neg_subgradient ht hb, HasGradientAtFn.subgradient_eq (convexFn_infBifun hF) h]
   simp
 
 end KuhnTuckerGradient

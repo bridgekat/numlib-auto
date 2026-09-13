@@ -102,7 +102,7 @@ theorem dirDeriv_eq_coe_toReal_of_mem_interior_dom (hg : ConvexFn g) (hgp : Prop
   have hbot : dirDeriv g x z ≠ ⊥ := (proper_dirDeriv_of_mem_relint_dom hg hgp hri).ne_bot z
   have hdom := (dom_dirDeriv_eq_univ_iff_mem_interior_dom hg hgp hri).2 hx
   have htop : dirDeriv g x z ≠ ⊤ := (mem_dom.1 (hdom ▸ Set.mem_univ z)).ne
-  exact (_root_.EReal.coe_toReal htop hbot).symm
+  exact (EReal.coe_toReal htop hbot).symm
 
 /-- At an interior point of `dom f` the directional derivative is a *finite* convex function on the
 whole space. -/
@@ -121,8 +121,8 @@ theorem toReal_dirDeriv_smul (hg : ConvexFn g) (hgp : Proper g) (hx : x ∈ inte
     {c : ℝ} (hc : 0 < c) (z : E) :
     (dirDeriv g x (c • z)).toReal = c * (dirDeriv g x z).toReal := by
   have h := posHomogeneous_dirDeriv g x c hc z
-  rw [dirDeriv_eq_coe_toReal_of_mem_interior_dom hg hgp hx z, ← _root_.EReal.coe_mul] at h
-  rw [h, _root_.EReal.toReal_coe]
+  rw [dirDeriv_eq_coe_toReal_of_mem_interior_dom hg hgp hx z, ← EReal.coe_mul] at h
+  rw [h, EReal.toReal_coe]
 
 end Interior
 
@@ -185,15 +185,15 @@ theorem eventually_dirDeriv_lt (hU : IsOpen U) (hUc : Convex ℝ U)
   set F : ℕ → E → ℝ := fun i z => (f i z).toReal with hFdef
   set G : E → ℝ := fun z => (g z).toReal with hGdef
   have hgeq : ∀ z ∈ U, g z = ((G z : ℝ) : EReal) := fun z hz =>
-    (_root_.EReal.coe_toReal (mem_dom.1 (hgU hz)).ne (hgp.ne_bot z)).symm
+    (EReal.coe_toReal (mem_dom.1 (hgU hz)).ne (hgp.ne_bot z)).symm
   have hfeq : ∀ i, ∀ z ∈ U, f i z = ((F i z : ℝ) : EReal) := fun i z hz =>
-    (_root_.EReal.coe_toReal (mem_dom.1 (hfU i hz)).ne ((hfp i).ne_bot z)).symm
+    (EReal.coe_toReal (mem_dom.1 (hfU i hz)).ne ((hfp i).ne_bot z)).symm
   have hFconv : ∀ i, ConvexOn ℝ U (F i) := fun i =>
     ((hf i).convexOn_toReal_dom (hfp i)).subset (hfU i) hUc
   have hGconv : ConvexOn ℝ U G := (hg.convexOn_toReal_dom hgp).subset hgU hUc
   have hconvR : ∀ z ∈ U, Tendsto (fun i => F i z) atTop (𝓝 (G z)) := by
     intro z hz
-    rw [← _root_.EReal.tendsto_coe]
+    rw [← EReal.tendsto_coe]
     have hfun : (fun i => ((F i z : ℝ) : EReal)) = fun i => f i z := by
       funext i; exact (hfeq i z hz).symm
     rw [hfun, ← hgeq z hz]
@@ -216,8 +216,8 @@ theorem eventually_dirDeriv_lt (hU : IsOpen U) (hUc : Convex ℝ U)
     lt_of_le_of_lt (monotoneOn_sub_div hg (hgeq x hx) y (mem_Ioi.2 ha) (mem_Ioi.2 ha₀)
       (min_le_left _ _)) hlt0
   have hquotR : (G (x + a • y) - G x) / a < μ := by
-    rw [hgeq _ haU, hgeq x hx, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div,
-      _root_.EReal.coe_lt_coe_iff] at hq
+    rw [hgeq _ haU, hgeq x hx, ← EReal.coe_sub, ← EReal.coe_div,
+      EReal.coe_lt_coe_iff] at hq
     exact hq
   -- Continuous convergence at the two moving points.
   have hzs : Tendsto (fun i => xs i + a • ys i) atTop (𝓝 (x + a • y)) := hxs.add (hys.const_smul a)
@@ -232,7 +232,7 @@ theorem eventually_dirDeriv_lt (hU : IsOpen U) (hUc : Convex ℝ U)
   calc dirDeriv (f i) (xs i) (ys i)
       ≤ (f i (xs i + a • ys i) - f i (xs i)) / (a : EReal) := dirDeriv_le _ _ _ ha
     _ = (((F i (xs i + a • ys i) - F i (xs i)) / a : ℝ) : EReal) := by
-        rw [hfeq i _ hiU', hfeq i _ hiU, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div]
+        rw [hfeq i _ hiU', hfeq i _ hiU, ← EReal.coe_sub, ← EReal.coe_div]
     _ < (μ : EReal) := by exact_mod_cast hi
 
 end DirDeriv
@@ -251,7 +251,7 @@ theorem upperSemicontinuousAt_dirDeriv (hf : ConvexFn f) (hfp : Proper f)
     (hx : x ∈ interior (dom f)) (y : E) :
     UpperSemicontinuousAt (fun p : E × E => dirDeriv f p.1 p.2) (x, y) := by
   intro c hc
-  obtain ⟨μ, hμ₁, hμ₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hc
+  obtain ⟨μ, hμ₁, hμ₂⟩ := EReal.lt_iff_exists_real_btwn.1 hc
   have h : ∀ᶠ p : E × E in 𝓝 (x, y), dirDeriv f p.1 p.2 < (μ : EReal) := by
     rw [Filter.eventually_iff_seq_eventually]
     intro ps hps
@@ -326,7 +326,7 @@ theorem subgradient_subset_add_closedBall_of_forall_dirDeriv_le {p q : E → ERe
       supportFn_subgradient hq hqp hvri, supportFn_closedBall hε.le]
     calc dirDeriv p u z ≤ (((dirDeriv q v z).toReal + ε * ‖z‖ : ℝ) : EReal) := hhom z
       _ = dirDeriv q v z + ((ε * ‖z‖ : ℝ) : EReal) := by
-          rw [_root_.EReal.coe_add, ← dirDeriv_eq_coe_toReal_of_mem_interior_dom hq hqp hv z]
+          rw [EReal.coe_add, ← dirDeriv_eq_coe_toReal_of_mem_interior_dom hq hqp hv z]
   have hincl := (closure_convexHull_subset_iff_supportFn_le (B := innerₗ E) _ _).2 hsupple
   rw [hcvx.convexHull_eq, hcptsum.isClosed.closure_eq] at hincl
   exact fun w hw => hincl (subset_closure (subset_convexHull ℝ _ hw))
@@ -373,11 +373,11 @@ theorem eventually_subgradient_subset_add_closedBall (hU : IsOpen U) (hUc : Conv
     intro z _ δ hδ
     have hlt : dirDeriv g x z < (((dirDeriv g x z).toReal + δ : ℝ) : EReal) :=
       lt_of_eq_of_lt (dirDeriv_eq_coe_toReal_of_mem_interior_dom hg hgp hxint z)
-        (_root_.EReal.coe_lt_coe_iff.2 (by linarith))
+        (EReal.coe_lt_coe_iff.2 (by linarith))
     filter_upwards [eventually_dirDeriv_lt hU hUc hf hfp hfU hg hgp hgU hconv hx hxs'
       (ys := fun _ => z) tendsto_const_nhds hlt] with i hi
     rw [dirDeriv_eq_coe_toReal_of_mem_interior_dom (hf i) (hfp i) (hxsint i) z] at hi
-    exact (_root_.EReal.coe_lt_coe_iff.1 hi).le
+    exact (EReal.coe_lt_coe_iff.1 hi).le
   -- Made uniform on the unit ball.
   have hunif : ∀ᶠ i in atTop, ∀ z ∈ Metric.closedBall (0 : E) 1,
       (dirDeriv (f i) (xs' i) z).toReal ≤ (dirDeriv g x z).toReal + ε :=
@@ -471,8 +471,8 @@ theorem mem_interior_dom_dirDeriv (hfp : Proper f) (hx : x ∈ dom f) {α : ℝ}
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hfp.ne_bot (x + α • v))
     (mem_dom.1 (interior_subset hv))
   refine mem_dom.2 (lt_of_le_of_lt (dirDeriv_le f x v hα) ?_)
-  rw [hs, hr, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div]
-  exact _root_.EReal.coe_lt_top _
+  rw [hs, hr, ← EReal.coe_sub, ← EReal.coe_div]
+  exact EReal.coe_lt_top _
 
 /-- **`f'(x; ·)` is proper once it is finite at one interior point of its effective domain.** A
 convex function that takes the value `-∞` takes it throughout the relative interior of its domain,
@@ -569,7 +569,7 @@ theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : Proper f)
         Convex.interior_subset_relint hgconv.convex_dom ⟨y, hyint⟩, isOpen_interior, hyint⟩)
   have hSten : Tendsto (fun i => (dirDeriv f x (Y i)).toReal) atTop (𝓝 c) := by
     have h := hScont.tendsto.comp hYten
-    rwa [hc, _root_.EReal.toReal_coe] at h
+    rwa [hc, EReal.toReal_coe] at h
   have hFcont : ContinuousAt (fun v => (f v).toReal) (x + b • (y + lam • z)) :=
     (hf.continuousOn_toReal_relint_dom hfp).continuousAt (mem_nhds_iff.2
       ⟨interior (dom f), Convex.interior_subset_relint hf.convex_dom ⟨_, hbu⟩,
@@ -586,8 +586,8 @@ theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : Proper f)
   obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hfp.ne_bot _)
     (mem_dom.1 (interior_subset hbu))
   have hQlt : ((f (x + b • (y + lam • z))).toReal - r) / b - c < μ * lam := by
-    rw [hq, hr, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, _root_.EReal.coe_lt_coe_iff] at hqb
-    rw [hq, _root_.EReal.toReal_coe]
+    rw [hq, hr, ← EReal.coe_sub, ← EReal.coe_div, EReal.coe_lt_coe_iff] at hqb
+    rw [hq, EReal.toReal_coe]
     linarith
   -- Everything that has to hold only for large indices.
   filter_upwards [heten.eventually_le_const (show (0 : ℝ) < α / 2 by linarith),
@@ -616,35 +616,35 @@ theorem eventually_dirDeriv_lt_of_tendsto_dir (hf : ConvexFn f) (hfp : Proper f)
     (mem_dom.1 (interior_subset heY))
   have step1 : dirDeriv f x (Y i) ≤ (((a1 - r) / e i : ℝ) : EReal) := by
     have h := dirDeriv_le f x (Y i) hei0
-    rwa [hxeq, ha1, hr, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div] at h
+    rwa [hxeq, ha1, hr, ← EReal.coe_sub, ← EReal.coe_div] at h
   have step2 : (lam : EReal) * dirDeriv f (xs i) z ≤ (((m1 - a1) / e i : ℝ) : EReal) := by
     have h := dirDeriv_le f (xs i) (lam • z) hei0
     rw [posHomogeneous_dirDeriv f (xs i) lam hlampos z, ← hxeq2, hm1, ha1,
-      ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div] at h
+      ← EReal.coe_sub, ← EReal.coe_div] at h
     exact h
   have step3 : dirDeriv f x (Y i) + (lam : EReal) * dirDeriv f (xs i) z
       ≤ (((m1 - r) / e i : ℝ) : EReal) := by
     have h := add_le_add step1 step2
-    rwa [← _root_.EReal.coe_add,
+    rwa [← EReal.coe_add,
       show (a1 - r) / e i + (m1 - a1) / e i = (m1 - r) / e i from by field_simp; ring] at h
   have step4 : (((m1 - r) / e i : ℝ) : EReal) ≤ (((m2 - r) / (e i + b) : ℝ) : EReal) := by
     have h : (f (x + e i • U i) - f x) / ((e i : ℝ) : EReal)
         ≤ (f (x + (e i + b) • U i) - f x) / ((e i + b : ℝ) : EReal) :=
       monotoneOn_sub_div hf hr (U i) (mem_Ioi.2 hei0)
         (mem_Ioi.2 (by linarith : (0 : ℝ) < e i + b)) (by linarith)
-    rwa [hm1, hm2, hr, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, ← _root_.EReal.coe_sub,
-      ← _root_.EReal.coe_div] at h
-  rw [hm2, hs1, _root_.EReal.toReal_coe, _root_.EReal.toReal_coe] at hQS
+    rwa [hm1, hm2, hr, ← EReal.coe_sub, ← EReal.coe_div, ← EReal.coe_sub,
+      ← EReal.coe_div] at h
+  rw [hm2, hs1, EReal.toReal_coe, EReal.toReal_coe] at hQS
   by_contra hcon
   push Not at hcon
   have h5 : ((lam * μ : ℝ) : EReal) ≤ (lam : EReal) * dirDeriv f (xs i) z := by
-    rw [← EReal.coe_mul_coe]
+    rw [EReal.coe_mul]
     exact (EReal.coe_mul_le_coe_mul_iff hlampos).2 hcon
   have h6 : ((s1 + lam * μ : ℝ) : EReal) ≤ (((m2 - r) / (e i + b) : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     refine le_trans (add_le_add ?_ h5) (step3.trans step4)
     rw [hs1]
-  rw [_root_.EReal.coe_le_coe_iff] at h6
+  rw [EReal.coe_le_coe_iff] at h6
   linarith [mul_comm lam μ]
 
 end Boundary
@@ -765,12 +765,12 @@ theorem eventually_subgradient_subset_exposed_add_closedBall (hf : ConvexFn f) (
     have hlt : dirDeriv (dirDeriv f x) y z
         < (((dirDeriv (dirDeriv f x) y z).toReal + δ : ℝ) : EReal) :=
       lt_of_eq_of_lt (dirDeriv_eq_coe_toReal_of_mem_interior_dom hgc hgp hyint z)
-        (_root_.EReal.coe_lt_coe_iff.2 (by linarith))
+        (EReal.coe_lt_coe_iff.2 (by linarith))
     filter_upwards [eventually_dirDeriv_lt_of_tendsto_dir hf hfp hx hxsdom hxsne hxs hdir hy
       hα hαy hlt, hxs'eq, hint] with i hi hieq hiint
     rw [hieq]
     rw [dirDeriv_eq_coe_toReal_of_mem_interior_dom hf hfp hiint z] at hi
-    exact (_root_.EReal.coe_lt_coe_iff.1 hi).le
+    exact (EReal.coe_lt_coe_iff.1 hi).le
   -- Made uniform on the unit ball.
   have hunif : ∀ᶠ i in atTop, ∀ z ∈ Metric.closedBall (0 : E) 1,
       (dirDeriv f (xs' i) z).toReal ≤ (dirDeriv (dirDeriv f x) y z).toReal + ε :=

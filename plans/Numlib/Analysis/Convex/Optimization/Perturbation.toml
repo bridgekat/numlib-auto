@@ -67,7 +67,7 @@ id = 'dirDeriv_infBifun_eq'
 id = 'isCompact_kuhnTucker_of_strictlyConsistent'
 
 [[node]]
-id = 'kuhnTucker_eq_singleton_of_hasGradientAt'
+id = 'kuhnTucker_eq_singleton_of_hasGradientAtFn'
 
 [[node]]
 id = 'PolyhedralBifun'

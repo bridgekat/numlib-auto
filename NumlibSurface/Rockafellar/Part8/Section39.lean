@@ -141,7 +141,7 @@ theorem imageFn_apply (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal}
       add_zero, iInf_pos hu]
   · rw [ConvexProcess.indicatorBifun_apply,
       indicatorFn_of_notMem (show x ∉ A.eval u from hu), iInf_neg hu]
-    exact _root_.EReal.add_top_of_ne_bot (hf u)
+    exact EReal.add_top_of_ne_bot (hf u)
 
 /-- `(BA)⁻¹ = A⁻¹B⁻¹`. -/
 theorem inv_comp (B : ConvexProcess (Rn n) (Rn p)) (A : ConvexProcess (Rn m) (Rn n)) :
@@ -290,7 +290,7 @@ theorem bracketSet_inf_eq_neg_supportFn (C : Set (Rn n)) (y : Rn n) :
   refine iInf_congr fun x => ?_
   rw [EReal.neg_iSup]
   refine iInf_congr fun _ => ?_
-  rw [← _root_.EReal.coe_neg, map_neg (pairing n x) y, _root_.neg_neg]
+  rw [← EReal.coe_neg, map_neg (pairing n x) y, _root_.neg_neg]
 
 /-- An **oriented convex process** is a convex process together with an orientation, `A u` carrying
 that orientation for every `u`. It must be a pair: Theorems 39.5 and 39.8 require two processes to

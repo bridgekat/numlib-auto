@@ -133,7 +133,7 @@ theorem mem_dom_of_mem_subgradient (hp : Proper f) (hy : y ∈ subgradient B f x
   obtain ⟨z₀, hz₀⟩ := hp.dom_nonempty
   refine mem_dom.2 (lt_top_iff_ne_top.2 fun htop => ?_)
   have hle := hy z₀
-  rw [htop, _root_.EReal.top_add_coe] at hle
+  rw [htop, EReal.top_add_coe] at hle
   exact absurd (top_le_iff.1 hle) (mem_dom.1 hz₀).ne
 
 /-- `dom ∂f`: the set of points at which `f` has at least one subgradient. -/
@@ -179,8 +179,8 @@ theorem mem_subgradient_iff_conj_eq :
 an order isomorphism of `EReal`, so no `∞ - ∞` arises. -/
 theorem mem_subgradient_iff_add_conj_le :
     y ∈ subgradient B f x ↔ f x + conj B f y ≤ ((B x y : ℝ) : EReal) := by
-  rw [mem_subgradient_iff_conj_le, _root_.EReal.le_sub_iff_add_le
-    (.inr (_root_.EReal.coe_ne_bot _)) (.inr (_root_.EReal.coe_ne_top _)), add_comm]
+  rw [mem_subgradient_iff_conj_le, EReal.le_sub_iff_add_le
+    (.inr (EReal.coe_ne_bot _)) (.inr (EReal.coe_ne_top _)), add_comm]
 
 /-- `y ∈ ∂f x` exactly when **Fenchel's inequality** holds with equality at `(x, y)`. Properness is
 not decorative: for `f ≡ ⊤` every `y` is a subgradient at every `x`, while `f* ≡ ⊥` and so
@@ -223,7 +223,7 @@ theorem biconj_eq_of_mem_subgradient (hy : y ∈ subgradient B f x) : biconj B f
   refine le_antisymm (biconj_le B f x) ?_
   have h := sub_le_conj B.flip (conj B f) y x
   rwa [LinearMap.flip_apply, mem_subgradient_iff_conj_eq.1 hy, EReal.coe_sub_coe_sub, sub_self,
-    _root_.EReal.coe_zero, zero_add] at h
+    EReal.coe_zero, zero_add] at h
 
 /-- A function subdifferentiable at a point where it is finite is proper. The subgradient
 inequality exhibits a finite affine minorant, ruling out the value `⊥`. -/
@@ -232,8 +232,8 @@ theorem proper_of_mem_subgradient (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) (hy : y 
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (lt_top_iff_ne_top.2 ht)
   refine ⟨⟨x, lt_top_iff_ne_top.2 ht⟩, fun z hz => ?_⟩
   have h := hy z
-  rw [hr, hz, ← _root_.EReal.coe_add] at h
-  exact _root_.EReal.coe_ne_bot _ (le_bot_iff.1 h)
+  rw [hr, hz, ← EReal.coe_add] at h
+  exact EReal.coe_ne_bot _ (le_bot_iff.1 h)
 
 /-- The same in the "subdifferentiable" phrasing. -/
 theorem proper_of_subgradient_nonempty (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
@@ -249,7 +249,7 @@ theorem subgradient_eq_empty_of_notMem_dom (hp : Proper f) (hx : x ∉ dom f) :
     by_contra hc
     exact hx (lt_top_iff_ne_top.2 hc)
   refine eq_empty_of_forall_notMem fun y hy => absurd (hy z) (not_le.2 ?_)
-  rw [hfx, _root_.EReal.top_add_coe]
+  rw [hfx, EReal.top_add_coe]
   exact hz
 
 end Conj
@@ -329,11 +329,11 @@ omit [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F] [Topologica
 continuous when `u = ⊤`, because `⊤ + ⊥ = ⊥`; restricting the argument to the reals saves it. -/
 theorem continuous_add_coe (u : EReal) : Continuous fun t : ℝ => u + (t : EReal) := by
   induction u with
-  | bot => simpa only [_root_.EReal.bot_add] using continuous_const
+  | bot => simpa only [EReal.bot_add] using continuous_const
   | coe r =>
     have h : Continuous fun t : ℝ => (r + t : ℝ) := by fun_prop
-    simpa only [← _root_.EReal.coe_add] using continuous_coe_real_ereal.comp' h
-  | top => simpa only [_root_.EReal.top_add_coe] using continuous_const
+    simpa only [← EReal.coe_add] using continuous_coe_real_ereal.comp' h
+  | top => simpa only [EReal.top_add_coe] using continuous_const
 
 /-- The subdifferential is closed once every `⟨z, ·⟩ : F → ℝ` is continuous — automatic in `ℝⁿ`,
 and here the instance `closedFn_conj` also asks for. -/
@@ -380,7 +380,7 @@ theorem dirDeriv_lt_iff {c : EReal} :
 /-- `f'(x; 0) = 0` whenever `f x` is finite. -/
 theorem dirDeriv_zero (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) : dirDeriv f x 0 = 0 := by
   have h : ∀ a : ℝ, 0 < a → (f (x + a • (0 : E)) - f x) / (a : EReal) = 0 := fun a _ => by
-    rw [smul_zero, add_zero, _root_.EReal.sub_self ht hb, _root_.EReal.zero_div]
+    rw [smul_zero, add_zero, EReal.sub_self ht hb, EReal.zero_div]
   exact le_antisymm ((dirDeriv_le f x 0 one_pos).trans (h 1 one_pos).le)
     (le_dirDeriv fun a ha => (h a ha).ge)
 
@@ -392,8 +392,8 @@ theorem posHomogeneous_dirDeriv (f : E → EReal) (x : E) : PosHomogeneous (dirD
       (f (x + a • (c • y)) - f x) / (a : EReal)
         = (c : EReal) * ((f (x + (a * c) • y) - f x) / ((a * c : ℝ) : EReal)) := by
     intro a _
-    rw [smul_smul, div_eq_mul_inv, div_eq_mul_inv, ← _root_.EReal.coe_inv, ← _root_.EReal.coe_inv,
-      ← mul_assoc, mul_comm (c : EReal) _, mul_assoc, EReal.coe_mul_coe,
+    rw [smul_smul, div_eq_mul_inv, div_eq_mul_inv, ← EReal.coe_inv, ← EReal.coe_inv,
+      ← mul_assoc, mul_comm (c : EReal) _, mul_assoc, ← EReal.coe_mul,
       show c * (a * c)⁻¹ = a⁻¹ from by field_simp]
   rw [dirDeriv_apply, dirDeriv_apply, iInf_subtype', iInf_subtype', EReal.coe_mul_iInf hc]
   refine le_antisymm (le_iInf fun b => ?_) (le_iInf fun a => ?_)
@@ -451,7 +451,8 @@ theorem convexFn_dirDeriv (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥
     have : s = 1 := by linarith
     subst this
     simpa using h₁
-  refine EReal.le_coe_of_forall_lt fun p hp => ?_
+  refine EReal.le_of_forall_lt_iff_le.1 fun p hp => le_of_lt ?_
+  replace hp := EReal.coe_lt_coe_iff.1 hp
   obtain ⟨e, he, hesum⟩ : ∃ e : ℝ, 0 < e ∧ s * μ + t * ν + e = p - e :=
     ⟨(p - (s * μ + t * ν)) / 2, by linarith, by ring⟩
   have h1 : dirDeriv f x y₁ < ((μ + e : ℝ) : EReal) :=
@@ -493,16 +494,17 @@ theorem neg_dirDeriv_neg_le (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ �
     have hc := hconv.epi_combo hm hn (a := 1 / 2) (b := 1 / 2) (by norm_num) (by norm_num)
       (by norm_num)
     rw [show ((1 : ℝ) / 2) • (-y) + ((1 : ℝ) / 2) • y = (0 : E) from by
-      rw [smul_neg, neg_add_cancel], hzero, ← _root_.EReal.coe_zero,
-      _root_.EReal.coe_le_coe_iff] at hc
+      rw [smul_neg, neg_add_cancel], hzero, ← EReal.coe_zero,
+      EReal.coe_le_coe_iff] at hc
     linarith
   by_contra hcon
   rw [not_le] at hcon
-  obtain ⟨n, hn1, hn2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+  obtain ⟨n, hn1, hn2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
   have h3 : dirDeriv f x (-y) < ((-n : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_neg]
-    exact _root_.EReal.lt_neg_comm.1 hn2
-  obtain ⟨m, hm1, hm2⟩ := EReal.exists_real_btwn_of_lt_coe h3
+    rw [EReal.coe_neg]
+    exact EReal.lt_neg_comm.1 hn2
+  obtain ⟨m, hm1, hm2⟩ := EReal.exists_between_coe_real h3
+  replace hm2 := EReal.coe_lt_coe_iff.1 hm2
   have := main m n hm1.le hn1.le
   linarith
 
@@ -526,14 +528,14 @@ theorem mem_subgradient_iff_le_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     refine le_dirDeriv fun a ha => ?_
     rw [hr, EReal.coe_le_sub_div_iff ha]
     have hv := h (x + a • v)
-    rw [add_sub_cancel_left, hr, ← _root_.EReal.coe_add, map_smul, LinearMap.smul_apply,
+    rw [add_sub_cancel_left, hr, ← EReal.coe_add, map_smul, LinearMap.smul_apply,
       smul_eq_mul] at hv
     rwa [mul_comm (B v y) a]
   · intro h z
     have h1 := dirDeriv_le f x (z - x) one_pos
     rw [one_smul, show x + (z - x) = z from by abel] at h1
     have h2 := (h (z - x)).trans h1
-    rw [hr, EReal.coe_le_sub_div_iff one_pos, mul_one, _root_.EReal.coe_add] at h2
+    rw [hr, EReal.coe_le_sub_div_iff one_pos, mul_one, EReal.coe_add] at h2
     rw [hr]
     exact h2
 

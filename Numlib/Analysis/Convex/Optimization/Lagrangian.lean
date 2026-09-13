@@ -52,7 +52,7 @@ theorem lagrangian_eq_concaveConj (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bif
 theorem lagrangian_le (B : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifun U X) (v : V) (x : X) :
     lagrangian B F v x ≤ F 0 x := by
   refine le_trans (iInf_le _ 0) (le_of_eq ?_)
-  rw [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero, zero_add]
+  rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_add]
 
 /-- Minimising the Lagrangian over `x` is the same as pricing the perturbations:
 `⨅ x L(v, x) = ⨅ u (⟨u, v⟩ + inf F u)`. -/

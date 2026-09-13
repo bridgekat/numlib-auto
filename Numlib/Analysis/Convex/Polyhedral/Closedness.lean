@@ -54,7 +54,7 @@ omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
 theorem zero_mem_dom_supportFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (hne : C₁.Nonempty) :
     (0 : F) ∈ dom (supportFn B C₁) := by
   rw [mem_dom, supportFn_zero hne]
-  exact _root_.EReal.zero_lt_top
+  exact EReal.zero_lt_top
 
 /-- **The constraint qualification.** Under the recession hypothesis the barrier cone of `C₁` meets
 the *relative interior* of the barrier cone of `C₂`. This is where polyhedrality of `C₁` is spent:

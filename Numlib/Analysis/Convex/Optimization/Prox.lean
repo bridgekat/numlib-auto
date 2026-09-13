@@ -72,7 +72,7 @@ omit [IsContinuousInnerPairing B] in
 theorem sub_mem_subgradient_quadFn_sub (z x : E) :
     x - z ∈ subgradient B (fun u => quadFn B (z - u)) x := by
   intro u
-  simp only [quadFn_apply, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+  simp only [quadFn_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
   have hexp := self_pairing_sub (B := B) (z - x) (u - x)
   have hinner : B (u - x) (x - z) = -B (z - x) (u - x) := by
     rw [show x - z = -(z - x) by abel, map_neg, pairing_comm B (u - x) (z - x)]
@@ -85,7 +85,7 @@ theorem subgradient_quadFn_sub (z x : E) :
     subgradient B (fun u => quadFn B (z - u)) x = {x - z} := by
   refine Set.Subset.antisymm (fun y hy => ?_) ?_
   · have h := hy (y + z)
-    simp only [quadFn_apply, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h
+    simp only [quadFn_apply, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
     have hnorm : B (z - (y + z)) (z - (y + z)) = B y y := by
       rw [show z - (y + z) = -y by abel, self_pairing_neg]
     have hyz : B (y + z - x) y = B y y + B (z - x) y := by
@@ -133,7 +133,7 @@ theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
     intro a
     rw [show z - (z + a • y) = -(a • y) by abel, quadFn_apply, self_pairing_neg,
       self_pairing_smul]
-  simp only [hz, hza, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hkey
+  simp only [hz, hza, ← EReal.coe_add, EReal.coe_le_coe_iff] at hkey
   nlinarith [hkey, mul_le_mul_of_nonneg_left ha3 ha0,
     mul_le_mul_of_nonneg_left (le_abs_self ν) ha0]
 
@@ -185,7 +185,7 @@ theorem closedProperConvexFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     ClosedProperConvexFn (moreauObj B f z) := by
   obtain ⟨x₀, hx₀⟩ := hf.proper.dom_nonempty
   refine ClosedProperConvexFn.add hf (closedProperConvexFn_quadFn_sub z) ⟨x₀, ?_⟩
-  exact mem_dom.2 (_root_.EReal.add_lt_top (mem_dom.1 hx₀).ne (quadFn_ne_top _))
+  exact mem_dom.2 (EReal.add_lt_top (mem_dom.1 hx₀).ne (quadFn_ne_top _))
 
 omit [FiniteDimensional ℝ E] [IsCompatiblePairing B] in
 /-- **The Moreau objective has no direction of recession.** Its recession function splits as
@@ -199,7 +199,7 @@ theorem recessionConeFn_moreauObj (hf : ClosedProperConvexFn f) (z : E) :
     rw [mem_recessionConeFn, moreauObj_def,
       congrFun (recessionFn_add hf (closedProperConvexFn_quadFn_sub z) hg.proper.dom_nonempty) y,
       Pi.add_apply, recessionFn_quadFn_sub z hy0,
-      _root_.EReal.add_top_of_ne_bot (recessionFn_ne_bot hf.proper y)] at hy
+      EReal.add_top_of_ne_bot (recessionFn_ne_bot hf.proper y)] at hy
     exact absurd hy (by simp)
   · rw [Set.singleton_subset_iff, mem_recessionConeFn]
     exact recessionFn_apply_zero_le _

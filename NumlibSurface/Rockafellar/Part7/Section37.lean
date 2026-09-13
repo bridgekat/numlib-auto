@@ -623,7 +623,7 @@ theorem corollary_37_4_1_eq (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
     have hA : conj (pairing n).flip (fun v => M (p.1, v)) = F p.1 :=
       congrFun (bifunOfSaddle_eq_of_mem_bifunSaddleClass (pairing m) (pairing n) hFconv hFcl
         (mem_bifunSaddleClass_of_mem_Ω hM)) p.1
-    rw [conj_flip_pairing] at hA
+    rw [flip_pairing] at hA
     have hsub : conj (pairing n) (fun v => M (p.1, v)) q.2
         = ((pairing n p.2 q.2 : ℝ) : EReal) - M (p.1, p.2) :=
       mem_subgradient_iff_conj_eq.1 hqM.2
@@ -647,7 +647,7 @@ theorem theorem_37_5_f (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω
   have hA : conj (pairing n).flip (fun v => K (u, v)) = F u :=
     congrFun (bifunOfSaddle_eq_of_mem_bifunSaddleClass (pairing m) (pairing n) hF hcl
       (mem_bifunSaddleClass_of_mem_Ω hK)) u
-  rw [conj_flip_pairing] at hA
+  rw [flip_pairing] at hA
   have hg : graphFn F (u, w) = F u w := rfl
   rw [hg, ← hA, conj_apply]
 

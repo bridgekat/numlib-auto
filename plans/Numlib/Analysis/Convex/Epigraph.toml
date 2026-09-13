@@ -10,7 +10,7 @@ id = 'dom'
 id = 'Proper'
 
 [[node]]
-id = 'restrict'
+id = 'restrictFn'
 
 [[node]]
 id = 'dom_coe_mul'
@@ -50,6 +50,24 @@ id = 'ConvexFn.convex_dom'
 
 [[node]]
 id = 'convexOn_iff_convexFn'
+
+[[node]]
+id = 'dom_coe'
+
+[[node]]
+id = 'proper_coe'
+
+[[node]]
+id = 'dom_restrictFn_coe'
+
+[[node]]
+id = 'proper_restrictFn_coe'
+
+[[node]]
+id = '_root_.ConvexOn.convexFn_restrictFn_coe'
+
+[[node]]
+id = '_root_.ConvexOn.convexFn_coe'
 
 [[node]]
 id = 'ConvexFn.sum_le'

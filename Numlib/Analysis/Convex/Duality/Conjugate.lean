@@ -93,7 +93,7 @@ theorem conj_le_coe_iff : conj B f y ≤ (c : EReal) ↔ affineFn B y c ≤ f :=
   rw [conj_apply, iSup_le_iff, affineFn_le_iff]
 
 theorem conj_antitone (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : Antitone (conj B) := fun _ _ h _ =>
-  iSup_mono fun x => _root_.EReal.sub_le_sub le_rfl (h x)
+  iSup_mono fun x => EReal.sub_le_sub le_rfl (h x)
 
 /-- **The adjunction.** `f* ≤ g` and `g* ≤ f` say the same thing — that `⟨x, y⟩ ≤ f x + g y` for
 all `x` and `y`, in the `∞ - ∞`-free reading. -/
@@ -117,7 +117,7 @@ theorem conj_eq_bot_iff : conj B f y = ⊥ ↔ ∀ x, f x = ⊤ := by
 theorem conj_of_eq_bot {x₀ : E} (h : f x₀ = ⊥) : conj B f = fun _ => ⊤ := by
   funext y
   refine top_le_iff.1 (le_trans ?_ (sub_le_conj B f x₀ y))
-  rw [h, _root_.EReal.coe_sub_bot]
+  rw [h, EReal.coe_sub_bot]
 
 theorem conj_top (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : conj B (fun _ => ⊤) = fun _ => (⊥ : EReal) :=
   funext fun _ => conj_eq_bot_iff.2 fun _ => rfl
@@ -136,7 +136,7 @@ and if `f` takes `-∞` then it is `⊥ + ⊤ = ⊥`. Use `sub_le_conj` when pro
 theorem le_add_conj (hb : f x ≠ ⊥) (hd : (dom f).Nonempty) (y : F) :
     ((B x y : ℝ) : EReal) ≤ f x + conj B f y := by
   rw [add_comm]
-  exact (_root_.EReal.sub_le_iff_le_add (.inl hb) (.inr (conj_ne_bot hd y))).1 (sub_le_conj B f x y)
+  exact (EReal.sub_le_iff_le_add (.inl hb) (.inr (conj_ne_bot hd y))).1 (sub_le_conj B f x y)
 
 theorem Proper.le_add_conj (hp : Proper f) (x : E) (y : F) :
     ((B x y : ℝ) : EReal) ≤ f x + conj B f y :=
@@ -163,9 +163,9 @@ theorem conj_term_eq (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x 
       (fun y => ((B x y : ℝ) : EReal) - f x) = (fun _ => (⊤ : EReal)) ∨
       ∃ t : ℝ, (fun y => ((B x y : ℝ) : EReal) - f x) = affineFn B.flip x t := by
   rcases eq_or_ne (f x) ⊤ with h | h
-  · exact Or.inl (funext fun y => by rw [h, _root_.EReal.sub_top])
+  · exact Or.inl (funext fun y => by rw [h, EReal.sub_top])
   rcases eq_or_ne (f x) ⊥ with h' | h'
-  · exact Or.inr (Or.inl (funext fun y => by rw [h', _root_.EReal.coe_sub_bot]))
+  · exact Or.inr (Or.inl (funext fun y => by rw [h', EReal.coe_sub_bot]))
   · obtain ⟨t, ht⟩ := EReal.exists_coe_of_ne_bot_of_lt_top h' (lt_top_iff_ne_top.2 h)
     exact Or.inr (Or.inr ⟨t, funext fun y => by rw [ht, affineFn_apply, LinearMap.flip_apply]⟩)
 
@@ -268,7 +268,7 @@ theorem exists_affineFn_le_of_lt (hf : ConvexFn f) (hc : ClosedFn f) {x₀ : E} 
     rcases eq_const_of_closedFn_of_not_proper hc hp with hbot | htop
     · rw [hbot] at h; exact absurd h (by simp)
     · refine ⟨0, -(α + 1), htop ▸ fun _ => le_top, ?_⟩
-      rw [affineFn_eq_coe, map_zero, _root_.EReal.coe_lt_coe_iff]
+      rw [affineFn_eq_coe, map_zero, EReal.coe_lt_coe_iff]
       linarith
   case pos =>
   -- A point of the epigraph over any point of the effective domain.
@@ -309,14 +309,14 @@ theorem exists_affineFn_le_of_lt (hf : ConvexFn f) (hc : ClosedFn f) {x₀ : E} 
     · rw [affineFn_eq_coe, hy]
       by_contra hcon
       rw [not_le] at hcon
-      obtain ⟨μ, hfμ, hμ⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨μ, hfμ, hμ⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       have hin : ((x, μ) : E × ℝ) ∈ epi f := mk_mem_epi.2 hfμ.le
       have hbnd := hLs _ hin
       rw [hL] at hbnd
       have hμ' : μ < (-c₀)⁻¹ * g x - u / (-c₀) := by exact_mod_cast hμ
       rw [inv_mul_eq_div, div_sub_div_same, lt_div_iff₀ hd] at hμ'
       nlinarith
-    · rw [affineFn_eq_coe, hy, _root_.EReal.coe_lt_coe_iff, inv_mul_eq_div, div_sub_div_same,
+    · rw [affineFn_eq_coe, hy, EReal.coe_lt_coe_iff, inv_mul_eq_div, div_sub_div_same,
         lt_div_iff₀ hd]
       rw [hL] at hLx
       nlinarith
@@ -342,10 +342,10 @@ theorem exists_affineFn_le_of_lt (hf : ConvexFn f) (hc : ClosedFn f) {x₀ : E} 
       · have h1 : lam * (B x y₁ - u) ≤ 0 :=
           mul_nonpos_of_nonneg_of_nonpos hlam0 (by rw [← hy₁ x]; linarith [hdom x hx])
         refine le_trans ?_ (hy₂ x ▸ hw x)
-        rw [← _root_.EReal.coe_sub, _root_.EReal.coe_le_coe_iff]
+        rw [← EReal.coe_sub, EReal.coe_le_coe_iff]
         linarith
       · rw [top_le_iff.1 hx]; exact le_top
-    · rw [affineFn_smul_add, _root_.EReal.coe_lt_coe_iff, ← hy₁ x₀, ← hm]
+    · rw [affineFn_smul_add, EReal.coe_lt_coe_iff, ← hy₁ x₀, ← hm]
       have := (div_le_iff₀ hdpos).1 hlamle
       nlinarith
 
@@ -357,7 +357,7 @@ theorem eq_biSup_affineFn (hf : ConvexFn f) (hc : ClosedFn f) :
   refine le_antisymm ?_ (iSup₂_le fun p hp => hp x)
   by_contra hcon
   rw [not_le] at hcon
-  obtain ⟨α, hα₁, hα₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+  obtain ⟨α, hα₁, hα₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
   obtain ⟨y, c, hle, hlt⟩ := exists_affineFn_le_of_lt (B := B) hf hc hα₂
   exact absurd (lt_of_lt_of_le hlt (le_iSup₂ (f := fun p (_ : p ∈ _) => affineFn B p.1 p.2 x)
     ((y, c) : F × ℝ) hle)) (not_lt.2 hα₁.le)
@@ -393,21 +393,21 @@ theorem biconj_eq_clFn (hf : ConvexFn f) : biconj B f = clFn f := by
   refine le_antisymm (biconj_le_clFn f) fun x₀ => ?_
   by_contra hcon
   rw [not_le] at hcon
-  obtain ⟨α, hα₁, hα₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+  obtain ⟨α, hα₁, hα₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
   obtain ⟨y, c, hle, hlt⟩ :=
     exists_affineFn_le_of_lt (B := B) (convexFn_clFn hf) (closedFn_clFn f) hα₂
   have hcy : conj B f y ≤ (c : EReal) := conj_le_coe_iff.2 (hle.trans (clFn_le f))
   refine absurd (lt_of_lt_of_le hlt ?_) (not_lt.2 hα₁.le)
   refine le_trans ?_ (sub_le_conj B.flip (conj B f) y x₀)
   rw [affineFn_apply, LinearMap.flip_apply]
-  exact _root_.EReal.sub_le_sub le_rfl hcy
+  exact EReal.sub_le_sub le_rfl hcy
 
 /-- **The properness half**: the conjugate of a closed proper convex function is proper.
 With `proper_of_proper_conj`, "`f*` is proper if and only if `f` is". -/
 theorem proper_conj (hf : ClosedProperConvexFn f) : Proper (conj B f) := by
   obtain ⟨w, c, hw⟩ := exists_affine_le_of_closed_proper hf
   obtain ⟨y, hy⟩ := exists_pairing_eq B w
-  refine ⟨⟨y, lt_of_le_of_lt (conj_le_coe_iff.2 fun x => ?_) (_root_.EReal.coe_lt_top c)⟩,
+  refine ⟨⟨y, lt_of_le_of_lt (conj_le_coe_iff.2 fun x => ?_) (EReal.coe_lt_top c)⟩,
     conj_ne_bot hf.proper.dom_nonempty⟩
   rw [affineFn_apply, ← hy x]
   exact hw x
@@ -539,7 +539,7 @@ theorem conj_comp_add (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal) (a
     conj B (fun x => h (a + x)) y = conj B h y - ((B a y : ℝ) : EReal) := by
   have hfun : (fun x : E => h (a + x)) = fun x : E => h (x - -a) := by
     funext x; rw [sub_neg_eq_add, add_comm]
-  rw [hfun, conj_comp_sub, map_neg, LinearMap.neg_apply, _root_.EReal.coe_neg,
+  rw [hfun, conj_comp_sub, map_neg, LinearMap.neg_apply, EReal.coe_neg,
     ← sub_eq_add_neg]
 
 /-- **The tilting row**: adding the linear function `⟨·, b⟩` to `h` translates the
@@ -556,14 +556,14 @@ theorem conj_sub_pairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal)
   have hfun : (fun x : E => h x - ((B x b : ℝ) : EReal))
       = fun x : E => h x + ((B x (-b) : ℝ) : EReal) := by
     funext x
-    rw [map_neg, _root_.EReal.coe_neg, ← sub_eq_add_neg]
+    rw [map_neg, EReal.coe_neg, ← sub_eq_add_neg]
   rw [hfun, conj_add_pairing, sub_neg_eq_add]
 
 /-- **The constant row**: adding a constant to `h` subtracts it from the conjugate. -/
 theorem conj_add_const (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E → EReal) (α : ℝ) (y : F) :
     conj B (fun x => h x + (α : EReal)) y = conj B h y - (α : EReal) := by
   simp only [conj_apply]
-  rw [sub_eq_add_neg, ← _root_.EReal.coe_neg, EReal.iSup_add_coe]
+  rw [sub_eq_add_neg, ← EReal.coe_neg, EReal.iSup_add_coe]
   exact iSup_congr fun x => by
     rw [EReal.coe_sub_add_coe, ← EReal.coe_add_sub, ← sub_eq_add_neg]
 
@@ -602,8 +602,8 @@ theorem conj_comp_affine (A : E ≃ₗ[ℝ] G) (A' : H ≃ₗ[ℝ] F)
     conj_comp_linearEquiv A A' hA h (y - b)
   have harith : ((B a y - B a b : ℝ) : EReal) + -(α : EReal)
       = ((B a y : ℝ) : EReal) + ((-α - B a b : ℝ) : EReal) := by
-    rw [← _root_.EReal.coe_neg, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-      _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_neg, ← EReal.coe_add, ← EReal.coe_add,
+      EReal.coe_eq_coe_iff]
     ring
   have hassoc : ∀ U : EReal, U + ((B a (y - b) : ℝ) : EReal) - (α : EReal)
       = U + ((B a y : ℝ) : EReal) + ((-α - B a b : ℝ) : EReal) := fun U => by
@@ -623,8 +623,8 @@ theorem conj_comp_add_sub_pairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h : E �
   have hsplit : ∀ (u : EReal) (p q : ℝ),
       u - ((p + q : ℝ) : EReal) = u - (p : EReal) - (q : EReal) := fun u p q => by
     have hneg : -(((p + q : ℝ)) : EReal) = -((p : ℝ) : EReal) + -((q : ℝ) : EReal) := by
-      rw [← _root_.EReal.coe_neg, neg_add, _root_.EReal.coe_add, _root_.EReal.coe_neg,
-        _root_.EReal.coe_neg]
+      rw [← EReal.coe_neg, neg_add, EReal.coe_add, EReal.coe_neg,
+        EReal.coe_neg]
     change u + -(((p + q : ℝ)) : EReal) = u + -((p : ℝ) : EReal) + -((q : ℝ) : EReal)
     rw [hneg, ← add_assoc]
   rw [conj_sub_pairing B (fun x => h (z + x)) z' y, conj_comp_add B h z (y + z'),

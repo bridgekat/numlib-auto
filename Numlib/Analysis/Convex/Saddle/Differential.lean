@@ -454,22 +454,9 @@ end SaddleDirDeriv
 
 section SubgradientDefs
 
-variable {E : Type*} {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U]
+variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U]
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] {C : Set U} {D : Set X} {K : U × X → ℝ}
   {p : U × X}
-
-/-- The restriction of a *real-valued* function to a nonempty set is a proper `EReal`-valued
-function: its effective domain is that set, and it never takes the value `-∞`. -/
-theorem proper_restrict_coe {s : Set E} (hs : s.Nonempty) (g : E → ℝ) :
-    Proper (ConvexAnalysis.restrict s fun x => ((g x : ℝ) : EReal)) := by
-  refine ⟨?_, fun x => ?_⟩
-  · rw [dom_restrict_coe]
-    exact hs
-  · by_cases hx : x ∈ s
-    · rw [restrict_of_mem hx]
-      exact EReal.coe_ne_bot _
-    · rw [restrict_of_notMem hx]
-      exact top_ne_bot
 
 /-- `∂₁K(u, v)`, the subdifferential of a saddle-function in its **concave** variable: the
 supergradients at `u` of the concave slice `K (·, v)`, tested against the points of `C`.
@@ -506,18 +493,18 @@ slice extended by `+∞` off `D`. This is the bridge that lets the one-variable 
 applied to a saddle-function one variable at a time. -/
 theorem subgradientSnd_eq_subgradient (hp : p.2 ∈ D) :
     subgradientSnd D K p
-      = subgradient (innerₗ X) (ConvexAnalysis.restrict D fun x => ((K (p.1, x) : ℝ) : EReal))
+      = subgradient (innerₗ X) (ConvexAnalysis.restrictFn D fun x => ((K (p.1, x) : ℝ) : EReal))
         p.2 := by
   ext y
-  simp only [mem_subgradientSnd, mem_subgradient, restrict_of_mem hp]
+  simp only [mem_subgradientSnd, mem_subgradient, restrictFn_of_mem hp]
   refine ⟨fun h z => ?_, fun h x hx => ?_⟩
   · by_cases hz : z ∈ D
-    · rw [restrict_of_mem hz]
+    · rw [restrictFn_of_mem hz]
       exact_mod_cast h z hz
-    · rw [restrict_of_notMem hz]
+    · rw [restrictFn_of_notMem hz]
       exact le_top
   · have hx' := h x
-    rw [restrict_of_mem hx] at hx'
+    rw [restrictFn_of_mem hx] at hx'
     exact_mod_cast hx'
 
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] in
@@ -526,22 +513,22 @@ omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] in
 theorem subgradientFst_eq_neg_subgradient (hp : p.1 ∈ C) :
     subgradientFst C K p
       = -subgradient (innerₗ U)
-        (ConvexAnalysis.restrict C fun w => ((-K (w, p.2) : ℝ) : EReal)) p.1 := by
+        (ConvexAnalysis.restrictFn C fun w => ((-K (w, p.2) : ℝ) : EReal)) p.1 := by
   ext y
-  simp only [mem_subgradientFst, Set.mem_neg, mem_subgradient, restrict_of_mem hp]
+  simp only [mem_subgradientFst, Set.mem_neg, mem_subgradient, restrictFn_of_mem hp]
   refine ⟨fun h z => ?_, fun h w hw => ?_⟩
   · by_cases hz : z ∈ C
-    · rw [restrict_of_mem hz]
+    · rw [restrictFn_of_mem hz]
       have := h z hz
       have hi : (innerₗ U) (z - p.1) (-y) = -⟪z - p.1, y⟫ := by
         simp [inner_sub_left]
         ring
       rw [hi]
       exact_mod_cast by linarith [this]
-    · rw [restrict_of_notMem hz]
+    · rw [restrictFn_of_notMem hz]
       exact le_top
   · have hw' := h w
-    rw [restrict_of_mem hw] at hw'
+    rw [restrictFn_of_mem hw] at hw'
     have hi : (innerₗ U) (w - p.1) (-y) = -⟪w - p.1, y⟫ := by
       simp [inner_sub_left]
       ring
@@ -716,21 +703,21 @@ theorem eventually_subgradientSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (
     simp [hus'def, hi]
   have hus' : Tendsto us' atTop (𝓝 u) := hus.congr' (hus'eq.mono fun i h => h.symm)
   have hfc : ∀ i,
-      ConvexFn (ConvexAnalysis.restrict D fun x => ((Ks i (us' i, x) : ℝ) : EReal)) :=
+      ConvexFn (ConvexAnalysis.restrictFn D fun x => ((Ks i (us' i, x) : ℝ) : EReal)) :=
     fun i => (convexOn_iff_convexFn D _).1 ((hKs i).convex_snd (us' i) (hus'C i))
-  have hgc : ConvexFn (ConvexAnalysis.restrict D fun x => ((K (u, x) : ℝ) : EReal)) :=
+  have hgc : ConvexFn (ConvexAnalysis.restrictFn D fun x => ((K (u, x) : ℝ) : EReal)) :=
     (convexOn_iff_convexFn D _).1 (hK.convex_snd u hu)
   have hconvD : ∀ x ∈ D, Tendsto
-      (fun i => ConvexAnalysis.restrict D (fun x => ((Ks i (us' i, x) : ℝ) : EReal)) x) atTop
-      (𝓝 (ConvexAnalysis.restrict D (fun x => ((K (u, x) : ℝ) : EReal)) x)) := by
+      (fun i => ConvexAnalysis.restrictFn D (fun x => ((Ks i (us' i, x) : ℝ) : EReal)) x) atTop
+      (𝓝 (ConvexAnalysis.restrictFn D (fun x => ((K (u, x) : ℝ) : EReal)) x)) := by
     intro x hx
     have h := tendsto_eval_prod_of_tendsto hCo hCc hDo hDc hKs hK hconv hu hx hus'
       (tendsto_const_nhds (x := x))
-    simp only [restrict_of_mem hx]
+    simp only [restrictFn_of_mem hx]
     exact EReal.tendsto_coe.2 h
   have hmain := eventually_subgradient_subset_add_closedBall hDo hDc hfc
-    (fun _ => proper_restrict_coe ⟨v, hv⟩ _) (fun _ => (dom_restrict_coe D _).ge) hgc
-    (proper_restrict_coe ⟨v, hv⟩ _) (dom_restrict_coe D _).ge hconvD hv hvs hε
+    (fun _ => proper_restrictFn_coe ⟨v, hv⟩ _) (fun _ => (dom_restrictFn_coe D _).ge) hgc
+    (proper_restrictFn_coe ⟨v, hv⟩ _) (dom_restrictFn_coe D _).ge hconvD hv hvs hε
   filter_upwards [hmain, hus'eq, hvs.eventually_mem (hDo.mem_nhds hv)] with i hi hui hvi
   rw [subgradientSnd_eq_subgradient (D := D) (K := Ks i) (p := (us i, vs i)) hvi,
     subgradientSnd_eq_subgradient (D := D) (K := K) (p := (u, v)) hv, ← hui]
@@ -760,24 +747,24 @@ theorem eventually_subgradientFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (
     simp [hvs'def, hi]
   have hvs' : Tendsto vs' atTop (𝓝 v) := hvs.congr' (hvs'eq.mono fun i h => h.symm)
   have hfc : ∀ i,
-      ConvexFn (ConvexAnalysis.restrict C fun w => ((-Ks i (w, vs' i) : ℝ) : EReal)) := by
+      ConvexFn (ConvexAnalysis.restrictFn C fun w => ((-Ks i (w, vs' i) : ℝ) : EReal)) := by
     intro i
     refine (convexOn_iff_convexFn C _).1 ?_
     exact ((hKs i).concave_fst (vs' i) (hvs'D i)).neg
-  have hgc : ConvexFn (ConvexAnalysis.restrict C fun w => ((-K (w, v) : ℝ) : EReal)) := by
+  have hgc : ConvexFn (ConvexAnalysis.restrictFn C fun w => ((-K (w, v) : ℝ) : EReal)) := by
     refine (convexOn_iff_convexFn C _).1 ?_
     exact (hK.concave_fst v hv).neg
   have hconvC : ∀ w ∈ C, Tendsto
-      (fun i => ConvexAnalysis.restrict C (fun w => ((-Ks i (w, vs' i) : ℝ) : EReal)) w) atTop
-      (𝓝 (ConvexAnalysis.restrict C (fun w => ((-K (w, v) : ℝ) : EReal)) w)) := by
+      (fun i => ConvexAnalysis.restrictFn C (fun w => ((-Ks i (w, vs' i) : ℝ) : EReal)) w) atTop
+      (𝓝 (ConvexAnalysis.restrictFn C (fun w => ((-K (w, v) : ℝ) : EReal)) w)) := by
     intro w hw
     have h := (tendsto_eval_prod_of_tendsto hCo hCc hDo hDc hKs hK hconv hw hv
       (tendsto_const_nhds (x := w)) hvs').neg
-    simp only [restrict_of_mem hw]
+    simp only [restrictFn_of_mem hw]
     exact EReal.tendsto_coe.2 h
   have hmain := eventually_subgradient_subset_add_closedBall hCo hCc hfc
-    (fun _ => proper_restrict_coe ⟨u, hu⟩ _) (fun _ => (dom_restrict_coe C _).ge) hgc
-    (proper_restrict_coe ⟨u, hu⟩ _) (dom_restrict_coe C _).ge hconvC hu hus hε
+    (fun _ => proper_restrictFn_coe ⟨u, hu⟩ _) (fun _ => (dom_restrictFn_coe C _).ge) hgc
+    (proper_restrictFn_coe ⟨u, hu⟩ _) (dom_restrictFn_coe C _).ge hconvC hu hus hε
   filter_upwards [hmain, hvs'eq, hus.eventually_mem (hCo.mem_nhds hu)] with i hi hvi hui
   rw [subgradientFst_eq_neg_subgradient (C := C) (K := Ks i) (p := (us i, vs i)) hui,
     subgradientFst_eq_neg_subgradient (C := C) (K := K) (p := (u, v)) hu, ← hvi,
@@ -1131,14 +1118,14 @@ subgradient wherever it is finite on a neighbourhood. -/
 theorem subgradientSnd_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
     (hK : ConvexOn ℝ D fun x => K (u, x)) (hv : v ∈ D) :
     (subgradientSnd D K (u, v)).Nonempty := by
-  have hf : ConvexFn (ConvexAnalysis.restrict D fun x => ((K (u, x) : ℝ) : EReal)) :=
+  have hf : ConvexFn (ConvexAnalysis.restrictFn D fun x => ((K (u, x) : ℝ) : EReal)) :=
     (convexOn_iff_convexFn D _).1 hK
-  have hri : v ∈ ri (dom (ConvexAnalysis.restrict D fun x => ((K (u, x) : ℝ) : EReal))) := by
-    rw [dom_restrict_coe]
+  have hri : v ∈ ri (dom (ConvexAnalysis.restrictFn D fun x => ((K (u, x) : ℝ) : EReal))) := by
+    rw [dom_restrictFn_coe]
     exact Convex.interior_subset_relint hDc ⟨v, by rwa [hDo.interior_eq]⟩
       (by rwa [hDo.interior_eq])
   rw [subgradientSnd_eq_subgradient (D := D) (K := K) (p := (u, v)) hv]
-  exact subgradient_nonempty_of_mem_relint_dom hf (proper_restrict_coe ⟨v, hv⟩ _) hri
+  exact subgradient_nonempty_of_mem_relint_dom hf (proper_restrictFn_coe ⟨v, hv⟩ _) hri
 
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X] in
 /-- `∂₁K(u, v)` is nonempty at every point of the open rectangle, by the same fact for the concave
@@ -1146,16 +1133,16 @@ slice. -/
 theorem subgradientFst_nonempty (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hK : ConcaveOn ℝ C fun w => K (w, v)) (hu : u ∈ C) :
     (subgradientFst C K (u, v)).Nonempty := by
-  have hf : ConvexFn (ConvexAnalysis.restrict C fun w => ((-K (w, v) : ℝ) : EReal)) := by
+  have hf : ConvexFn (ConvexAnalysis.restrictFn C fun w => ((-K (w, v) : ℝ) : EReal)) := by
     refine (convexOn_iff_convexFn C _).1 ?_
     exact hK.neg
-  have hri : u ∈ ri (dom (ConvexAnalysis.restrict C fun w => ((-K (w, v) : ℝ) : EReal))) := by
-    rw [dom_restrict_coe]
+  have hri : u ∈ ri (dom (ConvexAnalysis.restrictFn C fun w => ((-K (w, v) : ℝ) : EReal))) := by
+    rw [dom_restrictFn_coe]
     exact Convex.interior_subset_relint hCc ⟨u, by rwa [hCo.interior_eq]⟩
       (by rwa [hCo.interior_eq])
   rw [subgradientFst_eq_neg_subgradient (C := C) (K := K) (p := (u, v)) hu]
   obtain ⟨y, hy⟩ := subgradient_nonempty_of_mem_relint_dom (B := innerₗ U) hf
-    (proper_restrict_coe ⟨u, hu⟩ _) hri
+    (proper_restrictFn_coe ⟨u, hu⟩ _) hri
   exact ⟨-y, by simpa using hy⟩
 
 /-- Upper semicontinuity of `∂₁K` on the rectangle, in the concave variable alone. -/

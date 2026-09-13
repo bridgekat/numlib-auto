@@ -61,12 +61,12 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 is its Riesz representative, so that `S x` lives in the same space as `∂f x` for `innerₗ E`. -/
 def gradientLimits (f : E → EReal) (x : E) : Set E :=
   {v | ∃ xs : ℕ → E, ∃ vs : ℕ → E, Tendsto xs atTop (𝓝 x) ∧
-    (∀ i, HasGradientAt f (InnerProductSpace.toDual ℝ E (vs i)) (xs i)) ∧
+    (∀ i, HasGradientAtFn f (InnerProductSpace.toDual ℝ E (vs i)) (xs i)) ∧
     Tendsto vs atTop (𝓝 v)}
 
 /-- A gradient at `x` itself is a limit of gradients, along the constant sequence. -/
-theorem mem_gradientLimits_of_hasGradientAt {v : E}
-    (h : HasGradientAt f (InnerProductSpace.toDual ℝ E v) x) : v ∈ gradientLimits f x :=
+theorem mem_gradientLimits_of_hasGradientAtFn {v : E}
+    (h : HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x) : v ∈ gradientLimits f x :=
   ⟨fun _ => x, fun _ => v, tendsto_const_nhds, fun _ => h, tendsto_const_nhds⟩
 
 /-- **`S x ⊆ ∂f x`**: the graph of `∂f` is closed, so a limit of gradients at points tending to `x`
@@ -109,8 +109,8 @@ theorem inner_add_smul_le_of_mem_subgradient (hp : Proper f) {v w z : E} {a : �
   have hzb : f z ≠ ⊥ := hp.ne_bot z
   have hfx : f x ≠ ⊤ := (mem_dom.1 (mem_dom_of_mem_subgradient hp hmem)).ne
   have hxb : f x ≠ ⊥ := hp.ne_bot x
-  rw [hval, ← _root_.EReal.coe_toReal hfx hxb, ← _root_.EReal.coe_toReal hfz hzb,
-    ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hle
+  rw [hval, ← EReal.coe_toReal hfx hxb, ← EReal.coe_toReal hfz hzb,
+    ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
   linarith
 
 omit [FiniteDimensional ℝ E] in
@@ -413,8 +413,8 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
     have hl0 : ∀ z : E, l z = 0 := fun z => by rw [hlw, hzero, inner_zero_left]
     have hsingle : subgradient (innerₗ E) f x = {v} :=
       Set.eq_singleton_iff_unique_mem.2 ⟨hv, fun z hz => (hl z hz).2 (by rw [hl0, hl0])⟩
-    exact mem_gradientLimits_of_hasGradientAt
-      (hasGradientAt_toDual_of_subgradient_eq_singleton hf hp hsingle)
+    exact mem_gradientLimits_of_hasGradientAtFn
+      (hasGradientAtFn_toDual_of_subgradient_eq_singleton hf hp hsingle)
   · -- Otherwise, normalise the exposing direction.
     have hy₀pos : 0 < ‖y₀‖ := norm_pos_iff.2 hzero
     set y : E := ‖y₀‖⁻¹ • y₀ with hydef
@@ -458,7 +458,7 @@ theorem exposedPoints_subset_gradientLimits (hf : ConvexFn f) (hp : Proper f)
         (hp.ne_bot x)).1 hv y
       intro hbot
       rw [hbot, le_bot_iff] at h
-      exact (_root_.EReal.coe_ne_bot _) h
+      exact (EReal.coe_ne_bot _) h
     refine ⟨xs, vs, hxslim, fun i => ?_, ?_⟩
     · rw [hvsdef, LinearIsometryEquiv.apply_symm_apply]
       exact hG i

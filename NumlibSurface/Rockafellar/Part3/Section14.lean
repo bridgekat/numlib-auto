@@ -231,10 +231,10 @@ theorem theorem_14_3 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (h0 : 0 
     ⟨convexFn_conj _ _, closedFn_conj, proper_conj hf⟩
   have hg0 : 0 < conj (pairing n) f 0 := by
     rw [conj_apply_zero]
-    exact _root_.EReal.neg_pos.2 hinf
+    exact EReal.neg_pos.2 hinf
   have hginf : ⨅ y, conj (pairing n) f y < 0 := by
     rw [iInf_conj_eq_neg_apply_zero hf.convex hf.closed]
-    exact _root_.EReal.neg_lt_zero.2 h0
+    exact EReal.neg_lt_zero.2 h0
   rw [polarCone_closure, polarCone_hull, polarCone_eq_setOf_supportFn_le_zero,
     supportFn_setOf_le_zero hf.convex hf.closed, setOf_clFn_posHomGen_le_zero hg hg0 hginf]
 

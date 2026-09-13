@@ -80,7 +80,7 @@ theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : 
       rw [dist_eq_norm, add_sub_cancel_left, norm_smul, Real.norm_eq_abs,
         abs_of_pos (div_pos hδ hznorm)]
     have hlip := hK.dist_le_mul _ hwT _ hxT
-    simp only [ha, hb, _root_.EReal.toReal_coe, Real.dist_eq, hnorm] at hlip
+    simp only [ha, hb, EReal.toReal_coe, Real.dist_eq, hnorm] at hlip
     exact (le_abs_self _).trans hlip
   refine ⟨K, hK.mono (Metric.self_subset_cthickening S), ?_, ?_⟩
   · intro x hx y hy z
@@ -94,7 +94,7 @@ theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : 
       (hTdom (mem_cthickening_add_smul hx hδ hz))
     have hsg := hy (x + (δ / ‖z‖) • z)
     rw [add_sub_cancel_left, map_smul, LinearMap.smul_apply, smul_eq_mul, ha, hb,
-      ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hsg
+      ← EReal.coe_add, EReal.coe_le_coe_iff] at hsg
     refine le_of_mul_le_mul_left ?_ ht
     calc (δ / ‖z‖) * B z y
         ≤ b - a := by linarith
@@ -104,14 +104,14 @@ theorem exists_lipschitz_forall_pairing_le_of_isCompact (hf : ConvexFn f) (hp : 
     have hxT : x ∈ Metric.cthickening δ S := Metric.self_subset_cthickening S hx
     obtain ⟨a, ha⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (hTdom hxT)
     rcases eq_or_ne z 0 with rfl | hz
-    · rw [dirDeriv_zero (by rw [ha]; exact _root_.EReal.coe_ne_top a) (hp.ne_bot x)]
+    · rw [dirDeriv_zero (by rw [ha]; exact EReal.coe_ne_top a) (hp.ne_bot x)]
       simp
     have hznorm : 0 < ‖z‖ := norm_pos_iff.2 hz
     have ht : (0 : ℝ) < δ / ‖z‖ := div_pos hδ hznorm
     obtain ⟨b, hb⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot _)
       (hTdom (mem_cthickening_add_smul hx hδ hz))
     refine le_trans (dirDeriv_le f x z ht) ?_
-    rw [ha, hb, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_div, _root_.EReal.coe_le_coe_iff,
+    rw [ha, hb, ← EReal.coe_sub, ← EReal.coe_div, EReal.coe_le_coe_iff,
       div_le_iff₀ ht]
     calc b - a ≤ (K : ℝ) * ((δ / ‖z‖) * ‖z‖) := hkey x hx z hz a b ha hb
       _ = (K : ℝ) * ‖z‖ * (δ / ‖z‖) := by ring

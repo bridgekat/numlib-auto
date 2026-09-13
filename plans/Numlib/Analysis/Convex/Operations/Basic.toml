@@ -29,7 +29,7 @@ id = 'ConvexFn.comp'
 id = 'ConvexFn.comp_extendTop'
 
 [[node]]
-id = 'ConvexFn.restrict'
+id = 'ConvexFn.restrictFn'
 desc = 'A convex function restricted to a convex set, extended by the top value, is convex.'
 
 [[node]]

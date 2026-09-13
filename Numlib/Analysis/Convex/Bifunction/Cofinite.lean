@@ -166,9 +166,9 @@ theorem Cofinite.proper_conj_add (hf : Cofinite f) (hg : Cofinite g) :
     Proper (conj B f + conj B g) := by
   refine ⟨⟨0, ?_⟩, fun y => ?_⟩
   · rw [mem_dom, Pi.add_apply]
-    exact _root_.EReal.add_lt_top (Cofinite.conj_lt_top (B := B) hf 0).ne
+    exact EReal.add_lt_top (Cofinite.conj_lt_top (B := B) hf 0).ne
       (Cofinite.conj_lt_top (B := B) hg 0).ne
-  · rw [Pi.add_apply, ne_eq, _root_.EReal.add_eq_bot_iff]
+  · rw [Pi.add_apply, ne_eq, EReal.add_eq_bot_iff]
     push Not
     exact ⟨conj_ne_bot hf.proper.dom_nonempty y, conj_ne_bot hg.proper.dom_nonempty y⟩
 
@@ -192,7 +192,7 @@ theorem cofinite_infConv (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
     ⟨convexFn_infConv hf.convex hg.convex, hclosed, hproper⟩
   refine (cofinite_iff_forall_conj_lt_top (B := B) hcpc).2 fun y => ?_
   rw [conj_infConv, Pi.add_apply]
-  exact _root_.EReal.add_lt_top (Cofinite.conj_lt_top (B := B) hf y).ne
+  exact EReal.add_lt_top (Cofinite.conj_lt_top (B := B) hf y).ne
     (Cofinite.conj_lt_top (B := B) hg y).ne
 
 end CofiniteInfConv
@@ -227,16 +227,16 @@ theorem isExactSum_neg_bracket_of_cofinite (hF₁ : CofiniteBifun F₁) (hF₂ :
   have hp : ∀ G : Bifun U X, CofiniteBifun G → Proper (fun u => -(bracket Bx G u y)) := by
     intro G hG
     refine ⟨⟨0, ?_⟩, fun u => ?_⟩
-    · rw [mem_dom, lt_top_iff_ne_top, ne_eq, _root_.EReal.neg_eq_top_iff]
+    · rw [mem_dom, lt_top_iff_ne_top, ne_eq, EReal.neg_eq_top_iff]
       exact CofiniteBifun.bracket_ne_bot (Bx := Bx) hG 0 y
-    · rw [ne_eq, _root_.EReal.neg_eq_bot_iff]
+    · rw [ne_eq, EReal.neg_eq_bot_iff]
       exact (CofiniteBifun.bracket_lt_top (Bx := Bx) hG u y).ne
   have hd : ∀ G : Bifun U X, CofiniteBifun G →
       (0 : U) ∈ ri (dom fun u => -(bracket Bx G u y)) := by
     intro G hG
     have hdom : (dom fun u => -(bracket Bx G u y)) = univ :=
       eq_univ_of_forall fun u => by
-        rw [mem_dom, lt_top_iff_ne_top, ne_eq, _root_.EReal.neg_eq_top_iff]
+        rw [mem_dom, lt_top_iff_ne_top, ne_eq, EReal.neg_eq_top_iff]
         exact CofiniteBifun.bracket_ne_bot (Bx := Bx) hG u y
     rw [hdom, intrinsicInterior_univ]; trivial
   exact IsExactSum.of_relint (concaveFn_iff_convexFn_neg.1 (concaveFn_bracket hF₁.convexBifun Bx y))
@@ -297,8 +297,8 @@ theorem closedFn_smulRight (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ)
 omit [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
 theorem coe_mul_ne_bot (ha : 0 < a) {u : EReal} (hu : u ≠ ⊥) : (a : EReal) * u ≠ ⊥ := by
   intro h
-  refine EReal.coe_mul_ne_top ha (u := -u) (by rwa [Ne, _root_.EReal.neg_eq_top_iff]) ?_
-  rw [mul_neg, h, _root_.EReal.neg_bot]
+  refine EReal.coe_mul_ne_top ha (u := -u) (by rwa [Ne, EReal.neg_eq_top_iff]) ?_
+  rw [mul_neg, h, EReal.neg_bot]
 
 omit [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
 /-- **`fa` is proper** when `f` is and `a > 0`. -/
@@ -363,16 +363,16 @@ theorem CofiniteBifun.domConcaveBifun_adjointBifun_eq_univ (Bu : U →ₗ[ℝ] V
     concaveFn_iff_convexFn_neg.1 (concaveFn_bracket hF.convexBifun Bx y)
   have hgp : Proper (fun u => -(bracket Bx F u y)) := by
     refine ⟨⟨0, mem_dom.2 (lt_top_iff_ne_top.2 ?_)⟩, fun u => ?_⟩
-    · rw [ne_eq, _root_.EReal.neg_eq_top_iff]
+    · rw [ne_eq, EReal.neg_eq_top_iff]
       exact CofiniteBifun.bracket_ne_bot (Bx := Bx) hF 0 y
-    · rw [ne_eq, _root_.EReal.neg_eq_bot_iff]
+    · rw [ne_eq, EReal.neg_eq_bot_iff]
       exact (CofiniteBifun.bracket_lt_top (Bx := Bx) hF u y).ne
   obtain ⟨w, hw⟩ := (proper_conj_of_proper (B := Bu) hgc hgp).dom_nonempty
   refine ⟨-w, ?_⟩
   have hneg : -(concaveConj Bu (fun u => bracket Bx F u y) (-w))
       = conj Bu (fun u => -(bracket Bx F u y)) w := by
     rw [neg_concaveConj, neg_neg]
-  rw [adjointBifun_eq_concaveConj_bracket, ne_eq, ← _root_.EReal.neg_eq_top_iff, hneg]
+  rw [adjointBifun_eq_concaveConj_bracket, ne_eq, ← EReal.neg_eq_top_iff, hneg]
   exact (mem_dom.1 hw).ne
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ V] [FiniteDimensional ℝ X]

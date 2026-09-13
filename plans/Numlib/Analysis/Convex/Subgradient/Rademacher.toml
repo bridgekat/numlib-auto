@@ -1,10 +1,10 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'HasGradientAt.hasFDerivAt_toReal'
+id = 'HasGradientAtFn.hasFDerivAt_toReal'
 
 [[node]]
-id = 'hasGradientAt_of_hasFDerivAt_toReal'
+id = 'hasGradientAtFn_of_hasFDerivAt_toReal'
 
 [[node]]
 id = 'exists_lipschitzOnWith_ball'

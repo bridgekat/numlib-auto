@@ -266,12 +266,8 @@ theorem dim_le_dim_of_subset {S T : Set (Rn n)} (hne : S.Nonempty) (hST : S ⊆ 
 /-- **Theorem 1.1** in the form §2's Theorem 2.7 needs it: for a set containing the origin, the
 direction of the affine hull is the linear span. -/
 theorem vectorSpan_eq_span_of_zero_mem {S : Set (Rn n)} (h0 : (0 : Rn n) ∈ S) :
-    vectorSpan ℝ S = Submodule.span ℝ S := by
-  rw [vectorSpan_eq_span_vsub_set_right ℝ h0]
-  have himg : (fun x : Rn n => x -ᵥ (0 : Rn n)) '' S = S := by
-    ext z
-    simp
-  rw [himg]
+    vectorSpan ℝ S = Submodule.span ℝ S :=
+  _root_.vectorSpan_eq_span_of_zero_mem h0
 
 /-- **Theorem 1.1**: for a set containing the origin, the affine hull *is* the linear span. -/
 theorem coe_affineSpan_of_zero_mem {S : Set (Rn n)} (h0 : (0 : Rn n) ∈ S) :

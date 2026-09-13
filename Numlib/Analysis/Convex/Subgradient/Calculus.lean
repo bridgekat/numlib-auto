@@ -54,7 +54,7 @@ theorem subgradient_add_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f g : E �
   rintro _ ⟨y₁, hy₁, y₂, hy₂, rfl⟩ z
   have h₁ := hy₁ z
   have h₂ := hy₂ z
-  rw [Pi.add_apply, Pi.add_apply, map_add, _root_.EReal.coe_add, add_add_add_comm]
+  rw [Pi.add_apply, Pi.add_apply, map_add, EReal.coe_add, add_add_add_comm]
   exact add_le_add h₁ h₂
 
 /-- `∂(f + g) x = ∂f x + ∂g x` whenever the sum is exact. Exactness splits
@@ -167,8 +167,8 @@ theorem IsExactImage.subgradient_compLin {hA : IsAdjointPair B B' A A'}
     by_contra htop
     rw [not_lt, top_le_iff] at htop
     have hsub := mem_subgradient_iff_add_conj_le.1 hy
-    rw [htop, _root_.EReal.add_top_of_ne_bot hne, top_le_iff] at hsub
-    exact absurd hsub (_root_.EReal.coe_ne_top _)
+    rw [htop, EReal.add_top_of_ne_bot hne, top_le_iff] at hsub
+    exact absurd hsub (EReal.coe_ne_top _)
   obtain ⟨z, rfl, hle⟩ := h.exact_le y hfin
   refine ⟨z, mem_subgradient_iff_add_conj_le.2 ?_, rfl⟩
   calc g (A x) + conj B' g z
@@ -221,7 +221,7 @@ why it is not cosmetic: `∂fᵢ x` may be *empty* at a boundary point of `dom f
 theorem subgradient_zero_mul (hB : Function.Injective B.flip) (f : E → EReal) (x : E) :
     subgradient B (fun y => ((0 : ℝ) : EReal) * f y) x = {(0 : F)} := by
   have hz : (fun y => ((0 : ℝ) : EReal) * f y) = fun _ : E => (0 : EReal) := by
-    funext y; rw [_root_.EReal.coe_zero, zero_mul]
+    funext y; rw [EReal.coe_zero, zero_mul]
   rw [hz]
   ext v
   rw [Set.mem_singleton_iff]
@@ -263,7 +263,7 @@ theorem subgradient_coe_affineMap (hB : Function.Injective B.flip) (a : E →ᵃ
     have hle : ∀ w : E, B w v ≤ a.linear w := by
       intro w
       have h := hv (w + x)
-      rw [add_sub_cancel_right, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h
+      rw [add_sub_cancel_right, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
       have hd := hdec (w + x)
       rw [add_sub_cancel_right] at hd
       linarith
@@ -276,7 +276,7 @@ theorem subgradient_coe_affineMap (hB : Function.Injective B.flip) (a : E →ᵃ
     linarith
   · rintro rfl
     intro z
-    rw [← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff, hb (z - x)]
+    rw [← EReal.coe_add, EReal.coe_le_coe_iff, hb (z - x)]
     linarith [hdec z]
 
 /-- `∂(ca) x = c ∂a x` for an *arbitrary* real `c`, when `a` is affine. An affine function satisfies
@@ -289,7 +289,7 @@ theorem subgradient_coe_mul_affineMap (hB : Function.Injective B.flip) (c : ℝ)
   have hfun : (fun y => (c : EReal) * ((a y : ℝ) : EReal))
       = fun y => (((c • a) y : ℝ) : EReal) := by
     funext y
-    rw [EReal.coe_mul_coe]
+    rw [← EReal.coe_mul]
     rfl
   have hb' : ∀ w : E, B w (c • b) = (c • a).linear w := by
     intro w
@@ -341,7 +341,7 @@ theorem subgradient_add_normalCone_dom_subset (B : E →ₗ[ℝ] F →ₗ[ℝ] �
   rintro _ ⟨y, hy, n, hn, rfl⟩ z
   by_cases hz : z ∈ dom f
   · have hle : ((B (z - x) (y + n) : ℝ) : EReal) ≤ ((B (z - x) y : ℝ) : EReal) := by
-      rw [map_add, _root_.EReal.coe_le_coe_iff]
+      rw [map_add, EReal.coe_le_coe_iff]
       linarith [hn z hz]
     exact (add_le_add (le_refl (f x)) hle).trans (hy z)
   · rw [top_le_iff.1 (not_lt.1 fun h => hz (mem_dom.2 h))]

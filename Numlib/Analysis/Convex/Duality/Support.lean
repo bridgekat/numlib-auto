@@ -88,7 +88,7 @@ theorem supportFn_eq_conj_indicatorFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s :
   refine iSup_congr fun x => ?_
   by_cases hx : x ∈ s
   · rw [iSup_pos hx, indicatorFn_of_mem hx, sub_zero]
-  · rw [iSup_neg hx, indicatorFn_of_notMem hx, _root_.EReal.sub_top]
+  · rw [iSup_neg hx, indicatorFn_of_notMem hx, EReal.sub_top]
 
 theorem le_supportFn (hx : x ∈ s) (y : F) : ((B x y : ℝ) : EReal) ≤ supportFn B s y :=
   le_iSup₂ (f := fun x (_ : x ∈ s) => ((B x y : ℝ) : EReal)) x hx
@@ -101,17 +101,17 @@ theorem supportFn_le_iff {c : EReal} :
 theorem supportFn_le_coe_iff {c : ℝ} :
     supportFn B s y ≤ (c : EReal) ↔ ∀ x ∈ s, B x y ≤ c := by
   rw [supportFn_le_iff]
-  exact forall₂_congr fun _ _ => _root_.EReal.coe_le_coe_iff
+  exact forall₂_congr fun _ _ => EReal.coe_le_coe_iff
 
 /-- `δ*(y | s) ≤ 0` says that the pairing with `y` is nowhere positive on `s` — the level `0` of
 `supportFn_le_coe_iff`, which is where a polar cone is cut out. -/
 theorem supportFn_le_zero_iff : supportFn B s y ≤ 0 ↔ ∀ x ∈ s, B x y ≤ 0 := by
-  rw [← _root_.EReal.coe_zero, supportFn_le_coe_iff]
+  rw [← EReal.coe_zero, supportFn_le_coe_iff]
 
 /-- `0 < δ*(y | s)` says that the pairing with `y` is positive somewhere on `s`. -/
 theorem zero_lt_supportFn_iff : 0 < supportFn B s y ↔ ∃ x ∈ s, 0 < B x y := by
-  rw [supportFn_apply, ← _root_.EReal.coe_zero]
-  simp only [lt_iSup_iff, exists_prop, _root_.EReal.coe_lt_coe_iff]
+  rw [supportFn_apply, ← EReal.coe_zero]
+  simp only [lt_iSup_iff, exists_prop, EReal.coe_lt_coe_iff]
 
 theorem supportFn_mono (h : s ⊆ t) : supportFn B s ≤ supportFn B t :=
   fun _ => iSup₂_le fun _ hx => le_supportFn (h hx) _
@@ -144,7 +144,7 @@ theorem supportFn_ne_bot (hs : s.Nonempty) (y : F) : supportFn B s y ≠ ⊥ := 
   refine le_antisymm (iSup₂_le fun z _ => ?_) ?_
   · rw [map_zero]; rfl
   · have h := le_supportFn (B := B) hx (0 : F)
-    rwa [map_zero, _root_.EReal.coe_zero] at h
+    rwa [map_zero, EReal.coe_zero] at h
 
 theorem proper_supportFn (hs : s.Nonempty) : Proper (supportFn B s) :=
   ⟨⟨0, by rw [mem_dom, supportFn_zero hs]; exact lt_top_iff_ne_top.2 (by simp)⟩,
@@ -156,10 +156,10 @@ theorem dom_supportFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Set E) :
     dom (supportFn B s) = {y : F | ∃ c : ℝ, ∀ x ∈ s, B x y ≤ c} := by
   ext y
   refine ⟨fun hy => ?_, fun hy => ?_⟩
-  · obtain ⟨c, hc, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (hy : supportFn B s y < ⊤)
+  · obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (hy : supportFn B s y < ⊤)
     exact ⟨c, supportFn_le_coe_iff.1 hc.le⟩
   · obtain ⟨c, hc⟩ := hy
-    exact lt_of_le_of_lt (supportFn_le_coe_iff.2 hc) (_root_.EReal.coe_lt_top c)
+    exact lt_of_le_of_lt (supportFn_le_coe_iff.2 hc) (EReal.coe_lt_top c)
 
 theorem supportFn_lt_top_iff : supportFn B s y < ⊤ ↔ ∃ c : ℝ, ∀ x ∈ s, B x y ≤ c := by
   rw [← mem_dom, dom_supportFn]
@@ -182,7 +182,7 @@ theorem posHomogeneous_supportFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Set 
   refine iSup_congr fun x => ?_
   rw [EReal.coe_mul_iSup ha]
   refine iSup_congr fun _ => ?_
-  rw [map_smul, smul_eq_mul, ← EReal.coe_mul_coe]
+  rw [map_smul, smul_eq_mul, EReal.coe_mul]
 
 /-- Support functions are **subadditive in the dual variable**: a positively homogeneous convex
 function is subadditive, applied to `posHomogeneous_supportFn`. -/
@@ -194,7 +194,7 @@ theorem supportFn_add_le (hs : s.Nonempty) (y₁ y₂ : F) :
 theorem convex_setOf_pairing_le (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (y : F) (M : EReal) :
     Convex ℝ {x : E | ((B x y : ℝ) : EReal) ≤ M} := by
   have h := (convexFn_affineFn (B := B) y 0).convex_le M
-  simpa only [affineFn_apply, _root_.EReal.coe_zero, sub_zero] using h
+  simpa only [affineFn_apply, EReal.coe_zero, sub_zero] using h
 
 /-- **The support function does not see the convex hull.** -/
 theorem supportFn_convexHull (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s : Set E) :
@@ -212,7 +212,7 @@ theorem supportFn_smul (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) {a : ℝ} (ha : 0 <
   refine iSup_congr fun z => ?_
   rw [EReal.coe_mul_iSup ha]
   refine iSup_congr fun _ => ?_
-  rw [map_smul, LinearMap.smul_apply, smul_eq_mul, ← EReal.coe_mul_coe]
+  rw [map_smul, LinearMap.smul_apply, smul_eq_mul, EReal.coe_mul]
 
 /-- **The support function of a sum of sets is the sum of the support functions.** Unconditional,
 unlike the corresponding statement for a sum of *functions*, because the two suprema never
@@ -225,13 +225,13 @@ theorem supportFn_add (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (s t : Set E) :
         rw [supportFn_apply, ← Set.image2_add, iSup_image2]
     _ = ⨆ a ∈ s, ⨆ b ∈ t, (((B b y : ℝ) : EReal) + ((B a y : ℝ) : EReal)) := by
         refine iSup_congr fun a => iSup_congr fun _ => iSup_congr fun b => iSup_congr fun _ => ?_
-        rw [map_add, LinearMap.add_apply, ← _root_.EReal.coe_add, add_comm]
+        rw [map_add, LinearMap.add_apply, ← EReal.coe_add, add_comm]
     _ = ⨆ a ∈ s, (((B a y : ℝ) : EReal) + supportFn B t y) := by
         refine iSup_congr fun a => iSup_congr fun _ => ?_
         rw [supportFn_apply, ← EReal.biSup_add_coe, add_comm]
     _ = supportFn B s y + supportFn B t y := by
         rw [← EReal.biSup_add_of_ne_bot (u := fun a => ((B a y : ℝ) : EReal))
-          fun a _ => _root_.EReal.coe_ne_bot _]
+          fun a _ => EReal.coe_ne_bot _]
         rfl
 
 end Defs
@@ -259,9 +259,9 @@ theorem supportSet_eq_setOf_conj_le (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E
     supportSet B f = {y | conj B f y ≤ 0} := by
   ext y
   change (∀ x, ((B x y : ℝ) : EReal) ≤ f x) ↔ conj B f y ≤ 0
-  rw [show ((0 : EReal)) = ((0 : ℝ) : EReal) from _root_.EReal.coe_zero.symm, conj_le_coe_iff,
+  rw [show ((0 : EReal)) = ((0 : ℝ) : EReal) from EReal.coe_zero.symm, conj_le_coe_iff,
     Pi.le_def]
-  exact forall_congr' fun x => by rw [affineFn_apply, _root_.EReal.coe_zero, sub_zero]
+  exact forall_congr' fun x => by rw [affineFn_apply, EReal.coe_zero, sub_zero]
 
 theorem convex_supportSet (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) : Convex ℝ (supportSet B f) := by
   rw [supportSet_eq_setOf_conj_le]
@@ -274,18 +274,18 @@ theorem conj_smul_eq_self (hf : PosHomogeneous f) {a : ℝ} (ha : 0 < a) (y : F)
   by_cases hb : ∃ x, f x = ⊥
   · obtain ⟨x₀, hx₀⟩ := hb
     rw [conj_of_eq_bot hx₀]
-    exact (_root_.EReal.coe_mul_top_of_pos ha).symm
+    exact (EReal.coe_mul_top_of_pos ha).symm
   push Not at hb
   have hterm : ∀ x : E, ((B (a • x) y : ℝ) : EReal) - f (a • x)
       = (a : EReal) * (((B x y : ℝ) : EReal) - f x) := by
     intro x
     rw [hf a ha x, map_smul, LinearMap.smul_apply, smul_eq_mul]
     rcases eq_or_ne (f x) ⊤ with h | h
-    · rw [h, _root_.EReal.coe_mul_top_of_pos ha, _root_.EReal.sub_top, _root_.EReal.sub_top,
-        _root_.EReal.coe_mul_bot_of_pos ha]
+    · rw [h, EReal.coe_mul_top_of_pos ha, EReal.sub_top, EReal.sub_top,
+        EReal.coe_mul_bot_of_pos ha]
     · obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hb x) (lt_top_iff_ne_top.2 h)
-      rw [hr, EReal.coe_mul_coe, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_sub,
-        EReal.coe_mul_coe]
+      rw [hr, ← EReal.coe_mul, ← EReal.coe_sub, ← EReal.coe_sub,
+        ← EReal.coe_mul]
       congr 1
       ring
   have hsurj : Function.Surjective fun x : E => a • x := fun z =>
@@ -351,7 +351,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 theorem isClosed_setOf_pairing_le (y : F) (M : EReal) :
     IsClosed {x : E | ((B x y : ℝ) : EReal) ≤ M} :=
-  isClosed_Iic.preimage (_root_.EReal.continuous_coe_iff.2 (continuous_pairing B y))
+  isClosed_Iic.preimage (EReal.continuous_coe_iff.2 (continuous_pairing B y))
 
 /-- **The support function does not see the closure.** -/
 theorem supportFn_closure (s : Set E) : supportFn B (closure s) = supportFn B s := by
@@ -362,7 +362,7 @@ theorem supportFn_closure (s : Set E) : supportFn B (closure s) = supportFn B s 
 
 theorem isClosed_supportSet (g : F → EReal) : IsClosed (supportSet B.flip g) := by
   rw [supportSet_eq_setOf_conj_le,
-    show ((0 : EReal)) = ((0 : ℝ) : EReal) from _root_.EReal.coe_zero.symm]
+    show ((0 : EReal)) = ((0 : ℝ) : EReal) from EReal.coe_zero.symm]
   exact lowerSemicontinuous_iff_isClosed_le.1 (lowerSemicontinuous_conj (B := B.flip)) 0
 
 end ContinuousPairing
@@ -385,7 +385,7 @@ theorem mem_closure_convexHull_iff_le_supportFn (s : Set E) (x : E) :
   · intro h y
     by_contra hcon
     rw [not_le] at hcon
-    obtain ⟨c, hc₁, hc₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+    obtain ⟨c, hc₁, hc₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
     have hbnd : ∀ z ∈ s, evalCLM B y z ≤ c := supportFn_le_coe_iff.1 hc₁.le
     have hx := h (evalCLM B y) c hbnd
     rw [evalCLM_apply] at hx

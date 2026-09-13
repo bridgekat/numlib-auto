@@ -14,10 +14,10 @@ id = 'image_piSum_univ_pi'
 id = 'forall_mem_linealitySpace_pi'
 
 [[node]]
-id = 'Convex.isClosed_sum'
+id = '_root_.Convex.isClosed_sum'
 
 [[node]]
-id = 'Convex.closure_sum_eq'
+id = '_root_.Convex.closure_sum_eq'
 
 [[node]]
-id = 'Convex.recessionCone_sum'
+id = '_root_.Convex.recessionCone_sum'

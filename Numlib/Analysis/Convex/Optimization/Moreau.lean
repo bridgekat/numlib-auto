@@ -60,9 +60,9 @@ noncomputable def quadFn (B : E →ₗ[ℝ] E →ₗ[ℝ] ℝ) : E → EReal :=
 
 theorem quadFn_apply (z : E) : quadFn B z = ((B z z / 2 : ℝ) : EReal) := rfl
 
-theorem quadFn_ne_bot (z : E) : quadFn B z ≠ ⊥ := _root_.EReal.coe_ne_bot _
+theorem quadFn_ne_bot (z : E) : quadFn B z ≠ ⊥ := EReal.coe_ne_bot _
 
-theorem quadFn_ne_top (z : E) : quadFn B z ≠ ⊤ := _root_.EReal.coe_ne_top _
+theorem quadFn_ne_top (z : E) : quadFn B z ≠ ⊤ := EReal.coe_ne_top _
 
 @[simp] theorem quadFn_neg (z : E) : quadFn B (-z) = quadFn B z := by
   rw [quadFn_apply, quadFn_apply, self_pairing_neg]
@@ -77,10 +77,10 @@ variable [IsInnerPairing B]
 /-- `x ↦ w (z - x)` is convex: the defect is `½ a b B (u - v) (u - v) ≥ 0`. -/
 theorem convexFn_quadFn_sub (z : E) : ConvexFn (fun x => quadFn B (z - x)) := by
   refine convexFn_of_epi_combo fun x y μ ν hx hy a b ha hb hab => ?_
-  rw [quadFn_apply, _root_.EReal.coe_le_coe_iff] at hx hy
+  rw [quadFn_apply, EReal.coe_le_coe_iff] at hx hy
   have harg : z - (a • x + b • y) = a • (z - x) + b • (z - y) := by
     rw [smul_sub, smul_sub, ← add_sub_add_comm, ← add_smul, hab, one_smul]
-  rw [quadFn_apply, harg, _root_.EReal.coe_le_coe_iff]
+  rw [quadFn_apply, harg, EReal.coe_le_coe_iff]
   refine le_trans (self_pairing_combo_le ha hb hab) ?_
   exact add_le_add (mul_le_mul_of_nonneg_left hx ha) (mul_le_mul_of_nonneg_left hy hb)
 
@@ -99,11 +99,11 @@ theorem proper_quadFn_sub (z : E) : Proper (fun x => quadFn B (z - x)) :=
 theorem conj_quadFn (y : E) : conj B (quadFn B) y = quadFn B y := by
   rw [conj_apply]
   refine le_antisymm (iSup_le fun x => ?_) ?_
-  · rw [quadFn_apply, quadFn_apply, ← _root_.EReal.coe_sub, _root_.EReal.coe_le_coe_iff]
+  · rw [quadFn_apply, quadFn_apply, ← EReal.coe_sub, EReal.coe_le_coe_iff]
     linarith [self_pairing_sub (B := B) x y, self_pairing_nonneg B (x - y)]
   · refine le_trans (le_of_eq ?_)
       (le_iSup (fun x : E => ((B x y : ℝ) : EReal) - quadFn B x) y)
-    rw [quadFn_apply, ← _root_.EReal.coe_sub, _root_.EReal.coe_eq_coe_iff]
+    rw [quadFn_apply, ← EReal.coe_sub, EReal.coe_eq_coe_iff]
     ring
 
 /-- **The conjugate of a translate of the quadratic**: `(w (z - ·))* y = B z y + w y`. The supremum
@@ -114,16 +114,16 @@ theorem conj_quadFn_sub (z y : E) :
     rw [map_sub, LinearMap.sub_apply]
   rw [conj_apply]
   refine le_antisymm (iSup_le fun x => ?_) ?_
-  · rw [quadFn_apply, quadFn_apply, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_add,
-      _root_.EReal.coe_le_coe_iff]
+  · rw [quadFn_apply, quadFn_apply, ← EReal.coe_sub, ← EReal.coe_add,
+      EReal.coe_le_coe_iff]
     linarith [self_pairing_sub (B := B) (x - z) y, self_pairing_nonneg B (x - z - y), hsub x,
       self_pairing_sub_rev (B := B) z x]
   · refine le_trans (le_of_eq ?_)
       (le_iSup (fun x : E => ((B x y : ℝ) : EReal) - quadFn B (z - x)) (z + y))
     have harg : z - (z + y) = -y := by abel
     have hadd : B (z + y) y = B z y + B y y := by rw [map_add, LinearMap.add_apply]
-    rw [harg, quadFn_apply, quadFn_apply, ← _root_.EReal.coe_add, ← _root_.EReal.coe_sub,
-      _root_.EReal.coe_eq_coe_iff, hadd, self_pairing_neg]
+    rw [harg, quadFn_apply, quadFn_apply, ← EReal.coe_add, ← EReal.coe_sub,
+      EReal.coe_eq_coe_iff, hadd, self_pairing_neg]
     ring
 
 end Quadratic
@@ -210,7 +210,7 @@ theorem moreau_add (hf : ClosedProperConvexFn f) (z : E) :
       have h := self_pairing_sub (B := B) z y
       linarith
     rw [conj_quadFn_sub, zero_sub, neg_neg, quadFn_neg, quadFn_apply, quadFn_apply,
-      ← _root_.EReal.coe_add, hreal, _root_.EReal.coe_add, ← add_assoc]
+      ← EReal.coe_add, hreal, EReal.coe_add, ← add_assoc]
   have hQD : conj B (f + fun x => quadFn B (z - x)) 0
       = infConv (conj B f) (quadFn B) z + ((-(B z z / 2) : ℝ) : EReal) := by
     rw [hex.conj_add_apply 0,
@@ -224,35 +224,35 @@ theorem moreau_add (hf : ClosedProperConvexFn f) (z : E) :
       EReal.exists_coe_of_ne_bot_of_lt_top (conj_ne_bot hf.proper.dom_nonempty y₀) hy₀
     have hle : (⨅ y, (conj B f y + quadFn B (z - y)))
         ≤ conj B f y₀ + quadFn B (z - y₀) := iInf_le _ y₀
-    rw [hr, quadFn_apply, ← _root_.EReal.coe_add] at hle
-    exact ne_top_of_le_ne_top (_root_.EReal.coe_ne_top _) hle
+    rw [hr, quadFn_apply, ← EReal.coe_add] at hle
+    exact ne_top_of_le_ne_top (EReal.coe_ne_top _) hle
   have hQb : conj B (f + fun x => quadFn B (z - x)) 0 ≠ ⊥ := by
     intro hc
     have hle := sub_le_conj B (f + fun x => quadFn B (z - x)) x₀ 0
     rw [hc, le_bot_iff, EReal.coe_sub_eq_bot_iff] at hle
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x₀) hx₀
-    rw [Pi.add_apply, hp, quadFn_apply, ← _root_.EReal.coe_add] at hle
-    exact absurd hle (_root_.EReal.coe_ne_top _)
+    rw [Pi.add_apply, hp, quadFn_apply, ← EReal.coe_add] at hle
+    exact absurd hle (EReal.coe_ne_top _)
   have hDb : infConv (conj B f) (quadFn B) z ≠ ⊥ := by
     intro hc
     rw [hc] at hQD
-    simp only [_root_.EReal.bot_add] at hQD
+    simp only [EReal.bot_add] at hQD
     exact hQb hQD
   obtain ⟨d, hd⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hDb (lt_top_iff_ne_top.2 hDt)
-  rw [hP, hQD, hd, ← _root_.EReal.coe_add, ← _root_.EReal.coe_neg, ← _root_.EReal.coe_add,
-    quadFn_apply, _root_.EReal.coe_eq_coe_iff]
+  rw [hP, hQD, hd, ← EReal.coe_add, ← EReal.coe_neg, ← EReal.coe_add,
+    quadFn_apply, EReal.coe_eq_coe_iff]
   ring
 
 private theorem top_add_ne_coe (u : EReal) (r : ℝ) : ⊤ + u ≠ (r : EReal) := by
   rcases eq_or_ne u ⊥ with rfl | hu
-  · rw [_root_.EReal.add_bot]
-    exact (_root_.EReal.coe_ne_bot r).symm
-  · rw [_root_.EReal.top_add_of_ne_bot hu]
-    exact (_root_.EReal.coe_ne_top r).symm
+  · rw [EReal.add_bot]
+    exact (EReal.coe_ne_bot r).symm
+  · rw [EReal.top_add_of_ne_bot hu]
+    exact (EReal.coe_ne_top r).symm
 
 private theorem bot_add_ne_coe (u : EReal) (r : ℝ) : ⊥ + u ≠ (r : EReal) := by
-  rw [_root_.EReal.bot_add]
-  exact (_root_.EReal.coe_ne_bot r).symm
+  rw [EReal.bot_add]
+  exact (EReal.coe_ne_bot r).symm
 
 /-- The Moreau envelope of a closed proper convex function is never `+∞`. Both infima in the
 decomposition are real, since their sum is. -/
@@ -276,30 +276,30 @@ theorem infConv_conj_quadFn_ne_top (hf : ClosedProperConvexFn f) (z : E) :
     infConv (conj B f) (quadFn B) z ≠ ⊤ := by
   intro hc
   have h := moreau_add (B := B) hf z
-  rw [hc, _root_.EReal.add_top_of_ne_bot (infConv_quadFn_ne_bot (B := B) hf z), quadFn_apply] at h
-  exact absurd h (_root_.EReal.coe_ne_top _).symm
+  rw [hc, EReal.add_top_of_ne_bot (infConv_quadFn_ne_bot (B := B) hf z), quadFn_apply] at h
+  exact absurd h (EReal.coe_ne_top _).symm
 
 /-- The dual Moreau envelope never takes `-∞`. -/
 theorem infConv_conj_quadFn_ne_bot (hf : ClosedProperConvexFn f) (z : E) :
     infConv (conj B f) (quadFn B) z ≠ ⊥ := by
   intro hc
   have h := moreau_add (B := B) hf z
-  rw [hc, _root_.EReal.add_bot, quadFn_apply] at h
-  exact absurd h (_root_.EReal.coe_ne_bot _).symm
+  rw [hc, EReal.add_bot, quadFn_apply] at h
+  exact absurd h (EReal.coe_ne_bot _).symm
 
 private theorem eq_coe_of_add_coe_eq_coe {S : EReal} {k m : ℝ}
     (h : S + (k : EReal) = (m : EReal)) : S = ((m - k : ℝ) : EReal) := by
   induction S with
   | bot =>
-      rw [_root_.EReal.bot_add] at h
-      exact absurd h.symm (_root_.EReal.coe_ne_bot m)
+      rw [EReal.bot_add] at h
+      exact absurd h.symm (EReal.coe_ne_bot m)
   | coe s =>
-      rw [← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at h
-      rw [_root_.EReal.coe_eq_coe_iff]
+      rw [← EReal.coe_add, EReal.coe_eq_coe_iff] at h
+      rw [EReal.coe_eq_coe_iff]
       linarith
   | top =>
-      rw [_root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot k)] at h
-      exact absurd h.symm (_root_.EReal.coe_ne_top m)
+      rw [EReal.top_add_of_ne_bot (EReal.coe_ne_bot k)] at h
+      exact absurd h.symm (EReal.coe_ne_top m)
 
 private theorem finite_of_add_eq_coe {A C : EReal} (hA : A ≠ ⊥) (hC : C ≠ ⊥) {m : ℝ}
     (h : A + C = (m : EReal)) : A ≠ ⊤ ∧ C ≠ ⊤ := by
@@ -327,9 +327,9 @@ theorem mem_subgradient_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
   have hreal : B y y / 2 + B x x / 2 = B x x / 2 + B y y / 2 := by ring
   have hkey : (f x + quadFn B y) + (conj B f y + quadFn B x)
       = (f x + conj B f y) + ((B x x / 2 + B y y / 2 : ℝ) : EReal) := by
-    rw [add_add_add_comm, quadFn_apply, quadFn_apply, ← _root_.EReal.coe_add, hreal]
+    rw [add_add_add_comm, quadFn_apply, quadFn_apply, ← EReal.coe_add, hreal]
   have hwz : ((B x y : ℝ) : EReal) + ((B x x / 2 + B y y / 2 : ℝ) : EReal) = quadFn B z := by
-    rw [← _root_.EReal.coe_add, quadFn_apply, ← hz, _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_add, quadFn_apply, ← hz, EReal.coe_eq_coe_iff]
     have h := self_pairing_add (B := B) x y
     linarith
   constructor
@@ -347,30 +347,30 @@ theorem mem_subgradient_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
     have hAb : f x + quadFn B y ≠ ⊥ := by
       intro hcon
       rw [hcon, le_bot_iff, hp] at hPle
-      exact absurd hPle (_root_.EReal.coe_ne_bot p)
+      exact absurd hPle (EReal.coe_ne_bot p)
     have hCb : conj B f y + quadFn B x ≠ ⊥ := by
       intro hcon
       rw [hcon, le_bot_iff, hq] at hDle
-      exact absurd hDle (_root_.EReal.coe_ne_bot q)
+      exact absurd hDle (EReal.coe_ne_bot q)
     obtain ⟨hAt, hCt⟩ := finite_of_add_eq_coe hAb hCb
-      (m := p + q) (by rw [hsum, hp, hq, ← _root_.EReal.coe_add])
+      (m := p + q) (by rw [hsum, hp, hq, ← EReal.coe_add])
     obtain ⟨a, ha⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hAb (lt_top_iff_ne_top.2 hAt)
     obtain ⟨c, hcc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hCb (lt_top_iff_ne_top.2 hCt)
-    rw [hp, ha, _root_.EReal.coe_le_coe_iff] at hPle
-    rw [hq, hcc, _root_.EReal.coe_le_coe_iff] at hDle
-    rw [ha, hcc, hp, hq, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-      _root_.EReal.coe_eq_coe_iff] at hsum
+    rw [hp, ha, EReal.coe_le_coe_iff] at hPle
+    rw [hq, hcc, EReal.coe_le_coe_iff] at hDle
+    rw [ha, hcc, hp, hq, ← EReal.coe_add, ← EReal.coe_add,
+      EReal.coe_eq_coe_iff] at hsum
     refine ⟨?_, ?_⟩
-    · rw [ha, hp, _root_.EReal.coe_eq_coe_iff]
+    · rw [ha, hp, EReal.coe_eq_coe_iff]
       linarith
-    · rw [hcc, hq, _root_.EReal.coe_eq_coe_iff]
+    · rw [hcc, hq, EReal.coe_eq_coe_iff]
       linarith
   · rintro ⟨h1, h2⟩
     have hsum : (f x + conj B f y) + ((B x x / 2 + B y y / 2 : ℝ) : EReal)
         = ((B z z / 2 : ℝ) : EReal) := by
       rw [← hkey, h1, h2, moreau_add hf z, quadFn_apply]
     rw [hf.proper.mem_subgradient_iff_add_conj_eq, eq_coe_of_add_coe_eq_coe hsum,
-      _root_.EReal.coe_eq_coe_iff, ← hz]
+      EReal.coe_eq_coe_iff, ← hz]
     have h := self_pairing_add (B := B) x y
     linarith
 

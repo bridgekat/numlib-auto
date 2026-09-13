@@ -445,7 +445,7 @@ theorem concaveAdjointBifun_eq_conj_concaveBracket (Bu : U →ₗ[ℝ] V →ₗ[
     EReal.iSup_add_coe]
   refine iSup_congr fun v => ?_
   rw [neg_coe_sub', add_comm (((-(Bu u v) : ℝ) : EReal)) (G y v), add_assoc,
-    ← _root_.EReal.coe_add]
+    ← EReal.coe_add]
   congr 2
   ring
 
@@ -504,7 +504,7 @@ theorem adjointBifun_eq_concaveConj_bracket (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     exact iInf_congr fun x => by rw [neg_coe_sub']
   rw [hneg]
   refine iInf_congr fun x => ?_
-  rw [add_comm (((-(Bx x y) : ℝ) : EReal)) (F u x), add_assoc, ← _root_.EReal.coe_add]
+  rw [add_comm (((-(Bx x y) : ℝ) : EReal)) (F u x), add_assoc, ← EReal.coe_add]
   congr 2
   ring
 

@@ -57,7 +57,7 @@ theorem comp_add_sub_pairing_eq_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (h
     (fun x => h (z + x) - ((B x z' : ℝ) : EReal))
       = fun x => h (z + x) + ((-(B x z') : ℝ) : EReal) := by
   funext x
-  rw [_root_.EReal.coe_neg, ← sub_eq_add_neg]
+  rw [EReal.coe_neg, ← sub_eq_add_neg]
 
 /-- `f` is convex: a translate of `h` plus a linear term. -/
 theorem convexFn_comp_add_sub_pairing (hh : ConvexFn h) (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (z : E) (z' : F) :
@@ -73,7 +73,7 @@ theorem exists_comp_add_sub_pairing_eq_coe (hp : Proper h) (hdom : dom h = univ)
     ∃ r : ℝ, h (z + x) - ((B x z' : ℝ) : EReal) = (r : EReal) := by
   obtain ⟨p, hp'⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot (z + x))
     (by rw [← mem_dom, hdom]; trivial)
-  exact ⟨p - B x z', by rw [hp', ← _root_.EReal.coe_sub]⟩
+  exact ⟨p - B x z', by rw [hp', ← EReal.coe_sub]⟩
 
 /-- `f` is proper whenever `h` is finite everywhere. -/
 theorem proper_comp_add_sub_pairing (hp : Proper h) (hdom : dom h = univ)
@@ -82,10 +82,10 @@ theorem proper_comp_add_sub_pairing (hp : Proper h) (hdom : dom h = univ)
   refine ⟨⟨0, ?_⟩, fun x => ?_⟩
   · obtain ⟨r, hr⟩ := exists_comp_add_sub_pairing_eq_coe hp hdom B z z' 0
     rw [mem_dom, hr]
-    exact _root_.EReal.coe_lt_top r
+    exact EReal.coe_lt_top r
   · obtain ⟨r, hr⟩ := exists_comp_add_sub_pairing_eq_coe hp hdom B z z' x
     rw [hr]
-    exact _root_.EReal.coe_ne_bot r
+    exact EReal.coe_ne_bot r
 
 /-- `f` is finite everywhere whenever `h` is. -/
 theorem dom_comp_add_sub_pairing_eq_univ (hp : Proper h) (hdom : dom h = univ)
@@ -94,7 +94,7 @@ theorem dom_comp_add_sub_pairing_eq_univ (hp : Proper h) (hdom : dom h = univ)
   refine eq_univ_of_forall fun x => ?_
   obtain ⟨r, hr⟩ := exists_comp_add_sub_pairing_eq_coe hp hdom B z z' x
   rw [mem_dom, hr]
-  exact _root_.EReal.coe_lt_top r
+  exact EReal.coe_lt_top r
 
 /-- `f*` is the dual objective shifted down by the constant `⟨z, z*⟩`, with the two subtractions
 collected into a single real summand. -/
@@ -102,7 +102,7 @@ theorem conj_comp_add_sub_pairing_eq_add_coe (B : E →ₗ[ℝ] F →ₗ[ℝ] �
     (z' : F) (w : F) :
     conj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal)) w
       = (conj B h (z' + w) - ((B z w : ℝ) : EReal)) + ((-(B z z') : ℝ) : EReal) := by
-  rw [conj_comp_add_sub_pairing, _root_.EReal.coe_neg, ← sub_eq_add_neg]
+  rw [conj_comp_add_sub_pairing, EReal.coe_neg, ← sub_eq_add_neg]
 
 /-- The infimum of `f*` over `K*` is the dual infimum for `h` shifted down by `⟨z, z*⟩`; the shift
 is a real constant, so it slides out of the infimum. -/
@@ -138,7 +138,7 @@ theorem exists_conj_comp_add_sub_pairing_eq_coe (hcof : Cofinite h) (z : E) (z' 
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
     (conj_ne_bot hcof.proper.dom_nonempty (z' + w))
     (by rw [← mem_dom, dom_conj_eq_univ_of_cofinite (B := B) hcof]; trivial)
-  exact ⟨s - B z w, by rw [hs, ← _root_.EReal.coe_sub]⟩
+  exact ⟨s - B z w, by rw [hs, ← EReal.coe_sub]⟩
 
 omit [FiniteDimensional ℝ E] in
 /-- `f*` is finite everywhere, because the conjugate of a co-finite function is. -/
@@ -146,8 +146,8 @@ theorem dom_conj_comp_add_sub_pairing_eq_univ (hcof : Cofinite h) (z : E) (z' : 
     dom (conj B (fun x => h (z + x) - ((B x z' : ℝ) : EReal))) = univ := by
   refine eq_univ_of_forall fun w => ?_
   obtain ⟨r, hr⟩ := exists_conj_comp_add_sub_pairing_eq_coe (B := B) hcof z z' w
-  rw [mem_dom, conj_comp_add_sub_pairing_eq_add_coe, hr, ← _root_.EReal.coe_add]
-  exact _root_.EReal.coe_lt_top _
+  rw [mem_dom, conj_comp_add_sub_pairing_eq_add_coe, hr, ← EReal.coe_add]
+  exact EReal.coe_lt_top _
 
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
 /-- `f` is finite everywhere, hence continuous, so it adds exactly to `δ(·|K)`: the constraint
@@ -208,12 +208,12 @@ theorem iInf_mem_neg_polarCone_conj_ne_bot (hcof : Cofinite h) (hdom : dom h = u
   intro hc
   have hex := isExactSum_comp_add_sub_pairing_indicatorFn (B := B) hcof hdom hconv ⟨x₀, hx₀⟩ z z'
   have hP := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK ⟨x₀, hx₀⟩
-  rw [hc, _root_.EReal.neg_bot] at hP
+  rw [hc, EReal.neg_bot] at hP
   obtain ⟨r, hr⟩ := exists_comp_add_sub_pairing_eq_coe hcof.proper hdom B z z' x₀
   have hle : (⨅ x ∈ K, (h (z + x) - ((B x z' : ℝ) : EReal)))
       ≤ h (z + x₀) - ((B x₀ z' : ℝ) : EReal) := iInf₂_le x₀ hx₀
   rw [hP, hr] at hle
-  exact _root_.EReal.coe_ne_top r (top_le_iff.1 hle)
+  exact EReal.coe_ne_top r (top_le_iff.1 hle)
 
 /-- **Cone duality.** For `h` convex, finite everywhere and co-finite and `K` a nonempty convex
 cone, the primal infimum over `K` and the dual infimum over `K* = -K°` add to `⟨z, z*⟩`. Closedness
@@ -236,7 +236,7 @@ theorem iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing (hcof : Cofinite h) (hdom
       = ((⨅ x ∈ K, (h (z + x) - ((B x z' : ℝ) : EReal)))
           + (⨅ w ∈ -(polarCone B K), (conj B h (z' + w) - ((B z w : ℝ) : EReal)))
           + ((-(B z z') : ℝ) : EReal)) + ((B z z' : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_neg, ← sub_eq_add_neg, _root_.EReal.sub_add_cancel]
+    rw [EReal.coe_neg, ← sub_eq_add_neg, EReal.sub_add_cancel]
   rw [hback, hzero, zero_add]
 
 omit [FiniteDimensional ℝ F] [IsCompatiblePairing B.flip] in
@@ -270,8 +270,8 @@ theorem exists_iInf_mem_eq_coe_of_cofinite (hcof : Cofinite h) (hdom : dom h = u
     exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite (B := B) hcof hdom hconv hK hne z z'
   have hex := isExactSum_comp_add_sub_pairing_indicatorFn (B := B) hcof hdom hconv hne z z'
   have hP := iInf_mem_eq_neg_iInf_mem_neg_polarCone hex hK hne
-  rw [iInf_mem_neg_polarCone_conj_eq, hr, ← _root_.EReal.coe_add] at hP
-  exact ⟨-(r + -(B z z')), by rw [hP, ← _root_.EReal.coe_neg]⟩
+  rw [iInf_mem_neg_polarCone_conj_eq, hr, ← EReal.coe_add] at hP
+  exact ⟨-(r + -(B z z')), by rw [hP, ← EReal.coe_neg]⟩
 
 /-- The primal infimum is attained; this is where co-finiteness of `h` and closedness of `K` are
 used. -/

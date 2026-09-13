@@ -1,22 +1,7 @@
 namespace = 'EReal'
 
 [[node]]
-id = 'le_coe_of_forall_lt'
-
-[[node]]
-id = 'exists_real_btwn_of_lt_coe'
-
-[[node]]
-id = 'coe_mul_coe'
-
-[[node]]
-id = 'eq_bot_of_forall_le_coe'
-
-[[node]]
 id = 'exists_coe_of_ne_bot_of_lt_top'
-
-[[node]]
-id = 'neg_add_of_ne_top'
 
 [[node]]
 id = 'coe_mul_ne_top'
@@ -29,9 +14,6 @@ id = 'coe_mul_le_coe_mul_iff'
 
 [[node]]
 id = 'le_zero_of_forall_le_pos'
-
-[[node]]
-id = 'coe_mul_add_coe'
 
 [[node]]
 id = 'coe_mul_add_coe_le_coe_mul_iff'
@@ -109,13 +91,19 @@ id = 'neg_coe_sub'
 id = 'neg_sub_comm'
 
 [[node]]
-id = "neg_sub_comm'"
-
-[[node]]
 id = 'coe_mul_iSup'
 
 [[node]]
 id = 'iSup_add_coe'
+
+[[node]]
+id = 'iSup_add'
+
+[[node]]
+id = 'add_iSup'
+
+[[node]]
+id = 'sub_iInf'
 
 [[node]]
 id = 'iSup_sub_of_ne_bot'

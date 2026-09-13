@@ -131,13 +131,11 @@ theorem biInf_coe_le_coe_iff (hS : UpClosed S) (hcl : IsClosed S) (c : ℝ) :
 theorem zero_le_biInf_coe (h : ∀ a ∈ S, (0 : ℝ) ≤ a) : 0 ≤ ⨅ a ∈ S, (a : EReal) :=
   le_iInf₂ fun a ha => EReal.coe_nonneg.2 (h a ha)
 
-/-- If `z ≤ d` for every real `d` above `r`, then `z ≤ r`. The `≤` companion of
-`EReal.le_coe_of_forall_lt`. -/
+/-- If `z ≤ d` for every real `d` above `r`, then `z ≤ r`: Mathlib's
+`EReal.le_of_forall_lt_iff_le` with the hypothesis stated in `ℝ`. -/
 theorem le_coe_of_forall_gt_le {z : EReal} {r : ℝ} (h : ∀ d : ℝ, r < d → z ≤ (d : EReal)) :
-    z ≤ (r : EReal) := by
-  refine EReal.le_coe_of_forall_lt fun q hq => ?_
-  obtain ⟨d, hrd, hdq⟩ := exists_between hq
-  exact lt_of_le_of_lt (h d hrd) (EReal.coe_lt_coe_iff.2 hdq)
+    z ≤ (r : EReal) :=
+  EReal.le_of_forall_lt_iff_le.1 fun d hd => h d (EReal.coe_lt_coe_iff.1 hd)
 
 end UpClosed
 
@@ -203,7 +201,7 @@ theorem gaugeFn_smul_le (ht : 0 < t) (C : Set E) (x : E) :
   refine le_iInf fun a => ?_
   rw [EReal.coe_mul_iInf ht]
   refine le_iInf fun ha => ?_
-  rw [EReal.coe_mul_coe]
+  rw [← EReal.coe_mul]
   obtain ⟨z, hz, hzx⟩ := ha.2
   refine gaugeFn_le_of_mem_smul (mul_nonneg ht.le ha.1) ⟨z, hz, ?_⟩
   change (t * a) • z = t • x
@@ -217,7 +215,7 @@ theorem posHomogeneous_gaugeFn (C : Set E) : PosHomogeneous (gaugeFn C) := by
   rw [inv_smul_smul₀ ht.ne'] at h
   have h2 : (t : EReal) * gaugeFn C x ≤ (t : EReal) * ((t⁻¹ : ℝ) * gaugeFn C (t • x)) :=
     mul_le_mul_of_nonneg_left h (EReal.coe_nonneg.2 ht.le)
-  rwa [← mul_assoc, EReal.coe_mul_coe, mul_inv_cancel₀ ht.ne', EReal.coe_one, one_mul] at h2
+  rwa [← mul_assoc, ← EReal.coe_mul, mul_inv_cancel₀ ht.ne', EReal.coe_one, one_mul] at h2
 
 theorem convexFn_gaugeFn (hC : Convex ℝ C) : ConvexFn (gaugeFn C) := by
   refine convexFn_of_epi_combo fun x y μ ν hx hy a b ha hb hab => ?_
@@ -229,7 +227,8 @@ theorem convexFn_gaugeFn (hC : Convex ℝ C) : ConvexFn (gaugeFn C) := by
   · have ha1 : a = 1 := by linarith
     subst ha1
     simpa using hx
-  refine EReal.le_coe_of_forall_lt fun q hq => ?_
+  refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   set ε : ℝ := q - (a * μ + b * ν) with hε
   have hε0 : 0 < ε := by simp only [hε]; linarith
   have hxs : gaugeFn C x < ((μ + ε : ℝ) : EReal) :=
@@ -324,7 +323,7 @@ theorem gaugeFn_level_one (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0 
     · rw [hr]
       refine gaugeFn_le_of_mem_smul hr0 ⟨r⁻¹ • x, ?_, smul_inv_smul₀ hrpos.ne' x⟩
       change k (r⁻¹ • x) ≤ 1
-      rw [hph r⁻¹ (inv_pos.2 hrpos) x, hr, EReal.coe_mul_coe, inv_mul_cancel₀ hrpos.ne']
+      rw [hph r⁻¹ (inv_pos.2 hrpos) x, hr, ← EReal.coe_mul, inv_mul_cancel₀ hrpos.ne']
       exact le_rfl
   · rw [gaugeFn_apply]
     refine le_iInf₂ fun a ha => ?_
@@ -447,7 +446,7 @@ theorem lowerSemicontinuous_gaugeFn (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (hc
   intro z
   have hset : gaugeFn C ⁻¹' Iic z = {x : E | gaugeFn C x ≤ z} := rfl
   rw [hset]
-  induction z using _root_.EReal.rec with
+  induction z using EReal.rec with
   | bot =>
     have : {x : E | gaugeFn C x ≤ (⊥ : EReal)} = ∅ := by
       ext x
@@ -517,7 +516,7 @@ theorem gaugeFn_polarSet (h0 : (0 : E) ∈ C) : gaugeFn (polarSet B C) = support
   funext y
   have hsupp0 : (0 : EReal) ≤ supportFn B C y := by
     have h := le_supportFn (B := B) h0 y
-    rwa [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+    rwa [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
   refine le_antisymm ?_ ?_
   · by_cases htop : supportFn B C y = ⊤
     · rw [htop]; exact le_top
@@ -770,14 +769,14 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 `[0, 1]`: `f (t • x) ≤ t * r` whenever `f x ≤ r`. -/
 theorem ConvexFn.smul_le_coe (hconv : ConvexFn f) (h0 : f 0 ≤ 0) {t r : ℝ} (ht0 : 0 ≤ t)
     (ht1 : t ≤ 1) {x : E} (hx : f x ≤ (r : EReal)) : f (t • x) ≤ ((t * r : ℝ) : EReal) := by
-  have h0' : f 0 ≤ ((0 : ℝ) : EReal) := by rwa [_root_.EReal.coe_zero]
+  have h0' : f 0 ≤ ((0 : ℝ) : EReal) := by rwa [EReal.coe_zero]
   have h := hconv.epi_combo hx h0' (a := t) (b := 1 - t) ht0 (by linarith) (by ring)
   simpa using h
 
 /-- The conjugate of a function that is nonpositive at the origin is nonnegative. -/
 theorem zero_le_conj (h0 : f 0 ≤ 0) (y : F) : 0 ≤ conj B f y := by
   refine le_trans ?_ (sub_le_conj B f 0 y)
-  rw [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero, zero_sub, _root_.EReal.le_neg,
+  rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_sub, EReal.le_neg,
     neg_zero]
   exact h0
 
@@ -787,7 +786,7 @@ theorem conj_zero_eq_zero (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) : conj B f 0
   refine le_antisymm ?_ (zero_le_conj h0 0)
   rw [conj_apply]
   refine iSup_le fun x => ?_
-  rw [map_zero, _root_.EReal.coe_zero, zero_sub, _root_.EReal.neg_le, neg_zero]
+  rw [map_zero, EReal.coe_zero, zero_sub, EReal.neg_le, neg_zero]
   exact hnn x
 
 /-- **The first inclusion** (in scaled form): `α • {f ≤ α}° ⊆ {f* ≤ α}`.
@@ -807,7 +806,7 @@ theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f
   · have h1 : B x w ≤ 1 := hw x hfx
     have h2 : B x (α • w) ≤ α := by rw [hBx]; nlinarith
     calc ((B x (α • w) : ℝ) : EReal) - f x
-        ≤ ((α : ℝ) : EReal) - 0 := _root_.EReal.sub_le_sub (EReal.coe_le_coe_iff.2 h2) (hnn x)
+        ≤ ((α : ℝ) : EReal) - 0 := EReal.sub_le_sub (EReal.coe_le_coe_iff.2 h2) (hnn x)
       _ = (α : EReal) := by rw [sub_zero]
   · rw [not_le] at hfx
     rcases eq_or_lt_of_le (le_top (a := f x)) with htop | hlt
@@ -830,9 +829,9 @@ theorem smul_polarSet_setOf_le_subset (hconv : ConvexFn f) (hnn : ∀ x, 0 ≤ f
       exact mul_le_of_le_one_right hr0.le h1
     rw [hr]
     calc ((B x (α • w) : ℝ) : EReal) - (r : EReal)
-        ≤ ((r : ℝ) : EReal) - (r : EReal) := _root_.EReal.sub_le_sub
+        ≤ ((r : ℝ) : EReal) - (r : EReal) := EReal.sub_le_sub
           (EReal.coe_le_coe_iff.2 h2) le_rfl
-      _ = 0 := by rw [← _root_.EReal.coe_sub, sub_self, _root_.EReal.coe_zero]
+      _ = 0 := by rw [← EReal.coe_sub, sub_self, EReal.coe_zero]
       _ ≤ (α : EReal) := EReal.coe_nonneg.2 hα.le
 
 /-- **The second inclusion** (in scaled form): `{f* ≤ α} ⊆ (2α) • {f ≤ α}°`. This half is
@@ -920,7 +919,7 @@ theorem polarGauge_eq_supportFn (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k
   funext y
   have hs0 : (0 : EReal) ≤ supportFn B {x : E | k x ≤ 1} y := by
     have h := le_supportFn (B := B) h0D y
-    rwa [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+    rwa [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
   refine le_antisymm ?_ ?_
   · by_cases htop : supportFn B {x : E | k x ≤ 1} y = ⊤
     · rw [htop]; exact le_top
@@ -933,13 +932,13 @@ theorem polarGauge_eq_supportFn (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k
     have hd0 : (0 : ℝ) < d := lt_of_le_of_lt hr0 hd
     refine polarGauge_le_of_forall hd0.le fun x => ?_
     rcases eq_or_lt_of_le (le_top (a := k x)) with htopx | hltx
-    · rw [htopx, _root_.EReal.coe_mul_top_of_pos hd0]
+    · rw [htopx, EReal.coe_mul_top_of_pos hd0]
       exact le_top
     obtain ⟨sx, hsx⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
       (fun h => by simpa [h] using hnn x) hltx
     have hsx0 : (0 : ℝ) ≤ sx := by
       have := hnn x; rw [hsx] at this; exact EReal.coe_nonneg.1 this
-    rw [hsx, EReal.coe_mul_coe, EReal.coe_le_coe_iff]
+    rw [hsx, ← EReal.coe_mul, EReal.coe_le_coe_iff]
     rcases eq_or_lt_of_le hsx0 with hzero | hpos
     · have hray : ∀ t : ℝ, 0 < t → t * B x y ≤ r := by
         intro t ht
@@ -958,7 +957,7 @@ theorem polarGauge_eq_supportFn (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k
       rw [← hzero]
       nlinarith
     · have hmem : k (sx⁻¹ • x) ≤ 1 := by
-        rw [hph _ (inv_pos.2 hpos) x, hsx, EReal.coe_mul_coe, inv_mul_cancel₀ hpos.ne']
+        rw [hph _ (inv_pos.2 hpos) x, hsx, ← EReal.coe_mul, inv_mul_cancel₀ hpos.ne']
         exact le_rfl
       have hb := hbound _ hmem
       rw [map_smul, LinearMap.smul_apply, smul_eq_mul, inv_mul_le_iff₀ hpos] at hb
@@ -981,7 +980,7 @@ theorem isGauge_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) (h0
   refine ⟨fun y => ?_, posHomogeneous_supportFn B _, convexFn_supportFn B _,
     supportFn_zero ⟨0, h0D⟩⟩
   have h := le_supportFn (B := B) h0D y
-  rwa [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero] at h
+  rwa [map_zero, LinearMap.zero_apply, EReal.coe_zero] at h
 
 /-- The polar of a gauge is a **closed** gauge. -/
 theorem closedFn_polarGauge [TopologicalSpace F] [IsTopologicalAddGroup F]
@@ -998,7 +997,7 @@ theorem polarSet_setOf_gaugeFn_le_one (C : Set E) :
     refine le_of_forall_gt_imp_ge_of_dense fun q hq => ?_
     have hlt : gaugeFn C x < ((q : ℝ) : EReal) := by
       refine lt_of_le_of_lt hx' ?_
-      rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [_root_.EReal.coe_one]]
+      rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [EReal.coe_one]]
       exact EReal.coe_lt_coe_iff.2 hq
     obtain ⟨a, ha0, ⟨z, hz, hza⟩, halt⟩ := gaugeFn_lt_iff.1 hlt
     have haq : a < q := EReal.coe_lt_coe_iff.1 halt
@@ -1163,7 +1162,7 @@ theorem polarFn_nonneg (h0 : f 0 ≤ 0) (y : F) : 0 ≤ polarFn B f y := by
     intro ν hν
     have h0' : f 0 ≤ ((ν : ℝ) : EReal) := by
       refine le_trans h0 ?_
-      rw [← _root_.EReal.coe_zero, EReal.coe_le_coe_iff]
+      rw [← EReal.coe_zero, EReal.coe_le_coe_iff]
       exact hν
     have h := ha 0 ν h0'
     rw [map_zero, LinearMap.zero_apply] at h
@@ -1181,7 +1180,7 @@ theorem polarFn_nonneg (h0 : f 0 ≤ 0) (y : F) : 0 ≤ polarFn B f y := by
     intro x ν _
     simp
   have h2 := iInf₂_le (f := fun (μ : ℝ) (_ : μ ∈ polarFnSet B f 0) => (μ : EReal)) (0 : ℝ) h
-  rw [polarFn_apply, ← _root_.EReal.coe_zero]
+  rw [polarFn_apply, ← EReal.coe_zero]
   exact h2
 
 /-- **The original formula for the polar**, recovered from the epigraph form: `f°(y)` is the
@@ -1202,22 +1201,22 @@ theorem polarFn_apply_eq (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 ≤ 0) (y : F) :
     have hle : (μ : EReal) * f x ≤ (μ : EReal) * (ν : EReal) :=
       mul_le_mul_of_nonneg_left hν (EReal.coe_nonneg.2 hμ.1)
     have := le_trans (hμ.2 x) (add_le_add (le_refl (1 : EReal)) hle)
-    rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [_root_.EReal.coe_one],
-      EReal.coe_mul_coe, ← _root_.EReal.coe_add, EReal.coe_le_coe_iff] at this
+    rw [show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [EReal.coe_one],
+      ← EReal.coe_mul, ← EReal.coe_add, EReal.coe_le_coe_iff] at this
     nlinarith
   have hpos : ∀ μ : ℝ, 0 < μ → μ ∈ polarFnSet B f y → μ ∈ T := by
     intro μ hμ0 hμ
     refine ⟨hμ0.le, fun x => ?_⟩
     rcases eq_or_lt_of_le (le_top (a := f x)) with htop | hlt
-    · rw [htop, _root_.EReal.coe_mul_top_of_pos hμ0,
-        show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [_root_.EReal.coe_one],
-        _root_.EReal.coe_add_top]
+    · rw [htop, EReal.coe_mul_top_of_pos hμ0,
+        show ((1 : EReal)) = ((1 : ℝ) : EReal) by rw [EReal.coe_one],
+        EReal.coe_add_top]
       exact le_top
     obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
       (fun h => by simpa [h] using hnn x) hlt
     have := hμ x s (le_of_eq hs)
-    rw [hs, EReal.coe_mul_coe, show ((1 : EReal)) = ((1 : ℝ) : EReal) by
-      rw [_root_.EReal.coe_one], ← _root_.EReal.coe_add, EReal.coe_le_coe_iff]
+    rw [hs, ← EReal.coe_mul, show ((1 : EReal)) = ((1 : ℝ) : EReal) by
+      rw [EReal.coe_one], ← EReal.coe_add, EReal.coe_le_coe_iff]
     nlinarith
   refine le_antisymm (le_iInf₂ fun μ hμ => iInf₂_le μ (hTS hμ)) ?_
   refine le_iInf₂ fun μ hμ => ?_
@@ -1469,7 +1468,7 @@ theorem polarFn_eq_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) 
     refine (polarFn_le_coe_iff hnn).2 fun x ν hν => ?_
     have h1 : ((B x y : ℝ) : EReal) ≤ ((μ * ν : ℝ) : EReal) := by
       refine le_trans (hμ.2 x) ?_
-      rw [← EReal.coe_mul_coe]
+      rw [EReal.coe_mul]
       exact mul_le_mul_of_nonneg_left hν (EReal.coe_nonneg.2 hμ.1)
     rw [EReal.coe_le_coe_iff] at h1
     linarith [mul_comm μ ν]
@@ -1484,17 +1483,17 @@ theorem polarFn_eq_polarGauge (hnn : ∀ x, 0 ≤ k x) (hph : PosHomogeneous k) 
     have hdmem : d ∈ polarFnSet B k y := upClosed_polarFnSet hnn y hμ hd.le
     refine polarGauge_le_of_forall hd0.le fun x => ?_
     rcases eq_or_lt_of_le (le_top (a := k x)) with htopx | hltx
-    · rw [htopx, _root_.EReal.coe_mul_top_of_pos hd0]
+    · rw [htopx, EReal.coe_mul_top_of_pos hd0]
       exact le_top
     obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top
       (fun h => by simpa [h] using hnn x) hltx
-    rw [hc, EReal.coe_mul_coe, EReal.coe_le_coe_iff]
+    rw [hc, ← EReal.coe_mul, EReal.coe_le_coe_iff]
     by_contra hcon
     rw [not_le] at hcon
     have ha0 : (0 : ℝ) < B x y - d * c := by linarith
     have ht : (0 : ℝ) < 2 / (B x y - d * c) := by positivity
     have hkt : k ((2 / (B x y - d * c)) • x) ≤ (((2 / (B x y - d * c)) * c : ℝ) : EReal) :=
-      le_of_eq (by rw [hph _ ht x, hc, EReal.coe_mul_coe])
+      le_of_eq (by rw [hph _ ht x, hc, ← EReal.coe_mul])
     have hb := hdmem _ _ hkt
     rw [map_smul, LinearMap.smul_apply, smul_eq_mul] at hb
     have hexp : 2 / (B x y - d * c) * B x y - 2 / (B x y - d * c) * c * d
@@ -1658,17 +1657,17 @@ theorem eq_of_forall_pos_le_iff {A B : EReal} (hA : 0 ≤ A) (hB : 0 ≤ B)
     (h : ∀ ν : ℝ, 0 < ν → (A ≤ (ν : EReal) ↔ B ≤ (ν : EReal))) : A = B := by
   refine le_antisymm ?_ ?_
   · by_contra hcon
-    obtain ⟨ν, hBν, hνA⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+    obtain ⟨ν, hBν, hνA⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
     have hν0 : (0 : ℝ) < ν := by
       have hlt : (0 : EReal) < (ν : EReal) := lt_of_le_of_lt hB hBν
-      rw [← _root_.EReal.coe_zero, EReal.coe_lt_coe_iff] at hlt
+      rw [← EReal.coe_zero, EReal.coe_lt_coe_iff] at hlt
       exact hlt
     exact absurd ((h ν hν0).2 hBν.le) (not_le.2 hνA)
   · by_contra hcon
-    obtain ⟨ν, hAν, hνB⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+    obtain ⟨ν, hAν, hνB⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
     have hν0 : (0 : ℝ) < ν := by
       have hlt : (0 : EReal) < (ν : EReal) := lt_of_le_of_lt hA hAν
-      rw [← _root_.EReal.coe_zero, EReal.coe_lt_coe_iff] at hlt
+      rw [← EReal.coe_zero, EReal.coe_lt_coe_iff] at hlt
       exact hlt
     exact absurd ((h ν hν0).1 hAν.le) (not_le.2 hνB)
 
@@ -1778,17 +1777,17 @@ theorem conj_le_coe_iff_epi (hnn : ∀ x, 0 ≤ f x) {ν : ℝ} :
   constructor
   · intro h x α hα
     have h2 : ((B x y : ℝ) : EReal) - (α : EReal) ≤ ((B x y : ℝ) : EReal) - f x :=
-      _root_.EReal.sub_le_sub le_rfl hα
+      EReal.sub_le_sub le_rfl hα
     have h3 := le_trans h2 (h x)
-    rw [← _root_.EReal.coe_sub, EReal.coe_le_coe_iff] at h3
+    rw [← EReal.coe_sub, EReal.coe_le_coe_iff] at h3
     exact h3
   · intro h x
     rcases eq_or_lt_of_le (le_top (a := f x)) with htop | hlt
-    · rw [htop, _root_.EReal.sub_top]
+    · rw [htop, EReal.sub_top]
       exact bot_le
     obtain ⟨c, hc⟩ :=
       EReal.exists_coe_of_ne_bot_of_lt_top (fun hb => by simpa [hb] using hnn x) hlt
-    rw [hc, ← _root_.EReal.coe_sub, EReal.coe_le_coe_iff]
+    rw [hc, ← EReal.coe_sub, EReal.coe_le_coe_iff]
     exact h x c (le_of_eq hc)
 
 end ConjEpi
@@ -1958,13 +1957,13 @@ theorem gaugeFn_eq_zero_iff (hC : Convex ℝ C) (h0 : (0 : E) ∈ C) (x : E) :
     gaugeFn C x = 0 ↔ ∀ l : ℝ, 0 < l → l • x ∈ C := by
   constructor
   · intro h l hl
-    have hle : gaugeFn C x ≤ ((0 : ℝ) : EReal) := by rw [h, _root_.EReal.coe_zero]
+    have hle : gaugeFn C x ≤ ((0 : ℝ) : EReal) := by rw [h, EReal.coe_zero]
     rw [gaugeFn_le_coe_iff_forall_lt hC h0 le_rfl] at hle
     have hmem := hle l⁻¹ (inv_pos.2 hl)
     rwa [mem_smul_set_iff_inv_smul_mem₀ (inv_ne_zero hl.ne') C x, inv_inv] at hmem
   · intro h
     refine le_antisymm ?_ (gaugeFn_nonneg C x)
-    rw [← _root_.EReal.coe_zero, gaugeFn_le_coe_iff_forall_lt hC h0 le_rfl]
+    rw [← EReal.coe_zero, gaugeFn_le_coe_iff_forall_lt hC h0 le_rfl]
     intro d hd
     rw [mem_smul_set_iff_inv_smul_mem₀ hd.ne' C x]
     exact h d⁻¹ (inv_pos.2 hd)
@@ -1998,20 +1997,20 @@ theorem IsNorm.level_one (hk : IsNorm k) :
     have hmax : (0 : ℝ) < max c 1 := lt_of_lt_of_le zero_lt_one (le_max_right c 1)
     rw [mem_smul_set_iff_inv_smul_mem₀ hmax.ne']
     change k ((max c 1)⁻¹ • x) ≤ 1
-    rw [hk.posHomogeneous _ (inv_pos.2 hmax) x, hc, ← _root_.EReal.coe_one,
-      EReal.coe_mul_coe, EReal.coe_le_coe_iff, inv_mul_le_iff₀ hmax, mul_one]
+    rw [hk.posHomogeneous _ (inv_pos.2 hmax) x, hc, ← EReal.coe_one,
+      ← EReal.coe_mul, EReal.coe_le_coe_iff, inv_mul_le_iff₀ hmax, mul_one]
     exact le_max_left c 1
   · intro x hx
     obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hk.toIsGauge.ne_bot x)
       (lt_top_iff_ne_top.2 (hk.ne_top x))
     have hcpos : (0 : ℝ) < c := by
-      have := hk.pos x hx; rw [hc, ← _root_.EReal.coe_zero, EReal.coe_lt_coe_iff] at this
+      have := hk.pos x hx; rw [hc, ← EReal.coe_zero, EReal.coe_lt_coe_iff] at this
       exact this
     refine ⟨2 / c, by positivity, ?_⟩
     intro hmem
     have hle : k ((2 / c) • x) ≤ 1 := hmem
-    rw [hk.posHomogeneous _ (by positivity) x, hc, ← _root_.EReal.coe_one,
-      EReal.coe_mul_coe, EReal.coe_le_coe_iff, div_mul_cancel₀ (2 : ℝ) hcpos.ne'] at hle
+    rw [hk.posHomogeneous _ (by positivity) x, hc, ← EReal.coe_one,
+      ← EReal.coe_mul, EReal.coe_le_coe_iff, div_mul_cancel₀ (2 : ℝ) hcpos.ne'] at hle
     linarith
 
 /-- **The norms are exactly the gauges of the symmetric convex sets that absorb every point and
@@ -2035,7 +2034,7 @@ unless it happens to be continuous, which in general it is not; that is the dist
 the only one. -/
 
 theorem IsNorm.coe_toReal (hk : IsNorm k) (x : E) : (((k x).toReal : ℝ) : EReal) = k x :=
-  _root_.EReal.coe_toReal (hk.ne_top x) (hk.toIsGauge.ne_bot x)
+  EReal.coe_toReal (hk.ne_top x) (hk.toIsGauge.ne_bot x)
 
 /-- **A norm is absolutely homogeneous**, not merely positively homogeneous: symmetry upgrades
 `k (a • x) = a * k x` for `a > 0` to `k (a • x) = |a| * k x` for every real `a`. -/
@@ -2064,12 +2063,12 @@ noncomputable def IsNorm.toSeminorm (hk : IsNorm k) : Seminorm ℝ E where
         hk.toIsGauge.ne_bot).1 hk.toIsGauge.convexFn x y
     have hcoe : (((k (x + y)).toReal : ℝ) : EReal)
         ≤ (((k x).toReal + (k y).toReal : ℝ) : EReal) := by
-      rw [hk.coe_toReal, _root_.EReal.coe_add, hk.coe_toReal, hk.coe_toReal]
+      rw [hk.coe_toReal, EReal.coe_add, hk.coe_toReal, hk.coe_toReal]
       exact hsub
     exact_mod_cast hcoe
   neg' x := by rw [hk.map_neg]
   smul' a x := by
-    rw [hk.apply_smul a x, _root_.EReal.toReal_mul, _root_.EReal.toReal_coe, Real.norm_eq_abs]
+    rw [hk.apply_smul a x, EReal.toReal_mul, EReal.toReal_coe, Real.norm_eq_abs]
 
 /-- The `Seminorm` really is `k`. -/
 @[simp] theorem IsNorm.coe_toSeminorm (hk : IsNorm k) (x : E) :

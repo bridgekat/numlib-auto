@@ -173,7 +173,7 @@ theorem posHomogeneous_iff_isCone_epi :
     ext p
     rw [Set.mem_smul_set_iff_inv_smul_mem₀ ha.ne']
     simp only [mem_epi, Prod.smul_fst, Prod.smul_snd, smul_eq_mul]
-    rw [hf a⁻¹ hainv, ← EReal.coe_mul_coe, EReal.coe_mul_le_coe_mul_iff hainv]
+    rw [hf a⁻¹ hainv, EReal.coe_mul, EReal.coe_mul_le_coe_mul_iff hainv]
   · intro hcone a ha x
     refine EReal.eq_of_forall_le_coe_iff fun r => ?_
     have hsmul : a • ((x, r / a) : E × ℝ) = ((a • x, r) : E × ℝ) := by
@@ -202,14 +202,14 @@ theorem posHomogeneous_indicatorFn {s : Set E} :
       by_contra hc
       have hax := h a ha (a⁻¹ • x)
       rw [smul_inv_smul₀ ha.ne', indicatorFn_of_mem hx, indicatorFn_of_notMem hc,
-        _root_.EReal.coe_mul_top_of_pos ha] at hax
+        EReal.coe_mul_top_of_pos ha] at hax
       exact absurd hax (by simp)
   · intro h a ha x
     by_cases hx : x ∈ s
     · rw [indicatorFn_of_mem hx, indicatorFn_of_mem ((smul_mem_iff_of_isCone h ha).2 hx), mul_zero]
     · rw [indicatorFn_of_notMem hx,
         indicatorFn_of_notMem fun hc => hx ((smul_mem_iff_of_isCone h ha).1 hc),
-        _root_.EReal.coe_mul_top_of_pos ha]
+        EReal.coe_mul_top_of_pos ha]
 
 /-! ### Convexity is subadditivity -/
 
@@ -222,21 +222,21 @@ theorem PosHomogeneous.convexFn_iff_subadditive (hf : PosHomogeneous f) (hbot : 
   constructor
   · intro hadd x y
     rcases eq_top_or_lt_top (f x) with hx | hx
-    · rw [hx, _root_.EReal.top_add_of_ne_bot (hbot y)]; exact le_top
+    · rw [hx, EReal.top_add_of_ne_bot (hbot y)]; exact le_top
     rcases eq_top_or_lt_top (f y) with hy | hy
-    · rw [hy, _root_.EReal.add_top_of_ne_bot (hbot x)]; exact le_top
+    · rw [hy, EReal.add_top_of_ne_bot (hbot x)]; exact le_top
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot x) hx
     obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot y) hy
     have hmem : ((x, p) + (y, q) : E × ℝ) ∈ epi f :=
       hadd _ (by simp [hp]) _ (by simp [hq])
     simp only [mem_epi, Prod.fst_add, Prod.snd_add] at hmem
-    rw [hp, hq, ← _root_.EReal.coe_add]
+    rw [hp, hq, ← EReal.coe_add]
     exact hmem
   · intro hsub p hp q hq
     simp only [mem_epi, Prod.fst_add, Prod.snd_add] at hp hq ⊢
     refine (hsub p.1 q.1).trans ?_
     calc f p.1 + f q.1 ≤ (p.2 : EReal) + (q.2 : EReal) := add_le_add hp hq
-      _ = ((p.2 + q.2 : ℝ) : EReal) := (_root_.EReal.coe_add _ _).symm
+      _ = ((p.2 + q.2 : ℝ) : EReal) := (EReal.coe_add _ _).symm
 
 /-! ### Finite combinations, and the value at `-x` -/
 
@@ -272,7 +272,7 @@ omit [Module ℝ E] in
 /-- Where a function with values in `(-∞, +∞]` is odd, it is finite. -/
 theorem ne_top_of_neg_eq (hbot : ∀ x, f x ≠ ⊥) {x : E} (h : f (-x) = -(f x)) : f x ≠ ⊤ := by
   intro htop
-  exact hbot (-x) (by rw [h, htop, _root_.EReal.neg_top])
+  exact hbot (-x) (by rw [h, htop, EReal.neg_top])
 
 /-- If a positively homogeneous convex function is odd anywhere, then it vanishes at the origin. -/
 theorem PosHomogeneous.map_zero_eq_zero (hf : PosHomogeneous f) (hconv : ConvexFn f)
@@ -282,8 +282,8 @@ theorem PosHomogeneous.map_zero_eq_zero (hf : PosHomogeneous f) (hconv : ConvexF
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot b)
     (lt_top_iff_ne_top.2 (ne_top_of_neg_eq hbot hb))
   have h := hsub b (-b)
-  rw [add_neg_cancel, hb, hr, ← _root_.EReal.coe_neg, ← _root_.EReal.coe_add, add_neg_cancel,
-    _root_.EReal.coe_zero] at h
+  rw [add_neg_cancel, hb, hr, ← EReal.coe_neg, ← EReal.coe_add, add_neg_cancel,
+    EReal.coe_zero] at h
   exact h
 
 /-- Since `-(f x) ≤ f (-x)` always holds, oddness at `x` is a single inequality. -/
@@ -298,8 +298,8 @@ theorem PosHomogeneous.map_smul_of_neg_eq (hf : PosHomogeneous f) (hconv : Conve
     f (c • x) = (c : EReal) * f x := by
   rcases lt_trichotomy c 0 with hc | rfl | hc
   · have hcx : (-c) • (-x) = c • x := by rw [neg_smul, smul_neg, neg_neg]
-    rw [← hcx, hf (-c) (neg_pos.2 hc) (-x), hx, _root_.EReal.coe_neg, neg_mul_neg]
-  · rw [zero_smul, hf.map_zero_eq_zero hconv hbot hx, _root_.EReal.coe_zero, zero_mul]
+    rw [← hcx, hf (-c) (neg_pos.2 hc) (-x), hx, EReal.coe_neg, neg_mul_neg]
+  · rw [zero_smul, hf.map_zero_eq_zero hconv hbot hx, EReal.coe_zero, zero_mul]
   · exact hf c hc x
 
 /-- At two points where a positively homogeneous convex function is odd, it is additive. -/
@@ -310,13 +310,13 @@ theorem PosHomogeneous.map_add_of_neg_eq (hf : PosHomogeneous f) (hconv : Convex
   refine le_antisymm (hsub x y) ?_
   have h1 : f (-(x + y)) ≤ -(f x + f y) := by
     rw [neg_add x y,
-      _root_.EReal.neg_add (Or.inl (hbot x)) (Or.inl (ne_top_of_neg_eq hbot hx))]
+      EReal.neg_add (Or.inl (hbot x)) (Or.inl (ne_top_of_neg_eq hbot hx))]
     calc f (-x + -y) ≤ f (-x) + f (-y) := hsub _ _
       _ = -(f x) + -(f y) := by rw [hx, hy]
   have h2 := hf.neg_le hconv hbot (-(x + y))
   rw [neg_neg] at h2
   calc f x + f y = -(-(f x + f y)) := (neg_neg _).symm
-    _ ≤ -f (-(x + y)) := by rwa [_root_.EReal.neg_le_neg_iff]
+    _ ≤ -f (-(x + y)) := by rwa [EReal.neg_le_neg_iff]
     _ ≤ f (x + y) := h2
 
 /-- Oddness of a positively homogeneous convex function is preserved by addition. -/
@@ -327,7 +327,7 @@ theorem PosHomogeneous.neg_eq_add (hf : PosHomogeneous f) (hconv : ConvexFn f)
   have hny : f (-(-y)) = -(f (-y)) := by rw [neg_neg, hy, neg_neg]
   rw [neg_add x y, hf.map_add_of_neg_eq hconv hbot hnx hny,
     hf.map_add_of_neg_eq hconv hbot hx hy, hx, hy,
-    _root_.EReal.neg_add (Or.inl (hbot x)) (Or.inl (ne_top_of_neg_eq hbot hx)),
+    EReal.neg_add (Or.inl (hbot x)) (Or.inl (ne_top_of_neg_eq hbot hx)),
     sub_eq_add_neg]
 
 /-- Oddness of a positively homogeneous convex function is preserved by scalar multiplication. -/
@@ -360,7 +360,7 @@ theorem PosHomogeneous.isLinearOn_iff (hf : PosHomogeneous f) (hconv : ConvexFn 
         ∀ (c : ℝ), ∀ x ∈ L, f (c • x) = (c : EReal) * f x) ↔ ∀ x ∈ L, f (-x) = -(f x) := by
   constructor
   · rintro ⟨-, hsmul⟩ x hx
-    rw [← neg_one_smul ℝ x, hsmul (-1) x hx, _root_.EReal.coe_neg, _root_.EReal.coe_one,
+    rw [← neg_one_smul ℝ x, hsmul (-1) x hx, EReal.coe_neg, EReal.coe_one,
       neg_one_mul]
   · intro hodd
     exact ⟨fun x hx y hy => hf.map_add_of_neg_eq hconv hbot (hodd x hx) (hodd y hy),
@@ -375,10 +375,10 @@ theorem PosHomogeneous.exists_linearMap_iff (hf : PosHomogeneous f) (hconv : Con
   constructor
   · rintro ⟨g, hg⟩ x hx
     have hneg : f (-x) = ((g (-⟨x, hx⟩ : L) : ℝ) : EReal) := hg (-⟨x, hx⟩ : L)
-    rw [hneg, map_neg, _root_.EReal.coe_neg, hg ⟨x, hx⟩]
+    rw [hneg, map_neg, EReal.coe_neg, hg ⟨x, hx⟩]
   · intro hodd
     have hodd' : ∀ x : L, f (x : E) = ((f (x : E)).toReal : EReal) := fun x =>
-      (_root_.EReal.coe_toReal (ne_top_of_neg_eq hbot (hodd x x.2)) (hbot x)).symm
+      (EReal.coe_toReal (ne_top_of_neg_eq hbot (hodd x x.2)) (hbot x)).symm
     refine ⟨{ toFun := fun x => (f (x : E)).toReal
               map_add' := fun x y => ?_
               map_smul' := fun c x => ?_ }, fun x => hodd' x⟩
@@ -386,13 +386,13 @@ theorem PosHomogeneous.exists_linearMap_iff (hf : PosHomogeneous f) (hconv : Con
         hf.map_add_of_neg_eq hconv hbot (hodd x x.2) (hodd y y.2)
       have hcast : ((f (((x + y : L) : E))).toReal : EReal)
           = (((f (x : E)).toReal + (f (y : E)).toReal : ℝ) : EReal) := by
-        rw [← hodd' (x + y), Submodule.coe_add, h, _root_.EReal.coe_add, ← hodd' x, ← hodd' y]
+        rw [← hodd' (x + y), Submodule.coe_add, h, EReal.coe_add, ← hodd' x, ← hodd' y]
       exact_mod_cast hcast
     · have h : f (c • (x : E)) = (c : EReal) * f (x : E) :=
         hf.map_smul_of_neg_eq hconv hbot (hodd x x.2) c
       have hcast : ((f (((c • x : L) : E))).toReal : EReal)
           = ((c * (f (x : E)).toReal : ℝ) : EReal) := by
-        rw [← hodd' (c • x), Submodule.coe_smul, h, ← EReal.coe_mul_coe, ← hodd' x]
+        rw [← hodd' (c • x), Submodule.coe_smul, h, EReal.coe_mul, ← hodd' x]
       exact_mod_cast hcast
 
 /-- To know that `f` is linear on the subspace spanned by a nonempty set `s`, it is enough to

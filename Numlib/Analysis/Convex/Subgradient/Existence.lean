@@ -68,8 +68,8 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] {f : E → EReal} {x : E} {
 positively homogeneous convex function is a cone. -/
 theorem coe_hull_epi_sub_subset_epi_dirDeriv (hf : ConvexFn f) (hr : f x = (r : EReal)) :
     (PointedCone.hull ℝ (epi f - {((x, r) : E × ℝ)}) : Set (E × ℝ)) ⊆ epi (dirDeriv f x) := by
-  have ht : f x ≠ ⊤ := by rw [hr]; exact _root_.EReal.coe_ne_top r
-  have hb : f x ≠ ⊥ := by rw [hr]; exact _root_.EReal.coe_ne_bot r
+  have ht : f x ≠ ⊤ := by rw [hr]; exact EReal.coe_ne_top r
+  have hb : f x ≠ ⊥ := by rw [hr]; exact EReal.coe_ne_bot r
   have hisCone : ∀ a : ℝ, 0 < a → a • epi (dirDeriv f x) = epi (dirDeriv f x) :=
     (posHomogeneous_iff_isCone_epi (f := dirDeriv f x)).1 (posHomogeneous_dirDeriv f x)
   have hadd : ∀ p ∈ epi (dirDeriv f x), ∀ q ∈ epi (dirDeriv f x), p + q ∈ epi (dirDeriv f x) :=
@@ -212,10 +212,10 @@ theorem dom_dirDeriv_subset_direction (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb :
   have hxaff : x ∈ affineSpan ℝ (dom f) := subset_affineSpan ℝ (dom f) hxdom
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (mem_dom.1 hxdom)
   intro y hy
-  obtain ⟨m, hm, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hy)
+  obtain ⟨m, hm, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hy)
   obtain ⟨a, ha, hbound⟩ := exists_le_of_dirDeriv_lt hf hr hm
   have hmem : x + a • y ∈ dom f :=
-    mem_dom.2 (lt_of_le_of_lt (hbound a ha le_rfl) (_root_.EReal.coe_lt_top _))
+    mem_dom.2 (lt_of_le_of_lt (hbound a ha le_rfl) (EReal.coe_lt_top _))
   have hvs : (x + a • y) - x ∈ (affineSpan ℝ (dom f)).direction :=
     AffineSubspace.vsub_mem_direction (subset_affineSpan ℝ (dom f) hmem) hxaff
   have hay : a • y ∈ (affineSpan ℝ (dom f)).direction := by
@@ -257,7 +257,7 @@ theorem dom_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f) (hx : x
       have h : (x + a • y) - x = a • y := by abel
       rwa [h]
     have hmem : x + a • y ∈ dom f := hball _ haff hdist
-    obtain ⟨c, hc, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hmem)
+    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 hmem)
     refine mem_dom.2 (lt_of_le_of_lt (dirDeriv_le f x y hpos) ?_)
     rw [hr]
     have hbound : (f (x + a • y) - (r : EReal)) / ((a : ℝ) : EReal)
@@ -267,7 +267,7 @@ theorem dom_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f) (hx : x
         rw [div_mul_cancel₀ _ hpos.ne']; ring
       rw [hcc]
       exact hc.le
-    exact lt_of_le_of_lt hbound (_root_.EReal.coe_lt_top _)
+    exact lt_of_le_of_lt hbound (EReal.coe_lt_top _)
 
 omit [FiniteDimensional ℝ E] in
 /-- Second step: at a relative interior point `f'(x; ·)` is proper. Its effective domain is a
@@ -281,7 +281,7 @@ theorem proper_dirDeriv_of_mem_relint_dom (hf : ConvexFn f) (hp : Proper f)
   have hb : f x ≠ ⊥ := hp.ne_bot x
   have hdom := dom_dirDeriv_of_mem_relint_dom hf hp hx
   have h0 : (0 : E) ∈ dom (dirDeriv f x) := by
-    rw [mem_dom, dirDeriv_zero ht hb]; exact _root_.EReal.zero_lt_top
+    rw [mem_dom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
   by_contra hcon
   have hopen : ri (dom (dirDeriv f x)) = dom (dirDeriv f x) := by
     have h := AffineSubspace.intrinsicInterior_coe
@@ -367,9 +367,9 @@ quotient at `a = 1` is `f z - f x`, which stays below `⊤` as soon as `f x ≠ 
 theorem sub_mem_dom_dirDeriv (hb : f x ≠ ⊥) {z : E} (hz : z ∈ dom f) :
     z - x ∈ dom (dirDeriv f x) := by
   refine mem_dom.2 (dirDeriv_lt_iff.2 ⟨1, one_pos, ?_⟩)
-  rw [one_smul, show x + (z - x) = z from by abel, _root_.EReal.coe_one, div_one, sub_eq_add_neg]
-  exact _root_.EReal.add_lt_top (mem_dom.1 hz).ne
-    (by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact hb)
+  rw [one_smul, show x + (z - x) = z from by abel, EReal.coe_one, div_one, sub_eq_add_neg]
+  exact EReal.add_lt_top (mem_dom.1 hz).ne
+    (by rw [Ne, EReal.neg_eq_top_iff]; exact hb)
 
 /-- Directions pointing from `x` into the relative interior of `dom f` are relative interior points
 of the effective domain of `f'(x; ·)`. This is the geometric core of the non-existence statement
@@ -378,7 +378,7 @@ theorem sub_mem_relint_dom_dirDeriv (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f
     (hz : z ∈ ri (dom f)) : z - x ∈ ri (dom (dirDeriv f x)) := by
   have hconv : ConvexFn (dirDeriv f x) := convexFn_dirDeriv hf ht hb
   have h0 : (0 : E) ∈ dom (dirDeriv f x) :=
-    mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact _root_.EReal.zero_lt_top)
+    mem_dom.2 (by rw [dirDeriv_zero ht hb]; exact EReal.zero_lt_top)
   have hxaff : x ∈ affineSpan ℝ (dom f) :=
     subset_affineSpan ℝ (dom f) (mem_dom.2 (lt_top_iff_ne_top.2 ht))
   refine (Convex.mem_relint_iff_prolong hconv.convex_dom ⟨0, h0⟩).2 fun w hw => ?_
@@ -416,7 +416,7 @@ theorem exists_dirDeriv_eq_bot_and_dirDeriv_neg_eq_top [IsCompatiblePairing B] (
   refine ⟨z - x, dirDeriv_eq_bot_of_subgradient_eq_empty (B := B) hf ht hb hsub hz, ?_⟩
   have h := neg_dirDeriv_neg_le hf ht hb (z - x)
   rwa [dirDeriv_eq_bot_of_subgradient_eq_empty (B := B) hf ht hb hsub hz, le_bot_iff,
-    _root_.EReal.neg_eq_bot_iff] at h
+    EReal.neg_eq_bot_iff] at h
 
 /-- As a criterion: a convex function finite at `x` fails to be subdifferentiable there exactly
 when `f'(x; ·)` takes the value `−∞` somewhere. Only the forward direction needs the work above;
@@ -432,7 +432,7 @@ theorem subgradient_eq_empty_iff_exists_dirDeriv_eq_bot [IsCompatiblePairing B] 
     refine Set.eq_empty_of_forall_notMem fun v hv => ?_
     have h := (mem_subgradient_iff_le_dirDeriv ht hb).1 hv y
     rw [hy, le_bot_iff] at h
-    exact _root_.EReal.coe_ne_bot _ h
+    exact EReal.coe_ne_bot _ h
 
 end Relint
 
@@ -464,7 +464,7 @@ theorem proper_dirDeriv_of_polyhedralFn (hf : PolyhedralFn f) (ht : f x ≠ ⊤)
     Proper (dirDeriv f x) := by
   have hpoly := polyhedralFn_dirDeriv hf ht hb
   have h0 : (0 : E) ∈ dom (dirDeriv f x) := by
-    rw [mem_dom, dirDeriv_zero ht hb]; exact _root_.EReal.zero_lt_top
+    rw [mem_dom, dirDeriv_zero ht hb]; exact EReal.zero_lt_top
   by_contra hcon
   have hbot := hpoly.convexFn.eq_bot_of_mem_closure_dom hpoly.lowerSemicontinuous hcon
     (subset_closure h0)
@@ -539,7 +539,7 @@ theorem subgradient_subset_normalCone_setOf_le (hr : f x = (r : EReal)) :
   have h0 := hy z
   rw [hr] at h0
   have h1 : (r : EReal) + ((B (z - x) y : ℝ) : EReal) ≤ (r : EReal) := h0.trans hz
-  rw [← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h1
+  rw [← EReal.coe_add, EReal.coe_le_coe_iff] at h1
   linarith
 
 omit [FiniteDimensional ℝ E] [TopologicalSpace F] [IsTopologicalAddGroup F] [ContinuousSMul ℝ F]
@@ -567,19 +567,19 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subgradient [IsCompatiblePairing
     (hinf : ⨅ z, f z < (r : EReal)) (hne : (subgradient B f x).Nonempty) :
     normalCone B {z | f z ≤ (r : EReal)} x
       = closure ((PointedCone.hull ℝ (subgradient B f x) : Set F)) := by
-  have ht : f x ≠ ⊤ := by rw [hr]; exact _root_.EReal.coe_ne_top r
-  have hb : f x ≠ ⊥ := by rw [hr]; exact _root_.EReal.coe_ne_bot r
+  have ht : f x ≠ ⊤ := by rw [hr]; exact EReal.coe_ne_top r
+  have hb : f x ≠ ⊥ := by rw [hr]; exact EReal.coe_ne_bot r
   have hk : ConvexFn (dirDeriv f x) := convexFn_dirDeriv hf ht hb
   have hkp : Proper (dirDeriv f x) := by
     obtain ⟨y₀, hy₀⟩ := hne
     refine ⟨⟨0, ?_⟩, fun v => ?_⟩
     · rw [mem_dom, dirDeriv_zero ht hb]
       simp
-    · exact ne_bot_of_le_ne_bot (_root_.EReal.coe_ne_bot _)
+    · exact ne_bot_of_le_ne_bot (EReal.coe_ne_bot _)
         ((mem_subgradient_iff_le_dirDeriv ht hb).1 hy₀ v)
   have hneg : (⨅ v, dirDeriv f x v) < ((0 : ℝ) : EReal) := by
     obtain ⟨z, hz⟩ := iInf_lt_iff.1 hinf
-    obtain ⟨μ, hzμ, hμr⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hz
+    obtain ⟨μ, hzμ, hμr⟩ := EReal.lt_iff_exists_real_btwn.1 hz
     have hμr2 : μ < r := by exact_mod_cast hμr
     have hquot : dirDeriv f x (z - x) ≤ ((μ - r : ℝ) : EReal) := by
       have h1 := dirDeriv_le f x (z - x) one_pos
@@ -591,7 +591,7 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subgradient [IsCompatiblePairing
     exact_mod_cast (by linarith : μ - r < 0)
   have hpol : polarCone B.flip (subgradient B f x) = closure {v : E | dirDeriv f x v < 0} := by
     have h76 := hk.closure_setOf_lt hneg
-    rw [_root_.EReal.coe_zero] at h76
+    rw [EReal.coe_zero] at h76
     rw [polarCone_subgradient hf ht hb, h76, hk.clFn_eq_lscHull hkp]
   have hbip : closure ((PointedCone.hull ℝ (subgradient B f x) : Set F))
       = polarCone B (polarCone B.flip (subgradient B f x)) := by
@@ -610,7 +610,7 @@ theorem normalCone_setOf_le_eq_closure_coe_hull_subgradient [IsCompatiblePairing
     obtain ⟨a, ha, hlt⟩ := dirDeriv_lt_iff.1 hw
     have hmem : x + a • w ∈ {z : E | f z ≤ (r : EReal)} := by
       have h2 : (f (x + a • w) - f x) / (a : EReal) ≤ ((0 : ℝ) : EReal) := by
-        rw [_root_.EReal.coe_zero]
+        rw [EReal.coe_zero]
         exact hlt.le
       rw [hr, EReal.sub_div_le_coe_iff ha, show r + 0 * a = r from by ring] at h2
       exact h2
@@ -655,7 +655,7 @@ theorem normalCone_setOf_le_eq_coe_hull_subgradient [IsCompatiblePairing B]
     intro hmem
     refine absurd (le_iInf fun z => ?_) (not_le_of_gt hinf)
     have h1 := hmem z
-    rwa [map_zero, _root_.EReal.coe_zero, add_zero, hr] at h1
+    rwa [map_zero, EReal.coe_zero, add_zero, hr] at h1
   have hcl := isClosed_coe_hull_of_isBounded (convex_subgradient B f x)
     (isClosed_subgradient (B := B) f x) hne h0 hbdd
   rw [normalCone_setOf_le_eq_closure_coe_hull_subgradient hf hr hinf hne, hcl.closure_eq]

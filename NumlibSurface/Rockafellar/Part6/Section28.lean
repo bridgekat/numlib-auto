@@ -107,7 +107,7 @@ theorem f_ne_bot (i : Fin m) (x : Rn n) : P.f i x ≠ ⊥ := by
   rcases lt_or_ge (i : ℕ) P.r with hi | hi
   · exact (P.proper_f i hi).ne_bot x
   · obtain ⟨a, ha⟩ := P.exists_affine i hi
-    rw [ha x]; exact _root_.EReal.coe_ne_bot _
+    rw [ha x]; exact EReal.coe_ne_bot _
 
 /-- Every constraint function is finite on `C`: Rockafellar's convention (b) is exactly what makes
 the Lagrangian an inequality between real numbers. -/
@@ -163,24 +163,24 @@ noncomputable def objective : Rn n → EReal := fun x => P.f₀ x + indicatorFn 
 
 @[simp] theorem objective_of_notMem {x : Rn n} (hx : x ∉ P.feasibleSet) : P.objective x = ⊤ := by
   rw [objective, indicatorFn_of_notMem hx,
-    _root_.EReal.add_top_of_ne_bot (P.proper_f₀.ne_bot x)]
+    EReal.add_top_of_ne_bot (P.proper_f₀.ne_bot x)]
 
 /-- The objective function is `f₀` restricted to `C₁ ∩ ⋯ ∩ C_m`: the constraint `x ∈ C` is
 automatic, because `f₀` is already `+∞` off `C`. This is the form in which convexity and closedness
 of the objective are read off. -/
-theorem objective_eq_restrict :
-    P.objective = ConvexAnalysis.restrict P.constraintSet P.f₀ := by
+theorem objective_eq_restrictFn :
+    P.objective = ConvexAnalysis.restrictFn P.constraintSet P.f₀ := by
   funext x
   by_cases hx : x ∈ P.constraintSet
   · by_cases hC : x ∈ P.C
-    · rw [P.objective_of_mem ⟨hC, hx⟩, restrict_of_mem hx]
-    · rw [P.objective_of_notMem (fun h => hC h.1), restrict_of_mem hx,
+    · rw [P.objective_of_mem ⟨hC, hx⟩, restrictFn_of_mem hx]
+    · rw [P.objective_of_notMem (fun h => hC h.1), restrictFn_of_mem hx,
         P.f₀_eq_top_of_notMem hC]
-  · rw [P.objective_of_notMem (fun h => hx h.2), restrict_of_notMem hx]
+  · rw [P.objective_of_notMem (fun h => hx h.2), restrictFn_of_notMem hx]
 
 theorem convexFn_objective : ConvexFn P.objective := by
-  rw [P.objective_eq_restrict]
-  exact P.convexFn_f₀.restrict P.convex_constraintSet
+  rw [P.objective_eq_restrictFn]
+  exact P.convexFn_f₀.restrictFn P.convex_constraintSet
 
 /-- **§28**: the objective function is closed when `f₀, f₁, …, f_r` are. -/
 theorem closedFn_objective (hcl₀ : ClosedFn P.f₀)
@@ -201,8 +201,8 @@ theorem closedFn_objective (hcl₀ : ClosedFn P.f₀)
         exact ⟨fun h => by exact_mod_cast h, fun h => by rw [h]; rfl⟩
       rw [hset]
       exact IsClosed.preimage g.continuous_of_finiteDimensional isClosed_singleton
-  rw [P.objective_eq_restrict]
-  exact ClosedFn.restrict hcl₀ P.proper_f₀.ne_bot hclosed
+  rw [P.objective_eq_restrictFn]
+  exact ClosedFn.restrictFn hcl₀ P.proper_f₀.ne_bot hclosed
 
 theorem objective_ne_bot (x : Rn n) : P.objective x ≠ ⊥ := by
   by_cases hx : x ∈ P.feasibleSet
@@ -299,7 +299,7 @@ theorem convexFn_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r
       have hrw : P.lagrangeSummand u (some j) = fun x => (((u j • g) x : ℝ) : EReal) := by
         funext x
         simp only [lagrangeSummand_some]
-        rw [hg x, EReal.coe_mul_coe, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
+        rw [hg x, ← EReal.coe_mul, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
       rw [hrw]
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).convex
@@ -315,7 +315,7 @@ theorem proper_lagrangeSummand {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r �
       have hrw : P.lagrangeSummand u (some j) = fun x => (((u j • g) x : ℝ) : EReal) := by
         funext x
         simp only [lagrangeSummand_some]
-        rw [hg x, EReal.coe_mul_coe, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
+        rw [hg x, ← EReal.coe_mul, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
       rw [hrw]
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).proper
@@ -333,7 +333,7 @@ theorem closedFn_lagrangeSummand (hcl₀ : ClosedFn P.f₀)
       have hrw : P.lagrangeSummand u (some j) = fun x => (((u j • g) x : ℝ) : EReal) := by
         funext x
         simp only [lagrangeSummand_some]
-        rw [hg x, EReal.coe_mul_coe, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
+        rw [hg x, ← EReal.coe_mul, AffineMap.coe_smul, Pi.smul_apply, smul_eq_mul]
       rw [hrw]
       exact (closedProperConvexFn_coe_affineMap
         (u j • g).continuous_of_finiteDimensional).closed
@@ -346,38 +346,8 @@ theorem mem_dom_lagrangeSummand (u : Rn m) {x : Rn n} (hx : x ∈ P.C) (i : Opti
     obtain ⟨c, hc⟩ := P.exists_coe_f hx j
     rw [mem_dom]
     simp only [lagrangeSummand_some]
-    rw [hc, EReal.coe_mul_coe]
-    exact _root_.EReal.coe_lt_top _
-
-/-- A relative interior point of `C` is a relative interior point of the effective domain of every
-summand of `h` — which is the constraint qualification Theorem 23.8 asks for. This is exactly
-Rockafellar's blanket assumption (b), used. -/
-theorem relint_mem_dom_lagrangeSummand {u : Rn m}
-    (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) {x₀ : Rn n} (hx₀ : x₀ ∈ ri P.C)
-    (i : Option (Fin m)) : x₀ ∈ ri (dom (P.lagrangeSummand u i)) := by
-  have huniv : ∀ g : Rn n → EReal, dom g = Set.univ → x₀ ∈ ri (dom g) := by
-    intro g hg
-    rw [hg]
-    exact interior_subset_intrinsicInterior (by rw [interior_univ]; trivial)
-  cases i with
-  | none => rw [lagrangeSummand_none, P.dom_f₀]; exact hx₀
-  | some j =>
-    rcases lt_or_ge (j : ℕ) P.r with hj | hj
-    · rcases eq_or_lt_of_le (hu j hj) with h0 | h0
-      · refine huniv _ (Set.eq_univ_of_forall fun x => ?_)
-        have hz : P.lagrangeSummand u (some j) x = 0 := by
-          simp only [lagrangeSummand_some, ← h0]
-          simp
-        rw [mem_dom, hz]
-        exact lt_of_le_of_ne le_top (by simp)
-      · rw [lagrangeSummand_some, dom_coe_mul h0]
-        exact P.relint_subset j hj hx₀
-    · obtain ⟨c, hc⟩ := P.exists_affine j hj
-      refine huniv _ (Set.eq_univ_of_forall fun x => ?_)
-      rw [mem_dom]
-      simp only [lagrangeSummand_some]
-      rw [hc x, EReal.coe_mul_coe]
-      exact _root_.EReal.coe_lt_top _
+    rw [hc, ← EReal.coe_mul]
+    exact EReal.coe_lt_top _
 
 theorem convexFn_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) :
     ConvexFn (P.lagrangeFn u) := by
@@ -414,25 +384,25 @@ theorem sum_coe_mul_f_ne_bot {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r →
   rcases lt_or_ge (i : ℕ) P.r with hi | hi
   · exact EReal.coe_mul_ne_bot (hu i hi) (P.f_ne_bot i x)
   · obtain ⟨g, hg⟩ := P.exists_affine i hi
-    rw [hg x, EReal.coe_mul_coe]
-    exact _root_.EReal.coe_ne_bot _
+    rw [hg x, ← EReal.coe_mul]
+    exact EReal.coe_ne_bot _
 
 theorem lagrangeFn_ne_bot {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) (x : Rn n) :
     P.lagrangeFn u x ≠ ⊥ :=
-  _root_.EReal.add_ne_bot_iff.2 ⟨P.proper_f₀.ne_bot x, P.sum_coe_mul_f_ne_bot hu x⟩
+  EReal.add_ne_bot_iff.2 ⟨P.proper_f₀.ne_bot x, P.sum_coe_mul_f_ne_bot hu x⟩
 
 theorem lagrangeFn_eq_top_of_notMem_C {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i)
     {x : Rn n} (hx : x ∉ P.C) : P.lagrangeFn u x = ⊤ := by
   rw [lagrangeFn_apply, P.f₀_eq_top_of_notMem hx,
-    _root_.EReal.top_add_of_ne_bot (P.sum_coe_mul_f_ne_bot hu x)]
+    EReal.top_add_of_ne_bot (P.sum_coe_mul_f_ne_bot hu x)]
 
 /-- `h` at a point of `C`, read as a single real number. -/
 theorem lagrangeFn_eq_coe {u : Rn m} {x : Rn n} {c₀ : ℝ} (h₀ : P.f₀ x = (c₀ : EReal))
     {c : Fin m → ℝ} (hc : ∀ i, P.f i x = (c i : EReal)) :
     P.lagrangeFn u x = ((c₀ + ∑ i, u i * c i : ℝ) : EReal) := by
   rw [lagrangeFn_apply, h₀,
-    Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => by rw [hc i, EReal.coe_mul_coe]),
-    ← EReal.coe_sum, ← _root_.EReal.coe_add]
+    Finset.sum_congr rfl (fun i (_ : i ∈ Finset.univ) => by rw [hc i, ← EReal.coe_mul]),
+    ← EReal.coe_sum, ← EReal.coe_add]
 
 /-- When every multiplier term vanishes, `h` agrees with the objective `f₀`. -/
 theorem lagrangeFn_eq_f₀ {u : Rn m} {x : Rn n} (h : ∀ i : Fin m, (u i : EReal) * P.f i x = 0) :
@@ -527,7 +497,7 @@ theorem theorem_28_1 {u : Rn m} (hu : P.IsKuhnTuckerVector u) :
     choose c hc using P.exists_coe_f hfeas.1
     have hzero : ∑ i, u i * c i = 0 := by
       have h := P.lagrangeFn_eq_coe (u := u) hc₀ hc
-      rw [heq, hc₀, _root_.EReal.coe_eq_coe_iff] at h
+      rw [heq, hc₀, EReal.coe_eq_coe_iff] at h
       linarith
     have hnonpos : ∀ i ∈ Finset.univ, u i * c i ≤ 0 := by
       intro i _
@@ -574,11 +544,11 @@ theorem corollary_28_1_1 (hcl₀ : ClosedFn P.f₀)
       ⟨w, rfl⟩).1 isCompact_singleton
   -- a level set of the objective at a level above the optimal value
   have hlt : P.optimalValue < ((μ + 1 : ℝ) : EReal) := by
-    rw [← hwval, hμ, _root_.EReal.coe_lt_coe_iff]; linarith
+    rw [← hwval, hμ, EReal.coe_lt_coe_iff]; linarith
   obtain ⟨z₀, hz₀⟩ : ∃ z, P.objective z < ((μ + 1 : ℝ) : EReal) := iInf_lt_iff.1 hlt
   have hfobj : ClosedProperConvexFn P.objective :=
     ⟨P.convexFn_objective, P.closedFn_objective hcl₀ hcl,
-      ⟨⟨z₀, mem_dom.2 (hz₀.trans (_root_.EReal.coe_lt_top _))⟩, P.objective_ne_bot⟩⟩
+      ⟨⟨z₀, mem_dom.2 (hz₀.trans (EReal.coe_lt_top _))⟩, P.objective_ne_bot⟩⟩
   have hneβ : {z : Rn n | P.objective z ≤ ((μ + 1 : ℝ) : EReal)}.Nonempty := ⟨z₀, hz₀.le⟩
   have hneβh : {z : Rn n | P.lagrangeFn u z ≤ ((μ + 1 : ℝ) : EReal)}.Nonempty :=
     ⟨z₀, (P.lagrangeFn_le_objective hu.nonneg z₀).trans hz₀.le⟩
@@ -609,19 +579,19 @@ convex program in the sense of §29: `F u x` is `f₀ x` when `x` satisfies the 
 perturbed program `(P_u)` — `fᵢ x ≤ vᵢ` for `i ≤ r` and `fᵢ x = vᵢ` for `i > r` — and `+∞`
 otherwise. The constraint `x ∈ C` is not imposed: `f₀` is already `+∞` off `C`. -/
 noncomputable def ineqBifun : Bifun (Rn m) (Rn n) := fun u =>
-  ConvexAnalysis.restrict
+  ConvexAnalysis.restrictFn
     {y | (∀ i : Fin m, (i : ℕ) < P.r → P.f i y ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i y = (u i : EReal)} P.f₀
 
 theorem ineqBifun_of_mem {u : Rn m} {x : Rn n}
     (h : (∀ i : Fin m, (i : ℕ) < P.r → P.f i x ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = (u i : EReal)) :
-    P.ineqBifun u x = P.f₀ x := restrict_of_mem h
+    P.ineqBifun u x = P.f₀ x := restrictFn_of_mem h
 
 theorem ineqBifun_of_notMem {u : Rn m} {x : Rn n}
     (h : ¬((∀ i : Fin m, (i : ℕ) < P.r → P.f i x ≤ (u i : EReal)) ∧
       ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = (u i : EReal))) :
-    P.ineqBifun u x = ⊤ := restrict_of_notMem h
+    P.ineqBifun u x = ⊤ := restrictFn_of_notMem h
 
 theorem ineqBifun_eq_top_of_notMem_C {x : Rn n} (hx : x ∉ P.C) (u : Rn m) :
     P.ineqBifun u x = ⊤ := by
@@ -633,13 +603,13 @@ theorem ineqBifun_eq_top_of_notMem_C {x : Rn n} (hx : x ∉ P.C) (u : Rn m) :
 /-- At the unperturbed parameter the bifunction is the objective function of `(P)`. -/
 @[simp] theorem ineqBifun_zero : P.ineqBifun 0 = P.objective := by
   have hz : ∀ i : Fin m, ((0 : Rn m) i : EReal) = 0 := fun i => by norm_num
-  rw [P.objective_eq_restrict]
+  rw [P.objective_eq_restrictFn]
   funext x
   by_cases hx : x ∈ P.constraintSet
   · rw [P.ineqBifun_of_mem ⟨fun i hi => by rw [hz i]; exact hx.1 i hi,
-      fun i hi => by rw [hz i]; exact hx.2 i hi⟩, restrict_of_mem hx]
+      fun i hi => by rw [hz i]; exact hx.2 i hi⟩, restrictFn_of_mem hx]
   · refine (P.ineqBifun_of_notMem fun hc => hx ⟨fun i hi => ?_, fun i hi => ?_⟩).trans
-      (restrict_of_notMem hx).symm
+      (restrictFn_of_notMem hx).symm
     · have := hc.1 i hi; rwa [hz i] at this
     · have := hc.2 i hi; rwa [hz i] at this
 
@@ -664,7 +634,7 @@ namespace OrdinaryConvexProgram
 theorem optimalValue_eq_biInf_constraintSet :
     P.optimalValue = ⨅ x ∈ P.constraintSet, P.f₀ x := by
   have h : P.optimalValue = ⨅ x, P.objective x := rfl
-  rw [h, P.objective_eq_restrict]
+  rw [h, P.objective_eq_restrictFn]
   rfl
 
 end OrdinaryConvexProgram
@@ -829,7 +799,7 @@ theorem theorem_28_2 {I : Finset (Fin m)}
       rw [P.lagrangeFn_eq_coe hc₀ hc,
         programLagrangian_eq_coe (f := g) (b := b) (l := l) (μ := μ) hc₀
           (r := fun i : {i : Fin m // i ∈ I} => c (i : Fin m)) (fun i => hc (i : Fin m)),
-        _root_.EReal.coe_eq_coe_iff, hsplit]
+        EReal.coe_eq_coe_iff, hsplit]
       ring
     · rw [P.lagrangeFn_eq_top_of_notMem_C hnn hxC,
         programLagrangian_eq_top (f := g) (b := b) (μ := μ) hkt.nonneg
@@ -875,7 +845,8 @@ noncomputable def linConstraint (v : Rn n) (α : ℝ) : Rn n →ᵃ[ℝ] ℝ :=
 
 @[simp] theorem linConstraint_apply (v : Rn n) (α : ℝ) (x : Rn n) :
     linConstraint v α x = pairing n x v - α := by
-  simp [linConstraint]
+  simp only [linConstraint, AffineMap.coe_sub, Pi.sub_apply, AffineMap.const_apply,
+    LinearMap.coe_toAffineMap, ContinuousLinearMap.coe_coe, linFn_apply]
 
 /-- **Corollary 28.2.2**, stated in the book with **no proof**. A program whose constraints are all
 *linear*, `fᵢ(x) = ⟨aᵢ, x⟩ - αᵢ`, needs nothing beyond a feasible solution in `ri C`. It is Theorem
@@ -991,7 +962,7 @@ theorem mem_multiplierCone_iff_programLagrangian_ne_bot {u : Rn m} {x : Rn n} (h
   · intro hu
     obtain ⟨c, hc⟩ := P.exists_coe_lagrangeFn u hx
     rw [P.programLagrangian_eq_lagrangeFn hx hu, hc]
-    exact _root_.EReal.coe_ne_bot c
+    exact EReal.coe_ne_bot c
   · intro hne
     by_contra hu
     exact hne (P.programLagrangian_eq_bot hx hu)
@@ -1011,7 +982,7 @@ theorem setOf_programLagrangian_finite :
   · rintro ⟨hu, hC⟩
     obtain ⟨c, hc⟩ := P.exists_coe_lagrangeFn q.1 hC
     rw [P.programLagrangian_eq_lagrangeFn hC hu, hc]
-    exact ⟨_root_.EReal.coe_ne_bot c, _root_.EReal.coe_ne_top c⟩
+    exact ⟨EReal.coe_ne_bot c, EReal.coe_ne_top c⟩
 
 /-- **§28**: `f₀(x) = L(0, x)` for `x ∈ C`. -/
 theorem f₀_eq_programLagrangian {x : Rn n} (hx : x ∈ P.C) : P.f₀ x = P.programLagrangian 0 x := by
@@ -1024,7 +995,7 @@ theorem f_eq_programLagrangian_sub {x : Rn n} (hx : x ∈ P.C) (i : Fin m) :
   obtain ⟨c, hc⟩ := P.exists_coe_f hx i
   rw [P.programLagrangian_eq_lagrangeFn hx (P.unitVec_mem_multiplierCone i),
     P.programLagrangian_eq_lagrangeFn hx P.zero_mem_multiplierCone, P.lagrangeFn_zero,
-    P.lagrangeFn_unitVec, h₀, hc, ← _root_.EReal.coe_add, ← _root_.EReal.coe_sub]
+    P.lagrangeFn_unitVec, h₀, hc, ← EReal.coe_add, ← EReal.coe_sub]
   norm_num
 
 private theorem r_le_of_multiplierCone_subset {P₁ P₂ : OrdinaryConvexProgram n m}
@@ -1114,15 +1085,15 @@ theorem lagrangian_ineqBifun :
       refine le_antisymm ?_ (le_iInf fun w => ?_)
       · refine le_trans (iInf_le _ cVec) (le_of_eq ?_)
         rw [P.ineqBifun_of_mem (hcMem cVec (fun i _ => le_of_eq (hcApp i).symm)
-          (fun i _ => (hcApp i).symm)), h₀, pairing_eq_sum, ← _root_.EReal.coe_add]
+          (fun i _ => (hcApp i).symm)), h₀, pairing_eq_sum, ← EReal.coe_add]
         congr 1
         rw [add_comm]
         exact congrArg (fun t => c₀ + t)
           (Finset.sum_congr rfl fun i _ => by rw [hcApp i]; ring)
       · by_cases hw : (∀ i : Fin m, (i : ℕ) < P.r → P.f i x ≤ ((w i : ℝ) : EReal)) ∧
             ∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = ((w i : ℝ) : EReal)
-        · rw [P.ineqBifun_of_mem hw, h₀, pairing_eq_sum, ← _root_.EReal.coe_add,
-            _root_.EReal.coe_le_coe_iff]
+        · rw [P.ineqBifun_of_mem hw, h₀, pairing_eq_sum, ← EReal.coe_add,
+            EReal.coe_le_coe_iff]
           have hle : ∑ i, u i * c i ≤ ∑ i, w i * u i := by
             refine Finset.sum_le_sum fun i _ => ?_
             rcases lt_or_ge (i : ℕ) P.r with hi | hi
@@ -1134,7 +1105,7 @@ theorem lagrangian_ineqBifun :
                 have := hw.2 i hi; rw [hc i] at this; exact_mod_cast this
               rw [h1, mul_comm]
           linarith
-        · rw [P.ineqBifun_of_notMem hw, _root_.EReal.coe_add_top]
+        · rw [P.ineqBifun_of_notMem hw, EReal.coe_add_top]
           exact le_top
     · rw [P.programLagrangian_eq_bot hx hu]
       obtain ⟨i₀, hi₀r, hi₀neg⟩ : ∃ i : Fin m, (i : ℕ) < P.r ∧ u i < 0 := by
@@ -1170,7 +1141,7 @@ theorem lagrangian_ineqBifun :
         have hp : pairing m (cVec + t • unitVec m i₀) u = S + t * u i₀ := by
           rw [map_add, LinearMap.add_apply, map_smul, LinearMap.smul_apply, smul_eq_mul,
             pairing_unitVec, pairing_eq_sum]
-        rw [hp, ← _root_.EReal.coe_add, _root_.EReal.coe_lt_coe_iff]
+        rw [hp, ← EReal.coe_add, EReal.coe_lt_coe_iff]
         have hmul : t * u i₀ < K * u i₀ := mul_lt_mul_of_neg_right htK hi₀neg
         have hKu : K * u i₀ = β - S - c₀ := div_mul_cancel₀ _ (ne_of_lt hi₀neg)
         linarith
@@ -1180,10 +1151,10 @@ theorem lagrangian_ineqBifun :
       | coe β => obtain ⟨w, hw⟩ := hkey β; exact ⟨w, hw⟩
       | top =>
         obtain ⟨w, hw⟩ := hkey 0
-        exact ⟨w, lt_trans hw (_root_.EReal.coe_lt_top 0)⟩
+        exact ⟨w, lt_trans hw (EReal.coe_lt_top 0)⟩
   · rw [P.programLagrangian_eq_top hx u]
     refine le_antisymm le_top (le_iInf fun w => ?_)
-    rw [P.ineqBifun_eq_top_of_notMem_C hx w, _root_.EReal.coe_add_top]
+    rw [P.ineqBifun_eq_top_of_notMem_C hx w, EReal.coe_add_top]
 
 /-- The §29 saddle-Lagrangian of `(P)`'s bifunction, read on `ℝᵐ × ℝⁿ`, is `L`. -/
 theorem saddleLagrangian_ineqBifun :
@@ -1272,13 +1243,13 @@ theorem iSup_programLagrangian (x : Rn n) :
       | bot =>
         refine ⟨0, ?_⟩
         rw [P.programLagrangian_eq_lagrangeFn hC P.zero_mem_multiplierCone, P.lagrangeFn_zero, h₀]
-        exact _root_.EReal.bot_lt_coe c₀
+        exact EReal.bot_lt_coe c₀
       | coe β =>
         set K : ℝ := (β - c₀) / (s * c i) with hK
         set t : ℝ := max 0 (K + 1) with hT
         refine ⟨(t * s) • unitVec m i, ?_⟩
         rw [P.programLagrangian_eq_lagrangeFn hC (hsmem t (le_max_left _ _)),
-          P.lagrangeFn_eq_coe h₀ hc, _root_.EReal.coe_lt_coe_iff]
+          P.lagrangeFn_eq_coe h₀ hc, EReal.coe_lt_coe_iff]
         have hsum : (∑ j, ((t * s) • unitVec m i : Rn m) j * c j) = (t * s) * c i := by
           have h1 : (∑ j, ((t * s) • unitVec m i : Rn m) j * c j)
               = ((t * s) • unitVec m i : Rn m) i * c i := by
@@ -1323,7 +1294,7 @@ theorem iInf_lagrangeFn_ne_top (u : Rn m) : (⨅ z, P.lagrangeFn u z) ≠ ⊤ :=
   obtain ⟨c, hcc⟩ := P.exists_coe_lagrangeFn u hx₀
   refine ne_of_lt (lt_of_le_of_lt (iInf_le (fun z => P.lagrangeFn u z) x₀) ?_)
   rw [hcc]
-  exact _root_.EReal.coe_lt_top c
+  exact EReal.coe_lt_top c
 
 /-- **§28**, condition (d): `(ū*, x̄)` is a saddle-point of `L` exactly when `ū* ∈ E_r`, `x̄` is a
 feasible solution, and `inf h = f₀(x̄)`. -/
@@ -1374,8 +1345,22 @@ theorem theorem_28_3 {u : Rn m} {x : Rn n} :
 
 /-! #### The Kuhn–Tucker conditions (a), (b), (c) -/
 
+/-- Every summand `λᵢ fᵢ` of `h` is admissible in the sense of the backbone's
+`IsLagrangeSummand`, at any relative interior point of `C`: the inequality constraints are
+convex, proper and carry non-negative multipliers, and Rockafellar's convention (b) puts `ri C`
+inside `ri (dom fᵢ)`; the equality constraints are affine, their linear part a vector of `ℝⁿ` by
+Fréchet–Riesz. -/
+theorem isLagrangeSummand {u : Rn m} (hu : u ∈ P.multiplierCone) {x₀ : Rn n}
+    (hx₀ : x₀ ∈ ri P.C) (i : Fin m) : IsLagrangeSummand (pairing n) x₀ (u i) (P.f i) := by
+  rcases lt_or_ge (i : ℕ) P.r with hi | hi
+  · exact Or.inl ⟨hu i hi, P.convexFn_f i hi, P.proper_f i hi, P.relint_subset i hi hx₀⟩
+  · obtain ⟨a, ha⟩ := P.exists_affine i hi
+    obtain ⟨b, hb⟩ := exists_linFn (LinearMap.toContinuousLinearMap a.linear)
+    exact Or.inr ⟨a, b, ha, fun w => by rw [← linFn_apply b w, hb]; rfl⟩
+
 /-- **§28**, the subgradient of `h` decomposed by Theorem 23.8. The multiplier terms with `λᵢ = 0`
-contribute `{0}` and are omitted, exactly as the book's parenthesis in condition (c) says. -/
+contribute `{0}` and are omitted, exactly as the book's parenthesis in condition (c) says. This is
+the backbone's `subgradient_add_sum_coe_mul` for the family `f₁, …, f_m`. -/
 theorem subgradient_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x : Rn n) :
     subgradient (pairing n) (P.lagrangeFn u) x
       = subgradient (pairing n) P.f₀ x
@@ -1384,36 +1369,13 @@ theorem subgradient_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x : Rn 
   have hsep : Function.Injective (pairing n).flip :=
     LinearMap.ker_eq_bot.1
       (LinearMap.separatingRight_iff_flip_ker_eq_bot.1 (separatingRight_pairing n))
-  rw [P.lagrangeFn_eq_finsetSum u,
-    theorem_23_8 ⟨none, Finset.mem_univ none⟩ (fun i _ => P.convexFn_lagrangeSummand hu i)
-      (fun i _ => P.proper_lagrangeSummand hu i)
-      (fun i _ => P.relint_mem_dom_lagrangeSummand hu hx₀ i) x,
-    Fintype.sum_option]
-  congr 1
-  have hzero : ∀ j : Fin m, j ∈ (Finset.univ : Finset (Fin m)) → j ∉ activeIndices u →
-      subgradient (pairing n) (P.lagrangeSummand u (some j)) x = 0 := by
-    intro j _ hj
-    have hj0 : u j = 0 := by
-      by_contra hc
-      exact hj (mem_activeIndices.2 hc)
-    simp only [lagrangeSummand_some, hj0]
-    rw [subgradient_zero_mul hsep, Set.singleton_zero]
-  rw [← Finset.sum_subset (Finset.subset_univ (activeIndices u)) hzero]
-  refine Finset.sum_congr rfl fun j hj => ?_
-  have hj0 : u j ≠ 0 := mem_activeIndices.1 hj
-  rcases lt_or_gt_of_ne hj0 with hneg | hpos
-  · have hjr : P.r ≤ (j : ℕ) := by
-      by_contra hc
-      exact absurd (hu j (by omega)) (not_le.2 hneg)
-    obtain ⟨a, ha⟩ := P.exists_affine j hjr
-    obtain ⟨b, hb⟩ := exists_linFn (LinearMap.toContinuousLinearMap a.linear)
-    have hbw : ∀ w : Rn n, pairing n w b = a.linear w := fun w => by
-      rw [← linFn_apply b w, hb]; rfl
-    have hfj : P.f j = fun y => ((a y : ℝ) : EReal) := funext ha
-    simp only [lagrangeSummand_some, hfj]
-    exact subgradient_coe_mul_affineMap hsep (u j) a hbw x
-  · simp only [lagrangeSummand_some]
-    exact subgradient_coe_mul hpos (P.f j) x
+  have hactive : activeIndices u = Finset.univ.filter fun i => u i ≠ 0 :=
+    Finset.ext fun i => by simp [activeIndices]
+  have hfn : P.lagrangeFn u = fun y => P.f₀ y + ∑ i, (u i : EReal) * P.f i y :=
+    funext fun y => P.lagrangeFn_apply u y
+  rw [hactive, hfn]
+  exact subgradient_add_sum_coe_mul hsep P.convexFn_f₀ P.proper_f₀ (P.dom_f₀ ▸ hx₀)
+    (fun i _ => P.isLagrangeSummand hu hx₀ i) x
 
 /-- **Theorem 28.3**, second half: the saddle-point condition holds if
 and only if `x̄` and the multipliers `λᵢ` satisfy the **Kuhn–Tucker conditions**
@@ -1454,7 +1416,7 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
     have hzero : ∀ i : Fin m, u i * c i = 0 :=
       fun i => (Finset.sum_eq_zero_iff_of_nonpos hnonpos).1 hsum i (Finset.mem_univ i)
     refine ⟨fun i hi => ⟨hu i hi, hF.2.1 i hi, ?_⟩, fun i hi => hF.2.2 i hi, ?_⟩
-    · rw [hc i, EReal.coe_mul_coe, hzero i]
+    · rw [hc i, ← EReal.coe_mul, hzero i]
       norm_num
     · rw [← P.subgradient_lagrangeFn hu x,
         ← mem_argmin_iff_zero_mem_subgradient (pairing n) (P.lagrangeFn u) x]
@@ -1674,7 +1636,7 @@ theorem dom_lagrangeFn {u : Rn m} (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤
       (P.mem_C_iff.1 hx)
     choose c hc using fun i => P.exists_coe_f hx i
     rw [P.lagrangeFn_eq_coe hc₀ hc]
-    exact _root_.EReal.coe_lt_top _
+    exact EReal.coe_lt_top _
 
 /-- **§28**: in the coordinates `x = (x₁, …, x_s)` the set `C` is the
 product of the sets `C^k = dom h_k`.
@@ -1725,20 +1687,6 @@ private theorem fin_two_cases (i : Fin 2) : i = 0 ∨ i = 1 := by
   · exact Or.inr rfl
   · omega
 
-private theorem dom_coe_eq_univ (g : Rn n → ℝ) :
-    dom (fun x => ((g x : ℝ) : EReal)) = Set.univ :=
-  Set.eq_univ_of_forall fun _ => mem_dom.2 (_root_.EReal.coe_lt_top _)
-
-private theorem proper_coe (g : Rn n → ℝ) : Proper (fun x => ((g x : ℝ) : EReal)) :=
-  ⟨⟨0, mem_dom.2 (_root_.EReal.coe_lt_top _)⟩, fun _ => _root_.EReal.coe_ne_bot _⟩
-
-private theorem convexFn_coe_of_convexOn_univ {g : Rn n → ℝ} (h : ConvexOn ℝ Set.univ g) :
-    ConvexFn (fun x => ((g x : ℝ) : EReal)) := by
-  have h' := (convexOn_iff_convexFn Set.univ g).1 h
-  have hr : ConvexAnalysis.restrict Set.univ (fun x => ((g x : ℝ) : EReal))
-      = fun x => ((g x : ℝ) : EReal) := funext fun x => restrict_of_mem (Set.mem_univ x)
-  rwa [hr] at h'
-
 /-- `ξ₁² - ξ₂` is convex on `ℝ²`. -/
 private theorem convexOn_sqSub : ConvexOn ℝ Set.univ fun x : Rn 2 => x 0 ^ 2 - x 1 := by
   refine ⟨convex_univ, fun u _ v _ a b ha hb _ => ?_⟩
@@ -1758,8 +1706,8 @@ noncomputable def ex1Constraint₂ : Rn 2 → EReal := fun x => ((x 0 ^ 2 - x 1 
 private theorem ex1_dom_f (i : Fin 2) :
     dom (![ex1Constraint₁, ex1Constraint₂] i) = Set.univ := by
   rcases fin_two_cases i with rfl | rfl
-  · exact dom_coe_eq_univ (fun x : Rn 2 => x 1)
-  · exact dom_coe_eq_univ (fun x : Rn 2 => x 0 ^ 2 - x 1)
+  · exact dom_coe (fun x : Rn 2 => x 1)
+  · exact dom_coe (fun x : Rn 2 => x 0 ^ 2 - x 1)
 
 /-- **§28**, first counterexample: the program with `C = ℝ²`, `f₀(ξ₁, ξ₂) = ξ₁`, `f₁(ξ₁, ξ₂) = ξ₂`,
 `f₂(ξ₁, ξ₂) = ξ₁² - ξ₂` and `r = 2`. Its only feasible solution, hence its unique optimal solution,
@@ -1775,13 +1723,13 @@ noncomputable def ex1 : OrdinaryConvexProgram 2 2 where
     (closedProperConvexFn_coe_affineMap
       (coordAffine 2 0).continuous_of_finiteDimensional).convex
   proper_f₀ := proper_coe _
-  dom_f₀ := dom_coe_eq_univ _
+  dom_f₀ := dom_coe _
   convexFn_f := by
     intro i _
     rcases fin_two_cases i with rfl | rfl
     · exact (closedProperConvexFn_coe_affineMap
         (coordAffine 2 1).continuous_of_finiteDimensional).convex
-    · exact convexFn_coe_of_convexOn_univ convexOn_sqSub
+    · exact convexOn_sqSub.convexFn_coe
   proper_f := by
     intro i _
     rcases fin_two_cases i with rfl | rfl
@@ -1810,11 +1758,11 @@ theorem ex1_feasibleSet : ex1.feasibleSet = {0} := by
     have hA : x 1 ≤ 0 := by
       have h := h1 0 (by norm_num)
       rw [ex1_f_zero] at h
-      exact _root_.EReal.coe_nonpos.1 h
+      exact EReal.coe_nonpos.1 h
     have hB : x 0 ^ 2 - x 1 ≤ 0 := by
       have h := h1 1 (by norm_num)
       rw [ex1_f_one] at h
-      exact _root_.EReal.coe_nonpos.1 h
+      exact EReal.coe_nonpos.1 h
     have h10 : x 1 = 0 := by nlinarith [sq_nonneg (x 0)]
     have h00 : x 0 = 0 := by nlinarith [sq_nonneg (x 0)]
     ext i
@@ -1824,8 +1772,8 @@ theorem ex1_feasibleSet : ex1.feasibleSet = {0} := by
   · rintro rfl
     refine ⟨trivial, fun i _ => ?_, fun i hi => ?_⟩
     · rcases fin_two_cases i with rfl | rfl
-      · rw [ex1_f_zero]; exact _root_.EReal.coe_nonpos.2 (le_of_eq rfl)
-      · rw [ex1_f_one]; exact _root_.EReal.coe_nonpos.2 (by norm_num)
+      · rw [ex1_f_zero]; exact EReal.coe_nonpos.2 (le_of_eq rfl)
+      · rw [ex1_f_one]; exact EReal.coe_nonpos.2 (by norm_num)
     · rw [ex1_r] at hi; exact absurd i.isLt (by omega)
 
 theorem ex1_optimalValue : ex1.optimalValue = 0 := by
@@ -1852,8 +1800,8 @@ theorem ex1_optimalSolutions : ex1.optimalSolutions = {0} := by
 private theorem ex1_lagrangeFn (u : Rn 2) (x : Rn 2) :
     ex1.lagrangeFn u x = ((x 0 + u 0 * x 1 + u 1 * (x 0 ^ 2 - x 1) : ℝ) : EReal) := by
   rw [OrdinaryConvexProgram.lagrangeFn_apply, Fin.sum_univ_two, ex1_f₀, ex1_f_zero, ex1_f_one,
-    EReal.coe_mul_coe, EReal.coe_mul_coe, ← _root_.EReal.coe_add, ←
-    _root_.EReal.coe_add]
+    ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add, ←
+    EReal.coe_add]
   congr 1
   ring
 
@@ -1871,7 +1819,7 @@ theorem ex1_not_exists_isKuhnTuckerVector : ¬ ∃ u : Rn 2, ex1.IsKuhnTuckerVec
       rw [← ex1_optimalValue, ← hu.iInf_eq]
       exact iInf_le _ x
     rw [ex1_lagrangeFn] at h
-    exact _root_.EReal.coe_nonneg.1 h
+    exact EReal.coe_nonneg.1 h
   have hnn : (0 : ℝ) ≤ u 0 := hu.nonneg 0 (by norm_num)
   -- the two multipliers must agree
   have heq : u 0 = u 1 := by
@@ -1896,24 +1844,6 @@ theorem ex1_not_exists_isKuhnTuckerVector : ¬ ∃ u : Rn 2, ex1.IsKuhnTuckerVec
 
 /-! #### A program with linear constraints and no Kuhn–Tucker vector -/
 
-private theorem dom_restrict_coe (s : Set (Rn n)) (g : Rn n → ℝ) :
-    dom (ConvexAnalysis.restrict s fun x => ((g x : ℝ) : EReal)) = s := by
-  ext x
-  rw [mem_dom]
-  by_cases hx : x ∈ s
-  · simp only [restrict_of_mem hx, hx, iff_true]
-    exact _root_.EReal.coe_lt_top _
-  · simp only [restrict_of_notMem hx, hx, lt_self_iff_false]
-
-private theorem proper_restrict_coe {s : Set (Rn n)} (hs : s.Nonempty) (g : Rn n → ℝ) :
-    Proper (ConvexAnalysis.restrict s fun x => ((g x : ℝ) : EReal)) := by
-  refine ⟨?_, fun x => ?_⟩
-  · obtain ⟨y, hy⟩ := hs
-    exact ⟨y, mem_dom.2 (by rw [restrict_of_mem hy]; exact _root_.EReal.coe_lt_top _)⟩
-  · by_cases hx : x ∈ s
-    · rw [restrict_of_mem hx]; exact _root_.EReal.coe_ne_bot _
-    · rw [restrict_of_notMem hx]; exact top_ne_bot
-
 /-- The set `C = {(ξ₁, ξ₂) | ξ₁² - ξ₂ ≤ 0}` of the counterexample: a parabolic region whose relative
 interior misses the whole feasible set `{ξ₂ = 0}`. -/
 def ex2Set : Set (Rn 2) := {x | x 0 ^ 2 - x 1 ≤ 0}
@@ -1935,14 +1865,14 @@ optimal solution, `0` is the optimal value, and there is **no Kuhn–Tucker vect
 28.2 and Corollary 28.2.2 cannot be dropped. -/
 noncomputable def ex2 : OrdinaryConvexProgram 2 1 where
   C := ex2Set
-  f₀ := ConvexAnalysis.restrict ex2Set fun x => ((x 0 : ℝ) : EReal)
+  f₀ := ConvexAnalysis.restrictFn ex2Set fun x => ((x 0 : ℝ) : EReal)
   f := fun _ x => ((x 1 : ℝ) : EReal)
   r := 0
   r_le := Nat.zero_le 1
   convexFn_f₀ := (convexOn_iff_convexFn ex2Set _).1
     ⟨convex_ex2Set, fun _ _ _ _ _ _ _ _ _ => le_of_eq rfl⟩
-  proper_f₀ := proper_restrict_coe ⟨0, by rw [mem_ex2Set]; norm_num⟩ _
-  dom_f₀ := dom_restrict_coe _ _
+  proper_f₀ := proper_restrictFn_coe ⟨0, by rw [mem_ex2Set]; norm_num⟩ _
+  dom_f₀ := dom_restrictFn_coe _ _
   convexFn_f := fun _ hi => absurd hi (by omega)
   proper_f := fun _ hi => absurd hi (by omega)
   subset_dom_f := fun _ hi => absurd hi (by omega)
@@ -1956,7 +1886,7 @@ noncomputable def ex2 : OrdinaryConvexProgram 2 1 where
 @[simp] theorem ex2_f (i : Fin 1) (x : Rn 2) : ex2.f i x = ((x 1 : ℝ) : EReal) := rfl
 
 theorem ex2_f₀_of_mem {x : Rn 2} (hx : x ∈ ex2Set) : ex2.f₀ x = ((x 0 : ℝ) : EReal) :=
-  restrict_of_mem (f := fun y : Rn 2 => ((y 0 : ℝ) : EReal)) hx
+  restrictFn_of_mem (f := fun y : Rn 2 => ((y 0 : ℝ) : EReal)) hx
 
 /-- The only point of `C` with `ξ₂ = 0` is the origin. -/
 theorem ex2_feasibleSet : ex2.feasibleSet = {0} := by
@@ -2006,7 +1936,7 @@ theorem ex2_optimalSolutions : ex2.optimalSolutions = {0} := by
 private theorem ex2_lagrangeFn_of_mem (u : Rn 1) {x : Rn 2} (hx : x ∈ ex2Set) :
     ex2.lagrangeFn u x = ((x 0 + u 0 * x 1 : ℝ) : EReal) := by
   rw [OrdinaryConvexProgram.lagrangeFn_apply, Fin.sum_univ_one, ex2_f₀_of_mem hx, ex2_f,
-    EReal.coe_mul_coe, ← _root_.EReal.coe_add]
+    ← EReal.coe_mul, ← EReal.coe_add]
 
 /-- **§28**: the program has **no Kuhn–Tucker vector**, even though its
 objective is linear on `C` and its only constraint is a linear equation.
@@ -2022,7 +1952,7 @@ theorem ex2_not_exists_isKuhnTuckerVector : ¬ ∃ u : Rn 1, ex2.IsKuhnTuckerVec
       rw [← ex2_optimalValue, ← hu.iInf_eq]
       exact iInf_le _ x
     rw [ex2_lagrangeFn_of_mem u hx] at h
-    exact _root_.EReal.coe_nonneg.1 h
+    exact EReal.coe_nonneg.1 h
   have hd : (0 : ℝ) < |u 0| + 1 := by positivity
   set t : ℝ := 1 / (|u 0| + 1) with ht
   have htpos : (0 : ℝ) < t := by rw [ht]; positivity

@@ -76,11 +76,11 @@ theorem ConvexFn.eq_of_isMaxOn_mem_relint (hf : ConvexFn f) (hCdom : C ⊆ dom f
   obtain ⟨ζ, hζ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (ne_bot_of_gt hxlt)
     (mem_dom.1 (hCdom (intrinsicInterior_subset hz)))
   rw [hζ] at hxlt
-  obtain ⟨ξ, hξ1, hξ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hxlt
+  obtain ⟨ξ, hξ1, hξ2⟩ := EReal.lt_iff_exists_real_btwn.1 hxlt
   have hξlt : ξ < ζ := by exact_mod_cast hξ2
   have hcomb := hf.epi_combo hξ1.le ((hmax _ hy).trans hζ.le)
     (by linarith : (0 : ℝ) ≤ 1 - t⁻¹) htinv0.le (by ring)
-  rw [combo_prolong x z ht0.ne', hζ, _root_.EReal.coe_le_coe_iff] at hcomb
+  rw [combo_prolong x z ht0.ne', hζ, EReal.coe_le_coe_iff] at hcomb
   nlinarith [mul_pos (by linarith : (0 : ℝ) < 1 - t⁻¹) (by linarith : (0 : ℝ) < ζ - ξ)]
 
 /-- Every maximiser lies in a face of `C` on which `f` is constant, so the maximiser set is a union
@@ -180,8 +180,8 @@ theorem ConvexFn.add_le_of_forall_add_smul_le (hf : ConvexFn f) {u v : E} {β : 
     (hray : ∀ t : ℝ, 0 ≤ t → f (u + t • v) ≤ (β : EReal)) : f (u + v) ≤ f u := by
   by_contra hcon
   have hlt : f u < f (u + v) := not_le.1 hcon
-  obtain ⟨ξ, hξ1, hξ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hlt
-  obtain ⟨η, hη1, hη2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hξ2
+  obtain ⟨ξ, hξ1, hξ2⟩ := EReal.lt_iff_exists_real_btwn.1 hlt
+  obtain ⟨η, hη1, hη2⟩ := EReal.lt_iff_exists_real_btwn.1 hξ2
   have hξη : ξ < η := by exact_mod_cast hη1
   set t : ℝ := max 1 (1 + (β - ξ) / (η - ξ)) with ht
   have ht1 : (1 : ℝ) ≤ t := le_max_left _ _
@@ -483,7 +483,7 @@ theorem mem_normalCone_of_mem_subgradient_of_isMaxOn (hxb : f x ≠ ⊥) (hxt : 
   intro z hz
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hxb (lt_top_iff_ne_top.2 hxt)
   have h2 : f x + ((B (z - x) y : ℝ) : EReal) ≤ f x := le_trans (hy z) (hmax z hz)
-  rw [hr, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at h2
+  rw [hr, ← EReal.coe_add, EReal.coe_le_coe_iff] at h2
   linarith
 
 /-- Non-vanishing clause: if `f` is not constant on `C`, no subgradient at a maximiser can be

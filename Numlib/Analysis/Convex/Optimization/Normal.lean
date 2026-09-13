@@ -77,7 +77,7 @@ theorem clFn_zero_eq_iSup_iInf (hf : ConvexFn f) :
   have hterm : ∀ y : F, ((B (0 : E) y : ℝ) : EReal) - conj B f y
       = ⨅ x : E, (((B x (-y) : ℝ) : EReal) + f x) := by
     intro y
-    rw [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero, zero_sub, conj_apply,
+    rw [map_zero, LinearMap.zero_apply, EReal.coe_zero, zero_sub, conj_apply,
       EReal.neg_iSup]
     refine iInf_congr fun x => ?_
     have hb : (B x (-y) : ℝ) = -(B x y) := by rw [map_neg]
@@ -130,7 +130,7 @@ theorem neg_supBifun (G : Bifun Y V) :
 into the corresponding hypothesis about the convex program `-G`. -/
 theorem domBifun_neg (G : Bifun Y V) : domBifun (fun y v => -(G y v)) = domConcaveBifun G := by
   ext y
-  simp only [mem_domBifun, mem_domConcaveBifun, ne_eq, _root_.EReal.neg_eq_top_iff]
+  simp only [mem_domBifun, mem_domConcaveBifun, ne_eq, EReal.neg_eq_top_iff]
 
 /-- The mirror of `dom_infBifun`. -/
 theorem domConcave_supBifun (G : Bifun Y V) : domConcave (supBifun G) = domConcaveBifun G := by
@@ -242,8 +242,8 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 /-- Negating a sum whose second summand is finite. -/
 private theorem neg_neg_add_coe {a : EReal} {c : ℝ} :
     -(-a + (c : EReal)) = a + ((-c : ℝ) : EReal) := by
-  rw [_root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top _)) (.inr (_root_.EReal.coe_ne_bot _)),
-    neg_neg, sub_eq_add_neg, ← _root_.EReal.coe_neg]
+  rw [EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _)),
+    neg_neg, sub_eq_add_neg, ← EReal.coe_neg]
 
 /-- The dual of `clFn_infBifun_zero_eq_iSup_adjointBifun`: the concave closure of the dual
 perturbation function at the origin is the optimal value of the doubly-adjoint program. -/
@@ -426,8 +426,8 @@ theorem infBifun_shiftBifun (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U 
     infBifun (shiftBifun Bx F y) u = -(conj Bx (F u) y) := by
   rw [infBifun_apply, conj_apply, EReal.neg_iSup]
   refine iInf_congr fun x => ?_
-  rw [shiftBifun_apply, _root_.EReal.neg_sub (Or.inl (_root_.EReal.coe_ne_bot ((Bx x) y)))
-    (Or.inl (_root_.EReal.coe_ne_top ((Bx x) y))), sub_eq_add_neg]
+  rw [shiftBifun_apply, EReal.neg_sub (Or.inl (EReal.coe_ne_bot ((Bx x) y)))
+    (Or.inl (EReal.coe_ne_top ((Bx x) y))), sub_eq_add_neg]
   exact add_comm _ _
 
 end Shift
@@ -452,7 +452,7 @@ theorem convexBifun_shiftBifun (hF : ConvexBifun F) (y : Y) :
   have heq : (fun p : U × X => graphFn F p + ((-(Bx p.2 y) : ℝ) : EReal))
       = graphFn (shiftBifun Bx F y) := by
     funext p
-    simp only [graphFn, shiftBifun, _root_.EReal.coe_neg, sub_eq_add_neg]
+    simp only [graphFn, shiftBifun, EReal.coe_neg, sub_eq_add_neg]
   refine convexBifun_iff.2 ?_
   rw [← heq]
   exact h
@@ -464,7 +464,7 @@ theorem adjointBifun_shiftBifun_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx 
   have key : ∀ (z : EReal) (b c : ℝ),
       (z - (c : EReal)) + (b : EReal) = z + ((b - c : ℝ) : EReal) := by
     intro z b c
-    rw [_root_.EReal.coe_sub, sub_eq_add_neg z, sub_eq_add_neg ((b : ℝ) : EReal), add_assoc,
+    rw [EReal.coe_sub, sub_eq_add_neg z, sub_eq_add_neg ((b : ℝ) : EReal), add_assoc,
       add_comm (-(((c : ℝ) : EReal))) (((b : ℝ) : EReal))]
   simp only [adjointBifun_apply, shiftBifun_apply, map_zero, sub_zero, key]
 
@@ -507,9 +507,9 @@ theorem mem_domConcaveBifun_adjointBifun (hF : ConvexBifun F) (hc : Consistent F
     · have hle : infBifun (shiftBifun Bx F y) 0 ≤ shiftBifun Bx F y 0 x₀ := iInf_le _ x₀
       refine lt_of_le_of_lt hle ?_
       rw [shiftBifun_apply, sub_eq_add_neg]
-      exact _root_.EReal.add_lt_top hx₀
-        (by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact _root_.EReal.coe_ne_bot _)
-    · rw [infBifun_shiftBifun, Ne, _root_.EReal.neg_eq_bot_iff]
+      exact EReal.add_lt_top hx₀
+        (by rw [Ne, EReal.neg_eq_top_iff]; exact EReal.coe_ne_bot _)
+    · rw [infBifun_shiftBifun, Ne, EReal.neg_eq_bot_iff]
       exact h u
   have hcl := (convexFn_infBifun (convexBifun_shiftBifun (Bx := Bx) hF y)).proper_clFn hprop
   have hne : supBifun (adjointBifun Bu Bx F) y ≠ ⊥ := by
@@ -535,7 +535,7 @@ theorem normal_of_exists_setOf_le (hF : ConvexBifun F) (hcl : ClosedBifun F)
       Bornology.IsBounded {x : X | F 0 x ≤ (α : EReal)}) :
     Normal F := by
   obtain ⟨α, ⟨x₀, hx₀⟩, hbd⟩ := h
-  have hx₀top : F 0 x₀ ≠ ⊤ := (lt_of_le_of_lt hx₀ (_root_.EReal.coe_lt_top α)).ne
+  have hx₀top : F 0 x₀ ≠ ⊤ := (lt_of_le_of_lt hx₀ (EReal.coe_lt_top α)).ne
   have hcons : Consistent F := ⟨x₀, hx₀top⟩
   have hlsc : LowerSemicontinuous (graphFn F) := ClosedFn.lowerSemicontinuous hcl
   have hcont : ∀ u : U, Continuous fun x : X => (u, x) := fun u =>
@@ -578,9 +578,9 @@ theorem normal_of_exists_setOf_le (hF : ConvexBifun F) (hcl : ClosedBifun F)
       have hinf : infBifun (shiftBifun Bx F z) u = ⊤ := by
         rw [infBifun_apply]
         refine le_antisymm le_top (le_iInf fun x => ?_)
-        rw [shiftBifun_apply, htop x, _root_.EReal.top_sub_coe]
+        rw [shiftBifun_apply, htop x, EReal.top_sub_coe]
       rw [infBifun_shiftBifun] at hinf
-      rw [_root_.EReal.neg_eq_top_iff.1 hinf]
+      rw [EReal.neg_eq_top_iff.1 hinf]
       exact bot_ne_top
   exact normal_of_concaveStronglyConsistent_adjointBifun hF hcl
     (interior_subset_intrinsicInterior (interior_maximal hsub isOpen_interior h0int))
@@ -637,7 +637,7 @@ theorem normal_of_exists_setOf_ge_adjointBifun (hF : ConvexBifun F) (hcl : Close
     ext v
     have hiff : (-(adjointBifun Bu Bx F 0 v) ≤ ((-α : ℝ) : EReal))
         ↔ ((α : EReal) ≤ adjointBifun Bu Bx F 0 v) := by
-      rw [_root_.EReal.neg_le, _root_.EReal.coe_neg, neg_neg]
+      rw [EReal.neg_le, EReal.coe_neg, neg_neg]
     exact hiff
   have hne' : {v : V | -(adjointBifun Bu Bx F 0 v) ≤ ((-α : ℝ) : EReal)}.Nonempty := by
     rw [hset]; exact hne
@@ -718,8 +718,8 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [FiniteDim
 /-- Negating a sum whose first summand is finite. -/
 private theorem neg_coe_add {c : ℝ} {w : EReal} :
     -(((c : ℝ) : EReal) + w) = ((-c : ℝ) : EReal) - w := by
-  rw [_root_.EReal.neg_add (.inl (_root_.EReal.coe_ne_bot _)) (.inl (_root_.EReal.coe_ne_top _)),
-    ← _root_.EReal.coe_neg]
+  rw [EReal.neg_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _)),
+    ← EReal.coe_neg]
 
 omit [FiniteDimensional ℝ U] [IsCompatiblePairing Bu] in
 /-- The dual objective, negated, is the conjugate of the perturbation function at the reflected
@@ -735,7 +735,7 @@ omit [FiniteDimensional ℝ U] [IsCompatiblePairing Bu] in
 `+∞` at `-v`. -/
 theorem adjointBifun_zero_eq_bot_iff (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (v : V) :
     adjointBifun Bu Bx F 0 v = ⊥ ↔ conj Bu (infBifun F) (-v) = ⊤ := by
-  rw [← neg_adjointBifun_zero_apply (Bu := Bu) Bx (F := F) v, _root_.EReal.neg_eq_top_iff]
+  rw [← neg_adjointBifun_zero_apply (Bu := Bu) Bx (F := F) v, EReal.neg_eq_top_iff]
 
 /-- **Inconsistency of the dual**: `(P*)` is inconsistent exactly when some perturbation of `(P)`
 is unbounded below. Closedness of `F` is not needed, because `F*` never sees the difference
@@ -825,7 +825,7 @@ theorem not_consistent_iff_exists_supBifun_eq_top (hF : ConvexBifun F) (hcl : Cl
   push Not
   simp only [hF0]
   rw [forall_conj_eq_top_iff (B := Bx.flip) hg]
-  exact exists_congr fun y => _root_.EReal.neg_eq_bot_iff
+  exact exists_congr fun y => EReal.neg_eq_bot_iff
 
 /-- The positive form: `(P)` is consistent exactly when no perturbation of `(P*)` is unbounded
 above. -/
@@ -861,21 +861,21 @@ theorem mem_concaveKuhnTucker_iff_neg_mem_kuhnTucker :
     rw [EReal.neg_iSup]
     refine iInf_congr fun y => ?_
     have hb : ((B y (-x) : ℝ) : EReal) = -(((B y x : ℝ)) : EReal) := by
-      rw [← _root_.EReal.coe_neg, map_neg]
-    rw [hinf y, hb, _root_.EReal.neg_add (.inl (_root_.EReal.coe_ne_bot _))
-      (.inl (_root_.EReal.coe_ne_top _))]
+      rw [← EReal.coe_neg, map_neg]
+    rw [hinf y, hb, EReal.neg_add (.inl (EReal.coe_ne_bot _))
+      (.inl (EReal.coe_ne_top _))]
     rfl
   constructor
   · rintro ⟨h1, h2, h3⟩
     refine ⟨?_, ?_, ?_⟩
-    · rw [hinf 0, ne_eq, _root_.EReal.neg_eq_top_iff]
+    · rw [hinf 0, ne_eq, EReal.neg_eq_top_iff]
       exact h2
-    · rw [hinf 0, ne_eq, _root_.EReal.neg_eq_bot_iff]
+    · rw [hinf 0, ne_eq, EReal.neg_eq_bot_iff]
       exact h1
     · rw [hkey, hinf 0, h3]
   · rintro ⟨h1, h2, h3⟩
-    rw [hinf 0, ne_eq, _root_.EReal.neg_eq_top_iff] at h1
-    rw [hinf 0, ne_eq, _root_.EReal.neg_eq_bot_iff] at h2
+    rw [hinf 0, ne_eq, EReal.neg_eq_top_iff] at h1
+    rw [hinf 0, ne_eq, EReal.neg_eq_bot_iff] at h2
     rw [hkey, hinf 0] at h3
     exact ⟨h2, h1, neg_inj.1 h3⟩
 
@@ -964,7 +964,7 @@ theorem ConcavePolyhedralBifun.concaveNormal (hG : ConcavePolyhedralBifun G)
       exact hc
     exact (mem_domConcave.1 h0).ne'
   have hdom : (0 : Y) ∈ dom fun z => -(supBifun G z) := mem_dom.2 (by
-    rw [lt_top_iff_ne_top, ne_eq, _root_.EReal.neg_eq_top_iff]
+    rw [lt_top_iff_ne_top, ne_eq, EReal.neg_eq_top_iff]
     exact hne)
   have hpoly : PolyhedralFn fun z : Y => -(supBifun G z) := by
     rw [neg_supBifun]
@@ -1005,8 +1005,8 @@ omit [AddCommGroup E] [Module ℝ E] [IsTopologicalAddGroup E] [ContinuousSMul �
 filter. -/
 theorem le_limsup_nhds (g : E → EReal) (x : E) : g x ≤ Filter.limsup g (𝓝 x) := by
   have h := liminf_nhds_le (-g) x
-  rw [_root_.EReal.liminf_neg, Pi.neg_apply] at h
-  exact _root_.EReal.neg_le_neg_iff.1 h
+  rw [EReal.liminf_neg, Pi.neg_apply] at h
+  exact EReal.neg_le_neg_iff.1 h
 
 /-- The concave mirror of `clFn_eq_liminf_or`: for concave `g` the concave closure at `x` is the
 `limsup` of `g` at `x`, except when the left side is `+∞` and the right `-∞`. -/
@@ -1014,12 +1014,12 @@ theorem clConcave_eq_limsup_or (hg : ConcaveFn g) (x : E) :
     clConcave g x = Filter.limsup g (𝓝 x)
       ∨ (clConcave g x = ⊤ ∧ Filter.limsup g (𝓝 x) = ⊥) := by
   have hkey : Filter.liminf (fun z => -(g z)) (𝓝 x) = -(Filter.limsup g (𝓝 x)) :=
-    _root_.EReal.liminf_neg
+    EReal.liminf_neg
   rcases clFn_eq_liminf_or (concaveFn_iff_convexFn_neg.1 hg) x with heq | ⟨hbot, htop⟩
   · exact Or.inl (by rw [clConcave_apply, heq, hkey, neg_neg])
-  · refine Or.inr ⟨by rw [clConcave_apply, hbot, _root_.EReal.neg_bot], ?_⟩
+  · refine Or.inr ⟨by rw [clConcave_apply, hbot, EReal.neg_bot], ?_⟩
     rw [hkey] at htop
-    exact _root_.EReal.neg_eq_top_iff.1 htop
+    exact EReal.neg_eq_top_iff.1 htop
 
 end ClConcaveLimsup
 
@@ -1174,11 +1174,11 @@ theorem exists_infBifun_eq_of_concaveStronglyConsistent (hF : ConvexBifun F)
       = -(supBifun (adjointBifun Bu Bx F) y) :=
     fun y => (congrFun (neg_supBifun (adjointBifun Bu Bx F)) y).symm
   have ht : infBifun (fun y' v => -(adjointBifun Bu Bx F y' v)) 0 ≠ ⊤ := by
-    rw [hinfneg 0, hgap, ne_eq, _root_.EReal.neg_eq_top_iff]
+    rw [hinfneg 0, hgap, ne_eq, EReal.neg_eq_top_iff]
     exact hbot
   have hp : Proper (infBifun fun y' v => -(adjointBifun Bu Bx F y' v)) := by
     refine ⟨⟨0, lt_top_iff_ne_top.2 ht⟩, fun y => ?_⟩
-    rw [hinfneg y, ne_eq, _root_.EReal.neg_eq_bot_iff]
+    rw [hinfneg y, ne_eq, EReal.neg_eq_bot_iff]
     exact htop y
   obtain ⟨w, hw⟩ := kuhnTucker_nonempty_of_stronglyConsistent (B := Bx.flip)
     (convexBifun_neg_adjointBifun Bu Bx F) hp

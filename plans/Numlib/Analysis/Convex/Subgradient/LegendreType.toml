@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'gradientRange'
 
 [[node]]
-id = 'hasGradientAt_toDual_iff_mem_subgradient'
+id = 'hasGradientAtFn_toDual_iff_mem_subgradient'
 
 [[node]]
 id = 'gradientRange_eq_domSubgradient_conj'

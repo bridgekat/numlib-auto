@@ -68,11 +68,11 @@ theorem sub_coe_le_sub_coe_iff_le_add {z w : EReal} {c d e : ℝ} (he : c - d = 
     | bot => simp
     | top => simp
     | coe t =>
-      rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_eq_coe_iff]
+      rw [← EReal.coe_sub, ← EReal.coe_add, ← EReal.coe_add,
+        EReal.coe_eq_coe_iff]
       linarith
-  rw [← (_root_.EReal.addLECancellable_coe c).add_le_add_iff_right,
-    _root_.EReal.sub_add_cancel, hw]
+  rw [← (EReal.addLECancellable_coe c).add_le_add_iff_right,
+    EReal.sub_add_cancel, hw]
 
 /-- The companion of `sub_coe_le_sub_coe_iff_le_add` with the real moved to the *left*:
 `z - c ≤ w - d ↔ z + e ≤ w` whenever `d - c = e`. -/
@@ -83,11 +83,11 @@ theorem sub_coe_le_sub_coe_iff_add_le {z w : EReal} {c d e : ℝ} (he : d - c = 
     | bot => simp
     | top => simp
     | coe t =>
-      rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_eq_coe_iff]
+      rw [← EReal.coe_sub, ← EReal.coe_add, ← EReal.coe_add,
+        EReal.coe_eq_coe_iff]
       linarith
-  rw [← (_root_.EReal.addLECancellable_coe d).add_le_add_iff_right,
-    _root_.EReal.sub_add_cancel, hz]
+  rw [← (EReal.addLECancellable_coe d).add_le_add_iff_right,
+    EReal.sub_add_cancel, hz]
 
 /-- Subtracting a real number does not move the effective domain: `z - c < ⊤ ↔ z < ⊤`. -/
 theorem sub_coe_lt_top_iff {z : EReal} {c : ℝ} : z - (c : EReal) < ⊤ ↔ z < ⊤ := by
@@ -95,9 +95,9 @@ theorem sub_coe_lt_top_iff {z : EReal} {c : ℝ} : z - (c : EReal) < ⊤ ↔ z <
   | bot => simp
   | top => simp
   | coe r =>
-    refine iff_of_true ?_ (_root_.EReal.coe_lt_top r)
-    rw [← _root_.EReal.coe_sub]
-    exact _root_.EReal.coe_lt_top _
+    refine iff_of_true ?_ (EReal.coe_lt_top r)
+    rw [← EReal.coe_sub]
+    exact EReal.coe_lt_top _
 
 /-- Subtracting a real number does not move the concave effective domain:
 `⊥ < z - c ↔ ⊥ < z`. -/
@@ -106,13 +106,13 @@ theorem bot_lt_sub_coe_iff {z : EReal} {c : ℝ} : ⊥ < z - (c : EReal) ↔ ⊥
   | bot => simp
   | top => simp
   | coe r =>
-    refine iff_of_true ?_ (_root_.EReal.bot_lt_coe r)
-    rw [← _root_.EReal.coe_sub]
-    exact _root_.EReal.bot_lt_coe _
+    refine iff_of_true ?_ (EReal.bot_lt_coe r)
+    rw [← EReal.coe_sub]
+    exact EReal.bot_lt_coe _
 
 /-- Subtracting from a real number is an involution of `EReal`: `r - (r - z) = z`. -/
 theorem coe_sub_coe_sub_self (r : ℝ) (z : EReal) : (r : EReal) - ((r : EReal) - z) = z := by
-  rw [EReal.coe_sub_coe_sub, sub_self, _root_.EReal.coe_zero, zero_add]
+  rw [EReal.coe_sub_coe_sub, sub_self, EReal.coe_zero, zero_add]
 
 /-- Moving an `EReal` across a subtraction from a real number: `z = r - w ↔ r - z = w`. This is
 what turns the two conjugate criteria into a common value. -/
@@ -130,8 +130,8 @@ theorem neg_sub_coe (z : EReal) (r : ℝ) : -(z - (r : EReal)) = (r : EReal) - z
   | bot => simp
   | top => simp
   | coe t =>
-    rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_neg, ← _root_.EReal.coe_sub,
-      _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_sub, ← EReal.coe_neg, ← EReal.coe_sub,
+      EReal.coe_eq_coe_iff]
     ring
 
 /-- Reflecting both sides of an equation between differences by real numbers:
@@ -148,16 +148,16 @@ theorem sub_coe_eq_sub_coe_iff {z w : EReal} {r s : ℝ} :
     | bot => simp
     | top => simp
     | coe t =>
-      rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_eq_coe_iff]
+      rw [← EReal.coe_sub, ← EReal.coe_add, ← EReal.coe_add,
+        EReal.coe_eq_coe_iff]
       ring
   have hw : w - (s : EReal) + ((r + s : ℝ) : EReal) = w + (r : EReal) := by
     induction w with
     | bot => simp
     | top => simp
     | coe t =>
-      rw [← _root_.EReal.coe_sub, ← _root_.EReal.coe_add, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_eq_coe_iff]
+      rw [← EReal.coe_sub, ← EReal.coe_add, ← EReal.coe_add,
+        EReal.coe_eq_coe_iff]
       ring
   constructor
   · intro h
@@ -166,8 +166,8 @@ theorem sub_coe_eq_sub_coe_iff {z w : EReal} {r s : ℝ} :
     have h2 : z - (r : EReal) + ((r + s : ℝ) : EReal)
         = w - (s : EReal) + ((r + s : ℝ) : EReal) := by rw [hz, hw, h]
     exact le_antisymm
-      ((_root_.EReal.addLECancellable_coe (r + s)).add_le_add_iff_right.1 h2.le)
-      ((_root_.EReal.addLECancellable_coe (r + s)).add_le_add_iff_right.1 h2.ge)
+      ((EReal.addLECancellable_coe (r + s)).add_le_add_iff_right.1 h2.le)
+      ((EReal.addLECancellable_coe (r + s)).add_le_add_iff_right.1 h2.ge)
 
 /-- **The reflection that exchanges a class with its conjugate class**:
 `z - r = w - s ↔ -w - r = -z - s`. Both say `z + s = w + r`; the right-hand side is the left with
@@ -175,11 +175,11 @@ the two `EReal`s negated and exchanged, which is what conjugating a bifunction d
 theorem sub_coe_eq_sub_coe_iff_neg {z w : EReal} {r s : ℝ} :
     z - (r : EReal) = w - (s : EReal) ↔ -w - (r : EReal) = -z - (s : EReal) := by
   have hw : -w - (r : EReal) = -(w + (r : EReal)) :=
-    (_root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top r))
-      (.inr (_root_.EReal.coe_ne_bot r))).symm
+    (EReal.neg_add (.inr (EReal.coe_ne_top r))
+      (.inr (EReal.coe_ne_bot r))).symm
   have hz : -z - (s : EReal) = -(z + (s : EReal)) :=
-    (_root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top s))
-      (.inr (_root_.EReal.coe_ne_bot s))).symm
+    (EReal.neg_add (.inr (EReal.coe_ne_top s))
+      (.inr (EReal.coe_ne_bot s))).symm
   rw [sub_coe_eq_sub_coe_iff, hw, hz, _root_.neg_inj, eq_comm]
 
 end ERealSub
@@ -207,14 +207,14 @@ theorem mem_concaveSubgradient_iff_neg_mem_subgradient_neg :
     y ∈ concaveSubgradient B g x ↔ -y ∈ subgradient B (fun z => -(g z)) x := by
   refine forall_congr' fun z => ?_
   have hcoe : ((B (z - x) (-y) : ℝ) : EReal) = -((B (z - x) y : ℝ) : EReal) := by
-    rw [map_neg, _root_.EReal.coe_neg]
+    rw [map_neg, EReal.coe_neg]
   have hsum : -(g x) + -((B (z - x) y : ℝ) : EReal)
       = -(g x + ((B (z - x) y : ℝ) : EReal)) := by
     have h : -(g x + ((B (z - x) y : ℝ) : EReal)) = -(g x) + -((B (z - x) y : ℝ) : EReal) :=
-      _root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top _)) (.inr (_root_.EReal.coe_ne_bot _))
+      EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _))
     exact h.symm
   change _ ↔ -(g x) + ((B (z - x) (-y) : ℝ) : EReal) ≤ -(g z)
-  rw [hcoe, hsum, _root_.EReal.neg_le_neg_iff]
+  rw [hcoe, hsum, EReal.neg_le_neg_iff]
 
 theorem neg_mem_concaveSubgradient_iff :
     -y ∈ concaveSubgradient B g x ↔ y ∈ subgradient B (fun z => -(g z)) x := by

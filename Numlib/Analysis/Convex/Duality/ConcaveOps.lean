@@ -42,12 +42,10 @@ namespace ConvexAnalysis
 
 /-! ### `EReal` bookkeeping -/
 
-/-- Negation distributes over an `EReal` sum as soon as neither summand is `⊥`: the mirror of
-`EReal.neg_add_of_ne_top`, and with it the whole sign dictionary for sums. -/
-theorem neg_add_of_ne_bot {u v : EReal} (hu : u ≠ ⊥) (hv : v ≠ ⊥) : -(u + v) = -u + -v := by
-  have h := EReal.neg_add_of_ne_top (u := -u) (v := -v) (by simpa using hu) (by simpa using hv)
-  rw [neg_neg, neg_neg] at h
-  rw [← h, neg_neg]
+/-- Negation distributes over an `EReal` sum as soon as neither summand is `⊥`: the symmetric
+special case of Mathlib's `EReal.neg_add`, and with it the whole sign dictionary for sums. -/
+theorem neg_add_of_ne_bot {u v : EReal} (hu : u ≠ ⊥) (hv : v ≠ ⊥) : -(u + v) = -u + -v :=
+  (EReal.neg_add (.inl hu) (.inr hv)).trans (sub_eq_add_neg _ _)
 
 /-! ### Infimal convolution and reflection -/
 
@@ -137,7 +135,7 @@ theorem concaveConj_add_of_isExactSum {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {g�
   have hg₁ : ∀ x, g₁ x ≠ ⊤ := fun x hx => hex.proper_left.ne_bot x (by simp [hx])
   have hg₂ : ∀ x, g₂ x ≠ ⊤ := fun x hx => hex.proper_right.ne_bot x (by simp [hx])
   have hsum : (fun x => -(g₁ x + g₂ x)) = (fun x => -(g₁ x)) + (fun x => -(g₂ x)) :=
-    funext fun x => EReal.neg_add_of_ne_top (hg₁ x) (hg₂ x)
+    funext fun x => (EReal.neg_add (.inr (hg₂ x)) (.inl (hg₁ x))).trans (sub_eq_add_neg _ _)
   funext v
   have step1 : concaveConj B (fun x => g₁ x + g₂ x) v
       = -(conj B ((fun x => -(g₁ x)) + (fun x => -(g₂ x))) (-v)) := by

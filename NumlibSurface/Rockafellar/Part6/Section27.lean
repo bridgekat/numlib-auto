@@ -128,7 +128,7 @@ theorem subsingleton_argmin_of_strictConvexOnFn (hp : Proper f)
   rw [← hxy, hμ] at hstrict
   have hval : ((1 / 2 : ℝ) : EReal) * (μ : EReal) + ((1 / 2 : ℝ) : EReal) * (μ : EReal)
       = (μ : EReal) := by
-    rw [EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_mul, ← EReal.coe_add, EReal.coe_eq_coe_iff]
     ring
   rw [hval] at hstrict
   exact absurd (hμ ▸ hx ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)) (not_le.2 hstrict)
@@ -180,8 +180,8 @@ theorem mem_argmin_of_localMin (hf : ConvexFn f) (hp : Proper f) (hx : x ∈ dom
   rw [hpt] at hcombo
   have hchain : (μ : EReal) ≤ (((1 - t) * μ + t * ν : ℝ) : EReal) :=
     le_trans (hμ ▸ hloc _ hdist) hcombo
-  rw [_root_.EReal.coe_le_coe_iff] at hchain
-  rw [hμ, hν, _root_.EReal.coe_le_coe_iff]
+  rw [EReal.coe_le_coe_iff] at hchain
+  rw [hμ, hν, EReal.coe_le_coe_iff]
   nlinarith
 
 end Opening
@@ -209,7 +209,7 @@ theorem theorem_27_1_a_bddBelow (f : Rn n → EReal) :
 Theorem 23.5 at the origin. Properness, which the book assumes throughout, is not needed. -/
 theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedFn f) :
     argmin f = subgradient (pairing n) (conj (pairing n) f) 0 := by
-  rw [argmin_eq_subgradient_conj_zero (B := pairing n) hf hc, subgradient_flip_pairing]
+  rw [argmin_eq_subgradient_conj_zero (B := pairing n) hf hc, flip_pairing]
 
 /-- **Theorem 27.1(b)**, second sentence: the infimum of `f` is attained exactly when `f*` is
 subdifferentiable at the origin. -/
@@ -318,9 +318,10 @@ theorem theorem_27_1_f_polarCone (hf : ClosedProperConvexFn f) {α : ℝ}
     recessionCone {x : Rn n | f x ≤ (α : EReal)}
       = polarCone (pairing n)
           (PointedCone.hull ℝ (dom (conj (pairing n) f)) : Set (Rn n)) := by
-  rw [polarCone_hull, ← polarCone_flip_pairing]
-  exact recessionCone_setOf_le_eq_polarCone_dom_conj (B := pairing n) hf.convex hf.closed
+  rw [polarCone_hull]
+  have h := recessionCone_setOf_le_eq_polarCone_dom_conj (B := pairing n) hf.convex hf.closed
     hf.proper hne
+  rwa [flip_pairing] at h
 
 /-! ### Theorem 27.1(g): support functions of the level sets -/
 
@@ -638,7 +639,7 @@ theorem corollary_27_3_3_polyhedral {ι₀ ι₁ : Type*} [Finite ι₀]
     have hxD : x ∈ D := by
       by_contra hcon
       rw [Pi.add_apply, indicatorFn_of_notMem hcon,
-        _root_.EReal.add_top_of_ne_bot (hf₀.proper.ne_bot x)] at hxlt
+        EReal.add_top_of_ne_bot (hf₀.proper.ne_bot x)] at hxlt
       exact absurd hxlt (lt_irrefl ⊤)
     refine ⟨x, ⟨(hmemC x).1 hxC, (hmemD x).1 hxD⟩, fun z hz => ?_⟩
     have hstep := hxmin z ((hmemC z).2 hz.1)
@@ -686,7 +687,7 @@ theorem theorem_27_4_necessary_polyhedral (hh : ConvexFn h) (hp : Proper h) (hC 
 
 private theorem quadFn_le_quadFn_iff (u v : Rn n) :
     quadFn (pairing n) u ≤ quadFn (pairing n) v ↔ ‖u‖ ≤ ‖v‖ := by
-  rw [quadFn_apply, quadFn_apply, _root_.EReal.coe_le_coe_iff, pairing_apply, pairing_apply,
+  rw [quadFn_apply, quadFn_apply, EReal.coe_le_coe_iff, pairing_apply, pairing_apply,
     real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq, div_le_div_iff_of_pos_right two_pos]
   exact pow_le_pow_iff_left₀ (norm_nonneg u) (norm_nonneg v) two_ne_zero
 

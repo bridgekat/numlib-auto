@@ -12,7 +12,7 @@ gradient map is continuous where it is defined.
 
 ## Main results
 
-* `HasGradientAt.hasFDerivAt_toReal`, `hasGradientAt_of_hasFDerivAt_toReal` — the dictionary
+* `HasGradientAtFn.hasFDerivAt_toReal`, `hasGradientAtFn_of_hasFDerivAt_toReal` — the dictionary
   between `∇f` for an `EReal`-valued `f` and Mathlib's `fderiv` of the *real trace*
   `fun z => (f z).toReal`, valid at interior points of `dom f`.
 * `exists_lipschitzOnWith_ball` — a proper convex function is Lipschitz on a whole *ball* around
@@ -66,40 +66,40 @@ omit [NormedSpace ℝ E] in
 theorem eventuallyEq_coe_toReal (hp : Proper f) (hx : x ∈ interior (dom f)) :
     f =ᶠ[𝓝 x] fun z => (((f z).toReal : ℝ) : EReal) := by
   filter_upwards [isOpen_interior.mem_nhds hx] with z hz
-  exact (_root_.EReal.coe_toReal (mem_dom.1 (interior_subset hz)).ne (hp.ne_bot z)).symm
+  exact (EReal.coe_toReal (mem_dom.1 (interior_subset hz)).ne (hp.ne_bot z)).symm
 
 /-- A gradient of `f` is a Fréchet derivative of its real trace. -/
-theorem HasGradientAt.hasFDerivAt_toReal (h : HasGradientAt f f' x) :
+theorem HasGradientAtFn.hasFDerivAt_toReal (h : HasGradientAtFn f f' x) :
     HasFDerivAt (fun z => (f z).toReal) f' x := by
   obtain ⟨g, hfg, hd⟩ := h
   refine hd.congr_of_eventuallyEq ?_
   filter_upwards [hfg] with z hz
-  rw [hz, _root_.EReal.toReal_coe]
+  rw [hz, EReal.toReal_coe]
 
 /-- Conversely, at an interior point of `dom f` a Fréchet derivative of the real trace is a
 gradient of `f`. -/
-theorem hasGradientAt_of_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f))
-    (hd : HasFDerivAt (fun z => (f z).toReal) f' x) : HasGradientAt f f' x :=
+theorem hasGradientAtFn_of_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f))
+    (hd : HasFDerivAt (fun z => (f z).toReal) f' x) : HasGradientAtFn f f' x :=
   ⟨_, eventuallyEq_coe_toReal hp hx, hd⟩
 
-theorem hasGradientAt_iff_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f)) :
-    HasGradientAt f f' x ↔ HasFDerivAt (fun z => (f z).toReal) f' x :=
-  ⟨HasGradientAt.hasFDerivAt_toReal, hasGradientAt_of_hasFDerivAt_toReal hp hx⟩
+theorem hasGradientAtFn_iff_hasFDerivAt_toReal (hp : Proper f) (hx : x ∈ interior (dom f)) :
+    HasGradientAtFn f f' x ↔ HasFDerivAt (fun z => (f z).toReal) f' x :=
+  ⟨HasGradientAtFn.hasFDerivAt_toReal, hasGradientAtFn_of_hasFDerivAt_toReal hp hx⟩
 
 theorem differentiableAtFn_iff_differentiableAt_toReal (hp : Proper f)
     (hx : x ∈ interior (dom f)) :
     DifferentiableAtFn f x ↔ DifferentiableAt ℝ (fun z => (f z).toReal) x :=
   ⟨fun ⟨_, h⟩ => h.hasFDerivAt_toReal.differentiableAt,
-    fun h => ⟨_, hasGradientAt_of_hasFDerivAt_toReal hp hx h.hasFDerivAt⟩⟩
+    fun h => ⟨_, hasGradientAtFn_of_hasFDerivAt_toReal hp hx h.hasFDerivAt⟩⟩
 
 /-- Mathlib's `fderiv` of the real trace **is** `∇f`. -/
-theorem HasGradientAt.fderiv_toReal_eq (h : HasGradientAt f f' x) :
+theorem HasGradientAtFn.fderiv_toReal_eq (h : HasGradientAtFn f f' x) :
     fderiv ℝ (fun z => (f z).toReal) x = f' :=
   h.hasFDerivAt_toReal.fderiv
 
 /-- The gradient of `f` at a point of differentiability, named. -/
-theorem DifferentiableAtFn.hasGradientAt_fderiv (h : DifferentiableAtFn f x) :
-    HasGradientAt f (fderiv ℝ (fun z => (f z).toReal) x) x := by
+theorem DifferentiableAtFn.hasGradientAtFn_fderiv (h : DifferentiableAtFn f x) :
+    HasGradientAtFn f (fderiv ℝ (fun z => (f z).toReal) x) x := by
   obtain ⟨f', hf'⟩ := h
   rw [hf'.fderiv_toReal_eq]
   exact hf'
@@ -165,7 +165,7 @@ values of the gradient. -/
 theorem twoSided_dirDeriv_of_differentiableAtFn (hf : ConvexFn f)
     (h : DifferentiableAtFn f x) (y : E) : dirDeriv f x y = -dirDeriv f x (-y) := by
   obtain ⟨f', hf'⟩ := h
-  rw [hf'.dirDeriv_eq hf, hf'.dirDeriv_eq hf, map_neg, _root_.EReal.coe_neg, neg_neg]
+  rw [hf'.dirDeriv_eq hf, hf'.dirDeriv_eq hf, map_neg, EReal.coe_neg, neg_neg]
 
 /-- In any fixed direction `y` the two-sided directional derivative exists at almost every point
 of `int (dom f)`. Here this is a consequence of almost-everywhere differentiability, which supplies
@@ -236,7 +236,7 @@ theorem mem_subgradient_innerL_iff {v : E} :
 
 /-- **In vector form**: at a point of differentiability the subdifferential for the inner-product
 pairing is the single vector representing the gradient. -/
-theorem subgradient_innerL_eq_singleton (hf : ConvexFn f) (h : HasGradientAt f f' x) :
+theorem subgradient_innerL_eq_singleton (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     subgradient (innerₗ E) f x = {(InnerProductSpace.toDual ℝ E).symm f'} := by
   ext v
   rw [mem_subgradient_innerL_iff, h.subgradient_eq hf, Set.mem_singleton_iff,
@@ -263,18 +263,18 @@ theorem subgradient_topDualPairing_eq_singleton {v : E}
     exact mem_subgradient_innerL_iff.1 (by rw [h]; rfl)
 
 /-- Converse, in vector form: a lone subgradient for the inner-product pairing is the gradient. -/
-theorem hasGradientAt_toDual_of_subgradient_eq_singleton (hf : ConvexFn f) (hp : Proper f) {v : E}
+theorem hasGradientAtFn_toDual_of_subgradient_eq_singleton (hf : ConvexFn f) (hp : Proper f) {v : E}
     (h : subgradient (innerₗ E) f x = {v}) :
-    HasGradientAt f (InnerProductSpace.toDual ℝ E v) x :=
-  hasGradientAt_of_subgradient_eq_singleton hf hp (subgradient_topDualPairing_eq_singleton h)
+    HasGradientAtFn f (InnerProductSpace.toDual ℝ E v) x :=
+  hasGradientAtFn_of_subgradient_eq_singleton hf hp (subgradient_topDualPairing_eq_singleton h)
 
 /-- The gradient mapping is continuous on the set where the function is differentiable. This is
 upper semicontinuity of `∂f` with both subdifferentials collapsed to singletons. -/
 theorem continuousOn_fderiv_toReal (hf : ConvexFn f) (hp : Proper f) :
     ContinuousOn (fderiv ℝ fun w => (f w).toReal) {z | DifferentiableAtFn f z} := by
   set g := fderiv ℝ fun w => (f w).toReal with hgdef
-  have hgrad : ∀ z ∈ {z | DifferentiableAtFn f z}, HasGradientAt f (g z) z := fun _ hz =>
-    DifferentiableAtFn.hasGradientAt_fderiv hz
+  have hgrad : ∀ z ∈ {z | DifferentiableAtFn f z}, HasGradientAtFn f (g z) z := fun _ hz =>
+    DifferentiableAtFn.hasGradientAtFn_fderiv hz
   intro x hx
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
   have hev := eventually_nhds_subgradient_subset_add_closedBall hf hp
@@ -306,7 +306,7 @@ same gradients. -/
 theorem continuousOn_fderiv_of_convexOn {C : Set E} {g : E → ℝ} (hC : IsOpen C)
     (hne : C.Nonempty) (hg : ConvexOn ℝ C g) (hd : DifferentiableOn ℝ g C) :
     ContinuousOn (fderiv ℝ g) C := by
-  set f : E → EReal := restrict C fun z => ((g z : ℝ) : EReal) with hfdef
+  set f : E → EReal := restrictFn C fun z => ((g z : ℝ) : EReal) with hfdef
   have hcf : ConvexFn f := (convexOn_iff_convexFn C g).1 hg
   have hdom : dom f = C := by
     ext z
@@ -314,13 +314,13 @@ theorem continuousOn_fderiv_of_convexOn {C : Set E} {g : E → ℝ} (hC : IsOpen
   have hp : Proper f := ⟨by rw [hdom]; exact hne, fun z => by
     by_cases hz : z ∈ C <;> simp [hfdef, hz]⟩
   have hint : interior (dom f) = C := by rw [hdom, hC.interior_eq]
-  have hgrad : ∀ z ∈ C, HasGradientAt f (fderiv ℝ g z) z := fun z hz => by
+  have hgrad : ∀ z ∈ C, HasGradientAtFn f (fderiv ℝ g z) z := fun z hz => by
     refine ⟨g, ?_, ((hd z hz).differentiableAt (hC.mem_nhds hz)).hasFDerivAt⟩
     filter_upwards [hC.mem_nhds hz] with w hw
     simp [hfdef, hw]
   have hsub : C ⊆ {z | DifferentiableAtFn f z} := fun z hz => ⟨_, hgrad z hz⟩
   exact ((continuousOn_fderiv_toReal hcf hp).mono hsub).congr fun z hz =>
-    (HasGradientAt.fderiv_toReal_eq (hgrad z hz)).symm
+    (HasGradientAtFn.fderiv_toReal_eq (hgrad z hz)).symm
 
 end GradientContinuity
 

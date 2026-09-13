@@ -17,7 +17,7 @@ Mathlib's `ConvexOn.convex_epigraph`, which uses the codomain of the function.
 * `epi f` — the epigraph of `f`, a subset of `E × ℝ`.
 * `dom f` — the effective domain of `f`, where `f < ⊤`.
 * `Proper f` — `f` is finite somewhere and never `⊥`.
-* `restrict s f` — `f` restricted to `s`, extended by `⊤`.
+* `restrictFn s f` — `f` restricted to `s`, extended by `⊤`.
 * `ConvexFn f` — `f` is convex, meaning that `epi f` is a convex set.
 * `scaleSnd c` — the vertical scaling `(x, μ) ↦ (x, c μ)` of `E × ℝ`, which is how a scalar
   multiple of `f` acts on epigraphs.
@@ -32,7 +32,9 @@ Mathlib's `ConvexOn.convex_epigraph`, which uses the codomain of the function.
 * `ConvexFn.convex_lt`, `ConvexFn.convex_le`, `ConvexFn.convex_dom` — sublevel sets and the
   effective domain of a convex function are convex.
 * `convexFn_coe_mul`, `dom_coe_mul`, `proper_coe_mul` — a non-negative multiple `cf`.
-* `convexOn_iff_convexFn` — the bridge to Mathlib's `ConvexOn`.
+* `convexOn_iff_convexFn` — the bridge to Mathlib's `ConvexOn`; with it the dictionary between
+  real-valued and `EReal`-valued functions: `dom_coe`, `proper_coe`, `dom_restrictFn_coe`,
+  `proper_restrictFn_coe`, `ConvexOn.convexFn_restrictFn_coe`, `ConvexOn.convexFn_coe`.
 * `ConvexFn.sum_le` — Jensen's inequality for a finite convex combination.
 
 ## References
@@ -87,7 +89,7 @@ theorem dom_eq_fst_image_epi (f : E → EReal) : dom f = Prod.fst '' epi f := by
     · obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top h.ne' hx
       exact ⟨(x, r), by simp [epi, hr], rfl⟩
   · rintro ⟨⟨y, μ⟩, hy, rfl⟩
-    exact lt_of_le_of_lt hy (_root_.EReal.coe_lt_top μ)
+    exact lt_of_le_of_lt hy (EReal.coe_lt_top μ)
 
 /-- The epigraph is nonempty exactly when the effective domain is: both say `f ≢ +∞`. -/
 theorem epi_nonempty_iff (f : E → EReal) : (epi f).Nonempty ↔ (dom f).Nonempty := by
@@ -110,14 +112,14 @@ structure Proper (f : E → EReal) : Prop where
 
 /-- `f` restricted to `s` and extended by `⊤` off `s` — the standing encoding of "a convex function
 given on a convex set". The `⨅` formulation avoids a decidability hypothesis;
-`restrict_of_mem` and `restrict_of_notMem` are the defining equations. -/
-noncomputable def restrict (s : Set E) (f : E → EReal) : E → EReal := fun x => ⨅ _ : x ∈ s, f x
+`restrictFn_of_mem` and `restrictFn_of_notMem` are the defining equations. -/
+noncomputable def restrictFn (s : Set E) (f : E → EReal) : E → EReal := fun x => ⨅ _ : x ∈ s, f x
 
-@[simp] theorem restrict_of_mem {s : Set E} {f : E → EReal} {x : E} (hx : x ∈ s) :
-    restrict s f x = f x := iInf_pos hx
+@[simp] theorem restrictFn_of_mem {s : Set E} {f : E → EReal} {x : E} (hx : x ∈ s) :
+    restrictFn s f x = f x := iInf_pos hx
 
-@[simp] theorem restrict_of_notMem {s : Set E} {f : E → EReal} {x : E} (hx : x ∉ s) :
-    restrict s f x = ⊤ := iInf_neg hx
+@[simp] theorem restrictFn_of_notMem {s : Set E} {f : E → EReal} {x : E} (hx : x ∉ s) :
+    restrictFn s f x = ⊤ := iInf_neg hx
 
 /-! #### Non-negative scalar multiples
 
@@ -132,7 +134,7 @@ theorem dom_coe_mul {c : ℝ} (hc : 0 < c) (f : E → EReal) :
   rw [mem_dom, mem_dom]
   refine ⟨fun h => ?_, fun h => lt_of_le_of_ne le_top (EReal.coe_mul_ne_top hc h.ne)⟩
   by_contra hcon
-  rw [top_le_iff.1 (not_lt.1 hcon), _root_.EReal.coe_mul_top_of_pos hc] at h
+  rw [top_le_iff.1 (not_lt.1 hcon), EReal.coe_mul_top_of_pos hc] at h
   exact lt_irrefl _ h
 
 /-- **A non-negative multiple of a proper function is proper.** At `c = 0` the product is the
@@ -201,7 +203,7 @@ theorem convexFn_add_coe {f : E → EReal} (hf : ConvexFn f) {l : E → ℝ}
   have hcomb := hf.epi_combo (EReal.add_coe_le_coe_iff.1 hx)
     (EReal.add_coe_le_coe_iff.1 hy) ha hb hab
   refine EReal.add_coe_le_coe_iff.2 (hcomb.trans (le_of_eq ?_))
-  rw [_root_.EReal.coe_eq_coe_iff, hl x y a b hab]
+  rw [EReal.coe_eq_coe_iff, hl x y a b hab]
   ring
 
 /-- **Translating the argument preserves convexity.** `x ↦ f (a + x)` is convex whenever `f` is,
@@ -261,8 +263,9 @@ theorem convexFn_iff_forall_lt (f : E → EReal) :
         f (a • x + b • y) < ((a * α + b * β : ℝ) : EReal) := by
   constructor
   · intro hf x y a b ha hb hab α β hx hy
-    obtain ⟨α', hxα', hα'⟩ := EReal.exists_real_btwn_of_lt_coe hx
-    obtain ⟨β', hyβ', hβ'⟩ := EReal.exists_real_btwn_of_lt_coe hy
+    obtain ⟨α', hxα', hα'⟩ := EReal.exists_between_coe_real hx
+    obtain ⟨β', hyβ', hβ'⟩ := EReal.exists_between_coe_real hy
+    rw [EReal.coe_lt_coe_iff] at hα' hβ'
     refine lt_of_le_of_lt (hf.epi_combo hxα'.le hyβ'.le ha.le hb.le hab) ?_
     exact_mod_cast add_lt_add (by nlinarith) (by nlinarith)
   · intro h
@@ -273,7 +276,8 @@ theorem convexFn_iff_forall_lt (f : E → EReal) :
     rcases eq_or_lt_of_le hb with rfl | hb'
     · have ha1 : a = 1 := by linarith
       subst ha1; simpa using hx
-    · refine EReal.le_coe_of_forall_lt (fun q hq => ?_)
+    · refine EReal.le_of_forall_lt_iff_le.1 (fun q hq => le_of_lt ?_)
+      replace hq := EReal.coe_lt_coe_iff.1 hq
       have hx' : f x < ((μ + (q - (a * μ + b * ν)) : ℝ) : EReal) :=
         lt_of_le_of_lt hx (by exact_mod_cast (by linarith : μ < μ + (q - (a * μ + b * ν))))
       have hy' : f y < ((ν + (q - (a * μ + b * ν)) : ℝ) : EReal) :=
@@ -299,14 +303,15 @@ theorem convexFn_iff_le {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
       rcases eq_top_or_lt_top (f y) with hy | hy
       · rw [hy, EReal.mul_top_of_pos (hacoe hb), EReal.top_add_top]; exact le_top
       · obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf y) hy
-        rw [hq, EReal.coe_mul_coe, EReal.top_add_coe]; exact le_top
+        rw [hq, ← EReal.coe_mul, EReal.top_add_coe]; exact le_top
     obtain ⟨p, hp⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf x) hx
     rcases eq_top_or_lt_top (f y) with hy | hy
-    · rw [hy, EReal.mul_top_of_pos (hacoe hb), hp, EReal.coe_mul_coe, EReal.coe_add_top]
+    · rw [hy, EReal.mul_top_of_pos (hacoe hb), hp, ← EReal.coe_mul, EReal.coe_add_top]
       exact le_top
     obtain ⟨q, hq⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf y) hy
-    rw [hp, hq, EReal.coe_mul_coe, EReal.coe_mul_coe, ← EReal.coe_add]
-    refine EReal.le_coe_of_forall_lt (fun r hr => ?_)
+    rw [hp, hq, ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add]
+    refine EReal.le_of_forall_lt_iff_le.1 (fun r hr => le_of_lt ?_)
+    replace hr := EReal.coe_lt_coe_iff.1 hr
     have hx' : f x < ((p + (r - (a * p + b * q)) : ℝ) : EReal) := by
       rw [hp]; exact_mod_cast (by linarith : p < p + (r - (a * p + b * q)))
     have hy' : f y < ((q + (r - (a * p + b * q)) : ℝ) : EReal) := by
@@ -321,7 +326,7 @@ theorem convexFn_iff_le {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
     obtain ⟨q, hq⟩ :=
       EReal.exists_coe_of_ne_bot_of_lt_top (hf y) (hy.trans (EReal.coe_lt_top β))
     refine lt_of_le_of_lt (h x y a b ha hb hab) ?_
-    rw [hp, hq, EReal.coe_mul_coe, EReal.coe_mul_coe, ← EReal.coe_add]
+    rw [hp, hq, ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add]
     rw [hp] at hx; rw [hq] at hy
     have hpα : p < α := by exact_mod_cast hx
     have hqβ : q < β := by exact_mod_cast hy
@@ -361,7 +366,7 @@ theorem ConvexFn.convex_le {f : E → EReal} (hf : ConvexFn f) (α : EReal) :
   change f (a • x + b • y) ≤ α
   induction α with
   | bot =>
-    refine le_of_eq (EReal.eq_bot_of_forall_le_coe (fun r => ?_))
+    refine le_of_eq (le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ => ?_))
     have := hf.epi_combo (μ := r) (ν := r) (hx'.trans bot_le) (hy'.trans bot_le) ha'.le hb'.le hab
     refine this.trans (le_of_eq ?_)
     exact_mod_cast (by linear_combination r * hab : a * r + b * r = r)
@@ -378,19 +383,71 @@ theorem ConvexFn.convex_dom {f : E → EReal} (hf : ConvexFn f) : Convex ℝ (do
 /-! ### The bridge to Mathlib's `ConvexOn` -/
 
 omit [AddCommGroup E] [Module ℝ E] in
-theorem epi_restrict_coe (s : Set E) (g : E → ℝ) :
-    epi (restrict s fun x => (g x : EReal)) = {p : E × ℝ | p.1 ∈ s ∧ g p.1 ≤ p.2} := by
+theorem epi_restrictFn_coe (s : Set E) (g : E → ℝ) :
+    epi (restrictFn s fun x => (g x : EReal)) = {p : E × ℝ | p.1 ∈ s ∧ g p.1 ≤ p.2} := by
   ext p
   by_cases hp : p.1 ∈ s <;> simp [epi, hp]
 
 /-- Mathlib's `ConvexOn` for a real-valued function on a set agrees with `ConvexFn` for its
 extension by `⊤`. This is the interface through which the surface layer reuses Mathlib. -/
 theorem convexOn_iff_convexFn (s : Set E) (g : E → ℝ) :
-    ConvexOn ℝ s g ↔ ConvexFn (restrict s fun x => (g x : EReal)) := by
-  rw [convexFn_iff_convex_epi, epi_restrict_coe]
+    ConvexOn ℝ s g ↔ ConvexFn (restrictFn s fun x => (g x : EReal)) := by
+  rw [convexFn_iff_convex_epi, epi_restrictFn_coe]
   exact ⟨fun h => h.convex_epigraph, fun h => convexOn_of_convex_epigraph h⟩
 
 end Module
+
+/-! ### Real-valued functions as `EReal`-valued ones
+
+A book's convex function is real-valued on a convex set `s`, or on the whole space; the backbone's
+is `EReal`-valued. The dictionary: a real-valued `g` on `s` is
+`restrictFn s fun x => (g x : EReal)`, which is proper with effective domain `s` as soon as `s` is
+nonempty, and convex exactly when `g` is `ConvexOn ℝ s`; on the whole space the restriction
+disappears. -/
+
+section RealValued
+
+variable {E : Type*}
+
+@[simp] theorem restrictFn_univ (f : E → EReal) : restrictFn univ f = f :=
+  funext fun x => restrictFn_of_mem (mem_univ x)
+
+/-- A real-valued function, read as `EReal`-valued, has effective domain everything. -/
+@[simp] theorem dom_coe (g : E → ℝ) : dom (fun x => ((g x : ℝ) : EReal)) = univ :=
+  eq_univ_of_forall fun _ => mem_dom.2 (EReal.coe_lt_top _)
+
+/-- A real-valued function on a nonempty space is proper as an `EReal`-valued one. -/
+theorem proper_coe [Nonempty E] (g : E → ℝ) : Proper (fun x => ((g x : ℝ) : EReal)) :=
+  ⟨by simp, fun _ => EReal.coe_ne_bot _⟩
+
+/-- The effective domain of a real-valued function extended by `⊤` is the set it was given on. -/
+theorem dom_restrictFn_coe (s : Set E) (g : E → ℝ) :
+    dom (restrictFn s fun x => (g x : EReal)) = s := by
+  ext x
+  by_cases hx : x ∈ s <;> simp [hx]
+
+/-- The restriction of a real-valued function to a nonempty set is a proper `EReal`-valued
+function: its effective domain is that set, and it never takes the value `⊥`. -/
+theorem proper_restrictFn_coe {s : Set E} (hs : s.Nonempty) (g : E → ℝ) :
+    Proper (restrictFn s fun x => (g x : EReal)) := by
+  refine ⟨by rwa [dom_restrictFn_coe], fun x => ?_⟩
+  by_cases hx : x ∈ s
+  · rw [restrictFn_of_mem hx]; exact EReal.coe_ne_bot _
+  · rw [restrictFn_of_notMem hx]; exact top_ne_bot
+
+variable [AddCommGroup E] [Module ℝ E]
+
+/-- `convexOn_iff_convexFn`, forwards, as dot notation on a `ConvexOn` hypothesis. -/
+theorem _root_.ConvexOn.convexFn_restrictFn_coe {s : Set E} {g : E → ℝ} (h : ConvexOn ℝ s g) :
+    ConvexFn (restrictFn s fun x => (g x : EReal)) :=
+  (convexOn_iff_convexFn s g).1 h
+
+/-- A real-valued function convex on the whole space is convex as an `EReal`-valued one. -/
+theorem _root_.ConvexOn.convexFn_coe {g : E → ℝ} (h : ConvexOn ℝ univ g) :
+    ConvexFn fun x => (g x : EReal) := by
+  simpa using h.convexFn_restrictFn_coe
+
+end RealValued
 
 /-! ### Jensen's inequality for finite convex combinations -/
 

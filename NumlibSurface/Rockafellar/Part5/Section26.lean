@@ -414,7 +414,7 @@ theorem dom_strictOnRelintFn :
   ext x
   by_cases h : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)
   · simp only [mem_dom, strictOnRelintFn_of_mem h, Set.mem_ofPred_eq]
-    exact ⟨fun _ => h, fun _ => _root_.EReal.coe_lt_top _⟩
+    exact ⟨fun _ => h, fun _ => EReal.coe_lt_top _⟩
   · simp only [mem_dom, strictOnRelintFn_of_not_mem h, Set.mem_ofPred_eq, lt_self_iff_false]
     exact ⟨fun hc => absurd hc not_false, fun hc => absurd hc h⟩
 
@@ -511,8 +511,8 @@ theorem strictConvexOnFn_strictOnRelintFn :
       ∨ ((a • x + b • y : Rn 2) 0 = 0 ∧ (a • x + b • y : Rn 2) 1 = 0) :=
     Or.inl ⟨by rw [hzc0]; exact hz0, by rw [hzc1]; exact hz1.le⟩
   rw [strictOnRelintFn_of_mem hxm, strictOnRelintFn_of_mem hym, strictOnRelintFn_of_mem hzm,
-    hzc0, hzc1, EReal.coe_mul_coe, EReal.coe_mul_coe, ← _root_.EReal.coe_add,
-    _root_.EReal.coe_lt_coe_iff]
+    hzc0, hzc1, ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add,
+    EReal.coe_lt_coe_iff]
   have hden : a * (2 * x 0) + b * (2 * y 0) = 2 * (a * x 0 + b * y 0) := by ring
   have hexp : a * (x 1 ^ 2 / (2 * x 0) + x 1 ^ 2) + b * (y 1 ^ 2 / (2 * y 0) + y 1 ^ 2)
       = (a * (x 1 ^ 2 / (2 * x 0)) + b * (y 1 ^ 2 / (2 * y 0)))
@@ -619,7 +619,7 @@ theorem legendreDomain_eq_gradientRange
   ext v
   constructor
   · rintro ⟨z, hz, rfl⟩
-    exact (hdiff hz).hasGradientAt_gradient.mem_gradientRange
+    exact (hdiff hz).hasGradientAtFn_gradient.mem_gradientRange
   · rintro ⟨z, hz⟩
     exact ⟨z, hz.mem_interior_dom, by
       rw [hz.gradient_toReal_eq, LinearIsometryEquiv.symm_apply_apply]⟩
@@ -633,12 +633,12 @@ well-defined. Whatever `x` is chosen in `(∇f)⁻¹(x*)`, the value `⟨x, x*�
 non-empty `C = int (dom f)` on which `f` is differentiable; the well-definedness is a consequence of
 Theorem 23.5 at the two points separately and holds wherever two gradients happen to agree. -/
 theorem theorem_26_4_wellDefined (hf : ConvexFn f) {v x₁ x₂ : Rn n}
-    (h₁ : HasGradientAt f (InnerProductSpace.toDual ℝ (Rn n) v) x₁)
-    (h₂ : HasGradientAt f (InnerProductSpace.toDual ℝ (Rn n) v) x₂) :
+    (h₁ : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x₁)
+    (h₂ : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x₂) :
     pairing n x₁ v - (f x₁).toReal = pairing n x₂ v - (f x₂).toReal := by
   obtain ⟨r₁, hr₁⟩ := h₁.exists_coe
   obtain ⟨r₂, hr₂⟩ := h₂.exists_coe
-  have h := sub_eq_sub_of_hasGradientAt hf h₁ h₂ hr₁ hr₂
+  have h := sub_eq_sub_of_hasGradientAtFn hf h₁ h₂ hr₁ hr₂
   rw [toDual_apply_eq_pairing, toDual_apply_eq_pairing] at h
   rw [hr₁, hr₂]
   simpa using h
@@ -646,10 +646,10 @@ theorem theorem_26_4_wellDefined (hf : ConvexFn f) {v x₁ x₂ : Rn n}
 /-- **Rockafellar, Theorem 26.4**, second and third clauses: `D ⊆ dom f*`, and `g` is the
 restriction of `f*` to `D` — at a point `x*` of `D` the defining formula returns `f*(x*)`. -/
 theorem theorem_26_4_eq (hf : ConvexFn f) {v x : Rn n}
-    (h : HasGradientAt f (InnerProductSpace.toDual ℝ (Rn n) v) x) :
+    (h : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x) :
     conj (pairing n) f v = ((pairing n x v - (f x).toReal : ℝ) : EReal) := by
   obtain ⟨r, hr⟩ := h.exists_coe
-  have hval := conj_eq_of_hasGradientAt hf h hr
+  have hval := conj_eq_of_hasGradientAtFn hf h hr
   rw [conj_innerL_eq_conj_topDualPairing, hval, toDual_apply_eq_pairing, hr]
   simp
 
@@ -660,7 +660,7 @@ theorem theorem_26_4_subset_dom_conj (hf : ConvexFn f)
   rw [legendreDomain_eq_gradientRange hdiff]
   rintro v ⟨x, hx⟩
   rw [mem_dom, theorem_26_4_eq hf hx]
-  exact _root_.EReal.coe_lt_top _
+  exact EReal.coe_lt_top _
 
 /-! ### Corollary 26.4.1 -/
 
@@ -689,7 +689,7 @@ theorem corollary_26_4_1_eq (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : R
     (hx : x ∈ interior (dom f)) :
     conj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
-  theorem_26_4_eq hf (hes.differentiableAtFn hx).hasGradientAt_gradient
+  theorem_26_4_eq hf (hes.differentiableAtFn hx).hasGradientAtFn_gradient
 
 /-- **Rockafellar, Corollary 26.4.1**, last clause: `g` is strictly convex on every convex subset
 of `D`. Since `g = f*` on `D` (Theorem 26.4), this is the essential strict convexity of `f*`, which
@@ -735,7 +735,7 @@ theorem halfPlaneFn_of_nonpos {x : Rn 2} (hx : ¬ 0 < x 1) : halfPlaneFn x = ⊤
 
 theorem halfPlaneFn_ne_bot (x : Rn 2) : halfPlaneFn x ≠ ⊥ := by
   by_cases hx : 0 < x 1
-  · rw [halfPlaneFn_of_pos hx]; exact _root_.EReal.coe_ne_bot _
+  · rw [halfPlaneFn_of_pos hx]; exact EReal.coe_ne_bot _
   · rw [halfPlaneFn_of_nonpos hx]; exact top_ne_bot
 
 theorem dom_halfPlaneFn : dom halfPlaneFn = {x : Rn 2 | 0 < x 1} := by
@@ -760,8 +760,8 @@ theorem convexFn_halfPlaneFn : ConvexFn halfPlaneFn := by
       have h1 : (a • x + b • y) 1 = a * x 1 + b * y 1 := rfl
       have hz : 0 < (a • x + b • y) 1 := by rw [h1]; positivity
       rw [halfPlaneFn_of_pos hx, halfPlaneFn_of_pos hy, halfPlaneFn_of_pos hz, h0, h1,
-        EReal.coe_mul_coe, EReal.coe_mul_coe, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_le_coe_iff]
+        ← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add,
+        EReal.coe_le_coe_iff]
       have hx0 : x 1 ≠ 0 := ne_of_gt hx
       have hy0 : y 1 ≠ 0 := ne_of_gt hy
       have hs : 0 < a * x 1 + b * y 1 := by positivity
@@ -775,17 +775,17 @@ theorem convexFn_halfPlaneFn : ConvexFn halfPlaneFn := by
       have hnn : 0 ≤ a * b * (x 0 * y 1 - y 0 * x 1) ^ 2
           / (4 * (x 1 * y 1 * (a * x 1 + b * y 1))) := by positivity
       linarith
-    · rw [halfPlaneFn_of_nonpos hy, _root_.EReal.coe_mul_top_of_pos hb,
-        _root_.EReal.add_top_of_ne_bot (EReal.coe_mul_ne_bot ha.le (halfPlaneFn_ne_bot x))]
+    · rw [halfPlaneFn_of_nonpos hy, EReal.coe_mul_top_of_pos hb,
+        EReal.add_top_of_ne_bot (EReal.coe_mul_ne_bot ha.le (halfPlaneFn_ne_bot x))]
       exact le_top
-  · rw [halfPlaneFn_of_nonpos hx, _root_.EReal.coe_mul_top_of_pos ha,
-      _root_.EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (halfPlaneFn_ne_bot y))]
+  · rw [halfPlaneFn_of_nonpos hx, EReal.coe_mul_top_of_pos ha,
+      EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (halfPlaneFn_ne_bot y))]
     exact le_top
 
 theorem proper_halfPlaneFn : Proper halfPlaneFn := by
   refine ⟨⟨WithLp.toLp 2 ![0, 1], ?_⟩, halfPlaneFn_ne_bot⟩
   rw [mem_dom, halfPlaneFn_of_pos (x := WithLp.toLp 2 ![0, 1]) (by norm_num)]
-  exact _root_.EReal.coe_lt_top _
+  exact EReal.coe_lt_top _
 
 /-- **The subdifferential of `ξ₁²/4ξ₂` in coordinates.** Both directions come from the same
 completed square: `ξ₁²/4ξ₂ − u₀ξ₁ − u₁ξ₂ = (ξ₁ − 2u₀ξ₂)²/4ξ₂ − ξ₂(u₀² + u₁)`, whose infimum over
@@ -801,8 +801,8 @@ theorem mem_subgradient_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
       have hzs : (0 : ℝ) < (WithLp.toLp 2 ![2 * s * u 0, s] : Rn 2) 1 := hs
       have hle := h (WithLp.toLp 2 ![2 * s * u 0, s] : Rn 2)
       rw [halfPlaneFn_of_pos hx, halfPlaneFn_of_pos hzs, pairing_two] at hle
-      rw [sub_apply_two, sub_apply_two, ← _root_.EReal.coe_add,
-        _root_.EReal.coe_le_coe_iff] at hle
+      rw [sub_apply_two, sub_apply_two, ← EReal.coe_add,
+        EReal.coe_le_coe_iff] at hle
       have e0 : (WithLp.toLp 2 ![2 * s * u 0, s] : Rn 2) 0 = 2 * s * u 0 := rfl
       have e1 : (WithLp.toLp 2 ![2 * s * u 0, s] : Rn 2) 1 = s := rfl
       rw [e0, e1] at hle
@@ -833,7 +833,7 @@ theorem mem_subgradient_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
   · rintro ⟨hu1, hu0⟩ z
     by_cases hz : 0 < z 1
     · rw [halfPlaneFn_of_pos hx, halfPlaneFn_of_pos hz, pairing_two, sub_apply_two,
-        sub_apply_two, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+        sub_apply_two, ← EReal.coe_add, EReal.coe_le_coe_iff]
       have hz4 : (0 : ℝ) < 4 * z 1 := by linarith
       have hxval : x 0 ^ 2 / (4 * x 1) = u 0 ^ 2 * x 1 := by
         have hx0 : x 1 ≠ 0 := ne_of_gt hx
@@ -863,16 +863,16 @@ theorem subgradient_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
 
 /-- The p. 257 example is differentiable throughout `C`, its gradient at `x` being the single
 subgradient there (Theorem 25.1 backwards). -/
-theorem hasGradientAt_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
-    HasGradientAt halfPlaneFn
+theorem hasGradientAtFn_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
+    HasGradientAtFn halfPlaneFn
       (InnerProductSpace.toDual ℝ (Rn 2) (parabolaPoint (x 0 / (2 * x 1)))) x :=
-  hasGradientAt_toDual_of_subgradient_eq_singleton convexFn_halfPlaneFn proper_halfPlaneFn
+  hasGradientAtFn_toDual_of_subgradient_eq_singleton convexFn_halfPlaneFn proper_halfPlaneFn
     (subgradient_halfPlaneFn hx)
 
 theorem differentiableAtFn_halfPlaneFn ⦃z : Rn 2⦄ (hz : z ∈ interior (dom halfPlaneFn)) :
     DifferentiableAtFn halfPlaneFn z := by
   rw [interior_dom_halfPlaneFn] at hz
-  exact ⟨_, hasGradientAt_halfPlaneFn hz⟩
+  exact ⟨_, hasGradientAtFn_halfPlaneFn hz⟩
 
 /-- **Rockafellar, §26 (p. 257).** The image `D` of `C` under `∇f` is exactly the parabola: as
 `x` runs over the open upper half-plane, `ξ₁/2ξ₂` runs over all of `ℝ`, and the second coordinate
@@ -892,7 +892,7 @@ theorem gradientRange_halfPlaneFn : gradientRange halfPlaneFn = parabola := by
   · intro hv
     refine ⟨WithLp.toLp 2 ![v 0, 1 / 2], ?_⟩
     have hx1 : (0 : ℝ) < (WithLp.toLp 2 ![v 0, 1 / 2] : Rn 2) 1 := by norm_num
-    have h := hasGradientAt_halfPlaneFn hx1
+    have h := hasGradientAtFn_halfPlaneFn hx1
     have e0 : (WithLp.toLp 2 ![v 0, 1 / 2] : Rn 2) 0 = v 0 := rfl
     have e1 : (WithLp.toLp 2 ![v 0, 1 / 2] : Rn 2) 1 = 1 / 2 := rfl
     have hpt : parabolaPoint ((WithLp.toLp 2 ![v 0, 1 / 2] : Rn 2) 0
@@ -975,7 +975,7 @@ theorem not_essentiallySmooth_halfPlaneFn : ¬ EssentiallySmooth halfPlaneFn := 
   have htop := hes.tendsto_norm_fderiv hout zs hmem hlim
   have hzero : ∀ i, ‖fderiv ℝ (fun w => (halfPlaneFn w).toReal) (zs i)‖ = 0 := by
     intro i
-    have hg := hasGradientAt_halfPlaneFn (hpos i)
+    have hg := hasGradientAtFn_halfPlaneFn (hpos i)
     rw [hg.fderiv_toReal_eq]
     have hpt : parabolaPoint (zs i 0 / (2 * zs i 1)) = 0 := by
       rw [hcoord0 i, zero_div]
@@ -1115,7 +1115,7 @@ theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, Differentiab
     (x : Rn n) :
     conj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
-  theorem_26_4_eq hf (hdiff x).hasGradientAt_gradient
+  theorem_26_4_eq hf (hdiff x).hasGradientAtFn_gradient
 
 /-! ### Lemma 26.7 -/
 

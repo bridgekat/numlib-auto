@@ -1,10 +1,4 @@
 [[node]]
-id = 'ConvexAnalysis.proper_coe_real'
-
-[[node]]
-id = 'ConvexOn.convexFn_coe'
-
-[[node]]
 id = 'isVariationalInequalitySolution_zero_iff_sub_mem_normalCone'
 source = 'Atkinson–Han, Theoretical Numerical Analysis, (11.3.8)'
 

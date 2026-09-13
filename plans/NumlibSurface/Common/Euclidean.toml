@@ -28,14 +28,4 @@ id = 'pairingAdjoint'
 id = 'pairingProd_euclideanProdEquiv'
 
 [[node]]
-id = 'conj_flip_pairing'
-desc = 'The Euclidean pairing is its own flip, so conjugating against the flip changes nothing.'
-
-[[node]]
 id = 'linFn'
-
-[[node]]
-id = 'exists_linFn'
-
-[[node]]
-id = 'linFn_eq_toDual'

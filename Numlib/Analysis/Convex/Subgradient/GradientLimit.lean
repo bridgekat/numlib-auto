@@ -14,7 +14,7 @@ subdifferentials are singletons, so an inclusion `∂fᵢ x ⊆ ∂f x + εB` *i
 
 * `dist_le_of_subgradient_subset` — an inclusion `∂p u ⊆ ∂q v + ε B` between *singleton*
   subdifferentials is the bound `‖∇p u - ∇q v‖ ≤ ε`.
-* `tendsto_of_hasGradientAt`, `tendstoUniformlyOn_fderiv_toReal` — convergence of the gradients,
+* `tendsto_of_hasGradientAtFn`, `tendstoUniformlyOn_fderiv_toReal` — convergence of the gradients,
   pointwise and uniformly on every compact subset (Theorem 25.7 in [^1]).
 
 ## Implementation notes
@@ -41,7 +41,7 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
 subgradient of `p` at `u`, `b` the only one of `q` at `v`, and `∂p u ⊆ ∂q v + ε B`, then
 `‖a - b‖ ≤ ε`. -/
 theorem dist_le_of_subgradient_subset {p q : E → EReal} {u v : E} {a b : StrongDual ℝ E} {ε : ℝ}
-    (hp : ConvexFn p) (hq : ConvexFn q) (ha : HasGradientAt p a u) (hb : HasGradientAt q b v)
+    (hp : ConvexFn p) (hq : ConvexFn q) (ha : HasGradientAtFn p a u) (hb : HasGradientAtFn q b v)
     (hsub : subgradient (innerₗ E) p u ⊆ subgradient (innerₗ E) q v + closedBall (0 : E) ε) :
     dist a b ≤ ε := by
   have hmem : (InnerProductSpace.toDual ℝ E).symm a ∈ subgradient (innerₗ E) p u := by
@@ -61,11 +61,11 @@ theorem dist_le_of_subgradient_subset {p q : E → EReal} {u v : E} {a b : Stron
 
 /-- The gradients of convex functions converging pointwise on an open convex set converge at every
 point of it — upper semicontinuity of the subdifferential at the constant sequence `xᵢ = x`. -/
-theorem tendsto_of_hasGradientAt (hU : IsOpen U) (hUc : Convex ℝ U) (hf : ∀ i, ConvexFn (f i))
+theorem tendsto_of_hasGradientAtFn (hU : IsOpen U) (hUc : Convex ℝ U) (hf : ∀ i, ConvexFn (f i))
     (hfp : ∀ i, Proper (f i)) (hfU : ∀ i, U ⊆ dom (f i)) (hg : ConvexFn g) (hgp : Proper g)
     (hgU : U ⊆ dom g) (hconv : ∀ z ∈ U, Tendsto (fun i => f i z) atTop (𝓝 (g z))) (hx : x ∈ U)
-    {G : ℕ → StrongDual ℝ E} {G' : StrongDual ℝ E} (hG : ∀ i, HasGradientAt (f i) (G i) x)
-    (hG' : HasGradientAt g G' x) : Tendsto G atTop (𝓝 G') := by
+    {G : ℕ → StrongDual ℝ E} {G' : StrongDual ℝ E} (hG : ∀ i, HasGradientAtFn (f i) (G i) x)
+    (hG' : HasGradientAtFn g G' x) : Tendsto G atTop (𝓝 G') := by
   refine Metric.tendsto_nhds.2 fun ε hε => ?_
   have hev := eventually_subgradient_subset_add_closedBall hU hUc hf hfp hfU hg hgp hgU hconv hx
     (tendsto_const_nhds (x := x) (f := (atTop : Filter ℕ))) (half_pos hε)
@@ -86,10 +86,10 @@ theorem tendstoUniformlyOn_fderiv_toReal (hU : IsOpen U) (hUc : Convex ℝ U)
       (fderiv ℝ fun w => (g w).toReal) atTop S := by
   set Gf : ℕ → E → StrongDual ℝ E := fun i => fderiv ℝ fun w => (f i w).toReal with hGfdef
   set Gg : E → StrongDual ℝ E := fderiv ℝ fun w => (g w).toReal with hGgdef
-  have hgradf : ∀ i, ∀ z ∈ U, HasGradientAt (f i) (Gf i z) z := fun i z hz =>
-    DifferentiableAtFn.hasGradientAt_fderiv (hfd i z hz)
-  have hgradg : ∀ z ∈ U, HasGradientAt g (Gg z) z := fun z hz =>
-    DifferentiableAtFn.hasGradientAt_fderiv (hgd z hz)
+  have hgradf : ∀ i, ∀ z ∈ U, HasGradientAtFn (f i) (Gf i z) z := fun i z hz =>
+    DifferentiableAtFn.hasGradientAtFn_fderiv (hfd i z hz)
+  have hgradg : ∀ z ∈ U, HasGradientAtFn g (Gg z) z := fun z hz =>
+    DifferentiableAtFn.hasGradientAtFn_fderiv (hgd z hz)
   rw [Metric.tendstoUniformlyOn_iff]
   intro ε hε
   by_contra hcon

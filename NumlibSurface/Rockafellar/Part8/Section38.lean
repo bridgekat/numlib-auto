@@ -62,12 +62,12 @@ theorem concaveAdd_apply (a b : EReal) : concaveAdd a b = -(-a + -b) := rfl
 
 /-- The convex convention resolves `∞ − ∞` downwards. -/
 @[simp] theorem convexAdd_top_bot : convexAdd ⊤ ⊥ = ⊥ := by
-  rw [convexAdd_apply, _root_.EReal.add_bot]
+  rw [convexAdd_apply, EReal.add_bot]
 
 /-- The concave convention resolves `∞ − ∞` upwards. -/
 @[simp] theorem concaveAdd_top_bot : concaveAdd ⊤ ⊥ = ⊤ := by
-  rw [concaveAdd_apply, _root_.EReal.neg_top, _root_.EReal.neg_bot, _root_.EReal.bot_add,
-    _root_.EReal.neg_bot]
+  rw [concaveAdd_apply, EReal.neg_top, EReal.neg_bot, EReal.bot_add,
+    EReal.neg_bot]
 
 /-- The two conventions are genuinely different operations, which is why they are named apart
 where the book's `⟨·, ·⟩` carries both. -/
@@ -80,13 +80,13 @@ theorem concaveAdd_eq_convexAdd {a b : EReal} (h₁ : a ≠ ⊤ ∨ b ≠ ⊥) (
     concaveAdd a b = convexAdd a b := by
   have hn₁ : -a ≠ ⊥ ∨ -b ≠ ⊤ := by
     rcases h₁ with h | h
-    · exact Or.inl (by rw [Ne, _root_.EReal.neg_eq_bot_iff]; exact h)
-    · exact Or.inr (by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact h)
+    · exact Or.inl (by rw [Ne, EReal.neg_eq_bot_iff]; exact h)
+    · exact Or.inr (by rw [Ne, EReal.neg_eq_top_iff]; exact h)
   have hn₂ : -a ≠ ⊤ ∨ -b ≠ ⊥ := by
     rcases h₂ with h | h
-    · exact Or.inl (by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact h)
-    · exact Or.inr (by rw [Ne, _root_.EReal.neg_eq_bot_iff]; exact h)
-  have hna : -(-a + -b) = - -a + - -b := _root_.EReal.neg_add hn₁ hn₂
+    · exact Or.inl (by rw [Ne, EReal.neg_eq_top_iff]; exact h)
+    · exact Or.inr (by rw [Ne, EReal.neg_eq_bot_iff]; exact h)
+  have hna : -(-a + -b) = - -a + - -b := EReal.neg_add hn₁ hn₂
   have hb₁ : (- -a : EReal) = a := neg_neg a
   have hb₂ : (- -b : EReal) = b := neg_neg b
   rw [concaveAdd_apply, convexAdd_apply, hna, hb₁, hb₂]

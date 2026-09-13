@@ -91,7 +91,7 @@ theorem imageBifun_indicatorBifun_ofLinearMap (T : U →ₗ[ℝ] X) {f : U → E
       exact mapLin_le h
     · rw [indicatorBifun_apply, eval_ofLinearMap,
         indicatorFn_of_notMem fun hc => h (Set.mem_singleton_iff.1 hc).symm,
-        _root_.EReal.add_top_of_ne_bot (hbf u)]
+        EReal.add_top_of_ne_bot (hbf u)]
       exact le_top
 
 end Image

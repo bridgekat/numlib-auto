@@ -18,27 +18,33 @@ import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
 import Mathlib.Tactic.TFAE
 
 /-!
-# The Euclidean instantiation shared by every `ℝⁿ` surface
+# The Euclidean vocabulary shared by every `ℝⁿ` surface
 
-`Rn n` is `EuclideanSpace ℝ (Fin n)` and `pairing n` is its own inner product read as a bilinear
-map. Together they instantiate the backbone's duality theory at a stroke, which is why a textbook
-written in `ℝⁿ` can state everything without qualification. Nothing here is tied to one book.
+This module is not a book. It is the shared vocabulary in which a textbook written in `ℝⁿ` is
+transcribed: `Rn n` is `EuclideanSpace ℝ (Fin n)` and `pairing n` is its own inner product read as
+a bilinear map. Together they instantiate the backbone's duality theory at a stroke, which is why
+such a textbook can state everything without qualification. Everything general about a
+self-pairing of inner-product type lives in the backbone
+(`Numlib/Analysis/Convex/Duality/InnerPairing.lean`); what is here is the `ℝⁿ` spelling of it.
 
 ## Main definitions
 
 * `Rn n` — the ambient space.
 * `pairing n` — the self-pairing `⟨x, y⟩`, as a `LinearMap` so that the backbone's duality applies.
 * `pairingProd`, `pairingAdjoint` — the pairing on a product, and its sign-flipped form.
-* `linFn b` — the vector `b` read as the linear function `⟨·, b⟩`.
+* `linFn b` — the vector `b` read as the linear function `⟨·, b⟩`, an abbreviation of Mathlib's
+  `innerSL ℝ b` in the book's spelling.
 
 ## Main results
 
-* `flip_pairing` — the pairing is its own flip; `conj_flip_pairing` and its seven companions
-  rewrite away the `.flip` a bipolar theorem hands back.
+* `flip_pairing` — the pairing is its own flip, which rewrites away the `.flip` a bipolar theorem
+  hands back.
 * `pairing_comm`, `forall_pairing_le_comm`, `forall_pairing_lt_comm` — a book writes a linear
   system as `⟨aᵢ, x⟩ ≤ αᵢ` and the backbone puts the variable on the left; these translate.
-* `exists_linFn`, `linFn_eq_toDual` — the Fréchet–Riesz translation between the book's vector `b`
-  and the backbone's continuous linear functional.
+* `pairing_eq_sum`, `pairing_two` — the pairing in coordinates.
+* `exists_linFn`, `linFn_eq_toDual`, `linFn_eq_zero_iff`, `toDual_apply_eq_pairing`,
+  `separatingRight_pairing` — the backbone's Fréchet–Riesz and separation facts about `innerₗ E`,
+  restated for `pairing n` and `linFn`.
 * `pairingProd_euclideanProdEquiv` — `pairingProd` is the inner product of `Rn (m + n)`, read
   through the concatenation of coordinates.
 
@@ -105,9 +111,8 @@ theorem continuous_coord {n : ℕ} (i : Fin n) : Continuous fun x : Rn n => x i 
 
 /-- **`pairing n` separates on the right**, which is the hypothesis the backbone's level-set and
 recession duality asks for in place of a book's `y ≠ 0`. -/
-theorem separatingRight_pairing (n : ℕ) : (pairing n).SeparatingRight := by
-  have h := separatingRight_flip_of_separatingDual (pairing n)
-  rwa [flip_pairing] at h
+theorem separatingRight_pairing (n : ℕ) : (pairing n).SeparatingRight :=
+  separatingRight_innerL
 
 /-- The **product pairing** on `Rn m × Rn n`, which is what a bifunction from `ℝᵐ` to `ℝⁿ` is
 conjugated against. -/
@@ -185,94 +190,44 @@ example : IsCompatiblePairing (pairingAdjoint m n).flip := inferInstance
 
 end Instances
 
-/-! ### Rewriting `.flip` away
-
-`flip_pairing` is a `simp` lemma, but a `.flip` inside a `conj` or a `subgradient` sits under a
-binder `simp` will not always reach. -/
-
-section Flip
-
-variable {n : ℕ}
-
-@[simp] theorem conj_flip_pairing (f : Rn n → EReal) :
-    conj (pairing n).flip f = conj (pairing n) f := by
-  rw [flip_pairing]
-
-@[simp] theorem subgradient_flip_pairing (f : Rn n → EReal) (x : Rn n) :
-    subgradient (pairing n).flip f x = subgradient (pairing n) f x := by
-  rw [flip_pairing]
-
-@[simp] theorem supportSet_flip_pairing (f : Rn n → EReal) :
-    supportSet (pairing n).flip f = supportSet (pairing n) f := by
-  rw [flip_pairing]
-
-@[simp] theorem supportFn_flip_pairing (s : Set (Rn n)) :
-    supportFn (pairing n).flip s = supportFn (pairing n) s := by
-  rw [flip_pairing]
-
-@[simp] theorem polarCone_flip_pairing (K : Set (Rn n)) :
-    polarCone (pairing n).flip K = polarCone (pairing n) K := by
-  rw [flip_pairing]
-
-@[simp] theorem polarSet_flip_pairing (C : Set (Rn n)) :
-    polarSet (pairing n).flip C = polarSet (pairing n) C := by
-  rw [flip_pairing]
-
-@[simp] theorem polarGauge_flip_pairing (k : Rn n → EReal) :
-    polarGauge (pairing n).flip k = polarGauge (pairing n) k := by
-  rw [flip_pairing]
-
-@[simp] theorem polarFn_flip_pairing (f : Rn n → EReal) :
-    polarFn (pairing n).flip f = polarFn (pairing n) f := by
-  rw [flip_pairing]
-
-end Flip
-
 /-! ### The vector picture of a linear function
 
 A book writes a linear function on `ℝⁿ` as `⟨·, b⟩` and quantifies over the vector `b`; the
-backbone quantifies over a continuous linear functional, which is what separation produces. -/
+backbone quantifies over a continuous linear functional, which is what separation produces. The
+translation is Mathlib's `innerSL ℝ b`, here under the book's name `linFn b`; the facts about it
+are the backbone's, restated. -/
 
 section LinFn
 
 variable {n : ℕ}
 
-/-- The vector `b` read as the linear function `⟨·, b⟩`. -/
-noncomputable def linFn (b : Rn n) : Rn n →L[ℝ] ℝ := innerSL ℝ b
+/-- The vector `b` read as the linear function `⟨·, b⟩`: Mathlib's `innerSL ℝ b`. -/
+noncomputable abbrev linFn (b : Rn n) : Rn n →L[ℝ] ℝ := innerSL ℝ b
 
 @[simp] theorem linFn_apply (b x : Rn n) : linFn b x = pairing n x b := by
-  simp only [linFn, pairing_apply]
+  simp only [linFn, innerSL_apply_apply, pairing_apply]
   exact real_inner_comm x b
 
 /-- `⟨·, b⟩` is the zero function exactly when `b` is the zero vector: this is what makes `b ≠ 0`
 and "`{x | ⟨x, b⟩ = β}` is a hyperplane" the same condition. -/
-theorem linFn_eq_zero_iff {b : Rn n} : linFn b = 0 ↔ b = 0 := by
-  constructor
-  · intro h
-    have hb : pairing n b b = 0 := by rw [← linFn_apply b b, h]; rfl
-    exact inner_self_eq_zero.1 hb
-  · rintro rfl
-    ext x
-    simp
+theorem linFn_eq_zero_iff {b : Rn n} : linFn b = 0 ↔ b = 0 :=
+  innerSL_eq_zero_iff
 
 /-- **Every continuous linear function on `ℝⁿ` is `⟨·, b⟩`.** This Fréchet–Riesz identification is
 what lets a surface statement quantify over vectors while its proof quantifies over functionals. -/
 theorem exists_linFn (f : Rn n →L[ℝ] ℝ) : ∃ b : Rn n, linFn b = f :=
-  ⟨(InnerProductSpace.toDual ℝ (Rn n)).symm f, by
-    ext x
-    exact InnerProductSpace.toDual_symm_apply (x := x)⟩
+  exists_innerSL_eq f
 
 /-- **`linFn` is the Fréchet–Riesz map**, so the surface's vector-to-functional translation and the
 one the backbone's gradient results are stated against are the same map. -/
-theorem linFn_eq_toDual (b : Rn n) : linFn b = InnerProductSpace.toDual ℝ (Rn n) b := by
-  ext y
-  simp [linFn]
+theorem linFn_eq_toDual (b : Rn n) : linFn b = InnerProductSpace.toDual ℝ (Rn n) b :=
+  (toDual_eq_innerSL b).symm
 
 /-- The Riesz representative of `v` evaluated at `x` is the book's `⟨x, v⟩`. Every backbone result
-about `HasGradientAt` produces the left-hand side, and every surface statement wants the right. -/
+about `HasGradientAtFn` produces the left-hand side, and every surface statement wants the right. -/
 theorem toDual_apply_eq_pairing (v x : Rn n) :
     (InnerProductSpace.toDual ℝ (Rn n) v) x = pairing n x v :=
-  real_inner_comm x v
+  toDual_apply_eq_innerL v x
 
 end LinFn
 

@@ -64,13 +64,13 @@ theorem recessionFn_conj_le_supportFn_dom (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) 
     have hle : B x (z + a • y) ≤ B x z + a * ν := by rw [hBx]; linarith
     calc ((B x (z + a • y) : ℝ) : EReal) - f x
         ≤ ((B x z + a * ν : ℝ) : EReal) - f x :=
-          _root_.EReal.sub_le_sub (_root_.EReal.coe_le_coe_iff.2 hle) le_rfl
+          EReal.sub_le_sub (EReal.coe_le_coe_iff.2 hle) le_rfl
       _ = (((B x z : ℝ) : EReal) - f x) + ((a * ν : ℝ) : EReal) :=
           EReal.coe_add_sub _ _ _
       _ ≤ conj B f z + ((a * ν : ℝ) : EReal) :=
           add_le_add (sub_le_conj B f x z) le_rfl
   · rw [mem_dom, not_lt, top_le_iff] at hx
-    rw [hx, _root_.EReal.sub_top]
+    rw [hx, EReal.sub_top]
     exact bot_le
 
 /-- **The half that needs properness of `f*`**: `δ*(· | dom f) ≤ (f*) 0⁺`.
@@ -93,7 +93,7 @@ theorem supportFn_dom_le_recessionFn_conj (hp : Proper f) (hc : Proper (conj B f
     have hsub := sub_le_conj B f x (z + a • y)
     rw [hrx] at hsub
     have hle := hsub.trans (hrec a ha)
-    rw [hcz, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hle
+    rw [hcz, ← EReal.coe_sub, ← EReal.coe_add, EReal.coe_le_coe_iff] at hle
     have hBx : B x (z + a • y) = B x z + a * B x y := by rw [map_add, map_smul, smul_eq_mul]
     rw [hBx] at hle
     linarith

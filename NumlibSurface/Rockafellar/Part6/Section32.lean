@@ -171,7 +171,7 @@ theorem bddAboveOnRays_iff (hCdom : C ⊆ dom f) :
   · intro h u v hray
     rcases eq_or_ne v 0 with rfl | hv
     · have hu : u ∈ C := by simpa using hray 0 le_rfl
-      obtain ⟨β, hβ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hCdom hu))
+      obtain ⟨β, hβ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hCdom hu))
       exact ⟨β, fun t _ => by simpa using hβ.le⟩
     · exact h u v hv hray
 
@@ -324,7 +324,7 @@ theorem corollary_32_3_4_affine (b : Rn n) (γ : ℝ) (hC : Polyhedral C) (hne :
     fun x hx => by rw [affineFn_eq_coe]; exact_mod_cast hbdd x hx
   refine ⟨z, hz, fun w hw => ?_⟩
   have hle := hzmax w hw
-  rw [affineFn_eq_coe, affineFn_eq_coe, _root_.EReal.coe_le_coe_iff] at hle
+  rw [affineFn_eq_coe, affineFn_eq_coe, EReal.coe_le_coe_iff] at hle
   exact hle
 
 /-- **§32**: maximising an affine function over the solutions of a finite system of weak linear
@@ -483,7 +483,7 @@ theorem supportFn_parabolicSet : supportFn (pairing 2) parabolicSet = parabolicF
         exact le_supportFn (parabolicPoint_mem 0) y
       rw [hsup, hy0, hy1']
       norm_num
-  · rw [parabolicFn_of_notMem hy, _root_.EReal.eq_top_iff_forall_lt]
+  · rw [parabolicFn_of_notMem hy, EReal.eq_top_iff_forall_lt]
     intro c
     by_cases hy1 : 0 ≤ y 1
     · have hy1' : y 1 = 0 := by
@@ -592,7 +592,7 @@ private theorem parabolicFn_cap {g : ℝ → ℝ} (hgnn : ∀ t : ℝ, 0 ≤ g t
 private theorem cap_subset_dom {g : ℝ → ℝ} (hgnn : ∀ t : ℝ, 0 ≤ g t)
     (hgz : ∀ t : ℝ, g t ≤ 0 → t = 0) : cap g ⊆ dom parabolicFn := fun x hx => by
   rw [mem_dom, parabolicFn_cap hgnn hgz hx]
-  exact _root_.EReal.coe_lt_top _
+  exact EReal.coe_lt_top _
 
 private noncomputable def capPoint (k : ℕ) (t : ℝ) : Rn 2 := WithLp.toLp 2 ![t, t ^ k]
 
@@ -662,7 +662,7 @@ and `f ≤ 1 − ξ₂ < 1` when `ξ₂ > 0`; and `ξ₂ = 0` forces the origin,
 theorem parabolicFn_lt_one_of_mem_parabolicCap {x : Rn 2} (hx : x ∈ parabolicCap) :
     parabolicFn x < ((1 : ℝ) : EReal) := by
   rw [parabolicFn_cap (g := fun t : ℝ => t ^ 2) sq_nonneg' sq_eq_zero' hx,
-    _root_.EReal.coe_lt_coe_iff]
+    EReal.coe_lt_coe_iff]
   rcases eq_or_lt_of_le (le_trans (sq_nonneg (x 0)) hx.1) with h | h
   · have hx0 : x 0 = 0 := sq_eq_zero' _ (h ▸ hx.1)
     rw [hx0, ← h]
@@ -687,7 +687,7 @@ theorem parabolicCap_not_attained :
     parabolicFn_cap (g := fun t : ℝ => t ^ 2) sq_nonneg' sq_eq_zero' hz
   have hr1 : z 0 ^ 2 / z 1 - z 1 < 1 := by
     have hlt := parabolicFn_lt_one_of_mem_parabolicCap hz
-    rw [hfz, _root_.EReal.coe_lt_coe_iff] at hlt
+    rw [hfz, EReal.coe_lt_coe_iff] at hlt
     exact hlt
   have ht0 : 0 < min 1 ((1 - (z 0 ^ 2 / z 1 - z 1)) / 2) := lt_min one_pos (by linarith)
   have ht1 : min 1 ((1 - (z 0 ^ 2 / z 1 - z 1)) / 2) ≤ 1 := min_le_left _ _
@@ -697,7 +697,7 @@ theorem parabolicCap_not_attained :
   have hmem : capPoint 2 (min 1 ((1 - (z 0 ^ 2 / z 1 - z 1)) / 2)) ∈ parabolicCap := by
     rw [parabolicCap_eq]; exact capPoint_mem hsq
   have hle := hzmax _ hmem
-  rw [parabolicFn_capPoint (ne_of_gt ht0) hsq, hfz, _root_.EReal.coe_le_coe_iff] at hle
+  rw [parabolicFn_capPoint (ne_of_gt ht0) hsq, hfz, EReal.coe_le_coe_iff] at hle
   nlinarith
 
 /-! #### The second example: a supremum that is not finite -/
@@ -730,7 +730,7 @@ theorem quarticCap_not_bddAbove :
     rw [le_div_iff₀ (by positivity)]
     nlinarith [sq_nonneg (min 1 (1 / (|r| + 2))), pow_pos ht0 2]
   have hle := hr _ hmem
-  rw [hval, _root_.EReal.coe_le_coe_iff] at hle
+  rw [hval, EReal.coe_le_coe_iff] at hle
   nlinarith
 
 /-! #### The weakening of Corollary 32.3.2 that the two examples refute -/

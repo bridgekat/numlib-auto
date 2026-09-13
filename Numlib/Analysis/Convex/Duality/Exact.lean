@@ -82,7 +82,7 @@ theorem conj_add_le_coe_add (h₁ : conj B f y₁ ≤ (c₁ : EReal)) (h₂ : co
   intro x
   have hsplit : affineFn B (y₁ + y₂) (c₁ + c₂) x
       = affineFn B y₁ c₁ x + affineFn B y₂ c₂ x := by
-    rw [affineFn_eq_coe, affineFn_eq_coe, affineFn_eq_coe, ← _root_.EReal.coe_add]
+    rw [affineFn_eq_coe, affineFn_eq_coe, affineFn_eq_coe, ← EReal.coe_add]
     congr 1
     rw [map_add]
     ring
@@ -109,16 +109,16 @@ domains rule that out. -/
 theorem conj_add_le_add_conj (hf : (dom f).Nonempty) (hg : (dom g).Nonempty) (y₁ y₂ : F) :
     conj B (f + g) (y₁ + y₂) ≤ conj B f y₁ + conj B g y₂ := by
   rcases eq_or_ne (conj B f y₁) ⊤ with h₁ | h₁
-  · rw [h₁, _root_.EReal.top_add_of_ne_bot (conj_ne_bot hg y₂)]
+  · rw [h₁, EReal.top_add_of_ne_bot (conj_ne_bot hg y₂)]
     exact le_top
   rcases eq_or_ne (conj B g y₂) ⊤ with h₂ | h₂
-  · rw [h₂, _root_.EReal.add_top_of_ne_bot (conj_ne_bot hf y₁)]
+  · rw [h₂, EReal.add_top_of_ne_bot (conj_ne_bot hf y₁)]
     exact le_top
   obtain ⟨c₁, hc₁⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (conj_ne_bot hf y₁) (lt_top_iff_ne_top.2 h₁)
   obtain ⟨c₂, hc₂⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (conj_ne_bot hg y₂) (lt_top_iff_ne_top.2 h₂)
-  rw [hc₁, hc₂, ← _root_.EReal.coe_add]
+  rw [hc₁, hc₂, ← EReal.coe_add]
   exact conj_add_le_coe_add hc₁.le hc₂.le
 
 end Sum
@@ -169,13 +169,13 @@ theorem proper_add : Proper (f + g) := by
   have hb : conj B (f + g) 0 ≠ ⊥ := by
     obtain ⟨y₁, y₂, -, hle⟩ := h.exact_le 0
     intro hc
-    rw [hc, le_bot_iff, _root_.EReal.add_eq_bot_iff] at hle
+    rw [hc, le_bot_iff, EReal.add_eq_bot_iff] at hle
     exact hle.elim (h.conj_left_ne_bot y₁) (h.conj_right_ne_bot y₂)
   refine ⟨?_, fun x hx => ?_⟩
   · by_contra hd
     rw [Set.not_nonempty_iff_eq_empty, Set.eq_empty_iff_forall_notMem] at hd
     exact hb (conj_eq_bot_iff.2 fun x => top_le_iff.1 (not_lt.1 (hd x)))
-  · rw [Pi.add_apply, _root_.EReal.add_eq_bot_iff] at hx
+  · rw [Pi.add_apply, EReal.add_eq_bot_iff] at hx
     exact hx.elim (h.proper_left.ne_bot x) (h.proper_right.ne_bot x)
 
 theorem infConv_le_conj_add : infConv (conj B f) (conj B g) ≤ conj B (f + g) := by
@@ -254,7 +254,7 @@ theorem conj_finsetSum_le_sum_conj (hf : ∀ i ∈ s, (dom (f i)).Nonempty) (y :
   have hfin : ∀ i ∈ s, conj B (f i) (y i) ≠ ⊤ :=
     EReal.forall_ne_top_of_sum_ne_top s _ hbot htop
   have hci : ∀ i ∈ s, conj B (f i) (y i) = (((conj B (f i) (y i)).toReal : ℝ) : EReal) :=
-    fun i hi => (_root_.EReal.coe_toReal (hfin i hi) (hbot i hi)).symm
+    fun i hi => (EReal.coe_toReal (hfin i hi) (hbot i hi)).symm
   have hsum : ∑ i ∈ s, conj B (f i) (y i)
       = ((∑ i ∈ s, (conj B (f i) (y i)).toReal : ℝ) : EReal) := by
     rw [EReal.coe_sum]

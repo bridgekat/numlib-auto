@@ -30,7 +30,7 @@ converse passage needs `x` interior to `dom f` and is in `Subgradient/Uniqueness
   differentiability is linearity of `f'(x; ·)`, already along a basis (Theorem 25.2 in [^1]).
 * `mem_exposedPoints_epi_conj_iff`, `mem_exposedPoints_supportSet_iff` — exposed points as unique
   subgradients.
-* `HasGradientAt`, `DifferentiableAtFn` — `∇f x = f'` for an `EReal`-valued `f`, with the results
+* `HasGradientAtFn`, `DifferentiableAtFn` — `∇f x = f'` for an `EReal`-valued `f`, with the results
   above repackaged as `.le`, `.subgradient_eq`, `.dirDeriv_eq`, `.mem_interior_dom`, `.proper` and
   `.unique`. This is the interface the Legendre theory uses.
 
@@ -78,11 +78,11 @@ theorem subgradient_eq_singleton_of_dirDeriv_eq (hsep : Function.Injective B.fli
     refine hsep (LinearMap.ext fun v => ?_)
     have h₁ : B v y ≤ B v y₀ := by
       have hv := hy v
-      rw [h v, _root_.EReal.coe_le_coe_iff] at hv
+      rw [h v, EReal.coe_le_coe_iff] at hv
       exact hv
     have h₂ : B (-v) y ≤ B (-v) y₀ := by
       have hv := hy (-v)
-      rw [h (-v), _root_.EReal.coe_le_coe_iff] at hv
+      rw [h (-v), EReal.coe_le_coe_iff] at hv
       exact hv
     rw [map_neg, LinearMap.neg_apply, LinearMap.neg_apply] at h₂
     simp only [LinearMap.flip_apply]
@@ -138,7 +138,7 @@ finiteness. -/
 theorem mem_interior_dom_of_eventuallyEq_coe
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : x ∈ interior (dom f) :=
   mem_interior_iff_mem_nhds.2
-    (hfg.mono fun z hz => mem_dom.2 (by rw [hz]; exact _root_.EReal.coe_lt_top _))
+    (hfg.mono fun z hz => mem_dom.2 (by rw [hz]; exact EReal.coe_lt_top _))
 
 /-- A convex function that is finite near a point is proper. Unlike the general statement that a
 convex function taking `−∞` takes it throughout the relative interior of its domain, this holds in
@@ -147,13 +147,13 @@ whose points approach `x`, where `f` is finite. -/
 theorem proper_of_eventuallyEq_coe (hf : ConvexFn f)
     (hfg : f =ᶠ[𝓝 x] fun z => ((g z : ℝ) : EReal)) : Proper f := by
   have hx : f x = ((g x : ℝ) : EReal) := hfg.self_of_nhds
-  have hxdom : x ∈ dom f := mem_dom.2 (by rw [hx]; exact _root_.EReal.coe_lt_top _)
+  have hxdom : x ∈ dom f := mem_dom.2 (by rw [hx]; exact EReal.coe_lt_top _)
   refine ⟨⟨x, hxdom⟩, fun u hu => ?_⟩
   have hray : Tendsto (fun a : ℝ => (1 - a) • u + a • x) (𝓝[<] (1 : ℝ)) (𝓝 x) := by
     have hc : Continuous fun a : ℝ => (1 - a) • u + a • x := by fun_prop
     simpa using (hc.tendsto 1).mono_left nhdsWithin_le_nhds
   have hfin : ∀ᶠ z in 𝓝 x, f z ≠ ⊥ :=
-    hfg.mono fun z hz => by rw [hz]; exact _root_.EReal.coe_ne_bot _
+    hfg.mono fun z hz => by rw [hz]; exact EReal.coe_ne_bot _
   have hne : ∀ᶠ a in 𝓝[<] (1 : ℝ), f ((1 - a) • u + a • x) ≠ ⊥ := hray.eventually hfin
   have hbot : ∀ᶠ a in 𝓝[<] (1 : ℝ), f ((1 - a) • u + a • x) = ⊥ := by
     filter_upwards [mem_nhdsWithin_of_mem_nhds (Ioi_mem_nhds one_pos), self_mem_nhdsWithin]
@@ -173,7 +173,7 @@ theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
   rcases eq_or_ne (f z) ⊤ with hz | hz
   · rw [hz]; exact le_top
   obtain ⟨r, hfz⟩ : ∃ r : ℝ, f z = ((r : ℝ) : EReal) :=
-    ⟨(f z).toReal, (_root_.EReal.coe_toReal hz (hp.ne_bot z)).symm⟩
+    ⟨(f z).toReal, (EReal.coe_toReal hz (hp.ne_bot z)).symm⟩
   have hIoc : Set.Ioc (0 : ℝ) 1 ∈ 𝓝[>] (0 : ℝ) := by
     rw [← Set.Ioi_inter_Iic]
     exact inter_mem_nhdsWithin _ (Iic_mem_nhds one_pos)
@@ -184,11 +184,11 @@ theorem le_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
     have hcombo := hf.epi_combo (x := x) (y := z) (μ := g x) (ν := r) hx.le hfz.le
       (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t) ht.1.le (by ring)
     have hpt : (1 - t) • x + t • z = x + t • (z - x) := by module
-    rw [hpt, hteq, _root_.EReal.coe_le_coe_iff] at hcombo
+    rw [hpt, hteq, EReal.coe_le_coe_iff] at hcombo
     rw [div_le_iff₀ ht.1]
     nlinarith [hcombo]
   have hle := le_of_tendsto (tendsto_slope_ray_of_hasFDerivAt hd (z - x)) hbound
-  rw [hx, hfz, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+  rw [hx, hfz, ← EReal.coe_add, EReal.coe_le_coe_iff]
   linarith
 
 /-- **Uniqueness**: any subgradient at a point of differentiability is the derivative. Neither
@@ -208,7 +208,7 @@ theorem eq_of_mem_subgradient_of_hasFDerivAt (hfg : f =ᶠ[𝓝 x] fun z => ((g 
       have hval : ((topDualPairing ℝ E).flip (x + t • w - x)) y = t * y w := by
         rw [add_sub_cancel_left, LinearMap.flip_apply, topDualPairing_apply, map_smul,
           smul_eq_mul]
-      rw [hval, hx, hteq, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hsub
+      rw [hval, hx, hteq, ← EReal.coe_add, EReal.coe_le_coe_iff] at hsub
       rw [le_div_iff₀ ht]
       linarith
     exact ge_of_tendsto (tendsto_slope_ray_of_hasFDerivAt hd w) hbound
@@ -248,16 +248,16 @@ theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
       exact ⟨ht, hteq, htlt⟩
     obtain ⟨t, ht, hteq, htlt⟩ := hcomb.exists
     refine (dirDeriv_le f x v ht).trans ?_
-    rw [hx, hteq, EReal.sub_div_le_coe_iff ht, _root_.EReal.coe_le_coe_iff]
+    rw [hx, hteq, EReal.sub_div_le_coe_iff ht, EReal.coe_le_coe_iff]
     rw [div_lt_iff₀ ht] at htlt
     linarith
   refine le_antisymm ?_ (le_dirDeriv fun a ha => ?_)
   · by_contra hcon
-    obtain ⟨m, hm1, hm2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+    obtain ⟨m, hm1, hm2⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
     exact absurd (key m (by exact_mod_cast hm1)) (not_le.2 hm2)
   · rw [hx, EReal.coe_le_sub_div_iff ha]
     have hgrad := le_of_hasFDerivAt hf hp hfg hd (x + a • v)
-    rw [hx, add_sub_cancel_left, map_smul, smul_eq_mul, ← _root_.EReal.coe_add] at hgrad
+    rw [hx, add_sub_cancel_left, map_smul, smul_eq_mul, ← EReal.coe_add] at hgrad
     rwa [mul_comm (f' v) a]
 
 /-! ### Packaging: `∇f` for an `EReal`-valued function -/
@@ -266,54 +266,54 @@ theorem dirDeriv_eq_of_hasFDerivAt (hf : ConvexFn f) (hp : Proper f)
 Fréchet differentiable at `x` with derivative `f'`. This is `∇f x = f'`. An `EReal`-valued function
 cannot satisfy `HasFDerivAt` directly — that needs a normed target — and the local real
 representative carries exactly what the classical definition presupposes: `f` finite near `x`. -/
-def HasGradientAt (f : E → EReal) (f' : StrongDual ℝ E) (x : E) : Prop :=
+def HasGradientAtFn (f : E → EReal) (f' : StrongDual ℝ E) (x : E) : Prop :=
   ∃ g : E → ℝ, f =ᶠ[𝓝 x] (fun z => ((g z : ℝ) : EReal)) ∧ HasFDerivAt g f' x
 
 /-- `f` is **differentiable** at `x`: it has a gradient there. -/
 def DifferentiableAtFn (f : E → EReal) (x : E) : Prop :=
-  ∃ f' : StrongDual ℝ E, HasGradientAt f f' x
+  ∃ f' : StrongDual ℝ E, HasGradientAtFn f f' x
 
-theorem hasGradientAt_coe (hd : HasFDerivAt g f' x) :
-    HasGradientAt (fun z => ((g z : ℝ) : EReal)) f' x :=
+theorem hasGradientAtFn_coe (hd : HasFDerivAt g f' x) :
+    HasGradientAtFn (fun z => ((g z : ℝ) : EReal)) f' x :=
   ⟨g, EventuallyEq.rfl, hd⟩
 
 /-- Packaged: a gradient at `x` puts `x` in the interior of `dom f`. -/
-theorem HasGradientAt.mem_interior_dom (h : HasGradientAt f f' x) : x ∈ interior (dom f) := by
+theorem HasGradientAtFn.mem_interior_dom (h : HasGradientAtFn f f' x) : x ∈ interior (dom f) := by
   obtain ⟨g, hfg, -⟩ := h
   exact mem_interior_dom_of_eventuallyEq_coe hfg
 
 /-- Packaged: a convex function with a gradient somewhere is proper. -/
-theorem HasGradientAt.proper (hf : ConvexFn f) (h : HasGradientAt f f' x) : Proper f := by
+theorem HasGradientAtFn.proper (hf : ConvexFn f) (h : HasGradientAtFn f f' x) : Proper f := by
   obtain ⟨g, hfg, -⟩ := h
   exact proper_of_eventuallyEq_coe hf hfg
 
 /-- The gradient inequality, packaged. -/
-theorem HasGradientAt.le (hf : ConvexFn f) (h : HasGradientAt f f' x) (z : E) :
+theorem HasGradientAtFn.le (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (z : E) :
     f x + ((f' (z - x) : ℝ) : EReal) ≤ f z := by
   obtain ⟨g, hfg, hd⟩ := h
   exact le_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd z
 
 /-- Packaged: the gradient is the only subgradient. -/
-theorem HasGradientAt.subgradient_eq (hf : ConvexFn f) (h : HasGradientAt f f' x) :
+theorem HasGradientAtFn.subgradient_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     subgradient (topDualPairing ℝ E).flip f x = {f'} := by
   obtain ⟨g, hfg, hd⟩ := h
   exact subgradient_eq_singleton_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd
 
-theorem HasGradientAt.mem_subgradient (hf : ConvexFn f) (h : HasGradientAt f f' x) :
+theorem HasGradientAtFn.mem_subgradient (hf : ConvexFn f) (h : HasGradientAtFn f f' x) :
     f' ∈ subgradient (topDualPairing ℝ E).flip f x := by
   rw [h.subgradient_eq hf]
   exact Set.mem_singleton_iff.2 rfl
 
 /-- Packaged: `f'(x; v) = ⟨v, ∇f x⟩` at a point of differentiability. -/
-theorem HasGradientAt.dirDeriv_eq (hf : ConvexFn f) (h : HasGradientAt f f' x) (v : E) :
+theorem HasGradientAtFn.dirDeriv_eq (hf : ConvexFn f) (h : HasGradientAtFn f f' x) (v : E) :
     dirDeriv f x v = ((f' v : ℝ) : EReal) := by
   obtain ⟨g, hfg, hd⟩ := h
   exact dirDeriv_eq_of_hasFDerivAt hf (proper_of_eventuallyEq_coe hf hfg) hfg hd v
 
 /-- The gradient is unique where it exists. This is the
 uniqueness of `HasFDerivAt` for the local real representative, and it needs no convexity. -/
-theorem HasGradientAt.unique {f₁' f₂' : StrongDual ℝ E} (h₁ : HasGradientAt f f₁' x)
-    (h₂ : HasGradientAt f f₂' x) : f₁' = f₂' := by
+theorem HasGradientAtFn.unique {f₁' f₂' : StrongDual ℝ E} (h₁ : HasGradientAtFn f f₁' x)
+    (h₂ : HasGradientAtFn f f₂' x) : f₁' = f₂' := by
   obtain ⟨g₁, hfg₁, hd₁⟩ := h₁
   obtain ⟨g₂, hfg₂, hd₂⟩ := h₂
   have hgg : g₁ =ᶠ[𝓝 x] g₂ := by
@@ -356,15 +356,15 @@ theorem exists_forall_abs_le_of_dirDeriv_eq (hf : ConvexFn f) {r : ℝ} (hr : f 
     have hle := h₂ (-t) (by linarith) (ht.trans (min_le_right _ _))
     rw [neg_smul_neg] at hle
     refine hle.trans (le_of_eq ?_)
-    rw [_root_.EReal.coe_eq_coe_iff, habs]
+    rw [EReal.coe_eq_coe_iff, habs]
     ring
-  · rw [zero_smul, add_zero, hr, _root_.EReal.coe_le_coe_iff]
+  · rw [zero_smul, add_zero, hr, EReal.coe_le_coe_iff]
     simp
   · have habs : |t| = t := abs_of_pos hgt
     rw [habs] at ht
     have hle := h₁ t hgt (ht.trans (min_le_left _ _))
     refine hle.trans (le_of_eq ?_)
-    rw [_root_.EReal.coe_eq_coe_iff, habs]
+    rw [EReal.coe_eq_coe_iff, habs]
     ring
 
 /-- **Sufficiency, quantitatively**: two-sided directional derivatives along a *basis* already
@@ -498,7 +498,7 @@ theorem exists_le_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E] (b : Mod
         _ = r + y₀ w + S * η := by rw [hw1, one_mul, one_mul, hy₀w]
     rw [hpt, hval] at hjensen
     refine hjensen.trans ?_
-    rw [_root_.EReal.coe_le_coe_iff]
+    rw [EReal.coe_le_coe_iff]
     have hSη : S * η ≤ ε * ‖w‖ := by
       calc S * η ≤ (K * ‖w‖) * η := mul_le_mul_of_nonneg_right hSK hη.le
         _ = ε * ‖w‖ := by rw [hηdef]; field_simp
@@ -523,7 +523,7 @@ theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     have hnu : 0 < ‖u‖ := norm_pos_iff.2 hu
     have hnu' : ‖u‖ ≠ 0 := hnu.ne'
     by_contra hcon
-    obtain ⟨m, hm₁, hm₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+    obtain ⟨m, hm₁, hm₂⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
     have hm' : y₀ u < m := by exact_mod_cast hm₁
     obtain ⟨δ, hδ, hup⟩ := exists_le_of_forall_basis_dirDeriv_eq b hf hr hpos hneg
       (div_pos (sub_pos.2 hm') hnu)
@@ -539,7 +539,7 @@ theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
       refine (dirDeriv_le f x u ha).trans ?_
       rw [hr, EReal.sub_div_le_coe_iff ha]
       refine hbound.trans (le_of_eq ?_)
-      rw [_root_.EReal.coe_eq_coe_iff, map_smul, smul_eq_mul, norm_smul, Real.norm_eq_abs,
+      rw [EReal.coe_eq_coe_iff, map_smul, smul_eq_mul, norm_smul, Real.norm_eq_abs,
         abs_of_pos ha]
       field_simp
       ring
@@ -547,8 +547,8 @@ theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
   refine le_antisymm (hle v) ?_
   have hneg' := hle (-v)
   rw [map_neg] at hneg'
-  have h2 := _root_.EReal.neg_le_neg_iff.2 hneg'
-  rw [← _root_.EReal.coe_neg, neg_neg] at h2
+  have h2 := EReal.neg_le_neg_iff.2 hneg'
+  rw [← EReal.coe_neg, neg_neg] at h2
   exact h2.trans (neg_dirDeriv_neg_le hf ht hb v)
 
 /-- **Sufficiency**, from two-sided derivatives along a basis: `f` is Fréchet differentiable at
@@ -556,11 +556,11 @@ theorem dirDeriv_eq_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
 one-sided derivatives. The two-sided estimate `f x + ⟨z - x, y₀⟩ ≤ f z ≤ f x + ⟨z - x, y₀⟩ +
 ε ‖z - x‖` does all three jobs at once: it makes `f` finite near `x`, so that the local real
 representative exists, and exhibits the little-o estimate defining `HasFDerivAt`. -/
-theorem hasGradientAt_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
+theorem hasGradientAtFn_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     (b : Module.Basis ι ℝ E) (hf : ConvexFn f) (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
     {y₀ : StrongDual ℝ E} (hpos : ∀ j, dirDeriv f x (b j) = ((y₀ (b j) : ℝ) : EReal))
     (hneg : ∀ j, dirDeriv f x (-(b j)) = ((-(y₀ (b j)) : ℝ) : EReal)) :
-    HasGradientAt f y₀ x := by
+    HasGradientAtFn f y₀ x := by
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (lt_top_iff_ne_top.2 ht)
   have hall := dirDeriv_eq_of_forall_basis_dirDeriv_eq b hf ht hb hpos hneg
   have hsubg : y₀ ∈ subgradient (topDualPairing ℝ E).flip f x :=
@@ -569,20 +569,20 @@ theorem hasGradientAt_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
     intro z
     have h := hsubg z
     rwa [hr, show ((topDualPairing ℝ E).flip (z - x)) y₀ = y₀ (z - x) from rfl,
-      ← _root_.EReal.coe_add] at h
+      ← EReal.coe_add] at h
   obtain ⟨δ₁, hδ₁, hup₁⟩ := exists_le_of_forall_basis_dirDeriv_eq b hf hr hpos hneg one_pos
   have hfin : ∀ z : E, ‖z - x‖ ≤ δ₁ → f z = (((f z).toReal : ℝ) : EReal) := by
     intro z hz
-    refine (_root_.EReal.coe_toReal (ne_top_of_le_ne_top (_root_.EReal.coe_ne_top _)
+    refine (EReal.coe_toReal (ne_top_of_le_ne_top (EReal.coe_ne_top _)
       (hup₁ z hz)) ?_).symm
     intro hbot
     have h := hlow z
     rw [hbot, le_bot_iff] at h
-    exact absurd h (_root_.EReal.coe_ne_bot _)
+    exact absurd h (EReal.coe_ne_bot _)
   have hfg : f =ᶠ[𝓝 x] fun z => (((f z).toReal : ℝ) : EReal) := by
     filter_upwards [Metric.closedBall_mem_nhds x hδ₁] with z hz
     exact hfin z (by rwa [Metric.mem_closedBall, dist_eq_norm] at hz)
-  have hgx : (f x).toReal = r := by rw [hr, _root_.EReal.toReal_coe]
+  have hgx : (f x).toReal = r := by rw [hr, EReal.toReal_coe]
   refine ⟨fun z => (f z).toReal, hfg, ?_⟩
   rw [hasFDerivAt_iff_isLittleO, Asymptotics.isLittleO_iff]
   intro ε hε
@@ -591,22 +591,22 @@ theorem hasGradientAt_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
   have hzn : ‖z - x‖ ≤ min δ δ₁ := by rwa [Metric.mem_closedBall, dist_eq_norm] at hz
   have h1 := hup z (hzn.trans (min_le_left _ _))
   have h2 := hlow z
-  rw [hfin z (hzn.trans (min_le_right _ _)), _root_.EReal.coe_le_coe_iff] at h1 h2
+  rw [hfin z (hzn.trans (min_le_right _ _)), EReal.coe_le_coe_iff] at h1 h2
   rw [hgx, Real.norm_eq_abs, abs_le]
   exact ⟨by linarith, by linarith⟩
 
 /-- **Sufficiency**: if the directional derivative `f'(x; ·)` is the linear function `⟨·, y₀⟩`,
 then `f` is differentiable at `x` with `∇f x = y₀`. This is the previous theorem read at any basis;
 the hypothesis in every direction is more than the proof consumes. -/
-theorem hasGradientAt_of_dirDeriv_eq [FiniteDimensional ℝ E] (hf : ConvexFn f) (ht : f x ≠ ⊤)
+theorem hasGradientAtFn_of_dirDeriv_eq [FiniteDimensional ℝ E] (hf : ConvexFn f) (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) {y₀ : StrongDual ℝ E}
-    (h : ∀ v : E, dirDeriv f x v = ((y₀ v : ℝ) : EReal)) : HasGradientAt f y₀ x :=
-  hasGradientAt_of_forall_basis_dirDeriv_eq (Module.finBasis ℝ E) hf ht hb (fun j => h _)
+    (h : ∀ v : E, dirDeriv f x v = ((y₀ v : ℝ) : EReal)) : HasGradientAtFn f y₀ x :=
+  hasGradientAtFn_of_forall_basis_dirDeriv_eq (Module.finBasis ℝ E) hf ht hb (fun j => h _)
     (fun j => by rw [h, map_neg])
 
 /-- **In full**: for a convex function finite at `x`, differentiability at `x` is equivalent to
-linearity of `f'(x; ·)`. Necessity is `HasGradientAt.dirDeriv_eq` and sufficiency is
-`hasGradientAt_of_dirDeriv_eq`. -/
+linearity of `f'(x; ·)`. Necessity is `HasGradientAtFn.dirDeriv_eq` and sufficiency is
+`hasGradientAtFn_of_dirDeriv_eq`. -/
 theorem differentiableAtFn_iff_exists_dirDeriv_eq [FiniteDimensional ℝ E] (hf : ConvexFn f)
     (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     DifferentiableAtFn f x ↔
@@ -615,7 +615,7 @@ theorem differentiableAtFn_iff_exists_dirDeriv_eq [FiniteDimensional ℝ E] (hf 
   · rintro ⟨y₀, hy₀⟩
     exact ⟨y₀, hy₀.dirDeriv_eq hf⟩
   · rintro ⟨y₀, h⟩
-    exact ⟨y₀, hasGradientAt_of_dirDeriv_eq hf ht hb h⟩
+    exact ⟨y₀, hasGradientAtFn_of_dirDeriv_eq hf ht hb h⟩
 
 /-- It is already enough that the `n` two-sided partial derivatives exist and are finite. Here
 "the `n` partial derivatives" is the pair of one-sided derivatives along the vectors of a basis,
@@ -629,7 +629,7 @@ theorem differentiableAtFn_of_forall_basis_dirDeriv_eq [FiniteDimensional ℝ E]
   refine ⟨LinearMap.toContinuousLinearMap (b.constr ℝ c), ?_⟩
   have hval : ∀ j, (LinearMap.toContinuousLinearMap (b.constr ℝ c)) (b j) = c j := fun j => by
     simp
-  exact hasGradientAt_of_forall_basis_dirDeriv_eq b hf ht hb (fun j => by rw [hpos j, hval j])
+  exact hasGradientAtFn_of_forall_basis_dirDeriv_eq b hf ht hb (fun j => by rw [hpos j, hval j])
     (fun j => by rw [hneg j, hval j])
 
 end Sufficiency
@@ -719,11 +719,11 @@ theorem Proper.eq_sub_of_mem_subgradient (hp : Proper f) {x : E} {y : F} {μ : �
   have hxb : f x ≠ ⊥ := hp.ne_bot x
   have hxt : f x ≠ ⊤ := by
     intro h
-    rw [h, _root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot μ)] at hfx
-    exact absurd hfx (_root_.EReal.top_ne_coe _)
-  have hxc : f x = (((f x).toReal : ℝ) : EReal) := (_root_.EReal.coe_toReal hxt hxb).symm
-  rw [hxc, ← _root_.EReal.coe_add, _root_.EReal.coe_eq_coe_iff] at hfx
-  rw [hxc, _root_.EReal.coe_eq_coe_iff]
+    rw [h, EReal.top_add_of_ne_bot (EReal.coe_ne_bot μ)] at hfx
+    exact absurd hfx (EReal.top_ne_coe _)
+  have hxc : f x = (((f x).toReal : ℝ) : EReal) := (EReal.coe_toReal hxt hxb).symm
+  rw [hxc, ← EReal.coe_add, EReal.coe_eq_coe_iff] at hfx
+  rw [hxc, EReal.coe_eq_coe_iff]
   linarith
 
 section Topology
@@ -802,17 +802,17 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       rw [hsplit, hsplit]
       nlinarith
     -- The value at `y` is `μ`.
-    have hyt : conj B f y ≠ ⊤ := ne_top_of_le_ne_top (_root_.EReal.coe_ne_top μ) hmem'
+    have hyt : conj B f y ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top μ) hmem'
     have hyc : conj B f y = (((conj B f y).toReal : ℝ) : EReal) :=
-      (_root_.EReal.coe_toReal hyt (hbot y)).symm
+      (EReal.coe_toReal hyt (hbot y)).symm
     have hνμ : (conj B f y).toReal ≤ μ := by
-      rw [hyc, _root_.EReal.coe_le_coe_iff] at hmem'
+      rw [hyc, EReal.coe_le_coe_iff] at hmem'
       exact hmem'
     have hμν : μ ≤ (conj B f y).toReal := by
       have := hmax y _ (le_of_eq hyc)
       linarith
     have hμeq : conj B f y = (μ : EReal) := by
-      rw [hyc, _root_.EReal.coe_eq_coe_iff]
+      rw [hyc, EReal.coe_eq_coe_iff]
       linarith
     -- `y` is a subgradient at `x`, and the only one.
     have hysub : y ∈ subgradient B f x := by
@@ -822,15 +822,15 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       · rw [hz]
         simp
       · have hzc : conj B f z = (((conj B f z).toReal : ℝ) : EReal) :=
-          (_root_.EReal.coe_toReal hz (hbot z)).symm
+          (EReal.coe_toReal hz (hbot z)).symm
         have h := hmax z _ (le_of_eq hzc)
-        rw [LinearMap.flip_apply, LinearMap.flip_apply, hzc, hμeq, ← _root_.EReal.coe_sub,
-          ← _root_.EReal.coe_sub, _root_.EReal.coe_le_coe_iff]
+        rw [LinearMap.flip_apply, LinearMap.flip_apply, hzc, hμeq, ← EReal.coe_sub,
+          ← EReal.coe_sub, EReal.coe_le_coe_iff]
         exact h
     refine ⟨hμeq, x, Set.eq_singleton_iff_unique_mem.2 ⟨hysub, fun z hz => ?_⟩⟩
     have hfx : f x = ((B x y - μ : ℝ) : EReal) := hp.eq_sub_of_mem_subgradient hysub hμeq
     have hzc : conj B f z = ((B x z : ℝ) : EReal) - f x := mem_subgradient_iff_conj_eq.1 hz
-    rw [hfx, ← _root_.EReal.coe_sub] at hzc
+    rw [hfx, ← EReal.coe_sub] at hzc
     have := huniq z (B x z - (B x y - μ)) (le_of_eq hzc) (by simp)
     exact congrArg Prod.fst this
   · rintro ⟨hμ, x, hx⟩
@@ -845,14 +845,14 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       simp [LinearMap.flip_apply]
     rintro ⟨z, β⟩ hzβ
     have hzβ' : conj B f z ≤ (β : EReal) := hzβ
-    have hzt : conj B f z ≠ ⊤ := ne_top_of_le_ne_top (_root_.EReal.coe_ne_top β) hzβ'
+    have hzt : conj B f z ≠ ⊤ := ne_top_of_le_ne_top (EReal.coe_ne_top β) hzβ'
     have hzc : conj B f z = (((conj B f z).toReal : ℝ) : EReal) :=
-      (_root_.EReal.coe_toReal hzt (hbot z)).symm
+      (EReal.coe_toReal hzt (hbot z)).symm
     have hrβ : (conj B f z).toReal ≤ β := by
-      rw [hzc, _root_.EReal.coe_le_coe_iff] at hzβ'
+      rw [hzc, EReal.coe_le_coe_iff] at hzβ'
       exact hzβ'
     have hfen := hp.le_add_conj (B := B) x z
-    rw [hfx, hzc, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff] at hfen
+    rw [hfx, hzc, ← EReal.coe_add, EReal.coe_le_coe_iff] at hfen
     refine ⟨?_, fun hge => ?_⟩
     · rw [hval, hval]
       linarith
@@ -860,11 +860,11 @@ theorem mem_exposedPoints_epi_conj_iff [IsCompatiblePairing B] [IsCompatiblePair
       have hβr : β = (conj B f z).toReal := by linarith
       have hzsub : z ∈ subgradient B f x := by
         refine mem_subgradient_iff_conj_eq.2 ?_
-        rw [hzc, hfx, ← _root_.EReal.coe_sub, _root_.EReal.coe_eq_coe_iff]
+        rw [hzc, hfx, ← EReal.coe_sub, EReal.coe_eq_coe_iff]
         linarith
       have hzy : z = y := by rw [hx] at hzsub; exact hzsub
       subst hzy
-      rw [hμ, _root_.EReal.toReal_coe] at hβr
+      rw [hμ, EReal.toReal_coe] at hβr
       rw [hβr]
 
 /-! ### Exposed points of a set cut out by a positively homogeneous function -/
@@ -902,14 +902,14 @@ theorem mem_exposedPoints_supportSet_iff [IsCompatiblePairing B] [IsCompatiblePa
     have hzt : conj B.flip g z ≠ ⊤ := by
       intro htop
       have heq := hgp.mem_subgradient_iff_add_conj_eq.1 hzsub
-      rw [htop, add_comm, _root_.EReal.top_add_of_ne_bot (hgp.ne_bot y)] at heq
-      exact absurd heq (_root_.EReal.top_ne_coe _)
+      rw [htop, add_comm, EReal.top_add_of_ne_bot (hgp.ne_bot y)] at heq
+      exact absurd heq (EReal.top_ne_coe _)
     have hzC : z ∈ supportSet B.flip g := by
       by_contra hzn
       rw [hind, indicatorFn_of_notMem hzn] at hzt
       exact hzt rfl
     have hz0 : conj B.flip g z = ((0 : ℝ) : EReal) := by
-      rw [hind, indicatorFn_of_mem hzC, _root_.EReal.coe_zero]
+      rw [hind, indicatorFn_of_mem hzC, EReal.coe_zero]
     have h1 := (mem_exposedPoints_epi_conj_iff (B := B.flip) hgc hgp hgcl
       (y := z) (μ := (0 : ℝ))).2 ⟨hz0, y, hy⟩
     rw [hepi] at h1

@@ -65,7 +65,7 @@ theorem isPolytope_iff {C : Set (Rn n)} :
   constructor
   · rintro ⟨P, rfl⟩
     exact ⟨polyhedral_convexHull_finset P,
-      (P.finite_toSet.isCompact.isCompact_convexHull).isBounded⟩
+      (P.finite_toSet.isCompact.convexHull).isBounded⟩
   · rintro ⟨hC, hb⟩
     exact hC.exists_finset_convexHull hb
 

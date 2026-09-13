@@ -13,6 +13,7 @@ from the one on an interval.
 
 ## Main results
 
+* `Convex.line_steps` — the steps that keep `x + t • d` in a convex `S` form a convex set.
 * `convexOn_comp_line`, `concaveOn_comp_line` — the restriction stays convex, resp. concave.
 * `convexOn_iff_lines`, `concaveOn_iff_lines` — for convex `S`, the restrictions detect convexity.
 * `isOpen_line_steps` — the step set is open when `S` is.
@@ -37,23 +38,29 @@ section Line
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] {S : Set E} {f : E → ℝ} {x d : E}
 
+/-- A convex combination of two points of the line `t ↦ x + t • d` is the point of the line at the
+convex combination of the steps. -/
+theorem add_combo_smul_eq_combo (x d : E) {a b : ℝ} (hab : a + b = 1) (t₁ t₂ : ℝ) :
+    x + (a • t₁ + b • t₂) • d = a • (x + t₁ • d) + b • (x + t₂ • d) := by
+  rw [smul_add, smul_add, smul_smul, smul_smul, add_add_add_comm, ← add_smul, hab, one_smul,
+    smul_eq_mul, smul_eq_mul, ← add_smul]
+
+/-- The steps `t` with `x + t • d ∈ S` form a convex set of reals when `S` is convex. -/
+theorem _root_.Convex.line_steps (hS : Convex ℝ S) (x d : E) :
+    Convex ℝ {t : ℝ | x + t • d ∈ S} := by
+  intro t₁ h₁ t₂ h₂ a b ha hb hab
+  change x + (a • t₁ + b • t₂) • d ∈ S
+  rw [add_combo_smul_eq_combo x d hab]
+  exact hS h₁ h₂ ha hb hab
+
 /-- A convex function stays convex along a line: `t ↦ f (x + t • d)` is convex on the set of steps
 that keep `x + t • d` inside `S`. -/
 theorem convexOn_comp_line (hf : ConvexOn ℝ S f) (x d : E) :
     ConvexOn ℝ {t : ℝ | x + t • d ∈ S} fun t => f (x + t • d) := by
-  have key : ∀ a b t₁ t₂ : ℝ, a + b = 1 →
-      x + (a • t₁ + b • t₂) • d = a • (x + t₁ • d) + b • (x + t₂ • d) := by
-    intro a b t₁ t₂ hab
-    rw [smul_add, smul_add, smul_smul, smul_smul, add_add_add_comm, ← add_smul, hab, one_smul,
-      smul_eq_mul, smul_eq_mul, ← add_smul]
-  constructor
-  · intro t₁ h₁ t₂ h₂ a b ha hb hab
-    change x + (a • t₁ + b • t₂) • d ∈ S
-    rw [key a b t₁ t₂ hab]
-    exact hf.1 h₁ h₂ ha hb hab
+  refine ⟨hf.1.line_steps x d, ?_⟩
   · intro t₁ h₁ t₂ h₂ a b ha hb hab
     change f (x + (a • t₁ + b • t₂) • d) ≤ a • f (x + t₁ • d) + b • f (x + t₂ • d)
-    rw [key a b t₁ t₂ hab]
+    rw [add_combo_smul_eq_combo x d hab]
     exact hf.2 h₁ h₂ ha hb hab
 
 /-- A concave function stays concave along a line. This is `convexOn_comp_line` for `-f`. -/

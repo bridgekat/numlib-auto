@@ -73,10 +73,10 @@ theorem adjointBifun_flip_inverseBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (B
     intro v y
     have hneg : -(G y v + ((Bx x y - Bu u v : ℝ) : EReal))
         = -(G y v) + -(((Bx x y - Bu u v : ℝ) : EReal)) :=
-      _root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top _))
-        (.inr (_root_.EReal.coe_ne_bot _))
+      EReal.neg_add (.inr (EReal.coe_ne_top _))
+        (.inr (EReal.coe_ne_bot _))
     have hr : (Bu u v - Bx x y : ℝ) = -(Bx x y - Bu u v) := by ring
-    rw [hneg, inverseBifun_apply, hr, _root_.EReal.coe_neg]
+    rw [hneg, inverseBifun_apply, hr, EReal.coe_neg]
   rw [inverseBifun_apply, concaveAdjointBifun_apply, EReal.neg_iSup, iInf_prod,
     adjointBifun_apply, iInf_prod, iInf_comm]
   exact iInf_congr fun y => iInf_congr fun v => hpt v y
@@ -232,14 +232,14 @@ theorem properSaddleFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
   have hw' : conj (prodPairing Bu Bx) (graphFn F) (v₁, y₁) < ⊤ := hw
   have hadj : adjointBifun Bu Bx F y₁ (-v₁) ≠ ⊥ := by
     rw [adjointBifun_eq_neg_conj_graphFn, neg_neg]
-    exact fun hcon => absurd (_root_.EReal.neg_eq_bot_iff.1 hcon) (ne_of_lt hw')
+    exact fun hcon => absurd (EReal.neg_eq_bot_iff.1 hcon) (ne_of_lt hw')
   refine ⟨⟨-v₁, ?_⟩, ⟨p₀.2, ?_⟩⟩
   · intro x
     have hterm : ∀ u : U, ((Bu u (-v₁) : ℝ) : EReal) + F u x
         = (F u x + ((Bu u (-v₁) - Bx x y₁ : ℝ) : EReal)) + ((Bx x y₁ : ℝ) : EReal) := by
       intro u
       have hreal : (Bu u (-v₁) - Bx x y₁ : ℝ) + Bx x y₁ = Bu u (-v₁) := by ring
-      rw [add_assoc, ← _root_.EReal.coe_add, hreal, add_comm (F u x)]
+      rw [add_assoc, ← EReal.coe_add, hreal, add_comm (F u x)]
     have hge : adjointBifun Bu Bx F y₁ (-v₁) + ((Bx x y₁ : ℝ) : EReal)
         ≤ saddleLagrangian Bu F (-v₁, x) := by
       change _ ≤ lagrangian Bu F (-v₁) x
@@ -249,14 +249,14 @@ theorem properSaddleFn_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [
       exact add_le_add (iInf_le (fun p : U × X =>
         F p.1 p.2 + ((Bu p.1 (-v₁) - Bx p.2 y₁ : ℝ) : EReal)) (u, x)) le_rfl
     refine lt_of_lt_of_le (bot_lt_iff_ne_bot.2 fun hcon => ?_) hge
-    rcases _root_.EReal.add_eq_bot_iff.1 hcon with h | h
+    rcases EReal.add_eq_bot_iff.1 hcon with h | h
     · exact hadj h
-    · exact _root_.EReal.coe_ne_bot _ h
+    · exact EReal.coe_ne_bot _ h
   · intro v
     change lagrangian Bu F v p₀.2 < ⊤
     rw [lagrangian_apply]
     refine lt_of_le_of_lt (iInf_le (fun u => ((Bu u v : ℝ) : EReal) + F u p₀.2) p₀.1) ?_
-    exact _root_.EReal.add_lt_top (_root_.EReal.coe_ne_top _) (ne_of_lt hp₀)
+    exact EReal.add_lt_top (EReal.coe_ne_top _) (ne_of_lt hp₀)
 
 end ProperConj
 
@@ -436,7 +436,7 @@ theorem exists_maximin_eq_coe_of_mem_relint_domSaddle (Bu : U →ₗ[ℝ] V →�
     change lowerConjSaddle Bu Bx K 0 = upperConjSaddle Bu Bx K 0 at h
     rw [← h]
     exact hr
-  rw [maximin_eq_neg_upperConjSaddle_zero Bu Bx K, heq, _root_.EReal.coe_neg]
+  rw [maximin_eq_neg_upperConjSaddle_zero Bu Bx K, heq, EReal.coe_neg]
 
 end CommonDom
 
@@ -465,7 +465,7 @@ theorem dom₂_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifu
     rw [lagrangian_apply] at h0
     have h1 : ⨅ u, F u x < ⊤ := by
       refine lt_of_le_of_lt (le_of_eq (iInf_congr fun u => ?_)) h0
-      rw [map_zero, _root_.EReal.coe_zero, zero_add]
+      rw [map_zero, EReal.coe_zero, zero_add]
     obtain ⟨u, hu⟩ := iInf_lt_iff.1 h1
     exact ⟨(u, x), hu, rfl⟩
   · rintro ⟨p, hp, rfl⟩
@@ -473,7 +473,7 @@ theorem dom₂_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : Bifu
     change lagrangian Bu F v p.2 < ⊤
     rw [lagrangian_apply]
     refine lt_of_le_of_lt (iInf_le (fun u => ((Bu u v : ℝ) : EReal) + F u p.2) p.1) ?_
-    exact _root_.EReal.add_lt_top (_root_.EReal.coe_ne_top _) (ne_of_lt hp)
+    exact EReal.add_lt_top (EReal.coe_ne_top _) (ne_of_lt hp)
 
 end DomLagrangian
 
@@ -689,7 +689,7 @@ theorem zero_mem_interior_dom₂_upperConjSaddle_iff (Bu : U →ₗ[ℝ] V →�
     (properSaddleFn_upperConjSaddle Bu Bx hF hcl hpr hK).dom₂_nonempty
   rw [mem_interior_iff_lt_supportFn (B := Bx) hconv hnex hB 0]
   refine forall_congr' fun w => imp_congr_right fun _ => ?_
-  rw [map_zero, LinearMap.zero_apply, _root_.EReal.coe_zero,
+  rw [map_zero, LinearMap.zero_apply, EReal.coe_zero,
     supportFn_dom₂_upperConjSaddle_eq_iSup_recessionFn Bu Bx hF hcl hK hKcc hne hs w]
   simp only [lt_iSup_iff, exists_prop]
 

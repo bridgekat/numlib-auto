@@ -533,7 +533,7 @@ theorem posHomGen_apply_zero_le (f : E → EReal) : posHomGen f 0 ≤ 0 := by
     rw [Prod.mk_zero_zero]
     exact Submodule.zero_mem _
   have h : posHomGen f 0 ≤ ((0 : ℝ) : EReal) := ofEpi_apply_le hmem
-  rwa [_root_.EReal.coe_zero] at h
+  rwa [EReal.coe_zero] at h
 
 /-- `posHomGen f` is convex, with no hypothesis on `f`: a cone hull is convex. -/
 theorem convexFn_posHomGen (f : E → EReal) : ConvexFn (posHomGen f) :=
@@ -1134,7 +1134,7 @@ theorem exists_combo_of_convFn₂_le (hf : ClosedProperConvexFn f) (hg : ClosedP
   have h₂ : (b : EReal) * g q.1 ≤ (b : EReal) * ((q.2 : ℝ) : EReal) :=
     mul_le_mul_of_nonneg_left (mem_epi.1 hq) (by exact_mod_cast hb)
   refine (add_le_add h₁ h₂).trans (le_of_eq ?_)
-  rw [EReal.coe_mul_coe, EReal.coe_mul_coe, ← EReal.coe_add, hν]
+  rw [← EReal.coe_mul, ← EReal.coe_mul, ← EReal.coe_add, hν]
 
 end UnionOfFns
 

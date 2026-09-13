@@ -184,13 +184,13 @@ theorem supportFn_univ_pi (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (C : ι → Set 
     rw [supportFn_apply]
     simp only [hcoe, supportFn_apply]
     exact biSup_sum_univ_pi hne (fun i z => ((B z (y i) : ℝ) : EReal))
-      (fun i z _ => _root_.EReal.coe_ne_bot _) Finset.univ
+      (fun i z _ => EReal.coe_ne_bot _) Finset.univ
   · simp only [not_forall, Set.not_nonempty_iff_eq_empty] at hne
     obtain ⟨i₀, hi₀⟩ := hne
     have hempty : univ.pi C = ∅ := Set.univ_pi_eq_empty_iff.2 ⟨i₀, hi₀⟩
     rw [← Finset.add_sum_erase _ (fun i => supportFn B (C i) (y i)) (Finset.mem_univ i₀), hi₀]
     simp only [hempty, supportFn_empty]
-    exact (_root_.EReal.bot_add _).symm
+    exact (EReal.bot_add _).symm
 
 end Support
 
@@ -214,7 +214,7 @@ private theorem iSup_eq_biSup_of_notMem {α : Type*} {s : Set α} {w : α → ER
 private theorem sum_eq_bot_of_mem {ι : Type*} {v : ι → EReal} {t : Finset ι} {j : ι} (hj : j ∈ t)
     (h : v j = ⊥) : (∑ k ∈ t, v k) = ⊥ := by
   classical
-  rw [← Finset.add_sum_erase t v hj, h, _root_.EReal.bot_add]
+  rw [← Finset.add_sum_erase t v hj, h, EReal.bot_add]
 
 /-- A real minuend distributes over a two-term subtrahend, provided neither term is `⊥`. Both `⊤`
 cases come out `⊥` on each side, which is why no finiteness is needed. -/
@@ -223,17 +223,17 @@ private theorem coe_add_sub_add (a b : ℝ) {p q : EReal} (hp : p ≠ ⊥) (hq :
   induction p with
   | bot => exact absurd rfl hp
   | top =>
-    rw [_root_.EReal.top_add_of_ne_bot hq, _root_.EReal.sub_top, _root_.EReal.sub_top,
-      _root_.EReal.bot_add]
+    rw [EReal.top_add_of_ne_bot hq, EReal.sub_top, EReal.sub_top,
+      EReal.bot_add]
   | coe r =>
     induction q with
     | bot => exact absurd rfl hq
     | top =>
-      rw [_root_.EReal.add_top_of_ne_bot (_root_.EReal.coe_ne_bot r), _root_.EReal.sub_top,
-        _root_.EReal.sub_top, _root_.EReal.add_bot]
+      rw [EReal.add_top_of_ne_bot (EReal.coe_ne_bot r), EReal.sub_top,
+        EReal.sub_top, EReal.add_bot]
     | coe s =>
-      simp only [← _root_.EReal.coe_add, ← _root_.EReal.coe_sub]
-      rw [_root_.EReal.coe_eq_coe_iff]
+      simp only [← EReal.coe_add, ← EReal.coe_sub]
+      rw [EReal.coe_eq_coe_iff]
       ring
 
 /-- The `Finset` form of `coe_add_sub_add`: a real minuend distributes over a finite sum of
@@ -266,12 +266,12 @@ theorem conj_piFn (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : ι → E → EReal)
   have hoff : ∀ i, ∀ z ∉ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) = ⊥ := by
     intro i z hz
     have hz' : ¬ (f i z < ⊤) := hz
-    rw [top_le_iff.1 (not_lt.1 hz'), _root_.EReal.sub_top]
+    rw [top_le_iff.1 (not_lt.1 hz'), EReal.sub_top]
   have hval : ∀ i, ∀ z ∈ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) ≠ ⊥ := by
     intro i z hz
     obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot i z) hz
-    rw [hr, ← _root_.EReal.coe_sub]
-    exact _root_.EReal.coe_ne_bot _
+    rw [hr, ← EReal.coe_sub]
+    exact EReal.coe_ne_bot _
   have hcoord : ∀ i, conj B (f i) (y i)
       = ⨆ z ∈ dom (f i), (((B z (y i) : ℝ) : EReal) - f i z) :=
     fun i => iSup_eq_biSup_of_notMem (hoff i)

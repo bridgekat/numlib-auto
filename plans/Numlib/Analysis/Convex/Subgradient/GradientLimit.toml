@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'dist_le_of_subgradient_subset'
 
 [[node]]
-id = 'tendsto_of_hasGradientAt'
+id = 'tendsto_of_hasGradientAtFn'
 
 [[node]]
 id = 'tendstoUniformlyOn_fderiv_toReal'

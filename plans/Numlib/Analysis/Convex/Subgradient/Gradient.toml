@@ -13,7 +13,7 @@ id = 'eq_of_mem_subgradient_of_hasFDerivAt'
 id = 'subgradient_eq_singleton_of_hasFDerivAt'
 
 [[node]]
-id = 'HasGradientAt'
+id = 'HasGradientAtFn'
 
 [[node]]
 id = 'DifferentiableAtFn'

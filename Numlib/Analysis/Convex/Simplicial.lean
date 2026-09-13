@@ -134,12 +134,12 @@ theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) 
   obtain ⟨hι⟩ := nonempty_fintype ι
   -- a real bound for `f` on the whole simplex
   have hbdd : ∀ i, ∃ c : ℝ, f (v i) ≤ (c : EReal) := fun i => by
-    obtain ⟨c, hc, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hdom i))
+    obtain ⟨c, hc, -⟩ := EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (hdom i))
     exact ⟨c, hc.le⟩
   choose c hc using hbdd
   obtain ⟨ν, hν⟩ := (Set.finite_range c).bddAbove
   have hνv : ∀ i, f (v i) ≤ (ν : EReal) := fun i =>
-    (hc i).trans (_root_.EReal.coe_le_coe_iff.2 (hν ⟨i, rfl⟩))
+    (hc i).trans (EReal.coe_le_coe_iff.2 (hν ⟨i, rfl⟩))
   have hνT : ∀ z ∈ convexHull ℝ (Set.range v), f z ≤ (ν : EReal) :=
     convexHull_min (by rintro _ ⟨i, rfl⟩; exact hνv i) (hf.convex_le (ν : EReal))
   -- the weights of `x`
@@ -147,8 +147,8 @@ theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) 
   obtain ⟨μ, hμΔ, rfl⟩ := hx
   intro b hb
   -- two real numbers below `b` and above `f x`
-  obtain ⟨β, hβ1, hβ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
-  obtain ⟨γ, hγ1, hγ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hβ2
+  obtain ⟨β, hβ1, hβ2⟩ := EReal.lt_iff_exists_real_btwn.1 hb
+  obtain ⟨γ, hγ1, hγ2⟩ := EReal.lt_iff_exists_real_btwn.1 hβ2
   have hβγ : β < γ := by exact_mod_cast hγ1
   -- the shrinking factor
   set ε : ℝ := min 1 ((γ - β) / (|ν - β| + 1)) with hε
@@ -216,7 +216,7 @@ theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) 
   refine lt_of_le_of_lt (hf.epi_combo hβ1.le (hνT _ ?_) (by linarith) hε0.le (by ring)) ?_
   · rw [convexHull_range_eq_image_stdSimplex]
     exact ⟨y, hyΔ, rfl⟩
-  · refine lt_of_le_of_lt (_root_.EReal.coe_le_coe_iff.2 ?_) hγ2
+  · refine lt_of_le_of_lt (EReal.coe_le_coe_iff.2 ?_) hγ2
     nlinarith [le_abs_self (ν - β), abs_nonneg (ν - β)]
 
 end Core
@@ -328,7 +328,7 @@ theorem exists_closedFn_continuousOn_of_locallySimplicial (hC : Convex ℝ C)
       refine le_of_tendsto htend ?_
       filter_upwards [eventually_mem_Ico_nhdsLT_one] with a ha
       exact hc _ ⟨a, ha, rfl⟩
-    exact mem_dom.2 (lt_of_le_of_lt hle (_root_.EReal.coe_lt_top c))
+    exact mem_dom.2 (lt_of_le_of_lt hle (EReal.coe_lt_top c))
   refine ⟨clFn f, convexFn_clFn hf, closedFn_clFn f, hf.proper_clFn hp, ?_, hCdom, ?_⟩
   · intro x hx
     exact hf.clFn_eq_of_mem_relint_dom (hridom ▸ hx)

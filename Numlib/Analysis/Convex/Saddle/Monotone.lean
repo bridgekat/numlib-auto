@@ -280,7 +280,7 @@ theorem concaveSubgradient_eq_subgradientFst (K : U × X → ℝ) (p : U × X) :
       = subgradientFst Set.univ K p := by
   ext y
   simp only [mem_concaveSubgradient, mem_subgradientFst, Set.mem_univ, forall_const,
-    innerₗ_apply_apply, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+    innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [FiniteDimensional ℝ X] in
@@ -290,7 +290,7 @@ theorem subgradient_eq_subgradientSnd (K : U × X → ℝ) (p : U × X) :
       = subgradientSnd Set.univ K p := by
   ext y
   simp only [mem_subgradient, mem_subgradientSnd, Set.mem_univ, forall_const,
-    innerₗ_apply_apply, ← _root_.EReal.coe_add, _root_.EReal.coe_le_coe_iff]
+    innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- Over the whole space the `EReal`-valued and the real-valued `∂K` are the same set; the

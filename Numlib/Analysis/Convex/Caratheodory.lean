@@ -47,9 +47,9 @@ exist when the generated function is improper.
   directions.
 * `lift_mem_coneHull_liftPD` — the easy half of the homogenisation dictionary; it needs neither a
   norm nor finite dimension, and `HullDirections.lean` builds the converse half on it.
-* `IsCompact.isCompact_convexHull`, `Bornology.IsBounded.closure_convexHull` — the convex hull of
+* `IsCompact.convexHull`, `Bornology.IsBounded.closure_convexHull` — the convex hull of
   a compact set is compact, and `cl (conv S) = conv (cl S)` for bounded `S`.
-* `closedProperConvexFn_convHullFn_restrict` — the convex hull of a function with compact graph is
+* `closedProperConvexFn_convHullFn_restrictFn` — the convex hull of a function with compact graph is
   a closed proper convex function.
 * `exists_subset_linearIndepOn_of_sum`, `exists_subset_affineIndependent_of_sum` — the **indexed**
   elimination step: a representation `∑ i ∈ t, w i • v i` is thinned to a sub-*index set* on which
@@ -190,7 +190,7 @@ theorem mem_convexHull_iff_exists_fin_finrank_succ {S : Set E} {x : E} :
 /-- **The convex hull of a compact set is compact**: it is the image of `stdSimplex × Sⁿ⁺¹` under
 `(w, z) ↦ ∑ wᵢ zᵢ`. Mathlib has this only for *finite*
 sets (`Set.Finite.isCompact_convexHull`). -/
-theorem IsCompact.isCompact_convexHull {S : Set E} (hS : IsCompact S) :
+theorem _root_.IsCompact.convexHull {S : Set E} (hS : IsCompact S) :
     IsCompact (convexHull ℝ S) := by
   classical
   have hT : IsCompact (stdSimplex ℝ (Fin (Module.finrank ℝ E + 1)) ×ˢ
@@ -200,7 +200,7 @@ theorem IsCompact.isCompact_convexHull {S : Set E} (hS : IsCompact S) :
       (Fin (Module.finrank ℝ E + 1) → E) => ∑ i, p.1 i • p.2 i :=
     continuous_finsetSum _ fun i _ =>
       ((continuous_apply i).comp continuous_fst).smul ((continuous_apply i).comp continuous_snd)
-  have himg : convexHull ℝ S = (fun p : (Fin (Module.finrank ℝ E + 1) → ℝ) ×
+  have himg : _root_.convexHull ℝ S = (fun p : (Fin (Module.finrank ℝ E + 1) → ℝ) ×
       (Fin (Module.finrank ℝ E + 1) → E) => ∑ i, p.1 i • p.2 i) ''
       (stdSimplex ℝ (Fin (Module.finrank ℝ E + 1)) ×ˢ
         (Set.univ.pi fun _ : Fin (Module.finrank ℝ E + 1) => S)) := by
@@ -215,13 +215,13 @@ theorem IsCompact.isCompact_convexHull {S : Set E} (hS : IsCompact S) :
   exact IsCompact.image hT hcont
 
 /-- **For a bounded set the closure and the convex hull commute.** -/
-theorem Bornology.IsBounded.closure_convexHull {S : Set E} (hS : Bornology.IsBounded S) :
+theorem _root_.Bornology.IsBounded.closure_convexHull {S : Set E} (hS : Bornology.IsBounded S) :
     closure (convexHull ℝ S) = convexHull ℝ (closure S) := by
   have hcl : IsCompact (closure S) :=
     Metric.isCompact_of_isClosed_isBounded isClosed_closure hS.closure
   refine subset_antisymm ?_ ?_
   · exact closure_minimal (convexHull_mono subset_closure)
-      (IsCompact.isClosed (IsCompact.isCompact_convexHull hcl))
+      (IsCompact.isClosed (IsCompact.convexHull hcl))
   · exact convexHull_min (closure_mono (subset_convexHull ℝ S))
       (Convex.closure (convex_convexHull ℝ S))
 
@@ -251,24 +251,24 @@ private theorem isClosed_upRay : IsClosed (upRay E) := by
 
 /-- The epigraph of a function that is real-valued on `S` and `+∞` off `S` is the graph of that
 function over `S`, translated upward along the vertical ray. -/
-private theorem epi_restrict_eq (S : Set E) (g : E → ℝ) :
-    epi (restrict S fun x => ((g x : ℝ) : EReal))
+private theorem epi_restrictFn_eq (S : Set E) (g : E → ℝ) :
+    epi (restrictFn S fun x => ((g x : ℝ) : EReal))
       = (fun x => ((x, g x) : E × ℝ)) '' S + upRay E := by
   ext p
   constructor
   · intro hp
     rw [mem_epi] at hp
     by_cases hp1 : p.1 ∈ S
-    · rw [restrict_of_mem hp1, _root_.EReal.coe_le_coe_iff] at hp
+    · rw [restrictFn_of_mem hp1, EReal.coe_le_coe_iff] at hp
       exact ⟨(p.1, g p.1), ⟨p.1, hp1, rfl⟩, (0, p.2 - g p.1), ⟨rfl, by linarith⟩,
         Prod.ext (by change p.1 + 0 = p.1; rw [add_zero])
           (by change g p.1 + (p.2 - g p.1) = p.2; ring)⟩
-    · rw [restrict_of_notMem hp1] at hp
+    · rw [restrictFn_of_notMem hp1] at hp
       exact absurd hp (by simp)
   · rintro ⟨u, ⟨x, hx, rfl⟩, v, ⟨hv1, hv2⟩, rfl⟩
     rw [mem_epi]
     have h1 : ((x, g x) + v).1 = x := by change x + v.1 = x; rw [hv1, add_zero]
-    rw [h1, restrict_of_mem hx]
+    rw [h1, restrictFn_of_mem hx]
     change ((g x : ℝ) : EReal) ≤ ((g x + v.2 : ℝ) : EReal)
     exact_mod_cast le_add_of_nonneg_right hv2
 
@@ -285,19 +285,19 @@ private theorem convex_upRay : Convex ℝ (upRay E) := by
 
 /-- Taking the convex hull of such an epigraph leaves the vertical ray alone: it acts only on the
 graph. -/
-private theorem convexHull_epi_restrict_eq (S : Set E) (g : E → ℝ) :
-    convexHull ℝ (epi (restrict S fun x => ((g x : ℝ) : EReal)))
+private theorem convexHull_epi_restrictFn_eq (S : Set E) (g : E → ℝ) :
+    convexHull ℝ (epi (restrictFn S fun x => ((g x : ℝ) : EReal)))
       = convexHull ℝ ((fun x => ((x, g x) : E × ℝ)) '' S) + upRay E := by
-  rw [epi_restrict_eq, convexHull_add, (convex_upRay (E := E)).convexHull_eq]
+  rw [epi_restrictFn_eq, convexHull_add, (convex_upRay (E := E)).convexHull_eq]
 
 variable [FiniteDimensional ℝ E]
 
 /-- **The convex hull of the epigraph of a function with compact graph is closed.** The graph is
 compact, so its convex hull is compact, and a compact set plus the closed vertical ray is closed. -/
-theorem isClosed_convexHull_epi_restrict (hS : IsCompact S) (hg : ContinuousOn g S) :
-    IsClosed (convexHull ℝ (epi (restrict S fun x => ((g x : ℝ) : EReal)))) := by
-  rw [convexHull_epi_restrict_eq]
-  exact isClosed_upRay.add_left_of_isCompact (IsCompact.isCompact_convexHull
+theorem isClosed_convexHull_epi_restrictFn (hS : IsCompact S) (hg : ContinuousOn g S) :
+    IsClosed (convexHull ℝ (epi (restrictFn S fun x => ((g x : ℝ) : EReal)))) := by
+  rw [convexHull_epi_restrictFn_eq]
+  exact isClosed_upRay.add_left_of_isCompact (IsCompact.convexHull
     (hS.image_of_continuousOn (ContinuousOn.prodMk continuousOn_id hg)))
 
 /-- **The convex hull of a function with compact graph is a closed proper convex function.** For
@@ -305,15 +305,15 @@ non-empty compact `S` and `g` continuous on `S`, extended by `+∞`, the graph `
 compact, so `conv G` is compact; `epi f = G + K` for the upward vertical ray
 `K`, so `conv (epi f) = conv G + K` is closed and upward closed on each vertical line, hence *is*
 an epigraph. -/
-theorem closedProperConvexFn_convHullFn_restrict (hSne : S.Nonempty) (hS : IsCompact S)
+theorem closedProperConvexFn_convHullFn_restrictFn (hSne : S.Nonempty) (hS : IsCompact S)
     (hg : ContinuousOn g S) :
-    ClosedProperConvexFn (convHullFn (restrict S fun x => ((g x : ℝ) : EReal))) := by
-  set f : E → EReal := restrict S (fun x => ((g x : ℝ) : EReal)) with hfdef
+    ClosedProperConvexFn (convHullFn (restrictFn S fun x => ((g x : ℝ) : EReal))) := by
+  set f : E → EReal := restrictFn S (fun x => ((g x : ℝ) : EReal)) with hfdef
   set G : Set (E × ℝ) := (fun x => ((x, g x) : E × ℝ)) '' S with hGdef
   have hGc : IsCompact G := hS.image_of_continuousOn (ContinuousOn.prodMk continuousOn_id hg)
-  have hCc : IsCompact (convexHull ℝ G) := IsCompact.isCompact_convexHull hGc
-  have hFeq : convexHull ℝ (epi f) = convexHull ℝ G + upRay E := convexHull_epi_restrict_eq S g
-  have hFcl : IsClosed (convexHull ℝ (epi f)) := isClosed_convexHull_epi_restrict hS hg
+  have hCc : IsCompact (convexHull ℝ G) := IsCompact.convexHull hGc
+  have hFeq : convexHull ℝ (epi f) = convexHull ℝ G + upRay E := convexHull_epi_restrictFn_eq S g
+  have hFcl : IsClosed (convexHull ℝ (epi f)) := isClosed_convexHull_epi_restrictFn hS hg
   have hEpi : IsEpiLike (convexHull ℝ (epi f)) := by
     refine IsEpiLike.of_isClosed (fun x μ ν hp hμν => ?_) hFcl
     rw [hFeq] at hp ⊢
@@ -337,8 +337,8 @@ theorem closedProperConvexFn_convHullFn_restrict (hSne : S.Nonempty) (hS : IsCom
     refine ⟨⟨x₀, ?_⟩, fun x hbot => ?_⟩
     · rw [mem_dom]
       refine lt_of_le_of_lt (convHullFn_le f x₀) ?_
-      rw [hfdef, restrict_of_mem hx₀]
-      exact _root_.EReal.coe_lt_top _
+      rw [hfdef, restrictFn_of_mem hx₀]
+      exact EReal.coe_lt_top _
     · have hge : ((q.2 : ℝ) : EReal) ≤ convHullFn f x := by
         refine le_ofEpi fun μ hμ => ?_
         rw [hFeq] at hμ
@@ -348,7 +348,7 @@ theorem closedProperConvexFn_convHullFn_restrict (hSne : S.Nonempty) (hS : IsCom
         have hk2 := hk.2
         exact_mod_cast (by linarith : q.2 ≤ μ)
       rw [hbot] at hge
-      exact absurd (le_bot_iff.1 hge) (_root_.EReal.coe_ne_bot _)
+      exact absurd (le_bot_iff.1 hge) (EReal.coe_ne_bot _)
   refine ClosedProperConvexFn.of_isClosed_epi (convexFn_convHullFn f) ?_ hproper
   have hepiF : epi (convHullFn f) = convexHull ℝ (epi f) := epi_ofEpi hEpi
   rw [hepiF]
@@ -1106,33 +1106,33 @@ theorem exists_affineIndependent_of_convFn_lt {f : ι → E → EReal} (hf : ∀
     rw [Finset.sum_subset hsub fun i hi hi' => by rw [hzero i hi hi', zero_smul]]; exact hwx
   have hval : ∑ i ∈ t₁, (w i : EReal) * f i (p i) = ∑ i ∈ t, (w i : EReal) * f i (p i) := by
     refine Finset.sum_subset hsub fun i hi hi' => ?_
-    rw [hzero i hi hi', _root_.EReal.coe_zero, zero_mul]
+    rw [hzero i hi hi', EReal.coe_zero, zero_mul]
   -- on the surviving indices every term is finite
   have hbot : ∀ i ∈ t₁, (w i : EReal) * f i (p i) ≠ ⊥ := fun i hi =>
     EReal.coe_mul_ne_bot (hwpos i hi).le (hf' i (p i))
   have htop : ∑ i ∈ t₁, (w i : EReal) * f i (p i) ≠ ⊤ := by
     rw [hval]
-    exact (hlt.trans (_root_.EReal.coe_lt_top r)).ne
+    exact (hlt.trans (EReal.coe_lt_top r)).ne
   have hnetop := EReal.forall_ne_top_of_sum_ne_top t₁ _ hbot htop
   obtain ⟨c, hc⟩ : ∃ c : ι → ℝ, ∀ i ∈ t₁, f i (p i) = (c i : EReal) := by
     refine ⟨fun i => (f i (p i)).toReal, fun i hi => ?_⟩
     have hne : f i (p i) ≠ ⊤ := fun hcon =>
-      hnetop i hi (by rw [hcon, _root_.EReal.coe_mul_top_of_pos (hwpos i hi)])
-    exact (_root_.EReal.coe_toReal hne (hf' i (p i))).symm
+      hnetop i hi (by rw [hcon, EReal.coe_mul_top_of_pos (hwpos i hi)])
+    exact (EReal.coe_toReal hne (hf' i (p i))).symm
   have hreal : ∀ (u : Finset ι), u ⊆ t₁ → ∀ v : ι → ℝ,
       ∑ i ∈ u, (v i : EReal) * f i (p i) = ((∑ i ∈ u, v i * c i : ℝ) : EReal) := by
     intro u hu v
     rw [EReal.coe_sum]
     exact Finset.sum_congr rfl fun i hi => by
-      rw [hc i (hu hi), EReal.coe_mul_coe]
+      rw [hc i (hu hi), ← EReal.coe_mul]
   -- thin the representation to an affinely independent one, without increasing the cost
   obtain ⟨t', w', hsub', hpos', hai, hone, hpt, hcost⟩ :=
     exists_subset_affineIndependent_of_sum p c t₁ w hwpos
   refine ⟨t', w', p, hpos', by rw [hone, hw₁'], card_le_finrank_succ_of_affineIndependent hai,
-    hai, fun i hi => by rw [hc i (hsub' hi)]; exact _root_.EReal.coe_ne_top _,
+    hai, fun i hi => by rw [hc i (hsub' hi)]; exact EReal.coe_ne_top _,
     by rw [hpt, hwx'], ?_⟩
   rw [hreal t' hsub' w']
-  refine lt_of_le_of_lt (_root_.EReal.coe_le_coe_iff.2 hcost) ?_
+  refine lt_of_le_of_lt (EReal.coe_le_coe_iff.2 hcost) ?_
   rw [← hreal t₁ (Finset.Subset.refl _) w, hval]
   exact hlt
 
@@ -1151,7 +1151,7 @@ theorem convFn_apply_affineIndependent {f : ι → E → EReal} (hf : ∀ i, Con
     exact sInf_le ⟨t, w, p, fun i hi => (hpos i hi).le, hone, hpt, rfl⟩
   · by_contra hcon
     rw [not_le] at hcon
-    obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+    obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
     obtain ⟨t, w, p, hpos, hone, hcard, hai, hnetop, hpt, hlt⟩ :=
       exists_affineIndependent_of_convFn_lt hf hf' hr₁
     have hmem : (∑ i ∈ t, (w i : EReal) * f i (p i)) ∈
@@ -1223,8 +1223,8 @@ theorem convHullFn_apply_fin {g : E → EReal} (hg : ∀ x, g x ≠ ⊥) (x : E)
       refine ⟨fun i => (g (p i)).toReal, fun i hi => ?_⟩
       have hpos : 0 < w i := (Finset.mem_filter.1 hi).2
       have hne : g (p i) ≠ ⊤ := fun hcon =>
-        hnetop i (Finset.mem_univ i) (by rw [hcon, _root_.EReal.coe_mul_top_of_pos hpos])
-      exact (_root_.EReal.coe_toReal hne (hg (p i))).symm
+        hnetop i (Finset.mem_univ i) (by rw [hcon, EReal.coe_mul_top_of_pos hpos])
+      exact (EReal.coe_toReal hne (hg (p i))).symm
     have hcm := Finset.centerMass_mem_convexHull t'
       (fun i hi => ((Finset.mem_filter.1 hi).2).le) (by rw [hw₁']; exact zero_lt_one)
       (z := fun i => ((p i, μ i) : E × ℝ))
@@ -1238,7 +1238,7 @@ theorem convHullFn_apply_fin {g : E → EReal} (hg : ∀ x, g x ≠ ⊥) (x : E)
     refine (ofEpi_apply_le hcm).trans (le_of_eq ?_)
     rw [EReal.coe_sum,
       ← Finset.sum_subset hsub (fun i hi hi' => by rw [hzero i hi hi']; simp)]
-    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, EReal.coe_mul_coe]
+    exact Finset.sum_congr rfl fun i hi => by rw [hμ i hi, ← EReal.coe_mul]
   -- **`≥`**: every point of the hull of `epi g` admits an `n + 1`-point representation.
   · refine le_ofEpi fun ν hν => ?_
     rw [convexHull_eq] at hν
@@ -1318,7 +1318,7 @@ theorem convHullFn_apply_fin {g : E → EReal} (hg : ∀ x, g x ≠ ⊥) (x : E)
         simp only [hWdef, hPdef]
         split
         · rfl
-        · rw [_root_.EReal.coe_zero, zero_mul]
+        · rw [EReal.coe_zero, zero_mul]
       rw [Finset.sum_congr rfl fun i _ => hterm i,
         sum_pad_eq t' hcard jj hjj fun j => (w' j : EReal) * g ((zz j).1)]
     have hmem : (∑ i, (W i : EReal) * g (P i)) ∈ {z : EReal |
@@ -1334,7 +1334,7 @@ theorem convHullFn_apply_fin {g : E → EReal} (hg : ∀ x, g x ≠ ⊥) (x : E)
             (by exact_mod_cast (hpos' j hj).le)
       _ = ((∑ j ∈ t', w' j * (zz j).2 : ℝ) : EReal) := by
           rw [EReal.coe_sum]
-          exact Finset.sum_congr rfl fun j _ => (EReal.coe_mul_coe _ _).symm
+          exact Finset.sum_congr rfl fun j _ => EReal.coe_mul _ _
       _ ≤ (ν : EReal) := by exact_mod_cast hsumc
 
 end ConvHullFn
@@ -1480,7 +1480,7 @@ private theorem isClosed_coneHull_insert [IsCompatiblePairing B.flip] (hScl : Is
   have hcpt : IsCompact (insert ((0 : F), (1 : ℝ)) S) :=
     IsCompact.insert (Metric.isCompact_of_isClosed_isBounded hScl hSb) _
   have hT : IsCompact (convexHull ℝ (insert ((0 : F), (1 : ℝ)) S)) :=
-    IsCompact.isCompact_convexHull hcpt
+    IsCompact.convexHull hcpt
   have hcl := isClosed_coe_hull_of_isBounded (convex_convexHull ℝ _) hT.isClosed
     ⟨((0 : F), (1 : ℝ)), subset_convexHull ℝ _ (Set.mem_insert _ _)⟩
     (zero_notMem_convexHull_insert hS0 hint) hT.isBounded

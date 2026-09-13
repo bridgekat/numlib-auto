@@ -165,25 +165,25 @@ theorem corollary_7_3_1 (hf : ConvexFn f) {α : ℝ} (h : ∃ x, f x < (α : ERe
 theorem corollary_7_3_2 (hf : ConvexFn f) {C : Set (Rn n)} (hC : Convex ℝ C)
     (hsub : ri C ⊆ dom f) {α : ℝ} (h : ∃ x ∈ closure C, f x < (α : EReal)) :
     ∃ x ∈ ri C, f x < (α : EReal) := by
-  have hgc : ConvexFn (ConvexAnalysis.restrict (closure C) f) := hf.restrict hC.closure
-  have hle : dom (ConvexAnalysis.restrict (closure C) f) ⊆ closure C := by
+  have hgc : ConvexFn (ConvexAnalysis.restrictFn (closure C) f) := hf.restrictFn hC.closure
+  have hle : dom (ConvexAnalysis.restrictFn (closure C) f) ⊆ closure C := by
     intro z hz
     by_contra hzc
-    rw [mem_dom, restrict_of_notMem hzc] at hz
+    rw [mem_dom, restrictFn_of_notMem hzc] at hz
     exact absurd hz (lt_irrefl ⊤)
-  have hge : ri C ⊆ dom (ConvexAnalysis.restrict (closure C) f) := by
+  have hge : ri C ⊆ dom (ConvexAnalysis.restrictFn (closure C) f) := by
     intro z hz
-    rw [mem_dom, restrict_of_mem (subset_closure (intrinsicInterior_subset hz))]
+    rw [mem_dom, restrictFn_of_mem (subset_closure (intrinsicInterior_subset hz))]
     exact hsub hz
-  have hri : ri (dom (ConvexAnalysis.restrict (closure C) f)) = ri C :=
+  have hri : ri (dom (ConvexAnalysis.restrictFn (closure C) f)) = ri C :=
     (Convex.closure_eq_iff_relint_eq hgc.convex_dom hC).1
       (Convex.closure_eq_of_relint_subset_of_subset_closure hC hge hle)
-  have hex : ∃ y, ConvexAnalysis.restrict (closure C) f y < (α : EReal) := by
+  have hex : ∃ y, ConvexAnalysis.restrictFn (closure C) f y < (α : EReal) := by
     obtain ⟨x, hx, hxα⟩ := h
-    exact ⟨x, by rw [restrict_of_mem hx]; exact hxα⟩
+    exact ⟨x, by rw [restrictFn_of_mem hx]; exact hxα⟩
   obtain ⟨z, hz, hzα⟩ := hgc.exists_mem_relint_dom_lt hex
   rw [hri] at hz
-  rw [restrict_of_mem (subset_closure (intrinsicInterior_subset hz))] at hzα
+  rw [restrictFn_of_mem (subset_closure (intrinsicInterior_subset hz))] at hzα
   exact ⟨z, hz, hzα⟩
 
 /-- **Corollary 7.3.3.** For convex `f` finite on a convex set `C`: if `f x ≥ α` throughout `C`,
@@ -308,9 +308,9 @@ theorem affineSpan_relint_dom_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x 
   intro x hx
   by_cases hxα : f x < (α : EReal)
   · exact subset_affineSpan ℝ R ⟨hx, hxα⟩
-  obtain ⟨β, hyβ, hβα⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hyα
+  obtain ⟨β, hyβ, hβα⟩ := EReal.lt_iff_exists_real_btwn.1 hyα
   obtain ⟨γ, hxγ, -⟩ :=
-    _root_.EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
+    EReal.lt_iff_exists_real_btwn.1 (mem_dom.1 (intrinsicInterior_subset hx))
   have hβα' : β < α := by exact_mod_cast hβα
   have hpos : (0 : ℝ) < α - β := by linarith
   set t : ℝ := min (1 / 2) ((α - β) / (2 * (|γ - β| + 1))) with ht

@@ -89,8 +89,8 @@ theorem isBounded_setOf_norm_gradient_le_of_dom_conj_eq_univ (hf : ConvexFn f) (
   refine hcomp.isBounded.subset fun x hx => ⟨gradient (fun w => (f w).toReal) x, ?_, ?_⟩
   · exact mem_closedBall_zero_iff.2 hx
   · rw [mem_subgradientRel, mem_subgradient_conj_innerL_iff hf hcl,
-      ← hasGradientAt_toDual_iff_mem_subgradient hf hp hcl hes]
-    exact (hdiff x).hasGradientAt_gradient
+      ← hasGradientAtFn_toDual_iff_mem_subgradient hf hp hcl hes]
+    exact (hdiff x).hasGradientAtFn_gradient
 
 /-- The hard half, first step: the range of `∇f` lies inside `int (dom f*)`. A
 non-zero `n` normal to `dom f*` at `v = ∇f x` may be added to `x` with any non-negative coefficient
@@ -121,7 +121,7 @@ theorem gradientRange_subset_interior_dom_conj_of_isBounded (hf : ConvexFn f) (h
     have hmem := subgradient_add_normalCone_dom_subset (innerₗ E) (conj (innerₗ E) f) v
       (Set.add_mem_add hx hsmul)
     rw [mem_subgradient_conj_innerL_iff hf hcl,
-      ← hasGradientAt_toDual_iff_mem_subgradient hf hp hcl hes] at hmem
+      ← hasGradientAtFn_toDual_iff_mem_subgradient hf hp hcl hes] at hmem
     rw [hmem.gradient_toReal_eq, LinearIsometryEquiv.symm_apply_apply]
   -- Which contradicts boundedness of the sublevel set at height `‖v‖`.
   obtain ⟨R, hR⟩ := isBounded_iff_forall_norm_le.1 (hbd ‖v‖)
@@ -163,7 +163,7 @@ theorem isClosed_gradientRange_of_isBounded (hf : ConvexFn f) (hp : Proper f)
   have hva : gradient (fun w => (f w).toReal) a = v := by
     refine tendsto_nhds_unique ((hcont.tendsto a).comp hφlim) ?_
     exact (hlim.comp hφ.tendsto_atTop).congr fun n => (hgrad (φ n)).symm
-  exact ⟨a, hva ▸ (hdiff a).hasGradientAt_gradient⟩
+  exact ⟨a, hva ▸ (hdiff a).hasGradientAtFn_gradient⟩
 
 /-- The hard half: bounded sublevel sets of `‖∇f‖` force `dom f* = E`. Here `∇f(E)`
 is non-empty, open and closed, and `E` is connected. -/
@@ -173,7 +173,7 @@ theorem dom_conj_eq_univ_of_isBounded (hf : ConvexFn f) (hp : Proper f) (hdom : 
     dom (conj (innerₗ E) f) = univ := by
   have hcl : ClosedFn f := closedFn_of_dom_eq_univ hf hp hdom
   have hes : EssentiallySmooth f := essentiallySmooth_of_dom_eq_univ hdom hdiff
-  have hne : (gradientRange f).Nonempty := ⟨_, (hdiff 0).hasGradientAt_gradient.mem_gradientRange⟩
+  have hne : (gradientRange f).Nonempty := ⟨_, (hdiff 0).hasGradientAtFn_gradient.mem_gradientRange⟩
   have hsub := gradientRange_subset_interior_dom_conj_of_isBounded hf hp hdom hdiff hbd
   have heq : gradientRange f = interior (dom (conj (innerₗ E) f)) :=
     Subset.antisymm hsub

@@ -207,7 +207,7 @@ theorem IsExactSum.of_relint_closed [IsCompatiblePairing B] [IsCompatiblePairing
   have hdomne : (dom (f + g)).Nonempty :=
     ⟨x₀, by
       rw [mem_dom, Pi.add_apply]
-      exact _root_.EReal.add_lt_top (mem_dom.1 hx₀f).ne (mem_dom.1 hx₀g).ne⟩
+      exact EReal.add_lt_top (mem_dom.1 hx₀f).ne (mem_dom.1 hx₀g).ne⟩
   have hproper : Proper (infConv (conj B f) (conj B g)) := by
     refine ⟨?_, fun y hy => ?_⟩
     · obtain ⟨p, hp⟩ := hup.dom_nonempty
@@ -236,7 +236,7 @@ theorem IsExactSum.of_relint_closed [IsCompatiblePairing B] [IsCompatiblePairing
   rw [hμ]
   calc conj B f y₁ + conj B g y₂ ≤ ((a : ℝ) : EReal) + ((b : ℝ) : EReal) :=
         add_le_add (mk_mem_epi.1 h₁) (mk_mem_epi.1 h₂)
-    _ = ((μ : ℝ) : EReal) := by rw [← _root_.EReal.coe_add, hab]
+    _ = ((μ : ℝ) : EReal) := by rw [← EReal.coe_add, hab]
 
 end Sum
 
@@ -324,7 +324,7 @@ theorem conj_add_eq_conj_clFn_add_clFn (hf : ConvexFn f) (hpf : Proper f) (hg : 
     exact le_of_tendsto_of_tendsto' hL hR fun a => hc _
   by_contra hcon
   rw [not_le] at hcon
-  obtain ⟨c, h1, h2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+  obtain ⟨c, h1, h2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
   exact absurd (key c h1.le) (not_le.2 h2)
 
 omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] in
@@ -402,7 +402,7 @@ theorem conj_compLin_eq_conj_compLin_clFn (A : E →ₗ[ℝ] G) {x₀ : E}
     exact le_of_tendsto_of_tendsto' hL hR fun a => hc _
   by_contra hcon
   rw [not_le] at hcon
-  obtain ⟨c, h1, h2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+  obtain ⟨c, h1, h2⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
   exact absurd (key c h1.le) (not_le.2 h2)
 
 /-- **A *proper convex* `g` pulls back exactly along a linear map whose range meets `ri (dom g)`.**

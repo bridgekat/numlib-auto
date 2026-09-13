@@ -1,6 +1,9 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
+id = '_root_.Convex.line_steps'
+
+[[node]]
 id = 'convexOn_comp_line'
 
 [[node]]

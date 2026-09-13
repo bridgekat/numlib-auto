@@ -400,7 +400,7 @@ theorem corollary_21_6_2 {ι : Type*} [Fintype ι] [Nonempty ι] {C : Set (Rn n)
 constraints of Theorem 21.2 enter Corollary 21.6.1's collection of convex sets. -/
 theorem convexFn_coe_affineMap (g : Rn n →ᵃ[ℝ] ℝ) : ConvexFn (fun x => ((g x : ℝ) : EReal)) := by
   refine convexFn_of_epi_combo fun x y p q hx hy s t hs ht hst => ?_
-  rw [_root_.EReal.coe_le_coe_iff] at hx hy ⊢
+  rw [EReal.coe_le_coe_iff] at hx hy ⊢
   rw [Convex.combo_affine_apply hst]
   simp only [smul_eq_mul]
   nlinarith

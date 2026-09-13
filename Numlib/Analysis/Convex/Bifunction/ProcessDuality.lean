@@ -318,10 +318,10 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
     have h1 : ((Bx x (0 : Y) : ℝ) : EReal) - F 0 x ≤ K (0, 0) := by
       rw [← hbr0 0 0]
       exact sub_le_conj Bx (F 0) x 0
-    rw [hK₀, map_zero, _root_.EReal.coe_zero] at h1
+    rw [hK₀, map_zero, EReal.coe_zero] at h1
     have hz : (0 : EReal) - F 0 x = -(F 0 x) := zero_add _
     rw [hz] at h1
-    have h3 := _root_.EReal.neg_le.1 h1
+    have h3 := EReal.neg_le.1 h1
     rwa [neg_zero] at h3
   have hex0 : ∃ x : X, F 0 x ≠ ⊤ := by
     by_contra hc
@@ -399,7 +399,7 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
   have hG0 : (0 : U × X) ∈ G := by
     refine (hmem 0).2 fun y => ?_
     simp only [Prod.fst_zero, Prod.snd_zero, map_zero, LinearMap.zero_apply,
-      _root_.EReal.coe_zero]
+      EReal.coe_zero]
     exact hK0nn y
   have hGsmul : ∀ c : ℝ, 0 ≤ c → ∀ p ∈ G, c • p ∈ G := by
     intro c hc p hp
@@ -410,7 +410,7 @@ theorem exists_unique_convexProcess_bracket_indicatorBifun_eq
       have hK' : K ((c • p).1, y) = (c : EReal) * K (p.1, y) := hhu y c hcpos p.1
       have hB : ((Bx (c • p).2 y : ℝ) : EReal) = (c : EReal) * ((Bx p.2 y : ℝ) : EReal) := by
         simp only [Prod.smul_snd, map_smul, smul_eq_mul, LinearMap.smul_apply]
-        rw [_root_.EReal.coe_mul]
+        rw [EReal.coe_mul]
       rw [hK', hB]
       exact mul_le_mul_of_nonneg_left ((hmem p).1 hp y) (by exact_mod_cast hcpos.le)
   have hGadd : ∀ p ∈ G, ∀ q ∈ G, p + q ∈ G := by
@@ -501,7 +501,7 @@ theorem exists_mem_eval_and_eq_imageBifun (hA : IsClosed (A.graph : Set (U × X)
   have hmem : x ∈ A.eval u := by
     by_contra hc
     rw [indicatorBifun_apply, indicatorFn_of_notMem hc,
-      _root_.EReal.add_top_of_ne_bot (hf.proper.ne_bot u)] at hu
+      EReal.add_top_of_ne_bot (hf.proper.ne_bot u)] at hu
     exact hne hu.symm
   refine ⟨u, hmem, ?_⟩
   rwa [indicatorBifun_apply, indicatorFn_of_mem hmem, add_zero] at hu

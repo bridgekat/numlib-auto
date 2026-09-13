@@ -118,7 +118,7 @@ theorem conj_le_coe_iff_forall_mem_epi {y : F} {c : ℝ} :
   constructor
   · intro h p hp
     have h₁ : affineFn B y c p.1 ≤ ((p.2 : ℝ) : EReal) := le_trans (h p.1) hp
-    rw [affineFn_eq_coe, _root_.EReal.coe_le_coe_iff] at h₁
+    rw [affineFn_eq_coe, EReal.coe_le_coe_iff] at h₁
     linarith
   · intro h x
     by_contra hlt
@@ -126,7 +126,7 @@ theorem conj_le_coe_iff_forall_mem_epi {y : F} {c : ℝ} :
     obtain ⟨μ, hμ₁, hμ₂⟩ := EReal.lt_iff_exists_real_btwn.1 hlt
     have hmem : ((x, μ) : E × ℝ) ∈ epi f := le_of_lt hμ₁
     have hle := h (x, μ) hmem
-    rw [affineFn_eq_coe, _root_.EReal.coe_lt_coe_iff] at hμ₂
+    rw [affineFn_eq_coe, EReal.coe_lt_coe_iff] at hμ₂
     simp only at hle
     linarith
 

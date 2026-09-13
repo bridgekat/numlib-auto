@@ -395,11 +395,11 @@ theorem corollary_8_6_1_closed (hf : ClosedProperConvexFn f) {x y : Rn n} {α : 
       Antitone fun l : ℝ => f (z + l • v) := fun z v hz =>
     antitone_along_of_liminf_lt_top hf.convex z v
       (lt_of_le_of_lt (liminf_le_of_frequently_le' (Frequently.of_forall hz))
-        (_root_.EReal.coe_lt_top α))
+        (EReal.coe_lt_top α))
   have hx : x ∈ dom f := by
     have h0 := h 0
     rw [zero_smul, add_zero] at h0
-    exact mem_dom.2 (lt_of_le_of_lt h0 (_root_.EReal.coe_lt_top α))
+    exact mem_dom.2 (lt_of_le_of_lt h0 (EReal.coe_lt_top α))
   have hneg : ∀ l : ℝ, f (x + l • (-y)) ≤ (α : EReal) := by
     intro l
     rw [smul_neg, ← neg_smul]
@@ -504,10 +504,10 @@ theorem theorem_8_8_b_iff_c (hp : Proper f) (y : Rn n) (ν : ℝ) :
   constructor
   · rintro ⟨h1, h2⟩
     refine ⟨?_, h1⟩
-    rw [h1, h2, ← _root_.EReal.coe_neg, neg_neg]
+    rw [h1, h2, ← EReal.coe_neg, neg_neg]
   · rintro ⟨h1, h2⟩
     refine ⟨h2, ?_⟩
-    rw [← neg_neg (recessionFn f (-y)), h1, h2, ← _root_.EReal.coe_neg]
+    rw [← neg_neg (recessionFn f (-y)), h1, h2, ← EReal.coe_neg]
 
 /-- **Theorem 8.8**, the equivalence (a) ⟺ (c).
 
@@ -566,8 +566,8 @@ theorem recessionFn_eq_indicator_zero_of_isBounded_dom (hp : Proper f) (hb : IsB
       intro x hx l hl
       obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_dom.1 hx)
       have hle := recessionFn_le_coe_iff_forall.1 hν.le x l hl
-      rw [hs, ← _root_.EReal.coe_add] at hle
-      exact mem_dom.2 (lt_of_le_of_lt hle (_root_.EReal.coe_lt_top _))
+      rw [hs, ← EReal.coe_add] at hle
+      exact mem_dom.2 (lt_of_le_of_lt hle (EReal.coe_lt_top _))
     rw [hzero] at hmem
     exact hy hmem
 

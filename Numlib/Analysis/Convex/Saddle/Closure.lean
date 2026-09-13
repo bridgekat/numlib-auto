@@ -109,7 +109,7 @@ theorem saddleSwap_apply (K : U × X → EReal) (q : X × U) :
 
 theorem saddleSwap_le_saddleSwap {K L : U × X → EReal} (h : K ≤ L) :
     saddleSwap L ≤ saddleSwap K :=
-  fun q => _root_.EReal.neg_le_neg_iff.2 (h (q.2, q.1))
+  fun q => EReal.neg_le_neg_iff.2 (h (q.2, q.1))
 
 /-- `saddleSwap` bundled as an order isomorphism onto the order dual. It is not an endomorphism —
 the two factors are exchanged — so its two-sided inverse has to be recorded as an `Equiv`. -/

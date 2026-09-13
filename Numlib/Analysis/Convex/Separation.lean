@@ -292,7 +292,7 @@ theorem exists_separatesStrongly_iff_iSup_lt_iInf :
   · rintro ⟨c, hc⟩
     exact hc.iSup_lt.trans hc.lt_iInf
   · intro h
-    obtain ⟨c, h₁, h₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 h
+    obtain ⟨c, h₁, h₂⟩ := EReal.lt_iff_exists_real_btwn.1 h
     exact ⟨c, h₁, h₂⟩
 
 /-- Strong separation is separation. -/
@@ -316,8 +316,8 @@ theorem separatesStrongly_iff_exists_gap :
       ∃ δ > 0, (∀ x ∈ s, f x ≤ c - δ) ∧ ∀ x ∈ t, c + δ ≤ f x := by
   constructor
   · intro h
-    obtain ⟨p, hp₁, hp₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 h.iSup_lt
-    obtain ⟨q, hq₁, hq₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 h.lt_iInf
+    obtain ⟨p, hp₁, hp₂⟩ := EReal.lt_iff_exists_real_btwn.1 h.iSup_lt
+    obtain ⟨q, hq₁, hq₂⟩ := EReal.lt_iff_exists_real_btwn.1 h.lt_iInf
     have hp : p < c := by exact_mod_cast hp₂
     have hq : c < q := by exact_mod_cast hq₁
     refine ⟨min (c - p) (q - c), lt_min (by linarith) (by linarith), fun x hx => ?_,
@@ -966,7 +966,7 @@ theorem exists_affine_le_of_isClosed_epi {g : E → EReal} (hg : ConvexFn g)
     (fun hmem => absurd (mk_mem_epi.1 hmem) (not_le.2 hμ))
   refine ⟨y, b, fun x => ?_, hx₀⟩
   by_contra hcon
-  obtain ⟨ρ, hρ₁, hρ₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
+  obtain ⟨ρ, hρ₁, hρ₂⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hcon)
   have hmem : (x, ρ) ∈ epi g := mk_mem_epi.2 hρ₁.le
   have hlt : y x - b < ρ := hy x ρ hmem
   have hgt : ρ < y x - b := by exact_mod_cast hρ₂

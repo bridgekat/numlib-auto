@@ -10,16 +10,16 @@ id = 'isClosed_image_of_recessionCone_inter_ker'
 id = 'recessionCone_image_of_recessionCone_inter_ker'
 
 [[node]]
-id = 'Convex.closure_image_eq_and_recessionCone'
+id = '_root_.Convex.closure_image_eq_and_recessionCone'
 
 [[node]]
-id = 'Convex.isClosed_add'
+id = '_root_.Convex.isClosed_add'
 
 [[node]]
-id = 'Convex.closure_add_eq'
+id = '_root_.Convex.closure_add_eq'
 
 [[node]]
-id = 'Convex.recessionCone_add'
+id = '_root_.Convex.recessionCone_add'
 
 [[node]]
 id = 'closedProperConvexFn_mapLin'

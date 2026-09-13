@@ -55,14 +55,14 @@ theorem StrictConvexOnFn.add_convexFn (hC : Convex ℝ C) (hsc : StrictConvexOnF
   have hstrict := hsc hx hy hne ha hb hab
   have hconv := (convexFn_iff_le hpg.ne_bot).1 hg x y a b ha hb hab
   have hcf : ∀ ⦃z : E⦄, z ∈ C → f z = ((f z).toReal : EReal) := fun z hzC =>
-    (_root_.EReal.coe_toReal (mem_dom.1 (hCf hzC)).ne (hpf.ne_bot z)).symm
+    (EReal.coe_toReal (mem_dom.1 (hCf hzC)).ne (hpf.ne_bot z)).symm
   have hcg : ∀ ⦃z : E⦄, z ∈ C → g z = ((g z).toReal : EReal) := fun z hzC =>
-    (_root_.EReal.coe_toReal (mem_dom.1 (hCg hzC)).ne (hpg.ne_bot z)).symm
+    (EReal.coe_toReal (mem_dom.1 (hCg hzC)).ne (hpg.ne_bot z)).symm
   rw [hcf hx, hcf hy, hcf hz] at hstrict
   rw [hcg hx, hcg hy, hcg hz] at hconv
   rw [Pi.add_apply, Pi.add_apply, Pi.add_apply, hcf hx, hcf hy, hcf hz, hcg hx, hcg hy, hcg hz]
-  simp only [EReal.coe_mul_coe, ← _root_.EReal.coe_add, _root_.EReal.coe_lt_coe_iff,
-    _root_.EReal.coe_le_coe_iff] at hstrict hconv ⊢
+  simp only [← EReal.coe_mul, ← EReal.coe_add, EReal.coe_lt_coe_iff,
+    EReal.coe_le_coe_iff] at hstrict hconv ⊢
   linarith
 
 /-- The same with the summands the other way round. -/

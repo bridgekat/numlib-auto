@@ -63,7 +63,7 @@ structure IsFace (C C' : Set E) : Prop extends IsExtreme ℝ C C' where
   convex : Convex ℝ C'
 
 /-- Every convex set is a face of itself: the greatest element of the lattice of faces. -/
-protected theorem Convex.isFace_self (hC : Convex ℝ C) : IsFace C C :=
+protected theorem _root_.Convex.isFace_self (hC : Convex ℝ C) : IsFace C C :=
   ⟨IsExtreme.rfl, hC⟩
 
 /-- The empty set is a face of every set: the least element of the lattice of faces. -/
@@ -106,7 +106,7 @@ theorem isFace_singleton {x : E} : IsFace C {x} ↔ x ∈ C.extremePoints ℝ :=
 /-- **Exposed faces are faces**: the set on which a linear function attains its maximum over a
 convex set `C` is a face of `C`. This is the only source of faces used in the partition theorem
 below. -/
-theorem Convex.isFace_inter_setOf_eq (hC : Convex ℝ C) {g : E →ₗ[ℝ] ℝ} {α : ℝ}
+theorem _root_.Convex.isFace_inter_setOf_eq (hC : Convex ℝ C) {g : E →ₗ[ℝ] ℝ} {α : ℝ}
     (hmax : ∀ y ∈ C, g y ≤ α) : IsFace C (C ∩ {w | g w = α}) := by
   refine ⟨⟨inter_subset_left, ?_⟩, hC.inter (convex_hyperplane g.isLinear α)⟩
   rintro x hx y hy z ⟨_, hz⟩ ⟨a, b, ha, hb, hab, rfl⟩

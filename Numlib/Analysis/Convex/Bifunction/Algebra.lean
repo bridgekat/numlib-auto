@@ -236,41 +236,23 @@ end AdjointInfConvBifun
 
 section ERealAux
 
-private theorem iSup_add_of_ne_top {ι : Sort*} [Nonempty ι] (u : ι → EReal) {c : EReal}
-    (hc : c ≠ ⊤) : (⨆ i, u i) + c = ⨆ i, (u i + c) := by
-  induction c with
-  | bot => simp
-  | coe r => exact EReal.iSup_add_coe u r
-  | top => exact absurd rfl hc
-
 private theorem coe_sub_add (r : ℝ) {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
     (r : EReal) - (a + b) = ((r : EReal) - b) - a := by
   have h : -(a + b) = -b + -a := by
     rw [add_comm a b]
-    exact _root_.EReal.neg_add (.inl hb) (.inr ha)
+    exact EReal.neg_add (.inl hb) (.inr ha)
   change (r : EReal) + -(a + b) = ((r : EReal) + -b) + -a
   rw [h, ← add_assoc]
-
-private theorem add_iSup_of_ne_top {ι : Sort*} [Nonempty ι] (u : ι → EReal) {c : EReal}
-    (hc : c ≠ ⊤) : c + (⨆ i, u i) = ⨆ i, (c + u i) := by
-  rw [add_comm, iSup_add_of_ne_top u hc]
-  exact iSup_congr fun i => add_comm _ _
-
-private theorem sub_iInf_of_ne_top {ι : Sort*} [Nonempty ι] (u : ι → EReal) {c : EReal}
-    (hc : c ≠ ⊤) : c - (⨅ i, u i) = ⨆ i, (c - u i) := by
-  change c + -(⨅ i, u i) = _
-  rw [EReal.neg_iInf, add_iSup_of_ne_top _ hc]
-  rfl
 
 private theorem add_coe_ne_top {a : EReal} (ha : a ≠ ⊤) (c : ℝ) : a + (c : EReal) ≠ ⊤ := by
   induction a with
   | bot => simp
-  | coe p => rw [← _root_.EReal.coe_add]; exact _root_.EReal.coe_ne_top _
+  | coe p => rw [← EReal.coe_add]; exact EReal.coe_ne_top _
   | top => exact absurd rfl ha
 
 private theorem sub_sub_eq_add_sub {a b c : EReal} (ha : a ≠ ⊥) (hc : c ≠ ⊤) :
     b - (a - c) = (b + c) - a := by
-  have h : -(a - c) = c - a := EReal.neg_sub_comm ha hc
+  have h : -(a - c) = c - a := EReal.neg_sub_comm (.inl ha) (.inr hc)
   change b + -(a - c) = b + c + -a
   rw [h]
   change b + (c + -a) = b + c + -a
@@ -361,9 +343,9 @@ theorem lowerAdjointBifun_eq_concaveAdjointBifun (Bu : U →ₗ[ℝ] V →ₗ[�
   simp only [Prod.fst_swap, Prod.snd_swap, inverseBifun_apply, LinearMap.flip_apply]
   have h1 : -(F q.2 q.1 + ((Bu q.2 v - Bx q.1 y : ℝ) : EReal))
       = -(F q.2 q.1) + -(((Bu q.2 v - Bx q.1 y : ℝ) : EReal)) :=
-    _root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top _)) (.inr (_root_.EReal.coe_ne_bot _))
+    EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _))
   have hr : (-(Bu q.2 v - Bx q.1 y) : ℝ) = Bx q.1 y - Bu q.2 v := by ring
-  rw [h1, ← _root_.EReal.coe_neg, hr]
+  rw [h1, ← EReal.coe_neg, hr]
 
 /-- `F⁎*` is a convex bifunction, with no hypothesis on `F`: it is the negative of the concave
 `F*`, read through the swap of the two factors. -/
@@ -421,11 +403,10 @@ theorem conj_imageBifun_eq_iSup (hbF : ∀ u x, F u x ≠ ⊥) (hbf : ∀ u, f u
   have hstep : ∀ u : U, (⨆ x : X, (((Bx x y : ℝ) : EReal) - (f u + F u x)))
       = bracket Bx F u y - f u := by
     intro u
-    have hnt : -(f u) ≠ ⊤ := by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact hbf u
     have hbody : ∀ x : X, ((Bx x y : ℝ) : EReal) - (f u + F u x)
         = (((Bx x y : ℝ) : EReal) - F u x) + -(f u) := fun x => by
       rw [coe_sub_add _ (hbf u) (hbF u x), sub_eq_add_neg]
-    rw [iSup_congr hbody, ← iSup_add_of_ne_top _ hnt, ← sub_eq_add_neg]
+    rw [iSup_congr hbody, ← EReal.iSup_add, ← sub_eq_add_neg]
     rfl
   rw [conj_apply]
   calc (⨆ x : X, (((Bx x y : ℝ) : EReal) - imageBifun F f x))
@@ -442,7 +423,7 @@ theorem conj_imageBifun_eq_neg_iInf (hbF : ∀ u x, F u x ≠ ⊥) (hbf : ∀ u,
     (hgt : ∀ u, bracket Bx F u y ≠ ⊤) :
     conj Bx (imageBifun F f) y = -(⨅ u, (f u - bracket Bx F u y)) := by
   rw [conj_imageBifun_eq_iSup hbF hbf y, EReal.neg_iInf]
-  exact iSup_congr fun u => (EReal.neg_sub_comm (hbf u) (hgt u)).symm
+  exact iSup_congr fun u => (EReal.neg_sub_comm (.inl (hbf u)) (.inr (hgt u))).symm
 
 /-- **The conjugate of an image is the image under the lower adjoint**, `(Ff)* = F⁎* f*`, in the
 pointwise form `(Ff)*(y) = ⨅ v, f*(v) - (F* y)(v)`.
@@ -469,7 +450,7 @@ theorem conj_imageBifun (hbF : ∀ u x, F u x ≠ ⊥) (hf : Proper f) {y : Y}
       = ⨅ v, (conj Bu f v - concaveConj Bu g v) := by
     rw [EReal.neg_iSup]
     exact iInf_congr fun v =>
-      EReal.neg_sub_comm' (concaveConj_ne_top hgd v) (conj_ne_bot hf.dom_nonempty v)
+      EReal.neg_sub_comm (.inr (conj_ne_bot hf.dom_nonempty v)) (.inl (concaveConj_ne_top hgd v))
   rw [h1, h2, h4]
   exact iInf_congr fun v => by rw [adjointBifun_eq_concaveConj_bracket]
 
@@ -489,7 +470,7 @@ theorem exists_conj_imageBifun_eq (hbF : ∀ u x, F u x ≠ ⊥) (hf : Proper f)
   obtain ⟨v, hv⟩ := exists_concaveConj_sub_conj_eq hex'
   refine ⟨v, ?_⟩
   rw [conj_imageBifun_eq_neg_iInf hbF hf.ne_bot hgt, ← hv,
-    EReal.neg_sub_comm' (concaveConj_ne_top hgd v) (conj_ne_bot hf.dom_nonempty v),
+    EReal.neg_sub_comm (.inr (conj_ne_bot hf.dom_nonempty v)) (.inl (concaveConj_ne_top hgd v)),
     adjointBifun_eq_concaveConj_bracket]
 
 /-- **The degenerate branch of `(Ff)* = F⁎* f*`**, `y ∉ dom F*`: if the bracket `⟨Fu, y⟩` is `+∞`
@@ -515,8 +496,8 @@ theorem conj_imageBifun_of_bracket_eq_top (hbF : ∀ u x, F u x ≠ ⊥) (hf : P
     rw [imageBifun_apply]
     refine le_antisymm le_top (le_iInf fun v => ?_)
     have hv : conj Bu f v + lowerAdjointBifun Bu Bx F v y = ⊤ := by
-      rw [lowerAdjointBifun_apply, hbot v, _root_.EReal.neg_bot,
-        _root_.EReal.add_top_of_ne_bot (conj_ne_bot hf.dom_nonempty v)]
+      rw [lowerAdjointBifun_apply, hbot v, EReal.neg_bot,
+        EReal.add_top_of_ne_bot (conj_ne_bot hf.dom_nonempty v)]
     exact le_of_eq hv.symm
 
 end ImageBifunConj
@@ -576,9 +557,9 @@ theorem lowerAdjointBifun_lowerAdjointBifun_eq_clBifun (hF : ConvexBifun F) :
   simp only [Prod.fst_swap, Prod.snd_swap, lowerAdjointBifun_apply, LinearMap.flip_apply]
   have h1 : -(-(adjointBifun Bu Bx F q.2 q.1) + ((Bu u q.1 - Bx x q.2 : ℝ) : EReal))
       = -(-(adjointBifun Bu Bx F q.2 q.1)) + -(((Bu u q.1 - Bx x q.2 : ℝ) : EReal)) :=
-    _root_.EReal.neg_add (.inr (_root_.EReal.coe_ne_top _)) (.inr (_root_.EReal.coe_ne_bot _))
+    EReal.neg_add (.inr (EReal.coe_ne_top _)) (.inr (EReal.coe_ne_bot _))
   have hr : (-(Bu u q.1 - Bx x q.2) : ℝ) = Bx x q.2 - Bu u q.1 := by ring
-  rw [h1, neg_neg, ← _root_.EReal.coe_neg, hr]
+  rw [h1, neg_neg, ← EReal.coe_neg, hr]
 
 /-- **`(F⁎* f*)* = Ff`** for a closed proper convex `F` and a closed proper convex `f` — the
 identity the rest of the closed case follows from.
@@ -734,7 +715,7 @@ theorem fenchelInf_conj_le_neg_fenchelSup (hf : Proper f) (hg : ProperConcave g)
   have hneg : -(fenchelSup B f g) = ⨅ x : E, (f x - concaveConj B.flip g x) := by
     rw [fenchelSup_apply, EReal.neg_iSup]
     exact iInf_congr fun x =>
-      EReal.neg_sub_comm' (concaveConj_ne_top hg.domConcave_nonempty x) (hf.ne_bot x)
+      EReal.neg_sub_comm (.inr (hf.ne_bot x)) (.inl (concaveConj_ne_top hg.domConcave_nonempty x))
   rw [hneg, fenchelInf_apply]
   exact iInf_mono fun x => add_le_add (biconj_le B f x) le_rfl
 
@@ -744,7 +725,8 @@ theorem neg_fenchelInf_le_fenchelSup_conj (hf : Proper f) (hg : ProperConcave g)
     -(fenchelInf B f g) ≤ fenchelSup B.flip (conj B f) (concaveConj B.flip g) := by
   have hneg : -(fenchelInf B f g) = ⨆ y : F, (g y - conj B f y) := by
     rw [fenchelInf_apply, EReal.neg_iInf]
-    exact iSup_congr fun y => EReal.neg_sub_comm (conj_ne_bot hf.dom_nonempty y) (hg.ne_top y)
+    exact iSup_congr fun y =>
+      EReal.neg_sub_comm (.inl (conj_ne_bot hf.dom_nonempty y)) (.inr (hg.ne_top y))
   rw [hneg, fenchelSup_apply]
   exact iSup_mono fun y => add_le_add (le_biconcaveConj B.flip g y) le_rfl
 
@@ -788,7 +770,7 @@ theorem fenchelSup_conj_eq_neg_fenchelInf (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) 
   rw [fenchelSup_apply, fenchelInf_apply, EReal.neg_iInf]
   refine iSup_congr fun y => ?_
   rw [LinearMap.flip_flip]
-  exact (EReal.neg_sub_comm (conj_ne_bot hd y) (concaveConj_ne_top hh y)).symm
+  exact (EReal.neg_sub_comm (.inl (conj_ne_bot hd y)) (.inr (concaveConj_ne_top hh y))).symm
 
 end AdjointAcrossAux
 
@@ -859,7 +841,7 @@ theorem concaveImageBifun_adjointBifun_ne_top (Bu : U →ₗ[ℝ] V →ₗ[ℝ] 
     have h2 : adjointBifun Bu Bx F y v ≤ F u₀ x₀ + ((Bu u₀ v - Bx x₀ y : ℝ) : EReal) :=
       iInf_le _ (u₀, x₀)
     refine le_trans (add_le_add h1 h2) (le_of_eq ?_)
-    rw [hr, ← _root_.EReal.coe_sub, add_left_comm, ← _root_.EReal.coe_add]
+    rw [hr, ← EReal.coe_sub, add_left_comm, ← EReal.coe_add]
     congr 2
     ring
   exact ne_top_of_le_ne_top (add_coe_ne_top hF _) (iSup_le hbound)
@@ -869,12 +851,11 @@ is minus `⟨f, F* g*⟩` on the inf side.
 
 Both unwind to the same double extremum over `V × Y`, term by term
 `⟨F* y, g*⟩ - f*(v) = (g*(y) + (F* y)(v)) - f*(v)`. -/
-theorem fenchelSup_imageBifun_lowerAdjointBifun (hf : Proper f) (hgd : (domConcave g).Nonempty)
-    {u₀ : U} {x₀ : X} (hF : F u₀ x₀ ≠ ⊤) (hgb : g x₀ ≠ ⊥) (hgt : g x₀ ≠ ⊤) :
+theorem fenchelSup_imageBifun_lowerAdjointBifun (hf : Proper f) {u₀ : U} {x₀ : X}
+    (hF : F u₀ x₀ ≠ ⊤) (hgb : g x₀ ≠ ⊥) (hgt : g x₀ ≠ ⊤) :
     fenchelSup Bx.flip (imageBifun (lowerAdjointBifun Bu Bx F) (conj Bu f)) g
       = -(fenchelInf Bu f (concaveImageBifun (adjointBifun Bu Bx F) (concaveConj Bx g))) := by
   have hane : ∀ v : V, conj Bu f v ≠ ⊥ := fun v => conj_ne_bot hf.dom_nonempty v
-  have hbne : ∀ y : Y, concaveConj Bx g y ≠ ⊤ := fun y => concaveConj_ne_top hgd y
   have hcne : ∀ (y : Y) (v : V), adjointBifun Bu Bx F y v ≠ ⊤ :=
     fun y v => adjointBifun_ne_top hF Bu Bx y v
   have hL : fenchelSup Bx.flip (imageBifun (lowerAdjointBifun Bu Bx F) (conj Bu f)) g
@@ -885,14 +866,14 @@ theorem fenchelSup_imageBifun_lowerAdjointBifun (hf : Proper f) (hgd : (domConca
     rw [LinearMap.flip_flip]
     have hH : imageBifun (lowerAdjointBifun Bu Bx F) (conj Bu f) y
         = ⨅ v : V, (conj Bu f v - adjointBifun Bu Bx F y v) := rfl
-    rw [hH, sub_iInf_of_ne_top _ (hbne y)]
+    rw [hH, EReal.sub_iInf]
   have hR : -(fenchelInf Bu f (concaveImageBifun (adjointBifun Bu Bx F) (concaveConj Bx g)))
       = ⨆ v : V, ⨆ y : Y,
         ((concaveConj Bx g y + adjointBifun Bu Bx F y v) - conj Bu f v) := by
     rw [fenchelInf_apply, EReal.neg_iInf]
     refine iSup_congr fun v => ?_
-    rw [EReal.neg_sub_comm (hane v)
-        (concaveImageBifun_adjointBifun_ne_top Bu Bx hF hgb hgt v),
+    rw [EReal.neg_sub_comm (.inl (hane v))
+        (.inr (concaveImageBifun_adjointBifun_ne_top Bu Bx hF hgb hgt v)),
       concaveImageBifun_apply, EReal.iSup_sub_of_ne_bot _ (hane v)]
   rw [hL, hR, iSup_comm]
   exact iSup_congr fun v => iSup_congr fun y => sub_sub_eq_add_sub (hane v) (hcne y v)
@@ -904,7 +885,7 @@ theorem dom_imageBifun_nonempty (hbF : ∀ u x, F u x ≠ ⊥) (hf : Proper f) {
   refine ⟨x₀, ?_⟩
   have hle : imageBifun F f x₀ ≤ f u₀ + F u₀ x₀ := iInf_le _ u₀
   have hne : imageBifun F f x₀ ≠ ⊤ := ne_top_of_le_ne_top
-    ((_root_.EReal.add_ne_top_iff_ne_top₂ (hf.ne_bot u₀) (hbF u₀ x₀)).2 ⟨hfu, hF⟩) hle
+    ((EReal.add_ne_top_iff_ne_top₂ (hf.ne_bot u₀) (hbF u₀ x₀)).2 ⟨hfu, hF⟩) hle
   exact lt_top_iff_ne_top.2 hne
 
 /-- **`⟨F⁎* f*, g⟩ = -⟨Ff, g*⟩`**, the third equality of the chain below.
@@ -934,7 +915,7 @@ theorem fenchelInf_imageBifun_eq_fenchelInf_concaveImageBifun (hbF : ∀ u x, F 
     fenchelInf Bx (imageBifun F f) (concaveConj Bx g)
       = fenchelInf Bu f (concaveImageBifun (adjointBifun Bu Bx F) (concaveConj Bx g)) := by
   have h1 := fenchelSup_imageBifun_lowerAdjointBifun_eq_neg hbF hf hgd hF hfu hex
-  rw [fenchelSup_imageBifun_lowerAdjointBifun hf hgd hF hgb hgt] at h1
+  rw [fenchelSup_imageBifun_lowerAdjointBifun hf hF hgb hgt] at h1
   have h2 := congrArg (fun z : EReal => -z) h1
   simpa using h2.symm
 
@@ -1007,7 +988,8 @@ theorem adjointBifun_smulRightBifun (hl : 0 < l) (Bu : U →ₗ[ℝ] V →ₗ[�
     EReal.coe_mul_iInf hl, ← hsurj.iInf_comp]
   refine iInf_congr fun p => ?_
   rw [smulRightBifun_apply, smulRight_apply_pos hl, inv_smul_smul₀ hl0,
-    EReal.coe_mul_add_coe hl]
+    EReal.left_distrib_of_nonneg_of_ne_top (by exact_mod_cast hl.le) (EReal.coe_ne_top l),
+    ← EReal.coe_mul]
   have hr : l * (Bu p.1 (l⁻¹ • v) - Bx p.2 y) = Bu p.1 v - Bx (l • p.2) y := by
     simp only [map_smul, LinearMap.smul_apply, smul_eq_mul]
     field_simp
@@ -1049,7 +1031,7 @@ theorem inverseBifun_compBifun (G : Bifun X Y) (F : Bifun U X) (hbF : ∀ u x, F
   rw [inverseBifun_apply, compBifun_apply, EReal.neg_iInf, concaveCompBifun_apply]
   refine iSup_congr fun x => ?_
   have h : -(F u x + G x y) = -(F u x) + -(G x y) :=
-    _root_.EReal.neg_add (.inl (hbF u x)) (.inr (hbG x y))
+    EReal.neg_add (.inl (hbF u x)) (.inr (hbG x y))
   rw [h, inverseBifun_apply, inverseBifun_apply, add_comm]
 
 end Defs
@@ -1112,7 +1094,7 @@ theorem conj_concaveBracket_inverseBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) 
     (hbF : ∀ u x, F u x ≠ ⊥) (v : V) (w : W) :
     conj Bx (concaveBracket Bu.flip (inverseBifun F) v) w = -(adjointBifun Bu Bx F w v) := by
   rw [concaveBracket_inverseBifun_eq_imageBifun,
-    conj_imageBifun_eq_iSup hbF (fun _ => _root_.EReal.coe_ne_bot _),
+    conj_imageBifun_eq_iSup hbF (fun _ => EReal.coe_ne_bot _),
     adjointBifun_eq_concaveConj_bracket, concaveConj_apply, EReal.neg_iInf]
   exact iSup_congr fun u => (EReal.neg_coe_sub _ _).symm
 
@@ -1143,7 +1125,7 @@ theorem adjointBifun_compBifun_eq_iInf (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (B
     intro u y
     rw [compBifun_apply, EReal.iInf_add_coe]
     refine iInf_congr fun x => ?_
-    rw [_root_.EReal.coe_sub]
+    rw [EReal.coe_sub]
     change (F u x + G x y) + (((Bu u v : ℝ) : EReal) + -((By y z : ℝ) : EReal))
       = (((Bu u v : ℝ) : EReal) + F u x) + (G x y + -((By y z : ℝ) : EReal))
     ac_rfl
@@ -1208,7 +1190,7 @@ theorem lowerAdjointBifun_compBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx :
   refine iInf_congr fun w => ?_
   have h : -(adjointBifun Bx By G z w + adjointBifun Bu Bx F w v)
       = -(adjointBifun Bx By G z w) + -(adjointBifun Bu Bx F w v) :=
-    _root_.EReal.neg_add (.inr (adjointBifun_ne_top hFp Bu Bx w v))
+    EReal.neg_add (.inr (adjointBifun_ne_top hFp Bu Bx w v))
       (.inl (adjointBifun_ne_top hGp Bx By z w))
   rw [h, lowerAdjointBifun_apply, lowerAdjointBifun_apply, add_comm]
 
@@ -1326,7 +1308,7 @@ theorem exists_compBifun_eq (hF : ClosedProperConvexFn (graphFn F))
   have hGb : G x y ≠ ⊥ := hG.proper.ne_bot (x, y)
   have hFb : F u x ≠ ⊥ := hF.proper.ne_bot (u, x)
   have hsplit : (-(G x y) + -(F u x) : EReal) = -(G x y + F u x) := by
-    rw [_root_.EReal.neg_add (.inl hGb) (.inr hFb)]
+    rw [EReal.neg_add (.inl hGb) (.inr hFb)]
     rfl
   rw [hsplit] at hx
   rw [add_comm]
@@ -1463,27 +1445,27 @@ private theorem neg_add_coe' (a : EReal) (r : ℝ) :
     -(a + (r : EReal)) = ((-r : ℝ) : EReal) - a := by
   induction a with
   | bot =>
-    rw [_root_.EReal.bot_add, _root_.EReal.neg_bot,
-      _root_.EReal.sub_bot (_root_.EReal.coe_ne_bot _)]
+    rw [EReal.bot_add, EReal.neg_bot,
+      EReal.sub_bot (EReal.coe_ne_bot _)]
   | coe c =>
-    rw [← _root_.EReal.coe_add, ← _root_.EReal.coe_neg, ← _root_.EReal.coe_sub,
-      _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_add, ← EReal.coe_neg, ← EReal.coe_sub,
+      EReal.coe_eq_coe_iff]
     ring
-  | top => rw [_root_.EReal.top_add_coe, _root_.EReal.neg_top, _root_.EReal.sub_top]
+  | top => rw [EReal.top_add_coe, EReal.neg_top, EReal.sub_top]
 
 private theorem neg_add_coe_sub' (a : EReal) (r s : ℝ) :
     -(a + ((r - s : ℝ) : EReal)) = (s : EReal) - (a + (r : EReal)) := by
   induction a with
   | bot =>
-    rw [_root_.EReal.bot_add, _root_.EReal.neg_bot, _root_.EReal.bot_add,
-      _root_.EReal.sub_bot (_root_.EReal.coe_ne_bot _)]
+    rw [EReal.bot_add, EReal.neg_bot, EReal.bot_add,
+      EReal.sub_bot (EReal.coe_ne_bot _)]
   | coe c =>
-    rw [← _root_.EReal.coe_add, ← _root_.EReal.coe_add, ← _root_.EReal.coe_neg,
-      ← _root_.EReal.coe_sub, _root_.EReal.coe_eq_coe_iff]
+    rw [← EReal.coe_add, ← EReal.coe_add, ← EReal.coe_neg,
+      ← EReal.coe_sub, EReal.coe_eq_coe_iff]
     ring
   | top =>
-    rw [_root_.EReal.top_add_coe, _root_.EReal.neg_top, _root_.EReal.top_add_coe,
-      _root_.EReal.sub_top]
+    rw [EReal.top_add_coe, EReal.neg_top, EReal.top_add_coe,
+      EReal.sub_top]
 
 /-- Negation distributes over a sum of two negatives, provided neither original summand is `⊥`.
 This is not `EReal.neg_add`, whose second side condition fails when both summands are `⊤` — and
@@ -1491,13 +1473,13 @@ that case is genuinely fine here, since `-(⊥ + ⊥) = ⊤ = ⊤ + ⊤`. -/
 private theorem neg_add_neg' {a b : EReal} (ha : a ≠ ⊥) (hb : b ≠ ⊥) :
     -(-a + -b) = a + b := by
   rcases eq_or_ne a ⊤ with rfl | hat
-  · rw [_root_.EReal.neg_top, _root_.EReal.bot_add, _root_.EReal.neg_bot,
-      _root_.EReal.top_add_of_ne_bot hb]
+  · rw [EReal.neg_top, EReal.bot_add, EReal.neg_bot,
+      EReal.top_add_of_ne_bot hb]
   · rcases eq_or_ne b ⊤ with rfl | hbt
-    · rw [_root_.EReal.neg_top, _root_.EReal.add_bot, _root_.EReal.neg_bot,
-        _root_.EReal.add_top_of_ne_bot ha]
-    · rw [_root_.EReal.neg_add (.inl (by rw [Ne, _root_.EReal.neg_eq_bot_iff]; exact hat))
-        (.inl (by rw [Ne, _root_.EReal.neg_eq_top_iff]; exact ha)), neg_neg]
+    · rw [EReal.neg_top, EReal.add_bot, EReal.neg_bot,
+        EReal.add_top_of_ne_bot ha]
+    · rw [EReal.neg_add (.inl (by rw [Ne, EReal.neg_eq_bot_iff]; exact hat))
+        (.inl (by rw [Ne, EReal.neg_eq_top_iff]; exact ha)), neg_neg]
       change a + -(-b) = a + b
       rw [neg_neg]
 

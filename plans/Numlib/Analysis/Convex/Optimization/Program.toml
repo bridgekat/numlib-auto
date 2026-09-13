@@ -23,3 +23,15 @@ id = 'exists_isKuhnTuckerVector_of_mem_dom'
 
 [[node]]
 id = 'exists_multipliers_of_slater_eq'
+
+[[node]]
+id = 'IsLagrangeSummand'
+
+[[node]]
+id = 'subgradient_add_sum_coe_mul'
+
+[[node]]
+id = 'mem_argmin_add_sum_coe_mul_of_zero_mem'
+
+[[node]]
+id = 'isKuhnTuckerVector_of_kuhnTucker'

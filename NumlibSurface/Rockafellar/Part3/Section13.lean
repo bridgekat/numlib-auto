@@ -97,7 +97,7 @@ theorem infimum_eq_neg_supportFn_neg (C : Set (Rn n)) (y : Rn n) :
   refine iInf_congr fun x => ?_
   rw [EReal.neg_iSup]
   refine iInf_congr fun _ => ?_
-  rw [inner_neg_right, _root_.EReal.coe_neg, neg_neg]
+  rw [inner_neg_right, EReal.coe_neg, neg_neg]
 
 /-- **Rockafellar, §13, p. 112**: the support function describes all the closed half-spaces
 containing `C` — `C ⊆ {x | ⟨x, x*⟩ ≤ β}` if and only if `β ≥ δ*(x* | C)`. -/
@@ -204,8 +204,8 @@ theorem theorem_13_2_conj_indicator (C : Set (Rn n)) :
 of a closed convex set are conjugate to each other. -/
 theorem theorem_13_2_conj {C : Set (Rn n)} (hC : Convex ℝ C) (hCcl : IsClosed C) :
     conj (pairing n) (supportFn (pairing n) C) = indicatorFn C := by
-  rw [← conj_flip_pairing]
-  exact conj_supportFn hC hCcl
+  have h := conj_supportFn (B := pairing n) hC hCcl
+  rwa [flip_pairing] at h
 
 /-- **Theorem 13.2**, second assertion: the functions which are the support functions
 of non-empty convex sets are exactly the closed proper convex functions which are positively

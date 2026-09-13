@@ -26,7 +26,7 @@ numbered results of §12 are formalized.
 Rockafellar prints **Theorem 12.4** with no proof at all. The argument here avoids the
 symmetrisation `f x = g (abs x)` that the surrounding prose suggests, and with it the question of
 whether `x ↦ g (abs x)` is convex. Writing `K` for the non-negative orthant, the one fact that
-makes the truncation `g⁺ = restrict K f*` harmless is `conj_posPart`: `f* (y⁺) = f* y`, where `y⁺`
+makes the truncation `g⁺ = restrictFn K f*` harmless is `conj_posPart`: `f* (y⁺) = f* y`, where `y⁺`
 is the componentwise positive part. The supremum defining `f**` may then be taken over `K` alone,
 and Fenchel–Moreau finishes.
 
@@ -75,7 +75,7 @@ theorem corollary_12_1_2 (hf : ConvexFn f) (hp : Proper f) :
     ⟨convexFn_clFn hf, closedFn_clFn f, hf.proper_clFn hp⟩
   obtain ⟨⟨b, hb⟩, -⟩ := proper_conj (B := pairing n) hcl
   rw [mem_dom, conj_clFn] at hb
-  obtain ⟨β, hβ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
+  obtain ⟨β, hβ, -⟩ := EReal.lt_iff_exists_real_btwn.1 hb
   exact ⟨b, β, conj_le_coe_iff.1 hβ.le⟩
 
 /-! ### Theorem 12.2: Fenchel–Moreau -/
@@ -111,10 +111,11 @@ theorem theorem_12_2_conj_clFn (f : Rn n → EReal) :
 /-- **Theorem 12.2**, the Fenchel–Moreau theorem: `f** = cl f` for convex `f`.
 
 On `ℝⁿ` the two sides of the pairing coincide, so `f**` is literally `conj (pairing n)` applied
-twice; `conj_flip_pairing` is what removes the backbone's `B.flip`. -/
+twice; `flip_pairing` is what removes the backbone's `B.flip`. -/
 theorem theorem_12_2_biconj (hf : ConvexFn f) :
     conj (pairing n) (conj (pairing n) f) = clFn f := by
-  simpa using biconj_eq_clFn (B := pairing n) hf
+  have h := biconj_eq_clFn (B := pairing n) hf
+  rwa [biconj, flip_pairing] at h
 
 /-- **Corollary 12.2.1.** The conjugacy operation `f ↦ f*` induces a symmetric
 one-to-one correspondence in the class of all closed proper convex functions on `ℝⁿ`.
@@ -142,30 +143,30 @@ theorem corollary_12_2_2 (hf : ConvexFn f) (y : Rn n) :
     conj (pairing n) f y = ⨆ x ∈ ri (dom f), ((inner ℝ x y : ℝ) : EReal) - f x := by
   have hdomconv : Convex ℝ (dom f) := hf.convex_dom
   have hsub : ri (dom f) ⊆ dom f := intrinsicInterior_subset
-  have hg : ConvexFn (restrict (ri (dom f)) f) := hf.restrict hdomconv.relint
-  have hdomg : dom (restrict (ri (dom f)) f) = ri (dom f) := by
+  have hg : ConvexFn (restrictFn (ri (dom f)) f) := hf.restrictFn hdomconv.relint
+  have hdomg : dom (restrictFn (ri (dom f)) f) = ri (dom f) := by
     ext x
     by_cases hx : x ∈ ri (dom f)
-    · simp only [mem_dom, restrict_of_mem hx]
+    · simp only [mem_dom, restrictFn_of_mem hx]
       exact ⟨fun _ => hx, fun _ => hsub hx⟩
     · simp [hx]
-  have hri : ri (dom (restrict (ri (dom f)) f)) = ri (dom f) := by
+  have hri : ri (dom (restrictFn (ri (dom f)) f)) = ri (dom f) := by
     rw [hdomg, hdomconv.relint_relint]
-  have hcl : clFn (restrict (ri (dom f)) f) = clFn f :=
-    corollary_7_3_4 hg hf hri fun x hx => restrict_of_mem (hri ▸ hx)
-  have hconj : conj (pairing n) (restrict (ri (dom f)) f) = conj (pairing n) f := by
-    rw [← conj_clFn (B := pairing n) (restrict (ri (dom f)) f), hcl, conj_clFn]
+  have hcl : clFn (restrictFn (ri (dom f)) f) = clFn f :=
+    corollary_7_3_4 hg hf hri fun x hx => restrictFn_of_mem (hri ▸ hx)
+  have hconj : conj (pairing n) (restrictFn (ri (dom f)) f) = conj (pairing n) f := by
+    rw [← conj_clFn (B := pairing n) (restrictFn (ri (dom f)) f), hcl, conj_clFn]
   rw [← hconj, conj_apply]
   refine le_antisymm (iSup_le fun x => ?_) (iSup₂_le fun x hx => ?_)
   · by_cases hx : x ∈ ri (dom f)
-    · rw [restrict_of_mem hx]
+    · rw [restrictFn_of_mem hx]
       exact le_iSup₂ (f := fun x (_ : x ∈ ri (dom f)) =>
         ((inner ℝ x y : ℝ) : EReal) - f x) x hx
-    · rw [restrict_of_notMem hx]
+    · rw [restrictFn_of_notMem hx]
       simp
-  · rw [← restrict_of_mem (f := f) hx]
+  · rw [← restrictFn_of_mem (f := f) hx]
     exact le_iSup (fun x : Rn n => ((pairing n x y : ℝ) : EReal)
-      - restrict (ri (dom f)) f x) x
+      - restrictFn (ri (dom f)) f x) x
 
 /-! ### Fenchel's inequality -/
 
@@ -345,13 +346,13 @@ theorem MonotoneOrthantFn.proper {f : Rn n → EReal} (hf : MonotoneOrthantFn f)
 /-- The **monotone conjugate** `g⁺` of Rockafellar's p. 111: the conjugate, truncated back to the
 non-negative orthant so that the correspondence is one between functions on the orthant. -/
 noncomputable def monotoneConjOrthant (f : Rn n → EReal) : Rn n → EReal :=
-  restrict (nonnegOrthant n) (conj (pairing n) f)
+  restrictFn (nonnegOrthant n) (conj (pairing n) f)
 
 /-- Rockafellar's formula `g⁺(z*) = sup {⟨z, z*⟩ - g z ∣ z ≥ 0}` (p. 111), on the orthant. -/
 theorem monotoneConjOrthant_apply {f : Rn n → EReal}
     (htop : ∀ ⦃z : Rn n⦄, z ∉ nonnegOrthant n → f z = ⊤) {y : Rn n} (hy : y ∈ nonnegOrthant n) :
     monotoneConjOrthant f y = ⨆ z ∈ nonnegOrthant n, ((inner ℝ z y : ℝ) : EReal) - f z := by
-  rw [monotoneConjOrthant, restrict_of_mem hy, conj_apply]
+  rw [monotoneConjOrthant, restrictFn_of_mem hy, conj_apply]
   refine le_antisymm (iSup_le fun z => ?_) (iSup₂_le fun z hz => ?_)
   · by_cases hz : z ∈ nonnegOrthant n
     · exact le_iSup₂ (f := fun z (_ : z ∈ nonnegOrthant n) =>
@@ -361,12 +362,12 @@ theorem monotoneConjOrthant_apply {f : Rn n → EReal}
 
 theorem monotoneConjOrthant_of_notMem (f : Rn n → EReal) {y : Rn n}
     (hy : y ∉ nonnegOrthant n) : monotoneConjOrthant f y = ⊤ :=
-  restrict_of_notMem hy
+  restrictFn_of_notMem hy
 
 theorem conj_le_monotoneConjOrthant (f : Rn n → EReal) (y : Rn n) :
     conj (pairing n) f y ≤ monotoneConjOrthant f y := by
   by_cases hy : y ∈ nonnegOrthant n
-  · rw [monotoneConjOrthant, restrict_of_mem hy]
+  · rw [monotoneConjOrthant, restrictFn_of_mem hy]
   · rw [monotoneConjOrthant_of_notMem f hy]; exact le_top
 
 /-- The conjugate of an orthant function is monotone in the dual variable. -/
@@ -377,8 +378,8 @@ theorem conj_mono_of_top_of_notMem {f : Rn n → EReal}
   refine iSup_le fun z => ?_
   by_cases hz : z ∈ nonnegOrthant n
   · refine le_trans ?_ (le_iSup (fun z : Rn n => ((pairing n z y' : ℝ) : EReal) - f z) z)
-    refine _root_.EReal.sub_le_sub ?_ le_rfl
-    rw [_root_.EReal.coe_le_coe_iff]
+    refine EReal.sub_le_sub ?_ le_rfl
+    rw [EReal.coe_le_coe_iff]
     change (inner ℝ z y : ℝ) ≤ inner ℝ z y'
     rw [inner_rn, inner_rn]
     exact Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_left (h j) (hz j)
@@ -394,9 +395,9 @@ theorem conj_posPart {f : Rn n → EReal} (hf : MonotoneOrthantFn f) (y : Rn n) 
   by_cases hz : z ∈ nonnegOrthant n
   · refine le_trans ?_
       (le_iSup (fun w : Rn n => ((pairing n w y : ℝ) : EReal) - f w) (maskNonneg y z))
-    refine _root_.EReal.sub_le_sub (le_of_eq ?_)
+    refine EReal.sub_le_sub (le_of_eq ?_)
       (hf.mono (maskNonneg_mem y hz) (maskNonneg_le y hz))
-    rw [_root_.EReal.coe_eq_coe_iff]
+    rw [EReal.coe_eq_coe_iff]
     exact (inner_maskNonneg y z).symm
   · rw [hf.top_of_notMem hz]; simp
 
@@ -409,30 +410,30 @@ its infimum over the orthant at the origin. -/
 theorem theorem_12_4_mem {f : Rn n → EReal} (hf : MonotoneOrthantFn f) :
     MonotoneOrthantFn (monotoneConjOrthant f) := by
   have hzero : monotoneConjOrthant f 0 = -f 0 := by
-    rw [monotoneConjOrthant, restrict_of_mem (zero_mem_nonnegOrthant n), conj_apply]
+    rw [monotoneConjOrthant, restrictFn_of_mem (zero_mem_nonnegOrthant n), conj_apply]
     refine le_antisymm (iSup_le fun z => ?_) ?_
     · by_cases hz : z ∈ nonnegOrthant n
       · have h0 : ((pairing n z 0 : ℝ) : EReal) = 0 := by
-          rw [map_zero, _root_.EReal.coe_zero]
-        rw [h0, zero_sub, _root_.EReal.neg_le_neg_iff]
+          rw [map_zero, EReal.coe_zero]
+        rw [h0, zero_sub, EReal.neg_le_neg_iff]
         exact hf.zero_le hz
       · rw [hf.top_of_notMem hz]; simp
     · refine le_trans (le_of_eq ?_)
         (le_iSup (fun z : Rn n => ((pairing n z 0 : ℝ) : EReal) - f z) 0)
-      rw [map_zero, _root_.EReal.coe_zero, zero_sub]
+      rw [map_zero, EReal.coe_zero, zero_sub]
   refine ⟨fun y hy => monotoneConjOrthant_of_notMem f hy, ?_,
-    (convexFn_conj (pairing n) f).restrict (convex_nonnegOrthant n),
-    (closedFn_conj (B := pairing n) (f := f)).restrict ?_ (isClosed_nonnegOrthant n),
+    (convexFn_conj (pairing n) f).restrictFn (convex_nonnegOrthant n),
+    (closedFn_conj (B := pairing n) (f := f)).restrictFn ?_ (isClosed_nonnegOrthant n),
     ?_, ?_⟩
   · intro y y' hy hyy'
     have hy' : y' ∈ nonnegOrthant n := fun j => le_trans (hy j) (hyy' j)
-    rw [monotoneConjOrthant, restrict_of_mem hy, restrict_of_mem hy']
+    rw [monotoneConjOrthant, restrictFn_of_mem hy, restrictFn_of_mem hy']
     exact conj_mono_of_top_of_notMem hf.top_of_notMem hyy'
   · exact fun y => conj_ne_bot hf.proper.dom_nonempty y
   · rw [hzero]
-    exact fun h => hf.zero_ne_bot (_root_.EReal.neg_eq_top_iff.1 h)
+    exact fun h => hf.zero_ne_bot (EReal.neg_eq_top_iff.1 h)
   · rw [hzero]
-    exact fun h => hf.zero_ne_top (_root_.EReal.neg_eq_bot_iff.1 h)
+    exact fun h => hf.zero_ne_top (EReal.neg_eq_bot_iff.1 h)
 
 /-- **Theorem 12.4**, second half: the monotone conjugate of `g⁺` is in turn `g`. The book states
 Theorem 12.4 with **no proof at all**; see the module docstring. -/
@@ -453,13 +454,13 @@ theorem theorem_12_4_involutive {f : Rn n → EReal} (hf : MonotoneOrthantFn f) 
       refine le_trans ?_
         (le_iSup (fun w : Rn n => ((pairing n w z : ℝ) : EReal) - monotoneConjOrthant f w)
           (posPart y))
-      refine _root_.EReal.sub_le_sub ?_ (le_of_eq ?_)
-      · rw [_root_.EReal.coe_le_coe_iff]
+      refine EReal.sub_le_sub ?_ (le_of_eq ?_)
+      · rw [EReal.coe_le_coe_iff]
         exact inner_le_inner_posPart hz y
-      · rw [monotoneConjOrthant, restrict_of_mem (posPart_mem y), conj_posPart hf]
+      · rw [monotoneConjOrthant, restrictFn_of_mem (posPart_mem y), conj_posPart hf]
     have hle := conj_antitone (pairing n) (conj_le_monotoneConjOrthant f) z
     rw [hbi] at hge hle
-    rw [monotoneConjOrthant, restrict_of_mem hz]
+    rw [monotoneConjOrthant, restrictFn_of_mem hz]
     exact le_antisymm hle hge
   · rw [monotoneConjOrthant_of_notMem _ hz, (hf.top_of_notMem hz).symm]
 

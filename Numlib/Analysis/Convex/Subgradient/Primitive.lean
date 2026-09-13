@@ -66,20 +66,20 @@ theorem eq_and_eq_of_forall_coe_mem_iff {A₁ B₁ A₂ B₂ : EReal}
   · refine le_antisymm ?_ ?_
     · by_contra hcon
       push Not at hcon
-      obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       exact absurd ((h r).2 ⟨hr₁.le, ((hr₂.trans_le hy₁).le).trans hy₄⟩).1 (not_le.2 hr₂)
     · by_contra hcon
       push Not at hcon
-      obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       exact absurd ((h r).1 ⟨hr₁.le, ((hr₂.trans_le hy₃).le).trans hy₂⟩).1 (not_le.2 hr₂)
   · refine le_antisymm ?_ ?_
     · by_contra hcon
       push Not at hcon
-      obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       exact absurd ((h r).1 ⟨hy₁.trans (hy₄.trans hr₁.le), hr₂.le⟩).2 (not_le.2 hr₁)
     · by_contra hcon
       push Not at hcon
-      obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+      obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
       exact absurd ((h r).2 ⟨hy₃.trans (hy₂.trans hr₁.le), hr₂.le⟩).2 (not_le.2 hr₁)
 
 /-- **An extended-real interval with no real point is degenerate at one end of the line.** If
@@ -92,7 +92,7 @@ theorem eq_bot_or_eq_top_of_forall_not_coe_mem {A B : EReal} (hAB : A ≤ B)
   | bot =>
     refine Or.inl ⟨rfl, ?_⟩
     by_contra hB
-    obtain ⟨r, -, hr⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (bot_lt_iff_ne_bot.2 hB)
+    obtain ⟨r, -, hr⟩ := EReal.lt_iff_exists_real_btwn.1 (bot_lt_iff_ne_bot.2 hB)
     exact h r ⟨bot_le, hr.le⟩
   | coe c => exact absurd ⟨le_rfl, hAB⟩ (h c)
   | top => exact Or.inr ⟨rfl, top_le_iff.1 hAB⟩
@@ -170,7 +170,7 @@ theorem exists_mem_monotoneCurve_sub (hφ : Monotone φ) {a : ℝ} (hb : φ a �
   refine ⟨sSup T, iSup₂_le fun z hz => ?_, le_iInf₂ fun z hz => ?_⟩
   · by_contra hcon
     push Not at hcon
-    obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+    obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
     have hr₁' : s - sSup T < r := by exact_mod_cast hr₁
     have hw : max z (s - r) < sSup T := max_lt hz (by linarith)
     obtain ⟨t', ht'T, hlt'⟩ := exists_lt_of_lt_csSup hTne hw
@@ -181,7 +181,7 @@ theorem exists_mem_monotoneCurve_sub (hφ : Monotone φ) {a : ℝ} (hb : φ a �
     exact absurd (hwT.trans h₂) (not_le.2 h₁)
   · by_contra hcon
     push Not at hcon
-    obtain ⟨r, hr₁, hr₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hcon
+    obtain ⟨r, hr₁, hr₂⟩ := EReal.lt_iff_exists_real_btwn.1 hcon
     have hr₂' : r < s - sSup T := by exact_mod_cast hr₂
     have hw : sSup T < min z (s - r) := lt_min hz (by linarith)
     have hwT : min z (s - r) ∉ T := fun hmem => absurd (le_csSup hTbdd hmem) (not_le.2 hw)
@@ -330,8 +330,8 @@ theorem exists_monotone_ne_bot_ne_top_monotoneCurve_eq {f : ℝ → EReal}
       ≤ ⨅ z ∈ Ioi a, rightDeriv f z := by rw [hval]; exact hmem.2
   refine ⟨Function.update (rightDeriv f) a ((y₀ : ℝ) : EReal),
     monotone_of_forall_ne_of_le_of_le (monotone_rightDeriv hf.convex hf.proper) hoff h₁ h₂,
-    ⟨a, by rw [hval]; exact _root_.EReal.coe_ne_bot _,
-      by rw [hval]; exact _root_.EReal.coe_ne_top _⟩, ?_⟩
+    ⟨a, by rw [hval]; exact EReal.coe_ne_bot _,
+      by rw [hval]; exact EReal.coe_ne_top _⟩, ?_⟩
   rw [subgradientRel_eq_monotoneCurve_rightDeriv hf]
   exact (monotoneCurve_eq_of_forall_ne (monotone_rightDeriv hf.convex hf.proper) hoff h₁ h₂).symm
 
@@ -376,9 +376,9 @@ theorem exists_closedProperConvexFn_leftDeriv_eq_rightDeriv_eq (hφ : Monotone �
     ⟨c, hc ▸ hsuple a, hc ▸ hleinf a⟩ (hiff a)
   have hLalt : leftDeriv f a < ⊤ :=
     lt_of_le_of_lt (hLa ▸ (hc ▸ hsuple a : (⨆ z ∈ Iio a, φ z) ≤ (c : EReal)))
-      (_root_.EReal.coe_lt_top c)
+      (EReal.coe_lt_top c)
   have hRagt : ⊥ < rightDeriv f a :=
-    lt_of_lt_of_le (_root_.EReal.bot_lt_coe c) (hRa ▸ (hc ▸ hleinf a : (c : EReal) ≤ _))
+    lt_of_lt_of_le (EReal.bot_lt_coe c) (hRa ▸ (hc ▸ hleinf a : (c : EReal) ≤ _))
   suffices key : ∀ x : ℝ,
       leftDeriv f x = ⨆ z ∈ Iio x, φ z ∧ rightDeriv f x = ⨅ z ∈ Ioi x, φ z from
     ⟨f, hf, fun x => (key x).1, fun x => (key x).2⟩

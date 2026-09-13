@@ -61,7 +61,7 @@ theorem subgradient_eq_singleton_of_essentiallySmooth (hf : ConvexFn f) (hes : E
     subgradient (innerₗ E) f x
       = {(InnerProductSpace.toDual ℝ E).symm (fderiv ℝ (fun w => (f w).toReal) x)} :=
   subgradient_innerL_eq_singleton hf
-    (DifferentiableAtFn.hasGradientAt_fderiv (hes.differentiableAtFn hx))
+    (DifferentiableAtFn.hasGradientAtFn_fderiv (hes.differentiableAtFn hx))
 
 /-- Off the interior of the effective domain, an essentially smooth closed proper convex function
 has *no* subgradient: a subgradient at `x` would force a sequence of gradients to converge, which
@@ -124,7 +124,7 @@ theorem differentiableAtFn_of_subsingleton_subgradient (hf : ConvexFn f) (hp : P
     (h : ∀ z : E, (subgradient (innerₗ E) f z).Subsingleton) (hx : x ∈ ri (dom f)) :
     DifferentiableAtFn f x := by
   obtain ⟨v, hv⟩ := subgradient_nonempty_of_mem_relint_dom (B := innerₗ E) hf hp hx
-  exact ⟨_, hasGradientAt_toDual_of_subgradient_eq_singleton hf hp
+  exact ⟨_, hasGradientAtFn_toDual_of_subgradient_eq_singleton hf hp
     (Set.eq_singleton_iff_unique_mem.2 ⟨hv, fun z hz => h x hz hv⟩)⟩
 
 /-- **The substantive half**: a closed proper convex function with a single-valued
@@ -148,9 +148,9 @@ theorem essentiallySmooth_of_subsingleton_subgradient (hf : ConvexFn f) (hp : Pr
   obtain ⟨φ, hφ, hφb⟩ := Filter.extraction_of_frequently_atTop (Filter.not_eventually.1 hb)
   set vs : ℕ → E := fun i => (InnerProductSpace.toDual ℝ E).symm
     (fderiv ℝ (fun w => (f w).toReal) (zs i)) with hvsdef
-  have hgrad : ∀ i, HasGradientAt f (InnerProductSpace.toDual ℝ E (vs i)) (zs i) := fun i => by
+  have hgrad : ∀ i, HasGradientAtFn f (InnerProductSpace.toDual ℝ E (vs i)) (zs i) := fun i => by
     rw [hvsdef, LinearIsometryEquiv.apply_symm_apply]
-    exact DifferentiableAtFn.hasGradientAt_fderiv
+    exact DifferentiableAtFn.hasGradientAtFn_fderiv
       (differentiableAtFn_of_subsingleton_subgradient hf hp h
         (Convex.interior_subset_relint hf.convex_dom hne (hzs i)))
   have hvsb : ∀ n, vs (φ n) ∈ closedBall (0 : E) b := fun n => by
@@ -163,7 +163,7 @@ theorem essentiallySmooth_of_subsingleton_subgradient (hf : ConvexFn f) (hp : Pr
       fun n => hgrad (φ (ψ n)), hψlim⟩
   have hsub : w ∈ subgradient (innerₗ E) f z :=
     gradientLimits_subset_subgradient hf hp hcl hmem
-  exact hz (hasGradientAt_toDual_of_subgradient_eq_singleton hf hp
+  exact hz (hasGradientAtFn_toDual_of_subgradient_eq_singleton hf hp
     (Set.eq_singleton_iff_unique_mem.2 ⟨hsub, fun u hu => h z hu hsub⟩)).mem_interior_dom
 
 /-- For a closed proper convex function, single-valuedness of the subdifferential and essential

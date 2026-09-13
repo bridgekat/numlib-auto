@@ -18,9 +18,9 @@ differentiable there.
 ## Main results
 
 * `subgradient_infConv_quadFn` — `∂(f □ w) z = {prox (z | f*)}`.
-* `hasGradientAt_infConv_quadFn`, `hasGradientAt_infConv_conj_quadFn`,
+* `hasGradientAtFn_infConv_quadFn`, `hasGradientAtFn_infConv_conj_quadFn`,
   `gradient_infConv_quadFn`, `gradient_infConv_conj_quadFn` — the gradient formulas
-  (Theorem 31.5 in [^1]), in `HasGradientAt` form and in terms of Mathlib's `gradient`.
+  (Theorem 31.5 in [^1]), in `HasGradientAtFn` form and in terms of Mathlib's `gradient`.
 * `closedProperConvexFn_infConv_quadFn` — the Moreau envelope is finite everywhere, hence closed
   proper convex.
 * `conj_infConv_quadFn` — `(f □ w)* = f* + w`, since conjugation turns `□` into `+` and `w* = w`.
@@ -102,39 +102,39 @@ theorem prox_conj_eq (hf : ClosedProperConvexFn f) (z : E) :
 
 /-- `prox (z | f*) = ∇(f □ w) z`: the subdifferential is a single point, so the envelope is
 differentiable there. -/
-theorem hasGradientAt_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
-    HasGradientAt (infConv f (quadFn (innerₗ E)))
+theorem hasGradientAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
+    HasGradientAtFn (infConv f (quadFn (innerₗ E)))
       (InnerProductSpace.toDual ℝ E (prox (innerₗ E) (conj (innerₗ E) f) z)) z :=
-  hasGradientAt_toDual_of_subgradient_eq_singleton
+  hasGradientAtFn_toDual_of_subgradient_eq_singleton
     (closedProperConvexFn_infConv_quadFn hf).convex
     (closedProperConvexFn_infConv_quadFn hf).proper (subgradient_infConv_quadFn hf z)
 
 /-- `prox (z | f) = ∇(f* □ w) z`. The previous statement applied to `f*`, using
 `prox (z | f**) = z - prox (z | f*) = prox (z | f)`. -/
-theorem hasGradientAt_infConv_conj_quadFn (hf : ClosedProperConvexFn f) (z : E) :
-    HasGradientAt (infConv (conj (innerₗ E) f) (quadFn (innerₗ E)))
+theorem hasGradientAtFn_infConv_conj_quadFn (hf : ClosedProperConvexFn f) (z : E) :
+    HasGradientAtFn (infConv (conj (innerₗ E) f) (quadFn (innerₗ E)))
       (InnerProductSpace.toDual ℝ E (prox (innerₗ E) f z)) z := by
   have hcf := closedProperConvexFn_conj (B := innerₗ E) hf
-  have h := hasGradientAt_infConv_quadFn hcf z
+  have h := hasGradientAtFn_infConv_quadFn hcf z
   rwa [prox_conj_eq hcf z, prox_conj_eq hf z, sub_sub_cancel] at h
 
 /-- `∇(f □ w) z = z - prox (z | f)`. -/
 theorem gradient_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     gradient (fun u => (infConv f (quadFn (innerₗ E)) u).toReal) z = z - prox (innerₗ E) f z := by
-  rw [(hasGradientAt_infConv_quadFn hf z).gradient_toReal_eq,
+  rw [(hasGradientAtFn_infConv_quadFn hf z).gradient_toReal_eq,
     LinearIsometryEquiv.symm_apply_apply, prox_conj_eq hf z]
 
 /-- `∇(f* □ w) z = prox (z | f)`. -/
 theorem gradient_infConv_conj_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     gradient (fun u => (infConv (conj (innerₗ E) f) (quadFn (innerₗ E)) u).toReal) z
       = prox (innerₗ E) f z := by
-  rw [(hasGradientAt_infConv_conj_quadFn hf z).gradient_toReal_eq,
+  rw [(hasGradientAtFn_infConv_conj_quadFn hf z).gradient_toReal_eq,
     LinearIsometryEquiv.symm_apply_apply]
 
 /-- The Moreau envelope is differentiable everywhere. -/
 theorem differentiableAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     DifferentiableAtFn (infConv f (quadFn (innerₗ E))) z :=
-  ⟨_, hasGradientAt_infConv_quadFn hf z⟩
+  ⟨_, hasGradientAtFn_infConv_quadFn hf z⟩
 
 end MoreauGradient
 

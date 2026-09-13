@@ -299,11 +299,11 @@ theorem isNorm_euclideanNorm (n : ℕ) : IsNorm (fun x : Rn n => ((‖x‖ : ℝ
   have hph : PosHomogeneous fun x : Rn n => ((‖x‖ : ℝ) : EReal) := by
     intro a ha x
     change ((‖a • x‖ : ℝ) : EReal) = ((a : ℝ) : EReal) * ((‖x‖ : ℝ) : EReal)
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha, EReal.coe_mul_coe]
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha, ← EReal.coe_mul]
   have hbot : ∀ x : Rn n, ((‖x‖ : ℝ) : EReal) ≠ ⊥ := fun x => EReal.coe_ne_bot _
   have hconv : ConvexFn fun x : Rn n => ((‖x‖ : ℝ) : EReal) := by
     refine (PosHomogeneous.convexFn_iff_subadditive hph hbot).2 fun x y => ?_
-    rw [← _root_.EReal.coe_add]
+    rw [← EReal.coe_add]
     exact_mod_cast norm_add_le x y
   exact ⟨⟨fun x => by exact_mod_cast norm_nonneg x, hph, hconv, by simp⟩,
     fun _ => EReal.coe_ne_top _, fun x => by rw [norm_neg],

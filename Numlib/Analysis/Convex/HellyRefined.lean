@@ -73,7 +73,7 @@ theorem conj_affineFn_apply_self (a : F) (c : ℝ) :
     conj B (affineFn B a c) a = ((c : ℝ) : EReal) := by
   rw [conj_apply]
   refine le_antisymm (iSup_le fun x => ?_) ?_
-  · rw [affineFn_eq_coe, ← _root_.EReal.coe_sub]
+  · rw [affineFn_eq_coe, ← EReal.coe_sub]
     exact_mod_cast le_of_eq (by ring)
   · have h := le_iSup (fun x : E => ((B x a : ℝ) : EReal) - affineFn B a c x) 0
     simpa using h
@@ -87,12 +87,12 @@ theorem conj_affineFn_apply_of_ne (hB : B.SeparatingRight) {a y : F} (hy : y ≠
     push Not at hcon
     exact hy (sub_eq_zero.1 (hB _ hcon))
   set t : ℝ := B x₀ (y - a) with ht
-  rw [conj_apply, _root_.EReal.eq_top_iff_forall_lt]
+  rw [conj_apply, EReal.eq_top_iff_forall_lt]
   intro d
   have hval : ∀ s : ℝ, ((B (s • x₀) y : ℝ) : EReal) - affineFn B a c (s • x₀)
       = ((s * t + c : ℝ) : EReal) := by
     intro s
-    rw [affineFn_eq_coe, ← _root_.EReal.coe_sub]
+    rw [affineFn_eq_coe, ← EReal.coe_sub]
     refine congrArg _ ?_
     have h1 : B (s • x₀) y = s * B x₀ y := by rw [map_smul]; simp
     have h2 : B (s • x₀) a = s * B x₀ a := by rw [map_smul]; simp
@@ -169,23 +169,23 @@ theorem PosHomogeneous.add_le_add_of_ne_top (hg : PosHomogeneous g) (hgc : Conve
       (hg.epiCone hgc).add_mem (mk_mem_epi.2 hμ) (mk_mem_epi.2 hν)
     rw [Prod.mk_add_mk] at h
     exact mk_mem_epi.1 h
-  have hxr : g x ≤ (((g x).toReal : ℝ) : EReal) := _root_.EReal.le_coe_toReal hx
-  have hyr : g y ≤ (((g y).toReal : ℝ) : EReal) := _root_.EReal.le_coe_toReal hy
+  have hxr : g x ≤ (((g x).toReal : ℝ) : EReal) := EReal.le_coe_toReal hx
+  have hyr : g y ≤ (((g y).toReal : ℝ) : EReal) := EReal.le_coe_toReal hy
   rcases eq_or_ne (g x) ⊥ with hxb | hxb
-  · rw [hxb, _root_.EReal.bot_add, le_bot_iff, _root_.EReal.eq_bot_iff_forall_lt]
+  · rw [hxb, EReal.bot_add, le_bot_iff, EReal.eq_bot_iff_forall_lt]
     intro r
     refine lt_of_le_of_lt (key (r - (g y).toReal - 1) (g y).toReal (by rw [hxb]; simp) hyr) ?_
     have hr : (r - (g y).toReal - 1 + (g y).toReal : ℝ) < r := by linarith
     exact_mod_cast hr
   rcases eq_or_ne (g y) ⊥ with hyb | hyb
-  · rw [hyb, _root_.EReal.add_bot, le_bot_iff, _root_.EReal.eq_bot_iff_forall_lt]
+  · rw [hyb, EReal.add_bot, le_bot_iff, EReal.eq_bot_iff_forall_lt]
     intro r
     refine lt_of_le_of_lt (key (g x).toReal (r - (g x).toReal - 1) hxr (by rw [hyb]; simp)) ?_
     have hr : ((g x).toReal + (r - (g x).toReal - 1) : ℝ) < r := by linarith
     exact_mod_cast hr
-  · have hxe : g x = (((g x).toReal : ℝ) : EReal) := (_root_.EReal.coe_toReal hx hxb).symm
-    have hye : g y = (((g y).toReal : ℝ) : EReal) := (_root_.EReal.coe_toReal hy hyb).symm
-    rw [hxe, hye, ← _root_.EReal.coe_add]
+  · have hxe : g x = (((g x).toReal : ℝ) : EReal) := (EReal.coe_toReal hx hxb).symm
+    have hye : g y = (((g y).toReal : ℝ) : EReal) := (EReal.coe_toReal hy hyb).symm
+    rw [hxe, hye, ← EReal.coe_add]
     exact key _ _ hxr hyr
 
 end PosHomGenAux
@@ -447,8 +447,8 @@ theorem apply_zero_eq_bot_of_le_of_le [IsCompatiblePairing B] [IsCompatiblePairi
   · refine le_bot_iff.1 ?_
     have h := hsub z (ne_of_lt hzd₀) (ne_of_lt hzd₁)
     rcases hb with hb | hb
-    · rwa [hb, _root_.EReal.bot_add] at h
-    · rwa [hb, _root_.EReal.add_bot] at h
+    · rwa [hb, EReal.bot_add] at h
+    · rwa [hb, EReal.add_bot] at h
   push Not at hb
   -- Both `kⱼ` are proper: `k₀` is polyhedral hence lower semicontinuous, and `z` is a relative
   -- interior point of `dom k₁`.
@@ -477,18 +477,18 @@ theorem apply_zero_eq_bot_of_le_of_le [IsCompatiblePairing B] [IsCompatiblePairi
     have hne : ¬ ((∀ i, g₀ i y ≤ 0) ∧ ∀ i, g₁ i y ≤ 0) := fun hc => hempty ⟨y, hc⟩
     rcases not_and_or.1 hne with h | h
     · rw [indicatorFn_of_notMem (show y ∉ {x : E | ∀ i, g₀ i x ≤ 0} from h)]
-      exact le_of_eq (_root_.EReal.top_add_of_ne_bot (indicatorFn_ne_bot _ y)).symm
+      exact le_of_eq (EReal.top_add_of_ne_bot (indicatorFn_ne_bot _ y)).symm
     · rw [indicatorFn_of_notMem (show y ∉ {x : E | ∀ i, g₁ i x ≤ 0} from h)]
-      exact le_of_eq (_root_.EReal.add_top_of_ne_bot (indicatorFn_ne_bot _ y)).symm
+      exact le_of_eq (EReal.add_top_of_ne_bot (indicatorFn_ne_bot _ y)).symm
   -- `k(0)` is below the sum everywhere, and the sum has infimum `-∞`.
   have hfinal : ∀ w : F, k 0 ≤ ((fun w : F => k₀ (-w)) + k₁) w := by
     intro w
     rw [Pi.add_apply]
     by_cases hw₀ : k₀ (-w) = ⊤
-    · rw [hw₀, _root_.EReal.top_add_of_ne_bot (hp₁.ne_bot w)]
+    · rw [hw₀, EReal.top_add_of_ne_bot (hp₁.ne_bot w)]
       exact le_top
     by_cases hw₁ : k₁ w = ⊤
-    · rw [hw₁, _root_.EReal.add_top_of_ne_bot (hp₀.ne_bot (-w))]
+    · rw [hw₁, EReal.add_top_of_ne_bot (hp₀.ne_bot (-w))]
       exact le_top
     exact hsub w hw₀ hw₁
   have hle : conj B.flip ((fun w : F => k₀ (-w)) + k₁) 0 ≤ -(k 0) := by
@@ -496,7 +496,7 @@ theorem apply_zero_eq_bot_of_le_of_le [IsCompatiblePairing B] [IsCompatiblePairi
     refine iSup_le fun w => ?_
     have h0 : ((B.flip w 0 : ℝ) : EReal) = 0 := by simp
     rw [h0, zero_sub]
-    exact _root_.EReal.neg_le_neg_iff.2 (hfinal w)
+    exact EReal.neg_le_neg_iff.2 (hfinal w)
   rw [htop] at hle
   have h2 : -(k 0) = ⊤ := top_le_iff.1 hle
   have h3 := congrArg (fun a : EReal => -a) h2

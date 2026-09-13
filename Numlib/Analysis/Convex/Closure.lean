@@ -76,7 +76,7 @@ theorem lowerSemicontinuous_iff_isClosed_epi : LowerSemicontinuous f ↔ IsClose
   · intro hf
     rw [← isOpen_compl_iff, isOpen_iff_mem_nhds]
     rintro ⟨x, μ⟩ hp
-    obtain ⟨r, hμr, hrf⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hp)
+    obtain ⟨r, hμr, hrf⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hp)
     refine mem_of_superset
       (prod_mem_nhds (hf x (r : EReal) hrf) (Iio_mem_nhds (by exact_mod_cast hμr))) ?_
     rintro ⟨z, ν⟩ ⟨hz, hν⟩
@@ -84,7 +84,7 @@ theorem lowerSemicontinuous_iff_isClosed_epi : LowerSemicontinuous f ↔ IsClose
     have hν' : ν < r := hν
     exact not_le.2 (lt_trans (by exact_mod_cast hν') hz')
   · intro hF x y hy
-    obtain ⟨r, hyr, hrf⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hy
+    obtain ⟨r, hyr, hrf⟩ := EReal.lt_iff_exists_real_btwn.1 hy
     have hclosed : IsClosed {z : E | f z ≤ (r : EReal)} := by
       have hpre : {z : E | f z ≤ (r : EReal)} = (fun z : E => (z, r)) ⁻¹' epi f := rfl
       rw [hpre]
@@ -102,7 +102,7 @@ theorem lowerSemicontinuous_iff_isClosed_le :
     intro x hx
     filter_upwards [hf x (α : EReal) (not_le.1 hx)] with z hz using not_le.2 hz
   · intro h x y hy
-    obtain ⟨r, hyr, hrf⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hy
+    obtain ⟨r, hyr, hrf⟩ := EReal.lt_iff_exists_real_btwn.1 hy
     filter_upwards [(h r).isOpen_compl.mem_nhds (not_le.2 hrf)] with z hz
     exact hyr.trans (not_le.1 hz)
 
@@ -367,7 +367,8 @@ theorem lscHull_le_setOf (f : E → EReal) (α : ℝ) :
       lt_of_le_of_lt hx (by exact_mod_cast (hμ : α < μ))
     obtain ⟨ν, hν, hνμ⟩ := ofEpi_lt_iff.1 hlt
     exact mem_closure_le_of_mem_closure_epi hν (by exact_mod_cast hνμ)
-  · refine EReal.le_coe_of_forall_lt fun q hq => ?_
+  · refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+    replace hq := EReal.coe_lt_coe_iff.1 hq
     obtain ⟨μ, hαμ, hμq⟩ := exists_between hq
     exact lt_of_le_of_lt
       (closure_le_subset_lscHull_le f μ (mem_iInter₂.1 hx μ hαμ)) (by exact_mod_cast hμq)
@@ -507,15 +508,15 @@ anywhere is identically `⊥`" is **false**; see `eq_bot_of_lsc_of_eq_bot`. -/
 omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] in
 /-- The algebraic engine of the dichotomy, valid in any real vector space: if `f` is convex,
 `f x₀ = ⊥` and `y` is in the effective domain, then `f` is `⊥` on the half-open segment `[x₀, y)`.
-The hypothesis `y ∈ dom f` is needed: for `f = restrict {x₀} (fun _ => ⊥)` the segment meets
+The hypothesis `y ∈ dom f` is needed: for `f = restrictFn {x₀} (fun _ => ⊥)` the segment meets
 `dom f` only at `x₀`. -/
 theorem ConvexFn.eq_bot_of_lt_one (hf : ConvexFn f) {x₀ y : E} (h₀ : f x₀ = ⊥) (hy : y ∈ dom f)
     {a : ℝ} (ha : 0 ≤ a) (ha1 : a < 1) : f ((1 - a) • x₀ + a • y) = ⊥ := by
   rcases eq_or_lt_of_le ha with rfl | ha'
   · simpa using h₀
-  · obtain ⟨β, hβ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (hy : f y < ⊤)
+  · obtain ⟨β, hβ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (hy : f y < ⊤)
     have hb : (0 : ℝ) < 1 - a := by linarith
-    refine EReal.eq_bot_of_forall_le_coe fun r => ?_
+    refine le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ => ?_)
     have hb' : (1 : ℝ) - a ≠ 0 := ne_of_gt hb
     have harith : (1 - a) * ((r - a * β) / (1 - a)) + a * β = r := by
       field_simp
@@ -594,7 +595,7 @@ neither the pairing that needs, nor convexity, is required here. -/
 theorem posHomogeneous_clFn (hf : PosHomogeneous f) : PosHomogeneous (clFn f) := by
   by_cases h : ∃ x, lscHull f x = ⊥
   · rw [clFn_of_exists_eq_bot h]
-    exact fun a ha _ => (_root_.EReal.coe_mul_bot_of_pos ha).symm
+    exact fun a ha _ => (EReal.coe_mul_bot_of_pos ha).symm
   · rw [clFn_of_forall_ne_bot (by push Not at h; exact h)]
     exact posHomogeneous_lscHull hf
 
@@ -680,15 +681,15 @@ proper, and is not closed. In finite dimensions `AffineMap.continuous_of_finiteD
 discharges it. -/
 theorem closedProperConvexFn_coe_affineMap {g : E →ᵃ[ℝ] ℝ} (hg : Continuous g) :
     ClosedProperConvexFn (fun x => ((g x : ℝ) : EReal)) := by
-  have hcont : Continuous fun x : E => ((g x : ℝ) : EReal) := _root_.EReal.continuous_coe_iff.2 hg
-  refine ⟨?_, ?_, ⟨⟨0, mem_dom.2 (_root_.EReal.coe_lt_top _)⟩,
-    fun _ => _root_.EReal.coe_ne_bot _⟩⟩
+  have hcont : Continuous fun x : E => ((g x : ℝ) : EReal) := EReal.continuous_coe_iff.2 hg
+  refine ⟨?_, ?_, ⟨⟨0, mem_dom.2 (EReal.coe_lt_top _)⟩,
+    fun _ => EReal.coe_ne_bot _⟩⟩
   · refine convexFn_of_epi_combo fun x y p q hx hy s t hs ht hst => ?_
-    rw [_root_.EReal.coe_le_coe_iff] at hx hy ⊢
+    rw [EReal.coe_le_coe_iff] at hx hy ⊢
     rw [Convex.combo_affine_apply hst]
     simp only [smul_eq_mul]
     nlinarith
-  · exact (closedFn_iff_lowerSemicontinuous fun _ => _root_.EReal.coe_ne_bot _).2
+  · exact (closedFn_iff_lowerSemicontinuous fun _ => EReal.coe_ne_bot _).2
       hcont.lowerSemicontinuous
 
 end ClosedProperConvex
@@ -701,11 +702,11 @@ so it is convex and lower semicontinuous, takes the value `⊥`, and is not the 
 
 example : ∃ f : ℝ → EReal,
     ConvexFn f ∧ LowerSemicontinuous f ∧ (∃ x, f x = ⊥) ∧ f ≠ fun _ => ⊥ := by
-  have hepi : epi (ConvexAnalysis.restrict ({0} : Set ℝ) fun _ => (⊥ : EReal))
+  have hepi : epi (ConvexAnalysis.restrictFn ({0} : Set ℝ) fun _ => (⊥ : EReal))
       = (Prod.fst : ℝ × ℝ → ℝ) ⁻¹' {0} := by
     ext p
     by_cases h : p.1 ∈ ({0} : Set ℝ) <;> simp [epi, h]
-  refine ⟨ConvexAnalysis.restrict ({0} : Set ℝ) fun _ => ⊥, ⟨?_⟩, ?_, ⟨0, by simp⟩, ?_⟩
+  refine ⟨ConvexAnalysis.restrictFn ({0} : Set ℝ) fun _ => ⊥, ⟨?_⟩, ?_, ⟨0, by simp⟩, ?_⟩
   · rw [hepi]
     exact (convex_singleton (0 : ℝ)).linear_preimage (LinearMap.fst ℝ ℝ ℝ)
   · refine lowerSemicontinuous_iff_isClosed_epi.2 ?_
@@ -713,7 +714,7 @@ example : ∃ f : ℝ → EReal,
     exact isClosed_singleton.preimage continuous_fst
   · intro hcontra
     have h1 := congrFun hcontra 1
-    rw [ConvexAnalysis.restrict_of_notMem (by norm_num : (1 : ℝ) ∉ ({0} : Set ℝ))] at h1
+    rw [ConvexAnalysis.restrictFn_of_notMem (by norm_num : (1 : ℝ) ∉ ({0} : Set ℝ))] at h1
     exact absurd h1 (by simp)
 
 
@@ -764,8 +765,8 @@ theorem tendsto_lscHull_along_segment (hf : ConvexFn f) {x : E} {α : ℝ}
       with a ha
     exact lt_of_lt_of_le ha (lscHull_le f _)
   · intro b hb
-    obtain ⟨β, hβ1, hβ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
-    obtain ⟨γ, hγ1, hγ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hβ2
+    obtain ⟨β, hβ1, hβ2⟩ := EReal.lt_iff_exists_real_btwn.1 hb
+    obtain ⟨γ, hγ1, hγ2⟩ := EReal.lt_iff_exists_real_btwn.1 hβ2
     have hβγ : β < γ := by exact_mod_cast hγ1
     have hyβ : ((y, β) : E × ℝ) ∈ closure (epi f) := by
       rw [← epi_lscHull]; exact hβ1.le
@@ -804,7 +805,7 @@ theorem tendsto_along_segment_of_closed_proper (hf : ClosedProperConvexFn f)
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hx
   obtain ⟨r, hr⟩ :=
     EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot y) (lt_of_lt_of_le hb le_top)
-  obtain ⟨γ, hγ1, hγ2⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
+  obtain ⟨γ, hγ1, hγ2⟩ := EReal.lt_iff_exists_real_btwn.1 hb
   have hrγ : r < γ := by rw [hr] at hγ1; exact_mod_cast hγ1
   filter_upwards [(tendsto_affine_nhdsLT_one s r).eventually_lt_const hrγ,
     eventually_mem_Ico_nhdsLT_one] with a hlt ha

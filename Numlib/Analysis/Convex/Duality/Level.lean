@@ -176,7 +176,7 @@ theorem posHomGen_apply_zero_of_nonneg (hf : ConvexFn f) (h : 0 ≤ f 0) : posHo
   refine le_ofEpi fun μ hμ => ?_
   rcases mem_posHomGenCone_iff_exists.1 hμ with h0 | ⟨a, ha, hmem⟩
   · rw [show μ = 0 from congrArg (fun q : E × ℝ => q.2) h0]
-    exact le_of_eq _root_.EReal.coe_zero.symm
+    exact le_of_eq EReal.coe_zero.symm
   · rw [Set.mem_smul_set_iff_inv_smul_mem₀ ha.ne'] at hmem
     have hx : (a⁻¹ • ((0 : E), μ)).1 = (0 : E) := by simp
     have hfle : f 0 ≤ ((a⁻¹ * μ : ℝ) : EReal) := by
@@ -197,10 +197,11 @@ theorem posHomGen_apply_zero_eq_bot_iff (hf : ConvexFn f) : posHomGen f 0 = ⊥ 
     rw [posHomGen_apply_zero_of_nonneg hf hcon] at h
     exact absurd h (by simp)
   · intro h
-    have h0 : f 0 < ((0 : ℝ) : EReal) := by rwa [_root_.EReal.coe_zero]
-    obtain ⟨q, hq₁, hq₂⟩ := EReal.exists_real_btwn_of_lt_coe h0
+    have h0 : f 0 < ((0 : ℝ) : EReal) := by rwa [EReal.coe_zero]
+    obtain ⟨q, hq₁, hq₂⟩ := EReal.exists_between_coe_real h0
+    replace hq₂ := EReal.coe_lt_coe_iff.1 hq₂
     rw [posHomGen_eq_ofEpi hf]
-    refine EReal.eq_bot_of_forall_le_coe fun r => ?_
+    refine le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun r _ => ?_)
     set a : ℝ := max (r / q) 1 with ha
     have ha0 : 0 < a := lt_of_lt_of_le one_pos (le_max_right _ _)
     have hmem : ((0 : E), a * q) ∈ posHomGenCone f := by
@@ -218,7 +219,7 @@ theorem posHomogeneous_ofEpi (hK : ∀ a : ℝ, 0 < a → a • K = K) : PosHomo
     intro b hb y
     have hmul : (b : EReal) * ofEpi K y
         = ⨅ μ ∈ {μ : ℝ | (y, μ) ∈ K}, ((b * μ : ℝ) : EReal) := by
-      simp only [ofEpi, EReal.coe_mul_iInf hb, EReal.coe_mul_coe]
+      simp only [ofEpi, EReal.coe_mul_iInf hb, ← EReal.coe_mul]
     rw [hmul]
     refine le_iInf₂ fun μ hμ => ?_
     have hmem0 : ((y, μ) : E × ℝ) ∈ K := hμ
@@ -233,7 +234,7 @@ theorem posHomogeneous_ofEpi (hK : ∀ a : ℝ, 0 < a → a • K = K) : PosHomo
   rw [inv_smul_smul₀ ha.ne'] at h
   have h2 : (a : EReal) * ofEpi K x ≤ (a : EReal) * (((a⁻¹ : ℝ) : EReal) * ofEpi K (a • x)) :=
     mul_le_mul_of_nonneg_left h (by exact_mod_cast ha.le)
-  rwa [← mul_assoc, EReal.coe_mul_coe, mul_inv_cancel₀ ha.ne', _root_.EReal.coe_one,
+  rwa [← mul_assoc, ← EReal.coe_mul, mul_inv_cancel₀ ha.ne', EReal.coe_one,
     one_mul] at h2
 
 /-- **The ray description of the generated cone is enough for maximality**: it is contained in
@@ -374,11 +375,11 @@ theorem setOf_clFn_posHomGen_le_zero (hf : ClosedProperConvexFn f) (h0 : 0 < f 0
   have hkc : ConvexFn (posHomGen f) := convexFn_posHomGen f
   obtain ⟨x₀, hx₀⟩ := iInf_lt_iff.1 hinf
   have hkinf : ⨅ x, posHomGen f x < ((0 : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_zero]
+    rw [EReal.coe_zero]
     exact lt_of_le_of_lt ((iInf_le _ x₀).trans (posHomGen_le f x₀)) hx₀
   have hle := hkc.closure_setOf_le_clFn hkp hkinf
   have hlt := hkc.closure_setOf_lt_eq hkinf
-  simp only [_root_.EReal.coe_zero] at hle hlt
+  simp only [EReal.coe_zero] at hle hlt
   refine subset_antisymm ?_ ?_
   · rw [← hle, ← hlt]
     exact closure_mono (setOf_posHomGen_lt_zero_subset hf.convex h0.le)
@@ -404,13 +405,13 @@ theorem posHomogeneous_pairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (y : F) :
     PosHomogeneous fun x => ((B x y : ℝ) : EReal) := by
   intro a ha x
   simp only [map_smul, LinearMap.smul_apply, smul_eq_mul]
-  exact (EReal.coe_mul_coe _ _).symm
+  exact EReal.coe_mul _ _
 
 theorem convexFn_pairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (y : F) :
     ConvexFn fun x => ((B x y : ℝ) : EReal) := by
   have h : (fun x => ((B x y : ℝ) : EReal)) = affineFn B y 0 := by
     funext x
-    rw [affineFn_apply, _root_.EReal.coe_zero, sub_zero]
+    rw [affineFn_apply, EReal.coe_zero, sub_zero]
   rw [h]
   exact convexFn_affineFn y 0
 
@@ -442,7 +443,7 @@ theorem conj_apply_zero (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) 
     conj B f 0 = -⨅ x, f x := by
   rw [conj_apply, EReal.neg_iInf]
   refine iSup_congr fun x => ?_
-  rw [map_zero (B x), _root_.EReal.coe_zero]
+  rw [map_zero (B x), EReal.coe_zero]
   exact zero_add _
 
 end Conj
@@ -539,12 +540,12 @@ theorem conj_levelOneLift_le_zero_iff (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f :
   have hcoef : ∀ p : ℝ × E, p.1 = 1 →
       affineFn (prodPairing (innerₗ ℝ) B) q 0 p = affineFn B q.2 (-q.1) p.2 := by
     intro p hp
-    rw [affineFn_apply, affineFn_apply, ← _root_.EReal.coe_sub, ← _root_.EReal.coe_sub]
+    rw [affineFn_apply, affineFn_apply, ← EReal.coe_sub, ← EReal.coe_sub]
     congr 1
     simp only [prodPairing_apply, sub_zero, sub_neg_eq_add, hp]
     have h1 : innerₗ ℝ (1 : ℝ) q.1 = q.1 := by simp
     rw [h1, add_comm]
-  rw [show ((0 : EReal)) = ((0 : ℝ) : EReal) from _root_.EReal.coe_zero.symm, conj_le_coe_iff,
+  rw [show ((0 : EReal)) = ((0 : ℝ) : EReal) from EReal.coe_zero.symm, conj_le_coe_iff,
     conj_le_coe_iff, Pi.le_def, Pi.le_def]
   constructor
   · intro h x
@@ -812,11 +813,11 @@ theorem recessionFn_le_neg_coe_iff (f : E → EReal) (y : E) (ε : ℝ) :
       ∀ x ∈ dom f, ∀ a : ℝ, 0 ≤ a → f (x + a • y) ≤ f x - ((a * ε : ℝ) : EReal) := by
   have hrw : ∀ (x : E) (a : ℝ), (f x + ((a * -ε : ℝ) : EReal))
       = f x - ((a * ε : ℝ) : EReal) := fun x a => by
-    rw [show (a * -ε : ℝ) = -(a * ε) from by ring, _root_.EReal.coe_neg, ← sub_eq_add_neg]
+    rw [show (a * -ε : ℝ) = -(a * ε) from by ring, EReal.coe_neg, ← sub_eq_add_neg]
   rw [recessionFn_le_coe_iff_forall]
   refine ⟨fun h x _ a ha => (hrw x a) ▸ h x a ha, fun h x a ha => (hrw x a).symm ▸ ?_⟩
   rcases eq_or_ne (f x) ⊤ with hx | hx
-  · rw [hx, _root_.EReal.top_sub_coe]
+  · rw [hx, EReal.top_sub_coe]
     exact le_top
   · exact h x (mem_dom.2 (lt_top_iff_ne_top.2 hx)) a ha
 
@@ -833,7 +834,7 @@ theorem zero_notMem_closure_dom_conj_iff (hf : ClosedProperConvexFn f) :
   constructor
   · rintro ⟨y, hy⟩
     rw [not_le] at hy
-    obtain ⟨m, hm₁, hm₂⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hy
+    obtain ⟨m, hm₁, hm₂⟩ := EReal.lt_iff_exists_real_btwn.1 hy
     have hmneg : m < 0 := by exact_mod_cast hm₂
     refine ⟨y, ?_, -m, neg_pos.2 hmneg, (recessionFn_le_neg_coe_iff f y (-m)).1 ?_⟩
     · rintro rfl
@@ -859,7 +860,8 @@ omit [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [Loca
   [SeparatingDual ℝ E] [IsCompatiblePairing B] [IsCompatiblePairing B.flip] in
 /-- In finite dimensions a dense convex set is everything: `ri (cl C) = ri C` together with
 `ri univ = univ`. -/
-theorem Convex.eq_univ_of_closure_eq_univ (hD : Convex ℝ D) (h : closure D = univ) : D = univ := by
+theorem _root_.Convex.eq_univ_of_closure_eq_univ (hD : Convex ℝ D) (h : closure D = univ) :
+    D = univ := by
   have h1 : ri (closure D) = ri D := Convex.relint_closure hD
   rw [h, intrinsicInterior_univ] at h1
   exact univ_subset_iff.1 (h1 ▸ intrinsicInterior_subset)

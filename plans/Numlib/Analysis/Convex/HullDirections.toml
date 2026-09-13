@@ -19,7 +19,7 @@ id = 'convexHullPD_eq_slice'
 id = 'exists_of_mem_convexHullPD'
 
 [[node]]
-id = 'IsCompact.isClosed_convexHullPD'
+id = '_root_.IsCompact.isClosed_convexHullPD'
 
 [[node]]
 id = 'affineSpanPD'

@@ -143,7 +143,7 @@ variable {E : Type*}
 theorem domConcave_neg (h : E → EReal) : domConcave (fun z => -(h z)) = dom h := by
   ext z
   change ⊥ < -(h z) ↔ h z < ⊤
-  rw [← _root_.EReal.neg_top, _root_.EReal.neg_lt_neg_iff]
+  rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
 
 end ERealAux
 
@@ -165,7 +165,7 @@ theorem clConcave_eq_top_of_eq_top {x₀ : E} (h : g x₀ = ⊤) :
   have h1 : clFn (fun z => -(g z)) = fun _ => (⊥ : EReal) :=
     clFn_eq_bot_of_eq_bot (x₀ := x₀) (by simp [h])
   funext x
-  rw [clConcave_apply, congrFun h1 x, _root_.EReal.neg_bot]
+  rw [clConcave_apply, congrFun h1 x, EReal.neg_bot]
 
 end AuxTopological
 
@@ -175,7 +175,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimension
   {g : E → EReal}
 
 /-- A convex set squeezed between `C` and `cl C` has the same relative interior as `C`. -/
-theorem Convex.relint_eq_of_subset_of_subset_closure {C S : Set E} (hC : Convex ℝ C)
+theorem _root_.Convex.relint_eq_of_subset_of_subset_closure {C S : Set E} (hC : Convex ℝ C)
     (hS : Convex ℝ S) (h₁ : C ⊆ S) (h₂ : S ⊆ closure C) : ri S = ri C :=
   (Convex.closure_eq_iff_relint_eq hS hC).1
     (Convex.closure_eq_of_relint_subset_of_subset_closure hC
@@ -210,13 +210,13 @@ variable {U X : Type*}
   ext x
   refine forall_congr' fun u => ?_
   change ⊥ < -(K (u, x)) ↔ K (u, x) < ⊤
-  rw [← _root_.EReal.neg_top, _root_.EReal.neg_lt_neg_iff]
+  rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
 
 @[simp] theorem dom₂_saddleSwap (K : U × X → EReal) : dom₂ (saddleSwap K) = dom₁ K := by
   ext u
   refine forall_congr' fun x => ?_
   change -(K (u, x)) < ⊤ ↔ ⊥ < K (u, x)
-  rw [← _root_.EReal.neg_bot, _root_.EReal.neg_lt_neg_iff]
+  rw [← EReal.neg_bot, EReal.neg_lt_neg_iff]
 
 end Swap
 
@@ -398,7 +398,7 @@ theorem dom_partialCl₁_slice (hK : ConcaveConvexFn K) (hne : (dom₁ K).Nonemp
   change partialCl₁ K (u, x) < ⊤ ↔ ⊥ < partialCl₂ (saddleSwap K) (x, u)
   rw [congrFun (partialCl₂_saddleSwap K) (x, u)]
   change partialCl₁ K (u, x) < ⊤ ↔ ⊥ < -(partialCl₁ K (u, x))
-  rw [← _root_.EReal.neg_top, _root_.EReal.neg_lt_neg_iff]
+  rw [← EReal.neg_top, EReal.neg_lt_neg_iff]
 
 /-- `cl₁` does not change the second effective domain. -/
 theorem dom₂_partialCl₁ (hK : ConcaveConvexFn K) (hne : (dom₁ K).Nonempty) :
@@ -419,7 +419,7 @@ theorem domConcave_partialCl₁_slice_subset_closure (hK : ConcaveConvexFn K)
     change partialCl₂ (saddleSwap K) (x, u) < ⊤ ↔ ⊥ < partialCl₁ K (u, x)
     rw [congrFun (partialCl₂_saddleSwap K) (x, u)]
     change -(partialCl₁ K (u, x)) < ⊤ ↔ ⊥ < partialCl₁ K (u, x)
-    rw [← _root_.EReal.neg_bot, _root_.EReal.neg_lt_neg_iff]
+    rw [← EReal.neg_bot, EReal.neg_lt_neg_iff]
   have e2 : dom (fun u => saddleSwap K (x, u)) = domConcave fun u => K (u, x) :=
     (domConcave_eq_dom_neg _).symm
   rw [e1, e2] at h
@@ -699,11 +699,11 @@ variable {E : Type*} [NormedAddCommGroup E]
 /-- The constant `-∞` is its own concave closure. -/
 @[simp] theorem clConcave_const_bot : clConcave (fun _ : E => (⊥ : EReal)) = fun _ => ⊥ := by
   have hb : (fun _ : E => -((⊥ : EReal))) = fun _ : E => (⊤ : EReal) := by
-    funext _; exact _root_.EReal.neg_bot
+    funext _; exact EReal.neg_bot
   have h : clFn (fun _ : E => -((⊥ : EReal))) = fun _ => (⊤ : EReal) := by
     rw [hb, clFn_const_top]
   funext x
-  rw [clConcave_apply, congrFun h x, _root_.EReal.neg_top]
+  rw [clConcave_apply, congrFun h x, EReal.neg_top]
 
 end Constants
 
@@ -983,15 +983,15 @@ two saddle-functions awkward to state. The extension loses nothing — `K` is fi
 so `kernel K` is `⊤` exactly off the rectangle — and `kernel K = kernel L` recovers both "the same
 rectangle" and "the same values there" (`kernel_eq_iff`). -/
 noncomputable def kernel (K : U × X → EReal) : U × X → EReal :=
-  ConvexAnalysis.restrict (kernelSet K) K
+  ConvexAnalysis.restrictFn (kernelSet K) K
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 @[simp] theorem kernel_of_mem {p : U × X} (hp : p ∈ kernelSet K) : kernel K p = K p :=
-  restrict_of_mem hp
+  restrictFn_of_mem hp
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 @[simp] theorem kernel_of_notMem {p : U × X} (hp : p ∉ kernelSet K) : kernel K p = ⊤ :=
-  restrict_of_notMem hp
+  restrictFn_of_notMem hp
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- A saddle-function is finite on its kernel rectangle, which is what makes `kernel K` detect
@@ -1561,11 +1561,6 @@ section SimpleExt
 
 variable {E : Type*}
 
-/-- The effective domain of a finite function extended by `⊤` is the set it was given on. -/
-theorem dom_restrict_coe (s : Set E) (g : E → ℝ) : dom (restrict s fun x => (g x : EReal)) = s := by
-  ext x
-  by_cases hx : x ∈ s <;> simp [hx]
-
 /-- The concave effective domain of a finite function extended by `⊥` is the set it was given
 on. -/
 theorem domConcave_restrictConcave_coe (s : Set E) (g : E → ℝ) :
@@ -1584,12 +1579,12 @@ theorem concaveFn_const (c : EReal) : ConcaveFn (fun _ : E => c) :=
   concaveFn_iff_convexFn_neg.2 (convexFn_const (-c))
 
 /-- Restricting a concave function to a convex set — extending by `⊥` off it — gives a concave
-function; the mirror of `ConvexFn.restrict`. -/
+function; the mirror of `ConvexFn.restrictFn`. -/
 theorem ConcaveFn.restrictConcave {g : E → EReal} {s : Set E} (hg : ConcaveFn g)
     (hs : Convex ℝ s) : ConcaveFn (ConvexAnalysis.restrictConcave s g) := by
   refine concaveFn_iff_convexFn_neg.2 ?_
   rw [neg_restrictConcave]
-  exact hg.convexFn_neg.restrict hs
+  exact hg.convexFn_neg.restrictFn hs
 
 end SimpleExtConvex
 
@@ -1600,7 +1595,7 @@ variable {U X : Type*} {C : Set U} {D : Set X} {K : U × X → ℝ}
 /-- Rockafellar's **lower simple extension** `K₁` of a finite saddle-function `K` on `C × D`:
 `K` on `C × D`, `+∞` on `C × Dᶜ`, and `-∞` off `C`. -/
 noncomputable def lowerSimpleExt (C : Set U) (D : Set X) (K : U × X → ℝ) : U × X → EReal :=
-  fun p => restrictConcave C (fun u => restrict D (fun x => (K (u, x) : EReal)) p.2) p.1
+  fun p => restrictConcave C (fun u => restrictFn D (fun x => (K (u, x) : EReal)) p.2) p.1
 
 @[simp] theorem lowerSimpleExt_of_mem {p : U × X} (hu : p.1 ∈ C) (hx : p.2 ∈ D) :
     lowerSimpleExt C D K p = (K p : EReal) := by
@@ -1616,7 +1611,7 @@ noncomputable def lowerSimpleExt (C : Set U) (D : Set X) (K : U × X → ℝ) : 
 
 /-- Over `C` the convex slice of `K₁` is `K (u, ·)` extended by `⊤` off `D`. -/
 theorem lowerSimpleExt_slice₂_of_mem {u : U} (hu : u ∈ C) :
-    (fun x => lowerSimpleExt C D K (u, x)) = restrict D fun x => (K (u, x) : EReal) := by
+    (fun x => lowerSimpleExt C D K (u, x)) = restrictFn D fun x => (K (u, x) : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [lowerSimpleExt, hu, hx]
 
@@ -1719,7 +1714,7 @@ theorem simpleSaddleFn_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
   · intro u hu
     rw [dom₁_lowerSimpleExt (K := K) hDne] at hu
     rw [dom₂_lowerSimpleExt (K := K) hCne,
-      lowerSimpleExt_slice₂_of_mem (intrinsicInterior_subset hu), dom_restrict_coe]
+      lowerSimpleExt_slice₂_of_mem (intrinsicInterior_subset hu), dom_restrictFn_coe]
     exact subset_closure
   · intro x hx
     rw [dom₂_lowerSimpleExt (K := K) hCne] at hx
@@ -1730,18 +1725,18 @@ theorem simpleSaddleFn_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- The kernel of the lower simple extension is the restriction of `K` to `ri (C × D)`. -/
 theorem kernel_lowerSimpleExt (hCne : C.Nonempty) (hDne : D.Nonempty) :
-    kernel (lowerSimpleExt C D K) = restrict (ri (C ×ˢ D)) fun p => (K p : EReal) := by
+    kernel (lowerSimpleExt C D K) = restrictFn (ri (C ×ˢ D)) fun p => (K p : EReal) := by
   have hset : kernelSet (lowerSimpleExt C D K) = ri (C ×ˢ D) := by
     rw [kernelSet, dom₁_lowerSimpleExt (K := K) hDne, dom₂_lowerSimpleExt (K := K) hCne,
       intrinsicInterior_prod_eq]
   funext p
   by_cases hp : p ∈ ri (C ×ˢ D)
   · have hp' : p ∈ kernelSet (lowerSimpleExt C D K) := by rw [hset]; exact hp
-    rw [kernel_of_mem hp', restrict_of_mem hp,
+    rw [kernel_of_mem hp', restrictFn_of_mem hp,
       lowerSimpleExt_of_mem (intrinsicInterior_subset (hset ▸ hp')).1
         (intrinsicInterior_subset (hset ▸ hp')).2]
   · have hp' : p ∉ kernelSet (lowerSimpleExt C D K) := by rw [hset]; exact hp
-    rw [kernel_of_notMem hp', restrict_of_notMem hp]
+    rw [kernel_of_notMem hp', restrictFn_of_notMem hp]
 
 /-- A finite concave-convex function `K` on a nonempty product `C × D` of convex sets is the
 kernel of exactly one equivalence class of closed proper concave-convex functions on `U × X`. The
@@ -1751,9 +1746,9 @@ theorem exists_unique_saddleEquiv_class_of_finite (hC : Convex ℝ C)
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x)) :
     ∃ M : U × X → EReal, (ClosedSaddleFn M ∧ ConcaveConvexFn M ∧ ProperSaddleFn M ∧
-      kernel M = restrict (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
+      kernel M = restrictFn (ri (C ×ˢ D)) fun p => (K p : EReal)) ∧
       ∀ L : U × X → EReal, ClosedSaddleFn L → ConcaveConvexFn L → ProperSaddleFn L →
-        (kernel L = restrict (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔ SaddleEquiv M L) := by
+        (kernel L = restrictFn (ri (C ×ˢ D)) (fun p => (K p : EReal)) ↔ SaddleEquiv M L) := by
   obtain ⟨M, ⟨hclM, hCCM, hpM, hkerM⟩, huniq⟩ :=
     exists_unique_saddleEquiv_class_of_kernel (concaveConvexFn_lowerSimpleExt hC hconv hconc)
       (properSaddleFn_lowerSimpleExt hCne hDne) (simpleSaddleFn_lowerSimpleExt hCne hDne)
@@ -1772,9 +1767,9 @@ variable {E : Type*} [TopologicalSpace E] [AddCommGroup E] [IsTopologicalAddGrou
 
 omit [AddCommGroup E] [IsTopologicalAddGroup E] in
 /-- The epigraph of a finite continuous function on a closed set, extended by `⊤`, is closed. -/
-theorem isClosed_epi_restrict_coe (hs : IsClosed s) (hg : ContinuousOn g s) :
-    IsClosed (epi (restrict s fun x => (g x : EReal))) := by
-  rw [epi_restrict_coe]
+theorem isClosed_epi_restrictFn_coe (hs : IsClosed s) (hg : ContinuousOn g s) :
+    IsClosed (epi (restrictFn s fun x => (g x : EReal))) := by
+  rw [epi_restrictFn_coe]
   have hcont : ContinuousOn (fun p : E × ℝ => g p.1 - p.2) (s ×ˢ (Set.univ : Set ℝ)) :=
     (hg.comp continuousOn_fst fun p hp => hp.1).sub continuousOn_snd
   have h := hcont.preimage_isClosed_of_isClosed (hs.prod isClosed_univ)
@@ -1784,13 +1779,13 @@ theorem isClosed_epi_restrict_coe (hs : IsClosed s) (hg : ContinuousOn g s) :
   simp [Set.mem_prod]
 
 /-- A finite continuous function on a closed set, extended by `⊤`, is a closed function. -/
-theorem closedFn_restrict_coe (hs : IsClosed s) (hg : ContinuousOn g s) :
-    ClosedFn (restrict s fun x => (g x : EReal)) := by
-  have hne : ∀ x, (restrict s fun x => (g x : EReal)) x ≠ ⊥ := by
+theorem closedFn_restrictFn_coe (hs : IsClosed s) (hg : ContinuousOn g s) :
+    ClosedFn (restrictFn s fun x => (g x : EReal)) := by
+  have hne : ∀ x, (restrictFn s fun x => (g x : EReal)) x ≠ ⊥ := by
     intro x
     by_cases hx : x ∈ s <;> simp [hx]
   exact (closedFn_iff_lowerSemicontinuous hne).2
-    (lowerSemicontinuous_iff_isClosed_epi.2 (isClosed_epi_restrict_coe hs hg))
+    (lowerSemicontinuous_iff_isClosed_epi.2 (isClosed_epi_restrictFn_coe hs hg))
 
 /-- The concave mirror: a finite continuous function on a closed set, extended by `-∞`, is a closed
 concave function. -/
@@ -1798,7 +1793,7 @@ theorem closedConcaveFn_restrictConcave_coe (hs : IsClosed s) (hg : ContinuousOn
     ClosedConcaveFn (restrictConcave s fun x => (g x : EReal)) := by
   rw [closedConcaveFn_iff, neg_restrictConcave]
   simp only [← EReal.coe_neg]
-  exact closedFn_restrict_coe hs hg.neg
+  exact closedFn_restrictFn_coe hs hg.neg
 
 end ClosedRestrict
 
@@ -1811,7 +1806,7 @@ variable {U X : Type*} {C : Set U} {D : Set X} {K : U × X → ℝ}
 /-- Rockafellar's **upper simple extension** `K₂` of a finite saddle-function `K` on `C × D`:
 `K` on `C × D`, `-∞` on `Cᶜ × D`, and `+∞` off `D`. -/
 noncomputable def upperSimpleExt (C : Set U) (D : Set X) (K : U × X → ℝ) : U × X → EReal :=
-  fun p => restrict D (fun x => restrictConcave C (fun u => (K (u, x) : EReal)) p.1) p.2
+  fun p => restrictFn D (fun x => restrictConcave C (fun u => (K (u, x) : EReal)) p.1) p.2
 
 /-- The real-valued companion of `saddleSwap`: negate and exchange the two arguments. Note that
 `swapReal (swapReal K) = K` is **not** `rfl`, because the negation is on `ℝ` values. -/
@@ -1853,13 +1848,13 @@ theorem upperSimpleExt_eq_saddleSwap (C : Set U) (D : Set X) (K : U × X → ℝ
 
 /-- Over `C` the convex slice of `K₂` agrees with that of `K₁`. -/
 theorem upperSimpleExt_slice₂_of_mem {u : U} (hu : u ∈ C) :
-    (fun x => upperSimpleExt C D K (u, x)) = restrict D fun x => (K (u, x) : EReal) := by
+    (fun x => upperSimpleExt C D K (u, x)) = restrictFn D fun x => (K (u, x) : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [upperSimpleExt, hu, hx]
 
 /-- Off `C` the convex slice of `K₂` is `-∞` on `D` and `+∞` elsewhere. -/
 theorem upperSimpleExt_slice₂_of_notMem {u : U} (hu : u ∉ C) :
-    (fun x => upperSimpleExt C D K (u, x)) = restrict D fun _ => (⊥ : EReal) := by
+    (fun x => upperSimpleExt C D K (u, x)) = restrictFn D fun _ => (⊥ : EReal) := by
   funext x
   by_cases hx : x ∈ D <;> simp [upperSimpleExt, hu, hx]
 
@@ -1964,9 +1959,9 @@ theorem partialCl₂_lowerSimpleExt (hDcl : IsClosed D)
   obtain ⟨u, x⟩ := p
   by_cases hu : u ∈ C
   · have h : (fun x => partialCl₂ (lowerSimpleExt C D K) (u, x))
-        = restrict D fun x => (K (u, x) : EReal) := by
+        = restrictFn D fun x => (K (u, x) : EReal) := by
       rw [partialCl₂_slice (lowerSimpleExt C D K) u, lowerSimpleExt_slice₂_of_mem hu]
-      exact closedFn_restrict_coe hDcl (hcont u hu)
+      exact closedFn_restrictFn_coe hDcl (hcont u hu)
     rw [congrFun h x, ← congrFun (lowerSimpleExt_slice₂_of_mem (K := K) hu) x]
   · have h : (fun x => partialCl₂ (lowerSimpleExt C D K) (u, x)) = fun _ => (⊥ : EReal) := by
       rw [partialCl₂_slice (lowerSimpleExt C D K) u, lowerSimpleExt_slice₂_of_notMem hu]

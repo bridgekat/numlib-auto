@@ -175,7 +175,7 @@ theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀
     rw [hC₁def]
     refine ⟨y₀, intrinsicInterior_subset hy₀, fun i => ?_⟩
     have hcoe : (((f i y₀).toReal : ℝ) : EReal) = f i y₀ :=
-      _root_.EReal.coe_toReal (hfinri i y₀ hy₀) ((hp i).ne_bot y₀)
+      EReal.coe_toReal (hfinri i y₀ hy₀) ((hp i).ne_bot y₀)
     rw [← hcoe]
     exact_mod_cast (by linarith : (f i y₀).toReal < (f i y₀).toReal + 1)
   have hC₂conv : Convex ℝ C₂ := by
@@ -266,13 +266,13 @@ theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀
     rw [EReal.coe_sum]
     refine Finset.sum_congr rfl fun i _ => ?_
     have hcoe : (((f i z).toReal : ℝ) : EReal) = f i z :=
-      _root_.EReal.coe_toReal (hfinri i z hz) ((hp i).ne_bot z)
-    rw [mul_comm, ← EReal.coe_mul_coe, hcoe]
+      EReal.coe_toReal (hfinri i z hz) ((hp i).ne_bot z)
+    rw [mul_comm, EReal.coe_mul, hcoe]
   have hri : ∀ z ∈ ri C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i z := by
     intro z hz
     have hzC : z ∈ C := intrinsicInterior_subset hz
     have hcoe : ∀ i, (((f i z).toReal : ℝ) : EReal) = f i z :=
-      fun i => _root_.EReal.coe_toReal (hfinri i z hz) ((hp i).ne_bot z)
+      fun i => EReal.coe_toReal (hfinri i z hz) ((hp i).ne_bot z)
     have hstep : ∀ ε : ℝ, 0 < ε → 0 ≤ ∑ i, ((f i z).toReal + ε) * l i := by
       intro ε hε
       refine hkey _ ?_
@@ -315,7 +315,7 @@ theorem alternative_of_convex_system [Nonempty ι] (hC : Convex ℝ C) (hf : ∀
   have hgfin : ∀ z ∈ ri C, (∑ i, (l i : EReal) * f i z) ≠ ⊤ := by
     intro z hz
     rw [hsumcoe z hz]
-    exact _root_.EReal.coe_ne_top _
+    exact EReal.coe_ne_top _
   have hxcl : x ∈ closure (ri C) := by
     rw [Convex.closure_relint hC]; exact subset_closure hx
   have hfinal := hgconv.le_of_mem_closure hgbot (Convex.relint hC) hgfin (c := 0)
@@ -346,7 +346,7 @@ omit [FiniteDimensional ℝ E] in
 theorem convexFn_coe_affine_sum (μ : κ → ℝ) :
     ConvexFn (fun x => ((∑ j, μ j * a j x : ℝ) : EReal)) := by
   refine convexFn_of_epi_combo fun x y p q hx hy s t hs ht hst => ?_
-  rw [_root_.EReal.coe_le_coe_iff] at hx hy ⊢
+  rw [EReal.coe_le_coe_iff] at hx hy ⊢
   rw [combo_affine_sum μ hst]
   nlinarith [mul_le_mul_of_nonneg_left hx hs, mul_le_mul_of_nonneg_left hy ht]
 
@@ -455,7 +455,7 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
     rw [hD₁def]
     refine ⟨y₀, hy₀C, fun i => ?_, fun j => by simp⟩
     have hcoe : (((f i y₀).toReal : ℝ) : EReal) = f i y₀ :=
-      _root_.EReal.coe_toReal (hfinri i y₀ hy₀) ((hp i).ne_bot y₀)
+      EReal.coe_toReal (hfinri i y₀ hy₀) ((hp i).ne_bot y₀)
     simp only [Sum.elim_inl]
     rw [← hcoe]
     exact_mod_cast (by linarith : (f i y₀).toReal < (f i y₀).toReal + 1)
@@ -524,7 +524,7 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
     intro x hx
     have hxC : x ∈ C := intrinsicInterior_subset hx
     have hcoe : ∀ i, (((f i x).toReal : ℝ) : EReal) = f i x :=
-      fun i => _root_.EReal.coe_toReal (hfinri i x hx) ((hp i).ne_bot x)
+      fun i => EReal.coe_toReal (hfinri i x hx) ((hp i).ne_bot x)
     have hstep : ∀ ε : ℝ, 0 < ε → α ≤ (∑ i, w (Sum.inl i) * ((f i x).toReal + ε))
         + ∑ j, w (Sum.inr j) * a j x := by
       intro ε hε
@@ -564,21 +564,21 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
     EReal.sum_ne_bot fun i _ => EReal.coe_mul_ne_bot (hwnonneg _) ((hp i).ne_bot x)
   have hFconv : ConvexFn (fun x => (∑ i, (w (Sum.inl i) : EReal) * f i x)
       + ((∑ j, w (Sum.inr j) * a j x : ℝ) : EReal)) :=
-    hAconv.add (convexFn_coe_affine_sum _) hAbot (fun x => _root_.EReal.coe_ne_bot _)
+    hAconv.add (convexFn_coe_affine_sum _) hAbot (fun x => EReal.coe_ne_bot _)
   have hFbot : ∀ x, ((∑ i, (w (Sum.inl i) : EReal) * f i x)
       + ((∑ j, w (Sum.inr j) * a j x : ℝ) : EReal)) ≠ ⊥ := fun x =>
-    _root_.EReal.add_ne_bot_iff.2 ⟨hAbot x, _root_.EReal.coe_ne_bot _⟩
+    EReal.add_ne_bot_iff.2 ⟨hAbot x, EReal.coe_ne_bot _⟩
   have hFcoe : ∀ x ∈ ri C, (∑ i, (w (Sum.inl i) : EReal) * f i x)
       + ((∑ j, w (Sum.inr j) * a j x : ℝ) : EReal)
       = (((∑ i, w (Sum.inl i) * (f i x).toReal) + ∑ j, w (Sum.inr j) * a j x : ℝ) : EReal) := by
     intro x hx
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     congr 1
     rw [EReal.coe_sum]
     refine Finset.sum_congr rfl fun i _ => ?_
     have hcoe : (((f i x).toReal : ℝ) : EReal) = f i x :=
-      _root_.EReal.coe_toReal (hfinri i x hx) ((hp i).ne_bot x)
-    rw [← EReal.coe_mul_coe, hcoe]
+      EReal.coe_toReal (hfinri i x hx) ((hp i).ne_bot x)
+    rw [EReal.coe_mul, hcoe]
   have hFC : ∀ x ∈ C, ((α : ℝ) : EReal) ≤ (∑ i, (w (Sum.inl i) : EReal) * f i x)
       + ((∑ j, w (Sum.inr j) * a j x : ℝ) : EReal) := by
     intro x hx
@@ -587,7 +587,7 @@ theorem alternative_of_convex_system_affine (hC : Convex ℝ C) (hf : ∀ i, Con
     refine hFconv.le_of_mem_closure hFbot (Convex.relint hC) ?_ ?_ hxcl
     · intro z hz
       rw [hFcoe z hz]
-      exact _root_.EReal.coe_ne_top _
+      exact EReal.coe_ne_top _
     · intro z hz
       rw [hFcoe z hz]
       exact_mod_cast hval z hz
@@ -849,18 +849,18 @@ theorem exists_multipliers_of_posHomGen_convFn_conj_eq_bot [IsCompatiblePairing 
     fun i y => conj_ne_bot (hf i).proper.dom_nonempty y
   have hh0 : (convFn fun i => conj B (f i)) (0 : F) < ((0 : ℝ) : EReal) := by
     have hbot := (posHomGen_apply_zero_eq_bot_iff (convexFn_convFn _)).1 hk0
-    rwa [_root_.EReal.coe_zero]
+    rwa [EReal.coe_zero]
   -- finitely many multipliers, at most `n + 1` of them
   obtain ⟨t, w, q, hwpos, hwsum, hcard, -, hqtop, hq0, hqval⟩ :=
     exists_affineIndependent_of_convFn_lt hconvg hgbot hh0
   obtain ⟨c, hc⟩ : ∃ c : ι → ℝ, ∀ i ∈ t, conj B (f i) (q i) = (c i : EReal) := by
     refine ⟨fun i => (conj B (f i) (q i)).toReal, fun i hi => ?_⟩
-    exact (_root_.EReal.coe_toReal (hqtop i hi) (hgbot i (q i))).symm
+    exact (EReal.coe_toReal (hqtop i hi) (hgbot i (q i))).symm
   have hcsum : ∑ i ∈ t, w i * c i < 0 := by
     have heq : ∑ i ∈ t, (w i : EReal) * conj B (f i) (q i)
         = ((∑ i ∈ t, w i * c i : ℝ) : EReal) := by
       rw [EReal.coe_sum]
-      exact Finset.sum_congr rfl fun i hi => by rw [hc i hi, EReal.coe_mul_coe]
+      exact Finset.sum_congr rfl fun i hi => by rw [hc i hi, ← EReal.coe_mul]
     rw [heq] at hqval
     exact_mod_cast hqval
   refine ⟨t, fun i => if i ∈ t then w i else 0, -∑ i ∈ t, w i * c i, ?_, ?_, by linarith, ?_, ?_⟩
@@ -893,9 +893,9 @@ theorem exists_multipliers_of_posHomGen_convFn_conj_eq_bot [IsCompatiblePairing 
       rw [hc i hi] at hfen
       have hstep : ((B x (q i) : ℝ) : EReal) - ((c i : ℝ) : EReal) ≤ f i x :=
         EReal.coe_sub_le_comm.1 hfen
-      rw [← _root_.EReal.coe_sub] at hstep
+      rw [← EReal.coe_sub] at hstep
       calc ((w i * (B x (q i) - c i) : ℝ) : EReal)
-          = (w i : EReal) * ((B x (q i) - c i : ℝ) : EReal) := (EReal.coe_mul_coe _ _).symm
+          = (w i : EReal) * ((B x (q i) - c i : ℝ) : EReal) := EReal.coe_mul _ _
         _ ≤ (w i : EReal) * f i x :=
             mul_le_mul_of_nonneg_left hstep (by exact_mod_cast (hwpos i hi).le)
     have hsum : ((∑ i ∈ t, w i * (B x (q i) - c i) : ℝ) : EReal)
@@ -1076,7 +1076,7 @@ theorem not_forall_le_weighted_of_forall_subsystem {t : Finset ι} {l : ι → �
       obtain ⟨x, hxC⟩ := hCne
       have hbound := hineq x hxC
       rw [Finset.sum_congr rfl fun i hi => by
-        rw [hzero i hi, _root_.EReal.coe_zero, zero_mul]] at hbound
+        rw [hzero i hi, EReal.coe_zero, zero_mul]] at hbound
       have h2 : ((ε : ℝ) : EReal) ≤ 0 := by simpa using hbound
       have h3 : ε ≤ 0 := by exact_mod_cast h2
       linarith
@@ -1089,7 +1089,7 @@ theorem not_forall_le_weighted_of_forall_subsystem {t : Finset ι} {l : ι → �
     calc (l i : EReal) * f i x
         ≤ (l i : EReal) * ((ε / (2 * ∑ j ∈ t, l j) : ℝ) : EReal) :=
           mul_le_mul_of_nonneg_left (hxlt i hi).le (by exact_mod_cast hl0 i)
-      _ = _ := EReal.coe_mul_coe _ _
+      _ = _ := (EReal.coe_mul _ _).symm
   have hsum : ∑ i ∈ t, (l i : EReal) * f i x ≤ ((ε / 2 : ℝ) : EReal) := by
     refine le_trans (Finset.sum_le_sum hbound) (le_of_eq ?_)
     rw [← EReal.coe_sum, ← Finset.sum_mul]

@@ -1463,7 +1463,7 @@ private theorem extremePoints_subset_closure_exposedPoints_aux
   -- `C₀`, the convex hull of the closure of the exposed points, is compact, and misses `x`
   have hC₀conv : Convex ℝ (convexHull ℝ (closure (C.exposedPoints ℝ))) := convex_convexHull ℝ _
   have hC₀comp : IsCompact (convexHull ℝ (closure (C.exposedPoints ℝ))) :=
-    IsCompact.isCompact_convexHull hclScomp
+    IsCompact.convexHull hclScomp
   have hC₀C : convexHull ℝ (closure (C.exposedPoints ℝ)) ⊆ C := convexHull_min hclSC hC
   have hxC₀ : x ∉ convexHull ℝ (closure (C.exposedPoints ℝ)) := fun hmem =>
     hxS (extremePoints_convexHull_subset (mem_extremePoints_of_subset hx hC₀C hmem))

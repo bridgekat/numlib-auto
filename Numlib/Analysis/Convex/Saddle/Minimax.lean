@@ -340,7 +340,8 @@ theorem ConvexFn.biInf_eq_iInf_of_relint_dom_subset (hf : ConvexFn f) {S : Set E
     (hS : ri (dom f) ⊆ S) : (⨅ x ∈ S, f x) = ⨅ x, f x := by
   refine le_antisymm ?_ (le_iInf₂ fun x _ => iInf_le f x)
   refine EReal.le_of_forall_coe_le fun s hs => ?_
-  refine EReal.le_coe_of_forall_lt fun q hq => ?_
+  refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   have hqc : ((s : ℝ) : EReal) < (q : EReal) := by exact_mod_cast hq
   obtain ⟨x, hx⟩ := iInf_lt_iff.1 (lt_of_le_of_lt hs hqc)
   obtain ⟨z, hz, hzq⟩ := hf.exists_mem_relint_dom_lt ⟨x, hx⟩
@@ -496,7 +497,7 @@ theorem iInf_lagrangian_ne_top (hpr : Proper (graphFn F)) :
   obtain ⟨q, hq⟩ := hpr.dom_nonempty
   refine ne_of_lt (lt_of_le_of_lt (iInf_le (fun y => lagrangian Bu F v y) q.2) ?_)
   refine lt_of_le_of_lt (iInf_le (fun u => ((Bu u v : ℝ) : EReal) + F u q.2) q.1) ?_
-  exact _root_.EReal.add_lt_top (_root_.EReal.coe_ne_top _) (ne_of_lt hq)
+  exact EReal.add_lt_top (EReal.coe_ne_top _) (ne_of_lt hq)
 
 /-- `(v, x)` is a saddle-point of the Lagrangian of `(P)` exactly when `v` is a Kuhn–Tucker vector
 for `(P)` and `x` is an optimal solution to `(P)`.
@@ -696,8 +697,8 @@ theorem saddleSwap_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (F : 
     EReal.neg_iInf]
   refine iSup_congr fun u => ?_
   have hb : (((-Bu) u q.2 : ℝ) : EReal) = ((-(Bu u q.2) : ℝ) : EReal) := rfl
-  rw [hb, _root_.EReal.coe_neg,
-    _root_.EReal.neg_add (.inl (_root_.EReal.coe_ne_bot _)) (.inl (_root_.EReal.coe_ne_top _))]
+  rw [hb, EReal.coe_neg,
+    EReal.neg_add (.inl (EReal.coe_ne_bot _)) (.inl (EReal.coe_ne_top _))]
   rfl
 
 omit [TopologicalSpace U] [IsTopologicalAddGroup U] [ContinuousSMul ℝ U]
@@ -876,7 +877,7 @@ theorem minimax_eq_neg_lowerConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     rw [EReal.neg_iSup]
     refine iInf_congr fun u => ?_
     have h0 : (Bu u (0 : V × X).1 + Bx (0 : V × X).2 y : ℝ) = 0 := by simp
-    rw [h0, _root_.EReal.coe_zero]
+    rw [h0, EReal.coe_zero]
     change (0 : EReal) + -(K (u, y)) = -(K (u, y))
     rw [zero_add]
   rw [h, neg_neg]
@@ -891,7 +892,7 @@ theorem maximin_eq_neg_upperConjSaddle_zero (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     rw [EReal.neg_iInf]
     refine iSup_congr fun y => ?_
     have h0 : (Bu u (0 : V × X).1 + Bx (0 : V × X).2 y : ℝ) = 0 := by simp
-    rw [h0, _root_.EReal.coe_zero]
+    rw [h0, EReal.coe_zero]
     change (0 : EReal) + -(K (u, y)) = -(K (u, y))
     rw [zero_add]
   rw [h, neg_neg]
@@ -1066,7 +1067,7 @@ theorem upperConjSaddle_eq_saddleLagrangian (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
   have h1 : ∀ y, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y))
       = (((Bx q.2 y : ℝ) : EReal) - K (u, y)) + ((Bu u q.1 : ℝ) : EReal) := by
     intro y
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     simp only [sub_eq_add_neg]
     rw [add_assoc, add_comm]
   simp only [h1]
@@ -1090,7 +1091,7 @@ theorem lowerConjSaddle_eq_bracket_inverseBifun (Bu : U →ₗ[ℝ] V →ₗ[ℝ
   have h1 : ∀ u, (((Bu u q.1 + Bx q.2 y : ℝ) : EReal) - K (u, y))
       = (((Bu u q.1 : ℝ) : EReal) - K (u, y)) + ((Bx q.2 y : ℝ) : EReal) := by
     intro u
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     simp only [sub_eq_add_neg]
     rw [add_right_comm]
   simp only [h1]

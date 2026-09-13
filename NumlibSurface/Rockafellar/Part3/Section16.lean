@@ -57,7 +57,7 @@ is conjugate to the indicator function `δ(· | 0)`". Both halves of that senten
 `Rn n` is a `SeparatingDual`, asserted in the shared header. -/
 theorem conj_zero_rn : conj (pairing n) (0 : Rn n → EReal) = indicatorFn ({0} : Set (Rn n)) := by
   have h := conj_zero_eq_indicatorFn (B := pairing n) (E := Rn n) (F := Rn n)
-  rwa [conj_flip_pairing] at h
+  rwa [flip_pairing] at h
 
 /-- The conjugate of `δ(· | 0)` is the constant function `0`, the other half of the same sentence.
 Specialises `conj_indicatorFn_zero`. -/

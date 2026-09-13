@@ -68,7 +68,7 @@ theorem hypo_mono {g h : E → EReal} (hgh : g ≤ h) : hypo g ⊆ hypo h := fun
 theorem le_iff_hypo_subset {g h : E → EReal} : g ≤ h ↔ hypo g ⊆ hypo h := by
   refine ⟨hypo_mono, fun hs x => ?_⟩
   by_contra hx
-  obtain ⟨q, hhq, hqg⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (not_le.1 hx)
+  obtain ⟨q, hhq, hqg⟩ := EReal.lt_iff_exists_real_btwn.1 (not_le.1 hx)
   exact absurd (hs (show (x, q) ∈ hypo g from hqg.le)) (not_le.2 hhq)
 
 /-- The hypograph of `g` is the vertical reflection `(x, μ) ↦ (x, -μ)` of the epigraph of `-g`. This
@@ -78,7 +78,7 @@ theorem hypo_neg (g : E → EReal) :
     hypo g = Prod.map (id : E → E) (Neg.neg : ℝ → ℝ) ⁻¹' epi fun x => -(g x) := by
   ext ⟨x, μ⟩
   change (μ : EReal) ≤ g x ↔ -(g x) ≤ ((-μ : ℝ) : EReal)
-  rw [_root_.EReal.coe_neg, _root_.EReal.neg_le_neg_iff]
+  rw [EReal.coe_neg, EReal.neg_le_neg_iff]
 
 /-- The epigraph of `-g` is the vertical reflection `(x, μ) ↦ (x, -μ)` of the hypograph of `g`; the
 converse direction of `hypo_neg`, the reflection being an involution. -/
@@ -86,8 +86,8 @@ theorem epi_neg (g : E → EReal) :
     epi (fun x => -(g x)) = Prod.map (id : E → E) (Neg.neg : ℝ → ℝ) ⁻¹' hypo g := by
   ext ⟨x, μ⟩
   change -(g x) ≤ (μ : EReal) ↔ ((-μ : ℝ) : EReal) ≤ g x
-  rw [_root_.EReal.coe_neg]
-  exact _root_.EReal.neg_le
+  rw [EReal.coe_neg]
+  exact EReal.neg_le
 
 /-- `hypo_neg` with the reflection applied as an image rather than a preimage. -/
 theorem hypo_eq_image_epi_neg (g : E → EReal) :
@@ -106,7 +106,7 @@ def domConcave (g : E → EReal) : Set E := {x | ⊥ < g x}
 theorem domConcave_eq_dom_neg (g : E → EReal) : domConcave g = dom fun x => -(g x) := by
   ext x
   change ⊥ < g x ↔ -(g x) < ⊤
-  exact (_root_.EReal.neg_lt_comm (a := g x) (b := ⊤)).symm
+  exact (EReal.neg_lt_comm (a := g x) (b := ⊤)).symm
 
 /-- The mirror of `dom_eq_fst_image_epi`: `domConcave g` is the projection of `hypo g` on `E`,
 with no hypothesis on `g`. -/
@@ -134,9 +134,9 @@ theorem properConcave_iff_proper_neg {g : E → EReal} :
     · rw [domConcave_eq_dom_neg]; exact h.dom_nonempty
     · simpa using h.ne_bot x
 
-/-- `g` restricted to `s` and extended by `⊥` off `s`: the concave counterpart of `restrict`, which
-extends by `⊤`. The `⨆` formulation avoids a decidability hypothesis; `restrictConcave_of_mem` and
-`restrictConcave_of_notMem` are the defining equations. -/
+/-- `g` restricted to `s` and extended by `⊥` off `s`: the concave counterpart of `restrictFn`,
+which extends by `⊤`. The `⨆` formulation avoids a decidability hypothesis;
+`restrictConcave_of_mem` and `restrictConcave_of_notMem` are the defining equations. -/
 noncomputable def restrictConcave (s : Set E) (g : E → EReal) : E → EReal :=
   fun x => ⨆ _ : x ∈ s, g x
 
@@ -148,7 +148,7 @@ noncomputable def restrictConcave (s : Set E) (g : E → EReal) : E → EReal :=
 
 /-- Extension by `⊥` and extension by `⊤` correspond under negation. -/
 theorem neg_restrictConcave (s : Set E) (g : E → EReal) :
-    (fun x => -(restrictConcave s g x)) = restrict s fun x => -(g x) := by
+    (fun x => -(restrictConcave s g x)) = restrictFn s fun x => -(g x) := by
   funext x
   by_cases hx : x ∈ s <;> simp [hx]
 
@@ -193,21 +193,21 @@ theorem concaveFn_iff_convexFn_neg {g : E → EReal} : ConcaveFn g ↔ ConvexFn 
   · intro hg
     refine convexFn_of_epi_combo fun x y μ ν hx hy a b ha hb hab => ?_
     have hx' : ((-μ : ℝ) : EReal) ≤ g x := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_le.1 hx
+      rw [EReal.coe_neg]; exact EReal.neg_le.1 hx
     have hy' : ((-ν : ℝ) : EReal) ≤ g y := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_le.1 hy
+      rw [EReal.coe_neg]; exact EReal.neg_le.1 hy
     have key := hg.hypo_combo hx' hy' ha hb hab
-    rw [show (a * -μ + b * -ν : ℝ) = -(a * μ + b * ν) by ring, _root_.EReal.coe_neg] at key
-    exact _root_.EReal.neg_le_of_neg_le key
+    rw [show (a * -μ + b * -ν : ℝ) = -(a * μ + b * ν) by ring, EReal.coe_neg] at key
+    exact EReal.neg_le_of_neg_le key
   · intro hg
     refine concaveFn_of_hypo_combo fun x y μ ν hx hy a b ha hb hab => ?_
     have hx' : -(g x) ≤ ((-μ : ℝ) : EReal) := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_le_neg_iff.2 hx
+      rw [EReal.coe_neg]; exact EReal.neg_le_neg_iff.2 hx
     have hy' : -(g y) ≤ ((-ν : ℝ) : EReal) := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_le_neg_iff.2 hy
+      rw [EReal.coe_neg]; exact EReal.neg_le_neg_iff.2 hy
     have key := hg.epi_combo hx' hy' ha hb hab
-    rw [show (a * -μ + b * -ν : ℝ) = -(a * μ + b * ν) by ring, _root_.EReal.coe_neg] at key
-    exact _root_.EReal.neg_le_neg_iff.1 key
+    rw [show (a * -μ + b * -ν : ℝ) = -(a * μ + b * ν) by ring, EReal.coe_neg] at key
+    exact EReal.neg_le_neg_iff.1 key
 
 /-- The forward direction of `concaveFn_iff_convexFn_neg`. -/
 theorem ConcaveFn.convexFn_neg {g : E → EReal} (hg : ConcaveFn g) : ConvexFn fun x => -(g x) :=
@@ -230,20 +230,20 @@ theorem concaveFn_iff_forall_gt (g : E → EReal) :
   constructor
   · intro h x y a b ha hb hab α β hx hy
     have hx' : -(g x) < ((-α : ℝ) : EReal) := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_lt_neg_iff.2 hx
+      rw [EReal.coe_neg]; exact EReal.neg_lt_neg_iff.2 hx
     have hy' : -(g y) < ((-β : ℝ) : EReal) := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_lt_neg_iff.2 hy
+      rw [EReal.coe_neg]; exact EReal.neg_lt_neg_iff.2 hy
     have key := h x y a b ha hb hab _ _ hx' hy'
-    rw [show (a * -α + b * -β : ℝ) = -(a * α + b * β) by ring, _root_.EReal.coe_neg] at key
-    exact _root_.EReal.neg_lt_neg_iff.1 key
+    rw [show (a * -α + b * -β : ℝ) = -(a * α + b * β) by ring, EReal.coe_neg] at key
+    exact EReal.neg_lt_neg_iff.1 key
   · intro h x y a b ha hb hab α β hx hy
     have hx' : ((-α : ℝ) : EReal) < g x := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_lt_comm.1 hx
+      rw [EReal.coe_neg]; exact EReal.neg_lt_comm.1 hx
     have hy' : ((-β : ℝ) : EReal) < g y := by
-      rw [_root_.EReal.coe_neg]; exact _root_.EReal.neg_lt_comm.1 hy
+      rw [EReal.coe_neg]; exact EReal.neg_lt_comm.1 hy
     have key := h x y a b ha hb hab _ _ hx' hy'
-    rw [show (a * -α + b * -β : ℝ) = -(a * α + b * β) by ring, _root_.EReal.coe_neg] at key
-    exact _root_.EReal.neg_lt_comm.1 key
+    rw [show (a * -α + b * -β : ℝ) = -(a * α + b * β) by ring, EReal.coe_neg] at key
+    exact EReal.neg_lt_comm.1 key
 
 /-! ### Concavity as an inequality on values -/
 
@@ -258,7 +258,7 @@ theorem concaveFn_iff_le {g : E → EReal} (hg : ∀ x, g x ≠ ⊤) :
   rw [concaveFn_iff_convexFn_neg, convexFn_iff_le hneg]
   refine forall₂_congr fun x y => forall₂_congr fun a b => ?_
   refine forall₃_congr fun ha hb _ => ?_
-  rw [EReal.neg_combo ha hb (hg x) (hg y), _root_.EReal.neg_le_neg_iff]
+  rw [EReal.neg_combo ha hb (hg x) (hg y), EReal.neg_le_neg_iff]
 
 /-! ### Level sets and the effective domain -/
 

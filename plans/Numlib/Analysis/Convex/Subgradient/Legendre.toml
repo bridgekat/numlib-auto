@@ -1,7 +1,7 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'conj_eq_of_hasGradientAt'
+id = 'conj_eq_of_hasGradientAtFn'
 
 [[node]]
 id = 'legendreDom'

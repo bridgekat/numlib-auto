@@ -78,7 +78,7 @@ theorem supportFn_neg_eq_neg_iff (hs : s.Nonempty) (y : F) :
     have hbot' : supportFn B s (-y) ≠ ⊥ := supportFn_ne_bot ⟨x₀, hx₀⟩ (-y)
     have htop : supportFn B s y ≠ ⊤ := by
       intro ht
-      rw [ht, _root_.EReal.neg_top] at h
+      rw [ht, EReal.neg_top] at h
       exact hbot' h
     obtain ⟨c, hc⟩ :=
       EReal.exists_coe_of_ne_bot_of_lt_top hbot (lt_top_iff_ne_top.2 htop)
@@ -86,7 +86,7 @@ theorem supportFn_neg_eq_neg_iff (hs : s.Nonempty) (y : F) :
     have h1 : B x y ≤ c := supportFn_le_coe_iff.1 hc.le x hx
     have h2 : B x (-y) ≤ -c := by
       refine supportFn_le_coe_iff.1 ?_ x hx
-      rw [h, hc, ← _root_.EReal.coe_neg]
+      rw [h, hc, ← EReal.coe_neg]
     rw [map_neg] at h2
     linarith
   · rintro ⟨c, hc⟩
@@ -94,7 +94,7 @@ theorem supportFn_neg_eq_neg_iff (hs : s.Nonempty) (y : F) :
       supportFn_eq_coe_of_forall_eq ⟨x₀, hx₀⟩ hc
     have hy' : supportFn B s (-y) = ((-c : ℝ) : EReal) :=
       supportFn_eq_coe_of_forall_eq ⟨x₀, hx₀⟩ fun x hx => by rw [map_neg, hc x hx]
-    rw [hy, hy', _root_.EReal.coe_neg]
+    rw [hy, hy', EReal.coe_neg]
 
 /-- `supportFn_neg_eq_neg_iff` in the orientation the clauses below use:
 `-δ*(-y | s) = δ*(y | s)`. -/

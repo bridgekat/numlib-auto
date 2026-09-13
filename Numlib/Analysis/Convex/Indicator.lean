@@ -29,13 +29,13 @@ section Basic
 variable {E : Type*}
 
 /-- The indicator function `δ(· | s)` of a set `s`: `0` on `s`, `⊤` off it. -/
-noncomputable def indicatorFn (s : Set E) : E → EReal := restrict s (fun _ => 0)
+noncomputable def indicatorFn (s : Set E) : E → EReal := restrictFn s (fun _ => 0)
 
 @[simp] theorem indicatorFn_of_mem {s : Set E} {x : E} (hx : x ∈ s) : indicatorFn s x = 0 :=
-  restrict_of_mem hx
+  restrictFn_of_mem hx
 
 @[simp] theorem indicatorFn_of_notMem {s : Set E} {x : E} (hx : x ∉ s) : indicatorFn s x = ⊤ :=
-  restrict_of_notMem hx
+  restrictFn_of_notMem hx
 
 theorem indicatorFn_ne_bot (s : Set E) (x : E) : indicatorFn s x ≠ ⊥ := by
   by_cases hx : x ∈ s <;> simp [hx]
@@ -104,12 +104,12 @@ omit [Module ℝ E] in
 
 omit [AddCommGroup E] [Module ℝ E] in
 /-- Adding an indicator function restricts the effective domain. -/
-theorem restrict_eq_add_indicatorFn {s : Set E} {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
-    restrict s f = f + indicatorFn s := by
+theorem restrictFn_eq_add_indicatorFn {s : Set E} {f : E → EReal} (hf : ∀ x, f x ≠ ⊥) :
+    restrictFn s f = f + indicatorFn s := by
   funext x
   by_cases hx : x ∈ s
   · simp [hx]
-  · simp only [restrict_of_notMem hx, Pi.add_apply, indicatorFn_of_notMem hx]
+  · simp only [restrictFn_of_notMem hx, Pi.add_apply, indicatorFn_of_notMem hx]
     exact (EReal.add_top_of_ne_bot (hf x)).symm
 
 end Module

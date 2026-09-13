@@ -84,17 +84,17 @@ theorem mk_mem_recessionCone_epi_iff :
   constructor
   · intro h x a ha
     rcases eq_top_or_lt_top (f x) with hx | hx
-    · rw [hx, _root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot _)]
+    · rw [hx, EReal.top_add_of_ne_bot (EReal.coe_ne_bot _)]
       exact le_top
     by_cases hb : f x = ⊥
-    · rw [hb, _root_.EReal.bot_add, le_bot_iff]
-      refine EReal.eq_bot_of_forall_le_coe fun s => ?_
+    · rw [hb, EReal.bot_add, le_bot_iff]
+      refine le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun s _ => ?_)
       simpa using h x (s - a * ν) (hb ▸ bot_le) a ha
     · obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb hx
-      rw [hr, ← _root_.EReal.coe_add]
+      rw [hr, ← EReal.coe_add]
       exact h x r hr.le a ha
   · intro h x μ hx a ha
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     exact (h x a ha).trans (add_le_add hx le_rfl)
 
 /-- A vertical section of `0⁺(epi f)` is upward closed: this is one of the two halves of
@@ -117,7 +117,8 @@ theorem isEpiLike_recessionCone_epi (f : E → EReal) : IsEpiLike (recessionCone
     fun y ν h => ?_
   rw [mk_mem_recessionCone_epi]
   intro x μ hx a ha
-  refine EReal.le_coe_of_forall_lt fun q hq => ?_
+  refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   rcases ha.eq_or_lt with rfl | ha'
   · simp only [zero_smul, add_zero, zero_mul] at hq ⊢
     exact lt_of_le_of_lt hx (by exact_mod_cast hq)
@@ -163,23 +164,23 @@ theorem recessionFn_le_coe_iff_of_convexFn (hf : ConvexFn f) :
   constructor
   · intro h x
     rcases eq_top_or_lt_top (f x) with hx | hx
-    · rw [hx, _root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot _)]
+    · rw [hx, EReal.top_add_of_ne_bot (EReal.coe_ne_bot _)]
       exact le_top
     by_cases hb : f x = ⊥
-    · rw [hb, _root_.EReal.bot_add, le_bot_iff]
-      refine EReal.eq_bot_of_forall_le_coe fun s => ?_
+    · rw [hb, EReal.bot_add, le_bot_iff]
+      refine le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun s _ => ?_)
       have hmem := h (x, s - ν) (mk_mem_epi.2 (hb ▸ bot_le))
       rw [Prod.mk_add_mk] at hmem
       simpa using mk_mem_epi.1 hmem
     · obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb hx
       have hmem := h (x, r) (mk_mem_epi.2 hr.le)
       rw [Prod.mk_add_mk] at hmem
-      rw [hr, ← _root_.EReal.coe_add]
+      rw [hr, ← EReal.coe_add]
       exact mk_mem_epi.1 hmem
   · rintro h ⟨x, μ⟩ hp
     rw [Prod.mk_add_mk]
     refine mk_mem_epi.2 ?_
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     exact (h x).trans (add_le_add (mk_mem_epi.1 hp) le_rfl)
 
 /-! ### `f0⁺` is a positively homogeneous convex function -/
@@ -231,7 +232,7 @@ theorem recessionFn_ne_bot (hp : Proper f) (y : E) : recessionFn f y ≠ ⊥ := 
   intro hbot
   obtain ⟨x, hx⟩ := hp.dom_nonempty
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
-  refine hp.ne_bot (x + y) (EReal.eq_bot_of_forall_le_coe fun s => ?_)
+  refine hp.ne_bot (x + y) (le_bot_iff.1 (EReal.le_of_forall_lt_iff_le.1 fun s _ => ?_))
   have hmem : ((y, s - r) : E × ℝ) ∈ recessionCone (epi f) :=
     recessionFn_le_coe_iff.1 (hbot ▸ bot_le)
   have hle := mk_mem_recessionCone_epi.1 hmem x r hr.le 1 zero_le_one
@@ -249,7 +250,7 @@ theorem recessionFn_apply_zero (hp : Proper f) : recessionFn f 0 = 0 := by
 
 /-- The recession function of a proper convex function is proper. -/
 theorem proper_recessionFn (hp : Proper f) : Proper (recessionFn f) where
-  dom_nonempty := ⟨0, by rw [mem_dom, recessionFn_apply_zero hp]; exact _root_.EReal.zero_lt_top⟩
+  dom_nonempty := ⟨0, by rw [mem_dom, recessionFn_apply_zero hp]; exact EReal.zero_lt_top⟩
   ne_bot := recessionFn_ne_bot hp
 
 /-! ### The difference formula and the least-function property -/
@@ -263,18 +264,18 @@ theorem forall_le_add_coe_iff (hbot : ∀ x, f x ≠ ⊥) {r : ℝ} :
   constructor
   · intro h x hx
     obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot x) hx
-    rw [hs, _root_.EReal.sub_le_iff_le_add (Or.inl (_root_.EReal.coe_ne_bot s))
-      (Or.inl (_root_.EReal.coe_ne_top s)), add_comm ((r : ℝ) : EReal) ((s : ℝ) : EReal), ← hs]
+    rw [hs, EReal.sub_le_iff_le_add (Or.inl (EReal.coe_ne_bot s))
+      (Or.inl (EReal.coe_ne_top s)), add_comm ((r : ℝ) : EReal) ((s : ℝ) : EReal), ← hs]
     exact h x
   · intro h x
     rcases eq_top_or_lt_top (f x) with hx | hx
-    · rw [hx, _root_.EReal.top_add_of_ne_bot (_root_.EReal.coe_ne_bot _)]
+    · rw [hx, EReal.top_add_of_ne_bot (EReal.coe_ne_bot _)]
       exact le_top
     · obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hbot x) hx
       have hstep := h x hx
       rw [hs] at hstep ⊢
-      rwa [_root_.EReal.sub_le_iff_le_add (Or.inl (_root_.EReal.coe_ne_bot s))
-        (Or.inl (_root_.EReal.coe_ne_top s)),
+      rwa [EReal.sub_le_iff_le_add (Or.inl (EReal.coe_ne_bot s))
+        (Or.inl (EReal.coe_ne_top s)),
         add_comm ((r : ℝ) : EReal) ((s : ℝ) : EReal)] at hstep
 
 /-- **The difference formula**
@@ -293,13 +294,13 @@ theorem recessionFn_apply_eq_iSup_sub (hf : ConvexFn f) (hbot : ∀ x, f x ≠ �
 theorem le_add_recessionFn (hf : ConvexFn f) (hp : Proper f) (x y : E) :
     f (x + y) ≤ f x + recessionFn f y := by
   rcases eq_top_or_lt_top (f x) with hx | hx
-  · rw [hx, _root_.EReal.top_add_of_ne_bot (recessionFn_ne_bot hp y)]
+  · rw [hx, EReal.top_add_of_ne_bot (recessionFn_ne_bot hp y)]
     exact le_top
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
   have hterm : f (x + y) - f x ≤ recessionFn f y := by
     rw [recessionFn_apply_eq_iSup_sub hf hp.ne_bot]
     exact le_iSup₂ (f := fun x' (_ : x' ∈ dom f) => f (x' + y) - f x') x hx
-  calc f (x + y) = f (x + y) - f x + f x := by rw [hs]; exact _root_.EReal.sub_add_cancel.symm
+  calc f (x + y) = f (x + y) - f x + f x := by rw [hs]; exact EReal.sub_add_cancel.symm
     _ ≤ recessionFn f y + f x := add_le_add hterm le_rfl
     _ = f x + recessionFn f y := add_comm _ _
 
@@ -317,8 +318,8 @@ theorem recessionFn_isLeast (hf : ConvexFn f) (hp : Proper f) :
     have hstep := hh x (x + y)
     rw [add_sub_cancel_left, hs, add_comm ((s : ℝ) : EReal) (h y)] at hstep
     rw [hs]
-    exact (_root_.EReal.sub_le_iff_le_add (Or.inl (_root_.EReal.coe_ne_bot s))
-      (Or.inl (_root_.EReal.coe_ne_top s))).2 hstep
+    exact (EReal.sub_le_iff_le_add (Or.inl (EReal.coe_ne_bot s))
+      (Or.inl (EReal.coe_ne_top s))).2 hstep
 
 /-! ### Directions of recession -/
 
@@ -326,7 +327,7 @@ theorem recessionFn_isLeast (hf : ConvexFn f) (hp : Proper f) :
 never increases `f`. -/
 theorem add_smul_le_of_recessionFn_nonpos (h : recessionFn f y ≤ 0) (x : E) {a : ℝ} (ha : 0 ≤ a) :
     f (x + a • y) ≤ f x := by
-  have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) := by rwa [_root_.EReal.coe_zero]
+  have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) := by rwa [EReal.coe_zero]
   simpa using recessionFn_le_coe_iff_forall.1 h0 x a ha
 
 theorem recessionFn_nonpos_iff :
@@ -334,7 +335,7 @@ theorem recessionFn_nonpos_iff :
   refine ⟨fun h x a ha => add_smul_le_of_recessionFn_nonpos h x ha, fun h => ?_⟩
   have h0 : recessionFn f y ≤ ((0 : ℝ) : EReal) :=
     recessionFn_le_coe_iff_forall.2 fun x a ha => by simpa using h x a ha
-  rwa [_root_.EReal.coe_zero] at h0
+  rwa [EReal.coe_zero] at h0
 
 /-- **`f (x + a • y)` is a nonincreasing function of `a` for *every* `x` exactly when
 `(f0⁺) y ≤ 0`.**
@@ -363,12 +364,13 @@ weight on the second point tends to `0`, so convexity gives `f (x + λ₂ • y)
 theorem antitone_along_of_liminf_lt_top (hf : ConvexFn f) (x y : E)
     (h : liminf (fun a : ℝ => f (x + a • y)) atTop < ⊤) :
     Antitone fun a : ℝ => f (x + a • y) := by
-  obtain ⟨α, hα, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 h
+  obtain ⟨α, hα, -⟩ := EReal.lt_iff_exists_real_btwn.1 h
   have hfreq : ∃ᶠ a : ℝ in atTop, f (x + a • y) < (α : EReal) :=
     frequently_lt_of_liminf_lt (h := hα)
   intro a₁ a₂ h12
   refine EReal.le_of_forall_coe_le fun μ hμ => ?_
-  refine EReal.le_coe_of_forall_lt fun q hq => ?_
+  refine EReal.le_of_forall_lt_iff_le.1 fun q hq => le_of_lt ?_
+  replace hq := EReal.coe_lt_coe_iff.1 hq
   rcases h12.eq_or_lt with rfl | hlt
   · exact lt_of_le_of_lt hμ (by exact_mod_cast hq)
   have hc0 : (0 : ℝ) < |α - μ| + 1 := by positivity
@@ -444,7 +446,7 @@ theorem ConvexFn.eq_of_forall_le_along_line (hf : ConvexFn f) {x z : E} {α : �
     have hlim : liminf (fun a : ℝ => f (u + a • (v - u))) atTop ≤ (α : EReal) :=
       liminf_le_of_frequently_le' (Frequently.of_forall hu)
     have hanti := antitone_along_of_liminf_lt_top hf u (v - u)
-      (lt_of_le_of_lt hlim (_root_.EReal.coe_lt_top α))
+      (lt_of_le_of_lt hlim (EReal.coe_lt_top α))
     have hstep := hanti (zero_le_one' ℝ)
     simpa using hstep
   have hzx : ∀ a : ℝ, f (z + a • (x - z)) ≤ (α : EReal) := by
@@ -480,7 +482,7 @@ theorem mem_recessionConeFn : y ∈ recessionConeFn f ↔ recessionFn f y ≤ 0 
 /-- The recession cone of `f` is the horizontal slice of the recession cone of `epi f`. -/
 theorem mem_recessionConeFn_iff_mk :
     y ∈ recessionConeFn f ↔ ((y, (0 : ℝ)) : E × ℝ) ∈ recessionCone (epi f) := by
-  rw [mem_recessionConeFn, ← recessionFn_le_coe_iff, _root_.EReal.coe_zero]
+  rw [mem_recessionConeFn, ← recessionFn_le_coe_iff, EReal.coe_zero]
 
 /-- The recession cone of `f` is a convex cone containing the origin, bundled as a
 `PointedCone ℝ E`. No hypothesis on `f` is needed. -/
@@ -598,7 +600,7 @@ theorem eq_add_of_mk_mem_linealitySpace_epi (h : ((y, ν) : E × ℝ) ∈ lineal
       ≤ f (x + a • y) + (((a * -ν : ℝ) : EReal) + ((a * ν : ℝ) : EReal)) := by
     rw [← add_assoc]
     exact add_le_add hback le_rfl
-  rwa [← _root_.EReal.coe_add, show a * -ν + a * ν = 0 by ring, _root_.EReal.coe_zero,
+  rwa [← EReal.coe_add, show a * -ν + a * ν = 0 by ring, EReal.coe_zero,
     add_zero] at hstep
 
 /-- `f` is affine with slope `ν` along the whole line through every `x` in the direction `y`
@@ -657,15 +659,15 @@ theorem linealitySpaceFn_eq_image (hp : Proper f) :
     have hne : recessionFn f z ≠ ⊤ := by
       intro hc
       rw [hc] at hz'
-      exact recessionFn_ne_bot hp (-z) (by rwa [_root_.EReal.neg_top] at hz')
+      exact recessionFn_ne_bot hp (-z) (by rwa [EReal.neg_top] at hz')
     obtain ⟨ν, hν⟩ :=
       EReal.exists_coe_of_ne_bot_of_lt_top (recessionFn_ne_bot hp z) (lt_top_iff_ne_top.2 hne)
     refine ⟨(z, ν), (mk_mem_linealitySpace_epi_iff hp).2 ⟨hν, ?_⟩, rfl⟩
-    rw [hz', hν, ← _root_.EReal.coe_neg]
+    rw [hz', hν, ← EReal.coe_neg]
   · rintro ⟨⟨w, ν⟩, hw, rfl⟩
     obtain ⟨h1, h2⟩ := (mk_mem_linealitySpace_epi_iff hp).1 hw
     change recessionFn f (-w) = -recessionFn f w
-    rw [h1, h2, _root_.EReal.coe_neg]
+    rw [h1, h2, EReal.coe_neg]
 
 /-- The lineality space of `f` is a subspace, bundled as a `Submodule ℝ E`. It is defined as the
 image of `linealitySubmodule (epi f)` under the projection, so the subspace structure is free, and
@@ -696,13 +698,13 @@ theorem mem_constancySpace_of_mem_linealitySpaceFn (hp : Proper f)
     (hle.trans_lt (by simp))
   have hνle : ν ≤ 0 := by exact_mod_cast hν ▸ hle
   have hneg : recessionFn f (-y) = ((-ν : ℝ) : EReal) := by
-    rw [mem_linealitySpaceFn.1 hlin, hν, ← _root_.EReal.coe_neg]
+    rw [mem_linealitySpaceFn.1 hlin, hν, ← EReal.coe_neg]
   have haff := (forall_eq_add_iff_recessionFn hp).2 ⟨hν, hneg⟩
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) hx
   have hkey : ∀ a : ℝ, 0 ≤ a → β ≤ μ + a * ν := by
     intro a ha
     have hval := hbdd a ha
-    rw [haff x a, hμ, ← _root_.EReal.coe_add] at hval
+    rw [haff x a, hμ, ← EReal.coe_add] at hval
     exact_mod_cast hval
   have hν0 : ν = 0 := by
     rcases lt_or_eq_of_le hνle with hlt | heq
@@ -738,19 +740,19 @@ theorem coe_inv_mul_sub_le_coe_iff (hbot : ∀ z, f z ≠ ⊥) (hx : x ∈ dom f
     have h2 : ((a : ℝ) : EReal) * (((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - (s : EReal)))
         ≤ ((a : ℝ) : EReal) * ((ν : ℝ) : EReal) :=
       mul_le_mul_of_nonneg_left hle (by exact_mod_cast ha.le)
-    rw [← mul_assoc, EReal.coe_mul_coe, mul_inv_cancel₀ ha.ne', _root_.EReal.coe_one,
-      one_mul, EReal.coe_mul_coe] at h2
+    rw [← mul_assoc, ← EReal.coe_mul, mul_inv_cancel₀ ha.ne', EReal.coe_one,
+      one_mul, ← EReal.coe_mul] at h2
     rw [add_comm ((s : ℝ) : EReal) ((a * ν : ℝ) : EReal)]
-    exact (_root_.EReal.sub_le_iff_le_add (Or.inl (_root_.EReal.coe_ne_bot s))
-      (Or.inl (_root_.EReal.coe_ne_top s))).1 h2
+    exact (EReal.sub_le_iff_le_add (Or.inl (EReal.coe_ne_bot s))
+      (Or.inl (EReal.coe_ne_top s))).1 h2
   · intro hle
     rw [add_comm ((s : ℝ) : EReal) ((a * ν : ℝ) : EReal)] at hle
-    have h2 := (_root_.EReal.sub_le_iff_le_add (Or.inl (_root_.EReal.coe_ne_bot s))
-      (Or.inl (_root_.EReal.coe_ne_top s))).2 hle
+    have h2 := (EReal.sub_le_iff_le_add (Or.inl (EReal.coe_ne_bot s))
+      (Or.inl (EReal.coe_ne_top s))).2 hle
     have h3 : ((a⁻¹ : ℝ) : EReal) * (f (x + a • y) - (s : EReal))
         ≤ ((a⁻¹ : ℝ) : EReal) * ((a * ν : ℝ) : EReal) :=
       mul_le_mul_of_nonneg_left h2 (by exact_mod_cast (inv_pos.2 ha).le)
-    rwa [EReal.coe_mul_coe, show a⁻¹ * (a * ν) = ν by field_simp] at h3
+    rwa [← EReal.coe_mul, show a⁻¹ * (a * ν) = ν by field_simp] at h3
 
 /-- **The difference quotient is nondecreasing** in `a`. Convexity is the whole content:
 `x + a₁ • y` is a convex combination of `x` and `x + a₂ • y`. -/
@@ -765,7 +767,7 @@ theorem monotone_coe_inv_mul_sub (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥) (
   have hν' := (coe_inv_mul_sub_le_coe_iff hbot hx h2).1 hν
   rw [hs] at hν' ⊢
   have hmem2 : f (x + a₂ • y) ≤ ((s + a₂ * ν : ℝ) : EReal) := by
-    rw [_root_.EReal.coe_add]
+    rw [EReal.coe_add]
     exact hν'
   have hq0 : (0 : ℝ) ≤ a₁ / a₂ := div_nonneg h1.le h2.le
   have hq1 : a₁ / a₂ ≤ 1 := (div_le_one h2).2 h12
@@ -777,7 +779,7 @@ theorem monotone_coe_inv_mul_sub (hf : ConvexFn f) (hbot : ∀ z, f z ≠ ⊥) (
   have hval : (1 - a₁ / a₂) * s + a₁ / a₂ * (s + a₂ * ν) = s + a₁ * ν := by
     field_simp
     ring
-  rwa [harg, hval, _root_.EReal.coe_add] at hcombo
+  rwa [harg, hval, EReal.coe_add] at hcombo
 
 end Quotient
 
@@ -877,7 +879,7 @@ theorem recessionFn_le_coe_iff_of_isClosed (hf : ConvexFn f) (hc : IsClosed (epi
   rcases ha.eq_or_lt with rfl | ha'
   · simpa using hs.le
   · have hstep := h a ha'
-    rwa [hs, ← _root_.EReal.coe_add] at hstep
+    rwa [hs, ← EReal.coe_add] at hstep
 
 /-- **The difference-quotient formula**: for a closed convex `f` and any one `x ∈ dom f`,
 
@@ -922,7 +924,7 @@ theorem recessionFn_nonpos_of_antitone (hf : ClosedProperConvexFn f)
     have hstep := h ha.le
     simp only [zero_smul, add_zero] at hstep
     simpa using hstep
-  rwa [_root_.EReal.coe_zero] at h0
+  rwa [EReal.coe_zero] at h0
 
 /-- For a closed `f`, a single `x ∈ dom f` along which `f` is affine with slope `ν` already forces
 `(f0⁺) y = ν` and `(f0⁺) (-y) = -ν`. -/
@@ -932,11 +934,11 @@ theorem recessionFn_eq_of_affine_along (hf : ClosedProperConvexFn f)
   obtain ⟨s, hs⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hf.proper.ne_bot x) hx
   refine (mk_mem_linealitySpace_epi_iff hf.proper).1 (mem_linealitySpace.2 ⟨?_, ?_⟩)
   · refine mk_mem_recessionCone_epi_of_ray hf.convex hf.isClosed_epi x s fun a _ => ?_
-    rw [h a, hs, ← _root_.EReal.coe_add]
+    rw [h a, hs, ← EReal.coe_add]
   · refine (mk_mem_recessionCone_epi_of_ray hf.convex hf.isClosed_epi x s fun a _ => ?_ :
       ((-y, -ν) : E × ℝ) ∈ recessionCone (epi f))
     have hstep := h (-a)
-    rw [neg_smul, ← smul_neg, hs, ← _root_.EReal.coe_add] at hstep
+    rw [neg_smul, ← smul_neg, hs, ← EReal.coe_add] at hstep
     rw [hstep, show s + -a * ν = s + a * -ν by ring]
 
 /-- For a closed convex `f`, every nonempty level set `{x | f x ≤ α}` has the same recession cone,
@@ -974,7 +976,7 @@ and only the *upper* half needs a point of `dom f` on the ray through `y`. -/
 theorem eventually_lt_smulRight (hf : ConvexFn f) (hc : IsClosed (epi f)) {b : EReal}
     (hb : b < recessionFn f y) : ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), b < smulRight f a y := by
   have hpos : ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), 0 < a := self_mem_nhdsWithin
-  obtain ⟨β, hbβ, hβL⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
+  obtain ⟨β, hbβ, hβL⟩ := EReal.lt_iff_exists_real_btwn.1 hb
   by_contra hcon
   rw [Filter.not_eventually] at hcon
   have hfreq : ∃ᶠ a : ℝ in 𝓝[>] (0 : ℝ), 0 < a ∧ smulRight f a y ≤ (β : EReal) :=
@@ -992,8 +994,8 @@ theorem eventually_lt_smulRight (hf : ConvexFn f) (hc : IsClosed (epi f)) {b : E
     have h3 : (((u n)⁻¹ : ℝ) : EReal) * (((u n : ℝ) : EReal) * f ((u n)⁻¹ • y))
         ≤ (((u n)⁻¹ : ℝ) : EReal) * ((β : ℝ) : EReal) :=
       mul_le_mul_of_nonneg_left hle (by exact_mod_cast (inv_pos.2 hun).le)
-    rwa [← mul_assoc, EReal.coe_mul_coe, inv_mul_cancel₀ hun.ne', _root_.EReal.coe_one,
-      one_mul, EReal.coe_mul_coe] at h3
+    rwa [← mul_assoc, ← EReal.coe_mul, inv_mul_cancel₀ hun.ne', EReal.coe_one,
+      one_mul, ← EReal.coe_mul] at h3
   have hconst : (fun n => u n • ((u n)⁻¹ • ((y, β) : E × ℝ))) = fun _ => ((y, β) : E × ℝ) := by
     funext n
     rw [smul_smul, mul_inv_cancel₀ (hup n).1.ne', one_smul]
@@ -1012,8 +1014,8 @@ theorem eventually_smulRight_lt (hp : Proper f) {θ : ℝ} (hθ : θ • y ∈ d
     (hb : recessionFn f y < b) :
     ∀ᶠ a : ℝ in 𝓝[>] (0 : ℝ), smulRight f a y < b := by
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot (θ • y)) hθ
-  obtain ⟨β, hLβ, hβb⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hb
-  obtain ⟨γ, hβγ, hγb⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 hβb
+  obtain ⟨β, hLβ, hβb⟩ := EReal.lt_iff_exists_real_btwn.1 hb
+  obtain ⟨γ, hβγ, hγb⟩ := EReal.lt_iff_exists_real_btwn.1 hβb
   have hβγ' : β < γ := by exact_mod_cast hβγ
   have hray := mk_mem_recessionCone_epi.1 (recessionFn_le_coe_iff.1 hLβ.le) (θ • y) r hr.le
   have hcont : Tendsto (fun a : ℝ => a * r + (1 - a * θ) * β) (𝓝[>] (0 : ℝ)) (𝓝 β) := by
@@ -1041,7 +1043,7 @@ theorem eventually_smulRight_lt (hp : Proper f) {θ : ℝ} (hθ : θ • y ∈ d
       ≤ ((a : ℝ) : EReal) * ((r + (a⁻¹ - θ) * β : ℝ) : EReal) :=
     mul_le_mul_of_nonneg_left hkey (by exact_mod_cast hapos.le)
   refine lt_of_le_of_lt h2 ?_
-  rw [EReal.coe_mul_coe,
+  rw [← EReal.coe_mul,
     show a * (r + (a⁻¹ - θ) * β) = a * r + (1 - a * θ) * β by field_simp]
   exact lt_trans (by exact_mod_cast hva) hγb
 
@@ -1084,13 +1086,13 @@ No hypothesis is placed on `u`: when `G (u, ·) ≡ ⊤` the conclusion holds va
 theorem recessionFn_le_coe_of_slice (hG : ConvexFn G) (hc : IsClosed (epi G))
     (hx₀ : G (u₀, x₀) ≠ ⊤) (h : recessionFn (fun x => G (u₀, x)) y ≤ (ν : EReal)) (u : U) :
     recessionFn (fun x => G (u, x)) y ≤ (ν : EReal) := by
-  obtain ⟨μ, hμ, -⟩ := _root_.EReal.lt_iff_exists_real_btwn.1 (lt_top_iff_ne_top.2 hx₀)
+  obtain ⟨μ, hμ, -⟩ := EReal.lt_iff_exists_real_btwn.1 (lt_top_iff_ne_top.2 hx₀)
   have hdir : (((0 : U), y), ν) ∈ recessionCone (epi G) := by
     refine mem_recessionCone_of_exists_ray hG.convex_epi hc ⟨((u₀, x₀), μ), fun a ha => ?_⟩
     have hstep := recessionFn_le_coe_iff_forall.1 h x₀ a ha
     have hbound : G (u₀, x₀ + a • y) ≤ ((μ + a * ν : ℝ) : EReal) := by
       refine hstep.trans ?_
-      rw [_root_.EReal.coe_add]
+      rw [EReal.coe_add]
       exact add_le_add hμ.le le_rfl
     simpa [Prod.smul_mk, smul_zero] using hbound
   refine recessionFn_le_coe_iff.2 fun p hp a ha => ?_

@@ -78,7 +78,7 @@ theorem IsExactSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairi
   have hdomne : (dom (f + g)).Nonempty :=
     ⟨x₀, by
       rw [mem_dom, Pi.add_apply]
-      exact _root_.EReal.add_lt_top (mem_dom.1 hxf).ne (mem_dom.1 hxg).ne⟩
+      exact EReal.add_lt_top (mem_dom.1 hxf).ne (mem_dom.1 hxg).ne⟩
   have hproper : Proper (infConv (conj B f) (conj B g)) := by
     refine ⟨?_, fun y hy => ?_⟩
     · obtain ⟨p, hp⟩ := hup.dom_nonempty
@@ -107,7 +107,7 @@ theorem IsExactSum.of_polyhedral_pair [IsCompatiblePairing B] [IsCompatiblePairi
   rw [hμ]
   calc conj B f y₁ + conj B g y₂ ≤ ((a : ℝ) : EReal) + ((b : ℝ) : EReal) :=
         add_le_add (mk_mem_epi.1 h₁) (mk_mem_epi.1 h₂)
-    _ = ((μ : ℝ) : EReal) := by rw [← _root_.EReal.coe_add, hab]
+    _ = ((μ : ℝ) : EReal) := by rw [← EReal.coe_add, hab]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] in
 /-- An indicator function is absorbed by any function whose effective domain it contains. This is
@@ -192,7 +192,7 @@ theorem IsExactSum.of_polyhedral_closed [IsCompatiblePairing B] [IsCompatiblePai
   -- `h = δ + f` is polyhedral and proper, with `dom h = M ∩ dom f`
   have hhpoly : PolyhedralFn (δ + f) := PolyhedralFn.add hδpoly hf hδbot hpf.ne_bot
   have hhbot : ∀ x, (δ + f) x ≠ ⊥ := fun x =>
-    _root_.EReal.add_ne_bot_iff.2 ⟨hδbot x, hpf.ne_bot x⟩
+    EReal.add_ne_bot_iff.2 ⟨hδbot x, hpf.ne_bot x⟩
   have hhdom : dom (δ + f) = (MA : Set E) ∩ dom f := by
     rw [dom_add hδbot hpf.ne_bot, hδdom]
   have hx₀h : x₀ ∈ dom (δ + f) := by rw [hhdom]; exact ⟨hx₀M, hxf⟩
