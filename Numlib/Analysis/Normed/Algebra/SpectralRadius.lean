@@ -8,6 +8,7 @@ import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Normed.Unbundled.AlgebraNorm
+import Mathlib.FieldTheory.IsAlgClosed.Spectrum
 import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
@@ -26,9 +27,19 @@ classical consequences of Gelfand's formula for the spectral radius, which Mathl
   `summable_pow_iff_spectralRadius_lt_one`, the three criteria in terms of the powers;
 * `exists_norm_pow_le_of_spectralRadius_lt`, geometric decay of the powers at any rate above the
   spectral radius;
+* `spectrum.spectralRadius_ne_top` and
+  `spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius`, finiteness of the spectral
+  radius and Gelfand's formula as a limit in `ℝ`;
+* `spectralRadius_pow`, the power rule `ρ(aⁿ) = ρ(a)ⁿ`, from the spectral mapping theorem;
+* `hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`, the Neumann series `∑ aⁿ = (1 - a)⁻¹`
+  under `ρ(a) < 1` alone;
 * `spectralRadius_le_algebraNorm`, bounding the spectral radius by an *arbitrary* algebra norm on
   a finite-dimensional algebra — "`|λ| ≤ ‖A‖` for any consistent matrix norm" — with no analysis
-  and no relation to the norm the algebra already carries.
+  and no relation to the norm the algebra already carries;
+* `isUnit_one_sub_of_algebraNorm_lt_one` with `AlgebraNorm.norm_inverse_one_sub_le_of_lt_one` and
+  `AlgebraNorm.one_div_one_add_le_norm_inverse_one_sub`, the two-sided bound
+  `1 / (1 + N a) ≤ N ((1 - a)⁻¹) ≤ 1 / (1 - N a)` for an arbitrary unital algebra norm with
+  `N a < 1`, [quarteroni2000numerical] (1.26).
 -/
 
 open Filter Topology
@@ -54,9 +65,58 @@ theorem spectralRadius_smul (c : 𝕜) (a : B) :
     simp only [spectralRadius, hset, ← Set.image_smul, iSup_image, smul_eq_mul, nnnorm_mul,
       ENNReal.coe_mul, ENNReal.mul_iSup]
 
+/-- The power rule `ρ(aⁿ) = ρ(a)ⁿ` for an element with nonempty spectrum of an algebra over an
+algebraically closed normed field: the spectral mapping theorem `spectrum.map_pow_of_nonempty`
+gives `σ(aⁿ) = (· ^ n) '' σ(a)`, and `‖·‖₊ ^ n` commutes with the supremum. Nonemptiness is only
+needed at `n = 0`, where it makes the algebra nontrivial. -/
+theorem spectralRadius_pow_of_nonempty [IsAlgClosed 𝕜] {a : B} (ha : (spectrum 𝕜 a).Nonempty)
+    (n : ℕ) : spectralRadius 𝕜 (a ^ n) = spectralRadius 𝕜 a ^ n := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have : Nontrivial B := by
+      obtain ⟨z, hz⟩ := ha
+      by_contra h
+      rw [not_nontrivial_iff_subsingleton] at h
+      exact spectrum.mem_iff.mp hz (isUnit_of_subsingleton _)
+    simp
+  refine le_antisymm ?_ (spectrum.spectralRadius_pow_le a n hn.ne')
+  rw [spectralRadius, spectrum.map_pow_of_nonempty ha n]
+  refine iSup₂_le fun z hz => ?_
+  obtain ⟨w, hw, rfl⟩ := hz
+  calc (‖w ^ n‖₊ : ℝ≥0∞) = (‖w‖₊ : ℝ≥0∞) ^ n := by rw [nnnorm_pow, ENNReal.coe_pow]
+    _ ≤ spectralRadius 𝕜 a ^ n :=
+        pow_le_pow_left' (le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 a) => (‖k‖₊ : ℝ≥0∞)) w hw) n
+
 end Homogeneous
 
+section Finite
+
+variable {𝕜 A : Type*} [NormedField 𝕜] [NormedRing A] [NormedAlgebra 𝕜 A] [CompleteSpace A]
+
+/-- The spectral radius of an element of a complete normed algebra is finite: the spectrum lies
+in the closed ball of radius `‖a‖ ‖1‖` (`spectrum.spectralRadius_le_pow_nnnorm_pow_one_div` at
+`n = 0`). -/
+theorem spectrum.spectralRadius_ne_top (a : A) : spectralRadius 𝕜 a ≠ ⊤ :=
+  ne_top_of_le_ne_top
+    (ENNReal.mul_ne_top (ENNReal.rpow_ne_top_of_nonneg (by norm_num) ENNReal.coe_ne_top)
+      (ENNReal.rpow_ne_top_of_nonneg (by norm_num) ENNReal.coe_ne_top))
+    (spectrum.spectralRadius_le_pow_nnnorm_pow_one_div 𝕜 a 0)
+
+end Finite
+
 variable {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A] [NormOneClass A]
+
+omit [NormOneClass A] in
+/-- **Gelfand's formula, real-valued**: `‖aⁿ‖ ^ (1 / n) → ρ(a)` in `ℝ`, the spectral radius
+being finite (`spectrum.spectralRadius_ne_top`). This is Mathlib's
+`spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius` with the `ENNReal` coercions
+removed, the form in which every norm-independent limit argument uses it. -/
+theorem spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius (a : A) :
+    Tendsto (fun n : ℕ => ‖a ^ n‖ ^ (1 / n : ℝ)) atTop (𝓝 (spectralRadius ℂ a).toReal) := by
+  have h := (ENNReal.tendsto_toReal (spectrum.spectralRadius_ne_top a)).comp
+    (spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius a)
+  refine h.congr fun k => ?_
+  simp only [Function.comp_apply]
+  exact ENNReal.toReal_ofReal (Real.rpow_nonneg (norm_nonneg _) _)
 
 omit [NormOneClass A] in
 /-- Gelfand's formula turns `ρ(a) < r` into the eventual bound `‖aⁿ‖ ≤ rⁿ`. -/
@@ -158,6 +218,26 @@ theorem isUnit_one_sub_of_spectralRadius_lt_one {a : A} (h : spectralRadius ℂ 
   have hs : Summable (a ^ ·) := (summable_pow_iff_spectralRadius_lt_one a).mpr h
   ⟨⟨1 - a, ∑' n : ℕ, a ^ n, hs.one_sub_mul_tsum_pow, hs.tsum_pow_mul_one_sub⟩, rfl⟩
 
+/-- The Neumann series under the spectral-radius hypothesis alone: when `ρ(a) < 1`,
+`∑ aⁿ` sums to `(1 - a)⁻¹`. Mathlib's `NormedRing.tsum_geometric_of_norm_lt_one` and
+`geom_series_eq_inverse` ask for `‖a‖ < 1`; this is [quarteroni2000numerical] Theorem 1.5,
+display (1.25). -/
+theorem hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one {a : A}
+    (h : spectralRadius ℂ a < 1) : HasSum (fun n => a ^ n) (Ring.inverse (1 - a)) := by
+  have hs : Summable (a ^ ·) := (summable_pow_iff_spectralRadius_lt_one a).mpr h
+  let u : Aˣ := ⟨1 - a, ∑' n : ℕ, a ^ n, hs.one_sub_mul_tsum_pow, hs.tsum_pow_mul_one_sub⟩
+  have hu : Ring.inverse (1 - a) = ∑' n : ℕ, a ^ n := Ring.inverse_unit u
+  rw [hu]
+  exact hs.hasSum
+
+/-- The power rule `ρ(aⁿ) = ρ(a)ⁿ` in a complex Banach algebra; the case of nonempty spectrum
+of `spectralRadius_pow_of_nonempty`, nonemptiness being `spectrum.nonempty`. Mathlib has the
+inequality `spectrum.spectralRadius_pow_le`. [quarteroni2000numerical] §1.7. -/
+theorem spectralRadius_pow (a : A) (n : ℕ) :
+    spectralRadius ℂ (a ^ n) = spectralRadius ℂ a ^ n :=
+  have : Nontrivial A := NormOneClass.nontrivial
+  spectralRadius_pow_of_nonempty (spectrum.nonempty a) n
+
 /-! ### An arbitrary algebra norm bounds the spectral radius
 
 The bound `ρ(a) ≤ N a` holds for *every* algebra norm on a finite-dimensional algebra, not only
@@ -236,6 +316,67 @@ theorem spectralRadius_le_algebraNorm [FiniteDimensional 𝕜 B] (N : AlgebraNor
       nlinarith [hpos y hy]
   calc (‖μ‖₊ : ℝ≥0∞) = ENNReal.ofReal ‖μ‖ := (ofReal_norm μ).symm
     _ ≤ ENNReal.ofReal (N a) := ENNReal.ofReal_le_ofReal hle
+
+/-- If some algebra norm of `a` is `< 1`, then `1 - a` is a unit: `1 ∉ σ(a)` because
+`ρ(a) ≤ N a < 1 = ‖1‖`. Finite dimension replaces completeness; no topology on `B` enters. -/
+theorem isUnit_one_sub_of_algebraNorm_lt_one [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B) {a : B}
+    (h : N a < 1) : IsUnit (1 - a) := by
+  have h1 : (1 : 𝕜) ∈ resolventSet 𝕜 a :=
+    spectrum.mem_resolventSet_of_spectralRadius_lt <|
+      (spectralRadius_le_algebraNorm N a).trans_lt (by simpa using ENNReal.ofReal_lt_one.mpr h)
+  simpa using spectrum.mem_resolventSet_iff.mp h1
+
+namespace AlgebraNorm
+
+/-- The Neumann bound for an arbitrary algebra norm with `N a < 1`, in the form that does not
+assume `N 1 = 1`: `N ((1 - a)⁻¹) ≤ N 1 / (1 - N a)`, from `(1 - a)⁻¹ = 1 + a (1 - a)⁻¹`. -/
+theorem norm_inverse_one_sub_le_div_of_lt_one [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B) {a : B}
+    (h : N a < 1) : N (Ring.inverse (1 - a)) ≤ N 1 / (1 - N a) := by
+  have hu := isUnit_one_sub_of_algebraNorm_lt_one N h
+  set u := Ring.inverse (1 - a) with hu_def
+  have key : u = 1 + a * u := by
+    have := Ring.mul_inverse_cancel (1 - a) hu
+    rw [← hu_def] at this
+    calc u = (1 - a) * u + a * u := by noncomm_ring
+      _ = 1 + a * u := by rw [this]
+  have hle : N u ≤ 1 * N 1 + N a * N u := by
+    calc N u = N (1 + a * u) := by rw [← key]
+      _ ≤ N 1 + N (a * u) := map_add_le_add N _ _
+      _ ≤ 1 * N 1 + N a * N u := by rw [one_mul]; gcongr; exact map_mul_le_mul N _ _
+  rw [le_div_iff₀ (by linarith)]
+  nlinarith [apply_nonneg N u]
+
+/-- The lower bound for the inverse of a unit `1 - a` under an arbitrary algebra norm, in the
+form that does not assume `N 1 = 1`: `N 1 / (N 1 + N a) ≤ N ((1 - a)⁻¹)`, from
+`N 1 = N ((1 - a) (1 - a)⁻¹) ≤ (N 1 + N a) N ((1 - a)⁻¹)`. -/
+theorem div_add_le_norm_inverse_one_sub (N : AlgebraNorm 𝕜 B) {a : B} (hu : IsUnit (1 - a)) :
+    N 1 / (N 1 + N a) ≤ N (Ring.inverse (1 - a)) := by
+  set u := Ring.inverse (1 - a) with hu_def
+  have hmul : (1 - a) * u = 1 := Ring.mul_inverse_cancel (1 - a) hu
+  have h1 : N 1 ≤ (N 1 + N a) * N u := by
+    calc N 1 = N ((1 - a) * u) := by rw [hmul]
+      _ ≤ N (1 - a) * N u := map_mul_le_mul N _ _
+      _ ≤ (N 1 + N a) * N u := by gcongr; exact map_sub_le_add N 1 a
+  rcases (add_nonneg (apply_nonneg N 1) (apply_nonneg N a)).lt_or_eq with hpos | hzero
+  · exact (div_le_iff₀ hpos).mpr (by linarith)
+  · rw [← hzero, div_zero]; exact apply_nonneg N u
+
+/-- **The upper bound of [quarteroni2000numerical] (1.26)** for an arbitrary unital algebra norm
+`N` (`N 1 = 1`) on a finite-dimensional algebra: `N a < 1` makes `1 - a` a unit with
+`N ((1 - a)⁻¹) ≤ 1 / (1 - N a)`. For the norm the algebra carries this is
+`NormedRing.norm_inverse_one_sub_le`; here `N` is unrelated to any topology on `B`. -/
+theorem norm_inverse_one_sub_le_of_lt_one [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B)
+    (h1 : N 1 = 1) {a : B} (h : N a < 1) : N (Ring.inverse (1 - a)) ≤ 1 / (1 - N a) :=
+  h1 ▸ norm_inverse_one_sub_le_div_of_lt_one N h
+
+/-- **The lower bound of [quarteroni2000numerical] (1.26)** for an arbitrary unital algebra norm
+`N` (`N 1 = 1`) on a finite-dimensional algebra: if `N a < 1` then
+`1 / (1 + N a) ≤ N ((1 - a)⁻¹)`. -/
+theorem one_div_one_add_le_norm_inverse_one_sub [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B)
+    (h1 : N 1 = 1) {a : B} (h : N a < 1) : 1 / (1 + N a) ≤ N (Ring.inverse (1 - a)) :=
+  h1 ▸ div_add_le_norm_inverse_one_sub N (isUnit_one_sub_of_algebraNorm_lt_one N h)
+
+end AlgebraNorm
 
 end AlgebraNorm
 

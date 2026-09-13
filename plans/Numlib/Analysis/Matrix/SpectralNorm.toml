@@ -13,23 +13,17 @@ id = "hasEigenvalue_toEuclideanLin_inv_iff"
 id = "IsHermitian.l2_opNorm_inv_eq"
 
 [[node]]
+id = "_root_.IsSelfAdjoint.nnnorm_pow"
+
+[[node]]
+id = "_root_.IsSelfAdjoint.norm_pow"
+
+[[node]]
 id = "IsHermitian.l2_opNorm_pow"
-kind = "theorem"
-desc = '''For a Hermitian `A : Matrix n n 𝕜` and every `m`, `‖A ^ m‖ = ‖A‖ ^ m` in the `ℓ²` operator norm
-(`open scoped Matrix.Norms.L2Operator`). `A ^ m` is Hermitian with eigenvalues the `m`-th powers of
-those of `A` (`IsHermitian.hasEigenvalue_toEuclideanLin_iff` and the eigenvector basis), so
-`IsHermitian.l2_opNorm_eq` applied to `A ^ m` gives `max |λ|^m = (max |λ|)^m = ‖A‖ ^ m`;
-alternatively Mathlib's C*-identity `IsSelfAdjoint.nnnorm_pow_two_pow` for even exponents. ★'''
-deps = ["Matrix.IsHermitian.l2_opNorm_eq"]
+
+[[node]]
+id = "IsHermitian.l2_opNorm_pow_rpow"
 
 [[node]]
 id = "l2_opNorm_eq_complexSpectralRadius_of_isHermitian"
-kind = "theorem"
-desc = '''For a real symmetric `A : Matrix n n ℝ`, `‖A‖ = (complexSpectralRadius A).toReal` in the `ℓ²`
-operator norm: the spectral norm of a symmetric matrix is its spectral radius. Combine
-`IsHermitian.l2_opNorm_eq` (norm = largest `|λ|` over the real eigenvalues) with
-`ofReal_mem_spectrum_complexify_iff` (the complex spectrum of a real symmetric matrix is its real
-spectrum). With `IsHermitian.l2_opNorm_pow` this gives `‖A ^ m‖ = ρ(A)^m`, hence
-`-(1/m) log ‖A^m‖ = -log ρ(A)` for every `m ≥ 1`: the symmetric case of Quarteroni–Sacco–Saleri
-(4.5). ★'''
-deps = ["Matrix.IsHermitian.l2_opNorm_eq", "Matrix.ofReal_mem_spectrum_complexify_iff", "Matrix.complexSpectralRadius"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (4.5), symmetric case"

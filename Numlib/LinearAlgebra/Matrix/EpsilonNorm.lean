@@ -10,8 +10,9 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 # Norms in which a matrix is within `ε` of its spectral radius
 
 The spectral radius is a lower bound for every operator norm of a matrix, and it is the *greatest*
-such lower bound: for every `ε > 0` there is a vector norm on `ℝⁿ` whose induced operator norm of
-`A` is at most `ρ(A) + ε`. Consequently `ρ(A)` is the infimum of `‖A‖` over the operator norms.
+such lower bound: for every `ε > 0` there is a vector norm on `𝕜ⁿ` (`𝕜 = ℝ` or `ℂ`) whose induced
+operator norm of `A` is at most `ρ(A) + ε`. Consequently `ρ(A)` is the infimum of `‖A‖` over the
+operator norms. This is [quarteroni2000numerical] Property 1.13 and display (1.23).
 
 The vector norm is built from Gelfand's formula rather than from a triangularization: pick `k` with
 `‖Aᵏ‖ ≤ cᵏ`, where `c = ρ(A) + ε`, and set
@@ -26,8 +27,12 @@ some power of `A` is small, which is what Gelfand's formula provides.
 
 ## Main results
 
-* `Matrix.exists_seminorm_forall_mulVec_le`: the norm `p` above, with the equivalence bounds
-  `‖x‖ ≤ p x ≤ C ‖x‖` and `p (A x) ≤ (ρ(A) + ε) p x`.
+* `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto`: the construction over `RCLike 𝕜`, taking
+  the Gelfand limit `‖Aᵏ‖ ^ (1 / k) → ρ` as its input, so that it applies verbatim to the real
+  spectral radius of a real matrix (computed over `ℂ`) and to the spectral radius of a complex one.
+* `Matrix.exists_seminorm_forall_mulVec_le` and `Matrix.exists_seminorm_forall_mulVec_le_complex`:
+  the norm `p` above for `A : Matrix n n ℝ` and for `A : Matrix n n ℂ`, with the equivalence
+  bounds `‖x‖ ≤ p x ≤ C ‖x‖` and `p (A x) ≤ (ρ(A) + ε) p x`.
 * `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`: the converse bound, that a constant
   `c ≥ 0` with `p (A x) ≤ c p x` for a norm `p` equivalent to the original is at least `ρ(A)`. This
   is the spectral radius bounding an operator norm, for an arbitrary vector norm; together the two
@@ -125,24 +130,26 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
-/-- **The `ε`-norm theorem.** For every `ε > 0` there is a norm `p` on `ℝⁿ`, equivalent to the
-supremum norm, in which `A` is `(ρ(A) + ε)`-Lipschitz: the operator norm of `A` induced by `p` is at
-most `ρ(A) + ε`. With `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` for the reverse
-inequality, this says that the spectral radius is the infimum of `‖A‖` over the operator norms.
+/-- **The `ε`-norm construction**, over `RCLike 𝕜` and with the Gelfand limit as its input: if
+`‖Aᵏ‖ ^ (1 / k) → ρ` (in the maximum-absolute-row-sum norm; the limit is the same for every norm,
+`Seminorm.tendsto_rpow_one_div`), then for every `ε > 0` there is a norm `p` on `𝕜ⁿ`, equivalent
+to the supremum norm, in which `A` is `(ρ + ε)`-Lipschitz: the operator norm of `A` induced by `p`
+is at most `ρ + ε`.
 
-The norm is `p x = ∑_{j < k} c⁻ʲ ‖Aʲ x‖` with `c = ρ(A) + ε` and `k` chosen by Gelfand's formula so
+The norm is `p x = ∑_{j < k} c⁻ʲ ‖Aʲ x‖` with `c = ρ + ε` and `k` chosen from the limit so
 that `‖Aᵏ‖ ≤ cᵏ`; the telescoping identity `p (A x) = c (p x + c⁻ᵏ ‖Aᵏ x‖ - ‖x‖)` then gives the
 Lipschitz bound. -/
-theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 0 < ε) :
-    ∃ p : Seminorm ℝ (n → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
-      ∀ x, p (A *ᵥ x) ≤ ((complexSpectralRadius A).toReal + ε) * p x := by
-  set c : ℝ := (complexSpectralRadius A).toReal + ε with hcdef
-  have hc0 : 0 < c := by
-    have := ENNReal.toReal_nonneg (a := complexSpectralRadius A)
-    linarith
-  -- Gelfand's formula gives a power with `‖Aᵏ‖ ≤ cᵏ`.
+theorem exists_seminorm_forall_mulVec_le_of_tendsto {𝕜 : Type*} [RCLike 𝕜] (A : Matrix n n 𝕜)
+    {ρ : ℝ} (hρ : Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 ρ)) {ε : ℝ}
+    (hε : 0 < ε) :
+    ∃ p : Seminorm 𝕜 (n → 𝕜), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
+      ∀ x, p (A *ᵥ x) ≤ (ρ + ε) * p x := by
+  have hρ0 : 0 ≤ ρ := ge_of_tendsto' hρ fun k => by positivity
+  set c : ℝ := ρ + ε with hcdef
+  have hc0 : 0 < c := by linarith
+  -- the limit gives a power with `‖Aᵏ‖ ≤ cᵏ`.
   obtain ⟨k, hk1, hk⟩ : ∃ k : ℕ, 1 ≤ k ∧ ‖A ^ k‖ ^ (1 / k : ℝ) < c := by
-    have h := (tendsto_pow_rpow_linfty_opNorm A).eventually_lt_const (by linarith : _ < c)
+    have h := hρ.eventually_lt_const (by linarith : _ < c)
     exact ((eventually_ge_atTop 1).and h).exists
   have hAk : ‖A ^ k‖ ≤ c ^ k := by
     have hkne : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (by omega)
@@ -151,11 +158,11 @@ theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 
         inv_mul_cancel₀ hkne, Real.rpow_one]
     calc ‖A ^ k‖ = (‖A ^ k‖ ^ (1 / k : ℝ)) ^ k := h1.symm
       _ ≤ c ^ k := pow_le_pow_left₀ (by positivity) hk.le k
-  have hAkx : ∀ x : n → ℝ, ‖(A ^ k) *ᵥ x‖ ≤ c ^ k * ‖x‖ := fun x =>
+  have hAkx : ∀ x : n → 𝕜, ‖(A ^ k) *ᵥ x‖ ≤ c ^ k * ‖x‖ := fun x =>
     (linfty_opNorm_mulVec (A ^ k) x).trans (by gcongr)
   -- the weighted sum of the norms of the first `k` iterates
-  set f : (n → ℝ) → ℕ → ℝ := fun x j => (c ^ j)⁻¹ * ‖(A ^ j) *ᵥ x‖ with hf
-  have hadd : ∀ x y : n → ℝ, ∑ j ∈ Finset.range k, f (x + y) j
+  set f : (n → 𝕜) → ℕ → ℝ := fun x j => (c ^ j)⁻¹ * ‖(A ^ j) *ᵥ x‖ with hf
+  have hadd : ∀ x y : n → 𝕜, ∑ j ∈ Finset.range k, f (x + y) j
       ≤ (∑ j ∈ Finset.range k, f x j) + ∑ j ∈ Finset.range k, f y j := by
     intro x y
     calc ∑ j ∈ Finset.range k, f (x + y) j ≤ ∑ j ∈ Finset.range k, (f x j + f y j) := by
@@ -166,20 +173,20 @@ theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 
           have hcj : (0 : ℝ) < (c ^ j)⁻¹ := by positivity
           nlinarith
       _ = (∑ j ∈ Finset.range k, f x j) + ∑ j ∈ Finset.range k, f y j := Finset.sum_add_distrib
-  have hsmul : ∀ (a : ℝ) (x : n → ℝ), ∑ j ∈ Finset.range k, f (a • x) j
+  have hsmul : ∀ (a : 𝕜) (x : n → 𝕜), ∑ j ∈ Finset.range k, f (a • x) j
       = ‖a‖ * ∑ j ∈ Finset.range k, f x j := by
     intro a x
     rw [Finset.mul_sum]
     refine Finset.sum_congr rfl fun j _ => ?_
-    simp only [hf, mulVec_smul, norm_smul, Real.norm_eq_abs]
+    simp only [hf, mulVec_smul, norm_smul]
     ring
-  have hnorm_le : ∀ x : n → ℝ, ‖x‖ ≤ ∑ j ∈ Finset.range k, f x j := by
+  have hnorm_le : ∀ x : n → 𝕜, ‖x‖ ≤ ∑ j ∈ Finset.range k, f x j := by
     intro x
     have h0 : f x 0 = ‖x‖ := by simp [hf]
     calc ‖x‖ = f x 0 := h0.symm
       _ ≤ ∑ j ∈ Finset.range k, f x j :=
         Finset.single_le_sum (fun j _ => by positivity) (Finset.mem_range.2 (by omega))
-  have hle_norm : ∀ x : n → ℝ, ∑ j ∈ Finset.range k, f x j
+  have hle_norm : ∀ x : n → 𝕜, ∑ j ∈ Finset.range k, f x j
       ≤ (∑ j ∈ Finset.range k, (c ^ j)⁻¹ * ‖A ^ j‖) * ‖x‖ := by
     intro x
     rw [Finset.sum_mul]
@@ -189,7 +196,7 @@ theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 
     simp only [hf]
     rw [mul_assoc]
     exact mul_le_mul_of_nonneg_left h hcj.le
-  have hkey : ∀ x : n → ℝ, ∑ j ∈ Finset.range k, f (A *ᵥ x) j
+  have hkey : ∀ x : n → 𝕜, ∑ j ∈ Finset.range k, f (A *ᵥ x) j
       ≤ c * ∑ j ∈ Finset.range k, f x j := by
     intro x
     -- the telescoping identity
@@ -224,6 +231,30 @@ theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 
            add_le' := hadd
            neg' := fun x => by simp [hf, mulVec_neg]
            smul' := hsmul }, hnorm_le, ⟨_, hle_norm⟩, hkey⟩
+
+/-- **The `ε`-norm theorem.** For every `ε > 0` there is a norm `p` on `ℝⁿ`, equivalent to the
+supremum norm, in which `A` is `(ρ(A) + ε)`-Lipschitz: the operator norm of `A` induced by `p` is at
+most `ρ(A) + ε`. With `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` for the reverse
+inequality, this says that the spectral radius is the infimum of `‖A‖` over the operator norms.
+
+This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at the Gelfand limit
+`Matrix.tendsto_pow_rpow_linfty_opNorm`. -/
+theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ p : Seminorm ℝ (n → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
+      ∀ x, p (A *ᵥ x) ≤ ((complexSpectralRadius A).toReal + ε) * p x :=
+  exists_seminorm_forall_mulVec_le_of_tendsto A (tendsto_pow_rpow_linfty_opNorm A) hε
+
+/-- **The `ε`-norm theorem for a complex matrix**, [quarteroni2000numerical] Property 1.13: for
+every `ε > 0` there is a norm `p` on `ℂⁿ`, equivalent to the supremum norm, in which `A` is
+`(ρ(A) + ε)`-Lipschitz. This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at Gelfand's
+formula `spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius` for the Banach algebra
+`Matrix n n ℂ` with the maximum-absolute-row-sum norm. -/
+theorem exists_seminorm_forall_mulVec_le_complex (A : Matrix n n ℂ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ p : Seminorm ℂ (n → ℂ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
+      ∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x :=
+  have : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
+  exists_seminorm_forall_mulVec_le_of_tendsto A
+    (spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius A) hε
 
 end Operator
 

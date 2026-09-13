@@ -4,7 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.CStarAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Spectrum
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Complexify
 
 /-!
 # The spectral norm of a Hermitian matrix
@@ -30,9 +32,43 @@ reverse bound, so no diagonalization is needed.
   the eigenvalues of an invertible `A`.
 * `Matrix.IsHermitian.l2_opNorm_inv_eq`: `‖A⁻¹‖₂ = m⁻¹` when every eigenvalue has modulus at least
   `m > 0` and some eigenvalue has modulus exactly `m`.
+* `IsSelfAdjoint.norm_pow` and `Matrix.IsHermitian.l2_opNorm_pow`: `‖Aᵐ‖₂ = ‖A‖₂ᵐ` for a Hermitian
+  matrix, the C⋆-identity `‖A²‖ = ‖A‖²` iterated, with `Matrix.IsHermitian.l2_opNorm_pow_rpow`
+  for the root form `‖Aᵐ‖₂ ^ (1 / m) = ‖A‖₂`.
+* `Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`: the spectral norm of a real
+  symmetric matrix is its spectral radius.
 -/
 
 open scoped Matrix.Norms.L2Operator
+
+section CStarRing
+
+variable {E : Type*} [NormedRing E] [StarRing E] [CStarRing E]
+
+/-- In a C⋆-ring, `‖xⁿ‖₊ = ‖x‖₊ⁿ` for a self-adjoint `x` and every `n ≠ 0`: the identity
+`IsSelfAdjoint.nnnorm_pow_two_pow` for powers of two, then `‖x‖ ^ 2ᵏ = ‖xⁿ x ^ (2ᵏ - n)‖ ≤ ‖xⁿ‖
+‖x‖ ^ (2ᵏ - n)` for `n < 2ᵏ`. (The exponent `0` needs `‖1‖ = 1`, which a C⋆-ring may lack.) -/
+theorem IsSelfAdjoint.nnnorm_pow {x : E} (hx : IsSelfAdjoint x) {n : ℕ} (hn : n ≠ 0) :
+    ‖x ^ n‖₊ = ‖x‖₊ ^ n := by
+  refine le_antisymm (nnnorm_pow_le' x (Nat.pos_of_ne_zero hn)) ?_
+  obtain ⟨j, hj, hj0⟩ : ∃ j, 2 ^ n = n + j ∧ j ≠ 0 :=
+    ⟨2 ^ n - n, by have := n.lt_two_pow_self; omega, by have := n.lt_two_pow_self; omega⟩
+  rcases eq_or_ne ‖x‖₊ 0 with h0 | h0
+  · rw [h0, zero_pow hn]
+    exact zero_le
+  have h := hx.nnnorm_pow_two_pow n
+  rw [hj, pow_add, pow_add] at h
+  have hle : ‖x‖₊ ^ n * ‖x‖₊ ^ j ≤ ‖x ^ n‖₊ * ‖x‖₊ ^ j := by
+    rw [← h]
+    exact (nnnorm_mul_le _ _).trans (by gcongr; exact nnnorm_pow_le' x (Nat.pos_of_ne_zero hj0))
+  exact le_of_mul_le_mul_right hle (pos_iff_ne_zero.2 (pow_ne_zero _ h0))
+
+/-- In a C⋆-ring, `‖xⁿ‖ = ‖x‖ⁿ` for a self-adjoint `x` and every `n ≠ 0`. -/
+theorem IsSelfAdjoint.norm_pow {x : E} (hx : IsSelfAdjoint x) {n : ℕ} (hn : n ≠ 0) :
+    ‖x ^ n‖ = ‖x‖ ^ n :=
+  congr($(hx.nnnorm_pow hn))
+
+end CStarRing
 
 namespace Matrix
 
@@ -123,5 +159,34 @@ theorem IsHermitian.l2_opNorm_inv_eq (hA : A.IsHermitian) {m : ℝ} (hm : 0 < m)
     have hμ₀0 : μ₀ ≠ 0 := by rintro rfl; exact hzero hμ₀
     refine ⟨μ₀⁻¹, (Matrix.hasEigenvalue_toEuclideanLin_inv_iff hAunit _).mpr (by rwa [inv_inv]), ?_⟩
     rw [re_inv_of_ofReal_re (hA.ofReal_re_of_hasEigenvalue hμ₀), abs_inv, hμ₀m]
+
+/-- **The spectral norm of a power of a Hermitian matrix is the power of the spectral norm**:
+`‖Aᵐ‖₂ = ‖A‖₂ᵐ` for `m ≠ 0`. This is the C⋆-identity `IsSelfAdjoint.norm_pow` in the
+C⋆-ring `Matrix n n 𝕜` with the `ℓ²` operator norm; the exponent `0` is excluded because
+`‖1‖₂ = 0 ≠ 1` when `n` is empty. -/
+theorem IsHermitian.l2_opNorm_pow (hA : A.IsHermitian) {m : ℕ} (hm : m ≠ 0) :
+    ‖A ^ m‖ = ‖A‖ ^ m :=
+  hA.isSelfAdjoint.norm_pow hm
+
+/-- The root form of `Matrix.IsHermitian.l2_opNorm_pow`: `‖Aᵐ‖₂ ^ (1 / m) = ‖A‖₂` for `m ≠ 0`,
+so that the Gelfand sequence of a Hermitian matrix is constant. -/
+theorem IsHermitian.l2_opNorm_pow_rpow (hA : A.IsHermitian) {m : ℕ} (hm : m ≠ 0) :
+    ‖A ^ m‖ ^ (1 / m : ℝ) = ‖A‖ := by
+  rw [hA.l2_opNorm_pow hm, ← Real.rpow_natCast, ← Real.rpow_mul (norm_nonneg _),
+    mul_one_div_cancel (Nat.cast_ne_zero.2 hm), Real.rpow_one]
+
+/-- **The spectral norm of a real symmetric matrix is its spectral radius**:
+`‖A‖₂ = ρ(A)` for `A : Matrix n n ℝ` with `Aᵀ = A`, the spectral radius being the complex one
+(`Matrix.complexSpectralRadius`). Complexification preserves the norm
+(`Matrix.l2_opNorm_complexify`) and Hermitian-ness, and in the C⋆-algebra `Matrix n n ℂ` the norm
+of a self-adjoint element is its spectral radius
+(`IsSelfAdjoint.toReal_spectralRadius_complex_eq_norm`). With
+`Matrix.IsHermitian.l2_opNorm_pow` this gives `‖Aᵐ‖₂ = ρ(A)ᵐ` for every `m`, the symmetric case
+of [quarteroni2000numerical] (4.5). -/
+theorem l2_opNorm_eq_complexSpectralRadius_of_isHermitian {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) : ‖A‖ = (complexSpectralRadius A).toReal := by
+  rw [← l2_opNorm_complexify, complexSpectralRadius]
+  exact (IsSelfAdjoint.toReal_spectralRadius_complex_eq_norm
+    ((isHermitian_complexify_iff A).mpr hA).isSelfAdjoint).symm
 
 end Matrix

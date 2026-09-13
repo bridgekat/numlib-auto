@@ -2,81 +2,82 @@ namespace = "Matrix"
 
 [[node]]
 id = "IsConsistent"
-kind = "definition"
-desc = '''`Matrix.IsConsistent (N : Matrix m n 𝕜 → ℝ) (q : Seminorm 𝕜 (m → 𝕜)) (p : Seminorm 𝕜 (n → 𝕜)) : Prop := ∀ A x, q (A *ᵥ x) ≤ N A * p x`: the matrix norm `N` is consistent (compatible) with the vector norms `q` on the codomain and `p` on the domain. Quarteroni–Sacco–Saleri Definition 1.20; for square matrices `q = p`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.20"
+
+[[node]]
+id = "_root_.Seminorm.exists_bounds_rclike"
+
+[[node]]
+id = "_root_.Seminorm.continuous_rclike"
 
 [[node]]
 id = "inducedNorm"
-kind = "definition"
-desc = '''`Matrix.inducedNorm (q : Seminorm 𝕜 (m → 𝕜)) (p : Seminorm 𝕜 (n → 𝕜)) (A : Matrix m n 𝕜) : ℝ := ⨆ x : {x // p x ≤ 1}, q (A *ᵥ x)`, the matrix norm induced by the vector norms `p` (domain) and `q` (codomain); Quarteroni–Sacco–Saleri (1.20). The supremum over the closed unit ball rather than the sphere makes the definition total (nonempty index set) and the `ciSup` bounded when `p` is definite (`Seminorm.exists_bounds` on `n → 𝕜`). ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.20)"
+
+[[node]]
+id = "bddAbove_range_inducedNorm"
+
+[[node]]
+id = "inducedNorm_nonneg"
+
+[[node]]
+id = "le_inducedNorm"
+
+[[node]]
+id = "inducedNorm_le"
 
 [[node]]
 id = "inducedNorm_eq_iSup_div"
-kind = "theorem"
-desc = '''For definite `p` (`hp : ∀ x, p x = 0 → x = 0`) and any `A`, `inducedNorm q p A = ⨆ x : {x // x ≠ 0}, q (A *ᵥ x) / p x`: Quarteroni–Sacco–Saleri (1.19) equals (1.20). Proof: scale `x` to `x / p x`; both sides are bounded suprema, `p` being equivalent to the sup norm by `Seminorm.exists_bounds`. ★'''
-deps = ["Matrix.inducedNorm", "Seminorm.exists_bounds"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.1, (1.19)"
 
 [[node]]
 id = "le_inducedNorm_mul"
-kind = "theorem"
-desc = '''For definite `p`: `q (A *ᵥ x) ≤ inducedNorm q p A * p x` for every `x`; that is, `IsConsistent (inducedNorm q p) q p` (`isConsistent_inducedNorm` is the bundled form). Quarteroni–Sacco–Saleri Theorem 1.3 (1), also used inside the proof of Theorem 1.1. ★'''
-deps = ["Matrix.inducedNorm", "Seminorm.exists_bounds"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.3 (1)"
 
 [[node]]
 id = "isConsistent_inducedNorm"
-kind = "theorem"
-desc = '''`IsConsistent (inducedNorm q p) q p` for definite `p`; the bundled form of `le_inducedNorm_mul`. ★'''
-deps = ["Matrix.IsConsistent", "Matrix.le_inducedNorm_mul"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.3 (1)"
+
+[[node]]
+id = "inducedNorm_le_of_isConsistent"
 
 [[node]]
 id = "exists_inducedNorm_eq"
-kind = "theorem"
-desc = '''For definite `p` and `[Nonempty n]`, the supremum in `inducedNorm q p A` is attained on the unit sphere: `∃ x, p x = 1 ∧ inducedNorm q p A = q (A *ᵥ x)`. Proof: the sphere `{p x = 1}` is compact (closed and bounded, `p` equivalent to the ambient norm and continuous by `Seminorm.continuous_of_finiteDimensional`) and `x ↦ q (A *ᵥ x)` is continuous. This is the "`= ‖A w‖` with `‖w‖ = 1`" of the book's proof of Theorem 1.1 and is what Theorem 1.4 and the `‖A‖₂ = σ_max` identification need. ★★'''
-deps = ["Matrix.inducedNorm", "Seminorm.exists_bounds", "Seminorm.continuous_of_finiteDimensional"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.1"
 
 [[node]]
 id = "inducedSeminorm"
-kind = "definition"
-desc = '''`Matrix.inducedSeminorm q p (hp : ∀ x, p x = 0 → x = 0) : Seminorm 𝕜 (Matrix m n 𝕜)` with `toFun = inducedNorm q p`: nonnegativity, `inducedNorm q p 0 = 0`, absolute homogeneity `inducedNorm q p (c • A) = ‖c‖ * inducedNorm q p A` and the triangle inequality `inducedNorm q p (A + B) ≤ inducedNorm q p A + inducedNorm q p B`. Quarteroni–Sacco–Saleri Theorem 1.1, items 2–3; the homogeneity and triangle inequality follow from `le_inducedNorm_mul` on unit vectors and `ciSup_le`. ★'''
-deps = ["Matrix.inducedNorm", "Matrix.le_inducedNorm_mul"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.1"
 
 [[node]]
 id = "inducedNorm_eq_zero_iff"
-kind = "theorem"
-desc = '''For definite `q` and `p`: `inducedNorm q p A = 0 ↔ A = 0`. Quarteroni–Sacco–Saleri Theorem 1.1, item 1: `inducedNorm q p A = 0` forces `q (A *ᵥ x) = 0`, hence `A *ᵥ x = 0`, for every `x`, and `A *ᵥ Pi.single j 1` is the `j`-th column. ★'''
-deps = ["Matrix.inducedNorm", "Matrix.le_inducedNorm_mul"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.1"
 
 [[node]]
 id = "inducedNorm_mul_le"
-kind = "theorem"
-desc = '''Rectangular submultiplicativity, Quarteroni–Sacco–Saleri Theorem 1.3 (3) and Definition 1.21: for definite `p`, `q` and any `r : Seminorm 𝕜 (l → 𝕜)`, `A : Matrix l m 𝕜`, `B : Matrix m n 𝕜`, `inducedNorm r p (A * B) ≤ inducedNorm r q A * inducedNorm q p B`. Proof: `r (A *ᵥ (B *ᵥ x)) ≤ ‖A‖_{r,q} q (B *ᵥ x) ≤ ‖A‖_{r,q} ‖B‖_{q,p} p x` and `mulVec_mulVec`. ★'''
-deps = ["Matrix.inducedNorm", "Matrix.le_inducedNorm_mul"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.3 (3)"
 
 [[node]]
 id = "inducedNorm_one"
-kind = "theorem"
-desc = '''For definite `p` on a nonempty index type, `inducedNorm p p (1 : Matrix n n 𝕜) = 1`. Quarteroni–Sacco–Saleri Theorem 1.3 (2). Companion remark of the book: submultiplicativity alone only gives `1 ≤ N 1` for `N 1 ≠ 0` (`one_le_of_mul_le`, a one-line lemma to state next to this one). ★'''
-deps = ["Matrix.inducedNorm", "Matrix.le_inducedNorm_mul", "Matrix.exists_inducedNorm_eq"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.3 (2)"
+
+[[node]]
+id = "one_le_of_mul_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11, after Theorem 1.3"
 
 [[node]]
 id = "inducedAlgebraNorm"
-kind = "definition"
-desc = '''`Matrix.inducedAlgebraNorm (p : Seminorm 𝕜 (n → 𝕜)) (hp : ∀ x, p x = 0 → x = 0) : AlgebraNorm 𝕜 (Matrix n n 𝕜)` with `toFun = inducedNorm p p`: the square induced norm as an algebra norm (seminorm + `mul_le'` + definiteness), so that `spectralRadius_le_algebraNorm`, `tendsto_pow_of_algebraNorm_lt_one` and the `AlgebraNorm` lemmas of `Numlib/Analysis/Normed/Algebra/SpectralRadius` apply to it. Theorems 1.1 and 1.3 of Quarteroni–Sacco–Saleri bundled. ★'''
-deps = ["Matrix.inducedSeminorm", "Matrix.inducedNorm_eq_zero_iff", "Matrix.inducedNorm_mul_le"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorems 1.1 and 1.3"
 
 [[node]]
 id = "lpSeminorm"
-kind = "definition"
-desc = '''`Matrix.lpSeminorm (r : ℝ≥0∞) [Fact (1 ≤ r)] : Seminorm 𝕜 (n → 𝕜)`, the vector `r`-norm `(∑ |x_i|^r)^{1/r}` of Quarteroni–Sacco–Saleri (1.13) (and `max |x_i|` at `r = ∞`) read on plain functions: `(normSeminorm 𝕜 (PiLp r fun _ => 𝕜)).comp (WithLp.linearEquiv r 𝕜 _).symm`. It is definite; `lpSeminorm r x = ‖WithLp.toLp r x‖` by `rfl`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.13)"
 
 [[node]]
 id = "lpSeminorm_eq_zero_iff"
-kind = "theorem"
-desc = '`lpSeminorm r x = 0 ↔ x = 0`, the definiteness hypothesis the induced-norm lemmas take. ★'
-deps = ["Matrix.lpSeminorm"]
+
+[[node]]
+id = "lpSeminorm_definite"
 
 [[node]]
 id = "lpCLM"
@@ -86,9 +87,12 @@ id = "lpOpNorm"
 
 [[node]]
 id = "lpOpNorm_eq_inducedNorm"
-kind = "theorem"
-desc = '''`lpOpNorm r A = inducedNorm (lpSeminorm r) (lpSeminorm r) A`: the two descriptions of `‖A‖_r` agree, so everything proved for `inducedNorm` (consistency, submultiplicativity, `‖I‖ = 1`, `ρ(A) ≤ ‖A‖_r`) transfers to `lpOpNorm`. Proof: `ContinuousLinearMap.opNorm_eq_iSup_unit_ball`-style characterization of the operator norm (`ContinuousLinearMap.opNorm_le_bound`, `le_opNorm`) against `inducedNorm_eq_iSup_div`. ★★'''
-deps = ["Matrix.lpOpNorm", "Matrix.inducedNorm", "Matrix.lpSeminorm", "Matrix.inducedNorm_eq_iSup_div"]
+
+[[node]]
+id = "lpSeminorm_mulVec_le"
+
+[[node]]
+id = "isConsistent_lpOpNorm"
 
 [[node]]
 id = "lpOpNorm_mul_le"
@@ -113,167 +117,200 @@ id = "ringInverse_lpCLM"
 
 [[node]]
 id = "lpOpNorm_top"
-kind = "theorem"
-desc = '''`lpOpNorm ⊤ A = ‖A‖` for the scoped `Matrix.Norms.Operator` norm, so that Mathlib's `Matrix.linfty_opNorm_def` (largest absolute row sum, Quarteroni–Sacco–Saleri "row sum norm") is the `r = ∞` case of `lpOpNorm`. Proof: `Matrix.linfty_opNNNorm_eq_opNNNorm` identifies `‖A‖` with the operator norm of `mulVecLin A` on the sup-normed pi type, which is `PiLp ⊤` up to the isometry `WithLp.equiv`. ★'''
-deps = ["Matrix.lpOpNorm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "lpOpNorm_one_eq_linfty_opNorm_transpose"
-kind = "theorem"
-desc = '''`lpOpNorm 1 A = ‖Aᵀ‖` (scoped `Operator` norm on the right): `‖A‖₁ = ‖Aᵀ‖_∞`, Quarteroni–Sacco–Saleri §1.11; and for Hermitian `A`, `lpOpNorm 1 A = ‖A‖`, since `‖Aᴴ‖_∞ = ‖A‖_∞` termwise (`norm_star`). Saad's `equation_1_14`, second clause, generalized. ★'''
-deps = ["Matrix.lpOpNorm_one_eq_sup_sum_norm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
+
+[[node]]
+id = "lpOpNorm_one_eq_linfty_opNorm_conjTranspose"
+
+[[node]]
+id = "IsHermitian.lpOpNorm_one_eq_linfty_opNorm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self"
-kind = "theorem"
-desc = '''For `A : Matrix m n ℂ` and the scoped `L2Operator` norm, `(‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (Aᴴ * A) = spectralRadius ℂ (A * Aᴴ)`: Quarteroni–Sacco–Saleri (1.21), first two equalities. `Aᴴ A` is self-adjoint, so `IsSelfAdjoint.spectralRadius_eq_nnnorm` gives `ρ(Aᴴ A) = ‖Aᴴ A‖₂` and the C⋆-identity `Matrix.l2_opNNNorm_conjTranspose_mul_self` gives `‖A‖₂²`; the second by `l2_opNNNorm_conjTranspose`. Saad's `equation_1_15` for square matrices; here rectangular (`Aᴴ A : Matrix n n`, `A Aᴴ : Matrix m m`). Over `ℝ` the statement reads with `complexSpectralRadius` and follows through `l2_opNorm_complexify`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2, (1.21)"
+
+[[node]]
+id = "l2_opNorm_sq_eq_spectralRadius_self_mul_conjTranspose"
+
+[[node]]
+id = "l2_opNNNorm_complexify"
+
+[[node]]
+id = "l2_opNorm_sq_eq_complexSpectralRadius_conjTranspose_mul_self"
 
 [[node]]
 id = "IsHermitian.l2_opNorm_eq_spectralRadius"
-kind = "theorem"
-desc = '''For Hermitian `A : Matrix n n ℂ`, `(‖A‖₊ : ℝ≥0∞) = spectralRadius ℂ A` (`IsSelfAdjoint.spectralRadius_eq_nnnorm`), and for real symmetric `A : Matrix n n ℝ`, `(‖A‖₊ : ℝ≥0∞) = A.complexSpectralRadius` through `l2_opNorm_complexify` and `complexify_conjTranspose`. Quarteroni–Sacco–Saleri (1.22). ★'''
-deps = ["Matrix.l2_opNorm_complexify"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2, (1.22)"
+
+[[node]]
+id = "IsHermitian.l2_opNNNorm_eq_complexSpectralRadius"
 
 [[node]]
 id = "l2_opNorm_eq_spectralRadius_of_isStarNormal"
-kind = "theorem"
-desc = '''For normal `A : Matrix n n ℂ` (`IsStarNormal A`), `(‖A‖₊ : ℝ≥0∞) = spectralRadius ℂ A`: Mathlib's `IsStarNormal.spectralRadius_eq_nnnorm` read on the C⋆-algebra `Matrix n n ℂ` with the `L2Operator` norm. Needed for the book's remark that `‖A‖₂ ≤ ‖A‖_p` for normal `A`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "l2_opNorm_of_mem_unitaryGroup"
-kind = "theorem"
-desc = '''`‖U‖ = 1` (scoped `L2Operator`) for `U ∈ unitaryGroup n 𝕜` with `n` nonempty: Quarteroni–Sacco–Saleri Theorem 1.2, last clause; from `norm_toLp_mulVec_of_mem_unitaryGroup` (`Numlib/Analysis/Matrix/ToEuclideanLin`) and `l2_opNorm_eq_norm_toEuclideanLin`. ★'''
-deps = ["Matrix.norm_toLp_mulVec_of_mem_unitaryGroup", "Matrix.l2_opNorm_eq_norm_toEuclideanLin"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2"
+
+[[node]]
+id = "norm_toEuclideanLin_apply_le"
+
+[[node]]
+id = "l2_opNorm_le_of_forall_norm_toEuclideanLin_le"
+
+[[node]]
+id = "norm_toEuclideanLin_apply_of_mem_unitaryGroup"
 
 [[node]]
 id = "l2_opNorm_unitary_mul_mul_unitary"
-kind = "theorem"
-desc = '''Unitary invariance of the spectral norm: for `U ∈ unitaryGroup m 𝕜`, `V ∈ unitaryGroup n 𝕜` and `A : Matrix m n 𝕜`, `‖U * A * V‖ = ‖A‖` (scoped `L2Operator`); from `norm_toLp_mulVec_of_mem_unitaryGroup` applied on both sides of the supremum. Used by the SVD identification `‖A‖₂ = σ₁` and everywhere in chapter 5 of Quarteroni–Sacco–Saleri. ★'''
-deps = ["Matrix.norm_toLp_mulVec_of_mem_unitaryGroup", "Matrix.l2_opNorm_eq_norm_toEuclideanLin"]
+
+[[node]]
+id = "l2_opNorm_unitary_mul_mul_unitary_le"
 
 [[node]]
 id = "frobenius_norm_unitary_mul_mul_unitary"
-kind = "theorem"
-desc = '''Unitary invariance of the Frobenius norm: `‖U * A * V‖ = ‖A‖` (scoped `Frobenius`) for unitary `U`, `V`. Proof: `‖A‖_F² = tr(Aᴴ A)` (`Matrix.frobenius_norm_def` summed as a trace, as in Saad's `equation_1_16`) and `trace_mul_comm` with `star U * U = 1`. ★'''
-deps = []
+
+[[node]]
+id = "frobenius_norm_sq_eq_sum_sq"
+
+[[node]]
+id = "frobenius_norm_sq_eq_trace"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.18)"
 
 [[node]]
 id = "frobenius_norm_sq_eq_sum_sq_singularValues"
-kind = "theorem"
-desc = '''`‖A‖ ^ 2 = ∑ i, A.singularValues i ^ 2` (scoped `Frobenius`, `A : Matrix m n 𝕜`): Quarteroni–Sacco–Saleri Exercise 16, and the engine of the Frobenius–spectral comparison. Proof: `‖A‖_F² = tr(Aᴴ A) = ∑ eigenvalues(Aᴴ A)` (`Matrix.IsHermitian.trace_eq_sum_eigenvalues`) and `sq_singularValues`. ★'''
-deps = ["Matrix.singularValues", "Matrix.sq_singularValues"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 16"
+
+[[node]]
+id = "singularValues_le_l2_opNorm"
+
+[[node]]
+id = "singularValues_le_lpOpNorm_two"
 
 [[node]]
 id = "l2_opNorm_le_frobenius_norm"
-kind = "theorem"
-desc = '''`‖A‖₂ ≤ ‖A‖_F ≤ √(rank A) ‖A‖₂` (the two scoped norms written out via `lpOpNorm 2` and `Matrix.frobenius_norm_def` to avoid instance clashes in one statement): the first inequality is `σ₁² ≤ ∑ σ_i²`, the second `∑ σ_i² ≤ rank · σ₁²` with `card_singularValues_ne_zero`. Quarteroni–Sacco–Saleri Exercise 17 (`c_{2F} = 1`, `c_{F2} = √n`) and the `p = F` row of its table. ★'''
-deps = ["Matrix.frobenius_norm_sq_eq_sum_sq_singularValues", "Matrix.l2_opNorm_eq_iSup_singularValues", "Matrix.card_singularValues_ne_zero"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 17"
+
+[[node]]
+id = "frobenius_norm_le_sqrt_rank_mul_l2_opNorm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 17"
 
 [[node]]
 id = "frobenius_norm_mulVec_le"
-kind = "theorem"
-desc = '''`‖WithLp.toLp 2 (A *ᵥ x)‖ ≤ ‖A‖ * ‖WithLp.toLp 2 x‖` with the scoped `Frobenius` norm on `A`: the Frobenius norm is consistent with the Euclidean vector norm, Quarteroni–Sacco–Saleri Example 1.7 (Cauchy–Schwarz row by row, or `frobenius_nnnorm_mul` on `replicateCol` with `frobenius_norm_replicateCol`). Also `‖(1 : Matrix n n 𝕜)‖ = √(card n)` from `frobenius_nnnorm_one`, stated beside it. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.7"
+
+[[node]]
+id = "frobenius_norm_one"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.7"
 
 [[node]]
 id = "norm_entry_le_l2_opNorm"
-kind = "theorem"
-desc = '''`‖A i j‖ ≤ ‖A‖` (scoped `L2Operator`) for every entry, and `‖A‖ ≤ √(card m * card n) * (⨆ i j, ‖A i j‖)`, hence `‖A‖ ≤ n * max |a_ij|` for square `A`: the first estimate of Quarteroni–Sacco–Saleri §1.11 after Theorem 1.2 (`max_{i,j} |a_ij| ≤ ‖A‖₂ ≤ n max_{i,j} |a_ij|`). Lower bound: `A i j = ⟪e_i, A e_j⟫`; upper: `‖A‖₂ ≤ ‖A‖_F ≤ √(mn) max |a_ij|`. ★'''
-deps = ["Matrix.l2_opNorm_le_frobenius_norm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
+
+[[node]]
+id = "l2_opNorm_le_sqrt_card_mul_of_forall_norm_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "l2_opNorm_le_sqrt_card_mul_linfty_opNorm"
-kind = "theorem"
-desc = '''For `A : Matrix m n 𝕜`, with `‖·‖_∞` the scoped `Operator` norm written as `lpOpNorm ⊤` and `‖·‖₂` as `lpOpNorm 2`: `lpOpNorm 2 A ≤ √(card n) * lpOpNorm ⊤ A` and `lpOpNorm ⊤ A ≤ √(card m) * lpOpNorm 2 A` (square case: `n^{-1/2} ‖A‖_∞ ≤ ‖A‖₂ ≤ n^{1/2} ‖A‖_∞`, Quarteroni–Sacco–Saleri §1.11); the `‖·‖₁` twins `lpOpNorm 2 A ≤ √(card m) * lpOpNorm 1 A`, `lpOpNorm 1 A ≤ √(card n) * lpOpNorm 2 A` follow by transposition (`l2_opNNNorm_conjTranspose`, `lpOpNorm_one_eq_linfty_opNorm_transpose`). Proof: the vector comparisons `‖x‖_∞ ≤ ‖x‖₂ ≤ √n ‖x‖_∞` (`PiLp.lipschitzWith_toLp`/`antilipschitzWith_ofLp` at `p = 2`, or `PiLp.norm_le_of_forall_le`-style bounds) pushed through the operator norm. ★★'''
-deps = ["Matrix.lpOpNorm", "Matrix.lpOpNorm_top", "Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
+
+[[node]]
+id = "lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le"
+
+[[node]]
+id = "lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge"
+
+[[node]]
+id = "l2_opNorm_le_sqrt_card_mul_lpOpNorm_one"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm"
-kind = "theorem"
-desc = '''`lpOpNorm 2 A ^ 2 ≤ lpOpNorm 1 A * lpOpNorm ⊤ A`, i.e. `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`, Quarteroni–Sacco–Saleri §1.11, for `A : Matrix m n 𝕜`. Proof: `‖A‖₂² = ρ(Aᴴ A) ≤ ‖Aᴴ A‖_∞ ≤ ‖Aᴴ‖_∞ ‖A‖_∞ = ‖A‖₁ ‖A‖_∞`, using `l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self`, `spectralRadius_le_nnnorm` for the `Operator` norm (a `NormOneClass` normed algebra), `linfty_opNorm_mul` and `lpOpNorm_one_eq_linfty_opNorm_transpose`; over `ℝ` pass through `complexify`. ★★'''
-deps = ["Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self", "Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose", "Matrix.lpOpNorm_top"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
+
+[[node]]
+id = "sum_norm_le_lpOpNorm_top"
+
+[[node]]
+id = "sum_norm_le_lpOpNorm_one"
 
 [[node]]
 id = "l2_opNorm_le_lpOpNorm_of_isStarNormal"
-kind = "theorem"
-desc = '''For normal `A : Matrix n n ℂ` and every `r` with `1 ≤ r`, `lpOpNorm 2 A ≤ lpOpNorm r A`: `‖A‖₂ = ρ(A)` for normal `A` and `ρ(A) ≤ ‖A‖_r` by consistency. Quarteroni–Sacco–Saleri states it "for all `p ≥ 2`"; the restriction is unnecessary, the argument works for every `p ≥ 1` (book reading recorded in the surface). ★'''
-deps = ["Matrix.l2_opNorm_eq_spectralRadius_of_isStarNormal", "Matrix.spectralRadius_le_of_isConsistent", "Matrix.lpOpNorm_eq_inducedNorm", "Matrix.isConsistent_inducedNorm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11"
 
 [[node]]
 id = "spectralRadius_le_of_isConsistent"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri Theorem 1.4 over `ℂ`: if `N : Matrix n n ℂ → ℝ` is consistent with a definite `p : Seminorm ℂ (n → ℂ)` (`IsConsistent N p p`), then `spectralRadius ℂ A ≤ ENNReal.ofReal (N A)` for every `A`. The book's one-line proof: for an eigenpair `A v = λ v`, `‖λ‖ p v = p (A v) ≤ N A * p v` with `p v > 0`; eigenvectors exist for every spectral value in finite dimension (`Matrix.hasEigenvalue_toEuclideanLin_iff`, `Module.End.HasEigenvalue.exists_hasEigenvector`). No submultiplicativity is used, which is what distinguishes this from `spectralRadius_le_algebraNorm`. ★'''
-deps = ["Matrix.IsConsistent"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.4"
 
 [[node]]
 id = "complexSpectralRadius_le_of_isConsistent"
-kind = "theorem"
-desc = '''Theorem 1.4 for a real matrix and a *real* consistent pair: `IsConsistent N p p` with `p : Seminorm ℝ (n → ℝ)` definite implies `A.complexSpectralRadius ≤ ENNReal.ofReal (N A)`. The book's proof does not apply (the eigenvector may be complex). Proof: consistency iterates to `p (A ^ k *ᵥ x) ≤ N A ^ k * p x`; `p` is equivalent to `‖·‖₂` (`Seminorm.exists_bounds`), and `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq` (`Numlib/LinearAlgebra/Matrix/Complexify`) supplies a real `d₀ ≠ 0` with `limsup ‖A^k d₀‖^{1/k} = ρ(A)`; taking `k`-th roots gives `ρ(A) ≤ N A`. ★★'''
-deps = ["Matrix.IsConsistent", "Matrix.exists_limsup_norm_pow_mulVec_rpow_eq", "Seminorm.exists_bounds"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.4"
 
 [[node]]
 id = "complexSpectralRadius_le_inducedNorm"
-kind = "theorem"
-desc = '''`A.complexSpectralRadius ≤ ENNReal.ofReal (inducedNorm p p A)` for every definite `p : Seminorm ℝ (n → ℝ)` and real `A`, and `spectralRadius ℂ A ≤ ENNReal.ofReal (inducedNorm p p A)` for complex `A` and `p : Seminorm ℂ (n → ℂ)`: Theorem 1.4 specialized to the induced norms, the form chapter 4 uses. Immediate from the two consistency results; the real case also follows from `spectralRadius_le_algebraNorm` applied to `inducedAlgebraNorm`. ★'''
-deps = ["Matrix.complexSpectralRadius_le_of_isConsistent", "Matrix.spectralRadius_le_of_isConsistent", "Matrix.isConsistent_inducedNorm", "Matrix.inducedAlgebraNorm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.4"
+
+[[node]]
+id = "spectralRadius_le_inducedNorm"
 
 [[node]]
 id = "exists_inducedNorm_le_complexSpectralRadius_add"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri Property 1.13 in the induced-norm vocabulary, real case: for `A : Matrix n n ℝ` and `ε > 0` there is a definite `p : Seminorm ℝ (n → ℝ)` with `inducedNorm p p A ≤ (A.complexSpectralRadius).toReal + ε`. The seminorm is the one of `Matrix.exists_seminorm_forall_mulVec_le` (`Numlib/LinearAlgebra/Matrix/EpsilonNorm`), which is definite because it dominates `‖·‖`; its Lipschitz bound `p (A x) ≤ (ρ + ε) p x` is the bound on the supremum. ★'''
-deps = ["Matrix.inducedNorm", "Matrix.exists_seminorm_forall_mulVec_le"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.13"
 
 [[node]]
 id = "exists_inducedNorm_le_spectralRadius_add"
-kind = "theorem"
-desc = '''Property 1.13 as the book states it, for `A : Matrix n n ℂ`: `∃ p : Seminorm ℂ (n → ℂ)` definite with `inducedNorm p p A ≤ (spectralRadius ℂ A).toReal + ε`. Needs the `RCLike` generalization of `Matrix.exists_seminorm_forall_mulVec_le` proposed in the EXT of `Numlib/LinearAlgebra/Matrix/EpsilonNorm`; the derivation is then the same as the real case. ★'''
-deps = ["Matrix.inducedNorm", "Matrix.exists_seminorm_forall_mulVec_le_complex"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.13"
 
 [[node]]
 id = "complexSpectralRadius_eq_iInf_inducedNorm"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri (1.23): `(A.complexSpectralRadius).toReal = ⨅ p : {p : Seminorm ℝ (n → ℝ) // ∀ x, p x = 0 → x = 0}, inducedNorm p p A`. The infimum over the induced norms is `≥ ρ(A)` by `complexSpectralRadius_le_inducedNorm` and `≤ ρ(A) + ε` for every `ε` by the previous node; the book takes the infimum over "all consistent norms", which gives the same value since every consistent norm is `≥ ρ(A)` and the induced norms are among them. ★'''
-deps = ["Matrix.complexSpectralRadius_le_inducedNorm", "Matrix.exists_inducedNorm_le_complexSpectralRadius_add"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.23)"
 
 [[node]]
 id = "exists_isConsistent_of_mul_le"
-kind = "theorem"
-desc = '''A submultiplicative matrix norm has a consistent vector norm (Quarteroni–Sacco–Saleri §1.11, after Definition 1.21): for `N : Seminorm 𝕜 (Matrix n n 𝕜)` with `N (A * B) ≤ N A * N B` and any fixed `y ≠ 0`, the seminorm `p x := N (vecMulVec x (star y))` (`‖x yᴴ‖_α`) satisfies `IsConsistent N p p`, because `A * vecMulVec x (star y) = vecMulVec (A *ᵥ x) (star y)`; `p` is definite when `N` is. ★'''
-deps = ["Matrix.IsConsistent"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11, after Definition 1.21"
 
 [[node]]
 id = "inducedNorm_inv_one_sub_le"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri (1.26) for an induced norm: if `inducedNorm p p A < 1` (`p : Seminorm ℝ (n → ℝ)` definite, `A : Matrix n n ℝ`) then `1 - A` is a unit and `1 / (1 + inducedNorm p p A) ≤ inducedNorm p p (1 - A)⁻¹ ≤ 1 / (1 - inducedNorm p p A)`. Instance of the `AlgebraNorm` lemmas `AlgebraNorm.norm_inverse_one_sub_le_of_lt_one` / `AlgebraNorm.one_div_one_add_le_norm_inverse_one_sub` proposed in the EXT of `Numlib/Analysis/Normed/Algebra/SpectralRadius`, applied to `inducedAlgebraNorm p hp`, whose value at `1` is `1`. ★'''
-deps = ["Matrix.inducedAlgebraNorm", "Matrix.inducedNorm_one", "AlgebraNorm.norm_inverse_one_sub_le_of_lt_one", "AlgebraNorm.one_div_one_add_le_norm_inverse_one_sub"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.26)"
+
+[[node]]
+id = "isUnit_one_sub_of_inducedNorm_lt_one"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.5, Remark 1.1"
+
+[[node]]
+id = "one_div_one_add_le_inducedNorm_inv_one_sub"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.26)"
 
 [[node]]
 id = "linfty_opNorm_le_of_abs_entrywiseLE"
-kind = "theorem"
-desc = '''The `∞`-operator norm is monotone in the entrywise order of absolute values: in Mathlib's scoped
-`Matrix.Norms.Operator`, `A.abs ≤ₑ B.abs → ‖A‖ ≤ ‖B‖`; in particular `‖A.abs‖ = ‖A‖`
-(`linfty_opNorm_abs`) and `A.abs ≤ₑ c • B.abs → ‖A‖ ≤ c * ‖B‖` for `0 ≤ c`. Row sums,
-`Matrix.linfty_opNorm_def`. This is how every entrywise backward-error bound of `FloatingPoint/*`
-becomes a normwise one (QSS (3.25), (3.65), (3.67)). ★'''
-deps = []
+
+[[node]]
+id = "linfty_opNorm_abs"
+
+[[node]]
+id = "linfty_opNorm_le_mul_of_abs_entrywiseLE"
 
 [[node]]
 id = "l2_opNorm_unitary_mul"
-kind = "theorem"
-desc = '''Unitary invariance of the spectral norm: `U ∈ unitaryGroup n 𝕜 → ‖U * A‖ = ‖A‖` and `‖A * U‖ = ‖A‖`
-in `Matrix.Norms.L2Operator`; consequences `Matrix.condNumber_l2_of_mem_unitaryGroup : κ U = 1`
-(QSS §3.1.1, "if `A` is orthogonal, `K₂(A) = 1`") and `κ (Q * R) = κ R` (QSS §3.11, Exercise 14,
-`K₂(A) = K₂(R)`). Through `Matrix.toEuclideanCLM` and the isometry of a unitary operator,
-`Analysis/Matrix/ToEuclideanLin`. ★'''
-deps = ["NormedRing.condNumber"]
+
+[[node]]
+id = "l2_opNorm_mul_unitary"
+
+[[node]]
+id = "condNumber_l2_of_mem_unitaryGroup"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1"
+
+[[node]]
+id = "condNumber_l2_unitary_mul"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11, Exercise 14"
 
 [[node]]
 id = "PosDef.condNumber_l2_eq_div_eigenvalues"
-kind = "theorem"
-desc = '''QSS (3.5): for `A.PosDef` over `RCLike 𝕜`, `κ A = λ_max / λ_min` in the spectral norm, with
-`λ_max = ⨆ i, hA.1.eigenvalues i` and `λ_min = ⨅ i, hA.1.eigenvalues i`; equivalently `κ A = ρ(A)
-ρ(A⁻¹)`. From `Matrix.IsHermitian.l2_opNorm_eq` and `l2_opNorm_inv_eq` of
-`Analysis/Matrix/SpectralNorm` with the positivity of the eigenvalues. ★'''
-deps = ["Matrix.IsHermitian.l2_opNorm_eq", "Matrix.IsHermitian.l2_opNorm_inv_eq", "NormedRing.condNumber"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (3.5)"

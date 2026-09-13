@@ -10,6 +10,7 @@ import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Hermitian
+import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.Topology.Instances.Matrix
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.LinearAlgebra.Matrix.Hessenberg
@@ -50,6 +51,16 @@ corollaries at the end of the file.
 * `Matrix.limsup_norm_pow_mulVec_rpow_le` and
   `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq`: the spectral radius bounds every specific
   convergence factor `limsup (‖Gᵏ d₀‖/‖d₀‖) ^ (1/k)`, and some `d₀` attains it.
+* `Matrix.star_mem_spectrum_complexify_iff`, `Matrix.spectrum_complexify_affine`,
+  `Matrix.complexSpectralRadius_pow` and `Matrix.complexSpectralRadius_affine_le`: the spectrum of
+  a real matrix is closed under conjugation, spectral mapping for affine images and powers, and the
+  relaxation estimate `ρ((1 - ω) I + ω X) ≤ (1 - ω) + ω ρ(X)`.
+* `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one` and
+  `Matrix.summable_pow_iff_complexSpectralRadius_lt_one`: the real Neumann series
+  `∑ Aᵏ = (1 - A)⁻¹` under `ρ(A) < 1` alone, [quarteroni2000numerical] Theorem 1.5.
+* `Matrix.posDef_complexify_iff`: positive definiteness is unchanged by complexification.
+* `Matrix.tendsto_averageConvergenceRate`: `-(1/m) log ‖Gᵐ‖ → -log ρ(G)`,
+  [quarteroni2000numerical] (4.5).
 
 Complexification is a ring homomorphism, and the algebraic lemmas at the top of the file say so
 operation by operation (`Matrix.complexify_add`, `Matrix.complexify_mul`, `Matrix.complexify_inv`,
@@ -141,6 +152,11 @@ theorem complexify_strictUpper [LinearOrder n] (A : Matrix n n ℝ) :
     complexify (strictUpper A) = strictUpper (complexify A) := by
   ext i j; by_cases h : i < j <;> simp [complexify, strictUpper_apply, h]
 
+/-- Complexification preserves tridiagonality, since it preserves zeros entrywise. -/
+theorem IsTridiagonal.complexify [LinearOrder n] {A : Matrix n n ℝ} (hA : A.IsTridiagonal) :
+    (Matrix.complexify A).IsTridiagonal := fun i j h => by
+  simp [Matrix.complexify, hA i j h]
+
 variable [DecidableEq n]
 
 @[simp] theorem complexify_one : complexify (1 : Matrix n n ℝ) = 1 :=
@@ -226,6 +242,65 @@ theorem ofReal_mem_spectrum_complexify_iff (A : Matrix n n ℝ) (μ : ℝ) :
     Polynomial.eval₂_at_apply]
   simp
 
+/-- **The complex eigenvalues of a real matrix come in conjugate pairs**:
+`star μ ∈ σ(A) ↔ μ ∈ σ(A)`, because the characteristic polynomial has real coefficients
+(`Matrix.charpoly_complexify` with `Polynomial.aeval_conj`). [quarteroni2000numerical] §1.7. -/
+theorem star_mem_spectrum_complexify_iff (A : Matrix n n ℝ) (μ : ℂ) :
+    star μ ∈ spectrum ℂ (complexify A) ↔ μ ∈ spectrum ℂ (complexify A) := by
+  have key : ∀ ν : ℂ, ν ∈ spectrum ℂ (complexify A) → star ν ∈ spectrum ℂ (complexify A) := by
+    intro ν hν
+    rw [mem_spectrum_complexify_iff, Polynomial.IsRoot.def, Polynomial.eval_map,
+      ← Polynomial.aeval_def] at hν ⊢
+    rw [show star ν = starRingEnd ℂ ν from rfl, Polynomial.aeval_conj, hν, map_zero]
+  exact ⟨fun h => by simpa using key _ h, key μ⟩
+
+/-- Conjugate eigenvalues of a real matrix have the same algebraic multiplicity: the
+characteristic polynomial is fixed by conjugation of its coefficients, and root multiplicities
+are preserved by an injective ring homomorphism (`Polynomial.eq_rootMultiplicity_map`). -/
+theorem rootMultiplicity_charpoly_complexify_star (A : Matrix n n ℝ) (μ : ℂ) :
+    (complexify A).charpoly.rootMultiplicity (star μ)
+      = (complexify A).charpoly.rootMultiplicity μ := by
+  rw [charpoly_complexify]
+  have hmap : (A.charpoly.map (algebraMap ℝ ℂ)).map (starRingEnd ℂ)
+      = A.charpoly.map (algebraMap ℝ ℂ) := by
+    rw [Polynomial.map_map]
+    congr 1
+    ext x
+    simp
+  have h := Polynomial.eq_rootMultiplicity_map (p := A.charpoly.map (algebraMap ℝ ℂ))
+    (starRingEnd ℂ).injective μ
+  rw [hmap] at h
+  exact h.symm
+
+/-- The spectrum of an affine image `c • 1 + d • Y` of a complex matrix, `d ≠ 0`. -/
+private theorem mem_spectrum_affine_iff {Y : Matrix n n ℂ} {c d : ℂ} (hd : d ≠ 0) (μ : ℂ) :
+    μ ∈ spectrum ℂ (c • 1 + d • Y) ↔ (μ - c) / d ∈ spectrum ℂ Y := by
+  have key : algebraMap ℂ (Matrix n n ℂ) μ - (c • 1 + d • Y)
+      = d • (algebraMap ℂ (Matrix n n ℂ) ((μ - c) / d) - Y) := by
+    rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one, smul_sub, smul_smul,
+      mul_div_cancel₀ _ hd]
+    module
+  have hu := isUnit_smul_iff (Units.mk0 d hd) (algebraMap ℂ (Matrix n n ℂ) ((μ - c) / d) - Y)
+  rw [Units.smul_def, Units.val_mk0] at hu
+  rw [spectrum.mem_iff, spectrum.mem_iff, key, hu]
+
+/-- **Spectral mapping for affine images of a real matrix**: for `d ≠ 0`,
+`σ(c I + d X) = c + d σ(X)`. This is what every relaxation argument uses — JOR
+`(1 - ω) I + ω B_J`, Richardson `I - α M`. -/
+theorem spectrum_complexify_affine (X : Matrix n n ℝ) {c d : ℝ} (hd : d ≠ 0) :
+    spectrum ℂ (complexify (c • 1 + d • X))
+      = (fun μ : ℂ => c + d * μ) '' spectrum ℂ (complexify X) := by
+  have hd' : (d : ℂ) ≠ 0 := by exact_mod_cast hd
+  ext μ
+  rw [complexify_add, complexify_smul, complexify_smul, complexify_one,
+    mem_spectrum_affine_iff hd', Set.mem_image]
+  refine ⟨fun h => ⟨_, h, by rw [mul_div_cancel₀ _ hd']; ring⟩, ?_⟩
+  rintro ⟨ν, hν, rfl⟩
+  have hcancel : ((c : ℂ) + (d : ℂ) * ν - (c : ℂ)) / (d : ℂ) = ν := by
+    field_simp
+    ring
+  rwa [hcancel]
+
 /-- The spectral radius of a real matrix, computed over `ℂ`. -/
 noncomputable def complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
   spectralRadius ℂ (complexify A)
@@ -253,6 +328,55 @@ theorem complexSpectralRadius_pow_le (A : Matrix n n ℝ) {k : ℕ} (hk : k ≠ 
     complexSpectralRadius A ^ k ≤ complexSpectralRadius (A ^ k) := by
   rw [complexSpectralRadius, complexSpectralRadius, complexify_pow]
   exact spectrum.spectralRadius_pow_le _ k hk
+
+/-- **`ρ(Aᵏ) = ρ(A)ᵏ`** for `k ≠ 0` (the spectral mapping theorem, `spectralRadius_pow_of_nonempty`;
+the exponent `0` is excluded because on an empty index type the spectrum is empty and `ρ(1) = 0`).
+[quarteroni2000numerical] §1.7 and Exercise 8. -/
+theorem complexSpectralRadius_pow (A : Matrix n n ℝ) {k : ℕ} (hk : k ≠ 0) :
+    complexSpectralRadius (A ^ k) = complexSpectralRadius A ^ k := by
+  rw [complexSpectralRadius, complexSpectralRadius, complexify_pow]
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
+    simp [spectralRadius, spectrum.of_subsingleton, hk]
+  · exact spectralRadius_pow_of_nonempty
+      (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ _) k
+
+/-- **The relaxation estimate**: for `0 < ω ≤ 1`, `ρ((1 - ω) I + ω X) ≤ (1 - ω) + ω ρ(X)`. Each
+eigenvalue `(1 - ω) + ω μ` of the relaxed matrix (`Matrix.spectrum_complexify_affine`) has modulus
+at most `(1 - ω) + ω |μ|`. This is the estimate behind [quarteroni2000numerical] Theorem 4.6. -/
+theorem complexSpectralRadius_affine_le (X : Matrix n n ℝ) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
+    complexSpectralRadius ((1 - ω) • 1 + ω • X)
+      ≤ ENNReal.ofReal (1 - ω) + ENNReal.ofReal ω * complexSpectralRadius X := by
+  have h1ω : 0 ≤ 1 - ω := by linarith
+  have e1 : ENNReal.ofReal (1 - ω) = ‖((1 - ω : ℝ) : ℂ)‖₊ := by
+    rw [Complex.nnnorm_real, Real.nnnorm_of_nonneg h1ω, ENNReal.ofReal_eq_coe_nnreal h1ω]
+  have e2 : ENNReal.ofReal ω = ‖(ω : ℂ)‖₊ := by
+    rw [Complex.nnnorm_real, Real.nnnorm_of_nonneg hω0.le, ENNReal.ofReal_eq_coe_nnreal hω0.le]
+  rw [complexSpectralRadius, complexSpectralRadius, spectralRadius,
+    spectrum_complexify_affine X hω0.ne', e1, e2]
+  refine iSup₂_le fun μ hμ => ?_
+  obtain ⟨ν, hν, rfl⟩ := hμ
+  calc (‖((1 - ω : ℝ) : ℂ) + (ω : ℂ) * ν‖₊ : ℝ≥0∞)
+      ≤ ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ) * ν‖₊ := by
+        rw [← ENNReal.coe_add]; exact ENNReal.coe_le_coe.2 (nnnorm_add_le _ _)
+    _ = ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ)‖₊ * ‖ν‖₊ := by rw [nnnorm_mul, ENNReal.coe_mul]
+    _ ≤ ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ)‖₊ * spectralRadius ℂ (complexify X) := by
+        gcongr
+        exact le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) ν hν
+
+/-- Relaxation with `0 < ω ≤ 1` preserves `ρ < 1`: the corollary of
+`Matrix.complexSpectralRadius_affine_le` that [quarteroni2000numerical] Theorem 4.6 uses. -/
+theorem complexSpectralRadius_affine_lt_one (X : Matrix n n ℝ) {ω : ℝ} (hω0 : 0 < ω)
+    (hω1 : ω ≤ 1) (hX : complexSpectralRadius X < 1) :
+    complexSpectralRadius ((1 - ω) • 1 + ω • X) < 1 := by
+  refine (complexSpectralRadius_affine_le X hω0 hω1).trans_lt ?_
+  have hω' : ENNReal.ofReal ω ≠ 0 := by simpa using hω0
+  calc ENNReal.ofReal (1 - ω) + ENNReal.ofReal ω * complexSpectralRadius X
+      < ENNReal.ofReal (1 - ω) + ENNReal.ofReal ω * 1 :=
+        ENNReal.add_lt_add_left ENNReal.ofReal_ne_top
+          (ENNReal.mul_lt_mul_right hω' ENNReal.ofReal_ne_top hX)
+    _ = 1 := by
+        rw [mul_one, ← ENNReal.ofReal_add (by linarith) hω0.le, sub_add_cancel, ENNReal.ofReal_one]
 
 /-- The real spectral radius is at most the complex one, and can be strictly smaller: a plane
 rotation has empty real spectrum. -/
@@ -651,6 +775,82 @@ theorem tendsto_pow_rpow_complexSpectralRadius (A : Matrix n n ℝ) :
   simp only [Function.comp_apply]
   exact ENNReal.toReal_ofReal (Real.rpow_nonneg (norm_nonneg _) _)
 
+/-- **The real Neumann series**: when `ρ(A) < 1`, `∑ Aᵏ` sums to `(1 - A)⁻¹` — the real form of
+[quarteroni2000numerical] Theorem 1.5, display (1.25), with only the spectral-radius hypothesis.
+Summability comes from the geometric decay `‖Aᵏ‖ ≤ C rᵏ` of the complexification
+(`exists_norm_pow_le_of_spectralRadius_lt` with `Matrix.l2_opNorm_complexify`), and the sum is
+identified by `(1 - A) ∑ Aᵏ = 1`. -/
+theorem hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one {A : Matrix n n ℝ}
+    (h : complexSpectralRadius A < 1) : HasSum (fun k => A ^ k) (1 - A)⁻¹ := by
+  have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
+  have _ : CompleteSpace (Matrix n n ℝ) := FiniteDimensional.complete ℝ _
+  obtain ⟨r, hr1, hr2⟩ := ENNReal.lt_iff_exists_nnreal_btwn.mp h
+  obtain ⟨C, -, hC⟩ := exists_norm_pow_le_of_spectralRadius_lt (complexify A) hr1
+  have hrlt : (r : ℝ) < 1 := by exact_mod_cast ENNReal.coe_lt_one_iff.mp hr2
+  have hs : Summable (fun k => A ^ k) :=
+    Summable.of_norm_bounded ((summable_geometric_of_lt_one r.coe_nonneg hrlt).mul_left C)
+      fun k => by rw [← l2_opNorm_complexify, complexify_pow]; exact hC k
+  rw [Matrix.inv_eq_right_inv hs.one_sub_mul_tsum_pow]
+  exact hs.hasSum
+
+/-- **The geometric series `∑ Aᵏ` of a real matrix converges iff `ρ(A) < 1`**,
+[quarteroni2000numerical] Theorem 1.5. -/
+theorem summable_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
+    Summable (fun k => A ^ k) ↔ complexSpectralRadius A < 1 :=
+  ⟨fun hs => (tendsto_pow_iff_complexSpectralRadius_lt_one A).1 hs.tendsto_atTop_zero,
+    fun h => (hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one h).summable⟩
+
+/-- **`ρ(A) < 1` makes some power of the operator `A` a contraction**, for any continuous linear
+map `T` on `EuclideanSpace ℝ n` whose underlying linear map is `toEuclideanLin A`: `‖Tᵏ‖ < 1` for
+some `k`, `‖Tᵏ‖` being the spectral norm of `Aᵏ`. This is the bridge from `ρ(J_G(x*)) < 1`
+([quarteroni2000numerical] Property 7.3, and the stationary-iteration criteria of its chapter 4
+read on `EuclideanSpace`) to the Banach-space Ostrowski theorem, with no re-norming of `ℝⁿ`. -/
+theorem exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one
+    {A : Matrix n n ℝ} (hA : complexSpectralRadius A < 1)
+    {T : EuclideanSpace ℝ n →L[ℝ] EuclideanSpace ℝ n}
+    (hT : (T : EuclideanSpace ℝ n →ₗ[ℝ] EuclideanSpace ℝ n) = toEuclideanLin A) :
+    ∃ k, ‖T ^ k‖ < 1 := by
+  have hT' : T = toEuclideanCLM (n := n) (𝕜 := ℝ) A :=
+    ContinuousLinearMap.coe_injective (hT.trans (coe_toEuclideanCLM_eq_toEuclideanLin A).symm)
+  have h := ((tendsto_pow_iff_complexSpectralRadius_lt_one A).2 hA).norm
+  rw [norm_zero] at h
+  obtain ⟨k, hk⟩ := (h.eventually_lt_const one_pos).exists
+  exact ⟨k, by rwa [hT', ← map_pow, l2_opNorm_toEuclideanCLM]⟩
+
+/-- The `toEuclideanCLM` form of
+`Matrix.exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one`. -/
+theorem exists_norm_toEuclideanCLM_pow_lt_one_of_complexSpectralRadius_lt_one {A : Matrix n n ℝ}
+    (hA : complexSpectralRadius A < 1) :
+    ∃ k, ‖toEuclideanCLM (n := n) (𝕜 := ℝ) A ^ k‖ < 1 :=
+  exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one hA
+    (coe_toEuclideanCLM_eq_toEuclideanLin A)
+
+/-- If `a m ^ (1 / m) → ρ > 0` for a nonnegative sequence, then `(1 / m) log (a m) → log ρ`: the
+continuity of `log` at a positive point, with `log (a ^ (1 / m)) = (1 / m) log a` also at
+`a = 0`. -/
+theorem _root_.tendsto_one_div_mul_log_of_tendsto_rpow_one_div {a : ℕ → ℝ} (ha : ∀ m, 0 ≤ a m)
+    {ρ : ℝ} (hρ : 0 < ρ) (h : Tendsto (fun m : ℕ => a m ^ (1 / m : ℝ)) atTop (𝓝 ρ)) :
+    Tendsto (fun m : ℕ => (1 / m : ℝ) * Real.log (a m)) atTop (𝓝 (Real.log ρ)) := by
+  refine ((Real.continuousAt_log hρ.ne').tendsto.comp h).congr' ?_
+  filter_upwards [eventually_ge_atTop 1] with m hm
+  simp only [Function.comp_apply]
+  rcases (ha m).eq_or_lt with h0 | h0
+  · rw [← h0, Real.zero_rpow (one_div_ne_zero (Nat.cast_ne_zero.2 (by omega))), Real.log_zero,
+      mul_zero]
+  · rw [Real.log_rpow h0]
+
+/-- **The average convergence rate tends to the asymptotic one**: for a real matrix `G` with
+`ρ(G) ≠ 0`, `-(1 / m) log ‖Gᵐ‖₂ → -log ρ(G)`, [quarteroni2000numerical] (4.5). It is Gelfand's
+formula `Matrix.tendsto_pow_rpow_complexSpectralRadius` composed with `log`; the same holds in the
+maximum-row-sum norm through `Matrix.tendsto_pow_rpow_linfty_opNorm`. -/
+theorem tendsto_averageConvergenceRate (G : Matrix n n ℝ) (hG : complexSpectralRadius G ≠ 0) :
+    Tendsto (fun m : ℕ => -(1 / m : ℝ) * Real.log ‖G ^ m‖) atTop
+      (𝓝 (-Real.log (complexSpectralRadius G).toReal)) := by
+  have hρ : 0 < (complexSpectralRadius G).toReal :=
+    ENNReal.toReal_pos hG (complexSpectralRadius_ne_top G)
+  simpa only [neg_mul] using (tendsto_one_div_mul_log_of_tendsto_rpow_one_div
+    (fun m => norm_nonneg _) hρ (tendsto_pow_rpow_complexSpectralRadius G)).neg
+
 /-- The specific convergence factor of an initial error is bounded termwise by the general one. -/
 private theorem rpow_le_rpow_norm_pow (G : Matrix n n ℝ) (d₀ : n → ℝ) (k : ℕ) :
     (‖(WithLp.toLp 2 (G ^ k *ᵥ d₀) : EuclideanSpace ℝ n)‖
@@ -856,18 +1056,106 @@ theorem exists_limsup_norm_pow_mulVec_rpow_eq [Nonempty n] (G : Matrix n n ℝ) 
 
 end L2Operator
 
-/-- **A real iteration matrix of algebra norm less than one has powers tending to `0`**, for any
-consistent (submultiplicative) matrix norm at all, not only the scoped ones.
+section PosDef
+
+open scoped ComplexOrder
+
+omit [DecidableEq n] in
+/-- The real part of the Hermitian form of a complexified matrix at `z = x + i y` is the sum of
+the real bilinear forms at `x` and at `y`. -/
+theorem re_star_dotProduct_complexify_mulVec (A : Matrix n n ℝ) (z : n → ℂ) :
+    (star z ⬝ᵥ (complexify A *ᵥ z)).re
+      = (fun i => (z i).re) ⬝ᵥ (A *ᵥ fun i => (z i).re)
+        + (fun i => (z i).im) ⬝ᵥ (A *ᵥ fun i => (z i).im) := by
+  simp only [dotProduct, Pi.star_apply, Complex.re_sum, Complex.mul_re, Complex.star_def,
+    Complex.conj_re, Complex.conj_im, complexify_mulVec_re, complexify_mulVec_im,
+    ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+omit [DecidableEq n] in
+/-- The imaginary part of the Hermitian form of a complexified matrix at `z = x + i y` is the
+commutator `x ⬝ A y - y ⬝ A x` of the real bilinear form; it vanishes for a symmetric `A`. -/
+theorem im_star_dotProduct_complexify_mulVec (A : Matrix n n ℝ) (z : n → ℂ) :
+    (star z ⬝ᵥ (complexify A *ᵥ z)).im
+      = (fun i => (z i).re) ⬝ᵥ (A *ᵥ fun i => (z i).im)
+        - (fun i => (z i).im) ⬝ᵥ (A *ᵥ fun i => (z i).re) := by
+  simp only [dotProduct, Pi.star_apply, Complex.im_sum, Complex.mul_im, Complex.star_def,
+    Complex.conj_re, Complex.conj_im, complexify_mulVec_re, complexify_mulVec_im,
+    ← Finset.sum_sub_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+omit [DecidableEq n] in
+/-- The bilinear form of a symmetric real matrix is symmetric. -/
+private theorem dotProduct_mulVec_comm_of_isHermitian {A : Matrix n n ℝ} (hA : A.IsHermitian)
+    (x y : n → ℝ) : x ⬝ᵥ (A *ᵥ y) = y ⬝ᵥ (A *ᵥ x) := by
+  have hT : Aᵀ = A := by simpa [conjTranspose_eq_transpose_of_trivial] using hA.eq
+  rw [dotProduct_mulVec, ← mulVec_transpose, hT, dotProduct_comm]
+
+omit [DecidableEq n] in
+/-- **The Hermitian form of the complexification of a symmetric real matrix is real**:
+`star z ⬝ᵥ (Ā z) = x ⬝ A x + y ⬝ A y` for `z = x + i y`. -/
+theorem star_dotProduct_complexify_mulVec_of_isHermitian {A : Matrix n n ℝ} (hA : A.IsHermitian)
+    (z : n → ℂ) :
+    star z ⬝ᵥ (complexify A *ᵥ z)
+      = (((fun i => (z i).re) ⬝ᵥ (A *ᵥ fun i => (z i).re)
+        + (fun i => (z i).im) ⬝ᵥ (A *ᵥ fun i => (z i).im) : ℝ) : ℂ) := by
+  apply Complex.ext
+  · rw [Complex.ofReal_re, re_star_dotProduct_complexify_mulVec]
+  · rw [Complex.ofReal_im, im_star_dotProduct_complexify_mulVec,
+      dotProduct_mulVec_comm_of_isHermitian hA, sub_self]
+
+omit [DecidableEq n] in
+-- `Matrix.PosDef` is stated with finitely supported sums and needs no `Fintype n`, but the proof
+-- goes through the `dotProduct` form `Matrix.posDef_iff_dotProduct_mulVec`, which does.
+set_option linter.unusedFintypeInType false in
+/-- **A real matrix is positive definite exactly when its complexification is.** The complex
+Hermitian form at `x + i y` is the sum of the real quadratic forms at `x` and `y`
+(`Matrix.star_dotProduct_complexify_mulVec_of_isHermitian`), and a real vector is a complex vector
+with zero imaginary part. -/
+theorem posDef_complexify_iff {A : Matrix n n ℝ} : (complexify A).PosDef ↔ A.PosDef := by
+  rw [posDef_iff_dotProduct_mulVec, posDef_iff_dotProduct_mulVec, isHermitian_complexify_iff]
+  simp only [star_trivial]
+  constructor
+  · rintro ⟨hA, h⟩
+    refine ⟨hA, fun x hx => ?_⟩
+    have hz : (fun i => (x i : ℂ)) ≠ 0 := fun h0 =>
+      hx (funext fun i => by simpa using congrFun h0 i)
+    have hpos := h hz
+    rw [star_dotProduct_complexify_mulVec_of_isHermitian hA, Complex.zero_lt_real] at hpos
+    simpa using hpos
+  · rintro ⟨hA, h⟩
+    refine ⟨hA, fun z hz => ?_⟩
+    rw [star_dotProduct_complexify_mulVec_of_isHermitian hA, Complex.zero_lt_real]
+    have hnonneg : ∀ x : n → ℝ, 0 ≤ x ⬝ᵥ (A *ᵥ x) := fun x => by
+      rcases eq_or_ne x 0 with rfl | hx
+      · simp
+      · exact (h hx).le
+    rcases eq_or_ne (fun i => (z i).re) 0 with hre | hre
+    · have him : (fun i => (z i).im) ≠ 0 := fun him =>
+        hz (funext fun i => Complex.ext (by simpa using congrFun hre i)
+          (by simpa using congrFun him i))
+      have := h him
+      linarith [hnonneg fun i => (z i).re]
+    · have := h hre
+      linarith [hnonneg fun i => (z i).im]
+
+end PosDef
+
+/-- **The spectral radius of a real matrix is at most any algebra norm of it**,
+`ρ(A) ≤ N A` for every `N : AlgebraNorm ℝ (Matrix n n ℝ)`: the real form of
+`spectralRadius_le_algebraNorm`, the spectral radius being the complex one. This is
+[quarteroni2000numerical] Theorem 1.4 for a submultiplicative matrix norm.
 
 The norm is bundled as an `AlgebraNorm ℝ (Matrix n n ℝ)`, so that its hypotheses are attached to
 the canonical ring and module structures of `Matrix n n ℝ`.  Stating it instead with a class
 argument `[NormedRing (Matrix n n ℝ)]` would make it false, for the reason explained above
 `Matrix.exists_nnnorm_apply_le`. -/
-theorem tendsto_pow_of_algebraNorm_lt_one (N : AlgebraNorm ℝ (Matrix n n ℝ)) {A : Matrix n n ℝ}
-    (h : N A < 1) : Tendsto (fun k => A ^ k) atTop (𝓝 0) := by
+theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix n n ℝ))
+    (A : Matrix n n ℝ) : complexSpectralRadius A ≤ ENNReal.ofReal (N A) := by
   have hmono : ∀ B, (0 : ℝ) ≤ N B := fun B => apply_nonneg N B
-  refine (tendsto_pow_iff_complexSpectralRadius_lt_one A).mpr ?_
-  refine lt_of_le_of_lt (complexSpectralRadius_le_of_norm (fun B => (N B).toNNReal) A ?_ ?_ ?_) ?_
+  refine (complexSpectralRadius_le_of_norm (fun B => (N B).toNNReal) A ?_ ?_ ?_).trans_eq ?_
   · intro B C
     rw [← Real.toNNReal_mul (hmono B)]
     exact Real.toNNReal_mono (map_mul_le_mul N B C)
@@ -879,7 +1167,13 @@ theorem tendsto_pow_of_algebraNorm_lt_one (N : AlgebraNorm ℝ (Matrix n n ℝ))
   · intro B hB
     refine eq_zero_of_map_eq_zero N (le_antisymm ?_ (hmono B))
     simpa [Real.toNNReal_eq_zero] using hB
-  · rw [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_coe]
-    simpa [Real.coe_toNNReal _ (hmono A)] using h
+  · rfl
+
+/-- **The powers of a real matrix tend to zero as soon as some algebra norm of it is less than
+one**, the convergence criterion for an arbitrary consistent norm. -/
+theorem tendsto_pow_of_algebraNorm_lt_one (N : AlgebraNorm ℝ (Matrix n n ℝ)) {A : Matrix n n ℝ}
+    (h : N A < 1) : Tendsto (fun k => A ^ k) atTop (𝓝 0) :=
+  (tendsto_pow_iff_complexSpectralRadius_lt_one A).mpr
+    ((complexSpectralRadius_le_algebraNorm N A).trans_lt (ENNReal.ofReal_lt_one.mpr h))
 
 end Matrix

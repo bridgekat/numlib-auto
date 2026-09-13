@@ -157,6 +157,7 @@ import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Module.DualSeparable

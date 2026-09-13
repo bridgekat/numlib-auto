@@ -93,17 +93,3 @@ id = "inner_toLp_mulVec_of_mem_unitaryGroup"
 [[node]]
 id = "norm_toLp_mulVec_of_mem_unitaryGroup"
 
-[[node]]
-id = "exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one"
-kind = "theorem"
-desc = '''For a real matrix `A : Matrix n n ℝ` with `Matrix.complexSpectralRadius A < 1` there is `k`
-with `‖(toEuclideanLin A : EuclideanSpace ℝ n →L[ℝ] EuclideanSpace ℝ n) ^ k‖ < 1` (the operator norm
-of the `k`-th power, i.e. the spectral norm of `A ^ k`). Proof:
-`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` (`Numlib/LinearAlgebra/Matrix/Complexify`)
-gives `A ^ k → 0`; `toEuclideanLin` is continuous linear on a finite-dimensional space and
-multiplicative (`toEuclideanLin_pow`), so the powers of the operator tend to `0` and are eventually
-of norm `< 1`. This is the bridge from `ρ(J_G(x*)) < 1` (Quarteroni–Sacco–Saleri Property 7.3,
-and chapter 4's stationary-iteration criteria read on `EuclideanSpace`) to the Banach-space
-Ostrowski theorem `tendsto_iterate_of_exists_norm_pow_fderiv_lt_one`, avoiding any re-norming of
-`ℝⁿ`. ★'''
-deps = ["Matrix.toEuclideanLin_pow", "Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one"]

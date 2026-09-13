@@ -1,35 +1,34 @@
 namespace = "PiLp"
-desc = '''
-Comparison of the vector `p`-norms on a finite product `PiLp p (fun _ : ι => 𝕜)`: the constants of
-Quarteroni–Sacco–Saleri Table 1.1 (`‖x‖₂ ≤ ‖x‖₁ ≤ √n ‖x‖₂`, `‖x‖_∞ ≤ ‖x‖₂ ≤ √n ‖x‖_∞`,
-`‖x‖_∞ ≤ ‖x‖₁ ≤ n ‖x‖_∞`), the monotonicity `‖x‖_q ≤ ‖x‖_p` for `p ≤ q`, and the limit
-`‖x‖_p → ‖x‖_∞` as `p → ∞` that the book uses to introduce the maximum norm in §1.10. Mathlib's
-`PiLp.lean` has the `∞`-versus-`p` comparison as Lipschitz constants only (`PiLp.lipschitzWith_toLp`,
-`PiLp.antilipschitzWith_ofLp`, constant `card^{1/p}`; grepped `card`, `lipschitzWith`,
-`antilipschitzWith`, `norm_le`, `mono`, `antitone` in that file) and the power-mean inequalities
-(`NNReal.rpow_arith_mean_le_arith_mean_rpow`, `Real.inner_le_Lp_mul_Lq`) from which the rest
-follows; it has no statement in the `PiLp` vocabulary and no limit in `p`. The module is small and
-Mathlib-shaped; it sits beside `Numlib/Analysis/Normed/Lp/SmoothApprox` by directory name only
-(that module is about function spaces), and is an upstreaming candidate.
 
-The matrix-norm consequences (Table 1.1's matrix analogue, Exercise 17) are in
-`Numlib/Analysis/Matrix/OperatorNorm`.
-'''
+[[node]]
+id = "_root_.NNReal.sum_rpow_le_rpow_sum"
 
 [[node]]
 id = "norm_le_norm_of_le"
-kind = "theorem"
-desc = '''For `1 ≤ p ≤ q ≤ ∞` and `x : ι → 𝕜` (finite `ι`), `‖WithLp.toLp q x‖ ≤ ‖WithLp.toLp p x‖`: the `p`-norms decrease in `p`. Proof for finite `q`: normalize to `‖x‖_p = 1`, then `|x_i| ≤ 1` and `|x_i|^q ≤ |x_i|^p`; for `q = ∞` each `|x_i|^p ≤ ∑ |x_j|^p`. Covers the `c_pq = 1` entries of Quarteroni–Sacco–Saleri Table 1.1. ★★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 1.1"
 
 [[node]]
 id = "norm_le_card_rpow_mul_norm"
-kind = "theorem"
-desc = '''For `1 ≤ p ≤ q ≤ ∞`, `‖WithLp.toLp p x‖ ≤ (card ι) ^ (1/p - 1/q) * ‖WithLp.toLp q x‖` (with `1/∞ = 0`): Hölder with exponents `q/p` and its conjugate applied to `∑ |x_i|^p · 1`. Specializations `norm_toLp_one_le_sqrt_card_mul_norm_toLp_two` (`‖x‖₁ ≤ √n ‖x‖₂`), `norm_toLp_two_le_sqrt_card_mul_norm_toLp_top` (`‖x‖₂ ≤ √n ‖x‖_∞`, also `PiLp.lipschitzWith_toLp` at `p = 2`) and `norm_toLp_one_le_card_mul_norm_toLp_top` (`‖x‖₁ ≤ n ‖x‖_∞`) stated as corollaries: the `C_pq` entries of Table 1.1. ★★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 1.1"
 
 [[node]]
 id = "tendsto_norm_toLp_atTop"
-kind = "theorem"
-desc = '''`Tendsto (fun p : ℝ => ‖WithLp.toLp (ENNReal.ofReal p) x‖) atTop (𝓝 ‖WithLp.toLp ⊤ x‖)`: the `p`-norm tends to the maximum norm as `p → ∞` (Quarteroni–Sacco–Saleri §1.10, "the limit as `p` goes to infinity of `‖x‖_p` exists, is finite, and equals the maximum module"). Squeeze `‖x‖_∞ ≤ ‖x‖_p ≤ n^{1/p} ‖x‖_∞` from the two previous nodes and `n^{1/p} → 1` (`tendsto_rpow_div`, or the `tendsto_const_rpow_one_div` argument of `Numlib/Analysis/Normed/Module/NormEquivalence`). ★★'''
-deps = ["PiLp.norm_le_norm_of_le", "PiLp.norm_le_card_rpow_mul_norm"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.10"
+
+[[node]]
+id = "norm_toLp_two_le_norm_toLp_one"
+
+[[node]]
+id = "norm_toLp_top_le_norm_toLp_two"
+
+[[node]]
+id = "norm_toLp_top_le_norm_toLp_one"
+
+[[node]]
+id = "norm_toLp_one_le_sqrt_card_mul_norm_toLp_two"
+
+[[node]]
+id = "norm_toLp_two_le_sqrt_card_mul_norm_toLp_top"
+
+[[node]]
+id = "norm_toLp_one_le_card_mul_norm_toLp_top"

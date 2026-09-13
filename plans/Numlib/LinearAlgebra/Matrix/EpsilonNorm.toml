@@ -6,12 +6,7 @@ id = "Matrix.exists_seminorm_forall_mulVec_le"
 
 [[node]]
 id = "Matrix.exists_seminorm_forall_mulVec_le_of_tendsto"
-kind = "theorem"
-desc = '''The telescoping construction with the Gelfand limit as an input, over `RCLike 𝕜`: if `A : Matrix n n 𝕜`, `ρ ≥ 0` and `‖A ^ k‖ ^ (1 / k) → ρ` (scoped `Operator` norm, or any norm — the limit is norm-independent by `Seminorm.tendsto_rpow_one_div`), then for every `ε > 0` there is `p : Seminorm 𝕜 (n → 𝕜)` with `∀ x, ‖x‖ ≤ p x`, `∃ C, ∀ x, p x ≤ C * ‖x‖`, and `∀ x, p (A *ᵥ x) ≤ (ρ + ε) * p x`. The existing real theorem `exists_seminorm_forall_mulVec_le` becomes its instance at `ρ = (complexSpectralRadius A).toReal` (`tendsto_pow_rpow_linfty_opNorm`), keeping its id and statement. ★★'''
-deps = ["Matrix.exists_seminorm_forall_mulVec_le"]
 
 [[node]]
 id = "Matrix.exists_seminorm_forall_mulVec_le_complex"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri Property 1.13 for `A : Matrix n n ℂ`: for `ε > 0` there is a definite `p : Seminorm ℂ (n → ℂ)` with `∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x` (and the two equivalence bounds). The previous node at `ρ = (spectralRadius ℂ A).toReal`, the limit being Mathlib's `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` for the `Operator` (`NormOneClass` normed algebra) norm on `Matrix n n ℂ`. The induced-norm form is `Matrix.exists_inducedNorm_le_spectralRadius_add` in `Numlib/Analysis/Matrix/OperatorNorm`. ★'''
-deps = ["Matrix.exists_seminorm_forall_mulVec_le_of_tendsto"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.13"

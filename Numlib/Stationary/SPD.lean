@@ -363,47 +363,6 @@ private theorem IsHermitian.spectrum_complexify_eq {X : Matrix n n ℝ} (hX : X.
   · rintro _ ⟨r, hr, rfl⟩
     exact (ofReal_mem_spectrum_complexify_iff X r).mpr hr
 
-/-- Coercivity of a real symmetric matrix with a given constant is coercivity of its
-complexification with the same constant: both say that the eigenvalues are at least that constant,
-and the two spectra correspond under `Matrix.complexify`. -/
-private theorem isCoerciveWith_toEuclideanLin_complexify_iff {X : Matrix n n ℝ}
-    (hX : X.IsHermitian) (c : ℝ) :
-    (toEuclideanLin (complexify X)).IsCoerciveWith c ↔ (toEuclideanLin X).IsCoerciveWith c := by
-  have hC : (complexify X).IsHermitian := (isHermitian_complexify_iff X).mpr hX
-  rw [LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue
-      (isSymmetric_toEuclideanLin_iff.mpr hC) c,
-    LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue
-      (isSymmetric_toEuclideanLin_iff.mpr hX) c]
-  simp only [hasEigenvalue_toEuclideanLin_iff]
-  constructor
-  · intro hc μ hμ
-    simpa using hc (μ : ℂ) ((ofReal_mem_spectrum_complexify_iff X μ).mpr hμ)
-  · intro hc μ hμ
-    rw [hX.spectrum_complexify_eq] at hμ
-    obtain ⟨r, hr, rfl⟩ := hμ
-    simpa using hc r hr
-
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
-/-- A real matrix is positive definite exactly when its complexification is. -/
-private theorem posDef_complexify_iff {X : Matrix n n ℝ} :
-    (complexify X).PosDef ↔ X.PosDef := by
-  constructor
-  · intro hP
-    have hX : X.IsHermitian := (isHermitian_complexify_iff X).mp hP.isHermitian
-    rw [posDef_iff_isSymmetricCoercive] at hP
-    obtain ⟨c, hc, hcw⟩ := hP.isCoercive
-    rw [posDef_iff_isSymmetricCoercive]
-    exact ⟨isSymmetric_toEuclideanLin_iff.mpr hX, c, hc,
-      (isCoerciveWith_toEuclideanLin_complexify_iff hX c).mp hcw⟩
-  · intro hP
-    have hX : X.IsHermitian := hP.isHermitian
-    rw [posDef_iff_isSymmetricCoercive] at hP
-    obtain ⟨c, hc, hcw⟩ := hP.isCoercive
-    rw [posDef_iff_isSymmetricCoercive]
-    exact ⟨isSymmetric_toEuclideanLin_iff.mpr ((isHermitian_complexify_iff X).mpr hX), c, hc,
-      (isCoerciveWith_toEuclideanLin_complexify_iff hX c).mpr hcw⟩
-
 /-- A splitting transported along a ring homomorphism: the iteration operator goes along. -/
 private theorem iterationOperator_map {R S F : Type*} [Ring R] [Ring S] [FunLike F R S]
     [RingHomClass F R S] (f : F) {a : R} (s : Stationary.Splitting a)
