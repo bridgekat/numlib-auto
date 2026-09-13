@@ -349,15 +349,30 @@ imports no surface, and nothing here may be justified by a book's own numbering.
 
 ## The backbone
 
-The layer is organized by subject, not by book. `Numlib.Analysis`, `Numlib.LinearAlgebra` and
-`Numlib.RingTheory` are Mathlib-shaped material that Mathlib lacks, on paths mirroring where each
-would go if contributed; `Numlib.Analysis.Convex` is the general convex analysis, at four levels of
-generality, with `Numlib.Order` and `Numlib.LinearAlgebra.Subspace` as its small standing pieces.
-The rest is the subject matter: `Numlib.LinearSolve` for perturbation
-theory, stationary iterations and projection methods; `Numlib.Krylov` for the Krylov spine;
-`Numlib.Variational` for sesquilinear forms, Lax–Milgram and Galerkin; `Numlib.Nonlinear` for fixed
-points and Newton's method; `Numlib.Approximation` and `Numlib.Eigen` for best approximation and the
-eigenvalue bounds.
+The layer is organized by subject, not by book. The **foundations** are Mathlib-shaped material
+that Mathlib lacks, on the paths where each would go if contributed: `Numlib.Analysis` (with the
+general convex analysis `Numlib.Analysis.Convex`, at four levels of generality from a bare real
+vector space to Euclidean space, and the Sobolev, Fourier and wavelet material),
+`Numlib.LinearAlgebra`, `Numlib.RingTheory`, `Numlib.Topology`, `Numlib.Order`, `Numlib.Algebra`,
+`Numlib.Combinatorics` and `Numlib.Geometry`. The **subjects** stand on them: `Numlib.Conditioning`
+for well-posedness, condition numbers and the consistency–stability–convergence vocabulary;
+`Numlib.FloatingPoint` for the relational rounding model and the number systems that instantiate
+it; `Numlib.LinearSolve` for direct solvers, perturbation theory, stationary iterations and
+projection methods; `Numlib.Krylov` for the Krylov spine; `Numlib.Eigen` for eigenvalue bounds and
+algorithms; `Numlib.Nonlinear` for fixed points, rootfinding and Newton's method;
+`Numlib.Optimization` for descent, line-search, quasi-Newton and constrained methods with the
+smooth first- and second-order theory; `Numlib.Approximation` for interpolation, quadrature and
+best approximation; `Numlib.Variational` for sesquilinear forms, Lax–Milgram, Galerkin and
+variational inequalities; `Numlib.ODE` for one-step, multistep and Runge–Kutta methods;
+`Numlib.FiniteDifference` for difference schemes and their stability; `Numlib.IntegralEquations`;
+and `Numlib.Probability` for what Monte Carlo integration needs.
+
+One boundary is worth stating. The *theory* of an extremum problem — optimality conditions,
+duality, existence for convex data — is `Numlib.Analysis.Convex.Optimization`, which sits in the
+middle of the convex library's import graph; iterative *methods* and the smooth nonconvex
+optimality theory are `Numlib.Optimization`. The dictionary between the two vocabularies
+(variational inequalities as normal-cone conditions, best approximation as a proximal map, saddle
+points) is where the older numerical modules and the convex library meet.
 
 Two conventions run through it. **An iterate is specified by what it optimizes, not by the algorithm
 that computes it**, so a theorem about "MINRES" is a theorem about any sequence satisfying the

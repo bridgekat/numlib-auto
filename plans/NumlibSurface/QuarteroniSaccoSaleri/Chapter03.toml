@@ -6,8 +6,8 @@ systems `A x = b`, `A : Matrix (Fin n) (Fin n) ℝ`, except in §3.13 (rectangul
 Conventions of the chapter's surface files:
 
 * Matrix norms are the induced `p`-norms `‖A‖_p` and condition numbers `K_p(A) = ‖A‖_p ‖A⁻¹‖_p` as
-  restated by chapter 1 (§1.11, (1.21)/(3.4)) from the backbone `NormedRing.condNumber` — the same
-  object as `Matrix.condNumberLp` of `NumlibSurface/SaadSparse/Chapter01`. Where the book says
+  restated by chapter 1 (§1.11, (1.21)/(3.4)) from the backbone's `Matrix.condNumberLp`
+  (`Numlib/Analysis/Matrix/OperatorNorm`, `= NormedRing.condNumber` of `lpCLM`). Where the book says
   "for a matrix norm" (Theorems 3.1–3.3, Property 3.1) the surface theorem is stated for the
   operator `A` acting on `PiLp p (Fin n → ℝ)` with a `Fact (1 ≤ p)`, and specialized statements
   use `p = ∞` through Mathlib's scoped `Matrix.Norms.Operator` (maximum absolute row sum), the
