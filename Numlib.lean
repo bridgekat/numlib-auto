@@ -1,5 +1,6 @@
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
+import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
@@ -272,6 +273,7 @@ import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.PlaneRotation
+import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.RealSchur
