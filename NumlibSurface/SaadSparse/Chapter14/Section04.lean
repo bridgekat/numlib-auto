@@ -157,7 +157,7 @@ is `probeVec m r`. -/
 def probeVec (m : ℕ) (r : ℕ) : Fin m → ℝ := fun i => if (i : ℕ) % 3 = r then 1 else 0
 
 /-- A tridiagonal matrix vanishes off the three central diagonals, in index arithmetic. -/
-private theorem apply_eq_zero_of_isTridiagonal {T : Matrix (Fin m) (Fin m) ℝ}
+private theorem apply_eq_zero_of_isTridiagonal {m : ℕ} {T : Matrix (Fin m) (Fin m) ℝ}
     (hT : T.IsTridiagonal) {i j : Fin m} (h : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
     T i j = 0 := by
   rcases h with h | h
@@ -171,7 +171,8 @@ private theorem apply_eq_zero_of_isTridiagonal {T : Matrix (Fin m) (Fin m) ℝ}
 modulo `3`.  Since the three columns `i - 1, i, i + 1` have three distinct residues, every entry
 of `T` appears in exactly one of the three products — which is Saad's "it is easy to recover `T`
 by applying it to three well-chosen vectors". -/
-theorem mulVec_probeVec_apply {T : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal) {i j : Fin m}
+theorem mulVec_probeVec_apply {m : ℕ} {T : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal)
+    {i j : Fin m}
     (hij : (j : ℕ) ≤ (i : ℕ) + 1 ∧ (i : ℕ) ≤ (j : ℕ) + 1) :
     (T *ᵥ probeVec m ((j : ℕ) % 3)) i = T i j := by
   rw [Matrix.mulVec_apply_eq_sum]
@@ -189,7 +190,7 @@ theorem mulVec_probeVec_apply {T : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiag
 tridiagonal approximation `T` of the Schur complement can be recovered from `S w_1`, `S w_2`,
 `S w_3` alone.  The book states no bound on `S - T`, and none holds without hypotheses it does not
 give; what is exact is this reconstruction. -/
-theorem probing_eq {T T' : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal)
+theorem probing_eq {m : ℕ} {T T' : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal)
     (hT' : T'.IsTridiagonal)
     (h : ∀ r, T *ᵥ probeVec m r = T' *ᵥ probeVec m r) : T = T' := by
   ext i j

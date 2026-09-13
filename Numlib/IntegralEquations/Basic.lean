@@ -1260,7 +1260,7 @@ theorem equiv_iterate_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b
 
 /-- The elementary integral behind Bielecki's trick: `∫_a^t e^{β (s - a)} ds = (e^{β (t - a)} -
 1)/β`. -/
-theorem integral_exp_mul_sub (hβ : β ≠ 0) (a t : ℝ) :
+theorem integral_exp_mul_sub {β : ℝ} (hβ : β ≠ 0) (a t : ℝ) :
     (∫ s in a..t, Real.exp (β * (s - a))) = (Real.exp (β * (t - a)) - 1) / β := by
   have hderiv : ∀ x ∈ uIcc a t,
       HasDerivAt (fun s : ℝ => Real.exp (β * (s - a)) / β) (Real.exp (β * (x - a))) x := by

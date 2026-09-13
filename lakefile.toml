@@ -5,6 +5,7 @@ defaultTargets = ["Numlib", "NumlibSurface"]
 
 [leanOptions]
 pp.unicode.fun = true                 # pretty-prints `fun a ↦ b`
+autoImplicit = false
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
 weak.linter.style.header = false      # no Mathlib copyright headers in this project

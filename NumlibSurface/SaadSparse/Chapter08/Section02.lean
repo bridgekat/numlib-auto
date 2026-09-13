@@ -210,7 +210,7 @@ theorem nrSORStep_eq_step1 (i : Fin n) (x : E n) :
 /-- **Saad (8.12)–(8.15)**: the unrelaxed NE-SOR relaxation is the Petrov–Galerkin step onto
 `K = span {Aᵀ e_i}` orthogonally to `L = span {e_i}`, and the `i`-th component of the new
 residual therefore vanishes. -/
-theorem neSORStep_isPetrovGalerkin (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) :
+theorem neSORStep_isPetrovGalerkin {i : Fin n} (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) :
     IsPetrovGalerkin (Matrix.toEuclideanLin A) b x (ℝ ∙ (Aᵀ ⬝ coordVec i)) (ℝ ∙ coordVec i)
         (neSORStep A b 1 i x) ∧
       inner ℝ (coordVec i) (b - (A ⬝ neSORStep A b 1 i x)) = 0 := by
@@ -226,7 +226,7 @@ theorem neSORStep_isPetrovGalerkin (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) 
 /-- **Saad (8.17)–(8.18)**: the unrelaxed NR-SOR relaxation is the Galerkin step for
 `AᵀA x = Aᵀ b` on `span {e_i}`, and the `i`-th component of the new normal-equations residual
 therefore vanishes. -/
-theorem nrSORStep_isGalerkin (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
+theorem nrSORStep_isGalerkin {i : Fin n} (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
     IsGalerkin (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) x (ℝ ∙ coordVec i)
         (nrSORStep A b 1 i x) ∧
       inner ℝ (A ⬝ coordVec i) (b - (A ⬝ nrSORStep A b 1 i x)) = 0 := by

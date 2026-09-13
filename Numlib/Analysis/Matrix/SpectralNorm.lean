@@ -45,7 +45,7 @@ theorem IsHermitian.ofReal_re_of_hasEigenvalue (hA : A.IsHermitian) {μ : 𝕜}
     ((isSymmetric_toEuclideanLin_iff.mpr hA).conj_eigenvalue_eq_self hμ)
 
 /-- For a real eigenvalue the real part commutes with inversion. -/
-private theorem re_inv_of_ofReal_re (hμ : ((RCLike.re μ : ℝ) : 𝕜) = μ) :
+private theorem re_inv_of_ofReal_re {μ : 𝕜} (hμ : ((RCLike.re μ : ℝ) : 𝕜) = μ) :
     RCLike.re μ⁻¹ = (RCLike.re μ)⁻¹ := by
   rw [← hμ, ← RCLike.ofReal_inv, RCLike.ofReal_re, RCLike.ofReal_re]
 
