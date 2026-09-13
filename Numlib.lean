@@ -214,6 +214,8 @@ import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet
 import Numlib.Conditioning.LinearSystem
+import Numlib.Conditioning.Method
+import Numlib.Conditioning.Problem
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation

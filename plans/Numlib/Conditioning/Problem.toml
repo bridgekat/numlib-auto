@@ -1,287 +1,115 @@
 namespace = "Conditioning"
-desc = '''
-Well-posedness and condition numbers of a problem `F x d = 0` (Quarteroni–Sacco–Saleri §2.1).
-
-Setting: `D`, `X`, `Y` normed additive groups (`[NormedAddCommGroup]`), `F : X → D → Y` the
-residual of the problem, `S : Set D` the admissible data, `G : D → X` the resolvent. Vector-space
-structure over a `NontriviallyNormedField 𝕜` enters only in the first-order section, where
-`HasFDerivAt` is used.
-
-The primitive is `absCondNumberOn G N d : ℝ≥0∞`, the supremum of `‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ`
-over the nonzero perturbations `δd` of an arbitrary set `N` of admissible perturbations (the
-book's `D` in (2.4)–(2.5)); `absCondNumberWithin G S d η` is the case `N = perturbations S d η =
-{δd | ‖δd‖ < η ∧ d + δd ∈ S}`, and `absCondNumber G S d = ⨅ η > 0, absCondNumberWithin G S d η`
-is the limit as the perturbation size tends to zero, which is what the book's first-order
-formula (2.7) computes. The relative versions divide by `‖G d‖ₑ / ‖d‖ₑ` inside the supremum, as
-(2.4) does, and are shown to be the absolute ones times `‖d‖ₑ / ‖G d‖ₑ`.
-
-Everything is in `ℝ≥0∞` (`‖·‖ₑ` and `ENNReal` division): "the condition number is infinite"
-(Remark 2.1) is the value `⊤`, the suprema and infima are total, and the Lipschitz condition (2.3)
-is exactly finiteness (`absCondNumberWithin_ne_top_iff`). Bridges to real-valued quantities go
-through `ENNReal.ofReal` and `‖L‖ₑ = ENNReal.ofReal ‖L‖`.
-
-Proof pattern for the first-order formula `absCondNumber G S d = ‖G'‖ₑ`: the lower bound
-`‖G'‖ₑ ≤ absCondNumberWithin G S d η` for every `η > 0` is Mathlib's `HasFDerivAt.le_of_lip'`
-(a Lipschitz bound near `d` bounds the derivative), and the upper bound is
-`hasFDerivAt_iff_isLittleO`: for every `ε > 0` there is `δ` with `‖G (d + h) - G d‖ ≤ (‖G'‖ + ε)
-‖h‖` for `‖h‖ < δ`, so `absCondNumberWithin G S d δ ≤ ofReal (‖G'‖ + ε)`.
-
-Prototype: `notes/qss/ch02/proto/Conditioning.lean` of the 2026-09-12 chapter-2 plan; every statement below
-elaborated there.
-'''
 
 [[node]]
 id = "IsResolvent"
-kind = "definition"
-desc = '''`IsResolvent F S G : Prop := ∀ d ∈ S, ∀ x, F x d = 0 ↔ x = G d`: `G` is the resolvent of
-the problem `F x d = 0` on the admissible data `S` (Quarteroni–Sacco–Saleri (2.6)). Requires only
-`[Zero Y]`. ★'''
-deps = []
 
 [[node]]
 id = "IsWellPosed"
-kind = "definition"
-desc = '''`IsWellPosed F S : Prop := ∃ G, IsResolvent F S G ∧ ContinuousOn G S`: the problem has a
-unique solution for every admissible datum, depending continuously on it (Hadamard's
-well-posedness, Quarteroni–Sacco–Saleri §2.1 prose). Continuity, not the Lipschitz condition (2.3):
-Remark 2.1 needs well-posed problems with infinite condition number, and (2.3) is finiteness of
-`absCondNumberWithin` (`absCondNumberWithin_ne_top_iff`). `[TopologicalSpace X]` and `[Zero Y]`
-suffice. ★'''
-deps = ["Conditioning.IsResolvent"]
 
 [[node]]
 id = "IsResolvent.eq_of"
-kind = "theorem"
-desc = '''`IsResolvent F S G → d ∈ S → F x d = 0 → x = G d`, and the companion `IsResolvent.apply`
-giving `F (G d) d = 0`; the two unfolding lemmas every instance uses. ★'''
-deps = ["Conditioning.IsResolvent"]
+
+[[node]]
+id = "IsResolvent.apply"
+
+[[node]]
+id = "IsResolvent.isWellPosed"
 
 [[node]]
 id = "perturbations"
-kind = "definition"
-desc = '''`perturbations S d η : Set D := {δd | ‖δd‖ < η ∧ d + δd ∈ S}`, the admissible perturbations
-of the datum `d` of size less than `η`. ★'''
-deps = []
 
 [[node]]
 id = "absCondNumberOn"
-kind = "definition"
-desc = '''`absCondNumberOn G N d : ℝ≥0∞ := ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), ‖G (d + δd) - G d‖ₑ /
-‖δd‖ₑ`: the absolute condition number of the datum `d` over the set `N` of admissible
-perturbations (Quarteroni–Sacco–Saleri Definition 2.1, (2.5), with the book's neighbourhood `D`
-of the origin as the parameter `N`). ★'''
-deps = []
 
 [[node]]
 id = "absCondNumberWithin"
-kind = "definition"
-desc = '''`absCondNumberWithin G S d η := absCondNumberOn G (perturbations S d η) d`: the absolute
-condition number over the admissible perturbations of size `< η`. ★'''
-deps = ["Conditioning.absCondNumberOn", "Conditioning.perturbations"]
 
 [[node]]
 id = "absCondNumber"
-kind = "definition"
-desc = '''`absCondNumber G S d := ⨅ (η : ℝ) (_ : 0 < η), absCondNumberWithin G S d η`: the
-first-order absolute condition number, the limit of `absCondNumberWithin G S d η` as `η → 0⁺`
-(an infimum, by `monotone_absCondNumberWithin`). This is the quantity the book's (2.7) computes
-and calls "the limit of the Lipschitz constant of `G` as the perturbation tends to zero". ★'''
-deps = ["Conditioning.absCondNumberWithin"]
 
 [[node]]
 id = "relCondNumberOn"
-kind = "definition"
-desc = '''`relCondNumberOn G N d : ℝ≥0∞ := ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), (‖G (d + δd) - G d‖ₑ /
-‖G d‖ₑ) / (‖δd‖ₑ / ‖d‖ₑ)`: the relative condition number over the perturbations `N`, exactly
-(2.4) of Definition 2.1. Meaningful for `d ≠ 0` and `G d ≠ 0` (`relCondNumberOn_eq`); otherwise
-the absolute one is to be used, as the book says. ★'''
-deps = []
 
 [[node]]
 id = "relCondNumberWithin"
-kind = "definition"
-desc = '`relCondNumberWithin G S d η := relCondNumberOn G (perturbations S d η) d`. ★'
-deps = ["Conditioning.relCondNumberOn", "Conditioning.perturbations"]
 
 [[node]]
 id = "relCondNumber"
-kind = "definition"
-desc = '''`relCondNumber G S d := ⨅ (η : ℝ) (_ : 0 < η), relCondNumberWithin G S d η`, the
-first-order relative condition number. ★'''
-deps = ["Conditioning.relCondNumberWithin"]
 
 [[node]]
-id = "absCondNumberOn_mono"
-kind = "theorem"
-desc = '''`N ⊆ N' → absCondNumberOn G N d ≤ absCondNumberOn G N' d`, by `iSup_mono`. Proved in the
-prototype. ★'''
-deps = ["Conditioning.absCondNumberOn"]
+id = "le_absCondNumberOn"
 
 [[node]]
-id = "monotone_absCondNumberWithin"
-kind = "theorem"
-desc = '`Monotone (absCondNumberWithin G S d)` in the radius `η`. Proved in the prototype. ★'
-deps = ["Conditioning.absCondNumberWithin", "Conditioning.absCondNumberOn_mono"]
+id = "absCondNumberOn_le"
 
 [[node]]
-id = "absCondNumber_le_absCondNumberWithin"
-kind = "theorem"
-desc = '`0 < η → absCondNumber G S d ≤ absCondNumberWithin G S d η` (`iInf₂_le`). ★'
-deps = ["Conditioning.absCondNumber"]
+id = "enorm_sub_le_absCondNumberOn_mul"
 
 [[node]]
-id = "tendsto_absCondNumberWithin"
-kind = "theorem"
-desc = '''`Tendsto (absCondNumberWithin G S d) (𝓝[>] 0) (𝓝 (absCondNumber G S d))`: the infimum
-defining `absCondNumber` is the limit as the perturbation size tends to `0` from above, by
-monotonicity (`tendsto_atBot_ciInf`-style argument in the complete lattice `ℝ≥0∞`, or
-`Monotone.tendsto_nhdsWithin_Ioi`-type lemma for `ℝ≥0∞`-valued monotone functions). ★★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.monotone_absCondNumberWithin"]
+id = "norm_sub_le_of_absCondNumberOn_le"
 
 [[node]]
 id = "absCondNumberOn_le_of_forall_norm_sub_le"
-kind = "theorem"
-desc = '''If `0 ≤ K` and `‖G (d + δd) - G d‖ ≤ K * ‖δd‖` for every nonzero `δd ∈ N`, then
-`absCondNumberOn G N d ≤ ENNReal.ofReal K` (`iSup₂_le`, `ENNReal.div_le_iff`). ★'''
-deps = ["Conditioning.absCondNumberOn"]
+
+[[node]]
+id = "absCondNumberOn_le_coe_iff"
+
+[[node]]
+id = "absCondNumberOn_mono"
+
+[[node]]
+id = "monotone_absCondNumberWithin"
+
+[[node]]
+id = "absCondNumber_le_absCondNumberWithin"
+
+[[node]]
+id = "tendsto_absCondNumberWithin"
 
 [[node]]
 id = "absCondNumberWithin_ne_top_iff"
-kind = "theorem"
-desc = '''`absCondNumberWithin G S d η ≠ ⊤ ↔ ∃ K : ℝ, ∀ δd, ‖δd‖ < η → d + δd ∈ S → ‖G (d + δd) - G
-d‖ ≤ K * ‖δd‖`: the Lipschitz continuous-dependence condition (2.3) of Quarteroni–Sacco–Saleri
-for a given `η` is exactly finiteness of the condition number over that neighbourhood. `→`: take
-`K = (absCondNumberWithin …).toReal` and unfold the supremum; `←`:
-`absCondNumberOn_le_of_forall_norm_sub_le` with `max K 0`. ★★'''
-deps = ["Conditioning.absCondNumberWithin", "Conditioning.absCondNumberOn_le_of_forall_norm_sub_le"]
+
+[[node]]
+id = "continuousWithinAt_of_absCondNumberWithin_ne_top"
 
 [[node]]
 id = "relCondNumberOn_eq"
-kind = "theorem"
-desc = '''For `d ≠ 0` and `G d ≠ 0`, `relCondNumberOn G N d = absCondNumberOn G N d * (‖d‖ₑ / ‖G
-d‖ₑ)`: the relative condition number is the absolute one rescaled. The factor `‖d‖ₑ / ‖G d‖ₑ` is
-finite and nonzero, so it commutes with the supremum (`ENNReal.mul_iSup`, and the identity
-`(a / b) / (c / e) = (a / c) * (e / b)` for `b, c, e ∉ {0, ⊤}`). ★★'''
-deps = ["Conditioning.relCondNumberOn", "Conditioning.absCondNumberOn"]
 
 [[node]]
 id = "relCondNumber_eq"
-kind = "theorem"
-desc = '''For `d ≠ 0` and `G d ≠ 0`, `relCondNumber G S d = absCondNumber G S d * (‖d‖ₑ / ‖G d‖ₑ)`,
-from `relCondNumberOn_eq` and `ENNReal.iInf_mul` with a finite nonzero factor. ★'''
-deps = ["Conditioning.relCondNumber", "Conditioning.absCondNumber", "Conditioning.relCondNumberOn_eq"]
 
 [[node]]
 id = "enorm_fderiv_le_absCondNumberWithin"
-kind = "theorem"
-desc = '''`HasFDerivAt G G' d → S ∈ 𝓝 d → 0 < η → ‖G'‖ₑ ≤ absCondNumberWithin G S d η`, for `G' : D
-→L[𝕜] X` over a `NontriviallyNormedField 𝕜`. The derivative never exceeds the condition number
-over any neighbourhood (so the first-order number (2.7) can underestimate the true one, as the
-book's `G d = cos d - 1` example shows). If the right side is `⊤` there is nothing to prove;
-otherwise `absCondNumberWithin_ne_top_iff` gives a Lipschitz bound `K` on a neighbourhood and
-Mathlib's `HasFDerivAt.le_of_lip'` gives `‖G'‖ ≤ K`; but the sharp bound needs `K` to be the
-supremum itself, which is `(absCondNumberWithin …).toReal`. ★★'''
-deps = ["Conditioning.absCondNumberWithin", "Conditioning.absCondNumberWithin_ne_top_iff"]
 
 [[node]]
 id = "absCondNumber_eq_enorm_fderiv"
-kind = "theorem"
-desc = '''**The first-order formula (2.7), absolute form**: `HasFDerivAt G G' d → S ∈ 𝓝 d →
-absCondNumber G S d = ‖G'‖ₑ`. `≥` is `enorm_fderiv_le_absCondNumberWithin` at every `η` and
-`le_iInf₂`; `≤`: by `hasFDerivAt_iff_isLittleO` and `Asymptotics.IsLittleO.def`, for every `ε >
-0` there is `δ > 0` with `S ⊇ ball d δ` and `‖G (d + h) - G d‖ ≤ (‖G'‖ + ε) ‖h‖` for `‖h‖ < δ`,
-whence `absCondNumber ≤ absCondNumberWithin G S d δ ≤ ofReal (‖G'‖ + ε)` by
-`absCondNumberOn_le_of_forall_norm_sub_le`; conclude with `ENNReal.le_of_forall_pos_le_add`.
-★★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.enorm_fderiv_le_absCondNumberWithin", "Conditioning.absCondNumberOn_le_of_forall_norm_sub_le", "Conditioning.absCondNumber_le_absCondNumberWithin"]
 
 [[node]]
 id = "relCondNumber_eq_enorm_fderiv"
-kind = "theorem"
-desc = '''**The first-order formula (2.7), relative form**: `HasFDerivAt G G' d → S ∈ 𝓝 d → d ≠ 0
-→ G d ≠ 0 → relCondNumber G S d = ‖G'‖ₑ * (‖d‖ₑ / ‖G d‖ₑ)`, from `relCondNumber_eq` and
-`absCondNumber_eq_enorm_fderiv`. ★'''
-deps = ["Conditioning.relCondNumber_eq", "Conditioning.absCondNumber_eq_enorm_fderiv"]
 
 [[node]]
 id = "absCondNumberWithin_continuousLinearMap"
-kind = "theorem"
-desc = '''For a bounded linear resolvent `L : D →L[𝕜] X`, `0 < η → absCondNumberWithin L univ d η =
-‖L‖ₑ`: the amplification ratio `‖L δd‖ / ‖δd‖` is scale invariant, so the supremum over any ball
-is the operator norm. `≤` is `L.le_opNorm`; `≥` is `ContinuousLinearMap.exists_lt_apply_of_lt_opNorm`
-(Mathlib, `Analysis/Normed/Operator/NNNorm.lean:181`) rescaled into the ball. Needs
-`[Nontrivial D]` or a case split on `L = 0`; check which. ★★'''
-deps = ["Conditioning.absCondNumberWithin"]
 
 [[node]]
 id = "absCondNumber_continuousLinearMap"
-kind = "theorem"
-desc = '''`absCondNumber L univ d = ‖L‖ₑ` for `L : D →L[𝕜] X`; the `η`-free corollary, also the
-case of `absCondNumber_eq_enorm_fderiv` with `L.hasFDerivAt`. ★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.absCondNumberWithin_continuousLinearMap"]
 
 [[node]]
 id = "relCondNumberWithin_continuousLinearMap"
-kind = "theorem"
-desc = '''`0 < η → d ≠ 0 → L d ≠ 0 → relCondNumberWithin L univ d η = ‖L‖ₑ * (‖d‖ₑ / ‖L d‖ₑ)`,
-from `relCondNumberOn_eq` and `absCondNumberWithin_continuousLinearMap`. ★'''
-deps = ["Conditioning.relCondNumberWithin", "Conditioning.relCondNumberOn_eq", "Conditioning.absCondNumberWithin_continuousLinearMap"]
 
 [[node]]
 id = "relCondNumber_symm_le_condNumber"
-kind = "theorem"
-desc = '''**Quarteroni–Sacco–Saleri Example 2.3, (2.9)**: for an isomorphism `A : E ≃L[𝕜] F` of
-normed spaces and `b ≠ 0`, the problem `A x = b` perturbed in the right-hand side only has
-resolvent `A.symm` and `relCondNumber A.symm univ b ≤ ENNReal.ofReal A.condNumber`, with
-`ContinuousLinearEquiv.condNumber` of `Numlib/Analysis/Normed/Ring/CondNumber.lean`. The exact
-value is `‖A.symm‖ₑ * (‖b‖ₑ / ‖A.symm b‖ₑ)` (`relCondNumberWithin_continuousLinearMap`) and
-`‖b‖ ≤ ‖A‖ ‖A.symm b‖`; alternatively each ratio is bounded by
-`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`
-(`Numlib/Conditioning/LinearSystem.lean:36`). The single-space `NormedRing.condNumber` form
-follows through `ContinuousLinearEquiv.condNumber_coe`. ★'''
-deps = ["Conditioning.relCondNumber", "Conditioning.relCondNumberWithin_continuousLinearMap", "ContinuousLinearEquiv.condNumber"]
 
 [[node]]
 id = "absCondNumber_of_local_left_inverse"
-kind = "theorem"
-desc = '''**Quarteroni–Sacco–Saleri Example 2.4, (2.11), the instance of §6.1**: for `φ G : 𝕜 → 𝕜`
-with `ContinuousAt G d`, `HasStrictDerivAt φ φ' (G d)`, `φ' ≠ 0` and `∀ᶠ y in 𝓝 d, φ (G y) = y`
-(`G` is a continuous local inverse of `φ` at `d`, i.e. `G y` is the root of `φ x = y`),
-`absCondNumber G univ d = ‖φ'‖ₑ⁻¹`. By Mathlib's `HasStrictDerivAt.of_local_left_inverse`
-(`Analysis/Calculus/Deriv/Inverse.lean:57`) `G` has derivative `φ'⁻¹` at `d`, and
-`absCondNumber_eq_enorm_fderiv` with `‖(φ'⁻¹) • 1‖ = ‖φ'‖⁻¹`. ★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.absCondNumber_eq_enorm_fderiv"]
 
 [[node]]
 id = "relCondNumber_of_local_left_inverse"
-kind = "theorem"
-desc = '''**(2.10)**: under the hypotheses of `absCondNumber_of_local_left_inverse` and `d ≠ 0`,
-`G d ≠ 0`, `relCondNumber G univ d = ‖φ'‖ₑ⁻¹ * (‖d‖ₑ / ‖G d‖ₑ)`. ★'''
-deps = ["Conditioning.relCondNumber_eq", "Conditioning.absCondNumber_of_local_left_inverse"]
+
+[[node]]
+id = "absCondNumber_eq_top_of_fderiv_eq_zero"
 
 [[node]]
 id = "absCondNumber_eq_top_of_deriv_eq_zero"
-kind = "theorem"
-desc = '''**A multiple root is infinitely ill conditioned**: for `φ G : 𝕜 → 𝕜`, an admissible set `S`
-of which `d` is an accumulation point (`(𝓝[S \ {d}] d).NeBot`), `ContinuousWithinAt G S d`,
-`HasDerivAt φ 0 (G d)` and `∀ᶠ y in 𝓝[S] d, φ (G y) = y`, one has `absCondNumber G S d = ⊤`.
-Since `φ (G y) - φ (G d) = o(‖G y - G d‖)` and `y ≠ d` forces `G y ≠ G d` (as `φ (G y) = y ≠ d = φ
-(G d)`), one has `‖y - d‖ = o(‖G y - G d‖)` along `𝓝[S \ {d}] d`, so the ratio `‖G y - G d‖ / ‖y -
-d‖` is unbounded on every ball: `absCondNumberWithin G S d η = ⊤` for every `η > 0`. Stated
-within `S` (not on `univ`) so that the one-sided case of Remark 2.1 — the double root at `p = 1`
-of `x² - 2px + 1`, where the resolvent exists only on `S = Ici 1` — is an instance (the prototype
-states the `univ` form with an explicit injectivity hypothesis; this is the intended final form).
-The book says "ill posed" for the multiple root; the problem may still be well posed
-(continuous), so the honest statement is infinite conditioning. ★★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.absCondNumberWithin"]
 
 [[node]]
 id = "absCondNumber_localInverse"
-kind = "theorem"
-desc = '''The Banach-space form of the root instance: for `φ : E → F` with `HasStrictFDerivAt φ (φ'
-: E →L[𝕜] F) x`, `φ' : E ≃L[𝕜] F`, `[CompleteSpace E]`, the local inverse
-`hφ.localInverse φ φ' x` of Mathlib's inverse function theorem
-(`Analysis/Calculus/InverseFunctionTheorem/FDeriv.lean:149`) has `absCondNumber (hφ.localInverse …)
-univ (φ x) = ‖(φ'.symm : F →L[𝕜] E)‖ₑ`, by `HasStrictFDerivAt.to_localInverse` and
-`absCondNumber_eq_enorm_fderiv`. ★'''
-deps = ["Conditioning.absCondNumber", "Conditioning.absCondNumber_eq_enorm_fderiv"]
