@@ -83,21 +83,10 @@ id = "Module.End.hasDerivAt_eigenvalue_perturbation"
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
 
 [[node]]
-id = "Matrix.hermitianPart"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
-
-[[node]]
-id = "Matrix.skewHermitianPart"
-kind = "definition"
-desc = 'See `Matrix.hermitianPart`. ★'
-deps = []
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
-
-[[node]]
 id = "Matrix.hirsch_re"
 kind = "theorem"
 desc = '''**Hirsch / Bendixson, matrix form** (Quarteroni–Sacco–Saleri Theorem 5.1, real part): for `A :
-Matrix n n ℂ` with `[Nonempty n]`, `hH := isHermitian_hermitianPart A` and `μ ∈ spectrum ℂ A`,
+Matrix n n ℂ` with `[Nonempty n]`, `hH := hermitianPart_isHermitian A` and `μ ∈ spectrum ℂ A`,
 `(⨅ i, hH.eigenvalues i) ≤ μ.re ∧ μ.re ≤ ⨆ i, hH.eigenvalues i`. Proof: `re ⟪A u, u⟫ = re ⟪H u,
 u⟫` for every `u`, so `re_hasEigenvalue_mem_Icc_of_symmetricPart` applies with the bounds
 `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` at the extreme eigenvalues of `H`. ★'''
@@ -107,7 +96,7 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
 [[node]]
 id = "Matrix.hirsch_im"
 kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri Theorem 5.1, imaginary part: with `hS := isHermitian_skewHermitianPart
+desc = '''Quarteroni–Sacco–Saleri Theorem 5.1, imaginary part: with `hS := skewHermitianPart_isHermitian
 A`, `(⨅ i, hS.eigenvalues i) ≤ μ.im ∧ μ.im ≤ ⨆ i, hS.eigenvalues i` for `μ ∈ spectrum ℂ A`. This is
 `Matrix.hirsch_re` for `(-I) • A`, whose Hermitian part is `S` and whose spectrum is `-I` times
 that of `A` (`spectrum.smul_eq_smul`), since `re (-I μ) = im μ`. ★'''

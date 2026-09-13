@@ -8,6 +8,7 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Matrix.Similar
 
 /-!
 # Saad §1.8: canonical forms of matrices
@@ -36,10 +37,11 @@ multiplicity, simple, semisimple, defective, derogatory — is Mathlib's `Module
 and gets no definition here; the index of an eigenvalue is spelled out where it is used, as the
 least `k` at which `Null (A - λ I)^k` stops growing.
 
-Similarity is a surface definition, `SaadSparse.Chapter01.IsSimilar`, because the book's `A = X B
-X⁻¹` with `X` nonsingular is what every statement of the section uses; it is an equivalence
-relation, it transports eigenvectors, and it preserves the characteristic polynomial (Problem
-P-1.9).
+Similarity is the backbone's `Matrix.IsSimilar` of `Numlib/LinearAlgebra/Matrix/Similar`,
+`B = C⁻¹ A C` with `C` nonsingular, which is the book's `A = X B X⁻¹` with `X = C`
+(Definition 1.5); that it is an equivalence relation, transports eigenvectors and preserves the
+characteristic polynomial (Problem P-1.9) is proved there, as is the diagonalizability criterion
+behind Theorem 1.6.
 
 Theorems 1.10, 1.11 and 1.12 are the backbone's, in stronger form, and are restated here in the
 book's words. Theorem 1.12, Gelfand's formula, comes twice: `theorem_1_12` in the Euclidean
@@ -58,94 +60,18 @@ namespace SaadSparse.Chapter01
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
-/-! ### §1.8 Definition 1.5: similarity -/
-
-/-- **Saad Definition 1.5**: two matrices are *similar* when `A = X B X⁻¹` for some nonsingular
-`X`. The book's phrase "there is a nonsingular matrix `X` such that …" is the `IsUnit X` here. -/
-def IsSimilar (A B : Matrix (Fin n) (Fin n) 𝕜) : Prop := ∃ X, IsUnit X ∧ A = X * B * X⁻¹
-
-/-- Similarity is reflexive. -/
-theorem IsSimilar.refl (A : Matrix (Fin n) (Fin n) 𝕜) : IsSimilar A A :=
-  ⟨1, isUnit_one, by simp⟩
-
-/-- Similarity is symmetric. -/
-theorem IsSimilar.symm {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) : IsSimilar B A := by
-  obtain ⟨X, hX, rfl⟩ := h
-  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
-  refine ⟨X⁻¹, Matrix.isUnit_nonsing_inv_iff.2 hX, ?_⟩
-  rw [Matrix.nonsing_inv_nonsing_inv X hd]
-  simp only [Matrix.mul_assoc]
-  rw [Matrix.nonsing_inv_mul X hd, Matrix.mul_one, ← Matrix.mul_assoc,
-    Matrix.nonsing_inv_mul X hd, Matrix.one_mul]
-
-/-- Similarity is transitive. -/
-theorem IsSimilar.trans {A B C : Matrix (Fin n) (Fin n) 𝕜} (hAB : IsSimilar A B)
-    (hBC : IsSimilar B C) : IsSimilar A C := by
-  obtain ⟨X, hX, rfl⟩ := hAB
-  obtain ⟨Y, hY, rfl⟩ := hBC
-  refine ⟨X * Y, hX.mul hY, ?_⟩
-  rw [Matrix.mul_inv_rev]
-  simp only [Matrix.mul_assoc]
-
-/-- Similar matrices have the same eigenvalues, with the eigenvectors transported by `X`: if
-`B u = μ u` then `A (X u) = μ (X u)`. This is the content the book draws from Definition 1.5. -/
-theorem mulVec_eq_smul_of_isSimilar {A B X : Matrix (Fin n) (Fin n) 𝕜} (hX : IsUnit X)
-    (hAB : A = X * B * X⁻¹) {μ : 𝕜} {u : Fin n → 𝕜} (hu : B *ᵥ u = μ • u) :
-    A *ᵥ (X *ᵥ u) = μ • (X *ᵥ u) := by
-  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
-  have h1 : A * X = X * B := by
-    rw [hAB, Matrix.mul_assoc, Matrix.nonsing_inv_mul X hd, Matrix.mul_one]
-  calc A *ᵥ (X *ᵥ u) = (A * X) *ᵥ u := by rw [Matrix.mulVec_mulVec]
-    _ = (X * B) *ᵥ u := by rw [h1]
-    _ = X *ᵥ (B *ᵥ u) := by rw [Matrix.mulVec_mulVec]
-    _ = X *ᵥ (μ • u) := by rw [hu]
-    _ = μ • (X *ᵥ u) := by rw [Matrix.mulVec_smul]
-
-/-- **Saad Problem P-1.9**: similar matrices have the same characteristic polynomial, so the
-eigenvalues of `A` and `B` agree with their algebraic multiplicities. -/
-theorem charpoly_eq_of_isSimilar {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) :
-    A.charpoly = B.charpoly := by
-  obtain ⟨X, hX, rfl⟩ := h
-  have h1 := Matrix.charpoly_units_conj hX.unit B
-  rwa [IsUnit.unit_spec] at h1
-
 /-! ### §1.8.1 Theorem 1.6: diagonalizability -/
 
 /-- **Saad Theorem 1.6**: a matrix is *diagonalizable* — similar to a diagonal matrix — exactly
 when it has `n` linearly independent eigenvectors. Both directions read the relation `A X = X D`
 column by column: the columns of the transforming matrix `X` are the eigenvectors, and `X` is
-nonsingular exactly when they are independent. -/
+nonsingular exactly when they are independent; this is the backbone's
+`Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. -/
 theorem theorem_1_6 (A : Matrix (Fin n) (Fin n) 𝕜) :
     (∃ d : Fin n → 𝕜, IsSimilar A (Matrix.diagonal d)) ↔
       ∃ (d : Fin n → 𝕜) (v : Fin n → Fin n → 𝕜),
-        LinearIndependent 𝕜 v ∧ ∀ j, A *ᵥ v j = d j • v j := by
-  constructor
-  · rintro ⟨d, X, hX, hA⟩
-    have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
-    have hAX : A * X = X * Matrix.diagonal d := by
-      rw [hA, Matrix.mul_assoc, Matrix.nonsing_inv_mul X hd, Matrix.mul_one]
-    refine ⟨d, X.col, Matrix.linearIndependent_cols_iff_isUnit.2 hX, fun j => ?_⟩
-    funext i
-    have h := congrFun (congrFun hAX i) j
-    rw [Matrix.mul_apply, Matrix.mul_apply] at h
-    simp only [Matrix.diagonal_apply, mul_ite, mul_zero, Finset.sum_ite_eq',
-      Finset.mem_univ, ite_true] at h
-    change ∑ k, A i k * X k j = d j * X i j
-    rw [h]
-    exact mul_comm _ _
-  · rintro ⟨d, v, hv, hvA⟩
-    have hX : IsUnit ((Matrix.of v)ᵀ) := Matrix.linearIndependent_cols_iff_isUnit.1 hv
-    have hd : IsUnit ((Matrix.of v)ᵀ).det := (Matrix.isUnit_iff_isUnit_det _).1 hX
-    have hAX : A * (Matrix.of v)ᵀ = (Matrix.of v)ᵀ * Matrix.diagonal d := by
-      ext i j
-      have h := congrFun (hvA j) i
-      rw [Matrix.mul_apply, Matrix.mul_apply]
-      simp only [Matrix.diagonal_apply, mul_ite, mul_zero, Finset.sum_ite_eq',
-        Finset.mem_univ, ite_true]
-      rw [show ((Matrix.of v)ᵀ) i j = v j i from rfl, mul_comm]
-      exact h
-    exact ⟨d, (Matrix.of v)ᵀ, hX, by
-      rw [← hAX, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hd, Matrix.mul_one]⟩
+        LinearIndependent 𝕜 v ∧ ∀ j, A *ᵥ v j = d j • v j :=
+  Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors A
 
 /-- Saad's corollary to Proposition 1.7, which is Problem P-1.2: eigenvectors belonging to
 distinct eigenvalues are linearly independent, so a matrix with `n` distinct eigenvalues is
@@ -216,44 +142,6 @@ private theorem maxGenEigenspace_le_eigenspace {K M : Type*} [Field K] [AddCommG
   rw [hker, LinearMap.mem_ker]
   exact hpow k v (by rw [hg]; exact hk)
 
-/-- Diagonalizability is exactly the statement that the eigenspaces span: Theorem 1.6 transported
-to the operator `A.mulVecLin`. -/
-theorem isSimilar_diagonal_iff_iSup_eigenspace (A : Matrix (Fin n) (Fin n) 𝕜) :
-    (∃ d : Fin n → 𝕜, IsSimilar A (Matrix.diagonal d)) ↔
-      (⨆ μ : 𝕜, Module.End.eigenspace A.mulVecLin μ) = ⊤ := by
-  rw [theorem_1_6]
-  constructor
-  · rintro ⟨d, v, hv, hvA⟩
-    have hcard : Fintype.card (Fin n) = Module.finrank 𝕜 (Fin n → 𝕜) := by
-      rw [Module.finrank_fin_fun, Fintype.card_fin]
-    have hspan : Submodule.span 𝕜 (Set.range v) = ⊤ :=
-      hv.span_eq_top_of_card_eq_finrank' hcard
-    refine top_le_iff.1 ?_
-    rw [← hspan]
-    refine Submodule.span_le.2 ?_
-    rintro _ ⟨j, rfl⟩
-    exact Submodule.mem_iSup_of_mem (d j) (Module.End.mem_eigenspace_iff.2 (hvA j))
-  · intro hsup
-    obtain ⟨b, hbsub, hbspan, hbind⟩ :=
-      exists_linearIndependent 𝕜 (⋃ μ : 𝕜, (Module.End.eigenspace A.mulVecLin μ : Set (Fin n → 𝕜)))
-    have hbtop : Submodule.span 𝕜 b = ⊤ := by
-      rw [hbspan, ← Submodule.iSup_eq_span]
-      exact hsup
-    have hbas : Module.Basis b 𝕜 (Fin n → 𝕜) :=
-      Module.Basis.mk hbind (by rw [Subtype.range_coe, hbtop])
-    have hfin : Fintype b := FiniteDimensional.fintypeBasisIndex hbas
-    have hcard : Fintype.card b = n := by
-      rw [← Module.finrank_eq_card_basis hbas, Module.finrank_fin_fun]
-    have hchoice : ∀ x : b, ∃ μ : 𝕜,
-        (x : Fin n → 𝕜) ∈ Module.End.eigenspace A.mulVecLin μ := by
-      intro x
-      simpa using hbsub x.2
-    choose dd hdd using hchoice
-    obtain ⟨e⟩ : Nonempty (b ≃ Fin n) := ⟨Fintype.equivFinOfCardEq hcard⟩
-    refine ⟨fun j => dd (e.symm j), fun j => (e.symm j : Fin n → 𝕜),
-      hbind.comp _ e.symm.injective, fun j => ?_⟩
-    exact Module.End.mem_eigenspace_iff.1 (hdd (e.symm j))
-
 /-- **Saad Proposition 1.7**: over `ℂ`, a matrix is diagonalizable if and only if every eigenvalue
 is *semisimple* — its eigenspace is already the whole maximal generalized eigenspace, so the
 geometric and algebraic multiplicities agree. One direction is that the generalized eigenspaces
@@ -264,7 +152,7 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     (∃ d : Fin n → ℂ, IsSimilar A (Matrix.diagonal d)) ↔
       ∀ μ : ℂ, Module.End.eigenspace A.mulVecLin μ =
         Module.End.maxGenEigenspace A.mulVecLin μ := by
-  rw [isSimilar_diagonal_iff_iSup_eigenspace]
+  rw [Matrix.isSimilar_diagonal_iff_iSup_eigenspace_eq_top]
   constructor
   · exact fun hsup μ => le_antisymm Module.End.eigenspace_le_maxGenEigenspace
       (maxGenEigenspace_le_eigenspace hsup μ)
@@ -274,39 +162,6 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
       _ = ⊤ := Module.End.iSup_maxGenEigenspace_eq_top _
 
 /-! ### §1.8.2 Theorem 1.8: the Jordan canonical form -/
-
-/-- Similarity survives subtracting a scalar from both matrices: `X (B - λ I) X⁻¹ = A - λ I`. -/
-theorem IsSimilar.sub_smul_one {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) (c : 𝕜) :
-    IsSimilar (A - c • 1) (B - c • 1) := by
-  obtain ⟨X, hX, rfl⟩ := h
-  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
-  refine ⟨X, hX, ?_⟩
-  rw [Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one, Matrix.sub_mul, Matrix.smul_mul,
-    Matrix.mul_nonsing_inv X hd]
-
-/-- Similar matrices have similar powers. -/
-theorem IsSimilar.pow {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) (k : ℕ) :
-    IsSimilar (A ^ k) (B ^ k) := by
-  obtain ⟨X, hX, rfl⟩ := h
-  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
-  refine ⟨X, hX, ?_⟩
-  induction k with
-  | zero => simp [Matrix.mul_nonsing_inv X hd]
-  | succ k ih =>
-      rw [pow_succ, pow_succ, ih]
-      simp only [Matrix.mul_assoc]
-      rw [← Matrix.mul_assoc X⁻¹ X, Matrix.nonsing_inv_mul X hd, Matrix.one_mul]
-
-/-- Similar matrices have null spaces of the same dimension, because they have the same rank. With
-`IsSimilar.sub_smul_one` and `IsSimilar.pow` this says that similar matrices give every eigenvalue
-the same geometric multiplicity and the same index, as Problem P-1.9 says they give it the same
-algebraic multiplicity. -/
-theorem finrank_ker_mulVecLin_eq_of_isSimilar {A B : Matrix (Fin n) (Fin n) 𝕜}
-    (h : IsSimilar A B) :
-    Module.finrank 𝕜 (LinearMap.ker A.mulVecLin)
-      = Module.finrank 𝕜 (LinearMap.ker B.mulVecLin) := by
-  obtain ⟨X, hX, rfl⟩ := h
-  exact Matrix.finrank_ker_mulVecLin_conj hX
 
 /-- The eigenspace of `A` at `c` is `Null (A - c I)`, the null space of the matrix `A - c I`. -/
 private theorem eigenspace_mulVecLin_eq_ker (A : Matrix (Fin n) (Fin n) 𝕜) (c : 𝕜) :
@@ -339,12 +194,7 @@ theorem theorem_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
           (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))) := by
   obtain ⟨p, lam, γ, l, σ, P, hinj, heig, hlpos, hP, hPA⟩ :=
     Matrix.exists_conj_blockDiagonal'_jordanForm A
-  have hd : IsUnit P.det := (Matrix.isUnit_iff_isUnit_det P).1 hP
-  refine ⟨p, lam, γ, l, σ, hinj, heig, hlpos, P, hP, ?_⟩
-  rw [← hPA]
-  calc A = P * P⁻¹ * A * (P * P⁻¹) := by
-        rw [Matrix.mul_nonsing_inv P hd, Matrix.one_mul, Matrix.mul_one]
-    _ = P * (P⁻¹ * A * P) * P⁻¹ := by simp only [Matrix.mul_assoc]
+  exact ⟨p, lam, γ, l, σ, hinj, heig, hlpos, P, hP, hPA.symm⟩
 
 /-- For a matrix in the Jordan form of Theorem 1.8, `Null (A - lam i I)^k` has the dimension the
 `i`-th diagonal block gives it: the other diagonal blocks carry other eigenvalues and contribute
@@ -366,7 +216,7 @@ private theorem finrank_ker_pow_sub_smul_one_of_jordan {A : Matrix (Fin n) (Fin 
       = Matrix.reindex σ σ ((J - lam i • 1) ^ k) := by
     simp only [← Matrix.coe_reindexAlgEquiv ℂ ℂ σ]
     rw [← map_one (Matrix.reindexAlgEquiv ℂ ℂ σ), ← map_smul, ← map_sub, ← map_pow]
-  rw [finrank_ker_mulVecLin_eq_of_isSimilar ((hA.sub_smul_one (lam i)).pow k), hre,
+  rw [((hA.sub_smul_one (lam i)).pow k).finrank_ker_mulVecLin_eq, hre,
     Matrix.finrank_ker_mulVecLin_reindex, hJ, Matrix.blockDiagonal'_sub_smul_one,
     ← Matrix.blockDiagonal'_pow, Matrix.finrank_ker_mulVecLin_blockDiagonal']
   refine Finset.sum_eq_single i (fun j _ hj => ?_) (fun h => absurd (Finset.mem_univ i) h)
@@ -407,7 +257,7 @@ theorem theorem_1_8_algebraicMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : 
     A.charpoly.rootMultiplicity (lam i) = ∑ k, l i k := by
   classical
   have hcp : A.charpoly = (Matrix.jordanForm (fun j => ∑ k, l j k) lam).charpoly := by
-    rw [Matrix.charpoly_jordanForm, charpoly_eq_of_isSimilar hA, Matrix.charpoly_reindex,
+    rw [Matrix.charpoly_jordanForm, hA.charpoly_eq, Matrix.charpoly_reindex,
       Matrix.charpoly_blockDiagonal']
     exact Finset.prod_congr rfl fun j _ => by
       rw [Matrix.charpoly_jordanForm, Finset.prod_pow_eq_pow_sum]

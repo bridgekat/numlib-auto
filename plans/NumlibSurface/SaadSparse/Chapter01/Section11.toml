@@ -15,9 +15,6 @@ id = "Matrix.IsSelfAdjointWrt"
 id = "Matrix.energyInner"
 
 [[node]]
-id = "Matrix.skewPart"
-
-[[node]]
 id = "SaadSparse.Chapter01.theorem_1_34"
 
 [[node]]

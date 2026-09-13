@@ -1,34 +1,10 @@
 namespace = "SaadSparse.Chapter01"
 
 [[node]]
-id = "IsSimilar"
-deprecated = '''Replaced by the backbone's `Matrix.IsSimilar` (Numlib/LinearAlgebra/Matrix/Similar); the Saad surface delegates to it.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 1.5"
-
-[[node]]
-id = "IsSimilar.refl"
-deprecated = '''Replaced by the backbone's `Matrix.IsSimilar.refl` (Numlib/LinearAlgebra/Matrix/Similar).'''
-
-[[node]]
-id = "IsSimilar.symm"
-
-[[node]]
-id = "IsSimilar.trans"
-
-[[node]]
-id = "mulVec_eq_smul_of_isSimilar"
-
-[[node]]
-id = "charpoly_eq_of_isSimilar"
-
-[[node]]
 id = "theorem_1_6"
 
 [[node]]
 id = "diagonalizable_of_injective_eigenvalues"
-
-[[node]]
-id = "isSimilar_diagonal_iff_iSup_eigenspace"
 
 [[node]]
 id = "proposition_1_7"
@@ -61,16 +37,6 @@ id = "realSchur"
 [[node]]
 id = "theorem_1_8"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
-
-[[node]]
-id = "IsSimilar.sub_smul_one"
-
-[[node]]
-id = "IsSimilar.pow"
-deprecated = '''Replaced by the backbone's `Matrix.IsSimilar.pow` (Numlib/LinearAlgebra/Matrix/Similar).'''
-
-[[node]]
-id = "finrank_ker_mulVecLin_eq_of_isSimilar"
 
 [[node]]
 id = "theorem_1_8_geometricMultiplicity"

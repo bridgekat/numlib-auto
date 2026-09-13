@@ -1,56 +1,32 @@
 namespace = "Matrix"
-desc = '''
-Similarity of square matrices, `B = C⁻¹ A C` with `C` a unit, and unitary similarity, as a
-backbone notion. Mathlib has no `Matrix.IsSimilar` (grepped `IsSimilar`, `isSimilar` under
-`Mathlib/LinearAlgebra/Matrix/`: nothing; `Matrix.charpoly_units_conj` is the only similarity
-lemma), and the Saad surface defines its own `SaadSparse.Chapter01.IsSimilar` with `refl`, `symm`,
-`trans`, the eigenvector transport `mulVec_eq_smul_of_isSimilar`, `charpoly_eq_of_isSimilar`,
-`IsSimilar.pow`, `IsSimilar.sub_smul_one`, `finrank_ker_mulVecLin_eq_of_isSimilar` and the
-diagonalizability criteria `theorem_1_6`, `isSimilar_diagonal_iff_iSup_eigenspace`
-(`NumlibSurface/SaadSparse/Chapter01/Section08.lean`). A second surface (Quarteroni–Sacco–Saleri,
-Definition 1.14 and everything in its §1.8 and chapter 5) needs exactly that API, and surfaces do
-not import each other, so the notion moves down: this module is the Saad block generalized from
-`Fin n` to a `Fintype` index and from `RCLike` to a field where the proof allows, and the Saad
-file then delegates (a refactor for the orchestrator; the ids listed here are new, the Saad ones
-become one-line restatements or are dropped).
-
-Contents: `IsSimilar`, its equivalence-relation lemmas, invariance of the characteristic polynomial,
-spectrum, determinant, trace and rank, transport of eigenvectors and of powers and shifts,
-`IsUnitarilySimilar` (over `RCLike`, `C ∈ unitaryGroup`) as a strengthening, similarity to a
-diagonal matrix iff the eigenvectors span (a basis of eigenvectors), and the multiplicity form of
-that criterion (diagonalizable iff no eigenvalue is defective) through
-`Numlib/LinearAlgebra/Matrix/Jordan`.
-'''
 
 [[node]]
 id = "IsSimilar"
-kind = "definition"
-desc = '''`Matrix.IsSimilar (A B : Matrix n n R) : Prop := ∃ C : Matrix n n R, IsUnit C ∧ B = C⁻¹ * A * C` over a commutative ring `R` with `[Fintype n] [DecidableEq n]`: Quarteroni–Sacco–Saleri Definition 1.14 and Saad §1.8. ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.14'
 
 [[node]]
 id = "IsSimilar.refl"
-kind = "theorem"
-desc = '''`IsSimilar A A`, with `IsSimilar.symm` (`C ↦ C⁻¹`, `nonsing_inv_nonsing_inv`) and `IsSimilar.trans` (`C ↦ C₁ * C₂`, `Matrix.mul_inv_rev`) stated alongside: similarity is an equivalence relation. ★'''
-deps = ["Matrix.IsSimilar"]
+
+[[node]]
+id = "IsSimilar.symm"
+
+[[node]]
+id = "IsSimilar.trans"
 
 [[node]]
 id = "IsSimilar.charpoly_eq"
-kind = "theorem"
-desc = '''`IsSimilar A B → A.charpoly = B.charpoly` (Mathlib's `Matrix.charpoly_units_conj`), hence over a field `spectrum K A = spectrum K B` (`IsSimilar.spectrum_eq`, via `mem_spectrum_iff_isRoot_charpoly`), `A.det = B.det`, `A.trace = B.trace`, and `A.rank = B.rank` (`Matrix.rank_conj` of `Numlib/LinearAlgebra/Matrix/Rank`). Quarteroni–Sacco–Saleri §1.8: "two similar matrices share the same spectrum and the same characteristic polynomial". ★'''
-deps = ["Matrix.IsSimilar", "Matrix.rank_conj"]
 
 [[node]]
 id = "IsSimilar.mulVec_eq_smul"
-kind = "theorem"
-desc = '''Eigenvector transport: if `B = C⁻¹ * A * C` with `C` a unit and `A *ᵥ x = μ • x`, then `B *ᵥ (C⁻¹ *ᵥ x) = μ • (C⁻¹ *ᵥ x)`, and `C⁻¹ *ᵥ x ≠ 0` when `x ≠ 0`. Quarteroni–Sacco–Saleri §1.8 (the displayed computation after Definition 1.14). ★'''
-deps = ["Matrix.IsSimilar"]
+
+[[node]]
+id = "IsSimilar.sub_smul_one"
 
 [[node]]
 id = "IsSimilar.pow"
-kind = "theorem"
-desc = '''`IsSimilar A B → IsSimilar (A ^ k) (B ^ k)` with the same `C`, and `IsSimilar (A - c • 1) (B - c • 1)` (`IsSimilar.sub_smul_one`), hence `finrank (ker (B - c•1)) = finrank (ker (A - c•1))` (`IsSimilar.finrank_ker_sub_smul_one_eq`, from `finrank_ker_mulVecLin_conj`): geometric multiplicities are similarity invariants. ★'''
-deps = ["Matrix.IsSimilar", "Matrix.finrank_ker_mulVecLin_conj"]
+
+[[node]]
+id = "IsSimilar.finrank_ker_mulVecLin_eq"
 
 [[node]]
 id = "IsUnitarilySimilar"
@@ -60,15 +36,10 @@ deps = ["Matrix.IsSimilar"]
 
 [[node]]
 id = "isSimilar_diagonal_iff_exists_basis_eigenvectors"
-kind = "theorem"
-desc = '''Over a field `K`: `(∃ d, IsSimilar A (diagonal d)) ↔ ∃ (d : n → K) (v : n → n → K), LinearIndependent K v ∧ ∀ j, A *ᵥ v j = d j • v j`; the columns of `C` are the eigenvectors and `C⁻¹ A C = diagonal d` reads `A C = C diagonal d` columnwise. Saad's surface `theorem_1_6`, generalized; Quarteroni–Sacco–Saleri §1.8 item 1 ("similar to a diagonal matrix iff the eigenvectors form a basis"). ★★'''
-deps = ["Matrix.IsSimilar"]
+source = 'Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.6'
 
 [[node]]
 id = "isSimilar_diagonal_iff_iSup_eigenspace_eq_top"
-kind = "theorem"
-desc = '''`(∃ d, IsSimilar A (diagonal d)) ↔ ⨆ μ, Module.End.eigenspace (toLin' A) μ = ⊤`: diagonalizable iff the eigenspaces span (Saad's `isSimilar_diagonal_iff_iSup_eigenspace`, generalized). With `Module.End.eigenspaces_iSupIndep` and `Module.End.iSup_maxGenEigenspace_eq_top` this is also "iff every eigenvalue has geometric multiplicity equal to its algebraic multiplicity", which is the reading Quarteroni–Sacco–Saleri give after Property 1.6 ("diagonalizable iff nondefective") — see `isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity`. ★★'''
-deps = ["Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors"]
 
 [[node]]
 id = "isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity"

@@ -1,0 +1,22 @@
+namespace = "Matrix"
+
+[[node]]
+id = "hermitianPart"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "skewHermitianPart"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "hermitianPart_isHermitian"
+
+[[node]]
+id = "skewHermitianPart_isHermitian"
+
+[[node]]
+id = "eq_hermitianPart_add_I_smul_skewHermitianPart"
+source = 'Saad, Iterative Methods for Sparse Linear Systems, Equation (1.49)'
+
+[[node]]
+id = "re_inner_hermitianPart"

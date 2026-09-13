@@ -1,7 +1,7 @@
 /-
-Upstreaming candidate for its first half: `Matrix.offDiagNormSq` and `Matrix.planeRotation` are
-general matrix material with no numerical-analysis-specific content.
-Natural home: `Mathlib.LinearAlgebra.Matrix.PlaneRotation`.
+Upstreaming candidate for its first section: `Matrix.offDiagNormSq` is general matrix material
+with no numerical-analysis-specific content, like the plane rotations of
+`Numlib/LinearAlgebra/Matrix/PlaneRotation` that it is used with.
 -/
 import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Analysis.SpecialFunctions.Sqrt
@@ -9,21 +9,22 @@ import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.Trace
+import Numlib.LinearAlgebra.Matrix.PlaneRotation
 
 /-!
 # Jacobi's eigenvalue algorithm
 
 Jacobi's method drives a real symmetric matrix towards a diagonal one by a sequence of plane
-rotations, each chosen to annihilate one off-diagonal entry. The quantity it decreases is the
-**off-diagonal mass** `N(A)² = ∑_{i ≠ j} |a_ij|²`, and the whole of the classical analysis is the
-identity `N(UᵀAU)² = N(A)² - 2 a_jk²` for the rotation `U` that annihilates `a_jk`
-([kress1998numerical], Lemma 7.13), together with the observation that the largest off-diagonal
-entry carries at least a fraction `1/(n² - n)` of the mass.
+rotations (`Matrix.planeRotation` of `Numlib/LinearAlgebra/Matrix/PlaneRotation`), each chosen to
+annihilate one off-diagonal entry. The quantity it decreases is the **off-diagonal mass** `N(A)² =
+∑_{i ≠ j} |a_ij|²`, and the whole of the classical analysis is the identity `N(UᵀAU)² = N(A)² - 2
+a_jk²` for the rotation `U` that annihilates `a_jk` ([kress1998numerical], Lemma 7.13), together
+with the observation that the largest off-diagonal entry carries at least a fraction `1/(n² - n)`
+of the mass.
 
 ## Main definitions
 
 * `Matrix.offDiagNormSq`: [kress1998numerical] `N(A)²`.
-* `Matrix.planeRotation`: the rotation of the `(j,k)`-plane by a given cosine and sine.
 * `Matrix.jacobiRotation`, `Matrix.jacobiStep`: the rotation annihilating `a_jk`, and the similarity
   it induces.
 * `Matrix.classicalJacobiIterate`: the classical method, annihilating a largest off-diagonal entry
@@ -99,87 +100,6 @@ theorem offDiagNormSq_eq_zero_iff {A : Matrix n n 𝕜} :
     simp
 
 end OffDiag
-
-/-! ### Plane rotations -/
-
-section PlaneRotation
-
-/-- The rotation of the `(j,k)`-plane with cosine `c` and sine `s`: the identity matrix with its
-`j`-th and `k`-th rows replaced by `(c, -s)` and `(s, c)` in the columns `j` and `k`. -/
-def planeRotation (j k : n) (c s : ℝ) : Matrix n n ℝ := Matrix.of fun p q =>
-  if p = j then (if q = j then c else if q = k then -s else 0)
-  else if p = k then (if q = j then s else if q = k then c else 0)
-  else if p = q then 1 else 0
-
-variable {j k : n} {c s : ℝ}
-
-omit [Fintype n] in
-/-- The entries of a plane rotation, written so that each column is a linear combination of
-Kronecker deltas. -/
-theorem planeRotation_apply (hjk : j ≠ k) (t q : n) :
-    planeRotation j k c s t q =
-      if q = j then (if t = j then c else 0) + (if t = k then s else 0)
-      else if q = k then (if t = j then -s else 0) + (if t = k then c else 0)
-      else if t = q then 1 else 0 := by
-  have hkj : k ≠ j := hjk.symm
-  unfold planeRotation
-  simp only [Matrix.of_apply]
-  by_cases htj : t = j
-  · by_cases hqj : q = j
-    · simp [htj, hqj, hjk]
-    · by_cases hqk : q = k
-      · simp [htj, hqk, hjk]
-      · simp [htj, hqj, hqk, Ne.symm hqj]
-  · by_cases htk : t = k
-    · by_cases hqj : q = j
-      · simp [htk, hqj, hkj]
-      · by_cases hqk : q = k
-        · simp [htk, hqk, hkj]
-        · simp [htk, hqj, hqk, Ne.symm hqk]
-    · by_cases hqj : q = j
-      · simp [htj, htk, hqj]
-      · by_cases hqk : q = k
-        · simp [htj, htk, hqk]
-        · simp [htj, htk, hqj, hqk]
-
-/-- Multiplying on the right by a plane rotation combines the `j`-th and `k`-th columns. -/
-theorem mul_planeRotation_apply (hjk : j ≠ k) (M : Matrix n n ℝ) (p q : n) :
-    (M * planeRotation j k c s) p q =
-      if q = j then c * M p j + s * M p k
-      else if q = k then -s * M p j + c * M p k
-      else M p q := by
-  rw [Matrix.mul_apply]
-  simp only [planeRotation_apply hjk]
-  split_ifs with h1 h2
-  · simp [mul_add, Finset.sum_add_distrib, mul_ite, Finset.sum_ite_eq', mul_comm]
-  · simp [mul_add, Finset.sum_add_distrib, mul_ite, Finset.sum_ite_eq', mul_comm]
-  · simp [mul_ite, Finset.sum_ite_eq']
-
-/-- Multiplying on the left by the transpose of a plane rotation combines the `j`-th and `k`-th
-rows. -/
-theorem transpose_planeRotation_mul_apply (hjk : j ≠ k) (M : Matrix n n ℝ) (p q : n) :
-    ((planeRotation j k c s)ᵀ * M) p q =
-      if p = j then c * M j q + s * M k q
-      else if p = k then -s * M j q + c * M k q
-      else M p q := by
-  rw [Matrix.mul_apply]
-  simp only [Matrix.transpose_apply, planeRotation_apply hjk]
-  split_ifs with h1 h2
-  · simp [add_mul, Finset.sum_add_distrib, ite_mul, Finset.sum_ite_eq']
-  · simp [add_mul, Finset.sum_add_distrib, ite_mul, Finset.sum_ite_eq']
-  · simp [ite_mul, Finset.sum_ite_eq']
-
-/-- A plane rotation is orthogonal. -/
-theorem transpose_planeRotation_mul_self (hjk : j ≠ k) (hcs : c ^ 2 + s ^ 2 = 1) :
-    (planeRotation j k c s)ᵀ * planeRotation j k c s = 1 := by
-  have hkj : k ≠ j := hjk.symm
-  ext p q
-  rw [transpose_planeRotation_mul_apply hjk]
-  simp only [planeRotation_apply hjk, Matrix.one_apply, hjk, hkj, ite_true, ite_false,
-    add_zero, zero_add]
-  split_ifs <;> simp_all <;> nlinarith [hcs]
-
-end PlaneRotation
 
 /-! ### Frobenius mass and orthogonal conjugation -/
 
@@ -358,39 +278,7 @@ end Jacobi
 
 section Step
 
-variable {c s : ℝ} {j k : n}
-
-/-- Conjugating by a plane rotation leaves every entry outside the `j`-th and `k`-th rows and
-columns alone. -/
-theorem conj_planeRotation_apply_of_ne (hjk : j ≠ k) (M : Matrix n n ℝ) {p q : n}
-    (hpj : p ≠ j) (hpk : p ≠ k) (hqj : q ≠ j) (hqk : q ≠ k) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p q = M p q := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk,
-    hpj, hpk, hqj, hqk]
-
-/-- The `(j,j)` entry of a matrix conjugated by a plane rotation. -/
-theorem conj_planeRotation_apply_jj (hjk : j ≠ k) (M : Matrix n n ℝ) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j j
-      = c * (c * M j j + s * M j k) + s * (c * M k j + s * M k k) := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk]
-  ring
-
-/-- The `(k,k)` entry of a matrix conjugated by a plane rotation. -/
-theorem conj_planeRotation_apply_kk (hjk : j ≠ k) (M : Matrix n n ℝ) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) k k
-      = -s * (-s * M j j + c * M j k) + c * (-s * M k j + c * M k k) := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, Ne.symm hjk]
-  ring
-
-/-- The `(j,k)` entry of a matrix conjugated by a plane rotation: the entry the Jacobi angle is
-chosen to annihilate. -/
-theorem conj_planeRotation_apply_jk (hjk : j ≠ k) (M : Matrix n n ℝ) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j k
-      = c * (-s * M j j + c * M j k) + s * (-s * M k j + c * M k k) := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, Ne.symm hjk]
-  ring
-
-variable (A : Matrix n n ℝ)
+variable {c s : ℝ} {j k : n} (A : Matrix n n ℝ)
 
 /-- **The Jacobi step annihilates the chosen off-diagonal entry** ([kress1998numerical], Lemma
 7.13). -/
@@ -491,32 +379,6 @@ theorem jacobiStep_apply_kk_sub (hA : A.IsSymm) (hjk : j ≠ k) :
   rw [jacobiStep_apply_kk A hA hjk, jacobiSin]
   linear_combination (A k k - jacobiTan A j k * A j k) * hcs
     - (jacobiTan A j k * jacobiCos A j k ^ 2) * hann
-
-/-- The `(p,j)` entry after a plane rotation, for `p` outside the rotated plane. -/
-theorem conj_planeRotation_apply_col_j (hjk : j ≠ k) (M : Matrix n n ℝ) {p : n}
-    (hpj : p ≠ j) (hpk : p ≠ k) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p j = c * M p j + s * M p k := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hpj, hpk]
-
-/-- The `(p,k)` entry after a plane rotation, for `p` outside the rotated plane. -/
-theorem conj_planeRotation_apply_col_k (hjk : j ≠ k) (M : Matrix n n ℝ) {p : n}
-    (hpj : p ≠ j) (hpk : p ≠ k) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p k = -s * M p j + c * M p k := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hpj, hpk,
-    Ne.symm hjk]
-
-/-- The `(j,q)` entry after a plane rotation, for `q` outside the rotated plane. -/
-theorem conj_planeRotation_apply_row_j (hjk : j ≠ k) (M : Matrix n n ℝ) {q : n}
-    (hqj : q ≠ j) (hqk : q ≠ k) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j q = c * M j q + s * M k q := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hqj, hqk]
-
-/-- The `(k,q)` entry after a plane rotation, for `q` outside the rotated plane. -/
-theorem conj_planeRotation_apply_row_k (hjk : j ≠ k) (M : Matrix n n ℝ) {q : n}
-    (hqj : q ≠ j) (hqk : q ≠ k) :
-    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) k q = -s * M j q + c * M k q := by
-  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hqj, hqk,
-    Ne.symm hjk]
 
 /-- Every off-diagonal entry is at most `√(N(A))` in modulus, being one term of the sum defining
 the off-diagonal mass. -/

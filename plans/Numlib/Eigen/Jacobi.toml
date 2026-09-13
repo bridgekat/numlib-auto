@@ -46,18 +46,6 @@ id = "jacobiCos_le_one"
 id = "abs_jacobiSin_le_one"
 
 [[node]]
-id = "conj_planeRotation_apply_col_j"
-
-[[node]]
-id = "conj_planeRotation_apply_col_k"
-
-[[node]]
-id = "conj_planeRotation_apply_row_j"
-
-[[node]]
-id = "conj_planeRotation_apply_row_k"
-
-[[node]]
 id = "jacobiStep_apply_jj_sub"
 
 [[node]]
@@ -99,21 +87,6 @@ Golub–Van Loan Alg 8.4.1); `jacobiTanSmall_mul_jacobiTan : jacobiTanSmall A j 
 (`jacobiSmall_annihilate`, the same polynomial identity as `jacobi_annihilate`). ★'''
 deps = ["Matrix.jacobiTan", "Matrix.jacobi_annihilate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
-
-[[node]]
-id = "transpose_planeRotation_mul_apply"
-
-[[node]]
-id = "conj_planeRotation_apply_of_ne"
-
-[[node]]
-id = "conj_planeRotation_apply_jj"
-
-[[node]]
-id = "conj_planeRotation_apply_kk"
-
-[[node]]
-id = "conj_planeRotation_apply_jk"
 
 [[node]]
 id = "jacobiTan"

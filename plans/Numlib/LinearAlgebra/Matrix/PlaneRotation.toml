@@ -1,30 +1,4 @@
 namespace = "Matrix"
-desc = '''
-Plane (Givens) rotations, and the more general embedding of a `2 × 2` matrix into a coordinate
-plane. This is a refactor: `Matrix.planeRotation` and its thirteen lemmas now in
-`Numlib/Eigen/Jacobi.lean` (lines 100–190 and 360–520: `planeRotation`, `planeRotation_apply`,
-`mul_planeRotation_apply`, `transpose_planeRotation_mul_apply`, `transpose_planeRotation_mul_self`,
-`conj_planeRotation_apply_of_ne`, `conj_planeRotation_apply_jj`, `conj_planeRotation_apply_kk`,
-`conj_planeRotation_apply_jk`, `conj_planeRotation_apply_col_j`, `conj_planeRotation_apply_col_k`,
-`conj_planeRotation_apply_row_j`, `conj_planeRotation_apply_row_k`) move here unchanged in name and
-statement, so `Numlib/Eigen/Jacobi` keeps compiling after adding the import; the ids stay in the
-`Jacobi` plan group only until the move, after which they belong to this group.
-
-The shared primitive is `Matrix.planeEmbed j k G`: the identity outside rows and columns `j`, `k`
-and the `2 × 2` matrix `G` on that block. A rotation is `planeEmbed j k !![c, -s; s, c]`, the
-Jacobi convention (rows `j`, `k` equal to `(c, -s)`, `(s, c)`, so `Gᵀ` rotates counterclockwise as
-in Quarteroni–Sacco–Saleri (5.44) with `s ↦ -s`); the complex Givens rotation of
-`Numlib/Krylov/Hessenberg.lean` (`Krylov.givensMatrix`, `!![conj c, conj s; -s, c]` at the plane
-`(k, k+1)` of `Fin (m+1)`) is another instance, and the bridge lemma
-`Krylov.givensMatrix_eq_planeEmbed` (planned in `Krylov/Hessenberg`) lets its unitarity and its
-row/column action come from here. Everything about `planeEmbed` is stated over a semiring or
-ring, with `[DecidableEq n]` and no order on `n`; the Givens pair `(c, s)` that annihilates one
-entry of a real vector, (5.44)/(5.51) of Quarteroni–Sacco–Saleri, is real.
-
-Consumers: `Numlib/Eigen/Jacobi` (Jacobi's method), `Numlib/LinearAlgebra/Matrix/QR` (the Givens
-QR factorization of a Hessenberg matrix), `Numlib/Krylov/Hessenberg` (the progressive QR
-factorization of GMRES/MINRES), and Kress §7.3.
-'''
 
 [[node]]
 id = "planeEmbed"
@@ -44,6 +18,33 @@ deps = ["Matrix.planeEmbed"]
 [[node]]
 id = "planeRotation"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.43)'
+
+[[node]]
+id = "transpose_planeRotation_mul_apply"
+
+[[node]]
+id = "conj_planeRotation_apply_of_ne"
+
+[[node]]
+id = "conj_planeRotation_apply_jj"
+
+[[node]]
+id = "conj_planeRotation_apply_kk"
+
+[[node]]
+id = "conj_planeRotation_apply_jk"
+
+[[node]]
+id = "conj_planeRotation_apply_col_j"
+
+[[node]]
+id = "conj_planeRotation_apply_col_k"
+
+[[node]]
+id = "conj_planeRotation_apply_row_j"
+
+[[node]]
+id = "conj_planeRotation_apply_row_k"
 
 [[node]]
 id = "mul_planeEmbed_apply"
