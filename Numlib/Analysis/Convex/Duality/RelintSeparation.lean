@@ -23,9 +23,10 @@ set together with the annihilator of `L`.
 * `submodule_inter_relint_nonempty_iff`, `submodule_inter_relint_nonempty_iff_supportFn` — the
   subspace case, pointwise and through the support function.
 * `submodule_inter_relint_dom_nonempty_iff` — the effective-domain case, with the support function
-  of `dom f` rewritten as the recession function of `f*` (Lemma 16.2 in [^1]).
+  of `dom f` rewritten as the recession function of `f*` ([rockafellar1970convex] Lemma 16.2).
 * `exists_apply_mem_relint_dom_iff` — the same for the range of a linear map, whose annihilator on
-  the other side of the pairing is the kernel of the adjoint (Corollary 16.2.1 in [^1]).
+  the other side of the pairing is the kernel of the adjoint
+  ([rockafellar1970convex] Corollary 16.2.1).
 
 ## Implementation notes
 
@@ -40,7 +41,7 @@ discharges it with `proper_conj_of_proper`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16, §11 and §13.
+* [rockafellar1970convex] §16, §11 and §13.
 -/
 
 open Set

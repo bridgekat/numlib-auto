@@ -29,12 +29,12 @@ infimum is the dual objective `(F* 0)(y)`, so `(cl (inf F))(0) = sup F* 0`.
   the other; `liminf_infBifun_eq_iSup_adjointBifun` — the same values as a `liminf`.
 * `normal_iff_iSup_adjointBifun_eq`, `concaveNormal_adjointBifun_iff`,
   `normal_iff_concaveNormal_adjointBifun` — normality, absence of a duality gap and normality of
-  the dual are one condition (Theorem 30.3 in [^1]).
+  the dual are one condition ([rockafellar1970convex] Theorem 30.3).
 * `StronglyConsistent.normal`, `normal_of_concaveStronglyConsistent_adjointBifun`,
   `normal_of_kuhnTucker_nonempty`, `normal_of_exists_setOf_le` and companions — ten sufficient
-  conditions for normality (Theorem 30.4 in [^1], clauses (a)–(j)).
+  conditions for normality ([rockafellar1970convex] Theorem 30.4, clauses (a)–(j)).
 * `mem_kuhnTucker_iff_adjointBifun_zero_eq_iSup`, `kuhnTucker_eq_setOf_isMax` — the Kuhn–Tucker
-  vectors are exactly the dual optimal solutions (Theorem 30.5 in [^1]), with
+  vectors are exactly the dual optimal solutions ([rockafellar1970convex] Theorem 30.5), with
   `mem_concaveKuhnTucker_adjointBifun_iff_mem_argmin` for the dual assertion;
   `exists_infBifun_eq_of_concaveStronglyConsistent` — attainment of the primal infimum.
 
@@ -48,7 +48,7 @@ than through subgradients, so needs no finite dimension.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §30.
+* [rockafellar1970convex] §30.
 -/
 
 open Filter Topology
@@ -897,11 +897,12 @@ theorem concaveNormal_of_concaveKuhnTucker_nonempty (hG : ConcaveBifun G)
   rw [mem_concaveKuhnTucker_iff_neg_mem_kuhnTucker] at hx
   have ht := hx.1
   have hb := hx.2.1
-  have hsub : -(-x) ∈ subgradient B (infBifun fun y v => -(G y v)) 0 :=
-    (mem_kuhnTucker_iff_neg_mem_subgradient ht hb).1 hx
+  have hsub : -(-x) ∈ subdifferential B (infBifun fun y v => -(G y v)) 0 :=
+    (mem_kuhnTucker_iff_neg_mem_subdifferential ht hb).1 hx
   rw [neg_neg] at hsub
   have hclosed : clFn (infBifun fun y v => -(G y v)) 0 = infBifun (fun y v => -(G y v)) 0 :=
-    clFn_eq_of_mem_subgradient (B := B) (convexFn_infBifun (concaveFn_iff_convexFn_neg.1 hG)) hsub
+    clFn_eq_of_mem_subdifferential (B := B) (convexFn_infBifun (concaveFn_iff_convexFn_neg.1 hG))
+      hsub
   have hinf0 : infBifun (fun y v => -(G y v)) 0 = -(supBifun G 0) :=
     (congrFun (neg_supBifun G) 0).symm
   rw [concaveNormal_iff, clConcave_apply, neg_supBifun, hclosed, hinf0, neg_neg]

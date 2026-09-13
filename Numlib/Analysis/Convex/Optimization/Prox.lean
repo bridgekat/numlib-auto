@@ -1,5 +1,5 @@
 import Numlib.Analysis.Convex.Optimization.Moreau
-import Numlib.Analysis.Convex.Subgradient.Monotone
+import Numlib.Analysis.Convex.Subdifferential.Monotone
 
 /-!
 # Proximal mappings, and maximal monotonicity of the subdifferential
@@ -23,11 +23,11 @@ maximal cyclic monotonicity of a subdifferential.
 
 ## Main results
 
-* `subgradient_quadFn_sub` — `∂(w (z - ·)) x = {x - z}`; `recessionFn_quadFn_sub` — `w (z - ·)`
+* `subdifferential_quadFn_sub` — `∂(w (z - ·)) x = {x - z}`; `recessionFn_quadFn_sub` — `w (z - ·)`
   recedes in no direction but `0`.
-* `argmin_moreauObj_nonempty`, `mem_argmin_moreauObj_iff`, `existsUnique_sub_mem_subgradient`,
+* `argmin_moreauObj_nonempty`, `mem_argmin_moreauObj_iff`, `existsUnique_sub_mem_subdifferential`,
   `prox_eq_iff` — the minimum exists, is unique, and solves `z - x ∈ ∂f x`
-  (Theorem 31.5 in [^1]); `prox_add_prox_conj` — `z = prox (z | f) + prox (z | f*)`.
+  ([rockafellar1970convex] Theorem 31.5); `prox_add_prox_conj` — `z = prox (z | f) + prox (z | f*)`.
 * `pairingNorm_prox_sub_le`, `dist_prox_prox_le`, `lipschitzWith_prox` — proximation is
   nonexpansive.
 * `subgradientRelHomeomorph` — the graph of `∂f` is homeomorphic to `E`;
@@ -43,7 +43,7 @@ used only for attainment of the minimum.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31.
+* [rockafellar1970convex] §31.
 -/
 
 namespace ConvexAnalysis
@@ -69,8 +69,8 @@ omit [IsContinuousInnerPairing B] in
 
 /-- `x - z` is a subgradient of `u ↦ w (z - u)` at `x`; the defect in the inequality is
 `½ B (u - x) (u - x)`. -/
-theorem sub_mem_subgradient_quadFn_sub (z x : E) :
-    x - z ∈ subgradient B (fun u => quadFn B (z - u)) x := by
+theorem sub_mem_subdifferential_quadFn_sub (z x : E) :
+    x - z ∈ subdifferential B (fun u => quadFn B (z - u)) x := by
   intro u
   simp only [quadFn_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
   have hexp := self_pairing_sub (B := B) (z - x) (u - x)
@@ -81,8 +81,8 @@ theorem sub_mem_subgradient_quadFn_sub (z x : E) :
 
 /-- **The subdifferential of the translated quadratic is a singleton**: `∂(w (z - ·)) x = {x - z}`.
 Testing at the point `y + z` forces `½ B ((z - x) + y) ((z - x) + y) ≤ 0`. -/
-theorem subgradient_quadFn_sub (z x : E) :
-    subgradient B (fun u => quadFn B (z - u)) x = {x - z} := by
+theorem subdifferential_quadFn_sub (z x : E) :
+    subdifferential B (fun u => quadFn B (z - u)) x = {x - z} := by
   refine Set.Subset.antisymm (fun y hy => ?_) ?_
   · have h := hy (y + z)
     simp only [quadFn_apply, ← EReal.coe_add, EReal.coe_le_coe_iff] at h
@@ -98,11 +98,11 @@ theorem subgradient_quadFn_sub (z x : E) :
     rw [Set.mem_singleton_iff, ← sub_eq_zero, show y - (x - z) = (z - x) + y by abel]
     exact hz
   · rw [Set.singleton_subset_iff]
-    exact sub_mem_subgradient_quadFn_sub z x
+    exact sub_mem_subdifferential_quadFn_sub z x
 
 /-- **The subdifferential of the quadratic is the identity**: `∂w x = {x}`. -/
-theorem subgradient_quadFn (x : E) : subgradient B (quadFn B) x = {x} := by
-  rw [← quadFn_zero_sub, subgradient_quadFn_sub, sub_zero]
+theorem subdifferential_quadFn (x : E) : subdifferential B (quadFn B) x = {x} := by
+  rw [← quadFn_zero_sub, subdifferential_quadFn_sub, sub_zero]
 
 /-- `u ↦ w (z - u)` is closed proper convex: it is finite, convex and continuous. -/
 theorem closedProperConvexFn_quadFn_sub (z : E) :
@@ -139,8 +139,8 @@ theorem recessionFn_quadFn_sub (z : E) {y : E} (hy : y ≠ 0) :
 
 /-- **Uniqueness of the proximal point**: at most one `x` satisfies `z - x ∈ ∂f x`. Monotonicity
 of `∂f` gives `0 ≤ B (x₁ - x₂) (-(x₁ - x₂))`, and definiteness finishes. -/
-theorem eq_of_sub_mem_subgradient (hp : Proper f) {z x₁ x₂ : E}
-    (h₁ : z - x₁ ∈ subgradient B f x₁) (h₂ : z - x₂ ∈ subgradient B f x₂) :
+theorem eq_of_sub_mem_subdifferential (hp : Proper f) {z x₁ x₂ : E}
+    (h₁ : z - x₁ ∈ subdifferential B f x₁) (h₂ : z - x₂ ∈ subdifferential B f x₂) :
     x₁ = x₂ := by
   have hmono := isMonotoneRel_subgradientRel (B := B) hp (x₁, z - x₁) h₁ (x₂, z - x₂) h₂
   rw [show z - x₁ - (z - x₂) = -(x₁ - x₂) by abel, map_neg] at hmono
@@ -215,11 +215,11 @@ theorem argmin_moreauObj_nonempty (hf : ClosedProperConvexFn f) (z : E) :
 
 omit [FiniteDimensional ℝ E] in
 /-- **The characterisation of the minimiser**: `x` minimises `f + w (z - ·)` exactly when
-`z - x ∈ ∂f x`. Fermat's rule, the sum rule and `subgradient_quadFn_sub`. -/
+`z - x ∈ ∂f x`. Fermat's rule, the sum rule and `subdifferential_quadFn_sub`. -/
 theorem mem_argmin_moreauObj_iff (hf : ClosedProperConvexFn f) (z x : E) :
-    x ∈ argmin (moreauObj B f z) ↔ z - x ∈ subgradient B f x := by
-  rw [mem_argmin_iff_zero_mem_subgradient B, moreauObj_def,
-    (isExactSum_quadFn_sub hf z).subgradient_add x, subgradient_quadFn_sub]
+    x ∈ argmin (moreauObj B f z) ↔ z - x ∈ subdifferential B f x := by
+  rw [mem_argmin_iff_zero_mem_subdifferential B, moreauObj_def,
+    (isExactSum_quadFn_sub hf z).subdifferential_add x, subdifferential_quadFn_sub]
   constructor
   · rintro ⟨y, hy, w, hw, hsum⟩
     rw [Set.mem_singleton_iff] at hw
@@ -232,11 +232,11 @@ theorem mem_argmin_moreauObj_iff (hf : ClosedProperConvexFn f) (z x : E) :
     exact ⟨z - x, h, x - z, rfl, by abel_nf⟩
 
 /-- There is exactly one `x` with `z = x + x*` and `x* ∈ ∂f x`. -/
-theorem existsUnique_sub_mem_subgradient (hf : ClosedProperConvexFn f) (z : E) :
-    ∃! x : E, z - x ∈ subgradient B f x := by
+theorem existsUnique_sub_mem_subdifferential (hf : ClosedProperConvexFn f) (z : E) :
+    ∃! x : E, z - x ∈ subdifferential B f x := by
   obtain ⟨x, hx⟩ := argmin_moreauObj_nonempty (B := B) hf z
   have hx' := (mem_argmin_moreauObj_iff hf z x).1 hx
-  exact ⟨x, hx', fun x' hx'' => eq_of_sub_mem_subgradient hf.proper hx'' hx'⟩
+  exact ⟨x, hx', fun x' hx'' => eq_of_sub_mem_subdifferential hf.proper hx'' hx'⟩
 
 omit [IsCompatiblePairing B] in
 /-- `prox B f z` minimises the Moreau objective. -/
@@ -245,26 +245,26 @@ theorem prox_mem_argmin (hf : ClosedProperConvexFn f) (z : E) :
   Classical.epsilon_spec (argmin_moreauObj_nonempty hf z)
 
 /-- The splitting `z = x + x*` with `x* ∈ ∂f x` exists, at `x = prox (z | f)`. -/
-theorem sub_prox_mem_subgradient (hf : ClosedProperConvexFn f) (z : E) :
-    z - prox B f z ∈ subgradient B f (prox B f z) :=
+theorem sub_prox_mem_subdifferential (hf : ClosedProperConvexFn f) (z : E) :
+    z - prox B f z ∈ subdifferential B f (prox B f z) :=
   (mem_argmin_moreauObj_iff hf z _).1 (prox_mem_argmin hf z)
 
 /-- That splitting determines `prox`. -/
-theorem prox_eq_of_sub_mem_subgradient (hf : ClosedProperConvexFn f) {z x : E}
-    (h : z - x ∈ subgradient B f x) : prox B f z = x :=
-  eq_of_sub_mem_subgradient hf.proper (sub_prox_mem_subgradient hf z) h
+theorem prox_eq_of_sub_mem_subdifferential (hf : ClosedProperConvexFn f) {z x : E}
+    (h : z - x ∈ subdifferential B f x) : prox B f z = x :=
+  eq_of_sub_mem_subdifferential hf.proper (sub_prox_mem_subdifferential hf z) h
 
 /-- Attainment and uniqueness in one statement: `prox (z | f) = x` exactly when `z - x ∈ ∂f x`. -/
 theorem prox_eq_iff (hf : ClosedProperConvexFn f) (z x : E) :
-    prox B f z = x ↔ z - x ∈ subgradient B f x :=
-  ⟨fun h => h ▸ sub_prox_mem_subgradient hf z, prox_eq_of_sub_mem_subgradient hf⟩
+    prox B f z = x ↔ z - x ∈ subdifferential B f x :=
+  ⟨fun h => h ▸ sub_prox_mem_subdifferential hf z, prox_eq_of_sub_mem_subdifferential hf⟩
 
 /-- The minimum set of the Moreau objective is `{prox (z | f)}`. -/
 theorem argmin_moreauObj_eq_singleton (hf : ClosedProperConvexFn f) (z : E) :
     argmin (moreauObj B f z) = {prox B f z} := by
   refine Set.Subset.antisymm (fun x hx => ?_) ?_
   · rw [Set.mem_singleton_iff]
-    exact (prox_eq_of_sub_mem_subgradient hf ((mem_argmin_moreauObj_iff hf z x).1 hx)).symm
+    exact (prox_eq_of_sub_mem_subdifferential hf ((mem_argmin_moreauObj_iff hf z x).1 hx)).symm
   · rw [Set.singleton_subset_iff]
     exact prox_mem_argmin hf z
 
@@ -285,13 +285,13 @@ theorem closedProperConvexFn_conj (hf : ClosedProperConvexFn f) :
 inversion turns `∂f` into `∂f*`, so the second half of `z = x + x*` is `prox (z | f*)`. -/
 theorem prox_add_prox_conj (hf : ClosedProperConvexFn f) (z : E) :
     prox B f z + prox B (conj B f) z = z := by
-  have hx : z - prox B f z ∈ subgradient B f (prox B f z) := sub_prox_mem_subgradient hf z
+  have hx : z - prox B f z ∈ subdifferential B f (prox B f z) := sub_prox_mem_subdifferential hf z
   have hstar : z - (z - prox B f z) ∈
-      subgradient B (conj B f) (z - prox B f z) := by
+      subdifferential B (conj B f) (z - prox B f z) := by
     rw [sub_sub_cancel]
-    have h := (mem_subgradient_conj_iff_of_closedFn (B := B) hf.convex hf.closed).2 hx
+    have h := (mem_subdifferential_conj_iff_of_closedFn (B := B) hf.convex hf.closed).2 hx
     rwa [flip_eq_self] at h
-  rw [prox_eq_of_sub_mem_subgradient (closedProperConvexFn_conj hf) hstar]
+  rw [prox_eq_of_sub_mem_subdifferential (closedProperConvexFn_conj hf) hstar]
   abel
 
 /-! ### The graph of `∂f` is homeomorphic to the space -/
@@ -301,8 +301,8 @@ theorem prox_add_prox_conj (hf : ClosedProperConvexFn f) (z : E) :
 theorem pairingNorm_prox_sub_le (hf : ClosedProperConvexFn f) (z₁ z₂ : E) :
     pairingNorm B (prox B f z₁ - prox B f z₂) ≤ pairingNorm B (z₁ - z₂) := by
   have hmono := isMonotoneRel_subgradientRel (B := B) hf.proper
-    (prox B f z₁, z₁ - prox B f z₁) (sub_prox_mem_subgradient hf z₁)
-    (prox B f z₂, z₂ - prox B f z₂) (sub_prox_mem_subgradient hf z₂)
+    (prox B f z₁, z₁ - prox B f z₁) (sub_prox_mem_subdifferential hf z₁)
+    (prox B f z₂, z₂ - prox B f z₂) (sub_prox_mem_subdifferential hf z₂)
   rw [show z₁ - prox B f z₁ - (z₂ - prox B f z₂)
       = (z₁ - z₂) - (prox B f z₁ - prox B f z₂) by abel, map_sub] at hmono
   have hcs := pairing_le_pairingNorm_mul B (prox B f z₁ - prox B f z₂) (z₁ - z₂)
@@ -331,11 +331,11 @@ every `z` splits uniquely, continuous because addition is, and its inverse
 noncomputable def subgradientRelHomeomorph (hf : ClosedProperConvexFn f) :
     ↥(subgradientRel B f) ≃ₜ E where
   toFun p := p.1.1 + p.1.2
-  invFun z := ⟨(prox B f z, z - prox B f z), sub_prox_mem_subgradient hf z⟩
+  invFun z := ⟨(prox B f z, z - prox B f z), sub_prox_mem_subdifferential hf z⟩
   left_inv := by
     rintro ⟨⟨x, y⟩, hp⟩
     have hpx : prox B f (x + y) = x :=
-      prox_eq_of_sub_mem_subgradient hf (by rwa [show x + y - x = y by abel])
+      prox_eq_of_sub_mem_subdifferential hf (by rwa [show x + y - x = y by abel])
     refine Subtype.ext ?_
     simp only [hpx, Prod.mk.injEq, true_and]
     abel
@@ -353,7 +353,7 @@ noncomputable def subgradientRelHomeomorph (hf : ClosedProperConvexFn f) :
 
 @[simp] theorem subgradientRelHomeomorph_symm_apply (hf : ClosedProperConvexFn f) (z : E) :
     (subgradientRelHomeomorph hf).symm z
-      = ⟨(prox B f z, z - prox B f z), sub_prox_mem_subgradient hf z⟩ := rfl
+      = ⟨(prox B f z, z - prox B f z), sub_prox_mem_subdifferential hf z⟩ := rfl
 
 /-! ### `∂f` is maximal monotone -/
 
@@ -365,7 +365,7 @@ theorem isMaximalMonotoneRel_subgradientRel (hf : ClosedProperConvexFn f) :
     IsMaximalMonotoneRel B (subgradientRel B f) := by
   refine ⟨isMonotoneRel_subgradientRel hf.proper, fun σ hσ hsub q hq => ?_⟩
   have hmem : (prox B f (q.1 + q.2), q.1 + q.2 - prox B f (q.1 + q.2))
-      ∈ subgradientRel B f := sub_prox_mem_subgradient hf (q.1 + q.2)
+      ∈ subgradientRel B f := sub_prox_mem_subdifferential hf (q.1 + q.2)
   have hmono := hσ q hq _ (hsub hmem)
   rw [show q.2 - (q.1 + q.2 - prox B f (q.1 + q.2)) = -(q.1 - prox B f (q.1 + q.2)) by abel,
     map_neg] at hmono

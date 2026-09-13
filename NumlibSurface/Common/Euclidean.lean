@@ -10,7 +10,7 @@ import Numlib.Analysis.Convex.HullDirections
 import Numlib.Analysis.Convex.Operations.Basic
 import Numlib.Analysis.Convex.Recession.Cone
 import Numlib.Analysis.Convex.Simplicial
-import Numlib.Analysis.Convex.Subgradient.Defs
+import Numlib.Analysis.Convex.Subdifferential.Defs
 import Numlib.LinearAlgebra.Subspace
 import Mathlib.Analysis.Convex.Join
 import Mathlib.Analysis.InnerProductSpace.Dual

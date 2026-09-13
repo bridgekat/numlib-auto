@@ -18,7 +18,8 @@ concave orientation of the same duality, which the adjoint of `F₁ □ F₂` ne
 * `infConv_neg` — infimal convolution commutes with negating the argument.
 * `supConv_apply` — the supremum formula, when neither function reaches `+∞`.
 * `concaveConj_add_of_isExactSum` — the concave conjugate of a sum is the supremal convolution of
-  the conjugates, under the hypothesis `IsExactSum B (-g₁) (-g₂)` (Theorem 16.4 in [^1]).
+  the conjugates, under the hypothesis `IsExactSum B (-g₁) (-g₂)`
+  ([rockafellar1970convex] Theorem 16.4).
 
 ## Implementation notes
 
@@ -33,7 +34,7 @@ supplies the third field (`IsExactSum.of_relint`). No case distinction survives 
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16 and §38.
+* [rockafellar1970convex] §16 and §38.
 -/
 
 open Pointwise

@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Indicator
 import Numlib.Analysis.Convex.Optimization.Minimum
 import Numlib.Analysis.Convex.Optimization.Prox
-import Numlib.Analysis.Convex.Subgradient.Defs
+import Numlib.Analysis.Convex.Subdifferential.Defs
 import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
@@ -63,4 +63,4 @@ theorem isBestApprox_iff_prox_eq [FiniteDimensional ℝ V] (hK : Convex ℝ K) (
     (hne : K.Nonempty) :
     IsBestApprox K u v ↔ prox (innerₗ V) (indicatorFn K) u = v := by
   rw [prox_eq_iff (closedProperConvexFn_indicatorFn hK hKc hne),
-    mem_subgradient_indicatorFn_iff hne, isBestApprox_iff_sub_mem_normalCone hK]
+    mem_subdifferential_indicatorFn_iff hne, isBestApprox_iff_sub_mem_normalCone hK]

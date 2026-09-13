@@ -21,13 +21,15 @@ closedness of `A` enters — and those needing relative interiors.
 * `ConvexProcess.partialCl₂_concaveBracket_adjointBifun_indicatorBifun` —
   `⟨Au, x*⟩ = cl_{x*} ⟨u, A* x*⟩` for a closed convex process.
 * `ConvexProcess.bracket_eq_concaveBracket_of_mem_relint_dom` and `…_of_mem_relint_dom_adjoint` —
-  `⟨Au, x*⟩ = ⟨u, A* x*⟩` whenever `u ∈ ri (dom A)` or `x* ∈ ri (dom A*)` (Theorem 39.3 in [^1]);
+  `⟨Au, x*⟩ = ⟨u, A* x*⟩` whenever `u ∈ ri (dom A)` or `x* ∈ ri (dom A*)`
+  ([rockafellar1970convex] Theorem 39.3);
   `bracket_eq_concaveBracket_adjointBifun_of_mem_relint_domConcaveBifun` is the dual half of that,
   for a general closed convex bifunction.
 * `exists_unique_convexProcess_bracket_indicatorBifun_eq` — a lower closed concave-convex `K` with
   `K (0, 0) = 0` that is positively homogeneous in each variable separately is `⟨Au, x*⟩` for
-  exactly one closed convex process `A` (Theorem 39.4 in [^1]). `ConvexProcess.isClosed_eval` and
-  the `…_bracket_indicatorBifun` results beside it are the four properties it inverts.
+  exactly one closed convex process `A` ([rockafellar1970convex] Theorem 39.4).
+  `ConvexProcess.isClosed_eval` and the `…_bracket_indicatorBifun` results beside it are the four
+  properties it inverts.
 * `ConvexProcess.closedFn_imageBifun_indicatorBifun` and the results beside it — for a closed
   convex process `A` and a closed proper convex `f`, the image `Af` is closed, the infimum defining
   `(Af)(x)` is attained, and `(Af)* = cl (A*⁻¹ f*)`. The open half is in `Bifunction/Process.lean`.
@@ -47,7 +49,7 @@ convex processes and kernels, so uniqueness is uniqueness among closed processes
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §39.
+* [rockafellar1970convex] §39.
 -/
 
 open Set

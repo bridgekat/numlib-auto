@@ -4,7 +4,7 @@ import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.Homogeneous
 import Numlib.Analysis.Convex.Line
 import Numlib.Analysis.Convex.Saddle.Differential
-import Numlib.Analysis.Convex.Subgradient.Gradient
+import Numlib.Analysis.Convex.Subdifferential.Gradient
 import NumlibSurface.Common.Euclidean
 
 /-!

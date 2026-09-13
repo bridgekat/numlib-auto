@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Line
 import Numlib.Analysis.Convex.Saddle.Continuity
-import Numlib.Analysis.Convex.Subgradient.Convergence
-import Numlib.Analysis.Convex.Subgradient.Gradient
+import Numlib.Analysis.Convex.Subdifferential.Convergence
+import Numlib.Analysis.Convex.Subdifferential.Gradient
 
 /-!
 # Directional derivatives and subgradients of a saddle-function
@@ -20,7 +20,8 @@ and `∂K` upper semicontinuous along a convergent sequence.
 
 * `dirDerivReal f x y` — the one-sided directional derivative `f'(x; y)` of a real-valued function,
   read as a genuine limit and taking the junk value `0` where that limit fails to exist.
-* `subgradientFst`, `subgradientSnd`, `subgradientSaddle` — `∂₁K`, `∂₂K` and `∂K = ∂₁K ×ˢ ∂₂K`.
+* `subdifferentialFst`, `subdifferentialSnd`, `subdifferentialSaddle` — `∂₁K`, `∂₂K` and
+  `∂K = ∂₁K ×ˢ ∂₂K`.
 * `prodInnerL q` — the functional `(w, x) ↦ ⟪w, q.1⟫ + ⟪x, q.2⟫` that a pair represents;
   `HasSaddleGradientAt K q p` is `HasFDerivAt K (prodInnerL q) p`.
 
@@ -28,16 +29,17 @@ and `∂K` upper semicontinuous along a convergent sequence.
 
 * `dirDerivReal_prod`, `tendsto_slope_dirDerivReal_prod`, `concaveConvexOn_dirDerivReal` — the
   joint limit exists, splits into the two partial derivatives, and is a finite concave-convex
-  function of the direction (Theorem 35.6 in [^1]).
+  function of the direction ([rockafellar1970convex] Theorem 35.6).
 * `eventually_dirDerivReal_snd_lt`, `eventually_lt_dirDerivReal_fst`,
-  `eventually_subgradientSaddle_subset` — the two semicontinuity inequalities, spelled without junk
-  values, and `∂K_i(u_i, v_i) ⊆ ∂K(u, v) + εB` eventually (Theorem 35.7 in [^1]).
+  `eventually_subdifferentialSaddle_subset` — the two semicontinuity inequalities, spelled without
+  junk values, and `∂K_i(u_i, v_i) ⊆ ∂K(u, v) + εB` eventually
+  ([rockafellar1970convex] Theorem 35.7).
 * `lowerSemicontinuousAt_dirDerivReal_fst`, `upperSemicontinuousAt_dirDerivReal_snd`,
-  `eventually_nhds_subgradientSaddle_subset` — the same for the constant sequence, that is, plain
-  semicontinuity on the rectangle.
-* `hasSaddleGradientAt_iff_subgradientSaddle_eq_singleton`,
-  `differentiableAt_iff_exists_subgradientSaddle_eq_singleton` — differentiability is unique
-  subdifferentiability (Theorem 35.8 in [^1]).
+  `eventually_nhds_subdifferentialSaddle_subset` — the same for the constant sequence, that is,
+  plain semicontinuity on the rectangle.
+* `hasSaddleGradientAt_iff_subdifferentialSaddle_eq_singleton`,
+  `differentiableAt_iff_exists_subdifferentialSaddle_eq_singleton` — differentiability is unique
+  subdifferentiability ([rockafellar1970convex] Theorem 35.8).
 * `differentiableAt_iff_isLinearMap_dirDerivReal` — where `K` is already finite, differentiability
   is exactly linearity of `K'(u, v; ·, ·)`.
 
@@ -48,7 +50,7 @@ and nonemptiness of `∂f(x)` there.
 
 ## Implementation notes
 
-`subgradientFst` and `subgradientSnd` test against `C` and `D` rather than the whole space;
+`subdifferentialFst` and `subdifferentialSnd` test against `C` and `D` rather than the whole space;
 Rockafellar tests against `Rᵐ`, the case `C = univ`, and the two agree once `K` is extended off the
 rectangle by the simple extension of `Saddle/Kernel.lean`.
 
@@ -59,7 +61,7 @@ quantifies over all `ε > 0`. Everything is stated on an *open* rectangle, as in
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §35.
+* [rockafellar1970convex] §35.
 -/
 
 open Set Filter Topology
@@ -76,8 +78,8 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E] {S : Set E} {f : E → ℝ}
 /-- The **one-sided directional derivative** `f'(x; y)` of a real-valued function: the limit of the
 difference quotient as the step decreases to `0`, with the junk value `0` where it does not exist.
 
-`dirDeriv` (`Subgradient/Defs.lean`) is an infimum instead, which agrees with the limit only when
-the quotient is monotone in the step — true along a line for a convex function, false for a
+`dirDeriv` (`Subdifferential/Defs.lean`) is an infimum instead, which agrees with the limit only
+when the quotient is monotone in the step — true along a line for a convex function, false for a
 saddle-function in a joint direction, which is the case treated here. -/
 noncomputable def dirDerivReal (f : E → ℝ) (x y : E) : ℝ :=
   limUnder (𝓝[>] (0 : ℝ)) fun t => (f (x + t • y) - f x) / t
@@ -452,7 +454,7 @@ end SaddleDirDeriv
 
 /-! ### The subdifferential of a saddle-function -/
 
-section SubgradientDefs
+section SubdifferentialDefs
 
 variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U]
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] {C : Set U} {D : Set X} {K : U × X → ℝ}
@@ -461,42 +463,42 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U]
 /-- `∂₁K(u, v)`, the subdifferential of a saddle-function in its **concave** variable: the
 supergradients at `u` of the concave slice `K (·, v)`, tested against the points of `C`.
 Rockafellar tests against all of `Rᵐ`, which is the case `C = univ`. -/
-def subgradientFst (C : Set U) (K : U × X → ℝ) (p : U × X) : Set U :=
+def subdifferentialFst (C : Set U) (K : U × X → ℝ) (p : U × X) : Set U :=
   {y | ∀ w ∈ C, K (w, p.2) ≤ K p + ⟪w - p.1, y⟫}
 
 /-- `∂₂K(u, v)`: the subgradients at `v` of the convex slice `K (u, ·)`, tested against `D`. -/
-def subgradientSnd (D : Set X) (K : U × X → ℝ) (p : U × X) : Set X :=
+def subdifferentialSnd (D : Set X) (K : U × X → ℝ) (p : U × X) : Set X :=
   {y | ∀ x ∈ D, K p + ⟪x - p.2, y⟫ ≤ K (p.1, x)}
 
 /-- `∂K(u, v) = ∂₁K(u, v) × ∂₂K(u, v)`, Rockafellar's subdifferential of a saddle-function.
 
 It is a *product*, not a set of joint subgradients: the two variables never interact, which is
 what makes differentiability a condition on each variable separately. -/
-def subgradientSaddle (C : Set U) (D : Set X) (K : U × X → ℝ) (p : U × X) : Set (U × X) :=
-  subgradientFst C K p ×ˢ subgradientSnd D K p
+def subdifferentialSaddle (C : Set U) (D : Set X) (K : U × X → ℝ) (p : U × X) : Set (U × X) :=
+  subdifferentialFst C K p ×ˢ subdifferentialSnd D K p
 
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] in
-@[simp] theorem mem_subgradientFst {y : U} :
-    y ∈ subgradientFst C K p ↔ ∀ w ∈ C, K (w, p.2) ≤ K p + ⟪w - p.1, y⟫ := Iff.rfl
+@[simp] theorem mem_subdifferentialFst {y : U} :
+    y ∈ subdifferentialFst C K p ↔ ∀ w ∈ C, K (w, p.2) ≤ K p + ⟪w - p.1, y⟫ := Iff.rfl
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] in
-@[simp] theorem mem_subgradientSnd {y : X} :
-    y ∈ subgradientSnd D K p ↔ ∀ x ∈ D, K p + ⟪x - p.2, y⟫ ≤ K (p.1, x) := Iff.rfl
+@[simp] theorem mem_subdifferentialSnd {y : X} :
+    y ∈ subdifferentialSnd D K p ↔ ∀ x ∈ D, K p + ⟪x - p.2, y⟫ ≤ K (p.1, x) := Iff.rfl
 
-@[simp] theorem mem_subgradientSaddle {q : U × X} :
-    q ∈ subgradientSaddle C D K p
-      ↔ q.1 ∈ subgradientFst C K p ∧ q.2 ∈ subgradientSnd D K p := Iff.rfl
+@[simp] theorem mem_subdifferentialSaddle {q : U × X} :
+    q ∈ subdifferentialSaddle C D K p
+      ↔ q.1 ∈ subdifferentialFst C K p ∧ q.2 ∈ subdifferentialSnd D K p := Iff.rfl
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] in
-/-- `∂₂K(u, v)` is the subdifferential, in the sense of `Subgradient/Defs.lean`, of the convex
+/-- `∂₂K(u, v)` is the subdifferential, in the sense of `Subdifferential/Defs.lean`, of the convex
 slice extended by `+∞` off `D`. This is the bridge that lets the one-variable subgradient theory be
 applied to a saddle-function one variable at a time. -/
-theorem subgradientSnd_eq_subgradient (hp : p.2 ∈ D) :
-    subgradientSnd D K p
-      = subgradient (innerₗ X) (ConvexAnalysis.restrictFn D fun x => ((K (p.1, x) : ℝ) : EReal))
+theorem subdifferentialSnd_eq_subdifferential (hp : p.2 ∈ D) :
+    subdifferentialSnd D K p
+      = subdifferential (innerₗ X) (ConvexAnalysis.restrictFn D fun x => ((K (p.1, x) : ℝ) : EReal))
         p.2 := by
   ext y
-  simp only [mem_subgradientSnd, mem_subgradient, restrictFn_of_mem hp]
+  simp only [mem_subdifferentialSnd, mem_subdifferential, restrictFn_of_mem hp]
   refine ⟨fun h z => ?_, fun h x hx => ?_⟩
   · by_cases hz : z ∈ D
     · rw [restrictFn_of_mem hz]
@@ -510,12 +512,12 @@ theorem subgradientSnd_eq_subgradient (hp : p.2 ∈ D) :
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] in
 /-- `∂₁K(u, v)` is the *negated* subdifferential of the negated concave slice extended by `+∞` off
 `C`: the concave variable reaches the convex theory through `-K`. -/
-theorem subgradientFst_eq_neg_subgradient (hp : p.1 ∈ C) :
-    subgradientFst C K p
-      = -subgradient (innerₗ U)
+theorem subdifferentialFst_eq_neg_subdifferential (hp : p.1 ∈ C) :
+    subdifferentialFst C K p
+      = -subdifferential (innerₗ U)
         (ConvexAnalysis.restrictFn C fun w => ((-K (w, p.2) : ℝ) : EReal)) p.1 := by
   ext y
-  simp only [mem_subgradientFst, Set.mem_neg, mem_subgradient, restrictFn_of_mem hp]
+  simp only [mem_subdifferentialFst, Set.mem_neg, mem_subdifferential, restrictFn_of_mem hp]
   refine ⟨fun h z => ?_, fun h w hw => ?_⟩
   · by_cases hz : z ∈ C
     · rw [restrictFn_of_mem hz]
@@ -536,7 +538,7 @@ theorem subgradientFst_eq_neg_subgradient (hp : p.1 ∈ C) :
     have : (-K (p.1, p.2) : ℝ) + -⟪w - p.1, y⟫ ≤ -K (w, p.2) := by exact_mod_cast hw'
     linarith
 
-end SubgradientDefs
+end SubdifferentialDefs
 
 /-! ### Continuous convergence, and semicontinuity of the directional derivatives -/
 
@@ -648,7 +650,7 @@ end Convergence
 
 /-! ### Upper semicontinuity of the subdifferentials -/
 
-section SubgradientConvergence
+section SubdifferentialConvergence
 
 variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X]
@@ -683,13 +685,13 @@ theorem prod_add_prod_subset {A A' : Set U} {B B' : Set X} :
 Upper semicontinuity of the one-variable subdifferential, applied to the convex slices
 `K_i (u_i, ·)` extended by `+∞` off `D`; the family converges pointwise on `D` to `K (u, ·)` by
 continuous convergence. -/
-theorem eventually_subgradientSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
+theorem eventually_subdifferentialSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ q ∈ C ×ˢ D, Tendsto (fun i => Ks i q) atTop (𝓝 (K q)))
     (hu : u ∈ C) (hv : v ∈ D) (hus : Tendsto us atTop (𝓝 u)) (hvs : Tendsto vs atTop (𝓝 v))
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subgradientSnd D (Ks i) (us i, vs i)
-      ⊆ subgradientSnd D K (u, v) + Metric.closedBall (0 : X) ε := by
+    ∀ᶠ i in atTop, subdifferentialSnd D (Ks i) (us i, vs i)
+      ⊆ subdifferentialSnd D K (u, v) + Metric.closedBall (0 : X) ε := by
   classical
   set us' : ℕ → U := fun i => if us i ∈ C then us i else u with hus'def
   have hus'C : ∀ i, us' i ∈ C := by
@@ -715,25 +717,25 @@ theorem eventually_subgradientSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (
       (tendsto_const_nhds (x := x))
     simp only [restrictFn_of_mem hx]
     exact EReal.tendsto_coe.2 h
-  have hmain := eventually_subgradient_subset_add_closedBall hDo hDc hfc
+  have hmain := eventually_subdifferential_subset_add_closedBall hDo hDc hfc
     (fun _ => proper_restrictFn_coe ⟨v, hv⟩ _) (fun _ => (dom_restrictFn_coe D _).ge) hgc
     (proper_restrictFn_coe ⟨v, hv⟩ _) (dom_restrictFn_coe D _).ge hconvD hv hvs hε
   filter_upwards [hmain, hus'eq, hvs.eventually_mem (hDo.mem_nhds hv)] with i hi hui hvi
-  rw [subgradientSnd_eq_subgradient (D := D) (K := Ks i) (p := (us i, vs i)) hvi,
-    subgradientSnd_eq_subgradient (D := D) (K := K) (p := (u, v)) hv, ← hui]
+  rw [subdifferentialSnd_eq_subdifferential (D := D) (K := Ks i) (p := (us i, vs i)) hvi,
+    subdifferentialSnd_eq_subdifferential (D := D) (K := K) (p := (u, v)) hv, ← hui]
   exact hi
 
 /-- **In the concave variable: `∂₁K_i(u_i, v_i) ⊆ ∂₁K(u, v) + εB` eventually.**
 
 The same argument through `-K`: `∂₁` is the negated subdifferential of the negated concave slice,
 and negation carries the `ε`-thickening across because the ball is symmetric. -/
-theorem eventually_subgradientFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
+theorem eventually_subdifferentialFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ q ∈ C ×ˢ D, Tendsto (fun i => Ks i q) atTop (𝓝 (K q)))
     (hu : u ∈ C) (hv : v ∈ D) (hus : Tendsto us atTop (𝓝 u)) (hvs : Tendsto vs atTop (𝓝 v))
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subgradientFst C (Ks i) (us i, vs i)
-      ⊆ subgradientFst C K (u, v) + Metric.closedBall (0 : U) ε := by
+    ∀ᶠ i in atTop, subdifferentialFst C (Ks i) (us i, vs i)
+      ⊆ subdifferentialFst C K (u, v) + Metric.closedBall (0 : U) ε := by
   classical
   set vs' : ℕ → X := fun i => if vs i ∈ D then vs i else v with hvs'def
   have hvs'D : ∀ i, vs' i ∈ D := by
@@ -762,12 +764,12 @@ theorem eventually_subgradientFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (
       (tendsto_const_nhds (x := w)) hvs').neg
     simp only [restrictFn_of_mem hw]
     exact EReal.tendsto_coe.2 h
-  have hmain := eventually_subgradient_subset_add_closedBall hCo hCc hfc
+  have hmain := eventually_subdifferential_subset_add_closedBall hCo hCc hfc
     (fun _ => proper_restrictFn_coe ⟨u, hu⟩ _) (fun _ => (dom_restrictFn_coe C _).ge) hgc
     (proper_restrictFn_coe ⟨u, hu⟩ _) (dom_restrictFn_coe C _).ge hconvC hu hus hε
   filter_upwards [hmain, hvs'eq, hus.eventually_mem (hCo.mem_nhds hu)] with i hi hvi hui
-  rw [subgradientFst_eq_neg_subgradient (C := C) (K := Ks i) (p := (us i, vs i)) hui,
-    subgradientFst_eq_neg_subgradient (C := C) (K := K) (p := (u, v)) hu, ← hvi,
+  rw [subdifferentialFst_eq_neg_subdifferential (C := C) (K := Ks i) (p := (us i, vs i)) hui,
+    subdifferentialFst_eq_neg_subdifferential (C := C) (K := K) (p := (u, v)) hu, ← hvi,
     ← neg_add_closedBall_zero]
   exact neg_subset_neg.2 hi
 
@@ -776,15 +778,16 @@ theorem eventually_subgradientFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (
 The subdifferential of a saddle-function is the *product* of the two one-variable ones, and the
 unit ball of a product is the product of the unit balls (`Metric.closedBall_prod_same`), so the
 statement is the conjunction of the previous two. -/
-theorem eventually_subgradientSaddle_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
+theorem eventually_subdifferentialSaddle_subset (hCo : IsOpen C) (hCc : Convex ℝ C) (hDo : IsOpen D)
     (hDc : Convex ℝ D) (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ q ∈ C ×ˢ D, Tendsto (fun i => Ks i q) atTop (𝓝 (K q)))
     (hu : u ∈ C) (hv : v ∈ D) (hus : Tendsto us atTop (𝓝 u)) (hvs : Tendsto vs atTop (𝓝 v))
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subgradientSaddle C D (Ks i) (us i, vs i)
-      ⊆ subgradientSaddle C D K (u, v) + Metric.closedBall (0 : U × X) ε := by
-  filter_upwards [eventually_subgradientFst_subset hCo hCc hDo hDc hKs hK hconv hu hv hus hvs hε,
-    eventually_subgradientSnd_subset hCo hCc hDo hDc hKs hK hconv hu hv hus hvs hε]
+    ∀ᶠ i in atTop, subdifferentialSaddle C D (Ks i) (us i, vs i)
+      ⊆ subdifferentialSaddle C D K (u, v) + Metric.closedBall (0 : U × X) ε := by
+  filter_upwards [
+    eventually_subdifferentialFst_subset hCo hCc hDo hDc hKs hK hconv hu hv hus hvs hε,
+    eventually_subdifferentialSnd_subset hCo hCc hDo hDc hKs hK hconv hu hv hus hvs hε]
     with i h₁ h₂
   refine (Set.prod_mono h₁ h₂).trans ?_
   have hball : Metric.closedBall (0 : U) ε ×ˢ Metric.closedBall (0 : X) ε
@@ -794,7 +797,7 @@ theorem eventually_subgradientSaddle_subset (hCo : IsOpen C) (hCc : Convex ℝ C
   rw [← hball]
   exact prod_add_prod_subset
 
-end SubgradientConvergence
+end SubdifferentialConvergence
 
 /-! ### The constant sequence: semicontinuity on the rectangle -/
 
@@ -833,7 +836,7 @@ theorem upperSemicontinuousAt_dirDerivReal_snd (hCo : IsOpen C) (hCc : Convex �
 
 end LocalSemicontinuity
 
-section LocalSubgradient
+section LocalSubdifferential
 
 variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X]
@@ -841,18 +844,18 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
 
 /-- `∂K` is upper semicontinuous on `C × D`: `∂K(x, y) ⊆ ∂K(u, v) + εB` for every `(x, y)` near
 `(u, v)`. -/
-theorem eventually_nhds_subgradientSaddle_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem eventually_nhds_subdifferentialSaddle_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ p in 𝓝 ((u, v) : U × X), subgradientSaddle C D K p
-      ⊆ subgradientSaddle C D K (u, v) + Metric.closedBall (0 : U × X) ε := by
+    ∀ᶠ p in 𝓝 ((u, v) : U × X), subdifferentialSaddle C D K p
+      ⊆ subdifferentialSaddle C D K (u, v) + Metric.closedBall (0 : U × X) ε := by
   rw [Filter.eventually_iff_seq_eventually]
   intro ps hps
   rw [nhds_prod_eq] at hps
-  exact eventually_subgradientSaddle_subset hCo hCc hDo hDc (fun _ => hK) hK
+  exact eventually_subdifferentialSaddle_subset hCo hCc hDo hDc (fun _ => hK) hK
     (fun _ _ => tendsto_const_nhds) hu hv hps.fst hps.snd hε
 
-end LocalSubgradient
+end LocalSubdifferential
 
 /-! ### Tangent inequalities at a point of differentiability -/
 
@@ -1039,23 +1042,23 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U]
 /-- The subdifferential of a saddle-function is a singleton exactly when each of its two blocks is,
 provided both are nonempty. It is a product, so this is not automatic: an empty factor makes the
 product empty whatever the other factor is. -/
-theorem subgradientSaddle_eq_singleton_iff (hne₁ : (subgradientFst C K p).Nonempty)
-    (hne₂ : (subgradientSnd D K p).Nonempty) :
-    subgradientSaddle C D K p = {q} ↔
-      subgradientFst C K p = {q.1} ∧ subgradientSnd D K p = {q.2} := by
-  have hprod : subgradientSaddle C D K p
-      = subgradientFst C K p ×ˢ subgradientSnd D K p := rfl
+theorem subdifferentialSaddle_eq_singleton_iff (hne₁ : (subdifferentialFst C K p).Nonempty)
+    (hne₂ : (subdifferentialSnd D K p).Nonempty) :
+    subdifferentialSaddle C D K p = {q} ↔
+      subdifferentialFst C K p = {q.1} ∧ subdifferentialSnd D K p = {q.2} := by
+  have hprod : subdifferentialSaddle C D K p
+      = subdifferentialFst C K p ×ˢ subdifferentialSnd D K p := rfl
   constructor
   · intro h
     obtain ⟨a, ha⟩ := hne₁
     obtain ⟨b, hb⟩ := hne₂
-    have hq : q ∈ subgradientSaddle C D K p := by rw [h]; exact Set.mem_singleton_iff.2 rfl
+    have hq : q ∈ subdifferentialSaddle C D K p := by rw [h]; exact Set.mem_singleton_iff.2 rfl
     refine ⟨Set.eq_singleton_iff_unique_mem.2 ⟨hq.1, fun y hy => ?_⟩,
       Set.eq_singleton_iff_unique_mem.2 ⟨hq.2, fun y hy => ?_⟩⟩
-    · have hmem : ((y, b) : U × X) ∈ subgradientSaddle C D K p := ⟨hy, hb⟩
+    · have hmem : ((y, b) : U × X) ∈ subdifferentialSaddle C D K p := ⟨hy, hb⟩
       rw [h, Set.mem_singleton_iff] at hmem
       exact congrArg Prod.fst hmem
-    · have hmem : ((a, y) : U × X) ∈ subgradientSaddle C D K p := ⟨ha, hy⟩
+    · have hmem : ((a, y) : U × X) ∈ subdifferentialSaddle C D K p := ⟨ha, hy⟩
       rw [h, Set.mem_singleton_iff] at hmem
       exact congrArg Prod.snd hmem
   · rintro ⟨h₁, h₂⟩
@@ -1063,45 +1066,45 @@ theorem subgradientSaddle_eq_singleton_iff (hne₁ : (subgradientFst C K p).None
 
 /-- At a point where `K` is differentiable the first block of `∇K` is the only element of
 `∂₁K(u, v)`. -/
-theorem subgradientFst_eq_singleton_of_hasSaddleGradientAt (hCo : IsOpen C)
+theorem subdifferentialFst_eq_singleton_of_hasSaddleGradientAt (hCo : IsOpen C)
     (hK : ConcaveOn ℝ C fun w => K (w, v)) (hu : u ∈ C)
-    (hd : HasSaddleGradientAt K q (u, v)) : subgradientFst C K (u, v) = {q.1} := by
+    (hd : HasSaddleGradientAt K q (u, v)) : subdifferentialFst C K (u, v) = {q.1} := by
   have hs := HasSaddleGradientAt.hasFDerivAt_fst hd
   refine Set.eq_singleton_iff_unique_mem.2 ⟨?_, fun y hy => ?_⟩
-  · simp only [mem_subgradientFst]
+  · simp only [mem_subdifferentialFst]
     intro w hw
     have h := le_add_of_hasFDerivAt_of_concaveOn hCo hK hu hs hw
     rwa [innerSL_apply_apply, real_inner_comm] at h
-  · simp only [mem_subgradientFst] at hy
+  · simp only [mem_subdifferentialFst] at hy
     refine innerSL_inj.1 (eq_of_forall_le_add_of_hasFDerivAt hCo hu hs fun z hz => ?_)
     rw [innerSL_apply_apply, real_inner_comm]
     exact hy z hz
 
 /-- The same in the convex variable: the second block of `∇K` is the only element of
 `∂₂K(u, v)`. -/
-theorem subgradientSnd_eq_singleton_of_hasSaddleGradientAt (hDo : IsOpen D)
+theorem subdifferentialSnd_eq_singleton_of_hasSaddleGradientAt (hDo : IsOpen D)
     (hK : ConvexOn ℝ D fun x => K (u, x)) (hv : v ∈ D)
-    (hd : HasSaddleGradientAt K q (u, v)) : subgradientSnd D K (u, v) = {q.2} := by
+    (hd : HasSaddleGradientAt K q (u, v)) : subdifferentialSnd D K (u, v) = {q.2} := by
   have hs := HasSaddleGradientAt.hasFDerivAt_snd hd
   refine Set.eq_singleton_iff_unique_mem.2 ⟨?_, fun y hy => ?_⟩
-  · simp only [mem_subgradientSnd]
+  · simp only [mem_subdifferentialSnd]
     intro x hx
     have h := le_add_of_hasFDerivAt_of_convexOn hDo hK hv hs hx
     rwa [innerSL_apply_apply, real_inner_comm] at h
-  · simp only [mem_subgradientSnd] at hy
+  · simp only [mem_subdifferentialSnd] at hy
     refine innerSL_inj.1 (eq_of_forall_add_le_of_hasFDerivAt hDo hv hs fun z hz => ?_)
     rw [innerSL_apply_apply, real_inner_comm]
     exact hy z hz
 
 /-- Where a finite concave-convex function is differentiable, its gradient is its unique
 subgradient. -/
-theorem subgradientSaddle_eq_singleton_of_hasSaddleGradientAt (hCo : IsOpen C) (hDo : IsOpen D)
+theorem subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt (hCo : IsOpen C) (hDo : IsOpen D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
-    (hd : HasSaddleGradientAt K q (u, v)) : subgradientSaddle C D K (u, v) = {q} := by
-  have hprod : subgradientSaddle C D K (u, v)
-      = subgradientFst C K (u, v) ×ˢ subgradientSnd D K (u, v) := rfl
-  rw [hprod, subgradientFst_eq_singleton_of_hasSaddleGradientAt hCo (hK.concave_fst v hv) hu hd,
-    subgradientSnd_eq_singleton_of_hasSaddleGradientAt hDo (hK.convex_snd u hu) hv hd,
+    (hd : HasSaddleGradientAt K q (u, v)) : subdifferentialSaddle C D K (u, v) = {q} := by
+  have hprod : subdifferentialSaddle C D K (u, v)
+      = subdifferentialFst C K (u, v) ×ˢ subdifferentialSnd D K (u, v) := rfl
+  rw [hprod, subdifferentialFst_eq_singleton_of_hasSaddleGradientAt hCo (hK.concave_fst v hv) hu hd,
+    subdifferentialSnd_eq_singleton_of_hasSaddleGradientAt hDo (hK.convex_snd u hu) hv hd,
     Set.singleton_prod_singleton]
 
 end SaddleGradient
@@ -1115,24 +1118,24 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U] in
 /-- `∂₂K(u, v)` is nonempty at every point of the open rectangle: a convex function has a
 subgradient wherever it is finite on a neighbourhood. -/
-theorem subgradientSnd_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
+theorem subdifferentialSnd_nonempty (hDo : IsOpen D) (hDc : Convex ℝ D)
     (hK : ConvexOn ℝ D fun x => K (u, x)) (hv : v ∈ D) :
-    (subgradientSnd D K (u, v)).Nonempty := by
+    (subdifferentialSnd D K (u, v)).Nonempty := by
   have hf : ConvexFn (ConvexAnalysis.restrictFn D fun x => ((K (u, x) : ℝ) : EReal)) :=
     (convexOn_iff_convexFn D _).1 hK
   have hri : v ∈ ri (dom (ConvexAnalysis.restrictFn D fun x => ((K (u, x) : ℝ) : EReal))) := by
     rw [dom_restrictFn_coe]
     exact Convex.interior_subset_relint hDc ⟨v, by rwa [hDo.interior_eq]⟩
       (by rwa [hDo.interior_eq])
-  rw [subgradientSnd_eq_subgradient (D := D) (K := K) (p := (u, v)) hv]
-  exact subgradient_nonempty_of_mem_relint_dom hf (proper_restrictFn_coe ⟨v, hv⟩ _) hri
+  rw [subdifferentialSnd_eq_subdifferential (D := D) (K := K) (p := (u, v)) hv]
+  exact subdifferential_nonempty_of_mem_relint_dom hf (proper_restrictFn_coe ⟨v, hv⟩ _) hri
 
 omit [NormedAddCommGroup X] [InnerProductSpace ℝ X] [FiniteDimensional ℝ X] in
 /-- `∂₁K(u, v)` is nonempty at every point of the open rectangle, by the same fact for the concave
 slice. -/
-theorem subgradientFst_nonempty (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem subdifferentialFst_nonempty (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hK : ConcaveOn ℝ C fun w => K (w, v)) (hu : u ∈ C) :
-    (subgradientFst C K (u, v)).Nonempty := by
+    (subdifferentialFst C K (u, v)).Nonempty := by
   have hf : ConvexFn (ConvexAnalysis.restrictFn C fun w => ((-K (w, v) : ℝ) : EReal)) := by
     refine (convexOn_iff_convexFn C _).1 ?_
     exact hK.neg
@@ -1140,33 +1143,33 @@ theorem subgradientFst_nonempty (hCo : IsOpen C) (hCc : Convex ℝ C)
     rw [dom_restrictFn_coe]
     exact Convex.interior_subset_relint hCc ⟨u, by rwa [hCo.interior_eq]⟩
       (by rwa [hCo.interior_eq])
-  rw [subgradientFst_eq_neg_subgradient (C := C) (K := K) (p := (u, v)) hu]
-  obtain ⟨y, hy⟩ := subgradient_nonempty_of_mem_relint_dom (B := innerₗ U) hf
+  rw [subdifferentialFst_eq_neg_subdifferential (C := C) (K := K) (p := (u, v)) hu]
+  obtain ⟨y, hy⟩ := subdifferential_nonempty_of_mem_relint_dom (B := innerₗ U) hf
     (proper_restrictFn_coe ⟨u, hu⟩ _) hri
   exact ⟨-y, by simpa using hy⟩
 
 /-- Upper semicontinuity of `∂₁K` on the rectangle, in the concave variable alone. -/
-theorem eventually_nhds_subgradientFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem eventually_nhds_subdifferentialFst_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ z in 𝓝 ((u, v) : U × X), subgradientFst C K z
-      ⊆ subgradientFst C K (u, v) + Metric.closedBall (0 : U) ε := by
+    ∀ᶠ z in 𝓝 ((u, v) : U × X), subdifferentialFst C K z
+      ⊆ subdifferentialFst C K (u, v) + Metric.closedBall (0 : U) ε := by
   rw [Filter.eventually_iff_seq_eventually]
   intro ps hps
   rw [nhds_prod_eq] at hps
-  exact eventually_subgradientFst_subset hCo hCc hDo hDc (fun _ => hK) hK
+  exact eventually_subdifferentialFst_subset hCo hCc hDo hDc (fun _ => hK) hK
     (fun _ _ => tendsto_const_nhds) hu hv hps.fst hps.snd hε
 
 /-- Upper semicontinuity of `∂₂K` on the rectangle, in the convex variable alone. -/
-theorem eventually_nhds_subgradientSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem eventually_nhds_subdifferentialSnd_subset (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
     {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ z in 𝓝 ((u, v) : U × X), subgradientSnd D K z
-      ⊆ subgradientSnd D K (u, v) + Metric.closedBall (0 : X) ε := by
+    ∀ᶠ z in 𝓝 ((u, v) : U × X), subdifferentialSnd D K z
+      ⊆ subdifferentialSnd D K (u, v) + Metric.closedBall (0 : X) ε := by
   rw [Filter.eventually_iff_seq_eventually]
   intro ps hps
   rw [nhds_prod_eq] at hps
-  exact eventually_subgradientSnd_subset hCo hCc hDo hDc (fun _ => hK) hK
+  exact eventually_subdifferentialSnd_subset hCo hCc hDo hDc (fun _ => hK) hK
     (fun _ _ => tendsto_const_nhds) hu hv hps.fst hps.snd hε
 
 /-- **Converse half**: a finite concave-convex function with a *unique* subgradient at a point of
@@ -1178,24 +1181,24 @@ convergence of the rescalings
 `∂K` gives the estimate outright: the increment `K (u + a, v + b) - K (u, v)` is sandwiched by
 subgradient inequalities at `(u, v)`, `(u, v + b)` and `(u + a, v + b)`, each of whose subgradients
 lies within `ε` of `q`, so the error is at most `ε (‖a‖ + ‖b‖)`. -/
-theorem hasSaddleGradientAt_of_subgradient_eq_singleton (hCo : IsOpen C) (hCc : Convex ℝ C)
+theorem hasSaddleGradientAt_of_subdifferential_eq_singleton (hCo : IsOpen C) (hCc : Convex ℝ C)
     (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
-    (h₁ : subgradientFst C K (u, v) = {q.1}) (h₂ : subgradientSnd D K (u, v) = {q.2}) :
+    (h₁ : subdifferentialFst C K (u, v) = {q.1}) (h₂ : subdifferentialSnd D K (u, v) = {q.2}) :
     HasSaddleGradientAt K q (u, v) := by
   change HasFDerivAt K (prodInnerL q) ((u, v) : U × X)
   rw [hasFDerivAt_iff_isLittleO_nhds_zero, Asymptotics.isLittleO_iff]
   intro c hc
   have hε : (0 : ℝ) < c / 2 := by linarith
-  have hq1 : q.1 ∈ subgradientFst C K (u, v) := by rw [h₁]; exact Set.mem_singleton_iff.2 rfl
-  have hq2 : q.2 ∈ subgradientSnd D K (u, v) := by rw [h₂]; exact Set.mem_singleton_iff.2 rfl
-  simp only [mem_subgradientFst] at hq1
-  simp only [mem_subgradientSnd] at hq2
+  have hq1 : q.1 ∈ subdifferentialFst C K (u, v) := by rw [h₁]; exact Set.mem_singleton_iff.2 rfl
+  have hq2 : q.2 ∈ subdifferentialSnd D K (u, v) := by rw [h₂]; exact Set.mem_singleton_iff.2 rfl
+  simp only [mem_subdifferentialFst] at hq1
+  simp only [mem_subdifferentialSnd] at hq2
   have hCmem : ∀ᶠ z : U × X in 𝓝 ((u, v) : U × X), z.1 ∈ C :=
     (hCo.preimage continuous_fst).mem_nhds hu
   have hDmem : ∀ᶠ z : U × X in 𝓝 ((u, v) : U × X), z.2 ∈ D :=
     (hDo.preimage continuous_snd).mem_nhds hv
-  have hFsub := eventually_nhds_subgradientFst_subset hCo hCc hDo hDc hK hu hv hε
-  have hSsub := eventually_nhds_subgradientSnd_subset hCo hCc hDo hDc hK hu hv hε
+  have hFsub := eventually_nhds_subdifferentialFst_subset hCo hCc hDo hDc hK hu hv hε
+  have hSsub := eventually_nhds_subdifferentialSnd_subset hCo hCc hDo hDc hK hu hv hε
   have hmove : Tendsto (fun h : U × X => ((u + h.1, v + h.2) : U × X)) (𝓝 0) (𝓝 (u, v)) := by
     have hcont : Continuous fun h : U × X => ((u + h.1, v + h.2) : U × X) := by fun_prop
     simpa using hcont.tendsto 0
@@ -1204,11 +1207,11 @@ theorem hasSaddleGradientAt_of_subgradient_eq_singleton (hCo : IsOpen C) (hCc : 
     simpa using hcont.tendsto 0
   filter_upwards [hmove.eventually hCmem, hmove.eventually hDmem, hmove.eventually hFsub,
     hmid.eventually hFsub, hmid.eventually hSsub] with h hxC hyD hFp hFm hSm
-  obtain ⟨b, hb⟩ := subgradientSnd_nonempty (u := u) (v := v + h.2) hDo hDc
+  obtain ⟨b, hb⟩ := subdifferentialSnd_nonempty (u := u) (v := v + h.2) hDo hDc
     (hK.convex_snd u hu) hyD
-  obtain ⟨a, ha⟩ := subgradientFst_nonempty (u := u) (v := v + h.2) hCo hCc
+  obtain ⟨a, ha⟩ := subdifferentialFst_nonempty (u := u) (v := v + h.2) hCo hCc
     (hK.concave_fst (v + h.2) hyD) hu
-  obtain ⟨a', ha'⟩ := subgradientFst_nonempty (u := u + h.1) (v := v + h.2) hCo hCc
+  obtain ⟨a', ha'⟩ := subdifferentialFst_nonempty (u := u + h.1) (v := v + h.2) hCo hCc
     (hK.concave_fst (v + h.2) hyD) hxC
   have hbε : ‖b - q.2‖ ≤ c / 2 := by
     refine norm_sub_le_of_mem_singleton_add_closedBall ?_
@@ -1222,8 +1225,8 @@ theorem hasSaddleGradientAt_of_subgradient_eq_singleton (hCo : IsOpen C) (hCc : 
     refine norm_sub_le_of_mem_singleton_add_closedBall ?_
     have hmem := hFp ha'
     rwa [h₁] at hmem
-  simp only [mem_subgradientSnd] at hb
-  simp only [mem_subgradientFst] at ha ha'
+  simp only [mem_subdifferentialSnd] at hb
+  simp only [mem_subdifferentialFst] at ha ha'
   have e1 : v + h.2 - v = h.2 := by abel
   have e2 : v - (v + h.2) = -h.2 := by abel
   have e3 : u + h.1 - u = h.1 := by abel
@@ -1260,30 +1263,31 @@ theorem hasSaddleGradientAt_of_subgradient_eq_singleton (hCo : IsOpen C) (hCc : 
 
 /-- A finite concave-convex function is differentiable at a point of an open rectangle exactly when
 it has a unique subgradient there, and the gradient is then that subgradient. -/
-theorem hasSaddleGradientAt_iff_subgradientSaddle_eq_singleton (hCo : IsOpen C) (hCc : Convex ℝ C)
-    (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) :
-    HasSaddleGradientAt K q (u, v) ↔ subgradientSaddle C D K (u, v) = {q} := by
-  refine ⟨subgradientSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hK hu hv, fun h => ?_⟩
-  obtain ⟨h₁, h₂⟩ := (subgradientSaddle_eq_singleton_iff
-    (subgradientFst_nonempty hCo hCc (hK.concave_fst v hv) hu)
-    (subgradientSnd_nonempty hDo hDc (hK.convex_snd u hu) hv)).1 h
-  exact hasSaddleGradientAt_of_subgradient_eq_singleton hCo hCc hDo hDc hK hu hv h₁ h₂
+theorem hasSaddleGradientAt_iff_subdifferentialSaddle_eq_singleton (hCo : IsOpen C)
+    (hCc : Convex ℝ C) (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C)
+    (hv : v ∈ D) :
+    HasSaddleGradientAt K q (u, v) ↔ subdifferentialSaddle C D K (u, v) = {q} := by
+  refine ⟨subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt hCo hDo hK hu hv, fun h => ?_⟩
+  obtain ⟨h₁, h₂⟩ := (subdifferentialSaddle_eq_singleton_iff
+    (subdifferentialFst_nonempty hCo hCc (hK.concave_fst v hv) hu)
+    (subdifferentialSnd_nonempty hDo hDc (hK.convex_snd u hu) hv)).1 h
+  exact hasSaddleGradientAt_of_subdifferential_eq_singleton hCo hCc hDo hDc hK hu hv h₁ h₂
 
 /-- The same without naming the gradient: differentiability and unique subdifferentiability are the
 same property. -/
-theorem differentiableAt_iff_exists_subgradientSaddle_eq_singleton (hCo : IsOpen C)
+theorem differentiableAt_iff_exists_subdifferentialSaddle_eq_singleton (hCo : IsOpen C)
     (hCc : Convex ℝ C) (hDo : IsOpen D) (hDc : Convex ℝ D) (hK : ConcaveConvexOn C D K)
     (hu : u ∈ C) (hv : v ∈ D) :
-    DifferentiableAt ℝ K (u, v) ↔ ∃ q, subgradientSaddle C D K (u, v) = {q} := by
+    DifferentiableAt ℝ K (u, v) ↔ ∃ q, subdifferentialSaddle C D K (u, v) = {q} := by
   rw [differentiableAt_iff_exists_hasSaddleGradientAt]
   exact exists_congr fun q =>
-    hasSaddleGradientAt_iff_subgradientSaddle_eq_singleton hCo hCc hDo hDc hK hu hv
+    hasSaddleGradientAt_iff_subdifferentialSaddle_eq_singleton hCo hCc hDo hDc hK hu hv
 
 end Differentiable
 
 /-! ### Subgradients through the directional derivative, in real form -/
 
-section DirDerivSubgradient
+section DirDerivSubdifferential
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {S : Set E} {f : E → ℝ}
   {x y z : E}
@@ -1339,7 +1343,7 @@ theorem forall_dirDerivReal_le_inner_iff (hS : IsOpen S) (hf : ConcaveOn ℝ S f
     rw [div_le_iff₀ (show (0 : ℝ) < t from ht)]
     linarith
 
-end DirDerivSubgradient
+end DirDerivSubdifferential
 
 /-! ### Differentiability is linearity of `K'(u, v; ·, ·)` -/
 
@@ -1354,28 +1358,28 @@ omit [FiniteDimensional ℝ U] [NormedAddCommGroup X] [InnerProductSpace ℝ X]
 /-- A partial directional derivative equal to the linear function `⟪·, q.1⟫` pins `∂₁K(u, v)` down
 to `{q.1}`, for the concave variable. Unlike the usual Gâteaux criterion this needs no upgrade to
 Fréchet differentiability, because its conclusion is about subgradients. -/
-theorem subgradientFst_eq_singleton_of_dirDerivReal (hCo : IsOpen C)
+theorem subdifferentialFst_eq_singleton_of_dirDerivReal (hCo : IsOpen C)
     (hK : ConcaveOn ℝ C fun w => K (w, v)) (hu : u ∈ C)
     (h : ∀ w : U, dirDerivReal (fun w => K (w, v)) u w = ⟪w, q.1⟫) :
-    subgradientFst C K (u, v) = {q.1} := by
+    subdifferentialFst C K (u, v) = {q.1} := by
   refine Set.eq_singleton_iff_unique_mem.2 ⟨?_, fun y hy => ?_⟩
-  · simp only [mem_subgradientFst]
+  · simp only [mem_subdifferentialFst]
     exact (forall_dirDerivReal_le_inner_iff hCo hK hu).1 fun w => (h w).le
-  · simp only [mem_subgradientFst] at hy
+  · simp only [mem_subdifferentialFst] at hy
     have hy' := (forall_dirDerivReal_le_inner_iff hCo hK hu).2 hy
     exact (eq_of_forall_real_inner_le fun w => (h w).symm.trans_le (hy' w)).symm
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [FiniteDimensional ℝ X] in
 /-- The same for the convex variable: `∂₂K(u, v)` is pinned down to `{q.2}`. -/
-theorem subgradientSnd_eq_singleton_of_dirDerivReal (hDo : IsOpen D)
+theorem subdifferentialSnd_eq_singleton_of_dirDerivReal (hDo : IsOpen D)
     (hK : ConvexOn ℝ D fun x => K (u, x)) (hv : v ∈ D)
     (h : ∀ w : X, dirDerivReal (fun x => K (u, x)) v w = ⟪w, q.2⟫) :
-    subgradientSnd D K (u, v) = {q.2} := by
+    subdifferentialSnd D K (u, v) = {q.2} := by
   refine Set.eq_singleton_iff_unique_mem.2 ⟨?_, fun y hy => ?_⟩
-  · simp only [mem_subgradientSnd]
+  · simp only [mem_subdifferentialSnd]
     exact (forall_inner_le_dirDerivReal_iff hDo hK hv).1 fun w => (h w).ge
-  · simp only [mem_subgradientSnd] at hy
+  · simp only [mem_subdifferentialSnd] at hy
     have hy' := (forall_inner_le_dirDerivReal_iff hDo hK hv).2 hy
     exact eq_of_forall_real_inner_le fun w => (hy' w).trans (h w).le
 
@@ -1394,9 +1398,9 @@ theorem hasSaddleGradientAt_iff_forall_dirDerivReal_eq (hCo : IsOpen C) (hCc : C
     intro w
     rw [← dirDerivReal_prod_snd hCo hDo hK hu hv w, h (0, w), prodInnerL_apply]
     simp
-  exact hasSaddleGradientAt_of_subgradient_eq_singleton hCo hCc hDo hDc hK hu hv
-    (subgradientFst_eq_singleton_of_dirDerivReal hCo (hK.concave_fst v hv) hu hfst)
-    (subgradientSnd_eq_singleton_of_dirDerivReal hDo (hK.convex_snd u hu) hv hsnd)
+  exact hasSaddleGradientAt_of_subdifferential_eq_singleton hCo hCc hDo hDc hK hu hv
+    (subdifferentialFst_eq_singleton_of_dirDerivReal hCo (hK.concave_fst v hv) hu hfst)
+    (subdifferentialSnd_eq_singleton_of_dirDerivReal hDo (hK.convex_snd u hu) hv hsnd)
 
 /-- For a concave-convex function already finite on an open rectangle — Rockafellar's "`K` is
 finite on a neighbourhood of `(u, v)`" — differentiability at `(u, v)` is exactly linearity of

@@ -31,7 +31,7 @@ the derivation in the other direction.
 * `mem_homCone_conj_iff_of_pos` — the cross-section: for `λ* > 0`, the reflected vector
   `(-μ*, y, -λ*)` lies in the polar of `homCone f` exactly when `(λ*, y, μ*)` lies in `homCone f*`.
 * `closure_homCone_conj` — `cl (homCone f*) = (negSwapEnds F) ⁻¹' (homCone f)°`
-  (Theorem 14.4 in [^1]).
+  ([rockafellar1970convex] Theorem 14.4).
 
 ## Divergences from the reference
 
@@ -47,7 +47,7 @@ convexity, no compatibility of the pairing and no finite dimension.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14.
+* [rockafellar1970convex] §14.
 -/
 
 open Set Pointwise

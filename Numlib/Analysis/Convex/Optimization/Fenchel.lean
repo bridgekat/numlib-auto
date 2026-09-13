@@ -17,7 +17,8 @@ minimising `f*` over `K* = -K°`.
 
 * `concaveConj_sub_conj_le_sub` — weak duality, pointwise.
 * `fenchel_duality`, `exists_concaveConj_sub_conj_eq` — **Fenchel's duality theorem** under
-  condition (a): `inf (f - g) = sup (g* - f*)`, with the supremum attained (Theorem 31.1 in [^1]).
+  condition (a): `inf (f - g) = sup (g* - f*)`, with the supremum attained
+  ([rockafellar1970convex] Theorem 31.1).
 * `fenchel_duality_of_closed`, `exists_sub_eq_iInf` — the same under condition (b): the same
   equality, with the *infimum* attained.
 * `fenchel_duality_comp`, `exists_concaveConj_sub_conj_comp_eq` — the same with a linear
@@ -40,7 +41,7 @@ interfaces, `IsExactSum` for the sum and `IsExactImage` for the pullback along `
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31.
+* [rockafellar1970convex] §31.
 -/
 
 namespace ConvexAnalysis
@@ -382,8 +383,9 @@ private theorem sub_eq_sub_iff_of_le {a b c d p : EReal} (ha : a ≠ ⊥) (hb : 
 /-- **Equality in the concave Fenchel inequality**: `g x + g*(y) = ⟨x, y⟩` says `-y ∈ ∂(-g) x`.
 The book writes this as `x ∈ ∂g*(y)` with the superdifferential of a concave function,
 `-∂(-g)`. -/
-theorem neg_mem_subgradient_neg_iff_add_concaveConj_eq (hpg : Proper fun z => -(g z)) :
-    -y ∈ subgradient B (fun z => -(g z)) x ↔ g x + concaveConj B g y = ((B x y : ℝ) : EReal) := by
+theorem neg_mem_subdifferential_neg_iff_add_concaveConj_eq (hpg : Proper fun z => -(g z)) :
+    -y ∈ subdifferential B (fun z => -(g z)) x ↔
+      g x + concaveConj B g y = ((B x y : ℝ) : EReal) := by
   have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
@@ -391,7 +393,7 @@ theorem neg_mem_subgradient_neg_iff_add_concaveConj_eq (hpg : Proper fun z => -(
   have hct : concaveConj B g y ≠ ⊤ := concaveConj_ne_top hdc y
   have hpn : ((B x (-y) : ℝ) : EReal) = -((B x y : ℝ) : EReal) := by
     rw [map_neg, EReal.coe_neg]
-  rw [hpg.mem_subgradient_iff_add_conj_eq, ← neg_concaveConj B g y, hpn, ← sub_eq_add_neg,
+  rw [hpg.mem_subdifferential_iff_add_conj_eq, ← neg_concaveConj B g y, hpn, ← sub_eq_add_neg,
     ← EReal.neg_add (.inr hct) (.inl hgt), neg_inj]
 
 /-- **The optimality conditions** at `A = id`: `x` and `y` are jointly optimal for the two problems
@@ -400,7 +402,7 @@ inequality holding with equality, and `f x - g x = g*(y) - f*(y)` squeezes the t
 `⟨x, y⟩ ≤ f x + f*(y)` and `g x + g*(y) ≤ ⟨x, y⟩` together. -/
 theorem sub_eq_concaveConj_sub_conj_iff (hpf : Proper f) (hpg : Proper fun z => -(g z)) :
     f x - g x = concaveConj B g y - conj B f y ↔
-      y ∈ subgradient B f x ∧ -y ∈ subgradient B (fun z => -(g z)) x := by
+      y ∈ subdifferential B f x ∧ -y ∈ subdifferential B (fun z => -(g z)) x := by
   have hgt : g x ≠ ⊤ := fun hc => hpg.ne_bot x (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
@@ -408,7 +410,7 @@ theorem sub_eq_concaveConj_sub_conj_iff (hpf : Proper f) (hpg : Proper fun z => 
   rw [sub_eq_sub_iff_of_le (hpf.ne_bot x) hgt (concaveConj_ne_top hdc y)
       (conj_ne_bot hpf.dom_nonempty y) (EReal.coe_ne_bot _) (EReal.coe_ne_top _)
       (le_add_conj (hpf.ne_bot x) hpf.dom_nonempty y) (add_concaveConj_le B g x y),
-    hpf.mem_subgradient_iff_add_conj_eq, neg_mem_subgradient_neg_iff_add_concaveConj_eq hpg]
+    hpf.mem_subdifferential_iff_add_conj_eq, neg_mem_subdifferential_neg_iff_add_concaveConj_eq hpg]
 
 /-- A point where the primal and dual values agree already minimises `f - g`. Only weak duality is
 used. -/
@@ -428,7 +430,7 @@ theorem iSup_sub_eq_of_sub_eq (h : f x - g x = concaveConj B g y - conj B f y) :
 pair. -/
 theorem iInf_sub_eq_iff_exists_kuhnTucker (hex : IsExactSum B f (-g)) (x : E) :
     (⨅ z, f z - g z) = f x - g x ↔
-      ∃ y : F, y ∈ subgradient B f x ∧ -y ∈ subgradient B (fun z => -(g z)) x := by
+      ∃ y : F, y ∈ subdifferential B f x ∧ -y ∈ subdifferential B (fun z => -(g z)) x := by
   have hpf : Proper f := hex.proper_left
   have hpg : Proper fun z => -(g z) := hex.proper_right
   constructor
@@ -472,7 +474,7 @@ and `-z ∈ ∂(-g)(A x)`. The proof is the one at `A = id`, with the shared fin
 theorem sub_comp_eq_concaveConj_sub_conj_iff (hA : IsAdjointPair B B' A A') (hpf : Proper f)
     (hpg : Proper fun w => -(g w)) :
     f x - g (A x) = concaveConj B' g z - conj B f (A' z) ↔
-      A' z ∈ subgradient B f x ∧ -z ∈ subgradient B' (fun w => -(g w)) (A x) := by
+      A' z ∈ subdifferential B f x ∧ -z ∈ subdifferential B' (fun w => -(g w)) (A x) := by
   have hgt : g (A x) ≠ ⊤ := fun hc => hpg.ne_bot (A x) (by rw [hc, EReal.neg_top])
   have hdc : (domConcave g).Nonempty := by
     rw [domConcave_eq_dom_neg]
@@ -485,8 +487,9 @@ theorem sub_comp_eq_concaveConj_sub_conj_iff (hA : IsAdjointPair B B' A A') (hpf
       (conj_ne_bot hpf.dom_nonempty (A' z)) (EReal.coe_ne_bot _)
       (EReal.coe_ne_top _)
       (le_add_conj (hpf.ne_bot x) hpf.dom_nonempty (A' z)) h2,
-    hpf.mem_subgradient_iff_add_conj_eq,
-    neg_mem_subgradient_neg_iff_add_concaveConj_eq (B := B') (g := g) (x := A x) (y := z) hpg, hp]
+    hpf.mem_subdifferential_iff_add_conj_eq,
+    neg_mem_subdifferential_neg_iff_add_concaveConj_eq (B := B') (g := g) (x := A x) (y := z) hpg,
+    hp]
 
 /-- A point where the primal and dual values agree already minimises `f - g A`. -/
 theorem iInf_sub_comp_eq_of_sub_eq (hA : IsAdjointPair B B' A A')
@@ -510,7 +513,7 @@ theorem iInf_sub_comp_eq_iff_exists_kuhnTucker (hA : IsAdjointPair B B' A A')
     (hex : IsExactSum B f fun w => -(g (A w)))
     (himg : IsExactImage B B' A A' hA fun w => -(g w)) (x : E) :
     (⨅ w, f w - g (A w)) = f x - g (A x) ↔
-      ∃ z : H, A' z ∈ subgradient B f x ∧ -z ∈ subgradient B' (fun w => -(g w)) (A x) := by
+      ∃ z : H, A' z ∈ subdifferential B f x ∧ -z ∈ subdifferential B' (fun w => -(g w)) (A x) := by
   have hpf : Proper f := hex.proper_left
   have hpg : Proper fun w => -(g w) := himg.proper
   constructor
@@ -607,11 +610,11 @@ private theorem neg_conj_eq_of_add_eq_zero (hp : Proper f) (hz : f x + conj B f 
 /-- **Optimality conditions for the cone program**: for `x ∈ K` and `y ∈ K*` the primal and dual
 values agree exactly when `y ∈ ∂f x` and `⟨x, y⟩ = 0`. These are the Fenchel conditions for
 `g = -δ(· | K)`. -/
-theorem add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero (hp : Proper f) (hxK : x ∈ K)
+theorem add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero (hp : Proper f) (hxK : x ∈ K)
     (hyK : y ∈ -(polarCone B K)) :
-    f x + conj B f y = 0 ↔ y ∈ subgradient B f x ∧ (B x y : ℝ) = 0 := by
+    f x + conj B f y = 0 ↔ y ∈ subdifferential B f x ∧ (B x y : ℝ) = 0 := by
   have hxy : (0 : ℝ) ≤ B x y := mem_neg_polarCone.1 hyK x hxK
-  rw [hp.mem_subgradient_iff_add_conj_eq]
+  rw [hp.mem_subdifferential_iff_add_conj_eq]
   refine ⟨fun h => ?_, fun h => by rw [h.1, h.2, EReal.coe_zero]⟩
   have hle : ((B x y : ℝ) : EReal) ≤ 0 := h ▸ hp.le_add_conj x y
   have hzero : (B x y : ℝ) = 0 := le_antisymm (by exact_mod_cast hle) hxy
@@ -619,19 +622,19 @@ theorem add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero (hp : Proper f)
 
 /-- The optimality conditions make `x` optimal for the primal cone program. Only `⟨x, y⟩ = 0` and
 `y ∈ K*` are used. -/
-theorem forall_le_of_mem_subgradient_of_pairing_eq_zero (hyK : y ∈ -(polarCone B K))
-    (hy : y ∈ subgradient B f x) (hxy : (B x y : ℝ) = 0) {z : E} (hz : z ∈ K) : f x ≤ f z := by
+theorem forall_le_of_mem_subdifferential_of_pairing_eq_zero (hyK : y ∈ -(polarCone B K))
+    (hy : y ∈ subdifferential B f x) (hxy : (B x y : ℝ) = 0) {z : E} (hz : z ∈ K) : f x ≤ f z := by
   have hzy : (0 : ℝ) ≤ B (z - x) y := by
     rw [map_sub, LinearMap.sub_apply, hxy, sub_zero]
     exact mem_neg_polarCone.1 hyK z hz
   exact le_trans (le_add_of_nonneg_right (by exact_mod_cast hzy)) (hy z)
 
 /-- The optimality conditions make `y` optimal for the dual cone program. -/
-theorem conj_le_conj_of_mem_subgradient_of_pairing_eq_zero (hp : Proper f) (hxK : x ∈ K)
-    (hy : y ∈ subgradient B f x) (hxy : (B x y : ℝ) = 0) {w : F} (hwK : w ∈ -(polarCone B K)) :
+theorem conj_le_conj_of_mem_subdifferential_of_pairing_eq_zero (hp : Proper f) (hxK : x ∈ K)
+    (hy : y ∈ subdifferential B f x) (hxy : (B x y : ℝ) = 0) {w : F} (hwK : w ∈ -(polarCone B K)) :
     conj B f y ≤ conj B f w := by
   have hsum : f x + conj B f y = 0 := by
-    rw [hp.mem_subgradient_iff_add_conj_eq.1 hy, hxy, EReal.coe_zero]
+    rw [hp.mem_subdifferential_iff_add_conj_eq.1 hy, hxy, EReal.coe_zero]
   have hxeq : -(conj B f y) = f x := neg_conj_eq_of_add_eq_zero hp hsum
   rw [← EReal.neg_le_neg_iff, hxeq]
   exact neg_conj_le_of_mem_neg_polarCone hxK hwK
@@ -705,16 +708,16 @@ theorem iInf_mem_submodule_eq_neg_iInf_mem_polarCone {M : Submodule ℝ E}
 
 /-- Over a subspace the orthogonality `⟨x, y⟩ = 0` is automatic, so the primal and dual values
 agree exactly when `y ∈ ∂f x`. -/
-theorem add_conj_eq_zero_iff_mem_subgradient_of_mem_submodule {M : Submodule ℝ E} (hp : Proper f)
-    (hxM : x ∈ M) (hyM : y ∈ polarCone B (M : Set E)) :
-    f x + conj B f y = 0 ↔ y ∈ subgradient B f x := by
+theorem add_conj_eq_zero_iff_mem_subdifferential_of_mem_submodule {M : Submodule ℝ E}
+    (hp : Proper f) (hxM : x ∈ M) (hyM : y ∈ polarCone B (M : Set E)) :
+    f x + conj B f y = 0 ↔ y ∈ subdifferential B f x := by
   have hxy : (B x y : ℝ) = 0 := by
     rw [polarCone_coe_submodule'] at hyM
     exact hyM x hxM
   have hyK : y ∈ -(polarCone B (M : Set E)) := by
     rw [neg_polarCone_coe_submodule]
     exact hyM
-  rw [add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero hp hxM hyK]
+  rw [add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero hp hxM hyK]
   exact ⟨And.left, fun h => ⟨h, hxy⟩⟩
 
 end Cone

@@ -25,8 +25,8 @@ recession at all.
 ## Main results
 
 * `alternative_of_convex_system` — the substantial half of the alternative for a finite strict
-  system (Theorem 21.1 in [^1]); `not_exists_forall_neg_of_forall_zero_le_weighted` is the easy
-  half, that the two alternatives exclude each other.
+  system ([rockafellar1970convex] Theorem 21.1); `not_exists_forall_neg_of_forall_zero_le_weighted`
+  is the easy half, that the two alternatives exclude each other.
 * `alternative_of_convex_system_affine` — the refinement that keeps affine constraints apart and
   so sharpens alternative (b) to "not all of the `λᵢ` on the *convex* constraints vanish".
 * `helly_finite` — **Helly's theorem** for finite collections (Mathlib's `Convex.helly_theorem'`).
@@ -35,7 +35,7 @@ recession at all.
 * `sparse_alternative_of_convex_system` — the multipliers may be taken supported on at most `n + 1`
   indices.
 * `alternative_infinite_system_univ`, `alternative_infinite_system` — the alternative for *weak*
-  inequalities over an arbitrary index set (Theorem 21.3 in [^1]).
+  inequalities over an arbitrary index set ([rockafellar1970convex] Theorem 21.3).
 * `exists_multipliers_of_posHomGen_convFn_conj_eq_bot` — its multiplier half, with `k(0) = -∞` as a
   hypothesis rather than a consequence of the recession assumption.
 * `exists_forall_le_zero_of_forall_subsystem` — the solvability criterion for an infinite system,
@@ -63,7 +63,7 @@ independently, needing only proper separation where the refinement needs the pol
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §21.
+* [rockafellar1970convex] §21.
 -/
 
 open Set Filter Topology

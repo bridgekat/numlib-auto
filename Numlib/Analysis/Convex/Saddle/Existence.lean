@@ -1,5 +1,5 @@
-import Numlib.Analysis.Convex.Saddle.Subgradient
-import Numlib.Analysis.Convex.Subgradient.Monotone
+import Numlib.Analysis.Convex.Saddle.Subdifferential
+import Numlib.Analysis.Convex.Subdifferential.Monotone
 
 /-!
 # Existence of saddle-values and saddle-points
@@ -30,16 +30,17 @@ The file closes with the identification of `∂K` with the subdifferential of th
   the first variable gives a saddle-value; `hasSaddleValue_of_isBounded_dom₁` — likewise when `C`
   is bounded.
 * `exists_isSaddlePoint_of_no_common_direction_of_recession` — a saddle-point exists when neither
-  variable has a common direction of recession (Theorem 37.6 in [^1]);
+  variable has a common direction of recession ([rockafellar1970convex] Theorem 37.6);
   `exists_isSaddlePoint_of_isBounded_domSaddle` — likewise for a bounded effective domain.
 * `saddleStructure_lowerSimpleExt`, `maximin_lowerSimpleExt`,
   `exists_bifunSaddleClass_lowerSimpleExt` — the transfer to a finite continuous concave-convex
   function on a closed `C × D`, through its lower simple extension.
 * `biSup_biInf_eq_biInf_biSup_of_isBounded_right` — `sup inf = inf sup` with one factor bounded;
-  `exists_saddlePoint_of_isBounded` — the **minimax theorem** (Corollary 37.6.2 in [^1]).
-* `isBifunSubgradientPair_iff_mem_subgradient_graphFn`, `setOf_mem_saddleSubgradient_eq_preimage` —
-  `∂K` is `∂f` partially inverted, pointwise and as an equality of graphs;
-  `isClosed_setOf_mem_saddleSubgradient` — the graph of `∂K` is closed.
+  `exists_saddlePoint_of_isBounded` — the **minimax theorem**
+  ([rockafellar1970convex] Corollary 37.6.2).
+* `isBifunSubgradientPair_iff_mem_subdifferential_graphFn`,
+  `setOf_mem_saddleSubdifferential_eq_preimage` — `∂K` is `∂f` partially inverted, pointwise and as
+  an equality of graphs; `isClosed_setOf_mem_saddleSubdifferential` — the graph of `∂K` is closed.
 
 ## Implementation notes
 
@@ -50,7 +51,7 @@ inequalities.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §24, §34, §36, §37.
+* [rockafellar1970convex] §24, §34, §36, §37.
 -/
 
 namespace ConvexAnalysis
@@ -617,7 +618,7 @@ end Minimax
 
 /-! ### `∂K` as the subdifferential of the graph function, partially inverted -/
 
-section GraphSubgradient
+section GraphSubdifferential
 
 variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup X] [Module ℝ X] [AddCommGroup Y] [Module ℝ Y]
@@ -649,20 +650,20 @@ private theorem neg_eq_coe_sub_iff_sub_coe_eq_sub_coe (a b : EReal) (c d e : ℝ
 of the graph function `f` of `F`, with the pair `(u*, v)` **partially inverted** to `(-u*, v)`. No
 hypothesis on `F` is needed: it is the conjugate criterion for a subgradient together with the
 unconditional identity `(F* v)(u*) = -f*(-u*, v)`. -/
-theorem isBifunSubgradientPair_iff_mem_subgradient_graphFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+theorem isBifunSubgradientPair_iff_mem_subdifferential_graphFn (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (F : Bifun U X) (p : U × Y) (q : V × X) :
     IsBifunSubgradientPair Bu Bx F p q ↔
-      (-q.1, p.2) ∈ subgradient (prodPairing Bu Bx) (graphFn F) (p.1, q.2) := by
+      (-q.1, p.2) ∈ subdifferential (prodPairing Bu Bx) (graphFn F) (p.1, q.2) := by
   have hconj : conj (prodPairing Bu Bx) (graphFn F) (-q.1, p.2)
       = -(adjointBifun Bu Bx F p.2 q.1) := by
     rw [adjointBifun_eq_neg_conj_graphFn, neg_neg]
   have hpair : (prodPairing Bu Bx (p.1, q.2) (-q.1, p.2) : ℝ)
       = -(Bu p.1 q.1) + Bx q.2 p.2 := by
     simp
-  rw [mem_subgradient_iff_conj_eq, hconj, hpair, graphFn_apply, isBifunSubgradientPair_def]
+  rw [mem_subdifferential_iff_conj_eq, hconj, hpair, graphFn_apply, isBifunSubgradientPair_def]
   exact (neg_eq_coe_sub_iff_sub_coe_eq_sub_coe _ _ _ _ _ rfl).symm
 
-end GraphSubgradient
+end GraphSubdifferential
 
 section GraphInversion
 
@@ -673,28 +674,28 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
 /-- **The graph of `∂K` is the graph of `∂f` partially inverted**, `f` the graph function of `F`,
 as an equality of sets. The inversion `(u, y, v, x) ↦ ((u, x), (-v, y))` is a linear homeomorphism,
 which is what makes closedness and maximal monotonicity transfer from `∂f`. -/
-theorem setOf_mem_saddleSubgradient_eq_preimage (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+theorem setOf_mem_saddleSubdifferential_eq_preimage (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
     (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
-    {r : (U × Y) × (V × X) | r.2 ∈ saddleSubgradient Bu Bx.flip K r.1}
+    {r : (U × Y) × (V × X) | r.2 ∈ saddleSubdifferential Bu Bx.flip K r.1}
       = (fun r : (U × Y) × (V × X) => ((r.1.1, r.2.2), (-r.2.1, r.1.2)))
         ⁻¹' subgradientRel (prodPairing Bu Bx) (graphFn F) := by
   ext r
   rw [Set.mem_preimage, Set.mem_ofPred_eq,
-    mem_saddleSubgradient_iff_isBifunSubgradientPair Bu Bx hF hcl hK,
-    isBifunSubgradientPair_iff_mem_subgradient_graphFn]
+    mem_saddleSubdifferential_iff_isBifunSubgradientPair Bu Bx hF hcl hK,
+    isBifunSubgradientPair_iff_mem_subdifferential_graphFn]
   exact Iff.rfl
 
 /-- The graph of `∂K` is closed: it is the preimage of the graph of `∂f` under a linear
 homeomorphism, and the graph of the subdifferential of a closed proper convex function is closed.
-The homeomorphism clause is `saddleSubgradientHomeomorph`. -/
-theorem isClosed_setOf_mem_saddleSubgradient (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
+The homeomorphism clause is `saddleSubdifferentialHomeomorph`. -/
+theorem isClosed_setOf_mem_saddleSubdifferential (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [IsCompatiblePairing Bu]
     [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) [IsCompatiblePairing Bx]
     [IsCompatiblePairing Bx.flip] (hcu : Continuous fun r : U × V => Bu r.1 r.2)
     (hcx : Continuous fun r : X × Y => Bx r.1 r.2) (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ bifunSaddleClass Bu Bx F) :
-    IsClosed {r : (U × Y) × (V × X) | r.2 ∈ saddleSubgradient Bu Bx.flip K r.1} := by
+    IsClosed {r : (U × Y) × (V × X) | r.2 ∈ saddleSubdifferential Bu Bx.flip K r.1} := by
   have hcont : Continuous fun r : (U × Y) × (V × X) => ((r.1.1, r.2.2), (-r.2.1, r.1.2)) := by
     fun_prop
   have hpairing : Continuous fun r : (U × X) × (V × Y) => (prodPairing Bu Bx) r.1 r.2 := by
@@ -705,7 +706,7 @@ theorem isClosed_setOf_mem_saddleSubgradient (Bu : U →ₗ[ℝ] V →ₗ[ℝ] �
     have h3 : Continuous fun r : (U × X) × (V × Y) => Bu r.1.1 r.2.1 + Bx r.1.2 r.2.2 :=
       h1.add h2
     simpa only [prodPairing_apply] using h3
-  rw [setOf_mem_saddleSubgradient_eq_preimage Bu Bx hF hcl hK]
+  rw [setOf_mem_saddleSubdifferential_eq_preimage Bu Bx hF hcl hK]
   exact IsClosed.preimage hcont
     (isClosed_subgradientRel hpairing hpr (ClosedFn.lowerSemicontinuous hcl))
 

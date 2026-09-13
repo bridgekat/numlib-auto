@@ -26,10 +26,11 @@ operation involved.
 
 ## Main results
 
-* `saddleEquiv_iff_kernel_eq` — equivalence is detected by the kernel (Theorem 34.4 in [^1]);
-  `closedSaddleFn_iff_saddleStructure` — closedness is detected by the six structural clauses.
+* `saddleEquiv_iff_kernel_eq` — equivalence is detected by the kernel
+  ([rockafellar1970convex] Theorem 34.4); `closedSaddleFn_iff_saddleStructure` — closedness is
+  detected by the six structural clauses.
 * `exists_unique_saddleEquiv_class_of_kernel` — a simple proper saddle-function has exactly one
-  class of closed proper functions with its kernel (Theorem 34.5 in [^1]);
+  class of closed proper functions with its kernel ([rockafellar1970convex] Theorem 34.5);
   `exists_unique_saddleEquiv_class_of_finite` — the same starting from a finite saddle-function.
 * `kernel_partialCl₂`, `kernel_partialCl₁`, `SimpleSaddleFn.partialCl₂`,
   `SimpleSaddleFn.partialCl₁` — `cl₁` and `cl₂` preserve simplicity, properness and the kernel,
@@ -59,7 +60,7 @@ normed space the continuous dual supplies the compatible pairing internally.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33 and §34.
+* [rockafellar1970convex] §33 and §34.
 -/
 
 namespace ConvexAnalysis

@@ -13,7 +13,8 @@ disappears altogether.
 
 * `isClosed_add_of_polyhedral` — a nonempty polyhedral set plus a nonempty closed convex set is
   closed as soon as `C₂` is linear in every direction of recession the two share
-  (Theorem 20.3 in [^1]); `separatesStrongly_of_polyhedral_of_recession` is the separation form.
+  ([rockafellar1970convex] Theorem 20.3); `separatesStrongly_of_polyhedral_of_recession` is the
+  separation form.
 * `nonempty_dom_supportFn_inter_relint` — the constraint qualification that carries it, read off
   from polyhedral separation applied to the two barrier cones.
 
@@ -25,7 +26,7 @@ side is `δ(· | cl (C₁ + C₂))` and the domain of the right side is `C₁ + 
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20.
+* [rockafellar1970convex] §20.
 -/
 
 open Set

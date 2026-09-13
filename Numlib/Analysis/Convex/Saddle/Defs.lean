@@ -37,13 +37,13 @@ first.
 * `convexFn_partialCl₂`, `concaveConvexFn_partialCl₂`, `concaveFn_partialCl₁` — the partial
   closures preserve concave-convexity.
 * `concaveBracket_adjointBifun_eq_partialCl₁`, `partialCl₂_concaveBracket_adjointBifun` — the two
-  equations `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` and `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩` (Theorem 33.2 in [^1]).
-  One theorem in opposite variables, so the pairing hypotheses differ: `U` for the first, `Y` for
-  the second.
+  equations `⟨u, F* y⟩ = cl₁ ⟨Fu, y⟩` and `cl₂ ⟨u, F* y⟩ = ⟨(cl F) u, y⟩`
+  ([rockafellar1970convex] Theorem 33.2). One theorem in opposite variables, so the pairing
+  hypotheses differ: `U` for the first, `Y` for the second.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33–§34.
+* [rockafellar1970convex] §33–§34.
 -/
 
 namespace ConvexAnalysis

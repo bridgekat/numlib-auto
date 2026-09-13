@@ -38,7 +38,8 @@ below it.
   induces, and the order anti-isomorphism between the biconjugation-fixed functions.
 * `conj_comp_sub`, `conj_comp_add`, `conj_add_pairing`, `conj_sub_pairing`, `conj_add_const`,
   `conj_comp_linearEquiv` — the four elementary rows (translation, tilting, an added constant, an
-  invertible substitution), with `conj_comp_affine` composing them (Theorem 12.3 in [^1]).
+  invertible substitution), with `conj_comp_affine` composing them
+  ([rockafellar1970convex] Theorem 12.3).
 
 ## Implementation notes
 
@@ -50,7 +51,7 @@ its norm-topology dual is continuous on both sides but compatible only if it is 
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12.
+* [rockafellar1970convex] §12.
 -/
 
 open Set OrderDual

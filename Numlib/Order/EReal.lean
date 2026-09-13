@@ -690,4 +690,43 @@ theorem le_coe_of_sum_le_coe_sum {ι : Type*} {s : Finset ι} {c : ι → ℝ} {
     exact hsum
   exact le_coe_of_add_le_coe_add (hle j hj) hq hadd
 
+/-! ### The coercion `ℝ → EReal` and conditionally complete extrema -/
+
+/-- The coercion `ℝ → EReal` carries the supremum of a nonempty bounded set to the `EReal`
+supremum of its image: an order embedding, but `sSup` on `ℝ` is only conditionally complete, so the
+statement needs both hypotheses. -/
+theorem coe_sSup_of_bddAbove {s : Set ℝ} (hne : s.Nonempty) (hbdd : BddAbove s) :
+    ((sSup s : ℝ) : EReal) = ⨆ a ∈ s, (a : EReal) := by
+  rw [← sSup_image]
+  refine (IsLUB.sSup_eq ⟨?_, ?_⟩).symm
+  · rintro _ ⟨a, ha, rfl⟩
+    exact EReal.coe_le_coe_iff.2 (le_csSup hbdd ha)
+  · intro b hb
+    induction b with
+    | bot =>
+      obtain ⟨a, ha⟩ := hne
+      exact absurd (le_bot_iff.1 (hb ⟨a, ha, rfl⟩)) (EReal.coe_ne_bot a)
+    | coe r =>
+      exact EReal.coe_le_coe_iff.2
+        (csSup_le hne fun a ha => EReal.coe_le_coe_iff.1 (hb ⟨a, ha, rfl⟩))
+    | top => exact le_top
+
+/-- The coercion `ℝ → EReal` carries the infimum of a nonempty bounded set to the `EReal` infimum
+of its image. -/
+theorem coe_sInf_of_bddBelow {s : Set ℝ} (hne : s.Nonempty) (hbdd : BddBelow s) :
+    ((sInf s : ℝ) : EReal) = ⨅ a ∈ s, (a : EReal) := by
+  rw [← sInf_image]
+  refine (IsGLB.sInf_eq ⟨?_, ?_⟩).symm
+  · rintro _ ⟨a, ha, rfl⟩
+    exact EReal.coe_le_coe_iff.2 (csInf_le hbdd ha)
+  · intro b hb
+    induction b with
+    | bot => exact bot_le
+    | coe r =>
+      exact EReal.coe_le_coe_iff.2
+        (le_csInf hne fun a ha => EReal.coe_le_coe_iff.1 (hb ⟨a, ha, rfl⟩))
+    | top =>
+      obtain ⟨a, ha⟩ := hne
+      exact absurd (top_le_iff.1 (hb ⟨a, ha, rfl⟩)) (EReal.coe_ne_top a)
+
 end EReal

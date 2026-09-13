@@ -11,11 +11,11 @@ is bounded above on `C`. For a nonempty closed convex set it is polar to the rec
 ## Main results
 
 * `polarCone_dom_supportFn` — the polar of the barrier cone of a nonempty closed convex set is
-  its recession cone (Corollary 14.2.1 in [^1]).
+  its recession cone ([rockafellar1970convex] Corollary 14.2.1).
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14.
+* [rockafellar1970convex] §14.
 -/
 
 open Set

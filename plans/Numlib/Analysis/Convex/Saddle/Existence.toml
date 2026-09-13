@@ -49,10 +49,10 @@ id = 'biSup_biInf_eq_biInf_biSup_of_isBounded_right'
 id = 'exists_saddlePoint_of_isBounded'
 
 [[node]]
-id = 'isBifunSubgradientPair_iff_mem_subgradient_graphFn'
+id = 'isBifunSubgradientPair_iff_mem_subdifferential_graphFn'
 
 [[node]]
-id = 'setOf_mem_saddleSubgradient_eq_preimage'
+id = 'setOf_mem_saddleSubdifferential_eq_preimage'
 
 [[node]]
-id = 'isClosed_setOf_mem_saddleSubgradient'
+id = 'isClosed_setOf_mem_saddleSubdifferential'

@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Subgradient.BoundaryDirDeriv
-import Numlib.Analysis.Convex.Subgradient.Cofinite
-import Numlib.Analysis.Convex.Subgradient.Preservation
+import Numlib.Analysis.Convex.Subdifferential.BoundaryDirDeriv
+import Numlib.Analysis.Convex.Subdifferential.Cofinite
+import Numlib.Analysis.Convex.Subdifferential.Preservation
 import NumlibSurface.Common.Euclidean
 
 /-!
@@ -125,15 +125,15 @@ theorem essentiallySmooth_iff_book : EssentiallySmooth f ↔ EssentiallySmoothBo
 /-- **Rockafellar, Theorem 26.1.** Let `f` be a closed proper convex function. Then `∂f` is a
 single-valued mapping if and only if `f` is essentially smooth. -/
 theorem theorem_26_1 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    SingleValued (subgradient (pairing n) f) ↔ EssentiallySmooth f :=
-  subsingleton_subgradient_iff_essentiallySmooth hf hp hcl
+    SingleValued (subdifferential (pairing n) f) ↔ EssentiallySmooth f :=
+  subsingleton_subdifferential_iff_essentiallySmooth hf hp hcl
 
 /-- **Rockafellar, Theorem 26.1**, the "in this case" clause, first half: `∂f x` consists of the
 vector `∇f x` alone when `x ∈ int (dom f)`. -/
 theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
     (hx : x ∈ interior (dom f)) :
-    subgradient (pairing n) f x = {gradient (fun w => (f w).toReal) x} := by
-  have h := subgradient_eq_singleton_of_essentiallySmooth hf hes hx
+    subdifferential (pairing n) f x = {gradient (fun w => (f w).toReal) x} := by
+  have h := subdifferential_eq_singleton_of_essentiallySmooth hf hes hx
   rwa [show (InnerProductSpace.toDual ℝ (Rn n)).symm (fderiv ℝ (fun w => (f w).toReal) x)
       = gradient (fun w => (f w).toReal) x from rfl] at h
 
@@ -142,15 +142,15 @@ theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x :
 `int (dom f)` and nothing anywhere else. -/
 theorem theorem_26_1_empty (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hes : EssentiallySmooth f) {x : Rn n} (hx : x ∉ interior (dom f)) :
-    subgradient (pairing n) f x = ∅ :=
-  subgradient_eq_empty_of_essentiallySmooth hf hp hcl hes hx
+    subdifferential (pairing n) f x = ∅ :=
+  subdifferential_eq_empty_of_essentiallySmooth hf hp hcl hes hx
 
 /-- **Rockafellar, Theorem 26.1**, both halves of the "in this case" clause as one equation:
 `dom ∂f = int (dom f)` for an essentially smooth closed proper convex function. -/
-theorem theorem_26_1_domSubgradient (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
+theorem theorem_26_1_domSubdifferential (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hes : EssentiallySmooth f) :
-    domSubgradient (pairing n) f = interior (dom f) :=
-  domSubgradient_eq_interior_dom_of_essentiallySmooth hf hp hcl hes
+    domSubdifferential (pairing n) f = interior (dom f) :=
+  domSubdifferential_eq_interior_dom_of_essentiallySmooth hf hp hcl hes
 
 /-! ### Lemma 26.2 -/
 
@@ -371,8 +371,8 @@ theorem strictOnRelintFn_eq_zero_of_mem {x : Rn 2} (hx : x ∈ nonnegAxis) :
 /-- **The whole non-negative `ξ₁`-axis lies in `dom ∂f`** for the p. 254 example: the function is
 non-negative and vanishes there, so `0` is a subgradient at each of its points. This is exactly
 Rockafellar's observation that `dom ∂f` is bigger than `ri (dom f)` here. -/
-theorem zero_mem_subgradient_strictOnRelintFn {x : Rn 2} (hx : x ∈ nonnegAxis) :
-    (0 : Rn 2) ∈ subgradient (pairing 2) strictOnRelintFn x := by
+theorem zero_mem_subdifferential_strictOnRelintFn {x : Rn 2} (hx : x ∈ nonnegAxis) :
+    (0 : Rn 2) ∈ subdifferential (pairing 2) strictOnRelintFn x := by
   intro z
   have h0 : ((pairing 2 (z - x)) (0 : Rn 2) : ℝ) = 0 := map_zero _
   rw [strictOnRelintFn_eq_zero_of_mem hx, h0]
@@ -388,8 +388,8 @@ theorem strictOnRelintFn_axis {t : ℝ} (ht : 0 ≤ t) :
 theorem strictOnRelintFn_not_essentiallyStrictlyConvex :
     ¬ EssentiallyStrictlyConvex (B := pairing 2) strictOnRelintFn := by
   intro h
-  have hsub : nonnegAxis ⊆ domSubgradient (pairing 2) strictOnRelintFn :=
-    fun _ hx => ⟨0, zero_mem_subgradient_strictOnRelintFn hx⟩
+  have hsub : nonnegAxis ⊆ domSubdifferential (pairing 2) strictOnRelintFn :=
+    fun _ hx => ⟨0, zero_mem_subdifferential_strictOnRelintFn hx⟩
   refine not_strictConvexOnFn_of_axis (C := nonnegAxis) ⟨zero_le_one, rfl⟩
     ⟨by norm_num, rfl⟩ (fun _ ht => strictOnRelintFn_axis ht) ?_
   exact h convex_nonnegAxis hsub
@@ -560,9 +560,9 @@ theorem theorem_26_3' (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
 /-- **Rockafellar, Corollary 26.3.1.** Let `f` be a closed proper convex function. Then `∂f` is a
 one-to-one mapping if and only if `f` is strictly convex on `int (dom f)` and essentially smooth. -/
 theorem corollary_26_3_1 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    OneToOne (subgradient (pairing n) f) ↔
+    OneToOne (subdifferential (pairing n) f) ↔
       (StrictConvexOnFn f (interior (dom f)) ∧ EssentiallySmooth f) :=
-  oneToOne_iff.trans ((subgradient_injective_iff hf hp hcl).trans and_comm)
+  oneToOne_iff.trans ((subdifferential_injective_iff hf hp hcl).trans and_comm)
 
 /-! ### Corollaries 26.3.2 and 26.3.3: preservation of essential smoothness -/
 
@@ -668,9 +668,9 @@ theorem theorem_26_4_subset_dom_conj (hf : ConvexFn f)
 `f`, the domain `D` of the Legendre conjugate is `{x* | ∂f*(x*) ≠ ∅}`. -/
 theorem corollary_26_4_1_dom (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hes : EssentiallySmooth f) :
-    legendreDomain f = domSubgradient (pairing n) (conj (pairing n) f) := by
+    legendreDomain f = domSubdifferential (pairing n) (conj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
-  exact gradientRange_eq_domSubgradient_conj hf hp hcl hes
+  exact gradientRange_eq_domSubdifferential_conj hf hp hcl hes
 
 /-- **Rockafellar, Corollary 26.4.1**: `ri (dom f*) ⊆ D`, so `D` is "almost convex". -/
 theorem corollary_26_4_1_relint_subset (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
@@ -791,8 +791,8 @@ theorem proper_halfPlaneFn : Proper halfPlaneFn := by
 completed square: `ξ₁²/4ξ₂ − u₀ξ₁ − u₁ξ₂ = (ξ₁ − 2u₀ξ₂)²/4ξ₂ − ξ₂(u₀² + u₁)`, whose infimum over
 the ray `ξ = (2su₀, s)` is `−s(u₀² + u₁)`. Testing at `s = ξ₂`, `s = ξ₂ + 1` and `s = ξ₂/2` forces
 both `u₀² + u₁ = 0` and the completed square to vanish, with no case analysis. -/
-theorem mem_subgradient_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
-    u ∈ subgradient (pairing 2) halfPlaneFn x ↔ u 1 = -(u 0) ^ 2 ∧ x 0 = 2 * u 0 * x 1 := by
+theorem mem_subdifferential_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
+    u ∈ subdifferential (pairing 2) halfPlaneFn x ↔ u 1 = -(u 0) ^ 2 ∧ x 0 = 2 * u 0 * x 1 := by
   constructor
   · intro h
     have key : ∀ s : ℝ, 0 < s →
@@ -847,11 +847,11 @@ theorem mem_subgradient_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
 
 /-- On the open upper half-plane the subdifferential of the p. 257 example is the single vector
 `(ξ₁/2ξ₂, −ξ₁²/4ξ₂²)`, which lies on the parabola. -/
-theorem subgradient_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
-    subgradient (pairing 2) halfPlaneFn x = {parabolaPoint (x 0 / (2 * x 1))} := by
+theorem subdifferential_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
+    subdifferential (pairing 2) halfPlaneFn x = {parabolaPoint (x 0 / (2 * x 1))} := by
   have hx0 : x 1 ≠ 0 := ne_of_gt hx
   ext u
-  rw [mem_subgradient_halfPlaneFn_iff hx, Set.mem_singleton_iff]
+  rw [mem_subdifferential_halfPlaneFn_iff hx, Set.mem_singleton_iff]
   constructor
   · rintro ⟨hu1, hu0⟩
     have hu : u 0 = x 0 / (2 * x 1) := by field_simp; linarith
@@ -866,8 +866,8 @@ subgradient there (Theorem 25.1 backwards). -/
 theorem hasGradientAtFn_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
     HasGradientAtFn halfPlaneFn
       (InnerProductSpace.toDual ℝ (Rn 2) (parabolaPoint (x 0 / (2 * x 1)))) x :=
-  hasGradientAtFn_toDual_of_subgradient_eq_singleton convexFn_halfPlaneFn proper_halfPlaneFn
-    (subgradient_halfPlaneFn hx)
+  hasGradientAtFn_toDual_of_subdifferential_eq_singleton convexFn_halfPlaneFn proper_halfPlaneFn
+    (subdifferential_halfPlaneFn hx)
 
 theorem differentiableAtFn_halfPlaneFn ⦃z : Rn 2⦄ (hz : z ∈ interior (dom halfPlaneFn)) :
     DifferentiableAtFn halfPlaneFn z := by
@@ -883,12 +883,12 @@ theorem gradientRange_halfPlaneFn : gradientRange halfPlaneFn = parabola := by
   · rintro ⟨x, hx⟩
     have hxi : x ∈ interior (dom halfPlaneFn) := hx.mem_interior_dom
     rw [interior_dom_halfPlaneFn] at hxi
-    have hsing := subgradient_innerL_eq_singleton convexFn_halfPlaneFn hx
+    have hsing := subdifferential_innerL_eq_singleton convexFn_halfPlaneFn hx
     rw [LinearIsometryEquiv.symm_apply_apply] at hsing
-    have hv : v ∈ subgradient (pairing 2) halfPlaneFn x := by
+    have hv : v ∈ subdifferential (pairing 2) halfPlaneFn x := by
       rw [hsing]
       exact Set.mem_singleton v
-    exact ((mem_subgradient_halfPlaneFn_iff hxi).1 hv).1
+    exact ((mem_subdifferential_halfPlaneFn_iff hxi).1 hv).1
   · intro hv
     refine ⟨WithLp.toLp 2 ![v 0, 1 / 2], ?_⟩
     have hx1 : (0 : ℝ) < (WithLp.toLp 2 ![v 0, 1 / 2] : Rn 2) 1 := by norm_num
@@ -995,8 +995,8 @@ one-to-one. -/
 a closed proper convex function `f` has `∂f` one-to-one if and only if the restriction of `f` to
 `C = int (dom f)` is a convex function of Legendre type. -/
 theorem legendreType_iff (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f) :
-    LegendreType f ↔ OneToOne (subgradient (pairing n) f) :=
-  (legendreType_iff_subgradient_injective hf hp hcl).trans oneToOne_iff.symm
+    LegendreType f ↔ OneToOne (subdifferential (pairing n) f) :=
+  (legendreType_iff_subdifferential_injective hf hp hcl).trans oneToOne_iff.symm
 
 /-! ### Theorem 26.5 -/
 

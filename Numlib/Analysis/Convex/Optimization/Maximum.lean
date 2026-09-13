@@ -2,7 +2,7 @@ import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Polyhedral.Defs
 import Numlib.Analysis.Convex.Polyhedral.Ops
 import Numlib.Analysis.Convex.Representation
-import Numlib.Analysis.Convex.Subgradient.Defs
+import Numlib.Analysis.Convex.Subdifferential.Defs
 
 /-!
 # The maximum of a convex function
@@ -23,20 +23,20 @@ and `ConvexFn.iSup_extremePoints_add_coneHull` is the unconditional statement ke
 
 ## Main results
 
-* `ConvexFn.eq_of_isMaxOn_mem_relint` — the maximum principle (Theorem 32.1 in [^1]), with
-  `exists_isFace_forall_eq_of_isMaxOn` for the face it forces; `ConvexFn.iSup_convexHull`,
-  `exists_eq_of_isMaxOn_convexHull` — the convex hull raises neither the supremum nor the
-  maximiser set; `ConvexFn.iSup_sdiff_relint`, `exists_notMem_relint_eq_of_isMaxOn` — the relative
-  boundary carries both.
-* `ConvexFn.iSup_extremePoints_of_containsNoLine`,
-  `ConvexFn.iSup_extremePoints_inter_of_isCompl`, `ConvexFn.iSup_extremePoints_add_coneHull` —
-  the extreme point principle (Theorem 32.3 in [^1]): for a line-free `C`, for a general `C` cut
-  down by a complement of its lineality space, and in representation form.
+* `ConvexFn.eq_of_isMaxOn_mem_relint` — the maximum principle
+  ([rockafellar1970convex] Theorem 32.1), with `exists_isFace_forall_eq_of_isMaxOn` for the face it
+  forces; `ConvexFn.iSup_convexHull`, `exists_eq_of_isMaxOn_convexHull` — the convex hull raises
+  neither the supremum nor the maximiser set; `ConvexFn.iSup_sdiff_relint`,
+  `exists_notMem_relint_eq_of_isMaxOn` — the relative boundary carries both.
+* `ConvexFn.iSup_extremePoints_of_containsNoLine`, `ConvexFn.iSup_extremePoints_inter_of_isCompl`,
+  `ConvexFn.iSup_extremePoints_add_coneHull` — the extreme point principle
+  ([rockafellar1970convex] Theorem 32.3): for a line-free `C`, for a general `C` cut down by a
+  complement of its lineality space, and in representation form.
 * `exists_isMaxOn_of_polyhedral_of_bddAboveOnRays`,
   `exists_mem_extremePoints_isMaxOn_of_finitelyGenerated` — attainment over a polyhedral and over
   a finitely generated set; `ConvexFn.iSup_extremePoints`,
   `exists_mem_extremePoints_isMaxOn_of_isCompact` — the compact case.
-* `mem_normalCone_of_mem_subgradient_of_isMaxOn` — at a maximiser, every subgradient is normal.
+* `mem_normalCone_of_mem_subdifferential_of_isMaxOn` — at a maximiser, every subgradient is normal.
 
 ## Implementation notes
 
@@ -47,7 +47,7 @@ inner product is needed where the book takes `N = L⊥`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §32.
+* [rockafellar1970convex] §32.
 -/
 
 open scoped Pointwise
@@ -478,8 +478,8 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 
 /-- At a point where `f` attains its supremum over `C`, every subgradient of `f` is normal to `C`.
 All that is needed is that `f x` be real. -/
-theorem mem_normalCone_of_mem_subgradient_of_isMaxOn (hxb : f x ≠ ⊥) (hxt : f x ≠ ⊤)
-    (hmax : ∀ z ∈ C, f z ≤ f x) (hy : y ∈ subgradient B f x) : y ∈ normalCone B C x := by
+theorem mem_normalCone_of_mem_subdifferential_of_isMaxOn (hxb : f x ≠ ⊥) (hxt : f x ≠ ⊤)
+    (hmax : ∀ z ∈ C, f z ≤ f x) (hy : y ∈ subdifferential B f x) : y ∈ normalCone B C x := by
   intro z hz
   obtain ⟨r, hr⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hxb (lt_top_iff_ne_top.2 hxt)
   have h2 : f x + ((B (z - x) y : ℝ) : EReal) ≤ f x := le_trans (hy z) (hmax z hz)
@@ -488,8 +488,8 @@ theorem mem_normalCone_of_mem_subgradient_of_isMaxOn (hxb : f x ≠ ⊥) (hxt : 
 
 /-- Non-vanishing clause: if `f` is not constant on `C`, no subgradient at a maximiser can be
 zero. -/
-theorem ne_zero_of_mem_subgradient_of_isMaxOn (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : E} (hz₀ : z₀ ∈ C)
-    (hne : f z₀ ≠ f x) (hy : y ∈ subgradient B f x) : y ≠ 0 := by
+theorem ne_zero_of_mem_subdifferential_of_isMaxOn (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : E}
+    (hz₀ : z₀ ∈ C) (hne : f z₀ ≠ f x) (hy : y ∈ subdifferential B f x) : y ≠ 0 := by
   rintro rfl
   have hle : f x ≤ f z₀ := by simpa using hy z₀
   exact hne (le_antisymm (hmax z₀ hz₀) hle)

@@ -96,33 +96,33 @@ import Numlib.Analysis.Convex.Saddle.Minimax
 import Numlib.Analysis.Convex.Saddle.Monotone
 import Numlib.Analysis.Convex.Saddle.Rademacher
 import Numlib.Analysis.Convex.Saddle.Real
-import Numlib.Analysis.Convex.Saddle.Subgradient
+import Numlib.Analysis.Convex.Saddle.Subdifferential
 import Numlib.Analysis.Convex.Separation
 import Numlib.Analysis.Convex.Simplicial
 import Numlib.Analysis.Convex.StrictConvexSpace
-import Numlib.Analysis.Convex.Subgradient.Approx
-import Numlib.Analysis.Convex.Subgradient.BoundaryDirDeriv
-import Numlib.Analysis.Convex.Subgradient.Bounded
-import Numlib.Analysis.Convex.Subgradient.Calculus
-import Numlib.Analysis.Convex.Subgradient.Cofinite
-import Numlib.Analysis.Convex.Subgradient.Convergence
-import Numlib.Analysis.Convex.Subgradient.Defs
-import Numlib.Analysis.Convex.Subgradient.Differentiability
-import Numlib.Analysis.Convex.Subgradient.EssentiallySmooth
-import Numlib.Analysis.Convex.Subgradient.Existence
-import Numlib.Analysis.Convex.Subgradient.Gradient
-import Numlib.Analysis.Convex.Subgradient.GradientLimit
-import Numlib.Analysis.Convex.Subgradient.Integral
-import Numlib.Analysis.Convex.Subgradient.Legendre
-import Numlib.Analysis.Convex.Subgradient.LegendreType
-import Numlib.Analysis.Convex.Subgradient.Monotone
-import Numlib.Analysis.Convex.Subgradient.OneDim
-import Numlib.Analysis.Convex.Subgradient.Preservation
-import Numlib.Analysis.Convex.Subgradient.Primitive
-import Numlib.Analysis.Convex.Subgradient.Rademacher
-import Numlib.Analysis.Convex.Subgradient.Reconstruction
-import Numlib.Analysis.Convex.Subgradient.StrictlyConvex
-import Numlib.Analysis.Convex.Subgradient.Uniqueness
+import Numlib.Analysis.Convex.Subdifferential.Approx
+import Numlib.Analysis.Convex.Subdifferential.BoundaryDirDeriv
+import Numlib.Analysis.Convex.Subdifferential.Bounded
+import Numlib.Analysis.Convex.Subdifferential.Calculus
+import Numlib.Analysis.Convex.Subdifferential.Cofinite
+import Numlib.Analysis.Convex.Subdifferential.Convergence
+import Numlib.Analysis.Convex.Subdifferential.Defs
+import Numlib.Analysis.Convex.Subdifferential.Differentiability
+import Numlib.Analysis.Convex.Subdifferential.EssentiallySmooth
+import Numlib.Analysis.Convex.Subdifferential.Existence
+import Numlib.Analysis.Convex.Subdifferential.Gradient
+import Numlib.Analysis.Convex.Subdifferential.GradientLimit
+import Numlib.Analysis.Convex.Subdifferential.Integral
+import Numlib.Analysis.Convex.Subdifferential.Legendre
+import Numlib.Analysis.Convex.Subdifferential.LegendreType
+import Numlib.Analysis.Convex.Subdifferential.Monotone
+import Numlib.Analysis.Convex.Subdifferential.OneDim
+import Numlib.Analysis.Convex.Subdifferential.Preservation
+import Numlib.Analysis.Convex.Subdifferential.Primitive
+import Numlib.Analysis.Convex.Subdifferential.Rademacher
+import Numlib.Analysis.Convex.Subdifferential.Reconstruction
+import Numlib.Analysis.Convex.Subdifferential.StrictlyConvex
+import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 import Numlib.Analysis.Convex.Tangent
 import Numlib.Analysis.Convex.Uniform
 
@@ -191,7 +191,7 @@ closure may be dropped from a duality formula.
 **`Recession`.** Recession cones and recession functions, lineality and constancy spaces, and the
 closedness criteria for images and sums that they govern.
 
-**`Subgradient`.** Subgradients, normal cones and directional derivatives; gradients and where a
+**`Subdifferential`.** Subgradients, normal cones and directional derivatives; gradients and where a
 convex function is differentiable; monotonicity and cyclic monotonicity of `∂f`; the Legendre
 transformation, essential smoothness and essential strict convexity.
 
@@ -215,10 +215,10 @@ convex cones containing the origin.
 
 `Eponyms` aliases the results that carry a name, and is the quickest way in: `fenchel_moreau`
 (`f** = cl f`), `fenchel_inequality`, `jensen`, `caratheodory`, `krein_milman`, `minkowski_weyl`,
-`moreau_decomposition`, `subgradient_maximalMonotone`, and `perspective`. Beyond those, the
+`moreau_decomposition`, `subdifferential_maximalMonotone`, and `perspective`. Beyond those, the
 headline theorems are `fenchel_duality` in `Optimization.Fenchel`, the separation theorems in
 `Separation`, `helly_finite` in `Helly`, `polyhedral_iff_finitelyGenerated` in `Polyhedral.Defs`,
-and `ae_differentiableAtFn` in `Subgradient.Rademacher`.
+and `ae_differentiableAtFn` in `Subdifferential.Rademacher`.
 
 ## Conventions
 

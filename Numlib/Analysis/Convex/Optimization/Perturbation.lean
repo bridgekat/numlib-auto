@@ -2,8 +2,8 @@ import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Operations.Image
 import Numlib.Analysis.Convex.Optimization.Minimum
 import Numlib.Analysis.Convex.Polyhedral.Duality
-import Numlib.Analysis.Convex.Subgradient.Existence
-import Numlib.Analysis.Convex.Subgradient.Gradient
+import Numlib.Analysis.Convex.Subdifferential.Existence
+import Numlib.Analysis.Convex.Subdifferential.Gradient
 
 /-!
 # Convex bifunctions and generalized convex programs
@@ -31,10 +31,10 @@ formulas, the polyhedral case.
 
 ## Main results
 
-* `convexFn_infBifun`, `dom_infBifun`, `mem_kuhnTucker_iff_neg_mem_subgradient` — `inf F` is
+* `convexFn_infBifun`, `dom_infBifun`, `mem_kuhnTucker_iff_neg_mem_subdifferential` — `inf F` is
   convex with effective domain `dom F`, and `∂(inf F)(0)` is the reflected Kuhn–Tucker set
-  (Theorem 29.1 in [^1]).
-* `kuhnTucker_eq_neg_subgradient`, `convex_kuhnTucker`, `isClosed_kuhnTucker`,
+  ([rockafellar1970convex] Theorem 29.1).
+* `kuhnTucker_eq_neg_subdifferential`, `convex_kuhnTucker`, `isClosed_kuhnTucker`,
   `supportFn_kuhnTucker` — the Kuhn–Tucker set is closed convex with a computable support function;
   `kuhnTucker_eq_empty_iff` — when it is empty; `kuhnTucker_eq_singleton_of_hasGradientAtFn` — when
   it is one vector; `kuhnTucker_nonempty_of_stronglyConsistent`, `dirDeriv_infBifun_eq` — existence
@@ -42,7 +42,8 @@ formulas, the polyhedral case.
 * `isCompact_kuhnTucker_of_strictlyConsistent`, `continuousOn_infBifun_interior` — what strict
   consistency buys; `infBifun_eq_bot_of_mem_relint` — an improper `inf F` is `-∞` on `ri (dom F)`.
 * `PolyhedralBifun.polyhedralFn_infBifun`, `kuhnTucker_nonempty_of_polyhedralBifun`,
-  `argmin_nonempty_of_polyhedralBifun` and companions — the polyhedral case (Theorem 29.2 in [^1]).
+  `argmin_nonempty_of_polyhedralBifun` and companions — the polyhedral case
+  ([rockafellar1970convex] Theorem 29.2).
 
 ## Implementation notes
 
@@ -54,7 +55,7 @@ bound needs a coordinate estimate against a finite basis.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §29.
+* [rockafellar1970convex] §29.
 -/
 
 open Pointwise
@@ -235,30 +236,30 @@ private theorem coe_add_neg_le_iff {c p : ℝ} {w : EReal} :
 /-- When the optimal value is finite, the Kuhn–Tucker vectors are exactly the `v` with
 `-v ∈ ∂(inf F)(0)`. The subgradient inequality at `0` in the direction `-v` says precisely that no
 perturbation is worth buying at the price `v`. -/
-theorem mem_kuhnTucker_iff_neg_mem_subgradient (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
-    v ∈ KuhnTucker B F ↔ -v ∈ subgradient B (infBifun F) 0 := by
+theorem mem_kuhnTucker_iff_neg_mem_subdifferential (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
+    v ∈ KuhnTucker B F ↔ -v ∈ subdifferential B (infBifun F) 0 := by
   obtain ⟨c, hc⟩ := EReal.exists_coe_of_ne_bot_of_lt_top hb (lt_top_iff_ne_top.2 ht)
   have hiff : ∀ u : U, (infBifun F 0 ≤ ((B u v : ℝ) : EReal) + infBifun F u)
       ↔ (infBifun F 0 + ((B (u - 0) (-v) : ℝ) : EReal) ≤ infBifun F u) := by
     intro u
     rw [sub_zero, map_neg, hc]
     exact coe_add_neg_le_iff.symm
-  rw [mem_kuhnTucker_iff_forall_le, mem_subgradient]
+  rw [mem_kuhnTucker_iff_forall_le, mem_subdifferential]
   exact ⟨fun h u => (hiff u).1 (h.2.2 u), fun h => ⟨ht, hb, fun u => (hiff u).2 (h u)⟩⟩
 
 /-- The same as an equation between sets: the Kuhn–Tucker set is the reflected subdifferential of
 the perturbation function at the origin. -/
-theorem kuhnTucker_eq_neg_subgradient (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
-    KuhnTucker B F = -(subgradient B (infBifun F) 0) := by
+theorem kuhnTucker_eq_neg_subdifferential (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
+    KuhnTucker B F = -(subdifferential B (infBifun F) 0) := by
   ext v
   rw [Set.mem_neg]
-  exact mem_kuhnTucker_iff_neg_mem_subgradient ht hb
+  exact mem_kuhnTucker_iff_neg_mem_subdifferential ht hb
 
 /-- The Kuhn–Tucker vectors form a convex set. -/
 theorem convex_kuhnTucker (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     Convex ℝ (KuhnTucker B F) := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb]
-  exact (convex_subgradient B (infBifun F) 0).neg
+  rw [kuhnTucker_eq_neg_subdifferential ht hb]
+  exact (convex_subdifferential B (infBifun F) 0).neg
 
 end KuhnTucker
 
@@ -272,8 +273,8 @@ variable {U V X : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
 /-- The Kuhn–Tucker vectors form a closed set. -/
 theorem isClosed_kuhnTucker [IsContinuousPairing B.flip] (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) : IsClosed (KuhnTucker B F) := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb]
-  exact (isClosed_subgradient (B := B) (infBifun F) 0).neg
+  rw [kuhnTucker_eq_neg_subdifferential ht hb]
+  exact (isClosed_subdifferential (B := B) (infBifun F) 0).neg
 
 end Topology
 
@@ -290,9 +291,9 @@ theorem kuhnTucker_nonempty_of_stronglyConsistent [IsCompatiblePairing B] (hF : 
     (KuhnTucker B F).Nonempty := by
   have hri : (0 : U) ∈ ri (dom (infBifun F)) := by rwa [dom_infBifun]
   obtain ⟨y, hy⟩ :=
-    subgradient_nonempty_of_mem_relint_dom (B := B) (convexFn_infBifun hF) hp hri
+    subdifferential_nonempty_of_mem_relint_dom (B := B) (convexFn_infBifun hF) hp hri
   refine ⟨-y, ?_⟩
-  rw [mem_kuhnTucker_iff_neg_mem_subgradient ht (hp.ne_bot 0), neg_neg]
+  rw [mem_kuhnTucker_iff_neg_mem_subdifferential ht (hp.ne_bot 0), neg_neg]
   exact hy
 
 end Existence
@@ -346,7 +347,7 @@ support function of a subdifferential, composed with the reflection. -/
 theorem supportFn_kuhnTucker (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) (u : U) :
     supportFn B.flip (KuhnTucker B F) u = clFn (dirDeriv (infBifun F) 0) (-u) := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb, supportFn_neg_set,
+  rw [kuhnTucker_eq_neg_subdifferential ht hb, supportFn_neg_set,
     clFn_dirDeriv (B := B) (convexFn_infBifun hF) ht hb]
 
 end DirDerivSupport
@@ -396,11 +397,11 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
   have hconv := convexFn_infBifun hF
   constructor
   · intro hempty
-    have h1 : -(subgradient B (infBifun F) 0) = ∅ := by
-      rw [← kuhnTucker_eq_neg_subgradient ht hb]
+    have h1 : -(subdifferential B (infBifun F) 0) = ∅ := by
+      rw [← kuhnTucker_eq_neg_subdifferential ht hb]
       exact hempty
-    have hsub : subgradient B (infBifun F) 0 = ∅ := by
-      rw [← neg_neg (subgradient B (infBifun F) 0), h1]
+    have hsub : subdifferential B (infBifun F) 0 = ∅ := by
+      rw [← neg_neg (subdifferential B (infBifun F) 0), h1]
       simp
     have hcl : clFn (dirDeriv (infBifun F) 0) = fun _ => (⊥ : EReal) := by
       rw [clFn_dirDeriv (B := B) hconv ht hb, hsub, supportFn_empty]
@@ -423,8 +424,8 @@ theorem kuhnTucker_eq_empty_iff (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤)
   · rintro ⟨u, hu, -⟩
     rw [Set.eq_empty_iff_forall_notMem]
     intro v hv
-    rw [mem_kuhnTucker_iff_neg_mem_subgradient ht hb,
-      mem_subgradient_iff_le_dirDeriv ht hb] at hv
+    rw [mem_kuhnTucker_iff_neg_mem_subdifferential ht hb,
+      mem_subdifferential_iff_le_dirDeriv ht hb] at hv
     have hcontra := hv u
     rw [hu, le_bot_iff] at hcontra
     exact absurd hcontra (EReal.coe_ne_bot _)
@@ -480,7 +481,7 @@ theorem dirDeriv_infBifun_eq (hF : ConvexBifun F) (hp : Proper (infBifun F))
     dirDeriv (infBifun F) 0 u = supportFn B.flip (KuhnTucker B F) (-u) := by
   have hri : (0 : U) ∈ ri (dom (infBifun F)) := by rwa [dom_infBifun]
   have ht : infBifun F 0 ≠ ⊤ := (mem_dom.1 (intrinsicInterior_subset hri)).ne
-  rw [kuhnTucker_eq_neg_subgradient ht (hp.ne_bot 0), supportFn_neg_set, neg_neg,
+  rw [kuhnTucker_eq_neg_subdifferential ht (hp.ne_bot 0), supportFn_neg_set, neg_neg,
     dirDeriv_eq_supportFn_of_mem_relint_dom (B := B) (convexFn_infBifun hF) hp hri]
 
 /-- Under *strict* consistency the Kuhn–Tucker set is bounded in the pairing sense: every
@@ -492,9 +493,10 @@ theorem bddAbove_kuhnTucker_of_strictlyConsistent (hF : ConvexBifun F) (hp : Pro
   have hri : (0 : U) ∈ ri (dom (infBifun F)) := interior_subset_intrinsicInterior hint
   have ht : infBifun F 0 ≠ ⊤ := (mem_dom.1 (intrinsicInterior_subset hri)).ne
   obtain ⟨c, hc⟩ :=
-    (bddAbove_subgradient_iff_mem_interior_dom (B := B) (convexFn_infBifun hF) hp hri).2 hint (-u)
+    (bddAbove_subdifferential_iff_mem_interior_dom (B := B) (convexFn_infBifun hF) hp hri).2 hint
+      (-u)
   refine ⟨c, fun v hv => ?_⟩
-  rw [kuhnTucker_eq_neg_subgradient ht (hp.ne_bot 0), Set.mem_neg] at hv
+  rw [kuhnTucker_eq_neg_subdifferential ht (hp.ne_bot 0), Set.mem_neg] at hv
   have hb := hc (-v) hv
   simpa using hb
 
@@ -545,8 +547,8 @@ theorem kuhnTucker_eq_singleton_of_dirDeriv_eq (hsep : Function.Injective B.flip
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) {v₀ : V}
     (h : ∀ u : U, dirDeriv (infBifun F) 0 u = ((B u (-v₀) : ℝ) : EReal)) :
     KuhnTucker B F = {v₀} := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb,
-    subgradient_eq_singleton_of_dirDeriv_eq hsep ht hb h]
+  rw [kuhnTucker_eq_neg_subdifferential ht hb,
+    subdifferential_eq_singleton_of_dirDeriv_eq hsep ht hb h]
   simp
 
 end KuhnTuckerUnique
@@ -562,7 +564,8 @@ theorem kuhnTucker_eq_singleton_of_hasGradientAtFn (hF : ConvexBifun F)
     {f' : StrongDual ℝ U} (h : HasGradientAtFn (infBifun F) f' 0) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) :
     KuhnTucker (topDualPairing ℝ U).flip F = {-f'} := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb, HasGradientAtFn.subgradient_eq (convexFn_infBifun hF) h]
+  rw [kuhnTucker_eq_neg_subdifferential ht hb,
+    HasGradientAtFn.subdifferential_eq (convexFn_infBifun hF) h]
   simp
 
 end KuhnTuckerGradient
@@ -640,16 +643,16 @@ convex function is subdifferentiable throughout its effective domain. -/
 theorem kuhnTucker_nonempty_of_polyhedralBifun [IsCompatiblePairing B] (hF : PolyhedralBifun F)
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) : (KuhnTucker B F).Nonempty := by
   obtain ⟨y, hy⟩ :=
-    subgradient_nonempty_of_polyhedralFn (B := B) hF.polyhedralFn_infBifun ht hb
-  exact ⟨-y, by rw [mem_kuhnTucker_iff_neg_mem_subgradient ht hb, neg_neg]; exact hy⟩
+    subdifferential_nonempty_of_polyhedralFn (B := B) hF.polyhedralFn_infBifun ht hb
+  exact ⟨-y, by rw [mem_kuhnTucker_iff_neg_mem_subdifferential ht hb, neg_neg]; exact hy⟩
 
 /-- The Kuhn–Tucker vectors of a polyhedral convex program with a finite optimal value form a
 polyhedral convex set. -/
 theorem polyhedral_kuhnTucker_of_polyhedralBifun (hF : PolyhedralBifun F)
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) : Polyhedral (KuhnTucker B F) := by
-  rw [kuhnTucker_eq_neg_subgradient ht hb]
+  rw [kuhnTucker_eq_neg_subdifferential ht hb]
   exact Polyhedral.neg
-    (polyhedral_subgradient_of_polyhedralFn (B := B) hF.polyhedralFn_infBifun ht hb)
+    (polyhedral_subdifferential_of_polyhedralFn (B := B) hF.polyhedralFn_infBifun ht hb)
 
 omit [NormedAddCommGroup V] [NormedSpace ℝ V] [FiniteDimensional ℝ V] [FiniteDimensional ℝ U] in
 /-- A polyhedral convex program whose optimal value is not `-∞` has an **optimal solution**. The

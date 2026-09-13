@@ -39,7 +39,7 @@ relative boundary point, rest on the line segment principle and on `ri C ≠ ∅
 
 * `separates_iff_iSup_le_iInf`, `exists_separatesProperly_iff_iSup_le_iInf`,
   `exists_separatesStrongly_iff_iSup_lt_iInf` — the description of the three notions by the extrema
-  of `f` over the two sets (Theorem 11.1 in [^1]).
+  of `f` over the two sets ([rockafellar1970convex] Theorem 11.1).
 * `separatesStrongly_iff_exists_gap`, `separatesStrongly_iff_exists_nhds`,
   `separatesStrongly_iff_exists_closedBall` — the three faces of strong separation: a uniform gap,
   a neighbourhood of the origin, and — in a normed space — the textbook's `ε`-balls.
@@ -49,8 +49,9 @@ relative boundary point, rest on the line segment principle and on `ri C ≠ ∅
   `0 ∉ closure (s - t)`; `separatesStrongly_of_disjoint_isCompact_isClosed` is the compact/closed
   case.
 * `isClosed_convex_eq_iInter_halfspaces` — a closed convex set is the intersection of the closed
-  half-spaces containing it (Theorem 11.5 in [^1]), with `mem_iff_forall_le_halfSpace` as its
-  pointwise form and `closure_convexHull_eq_iInter_halfspaces` for an arbitrary set.
+  half-spaces containing it ([rockafellar1970convex] Theorem 11.5), with
+  `mem_iff_forall_le_halfSpace` as its pointwise form and `closure_convexHull_eq_iInter_halfspaces`
+  for an arbitrary set.
 * `exists_isSupporting_iff_disjoint_interior` — a convex subset lies in a non-trivial supporting
   hyperplane exactly when it misses the interior.
 * `SeparatesProperly.zero_of_isCone_left` — proper separation of a cone can always be moved to a
@@ -74,7 +75,7 @@ bundled, as `halfSpaceCone`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §11.
+* [rockafellar1970convex] §11.
 -/
 
 open Set Filter Topology Pointwise

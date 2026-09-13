@@ -22,11 +22,11 @@ attains that bound at a *relative interior* point is constant on the set.
 ## Main results
 
 * `IsExactImage.of_relint` — a proper convex `g` pulls back exactly along a linear map whose range
-  meets `ri (dom g)` (Theorem 16.3 in [^1]). `IsExactImage.of_relint_closed` is the closed case,
-  which carries the argument.
+  meets `ri (dom g)` ([rockafellar1970convex] Theorem 16.3). `IsExactImage.of_relint_closed` is the
+  closed case, which carries the argument.
 * `IsExactSum.of_relint` — two proper convex functions whose effective domains share a relative
-  interior point add exactly (Theorem 16.4 in [^1]); `IsExactSum.of_relint_closed` is again the
-  closed case, and `IsExactFinsetSum.of_relint` the `m`-ary form.
+  interior point add exactly ([rockafellar1970convex] Theorem 16.4); `IsExactSum.of_relint_closed`
+  is again the closed case, and `IsExactFinsetSum.of_relint` the `m`-ary form.
 * `TendstoClFnAlongSegment` — "`cl f` is the limit of `f` along segments issuing from `x₀`", the
   single hypothesis shared by the two ways of obtaining it: `x₀ ∈ ri (dom f)` for a proper convex
   `f`, and `x₀ ∈ dom f` for a closed proper convex one.
@@ -51,7 +51,7 @@ while the sum closedness theorem runs in `F × ℝ` and so `F` must be finite-di
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §9 and §16.
+* [rockafellar1970convex] §9 and §16.
 -/
 
 open Pointwise

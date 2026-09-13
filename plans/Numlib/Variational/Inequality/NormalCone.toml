@@ -3,7 +3,7 @@ id = 'isVariationalInequalitySolution_zero_iff_sub_mem_normalCone'
 source = 'Atkinson–Han, Theoretical Numerical Analysis, (11.3.8)'
 
 [[node]]
-id = 'isVariationalInequalitySolution_iff_sub_mem_subgradient'
+id = 'isVariationalInequalitySolution_iff_sub_mem_subdifferential'
 source = 'Atkinson–Han, Theoretical Numerical Analysis, (11.3.3)'
 
 [[node]]

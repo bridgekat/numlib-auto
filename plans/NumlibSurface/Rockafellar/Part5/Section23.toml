@@ -96,7 +96,7 @@ id = 'corollary_23_5_2_clFn'
 source = 'Rockafellar 1970, Corollary 23.5.2'
 
 [[node]]
-id = 'corollary_23_5_2_subgradient'
+id = 'corollary_23_5_2_subdifferential'
 source = 'Rockafellar 1970, Corollary 23.5.2'
 
 [[node]]

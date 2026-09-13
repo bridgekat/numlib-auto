@@ -28,7 +28,7 @@ id = 'exists_multipliers_of_slater_eq'
 id = 'IsLagrangeSummand'
 
 [[node]]
-id = 'subgradient_add_sum_coe_mul'
+id = 'subdifferential_add_sum_coe_mul'
 
 [[node]]
 id = 'mem_argmin_add_sum_coe_mul_of_zero_mem'

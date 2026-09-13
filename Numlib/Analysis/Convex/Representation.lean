@@ -29,16 +29,16 @@ directions. The *exposed* representation is in `Exposed.lean`.
 
 * `exists_notMem_relint_mem_segment_of_not_isAffineHalf` — in a closed convex set that is neither
   an affine set nor a closed half of one, every relative interior point lies on a segment joining
-  two relative boundary points (Theorem 18.4 in [^1]). The analytic core is
+  two relative boundary points ([rockafellar1970convex] Theorem 18.4). The analytic core is
   `exists_notMem_relint_mem_segment_of_isBounded`, the geometric input
   `exists_notMem_relint_mem_segment_of_not_convex`, and `isAffineHalf_of_convex_sdiff_relint`
   identifies the exceptions.
 * `convexHullPD_extremePoints_extremeDirections` — the **Minkowski–Klee representation**: a closed
   convex set containing no lines is the convex hull of its extreme points and extreme directions
-  (Theorem 18.5 in [^1]). `extremePoints_nonempty_of_containsNoLine` extracts an extreme point,
-  `coneHull_extremeDirections_eq` and `coneHull_of_forall_extremeDirection` treat cones, and
-  **Minkowski's theorem** for compact sets is `convexHull_extremePoints` in `Face.lean`, used here
-  as the base case of the induction.
+  ([rockafellar1970convex] Theorem 18.5). `extremePoints_nonempty_of_containsNoLine` extracts an
+  extreme point, `coneHull_extremeDirections_eq` and `coneHull_of_forall_extremeDirection` treat
+  cones, and **Minkowski's theorem** for compact sets is `convexHull_extremePoints` in `Face.lean`,
+  used here as the base case of the induction.
 * `isFace_recessionCone` — the recession cone of a face is a face of the recession cone, given
   that it is contained in it. `extremeDirections_subset_extremeDirections_recessionCone` is the
   consequence for extreme directions; `isExtremeDirection_recessionCone` needs no topology.
@@ -55,9 +55,10 @@ directions. The *exposed* representation is in `Exposed.lean`.
   lineality space leaves a set containing no lines. With `eq_add_inter_of_isCompl` this is the
   reduction of a general closed convex set to a line-free one.
 * `extremePoints_subset_closure_exposedPoints` — **Straszewicz's theorem**: the exposed points of a
-  closed convex set are dense in its extreme points (Theorem 18.6 in [^1]); Mathlib does not have
-  this. `mem_exposedPoints_of_forall_norm_sub_le` is the geometric heart (a farthest point is
-  exposed) and `closure_convexHull_exposedPoints` the representation `C = cl (conv (exp C))`.
+  closed convex set are dense in its extreme points ([rockafellar1970convex] Theorem 18.6); Mathlib
+  does not have this. `mem_exposedPoints_of_forall_norm_sub_le` is the geometric heart (a farthest
+  point is exposed) and `closure_convexHull_exposedPoints` the representation
+  `C = cl (conv (exp C))`.
 
 ## Implementation notes
 
@@ -73,7 +74,7 @@ finite-dimensional normed space through `toEuclidean`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18.
+* [rockafellar1970convex] §18.
 -/
 
 open Set Bornology

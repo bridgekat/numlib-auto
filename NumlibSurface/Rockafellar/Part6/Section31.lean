@@ -435,8 +435,8 @@ theorem theorem_31_3 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[
     (hpf : Proper f) (hpg : ProperConcave g) {x : Rn n} {z : Rn m} :
     f x - g (A x)
         = concaveConj (pairing m) g z - conj (pairing n) f (LinearMap.adjoint A z) ↔
-      LinearMap.adjoint A z ∈ subgradient (pairing n) f x ∧
-        -z ∈ subgradient (pairing m) (fun w => -(g w)) (A x) :=
+      LinearMap.adjoint A z ∈ subdifferential (pairing n) f x ∧
+        -z ∈ subdifferential (pairing m) (fun w => -(g w)) (A x) :=
   sub_comp_eq_concaveConj_sub_conj_iff (isAdjointPair_adjoint A) hpf
     (properConcave_iff_proper_neg.1 hpg)
 
@@ -444,11 +444,11 @@ theorem theorem_31_3 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[
 condition: `Ax ∈ ∂g*(u*)` says that Fenchel's inequality for the concave pair holds with equality,
 `g(Ax) + g*(u*) = ⟨Ax, u*⟩` (**Theorem 23.5** on the concave side).
 
-Specialises `neg_mem_subgradient_neg_iff_add_concaveConj_eq`. -/
+Specialises `neg_mem_subdifferential_neg_iff_add_concaveConj_eq`. -/
 theorem theorem_31_3_kuhnTucker_concave {g : Rn m → EReal} (hpg : ProperConcave g) (w z : Rn m) :
-    -z ∈ subgradient (pairing m) (fun v => -(g v)) w ↔
+    -z ∈ subdifferential (pairing m) (fun v => -(g v)) w ↔
       g w + concaveConj (pairing m) g z = ((pairing m w z : ℝ) : EReal) :=
-  neg_mem_subgradient_neg_iff_add_concaveConj_eq (properConcave_iff_proper_neg.1 hpg)
+  neg_mem_subdifferential_neg_iff_add_concaveConj_eq (properConcave_iff_proper_neg.1 hpg)
 
 /-- **Theorem 31.3**, first consequence: a pair at which the two values agree already minimises
 `f - gA`. Only weak duality is used. -/
@@ -475,7 +475,7 @@ Specialises `sub_eq_concaveConj_sub_conj_iff`. -/
 theorem theorem_31_3_id {f g : Rn n → EReal} (hpf : Proper f) (hpg : ProperConcave g)
     {x y : Rn n} :
     f x - g x = concaveConj (pairing n) g y - conj (pairing n) f y ↔
-      y ∈ subgradient (pairing n) f x ∧ -y ∈ subgradient (pairing n) (fun z => -(g z)) x :=
+      y ∈ subdifferential (pairing n) f x ∧ -y ∈ subdifferential (pairing n) (fun z => -(g z)) x :=
   sub_eq_concaveConj_sub_conj_iff hpf (properConcave_iff_proper_neg.1 hpg)
 
 /-- **Corollary 31.3.1**: in the notation of Theorem 31.3, and with `A (ri (dom f))` meeting
@@ -486,8 +486,8 @@ theorem corollary_31_3_1 {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →
     (hf : ConvexFn f) (hpf : Proper f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
     (hxf : x₀ ∈ ri (dom f)) (hxg : A x₀ ∈ ri (domConcave g)) (x : Rn n) :
     (⨅ w, f w - g (A w)) = f x - g (A x) ↔
-      ∃ z : Rn m, LinearMap.adjoint A z ∈ subgradient (pairing n) f x ∧
-        -z ∈ subgradient (pairing m) (fun w => -(g w)) (A x) :=
+      ∃ z : Rn m, LinearMap.adjoint A z ∈ subdifferential (pairing n) f x ∧
+        -z ∈ subdifferential (pairing m) (fun w => -(g w)) (A x) :=
   iInf_sub_comp_eq_iff_exists_kuhnTucker (isAdjointPair_adjoint A)
     (isExactSum_neg_comp_of_relint A hf hpf hg.concave hg.proper hxf hxg)
     (isExactImage_neg_of_relint A hg hxg) x
@@ -500,8 +500,8 @@ theorem corollary_31_3_1_id {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Prop
     (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (dom f))
     (hxg : x₀ ∈ ri (domConcave g)) (x : Rn n) :
     (⨅ z, f z - g z) = f x - g x ↔
-      ∃ y : Rn n, y ∈ subgradient (pairing n) f x ∧
-        -y ∈ subgradient (pairing n) (fun z => -(g z)) x :=
+      ∃ y : Rn n, y ∈ subdifferential (pairing n) f x ∧
+        -y ∈ subdifferential (pairing n) (fun z => -(g z)) x :=
   iInf_sub_eq_iff_exists_kuhnTucker (isExactSum_neg_of_relint hf hpf hg hpg hxf hxg) x
 
 /-! ### Theorem 31.4: minimising a convex function over a convex cone
@@ -658,25 +658,25 @@ the primal and dual values agree — `f(x) = -f*(x*)` — exactly when `x* ∈ �
 
 Rockafellar reads this off Theorem 31.3's Kuhn–Tucker conditions at `g = -δ(· | K)`, where
 `x ∈ ∂g*(x*)` unfolds into the three conditions `x ∈ K`, `x* ∈ K*`, `⟨x, x*⟩ = 0`. Specialises
-`add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero`. -/
+`add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero`. -/
 theorem theorem_31_4_optimality {f : Rn n → EReal} {K : Set (Rn n)} (hpf : Proper f) {x y : Rn n}
     (hxK : x ∈ K) (hyK : y ∈ -(polarCone (pairing n) K)) :
     f x + conj (pairing n) f y = 0 ↔
-      y ∈ subgradient (pairing n) f x ∧ (pairing n x y : ℝ) = 0 :=
-  add_conj_eq_zero_iff_mem_subgradient_and_pairing_eq_zero hpf hxK hyK
+      y ∈ subdifferential (pairing n) f x ∧ (pairing n x y : ℝ) = 0 :=
+  add_conj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero hpf hxK hyK
 
 /-- **Theorem 31.4**: the optimality conditions make `x` optimal for the primal cone program. -/
 theorem theorem_31_4_optimality_primal {f : Rn n → EReal} {K : Set (Rn n)} {x y : Rn n}
-    (hyK : y ∈ -(polarCone (pairing n) K)) (hy : y ∈ subgradient (pairing n) f x)
+    (hyK : y ∈ -(polarCone (pairing n) K)) (hy : y ∈ subdifferential (pairing n) f x)
     (hxy : (pairing n x y : ℝ) = 0) {z : Rn n} (hz : z ∈ K) : f x ≤ f z :=
-  forall_le_of_mem_subgradient_of_pairing_eq_zero hyK hy hxy hz
+  forall_le_of_mem_subdifferential_of_pairing_eq_zero hyK hy hxy hz
 
 /-- **Theorem 31.4**: the optimality conditions make `x*` optimal for the dual cone program. -/
 theorem theorem_31_4_optimality_dual {f : Rn n → EReal} {K : Set (Rn n)} (hpf : Proper f)
-    {x y : Rn n} (hxK : x ∈ K) (hy : y ∈ subgradient (pairing n) f x)
+    {x y : Rn n} (hxK : x ∈ K) (hy : y ∈ subdifferential (pairing n) f x)
     (hxy : (pairing n x y : ℝ) = 0) {w : Rn n} (hwK : w ∈ -(polarCone (pairing n) K)) :
     conj (pairing n) f y ≤ conj (pairing n) f w :=
-  conj_le_conj_of_mem_subgradient_of_pairing_eq_zero hpf hxK hy hxy hwK
+  conj_le_conj_of_mem_subdifferential_of_pairing_eq_zero hpf hxK hy hxy hwK
 
 /-- **Theorem 31.4**, weak duality: every dual value is below every primal value. No hypothesis
 beyond `x ∈ K` and `x* ∈ K*`. -/
@@ -797,7 +797,7 @@ non-negative (`pairing_eq_zero_iff_of_mem_nonnegOrthant`). -/
 theorem corollary_31_4_1_optimality {f : Rn n → EReal} (hpf : Proper f) {x y : Rn n}
     (hx : x ∈ nonnegOrthant n) (hy : y ∈ nonnegOrthant n) :
     f x + conj (pairing n) f y = 0 ↔
-      y ∈ subgradient (pairing n) f x ∧ ∀ j, x j * y j = 0 := by
+      y ∈ subdifferential (pairing n) f x ∧ ∀ j, x j * y j = 0 := by
   have hyK : y ∈ -(polarCone (pairing n) (nonnegOrthant n)) := by
     rw [neg_polarCone_nonnegOrthant]; exact hy
   rw [theorem_31_4_optimality hpf hx hyK, pairing_eq_zero_iff_of_mem_nonnegOrthant hx hy]
@@ -851,8 +851,8 @@ of Theorem 31.4 is automatic, so `x` and `x*` are jointly optimal exactly when `
 and `x* ∈ ∂f(x)`. -/
 theorem corollary_31_4_2_optimality {f : Rn n → EReal} (hpf : Proper f)
     {M : Submodule ℝ (Rn n)} {x y : Rn n} (hxM : x ∈ M) (hyM : y ∈ Mᗮ) :
-    f x + conj (pairing n) f y = 0 ↔ y ∈ subgradient (pairing n) f x := by
-  refine add_conj_eq_zero_iff_mem_subgradient_of_mem_submodule hpf hxM ?_
+    f x + conj (pairing n) f y = 0 ↔ y ∈ subdifferential (pairing n) f x := by
+  refine add_conj_eq_zero_iff_mem_subdifferential_of_mem_submodule hpf hxM ?_
   rw [polarCone_coe_submodule_eq_orthogonal]
   exact hyM
 
@@ -958,10 +958,10 @@ minimisers are the unique pair with `z = x + x*` and `x* ∈ ∂f(x)`.
 
 The backbone's uniqueness is monotonicity of `∂f` (Theorem 24.8) at the two pairs, not strict
 convexity of `w`; attainment is Theorem 27.2, through the recession function of `f + w(z - ·)`.
-Specialises `existsUnique_sub_mem_subgradient`. -/
+Specialises `existsUnique_sub_mem_subdifferential`. -/
 theorem theorem_31_5_existsUnique {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
-    ∃! p : Rn n × Rn n, p.1 + p.2 = z ∧ p.2 ∈ subgradient (pairing n) f p.1 := by
-  obtain ⟨x, hx, huniq⟩ := existsUnique_sub_mem_subgradient (B := pairing n) hf z
+    ∃! p : Rn n × Rn n, p.1 + p.2 = z ∧ p.2 ∈ subdifferential (pairing n) f p.1 := by
+  obtain ⟨x, hx, huniq⟩ := existsUnique_sub_mem_subdifferential (B := pairing n) hf z
   refine ⟨(x, z - x), ⟨by module, hx⟩, ?_⟩
   rintro ⟨u, v⟩ ⟨hsum, hmem⟩
   have hsum' : u + v = z := hsum
@@ -974,7 +974,7 @@ theorem theorem_31_5_existsUnique {f : Rn n → EReal} (hf : ClosedProperConvexF
 /-- **Theorem 31.5**, the characterisation of the minimiser: `x` attains `inf_x {f(x) + w(z - x)}`
 exactly when `z - x ∈ ∂f(x)`. Specialises `mem_argmin_moreauObj_iff`. -/
 theorem theorem_31_5_argmin_iff {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z x : Rn n) :
-    x ∈ argmin (moreauObj (pairing n) f z) ↔ z - x ∈ subgradient (pairing n) f x :=
+    x ∈ argmin (moreauObj (pairing n) f z) ↔ z - x ∈ subdifferential (pairing n) f x :=
   mem_argmin_moreauObj_iff hf z x
 
 /-- **Theorem 31.5**: `prox (z ∣ f)` is the unique minimiser, so the minimum set is a singleton.
@@ -985,8 +985,8 @@ theorem theorem_31_5_argmin_eq {f : Rn n → EReal} (hf : ClosedProperConvexFn f
 
 /-- **§31**, the defining property of the **proximation**: `prox (z ∣ f)` is the unique `x` with
 `z - x ∈ ∂f(x)`. Specialises `prox_eq_iff`. -/
-theorem prox_eq_iff_sub_mem_subgradient {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
-    (z x : Rn n) : prox (pairing n) f z = x ↔ z - x ∈ subgradient (pairing n) f x :=
+theorem prox_eq_iff_sub_mem_subdifferential {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
+    (z x : Rn n) : prox (pairing n) f z = x ↔ z - x ∈ subdifferential (pairing n) f x :=
   prox_eq_iff hf z x
 
 /-- **§31**: the decomposition `z = prox (z ∣ f) + prox (z ∣ f*)`. -/
@@ -1038,13 +1038,13 @@ theorem prox_lipschitzWith_one {f : Rn n → EReal} (hf : ClosedProperConvexFn f
 direction: `z - prox (z ∣ f) ∈ ∂f (prox (z ∣ f))` gives `⊆`, and a subgradient `y ∈ ∂f(x)` exhibits
 `x` as `prox (x + y ∣ f)`. -/
 theorem range_prox {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
-    Set.range (prox (pairing n) f) = {x : Rn n | (subgradient (pairing n) f x).Nonempty} := by
+    Set.range (prox (pairing n) f) = {x : Rn n | (subdifferential (pairing n) f x).Nonempty} := by
   ext x
   constructor
   · rintro ⟨z, rfl⟩
-    exact ⟨z - prox (pairing n) f z, sub_prox_mem_subgradient hf z⟩
+    exact ⟨z - prox (pairing n) f z, sub_prox_mem_subdifferential hf z⟩
   · rintro ⟨y, hy⟩
-    refine ⟨x + y, prox_eq_of_sub_mem_subgradient hf ?_⟩
+    refine ⟨x + y, prox_eq_of_sub_mem_subdifferential hf ?_⟩
     rwa [add_sub_cancel_left]
 
 /-- **Corollary 31.5.1** — *stated in the book with no proof at all*. The mapping `(x, x*) ↦ x + x*`
@@ -1062,7 +1062,7 @@ noncomputable def corollary_31_5_1 {f : Rn n → EReal} (hf : ClosedProperConvex
 @[simp] theorem corollary_31_5_1_symm_apply {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (z : Rn n) :
     (corollary_31_5_1 hf).symm z
-      = ⟨(prox (pairing n) f z, z - prox (pairing n) f z), sub_prox_mem_subgradient hf z⟩ :=
+      = ⟨(prox (pairing n) f z, z - prox (pairing n) f z), sub_prox_mem_subdifferential hf z⟩ :=
   rfl
 
 /-- **Corollary 31.5.2**: `∂f` is a *maximal monotone* mapping from `ℝⁿ` to `ℝⁿ`. Given `(y, y*)`

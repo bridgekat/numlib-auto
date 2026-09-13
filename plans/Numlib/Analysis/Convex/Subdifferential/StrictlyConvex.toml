@@ -1,0 +1,28 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'StrictConvexOnFn'
+
+[[node]]
+id = 'EssentiallyStrictlyConvex'
+
+[[node]]
+id = 'mem_subdifferential_of_combo'
+
+[[node]]
+id = 'le_combo_of_mem_subdifferential'
+
+[[node]]
+id = 'mem_subdifferential_conj_innerL_iff'
+
+[[node]]
+id = 'pairwise_disjoint_subdifferential_conj_iff'
+
+[[node]]
+id = 'essentiallySmooth_conj_iff_essentiallyStrictlyConvex'
+
+[[node]]
+id = 'essentiallyStrictlyConvex_conj_iff_essentiallySmooth'
+
+[[node]]
+id = 'subdifferential_injective_iff'

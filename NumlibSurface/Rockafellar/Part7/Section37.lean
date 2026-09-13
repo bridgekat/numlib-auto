@@ -78,11 +78,11 @@ theorem lowerConj_le_upperConj (K : Rn m × Rn n → EReal) : lowerConj K ≤ up
   lowerConjSaddle_le_upperConjSaddle (pairing m) (pairing n) K
 
 /-- Rockafellar's `dom ∂K = {(u, v) | ∂K (u, v) ≠ ∅}`. -/
-abbrev domSubgrad (K : Rn m × Rn n → EReal) : Set (Rn m × Rn n) :=
-  domSaddleSubgradient (pairing m) (pairing n) K
+abbrev domSubdiff (K : Rn m × Rn n → EReal) : Set (Rn m × Rn n) :=
+  domSaddleSubdifferential (pairing m) (pairing n) K
 
-theorem mem_domSubgrad {K : Rn m × Rn n → EReal} {p : Rn m × Rn n} :
-    p ∈ domSubgrad K ↔ (subgrad K p).Nonempty := Iff.rfl
+theorem mem_domSubdiff {K : Rn m × Rn n → EReal} {p : Rn m × Rn n} :
+    p ∈ domSubdiff K ↔ (subdiff K p).Nonempty := Iff.rfl
 
 /-- `pairing n` separates on the left; on a self-paired space this is one line from
 `inner_self_eq_zero`. -/
@@ -540,42 +540,42 @@ saddle-point of the tilted function `K − ⟨·, u*⟩ − ⟨·, v*⟩`. The t
 into one real coercion so that no `∞ − ∞` can arise, and there are **no hypotheses at all** — not
 concavity, not convexity, not properness, where the book assumes concave-convexity. -/
 theorem theorem_37_4 (K : Rn m × Rn n → EReal) (p q : Rn m × Rn n) :
-    q ∈ subgrad K p ↔ IsSaddlePoint (saddleTilt (pairing m) (pairing n) K q) p :=
-  mem_saddleSubgradient_iff_isSaddlePoint
+    q ∈ subdiff K p ↔ IsSaddlePoint (saddleTilt (pairing m) (pairing n) K q) p :=
+  mem_saddleSubdifferential_iff_isSaddlePoint
 
 /-- `∂K (u, v)` is **convex**, with no hypothesis on `K`: it is a product of two convex sets. -/
 theorem theorem_37_4_convex (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
-    Convex ℝ (subgrad K p) := convex_subgrad
+    Convex ℝ (subdiff K p) := convex_subdiff
 
-private theorem isClosed_subgrad₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
-    IsClosed (subgrad₁ K p) := by
-  have h : subgrad₁ K p
-      = (fun y : Rn m => -y) ⁻¹' subgradient (pairing m) (fun u => -(K (u, p.2))) p.1 := by
+private theorem isClosed_subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
+    IsClosed (subdiff₁ K p) := by
+  have h : subdiff₁ K p
+      = (fun y : Rn m => -y) ⁻¹' subdifferential (pairing m) (fun u => -(K (u, p.2))) p.1 := by
     ext y
-    exact mem_subgrad₁_iff_neg_mem_subgradient_neg
+    exact mem_subdiff₁_iff_neg_mem_subdifferential_neg
   rw [h]
-  exact (isClosed_subgradient _ _).preimage continuous_neg
+  exact (isClosed_subdifferential _ _).preimage continuous_neg
 
 /-- `∂K (u, v)` is **closed**. The concave factor is assembled from §35's sign dictionary
-`mem_subgrad₁_iff_neg_mem_subgradient_neg` and `isClosed_subgradient`. -/
+`mem_subdiff₁_iff_neg_mem_subdifferential_neg` and `isClosed_subdifferential`. -/
 theorem theorem_37_4_isClosed (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
-    IsClosed (subgrad K p) :=
-  (isClosed_subgrad₁ K p).prod (isClosed_subgradient _ _)
+    IsClosed (subdiff K p) :=
+  (isClosed_subdiff₁ K p).prod (isClosed_subdifferential _ _)
 
 /-- **Theorem 37.4**, left-hand inclusion: `ri (dom K) ⊆ dom ∂K` for a closed proper concave-convex
 function. Over `ri C` the slice `K (u, ·)` is proper with effective domain `D` (Theorem 34.3), so
 Theorem 23.4 produces a subgradient; the concave half is the same statement for `saddleSwap K`. -/
 theorem theorem_37_4_relint (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
-    (hcl : ClosedSaddleFn K) : ri (domSaddle K) ⊆ domSubgrad K := by
-  have h := kernelSet_subset_domSaddleSubgradient (Bu := pairing m) (Bx := pairing n) hK
+    (hcl : ClosedSaddleFn K) : ri (domSaddle K) ⊆ domSubdiff K := by
+  have h := kernelSet_subset_domSaddleSubdifferential (Bu := pairing m) (Bx := pairing n) hK
     ((theorem_34_3 hK hp).1 hcl)
   rwa [kernelSet_eq_relint_domSaddle] at h
 
 /-- **Theorem 37.4**, right-hand inclusion: `dom ∂K ⊆ dom K`. Only **properness** is used — a
 subgradient pair makes `p` a saddle-point of the tilt, and Corollary 36.3.1 places it in
 `dom K`. -/
-theorem theorem_37_4_dom (hp : ProperSaddleFn K) : domSubgrad K ⊆ domSaddle K :=
-  domSaddleSubgradient_subset_domSaddle hp
+theorem theorem_37_4_dom (hp : ProperSaddleFn K) : domSubdiff K ⊆ domSaddle K :=
+  domSaddleSubdifferential_subset_domSaddle hp
 
 end Thm374
 
@@ -591,14 +591,14 @@ one may speak of the subdifferential of an equivalence *class*.
 Rockafellar tilts both functions and appeals to Theorem 36.4, which needs `cl₁ (K − ℓ) = cl₁ K − ℓ`;
 the route here is Theorem 37.5's (a) ⇔ (d), and the price is a **closedness hypothesis the book's
 statement does not carry**. -/
-theorem corollary_37_4_1_subgrad (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
-    (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) : subgrad K = subgrad L := by
+theorem corollary_37_4_1_subdiff (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
+    (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) : subdiff K = subdiff L := by
   obtain ⟨F, hFconv, hFcl, hKmem⟩ := exists_mem_Ω_of_closed hK hcl
   have hLmem : L ∈ Ω F := theorem_34_2_maximal hFconv hFcl hKmem hL h
   have hpair : ∀ M : Rn m × Rn n → EReal, M ∈ Ω F → ∀ p q : Rn m × Rn n,
-      (q ∈ subgrad M p ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q) := by
+      (q ∈ subdiff M p ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q) := by
     intro M hM p q
-    have hb := mem_saddleSubgradient_iff_isBifunSubgradientPair (pairing m) (pairing n) hFconv
+    have hb := mem_saddleSubdifferential_iff_isBifunSubgradientPair (pairing m) (pairing n) hFconv
       hFcl (mem_bifunSaddleClass_of_mem_Ω hM) p q
     simpa only [flip_pairing] using hb
   funext p
@@ -609,15 +609,15 @@ theorem corollary_37_4_1_subgrad (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn 
 on `dom ∂K = dom ∂L`. A subgradient pair at `p` says the conjugate of the convex slice is attained,
 and that conjugate is `F p.1` for every member of the class. -/
 theorem corollary_37_4_1_eq (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
-    (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) {p : Rn m × Rn n} (hp : p ∈ domSubgrad K) :
+    (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) {p : Rn m × Rn n} (hp : p ∈ domSubdiff K) :
     K p = L p := by
   obtain ⟨F, hFconv, hFcl, hKmem⟩ := exists_mem_Ω_of_closed hK hcl
   have hLmem : L ∈ Ω F := theorem_34_2_maximal hFconv hFcl hKmem hL h
   obtain ⟨q, hq⟩ := hp
-  have hqL : q ∈ subgrad L p := by
-    rw [← corollary_37_4_1_subgrad hK hcl hL h]
+  have hqL : q ∈ subdiff L p := by
+    rw [← corollary_37_4_1_subdiff hK hcl hL h]
     exact hq
-  have key : ∀ M : Rn m × Rn n → EReal, M ∈ Ω F → q ∈ subgrad M p →
+  have key : ∀ M : Rn m × Rn n → EReal, M ∈ Ω F → q ∈ subdiff M p →
       ((pairing n p.2 q.2 : ℝ) : EReal) - F p.1 q.2 = M p := by
     intro M hM hqM
     have hA : conj (pairing n).flip (fun v => M (p.1, v)) = F p.1 :=
@@ -626,7 +626,7 @@ theorem corollary_37_4_1_eq (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
     rw [flip_pairing] at hA
     have hsub : conj (pairing n) (fun v => M (p.1, v)) q.2
         = ((pairing n p.2 q.2 : ℝ) : EReal) - M (p.1, p.2) :=
-      mem_subgradient_iff_conj_eq.1 hqM.2
+      mem_subdifferential_iff_conj_eq.1 hqM.2
     rw [hA] at hsub
     exact eq_coe_sub_iff_coe_sub_eq.1 hsub
   exact (key K hKmem hq).symm.trans (key L hLmem hqL)
@@ -656,8 +656,8 @@ satisfies the class-level condition `IsBifunSubgradientPair`. Because the right-
 only `F`, this *is* the statement that `∂K` depends only on the equivalence class. -/
 theorem theorem_37_5_a (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
     (p q : Rn m × Rn n) :
-    q ∈ subgrad K p ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
-  have h := mem_saddleSubgradient_iff_isBifunSubgradientPair (pairing m) (pairing n) hF hcl
+    q ∈ subdiff K p ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
+  have h := mem_saddleSubdifferential_iff_isBifunSubgradientPair (pairing m) (pairing n) hF hcl
     (mem_bifunSaddleClass_of_mem_Ω hK) p q
   simpa only [flip_pairing] using h
 
@@ -666,8 +666,8 @@ conjugate. With (a) this says the subdifferentials of conjugate classes are **in
 other, as `∂(f*) = (∂f)⁻¹` is for convex functions. -/
 theorem theorem_37_5_b (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
     (p q : Rn m × Rn n) :
-    p ∈ subgrad (upperConj K) q ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
-  have h := mem_saddleSubgradient_upperConjSaddle_iff (pairing m) (pairing n) hF hcl
+    p ∈ subdiff (upperConj K) q ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
+  have h := mem_saddleSubdifferential_upperConjSaddle_iff (pairing m) (pairing n) hF hcl
     (mem_bifunSaddleClass_of_mem_Ω hK) p q
   simpa only [flip_pairing] using h
 
@@ -677,8 +677,8 @@ gradient negated. That is what transfers closedness, the Minty parametrisation a
 monotonicity to `∂K`, and is the source of the asymmetry in Corollaries 37.5.1 and 37.5.2. -/
 theorem theorem_37_5_c (F : Bifun (Rn m) (Rn n)) (p q : Rn m × Rn n) :
     IsBifunSubgradientPair (pairing m) (pairing n) F p q ↔
-      (-q.1, p.2) ∈ subgradient (pairingProd m n) (graphFn F) (p.1, q.2) :=
-  isBifunSubgradientPair_iff_mem_subgradient_graphFn (pairing m) (pairing n) F p q
+      (-q.1, p.2) ∈ subdifferential (pairingProd m n) (graphFn F) (p.1, q.2) :=
+  isBifunSubgradientPair_iff_mem_subdifferential_graphFn (pairing m) (pairing n) F p q
 
 /-- **Theorem 37.5 (d)**: the condition `(Fu)(v*) − ⟨v, v*⟩ = (F*v)(u*) − ⟨u, u*⟩`, the equality
 case of `⟨v, v*⟩ − (Fu)(v*) ≤ ⟨Fu, v⟩ ≤ K (u, v) ≤ ⟨u, F*v⟩ ≤ ⟨u, u*⟩ − (F*v)(u*)`. It mentions no
@@ -703,8 +703,8 @@ private theorem continuous_pairing (n : ℕ) :
 the preimage of the graph of `∂f` under a linear homeomorphism, and Theorem 24.4 applies. -/
 theorem corollary_37_5_1_isClosed (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ Ω F) :
-    IsClosed {r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subgrad K r.1} := by
-  have h := isClosed_setOf_mem_saddleSubgradient (pairing m) (pairing n) (continuous_pairing m)
+    IsClosed {r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1} := by
+  have h := isClosed_setOf_mem_saddleSubdifferential (pairing m) (pairing n) (continuous_pairing m)
     (continuous_pairing n) hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK)
   simpa only [flip_pairing] using h
 
@@ -715,22 +715,22 @@ argument because a `Homeomorph` is data; `corollary_37_5_1_exists_homeomorph` is
 form. -/
 noncomputable def corollary_37_5_1_homeomorph (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ Ω F) :
-    ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subgrad K r.1} ≃ₜ (Rn m × Rn n) :=
-  saddleSubgradientHomeomorph hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK)
+    ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1} ≃ₜ (Rn m × Rn n) :=
+  saddleSubdifferentialHomeomorph hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK)
 
 /-- The homeomorphism is the book's map, with the two summands of the second component in the
 other order: `(u − u*, v* + v)` against the printed `(u − u*, v + v*)`. -/
 theorem corollary_37_5_1_homeomorph_apply (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ Ω F)
-    (r : ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subgrad K r.1}) :
+    (r : ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1}) :
     corollary_37_5_1_homeomorph hF hcl hpr hK r = (r.1.1.1 - r.1.2.1, r.1.2.2 + r.1.1.2) :=
-  saddleSubgradientHomeomorph_apply hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK) r
+  saddleSubdifferentialHomeomorph_apply hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK) r
 
 /-- **Corollary 37.5.1** in the book's own quantification: for a closed proper concave-convex
 `K` the graph of `∂K` is homeomorphic to `ℝᵐ × ℝⁿ`. -/
 theorem corollary_37_5_1_exists_homeomorph (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
     (hp : ProperSaddleFn K) :
-    Nonempty (↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subgrad K r.1} ≃ₜ (Rn m × Rn n)) := by
+    Nonempty (↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1} ≃ₜ (Rn m × Rn n)) := by
   obtain ⟨F, hFconv, hFcl, hmem⟩ := exists_mem_Ω_of_closed hK hcl
   exact ⟨corollary_37_5_1_homeomorph hFconv hFcl
     (proper_graphFn_of_properSaddleFn (pairing m) (pairing n)
@@ -743,10 +743,10 @@ one variable and antitone in the other, and negating the first dual component re
 theorem corollary_37_5_2 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hpr : Proper (graphFn F))
     (hK : K ∈ Ω F) :
     IsMaximalMonotoneRel (pairingProd m n)
-      {r : (Rn m × Rn n) × (Rn m × Rn n) | (-r.2.1, r.2.2) ∈ subgrad K r.1} := by
+      {r : (Rn m × Rn n) × (Rn m × Rn n) | (-r.2.1, r.2.2) ∈ subdiff K r.1} := by
   have h := isMaximalMonotoneRel_saddleMonotoneRel hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK)
   have he : saddleMonotoneRel (pairing m) (pairing n) K
-      = {r : (Rn m × Rn n) × (Rn m × Rn n) | (-r.2.1, r.2.2) ∈ subgrad K r.1} := by
+      = {r : (Rn m × Rn n) × (Rn m × Rn n) | (-r.2.1, r.2.2) ∈ subdiff K r.1} := by
     ext r
     simp only [mem_saddleMonotoneRel, flip_pairing, Set.mem_ofPred_eq]
   rwa [he] at h
@@ -772,8 +772,8 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {K : Rn m × Rn n → EReal}
 /-- **Corollary 37.5.3**: `∂K* (0, 0)` **is** the set of saddle-points of `K`. It is Theorem
 37.5 (b) at the origin composed with Theorem 37.4, whose tilt by the origin is `K` itself. -/
 theorem corollary_37_5_3 (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
-    (p : Rn m × Rn n) : p ∈ subgrad (upperConj K) 0 ↔ IsSaddlePoint K p := by
-  have h := mem_saddleSubgradient_upperConjSaddle_zero_iff (pairing m) (pairing n) hF hcl
+    (p : Rn m × Rn n) : p ∈ subdiff (upperConj K) 0 ↔ IsSaddlePoint K p := by
+  have h := mem_saddleSubdifferential_upperConjSaddle_zero_iff (pairing m) (pairing n) hF hcl
     (mem_bifunSaddleClass_of_mem_Ω hK) p
   simpa only [flip_pairing] using h
 
@@ -786,7 +786,7 @@ theorem corollary_37_5_3_convex (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK :
 /-- **Corollary 37.5.3**: and a **closed** set. -/
 theorem corollary_37_5_3_isClosed (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F) :
     IsClosed {p : Rn m × Rn n | IsSaddlePoint K p} := by
-  have hset : {p : Rn m × Rn n | IsSaddlePoint K p} = subgrad (upperConj K) 0 := by
+  have hset : {p : Rn m × Rn n | IsSaddlePoint K p} = subdiff (upperConj K) 0 := by
     ext p
     exact (corollary_37_5_3 hF hcl hK p).symm
   rw [hset]
@@ -795,9 +795,9 @@ theorem corollary_37_5_3_isClosed (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK
 /-- **Corollary 37.5.3**, last sentence: a saddle-point exists **if and only if**
 `(0, 0) ∈ dom ∂K*`. -/
 theorem corollary_37_5_3_exists_iff (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F) :
-    (∃ p, IsSaddlePoint K p) ↔ (0 : Rn m × Rn n) ∈ domSubgrad (upperConj K) := by
-  have h := exists_isSaddlePoint_iff_zero_mem_domSaddleSubgradient (pairing m) (pairing n) hF hcl
-    (mem_bifunSaddleClass_of_mem_Ω hK)
+    (∃ p, IsSaddlePoint K p) ↔ (0 : Rn m × Rn n) ∈ domSubdiff (upperConj K) := by
+  have h := exists_isSaddlePoint_iff_zero_mem_domSaddleSubdifferential (pairing m) (pairing n) hF
+    hcl (mem_bifunSaddleClass_of_mem_Ω hK)
   simpa only [flip_pairing] using h
 
 /-- **Corollary 37.5.3**, "in particular": `K` has a saddle-point as soon as

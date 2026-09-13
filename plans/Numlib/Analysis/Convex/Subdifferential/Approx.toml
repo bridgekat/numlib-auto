@@ -1,0 +1,22 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'epsSubdifferential'
+
+[[node]]
+id = 'iInter_epsSubdifferential'
+
+[[node]]
+id = 'shiftFn'
+
+[[node]]
+id = 'epsSubdifferential_eq_setOf_conj_le'
+
+[[node]]
+id = 'posHomGen_shiftFn'
+
+[[node]]
+id = 'supportFn_epsSubdifferential_apply'
+
+[[node]]
+id = 'dirDeriv_eq_iInf_supportFn_epsSubdifferential'

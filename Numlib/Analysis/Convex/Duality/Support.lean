@@ -29,10 +29,11 @@ compatible pairing on both sides.
 
 * `supportFn_eq_conj_indicatorFn` — `δ*(· ∣ s) = (δ(· ∣ s))*`.
 * `mem_closure_convexHull_iff_le_supportFn` — `x ∈ cl (conv s)` if and only if `⟨x, y⟩ ≤ δ*(y ∣ s)`
-  for every `y` (Theorem 13.1 in [^1]).
+  for every `y` ([rockafellar1970convex] Theorem 13.1).
 * `conj_supportFn`, `exists_supportFn_iff`, `supportEquiv` — the indicator and the support function
-  of a closed convex set are conjugate, and the correspondence above (Theorem 13.2 in [^1]).
-  `exists_supportFn_finite_iff` reads it as bounded ⟺ finite.
+  of a closed convex set are conjugate, and the correspondence above
+  ([rockafellar1970convex] Theorem 13.2). `exists_supportFn_finite_iff` reads it as bounded ⟺
+  finite.
 * `clFn_eq_supportFn_of_posHomogeneous` — the closure of a positively homogeneous convex function
   is a support function. `supportSet_clFn` is the consequence that closure does not change the set
   supported.
@@ -55,7 +56,7 @@ on the set, for each `y`" — which is what the classical proof actually uses.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §13.
+* [rockafellar1970convex] §13.
 -/
 
 open Set Pointwise

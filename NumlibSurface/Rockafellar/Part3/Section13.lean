@@ -2,7 +2,7 @@ import Numlib.Analysis.Convex.Duality.Barrier
 import Numlib.Analysis.Convex.Duality.Level
 import Numlib.Analysis.Convex.Duality.SupportRelint
 import Numlib.Analysis.Convex.Recession.Conjugate
-import Numlib.Analysis.Convex.Subgradient.Convergence
+import Numlib.Analysis.Convex.Subdifferential.Convergence
 import NumlibSurface.Rockafellar.Part1.Section01
 
 /-!

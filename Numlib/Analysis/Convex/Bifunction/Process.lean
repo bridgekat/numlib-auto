@@ -39,16 +39,17 @@ only, and `coBracket_eq_neg_bracket` records the sign.
 ## Main results
 
 * `exists_linearMap_of_isBounded` — a convex process with full domain and bounded `A 0` is a
-  linear transformation (Theorem 39.1 in [^1]).
+  linear transformation ([rockafellar1970convex] Theorem 39.1).
 * `isClosed_graph_adjointProcess`, `coadjointProcess_adjointProcess_eq_self_iff` — `A*` is always
   closed, `A** = cl A`, and `A** = A` exactly for closed `A`.
 * `bracket_indicatorBifun` and the results beside it — `⟨Au, x*⟩` is the support function of `A u`,
   hence closed convex in `x*` and concave in `u`, and `⟨u, A* x*⟩` is its convex closure in `u`
-  (Theorem 39.3 in [^1]).
+  ([rockafellar1970convex] Theorem 39.3).
 * `adjointProcess_add`, `adjointProcess_comp`, `adjointProcess_smul` — `(A₁ + A₂)* = A₁* + A₂*`,
   `(BA)* = A* B*` and `(λ A)* = λ (A*)` for `λ > 0`; `isClosed_graph_add`,
   `graph_adjointProcess_add_eq_closure` and the `comp` analogues are the closed halves.
-* `conj_imageBifun_indicatorBifun` — `(Af)* = A*⁻¹ f*`, the infimum attained (Theorem 39.7 in [^1]).
+* `conj_imageBifun_indicatorBifun` — `(Af)* = A*⁻¹ f*`, the infimum attained
+  ([rockafellar1970convex] Theorem 39.7).
 * `isClosed_image` — `A C` is closed for closed `A`, nonempty closed convex `C`, and no non-zero
   vector of `A⁻¹ 0` receding `C`.
 * `exists_pairing_sandwich` — Fenchel duality at a positively homogeneous pair: a concave `p` below
@@ -62,7 +63,7 @@ summands proper, so the hypothesis carried here is stronger than the book's.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §39.
+* [rockafellar1970convex] §39.
 -/
 
 open Pointwise Set

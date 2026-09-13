@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Duality.Ops
 import Numlib.Analysis.Convex.Optimization.Prox
-import Numlib.Analysis.Convex.Subgradient.LegendreType
+import Numlib.Analysis.Convex.Subdifferential.LegendreType
 
 /-!
 # The gradient formulas of Moreau's theorem
@@ -17,10 +17,11 @@ differentiable there.
 
 ## Main results
 
-* `subgradient_infConv_quadFn` — `∂(f □ w) z = {prox (z | f*)}`.
+* `subdifferential_infConv_quadFn` — `∂(f □ w) z = {prox (z | f*)}`.
 * `hasGradientAtFn_infConv_quadFn`, `hasGradientAtFn_infConv_conj_quadFn`,
   `gradient_infConv_quadFn`, `gradient_infConv_conj_quadFn` — the gradient formulas
-  (Theorem 31.5 in [^1]), in `HasGradientAtFn` form and in terms of Mathlib's `gradient`.
+  ([rockafellar1970convex] Theorem 31.5), in `HasGradientAtFn` form and in terms of Mathlib's
+  `gradient`.
 * `closedProperConvexFn_infConv_quadFn` — the Moreau envelope is finite everywhere, hence closed
   proper convex.
 * `conj_infConv_quadFn` — `(f □ w)* = f* + w`, since conjugation turns `□` into `+` and `w* = w`.
@@ -33,7 +34,7 @@ is supplied by `w` being finite and continuous.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31.
+* [rockafellar1970convex] §31.
 -/
 
 namespace ConvexAnalysis
@@ -75,14 +76,14 @@ theorem conj_infConv_quadFn (f : E → EReal) :
 /-- **The subdifferential of a Moreau envelope is a single point**: `∂(f □ w) z = {prox (z | f*)}`.
 Conjugate inversion turns `y ∈ ∂(f □ w) z` into `z ∈ ∂(f* + w) y`, the sum rule splits that as
 `∂f* y + {y}`, and what is left, `z - y ∈ ∂f* y`, characterises `prox (z | f*)`. -/
-theorem subgradient_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
-    subgradient (innerₗ E) (infConv f (quadFn (innerₗ E))) z
+theorem subdifferential_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
+    subdifferential (innerₗ E) (infConv f (quadFn (innerₗ E))) z
       = {prox (innerₗ E) (conj (innerₗ E) f) z} := by
   have hg := closedProperConvexFn_infConv_quadFn hf
   have hcf := closedProperConvexFn_conj (B := innerₗ E) hf
   ext y
-  rw [Set.mem_singleton_iff, ← mem_subgradient_conj_innerL_iff hg.convex hg.closed z y,
-    conj_infConv_quadFn, (isExactSum_quadFn hcf).subgradient_add, subgradient_quadFn]
+  rw [Set.mem_singleton_iff, ← mem_subdifferential_conj_innerL_iff hg.convex hg.closed z y,
+    conj_infConv_quadFn, (isExactSum_quadFn hcf).subdifferential_add, subdifferential_quadFn]
   constructor
   · rintro ⟨a, ha, b, hb, hab⟩
     rw [Set.mem_singleton_iff] at hb
@@ -105,9 +106,9 @@ differentiable there. -/
 theorem hasGradientAtFn_infConv_quadFn (hf : ClosedProperConvexFn f) (z : E) :
     HasGradientAtFn (infConv f (quadFn (innerₗ E)))
       (InnerProductSpace.toDual ℝ E (prox (innerₗ E) (conj (innerₗ E) f) z)) z :=
-  hasGradientAtFn_toDual_of_subgradient_eq_singleton
+  hasGradientAtFn_toDual_of_subdifferential_eq_singleton
     (closedProperConvexFn_infConv_quadFn hf).convex
-    (closedProperConvexFn_infConv_quadFn hf).proper (subgradient_infConv_quadFn hf z)
+    (closedProperConvexFn_infConv_quadFn hf).proper (subdifferential_infConv_quadFn hf z)
 
 /-- `prox (z | f) = ∇(f* □ w) z`. The previous statement applied to `f*`, using
 `prox (z | f**) = z - prox (z | f*) = prox (z | f)`. -/

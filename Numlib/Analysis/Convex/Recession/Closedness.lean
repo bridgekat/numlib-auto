@@ -22,7 +22,8 @@ Sums of sets, images and sums and infimal convolutions of functions, and pointwi
 * `isClosed_image_of_recessionCone_inter_ker`, `recessionCone_image_of_recessionCone_inter_ker` —
   the closedness and recession-cone halves under the *reduced* hypothesis `0⁺C ∩ ker A ⊆ {0}`;
   `Convex.closure_image_eq_and_recessionCone` and its three components are the full statement
-  (Theorem 9.1 in [^1]), and `image_recessionCone_subset` is the unconditional inclusion.
+  ([rockafellar1970convex] Theorem 9.1), and `image_recessionCone_subset` is the unconditional
+  inclusion.
 * `Convex.isClosed_add`, `Convex.closure_add_eq`, `Convex.recessionCone_add` — the same three
   conclusions for a sum `C + D`, with the no-cancellation, bounded and conic cases following.
 * `closedProperConvexFn_mapLin` — a linear image of a closed proper convex function is closed
@@ -46,7 +47,7 @@ used only to get that compactness; the target space needs none.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §9.
+* [rockafellar1970convex] §9.
 -/
 
 open Filter Metric Pointwise Set Topology

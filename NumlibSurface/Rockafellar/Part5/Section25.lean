@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Subgradient.Differentiability
-import Numlib.Analysis.Convex.Subgradient.GradientLimit
-import Numlib.Analysis.Convex.Subgradient.Reconstruction
+import Numlib.Analysis.Convex.Subdifferential.Differentiability
+import Numlib.Analysis.Convex.Subdifferential.GradientLimit
+import Numlib.Analysis.Convex.Subdifferential.Reconstruction
 import NumlibSurface.Common.Euclidean
 
 /-!
@@ -117,8 +117,8 @@ variable {f : Rn n → EReal} {b x : Rn n}
 `∇f(x)` is the *unique* subgradient of `f` at `x`. Nothing in the argument is finite-dimensional,
 and the uniqueness half uses neither convexity nor properness. -/
 theorem theorem_25_1_forward (hf : ConvexFn f) (h : HasGradientVecAt f b x) :
-    subgradient (pairing n) f x = {b} := by
-  have hs := subgradient_innerL_eq_singleton (E := Rn n) hf
+    subdifferential (pairing n) f x = {b} := by
+  have hs := subdifferential_innerL_eq_singleton (E := Rn n) hf
     (hasGradientVecAt_iff_hasGradientAtFn.1 h)
   rwa [linFn_eq_toDual, LinearIsometryEquiv.symm_apply_apply] at hs
 
@@ -134,21 +134,21 @@ convex `f` has a unique subgradient at `x` then `f` is differentiable at `x`. In
 a convex set is a neighbourhood of every point whose normal cone is trivial (Corollary 11.6.1),
 which is the step Rockafellar passes over. -/
 theorem theorem_25_1_converse (hf : ConvexFn f) (hp : Proper f)
-    (h : subgradient (pairing n) f x = {b}) : HasGradientVecAt f b x := by
-  have hg := hasGradientAtFn_toDual_of_subgradient_eq_singleton (E := Rn n) hf hp h
+    (h : subdifferential (pairing n) f x = {b}) : HasGradientVecAt f b x := by
+  have hg := hasGradientAtFn_toDual_of_subdifferential_eq_singleton (E := Rn n) hf hp h
   rw [hasGradientVecAt_iff_hasGradientAtFn, linFn_eq_toDual]
   exact hg
 
 /-- **Rockafellar, Theorem 25.1**, in full: for a proper convex function on `ℝⁿ`, having gradient
 `b` at `x` and having `b` as sole subgradient at `x` are the same thing. -/
 theorem theorem_25_1 (hf : ConvexFn f) (hp : Proper f) :
-    HasGradientVecAt f b x ↔ subgradient (pairing n) f x = {b} :=
+    HasGradientVecAt f b x ↔ subdifferential (pairing n) f x = {b} :=
   ⟨theorem_25_1_forward hf, theorem_25_1_converse hf hp⟩
 
 /-- **Theorem 25.1** as the book's following sentence states it: `∂f(x)` is a single vector exactly
 when `f` is differentiable at `x`. -/
 theorem theorem_25_1_differentiableAtFn (hf : ConvexFn f) (hp : Proper f) :
-    DifferentiableAtFn f x ↔ ∃ b : Rn n, subgradient (pairing n) f x = {b} := by
+    DifferentiableAtFn f x ↔ ∃ b : Rn n, subdifferential (pairing n) f x = {b} := by
   rw [differentiableAtFn_iff_exists_hasGradientVecAt]
   exact exists_congr fun _ => theorem_25_1 hf hp
 
@@ -358,10 +358,10 @@ theorem mem_gradientLimits_iff {v : Rn n} :
 /-- For `x` with `∂f(x) ≠ ∅`, the recession cone of `∂f(x)` is the normal cone to `dom f` at `x`.
 Rockafellar leaves this as a §23 exercise and says it will be verified inside the proof of Theorem
 25.6; **it is not** — that proof uses only `⊆`, and the equality is discharged separately. -/
-theorem recessionCone_subgradient_eq_normalCone (hp : Proper f) {v : Rn n}
-    (hv : v ∈ subgradient (pairing n) f x) :
-    recessionCone (subgradient (pairing n) f x) = normalCone (pairing n) (dom f) x :=
-  ConvexAnalysis.recessionCone_subgradient_eq_normalCone hp hv
+theorem recessionCone_subdifferential_eq_normalCone (hp : Proper f) {v : Rn n}
+    (hv : v ∈ subdifferential (pairing n) f x) :
+    recessionCone (subdifferential (pairing n) f x) = normalCone (pairing n) (dom f) x :=
+  ConvexAnalysis.recessionCone_subdifferential_eq_normalCone hp hv
 
 /-- **Theorem 25.6**: for a closed proper convex `f` whose `dom f` has non-empty interior,
 
@@ -375,9 +375,9 @@ both sides are non-empty, and off `dom f` the left side is empty, forcing `cl (c
 empty too. -/
 theorem theorem_25_6 (hf : ConvexFn f) (hp : Proper f) (hcl : ClosedFn f)
     (hne : (interior (dom f)).Nonempty) :
-    subgradient (pairing n) f x
+    subdifferential (pairing n) f x
       = closure (convexHull ℝ (gradientLimits f x)) + normalCone (pairing n) (dom f) x :=
-  subgradient_eq_closure_convexHull_gradientLimits_add_normalCone hf hp hcl hne
+  subdifferential_eq_closure_convexHull_gradientLimits_add_normalCone hf hp hcl hne
 
 end Theorem256
 

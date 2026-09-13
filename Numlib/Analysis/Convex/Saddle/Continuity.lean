@@ -19,7 +19,8 @@ applied once in each variable and combined.
 ## Main results
 
 * `exists_forall_abs_le_and_lipschitzOnWith_prod` — a pointwise bounded family, indexed by an
-  arbitrary type, is uniformly bounded and equi-Lipschitz (Theorem 35.2 in [^1]); the engine here.
+  arbitrary type, is uniformly bounded and equi-Lipschitz ([rockafellar1970convex] Theorem 35.2);
+  the engine here.
 * `ConcaveConvexOn.exists_lipschitzOnWith_of_isCompact`, `.exists_forall_abs_le_of_isCompact`,
   `.continuousOn` — the same for a single function, and continuity on `ri C × ri D`.
 * `continuousOn_prod_of_concaveConvexOn`, `continuousOn_prod_of_concaveConvexOn'` — joint
@@ -49,7 +50,7 @@ product structure that the concave-convex hypothesis lives on. They are proved d
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §35.
+* [rockafellar1970convex] §35.
 -/
 
 open Set Filter Topology Metric

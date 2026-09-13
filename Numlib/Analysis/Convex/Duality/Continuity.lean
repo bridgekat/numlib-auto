@@ -7,11 +7,11 @@ import Numlib.Analysis.Convex.Duality.Exact
 If one of two proper convex functions is continuous at a point where the other is finite, they add
 exactly: `(f + g)* = f* □ g*`, with the infimal convolution attained.
 
-The classical qualification (Theorem 16.4 in [^1]) asks instead that `ri (dom f)` and `ri (dom g)`
-meet, which is sharp in finite dimensions but is not available in general, `ri` being empty for
-most infinite-dimensional convex sets. Continuity is the condition that replaces it, and the one
-every application in a Banach space actually verifies — typically because one summand is finite and
-continuous everywhere.
+The classical qualification ([rockafellar1970convex] Theorem 16.4) asks instead that `ri (dom f)`
+and `ri (dom g)` meet, which is sharp in finite dimensions but is not available in general, `ri`
+being empty for most infinite-dimensional convex sets. Continuity is the condition that replaces it,
+and the one every application in a Banach space actually verifies — typically because one summand is
+finite and continuous everywhere.
 
 ## Main results
 
@@ -32,7 +32,7 @@ negative rather than positive because the strict epigraph is unbounded upwards.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16.
+* [rockafellar1970convex] §16.
 -/
 
 open Set Filter

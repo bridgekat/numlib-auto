@@ -27,9 +27,9 @@ only a real topological vector space, and finite dimensionality enters only for 
 * `eq_add_inter_of_isCompl` — the decomposition `C = L + (C ∩ L')` for a complement `L'` of `L`.
 * `isClosed_recessionCone` — `0⁺C` is closed as soon as `C` is; no convexity, no nonemptiness.
 * `mem_recessionCone_iff_exists_tendsto` — for nonempty closed convex `C`, `0⁺C` is the set of
-  limits of sequences `lᵢ • xᵢ` with `xᵢ ∈ C` and `lᵢ ↓ 0` (Theorem 8.2 in [^1]).
+  limits of sequences `lᵢ • xᵢ` with `xᵢ ∈ C` and `lᵢ ↓ 0` ([rockafellar1970convex] Theorem 8.2).
 * `mem_recessionCone_of_exists_ray` — one half-line in the direction `y` inside a closed convex
-  `C` forces all of them (Theorem 8.3 in [^1]); `recessionCone_iInter` and
+  `C` forces all of them ([rockafellar1970convex] Theorem 8.3); `recessionCone_iInter` and
   `recessionCone_preimage` carry that to intersections and preimages, and `recessionCone_prod`,
   `recessionCone_pi` say that a nonempty product recedes coordinatewise.
 * `isBounded_iff_recessionCone_eq_zero` — a nonempty closed convex set is bounded exactly when it
@@ -46,7 +46,7 @@ nonempty closed convex sets). `0⁺C` itself is algebraic, and is used where the
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §8 and §21.
+* [rockafellar1970convex] §8 and §21.
 -/
 
 open Bornology Filter Pointwise Set Topology

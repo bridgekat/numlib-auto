@@ -24,9 +24,9 @@ does not exist.
 * `iInter_relint_nonempty_iff_supportFn`, `iInter_relint_dom_nonempty_iff` — a finite family of
   convex sets (resp. of effective domains) has a common relative-interior point exactly when there
   is no family `y` with `∑ i, yᵢ = 0`, `∑ i, δ*(yᵢ ∣ Cᵢ) ≤ 0` and `∑ i, δ*(-yᵢ ∣ Cᵢ) > 0`
-  (Corollary 16.2.2 in [^1]). The diagonal `{x ∣ x₁ = ⋯ = xₘ}` is a subspace of `ι → E` whose
-  annihilator under the product pairing is the family of `y` summing to zero, so this is the
-  subspace criterion of `Duality/RelintSeparation.lean` read at a product set.
+  ([rockafellar1970convex] Corollary 16.2.2). The diagonal `{x ∣ x₁ = ⋯ = xₘ}` is a subspace of
+  `ι → E` whose annihilator under the product pairing is the family of `y` summing to zero, so this
+  is the subspace criterion of `Duality/RelintSeparation.lean` read at a product set.
 
 ## Implementation notes
 
@@ -40,7 +40,7 @@ induction over the index `Finset` whose step decouples one coordinate with `Func
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16, §6 and §13.
+* [rockafellar1970convex] §16, §6 and §13.
 -/
 
 open Set

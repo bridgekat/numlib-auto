@@ -23,7 +23,8 @@ between a convex function and a cone, each in its strongest form.
 
 ## Main results
 
-* `iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing` — the identity (Corollary 31.4.3 in [^1]).
+* `iInf_mem_add_iInf_mem_neg_polarCone_eq_pairing` — the identity
+  ([rockafellar1970convex] Corollary 31.4.3).
 * `exists_iInf_mem_eq_of_cofinite`, `exists_iInf_mem_neg_polarCone_eq_of_cofinite` — both infima
   are attained.
 * `exists_iInf_mem_eq_coe_of_cofinite`, `exists_iInf_mem_neg_polarCone_eq_coe_of_cofinite` — both
@@ -38,7 +39,7 @@ convex function that is finite everywhere, and the everywhere-finite conjugate o
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §§12, 13, 31.
+* [rockafellar1970convex] §§12, 13, 31.
 -/
 
 open Set Pointwise

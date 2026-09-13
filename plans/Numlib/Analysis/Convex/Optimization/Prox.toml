@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'moreauObj'
 
 [[node]]
-id = 'subgradient_quadFn_sub'
+id = 'subdifferential_quadFn_sub'
 
 [[node]]
 id = 'recessionFn_quadFn_sub'
@@ -19,7 +19,7 @@ id = 'argmin_moreauObj_nonempty'
 id = 'mem_argmin_moreauObj_iff'
 
 [[node]]
-id = 'existsUnique_sub_mem_subgradient'
+id = 'existsUnique_sub_mem_subdifferential'
 
 [[node]]
 id = 'prox_eq_iff'

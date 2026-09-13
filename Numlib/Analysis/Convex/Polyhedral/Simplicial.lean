@@ -21,7 +21,7 @@ all of them inside `C`.
   finite set.
 * `isSimplex_convexHull_coe` — the convex hull of an affinely independent `Finset` is a simplex.
 * `Polyhedral.locallySimplicial` — every polyhedral convex set is locally simplicial
-  (Theorem 20.5 in [^1]).
+  ([rockafellar1970convex] Theorem 20.5).
 * `exists_polyhedral_between` — a compact set inside `int D` is inside `int P` for some polyhedral
   `P ⊆ int D`.
 
@@ -36,7 +36,7 @@ set the index set is `P.powerset`, and `Finset.equivFin` turns it into the `Fin 
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20.
+* [rockafellar1970convex] §20.
 -/
 
 open Set Filter Topology

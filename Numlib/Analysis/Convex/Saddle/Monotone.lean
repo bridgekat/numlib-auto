@@ -24,9 +24,10 @@ form, so each is the matching fact about the subdifferential of a closed proper 
 
 * `prodPairing_sub_partialInvertEquiv` — partial inversion preserves the monotonicity form, so
   `IsMaximalMonotoneRel.preimage_partialInvertEquiv` transfers maximal monotonicity across it.
-* `saddleSubgradientHomeomorph` — the graph of `∂K` is homeomorphic to the underlying space
-  (Corollary 37.5.1 in [^1]).
-* `isMaximalMonotoneRel_saddleMonotoneRel` — `ρ` is maximal monotone (Corollary 37.5.2 in [^1]).
+* `saddleSubdifferentialHomeomorph` — the graph of `∂K` is homeomorphic to the underlying space
+  ([rockafellar1970convex] Corollary 37.5.1).
+* `isMaximalMonotoneRel_saddleMonotoneRel` — `ρ` is maximal monotone
+  ([rockafellar1970convex] Corollary 37.5.2).
 * `isMaximalMonotoneRel_setOf_hasSaddleGradientAt` — for a finite differentiable `K` the mapping is
   `(u, v) ↦ (-∇₁K (u, v), ∇₂K (u, v))`.
 
@@ -37,13 +38,13 @@ where the corresponding facts about `∂f` do, and there as a self-pairing rathe
 `InnerProductSpace` instance: `U × X` carries the supremum norm, but
 `prodPairing (innerₗ U) (innerₗ X)` is a continuous inner pairing on it.
 
-Two subdifferentials are in play — `subgradientSaddle C D K` for a real-valued `K` on an open
-rectangle, `saddleSubgradient Bu Bx K` for an `EReal`-valued one on the whole space — and they
+Two subdifferentials are in play — `subdifferentialSaddle C D K` for a real-valued `K` on an open
+rectangle, `saddleSubdifferential Bu Bx K` for an `EReal`-valued one on the whole space — and they
 agree at `C = D = univ`, which is what the differentiable clause below needs.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §37.
+* [rockafellar1970convex] §37.
 -/
 
 namespace ConvexAnalysis
@@ -164,11 +165,11 @@ variable {U V X Y : Type*} [AddCommGroup U] [Module ℝ U] [AddCommGroup V] [Mod
 monotone in one variable and antitone in the other. -/
 def saddleMonotoneRel (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ) (K : U × Y → EReal) :
     SetRel (U × Y) (V × X) :=
-  {r | (-r.2.1, r.2.2) ∈ saddleSubgradient Bu Bx.flip K r.1}
+  {r | (-r.2.1, r.2.2) ∈ saddleSubdifferential Bu Bx.flip K r.1}
 
 @[simp] theorem mem_saddleMonotoneRel {Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ} {Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ}
     {K : U × Y → EReal} {r : (U × Y) × (V × X)} :
-    r ∈ saddleMonotoneRel Bu Bx K ↔ (-r.2.1, r.2.2) ∈ saddleSubgradient Bu Bx.flip K r.1 :=
+    r ∈ saddleMonotoneRel Bu Bx K ↔ (-r.2.1, r.2.2) ∈ saddleSubdifferential Bu Bx.flip K r.1 :=
   Iff.rfl
 
 end Rho
@@ -182,14 +183,14 @@ variable {U V X Y : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] {F : Bifun U X} {K : U × Y → EReal}
 
 /-- The graph of `∂K` is the preimage of the graph of `∂f` along `partialInvertNegHomeomorph`. -/
-theorem setOf_mem_saddleSubgradient_eq_preimage_homeomorph (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
+theorem setOf_mem_saddleSubdifferential_eq_preimage_homeomorph (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bu] [IsCompatiblePairing Bu.flip] (Bx : X →ₗ[ℝ] Y →ₗ[ℝ] ℝ)
     [IsCompatiblePairing Bx] [IsCompatiblePairing Bx.flip] (hF : ConvexBifun F)
     (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass Bu Bx F) :
-    {r : (U × Y) × (V × X) | r.2 ∈ saddleSubgradient Bu Bx.flip K r.1}
+    {r : (U × Y) × (V × X) | r.2 ∈ saddleSubdifferential Bu Bx.flip K r.1}
       = (partialInvertNegHomeomorph : ((U × Y) × (V × X)) ≃ₜ ((U × X) × (V × Y)))
         ⁻¹' subgradientRel (prodPairing Bu Bx) (graphFn F) :=
-  setOf_mem_saddleSubgradient_eq_preimage Bu Bx hF hcl hK
+  setOf_mem_saddleSubdifferential_eq_preimage Bu Bx hF hcl hK
 
 /-- **`ρ` is the graph of `∂f`, partially inverted.** The sign flip is absorbed into `ρ`, which is
 why no sign survives on the right. -/
@@ -200,7 +201,7 @@ theorem saddleMonotoneRel_eq_preimage (Bu : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) [Is
     saddleMonotoneRel Bu Bx K
       = (partialInvertEquiv : ((U × Y) × (V × X)) ≃ ((U × X) × (V × Y)))
         ⁻¹' subgradientRel (prodPairing Bu Bx) (graphFn F) := by
-  have h := setOf_mem_saddleSubgradient_eq_preimage Bu Bx hF hcl hK
+  have h := setOf_mem_saddleSubdifferential_eq_preimage Bu Bx hF hcl hK
   ext r
   have hr := Set.ext_iff.1 h (r.1, (-r.2.1, r.2.2))
   rw [Set.mem_ofPred_eq, Set.mem_preimage] at hr
@@ -218,30 +219,30 @@ variable {U X : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteD
   {F : Bifun U X} {K : U × X → EReal}
 
 /-- The same preimage description for a space paired with itself, where `Bx.flip` is `Bx`. -/
-theorem setOf_mem_saddleSubgradient_innerL_eq_preimage (hF : ConvexBifun F) (hcl : ClosedBifun F)
-    (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
-    {r : (U × X) × (U × X) | r.2 ∈ saddleSubgradient (innerₗ U) (innerₗ X) K r.1}
+theorem setOf_mem_saddleSubdifferential_innerL_eq_preimage (hF : ConvexBifun F)
+    (hcl : ClosedBifun F) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
+    {r : (U × X) × (U × X) | r.2 ∈ saddleSubdifferential (innerₗ U) (innerₗ X) K r.1}
       = (partialInvertNegHomeomorph : ((U × X) × (U × X)) ≃ₜ ((U × X) × (U × X)))
         ⁻¹' subgradientRel (prodPairing (innerₗ U) (innerₗ X)) (graphFn F) := by
-  have h := setOf_mem_saddleSubgradient_eq_preimage_homeomorph (innerₗ U) (innerₗ X) hF hcl hK
+  have h := setOf_mem_saddleSubdifferential_eq_preimage_homeomorph (innerₗ U) (innerₗ X) hF hcl hK
   rwa [flip_eq_self] at h
 
 /-- The graph of `∂K` is homeomorphic to `U × X` under `((u, y), (v, x)) ↦ (u - v, x + y)`: it is
 the graph of `∂f` partially inverted, and the graph of `∂f` maps onto `U × X` by
 `(z, z*) ↦ z + z*`. -/
-noncomputable def saddleSubgradientHomeomorph (hF : ConvexBifun F) (hcl : ClosedBifun F)
+noncomputable def saddleSubdifferentialHomeomorph (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F) :
-    ↥{r : (U × X) × (U × X) | r.2 ∈ saddleSubgradient (innerₗ U) (innerₗ X) K r.1} ≃ₜ (U × X) :=
+    ↥{r : (U × X) × (U × X) | r.2 ∈ saddleSubdifferential (innerₗ U) (innerₗ X) K r.1} ≃ₜ (U × X) :=
   (partialInvertNegHomeomorph.sets
-      (setOf_mem_saddleSubgradient_innerL_eq_preimage hF hcl hK)).trans
+      (setOf_mem_saddleSubdifferential_innerL_eq_preimage hF hcl hK)).trans
     (subgradientRelHomeomorph (B := prodPairing (innerₗ U) (innerₗ X)) ⟨hF, hcl, hpr⟩)
 
-@[simp] theorem saddleSubgradientHomeomorph_apply (hF : ConvexBifun F) (hcl : ClosedBifun F)
+@[simp] theorem saddleSubdifferentialHomeomorph_apply (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ bifunSaddleClass (innerₗ U) (innerₗ X) F)
-    (r : ↥{r : (U × X) × (U × X) | r.2 ∈ saddleSubgradient (innerₗ U) (innerₗ X) K r.1}) :
-    saddleSubgradientHomeomorph hF hcl hpr hK r
+    (r : ↥{r : (U × X) × (U × X) | r.2 ∈ saddleSubdifferential (innerₗ U) (innerₗ X) K r.1}) :
+    saddleSubdifferentialHomeomorph hF hcl hpr hK r
       = (r.1.1.1 - r.1.2.1, r.1.2.2 + r.1.1.2) := by
-  refine Prod.ext ?_ ?_ <;> simp [saddleSubgradientHomeomorph, sub_eq_add_neg]
+  refine Prod.ext ?_ ?_ <;> simp [saddleSubdifferentialHomeomorph, sub_eq_add_neg]
 
 /-- `ρ : (u, v) ↦ {(-u*, v*) | (u*, v*) ∈ ∂K (u, v)}` is maximal monotone: it is the partial
 inversion of `∂f`, partial inversion preserves the monotonicity form, and the subdifferential of a
@@ -275,44 +276,44 @@ variable [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ
 omit [FiniteDimensional ℝ U] [NormedAddCommGroup X] [InnerProductSpace ℝ X]
   [FiniteDimensional ℝ X] in
 /-- The concave subdifferential of the `EReal` reading of a finite saddle-function is `∂₁K`. -/
-theorem concaveSubgradient_eq_subgradientFst (K : U × X → ℝ) (p : U × X) :
-    concaveSubgradient (innerₗ U) (fun u => ((K (u, p.2) : ℝ) : EReal)) p.1
-      = subgradientFst Set.univ K p := by
+theorem concaveSubdifferential_eq_subdifferentialFst (K : U × X → ℝ) (p : U × X) :
+    concaveSubdifferential (innerₗ U) (fun u => ((K (u, p.2) : ℝ) : EReal)) p.1
+      = subdifferentialFst Set.univ K p := by
   ext y
-  simp only [mem_concaveSubgradient, mem_subgradientFst, Set.mem_univ, forall_const,
+  simp only [mem_concaveSubdifferential, mem_subdifferentialFst, Set.mem_univ, forall_const,
     innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
 
 omit [NormedAddCommGroup U] [InnerProductSpace ℝ U] [FiniteDimensional ℝ U]
   [FiniteDimensional ℝ X] in
 /-- The subdifferential of the `EReal` reading of a finite saddle-function is `∂₂K`. -/
-theorem subgradient_eq_subgradientSnd (K : U × X → ℝ) (p : U × X) :
-    subgradient (innerₗ X) (fun x => ((K (p.1, x) : ℝ) : EReal)) p.2
-      = subgradientSnd Set.univ K p := by
+theorem subdifferential_eq_subdifferentialSnd (K : U × X → ℝ) (p : U × X) :
+    subdifferential (innerₗ X) (fun x => ((K (p.1, x) : ℝ) : EReal)) p.2
+      = subdifferentialSnd Set.univ K p := by
   ext y
-  simp only [mem_subgradient, mem_subgradientSnd, Set.mem_univ, forall_const,
+  simp only [mem_subdifferential, mem_subdifferentialSnd, Set.mem_univ, forall_const,
     innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- Over the whole space the `EReal`-valued and the real-valued `∂K` are the same set; the
 definitions differ only in where their junk values live. -/
-theorem saddleSubgradient_eq_subgradientSaddle (K : U × X → ℝ) (p : U × X) :
-    saddleSubgradient (innerₗ U) (innerₗ X) (fun q => ((K q : ℝ) : EReal)) p
-      = subgradientSaddle Set.univ Set.univ K p := by
-  have h : saddleSubgradient (innerₗ U) (innerₗ X) (fun q => ((K q : ℝ) : EReal)) p
-      = concaveSubgradient (innerₗ U) (fun u => ((K (u, p.2) : ℝ) : EReal)) p.1
-        ×ˢ subgradient (innerₗ X) (fun x => ((K (p.1, x) : ℝ) : EReal)) p.2 := rfl
-  rw [h, concaveSubgradient_eq_subgradientFst, subgradient_eq_subgradientSnd]
+theorem saddleSubdifferential_eq_subdifferentialSaddle (K : U × X → ℝ) (p : U × X) :
+    saddleSubdifferential (innerₗ U) (innerₗ X) (fun q => ((K q : ℝ) : EReal)) p
+      = subdifferentialSaddle Set.univ Set.univ K p := by
+  have h : saddleSubdifferential (innerₗ U) (innerₗ X) (fun q => ((K q : ℝ) : EReal)) p
+      = concaveSubdifferential (innerₗ U) (fun u => ((K (u, p.2) : ℝ) : EReal)) p.1
+        ×ˢ subdifferential (innerₗ X) (fun x => ((K (p.1, x) : ℝ) : EReal)) p.2 := rfl
+  rw [h, concaveSubdifferential_eq_subdifferentialFst, subdifferential_eq_subdifferentialSnd]
   rfl
 
 omit [FiniteDimensional ℝ U] [FiniteDimensional ℝ X] in
 /-- For the `EReal`-valued subdifferential as well: where a finite concave-convex `K` has a
 gradient, `∂K` is the single point `(∇₁K, ∇₂K)`. -/
-theorem saddleSubgradient_eq_singleton_of_hasSaddleGradientAt
+theorem saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt
     (hK : ConcaveConvexOn (Set.univ : Set U) (Set.univ : Set X) K) {q p : U × X}
     (hd : HasSaddleGradientAt K q p) :
-    saddleSubgradient (innerₗ U) (innerₗ X) (fun z => ((K z : ℝ) : EReal)) p = {q} := by
-  rw [saddleSubgradient_eq_subgradientSaddle]
-  exact subgradientSaddle_eq_singleton_of_hasSaddleGradientAt isOpen_univ isOpen_univ hK
+    saddleSubdifferential (innerₗ U) (innerₗ X) (fun z => ((K z : ℝ) : EReal)) p = {q} := by
+  rw [saddleSubdifferential_eq_subdifferentialSaddle]
+  exact subdifferentialSaddle_eq_singleton_of_hasSaddleGradientAt isOpen_univ isOpen_univ hK
     (Set.mem_univ _) (Set.mem_univ _) hd
 
 /-- **Rockafellar's `ρ` for a differentiable `K`** is the graph of
@@ -325,10 +326,10 @@ theorem saddleMonotoneRel_eq_setOf_hasSaddleGradientAt
   ext r
   obtain ⟨q, hq⟩ := (differentiableAt_iff_exists_hasSaddleGradientAt K r.1).1 (hdiff r.1)
   rw [Set.mem_ofPred_eq, mem_saddleMonotoneRel, flip_eq_self,
-    saddleSubgradient_eq_singleton_of_hasSaddleGradientAt hK hq, Set.mem_singleton_iff]
+    saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq, Set.mem_singleton_iff]
   refine ⟨fun h => h ▸ hq, fun h => ?_⟩
-  have hsing := saddleSubgradient_eq_singleton_of_hasSaddleGradientAt hK h
-  rw [saddleSubgradient_eq_singleton_of_hasSaddleGradientAt hK hq] at hsing
+  have hsing := saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK h
+  rw [saddleSubdifferential_eq_singleton_of_hasSaddleGradientAt hK hq] at hsing
   exact (Set.singleton_eq_singleton_iff.1 hsing).symm
 
 /-- If `K` is everywhere finite and differentiable, `(u, v) ↦ (-∇₁K (u, v), ∇₂K (u, v))` is

@@ -332,7 +332,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 
 /-- The pairing `B` is **continuous** in its first variable: every `⟨·, y⟩` is a continuous linear
 functional on `E`. This is all that closedness needs — `closedFn_conj`, `conj_clFn`,
-`isClosed_polarCone`, `isClosed_subgradient` — and it is strictly weaker than
+`isClosed_polarCone`, `isClosed_subdifferential` — and it is strictly weaker than
 `IsCompatiblePairing`. -/
 class IsContinuousPairing (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) : Prop where
   /-- Every `⟨·, y⟩` is continuous. -/

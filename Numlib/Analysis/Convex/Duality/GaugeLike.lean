@@ -36,7 +36,7 @@ inequality, read as a conjugacy.
 ## Main results
 
 * `monotoneHalfLineFn_monotoneConj`, `monotoneConj_monotoneConj` — the class is stable under
-  `monotoneConj`, and `g⁺⁺ = g` (Theorem 12.4 in [^1]).
+  `monotoneConj`, and `g⁺⁺ = g` ([rockafellar1970convex] Theorem 12.4).
 * `closedProperConvexFn_monotoneComp`, `setOf_monotoneComp_le_eq_smul` — for a non-constant `g`,
   `g ∘ k` is closed proper convex, and its sublevel sets are all dilates of `{k ≤ 1}`.
 * `conj_monotoneComp` — `(g ∘ k)* = g⁺ ∘ k°` for a closed gauge `k`.
@@ -49,7 +49,8 @@ inequality, read as a conjugacy.
   polar sets.
 * `closedProperConvexFn_and_isGaugeLike_iff` — a function is closed proper convex and gauge-like
   exactly when it is `g ∘ k` for a closed gauge `k` and a non-constant `MonotoneHalfLineFn g`
-  (Theorem 15.3 in [^1]). `IsGaugeLike.exists_eq_monotoneComp` is the reconstruction half.
+  ([rockafellar1970convex] Theorem 15.3). `IsGaugeLike.exists_eq_monotoneComp` is the reconstruction
+  half.
 
 ## Implementation notes
 
@@ -60,7 +61,7 @@ conjugacy formula itself does not need it.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12 and §15.
+* [rockafellar1970convex] §12 and §15.
 -/
 
 open scoped Pointwise

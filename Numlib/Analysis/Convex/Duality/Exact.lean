@@ -32,10 +32,11 @@ and the sufficient conditions for them are proved in the module that owns each h
 * `conj_add_le_infConv`, `conj_compLin_le_mapLin`, `conj_finsetSum_le_sum_toInfConvFn` — the
   *unconditional* halves: `(f + g)* ≤ f* □ g*` and `(g A)* ≤ A' (g*)`, with no hypothesis at all.
 * `IsExactSum.conj_add`, `IsExactSum.exists_conj_add_eq` — the exact half for a sum:
-  `(f + g)* = f* □ g*` with the infimal convolution attained (Theorem 16.4 in [^1]);
+  `(f + g)* = f* □ g*` with the infimal convolution attained ([rockafellar1970convex] Theorem 16.4);
   `IsExactFinsetSum.conj_finsetSum` is the `m`-ary form.
-* `IsExactImage.conj_compLin`, `IsExactImage.exists_conj_compLin_eq` — the exact half for an
-  inverse image: `(g A)* = A' (g*)`, the infimum over the fibre attained (Theorem 16.3 in [^1]).
+* `IsExactImage.conj_compLin`, `IsExactImage.exists_conj_compLin_eq` — the exact half for an inverse
+  image: `(g A)* = A' (g*)`, the infimum over the fibre attained
+  ([rockafellar1970convex] Theorem 16.3).
 * `IsExactFinsetSum.singleton`, `.cons`, `.of_split` — the family interface built out of binary
   ones, which is how every `m`-ary constraint qualification is discharged.
 * `IsExactSum.proper_add`, `IsExactFinsetSum.proper_finsetSum`, `IsExactImage.proper_compLin` —
@@ -60,7 +61,7 @@ the empty family is not exact, just as two functions with disjoint effective dom
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16, §20, §23, §31.
+* [rockafellar1970convex] §16, §20, §23, §31.
 -/
 
 open Pointwise

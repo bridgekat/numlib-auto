@@ -27,8 +27,8 @@ exactly where the answer must not depend on the base point `x`, and is always ca
 
 * `posHomogeneous_recessionFn`, `convexFn_recessionFn`, `proper_recessionFn` — `f0⁺` is positively
   homogeneous and convex, proper when `f` is proper and closed when `f` is closed; and
-  `recessionFn_apply_eq_iSup_sub`: `(f0⁺) y = sup {f (x + y) - f x | x ∈ dom f}`, reached for
-  closed `f` by the difference quotients at any one `x ∈ dom f` (Theorem 8.5 in [^1]).
+  `recessionFn_apply_eq_iSup_sub`: `(f0⁺) y = sup {f (x + y) - f x | x ∈ dom f}`, reached for closed
+  `f` by the difference quotients at any one `x ∈ dom f` ([rockafellar1970convex] Theorem 8.5).
 * `recessionFn_isLeast` — `f0⁺` is the least `h` with `f z ≤ f x + h (z - x)`.
 * `tendsto_smulRight_recessionFn` — `(f0⁺) y = lim_{a ↓ 0} (fa) y`.
 * `antitone_along_of_liminf_lt_top`, `forall_antitone_iff_recessionFn_nonpos` — a convex `f` that
@@ -44,7 +44,7 @@ exactly where the answer must not depend on the base point `x`, and is always ca
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §8.
+* [rockafellar1970convex] §8.
 -/
 
 open Filter Pointwise Set Topology

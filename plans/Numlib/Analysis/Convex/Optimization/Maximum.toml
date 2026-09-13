@@ -43,4 +43,4 @@ id = 'ConvexFn.iSup_extremePoints'
 id = 'exists_mem_extremePoints_isMaxOn_of_isCompact'
 
 [[node]]
-id = 'mem_normalCone_of_mem_subgradient_of_isMaxOn'
+id = 'mem_normalCone_of_mem_subdifferential_of_isMaxOn'

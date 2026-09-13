@@ -22,7 +22,7 @@ reason: it needs a relative interior, hence a topology and a finite dimension.
   effective domain and is proper.
 * `CofiniteBifun.bracket_lt_top`, `cofiniteBifun_of_forall_bracket_lt_top` — a closed convex
   bifunction is co-finite exactly when `⟨Fu, y⟩` is finite for every `u` and `y`
-  (Corollary 13.3.1 in [^1], slice by slice).
+  ([rockafellar1970convex] Corollary 13.3.1, slice by slice).
 * `cofinite_infConv`, `cofiniteBifun_infConvBifun`, `adjointBifun_infConvBifun_of_cofinite` —
   Rockafellar's closing remark: `F₁ □ F₂` is co-finite and `(F₁ □ F₂)* = F₁* □ F₂*`, with no
   hypothesis beyond co-finiteness. `cofinite_smulRight` and `cofiniteBifun_smulRightBifun` are the
@@ -46,7 +46,7 @@ discharged, because the functions being added are finite on the whole space and
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §38 and §13.
+* [rockafellar1970convex] §38 and §13.
 -/
 
 open Set

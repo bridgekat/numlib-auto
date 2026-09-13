@@ -150,7 +150,7 @@ case `C = univ` of the variational inequality. The subgradient form of this suff
 nondifferentiable convex `f`, `g j` and affine equality constraints in `ℝⁿ`, with
 `0 ∈ ∂f(x) + ∑ μ_j ∂g_j(x)` in place of the variational inequality — is Rockafellar Theorem 28.3,
 `Rockafellar.OrdinaryConvexProgram.theorem_28_3_kuhnTucker` (`NumlibSurface/Rockafellar/Part6/
-Section28`), whose backbone core is `ConvexAnalysis.le_of_mem_subgradient_of_neg_mem_normalCone`;
+Section28`), whose backbone core is `ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone`;
 this node keeps the Gâteaux form because it allows a nonlinear equality constraint with a free
 multiplier whenever `μ · h` is convex on `C`, which is what Property 7.15 asks. ★★'''
 deps = []

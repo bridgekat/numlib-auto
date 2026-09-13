@@ -13,7 +13,7 @@ separating hyperplane can in addition be required not to contain the other set.
 
 * `exists_separates_not_subset_iff_disjoint_relint` — a nonempty polyhedral `C₁` and a nonempty
   convex `C₂` separate by a hyperplane missing `C₂` exactly when `C₁` misses `ri C₂`
-  (Theorem 20.2 in [^1]).
+  ([rockafellar1970convex] Theorem 20.2).
 * `disjoint_relint_of_separates_of_not_subset` — its easy half, which needs no polyhedrality.
 * `nonempty_inter_relint_iff_forall_supportFn` — the same condition read through support functions.
 * `supportFn_le_neg_supportFn_neg_iff` — the dictionary entry it rests on: `δ*(y | s)` is at most
@@ -34,7 +34,7 @@ relative interior is computed.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20.
+* [rockafellar1970convex] §20.
 -/
 
 open Set

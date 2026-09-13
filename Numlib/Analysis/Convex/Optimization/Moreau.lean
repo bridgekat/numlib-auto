@@ -24,9 +24,10 @@ in `Optimization/MoreauGradient.lean`.
 
 * `conj_quadFn` — the quadratic is self-conjugate under its own pairing.
 * `conj_quadFn_sub` — `(w (z - ·))* y = B z y + w y`.
-* `moreau_add` — **Moreau's decomposition**: `(f □ w) z + (f* □ w) z = w z` (Theorem 31.5 in [^1]).
+* `moreau_add` — **Moreau's decomposition**: `(f □ w) z + (f* □ w) z = w z`
+  ([rockafellar1970convex] Theorem 31.5).
 * `infConv_quadFn_ne_top`, `infConv_quadFn_ne_bot` — both Moreau envelopes are finite.
-* `mem_subgradient_iff_infConv_eq` — the Kuhn–Tucker conditions attached to a splitting
+* `mem_subdifferential_iff_infConv_eq` — the Kuhn–Tucker conditions attached to a splitting
   `z = x + y`.
 
 ## Implementation notes
@@ -40,7 +41,7 @@ recovered by `quadFn_innerL`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31.
+* [rockafellar1970convex] §31.
 -/
 
 open RealInnerProductSpace
@@ -311,9 +312,9 @@ private theorem finite_of_add_eq_coe {A C : EReal} (hA : A ≠ ⊥) (hC : C ≠ 
 Fenchel's inequality makes the left side at least `w z`, which is the sum of the two infima.
 
 That such a splitting exists and is unique is `Optimization/Prox.lean`. -/
-theorem mem_subgradient_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
+theorem mem_subdifferential_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
     (hz : x + y = z) :
-    y ∈ subgradient (B) f x ↔
+    y ∈ subdifferential (B) f x ↔
       f x + quadFn B y = infConv f (quadFn B) z ∧
         conj B f y + quadFn B x = infConv (conj B f) (quadFn B) z := by
   have hzx : z - x = y := by rw [← hz]; abel
@@ -335,7 +336,7 @@ theorem mem_subgradient_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
   constructor
   · intro hmem
     have hfen : f x + conj B f y = ((B x y : ℝ) : EReal) :=
-      hf.proper.mem_subgradient_iff_add_conj_eq.1 hmem
+      hf.proper.mem_subdifferential_iff_add_conj_eq.1 hmem
     have hsum : (f x + quadFn B y) + (conj B f y + quadFn B x)
         = infConv f (quadFn B) z + infConv (conj B f) (quadFn B) z := by
       rw [hkey, hfen, hwz, moreau_add (B := B) hf z]
@@ -369,7 +370,7 @@ theorem mem_subgradient_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
     have hsum : (f x + conj B f y) + ((B x x / 2 + B y y / 2 : ℝ) : EReal)
         = ((B z z / 2 : ℝ) : EReal) := by
       rw [← hkey, h1, h2, moreau_add hf z, quadFn_apply]
-    rw [hf.proper.mem_subgradient_iff_add_conj_eq, eq_coe_of_add_coe_eq_coe hsum,
+    rw [hf.proper.mem_subdifferential_iff_add_conj_eq, eq_coe_of_add_coe_eq_coe hsum,
       EReal.coe_eq_coe_iff, ← hz]
     have h := self_pairing_add (B := B) x y
     linarith

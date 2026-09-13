@@ -2,10 +2,10 @@ import Numlib.Analysis.Convex.Polyhedral.Function
 import Numlib.Analysis.Convex.Polyhedral.Recession
 import Numlib.Analysis.Convex.Recession.Closedness
 import Numlib.Analysis.Convex.Recession.Conjugate
-import Numlib.Analysis.Convex.Subgradient.Approx
-import Numlib.Analysis.Convex.Subgradient.Calculus
-import Numlib.Analysis.Convex.Subgradient.Existence
-import Numlib.Analysis.Convex.Subgradient.Uniqueness
+import Numlib.Analysis.Convex.Subdifferential.Approx
+import Numlib.Analysis.Convex.Subdifferential.Calculus
+import Numlib.Analysis.Convex.Subdifferential.Existence
+import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 
 /-!
 # The minimum of a convex function
@@ -24,25 +24,26 @@ polyhedral.
 
 ## Main results
 
-* `mem_argmin_iff_zero_mem_subgradient` — `x` minimises `f` exactly when `0 ∈ ∂f x`.
-* `conj_apply_zero` (of `Duality/Level`), `argmin_eq_subgradient_conj_zero`,
+* `mem_argmin_iff_zero_mem_subdifferential` — `x` minimises `f` exactly when `0 ∈ ∂f x`.
+* `conj_apply_zero` (of `Duality/Level`), `argmin_eq_subdifferential_conj_zero`,
   `iInf_ne_bot_and_argmin_eq_empty_iff`,
   `argmin_nonempty_and_isBounded_iff_zero_mem_interior_dom_conj`, `supportFn_setOf_le`,
   `argmin_eq_singleton_iff_hasGradientAtFn_conj_zero`, `supportFn_argmin`,
   `recessionCone_setOf_le_eq_polarCone_dom_conj`, `iInf_supportFn_setOf_le` — the minimum set and
-  the optimal value read off the conjugate at the origin (Theorem 27.1 in [^1], clauses (a)–(h)).
+  the optimal value read off the conjugate at the origin ([rockafellar1970convex] Theorem 27.1,
+  clauses (a)–(h)).
 * `isCompact_setOf_le` — a level set of a closed proper convex function with no direction of
   recession is compact; `argmin_nonempty_of_recessionConeFn_eq_zero`,
   `isCompact_argmin_of_recessionConeFn_eq_zero`, `exists_pos_forall_exists_mem_argmin_dist_lt` —
-  existence of a minimiser, and well-posedness (Theorem 27.2 in [^1]); `tendsto_infDist_argmin`
-  and `tendsto_of_argmin_eq_singleton` — the behaviour of minimising nets.
+  existence of a minimiser, and well-posedness ([rockafellar1970convex] Theorem 27.2);
+  `tendsto_infDist_argmin` and `tendsto_of_argmin_eq_singleton` — the behaviour of minimising nets.
 * `exists_forall_le_of_recessionConeFn_inter_eq_zero`,
   `exists_forall_le_of_inter_subset_constancySpace_inter_linealitySpace`,
   `exists_forall_le_of_polyhedral_of_inter_subset_constancySpace` — attainment over a closed convex
-  set in its basic, general and polyhedral forms (Theorem 27.3 in [^1]), with
+  set in its basic, general and polyhedral forms ([rockafellar1970convex] Theorem 27.3), with
   `argmin_nonempty_of_polyhedralFn` for a polyhedral objective.
-* `le_of_mem_subgradient_of_neg_mem_normalCone`, `exists_mem_subgradient_neg_mem_normalCone` — the
-  optimality condition for minimising over a convex set, sufficiency and necessity.
+* `le_of_mem_subdifferential_of_neg_mem_normalCone`, `exists_mem_subdifferential_neg_mem_normalCone`
+  — the optimality condition for minimising over a convex set, sufficiency and necessity.
 * `argmin_sepSum`, `dom_sepSum` — a **separable** objective `x ↦ ∑ᵢ hᵢ(xᵢ)` on a dependent finite
   product is minimised coordinatewise: the *decomposition principle*.
 
@@ -56,8 +57,7 @@ uses sequences, except `isBounded_range_of_tendsto_iInf`, whose conclusion is ab
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §27. Both level-set
-  formulas of clause (i) are in `Duality/Level.lean`.
+* [rockafellar1970convex] §27. Both level-set formulas of clause (i) are in `Duality/Level.lean`.
 -/
 
 open Set Pointwise
@@ -133,8 +133,8 @@ theorem argmax_eq_argmin_neg (g : E → EReal) : argmax g = argmin fun z => -(g 
   Set.ext fun _ => forall_congr' fun _ => EReal.neg_le_neg_iff.symm
 
 /-- Minimising is `0 ∈ ∂f x`, by the definition of a subgradient. -/
-theorem mem_argmin_iff_zero_mem_subgradient (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
-    x ∈ argmin f ↔ (0 : F) ∈ subgradient B f x := by
+theorem mem_argmin_iff_zero_mem_subdifferential (B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ) (f : E → EReal) (x : E) :
+    x ∈ argmin f ↔ (0 : F) ∈ subdifferential B f x := by
   constructor
   · intro h z; simpa using h z
   · intro h z; simpa using h z
@@ -259,12 +259,12 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 /-- **The minimum set of a closed convex function is `∂f*(0)`**; in particular the infimum is
 attained exactly when `f*` is subdifferentiable at the origin. This is the subgradient inequality
 for `f*` at the origin, where Fenchel–Moreau turns `f**` back into `f`. -/
-theorem argmin_eq_subgradient_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) :
-    argmin f = subgradient B.flip (conj B f) 0 := by
+theorem argmin_eq_subdifferential_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) :
+    argmin f = subdifferential B.flip (conj B f) 0 := by
   ext x
   have hbi : conj B.flip (conj B f) x = f x := congrFun (biconj_eq_self hf hc) x
   have hpair : ((B.flip 0 x : ℝ) : EReal) = 0 := by simp
-  rw [mem_argmin_iff_le_iInf, iInf_eq_neg_conj_zero B, mem_subgradient_iff_add_conj_le, hbi,
+  rw [mem_argmin_iff_le_iInf, iInf_eq_neg_conj_zero B, mem_subdifferential_iff_add_conj_le, hbi,
     hpair, ← EReal.le_sub_iff_add_le (.inr (by simp)) (.inr (by simp)), zero_sub,
     EReal.le_neg]
 
@@ -296,7 +296,7 @@ variable {E F : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module 
 /-- **Sufficiency of the optimality condition**: if some `y ∈ ∂h x` has `-y` normal to `C` at `x`,
 then `h` attains its infimum over `C` at `x`. No hypothesis is needed — the subgradient inequality
 and the normality inequality simply add. -/
-theorem le_of_mem_subgradient_of_neg_mem_normalCone (hy : y ∈ subgradient B h x)
+theorem le_of_mem_subdifferential_of_neg_mem_normalCone (hy : y ∈ subdifferential B h x)
     (hn : -y ∈ normalCone B C x) {z : E} (hz : z ∈ C) : h x ≤ h z := by
   have h2 : B (z - x) (-y) ≤ 0 := hn z hz
   rw [map_neg, neg_nonpos] at h2
@@ -329,13 +329,13 @@ theorem forall_le_of_mem_argmin_add_indicatorFn (hx : x ∈ argmin (h + indicato
 /-- **Necessity**: when the sum `h + δ(· | C)` is exact, every point where `h` attains its infimum
 over `C` carries a subgradient `y ∈ ∂h x` with `-y` normal to `C`. The book's two hypotheses are
 two ways of supplying that exactness. -/
-theorem exists_mem_subgradient_neg_mem_normalCone (hex : IsExactSum B h (indicatorFn C))
+theorem exists_mem_subdifferential_neg_mem_normalCone (hex : IsExactSum B h (indicatorFn C))
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
-    ∃ y ∈ subgradient B h x, -y ∈ normalCone B C x := by
-  have hzero : (0 : F) ∈ subgradient B (h + indicatorFn C) x :=
-    (mem_argmin_iff_zero_mem_subgradient B _ x).1
+    ∃ y ∈ subdifferential B h x, -y ∈ normalCone B C x := by
+  have hzero : (0 : F) ∈ subdifferential B (h + indicatorFn C) x :=
+    (mem_argmin_iff_zero_mem_subdifferential B _ x).1
       (mem_argmin_add_indicatorFn_of_forall hex.proper_left hx hmin)
-  rw [hex.subgradient_add x, subgradient_indicatorFn hx] at hzero
+  rw [hex.subdifferential_add x, subdifferential_indicatorFn hx] at hzero
   obtain ⟨y, hy, n, hn, hsum⟩ := hzero
   have hs : y + n = 0 := hsum
   have hny : -y = n := by
@@ -1131,7 +1131,7 @@ directional derivative of `f*` at the origin. -/
 theorem supportFn_argmin (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
     (hbdd : conj B f 0 ≠ ⊤) :
     supportFn B (argmin f) = clFn (dirDeriv (conj B f) 0) := by
-  rw [argmin_eq_subgradient_conj_zero (B := B) hf hc,
+  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc,
     clFn_dirDeriv (B := B.flip) (convexFn_conj B f) hbdd (conj_ne_bot hp.dom_nonempty 0),
     LinearMap.flip_flip]
 
@@ -1139,13 +1139,13 @@ omit [FiniteDimensional ℝ E] [FiniteDimensional ℝ F] [IsCompatiblePairing B.
 /-- The level sets of `f` above its infimum are exactly the ε-subdifferentials of `f*` at the
 origin. Fenchel–Moreau plus `f*(0) = -inf f`: `z ∈ ∂_ε f*(0)` says `⟨z, y⟩ - f*(y) ≤ inf f + ε` for
 every `y`, whose supremum on the left is `f**(z) = f(z)`. -/
-theorem epsSubgradient_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+theorem epsSubdifferential_conj_zero (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
-    epsSubgradient B.flip ε (conj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
+    epsSubdifferential B.flip ε (conj B f) 0 = {z : E | f z ≤ ((μ + ε : ℝ) : EReal)} := by
   have hc0 : conj B f 0 = ((-μ : ℝ) : EReal) := by
     rw [conj_apply_zero, hμ, EReal.coe_neg]
   ext z
-  rw [Set.mem_ofPred_eq, mem_epsSubgradient]
+  rw [Set.mem_ofPred_eq, mem_epsSubdifferential]
   have hstep : ∀ y : F, (conj B f 0 + ((B.flip (y - 0) z : ℝ) : EReal)
         ≤ conj B f y + (ε : EReal))
       ↔ (((B.flip y z : ℝ) : EReal) - conj B f y ≤ ((μ + ε : ℝ) : EReal)) := fun y => by
@@ -1172,9 +1172,10 @@ theorem iInf_supportFn_setOf_le (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper
     rw [conj_apply_zero, hμ, EReal.coe_neg]
   have hepi : IsClosed (epi (conj B f)) :=
     ClosedProperConvexFn.isClosed_epi ⟨convexFn_conj B f, closedFn_conj, hcp⟩
-  rw [← dirDeriv_eq_iInf_supportFn_epsSubgradient (B := B.flip) (convexFn_conj B f) hcp hepi hc0 y]
+  rw [← dirDeriv_eq_iInf_supportFn_epsSubdifferential (B := B.flip) (convexFn_conj B f) hcp hepi
+    hc0 y]
   refine iInf_congr fun ε => iInf_congr fun hε => ?_
-  rw [epsSubgradient_conj_zero hf hc hp hμ ε, LinearMap.flip_flip]
+  rw [epsSubdifferential_conj_zero hf hc hp hμ ε, LinearMap.flip_flip]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 /-- A proper function takes a value below `⊤` somewhere, so its infimum is never `⊤`. Together
@@ -1195,8 +1196,8 @@ theorem iInf_ne_bot_and_argmin_eq_empty_iff (hf : ConvexFn f) (hc : ClosedFn f) 
     rw [conj_apply_zero, ne_eq, ne_eq, EReal.neg_eq_top_iff]
   rw [hiff, and_congr_right_iff]
   intro ht
-  rw [argmin_eq_subgradient_conj_zero (B := B) hf hc,
-    subgradient_eq_empty_iff_exists_dirDeriv_eq_bot (B := B.flip) (convexFn_conj B f) ht hb]
+  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc,
+    subdifferential_eq_empty_iff_exists_dirDeriv_eq_bot (B := B.flip) (convexFn_conj B f) ht hb]
 
 end ConjugateAtZero
 
@@ -1204,7 +1205,7 @@ end ConjugateAtZero
 
 The minimum set *is* `∂f*(0)`, and a subdifferential is a singleton exactly at a point of
 differentiability; what follows is the two composed. No reflexivity is needed: the subdifferential
-in question is `subgradient B.flip (conj B f) 0`, a subset of `E`. -/
+in question is `subdifferential B.flip (conj B f) 0`, a subset of `E`. -/
 
 section UniqueMinimiser
 
@@ -1219,9 +1220,9 @@ space `f*` lives on. -/
 theorem hasGradientAtFn_conj_zero_of_argmin_eq_singleton (hf : ConvexFn f) (hc : ClosedFn f)
     (hp : Proper f) (h : argmin f = {x}) :
     HasGradientAtFn (conj B f) (evalCLM B.flip x) 0 :=
-  hasGradientAtFn_evalCLM_of_subgradient_eq_singleton (B := B.flip) (convexFn_conj B f)
+  hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton (B := B.flip) (convexFn_conj B f)
     (proper_conj ⟨hf, hc, hp⟩)
-    (by rw [← argmin_eq_subgradient_conj_zero (B := B) hf hc]; exact h)
+    (by rw [← argmin_eq_subdifferential_conj_zero (B := B) hf hc]; exact h)
 
 omit [FiniteDimensional ℝ F] in
 /-- **Sufficiency**: if `f*` is differentiable at the origin with `∇f*(0) = ⟨·, x⟩`, then `x` is
@@ -1236,8 +1237,8 @@ theorem argmin_eq_singleton_of_hasGradientAtFn_conj_zero (hf : ConvexFn f) (hc :
     (h : HasGradientAtFn (conj B f) (evalCLM B.flip x) 0) : argmin f = {x} := by
   have hcf : ConvexFn (conj B f) := convexFn_conj B f
   have hprop : Proper (conj B f) := HasGradientAtFn.proper hcf h
-  rw [argmin_eq_subgradient_conj_zero (B := B) hf hc]
-  refine subgradient_eq_singleton_of_dirDeriv_eq (B := B.flip)
+  rw [argmin_eq_subdifferential_conj_zero (B := B) hf hc]
+  refine subdifferential_eq_singleton_of_dirDeriv_eq (B := B.flip)
     (injective_of_separatingDual B)
     ((mem_dom.1 (interior_subset (HasGradientAtFn.mem_interior_dom h))).ne) (hprop.ne_bot 0)
     fun v => ?_

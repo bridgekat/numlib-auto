@@ -20,7 +20,7 @@ id = 'isAdjointPair_euclideanProdEquiv'
 id = 'conj_comp_euclideanProdEquiv'
 
 [[node]]
-id = 'subgradient_comp_euclideanProdEquiv'
+id = 'subdifferential_comp_euclideanProdEquiv'
 
 [[node]]
 id = 'relint_image_euclideanProdEquiv'

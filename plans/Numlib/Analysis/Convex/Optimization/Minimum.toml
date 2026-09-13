@@ -4,7 +4,7 @@ namespace = 'ConvexAnalysis'
 id = 'argmin'
 
 [[node]]
-id = 'mem_argmin_iff_zero_mem_subgradient'
+id = 'mem_argmin_iff_zero_mem_subdifferential'
 
 [[node]]
 id = 'dom_sepSum'
@@ -13,16 +13,16 @@ id = 'dom_sepSum'
 id = 'argmin_sepSum'
 
 [[node]]
-id = 'argmin_eq_subgradient_conj_zero'
+id = 'argmin_eq_subdifferential_conj_zero'
 
 [[node]]
 id = 'recessionCone_setOf_le_eq_polarCone_dom_conj'
 
 [[node]]
-id = 'le_of_mem_subgradient_of_neg_mem_normalCone'
+id = 'le_of_mem_subdifferential_of_neg_mem_normalCone'
 
 [[node]]
-id = 'exists_mem_subgradient_neg_mem_normalCone'
+id = 'exists_mem_subdifferential_neg_mem_normalCone'
 
 [[node]]
 id = 'isCompact_setOf_le'

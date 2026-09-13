@@ -27,19 +27,21 @@ vector, composition, the inner product — and describes how each behaves under 
   side a supremal convolution (`supConvBifun`) of concave bifunctions, with `bracket_infConvBifun`
   the bracket identity behind it; and `adjointBifun_smulRightBifun`, `(Fλ)* = F*λ` for `λ > 0`.
 * **The conjugate of an image** — `conj_imageBifun`, `exists_conj_imageBifun_eq`: `(Ff)* = F⁎* f*`,
-  infimum attained (Theorem 38.4 in [^1]); `conj_imageBifun_of_bracket_eq_top` is the degenerate
-  branch `y ∉ dom F*`, and `closedBifun_lowerAdjointBifun` says `F⁎*` is closed for *any* `F`.
+  infimum attained ([rockafellar1970convex] Theorem 38.4); `conj_imageBifun_of_bracket_eq_top` is
+  the degenerate branch `y ∉ dom F*`, and `closedBifun_lowerAdjointBifun` says `F⁎*` is closed for
+  *any* `F`.
 * **The adjoint of a product** — `inverseBifun_compBifun`, `adjointBifun_compBifun`,
   `lowerAdjointBifun_compBifun`: `(GF)⁎ = F⁎ G⁎`, `(GF)* = F* G*` with the supremum attained, and
-  `(GF)⁎* = (G⁎*)(F⁎*)` (Theorem 38.5 in [^1]); `lowerAdjointBifun_infConvFstBifun` is
-  `(H₁ ⊡ H₂)⁎* = H₁⁎* □ H₂⁎*`.
+  `(GF)⁎* = (G⁎*)(F⁎*)` ([rockafellar1970convex] Theorem 38.5); `lowerAdjointBifun_infConvFstBifun`
+  is `(H₁ ⊡ H₂)⁎* = H₁⁎* □ H₂⁎*`.
 * **The closed case** — for closed proper convex arguments each operation is closed, its defining
   extremum is attained, and the adjoint of the result is the *closure* of the corresponding
   product or convolution (`closedBifun_compBifun` and the `_eq_clBifun` results).
 * **The inner product** — `fenchelSup_le_fenchelInf` is weak duality, with no hypothesis;
   `fenchelPairing_conj` says conjugation reverses `⟨f, g⟩`; `conj_imageBifun_eq_fenchelPairing`
   (`⟨Ff, y⟩ = ⟨f, F* y⟩`) and `bracket_compBifun_eq_fenchelPairing` move an adjoint across it; and
-  `fenchelSup_imageBifun_lowerAdjointBifun` gives `⟨Ff, g*⟩ = ⟨f, F* g*⟩` (Theorem 38.7 in [^1]).
+  `fenchelSup_imageBifun_lowerAdjointBifun` gives `⟨Ff, g*⟩ = ⟨f, F* g*⟩`
+  ([rockafellar1970convex] Theorem 38.7).
 
 ## Implementation notes
 
@@ -60,7 +62,7 @@ are `⊥` on the sup side and `⊤` on the inf side, so the plain `⨆`/`⨅` us
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §38.
+* [rockafellar1970convex] §38.
 -/
 
 open Pointwise

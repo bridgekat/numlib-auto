@@ -25,13 +25,13 @@ id = 'theorem_35_5'
 source = 'Rockafellar 1970, Theorem 35.5'
 
 [[node]]
-id = 'subgrad₁'
+id = 'subdiff₁'
 
 [[node]]
-id = 'subgrad₂'
+id = 'subdiff₂'
 
 [[node]]
-id = 'subgrad'
+id = 'subdiff'
 
 [[node]]
 id = 'theorem_35_6'
@@ -46,7 +46,7 @@ id = 'theorem_35_7_snd'
 source = 'Rockafellar 1970, Theorem 35.7'
 
 [[node]]
-id = 'theorem_35_7_subgrad'
+id = 'theorem_35_7_subdiff'
 source = 'Rockafellar 1970, Theorem 35.7'
 
 [[node]]
@@ -58,7 +58,7 @@ id = 'corollary_35_7_1_snd'
 source = 'Rockafellar 1970, Corollary 35.7.1'
 
 [[node]]
-id = 'corollary_35_7_1_subgrad'
+id = 'corollary_35_7_1_subdiff'
 source = 'Rockafellar 1970, Corollary 35.7.1'
 
 [[node]]

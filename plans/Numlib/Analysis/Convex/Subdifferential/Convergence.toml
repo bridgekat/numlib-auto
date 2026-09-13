@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'tendsto_eval_of_tendsto'
+
+[[node]]
+id = 'eventually_dirDeriv_lt'
+
+[[node]]
+id = 'upperSemicontinuousAt_dirDeriv'
+
+[[node]]
+id = 'eventually_subdifferential_subset_add_closedBall'
+
+[[node]]
+id = 'eventually_nhds_subdifferential_subset_add_closedBall'
+
+[[node]]
+id = 'eventually_dirDeriv_lt_of_tendsto_dir'
+
+[[node]]
+id = 'subdifferential_dirDeriv'
+
+[[node]]
+id = 'eventually_subdifferential_subset_exposed_add_closedBall'

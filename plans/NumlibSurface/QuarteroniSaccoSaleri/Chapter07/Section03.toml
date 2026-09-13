@@ -29,12 +29,12 @@ differentiable on `Ω`, then (7.48) at `xstar ∈ Ω` implies that `xstar` is a 
 on `Ω`, `IsMinOn f Ω xstar`. The `mpr` direction of `isMinOn_iff_forall_lineDeriv_nonneg`
 (`Numlib/Analysis/Convex/Gateaux`) with `HasFDerivAt.hasLineDerivAt`, as checked in the
 prototype. This is the sufficiency half of Rockafellar's Theorem 27.4, and a second route is the
-subgradient form `ConvexAnalysis.le_of_mem_subgradient_of_neg_mem_normalCone`
+subgradient form `ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone`
 (`Numlib/Analysis/Convex/Optimization/Minimum`): (7.48) says `-∇f(x*)` is normal to `Ω` at `x*`
 (`isMinOn_iff_neg_mem_normalCone` in `Numlib/Variational/Inequality/NormalCone` is that reading),
 and `∇f(x*)` is a subgradient at `x*` of `f` extended by `+∞` off `Ω`, by `ConvexOn.add_lineDeriv_le`;
 proving it both ways is a consistency check of the bridge. ★'''
-deps = ["isMinOn_iff_forall_lineDeriv_nonneg", "QuarteroniSaccoSaleri.Chapter07.property_7_9_necessary", "ConvexAnalysis.le_of_mem_subgradient_of_neg_mem_normalCone"]
+deps = ["isMinOn_iff_forall_lineDeriv_nonneg", "QuarteroniSaccoSaleri.Chapter07.property_7_9_necessary", "ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.9'
 
 [[node]]

@@ -24,7 +24,7 @@ Extreme points and exposed faces are Mathlib's `Set.extremePoints` and `IsExpose
 
 ## Main results
 * `IsFace.subset_of_relint_inter_nonempty` — a face absorbs every convex subset of `C` whose
-  relative interior it meets (Theorem 18.1 in [^1]).
+  relative interior it meets ([rockafellar1970convex] Theorem 18.1).
 * `IsFace.eq_inter_closure` — `C' = C ∩ cl C'`; a face of a closed convex set is closed.
 * `IsFace.eq_of_relint_inter_nonempty` — faces whose relative interiors meet are equal.
 * `IsFace.disjoint_relint`, `IsFace.subset_intrinsicFrontier`, `IsFace.finrank_vectorSpan_lt` — a
@@ -33,7 +33,7 @@ Extreme points and exposed faces are Mathlib's `Set.extremePoints` and `IsExpose
   relative interior of a unique face of `C`.
 * `exists_isFace_mem_relint`, `eq_iUnion_relint_isFace`, `IsFace.relint_pairwise_disjoint`,
   `IsFace.relint_maximal` — the relative interiors of the nonempty faces partition `C`, and are
-  exactly the maximal relatively open convex subsets of `C` (Theorem 18.2 in [^1]).
+  exactly the maximal relatively open convex subsets of `C` ([rockafellar1970convex] Theorem 18.2).
 * `exists_notMem_relint_mem_segment` — in a compact set of positive dimension, every relative
   interior point lies on a segment joining two relative boundary points.
 * `convexHull_extremePoints` — **Minkowski's theorem**: a compact convex set is the convex hull of
@@ -41,7 +41,7 @@ Extreme points and exposed faces are Mathlib's `Set.extremePoints` and `IsExpose
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18.
+* [rockafellar1970convex] §18.
 -/
 
 open Set

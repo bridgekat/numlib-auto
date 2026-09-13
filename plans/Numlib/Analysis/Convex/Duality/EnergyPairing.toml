@@ -1,0 +1,23 @@
+[[node]]
+id = 'energyPairing'
+
+[[node]]
+id = 'energyPairing_apply'
+
+[[node]]
+id = 'energyPairing_apply_eq_energyInner'
+
+[[node]]
+id = 'LinearMap.IsSymmetricCoercive.isInnerPairing_energyPairing'
+
+[[node]]
+id = 'pairingNorm_energyPairing'
+
+[[node]]
+id = 'LinearMap.IsSymmetricCoercive.isContinuousInnerPairing_energyPairing'
+
+[[node]]
+id = 'SesqForm.energyPairing_toOperator_apply'
+
+[[node]]
+id = 'SesqForm.IsHermitian.isInnerPairing_energyPairing'

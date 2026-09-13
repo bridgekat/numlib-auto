@@ -184,15 +184,15 @@ theorem theorem_29_1_forall_le :
 are precisely the `u*` with `-u* ∈ ∂(inf F)(0)`. **No convexity is used**, although the book states
 the whole theorem for a convex bifunction: this assertion rearranges the definition. -/
 theorem theorem_29_1 (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
-    v ∈ KuhnTucker (pairing m) F ↔ -v ∈ subgradient (pairing m) (infBifun F) 0 :=
-  mem_kuhnTucker_iff_neg_mem_subgradient ht hb
+    v ∈ KuhnTucker (pairing m) F ↔ -v ∈ subdifferential (pairing m) (infBifun F) 0 :=
+  mem_kuhnTucker_iff_neg_mem_subdifferential ht hb
 
 /-- **Theorem 29.1**, second assertion as an equation of sets: the Kuhn–Tucker set is the reflection
 of `∂(inf F)(0)`. Corollaries 29.1.1–29.1.5 are subdifferential properties transported through
 it. -/
 theorem theorem_29_1_set (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
-    KuhnTucker (pairing m) F = -(subgradient (pairing m) (infBifun F) 0) :=
-  kuhnTucker_eq_neg_subgradient ht hb
+    KuhnTucker (pairing m) F = -(subdifferential (pairing m) (infBifun F) 0) :=
+  kuhnTucker_eq_neg_subdifferential ht hb
 
 end Theorem291
 
@@ -275,20 +275,20 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)} {b : Rn m}
 /-- **Corollary 29.1.3**. At a finite optimal value `(P)` has a *unique* Kuhn–Tucker vector exactly
 when the perturbation function is differentiable at the origin. The book's hypotheses are kept even
 though its proof cites Theorem 25.1, which needs properness that "finite optimal value" does not
-give: properness is free on each side, from `proper_of_mem_subgradient` and
+give: properness is free on each side, from `proper_of_mem_subdifferential` and
 `HasGradientAtFn.proper`. -/
 theorem corollary_29_1_3 (hF : ConvexBifun F) (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     (∃ v : Rn m, KuhnTucker (pairing m) F = {v}) ↔ DifferentiableAtFn (infBifun F) 0 := by
   constructor
   · rintro ⟨v, hv⟩
-    have hsub : subgradient (pairing m) (infBifun F) 0 = {-v} := by
+    have hsub : subdifferential (pairing m) (infBifun F) 0 = {-v} := by
       have h := theorem_29_1_set (F := F) ht hb
       rw [hv] at h
-      have h2 : subgradient (pairing m) (infBifun F) 0 = -({v} : Set (Rn m)) := by
+      have h2 : subdifferential (pairing m) (infBifun F) 0 = -({v} : Set (Rn m)) := by
         rw [h, neg_neg]
       rw [h2, Set.neg_singleton]
-    have hmem : -v ∈ subgradient (pairing m) (infBifun F) 0 := by rw [hsub]; rfl
-    have hp : Proper (infBifun F) := proper_of_mem_subgradient ht hb hmem
+    have hmem : -v ∈ subdifferential (pairing m) (infBifun F) 0 := by rw [hsub]; rfl
+    have hp : Proper (infBifun F) := proper_of_mem_subdifferential ht hb hmem
     exact (theorem_25_1_differentiableAtFn (convexFn_infBifun hF) hp).2 ⟨-v, hsub⟩
   · intro hd
     obtain ⟨c, hc⟩ := differentiableAtFn_iff_exists_hasGradientVecAt.1 hd

@@ -1,0 +1,55 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'subdifferential'
+
+[[node]]
+id = 'subgradientRel'
+
+[[node]]
+id = 'normalCone'
+
+[[node]]
+id = 'normalPointedCone'
+
+[[node]]
+id = 'domSubdifferential'
+
+[[node]]
+id = 'Proper.mem_subdifferential_tfae'
+
+[[node]]
+id = 'proper_of_mem_subdifferential'
+
+[[node]]
+id = 'subdifferential_indicatorFn'
+
+[[node]]
+id = 'dirDeriv'
+
+[[node]]
+id = 'posHomogeneous_dirDeriv'
+
+[[node]]
+id = 'monotoneOn_sub_div'
+
+[[node]]
+id = 'convexFn_dirDeriv'
+
+[[node]]
+id = 'mem_subdifferential_iff_le_dirDeriv'
+
+[[node]]
+id = 'conj_dirDeriv'
+
+[[node]]
+id = 'subgradientRel_conj_eq_inv'
+
+[[node]]
+id = 'subdifferential_clFn'
+
+[[node]]
+id = 'subdifferential_supportFn'
+
+[[node]]
+id = 'clFn_dirDeriv'

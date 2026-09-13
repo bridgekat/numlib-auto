@@ -26,7 +26,7 @@ properness in place of closedness.
   image-closedness has to be named: `bracket Bx F u = conj Bx (F u)` sees only `cl (F u)`.
 * `lowerClosedFn_bracket`, `exists_unique_convexBifun_bracket_eq` — the bracket of a closed convex
   bifunction is lower closed, and every lower closed concave-convex function is the bracket of
-  exactly one closed convex bifunction (Theorem 33.3 in [^1]).
+  exactly one closed convex bifunction ([rockafellar1970convex] Theorem 33.3).
 * `exists_unique_bifun_of_closure_pair` — a pair with `cl₁ K̲ = K̄` and `cl₂ K̄ = K̲` is exactly a
   bracket pair; `le_of_partialCl₂_eq` adds `K̲ ≤ K̄`.
 * `polyhedralFn_bracket`, `polyhedralFn_neg_bracket`, `imageClosedBifun_of_polyhedralBifun`,
@@ -41,7 +41,7 @@ same bracket, so they are equal.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33.
+* [rockafellar1970convex] §33.
 -/
 
 namespace ConvexAnalysis

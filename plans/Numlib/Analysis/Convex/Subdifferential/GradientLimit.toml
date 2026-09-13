@@ -1,0 +1,10 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'dist_le_of_subdifferential_subset'
+
+[[node]]
+id = 'tendsto_of_hasGradientAtFn'
+
+[[node]]
+id = 'tendstoUniformlyOn_fderiv_toReal'

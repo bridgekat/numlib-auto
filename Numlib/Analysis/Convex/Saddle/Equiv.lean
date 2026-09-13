@@ -23,13 +23,13 @@ pairs are exactly the bracket pairs.
 ## Main results
 
 * `partialCl₂_eq_of_mem_saddleClass`, `closedSaddleFn_of_mem_saddleClass` — the closures are
-  constant on the interval and every member of it is closed (Theorem 34.2 in [^1]).
+  constant on the interval and every member of it is closed ([rockafellar1970convex] Theorem 34.2).
 * `exists_unique_bifun_of_closedSaddleFn` — conversely, a closed concave-convex function determines
   a unique closed convex bifunction, with brackets `cl₂ K` and `cl₁ K`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §34.
+* [rockafellar1970convex] §34.
 -/
 
 namespace ConvexAnalysis

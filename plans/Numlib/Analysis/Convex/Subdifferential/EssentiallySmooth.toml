@@ -1,0 +1,10 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'EssentiallySmooth'
+
+[[node]]
+id = 'domSubdifferential_eq_interior_dom_of_essentiallySmooth'
+
+[[node]]
+id = 'subsingleton_subdifferential_iff_essentiallySmooth'

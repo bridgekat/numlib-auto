@@ -273,7 +273,7 @@ structure IsKuhnTuckerVector (P : OrdinaryConvexProgram n m) (u : Rn m) : Prop w
 
 /-- The `m + 1` summands of `h = f₀ + λ₁f₁ + ⋯ + λ_m f_m`, indexed by `Option (Fin m)` with the
 objective in the `none` slot. Theorem 23.8 is stated for a finite family, so this is the shape in
-which the subgradient of `h` is computed. -/
+which the subdifferential of `h` is computed. -/
 noncomputable def lagrangeSummand (u : Rn m) (i : Option (Fin m)) : Rn n → EReal :=
   i.elim P.f₀ fun j x => (u j : EReal) * P.f j x
 
@@ -1358,13 +1358,13 @@ theorem isLagrangeSummand {u : Rn m} (hu : u ∈ P.multiplierCone) {x₀ : Rn n}
     obtain ⟨b, hb⟩ := exists_linFn (LinearMap.toContinuousLinearMap a.linear)
     exact Or.inr ⟨a, b, ha, fun w => by rw [← linFn_apply b w, hb]; rfl⟩
 
-/-- **§28**, the subgradient of `h` decomposed by Theorem 23.8. The multiplier terms with `λᵢ = 0`
-contribute `{0}` and are omitted, exactly as the book's parenthesis in condition (c) says. This is
-the backbone's `subgradient_add_sum_coe_mul` for the family `f₁, …, f_m`. -/
-theorem subgradient_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x : Rn n) :
-    subgradient (pairing n) (P.lagrangeFn u) x
-      = subgradient (pairing n) P.f₀ x
-        + ∑ i ∈ activeIndices u, u i • subgradient (pairing n) (P.f i) x := by
+/-- **§28**, the subdifferential of `h` decomposed by Theorem 23.8. The multiplier terms with
+`λᵢ = 0` contribute `{0}` and are omitted, exactly as the book's parenthesis in condition (c) says.
+This is the backbone's `subdifferential_add_sum_coe_mul` for the family `f₁, …, f_m`. -/
+theorem subdifferential_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x : Rn n) :
+    subdifferential (pairing n) (P.lagrangeFn u) x
+      = subdifferential (pairing n) P.f₀ x
+        + ∑ i ∈ activeIndices u, u i • subdifferential (pairing n) (P.f i) x := by
   obtain ⟨x₀, hx₀⟩ := P.relint_C_nonempty
   have hsep : Function.Injective (pairing n).flip :=
     LinearMap.ker_eq_bot.1
@@ -1374,7 +1374,7 @@ theorem subgradient_lagrangeFn {u : Rn m} (hu : u ∈ P.multiplierCone) (x : Rn 
   have hfn : P.lagrangeFn u = fun y => P.f₀ y + ∑ i, (u i : EReal) * P.f i y :=
     funext fun y => P.lagrangeFn_apply u y
   rw [hactive, hfn]
-  exact subgradient_add_sum_coe_mul hsep P.convexFn_f₀ P.proper_f₀ (P.dom_f₀ ▸ hx₀)
+  exact subdifferential_add_sum_coe_mul hsep P.convexFn_f₀ P.proper_f₀ (P.dom_f₀ ▸ hx₀)
     (fun i _ => P.isLagrangeSummand hu hx₀ i) x
 
 /-- **Theorem 28.3**, second half: the saddle-point condition holds if
@@ -1390,8 +1390,8 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
     (P.IsKuhnTuckerVector u ∧ x ∈ P.optimalSolutions) ↔
       ((∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i ∧ P.f i x ≤ 0 ∧ (u i : EReal) * P.f i x = 0) ∧
         (∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = 0) ∧
-        (0 : Rn n) ∈ subgradient (pairing n) P.f₀ x
-          + ∑ i ∈ activeIndices u, u i • subgradient (pairing n) (P.f i) x) := by
+        (0 : Rn n) ∈ subdifferential (pairing n) P.f₀ x
+          + ∑ i ∈ activeIndices u, u i • subdifferential (pairing n) (P.f i) x) := by
   rw [P.theorem_28_3, P.isSaddlePoint_programLagrangian_iff]
   constructor
   · rintro ⟨hu, hF, heq⟩
@@ -1418,8 +1418,8 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
     refine ⟨fun i hi => ⟨hu i hi, hF.2.1 i hi, ?_⟩, fun i hi => hF.2.2 i hi, ?_⟩
     · rw [hc i, ← EReal.coe_mul, hzero i]
       norm_num
-    · rw [← P.subgradient_lagrangeFn hu x,
-        ← mem_argmin_iff_zero_mem_subgradient (pairing n) (P.lagrangeFn u) x]
+    · rw [← P.subdifferential_lagrangeFn hu x,
+        ← mem_argmin_iff_zero_mem_subdifferential (pairing n) (P.lagrangeFn u) x]
       intro z
       rw [hhx, ← heq]
       exact iInf_le (fun w => P.lagrangeFn u w) z
@@ -1428,7 +1428,7 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
     obtain ⟨v₀, hv₀, -, -, -⟩ := Set.mem_add.1 hcond
     have hxC : x ∈ P.C := by
       rw [← P.dom_f₀]
-      exact mem_dom_of_mem_subgradient P.proper_f₀ hv₀
+      exact mem_dom_of_mem_subdifferential P.proper_f₀ hv₀
     have hu : u ∈ P.multiplierCone := fun i hi => (ha i hi).1
     have hF : x ∈ P.feasibleSet := ⟨hxC, fun i hi => (ha i hi).2.1, hb⟩
     have hhx : P.lagrangeFn u x = P.f₀ x := by
@@ -1437,8 +1437,8 @@ theorem theorem_28_3_kuhnTucker {u : Rn m} {x : Rn n} :
       · exact (ha i hi).2.2
       · rw [hb i hi, mul_zero]
     have hmin : x ∈ argmin (P.lagrangeFn u) := by
-      rw [mem_argmin_iff_zero_mem_subgradient (pairing n) (P.lagrangeFn u) x,
-        P.subgradient_lagrangeFn hu x]
+      rw [mem_argmin_iff_zero_mem_subdifferential (pairing n) (P.lagrangeFn u) x,
+        P.subdifferential_lagrangeFn hu x]
       exact hcond
     exact ⟨hu, hF, by rw [← hhx]; exact iInf_eq_of_mem_argmin hmin⟩
 
@@ -1463,8 +1463,8 @@ theorem corollary_28_3_1_kuhnTucker (hkt : ∃ u : Rn m, P.IsKuhnTuckerVector u)
       ∃ u : Rn m,
         (∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i ∧ P.f i x ≤ 0 ∧ (u i : EReal) * P.f i x = 0) ∧
         (∀ i : Fin m, P.r ≤ (i : ℕ) → P.f i x = 0) ∧
-        (0 : Rn n) ∈ subgradient (pairing n) P.f₀ x
-          + ∑ i ∈ activeIndices u, u i • subgradient (pairing n) (P.f i) x := by
+        (0 : Rn n) ∈ subdifferential (pairing n) P.f₀ x
+          + ∑ i ∈ activeIndices u, u i • subdifferential (pairing n) (P.f i) x := by
   constructor
   · intro hx
     obtain ⟨u, hu⟩ := hkt

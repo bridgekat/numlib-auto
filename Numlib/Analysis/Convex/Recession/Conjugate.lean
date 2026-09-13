@@ -18,22 +18,22 @@ hypothesis `Proper (conj B f)`, automatic for a closed proper convex `f`.
 
 ## Main results
 
-* `recessionFn_conj` — `(f*) 0⁺ = δ*(· | dom f)` (Theorem 13.3 in [^1]). The dual form
-  `f 0⁺ = δ*(· | dom f*)` is `recessionFn_eq_supportFn_dom_conj` in `Duality/Level.lean`.
+* `recessionFn_conj` — `(f*) 0⁺ = δ*(· | dom f)` ([rockafellar1970convex] Theorem 13.3). The dual
+  form `f 0⁺ = δ*(· | dom f*)` is `recessionFn_eq_supportFn_dom_conj` in `Duality/Level.lean`.
 * `constancySpace_conj` — the constancy space of `f*` is the annihilator of `dom f`. This is the
   form the image and duality theorems consume: "`f*` is constant along `z`" becomes "`z`
   annihilates `dom f`", which a relative-interior hypothesis can discharge.
 * `recessionConeFn_conj`, `recessionConeFn_conj_hull`, `recessionConeFn_eq_polarCone_dom_conj`,
-  `polarCone_recessionConeFn` — both polar assertions (Theorem 14.2 in [^1]), each in the direct
-  form and in the cone-generated phrasing. The direct form is stated against `dom f` rather than
-  the cone it generates; a polar cone cannot tell the two apart (`polarCone_hull`).
+  `polarCone_recessionConeFn` — both polar assertions ([rockafellar1970convex] Theorem 14.2), each
+  in the direct form and in the cone-generated phrasing. The direct form is stated against `dom f`
+  rather than the cone it generates; a polar cone cannot tell the two apart (`polarCone_hull`).
 * `zero_mem_interior_iff_polarCone_eq_zero` — a nonempty convex set has the origin in its interior
   exactly when its polar cone is trivial. Composed with the polar dictionary and the level-set
   theory this gives `isBounded_setOf_le_iff_zero_mem_interior_dom_conj`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §13 and §14.
+* [rockafellar1970convex] §13 and §14.
 -/
 
 open scoped Pointwise

@@ -23,17 +23,18 @@ existence theorem applies it directly and the affine-only case is `ι = Empty`.
 
 ## Main results
 
-* `exists_isKuhnTuckerVector_of_slater` — the existence theorem (Theorem 28.2 in [^1]).
+* `exists_isKuhnTuckerVector_of_slater` — the existence theorem
+  ([rockafellar1970convex] Theorem 28.2).
 * `exists_isKuhnTuckerVector_of_mem_dom` — when every constraint holds strictly somewhere in `C`,
   the Slater point need not lie in `ri C`.
 * `exists_isKuhnTuckerVector_of_affine` — with only affine constraints, a feasible point in `ri C`
   suffices.
 * `exists_multipliers_of_slater_eq` — the same for affine *equality* constraints, whose
   multipliers are then of unrestricted sign.
-* `subgradient_add_sum_coe_mul`, `mem_argmin_add_sum_coe_mul_of_zero_mem`,
-  `isKuhnTuckerVector_of_kuhnTucker` — the Kuhn–Tucker conditions (Theorem 28.3 in [^1]): the
-  subgradient of `f₀ + λ₁f₁ + ⋯ + λₘfₘ` decomposes as `∂f₀ + ∑ λᵢ ∂fᵢ`, and the conditions make
-  `x̄` optimal and `λ` a Kuhn–Tucker vector.
+* `subdifferential_add_sum_coe_mul`, `mem_argmin_add_sum_coe_mul_of_zero_mem`,
+  `isKuhnTuckerVector_of_kuhnTucker` — the Kuhn–Tucker conditions
+  ([rockafellar1970convex] Theorem 28.3): the subdifferential of `f₀ + λ₁f₁ + ⋯ + λₘfₘ` decomposes
+  as `∂f₀ + ∑ λᵢ ∂fᵢ`, and the conditions make `x̄` optimal and `λ` a Kuhn–Tucker vector.
 
 ## Implementation notes
 
@@ -43,7 +44,7 @@ multiplier of the objective.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §28.
+* [rockafellar1970convex] §28.
 -/
 
 namespace ConvexAnalysis
@@ -447,9 +448,9 @@ multipliers `λᵢ`: (a) `λᵢ ≥ 0`, `fᵢ(x̄) ≤ 0` and `λᵢ fᵢ(x̄) =
 is two statements about Rockafellar's `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`, the objective plus the weighted
 constraints at fixed multipliers:
 
-* `subgradient_add_sum_coe_mul` — the subgradient of `h` decomposes as in (c), by the sum rule
-  for subgradients (Theorem 23.8 in [^1]) under the constraint qualification that the effective
-  domains share a relative interior point;
+* `subdifferential_add_sum_coe_mul` — the subdifferential of `h` decomposes as in (c), by the sum
+  rule for subgradients ([rockafellar1970convex] Theorem 23.8) under the constraint qualification
+  that the effective domains share a relative interior point;
 * `mem_argmin_add_sum_coe_mul_of_zero_mem` and `add_sum_coe_mul_eq_of_forall_mul_eq_zero` —
   condition (c) makes `x̄` a minimiser of `h`, and complementary slackness makes `h(x̄) = f₀(x̄)`;
   together these are the sufficiency half of Theorem 28.3, for any program whose Lagrange
@@ -512,16 +513,16 @@ theorem IsLagrangeSummand.convexFn_proper_mem_relint {c : ℝ} {g : E → EReal}
     rw [h₃, intrinsicInterior_univ]
     exact mem_univ _
 
-/-- The subgradient of an admissible summand with a non-zero multiplier is the multiple of the
-subgradient: `∂(λg) = λ ∂g` for `λ > 0`, and for every `λ` when `g` is affine. -/
-theorem IsLagrangeSummand.subgradient_coe_mul (hsep : Function.Injective B.flip) {c : ℝ}
+/-- The subdifferential of an admissible summand with a non-zero multiplier is the multiple of the
+subdifferential: `∂(λg) = λ ∂g` for `λ > 0`, and for every `λ` when `g` is affine. -/
+theorem IsLagrangeSummand.subdifferential_coe_mul (hsep : Function.Injective B.flip) {c : ℝ}
     {g : E → EReal} (h : IsLagrangeSummand B x₀ c g) (hc : c ≠ 0) (x : E) :
-    subgradient B (fun y => (c : EReal) * g y) x = c • subgradient B g x := by
+    subdifferential B (fun y => (c : EReal) * g y) x = c • subdifferential B g x := by
   rcases h with ⟨hc0, -, -, -⟩ | ⟨a, v, hga, hv⟩
-  · exact ConvexAnalysis.subgradient_coe_mul (lt_of_le_of_ne hc0 (Ne.symm hc)) g x
+  · exact ConvexAnalysis.subdifferential_coe_mul (lt_of_le_of_ne hc0 (Ne.symm hc)) g x
   · have hg : g = fun y => ((a y : ℝ) : EReal) := funext hga
     subst hg
-    exact subgradient_coe_mul_affineMap hsep c a hv x
+    exact subdifferential_coe_mul_affineMap hsep c a hv x
 
 end LagrangeSummand
 
@@ -534,16 +535,16 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensi
   {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {ι : Type*} {s : Finset ι} {f₀ : E → EReal} {f : ι → E → EReal}
   {l : ι → ℝ} {x₀ : E}
 
-/-- **The subgradient of `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`**, Theorem 23.8 applied to the summands of the
-Lagrange function: when the effective domains share a relative interior point `x₀`,
+/-- **The subdifferential of `h = f₀ + λ₁f₁ + ⋯ + λₘfₘ`**, Theorem 23.8 applied to the summands of
+the Lagrange function: when the effective domains share a relative interior point `x₀`,
 `∂h(x) = ∂f₀(x) + ∑ λᵢ ∂fᵢ(x)`, the sum over the indices with `λᵢ ≠ 0`. The omission is not
 cosmetic — `∂fᵢ(x)` can be empty at a boundary point of `dom fᵢ`, and then `0 · ∂fᵢ(x)` would be
 empty rather than `{0}`. -/
-theorem subgradient_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
+theorem subdifferential_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing B.flip]
     (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀) (hp₀ : Proper f₀)
     (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i)) (x : E) :
-    subgradient B (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) x
-      = subgradient B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subgradient B (f i) x := by
+    subdifferential B (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) x
+      = subdifferential B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subdifferential B (f i) x := by
   classical
   set g : Option ι → E → EReal := fun o => o.elim f₀ fun i y => (l i : EReal) * f i y with hg
   have hsum : (fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y) = ∑ o ∈ s.insertNone, g o := by
@@ -558,14 +559,14 @@ theorem subgradient_add_sum_coe_mul [IsCompatiblePairing B] [IsCompatiblePairing
   have hex : IsExactFinsetSum B s.insertNone g :=
     IsExactFinsetSum.of_relint ⟨none, Finset.mem_insertNone.2 (by simp)⟩
       (fun o ho => (hprop o ho).1) (fun o ho => (hprop o ho).2.1) fun o ho => (hprop o ho).2.2
-  rw [hsum, hex.subgradient_finsetSum x, Finset.sum_insertNone, Finset.sum_filter]
+  rw [hsum, hex.subdifferential_finsetSum x, Finset.sum_insertNone, Finset.sum_filter]
   congr 1
   refine Finset.sum_congr rfl fun i hi => ?_
   split_ifs with hli
-  · exact (hf i hi).subgradient_coe_mul hsep hli x
+  · exact (hf i hi).subdifferential_coe_mul hsep hli x
   · push Not at hli
-    change subgradient B (fun y => (l i : EReal) * f i y) x = 0
-    rw [hli, subgradient_zero_mul hsep, Set.singleton_zero]
+    change subdifferential B (fun y => (l i : EReal) * f i y) x = 0
+    rw [hli, subdifferential_zero_mul hsep, Set.singleton_zero]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] [FiniteDimensional ℝ F] in
@@ -581,9 +582,10 @@ theorem mem_argmin_add_sum_coe_mul_of_zero_mem [IsCompatiblePairing B]
     [IsCompatiblePairing B.flip] (hsep : Function.Injective B.flip) (hf₀ : ConvexFn f₀)
     (hp₀ : Proper f₀) (hx₀ : x₀ ∈ ri (dom f₀)) (hf : ∀ i ∈ s, IsLagrangeSummand B x₀ (l i) (f i))
     {x : E}
-    (h : (0 : F) ∈ subgradient B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subgradient B (f i) x) :
+    (h : (0 : F) ∈ subdifferential B f₀ x + ∑ i ∈ s with l i ≠ 0, l i • subdifferential B (f i) x) :
     x ∈ argmin fun y => f₀ y + ∑ i ∈ s, (l i : EReal) * f i y := by
-  rw [mem_argmin_iff_zero_mem_subgradient B, subgradient_add_sum_coe_mul hsep hf₀ hp₀ hx₀ hf]
+  rw [mem_argmin_iff_zero_mem_subdifferential B,
+    subdifferential_add_sum_coe_mul hsep hf₀ hp₀ hx₀ hf]
   exact h
 
 end KuhnTucker
@@ -641,7 +643,7 @@ theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePa
     (hri : ∀ i, x₀ ∈ ri (dom (f i))) {a : κ → F} (ha : ∀ j w, B w (a j) = (b j).linear w) {x : E}
     (hl : ∀ i, 0 ≤ l i ∧ f i x ≤ 0 ∧ (l i : EReal) * f i x = 0)
     (hμ : ∀ j, 0 ≤ μ j ∧ b j x ≤ 0 ∧ μ j * b j x = 0)
-    (hc : (0 : F) ∈ subgradient B f₀ x + ∑ i with l i ≠ 0, l i • subgradient B (f i) x
+    (hc : (0 : F) ∈ subdifferential B f₀ x + ∑ i with l i ≠ 0, l i • subdifferential B (f i) x
       + {∑ j, μ j • a j}) :
     IsKuhnTuckerVector f₀ f b l μ ∧ x ∈ feasibleSet f b ∧ f₀ x = optimalValue f₀ f b := by
   classical
@@ -664,10 +666,12 @@ theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePa
       = insert none ((Finset.univ.filter fun i => l i ≠ 0).map Function.Embedding.some) := by
     ext o
     cases o <;> simp [hl']
-  have hc' : (0 : F) ∈ subgradient B f₀ x + ∑ o with l' o ≠ 0, l' o • subgradient B (g o) x := by
+  have hc' : (0 : F) ∈
+      subdifferential B f₀ x + ∑ o with l' o ≠ 0, l' o • subdifferential B (g o) x := by
     rw [hfilter, Finset.sum_insert (by simp), Finset.sum_map]
-    have hnone : subgradient B (fun y => ((affineSum b μ y : ℝ) : EReal)) x = {∑ j, μ j • a j} :=
-      subgradient_coe_affineMap hsep (affineSum b μ) hlin x
+    have hnone :
+        subdifferential B (fun y => ((affineSum b μ y : ℝ) : EReal)) x = {∑ j, μ j • a j} :=
+      subdifferential_coe_affineMap hsep (affineSum b μ) hlin x
     simp only [hl', hg, Option.elim, Function.Embedding.some_apply, one_smul]
     rw [hnone, add_comm ({∑ j, μ j • a j} : Set F), ← add_assoc]
     exact hc
@@ -692,7 +696,7 @@ theorem isKuhnTuckerVector_of_kuhnTucker [IsCompatiblePairing B] [IsCompatiblePa
   have hxdom : x ∈ dom f₀ := by
     obtain ⟨w, hw, -, -, -⟩ := Set.mem_add.1 hc
     obtain ⟨v₀, hv₀, -, -, -⟩ := Set.mem_add.1 hw
-    exact mem_dom_of_mem_subgradient hp₀ hv₀
+    exact mem_dom_of_mem_subdifferential hp₀ hv₀
   have hinf : (⨅ y, programLagrangian f₀ f b l μ y) = f₀ x := by
     rw [iInf_eq_of_mem_argmin hmin, hLx]
   have hopt : f₀ x = optimalValue f₀ f b := by

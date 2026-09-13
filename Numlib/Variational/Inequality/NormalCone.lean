@@ -2,9 +2,9 @@ import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.Pairing
 import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Subgradient.Calculus
-import Numlib.Analysis.Convex.Subgradient.Defs
-import Numlib.Analysis.Convex.Subgradient.Monotone
+import Numlib.Analysis.Convex.Subdifferential.Calculus
+import Numlib.Analysis.Convex.Subdifferential.Defs
+import Numlib.Analysis.Convex.Subdifferential.Monotone
 import Numlib.Variational.Inequality.Basic
 
 /-!
@@ -17,18 +17,18 @@ inequality
   `u ∈ K`,  `⟪f, v - u⟫ ≤ ⟪A u, v - u⟫ + j v - j u`  for every `v ∈ K`
 
 stays the *definition*: its consumers manipulate it as an inequality, `A` is a nonlinear operator
-and `j` is real-valued, and a definition through `subgradient` would carry an `EReal` coercion into
-every proof of the Hilbert-space theory for no gain. What this module adds are the translations, all
-of them `Iff`s about the same point `u`:
+and `j` is real-valued, and a definition through `subdifferential` would carry an `EReal` coercion
+into every proof of the Hilbert-space theory for no gain. What this module adds are the
+translations, all of them `Iff`s about the same point `u`:
 
 * `isVariationalInequalitySolution_zero_iff_sub_mem_normalCone` — the inequality of the first kind
   (`j = 0`) is `f - A u ∈ N_K(u)`, the normal cone taken for the pairing `innerₗ V`;
-* `isVariationalInequalitySolution_iff_sub_mem_subgradient` — the inequality of the second kind is
-  `f - A u ∈ ∂(j + δ_K)(u)`, with `δ_K` the indicator function `indicatorFn K`;
+* `isVariationalInequalitySolution_iff_sub_mem_subdifferential` — the inequality of the second kind
+  is `f - A u ∈ ∂(j + δ_K)(u)`, with `δ_K` the indicator function `indicatorFn K`;
 * `isVariationalInequalitySolution_iff_sub_mem_add_normalCone` — in a Hilbert space, for `j` convex
   and lower semicontinuous, the subdifferential splits, `∂(j + δ_K)(u) = ∂j(u) + N_K(u)`, so the
   inequality of the second kind is `f - A u ∈ ∂j(u) + N_K(u)`. The split is the sum rule
-  `IsExactSum.subgradient_add` under the continuity constraint qualification
+  `IsExactSum.subdifferential_add` under the continuity constraint qualification
   `IsExactSum.of_continuousAt`; the continuity of `j` is
   `ConvexOn.continuous_of_lowerSemicontinuous`, and the qualification wants the pairing compatible,
   which `instIsCompatiblePairingInner` supplies by Fréchet–Riesz.
@@ -79,12 +79,13 @@ theorem isVariationalInequalitySolution_zero_iff_sub_mem_normalCone :
 subgradient at `u` of `j + δ_K`, the functional `j` extended by `+∞` off `K`. Off `K` the
 subgradient inequality is vacuous, and on `K` it is the variational inequality. No hypothesis on
 `A`, `j`, `K` or `V`. -/
-theorem isVariationalInequalitySolution_iff_sub_mem_subgradient :
+theorem isVariationalInequalitySolution_iff_sub_mem_subdifferential :
     IsVariationalInequalitySolution A j f K u ↔
-      u ∈ K ∧ f - A u ∈ subgradient (innerₗ V) (fun v => (j v : EReal) + indicatorFn K v) u := by
+      u ∈ K ∧
+        f - A u ∈ subdifferential (innerₗ V) (fun v => (j v : EReal) + indicatorFn K v) u := by
   unfold IsVariationalInequalitySolution
   refine and_congr_right fun hu => ?_
-  simp only [mem_subgradient, indicatorFn_of_mem hu, add_zero, innerₗ_apply_apply]
+  simp only [mem_subdifferential, indicatorFn_of_mem hu, add_zero, innerₗ_apply_apply]
   constructor
   · intro h v
     by_cases hv : v ∈ K
@@ -115,18 +116,18 @@ theorem ConvexOn.isExactSum_coe_indicatorFn [CompleteSpace V] (hj : ConvexOn ℝ
 lower semicontinuous and `K` nonempty and convex, `IsVariationalInequalitySolution A j f K u`
 says exactly that `u ∈ K` and `f - A u ∈ ∂j(u) + N_K(u)`: some subgradient `y` of `j` at `u`
 has `f - A u - y` normal to `K` at `u`. The inclusion `∂j(u) + N_K(u) ⊆ ∂(j + δ_K)(u)` is
-unconditional; the reverse one is the sum rule `IsExactSum.subgradient_add` under the continuity
+unconditional; the reverse one is the sum rule `IsExactSum.subdifferential_add` under the continuity
 constraint qualification, which is where the hypotheses on `j`, `K` and `V` are spent. -/
 theorem isVariationalInequalitySolution_iff_sub_mem_add_normalCone [CompleteSpace V]
     (hj : ConvexOn ℝ Set.univ j) (hlsc : LowerSemicontinuous j) (hK : Convex ℝ K)
     (hne : K.Nonempty) :
     IsVariationalInequalitySolution A j f K u ↔
-      u ∈ K ∧ f - A u ∈ subgradient (innerₗ V) (fun v => (j v : EReal)) u +
+      u ∈ K ∧ f - A u ∈ subdifferential (innerₗ V) (fun v => (j v : EReal)) u +
         normalCone (innerₗ V) K u := by
-  rw [isVariationalInequalitySolution_iff_sub_mem_subgradient]
+  rw [isVariationalInequalitySolution_iff_sub_mem_subdifferential]
   refine and_congr_right fun hu => ?_
-  rw [← subgradient_indicatorFn (B := innerₗ V) hu,
-    ← (ConvexOn.isExactSum_coe_indicatorFn hj hlsc hK hne).subgradient_add u]
+  rw [← subdifferential_indicatorFn (B := innerₗ V) hu,
+    ← (ConvexOn.isExactSum_coe_indicatorFn hj hlsc hK hne).subdifferential_add u]
   rfl
 
 /-- **A strongly monotone operator has a monotone graph.** `IsStronglyMonotoneWith ℝ A c` with

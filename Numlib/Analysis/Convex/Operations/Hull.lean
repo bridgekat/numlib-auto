@@ -28,16 +28,16 @@ the union of the epigraphs, and it is the **greatest convex function below every
 * `gci_val_convHullFn` — `conv` is right adjoint to the inclusion of the convex functions, as a
   `GaloisCoinsertion`. This is what makes the convex functions a complete lattice with
   `⨅ = convFn` and `⨆ = sSup`.
-* `convFn_apply` — the explicit formula
-  `(conv {f i}) x = inf {∑ λ i * f i (x i) | ∑ λ i • x i = x}` (Theorem 5.6 in [^1]);
-  `convFn₂_apply` is the two-function form later sections use.
+* `convFn_apply` — the explicit formula `(conv {f i}) x = inf {∑ λ i * f i (x i) | ∑ λ i • x i = x}`
+  ([rockafellar1970convex] Theorem 5.6); `convFn₂_apply` is the two-function form later sections
+  use.
 * `IsEpiLike.mem_convexHull_of_le`, `isEpiLike_convexHull_epi_union`, `epi_convFn₂` — when that
   infimum is *attained*. `epi (conv {f, g})` is `conv (epi f ∪ epi g)` exactly when that hull is
   an epigraph, and the only way it can fail to be one is by failing to be closed.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5.
+* [rockafellar1970convex] §5.
 -/
 
 open Set

@@ -35,12 +35,12 @@ above are Atkinson–Han's Proposition 8.6.2 and (8.6.12)–(8.6.14) under that 
 
 ## Implementation notes
 
-`EReal.coe_sSup_of_bddAbove` and `EReal.coe_sInf_of_bddBelow` are the only new order facts: the
-coercion `ℝ → EReal` carries a conditionally complete supremum to the corresponding `⨆`. They are
-what lets each real statement be read off its `EReal` original rather than reproved. The
-`BddAbove`/`BddBelow` hypotheses are not decoration: `sSup` and `sInf` take junk values on unbounded
-sets of reals, and the `EReal` statements hold with no hypothesis precisely because `⊤` and `⊥` are
-available there.
+The only order facts needed are `EReal.coe_sSup_of_bddAbove` and `EReal.coe_sInf_of_bddBelow` of
+`Numlib/Order/EReal`: the coercion `ℝ → EReal` carries a conditionally complete supremum to the
+corresponding `⨆`. They are what lets each real statement be read off its `EReal` original rather
+than reproved. The `BddAbove`/`BddBelow` hypotheses are not decoration: `sSup` and `sInf` take junk
+values on unbounded sets of reals, and the `EReal` statements hold with no hypothesis precisely
+because `⊤` and `⊥` are available there.
 
 ## References
 
@@ -49,28 +49,6 @@ available there.
 -/
 
 open Set
-
-/-! ### The coercion `ℝ → EReal` and conditionally complete extrema -/
-
-namespace EReal
-
-/-- The coercion `ℝ → EReal` carries the supremum of a nonempty bounded set to the `EReal`
-supremum of its image. -/
-theorem coe_sSup_of_bddAbove {s : Set ℝ} (hne : s.Nonempty) (hbdd : BddAbove s) :
-    ((sSup s : ℝ) : EReal) = ⨆ a ∈ s, (a : EReal) := by
-  rw [← sSup_image]
-  exact Monotone.map_csSup_of_continuousAt continuous_coe_real_ereal.continuousAt
-    coe_strictMono.monotone hne hbdd
-
-/-- The coercion `ℝ → EReal` carries the infimum of a nonempty bounded set to the `EReal` infimum
-of its image. -/
-theorem coe_sInf_of_bddBelow {s : Set ℝ} (hne : s.Nonempty) (hbdd : BddBelow s) :
-    ((sInf s : ℝ) : EReal) = ⨅ a ∈ s, (a : EReal) := by
-  rw [← sInf_image]
-  exact Monotone.map_csInf_of_continuousAt continuous_coe_real_ereal.continuousAt
-    coe_strictMono.monotone hne hbdd
-
-end EReal
 
 namespace ConvexAnalysis
 

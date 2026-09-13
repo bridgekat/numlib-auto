@@ -16,7 +16,7 @@ id = 'partialInvertNegHomeomorph'
 id = 'saddleMonotoneRel'
 
 [[node]]
-id = 'saddleSubgradientHomeomorph'
+id = 'saddleSubdifferentialHomeomorph'
 
 [[node]]
 id = 'isMaximalMonotoneRel_saddleMonotoneRel'

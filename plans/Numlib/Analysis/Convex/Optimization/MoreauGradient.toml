@@ -7,7 +7,7 @@ id = 'closedProperConvexFn_infConv_quadFn'
 id = 'conj_infConv_quadFn'
 
 [[node]]
-id = 'subgradient_infConv_quadFn'
+id = 'subdifferential_infConv_quadFn'
 
 [[node]]
 id = 'hasGradientAtFn_infConv_quadFn'

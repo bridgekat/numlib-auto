@@ -14,8 +14,8 @@ effective domains, the polyhedral side here contributes only a point of its effe
 * `IsExactSum.of_polyhedral_pair` — both functions polyhedral: no relative interiors at all, only
   `dom f ∩ dom g ≠ ∅`.
 * `IsExactSum.of_polyhedral` — a proper polyhedral `f` and a proper convex `g` add exactly as soon
-  as `dom f` meets `ri (dom g)` (Theorem 20.1 in [^1]). `IsExactSum.of_polyhedral_closed` is the
-  closed case, which carries the argument, and
+  as `dom f` meets `ri (dom g)` ([rockafellar1970convex] Theorem 20.1).
+  `IsExactSum.of_polyhedral_closed` is the closed case, which carries the argument, and
   `relint_inter_relint_nonempty_of_subset_affineSpan` is the relative-interior step it turns on.
 * `IsExactFinsetSum.of_polyhedral` — the same for `m` summands; `polyhedralFn_finsetSum`, a finite
   sum of proper polyhedral functions being polyhedral, makes the polyhedral block one summand.
@@ -38,7 +38,7 @@ is then re-absorbed, since `δ + g = g` and `δ + (f + g) = f + g`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20.
+* [rockafellar1970convex] §20.
 -/
 
 open Set

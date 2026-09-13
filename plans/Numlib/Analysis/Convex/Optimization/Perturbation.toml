@@ -34,10 +34,10 @@ id = 'StrictlyConsistent'
 id = 'KuhnTucker'
 
 [[node]]
-id = 'mem_kuhnTucker_iff_neg_mem_subgradient'
+id = 'mem_kuhnTucker_iff_neg_mem_subdifferential'
 
 [[node]]
-id = 'kuhnTucker_eq_neg_subgradient'
+id = 'kuhnTucker_eq_neg_subdifferential'
 
 [[node]]
 id = 'convex_kuhnTucker'

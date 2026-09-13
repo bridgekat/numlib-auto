@@ -19,4 +19,4 @@ id = 'infConv_quadFn_ne_top'
 id = 'infConv_quadFn_ne_bot'
 
 [[node]]
-id = 'mem_subgradient_iff_infConv_eq'
+id = 'mem_subdifferential_iff_infConv_eq'

@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Duality.Support
 import Numlib.Analysis.Convex.Optimization.Maximum
-import Numlib.Analysis.Convex.Subgradient.Existence
-import Numlib.Analysis.Convex.Subgradient.Rademacher
+import Numlib.Analysis.Convex.Subdifferential.Existence
+import Numlib.Analysis.Convex.Subdifferential.Rademacher
 import NumlibSurface.Common.Euclidean
 import NumlibSurface.Rockafellar.Part2.Section08
 import NumlibSurface.Rockafellar.Part4.Section19
@@ -349,8 +349,8 @@ theorem theorem_32_4_proper (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (dom f
 /-- **Theorem 32.4**: "the set `∂f(x)` is non-empty, because `x ∈ ri (dom f)` (Theorem 23.4)" —
 which is what makes the theorem's conclusion about *every* subgradient a statement with content. -/
 theorem theorem_32_4_nonempty (hf : ConvexFn f) {x : Rn n} (hxri : x ∈ ri (dom f))
-    (hxb : f x ≠ ⊥) : (subgradient (pairing n) f x).Nonempty :=
-  subgradient_nonempty_of_mem_relint_dom hf (theorem_32_4_proper hf hxri hxb) hxri
+    (hxb : f x ≠ ⊥) : (subdifferential (pairing n) f x).Nonempty :=
+  subdifferential_nonempty_of_mem_relint_dom hf (theorem_32_4_proper hf hxri hxb) hxri
 
 /-- **Theorem 32.4**: at a point where `f` attains its supremum relative to `C`, every
 `x* ∈ ∂f(x)` is normal to `C` at `x`.
@@ -360,16 +360,16 @@ directly it is one line: the subgradient inequality at `z` and maximality at `z`
 `⟨z − x, x*⟩` between `0` and `0`. Only finiteness of `f x` is used, so neither convexity of `C`
 nor `x ∈ ri (dom f)` appears. -/
 theorem theorem_32_4_normal (hfin : ∀ z ∈ C, f z ≠ ⊥ ∧ f z ≠ ⊤) {x : Rn n} (hx : x ∈ C)
-    (hmax : ∀ z ∈ C, f z ≤ f x) {y : Rn n} (hy : y ∈ subgradient (pairing n) f x) :
+    (hmax : ∀ z ∈ C, f z ≤ f x) {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) :
     y ∈ normalCone (pairing n) C x :=
-  mem_normalCone_of_mem_subgradient_of_isMaxOn (hfin x hx).1 (hfin x hx).2 hmax hy
+  mem_normalCone_of_mem_subdifferential_of_isMaxOn (hfin x hx).1 (hfin x hx).2 hmax hy
 
 /-- **Theorem 32.4**: the vector is **non-zero**. Rockafellar's argument is that `inf f < f x`
 because `f` is not constant on `C`, hence `0 ∉ ∂f(x)`; here the witness of non-constancy is passed
 directly, since a set on which `f` is not constant supplies one at every one of its points. -/
 theorem theorem_32_4_ne_zero {x : Rn n} (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ C)
-    (hne : f z₀ ≠ f x) {y : Rn n} (hy : y ∈ subgradient (pairing n) f x) : y ≠ 0 :=
-  ne_zero_of_mem_subgradient_of_isMaxOn hmax hz₀ hne hy
+    (hne : f z₀ ≠ f x) {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) : y ≠ 0 :=
+  ne_zero_of_mem_subdifferential_of_isMaxOn hmax hz₀ hne hy
 
 /-- **Corollary 32.4.1**: for a proper convex `f` and a non-empty `S` on which `f` is not constant,
 if the supremum of `f` relative to `S` is attained at `x ∈ ri (dom f)`, then every `x* ∈ ∂f(x)` is
@@ -379,10 +379,10 @@ Rockafellar passes to `C = conv S` so that Theorem 32.4 applies to a convex set.
 unnecessary: `theorem_32_4_normal` asks nothing of `C`, so it applies to `S` itself. -/
 theorem corollary_32_4_1 (hp : Proper f) {S : Set (Rn n)} {x : Rn n} (hxri : x ∈ ri (dom f))
     (hmax : ∀ z ∈ S, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ S) (hne : f z₀ ≠ f x)
-    {y : Rn n} (hy : y ∈ subgradient (pairing n) f x) :
+    {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) :
     y ≠ 0 ∧ ∀ z ∈ S, pairing n z y ≤ pairing n x y := by
-  refine ⟨ne_zero_of_mem_subgradient_of_isMaxOn hmax hz₀ hne hy, fun z hz => ?_⟩
-  exact le_of_mem_normalCone (mem_normalCone_of_mem_subgradient_of_isMaxOn (hp.ne_bot x)
+  refine ⟨ne_zero_of_mem_subdifferential_of_isMaxOn hmax hz₀ hne hy, fun z hz => ?_⟩
+  exact le_of_mem_normalCone (mem_normalCone_of_mem_subdifferential_of_isMaxOn (hp.ne_bot x)
     (mem_dom.1 (intrinsicInterior_subset hxri)).ne hmax hy) hz
 
 /-- **§32**: the vectors normal to the Euclidean unit ball at a boundary
@@ -401,7 +401,7 @@ theorem theorem_32_4_ball {x : Rn n} (hx : ‖x‖ = 1)
     (hfin : ∀ z ∈ Metric.closedBall (0 : Rn n) 1, f z ≠ ⊥ ∧ f z ≠ ⊤)
     (hmax : ∀ z ∈ Metric.closedBall (0 : Rn n) 1, f z ≤ f x) {z₀ : Rn n}
     (hz₀ : z₀ ∈ Metric.closedBall (0 : Rn n) 1) (hne : f z₀ ≠ f x) {y : Rn n}
-    (hy : y ∈ subgradient (pairing n) f x) : ∃ lam : ℝ, 0 < lam ∧ y = lam • x := by
+    (hy : y ∈ subdifferential (pairing n) f x) : ∃ lam : ℝ, 0 < lam ∧ y = lam • x := by
   have hxmem : x ∈ Metric.closedBall (0 : Rn n) 1 := by
     rw [Metric.mem_closedBall, dist_zero_right, hx]
   have hyne : y ≠ 0 := theorem_32_4_ne_zero hmax hz₀ hne hy

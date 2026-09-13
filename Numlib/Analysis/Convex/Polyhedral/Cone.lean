@@ -18,7 +18,7 @@ rest of the polyhedral theory. Mathlib has the two predicates for pointed cones
   the reason Weyl is proved first.
 * `PolyhedralCone.finitelyGeneratedCone` — Minkowski's half, H ⇒ V, by separation in the dual.
 * `polyhedralCone_iff_finitelyGeneratedCone` — the **Minkowski–Weyl theorem** for cones
-  (Theorem 19.1 in [^1]).
+  ([rockafellar1970convex] Theorem 19.1).
 
 ## Implementation notes
 
@@ -31,7 +31,7 @@ equal `K + {t • v | t ≥ 0}`, because that is the form the elimination proof 
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19.
+* [rockafellar1970convex] §19.
 -/
 
 open Set

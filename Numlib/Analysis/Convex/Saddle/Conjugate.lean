@@ -25,14 +25,14 @@ into criteria for `0 ∈ int D*` and for the saddle-value to exist. The `C*` hal
 * `saddleLagrangian_eq_concaveBracket` — the Lagrangian *is* the concave bracket of `F_*`.
 * `partialCl₁_lowerConjSaddle`, `partialCl₂_upperConjSaddle`, `saddleClass_conjSaddle`,
   `domSaddle_conjSaddle_eq`, `lowerConjSaddle_eq_upperConjSaddle_of_mem_relint_dom₁` — the two
-  conjugates are a closure pair (Corollary 37.1.2 in [^1]); `properSaddleFn_saddleLagrangian` —
-  conjugates of closed proper saddle-functions are proper.
+  conjugates are a closure pair ([rockafellar1970convex] Corollary 37.1.2);
+  `properSaddleFn_saddleLagrangian` — conjugates of closed proper saddle-functions are proper.
 * `hasSaddleValue_of_mem_relint_dom₁_lowerConjSaddle` and
   `exists_maximin_eq_coe_of_mem_relint_domSaddle` — the origin in the relative interior of `C*` or
   of `D*` gives the saddle-value, and in both gives a finite one.
 * `dom₁_eq_domBifun_of_mem_bifunSaddleClass` — `C = dom F` for every member of `Ω (F)`.
 * `supportFn_dom₂_upperConjSaddle`, `zero_mem_interior_dom₂_upperConjSaddle_iff` — the support
-  function of `D*`, and the criterion for `0 ∈ int D*` (Theorem 37.2 in [^1]).
+  function of `D*`, and the criterion for `0 ∈ int D*` ([rockafellar1970convex] Theorem 37.2).
 * `hasSaddleValue_of_no_common_direction_of_recession`, `hasSaddleValue_of_isBounded_dom₂` — no
   common direction of recession, or a bounded `D`, gives the saddle-value.
 
@@ -46,7 +46,7 @@ what makes closedness of `F` a genuine hypothesis rather than a convenience.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §30, §34, §37.
+* [rockafellar1970convex] §30, §34, §37.
 -/
 
 namespace ConvexAnalysis

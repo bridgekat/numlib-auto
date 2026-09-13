@@ -1,0 +1,25 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'IsExactSum.subdifferential_add'
+
+[[node]]
+id = 'IsExactFinsetSum.subdifferential_finsetSum'
+
+[[node]]
+id = 'IsExactImage.subdifferential_compLin'
+
+[[node]]
+id = 'subdifferential_coe_mul'
+
+[[node]]
+id = 'subdifferential_coe_affineMap'
+
+[[node]]
+id = 'IsExactSum.normalCone_inter'
+
+[[node]]
+id = 'subdifferential_add_normalCone_dom_subset'
+
+[[node]]
+id = 'normalCone_dom_eq_zero_of_subdifferential_eq_singleton'

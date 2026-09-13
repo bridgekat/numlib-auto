@@ -18,13 +18,13 @@ Both are linear in `(y, c)`, so they cut `epi (conj B f)` out of `F × ℝ` as a
 * `mem_epi_conj_iff` — the epigraph of `conj B f`, read off `epi f`, with no hypothesis on `f`. In
   particular none excluding `f x = ⊥`: in that case both sides are false.
 * `PolyhedralFn.conj` — the conjugate of a polyhedral convex function is polyhedral
-  (Theorem 19.2 in [^1]). The case `P = ∅` is separate: then `f ≡ ⊤` and `epi (conj B f)` is all
-  of `F × ℝ`, whereas the generator argument needs a base point to slide along a recession
-  direction.
+  ([rockafellar1970convex] Theorem 19.2). The case `P = ∅` is separate: then `f ≡ ⊤` and
+  `epi (conj B f)` is all of `F × ℝ`, whereas the generator argument needs a base point to slide
+  along a recession direction.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19.
+* [rockafellar1970convex] §19.
 -/
 
 open Set

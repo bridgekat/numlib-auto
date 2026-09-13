@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Duality.Conjugate
 import Numlib.Analysis.Convex.Duality.Polar
 import Numlib.Analysis.Convex.RelativeInterior
-import Numlib.Analysis.Convex.Subgradient.Defs
+import Numlib.Analysis.Convex.Subdifferential.Defs
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -9,8 +9,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 
 `EuclideanSpace ℝ (Fin m) × EuclideanSpace ℝ (Fin n)` and `EuclideanSpace ℝ (Fin (m + n))` are
 different types, and a text written in `ℝⁿ` moves between them without comment. This module is that
-move: the concatenation `(x, y) ↦ (x₁, …, x_m, y₁, …, y_n)`, together with the transport along it
-of the operations a convexity statement is made of — `conj`, `subgradient`, `ri`, the polar and the
+move: the concatenation `(x, y) ↦ (x₁, …, x_m, y₁, …, y_n)`, together with the transport along it of
+the operations a convexity statement is made of — `conj`, `subdifferential`, `ri`, the polar and the
 pointed-cone hull.
 
 Everything turns on `inner_euclideanProdEquiv`: concatenation adds the two inner products, so the
@@ -30,7 +30,7 @@ transport lemma is one application of a general substitution rule to it.
 
 * `inner_euclideanProdEquiv`, `isAdjointPair_euclideanProdEquiv` — the pairing and its adjointness
   datum; `euclideanProdEquiv_apply_castAdd` and friends give the coordinates.
-* `conj_comp_euclideanProdEquiv`, `subgradient_comp_euclideanProdEquiv`,
+* `conj_comp_euclideanProdEquiv`, `subdifferential_comp_euclideanProdEquiv`,
   `relint_image_euclideanProdEquiv` — conjugate, subdifferential and relative interior transport.
 * `polarCone_image_of_pairing_eq`, `coe_hull_image` — the same for the polar of a set and for the
   pointed-cone hull, which is what a statement about *cones* is made of.
@@ -42,7 +42,7 @@ transport lemma is one application of a general substitution rule to it.
 
 The isometry is out of `WithLp 2 (ℝᵐ × ℝⁿ)` because Mathlib's norm on a product is the *supremum*
 norm. Everything else is stated for the plain product, whose linear structure and topology are all
-that `conj`, `subgradient` and `ri` need, so that no consumer has to move a `Convex` or an
+that `conj`, `subdifferential` and `ri` need, so that no consumer has to move a `Convex` or an
 `IsClosed` across a type synonym; `euclideanProdEquiv_eq_isometry` records that the two agree.
 -/
 
@@ -130,8 +130,8 @@ theorem prodPairing_euclideanProdEquiv_symm (z : EuclideanSpace ℝ (Fin (m + n)
   exact h.symm
 
 /-- **Concatenation is an adjoint pair for the two pairings.** This is the hypothesis
-`conj_comp_linearEquiv` and `subgradient_comp_linearEquiv` take, and the only mathematical input the
-transport has. -/
+`conj_comp_linearEquiv` and `subdifferential_comp_linearEquiv` take, and the only mathematical input
+the transport has. -/
 theorem isAdjointPair_euclideanProdEquiv :
     IsAdjointPair (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
       (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m))) (innerₗ (EuclideanSpace ℝ (Fin n))))
@@ -149,7 +149,7 @@ end Pairing
 `conj_comp_linearEquiv` is the substitution rule for the conjugate. The subdifferential
 obeys the same rule, in the generality of an arbitrary adjoint pair of isomorphisms. -/
 
-section SubgradientTransport
+section SubdifferentialTransport
 
 variable {E F G H : Type*}
 variable [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
@@ -158,10 +158,10 @@ variable [AddCommGroup G] [Module ℝ G] [AddCommGroup H] [Module ℝ H]
 /-- **Precomposing with a linear isomorphism moves the subdifferential along the transpose.**
 The companion of `conj_comp_linearEquiv` for `∂f`: if `A` and `A'` are adjoint isomorphisms, then
 `∂(g ∘ A)(x) = A' (∂g (A x))`. -/
-theorem subgradient_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
+theorem subdifferential_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
     (A : E ≃ₗ[ℝ] G) (A' : H ≃ₗ[ℝ] F)
     (hA : IsAdjointPair B B' (A : E →ₗ[ℝ] G) (A' : H →ₗ[ℝ] F)) (g : G → EReal) (x : E) :
-    subgradient B (fun u => g (A u)) x = A' '' subgradient B' g (A x) := by
+    subdifferential B (fun u => g (A u)) x = A' '' subdifferential B' g (A x) := by
   ext y
   constructor
   · intro hy
@@ -185,7 +185,7 @@ theorem subgradient_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' :
     rw [← h2]
     exact hw
 
-end SubgradientTransport
+end SubdifferentialTransport
 
 /-! ### The transport -/
 
@@ -206,13 +206,13 @@ theorem conj_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) × Euclidea
     (euclideanProdEquiv m n).toLinearEquiv isAdjointPair_euclideanProdEquiv f z
 
 /-- **The subdifferential transports along the concatenation.** -/
-theorem subgradient_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) ×
+theorem subdifferential_comp_euclideanProdEquiv (f : EuclideanSpace ℝ (Fin m) ×
     EuclideanSpace ℝ (Fin n) → EReal) (z : EuclideanSpace ℝ (Fin (m + n))) :
-    subgradient (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
+    subdifferential (innerₗ (EuclideanSpace ℝ (Fin (m + n))))
         (fun w => f ((euclideanProdEquiv m n).symm w)) z
-      = euclideanProdEquiv m n '' subgradient (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m)))
+      = euclideanProdEquiv m n '' subdifferential (prodPairing (innerₗ (EuclideanSpace ℝ (Fin m)))
           (innerₗ (EuclideanSpace ℝ (Fin n)))) f ((euclideanProdEquiv m n).symm z) :=
-  subgradient_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
+  subdifferential_comp_linearEquiv (euclideanProdEquiv m n).symm.toLinearEquiv
     (euclideanProdEquiv m n).toLinearEquiv isAdjointPair_euclideanProdEquiv f z
 
 /-- **The relative interior transports along the concatenation.** -/

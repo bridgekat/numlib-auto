@@ -32,9 +32,9 @@ that `C` is linear in every common direction of recession, or polyhedral and cut
   from polyhedral separation and the constancy hypothesis.
 * `apply_zero_eq_bot_of_le_of_le` — **the heart of the refinement**: `k(0) = -∞`.
 * `alternative_infinite_system_univ_of_affine_tail` — the refined alternative for functions;
-  Theorem 21.4 in [^1]. `exists_forall_le_zero_of_forall_subsystem_of_affine_tail` is the matching
-  solvability criterion.
-* `helly_of_polyhedral_tail` — the refined Helly theorem; Theorem 21.5 in [^1].
+  [rockafellar1970convex] Theorem 21.4. `exists_forall_le_zero_of_forall_subsystem_of_affine_tail`
+  is the matching solvability criterion.
+* `helly_of_polyhedral_tail` — the refined Helly theorem; [rockafellar1970convex] Theorem 21.5.
 * `Polyhedral.exists_finset_pairing` — a polyhedral set is cut out by finitely many inequalities
   *of the pairing*, which is what lets the refined Helly theorem feed its half-spaces to the
   refined alternative.
@@ -56,8 +56,7 @@ what makes `fᵢ*` a *point* indicator rather than the indicator of an affine su
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §13, §19, §20
-  and §21.
+* [rockafellar1970convex] §13, §19, §20 and §21.
 -/
 open Set Pointwise
 

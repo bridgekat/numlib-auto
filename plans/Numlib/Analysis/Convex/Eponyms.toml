@@ -22,7 +22,7 @@ id = 'minkowski_weyl'
 id = 'moreau_decomposition'
 
 [[node]]
-id = 'subgradient_maximalMonotone'
+id = 'subdifferential_maximalMonotone'
 
 [[node]]
 id = 'perspective'

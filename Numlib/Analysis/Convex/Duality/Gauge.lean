@@ -40,12 +40,12 @@ is within a factor of two of the corresponding sublevel set of the conjugate.
   `dim C° = n - lin C` and `lin C° = n - dim C`. `polarSet_setOf_le_subset_and_subset` traps
   `α⁻¹ {f* ≤ α}` between `{f ≤ α}°` and `2 {f ≤ α}°`.
 * `polarGauge_eq_supportFn`, `polarGauge_polarGauge`, `polarGaugeEquiv` — the polar of a gauge is
-  the support function of its unit level set, and `k°° = cl k` (Theorem 15.1 in [^1]). `isNorm_iff`
-  identifies the norms among the gauges.
+  the support function of its unit level set, and `k°° = cl k`
+  ([rockafellar1970convex] Theorem 15.1). `isNorm_iff` identifies the norms among the gauges.
 * `polarFn_polarFn`, `polarFnEquiv` — `f°° = cl f`, so `f ↦ f°` is an involution on the nonnegative
-  closed convex functions vanishing at the origin (Theorem 15.4 in [^1]).
+  closed convex functions vanishing at the origin ([rockafellar1970convex] Theorem 15.4).
 * `obverse_obverse`, `conj_eq_obverse_polarFn`, `polarFn_eq_obverse_conj` — the obverse is an
-  involution, and `f°` and `f*` are obverses of each other (Theorem 15.5 in [^1]);
+  involution, and `f°` and `f*` are obverses of each other ([rockafellar1970convex] Theorem 15.5);
   `polarFn_conj_eq_conj_polarFn` is `f*° = f°*`, and `setOf_polarFn_le` is
   `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
 
@@ -71,7 +71,7 @@ needs only `0 ∈ C`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14 and §15.
+* [rockafellar1970convex] §14 and §15.
 -/
 
 open Set Pointwise

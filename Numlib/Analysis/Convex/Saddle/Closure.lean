@@ -22,12 +22,12 @@ iteration stops because the adjoint does not see the closure, `(cl F)* = F*`.
 
 * `fullyClosedFn_iff` — fully closed means lower closed and upper closed.
 * `upperClosedFn_upperCl`, `lowerClosedFn_lowerCl` — each closure is idempotent
-  (Theorem 34.1 in [^1]). The pairings occur only in the hypotheses, never in the conclusion, so
-  they must be given explicitly at each use site.
+  ([rockafellar1970convex] Theorem 34.1). The pairings occur only in the hypotheses, never in the
+  conclusion, so they must be given explicitly at each use site.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33–§34.
+* [rockafellar1970convex] §33–§34.
 -/
 
 namespace ConvexAnalysis

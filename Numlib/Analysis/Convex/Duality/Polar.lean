@@ -25,11 +25,11 @@ function or the gauge and are proved in `Recession/Conjugate.lean`, `Duality/Hom
 
 * `isClosed_polarCone`, `polarPointedCone`, `polarCone_polarCone`,
   `conj_indicatorFn_eq_indicatorFn_polarCone` — the three assertions of the **bipolar theorem**
-  (Theorem 14.1 in [^1]): `K°` is a nonempty closed convex cone for *any* `K`; `K°° = cl K` for a
-  nonempty convex cone; and the indicator functions of `K` and `K°` are conjugate.
-  `neg_polarCone_neg_polarCone` is `K** = K` for the *dual* cone `K* = -K°`.
+  ([rockafellar1970convex] Theorem 14.1): `K°` is a nonempty closed convex cone for *any* `K`;
+  `K°° = cl K` for a nonempty convex cone; and the indicator functions of `K` and `K°` are
+  conjugate. `neg_polarCone_neg_polarCone` is `K** = K` for the *dual* cone `K* = -K°`.
 * `polarSet_polarSet` — `C°° = C` for a closed convex `C` containing the origin
-  (Theorem 14.5 in [^1]).
+  ([rockafellar1970convex] Theorem 14.5).
 * `polarCone_eq_setOf_supportFn_le_zero` — the polar is the zero sublevel set of the support
   function, for an arbitrary set: this is what turns a theorem computing a support function into a
   theorem computing a polar.
@@ -61,7 +61,7 @@ exactly on balanced sets (`polarSet_eq_polar_of_balanced`).
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14.
+* [rockafellar1970convex] §14.
 -/
 
 open Set Pointwise

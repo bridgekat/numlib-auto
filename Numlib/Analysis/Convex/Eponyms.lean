@@ -3,7 +3,7 @@ import Numlib.Analysis.Convex.Face
 import Numlib.Analysis.Convex.Homogenize
 import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Cone
-import Numlib.Analysis.Convex.Subgradient.Gradient
+import Numlib.Analysis.Convex.Subdifferential.Gradient
 
 /-!
 # Eponyms
@@ -47,7 +47,7 @@ alias minkowski_weyl := polyhedralCone_iff_finitelyGeneratedCone
 alias moreau_decomposition := moreau_add
 
 /-- **Maximal monotonicity of the subdifferential** of a closed proper convex function. -/
-alias subgradient_maximalMonotone := isMaximalMonotoneRel_subgradientRel
+alias subdifferential_maximalMonotone := isMaximalMonotoneRel_subgradientRel
 
 /-- **The perspective** of a convex function, `(f a) x = a · f (x / a)` for `a > 0`, defined through
 the epigraph so that the `a = 0` and improper cases come out right. Rockafellar's `fa`. -/

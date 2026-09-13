@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Optimization.Minimum
 import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Duality
-import Numlib.Analysis.Convex.Subgradient.StrictlyConvex
+import Numlib.Analysis.Convex.Subdifferential.StrictlyConvex
 import NumlibSurface.Rockafellar.Part2.Section08
 import NumlibSurface.Rockafellar.Part5.Section25
 
@@ -136,15 +136,15 @@ theorem subsingleton_argmin_of_strictConvexOnFn (hp : Proper f)
 
 /-- `x` minimises `f` exactly when `0 ∈ ∂f(x)`: `argmin f` unfolds to the subgradient inequality at
 `x* = 0`. -/
-theorem mem_argmin_iff_zero_mem_subgradient_surface (f : Rn n → EReal) (x : Rn n) :
-    x ∈ argmin f ↔ (0 : Rn n) ∈ subgradient (pairing n) f x :=
-  mem_argmin_iff_zero_mem_subgradient (pairing n) f x
+theorem mem_argmin_iff_zero_mem_subdifferential_surface (f : Rn n → EReal) (x : Rn n) :
+    x ∈ argmin f ↔ (0 : Rn n) ∈ subdifferential (pairing n) f x :=
+  mem_argmin_iff_zero_mem_subdifferential (pairing n) f x
 
 /-- By Theorem 23.2: `0 ∈ ∂f(x)` exactly when `f` is finite at `x` and `f'(x; y) ≥ 0` for every
 `y`. -/
 theorem mem_argmin_iff_zero_le_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     x ∈ argmin f ↔ ∀ y : Rn n, 0 ≤ dirDeriv f x y := by
-  rw [mem_argmin_iff_zero_mem_subgradient_surface, mem_subgradient_iff_le_dirDeriv ht hb]
+  rw [mem_argmin_iff_zero_mem_subdifferential_surface, mem_subdifferential_iff_le_dirDeriv ht hb]
   exact forall_congr' fun y => by simp
 
 /-- One of the most quoted sentences in the subject: a *local* minimum of a proper convex function
@@ -209,13 +209,13 @@ theorem theorem_27_1_a_bddBelow (f : Rn n → EReal) :
 /-- **Theorem 27.1(b)**, first sentence: the minimum set of a closed convex `f` is `∂f*(0)`, by
 Theorem 23.5 at the origin. Properness, which the book assumes throughout, is not needed. -/
 theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedFn f) :
-    argmin f = subgradient (pairing n) (conj (pairing n) f) 0 := by
-  rw [argmin_eq_subgradient_conj_zero (B := pairing n) hf hc, flip_pairing]
+    argmin f = subdifferential (pairing n) (conj (pairing n) f) 0 := by
+  rw [argmin_eq_subdifferential_conj_zero (B := pairing n) hf hc, flip_pairing]
 
 /-- **Theorem 27.1(b)**, second sentence: the infimum of `f` is attained exactly when `f*` is
 subdifferentiable at the origin. -/
 theorem theorem_27_1_b_attained (hf : ConvexFn f) (hc : ClosedFn f) :
-    (argmin f).Nonempty ↔ (subgradient (pairing n) (conj (pairing n) f) 0).Nonempty := by
+    (argmin f).Nonempty ↔ (subdifferential (pairing n) (conj (pairing n) f) 0).Nonempty := by
   rw [theorem_27_1_b hf hc]
 
 /-- **Theorem 27.1(b)**, third sentence: `0 ∈ ri (dom f*)` is enough for the infimum to be attained.
@@ -223,7 +223,7 @@ This is Theorem 23.4 for `f*` at the origin. -/
 theorem theorem_27_1_b_relint (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
     (h0 : (0 : Rn n) ∈ ri (dom (conj (pairing n) f))) : (argmin f).Nonempty := by
   rw [theorem_27_1_b hf hc]
-  exact subgradient_nonempty_of_mem_relint_dom (B := pairing n) (convexFn_conj (pairing n) f)
+  exact subdifferential_nonempty_of_mem_relint_dom (B := pairing n) (convexFn_conj (pairing n) f)
     (proper_conj ⟨hf, hc, hp⟩) h0
 
 /-- **Theorem 27.1(b)**, last sentence: `0 ∈ ri (dom f*)` exactly when every direction of recession
@@ -355,11 +355,11 @@ theorem theorem_27_1_h (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) {μ :
 
 /-- The identification the proof of Theorem 27.1(h) runs on, unnumbered in the book: the level sets
 of `f` above its infimum are the ε-subdifferentials of `f*` at the origin. -/
-theorem theorem_27_1_h_epsSubgradient (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f) {μ : ℝ}
-    (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
-    epsSubgradient (pairing n) ε (conj (pairing n) f) 0
+theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedFn f) (hp : Proper f)
+    {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
+    epsSubdifferential (pairing n) ε (conj (pairing n) f) 0
       = {z : Rn n | f z ≤ ((μ + ε : ℝ) : EReal)} := by
-  rw [← epsSubgradient_conj_zero (B := pairing n) hf hc hp hμ ε, flip_pairing]
+  rw [← epsSubdifferential_conj_zero (B := pairing n) hf hc hp hμ ε, flip_pairing]
 
 /-! ### Theorem 27.1(i): the origin in the closure of `dom f*` -/
 
@@ -659,9 +659,9 @@ variable {h : Rn n → EReal} {C : Set (Rn n)} {x : Rn n}
 /-- **Theorem 27.4**, sufficiency: if some `x* ∈ ∂h(x)` has `-x*` normal to `C` at `x`, then `h`
 attains its infimum relative to `C` at `x`. Needs **no hypothesis at all** — not properness of `h`,
 not convexity of `C`, not even `x ∈ C`: the two inequalities simply add. -/
-theorem theorem_27_4_sufficient {y : Rn n} (hy : y ∈ subgradient (pairing n) h x)
+theorem theorem_27_4_sufficient {y : Rn n} (hy : y ∈ subdifferential (pairing n) h x)
     (hn : -y ∈ normalCone (pairing n) C x) {z : Rn n} (hz : z ∈ C) : h x ≤ h z :=
-  le_of_mem_subgradient_of_neg_mem_normalCone hy hn hz
+  le_of_mem_subdifferential_of_neg_mem_normalCone hy hn hz
 
 /-- **Theorem 27.4**, necessity under the book's first constraint qualification: `ri (dom h)` meets
 `ri C`. The exactness of the sum `h + δ(· | C)` comes from Theorem 16.4; Rockafellar's proof cites
@@ -669,8 +669,8 @@ Theorem 23.8 for the same step. -/
 theorem theorem_27_4_necessary (hh : ConvexFn h) (hp : Proper h) (hC : Convex ℝ C)
     (hCne : C.Nonempty) {x₀ : Rn n} (hx₀h : x₀ ∈ ri (dom h)) (hx₀C : x₀ ∈ ri C)
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
-    ∃ y ∈ subgradient (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
-  exists_mem_subgradient_neg_mem_normalCone
+    ∃ y ∈ subdifferential (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
+  exists_mem_subdifferential_neg_mem_normalCone
     (IsExactSum.of_relint (B := pairing n) hh hp (convexFn_indicatorFn.2 hC)
       (proper_indicatorFn.2 hCne) hx₀h (by rw [dom_indicatorFn]; exact hx₀C)) hx hmin
 
@@ -680,8 +680,8 @@ Theorem 20.1 needs only a point of its effective domain. -/
 theorem theorem_27_4_necessary_polyhedral (hh : ConvexFn h) (hp : Proper h) (hC : Polyhedral C)
     {x₀ : Rn n} (hx₀h : x₀ ∈ ri (dom h)) (hx₀C : x₀ ∈ C)
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
-    ∃ y ∈ subgradient (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
-  exists_mem_subgradient_neg_mem_normalCone
+    ∃ y ∈ subdifferential (pairing n) h x, -y ∈ normalCone (pairing n) C x :=
+  exists_mem_subdifferential_neg_mem_normalCone
     (IsExactSum.symm (IsExactSum.of_polyhedral (B := pairing n) (polyhedralFn_indicatorFn hC)
       (proper_indicatorFn.2 ⟨x₀, hx₀C⟩) hh hp (by rw [dom_indicatorFn]; exact hx₀C) hx₀h))
     hx hmin
@@ -711,12 +711,12 @@ theorem nearest_iff_sub_mem_normalCone (hC : Convex ℝ C) (hCne : C.Nonempty) {
     obtain ⟨x₀, hx₀⟩ := Convex.relint_nonempty hC hCne
     obtain ⟨y, hy, hny⟩ := theorem_27_4_necessary (convexFn_quadFn_sub a) (proper_quadFn_sub a) hC
       hCne (x₀ := x₀) (by rw [hdom, intrinsicInterior_univ]; trivial) hx₀ hx hmin'
-    rw [subgradient_quadFn_sub, Set.mem_singleton_iff] at hy
+    rw [subdifferential_quadFn_sub, Set.mem_singleton_iff] at hy
     rwa [hy, neg_sub] at hny
   · intro hn z hz
     refine theorem_27_4_sufficient (h := fun u => quadFn (pairing n) (a - u)) (y := x - a)
       ?_ ?_ hz
-    · rw [subgradient_quadFn_sub]
+    · rw [subdifferential_quadFn_sub]
       exact Set.mem_singleton _
     · rwa [neg_sub]
 

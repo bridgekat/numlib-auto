@@ -25,16 +25,16 @@ neither its value, its solutions, nor its Kuhn–Tucker vectors.
 
 ## Main results
 
-* `adjointBifun_eq_neg_conj_graphFn` — the computation above;
-  `concaveFn_graphFn_adjointBifun`, `closedConcaveFn_graphFn_adjointBifun`,
-  `concaveAdjointBifun_adjointBifun_eq_clBifun`, `properConcave_graphFn_adjointBifun_iff` — `F*` is
-  closed concave, `F** = cl F`, and `F*` is proper exactly when `F` is (Theorem 30.1 in [^1]).
+* `adjointBifun_eq_neg_conj_graphFn` — the computation above; `concaveFn_graphFn_adjointBifun`,
+  `closedConcaveFn_graphFn_adjointBifun`, `concaveAdjointBifun_adjointBifun_eq_clBifun`,
+  `properConcave_graphFn_adjointBifun_iff` — `F*` is closed concave, `F** = cl F`, and `F*` is
+  proper exactly when `F` is ([rockafellar1970convex] Theorem 30.1).
 * `adjointBifun_zero_eq_concaveConj` — the dual objective as a concave conjugate;
   `adjointBifun_zero_le` — weak duality.
 * `mem_kuhnTucker_iff_adjointBifun_zero_eq` — the Kuhn–Tucker vectors are the points where the dual
   objective attains the optimal value, with no normality needed.
 * `clBifun_apply_eq_clFn`, `infBifun_clBifun_eq` and the two `domBifun` inclusions — the closure of
-  a bifunction, slice by slice (Theorem 29.4 in [^1]).
+  a bifunction, slice by slice ([rockafellar1970convex] Theorem 29.4).
 
 ## Implementation notes
 
@@ -48,7 +48,7 @@ demand a topology on `U × X` that this development never supplies.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §§29-30.
+* [rockafellar1970convex] §§29-30.
 -/
 
 namespace ConvexAnalysis

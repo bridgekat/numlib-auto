@@ -1,7 +1,7 @@
-import Numlib.Analysis.Convex.Subgradient.Bounded
-import Numlib.Analysis.Convex.Subgradient.Convergence
-import Numlib.Analysis.Convex.Subgradient.Integral
-import Numlib.Analysis.Convex.Subgradient.Primitive
+import Numlib.Analysis.Convex.Subdifferential.Bounded
+import Numlib.Analysis.Convex.Subdifferential.Convergence
+import Numlib.Analysis.Convex.Subdifferential.Integral
+import Numlib.Analysis.Convex.Subdifferential.Primitive
 import NumlibSurface.Common.Euclidean
 
 /-!
@@ -106,10 +106,10 @@ theorem theorem_24_1_tendsto_leftDeriv_Iio (hf : ClosedProperConvexFn f) (x : �
 
 /-- **§24**, the remark after Theorem 24.1: `∂f(x) = {x* ∈ R | f'₋(x) ≤ x* ≤ f'₊(x)}`. Only
 properness is needed. -/
-theorem theorem_24_1_subgradient (hp : Proper f) (x : ℝ) :
-    subgradient (innerₗ ℝ) f x
+theorem theorem_24_1_subdifferential (hp : Proper f) (x : ℝ) :
+    subdifferential (innerₗ ℝ) f x
       = {y : ℝ | leftDeriv f x ≤ (y : EReal) ∧ (y : EReal) ≤ rightDeriv f x} :=
-  Set.ext fun _ => mem_subgradient_iff_le_rightDeriv hp
+  Set.ext fun _ => mem_subdifferential_iff_le_rightDeriv hp
 
 end OneDim
 
@@ -292,8 +292,8 @@ theorem theorem_24_4 (hf : ClosedProperConvexFn f) : IsClosed (subgradientRel (p
 /-- **Rockafellar, Theorem 24.4** in the book's own words: if `xᵢ* ∈ ∂f(xᵢ)` with `xᵢ → x` and
 `xᵢ* → x*`, then `x* ∈ ∂f(x)`. -/
 theorem theorem_24_4_seq (hf : ClosedProperConvexFn f) {xs ys : ℕ → Rn n} {x y : Rn n}
-    (hmem : ∀ i, ys i ∈ subgradient (pairing n) f (xs i)) (hx : Tendsto xs atTop (𝓝 x))
-    (hy : Tendsto ys atTop (𝓝 y)) : y ∈ subgradient (pairing n) f x := by
+    (hmem : ∀ i, ys i ∈ subdifferential (pairing n) f (xs i)) (hx : Tendsto xs atTop (𝓝 x))
+    (hy : Tendsto ys atTop (𝓝 y)) : y ∈ subdifferential (pairing n) f x := by
   have hp : Tendsto (fun i => ((xs i, ys i) : Rn n × Rn n)) atTop (𝓝 (x, y)) := by
     rw [nhds_prod_eq]
     exact hx.prodMk hy
@@ -353,16 +353,16 @@ theorem theorem_24_5_limsup (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, Co
 
 /-- **Rockafellar, Theorem 24.5**, second assertion: given `ε > 0` there is an index `i₀` with
 `∂fᵢ(xᵢ) ⊆ ∂f(x) + εB` for all `i ≥ i₀`, `B` the Euclidean unit ball. -/
-theorem theorem_24_5_subgradient (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
+theorem theorem_24_5_subdifferential (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hfin : ∀ i, ∀ z ∈ C, f i z ≠ ⊥ ∧ f i z ≠ ⊤) (hg : ConvexFn g)
     (hgfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤)
     (hconv : ∀ z ∈ C, Tendsto (fun i => f i z) atTop (𝓝 (g z))) {x : Rn n}
     (hx : x ∈ C) {xs : ℕ → Rn n} (hxs : Tendsto xs atTop (𝓝 x)) {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subgradient (pairing n) (f i) (xs i)
-      ⊆ subgradient (pairing n) g x + Metric.closedBall (0 : Rn n) ε := by
+    ∀ᶠ i in atTop, subdifferential (pairing n) (f i) (xs i)
+      ⊆ subdifferential (pairing n) g x + Metric.closedBall (0 : Rn n) ε := by
   obtain ⟨hgp, hgC⟩ := proper_of_finite_on_isOpen hg hC hgfin hx
   have h := fun i => proper_of_finite_on_isOpen (hf i) hC (hfin i) hx
-  exact eventually_subgradient_subset_add_closedBall hC hCc hf (fun i => (h i).1)
+  exact eventually_subdifferential_subset_add_closedBall hC hCc hf (fun i => (h i).1)
     (fun i => (h i).2) hg hgp hgC hconv hx hxs hε
 
 /-- **Corollary 24.5.1**, first assertion: `f'(x; y)` is upper semicontinuous in
@@ -375,12 +375,12 @@ theorem corollary_24_5_1_upperSemicontinuous {f : Rn n → EReal} (hf : ConvexFn
 
 /-- **Rockafellar, Corollary 24.5.1**, second assertion: for `x ∈ int (dom f)` and `ε > 0` there is
 a `δ > 0` with `∂f(z) ⊆ ∂f(x) + εB` for every `z` within `δ` of `x`. -/
-theorem corollary_24_5_1_subgradient {f : Rn n → EReal} (hf : ConvexFn f) (hfp : Proper f)
+theorem corollary_24_5_1_subdifferential {f : Rn n → EReal} (hf : ConvexFn f) (hfp : Proper f)
     {x : Rn n} (hx : x ∈ interior (dom f)) {ε : ℝ} (hε : 0 < ε) :
-    ∃ δ > 0, ∀ z ∈ Metric.ball x δ, subgradient (pairing n) f z
-      ⊆ subgradient (pairing n) f x + Metric.closedBall (0 : Rn n) ε := by
+    ∃ δ > 0, ∀ z ∈ Metric.ball x δ, subdifferential (pairing n) f z
+      ⊆ subdifferential (pairing n) f x + Metric.closedBall (0 : Rn n) ε := by
   obtain ⟨δ, hδ, hmem⟩ := Metric.eventually_nhds_iff.1
-    (eventually_nhds_subgradient_subset_add_closedBall hf hfp hx hε)
+    (eventually_nhds_subdifferential_subset_add_closedBall hf hfp hx hε)
   exact ⟨δ, hδ, fun z hz => hmem (by simpa [Metric.mem_ball] using hz)⟩
 
 end Convergence
@@ -392,18 +392,20 @@ section Boundary
 variable {n : ℕ} {f : Rn n → EReal} {x y : Rn n}
 
 /-- **§24.** `∂f(x)_y` is the set of points `x* ∈ ∂f(x)` at which `y` is *normal* to `∂f(x)`;
-equivalently (`subgradientNormal_eq_sep`) the face of `∂f(x)` exposed by `y`. -/
-def subgradientNormal (f : Rn n → EReal) (x y : Rn n) : Set (Rn n) :=
-  {v ∈ subgradient (pairing n) f x | y ∈ normalCone (pairing n) (subgradient (pairing n) f x) v}
+equivalently (`subdifferentialNormal_eq_sep`) the face of `∂f(x)` exposed by `y`. -/
+def subdifferentialNormal (f : Rn n → EReal) (x y : Rn n) : Set (Rn n) :=
+  {v ∈ subdifferential (pairing n) f x |
+    y ∈ normalCone (pairing n) (subdifferential (pairing n) f x) v}
 
 /-- **The bridge**: `y` is normal to a set at `v` exactly when `v` maximises `⟨y, ·⟩` over it. -/
-theorem subgradientNormal_eq_sep (f : Rn n → EReal) (x y : Rn n) :
-    subgradientNormal f x y
-      = {v ∈ subgradient (pairing n) f x | ∀ w ∈ subgradient (pairing n) f x, ⟪y, w⟫ ≤ ⟪y, v⟫} := by
+theorem subdifferentialNormal_eq_sep (f : Rn n → EReal) (x y : Rn n) :
+    subdifferentialNormal f x y
+      = {v ∈ subdifferential (pairing n) f x |
+          ∀ w ∈ subdifferential (pairing n) f x, ⟪y, w⟫ ≤ ⟪y, v⟫} := by
   have key : ∀ w : Rn n, pairing n w y = ⟪y, w⟫ := fun w => by
     rw [pairing_apply]; exact real_inner_comm _ _
   ext v
-  simp only [subgradientNormal, Set.mem_sep_iff, mem_normalCone, map_sub, LinearMap.sub_apply,
+  simp only [subdifferentialNormal, Set.mem_sep_iff, mem_normalCone, map_sub, LinearMap.sub_apply,
     sub_nonpos, key]
 
 /-- **Theorem 24.6**, first assertion without junk values: every real `μ` above the second-order
@@ -433,15 +435,15 @@ theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f
 
 /-- **Rockafellar, Theorem 24.6**, second assertion: given `ε > 0` there is an index `i₀` with
 `∂f(xᵢ) ⊆ ∂f(x)_y + εB` for all `i ≥ i₀`. -/
-theorem theorem_24_6_subgradient (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f)
+theorem theorem_24_6_subdifferential (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f)
     {xs : ℕ → Rn n} (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x)
     (hxs : Tendsto xs atTop (𝓝 x))
     (hdir : Tendsto (fun i => ‖xs i - x‖⁻¹ • (xs i - x)) atTop (𝓝 y)) (hy : dirDeriv f x y ≠ ⊥)
     {α : ℝ} (hα : 0 < α) (hαy : x + α • y ∈ interior (dom f)) {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ i in atTop, subgradient (pairing n) f (xs i)
-      ⊆ subgradientNormal f x y + Metric.closedBall (0 : Rn n) ε := by
-  rw [subgradientNormal_eq_sep]
-  exact eventually_subgradient_subset_exposed_add_closedBall hf hfp hx hxsdom hxsne hxs hdir hy
+    ∀ᶠ i in atTop, subdifferential (pairing n) f (xs i)
+      ⊆ subdifferentialNormal f x y + Metric.closedBall (0 : Rn n) ε := by
+  rw [subdifferentialNormal_eq_sep]
+  exact eventually_subdifferential_subset_exposed_add_closedBall hf hfp hx hxsdom hxsne hxs hdir hy
     hα hαy hε
 
 end Boundary
@@ -459,7 +461,7 @@ such `α`, which is implied by, but weaker than, the book's sharper reading. -/
 theorem theorem_24_7_bound (hf : ConvexFn f) (hp : Proper f) (hS : IsCompact S)
     (hSD : S ⊆ interior (dom f)) :
     ∃ α : NNReal, LipschitzOnWith α (fun x => (f x).toReal) S ∧
-      (∀ x ∈ S, ∀ v ∈ subgradient (pairing n) f x, ‖v‖ ≤ (α : ℝ)) ∧
+      (∀ x ∈ S, ∀ v ∈ subdifferential (pairing n) f x, ‖v‖ ≤ (α : ℝ)) ∧
       ∀ x ∈ S, ∀ z : Rn n, dirDeriv f x z ≤ (((α : ℝ) * ‖z‖ : ℝ) : EReal) := by
   obtain ⟨α, hlip, hpair, hdir⟩ :=
     exists_lipschitz_forall_pairing_le_of_isCompact (B := pairing n) hf hp hS hSD

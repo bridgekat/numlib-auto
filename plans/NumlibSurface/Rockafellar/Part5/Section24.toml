@@ -33,7 +33,7 @@ id = 'theorem_24_1_tendsto_leftDeriv_Iio'
 source = 'Rockafellar 1970, Theorem 24.1'
 
 [[node]]
-id = 'theorem_24_1_subgradient'
+id = 'theorem_24_1_subdifferential'
 source = 'Rockafellar 1970, Theorem 24.1'
 
 [[node]]
@@ -68,7 +68,7 @@ id = 'theorem_24_5_limsup'
 source = 'Rockafellar 1970, Theorem 24.5'
 
 [[node]]
-id = 'theorem_24_5_subgradient'
+id = 'theorem_24_5_subdifferential'
 source = 'Rockafellar 1970, Theorem 24.5'
 
 [[node]]
@@ -76,11 +76,11 @@ id = 'corollary_24_5_1_upperSemicontinuous'
 source = 'Rockafellar 1970, Corollary 24.5.1'
 
 [[node]]
-id = 'corollary_24_5_1_subgradient'
+id = 'corollary_24_5_1_subdifferential'
 source = 'Rockafellar 1970, Corollary 24.5.1'
 
 [[node]]
-id = 'subgradientNormal'
+id = 'subdifferentialNormal'
 
 [[node]]
 id = 'theorem_24_6_lt'
@@ -91,7 +91,7 @@ id = 'theorem_24_6_limsup'
 source = 'Rockafellar 1970, Theorem 24.6'
 
 [[node]]
-id = 'theorem_24_6_subgradient'
+id = 'theorem_24_6_subdifferential'
 source = 'Rockafellar 1970, Theorem 24.6'
 
 [[node]]

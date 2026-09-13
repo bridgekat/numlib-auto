@@ -1,12 +1,6 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = '_root_.EReal.coe_sSup_of_bddAbove'
-
-[[node]]
-id = '_root_.EReal.coe_sInf_of_bddBelow'
-
-[[node]]
 id = 'isSaddlePointOn_iff_isSaddlePoint_subtype'
 
 [[node]]

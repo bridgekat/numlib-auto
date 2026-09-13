@@ -47,11 +47,12 @@ the saddle-value exists exactly when the two conjugates agree at the origin.
 * `isSaddlePoint_lagrangian_iff` — the saddle-points of the Lagrangian are the pairs "Kuhn–Tucker
   vector, optimal solution"; `isSaddlePoint_lagrangian_iff_normal_and_optimal` — the same read
   through normality; `mem_argmin_iff_exists_isSaddlePoint_lagrangian` — the general Kuhn–Tucker
-  theorem (Theorem 36.6 in [^1]); `exists_unique_closedBifun_saddleLagrangian_eq` — Lagrangians
-  are exactly the upper closed concave-convex functions (Theorem 36.5 in [^1]).
+  theorem ([rockafellar1970convex] Theorem 36.6); `exists_unique_closedBifun_saddleLagrangian_eq` —
+  Lagrangians are exactly the upper closed concave-convex functions
+  ([rockafellar1970convex] Theorem 36.5).
 * `hasSaddleValue_iff_conjSaddle_zero_eq` — the saddle-value read off at the origin.
 * `upperConjSaddle_eq_saddleLagrangian`, `lowerConjSaddle_eq_bracket_inverseBifun` — the two
-  conjugates of a member of `Ω (F)`, in terms of `F` alone (Theorem 37.1 in [^1]);
+  conjugates of a member of `Ω (F)`, in terms of `F` alone ([rockafellar1970convex] Theorem 37.1);
   `concaveConvexFn_upperConjSaddle` and companions — they are again concave-convex, and closed.
 
 ## Implementation notes
@@ -68,7 +69,7 @@ bracket of `flipBifun F` for the negated pairing, where the convex theory applie
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §36, §37.
+* [rockafellar1970convex] §36, §37.
 -/
 
 namespace ConvexAnalysis

@@ -164,3 +164,9 @@ id = 'le_coe_of_add_le_coe_add'
 
 [[node]]
 id = 'le_coe_of_sum_le_coe_sum'
+
+[[node]]
+id = 'coe_sSup_of_bddAbove'
+
+[[node]]
+id = 'coe_sInf_of_bddBelow'

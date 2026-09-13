@@ -26,8 +26,9 @@ modules `Closure.lean` and `Separation.lean` can state only in dimension-free fo
   a linear functional is non-negative and somewhere positive is the closure of the part where the
   functional is positive; a segment argument with no relative interiors in it, here because it is
   the density step of the cross-section arguments.
-* `Convex.segment_mem_relint` — the *line segment principle*: the half-open segment from a
-  relative interior point towards a point of the closure stays in `ri C` (Theorem 6.1 in [^1]).
+* `Convex.segment_mem_relint` — the *line segment principle*: the half-open segment from a relative
+  interior point towards a point of the closure stays in `ri C`
+  ([rockafellar1970convex] Theorem 6.1).
 * `Convex.relint_nonempty`, `Convex.affineSpan_relint` — a nonempty convex set has a nonempty
   relative interior, and the same affine hull as it.
 * `Convex.interior_subset_relint` — the full-dimensional collapse `ri C = int C`, in the direction
@@ -36,7 +37,7 @@ modules `Closure.lean` and `Separation.lean` can state only in dimension-free fo
   relative interior, whence `Convex.closure_eq_iff_relint_eq` and
   `Convex.relint_inter_nonempty_of_isOpen`.
 * `Convex.mem_relint_iff_prolong` — the *prolongation principle*: `z ∈ ri C` exactly when every
-  segment of `C` ending at `z` continues past it (Theorem 6.4 in [^1]).
+  segment of `C` ending at `z` continues past it ([rockafellar1970convex] Theorem 6.4).
 * `Convex.closure_iInter`, `Convex.relint_iInter` — closure and relative interior commute with an
   intersection whose relative interiors meet, with `Convex.relint_inter_affine` and
   `Convex.relint_subset_relint_of_subset_closure`.
@@ -59,7 +60,7 @@ modules `Closure.lean` and `Separation.lean` can state only in dimension-free fo
   of a level set, with `ConvexFn.relint_setOf_lt_eq`, `ConvexFn.closure_setOf_lt_eq` and the
   relatively open and closed special cases.
 * `exists_separatesProperly_iff_disjoint_relint` — two nonempty convex sets separate properly
-  exactly when their relative interiors are disjoint (Theorem 11.3 in [^1]).
+  exactly when their relative interiors are disjoint ([rockafellar1970convex] Theorem 11.3).
 
 ## Implementation notes
 
@@ -77,7 +78,7 @@ lemmas must be applied by their explicit names, `Convex.segment_mem_relint hC �
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §6, §7 and §11.
+* [rockafellar1970convex] §6, §7 and §11.
 -/
 
 open Set Filter Topology Pointwise

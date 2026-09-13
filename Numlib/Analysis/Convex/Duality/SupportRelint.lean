@@ -21,7 +21,7 @@ for equality in the reversible directions and nothing at all elsewhere.
 * `supportFn_neg_eq_neg_iff`, `neg_supportFn_neg_eq_iff` — the reversible directions of a support
   function are its directions of constancy.
 * `mem_relint_iff_lt_supportFn`, `mem_interior_iff_lt_supportFn` — the `ri` and `int` clauses
-  (Theorem 13.1 in [^1]).
+  ([rockafellar1970convex] Theorem 13.1).
 * `mem_affineSpan_iff_eq_supportFn` — the `aff` clause: the affine hull of a set is the
   intersection of the hyperplanes containing it. No convexity is needed.
 * `isBounded_iff_forall_bddAbove` — a set is bounded in the norm exactly when its support function
@@ -46,7 +46,7 @@ space, where `int ∅ = ∅`.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §13 and §1.
+* [rockafellar1970convex] §13 and §1.
 -/
 
 namespace ConvexAnalysis

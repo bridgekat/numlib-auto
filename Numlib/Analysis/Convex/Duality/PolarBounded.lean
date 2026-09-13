@@ -11,11 +11,12 @@ side for interiority on the other.
 ## Main results
 
 * `isBounded_polarSet_iff_zero_mem_interior` — `C°` is bounded if and only if `0 ∈ int C`
-  (Corollary 14.5.1 in [^1]). `isBounded_iff_zero_mem_interior_polarSet` is the dual statement.
+  ([rockafellar1970convex] Corollary 14.5.1). `isBounded_iff_zero_mem_interior_polarSet` is the dual
+  statement.
 
 ## References
 
-[^1]: R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §14.
+* [rockafellar1970convex] §14.
 -/
 
 open Bornology Set

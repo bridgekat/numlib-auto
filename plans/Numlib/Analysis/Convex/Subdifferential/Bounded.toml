@@ -1,0 +1,13 @@
+namespace = 'ConvexAnalysis'
+
+[[node]]
+id = 'exists_lipschitz_forall_pairing_le_of_isCompact'
+
+[[node]]
+id = 'exists_forall_norm_le_of_isCompact'
+
+[[node]]
+id = 'isCompact_subdifferential'
+
+[[node]]
+id = 'isCompact_image_subgradientRel'
