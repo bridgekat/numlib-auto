@@ -1,60 +1,19 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
-desc = '''
-§5.11, the Lanczos method for the extremal eigenvalues of a symmetric matrix. The tridiagonal
-matrices `H_m` are `Lanczos.tridiag` of `Numlib/Krylov/Lanczos`, the Courant–Fischer theorem is
-`Numlib/Eigen/MinMax`, the bounds (5.67) are the Ritz-value interlacing of
-`Numlib/Eigen/RayleighRitz`, and Property 5.12 is `Lanczos.kaniel_paige_saad` of
-`Numlib/Eigen/KrylovEigen` at the first index, once the eigenvalues of `H_m` are identified with
-the eigenvalues of the compression of `A` to the Krylov subspace (a new bridge node). Example 5.18
-is numerical and Program 45 is not a node.
-'''
 
 [[node]]
 id = "courantFischer"
-kind = "theorem"
-desc = '''The Courant–Fischer theorem as displayed in §5.11: for a symmetric `A : Matrix (Fin (N+1)) (Fin
-(N+1)) ℝ` with eigenvalues sorted decreasingly, `λ_1 = max_{x ≠ 0} r(x)` and `λ_n = min_{x ≠ 0}
-r(x)` for the Rayleigh quotient `r(x) = xᵀ A x / xᵀ x`. `LinearMap.IsSymmetric.isGreatest_eigenvalues`
-and `LinearMap.IsSymmetric.isLeast_eigenvalues` at the extreme indices (the extreme cases are also
-Mathlib's `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional`). ★'''
-deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues", "LinearMap.IsSymmetric.isLeast_eigenvalues"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.11'
 
 [[node]]
 id = "lanczosTridiag"
-kind = "definition"
-desc = '''The Lanczos matrices `H_m = V_mᵀ A V_m` of §4.4.3, `Lanczos.tridiag (toEuclideanLin A) q₁ m`, the
-symmetric tridiagonal matrix of the compression of `A` to the Krylov subspace `𝒦_m(A, q₁)` in the
-Lanczos basis. The bridge `Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression` (new): as long
-as the process has not broken down (`finrank 𝒦_m = m`), the sorted eigenvalues of `H_m` are the
-sorted eigenvalues of `compression (toEuclideanLin A) (Krylov.subspace _ q₁ m)`. Cross-chapter:
-chapter 4's node for the Lanczos algorithm is assumed to be
-`QuarteroniSaccoSaleri.Chapter04.lanczosTridiag` or similar; depend on it once its id is fixed. ★★'''
-deps = ["Lanczos.tridiag", "Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.11'
 
 [[node]]
 id = "equation_5_67"
-kind = "theorem"
-desc = '''(5.67): `λ_1(H_m) = max_{‖x‖ = 1} r(V_m x) ≤ λ_1(A)` and `λ_m(H_m) = min_{‖x‖ = 1} r(V_m x) ≥
-λ_n(A)`. The variational identities are `LinearMap.IsSymmetric.isGreatest_eigenvalues_compression`
-(Ritz values are max–min over subspaces of `𝒦_m`) and the inequalities are the interlacing
-`LinearMap.IsSymmetric.eigenvalues_compression_le` (upper) and its reverse
-`LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression` (new, `Eigen/MinMax`) at the last
-index, or simply `Krylov.IsRitzPair.mem_Icc`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.lanczosTridiag", "LinearMap.IsSymmetric.isGreatest_eigenvalues_compression", "LinearMap.IsSymmetric.eigenvalues_compression_le", "LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.67)'
 
 [[node]]
 id = "property_5_12"
-kind = "theorem"
-desc = '''Property 5.12 (Kaniel–Paige), the largest eigenvalue: for symmetric `A` with eigenvalues
-`λ_1 ≥ … ≥ λ_n`, orthonormal eigenvectors `u_i`, starting vector `q₁` with `cos φ₁ = |q₁ᵀ u_1| ≠ 0`,
-`λ_1 > λ_2 > λ_n` and `m ≥ 2` before breakdown, the largest eigenvalue `η_1` of `H_m` satisfies
-`λ_1 ≥ η_1 ≥ λ_1 - (λ_1 - λ_n) tan²φ₁ / T_{m-1}(1 + 2ρ_1)²` with `ρ_1 = (λ_1 - λ_2)/(λ_2 - λ_n)`
-and `T_{m-1}` the Chebyshev polynomial of the first kind. This is `Lanczos.kaniel_paige_saad` at
-`i = 0` (the deflation product is empty, `κ_1 = 1`) with `k = m - 1`, through `lanczosTridiag`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.lanczosTridiag", "Lanczos.kaniel_paige_saad", "QuarteroniSaccoSaleri.Chapter05.courantFischer"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
 
 [[node]]
@@ -63,6 +22,40 @@ kind = "theorem"
 desc = '''Property 5.12, the smallest eigenvalue (the display after it): `λ_n ≤ η_m ≤ λ_n + (λ_1 - λ_n)
 tan²φ_n / T_{m-1}(1 + 2ρ_n)²` with `ρ_n = (λ_{n-1} - λ_n)/(λ_1 - λ_{n-1})`, `cos φ_n = |q₁ᵀ u_n|`.
 `property_5_12` applied to `-A`, whose Krylov subspaces are those of `A`
-(`Krylov.subspace_neg`, new if absent) and whose Ritz values are the negatives. ★★'''
+(`Krylov.subspace_neg`, new if absent) and whose Ritz values are the negatives. ★★
+
+Blocked: the reduction to `property_5_12` for `-A` needs four general facts the backbone does not
+have — `Krylov.subspace (-A) v m = Krylov.subspace A v m`, `compression (-A) K = -compression A K`,
+the reflection of the sorted eigenvalues `(hT.neg).eigenvalues hn i = -hT.eigenvalues hn (Fin.rev i)`
+(provable from `LinearMap.IsSymmetric.isGreatest_eigenvalues`/`isLeast_eigenvalues` and the
+uniqueness of greatest elements under negation), and, for the angle `φ_n`, that the eigenvector
+`(hT.neg).eigenvectorBasis hn 0` of `-A` is a unimodular multiple of `u_n` when `λ_n` is simple
+(`Submodule.tanAngle` is invariant under such a rescaling). Each is routine but together they are
+an afternoon; the natural fix is either those four backbone lemmas or a mirror
+`Lanczos.kaniel_paige_saad` for the smallest Ritz value. Estimate: 150 lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
+
+[[node]]
+id = "rayleigh"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.11'
+
+[[node]]
+id = "rayleigh_eq_rayleighQuotient"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.11'
+
+[[node]]
+id = "lanczosTridiag_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.11'
+
+[[node]]
+id = "lanczosEigenvalues"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
+
+[[node]]
+id = "lanczosEigenvalues_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
+
+[[node]]
+id = "le_of_finrank_krylov_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.67)'

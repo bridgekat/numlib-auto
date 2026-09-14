@@ -1,99 +1,35 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
-desc = '''
-§5.10, methods for symmetric matrices. §5.10.1, the Jacobi method: the rotation (5.59)–(5.62) with
-the book's root choice, the off-diagonal mass `Ψ` (5.63) and its decrease (5.64), all from
-`Numlib/Eigen/Jacobi` (which proves the decrease for its own root; the surface uses the general
-form of the identity for any annihilating rotation), the row-cyclic sweep as a definition, and
-the quadratic convergence of the cyclic method as not formalized. §5.10.2, Sturm sequences: the
-recurrence (5.65), Property 5.11 (strict interlacing and the sign-change count) and the Givens
-bisection, over the new `Numlib/Eigen/Sturm` and the Cauchy interlacing added to
-`Numlib/Eigen/MinMax`. The count statement is read with `≤ μ` (see the errata): the book's sign
-convention at a zero of `p_i` counts an eigenvalue equal to `μ`. Examples 5.15–5.17 are numerical
-and Programs 38–44 are not nodes.
-'''
 
 [[node]]
 id = "equation_5_60"
-kind = "theorem"
-desc = '''(5.59)–(5.60): for a symmetric `A : Matrix n n ℝ`, indices `p ≠ q` and `G = planeRotation p q
-c s` with `c² + s² = 1`, the entries of `A' = Gᵀ A G` at `(p,p), (p,q), (q,q)` are those of the
-`2 × 2` product `!![c, s; -s, c]ᵀ * !![a_pp, a_pq; a_pq, a_qq] * !![c, s; -s, c]` and the other
-entries change only in rows/columns `p`, `q`. `Matrix.conj_planeRotation_apply_jj/_kk/_jk/_of_ne`
-(moved to `LinearAlgebra/Matrix/PlaneRotation`). Sign convention: the book's `G_pq` has `(p, q)`
-entry `+ sin θ`, the backbone's `planeRotation p q c s` has `-s` there, so the book's `(c, s)` is
-the backbone's `(c, -s)`; `t = s/c` changes sign accordingly. ★'''
-deps = ["Matrix.conj_planeRotation_apply_jj", "Matrix.conj_planeRotation_apply_kk", "Matrix.conj_planeRotation_apply_jk", "Matrix.conj_planeRotation_apply_of_ne"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.60)'
 
 [[node]]
 id = "equation_5_61"
-kind = "definition"
-desc = '''(5.61)–(5.62), the book's rotation: for `a_pq ≠ 0` let `η = (a_qq - a_pp)/(2 a_pq)`, `t = 1/(η
-+ √(1+η²))` if `η ≥ 0` and `t = -1/(-η + √(1+η²))` otherwise, `c = 1/√(1+t²)`, `s = c t`; for
-`a_pq = 0`, `(c, s) = (1, 0)`. Defined as `jacobiTanBook A p q`, `jacobiCosBook`, `jacobiSinBook`
-(Program 39). This is the root of `t² + 2ηt - 1 = 0` of smaller modulus; the backbone's
-`Matrix.jacobiTan` is the other root `θ + √(θ²+1)` with `θ = (a_qq - a_pp)/(2 a_pq)` = the book's
-`η`, so the two differ by `t_book = -1/t_backbone`. ★'''
-deps = ["Matrix.jacobiTan", "Matrix.jacobiCos", "Matrix.jacobiSin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
 
 [[node]]
 id = "equation_5_61_root"
-kind = "theorem"
-desc = '''(5.61): the book's `t` satisfies `t² + 2ηt - 1 = 0` and `|t| ≤ 1`, and `c² + s² = 1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_61"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
 
 [[node]]
 id = "equation_5_59"
-kind = "theorem"
-desc = '''(5.59): with the book's `(c, s)`, the rotated matrix `A^{(k)} = G_pqᵀ A^{(k-1)} G_pq` has
-`A^{(k)} p q = 0`. From `equation_5_60` and `equation_5_61_root`: the `(p, q)` entry is `(c² - s²)
-a_pq + c s (a_pp - a_qq)`, which vanishes iff `t² + 2ηt - 1 = 0` (with the sign convention noted
-in `equation_5_60`). The backbone's `Matrix.jacobi_annihilate` is the same identity for its root. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_60", "QuarteroniSaccoSaleri.Chapter05.equation_5_61_root", "Matrix.jacobi_annihilate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.59)'
 
 [[node]]
 id = "equation_5_63"
-kind = "definition"
-desc = '''(5.63): `Ψ(M) = (∑_{i ≠ j} m_ij²)^{1/2} = (‖M‖_F² - ∑ m_ii²)^{1/2}`; `Ψ M := √(offDiagNormSq
-M)` with `Matrix.offDiagNormSq_add_sum_diag_sq_real` for the second form. ★'''
-deps = ["Matrix.offDiagNormSq", "Matrix.offDiagNormSq_add_sum_diag_sq_real"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.63)'
 
 [[node]]
 id = "equation_5_64"
-kind = "theorem"
-desc = '''(5.64): for symmetric `A`, `p ≠ q`, and any rotation `G = planeRotation p q c s`
-(`c² + s² = 1`) with `(Gᵀ A G) p q = 0`, `Ψ(Gᵀ A G)² = Ψ(A)² - 2 a_pq²`, in particular for the
-book's rotation of `equation_5_59`. Backbone `Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero`
-(new, `Eigen/Jacobi`; the existing `Matrix.offDiagNormSq_jacobiStep` is its instance at the
-backbone's root). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_63", "QuarteroniSaccoSaleri.Chapter05.equation_5_59", "Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.64)'
 
 [[node]]
 id = "classicalJacobi"
-kind = "theorem"
-desc = '''The "optimal choice" of `(p, q)` after (5.64), the classical Jacobi method annihilating a
-largest off-diagonal entry at each step: `Matrix.classicalJacobiIterate A ν` is symmetric and
-orthogonally similar to `A`, `Ψ(A_ν)² ≤ (1 - 2/(n² - n))^ν Ψ(A)²`, and the iterates converge to a
-diagonal matrix with the characteristic polynomial of `A`. `Matrix.offDiagNormSq_classicalJacobiIterate_le`,
-`Matrix.tendsto_classicalJacobiIterate`, `Matrix.charpoly_classicalJacobiIterate`. Not stated as a
-theorem by the book; recorded because it is the convergence result the backbone has. ★'''
-deps = ["Matrix.classicalJacobiIterate", "Matrix.offDiagNormSq_classicalJacobiIterate_le", "Matrix.tendsto_classicalJacobiIterate", "Matrix.charpoly_classicalJacobiIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 
 [[node]]
 id = "cyclicJacobiSweep"
-kind = "definition"
-desc = '''The row-cyclic Jacobi method: one sweep `Matrix.cyclicJacobiSweep A` applies the rotation of
-`equation_5_59` at `(p, q)` for `p = 0, …, N-2`, `q = p+1, …, N-1` in row order (`N(N-1)/2`
-rotations), and `cyclicJacobiIterate A k` iterates sweeps. Each sweep is a product of rotations,
-so the iterates stay symmetric and orthogonally similar to `A`; `Ψ` does not increase
-(`equation_5_64`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_59", "QuarteroniSaccoSaleri.Chapter05.equation_5_64"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 
 [[node]]
@@ -108,65 +44,84 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 
 [[node]]
 id = "sturmSeq"
-kind = "definition"
-desc = '''(5.65): for `T = tridiag(b, d, b)` with diagonal `d : ℕ → ℝ` and off-diagonal `b : ℕ → ℝ`
-(`Matrix.symmTridiagonalOf d b n`), the Sturm sequence `p 0 = 1`, `p 1 = d 0 - X`,
-`p (i+2) = (d (i+1) - X) p (i+1) - b i² p i`; `Sturm.seq d b`, with `Sturm.seq_eq_det`:
-`p i = det (T_i - X I)` for the leading principal submatrix `T_i` of order `i`, and
-`Sturm.seq_eq_charpoly`: `p i = (-1)^i charpoly T_i`, so `p n` is the characteristic polynomial
-of `T` up to sign. The book's indexing is `1`-based (`d_1, …, d_n`, `b_1, …, b_{n-1}`); here
-`d i = d_{i+1}`, `b i = b_{i+1}`. ★'''
-deps = ["Matrix.symmTridiagonalOf", "Sturm.seq", "Sturm.seq_eq_det", "Sturm.seq_eq_charpoly"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.65)'
 
 [[node]]
 id = "property_5_11_interlace"
-kind = "theorem"
-desc = '''Property 5.11, first clause: for `b i ≠ 0` for all `i` (unreduced `T`) and `1 ≤ i`, the
-eigenvalues of `T_{i-1}` strictly separate those of `T_i`: with both spectra sorted decreasingly
-(`Matrix.IsHermitian.eigenvalues₀`), `λ_{k+1}(T_i) < λ_k(T_{i-1}) < λ_k(T_i)` for `k < i - 1`.
-`Sturm.eigenvalues_strictInterlace`. Proof: weak interlacing is Cauchy's theorem for the leading
-principal submatrix (`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`, `Eigen/MinMax`);
-strictness because consecutive `p_i`, `p_{i-1}` have no common root
-(`Sturm.eval_ne_zero_or_eval_ne_zero`: a common root propagates down the recurrence to
-`p_0 = 1`) and the eigenvalues of an unreduced symmetric tridiagonal matrix are simple. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.sturmSeq", "Sturm.eigenvalues_strictInterlace", "Matrix.IsHermitian.eigenvalues₀_submatrix_interlace", "Sturm.eval_ne_zero_or_eval_ne_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
 
 [[node]]
 id = "property_5_11_count"
-kind = "theorem"
-desc = '''Property 5.11, second clause: for unreduced `T` and `μ : ℝ`, the number `s(μ)` of sign changes
-in `p_0(μ), …, p_n(μ)` — with a vanishing `p_i(μ)` given the sign opposite to `p_{i-1}(μ)`
-(`Sturm.sign`, `Sturm.signChanges`) — equals the number of eigenvalues of `T` that are `≤ μ`,
-counted with multiplicity: `signChanges d b n μ = T.charpoly.countRootsIn (Set.Iic μ)`.
-`Sturm.signChanges_eq_countRootsIn`. Reading: the book says "strictly less than `μ`", which is
-the same when `μ` is not an eigenvalue; at an eigenvalue the stated sign convention makes the
-count include `μ` (for `n = 1`, `μ = d_1`: the sequence `1, 0` has one sign change and no
-eigenvalue `< μ`). Proof: induction on `n` through the strict interlacing and the intermediate
-value theorem, as in Wilkinson Ch. 5 §37. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.sturmSeq", "Sturm.sign", "Sturm.signChanges", "Sturm.signChanges_eq_countRootsIn", "QuarteroniSaccoSaleri.Chapter05.property_5_11_interlace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
 
 [[node]]
 id = "givensBisection"
-kind = "definition"
-desc = '''The Givens method: `α = min_i (d_i - |b_{i-1}| - |b_i|)`, `β = max_i (d_i + |b_{i-1}| + |b_i|)`
-(with `b_0 = b_n = 0`) enclose the spectrum by Theorem 5.2 (`Sturm.spectrum_subset_Icc`), and for
-the `i`-th eigenvalue (counting from the largest, `1`-based) the bisection `c = (a + b)/2`,
-`b := c` if `s(c) > n - i` else `a := c`, is `Sturm.bisectionStep`/`Sturm.bisectionIterate` from
-`(α, β)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_11_count", "Sturm.spectrum_subset_Icc", "Sturm.bisectionStep", "Sturm.bisectionIterate", "QuarteroniSaccoSaleri.Chapter05.theorem_5_2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
 
 [[node]]
 id = "givensBisection_error"
-kind = "theorem"
-desc = '''The error bound of the Givens method: after `r` steps from `(α, β)` the interval `(a_r, b_r]`
-contains `λ_i` and has length `(β - α)/2^r`, so `c_r = (a_r + b_r)/2` approximates `λ_i` within
-`(β - α) 2^{-(r+1)} ≤ (|α| + |β|) 2^{-(r+1)}` — the book's bound quoted from (6.9).
-`Sturm.eigenvalues₀_mem_bisectionIterate` and `Sturm.bisectionIterate_length` (new). The invariant
-is `s(a_r) ≤ n - i < s(b_r)`, which by `property_5_11_count` says exactly that the `i`-th largest
-eigenvalue lies in `(a_r, b_r]`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.givensBisection", "Sturm.eigenvalues₀_mem_bisectionIterate", "Sturm.bisectionIterate_length"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "jacobiTanBook"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
+
+[[node]]
+id = "jacobiTanBook_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
+
+[[node]]
+id = "equation_5_61_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.62)'
+
+[[node]]
+id = "jacobiRotate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "jacobiRotate_eq_jacobiStep"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "equation_5_63_eq_sqrt"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.63)'
+
+[[node]]
+id = "equation_5_63_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.63)'
+
+[[node]]
+id = "cyclicPairs"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "cyclicPairs_ne"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "cyclicJacobiIterate"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "foldl_jacobiRotate_spec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "cyclicJacobiSweep_spec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
+
+[[node]]
+id = "sturmSeq_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.65)'
+
+[[node]]
+id = "equation_5_65"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.65)'
+
+[[node]]
+id = "givensBisection_spec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "eigenvalues_mem_Icc_givensBisection"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
