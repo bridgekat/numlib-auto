@@ -1,66 +1,37 @@
 namespace = "QuarteroniSaccoSaleri.Chapter01"
-desc = '''
-Quarteroni–Sacco–Saleri §1.9, the singular value decomposition: Property 1.7 (`Uᴴ A V = Σ`), the
-characterization (1.10) of the singular values through `Aᴴ A`, the Hermitian case, rank, kernel
-and range read off the SVD, and the Moore–Penrose pseudo-inverse `A⁺ = V Σ⁺ Uᴴ` of Definition 1.15
-with its full-rank and square cases, all from `Numlib/LinearAlgebra/Matrix/SVD` (whose
-`Matrix.singularValues` are indexed by the columns and unsorted; the sorted `σ₁ ≥ σ₂ ≥ …` of the
-book are Mathlib's `LinearMap.singularValues`, which the factorization `Matrix.exists_svd` carries).
-Exercise 12, cited here, is the Moore–Penrose identities.
-'''
 
 [[node]]
 id = "property_1_7"
-kind = "theorem"
-desc = '''For `A : Matrix (Fin m) (Fin n) ℂ` there are `U ∈ unitaryGroup (Fin m) ℂ` and `V ∈ unitaryGroup (Fin n) ℂ` with `star U * A * V = Matrix.rectDiagonal σ`, where `σ i = (toEuclideanLin A).singularValues i` is antitone and nonnegative (`σ₁ ≥ … ≥ σ_p ≥ 0`, `p = min m n`); for a real `A : Matrix (Fin m) (Fin n) ℝ` the same with orthogonal `U`, `V` and `Uᵀ` (the `𝕜 = ℝ` instance of the backbone statement). Backbone `Matrix.exists_svd`. ★'''
-deps = ["Matrix.exists_svd"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.7'
 
 [[node]]
 id = "equation_1_10"
-kind = "theorem"
-desc = '''`σ_i(A) = √λ_i(Aᴴ A)`: `A.singularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i` for every column index (backbone `Matrix.sq_singularValues`), and for any SVD `star U * A * V = rectDiagonal σ` the numbers `σ i` are the square roots of the eigenvalues of `Aᴴ A` (`Matrix.singularValues_eq_of_svd`); the columns of `U` (left singular vectors) are eigenvectors of `A Aᴴ` and those of `V` (right singular vectors) of `Aᴴ A`, as `Aᴴ A = V Σᴴ Σ Vᴴ`. ★'''
-deps = ["Matrix.sq_singularValues", "Matrix.singularValues_eq_of_svd"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.10)'
 
 [[node]]
 id = "singularValues_of_isHermitian"
-kind = "theorem"
-desc = '''For Hermitian `A` the singular values are the moduli of the eigenvalues: `∃ e : Fin n ≃ Fin n, ∀ i, A.singularValues (e i) = |hA.eigenvalues i|`. Backbone `Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues`. ★'''
-deps = ["Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.9'
 
 [[node]]
 id = "rank_eq_card_singularValues_ne_zero"
-kind = "theorem"
-desc = '''If `σ₁ ≥ … ≥ σ_r > σ_{r+1} = … = 0` then `A.rank = r`: `A.rank = Fintype.card {i // A.singularValues i ≠ 0}` (backbone `Matrix.card_singularValues_ne_zero`), and for the sorted values `A.rank = (toEuclideanLin A).singularValues.support.card` (Mathlib `LinearMap.card_support_singularValues`). ★'''
-deps = ["Matrix.card_singularValues_ne_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.9'
 
 [[node]]
 id = "ker_range_of_svd"
-kind = "theorem"
-desc = '''From an SVD `star U * A * V = rectDiagonal σ`: `ker A.mulVecLin` is the span of the columns `v_j` of `V` with `σ_j = 0` (or `j ≥ m`) and `range A.mulVecLin` the span of the columns `u_i` of `U` with `σ_i ≠ 0`. Backbone `Matrix.ker_mulVecLin_eq_span_of_svd` and `Matrix.range_mulVecLin_eq_span_of_svd`. ★'''
-deps = ["Matrix.ker_mulVecLin_eq_span_of_svd"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.9'
 
 [[node]]
 id = "definition_1_15"
-kind = "theorem"
-desc = '''The Moore–Penrose pseudo-inverse of Definition 1.15 is the backbone's `Matrix.pinv`: for any SVD `star U * A * V = rectDiagonal (ofReal ∘ σ)` with `σ ≥ 0`, `A.pinv = V * rectDiagonal (ofReal ∘ fun i => (σ i)⁻¹) * star U`, the middle factor being `Σ⁺ = diag(1/σ₁, …, 1/σ_r, 0, …, 0)` of (1.11) (Lean's `0⁻¹ = 0`). Backbone `Matrix.pinv_eq_of_svd`. ★'''
-deps = ["Matrix.pinv_eq_of_svd", "Matrix.pinv"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.15'
 
 [[node]]
+id = "isUnit_of_rank_eq_card"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.9'
+
+[[node]]
 id = "definition_1_15_fullRank"
-kind = "theorem"
-desc = '''If `A.rank = n` (full column rank, e.g. `n < m`) then `A.pinv = (Aᴴ * A)⁻¹ * Aᴴ` (`(Aᵀ A)⁻¹ Aᵀ` for real `A`), and if `A` is square and nonsingular then `A.pinv = A⁻¹`. The corollaries `pinv_eq_inv_gram_mul_conjTranspose` and `pinv_eq_inv` stated beside `Matrix.pinv_eq_of_svd`, each a use of `Matrix.pinv_unique`. ★'''
-deps = ["Matrix.pinv_eq_of_svd", "Matrix.pinv_unique"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.15'
 
 [[node]]
 id = "exercise_1_12"
-kind = "theorem"
-desc = '''Cited by §1.9 for the properties of `A⁺`: for `A` with `A.rank = n`, (1) `A.pinv * A = 1`; (2) `A.pinv * A * A.pinv = A.pinv` and `A * A.pinv * A = A` (these two hold for every `A`, backbone `Matrix.pinv_mul_self_mul_pinv`, `Matrix.mul_pinv_mul_self`); (3) if `m = n` then `A.pinv = A⁻¹`. (1) from `definition_1_15_fullRank` and `nonsing_inv_mul` of the Gram matrix. ★'''
-deps = ["Matrix.mul_pinv_mul_self", "Matrix.pinv_mul_self_mul_pinv", "QuarteroniSaccoSaleri.Chapter01.definition_1_15_fullRank"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 1.12'

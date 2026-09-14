@@ -1,154 +1,93 @@
 namespace = "QuarteroniSaccoSaleri.Chapter01"
-desc = '''
-Quarteroni–Sacco–Saleri §1.12, positive definite, diagonally dominant and M-matrices. The book's
-positive definiteness (Definition 1.22) does not assume symmetry, so it is a surface definition in
-two flavours — `IsPositiveDefinite` (complex, "`(A x, x)` real and positive") and
-`IsPositiveDefiniteReal` (real, "`(A x, x) > 0`", the backbone's `LinearMap.IsCoercive`) — and
-Property 1.17 identifies the complex one with Mathlib's `Matrix.PosDef`. Properties 1.15–1.18 and
-the remarks after them come from Mathlib's `PosDef` API, `Numlib/LinearAlgebra/Matrix/Cholesky`
-(Sylvester, the factorization, the largest-entry remark) and
-`Numlib/Analysis/InnerProductSpace/{Coercive, Energy}` (the energy norm (1.28)); Definition 1.24
-and the positive-definiteness criterion for dominant matrices from
-`Numlib/LinearAlgebra/Matrix/DiagDominant`; Definition 1.25, the discrete maximum principle and
-Properties 1.19–1.20 from `Numlib/LinearAlgebra/Matrix/MMatrix`.
-'''
 
 [[node]]
 id = "IsPositiveDefinite"
-kind = "definition"
-desc = '''`IsPositiveDefinite (A : Matrix (Fin n) (Fin n) ℂ) : Prop := ∀ x : Fin n → ℂ, x ≠ 0 → (star x ⬝ᵥ (A *ᵥ x)).im = 0 ∧ 0 < (star x ⬝ᵥ (A *ᵥ x)).re`: positive definite in `ℂⁿ`, the number `(A x, x)` is real and positive for every nonzero `x`. No Hermitian symmetry is assumed (Property 1.17 derives it). `IsPositiveSemidefinite` with `0 ≤ re` alongside. ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.22'
+
+[[node]]
+id = "IsPositiveSemidefinite"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.22'
 
 [[node]]
 id = "IsPositiveDefiniteReal"
-kind = "definition"
-desc = '''`IsPositiveDefiniteReal (A : Matrix (Fin n) (Fin n) ℝ) : Prop := ∀ x : Fin n → ℝ, x ≠ 0 → 0 < x ⬝ᵥ (A *ᵥ x)`: positive definite in `ℝⁿ`; `IsPositiveSemidefiniteReal` with `≤` alongside. Saad's surface calls the same notion `IsPositiveReal`. ★'''
-deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.22'
+
+[[node]]
+id = "IsPositiveSemidefiniteReal"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.22'
 
 [[node]]
 id = "definition_1_22"
-kind = "theorem"
-desc = '''`IsPositiveDefiniteReal A ↔ (Matrix.toEuclideanLin A).IsCoercive` — the real notion is coercivity of the Euclidean operator (backbone `LinearMap.isCoercive_iff_forall_pos` in finite dimension), which is where its consequences live; and `IsPositiveDefinite (complexify A) → IsPositiveDefiniteReal A` (restrict to real vectors), the converse failing (Example 1.8). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter01.IsPositiveDefiniteReal", "QuarteroniSaccoSaleri.Chapter01.IsPositiveDefinite", "LinearMap.IsCoercive", "LinearMap.isCoercive_iff_forall_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.22'
 
 [[node]]
+id = "example_1_8_matrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.8, equation (1.27)'
+
+[[node]]
 id = "example_1_8"
-kind = "theorem"
-desc = '''For every `α : ℝ`, `A α := !![2, α; -2 - α, 2]` has `x ⬝ᵥ (A α *ᵥ x) = 2 * (x 0 ^ 2 + x 1 ^ 2 - x 0 * x 1)`, hence `IsPositiveDefiniteReal (A α)` (the quadratic form is `≥ x 0 ^ 2 + x 1 ^ 2`), `A α` is not symmetric when `α ≠ -1`, and `¬ IsPositiveDefinite (complexify (A α))` for `α ≠ -1`: at `x = ![1, I]`, `(star x ⬝ᵥ (A α *ᵥ x)).im = 2 α + 2 ≠ 0`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter01.IsPositiveDefiniteReal", "QuarteroniSaccoSaleri.Chapter01.IsPositiveDefinite"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.8'
 
 [[node]]
 id = "definition_1_23"
-kind = "theorem"
-desc = '''The symmetric and skew-symmetric parts are Mathlib's `selfAdjointPart ℝ` and `skewAdjointPart ℝ` on the star module `Matrix (Fin n) (Fin n) ℝ` (`star A = Aᵀ` over `ℝ`, `Matrix.star_eq_conjTranspose`, `conjTranspose_eq_transpose_of_trivial`): `(selfAdjointPart ℝ A : Matrix _ _ ℝ) = (1/2 : ℝ) • (A + Aᵀ)`, `(skewAdjointPart ℝ A : Matrix _ _ ℝ) = (1/2 : ℝ) • (A - Aᵀ)` (`selfAdjointPart_apply_coe`, `skewAdjointPart_apply_coe`) and `A = A_S + A_SS` (`StarModule.selfAdjointPart_add_skewAdjointPart`); over `ℂ` the same with `Aᴴ`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.23'
 
 [[node]]
 id = "property_1_15"
-kind = "theorem"
-desc = '''A real matrix is positive definite in `ℝⁿ` iff its symmetric part is: `IsPositiveDefiniteReal A ↔ IsPositiveDefiniteReal ((1/2 : ℝ) • (A + Aᵀ))`, because `x ⬝ᵥ (A_SS *ᵥ x) = 0` for every `x` (the quadratic form of a skew-symmetric matrix vanishes: `dotProduct_mulVec`, `vecMul_transpose`). The operator form is the backbone's `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter01.IsPositiveDefiniteReal", "QuarteroniSaccoSaleri.Chapter01.definition_1_23"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.15'
 
 [[node]]
 id = "property_1_16"
-kind = "theorem"
-desc = '''If `(A x, x)` is real for every `x ∈ ℂⁿ` then `A` is Hermitian: `(∀ x : Fin n → ℂ, (star x ⬝ᵥ (A *ᵥ x)).im = 0) → A.IsHermitian` (Mathlib `LinearMap.isSymmetric_iff_inner_map_self_real` through `Matrix.isHermitian_iff_isSymmetric`; the converse is `Matrix.IsHermitian.im_star_dotProduct_mulVec_self`); for a real `A`, `(∀ x : Fin n → ℂ, (star x ⬝ᵥ (complexify A *ᵥ x)).im = 0) → A.IsSymm`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.16'
 
 [[node]]
 id = "property_1_17"
-kind = "theorem"
-desc = '''`IsPositiveDefinite A ↔ A.PosDef` (Mathlib's `Matrix.PosDef` = Hermitian with positive quadratic form; forward direction through `property_1_16`), `A.PosDef ↔ A.IsHermitian ∧ ∀ i, 0 < hA.eigenvalues i` ("Hermitian with positive eigenvalues", `Matrix.IsHermitian.posDef_iff_eigenvalues_pos`), and a positive definite matrix is nonsingular (`Matrix.PosDef.isUnit`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter01.IsPositiveDefinite", "QuarteroniSaccoSaleri.Chapter01.property_1_16"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.17'
 
 [[node]]
 id = "property_1_18_quadratic"
-kind = "theorem"
-desc = '''Property 1.18 (1): for symmetric real `A`, `A.PosDef ↔ IsPositiveDefiniteReal A` — positivity of the real quadratic form on `ℝⁿ` suffices (`Matrix.posDef_iff_dotProduct_mulVec` with `star = id` over `ℝ`, `IsHermitian ↔ IsSymm` for real matrices). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter01.IsPositiveDefiniteReal"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.18'
 
 [[node]]
 id = "property_1_18_eigenvalues"
-kind = "theorem"
-desc = '''Property 1.18 (2): for symmetric real `A`, `A.PosDef ↔ ∀ (k) (e : Fin k ↪ Fin n), ∀ i, 0 < (A.submatrix e e).isHermitian.eigenvalues i` — the eigenvalues of every principal submatrix are positive. Backbone `Matrix.posDef_iff_forall_principalSubmatrix_eigenvalues_pos` with `IsHermitian.posDef_iff_eigenvalues_pos`. ★'''
-deps = ["Matrix.posDef_iff_forall_principalSubmatrix_eigenvalues_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.18'
 
 [[node]]
 id = "property_1_18_minors"
-kind = "theorem"
-desc = '''Property 1.18 (3), Sylvester's criterion: for symmetric real `A : Matrix (Fin n) (Fin n) ℝ`, `A.PosDef ↔ ∀ (k : ℕ) (hk : k ≤ n), 0 < (A.leadingPrincipalSubmatrix k hk).det` — all dominating principal minors `d_k` are positive. Backbone `Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos`. ★'''
-deps = ["Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.18'
 
 [[node]]
 id = "property_1_18_factor"
-kind = "theorem"
-desc = '''Property 1.18 (4): for symmetric real `A`, `A.PosDef ↔ ∃ H : Matrix (Fin n) (Fin n) ℝ, IsUnit H ∧ A = Hᵀ * H`. Forward: backbone `Matrix.posDef_iff_exists_isUnit_conjTranspose_mul_self`; backward: Mathlib `Matrix.PosDef.conjTranspose_mul_self` (`Hᵀ H` is positive definite for injective `H`). ★'''
-deps = ["Matrix.posDef_iff_exists_isUnit_conjTranspose_mul_self"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.18'
 
 [[node]]
 id = "posDef_diag_pos"
-kind = "theorem"
-desc = '''The two necessary conditions after Property 1.18: all diagonal entries of a positive definite matrix are positive, `A.PosDef → ∀ i, 0 < A i i` (`Matrix.PosDef.diag_pos`, the book's `e_iᵀ A e_i = a_ii`), and the entry of largest modulus is on the diagonal, `A.PosDef → ∀ i j, |A i j| ≤ max (A i i) (A j j)` (backbone `Matrix.PosDef.norm_apply_le_max_re_diag`). ★'''
-deps = ["Matrix.PosDef.norm_apply_le_max_re_diag"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.12'
 
 [[node]]
 id = "equation_1_28"
-kind = "theorem"
-desc = '''The energy norm of a symmetric positive definite `A`: (a) `A^{1/2}` is the unique positive definite solution of `X ^ 2 = A` — `X.PosDef ∧ X ^ 2 = A ↔ X = CFC.sqrt A` (Mathlib's `CFC.sqrt` on `Matrix (Fin n) (Fin n) ℝ` with the Loewner order of `Mathlib/Analysis/Matrix/Order`, `CFC.sqrt_eq_iff`/`CFC.sqrt_unique`, positive definiteness of the root from `Matrix.PosSemidef.det_sqrt`); (b) `‖x‖_A := energyNorm (toEuclideanLin A) x = ‖toLp 2 (CFC.sqrt A *ᵥ x)‖ = √(x ⬝ᵥ (A *ᵥ x))` (backbone `energyNorm`, `LinearMap.IsSymmetricCoercive.energyNorm_sq`), and it is a norm — the `WithEnergy` instance of `Numlib/Analysis/InnerProductSpace/Energy` through `Matrix.posDef_iff_isSymmetricCoercive`; (c) the energy scalar product `(x, y)_A = (A x, y)` is `energyInner (toEuclideanLin A) x y`. ★★'''
-deps = ["energyNorm", "energyInner", "WithEnergy", "Matrix.posDef_iff_isSymmetricCoercive"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.28)'
 
 [[node]]
 id = "definition_1_24"
-kind = "theorem"
-desc = '''Diagonal dominance aligned with the backbone: by rows, `Matrix.IsDiagDominant A ↔ ∀ i, ∑ j ∈ univ.erase i, |A i j| ≤ |A i i|`; by columns, `Matrix.IsColDiagDominant A ↔ ∀ i, ∑ j ∈ univ.erase i, |A j i| ≤ |A i i|`; strictly, `Matrix.IsStrictDiagDominant A ↔ ∀ i, ∑ j ∈ univ.erase i, |A i j| < |A i i|` and `Matrix.IsStrictColDiagDominant A ↔ …` (backbone `Matrix.isStrictDiagDominant_iff`, `Matrix.IsDiagDominant`). ★'''
-deps = ["Matrix.IsDiagDominant", "Matrix.isStrictDiagDominant_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.24'
 
 [[node]]
 id = "posDef_of_isStrictDiagDominant"
-kind = "theorem"
-desc = '''A strictly diagonally dominant symmetric matrix with positive diagonal entries is positive definite: `A.IsSymm → A.IsStrictDiagDominant → (∀ i, 0 < A i i) → A.PosDef`. Backbone `Matrix.IsStrictDiagDominant.posDef`. ★'''
-deps = ["Matrix.IsStrictDiagDominant.posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.12'
 
 [[node]]
 id = "definition_1_25"
-kind = "theorem"
-desc = '''`Matrix.IsMMatrix A ↔ IsUnit A ∧ (∀ i j, i ≠ j → A i j ≤ 0) ∧ A⁻¹.EntrywiseNonneg`: a nonsingular matrix with nonpositive off-diagonal entries and entrywise nonnegative inverse is an M-matrix (the backbone structure unfolded; `Matrix.EntrywiseNonneg` of `Numlib/LinearAlgebra/Matrix/Order`). ★'''
-deps = ["Matrix.IsMMatrix"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.25'
 
 [[node]]
 id = "discreteMaximumPrinciple"
-kind = "theorem"
-desc = '''The discrete maximum principle: if `A` is an M-matrix and `A *ᵥ x ≤ 0` componentwise then `x ≤ 0` componentwise. Backbone `Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`. ★'''
-deps = ["Matrix.IsMMatrix.nonneg_of_mulVec_nonneg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.12'
 
 [[node]]
 id = "property_1_19"
-kind = "theorem"
-desc = '''M-criterion: for `A` with `∀ i j, i ≠ j → A i j ≤ 0`, `A.IsMMatrix ↔ ∃ w : Fin n → ℝ, (∀ i, 0 < w i) ∧ ∀ i, 0 < (A *ᵥ w) i`. Backbone `Matrix.isMMatrix_iff_exists_pos_mulVec_pos`. ★'''
-deps = ["Matrix.isMMatrix_iff_exists_pos_mulVec_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.19'
 
 [[node]]
 id = "property_1_20"
-kind = "theorem"
-desc = '''A strictly row diagonally dominant `A` with `A i j ≤ 0` for `i ≠ j` and `0 < A i i` is an M-matrix: `A.IsStrictDiagDominant → (∀ i j, i ≠ j → A i j ≤ 0) → (∀ i, 0 < A i i) → A.IsMMatrix`. Under these hypotheses every row sum is positive (`∑ j, A i j = A i i - ∑_{j ≠ i} |A i j| > 0`), so this is backbone `Matrix.isMMatrix_of_forall_sum_pos` after `Matrix.isStrictDiagDominant_iff`. ★'''
-deps = ["Matrix.isMMatrix_of_forall_sum_pos", "Matrix.isStrictDiagDominant_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.20'
