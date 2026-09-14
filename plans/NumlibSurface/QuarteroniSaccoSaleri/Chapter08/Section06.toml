@@ -1,182 +1,63 @@
 namespace = "QuarteroniSaccoSaleri.Chapter08"
-desc = '''
-QSS §8.6: approximation by splines — Definition 8.1 and the dimension `n + k` of `𝒮_k`, the
-periodic (8.44) and natural (8.45) conditions, the truncated-power basis of Exercise 10;
-interpolatory cubic splines (§8.6.1): the panel representation (8.46), the M-continuity system
-(8.47)–(8.48) and its unique solvability for the natural, clamped and "prolonged" closures, the
-not-a-knot closure, the cardinal spline basis, the Holladay minimum-norm Property 8.2 with its
-clamped version (Exercise 11) and the best-approximation property of the clamped spline, and the
-error bounds of Property 8.3; B-splines (§8.6.2): Definition 8.2, the explicit form (8.53),
-support, positivity and minimal support, the Cox–de Boor recursion (8.54), coincident knots
-(Remark 8.3), the uniform cubic B-spline (Example 8.9), the B-spline basis (8.55)–(8.57), and
-knot insertion (Remark 8.4).
-
-The backbone is `Numlib/Approximation/Spline` (`Spline.splineSpace`, `Spline.momentMatrix`,
-`Spline.cubicInterp`, `Spline.holladay`, …) and `Numlib/Approximation/BSpline`
-(`BSpline.bspline` by the recursion, Definition 8.2 as the theorem
-`BSpline.bspline_eq_mul_newton_truncPow`). Conventions: the partition is
-`a = x 0 < x 1 < ⋯ < x n = b` (`Spline.IsPartition a b n x`), `n` panels; the book's B-spline
-`B_{i,k+1}` of degree `k` is `BSpline.bspline x k i`, and the book's fictitious knots
-`x_{-k}, …, x_{-1}` are the knots `x 0, …, x (k-1)` of a shifted sequence with the data knots
-at `x k, …, x (n + k)`. Example 8.8 (table) and Remark 8.2 (software) are skipped.
-'''
 
 [[node]]
 id = "definition_8_1"
-kind = "definition"
-desc = '''Definition 8.1: `𝒮_k`, the splines of degree `k` relative to the nodes `a = x 0 < ⋯ < x n = b`
-— functions on `[a, b]` that are polynomials of degree `≤ k` on every `[x j, x (j+1)]` (8.41) and
-of class `C^{k-1}` on `[a, b]` (8.42): `splineSpaceQSS a b n x k := Spline.splineSpace a b n x k (k - 1)`,
-a submodule of `C(Icc a b, ℝ)`, with `mem_definition_8_1_iff` unfolding (8.41)–(8.42). ★'''
-deps = ["Spline.splineSpace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1'
 
 [[node]]
 id = "definition_8_1_finrank"
-kind = "theorem"
-desc = '''`dim 𝒮_k = n + k`: for `Spline.IsPartition a b n x`, `1 ≤ n` and `1 ≤ k`,
-`Module.finrank ℝ (splineSpaceQSS a b n x k) = n + k`. `Spline.finrank_splineSpace` at `r = k - 1`:
-`n (k - (k - 1)) + (k - 1) + 1`. The book's count (8.43), `(k + 1) n - k (n - 1)`, is the same
-number. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_1", "Spline.finrank_splineSpace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1 and (8.43)'
 
 [[node]]
 id = "equation_8_44"
-kind = "definition"
-desc = '''(8.44), periodic splines: `IsPeriodicSpline a b k s` for `s : ℝ → ℝ` says
-`iteratedDeriv m s a = iteratedDeriv m s b` for all `m ≤ k - 1`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)'
 
 [[node]]
 id = "equation_8_45"
-kind = "definition"
-desc = '''(8.45), natural splines of odd degree `k = 2l - 1`, `l ≥ 2`: `IsNaturalSpline a b l s` says
-`iteratedDeriv (l + j) s a = 0` and `iteratedDeriv (l + j) s b = 0` for all `j ≤ l - 2`; for `l = 2`
-(cubic) this is `s''(a) = s''(b) = 0`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.45)'
 
 [[node]]
 id = "exercise_8_10"
-kind = "theorem"
-desc = '''Exercise 8.10 (cited in §8.6): `1, t, …, t^k, (t - x_1)_+^k, …, (t - x_{n-1})_+^k` form a
-basis of `𝒮_k[a, b]`, so every `s_k ∈ 𝒮_k` is `∑_{i ≤ k} b_i t^i + ∑_{1 ≤ j ≤ n-1} c_j (t - x_j)_+^k`:
-`Spline.exists_basis_truncPow`, for `Spline.IsPartition a b n x`, `1 ≤ n`, `1 ≤ k`. (The book's
-`g` is the number of interior nodes, `n - 1`.) ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_1", "Spline.exists_basis_truncPow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.10'
 
 [[node]]
 id = "IsCubicInterpSpline"
-kind = "definition"
-desc = '''"The cubic spline interpolating the values `f_i`": `IsCubicInterpSpline a b n x f s :=
-Spline.IsCubicInterp a b n x f s` — `s` is `C²` on `[a, b]`, a cubic on every panel, and
-`s (x i) = f i` for `i ≤ n`; with the notation `m_i = s'(x_i)`, `M_i = s''(x_i)`. ★'''
-deps = ["Spline.IsCubicInterp"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
 id = "equation_8_46"
-kind = "theorem"
-desc = '''(8.46): for `hs : IsCubicInterpSpline a b n x f s`, `M i := deriv (deriv s) (x i)` and
-`1 ≤ i ≤ n`, on `[x (i-1), x i]` the second derivative is linear,
-`deriv (deriv s) t = M (i-1) * (x i - t)/h_i + M i * (t - x (i-1))/h_i`, `h_i = x i - x (i-1)`; and
-`equation_8_46_integrated`: `s = Spline.panelCubic x f M i` on that panel (the display following
-(8.46) with `C_{i-1}, C̃_{i-1}` determined by the end values). `Spline.IsCubicInterp.eq_cubicSplineFun`
-and `Spline.deriv2_panelCubic`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.IsCubicInterpSpline", "Spline.IsCubicInterp", "Spline.panelCubic_left"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)'
 
 [[node]]
 id = "equation_8_47"
-kind = "theorem"
-desc = '''(8.47), the M-continuity system: for `hs : IsCubicInterpSpline a b n x f s` and every
-interior node `1 ≤ i ≤ n - 1`, `μ_i M_{i-1} + 2 M_i + λ_i M_{i+1} = d_i` with
-`μ_i = h_i/(h_i + h_{i+1})`, `λ_i = h_{i+1}/(h_i + h_{i+1})`,
-`d_i = (6/(h_i + h_{i+1})) ((f_{i+1} - f_i)/h_{i+1} - (f_i - f_{i-1})/h_i)`.
-`Spline.IsCubicInterp.moment_eq` / `Spline.moment_eq_of_contDiffOn`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.IsCubicInterpSpline", "Spline.moment_eq_of_contDiffOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.47)'
 
 [[node]]
 id = "equation_8_48"
-kind = "theorem"
-desc = '''(8.48), the closed tridiagonal system and its unique solvability: for
-`Spline.IsPartition a b n x`, `1 ≤ n`, closure parameters `0 ≤ λ_0 ≤ 1`, `0 ≤ μ_n ≤ 1` and any
-`d_0, d_n`, the system `Spline.momentMatrix n h λ_0 μ_n *ᵥ M = Spline.momentRhs n h f d_0 d_n` has
-exactly one solution (`Spline.isUnit_momentMatrix`, the matrix being strictly diagonally dominant),
-and there is exactly one `s` with `IsCubicInterpSpline a b n x f s` whose moments satisfy the two
-closure equations `2 M_0 + λ_0 M_1 = d_0`, `μ_n M_{n-1} + 2 M_n = d_n`
-(`Spline.existsUnique_isCubicInterp_of_closure`). The book's "popular choice" `λ_0 = μ_n = 1`,
-`d_0 = d_1`, `d_n = d_{n-1}` is the instance `equation_8_48_prolonged`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_47", "Spline.momentMatrix", "Spline.momentRhs", "Spline.isUnit_momentMatrix", "Spline.existsUnique_isCubicInterp_of_closure"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.48)'
 
 [[node]]
 id = "naturalCubicSpline_existsUnique"
-kind = "theorem"
-desc = '''The natural cubic spline (`s''(a) = s''(b) = 0`, i.e. `IsNaturalSpline a b 2 s`) interpolating
-`f_0, …, f_n` exists and is unique: `equation_8_48` with `λ_0 = μ_n = d_0 = d_n = 0`
-(`Spline.naturalInterp`). Likewise `clampedCubicSpline_existsUnique` for the constrained spline
-with `s'(a) = f'_0`, `s'(b) = f'_n` (`Spline.clampedInterp`; the closure `λ_0 = μ_n = 1` with
-`d_0 = (6/h_1)((f_1 - f_0)/h_1 - f'_0)`, `d_n = (6/h_n)(f'_n - (f_n - f_{n-1})/h_n)`, which is the
-book's remark that (8.48) "can be of the form" above with `f'(a), f'(b)` available). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_48", "QuarteroniSaccoSaleri.Chapter08.equation_8_45", "Spline.cubicInterp"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
 id = "notAKnotSpline_existsUnique"
-kind = "theorem"
-desc = '''The not-a-knot spline of §8.6.1: for `Spline.IsPartition a b n x` and `3 ≤ n` there is exactly
-one `s` with `IsCubicInterpSpline a b n x f s` whose third derivative is continuous at `x 1` and at
-`x (n-1)` (the cubic pieces on the first two and on the last two panels coincide, so the "active
-knots" are `x_0, x_2, …, x_{n-2}, x_n`). `Spline.existsUnique_isCubicInterp_notAKnot`. The
-hypothesis `3 ≤ n` is not in the book and is necessary (report, errata). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.IsCubicInterpSpline", "Spline.existsUnique_isCubicInterp_notAKnot"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
 id = "cardinalSplineBasis"
-kind = "theorem"
-desc = '''The cardinal spline basis of §8.6.1: there are cubic splines `φ_0, …, φ_{n+2} ∈ 𝒮_3` with
-`φ_i (x j) = δ_ij`, `φ_i'(x_0) = φ_i'(x_n) = 0` for `i ≤ n`, `φ_{n+1} (x j) = 0`, `φ_{n+1}'(x_0) = 1`,
-`φ_{n+1}'(x_n) = 0`, `φ_{n+2} (x j) = 0`, `φ_{n+2}'(x_0) = 0`, `φ_{n+2}'(x_n) = 1`; they form a basis
-of `𝒮_3`, and the clamped spline is `s_3 = ∑_{i ≤ n} f_i φ_i + f'_0 φ_{n+1} + f'_n φ_{n+2}`.
-`Spline.cardinalBasis` and `Spline.clampedInterp_eq_sum_cardinalBasis`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_1", "Spline.cardinalBasis"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
 id = "property_8_2"
-kind = "theorem"
-desc = '''Property 8.2 (Holladay): for `f` of class `C²` on `[a, b]` and `s_3` the natural cubic spline
-interpolating `f` at the nodes, `∫ t in a..b, (deriv (deriv s_3) t)^2 ≤ ∫ t in a..b, (deriv (deriv f) t)^2`,
-with equality iff `f = s_3` on `[a, b]` (`property_8_2_eq_iff`). `Spline.holladay` and
-`Spline.holladay_eq_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.holladay"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2'
 
 [[node]]
 id = "exercise_8_11"
-kind = "theorem"
-desc = '''Exercise 8.11 (cited after Property 8.2): the minimum norm property (8.49) holds also for the
-constrained spline with `s'(a) = f'(a)`, `s'(b) = f'(b)`: `∫ s''² ≤ ∫ f''²`, equality iff `f = s`.
-`Spline.holladay_clamped`. The hint's integration by parts is
-`Spline.integral_sub_deriv2_mul_deriv2_eq_zero`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.holladay"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.11'
 
 [[node]]
 id = "clampedSpline_bestApprox_deriv2"
-kind = "theorem"
-desc = '''The unnumbered display after Property 8.2: for `f` of class `C²` and `s_f` the clamped cubic
-spline interpolating `f` with `s_f'(a) = f'(a)`, `s_f'(b) = f'(b)`,
-`∫ t in a..b, (f'' t - s_f'' t)^2 ≤ ∫ t in a..b, (f'' t - s'' t)^2` for every `s ∈ 𝒮_3` (every `C²`
-piecewise cubic on the partition, interpolating or not).
-`Spline.integral_sq_sub_deriv2_clampedInterp_le`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "QuarteroniSaccoSaleri.Chapter08.definition_8_1", "Spline.integral_sq_sub_deriv2_clampedInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1 (after Property 8.2)'
 
 [[node]]
@@ -193,45 +74,28 @@ end conditions it means, and for the natural spline the statement is false unles
 near the ends). Not formalized: the sharp constants are the Hall–Meyer theorem, quoted by the
 book without proof; the `O(h⁴)` bound with non-sharp constants for `r = 0, 1, 2` is planned as
 `Spline.norm_sub_clampedInterp_le` (`★★★`) and the surface can state that version as
-`property_8_3_weak` once it exists.'''
+`property_8_3_weak` once it exists.
+
+Blocked: depends on the open backbone nodes `Spline.norm_deriv2_sub_clampedInterp_le` and
+`Spline.norm_sub_clampedInterp_le` (the `O(h⁴)` bound with non-sharp constants); the sharp constants are
+Hall–Meyer's theorem, not attempted. Left open on purpose in this pass.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.norm_sub_clampedInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3'
 
 [[node]]
 id = "definition_8_2"
-kind = "theorem"
-desc = '''Definition 8.2: the normalized B-spline `B_{i,k+1}` of degree `k` on the distinct nodes
-`x_i, …, x_{i+k+1}` is `(x_{i+k+1} - x_i) g[x_i, …, x_{i+k+1}]` with `g(s) = (s - t)_+^k` (8.51)–(8.52).
-Define `bSplineQSS x k i t := (x (i+k+1) - x i) * DividedDifference.newton (fun s => Quadrature.truncPow k s t) (fun j : Fin (k+2) => x (i + j))`
-and prove `bSplineQSS x k i = BSpline.bspline x k i` for strictly increasing `x` and `1 ≤ k`:
-`BSpline.bspline_eq_mul_newton_truncPow`. (For `k = 0` the two differ at the knots; the book's
-degree-`0` B-spline (8.54) is the indicator of a closed interval, which is not even a partition
-of unity.) ★'''
-deps = ["BSpline.bspline_eq_mul_newton_truncPow", "DividedDifference.newton", "Quadrature.truncPow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.2'
 
 [[node]]
 id = "equation_8_53"
-kind = "theorem"
-desc = '''(8.53): `B_{i,k+1}(t) = (x_{i+k+1} - x_i) ∑_{j=0}^{k+1} (x_{i+j} - t)_+^k / ∏_{l ≠ j} (x_{i+j} - x_{i+l})`
-for strictly increasing knots and `1 ≤ k`; `BSpline.bspline_eq_sum_truncPow`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_2", "BSpline.bspline_eq_sum_truncPow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.53)'
 
 [[node]]
 id = "bSpline_support"
-kind = "theorem"
-desc = '''§8.6.2: `B_{i,k+1}` "is non null only within `[x_i, x_{i+k+1}]`":
-`t ∉ Icc (x i) (x (i+k+1)) → BSpline.bspline x k i t = 0`; `BSpline.bspline_eq_zero_of_notMem`. ★'''
-deps = ["BSpline.bspline_eq_zero_of_notMem"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2'
 
 [[node]]
 id = "bSpline_nonneg"
-kind = "theorem"
-desc = '''§8.6.2, quoted from de Boor: `0 ≤ BSpline.bspline x k i t` for nondecreasing knots;
-`BSpline.bspline_nonneg`. ★'''
-deps = ["BSpline.bspline_nonneg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2'
 
 [[node]]
@@ -246,74 +110,36 @@ vanishing to the left of `x_i` killing the polynomial part), `s = ∑_{j=i}^{i+k
 vanishing to the right of `x_{i+k+1}` says `∑_j c_j (t - x_j)^k = 0` as a polynomial, `k + 1`
 linear conditions on `k + 2` unknowns whose matrix (the moments `∑_j c_j x_j^p = 0`, `p ≤ k`,
 after binomial expansion) is a `(k+1) × (k+2)` Vandermonde of full rank, so the kernel is
-one-dimensional, and (8.53) exhibits `B_{i,k+1}` in it. ★★★'''
+one-dimensional, and (8.53) exhibits `B_{i,k+1}` in it. ★★★
+
+Blocked: not attempted in this pass. The route above (truncated-power representation, a Vandermonde
+kernel of dimension one) is a 300-line development with no backbone support for the kernel computation;
+estimate one focused day.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_53", "Spline.span_truncPow_eq_splineSpace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2 (Schoenberg 1967)'
 
 [[node]]
 id = "equation_8_54"
-kind = "theorem"
-desc = '''(8.54), the Cox–de Boor recursion: `BSpline.bspline x 0 i` is the indicator of `[x_i, x_{i+1})`
-(the book writes the closed interval; see the report's errata) and
-`BSpline.bspline x (k+1) i t = (t - x_i)/(x_{i+k+1} - x_i) · bspline x k i t + (x_{i+k+2} - t)/(x_{i+k+2} - x_{i+1}) · bspline x k (i+1) t`
-for strictly increasing knots (so no `0/0`); `BSpline.bspline_succ` and the definition of
-`BSpline.weight`. With `definition_8_2`, this is the book's claim that the recursion computes the
-divided-difference B-spline. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_2", "BSpline.bspline", "BSpline.weight"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.54)'
 
 [[node]]
 id = "remark_8_3_confluent"
-kind = "definition"
-desc = '''Remark 8.3, the divided differences with coincident nodes: `confluentDividedDifference f x :=
-DividedDifference.confluent f x`, the recursion `(f[x_1..x_n] - f[x_0..x_{n-1}])/(x_n - x_0)` when
-`x_0 < x_n` and `f^{(n)}(x_0)/n!` when `x_0 = ⋯ = x_n` (the book prints `f^{(n+1)}(x_0)/(n+1)!`, a
-misprint: report, errata), with `remark_8_3_confluent_eq` : it agrees with `DividedDifference.newton`
-at distinct nodes (`DividedDifference.confluent_eq_newton`). ★'''
-deps = ["DividedDifference.confluent", "DividedDifference.confluent_eq_newton"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
 
 [[node]]
 id = "remark_8_3_left"
-kind = "theorem"
-desc = '''Remark 8.3, the two coincident-knot formulas: if `x_{i-1} < x_i = ⋯ = x_{i+k} < x_{i+k+1}` then
-`BSpline.bspline x k i t = ((x_{i+k+1} - t)/(x_{i+k+1} - x_i))^k` on `[x_i, x_{i+k+1})` and `0`
-otherwise, and (`remark_8_3_right`) if `x_i < x_{i+1} = ⋯ = x_{i+k+1} < x_{i+k+2}` then
-`BSpline.bspline x k i t = ((t - x_i)/(x_{i+k+1} - x_i))^k` on `[x_i, x_{i+k+1})` and `0` otherwise.
-`BSpline.bspline_apply_of_coincident_left` / `_right`. ★'''
-deps = ["BSpline.bspline_apply_of_coincident_left"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
 
 [[node]]
 id = "example_8_9"
-kind = "theorem"
-desc = '''Example 8.9, the cubic B-spline on equally spaced knots `x_{i+1} = x_i + h`: the four-piece
-formula for `6 h³ B_{i,4}(t)` — `(t - x_i)³`, `h³ + 3h²(t - x_{i+1}) + 3h(t - x_{i+1})² - 3(t - x_{i+1})³`,
-`h³ + 3h²(x_{i+3} - t) + 3h(x_{i+3} - t)² - 3(x_{i+3} - t)³`, `(x_{i+4} - t)³` on the four knot
-intervals, `0` elsewhere. `BSpline.bspline_uniform_cubic`. ★'''
-deps = ["BSpline.bspline_uniform_cubic"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.9'
 
 [[node]]
 id = "equation_8_56"
-kind = "theorem"
-desc = '''(8.55)–(8.56): with `2k` fictitious knots `x_{-k} ≤ ⋯ ≤ x_{-1} ≤ x_0 = a` and
-`b = x_n ≤ x_{n+1} ≤ ⋯ ≤ x_{n+k}` (in the shifted indexing, a nondecreasing `x : ℕ → ℝ` with
-`x k = a < x (k+1) < ⋯ < x (n+k) = b`), every `s_k ∈ 𝒮_k` is uniquely
-`∑_{i=-k}^{n-1} c_i B_{i,k+1}` on `[a, b]`: the `n + k` B-splines `BSpline.bspline x k i`, `i < n + k`,
-restricted to `[a, b]`, form a basis of `splineSpaceQSS a b n (fun j => x (j + k)) k`.
-`BSpline.exists_basis_bspline`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.definition_8_1", "BSpline.exists_basis_bspline"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.55)–(8.56)'
 
 [[node]]
 id = "equation_8_57"
-kind = "theorem"
-desc = '''(8.57), coincident fictitious knots: if `x_{-k} = ⋯ = x_0 = a` and `x_n = ⋯ = x_{n+k} = b`, then
-`s_k(a) = c_{-k}` and `s_k(b) = c_{n-1}` for `s_k = ∑ c_i B_{i,k+1}` (the value at `b` as the
-left limit, or as the value of the continuous extension to `[a, b]`).
-`BSpline.sum_smul_bspline_left` and `_right`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_56", "BSpline.sum_smul_bspline_left"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.57)'
 
 [[node]]
@@ -323,6 +149,149 @@ desc = '''Remark 8.4, Boehm's knot insertion: for a spline `s_k = ∑_{i=-k}^{n-
 knot `x̃ ∈ [x_j, x_{j+1})`, the same function is `∑ d_i B̃_{i,k+1}` on the refined knots `y` with
 `d_i = ω_i c_i + (1 - ω_i) c_{i-1}` (the book prints `c_i` twice; report, errata), where `ω_i = 1`
 for `i ≤ j - k`, `ω_i = (y_{j+1} - y_i)/(y_{i+k+1} - y_i)` for `j - k < i ≤ j`, `ω_i = 0` for `i > j`.
-`BSpline.sum_smul_bspline_insertKnot` with `BSpline.insertKnot`, `BSpline.insertKnotCoeff`. ★'''
+`BSpline.sum_smul_bspline_insertKnot` with `BSpline.insertKnot`, `BSpline.insertKnotCoeff`. ★
+
+Blocked: depends on the open backbone node `BSpline.sum_smul_bspline_insertKnot` (Boehm's insertion
+identity, ★★★), which is not proved; the surface statement is a direct restatement once it is.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_56", "BSpline.sum_smul_bspline_insertKnot", "BSpline.insertKnot"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4'
+
+[[node]]
+id = "mem_definition_8_1_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1, (8.41)–(8.42)'
+
+[[node]]
+id = "mem_definition_8_1_three_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1 (k = 3)'
+
+[[node]]
+id = "mem_definition_8_1_three_of_isCubicSpline"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1 (k = 3)'
+
+[[node]]
+id = "equation_8_44_three_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)'
+
+[[node]]
+id = "equation_8_45_two_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.45)'
+
+[[node]]
+id = "equation_8_45_two_iff_hasClosure"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.45) and (8.48)'
+
+[[node]]
+id = "isCubicInterpSpline_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "equation_8_46_integrated"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)'
+
+[[node]]
+id = "equation_8_48_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.48)'
+
+[[node]]
+id = "equation_8_48_spline"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.48)'
+
+[[node]]
+id = "equation_8_48_prolonged"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.48)'
+
+[[node]]
+id = "IsCubicInterpSpline.eqOn_naturalInterp"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "IsCubicInterpSpline.hasClosure_of_derivWithin"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the slope formulas before (8.47)'
+
+[[node]]
+id = "clampedCubicSpline_existsUnique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1 and Exercise 8.11'
+
+[[node]]
+id = "IsCubicInterpSpline.eqOn_clampedInterp"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "periodicCubicSpline_existsUnique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)'
+
+[[node]]
+id = "isCubicInterp_clampedInterp"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "isCubicSpline_cardinalBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "contDiff_cardinalBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "cardinalSplineBasis_apply_node"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "derivWithin_cardinalSplineBasis_left"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "derivWithin_cardinalSplineBasis_right"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "cardinalSplineBasis_clampedInterp"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
+
+[[node]]
+id = "property_8_2_eq_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2'
+
+[[node]]
+id = "exercise_8_11_eq_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 8.11'
+
+[[node]]
+id = "definition_8_2_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.2, (8.51)–(8.52)'
+
+[[node]]
+id = "definition_8_2_eq_bspline"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.2 and (8.54)'
+
+[[node]]
+id = "equation_8_54_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.54)'
+
+[[node]]
+id = "equation_8_54_definition_8_2"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.54)'
+
+[[node]]
+id = "remark_8_3_confluent_of_lt"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
+
+[[node]]
+id = "remark_8_3_confluent_const"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
+
+[[node]]
+id = "remark_8_3_confluent_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
+
+[[node]]
+id = "remark_8_3_right"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.3'
+
+[[node]]
+id = "equation_8_56_repr"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.56)'
+
+[[node]]
+id = "equation_8_57_right"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.57)'
