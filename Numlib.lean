@@ -138,6 +138,7 @@ import Numlib.Analysis.Convolution.Lp
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
+import Numlib.Analysis.Fourier.FourierIntegral
 import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.Fourier.TrigonometricBasis
@@ -192,6 +193,8 @@ import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
+import Numlib.Analysis.SpecialFunctions.LaplaceTransform
+import Numlib.Analysis.Wavelet.ContinuousTransform
 import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution

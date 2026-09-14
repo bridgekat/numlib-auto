@@ -1,6 +1,8 @@
 import Mathlib.Analysis.Fourier.FourierTransform
+import Mathlib.Analysis.Fourier.PoissonSummation
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Numlib.Analysis.Fourier.FourierIntegral
 
 /-!
 # Periodisation of an integrable function
@@ -29,6 +31,11 @@ everywhere.
 * `integral_mul_periodise`: the same with a bounded `T`-periodic weight, which passes through the
   sum.
 * `integral_fourierChar_mul_periodise`: the Fourier-coefficient form, `T = 1`.
+* `Real.tsum_fourierIntegral_sub_div_eq_tsum_mul`: the dual statement, **the transform of a
+  sampled signal is the periodisation of its transform** — for `g` continuous with polynomial
+  decay, `∑_j ĝ(ν − j/Δt) = Δt ∑_k g(k Δt) e^{−2πiνkΔt}`, the aliasing formula of
+  [quarteroni2000numerical] (10.82), from Mathlib's Poisson summation
+  `Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable` applied to the rescaled, modulated signal.
 
 ## Implementation notes
 
@@ -144,3 +151,84 @@ theorem integral_fourierChar_mul_periodise {g : ℝ → ℂ} (hg : Integrable g)
     continuous_subtype_val.comp (Real.continuous_fourierChar.comp (by fun_prop))
   exact integral_mul_periodise one_pos hper hcont.aestronglyMeasurable (C := 1)
     (fun x => le_of_eq (Circle.norm_coe _)) hg
+
+/-! ### The transform of a sampled signal -/
+
+namespace Real
+
+open Asymptotics Filter FourierTransform
+
+/-- **The transform of a sampled signal is the periodisation of its transform**
+([quarteroni2000numerical] (10.82)). For `g : ℝ → ℂ` continuous with `g = O(|x|^{-b})` at
+infinity for some `b > 1`, a sampling step `Δt > 0` and a frequency `ν` at which the periodised
+transform `∑_j 𝓕 g (ν − j/Δt)` converges absolutely,
+
+`∑' j : ℤ, 𝓕 g (ν − j / Δt) = Δt * ∑' k : ℤ, g (k Δt) * exp (−2πi ν k Δt)`:
+
+the trapezoidal sum `Δt ∑_k g (k Δt) e^{−2πiνkΔt}` approximating `𝓕 g ν` is the periodic
+repetition of `𝓕 g` with period `1/Δt`, that is `periodise (1/Δt) (𝓕 g) ν` — for a `g` supported in
+`[0, T₀]` the right side is the finite trapezoidal sum of the textbook. Poisson summation
+(`Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable`) at `x = 0` for the rescaled and modulated
+signal `h t = Δt · 𝐞 (−t ν Δt) · g (Δt t)`, whose transform is `𝓕 h n = 𝓕 g (ν + n/Δt)` by the
+modulation and scaling rules of `Numlib/Analysis/Fourier/FourierIntegral`. -/
+theorem tsum_fourierIntegral_sub_div_eq_tsum_mul {g : ℝ → ℂ} (hg : Continuous g) {b : ℝ}
+    (hb : 1 < b) (hdecay : g =O[cocompact ℝ] fun x : ℝ => |x| ^ (-b)) {Δt : ℝ} (hΔt : 0 < Δt)
+    {ν : ℝ} (hsum : Summable fun j : ℤ => 𝓕 g (ν - j / Δt)) :
+    ∑' j : ℤ, 𝓕 g (ν - j / Δt)
+      = Δt * ∑' k : ℤ, g (k * Δt) * Complex.exp (-(2 * π * ν * k * Δt) * Complex.I) := by
+  -- the rescaled, modulated signal
+  set h : ℝ → ℂ := fun t => Δt * ((𝐞 (-(t * (ν * Δt))) : ℂ) * g (Δt * t)) with hh
+  have hcont : Continuous h := by
+    refine continuous_const.mul (Continuous.mul ?_ (hg.comp (continuous_const.mul continuous_id)))
+    exact continuous_subtype_val.comp (Real.continuous_fourierChar.comp (by fun_prop))
+  -- its Fourier transform is the shifted, rescaled transform of `g`
+  have hF : ∀ n : ℤ, 𝓕 h n = 𝓕 g (ν + n / Δt) := by
+    intro n
+    have h1 : h = fun t => (Δt : ℂ) • ((𝐞 (-(t * (ν * Δt))) : ℂ) • (fun u => g (Δt * u)) t) := by
+      funext t
+      simp only [hh, smul_eq_mul]
+    rw [h1, fourierIntegral_const_smul, fourierIntegral_fourierChar_mul,
+      fourierIntegral_comp_mul_left hΔt.ne', abs_of_pos hΔt]
+    rw [show ((n : ℝ) + ν * Δt) / Δt = ν + n / Δt by
+      rw [add_div, mul_div_cancel_right₀ ν hΔt.ne', add_comm]]
+    rw [smul_eq_mul, Complex.real_smul, ← mul_assoc, ← Complex.ofReal_mul,
+      mul_inv_cancel₀ hΔt.ne', Complex.ofReal_one, one_mul]
+  -- decay of `h`
+  have hdecay' : h =O[cocompact ℝ] fun x : ℝ => |x| ^ (-b) := by
+    have htend : Filter.Tendsto (fun t : ℝ => Δt * t) (cocompact ℝ) (cocompact ℝ) :=
+      (Homeomorph.mulLeft₀ Δt hΔt.ne').isClosedEmbedding.tendsto_cocompact
+    have h1 : (fun t => g (Δt * t)) =O[cocompact ℝ] fun t : ℝ => |Δt| ^ (-b) * |t| ^ (-b) := by
+      refine (hdecay.comp_tendsto htend).trans
+        (IsBigO.of_bound' (Filter.Eventually.of_forall fun t => ?_))
+      simp only [Function.comp_apply, abs_mul, Real.mul_rpow (abs_nonneg _) (abs_nonneg _),
+        norm_mul, Real.norm_eq_abs, le_refl]
+    have h2 : (fun t : ℝ => (Δt : ℂ) * (𝐞 (-(t * (ν * Δt))) : ℂ)) =O[cocompact ℝ]
+        fun _ : ℝ => (1 : ℝ) := by
+      refine IsBigO.of_bound Δt (Filter.Eventually.of_forall fun t => ?_)
+      rw [norm_mul, Circle.norm_coe, mul_one, Complex.norm_real, Real.norm_eq_abs,
+        abs_of_pos hΔt, norm_one, mul_one]
+    have h3 : h =O[cocompact ℝ] fun x : ℝ => |Δt| ^ (-b) * |x| ^ (-b) :=
+      (h2.mul h1).congr (fun t => by simp only [hh]; exact mul_assoc _ _ _) fun x => one_mul _
+    exact h3.of_const_mul_right
+  -- summability of the transform of `h`
+  have hsum' : Summable fun n : ℤ => 𝓕 h n := by
+    simp only [hF]
+    have := (Equiv.neg ℤ).summable_iff.mpr hsum
+    refine this.congr fun n => ?_
+    simp only [Function.comp_apply, Equiv.neg_apply, Int.cast_neg]
+    ring_nf
+  -- Poisson summation at `x = 0`
+  have hpoisson := Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable hcont hb hdecay' hsum' 0
+  simp only [zero_add, hF, QuotientAddGroup.mk_zero, fourier_eval_zero, mul_one] at hpoisson
+  rw [← (Equiv.neg ℤ).tsum_eq (fun n : ℤ => 𝓕 g (ν + n / Δt))] at hpoisson
+  simp only [Equiv.neg_apply, Int.cast_neg] at hpoisson
+  rw [← tsum_mul_left]
+  rw [show (fun j : ℤ => 𝓕 g (ν - j / Δt)) = fun j : ℤ => 𝓕 g (ν + -j / Δt) from
+    funext fun j => by rw [neg_div, ← sub_eq_add_neg], ← hpoisson]
+  refine tsum_congr fun n => ?_
+  simp only [hh, Real.fourierChar_apply]
+  rw [mul_comm (Δt : ℝ) (n : ℝ)]
+  push_cast
+  ring_nf
+
+end Real

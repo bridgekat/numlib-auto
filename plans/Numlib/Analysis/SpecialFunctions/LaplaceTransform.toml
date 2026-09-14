@@ -1,175 +1,76 @@
 namespace = "LaplaceTransform"
-desc = '''
-The Laplace transform `L(s) = ∫_0^∞ e^{-st} f(t) dt` of a locally integrable function on `[0, ∞)`,
-in the conditional (improper) sense of the textbooks — the limit of `∫_0^T` as `T → ∞` — with its
-region of convergence, the abscissa of convergence, the relation to the Fourier transform, the
-transform of a derivative, the transform of the unit step and of a step function, and the
-Z-transform of a sampled sequence as the discrete Laplace transform. The material is
-Quarteroni–Sacco–Saleri §10.11.3–10.11.4 (Definitions 10.2–10.3, Property 10.4, Examples 10.8–10.9).
-
-Mathlib has no Laplace transform: `grep -rli laplace Mathlib/` finds only the Laplace expansion of
-determinants and the Laplacian, and `laplaceTransform`/`LaplaceTransform` have no hits (2026-09-12);
-the closest object is the Mellin transform (`Mathlib/Analysis/MellinTransform.lean`, `mellin f s =
-∫ t in Ioi 0, t^(s-1) • f t`, an absolutely convergent Bochner integral), to which the Laplace
-transform is related by `t = e^{-u}`; the substitution is not used here because the conditional
-convergence of Property 10.4 is the point.
-
-Design: `Converges f s` is the existence of the limit of the truncated integrals, and
-`laplaceTransform f s` is that limit (junk `0` elsewhere), so that Property 10.4 — convergence at
-`s₀` implies convergence for `Re s > Re s₀` — is provable by the classical integration by parts
-against the bounded, convergent primitive `φ(T) = ∫_0^T e^{-s₀ t} f`. Under absolute convergence
-(`IntegrableOn (e^{-st} f) (Ioi 0)`) the transform is the Bochner integral over `(0, ∞)`, which is
-the form every computation uses. The Z-transform is a power series in `z⁻¹`, and its convergence
-region is the Cauchy–Hadamard radius.
-
-Consumers: Quarteroni–Sacco–Saleri §10.11 and (through the Z-transform and the discrete
-Laplace transform) the difference-equation vocabulary of §11.4.
-'''
 
 [[node]]
 id = "truncated"
-kind = "definition"
-desc = '''`truncated f s T = ∫ t in (0:ℝ)..T, Complex.exp (-(s * t)) • f t`, the Laplace integral truncated at
-`T`, for `f : ℝ → E` with `E` a complex normed space. ★'''
-deps = []
 
 [[node]]
 id = "Converges"
-kind = "definition"
-desc = '''`Converges f s : Prop := ∃ L, Tendsto (truncated f s) atTop (𝓝 L)`: the Laplace integral of `f`
-converges (conditionally) at `s ∈ ℂ`, Quarteroni–Sacco–Saleri Definition 10.2. ★'''
-deps = ["LaplaceTransform.truncated"]
 
 [[node]]
 id = "laplaceTransform"
-kind = "definition"
-desc = '''`laplaceTransform f s : E` — the limit of `truncated f s T` as `T → ∞` when `Converges f s`
-(chosen with `Classical.choose`, unique by `tendsto_nhds_unique`), and `0` otherwise; the
-Laplace transform `ℒ[f](s)`. With `tendsto_truncated : Converges f s → Tendsto (truncated f s) atTop
-(𝓝 (laplaceTransform f s))`. ★'''
-deps = ["LaplaceTransform.Converges"]
+
+[[node]]
+id = "tendsto_truncated"
+
+[[node]]
+id = "laplaceTransform_eq_of_tendsto"
+
+[[node]]
+id = "converges_of_integrableOn"
 
 [[node]]
 id = "laplaceTransform_eq_integral"
-kind = "theorem"
-desc = '''Under absolute convergence — `IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • f t) (Ioi 0)` —
-the integral converges (`Converges f s`) and `laplaceTransform f s = ∫ t in Ioi 0, Complex.exp (-(s
-* t)) • f t`. `MeasureTheory.intervalIntegral_tendsto_integral_Ioi`. ★'''
-deps = ["LaplaceTransform.laplaceTransform"]
 
 [[node]]
 id = "integrableOn_of_re_le"
-kind = "theorem"
-desc = '''Absolute convergence propagates to the right: if `e^{-s₀ t} f` is integrable on `(0, ∞)` and
-`f` is a.e.-strongly measurable there, then for `s₀.re ≤ s.re` so is `e^{-s t} f`
-(`‖e^{-st}‖ = e^{-Re s · t} ≤ e^{-Re s₀ · t}` for `t ≥ 0`, `Integrable.mono`). ★'''
-deps = []
-
-[[node]]
-id = "converges_of_re_lt"
-kind = "theorem"
-desc = '''**Property 10.4, first clause** (Quarteroni–Sacco–Saleri): for `f : ℝ → E` locally integrable on
-`[0, ∞)` (`LocallyIntegrableOn f (Ici 0)`), `E` complete, `Converges f s₀` and `s₀.re < s.re` imply
-`Converges f s`. Proof (Widder, *The Laplace Transform*, Thm II.1): with `φ T = truncated f s₀ T`,
-which is continuous, bounded and convergent, integration by parts gives
-`truncated f s T = e^{-(s - s₀) T} φ T + (s - s₀) ∫_0^T e^{-(s - s₀) t} φ t dt`
-(`intervalIntegral.integral_mul_deriv_eq_deriv_mul` with `φ' = e^{-s₀ t} f` a.e., or
-`integral_eq_sub_of_hasDerivAt_of_le` for the absolutely continuous `φ`); the first term tends to
-`0` and the integral converges absolutely since `φ` is bounded and `Re (s - s₀) > 0`. ★★★'''
-deps = ["LaplaceTransform.Converges", "LaplaceTransform.truncated"]
 
 [[node]]
 id = "abscissaOfConvergence"
-kind = "definition"
-desc = '''`abscissaOfConvergence f : EReal := sInf ((fun s : ℂ => (s.re : EReal)) '' {s | Converges f s})`,
-the infimum `λ` of the real parts at which the Laplace integral converges; `⊤` if it converges
-nowhere, `⊥` (`-∞`) if it converges at points of arbitrarily negative real part. ★'''
-deps = ["LaplaceTransform.Converges"]
+
+[[node]]
+id = "_root_.IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral'"
+
+[[node]]
+id = "integral_smul_eq_smul_integral_sub"
+
+[[node]]
+id = "intervalIntegrable_exp_smul"
+
+[[node]]
+id = "continuousOn_truncated"
+
+[[node]]
+id = "converges_of_re_lt"
 
 [[node]]
 id = "converges_of_abscissaOfConvergence_lt"
-kind = "theorem"
-desc = '''**Property 10.4, second clause**: for `f` locally integrable on `[0, ∞)`, `E` complete, and `s`
-with `abscissaOfConvergence f < s.re`, `Converges f s`; in particular the integral converges on the
-open half-plane `Re s > λ`, and everywhere when `λ = ⊥`. From the definition of `sInf` and
-`converges_of_re_lt`. ★'''
-deps = ["LaplaceTransform.abscissaOfConvergence", "LaplaceTransform.converges_of_re_lt"]
 
 [[node]]
 id = "laplaceTransform_eq_fourier"
-kind = "theorem"
-desc = '''The relation to the Fourier transform (Quarteroni–Sacco–Saleri after Definition 10.2): for
-`f : ℝ → ℂ` with `e^{-st} f` integrable on `(0, ∞)`,
-`laplaceTransform f s = 𝓕 (fun t => Complex.exp (-(s.re * t)) * Set.indicator (Ioi 0) f t) (s.im / (2π))`
-— `L(σ + iω) = F[e^{-σt} f̃](ω/2π)` with `f̃ = f` on `t ≥ 0` and `0` on `t < 0`; the argument is `ω/2π`
-because `Real.fourierIntegral` carries `e^{-2πiνt}` (the book writes `F(e^{-σt} f̃)` with no
-argument). `laplaceTransform_eq_integral`, `Real.fourier_real_eq_integral_exp_smul`, `e^{-st} =
-e^{-σt} e^{-iωt}`, and `integral_indicator`. ★'''
-deps = ["LaplaceTransform.laplaceTransform_eq_integral"]
 
 [[node]]
 id = "laplaceTransform_indicator_Ioi"
-kind = "theorem"
-desc = '''Example 10.8: for `0 < s.re`, `laplaceTransform (Set.indicator (Ioi 0) (fun _ => (1 : ℂ))) s = 1 / s`
-(`∫_0^∞ e^{-st} dt = 1/s`: `integral_exp_mul_complex_Ioi` or the truncated integral
-`(1 - e^{-sT})/s → 1/s`). ★'''
-deps = ["LaplaceTransform.laplaceTransform", "LaplaceTransform.laplaceTransform_eq_integral"]
 
 [[node]]
 id = "converges_indicator_Ioi_iff"
-kind = "theorem"
-desc = '''Example 10.8, the region: `Converges (Set.indicator (Ioi 0) (fun _ => (1 : ℂ))) s ↔ 0 < s.re`, so
-the abscissa of convergence of the unit step is `0`. (⇐) the previous node; (⇒) `truncated … T =
-(1 - e^{-sT})/s` for `s ≠ 0` (and `= T` at `s = 0`) has no limit when `Re s ≤ 0`. ★★'''
-deps = ["LaplaceTransform.Converges", "LaplaceTransform.truncated", "LaplaceTransform.abscissaOfConvergence"]
 
 [[node]]
 id = "laplaceTransform_deriv"
-kind = "theorem"
-desc = '''The transform of a derivative (Quarteroni–Sacco–Saleri Example 10.9, (10.83)): for `y : ℝ → ℂ` of
-class `C¹`, `s : ℂ`, with `e^{-st} y` and `e^{-st} y'` integrable on `(0, ∞)` and
-`e^{-st} y t → 0` as `t → ∞`: `laplaceTransform (deriv y) s = s * laplaceTransform y s - y 0`.
-Integration by parts on `[0, T]` and the limit `T → ∞`
-(`intervalIntegral.integral_deriv_mul_eq_sub`). Consequently the solution of `y' + a y = g`,
-`y(0) = y₀`, has `(s + a) Y(s) = G(s) + y₀` wherever all three transforms converge absolutely. ★★'''
-deps = ["LaplaceTransform.laplaceTransform_eq_integral"]
+
+[[node]]
+id = "iUnion_Ico_nat_mul"
+
+[[node]]
+id = "pairwise_disjoint_Ico_nat_mul"
 
 [[node]]
 id = "laplaceTransform_stepFun"
-kind = "theorem"
-desc = '''The Laplace transform of the sample-and-hold function (Quarteroni–Sacco–Saleri §10.11.4): for
-`Δt > 0`, `f : ℝ → ℂ` and `f₀ t = f (⌊t/Δt⌋ Δt)` (the piecewise constant function equal to
-`f (n Δt)` on `[n Δt, (n+1) Δt)`), and `s` with `0 < s.re` and `∑ n, ‖f (n Δt)‖ e^{-n Re s Δt} < ∞`:
-`laplaceTransform f₀ s = ((1 - Complex.exp (-(s * Δt))) / s) * ∑' n : ℕ, f (n * Δt) * Complex.exp (-(n *
-s * Δt))`. Split `(0, ∞)` into the intervals `[nΔt, (n+1)Δt)` (`integral_Ioi_eq_tsum` over a
-partition / `MeasureTheory.integral_iUnion` with `hasSum_integral_iUnion`), and integrate
-`e^{-st}` on each. The factor `∑' n, f(nΔt) e^{-nsΔt}` is the *discrete Laplace transform*, and
-the Z-transform under `z = e^{sΔt}`. ★★★'''
-deps = ["LaplaceTransform.laplaceTransform_eq_integral"]
 
 [[node]]
 id = "_root_.zTransform"
-kind = "definition"
-desc = '''The Z-transform of the samples `f (n Δt)` (Quarteroni–Sacco–Saleri Definition 10.3, (10.84)):
-`zTransform f Δt z = ∑' n : ℕ, f (n * Δt) * z⁻¹ ^ n` for `f : ℝ → ℂ`, `Δt : ℝ`, `z : ℂ`. ★'''
-deps = []
 
 [[node]]
 id = "_root_.summable_zTransform"
-kind = "theorem"
-desc = '''Cauchy–Hadamard for the Z-transform: if `limsup_n ‖f (n Δt)‖^(1/n) < ‖z‖` (as a `limsup` in
-`ℝ` of the `n`-th roots, the book's `R`), then `Summable fun n => f (n * Δt) * z⁻¹ ^ n`. Choose `R <
-r < ‖z‖`; eventually `‖f (n Δt)‖ ≤ r^n` (`Filter.eventually_lt_of_limsup_lt`), so the terms are
-bounded by `(r/‖z‖)^n`, `summable_geometric_of_lt_one`, `Summable.of_norm_bounded_eventually`.
-Conversely divergence for `‖z‖ < R` (not planned). ★★'''
-deps = ["zTransform"]
 
 [[node]]
 id = "_root_.zTransform_eq_discreteLaplace"
-kind = "theorem"
-desc = '''The Z-transform is the discrete Laplace transform under `z = e^{sΔt}`: for `Δt > 0`,
-`zTransform f Δt (Complex.exp (s * Δt)) = ∑' n : ℕ, f (n * Δt) * Complex.exp (-(n * s * Δt))`, the series
-of `laplaceTransform_stepFun`; so `laplaceTransform f₀ s = ((1 - e^{-sΔt})/s) · zTransform f Δt
-(e^{sΔt})` under that node's hypotheses. Erratum: Quarteroni–Sacco–Saleri print the substitution
-as `z = e^{-sΔt}`; with `Z(z) = ∑ f(nΔt) z^{-n}` it is `z = e^{sΔt}`. ★'''
-deps = ["zTransform", "LaplaceTransform.laplaceTransform_stepFun"]

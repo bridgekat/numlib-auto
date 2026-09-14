@@ -1,80 +1,46 @@
 namespace = "Real"
-desc = '''
-Elementary facts about the Fourier integral `𝓕 f ν = ∫ f t exp (-2πi ν t) dt` on the line that
-Mathlib's `Mathlib/Analysis/Fourier/{FourierTransform, Inversion, Convolution,
-RiemannLebesgueLemma}.lean` do not state in the form a textbook uses (Quarteroni–Sacco–Saleri
-§10.11.1, Property 10.3 and properties 1–5): continuity of the transform of an `L¹` function as a
-one-line specialization, the almost-everywhere inversion formula without a continuity hypothesis,
-the scaling rule, the parity rules for real even and odd functions, and the transform of a product
-as a convolution.
-
-Upstreaming candidate: nothing here is specific to numerical analysis. Everything Mathlib has is
-used as is — `Integrable.fourierInv_fourier_eq` (inversion at a continuity point),
-`Continuous.fourierInv_fourier_eq`, `fourierInv_eq_fourier_comp_neg`, `zero_at_infty_fourier`
-(Riemann–Lebesgue), `fourier_mul_convolution_eq` (transform of a convolution), and
-`SchwartzMap.fourier_convolution` (product rule on the Schwartz class).
-'''
 
 [[node]]
 id = "continuous_fourierIntegral"
-kind = "theorem"
-desc = '''For `f : ℝ → E` integrable, `Continuous (𝓕 f)`. Mathlib's
-`VectorFourier.fourierIntegral_continuous` specialized to `Real.fourierChar`, `volume` and the
-bilinear form `innerₗ ℝ` (or the multiplication map) that `Real.fourierIntegral` uses; check
-whether `Real.fourierIntegral_continuous` already exists under that name before writing it. ★'''
-deps = []
+
+[[node]]
+id = "continuous_fourierIntegralInv"
 
 [[node]]
 id = "ae_eq_fourierInv_fourier"
-kind = "theorem"
-desc = '''**Almost-everywhere Fourier inversion** (Quarteroni–Sacco–Saleri Property 10.3): for
-`f : ℝ → ℂ` with `Integrable f` and `Integrable (𝓕 f)`, `f =ᵐ[volume] 𝓕⁻ (𝓕 f)`. Mathlib has the
-pointwise form at continuity points only. Proof: the set of Lebesgue points of `f` has full
-measure (`ae_tendsto_average` / Lebesgue differentiation, `VitaliFamily.ae_tendsto_average`), and
-the Gaussian-regularization argument of `Real.tendsto_integral_gaussian_smul'` in
-`Mathlib/Analysis/Fourier/Inversion.lean` — which is where continuity at `v` enters — goes through
-at a Lebesgue point of `f` with the peak-function lemma stated for Lebesgue points rather than
-continuity points (`tendsto_setIntegral_peak_smul_of_integrableOn_of_tendsto` has a
-Lebesgue-point variant in `PeakFunction.lean`, `tendsto_integral_comp_smul_smul_of_integrable`).
-Alternatively: `g = 𝓕⁻ (𝓕 f)` is continuous and integrable-tested against Schwartz functions
-gives the same distribution as `f` (Fubini and `integral_fourierIntegral_smul_eq_flip`), and two
-locally integrable functions defining the same distribution agree a.e.
-(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). ★★★'''
-deps = ["Real.continuous_fourierIntegral"]
+
+[[node]]
+id = "fourierIntegral_const_smul"
+
+[[node]]
+id = "fourierIntegral_comp_add_right"
+
+[[node]]
+id = "fourierIntegral_comp_sub_right"
+
+[[node]]
+id = "fourierIntegral_fourierChar_mul"
 
 [[node]]
 id = "fourierIntegral_comp_mul_left"
-kind = "theorem"
-desc = '''Scaling: for `a ≠ 0` and any `f : ℝ → E`, `𝓕 (fun t => f (a * t)) ν = |a|⁻¹ • 𝓕 f (ν / a)`.
-Change of variables `MeasureTheory.Measure.integral_comp_mul_left` (`Real.map_volume_mul_left`) in
-`Real.fourier_real_eq_integral_exp_smul`. ★'''
-deps = []
+
+[[node]]
+id = "fourierIntegral_even_eq_integral_cos"
 
 [[node]]
 id = "fourierIntegral_even_real"
-kind = "theorem"
-desc = '''Parity, even case: if `f : ℝ → ℂ` is integrable, real-valued (`∀ t, (f t).im = 0`) and even
-(`∀ t, f (-t) = f t`), then `𝓕 f` is real-valued and even: `(𝓕 f ν).im = 0` and `𝓕 f (-ν) = 𝓕 f ν`.
-Substitute `t ↦ -t` (`integral_neg_eq_self`) and pair the terms into `f t cos (2πνt)`. ★'''
-deps = []
+
+[[node]]
+id = "fourierIntegral_odd_eq_integral_sin"
 
 [[node]]
 id = "fourierIntegral_odd_real"
-kind = "theorem"
-desc = '''Parity, odd case: if `f` is integrable, real-valued and odd, then `𝓕 f` is purely imaginary and
-odd: `(𝓕 f ν).re = 0` and `𝓕 f (-ν) = -𝓕 f ν`. As the even case, pairing into `-i f t sin (2πνt)`. ★'''
-deps = []
 
 [[node]]
 id = "fourier_mul_eq_convolution"
-kind = "theorem"
-desc = '''The transform of a product is the convolution of the transforms
-(Quarteroni–Sacco–Saleri (10.76), second identity): for `f g : ℝ → ℂ` continuous and integrable
-with `𝓕 f` and `𝓕 g` integrable, `𝓕 (f * g) = 𝓕 f ⋆ 𝓕 g` (Mathlib's `MeasureTheory.convolution`
-with `mul ℂ ℂ`). Proof: `f = 𝓕⁻ (𝓕 f)`, `g = 𝓕⁻ (𝓕 g)` pointwise (`Continuous.fourierInv_fourier_eq`);
-`𝓕 f ⋆ 𝓕 g` is integrable with `𝓕⁻ (𝓕 f ⋆ 𝓕 g) = 𝓕⁻(𝓕 f) · 𝓕⁻(𝓕 g) = f g` by
-`Real.fourier_mul_convolution_eq` applied to `𝓕⁻` (i.e. to `𝓕` composed with negation); apply `𝓕`
-and invert again using `fourier_fourierInv_eq` — this needs `f g` and `𝓕 f ⋆ 𝓕 g` integrable and
-continuous, which the hypotheses give (`f g ∈ L¹` since `g` is bounded). The book states the
-identity for `f, g ∈ L¹` alone, where the right side need not exist. ★★★'''
-deps = ["Real.ae_eq_fourierInv_fourier"]
+
+[[node]]
+id = "coeFn_fourier_toLp"
+
+[[node]]
+id = "integral_conj_fourier_mul_fourier"

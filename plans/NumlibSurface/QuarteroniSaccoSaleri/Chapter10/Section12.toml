@@ -1,44 +1,26 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.12: wavelets — the translated and dilated family (10.85) and its Fourier transform (10.86), the
-continuous wavelet transform (Definition 10.4, (10.87)), its Fourier-side form, the Heisenberg
-inequality (10.88), the Haar (Example 10.10) and Morlet (Example 10.11) wavelets, and the discrete
-and orthonormal wavelets of §10.12.2 with the reconstruction formula. The continuous side is
-`Numlib/Analysis/Wavelet/ContinuousTransform`; the discrete side is
-`Numlib/Analysis/Wavelet/{Multiresolution, Haar}` at `s₀ = 2`, `τ₀ = 1`, with the index reversal
-`j ↦ -j` between the book's `s₀^{-j/2} h(s₀^{-j} t - k)` and the backbone's
-`2^{j/2} ψ(2^j x - k)`. The bandwidth and quality-factor discussion after Example 10.11 is prose
-(and its `Δω` is printed with an outer square where a square root is meant); no node.
-'''
+
+[[node]]
+id = "wavelet"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.85)'
 
 [[node]]
 id = "equation_10_86"
-kind = "theorem"
-desc = '''(10.85)–(10.86): for `h ∈ L²(ℝ)`, `s > 0` and `τ ∈ ℝ`, the wavelet
-`h_{s,τ}(t) = s^{-1/2} h((t - τ)/s)` (`Wavelet.dilateTranslate h s τ`) has, for integrable `h`,
-Fourier transform `𝓕 h_{s,τ} ν = √s 𝓕 h (sν) e^{-2πiντ}` — the book's (10.86) in the variable
-`ω = 2πν`. Restates `Wavelet.fourier_dilateTranslate`. ★'''
-deps = ["Wavelet.dilateTranslate", "Wavelet.fourier_dilateTranslate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.85)–(10.86)'
 
 [[node]]
 id = "definition_10_4"
-kind = "definition"
-desc = '''Definition 10.4, (10.87): the continuous wavelet transform of `f ∈ L²(ℝ)` with respect to the
-elementary wavelet `h ∈ L²(ℝ)`, `W_f(s, τ) = ∫ f(t) conj (h_{s,τ}(t)) dt = ⟪f, h_{s,τ}⟫_{L²}`, is
-`Wavelet.continuousTransform h f s τ`. ★'''
-deps = ["Wavelet.continuousTransform", "QuarteroniSaccoSaleri.Chapter10.equation_10_86"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 10.4, (10.87)'
+
+[[node]]
+id = "definition_10_4_eq_continuousTransform"
+
+[[node]]
+id = "definition_10_4_eq_inner"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 10.4, (10.87)'
 
 [[node]]
 id = "continuousTransform_eq_integral_fourier"
-kind = "theorem"
-desc = '''The unnumbered Fourier-side form after (10.88): for `f, h ∈ L¹ ∩ L²`,
-`W_f(s, τ) = √s ∫ 𝓕 f (ν) conj (𝓕 h (sν)) e^{2πiντ} dν` (the book's
-`(√s/2π) ∫ F(ω) conj H(sω) e^{iωτ} dω` in `ω = 2πν`). Restates
-`Wavelet.continuousTransform_eq_integral_fourier`, Plancherel's identity
-`⟪f, g⟫ = ⟪𝓕 f, 𝓕 g⟫` applied to `g = h_{s,τ}` with (10.86). ★★'''
-deps = ["Wavelet.continuousTransform_eq_integral_fourier", "QuarteroniSaccoSaleri.Chapter10.definition_10_4"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.1, the wavelet transform as a bank of filters'''
 
 [[node]]
@@ -52,49 +34,39 @@ deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.88)'
 
 [[node]]
+id = "haarWavelet"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.10, the Haar wavelet'
+
+[[node]]
+id = "haarWavelet_ae_eq_waveletFun"
+
+[[node]]
 id = "example_10_10"
-kind = "theorem"
-desc = '''Example 10.10, the Haar wavelet `h = 1_{(0,1/2)} - 1_{(1/2,1)}` (the backbone's
-`Haar.waveletFun` at level `0`, translate `0`, as a function): its Fourier transform in `ω = 2πν` is
-`H(ω) = 2i e^{-iω/2} (1 - cos (ω/2))/ω` for `ω ≠ 0`, `|H|` even. Erratum: the book prints `4i`;
-`∫_0^{1/2} e^{-iωt} dt - ∫_{1/2}^1 e^{-iωt} dt = (1 - e^{-iω/2})²/(iω) = 2i e^{-iω/2}(1 - cos(ω/2))/ω`
-(the printed value would need `4 sin²(ω/4) = 4(1 - cos(ω/2))`, which is false by a factor 2).
-Direct integration. ★★'''
-deps = ["Haar.waveletFun"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.10'
 
 [[node]]
+id = "morletWavelet"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.11, the Morlet wavelet'
+
+[[node]]
 id = "example_10_11"
-kind = "theorem"
-desc = '''Example 10.11, the Morlet wavelet `h(x) = e^{iω₀x} e^{-x²/2}`: the Fourier transform of its real
-part `cos(ω₀x) e^{-x²/2}` is, in `ω = 2πν`, `√(π/2) (e^{-(ω-ω₀)²/2} + e^{-(ω+ω₀)²/2})`, real,
-positive and even. Erratum: the book prints `√π`; `∫ e^{-x²/2} e^{-iωx} dx = √(2π) e^{-ω²/2}`
-(Mathlib's `fourierIntegral_gaussian_pi'`), and Euler's formula halves it. ★★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.11'
 
 [[node]]
 id = "discreteWavelet"
-kind = "definition"
-desc = '''§10.12.2: the discrete wavelet `h_{j,k}(t) = s₀^{-j/2} h(s₀^{-j} t - kτ₀)` for `s₀ > 1`,
-`τ₀ ∈ ℝ`, `j k : ℤ` (`Wavelet.discrete h s₀ τ₀ j k`), and the discrete wavelet transform
-`W_f(j, k) = ∫ f conj (h_{j,k})` for `f ∈ L²` (`Wavelet.discreteTransform`; the book says `L¹`,
-but the integral against an `L²` wavelet is the `L²` inner product). At the dyadic choice
-`s₀ = 2`, `τ₀ = 1`, `h_{j,k} = waveletSystem ψ (-j) k` of `Numlib/Analysis/Wavelet/Multiresolution`
-(`Wavelet.discrete_two_one_eq_waveletSystem`). ★'''
-deps = ["Wavelet.discrete", "Wavelet.discreteTransform", "Wavelet.discrete_two_one_eq_waveletSystem", "waveletSystem"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.2, discrete wavelets and the discrete wavelet transform'''
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.2, discrete wavelets'''
+
+[[node]]
+id = "discreteWaveletTransform"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.2, the discrete wavelet transform'''
+
+[[node]]
+id = "discreteWaveletTransform_eq"
+
+[[node]]
+id = "discreteWavelet_two_one"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.2, the dyadic discrete wavelets'''
 
 [[node]]
 id = "orthonormalWavelet_reconstruction"
-kind = "theorem"
-desc = '''§10.12.2, the orthonormal wavelet basis and the reconstruction formula: for the wavelet `ψ` of a
-multiresolution analysis (`IsMultiresolutionAnalysis V φ`, `ψ = mraWavelet φ`) the dyadic family
-`h_{j,k}` is orthonormal, `∫ h_{i,j} conj (h_{k,l}) = δ_{ik} δ_{jl}`
-(`IsMultiresolutionAnalysis.orthonormal_waveletSystem_prod`), and every `f ∈ L²(ℝ)` is
-`f = ∑_{j,k} W_f(j,k) h_{j,k}` (`IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem`), the
-book's `f = A ∑ W_f(j,k) h_{j,k}` with `A = 1` — for an *orthonormal* basis the constant is `1`
-(`A ≠ 1` occurs for tight frames, which the book does not introduce). The Haar wavelet is the
-instance `Haar.isMultiresolutionAnalysis`. ★'''
-deps = ["IsMultiresolutionAnalysis.orthonormal_waveletSystem_prod", "IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem", "Haar.isMultiresolutionAnalysis", "QuarteroniSaccoSaleri.Chapter10.discreteWavelet"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.2, orthonormal wavelet bases and the reconstruction formula'''

@@ -1,95 +1,89 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.9: Fourier series on `(0, 2π)` (10.48)–(10.50), the truncation of order `N` over the window
-`-N/2 ≤ k ≤ N/2 - 1`, the discrete scalar product (10.51), the discrete Fourier coefficients
-(10.52)–(10.53), Lemma 10.1, the interpolation property and the DFT/IDFT pair (10.55), the four
-quoted error estimates, the Gibbs phenomenon and Lanczos smoothing (§10.9.1, (10.56)) and the
-radix-2 FFT (§10.9.2). Complex-valued functions on the circle `AddCircle (2π)` with Mathlib's
-`fourierCoeff` (whose normalization `(1/2π) ∫_0^{2π}` is the book's (10.48)); the discrete side is
-`DFT.coeff`, `DFT.interp` of `Numlib/Analysis/Fourier/DFT`, indexed by a frequency window
-`m + k`, `k < N`, with the book's `m = -N/2`.
-'''
 
 [[node]]
 id = "equation_10_48"
-kind = "theorem"
-desc = '''(10.48): for `f ∈ L²(0, 2π)` (as `Lp ℂ 2 haarAddCircle` on `AddCircle (2π)`), the Fourier
-coefficients are `f̂_k = (1/2π) ∫_0^{2π} f(x) e^{-ikx} dx` (`fourierCoeff_eq_intervalIntegral`) and
-the Fourier series `∑_k f̂_k e^{ikx}` converges to `f` in `L²` (`hasSum_fourier_series_L2`).
-Mathlib restatement. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.48)'
 
 [[node]]
-id = "equation_10_49"
-kind = "theorem"
-desc = '''(10.49): writing `f = α + iβ` with real `α, β`, `f̂_k = a_k + i b_k` with
-`a_k = (1/2π) ∫ (α cos kx + β sin kx)` and `b_k = (1/2π) ∫ (-α sin kx + β cos kx)`; and for real
-`f`, `f̂_{-k} = conj (f̂_k)`. Expanding `e^{-ikx}` in (10.48) and taking real and imaginary parts;
-the conjugation rule is `fourier_neg` under the integral. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_48"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.49) and the remark f̂_{-k} = conj f̂_k'
+id = "equation_10_48_hasSum"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.48)'
 
 [[node]]
-id = "truncation_isBestApprox"
-kind = "theorem"
-desc = '''The unnumbered optimality after (10.50): for even `N` the truncation
-`f_N^* = ∑_{k=-N/2}^{N/2-1} f̂_k e^{ikx}` satisfies `‖f - f_N^*‖_{L²} = min_{g ∈ S_N} ‖f - g‖_{L²}`,
-`S_N = span {e^{ikx} : -N/2 ≤ k < N/2}`. The orthogonal projection onto a finite span of Hilbert
-basis vectors (`fourierBasis`) is the partial sum over that index set, and
-`Submodule.starProjection_minimal` gives the minimality. The symmetric-window projection is
-`trigProjCLM` of `Numlib/Analysis/Fourier/Truncation`; the book's window is asymmetric, so this
-is stated directly. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_48"]
+id = "intervalIntegrable_of_integrable_haarAddCircle"
+
+[[node]]
+id = "equation_10_49"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.49)'
+
+[[node]]
+id = "equation_10_49_conj"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, the remark after (10.49)'
+
+[[node]]
+id = "trigTruncation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.50)'
+
+[[node]]
+id = "trigTruncation_isBestApprox"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the least-squares optimality of the truncation of order N'''
 
 [[node]]
 id = "equation_10_51"
-kind = "definition"
-desc = '''(10.51): the discrete scalar product `(f, g)_N = h ∑_{j<N} f(xⱼ) conj (g(xⱼ))`, `h = 2π/N`,
-`xⱼ = jh` (`Quadrature.angleNode N j`), for `f g : ℝ → ℂ`. ★'''
-deps = ["Quadrature.angleNode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.51)'
 
 [[node]]
+id = "trigDiscreteNorm"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the discrete norm'
+
+[[node]]
 id = "equation_10_52"
-kind = "definition"
-desc = '''(10.52)–(10.53): the discrete Fourier coefficients
-`f̃_k = (1/N) ∑_{j<N} f(xⱼ) W_N^{(k - N/2) j}`, `W_N = exp(-2πi/N)`, `k < N`, and the discrete Fourier
-series `Π^F_N f(x) = ∑_{k<N} f̃_k e^{i(k - N/2)x}`; these are `DFT.coeff N (-N/2) f` and
-`DFT.interp N (-N/2) f` (the window offset `m = -N/2` for even `N`), and (10.52) is
-`(f, φ̃_k)_N / 2π` with `φ̃_k = e^{-i(k - N/2)x}` in the notation of (10.51). ★'''
-deps = ["DFT.coeff", "DFT.interp", "QuarteroniSaccoSaleri.Chapter10.equation_10_51"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.52)–(10.53)'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.52)'
+
+[[node]]
+id = "discreteSeries"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.53)'
+
+[[node]]
+id = "equation_10_52_eq_discreteInner"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.52)'
 
 [[node]]
 id = "lemma_10_1"
-kind = "theorem"
-desc = '''Lemma 10.1, (10.54): `(φ_l, φ_j)_N = h ∑_{k<N} e^{-ik(l-j)h} = 2π δ_{jl}` for `0 ≤ l, j < N`.
-Restates `DFT.sum_exp_neg_sub`, itself `Quadrature.sum_exp_angleNode` at `p = j - l` with
-`|j - l| < N`. ★'''
-deps = ["DFT.sum_exp_neg_sub", "QuarteroniSaccoSaleri.Chapter10.equation_10_51"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 10.1'
 
 [[node]]
 id = "equation_10_55"
-kind = "theorem"
-desc = '''The interpolation property and (10.55): `Π^F_N f(xⱼ) = f(xⱼ)` for `j < N`, i.e.
-`f(xⱼ) = ∑_{k<N} f̃_k W_N^{-(j - N/2)k}` (the IDFT); and the DFT/IDFT are the matrix–vector products
-with `T_{kj} = N⁻¹ W_N^{(k - N/2) j}` and `C = T⁻¹`, `C_{jk} = W_N^{-(j - N/2) k}`. Restates
-`DFT.interp_angleNode` and, for the matrices, `DFT.coeff_eq_dft_mulVec` with
-`Matrix.inv_conjTranspose_dft`. ★'''
-deps = ["DFT.interp_angleNode", "DFT.coeff_eq_dft_mulVec", "Matrix.inv_conjTranspose_dft", "QuarteroniSaccoSaleri.Chapter10.lemma_10_1", "QuarteroniSaccoSaleri.Chapter10.equation_10_52"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.55) and the DFT/IDFT matrices'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.55)'
+
+[[node]]
+id = "principalRoot"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.52), the root of unity W_N'
+
+[[node]]
+id = "dftMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, the matrix T after (10.55)'
+
+[[node]]
+id = "idftMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, the matrix C after (10.55)'
+
+[[node]]
+id = "principalRoot_zpow_mul"
+
+[[node]]
+id = "equation_10_55_dft"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, the DFT as a matrix–vector product after (10.55)'
+
+[[node]]
+id = "equation_10_55_idft"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, the IDFT as a matrix–vector product after (10.55)'
+
+[[node]]
+id = "equation_10_55_inv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, C = T⁻¹ after (10.55)'
 
 [[node]]
 id = "interp_isBestApprox_discrete"
-kind = "theorem"
-desc = '''The unnumbered statement after (10.55): `Π^F_N f ∈ S_N` minimizes `‖f - g‖_N` over
-`g ∈ S_N`, where `‖·‖_N = (·,·)_N^{1/2}` is a norm on `S_N` (Exercise 4 for the trigonometric
-system: `Lemma 10.1` makes the `N` exponentials `(·,·)_N`-orthogonal, hence independent). Immediate
-from `equation_10_55`: the interpolant has discrete error `0`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_55", "QuarteroniSaccoSaleri.Chapter10.lemma_10_1"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the discrete least-squares property of Π^F_N f'''
 
 [[node]]
@@ -109,30 +103,28 @@ id = "fourier_trapezoid_error"
 kind = "theorem"
 desc = '''The two unnumbered quadrature estimates of §10.9: `|(f, v_N) - (f, v_N)_N| ≤ C N^{-s} ‖f‖_s ‖v_N‖`
 for `v_N ∈ S_N`, and at `v_N = 1` the composite trapezoidal error
-`|∫_0^{2π} f - h ∑_{j<N} f(xⱼ)| ≤ C N^{-s} ‖f‖_s` for `2π`-periodic `f ∈ C^s`. The second is
-`PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le` read through the identification
-`‖f‖_{H^s} ≍ ‖f‖_s` for smooth periodic `f` (Parseval with `fourierCoeffOn_of_hasDerivAt_Ioo`
-for the coefficients of `f^{(k)}`); the first is not formalized (quoted from [CHQZ88]). ★★★'''
+`|∫_0^{2π} f - h ∑_{j<N} f(xⱼ)| ≤ C N^{-s} ‖f‖_s` for `2π`-periodic `f ∈ C^s`, with the book's norm
+`‖f‖_s = (∑_{k ≤ s} ‖f^{(k)}‖²_{L²})^{1/2}`. The first is not formalized (quoted from [CHQZ88]).
+The second is `fourier_trapezoid_error_sobolev` with the coefficient-form `H^s` norm of
+`PeriodicSobolev` in place of `‖f‖_s`.
+
+Blocked: the identification `‖f‖_{H^s} ≍ ‖f‖_s` for a smooth `2π`-periodic `f : ℝ → ℂ` — that
+its Fourier coefficient sequence lies in `PeriodicSobolev s` with `f = eval (2π) φ` and
+`‖φ‖ ≤ C ‖f‖_s` — needs Parseval for each derivative (`fourierCoeffOn_of_hasDerivAt_Ioo` gives
+the coefficients of `f^{(k)}` as `(i m)^k f̂(m)`) and the identification of the Fourier series of a smooth
+function with the function; neither is in the backbone. Estimate: a `PeriodicSobolev.ofSmooth`
+bridge of 150–250 lines in `Numlib/Analysis/Sobolev/Periodic`. ★★★'''
 deps = ["PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le", "QuarteroniSaccoSaleri.Chapter10.equation_10_51"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the quadrature error estimates for the discrete scalar product'''
 
 [[node]]
+id = "fourier_trapezoid_error_sobolev"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the composite trapezoidal error for a smooth periodic integrand'''
+
+[[node]]
 id = "equation_10_56"
-kind = "definition"
-desc = '''(10.56), Lanczos smoothing: the factors `σ_k = sin (2(k - N/2)π/N) / (2(k - N/2)π/N)` for
-`k < N` (with `σ_{N/2} = 1`), applied as `f̂_k ↦ σ_k f̂_k`. The Gibbs phenomenon of §10.9.1 is
-described, not stated, by the book, and gets no node. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.56)'
 
 [[node]]
 id = "fft_radix_two"
-kind = "theorem"
-desc = '''§10.9.2, the Cooley–Tukey step: with `p(x) = N⁻¹ ∑_j f_j x^j`, `p = p_e(x²) + x p_o(x²)` and
-`W_N^{2(k - N/2)} = W_{N/2}^k`, so the DFT of order `N = 2M` of `f` is assembled from the DFTs of
-order `M` of its even and odd samples. Restates `Matrix.dft_radix_two` and `Matrix.dft_radix_two_add`
-(`ŷ_k = E_k + ω^{-k} O_k`, `ŷ_{k+M} = E_k - ω^{-k} O_k`), translated to the book's shifted window
-by `W_N^{-Nj/2} = (-1)^j`: the book's `T f` is `N⁻¹` times the conjugate DFT of `((-1)^j f_j)_j`.
-The operation count `O(N log₂ N)` is algorithmic and is not a node. ★'''
-deps = ["Matrix.dft_radix_two", "Matrix.dft_radix_two_add", "QuarteroniSaccoSaleri.Chapter10.equation_10_55"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9.2, the recursive FFT identity'

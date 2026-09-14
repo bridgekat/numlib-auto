@@ -1,82 +1,43 @@
 namespace = "Wavelet"
-desc = '''
-The continuous wavelet transform: the family `h_{s,τ}(t) = s^{-1/2} h((t - τ)/s)` of dilates and
-translates of an elementary wavelet `h ∈ L²(ℝ)`, its Fourier transform
-`𝓕 h_{s,τ}(ν) = √s 𝓕h(sν) e^{-2πiντ}`, the transform `W_f(s, τ) = ⟪f, h_{s,τ}⟫`, its expression on the
-Fourier side by Plancherel, and the discretely sampled family `h_{j,k}(t) = s₀^{-j/2} h(s₀^{-j} t -
-k τ₀)` with the identification, at `s₀ = 2`, `τ₀ = 1`, with the dyadic `waveletSystem` of
-`Numlib/Analysis/Wavelet/Multiresolution` (index reversal `j ↦ -j`). The material is
-Quarteroni–Sacco–Saleri §10.12 (Definition 10.4, (10.85)–(10.87)); Atkinson–Han §4.4–4.5 state
-only the dyadic case, which is why the existing wavelet modules start there.
-
-Not here: the inversion formula of the continuous wavelet transform (Calderón's admissibility
-condition `∫ |𝓕h(ν)|²/|ν| dν < ∞` and `f = C_h⁻¹ ∫∫ W_f(s,τ) h_{s,τ} ds dτ / s²`), which the book does
-not state either; and the Heisenberg uncertainty inequality (10.88), absent from Mathlib
-(grep `Heisenberg`, `uncertainty`: no hits). Dilation as a unitary of `L²(ℝ)` is
-`MeasureTheory.Lp.dilationₗᵢ` of `Numlib/Analysis/Wavelet/Haar`, and translation
-`MeasureTheory.Lp.translationₗᵢ` of `Multiresolution`; the pointwise family below is what those
-act on when `h` is given as a function.
-'''
 
 [[node]]
 id = "dilateTranslate"
-kind = "definition"
-desc = '''`dilateTranslate h s τ : ℝ → ℂ := fun t => (Real.sqrt s)⁻¹ * h ((t - τ) / s)`, the wavelet
-`h_{s,τ}` of Quarteroni–Sacco–Saleri (10.85), for `h : ℝ → ℂ`, scale `s > 0` and shift `τ`. With
-`memLp_dilateTranslate`: it is in `L²` (of the same norm) when `h` is, by the change of variables
-`t ↦ s t + τ`. ★'''
-deps = []
+
+[[node]]
+id = "map_volume_sub_div"
+
+[[node]]
+id = "memLp_dilateTranslate"
+
+[[node]]
+id = "eLpNorm_dilateTranslate"
+
+[[node]]
+id = "integrable_dilateTranslate"
 
 [[node]]
 id = "fourier_dilateTranslate"
-kind = "theorem"
-desc = '''(10.86): for integrable `h`, `0 < s` and every `ν`,
-`𝓕 (dilateTranslate h s τ) ν = Real.sqrt s * 𝓕 h (s * ν) * Complex.exp (-(2π ν τ) * I)`.
-Translation is Mathlib's `Real.fourierIntegral_comp_add_right` (`𝓕 (h (· - τ)) ν = e^{-2πiντ} 𝓕 h
-ν`), dilation is `Real.fourierIntegral_comp_mul_left` of `Numlib/Analysis/Fourier/FourierIntegral`
-at `a = 1/s`. ★'''
-deps = ["Wavelet.dilateTranslate", "Real.fourierIntegral_comp_mul_left"]
 
 [[node]]
 id = "continuousTransform"
-kind = "definition"
-desc = '''The continuous wavelet transform (Quarteroni–Sacco–Saleri Definition 10.4, (10.87)):
-`continuousTransform h f s τ = ∫ t, f t * conj (dilateTranslate h s τ t)`, for `f h : ℝ → ℂ`; for
-`f, h ∈ L²` this is the inner product `⟪f, h_{s,τ}⟫_{L²}` (`continuousTransform_eq_inner`). ★'''
-deps = ["Wavelet.dilateTranslate"]
+
+[[node]]
+id = "continuousTransform_eq_inner"
 
 [[node]]
 id = "continuousTransform_eq_integral_fourier"
-kind = "theorem"
-desc = '''The transform on the Fourier side (Quarteroni–Sacco–Saleri §10.12.1): for `f, h ∈ L¹ ∩ L²`
-and `0 < s`, `continuousTransform h f s τ = Real.sqrt s * ∫ ν, 𝓕 f ν * conj (𝓕 h (s * ν)) *
-Complex.exp (2π ν τ * I)` (the book's `(√s/2π) ∫ F(ω) conj H(sω) e^{iωτ} dω` in `ω = 2πν`).
-Plancherel `⟪f, g⟫ = ⟪𝓕 f, 𝓕 g⟫` for `g = h_{s,τ}` — Mathlib's `MeasureTheory.Lp.fourierTransformₗᵢ`
-is an isometry of `L²`, so the polarization identity gives the inner products, and
-`fourierTransform_toLp` identifies `𝓕` on `L¹ ∩ L²` — followed by `fourier_dilateTranslate`. ★★★'''
-deps = ["Wavelet.continuousTransform", "Wavelet.fourier_dilateTranslate"]
 
 [[node]]
 id = "discrete"
-kind = "definition"
-desc = '''The discrete wavelet (Quarteroni–Sacco–Saleri §10.12.2): `discrete h s₀ τ₀ j k = dilateTranslate h
-(s₀ ^ j) (k * τ₀ * s₀ ^ j)` for `j k : ℤ`, i.e. `t ↦ s₀^{-j/2} h (s₀^{-j} t - k τ₀)`. ★'''
-deps = ["Wavelet.dilateTranslate"]
+
+[[node]]
+id = "discrete_apply"
 
 [[node]]
 id = "discreteTransform"
-kind = "definition"
-desc = '''The discrete wavelet transform `discreteTransform h s₀ τ₀ f j k = ∫ t, f t * conj (discrete h s₀ τ₀
-j k t)` (`= continuousTransform h f (s₀^j) (k τ₀ s₀^j)`). ★'''
-deps = ["Wavelet.discrete", "Wavelet.continuousTransform"]
+
+[[node]]
+id = "discrete_two_one_ae_eq_scalingSystem"
 
 [[node]]
 id = "discrete_two_one_eq_waveletSystem"
-kind = "theorem"
-desc = '''At the dyadic parameters, the discrete wavelets are the `waveletSystem` of a multiresolution
-analysis with the level index reversed: for `ψ : ℝ → ℝ` (as the wavelet function underlying
-`mraWavelet φ`), `discrete (fun t => (ψ t : ℂ)) 2 1 j k = fun t => (2 : ℝ)^(-(j : ℝ)/2) * ψ (2^(-j) t -
-k)`, which is the function underlying `waveletSystem ψ (-j) k` (`2^{j'/2} ψ(2^{j'} x - k)` at `j' =
--j`). Unfolding both definitions; the `Lp` side is `MeasureTheory.Lp.dilationₗᵢ` applied to a
-translate. ★'''
-deps = ["Wavelet.discrete", "waveletSystem"]
