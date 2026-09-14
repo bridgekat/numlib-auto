@@ -1,387 +1,123 @@
 namespace = "Spline"
-desc = '''
-# Polynomial splines and interpolatory cubic splines
-
-The spline space `S_k^r` of a partition `a = x_0 < x_1 < ⋯ < x_n = b`: continuous functions on
-`[a, b]` that are polynomials of degree `≤ k` on every panel and of class `C^r` across the
-breakpoints, with its dimension `n (k - r) + r + 1` and its truncated-power basis; and the
-interpolatory cubic spline (`k = 3`, `r = 2`) through the *moment* system for `M_i = s''(x_i)` —
-a tridiagonal, strictly diagonally dominant linear system for the natural, clamped and "prolonged"
-closures, a cyclic one for the periodic closure and a reduced one for the not-a-knot closure —
-with the Holladay minimum-norm property and the best-approximation property of the clamped
-spline, and an `O(h⁴)` error bound with explicit (non-sharp) constants. The material is
-Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §8.6–8.6.1 (Definition 8.1, (8.46)–(8.50),
-Properties 8.2–8.3, Exercises 10–11), Kress §8.4 and Atkinson–Han §3.2–3.4 where they touch
-splines; de Boor, *A Practical Guide to Splines*, is the reference for what the book quotes.
-
-## Design
-
-* `splineSpace a b n x k r : Submodule ℝ C(Icc a b, ℝ)` with the smoothness `r` as a parameter:
-  the book's `S_k` is `r = k - 1`, its `X_h^k` of (8.22) — the range of `piecewisePolyInterpCLM`
-  of `Numlib/Approximation/Interpolation` — is `r = 0`, and `r = k` is `polyLE (Icc a b) k`.
-  Membership is "there is a `C^r` function on `Icc a b` agreeing with `f` there and with a
-  polynomial of degree `≤ k` on every panel", so that no derivative of a function on the subtype
-  is ever needed.
-* Cubic splines are built from their moments: `panelCubic x f M i` is the cubic on the panel
-  `[x_{i-1}, x_i]` with values `f_{i-1}, f_i` and second derivatives `M_{i-1}, M_i` at its ends,
-  (8.46) integrated twice, and `cubicSplineFun x f M` glues the panels. The first derivative is
-  continuous at `x_i` iff the moments satisfy row `i` of the M-continuity system (8.47); that is
-  the equivalence `moment_eq_of_contDiffOn` / `contDiffOn_cubicSplineFun`, and everything about
-  existence and uniqueness is then linear algebra on `momentMatrix`, whose strict diagonal
-  dominance is `Matrix.IsStrictDiagDominant` of `Numlib/LinearAlgebra/Matrix/DiagDominant`.
-* The closure of (8.48), `2 M_0 + λ_0 M_1 = d_0`, `μ_n M_{n-1} + 2 M_n = d_n` with
-  `0 ≤ λ_0, μ_n ≤ 1`, is taken as the primary parameter (`closure : ℝ × ℝ × ℝ × ℝ`): the natural
-  spline is `(0, 0, 0, 0)`, the clamped spline with `s'(a) = f'_0`, `s'(b) = f'_n` is
-  `λ_0 = μ_n = 1`, `d_0 = (6/h_1)((f_1 - f_0)/h_1 - f'_0)`, `d_n = (6/h_n)(f'_n - (f_n - f_{n-1})/h_n)`,
-  and the book's "popular choice" is `λ_0 = μ_n = 1`, `d_0 = d_1`, `d_n = d_{n-1}`. Periodic and
-  not-a-knot closures are not of this form and get their own existence theorems.
-
-Prototype: `notes/qss/ch08/proto/Spline.lean` of the chapter 8 planning pass elaborates `splineSpace`,
-`IsPartition`, the dimension count, the truncated-power basis statement, `momentMatrix`,
-`momentRhs`, its diagonal dominance, `panelCubic` and `moment_eq_of_contDiffOn` with `sorry`.
-
-## Consumers
-
-QSS chapter 8 (§8.6, §8.7 parametric splines), QSS chapter 12 (the `X_h^k` finite element space,
-Property 12.1) through `r = 0`, `Numlib/Approximation/BSpline` (the B-spline basis of
-`splineSpace`), Kress §8.4 and Atkinson–Han Exercise 3.2.7 (cubic spline interpolation).
-'''
 
 [[node]]
 id = "IsPartition"
-kind = "definition"
-desc = '''`IsPartition a b n x` for `x : ℕ → ℝ`: `x j < x (j + 1)` for `j < n`, `x 0 = a`, `x n = b` —
-the nodes of Definition 8.1 (`n` panels, `n + 1` nodes; the book's `n` is this `n`). A structure
-with fields `step`, `first`, `last`. Only `x 0, …, x n` are used. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1"
 
 [[node]]
 id = "splineSpace"
-kind = "definition"
-desc = '''**The spline space** `splineSpace a b n x k r : Submodule ℝ C(Icc a b, ℝ)`: the `f` for
-which there is `g : ℝ → ℝ` with `ContDiffOn ℝ r g (Icc a b)`, `f t = g t` on `Icc a b`, and for
-every `j < n` a polynomial `p` with `p.degree ≤ k` and `EqOn g p.eval (Icc (x j) (x (j+1)))`.
-Closed under addition and scalar multiplication since `ContDiffOn` and "polynomial on a panel"
-are. Definition 8.1 is `r = k - 1`. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1"
 
 [[node]]
 id = "mem_splineSpace_iff"
-kind = "theorem"
-desc = 'The unfolding of `splineSpace`. ★'
-deps = ["Spline.splineSpace"]
 
 [[node]]
 id = "polyLE_le_splineSpace"
-kind = "theorem"
-desc = '''`polyLE (Icc a b) k ≤ splineSpace a b n x k r` for every `r`: a polynomial is a spline
-("obviously, any polynomial of degree `k` on `[a, b]` is a spline"). ★'''
-deps = ["Spline.splineSpace"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6"
 
 [[node]]
 id = "splineSpace_anti_smoothness"
-kind = "theorem"
-desc = '''`splineSpace a b n x k r' ≤ splineSpace a b n x k r` for `r ≤ r'`, and
-`splineSpace_mono_degree`: `splineSpace a b n x k r ≤ splineSpace a b n x k' r` for `k ≤ k'`. ★'''
-deps = ["Spline.splineSpace"]
 
 [[node]]
 id = "truncPowCM"
-kind = "definition"
-desc = '''`truncPowCM a b c s : C(Icc a b, ℝ)` is `t ↦ (t - c)_+^s = Quadrature.truncPow s t c`
-(`Numlib/Approximation/Quadrature`), continuous for `s ≥ 1`; for `s = 0` take the indicator of
-`Ici c`, which is not continuous — the definition is for `1 ≤ s` (junk `0` otherwise, or a
-hypothesis). ★'''
-deps = ["Quadrature.truncPow"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)"
 
 [[node]]
 id = "truncPowCM_mem_splineSpace"
-kind = "theorem"
-desc = '''For an interior breakpoint `x j`, `0 < j < n`, and `r < s ≤ k`,
-`truncPowCM a b (x j) s ∈ splineSpace a b n x k r`: `(t - c)_+^s` is `C^{s-1}` (its first `s - 1`
-derivatives vanish at `c` from both sides) and a polynomial on either side of `c`. ★★'''
-deps = ["Spline.truncPowCM", "Spline.splineSpace"]
 
 [[node]]
 id = "linearIndependent_truncPow"
-kind = "theorem"
-desc = '''**The truncated powers are linearly independent** (QSS Exercise 8.10, the independence half):
-for `hx : IsPartition a b n x`, `r ≤ k`, the family `1, t, …, t^k` together with
-`(t - x_j)_+^s` for `0 < j < n`, `r < s ≤ k`, is linearly independent in `C(Icc a b, ℝ)`. Proof:
-restrict a vanishing combination to the first panel, where only the monomials survive, so their
-coefficients vanish (a polynomial vanishing on an interval is zero); then on the panel
-`[x_j, x_{j+1}]` only the terms with knots `≤ x_j` survive, and by induction on `j` the
-coefficients of the powers at `x_j` vanish because `(t - x_j)^s`, `r < s ≤ k`, are independent
-polynomials. ★★★'''
-deps = ["Spline.truncPowCM", "Spline.IsPartition"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1"
 
 [[node]]
 id = "span_truncPow_eq_splineSpace"
-kind = "theorem"
-desc = '''**The truncated powers span** (QSS Exercise 8.10, the spanning half): under the hypotheses of
-`linearIndependent_truncPow` and `1 ≤ n`, every `f ∈ splineSpace a b n x k r` is a combination of
-`1, …, t^k` and the `(t - x_j)_+^s`. Proof by induction over the panels: subtract the polynomial
-`p_0` of the first panel; the remainder vanishes on `[x_0, x_1]` and is `C^r` and a polynomial on
-`[x_1, x_2]`, so on that panel it is `∑_{s > r} c_s (t - x_1)^s` (its derivatives of order `≤ r`
-vanish at `x_1`); subtract those truncated powers and continue. ★★★'''
-deps = ["Spline.linearIndependent_truncPow", "Spline.truncPowCM_mem_splineSpace", "Spline.splineSpace"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1 and (8.44)"
 
 [[node]]
 id = "finrank_splineSpace"
-kind = "theorem"
-desc = '''**The dimension count** (Definition 8.1's `dim S_k = n + k`, and (8.43)): for
-`hx : IsPartition a b n x`, `1 ≤ n`, `r ≤ k`,
-`Module.finrank ℝ (splineSpace a b n x k r) = n * (k - r) + r + 1`; for `r = k - 1` this is
-`n + k`, for `r = 0` it is `n k + 1`. From the basis of `linearIndependent_truncPow` and
-`span_truncPow_eq_splineSpace`: `(k + 1) + (n - 1)(k - r)`. ★★'''
-deps = ["Spline.linearIndependent_truncPow", "Spline.span_truncPow_eq_splineSpace"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1"
 
 [[node]]
 id = "exists_basis_truncPow"
-kind = "theorem"
-desc = '''Exercise 8.10 as a `Module.Basis (Fin (n + k)) ℝ (splineSpace a b n x k (k - 1))` whose
-first `k + 1` vectors are the monomials and whose remaining `n - 1` are
-`truncPowCM a b (x (j + 1)) k`; `Module.Basis.mk` from the two halves. ★'''
-deps = ["Spline.linearIndependent_truncPow", "Spline.span_truncPow_eq_splineSpace"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.1 and (8.44)"
 
 [[node]]
 id = "panelCubic"
-kind = "definition"
-desc = '''`panelCubic x f M i t`, `1 ≤ i ≤ n`: the cubic on `[x_{i-1}, x_i]` with `h_i = x_i - x_{i-1}`,
-`M_{i-1} (x_i - t)³/(6 h_i) + M_i (t - x_{i-1})³/(6 h_i) + C_{i-1} (t - x_{i-1}) + C̃_{i-1}`,
-`C̃_{i-1} = f_{i-1} - M_{i-1} h_i²/6`, `C_{i-1} = (f_i - f_{i-1})/h_i - (h_i/6)(M_i - M_{i-1})` —
-QSS (8.46) integrated twice with the end values imposed. ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)"
 
 [[node]]
 id = "panelCubic_left"
-kind = "theorem"
-desc = '''`panelCubic x f M i (x (i-1)) = f (i-1)` and `panelCubic_right`: `… (x i) = f i`; the second
-derivative is `M_{i-1} (x_i - t)/h_i + M_i (t - x_{i-1})/h_i` (`deriv2_panelCubic`, which is
-(8.46)), with values `M_{i-1}`, `M_i` at the ends. ★'''
-deps = ["Spline.panelCubic"]
 
 [[node]]
 id = "deriv_panelCubic_right"
-kind = "theorem"
-desc = '''The one-sided slopes at the node `x_i` (the two displayed lines before (8.47)):
-`deriv (panelCubic x f M i) (x i) = h_i M_{i-1}/6 + h_i M_i/3 + (f_i - f_{i-1})/h_i` and, as
-`deriv_panelCubic_left`, `deriv (panelCubic x f M (i+1)) (x i) = -h_{i+1} M_i/3 - h_{i+1} M_{i+1}/6 + (f_{i+1} - f_i)/h_{i+1}`.
-Direct differentiation. ★'''
-deps = ["Spline.panelCubic"]
 
 [[node]]
 id = "momentMatrix"
-kind = "definition"
-desc = '''**The M-continuity matrix** (8.48), `momentMatrix n h lam0 mun : Matrix (Fin (n+1)) (Fin (n+1)) ℝ`
-for the panel lengths `h : ℕ → ℝ` (`h i = x i - x (i-1)`): diagonal `2`; superdiagonal
-`λ_i = h_{i+1}/(h_i + h_{i+1})` for `1 ≤ i ≤ n - 1` and `λ_0 = lam0`; subdiagonal
-`μ_i = h_i/(h_i + h_{i+1})` for `1 ≤ i ≤ n - 1` and `μ_n = mun`; zero elsewhere. It is
-`Matrix.IsTridiagonal` (`Numlib/LinearAlgebra/Matrix/Hessenberg`). ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.47)–(8.48)"
 
 [[node]]
 id = "momentRhs"
-kind = "definition"
-desc = '''`momentRhs n h f d0 dn : Fin (n+1) → ℝ`: `d_i = (6/(h_i + h_{i+1})) ((f_{i+1} - f_i)/h_{i+1} - (f_i - f_{i-1})/h_i)`
-for `1 ≤ i ≤ n - 1`, `d_0 = d0`, `d_n = dn` — the right-hand side of (8.47)–(8.48). ★'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.47)–(8.48)"
 
 [[node]]
 id = "isStrictDiagDominant_momentMatrix"
-kind = "theorem"
-desc = '''For positive panel lengths and `0 ≤ lam0 ≤ 1`, `0 ≤ mun ≤ 1`, `momentMatrix n h lam0 mun` is
-`Matrix.IsStrictDiagDominant`: each interior row has off-diagonal sum `μ_i + λ_i = 1 < 2`, the end
-rows `lam0 ≤ 1`, `mun ≤ 1`. ★'''
-deps = ["Spline.momentMatrix", "Matrix.IsStrictDiagDominant"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the system (8.48) is strictly diagonally dominant"
 
 [[node]]
 id = "isUnit_momentMatrix"
-kind = "theorem"
-desc = '''`IsUnit (momentMatrix n h lam0 mun)` under the same hypotheses;
-`Matrix.IsStrictDiagDominant.isUnit`. ★'''
-deps = ["Spline.isStrictDiagDominant_momentMatrix", "Matrix.IsStrictDiagDominant.isUnit"]
 
 [[node]]
 id = "linfty_opNorm_inv_momentMatrix_le"
-kind = "theorem"
-desc = '''`‖(momentMatrix n h lam0 mun)⁻¹‖_∞ ≤ 1` (the `‖·‖_∞` operator norm, Mathlib's
-`Matrix.linfty_opNorm`): for `A = 2 (1 - G)` with `‖G‖_∞ ≤ 1/2` (the Jacobi iteration matrix, whose
-norm is the Jacobi contraction of `Numlib/Stationary/DiagDominant`), `‖A⁻¹‖ ≤ (1/2) ·
-1/(1 - 1/2) = 1` by the Neumann series. Equivalently and more directly: for `A v = w`, at an index
-`i` where `|v_i|` is maximal, `2|v_i| ≤ |w_i| + (μ_i + λ_i)|v_i|`, so `‖v‖_∞ ≤ ‖w‖_∞`. It is what
-the error bound `norm_sub_cubicInterp_le` rests on. ★★'''
-deps = ["Spline.momentMatrix", "Spline.isStrictDiagDominant_momentMatrix"]
 
 [[node]]
 id = "cubicSplineFun"
-kind = "definition"
-desc = '''`cubicSplineFun x f M : ℝ → ℝ` glues the panel cubics: on `[x_{i-1}, x_i]` (choosing, say, the
-panel `i` with `x_{i-1} ≤ t < x_i`, the last panel closed) it is `panelCubic x f M i t`; outside
-`[x_0, x_n]` it continues the first / last cubic. Only its values on `Icc a b` matter. ★'''
-deps = ["Spline.panelCubic"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)"
 
 [[node]]
 id = "moment_eq_of_contDiffOn"
-kind = "theorem"
-desc = '''**The M-continuity system is necessary** (8.47): if `hx : IsPartition a b n x`, `s` is `C²`
-on `Icc a b` and agrees with `panelCubic x f M i` on every panel `[x_{i-1}, x_i]`, then for every
-interior node `1 ≤ i < n`, `μ_i M_{i-1} + 2 M_i + λ_i M_{i+1} = d_i` with `μ_i, λ_i, d_i` as in
-`momentMatrix`, `momentRhs`. Proof: `s'` is continuous at `x_i`, so the one-sided slopes
-`deriv_panelCubic_right` and `deriv_panelCubic_left` agree; multiply by `6/(h_i + h_{i+1})`. ★★'''
-deps = ["Spline.panelCubic", "Spline.deriv_panelCubic_right", "Spline.IsPartition"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.47)"
 
 [[node]]
 id = "contDiffOn_cubicSplineFun"
-kind = "theorem"
-desc = '''**The M-continuity system is sufficient**: if `M` satisfies the interior equations of
-`moment_eq_of_contDiffOn` then `cubicSplineFun x f M` is `C²` on `Icc a b`. Values agree at `x_i`
-(`panelCubic_left/right`), first derivatives agree by the moment equation, second derivatives are
-`M_i` from both sides (`deriv2_panelCubic`); so the glued function is `C²` at each interior node.
-Mathlib has no ready lemma for `C^k` gluing of two functions agreeing to order `k` at a point;
-prove `HasDerivAt` of the glued function at the breakpoint from the two one-sided derivatives
-(`HasDerivWithinAt.union` with `Iic`/`Ici`) for the function, its derivative and its second
-derivative, and assemble `ContDiffOn` through `contDiffOn_succ_iff_derivWithin` or by exhibiting
-the continuous second derivative. This is the one piece of real proof engineering in the module.
-★★★'''
-deps = ["Spline.cubicSplineFun", "Spline.panelCubic_left", "Spline.deriv_panelCubic_right"]
 
 [[node]]
 id = "cubicSplineFun_mem_splineSpace"
-kind = "theorem"
-desc = '''Under the hypotheses of `contDiffOn_cubicSplineFun`, the restriction of `cubicSplineFun x f M`
-to `Icc a b` lies in `splineSpace a b n x 3 2` and takes the values `f i` at the nodes. ★'''
-deps = ["Spline.contDiffOn_cubicSplineFun", "Spline.splineSpace", "Spline.panelCubic_left"]
 
 [[node]]
 id = "IsCubicInterp"
-kind = "definition"
-desc = '''`IsCubicInterp a b n x f s`, for `s : ℝ → ℝ`: `s` is `C²` on `Icc a b`, agrees with a cubic
-polynomial on every panel, and `s (x i) = f i` for `i ≤ n` — "the cubic spline interpolating the
-values `f_i`". The moments of such an `s` are `M_i = deriv² s (x i)` and `s` is `cubicSplineFun x f
-M` on `Icc a b` (`IsCubicInterp.eq_cubicSplineFun`, from uniqueness of a cubic with given end values
-and end second derivatives), so its moments satisfy the system (`IsCubicInterp.moment_eq`). ★★'''
-deps = ["Spline.cubicSplineFun", "Spline.moment_eq_of_contDiffOn"]
 
 [[node]]
 id = "existsUnique_isCubicInterp_of_closure"
-kind = "theorem"
-desc = '''**Existence and uniqueness of the interpolatory cubic spline with a closure of type (8.48)**:
-for `hx : IsPartition a b n x`, `1 ≤ n`, `0 ≤ lam0 ≤ 1`, `0 ≤ mun ≤ 1` and any `d0 dn`, there is
-exactly one `s` (as a function on `Icc a b`, or up to `EqOn` on `Icc a b`) with
-`IsCubicInterp a b n x f s` whose moments satisfy `2 M_0 + lam0 M_1 = d0` and
-`mun M_{n-1} + 2 M_n = dn`. Existence: `M := (momentMatrix n h lam0 mun)⁻¹ *ᵥ momentRhs n h f d0 dn`
-and `contDiffOn_cubicSplineFun`; uniqueness: `IsCubicInterp.moment_eq` shows the moments of any
-such `s` solve the same nonsingular system (`isUnit_momentMatrix`), and equal moments give equal
-panel cubics. ★★'''
-deps = ["Spline.isUnit_momentMatrix", "Spline.contDiffOn_cubicSplineFun", "Spline.IsCubicInterp", "Spline.momentRhs"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, existence and uniqueness for the closures (8.48)"
 
 [[node]]
 id = "cubicInterp"
-kind = "definition"
-desc = '''`cubicInterp x f lam0 mun d0 dn : ℝ → ℝ`, the spline of
-`existsUnique_isCubicInterp_of_closure`, given explicitly as `cubicSplineFun x f M` with
-`M = (momentMatrix n h lam0 mun)⁻¹ *ᵥ momentRhs n h f d0 dn`; `cubicInterp_apply_node`,
-`isCubicInterp_cubicInterp`, `deriv2_cubicInterp_node` (the moments) and `eq_cubicInterp`
-(uniqueness) are its API. `naturalInterp x f := cubicInterp x f 0 0 0 0` and
-`clampedInterp x f f'0 f'n := cubicInterp x f 1 1 ((6/h_1)((f_1 - f_0)/h_1 - f'0)) ((6/h_n)(f'n - (f_n - f_{n-1})/h_n))`
-are abbreviations, with `deriv2_naturalInterp_endpoints : s''(a) = s''(b) = 0` and
-`deriv_clampedInterp_endpoints : s'(a) = f'0, s'(b) = f'n` (the closure equation at row `0` is
-exactly `deriv_panelCubic_left` at `x_0` set equal to `f'0`). ★'''
-deps = ["Spline.existsUnique_isCubicInterp_of_closure", "Spline.cubicSplineFun", "Spline.momentMatrix", "Spline.momentRhs"]
 
 [[node]]
 id = "cubicInterp_add"
-kind = "theorem"
-desc = '''**Linearity in the data**: `cubicInterp x (f + g) lam0 mun (d0 + e0) (dn + en) = cubicInterp x f lam0 mun d0 dn + cubicInterp x g lam0 mun e0 en`
-on `Icc a b`, and `cubicInterp_smul`; immediate from the explicit formula, `M` being linear in
-`(f, d0, dn)`, or from uniqueness. Needed by the cardinal basis, by the vector-valued (parametric)
-splines of QSS §8.7, and by the affine invariance of the cumulative-length parametric spline. ★'''
-deps = ["Spline.cubicInterp"]
 
 [[node]]
 id = "cardinalBasis"
-kind = "definition"
-desc = '''**The cardinal spline basis** (QSS §8.6.1, the `φ_i`): for `i ≤ n`, `cardinalBasis x i :=
-clampedInterp x (Pi.single i 1) 0 0`, so `φ_i (x j) = δ_ij`, `φ_i'(a) = φ_i'(b) = 0`;
-`cardinalBasis x (n + 1) := clampedInterp x 0 1 0` and `cardinalBasis x (n + 2) := clampedInterp x 0 0 1`.
-`clampedInterp_eq_sum_cardinalBasis`: `clampedInterp x f f'0 f'n = ∑_{i ≤ n} f_i φ_i + f'0 φ_{n+1} + f'n φ_{n+2}`
-on `Icc a b`, by `cubicInterp_add`/`cubicInterp_smul`; and the `n + 3` functions are a basis of
-`splineSpace a b n x 3 2` (`finrank_splineSpace` gives `n + 3`, and they are independent because
-evaluating a vanishing combination at the nodes and differentiating at the ends kills every
-coefficient). ★★'''
-deps = ["Spline.cubicInterp", "Spline.cubicInterp_add", "Spline.finrank_splineSpace"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.50)"
 
 [[node]]
 id = "existsUnique_isCubicInterp_periodic"
-kind = "theorem"
-desc = '''**The periodic cubic spline** ((8.44) with `k = 3`): for `hx : IsPartition a b n x`, `2 ≤ n`
-and data with `f 0 = f n`, there is exactly one `IsCubicInterp a b n x f s` with `s'(a) = s'(b)` and
-`s''(a) = s''(b)`. The moments satisfy `M_0 = M_n` and the cyclic system of `n` equations
-`μ_i M_{i-1} + 2 M_i + λ_i M_{i+1} = d_i`, `i = 1, …, n`, indices mod `n` with `h_{n+1} := h_1`
-(row `n` is the continuity of `s'` at `a = b`), whose matrix `periodicMomentMatrix n h` is strictly
-diagonally dominant (`μ_i + λ_i = 1 < 2`, also when `n = 2` and the two off-diagonal entries land in
-the same column); then as in `existsUnique_isCubicInterp_of_closure`. ★★★ (index arithmetic mod
-`n`)'''
-deps = ["Spline.IsCubicInterp", "Spline.contDiffOn_cubicSplineFun", "Matrix.IsStrictDiagDominant.isUnit"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the periodic spline"
 
 [[node]]
 id = "existsUnique_isCubicInterp_notAKnot"
-kind = "theorem"
-desc = '''**The not-a-knot cubic spline** (QSS §8.6.1, the closure "continuity of `s^{(3)}` at `x_1` and
-`x_{n-1}`"): for `hx : IsPartition a b n x` and `3 ≤ n` there is exactly one
-`IsCubicInterp a b n x f s` whose cubic pieces on the panels `1, 2` coincide and on the panels
-`n - 1, n` coincide (equivalently `s^{(3)}` has no jump at `x_1` and at `x_{n-1}`). In moments, `s^{(3)}`
-on the panel `i` is `(M_i - M_{i-1})/h_i`, so the conditions are
-`(M_1 - M_0)/h_1 = (M_2 - M_1)/h_2` and `(M_n - M_{n-1})/h_n = (M_{n-1} - M_{n-2})/h_{n-1}`;
-eliminating `M_0 = (1 + h_1/h_2) M_1 - (h_1/h_2) M_2` and `M_n` from rows `1` and `n - 1` of (8.47)
-turns row `1` into `(2 + h_1/h_2) M_1 + ((h_2 - h_1)/h_2) M_2 = d_1` and row `n - 1` symmetrically,
-and the reduced `(n-1) × (n-1)` system is strictly diagonally dominant since
-`|h_2 - h_1|/h_2 < 2 + h_1/h_2`; for `n = 3` both modified rows are present and still dominant.
-For `n = 2` the two conditions coincide and the spline is not unique (a single cubic through three
-points), which is why the book's `n ≥ 3`-free phrasing needs the hypothesis. ★★★'''
-deps = ["Spline.IsCubicInterp", "Spline.contDiffOn_cubicSplineFun", "Matrix.IsStrictDiagDominant.isUnit"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the not-a-knot condition"
 
 [[node]]
 id = "integral_sub_deriv2_mul_deriv2_eq_zero"
-kind = "theorem"
-desc = '''**The Holladay orthogonality identity** (QSS Exercise 8.11's hint): for `hx : IsPartition a b n x`,
-`f` of class `C²` on `Icc a b`, and `s` with `IsCubicInterp a b n x (fun i => f (x i)) s` such that
-either `s''(a) = s''(b) = 0` (natural) or `s'(a) = f'(a)` and `s'(b) = f'(b)` (clamped),
-`∫ t in a..b, (deriv² f t - deriv² s t) * deriv² s t = 0`. Proof: split at the nodes
-(`intervalIntegral.sum_integral_adjacent_intervals`), integrate by parts on each panel
-(`intervalIntegral.integral_mul_deriv_eq_deriv_mul`): `∫ (f'' - s'') s'' = [(f' - s') s'']_a^b - ∑_i ∫_{x_{i-1}}^{x_i} (f' - s') s^{(3)}`,
-the boundary terms telescoping because `s''` is continuous; the first term vanishes under either
-end condition, and on each panel `s^{(3)} = c_i` is constant so the second is
-`∑ c_i [f - s]_{x_{i-1}}^{x_i} = 0` by interpolation. ★★★'''
-deps = ["Spline.IsCubicInterp", "Spline.IsPartition"]
 
 [[node]]
 id = "holladay"
-kind = "theorem"
-desc = '''**The minimum norm property** (QSS Property 8.2, Holladay): for `f` of class `C²` on
-`Icc a b` and `s = naturalInterp x (fun i => f (x i))`,
-`∫ t in a..b, deriv² s t ^ 2 ≤ ∫ t in a..b, deriv² f t ^ 2`, with equality iff `f = s` on `Icc a b`
-(`holladay_eq_iff`). From `∫ f''² = ∫ s''² + ∫ (f'' - s'')² + 2 ∫ (f'' - s'') s''` and
-`integral_sub_deriv2_mul_deriv2_eq_zero`; equality forces `f'' = s''` on `[a, b]` (continuous,
-nonnegative integrand with zero integral), so `f - s` is affine and vanishes at the `n + 1 ≥ 2`
-nodes, hence is zero. `holladay_clamped` is the same statement for `clampedInterp x f (f'(a)) (f'(b))`
-(Exercise 8.11's second half). ★★'''
-deps = ["Spline.integral_sub_deriv2_mul_deriv2_eq_zero", "Spline.cubicInterp"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2"
 
 [[node]]
 id = "integral_sq_sub_deriv2_clampedInterp_le"
-kind = "theorem"
-desc = '''**The clamped spline is the best `L²`-approximation of `f''` by second derivatives of cubic
-splines** (the unnumbered display after Property 8.2): for `f` of class `C²` on `Icc a b`,
-`s_f = clampedInterp x (fun i => f (x i)) (f'(a)) (f'(b))` and every `s` with `IsCubicSpline a b n x s`
-(a `C²` piecewise cubic, no interpolation condition),
-`∫ t in a..b, (deriv² f t - deriv² s_f t)^2 ≤ ∫ t in a..b, (deriv² f t - deriv² s t)^2`.
-The identity `∫ (f'' - s_f'') s'' = 0` holds for *every* cubic spline `s` by the computation of
-`integral_sub_deriv2_mul_deriv2_eq_zero` with `s_f` in the role of the interpolant (the boundary
-term vanishes because `f' = s_f'` at the ends, the panel terms because `f = s_f` at the nodes);
-apply it to `s_f - s` and expand the square. ★★'''
-deps = ["Spline.integral_sub_deriv2_mul_deriv2_eq_zero", "Spline.cubicInterp"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2 (the best-approximation form)"
 
 [[node]]
 id = "norm_deriv2_sub_clampedInterp_le"
@@ -393,8 +129,16 @@ up to a residual `r_i = μ_i F_{i-1} + 2F_i + λ_i F_{i+1} - d_i` which Taylor e
 `f''` about `x_i` bounds by `(3/4) h² K` (Stoer–Bulirsch, *Introduction to Numerical Analysis*,
 Theorem 2.4.3.3 has this computation); then `M - F = A⁻¹ r` and
 `linfty_opNorm_inv_momentMatrix_le`. Mathlib's `taylor_mean_remainder_lagrange` gives the
-expansions. ★★★'''
+expansions. ★★★
+
+Blocked: not attempted in this pass. Everything the proof needs is in place (`cubicInterp`,
+`momentVec`, `momentMatrix_mulVec_momentVec`, `linfty_opNorm_inv_momentMatrix_le`,
+`iteratedDeriv_two_cubicInterp_node`); what remains is the Taylor-expansion bound on the residual
+`r_i = μ_i f''(x_{i-1}) + 2 f''(x_i) + λ_i f''(x_{i+1}) - d_i`, which needs
+`taylor_mean_remainder_lagrange` for `f` and `f''` about `x_i` on both sides and the bookkeeping of
+the `h_i`, `h_{i+1}` factors, plus the two clamped end rows separately. Estimated ★★★, ~300 lines.'''
 deps = ["Spline.cubicInterp", "Spline.linfty_opNorm_inv_momentMatrix_le", "Spline.moment_eq_of_contDiffOn"]
+source = "Stoer–Bulirsch, Introduction to Numerical Analysis, Theorem 2.4.3.3"
 
 [[node]]
 id = "norm_sub_clampedInterp_le"
@@ -409,19 +153,152 @@ the moment bound: on a panel `s''` is the linear interpolant of `M_{i-1}, M_i`, 
 Rolle (`f - s` vanishes at both ends), so integrating once over at most `h` gives the `h³` bound,
 and `f - s` vanishes at the panel's left end so integrating again gives `h⁴`. The sharp constants
 `5/384, 1/24, 3/8` of Property 8.3 are the Hall–Meyer theorem (J. Approx. Theory 16, 1976) and
-are not attempted; see the surface node `property_8_3`. ★★★'''
+are not attempted; see the surface node `property_8_3`. ★★★
+
+Blocked: depends on `norm_deriv2_sub_clampedInterp_le`, which is not proved; the remaining steps
+(the linear interpolant of `M` versus that of `f''` on a panel, Rolle for `f' - s'`, and two
+integrations) are routine once it is. `integral_sq_sub_deriv2_clampedInterp_le` gives the `L²`
+form of the second-derivative estimate meanwhile, and `SobolevInterpolation` gives the piecewise
+polynomial `L²` estimates with explicit constants.'''
 deps = ["Spline.norm_deriv2_sub_clampedInterp_le", "norm_sub_piecewiseLinearInterpCLM_le"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3 (with non-sharp constants); Stoer–Bulirsch, Theorem 2.4.3.3"
 
 [[node]]
 id = "cubicInterp_affine"
-kind = "theorem"
-desc = '''**Affine equivariance of cubic spline interpolation**, for vector-valued data: for a
-finite-dimensional real normed space `E`, define `cubicInterpVec x (P : ℕ → E) … : ℝ → E`
-coordinatewise (or by the same formula with `E`-valued moments, `momentMatrix` acting through
-`Matrix.mulVec` on `Fin (n+1) → E`); then for an affine map `Q = L + c` (`L : E →ₗ[ℝ] F`),
-`cubicInterpVec x (Q ∘ P) … = Q ∘ cubicInterpVec x P …` on `Icc a b`, the derivative end data being
-transformed by `L`. Linearity (`cubicInterp_add`) plus reproduction of constants (a constant is its
-own natural/clamped interpolant with zero end derivatives). It is the "geometric invariance" of
-the cumulative-length parametric spline of QSS §8.7 (the chord lengths `l_i` being invariant under
-isometries, the parametrization is the same and the curve is carried along). ★★'''
-deps = ["Spline.cubicInterp", "Spline.cubicInterp_add"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property of parametric splines"
+
+[[node]]
+id = "IsPartition.exists_mem_panel"
+
+[[node]]
+id = "truncPowFamily"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)"
+
+[[node]]
+id = "panelIndex"
+
+[[node]]
+id = "panelGlue"
+
+[[node]]
+id = "hasDerivAt_panelGlue"
+
+[[node]]
+id = "continuous_panelGlue"
+
+[[node]]
+id = "contDiff_two_of_hasDerivAt"
+
+[[node]]
+id = "panelCubicPoly"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)"
+
+[[node]]
+id = "panelCubicD1"
+
+[[node]]
+id = "panelCubicD2"
+
+[[node]]
+id = "deriv_panelCubic_left"
+
+[[node]]
+id = "extendFin"
+
+[[node]]
+id = "isStrictDiagDominant_momentMatrix_of_abs_lt"
+
+[[node]]
+id = "norm_le_norm_momentMatrix_mulVec"
+
+[[node]]
+id = "IsMomentEq"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.47)"
+
+[[node]]
+id = "contDiff_cubicSplineFun"
+
+[[node]]
+id = "IsCubicSpline"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 8.1 with k = 3"
+
+[[node]]
+id = "moment"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, M_i = s''(x_i)"
+
+[[node]]
+id = "HasClosure"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.48)"
+
+[[node]]
+id = "momentVec"
+
+[[node]]
+id = "naturalInterp"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the natural spline"
+
+[[node]]
+id = "clampedInterp"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the complete (clamped) spline"
+
+[[node]]
+id = "contDiff_clampedInterp"
+
+[[node]]
+id = "deriv_clampedInterp_endpoints"
+
+[[node]]
+id = "iteratedDeriv_two_naturalInterp_endpoints"
+
+[[node]]
+id = "cubicInterp_smul"
+
+[[node]]
+id = "cubicInterp_sum"
+
+[[node]]
+id = "cardinalBasis_apply_node"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.50)"
+
+[[node]]
+id = "deriv_cardinalBasis_left"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.50)"
+
+[[node]]
+id = "deriv_cardinalBasis_right"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.50)"
+
+[[node]]
+id = "clampedInterp_eq_sum_cardinalBasis"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.49)"
+
+[[node]]
+id = "holladay_eq_iff"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2"
+
+[[node]]
+id = "holladay_clamped"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2"
+
+[[node]]
+id = "cubicInterpVec"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7"
+
+[[node]]
+id = "cubicInterpVec_affine"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7"
+
+[[node]]
+id = "IsNotAKnot"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the not-a-knot condition"
+
+[[node]]
+id = "IsPeriodicEnd"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the periodic spline"
+
+[[node]]
+id = "periodicMomentMatrix"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the cyclic system of the periodic spline"
+
+[[node]]
+id = "isStrictDiagDominant_periodicMomentMatrix"

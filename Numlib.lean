@@ -196,7 +196,9 @@ import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Analysis.Wavelet.QuadratureMirror
+import Numlib.Approximation.BSpline
 import Numlib.Approximation.Bezier
+import Numlib.Approximation.BrokenPolynomial
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.DiskQuadrature
@@ -219,6 +221,8 @@ import Numlib.Approximation.OrthogonalPolynomial.Classical
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial
+import Numlib.Approximation.SobolevInterpolation
+import Numlib.Approximation.Spline
 import Numlib.Approximation.TrapezoidExactness
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation
