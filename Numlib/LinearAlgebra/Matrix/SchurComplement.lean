@@ -4,6 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.SchurComplement`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.InnerProductSpace.Rayleigh
+import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 
@@ -28,6 +31,16 @@ about its inverse. This file adds the name and the facts a domain-decomposition 
   be built out of a solver for `A`;
 * `Matrix.PosDef.schurComplement`: the Schur complement of a positive definite matrix is positive
   definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`;
+* `Matrix.PosDef.schurComplement_loewner_le`: it lies below the `(2,2)` block in the Loewner
+  order, `A₂₂ - S` being positive semidefinite;
+* `Matrix.PosDef.condNumber_schurComplement_le`: in the spectral norm it is better conditioned
+  than the matrix, `‖S‖ ‖S⁻¹‖ ≤ ‖A‖ ‖A⁻¹‖` ([quarteroni2000numerical] Remark 3.6), by way of two
+  general facts about the `ℓ²` operator norm: it is monotone on positive semidefinite matrices
+  (`Matrix.l2_opNorm_le_of_posSemidef_of_posSemidef_sub`) and decreases on passing to a
+  submatrix (`Matrix.l2_opNorm_submatrix_le`);
+* `Matrix.fromBlocks_eq_mul_fromBlocks_of_mul_eq`: the block LDU factorization of
+  [quarteroni2000numerical] §3.8.1, built from a factorization `A₁₁ = L₁₁ D₁ R₁₁` of the leading
+  block;
 * `Matrix.schurComplement_fromBlocks_blockDiagonal'`: the Schur complement is *additive over the
   subdomains*, `S = ∑ S_i`, when the interior block is block diagonal and the interface block is a
   sum of local contributions. This is what every preconditioner assembled from local Schur
@@ -56,6 +69,9 @@ Connect `Matrix.schurComplementSingle` to `Matrix.schurComplement`, by the ident
 `Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed matrix is `1`) together with
 `Matrix.det_unique`, and then the collapse of a sum over a `Unique` index type.
 -/
+
+open Function
+open scoped ComplexOrder
 
 namespace Matrix
 
@@ -276,5 +292,207 @@ theorem schurComplementSingle_apply (A : Matrix n n K) (p : n) (i j : {i : n // 
     A.schurComplementSingle p i j = A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1 := rfl
 
 end Single
+
+section BlockLDU
+
+variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
+variable {A₁₁ L₁₁ D₁ R₁₁ : Matrix m m R} {A₁₂ : Matrix m n R} {A₂₁ : Matrix n m R}
+  {A₂₂ : Matrix n n R}
+
+omit [Fintype n] [DecidableEq n] in
+/-- The Schur complement written with the factors of `A₁₁ = L₁₁ D₁ R₁₁`: `Δ₂ = A₂₂ - L₂₁ D₁ R₁₂`
+with `L₂₁ = A₂₁ R₁₁⁻¹ D₁⁻¹` and `R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂` ([quarteroni2000numerical] §3.8.1); only
+`D₁` needs to be nonsingular for this identity. -/
+theorem schurComplement_fromBlocks_of_mul_eq (hD : IsUnit D₁) (h : A₁₁ = L₁₁ * D₁ * R₁₁) :
+    (fromBlocks A₁₁ A₁₂ A₂₁ A₂₂).schurComplement
+      = A₂₂ - (A₂₁ * R₁₁⁻¹ * D₁⁻¹) * D₁ * (D₁⁻¹ * L₁₁⁻¹ * A₁₂) := by
+  rw [schurComplement_fromBlocks, h, Matrix.mul_inv_rev, Matrix.mul_inv_rev]
+  congr 1
+  simp only [Matrix.mul_assoc]
+  rw [← Matrix.mul_assoc D₁⁻¹ D₁, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hD),
+    Matrix.one_mul]
+
+/-- **The block LDU factorization** ([quarteroni2000numerical] §3.8.1): if the leading block
+factors as `A₁₁ = L₁₁ D₁ R₁₁` with nonsingular factors, then
+`[A₁₁ A₁₂; A₂₁ A₂₂] = [L₁₁ 0; L₂₁ I] [D₁ 0; 0 Δ₂] [R₁₁ R₁₂; 0 I]` with `L₂₁ = A₂₁ R₁₁⁻¹ D₁⁻¹`,
+`R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂` and `Δ₂` the Schur complement of `A₁₁`
+(`Matrix.schurComplement_fromBlocks_of_mul_eq` writes it as `A₂₂ - L₂₁ D₁ R₁₂`). -/
+theorem fromBlocks_eq_mul_fromBlocks_of_mul_eq (hL : IsUnit L₁₁) (hD : IsUnit D₁) (hR : IsUnit R₁₁)
+    (h : A₁₁ = L₁₁ * D₁ * R₁₁) :
+    fromBlocks A₁₁ A₁₂ A₂₁ A₂₂
+      = fromBlocks L₁₁ 0 (A₂₁ * R₁₁⁻¹ * D₁⁻¹) 1
+        * fromBlocks D₁ 0 0 (fromBlocks A₁₁ A₁₂ A₂₁ A₂₂).schurComplement
+        * fromBlocks R₁₁ (D₁⁻¹ * L₁₁⁻¹ * A₁₂) 0 1 := by
+  have hLL : L₁₁ * L₁₁⁻¹ = 1 := mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hL)
+  have hDD : D₁ * D₁⁻¹ = 1 := mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hD)
+  have hRR : R₁₁⁻¹ * R₁₁ = 1 := nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hR)
+  have hDD' : D₁⁻¹ * D₁ = 1 := nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hD)
+  rw [schurComplement_fromBlocks_of_mul_eq hD h, fromBlocks_multiply, fromBlocks_multiply]
+  simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add, Matrix.mul_one,
+    Matrix.one_mul]
+  congr 1
+  · simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc D₁ D₁⁻¹, hDD, Matrix.one_mul, ← Matrix.mul_assoc L₁₁ L₁₁⁻¹, hLL,
+      Matrix.one_mul]
+  · rw [Matrix.mul_assoc (A₂₁ * R₁₁⁻¹) D₁⁻¹ D₁, hDD', Matrix.mul_one, Matrix.mul_assoc, hRR,
+      Matrix.mul_one]
+  · rw [add_sub_cancel]
+
+end BlockLDU
+
+section Loewner
+
+/-- The off-diagonal blocks of a Hermitian matrix are conjugate transposes of each other. -/
+theorem IsHermitian.toBlocks₁₂_eq_conjTranspose {α : Type*} [Star α]
+    {A : Matrix (m ⊕ n) (m ⊕ n) α} (hA : A.IsHermitian) : A.toBlocks₁₂ = A.toBlocks₂₁ᴴ := by
+  ext i j
+  rw [toBlocks₁₂, conjTranspose_apply, toBlocks₂₁, of_apply, of_apply, ← hA.apply]
+
+variable {K : Type*} [Field K] [PartialOrder K] [StarRing K] [Fintype m] [DecidableEq m]
+  [Finite n]
+
+/-- **The Schur complement lies below the `(2,2)` block in the Loewner order**: for `A` positive
+definite, `A₂₂ - S = A₂₁ A₁₁⁻¹ A₁₂ = A₂₁ A₁₁⁻¹ A₂₁ᴴ` is positive semidefinite, which is exactly
+`S ≤ A₂₂` for the order `X ≤ Y ↔ (Y - X).PosSemidef` of `Mathlib.Analysis.Matrix.Order` (scoped
+`MatrixOrder`, over `RCLike`; `Matrix.le_iff` is `Iff.rfl`). Stated over any ordered star field,
+without that order, as the positive semidefiniteness of the difference. -/
+theorem PosDef.schurComplement_loewner_le {A : Matrix (m ⊕ n) (m ⊕ n) K} (hA : A.PosDef) :
+    (A.toBlocks₂₂ - A.schurComplement).PosSemidef := by
+  have h11 : A.toBlocks₁₁.PosDef := Matrix.PosDef.submatrix hA Sum.inl_injective
+  rw [schurComplement_eq, sub_sub_cancel, hA.1.toBlocks₁₂_eq_conjTranspose]
+  exact (Matrix.PosDef.inv h11).posSemidef.mul_mul_conjTranspose_same _
+
+end Loewner
+
+section L2Order
+
+open scoped Matrix.Norms.L2Operator
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+/-- The `ℓ²` norm of a subfamily of the coordinates of a vector is at most the norm of the
+vector. -/
+theorem _root_.EuclideanSpace.norm_toLp_comp_le {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {f : ι → κ} (hf : Injective f) (y : κ → 𝕜) :
+    ‖(WithLp.toLp 2 (y ∘ f) : EuclideanSpace 𝕜 ι)‖ ≤ ‖(WithLp.toLp 2 y : EuclideanSpace 𝕜 κ)‖ := by
+  classical
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+  refine Real.sqrt_le_sqrt ?_
+  change ∑ i, ‖y (f i)‖ ^ 2 ≤ ∑ k, ‖y k‖ ^ 2
+  rw [← Finset.sum_image (f := fun k => ‖y k‖ ^ 2) hf.injOn]
+  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun k _ _ => by positivity
+
+/-- Extending a vector by zero along an injection preserves the `ℓ²` norm. -/
+theorem _root_.EuclideanSpace.norm_toLp_extend {ι κ : Type*} [Fintype ι] [Fintype κ]
+    {g : ι → κ} (hg : Injective g) (x : ι → 𝕜) :
+    ‖(WithLp.toLp 2 (extend g x 0) : EuclideanSpace 𝕜 κ)‖
+      = ‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 ι)‖ := by
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+  congr 1
+  refine (Fintype.sum_of_injective g hg (fun i => ‖x i‖ ^ 2) (fun k => ‖extend g x 0 k‖ ^ 2)
+    (fun k hk => ?_) fun i => ?_).symm
+  · rw [extend_apply' _ _ _ (by simpa using hk)]
+    simp
+  · rw [hg.extend_apply]
+
+/-- `Matrix.l2_opNorm_mulVec` in the `WithLp.toLp` form. -/
+theorem l2_opNorm_toLp_mulVec {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
+    (A : Matrix m n 𝕜) (v : n → 𝕜) :
+    ‖(WithLp.toLp 2 (A *ᵥ v) : EuclideanSpace 𝕜 m)‖
+      ≤ ‖A‖ * ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ :=
+  l2_opNorm_mulVec A (WithLp.toLp 2 v)
+
+/-- **A submatrix has a smaller `ℓ²` operator norm**, for injective row and column selections:
+`‖A.submatrix f g‖₂ ≤ ‖A‖₂`. Apply `A` to the vector extended by zero and drop coordinates. -/
+theorem l2_opNorm_submatrix_le {m n m' n' : Type*} [Fintype m] [Fintype n] [DecidableEq n]
+    [Fintype m'] [Fintype n'] [DecidableEq n'] (A : Matrix m n 𝕜) {f : m' → m} (hf : Injective f)
+    {g : n' → n} (hg : Injective g) : ‖A.submatrix f g‖ ≤ ‖A‖ := by
+  rw [l2_opNorm_def]
+  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun x => ?_
+  have hx : (A.submatrix f g) *ᵥ WithLp.ofLp x = (A *ᵥ extend g (WithLp.ofLp x) 0) ∘ f := by
+    funext i
+    simp only [mulVec, dotProduct, submatrix_apply]
+    exact Fintype.sum_of_injective g hg _ _ (fun k hk => by
+      rw [extend_apply' _ _ _ (by simpa using hk), Pi.zero_apply, mul_zero]) fun j => by
+      rw [hg.extend_apply]
+  have key : ‖(WithLp.toLp 2 ((A.submatrix f g) *ᵥ WithLp.ofLp x) : EuclideanSpace 𝕜 m')‖
+      ≤ ‖A‖ * ‖x‖ := by
+    rw [hx]
+    calc ‖(WithLp.toLp 2 ((A *ᵥ extend g (WithLp.ofLp x) 0) ∘ f) : EuclideanSpace 𝕜 m')‖
+        ≤ ‖(WithLp.toLp 2 (A *ᵥ extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 m)‖ :=
+          EuclideanSpace.norm_toLp_comp_le hf _
+      _ ≤ ‖A‖ * ‖(WithLp.toLp 2 (extend g (WithLp.ofLp x) 0) : EuclideanSpace 𝕜 n)‖ :=
+          l2_opNorm_toLp_mulVec A _
+      _ = ‖A‖ * ‖x‖ := by rw [EuclideanSpace.norm_toLp_extend hg]
+  exact key
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **The `ℓ²` operator norm is monotone on positive semidefinite matrices**: if `0 ≤ X ≤ Y` in the
+Loewner order — `X` and `Y - X` positive semidefinite — then `‖X‖₂ ≤ ‖Y‖₂`. The norm of a
+Hermitian matrix is the supremum of its Rayleigh quotient, and the Rayleigh quotients of `X` lie
+between `0` and those of `Y`. -/
+theorem l2_opNorm_le_of_posSemidef_of_posSemidef_sub {X Y : Matrix n n 𝕜} (hX : X.PosSemidef)
+    (hXY : (Y - X).PosSemidef) : ‖X‖ ≤ ‖Y‖ := by
+  rw [l2_opNorm_def, l2_opNorm_def]
+  obtain ⟨TX, hTX⟩ : ∃ TX : EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n,
+    TX = (toEuclideanLin.trans LinearMap.toContinuousLinearMap) X := ⟨_, rfl⟩
+  obtain ⟨TY, hTY⟩ : ∃ TY : EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n,
+    TY = (toEuclideanLin.trans LinearMap.toContinuousLinearMap) Y := ⟨_, rfl⟩
+  rw [← hTX, ← hTY]
+  have hsym : (TX : EuclideanSpace 𝕜 n →ₗ[𝕜] EuclideanSpace 𝕜 n).IsSymmetric := by
+    rw [hTX, LinearEquiv.trans_apply, LinearMap.coe_toContinuousLinearMap]
+    exact isSymmetric_toEuclideanLin_iff.mpr hX.1
+  -- the Rayleigh quotients of `X` are nonnegative and below those of `Y`
+  have hre : ∀ x : EuclideanSpace 𝕜 n, 0 ≤ RCLike.re (inner 𝕜 (TX x) x) ∧
+      RCLike.re (inner 𝕜 (TX x) x) ≤ RCLike.re (inner 𝕜 (TY x) x) := by
+    intro x
+    have hinner : ∀ (M : Matrix n n 𝕜), RCLike.re (inner 𝕜
+        ((toEuclideanLin.trans LinearMap.toContinuousLinearMap) M x) x)
+          = RCLike.re (star (WithLp.ofLp x) ⬝ᵥ (M *ᵥ WithLp.ofLp x)) := by
+      intro M
+      rw [LinearEquiv.trans_apply, LinearMap.coe_toContinuousLinearMap',
+        EuclideanSpace.inner_eq_star_dotProduct, ofLp_toLpLin, toLin'_apply, dotProduct_star,
+        dotProduct_comm, RCLike.star_def, RCLike.conj_re]
+    rw [hTX, hTY, hinner, hinner]
+    refine ⟨hX.re_dotProduct_nonneg _, ?_⟩
+    have h := hXY.re_dotProduct_nonneg (WithLp.ofLp x)
+    rw [sub_mulVec, dotProduct_sub, map_sub] at h
+    linarith
+  rw [ContinuousLinearMap.norm_eq_iSup_rayleighQuotient TX hsym]
+  refine ciSup_le fun x => ?_
+  rw [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf_apply,
+    abs_of_nonneg (div_nonneg (hre x).1 (sq_nonneg _))]
+  refine le_trans ?_ (le_trans (le_abs_self _) (TY.rayleighQuotient_le_norm x))
+  rw [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf_apply]
+  exact div_le_div_of_nonneg_right (hre x).2 (sq_nonneg _)
+
+end L2Order
+
+section CondNumber
+
+open scoped Matrix.Norms.L2Operator
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+  [DecidableEq n]
+
+/-- **The Schur complement of a positive definite matrix is better conditioned than the matrix**
+([quarteroni2000numerical] Remark 3.6; Axelsson, *Iterative Solution Methods*, Lemma 3.12): in the
+spectral norm, `‖S‖₂ ‖S⁻¹‖₂ ≤ ‖A‖₂ ‖A⁻¹‖₂` for `S = A.schurComplement`. Indeed `0 ≤ S ≤ A₂₂` in the
+Loewner order gives `‖S‖ ≤ ‖A₂₂‖ ≤ ‖A‖`, a principal submatrix having the smaller norm, and
+`S⁻¹ = (A⁻¹)₂₂` gives `‖S⁻¹‖ ≤ ‖A⁻¹‖` for the same reason. -/
+theorem PosDef.condNumber_schurComplement_le {A : Matrix (m ⊕ n) (m ⊕ n) 𝕜} (hA : A.PosDef) :
+    ‖A.schurComplement‖ * ‖A.schurComplement⁻¹‖ ≤ ‖A‖ * ‖A⁻¹‖ := by
+  have h11 : A.toBlocks₁₁.PosDef := hA.submatrix Sum.inl_injective
+  have hS : ‖A.schurComplement‖ ≤ ‖A‖ :=
+    (l2_opNorm_le_of_posSemidef_of_posSemidef_sub hA.schurComplement.posSemidef
+      hA.schurComplement_loewner_le).trans
+      (l2_opNorm_submatrix_le A Sum.inr_injective Sum.inr_injective)
+  have hSinv : ‖A.schurComplement⁻¹‖ ≤ ‖A⁻¹‖ := by
+    rw [← toBlocks₂₂_inv_eq_inv_schurComplement h11.isUnit hA.isUnit]
+    exact l2_opNorm_submatrix_le A⁻¹ Sum.inr_injective Sum.inr_injective
+  exact mul_le_mul hS hSinv (norm_nonneg _) (norm_nonneg _)
+
+end CondNumber
 
 end Matrix

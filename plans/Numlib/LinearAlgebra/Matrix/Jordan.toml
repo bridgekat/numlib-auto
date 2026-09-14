@@ -112,13 +112,12 @@ id = "finrank_ker_mulVecLin_jordanForm_sub_smul_one"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
 
 [[node]]
+id = "eigenspace_mulVecLin_eq_ker"
+
+[[node]]
 id = "finrank_eigenspace_le_rootMultiplicity_charpoly"
-kind = "theorem"
-desc = '''For `A : Matrix n n K` over an algebraically closed field and every `μ`, `finrank K (LinearMap.ker (A.mulVecLin - μ • 1)) ≤ A.charpoly.rootMultiplicity μ` — the geometric multiplicity (`n - rank (A - μ I)`, by `rank_add_finrank_ker_mulVecLin`) never exceeds the algebraic one (Quarteroni–Sacco–Saleri §1.7). Proof: conjugate to a Jordan form (`exists_conj_blockDiagonal'_jordanForm`); kernel dimensions and characteristic polynomials are similarity invariants (`finrank_ker_mulVecLin_conj`, `charpoly_units_conj`); for the Jordan form the kernel dimension of `J - μ` is the number of blocks with eigenvalue `μ` (`finrank_ker_mulVecLin_jordanForm_sub_smul_one` at `k = 1`) and the root multiplicity is the sum of their sizes (`rootMultiplicity_charpoly_jordanForm`), each size being `≥ 1`. Equality for every `μ` is "nondefective"; the surface defines `IsDefective` from this. ★★'''
-deps = ["Matrix.exists_conj_blockDiagonal'_jordanForm", "Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one", "Matrix.rootMultiplicity_charpoly_jordanForm", "Matrix.finrank_ker_mulVecLin_conj"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.7"
 
 [[node]]
 id = "mulVec_eq_of_conj_jordanForm"
-kind = "theorem"
-desc = '''The principal-vector recursion, Quarteroni–Sacco–Saleri (1.8): if `X⁻¹ * A * X = blockDiagonal' (fun i => jordanBlock (e i) (μ i))` with `X` a unit, then for the column `x_⟨i, j⟩ := Xᵀ ⟨i, j⟩` one has `A *ᵥ x_⟨i, 0⟩ = μ i • x_⟨i, 0⟩` and `A *ᵥ x_⟨i, j+1⟩ = μ i • x_⟨i, j+1⟩ + x_⟨i, j⟩`. Read `A * X = X * J` column by column with `jordanBlock_apply`; the columns of `X` are the book's principal vectors (generalized eigenvectors). ★'''
-deps = ["Matrix.jordanForm", "Matrix.jordanBlock_apply"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.8)"

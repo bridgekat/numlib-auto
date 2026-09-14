@@ -22,67 +22,47 @@ id = "Matrix.IsMMatrix.of_entrywiseLE"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.33"
 
 [[node]]
-id = "Matrix.isMMatrix_iff_exists_pos_mulVec_pos"
-kind = "theorem"
-desc = '''**M-criterion**, Quarteroni–Sacco–Saleri Property 1.19: for `A : Matrix n n ℝ` with `∀ i j, i ≠ j → A i j ≤ 0`, `A.IsMMatrix ↔ ∃ w : n → ℝ, (∀ i, 0 < w i) ∧ ∀ i, 0 < (A *ᵥ w) i`. Forward: `w = A⁻¹ *ᵥ 1` has `A *ᵥ w = 1 > 0`, and `w i > 0` because row `i` of `A⁻¹ ≥ 0` is nonzero (`A⁻¹` invertible). Backward: `a_ii w_i = (A w)_i - ∑_{j≠i} a_ij w_j > 0` gives `a_ii > 0`; with `D = diagonal (A i i)` the nonnegative matrix `B = 1 - D⁻¹ A` satisfies `B *ᵥ w = w - D⁻¹ (A w) < w` componentwise, so for the weighted sup seminorm `p x = max_i |x_i| / w_i` one has `p (B *ᵥ x) ≤ θ p x` with `θ = max_i (B w)_i / w_i < 1`, hence `ρ(B) ≤ θ < 1` by `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` (`Numlib/LinearAlgebra/Matrix/EpsilonNorm`; `p` is equivalent to `‖·‖`), and `isMMatrix_iff_complexSpectralRadius_lt_one` concludes. ★★'''
-deps = ["Matrix.IsMMatrix", "Matrix.isMMatrix_iff_complexSpectralRadius_lt_one", "Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le", "Matrix.IsMMatrix.diag_pos"]
-
-[[node]]
-id = "Matrix.isMMatrix_of_forall_sum_pos"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri Property 1.20 in row-sum form: if `∀ i j, i ≠ j → A i j ≤ 0` and every row sum is positive, `∀ i, 0 < ∑ j, A i j`, then `A.IsMMatrix`. For a Z-matrix "positive row sums" is exactly "strictly row diagonally dominant with positive diagonal", the book's hypothesis; the surface node `property_1_20` makes that bridge with `Matrix.IsStrictDiagDominant`. Proof: the M-criterion with `w = fun _ => 1`. ★'''
-deps = ["Matrix.isMMatrix_iff_exists_pos_mulVec_pos"]
-
-[[node]]
-id = "Matrix.isMMatrix_of_isIrreduciblyDiagDominant"
-kind = "theorem"
-desc = '''An irreducibly diagonally dominant real matrix with positive diagonal and nonpositive off-diagonal
-entries is an M-matrix (the irreducible companion of QSS Property 1.20, needed for the grid
-regularization matrix (3.78) of §3.14.2): `A.IsIrreduciblyDiagDominant → (∀ i, 0 < A i i) →
-(∀ i j, i ≠ j → A i j ≤ 0) → A.IsMMatrix`. By `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one`
-and `Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one` of
-`Stationary/DiagDominant` (the Jacobi operator there is `1 - D⁻¹ A` up to
-complexification). ★'''
-deps = ["Matrix.isMMatrix_iff_complexSpectralRadius_lt_one", "Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one"]
-
-[[node]]
 id = "Matrix.IsMMatrix.nonneg_of_mulVec_nonneg"
-kind = "theorem"
-desc = '''The discrete maximum (monotonicity) principle of an M-matrix: if `A.IsMMatrix` and
-`0 ≤ A *ᵥ x` entrywise, then `0 ≤ x` entrywise. Proof: `x = A⁻¹ *ᵥ (A *ᵥ x)` and `A⁻¹` is entrywise
-nonnegative (`IsMMatrix.inv_entrywiseNonneg`), so a nonnegative matrix times a nonnegative vector.
-This is the property Quarteroni–Sacco–Saleri call the *discrete maximum principle* in §12.2 and
-§12.5.2 ("`u` is nonnegative if `f` is nonnegative"). ★'''
-deps = ["Matrix.IsMMatrix"]
+
+[[node]]
+id = "Matrix.IsMMatrix.nonpos_of_mulVec_nonpos"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.12 (the discrete maximum principle)"
+
+[[node]]
+id = "Matrix.IsMMatrix.inv_mulVec_le_inv_mulVec"
+
+[[node]]
+id = "Matrix.IsMMatrix.abs_inv_mulVec_le"
 
 [[node]]
 id = "Matrix.IsMMatrix.norm_inv_mulVec_le"
-kind = "theorem"
-desc = '''**The comparison principle.** For `A.IsMMatrix` over a `Fintype` index, a *comparison vector* `w`
-with `A *ᵥ w = 1` (the all-ones vector), and any `τ`, `‖A⁻¹ *ᵥ τ‖ ≤ ‖w‖ * ‖τ‖` in the supremum norm
-of `n → ℝ`. Proof: entrywise, `|A⁻¹ τ| ≤ A⁻¹ |τ| ≤ ‖τ‖_∞ (A⁻¹ 1) = ‖τ‖_∞ w`, using `A⁻¹ ≥ 0` twice
-and `w = A⁻¹ *ᵥ 1`. More generally `Matrix.IsMMatrix.abs_inv_mulVec_le : |A⁻¹ *ᵥ τ| ≤ A⁻¹ *ᵥ |τ|`
-and the monotonicity `Matrix.IsMMatrix.inv_mulVec_le_inv_mulVec : σ ≤ τ → A⁻¹ *ᵥ σ ≤ A⁻¹ *ᵥ τ`. This
-is the whole of the stability half of Quarteroni–Sacco–Saleri Theorem 12.1 (their (12.28) with
-`w_j = x_j (1 - x_j)/2`, `‖w‖_∞ ≤ 1/8`) and of the two-dimensional remark in §12.6, and it is the
-route this plan takes in place of the book's explicit discrete Green's function sum. ★★'''
-deps = ["Matrix.IsMMatrix", "Matrix.IsMMatrix.nonneg_of_mulVec_nonneg"]
+
+[[node]]
+id = "Matrix.complexSpectralRadius_conj"
+
+[[node]]
+id = "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_of_mulVec_lt"
+
+[[node]]
+id = "Matrix.isMMatrix_iff_exists_pos_mulVec_pos"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.19"
+
+[[node]]
+id = "Matrix.isMMatrix_of_forall_sum_pos"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.20"
+
+[[node]]
+id = "Matrix.IsStrictDiagDominant.isMMatrix"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.20"
+
+[[node]]
+id = "Matrix.isMMatrix_of_isDiagDominant_of_isUnit"
+
+[[node]]
+id = "Matrix.isMMatrix_of_isIrreduciblyDiagDominant"
+
+[[node]]
+id = "Matrix.isMMatrix_of_forall_dotProduct_mulVec_pos"
 
 [[node]]
 id = "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos"
-kind = "theorem"
-desc = '''**Stieltjes matrices are M-matrices.** A real symmetric positive definite matrix `A` (`A.PosDef`
-over `ℝ`, on a `Fintype` `n` with `DecidableEq`) whose off-diagonal entries are nonpositive is an
-M-matrix. Proof through `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one`: write `A = D - N` with
-`D = diagonal (diag A)`, `D > 0` (a positive definite matrix has positive diagonal) and `N ≥ 0`
-entrywise, symmetric. The Jacobi matrix `D⁻¹ N` is similar to `S = D^{-1/2} N D^{-1/2}`, symmetric
-and entrywise nonnegative, and `D^{-1/2} A D^{-1/2} = 1 - S` is positive definite, so every
-eigenvalue of `S` is `< 1`. For the lower bound, if `S x = λ x` with `λ = λ_min`, then
-`|λ| ‖x‖² = |xᵀ S x| ≤ |x|ᵀ S |x| ≤ λ_max ‖x‖²` (entrywise nonnegativity of `S`, then the Rayleigh
-quotient bound), so `ρ(S) = λ_max < 1` — no Perron–Frobenius theorem is used, only the Rayleigh
-quotient (`Matrix.IsHermitian` eigenvalue bounds) and the triangle inequality entry by entry.
-Consumers: `tridiag(-1, 2, -1)` (Quarteroni–Sacco–Saleri Exercise 12.2, from the existing
-`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`), its Kronecker sum, the five-point Laplacian
-(Exercise 12.14, from `Matrix.posDef_kroneckerSum`), and the variable-coefficient matrix (12.34)
-when `γ ≥ 0`. ★★'''
-deps = ["Matrix.IsMMatrix", "Matrix.isMMatrix_iff_complexSpectralRadius_lt_one"]

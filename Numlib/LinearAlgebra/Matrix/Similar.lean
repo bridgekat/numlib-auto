@@ -5,8 +5,11 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Similar`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.LinearAlgebra.Eigenspace.Basic
+import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.UnitaryGroup
 import Numlib.LinearAlgebra.Matrix.Rank
 
 /-!
@@ -22,6 +25,8 @@ characteristic polynomial as `Matrix.charpoly_units_conj` but has no name for th
 ## Main definitions
 
 * `Matrix.IsSimilar A B`: `∃ C, IsUnit C ∧ B = C⁻¹ * A * C`, over a commutative ring.
+* `Matrix.IsUnitarilySimilar A B`: `∃ U ∈ unitaryGroup n R, B = star U * A * U`, over a
+  commutative star ring; it implies similarity (`Matrix.IsUnitarilySimilar.isSimilar`).
 
 ## Main results
 
@@ -38,6 +43,9 @@ characteristic polynomial as `Matrix.charpoly_units_conj` but has no name for th
 * `Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`,
   `Matrix.isSimilar_diagonal_iff_iSup_eigenspace_eq_top`: a matrix over a field is similar to a
   diagonal matrix exactly when it has a basis of eigenvectors, that is, when its eigenspaces span.
+* `Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity`: over an
+  algebraically closed field, exactly when no eigenvalue is defective — every geometric
+  multiplicity equals the algebraic one.
 
 ## Implementation notes
 
@@ -54,12 +62,9 @@ and about eigenspaces are over a field.
 
 ## TODO
 
-`Matrix.IsUnitarilySimilar` over `RCLike`, the strengthening the Schur, spectral and normal
-theorems produce; the invariance of the spectrum, determinant, trace and rank as separate
-statements (`Matrix.rank_conj` of `Numlib/LinearAlgebra/Matrix/Rank` is the rank); the
-nonvanishing `C⁻¹ *ᵥ x ≠ 0` of the transported eigenvector; and the multiplicity form of the
-diagonalizability criterion — diagonalizable iff no eigenvalue is defective — through
-`Numlib/LinearAlgebra/Matrix/Jordan`.
+The invariance of the spectrum, determinant, trace and rank as separate statements
+(`Matrix.rank_conj` of `Numlib/LinearAlgebra/Matrix/Rank` is the rank), and the nonvanishing
+`C⁻¹ *ᵥ x ≠ 0` of the transported eigenvector.
 -/
 
 namespace Matrix
@@ -239,5 +244,112 @@ theorem isSimilar_diagonal_iff_iSup_eigenspace_eq_top (A : Matrix n n K) :
     exact Module.End.mem_eigenspace_iff.1 (hdd (e.symm j))
 
 end Field
+
+/-! ### Unitary similarity -/
+
+section Unitary
+
+variable {R : Type*} [CommRing R] [StarRing R]
+
+/-- Two square matrices are *unitarily similar* when `B = Uᴴ A U` for some unitary `U`
+([quarteroni2000numerical] Definition 1.14, second sentence). This is the relation the Schur,
+spectral and normal theorems produce. -/
+def IsUnitarilySimilar (A B : Matrix n n R) : Prop := ∃ U ∈ unitaryGroup n R, B = star U * A * U
+
+/-- Unitarily similar matrices are similar: `U⁻¹ = Uᴴ` for a unitary `U`. -/
+theorem IsUnitarilySimilar.isSimilar {A B : Matrix n n R} (h : IsUnitarilySimilar A B) :
+    IsSimilar A B := by
+  obtain ⟨U, hU, rfl⟩ := h
+  refine ⟨U, ⟨⟨U, star U, mem_unitaryGroup_iff.1 hU, mem_unitaryGroup_iff'.1 hU⟩, rfl⟩, ?_⟩
+  rw [inv_eq_left_inv (mem_unitaryGroup_iff'.1 hU)]
+
+/-- Unitary similarity is reflexive. -/
+@[refl]
+theorem IsUnitarilySimilar.refl (A : Matrix n n R) : IsUnitarilySimilar A A :=
+  ⟨1, one_mem _, by simp⟩
+
+/-- Unitary similarity is symmetric. -/
+@[symm]
+theorem IsUnitarilySimilar.symm {A B : Matrix n n R} (h : IsUnitarilySimilar A B) :
+    IsUnitarilySimilar B A := by
+  obtain ⟨U, hU, rfl⟩ := h
+  refine ⟨star U, Unitary.star_mem hU, ?_⟩
+  rw [star_star, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU,
+    Matrix.one_mul, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU, Matrix.mul_one]
+
+/-- Unitary similarity is transitive. -/
+@[trans]
+theorem IsUnitarilySimilar.trans {A B C : Matrix n n R} (hAB : IsUnitarilySimilar A B)
+    (hBC : IsUnitarilySimilar B C) : IsUnitarilySimilar A C := by
+  obtain ⟨U, hU, rfl⟩ := hAB
+  obtain ⟨V, hV, rfl⟩ := hBC
+  refine ⟨U * V, mul_mem hU hV, ?_⟩
+  rw [star_mul]
+  simp only [Matrix.mul_assoc]
+
+end Unitary
+
+/-! ### Diagonalizability and defective eigenvalues -/
+
+section Defective
+
+variable {K : Type*} [Field K]
+
+/-- **A matrix is diagonalizable if and only if it is nondefective** ([quarteroni2000numerical]
+§1.8, after Property 1.6): over an algebraically closed field, `A` is similar to a diagonal
+matrix exactly when every eigenvalue has geometric multiplicity equal to its algebraic
+multiplicity. The generalized eigenspaces of `A` are independent and span (Mathlib's
+`Module.End.iSup_maxGenEigenspace_eq_top`), each has the algebraic multiplicity as dimension
+(`LinearMap.finrank_maxGenEigenspace_eq`), and diagonalizability is the spanning of the
+eigenspaces themselves (`Matrix.isSimilar_diagonal_iff_iSup_eigenspace_eq_top`); the two
+spannings agree exactly when each eigenspace fills its generalized eigenspace, which is the
+equality of the two multiplicities. -/
+theorem isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity [IsAlgClosed K]
+    (A : Matrix n n K) :
+    (∃ d : n → K, IsSimilar A (diagonal d)) ↔
+      ∀ μ : K, Module.finrank K (Module.End.eigenspace A.mulVecLin μ)
+        = A.charpoly.rootMultiplicity μ := by
+  rw [isSimilar_diagonal_iff_iSup_eigenspace_eq_top]
+  have hfin : ∀ μ, Module.finrank K (Module.End.maxGenEigenspace A.mulVecLin μ)
+      = A.charpoly.rootMultiplicity μ := fun μ => by
+    rw [LinearMap.finrank_maxGenEigenspace_eq, charpoly_mulVecLin]
+  have hle : ∀ μ, Module.End.eigenspace A.mulVecLin μ
+      ≤ Module.End.maxGenEigenspace A.mulVecLin μ :=
+    fun μ => Module.End.eigenspace_le_maxGenEigenspace
+  constructor
+  · intro htop μ
+    rw [← hfin]
+    have heq : Module.End.eigenspace A.mulVecLin μ
+        = Module.End.maxGenEigenspace A.mulVecLin μ := by
+      refine le_antisymm (hle μ) fun x hx => ?_
+      -- `x` splits into an eigenvector for `μ` and a part in the other generalized eigenspaces
+      have hx' : x ∈ Module.End.eigenspace A.mulVecLin μ
+          ⊔ ⨆ (ν) (_ : ν ≠ μ), Module.End.maxGenEigenspace A.mulVecLin ν := by
+        have hsup : (⊤ : Submodule K (n → K)) ≤ Module.End.eigenspace A.mulVecLin μ
+            ⊔ ⨆ (ν) (_ : ν ≠ μ), Module.End.maxGenEigenspace A.mulVecLin ν := by
+          rw [← htop]
+          refine iSup_le fun ν => ?_
+          by_cases hν : ν = μ
+          · subst hν
+            exact le_sup_left
+          · exact le_sup_of_le_right (le_iSup₂_of_le ν hν (hle ν))
+        exact hsup Submodule.mem_top
+      obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.1 hx'
+      have hzμ : z ∈ Module.End.maxGenEigenspace A.mulVecLin μ := by
+        simpa using Submodule.sub_mem _ hx (hle μ hy)
+      have hz0 : z = 0 :=
+        Submodule.disjoint_def.1
+          (iSupIndep_def.1 (Module.End.independent_maxGenEigenspace A.mulVecLin) μ) z hzμ hz
+      rw [hz0, add_zero]
+      exact hy
+    rw [heq]
+  · intro h
+    have heq : ∀ μ, Module.End.eigenspace A.mulVecLin μ
+        = Module.End.maxGenEigenspace A.mulVecLin μ :=
+      fun μ => Submodule.eq_of_le_of_finrank_eq (hle μ) (by rw [h, hfin])
+    simp_rw [heq]
+    exact Module.End.iSup_maxGenEigenspace_eq_top A.mulVecLin
+
+end Defective
 
 end Matrix

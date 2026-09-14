@@ -1,40 +1,28 @@
 namespace = "Matrix"
-desc = '''
-The companion (Frobenius) matrix of a polynomial and its characteristic polynomial. For a monic
-`p = X^n + a_{n-1} X^{n-1} + … + a_0` the matrix `companion p : Matrix (Fin n) (Fin n) R` has first
-row `(-a_{n-1}, …, -a_0)` and ones on the subdiagonal (Quarteroni–Sacco–Saleri (5.72), Exercise
-5.8), and `charpoly (companion p) = p`; so the roots of a polynomial are the eigenvalues of a
-matrix, which is how Quarteroni–Sacco–Saleri §5.4 argues from Abel's theorem that no direct
-eigenvalue method exists for `n ≥ 5`, and how MATLAB's `roots` computes roots. Mathlib has no
-companion matrix (grepped `companion` under `Mathlib/LinearAlgebra`, `Mathlib/RingTheory`,
-`Mathlib/Algebra/Polynomial`: only the unrelated `QuadraticForm` uses of the word). A likely second
-consumer is the book's chapter 6 (polynomial roots); the transposed form of Exercise 5.11 is the
-same matrix up to similarity and is not planned.
-'''
 
 [[node]]
 id = "companion"
-kind = "definition"
-desc = '''`companion (p : R[X]) (n : ℕ) : Matrix (Fin n) (Fin n) R` over a commutative ring: `(0, j) ↦
--p.coeff (n - 1 - j)`, `(i+1, i) ↦ 1`, else `0` — the matrix `C` of Quarteroni–Sacco–Saleri
-(5.72) for a monic `p` of degree `n` (for `a_n ≠ 1` divide `p` by `a_n` first: `companion (p *
-C (p.leadingCoeff)⁻¹)`). ★'''
-deps = []
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.72)'
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.72)"
+
+[[node]]
+id = "companion_apply"
+
+[[node]]
+id = "companion_zero_apply"
+
+[[node]]
+id = "companion_succ_castSucc"
+
+[[node]]
+id = "companion_succ_apply_of_ne"
+
+[[node]]
+id = "companion_submatrix_castSucc"
 
 [[node]]
 id = "charpoly_companion"
-kind = "theorem"
-desc = '''For `p` monic of `natDegree n`, `(companion p n).charpoly = p`. Induction on `n` with the
-Laplace expansion of `det (X - C)` along the last column (or first row), the minor being the
-companion matrix of `(p - a_0)/X`. ★★'''
-deps = ["Matrix.companion"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.8'
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.8"
 
 [[node]]
 id = "spectrum_companion"
-kind = "theorem"
-desc = '''Over a field, `spectrum K (companion p n) = p.rootSet K` (as a set) for `p` monic of degree `n`;
-from `charpoly_companion` and `Matrix.mem_spectrum_iff_isRoot_charpoly`. ★'''
-deps = ["Matrix.charpoly_companion"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.8'
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.8"

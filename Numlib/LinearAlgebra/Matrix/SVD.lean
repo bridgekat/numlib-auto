@@ -6,8 +6,11 @@ Natural home: `Mathlib.Analysis.InnerProductSpace.SingularValues`, beside Mathli
 `NormedRing.condNumber`, which is `Numlib`'s.
 -/
 import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Analysis.InnerProductSpace.SingularValues
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.Analysis.Matrix.Spectrum
+import Mathlib.Data.Fin.Tuple.Sort
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Matrix.DotProduct
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Numlib.Analysis.Matrix.ToEuclideanLin
@@ -40,6 +43,9 @@ residual has exactly the size of the data error, and does so uniquely
   the same eigenbasis as a unitary matrix.
 * `Matrix.gramPinv` and `Matrix.pinv`: the Moore–Penrose pseudoinverse of `Aᴴ A` and of `A`.
 * `Matrix.tikhonov`: the Tikhonov regularization of `A` at level `α`.
+* `Matrix.rectDiagonal`: the rectangular diagonal matrix `diag(σ₀, σ₁, …) ∈ 𝕜^{m × n}` of a
+  factorization `Uᴴ A V = Σ`, and `Matrix.sortedRightSingularVec`, the right singular vectors
+  sorted by decreasing singular value.
 
 ## Main results
 
@@ -56,6 +62,14 @@ residual has exactly the size of the data error, and does so uniquely
   `Matrix.tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq`: the discrepancy principle picks out a
   unique regularization parameter, and the solutions it picks converge to `A⁺ y` as the data error
   tends to `0` ([kress1998numerical], Theorem 5.10).
+* `Matrix.exists_svd`: the full factorization `Uᴴ A V = Σ` with square unitary factors and the
+  sorted singular values of Mathlib's `LinearMap.singularValues` on the diagonal
+  ([quarteroni2000numerical] Property 1.7); from any such factorization,
+  `Matrix.pinv_eq_of_svd` (`A⁺ = V Σ⁺ Uᴴ`, their Definition 1.15),
+  `Matrix.ker_mulVecLin_eq_span_of_svd` and `Matrix.range_mulVecLin_eq_span_of_svd`, and the
+  uniqueness of the singular values `Matrix.singularValues_eq_of_svd`;
+  `Matrix.IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues` is the Hermitian case
+  `σ_i = |λ_i|`.
 
 ## Implementation notes
 
@@ -1157,5 +1171,725 @@ theorem tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq {ι : Type*} {l : Filter 
   simpa using hfinal
 
 end Discrepancy
+
+end Matrix
+
+namespace Matrix
+
+/-! ### The rectangular diagonal matrix -/
+
+section RectDiagonal
+
+variable {l m n : ℕ}
+
+section Zero
+
+variable {α : Type*} [Zero α]
+
+/-- The rectangular "diagonal" matrix `diag(σ 0, σ 1, …) ∈ α^{m × n}` of
+[quarteroni2000numerical] (1.9): `σ i` at the entries `(i, i)` with `i < min m n`, and `0`
+elsewhere. It is indexed by a function on `ℕ`, so that one `σ` serves every shape and the
+transpose is the same `σ` on the transposed shape; the values `σ i` for `i ≥ min m n` are never
+read. -/
+def rectDiagonal (σ : ℕ → α) : Matrix (Fin m) (Fin n) α :=
+  of fun i j => if (i : ℕ) = j then σ i else 0
+
+/-- The entries of a rectangular diagonal matrix. -/
+theorem rectDiagonal_apply (σ : ℕ → α) (i : Fin m) (j : Fin n) :
+    rectDiagonal σ i j = if (i : ℕ) = j then σ i else 0 := rfl
+
+/-- Two rectangular diagonal matrices of the same shape agree when their diagonals agree below
+`min m n`. -/
+theorem rectDiagonal_congr {σ τ : ℕ → α} (h : ∀ i, i < m → i < n → σ i = τ i) :
+    (rectDiagonal σ : Matrix (Fin m) (Fin n) α) = rectDiagonal τ := by
+  ext i j
+  simp only [rectDiagonal_apply]
+  split_ifs with hij
+  · exact h i i.isLt (hij ▸ j.isLt)
+  · rfl
+
+/-- The transpose of a rectangular diagonal matrix is the rectangular diagonal matrix of the
+transposed shape, with the same diagonal. -/
+theorem rectDiagonal_transpose (σ : ℕ → α) :
+    (rectDiagonal σ : Matrix (Fin m) (Fin n) α)ᵀ = rectDiagonal σ := by
+  ext i j
+  simp only [transpose_apply, rectDiagonal_apply]
+  split_ifs with h1 h2 h2
+  · rw [h1]
+  · exact absurd h1.symm h2
+  · exact absurd h2.symm h1
+  · rfl
+
+/-- A square rectangular diagonal matrix is a diagonal matrix. -/
+theorem rectDiagonal_eq_diagonal (σ : ℕ → α) :
+    (rectDiagonal σ : Matrix (Fin n) (Fin n) α) = diagonal fun i : Fin n => σ i := by
+  ext i j
+  simp only [rectDiagonal_apply, diagonal_apply, Fin.ext_iff]
+
+end Zero
+
+/-- The conjugate transpose of a rectangular diagonal matrix. -/
+theorem conjTranspose_rectDiagonal {α : Type*} [AddMonoid α] [StarAddMonoid α] (σ : ℕ → α) :
+    (rectDiagonal σ : Matrix (Fin m) (Fin n) α)ᴴ = rectDiagonal (star ∘ σ) := by
+  ext i j
+  simp only [conjTranspose_apply, rectDiagonal_apply, Function.comp_apply]
+  split_ifs with h1 h2 h2
+  · rw [h1]
+  · exact absurd h1.symm h2
+  · exact absurd h2.symm h1
+  · exact star_zero α
+
+section Semiring
+
+variable {α : Type*} [NonUnitalNonAssocSemiring α]
+
+/-- A rectangular diagonal matrix acts on a vector by scaling the coordinates it can see. -/
+theorem rectDiagonal_mulVec (σ : ℕ → α) (x : Fin n → α) (i : Fin m) (h : (i : ℕ) < n) :
+    (rectDiagonal σ *ᵥ x) i = σ i * x ⟨i, h⟩ := by
+  rw [mulVec_apply_eq_sum, Finset.sum_eq_single ⟨i, h⟩]
+  · simp [rectDiagonal_apply]
+  · intro j _ hj
+    rw [rectDiagonal_apply, ite_eq_right (fun hij => hj (Fin.ext hij.symm)), zero_mul]
+  · exact fun h' => absurd (Finset.mem_univ _) h'
+
+/-- A rectangular diagonal matrix kills the coordinates beyond its width. -/
+theorem rectDiagonal_mulVec_of_le (σ : ℕ → α) (x : Fin n → α) (i : Fin m) (h : n ≤ i) :
+    (rectDiagonal σ *ᵥ x) i = 0 := by
+  rw [mulVec_apply_eq_sum]
+  refine Finset.sum_eq_zero fun j _ => ?_
+  rw [rectDiagonal_apply,
+    ite_eq_right (fun hij : (i : ℕ) = j => absurd (lt_of_eq_of_lt hij j.isLt) (not_lt.2 h)),
+    zero_mul]
+
+/-- The product of two rectangular diagonal matrices is the rectangular diagonal matrix of the
+products, truncated at the inner dimension. -/
+theorem rectDiagonal_mul_rectDiagonal (σ τ : ℕ → α) :
+    (rectDiagonal σ : Matrix (Fin l) (Fin m) α) * (rectDiagonal τ : Matrix (Fin m) (Fin n) α)
+      = rectDiagonal fun i => if i < m then σ i * τ i else 0 := by
+  ext i j
+  rw [mul_apply, rectDiagonal_apply]
+  by_cases hm : (i : ℕ) < m
+  · rw [Finset.sum_eq_single ⟨i, hm⟩]
+    · simp only [rectDiagonal_apply, ite_eq_left hm]
+      split_ifs <;> simp
+    · intro k _ hk
+      rw [rectDiagonal_apply, ite_eq_right (fun hik => hk (Fin.ext hik.symm)), zero_mul]
+    · exact fun h' => absurd (Finset.mem_univ _) h'
+  · rw [ite_eq_right hm, ite_self]
+    refine Finset.sum_eq_zero fun k _ => ?_
+    rw [rectDiagonal_apply, ite_eq_right (fun hik : (i : ℕ) = k => hm (lt_of_eq_of_lt hik k.isLt)),
+      zero_mul]
+
+end Semiring
+
+end RectDiagonal
+
+/-! ### The full singular value decomposition -/
+
+section SVD
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+
+/-- `Σᴴ Σ` is the square diagonal matrix of the `|σ i|²`, truncated at the height of `Σ`. -/
+theorem conjTranspose_rectDiagonal_mul_self (σ : ℕ → 𝕜) :
+    (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜)ᴴ * rectDiagonal σ
+      = diagonal fun j : Fin n => if (j : ℕ) < m then star (σ j) * σ j else 0 := by
+  rw [conjTranspose_rectDiagonal, rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
+  rfl
+
+/-- The unitary matrix whose columns are the vectors of an orthonormal basis of a Euclidean
+space: the change-of-basis matrix from the standard basis. -/
+private noncomputable def unitaryOfBasis {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : Matrix ι ι 𝕜 :=
+  (EuclideanSpace.basisFun ι 𝕜).toBasis.toMatrix b.toBasis
+
+private theorem unitaryOfBasis_mem {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) : unitaryOfBasis b ∈ unitaryGroup ι 𝕜 :=
+  (EuclideanSpace.basisFun ι 𝕜).toMatrix_orthonormalBasis_mem_unitary b
+
+private theorem unitaryOfBasis_transpose_apply {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : OrthonormalBasis ι 𝕜 (EuclideanSpace 𝕜 ι)) (j : ι) :
+    (unitaryOfBasis b)ᵀ j = ⇑(b j) := rfl
+
+/-- The entries of `Uᴴ A V` are the inner products `⟪u_i, A v_j⟫` of the columns of `U` with the
+images of the columns of `V`. -/
+theorem star_mul_mul_apply (U : Matrix (Fin m) (Fin m) 𝕜) (A : Matrix (Fin m) (Fin n) 𝕜)
+    (V : Matrix (Fin n) (Fin n) 𝕜) (i : Fin m) (j : Fin n) :
+    (star U * A * V) i j = inner 𝕜 (WithLp.toLp 2 (Uᵀ i) : EuclideanSpace 𝕜 (Fin m))
+      (toEuclideanLin A (WithLp.toLp 2 (Vᵀ j))) := by
+  simp only [EuclideanSpace.inner_eq_star_dotProduct, ofLp_toEuclideanLin, dotProduct, mulVec,
+    mul_apply, star_apply, transpose_apply, Pi.star_apply, Finset.sum_mul]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => ?_
+  ring
+
+end SVD
+
+end Matrix
+
+/-! ### The sorted singular system of a linear map
+
+Facts about `LinearMap.singularValues` and the eigenbasis of `T† T` they are read from, missing
+from Mathlib's `Mathlib.Analysis.InnerProductSpace.SingularValues`. -/
+
+namespace LinearMap
+
+variable {𝕜 : Type*} [RCLike 𝕜] {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [FiniteDimensional 𝕜 E] [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F]
+  (T : E →ₗ[𝕜] F)
+
+/-- The images under `T` of the sorted orthonormal eigenbasis of `T† T` are pairwise orthogonal,
+with squared norms the squared singular values. -/
+theorem inner_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n)
+    (i j : Fin n) :
+    inner 𝕜 (T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn i))
+        (T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j))
+      = if i = j then ((T.singularValues j ^ 2 : ℝ) : 𝕜) else 0 := by
+  rw [← adjoint_inner_right, ← comp_apply, T.isSymmetric_adjoint_comp_self.apply_eigenvectorBasis,
+    inner_smul_right,
+    orthonormal_iff_ite.1 (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn).orthonormal i j,
+    ← T.sq_singularValues_fin hn j]
+  split_ifs <;> simp
+
+/-- The image under `T` of the `j`-th vector of the sorted eigenbasis of `T† T` has norm the `j`-th
+singular value. -/
+theorem norm_apply_eigenvectorBasis_adjoint_comp_self {n : ℕ} (hn : finrank 𝕜 E = n) (j : Fin n) :
+    ‖T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j)‖ = T.singularValues j := by
+  have h := T.inner_apply_eigenvectorBasis_adjoint_comp_self hn j j
+  rw [ite_eq_left rfl, inner_self_eq_norm_sq_to_K] at h
+  have h2 : ‖T (T.isSymmetric_adjoint_comp_self.eigenvectorBasis hn j)‖ ^ 2
+      = T.singularValues j ^ 2 := by exact_mod_cast h
+  exact (pow_left_inj₀ (norm_nonneg _) (T.singularValues_nonneg j) two_ne_zero).1 h2
+
+/-- The singular values vanish from the dimension of the *codomain* on, as they do from the
+dimension of the domain on (`LinearMap.singularValues_of_finrank_le`): only `rank T` of them are
+nonzero. -/
+theorem singularValues_of_finrank_codomain_le {i : ℕ} (hi : finrank 𝕜 F ≤ i) :
+    T.singularValues i = 0 :=
+  T.singularValues_eq_zero_iff_le_finrank_range.2 ((Submodule.finrank_le _).trans hi)
+
+end LinearMap
+
+namespace Matrix
+
+section SVD
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+
+/-- The right singular vectors of `A`, sorted by decreasing singular value and extended by zero to
+an `ℕ`-indexed family: `A.sortedRightSingularVec j` for `j < n` is the `j`-th vector of the sorted
+orthonormal eigenbasis of `Aᴴ A`, paired with `(toEuclideanLin A).singularValues j`. The
+`ℕ`-indexing matches `Matrix.rectDiagonal` and `LinearMap.singularValues`. -/
+noncomputable def sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (j : ℕ) :
+    EuclideanSpace 𝕜 (Fin n) :=
+  if h : j < n then
+    (toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis finrank_euclideanSpace_fin
+      ⟨j, h⟩
+  else 0
+
+/-- Below `n`, the sorted right singular vectors are the sorted eigenbasis of `Aᴴ A`. -/
+theorem sortedRightSingularVec_of_lt (A : Matrix (Fin m) (Fin n) 𝕜) {j : ℕ} (h : j < n) :
+    A.sortedRightSingularVec j = (toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis
+      finrank_euclideanSpace_fin ⟨j, h⟩ := by
+  rw [sortedRightSingularVec, dite_eq_left h]
+
+/-- From `n` on, the sorted right singular vectors are zero. -/
+theorem sortedRightSingularVec_of_le (A : Matrix (Fin m) (Fin n) 𝕜) {j : ℕ} (h : n ≤ j) :
+    A.sortedRightSingularVec j = 0 := by
+  rw [sortedRightSingularVec, dite_eq_right (not_lt.2 h)]
+
+/-- The images of the sorted right singular vectors are pairwise orthogonal, with the squared
+singular values as squared norms; beyond `n` they vanish. -/
+theorem inner_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (i j : ℕ) :
+    inner 𝕜 (toEuclideanLin A (A.sortedRightSingularVec i))
+        (toEuclideanLin A (A.sortedRightSingularVec j))
+      = if i = j ∧ j < n then (((toEuclideanLin A).singularValues j ^ 2 : ℝ) : 𝕜) else 0 := by
+  by_cases hj : j < n
+  · by_cases hi : i < n
+    · rw [sortedRightSingularVec_of_lt A hi, sortedRightSingularVec_of_lt A hj,
+        (toEuclideanLin A).inner_apply_eigenvectorBasis_adjoint_comp_self]
+      simp only [Fin.mk.injEq, hj, and_true]
+    · rw [sortedRightSingularVec_of_le A (not_lt.1 hi), map_zero, inner_zero_left,
+        ite_eq_right (fun h : i = j ∧ j < n => hi (h.1 ▸ hj))]
+  · rw [sortedRightSingularVec_of_le A (not_lt.1 hj), map_zero, inner_zero_right,
+      ite_eq_right (fun h : i = j ∧ j < n => hj h.2)]
+
+/-- The image of the `j`-th sorted right singular vector has norm the `j`-th singular value. -/
+theorem norm_toEuclideanLin_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) (j : ℕ) :
+    ‖toEuclideanLin A (A.sortedRightSingularVec j)‖ = (toEuclideanLin A).singularValues j := by
+  by_cases hj : j < n
+  · rw [sortedRightSingularVec_of_lt A hj,
+      (toEuclideanLin A).norm_apply_eigenvectorBasis_adjoint_comp_self]
+  · rw [sortedRightSingularVec_of_le A (not_lt.1 hj), map_zero, norm_zero,
+      (toEuclideanLin A).singularValues_of_finrank_le (finrank_euclideanSpace_fin.trans_le
+        (not_lt.1 hj))]
+
+/-- The sorted right singular vectors are orthonormal below `n`. -/
+theorem inner_sortedRightSingularVec (A : Matrix (Fin m) (Fin n) 𝕜) {i j : ℕ} (hi : i < n)
+    (hj : j < n) :
+    inner 𝕜 (A.sortedRightSingularVec i) (A.sortedRightSingularVec j) = if i = j then 1 else 0 := by
+  rw [sortedRightSingularVec_of_lt A hi, sortedRightSingularVec_of_lt A hj,
+    orthonormal_iff_ite.1 ((toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis
+      finrank_euclideanSpace_fin).orthonormal]
+  simp only [Fin.mk.injEq]
+
+/-- The normalized images `A v_j / σ_j` of the sorted right singular vectors with `σ_j ≠ 0`,
+placed at their own indices in `Fin m`, are orthonormal. -/
+theorem orthonormal_leftSingular (A : Matrix (Fin m) (Fin n) 𝕜) :
+    Orthonormal 𝕜 (({i : Fin m | (toEuclideanLin A).singularValues i ≠ 0} : Set (Fin m)).domRestrict
+      fun i : Fin m => (((toEuclideanLin A).singularValues i : ℝ) : 𝕜)⁻¹ •
+        toEuclideanLin A (A.sortedRightSingularVec i)) := by
+  rw [orthonormal_iff_ite]
+  rintro ⟨i, hi⟩ ⟨j, hj⟩
+  simp only [Set.domRestrict, inner_smul_left, inner_smul_right, map_inv₀, RCLike.conj_ofReal,
+    inner_toEuclideanLin_sortedRightSingularVec, Subtype.mk.injEq, Fin.ext_iff]
+  have hj' : (j : ℕ) < n := by
+    by_contra h
+    exact hj ((toEuclideanLin A).singularValues_of_finrank_le
+      (finrank_euclideanSpace_fin.trans_le (not_lt.1 h)))
+  simp only [hj', and_true]
+  split_ifs with h
+  · rw [h]
+    have : (((toEuclideanLin A).singularValues j : ℝ) : 𝕜) ≠ 0 := by
+      simpa using (hj : (toEuclideanLin A).singularValues j ≠ 0)
+    push_cast
+    field_simp
+  · simp
+
+/-- **The singular value decomposition** ([quarteroni2000numerical] Property 1.7): every
+`A : Matrix (Fin m) (Fin n) 𝕜` has unitary `U` (`m × m`) and `V` (`n × n`) with
+`Uᴴ A V = Σ = diag(σ₀, σ₁, …)`, the rectangular diagonal matrix carrying Mathlib's sorted singular
+values `(toEuclideanLin A).singularValues`, `σ₀ ≥ σ₁ ≥ … ≥ 0`. Over `𝕜 = ℝ` the factors are real
+orthogonal matrices, which is the book's real case.
+
+The columns of `V` are the sorted orthonormal eigenbasis of `Aᴴ A`
+(`Matrix.sortedRightSingularVec`); the images `A v_j` are pairwise orthogonal of norm `σ_j`, so the
+normalized ones with `σ_j ≠ 0` are orthonormal (`Matrix.orthonormal_leftSingular`) and, placed at
+the same indices, extend to an orthonormal basis of `𝕜^m`
+(`Orthonormal.exists_orthonormalBasis_extension_of_card_eq`), whose vectors are the columns of `U`.
+-/
+theorem exists_svd (A : Matrix (Fin m) (Fin n) 𝕜) :
+    ∃ U ∈ unitaryGroup (Fin m) 𝕜, ∃ V ∈ unitaryGroup (Fin n) 𝕜,
+      star U * A * V = rectDiagonal fun i => (((toEuclideanLin A).singularValues i : ℝ) : 𝕜) := by
+  obtain ⟨b, hb⟩ := A.orthonormal_leftSingular.exists_orthonormalBasis_extension_of_card_eq
+    (finrank_euclideanSpace_fin.trans (Fintype.card_fin m).symm)
+  set v : OrthonormalBasis (Fin n) 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
+    (toEuclideanLin A).isSymmetric_adjoint_comp_self.eigenvectorBasis finrank_euclideanSpace_fin
+    with hv
+  refine ⟨unitaryOfBasis b, unitaryOfBasis_mem b, unitaryOfBasis v, unitaryOfBasis_mem v, ?_⟩
+  ext i j
+  rw [star_mul_mul_apply, rectDiagonal_apply, unitaryOfBasis_transpose_apply,
+    unitaryOfBasis_transpose_apply, WithLp.toLp_ofLp, WithLp.toLp_ofLp, hv,
+    ← A.sortedRightSingularVec_of_lt j.isLt]
+  by_cases hj : (toEuclideanLin A).singularValues j = 0
+  · have hTv : toEuclideanLin A (A.sortedRightSingularVec j) = 0 := by
+      rw [← norm_eq_zero, norm_toEuclideanLin_sortedRightSingularVec, hj]
+    rw [hTv, inner_zero_right]
+    split_ifs with hij
+    · rw [hij, hj, RCLike.ofReal_zero]
+    · rfl
+  · have hjm : (j : ℕ) < m := by
+      by_contra h
+      exact hj ((toEuclideanLin A).singularValues_of_finrank_codomain_le
+        (finrank_euclideanSpace_fin.trans_le (not_lt.1 h)))
+    have hbj : b ⟨j, hjm⟩ = (((toEuclideanLin A).singularValues j : ℝ) : 𝕜)⁻¹ •
+        toEuclideanLin A (A.sortedRightSingularVec j) := hb ⟨j, hjm⟩ hj
+    have hTv : toEuclideanLin A (A.sortedRightSingularVec j)
+        = (((toEuclideanLin A).singularValues j : ℝ) : 𝕜) • b ⟨j, hjm⟩ := by
+      rw [hbj, smul_smul, mul_inv_cancel₀ (by simpa using hj), one_smul]
+    rw [hTv, inner_smul_right, orthonormal_iff_ite.1 b.orthonormal i ⟨j, hjm⟩]
+    by_cases hij : (i : ℕ) = j
+    · rw [ite_eq_left (Fin.ext hij), ite_eq_left hij, mul_one, hij]
+    · rw [ite_eq_right (fun h => hij (congrArg Fin.val h)), ite_eq_right hij, mul_zero]
+
+/-! #### Consequences of a singular value decomposition
+
+Everything below takes an arbitrary factorization `Uᴴ A V = Σ` with unitary `U`, `V` and
+rectangular diagonal `Σ` as its hypothesis — not necessarily the one `Matrix.exists_svd` produces —
+and reads off the pseudoinverse, the kernel and the range, and the singular values. -/
+
+/-- A factorization `Uᴴ A V = Σ` with unitary factors is `A = U Σ Vᴴ`. -/
+theorem eq_mul_mul_star_of_star_mul_mul_eq {A : Matrix (Fin m) (Fin n) 𝕜}
+    {U : Matrix (Fin m) (Fin m) 𝕜} {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) {S : Matrix (Fin m) (Fin n) 𝕜} (h : star U * A * V = S) :
+    A = U * S * star V := by
+  rw [← h, Matrix.mul_assoc, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hV, Matrix.mul_one,
+    ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU, Matrix.one_mul]
+
+/-- **The pseudoinverse from a singular value decomposition** ([quarteroni2000numerical]
+Definition 1.15): if `Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, then `A⁺ = V Σ⁺ Uᴴ` with
+`Σ⁺ = diag(σ⁻¹)` — Lean's `0⁻¹ = 0` produces exactly the `diag(1/σ₁, …, 1/σ_r, 0, …, 0)` of the
+book's (1.11), with no case split on the rank. The right-hand side satisfies the four Penrose
+conditions, and `Matrix.pinv_unique` identifies it; nothing is assumed about `σ`, not even that it
+is real. -/
+theorem pinv_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
+    {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
+    A.pinv = V * (rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) 𝕜) * star U := by
+  have hA : A = U * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) * star V :=
+    eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  have hUU : ∀ {k : Type} (X : Matrix (Fin m) k 𝕜), star U * (U * X) = X := fun X => by
+    rw [← Matrix.mul_assoc, mem_unitaryGroup_iff'.1 hU, Matrix.one_mul]
+  have hVV : ∀ {k : Type} (X : Matrix (Fin n) k 𝕜), star V * (V * X) = X := fun X => by
+    rw [← Matrix.mul_assoc, mem_unitaryGroup_iff'.1 hV, Matrix.one_mul]
+  have hstar : ∀ i, star (σ i * (σ i)⁻¹) = σ i * (σ i)⁻¹ := fun i => by
+    rcases eq_or_ne (σ i) 0 with h0 | h0
+    · simp [h0]
+    · rw [mul_inv_cancel₀ h0, star_one]
+  have hstar' : ∀ i, star ((σ i)⁻¹ * σ i) = (σ i)⁻¹ * σ i := fun i => by
+    rw [mul_comm]; exact hstar i
+  -- the diagonal identities
+  obtain ⟨S, hS⟩ : ∃ S : Matrix (Fin m) (Fin n) 𝕜, S = rectDiagonal σ := ⟨_, rfl⟩
+  obtain ⟨S', hS'⟩ : ∃ S' : Matrix (Fin n) (Fin m) 𝕜, S' = rectDiagonal fun i => (σ i)⁻¹ :=
+    ⟨_, rfl⟩
+  rw [← hS] at hA
+  rw [← hS']
+  have h1 : S * S' * S = S := by
+    rw [hS, hS', rectDiagonal_mul_rectDiagonal, rectDiagonal_mul_rectDiagonal]
+    refine rectDiagonal_congr fun i him hin => ?_
+    rw [ite_eq_left him, ite_eq_left hin, mul_inv_mul_self]
+  have h2 : S' * S * S' = S' := by
+    rw [hS, hS', rectDiagonal_mul_rectDiagonal, rectDiagonal_mul_rectDiagonal]
+    refine rectDiagonal_congr fun i hin him => ?_
+    rw [ite_eq_left hin, ite_eq_left him, inv_mul_mul_inv]
+  have h3 : (S * S')ᴴ = S * S' := by
+    rw [hS, hS', rectDiagonal_mul_rectDiagonal, conjTranspose_rectDiagonal]
+    refine rectDiagonal_congr fun i _ _ => ?_
+    simp only [Function.comp_apply]
+    split_ifs
+    · exact hstar i
+    · exact star_zero 𝕜
+  have h4 : (S' * S)ᴴ = S' * S := by
+    rw [hS, hS', rectDiagonal_mul_rectDiagonal, conjTranspose_rectDiagonal]
+    refine rectDiagonal_congr fun i _ _ => ?_
+    simp only [Function.comp_apply]
+    split_ifs
+    · exact hstar' i
+    · exact star_zero 𝕜
+  symm
+  refine pinv_unique A ?_ ?_ ?_ ?_
+  · rw [hA]
+    simp only [Matrix.mul_assoc]
+    rw [hVV, hUU, ← Matrix.mul_assoc S, ← Matrix.mul_assoc (S * S'), h1]
+  · rw [hA]
+    simp only [Matrix.mul_assoc]
+    rw [hUU, hVV, ← Matrix.mul_assoc S', ← Matrix.mul_assoc (S' * S), h2]
+  · rw [hA, IsHermitian]
+    simp only [Matrix.mul_assoc]
+    rw [hVV, ← Matrix.mul_assoc S, star_eq_conjTranspose, conjTranspose_mul, conjTranspose_mul,
+      conjTranspose_conjTranspose, h3, Matrix.mul_assoc]
+  · rw [hA, IsHermitian]
+    simp only [Matrix.mul_assoc]
+    rw [hUU, ← Matrix.mul_assoc S', star_eq_conjTranspose, conjTranspose_mul, conjTranspose_mul,
+      conjTranspose_conjTranspose, h4, Matrix.mul_assoc]
+
+end SVD
+
+section PinvSpecial
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
+
+/-- The pseudoinverse of a nonsingular matrix is its inverse ([quarteroni2000numerical] §1.9:
+`A⁺ = A⁻¹` when `n = m = rank A`). -/
+theorem pinv_eq_inv {A : Matrix n n 𝕜} (hA : IsUnit A) : A.pinv = A⁻¹ := by
+  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA
+  symm
+  refine pinv_unique A ?_ ?_ ?_ ?_
+  · rw [mul_nonsing_inv _ hdet, Matrix.one_mul]
+  · rw [nonsing_inv_mul _ hdet, Matrix.one_mul]
+  · rw [mul_nonsing_inv _ hdet]
+    exact isHermitian_one
+  · rw [nonsing_inv_mul _ hdet]
+    exact isHermitian_one
+
+/-- The pseudoinverse of a matrix of full column rank — one whose Gram matrix `Aᴴ A` is
+nonsingular — is `(Aᴴ A)⁻¹ Aᴴ` ([quarteroni2000numerical] §1.9: `A⁺ = (Aᵀ A)⁻¹ Aᵀ` when
+`rank A = n < m`). `LinearAlgebra/Matrix/LeastSquares` has the same identity under the hypothesis
+`LinearIndependent 𝕜 Aᵀ`. -/
+theorem pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit {A : Matrix m n 𝕜}
+    (h : IsUnit (Aᴴ * A)) : A.pinv = (Aᴴ * A)⁻¹ * Aᴴ := by
+  have hdet : IsUnit (Aᴴ * A).det := (isUnit_iff_isUnit_det _).1 h
+  have hH : (Aᴴ * A)⁻¹.IsHermitian := (isHermitian_conjTranspose_mul_self A).inv
+  symm
+  refine pinv_unique A ?_ ?_ ?_ ?_
+  · rw [Matrix.mul_assoc, Matrix.mul_assoc, nonsing_inv_mul _ hdet, Matrix.mul_one]
+  · rw [Matrix.mul_assoc (Aᴴ * A)⁻¹ Aᴴ A, nonsing_inv_mul _ hdet, Matrix.one_mul]
+  · rw [IsHermitian, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose, hH.eq,
+      Matrix.mul_assoc]
+  · rw [Matrix.mul_assoc, nonsing_inv_mul _ hdet]
+    exact isHermitian_one
+
+end PinvSpecial
+
+section SVD2
+
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+
+/-- The columns of a unitary matrix are sent to the standard basis vectors by its adjoint. -/
+private theorem star_mulVec_transpose_apply {V : Matrix (Fin n) (Fin n) 𝕜}
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) (j : Fin n) : star V *ᵥ Vᵀ j = Pi.single j 1 := by
+  have : Vᵀ j = V *ᵥ Pi.single j 1 := by rw [mulVec_single_one]; rfl
+  rw [this, mulVec_mulVec, mem_unitaryGroup_iff'.1 hV, one_mulVec]
+
+/-- A vector expanded along the columns of a unitary matrix, `x = ∑ (Vᴴ x)_j V_j`. -/
+private theorem eq_sum_star_mulVec_smul_transpose {V : Matrix (Fin n) (Fin n) 𝕜}
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) (x : Fin n → 𝕜) :
+    x = ∑ j, (star V *ᵥ x) j • Vᵀ j := by
+  conv_lhs => rw [← one_mulVec x, ← mem_unitaryGroup_iff.1 hV, ← mulVec_mulVec, mulVec_eq_sum]
+  simp only [op_smul_eq_smul]
+
+/-- **The kernel from a singular value decomposition** ([quarteroni2000numerical] §1.9): if
+`Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, the kernel of `A` is spanned by the columns of `V`
+whose singular value vanishes — the columns `j ≥ m` beyond the height of `Σ`, and those with
+`σ j = 0`; for sorted singular values these are `v_{r+1}, …, v_n`, `r` the rank. -/
+theorem ker_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
+    {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
+    LinearMap.ker A.mulVecLin
+      = Submodule.span 𝕜 (Vᵀ '' {j : Fin n | m ≤ (j : ℕ) ∨ σ j = 0}) := by
+  have hA : A = U * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) * star V :=
+    eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  -- `A x = 0` exactly when `Σ (Vᴴ x) = 0`
+  have key : ∀ x, A *ᵥ x = 0 ↔
+      (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) *ᵥ (star V *ᵥ x) = 0 := by
+    intro x
+    rw [hA, ← mulVec_mulVec, ← mulVec_mulVec]
+    constructor
+    · intro hx
+      have h0 : star U *ᵥ (U *ᵥ ((rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) *ᵥ (star V *ᵥ x)))
+          = 0 := by rw [hx, mulVec_zero]
+      rwa [mulVec_mulVec, mem_unitaryGroup_iff'.1 hU, one_mulVec] at h0
+    · intro hx
+      rw [hx, mulVec_zero]
+  refine le_antisymm ?_ (Submodule.span_le.2 ?_)
+  · intro x hx
+    rw [LinearMap.mem_ker, mulVecLin_apply, key] at hx
+    rw [eq_sum_star_mulVec_smul_transpose hV x]
+    refine Submodule.sum_mem _ fun j _ => ?_
+    by_cases hj : m ≤ (j : ℕ) ∨ σ j = 0
+    · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, hj, rfl⟩)
+    · push Not at hj
+      have hzero := congrFun hx ⟨j, hj.1⟩
+      rw [rectDiagonal_mulVec σ _ ⟨j, hj.1⟩ j.isLt, Pi.zero_apply, mul_eq_zero] at hzero
+      rw [(hzero.resolve_left hj.2 : (star V *ᵥ x) j = 0), zero_smul]
+      exact Submodule.zero_mem _
+  · rintro _ ⟨j, hj, rfl⟩
+    rw [SetLike.mem_coe, LinearMap.mem_ker, mulVecLin_apply, key, star_mulVec_transpose_apply hV]
+    funext i
+    rw [mulVec_single, Pi.zero_apply, op_smul_eq_smul, Pi.smul_apply, col_apply,
+      rectDiagonal_apply, smul_eq_mul, one_mul]
+    split_ifs with hij
+    · rcases hj with hj | hj
+      · exact absurd (lt_of_eq_of_lt hij.symm i.isLt) (not_lt.2 hj)
+      · rw [hij]
+        exact hj
+    · rfl
+
+/-- **The range from a singular value decomposition** ([quarteroni2000numerical] §1.9): if
+`Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary, the range of `A` is spanned by the columns of `U`
+whose singular value does not vanish — `u_1, …, u_r` for sorted singular values, `r` the rank. -/
+theorem range_mulVecLin_eq_span_of_svd {A : Matrix (Fin m) (Fin n) 𝕜}
+    {U : Matrix (Fin m) (Fin m) 𝕜} {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → 𝕜} (h : star U * A * V = rectDiagonal σ) :
+    LinearMap.range A.mulVecLin
+      = Submodule.span 𝕜 (Uᵀ '' {i : Fin m | (i : ℕ) < n ∧ σ i ≠ 0}) := by
+  have hA : A = U * (rectDiagonal σ : Matrix (Fin m) (Fin n) 𝕜) * star V :=
+    eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  refine le_antisymm ?_ (Submodule.span_le.2 ?_)
+  · rintro _ ⟨x, rfl⟩
+    rw [mulVecLin_apply, hA, ← mulVec_mulVec, ← mulVec_mulVec,
+      eq_sum_star_mulVec_smul_transpose hU (U *ᵥ _), mulVec_mulVec, mem_unitaryGroup_iff'.1 hU,
+      one_mulVec]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    by_cases hi : (i : ℕ) < n ∧ σ i ≠ 0
+    · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, hi, rfl⟩)
+    · have hzero : (rectDiagonal σ *ᵥ (star V *ᵥ x)) i = 0 := by
+        by_cases hin : (i : ℕ) < n
+        · rw [rectDiagonal_mulVec _ _ _ hin]
+          have : σ i = 0 := by
+            by_contra h0
+            exact hi ⟨hin, h0⟩
+          rw [this, zero_mul]
+        · exact rectDiagonal_mulVec_of_le _ _ _ (not_lt.1 hin)
+      rw [hzero, zero_smul]
+      exact Submodule.zero_mem _
+  · rintro _ ⟨i, ⟨hin, hi⟩, rfl⟩
+    refine ⟨V *ᵥ Pi.single ⟨i, hin⟩ (σ i)⁻¹, ?_⟩
+    rw [mulVecLin_apply, hA, mulVec_mulVec, Matrix.mul_assoc (U * rectDiagonal σ),
+      mem_unitaryGroup_iff'.1 hV, Matrix.mul_one, ← mulVec_mulVec]
+    have hS : rectDiagonal σ *ᵥ Pi.single (⟨i, hin⟩ : Fin n) (σ i)⁻¹ = Pi.single i 1 := by
+      funext k
+      rw [mulVec_single, op_smul_eq_smul, Pi.smul_apply, col_apply, rectDiagonal_apply,
+        smul_eq_mul, Fin.val_mk]
+      by_cases hki : k = i
+      · subst hki
+        rw [ite_eq_left rfl, Pi.single_eq_same, inv_mul_cancel₀ hi]
+      · rw [ite_eq_right (fun hk => hki (Fin.ext hk)), mul_zero, Pi.single_eq_of_ne hki]
+    rw [hS, mulVec_single_one]
+    rfl
+
+end SVD2
+
+/-! #### Uniqueness of the singular values
+
+The singular values of any factorization `Uᴴ A V = Σ` are determined by `A`: the multiset of their
+squares is the multiset of eigenvalues of `Aᴴ A`, and when they are sorted they are Mathlib's
+`LinearMap.singularValues`. The bridge is the characteristic polynomial, which the unitary
+similarity `Aᴴ A = V Σᴴ Σ Vᴴ` preserves. -/
+
+section Uniqueness
+
+/-- Two functions on a finite type with the same multiset of values, in a linear order, differ
+by a permutation of the index type: sort both. -/
+theorem _root_.exists_equiv_of_map_univ_val_eq {ι α : Type*} [Fintype ι] [LinearOrder α]
+    {f g : ι → α} (h : Multiset.map f Finset.univ.val = Multiset.map g Finset.univ.val) :
+    ∃ e : ι ≃ ι, ∀ i, f (e i) = g i := by
+  classical
+  set e₀ : Fin (Fintype.card ι) ≃ ι := (Fintype.equivFin ι).symm with he₀
+  have hperm : List.Perm (List.ofFn (f ∘ e₀)) (List.ofFn (g ∘ e₀)) := by
+    rw [← Multiset.coe_eq_coe, ← Fin.univ_val_map, ← Fin.univ_val_map, ← Multiset.map_map,
+      ← Multiset.map_map, Multiset.map_univ_val_equiv, h]
+  set σf := Tuple.sort (f ∘ e₀) with hσf
+  set σg := Tuple.sort (g ∘ e₀) with hσg
+  have hsorted : List.ofFn (f ∘ e₀ ∘ σf) = List.ofFn (g ∘ e₀ ∘ σg) := by
+    refine List.Perm.eq_of_sortedLE (Tuple.monotone_sort (f ∘ e₀)).sortedLE_ofFn
+      (Tuple.monotone_sort (g ∘ e₀)).sortedLE_ofFn ?_
+    exact ((σf.ofFn_comp_perm (f ∘ e₀)).trans hperm).trans (σg.ofFn_comp_perm (g ∘ e₀)).symm
+  have hfun : f ∘ e₀ ∘ σf = g ∘ e₀ ∘ σg := List.ofFn_injective hsorted
+  refine ⟨(e₀.symm.trans σg.symm).trans (σf.trans e₀), fun i => ?_⟩
+  have := congrFun hfun (σg.symm (e₀.symm i))
+  simpa using this
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+/-- The `n × n` diagonal matrix of real entries `d` is Hermitian. -/
+private theorem isHermitian_diagonal_ofReal {n : Type*} [DecidableEq n] (d : n → ℝ) :
+    (diagonal fun i => ((d i : ℝ) : 𝕜)).IsHermitian :=
+  isHermitian_diagonal_iff.2 fun i => RCLike.conj_ofReal (d i)
+
+/-- The characteristic polynomial of a unitary conjugate `U M Uᴴ` is that of `M`. -/
+private theorem charpoly_unitary_conj {n : Type*} [Fintype n] [DecidableEq n]
+    {U : Matrix n n 𝕜} (hU : U ∈ unitaryGroup n 𝕜) (M : Matrix n n 𝕜) :
+    (U * M * star U).charpoly = M.charpoly := by
+  rw [charpoly_mul_comm, ← Matrix.mul_assoc, mem_unitaryGroup_iff'.1 hU, Matrix.one_mul]
+
+/-- **The sorted eigenvalues of a symmetric operator are determined by its characteristic
+polynomial**: if the roots of `T.charpoly` are the values of an antitone `d : Fin n → ℝ`, then
+`hT.eigenvalues hn = d`. This is `LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues` read
+backwards. -/
+theorem _root_.LinearMap.IsSymmetric.eigenvalues_eq_of_antitone {E : Type*}
+    [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {T : E →ₗ[𝕜] E}
+    (hT : T.IsSymmetric) {n : ℕ} (hn : Module.finrank 𝕜 E = n) {d : Fin n → ℝ} (hd : Antitone d)
+    (hroots : T.charpoly.roots = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val) :
+    hT.eigenvalues hn = d := by
+  rw [← List.ofFn_inj, ← hT.sort_roots_charpoly_eq_eigenvalues hn, hroots]
+  simp_rw [Fin.univ_val_map, Multiset.map_coe, List.map_ofFn, Function.comp_def, RCLike.ofReal_re,
+    Multiset.coe_sort]
+  apply List.mergeSort_of_pairwise
+  simp_rw [decide_eq_true_eq, ← List.sortedGE_iff_pairwise]
+  exact hd.sortedGE_ofFn
+
+/-- The roots of the characteristic polynomial of a real diagonal matrix are its diagonal
+entries. -/
+private theorem roots_charpoly_diagonal_ofReal {n : Type*} [Fintype n] [DecidableEq n]
+    (d : n → ℝ) :
+    (diagonal fun i => ((d i : ℝ) : 𝕜)).charpoly.roots
+      = Multiset.map (RCLike.ofReal ∘ d) Finset.univ.val := by
+  rw [charpoly_diagonal, Polynomial.roots_prod]
+  · simp
+  · simp [Finset.prod_ne_zero_iff, Polynomial.X_sub_C_ne_zero]
+
+/-- **The singular values of a Hermitian matrix are the moduli of its eigenvalues**
+([quarteroni2000numerical] §1.9, after (1.10)): there is a relabelling `e` with
+`σ_{e i}(A) = |λ_i(A)|`. Since `Aᴴ A = A²` has the characteristic polynomial of `diag(λ_i²)`, the
+multiset of eigenvalues of `Aᴴ A` is that of the `λ_i²`, and `Matrix.singularValues` are their
+square roots. -/
+theorem IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues {n : Type*} [Fintype n]
+    [DecidableEq n] {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    ∃ e : n ≃ n, ∀ i, A.singularValues (e i) = |hA.eigenvalues i| := by
+  set hG := isHermitian_conjTranspose_mul_self A with hGdef
+  -- the characteristic polynomial of `Aᴴ A = A²` is that of `diag(λ²)`
+  have hchar : (Aᴴ * A).charpoly
+      = (diagonal fun i => ((hA.eigenvalues i ^ 2 : ℝ) : 𝕜)).charpoly := by
+    have hAA : Aᴴ * A = hA.eigenvectorUnitary * diagonal (fun i => ((hA.eigenvalues i ^ 2 : ℝ) : 𝕜))
+        * star hA.eigenvectorUnitary := by
+      conv_lhs => rw [hA.eq, hA.spectral_theorem, ← map_mul, Unitary.conjStarAlgAut_apply,
+        diagonal_mul_diagonal]
+      congr 2
+      funext i
+      simp [Function.comp_apply, sq]
+    rw [hAA, Unitary.coe_star, charpoly_unitary_conj hA.eigenvectorUnitary.2]
+  -- hence the multisets of eigenvalues agree
+  have hmult : Multiset.map hG.eigenvalues Finset.univ.val
+      = Multiset.map (fun i => hA.eigenvalues i ^ 2) Finset.univ.val := by
+    have h1 := hG.roots_charpoly_eq_eigenvalues
+    rw [hchar, roots_charpoly_diagonal_ofReal] at h1
+    have h2 := congrArg (Multiset.map RCLike.re) h1
+    simpa [Multiset.map_map, Function.comp_def] using h2.symm
+  obtain ⟨e, he⟩ := exists_equiv_of_map_univ_val_eq hmult
+  refine ⟨e, fun i => ?_⟩
+  rw [singularValues, he i, Real.sqrt_sq_eq_abs]
+
+variable {m n : ℕ}
+
+/-- **Uniqueness of the singular values** ([quarteroni2000numerical] (1.10), `σ_i(A) = √λ_i(Aᴴ A)`):
+if `Uᴴ A V = Σ = diag(σ)` with `U`, `V` unitary and `σ` antitone and nonnegative, then the `σ_i`
+with `i < min m n` are Mathlib's sorted singular values `(toEuclideanLin A).singularValues i`.
+From `Aᴴ A = V Σᴴ Σ Vᴴ` the characteristic polynomial of `Aᴴ A` is that of the diagonal matrix of
+the `σ_i²` (padded by zeros), an antitone family, which the sorted-eigenvalue characterization
+`LinearMap.IsSymmetric.eigenvalues_eq_of_antitone` identifies with the eigenvalues of `T† T`. -/
+theorem singularValues_eq_of_svd {A : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
+    {V : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin n) 𝕜) {σ : ℕ → ℝ} (hσ : Antitone σ) (hσ0 : ∀ i, 0 ≤ σ i)
+    (h : star U * A * V = rectDiagonal fun i => ((σ i : ℝ) : 𝕜)) {i : ℕ} (him : i < m)
+    (hin : i < n) : (toEuclideanLin A).singularValues i = σ i := by
+  have hA : A = U * (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin m) (Fin n) 𝕜) * star V :=
+    eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  -- the padded squares, an antitone family on `Fin n`
+  set d : Fin n → ℝ := fun j => if (j : ℕ) < m then σ j ^ 2 else 0 with hd
+  have hdanti : Antitone d := by
+    intro j k hjk
+    have hjk' : (j : ℕ) ≤ k := hjk
+    simp only [hd]
+    split_ifs with hk hj hj
+    · exact pow_le_pow_left₀ (hσ0 _) (hσ hjk') 2
+    · exact absurd (lt_of_le_of_lt hjk' hk) hj
+    · positivity
+    · exact le_rfl
+  -- `Aᴴ A = V diag(d) Vᴴ`
+  have hgram : Aᴴ * A = V * diagonal (fun j => ((d j : ℝ) : 𝕜)) * star V := by
+    have hSS : (rectDiagonal fun i => ((σ i : ℝ) : 𝕜) : Matrix (Fin m) (Fin n) 𝕜)ᴴ
+        * rectDiagonal (fun i => ((σ i : ℝ) : 𝕜)) = diagonal fun j => ((d j : ℝ) : 𝕜) := by
+      rw [conjTranspose_rectDiagonal_mul_self]
+      congr 1
+      funext j
+      simp only [hd]
+      split_ifs <;> simp [sq, RCLike.conj_ofReal]
+    have hUU : ∀ {k : Type} (X : Matrix (Fin m) k 𝕜), Uᴴ * (U * X) = X := fun X => by
+      rw [← Matrix.mul_assoc, ← star_eq_conjTranspose, mem_unitaryGroup_iff'.1 hU, Matrix.one_mul]
+    rw [hA, conjTranspose_mul, conjTranspose_mul, ← star_eq_conjTranspose (star V), star_star]
+    simp only [Matrix.mul_assoc]
+    rw [hUU, ← Matrix.mul_assoc (rectDiagonal _)ᴴ, hSS]
+  -- the operator `T† T` and the reference operator `diag(d)`
+  set T : EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin m) := toEuclideanLin A with hT
+  have hTsym := T.isSymmetric_adjoint_comp_self
+  have hn : Module.finrank 𝕜 (EuclideanSpace 𝕜 (Fin n)) = n := finrank_euclideanSpace_fin
+  have hDsym : (toEuclideanLin (diagonal fun j => ((d j : ℝ) : 𝕜))).IsSymmetric :=
+    isSymmetric_toEuclideanLin_iff.2 (isHermitian_diagonal_ofReal d)
+  have hTT : LinearMap.adjoint T ∘ₗ T = toEuclideanLin (Aᴴ * A) := by
+    rw [toEuclideanLin_mul, toEuclideanLin_conjTranspose]
+  have hchar : (LinearMap.adjoint T ∘ₗ T).charpoly
+      = (toEuclideanLin (diagonal fun j => ((d j : ℝ) : 𝕜))).charpoly := by
+    rw [hTT, toEuclideanLin, toLpLin_eq_toLin, Matrix.charpoly_toLin, Matrix.charpoly_toLin,
+      hgram, charpoly_unitary_conj hV]
+  have heig : hTsym.eigenvalues hn = d := by
+    rw [(hTsym.eigenvalues_eq_eigenvalues_iff hn hDsym hn).2 hchar]
+    refine hDsym.eigenvalues_eq_of_antitone hn hdanti ?_
+    rw [toEuclideanLin, toLpLin_eq_toLin, Matrix.charpoly_toLin, roots_charpoly_diagonal_ofReal]
+  rw [T.singularValues_of_lt hn hin, heig]
+  simp only [hd, ite_eq_left him]
+  exact Real.sqrt_sq (hσ0 i)
+
+end Uniqueness
 
 end Matrix

@@ -35,6 +35,12 @@ work with.
 * `Matrix.exists_unitary_conj_upperTriangular`: the matrix form, `star Q * A * Q` upper triangular
   for a unitary `Q`, with the diagonal of the triangular factor listing the roots of the
   characteristic polynomial.
+* `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`: similarity moves eigenvectors, which is how
+  an eigenvector of the triangular factor is carried back to `A`.
+* `Matrix.IsUpperTriangular.schurEigenvector` and
+  `Matrix.IsUpperTriangular.mulVec_schurEigenvector`: the eigenvector of an upper triangular
+  matrix for a simple diagonal entry, by one triangular solve ([quarteroni2000numerical] §5.8.2,
+  (5.56)).
 
 ## Implementation notes
 
@@ -234,5 +240,172 @@ theorem exists_unitary_conj_upperTriangular (A : Matrix n n 𝕜) :
   refine ⟨Q, hQu, htri, ?_⟩
   rw [← charpoly_of_isUpperTriangular _ htri, mul_assoc, charpoly_mul_comm, mul_assoc,
     mem_unitaryGroup_iff.1 hQu, mul_one]
+
+end Matrix
+
+namespace Matrix
+
+/-! ### Similarity moves eigenvectors -/
+
+section Conj
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **Similarity moves eigenvectors** ([quarteroni2000numerical] Exercise 5.9): if `A x = μ x` and
+`U` is nonsingular then `(U⁻¹ A U)(U⁻¹ x) = μ (U⁻¹ x)`. -/
+theorem mulVec_conj_eq_smul_of_mulVec_eq_smul {R : Type*} [CommRing R] {A U : Matrix n n R}
+    (hU : IsUnit U) {μ : R} {x : n → R} (hx : A *ᵥ x = μ • x) :
+    (U⁻¹ * A * U) *ᵥ (U⁻¹ *ᵥ x) = μ • (U⁻¹ *ᵥ x) := by
+  rw [mulVec_mulVec, Matrix.mul_assoc, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hU),
+    Matrix.mul_one, ← mulVec_mulVec, hx, mulVec_smul]
+
+/-- The unitary form of `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`: if `A x = μ x` and `U` is
+unitary then `(Uᴴ A U)(Uᴴ x) = μ (Uᴴ x)`. This is how an eigenvector of the Hessenberg or Schur
+form of `A` is carried back to `A`, `x = U y`. -/
+theorem mulVec_star_conj_eq_smul_of_mulVec_eq_smul {R : Type*} [CommRing R] [StarRing R]
+    {A U : Matrix n n R} (hU : U ∈ unitaryGroup n R) {μ : R} {x : n → R} (hx : A *ᵥ x = μ • x) :
+    (star U * A * U) *ᵥ (star U *ᵥ x) = μ • (star U *ᵥ x) := by
+  rw [mulVec_mulVec, Matrix.mul_assoc, mem_unitaryGroup_iff.1 hU, Matrix.mul_one, ← mulVec_mulVec,
+    hx, mulVec_smul]
+
+end Conj
+
+/-! ### Eigenvectors from the Schur form -/
+
+section SchurEigenvector
+
+variable {K : Type*} [Field K] {N : ℕ}
+
+namespace IsUpperTriangular
+
+/-- The eigenvector of an upper triangular matrix `T` for a *simple* diagonal entry `λ = T k k`,
+read off the Schur form as in [quarteroni2000numerical] §5.8.2, (5.56): with `T` partitioned around
+row `k` as `[T₁₁ v T₁₃; 0 λ wᵀ; 0 0 T₃₃]`, the vector is `(-(T₁₁ - λ I)⁻¹ v, 1, 0)`. It is defined
+for every `T` and `k` through `Matrix.inv`, and is an eigenvector when `λ` is not a diagonal
+entry of `T₁₁` (`Matrix.IsUpperTriangular.mulVec_schurEigenvector`). -/
+noncomputable def schurEigenvector (T : Matrix (Fin N) (Fin N) K) (k : Fin N) : Fin N → K :=
+  fun i =>
+    if h : (i : ℕ) < k then
+      -(((T.submatrix (Fin.castLE k.isLt.le) (Fin.castLE k.isLt.le) - T k k • 1)⁻¹
+        *ᵥ fun j => T (Fin.castLE k.isLt.le j) k) ⟨i, h⟩)
+    else if i = k then 1 else 0
+
+/-- The `k`-th entry of the Schur eigenvector is `1`. -/
+@[simp]
+theorem schurEigenvector_apply_self (T : Matrix (Fin N) (Fin N) K) (k : Fin N) :
+    schurEigenvector T k k = 1 := by
+  simp [schurEigenvector]
+
+/-- The Schur eigenvector vanishes below the row `k`. -/
+theorem schurEigenvector_apply_of_lt (T : Matrix (Fin N) (Fin N) K) {k i : Fin N} (h : k < i) :
+    schurEigenvector T k i = 0 := by
+  have h1 : ¬ ((i : ℕ) < k) := not_lt.2 (Fin.le_def.1 h.le)
+  rw [schurEigenvector, dite_eq_right h1, ite_eq_right h.ne']
+
+/-- The Schur eigenvector is nonzero, its `k`-th entry being `1`. -/
+theorem schurEigenvector_ne_zero (T : Matrix (Fin N) (Fin N) K) (k : Fin N) :
+    schurEigenvector T k ≠ 0 := fun h => by
+  simpa using congrFun h k
+
+/-- A sum over the indices below `k` is a sum over `Fin k`. -/
+private theorem sum_filter_lt_eq_sum_castLE {k : ℕ} (hk : k ≤ N) (g : Fin N → K) :
+    ∑ j ∈ Finset.univ.filter (fun j : Fin N => (j : ℕ) < k), g j
+      = ∑ j : Fin k, g (Fin.castLE hk j) := by
+  rw [show (∑ j : Fin k, g (Fin.castLE hk j)) = ∑ j ∈ Finset.univ.map (Fin.castLEEmb hk), g j from
+    (Finset.sum_map Finset.univ (Fin.castLEEmb hk) g).symm]
+  congr 1
+  ext j
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map, Fin.castLEEmb_apply]
+  constructor
+  · intro hj
+    exact ⟨⟨j, hj⟩, Fin.ext rfl⟩
+  · rintro ⟨i, rfl⟩
+    exact i.isLt
+
+/-- The leading block of an upper triangular matrix, shifted by a scalar, is upper triangular. -/
+private theorem isUpperTriangular_submatrix_castLE_sub {T : Matrix (Fin N) (Fin N) K}
+    (hT : T.IsUpperTriangular) {k : ℕ} (hk : k ≤ N) (c : K) :
+    (T.submatrix (Fin.castLE hk) (Fin.castLE hk) - c • 1).IsUpperTriangular := by
+  intro i j hji
+  rw [sub_apply, submatrix_apply, smul_apply, one_apply,
+    ite_eq_right (fun h : i = j => absurd h (ne_of_gt hji)), smul_zero, sub_zero]
+  exact hT (Fin.lt_def.2 (by simp only [id, Fin.val_castLE]; exact Fin.lt_def.1 hji))
+
+/-- **The Schur eigenvector is an eigenvector** ([quarteroni2000numerical] §5.8.2, (5.56)): for
+`T` upper triangular and a diagonal entry `λ = T k k` that is not repeated above row `k`,
+`T y = λ y` for `y = schurEigenvector T k`. Rows below `k` vanish on both sides, row `k` reads
+`λ · 1`, and the rows above `k` are the triangular system `(T₁₁ - λ I) y₁ = -v` that defines `y₁`.
+Together with `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul` and
+`Matrix.exists_unitary_conj_upperTriangular` this computes an eigenvector `x = Q y` of `A` for each
+simple eigenvalue from its Schur form. -/
+theorem mulVec_schurEigenvector {T : Matrix (Fin N) (Fin N) K}
+    (hT : T.IsUpperTriangular) {k : Fin N} (hk : ∀ i, i < k → T i i ≠ T k k) :
+    T *ᵥ schurEigenvector T k = T k k • schurEigenvector T k := by
+  obtain ⟨hle, -⟩ : ∃ hle : (k : ℕ) ≤ N, True := ⟨k.isLt.le, trivial⟩
+  obtain ⟨T₁₁, hT₁₁⟩ : ∃ T₁₁ : Matrix (Fin k) (Fin k) K,
+    T₁₁ = T.submatrix (Fin.castLE hle) (Fin.castLE hle) := ⟨_, rfl⟩
+  obtain ⟨v, hv⟩ : ∃ v : Fin k → K, v = fun j => T (Fin.castLE hle j) k := ⟨_, rfl⟩
+  obtain ⟨y₁, hy₁⟩ : ∃ y₁ : Fin k → K, y₁ = -((T₁₁ - T k k • 1)⁻¹ *ᵥ v) := ⟨_, rfl⟩
+  have hy : ∀ (i : Fin N) (h : (i : ℕ) < k), schurEigenvector T k i = y₁ ⟨i, h⟩ := by
+    intro i h
+    rw [schurEigenvector, dite_eq_left h, hy₁, hT₁₁, hv]
+    rfl
+  -- `T₁₁ - λ` is nonsingular: upper triangular with nonzero diagonal
+  have hdet : IsUnit (T₁₁ - T k k • 1).det := by
+    rw [hT₁₁, det_of_isUpperTriangular (isUpperTriangular_submatrix_castLE_sub hT hle _)]
+    refine isUnit_iff_ne_zero.2 (Finset.prod_ne_zero_iff.2 fun i _ => ?_)
+    rw [sub_apply, submatrix_apply, smul_apply, one_apply_eq, smul_eq_mul, mul_one]
+    exact sub_ne_zero.2 (hk _ (by simp [Fin.lt_def]))
+  have hsys : T₁₁ *ᵥ y₁ = T k k • y₁ - v := by
+    have h := congrArg (fun z => (T₁₁ - T k k • 1) *ᵥ z) hy₁
+    simp only [mulVec_neg, mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec, sub_mulVec,
+      smul_mulVec, one_mulVec] at h
+    funext i
+    have := congrFun h i
+    simp only [Pi.sub_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul] at this ⊢
+    linear_combination this
+  funext i
+  rw [mulVec_apply_eq_sum, Pi.smul_apply, smul_eq_mul,
+    ← Finset.sum_filter_add_sum_filter_not Finset.univ (fun j : Fin N => (j : ℕ) < k)]
+  -- the indices at and below `k`: only `j = k` survives
+  have htail : ∑ j ∈ Finset.univ.filter (fun j : Fin N => ¬ (j : ℕ) < k),
+      T i j * schurEigenvector T k j = T i k := by
+    rw [Finset.sum_eq_single k]
+    · rw [schurEigenvector_apply_self, mul_one]
+    · intro j hj hjk
+      have hkj : k < j := lt_of_le_of_ne (Fin.le_def.2 (not_lt.1 (Finset.mem_filter.1 hj).2))
+        (Ne.symm hjk)
+      rw [schurEigenvector_apply_of_lt T hkj, mul_zero]
+    · intro h
+      exact absurd (Finset.mem_filter.2 ⟨Finset.mem_univ k, lt_irrefl (k : ℕ)⟩) h
+  -- the indices above `k`: the leading block
+  have hhead : ∑ j ∈ Finset.univ.filter (fun j : Fin N => (j : ℕ) < k),
+      T i j * schurEigenvector T k j = ∑ j : Fin k, T i (Fin.castLE hle j) * y₁ j := by
+    rw [sum_filter_lt_eq_sum_castLE hle]
+    exact Finset.sum_congr rfl fun j _ => by rw [hy _ (by simp)]; rfl
+  rw [htail, hhead]
+  rcases lt_trichotomy i k with hik | rfl | hik
+  · -- a row above `k`: the defining system
+    have hik' : (i : ℕ) < k := Fin.lt_def.1 hik
+    have h1 : ∑ j : Fin k, T i (Fin.castLE hle j) * y₁ j = (T₁₁ *ᵥ y₁) ⟨i, hik'⟩ := by
+      rw [mulVec_apply_eq_sum, hT₁₁]
+      exact Finset.sum_congr rfl fun j _ => by rw [submatrix_apply]; rfl
+    have h2 : T i k = v ⟨i, hik'⟩ := by rw [hv]; rfl
+    rw [h1, hsys, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, hy i hik', h2]
+    ring
+  · -- the row `k` itself: only the diagonal entry
+    have h0 : ∑ j, T i (Fin.castLE hle j) * y₁ j = 0 :=
+      Finset.sum_eq_zero fun j _ => by
+        rw [hT (by simp [Fin.lt_def]), zero_mul]
+    rw [h0, zero_add, schurEigenvector_apply_self, mul_one]
+  · -- a row below `k`: everything vanishes
+    have h0 : ∑ j : Fin k, T i (Fin.castLE hle j) * y₁ j = 0 :=
+      Finset.sum_eq_zero fun j _ => by
+        rw [hT (by simp only [id, Fin.lt_def, Fin.val_castLE]; omega), zero_mul]
+    rw [h0, zero_add, hT hik, schurEigenvector_apply_of_lt T hik, mul_zero]
+
+end IsUpperTriangular
+
+end SchurEigenvector
 
 end Matrix

@@ -7,8 +7,10 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Algebra.DirectSum.LinearMap
 import Mathlib.Algebra.Module.PID
 import Mathlib.Algebra.Polynomial.Module.AEval
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.StdBasis
@@ -68,6 +70,12 @@ of the powers of `jordanForm e μ - c` stop growing, is the largest of their siz
 * `Matrix.exists_equiv_submatrix_jordanForm_pos`: the size-zero blocks that `Matrix.jordanForm`
   admits, and that would spoil those counts, can always be dropped. The existence theorems above
   produce block sizes that are already positive.
+* `Matrix.mulVec_eq_of_conj_jordanForm`: the columns of the transforming matrix are the
+  eigenvectors and principal vectors, `A x_{i,0} = μ_i x_{i,0}` and
+  `A x_{i,j+1} = μ_i x_{i,j+1} + x_{i,j}` ([quarteroni2000numerical] (1.8)).
+* `Matrix.finrank_eigenspace_le_rootMultiplicity_charpoly`: the geometric multiplicity of an
+  eigenvalue never exceeds its algebraic multiplicity (Mathlib's `LinearMap.finrank_eigenspace_le`
+  read for a matrix; the two counts above show where the gap comes from).
 
 ## Implementation notes
 
@@ -862,5 +870,122 @@ theorem exists_conj_blockDiagonal'_jordanForm (A : Matrix (Fin n) (Fin n) K) :
   obtain ⟨P, hP, hPA⟩ := exists_isUnit_conj_toMatrix A b σ
   exact ⟨q, ν, d, e, σ, P, hinj,
     fun μ => (hasEigenvalue_endOf_iff A μ).symm.trans (heig μ), hepos, hP, by rw [hPA, hb]⟩
+
+end Matrix
+
+namespace Matrix
+
+/-! ### Principal vectors -/
+
+section PrincipalVectors
+
+variable {R : Type*} [CommRing R] {ι : Type*} [DecidableEq ι] {e : ι → ℕ} {μ : ι → R}
+
+omit [DecidableEq ι] in
+/-- Equal sigma-pairs with the same first component have equal second components. -/
+private theorem snd_eq_of_sigma_mk_eq {i : ι} {a b : Fin (e i)}
+    (h : (⟨i, a⟩ : (i : ι) × Fin (e i)) = ⟨i, b⟩) : a = b :=
+  eq_of_heq (Sigma.mk.inj_iff.1 h).2
+
+/-- The first column of each block of a Jordan form: only the diagonal entry `μ i` is nonzero. -/
+private theorem jordanForm_transpose_zero (i : ι) (h0 : 0 < e i) :
+    (jordanForm e μ)ᵀ ⟨i, ⟨0, h0⟩⟩ = μ i • Pi.single (⟨i, ⟨0, h0⟩⟩ : (i : ι) × Fin (e i)) 1 := by
+  funext ⟨i', j'⟩
+  rw [transpose_apply, jordanForm_def, Pi.smul_apply, smul_eq_mul]
+  rcases eq_or_ne i' i with rfl | hi
+  · rw [blockDiagonal'_apply_eq, jordanBlock_apply]
+    rcases eq_or_ne j' ⟨0, h0⟩ with rfl | hj
+    · simp
+    · have hj' : ¬ ((j' : ℕ) + 1 = 0) := by omega
+      rw [ite_eq_right hj, ite_eq_right hj',
+        Pi.single_eq_of_ne (fun h => hj (snd_eq_of_sigma_mk_eq h)), mul_zero]
+  · rw [blockDiagonal'_apply_ne _ _ _ hi, Pi.single_eq_of_ne (fun h => hi (congrArg Sigma.fst h)),
+      mul_zero]
+
+/-- A later column of a block of a Jordan form: the diagonal entry `μ i` and the superdiagonal
+`1` just above it. -/
+private theorem jordanForm_transpose_succ (i : ι) (j : ℕ) (hj : j + 1 < e i) :
+    (jordanForm e μ)ᵀ ⟨i, ⟨j + 1, hj⟩⟩
+      = μ i • Pi.single (⟨i, ⟨j + 1, hj⟩⟩ : (i : ι) × Fin (e i)) 1
+        + Pi.single (⟨i, ⟨j, by omega⟩⟩ : (i : ι) × Fin (e i)) 1 := by
+  funext ⟨i', j'⟩
+  rw [transpose_apply, jordanForm_def, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  rcases eq_or_ne i' i with rfl | hi
+  · rw [blockDiagonal'_apply_eq, jordanBlock_apply]
+    have hne : (⟨j + 1, hj⟩ : Fin (e i')) ≠ ⟨j, by omega⟩ := fun h => by
+      have := congrArg Fin.val h
+      simp at this
+    rcases eq_or_ne j' ⟨j + 1, hj⟩ with rfl | hj1
+    · rw [ite_eq_left rfl, Pi.single_eq_same, mul_one,
+        Pi.single_eq_of_ne (fun h => hne (snd_eq_of_sigma_mk_eq h)), add_zero]
+    · rcases eq_or_ne j' ⟨j, by omega⟩ with rfl | hj2
+      · rw [ite_eq_right hj1, ite_eq_left (by simp), Pi.single_eq_same,
+          Pi.single_eq_of_ne (fun h => hne (snd_eq_of_sigma_mk_eq h).symm), mul_zero, zero_add]
+      · have h1 : ¬ ((j' : ℕ) + 1 = j + 1) := fun h => hj2 (Fin.ext (Nat.succ_injective h))
+        rw [ite_eq_right hj1, ite_eq_right h1,
+          Pi.single_eq_of_ne (fun h => hj1 (snd_eq_of_sigma_mk_eq h)),
+          Pi.single_eq_of_ne (fun h => hj2 (snd_eq_of_sigma_mk_eq h)), mul_zero, add_zero]
+  · rw [blockDiagonal'_apply_ne _ _ _ hi,
+      Pi.single_eq_of_ne (fun h => hi (congrArg Sigma.fst h)),
+      Pi.single_eq_of_ne (fun h => hi (congrArg Sigma.fst h)), mul_zero, add_zero]
+
+/-- Column `c` of `A * X` is `A` applied to column `c` of `X`. -/
+private theorem transpose_mul_apply {m : Type*} [Fintype m]
+    (A X : Matrix m m R) (c : m) : (A * X)ᵀ c = A *ᵥ Xᵀ c := by
+  funext r
+  simp [mul_apply, mulVec, dotProduct]
+
+/-- **The principal-vector recursion** ([quarteroni2000numerical] (1.8)): if `X⁻¹ A X` is the
+Jordan form `blockDiagonal' (fun i => jordanBlock (e i) (μ i))` with `X` nonsingular, then the
+columns `x_{i,j}` of `X` satisfy `A x_{i,0} = μ_i x_{i,0}` and `A x_{i,j+1} = μ_i x_{i,j+1} +
+x_{i,j}`: each block contributes one eigenvector and a chain of *principal vectors* (generalized
+eigenvectors) above it. Read `A X = X J` column by column. -/
+theorem mulVec_eq_of_conj_jordanForm [Fintype ι]
+    {A X : Matrix ((i : ι) × Fin (e i)) ((i : ι) × Fin (e i)) R} (hX : IsUnit X)
+    (h : X⁻¹ * A * X = jordanForm e μ) :
+    (∀ (i : ι) (h0 : 0 < e i), A *ᵥ Xᵀ ⟨i, ⟨0, h0⟩⟩ = μ i • Xᵀ ⟨i, ⟨0, h0⟩⟩) ∧
+      ∀ (i : ι) (j : ℕ) (hj : j + 1 < e i),
+        A *ᵥ Xᵀ ⟨i, ⟨j + 1, hj⟩⟩ = μ i • Xᵀ ⟨i, ⟨j + 1, hj⟩⟩ + Xᵀ ⟨i, ⟨j, by omega⟩⟩ := by
+  have hAX : A * X = X * jordanForm e μ := by
+    rw [← h, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hX), Matrix.one_mul]
+  have hcol : ∀ c, A *ᵥ Xᵀ c = X *ᵥ (jordanForm e μ)ᵀ c := fun c => by
+    rw [← transpose_mul_apply, hAX, transpose_mul_apply]
+  refine ⟨fun i h0 => ?_, fun i j hj => ?_⟩
+  · rw [hcol, jordanForm_transpose_zero, mulVec_smul, mulVec_single_one]
+    rfl
+  · rw [hcol, jordanForm_transpose_succ, mulVec_add, mulVec_smul, mulVec_single_one,
+      mulVec_single_one]
+    rfl
+
+end PrincipalVectors
+
+/-! ### Geometric versus algebraic multiplicity -/
+
+section Multiplicity
+
+variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The eigenspace of a matrix, as the null space of the shifted matrix. -/
+theorem eigenspace_mulVecLin_eq_ker (A : Matrix n n K) (μ : K) :
+    Module.End.eigenspace A.mulVecLin μ = LinearMap.ker (A - μ • 1).mulVecLin := by
+  ext v
+  rw [Module.End.mem_eigenspace_iff, LinearMap.mem_ker, mulVecLin_apply, mulVecLin_apply,
+    sub_mulVec, smul_mulVec, one_mulVec, sub_eq_zero]
+
+/-- **The geometric multiplicity of an eigenvalue never exceeds its algebraic multiplicity**
+([quarteroni2000numerical] §1.7): for every square matrix over a field and every `μ`,
+`finrank (eigenspace A μ) ≤ rootMultiplicity μ A.charpoly`. This is Mathlib's
+`LinearMap.finrank_eigenspace_le` for the operator `x ↦ A x`; the Jordan form makes the gap
+explicit — the eigenspace of `μ` has one dimension per block carrying `μ`
+(`Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one`) while the root multiplicity is the total
+size of those blocks (`Matrix.rootMultiplicity_charpoly_jordanForm`). Equality for every `μ` is
+what "nondefective" means. -/
+theorem finrank_eigenspace_le_rootMultiplicity_charpoly (A : Matrix n n K) (μ : K) :
+    finrank K (Module.End.eigenspace A.mulVecLin μ) ≤ A.charpoly.rootMultiplicity μ := by
+  have h := LinearMap.finrank_eigenspace_le A.mulVecLin μ
+  rwa [charpoly_mulVecLin] at h
+
+end Multiplicity
 
 end Matrix

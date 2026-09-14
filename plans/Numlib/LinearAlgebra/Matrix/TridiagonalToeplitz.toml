@@ -56,53 +56,39 @@ id = "tridiagonalToeplitz_transpose"
 id = "tridiagonalToeplitz_hasEigenvalue_iff"
 
 [[node]]
+id = "symmTridiagonalToeplitz_neg_one_two_mulVec_parabola"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.7"
+
+[[node]]
 id = "inv_symmTridiagonalToeplitz_neg_one_two_apply"
-kind = "theorem"
-desc = '''The explicit inverse of `T_n = tridiag(-1, 2, -1)`: for `j k : Fin n`,
-`(symmTridiagonalToeplitz n (-1) 2)⁻¹ j k = ((min j k + 1) * (n - max j k)) / (n + 1)` (as reals).
-With `x_j = (j + 1)/(n + 1)` this is `(n + 1) G(x_j, x_k)` for the Green's function
-`G(x, s) = min x s * (1 - max x s)` of `-u'' = f` on `(0, 1)`, which is Quarteroni–Sacco–Saleri
-Exercise 12.6 (`G^k(x_j) = h G(x_j, x_k)` for the discrete Green's function `L_h G^k = e^k`,
-`L_h = h⁻² T`). Proof: verify `T * M = 1` entrywise for the displayed `M`, three cases
-`k < j`, `k = j`, `k > j` on the row `j` of `T` (the function `s ↦ min j s (n - max j s)` is affine in
-`s` on each side of `j`, so the second difference vanishes off the diagonal, and at `s = j` it is
-`-(j)(n - j - 1) + 2 (j + 1)(n - j) - (j + 1)(n - j - 1) = n + 1`; the first and last rows are the
-same computation with the missing neighbour equal to `0`). Then `Matrix.inv_eq_right_inv`. ★★'''
-deps = ["Matrix.symmTridiagonalToeplitz"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.6"
+
+[[node]]
+id = "isUnit_symmTridiagonalToeplitz_neg_one_two"
 
 [[node]]
 id = "inv_symmTridiagonalToeplitz_neg_one_two_sum"
-kind = "theorem"
-desc = '''The row sums of the inverse: `∑ k, (symmTridiagonalToeplitz n (-1) 2)⁻¹ j k = (j + 1) * (n - j) / 2`,
-equivalently `T_n *ᵥ w = 1` for the discrete parabola `w j = (j + 1)(n - j)/2` — with `x_j = (j+1) h`,
-`h = 1/(n + 1)`, this is `h⁻² · x_j (1 - x_j)/2`, Quarteroni–Sacco–Saleri Exercise 12.7
-(`T_h 1 (x_j) = x_j (1 - x_j)/2`). Proof: either sum the explicit inverse (two arithmetic series) or
-check `T w = 1` directly (the second difference of a quadratic sequence is constant). The latter
-is the comparison vector of `Matrix.IsMMatrix.norm_inv_mulVec_le` for the boundary value problem. ★'''
-deps = ["Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.7"
+
+[[node]]
+id = "symmTridiagonalToeplitz_offDiag_nonpos"
+
+[[node]]
+id = "isMMatrix_symmTridiagonalToeplitz"
 
 [[node]]
 id = "isMMatrix_symmTridiagonalToeplitz_neg_one_two"
-kind = "theorem"
-desc = '''`tridiag(-1, 2, -1)` is an M-matrix (Quarteroni–Sacco–Saleri Exercise 12.2). Two proofs are
-available and either is a few lines: the explicit inverse is entrywise nonnegative
-(`inv_symmTridiagonalToeplitz_neg_one_two_apply`, `min j k + 1 > 0`, `n - max j k > 0`), or
-Stieltjes (`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos` with the existing
-`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`). The book's hint (continuity of the inverse of
-`T + α I` in `α`) is neither. More generally `Matrix.isMMatrix_symmTridiagonalToeplitz : 2 * |a| < b
-→ a ≤ 0 → (symmTridiagonalToeplitz n a b).IsMMatrix`, from Stieltjes and
-`Matrix.posDef_symmTridiagonalToeplitz`. ★'''
-deps = ["Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply", "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.2"
+
+[[node]]
+id = "l2_opNorm_symmTridiagonalToeplitz_neg_one_two"
+
+[[node]]
+id = "l2_opNorm_inv_symmTridiagonalToeplitz_neg_one_two"
 
 [[node]]
 id = "condNumber_symmTridiagonalToeplitz_neg_one_two"
-kind = "theorem"
-desc = '''The spectral condition number of `T_n = tridiag(-1, 2, -1)`: `‖T_n‖₂ ‖T_n⁻¹‖₂ = cot² (π / (2 (n + 1)))`,
-hence `≤ (2 (n + 1) / π)²`. The eigenvalues are `4 sin² ((k + 1) π / (2 (n + 1)))`, `k < n`
-(`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`), the largest `4 cos² (π / (2(n+1)))` and the
-smallest `4 sin² (π / (2(n+1)))`; `Matrix.IsHermitian.l2_opNorm_eq` and
-`Matrix.IsHermitian.l2_opNorm_inv_eq` of `Numlib/Analysis/Matrix/SpectralNorm.lean` turn eigenvalue
-bounds into the two norms. This is the `K₂(A_fe) = O(h⁻²)` of Quarteroni–Sacco–Saleri §12.4.5 for
-the model stiffness matrix `A_fe = h⁻¹ T_n` (the scaling cancels in the condition number), which the
-book quotes from [QV94] for general coefficients. ★★'''
-deps = ["Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.IsHermitian.l2_opNorm_inv_eq"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5"
+
+[[node]]
+id = "condNumber_symmTridiagonalToeplitz_neg_one_two_le"

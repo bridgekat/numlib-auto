@@ -5,8 +5,11 @@ Natural home: `Mathlib.LinearAlgebra.Matrix`, beside `Mathlib.LinearAlgebra.Matr
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.MMatrix
 
 /-!
 # The symmetric tridiagonal Toeplitz matrix and its discrete sine eigenbasis
@@ -27,7 +30,12 @@ basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the `n` 
 θ_k` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); the quadratic form is enclosed in `[b -
 2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]` (`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`);
 and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive
-definite.
+definite. For that model Laplacian the module also gives the explicit inverse — the discrete
+Green's function `(min(j, k) + 1)(n - max(j, k)) / (n + 1)`
+(`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply`) — with its row sums, the discrete
+parabola `(j + 1)(n - j) / 2`; its M-matrix property
+(`Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two`); and its spectral condition number
+`cot²(π / (2(n + 1)))` (`Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two`).
 
 `Matrix.tridiagonalToeplitz n a b c` is the general `tridiag(a, b, c)`, with possibly different
 off-diagonals. When they have the same sign, `a c ≥ 0`, the diagonal similarity `diag(1, d, d², …)`
@@ -564,6 +572,329 @@ theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
   rw [hcos]
   simp only [abs_neg, abs_one]
   nlinarith [hhalf]
+
+/-! ### The model Laplacian `tridiag(-1, 2, -1)`: inverse, comparison vector, M-matrix, conditioning
+
+The matrix `T = tridiag(-1, 2, -1)` has the explicit inverse
+`T⁻¹ j k = (min(j, k) + 1)(n - max(j, k)) / (n + 1)`, the discrete Green's function of `-u'' = f`
+with homogeneous Dirichlet data: with `x_j = (j + 1) / (n + 1)` it is `(n + 1) G(x_j, x_k)` for
+`G(x, s) = min(x, s)(1 - max(x, s))`. Its row sums are the discrete parabola `(j + 1)(n - j) / 2`,
+which is the *comparison vector* `w` with `T w = 1` that the stability estimate
+`Matrix.IsMMatrix.norm_inv_mulVec_le` consumes. `T` is an M-matrix, by positive definiteness, and
+its spectral condition number is `cot²(π / (2(n + 1)))`, of order `(n + 1)²`. -/
+
+section NegOneTwo
+
+/-- The three-term row of `tridiag(-1, 2, -1)` applied to `v`, in padded form. -/
+private theorem neg_one_two_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
+    (symmTridiagonalToeplitz n (-1) 2 *ᵥ v) i
+      = 2 * padZero v ((i : ℕ) + 1) - padZero v (i : ℕ) - padZero v ((i : ℕ) + 2) := by
+  rw [symmTridiagonalToeplitz_mulVec_apply]
+  ring
+
+/-- The padded discrete parabola `m ↦ m (n + 1 - m) / 2`, which vanishes at both ends `m = 0` and
+`m = n + 1`. -/
+private theorem padZero_parabola {m : ℕ} (hm : m ≤ n + 1) :
+    padZero (fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2) m
+      = (m : ℝ) * ((n : ℝ) + 1 - m) / 2 := by
+  cases m with
+  | zero => simp [padZero_zero]
+  | succ m =>
+    rw [padZero_succ]
+    by_cases h : m < n
+    · rw [dite_eq_left h]
+      push_cast
+      ring
+    · rw [dite_eq_right h]
+      have hmn : m = n := by omega
+      subst hmn
+      push_cast
+      ring
+
+/-- **The comparison vector of the model Laplacian**: `tridiag(-1, 2, -1)` maps the discrete
+parabola `w_j = (j + 1)(n - j) / 2` to the all-ones vector, because the second difference of a
+quadratic sequence is constant and the parabola vanishes at the padded ends `j = -1` and `j = n`.
+With `x_j = (j + 1) h`, `h = 1 / (n + 1)`, this is `h⁻² · x_j (1 - x_j) / 2`, the function
+[quarteroni2000numerical] Exercise 12.7 exhibits (`T_h 1 (x_j) = x_j (1 - x_j) / 2`), and it is
+the vector `w` of `Matrix.IsMMatrix.norm_inv_mulVec_le` for the two-point boundary value problem.
+-/
+theorem symmTridiagonalToeplitz_neg_one_two_mulVec_parabola (n : ℕ) :
+    symmTridiagonalToeplitz n (-1) 2
+      *ᵥ (fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2) = 1 := by
+  funext i
+  have hi : (i : ℕ) + 2 ≤ n + 1 := by omega
+  rw [neg_one_two_mulVec_apply, padZero_parabola (by omega), padZero_parabola (by omega),
+    padZero_parabola hi, Pi.one_apply]
+  push_cast
+  ring
+
+/-- The candidate inverse of `tridiag(-1, 2, -1)`: the discrete Green's function
+`(min(j, k) + 1)(n - max(j, k)) / (n + 1)`. -/
+private noncomputable def negOneTwoInv (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
+  Matrix.of fun j k =>
+    (((min (j : ℕ) k : ℕ) : ℝ) + 1) * ((n : ℝ) - (max (j : ℕ) k : ℕ)) / ((n : ℝ) + 1)
+
+/-- The `k`-th column of the Green's function, padded and scaled by `n + 1`, in the piecewise-affine
+form `m ↦ m (n - k)` for `m ≤ k + 1` and `m ↦ (k + 1)(n + 1 - m)` beyond: affine on each side of
+`m = k + 1`, and vanishing at the ends `m = 0` and `m = n + 1`. -/
+private theorem padZero_negOneTwoInv_col (k : Fin n) {m : ℕ} (hm : m ≤ n + 1) :
+    padZero (fun j => negOneTwoInv n j k) m
+      = (if m ≤ (k : ℕ) + 1 then (m : ℝ) * ((n : ℝ) - (k : ℕ))
+          else (((k : ℕ) : ℝ) + 1) * ((n : ℝ) + 1 - m)) / ((n : ℝ) + 1) := by
+  cases m with
+  | zero => simp [padZero_zero]
+  | succ m =>
+    rw [padZero_succ]
+    by_cases h : m < n
+    · rw [dite_eq_left h]
+      simp only [negOneTwoInv, of_apply]
+      rcases le_or_gt m k with hmk | hmk
+      · rw [min_eq_left hmk, max_eq_right hmk, ite_eq_left (by omega)]
+        push_cast
+        ring
+      · rw [min_eq_right hmk.le, max_eq_left hmk.le, ite_eq_right (by omega)]
+        push_cast
+        ring
+    · rw [dite_eq_right h]
+      have hmn : m = n := by omega
+      subst hmn
+      rw [ite_eq_right (by have := k.isLt; omega)]
+      push_cast
+      ring
+
+/-- `tridiag(-1, 2, -1)` times the Green's function is the identity: column by column, the second
+difference of the piecewise-affine column `k` vanishes off `j = k` and is `n + 1` there. -/
+private theorem symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv (n : ℕ) :
+    symmTridiagonalToeplitz n (-1) 2 * negOneTwoInv n = 1 := by
+  ext i k
+  have hn : ((n : ℝ) + 1) ≠ 0 := by positivity
+  have hi : (i : ℕ) + 2 ≤ n + 1 := by omega
+  change (symmTridiagonalToeplitz n (-1) 2 *ᵥ fun j => negOneTwoInv n j k) i = _
+  rw [neg_one_two_mulVec_apply, padZero_negOneTwoInv_col k (by omega),
+    padZero_negOneTwoInv_col k (by omega), padZero_negOneTwoInv_col k hi, one_apply]
+  rcases lt_trichotomy (i : ℕ) k with hik | hik | hik
+  · have hne : i ≠ k := fun h => by rw [h] at hik; exact lt_irrefl _ hik
+    have h1 : (i : ℕ) + 1 ≤ k + 1 := by omega
+    have h2 : (i : ℕ) ≤ k + 1 := by omega
+    have h3 : (i : ℕ) + 2 ≤ k + 1 := by omega
+    rw [ite_eq_left h1, ite_eq_left h2, ite_eq_left h3, ite_eq_right hne]
+    push_cast
+    ring
+  · obtain rfl : i = k := Fin.ext hik
+    have h1 : (i : ℕ) + 1 ≤ i + 1 := le_rfl
+    have h2 : (i : ℕ) ≤ i + 1 := by omega
+    have h3 : ¬ ((i : ℕ) + 2 ≤ i + 1) := by omega
+    rw [ite_eq_left h1, ite_eq_left h2, ite_eq_right h3, ite_eq_left rfl]
+    field_simp
+    push_cast
+    ring
+  · have hne : i ≠ k := fun h => by rw [h] at hik; exact lt_irrefl _ hik
+    have h1 : ¬ ((i : ℕ) + 1 ≤ k + 1) := by omega
+    have h3 : ¬ ((i : ℕ) + 2 ≤ k + 1) := by omega
+    rw [ite_eq_right h1, ite_eq_right h3, ite_eq_right hne]
+    -- at `i = k + 1` the two affine pieces agree, so the row `i` may use either
+    rcases eq_or_ne (i : ℕ) (k + 1) with h2 | h2
+    · rw [ite_eq_left h2.le, h2]
+      push_cast
+      ring
+    · rw [ite_eq_right (by omega)]
+      push_cast
+      ring
+
+/-- **The inverse of the model Laplacian**: `tridiag(-1, 2, -1)⁻¹ j k = (min(j, k) + 1)(n - max(j,
+k)) / (n + 1)`. With `x_j = (j + 1) / (n + 1)` this is `(n + 1) G(x_j, x_k)` for the Green's
+function `G(x, s) = min(x, s)(1 - max(x, s))` of `-u'' = f` on `(0, 1)` with homogeneous Dirichlet
+data — the discrete Green's function of [quarteroni2000numerical] Exercise 12.6 (`G^k(x_j) = h
+G(x_j, x_k)`, with `L_h = h⁻² T`). -/
+theorem inv_symmTridiagonalToeplitz_neg_one_two_apply (j k : Fin n) :
+    (symmTridiagonalToeplitz n (-1) 2)⁻¹ j k
+      = (((min (j : ℕ) k : ℕ) : ℝ) + 1) * ((n : ℝ) - (max (j : ℕ) k : ℕ)) / ((n : ℝ) + 1) := by
+  rw [inv_eq_right_inv (symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n)]
+  rfl
+
+/-- The model Laplacian is nonsingular. -/
+theorem isUnit_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
+    IsUnit (symmTridiagonalToeplitz n (-1) 2) :=
+  ⟨⟨_, negOneTwoInv n, symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n,
+    mul_eq_one_comm.1 (symmTridiagonalToeplitz_neg_one_two_mul_negOneTwoInv n)⟩, rfl⟩
+
+/-- The row sums of the inverse of the model Laplacian are the discrete parabola:
+`∑_k tridiag(-1, 2, -1)⁻¹ j k = (j + 1)(n - j) / 2`. This is `T⁻¹ 1 = w` for the comparison vector
+`w` of `Matrix.symmTridiagonalToeplitz_neg_one_two_mulVec_parabola`; it bounds the discrete Green's
+function sum of [quarteroni2000numerical] Theorem 12.1 by `(n + 1)² / 8`. -/
+theorem inv_symmTridiagonalToeplitz_neg_one_two_sum (j : Fin n) :
+    ∑ k, (symmTridiagonalToeplitz n (-1) 2)⁻¹ j k
+      = (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2 := by
+  have hdet : IsUnit (symmTridiagonalToeplitz n (-1) 2).det :=
+    (isUnit_iff_isUnit_det _).1 (isUnit_symmTridiagonalToeplitz_neg_one_two n)
+  have h : (symmTridiagonalToeplitz n (-1) 2)⁻¹ *ᵥ (1 : Fin n → ℝ)
+      = fun j : Fin n => (((j : ℕ) : ℝ) + 1) * ((n : ℝ) - (j : ℕ)) / 2 := by
+    rw [← symmTridiagonalToeplitz_neg_one_two_mulVec_parabola n, mulVec_mulVec,
+      nonsing_inv_mul _ hdet, one_mulVec]
+  have h' := congrFun h j
+  simpa [mulVec_apply_eq_sum] using h'
+
+/-- The off-diagonal entries of `tridiag(a, b, a)` are nonpositive when `a ≤ 0`. -/
+theorem symmTridiagonalToeplitz_offDiag_nonpos {a : ℝ} (ha : a ≤ 0) (b : ℝ) {i j : Fin n}
+    (hij : i ≠ j) : symmTridiagonalToeplitz n a b i j ≤ 0 := by
+  rw [symmTridiagonalToeplitz_apply, ite_eq_right hij]
+  split_ifs
+  · exact ha
+  · exact le_rfl
+
+/-- **Diagonally dominant symmetric tridiagonal Toeplitz matrices with nonpositive off-diagonals
+are M-matrices**: `tridiag(a, b, a)` with `a ≤ 0` and `2|a| < b`, through positive definiteness
+(`Matrix.posDef_symmTridiagonalToeplitz`) and the Stieltjes criterion
+`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`. -/
+theorem isMMatrix_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) (ha : a ≤ 0) :
+    (symmTridiagonalToeplitz n a b).IsMMatrix :=
+  IsMMatrix.of_posDef_of_offDiag_nonpos (posDef_symmTridiagonalToeplitz n h)
+    fun _ _ hij => symmTridiagonalToeplitz_offDiag_nonpos ha b hij
+
+/-- **The model Laplacian is an M-matrix** ([quarteroni2000numerical] Exercise 12.2): it is
+positive definite with nonpositive off-diagonal entries. The explicit inverse
+`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply` is visibly nonnegative as well; the book's
+hint, continuity of the inverse of `T + αI` in `α`, is needed by neither route. -/
+theorem isMMatrix_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
+    (symmTridiagonalToeplitz n (-1) 2).IsMMatrix :=
+  IsMMatrix.of_posDef_of_offDiag_nonpos (posDef_symmTridiagonalToeplitz_neg_one_two n)
+    fun _ _ hij => symmTridiagonalToeplitz_offDiag_nonpos (by norm_num) 2 hij
+
+section SpectralNorm
+
+open scoped Matrix.Norms.L2Operator
+
+/-- The half-angle `π / (2(n + 1))` of the model problem has positive sine. -/
+private theorem sin_half_angle_pos (n : ℕ) : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
+  refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
+  rw [div_lt_iff₀ (by positivity)]
+  nlinarith [Real.pi_pos]
+
+/-- The half-angle `π / (2(n + 1))` of the model problem has nonnegative cosine (it vanishes at
+`n = 0`). -/
+private theorem cos_half_angle_nonneg (n : ℕ) : 0 ≤ Real.cos (π / (2 * ((n : ℝ) + 1))) := by
+  refine Real.cos_nonneg_of_mem_Icc ⟨?_, ?_⟩
+  · have : 0 < π / (2 * ((n : ℝ) + 1)) := by positivity
+    linarith [Real.pi_pos]
+  · rw [div_le_div_iff_of_pos_left Real.pi_pos (by positivity) (by norm_num)]
+    linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
+
+/-- `1 + cos(π / (n + 1)) = 2 cos²(π / (2(n + 1)))`. -/
+private theorem one_add_cos_angle (n : ℕ) :
+    1 + Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+  have h : π / ((n : ℝ) + 1) = 2 * (π / (2 * ((n : ℝ) + 1))) := by
+    field_simp
+  rw [h, Real.cos_sq]
+  ring
+
+/-- `1 - cos(π / (n + 1)) = 2 sin²(π / (2(n + 1)))`. -/
+private theorem one_sub_cos_angle (n : ℕ) :
+    1 - Real.cos (π / ((n : ℝ) + 1)) = 2 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+  have h : π / ((n : ℝ) + 1) = 2 * (π / (2 * ((n : ℝ) + 1))) := by
+    field_simp
+  rw [h, Real.cos_two_mul, Real.cos_sq']
+  ring
+
+/-- Every eigenvalue of the model Laplacian lies in `[4 sin²(π/(2(n+1))), 4 cos²(π/(2(n+1)))]`. -/
+private theorem eigenvalue_neg_one_two_mem_Icc {μ : ℝ}
+    (hμ : Module.End.HasEigenvalue (toEuclideanLin (symmTridiagonalToeplitz n (-1) 2)) μ) :
+    μ ∈ Set.Icc (4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2)
+      (4 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2) := by
+  have h := (isSymmetricBoundedBy_symmTridiagonalToeplitz n (-1) 2).re_mem_Icc_of_hasEigenvalue hμ
+  rw [RCLike.re_to_real] at h
+  simp only [abs_neg, abs_one] at h
+  exact ⟨by linarith [h.1, one_sub_cos_angle n], by linarith [h.2, one_add_cos_angle n]⟩
+
+/-- **The spectral norm of the model Laplacian**: `‖tridiag(-1, 2, -1)‖₂ = 4 cos²(π / (2(n + 1)))`,
+its largest eigenvalue, attained by the last discrete sine vector. -/
+theorem l2_opNorm_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
+    ‖symmTridiagonalToeplitz n (-1) 2‖ = 4 * Real.cos (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+  refine (symmTridiagonalToeplitz_isHermitian (-1) 2).l2_opNorm_eq (fun μ hμ => ?_) ?_
+  · rw [RCLike.re_to_real]
+    have h := eigenvalue_neg_one_two_mem_Icc hμ
+    rw [abs_le]
+    constructor <;> nlinarith [h.1, h.2, sq_nonneg (Real.sin (π / (2 * ((n : ℝ) + 1))))]
+  · refine ⟨_, (symmTridiagonalToeplitz_hasEigenvalue_iff (-1) 2 _).2 ⟨⟨n - 1, by omega⟩, rfl⟩, ?_⟩
+    rw [RCLike.re_to_real]
+    have hcast : ((((⟨n - 1, by omega⟩ : Fin n) : ℕ) : ℝ) + 1) = (n : ℝ) := by
+      rw [Fin.val_mk, Nat.cast_sub hn, Nat.cast_one]
+      ring
+    have hrw : ((((⟨n - 1, by omega⟩ : Fin n) : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)
+        = π - π / ((n : ℝ) + 1) := by
+      rw [hcast]
+      field_simp
+      ring
+    have hnn : 0 ≤ 2 + 2 * -1 * -Real.cos (π / ((n : ℝ) + 1)) := by
+      nlinarith [one_add_cos_angle n, sq_nonneg (Real.cos (π / (2 * ((n : ℝ) + 1))))]
+    rw [hrw, Real.cos_pi_sub, abs_of_nonneg hnn]
+    linarith [one_add_cos_angle n]
+
+/-- **The spectral norm of the inverse of the model Laplacian**: `‖tridiag(-1, 2, -1)⁻¹‖₂ = 1 / (4
+sin²(π / (2(n + 1))))`, the reciprocal of its smallest eigenvalue, attained by the first discrete
+sine vector. -/
+theorem l2_opNorm_inv_symmTridiagonalToeplitz_neg_one_two (hn : 0 < n) :
+    ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖ = (4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2)⁻¹ := by
+  have hpos : 0 < 4 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+    have := sin_half_angle_pos n
+    positivity
+  refine (symmTridiagonalToeplitz_isHermitian (-1) 2).l2_opNorm_inv_eq hpos (fun μ hμ => ?_) ?_
+  · rw [RCLike.re_to_real]
+    exact (eigenvalue_neg_one_two_mem_Icc hμ).1.trans (le_abs_self μ)
+  · refine ⟨_, (symmTridiagonalToeplitz_hasEigenvalue_iff (-1) 2 _).2 ⟨⟨0, hn⟩, rfl⟩, ?_⟩
+    rw [RCLike.re_to_real]
+    simp only [Nat.cast_zero, zero_add, one_mul]
+    have hnn : 0 ≤ 2 + 2 * -1 * Real.cos (π / ((n : ℝ) + 1)) := by
+      nlinarith [one_sub_cos_angle n, sq_nonneg (Real.sin (π / (2 * ((n : ℝ) + 1))))]
+    rw [abs_of_nonneg hnn]
+    linarith [one_sub_cos_angle n]
+
+/-- **The spectral condition number of the model Laplacian**: `‖T‖₂ ‖T⁻¹‖₂ = cot²(π / (2(n + 1)))`
+for `T = tridiag(-1, 2, -1)`, the ratio of its extreme eigenvalues `4 cos²(π/(2(n+1)))` and `4
+sin²(π/(2(n+1)))`. This is the `K₂ = O(h⁻²)` of [quarteroni2000numerical] §12.4.5 for the model
+stiffness matrix `h⁻¹ T` (the scaling cancels), and the growth `(n + 1)²` that motivates
+preconditioning. On no indices both norms and `cot(π / 2)` vanish, so the identity holds for every
+`n`. -/
+theorem condNumber_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
+    ‖symmTridiagonalToeplitz n (-1) 2‖ * ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖
+      = Real.cot (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have h0 : symmTridiagonalToeplitz 0 (-1) 2 = 0 := Subsingleton.elim _ _
+    rw [h0, inv_zero, norm_zero, zero_mul, Real.cot_eq_cos_div_sin]
+    norm_num
+  · rw [l2_opNorm_symmTridiagonalToeplitz_neg_one_two hn,
+      l2_opNorm_inv_symmTridiagonalToeplitz_neg_one_two hn, Real.cot_eq_cos_div_sin, div_pow]
+    have := sin_half_angle_pos n
+    field_simp
+
+/-- The spectral condition number of the model Laplacian is at most `(2(n + 1) / π)²`: `cot x ≤
+1/x` on `(0, π/2)`, since `x < tan x` there. -/
+theorem condNumber_symmTridiagonalToeplitz_neg_one_two_le (n : ℕ) :
+    ‖symmTridiagonalToeplitz n (-1) 2‖ * ‖(symmTridiagonalToeplitz n (-1) 2)⁻¹‖
+      ≤ (2 * ((n : ℝ) + 1) / π) ^ 2 := by
+  rw [condNumber_symmTridiagonalToeplitz_neg_one_two]
+  have h0 : 0 ≤ Real.cot (π / (2 * ((n : ℝ) + 1))) := by
+    rw [Real.cot_eq_cos_div_sin]
+    exact div_nonneg (cos_half_angle_nonneg n) (sin_half_angle_pos n).le
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.cast_zero, zero_add, mul_one]
+    rw [Real.cot_eq_cos_div_sin, Real.cos_pi_div_two, zero_div, zero_pow two_ne_zero]
+    positivity
+  have hx : 0 < π / (2 * ((n : ℝ) + 1)) := by positivity
+  have hlt : π / (2 * ((n : ℝ) + 1)) < π / 2 := by
+    rw [div_lt_div_iff_of_pos_left Real.pi_pos (by positivity) (by norm_num)]
+    have : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    linarith
+  have htan := Real.lt_tan hx hlt
+  have hcot : Real.cot (π / (2 * ((n : ℝ) + 1))) = (Real.tan (π / (2 * ((n : ℝ) + 1))))⁻¹ := by
+    rw [Real.cot_eq_cos_div_sin, Real.tan_eq_sin_div_cos, inv_div]
+  have hinv : (2 * ((n : ℝ) + 1) / π) = (π / (2 * ((n : ℝ) + 1)))⁻¹ := by rw [inv_div]
+  rw [hcot] at h0 ⊢
+  rw [hinv]
+  exact pow_le_pow_left₀ h0 (inv_anti₀ hx htan.le) 2
+
+end SpectralNorm
+
+end NegOneTwo
 
 /-! ### The general tridiagonal Toeplitz matrix
 

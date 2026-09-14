@@ -29,20 +29,28 @@ id = "IsSimilar.pow"
 id = "IsSimilar.finrank_ker_mulVecLin_eq"
 
 [[node]]
-id = "IsUnitarilySimilar"
-kind = "definition"
-desc = '''`Matrix.IsUnitarilySimilar (A B : Matrix n n 𝕜) : Prop := ∃ U ∈ unitaryGroup n 𝕜, B = star U * A * U` (`RCLike 𝕜`), with `IsUnitarilySimilar.isSimilar` (`U⁻¹ = star U` for a unitary, `Matrix.inv_eq_left_inv`). Quarteroni–Sacco–Saleri Definition 1.14, second sentence; the Schur, spectral and normal theorems of the backbone produce this relation. ★'''
-deps = ["Matrix.IsSimilar"]
-
-[[node]]
 id = "isSimilar_diagonal_iff_exists_basis_eigenvectors"
-source = 'Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.6'
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.6"
 
 [[node]]
 id = "isSimilar_diagonal_iff_iSup_eigenspace_eq_top"
 
 [[node]]
+id = "IsUnitarilySimilar"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.14"
+
+[[node]]
+id = "IsUnitarilySimilar.isSimilar"
+
+[[node]]
+id = "IsUnitarilySimilar.refl"
+
+[[node]]
+id = "IsUnitarilySimilar.symm"
+
+[[node]]
+id = "IsUnitarilySimilar.trans"
+
+[[node]]
 id = "isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity"
-kind = "theorem"
-desc = '''Over an algebraically closed field: `(∃ d, IsSimilar A (diagonal d)) ↔ ∀ μ, finrank K (Module.End.eigenspace (toLin' A) μ) = A.charpoly.rootMultiplicity μ` — a matrix is diagonalizable iff it is nondefective, Quarteroni–Sacco–Saleri §1.8 after Property 1.6. Proof: `∑_μ geometric ≤ ∑_μ algebraic = n` (`finrank_eigenspace_le_rootMultiplicity_charpoly` of the Jordan EXT, `Polynomial.sum_rootMultiplicity_eq_natDegree` for a split polynomial), with equality of the sums iff `⨆ eigenspace = ⊤` (the eigenspaces are independent, `Module.End.eigenspaces_iSupIndep`) iff termwise equality. ★★'''
-deps = ["Matrix.isSimilar_diagonal_iff_iSup_eigenspace_eq_top", "Matrix.finrank_eigenspace_le_rootMultiplicity_charpoly"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.8 (after Property 1.6)"

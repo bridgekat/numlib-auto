@@ -11,6 +11,7 @@ import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.LinearAlgebra.Matrix.Block
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 
 /-!
 # The real Schur form
@@ -33,6 +34,11 @@ two*, and that is exactly where the `2 × 2` blocks come from.
   elements, with `⟪b i, A (b j)⟫ = 0` whenever `p j < p i`.
 * `Matrix.exists_orthogonal_conj_quasiUpperTriangular`: the matrix form, `Qᵀ A Q` quasi upper
   triangular for an orthogonal `Q`.
+* `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`: the sharper form
+  of [quarteroni2000numerical] Property 5.8, in which no `2 × 2` diagonal block has a real
+  eigenvalue, so that the `2 × 2` blocks carry exactly the pairs of complex conjugate eigenvalues.
+  It rests on `LinearMap.exists_invariant_finrank_eq_one_or_two`: an operator with an eigenvector
+  has an invariant line, and one without has no eigenvector on any invariant plane either.
 
 ## Implementation notes
 
@@ -49,7 +55,10 @@ takes on the first `m`.
 
 The bound "at most two elements per block" is carried through the induction in the equivalent form
 `∀ i j, p i = p j → (i : ℕ) ≤ (j : ℕ) + 1`, which propagates without any counting, and is turned
-into a statement about cardinalities once, at the end.
+into a statement about cardinalities once, at the end. The irreducibility of the `2 × 2` blocks is
+carried as the statement that, for two distinct indices `i, j` of one block, the characteristic
+polynomial `(a_ii - μ)(a_jj - μ) - a_ij a_ji` of the block has no real root, which is symmetric
+in `i, j` and speaks only of four inner products; it becomes `μ ∉ spectrum ℝ (block)` at the end.
 -/
 
 open Module Polynomial Submodule
@@ -168,6 +177,29 @@ theorem exists_invariant_finrank_le_two [Nontrivial E] (A : E →ₗ[ℝ] E) :
       · exact hAAw
     exact hsub hx
 
+/-- **A real operator has an invariant line, or an invariant plane on which it has no
+eigenvector.** This refinement of `LinearMap.exists_invariant_finrank_le_two` is what produces the
+real Schur form with *irreducible* `2 × 2` blocks: if `A` has an eigenvector at all, take the line
+it spans; otherwise `A` has no eigenvector anywhere, and any invariant subspace of dimension at
+most two — necessarily a plane, a line being spanned by an eigenvector — will do. -/
+theorem exists_invariant_finrank_eq_one_or_two [Nontrivial E] (A : E →ₗ[ℝ] E) :
+    ∃ W : Submodule ℝ E, (∀ w ∈ W, A w ∈ W) ∧
+      (finrank ℝ W = 1 ∨ finrank ℝ W = 2 ∧ ∀ (μ : ℝ), ∀ w ∈ W, A w = μ • w → w = 0) := by
+  by_cases h : ∃ (μ : ℝ) (v : E), v ≠ 0 ∧ A v = μ • v
+  · obtain ⟨μ, v, hv, hAv⟩ := h
+    refine ⟨ℝ ∙ v, fun w hw => ?_, Or.inl (finrank_span_singleton hv)⟩
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.1 hw
+    rw [map_smul, hAv, smul_smul]
+    exact Submodule.mem_span_singleton.2 ⟨_, rfl⟩
+  · obtain ⟨W, hW0, hWd, hWinv⟩ := exists_invariant_finrank_le_two A
+    refine ⟨W, hWinv, ?_⟩
+    have h0 : finrank ℝ W ≠ 0 := fun h0 => hW0 (Submodule.finrank_eq_zero.1 h0)
+    rcases (show finrank ℝ W = 1 ∨ finrank ℝ W = 2 by omega) with h1 | h2
+    · exact Or.inl h1
+    · refine Or.inr ⟨h2, fun μ w _ hw => ?_⟩
+      by_contra hne
+      exact h ⟨μ, w, hne, hw⟩
+
 end Invariant
 
 /-! ### The quasi-triangular orthonormal basis -/
@@ -186,6 +218,66 @@ theorem mem_orthogonal_of_adjoint_invariant [FiniteDimensional ℝ E] {A : E →
   rw [← LinearMap.adjoint_inner_left]
   exact hy _ (hW u hu)
 
+/-- The `2 × 2` block of the real Schur form is irreducible: if the plane `W`, invariant under the
+adjoint, carries no eigenvector of the adjoint, then the compression of `A` to an orthonormal basis
+of `W` has no real eigenvalue — the characteristic polynomial `(a₀₀ - μ)(a₁₁ - μ) - a₀₁ a₁₀` of
+the block has no real root. A root `μ` would give a kernel vector `c` of the transposed block, and
+`c₀ w₀ + c₁ w₁` would be an eigenvector of the adjoint in `W`. -/
+private theorem block_ne_zero [FiniteDimensional ℝ E] {A : E →ₗ[ℝ] E} {W : Submodule ℝ E}
+    (hW : ∀ w ∈ W, LinearMap.adjoint A w ∈ W)
+    (hW2 : ∀ (μ : ℝ), ∀ w ∈ W, LinearMap.adjoint A w = μ • w → w = 0)
+    (wb : OrthonormalBasis (Fin 2) ℝ W) (μ : ℝ) {a b : Fin 2} (hab : a ≠ b) :
+    (inner ℝ (wb a : E) (A (wb a)) - μ) * (inner ℝ (wb b : E) (A (wb b)) - μ)
+      - inner ℝ (wb a : E) (A (wb b)) * inner ℝ (wb b : E) (A (wb a)) ≠ 0 := by
+  suffices key : (inner ℝ (wb 0 : E) (A (wb 0)) - μ) * (inner ℝ (wb 1 : E) (A (wb 1)) - μ)
+      - inner ℝ (wb 0 : E) (A (wb 1)) * inner ℝ (wb 1 : E) (A (wb 0)) ≠ 0 by
+    have h2 : ∀ i : Fin 2, i = 0 ∨ i = 1 := by decide
+    rcases h2 a with rfl | rfl <;> rcases h2 b with rfl | rfl
+    · exact absurd rfl hab
+    · exact key
+    · intro h
+      apply key
+      linear_combination h
+    · exact absurd rfl hab
+  intro hzero
+  obtain ⟨B, hB⟩ : ∃ B : E →ₗ[ℝ] E, B = LinearMap.adjoint A := ⟨_, rfl⟩
+  rw [← hB] at hW hW2
+  have hadj : ∀ x y : W, inner ℝ (x : E) (A y) = inner ℝ (y : E) (B x) := fun x y => by
+    rw [hB, ← LinearMap.adjoint_inner_left, real_inner_comm]
+  -- `B` expanded on the orthonormal basis of `W`
+  have hexp : ∀ x : W, B x = inner ℝ (wb 0 : E) (B x) • (wb 0 : E)
+      + inner ℝ (wb 1 : E) (B x) • (wb 1 : E) := by
+    intro x
+    have h := congrArg Subtype.val (wb.sum_repr' ⟨B x, hW x x.2⟩)
+    rw [Fin.sum_univ_two] at h
+    simpa [Submodule.coe_inner] using h.symm
+  -- the characteristic polynomial of the block matrix of `B` vanishes at `μ`
+  obtain ⟨N, hN⟩ : ∃ N : Matrix (Fin 2) (Fin 2) ℝ,
+      N = Matrix.of fun i j => inner ℝ (wb i : E) (B (wb j)) - if i = j then μ else 0 :=
+    ⟨_, rfl⟩
+  have hdet : N.det = 0 := by
+    rw [Matrix.det_fin_two, hN]
+    simp only [Matrix.of_apply, ite_true, Fin.zero_eq_one_iff, Fin.one_eq_zero_iff, ite_false,
+      sub_zero, OfNat.ofNat_ne_one]
+    rw [hadj, hadj, hadj, hadj] at hzero
+    linear_combination hzero
+  obtain ⟨c, hc0, hNc⟩ := Matrix.exists_mulVec_eq_zero_iff.2 hdet
+  have h0 := congrFun hNc 0
+  have h1 := congrFun hNc 1
+  simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_two, hN, Matrix.of_apply, Pi.zero_apply,
+    ite_true, Fin.zero_eq_one_iff, Fin.one_eq_zero_iff, ite_false, sub_zero,
+    OfNat.ofNat_ne_one] at h0 h1
+  -- the eigenvector of `B` in `W`
+  obtain ⟨v, hv⟩ : ∃ v : W, v = c 0 • wb 0 + c 1 • wb 1 := ⟨_, rfl⟩
+  have hBv : B v = μ • (v : E) := by
+    rw [hv, Submodule.coe_add, Submodule.coe_smul, Submodule.coe_smul, map_add, map_smul,
+      map_smul, hexp (wb 0), hexp (wb 1)]
+    linear_combination (norm := module) h0 • (wb 0 : E) + h1 • (wb 1 : E)
+  have hv0 : v = 0 := Submodule.coe_eq_zero.1 (hW2 μ v v.2 hBv)
+  have hli := Fintype.linearIndependent_iff.1 wb.orthonormal.linearIndependent c
+    (by rw [Fin.sum_univ_two, ← hv, hv0])
+  exact hc0 (funext hli)
+
 /-- The induction behind the real Schur form: an orthonormal basis in which the entries of `A`
 below the diagonal blocks vanish. The space is quantified inside the statement because the
 induction descends to the orthogonal complement of the peeled subspace, and the block bound is
@@ -195,26 +287,32 @@ private theorem exists_orthonormalBasis_aux (n : ℕ) :
       finrank ℝ E = n → ∀ A : E →ₗ[ℝ] E,
         ∃ (b : OrthonormalBasis (Fin n) ℝ E) (p : Fin n → ℕ), Monotone p ∧ (∀ i, p i < n) ∧
           (∀ i j, p i = p j → (i : ℕ) ≤ (j : ℕ) + 1) ∧
-          ∀ i j : Fin n, p j < p i → (inner ℝ (b i) (A (b j)) : ℝ) = 0 := by
+          (∀ i j : Fin n, p j < p i → (inner ℝ (b i) (A (b j)) : ℝ) = 0) ∧
+          ∀ i j : Fin n, p i = p j → i ≠ j → ∀ μ : ℝ,
+            (inner ℝ (b i) (A (b i)) - μ) * (inner ℝ (b j) (A (b j)) - μ)
+              - inner ℝ (b i) (A (b j)) * inner ℝ (b j) (A (b i)) ≠ 0 := by
   induction n using Nat.strong_induction_on with
   | _ n ih =>
     intro E _ _ _ hE A
     rcases Nat.eq_zero_or_pos n with rfl | hn
     · exact ⟨(stdOrthonormalBasis ℝ E).reindex (finCongr hE), fun i => i.elim0,
-        fun i => i.elim0, fun i => i.elim0, fun i => i.elim0, fun i => i.elim0⟩
+        fun i => i.elim0, fun i => i.elim0, fun i => i.elim0, fun i => i.elim0, fun i => i.elim0⟩
     have : Nontrivial E := nontrivial_of_finrank_pos (R := ℝ) (by rw [hE]; exact hn)
-    obtain ⟨W, hW0, hWd, hWinv⟩ := exists_invariant_finrank_le_two (LinearMap.adjoint A)
+    obtain ⟨W, hWinv, hW⟩ := exists_invariant_finrank_eq_one_or_two (LinearMap.adjoint A)
     obtain ⟨d, hd⟩ : ∃ d, finrank ℝ W = d := ⟨_, rfl⟩
     obtain ⟨m, hm⟩ : ∃ m, finrank ℝ (Wᗮ : Submodule ℝ E) = m := ⟨_, rfl⟩
-    have hd1 : 1 ≤ d := by
-      rw [← hd]
-      exact Submodule.one_le_finrank_iff.2 hW0
-    have hd2 : d ≤ 2 := hd ▸ hWd
+    have hd1 : 1 ≤ d := by rcases hW with h | ⟨h, -⟩ <;> omega
+    have hd2 : d ≤ 2 := by rcases hW with h | ⟨h, -⟩ <;> omega
+    have hW2 : d = 2 → ∀ (μ : ℝ), ∀ w ∈ W, LinearMap.adjoint A w = μ • w → w = 0 := by
+      intro hd2'
+      rcases hW with h | ⟨-, h⟩
+      · omega
+      · exact h
     have hsum : d + m = n := by
       rw [← hd, ← hm, Submodule.finrank_add_finrank_orthogonal, hE]
     have hinv : ∀ y ∈ (Wᗮ : Submodule ℝ E), A y ∈ (Wᗮ : Submodule ℝ E) := fun _ hy =>
       mem_orthogonal_of_adjoint_invariant hWinv hy
-    obtain ⟨c, p', hp'mono, hp'lt, hp'close, hp'tri⟩ :=
+    obtain ⟨c, p', hp'mono, hp'lt, hp'close, hp'tri, hp'irr⟩ :=
       ih m (by omega) (E := (Wᗮ : Submodule ℝ E)) hm (A.restrict hinv)
     obtain ⟨wb, -⟩ : ∃ wb : OrthonormalBasis (Fin d) ℝ W, True :=
       ⟨(stdOrthonormalBasis ℝ W).reindex (finCongr hd), trivial⟩
@@ -260,8 +358,14 @@ private theorem exists_orthonormalBasis_aux (n : ℕ) :
             exact wb.orthonormal.2 fun h => hij (by rw [h])
     have hcard : Fintype.card (Fin (m + d)) = finrank ℝ E := by simp [hE]
     have : Nonempty (Fin (m + d)) := Fin.pos_iff_nonempty.1 (by omega)
+    -- the inner products of the first `m` vectors are those of the smaller space
+    have hinner : ∀ i j : Fin m, inner ℝ (f (Fin.castAdd d i)) (A (f (Fin.castAdd d j)))
+        = inner ℝ (c i) ((A.restrict hinv) (c j)) := fun i j => by
+      rw [hfl, hfl, show A ((c j : (Wᗮ : Submodule ℝ E)) : E)
+          = (((A.restrict hinv) (c j) : (Wᗮ : Submodule ℝ E)) : E) from rfl,
+        ← Submodule.coe_inner]
     refine ⟨(basisOfOrthonormalOfCardEqFinrank hon hcard).toOrthonormalBasis (by simpa using hon),
-      p, ?_, ?_, ?_, ?_⟩
+      p, ?_, ?_, ?_, ?_, ?_⟩
     · intro i j hle
       induction i using Fin.addCases with
       | left i =>
@@ -308,10 +412,8 @@ private theorem exists_orthonormalBasis_aux (n : ℕ) :
       | left i =>
         induction j using Fin.addCases with
         | left j =>
-          rw [hfl, hfl, show A ((c j : (Wᗮ : Submodule ℝ E)) : E)
-              = (((A.restrict hinv) (c j) : (Wᗮ : Submodule ℝ E)) : E) from rfl,
-            ← Submodule.coe_inner]
           rw [hpl, hpl] at hji
+          rw [hinner]
           exact hp'tri i j hji
         | right j =>
           exfalso
@@ -327,6 +429,33 @@ private theorem exists_orthonormalBasis_aux (n : ℕ) :
           exfalso
           rw [hpr, hpr] at hji
           omega
+    · intro i j hij hne μ
+      rw [Module.Basis.coe_toOrthonormalBasis, coe_basisOfOrthonormalOfCardEqFinrank]
+      induction i using Fin.addCases with
+      | left i =>
+        induction j using Fin.addCases with
+        | left j =>
+          rw [hpl, hpl] at hij
+          simp only [hinner]
+          exact hp'irr i j hij (fun h => hne (by rw [h])) μ
+        | right j =>
+          rw [hpl, hpr] at hij
+          exact absurd hij (Nat.ne_of_lt (hp'lt i))
+      | right i =>
+        induction j using Fin.addCases with
+        | left j =>
+          rw [hpr, hpl] at hij
+          exact absurd hij.symm (Nat.ne_of_lt (hp'lt j))
+        | right j =>
+          -- two distinct indices in the new block: it is a plane without eigenvectors
+          have hab : i ≠ j := fun h => hne (by rw [h])
+          obtain rfl : d = 2 := by
+            have := Fin.val_ne_of_ne hab
+            have := i.isLt
+            have := j.isLt
+            omega
+          rw [hfr, hfr]
+          exact block_ne_zero hWinv (hW2 rfl) wb μ hab
 
 /-- A block index on `Fin n` whose equal values are always within one of each other has fibres of
 at most two elements: three of them would contain two at distance two or more. -/
@@ -362,8 +491,27 @@ theorem exists_orthonormalBasis_quasiUpperTriangular {n : ℕ} (hn : finrank ℝ
     ∃ (b : OrthonormalBasis (Fin n) ℝ E) (p : Fin n → ℕ), Monotone p ∧
       (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
       ∀ i j : Fin n, p j < p i → (inner ℝ (b i) (A (b j)) : ℝ) = 0 := by
-  obtain ⟨b, p, hmono, -, hclose, htri⟩ := exists_orthonormalBasis_aux n hn A
+  obtain ⟨b, p, hmono, -, hclose, htri, -⟩ := exists_orthonormalBasis_aux n hn A
   exact ⟨b, p, hmono, fun k => card_filter_le_two hclose k, htri⟩
+
+/-- **The real Schur form with irreducible `2 × 2` blocks**, operator form
+([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): the basis of
+`LinearMap.exists_orthonormalBasis_quasiUpperTriangular` can be chosen so that no `2 × 2` diagonal
+block has a real eigenvalue — for two distinct indices `i, j` of one block, the characteristic
+polynomial `(a_ii - μ)(a_jj - μ) - a_ij a_ji` of the block has no real root `μ` — so that each
+`2 × 2` block carries a pair of complex conjugate eigenvalues. The induction peels off, at each
+step, an invariant line of the adjoint or an invariant plane on which the adjoint has no
+eigenvector (`LinearMap.exists_invariant_finrank_eq_one_or_two`). -/
+theorem exists_orthonormalBasis_quasiUpperTriangular_of_irreducible_blocks {n : ℕ}
+    (hn : finrank ℝ E = n) (A : E →ₗ[ℝ] E) :
+    ∃ (b : OrthonormalBasis (Fin n) ℝ E) (p : Fin n → ℕ), Monotone p ∧
+      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
+      (∀ i j : Fin n, p j < p i → (inner ℝ (b i) (A (b j)) : ℝ) = 0) ∧
+      ∀ i j : Fin n, p i = p j → i ≠ j → ∀ μ : ℝ,
+        (inner ℝ (b i) (A (b i)) - μ) * (inner ℝ (b j) (A (b j)) - μ)
+          - inner ℝ (b i) (A (b j)) * inner ℝ (b j) (A (b i)) ≠ 0 := by
+  obtain ⟨b, p, hmono, -, hclose, htri, hirr⟩ := exists_orthonormalBasis_aux n hn A
+  exact ⟨b, p, hmono, fun k => card_filter_le_two hclose k, htri, hirr⟩
 
 end QuasiTriangular
 
@@ -371,18 +519,23 @@ end LinearMap
 
 namespace Matrix
 
-/-- **The real Schur form**, matrix form: a real square matrix is orthogonally similar to a *quasi
-upper triangular* matrix, `Qᵀ A Q` block upper triangular with diagonal blocks of size `1 × 1` or
-`2 × 2`. This is the quasi-Schur form of [saad2003iterative] §1.8.3, and unlike the complex Schur
-triangulation it needs no complex arithmetic.
+/-- **The real Schur form with irreducible `2 × 2` blocks**, matrix form
+([quarteroni2000numerical] Property 5.8; Golub–Van Loan Theorem 7.4.1): a real square matrix is
+orthogonally similar to a quasi upper triangular matrix `Qᵀ A Q` none of whose `2 × 2` diagonal
+blocks has a real eigenvalue, so that each carries a pair of complex conjugate eigenvalues while
+the `1 × 1` blocks carry the real ones. The blocks are the fibres of the monotone block index `p`,
+and `(Qᵀ * A * Q).toBlock (fun i => p i = k) (fun i => p i = k)` is the `k`-th diagonal block.
 
 `Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
 below is `Qᵀ Q = 1`. -/
-theorem exists_orthogonal_conj_quasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
+theorem exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ p : Fin N → ℕ, Monotone p ∧
-      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p := by
-  obtain ⟨b, p, hmono, hcard, htri⟩ :=
-    LinearMap.exists_orthonormalBasis_quasiUpperTriangular
+      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p ∧
+      ∀ k, (Finset.univ.filter fun i => p i = k).card = 2 → ∀ μ : ℝ,
+        μ ∉ spectrum ℝ ((Qᵀ * A * Q).toBlock (fun i => p i = k) (fun i => p i = k)) := by
+  obtain ⟨b, p, hmono, hcard, htri, hirr⟩ :=
+    LinearMap.exists_orthonormalBasis_quasiUpperTriangular_of_irreducible_blocks
       (E := EuclideanSpace ℝ (Fin N)) (n := N) finrank_euclideanSpace_fin (Matrix.toEuclideanLin A)
   obtain ⟨v₀, hv₀⟩ : ∃ v₀ : OrthonormalBasis (Fin N) ℝ (EuclideanSpace ℝ (Fin N)),
       v₀ = EuclideanSpace.basisFun (Fin N) ℝ := ⟨_, rfl⟩
@@ -408,10 +561,43 @@ theorem exists_orthogonal_conj_quasiUpperTriangular {N : ℕ} (A : Matrix (Fin N
     conv_lhs => rw [← hA, ← hstarQ, ← hstar, hQdef]
     exact basis_toMatrix_mul_linearMap_toMatrix_mul_basis_toMatrix b.toBasis v₀.toBasis
       b.toBasis v₀.toBasis (Matrix.toEuclideanLin A)
-  refine ⟨Q, hQu, p, hmono, hcard, ?_⟩
-  intro i j hji
-  rw [hconj, LinearMap.toMatrix_apply, OrthonormalBasis.coe_toBasis,
-    OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
-  exact htri i j hji
+  -- the entries of `Qᵀ A Q` are the inner products `⟪b i, A (b j)⟫`
+  have hT : ∀ i j, (Qᵀ * A * Q) i j = inner ℝ (b i) (Matrix.toEuclideanLin A (b j)) := by
+    intro i j
+    rw [hconj, LinearMap.toMatrix_apply, OrthonormalBasis.coe_toBasis,
+      OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
+  refine ⟨Q, hQu, p, hmono, hcard, fun i j hji => ?_, fun k hk μ hμ => ?_⟩
+  · rw [hT]
+    exact htri i j hji
+  · -- a `2 × 2` block with a real eigenvalue would contradict the irreducibility
+    rw [Matrix.mem_spectrum_iff_isRoot_charpoly, Polynomial.IsRoot.def,
+      Matrix.eval_charpoly] at hμ
+    have hcard2 : Fintype.card {i // p i = k} = 2 := by
+      rw [Fintype.card_subtype]
+      exact hk
+    obtain ⟨e, he⟩ : ∃ e : {i // p i = k} ≃ Fin 2, e = Fintype.equivFinOfCardEq hcard2 :=
+      ⟨_, rfl⟩
+    rw [← Matrix.det_reindex_self e, Matrix.det_fin_two] at hμ
+    simp only [Matrix.reindex_apply, Matrix.submatrix_apply, Matrix.sub_apply, Matrix.scalar_apply,
+      Matrix.diagonal_apply_eq, Matrix.toBlock_apply, hT] at hμ
+    have hne : e.symm 0 ≠ e.symm 1 := e.symm.injective.ne (by decide)
+    rw [Matrix.diagonal_apply_ne _ hne, Matrix.diagonal_apply_ne _ hne.symm] at hμ
+    refine hirr (e.symm 0).1 (e.symm 1).1 (by rw [(e.symm 0).2, (e.symm 1).2])
+      (fun h => hne (Subtype.ext h)) μ ?_
+    linear_combination hμ
+
+/-- **The real Schur form**, matrix form: a real square matrix is orthogonally similar to a *quasi
+upper triangular* matrix, `Qᵀ A Q` block upper triangular with diagonal blocks of size `1 × 1` or
+`2 × 2`. This is the quasi-Schur form of [saad2003iterative] §1.8.3, and unlike the complex Schur
+triangulation it needs no complex arithmetic.
+
+`Matrix.orthogonalGroup` is `Matrix.unitaryGroup` over a ring with trivial star, so the membership
+below is `Qᵀ Q = 1`. -/
+theorem exists_orthogonal_conj_quasiUpperTriangular {N : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
+    ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ p : Fin N → ℕ, Monotone p ∧
+      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p := by
+  obtain ⟨Q, hQ, p, hmono, hcard, htri, -⟩ :=
+    exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
+  exact ⟨Q, hQ, p, hmono, hcard, htri⟩
 
 end Matrix
