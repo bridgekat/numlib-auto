@@ -1,56 +1,19 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.8, Runge–Kutta methods: the general form (11.70)–(11.71) and the Butcher array, the row-sum
-condition (11.72), explicit/implicit/semi-implicit methods, the truncation error and the
-consistency condition `∑ b_i = 1`, Property 11.4 (Butcher's barrier) and the classical method
-(11.73); the derivation of the two-stage order-two conditions (§11.8.1); embedded pairs (11.76)
-and the Runge–Kutta–Fehlberg pair (§11.8.2); the Gauss–Legendre, Radau, Lobatto and DIRK
-families (§11.8.3); and the stability function and the regions of absolute stability (§11.8.4).
-Scalar restatements of `Numlib/ODE/RungeKutta`.
-
-Skipped: Remark 11.4 (prose: the order in the vector case may differ for `p ≥ 4`, no statement to
-formalize), Remark 11.5 (MATLAB), the step-doubling heuristics (11.74)–(11.75) (asymptotic
-expansions with unspecified remainders), the `s_min` table (part of Property 11.4).
-'''
 
 [[node]]
 id = "equation_11_71"
-kind = "definition"
-desc = '''The `s`-stage Runge–Kutta method `u_{n+1} = u_n + h F(t_n, u_n, h; f)`, `F = ∑ b_i K_i`,
-`K_i = f(t_n + c_i h, u_n + h ∑_j a_ij K_j)` (11.70)–(11.71), with Butcher array `(A, b, c)`:
-`ODE.ButcherTableau s` and `tab.stepRel f` at `E = ℝ`; explicit when `a_ij = 0` for `j ≥ i`
-(`tab.IsExplicit`), semi-implicit when `a_ij = 0` for `j > i` (`tab.IsSemiImplicit`), implicit
-otherwise. For an explicit method `F` is `tab.explicitIncrement f`.'''
-deps = ["ODE.ButcherTableau", "ODE.ButcherTableau.stepRel", "ODE.ButcherTableau.IsExplicit", "ODE.ButcherTableau.explicitIncrement"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.71'
 
 [[node]]
 id = "equation_11_72"
-kind = "definition"
-desc = 'The row-sum condition `c_i = ∑_j a_ij`, assumed throughout §11.8: `tab.IsRowSum`.'
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "ODE.ButcherTableau.IsRowSum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.72'
 
 [[node]]
 id = "rungeKutta_consistent_iff"
-kind = "theorem"
-desc = '''The local truncation error `h τ_{n+1}(h) = y_{n+1} - y_n - h F(t_n, y_n, h; f)` of an RK
-method is `ODE.OneStep.lte (tab.explicitIncrement f)`, and the explicit method is consistent
-(along every `C¹` solution of a Lipschitz problem) iff `∑ b_i = 1`:
-`ODE.ButcherTableau.isConsistentFor_of_sum_b_eq_one` and `ODE.ButcherTableau.sum_b_eq_one_of_isConsistentFor`.
-The book cites [Lam91]. Order `p`: `τ(h) = O(h^p)`, `ODE.OneStep.HasOrderFor`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.ButcherTableau.isConsistentFor_of_sum_b_eq_one", "ODE.ButcherTableau.sum_b_eq_one_of_isConsistentFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8'
 
 [[node]]
 id = "rungeKutta_convergent"
-kind = "theorem"
-desc = '''"Since RK methods are one-step methods, consistency implies stability and, in turn,
-convergence": an explicit RK method with `f` Lipschitz in `y` has a Lipschitz increment, hence is
-zero-stable (Theorem 11.1) and, if consistent along the solution, convergent (Theorem 11.2), with
-order `p` when `τ(h) = O(h^p)`. `ODE.ButcherTableau.lipschitzIncrement_explicit` with
-`theorem_11_1`, `theorem_11_2`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.theorem_11_1", "QuarteroniSaccoSaleri.Chapter11.theorem_11_2", "ODE.ButcherTableau.lipschitzIncrement_explicit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8'
 
 [[node]]
@@ -67,79 +30,100 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.4'
 
 [[node]]
 id = "equation_11_73"
-kind = "definition"
-desc = '''The classical explicit four-stage method of order four,
-`u_{n+1} = u_n + (h/6)(K₁ + 2K₂ + 2K₃ + K₄)`, `K₁ = f_n`, `K₂ = f(t_n + h/2, u_n + (h/2)K₁)`,
-`K₃ = f(t_n + h/2, u_n + (h/2)K₂)`, `K₄ = f(t_{n+1}, u_n + hK₃)`: `ODE.rk4`, with the unfolded
-increment; `equation_11_73_order`: it has order 4 along `C⁴`-smooth problems
-(`ODE.rk4_hasOrderFor`, ★★★ in the backbone; the surface restatement itself is ★).'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "ODE.rk4", "ODE.rk4_hasOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.73'
 
 [[node]]
 id = "twoStageOrderConditions"
-kind = "theorem"
-desc = '''§11.8.1: a two-stage explicit RK method satisfying (11.72) has order 2 iff
-`b₁ + b₂ = 1` and `c₂ b₂ = 1/2` — the "only if" on the test problems `y' = 1`, `y' = 2t`
-(`ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`), the "if" for `C²` fields
-(`ODE.ButcherTableau.hasOrderFor_two_of`). Heun and the modified Euler method (11.91) are two
-such methods. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_72", "ODE.ButcherTableau.hasOrderFor_two_of", "ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8.1'
 
 [[node]]
 id = "equation_11_76"
-kind = "definition"
-desc = '''An embedded pair: two RK methods of orders `p` and `p + 1` with the same `A`, `c` and
-stages, weights `b` and `b̂`, and `E = b - b̂`; the difference of the two solutions
-`h ∑ E_i K_i` estimates the local error of the lower-order method without extra function
-evaluations. `ODE.EmbeddedPair`, `errorIndicator`, `errorIndicator_eq_sub`; the Runge–Kutta–Fehlberg
-4(5) pair is `ODE.rkf45` (`rkf45`, a definition node with the standard coefficients; the printed
-table is damaged in the source).'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "ODE.EmbeddedPair", "ODE.rkf45"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.76'
 
 [[node]]
 id = "implicitRungeKutta"
-kind = "definition"
-desc = '''§11.8.3, the implicit families as Butcher arrays: the Gauss–Legendre methods with `c_j`
-the roots of the Legendre polynomial `L_s` in `x = 2c - 1` and `a_ij`, `b_j` from the collocation
-systems `∑_j c_j^{k-1} a_ij = c_i^k / k`, `∑_j c_j^{k-1} b_j = 1/k` — the implicit midpoint rule
-(`ODE.ButcherTableau.implicitMidpoint`, order 2, with its unfolded step
-`u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)`) and the two-stage method of order 4
-(`ODE.ButcherTableau.gaussLegendre2`, with the collocation identities); the Radau tableaux
-(backward Euler and the two-stage Radau IIA), the Lobatto tableaux (Crank–Nicolson and its
-companions), and the three-stage DIRK tableau with `3μ³ - 3μ - 1 = 0`. The maximal orders `2s`,
-`2s - 1`, `2s - 2` and the order 4 of the DIRK family are quoted by the book without proof and
-are not formalized. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "ODE.ButcherTableau.implicitMidpoint", "ODE.ButcherTableau.gaussLegendre2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8.3'
 
 [[node]]
 id = "equation_11_77"
-kind = "theorem"
-desc = '''An `s`-stage RK method on the test problem gives `K = u_n 𝟙 + hλ A K`, `u_{n+1} = u_n + hλ bᵀK`
-(11.77), hence `u_{n+1} = R(hλ) u_n` with the stability function `R(z) = 1 + z bᵀ (I - z A)⁻¹ 𝟙`
-when `I - hλA` is invertible: `ODE.ButcherTableau.stabilityFunction`,
-`ODE.ButcherTableau.stepRel_testField_iff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.testProblem", "ODE.ButcherTableau.stabilityFunction", "ODE.ButcherTableau.stepRel_testField_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.77'
 
 [[node]]
 id = "rungeKutta_absStable_iff"
-kind = "theorem"
-desc = '''The RK method is absolutely stable iff `|R(hλ)| < 1`, and its region is
-`𝒜 = {z : |R(z)| < 1}` (with `I - zA` invertible — genuinely needed, see the backbone's counterexample): `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit`; for an explicit tableau `mem_absStabilityRegion_iff_of_isExplicit`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_77", "QuarteroniSaccoSaleri.Chapter11.definition_11_6", "ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8.4'
 
 [[node]]
 id = "rungeKutta_explicit_stabilityFunction"
-kind = "theorem"
-desc = '''For an explicit method `R(z) = det(I - zA + z 𝟙 bᵀ) / det(I - zA)` with `det(I - zA) = 1`, so
-`R` is a polynomial in `z` and `𝒜` can never be unbounded (`ODE.ButcherTableau.stabilityFunction_eq_det_of_isExplicit`,
-`ODE.ButcherTableau.not_isAStable_of_isExplicit`); for an explicit `s`-stage method of order `s`,
-`s = 1, …, 4`, `R(z) = ∑_{k=0}^s z^k / k!` (`ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder`),
-in particular `R_{rk4}(z) = 1 + z + z²/2 + z³/6 + z⁴/24` (`ODE.stabilityFunction_rk4`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.rungeKutta_absStable_iff", "QuarteroniSaccoSaleri.Chapter11.equation_11_73", "ODE.ButcherTableau.stabilityFunction_eq_det_of_isExplicit", "ODE.ButcherTableau.not_isAStable_of_isExplicit", "ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder", "ODE.stabilityFunction_rk4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.8.4'
+
+[[node]]
+id = "equation_11_71_iff"
+
+[[node]]
+id = "equation_11_72_iff"
+
+[[node]]
+id = "equation_11_71_explicit"
+
+[[node]]
+id = "equation_11_71_semiImplicit"
+
+[[node]]
+id = "equation_11_71_shapes"
+
+[[node]]
+id = "equation_11_70_increment"
+
+[[node]]
+id = "equation_11_71_explicit_iff"
+
+[[node]]
+id = "rungeKutta_lte"
+
+[[node]]
+id = "rungeKutta_lte_spec"
+
+[[node]]
+id = "equation_11_73_step"
+
+[[node]]
+id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three"
+
+[[node]]
+id = "equation_11_76_errorIndicator"
+
+[[node]]
+id = "equation_11_76_errorIndicator_eq"
+
+[[node]]
+id = "rkf45"
+
+[[node]]
+id = "rkf45_spec"
+
+[[node]]
+id = "gaussLegendre_tableaux"
+
+[[node]]
+id = "radau_tableaux"
+
+[[node]]
+id = "lobatto_tableaux"
+
+[[node]]
+id = "dirk_tableau"
+
+[[node]]
+id = "stabilityFunction"
+
+[[node]]
+id = "equation_11_73_order"
+kind = "theorem"
+desc = '''The classical method (11.73) has order four: `equation_11_14 (equation_11_70_increment equation_11_73 f) t₀ T y 4`
+along every `C⁴`-smooth solution of a problem with a `C⁴` field. The surface restatement of
+`ODE.rk4_hasOrderFor` (★★★ in the backbone); the restatement itself is ★.
+
+Blocked: `ODE.rk4_hasOrderFor` is open in the backbone (the fourth-order Taylor expansion of the
+four stages); the node stays open until it is proved.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_73", "QuarteroniSaccoSaleri.Chapter11.equation_11_14", "ODE.rk4_hasOrderFor"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.73'

@@ -124,8 +124,13 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section03
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section04
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section05
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section06
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section07
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section08
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section09
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section10
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section12
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section01
 import NumlibSurface.Rockafellar
 import NumlibSurface.Rockafellar.Part1

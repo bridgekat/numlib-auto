@@ -1,627 +1,374 @@
 namespace = "ODE"
-desc = '''
-Linear multistep methods on a real normed space `E` (Quarteroni–Sacco–Saleri §11.5–11.7; Kress
-§10.3–10.4 and Hairer–Nørsett–Wanner III state the same theory).
-
-**The method** is the structure `LinearMultistep` of coefficients `p`, `a : Fin (p+1) → ℝ`,
-`b : Fin (p+1) → ℝ`, `bm1 : ℝ` of (11.45),
-`u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h ∑_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1}`, a `p+1`-step method,
-implicit iff `b_{-1} ≠ 0`. The book's normalization `a_p ≠ 0 ∨ b_p ≠ 0` is not part of the
-structure (§11.7 drops it deliberately for predictor–corrector pairs); it is the hypothesis
-`IsGenuine` where a statement needs it. Orbits are stated by the recursion at every `n ≥ p`
-with the index shifted (`z (n + p + 1) = …`) so that no natural subtraction underflows, and
-`IsOrbitWith f h t₀ δ z` carries the perturbation `h δ_{n+1}` of (11.59). The `p + 1` starting
-values `u_0, …, u_p` are free data, as the book's `w_k^{(h)}`.
-
-**Truncation error.** `opL h w t` is the linear operator (11.48); `lte h y t = opL h y t / h` is
-the local truncation error (11.47) at `t = t_n`, `n ≥ p`; `globalLte`, `IsConsistentFor`,
-`HasOrderFor` are as in `ODE/OneStep`, along one curve; `IsConsistent` and `HasOrder q` quantify
-over all `C¹` (resp. `C^{q+1}`) *scalar* curves, which is equivalent to quantifying over all
-Cauchy problems with such solutions (every curve `y` solves `y' = f(t, ·)` with the
-state-independent field `f t v = y' t`). Theorem 11.3 is the algebraic characterization
-`orderCondition i`, `i ≤ q`: `∑ a_j = 1` and `∑ (-j)^i a_j + i ∑_{j=-1}^p (-j)^{i-1} b_j = 1`;
-the Taylor expansion is taken about `t = t_n` rather than the book's `t_{n-p}`, which changes
-nothing in the conditions and gives the error constant
-`C_{q+1} = (1 - ∑ (-j)^{q+1} a_j - (q+1) ∑ (-j)^q b_j) / (q+1)!` — the values of Table 11.1.
-
-**Characteristic polynomials.** `rho = X^{p+1} - ∑ a_j X^{p-j}`, `sigma = b_{-1} X^{p+1} + ∑ b_j X^{p-j}`
-in `ℝ[X]`, `charPoly z = ρ - z σ` in `ℂ[X]` (11.55). The root conditions are those of
-`Polynomial.SatisfiesRootCondition` (`ODE/DifferenceEquation`) applied to `rho.map (algebraMap ℝ ℂ)`.
-
-**Zero-stability** (Definition 11.13) and **Theorem 11.4**: the root condition is equivalent to
-zero-stability *for every field Lipschitz in the state*; sufficiency is Lemma 11.3 applied to the
-difference equation (11.61) of `z - u` plus the discrete Gronwall lemma (the book's proof, with
-the `h₀ = 1/Q` trick to move the `n`-th term to the left), necessity is the unbounded real
-solution of `ODE/DifferenceEquation` scaled by `ε/|r|^p`, on the problem `y' = 0`. Consistency is
-not used in either direction, although the book states the theorem for consistent methods.
-**Theorem 11.5** and **Corollary 11.1** (the Dahlquist equivalence theorem) follow from the
-estimate (11.65) with `δ_m = τ_m(h)` and from the same counterexample with `ε := h`.
-
-**Instances.** Adams–Bashforth and Adams–Moulton with `p + 1` interpolation nodes are defined by
-their interpolatory weights (`b_j = ∫_0^1 ℓ_j`) so that their orders come from the exactness of
-the quadrature on polynomials, hence from the order conditions — no interpolation error theorem is
-needed; the printed tables (11.50)–(11.51) and the AB3/AB4/AM3/AM4 rows are equalities of
-coefficients. BDF is given by Table 11.2 for `p ≤ 5` (the table's `p = 5` row has `b_{-1} = 60/147`,
-not the printed `60/137`); its zero-stability is proved for `p ≤ 2` by locating the roots and left
-★★★ for `p = 3, 4, 5`, where a Schur–Cohn test would be the tool. Midpoint (11.43) and Simpson
-(11.44) are instances with `ρ = r² - 1`.
-
-**Absolute stability** (§11.6.4). On the test equation the method is the linear recurrence
-`toLinearRecurrence z` (order `p + 1`, coefficients read off `ρ - zσ` after dividing by
-`1 - z b_{-1} ≠ 0`); `absStabilityRegion = {z | 1 - z b_{-1} ≠ 0 ∧ every solution → 0}`, which by
-`LinearRecurrence.forall_tendsto_zero_iff` is "every root of `Π(z)` lies in the open unit disc"
-(the absolute root condition, Definition 11.12); `absStabilityRegionStar` is Remark 11.3's `𝒜*`
-(bounded solutions), and `0 ∈ 𝒜* ↔ root condition ↔ zero-stable`. A-stability and ϑ-stability are
-the containments of `ℂ⁻` and of the sector. The Dahlquist barriers (Properties 11.1–11.2) are not
-formalized; they are recorded in the surface.
-
-**Predictor–corrector** (§11.7): `PredictorCorrector` pairs an explicit predictor with a
-corrector and a number `m` of corrections, with the `P(EC)^m` and `P(EC)^mE` recursions as
-orbits; Property 11.3 (the order of the pair) is planned at ★★★, Heun as PEC(forward Euler,
-Crank–Nicolson) is an identity of increments.
-'''
 
 [[node]]
 id = "LinearMultistep"
-kind = "definition"
-desc = '''`structure ODE.LinearMultistep` with fields `p : ℕ`, `a b : Fin (p + 1) → ℝ`, `bm1 : ℝ`: the
-linear multistep method (11.45) with `p + 1` steps, `a_j`, `b_j` for `j = 0, …, p` and
-`b_{-1} = bm1`. `IsImplicit M ↔ M.bm1 ≠ 0`; `IsGenuine M ↔ M.a (Fin.last p) ≠ 0 ∨ M.b (Fin.last p) ≠ 0`
-(the book's normalization, hypothesis only where needed).'''
-deps = []
 
 [[node]]
 id = "LinearMultistep.IsOrbitWith"
-kind = "definition"
-desc = '''The perturbed orbit (11.59): `M.IsOrbitWith f h t₀ δ z ↔ ∀ n, z (n + p + 1) =
-∑ j : Fin (p+1), a j • z (n + p - j) + h • ∑ j, b j • f (node t₀ h (n + p - j)) (z (n + p - j)) +
-(h * bm1) • f (node t₀ h (n + p + 1)) (z (n + p + 1)) + h • δ (n + p + 1)`. The starting values
-`z 0, …, z p` are unconstrained. `IsOrbit f h t₀ u := IsOrbitWith f h t₀ 0 u` is (11.45)/(11.60).'''
-deps = ["ODE.LinearMultistep", "ODE.node"]
 
 [[node]]
 id = "LinearMultistep.IsOrbit"
-kind = "definition"
-desc = '''`M.IsOrbit f h t₀ u := M.IsOrbitWith f h t₀ 0 u`; `isOrbit_iff` unfolds it with the `+ h • 0`
-removed.'''
-deps = ["ODE.LinearMultistep.IsOrbitWith"]
 
 [[node]]
 id = "LinearMultistep.opL"
-kind = "definition"
-desc = '''The linear operator (11.48): `M.opL h w t : E := w (t + h) - ∑ j, a j • w (t - j * h) -
-h • (bm1 • deriv w (t + h) + ∑ j, b j • deriv w (t - j * h))` for `w : ℝ → E`. Linear in `w`
-(`opL_add`, `opL_smul`), and `opL h y (node t₀ h n) = y_{n+1} - ∑ a_j y_{n-j} - h ∑_{j=-1}^p b_j y'_{n-j}`
-at a grid node (`opL_node`).'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.lte"
-kind = "definition"
-desc = '''Definition 11.8: `M.lte h y t := h⁻¹ • M.opL h y t`, the local truncation error `τ_{n+1}(h)`
-at `t = t_n` (11.47). `lte_spec`: for a solution `y` of `y' = f(t, y)`, `h ≠ 0`,
-`y_{n+1} = ∑ a_j y_{n-j} + h ∑ b_j f(t_{n-j}, y_{n-j}) + h b_{-1} f(t_{n+1}, y_{n+1}) + h τ_{n+1}`, so
-`y ∘ node t₀ h` is a perturbed orbit with `δ = lte`.'''
-deps = ["ODE.LinearMultistep.opL", "ODE.LinearMultistep.IsOrbitWith"]
 
 [[node]]
 id = "LinearMultistep.globalLte"
-kind = "definition"
-desc = '''`M.globalLte t₀ T y h := ⨆ n : Fin (gridCount T h), if p ≤ n then ‖M.lte h y (node t₀ h n)‖ else 0`,
-the book's `τ(h) = max_n |τ_{n+1}(h)|` over the steps the method actually takes (`n ≥ p`,
-`n + 1 ≤ N_h`). `IsConsistentFor t₀ T y`, `HasOrderFor t₀ T y q` as in `ODE/OneStep`.'''
-deps = ["ODE.LinearMultistep.lte", "ODE.gridCount"]
 
 [[node]]
 id = "LinearMultistep.IsConsistentFor"
-kind = "definition"
-desc = '''`Tendsto (M.globalLte t₀ T y) (𝓝[>] 0) (𝓝 0)`; and `HasOrderFor t₀ T y q :=
-M.globalLte t₀ T y =O[𝓝[>] 0] (· ^ q)`.'''
-deps = ["ODE.LinearMultistep.globalLte"]
 
 [[node]]
 id = "LinearMultistep.HasOrderFor"
-kind = "definition"
-desc = 'Definition 11.9, order `q` along `y`: `M.globalLte t₀ T y =O[𝓝[>] 0] fun h => h ^ q`.'
-deps = ["ODE.LinearMultistep.globalLte"]
 
 [[node]]
 id = "LinearMultistep.IsConsistent"
-kind = "definition"
-desc = '''Definition 11.9, consistency of the method: `∀ t₀ T, 0 < T → ∀ y : ℝ → ℝ, ContDiff ℝ 1 y →
-M.IsConsistentFor t₀ T y`. Quantifying over `C¹` scalar curves is quantifying over all scalar
-Cauchy problems with a `C¹` solution (the field `f t v := deriv y t` is Lipschitz with constant
-`0`); `HasOrder q` is the same with `ContDiff ℝ (q + 1) y` and `HasOrderFor … q`.'''
-deps = ["ODE.LinearMultistep.IsConsistentFor"]
 
 [[node]]
 id = "LinearMultistep.HasOrder"
-kind = "definition"
-desc = '''`M.HasOrder q ↔ ∀ t₀ T, 0 < T → ∀ y : ℝ → ℝ, ContDiff ℝ (q + 1) y → M.HasOrderFor t₀ T y q`.'''
-deps = ["ODE.LinearMultistep.HasOrderFor"]
 
 [[node]]
 id = "LinearMultistep.orderCondition"
-kind = "definition"
-desc = '''The algebraic conditions of Theorem 11.3, `M.orderCondition : ℕ → Prop`:
-`orderCondition 0 ↔ ∑ j, a j = 1` and for `i ≥ 1`
-`orderCondition i ↔ ∑ j, (-(j : ℝ)) ^ i * a j + i * (bm1 + ∑ j, (-(j : ℝ)) ^ (i - 1) * b j) = 1`
-(`(-j)^0 = 1` for the `b_{-1}` term, where `j = -1`). Conditions `0` and `1` are (11.52).'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.opL_pow"
-kind = "theorem"
-desc = '''The operator on monomials: for `w = (· ^ i)`,
-`M.opL h w t = ∑ m ∈ range (i + 1), (i.choose m : ℝ) * t ^ (i - m) * h ^ m * (1 - ∑ j, (-(j:ℝ))^m * a j - m * (bm1 + ∑ j, (-(j:ℝ))^(m-1) * b j))`
-— the binomial expansion of `(t ± jh)^i` and of its derivative; the bracket is `1 - (left side of
-orderCondition m)`. Consequently `(∀ i ≤ q, ∀ h t, M.opL h (· ^ i) t = 0) ↔ ∀ i ≤ q, M.orderCondition i`
-(`opL_pow_eq_zero_iff`, by triangularity: the coefficient of `h^i t^0` in `opL (·^i)` is the
-`i`-th bracket). ★★'''
-deps = ["ODE.LinearMultistep.opL", "ODE.LinearMultistep.orderCondition"]
 
 [[node]]
 id = "LinearMultistep.opL_eq_sum_add_remainder"
-kind = "theorem"
-desc = '''Taylor expansion of `L[w; h](t)` about `t`: for `w : ℝ → E` of class `C^{q+1}` on an
-interval containing `[t - ph, t + h]`, with `‖w^{(q+1)}‖ ≤ K` there,
-`‖M.opL h w t - ∑ m ∈ range (q + 1), (h ^ m / m!) • (C_m • iteratedDeriv m w t)‖ ≤ K' * h ^ (q + 1)`,
-where `C_m = 1 - ∑ (-j)^m a_j - m ∑_{j=-1}^p (-j)^{m-1} b_j` and `K'` depends on `K`, `p`, the
-coefficients. `taylor_mean_remainder_bound` applied to `w` at the `p + 2` points `t - jh`, `t + h`
-and to `w'` (class `C^q`) at the same points. ★★'''
-deps = ["ODE.LinearMultistep.opL", "ODE.LinearMultistep.orderCondition"]
 
 [[node]]
 id = "LinearMultistep.norm_lte_le_of_orderCondition"
-kind = "theorem"
-desc = '''Order `q` with a constant, vector-valued: if `∀ i ≤ q, M.orderCondition i` and `y : ℝ → E`
-is `C^{q+1}` on `Icc t₀ (t₀ + T)` with `‖y^{(q+1)}‖ ≤ K` there, then there is `C` (depending on `K`,
-`p`, the coefficients, `q`) such that for all `h > 0` and `t` with `t - p h`, `t + h ∈ Icc t₀ (t₀ + T)`,
-`‖M.lte h y t‖ ≤ C * h ^ q`. From `opL_eq_sum_add_remainder`: the sum vanishes. Hence
-`hasOrderFor_of_orderCondition : (∀ i ≤ q, orderCondition i) → HasOrderFor t₀ T y q` for such `y`,
-and `HasOrder q`. ★'''
-deps = ["ODE.LinearMultistep.opL_eq_sum_add_remainder", "ODE.LinearMultistep.HasOrderFor", "ODE.LinearMultistep.lte"]
 
 [[node]]
 id = "LinearMultistep.isConsistent_iff"
-kind = "theorem"
-desc = '''Theorem 11.3, first part: `M.IsConsistent ↔ M.orderCondition 0 ∧ M.orderCondition 1`.
-`←`: for `C¹` `y`, `opL h y t = (y(t+h) - y t - h y' t) - ∑ a_j (y(t - jh) - y t + jh y' t) - h ∑ b_j (y'(t-jh) - y' t)`
-after using both conditions, each bracket `o(h)` uniformly on the compact interval (uniform
-continuity of `y'`). `→`: test on `y = 1` (gives condition `0`: `τ = (1 - ∑ a_j)/h → 0` forces
-`∑ a_j = 1`) and `y = id` (gives condition `1`). ★★'''
-deps = ["ODE.LinearMultistep.IsConsistent", "ODE.LinearMultistep.orderCondition", "ODE.LinearMultistep.opL_pow"]
 
 [[node]]
 id = "LinearMultistep.hasOrder_iff"
-kind = "theorem"
-desc = '''Theorem 11.3, second part: for `1 ≤ q`, `M.HasOrder q ↔ ∀ i ≤ q, M.orderCondition i`.
-`←` is `norm_lte_le_of_orderCondition`. `→`: test on the monomials `y = (· ^ i)`, `i ≤ q`: by
-`opL_pow`, `lte h (·^i) t` is a polynomial in `h` whose coefficient of `h^{m-1}` (at `t = 0`, say,
-after translating `t₀ = -1`, `T = 2` so that `0` is an interior grid point for small `h`) is the
-`m`-th bracket times `i.choose m · 0^{i-m}`; `O(h^q)` with `m - 1 < q` forces the bracket to
-vanish — do it by induction on `i`, using the vanishing of the lower brackets. ★★'''
-deps = ["ODE.LinearMultistep.HasOrder", "ODE.LinearMultistep.norm_lte_le_of_orderCondition", "ODE.LinearMultistep.opL_pow"]
 
 [[node]]
 id = "LinearMultistep.errorConstant"
-kind = "definition"
-desc = '''The error constant `C_{q+1}` of a method of order `q` (§11.5, the PLTE
-`C_{q+1} h^{q+1} y^{(q+1)}`): `M.errorConstant q : ℝ := (1 - ∑ j, (-(j:ℝ))^(q+1) * a j - (q+1) * (bm1 + ∑ j, (-(j:ℝ))^q * b j)) / (q+1)!`,
-the first nonvanishing bracket of `opL_eq_sum_add_remainder`. Independent of the expansion point
-when the method has order `q`; Table 11.1 lists `1/2, 5/12, 3/8, 251/720` for AB of orders 1–4
-and `-1/2, -1/12, -1/24, -19/720` for AM of orders 1–4 (the table is indexed by *order*, its
-caption "AM having order `q+1`" notwithstanding).'''
-deps = ["ODE.LinearMultistep.orderCondition"]
 
 [[node]]
 id = "LinearMultistep.rho"
-kind = "definition"
-desc = '''The first characteristic polynomial `M.rho : ℝ[X] := X ^ (p+1) - ∑ j, C (a j) * X ^ (p - j)`
-(§11.6.2), monic of degree `p + 1` (`rho_monic`, `natDegree_rho`).'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.sigma"
-kind = "definition"
-desc = '''The second characteristic polynomial `M.sigma : ℝ[X] := C bm1 * X ^ (p+1) + ∑ j, C (b j) * X ^ (p - j)`,
-of degree `p + 1` iff the method is implicit.'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.charPoly"
-kind = "definition"
-desc = '''(11.55): `M.charPoly (z : ℂ) : ℂ[X] := M.rho.map (algebraMap ℝ ℂ) - C z * M.sigma.map (algebraMap ℝ ℂ)`,
-the characteristic polynomial `Π(r) = ρ(r) - hλ σ(r)` of the method on the test equation at
-`z = hλ`; `charPoly_zero : M.charPoly 0 = M.rho.map _`.'''
-deps = ["ODE.LinearMultistep.rho", "ODE.LinearMultistep.sigma"]
 
 [[node]]
 id = "LinearMultistep.rho_isRoot_one"
-kind = "theorem"
-desc = '''`M.orderCondition 0 → M.rho.IsRoot 1`: `ρ(1) = 1 - ∑ a_j = 0` — the consistency root
-`r₀ = 1` of §11.6.2. Also `derivative_rho_eval_one : ρ'(1) = p + 1 - ∑ (p - j) a_j = σ(1)` under
-conditions `0` and `1`, i.e. `ρ'(1) = σ(1)`, the classical form of consistency. ★'''
-deps = ["ODE.LinearMultistep.rho", "ODE.LinearMultistep.orderCondition"]
 
 [[node]]
 id = "LinearMultistep.SatisfiesRootCondition"
-kind = "definition"
-desc = '''Definition 11.10 for a method: `M.SatisfiesRootCondition := (M.rho.map (algebraMap ℝ ℂ)).SatisfiesRootCondition`;
-likewise `SatisfiesStrongRootCondition` (Definition 11.11) with `Polynomial.SatisfiesStrongRootCondition`.'''
-deps = ["ODE.LinearMultistep.rho", "Polynomial.SatisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.SatisfiesStrongRootCondition"
-kind = "definition"
-desc = '''Definition 11.11: `(M.rho.map (algebraMap ℝ ℂ)).SatisfiesStrongRootCondition` — the root
-condition and `1` is the only root on the unit circle (11.57).'''
-deps = ["ODE.LinearMultistep.rho", "Polynomial.SatisfiesStrongRootCondition"]
 
 [[node]]
 id = "LinearMultistep.IsZeroStable"
-kind = "definition"
-desc = '''Definition 11.13, zero-stability for the field `f` on the horizon `T`:
-`∃ h₀ > 0, ∃ C > 0, ∀ h ∈ Ioc 0 h₀, ∀ ε ≥ 0, ∀ δ : ℕ → E, (∀ k ≤ gridCount T h, ‖δ k‖ ≤ ε) →
-∀ u z, M.IsOrbit f h t₀ u → M.IsOrbitWith f h t₀ δ z → (∀ k ≤ p, z k = u k + δ k) →
-∀ n ≤ gridCount T h, ‖z n - u n‖ ≤ C * ε` (11.58): the orbit `u` from arbitrary starting values
-`w_k = u k` and the perturbed orbit `z` from `w_k + δ_k` stay `C ε`-close on the grid.'''
-deps = ["ODE.LinearMultistep.IsOrbit", "ODE.LinearMultistep.IsOrbitWith", "ODE.gridCount"]
 
 [[node]]
 id = "LinearMultistep.toLinearRecurrence"
-kind = "definition"
-desc = '''The recurrence (11.54) of the method on the test equation, as a `LinearRecurrence ℂ` of
-order `p + 1`: for `z : ℂ` with `1 - z * bm1 ≠ 0`, `coeffs i = (a (p - i) + z * b (p - i)) / (1 - z * bm1)`
-(indexing so that Mathlib's `u (n + order) = ∑ coeffs i * u (n + i)` matches), and any value
-when `1 - z bm1 = 0`. `charPoly_toLinearRecurrence : (1 - z bm1) ≠ 0 → (M.toLinearRecurrence z).charPoly = C (1 - z bm1)⁻¹ * M.charPoly z`,
-so the roots are those of `Π(z)`. `isOrbit_testField_iff : 1 - h lam bm1 ≠ 0 → (M.IsOrbit (testField lam) h 0 u ↔ (M.toLinearRecurrence (h * lam)).IsSolution u)`.
-Also the real specialization `toLinearRecurrenceZero : LinearRecurrence ℝ` at `z = 0`
-(coefficients `a (p - i)`), whose characteristic polynomial is `ρ`, for the necessity proofs. ★'''
-deps = ["ODE.LinearMultistep.charPoly", "ODE.LinearMultistep.IsOrbit", "ODE.testField"]
 
 [[node]]
 id = "LinearMultistep.norm_sub_le_of_satisfiesRootCondition"
-kind = "theorem"
-desc = '''The estimate (11.65) behind Theorem 11.4: let `M.SatisfiesRootCondition`, `0 < T`, `f t` be
-`L`-Lipschitz for `t ∈ Icc t₀ (t₀ + T + h₀)`. Then there are `h₀ > 0` and `K` such that for
-`h ∈ Ioc 0 h₀`, orbits `u` and `δ`-perturbed orbits `z` with `z k = u k + δ k` for `k ≤ p`, and
-`n ≤ gridCount T h`,
-`‖z n - u n‖ ≤ K * ((p + 1) * (⨆ k : Fin (p+1), ‖δ k‖) + T * (⨆ k : Fin (gridCount T h + 1), ‖δ k‖))`,
-with `K = 2 M exp (T Q)`, `Q = 2 (p+2) β L M`, `β = max |β_j|`, `M` the constant of Lemma 11.3 for
-`toLinearRecurrenceZero`. Proof (the book's): `w = z - u` satisfies the real recurrence
-`∑ α_j w_{n+j} = φ_{n+p+1}` (11.61) with `φ` the `f`-differences plus `h δ`; over `ℂ` — the
-recurrence has real coefficients, apply `LinearRecurrence.norm_le_of_satisfiesRootCondition` to
-the complexification, or restate that lemma for sequences in a normed space by applying it to
-`‖w‖`… it is cleaner to prove Lemma 11.3's sufficiency for `E`-valued sequences from the scalar
-Kronecker bound (the Duhamel formula is linear, so it holds verbatim in `E`); then (11.64), the
-Lipschitz bound on `φ`, the `1 - hQ/2 ≥ 1/2` trick to isolate `‖w_n‖`, and
-`Gronwall.discrete_sum` with `k_s = hQ`. Note the nodes used by the `f`-differences reach
-`t_{n+1} ≤ t₀ + T + h`, hence the enlarged Lipschitz interval. ★★★'''
-deps = ["ODE.LinearMultistep.SatisfiesRootCondition", "ODE.LinearMultistep.IsOrbitWith", "LinearRecurrence.norm_le_of_satisfiesRootCondition", "LinearRecurrence.eq_sum_kroneckerSol_add_sum", "Gronwall.discrete_sum", "ODE.LinearMultistep.toLinearRecurrence"]
 
 [[node]]
 id = "LinearMultistep.isZeroStable_of_satisfiesRootCondition"
-kind = "theorem"
-desc = '''Theorem 11.4, sufficiency: `M.SatisfiesRootCondition → 0 < T → (∀ t ∈ Icc t₀ (t₀ + T + 1), LipschitzWith L (f t)) → M.IsZeroStable f t₀ T`
-(the Lipschitz interval is padded by `h₀ ≤ 1`). Immediate from the estimate with `‖δ k‖ ≤ ε`:
-`C = K ((p + 1) + T)`. ★'''
-deps = ["ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition", "ODE.LinearMultistep.IsZeroStable"]
 
 [[node]]
 id = "LinearMultistep.satisfiesRootCondition_of_isZeroStable"
-kind = "theorem"
-desc = '''Theorem 11.4, necessity: `0 < T → M.IsZeroStable (E := ℝ) (fun _ _ => 0) t₀ T → M.SatisfiesRootCondition`
-— zero-stability for the single problem `y' = 0` forces the root condition. Proof by
-contradiction: `LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`
-gives a real solution `v` of the `ρ`-recurrence with `|v n|` unbounded; with `f = 0` the orbits are
-exactly the solutions of that recurrence (`toLinearRecurrenceZero`), so `u = 0` and
-`z = (ε / max_{k ≤ p} |v k|) v` (nonzero denominator: otherwise `v = 0`) is a perturbed orbit with
-`δ_k = z_k` for `k ≤ p`, `δ_k = 0` after, `|δ_k| ≤ ε`; given `h₀, C`, pick `h ≤ h₀` so small that
-some `n ≤ N_h = ⌊T/h⌋` has `|z n| > C ε` — possible since `N_h → ∞` as `h → 0` and `z` is
-unbounded. The book's witness `ε r^n` (real root) is not bounded by `ε` at `k ≤ p` when `|r| > 1`,
-and its `ε (r + r̄)^n` for a complex root is not a solution; the scaling and the real part repair
-both. ★★'''
-deps = ["ODE.LinearMultistep.IsZeroStable", "ODE.LinearMultistep.toLinearRecurrence", "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.isZeroStable_iff_satisfiesRootCondition"
-kind = "theorem"
-desc = '''Theorem 11.4 as stated: for `0 < T`,
-`(∀ (f : ℝ → ℝ → ℝ) L, (∀ t, LipschitzWith L (f t)) → M.IsZeroStable f t₀ T) ↔ M.SatisfiesRootCondition`,
-and the same with `E`-valued fields on the left. The two previous nodes; consistency is not
-needed. ★'''
-deps = ["ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition", "ODE.LinearMultistep.satisfiesRootCondition_of_isZeroStable"]
 
 [[node]]
 id = "LinearMultistep.IsConvergentFor"
-kind = "definition"
-desc = '''Convergence of a multistep method for the problem with solution `y` (Definition 11.5 read
-with starting values, as Theorem 11.5 requires): `M.IsConvergentFor f t₀ T y ↔ ∃ h₀ > 0, ∃ C : ℝ → ℝ → ℝ,
-(∀ ε, Tendsto (C ε) (𝓝[>] 0) (𝓝 0)) ∧ (∀ h, Tendsto (fun ε => C ε h) (𝓝[>] 0) (𝓝 0)) ∧ … ` — more
-simply: `∀ h ∈ Ioc 0 h₀, ∀ u, M.IsOrbit f h t₀ u → ∀ n ≤ gridCount T h, ‖u n - y (node t₀ h n)‖ ≤ C (⨆ k : Fin (p+1), ‖u k - y (node t₀ h k)‖) h`
-with `C ε h → 0` as `(ε, h) → (0, 0⁺)` jointly (`Tendsto (uncurry C) (𝓝[>] 0 ×ˢ 𝓝[>] 0) (𝓝 0)`, plus
-`C 0 h → 0`). The book's phrasing "the error on the initial data tends to zero as `h → 0`" is the
-hypothesis `ε_h → 0` on a family of orbits; the joint-limit constant makes that a consequence.
-Convergence with order `q`: `C ε h = K (ε + h ^ q)`.'''
-deps = ["ODE.LinearMultistep.IsOrbit", "ODE.gridCount", "ODE.node"]
 
 [[node]]
 id = "LinearMultistep.IsConvergentWithOrderFor"
-kind = "definition"
-desc = '''`∃ h₀ > 0, ∃ K > 0, ∀ h ∈ Ioc 0 h₀, ∀ u, M.IsOrbit f h t₀ u → ∀ n ≤ gridCount T h,
-‖u n - y (node t₀ h n)‖ ≤ K * ((⨆ k : Fin (p+1), ‖u k - y (node t₀ h k)‖) + h ^ q)`: starting
-errors `O(h^q)` give a global error `O(h^q)` (Theorem 11.5, second sentence).'''
-deps = ["ODE.LinearMultistep.IsConvergentFor"]
 
 [[node]]
 id = "LinearMultistep.isConvergentFor_of_satisfiesRootCondition"
-kind = "theorem"
-desc = '''Theorem 11.5, sufficiency: if `M.SatisfiesRootCondition`, `f t` is `L`-Lipschitz on
-`Icc t₀ (t₀ + T + 1)`, `y` solves `y' = f(t, y)` on `Icc t₀ (t₀ + T + 1)` and
-`M.IsConsistentFor t₀ T y`, then `M.IsConvergentFor f t₀ T y`; and with `M.HasOrderFor t₀ T y q`
-instead, `M.IsConvergentWithOrderFor f t₀ T y q`. Proof: `y ∘ node` is a perturbed orbit with
-`δ = lte` (`lte_spec`), so `norm_sub_le_of_satisfiesRootCondition` with `u := u`, `z := y ∘ node`
-gives `‖u_n - y_n‖ ≤ K ((p+1) max_{k≤p} ‖u_k - y_k‖ + T τ(h))`, and `τ(h) → 0`. ★★'''
-deps = ["ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition", "ODE.LinearMultistep.lte", "ODE.LinearMultistep.IsConvergentFor", "ODE.LinearMultistep.IsConvergentWithOrderFor"]
 
 [[node]]
 id = "LinearMultistep.satisfiesRootCondition_of_isConvergentFor"
-kind = "theorem"
-desc = '''Theorem 11.5, necessity: `0 < T → M.IsConvergentFor (E := ℝ) (fun _ _ => 0) 0 T (fun _ => 0) → M.SatisfiesRootCondition`
-— convergence for `y' = 0`, `y(0) = 0` forces the root condition. The same construction as
-`satisfiesRootCondition_of_isZeroStable` with the unbounded real solution `v` scaled to starting
-values `u_k = h v_k / max_{k≤p} |v_k|` (which tend to zero with `h`): `|u_n| = h |v_n| / …` at
-`n ≈ T/(2h)` is not `≤ C(ε_h, h) → 0`, because `|v_n|` grows at least geometrically
-(`|r|^n`, `|r| > 1`) or linearly (`n`) while `h ≈ T/(2n)`; for the linear case `h n ≈ T/2` does
-not tend to zero, which is the contradiction. ★★'''
-deps = ["ODE.LinearMultistep.IsConvergentFor", "ODE.LinearMultistep.toLinearRecurrence", "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.isConvergentFor_iff_isZeroStable"
-kind = "theorem"
-desc = '''Corollary 11.1, the Lax–Richtmyer equivalence theorem for multistep methods: for a
-consistent method (`M.IsConsistent`), *convergence for every Lipschitz problem*
-(`∀ f L, (∀ t, LipschitzWith L (f t)) → ∀ y, solves → IsConvergentFor f t₀ T y`, over `ℝ` and over
-`E`) is equivalent to *zero-stability for every Lipschitz problem*, both being equivalent to the
-root condition by Theorems 11.4 and 11.5. ★'''
-deps = ["ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition", "ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor", "ODE.LinearMultistep.isZeroStable_iff_satisfiesRootCondition", "ODE.LinearMultistep.isConsistent_iff"]
 
 [[node]]
 id = "LinearMultistep.ofOneStep"
-kind = "definition"
-desc = '''A one-step method `p = 0`: `ofOneStep a₀ b₀ bm1`. Forward Euler is `⟨0, ![1], ![1], 0⟩`,
-backward Euler `⟨0, ![1], ![0], 1⟩`, Crank–Nicolson `⟨0, ![1], ![1/2], 1/2⟩`; their orbits agree
-with `OneStep.IsOrbit (ofIncrement (forwardEuler f))` etc. (`isOrbit_ofOneStep_iff`), and
-`rho = X - 1`, so consistent one-step methods satisfy the root condition
-(`satisfiesRootCondition_of_p_eq_zero`). ★'''
-deps = ["ODE.LinearMultistep", "ODE.LinearMultistep.rho", "ODE.OneStep.forwardEuler"]
 
 [[node]]
 id = "LinearMultistep.adamsBashforth"
-kind = "definition"
-desc = '''The `p + 1`-step Adams–Bashforth method (11.49), explicit: `a = Pi.single 0 1`, `bm1 = 0`,
-`b j = ∫ s in (0:ℝ)..1, ∏ i ∈ univ.erase j, (s + i) / (i - j)` — the integral over `[t_n, t_{n+1}]`
-(in the variable `s = (t - t_n)/h`) of the Lagrange basis polynomial at the nodes `t_n, …, t_{n-p}`
-(`s = 0, -1, …, -p`). Concrete rows: `adamsBashforth 0 = forward Euler`,
-`adamsBashforth 1` has `b = ![3/2, -1/2]` (11.50), `adamsBashforth 2` has `b = ![23/12, -16/12, 5/12]`,
-`adamsBashforth 3` has `b = ![55/24, -59/24, 37/24, -9/24]` — each a `norm_num`/`simp` evaluation of
-the integrals of explicit polynomials (`integral_pow`). ★★ for the rows.'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.adamsBashforth_hasOrder"
-kind = "theorem"
-desc = '''`(adamsBashforth p).HasOrder (p + 1)` — "`q`-step Adams–Bashforth methods have order `q`".
-Through `hasOrder_iff`: the order conditions for an Adams method (`a = e₀`) reduce to
-`∑_{j=-1}^p (-j)^{i-1} b_j = 1/i`, `i = 1, …, q`, i.e. the quadrature rule `g ↦ ∑ b_j g(-j)` is exact
-on `s^{i-1}` over `[0, 1]`; an interpolatory rule with `p + 1` nodes is exact on polynomials of
-degree `≤ p` (`Quadrature.isInterpolatory_iff_isExactOn` in `Numlib/Approximation/Quadrature`, on
-`X = Icc (-p) 1`, or directly: the Lagrange interpolant of a polynomial of degree `≤ p` at `p + 1`
-nodes is itself, `Lagrange.interpolate` API), which gives `i - 1 ≤ p`, `q = p + 1`. Also the error
-constant `errorConstant (p+1) = ∫_0^1 ∏_{j=0}^p (s + j) ds / (p+1)!` giving Table 11.1's
-`1/2, 5/12, 3/8, 251/720` (★ each, `norm_num`). ★★'''
-deps = ["ODE.LinearMultistep.adamsBashforth", "ODE.LinearMultistep.hasOrder_iff"]
 
 [[node]]
 id = "LinearMultistep.adamsMoulton"
-kind = "definition"
-desc = '''The Adams–Moulton method with nodes `t_{n+1}, t_n, …, t_{n-p+1}` (11.49, case 2), a `p`-step
-method for `p ≥ 1` (and backward Euler for `p = 0`, where the only node is `t_{n+1}`): the
-structure with `p' = max p 1 - 1`… — to keep `Fin (p+1)` indexing uniform, define
-`adamsMoulton p : LinearMultistep` with `p` steps as the structure with field `p := p - 1` for
-`p ≥ 1`, `a = e₀`, `bm1 = ∫_0^1 ℓ_{-1}`, `b j = ∫_0^1 ℓ_j` for the Lagrange basis at `s = 1, 0, -1, …, -(p-1)`.
-Concrete rows: `p = 0`: backward Euler; `p = 1`: Crank–Nicolson (`bm1 = 1/2`, `b = ![1/2]`);
-`p = 2`: `bm1 = 5/12`, `b = ![8/12, -1/12]` (11.51); `p = 3`: `bm1 = 9/24`, `b = ![19/24, -5/24, 1/24]`;
-`p = 4`: `bm1 = 251/720`, `b = ![646/720, -264/720, 106/720, -19/720]`. ★★ for the rows.'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.adamsMoulton_hasOrder"
-kind = "theorem"
-desc = '''`(adamsMoulton p).HasOrder (p + 1)` for `p ≥ 1` — "`q`-step Adams–Moulton methods have order
-`q + 1`" — by the same exactness argument with `p + 1` nodes; and the error constants
-`-1/2, -1/12, -1/24, -19/720` of Table 11.1 for orders 1–4. ★★'''
-deps = ["ODE.LinearMultistep.adamsMoulton", "ODE.LinearMultistep.hasOrder_iff"]
 
 [[node]]
 id = "LinearMultistep.adams_satisfiesRootCondition"
-kind = "theorem"
-desc = '''Every Adams method is zero-stable: for `a = Pi.single 0 1`, `rho = X^{p+1} - X^p = X^p (X - 1)`,
-roots `1` (simple) and `0` (multiplicity `p`), so `SatisfiesRootCondition` holds; hence
-`(adamsBashforth p).IsZeroStable` and `(adamsMoulton p).IsZeroStable` for Lipschitz fields. ★'''
-deps = ["ODE.LinearMultistep.SatisfiesRootCondition", "ODE.LinearMultistep.adamsBashforth", "ODE.LinearMultistep.adamsMoulton", "ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.bdf"
-kind = "definition"
-desc = '''The backward differentiation formulae of Table 11.2, `bdf : Fin 6 → LinearMultistep`, with
-`b = 0` and (`p`; `a`; `bm1`): `0`: `![1]`, `1`; `1`: `![4/3, -1/3]`, `2/3`; `2`: `![18/11, -9/11, 2/11]`, `6/11`;
-`3`: `![48/25, -36/25, 16/25, -3/25]`, `12/25`; `4`: `![300/137, -300/137, 200/137, -75/137, 12/137]`, `60/137`;
-`5`: `![360/147, -450/147, 400/147, -225/147, 72/147, -10/147]`, `60/147`. The printed table has
-`b_{-1} = 60/137` in the last row, a misprint for `60/147` (the row must satisfy `∑ a_j = 1` and
-the first-order condition `∑ j a_j … `; with `60/137` the second condition fails). A general
-definition through the derivative of the interpolating polynomial at `t_{n+1}` is possible
-(`a`, `bm1` from the Lagrange basis derivatives at `s = 1`) but the book only gives the table.'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.bdf_hasOrder"
-kind = "theorem"
-desc = '''`(bdf k).HasOrder (k + 1)` for `k : Fin 6`: the order conditions are rational identities,
-`hasOrder_iff` and `norm_num [Fin.sum_univ_succ]`. ★'''
-deps = ["ODE.LinearMultistep.bdf", "ODE.LinearMultistep.hasOrder_iff"]
 
 [[node]]
 id = "LinearMultistep.bdf_satisfiesRootCondition"
+
+[[node]]
+id = "LinearMultistep.bdf_satisfiesRootCondition_all"
 kind = "theorem"
-desc = '''Zero-stability of BDF for `k ≤ 2` (§11.6.3, "BDF methods are zero-stable for `p ≤ 5`"):
-`(bdf 0).SatisfiesRootCondition` (`ρ = X - 1`), `(bdf 1)` (`ρ = X² - 4/3 X + 1/3 = (X - 1)(X - 1/3)`),
-`(bdf 2)` (`ρ = (X - 1)(X² - 7/11 X + 2/11)`, the quadratic factor has complex roots of modulus
-`√(2/11) < 1`). For `k = 3, 4, 5` the spurious roots are those of a cubic, quartic and quintic
-with no closed form; locating them inside the unit disc needs a Schur–Cohn/Jury criterion, which
-is not in Mathlib and not planned here — those three cases are left open at ★★★ and the surface
-node records the book's citation [Cry73]. ★★ for `k ≤ 2`.'''
-deps = ["ODE.LinearMultistep.bdf", "ODE.LinearMultistep.SatisfiesRootCondition"]
+desc = '''Zero-stability of every BDF method of Table 11.2 (§11.6.3, "BDF methods are zero-stable for
+`p ≤ 5`", [Cry73]): `∀ k : Fin 6, (bdf k).SatisfiesRootCondition`. The cases `k ≤ 2` are
+`bdf_satisfiesRootCondition`; for `k = 3, 4, 5` the spurious roots of `ρ` are those of a cubic, a
+quartic and a quintic with no closed form (BDF4: `25 r³ - 23 r² + 13 r - 3`; BDF5:
+`137 r⁴ - 163 r³ + 137 r² - 63 r + 12`; BDF6: `147 r⁵ - 213 r⁴ + 237 r³ - 163 r² + 62 r - 10`),
+and locating them inside the unit disc needs a Schur–Cohn/Jury criterion. ★★★
+
+Blocked: no Schur–Cohn/Jury test in Mathlib or in this library; the roots have no closed
+form, so the `satisfiesRootCondition_of_roots` route used for `k ≤ 2` does not apply. A
+Schur–Cohn module (`RingTheory/Polynomial/SchurCohn`, the reduced polynomial recursion with its
+root-counting theorem) is the missing piece; two to three days.'''
+deps = ["ODE.LinearMultistep.bdf", "ODE.LinearMultistep.bdf_satisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.midpoint"
-kind = "definition"
-desc = '''(11.43), the explicit midpoint method `u_{n+1} = u_{n-1} + 2h f_n`:
-`⟨1, ![0, 1], ![2, 0], 0⟩`; `rho = X² - 1`, `sigma = 2 X`; order 2 (`hasOrder_iff`, ★) and the root
-condition (`roots ±1`, simple, ★).'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.simpson"
-kind = "definition"
-desc = '''(11.44), the Simpson method `u_{n+1} = u_{n-1} + (h/3)(f_{n-1} + 4 f_n + f_{n+1})`:
-`⟨1, ![0, 1], ![4/3, 1/3], 1/3⟩`; `rho = X² - 1`, `sigma = (X² + 4X + 1)/3`; order 4 and the root
-condition. ★'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
 id = "LinearMultistep.absStabilityRegion"
-kind = "definition"
-desc = '''The region of absolute stability (11.26) of a multistep method:
-`M.absStabilityRegion : Set ℂ := {z | 1 - z * bm1 ≠ 0 ∧ ∀ u, (M.toLinearRecurrence z).IsSolution u → Tendsto u atTop (𝓝 0)}`
-— the values `z = hλ` at which the method on the test equation is well defined and every
-solution decays (Definition 11.6 for multistep methods, through `isOrbit_testField_iff`). By
-`absStabilityRegion_eq_of_scaleInvariant`'s pattern this is the `h = 1` slice, and the general
-`(h, λ)` statement is `isAbsStable_iff_mem : 0 < h → (every orbit of M on testField λ with step h tends to 0 ↔ h * λ ∈ M.absStabilityRegion)`.'''
-deps = ["ODE.LinearMultistep.toLinearRecurrence"]
 
 [[node]]
 id = "LinearMultistep.mem_absStabilityRegion_iff"
-kind = "theorem"
-desc = '''§11.6.4: `z ∈ M.absStabilityRegion ↔ 1 - z * bm1 ≠ 0 ∧ ∀ r, (M.charPoly z).IsRoot r → ‖r‖ < 1`
-— absolute stability at `z` is the absolute root condition at `z`.
-`LinearRecurrence.forall_tendsto_zero_iff` and `charPoly_toLinearRecurrence`. ★'''
-deps = ["ODE.LinearMultistep.absStabilityRegion", "LinearRecurrence.forall_tendsto_zero_iff", "ODE.LinearMultistep.toLinearRecurrence"]
 
 [[node]]
 id = "LinearMultistep.SatisfiesAbsRootCondition"
-kind = "definition"
-desc = '''Definition 11.12 for a fixed `lam : ℂ`: `M.SatisfiesAbsRootCondition lam ↔ ∃ h₀ > 0, ∀ h ∈ Ioc 0 h₀, ∀ r, (M.charPoly (h * lam)).IsRoot r → ‖r‖ < 1`.
-With `mem_absStabilityRegion_iff` this is "`h lam ∈ 𝒜` for all `h ≤ h₀`" up to the nondegeneracy
-clause (`satisfiesAbsRootCondition_iff`). ★'''
-deps = ["ODE.LinearMultistep.charPoly", "ODE.LinearMultistep.mem_absStabilityRegion_iff"]
 
 [[node]]
 id = "LinearMultistep.IsAStable"
-kind = "definition"
-desc = '''`M.IsAStable ↔ ∀ z, z.re < 0 → z ∈ M.absStabilityRegion` (§11.3.3 / §11.6.4); and
-ϑ-stability for `ϑ ∈ Ioo 0 (π/2)`: `M.IsThetaStable ϑ ↔ ∀ z ≠ 0, |π - arg z| < ϑ → z ∈ M.absStabilityRegion`
-(the sector `{z : -ϑ < π - arg z < ϑ}` of §11.6.4, i.e. `|arg (-z)| < ϑ`), with
-`IsAStable.isThetaStable`. `Complex.arg` takes values in `(-π, π]`, so the sector is
-`{z | z ≠ 0 ∧ |Complex.arg (-z)| < ϑ}`.'''
-deps = ["ODE.LinearMultistep.absStabilityRegion"]
 
 [[node]]
 id = "LinearMultistep.IsThetaStable"
-kind = "definition"
-desc = '''ϑ-stability (§11.6.4): `∀ z : ℂ, z ≠ 0 → |Complex.arg (-z)| < ϑ → z ∈ M.absStabilityRegion`.'''
-deps = ["ODE.LinearMultistep.absStabilityRegion"]
 
 [[node]]
 id = "LinearMultistep.absStabilityRegionStar"
-kind = "definition"
-desc = '''Remark 11.3, the region `𝒜*` of the milder definition:
-`M.absStabilityRegionStar : Set ℂ := {z | 1 - z * bm1 ≠ 0 ∧ ∀ u, (M.toLinearRecurrence z).IsSolution u → BddAbove (Set.range fun n => ‖u n‖)}`,
-with `mem_absStabilityRegionStar_iff : z ∈ 𝒜* ↔ 1 - z bm1 ≠ 0 ∧ (M.charPoly z).SatisfiesRootCondition`
-(`LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition`) and `absStabilityRegion_subset_star`. ★'''
-deps = ["ODE.LinearMultistep.toLinearRecurrence", "LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.zero_mem_absStabilityRegionStar_iff"
-kind = "theorem"
-desc = '''Remark 11.3, "zero-stable methods are those for which `𝒜*` contains the origin":
-`0 ∈ M.absStabilityRegionStar ↔ M.SatisfiesRootCondition`, since `charPoly 0 = ρ`; combined with
-Theorem 11.4 this is zero-stability for all Lipschitz problems. ★'''
-deps = ["ODE.LinearMultistep.absStabilityRegionStar", "ODE.LinearMultistep.SatisfiesRootCondition"]
 
 [[node]]
 id = "LinearMultistep.absStabilityRegion_midpoint"
-kind = "theorem"
-desc = '''Remark 11.3's example: `midpoint.absStabilityRegion = ∅` and
-`midpoint.absStabilityRegionStar = {z | ∃ α : ℝ, |α| < 1 ∧ z = α * I}`. The characteristic
-polynomial is `r² - 2 z r - 1`, whose roots have product `-1`, so they cannot both lie in the open
-disc (`𝒜 = ∅`); both lie on the unit circle iff `z = iα` with `|α| ≤ 1` (`r = iα ± √(1 - α²)`),
-and they are simple iff `|α| < 1` — at `α = ±1` the root `±i` is double and `n (±i)^n` is an
-unbounded solution. The book prints `α ∈ [-1, 1]`; the closed endpoints are wrong (see the
-errata). ★★'''
-deps = ["ODE.LinearMultistep.midpoint", "ODE.LinearMultistep.mem_absStabilityRegion_iff", "ODE.LinearMultistep.absStabilityRegionStar"]
 
 [[node]]
 id = "LinearMultistep.absStabilityRegion_ofOneStep"
-kind = "theorem"
-desc = '''For the one-step instances the multistep region agrees with the one-step region of
-`ODE/OneStep`: `(ofOneStep 1 1 0).absStabilityRegion = OneStep.absStabilityRegion (forward Euler)`
-etc.; in particular Crank–Nicolson (`adamsMoulton 1`) and backward Euler (`bdf 0`) are A-stable as
-multistep methods. ★'''
-deps = ["ODE.LinearMultistep.ofOneStep", "ODE.LinearMultistep.absStabilityRegion", "ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff", "ODE.LinearMultistep.IsAStable"]
 
 [[node]]
 id = "PredictorCorrector"
-kind = "definition"
-desc = '''§11.7: `structure ODE.PredictorCorrector` with an explicit predictor `P : LinearMultistep`
-(`P.bm1 = 0`), a corrector `C : LinearMultistep`, both padded to the same number of steps `p`
-(the book's convention after Example 11.8: the corrector's `a`, `b` are extended by zeros, so
-`ρ̂ = r^{p - p_C} ρ_C`, `σ̂ = r^{p - p_C} σ_C`), and `m : ℕ` with `1 ≤ m` corrections. Two step
-functions: `pecStep` for `P(EC)^m` (11.69) and `peceStep` for `P(EC)^mE`, both explicit given the
-history of values `u^{(m)}_{n-j}` and function values `f^{(m-1)}_{n-j}` resp. `f^{(m)}_{n-j}`; and
-the orbit predicates `IsOrbitPEC`, `IsOrbitPECE` on pairs of sequences `(u, fval)`. The
-`k`-th correction `u^{(k+1)}_{n+1} = ∑ a_j u^{(m)}_{n-j} + h b_{-1} f(t_{n+1}, u^{(k)}_{n+1}) + h ∑ b_j f_{n-j}`
-is `Nat.iterate` of the map `v ↦ G + h b_{-1} f(t_{n+1}, v)` from the predicted value.'''
-deps = ["ODE.LinearMultistep"]
 
 [[node]]
-id = "PredictorCorrector.heun_eq_pec"
-kind = "theorem"
-desc = '''Example 11.8: the PEC scheme with predictor forward Euler, corrector Crank–Nicolson and
-`m = 1` is Heun's method: its orbits are exactly the orbits of `OneStep.ofIncrement (heun f)`.
-Unfold both recursions. ★'''
-deps = ["ODE.PredictorCorrector", "ODE.OneStep.heun", "ODE.LinearMultistep.ofOneStep"]
+id = "PredictorCorrector.heun_eq_pece"
 
 [[node]]
-id = "PredictorCorrector.hasOrder_of"
-kind = "theorem"
-desc = '''Property 11.3, the order part: let the predictor have order `q̃`, the corrector order `q`,
-`f` be `L`-Lipschitz in the state and `y` a `C^{max q̃ q + 1}` solution. Then the local truncation
-error of the `P(EC)^m` (and `P(EC)^mE`) scheme, defined as the residual of the exact solution in
-the one-step-in-history form, is `O(h^{min q (q̃ + m)})`: if `q̃ ≥ q` or `m > q - q̃` the pair has
-order `q`; if `m ≤ q - q̃` it has order `q̃ + m`. Proof: each correction is a Lipschitz map with
-constant `h |b_{-1}| L`, so an error `O(h^{s+1})` in the input of a correction becomes
-`O(h^{s+2})` in its output while the corrector's own residual `O(h^{q+1})` is added; induction on
-`m`. The two PLTE clauses (same principal term as the corrector when `q̃ ≥ q` or `m > q - q̃`, a
-different one when `m = q - q̃`) are the same induction one order further, stated as
-`lte_PC - lte_C = O(h^{q+1})` resp. an explicit formula; formalize the order part first. ★★★'''
-deps = ["ODE.PredictorCorrector", "ODE.LinearMultistep.HasOrderFor", "ODE.LinearMultistep.lte"]
+id = "PredictorCorrector.hasOrderFor_of"
 
 [[node]]
 id = "PredictorCorrector.abm_charPoly"
-kind = "theorem"
-desc = '''Example 11.10: for the `p`-step ABM pair (Adams–Bashforth predictor with `p` steps,
-Adams–Moulton corrector with `p - 1` steps padded to `p`), `ρ̂ = ρ̃ = X^p - X^{p-1} = X (X^{p-1} - X^{p-2})`
-and `σ̂ = X * σ_AM`. Unfolding of the padding. ★'''
-deps = ["ODE.PredictorCorrector", "ODE.LinearMultistep.adamsBashforth", "ODE.LinearMultistep.adamsMoulton", "ODE.LinearMultistep.rho", "ODE.LinearMultistep.sigma"]
+
+[[node]]
+id = "_root_.norm_sub_sum_smul_le"
+
+[[node]]
+id = "LinearMultistep.rhs"
+
+[[node]]
+id = "LinearMultistep.lte_spec"
+
+[[node]]
+id = "LinearMultistep.taylorCoeff"
+
+[[node]]
+id = "LinearMultistep.remainderConst"
+
+[[node]]
+id = "LinearMultistep.isConsistentFor_of_orderCondition"
+
+[[node]]
+id = "LinearMultistep.hasOrderFor_of_orderCondition"
+
+[[node]]
+id = "LinearMultistep.hasOrderFor_of_contDiff"
+
+[[node]]
+id = "LinearMultistep.hasOrder_of_orderCondition"
+
+[[node]]
+id = "LinearMultistep.taylorCoeff_eq_zero_of_hasOrder"
+
+[[node]]
+id = "LinearMultistep.derivative_rho_eval_one_eq_sigma"
+
+[[node]]
+id = "LinearMultistep.toLinearRecurrenceZero"
+
+[[node]]
+id = "LinearMultistep.charPoly_toLinearRecurrenceZero"
+
+[[node]]
+id = "LinearMultistep.isOrbit_zero_iff_isSolution"
+
+[[node]]
+id = "LinearMultistep.charPoly_toLinearRecurrence"
+
+[[node]]
+id = "LinearMultistep.isOrbit_testField_iff"
+
+[[node]]
+id = "LinearMultistep.norm_sub_le_globalLte_of_satisfiesRootCondition"
+
+[[node]]
+id = "LinearMultistep.isConvergentWithOrderFor_of_satisfiesRootCondition"
+
+[[node]]
+id = "LinearMultistep.isOrbit_ofOneStep_theta_iff"
+
+[[node]]
+id = "LinearMultistep.satisfiesRootCondition_of_p_eq_zero"
+
+[[node]]
+id = "LinearMultistep.adamsWeight"
+
+[[node]]
+id = "LinearMultistep.sum_pow_mul_adamsWeight"
+
+[[node]]
+id = "LinearMultistep.eq_adamsWeight_of_moments"
+
+[[node]]
+id = "LinearMultistep.adamsBashforth_one_eq"
+
+[[node]]
+id = "LinearMultistep.adamsBashforth_two_eq"
+
+[[node]]
+id = "LinearMultistep.adamsBashforth_three_eq"
+
+[[node]]
+id = "LinearMultistep.adamsMoulton_two_eq"
+
+[[node]]
+id = "LinearMultistep.adamsMoulton_three_eq"
+
+[[node]]
+id = "LinearMultistep.adamsMoulton_four_eq"
+
+[[node]]
+id = "LinearMultistep.adamsBashforth_errorConstant"
+
+[[node]]
+id = "LinearMultistep.adamsMoulton_errorConstant"
+
+[[node]]
+id = "LinearMultistep.midpoint_hasOrder"
+
+[[node]]
+id = "LinearMultistep.simpson_hasOrder"
+
+[[node]]
+id = "LinearMultistep.midpoint_satisfiesRootCondition"
+
+[[node]]
+id = "LinearMultistep.simpson_satisfiesRootCondition"
+
+[[node]]
+id = "LinearMultistep.isAbsStable_iff_mem"
+
+[[node]]
+id = "LinearMultistep.satisfiesAbsRootCondition_iff"
+
+[[node]]
+id = "LinearMultistep.IsAStable.isThetaStable"
+
+[[node]]
+id = "LinearMultistep.mem_absStabilityRegionStar_iff"
+
+[[node]]
+id = "LinearMultistep.absStabilityRegion_subset_star"
+
+[[node]]
+id = "LinearMultistep.mem_absStabilityRegion_ofOneStep_iff"
+
+[[node]]
+id = "LinearMultistep.pad"
+
+[[node]]
+id = "LinearMultistep.rho_pad"
+
+[[node]]
+id = "LinearMultistep.sigma_pad"
+
+[[node]]
+id = "PredictorCorrector.ofPair"
+
+[[node]]
+id = "PredictorCorrector.IsOrbitPEC"
+
+[[node]]
+id = "PredictorCorrector.IsOrbitPECE"
+
+[[node]]
+id = "PredictorCorrector.abm"
+
+[[node]]
+id = "PredictorCorrector.lte"
+
+[[node]]
+id = "PredictorCorrector.norm_lte_le"
+
+[[node]]
+id = "PredictorCorrector.HasOrderFor"
+
+[[node]]
+id = "_root_.LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le"
+
+[[node]]
+id = "_root_.LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le"
+
+[[node]]
+id = "_root_.LinearRecurrence.exists_isSolution_real_frequently_le"
+
+[[node]]
+id = "_root_.Polynomial.satisfiesRootCondition_of_roots"
+
+[[node]]
+id = "_root_.Polynomial.satisfiesRootCondition_C_mul_iff"
+
+[[node]]
+id = "LinearMultistep.charPoly_monic_of_bm1_eq_zero"
+
+[[node]]
+id = "LinearMultistep.exists_neg_notMem_absStabilityRegion_of_bm1_eq_zero"
+
+[[node]]
+id = "LinearMultistep.not_isAStable_of_bm1_eq_zero"
+
+[[node]]
+id = "LinearMultistep.not_isThetaStable_of_bm1_eq_zero"
+
+[[node]]
+id = "_root_.Polynomial.norm_eval_le_two_pow_natDegree"

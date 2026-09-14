@@ -1,86 +1,47 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.12, the exercises the main text uses: Exercise 1 (Heun has order 2, cited in §11.3),
-Exercise 2 (Crank–Nicolson has order 2, with (11.90)), Exercise 3 (real solutions from complex
-conjugate roots, cited in §11.4), Exercise 4 ((11.32) for simple roots), Exercise 5 (the matrix
-`R` of (11.37) is nonsingular), and Exercise 12 with the modified Euler method (11.91), cited in
-§11.8.1. Exercises 6–11 and 13–15 are not cited by the main text and are not nodes (13 is the
-Butcher array of `ODE.rk4`; 14 is a MATLAB program whose "not connected" claim is a picture; 15
-is the Merson stability function).
-'''
 
 [[node]]
 id = "exercise_11_1"
-kind = "theorem"
-desc = '''Heun's method has order 2: along a `C³` solution of a problem with `f` Lipschitz in `y`,
-`|τ_{n+1}(h)| ≤ (h²/12) max|y^{(3)}| + (h²/4) L max|y''|`, following the hint `h τ_{n+1} = E₁ + E₂`
-with `E₁` the trapezoidal quadrature error and `E₂` bounded through forward Euler.
-`ODE.OneStep.norm_lte_heun_le`, `ODE.OneStep.HasOrderFor … 2`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_10", "QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.OneStep.norm_lte_heun_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.1'
 
 [[node]]
 id = "exercise_11_2"
-kind = "theorem"
-desc = '''Crank–Nicolson has order 2: for `y ∈ C³`,
-`(y_{n+1} - y_n)/h = (f(t_n, y_n) + f(t_{n+1}, y_{n+1}))/2 - (h²/12) y^{(3)}(ξ_n)` for some
-`ξ_n ∈ (t_n, t_{n+1})` (11.90) — in norm form `|τ_{n+1}(h)| ≤ (h²/12) max|y^{(3)}|` — so (11.9) agrees
-with (11.90) up to `O(h²)`. The book writes the remainder as `f''(ξ_n, y(ξ_n))`, the second
-derivative of `s ↦ f(s, y(s)) = y'(s)`. `ODE.OneStep.norm_lte_crankNicolson_le`; the mean-value
-form with `ξ_n` follows from the Peano-kernel representation and the mean value theorem for
-integrals when `y^{(3)}` is continuous (`exercise_11_2_meanValue`, ★★). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_9", "QuarteroniSaccoSaleri.Chapter11.consistent", "ODE.OneStep.norm_lte_crankNicolson_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.2'
 
 [[node]]
 id = "exercise_11_3"
-kind = "theorem"
-desc = '''The solution of `u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n` with
-`u₀ = 1, u₁ = 2, u₂ = 3, u₃ = 4` is `u_n = 2^n (n/4 - 1) + 2^{(n-2)/2} sin(nπ/4) + n + 2`. The
-source prints `sin(π/4)`; the characteristic polynomial is `(r - 2)²(r² - 2r + 2)` with roots `2`
-(double) and `1 ± i = √2 e^{±iπ/4}`, and the real solution attached to the conjugate pair is
-`2^{n/2} sin(nπ/4)` (Exercise 3 is the book's pointer for "real solutions from complex conjugate
-roots"). Verify the closed form: the recurrence via `(1+i)^n = 2^{n/2} e^{inπ/4}` and
-`LinearRecurrence.isSolution_mul_pow_of_one_lt_rootMultiplicity` for `n 2^n`, the particular
-solution `n + 2` by `ring`, the four initial values by `norm_num`, then uniqueness
-(`LinearRecurrence.eq_mkSolWith_of_isSolutionWith_of_eq_init`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28", "QuarteroniSaccoSaleri.Chapter11.equation_11_42", "LinearRecurrence.isSolution_mul_pow_of_one_lt_rootMultiplicity", "LinearRecurrence.eq_mkSolWith_of_isSolutionWith_of_eq_init"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.3'
 
 [[node]]
 id = "exercise_11_4"
-kind = "theorem"
-desc = '''If the characteristic polynomial `Π` of (11.30) has simple roots, every solution of the
-associated difference equation has the form (11.32), the coefficients being the unique solution
-of the Vandermonde system `∑_i α_i r_i^j = u_j`, `j < k`. `equation_11_32`,
-`LinearRecurrence.eq_sum_smul_pow_of_injective_roots`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_32", "LinearRecurrence.eq_sum_smul_pow_of_injective_roots"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.4'
 
 [[node]]
 id = "exercise_11_5"
-kind = "theorem"
-desc = '''If `Π` has simple roots, the matrix `R = (r_m^i)` of (11.37) is nonsingular: it is the
-transpose of the Vandermonde matrix of the roots. `Matrix.det_transpose` and Mathlib's
-`Matrix.det_vandermonde_ne_zero_iff`; `LinearRecurrence.det_vandermonde_transpose_ne_zero`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_37", "LinearRecurrence.det_vandermonde_transpose_ne_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.5'
 
 [[node]]
 id = "equation_11_91"
-kind = "definition"
-desc = '''The modified Euler method `u_{n+1} = u_n + h f(t_n + h/2, u_n + (h/2) f_n)`:
-`ODE.ButcherTableau.modifiedEuler` as a tableau, with its increment unfolded to this formula. ★'''
-deps = ["ODE.ButcherTableau.modifiedEuler", "ODE.ButcherTableau.explicitIncrement"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.91'
 
 [[node]]
 id = "exercise_11_12"
-kind = "theorem"
-desc = '''Heun's method (11.10) is the explicit two-stage RK method with Butcher array
-`c = (0, 1)`, `A = [[0, 0], [1, 0]]`, `b = (1/2, 1/2)`, and the modified Euler method (11.91) is
-the one with `c = (0, 1/2)`, `A = [[0, 0], [1/2, 0]]`, `b = (0, 1)`:
-`ODE.ButcherTableau.heun.explicitIncrement f = ODE.OneStep.heun f` and the analogous identity for
-`ODE.ButcherTableau.modifiedEuler`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_10", "QuarteroniSaccoSaleri.Chapter11.equation_11_91", "QuarteroniSaccoSaleri.Chapter11.equation_11_71", "ODE.ButcherTableau.heun", "ODE.ButcherTableau.modifiedEuler"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 11.12'
+
+[[node]]
+id = "exercise_11_3_sol"
+
+[[node]]
+id = "exercise_11_3_iff"
+
+[[node]]
+id = "exercise_11_3_rpow"
+
+[[node]]
+id = "exercise_11_3_im"
+
+[[node]]
+id = "exercise_11_3_sin_rec"
+
+[[node]]
+id = "equation_11_91_apply"

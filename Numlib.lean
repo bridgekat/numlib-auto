@@ -342,6 +342,7 @@ import Numlib.Nonlinear.ScalarNewton
 import Numlib.Nonlinear.Secant
 import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.Gronwall
+import Numlib.ODE.Multistep
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
 import Numlib.Optimization.ConjugateGradient

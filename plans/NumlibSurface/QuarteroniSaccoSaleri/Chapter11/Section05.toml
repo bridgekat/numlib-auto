@@ -1,151 +1,163 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.5, multistep methods: Definition 11.7, the midpoint (11.43) and Simpson (11.44) methods,
-the linear multistep method (11.45)–(11.46), its truncation error (Definition 11.8), consistency
-and order (Definition 11.9), the operator `L` (11.48) and the error constant, the Adams–Bashforth
-and Adams–Moulton families with their tables (11.49)–(11.51), Table 11.1, and the BDF methods of
-Table 11.2. Scalar restatements of `Numlib/ODE/Multistep`. Program 92 is not a node.
-'''
 
 [[node]]
 id = "definition_11_7"
-kind = "definition"
-desc = '''A `q`-step method (`q ≥ 1`): for `n ≥ q - 1`, `u_{n+1}` depends on `u_{n+1-q}` but not on
-earlier values. For a linear multistep method `M : ODE.LinearMultistep` this is
-`M.p + 1 = q ∧ M.IsGenuine` (`a_p ≠ 0 ∨ b_p ≠ 0`); the one-step methods of §11.2 are the case
-`q = 1` (`ODE.LinearMultistep.ofOneStep`).'''
-deps = ["ODE.LinearMultistep", "ODE.LinearMultistep.ofOneStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.7'
 
 [[node]]
 id = "equation_11_43"
-kind = "definition"
-desc = '''The midpoint method `u_{n+1} = u_{n-1} + 2h f_n`, `n ≥ 1`, an explicit two-step method:
-`ODE.LinearMultistep.midpoint`, with its orbit relation unfolded (`equation_11_43_isOrbit_iff`). ★'''
-deps = ["ODE.LinearMultistep.midpoint", "ODE.LinearMultistep.IsOrbit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.43'
 
 [[node]]
 id = "equation_11_44"
-kind = "definition"
-desc = '''The Simpson method `u_{n+1} = u_{n-1} + (h/3)(f_{n-1} + 4f_n + f_{n+1})`, an implicit two-step
-method: `ODE.LinearMultistep.simpson`. ★'''
-deps = ["ODE.LinearMultistep.simpson", "ODE.LinearMultistep.IsOrbit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.44'
 
 [[node]]
 id = "equation_11_45"
-kind = "definition"
-desc = '''The linear multistep method `u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h ∑_{j=0}^p b_j f_{n-j} + h b_{-1} f_{n+1}`,
-`n ≥ p`: `ODE.LinearMultistep` at `E = ℝ` with orbits `M.IsOrbit f h t₀ u`; implicit iff
-`b_{-1} ≠ 0` (`M.IsImplicit`).'''
-deps = ["ODE.LinearMultistep", "ODE.LinearMultistep.IsOrbit"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.45'
 
 [[node]]
 id = "equation_11_46"
-kind = "theorem"
-desc = '''The reformulation `∑_{s=0}^{p+1} α_s u_{n+s} = h ∑_{s=0}^{p+1} β_s f(t_{n+s}, u_{n+s})` with
-`α_{p+1} = 1`, `α_s = -a_{p-s}`, `β_s = b_{p-s}`, a linear difference equation (11.28) of order
-`k = p + 1` with `φ_{n+j} = h β_j f(t_{n+j}, u_{n+j})`: `M.IsOrbit f h t₀ u ↔ (M.toLinearRecurrenceZero).IsSolutionWith (fun n => h * ∑ s, β s * f (t_{n - (p+1) + s}) (u (n - (p+1) + s))) u`
-for the real recurrence with coefficients `a (p - i)`; the source term at index `n + p + 1`
-collects the `p + 2` evaluations of `f`. Unfolding and reindexing. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_45", "ODE.LinearMultistep.toLinearRecurrence", "LinearRecurrence.IsSolutionWith", "QuarteroniSaccoSaleri.Chapter11.equation_11_28"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.46'
 
 [[node]]
 id = "definition_11_8"
-kind = "definition"
-desc = '''The local truncation error `τ_{n+1}(h)` of (11.45) at `t_{n+1}`, `n ≥ p`, defined by
-`h τ_{n+1}(h) = y_{n+1} - [∑ a_j y_{n-j} + h ∑_{j=-1}^p b_j y'_{n-j}]` (11.47):
-`M.lte h y (ODE.node t₀ h n)`, `ODE.LinearMultistep.lte`; `τ(h) = max_n |τ_n(h)|` is
-`M.globalLte t₀ T y h`.'''
-deps = ["ODE.LinearMultistep.lte", "ODE.LinearMultistep.globalLte"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.8'
 
 [[node]]
 id = "definition_11_9"
-kind = "definition"
-desc = '''Consistency: `τ(h) → 0` as `h → 0`, `M.IsConsistentFor t₀ T y` along the solution and
-`M.IsConsistent` as a property of the method (over all `C¹` problems); order `q`: `τ(h) = O(h^q)`,
-`M.HasOrderFor t₀ T y q` and `M.HasOrder q` (`definition_11_9_order`).'''
-deps = ["ODE.LinearMultistep.IsConsistentFor", "ODE.LinearMultistep.IsConsistent", "ODE.LinearMultistep.HasOrderFor", "ODE.LinearMultistep.HasOrder", "QuarteroniSaccoSaleri.Chapter11.definition_11_8"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.9'
 
 [[node]]
 id = "equation_11_48"
-kind = "definition"
-desc = '''The linear operator `L[w; h](t) = w(t+h) - ∑_{j=0}^p a_j w(t - jh) - h ∑_{j=-1}^p b_j w'(t - jh)`:
-`M.opL h w t`; `equation_11_48_lte : M.lte h y t = M.opL h y t / h`; and the principal local
-truncation error `C_{q+1} h^{q+1} y^{(q+1)}` with the error constant `M.errorConstant q`
-(`errorConstant`, a definition node). ★'''
-deps = ["ODE.LinearMultistep.opL", "ODE.LinearMultistep.errorConstant", "QuarteroniSaccoSaleri.Chapter11.definition_11_8"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.48'
 
 [[node]]
 id = "equation_11_49"
-kind = "definition"
-desc = '''Adams methods `u_{n+1} = u_n + h ∑_{j=-1}^p b_j f_{n-j}`, obtained by integrating the
-interpolating polynomial of `f` over `[t_n, t_{n+1}]`: explicit (Adams–Bashforth, nodes
-`t_n, …, t_{n-p}`, `b_{-1} = 0`) `ODE.LinearMultistep.adamsBashforth p`, and implicit
-(Adams–Moulton, nodes `t_{n+1}, …, t_{n-p+1}`) `ODE.LinearMultistep.adamsMoulton p`.'''
-deps = ["ODE.LinearMultistep.adamsBashforth", "ODE.LinearMultistep.adamsMoulton"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.49'
 
 [[node]]
 id = "equation_11_50"
-kind = "theorem"
-desc = '''The two-step Adams–Bashforth method is `u_{n+1} = u_n + (h/2)(3f_n - f_{n-1})`:
-`(adamsBashforth 1).b = ![3/2, -1/2]`; also `adamsBashforth 0` is forward Euler, and the three-
-and four-step methods have `b = ![23/12, -16/12, 5/12]`, `![55/24, -59/24, 37/24, -9/24]`
-(`adamsBashforth_three`, `adamsBashforth_four`). Evaluation of the basis integrals. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_49", "ODE.LinearMultistep.adamsBashforth"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.50'
 
 [[node]]
 id = "adamsBashforth_order"
-kind = "theorem"
-desc = '''`q`-step Adams–Bashforth methods have order `q`: `(adamsBashforth p).HasOrder (p + 1)`.
-`ODE.LinearMultistep.adamsBashforth_hasOrder`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_49", "QuarteroniSaccoSaleri.Chapter11.definition_11_9", "ODE.LinearMultistep.adamsBashforth_hasOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.5.1'
 
 [[node]]
 id = "equation_11_51"
-kind = "theorem"
-desc = '''The two-step Adams–Moulton method is `u_{n+1} = u_n + (h/12)(5f_{n+1} + 8f_n - f_{n-1})`:
-`(adamsMoulton 2).bm1 = 5/12`, `.b = ![8/12, -1/12]`; `adamsMoulton 0` is backward Euler,
-`adamsMoulton 1` is Crank–Nicolson, and the three- and four-step methods have
-`(9/24; 19/24, -5/24, 1/24)` and `(251/720; 646/720, -264/720, 106/720, -19/720)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_49", "ODE.LinearMultistep.adamsMoulton"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.51'
 
 [[node]]
 id = "adamsMoulton_order"
-kind = "theorem"
-desc = '''`q`-step Adams–Moulton methods have order `q + 1`: `(adamsMoulton p).HasOrder (p + 1)` for
-`p ≥ 1`. `ODE.LinearMultistep.adamsMoulton_hasOrder`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_49", "QuarteroniSaccoSaleri.Chapter11.definition_11_9", "ODE.LinearMultistep.adamsMoulton_hasOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.5.1'
 
 [[node]]
 id = "adamsErrorConstants"
-kind = "theorem"
-desc = '''Table 11.1: the error constants of the Adams–Bashforth methods of orders 1–4 are
-`1/2, 5/12, 3/8, 251/720` and those of the Adams–Moulton methods of orders 1–4 are
-`-1/2, -1/12, -1/24, -19/720`: `(adamsBashforth p).errorConstant (p+1)` and
-`(adamsMoulton p).errorConstant (p+1)` for `p ≤ 3`. The table's index `q` is the *order* in both
-columns (its AM caption "having order `q+1`" would place `-1/2` at Crank–Nicolson, which has
-`-1/12`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_48", "ODE.LinearMultistep.adamsBashforth_hasOrder", "ODE.LinearMultistep.adamsMoulton_hasOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 11.1'
 
 [[node]]
 id = "bdf"
-kind = "definition"
-desc = '''§11.5.2 and Table 11.2: the backward differentiation formulae
-`u_{n+1} = ∑_{j=0}^p a_j u_{n-j} + h b_{-1} f_{n+1}` for `p = 0, …, 5`, `ODE.LinearMultistep.bdf`;
-`bdf 0` is backward Euler. The printed `b_{-1} = 60/137` of the row `p = 5` is `60/147`. With
-`bdf_order : (bdf k).HasOrder (k + 1)` (`ODE.LinearMultistep.bdf_hasOrder`). ★'''
-deps = ["ODE.LinearMultistep.bdf", "ODE.LinearMultistep.bdf_hasOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 11.2'
+
+[[node]]
+id = "definition_11_7_iff"
+
+[[node]]
+id = "definition_11_7_ofOneStep"
+
+[[node]]
+id = "equation_11_43_isOrbit_iff"
+
+[[node]]
+id = "equation_11_43_twoStep"
+
+[[node]]
+id = "equation_11_44_isOrbit_iff"
+
+[[node]]
+id = "equation_11_44_twoStep"
+
+[[node]]
+id = "equation_11_45_iff"
+
+[[node]]
+id = "equation_11_45_implicit_iff"
+
+[[node]]
+id = "equation_11_46_beta"
+
+[[node]]
+id = "equation_11_46_eq"
+
+[[node]]
+id = "definition_11_8_spec"
+
+[[node]]
+id = "definition_11_8_global"
+
+[[node]]
+id = "definition_11_8_global_eq"
+
+[[node]]
+id = "definition_11_9_iff"
+
+[[node]]
+id = "definition_11_9_method"
+
+[[node]]
+id = "definition_11_9_method_iff"
+
+[[node]]
+id = "definition_11_9_order"
+
+[[node]]
+id = "definition_11_9_order_iff"
+
+[[node]]
+id = "definition_11_9_order_method"
+
+[[node]]
+id = "definition_11_9_order_method_iff"
+
+[[node]]
+id = "definition_11_9_of_order"
+
+[[node]]
+id = "equation_11_48_eq"
+
+[[node]]
+id = "equation_11_48_lte"
+
+[[node]]
+id = "equation_11_48_linear"
+
+[[node]]
+id = "errorConstant"
+
+[[node]]
+id = "errorConstant_eq"
+
+[[node]]
+id = "equation_11_48_principal"
+
+[[node]]
+id = "equation_11_49_iff"
+
+[[node]]
+id = "equation_11_49_adamsBashforth"
+
+[[node]]
+id = "equation_11_49_adamsMoulton"
+
+[[node]]
+id = "bdf_p_b"
+
+[[node]]
+id = "bdf_isOrbit_iff"
+
+[[node]]
+id = "bdf_table"
+
+[[node]]
+id = "bdf_order"

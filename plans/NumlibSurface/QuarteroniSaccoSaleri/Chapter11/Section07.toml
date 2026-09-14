@@ -1,67 +1,39 @@
 namespace = "QuarteroniSaccoSaleri.Chapter11"
-desc = '''
-§11.7, predictor–corrector methods: the fixed-point iteration for an implicit step and its
-convergence condition (11.67)–(11.68), the `P(EC)^m` and `P(EC)^mE` schemes (11.69), Heun as a
-predictor–corrector pair (Example 11.8), the order of a pair (Property 11.3) and the ABM
-characteristic polynomials (Example 11.10). Restatements of `Numlib/ODE/Multistep`
-(`ODE.PredictorCorrector`) and `Numlib/Nonlinear/FixedPoint`.
-
-Skipped: Example 11.9 (a numerical experiment), the `Π_{P(EC)^m}` and `Π_{P(EC)^mE}` formulas
-and the ABM error estimate (Milne's device), all unnumbered; Program 93.
-'''
 
 [[node]]
 id = "equation_11_68"
-kind = "theorem"
-desc = '''The fixed-point iteration (11.67) `u_{n+1}^{(k+1)} = Ψ(u_{n+1}^{(k)})` for the implicit step
-`u_{n+1} = G + h b_{-1} f(t_{n+1}, u_{n+1})` converges from every starting value when
-`h < 1 / (|b_{-1}| L)`, `L` the Lipschitz constant of `f` in `y` (11.68): `v ↦ G + h b_{-1} f(t, v)`
-is a contraction with constant `h |b_{-1}| L < 1`, so Mathlib's `ContractingWith.fixedPoint` /
-`Nonlinear/FixedPoint`'s `existsUnique_eq_self` and the convergence of the iterates apply
-(Theorem 6.1 of the book). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_45"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.68'
 
 [[node]]
 id = "equation_11_69"
-kind = "definition"
-desc = '''The predictor–corrector schemes: the predictor `[P]` (an explicit `p̃+1`-step method), the
-evaluation `[E]`, and `m ≥ 1` corrections `[C]` by an implicit `p+1`-step method — `P(EC)^m`
-(11.69 and the following `[E]`, `[C]`) and `P(EC)^mE` (with a final evaluation); `PEC = P(EC)^1`.
-`ODE.PredictorCorrector` with its `pecStep`/`peceStep` and orbit predicates, and the convention
-that both methods are padded to the number `p` of steps of the predictor.'''
-deps = ["ODE.PredictorCorrector", "QuarteroniSaccoSaleri.Chapter11.equation_11_45"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.69'
 
 [[node]]
 id = "example_11_8"
-kind = "theorem"
-desc = '''Heun's method is the PEC method with forward Euler as predictor and Crank–Nicolson as
-corrector: the orbits of `PEC(forwardEuler, crankNicolson, m = 1)` are the orbits of (11.10).
-`ODE.PredictorCorrector.heun_eq_pec`. The second example (AB2 predictor, AM3 corrector) is the
-instance `ODE.PredictorCorrector.mk (adamsBashforth 1) (adamsMoulton 2) 1`, whose PEC and PECE
-recursions are the displayed ones (`example_11_8_abm`, by unfolding). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_69", "QuarteroniSaccoSaleri.Chapter11.equation_11_10", "ODE.PredictorCorrector.heun_eq_pec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.8'
 
 [[node]]
 id = "property_11_3"
-kind = "theorem"
-desc = '''Let the predictor have order `q̃` and the corrector order `q`. If `q̃ ≥ q`, or `q̃ < q` and
-`m > q - q̃`, the `P(EC)^m` method has the order (and the PLTE) of the corrector; if `q̃ < q` and
-`m = q - q̃` it has order `q` with a different PLTE; if `q̃ < q` and `m ≤ q - q̃ - 1` it has order
-`q̃ + m`. `P(EC)^mE` has the same order and PLTE as `P(EC)^m`. The order clauses are
-`ODE.PredictorCorrector.hasOrder_of`; the PLTE clauses are stated as
-`lte_PC - lte_C = O(h^{q+1})` in the first case and are planned with it (★★★). The book states the
-property without proof (citing [Lam91]).'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_69", "QuarteroniSaccoSaleri.Chapter11.definition_11_9", "ODE.PredictorCorrector.hasOrder_of"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.3'
 
 [[node]]
 id = "example_11_10"
-kind = "theorem"
-desc = '''For the ABM methods with `p` steps, `ρ̂(r) = ρ̃(r) = r (r^{p-1} - r^{p-2})` and
-`σ̂(r) = r σ(r)`, `σ` the second characteristic polynomial of the corrector: the padded corrector's
-polynomials. `ODE.PredictorCorrector.abm_charPoly`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_69", "QuarteroniSaccoSaleri.Chapter11.characteristicPolynomials", "ODE.PredictorCorrector.abm_charPoly"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 11.10'
+
+[[node]]
+id = "equation_11_69_pece"
+
+[[node]]
+id = "equation_11_69_iff"
+
+[[node]]
+id = "equation_11_69_pece_iff"
+
+[[node]]
+id = "example_11_8_abm_pair"
+
+[[node]]
+id = "example_11_8_abm"
+
+[[node]]
+id = "pecOrder"
