@@ -83,17 +83,4 @@ id = "isMinNormMinResidualIterate_iff_isMinResidualIterate"
 
 [[node]]
 id = "existsUnique_isGalerkinIterate_of_grade_le"
-kind = "theorem"
-desc = '''At the grade the Galerkin (FOM) iterate exists, is unique and is exact, for any *injective* `A`
-(no coercivity): for `A : E →ₗ[𝕜] E` injective, `[FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]`
-and `grade A (b - A x₀) ≤ m`, `∃! x, IsGalerkinIterate A b x₀ m x`, and that `x` satisfies
-`A x = b`. Proof: `𝒦_m = 𝒦_grade` is `A`-invariant (`subspace_grade_mem_invtSubmodule`) and
-contains `r₀`; `A` maps the finite-dimensional `𝒦_m` injectively into itself, hence onto it, so
-there is a unique `z ∈ 𝒦_m` with `A z = r₀`, and `x = x₀ + z` is the unique point of `x₀ + 𝒦_m`
-with zero residual; any Galerkin iterate has residual in `𝒦_{m+1} = 𝒦_m` and orthogonal to `𝒦_m`,
-hence zero, hence equals `x`. This is what Quarteroni–Sacco–Saleri's proof of Theorem 4.13 uses when
-it "inverts the first relation in (4.56)" at a breakdown step `m < n`: `H_m` is nonsingular there
-because `A` is; `existsUnique_isGalerkinIterate_iff_isUnit` of `Numlib/Krylov/Hessenberg` is the
-matrix side of the same fact. Compare `existsUnique_isGalerkinIterate_of_isCoercive`, which needs
-coercivity but no condition on `m`. ★★'''
-deps = ["Krylov.IsGalerkinIterate", "Krylov.IsGalerkinIterate.apply_eq_of_grade_le", "Krylov.subspace_grade_mem_invtSubmodule", "Krylov.subspace_eq_of_grade_le", "Krylov.residual_mem_subspace_succ", "Krylov.grade"]
+

@@ -462,6 +462,41 @@ theorem energyNorm_error_antitone (hA : A.IsSymmetricCoercive) {x : ℕ → E}
 
 end IsGalerkinIterate
 
+/-- At the grade the Galerkin (FOM) iterate exists, is unique and is exact, for any *injective* `A`
+— no coercivity: `𝒦_m = 𝒦_grade` is `A`-invariant and contains `r₀`, and `A` maps this
+finite-dimensional space injectively, hence onto, itself, so there is exactly one point of
+`x₀ + 𝒦_m` with zero residual; any Galerkin iterate is exact there
+(`Krylov.IsGalerkinIterate.apply_eq_of_grade_le`), hence equals it. This is the step
+[quarteroni2000numerical] take silently in the proof of Theorem 4.13 when they "invert the first
+relation in (4.56)" at a breakdown `m < n`: the Hessenberg matrix `H_m` is nonsingular there because
+`A` is (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` of `Numlib/Krylov/Hessenberg` is the
+matrix side). Compare `Krylov.existsUnique_isGalerkinIterate_of_isCoercive`, which needs coercivity
+but no condition on `m`. -/
+theorem existsUnique_isGalerkinIterate_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+    (hA : Function.Injective A) (hm : grade A (b - A x₀) ≤ m) :
+    ∃! x, IsGalerkinIterate A b x₀ m x := by
+  have hKg : subspace A (b - A x₀) m = subspace A (b - A x₀) (grade A (b - A x₀)) :=
+    subspace_eq_of_grade_le A (b - A x₀) hm
+  have hinvt : subspace A (b - A x₀) m ∈ Module.End.invtSubmodule A := by
+    rw [hKg]; exact subspace_grade_mem_invtSubmodule A (b - A x₀)
+  have hres : ∀ z ∈ subspace A (b - A x₀) m, A z ∈ subspace A (b - A x₀) m :=
+    (Module.End.mem_invtSubmodule_iff_forall_mem_of_mem A).1 hinvt
+  set f : subspace A (b - A x₀) m →ₗ[𝕜] subspace A (b - A x₀) m := A.restrict hres with hf
+  have hval : ∀ z : subspace A (b - A x₀) m, ((f z : subspace A (b - A x₀) m) : E) = A (z : E) :=
+    fun z => rfl
+  have hfinj : Function.Injective f := by
+    intro z w hzw
+    exact Subtype.ext (hA (by rw [← hval z, ← hval w, hzw]))
+  have hr₀ : b - A x₀ ∈ subspace A (b - A x₀) m := by
+    rw [hKg, subspace_grade_eq_fullSubspace]
+    exact Submodule.subset_span ⟨0, by simp⟩
+  obtain ⟨z, hz⟩ := (LinearMap.injective_iff_surjective.1 hfinj) ⟨b - A x₀, hr₀⟩
+  have hAz : A (z : E) = b - A x₀ := by rw [← hval z, hz]
+  refine ⟨x₀ + (z : E), ⟨by simp, ?_⟩, fun y hy => ?_⟩
+  · rw [map_add, hAz, show b - (A x₀ + (b - A x₀)) = 0 by abel]
+    exact Submodule.zero_mem _
+  · exact hA (by rw [hy.apply_eq_of_grade_le hm, map_add, hAz]; abel)
+
 end Galerkin
 
 /-- For symmetric `A` and a starting vector in the range of `A`, every Krylov subspace of that

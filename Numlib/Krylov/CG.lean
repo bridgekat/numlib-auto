@@ -1,5 +1,6 @@
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
+import Numlib.Projection.ConjugateDirection
 
 /-!
 # The conjugate gradient recurrence ([hestenes1952methods])
@@ -20,6 +21,10 @@ import Numlib.Krylov.Lanczos
 
 * `CG.isGalerkinIterate`: CG realises the Galerkin specification of `Numlib/Krylov/Iterate`, hence
   minimizes the energy norm of the error;
+* `CG.isConjugateFamily_direction`, `CG.iterate_x_eq_conjugateDirection_iterate`: CG is the
+  conjugate-direction method of `Numlib/Projection/ConjugateDirection` along its own directions
+  ([quarteroni2000numerical] §4.3.4), so the expanding subspace theorem and finite termination
+  proved there apply to it;
 * `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`: the orthogonality invariants
   ([saad2003iterative] Prop 6.20);
 * `CG.arnoldi_vec_eq`: the CG residuals are the Lanczos vectors up to sign ([saad2003iterative]
@@ -571,6 +576,32 @@ theorem isGalerkinIterate (k : ℕ) : IsGalerkinIterate A b x₀ k (iterate A b 
   refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨i, rfl⟩
   rw [← inner_conj_symm, inner_residual_direction_eq_zero b x₀ hA i.2, map_zero]
+
+/-! ### CG as a conjugate-direction method -/
+
+/-- The CG directions form an `A`-conjugate family in the sense of
+`ConjugateDirection.IsConjugateFamily`: this is `CG.inner_apply_direction_eq_zero` repackaged, and
+it holds past the grade, where the directions vanish. -/
+theorem isConjugateFamily_direction :
+    ConjugateDirection.IsConjugateFamily A fun k => (iterate A b x₀ k).p :=
+  fun _ _ h => inner_apply_direction_eq_zero b x₀ hA h
+
+/-- CG is the conjugate-direction method along its own directions
+([quarteroni2000numerical] §4.3.4 and §7.2.4): the CG step length `α = ⟪r, r⟫ / ⟪A p, p⟫` is the
+exact line-search value `⟪p, r⟫ / ⟪p, A p⟫` of `ConjugateDirection.iterate`, because
+`⟪p_k, r_k⟫ = ‖r_k‖²` (`CG.inner_residual_direction_eq`). With
+`ConjugateDirection.iterate_eq_of_finrank_le` this is how [quarteroni2000numerical] derive the
+finite termination of Theorem 4.12 from Theorem 4.11; the backbone's own route is
+`CG.residual_eq_zero_of_grade_le` with `Krylov.grade_le_finrank`. -/
+theorem iterate_x_eq_conjugateDirection_iterate (k : ℕ) :
+    (iterate A b x₀ k).x = ConjugateDirection.iterate A b (fun k => (iterate A b x₀ k).p) x₀ k := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [ConjugateDirection.iterate_succ_eq, ← ih, ← residual_eq, iterate_succ_x, alpha,
+      ← hA.isSymmetric, ← inner_conj_symm (iterate A b x₀ k).p (iterate A b x₀ k).r,
+      inner_residual_direction_eq b x₀ hA le_rfl, RCLike.conj_ofReal, inner_self_eq_norm_sq_to_K,
+      RCLike.ofReal_pow]
 
 /-! ### Identification with the Lanczos vectors -/
 

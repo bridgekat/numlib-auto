@@ -263,6 +263,45 @@ theorem isSymmetricCoercive_energyEnd (hA : A.IsSymmetric) {c : ℝ} (hc : 0 < c
     rw [hM.inner_energyEnd_left A, hM.norm_toEnergy_sq]
     exact hcoer x⟩
 
+/-- One step of the preconditioned gradient (steepest descent) method
+([quarteroni2000numerical] §4.3.3, Program 19 with `P ≠ I`): with `r = b - A x` and
+`z = M⁻¹ r`, `x ↦ x + (⟪z, r⟫ / ⟪z, A z⟫) z`, which is `Projection.step1 A b z z x`. It is the
+steepest descent step of `Numlib/Projection/OneDimensional` for the transported operator
+`M⁻¹ A` in the `M`-inner product, read back in `E`. -/
+theorem toEnergy_step1_inv_residual (b x : E) :
+    hM.toEnergy (Projection.step1 A b (Minv (b - A x)) (Minv (b - A x)) x)
+      = Projection.steepestDescentStep (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b))
+          (hM.toEnergy x) := by
+  have hres : hM.toEnergy (Minv b) - hM.energyEnd (Minv ∘ₗ A) (hM.toEnergy x)
+      = hM.toEnergy (Minv (b - A x)) := by
+    rw [energyEnd_apply, LinearMap.comp_apply, ← map_sub, ← map_sub]
+  rw [Projection.steepestDescentStep, Projection.step1, Projection.step1, hres, map_add, map_smul,
+    hM.inner_toEnergy_inv, hM.inner_energyEnd_right]
+
+/-- The preconditioned gradient method contracts the `A`-norm of the error by
+`(λmax - λmin) / (λmax + λmin)`, `λmin`, `λmax` bounding the generalized eigenvalues of
+`A x = λ M x` ([quarteroni2000numerical] §4.3.3 and Corollary 4.1 read for `P⁻¹ A`; the book prints
+the method as Program 19 and states no numbered result): for `A` symmetric with
+`λmin ⟪M x, x⟫ ≤ ⟪A x, x⟫ ≤ λmax ⟪M x, x⟫`, `0 < λmin`, `A x* = b`, and
+`x' = x + (⟪z, r⟫ / ⟪z, A z⟫) z` with `r = b - A x`, `z = M⁻¹ r`,
+`‖x* - x'‖_A ≤ (λmax - λmin) / (λmax + λmin) ‖x* - x‖_A`. It is
+`Projection.energyNorm_steepestDescentStep_le` for `M⁻¹ A` in the `M`-inner product
+(`isSymmetricBoundedBy_energyEnd`), read back through `energyNorm_energyEnd`, exactly as
+`Krylov.PCG.energyNorm_error_le` transports the conjugate gradient bound. -/
+theorem energyNorm_steepestDescentStep_le (hA : A.IsSymmetric) {lmin lmax : ℝ} (hl : 0 < lmin)
+    (hmin : ∀ x : E, lmin * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x))
+    (hmax : ∀ x : E, RCLike.re (inner 𝕜 (A x) x) ≤ lmax * RCLike.re (inner 𝕜 (M x) x))
+    {b xstar : E} (hstar : A xstar = b) (x : E) :
+    energyNorm A (xstar - Projection.step1 A b (Minv (b - A x)) (Minv (b - A x)) x) ≤
+      (lmax - lmin) / (lmax + lmin) * energyNorm A (xstar - x) := by
+  have hB := hM.isSymmetricBoundedBy_energyEnd A hA hmin hmax
+  have hstar' : hM.energyEnd (Minv ∘ₗ A) (hM.toEnergy xstar) = hM.toEnergy (Minv b) := by
+    rw [energyEnd_apply, LinearMap.comp_apply, hstar]
+  have h := Projection.energyNorm_steepestDescentStep_le hl hB hstar' (hM.toEnergy x)
+  rw [← hM.toEnergy_step1_inv_residual A b x, ← map_sub, ← map_sub, hM.energyNorm_energyEnd,
+    hM.energyNorm_energyEnd] at h
+  exact h
+
 end IsPreconditioner
 
 /-! ### Left and right preconditioning search the same space ([saad2003iterative], Proposition 9.1)

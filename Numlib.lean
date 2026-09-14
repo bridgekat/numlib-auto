@@ -336,6 +336,8 @@ import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.Gronwall
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
+import Numlib.Optimization.ConjugateGradient
+import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
 import Numlib.Order.EReal
@@ -346,6 +348,7 @@ import Numlib.Preconditioner.ILU
 import Numlib.Preconditioner.Polynomial
 import Numlib.Projection.Additive
 import Numlib.Projection.Basic
+import Numlib.Projection.ConjugateDirection
 import Numlib.Projection.Coordinate
 import Numlib.Projection.OneDimensional
 import Numlib.Projection.Optimality

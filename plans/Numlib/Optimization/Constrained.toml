@@ -1,229 +1,106 @@
 namespace = "Constrained"
-desc = '''
-Constrained minimization on a real normed space (Quarteroni–Sacco–Saleri §7.3; Nocedal–Wright
-Ch. 12, Bertsekas *Constrained Optimization and Lagrange Multiplier Methods*): equality constraints
-`h i x = 0` indexed by a `Fintype ι`, inequality constraints `g j x ≤ 0` indexed by a `Fintype κ`,
-regular points (linear independence of the active constraint gradients), the Lagrangian, the
-Lagrange multiplier theorem for equality constraints with uniqueness of the multipliers (from
-Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`, which produces a nontrivial
-`(Λ, Λ₀)` and needs regularity to normalize `Λ₀ = 1`), the second-order sufficient condition on the
-tangent space of the constraints, Karush–Kuhn–Tucker points and the KKT necessary conditions
-under regularity, the sufficiency of the KKT conditions for convex programs, the KKT conditions
-for a differentiable convex program under Slater's condition (a restatement of the Kuhn–Tucker
-theory of `Numlib/Analysis/Convex/Optimization/Program`), and the penalty and
-augmented-Lagrangian methods with the convergence of their minimizers. Derivatives are data
-`f' : E → E →L[ℝ] ℝ`, `h' : ι → E → E →L[ℝ] ℝ`, with `HasStrictFDerivAt` where Mathlib's theorem
-wants it (a `C¹` function is strictly differentiable, `ContDiffAt.hasStrictFDerivAt`) and
-`[CompleteSpace E]` as that theorem requires. Prototype: `notes/qss/ch07/proto/Constrained.lean`.
-'''
 
 [[node]]
 id = "feasibleEq"
-kind = "definition"
-desc = '''`Constrained.feasibleEq (h : ι → E → ℝ) : Set E := {x | ∀ i, h i x = 0}`, the feasible set of
-(7.50). ★'''
-deps = []
 
 [[node]]
-id = "IsRegularPoint"
-kind = "definition"
-desc = '''Definition 7.2: `IsRegularPoint h h' x : Prop := x ∈ feasibleEq h ∧ LinearIndependent ℝ
-(fun i => h' i x)`, the constraint gradients at a feasible point being linearly independent
-(LICQ for equality constraints). ★'''
-deps = ["Constrained.feasibleEq"]
+id = "feasible"
 
 [[node]]
-id = "lagrangian"
-kind = "definition"
-desc = '''`lagrangian f h x l := f x + ∑ i, l i * h i x`, the Lagrangian `ℒ(x, λ)` of (7.50), with
-`lagrangian_hasFDerivAt : HasFDerivAt (lagrangian f h · l) (f' x + ∑ i, l i • h' i x) x` under
-the differentiability of `f` and the `h i`. ★'''
-deps = []
+id = "mem_feasibleEq"
 
 [[node]]
-id = "existsUnique_multipliers_of_isLocalMinOn"
-kind = "theorem"
-desc = '''Property 7.11, first part, with the regularity hypothesis the book omits (without it the
-multipliers need not exist: `min x` subject to `x² = 0`). If `IsRegularPoint h h' x`,
-`IsLocalMinOn f (feasibleEq h) x`, `HasStrictFDerivAt f (f' x) x` and
-`∀ i, HasStrictFDerivAt (h i) (h' i x) x`, then `∃! l : ι → ℝ, f' x + ∑ i, l i • h' i x = 0`.
-Proof (prototype): `feasibleEq h = {y | ∀ i, h i y = h i x}`, so Mathlib's
-`IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt` gives `Λ, Λ₀` not both zero with
-`∑ Λ i • h' i x + Λ₀ • f' x = 0`; `Λ₀ = 0` would contradict linear independence, so divide by
-`Λ₀`; uniqueness is linear independence again. Needs `[CompleteSpace E]`. ★★'''
-deps = ["Constrained.IsRegularPoint", "Constrained.lagrangian"]
-
-[[node]]
-id = "isLocalMin_of_lagrangian_second_order"
-kind = "theorem"
-desc = '''Property 7.11, second part (second-order sufficient condition, Nocedal–Wright Thm 12.6). Let
-`x ∈ feasibleEq h`, `f` and the `h i` twice differentiable near `x` with the Hessian of the
-Lagrangian `H : E →L[ℝ] E →L[ℝ] ℝ` at `(x, l)` (the derivative at `x` of
-`y ↦ f' y + ∑ i, l i • h' i y`), suppose `f' x + ∑ i, l i • h' i x = 0` and
-`∀ z ≠ 0, (∀ i, h' i x z = 0) → 0 < H z z`. Then `x` is a strict local minimizer of `f` on
-`feasibleEq h`: `∃ δ > 0, ∀ y ∈ feasibleEq h, y ∈ ball x δ → y ≠ x → f x < f y`. Proof: by
-contradiction take feasible `y_k → x`, `y_k ≠ x`, `f y_k ≤ f x`; the unit directions
-`(y_k - x) / ‖y_k - x‖` have a cluster point `z` (finite dimension, so add
-`[FiniteDimensional ℝ E]`) with `h' i x z = 0` (differentiability of `h i` and `h i y_k = 0 = h i x`);
-on feasible points `f = lagrangian f h · l`, whose second-order expansion at `x` (mean value form
-along the segment, with the Hessian continuous at `x`) gives `f y_k - f x = ½ H z z ‖y_k - x‖² + o(‖y_k - x‖²) > 0`
-eventually. No regularity and no implicit function theorem are needed. ★★★'''
-deps = ["Constrained.feasibleEq", "Constrained.lagrangian"]
+id = "mem_feasible"
 
 [[node]]
 id = "activeSet"
-kind = "definition"
-desc = '''`activeSet (g : κ → E → ℝ) (x : E) : Set κ := {j | g j x = 0}`, the active inequality
-constraints `𝒥(x*)` of Definition 7.3. ★'''
-deps = []
+
+[[node]]
+id = "mem_activeSet"
+
+[[node]]
+id = "lagrangian"
+
+[[node]]
+id = "lagrangian_eq_of_mem"
+
+[[node]]
+id = "IsRegularPoint"
+
+[[node]]
+id = "lagrangian_hasFDerivAt"
+
+[[node]]
+id = "existsUnique_multipliers_of_isLocalMinOn"
+
+[[node]]
+id = "isLittleO_taylor_two"
+
+[[node]]
+id = "isLocalMin_of_lagrangian_second_order"
 
 [[node]]
 id = "IsRegularPointIneq"
-kind = "definition"
-desc = '''Definition 7.3: `IsRegularPointIneq h h' g g' x : Prop := (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
-LinearIndependent ℝ (Sum.elim (fun i => h' i x) (fun j : activeSet g x => g' j x))` — feasibility
-and linear independence of the equality gradients together with the active inequality gradients
-(LICQ). ★'''
-deps = ["Constrained.activeSet"]
+
+[[node]]
+id = "IsRegularPointIneq.mem_feasible"
 
 [[node]]
 id = "IsKKTPoint"
-kind = "definition"
-desc = '''`structure IsKKTPoint f' h h' g g' x l μ : Prop` with fields `feasible_eq : ∀ i, h i x = 0`,
-`feasible_ineq : ∀ j, g j x ≤ 0`, `stationary : f' x + ∑ i, l i • h' i x + ∑ j, μ j • g' j x = 0`,
-`nonneg : ∀ j, 0 ≤ μ j`, `complementary : ∀ j, μ j * g j x = 0` — the Karush–Kuhn–Tucker
-conditions for `min f` subject to `h = 0`, `g ≤ 0`, i.e. `J_ℳ(x*, λ*, μ*) = 0` with `μ* ≥ 0` and
-`μ*_j g_j(x*) = 0` in the book's notation (Property 7.12's conclusion). ★'''
-deps = []
 
 [[node]]
-id = "exists_kkt_of_isLocalMinOn"
-kind = "theorem"
-desc = '''Property 7.12, the KKT necessary conditions under LICQ (Nocedal–Wright Thm 12.1): in finite
-dimension, if `IsRegularPointIneq h h' g g' x`, `x` is a local minimizer of `f` on
-`{y | (∀ i, h i y = 0) ∧ ∀ j, g j y ≤ 0}`, and `f`, `h i`, `g j` are continuously differentiable
-near `x`, then `∃ l μ, IsKKTPoint f' h h' g g' x l μ`. What the proof needs, honestly: (a) under
-LICQ the tangent cone of the feasible set at `x` equals the linearized cone
-`{z | h' i x z = 0, g' j x z ≤ 0 for active j}` — the inclusion `⊇` is the implicit function
-theorem applied to the active constraints (Mathlib: `HasStrictFDerivAt.implicitFunction`), and it
-is the only place regularity enters; (b) the first-order condition `f' x z ≥ 0` on the tangent cone
-(`IsLocalMinOn.hasFDerivWithinAt_nonneg`, as in Property 7.9); (c) Farkas' lemma to turn
-`f' x z ≥ 0` on the linearized cone into the multiplier representation — this third is proved:
-`ConvexAnalysis.farkas` (`Numlib/Analysis/Convex/LinearInequalities`) states, for a pairing `B`
-with `B.flip` compatible, `(∀ z, (∀ i, B z (a i) ≤ 0) → B z a₀ ≤ 0) ↔ ∃ l ≥ 0, ∑ i, l i • a i = a₀`,
-and the closedness of the finitely generated cone that its proof needs is
-`ConvexAnalysis.FinitelyGeneratedCone.isClosed` (`Polyhedral/Cone`). Instantiate `B = innerₗ E`
-with the gradients read as vectors through Riesz — compatibility from finite dimension, which makes
-`E` complete so that `instIsCompatiblePairingInner` and `isCompatiblePairing_flip_of_isInnerPairing`
-apply — or directly `B = (topDualPairing ℝ E).flip` on the functionals `f' x`, `h' i x`, `g' j x`
-(`instIsCompatiblePairingTopDualFinite`); the generators are `h' i x`, `-h' i x` and the active
-`g' j x`, and `a₀ = -f' x`. Alternatively McShane's penalty proof avoids (a) and (c) at the price
-of a compactness argument. Uniqueness of `(l, μ)` under LICQ is the separate ★ node
-`kkt_multipliers_unique`. ★★★'''
-deps = ["Constrained.IsRegularPointIneq", "Constrained.IsKKTPoint", "ConvexAnalysis.farkas", "ConvexAnalysis.FinitelyGeneratedCone.isClosed"]
+id = "IsKKTPoint.mem_feasible"
+
+[[node]]
+id = "IsKKTPoint.eq_zero_of_notMem_activeSet"
+
+[[node]]
+id = "sum_eq_sum_activeSet"
 
 [[node]]
 id = "kkt_multipliers_unique"
-kind = "theorem"
-desc = '''Under `IsRegularPointIneq h h' g g' x`, two KKT multiplier pairs at `x` coincide:
-`IsKKTPoint f' h h' g g' x l μ → IsKKTPoint f' h h' g g' x l' μ' → l = l' ∧ μ = μ'`. Proof:
-complementarity kills the inactive `μ_j`, and the difference of the two stationarity equations is
-a vanishing linear combination of the linearly independent active gradients. This is the "only
-two vectors" of Property 7.12 and the uniqueness in Property 7.11. ★'''
-deps = ["Constrained.IsRegularPointIneq", "Constrained.IsKKTPoint"]
+
+[[node]]
+id = "_root_.LinearIndependent.range_pi_eq_top"
+
+[[node]]
+id = "exists_hasDerivAt_of_hasStrictFDerivAt_of_range_eq_top"
+
+[[node]]
+id = "mem_posTangentConeAt_of_isRegularPointIneq"
+
+[[node]]
+id = "sum_extend_activeSet_smul"
+
+[[node]]
+id = "exists_kkt_of_isLocalMinOn"
 
 [[node]]
 id = "isMinOn_of_lagrangian_convexOn"
-kind = "theorem"
-desc = '''Sufficiency of the KKT conditions for convex programs, the engine behind Property 7.15. Let
-`C` be convex, `S ⊆ C`, `x ∈ S`, `f` convex on `C`, and for each `j` let `y ↦ μ j * g j y` be
-convex on `C` (so `g j` convex where `μ j > 0` and concave where `μ j < 0`); suppose
-`HasFDerivAt f (f' x) x`, `HasFDerivAt (g j) (g' j x) x`, sign compatibility
-`∀ y ∈ S, ∀ j, μ j * g j y ≤ 0`, complementarity `∀ j, μ j * g j x = 0`, and the variational
-inequality `∀ y ∈ C, 0 ≤ f' x (y - x) + ∑ j, μ j * g' j x (y - x)`. Then `IsMinOn f S x`. Proof:
-the Lagrangian `Λ = f + ∑ μ_j g_j` is convex on `C` with `Λ x = f x` (complementarity) and
-`Λ' x (y - x) ≥ 0`, so `Λ y ≥ Λ x` on `C` (`ConvexOn.add_lineDeriv_le` /
-`isMinOn_iff_forall_lineDeriv_nonneg` of `Numlib/Analysis/Convex/Gateaux`), and on `S`,
-`f y ≥ Λ y ≥ Λ x = f x`. Equality constraints are the pair `h ≤ 0`, `-h ≤ 0` with free
-multipliers, and `≥`-constraints have nonpositive multipliers; stationarity `Λ' x = 0` is the
-case `C = univ` of the variational inequality. The subgradient form of this sufficiency — for
-nondifferentiable convex `f`, `g j` and affine equality constraints in `ℝⁿ`, with
-`0 ∈ ∂f(x) + ∑ μ_j ∂g_j(x)` in place of the variational inequality — is Rockafellar Theorem 28.3,
-`Rockafellar.OrdinaryConvexProgram.theorem_28_3_kuhnTucker` (`NumlibSurface/Rockafellar/Part6/
-Section28`), whose backbone core is `ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone`;
-this node keeps the Gâteaux form because it allows a nonlinear equality constraint with a free
-multiplier whenever `μ · h` is convex on `C`, which is what Property 7.15 asks. ★★'''
-deps = []
+
+[[node]]
+id = "_root_.AffineMap.hasFDerivAt_of_finiteDimensional"
 
 [[node]]
 id = "exists_kkt_of_convexOn_of_slater"
-kind = "theorem"
-desc = '''Kuhn–Tucker conditions for a differentiable convex program under Slater's condition — the
-constraint qualification the book alludes to after Property 7.14, in the convex case, with Slater
-in place of LICQ. In finite dimension let `f : E → ℝ` be convex (`ConvexOn ℝ univ f`), each
-inequality constraint `g j` convex, each equality constraint `h i` affine (`h i y = φ i y + c i`
-with `φ i : E →L[ℝ] ℝ`), all differentiable at `x` with `HasFDerivAt f (f' x) x`,
-`HasFDerivAt (g j) (g' j x) x`, `HasFDerivAt (h i) (h' i x) x`; let Slater's condition hold,
-`∃ y, (∀ i, h i y = 0) ∧ ∀ j, g j y < 0`; and let `x` minimize `f` on the feasible set
-`{y | (∀ i, h i y = 0) ∧ ∀ j, g j y ≤ 0}` (for a convex program a local minimizer is global). Then
-`∃ l μ, IsKKTPoint f' h h' g g' x l μ`. No regularity of the constraint gradients is assumed, and
-`(l, μ)` need not be unique. Proof: `ConvexAnalysis.exists_isKuhnTuckerVector_of_slater`
-(`Numlib/Analysis/Convex/Optimization/Program`) — or its equality form
-`exists_multipliers_of_slater_eq` — applied to `f₀ = f`, `f_j = g_j` read in `EReal` (so
-`dom f₀ = univ` and `ri (dom f₀) = univ`) and `b = h` as affine maps, gives multipliers `μ ≥ 0`, `l`
-with `inf_y (f y + ∑ μ_j g_j y + ∑ l_i h_i y) = f x`; the general form of Rockafellar's Theorem 28.3,
-in `Optimization/Program`, turns that into the Kuhn–Tucker conditions at `x`: complementary
-slackness `μ_j g_j x = 0` and `x` an unconstrained minimizer of the Lagrangian
-`f + ∑ μ_j g_j + ∑ l_i h_i`; the Lagrangian is differentiable at `x`, so its derivative vanishes
-there (`IsLocalMin.hasFDerivAt_eq_zero`), which is `stationary`. Feasibility is the hypothesis. ★★'''
-deps = ["Constrained.IsKKTPoint", "ConvexAnalysis.exists_isKuhnTuckerVector_of_slater"]
-source = 'Rockafellar, Convex Analysis, Theorems 28.2 and 28.3'
 
 [[node]]
 id = "penalized"
-kind = "definition"
-desc = '''(7.53), the penalized Lagrangian: for `h : E → F` into a real inner product space,
-`penalized f h α x := f x + 1 / 2 * α * ‖h x‖ ^ 2`. ★'''
-deps = []
 
 [[node]]
 id = "augmented"
-kind = "definition"
-desc = '''(7.55), the augmented Lagrangian: `augmented f h α l x := f x + ⟪l, h x⟫ + 1 / 2 * α * ‖h x‖ ^ 2`;
-`augmented f h α 0 = penalized f h α`. ★'''
-deps = ["Constrained.penalized"]
+
+[[node]]
+id = "augmented_zero"
+
+[[node]]
+id = "mem_and_eq_zero_and_le_of_clusterPt"
 
 [[node]]
 id = "penalty_clusterPt"
-kind = "theorem"
-desc = '''Property 7.16, corrected to the true statement (Luenberger–Ye Thm 13.1; Bertsekas Prop
-4.2.1): every cluster point of the penalty minimizers is a constrained global minimizer. Let `Ω`
-be closed, `f` and `h` continuous on `Ω`, `α : ℕ → ℝ` positive, monotone and tending to `∞`,
-`xstar ∈ Ω` with `h xstar = 0` and `IsMinOn f {y ∈ Ω | h y = 0} xstar`, and let
-`xk k ∈ Ω` be a global minimizer of `penalized f h (α k)` on `Ω` for every `k`. Then every
-`xbar` with `MapClusterPt xbar atTop xk` satisfies `xbar ∈ Ω`, `h xbar = 0` and
-`IsMinOn f {y ∈ Ω | h y = 0} xbar`. Proof: `penalized (α k) (xk k) ≤ f xstar`, so
-`f (xk k) ≤ f xstar` and `α k ‖h (xk k)‖² / 2 ≤ f xstar - f (xk k)`; along a subsequence converging
-to `xbar`, `f (xk k)` is bounded, so `‖h (xk k)‖ → 0` and `h xbar = 0` by continuity, and
-`f xbar ≤ f xstar`. The book's "the sequence converges to x*" holds only when the constrained
-minimizer is unique and the `xk` are bounded: `tendsto_penalty_of_unique`. ★★'''
-deps = ["Constrained.penalized"]
 
 [[node]]
 id = "tendsto_penalty_of_unique"
-kind = "theorem"
-desc = '''The convergent form of Property 7.16: under the hypotheses of `penalty_clusterPt`, if the
-sequence `xk` is bounded (e.g. `Ω` compact) and the constrained problem has the unique global
-minimizer `xstar`, then `Tendsto xk atTop (𝓝 xstar)`, in a proper space. Proof: every subsequence
-has a cluster point, each cluster point is a constrained minimizer, hence `xstar`. ★★'''
-deps = ["Constrained.penalty_clusterPt"]
 
 [[node]]
 id = "augmented_clusterPt"
-kind = "theorem"
-desc = '''Property 7.16 for the method of multipliers (7.56), as the book asserts after (7.56): with the
-hypotheses of `penalty_clusterPt`, a bounded multiplier sequence `l : ℕ → F` (`∀ k, ‖l k‖ ≤ Λ`) and
-`xk k` a global minimizer of `augmented f h (α k) (l k)` on `Ω`, every cluster point of `xk` is a
-constrained global minimizer. Proof as for `penalty_clusterPt`, with
-`α k ‖h (xk k)‖² / 2 - Λ ‖h (xk k)‖ ≤ f xstar - f (xk k)`. ★★'''
-deps = ["Constrained.augmented", "Constrained.penalty_clusterPt"]

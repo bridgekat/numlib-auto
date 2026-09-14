@@ -324,6 +324,240 @@ theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
         rw [one_div_div, div_pow, div_pow]
         field_simp
 
+/-- The closed form of the Chebyshev min–max value on `[λmin, λmax]` with `κ = λmax / λmin > 1`
+([quarteroni2000numerical] (4.47) and the display closing the proof of Theorem 4.12): with
+`c = (√κ - 1)/(√κ + 1)`, `1 / T_m((κ + 1)/(κ - 1)) = 2 c^m / (1 + c^{2m})`. At
+`x = (κ + 1)/(κ - 1)` one has `x + √(x² - 1) = 1/c` and `x - √(x² - 1) = c`, so
+`T_m x = ½ (c^{-m} + c^m)` by `eval_T_eq_half_add_pow`. This sharpens
+`one_div_eval_T_le_two_mul_pow` to an equality. -/
+theorem one_div_eval_T_eq_two_mul_pow_div {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
+    1 / (T ℝ m).eval ((κ + 1) / (κ - 1)) =
+      2 * ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ m /
+        (1 + ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ (2 * m)) := by
+  have hk1 : (0 : ℝ) < κ - 1 := by linarith
+  have hs : Real.sqrt κ ^ 2 = κ := Real.sq_sqrt (by linarith)
+  have hs1 : 1 < Real.sqrt κ := by nlinarith [Real.sqrt_nonneg κ]
+  have hsm1 : Real.sqrt κ - 1 ≠ 0 := by linarith
+  have hsp1 : Real.sqrt κ + 1 ≠ 0 := by linarith
+  have hx1 : (1 : ℝ) ≤ (κ + 1) / (κ - 1) := by
+    rw [le_div_iff₀ hk1]; linarith
+  have hsq : Real.sqrt (((κ + 1) / (κ - 1)) ^ 2 - 1) = 2 * Real.sqrt κ / (κ - 1) := by
+    rw [show ((κ + 1) / (κ - 1)) ^ 2 - 1 = (2 * Real.sqrt κ / (κ - 1)) ^ 2 by
+      rw [div_pow, div_pow, mul_pow, hs]
+      field_simp
+      ring]
+    exact Real.sqrt_sq (by positivity)
+  set c : ℝ := (Real.sqrt κ - 1) / (Real.sqrt κ + 1) with hc
+  have hcpos : 0 < c := div_pos (by linarith) (by linarith)
+  have hw : (κ + 1) / (κ - 1) + Real.sqrt (((κ + 1) / (κ - 1)) ^ 2 - 1) = c⁻¹ := by
+    rw [hsq, ← add_div, hc, inv_div, div_eq_div_iff hk1.ne' hsm1]
+    linear_combination 2 * hs
+  have hw' : (κ + 1) / (κ - 1) - Real.sqrt (((κ + 1) / (κ - 1)) ^ 2 - 1) = c := by
+    rw [hsq, ← sub_div, hc, div_eq_div_iff hk1.ne' hsp1]
+    linear_combination (-2) * hs
+  rw [eval_T_eq_half_add_pow hx1, hw, hw', inv_pow, pow_mul, ← pow_mul, mul_comm 2 m, pow_mul]
+  have hcm : 0 < c ^ m := pow_pos hcpos m
+  field_simp
+
+/-! ### Uniqueness of the constrained Chebyshev minimizer -/
+
+section Uniqueness
+
+variable {m : ℕ} {a b : ℝ}
+
+/-- The Chebyshev extremal nodes of `[a, b]`: the images `t_k = (b + a)/2 - cos(kπ/m) (b - a)/2`,
+`k = 0, …, m`, of the extrema `cos(kπ/m)` of `T_m` under the affine map of `[-1, 1]` onto
+`[a, b]`; `t_0 = a` and `t_m = b`. -/
+noncomputable def extremalNode (m : ℕ) (a b : ℝ) (k : Fin (m + 1)) : ℝ :=
+  (b + a) / 2 - Real.cos ((k : ℝ) * Real.pi / m) * ((b - a) / 2)
+
+/-- The affine change of variable sends the `k`-th extremal node back to `cos(kπ/m)`. -/
+theorem shift_extremalNode (hab : a < b) (k : Fin (m + 1)) :
+    (b + a - 2 * extremalNode m a b k) / (b - a) = Real.cos ((k : ℝ) * Real.pi / m) := by
+  have hba : b - a ≠ 0 := sub_ne_zero.mpr hab.ne'
+  rw [extremalNode]
+  field_simp
+  ring
+
+/-- The extremal nodes lie in `[a, b]`. -/
+theorem extremalNode_mem_Icc (hab : a < b) (k : Fin (m + 1)) :
+    extremalNode m a b k ∈ Set.Icc a b := by
+  have hc := Real.abs_cos_le_one ((k : ℝ) * Real.pi / m)
+  rw [abs_le] at hc
+  constructor <;> (simp only [extremalNode]; nlinarith [hc.1, hc.2])
+
+/-- The angle `kπ/m` of the `k`-th node lies in `[0, π]`. -/
+private theorem angle_mem_Icc (hm : 1 ≤ m) (k : Fin (m + 1)) :
+    (k : ℝ) * Real.pi / m ∈ Set.Icc 0 Real.pi := by
+  have hmpos : (0 : ℝ) < m := by exact_mod_cast hm
+  have hk : (k : ℝ) ≤ m := by exact_mod_cast Nat.lt_succ_iff.1 k.2
+  constructor
+  · positivity
+  · rw [div_le_iff₀ hmpos]
+    nlinarith [Real.pi_pos]
+
+/-- The extremal nodes are strictly increasing in `k`. -/
+theorem extremalNode_strictMono (hm : 1 ≤ m) (hab : a < b) :
+    StrictMono (extremalNode m a b) := by
+  intro j k hjk
+  have hmpos : (0 : ℝ) < m := by exact_mod_cast hm
+  have hjk' : (j : ℝ) * Real.pi / m < (k : ℝ) * Real.pi / m := by
+    have : (j : ℝ) < k := by exact_mod_cast hjk
+    exact div_lt_div_of_pos_right (mul_lt_mul_of_pos_right this Real.pi_pos) hmpos
+  have hcos := Real.strictAntiOn_cos (angle_mem_Icc hm j) (angle_mem_Icc hm k) hjk'
+  simp only [extremalNode]
+  nlinarith
+
+/-- The extremal nodes are distinct. -/
+theorem extremalNode_injective (hm : 1 ≤ m) (hab : a < b) :
+    Function.Injective (extremalNode m a b) :=
+  (extremalNode_strictMono hm hab).injective
+
+/-- At the `k`-th extremal node the normalized Chebyshev polynomial takes the value
+`(-1)^k / T_m((b + a)/(b - a))`, the alternating extremal values. -/
+theorem eval_shifted_extremalNode (hm : 1 ≤ m) (hab : a < b) (k : Fin (m + 1)) :
+    (shifted m a b 0).eval (extremalNode m a b k)
+      = (-1) ^ (k : ℕ) / (T ℝ m).eval ((b + a) / (b - a)) := by
+  have hmne : (m : ℝ) ≠ 0 := by exact_mod_cast (Nat.one_le_iff_ne_zero.1 hm)
+  rw [eval_shifted m hab, shift_extremalNode hab, T_real_cos,
+    show ((m : ℤ) : ℝ) * ((k : ℝ) * Real.pi / m) = (k : ℕ) * Real.pi by
+      push_cast; field_simp,
+    Real.cos_nat_mul_pi, mul_zero, sub_zero]
+
+/-- The weights `ℓ_k(0)` of Lagrange interpolation at the extremal nodes, evaluated at `0`, have
+the sign `(-1)^k`: `0 < (-1)^k ℓ_k(0)`. Each factor `(0 - t_j)/(t_k - t_j)` of `ℓ_k(0)` is
+negative exactly for the `k` indices `j < k`. -/
+theorem pos_neg_one_pow_mul_eval_zero_basis_extremalNode (hm : 1 ≤ m) (ha : 0 < a) (hab : a < b)
+    (k : Fin (m + 1)) :
+    0 < (-1) ^ (k : ℕ) * (Lagrange.basis Finset.univ (extremalNode m a b) k).eval 0 := by
+  have hpos : ∀ j, 0 < extremalNode m a b j := fun j =>
+    lt_of_lt_of_le ha (extremalNode_mem_Icc hab j).1
+  have hmono := extremalNode_strictMono hm hab
+  have hcard : (-1 : ℝ) ^ (k : ℕ) = ∏ j ∈ Finset.univ.erase k, if j < k then (-1 : ℝ) else 1 := by
+    rw [Finset.prod_ite, Finset.prod_const_one, mul_one, Finset.prod_const]
+    congr 1
+    rw [Finset.filter_erase, Finset.erase_eq_of_notMem (by simp), Finset.filter_gt_eq_Iio,
+      Fin.card_Iio]
+  rw [hcard, Lagrange.basis, Polynomial.eval_prod, ← Finset.prod_mul_distrib]
+  refine Finset.prod_pos fun j hj => ?_
+  have hjk : j ≠ k := (Finset.mem_erase.1 hj).1
+  rw [Lagrange.basisDivisor, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_sub,
+    Polynomial.eval_X, Polynomial.eval_C, zero_sub]
+  rcases lt_or_gt_of_ne hjk with h | h
+  · simp only [h, ↓reduceIte]
+    have h1 : 0 < extremalNode m a b k - extremalNode m a b j := sub_pos.2 (hmono h)
+    have := hpos j
+    have : 0 < (extremalNode m a b k - extremalNode m a b j)⁻¹ := inv_pos.2 h1
+    nlinarith
+  · simp only [not_lt.2 h.le, ↓reduceIte]
+    have h1 : extremalNode m a b k - extremalNode m a b j < 0 := sub_neg.2 (hmono h)
+    have := hpos j
+    have : (extremalNode m a b k - extremalNode m a b j)⁻¹ < 0 := inv_lt_zero.2 h1
+    nlinarith
+
+/-- Lagrange interpolation at the extremal nodes, evaluated at `0`: for `deg r ≤ m`,
+`r(0) = ∑_k r(t_k) ℓ_k(0)`. -/
+theorem eval_zero_eq_sum_extremalNode (hm : 1 ≤ m) (hab : a < b) {r : ℝ[X]}
+    (hr : r.natDegree ≤ m) :
+    r.eval 0 = ∑ k : Fin (m + 1), r.eval (extremalNode m a b k) *
+      (Lagrange.basis Finset.univ (extremalNode m a b) k).eval 0 := by
+  have hinj : Set.InjOn (extremalNode m a b) (Finset.univ : Finset (Fin (m + 1))) :=
+    (extremalNode_injective hm hab).injOn
+  have hdeg : r.degree < (Finset.univ : Finset (Fin (m + 1))).card := by
+    rw [Finset.card_univ, Fintype.card_fin]
+    exact lt_of_le_of_lt (Polynomial.degree_le_of_natDegree_le hr)
+      (by exact_mod_cast m.lt_succ_self)
+  conv_lhs => rw [Lagrange.eq_interpolate hinj hdeg]
+  rw [Lagrange.interpolate_apply, Polynomial.eval_finsetSum]
+  exact Finset.sum_congr rfl fun k _ => by rw [Polynomial.eval_mul, Polynomial.eval_C]
+
+/-- Uniqueness in the Chebyshev min–max problem (the "admits a unique solution" of
+[quarteroni2000numerical] Property 4.6, which the book states without proof): for `0 < a < b` and
+`m ≥ 1`, a polynomial `p` of degree at most `m` with `p(0) = 1` whose maximum modulus on `[a, b]`
+is the minimal value `1 / T_m((b + a)/(b - a))` (`one_div_eval_T_le_sSup_abs_eval_of_eval_zero`)
+is the normalized Chebyshev polynomial `shifted m a b 0`. Instead of counting zeros with
+multiplicity, the proof interpolates at the `m + 1` extremal nodes `t_k`: the weights
+`λ_k = ℓ_k(0)` have the signs `(-1)^k` of the extremal values of `q = shifted m a b 0`, so
+`1 = p(0) = ∑ λ_k p(t_k) ≤ ∑ |λ_k| M = ∑ λ_k q(t_k) = q(0) = 1` forces `p(t_k) = q(t_k)` at every
+node, and two polynomials of degree at most `m` agreeing at `m + 1` points are equal. -/
+theorem eq_shifted_of_sSup_abs_eval_eq (hm : 1 ≤ m) (ha : 0 < a) (hab : a < b) {p : ℝ[X]}
+    (hp : p.natDegree ≤ m) (hp0 : p.eval 0 = 1)
+    (hsup : sSup ((fun t => |p.eval t|) '' Set.Icc a b) = 1 / (T ℝ m).eval ((b + a) / (b - a))) :
+    p = shifted m a b 0 := by
+  set M : ℝ := 1 / (T ℝ m).eval ((b + a) / (b - a)) with hM
+  have hx1 : (1 : ℝ) ≤ (b + a) / (b - a) := by
+    rw [le_div_iff₀ (by linarith)]; linarith
+  have hT1 : 1 ≤ (T ℝ m).eval ((b + a) / (b - a)) := one_le_eval_T hx1 m
+  have hMpos : 0 < M := by rw [hM]; positivity
+  have hγ : (0 : ℝ) ∉ Set.Icc a b := fun h => absurd h.1 (not_le.2 ha)
+  set q : ℝ[X] := shifted m a b 0 with hq
+  have hq0 : q.eval 0 = 1 := shifted_eval_self m hab hγ
+  have hqdeg : q.natDegree ≤ m :=
+    Polynomial.natDegree_le_iff_degree_le.2 (shifted_degree_le m a b 0)
+  -- `|p| ≤ M` on `[a, b]`
+  have hbdd : BddAbove ((fun t => |p.eval t|) '' Set.Icc a b) :=
+    (isCompact_Icc.image_of_continuousOn
+      (p.continuous.abs.continuousOn)).bddAbove
+  have hpM : ∀ t ∈ Set.Icc a b, |p.eval t| ≤ M := fun t ht =>
+    hsup ▸ le_csSup hbdd ⟨t, ht, rfl⟩
+  -- the interpolation weights and their signs
+  set lam : Fin (m + 1) → ℝ := fun k => (Lagrange.basis Finset.univ (extremalNode m a b) k).eval 0
+    with hlam
+  have hsign : ∀ k : Fin (m + 1), 0 < (-1) ^ (k : ℕ) * lam k := fun k =>
+    pos_neg_one_pow_mul_eval_zero_basis_extremalNode hm ha hab k
+  have habs : ∀ k, |lam k| = (-1) ^ (k : ℕ) * lam k := fun k => by
+    have hk := hsign k
+    rcases neg_one_pow_eq_or ℝ (k : ℕ) with h | h
+    · rw [h, one_mul] at hk ⊢; exact abs_of_pos hk
+    · rw [h, neg_one_mul] at hk ⊢; exact abs_of_neg (by linarith)
+  have hqk : ∀ k, q.eval (extremalNode m a b k) = (-1) ^ (k : ℕ) * M := fun k => by
+    rw [hq, eval_shifted_extremalNode hm hab k, hM, div_eq_mul_one_div]
+  have hp_sum := eval_zero_eq_sum_extremalNode hm hab hp
+  have hq_sum := eval_zero_eq_sum_extremalNode hm hab hqdeg
+  rw [hp0] at hp_sum
+  rw [hq0] at hq_sum
+  -- termwise `λ_k p(t_k) ≤ |λ_k| M = λ_k q(t_k)`, with equality of the sums
+  have hterm : ∀ k,
+      p.eval (extremalNode m a b k) * lam k ≤ q.eval (extremalNode m a b k) * lam k := by
+    intro k
+    have h1 : p.eval (extremalNode m a b k) * lam k ≤ |lam k| * M := by
+      calc p.eval (extremalNode m a b k) * lam k ≤ |p.eval (extremalNode m a b k) * lam k| :=
+            le_abs_self _
+        _ = |p.eval (extremalNode m a b k)| * |lam k| := abs_mul _ _
+        _ ≤ M * |lam k| :=
+            mul_le_mul_of_nonneg_right (hpM _ (extremalNode_mem_Icc hab k)) (abs_nonneg _)
+        _ = |lam k| * M := mul_comm _ _
+    rw [habs k] at h1
+    rw [hqk k]
+    linarith
+  have hsum_eq : ∑ k, p.eval (extremalNode m a b k) * lam k
+      = ∑ k, q.eval (extremalNode m a b k) * lam k := by
+    rw [← hp_sum, ← hq_sum]
+  have heq : ∀ k, p.eval (extremalNode m a b k) * lam k = q.eval (extremalNode m a b k) * lam k :=
+    fun k => (Finset.sum_eq_sum_iff_of_le fun k _ => hterm k).1 hsum_eq k (Finset.mem_univ k)
+  have hval : ∀ k, p.eval (extremalNode m a b k) = q.eval (extremalNode m a b k) := by
+    intro k
+    have hne : lam k ≠ 0 := by
+      intro h0
+      have := hsign k
+      rw [h0, mul_zero] at this
+      exact lt_irrefl 0 this
+    exact mul_right_cancel₀ hne (heq k)
+  -- two polynomials of degree `≤ m` agreeing at `m + 1` points
+  have hinj : Set.InjOn (extremalNode m a b) (Finset.univ : Finset (Fin (m + 1))) :=
+    (extremalNode_injective hm hab).injOn
+  have hcard : ((Finset.univ : Finset (Fin (m + 1))).card : WithBot ℕ) = (m + 1 : ℕ) := by
+    rw [Finset.card_univ, Fintype.card_fin]
+  refine Polynomial.eq_of_degrees_lt_of_eval_index_eq Finset.univ hinj ?_ ?_ fun k _ => hval k
+  · rw [hcard]
+    exact lt_of_le_of_lt (Polynomial.degree_le_of_natDegree_le hp)
+      (by exact_mod_cast m.lt_succ_self)
+  · rw [hcard]
+    exact lt_of_le_of_lt (Polynomial.degree_le_of_natDegree_le hqdeg)
+      (by exact_mod_cast m.lt_succ_self)
+
+end Uniqueness
+
 /-- The pointwise form of the min–max bound: on `[a, b]` the normalized Chebyshev polynomial
 `shifted m a b γ` is bounded by `1 / |T_m((b + a - 2γ)/(b - a))|`. -/
 theorem abs_eval_shifted_le (m : ℕ) {a b γ t : ℝ} (hab : a < b) (ht : t ∈ Set.Icc a b) :

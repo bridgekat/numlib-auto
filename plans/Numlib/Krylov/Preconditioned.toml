@@ -107,14 +107,7 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3 and
 
 [[node]]
 id = "IsPreconditioner.energyNorm_steepestDescentStep_le"
-kind = "theorem"
-desc = '''The preconditioned gradient method (Quarteroni–Sacco–Saleri, Program 19 with `M ≠ I`; the
-book states no numbered result about it, so this node is optional and may be dropped if the QSS
-surface does not cite it). For `h : IsPreconditioner M Minv`, `A` symmetric with
-`λmin ⟪M x, x⟫ ≤ ⟪A x, x⟫ ≤ λmax ⟪M x, x⟫`, `0 < λmin`, and `A x* = b`, one step
-`x' = x + (⟪r, Minv r⟫ / ⟪A (Minv r), Minv r⟫) • Minv r` with `r = b - A x` satisfies
-`energyNorm A (x* - x') ≤ (λmax - λmin) / (λmax + λmin) * energyNorm A (x* - x)`. It is
-`Projection.energyNorm_steepestDescentStep_le` for `energyEnd Minv A` on `EnergySpace M`
-(`isSymmetricBoundedBy_energyEnd`), read back through `energyNorm_energyEnd`, exactly as
-`PCG.energyNorm_error_le` transports the CG bound. ★★'''
-deps = ["Krylov.IsPreconditioner", "Krylov.IsPreconditioner.isSymmetricBoundedBy_energyEnd", "Krylov.IsPreconditioner.energyNorm_energyEnd", "Projection.energyNorm_steepestDescentStep_le", "Projection.steepestDescentStep"]
+
+[[node]]
+id = "IsPreconditioner.toEnergy_step1_inv_residual"
+

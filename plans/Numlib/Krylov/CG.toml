@@ -98,21 +98,6 @@ id = "norm_iterate_lt_of_re_inner_apply_direction_pos"
 
 [[node]]
 id = "isConjugateFamily_direction"
-kind = "theorem"
-desc = '''The CG directions form an `A`-conjugate sequence in the sense of
-`ConjugateDirection.IsConjugateFamily`: `ConjugateDirection.IsConjugateFamily A (fun k => (iterate A b x₀ k).p)`
-for symmetric coercive `A`. It is `inner_apply_direction_eq_zero` repackaged (and it holds past the
-grade, where the directions vanish). ★'''
-deps = ["CG.inner_apply_direction_eq_zero", "ConjugateDirection.IsConjugateFamily"]
 
 [[node]]
 id = "iterate_x_eq_conjugateDirection_iterate"
-kind = "theorem"
-desc = '''CG is the conjugate-direction method along its own directions:
-`(iterate A b x₀ k).x = ConjugateDirection.iterate A b x₀ (fun k => (iterate A b x₀ k).p) k`
-for symmetric coercive `A`. Induction on `k`; the CG step length `alpha = ⟪r, r⟫/⟪A p, p⟫` equals the
-line-search value `⟪p, r⟫/⟪p, A p⟫` because `⟪p_k, r_k⟫ = ‖r_k‖²` (`inner_residual_direction_eq`).
-With `ConjugateDirection.iterate_eq_of_finrank_le` this is the way Quarteroni–Sacco–Saleri derive
-Theorem 4.12's finite termination from Theorem 4.11; the backbone's own route is
-`residual_eq_zero_of_grade_le` with `Krylov.grade_le_finrank`. ★★'''
-deps = ["CG.iterate", "CG.alpha", "CG.inner_residual_direction_eq", "ConjugateDirection.iterate", "CG.isConjugateFamily_direction"]

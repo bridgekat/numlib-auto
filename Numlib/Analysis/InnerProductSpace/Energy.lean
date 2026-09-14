@@ -4,7 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.InnerProductSpace`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Calculus.Gradient.Basic
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Numlib.Analysis.InnerProductSpace.Coercive
 
@@ -22,7 +24,12 @@ product, so that Mathlib's orthogonal projection theory applies to `A`-orthogona
   itself, defined for every `A` and useful without any hypothesis on it;
 * `WithEnergy A hA`, the type synonym of `E` carrying the energy inner product of a symmetric
   coercive `A`, together with `WithEnergy.equiv`, the identity `E ≃ₗ[𝕜] WithEnergy A hA` along
-  which Mathlib's inner product theory is imported.
+  which Mathlib's inner product theory is imported;
+* `energyFunctional A b`, the quadratic `x ↦ ½ re ⟪A x, x⟫ - re ⟪b, x⟫` (the *energy* of the
+  system `A x = b`, [quarteroni2000numerical] §4.3.3 and (7.35)), whose gradient at `x` is
+  `A x - b` for a real symmetric bounded `A` (`hasGradientAt_energyFunctional`) and whose
+  excess over its minimum is half the squared energy norm of the error
+  (`LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq`).
 
 ## Notation
 
@@ -53,6 +60,14 @@ scoped[Energy] notation "‖" x "‖_[" A "]" => energyNorm A x
 /-- The energy norm is nonnegative for every `A`, symmetric coercive or not, being a square
 root. Keep it at hand: `positivity` does not see through `energyNorm`. -/
 theorem energyNorm_nonneg (A : E →ₗ[𝕜] E) (x : E) : 0 ≤ energyNorm A x := Real.sqrt_nonneg _
+
+/-- The energy functional `φ(x) = ½ re ⟪A x, x⟫ - re ⟪b, x⟫` of the system `A x = b`
+([quarteroni2000numerical] §4.3.3, (7.35); [fong2012cg] (2.1)). For symmetric coercive `A` its
+unique minimizer is the solution of `A x = b`, and Galerkin iterates minimize it over affine
+subspaces (`IsGalerkin.quadratic_le` in `Numlib/Projection/Optimality`). It is defined for every
+`A`; the hypotheses enter only in the statements about it. -/
+noncomputable def energyFunctional (A : E →ₗ[𝕜] E) (b x : E) : ℝ :=
+  RCLike.re (inner 𝕜 (A x) x) / 2 - RCLike.re (inner 𝕜 b x)
 
 namespace LinearMap
 
@@ -120,6 +135,33 @@ theorem IsSymmetricCoercive.energyNorm_error_sq_eq (hA : A.IsSymmetricCoercive) 
     (hstar : A xstar = b) :
     energyNorm A (xstar - x) ^ 2 = RCLike.re (inner 𝕜 (xstar - x) (b - A x)) := by
   rw [hA.energyNorm_sq, map_sub, hstar, ← inner_conj_symm (b - A x) (xstar - x), RCLike.conj_re]
+
+/-- Second-order expansion of the energy functional at `x` in the direction `v`, exact because the
+functional is quadratic: `φ(x + v) = φ x + re ⟪A x - b, v⟫ + ½ re ⟪A v, v⟫`. The linear term is the
+gradient `A x - b = -r` paired with `v`, the quadratic term is half the energy quadratic form.
+Only symmetry of `A` is used. -/
+theorem IsSymmetric.energyFunctional_add (hA : A.IsSymmetric) (b x v : E) :
+    energyFunctional A b (x + v)
+      = energyFunctional A b x + RCLike.re (inner 𝕜 (A x - b) v)
+        + RCLike.re (inner 𝕜 (A v) v) / 2 := by
+  have h : RCLike.re (inner 𝕜 (A v) x) = RCLike.re (inner 𝕜 (A x) v) := by
+    rw [hA v x, ← inner_conj_symm]
+    exact RCLike.conj_re _
+  simp only [energyFunctional, map_add, inner_add_left, inner_add_right, inner_sub_left, map_sub]
+  rw [h]
+  ring
+
+/-- The energy functional exceeds its value at the solution `x*` of `A x* = b` by half the squared
+energy norm of the error: `φ y - φ x* = ½ ‖y - x*‖_A²` ([quarteroni2000numerical] (4.35)). Hence
+`x*` is the strict global minimizer of `φ`, and minimizing `φ` over a set is minimizing the
+energy-norm error over it. -/
+theorem IsSymmetricCoercive.energyFunctional_sub_eq (hA : A.IsSymmetricCoercive) {b xstar : E}
+    (hstar : A xstar = b) (y : E) :
+    energyFunctional A b y - energyFunctional A b xstar = energyNorm A (y - xstar) ^ 2 / 2 := by
+  have h := hA.isSymmetric.energyFunctional_add b xstar (y - xstar)
+  rw [add_sub_cancel, hstar, sub_self, inner_zero_left, map_zero, add_zero] at h
+  rw [h, hA.energyNorm_sq]
+  ring
 
 /-- Cauchy–Schwarz for the energy inner product. -/
 theorem IsSymmetricCoercive.abs_energyInner_le (hA : A.IsSymmetricCoercive) (x y : E) :
@@ -250,3 +292,66 @@ theorem continuous_equiv {A : E →L[𝕜] E} (hA : (A : E →ₗ[𝕜] E).IsSym
     exact h
 
 end WithEnergy
+
+/-! ### The gradient of the energy functional
+
+Over `ℝ` the energy functional of a symmetric bounded `A` is differentiable everywhere with
+gradient `∇φ(x) = A x - b`, the negative of the residual ([quarteroni2000numerical] (4.34),
+§7.2.4): this is what makes the projection methods of `Numlib/Projection` and the conjugate
+gradient method descent methods for `φ`, and the linear system `A x = b` the stationarity
+condition `∇φ = 0`. -/
+
+section Gradient
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- The Fréchet derivative of the energy functional of a real symmetric bounded `A` at `x` is the
+functional `v ↦ ⟪A x - b, v⟫`. No completeness is needed for this form. -/
+theorem hasFDerivAt_energyFunctional {A : F →L[ℝ] F} (hA : (A : F →ₗ[ℝ] F).IsSymmetric)
+    (b x : F) :
+    HasFDerivAt (energyFunctional (A : F →ₗ[ℝ] F) b) (innerSL ℝ (A x - b)) x := by
+  have hfun : energyFunctional (A : F →ₗ[ℝ] F) b
+      = fun y => 2⁻¹ * inner ℝ (A y) y - inner ℝ b y := by
+    funext y; simp [energyFunctional, div_eq_inv_mul]
+  have h1 : HasFDerivAt (fun y => inner ℝ (A y) y) (2 • innerSL ℝ (A x)) x := by
+    refine ((A.hasFDerivAt (x := x)).inner ℝ (hasFDerivAt_id x)).congr_fderiv ?_
+    ext v
+    simp only [ContinuousLinearMap.coe_comp, Function.comp_apply, ContinuousLinearMap.prod_apply,
+      fderivInnerCLM_apply, ContinuousLinearMap.coe_id', id_eq, smul_apply,
+      innerSL_apply_apply, nsmul_eq_mul]
+    have hs : inner ℝ (A v) x = inner ℝ v (A x) := by simpa using hA v x
+    rw [hs, real_inner_comm (A x) v]
+    ring
+  have h2 : HasFDerivAt (fun y => inner ℝ b y) (innerSL ℝ b) x := (innerSL ℝ b).hasFDerivAt
+  rw [hfun]
+  refine ((HasFDerivAt.const_mul h1 (2⁻¹ : ℝ)).sub h2).congr_fderiv ?_
+  ext v
+  simp only [FunLike.coe_sub, Pi.sub_apply, smul_apply, innerSL_apply_apply,
+    nsmul_eq_mul, smul_eq_mul, inner_sub_left]
+  ring
+
+/-- The gradient of the energy functional of a real symmetric bounded `A` is `∇φ(x) = A x - b`,
+the negative residual ([quarteroni2000numerical] (4.34)); in particular the derivative of the
+gradient map is `A` itself, the Hessian of `φ`. Completeness is what Mathlib's `HasGradientAt`
+(defined through the Riesz isomorphism) requires; the derivative form
+`hasFDerivAt_energyFunctional` needs none. -/
+theorem hasGradientAt_energyFunctional [CompleteSpace F] {A : F →L[ℝ] F}
+    (hA : (A : F →ₗ[ℝ] F).IsSymmetric) (b x : F) :
+    HasGradientAt (energyFunctional (A : F →ₗ[ℝ] F) b) (A x - b) x := by
+  rw [hasGradientAt_iff_hasFDerivAt]
+  have h : (InnerProductSpace.toDual ℝ F (A x - b) : F →L[ℝ] ℝ) = innerSL ℝ (A x - b) := by
+    ext v
+    simp [InnerProductSpace.toDual_apply_apply, innerSL_apply_apply]
+  rw [h]
+  exact hasFDerivAt_energyFunctional hA b x
+
+/-- `hasGradientAt_energyFunctional` for a linear map on a finite-dimensional space, where every
+linear map is bounded and the space is complete. -/
+theorem hasGradientAt_energyFunctional_of_finiteDimensional [FiniteDimensional ℝ F]
+    {A : F →ₗ[ℝ] F} (hA : A.IsSymmetric) (b x : F) :
+    HasGradientAt (energyFunctional A b) (A x - b) x := by
+  have h := hasGradientAt_energyFunctional (A := LinearMap.toContinuousLinearMap A)
+    (by simpa using hA) b x
+  simpa using h
+
+end Gradient

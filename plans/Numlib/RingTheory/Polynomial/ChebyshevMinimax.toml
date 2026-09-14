@@ -36,31 +36,31 @@ source = "Greenbaum, Iterative Methods for Solving Linear Systems, Section 3.1"
 
 [[node]]
 id = "one_div_eval_T_eq_two_mul_pow_div"
-kind = "theorem"
-desc = '''The closed form of the Chebyshev bound, Quarteroni–Sacco–Saleri (4.47) and the display
-`1/C_{k+1} = 2 c^{k+1}/(1 + c^{2(k+1)})` closing the proof of Theorem 4.12: for `κ > 1` and
-`c = (√κ - 1)/(√κ + 1)`, `1 / (T m).eval ((κ + 1)/(κ - 1)) = 2 * c ^ m / (1 + c ^ (2 * m))`.
-From `eval_T_eq_half_add_pow` at `x = (κ + 1)/(κ - 1) ≥ 1`, where `x + √(x² - 1) = 1/c` and
-`x - √(x² - 1) = c`, so `T_m x = ½ (c^{-m} + c^m) = (1 + c^{2m})/(2 c^m)`. It sharpens
-`one_div_eval_T_le_two_mul_pow` to an equality; with
-`Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` it gives (4.47) exactly as printed. ★'''
-deps = ["Polynomial.Chebyshev.eval_T_eq_half_add_pow", "Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow"]
 
 [[node]]
 id = "eq_shifted_of_sSup_abs_eval_eq"
-kind = "theorem"
-desc = '''Uniqueness in the Chebyshev min–max problem (the "admits a unique solution" of Quarteroni–Sacco–
-Saleri Property 4.6, stated by the book without proof): for `0 < a < b` and `m ≥ 1`, if `p : ℝ[X]`
-has `natDegree p ≤ m`, `p.eval 0 = 1` and `sSup ((fun t => |p.eval t|) '' Set.Icc a b) = 1 / (T m).eval ((b + a)/(b - a))`
-(the minimal value, by `one_div_eval_T_le_sSup_abs_eval_of_eval_zero`), then `p = shifted m a b 0`.
-Standard alternation argument: `q = shifted m a b 0` attains `±1/C_m` alternately at the `m + 1`
-extremal points `t_j` of `[a, b]` (images of `cos(jπ/m)`), and `|p t_j| ≤ 1/C_m` forces `q - p` to
-change sign weakly between consecutive `t_j`, giving `m` zeros of `q - p` in `[a, b]` counted with
-multiplicity (a double zero where the difference touches without crossing) plus the zero at `0 ∉
-[a, b]` from `p 0 = q 0 = 1`, i.e. `m + 1` zeros of a polynomial of degree `≤ m`, so `p = q`. The
-multiplicity bookkeeping at touching points is the delicate step; `Approximation/Chebyshev`'s
-equioscillation machinery (`IsBestApprox.unique_of_polyLE`) does not apply directly because the
-constraint `p 0 = 1` is not a best-approximation problem in a subspace, though it becomes one after
-dividing by `X` on `[a, b]`: `min ‖1 - X s‖_∞` over `deg s ≤ m - 1` is best approximation of `1/X`
-in the weighted norm, and the Haar uniqueness there is a possible route. ★★★'''
-deps = ["Polynomial.Chebyshev.shifted", "Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero", "Polynomial.Chebyshev.sSup_abs_eval_shifted"]
+
+[[node]]
+id = "extremalNode"
+
+[[node]]
+id = "shift_extremalNode"
+
+[[node]]
+id = "extremalNode_mem_Icc"
+
+[[node]]
+id = "extremalNode_strictMono"
+
+[[node]]
+id = "extremalNode_injective"
+
+[[node]]
+id = "eval_shifted_extremalNode"
+
+[[node]]
+id = "pos_neg_one_pow_mul_eval_zero_basis_extremalNode"
+
+[[node]]
+id = "eval_zero_eq_sum_extremalNode"
+

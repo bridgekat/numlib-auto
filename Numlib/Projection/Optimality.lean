@@ -9,7 +9,10 @@ import Numlib.Projection.Basic
 * [saad2003iterative] Prop 5.5: the Galerkin error is the `A`-orthogonal projection of `d₀ = x* -
   x₀`.
 * Nested subspaces give monotone residual / error norms.
-* [fong2012cg] §2.1: the Galerkin iterate minimizes the quadratic `½⟪A x, x⟫ - re⟪b, x⟫`.
+* [fong2012cg] §2.1: the Galerkin iterate minimizes the quadratic `½⟪A x, x⟫ - re⟪b, x⟫`, the
+  energy functional `energyFunctional A b`; conversely ([quarteroni2000numerical] Definition 4.4
+  and the displays after it) minimality of the energy functional along a direction is
+  orthogonality of the residual to it, and over `x₀ + K` it is the Galerkin condition.
 * [saad2003iterative] §8.3 and [choi2006iterative]: the minimal-error method over `x₀ + A† K` is
   Petrov–Galerkin with `L = K`.
 -/
@@ -116,6 +119,11 @@ theorem quadratic_le (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
   rw [hsymd, hbd']
   linarith
 
+/-- `IsGalerkin.quadratic_le` in terms of `energyFunctional`. -/
+theorem energyFunctional_le (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x) {y : E}
+    (hy : y - x₀ ∈ K) : energyFunctional A b x ≤ energyFunctional A b y :=
+  hx.quadratic_le hA hy
+
 /-- [saad2003iterative], Prop 5.5: the Galerkin error is the energy-orthogonal projection of `d₀ =
 x* - x₀` onto the energy-orthogonal complement of `K`. -/
 theorem error_eq_starProjection (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
@@ -143,6 +151,109 @@ theorem error_eq_starProjection (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A 
   exact (Submodule.eq_starProjection_of_mem_orthogonal hmem hdiff).symm
 
 end IsGalerkin
+
+/-! ### Optimality along a direction
+
+[quarteroni2000numerical] Definition 4.4 calls `x` *optimal with respect to a direction `p`* when
+`φ x ≤ φ (x + λ p)` for every real `λ`, `φ` the energy functional, and *optimal with respect to a
+subspace* when it is optimal with respect to every direction in it. The two displays after the
+definition show that optimality along `p` is `⟪r, p⟫ = 0` for the residual `r = b - A x`, and
+Theorem 4.11's proof uses that optimality with respect to `span {p_0, …, p_{k-1}}` is the Galerkin
+condition. Over `ℂ` a real parameter only sees the real part of `⟪r, p⟫`, so the statements come
+in a real-parameter and a `𝕜`-parameter form. -/
+
+/-- The energy functional along the line through `x` in the direction `p`:
+`φ(x + t p) = φ x - re (t ⟪r, p⟫) + ½ ‖t‖² re ⟪A p, p⟫`, `r = b - A x`. -/
+theorem energyFunctional_add_smul (hA : A.IsSymmetric) (b x p : E) (t : 𝕜) :
+    energyFunctional A b (x + t • p)
+      = energyFunctional A b x - RCLike.re (t * inner 𝕜 (b - A x) p)
+        + ‖t‖ ^ 2 * RCLike.re (inner 𝕜 (A p) p) / 2 := by
+  rw [hA.energyFunctional_add]
+  simp only [map_smul, inner_smul_left, inner_smul_right]
+  rw [← mul_assoc, RCLike.mul_conj, ← RCLike.ofReal_pow, RCLike.re_ofReal_mul,
+    show A x - b = -(b - A x) by abel, inner_neg_left, mul_neg, map_neg]
+  ring
+
+/-- Optimality along a direction, `𝕜`-parameter form ([quarteroni2000numerical], the displays
+after Definition 4.4): for symmetric `A` with `re ⟪A p, p⟫ ≥ 0` (any positive `A`, in particular
+any symmetric coercive one), `⟪r, p⟫ = 0` for the residual `r = b - A x` iff
+`φ x ≤ φ (x + t p)` for every `t : 𝕜`, `φ` the energy functional. The quadratic
+`t ↦ φ(x + t p) - φ x = -re (t ⟪r, p⟫) + ½ ‖t‖² re ⟪A p, p⟫` is nonnegative for all `t` iff its
+linear coefficient vanishes; `⇒` needs no sign condition on `⟪A p, p⟫` at all. -/
+theorem inner_residual_eq_zero_iff_forall_quadratic_add_smul_le (hA : A.IsSymmetric) {p : E}
+    (hp : 0 ≤ RCLike.re (inner 𝕜 (A p) p)) (b x : E) :
+    inner 𝕜 (b - A x) p = 0 ↔
+      ∀ t : 𝕜, energyFunctional A b x ≤ energyFunctional A b (x + t • p) := by
+  refine ⟨fun h t => ?_, fun h => ?_⟩
+  · rw [energyFunctional_add_smul hA, h, mul_zero, map_zero, sub_zero]
+    have : 0 ≤ ‖t‖ ^ 2 * RCLike.re (inner 𝕜 (A p) p) / 2 := by positivity
+    linarith
+  · set c := inner 𝕜 (b - A x) p with hc
+    set q := RCLike.re (inner 𝕜 (A p) p) with hq
+    set s : ℝ := q + 1 with hs
+    have hspos : 0 < s := by linarith
+    have ht := h (((s⁻¹ : ℝ) : 𝕜) * (starRingEnd 𝕜) c)
+    rw [energyFunctional_add_smul hA, ← hc, ← hq, mul_assoc, RCLike.conj_mul, ← RCLike.ofReal_pow,
+      ← RCLike.ofReal_mul, RCLike.ofReal_re, norm_mul, RCLike.norm_ofReal, RCLike.norm_conj,
+      abs_of_pos (inv_pos.2 hspos)] at ht
+    have hkey : ‖c‖ ^ 2 * (q / 2 + 1) ≤ 0 := by
+      have h2 : ‖c‖ ^ 2 * (q / 2 + 1)
+          = -(s ^ 2) * (- (s⁻¹ * ‖c‖ ^ 2) + (s⁻¹ * ‖c‖) ^ 2 * q / 2) := by
+        rw [hs]; field_simp; ring
+      rw [h2]
+      exact mul_nonpos_of_nonpos_of_nonneg (by nlinarith) (by linarith)
+    have hc0 : ‖c‖ ^ 2 ≤ 0 := by nlinarith [sq_nonneg ‖c‖]
+    have : ‖c‖ = 0 := by nlinarith [norm_nonneg c]
+    exact norm_eq_zero.1 this
+
+/-- Optimality along a direction, real-parameter form ([quarteroni2000numerical] Definition 4.4
+and the displays after it): for symmetric `A` with `re ⟪A p, p⟫ ≥ 0`, `re ⟪r, p⟫ = 0` for the
+residual `r = b - A x` iff `φ x ≤ φ (x + λ p)` for every real `λ`. Over `ℝ` this is the `𝕜` form;
+over `ℂ` a real parameter constrains only the real part of `⟪r, p⟫`. -/
+theorem re_inner_residual_eq_zero_iff_forall_quadratic_add_real_smul_le (hA : A.IsSymmetric)
+    {p : E} (hp : 0 ≤ RCLike.re (inner 𝕜 (A p) p)) (b x : E) :
+    RCLike.re (inner 𝕜 (b - A x) p) = 0 ↔
+      ∀ t : ℝ, energyFunctional A b x ≤ energyFunctional A b (x + (t : 𝕜) • p) := by
+  have hexp : ∀ t : ℝ, energyFunctional A b (x + (t : 𝕜) • p)
+      = energyFunctional A b x - t * RCLike.re (inner 𝕜 (b - A x) p)
+        + t ^ 2 * RCLike.re (inner 𝕜 (A p) p) / 2 := by
+    intro t
+    rw [energyFunctional_add_smul hA, RCLike.re_ofReal_mul, RCLike.norm_ofReal, sq_abs]
+  refine ⟨fun h t => ?_, fun h => ?_⟩
+  · rw [hexp, h, mul_zero, sub_zero]
+    have : 0 ≤ t ^ 2 * RCLike.re (inner 𝕜 (A p) p) / 2 := by positivity
+    linarith
+  · set c := RCLike.re (inner 𝕜 (b - A x) p) with hc
+    set q := RCLike.re (inner 𝕜 (A p) p) with hq
+    set s : ℝ := q + 1 with hs
+    have hspos : 0 < s := by linarith
+    have ht := h (s⁻¹ * c)
+    rw [hexp] at ht
+    have hkey : c ^ 2 * (q / 2 + 1) ≤ 0 := by
+      have h2 : c ^ 2 * (q / 2 + 1) = -(s ^ 2) * (- (s⁻¹ * c * c) + (s⁻¹ * c) ^ 2 * q / 2) := by
+        rw [hs]; field_simp; ring
+      rw [h2]
+      exact mul_nonpos_of_nonpos_of_nonneg (by nlinarith) (by linarith)
+    have : c ^ 2 ≤ 0 := by nlinarith [sq_nonneg c]
+    exact pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm this (sq_nonneg c))
+
+/-- The quadratic-form characterization of Galerkin iterates, the converse of
+`IsGalerkin.quadratic_le` ([fong2012cg] (2.1); [quarteroni2000numerical] Definition 4.4, "optimal
+with respect to `V`", as used in the proof of Theorem 4.11): for symmetric coercive `A` and
+`x ∈ x₀ + K`, `x` is the Galerkin iterate over `x₀ + K` iff it minimizes the energy functional
+there — equivalently, by `LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq`
+([quarteroni2000numerical] (4.35)), the energy norm of the error, which is
+`IsGalerkin.iff_energyNorm_min`. No finite-dimensionality is needed: `⇐` tests the minimality
+along each direction of `K` through `inner_residual_eq_zero_iff_forall_quadratic_add_smul_le`. -/
+theorem isGalerkin_iff_forall_quadratic_le (hA : A.IsSymmetricCoercive) (hx : x - x₀ ∈ K) :
+    IsGalerkin A b x₀ K x ↔
+      ∀ y, y - x₀ ∈ K → energyFunctional A b x ≤ energyFunctional A b y := by
+  refine ⟨fun h y hy => h.energyFunctional_le hA hy, fun h => ⟨hx, ?_⟩⟩
+  refine (Submodule.mem_orthogonal' _ _).2 fun p hp => ?_
+  refine (inner_residual_eq_zero_iff_forall_quadratic_add_smul_le hA.isSymmetric
+    (hA.isPositive.re_inner_nonneg_left p) b x).2 fun t => h _ ?_
+  rw [add_sub_right_comm]
+  exact K.add_mem hx (K.smul_mem t hp)
 
 namespace IsMinError
 

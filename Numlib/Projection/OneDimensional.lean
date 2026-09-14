@@ -175,6 +175,24 @@ theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     field_simp
     ring
 
+/-- With `v = w = d` and coercive `A`, the one-dimensional step is Galerkin on `span {d}` with no
+nondegeneracy hypothesis: coercivity gives `⟪d, A d⟫ ≠ 0` for `d ≠ 0`, and for `d = 0` the step
+does nothing while the span is trivial. This is the exact line search along `d` for the energy
+functional ([quarteroni2000numerical] (4.39), (7.36)), the step of every conjugate-direction
+method (`Numlib/Projection/ConjugateDirection`). -/
+theorem step1_isGalerkin (hA : A.IsCoercive) (d x : E) :
+    IsGalerkin A b x (𝕜 ∙ d) (step1 A b d d x) := by
+  rcases eq_or_ne d 0 with rfl | hd
+  · refine ⟨?_, ?_⟩
+    · rw [step1, smul_zero, add_zero, sub_self]
+      exact Submodule.zero_mem _
+    · rw [Submodule.span_zero_singleton, Submodule.bot_orthogonal_eq_top]
+      exact Submodule.mem_top
+  · refine step1_isPetrovGalerkin d d x fun hcon => ?_
+    have hpos := hA.inner_self_pos hd
+    rw [inner_eq_zero_symm.1 hcon, map_zero] at hpos
+    exact lt_irrefl 0 hpos
+
 /-- Steepest descent step ([saad2003iterative], Alg 5.2): `v = w = r` with the residual `r = b - A
 x`. -/
 noncomputable def steepestDescentStep (A : E →ₗ[𝕜] E) (b : E) (x : E) : E :=
@@ -507,6 +525,85 @@ theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar
   rw [hexp, ha]
   field_simp
   ring
+
+/-- The one-dimensional step does nothing when the test vector is already orthogonal to the
+residual: its coefficient vanishes. -/
+theorem step1_eq_self_of_inner_eq_zero {v w x : E} (h : inner 𝕜 w (b - A x) = 0) :
+    step1 A b v w x = x := by
+  rw [step1, h, zero_div, zero_smul, add_zero]
+
+/-- The exact one-step identity for the exact line search along an arbitrary direction `d`
+([quarteroni2000numerical] (7.37)–(7.38)): for symmetric coercive `A`, `A x* = b` and
+`x′ = step1 A b d d x`, that is `x′ = x + (⟪d, r⟫ / ⟪d, A d⟫) d` with `r = b - A x`,
+`‖x* - x′‖_A² = ‖x* - x‖_A² - ‖⟪d, r⟫‖² / re ⟪A d, d⟫`. No hypothesis on `d`: for `d = 0` the step
+does nothing and the quotient is `0 / 0 = 0`. Pythagoras in the energy norm for the Galerkin step
+(`Projection.step1_isGalerkin`, `IsGalerkin.energyNorm_sq_add`) gives the identity at once; the case
+`d = r` is `Projection.energyNorm_steepestDescentStep_sq_eq`. Over `ℝ` the numerator is
+`⟪d, r⟫²`, and the book's `ρ_k = 1 - σ_k` form is `Projection.energyNorm_step1_sq_eq_mul`. -/
+theorem energyNorm_step1_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
+    (d x : E) :
+    energyNorm A (xstar - step1 A b d d x) ^ 2
+      = energyNorm A (xstar - x) ^ 2
+        - ‖inner 𝕜 d (b - A x)‖ ^ 2 / RCLike.re (inner 𝕜 (A d) d) := by
+  rcases eq_or_ne d 0 with rfl | hd
+  · simp [step1]
+  have hq : 0 < RCLike.re (inner 𝕜 (A d) d) := hA.isCoercive.inner_self_pos hd
+  have hqK : inner 𝕜 d (A d) = ((RCLike.re (inner 𝕜 (A d) d) : ℝ) : 𝕜) := by
+    rw [← hA.isSymmetric d d]
+    exact (RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, ← hA.isSymmetric d d])).symm
+  have hgal := step1_isGalerkin (b := b) hA.isCoercive d x
+  have hpy := hgal.energyNorm_sq_add hA hstar (y := x) (by rw [sub_self]; exact zero_mem _)
+  have hdiff : step1 A b d d x - x
+      = (inner 𝕜 d (b - A x) / ((RCLike.re (inner 𝕜 (A d) d) : ℝ) : 𝕜)) • d := by
+    rw [step1, hqK, add_sub_cancel_left]
+  have hsmul : energyNorm A (step1 A b d d x - x) ^ 2
+      = ‖inner 𝕜 d (b - A x)‖ ^ 2 / RCLike.re (inner 𝕜 (A d) d) := by
+    rw [hdiff, hA.energyNorm_sq, map_smul, inner_smul_left, inner_smul_right, ← mul_assoc,
+      RCLike.conj_mul, (hA.isSymmetric d d).trans hqK, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul]
+    simp only [RCLike.ofReal_re, norm_div, RCLike.norm_ofReal, abs_of_pos hq, div_pow]
+    field_simp
+  rw [hpy, hsmul]
+  ring
+
+/-- [quarteroni2000numerical] (7.38): the exact step along `d` contracts the squared energy norm of
+the error by the factor `ρ = 1 - σ`, `σ = ‖⟪d, r⟫‖² / (re ⟪A d, d⟫ ‖x* - x‖_A²)`; when `x = x*`
+both sides vanish. -/
+theorem energyNorm_step1_sq_eq_mul (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
+    (d x : E) :
+    energyNorm A (xstar - step1 A b d d x) ^ 2
+      = energyNorm A (xstar - x) ^ 2 *
+        (1 - ‖inner 𝕜 d (b - A x)‖ ^ 2
+              / (RCLike.re (inner 𝕜 (A d) d) * energyNorm A (xstar - x) ^ 2)) := by
+  rw [energyNorm_step1_sq_eq hA hstar d x]
+  rcases eq_or_ne (energyNorm A (xstar - x)) 0 with h0 | h0
+  · have hx : xstar - x = 0 := hA.energyNorm_eq_zero_iff.1 h0
+    have hr : b - A x = 0 := by rw [← hstar, ← map_sub, hx, map_zero]
+    simp [h0, hr]
+  · field_simp
+
+/-- The exact step never increases the energy norm of the error. -/
+theorem energyNorm_step1_le (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
+    (d x : E) : energyNorm A (xstar - step1 A b d d x) ≤ energyNorm A (xstar - x) := by
+  refine energyNorm_le_of_sq_le ?_
+  rw [energyNorm_step1_sq_eq hA hstar d x]
+  have : 0 ≤ ‖inner 𝕜 d (b - A x)‖ ^ 2 / RCLike.re (inner 𝕜 (A d) d) :=
+    div_nonneg (by positivity) (hA.isPositive.re_inner_nonneg_left d)
+  linarith
+
+/-- [quarteroni2000numerical] §7.2.4, the remark after (7.38): the exact step along `d` strictly
+decreases the energy norm of the error unless `d` is orthogonal to the residual — in which case the
+step does nothing (`Projection.step1_eq_self_of_inner_eq_zero`). -/
+theorem energyNorm_step1_lt (hA : A.IsSymmetricCoercive) {xstar : E} (hstar : A xstar = b)
+    {d x : E} (h : inner 𝕜 d (b - A x) ≠ 0) :
+    energyNorm A (xstar - step1 A b d d x) < energyNorm A (xstar - x) := by
+  have hd : d ≠ 0 := fun hd => h (by rw [hd, inner_zero_left])
+  have hq : 0 < RCLike.re (inner 𝕜 (A d) d) := hA.isCoercive.inner_self_pos hd
+  have hsq : energyNorm A (xstar - step1 A b d d x) ^ 2 < energyNorm A (xstar - x) ^ 2 := by
+    rw [energyNorm_step1_sq_eq hA hstar d x]
+    have : 0 < ‖inner 𝕜 d (b - A x)‖ ^ 2 / RCLike.re (inner 𝕜 (A d) d) :=
+      div_pos (by positivity) hq
+    linarith
+  exact lt_of_pow_lt_pow_left₀ 2 (energyNorm_nonneg A _) hsq
 
 /-- The contraction corollary shared by the convergence theorems of this file: if the errors of a
 sequence of iterates contract by a factor `ρ < 1` in some functional `N` that dominates the norm up
