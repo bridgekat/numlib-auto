@@ -1,105 +1,127 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
-desc = '''
-§5.6, the QR method for Hessenberg matrices: Householder reflectors ((5.38)–(5.42), from
-`Numlib/LinearAlgebra/Matrix/QR`), Givens rotations ((5.43)–(5.44), (5.51), from the new
-`Numlib/LinearAlgebra/Matrix/PlaneRotation`), Householder deflation (Remark 5.3, new in
-`Numlib/Eigen/Deflation`), the Householder reduction to Hessenberg form (§5.6.2, new in
-`LinearAlgebra/Matrix/QR`) and its symmetric case (Remark 5.4), the Givens QR factorization of a
-Hessenberg matrix with a Hessenberg `Q` (§5.6.3) and the invariance of Hessenberg form under a QR
-step (§5.6.4). The two structural facts of §5.6.3–5.6.4 are cheap consequences of the uniqueness
-of the QR factorization: `Q = H R⁻¹` is Hessenberg because a Hessenberg matrix times an upper
-triangular one is Hessenberg, and `R Q` likewise. The rounding-error estimates (5.46) and the one
-after Program 30 are stated in the floating-point model only if chapter 2's `FloatingPoint/System`
-lands; they are recorded as "not formalized" here. Operation counts and Programs 29–35 are not
-nodes. Examples 5.5–5.9 are numerical.
-'''
 
 [[node]]
 id = "equation_5_38"
-kind = "definition"
-desc = '''(5.38): the Householder reflector `P = I - 2 v vᵀ / ‖v‖₂²` of a nonzero `v : Fin N → ℝ`,
-defined as `Matrix.householder (normalize v)` (the backbone takes a *unit* axis). Its properties:
-symmetric (`Matrix.isHermitian_householder`), involutive (`Matrix.householder_mul_self`), hence
-orthogonal (`Matrix.householder_mem_unitaryGroup`). ★'''
-deps = ["Matrix.householder", "Matrix.householder_mul_self", "Matrix.householder_mem_unitaryGroup"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
 
 [[node]]
+id = "norm_toLp_sq_eq_dotProduct"
+
+[[node]]
+id = "equation_5_38_zero"
+
+[[node]]
+id = "equation_5_38_eq_householder"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
+
+[[node]]
+id = "equation_5_38_isSymm"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
+
+[[node]]
+id = "star_dotProduct_normalize_self"
+
+[[node]]
+id = "equation_5_38_mul_self"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
+
+[[node]]
+id = "equation_5_38_mem_orthogonalGroup"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
+
+[[node]]
+id = "householderAxis_ne_zero"
+
+[[node]]
+id = "equation_5_38_householderAxis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.39)'
+
+[[node]]
 id = "equation_5_40"
-kind = "theorem"
-desc = '''(5.39)–(5.40): for `x ≠ 0` and an index `m`, the reflector with axis `v = x ± ‖x‖₂ e_m`
-(the backbone's sign choice `+ sign(x_m) ‖x‖` gives `-sign(x_m) ‖x‖` as the surviving entry) sends
-`x` to `c • e_m` with `|c| = ‖x‖₂`: `∃ c, |c| = ‖x‖₂ ∧ P *ᵥ x = c • Pi.single m 1`.
-`Matrix.householder_mulVec_eq_smul_single` with `Matrix.norm_phase`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_38", "Matrix.householderVec", "Matrix.householder_mulVec_eq_smul_single"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.40)'
 
 [[node]]
 id = "equation_5_41"
-kind = "theorem"
-desc = '''(5.41)–(5.42): the reflector `P_(k)` whose axis `w` vanishes on the first `k + 1` coordinates
-(`w i = 0` for `i ≤ k`) fixes those coordinates, `(P_(k) *ᵥ x) i = x i` for `i ≤ k`, and with
-`w = householderVec x' (k+1)` for `x'` the tail of `x` (`x' i = if k < i then x i else 0`) it
-annihilates the coordinates `> k + 1` and puts `± ‖x'‖₂` at `k + 1`. Backbone
-`Matrix.householder_mulVec_apply_of_apply_eq_zero` and `Matrix.householder_tail_mulVec` (new). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_40", "Matrix.householder_mulVec_apply_of_apply_eq_zero", "Matrix.householder_tail_mulVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.41)'
 
 [[node]]
 id = "equation_5_43"
-kind = "definition"
-desc = '''(5.43): the Givens matrix `G(i, k, θ)`, the identity except for `g_ii = g_kk = cos θ`,
-`g_ik = sin θ`, `g_ki = -sin θ`. With the backbone's `Matrix.planeRotation j k c s` (rows `j`, `k`
-equal to `(c, -s)`, `(s, c)`), `G(i, k, θ) = planeRotation i k (cos θ) (-sin θ)`, or equivalently
-`(planeRotation i k (cos θ) (sin θ))ᵀ`. Orthogonal by `Matrix.planeRotation_mem_orthogonalGroup`. ★'''
-deps = ["Matrix.planeRotation", "Matrix.planeRotation_mem_orthogonalGroup"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.43)'
+
+[[node]]
+id = "equation_5_43_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.43)'
+
+[[node]]
+id = "equation_5_43_mem_orthogonalGroup"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.43)'
 
 [[node]]
 id = "equation_5_44"
-kind = "theorem"
-desc = '''(5.44): `y = G(i, k, θ)ᵀ x` has `y_j = x_j` for `j ≠ i, k`, `y_i = c x_i - s x_k`,
-`y_k = s x_i + c x_k`; and with `α = √(x_i² + x_k²)`, the choice `c = x_i/α`, `s = -x_k/α` gives
-`y_k = 0`, `y_i = α` — the Givens pair `Matrix.givensPair (x i) (x k)` of the backbone, (5.51).
-`Matrix.transpose_planeRotation_mul_apply` for the entries and
-`Matrix.transpose_planeRotation_givensPair_mulVec` for the annihilation. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_43", "Matrix.transpose_planeRotation_mul_apply", "Matrix.givensPair", "Matrix.transpose_planeRotation_givensPair_mulVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.44)'
 
 [[node]]
+id = "exists_cos_eq_sin_eq"
+
+[[node]]
+id = "equation_5_51"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.51)'
+
+[[node]]
 id = "remark_5_3"
-kind = "theorem"
-desc = '''Remark 5.3 (Householder deflation): for `A : Matrix (Fin (N+1)) (Fin (N+1)) ℝ` with eigenpair
-`A x₁ = λ₁ x₁`, `x₁ ≠ 0`, and `H` the reflector with `H x₁ = α e₀`, the matrix `A₁ = H A H` has
-first column `λ₁ e₀`, i.e. `A₁ i 0 = 0` for `i ≠ 0` and `A₁ 0 0 = λ₁`, and its trailing block
-`A₂ = A₁.submatrix Fin.succ Fin.succ` satisfies `A₁.charpoly = (X - C λ₁) * A₂.charpoly`, so the
-eigenvalues of `A₂` are those of `A` with one copy of `λ₁` removed. Backbone
-`Matrix.householder_conj_eigenvector_apply` and `Matrix.charpoly_householder_conj_eigenvector`
-(new, `Eigen/Deflation`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_40", "Matrix.householder_conj_eigenvector_apply", "Matrix.charpoly_householder_conj_eigenvector"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.3'
 
 [[node]]
+id = "householderStepMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergStep"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergIter"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergQIter"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
 id = "hessenbergReduce"
-kind = "definition"
-desc = '''§5.6.2, the Householder method: `Matrix.hessenbergReduce A : Matrix (Fin N) (Fin N) ℝ`, the
-matrix `H = A^{(N-2)}` obtained from `A^{(0)} = A` by the `N - 2` similarity steps
-`A^{(k)} = P_(k)ᵀ A^{(k-1)} P_(k)` of (5.45), `P_(k)` the reflector (5.41) built from column `k` of
-`A^{(k-1)}` below row `k + 1`, together with the accumulated orthogonal `Matrix.hessenbergQ A =
-P_(1) ⋯ P_(N-2)` (backbone definitions). ★★'''
-deps = ["Matrix.hessenbergReduce", "Matrix.hessenbergQ", "QuarteroniSaccoSaleri.Chapter05.equation_5_41"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergQ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "householderStepMatrix_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergStep_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergIter_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergReduce_eq"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
 
 [[node]]
 id = "equation_5_45"
-kind = "theorem"
-desc = '''(5.45) and the claim after it: `hessenbergReduce A = (hessenbergQ A)ᵀ * A * hessenbergQ A`
-with `hessenbergQ A` orthogonal, and `hessenbergReduce A` is upper Hessenberg
-(`Matrix.IsUpperHessenberg`). Backbone `Matrix.hessenbergReduce_eq_conj`,
-`Matrix.hessenbergQ_mem_orthogonalGroup`, `Matrix.isUpperHessenberg_hessenbergReduce`; the
-existence form is `Matrix.exists_unitary_conj_isUpperHessenberg`. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.hessenbergReduce", "Matrix.hessenbergReduce_eq_conj", "Matrix.isUpperHessenberg_hessenbergReduce", "Matrix.exists_unitary_conj_isUpperHessenberg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergReduce_isUpperHessenberg"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
+
+[[node]]
+id = "exists_orthogonal_conj_isUpperHessenberg"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 
 [[node]]
 id = "equation_5_46"
@@ -115,41 +137,16 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.46)'
 
 [[node]]
 id = "remark_5_4"
-kind = "theorem"
-desc = '''Remark 5.4 (the symmetric case): if `A` is symmetric then every `A^{(k)}` and `H =
-hessenbergReduce A` are symmetric, and a symmetric upper Hessenberg matrix is tridiagonal, so `H`
-is symmetric tridiagonal. Backbone `Matrix.isSymm_hessenbergReduce` (new) and
-`Matrix.IsUpperHessenberg.isTridiagonal_of_isSymm` (new, `LinearAlgebra/Matrix/Hessenberg`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_45", "Matrix.isSymm_hessenbergReduce", "Matrix.IsUpperHessenberg.isTridiagonal_of_isHermitian"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
 
 [[node]]
 id = "equation_5_47"
-kind = "theorem"
-desc = '''(5.47)–(5.48), the QR factorization of a Hessenberg matrix by Givens rotations: for an upper
-Hessenberg `H : Matrix (Fin N) (Fin N) ℝ` there are rotations `G_j = planeRotation j (j+1) c_j s_j`,
-`j < N - 1`, such that `G_{N-2}ᵀ ⋯ G_0ᵀ H = R` is upper triangular, so `H = Q R` with `Q = G_0 ⋯
-G_{N-2}` orthogonal and upper Hessenberg. Backbone `Matrix.hessenbergGivensQR` (the fold) with
-`Matrix.hessenbergGivensQR_spec`; the structural half without the rotations is
-`Matrix.isUpperHessenberg_qrQ` (`qrQ H = H (qrR H)⁻¹` for nonsingular `H`). ★★★ for the fold, ★
-for the structural half.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_44", "Matrix.hessenbergGivensQR", "Matrix.hessenbergGivensQR_spec", "Matrix.isUpperHessenberg_qrQ"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
 
 [[node]]
 id = "isUpperHessenberg_qrIterate"
-kind = "theorem"
-desc = '''§5.6.4: the QR iteration preserves upper Hessenberg form, `(qrIterate A k).IsUpperHessenberg`
-for every `k` when `A` is upper Hessenberg and nonsingular — `R Q` is upper triangular times
-upper Hessenberg. `Matrix.isUpperHessenberg_qrIterate` (new). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.qrIterate", "QuarteroniSaccoSaleri.Chapter05.equation_5_47", "Matrix.isUpperHessenberg_qrIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.4'
 
 [[node]]
 id = "equation_5_49"
-kind = "theorem"
-desc = '''(5.49)–(5.50): for `P = I - β v vᵀ` with `β = 2/‖v‖²` and `w = Mᵀ v`, `P M = M - β v wᵀ`;
-with `w = M v`, `M P = M - β w vᵀ`. Pure algebra: `Matrix.householder_mul_eq_sub_vecMulVec`,
-`Matrix.mul_householder_eq_sub_vecMulVec` (new, `LinearAlgebra/Matrix/QR`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_38", "Matrix.householder_mul_eq_sub_vecMulVec", "Matrix.mul_householder_eq_sub_vecMulVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.49)'

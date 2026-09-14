@@ -1,46 +1,23 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
-desc = '''
-§5.4, the QR iteration. The iteration (5.32) with `Q⁽⁰⁾ = I` is `Matrix.qrIterate` of
-`Numlib/Eigen/QRAlgorithm` and the similarity (5.33) is `Matrix.qrIterate_eq_conj_qrAccum`; the
-general `Q⁽⁰⁾` is the conjugated matrix `Q⁽⁰⁾ᵀ A Q⁽⁰⁾` fed to the same iteration. Property 5.8 is
-two statements the book runs together: the existence of the real Schur form, which is
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular` of `Numlib/LinearAlgebra/Matrix/RealSchur`
-sharpened so that the `2 × 2` blocks have no real eigenvalue, and the claim (5.35) that the
-accumulated QR factors converge to its `Q`, which is false without shifts (Exercise 14 and the
-book's own Example 5.9 are counterexamples) and is recorded as such.
-'''
 
 [[node]]
 id = "qrIterate"
-kind = "definition"
-desc = '''(5.32) with `Q⁽⁰⁾ = I`: `T k := Matrix.qrIterate A k` for `A : Matrix (Fin N) (Fin N) ℝ`, the
-sequence `T 0 = A`, `T (k+1) = R Q` where `Q R = T k` is the QR factorization with positive
-diagonal (`Matrix.qrQ`, `Matrix.qrR`); `Matrix.qrIterate_succ`. For a general orthogonal `Q⁽⁰⁾`
-the book's iteration is `qrIterate (Q⁽⁰⁾ᵀ A Q⁽⁰⁾)`. ★'''
-deps = ["Matrix.qrIterate", "Matrix.qrQ", "Matrix.qrR", "Matrix.qrIterate_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.32)'
+
+[[node]]
+id = "qrIterate_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.32)'
+
+[[node]]
+id = "equation_5_32"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.32)'
 
 [[node]]
 id = "equation_5_33"
-kind = "theorem"
-desc = '''(5.33): every iterate is orthogonally similar to `A`, `T k = (Q⁽¹⁾ ⋯ Q⁽ᵏ⁾)ᵀ A (Q⁽¹⁾ ⋯ Q⁽ᵏ⁾)`
-with `Q⁽¹⁾ ⋯ Q⁽ᵏ⁾ = Matrix.qrAccum A k` orthogonal; `Matrix.qrIterate_eq_conj_qrAccum` and
-`Matrix.qrAccum_mem_unitaryGroup`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.qrIterate", "Matrix.qrIterate_eq_conj_qrAccum", "Matrix.qrAccum_mem_unitaryGroup"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.33)'
 
 [[node]]
 id = "property_5_8"
-kind = "theorem"
-desc = '''Property 5.8 (real Schur decomposition), the existence clause: for `A : Matrix (Fin N) (Fin N)
-ℝ` there are an orthogonal `Q` and a monotone block index `p : Fin N → ℕ` with fibres of size at
-most `2` such that `Qᵀ A Q` is `BlockTriangular p` and every `2 × 2` diagonal block has no real
-eigenvalue (its two eigenvalues are complex conjugate). Backbone:
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks` (new, in
-`LinearAlgebra/Matrix/RealSchur`), a sharpening of
-`Matrix.exists_orthogonal_conj_quasiUpperTriangular`, whose `2 × 2` blocks may still be
-triangularizable. ★★'''
-deps = ["Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8'
 
 [[node]]
@@ -57,3 +34,10 @@ cases §5.7 describes, which the book itself calls an open problem in general. T
 [GL89] pp. 341–342 for the existence proof only.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_8", "QuarteroniSaccoSaleri.Chapter05.exercise_5_14"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8'
+wrong = '''False as printed. For the cyclic permutation matrix `A` of Exercise 14 (`exercise_5_14`)
+`qrQ A = A` and `qrR A = 1`, so every iterate is `A`, the accumulated factor
+`Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾ = Matrix.qrAccum A k = A ^ k` cycles with period `3` and has no limit; and for
+Example 5.9 the iterates converge to a "cheating" quasi-triangular form that is not the real Schur
+form of `A`, as the book itself observes. Only the existence clause (5.34) is a theorem
+(`property_5_8`); the convergence of the shifted iteration that the book has in mind is left
+unproved by it (§5.7).'''

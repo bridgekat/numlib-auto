@@ -11,10 +11,16 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter04.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section03
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section04
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section06
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section07
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section08
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section09
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section10
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section11
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section12
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section13
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Basics
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section02

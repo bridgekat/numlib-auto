@@ -1,54 +1,31 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
-desc = '''
-§5.13, the exercises the main text uses: Exercise 8 (the companion matrix, cited in §5.4 for the
-impossibility of a direct method), Exercise 9 (unitary similarity moves eigenvectors, the
-justification of §5.8.1–5.8.2), Exercise 10 (the power method with `α₁ = 0` converges to the
-second eigenpair, cited in §5.3.3) and Exercise 14 (a matrix the QR iteration leaves fixed, cited
-in §5.7.2 and the counterexample to (5.35)). Exercises 1–7 and 11–13 are numerical or are not used
-by the text.
-'''
+
+[[node]]
+id = "equation_5_72"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.72)'
+
+[[node]]
+id = "equation_5_72_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.72)'
 
 [[node]]
 id = "exercise_5_8"
-kind = "theorem"
-desc = '''Exercise 8: for `p = ∑_{k ≤ n} a_k X^k` with real coefficients and `a_n ≠ 0`, the companion
-(Frobenius) matrix `C : Matrix (Fin n) (Fin n) ℝ` of (5.72) — first row `(-a_{n-1}/a_n, …,
--a_0/a_n)`, ones on the subdiagonal — has `C.charpoly = p / a_n` (monic), so `spectrum ℂ
-(complexify C)` is the set of complex roots of `p`. Backbone `Matrix.companion` and
-`Matrix.charpoly_companion` (new, `LinearAlgebra/Matrix/Companion`); the consequence the text
-draws, that no direct method computes eigenvalues for `n ≥ 5`, is Abel's theorem and is not a
-node. ★★'''
-deps = ["Matrix.companion", "Matrix.charpoly_companion"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.8'
 
 [[node]]
 id = "exercise_5_9"
-kind = "theorem"
-desc = '''Exercise 9: if `A *ᵥ x = λ • x` and `U` is unitary then `(Uᴴ A U) *ᵥ (Uᴴ *ᵥ x) = λ • (Uᴴ *ᵥ x)`.
-`Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul` (`LinearAlgebra/Matrix/Schur` EXT). ★'''
-deps = ["Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.9'
 
 [[node]]
+id = "tendsto_smul_powerIterate_of_mem_iSup"
+
+[[node]]
+id = "sum_repr_sdiff_mem_iSup_maxGenEigenspace"
+
+[[node]]
 id = "exercise_5_10"
-kind = "theorem"
-desc = '''Exercise 10: under the hypotheses of Theorem 5.6 except that `α_1 = 0`, with `α_2 ≠ 0` and
-`|λ_2| > |λ_3| ≥ …`, the power method converges (essentially) to `(λ_2, x_2)`: `∃ c_k, ‖c_k‖ = 1
-∧ c_k • q k → x_2/‖x_2‖` and `ν k → λ_2`. `Krylov.tendsto_smul_powerIterate` and
-`Krylov.tendsto_inner_powerIterate` with the decomposition `q₀ = α_2 x_2 + w`, `w` in the span of
-the eigenvectors for `λ_3, …, λ_n`: the backbone theorem never needed `λ_2` to be the dominant
-eigenvalue of `A`, only dominant among the components present in `q₀`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "Krylov.tendsto_smul_powerIterate", "Krylov.tendsto_inner_powerIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.10'
 
 [[node]]
 id = "exercise_5_14"
-kind = "theorem"
-desc = '''Exercise 14: for the cyclic permutation matrix `A = ![![0, 0, 1], ![1, 0, 0], ![0, 1, 0]]`,
-`qrIterate A k = A` for every `k` (its columns are already orthonormal, so `qrQ A = A`, `qrR A =
-1`, and `R Q = A`), and the same holds for the single-shift iteration with the Rayleigh shift
-`μ = t_nn = 0`. Its eigenvalues are the cube roots of unity, `σ(A) = {1, -1/2 ± i√3/2}`, all of
-modulus one, so Property 5.9 does not apply and the iterate is not (quasi-)triangular. The book's
-claim about Program 37 (the double-shift variant) is a computation and is not a node. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.qrIterate", "Matrix.qrQ", "Matrix.qrR", "QuarteroniSaccoSaleri.Chapter05.equation_5_53"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.14'
