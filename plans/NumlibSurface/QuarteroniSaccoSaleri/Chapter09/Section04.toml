@@ -1,22 +1,7 @@
 namespace = "QuarteroniSaccoSaleri.Chapter09"
-desc = '''
-§9.4, composite Newton–Cotes formulae: the composite rule (9.25), Theorem 9.3 with the corrected
-constant for the closed rules, the convergence remark that follows it, and Property 9.1 (convergence
-for continuous integrands with nonnegative weights, with the modulus-of-continuity bound). Example
-9.4 is a numerical table and is skipped.
-'''
 
 [[node]]
 id = "theorem_9_3_even"
-kind = "theorem"
-desc = '''Theorem 9.3, even `n` (9.26), for the composite *closed* rule: for even `n ≥ 2`, `a < b`,
-`m ≥ 1`, `H = (b - a)/m`, `f ∈ C^{n+2}([a, b])`,
-`∃ ξ ∈ Icc a b, ∫_a^b f - Quadrature.compositeNewtonCotes n f a b m
-= (b - a)/(n + 2)! * M_n/n^{n+3} * H^{n+2} * f^{(n+2)}(ξ)`.
-**Erratum:** the book prints `(n + 2)^{n+3}`; the closed spacing is `h = H/n` and `n = 2` must give
-the composite Simpson constant `-(b - a) H⁴/2880`. "The error is an infinitesimal of order `n + 2`
-in `H` and the degree of exactness is `n + 1`" follow. ★'''
-deps = ["Quadrature.exists_sub_compositeNewtonCotes_eq_of_even", "QuarteroniSaccoSaleri.Chapter09.theorem_9_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.3 (9.26)'
 
 [[node]]
@@ -24,37 +9,45 @@ id = "theorem_9_3_odd"
 kind = "theorem"
 desc = '''Theorem 9.3, odd `n` (9.27): for odd `n`, `f ∈ C^{n+1}([a, b])`,
 `∃ η ∈ Icc a b, ∫_a^b f - compositeNewtonCotes n f a b m = (b - a)/(n + 1)! * K_n/n^{n+2} * H^{n+1} * f^{(n+1)}(η)`;
-`n = 1` is the composite trapezoidal error `-(b - a) H²/12 f''`. ★'''
-deps = ["Quadrature.exists_sub_compositeNewtonCotes_eq_of_even", "QuarteroniSaccoSaleri.Chapter09.theorem_9_1"]
+`n = 1` is the composite trapezoidal error `-(b - a) H²/12 f''`. ★
+Blocked: the backbone companion `Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd` (which
+waits on the odd-`n` sign analysis `Quadrature.newtonCotesK_neg`, ★★★) is still open.'''
+deps = ["Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd", "QuarteroniSaccoSaleri.Chapter09.theorem_9_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.3 (9.27)'
 
 [[node]]
-id = "theorem_9_3_tendsto"
+id = "theorem_9_3_tendsto_even"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.4 (convergence remark after Theorem 9.3)'''
+
+[[node]]
+id = "theorem_9_3_tendsto_odd"
 kind = "theorem"
-desc = '''"For `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`": under the hypotheses of Theorem 9.3,
+desc = '''"For `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`", odd `n`: under the hypotheses of (9.27),
 `Tendsto (fun m => compositeNewtonCotes n f a b m) atTop (𝓝 (∫_a^b f))`. From the bound of
-`theorem_9_3_even` with `sup |f^{(n+2)}|` and `H^{n+2} → 0`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even", "QuarteroniSaccoSaleri.Chapter09.theorem_9_3_odd"]
+`theorem_9_3_odd` with `sup |f^{(n+1)}|` and `H^{n+1} → 0`, as `theorem_9_3_tendsto_even`. ★
+Blocked: `theorem_9_3_odd` is blocked on the backbone's odd-`n` composite error formula.'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.theorem_9_3_odd"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.4 (convergence remark after Theorem 9.3)'''
 
 [[node]]
 id = "property_9_1"
-kind = "theorem"
-desc = '''Property 9.1, first clause: for `f ∈ C⁰([a, b])` and a composite interpolatory rule (9.25)
-whose panel weights are nonnegative, `lim_{m → ∞} I_{n,m}(f) = ∫_a^b f`. Stated for the composite
-closed Newton–Cotes rule with `∀ i, 0 ≤ newtonCotesWeight n i` (the book's "interpolatory" is what
-makes the weights sum to the panel length), it is `Quadrature.tendsto_compositeNewtonCotes`; the
-general statement for an arbitrary nonnegative interpolatory panel rule is
-`Quadrature.tendsto_compositeSum`. ★'''
-deps = ["Quadrature.abs_sub_compositeNewtonCotes_le", "Quadrature.tendsto_compositeSum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.1'
 
 [[node]]
 id = "property_9_1_bound"
-kind = "theorem"
-desc = '''Property 9.1, second clause: `|∫_a^b f - I_{n,m}(f)| ≤ 2 (b - a) Ω(f; H)` with
-`Ω(f; H) = sup {|f x - f y| : |x - y| ≤ H}` the modulus of continuity. The backbone gives the
-constant `1` (`Quadrature.abs_sub_compositeNewtonCotes_le` with `ε = Ω(f; H)`, i.e.
-`ContinuousMap.modulusOfContinuity`), which implies the book's `2`. ★'''
-deps = ["Quadrature.abs_sub_compositeNewtonCotes_le", "ContinuousMap.modulusOfContinuity"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.1 (modulus of continuity bound)'
+
+[[node]]
+id = "equation_9_25"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.25)'
+
+[[node]]
+id = "property_9_1_midpoint"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.1 (`n = 0`, the composite midpoint formula)'
+
+[[node]]
+id = "modulusOfContinuity"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.1 (the modulus of continuity `Ω(f; H)`)'
+
+[[node]]
+id = "abs_sub_le_modulusOfContinuity"

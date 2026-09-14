@@ -221,9 +221,11 @@ import Numlib.Approximation.OrthogonalPolynomial.Classical
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial
+import Numlib.Approximation.SingularIntegral
 import Numlib.Approximation.SobolevInterpolation
 import Numlib.Approximation.Spline
 import Numlib.Approximation.TrapezoidExactness
+import Numlib.Approximation.TriangleQuadrature
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Approximation.Unisolvent
@@ -352,6 +354,7 @@ import Numlib.Preconditioner.ApproximateInverse
 import Numlib.Preconditioner.Chebyshev
 import Numlib.Preconditioner.ILU
 import Numlib.Preconditioner.Polynomial
+import Numlib.Probability.MonteCarlo
 import Numlib.Projection.Additive
 import Numlib.Projection.Basic
 import Numlib.Projection.ConjugateDirection

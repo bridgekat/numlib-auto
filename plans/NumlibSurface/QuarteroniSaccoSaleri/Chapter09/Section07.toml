@@ -1,53 +1,37 @@
 namespace = "QuarteroniSaccoSaleri.Chapter09"
-desc = '''
-§9.7, automatic integration. The algorithms (Programs 77 and the stopping test (9.38)) are not
-nodes; the a posteriori estimators are: (9.40) for the non-adaptive doubling of the trapezoidal and
-Simpson rules, (9.44) for the adaptive Simpson step, and the additivity of the local tolerance
-(9.45). The book writes (9.39)–(9.40) and (9.43)–(9.44) with `≃`; the nodes state them as
-identities with an explicit remainder, of the next order in `H` for (9.40) (through the
-Euler–Maclaurin expansion) and bounded by the modulus of continuity of `f⁗` for (9.44). Examples
-9.8 and 9.9 are numerical runs and are skipped; the Gauss–Kronrod paragraph is descriptive.
-'''
 
 [[node]]
 id = "equation_9_40_trapezoid"
-kind = "theorem"
-desc = '''(9.40) for the composite trapezoidal rule (`n = 1`, `p = 1`, `2^{n+p} - 1 = 3`): for
-`f ∈ C⁴([a, b])`, `T_m = trapezoidSum f a ((b - a)/m) m`,
-`|(∫_a^b f - T_{2m}) - (T_{2m} - T_m)/3| ≤ C ((b - a)/m)^4` with `C` depending only on `f` and
-`[a, b]`. `Richardson.abs_sub_sub_estimate_le` applied to the two-term Euler–Maclaurin expansion
-(`property_9_3` with `k = 1`, `δ = 1/4`, `p = 1`, `q = 2` in the parameter `H²`). ★'''
-deps = ["Richardson.abs_sub_sub_estimate_le", "QuarteroniSaccoSaleri.Chapter09.property_9_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.39)–(9.40), trapezoidal case'
 
 [[node]]
 id = "equation_9_40_simpson"
-kind = "theorem"
-desc = '''(9.40) for the composite Simpson rule (`n = p = 2`, `2^{n+p} - 1 = 15`, "a reduction of the
-absolute error by a factor of 15"): for `f ∈ C⁶([a, b])`, `S_m = simpsonSum f a ((b - a)/m) m`,
-`|(∫_a^b f - S_{2m}) - (S_{2m} - S_m)/15| ≤ C ((b - a)/m)^6`. Simpson is the first Romberg column
-(`Romberg.table_one_eq_simpsonSum`), so it inherits an expansion in `H²` from Euler–Maclaurin with
-`k = 2` whose `H²` term is gone; then `Richardson.abs_sub_sub_estimate_le` with `p = 2`, `q = 3`.
-★★'''
-deps = ["Richardson.abs_sub_sub_estimate_le", "Romberg.table_one_eq_simpsonSum", "Romberg.hasExpansion_trapezoidSum", "Richardson.hasExpansion_step"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.39)–(9.40), Simpson case'
 
 [[node]]
 id = "equation_9_44"
-kind = "theorem"
-desc = '''(9.42)–(9.44), the adaptive Simpson estimator: on `[α, β]` with `h₀ = (β - α)/2`,
-`S_f = (h₀/3)(f α + 4 f(α + h₀) + f β)`, `S_{f,2}` the same rule on the two halves and
-`ℰ_f = S_f - S_{f,2}`, for `f ∈ C⁴([α, β])` with `|f⁗(u) - f⁗(v)| ≤ ω` on `[α, β]`:
-`|(I_f(α, β) - S_{f,2}) + ℰ_f/15| ≤ h₀^5 ω/1350`. The book's `|I_f - S_{f,2}| ≃ |ℰ_f|/15` is this
-with the variation of `f⁗` neglected. ★'''
-deps = ["Quadrature.abs_sub_simpson_add_estimate_le", "QuarteroniSaccoSaleri.Chapter09.equation_9_16"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.42)–(9.44)'
 
 [[node]]
 id = "equation_9_45"
-kind = "theorem"
-desc = '''(9.45) and the sentence before it: if `[a, b]` is partitioned into finitely many subintervals
-`[α_j, β_j]` on each of which `|I_f(α_j, β_j) - J_j| ≤ ε (β_j - α_j)/(b - a)`, then
-`|∫_a^b f - ∑_j J_j| ≤ ε`. Triangle inequality and `∑ (β_j - α_j) = b - a`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.45)'
+
+[[node]]
+id = "eulerMaclaurinTerm"
+
+[[node]]
+id = "abs_trapezoidSum_sub_le"
+
+[[node]]
+id = "simpsonSum_eq_trapezoidSum"
+
+[[node]]
+id = "simpsonRule"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.7.2 (`S_f(α, β)`)'
+
+[[node]]
+id = "simpsonRule_eq_simpsonSum"
+
+[[node]]
+id = "equation_9_42"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.42)'
