@@ -33,170 +33,201 @@ id = "qr_unique"
 
 [[node]]
 id = "householder_mul_eq_sub_vecMulVec"
-kind = "theorem"
-desc = '''`householder w * M = M - (2 : 𝕜) • vecMulVec w (star w ᵥ* M)` and `mul_householder_eq_sub_vecMulVec :
-M * householder w = M - (2 : 𝕜) • vecMulVec (M *ᵥ w) (star w)`: applying a reflector is a rank-one
-update, never a matrix product (Quarteroni–Sacco–Saleri (5.49)–(5.50) with `β = 2` for a unit
-axis). ★'''
-deps = ["Matrix.householder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.49)'
 
 [[node]]
 id = "mul_householder_eq_sub_vecMulVec"
-kind = "theorem"
-desc = 'See `householder_mul_eq_sub_vecMulVec`. ★'
-deps = ["Matrix.householder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.50)'
 
 [[node]]
 id = "householder_mulVec_apply_of_apply_eq_zero"
-kind = "theorem"
-desc = '''A reflector fixes the coordinates where its axis vanishes: `w i = 0 → (householder w *ᵥ x) i =
-x i`. Quarteroni–Sacco–Saleri (5.41), the block form `P_(k) = diag (I_k, R_{n-k})`, without
-blocks. ★'''
-deps = ["Matrix.householder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.41)'
 
 [[node]]
+id = "householder_mulVec_eq_self_of_dotProduct_eq_zero"
+
+[[node]]
+id = "householder_mulVec_eq_self_of_apply_eq_zero"
+
+[[node]]
+id = "householder_mul_apply"
+
+[[node]]
+id = "householder_mul_apply_of_apply_eq_zero"
+
+[[node]]
+id = "mul_householder_apply_of_apply_eq_zero"
+
+[[node]]
+id = "vecMul_householder_star"
+
+[[node]]
+id = "mul_householder_star_apply"
+
+[[node]]
+id = "star_dotProduct_star_self"
+
+[[node]]
+id = "exists_unitary_mul_isUpperTriangular"
+
+[[node]]
 id = "householderTail"
-kind = "definition"
-desc = '''`householderTail (x : Fin N → 𝕜) (k : Fin N) : Fin N → 𝕜 := householderVec (fun i => if k < i
-then x i else 0) (k + 1)` (with `k + 1` clamped, or `k : Fin N` with `k.val + 1 < N` as a
-hypothesis), the axis `w^{(k)}` of Quarteroni–Sacco–Saleri (5.42): the reflector that keeps the
-first `k + 1` coordinates of `x`, sends coordinate `k + 1` to `±‖x^{(n-k)}‖` and annihilates the
-rest. ★'''
-deps = ["Matrix.householderVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.42)'
+
+[[node]]
+id = "householderTail_of_lt"
+
+[[node]]
+id = "householderTail_of_le"
+
+[[node]]
+id = "householderTail_apply_of_lt"
+
+[[node]]
+id = "householderVec_zero"
+
+[[node]]
+id = "householder_householderTail_mem_unitaryGroup"
+
+[[node]]
+id = "householder_star_householderTail_mem_unitaryGroup"
 
 [[node]]
 id = "householder_tail_mulVec"
-kind = "theorem"
-desc = '''For `x` with some `x i ≠ 0`, `k < i`: `householder (householderTail x k) *ᵥ x` agrees with `x` on
-`i ≤ k`, vanishes on `i > k + 1`, and has modulus `‖(x i)_{i > k}‖` at `k + 1`. From
-`householder_mulVec_eq_smul_single` on the tail `x'` and `householder_mulVec_apply_of_apply_eq_zero`
-on `x - x'` (which is orthogonal to the axis, so the reflector fixes it). ★'''
-deps = ["Matrix.householderTail", "Matrix.householder_mulVec_eq_smul_single", "Matrix.householder_mulVec_apply_of_apply_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.42)'
 
 [[node]]
+id = "householder_householderTail_mulVec_apply_of_lt"
+
+[[node]]
+id = "householder_householderTail_mulVec_apply_of_gt"
+
+[[node]]
+id = "householder_householderTail_mulVec_apply_self"
+
+[[node]]
+id = "norm_householder_householderTail_mulVec_apply_self"
+
+[[node]]
+id = "isUpperHessenberg_iff_fin"
+
+[[node]]
+id = "hessenbergReflector"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.41)'
+
+[[node]]
+id = "hessenbergReflector_of_lt"
+
+[[node]]
+id = "hessenbergReflector_of_le"
+
+[[node]]
+id = "isHermitian_hessenbergReflector"
+
+[[node]]
+id = "hessenbergReflector_mem_unitaryGroup"
+
+[[node]]
 id = "hessenbergStep"
-kind = "definition"
-desc = '''One step of the Householder reduction to Hessenberg form: `hessenbergStep (A : Matrix (Fin N)
-(Fin N) 𝕜) (k : Fin N) := P * A * P` with `P = householder (householderTail (Aᵀ k) k)` (the
-reflector built from column `k` of `A` below row `k + 1`; `P` is Hermitian and involutive so
-`Pᴴ A P = P A P`), or `A` itself when the tail is already zero. Quarteroni–Sacco–Saleri (5.45),
-`A^{(k)} = P_(k)ᵀ A^{(k-1)} P_(k)`. ★'''
-deps = ["Matrix.householderTail", "Matrix.householder"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergIter"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergQIter"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
 
 [[node]]
 id = "hessenbergReduce"
-kind = "definition"
-desc = '''`hessenbergReduce A := (List.finRange N).foldl hessenbergStep A` restricted to `k < N - 2` (the
-steps `k = 0, …, N - 3`), the Householder method of Quarteroni–Sacco–Saleri §5.6.2 (Program 29);
-`hessenbergQ A` the product of the reflectors in order, so that `hessenbergReduce A = (hessenbergQ
-A)ᴴ * A * hessenbergQ A`. ★'''
-deps = ["Matrix.hessenbergStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 
 [[node]]
 id = "hessenbergQ"
-kind = "definition"
-desc = 'See `hessenbergReduce`. ★'
-deps = ["Matrix.hessenbergStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 
 [[node]]
-id = "hessenbergReduce_eq_conj"
-kind = "theorem"
-desc = '''`hessenbergReduce A = (hessenbergQ A)ᴴ * A * hessenbergQ A` and `hessenbergQ_mem_unitaryGroup :
-hessenbergQ A ∈ unitaryGroup (Fin N) 𝕜` (`hessenbergQ_mem_orthogonalGroup` over `ℝ`); induction
-over the fold, each reflector being unitary. ★'''
-deps = ["Matrix.hessenbergReduce", "Matrix.hessenbergQ", "Matrix.householder_mem_unitaryGroup"]
+id = "hessenbergIter_zero"
+
+[[node]]
+id = "hessenbergIter_succ"
+
+[[node]]
+id = "hessenbergQIter_zero"
+
+[[node]]
+id = "hessenbergQIter_succ"
+
+[[node]]
+id = "hessenbergQIter_mem_unitaryGroup"
+
+[[node]]
+id = "hessenbergIter_eq_conj"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
 
 [[node]]
+id = "hessenbergQ_mem_unitaryGroup"
+
+[[node]]
+id = "hessenbergQ_mem_orthogonalGroup"
+
+[[node]]
+id = "hessenbergReduce_eq_conj"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.45)'
+
+[[node]]
+id = "hessenbergIter_apply_eq_zero"
+
+[[node]]
 id = "isUpperHessenberg_hessenbergReduce"
-kind = "theorem"
-desc = '''`(hessenbergReduce A).IsUpperHessenberg`. The invariant over the fold: after the steps `< k`,
-the columns `j < k` of the current matrix vanish below row `j + 1`; step `k` zeroes column `k`
-below row `k + 1` (`householder_tail_mulVec` applied to the column) and, since the reflector's
-axis vanishes on rows `≤ k`, left multiplication leaves rows `≤ k` alone and right multiplication
-leaves columns `≤ k` alone (`householder_mulVec_apply_of_apply_eq_zero` and its row form), so the
-earlier zeros survive. The same induction as `exists_unitary_mul_upperTriangular`, one diagonal
-lower and two-sided. ★★★'''
-deps = ["Matrix.hessenbergReduce", "Matrix.householder_tail_mulVec", "Matrix.householder_mulVec_apply_of_apply_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 
 [[node]]
-id = "exists_unitary_conj_isUpperHessenberg"
-kind = "theorem"
-desc = '''Every square matrix is unitarily similar to an upper Hessenberg one: `∃ Q ∈ unitaryGroup (Fin
-N) 𝕜, (Qᴴ * A * Q).IsUpperHessenberg`; from `hessenbergReduce_eq_conj` and
-`isUpperHessenberg_hessenbergReduce`. (An alternative existence proof runs the Arnoldi process of
-`Numlib/Krylov/Arnoldi` from a vector of full grade, restarting on the orthogonal complement at a
-breakdown; the Householder route is what gives the algorithm.) ★'''
-deps = ["Matrix.hessenbergReduce_eq_conj", "Matrix.isUpperHessenberg_hessenbergReduce"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
-
-[[node]]
-id = "isSymm_hessenbergReduce"
-kind = "theorem"
-desc = '''`A.IsHermitian → (hessenbergReduce A).IsHermitian` (a unitary conjugate of a Hermitian matrix),
-hence with `Matrix.IsUpperHessenberg.isTridiagonal_of_isHermitian` the reduction of a Hermitian
-matrix is tridiagonal (Quarteroni–Sacco–Saleri Remark 5.4). ★'''
-deps = ["Matrix.hessenbergReduce_eq_conj", "Matrix.isUpperHessenberg_hessenbergReduce"]
+id = "isHermitian_hessenbergReduce"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
 
 [[node]]
-id = "isUpperHessenberg_qrQ"
-kind = "theorem"
-desc = '''For `H : Matrix n n 𝕜` upper Hessenberg with `IsUnit H.det` (`[LinearOrder n]
-[LocallyFiniteOrderBot n]`), `(qrQ H).IsUpperHessenberg`: `qrQ H = H * (qrR H)⁻¹`
-(`Matrix.qrQ_mul_qrR`, `Matrix.qrR_diag_pos`), the inverse of an upper triangular matrix is upper
-triangular (Mathlib's `Matrix.blockTriangular_inv_of_blockTriangular`), and
-`IsUpperHessenberg.mul_isUpperTriangular`. Quarteroni–Sacco–Saleri §5.6.3, "the orthogonal
-matrix `Q^{(k)}` is in upper Hessenberg form", by uniqueness of the factorization rather than by
-inspecting the product of rotations. ★'''
-deps = ["Matrix.qrQ", "Matrix.qrQ_mul_qrR", "Matrix.qrR_diag_pos", "Matrix.IsUpperHessenberg.mul_isUpperTriangular"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.3'
+id = "isTridiagonal_hessenbergReduce_of_isHermitian"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
+
+[[node]]
+id = "isSymm_hessenbergReduce"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.4'
+
+[[node]]
+id = "exists_unitary_conj_isUpperHessenberg"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
+
+[[node]]
+id = "hessenbergGivensRotation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
+
+[[node]]
+id = "hessenbergGivensRotation_mem_orthogonalGroup"
+
+[[node]]
+id = "hessenbergGivensStep"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
+
+[[node]]
+id = "hessenbergGivensIter"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
 
 [[node]]
 id = "hessenbergGivensQR"
-kind = "definition"
-desc = '''The Givens QR factorization of an upper Hessenberg `H : Matrix (Fin N) (Fin N) ℝ`
-(Quarteroni–Sacco–Saleri (5.47), Program 31): `hessenbergGivensQR H : Matrix (Fin N) (Fin N) ℝ ×
-Matrix (Fin N) (Fin N) ℝ`, the fold over `j = 0, …, N - 2` that at step `j` forms `(c_j, s_j) =
-givensPair (R j j) (R (j+1) j)` from the current `R` and sets `R ← (planeRotation j (j+1) c_j
-s_j)ᵀ * R`, `Q ← Q * planeRotation j (j+1) c_j s_j`. ★★'''
-deps = ["Matrix.givensPair", "Matrix.planeRotation"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
 
 [[node]]
 id = "hessenbergGivensQR_spec"
-kind = "theorem"
-desc = '''For `H` upper Hessenberg, `(Q, R) = hessenbergGivensQR H` satisfies `Q ∈ orthogonalGroup (Fin N)
-ℝ`, `R.IsUpperTriangular`, `H = Q * R`, and `Q.IsUpperHessenberg`. Invariant of the fold: after
-steps `< j`, `R` is upper Hessenberg, agrees with an upper triangular matrix in columns `< j`, and
-`Q R = H` with `Q` a product of rotations in the planes `(i, i+1)`, `i < j`; step `j` zeroes `R
-(j+1) j` by `transpose_planeRotation_givensPair_mulVec` on column `j` and touches only rows `j`,
-`j + 1` (`planeEmbed_mul_apply`), which are zero in columns `< j` already. When `R` has positive
-diagonal it is `qrR H` and `Q = qrQ H` by `Matrix.qr_unique`. ★★★'''
-deps = ["Matrix.hessenbergGivensQR", "Matrix.transpose_planeRotation_givensPair_mulVec", "Matrix.planeEmbed_mul_apply", "Matrix.qr_unique"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.47)'
 
 [[node]]
+id = "exists_unitary_mul_mul_unitary_apply_eq_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
+
+[[node]]
 id = "exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"
-kind = "theorem"
-desc = '''**Golub–Kahan bidiagonalization** (Quarteroni–Sacco–Saleri (5.57); Golub–Van Loan §5.4.3): for
-`A : Matrix (Fin M) (Fin N) 𝕜` with `N ≤ M`, `∃ U ∈ unitaryGroup (Fin M) 𝕜, ∃ V ∈ unitaryGroup (Fin
-N) 𝕜, (∀ i j, N ≤ i → (Uᴴ * A * V) i j = 0) ∧ IsUpperBidiagonal ((Uᴴ * A * V).submatrix (Fin.castLE
-h) id)` — zero below row `N` and upper bidiagonal on top. Alternate left reflectors (annihilating
-column `k` below row `k`) and right reflectors (annihilating row `k` beyond column `k + 1`); the
-right reflector's axis vanishes on columns `≤ k`, so it preserves the zeros already created in
-those columns. The two-sided analogue of `exists_unitary_mul_upperTriangular`, whose induction
-it follows. ★★★'''
-deps = ["Matrix.householderTail", "Matrix.householder_tail_mulVec", "Matrix.IsUpperBidiagonal", "Matrix.exists_unitary_mul_upperTriangular"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
 
 [[node]]

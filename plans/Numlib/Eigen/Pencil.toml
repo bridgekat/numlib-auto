@@ -106,9 +106,6 @@ id = "pencilSpectrum_mul_mul_of_isUnit"
 id = "pencilSpectrum_diagonal"
 
 [[node]]
-id = "exists_unitary_mul_isUpperTriangular"
-
-[[node]]
 id = "PosDef.exists_isUnit_conj_eq_one"
 
 [[node]]

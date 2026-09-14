@@ -76,120 +76,113 @@ id = "_root_.Matrix.conjTranspose_mul_mul_apply"
 id = "_root_.Matrix.qrIterate_apply"
 
 [[node]]
+id = "mapsTo_span_image_of_eigen"
+
+[[node]]
+id = "mem_orthogonal_span_image_of_orthonormal"
+
+[[node]]
+id = "finrank_span_image_eq_of_linearIndependent"
+
+[[node]]
+id = "_root_.Matrix.euclideanCol_one"
+
+[[node]]
+id = "_root_.Matrix.mem_span_euclideanCol_one_iff"
+
+[[node]]
+id = "_root_.Matrix.span_euclideanCol_eq_map"
+
+[[node]]
+id = "_root_.Matrix.orthogonalIterate_euclideanCol_one_zero"
+
+[[node]]
+id = "_root_.Matrix.orthonormal_orthogonalIterate_euclideanCol_one"
+
+[[node]]
 id = "_root_.Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal"
-kind = "theorem"
-desc = '''The general-position hypothesis of `Matrix.tendsto_qrIterate` is the LU condition on the inverse
-eigenvector matrix (Golub–Van Loan Thm 7.3.1): for `X : Matrix (Fin N) (Fin N) 𝕜` invertible with
-columns `x j = euclideanCol X j` and a lower set `J = Set.Iio m`, `Disjoint (span (euclideanCol 1 ''
-J)) (span (x '' Jᶜ)) ↔ IsUnit ((X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm)).det`, the leading
-principal `m × m` submatrix of `X⁻¹`. Proof: `span (x '' Jᶜ) = {v | ∀ i ∈ J, (X⁻¹ *ᵥ v) i = 0}`
-(the rows of `X⁻¹` are the dual basis), so a nonzero `v` supported on `J` in that span is a
-nonzero kernel vector of the leading block of `X⁻¹`, and conversely. Every lower set of `Fin N` is
-some `Iio m`, so the hypothesis `hgen` of `Matrix.tendsto_qrIterate` is "all leading principal
-minors of `X⁻¹` are nonzero", which is the hypothesis Quarteroni–Sacco–Saleri's Property 5.9
-omits. ★★'''
-deps = ["Matrix.euclideanCol", "Matrix.tendsto_qrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
+
+[[node]]
+id = "_root_.Matrix.isLowerSet_setOf_val_lt"
+
+[[node]]
+id = "_root_.Matrix.exists_eq_setOf_val_lt_of_isLowerSet"
+
+[[node]]
+id = "_root_.Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
 
 [[node]]
 id = "_root_.Matrix.exists_abs_qrIterate_apply_le"
-kind = "theorem"
-desc = '''The convergence rate of the QR iteration, weakened (Quarteroni–Sacco–Saleri (5.37); Kress Thm
-7.19's proof): under the hypotheses of `Matrix.tendsto_qrIterate` (eigenpairs `(l j, x j)`,
-`‖l k‖ < ‖l j‖` for `j < k`, general position), for `k < j` (a strictly subdiagonal entry) and every
-`r` with `‖l j'‖ < r` for all `j' > k` (any `r` above the moduli of the eigenvalues after the
-`k`-th), `∃ C, ∀ ν, ‖qrIterate A ν j k‖ ≤ C * (r / ‖l k‖) ^ ν`. Proof: `qrIterate A ν j k = ⟪q_j^ν,
-A q_k^ν⟫` (`Matrix.qrIterate_apply`) with `q_k^ν ∈ S_k^ν = subspaceIterate (span (e_0..e_k)) ν`
-and `q_j^ν ⟂ S_k^ν`, so `Krylov.norm_inner_le_of_gap` bounds it by `2 ‖A‖ gap (T_k, S_k^ν)` for
-the invariant `T_k = span (x_0..x_k)`, and `Krylov.exists_gap_subspaceIterate_span_image_le` gives
-`gap ≤ C (r/‖l k‖)^ν`. For `j = k + 1` and `r → ‖l (k+1)‖` this is the book's `|t_{i,i-1}^{(k)}| =
-O(|λ_i/λ_{i-1}|^k)`, up to the usual loss `r > |λ_i|` of this library's subspace-iteration
-estimates. ★★'''
-deps = ["Matrix.qrIterate_apply", "Krylov.norm_inner_le_of_gap", "Krylov.exists_gap_subspaceIterate_span_image_le", "Matrix.tendsto_qrIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.37)'
 
 [[node]]
 id = "_root_.Matrix.isHermitian_qrIterate"
-kind = "theorem"
-desc = '''`A.IsHermitian → (qrIterate A k).IsHermitian`, from `Matrix.qrIterate_eq_conj_qrAccum` and the
-unitarity of `qrAccum`. So for a symmetric matrix the QR iterates converge to a *diagonal* matrix
-whenever they converge to a triangular one (Quarteroni–Sacco–Saleri Property 5.9, last sentence).
-★'''
-deps = ["Matrix.qrIterate_eq_conj_qrAccum", "Matrix.qrAccum_mem_unitaryGroup"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
 
 [[node]]
+id = "_root_.Matrix.isUpperHessenberg_qrQ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.3'
+
+[[node]]
 id = "_root_.Matrix.isUpperHessenberg_qrIterate"
-kind = "theorem"
-desc = '''A QR step preserves upper Hessenberg form: for `A : Matrix n n 𝕜` with `IsUnit A.det` and
-`A.IsUpperHessenberg`, `(qrIterate A k).IsUpperHessenberg` for all `k`. Step: `qrQ T = T * (qrR
-T)⁻¹` is Hessenberg (`Matrix.isUpperHessenberg_qrQ`, `LinearAlgebra/Matrix/QR`) and `qrR T * qrQ
-T` is upper triangular times Hessenberg (`Matrix.IsUpperTriangular.mul_isUpperHessenberg`,
-`LinearAlgebra/Matrix/Hessenberg`); nonsingularity passes along by `Matrix.isUnit_det_qrIterate`.
-Quarteroni–Sacco–Saleri §5.6.4, the Hessenberg-QR iteration. ★'''
-deps = ["Matrix.qrIterate_succ", "Matrix.isUpperHessenberg_qrQ", "Matrix.IsUpperTriangular.mul_isUpperHessenberg", "Matrix.isUnit_det_qrIterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.4'
 
 [[node]]
 id = "_root_.Matrix.shiftedQrStep"
-kind = "definition"
-desc = '''`Matrix.shiftedQrStep (μ : 𝕜) (T : Matrix n n 𝕜) : Matrix n n 𝕜 := qrR (T - μ • 1) * qrQ (T -
-μ • 1) + μ • 1`, one QR step with shift `μ` (Quarteroni–Sacco–Saleri (5.52)). ★'''
-deps = ["Matrix.qrQ", "Matrix.qrR"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.52)'
 
 [[node]]
 id = "_root_.Matrix.shiftedQrStep_eq_conj"
-kind = "theorem"
-desc = '''`shiftedQrStep μ T = (qrQ (T - μ • 1))ᴴ * T * qrQ (T - μ • 1)`: the shifted step is a unitary
-similarity (the display after (5.52)). Hence `charpoly (shiftedQrStep μ T) = charpoly T`. ★'''
-deps = ["Matrix.shiftedQrStep", "Matrix.qrR_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.52)'
 
 [[node]]
 id = "_root_.Matrix.shiftedQrIterate"
-kind = "definition"
-desc = '''`Matrix.shiftedQrIterate (A : Matrix n n 𝕜) (μ : 𝕜) : ℕ → Matrix n n 𝕜`, `0 ↦ A`, `k+1 ↦
-shiftedQrStep μ (… k)`: the QR iteration with a fixed shift. ★'''
-deps = ["Matrix.shiftedQrStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.52)'
 
 [[node]]
+id = "_root_.Matrix.shiftedQrIterate_zero"
+
+[[node]]
+id = "_root_.Matrix.shiftedQrIterate_succ"
+
+[[node]]
 id = "_root_.Matrix.shiftedQrIterate_eq_qrIterate_sub_add"
-kind = "theorem"
-desc = '''`shiftedQrIterate A μ k = qrIterate (A - μ • 1) k + μ • 1`: a fixed shift is the basic iteration
-on the shifted matrix. Induction on `k`; the step is `shiftedQrStep μ (B + μ • 1) = qrR B * qrQ B
-+ μ • 1`. Consequently `Matrix.tendsto_qrIterate` applied to `A - μ • 1` is the convergence claim
-of Quarteroni–Sacco–Saleri §5.7.1 (rate `|(λ_j - μ)/(λ_{j-1} - μ)|^k`, under `|λ_1 - μ| > … >
-|λ_n - μ| > 0` and the general-position hypothesis for the same eigenvector matrix). ★'''
-deps = ["Matrix.shiftedQrIterate", "Matrix.qrIterate_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.1'
+
+[[node]]
+id = "_root_.Matrix.shiftedQrIterate_eq_conj_qrAccum"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.1'
 
 [[node]]
 id = "_root_.Matrix.rayleighShiftQrIterate"
-kind = "definition"
-desc = '''`Matrix.rayleighShiftQrIterate (A : Matrix (Fin (N+1)) (Fin (N+1)) 𝕜) : ℕ → Matrix _ _ 𝕜`, `0 ↦
-A`, `k+1 ↦ shiftedQrStep (T k (Fin.last N) (Fin.last N)) (T k)`: the QR iteration with the
-Rayleigh-quotient shift `μ_k = t_nn^(k)` (Quarteroni–Sacco–Saleri (5.53)). Each iterate is
-unitarily similar to `A` by `shiftedQrStep_eq_conj`. No convergence theorem is planned (the
-book's quadratic-convergence claim is unproved there and is a local statement about Rayleigh
-quotient iteration). ★'''
-deps = ["Matrix.shiftedQrStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
+
+[[node]]
+id = "_root_.Matrix.rayleighShiftQrIterate_zero"
+
+[[node]]
+id = "_root_.Matrix.rayleighShiftQrIterate_succ"
+
+[[node]]
+id = "_root_.Matrix.exists_unitary_conj_rayleighShiftQrIterate"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
 [[node]]
 id = "_root_.Matrix.doubleShiftQrStep"
-kind = "definition"
-desc = '''`Matrix.doubleShiftQrStep (T : Matrix n n ℂ) (μ : ℂ) := shiftedQrStep (conj μ) (shiftedQrStep μ
-T)`, two consecutive shifted steps with a complex-conjugate pair of shifts
-(Quarteroni–Sacco–Saleri (5.55)); unitarily similar to `T` by `shiftedQrStep_eq_conj` twice. The
-real-arithmetic Francis implementation is not defined. ★'''
-deps = ["Matrix.shiftedQrStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.55)'
+
+[[node]]
+id = "_root_.Matrix.doubleShiftQrStep_eq_conj"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.55)'
+
+[[node]]
+id = "_root_.Matrix.exists_unitary_conj_doubleShiftQrStep"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.55)'
 
 [[node]]
 id = "_root_.Matrix.qrIterate_succ"
-desc = '''One QR step: `qrIterate A (k + 1) = qrR (qrIterate A k) * qrQ (qrIterate A k)`, by definition.'''
 
 [[node]]
 id = "_root_.Matrix.qrAccum_mem_unitaryGroup"

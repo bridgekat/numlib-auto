@@ -1,6 +1,7 @@
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Relations
+import Numlib.LinearAlgebra.Matrix.PlaneRotation
 
 /-!
 # Hessenberg relations, FOM/GMRES coordinates and Givens rotations
@@ -704,6 +705,25 @@ noncomputable def givensMatrix (k m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 
     else if (i : ℕ) = k + 1 ∧ (j : ℕ) = k then -givensS h k
     else if (i : ℕ) = k + 1 ∧ (j : ℕ) = k + 1 then givensC h k
     else if i = j then 1 else 0
+
+/-- The `k`-th rotation is the `2 × 2` block `!![conj c_k, conj s_k; -s_k, c_k]` placed in the
+`(k, k + 1)` coordinate plane: `Krylov.givensMatrix` is `Matrix.planeEmbed` of
+`Numlib/LinearAlgebra/Matrix/PlaneRotation`, so its unitarity is
+`Matrix.planeEmbed_mem_unitaryGroup_iff` together with `|c_k|² + |s_k|² = 1`. -/
+theorem givensMatrix_eq_planeEmbed (k m : ℕ) (hk : k < m) :
+    givensMatrix h k m = Matrix.planeEmbed (⟨k, by omega⟩ : Fin (m + 1)) ⟨k + 1, by omega⟩
+      !![starRingEnd 𝕜 (givensC h k), starRingEnd 𝕜 (givensS h k); -givensS h k, givensC h k] := by
+  ext i j
+  rw [Matrix.planeEmbed_apply, givensMatrix, Matrix.of_apply]
+  simp only [Fin.ext_iff]
+  split_ifs <;> simp_all
+
+/-- A rotation whose plane lies beyond the matrix is the identity. -/
+theorem givensMatrix_eq_one_of_lt (k m : ℕ) (hk : m < k) : givensMatrix h k m = 1 := by
+  ext i j
+  have hi := i.isLt
+  rw [givensMatrix, Matrix.of_apply, Matrix.one_apply]
+  simp only [show (i : ℕ) ≠ k by omega, show (i : ℕ) ≠ k + 1 by omega, false_and, ite_false]
 
 /-- A sum over `Fin N` all of whose terms outside `{p, q}` vanish. -/
 private theorem sum_pair_of_eq_zero {ι : Type*} [Fintype ι] {p q : ι}

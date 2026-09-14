@@ -495,27 +495,6 @@ section Schur
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- A square matrix indexed by a linearly ordered finite type is triangularized by a unitary
-matrix: `Matrix.exists_unitary_mul_upperTriangular` transported from `Fin N` to `n` along
-`monoEquivOfFin`. (This is a QR statement and belongs in `Numlib/LinearAlgebra/Matrix/QR`.) -/
-theorem exists_unitary_mul_isUpperTriangular [LinearOrder n] (X : Matrix n n 𝕜) :
-    ∃ U ∈ unitaryGroup n 𝕜, (U * X).IsUpperTriangular := by
-  obtain ⟨e, -⟩ : ∃ e : Fin (Fintype.card n) ≃o n, True := ⟨monoEquivOfFin n rfl, trivial⟩
-  obtain ⟨P, hP, hT⟩ := exists_unitary_mul_upperTriangular (X.submatrix e.toEquiv e.toEquiv)
-  refine ⟨P.submatrix e.toEquiv.symm e.toEquiv.symm, ?_, ?_⟩
-  · rw [mem_unitaryGroup_iff', star_eq_conjTranspose, conjTranspose_submatrix,
-      submatrix_mul_equiv, ← star_eq_conjTranspose, mem_unitaryGroup_iff'.mp hP,
-      submatrix_one_equiv]
-  · intro i j hij
-    have hX : X = (X.submatrix e.toEquiv e.toEquiv).submatrix e.toEquiv.symm e.toEquiv.symm := by
-      rw [submatrix_submatrix]
-      ext i j
-      simp
-    rw [hX, submatrix_mul_equiv, submatrix_apply]
-    refine hT _ _ ?_
-    change (e.symm j : ℕ) < e.symm i
-    exact e.symm.lt_iff_lt.mpr hij
-
 variable [IsAlgClosed 𝕜]
 
 /-- **Generalized Schur decomposition** ([quarteroni2000numerical] Property 5.10;

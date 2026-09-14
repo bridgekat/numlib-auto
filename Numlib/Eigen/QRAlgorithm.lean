@@ -3,6 +3,7 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Eigen.PowerMethod
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
 # Orthogonal iteration and the QR algorithm
@@ -45,6 +46,16 @@ form.
   For a diagonalizable operator whose eigenvalues have pairwise distinct moduli and a starting flag
   in general position, the compressions `Q_νᴴ A Q_ν` — the QR iterates, in the matrix reading — tend
   to upper triangular form with the eigenvalues in order down the diagonal.
+* `Matrix.exists_abs_qrIterate_apply_le`: the rate, `O((r/|λ_k|)^ν)` for the entries below the
+  diagonal in column `k`; `Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal`: the
+  general-position hypothesis is the nonvanishing of the leading principal minors of the inverse
+  eigenvector matrix, the hypothesis [quarteroni2000numerical] Property 5.9 omits.
+* `Matrix.isHermitian_qrIterate`, `Matrix.isUpperHessenberg_qrIterate`: the iteration preserves
+  Hermitian and upper Hessenberg form ([quarteroni2000numerical] §5.6.4).
+* `Matrix.shiftedQrStep`, `Matrix.shiftedQrIterate`, `Matrix.rayleighShiftQrIterate`,
+  `Matrix.doubleShiftQrStep`: the shifted iterations of [quarteroni2000numerical] §5.7, each a
+  unitary similarity; `Matrix.shiftedQrIterate_eq_qrIterate_sub_add` reduces a fixed shift to the
+  basic iteration on `A - μ I`.
 
 ## Implementation notes
 
@@ -275,6 +286,44 @@ theorem norm_inner_self_sub_le {A : Module.End 𝕜 E} {M : ℝ} (hM : 0 ≤ M)
   have hMl : 0 ≤ M + ‖lam‖ := by positivity
   gcongr
 
+/-- The span of a subfamily of an eigenbasis is invariant under the operator. -/
+theorem mapsTo_span_image_of_eigen {ι : Type*} {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜}
+    (heig : ∀ j, A (x j) = l j • x j) (J : Set ι) :
+    ∀ y ∈ span 𝕜 (x '' J), A y ∈ span 𝕜 (x '' J) := by
+  intro y hy
+  have hle : span 𝕜 (x '' J) ≤ Submodule.comap A (span 𝕜 (x '' J)) := by
+    rw [Submodule.span_le]
+    rintro _ ⟨i, hi, rfl⟩
+    simp only [SetLike.mem_coe, Submodule.mem_comap, heig i]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, hi, rfl⟩)
+  exact hle hy
+
+/-- A member of an orthonormal family is orthogonal to the span of any subfamily not containing
+it. -/
+theorem mem_orthogonal_span_image_of_orthonormal {ι : Type*} {q : ι → E} (hq : Orthonormal 𝕜 q)
+    {J : Set ι} {j : ι} (hj : j ∉ J) : q j ∈ (span 𝕜 (q '' J))ᗮ := by
+  rw [Submodule.mem_orthogonal']
+  intro u hu
+  have hle : span 𝕜 (q '' J) ≤
+      LinearMap.ker ((innerSL 𝕜 (q j) : E →L[𝕜] 𝕜) : E →ₗ[𝕜] 𝕜) := by
+    rw [Submodule.span_le]
+    rintro _ ⟨i, hi, rfl⟩
+    exact hq.2 fun h => hj (h ▸ hi)
+  exact hle hu
+
+/-- Two linearly independent families span subspaces of the same dimension over every index
+set. -/
+theorem finrank_span_image_eq_of_linearIndependent {ι : Type*} [Finite ι] {q x : ι → E}
+    (hq : LinearIndependent 𝕜 q) (hx : LinearIndependent 𝕜 x) (J : Set ι) :
+    Module.finrank 𝕜 ↥(span 𝕜 (q '' J)) = Module.finrank 𝕜 ↥(span 𝕜 (x '' J)) := by
+  classical
+  cases nonempty_fintype ι
+  have h1 : Set.range (fun j : ↥J => q ↑j) = q '' J := by rw [← Set.image_eq_range]
+  have h2 : Set.range (fun j : ↥J => x ↑j) = x '' J := by rw [← Set.image_eq_range]
+  have hqli : LinearIndependent 𝕜 fun j : ↥J => q ↑j := hq.comp _ Subtype.val_injective
+  have hxli : LinearIndependent 𝕜 fun j : ↥J => x ↑j := hx.comp _ Subtype.val_injective
+  rw [← h1, ← h2, finrank_span_eq_card hqli, finrank_span_eq_card hxli]
+
 open scoped NNReal in
 /-- The flag of iterated subspaces converges to the flag of dominant invariant subspaces. -/
 theorem tendsto_gap_span_image [FiniteDimensional 𝕜 E] {ι : Type*} [Finite ι] [LinearOrder ι]
@@ -310,14 +359,7 @@ theorem tendsto_gap_span_image [FiniteDimensional 𝕜 E] {ι : Type*} [Finite �
     have hjJ : j ∈ J := Set.mem_toFinset.1 hj
     have hjk : j < k := lt_of_not_ge fun hle => hkJ (hJ hle hjJ)
     exact_mod_cast hsep j k hjk
-  have hrank : Module.finrank 𝕜 ↥(span 𝕜 (q 0 '' J))
-      = Module.finrank 𝕜 ↥(span 𝕜 (x '' J)) := by
-    have h1 : Set.range (fun j : ↥J => q 0 ↑j) = q 0 '' J := by rw [← Set.image_eq_range]
-    have h2 : Set.range (fun j : ↥J => x ↑j) = x '' J := by rw [← Set.image_eq_range]
-    have hqli : LinearIndependent 𝕜 fun j : ↥J => q 0 ↑j :=
-      (hq 0).linearIndependent.comp _ Subtype.val_injective
-    have hxli : LinearIndependent 𝕜 fun j : ↥J => x ↑j := hx.comp _ Subtype.val_injective
-    rw [← h1, ← h2, finrank_span_eq_card hqli, finrank_span_eq_card hxli]
+  have hrank := finrank_span_image_eq_of_linearIndependent (hq 0).linearIndependent hx J
   obtain ⟨D, hD⟩ := exists_gap_subspaceIterate_span_image_le (J := J) hx hxtop heig
     (by exact_mod_cast hrho0) (fun j hj => by
       exact_mod_cast Finset.inf'_le (fun j => ‖l j‖₊) (Set.mem_toFinset.2 hj))
@@ -350,26 +392,12 @@ theorem tendsto_orthogonalIterate [FiniteDimensional 𝕜 E] {ι : Type*} [Finit
   have hA : ∀ y, ‖A y‖ ≤ M * ‖y‖ := fun y =>
     (LinearMap.toContinuousLinearMap A).le_opNorm y
   have hgapJ := tendsto_gap_span_image hx hxtop heig hl0 hsep hq hspan hgen
-  have hinv : ∀ (J : Set ι), ∀ y ∈ span 𝕜 (x '' J), A y ∈ span 𝕜 (x '' J) := by
-    intro J
-    have hle : span 𝕜 (x '' J) ≤ Submodule.comap A (span 𝕜 (x '' J)) := by
-      rw [Submodule.span_le]
-      rintro _ ⟨i, hi, rfl⟩
-      simp only [SetLike.mem_coe, Submodule.mem_comap, heig i]
-      exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, hi, rfl⟩)
-    exact fun y hy => hle hy
+  have hinv : ∀ (J : Set ι), ∀ y ∈ span 𝕜 (x '' J), A y ∈ span 𝕜 (x '' J) :=
+    fun J => mapsTo_span_image_of_eigen heig J
   have hmemS : ∀ (ν : ℕ) (J : Set ι) (i : ι), i ∈ J → q ν i ∈ span 𝕜 (q ν '' J) :=
     fun ν J i hi => Submodule.subset_span ⟨i, hi, rfl⟩
-  have hperp : ∀ (ν : ℕ) (J : Set ι) (j : ι), j ∉ J → q ν j ∈ (span 𝕜 (q ν '' J))ᗮ := by
-    intro ν J j hj
-    rw [Submodule.mem_orthogonal']
-    intro u hu
-    have hle : span 𝕜 (q ν '' J) ≤
-        LinearMap.ker ((innerSL 𝕜 (q ν j) : E →L[𝕜] 𝕜) : E →ₗ[𝕜] 𝕜) := by
-      rw [Submodule.span_le]
-      rintro _ ⟨i, hi, rfl⟩
-      exact (hq ν).2 fun h => hj (h ▸ hi)
-    exact hle hu
+  have hperp : ∀ (ν : ℕ) (J : Set ι) (j : ι), j ∉ J → q ν j ∈ (span 𝕜 (q ν '' J))ᗮ :=
+    fun ν J j hj => mem_orthogonal_span_image_of_orthonormal (hq ν) hj
   have hnq : ∀ (ν : ℕ) (j : ι), ‖q ν j‖ = 1 := fun ν j => (hq ν).1 j
   constructor
   · intro j k hkj
@@ -476,6 +504,51 @@ theorem linearIndependent_euclideanCol {A : Matrix n n 𝕜} (hA : IsUnit A.det)
   have h : LinearIndependent 𝕜 A.col :=
     Matrix.linearIndependent_cols_iff_isUnit.2 ((Matrix.isUnit_iff_isUnit_det A).2 hA)
   exact LinearIndependent.of_comp (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap h
+
+omit [Fintype n] in
+/-- The columns of the identity are the standard basis vectors. -/
+theorem euclideanCol_one (i : n) :
+    euclideanCol (1 : Matrix n n 𝕜) i = EuclideanSpace.single i 1 := by
+  ext j
+  simp [euclideanCol, one_apply, PiLp.single_apply, eq_comm]
+
+omit [Fintype n] in
+/-- A vector lies in the span of the standard basis vectors indexed by `S` exactly when it
+vanishes off `S`. -/
+theorem mem_span_euclideanCol_one_iff [Finite n] (S : Set n) (v : EuclideanSpace 𝕜 n) :
+    v ∈ span 𝕜 (euclideanCol (1 : Matrix n n 𝕜) '' S) ↔ ∀ i, i ∉ S → v i = 0 := by
+  classical
+  cases nonempty_fintype n
+  constructor
+  · intro hv i hi
+    induction hv using Submodule.span_induction with
+    | mem y hy =>
+      obtain ⟨j, hj, rfl⟩ := hy
+      rw [euclideanCol_one, PiLp.single_apply]
+      exact ite_eq_right fun h : i = j => hi (h.symm ▸ hj)
+    | zero => rfl
+    | add y z _ _ hy hz => rw [PiLp.add_apply, hy, hz, add_zero]
+    | smul c y _ hy => rw [PiLp.smul_apply, hy, smul_zero]
+  · intro hv
+    have hsum : v = ∑ i ∈ Finset.univ.filter (· ∈ S), v i • euclideanCol (1 : Matrix n n 𝕜) i := by
+      calc v = ∑ i, v i • euclideanCol (1 : Matrix n n 𝕜) i := by
+            conv_lhs => rw [← (EuclideanSpace.basisFun n 𝕜).sum_repr v]
+            simp only [EuclideanSpace.basisFun_repr, EuclideanSpace.basisFun_apply,
+              euclideanCol_one]
+        _ = _ := (Finset.sum_subset (Finset.filter_subset _ _) fun i _ hi => by
+            rw [hv i (by simpa using hi), zero_smul]).symm
+    rw [hsum]
+    exact Submodule.sum_mem _ fun i hi =>
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, by simpa using hi, rfl⟩)
+
+/-- The span of the columns of `A` indexed by `S` is the image under `A` of the coordinate
+subspace indexed by `S`. -/
+theorem span_euclideanCol_eq_map (A : Matrix n n 𝕜) (S : Set n) :
+    span 𝕜 (euclideanCol A '' S) =
+      (span 𝕜 (euclideanCol (1 : Matrix n n 𝕜) '' S)).map (toEuclideanLin A) := by
+  rw [Submodule.map_span, Set.image_image]
+  simp only [toEuclideanLin_euclideanCol_one]
+
 
 end Ring
 
@@ -649,6 +722,7 @@ omit [DecidableEq n] in
 theorem qrIterate_zero (A : Matrix n n 𝕜) : qrIterate A 0 = A := rfl
 
 omit [DecidableEq n] in
+/-- One QR step: `A_{k+1} = R_k Q_k`, by definition. -/
 theorem qrIterate_succ (A : Matrix n n 𝕜) (k : ℕ) :
     qrIterate A (k + 1) = qrR (qrIterate A k) * qrQ (qrIterate A k) := rfl
 
@@ -822,6 +896,19 @@ theorem qrIterate_apply {A : Matrix n n 𝕜} (hA : IsUnit A.det) (ν : ℕ) (j 
         (toEuclideanLin A (Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν k)) := by
   rw [qrIterate_eq_conj_qrAccum, conjTranspose_mul_mul_apply, qrAccum_eq_orthogonalIterate hA]
 
+/-- The orthogonal iterates of the canonical flag start at the canonical basis. -/
+theorem orthogonalIterate_euclideanCol_one_zero (A : Matrix n n 𝕜) :
+    Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol (1 : Matrix n n 𝕜)) 0 =
+      euclideanCol 1 :=
+  Krylov.orthogonalIterate_zero (orthonormal_euclideanCol (by simp))
+
+/-- The orthogonal iterates of the canonical flag are orthonormal: they are the columns of
+`Matrix.qrAccum`. -/
+theorem orthonormal_orthogonalIterate_euclideanCol_one {A : Matrix n n 𝕜} (hA : IsUnit A.det)
+    (ν : ℕ) : Orthonormal 𝕜 (Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν) := by
+  rw [← qrAccum_eq_orthogonalIterate hA ν]
+  exact orthonormal_euclideanCol (conjTranspose_mul_qrAccum A ν)
+
 /-- **[kress1998numerical], Theorem 7.20: the QR algorithm converges to triangular form.**  For a
 diagonalizable `A` whose eigenvalues have pairwise distinct moduli, ordered strictly decreasingly
 along the index type, and whose canonical flag is in general position with respect to the invariant
@@ -846,14 +933,8 @@ theorem tendsto_qrIterate {A : Matrix n n 𝕜} (hA : IsUnit A.det)
       ∀ j : n, Filter.Tendsto (fun ν => qrIterate A ν j j) Filter.atTop (nhds (l j)) := by
   set q : ℕ → n → EuclideanSpace 𝕜 n :=
     fun ν => Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν with hqdef
-  have honeH : (1 : Matrix n n 𝕜)ᴴ * 1 = 1 := by simp
-  have hq0 : q 0 = euclideanCol (1 : Matrix n n 𝕜) :=
-    Krylov.orthogonalIterate_zero (orthonormal_euclideanCol honeH)
-  have hqon : ∀ ν, Orthonormal 𝕜 (q ν) := by
-    intro ν
-    have hcol : q ν = euclideanCol (qrAccum A ν) := (qrAccum_eq_orthogonalIterate hA ν).symm
-    rw [hcol]
-    exact orthonormal_euclideanCol (conjTranspose_mul_qrAccum A ν)
+  have hq0 : q 0 = euclideanCol (1 : Matrix n n 𝕜) := orthogonalIterate_euclideanCol_one_zero A
+  have hqon : ∀ ν, Orthonormal 𝕜 (q ν) := orthonormal_orthogonalIterate_euclideanCol_one hA
   have hspan : ∀ (ν : ℕ) (J : Set n), IsLowerSet J →
       Submodule.span 𝕜 (q ν '' J) =
         Krylov.subspaceIterate (toEuclideanLin A) (Submodule.span 𝕜 (q 0 '' J)) ν := by
@@ -865,6 +946,353 @@ theorem tendsto_qrIterate {A : Matrix n n 𝕜} (hA : IsUnit A.det)
   exact ⟨fun j k hkj => by simpa only [qrIterate_apply hA] using h1 j k hkj,
     fun j => by simpa only [qrIterate_apply hA] using h2 j⟩
 
+/-! ### The rate of convergence, and structure preserved by the iteration -/
+
+/-- **The rate of convergence of the QR iteration**, [quarteroni2000numerical] (5.37) with the
+usual loss of this library's subspace-iteration estimates: under the hypotheses of
+`Matrix.tendsto_qrIterate`, a strictly subdiagonal entry `(j, k)`, `k < j`, of the `ν`-th iterate is
+`O((r / |λ_k|)^ν)` for every `r` above the moduli of the eigenvalues after the `k`-th. For
+`j = k + 1` and `r` close to `|λ_{k+1}|` this is the book's
+`|t_{i,i-1}^{(k)}| = O(|λ_i/λ_{i-1}|^k)`.
+
+The entry is `⟪q_j^ν, A q_k^ν⟫` (`Matrix.qrIterate_apply`) with `q_k^ν` in the `ν`-th iterate of
+the span of the first `k + 1` canonical vectors and `q_j^ν` orthogonal to it, so
+`Krylov.norm_inner_le_of_gap` bounds it by the gap between that iterate and the invariant subspace
+of the first `k + 1` eigenvectors, and `Krylov.exists_gap_subspaceIterate_span_image_le` bounds the
+gap. -/
+theorem exists_abs_qrIterate_apply_le {A : Matrix n n 𝕜} (hA : IsUnit A.det)
+    {x : n → EuclideanSpace 𝕜 n} {l : n → 𝕜} (hx : LinearIndependent 𝕜 x)
+    (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤)
+    (heig : ∀ j, toEuclideanLin A (x j) = l j • x j)
+    (hsep : ∀ j k : n, j < k → ‖l k‖ < ‖l j‖)
+    (hgen : ∀ J : Set n, IsLowerSet J →
+      Disjoint (Submodule.span 𝕜 (euclideanCol (1 : Matrix n n 𝕜) '' J))
+        (Submodule.span 𝕜 (x '' Jᶜ)))
+    {j k : n} (hkj : k < j) {r : ℝ} (hr0 : 0 ≤ r) (hr : ∀ j', k < j' → ‖l j'‖ ≤ r)
+    (hrk : r < ‖l k‖) :
+    ∃ C : ℝ, ∀ ν, ‖qrIterate A ν j k‖ ≤ C * (r / ‖l k‖) ^ ν := by
+  have hqon : ∀ ν, Orthonormal 𝕜 (Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν) :=
+    orthonormal_orthogonalIterate_euclideanCol_one hA
+  have hspan : ∀ ν, Submodule.span 𝕜
+      (Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν '' Set.Iic k) =
+        Krylov.subspaceIterate (toEuclideanLin A)
+          (Submodule.span 𝕜 (euclideanCol (1 : Matrix n n 𝕜) '' Set.Iic k)) ν := fun ν => by
+    rw [← orthogonalIterate_euclideanCol_one_zero A]
+    exact Krylov.span_orthogonalIterate_of_isLowerSet _ _ _ (isLowerSet_Iic k)
+  have hρ : 0 < ‖l k‖ := hr0.trans_lt hrk
+  have hJρ : ∀ j' ∈ Set.Iic k, ‖l k‖ ≤ ‖l j'‖ := fun j' hj' => by
+    rcases (Set.mem_Iic.1 hj').lt_or_eq with h | h
+    · exact (hsep _ _ h).le
+    · rw [h]
+  have hJr : ∀ j' ∉ Set.Iic k, ‖l j'‖ ≤ r := fun j' hj' => hr j' (by simpa using hj')
+  have hrank := Krylov.finrank_span_image_eq_of_linearIndependent
+    (orthonormal_euclideanCol (by simp : (1 : Matrix n n 𝕜)ᴴ * 1 = 1)).linearIndependent hx
+    (Set.Iic k)
+  obtain ⟨D, hD⟩ := Krylov.exists_gap_subspaceIterate_span_image_le hx hxtop heig hρ hJρ hr0 hrk
+    hJr (hgen _ (isLowerSet_Iic k)) hrank
+  set M := ‖LinearMap.toContinuousLinearMap (toEuclideanLin A)‖ with hMdef
+  have hM : 0 ≤ M := norm_nonneg _
+  have hAb : ∀ y, ‖toEuclideanLin A y‖ ≤ M * ‖y‖ := fun y =>
+    (LinearMap.toContinuousLinearMap (toEuclideanLin A)).le_opNorm y
+  refine ⟨2 * M * D, fun ν => ?_⟩
+  rw [qrIterate_apply hA]
+  have hbound := Krylov.norm_inner_le_of_gap (T := Submodule.span 𝕜 (x '' Set.Iic k))
+    (S := Submodule.span 𝕜
+      (Krylov.orthogonalIterate (toEuclideanLin A) (euclideanCol 1) ν '' Set.Iic k)) hM hAb
+    (Krylov.mapsTo_span_image_of_eigen heig (Set.Iic k))
+    (Submodule.subset_span ⟨k, Set.mem_Iic.2 le_rfl, rfl⟩) ((hqon ν).1 k).le
+    (Krylov.mem_orthogonal_span_image_of_orthonormal (hqon ν) (J := Set.Iic k)
+      (by simpa using hkj)) ((hqon ν).1 j).le
+  rw [Submodule.gap_congr _ _ (hspan ν)] at hbound
+  refine hbound.trans ?_
+  calc 2 * M * _ ≤ 2 * M * (D * (r / ‖l k‖) ^ ν) :=
+        mul_le_mul_of_nonneg_left (hD ν) (mul_nonneg zero_le_two hM)
+    _ = _ := by ring
+
+omit [DecidableEq n] in
+/-- The QR iterates of a Hermitian matrix are Hermitian, being unitary conjugates of it; so for a
+Hermitian matrix the iterates converge to a *diagonal* matrix whenever they converge to a
+triangular one ([quarteroni2000numerical] Property 5.9, last sentence). -/
+theorem isHermitian_qrIterate {A : Matrix n n 𝕜} (hA : A.IsHermitian) (k : ℕ) :
+    (qrIterate A k).IsHermitian := by
+  rw [qrIterate_eq_conj_qrAccum]
+  exact isHermitian_conjTranspose_mul_mul _ hA
+
+/-- The unitary factor of a nonsingular upper Hessenberg matrix is upper Hessenberg
+([quarteroni2000numerical] §5.6.3): `Q = H R⁻¹` with `R⁻¹` upper triangular, by uniqueness of
+the factorization rather than by inspecting a product of rotations. -/
+theorem isUpperHessenberg_qrQ {A : Matrix n n 𝕜} (hA : IsUnit A.det) (hH : A.IsUpperHessenberg) :
+    (qrQ A).IsUpperHessenberg := by
+  have hR : IsUnit (qrR A).det := by
+    rw [det_of_isUpperTriangular (isUpperTriangular_qrR A), isUnit_iff_ne_zero]
+    exact Finset.prod_ne_zero_iff.2 fun j _ => (qrR_diag_pos hA j).ne'
+  have : Invertible (qrR A) := invertibleOfIsUnitDet _ hR
+  have hQ : qrQ A = A * (qrR A)⁻¹ := by
+    calc qrQ A = qrQ A * (qrR A * (qrR A)⁻¹) := by rw [mul_nonsing_inv _ hR, Matrix.mul_one]
+      _ = A * (qrR A)⁻¹ := by rw [← Matrix.mul_assoc, qrQ_mul_qrR]
+  rw [hQ]
+  exact hH.mul_isUpperTriangular
+    (blockTriangular_inv_of_blockTriangular (isUpperTriangular_qrR A))
+
+/-- **The QR iteration preserves upper Hessenberg form** ([quarteroni2000numerical] §5.6.4): each
+step is `R Q` with `R` upper triangular and `Q` upper Hessenberg. -/
+theorem isUpperHessenberg_qrIterate {A : Matrix n n 𝕜} (hA : IsUnit A.det)
+    (hH : A.IsUpperHessenberg) (k : ℕ) : (qrIterate A k).IsUpperHessenberg := by
+  induction k with
+  | zero => exact hH
+  | succ k ih =>
+    rw [qrIterate_succ]
+    exact (isUpperTriangular_qrR _).mul_isUpperHessenberg
+      (isUpperHessenberg_qrQ (isUnit_det_qrIterate hA k) ih)
+
+/-! ### Shifts -/
+
+/-- **One QR step with shift `μ`** ([quarteroni2000numerical] (5.52)): factor `T - μ I = Q R` and
+return `R Q + μ I`. -/
+noncomputable def shiftedQrStep (μ : 𝕜) (T : Matrix n n 𝕜) : Matrix n n 𝕜 :=
+  qrR (T - μ • 1) * qrQ (T - μ • 1) + μ • 1
+
+/-- The shifted step is a unitary similarity, `R Q + μ I = Qᴴ T Q` (the display after
+[quarteroni2000numerical] (5.52)). -/
+theorem shiftedQrStep_eq_conj (μ : 𝕜) (T : Matrix n n 𝕜) :
+    shiftedQrStep μ T = (qrQ (T - μ • 1))ᴴ * T * qrQ (T - μ • 1) := by
+  rw [shiftedQrStep, qrR_eq, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one,
+    Matrix.smul_mul, conjTranspose_qrQ_mul_self, sub_add_cancel]
+
+/-- **The QR iteration with a fixed shift `μ`** ([quarteroni2000numerical] §5.7.1): `T₀ = A` and
+`T_{k+1} = shiftedQrStep μ T_k`. -/
+noncomputable def shiftedQrIterate (A : Matrix n n 𝕜) (μ : 𝕜) : ℕ → Matrix n n 𝕜
+  | 0 => A
+  | k + 1 => shiftedQrStep μ (shiftedQrIterate A μ k)
+
+/-- The shifted iteration starts at `A`. -/
+@[simp]
+theorem shiftedQrIterate_zero (A : Matrix n n 𝕜) (μ : 𝕜) : shiftedQrIterate A μ 0 = A := rfl
+
+/-- One step of the shifted iteration, by definition. -/
+theorem shiftedQrIterate_succ (A : Matrix n n 𝕜) (μ : 𝕜) (k : ℕ) :
+    shiftedQrIterate A μ (k + 1) = shiftedQrStep μ (shiftedQrIterate A μ k) := rfl
+
+/-- **A fixed shift is the basic iteration on the shifted matrix**: `shiftedQrIterate A μ k =
+qrIterate (A - μ I) k + μ I`. Consequently `Matrix.tendsto_qrIterate` and
+`Matrix.exists_abs_qrIterate_apply_le` applied to `A - μ • 1` are the convergence claim of
+[quarteroni2000numerical] §5.7.1: the subdiagonal entries decay like `|(λ_j - μ)/(λ_{j-1} - μ)|^k`
+when `|λ_1 - μ| > … > |λ_n - μ| > 0`, under the general-position hypothesis for the same
+eigenvector matrix. -/
+theorem shiftedQrIterate_eq_qrIterate_sub_add (A : Matrix n n 𝕜) (μ : 𝕜) (k : ℕ) :
+    shiftedQrIterate A μ k = qrIterate (A - μ • 1) k + μ • 1 := by
+  induction k with
+  | zero => rw [shiftedQrIterate_zero, qrIterate_zero, sub_add_cancel]
+  | succ k ih => rw [shiftedQrIterate_succ, ih, shiftedQrStep, add_sub_cancel_right, qrIterate_succ]
+
+/-- Every iterate of the fixed-shift iteration is a unitary conjugate of the starting matrix, by
+the accumulated unitary factor of the iteration on `A - μ I`. -/
+theorem shiftedQrIterate_eq_conj_qrAccum (A : Matrix n n 𝕜) (μ : 𝕜) (k : ℕ) :
+    shiftedQrIterate A μ k =
+      (qrAccum (A - μ • 1) k)ᴴ * A * qrAccum (A - μ • 1) k := by
+  rw [shiftedQrIterate_eq_qrIterate_sub_add, qrIterate_eq_conj_qrAccum, Matrix.mul_sub,
+    Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, conjTranspose_mul_qrAccum,
+    sub_add_cancel]
+
+/-- **The double-shift step** ([quarteroni2000numerical] (5.55)): two consecutive shifted steps
+with the complex-conjugate pair of shifts `μ`, `conj μ`, the shifts being the two eigenvalues of
+a `2 × 2` trailing block that the single-shift iteration cannot split. The real-arithmetic Francis
+implementation is not defined. -/
+noncomputable def doubleShiftQrStep (T : Matrix n n 𝕜) (μ : 𝕜) : Matrix n n 𝕜 :=
+  shiftedQrStep (starRingEnd 𝕜 μ) (shiftedQrStep μ T)
+
+/-- The double-shift step is a unitary similarity. -/
+theorem doubleShiftQrStep_eq_conj (T : Matrix n n 𝕜) (μ : 𝕜) :
+    doubleShiftQrStep T μ =
+      (qrQ (T - μ • 1) * qrQ (shiftedQrStep μ T - starRingEnd 𝕜 μ • 1))ᴴ * T *
+        (qrQ (T - μ • 1) * qrQ (shiftedQrStep μ T - starRingEnd 𝕜 μ • 1)) := by
+  rw [doubleShiftQrStep, shiftedQrStep_eq_conj (starRingEnd 𝕜 μ), conjTranspose_mul]
+  generalize qrQ (shiftedQrStep μ T - starRingEnd 𝕜 μ • 1) = Q₂
+  rw [shiftedQrStep_eq_conj μ T]
+  simp only [Matrix.mul_assoc]
+
+/-- The double-shift step is a unitary similarity, in existential form. -/
+theorem exists_unitary_conj_doubleShiftQrStep (T : Matrix n n 𝕜) (μ : 𝕜) :
+    ∃ Q ∈ Matrix.unitaryGroup n 𝕜, doubleShiftQrStep T μ = Qᴴ * T * Q :=
+  ⟨_, mul_mem (qrQ_mem_unitaryGroup _) (qrQ_mem_unitaryGroup _), doubleShiftQrStep_eq_conj T μ⟩
+
 end GramSchmidt
+
+section Rayleigh
+
+variable {𝕜 : Type*} [RCLike 𝕜] {N : ℕ}
+
+/-- **The QR iteration with the Rayleigh-quotient shift** ([quarteroni2000numerical] (5.53)):
+`T₀ = A` and `T_{k+1}` is the step with shift `μ_k = (T_k)_{nn}`, the current last diagonal entry.
+No convergence theorem is stated: the book's quadratic-convergence claim is a local statement about
+Rayleigh quotient iteration that it does not prove. -/
+noncomputable def rayleighShiftQrIterate (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
+    ℕ → Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜
+  | 0 => A
+  | k + 1 =>
+    shiftedQrStep (rayleighShiftQrIterate A k (Fin.last N) (Fin.last N))
+      (rayleighShiftQrIterate A k)
+
+/-- The Rayleigh-shift iteration starts at `A`. -/
+@[simp]
+theorem rayleighShiftQrIterate_zero (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
+    rayleighShiftQrIterate A 0 = A := rfl
+
+/-- One step of the Rayleigh-shift iteration, by definition: the shift is the current last
+diagonal entry. -/
+theorem rayleighShiftQrIterate_succ (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) (k : ℕ) :
+    rayleighShiftQrIterate A (k + 1) =
+      shiftedQrStep (rayleighShiftQrIterate A k (Fin.last N) (Fin.last N))
+        (rayleighShiftQrIterate A k) := rfl
+
+/-- Every Rayleigh-shift iterate is a unitary conjugate of the starting matrix. -/
+theorem exists_unitary_conj_rayleighShiftQrIterate (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜)
+    (k : ℕ) :
+    ∃ Q ∈ Matrix.unitaryGroup (Fin (N + 1)) 𝕜, rayleighShiftQrIterate A k = Qᴴ * A * Q := by
+  induction k with
+  | zero => exact ⟨1, one_mem _, by simp⟩
+  | succ k ih =>
+    obtain ⟨Q, hQ, hk⟩ := ih
+    refine ⟨Q * qrQ (rayleighShiftQrIterate A k -
+      rayleighShiftQrIterate A k (Fin.last N) (Fin.last N) • 1),
+      mul_mem hQ (qrQ_mem_unitaryGroup _), ?_⟩
+    rw [rayleighShiftQrIterate_succ, shiftedQrStep_eq_conj, conjTranspose_mul]
+    generalize qrQ (rayleighShiftQrIterate A k -
+      rayleighShiftQrIterate A k (Fin.last N) (Fin.last N) • 1) = Q'
+    rw [hk]
+    simp only [Matrix.mul_assoc]
+
+end Rayleigh
+
+section LeadingPrincipal
+
+variable {𝕜 : Type*} [RCLike 𝕜] {N : ℕ}
+
+/-- Summing a function that vanishes from `m` on over `Fin N` is summing over `Fin m`. -/
+private theorem sum_castLE {M : Type*} [AddCommMonoid M] {m : ℕ} (hm : m ≤ N) (F : Fin N → M)
+    (hF : ∀ l : Fin N, m ≤ (l : ℕ) → F l = 0) :
+    ∑ l, F l = ∑ l : Fin m, F (Fin.castLE hm l) := by
+  have h := Finset.sum_map Finset.univ (Fin.castLEEmb hm) F
+  simp only [Fin.coe_castLEEmb] at h
+  rw [← h]
+  refine (Finset.sum_subset (Finset.subset_univ _) fun l _ hl => hF l ?_).symm
+  by_contra hlt
+  exact hl (Finset.mem_map.2 ⟨⟨l, not_le.1 hlt⟩, Finset.mem_univ _, Fin.ext rfl⟩)
+
+/-- **The general-position hypothesis of `Matrix.tendsto_qrIterate` is the LU condition on the
+inverse eigenvector matrix** ([golub1989matrix] Theorem 7.3.1; the hypothesis
+[quarteroni2000numerical] Property 5.9 omits): for an invertible `X` with columns `x_j` and the
+lower set `J = {i | i < m}`, the span of the first `m` canonical vectors meets the span of the
+eigenvectors `x_j`, `j ≥ m`, only in `0` exactly when the leading principal `m × m` minor of `X⁻¹`
+is nonzero. The rows of `X⁻¹` are the dual basis of the columns of `X`, so a vector supported on
+`J` lying in that span is a kernel vector of the leading block of `X⁻¹`, and conversely. -/
+theorem disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal {X : Matrix (Fin N) (Fin N) 𝕜}
+    (hX : IsUnit X.det) {m : ℕ} (hm : m ≤ N) :
+    Disjoint (Submodule.span 𝕜 (euclideanCol (1 : Matrix (Fin N) (Fin N) 𝕜) '' {i | (i : ℕ) < m}))
+        (Submodule.span 𝕜 (euclideanCol X '' {i | (i : ℕ) < m}ᶜ)) ↔
+      IsUnit ((X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm)).det := by
+  have hkey : ∀ v : Fin N → 𝕜, (∀ l : Fin N, m ≤ (l : ℕ) → v l = 0) → ∀ i : Fin m,
+      (X⁻¹ *ᵥ v) (Fin.castLE hm i) =
+        ((X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm) *ᵥ fun i => v (Fin.castLE hm i)) i := by
+    intro v hv i
+    simp only [mulVec, dotProduct, submatrix_apply]
+    exact sum_castLE hm _ fun l hl => by rw [hv l hl, mul_zero]
+  have hmemJ : ∀ i : Fin m, (Fin.castLE hm i : Fin N) ∈ {i : Fin N | (i : ℕ) < m} := fun i => by
+    simp
+  rw [span_euclideanCol_eq_map X, Submodule.disjoint_def]
+  constructor
+  · intro hdisj
+    by_contra hL0
+    rw [isUnit_iff_ne_zero, not_not] at hL0
+    obtain ⟨a, ha0, haL⟩ := Matrix.exists_mulVec_eq_zero_iff.2 hL0
+    obtain ⟨v, hv⟩ : ∃ v : Fin N → 𝕜,
+        v = fun l : Fin N => if h : (l : ℕ) < m then a ⟨l, h⟩ else 0 := ⟨_, rfl⟩
+    have hvsupp : ∀ l : Fin N, m ≤ (l : ℕ) → v l = 0 := fun l hl => by
+      rw [hv]
+      exact dite_eq_right (not_lt.2 hl)
+    have hva : (fun i : Fin m => v (Fin.castLE hm i)) = a := by
+      funext i
+      rw [hv]
+      exact dite_eq_left i.isLt
+    have hvP : (WithLp.toLp 2 v : EuclideanSpace 𝕜 (Fin N)) ∈
+        Submodule.span 𝕜 (euclideanCol (1 : Matrix (Fin N) (Fin N) 𝕜) '' {i | (i : ℕ) < m}) :=
+      (mem_span_euclideanCol_one_iff _ _).2 fun i hi => hvsupp i (not_lt.1 hi)
+    have hw : (WithLp.toLp 2 (X⁻¹ *ᵥ v) : EuclideanSpace 𝕜 (Fin N)) ∈
+        Submodule.span 𝕜 (euclideanCol (1 : Matrix (Fin N) (Fin N) 𝕜) '' {i | (i : ℕ) < m}ᶜ) := by
+      refine (mem_span_euclideanCol_one_iff _ _).2 fun i hi => ?_
+      have hi' : (i : ℕ) < m := by simpa using hi
+      have h := hkey v hvsupp ⟨i, hi'⟩
+      rw [hva, haL] at h
+      exact h
+    have hvmem : (WithLp.toLp 2 v : EuclideanSpace 𝕜 (Fin N)) ∈
+        (Submodule.span 𝕜 (euclideanCol (1 : Matrix (Fin N) (Fin N) 𝕜) '' {i | (i : ℕ) < m}ᶜ)).map
+          (toEuclideanLin X) := by
+      refine ⟨WithLp.toLp 2 (X⁻¹ *ᵥ v), hw, ?_⟩
+      rw [toEuclideanLin_toLp, mulVec_mulVec, mul_nonsing_inv _ hX, one_mulVec]
+    have h0 := hdisj _ hvP hvmem
+    refine ha0 ?_
+    rw [← hva]
+    funext i
+    exact congrArg (fun z : EuclideanSpace 𝕜 (Fin N) => z (Fin.castLE hm i)) h0
+  · intro hL v hvP hvmem
+    obtain ⟨w, hw, rfl⟩ := hvmem
+    rw [mem_span_euclideanCol_one_iff] at hvP
+    rw [SetLike.mem_coe, mem_span_euclideanCol_one_iff] at hw
+    have hu : ∀ l : Fin N, m ≤ (l : ℕ) → (X *ᵥ WithLp.ofLp w) l = 0 := fun l hl =>
+      hvP l (by simp; omega)
+    have hXw : X⁻¹ *ᵥ (X *ᵥ WithLp.ofLp w) = WithLp.ofLp w := by
+      rw [mulVec_mulVec, nonsing_inv_mul _ hX, one_mulVec]
+    have hLa : (X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm) *ᵥ
+        (fun i => (X *ᵥ WithLp.ofLp w) (Fin.castLE hm i)) = 0 := by
+      funext i
+      rw [← hkey _ hu i, hXw]
+      exact hw _ (by simp)
+    have ha := eq_zero_of_mulVec_eq_zero (isUnit_iff_ne_zero.1 hL) hLa
+    ext l
+    rw [toEuclideanLin_apply]
+    by_cases hl : (l : ℕ) < m
+    · exact congrFun ha ⟨l, hl⟩
+    · exact hu l (not_lt.1 hl)
+
+/-- The initial segments of `Fin N` are lower sets. -/
+theorem isLowerSet_setOf_val_lt (m : ℕ) : IsLowerSet {i : Fin N | (i : ℕ) < m} :=
+  fun _ _ hba ha => (Fin.le_def.1 hba).trans_lt ha
+
+/-- Every lower set of `Fin N` is an initial segment `{i | i < m}` with `m ≤ N`. -/
+theorem exists_eq_setOf_val_lt_of_isLowerSet {J : Set (Fin N)} (hJ : IsLowerSet J) :
+    ∃ m ≤ N, J = {i : Fin N | (i : ℕ) < m} := by
+  rcases J.eq_empty_or_nonempty with rfl | hne
+  · exact ⟨0, Nat.zero_le _, by ext i; simp⟩
+  · obtain ⟨a, haJ, hmax⟩ := Set.exists_max_image J id J.toFinite hne
+    refine ⟨a + 1, a.isLt, ?_⟩
+    ext i
+    simp only [Set.mem_ofPred_eq]
+    constructor
+    · intro hi
+      have := Fin.le_def.1 (hmax i hi)
+      simp only [id] at this
+      omega
+    · intro hi
+      exact hJ (Fin.le_def.2 (by omega)) haJ
+
+/-- **The general-position hypothesis of `Matrix.tendsto_qrIterate` for an invertible eigenvector
+matrix `X` is the nonvanishing of every leading principal minor of `X⁻¹`** ([golub1989matrix]
+Theorem 7.3.1, the hypothesis [quarteroni2000numerical] Property 5.9 omits), since the lower sets
+of `Fin N` are the initial segments. -/
+theorem forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal {X : Matrix (Fin N) (Fin N) 𝕜}
+    (hX : IsUnit X.det) :
+    (∀ J : Set (Fin N), IsLowerSet J →
+      Disjoint (Submodule.span 𝕜 (euclideanCol (1 : Matrix (Fin N) (Fin N) 𝕜) '' J))
+        (Submodule.span 𝕜 (euclideanCol X '' Jᶜ))) ↔
+      ∀ (m : ℕ) (hm : m ≤ N), IsUnit ((X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm)).det := by
+  constructor
+  · intro h m hm
+    exact (disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal hX hm).1
+      (h _ (isLowerSet_setOf_val_lt m))
+  · intro h J hJ
+    obtain ⟨m, hm, rfl⟩ := exists_eq_setOf_val_lt_of_isLowerSet hJ
+    exact (disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal hX hm).2 (h m hm)
+
+end LeadingPrincipal
 
 end Matrix
