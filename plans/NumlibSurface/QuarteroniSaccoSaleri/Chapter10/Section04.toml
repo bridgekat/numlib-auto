@@ -1,30 +1,20 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.4: Legendre–Gauss (10.32) and Legendre–Gauss–Lobatto (10.33)–(10.34) nodes and weights, the
-weight bounds, the quoted estimates (10.36)–(10.37), and the discrete Legendre transform
-(10.38)–(10.40). Example 10.1 is a numerical experiment and is skipped, except that its display
-(10.38) is the Legendre form of the discrete truncation.
-'''
+
+[[node]]
+id = "legendreMeasure_compl_Icc"
 
 [[node]]
 id = "equation_10_32"
-kind = "theorem"
-desc = '''(10.32): the Legendre–Gauss nodes are the zeros of `L_{n+1}` (`Polynomial.legendre (n+1)`,
-which is `family legendreMeasure (n+1)` up to its leading coefficient,
-`OrthogonalPolynomial.family_eq_legendre`), and the weights are
-`αⱼ = 2 / ((1 - xⱼ²) L_{n+1}'(xⱼ)²)`. Nodes: `equation_10_16`; weights:
-`Quadrature.legendreGaussWeight_eq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_16", "OrthogonalPolynomial.family_eq_legendre", "Quadrature.legendreGaussWeight_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.32)'
 
 [[node]]
+id = "legendreLobatto_nodal_eq"
+
+[[node]]
+id = "isExactOnMeasure_of_nodal_eq_lobattoNodal"
+
+[[node]]
 id = "equation_10_34"
-kind = "theorem"
-desc = '''(10.33)–(10.34): for `n ≥ 1` the Legendre–Gauss–Lobatto nodes are `x̄_0 = -1`, `x̄_n = 1` and the
-zeros of `L_n'`, and the weights are `ᾱⱼ = 2 / (n (n+1) L_n(x̄ⱼ)²)`. Nodes:
-`Quadrature.derivative_legendre_eq_family` (the Legendre case of Remark 10.2) with
-`equation_10_18`; weights: `Quadrature.legendreLobattoWeight_eq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_18", "Quadrature.derivative_legendre_eq_family", "Quadrature.legendreLobattoWeight_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.33)–(10.34)'
 
 [[node]]
@@ -49,14 +39,9 @@ deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_34", "QuarteroniSaccoSaleri
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.36)–(10.37), and the Legendre forms of (10.22), (10.24)'''
 
 [[node]]
+id = "legendreDiscreteCoeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.40)'
+
+[[node]]
 id = "equation_10_40"
-kind = "theorem"
-desc = '''(10.38)–(10.40), the discrete Legendre transform (Exercise 6): the interpolant at the
-Legendre–Gauss–Lobatto nodes is `Π^{GL}_n f = ∑_{k ≤ n} f̃_k L_k` (10.38), where
-`f̃_k = ((2k+1)/(n(n+1))) ∑ⱼ L_k(x̄ⱼ) f(x̄ⱼ) / L_n(x̄ⱼ)²` for `k < n` and
-`f̃_n = (1/(n+1)) ∑ⱼ f(x̄ⱼ) / L_n(x̄ⱼ)` (10.40), so that `f(x̄ⱼ) = ∑_k f̃_k L_k(x̄ⱼ)` (10.39).
-Restates `Quadrature.interpolate_eq_sum_dlt`; its ingredients are the discrete norms
-`‖L_k‖_n² = 2/(2k+1)` for `k < n` (exactness `2n - 1 ≥ 2k`) and `‖L_n‖_n² = 2/n` (from (10.34):
-`∑ⱼ ᾱⱼ L_n(x̄ⱼ)² = (n+1) · 2/(n(n+1))`), `Quadrature.discreteInner_legendre_legendre`. ★'''
-deps = ["Quadrature.interpolate_eq_sum_dlt", "Quadrature.discreteInner_legendre_legendre", "QuarteroniSaccoSaleri.Chapter10.equation_10_34", "QuarteroniSaccoSaleri.Chapter10.equation_10_6"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.38)–(10.40); Exercise 10.6'

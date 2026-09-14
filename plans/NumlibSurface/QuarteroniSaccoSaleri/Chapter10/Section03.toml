@@ -1,42 +1,60 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.3: Chebyshev–Gauss (10.20) and Chebyshev–Gauss–Lobatto (10.21) nodes and weights, the
-weighted-Sobolev interpolation and quadrature estimates (10.22)–(10.27) quoted from [CHQZ88], the
-discrete scalar product (10.28) and the Chebyshev discrete transform (10.29)–(10.31). The Gauss rule
-is Mathlib's `Polynomial.Chebyshev.integral_eq_sumZeroes`; the Lobatto rule is
-`Polynomial.Chebyshev.integral_eq_sumExtrema` of `Numlib/Approximation/GaussLobatto`.
-'''
 
 [[node]]
-id = "equation_10_20"
-kind = "theorem"
-desc = '''(10.20): the Chebyshev–Gauss rule with `n + 1` nodes `xⱼ = -cos ((2j+1)π/(2(n+1)))` and equal
-weights `αⱼ = π/(n+1)` is exact for `w = (1 - x²)^{-1/2}` on `P_{2n+1}`, and its nodes are the
-zeros of `T_{n+1}`. Mathlib: `Polynomial.Chebyshev.integral_eq_sumZeroes` at `n + 1` (whose nodes
-are `cos ((2i+1)π/(2(n+1)))`, the same set under `j ↦ n - j`), and `roots_T_real`. ★'''
-deps = []
+id = "isExactOnMeasure_comp_equiv"
+
+[[node]]
+id = "interpolate_comp_equiv"
+
+[[node]]
+id = "chebyshevGaussNode"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.20)'
 
 [[node]]
-id = "equation_10_21"
-kind = "theorem"
-desc = '''(10.21): for `n ≥ 1` the Chebyshev–Gauss–Lobatto rule with nodes `x̄ⱼ = -cos (jπ/n)` and
-weights `ᾱⱼ = π/(dⱼ n)`, `d_0 = d_n = 2`, `dⱼ = 1` otherwise, is exact for the Chebyshev weight on
-`P_{2n-1}`; its interior nodes are the zeros of `T_n' = n U_{n-1}`. Restates
-`Polynomial.Chebyshev.integral_eq_sumExtrema` (nodes `cos (jπ/n)`, the same set reversed) with
-Mathlib's `T_derivative_eq_U` and `roots_U_real`. ★'''
-deps = ["Polynomial.Chebyshev.integral_eq_sumExtrema", "Polynomial.Chebyshev.lobattoWeight"]
+id = "chebyshevGaussNode_eq"
+
+[[node]]
+id = "equation_10_20"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.20)'
+
+[[node]]
+id = "chebyshevLobattoNode"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.21)'
 
 [[node]]
+id = "chebyshevLobattoNode_eq_node"
+
+[[node]]
+id = "lobattoFactor_sub"
+
+[[node]]
+id = "lobattoWeight_sub"
+
+[[node]]
+id = "chebyshevLobattoNode_rev"
+
+[[node]]
+id = "lobattoWeight_rev"
+
+[[node]]
+id = "isExactOnMeasure_chebyshevLobatto"
+
+[[node]]
+id = "injective_chebyshevLobattoNode"
+
+[[node]]
+id = "equation_10_21"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.21)'
+
+[[node]]
+id = "chebyshevGaussNode_mem_Icc"
+
+[[node]]
+id = "equation_10_25_interpolation_error"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25), the first inequality'
+
+[[node]]
 id = "equation_10_23"
-kind = "definition"
-desc = '''(10.23) and (10.35): the weighted Sobolev norm of order `s` of a function `f : ℝ → ℝ` for a
-weight `μ`, `‖f‖_{s,μ} = (∑_{k ≤ s} ∫ (f^{(k)})² ∂μ)^{1/2}`, as
-`√(∑ k ∈ range (s+1), ∫ (iteratedDeriv k f x)^2 ∂μ)`; the book's `‖·‖_{s,w}` is the case
-`μ = chebyshevMeasure` and `‖·‖_s` of (10.35) the case `μ = legendreMeasure`. It is only a
-definition on smooth functions, enough to state the quoted estimates. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.23), (10.35)'
 
 [[node]]
@@ -68,19 +86,20 @@ kind = "theorem"
 desc = '''(10.25): `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)` for the interpolant at the Chebyshev nodes
 (10.20), with `Λ_n ≤ (2/π) log (n+1) + 1` (Rivlin). The first inequality is
 `interpolation_error_le_lebesgue` (§10.8); the bound on the Lebesgue constant of the Chebyshev
-nodes is `Lagrange.norm_interpolateCLM_chebyshev_le`. ★'''
+nodes is `Lagrange.norm_interpolateCLM_chebyshev_le`. ★
+
+Blocked: the backbone node `Lagrange.norm_interpolateCLM_chebyshev_le` (Rivlin's bound on the
+Lebesgue constant of the Chebyshev nodes, ★★★ in `Approximation/Interpolation`) is open; the
+surface node is a two-line restatement once it exists (the nodes (10.20) are
+`chebyshevGaussNode n j` of this module, read as points of `Icc (-1) 1`).'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.interpolation_error_le_lebesgue", "Lagrange.norm_interpolateCLM_chebyshev_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'
 
 [[node]]
+id = "chebyshevMeasure_compl_Icc"
+
+[[node]]
 id = "lobatto_tendsto"
-kind = "theorem"
-desc = '''The unnumbered statement before (10.26) (quoted from [Sze67]): `I^{GL}_{n,w} f → ∫ f w` for
-every `f ∈ C[-1, 1]`. This is `gauss_tendsto` for the Chebyshev–Gauss–Lobatto rule (10.21) —
-positive weights and exactness `2n - 1 → ∞` give convergence by `Quadrature.tendsto_of_nonneg`.
-The book states it for every `f` with finite weighted integral, which is a dominated-convergence
-extension beyond the continuous case; state the continuous case. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.gauss_tendsto", "QuarteroniSaccoSaleri.Chapter10.equation_10_21"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.3, convergence of the Chebyshev Gauss–Lobatto rule'''
 
 [[node]]
@@ -96,22 +115,18 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.26)–(10.27)'
 
 [[node]]
 id = "equation_10_28"
-kind = "definition"
-desc = '''(10.28): the discrete scalar product `(f, g)_n = ∑ⱼ ᾱⱼ f(x̄ⱼ) g(x̄ⱼ) = I^{GL}_{n,w}(f g)` of
-the Chebyshev–Gauss–Lobatto rule, as `Quadrature.discreteInner (lobattoWeight n) (node n) f g`
-(nodes `cos (jπ/n)`). ★'''
-deps = ["Quadrature.discreteInner", "Polynomial.Chebyshev.lobattoWeight"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.28)'
 
 [[node]]
+id = "equation_10_28_eq"
+
+[[node]]
+id = "chebyshevDiscreteCoeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.31)'
+
+[[node]]
+id = "chebyshevDiscreteCoeff_eq"
+
+[[node]]
 id = "equation_10_31"
-kind = "theorem"
-desc = '''(10.29)–(10.31), the Chebyshev discrete transform (Exercise 2): the interpolant at the
-Gauss–Lobatto nodes is `Π^{GL}_{n,w} f = ∑_{k ≤ n} f̃_k T_k` with
-`f̃_k = (2/(n d_k)) ∑_{j ≤ n} dⱼ⁻¹ cos (kjπ/n) f(x̄ⱼ)` (10.31), so that
-`f(x̄ⱼ) = ∑_k cos (kjπ/n) f̃_k` (10.30), and `Π^{GL}_{n,w} f` is the discrete truncation `f_n^*`
-of (10.4). Restates `Polynomial.Chebyshev.interpolate_eq_sum_cdt`, whose ingredients are the
-discrete norms `‖T_k‖_n = ‖T_k‖_w` for `k < n` and `‖T_n‖_n² = 2 ‖T_n‖_w²` of the exercise's hint
-(`Polynomial.Chebyshev.discreteInner_T_T`). ★'''
-deps = ["Polynomial.Chebyshev.interpolate_eq_sum_cdt", "Polynomial.Chebyshev.discreteInner_T_T", "QuarteroniSaccoSaleri.Chapter10.equation_10_28", "QuarteroniSaccoSaleri.Chapter10.equation_10_6"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.29)–(10.31); Exercise 10.2'

@@ -1,113 +1,74 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.2: interpolatory weighted quadrature (10.13)–(10.14), Jacobi's theorem (Theorem 10.1),
-Corollary 10.1, the Gauss nodes (10.16), the Gauss–Lobatto rule (10.17)–(10.19), Remark 10.2 and
-Remark 10.3. The weighted rule is stated at the polynomial level, `Quadrature.IsExactOnMeasure μ α x
-r` (the form `Quadrature.exists_gauss` uses), with `μ` a weight in the sense of
-`OrthogonalPolynomial.IsWeight` carried by `[-1, 1]`.
-'''
+
+[[node]]
+id = "isExactOnMeasure_iff_forall_sub_eq_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, the degree of exactness with respect to w'
+
+[[node]]
+id = "sum_mul_eq_integral_interpolate"
 
 [[node]]
 id = "equation_10_14"
-kind = "theorem"
-desc = '''(10.13)–(10.14): for `n + 1` distinct nodes in `[-1, 1]` the rule with weights
-`αᵢ = ∫ lᵢ w` (`Quadrature.IsInterpolatoryMeasure μ α x`) has degree of exactness at least `n`, and
-conversely a rule exact to degree `n` has these weights. Restates
-`Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure`. ★'''
-deps = ["Quadrature.IsInterpolatoryMeasure", "Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.13)–(10.14)'
 
 [[node]]
 id = "theorem_10_1"
-kind = "theorem"
-desc = '''Theorem 10.1 (Jacobi): for `m ≥ 1`, `hw : IsWeight μ` and `n + 1` distinct nodes `x`, the
-rule `(α, x)` has degree of exactness `n + m` iff it is interpolatory and the nodal polynomial
-`ω_{n+1} = ∏ (X - xᵢ)` satisfies `∫ ω_{n+1} p ∂μ = 0` for every `p ∈ P_{m-1}` (10.15). Restates
-`Quadrature.isExactOnMeasure_add_iff`. ★'''
-deps = ["Quadrature.isExactOnMeasure_add_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 10.1'
 
 [[node]]
 id = "corollary_10_1"
-kind = "theorem"
-desc = '''Corollary 10.1: no rule with `n + 1` nodes is exact on `P_{2n+2}`
-(`Quadrature.not_isExactOnMeasure_two_mul_add_two`), and the degree `2n + 1` is attained
-(`Quadrature.exists_gauss` at `n + 1` nodes); so the maximum degree of exactness is `2n + 1`. ★'''
-deps = ["Quadrature.not_isExactOnMeasure_two_mul_add_two", "Quadrature.exists_gauss"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 10.1'
 
 [[node]]
-id = "equation_10_16"
-kind = "theorem"
-desc = '''(10.16): an `n + 1`-node rule has degree of exactness `2n + 1` iff its nodes are the roots
-of `p_{n+1} = OrthogonalPolynomial.family μ (n+1)` (equivalently `ω_{n+1} = p_{n+1}`) and it is
-interpolatory; these are the Gauss nodes. Restates `Quadrature.isExactOnMeasure_two_mul_add_one_iff`
-with `OrthogonalPolynomial.exists_injective_family_eq_prod`. ★'''
-deps = ["Quadrature.isExactOnMeasure_two_mul_add_one_iff", "OrthogonalPolynomial.exists_injective_family_eq_prod"]
+id = "exists_gauss_nodes"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.16)'
 
 [[node]]
+id = "equation_10_16"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.16)'
+
+[[node]]
+id = "nodal_eq_of_forall_eval_eq_zero"
+
+[[node]]
+id = "exists_eq_iff_eval_nodal_eq_zero"
+
+[[node]]
+id = "pos_of_isExactOnMeasure_of_le"
+
+[[node]]
 id = "gauss_weights_pos_nodes_mem_Ioo"
-kind = "theorem"
-desc = '''The unnumbered statement after (10.16) (quoted from [CHQZ88] p. 56): the Gauss weights are
-positive and the Gauss nodes lie in the open interval `(-1, 1)` when `μ (Icc (-1) 1)ᶜ = 0`.
-Positivity is in `Quadrature.exists_gauss`; the location is
-`OrthogonalPolynomial.root_family_mem_Ioo`. ★'''
-deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.root_family_mem_Ioo"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, positivity of the Gauss weights and location of the nodes'''
 
 [[node]]
 id = "equation_10_18"
-kind = "theorem"
-desc = '''(10.17)–(10.18), the Gauss–Lobatto rule: for `n ≥ 1` and a weight `μ` carried by `[-1, 1]`
-there are nodes `x̄_0 = -1 < x̄_1 < ⋯ < x̄_n = 1` — the roots of
-`ω̄_{n+1} = p_{n+1} + a p_n + b p_{n-1}` with `a, b` chosen so that `ω̄_{n+1}(±1) = 0`
-(`Quadrature.lobattoNodal_eq_add_smul`) — and positive interpolatory weights `ᾱ` such that
-`I^{GL}_{n,w} f = ∑ ᾱᵢ f(x̄ᵢ)` has degree of exactness `2n - 1`. Restates
-`Quadrature.exists_gaussLobatto` and `Quadrature.lobattoNodal_eq_add_smul`. ★'''
-deps = ["Quadrature.exists_gaussLobatto", "Quadrature.lobattoNodal_eq_add_smul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.17)–(10.18)'
 
 [[node]]
 id = "equation_10_19"
-kind = "theorem"
-desc = '''(10.19): with `Π^{GL}_{n,w} f = ∑ f(x̄ᵢ) l̄ᵢ` the interpolant at the Gauss–Lobatto nodes,
-`I^{GL}_{n,w} f = ∫ Π^{GL}_{n,w} f · w`. This is the interpolatory property of the rule,
-`Quadrature.IsInterpolatoryMeasure`, read through `Lagrange.interpolate`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_18", "Quadrature.IsInterpolatoryMeasure"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.19)'
 
 [[node]]
+id = "jacobiMeasure_compl_Icc"
+
+[[node]]
+id = "lobattoMeasure_jacobiMeasure"
+
+[[node]]
 id = "remark_10_2"
-kind = "theorem"
-desc = '''Remark 10.2: for the Jacobi weight with `α, β > -1` the interior Gauss–Lobatto nodes
-`x̄_1, …, x̄_{n-1}` are the roots of `(J_n^{(α,β)})'`, the extremants of the `n`-th Jacobi
-polynomial. Restates `Quadrature.derivative_family_jacobiMeasure` (the derivative of the `n`-th
-Jacobi polynomial is `n` times the `(n-1)`-st orthogonal polynomial of the weight with exponents
-raised by one, which is the weight `(1 - x²) w` defining the interior Lobatto nodes). The book
-prints the weight as `(1 - x)^α (1 - x)^β`; read `(1 - x)^α (1 + x)^β`. ★'''
-deps = ["Quadrature.derivative_family_jacobiMeasure", "Quadrature.exists_gaussLobatto"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.2'
 
 [[node]]
+id = "tendsto_of_isExactOnMeasure"
+
+[[node]]
 id = "gauss_tendsto"
-kind = "theorem"
-desc = '''The unnumbered convergence result of §10.2 (quoted from [Atk89]): for a weight `μ` carried by
-`[-1, 1]` and every `f ∈ C[-1, 1]`, the `n + 1`-node Gauss rules satisfy
-`∑ αⱼ f(xⱼ) → ∫ f ∂μ`; likewise the Gauss–Lobatto rules. From `Quadrature.tendsto_of_nonneg`
-(Szegő–Pólya with nonnegative weights) once the measure-level exactness is read on
-`C(Icc (-1) 1, ℝ)` by `Quadrature.isExactOnMeasure_iff_isExactOn`, using
-`gauss_weights_pos_nodes_mem_Ioo` for the nodes. ★★'''
-deps = ["Quadrature.tendsto_of_nonneg", "Quadrature.isExactOnMeasure_iff_isExactOn", "QuarteroniSaccoSaleri.Chapter10.gauss_weights_pos_nodes_mem_Ioo", "QuarteroniSaccoSaleri.Chapter10.equation_10_18"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, convergence of Gaussian integration'
 
 [[node]]
+id = "gaussLobatto_tendsto"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, convergence of Gauss–Lobatto integration'
+
+[[node]]
 id = "remark_10_3"
-kind = "theorem"
-desc = '''Remark 10.3: if the rule `(β, ξ)` on `[-1, 1]` is exact on `P_r` for Lebesgue measure, then the
-rule with nodes `xⱼ = φ(ξⱼ)` and weights `αⱼ = ((b - a)/2) βⱼ` is exact on `P_r` on `[a, b]`, where
-`φ(ξ) = ((b - a)/2) ξ + (a + b)/2`. Restates `Quadrature.isExactOnMeasure_map_affine`. Erratum: the
-book prints `φ(ξ) = ((a + b)/2) ξ + (b - a)/2` and the factor `(a + b)/2`; both should read as
-here (the printed map does not send `[-1, 1]` onto `[a, b]`). ★'''
-deps = ["Quadrature.isExactOnMeasure_map_affine"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.3'

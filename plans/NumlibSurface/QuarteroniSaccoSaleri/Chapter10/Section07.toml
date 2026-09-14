@@ -1,79 +1,63 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.7: the least-squares polynomial of a weight on `(a, b)` is the truncated generalized Fourier
-series; the discrete truncation at the Gauss–Lobatto nodes is the interpolant; §10.7.1 discrete
-least squares — existence and uniqueness (10.44), the essentially strict seminorm (10.45),
-the normal equations (10.46) and linear regression. The normal equations are chapter 3's
-`LinearAlgebra/Matrix/LeastSquares` (Theorem 3.8) applied to the weighted Vandermonde-type matrix
-`B`; the dependencies on that module's ids are to be filled in when chapter 3's plan is merged.
-Example 10.3 is a numerical experiment and is skipped.
-'''
 
 [[node]]
 id = "leastSquaresPolynomial_isBestApprox"
-kind = "theorem"
-desc = '''§10.7, the continuous least-squares polynomial: for a weight `μ` on `(a, b)` (`IsWeight μ`)
-and `f ∈ L²(μ)` the polynomial `r_n` minimizing `‖f - p‖_μ` over `P_n` exists, is unique, and is the
-truncation `f_n` of (10.2). Existence and the identification are `equation_10_3`; uniqueness is the
-strict convexity of the `L²` norm (`IsBestApprox` in a Hilbert space onto a finite-dimensional
-subspace is unique). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.7, the least-squares polynomial'
 
 [[node]]
 id = "discreteTruncation_eq_interpolate"
-kind = "theorem"
-desc = '''§10.7, unnumbered: the discrete truncation `f_n^*` of (10.4) computed with the Gauss–Lobatto
-discrete scalar product (10.28) coincides with the interpolant `Π^{GL}_{n,w} f` at the `n + 1`
-Gauss–Lobatto nodes, so `‖f - f_n^*‖_n = 0` and (10.6) is trivially satisfied. Restates
-`Quadrature.interpolate_eq_sum_discreteInner_smul` for the rule of `Quadrature.exists_gaussLobatto`
-(Chebyshev: `equation_10_31`; Legendre: `equation_10_40`). ★'''
-deps = ["Quadrature.interpolate_eq_sum_discreteInner_smul", "Quadrature.exists_gaussLobatto", "QuarteroniSaccoSaleri.Chapter10.equation_10_6"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.7, the discrete truncation is the Gauss–Lobatto interpolant'''
 
 [[node]]
+id = "IsDiscreteLeastSquares"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.43)–(10.44)'
+
+[[node]]
+id = "weightedEval"
+
+[[node]]
+id = "weightedData"
+
+[[node]]
+id = "inner_weightedEval"
+
+[[node]]
+id = "inner_weightedEval_weightedData"
+
+[[node]]
+id = "norm_weightedEval_sq"
+
+[[node]]
+id = "norm_weightedEval_sub_weightedData_sq"
+
+[[node]]
+id = "weightedEval_eq_zero_iff"
+
+[[node]]
+id = "eq_zero_of_weightedEval_eq_zero"
+
+[[node]]
+id = "isDiscreteLeastSquares_iff"
+
+[[node]]
 id = "equation_10_44"
-kind = "theorem"
-desc = '''(10.43)–(10.44): given `m + 1` data `(xᵢ, yᵢ)` with distinct abscissae, weights `wⱼ > 0` and
-`n ≤ m`, there is a unique `p_n ∈ P_n` with `∑ⱼ wⱼ |p_n(xⱼ) - yⱼ|² ≤ ∑ⱼ wⱼ |q(xⱼ) - yⱼ|²` for all
-`q ∈ P_n`; for `n = m` it is the interpolant. Proof: the map `P_n → ℝ^{m+1}`, `p ↦ (√wⱼ p(xⱼ))`, is
-injective (a nonzero polynomial of degree `≤ n ≤ m` has at most `m` roots), so the problem is the
-minimum-distance problem to a finite-dimensional subspace of a Euclidean space, which has a unique
-solution; alternatively the full-column-rank normal equations of chapter 3's Theorem 3.8. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.exercise_10_7"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.43)–(10.44)'
 
 [[node]]
 id = "exercise_10_7"
-kind = "theorem"
-desc = '''Exercise 7, used for the uniqueness in (10.44): `‖|q|‖ = (∑ⱼ wⱼ q(xⱼ)²)^{1/2}` (10.45) is a
-seminorm on `ℝ[X]`, a norm on `P_n` when `n ≤ m` and the `xⱼ` are distinct, and it is essentially
-strict: `‖|f + g|‖ = ‖|f|‖ + ‖|g|‖` implies `α f(xᵢ) + β g(xᵢ) = 0` for all `i` with `(α, β) ≠ 0`
-(the equality case of Cauchy–Schwarz in `ℝ^{m+1}` with the weighted inner product). ★★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.45); Exercise 10.7'
 
 [[node]]
+id = "span_range_eq_degreeLE"
+
+[[node]]
+id = "isDiscreteLeastSquares_sum_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.7.1, the system of normal equations'
+
+[[node]]
 id = "equation_10_46"
-kind = "theorem"
-desc = '''(10.46), the normal equations: with `B` the `(m+1) × (n+1)` matrix `bᵢⱼ = φⱼ(xᵢ)` for a basis
-`φ_0, …, φ_n` of `P_n`, `W = diag(wⱼ)` and `y` the data vector, `p_n = ∑ aⱼ φⱼ` solves (10.44) iff
-`Bᵀ W B a = Bᵀ W y`; for `wⱼ = 1` this is `Bᵀ B a = Bᵀ y`, the least-squares solution of the
-overdetermined system `B a = y` of §3.13. Proof: the gradient of the quadratic form, or chapter
-3's normal-equations theorem for `W^{1/2} B` (full column rank by the injectivity in
-`equation_10_44`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_44"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.46)'
 
 [[node]]
 id = "linearRegression_coeff"
-kind = "theorem"
-desc = '''§10.7.1, the unnumbered linear regression formulas: for `n = 1`, `φ_0 = 1`, `φ_1 = X` and
-`(f, g)_m = ∑ⱼ wⱼ f(xⱼ) g(xⱼ)`, the coefficients of the least-squares line are
-`a_0 = ((y, φ_0)_m (φ_1, φ_1)_m - (y, φ_1)_m (φ_1, φ_0)_m) / D` and
-`a_1 = ((y, φ_1)_m (φ_0, φ_0)_m - (y, φ_0)_m (φ_1, φ_0)_m) / D` with
-`D = (φ_1, φ_1)_m (φ_0, φ_0)_m - (φ_0, φ_1)_m²`, `D > 0` when `m ≥ 1`. Cramer's rule on the `2 × 2`
-system (10.46); the book's display defines `(·,·)_m` without the weights `wⱼ`, which is the case
-`wⱼ = 1` of the system it derives. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_46"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.7.1, linear regression'

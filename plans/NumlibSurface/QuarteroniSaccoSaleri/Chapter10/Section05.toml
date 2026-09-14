@@ -1,35 +1,11 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.5: Gaussian integration over unbounded intervals — the Laguerre polynomials and the
-Gauss–Laguerre rule (10.41), the Hermite polynomials and the Gauss–Hermite rule (10.42). The weights
-`e^{-x} dx` on `(0, ∞)` and `e^{-x²} dx` on `ℝ` are `OrthogonalPolynomial.laguerreMeasure` and
-`OrthogonalPolynomial.hermiteMeasure` of `Numlib/Approximation/OrthogonalPolynomial/Classical`.
-The book's Hermite polynomials are the physicists' `ℋ_n = (-1)^n e^{x²} (e^{-x²})^{(n)}`, not
-Mathlib's probabilists' `Polynomial.hermite`; the backbone's `Polynomial.physHermite` is the former.
-Example 10.2 is a numerical comparison and is skipped.
-'''
 
 [[node]]
 id = "laguerre"
-kind = "theorem"
-desc = '''The Laguerre polynomials of §10.5: `ℒ_n(x) = e^x (d/dx)^n (e^{-x} x^n)`
-(`Polynomial.laguerre_eq_deriv_exp_mul`), the recurrence
-`ℒ_{n+1} = (2n + 1 - X) ℒ_n - n² ℒ_{n-1}`, `ℒ_0 = 1` (`Polynomial.laguerre_succ_succ`), and the
-orthogonality `∫_0^∞ ℒ_n ℒ_m e^{-x} dx = (n!)² δ_{nm}` (`Polynomial.integral_laguerre_mul_laguerre`).
-★'''
-deps = ["Polynomial.laguerre", "Polynomial.laguerre_succ_succ", "Polynomial.laguerre_eq_deriv_exp_mul", "Polynomial.integral_laguerre_mul_laguerre"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.5, the Laguerre polynomials'
 
 [[node]]
 id = "equation_10_41"
-kind = "theorem"
-desc = '''(10.41), the Gauss–Laguerre rule: for `n ≥ 1`, with nodes the `n` zeros of `ℒ_n` and weights
-`α_k = (n!)² x_k / ℒ_{n+1}(x_k)²`, `∫_0^∞ φ(x) e^{-x} dx = ∑_k α_k φ(x_k)` for every
-`φ ∈ P_{2n-1}` — so `∫_0^∞ f = ∑ α_k φ(x_k)` for `f = φ e^{-x}`. Exactness and positivity are
-`Quadrature.exists_gauss` for `laguerreMeasure` with the nodes identified by
-`OrthogonalPolynomial.family_laguerreMeasure_eq`; the weight formula is
-`Quadrature.laguerreGaussWeight_eq`. ★'''
-deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.isWeight_laguerreMeasure", "OrthogonalPolynomial.family_laguerreMeasure_eq", "Quadrature.laguerreGaussWeight_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41), exactness and weights'
 
 [[node]]
@@ -47,23 +23,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41), the remai
 
 [[node]]
 id = "hermite"
-kind = "theorem"
-desc = '''The Hermite polynomials of §10.5: `ℋ_n(x) = (-1)^n e^{x²} (d/dx)^n e^{-x²}`
-(`Polynomial.physHermite_eq_deriv_gaussian`), the recurrence `ℋ_{n+1} = 2X ℋ_n - 2n ℋ_{n-1}`,
-`ℋ_0 = 1` (`Polynomial.physHermite_succ_succ`), and the orthogonality
-`∫ ℋ_n ℋ_m e^{-x²} dx = 2^n n! √π δ_{nm}` (`Polynomial.integral_physHermite_mul_physHermite`). ★'''
-deps = ["Polynomial.physHermite", "Polynomial.physHermite_succ_succ", "Polynomial.physHermite_eq_deriv_gaussian", "Polynomial.integral_physHermite_mul_physHermite"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.5, the Hermite polynomials'
 
 [[node]]
 id = "equation_10_42"
-kind = "theorem"
-desc = '''(10.42), the Gauss–Hermite rule: for `n ≥ 1`, with nodes the `n` zeros of `ℋ_n` and weights
-`α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)²`, `∫ e^{-x²} φ = ∑_k α_k φ(x_k)` for every `φ ∈ P_{2n-1}`.
-Exactness and positivity are `Quadrature.exists_gauss` for `hermiteMeasure` with
-`OrthogonalPolynomial.family_hermiteMeasure_eq`; the weight formula is
-`Quadrature.hermiteGaussWeight_eq`. ★'''
-deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.isWeight_hermiteMeasure", "OrthogonalPolynomial.family_hermiteMeasure_eq", "Quadrature.hermiteGaussWeight_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.42), exactness and weights'
 
 [[node]]

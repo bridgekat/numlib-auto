@@ -1,126 +1,84 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.1: generalized Fourier series in `L²_w(-1, 1)`, the truncation as the best `L²_w` approximation
-(10.3), the discrete truncation (10.4)–(10.6), the three-term recurrence (10.7)–(10.8), and the
-Chebyshev (§10.1.1) and Legendre (§10.1.2) families. The weight is a measure
-`μ : Measure ℝ` satisfying `OrthogonalPolynomial.IsWeight`; the book's `w(x) dx` on `(-1, 1)` is
-`AtkinsonHan.Chapter03.weightMeasure w`, and the Chebyshev and Legendre weights are
-`OrthogonalPolynomial.chebyshevMeasure` and `OrthogonalPolynomial.legendreMeasure`.
-'''
+
+[[node]]
+id = "weightMeasure"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.1)'
+
+[[node]]
+id = "integral_weightMeasure"
+
+[[node]]
+id = "isWeight_weightMeasure"
+
+[[node]]
+id = "fourierCoeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1, the generalized Fourier series'
+
+[[node]]
+id = "fourierCoeff_eq"
+
+[[node]]
+id = "truncation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.2)'
+
+[[node]]
+id = "truncation_eq"
 
 [[node]]
 id = "equation_10_3"
-kind = "theorem"
-desc = '''(10.3): for `hw : IsWeight μ`, `N : ℕ` and `f : Lp ℝ 2 μ`, the truncation
-`f_N = ∑_{k ≤ N} (⟪f, p_k⟫ / ‖p_k‖²) p_k` of the generalized Fourier series in the monic orthogonal
-family `OrthogonalPolynomial.family μ` is the best `L²(μ)` approximation of `f` by polynomials of
-degree at most `N`: `IsBestApprox ((degreeLE ℝ N).map hw.toLpₗ) f f_N`. Direct restatement of
-`OrthogonalPolynomial.isBestApprox_truncation`. ★'''
-deps = ["OrthogonalPolynomial.isBestApprox_truncation"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.3)'
 
 [[node]]
 id = "truncation_tendsto"
-kind = "theorem"
-desc = '''The unnumbered convergence statement after (10.2): for a weight `μ` carried by a compact
-interval (`μ (Icc a b)ᶜ = 0`) and `f : Lp ℝ 2 μ`, `‖f - f_N‖ → 0` as `N → ∞`, and Parseval's
-equality `‖f‖² = ∑_k f̂_k² ‖p_k‖²`. From `OrthogonalPolynomial.hilbertBasis` (the orthonormal
-polynomials are a Hilbert basis of `L²(μ)`) via `HilbertBasis.hasSum_repr` and
-`HilbertBasis.tsum_inner_mul_inner`; the truncation in the monic family equals the partial sum in
-the orthonormal family. ★★'''
-deps = ["OrthogonalPolynomial.hilbertBasis", "QuarteroniSaccoSaleri.Chapter10.equation_10_3"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1, the convergence statement and Parseval's equality after (10.2)'''
 
 [[node]]
+id = "discreteCoeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.5)'
+
+[[node]]
+id = "discreteTruncation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.4)'
+
+[[node]]
+id = "discreteNorm"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1, the seminorm associated with (·,·)_n'
+
+[[node]]
+id = "degree_discreteTruncation_le"
+
+[[node]]
 id = "equation_10_6"
-kind = "theorem"
-desc = '''(10.4)–(10.6): let the discrete scalar product `(f, g)_n = ∑ᵢ αᵢ f(xᵢ) g(xᵢ)` be that of a
-rule with `n + 1` distinct nodes, positive weights and degree of exactness at least `2n - 1` for
-`μ` (`Quadrature.IsExactOnMeasure μ α x (2n - 1)`, e.g. the Gauss or Gauss–Lobatto rule). Then the
-discrete truncation `f_n^* = ∑_{k ≤ n} f̃_k p_k` with `f̃_k = (f, p_k)_n / (p_k, p_k)_n` (10.5)
-minimizes the discrete seminorm: `‖f - f_n^*‖_n ≤ ‖f - q‖_n` for every `q ∈ P_n`. Proof: the
-discrete orthogonality `Quadrature.discreteInner_family_family` makes `p_0, …, p_n` orthogonal
-for `(·,·)_n`, and `Quadrature.interpolate_eq_sum_discreteInner_smul` identifies `f_n^*` with the
-interpolant at the nodes, whose discrete error is `0`. ★'''
-deps = ["Quadrature.discreteInner", "Quadrature.discreteInner_family_family", "Quadrature.interpolate_eq_sum_discreteInner_smul", "Quadrature.IsExactOnMeasure"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.4)–(10.6)'
 
 [[node]]
 id = "equation_10_7"
-kind = "theorem"
-desc = '''(10.7)–(10.8), the three-term recurrence of the monic orthogonal family: for
-`hw : IsWeight μ`, `p_{k+2} = (X - α_{k+1}) p_{k+1} - β_{k+1} p_k` with
-`α_k = (x p_k, p_k)_w / (p_k, p_k)_w` and `β_{k+1} = (p_{k+1}, p_{k+1})_w / (p_k, p_k)_w`, together
-with `p_0 = 1`, `p_1 = X - α_0`. Restates `OrthogonalPolynomial.three_term_recurrence` with the
-definitions `OrthogonalPolynomial.alpha` and `OrthogonalPolynomial.beta` unfolded; note the
-backbone's `beta μ k = normSq μ (k+1) / normSq μ k` is the book's `β_{k+1}`, so the book's
-`β_{k+1} p_{k-1}` term is the backbone's `beta μ k • family μ k` at index shift one. ★'''
-deps = ["OrthogonalPolynomial.three_term_recurrence"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.7)–(10.8)'
 
 [[node]]
 id = "equation_10_10"
-kind = "theorem"
-desc = '''(10.10): for `x ∈ [-1, 1]` and `k : ℕ`, `(T ℝ k).eval x = cos (k * arccos x)`. Mathlib's
-`Polynomial.Chebyshev.T_real_cos` at `θ = arccos x` with `Real.cos_arccos`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.10)'
 
 [[node]]
 id = "equation_10_11"
-kind = "theorem"
-desc = '''(10.11) (Exercise 1): `T_{k+2} = 2 X T_{k+1} - T_k`, `T_0 = 1`, `T_1 = X`. Mathlib's
-`Polynomial.Chebyshev.T_add_two`, `T_zero`, `T_one`, stated at natural indices. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.11); Exercise 10.1'
 
 [[node]]
 id = "chebyshev_inner"
-kind = "theorem"
-desc = '''The unnumbered orthogonality of §10.1.1: `(T_k, T_n)_w = 0` for `k ≠ n`, `(T_0, T_0)_w = π`,
-`(T_n, T_n)_w = π/2` for `n ≠ 0`, for `w = (1 - x²)^{-1/2}`. Restates
-`Polynomial.Chebyshev.integral_T_mul_T_div_sqrt`; also `‖T_n‖_∞ = 1` on `[-1, 1]` from
-`Polynomial.Chebyshev.abs_eval_T_real_le_one` and `T_n(1) = 1`. ★'''
-deps = ["Polynomial.Chebyshev.integral_T_mul_T_div_sqrt"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1.1, orthogonality of the Chebyshev polynomials'''
 
 [[node]]
 id = "chebyshev_minimax"
-kind = "theorem"
-desc = '''The unnumbered minimax property of §10.1.1: for `n ≥ 1` and every monic real `p` of degree
-`n`, `‖2^{1-n} T_n‖_∞ = 2^{1-n} ≤ ‖p‖_∞` on `[-1, 1]`. Proof: if `‖p‖_∞ < 2^{1-n}` then
-`q = p / ‖p‖_∞` satisfies `|q| ≤ 1` on `[-1, 1]` with leading coefficient `1/‖p‖_∞ > 2^{n-1}`,
-contradicting Mathlib's `Polynomial.Chebyshev.leadingCoeff_le_of_forall_abs_le_one`. The
-γ-normalized form of the same extremal problem is `Numlib/RingTheory/Polynomial/ChebyshevMinimax`,
-but the monic normalization is the one the book states. ★'''
-deps = []
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1.1, the minimax property of 2^{1-n} T_n'''
 
 [[node]]
 id = "equation_10_12"
-kind = "theorem"
-desc = '''(10.12): `L_k = 2^{-k} ∑_{l ≤ k/2} (-1)^l C(k, l) C(2k - 2l, k) X^{k - 2l}`, together with
-the recurrence `(k+1) L_{k+1} = (2k+1) X L_k - k L_{k-1}` and `L_0 = 1`, `L_1 = X`. The explicit
-sum is `Polynomial.legendre_eq_sum` (backbone EXT), the recurrence
-`Polynomial.legendre_recurrence`. ★'''
-deps = ["Polynomial.legendre_eq_sum", "Polynomial.legendre_recurrence"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.12) and the Legendre recurrence'
 
 [[node]]
 id = "legendre_inner"
-kind = "theorem"
-desc = '''The unnumbered orthogonality of §10.1.2: `(L_k, L_m) = δ_{km} (k + 1/2)^{-1}` on `(-1, 1)`.
-Restates `Polynomial.integral_legendre_mul_legendre`. ★'''
-deps = ["Polynomial.integral_legendre_mul_legendre"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.1.2, orthogonality of the Legendre polynomials'''
 
 [[node]]
 id = "remark_10_1"
-kind = "theorem"
-desc = '''Remark 10.1: for `α, β > -1` the Jacobi weight `(1 - x)^α (1 + x)^β` on `(-1, 1)` is a
-weight (`OrthogonalPolynomial.isWeight_jacobiMeasure`), and its orthogonal family specializes to
-the Legendre polynomials at `α = β = 0` (`jacobiMeasure 0 0 = legendreMeasure`) and to the
-Chebyshev polynomials at `α = β = -1/2` (`jacobiMeasure (-1/2) (-1/2) = chebyshevMeasure`, and
-`family chebyshevMeasure n = 2^{1-n} T_n` for `n ≥ 1`). ★'''
-deps = ["OrthogonalPolynomial.jacobiMeasure", "OrthogonalPolynomial.isWeight_jacobiMeasure", "OrthogonalPolynomial.jacobiMeasure_zero_zero", "OrthogonalPolynomial.jacobiMeasure_neg_half_neg_half", "OrthogonalPolynomial.family_chebyshevMeasure_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.1'
