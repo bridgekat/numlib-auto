@@ -389,6 +389,7 @@ import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Topology.Order.IntermediateValue
+import Numlib.Variational.AdvectionDiffusion
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Evolution
 import Numlib.Variational.Forms

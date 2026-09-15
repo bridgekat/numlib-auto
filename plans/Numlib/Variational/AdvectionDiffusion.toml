@@ -1,169 +1,274 @@
 namespace = "AdvectionDiffusion"
-desc = '''
-The one-dimensional advection–diffusion problem `-ε u'' + β u' = 0` on `(0, 1)`, `u(0) = 0`,
-`u(1) = 1`, with `ε, β > 0` and `ε/β ≪ 1`, and its stabilized discretizations: the global and local
-Péclet numbers, the exact solution with its boundary layer, the centred scheme (Galerkin `P_1` on
-a uniform mesh, equivalently centred finite differences) with its explicit discrete solution
-`u_i = (1 - ρ^i)/(1 - ρ^n)`, `ρ = (1 + Pe)/(1 - Pe)`, which oscillates when `Pe > 1`; upwinding read
-as centred differencing with the numerical viscosity `ε_h = ε (1 + φ(Pe))`, the upwind and
-Scharfetter–Gummel viscosity functions `φ^UP(t) = t`, `φ^SG(t) = t - 1 + B(2t)` with `B` the
-Bernoulli function, the stabilized Péclet number `Pe* = Pe/(1 + φ(Pe))` (`< 1` for both, `= tanh Pe`
-for SG), the M-matrix property that follows, the nodal exactness of the Scharfetter–Gummel scheme,
-and the convergence of the stabilized finite element method in the `H¹` seminorm
-(Quarteroni–Sacco–Saleri §12.5, Theorem 12.4) by Strang's lemma in a seminorm.
-
-Everything here is scalar and explicit; the structure it builds on is
-`Numlib/Variational/EllipticInterval.lean` (the form `a(u, v) = ∫ ε u' v' + β u' v`),
-`Numlib/Variational/FiniteElementInterval.lean` (the `P_1` space and
-`galerkin_iff_centredScheme`), `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz.lean` (the
-eigenvalues of `tridiag(a, b, c)` with `a c ≥ 0`, which give the M-matrix property of the
-stabilized matrices without Property 1.19), and the seminorm Strang lemma
-`seminorm_sub_le_of_generalizedGalerkin` (EXT of `Numlib/Variational/Galerkin.lean`). The
-Bernoulli function is defined here (`B(t) = t/(e^t - 1)`, `B(0) = 1`); Mathlib has the Bernoulli
-*numbers* only (grepped `bernoulliFun`, `Bernoulli function` under
-`Mathlib/NumberTheory/Bernoulli*.lean` and `Mathlib/Analysis/SpecialFunctions/`). Prototype:
-`notes/qss/ch12/proto/AdvectionDiffusion.lean` of the chapter 12 planning report (elaborates).
-'''
 
 [[node]]
 id = "globalPeclet"
-kind = "definition"
-desc = '''`globalPeclet β L ε = |β| L / (2 ε)`, the global Péclet number (12.71), and
-`localPeclet β h ε = |β| h / (2 ε)`, the local (mesh) Péclet number of §12.5.1; `localPeclet_eq :
-localPeclet β h ε = globalPeclet β 1 ε * h` on the unit interval. ★'''
-deps = []
+
+[[node]]
+id = "localPeclet"
+
+[[node]]
+id = "localPeclet_eq_globalPeclet_mul"
+
+[[node]]
+id = "localPeclet_nonneg"
+
+[[node]]
+id = "localPeclet_pos"
+
+[[node]]
+id = "mul_localPeclet"
 
 [[node]]
 id = "exactSolution"
-kind = "definition"
-desc = '''`exactSolution ε β x = (exp (β x / ε) - 1) / (exp (β / ε) - 1)`, and `exactSolution_solves`: for
-`ε > 0`, `β > 0` it is `C^∞`, satisfies `-ε u'' + β u' = 0` on `ℝ`, `u 0 = 0`, `u 1 = 1`; and
-`exactSolution_unique`: any `C²` function with these properties on `[0, 1]` equals it (the
-characteristic roots `0` and `β/ε` — or directly: `v = u' e^{-βx/ε}` is constant). The boundary layer
-statements of §12.5 (`u ≈ x` for `β/ε ≪ 1`, `u ≈ exp(-(β/ε)(1 - x))` for `β/ε ≫ 1`) are
-`exactSolution_tendsto_id` (`→ x` as `β/ε → 0`) and `exactSolution_le_exp` (`u x ≤ exp (-(β/ε)(1 - x))/(1
-- exp(-β/ε))`), optional. ★'''
-deps = []
+
+[[node]]
+id = "hasDerivAt_exactSolution"
+
+[[node]]
+id = "deriv_exactSolution"
+
+[[node]]
+id = "deriv_deriv_exactSolution"
+
+[[node]]
+id = "exactSolution_zero"
+
+[[node]]
+id = "exactSolution_one"
+
+[[node]]
+id = "exactSolution_solves"
+
+[[node]]
+id = "exactSolution_unique"
+
+[[node]]
+id = "centredRatio"
+
+[[node]]
+id = "one_sub_mul_centredRatio"
+
+[[node]]
+id = "centredRatio_root"
+
+[[node]]
+id = "one_lt_abs_centredRatio"
+
+[[node]]
+id = "centredRatio_neg"
+
+[[node]]
+id = "one_lt_centredRatio"
+
+[[node]]
+id = "centredRatio_pow_ne_one"
 
 [[node]]
 id = "centredSolution"
-kind = "definition"
-desc = '''The discrete solution of the centred scheme (12.76) on `n` panels: `centredSolution n Pe i = (1 - ρ ^ i) /
-(1 - ρ ^ n)` with `ρ = (1 + Pe) / (1 - Pe)`, for `Pe ≠ 1`. `centredSolution_solves`: for `0 < Pe`, `Pe ≠ 1`,
-`u_0 = 0`, `u_n = 1`, and `(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0` for `1 ≤ i < n`, and it is the
-only sequence with these properties (`centredSolution_unique`: a second-order linear recurrence with
-two boundary values — `Pe - 1 ≠ 0` — has at most one solution, by induction from `u_0, u_1`; or
-Mathlib's `LinearRecurrence` with `geom_sol_iff_root_charPoly`, roots `1` and `ρ`). ★★'''
-deps = ["AdvectionDiffusion.globalPeclet"]
+
+[[node]]
+id = "centredSolution_zero"
+
+[[node]]
+id = "centredSolution_self"
+
+[[node]]
+id = "centredSolution_solves"
+
+[[node]]
+id = "centredSolution_sub_eq"
 
 [[node]]
 id = "centredSolution_oscillates"
-kind = "theorem"
-desc = '''**Oscillation for `Pe > 1`**: for `1 < Pe` and `i + 1 ≤ n`, the increments `u_{i+1} - u_i` of
-`centredSolution n Pe` alternate in sign, `(u_{i+1} - u_i) = ρ^i (u_1 - u_0)` with `ρ < 0`, so
-`0 < (-1)^i (u_{i+1} - u_i) (u_1 - u_0)`. Conversely `centredSolution_monotone`: for `0 < Pe < 1` the
-sequence is strictly increasing in `i` (`ρ > 1`), matching the exact solution's monotonicity. The book
-states the oscillation from the negative base of the power. ★'''
-deps = ["AdvectionDiffusion.centredSolution"]
 
 [[node]]
-id = "viscosityScheme"
-kind = "definition"
-desc = '''The centred scheme with numerical viscosity (12.79)–(12.82): `viscosityScheme ε β n φ u : Prop` says
-that the grid function `u : Fin (n + 1) → ℝ` (with `h = 1/n`) satisfies `u 0 = 0`, `u n = 1` and
-`-ε_h (u_{i+1} - 2u_i + u_{i-1})/h² + β (u_{i+1} - u_{i-1})/(2h) = 0` for `0 < i < n`, where
-`ε_h = ε (1 + φ (localPeclet β h ε))`. `φ = 0` is the centred scheme (12.77), `φ = phiUpwind` is the
-upwind scheme (12.78) by the identity `(u_i - u_{i-1})/h = (u_{i+1} - u_{i-1})/(2h) - (h/2)(u_{i+1} - 2u_i +
-u_{i-1})/h²` (`upwindScheme_iff_viscosityScheme`, `ε_h = ε(1 + Pe)`), and the numerical viscosity is
-`ε Pe = β h/2` (12.81). `viscosityScheme_iff_centredSolution`: the solution of `viscosityScheme ε β n φ`
-is `centredSolution n (stabilizedPeclet φ Pe)` (divide by `ε_h/h²` and multiply by `h/ε_h`: the
-equation becomes (12.76) with `Pe*`). ★'''
-deps = ["AdvectionDiffusion.globalPeclet", "AdvectionDiffusion.centredSolution"]
+id = "centredSolution_strictMono"
+
+[[node]]
+id = "eq_mul_geom_sum_of_centredRecurrence"
+
+[[node]]
+id = "centredSolution_unique"
 
 [[node]]
 id = "bernoulliFn"
-kind = "definition"
-desc = '''`bernoulliFn t = if t = 0 then 1 else t / (exp t - 1)`, the Bernoulli function of (12.83);
-`bernoulliFn_neg : bernoulliFn (-t) = t + bernoulliFn t` (the identity Exercise 12.13's hint uses),
-`bernoulliFn_pos`, `bernoulliFn_continuous`, `bernoulliFn_le_one` for `t ≥ 0`. The viscosity functions:
-`phiUpwind t = t`, `phiSG t = t - 1 + bernoulliFn (2 t)`, and `phiSG_eq : phiSG t = t * coth t - 1` for `t ≠ 0`
-(`Real.cosh`, `Real.sinh`). ★'''
-deps = []
 
 [[node]]
-id = "stabilizedPeclet"
-kind = "definition"
-desc = '''`stabilizedPeclet φ Pe = Pe / (1 + φ Pe)`, the Péclet number `Pe*` of the stabilized scheme (§12.5.2).
-`stabilizedPeclet_phiUpwind : stabilizedPeclet phiUpwind Pe = Pe / (1 + Pe) < 1` for `Pe > 0`;
-`stabilizedPeclet_phiSG_eq_tanh : stabilizedPeclet phiSG Pe = Real.tanh Pe` for `Pe > 0` (since
-`1 + φ^SG(Pe) = Pe coth Pe`), hence `stabilizedPeclet_phiSG_lt_one`. So "for both the upwind and the SG
-schemes `Pe* < 1` for any `h`". ★'''
-deps = ["AdvectionDiffusion.bernoulliFn", "AdvectionDiffusion.globalPeclet"]
+id = "bernoulliFn_zero"
+
+[[node]]
+id = "bernoulliFn_of_ne_zero"
+
+[[node]]
+id = "exp_sub_one_ne_zero"
+
+[[node]]
+id = "bernoulliFn_neg"
+
+[[node]]
+id = "bernoulliFn_pos"
+
+[[node]]
+id = "bernoulliFn_le_one"
+
+[[node]]
+id = "continuous_bernoulliFn"
+
+[[node]]
+id = "phiUpwind"
+
+[[node]]
+id = "phiSG"
+
+[[node]]
+id = "phiSG_zero"
+
+[[node]]
+id = "one_add_phiSG_mul"
+
+[[node]]
+id = "one_add_phiSG"
+
+[[node]]
+id = "phiSG_eq"
+
+[[node]]
+id = "monotone_mul_cosh_sub_sinh"
+
+[[node]]
+id = "sinh_le_mul_cosh"
+
+[[node]]
+id = "monotone_sq_mul_sinh_sub"
+
+[[node]]
+id = "phiSG_nonneg"
+
+[[node]]
+id = "phiSG_le_sq"
 
 [[node]]
 id = "phiSG_asymptotics"
-kind = "theorem"
-desc = '''Remark 12.6's asymptotics: `phiSG_sub_phiUpwind_tendsto : Tendsto (fun t ↦ phiSG t - phiUpwind t) atTop
-(𝓝 0)` (`t (coth t - 1) → 0`), so `φ^SG ≃ φ^UP` as `Pe → ∞`; and `phiSG_le_sq : 0 ≤ phiSG t ≤ t ^ 2 / 3` for
-`t ≥ 0` (`t coth t - 1 ≤ t²/3`, from `t cosh t - sinh t ≤ (t²/3) sinh t`, i.e. a power series comparison
-or the derivative of `t ↦ (t²/3 + 1) sinh t - t cosh t`), so `φ^SG(Pe) = O(h²)` where `φ^UP(Pe) = O(h)` as
-`h → 0`. The book's "for `h` sufficiently small `φ^SG ≤ K h²`" is this with `K = (β/(2ε))²/3`. ★★'''
-deps = ["AdvectionDiffusion.bernoulliFn", "AdvectionDiffusion.stabilizedPeclet"]
 
 [[node]]
-id = "viscosityScheme_isMMatrix"
-kind = "theorem"
-desc = '''The matrix of the stabilized scheme is an M-matrix whenever `0 ≤ Pe* < 1` (Exercise 12.13, for the
-upwind and SG viscosities for every `h`): the `(n-1) × (n-1)` matrix `(ε_h/h²) tridiag(-(1 + Pe*), 2,
--(1 - Pe*))` (`Matrix.tridiagonalToeplitz`) is an M-matrix. Proof without Property 1.19: it is a
-Z-matrix with positive diagonal, and its Jacobi matrix `tridiag((1 + Pe*)/2, 0, (1 - Pe*)/2)` has
-`a c = (1 - Pe*²)/4 ≥ 0`, so by `Matrix.tridiagonalToeplitz_hasEigenvalue_iff` its eigenvalues are
-`√(1 - Pe*²) cos (kπ/n)`, all of modulus `< 1`; conclude by
-`Matrix.isMMatrix_iff_complexSpectralRadius_lt_one`. (The book's route is Property 1.19 with the
-comparison vector `v_i = 1 + x_i`, for which `(A v)_i = |β|`; once chapter 1's node for Property 1.19
-exists it is a one-line alternative.) Consequence: the discrete maximum principle
-`Matrix.IsMMatrix.nonneg_of_mulVec_nonneg` for the upwind and SG solutions. ★★'''
-deps = ["AdvectionDiffusion.viscosityScheme", "AdvectionDiffusion.stabilizedPeclet", "Matrix.tridiagonalToeplitz_hasEigenvalue_iff", "Matrix.isMMatrix_iff_complexSpectralRadius_lt_one"]
+id = "phiSG_div_phiUpwind_tendsto"
+
+[[node]]
+id = "stabilizedPeclet"
+
+[[node]]
+id = "stabilizedPeclet_phiUpwind"
+
+[[node]]
+id = "stabilizedPeclet_phiUpwind_lt_one"
+
+[[node]]
+id = "stabilizedPeclet_phiUpwind_pos"
+
+[[node]]
+id = "stabilizedPeclet_phiSG_eq_tanh"
+
+[[node]]
+id = "stabilizedPeclet_phiSG_lt_one"
+
+[[node]]
+id = "stabilizedPeclet_phiSG_pos"
+
+[[node]]
+id = "meshWidth"
+
+[[node]]
+id = "meshWidth_pos"
+
+[[node]]
+id = "viscosity"
+
+[[node]]
+id = "viscosity_zero"
+
+[[node]]
+id = "viscosity_phiUpwind"
+
+[[node]]
+id = "viscosity_pos"
+
+[[node]]
+id = "viscosityScheme"
+
+[[node]]
+id = "upwindScheme"
+
+[[node]]
+id = "viscosityScheme_zero_iff"
+
+[[node]]
+id = "upwindScheme_iff_viscosityScheme"
+
+[[node]]
+id = "upwindScheme_zero_diffusion"
+
+[[node]]
+id = "localPeclet_viscosity"
+
+[[node]]
+id = "viscosityScheme_iff_centredRecurrence"
+
+[[node]]
+id = "viscosityScheme_eq_centredSolution"
+
+[[node]]
+id = "centredRatio_stabilizedPeclet_phiSG"
 
 [[node]]
 id = "sg_nodal_exact"
-kind = "theorem"
-desc = '''**Nodal exactness of the Scharfetter–Gummel scheme** (Remark 12.6 for the problem (12.70), which is
-the case the proof of Theorem 12.4 uses): for `ε > 0`, `β > 0`, `n ≥ 1`, `h = 1/n`, the solution `u` of
-`viscosityScheme ε β n phiSG` satisfies `u i = exactSolution ε β (i h)` for every node. Proof:
-`sg_ratio_eq_exp : (1 + Pe*)/(1 - Pe*) = exp (β h / ε)` with `Pe* = tanh Pe`, `Pe = β h/(2ε)`
-(`(1 + tanh t)/(1 - tanh t) = exp (2t)`), so `centredSolution n Pe* i = (1 - e^{βih/ε})/(1 - e^{β/ε}) =
-exactSolution ε β (ih)`. The general statement of Remark 12.6 — nodal exactness for a piecewise
-constant right-hand side, quoted from [HGR96, pp. 44–45] — is not planned; only the homogeneous
-problem is needed, and the linear reduction `ů = u - x` of §12.5.3 turns the constant right-hand
-side `-β` into it. ★★'''
-deps = ["AdvectionDiffusion.viscosityScheme", "AdvectionDiffusion.stabilizedPeclet", "AdvectionDiffusion.exactSolution", "AdvectionDiffusion.centredSolution"]
+
+[[node]]
+id = "neg_tridiagonalToeplitz"
+
+[[node]]
+id = "tridiagonalToeplitz_eq_add_smul"
+
+[[node]]
+id = "dotProduct_mulVec_tridiagonalToeplitz_antisymm"
+
+[[node]]
+id = "dotProduct_mulVec_tridiagonalToeplitz_pos"
+
+[[node]]
+id = "isMMatrix_smul_tridiagonalToeplitz"
+
+[[node]]
+id = "viscosityScheme_isMMatrix"
+
+[[node]]
+id = "constLinf"
+
+[[node]]
+id = "coeFn_constLinf"
+
+[[node]]
+id = "norm_constLinf"
+
+[[node]]
+id = "mulL_constLinf"
 
 [[node]]
 id = "stabilizedForm"
-kind = "definition"
-desc = '''The stabilized bilinear form (12.84) on `H^1_0(0, 1)`: `stabilizedForm ε β h φ := EllipticInterval.form
-_ (ε_h) β 0` with `ε_h = ε (1 + φ (localPeclet β h ε))`, that is `a_h(u, v) = a(u, v) + b(u, v)` with the
-stabilization term `b(u, v) = ε φ(Pe) ∫ u' v'`; `stabilizedForm_self : a_h(v, v) = ε_h |v|₁²` for
-`v ∈ H^1_0` (`form_isCoerciveWith_seminorm_of_le` with constant `β`), and
-`stabilizedForm_isBoundedWith_seminorm : |a_h(u, v)| ≤ (ε_h + |β| C_P) |u|₁ |v|₁`, the `M_h` of the proof of
-Theorem 12.4, with `C_P = 1/√2`. The stabilized Galerkin problem is `IsGalerkinSolution (stabilizedForm …)
-(-load β) (lagrangeSpaceZero hab k x) ů_h`, where `-load β = v ↦ -∫ β v` is the right-hand side after the
-lifting `ů = u - x`. ★'''
-deps = ["EllipticInterval.form", "EllipticInterval.form_isCoerciveWith_seminorm_of_le", "EllipticInterval.form_isBoundedWith", "FiniteElement.lagrangeSpace"]
+
+[[node]]
+id = "stabilizedForm_sub_form"
+
+[[node]]
+id = "stabilizedForm_self"
+
+[[node]]
+id = "stabilizedForm_isBoundedWith_seminorm"
+
+[[node]]
+id = "seminorm_sub_le_of_consistencyDefect"
 
 [[node]]
 id = "seminorm_sub_stabilized_le"
-kind = "theorem"
-desc = '''**The generic stabilized error bound**, the content of (12.87)–(12.89) in Strang form: with `ů` the
-weak solution of the lifted problem (`a(ů, v) = -∫ β v` on `H^1_0`), `ů_h` the stabilized Galerkin solution
-in `K = lagrangeSpaceZero hab k x`, and any `w ∈ K`,
-`|ů - ů_h|₁ ≤ (1 + M_h/ε_h) |ů - w|₁ + (ε φ(Pe)/ε_h) |ů|₁`, where `M_h/ε_h ≤ 1 + 2 C_P Pe_gl`.
-From `seminorm_sub_le_of_generalizedGalerkin` with `q = SobolevInterval.seminorm 1 0 1`, `aN = a_h`,
-coercivity `ε_h`, boundedness `M_h`, and the consistency defect `|a_h(ů, w) - ℓ(w)| = |b(ů, w)| ≤ ε φ(Pe)
-|ů|₁ |w|₁` (from `a(ů, w) = ℓ(w)`). This is sharper than the book's (12.89), which applies Young's
-inequality to the same two terms. ★★'''
-deps = ["AdvectionDiffusion.stabilizedForm", "seminorm_sub_le_of_generalizedGalerkin", "EllipticInterval.existsUnique_isWeakSolution"]
 
 [[node]]
 id = "seminorm_sub_stabilized_le_upwind"
@@ -172,9 +277,21 @@ desc = '''**Theorem 12.4, upwind, `k = 1`**: with `φ = phiUpwind`, `k = 1`, the
 `ů ∈ H²(0, 1)`, `|ů - ů_h|₁ ≤ C h (|ů|₁ + |ů|₂)` with `C = (2 + 2 C_P Pe_gl) C₂ + β/(2ε)` (any
 explicit constant independent of `h` and `ů`). From `seminorm_sub_stabilized_le` with `w = Π_h¹ ů`, the
 interpolation estimate `|ů - Π_h¹ ů|₁ ≤ C₂ h |ů|₂` (Quarteroni–Sacco–Saleri (8.27), chapter 8's
-`Numlib/Approximation/SobolevInterpolation.lean`, expected node
-`integral_sq_sub_piecewiseLinearInterpCLM_le`), and `ε φ^UP(Pe)/ε_h ≤ Pe = β h/(2ε)`. ★★'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "integral_sq_sub_piecewiseLinearInterpCLM_le"]
+`Numlib/Approximation/SobolevInterpolation.lean`, node
+`integral_sq_deriv_sub_piecewisePolyInterpCLM_le` / `sobolevSeminorm_sub_piecewisePolyInterp_le`), and
+`ε φ^UP(Pe)/ε_h ≤ Pe = β h/(2ε)`. ★★
+
+Blocked: the generic bound `AdvectionDiffusion.seminorm_sub_stabilized_le` is proved and takes an
+arbitrary subspace `K ≤ H¹₀(a, b)` with an arbitrary `w ∈ K`; what is missing is the finite element
+space itself and the fact that the Lagrange interpolant of `ů` lies in it, that is
+`FiniteElement.lagrangeSpace` / `lagrangeSpaceZero` of `Numlib/Variational/FiniteElementInterval.lean`,
+which was being written concurrently in another worktree and is not visible from this branch. Chapter
+8's `sobolevSeminorm_sub_piecewisePolyInterp_le` bounds a *sum of panel integrals* of
+`(u^{(m)} - p_j^{(m)})²`, so turning it into `SobolevInterval.seminorm 1 a b (ů - Π_h ů)` also needs the
+interpolant as an element of `H¹(a, b)` with its weak derivative identified panelwise — exactly what
+`lagrangeSpace` provides. Estimate: half a day once that module exists; a day if the interpolant has to
+be built here.'''
+deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "FiniteElement.lagrangeSpace", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
 
 [[node]]
 id = "seminorm_sub_stabilized_le_sg"
@@ -184,7 +301,11 @@ even the book's factor `(1 + 2 Pe_gl C_P)` is absent, because by `sg_nodal_exact
 (both are the piecewise linear interpolants of the same nodal values, `u_h = ů_h + x` being nodally
 exact), so the error *is* the interpolation error; (ii) for `k = 2`, `|ů - ů_h|₁ ≤ C h² (|ů|₁ + |ů|₃)` for
 `ů ∈ H³`, from `seminorm_sub_stabilized_le` with `w = Π_h² ů`, the estimate `|ů - Π_h² ů|₁ ≤ C h² |ů|₃`
-(Theorem 8.3 with `k = 2`, `m = 1`, which the book *quotes* from [QV94] — chapter 8's agent decides
-whether it is proved; expected node `sobolevSeminorm_sub_piecewisePolyInterp_le`) and
-`phiSG_le_sq`: `ε φ^SG(Pe)/ε_h ≤ Pe²/3 = (β/(2ε))² h²/3`. ★★ given the chapter 8 nodes.'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.sg_nodal_exact", "AdvectionDiffusion.phiSG_asymptotics", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
+(`sobolevSeminorm_sub_piecewisePolyInterp_le`) and `phiSG_le_sq`: `ε φ^SG(Pe)/ε_h ≤ Pe²/3`. ★★
+
+Blocked: same missing dependency as `seminorm_sub_stabilized_le_upwind` — the finite element space
+`FiniteElement.lagrangeSpace` and the interpolant inside `H¹(a, b)`. Clause (i) additionally needs the
+nodal-exactness bridge "the `P_1` Galerkin solution is determined by its nodal values", which is
+`FiniteElement.galerkin_iff_centredScheme`; the scalar half, `AdvectionDiffusion.sg_nodal_exact`, is
+proved. Estimate: half a day on top of the upwind node.'''
+deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.sg_nodal_exact", "AdvectionDiffusion.phiSG_le_sq", "FiniteElement.lagrangeSpace", "sobolevSeminorm_sub_piecewisePolyInterp_le"]

@@ -1,52 +1,27 @@
 namespace = "QuarteroniSaccoSaleri.Chapter12"
-desc = '''
-§12.6, a quick glance at the two-dimensional case: the Poisson problem (12.90) on the unit
-square, the five-point scheme (12.91)–(12.93) with its matrix, Exercise 12.14, the finite
-element space (12.94), Green's formula (12.95) with Exercise 12.15, and Property 12.2. Per the
-planning brief, two-dimensional statements needing Sobolev spaces on a domain, traces or a
-triangulation are "not formalized" nodes with statements. The five-point matrix, however, is pure
-linear algebra — the Kronecker sum `h⁻² (T ⊕ₖ T)` of two copies of `tridiag(-1, 2, -1)`,
-`Numlib/LinearAlgebra/Matrix/KroneckerSum.lean` — and its positive definiteness and M-matrix
-property (Exercise 12.14) are reachable; they are the only nodes of this section that a
-formalizer should expect to close.
-'''
 
 [[node]]
 id = "equation_12_92"
-kind = "definition"
-desc = '''The five-point discretization (12.91)–(12.92) of `-Δu = f` on `(0,1)²` with `u = 0` on the boundary: on the
-grid `x_{i,j} = (ih, jh)`, `h = 1/N`, the operator `L_h u_h(x_{i,j}) = h⁻² (4 u_{i,j} - u_{i+1,j} - u_{i-1,j} - u_{i,j+1}
-- u_{i,j-1})` on grid functions `Fin (N+1) × Fin (N+1) → ℝ` vanishing on the boundary indices, and the
-solution predicate `IsFivePointSolution f u`. A definition. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.91)–(12.92)'
 
 [[node]]
-id = "equation_12_93"
-kind = "theorem"
-desc = '''(12.93): the matrix of the five-point scheme on the `(N - 1)²` interior unknowns is
-`A_fd = h⁻² (T ⊕ₖ T)`, the Kronecker sum (`Matrix.kroneckerSum`) of two copies of `T = tridiag_{N-1}(-1, 2,
--1)` — entrywise `h⁻² · 4` on the diagonal, `-h⁻²` at the four neighbours `(i ± 1, j)`, `(i, j ± 1)`, `0`
-otherwise, which under the row-major numbering is the book's `j = i - N - 1, i - 1, i + 1, i + N + 1` (with
-the book's `N + 1` being the number of unknowns per row plus two; its off-diagonal offsets read `N - 1`
-under this indexing — see the errata). Indexing by `Fin (N-1) × Fin (N-1)` rather than a flattened
-`Fin ((N-1)²)` is what makes the statement a definition-level identity. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_92", "Matrix.kroneckerSum", "Matrix.symmTridiagonalToeplitz"]
+id = "IsFivePointSolution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.91)'
+
+[[node]]
+id = "fivePointMatrix"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.93)'
 
 [[node]]
+id = "equation_12_93"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.93)'
+
+[[node]]
+id = "posDef_smul"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.14, the factor h⁻²'
+
+[[node]]
 id = "exercise_12_14"
-kind = "theorem"
-desc = '''Exercise 12.14, cited in §12.6: the five-point matrix (12.93) is symmetric positive definite and an
-M-matrix. Positive definiteness is `Matrix.posDef_kroneckerSum` of
-`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two` with itself; the M-matrix property is then Stieltjes,
-`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos` (the off-diagonal entries of a Kronecker sum of
-Z-matrices are nonpositive). Consequently the discrete maximum principle holds
-(`Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`). The book's assertion that the consistency and
-discretization errors are `O(h²)` is not a node: it is a two-dimensional Taylor computation plus the
-comparison principle `Matrix.IsMMatrix.norm_inv_mulVec_le` with `w = x(1 - x)/2` — reachable, but the
-brief scopes two-dimensional analysis out and the book states it without proof. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_93", "Matrix.posDef_kroneckerSum", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two", "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.14'
 
 [[node]]
@@ -58,20 +33,18 @@ formalized: a triangulation of a plane domain and continuous piecewise polynomia
 exist in the library (the Atkinson–Han plan's Chapter 10 group records the triangulation scaffold as a
 deliberate scope exclusion), and `H^1_0(Ω)` with a boundary trace is `notes/frontier.md` blocker 2. The
 book defines it and proves nothing about it.'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.94)'
 
 [[node]]
 id = "exercise_12_15"
 kind = "theorem"
-desc = '''Green's formula (12.95), Exercise 12.15: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_{∂Ω} (∇u · n) v dγ` for `u, v`
+desc = '''Green's formula (12.95), Exercise 12.15: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u, v`
 smooth on a bounded plane domain `Ω`. Not formalized for a general domain: it needs the divergence
 theorem on `Ω` with a boundary measure and normal (Mathlib's divergence theorem is for boxes,
 `MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable`; there is no surface measure
 on a curve — `notes/frontier.md` blocker 2). On a rectangle, with the boundary integral written as four
 line integrals, it is a corollary of Mathlib's box theorem applied to `v ∇u` with the identity
 `div(v ∇u) = v Δu + ∇u · ∇v` (the exercise's hint), and could be stated if wanted.'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15'
 
 [[node]]
@@ -79,7 +52,7 @@ id = "property_12_2"
 kind = "theorem"
 desc = '''Property 12.2: for `u ∈ H^1_0(Ω) ∩ H^s(Ω)`, `s ≥ 2`, and its finite element approximation `u_h ∈ V_h` of
 degree `k ≥ 1` on a triangulation, `‖u - u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}(Ω)}` with `l = min(k, s -
-1)` (12.96), and `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}` (12.97) (`property_12_2_l2`). Not formalized:
+1)` (12.96), and `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}` (12.97). Not formalized:
 the two-dimensional finite element space (12.94) does not exist, and the interpolation estimate behind
 (12.96) is the multi-dimensional Bramble–Hilbert / Deny–Lions theory that `notes/frontier.md` lists
 under blocker 1; the `L²` estimate additionally needs `H²` regularity of the Poisson problem on a convex

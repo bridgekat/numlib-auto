@@ -1,32 +1,128 @@
 namespace = "QuarteroniSaccoSaleri.Chapter12"
-desc = '''
-§12.5, advection–diffusion equations: the model problem (12.70) with its Péclet numbers and exact
-solution, the Galerkin `P_1` approximation (12.72)–(12.73) and Remark 12.5, its difference
-equation (12.75)–(12.76) and explicit oscillating solution, the relationship with centred and
-upwind finite differences (12.77)–(12.79), the numerical viscosity (12.81)–(12.83) with Remark
-12.6, the stabilized Péclet number and the M-matrix property (Exercise 12.13), the stabilized
-finite element method (12.84) and Theorem 12.4. All of it is `Numlib/Variational/AdvectionDiffusion.lean`
-on `[0, 1]`, with the `P_1` identification from `Numlib/Variational/FiniteElementInterval.lean`.
-Example 12.3 is a numerical experiment and is not a node.
-'''
 
 [[node]]
 id = "equation_12_71"
-kind = "definition"
-desc = '''The global Péclet number (12.71) `Pe_gl = |β| L / (2ε)` and the local Péclet number `Pe = |β| h / (2ε)`
-of §12.5.1: `AdvectionDiffusion.globalPeclet`, `AdvectionDiffusion.localPeclet`. ★'''
-deps = ["AdvectionDiffusion.globalPeclet"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.71)'
 
 [[node]]
+id = "equation_12_71_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.71)'
+
+[[node]]
+id = "meshPeclet"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the local Péclet number'
+
+[[node]]
+id = "meshPeclet_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the local Péclet number'
+
+[[node]]
+id = "meshPeclet_eq_equation_12_71_mul"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the local Péclet number'
+
+[[node]]
 id = "equation_12_70_solution"
-kind = "theorem"
-desc = '''The exact solution of (12.70), `-ε u'' + β u' = 0`, `u(0) = 0`, `u(1) = 1`, `ε, β > 0`:
-`u(x) = (exp(βx/ε) - 1)/(exp(β/ε) - 1)`, and it is the unique `C²` solution.
-`AdvectionDiffusion.exactSolution_solves`, `exactSolution_unique`. The boundary-layer discussion
-(`u ≈ x` for `β/ε ≪ 1`, `u ≈ exp(-(β/ε)(1 - x))` for `β/ε ≫ 1`, layer of width `O(ε/β)`) is prose. ★'''
-deps = ["AdvectionDiffusion.exactSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5, the exact solution of (12.70)'
+
+[[node]]
+id = "equation_12_70_unique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5, the exact solution of (12.70)'
+
+[[node]]
+id = "remark_12_5"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.5 and equation (12.74)'
+
+[[node]]
+id = "equation_12_76_solution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the solution of (12.76)'
+
+[[node]]
+id = "equation_12_76_unique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the solution of (12.76)'
+
+[[node]]
+id = "equation_12_76_oscillates"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the oscillation of the solution of (12.76)'
+
+[[node]]
+id = "equation_12_76_strictMono"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the remedy Pe < 1'
+
+[[node]]
+id = "equation_12_77"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.77)'
+
+[[node]]
+id = "equation_12_79"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.78)–(12.79)'
+
+[[node]]
+id = "equation_12_81"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.81)'
+
+[[node]]
+id = "equation_12_78_zero_diffusion"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.78), the case ε = 0'
+
+[[node]]
+id = "equation_12_82"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.82)'
+
+[[node]]
+id = "equation_12_82_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.82)'
+
+[[node]]
+id = "equation_12_82_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.82), the case φ = 0'
+
+[[node]]
+id = "equation_12_83"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.83)'
+
+[[node]]
+id = "equation_12_83_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.83)'
+
+[[node]]
+id = "bernoulliFn_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.83), the Bernoulli function'
+
+[[node]]
+id = "bernoulliFn_neg"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.13, the hint'
+
+[[node]]
+id = "remark_12_6_asymptotics"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
+
+[[node]]
+id = "remark_12_6_nodal_exact"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
+
+[[node]]
+id = "stabilizedPeclet_lt_one"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.2, the stabilized Péclet number'
+
+[[node]]
+id = "exercise_12_13"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.13'
+
+[[node]]
+id = "exercise_12_13_maximumPrinciple"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.13 and §12.2.2'
+
+[[node]]
+id = "equation_12_84"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.84)'
+
+[[node]]
+id = "equation_12_84_self"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.84)'
+
+[[node]]
+id = "equation_12_84_sub"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.84), the stabilization term'
 
 [[node]]
 id = "equation_12_72"
@@ -34,19 +130,16 @@ kind = "definition"
 desc = '''The Galerkin `P_1` approximation (12.72)–(12.73) of (12.70): find `u_h ∈ X_h^1` with `u_h(0) = 0`,
 `u_h(1) = 1` and `a(u_h, v_h) = ∫ (ε u_h' v_h' + β u_h' v_h) = 0` for all `v_h ∈ X_h^{1,0}` —
 `EllipticInterval.form _ ε β 0` on `FiniteElement.lagrangeSpace _ 1 x` tested against
-`FiniteElement.lagrangeSpaceZero _ 1 x`. ★'''
+`FiniteElement.lagrangeSpaceZero _ 1 x`. ★
+
+Blocked: `FiniteElement.lagrangeSpace` (`Numlib/Variational/FiniteElementInterval.lean`) does not
+exist on this branch — it was being written concurrently in another worktree. The form itself is
+available as `EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
+(AdvectionDiffusion.constLinf 0 1 β) 0` (see `QuarteroniSaccoSaleri.Chapter12.remark_12_5`, which
+states Remark 12.5 for it); only the trial and test spaces are missing. Estimate: an hour once the
+finite element module lands.'''
 deps = ["EllipticInterval.form", "FiniteElement.lagrangeSpace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.72)–(12.73)'
-
-[[node]]
-id = "remark_12_5"
-kind = "theorem"
-desc = '''Remark 12.5, the conservation form (12.74) `-(ε u' - β u)' = 0` with the form `b(u_h, v_h) = ∫ (ε u_h' -
-β u_h) v_h'`: `b` coincides with the form `a` of (12.73) on `X_h^1 × X_h^{1,0}` when `ε` and `β` are constant
-(`∫ β u v' = -∫ β u' v` by integration by parts with `v(0) = v(1) = 0`,
-`SobolevInterval.integral_deriv_mul_add_mul_deriv`). Stated for `u ∈ H^1(0,1)`, `v ∈ H^1_0(0,1)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_72", "SobolevInterval.integral_deriv_mul_add_mul_deriv"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.5 and equation (12.74)'
 
 [[node]]
 id = "equation_12_75"
@@ -54,112 +147,40 @@ kind = "theorem"
 desc = '''(12.75)–(12.76): on the uniform partition `x_i = ih`, `h = 1/n`, the Galerkin problem (12.72) is the
 difference equation `(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0`, `i = 1, …, n - 1`, for the
 nodal values, equivalently `(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0` with the local Péclet number
-`Pe = |β| h/(2ε)` (for `β > 0`). `FiniteElement.galerkin_iff_centredScheme`. ★'''
+`Pe = |β| h/(2ε)` (for `β > 0`). `FiniteElement.galerkin_iff_centredScheme`. ★
+
+Blocked: same missing dependency as `equation_12_72`. The difference equation itself and its
+equivalence with the centred finite difference scheme (12.77) are proved —
+`QuarteroniSaccoSaleri.Chapter12.equation_12_77`, from
+`AdvectionDiffusion.viscosityScheme_zero_iff` — so what is missing is exactly the step "the
+Galerkin problem is that difference equation", which is `FiniteElement.galerkin_iff_centredScheme`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_72", "QuarteroniSaccoSaleri.Chapter12.equation_12_71", "FiniteElement.galerkin_iff_centredScheme"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.75)–(12.76)'
 
 [[node]]
-id = "equation_12_76_solution"
+id = "remark_12_6_piecewise_const"
 kind = "theorem"
-desc = '''The solution of (12.76) with `u_0 = 0`, `u_n = 1` (`Pe ≠ 1`): `u_i = (1 - ρ^i)/(1 - ρ^n)`, `ρ = (1 + Pe)/(1 -
-Pe)`, `i = 0, …, n`, the roots of the characteristic equation `(Pe - 1)ρ² + 2ρ - (Pe + 1) = 0` being `ρ` and
-`1`; and `equation_12_76_oscillates`: if `Pe > 1` the solution oscillates (the increments alternate in
-sign). `AdvectionDiffusion.centredSolution_solves`, `centredSolution_unique`, `centredSolution_oscillates`.
-★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_75", "AdvectionDiffusion.centredSolution", "AdvectionDiffusion.centredSolution_oscillates"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.1, the solution of (12.76)'
-
-[[node]]
-id = "equation_12_77"
-kind = "theorem"
-desc = '''(12.77): the centred finite difference scheme `-ε (u_{i+1} - 2u_i + u_{i-1})/h² + β (u_{i+1} - u_{i-1})/(2h) = 0`
-with `u_0 = 0`, `u_n = 1` has, after multiplication by `h`, exactly the equations (12.75) of the `P_1`
-Galerkin method: `AdvectionDiffusion.viscosityScheme ε β n 0 u ↔ (12.75)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_75", "AdvectionDiffusion.viscosityScheme"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.77)'
-
-[[node]]
-id = "equation_12_79"
-kind = "theorem"
-desc = '''(12.78)–(12.81): the upwind scheme `-ε (u_{i+1} - 2u_i + u_{i-1})/h² + β (u_i - u_{i-1})/h = 0` (`β > 0`) is
-the centred scheme (12.79) with the viscosity `ε_h = ε (1 + Pe)`, by the identity `(u_i - u_{i-1})/h =
-(u_{i+1} - u_{i-1})/(2h) - (h/2)(u_{i+1} - 2u_i + u_{i-1})/h²`; the perturbation `-ε Pe u'' = -(βh/2) u''` (12.81) is
-the numerical viscosity. `AdvectionDiffusion.upwindScheme_iff_viscosityScheme`. For `ε = 0` the upwind
-scheme reduces to `u_i = u_{i-1}` (clause `upwindScheme_zero_diffusion`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_77", "AdvectionDiffusion.viscosityScheme"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.78)–(12.81)'
-
-[[node]]
-id = "equation_12_82"
-kind = "definition"
-desc = '''The general centred scheme with viscosity (12.82) `ε_h = ε (1 + φ(Pe))`, `φ(t) → 0` as `t → 0⁺`:
-`AdvectionDiffusion.viscosityScheme ε β n φ`; `φ = 0` is centred, `φ^UP(t) = t` upwind, and `φ^SG(t) = t - 1 +
-B(2t)` (12.83) with the Bernoulli function `B(t) = t/(e^t - 1)`, `B(0) = 1`, the Scharfetter–Gummel scheme:
-`AdvectionDiffusion.phiUpwind`, `phiSG`, `bernoulliFn`. ★'''
-deps = ["AdvectionDiffusion.viscosityScheme", "AdvectionDiffusion.bernoulliFn"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.82)–(12.83)'
-
-[[node]]
-id = "remark_12_6"
-kind = "theorem"
-desc = '''Remark 12.6: `φ^SG ≃ φ^UP` as `Pe → +∞` (`φ^SG(t) - φ^UP(t) → 0`), `φ^SG = O(h²)` (`φ^SG(Pe) ≤ Pe²/3`) and
-`φ^UP = O(h)` as `Pe → 0⁺`, so the SG method is second-order accurate (`remark_12_6_asymptotics`,
-`AdvectionDiffusion.phiSG_asymptotics`); and the nodal exactness: for the problem (12.72) the SG solution
-satisfies `u_h^{SG}(x_i) = u(x_i)` at every node, irrespective of `h` (`remark_12_6_nodal_exact`,
-`AdvectionDiffusion.sg_nodal_exact`). The book's general claim — nodal exactness for any piecewise
-constant `f`, quoted from [HGR96, pp. 44–45] — is `remark_12_6_piecewise_const`, not formalized (the
-book quotes it; the homogeneous case above is all that Theorem 12.4 uses, since the lifted problem's
-constant right-hand side `-β` returns to it). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_82", "AdvectionDiffusion.phiSG_asymptotics", "AdvectionDiffusion.sg_nodal_exact"]
+desc = '''Remark 12.6's general claim: if `f` is piecewise constant over the grid partition, the
+Scharfetter–Gummel scheme yields a nodally exact solution, irrespective of `h`. Not formalized: the
+book quotes it from [HGR96, pp. 44–45] and proves nothing; only the homogeneous case is needed by
+Theorem 12.4 (the lifted problem's constant right-hand side `-β` reduces to it), and that case is
+`QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
-
-[[node]]
-id = "stabilizedPeclet_lt_one"
-kind = "theorem"
-desc = '''The stabilized local Péclet number `Pe* = |β| h/(2 ε_h) = Pe/(1 + φ(Pe))` of §12.5.2 satisfies `Pe* < 1`
-for every `h` for both the upwind (`Pe/(1 + Pe)`) and the SG (`= tanh Pe`) schemes.
-`AdvectionDiffusion.stabilizedPeclet_phiUpwind`, `stabilizedPeclet_phiSG_eq_tanh`,
-`stabilizedPeclet_phiSG_lt_one`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_82", "AdvectionDiffusion.stabilizedPeclet"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.5.2, the stabilized Péclet number'
-
-[[node]]
-id = "exercise_12_13"
-kind = "theorem"
-desc = '''Exercise 12.13, cited in §12.5.2: the matrices of the stabilized schemes (12.79) with `φ^UP` and `φ^SG`
-are M-matrices for every `h`, hence their solutions satisfy the discrete maximum principle.
-`AdvectionDiffusion.viscosityScheme_isMMatrix` (for any `0 ≤ Pe* < 1`) with `stabilizedPeclet_lt_one`; the
-backbone proof is spectral (`Matrix.tridiagonalToeplitz_hasEigenvalue_iff`) rather than the book's
-Property 1.19 with `v = 1 + x`, and `bernoulliFn_neg : B(-t) = t + B(t)` is the identity the hint
-mentions. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.stabilizedPeclet_lt_one", "AdvectionDiffusion.viscosityScheme_isMMatrix", "Matrix.IsMMatrix.nonneg_of_mulVec_nonneg"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.13'
-
-[[node]]
-id = "equation_12_84"
-kind = "definition"
-desc = '''The stabilized finite element problem (12.84): find `ů_h ∈ X_h^{k,0}` with `a_h(ů_h, v_h) = -∫ β v_h` for all
-`v_h ∈ X_h^{k,0}`, `a_h = a + b`, `b(u, v) = ε φ(Pe) ∫ u' v'` the stabilization term —
-`IsGalerkinSolution (AdvectionDiffusion.stabilizedForm ε β h φ) (-load β) (lagrangeSpaceZero _ k x)`; with the
-identity `a_h(v, v) = ε_h |v|²_{H¹}` for `v ∈ H^1_0(0,1)` and `ε_h/ε = 1 + φ(Pe) ≥ 1`
-(`AdvectionDiffusion.stabilizedForm_self`), and the lifted exact problem `a(ů, v_h) = -∫ β v_h`, `ů = u - x`
-(the proof's first display, (12.87) `a_h(ů - ů_h, v_h) = b(ů, v_h)`). ★'''
-deps = ["AdvectionDiffusion.stabilizedForm", "QuarteroniSaccoSaleri.Chapter12.equation_12_57", "IsGalerkinSolution"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.84)'
 
 [[node]]
 id = "theorem_12_4"
 kind = "theorem"
 desc = '''Theorem 12.4, (12.85): for `k = 1`, `|ů - ů_h|_{H¹(0,1)} ≤ C h G(ů)` with `C` independent of `h` and `ů`, where
-`G(ů) = |ů|_{H¹} + |ů|_{H²}` for the upwind method (`theorem_12_4_upwind`,
-`AdvectionDiffusion.seminorm_sub_stabilized_le_upwind`) and `G(ů) = |ů|_{H²}` for the SG method
-(`theorem_12_4_sg`, `seminorm_sub_stabilized_le_sg` (i)); and (12.86): for `k = 2` the SG method gives
-`|ů - ů_h|_{H¹} ≤ C h² (|ů|_{H¹} + |ů|_{H³})` (`theorem_12_4_sg_quadratic`, `seminorm_sub_stabilized_le_sg`
-(ii)). Hypotheses: `ε, β > 0`, uniform mesh `h = 1/n`, `ů ∈ H²(0,1)` resp. `H³(0,1)`. The proof route is
-Strang's lemma in the seminorm `|·|_{H¹}` (`AdvectionDiffusion.seminorm_sub_stabilized_le`, the book's
-(12.88)–(12.89)) with the interpolation estimates of Theorem 8.3 ((8.27) for `k = 1`, proved by the book;
-the `k = 2` case (8.26) quoted from [QV94], so `theorem_12_4_sg_quadratic` inherits chapter 8's status
-for it). The displayed statement is garbled in the source text and the sentence "where `u(x) = u(x) - x`"
-should read `ů(x) = u(x) - x` (errata). ★★ given chapter 8.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_84", "QuarteroniSaccoSaleri.Chapter12.remark_12_6", "QuarteroniSaccoSaleri.Chapter12.exercise_12_8", "AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind", "AdvectionDiffusion.seminorm_sub_stabilized_le_sg"]
+`G(ů) = |ů|_{H¹} + |ů|_{H²}` for the upwind method and `G(ů) = |ů|_{H²}` for the SG method; and (12.86): for
+`k = 2` the SG method gives `|ů - ů_h|_{H¹} ≤ C h² (|ů|_{H¹} + |ů|_{H³})`. Hypotheses: `ε, β > 0`, uniform mesh
+`h = 1/n`, `ů ∈ H²(0,1)` resp. `H³(0,1)`. The displayed statement is garbled in the source text and the
+sentence "where `u(x) = u(x) - x`" should read `ů(x) = u(x) - x` (errata). ★★
+
+Blocked: the Strang-form bound behind it is proved and stated for an arbitrary subspace
+`K ≤ H¹₀(0, 1)` — `AdvectionDiffusion.seminorm_sub_stabilized_le` — but the two clauses that
+instantiate it, `AdvectionDiffusion.seminorm_sub_stabilized_le_upwind` and
+`seminorm_sub_stabilized_le_sg`, need `FiniteElement.lagrangeSpace` and the Lagrange interpolant
+inside `H¹(0, 1)`; see the `Blocked:` paragraphs of those two backbone nodes.'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_84", "QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind", "AdvectionDiffusion.seminorm_sub_stabilized_le_sg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.4'
