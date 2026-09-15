@@ -161,24 +161,15 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
 
 [[node]]
 id = "RegulaFalsi.convergesWithOrder_one_iterate"
-kind = "theorem"
-desc = """**Regula falsi converges linearly** (the order quoted in [quarteroni2000numerical] §6.2.2,
-citing Ralston and Rabinowitz 8.3 without proof): under the hypotheses of
-`RegulaFalsi.tendsto_iterate` together with `ContDiffAt R 2 f a`, `deriv f a != 0` and
-`iteratedDeriv 2 f a != 0`, the iterates converge to `a` with order `1`.
 
-Blocked: only the convergence half is proved (`RegulaFalsi.tendsto_iterate`). What is missing is
-the eventually-fixed-endpoint analysis: near the root the sign of the second derivative is
-constant, so from some index on one end of the bracket is never replaced again and the method
-becomes the chord method with a variable slope `f[x_k, x_k1] -> f[a, x_k1] = q`; the ratio
-`|e_{k+1}|/|e_k|` then tends to `|f[a, x_k1, a]/f[a, x_k1]| = |1 - f'(a)/q|`, which lies strictly
-between `0` and `1` by convexity. Identifying the fixed endpoint is the whole difficulty, and it
-is not shortened by assuming `f` convex on the interval. The pieces that exist are
-`Secant.sub_root_eq_mul_newton` (the secant error identity), `Chord.tendsto_sub_div_sub` and
-`RegulaFalsi.state_mem_uIcc`. Estimated 150-250 lines."""
-deps = ["ConvergesWithOrder", "RegulaFalsi.tendsto_iterate", "Secant.sub_root_eq_mul_newton", "Chord.tendsto_iterate"]
-source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
+[[node]]
+id = "RegulaFalsi.state_eq_of_apply_eq_zero"
 
+[[node]]
+id = "RegulaFalsi.sub_mul_sub_neg_of_mul_neg"
+
+[[node]]
+id = "RegulaFalsi.le_abs_newton_two_of_mul_neg"
 [[node]]
 id = "Muller.step"
 
@@ -188,10 +179,33 @@ kind = "theorem"
 desc = '''**Muller's method has order `p ≈ 1.84`**, the real root of `p³ = p² + p + 1`: for
 `f α = 0`, `ContDiffAt ℝ 3 f α`, `deriv f α ≠ 0` (and `iteratedDeriv 3 f α ≠ 0` for the lower
 bound), from three distinct starting values close enough to `α` the iterates converge with
-`ConvergesWithOrder … α p`. The book states the limit form `|e_{k+1}| / |e_k|^p → |f⁽³⁾(α) / (6 f'(α))|`
-citing Hildebrand without proof. Not formalized: the proof is the three-point analogue of
-`Secant.exists_ball_convergesWithOrder_goldenRatio` (error recursion `e_{k+1} ≈ C e_k e_{k-1} e_{k-2}`
-from the cubic interpolation error, then the same ratio-recursion argument with the tribonacci
-constant, whose defining cubic has no closed form in Mathlib), and nothing in the corpus depends on
-it. Planned as a statement only, at difficulty ★★★.'''
+`ConvergesWithOrder … α p`. The book states the limit form `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / (6 f'(α))|`
+citing Hildebrand without proof. Planned as a statement only, at difficulty ★★★.
+
+Blocked: not attempted this round; nothing in the corpus depends on it and three pieces are
+missing, each substantial.
+(i) **The step is not yet tied to the quadratic interpolant.** `Muller.step` is defined by the
+formula (6.30) with `Real.sqrt` and the max-modulus sign rule; what the error analysis needs is
+`q (step …) = 0` for the interpolating quadratic `q` through the three points, which holds only
+where the radicand `w² - 4 f(x_k) d` is nonnegative — true near a simple root
+(`w → f'(α) ≠ 0`, `f(x_k) → 0`) but a real hypothesis to establish, and false in the complex
+regime the book actually uses for polynomial roots.
+(ii) **The error identity.** With `q` the interpolant, the interpolation error at the node `α` is
+`-q(α) = f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`
+(`DividedDifference.sub_eval_interpolate_eq_newton` at four nodes, the three-node analogue of
+`Secant.sub_root_eq_mul_newton`), while `q(α) = a (α - x_{k+1})(α - r₂)` with `r₂` the second root
+and `a = f[x_{k-2}, x_{k-1}, x_k]`; so
+`e_{k+1} (a e_{k+1} + q'(x_{k+1})) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`
+and `q'(x_{k+1}) → f'(α) ≠ 0`. The second root has to be eliminated this way; there is no clean
+`chord`-style symmetric form as for the secant method.
+(iii) **The order itself.** The three-term analogue of `Secant.exists_le_mul_rpow_goldenRatio`:
+in `u_k = log e_k` the two-sided bound `m |e_k e_{k-1} e_{k-2}| ≤ |e_{k+1}| ≤ M |e_k e_{k-1} e_{k-2}|`
+must be turned into boundedness of `u_{k+1} - p u_k` with `p³ = p² + p + 1`. The golden-ratio proof
+uses `φ⁻¹ = φ - 1` (`Real.goldenRatio_sq`) to collapse the two product bounds into a *linear*
+recursion `s_{k+2} ≤ L + (1 - φ⁻¹) s_k`; the tribonacci constant has no such Mathlib support (it is
+not in Mathlib at all — it would have to be introduced as the root of `X³ - X² - X - 1` by the
+intermediate value theorem, with `1 < p < 2` and `p³ = p² + p + 1` proved from that), and the
+collapse is a three-term linear recursion in `(s_k, s_{k-1})` whose companion matrix has spectral
+radius `< 1` — provable, but a second piece of `Algebra/LinearRecurrence` work.
+Estimate: 400–600 lines over the three pieces.'''
 deps = ["ConvergesWithOrder", "Muller.step"]

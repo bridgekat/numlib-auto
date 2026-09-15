@@ -46,17 +46,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.3'
 
 [[node]]
 id = "bdf_zeroStable"
-kind = "theorem"
-desc = '''The BDF methods of Table 11.2 are zero-stable for `p ≤ 5` ([Cry73]): `(bdf k).SatisfiesRootCondition`
-for `k : Fin 6`. Proved through `ODE.LinearMultistep.bdf_satisfiesRootCondition` for `k ≤ 2`; for
-`k = 3, 4, 5` the spurious roots of `ρ` are the roots of a cubic, quartic and quintic and must be
-located inside the unit disc by a Schur–Cohn/Jury test — real work (★★★), the backbone node
-`ODE.LinearMultistep.bdf_satisfiesRootCondition_all`; the node stays open until it is proved. The
-cases `k ≤ 2` are `bdf_zeroStable_of_le_two`. The book quotes the result without proof.
-
-Blocked: no Schur–Cohn/Jury test in Mathlib or in this library; see
-`ODE.LinearMultistep.bdf_satisfiesRootCondition_all`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.bdf", "QuarteroniSaccoSaleri.Chapter11.definition_11_10", "ODE.LinearMultistep.bdf_satisfiesRootCondition", "ODE.LinearMultistep.bdf_satisfiesRootCondition_all"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.3'
 
 [[node]]
@@ -76,7 +65,10 @@ greater than `p + 1` if `p` is odd, `p + 2` if `p` is even; as a statement,
 Not formalized: the proof (Dahlquist 1956; Hairer–Nørsett–Wanner III.3) needs the
 `(ζ+1)/(ζ-1)` transform of `ρ` and `σ`, the positivity of the coefficients of `(ξ/log((1+ξ)/(1-ξ)))`-type
 series, and the counting of sign changes forced by the root condition — a substantial piece of
-complex analysis with no Mathlib support; the book states it without proof (citing [Dah63]).'''
+complex analysis with no Mathlib support; the book states it without proof (citing [Dah63]).
+
+Blocked: not attempted — one of the fifty-odd results this corpus records as not formalized
+(notes/backbone.md §17.2.5). Nothing about it changed this round.'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_10", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.1'
 
@@ -101,7 +93,11 @@ Not formalized: the order-2 barrier is Dahlquist's 1963 theorem, proved through 
 and the ϑ-stability statement is Widlund's; neither has Mathlib support and the book quotes
 both without proof ([Wid67]). The explicit clause alone is reachable — `Π` is then a polynomial
 of degree `p + 1` in `r` whose roots cannot all stay in the disc as `|z| → ∞` (the product of the
-roots is `-(a_p + z b_p)`, unbounded in `z`) — and is planned as `property_11_2_explicit` (★★).'''
+roots is `-(a_p + z b_p)`, unbounded in `z`) — and is planned as `property_11_2_explicit` (★★).
+
+Blocked: not attempted — the reachable clause is the separate node `property_11_2_explicit`,
+which is proved; the two barriers themselves are recorded as not formalized
+(notes/backbone.md §17.2.5).'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.thetaStable", "QuarteroniSaccoSaleri.Chapter11.absoluteStability", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.2'
 

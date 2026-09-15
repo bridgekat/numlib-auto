@@ -52,33 +52,55 @@ id = "rk4"
 id = "rk4_hasOrderFor"
 kind = "theorem"
 desc = '''The classical method has order four: for `f` with `(t, v) ↦ f t v` of class `C⁴` with
-bounded derivatives up to order 4 on `Icc t₀ (t₀ + T + 1) ×ˢ univ` and `y` a solution there,
-`OneStep.HasOrderFor (rk4.explicitIncrement f) t₀ T y 4`. Proof: Taylor-expand `K₂, K₃, K₄` to
-`O(h⁴)` in the elementary differentials of `F(t, v) = f t v` (with `D = DF(·)(1, ·)`-type
-notation: `F`, `F'F`, `F''(F,F)`, `F'F'F`, `F^{(3)}(F,F,F)`, `F''(F'F, F)`, `F'F''(F,F)`, `F'F'F'F` —
-the eight rooted trees of order `≤ 4`), compare with `y^{(k)}` expressed in the same
-differentials, and check the eight order conditions `∑ b_i = 1`, `∑ b_i c_i = 1/2`,
-`∑ b_i c_i² = 1/3`, `∑ b_i a_ij c_j = 1/6`, `∑ b_i c_i³ = 1/4`, `∑ b_i c_i a_ij c_j = 1/8`,
-`∑ b_i a_ij c_j² = 1/12`, `∑ b_i a_ij a_jk c_k = 1/24` (each `norm_num` for `rk4`). Honest
-estimate: ★★★ and large — several hundred lines even in the scalar autonomous case
-(`f : ℝ → ℝ`, `iteratedDeriv`), where every elementary differential is a product of derivatives
-of `f` at `y t` and the comparison is a polynomial identity; the `E`-valued nonautonomous case
-multiplies the bookkeeping by the multilinear-map API. Recommended split: (i) the eight algebraic
-order conditions for `rk4` as a separate ★ node `rk4_orderConditions`; (ii) the scalar autonomous
-case; (iii) the general case only if a B-series framework is built (not planned). The one-step
-theory then gives fourth-order convergence.
+bounded derivatives up to order 4 and `y` a solution on `Icc t₀ (t₀ + T)`,
+`OneStep.HasOrderFor (rk4.explicitIncrement f) t₀ T y 4`. ★★★
 
-Blocked: not attempted this round. The two-stage theorem `ButcherTableau.hasOrderFor_two_of`
-fixes the pattern (explicit Fréchet derivatives `F'`, `F''` of `(t, v) ↦ f t v` on `ℝ × E`, the
-Taylor bounds `norm_sub_sub_smul_apply_le_of_hasFDerivAt` along a segment and
-`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` for the curve, the chain rule
-`y'' = F'(t, y)(1, y')` by `UniqueDiffWithinAt.eq_deriv`); order four needs the same with the
-third and fourth Fréchet derivatives, a fifth-order Taylor bound for `y`, the expansions of
-`K₂, K₃, K₄` to `O(h⁴)` and the identification of the third and fourth derivatives of `y` with
-the elementary differentials, then the eight conditions `rk4_orderConditions`. Estimate: 400–600 lines with
-the present tools; a B-series framework would be the right investment before attempting it.'''
-deps = ["ODE.rk4", "ODE.OneStep.HasOrderFor"]
+Blocked: not proved. What this round added is the reduction that removes half the bookkeeping, and
+the verified algebra; what is missing is four analytic pieces.
 
+**The reduction (done).** `ButcherTableau.hasOrderFor_autonomize_iff` says an explicit tableau with
+`c_i = ∑_j a_ij` and `∑_i b_i = 1` has order `p` along `y` for `f` exactly when it has order `p`
+along `Y s = (s, y s)` for the autonomous field `G = autonomize f` on `ℝ × E`,
+`G(t, v) = (1, f t v)` (the stages correspond as `L_i = (1, K_i)`,
+`explicitStages_autonomize`, and the truncation errors as `(0, τ)`). So it suffices to prove the
+**autonomous** statement on a normed space `X`: for `G : X → X` with global Fréchet derivatives
+`G₁, G₂, G₃, G₄` and bounds, and `Y' = G(Y)` on the horizon,
+`‖Y(t+h) - Y(t) - (h/6)(L₁ + 2L₂ + 2L₃ + L₄)‖ ≤ c h⁵`.
+
+**The algebra (verified by hand, 2026-09-16).** Write `g = G(Y)`, `A = G₁(Y)`, `B = G₂(Y)`,
+`C = G₃(Y)`. The chain rule on `Y' = G(Y)` gives
+`Y^{(2)} = A g`, `Y^{(3)} = B(g, g) + A(A g)`,
+`Y^{(4)} = C(g, g, g) + B(A g, g) + 2 B(g, A g) + A(B(g, g)) + A(A(A g))`.
+The stages expand (all remainders `O(h⁴)`) as
+`L₂ = g + (h/2) A g + (h²/8) B(g,g) + (h³/48) C(g,g,g)`,
+`L₃ = g + (h/2) A g + h²[(1/4) A(A g) + (1/8) B(g,g)]
+      + h³[(1/16) A(B(g,g)) + (1/16)(B(g, A g) + B(A g, g)) + (1/48) C(g,g,g)]`,
+`L₄ = g + h A g + h²[(1/2) A(A g) + (1/2) B(g,g)]
+      + h³[(1/4) A(A(A g)) + (1/8) A(B(g,g)) + (1/4)(B(g, A g) + B(A g, g)) + (1/6) C(g,g,g)]`,
+and `(1/6)(L₁ + 2L₂ + 2L₃ + L₄) = g + (h/2) Y^{(2)} + (h²/6) Y^{(3)} + (h³/24) Y^{(4)} + O(h⁴)` —
+the coefficients match term by term: `C(g,g,g)` at `1/24`, `A(B(g,g))` at `1/24`, `A(A(A g))` at
+`1/24`, and the pair `B(g, A g) + B(A g, g)` at `1/16` each, against `Y^{(4)}/24`. The last match
+needs `B(a, b) = B(b, a)` (Mathlib's `second_derivative_symmetric`): the stage sum produces the
+symmetric combination `(1/16)(B(g,Ag) + B(Ag,g))` while `Y^{(4)}/24` produces
+`(1/24) B(Ag,g) + (2/24) B(g,Ag)`, and the two agree only after symmetrisation.
+
+**Done (i): a vector-valued Taylor bound of arbitrary order in one real variable**,
+`norm_sub_taylorSum_le`, and **(ii): the order-four segment bound**,
+`norm_sub_taylor_segment_le`. Both are proved in the module; (i) also now carries
+`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` as its `n = 2` case.
+
+**Missing (iii): the chain-rule identification** of `y^{(2)}, y^{(3)}, y^{(4)}` with the displayed
+elementary differentials, at every point of the horizon, by `UniqueDiffWithinAt.eq_deriv` as
+`hasOrderFor_two_of` does for `y^{(2)}` — three rounds instead of one, the second and third going
+through `HasDerivWithinAt.clm_apply`. The statement should take `y^{(2)}, y^{(3)}, y^{(4)}, y^{(5)}`
+as explicit functions with a bound on the last, following `hasOrderFor_two_of`; computing `y^{(5)}`
+symbolically is fifteen terms and is not needed.
+**(iv): the three stage expansions** with `O(h⁴)` remainders, the only genuinely long part: each is
+an application of (ii) followed by multilinear expansion of `B w w` and `C w w w` around
+`w = (h/2)•g` or `h•g`, with the cross terms kept and the rest absorbed. Phrasing each as
+`∃ c, ∀ h ∈ Ioc 0 1, ∀ p, ‖L_i - (polynomial in h)‖ ≤ c h⁴` avoids computing any constant.
+Estimate: 400–500 lines for (iii) and (iv); (iv) is about two thirds.'''
+deps = ["ODE.rk4", "ODE.OneStep.HasOrderFor", "ODE.ButcherTableau.hasOrderFor_autonomize_iff"]
 [[node]]
 id = "EmbeddedPair"
 
@@ -345,3 +367,27 @@ id = "_root_.norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six"
 
 [[node]]
 id = "_root_.norm_sub_sub_smul_apply_le_of_hasFDerivAt"
+
+[[node]]
+id = "_root_.ODE.autonomize"
+
+[[node]]
+id = "ButcherTableau.explicitStages_autonomize"
+
+[[node]]
+id = "ButcherTableau.explicitIncrement_autonomize"
+
+[[node]]
+id = "ButcherTableau.lte_autonomize"
+
+[[node]]
+id = "ButcherTableau.globalLte_autonomize"
+
+[[node]]
+id = "ButcherTableau.hasOrderFor_autonomize_iff"
+
+[[node]]
+id = "_root_.norm_sub_taylorSum_le"
+
+[[node]]
+id = "_root_.norm_sub_taylor_segment_le"

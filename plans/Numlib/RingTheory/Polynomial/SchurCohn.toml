@@ -1,0 +1,25 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "IsSchurStable"
+
+[[node]]
+id = "IsSchurCohnPair"
+
+[[node]]
+id = "IsSchurCohnPair.isSchurStable"
+
+[[node]]
+id = "IsSchurStable.aeval_ne_zero"
+
+[[node]]
+id = "IsSchurStable.ne_zero"
+
+[[node]]
+id = "isSchurCohnPair_C"
+
+[[node]]
+id = "IsSchurCohnPair.step"
+
+[[node]]
+id = "IsSchurCohnPair.reflect_step"

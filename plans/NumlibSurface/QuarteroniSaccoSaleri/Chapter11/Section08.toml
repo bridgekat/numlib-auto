@@ -24,7 +24,10 @@ explicit method of order `s` for `s ≥ 5`; the minimal stage numbers are `1, 2,
 for orders `1, …, 8`. Not formalized: Butcher's order barriers rest on the rooted-tree order
 conditions (a B-series theory, not in Mathlib nor in this library) and, for the `s ≥ 5` statement,
 on a delicate case analysis of those conditions (Butcher 1965; Hairer–Nørsett–Wanner II.5); the
-book states the property without proof (citing [But87]).'''
+book states the property without proof (citing [But87]).
+
+Blocked: not attempted — recorded as not formalized (notes/backbone.md §17.2.5); a B-series
+framework is the prerequisite, and `rk4_hasOrderFor` is the first step towards one.'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.rungeKutta_consistent_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.4'
 
@@ -119,11 +122,14 @@ id = "stabilityFunction"
 [[node]]
 id = "equation_11_73_order"
 kind = "theorem"
-desc = '''The classical method (11.73) has order four: `equation_11_14 (equation_11_70_increment equation_11_73 f) t₀ T y 4`
-along every `C⁴`-smooth solution of a problem with a `C⁴` field. The surface restatement of
-`ODE.rk4_hasOrderFor` (★★★ in the backbone); the restatement itself is ★.
+desc = '''The classical method (11.73) has order four:
+`equation_11_14 (equation_11_70_increment equation_11_73 f) t₀ T y 4` along every `C⁴`-smooth
+solution of a problem with a `C⁴` field. The surface restatement of `ODE.rk4_hasOrderFor`
+(★★★ in the backbone); the restatement itself is ★.
 
-Blocked: `ODE.rk4_hasOrderFor` is open in the backbone (the fourth-order Taylor expansion of the
-four stages); the node stays open until it is proved.'''
+Blocked: `ODE.rk4_hasOrderFor` is still open. Its `desc` now carries the verified expansion of the
+four stages and of `y^{(2)}, y^{(3)}, y^{(4)}` in the elementary differentials of the autonomised
+field, together with the reduction `ODE.ButcherTableau.hasOrderFor_autonomize_iff` proved this
+round; what is missing is the four analytic pieces listed there.'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_73", "QuarteroniSaccoSaleri.Chapter11.equation_11_14", "ODE.rk4_hasOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.73'

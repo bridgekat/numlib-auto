@@ -37,6 +37,9 @@ the pair `(t, y)` (`hasOrderFor_two_of`), and are necessary on the test problems
 method and the modified Euler method are the two-stage instances (`heun`, `modifiedEuler`); the
 classical fourth-order method (11.73) is `rk4`, with its algebraic order conditions
 (`rk4_orderConditions`). Property 11.4 (Butcher's barriers) is quoted, not formalized.
+A tableau satisfying the row-sum condition sees a non-autonomous problem as the autonomous
+problem `Y' = (1, f(Y))` on `ℝ × E` and has the same order along the two (`autonomize`,
+`hasOrderFor_autonomize_iff`), which is the reduction an order-four proof starts from.
 
 **Adaptivity** (§11.8.2). `EmbeddedPair s` is a tableau with a second weight vector `b̂`; the
 error indicator `h ∑_i (b_i - b̂_i) K_i` is the difference of the two solutions sharing the stages
@@ -604,6 +607,125 @@ theorem sum_b_eq_one_of_isConsistentFor {t₀ T : ℝ} (hT : 0 < T)
 end Consistency
 
 end ButcherTableau
+
+/-! ### Autonomization
+
+A non-autonomous problem `y' = f(t, y)` on `E` is the autonomous problem `Y' = G(Y)` on `ℝ × E`
+for `G(t, v) = (1, f t v)` and `Y s = (s, y s)`. A Runge–Kutta method satisfying the row-sum
+condition does not see the difference: its stages for `G` are `L_i = (1, K_i)`, its increment is
+`(1, Φ)` when the tableau is consistent, and its local truncation error along `Y` is
+`(0, τ)` — so the order along `y` and the order along `Y` are the same
+(`hasOrderFor_autonomize_iff`). This is the reduction that makes the order conditions of a
+non-autonomous problem those of an autonomous one: the elementary differentials of `G` on `ℝ × E`
+replace the mixed partial derivatives of `f` in `(t, v)`. -/
+
+section Autonomization
+
+/-- **The autonomized field** of `f : ℝ → E → E`: the field `G(t, v) = (1, f t v)` on `ℝ × E`,
+whose integral curves are `s ↦ (s, y s)` with `y' = f(·, y)`. It is constant in its own time
+argument, so it is a field on `ℝ × E` in the sense of `ODE` and an autonomous one. -/
+def autonomize (f : ℝ → E → E) : ℝ → ℝ × E → ℝ × E := fun _ p => (1, f p.1 p.2)
+
+namespace ButcherTableau
+
+variable {s : ℕ} (tab : ButcherTableau s) {f : ℝ → E → E} {h t t₀ T : ℝ} {u : E}
+
+/-- **The stages of the autonomized field are the stages of `f` with the time appended**:
+`L_i = (1, K_i)`, for an explicit tableau satisfying the row-sum condition `c_i = ∑_j a_ij`. The
+time component of `(t₀, u) + h ∑_{j<i} a_ij L_j` is `t₀ + h ∑_{j<i} a_ij = t₀ + c_i h`, which is
+exactly the time at which `K_i` evaluates `f`. -/
+theorem explicitStages_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (i : Fin s) :
+    tab.explicitStages (autonomize f) h t (t₀, u) i = (1, tab.explicitStages f h t₀ u i) := by
+  have key : ∀ m, ∀ i : Fin s, i.1 < m →
+      tab.explicitStages (autonomize f) h t (t₀, u) i = (1, tab.explicitStages f h t₀ u i) := by
+    intro m
+    induction m with
+    | zero => intro i hi; exact absurd hi (Nat.not_lt_zero _)
+    | succ m ih =>
+      intro i hi
+      rw [explicitStages_apply, explicitStages_apply, autonomize]
+      have hsum : ∀ j : Fin s, (if j < i then tab.A i j • tab.explicitStages (autonomize f) h t
+          (t₀, u) j else 0) = (if j < i then tab.A i j else 0,
+            if j < i then tab.A i j • tab.explicitStages f h t₀ u j else 0) := by
+        intro j
+        split_ifs with hj
+        · rw [ih j (by omega)]
+          simp [Prod.smul_mk]
+        · rfl
+      rw [Finset.sum_congr rfl fun j _ => hsum j]
+      have hfst : (∑ j : Fin s, ((if j < i then tab.A i j else 0 : ℝ),
+          (if j < i then tab.A i j • tab.explicitStages f h t₀ u j else 0 : E))) =
+          (∑ j : Fin s, (if j < i then tab.A i j else 0 : ℝ),
+            ∑ j : Fin s, (if j < i then tab.A i j • tab.explicitStages f h t₀ u j else 0 : E)) := by
+        rw [Prod.mk.injEq]
+        exact ⟨by rw [Prod.fst_sum], by rw [Prod.snd_sum]⟩
+      rw [hfst]
+      have hc : ∑ j : Fin s, (if j < i then tab.A i j else 0 : ℝ) = tab.c i := by
+        rw [hrow i]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        split_ifs with hj
+        · rfl
+        · exact (hex i j (not_lt.1 hj)).symm
+      simp only [Prod.smul_mk, Prod.mk_add_mk, hc]
+      rw [smul_eq_mul, mul_comm h (tab.c i)]
+  exact key (i.1 + 1) i (Nat.lt_succ_self _)
+
+/-- **The increment of the autonomized field** is `(1, Φ)`: the time component is `∑_i b_i = 1`
+by consistency of the tableau. -/
+theorem explicitIncrement_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
+    (hcons : tab.IsConsistent) (w : ℝ × E) :
+    tab.explicitIncrement (autonomize f) t (t₀, u) w h = (1, tab.explicitIncrement f t₀ u u h) := by
+  rw [explicitIncrement_apply, explicitIncrement_apply]
+  have hterm : ∀ i : Fin s, tab.b i • tab.explicitStages (autonomize f) h t (t₀, u) i
+      = ((tab.b i : ℝ), tab.b i • tab.explicitStages f h t₀ u i) := by
+    intro i
+    rw [tab.explicitStages_autonomize hex hrow]
+    simp [Prod.smul_mk]
+  rw [Finset.sum_congr rfl fun i _ => hterm i, Prod.mk.injEq]
+  exact ⟨by rw [Prod.fst_sum]; exact hcons, by rw [Prod.snd_sum]⟩
+
+/-- **The local truncation error of the autonomized method along `Y s = (s, y s)`** is
+`(0, τ)`: the time components of `h⁻¹ (Y(t+h) - Y(t))` and of the increment are both `1`. -/
+theorem lte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum) (hcons : tab.IsConsistent)
+    (y : ℝ → E) (hh : h ≠ 0) :
+    OneStep.lte (tab.explicitIncrement (autonomize f)) h (fun s => (s, y s)) t
+      = (0, OneStep.lte (tab.explicitIncrement f) h y t) := by
+  rw [OneStep.lte, OneStep.lte, tab.explicitIncrement_autonomize hex hrow hcons]
+  have hsub : ((t + h, y (t + h)) : ℝ × E) - (t, y t) = (h, y (t + h) - y t) := by
+    rw [Prod.mk_sub_mk]
+    simp
+  rw [hsub, Prod.smul_mk, Prod.mk_sub_mk, smul_eq_mul, inv_mul_cancel₀ hh]
+  simp
+  rfl
+
+/-- **The global truncation errors agree** for a nonzero step, since `‖(0, τ)‖ = ‖τ‖` in the
+product norm. -/
+theorem globalLte_autonomize (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
+    (hcons : tab.IsConsistent) (y : ℝ → E) (hh : h ≠ 0) :
+    OneStep.globalLte (tab.explicitIncrement (autonomize f)) t₀ T (fun s => (s, y s)) h
+      = OneStep.globalLte (tab.explicitIncrement f) t₀ T y h := by
+  rw [OneStep.globalLte, OneStep.globalLte]
+  refine congrArg _ (funext fun n => ?_)
+  rw [tab.lte_autonomize hex hrow hcons y hh, Prod.norm_mk, norm_zero]
+  exact max_eq_right (norm_nonneg _)
+
+/-- **Order is invariant under autonomization**: an explicit tableau satisfying the row-sum
+condition and consistent has order `p` along `y` for `f` exactly when it has order `p` along
+`s ↦ (s, y s)` for the autonomized field. This is what reduces the order conditions of a
+non-autonomous problem to those of an autonomous one. -/
+theorem hasOrderFor_autonomize_iff (hex : tab.IsExplicit) (hrow : tab.IsRowSum)
+    (hcons : tab.IsConsistent) (y : ℝ → E) (p : ℕ) :
+    OneStep.HasOrderFor (tab.explicitIncrement (autonomize f)) t₀ T (fun s => (s, y s)) p ↔
+      OneStep.HasOrderFor (tab.explicitIncrement f) t₀ T y p := by
+  have heq : OneStep.globalLte (tab.explicitIncrement (autonomize f)) t₀ T (fun s => (s, y s))
+      =ᶠ[𝓝[>] (0 : ℝ)] OneStep.globalLte (tab.explicitIncrement f) t₀ T y := by
+    filter_upwards [self_mem_nhdsWithin] with h hh
+    exact tab.globalLte_autonomize hex hrow hcons y (ne_of_gt hh)
+  exact ⟨fun hb => hb.congr' heq EventuallyEq.rfl, fun hb => hb.congr' heq.symm EventuallyEq.rfl⟩
+
+end ButcherTableau
+
+end Autonomization
 
 /-! ### The named explicit tableaux -/
 
@@ -1576,56 +1698,237 @@ end TruncExp
 
 end ButcherTableau
 
-/-! ### The two-stage order-two conditions
+/-! ### Taylor bounds, and the two-stage order-two conditions
 
-Two Taylor bounds first: the third-order bound for a curve with explicit derivatives on a
-closed interval, and the second-order bound for a map on `ℝ × E` along a segment, given its
-first two Fréchet derivatives. Both are Mathlib-shaped and live here until a calculus module
-takes them. -/
+Taylor bounds first: for a curve with explicit derivatives on a closed interval,
+`norm_sub_taylorSum_le` at an arbitrary order and its third-order case
+`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six`; and along a segment for a map with named
+Fréchet derivatives, `norm_sub_sub_smul_apply_le_of_hasFDerivAt` at order two and
+`norm_sub_taylor_segment_le` at order four. All are Mathlib-shaped and live here until a calculus
+module takes them. -/
 
 section Taylor
 
 variable {a b M : ℝ} {y y' y'' y''' : ℝ → E}
 
+/-- **Taylor's theorem with a bound on the top derivative**, for a curve in a normed space over a
+closed interval: if `Y 0, …, Y (n + 1)` is a chain of successive derivatives on `Icc a b` and
+`‖Y (n + 1)‖ ≤ M` there, then `Y 0 b` differs from its Taylor polynomial at `a` by at most
+`M (b - a)^{n+1} / (n+1)!`. The proof is induction on `n`: the residual has derivative the residual
+of the shifted family, which the induction hypothesis bounds on `[a, s]`, and
+`image_norm_le_of_norm_deriv_right_le_deriv_boundary` compares it with
+`M (s - a)^{n+2} / (n+2)!`. Mathlib-shaped and lives here until a calculus module takes it; it
+subsumes `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
+`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`). -/
+theorem _root_.norm_sub_taylorSum_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    {M a b : ℝ} {Y : ℕ → ℝ → X} {n : ℕ} (hab : a ≤ b)
+    (hY : ∀ k ≤ n, ∀ s ∈ Icc a b, HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s)
+    (hM : ∀ s ∈ Icc a b, ‖Y (n + 1) s‖ ≤ M) :
+    ‖Y 0 b - ∑ k ∈ range (n + 1), ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a‖ ≤
+      M * (b - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) := by
+  induction n generalizing Y b with
+  | zero =>
+    have key := (convex_Icc a b).norm_image_sub_le_of_norm_hasDerivWithin_le
+      (f := Y 0) (f' := Y 1) (fun s hs => hY 0 le_rfl s hs) (fun s hs => hM s hs)
+      (left_mem_Icc.2 hab) (right_mem_Icc.2 hab)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by linarith)] at key
+    have e1 : ∑ k ∈ range (0 + 1), ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a = Y 0 a := by
+      simp
+    have e2 : M * (b - a) ^ (0 + 1) / (Nat.factorial (0 + 1) : ℝ) = M * (b - a) := by
+      simp
+    rw [e1, e2]
+    exact key
+  | succ n ih =>
+    set G : ℝ → X := fun s => Y 0 s - Y 0 a -
+      ∑ k ∈ range (n + 1), ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a
+      with hGdef
+    set G' : ℝ → X := fun s => Y 1 s -
+      ∑ k ∈ range (n + 1), ((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a with hG'def
+    have hpoly : ∀ (k : ℕ) (s : ℝ), HasDerivAt
+        (fun s : ℝ => ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a)
+        (((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a) s := by
+      intro k s
+      have h1 : HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ))
+          ((s - a) ^ k / (Nat.factorial k : ℝ)) s := by
+        have h2 := (((hasDerivAt_id s).sub_const a).fun_pow (k + 1)).div_const
+          ((Nat.factorial (k + 1) : ℝ))
+        refine h2.congr_deriv ?_
+        simp only [id_eq, Nat.add_sub_cancel]
+        rw [Nat.factorial_succ]
+        have hf : ((Nat.factorial k : ℝ)) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero k)
+        push_cast
+        field_simp
+      simpa using h1.smul_const (Y (k + 1) a)
+    have hGder : ∀ s ∈ Icc a b, HasDerivWithinAt G (G' s) (Icc a b) s := by
+      intro s hs
+      have hsum : HasDerivWithinAt
+          (fun s : ℝ => ∑ k ∈ range (n + 1),
+            ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a)
+          (∑ k ∈ range (n + 1), ((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a)
+          (Icc a b) s :=
+        HasDerivWithinAt.fun_sum fun k _ => (hpoly k s).hasDerivWithinAt
+      exact ((hY 0 (by omega) s hs).sub_const (Y 0 a)).sub hsum
+    have hG'bound : ∀ s ∈ Icc a b,
+        ‖G' s‖ ≤ M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) := by
+      intro s hs
+      have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
+      exact ih (Y := fun k => Y (k + 1)) (b := s) hs.1
+        (fun k _ s' hs' => ((hY (k + 1) (by omega) s' (hsub hs')).mono hsub))
+        (fun s' hs' => hM s' (hsub hs'))
+    have hB : ∀ s : ℝ, HasDerivAt
+        (fun s : ℝ => M * (s - a) ^ (n + 2) / (Nat.factorial (n + 2) : ℝ))
+        (M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ)) s := by
+      intro s
+      have h1 := (((hasDerivAt_id s).sub_const a).fun_pow (n + 2)).const_mul M
+      have h2 := h1.div_const ((Nat.factorial (n + 2) : ℝ))
+      refine h2.congr_deriv ?_
+      simp only [id_eq]
+      rw [Nat.factorial_succ (n + 1)]
+      have hf : ((Nat.factorial (n + 1) : ℝ)) ≠ 0 :=
+        Nat.cast_ne_zero.2 (Nat.factorial_ne_zero (n + 1))
+      push_cast
+      field_simp
+      ring
+    have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
+      (f := G) (f' := G') (HasDerivWithinAt.continuousOn hGder)
+      (fun s hs => (hGder s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin
+        (Icc_mem_nhdsGE_of_mem hs))
+      (B := fun s => M * (s - a) ^ (n + 2) / (Nat.factorial (n + 2) : ℝ))
+      (B' := fun s => M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ))
+      (by simp [hGdef]) hB
+      (fun s hs => hG'bound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
+    have heq : Y 0 b - ∑ k ∈ range (n + 1 + 1),
+        ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a = G b := by
+      rw [hGdef, Finset.sum_range_succ']
+      simp only [pow_zero, Nat.factorial_zero, Nat.cast_one, div_one, one_smul]
+      abel
+    rw [heq]
+    exact key
+
 /-- **Third-order Taylor bound**: if `y'`, `y''`, `y'''` are the successive derivatives of `y`
 on `Icc a b` with `‖y'''‖ ≤ M` there, then
-`‖y b - y a - (b - a) • y' a - ((b - a)² / 2) • y'' a‖ ≤ M (b - a)³ / 6`. The residual has
-derivative `y' s - y' a - (s - a) • y'' a`, bounded by `M (s - a)² / 2` by the second-order bound
-for `y'`, and the comparison with `M (s - a)³ / 6` concludes. -/
+`‖y b - y a - (b - a) • y' a - ((b - a)² / 2) • y'' a‖ ≤ M (b - a)³ / 6`. The case `n = 2` of
+`norm_sub_taylorSum_le`. -/
 theorem _root_.norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six (hab : a ≤ b)
     (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
     (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
     (hy'' : ∀ s ∈ Icc a b, HasDerivWithinAt y'' (y''' s) (Icc a b) s)
     (hM : ∀ s ∈ Icc a b, ‖y''' s‖ ≤ M) :
     ‖y b - y a - (b - a) • y' a - ((b - a) ^ 2 / 2) • y'' a‖ ≤ M * (b - a) ^ 3 / 6 := by
-  have hg : ∀ s ∈ Icc a b, HasDerivWithinAt
-      (fun s => y s - y a - (s - a) • y' a - ((s - a) ^ 2 / 2) • y'' a)
-      (y' s - y' a - (s - a) • y'' a) (Icc a b) s := by
-    intro s hs
-    have h1 : HasDerivWithinAt (fun s : ℝ => (s - a) ^ 2 / 2) (s - a) (Icc a b) s := by
-      have := ((hasDerivWithinAt_id s (Icc a b)).sub_const a).pow 2
-      exact (this.div_const 2).congr_deriv (by simp)
-    have := (((hy s hs).sub_const (y a)).sub
-      (((hasDerivWithinAt_id s (Icc a b)).sub_const a).smul_const (y' a))).sub
-      (h1.smul_const (y'' a))
-    exact this.congr_deriv (by simp)
-  have hbound : ∀ s ∈ Icc a b, ‖y' s - y' a - (s - a) • y'' a‖ ≤ M * (s - a) ^ 2 / 2 := by
-    intro s hs
-    have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
-    exact norm_sub_sub_smul_le_mul_sq_div_two hs.1 (fun u hu => (hy' u (hsub hu)).mono hsub)
-      (fun u hu => (hy'' u (hsub hu)).mono hsub) (fun u hu => hM u (hsub hu))
-  have hB : ∀ s, HasDerivAt (fun s => M * (s - a) ^ 3 / 6) (M * (s - a) ^ 2 / 2) s := by
+  obtain ⟨Y, e0, e1, e2, e3⟩ : ∃ Y : ℕ → ℝ → E, Y 0 = y ∧ Y 1 = y' ∧ Y 2 = y'' ∧ Y 3 = y''' :=
+    ⟨fun k => match k with
+      | 0 => y
+      | 1 => y'
+      | 2 => y''
+      | _ => y''', rfl, rfl, rfl, rfl⟩
+  have hY : ∀ k ≤ 2, ∀ s ∈ Icc a b, HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s := by
+    intro k hk s hs
+    rcases k with _ | _ | _ | k
+    · rw [e0, e1]; exact hy s hs
+    · rw [e1, e2]; exact hy' s hs
+    · rw [e2, e3]; exact hy'' s hs
+    · omega
+  have key := norm_sub_taylorSum_le (Y := Y) (n := 2) hab hY (by rw [e3]; exact hM)
+  have hsum : ∑ k ∈ range (2 + 1), ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a
+      = y a + (b - a) • y' a + ((b - a) ^ 2 / 2) • y'' a := by
+    simp only [Finset.sum_range_succ, Finset.range_zero, Finset.sum_empty, zero_add, e0, e1, e2]
+    norm_num
+  rw [e0, hsum] at key
+  have he : y b - y a - (b - a) • y' a - ((b - a) ^ 2 / 2) • y'' a
+      = y b - (y a + (b - a) • y' a + ((b - a) ^ 2 / 2) • y'' a) := by abel
+  rw [he]
+  refine key.trans (le_of_eq ?_)
+  norm_num
+
+/-- **Fourth-order Taylor bound along a segment** for a map `G` on a normed space with Fréchet
+derivatives `G₁, G₂, G₃, G₄` and `‖G₄‖ ≤ M`:
+`‖G(p + w) - G p - G₁ p w - (1/2) G₂ p w w - (1/6) G₃ p w w w‖ ≤ M ‖w‖⁴ / 24`. It is
+`norm_sub_taylorSum_le` for `s ↦ G (p + s • w)` on `[0, 1]`, whose `k`-th derivative is
+`G_k (p + s • w)` applied to `w` `k` times (`HasFDerivAt.comp_hasDerivAt` and
+`HasFDerivAt.clm_apply`); it is the order-four analogue of
+`norm_sub_sub_smul_apply_le_of_hasFDerivAt`. -/
+theorem _root_.norm_sub_taylor_segment_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
+    {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {M : ℝ}
+    (h1 : ∀ p, HasFDerivAt G (G₁ p) p) (h2 : ∀ p, HasFDerivAt G₁ (G₂ p) p)
+    (h3 : ∀ p, HasFDerivAt G₂ (G₃ p) p) (h4 : ∀ p, HasFDerivAt G₃ (G₄ p) p)
+    (hM : ∀ p, ‖G₄ p‖ ≤ M) (p w : X) :
+    ‖G (p + w) - G p - G₁ p w - (2⁻¹ : ℝ) • G₂ p w w - (6⁻¹ : ℝ) • G₃ p w w w‖
+      ≤ M * ‖w‖ ^ 4 / 24 := by
+  have hseg : ∀ s : ℝ, HasDerivAt (fun s : ℝ => p + s • w) w s := fun s => by
+    simpa using ((hasDerivAt_id s).smul_const w).const_add p
+  obtain ⟨Y, e0, e1, e2, e3, e4⟩ :
+      ∃ Y : ℕ → ℝ → X, Y 0 = (fun s => G (p + s • w)) ∧ Y 1 = (fun s => G₁ (p + s • w) w) ∧
+        Y 2 = (fun s => G₂ (p + s • w) w w) ∧ Y 3 = (fun s => G₃ (p + s • w) w w w) ∧
+        Y 4 = (fun s => G₄ (p + s • w) w w w w) :=
+    ⟨fun k => match k with
+      | 0 => fun s => G (p + s • w)
+      | 1 => fun s => G₁ (p + s • w) w
+      | 2 => fun s => G₂ (p + s • w) w w
+      | 3 => fun s => G₃ (p + s • w) w w w
+      | _ => fun s => G₄ (p + s • w) w w w w,
+     rfl, rfl, rfl, rfl, rfl⟩
+  have hd0 : ∀ s : ℝ, HasDerivAt (Y 0) (Y 1 s) s := by
     intro s
-    have h1 : HasDerivAt (fun s : ℝ => (s - a) ^ 3) (3 * (s - a) ^ 2) s := by
-      have := (hasDerivAt_pow 3 (s - a)).comp s ((hasDerivAt_id s).sub_const a)
-      simpa [Function.comp_def] using this
-    exact ((h1.const_mul M).div_const 6).congr_deriv (by ring)
-  have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
-    (f' := fun s => y' s - y' a - (s - a) • y'' a) (HasDerivWithinAt.continuousOn hg)
-    (fun s hs => (hg s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hs))
-    (B := fun s => M * (s - a) ^ 3 / 6) (B' := fun s => M * (s - a) ^ 2 / 2) (by simp) hB
-    (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
-  simpa using key
+    rw [e0, e1]
+    exact (h1 _).comp_hasDerivAt s (hseg s)
+  have hd1 : ∀ s : ℝ, HasDerivAt (Y 1) (Y 2 s) s := by
+    intro s
+    rw [e1, e2]
+    have hc : HasDerivAt (fun s : ℝ => G₁ (p + s • w)) (G₂ (p + s • w) w) s :=
+      (h2 _).comp_hasDerivAt s (hseg s)
+    simpa using hc.clm_apply (hasDerivAt_const s w)
+  have hd2 : ∀ s : ℝ, HasDerivAt (Y 2) (Y 3 s) s := by
+    intro s
+    rw [e2, e3]
+    have hc : HasDerivAt (fun s : ℝ => G₂ (p + s • w)) (G₃ (p + s • w) w) s :=
+      (h3 _).comp_hasDerivAt s (hseg s)
+    have hc2 : HasDerivAt (fun s : ℝ => G₂ (p + s • w) w) (G₃ (p + s • w) w w) s := by
+      simpa using hc.clm_apply (hasDerivAt_const s w)
+    simpa using hc2.clm_apply (hasDerivAt_const s w)
+  have hd3 : ∀ s : ℝ, HasDerivAt (Y 3) (Y 4 s) s := by
+    intro s
+    rw [e3, e4]
+    have hc : HasDerivAt (fun s : ℝ => G₃ (p + s • w)) (G₄ (p + s • w) w) s :=
+      (h4 _).comp_hasDerivAt s (hseg s)
+    have hc2 : HasDerivAt (fun s : ℝ => G₃ (p + s • w) w) (G₄ (p + s • w) w w) s := by
+      simpa using hc.clm_apply (hasDerivAt_const s w)
+    have hc3 : HasDerivAt (fun s : ℝ => G₃ (p + s • w) w w) (G₄ (p + s • w) w w w) s := by
+      simpa using hc2.clm_apply (hasDerivAt_const s w)
+    simpa using hc3.clm_apply (hasDerivAt_const s w)
+  have hY : ∀ k ≤ 3, ∀ s ∈ Icc (0 : ℝ) 1, HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc 0 1) s := by
+    intro k hk s _
+    rcases k with _ | _ | _ | _ | k
+    · exact (hd0 s).hasDerivWithinAt
+    · exact (hd1 s).hasDerivWithinAt
+    · exact (hd2 s).hasDerivWithinAt
+    · exact (hd3 s).hasDerivWithinAt
+    · omega
+  have hMY : ∀ s ∈ Icc (0 : ℝ) 1, ‖Y 4 s‖ ≤ M * ‖w‖ ^ 4 := by
+    intro s _
+    rw [e4]
+    calc ‖G₄ (p + s • w) w w w w‖ ≤ ‖G₄ (p + s • w) w w w‖ * ‖w‖ :=
+          ContinuousLinearMap.le_opNorm _ _
+      _ ≤ ‖G₄ (p + s • w) w w‖ * ‖w‖ * ‖w‖ := by
+          gcongr
+          exact ContinuousLinearMap.le_opNorm _ _
+      _ ≤ ‖G₄ (p + s • w) w‖ * ‖w‖ * ‖w‖ * ‖w‖ := by
+          gcongr
+          exact ContinuousLinearMap.le_opNorm _ _
+      _ ≤ ‖G₄ (p + s • w)‖ * ‖w‖ * ‖w‖ * ‖w‖ * ‖w‖ := by
+          gcongr
+          exact ContinuousLinearMap.le_opNorm _ _
+      _ ≤ M * ‖w‖ * ‖w‖ * ‖w‖ * ‖w‖ := by gcongr; exact hM _
+      _ = M * ‖w‖ ^ 4 := by ring
+  have key := norm_sub_taylorSum_le (Y := Y) (n := 3) (M := M * ‖w‖ ^ 4) zero_le_one hY hMY
+  have hgoal : G (p + w) - G p - G₁ p w - (2⁻¹ : ℝ) • G₂ p w w - (6⁻¹ : ℝ) • G₃ p w w w
+      = Y 0 1 - ∑ k ∈ range 4, (((1 : ℝ) - 0) ^ k / (Nat.factorial k : ℝ)) • Y k 0 := by
+    simp only [Finset.sum_range_succ, Finset.range_zero, Finset.sum_empty, zero_add, e0, e1, e2, e3]
+    norm_num
+    abel
+  rw [hgoal]
+  refine key.trans (le_of_eq ?_)
+  norm_num
 
 variable {F : ℝ × E → E} {F' : ℝ × E → ℝ × E →L[ℝ] E} {F'' : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
 

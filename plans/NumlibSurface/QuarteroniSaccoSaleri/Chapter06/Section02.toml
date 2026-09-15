@@ -58,15 +58,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.2'
 
 [[node]]
 id = "regulaFalsi_order_one"
-kind = "theorem"
-desc = '''"The Regula Falsi method … has linear convergence order" (cited from Ralston–Rabinowitz):
-for `f` continuous on `uIcc xm1 x₀` with `f x₀ * f xm1 < 0`, `C²` at the unique root `α` there with
-`f'(α) ≠ 0`, `f''(α) ≠ 0`: `regulaFalsi f xm1 x₀ → α` and `definition_6_1 (regulaFalsi f xm1 x₀) α 1`.
-`RegulaFalsi.tendsto_iterate`, a ★★★ backbone node; this restatement is ★ once it exists.
-
-Blocked: waits on the backbone node `RegulaFalsi.tendsto_iterate` (`Nonlinear/Secant`), left open
-with its own `Blocked:` note; nothing else is missing.'''
-deps = ["QuarteroniSaccoSaleri.Chapter06.regulaFalsi", "RegulaFalsi.tendsto_iterate", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.2.2'
 
 [[node]]

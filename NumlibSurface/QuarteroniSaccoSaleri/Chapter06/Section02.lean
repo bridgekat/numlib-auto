@@ -20,8 +20,10 @@ to §6.3.1 (chord linear, Newton quadratic) are in `Section03`.
   bound (6.8)–(6.9) is the book's `(b - a) / 2^k`, weaker than the backbone's `(b - a) / 2^{k+1}`.
 * Property 6.2 needs `f'(α) ≠ 0`, which the book does not list, and the two initial values must
   be distinct and different from `α` (a start at `α` stops the method at once).
-* The linear order of regula falsi (`regulaFalsi_order_one`) waits on the backbone's
-  `RegulaFalsi.tendsto_iterate`.
+* The linear order of regula falsi (`regulaFalsi_order_one`) is the backbone's
+  `RegulaFalsi.convergesWithOrder_one_iterate`; it needs `f` twice continuously
+  differentiable at the root with `f'(α) ≠ 0`, but not the `f''(α) ≠ 0` the classical
+  argument through the eventually frozen endpoint would use.
 -/
 
 open Filter Set Topology
@@ -172,6 +174,20 @@ starting interval `[x^{(-1)}, x^{(0)}]`." `RegulaFalsi.iterate_mem_uIcc`. -/
 theorem regulaFalsi_mem_uIcc (h : f x₀ * f xm1 < 0) (k : ℕ) :
     regulaFalsi f xm1 x₀ k ∈ uIcc xm1 x₀ :=
   RegulaFalsi.iterate_mem_uIcc h k
+
+/-- **"The Regula Falsi method … has linear convergence order"** (§6.2.2, quoted there from
+Ralston and Rabinowitz without proof): from a bracketing pair `f(x^{(0)}) f(x^{(-1)}) < 0` of a
+function continuous on `[[x^{(-1)}, x^{(0)}]]` whose only zero there is `α`, at which `f` is twice
+continuously differentiable with `f'(α) ≠ 0`, the iterates converge to `α` with order `1` in the
+sense of Definition 6.1. `RegulaFalsi.tendsto_iterate` and
+`RegulaFalsi.convergesWithOrder_one_iterate`. -/
+theorem regulaFalsi_order_one (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm1 < 0) {α : ℝ}
+    (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hC : ContDiffAt ℝ 2 f α)
+    (hf' : deriv f α ≠ 0) :
+    Tendsto (regulaFalsi f xm1 x₀) atTop (𝓝 α) ∧ definition_6_1 (regulaFalsi f xm1 x₀) α 1 :=
+  ⟨RegulaFalsi.tendsto_iterate hf h huniq,
+    definition_6_1_of_convergesWithOrder le_rfl
+      (RegulaFalsi.convergesWithOrder_one_iterate hf h huniq hC hf')⟩
 
 end RegulaFalsi
 

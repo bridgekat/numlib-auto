@@ -4,6 +4,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.LinearAlgebra.Lagrange
 import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.RungeKutta
+import Numlib.RingTheory.Polynomial.SchurCohn
 
 /-!
 # Linear multistep methods
@@ -1893,6 +1894,47 @@ theorem satisfiesRootCondition_X_pow_mul_X_sub_one (p : ℕ) :
         Multiset.count_singleton]
       simp
 
+
+/-- **From Schur stability to the root condition**: if `P = c (X - 1) Q` with `c ≠ 0` and every
+complex root of `Q` has modulus `< 1` (`Polynomial.IsSchurStable`), then `P`, read in `ℂ[X]`,
+satisfies the root condition — its roots lie in the closed unit disc and the only one of modulus
+one is the simple root `1`. Belongs in `Numlib/ODE/DifferenceEquation`. -/
+theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c ≠ 0)
+    (hQ : Q.IsSchurStable) (hP : P = C c * ((X - C 1) * Q)) :
+    (P.map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
+  classical
+  set Qc : ℂ[X] := Q.map (algebraMap ℝ ℂ) with hQc
+  have hQeval : ∀ z : ℂ, Qc.eval z = aeval z Q := fun z => by rw [hQc, eval_map, aeval_def]
+  have hQ1 : Qc.eval 1 ≠ 0 := by
+    rw [hQeval]
+    exact hQ.aeval_ne_zero (by simp)
+  have hQ0 : Qc ≠ 0 := fun h0 => hQ1 (by rw [h0]; simp)
+  have hcne : (c : ℂ) ≠ 0 := by exact_mod_cast hc
+  have hmap : P.map (algebraMap ℝ ℂ) = C (c : ℂ) * ((X - C 1) * Qc) := by
+    rw [hP, hQc]
+    simp [Polynomial.map_mul, Polynomial.map_sub]
+  have hXne : (X - C 1 : ℂ[X]) ≠ 0 := X_sub_C_ne_zero 1
+  have hprod : (X - C 1 : ℂ[X]) * Qc ≠ 0 := mul_ne_zero hXne hQ0
+  have hall : C (c : ℂ) * ((X - C 1) * Qc) ≠ 0 := mul_ne_zero (by simpa using hcne) hprod
+  rw [hmap]
+  intro r hr
+  have hfac : (r - 1) * Qc.eval r = 0 := by
+    have h := hr
+    simp only [IsRoot, eval_mul, eval_C, eval_sub, eval_X] at h
+    exact (mul_eq_zero.1 h).resolve_left hcne
+  rcases mul_eq_zero.1 hfac with h1 | h2
+  · have hr1 : r = 1 := by linear_combination h1
+    subst hr1
+    refine ⟨by simp, fun _ => ?_⟩
+    have hc1 : ¬ (C (c : ℂ)).IsRoot 1 := by simp [IsRoot, hcne]
+    have hq1 : ¬ Qc.IsRoot 1 := hQ1
+    rw [rootMultiplicity_mul hall, rootMultiplicity_mul hprod,
+      rootMultiplicity_eq_zero hc1, rootMultiplicity_eq_zero hq1,
+      rootMultiplicity_X_sub_C_self]
+  · rw [hQeval] at h2
+    have hlt : ‖r‖ < 1 := hQ r h2
+    exact ⟨hlt.le, fun h => absurd h hlt.ne⟩
+
 end Polynomial
 
 namespace ODE
@@ -2519,6 +2561,172 @@ theorem bdf_satisfiesRootCondition (k : Fin 6) (hk : k ≤ 2) : (bdf k).Satisfie
       · exact absurd h1 hlt.1.ne
       · exact absurd h1 hlt.2.ne
   all_goals exact absurd hk (by decide)
+
+/-! #### Zero-stability of the four-, five- and six-step formulae
+
+For `p = 3, 4, 5` the spurious roots of `ρ` are those of a cubic, a quartic and a quintic with no
+closed form, and they are located inside the unit disc by the Schur–Cohn recursion of
+`Numlib/RingTheory/Polynomial/SchurCohn`: each chain below runs the reduction
+`Q ↦ (a_n Q - a_0 Q^♯)/X` (with the greatest common divisor of the coefficients scaled out) down
+to a nonzero constant, every step satisfying `|a_0| < |a_n|`. -/
+
+/-- **The spurious factor of the four-step BDF method is Schur stable**: every complex root of
+`25 r^3 - 23 r^2 + 13 r - 3` has modulus `< 1`. The Schur-Cohn chain is
+`(25, -23, 13, -3) -> (77, -67, 32) -> (109, -67) -> (7392)`, each step dividing out the
+greatest common divisor of the coefficients. -/
+theorem isSchurStable_bdfFactor3 : Polynomial.IsSchurStable
+    (C 25 * X ^ 3 + C (-23) * X ^ 2 + C 13 * X + C (-3)) := by
+  have h3 : Polynomial.IsSchurCohnPair (C 7392) (C 7392) :=
+    Polynomial.isSchurCohnPair_C (by norm_num)
+  have h2 : Polynomial.IsSchurCohnPair
+      (C 109 * X + C (-67))
+      (C (-67) * X + C 109) :=
+    h3.step (A := 109) (B := -67) (c := 1) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+  have h1 : Polynomial.IsSchurCohnPair
+      (C 77 * X ^ 2 + C (-67) * X + C 32)
+      (C 32 * X ^ 2 + C (-67) * X + C 77) :=
+    h2.step (A := 77) (B := 32) (c := 45) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h0 : Polynomial.IsSchurCohnPair
+      (C 25 * X ^ 3 + C (-23) * X ^ 2 + C 13 * X + C (-3))
+      (C (-3) * X ^ 3 + C 13 * X ^ 2 + C (-23) * X + C 25) :=
+    h1.step (A := 25) (B := -3) (c := 8) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  exact h0.isSchurStable
+
+/-- **The spurious factor of the five-step BDF method is Schur stable**: every complex root of
+`137 r^4 - 163 r^3 + 137 r^2 - 63 r + 12` has modulus `< 1`, by the Schur-Cohn chain
+`(137, -163, 137, -63, 12) -> (745, -863, 685, -267) -> (60467, -57505, 34988) ->
+(19091, -11501) -> (232193280)`. -/
+theorem isSchurStable_bdfFactor4 : Polynomial.IsSchurStable
+    (C 137 * X ^ 4 + C (-163) * X ^ 3 + C 137 * X ^ 2 + C (-63) * X + C 12) := by
+  have h4 : Polynomial.IsSchurCohnPair (C 232193280) (C 232193280) :=
+    Polynomial.isSchurCohnPair_C (by norm_num)
+  have h3 : Polynomial.IsSchurCohnPair
+      (C 19091 * X + C (-11501))
+      (C (-11501) * X + C 19091) :=
+    h4.step (A := 19091) (B := -11501) (c := 1) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+  have h2 : Polynomial.IsSchurCohnPair
+      (C 60467 * X ^ 2 + C (-57505) * X + C 34988)
+      (C 34988 * X ^ 2 + C (-57505) * X + C 60467) :=
+    h3.step (A := 60467) (B := 34988) (c := 127395) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h1 : Polynomial.IsSchurCohnPair
+      (C 745 * X ^ 3 + C (-863) * X ^ 2 + C 685 * X + C (-267))
+      (C (-267) * X ^ 3 + C 685 * X ^ 2 + C (-863) * X + C 745) :=
+    h2.step (A := 745) (B := -267) (c := 8) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h0 : Polynomial.IsSchurCohnPair
+      (C 137 * X ^ 4 + C (-163) * X ^ 3 + C 137 * X ^ 2 + C (-63) * X + C 12)
+      (C 12 * X ^ 4 + C (-63) * X ^ 3 + C 137 * X ^ 2 + C (-163) * X + C 137) :=
+    h1.step (A := 137) (B := 12) (c := 25) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  exact h0.isSchurStable
+
+/-- **The spurious factor of the six-step BDF method is Schur stable**: every complex root of
+`147 r^5 - 213 r^4 + 237 r^3 - 163 r^2 + 62 r - 10` has modulus `< 1`, by the Schur-Cohn chain
+`(147, -213, 237, -163, 62, -10) -> (21509, -30691, 33209, -21591, 6984) ->
+(2364919, -2910521, 2756347, -1428885) -> (20637463, -17112857, 13713664) ->
+(413869, -206179) -> (128777769120)`. -/
+theorem isSchurStable_bdfFactor5 : Polynomial.IsSchurStable
+    (C 147 * X ^ 5 + C (-213) * X ^ 4 + C 237 * X ^ 3 + C (-163) * X ^ 2 + C 62 * X +
+      C (-10)) := by
+  have h5 : Polynomial.IsSchurCohnPair (C 128777769120) (C 128777769120) :=
+    Polynomial.isSchurCohnPair_C (by norm_num)
+  have h4 : Polynomial.IsSchurCohnPair
+      (C 413869 * X + C (-206179))
+      (C (-206179) * X + C 413869) :=
+    h5.step (A := 413869) (B := -206179) (c := 1) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+  have h3 : Polynomial.IsSchurCohnPair
+      (C 20637463 * X ^ 2 + C (-17112857) * X + C 13713664)
+      (C 13713664 * X ^ 2 + C (-17112857) * X + C 20637463) :=
+    h4.step (A := 20637463) (B := 13713664) (c := 574675317) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h2 : Polynomial.IsSchurCohnPair
+      (C 2364919 * X ^ 3 + C (-2910521) * X ^ 2 + C 2756347 * X + C (-1428885))
+      (C (-1428885) * X ^ 3 + C 2756347 * X ^ 2 + C (-2910521) * X + C 2364919) :=
+    h3.step (A := 2364919) (B := -1428885) (c := 172072) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h1 : Polynomial.IsSchurCohnPair
+      (C 21509 * X ^ 4 + C (-30691) * X ^ 3 + C 33209 * X ^ 2 + C (-21591) * X + C 6984)
+      (C 6984 * X ^ 4 + C (-21591) * X ^ 3 + C 33209 * X ^ 2 + C (-30691) * X + C 21509) :=
+    h2.step (A := 21509) (B := 6984) (c := 175) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg]; ring)
+      (by simp only [map_ofNat, map_neg]; ring)
+  have h0 : Polynomial.IsSchurCohnPair
+      (C 147 * X ^ 5 + C (-213) * X ^ 4 + C 237 * X ^ 3 + C (-163) * X ^ 2 + C 62 * X + C (-10))
+      (C (-10) * X ^ 5 + C 62 * X ^ 4 + C (-163) * X ^ 3 + C 237 * X ^ 2 + C (-213) * X + C 147) :=
+    h1.step (A := 147) (B := -10) (c := 1) (by norm_num) (by norm_num)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+      (by simp only [map_ofNat, map_neg, map_one]; ring)
+  exact h0.isSchurStable
+
+/-- The factorisation of the first characteristic polynomial of the four-step BDF method:
+`25 ρ(r) = (r - 1)(25 r³ - 23 r² + 13 r - 3)`. -/
+theorem rho_bdf_three_factor : (bdf 3).rho =
+    C (1 / 25) * ((X - C 1) * (C 25 * X ^ 3 + C (-23) * X ^ 2 + C 13 * X + C (-3))) := by
+  rw [bdf_three_eq]
+  unfold rho
+  apply Polynomial.funext
+  intro x
+  simp [Fin.sum_univ_succ]
+  ring
+
+/-- The factorisation of the first characteristic polynomial of the five-step BDF method:
+`137 ρ(r) = (r - 1)(137 r⁴ - 163 r³ + 137 r² - 63 r + 12)`. -/
+theorem rho_bdf_four_factor : (bdf 4).rho =
+    C (1 / 137) * ((X - C 1) *
+      (C 137 * X ^ 4 + C (-163) * X ^ 3 + C 137 * X ^ 2 + C (-63) * X + C 12)) := by
+  rw [bdf_four_eq]
+  unfold rho
+  apply Polynomial.funext
+  intro x
+  simp [Fin.sum_univ_succ]
+  ring
+
+/-- The factorisation of the first characteristic polynomial of the six-step BDF method:
+`147 ρ(r) = (r - 1)(147 r⁵ - 213 r⁴ + 237 r³ - 163 r² + 62 r - 10)`. -/
+theorem rho_bdf_five_factor : (bdf 5).rho =
+    C (1 / 147) * ((X - C 1) *
+      (C 147 * X ^ 5 + C (-213) * X ^ 4 + C 237 * X ^ 3 + C (-163) * X ^ 2 + C 62 * X +
+        C (-10))) := by
+  rw [bdf_five_eq]
+  unfold rho
+  apply Polynomial.funext
+  intro x
+  simp [Fin.sum_univ_succ]
+  ring
+
+/-- **Every BDF method of Table 11.2 satisfies the root condition**
+([quarteroni2000numerical] §11.6.3, "BDF methods are zero-stable for `p ≤ 5`", quoted there from
+Cryer without proof). For `p ≤ 2` this is `bdf_satisfiesRootCondition`; for `p = 3, 4, 5` the
+first characteristic polynomial factors as `ρ = c (r - 1) Q` with `Q` Schur stable
+(`isSchurStable_bdfFactor3`, `isSchurStable_bdfFactor4`, `isSchurStable_bdfFactor5`), and
+`Polynomial.satisfiesRootCondition_of_isSchurStable` concludes. -/
+theorem bdf_satisfiesRootCondition_all (k : Fin 6) : (bdf k).SatisfiesRootCondition := by
+  fin_cases k
+  · exact bdf_satisfiesRootCondition _ (by decide)
+  · exact bdf_satisfiesRootCondition _ (by decide)
+  · exact bdf_satisfiesRootCondition _ (by decide)
+  · exact Polynomial.satisfiesRootCondition_of_isSchurStable (by norm_num)
+      isSchurStable_bdfFactor3 rho_bdf_three_factor
+  · exact Polynomial.satisfiesRootCondition_of_isSchurStable (by norm_num)
+      isSchurStable_bdfFactor4 rho_bdf_four_factor
+  · exact Polynomial.satisfiesRootCondition_of_isSchurStable (by norm_num)
+      isSchurStable_bdfFactor5 rho_bdf_five_factor
 
 end BDF
 

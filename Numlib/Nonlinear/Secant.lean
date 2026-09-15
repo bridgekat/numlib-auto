@@ -1,5 +1,6 @@
 import Mathlib.NumberTheory.Real.GoldenRatio
 import Numlib.Approximation.DividedDifference
+import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.ScalarNewton
 
 /-!
@@ -50,8 +51,12 @@ there. The brackets are nested (`RegulaFalsi.state_mem_uIcc`), so their two ends
 `l ≤ r`; the secant points, written symmetrically as chord zeros (`RegulaFalsi.chord`,
 `RegulaFalsi.chord_comm`), converge to the chord zero of `(l, f l)` and `(r, f r)`, which is a
 convex combination of `l` and `r` and at the same time an end of the limiting bracket, hence `l`
-or `r`, with the corresponding value of `f` vanishing. The linear *order* of regula falsi is not
-formalized; it needs the eventually fixed endpoint, which is a separate analysis.
+or `r`, with the corresponding value of `f` vanishing. Its linear *order*
+(`RegulaFalsi.convergesWithOrder_one_iterate`) needs `f` twice continuously differentiable at
+the root with `f'(α) ≠ 0`, but no convexity and no identification of the endpoint that is
+eventually frozen: the two divided differences of the secant error identity are bounded
+*uniformly over the bracket*, from below by the minimum of `|dslope f α|` on it and from above
+by splitting on whether the two points of the bracket are close together or far apart.
 -/
 
 open Filter Topology Set
@@ -1064,6 +1069,249 @@ theorem tendsto_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm
       refine Tendsto.congr ?_ (hzα ▸ htc)
       intro k
       rw [hx, hchord k]
+
+/-! #### The linear order of convergence
+
+The order statement needs the divided-difference error identity of the secant method
+(`Secant.abs_sub_root_le`) applied to the bracketing pair `(x_k, x_{k'})`:
+`|e_{k+1}| ≤ (M₂ / m₁) |e_k| |e_{k'}|`, with `m₁` a lower bound for the first divided difference
+`f[x_{k'}, x_k]` and `M₂` an upper bound for the second, `f[x_{k'}, x_k, α]`. Since `|e_{k'}|` is at
+most the length of the starting interval, that is linear convergence. The two bounds are uniform
+over the bracket rather than local, which is what removes the need to identify the endpoint that is
+eventually frozen:
+
+* **below**, `f[u, v] ≥ min_{[[x_{-1}, x_0]]} |g|` with `g = dslope f α`, because
+  `f u = (u - α) g u` and `f v = (v - α) g v` with `(u - α)(v - α) < 0` (the root separates a
+  bracketing pair) force `g u` and `g v` to have the same sign, so the numerator of
+  `f[u, v] = ((v - α) g v - (u - α) g u) / (v - u)` is a sum of two terms of equal sign; and `g`,
+  continuous and zero-free on the compact bracket (zero-free because `α` is the only root and
+  `g α = f'(α) ≠ 0`), is bounded away from `0` there;
+* **above**, `f[u, v, α] = g[u, v]`, bounded by `|g'(α)| + 1` when `u` and `v` are both in a small
+  ball around `α` (the mean value inequality for the `C¹` function `g`,
+  `exists_ball_abs_slope_sub_deriv_le`) and by `4 sup|g| / δ` when they are `δ / 2` apart. The
+  iterates converge to `α`, so eventually `x_k` is in the small ball and one of the two cases
+  applies.
+
+No convexity and no hypothesis on `f''(α)` enter: `ContDiffAt ℝ 2 f α` is used only to make
+`dslope f α` continuously differentiable at `α` (Hadamard's lemma). -/
+
+/-- **The method stalls at an exact root**: if the `k`-th iterate is a zero of `f`, every later
+state equals the `k`-th one. -/
+theorem state_eq_of_apply_eq_zero {k : ℕ} (hk : f ((step f)^[k] (x₀, xm1)).1 = 0) {j : ℕ}
+    (hj : k ≤ j) : (step f)^[j] (x₀, xm1) = (step f)^[k] (x₀, xm1) := by
+  induction j, hj using Nat.le_induction with
+  | base => rfl
+  | succ j hj ih => rw [Function.iterate_succ_apply', ih, step_eq_self hk]
+
+/-- **The root separates a bracketing pair**: if `α` is the only zero of `f` in `[[x_{-1}, x_0]]`
+and `u, v` in that interval satisfy `f u · f v < 0`, then `(u - α)(v - α) < 0`. The theorem of
+zeros gives a zero strictly between `u` and `v`, and uniqueness identifies it with `α`. -/
+theorem sub_mul_sub_neg_of_mul_neg (hf : ContinuousOn f (uIcc xm1 x₀)) {α u v : ℝ}
+    (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hu : u ∈ uIcc xm1 x₀) (hv : v ∈ uIcc xm1 x₀)
+    (hfuv : f u * f v < 0) : (u - α) * (v - α) < 0 := by
+  have hsub : uIcc u v ⊆ uIcc xm1 x₀ := uIcc_subset_uIcc hu hv
+  have hle : min u v ≤ max u v := min_le_max
+  have hcont : ContinuousOn f (Icc (min u v) (max u v)) := hf.mono hsub
+  have hmul : f (min u v) * f (max u v) < 0 := by
+    rcases le_total u v with hle' | hle'
+    · rwa [min_eq_left hle', max_eq_right hle']
+    · rw [min_eq_right hle', max_eq_left hle', mul_comm]; exact hfuv
+  obtain ⟨β, hβ, hfβ⟩ := exists_eq_zero_Ioo_of_mul_neg hle hcont hmul
+  have hβα : β = α := huniq β (hsub (Ioo_subset_Icc_self hβ)) hfβ
+  subst hβα
+  rcases le_total u v with hle' | hle'
+  · rw [min_eq_left hle', max_eq_right hle'] at hβ
+    nlinarith [hβ.1, hβ.2]
+  · rw [min_eq_right hle', max_eq_left hle'] at hβ
+    nlinarith [hβ.1, hβ.2]
+
+/-- **The first divided difference at a bracketing pair is at least `min |dslope f α|`.** With
+`g = dslope f α` one has `f u = (u - α) g u` and `f v = (v - α) g v` (`sub_smul_dslope`), so
+`f u · f v < 0` together with `(u - α)(v - α) < 0` forces `g u · g v > 0`; the numerator of
+`f[u, v] = ((v - α) g v - (u - α) g u) / (v - u)` is then a sum of two terms of the same sign, and
+`|f[u, v]|² ≥ m² |v - u|² / |v - u|²`. -/
+theorem le_abs_newton_two_of_mul_neg {α m u v : ℝ} (hα : f α = 0) (huv : u ≠ v)
+    (hsign : (u - α) * (v - α) < 0) (hfuv : f u * f v < 0) (hm : 0 < m)
+    (hgu : m ≤ |dslope f α u|) (hgv : m ≤ |dslope f α v|) :
+    m ≤ |DividedDifference.newton f ![u, v]| := by
+  set gu := dslope f α u with hgudef
+  set gv := dslope f α v with hgvdef
+  have hfu : f u = (u - α) * gu := by
+    have h := sub_smul_dslope f α u
+    simp only [smul_eq_mul] at h
+    rw [hα, sub_zero] at h
+    exact h.symm
+  have hfv : f v = (v - α) * gv := by
+    have h := sub_smul_dslope f α v
+    simp only [smul_eq_mul] at h
+    rw [hα, sub_zero] at h
+    exact h.symm
+  have hkey : ((u - α) * (v - α)) * (gu * gv) < 0 := by
+    rw [hfu, hfv] at hfuv; nlinarith [hfuv]
+  have hprod : 0 < gu * gv := by
+    by_contra hcon
+    push Not at hcon
+    nlinarith
+  have hvu : v - u ≠ 0 := sub_ne_zero.2 (Ne.symm huv)
+  have hsq1 : m ^ 2 ≤ gu ^ 2 := by nlinarith [abs_nonneg gu, sq_abs gu]
+  have hsq2 : m ^ 2 ≤ gv ^ 2 := by nlinarith [abs_nonneg gv, sq_abs gv]
+  have hsq3 : m ^ 2 ≤ gu * gv := by
+    have h : m ^ 2 ≤ |gu| * |gv| := by nlinarith [abs_nonneg gu, abs_nonneg gv]
+    rwa [← abs_mul, abs_of_pos hprod] at h
+  rw [DividedDifference.newton_two_eq _ huv, hfu, hfv, abs_div, le_div_iff₀ (abs_pos.2 hvu)]
+  have key : (m * |v - u|) ^ 2 ≤ ((v - α) * gv - (u - α) * gu) ^ 2 := by
+    rw [mul_pow, sq_abs]
+    nlinarith [mul_nonneg (sq_nonneg (v - α)) (sub_nonneg.2 hsq2),
+      mul_nonneg (sq_nonneg (u - α)) (sub_nonneg.2 hsq1),
+      mul_nonneg (neg_nonneg.2 hsign.le) (sub_nonneg.2 hsq3)]
+  have h1 : 0 ≤ m * |v - u| := by positivity
+  nlinarith [abs_nonneg ((v - α) * gv - (u - α) * gu), sq_abs ((v - α) * gv - (u - α) * gu)]
+
+/-- **Regula falsi converges linearly** ([quarteroni2000numerical] §6.2.2, "the Regula Falsi method
+has linear convergence order", quoted there from Ralston and Rabinowitz without proof): under the
+hypotheses of `tendsto_iterate` together with `f` twice continuously differentiable at the root and
+`f'(α) ≠ 0`, the iterates converge to `α` with order `1` in the sense of
+[quarteroni2000numerical] Definition 6.1.
+
+The constant produced is `M₂ |x_0 - x_{-1}| / m₁`, with `m₁` and `M₂` the uniform bounds on the two
+divided differences described above; the book's hypothesis `f''(α) ≠ 0` is not needed, and neither
+is any convexity assumption identifying the endpoint that is eventually frozen. -/
+theorem convergesWithOrder_one_iterate (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm1 < 0)
+    {α : ℝ} (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hC : ContDiffAt ℝ 2 f α)
+    (hf' : deriv f α ≠ 0) : ConvergesWithOrder (iterate f xm1 x₀) α 1 := by
+  refine ⟨tendsto_iterate hf h huniq, ?_⟩
+  -- the root, and its position strictly inside the bracket
+  have hxne : xm1 ≠ x₀ := by
+    intro heq
+    rw [heq] at h
+    nlinarith [sq_nonneg (f x₀)]
+  have hle : min xm1 x₀ ≤ max xm1 x₀ := min_le_max
+  have hmul : f (min xm1 x₀) * f (max xm1 x₀) < 0 := by
+    rcases le_total xm1 x₀ with hle' | hle'
+    · rw [min_eq_left hle', max_eq_right hle', mul_comm]; exact h
+    · rwa [min_eq_right hle', max_eq_left hle']
+  obtain ⟨β, hβ, hfβ⟩ := exists_eq_zero_Ioo_of_mul_neg hle hf hmul
+  have hβα : β = α := huniq β (Ioo_subset_Icc_self hβ) hfβ
+  subst hβα
+  have hα : f β = 0 := hfβ
+  have hαI : β ∈ uIcc xm1 x₀ := Ioo_subset_Icc_self hβ
+  have hInhds : uIcc xm1 x₀ ∈ 𝓝 β :=
+    Filter.mem_of_superset (Ioo_mem_nhds hβ.1 hβ.2) Ioo_subset_Icc_self
+  -- the divided slope `g = dslope f β` is continuous and zero-free on the bracket
+  have hdiff : DifferentiableAt ℝ f β := hC.differentiableAt (by norm_num)
+  have hgc : ContinuousOn (dslope f β) (uIcc xm1 x₀) := (continuousOn_dslope hInhds).2 ⟨hf, hdiff⟩
+  have hgne : ∀ x ∈ uIcc xm1 x₀, dslope f β x ≠ 0 := by
+    intro x hx
+    rcases eq_or_ne x β with rfl | hxa
+    · rw [dslope_same]; exact hf'
+    · rw [dslope_of_ne _ hxa, slope_def_field]
+      refine div_ne_zero (sub_ne_zero.2 ?_) (sub_ne_zero.2 hxa)
+      intro hfx
+      exact hxa (huniq x hx (by rw [hfx, hα]))
+  obtain ⟨m, hmpos, hmg⟩ : ∃ m, 0 < m ∧ ∀ x ∈ uIcc xm1 x₀, m ≤ |dslope f β x| := by
+    obtain ⟨z, hzI, hz⟩ := isCompact_uIcc.exists_isMinOn nonempty_uIcc hgc.abs
+    exact ⟨|dslope f β z|, abs_pos.2 (hgne z hzI), fun x hx => hz hx⟩
+  obtain ⟨Mg, hMg⟩ := isCompact_uIcc.exists_bound_of_continuousOn hgc
+  have hMg0 : 0 ≤ Mg := le_trans (norm_nonneg _) (hMg β hαI)
+  -- the `C¹` bound for `g` near the root
+  have hC2 : ContDiffAt ℝ (1 + 1 : ℕ) f β := by simpa using hC
+  have hgC1 : ContDiffAt ℝ 1 (dslope f β) β := ContDiffAt.dslope_same (n := 1) hC2
+  obtain ⟨δ, hδ, hball⟩ := exists_ball_abs_slope_sub_deriv_le hgC1 one_pos
+  set M₂ : ℝ := max (|deriv (dslope f β) β| + 1) (4 * Mg / δ) with hM₂def
+  have hM₂pos : 0 < M₂ := lt_of_lt_of_le (by positivity) (le_max_left _ _)
+  have hspan : max xm1 x₀ - min xm1 x₀ ≤ |xm1 - x₀| := by
+    rcases le_total xm1 x₀ with hle' | hle'
+    · rw [min_eq_left hle', max_eq_right hle', abs_sub_comm, abs_of_nonneg (by linarith)]
+    · rw [min_eq_right hle', max_eq_left hle', abs_of_nonneg (by linarith)]
+  have hdiam : ∀ a ∈ uIcc xm1 x₀, |a - β| ≤ |xm1 - x₀| := by
+    intro a ha
+    rw [abs_sub_le_iff]
+    constructor <;> linarith [ha.1, ha.2, hαI.1, hαI.2]
+  have hxpos : 0 < |xm1 - x₀| := abs_pos.2 (sub_ne_zero.2 hxne)
+  refine ⟨M₂ / m * |xm1 - x₀|, by positivity, ?_⟩
+  by_cases hroot : ∃ k, f (iterate f xm1 x₀ k) = 0
+  · -- an iterate is an exact root: the method stalls there
+    obtain ⟨k, hk⟩ := hroot
+    have hstall : ∀ j, k ≤ j → iterate f xm1 x₀ j = β := by
+      intro j hj
+      have hj' := state_eq_of_apply_eq_zero (f := f) (x₀ := x₀) (xm1 := xm1) hk hj
+      rw [iterate, hj', ← iterate]
+      exact huniq _ (iterate_mem_uIcc h k) hk
+    filter_upwards [eventually_ge_atTop k] with j hj
+    rw [hstall j hj, hstall (j + 1) (by omega)]
+    simp
+  · simp only [not_exists] at hroot
+    filter_upwards [(tendsto_iterate hf h huniq).eventually
+      (Metric.ball_mem_nhds β (half_pos hδ))] with k hk
+    have hbr : f ((step f)^[k] (x₀, xm1)).1 * f ((step f)^[k] (x₀, xm1)).2 < 0 :=
+      mul_neg_iterate h hroot k
+    set s := (step f)^[k] (x₀, xm1) with hsdef
+    set v := s.1 with hvdef
+    set u := s.2 with hudef
+    have hvI : v ∈ uIcc xm1 x₀ := (state_mem_uIcc h k).1
+    have huI : u ∈ uIcc xm1 x₀ := (state_mem_uIcc h k).2.1
+    have hfv : f v ≠ 0 := fun h0 => by rw [h0, zero_mul] at hbr; exact lt_irrefl _ hbr
+    have hfu : f u ≠ 0 := fun h0 => by rw [h0, mul_zero] at hbr; exact lt_irrefl _ hbr
+    have hva : v ≠ β := fun h0 => hfv (by rw [h0, hα])
+    have hua : u ≠ β := fun h0 => hfu (by rw [h0, hα])
+    have huv : u ≠ v := by
+      intro h0
+      rw [h0] at hbr
+      nlinarith [sq_nonneg (f v)]
+    have hsign : (u - β) * (v - β) < 0 :=
+      sub_mul_sub_neg_of_mul_neg hf huniq huI hvI (by rw [mul_comm]; exact hbr)
+    have hden : m ≤ |DividedDifference.newton f ![u, v]| :=
+      le_abs_newton_two_of_mul_neg hα huv hsign (by rw [mul_comm]; exact hbr) hmpos
+        (hmg u huI) (hmg v hvI)
+    have hvclose : |v - β| < δ / 2 := by
+      have hveq : v = iterate f xm1 x₀ k := rfl
+      rw [hveq, ← Real.dist_eq]
+      exact hk
+    -- the second divided difference is bounded, in both regimes
+    have hnum : |DividedDifference.newton f ![u, v, β]| ≤ M₂ := by
+      rw [DividedDifference.newton_three_eq_newton_two_dslope _ β huv hua hva,
+        DividedDifference.newton_two_eq _ huv]
+      rcases lt_or_ge (|u - β|) δ with hclose | hfar
+      · have hu' : u ∈ Metric.ball β δ := by rw [Metric.mem_ball, Real.dist_eq]; exact hclose
+        have hv' : v ∈ Metric.ball β δ := by
+          rw [Metric.mem_ball, Real.dist_eq]
+          linarith
+        have hb := hball u hu' v hv' huv
+        have hb2 := abs_le.1 hb
+        refine le_trans (b := |deriv (dslope f β) β| + 1) ?_ (le_max_left _ _)
+        rw [abs_le]
+        constructor
+        · linarith [neg_abs_le (deriv (dslope f β) β), hb2.1]
+        · linarith [le_abs_self (deriv (dslope f β) β), hb2.2]
+      · have hvu : δ / 2 ≤ |v - u| := by
+          have habs : |u - β| - |v - β| ≤ |u - v| := by
+            have h' := abs_sub_abs_le_abs_sub (u - β) (v - β)
+            simpa using h'
+          rw [abs_sub_comm v u]
+          linarith
+        have hbound : |dslope f β v - dslope f β u| ≤ 2 * Mg := by
+          have h1 := hMg v hvI
+          have h2 := hMg u huI
+          rw [Real.norm_eq_abs] at h1 h2
+          calc |dslope f β v - dslope f β u| ≤ |dslope f β v| + |dslope f β u| := abs_sub _ _
+            _ ≤ 2 * Mg := by linarith
+        have hvupos : (0 : ℝ) < |v - u| := lt_of_lt_of_le (by positivity) hvu
+        rw [abs_div, div_le_iff₀ hvupos]
+        refine le_trans hbound ?_
+        have hmax : 4 * Mg / δ ≤ M₂ := le_max_right _ _
+        have hkey : 4 * Mg / δ * (δ / 2) = 2 * Mg := by field_simp; ring
+        nlinarith [hvu, hmax, hM₂pos, hMg0]
+    -- the error recursion
+    have hstep := Secant.abs_sub_root_le hα huv hua hva hmpos hden hnum
+    rw [iterate_succ, secantPoint]
+    calc |v - (v - u) / (f v - f u) * f v - β| ≤ M₂ / m * (|v - β| * |u - β|) := hstep
+      _ ≤ M₂ / m * (|v - β| * |xm1 - x₀|) :=
+          mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left (hdiam u huI) (abs_nonneg _))
+            (div_pos hM₂pos hmpos).le
+      _ = M₂ / m * |xm1 - x₀| * |v - β| := by ring
+      _ = M₂ / m * |xm1 - x₀| * ‖iterate f xm1 x₀ k - β‖ ^ (1 : ℝ) := by
+          rw [Real.rpow_one, Real.norm_eq_abs]
+          rfl
 
 end RegulaFalsi
 

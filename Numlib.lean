@@ -383,6 +383,7 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.Horner
 import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.RingTheory.Polynomial.RuleOfSigns
+import Numlib.RingTheory.Polynomial.SchurCohn
 import Numlib.Stationary.ADI
 import Numlib.Stationary.Basic
 import Numlib.Stationary.Block

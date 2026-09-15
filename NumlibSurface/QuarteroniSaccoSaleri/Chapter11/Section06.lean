@@ -38,7 +38,7 @@ order and ϑ-stability clauses of Property 11.2) and the zero-stability of the B
 * `equation_11_54` — the method on the test problem is a linear difference equation.
 * `theorem_11_4`, `lemma_11_3`, `equation_11_65` — zero-stability and the root condition.
 * `oneStep_zeroStable`, `adams_zeroStable`, `midpoint_zeroStable`, `simpson_zeroStable`,
-  `bdf_zeroStable_of_le_two` — the classical methods.
+  `bdf_zeroStable_of_le_two`, `bdf_zeroStable` — the classical methods.
 * `theorem_11_5`, `theorem_11_5_mpr`, `theorem_11_5_order`, `theorem_11_5_mp`,
   `corollary_11_1` — convergence.
 * `absoluteStability`, `property_11_2_explicit`, `remark_11_3_midpoint`,
@@ -421,10 +421,17 @@ theorem simpson_zeroStable :
 
 /-- **The BDF methods with `p ≤ 2` are zero-stable** (§11.6.3, the rows `p = 0, 1, 2` of Table
 11.2): `ρ` has the roots `1`, `1/3` (`p = 1`) and `1`, `(7 ± i√39)/22` (`p = 2`);
-`ODE.LinearMultistep.bdf_satisfiesRootCondition`. The rows `p = 3, 4, 5` are `bdf_zeroStable`,
-open. -/
+`ODE.LinearMultistep.bdf_satisfiesRootCondition`. The rows `p = 3, 4, 5` are `bdf_zeroStable`. -/
 theorem bdf_zeroStable_of_le_two (k : Fin 6) (hk : k ≤ 2) : definition_11_10 (bdf k) :=
   LinearMultistep.bdf_satisfiesRootCondition k hk
+
+/-- **The BDF methods of Table 11.2 are zero-stable** (§11.6.3, "BDF methods are zero-stable for
+`p ≤ 5`", quoted in the book from Cryer without proof): every one of the six rows of Table 11.2
+satisfies the root condition. For `p ≤ 2` this is `bdf_zeroStable_of_le_two`; for `p = 3, 4, 5`
+the spurious factor of `ρ` is located inside the unit disc by the Schur–Cohn recursion,
+`ODE.LinearMultistep.bdf_satisfiesRootCondition_all`. -/
+theorem bdf_zeroStable (k : Fin 6) : definition_11_10 (bdf k) :=
+  LinearMultistep.bdf_satisfiesRootCondition_all k
 
 /-! ### Theorem 11.5 and Corollary 11.1: convergence -/
 

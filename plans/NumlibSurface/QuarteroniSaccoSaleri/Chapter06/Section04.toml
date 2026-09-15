@@ -60,10 +60,17 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.30)'
 id = "muller_order"
 kind = "theorem"
 desc = '''The convergence claim after (6.30): for `f ∈ C³(J)` near a root `α` with `f'(α) ≠ 0`, the
-error `e^{(k)} = α - x^{(k)}` of Muller's method satisfies `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6`
-with `p ≈ 1.84` the real root of `p³ = p² + p + 1`. Not formalized: the book quotes Hildebrand
-without proof; the backbone's `Muller.exists_ball_convergesWithOrder` states the order-`p` part
-(without the limit constant) as a ★★★ open node with the route, and nothing else in the corpus
-uses it. This node restates the book's limit form and depends on it.'''
+error `e^{(k)} = α - x^{(k)}` of Muller's method satisfies
+`|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6` with `p ≈ 1.84` the real root of
+`p³ = p² + p + 1`. The book quotes Hildebrand without proof; this node restates the book's limit
+form over the backbone's `Muller.exists_ball_convergesWithOrder`.
+
+Blocked: waits on `Muller.exists_ball_convergesWithOrder`, which is open with its own `Blocked:`
+note (the step is not yet tied to the quadratic interpolant, the four-node divided-difference error
+identity is not stated, and the tribonacci constant with its ratio recursion is not in Mathlib).
+Note also that the backbone node states only the order, not the limit constant printed here; if
+this node is to keep the limit form, a *limit* version of the backbone statement is needed as
+well — the secant analogue `Secant.exists_ball_convergesWithOrder_goldenRatio` deliberately proves
+the bound form only, and the book's own Property 6.2 is not claimed as a limit either.'''
 deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_30", "Muller.exists_ball_convergesWithOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.4.3'

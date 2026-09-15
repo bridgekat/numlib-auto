@@ -131,20 +131,6 @@ id = "LinearMultistep.bdf_satisfiesRootCondition"
 
 [[node]]
 id = "LinearMultistep.bdf_satisfiesRootCondition_all"
-kind = "theorem"
-desc = '''Zero-stability of every BDF method of Table 11.2 (§11.6.3, "BDF methods are zero-stable for
-`p ≤ 5`", [Cry73]): `∀ k : Fin 6, (bdf k).SatisfiesRootCondition`. The cases `k ≤ 2` are
-`bdf_satisfiesRootCondition`; for `k = 3, 4, 5` the spurious roots of `ρ` are those of a cubic, a
-quartic and a quintic with no closed form (BDF4: `25 r³ - 23 r² + 13 r - 3`; BDF5:
-`137 r⁴ - 163 r³ + 137 r² - 63 r + 12`; BDF6: `147 r⁵ - 213 r⁴ + 237 r³ - 163 r² + 62 r - 10`),
-and locating them inside the unit disc needs a Schur–Cohn/Jury criterion. ★★★
-
-Blocked: no Schur–Cohn/Jury test in Mathlib or in this library; the roots have no closed
-form, so the `satisfiesRootCondition_of_roots` route used for `k ≤ 2` does not apply. A
-Schur–Cohn module (`RingTheory/Polynomial/SchurCohn`, the reduced polynomial recursion with its
-root-counting theorem) is the missing piece; two to three days.'''
-deps = ["ODE.LinearMultistep.bdf", "ODE.LinearMultistep.bdf_satisfiesRootCondition"]
-
 [[node]]
 id = "LinearMultistep.midpoint"
 
@@ -356,6 +342,9 @@ id = "_root_.LinearRecurrence.exists_isSolution_real_frequently_le"
 id = "_root_.Polynomial.satisfiesRootCondition_of_roots"
 
 [[node]]
+id = "_root_.Polynomial.satisfiesRootCondition_of_isSchurStable"
+
+[[node]]
 id = "_root_.Polynomial.satisfiesRootCondition_C_mul_iff"
 
 [[node]]
@@ -372,3 +361,12 @@ id = "LinearMultistep.not_isThetaStable_of_bm1_eq_zero"
 
 [[node]]
 id = "_root_.Polynomial.norm_eval_le_two_pow_natDegree"
+
+[[node]]
+id = "LinearMultistep.isSchurStable_bdfFactor3"
+
+[[node]]
+id = "LinearMultistep.isSchurStable_bdfFactor4"
+
+[[node]]
+id = "LinearMultistep.isSchurStable_bdfFactor5"
