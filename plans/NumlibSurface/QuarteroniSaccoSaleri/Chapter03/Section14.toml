@@ -1,22 +1,17 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.14, applications: only (3.78), the barycentric regularization system of §3.14.2, states a
-result (its matrix is symmetric positive definite and an M-matrix). §3.14.1 is a MATLAB experiment.
-'''
+
+[[node]]
+id = "posSemidef_of_isDiagDominant"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.12'
+
+[[node]]
+id = "regularizationMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.78)'
+
+[[node]]
+id = "regularizationMatrix_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.78)'
 
 [[node]]
 id = "equation_3_78"
-kind = "theorem"
-desc = '''(3.78): for a triangulation with interior nodes `N_h` and boundary nodes, the matrix `A` of the system
-`n_i z_i - ∑_{z_j ∈ Z_i ∩ N_h} z_j = (boundary terms)`, `A i j = n_i` if `i = j`, `-1` if `j ∈ Z_i`
-interior, `0` otherwise (`n_i = #Z_i` counting boundary neighbours too), is symmetric, and — under
-the hypothesis the book leaves implicit, that every connected component of the interior adjacency
-graph contains a node with a boundary neighbour — irreducibly diagonally dominant on each
-component, hence an M-matrix (`Matrix.isMMatrix_of_isIrreduciblyDiagDominant`, per component) and
-symmetric positive definite (an M-matrix that is symmetric is positive definite: its eigenvalues are
-real and positive since `A + t 1` is an M-matrix for `t ≥ 0`… or directly: weakly dominant symmetric
-with positive diagonal is positive semidefinite, and nonsingular). State it for an abstract finite
-simple graph on `interior ⊕ boundary` with `n_i = degree i`; the discrete maximum principle it
-implies is `Matrix.IsMMatrix.inv_entrywiseNonneg`. ★★'''
-deps = ["Matrix.isMMatrix_of_isIrreduciblyDiagDominant", "Matrix.IsMMatrix", "Matrix.IsIrreduciblyDiagDominant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.78)'

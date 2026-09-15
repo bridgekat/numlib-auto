@@ -1,68 +1,25 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.15, the exercises the main text cites: 1 and 2 (§3.1.1), 4 (§3.1.2), 5 (§3.10), 11 (§3.9), 15
-(§3.11). Exercise 6 is folded into `example_3_7_lu`; Exercise 3 (`K(AB) ≤ K(A) K(B)`) is
-`NormedRing.condNumber_mul_le` but is not cited; Exercises 7–10, 12–14 are not cited.
-'''
 
 [[node]]
 id = "exercise_3_1"
-kind = "theorem"
-desc = '''Exercise 3.1: for nonsingular `A : Matrix (Fin n) (Fin n) ℝ`, `(1/n) K₂(A) ≤ K₁(A) ≤ n K₂(A)`, `(1/n)
-K_∞(A) ≤ K₂(A) ≤ n K_∞(A)`, `(1/n²) K₁(A) ≤ K_∞(A) ≤ n² K₁(A)`. From the norm inequalities `(1/√n)
-‖A‖₂ ≤ ‖A‖₁ ≤ √n ‖A‖₂` etc. of chapter 1's `Analysis/Matrix/OperatorNorm` (Theorem 1.2's
-`‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)` and the vector-norm equivalences), applied to `A` and `A⁻¹`. ★★'''
-deps = ["NormedRing.condNumber"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.1'
 
 [[node]]
 id = "exercise_3_2"
-kind = "theorem"
-desc = '''Exercise 3.2: `B : Matrix (Fin n) (Fin n) ℝ` with `b_ii = 1`, `b_ij = -1` for `i < j`, `0` below, has
-`det B = 1` and `K_∞(B) = n 2^{n-1}`: `B⁻¹` is unit upper triangular with `(B⁻¹)_ij = 2^{j-i-1}` for
-`i < j` (`Matrix.inv_apply_of_isUpperTriangular`), so `‖B⁻¹‖_∞ = 2^{n-1}` and `‖B‖_∞ = n`. ★★'''
-deps = ["Matrix.inv_apply_of_isUpperTriangular"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.2'
 
 [[node]]
 id = "exercise_3_4"
-kind = "theorem"
-desc = '''Exercise 3.4: `A = !![1, γ; 0, 1]`, `γ ≥ 0`, has `K_∞(A) = K₁(A) = (1 + γ)²`; and for `x = ![1 - γ,
-1]`, `b = A x = ![1, 1]`, `δb = ![δ₁, δ₂]`: `‖δx‖_∞ / ‖x‖_∞ ≤ (1 + γ) ‖δb‖_∞ / max(|1 - γ|, 1)` — the
-problem is well conditioned for this `b` although `K_∞(A)` is large for large `γ` (the book asks
-"well- or ill-conditioned?"; this bound is the answer). `A⁻¹ = !![1, -γ; 0, 1]`, `norm_num`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.4'
 
 [[node]]
 id = "exercise_3_5"
-kind = "theorem"
-desc = '''Exercise 3.5 (Wilkinson's matrix): `A : Matrix (Fin n) (Fin n) ℝ` with `a_ij = 1` if `i = j` or `j =
-n`, `-1` if `i > j`, `0` otherwise, has an LU factorization (no pivoting) with `|l_ij| ≤ 1` (`L` is the
-lower part of `A`) and `u_nn = 2^{n-1}`; so `growthFactor A = 2^{n-1}`, attaining
-`growthFactor_le_two_pow`. `Matrix.gemStage` doubles the last column at each stage. ★★'''
-deps = ["Matrix.IsLU", "Matrix.gemStage", "Matrix.growthFactor", "QuarteroniSaccoSaleri.Chapter03.growthFactor_le_two_pow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.5'
 
 [[node]]
 id = "exercise_3_11"
-kind = "theorem"
-desc = '''Exercise 3.11, as the main text uses it ("the hull can contain many zeros"): for the arrow matrix
-`A` with nonzero entries exactly on the diagonal, the first column and the last row, the envelope
-(3.59) is the whole strict lower triangle, while the LU factors have the pattern of `A` (no fill:
-`L` is nonzero only in column `0` and row `n - 1` below the diagonal, `U` only on the diagonal and
-in the last column… precisely `U` has the pattern of the upper part of `A`). The permutation of
-the hint (first ↔ last row and column) turns it into a matrix whose lower envelope is empty. ★★'''
-deps = ["Matrix.envelope", "Matrix.isLU_luLower_luUpper", "QuarteroniSaccoSaleri.Chapter03.equation_3_59"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.11'
 
 [[node]]
 id = "exercise_3_15"
-kind = "theorem"
-desc = '''Exercise 3.15: for nonsingular `A` with singular system `(σ_i; u_i, v_i)` and `d = ∑ d̃_i v_i`, the
-solutions of `Aᵀ x = d`, `A y = x` are `x = ∑ (d̃_i / σ_i) u_i`, `y = ∑ (d̃_i / σ_i²) v_i`, and
-`‖y‖₂ / ‖x‖₂ = (∑ (d̃_i/σ_i²)² / ∑ (d̃_i/σ_i)²)^{1/2}`; through `Matrix.exists_singularSystem` and
-`Matrix.norm_sq_toEuclideanLin_apply` of `Numlib/LinearAlgebra/Matrix/SVD`. The discussion of when
-the ratio approximates `σ_n⁻¹` is prose. ★★'''
-deps = ["Matrix.exists_singularSystem", "QuarteroniSaccoSaleri.Chapter03.equation_3_70"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 3.15'

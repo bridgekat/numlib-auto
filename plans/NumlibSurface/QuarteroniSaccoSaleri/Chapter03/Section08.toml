@@ -1,48 +1,21 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.8, block systems: the `2 × 2` block LDU with a factored leading block (§3.8.1), Theorem 3.7, the
-Sherman–Morrison–Woodbury formula (3.57), and the block tridiagonal factorization of §3.8.3.
-Backbone: `Numlib/LinearAlgebra/Matrix/SchurComplement`, `Numlib/LinearAlgebra/Matrix/LU`
-(`IsBlockLU`), `Numlib/LinearAlgebra/Matrix/NonsingularInverse`. The block Cholesky–Thomas
-reduction and the operation counts are prose.
-'''
 
 [[node]]
 id = "blockLDU"
-kind = "theorem"
-desc = '''§3.8.1: for `A = fromBlocks A₁₁ A₁₂ A₂₁ A₂₂` with nonsingular `A₁₁ = L₁₁ D₁ R₁₁`,
-`A = fromBlocks L₁₁ 0 L₂₁ 1 * fromBlocks D₁ 0 0 Δ₂ * fromBlocks R₁₁ R₁₂ 0 1` with `L₂₁ = A₂₁ R₁₁⁻¹
-D₁⁻¹`, `R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂`, `Δ₂ = A₂₂ - L₂₁ D₁ R₁₂` (the Schur complement);
-`Matrix.fromBlocks_eq_mul_fromBlocks_of_mul_eq`. ★'''
-deps = ["Matrix.fromBlocks_eq_mul_fromBlocks_of_mul_eq", "Matrix.schurComplement"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.8.1'
 
 [[node]]
 id = "theorem_3_7"
-kind = "theorem"
-desc = '''Theorem 3.7: for `A : Matrix (Fin N) (Fin N) ℝ` partitioned in `m × m` blocks by a monotone block
-labelling `b : Fin N → Fin m`, `A` admits a unique block LU factorization with unit-diagonal-block `L`
-(`Matrix.IsBlockLU b`) iff the `m - 1` leading principal block submatrices are nonsingular;
-`Matrix.existsUnique_isBlockLU_iff`. ★'''
-deps = ["Matrix.existsUnique_isBlockLU_iff", "Matrix.IsBlockLU", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.7'
 
 [[node]]
 id = "equation_3_57"
-kind = "theorem"
-desc = '''(3.57), Sherman–Morrison–Woodbury: for nonsingular `C` and `1 + B V C⁻¹ U`, `(C + U B V)⁻¹ = C⁻¹ -
-C⁻¹ U (1 + B V C⁻¹ U)⁻¹ B V C⁻¹`; `Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add` (Mathlib's
-`Matrix.add_mul_mul_inv_eq_sub` assumes `B` invertible, which the book does not). ★'''
-deps = ["Matrix.add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.57)'
 
 [[node]]
+id = "blockTridiagonal_isBlockBidiagonal"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.8.3'
+
+[[node]]
 id = "blockTridiagonal_lu"
-kind = "theorem"
-desc = '''§3.8.3, the block Thomas factorization of (3.58): for a block tridiagonal `A` whose leading principal
-block submatrices are nonsingular, the block LU factors are block bidiagonal, `U₁ = A₁₁`, `L_{i-1}
-U_{i-1} = A_{i,i-1}`, `U_i = A_{ii} - L_{i-1} A_{i-1,i}` — Theorem 3.7 together with the block form
-of Property 3.4 (`Matrix.IsBlockLU` + `BlockTriangular` bandwidth one, i.e. `L`, `U` vanish on
-blocks `|b i - b j| ≥ 2`), read as the recurrence for the diagonal blocks. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_7", "Matrix.IsBlockLU", "QuarteroniSaccoSaleri.Chapter03.property_3_4_lower"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.8.3'

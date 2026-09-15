@@ -30,7 +30,7 @@ on `(m₁ ⊕ m₂) ⊕ m₃`; the Schur complement of a two-block matrix is `Ma
 * `equation_3_59`, `equation_3_59_iff`, `equation_3_60` — the envelope and the confinement of
   fill-in.
 * `equation_3_63`, `remark_3_6_schur` — substructuring and the Schur complement system.
-* `remark_3_6_cond` — `K₂(S) ≤ K₂(A)` for symmetric positive definite `A` (planned; see below).
+* `remark_3_6_cond` — `K₂(S) ≤ K₂(A)` for symmetric positive definite `A`.
 
 The Cuthill–McKee and nested dissection reorderings (§3.9.1, §3.9.3) state no theorem, the
 operation count (3.61) has no cost model, and Remark 3.5 is prose.
@@ -236,6 +236,23 @@ theorem remark_3_6_schur {A₁₁ : Matrix (Fin m₁) (Fin m₁) ℝ} {A₂₂ :
       ext (k | k) <;> rfl
     rw [hsub, sum_elim_eq_iff]
   rw [e1, e2, sub_sub b₃]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **Remark 3.6, the conditioning of the interface system.** If the block matrix `A` is symmetric
+and positive definite, then the system on the Schur complement `S` is no more ill conditioned than
+the original one on `A`: `K₂(S) ≤ K₂(A)` (backbone
+`Matrix.PosDef.condNumber_schurComplement_le`, whose proof is Axelsson's Lemma 3.12 without
+interlacing — `0 ≤ S ≤ A₃₃` in the Loewner order gives `‖S‖₂ ≤ ‖A‖₂`, and `S⁻¹ = (A⁻¹)₃₃` gives
+`‖S⁻¹‖₂ ≤ ‖A⁻¹‖₂`, a principal submatrix having the smaller spectral norm). Here `K₂` is
+`NormedRing.condNumber` in Mathlib's scoped `L2Operator` matrix norm, which is the chapter's
+`condNumber 2` transported to a sum index type (`condNumber_two_eq`), and `remark_3_6_schur`
+identifies `A.schurComplement` with `A₃₃ - A₁₃ᵀ A₁₁⁻¹ A₁₃ - A₂₃ᵀ A₂₂⁻¹ A₂₃`. -/
+theorem remark_3_6_cond
+    {A : Matrix ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ℝ} (hA : A.PosDef) :
+    NormedRing.condNumber A.schurComplement ≤ NormedRing.condNumber A := by
+  rw [NormedRing.condNumber, NormedRing.condNumber, ← nonsing_inv_eq_ringInverse,
+    ← nonsing_inv_eq_ringInverse]
+  exact hA.condNumber_schurComplement_le
 
 end Substructuring
 
