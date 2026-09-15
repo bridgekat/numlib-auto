@@ -1,6 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.Variational.EllipticInterval
+import Numlib.Variational.FiniteElementInterval
 
 /-!
 # Advection–diffusion in one dimension, and its stabilized discretizations
@@ -1205,6 +1206,94 @@ theorem seminorm_sub_stabilized_le (hab : a < b) {ε β h : ℝ} {φ : ℝ → �
     (fun x hx => (stabilizedForm_self hab φ hx).ge) hK hu hdisc.1 hdef hw
   refine key.trans_eq ?_
   ring
+
+/-- **Theorem 12.4 for the upwind method with `k = 1`** ([quarteroni2000numerical] (12.85)): on
+a partition of mesh at most `h` with the `P_1` finite element space `X_h^{1,0}` as trial space,
+the upwind-stabilized Galerkin error satisfies
+`|ů - ů_h|_{H¹} ≤ C h (|ů|_{H¹} + |ů|_{H²})` with `C = 2 + C_P |β|/ε + |β|/(2ε)` independent of
+`h` and of `ů`. This is `AdvectionDiffusion.seminorm_sub_stabilized_le` with
+`w = Π_h^1 ů` (`FiniteElement.lagrangeInterp`), the interpolation estimate (8.27)
+`FiniteElement.seminorm_sub_lagrangeInterp_le`, and `ε φ^{UP}(Pe)/ε_h ≤ Pe = |β| h/(2ε)`. -/
+theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → ℝ}
+    (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
+    (hmesh : ∀ k < n, x (k + 1) - x k ≤ h) {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ}
+    {u uh : SobolevInterval 1 a b} (U : SobolevInterval 2 a b)
+    (hU : SobolevInterval.inclusionCLM 1 a b U = u) (hu : u ∈ SobolevIntervalZero a b)
+    (hexact : ∀ v ∈ FiniteElement.lagrangeSpaceZero hab n x 1,
+      EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) 0 u v = ℓ v)
+    (hdisc : IsGalerkinSolution (stabilizedForm a b ε β h phiUpwind) ℓ
+      (FiniteElement.lagrangeSpaceZero hab n x 1) uh) :
+    SobolevInterval.seminorm 1 a b (u - uh)
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε + |β| / (2 * ε)) * h
+        * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 2 a b U) := by
+  have hh : 0 ≤ h := by
+    have e1 := hx.step 0 hn
+    have e2 := hmesh 0 hn
+    linarith
+  have hPe : 0 ≤ localPeclet β h ε := localPeclet_nonneg hh hε.le
+  have hφ : 0 ≤ phiUpwind (localPeclet β h ε) := hPe
+  have hεh : 0 < viscosity ε β h phiUpwind := viscosity_pos hε hφ
+  have hεle : ε ≤ viscosity ε β h phiUpwind := by
+    rw [viscosity]
+    nlinarith
+  have key := seminorm_sub_stabilized_le hab hε hφ
+    (FiniteElement.lagrangeSpaceZero_le_sobolevIntervalZero hab n x 1) hu hexact hdisc
+    (FiniteElement.lagrangeInterp_mem_lagrangeSpaceZero hab hx hn hu)
+  -- the interpolation error
+  have hinterp : SobolevInterval.seminorm 1 a b (u - FiniteElement.lagrangeInterp hx hn u)
+      ≤ h * SobolevInterval.seminorm 2 a b U := by
+    have h1 := FiniteElement.seminorm_sub_lagrangeInterp_le hab hx hn hmesh U
+    rwa [hU] at h1
+  -- the two constants
+  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by
+    have := hab.le
+    positivity
+  have hc1 : 1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
+        / viscosity ε β h phiUpwind ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by
+    rw [add_div, div_self hεh.ne', ← add_assoc]
+    have : (b - a) / Real.sqrt 2 * |β| / viscosity ε β h phiUpwind
+        ≤ (b - a) / Real.sqrt 2 * |β| / ε :=
+      div_le_div_of_nonneg_left (by positivity) hε hεle
+    linarith
+  have hc2 : ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind
+      ≤ |β| / (2 * ε) * h := by
+    have hle : ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind
+        ≤ ε * phiUpwind (localPeclet β h ε) / ε :=
+      div_le_div_of_nonneg_left (by positivity) hε hεle
+    refine hle.trans (le_of_eq ?_)
+    simp only [phiUpwind, localPeclet]
+    field_simp
+  -- assembling
+  have h1 : 0 ≤ SobolevInterval.seminorm 1 a b u := apply_nonneg _ _
+  have h2 : 0 ≤ SobolevInterval.seminorm 2 a b U := apply_nonneg _ _
+  have h3 : 0 ≤ SobolevInterval.seminorm 1 a b (u - FiniteElement.lagrangeInterp hx hn u) :=
+    apply_nonneg _ _
+  have h4 : 0 ≤ 1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
+      / viscosity ε β h phiUpwind := by positivity
+  have h5 : 0 ≤ ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind := by positivity
+  refine key.trans ?_
+  have hA : (1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
+        / viscosity ε β h phiUpwind)
+      * SobolevInterval.seminorm 1 a b (u - FiniteElement.lagrangeInterp hx hn u)
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε) * (h * SobolevInterval.seminorm 2 a b U) := by
+    refine mul_le_mul hc1 hinterp h3 (by linarith)
+  have hB : ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind
+      * SobolevInterval.seminorm 1 a b u
+      ≤ |β| / (2 * ε) * h * SobolevInterval.seminorm 1 a b u :=
+    mul_le_mul_of_nonneg_right hc2 h1
+  have hbeta : 0 ≤ |β| / (2 * ε) := by positivity
+  have hba : (0 : ℝ) ≤ b - a := by linarith
+  have ha0 : 0 ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by positivity
+  calc (1 + (viscosity ε β h phiUpwind + (b - a) / Real.sqrt 2 * |β|)
+          / viscosity ε β h phiUpwind)
+        * SobolevInterval.seminorm 1 a b (u - FiniteElement.lagrangeInterp hx hn u)
+        + ε * phiUpwind (localPeclet β h ε) / viscosity ε β h phiUpwind
+          * SobolevInterval.seminorm 1 a b u
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε) * (h * SobolevInterval.seminorm 2 a b U)
+        + |β| / (2 * ε) * h * SobolevInterval.seminorm 1 a b u := add_le_add hA hB
+    _ ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε + |β| / (2 * ε)) * h
+          * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 2 a b U) := by
+        nlinarith [mul_nonneg (mul_nonneg ha0 hh) h1, mul_nonneg (mul_nonneg hbeta hh) h2]
 
 end Form
 

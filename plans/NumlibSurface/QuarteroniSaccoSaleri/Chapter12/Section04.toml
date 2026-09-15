@@ -27,7 +27,8 @@ desc = '''§12.4.2: `𝒟(0,1) = 𝓓(Opens.Ioo 0 1, ℝ)` (Mathlib's `TestFunct
 The two example functionals `⟨T, x⟩ = x(0)` and `⟨S, x⟩ = ∫ x sin` on `C[0,1]` are `ContinuousMap.evalCLM`
 and an integral against a continuous function, both in Mathlib. ★
 
-Blocked: not attempted. Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
+Blocked: not attempted this round either (the round's budget went to the hat functions, the
+stiffness matrix and the convergence estimates). Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
 whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
 distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
 to learn.'''
@@ -45,7 +46,8 @@ constructor (Mathlib has `Distribution.delta` but no `L¹_loc → 𝓓'` map): f
 then its distributional derivative is its classical derivative — `hasWeakDerivOn_of_contDiffOn` of
 `Numlib/Analysis/Sobolev/Interval.lean`, which is the same integration by parts. ★
 
-Blocked: not attempted. Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
+Blocked: not attempted this round either (the round's budget went to the hat functions, the
+stiffness matrix and the convergence estimates). Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
 whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
 distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
 to learn.'''
@@ -94,104 +96,41 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.57)'
 
 [[node]]
 id = "equation_12_58"
-kind = "theorem"
-desc = '''(12.58) and the `k = 1` estimate below it: `min_{w_h ∈ V_h} |u - w_h|_{H¹₀} ≤ |u - Π_h^k u|_{H¹₀}` (the
-interpolant `Π_h^k u` of the continuous representative of `u ∈ H^1_0` lies in `V_h`;
-`FiniteElement.piecewisePolyInterp_mem_lagrangeSpaceZero`), and for `k = 1`, `u ∈ H²(0,1)`:
-`|u - u_h|_{H¹₀(0,1)} ≤ (M/α₀) C h ‖u‖_{H²(0,1)}` from Céa (12.56) and (8.27) — chapter 8's expected
-`integral_sq_sub_piecewiseLinearInterpCLM_le`. ★
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_57", "QuarteroniSaccoSaleri.Chapter12.theorem_12_3", "integral_sq_sub_piecewiseLinearInterpCLM_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.58)'
 
 [[node]]
 id = "property_12_1"
-kind = "theorem"
-desc = '''Property 12.1, the `H¹` estimate (12.59): for `u ∈ H^1_0(0,1) ∩ H^s(0,1)`, `s ≥ 2`, and `u_h` its
-finite element approximation of degree `k ≥ 1`, `‖u - u_h‖_{H¹₀(0,1)} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}(0,1)}` with
-`l = min(k, s - 1)`. Céa (`theorem_12_3`) plus Theorem 8.3's `|u - Π_h^k u|_{H¹} ≤ C h^l |u|_{H^{l+1}}`
-(the interpolant of degree `k` applied to `u ∈ H^{l+1}`; chapter 8's expected
-`sobolevSeminorm_sub_piecewisePolyInterp_le`, which the book proves for `k = 1` only and
-quotes from [QV94] otherwise — so this node is proved for `k = 1` when chapter 8 proves (8.27), and
-inherits "not formalized" from chapter 8 for `k ≥ 2` if chapter 8 does not prove (8.26)). ★ given the
-interpolation estimate.
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_58", "QuarteroniSaccoSaleri.Chapter12.theorem_12_3", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.1, equation (12.59)'
 
 [[node]]
 id = "property_12_1_l2"
-kind = "theorem"
-desc = '''Property 12.1, the `L²` estimate (12.60): under the same assumptions and `α ∈ C¹[0,1]`,
-`‖u - u_h‖_{L²(0,1)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(0,1)}`. Aubin–Nitsche: `EllipticInterval.galerkin_norm_sub_le_l2`
-(which needs the one-dimensional `H²` regularity `EllipticInterval.isWeakSolution_mem_sobolevInterval_two`
-of the dual problem and the `k = 1` interpolation estimate for it) combined with `property_12_1`. The
-book quotes it from [QV94]. ★★★ through the two backbone nodes.
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.property_12_1", "EllipticInterval.galerkin_norm_sub_le_l2", "EllipticInterval.isWeakSolution_mem_sobolevInterval_two"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.1, equation (12.60)'
 
 [[node]]
 id = "equation_12_61"
-kind = "definition"
-desc = '''The shape functions of `X_h^1` (12.61), `φ_i` piecewise linear with `φ_i(x_j) = δ_ij`, their supports
-(`I_{i-1} ∪ I_i` for `1 ≤ i ≤ n - 1`, `I_0` and `I_{n-1}` at the ends), and the fact that they span `X_h^1`
-with the `n + 1` nodal values as degrees of freedom: `FiniteElement.hatFunction`, `hatFunction_support`,
-`hatFunction_apply_node`, `FiniteElement.hatBasis`. With (12.62) the affine map `x = φ(ξ) = x_i + ξ (x_{i+1}
-- x_i)` and the reference shape functions `φ̂₀(ξ) = 1 - ξ`, `φ̂₁(ξ) = ξ`, `φ_i = φ̂₀ ∘ ξ`, `φ_{i+1} = φ̂₁ ∘ ξ` on
-`I_i` (`FiniteElement.referenceShape`, `hatFunction_eq_referenceHat_comp`). ★
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["FiniteElement.hatFunction", "FiniteElement.hatBasis", "FiniteElement.referenceShape"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.61)–(12.62)'
 
 [[node]]
 id = "equation_12_63"
 kind = "definition"
-desc = '''The shape functions of `X_h^2` (12.63)–(12.64) at the `2n + 1` nodes (endpoints even, midpoints odd),
-with `φ_i(x_j) = δ_ij`, the reference functions (12.65) `φ̂₀ = (1 - ξ)(1 - 2ξ)`, `φ̂₁ = 4(1 - ξ)ξ`, `φ̂₂ = ξ(2ξ - 1)`,
-and the bubble function's support being one interval: `FiniteElement.quadraticShape`,
-`quadraticShape_apply_node`, `quadraticShape_support`, `referenceQuadratic`,
-`quadraticShape_eq_referenceQuadratic_comp`. ★
+desc = '''The shape functions of `X_h^2` (12.63)-(12.64) at the `2n + 1` nodes (endpoints even, midpoints odd),
+with `phi_i(x_j) = delta_ij`, the reference functions (12.65) and the bubble function's support being one
+interval: `FiniteElement.quadraticShape`, `quadraticShape_apply_node`, `quadraticShape_support`,
+`FiniteElement.referenceQuadratic` (which is written), `quadraticShape_eq_referenceQuadratic_comp`. *
 
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["FiniteElement.quadraticShape", "FiniteElement.referenceShape"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.63)–(12.65)'
+Blocked: `FiniteElement.quadraticShape` was not reached; see its `Blocked:` paragraph in
+`plans/Numlib/Variational/FiniteElementInterval.toml`. The reference functions (12.65) themselves
+are `FiniteElement.referenceQuadratic`, which is proved; only the global piecewise quadratic shape
+functions and their basis are missing.'''
+deps = ["FiniteElement.quadraticShape", "FiniteElement.referenceHat"]
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.63)-(12.65)'
 
 [[node]]
 id = "equation_12_66"
-kind = "theorem"
-desc = '''The hierarchical basis (12.66) `ψ̂₀ = 1 - ξ`, `ψ̂₁ = (1 - ξ)ξ`, `ψ̂₂ = ξ` is a basis of `P_2` on the
-reference interval: linearly independent (`α₀ + ξ(α₁ - α₀ + α₂) - α₁ξ² ≡ 0 ⟹ α₀ = α₁ = α₂ = 0`, the book's
-check) and of the right cardinality. `FiniteElement.referenceHierarchical_linearIndependent`. ★
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["FiniteElement.referenceShape"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.66)'
 
 [[node]]
 id = "equation_12_61_stiffness"
-kind = "theorem"
-desc = '''The structure of `A_fe` (§12.4.5): for `k = 1` the stiffness matrix in the hat basis is tridiagonal,
-`a_ij = 0` for `j ∉ {i - 1, i, i + 1}`, because the supports of `φ_i` and `φ_j` do not overlap; for `k = 2` it
-is pentadiagonal. `FiniteElement.stiffnessMatrix_eq_zero_of_lt`. And the conditioning claim
-`K₂(A_fe) = O(h⁻²)`: `stiffnessMatrix_condNumber` states it for the model problem `-u'' = f` on the uniform
-mesh, `K₂(A_fe) = cot²(πh/2) ≤ 4/(π² h²)` (`FiniteElement.condNumber_stiffnessMatrix_model`,
-`Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two`); the general-coefficient claim is quoted from
-[QV94, §6.3.2] and is not a node. ★
-
-Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
-round did not reach it); see the report of `agent/bvp` for the route.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_61", "FiniteElement.stiffnessMatrix_eq_zero_of_lt", "Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, the structure and conditioning of the stiffness matrix'''
 
 [[node]]
@@ -202,19 +141,27 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 12.1, equa
 [[node]]
 id = "equation_12_68"
 kind = "definition"
-desc = '''The spectral (generalized Galerkin) method (12.68)–(12.69): find `u_n ∈ P_n^0` with `a_n(u_n, v_n) =
-(f, v_n)_n` for all `v_n ∈ P_n^0`, where `a_n(u, v) = (α u', v')_n + (β u', v)_n + (γ u, v)_n` replaces the
-integrals of (12.44) by the Gauss–Lobatto formula (12.37) — `IsGeneralizedGalerkinSolution` of
-`Numlib/Variational/Galerkin.lean` with `W = P_n^0` (as a subspace of `H^1_0(-1,1)`), `aN = a_n`, `ℓN = (f,
-·)_n`; and `equation_12_68_eq_collocation`: for `α = 1`, `β = γ = 0` it coincides with the collocation problem
-(12.36), by `equation_12_38`. Its error estimate "of the same kind as (12.39)" is asserted through the
-Strang lemma and [QV94] and is not a node beyond `theorem_12_2`'s status. ★
+desc = '''The spectral (generalized Galerkin) method (12.68)-(12.69): find `u_n` in `P_n^0` with
+`a_n(u_n, v_n) = (f, v_n)_n` for all `v_n` in `P_n^0`, where `a_n(u, v) = (alpha u', v')_n +
+(beta u', v)_n + (gamma u, v)_n` replaces the integrals of (12.44) by the Gauss-Lobatto formula
+(12.37); and `equation_12_68_eq_collocation`: for `alpha = 1`, `beta = gamma = 0` it coincides
+with the collocation problem (12.36), by `equation_12_38`. *
 
-Blocked: needs §12.3's `equation_12_37`/`equation_12_38`, which are not written (that section is
-not in this round's task).'''
+Blocked: §12.3's `equation_12_37` and `equation_12_38` are now proved, so the obstacle is only
+the shape of the backbone predicate. `IsGeneralizedGalerkinSolution` takes its space `W` with
+`[NormedAddCommGroup W] [NormedSpace k W]`, while the natural `W` here is the polynomials
+`R[X]` — the discrete form evaluates `u'` *pointwise* at the Gauss-Lobatto nodes, which no
+element of `H^1(-1, 1)` or `L^2(-1, 1)` offers. Two ways out, neither attempted: generalize
+`IsGeneralizedGalerkinSolution` (and the Strang lemma's statement, which does need the norm) to
+a plain module for the definition alone; or instantiate `W` at `ContDiffMapIcc` (the `C^k` maps
+on `[-1, 1]`, which is a normed space and carries `u'`) and take `K` to be the image of the
+polynomials of degree at most `n` vanishing at the endpoints. The second needs the image
+submodule and the bilinearity of the three discrete pairings; estimated half a day. The
+collocation equivalence additionally needs the discrete integration by parts
+`(p', q')_n = (-p'', q)_n`, which is `equation_12_37_exact` twice around the polynomial
+integration by parts on `[-1, 1]`.'''
 deps = ["IsGeneralizedGalerkinSolution", "QuarteroniSaccoSaleri.Chapter12.equation_12_37", "QuarteroniSaccoSaleri.Chapter12.equation_12_38"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.68)–(12.69)'
-
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.68)-(12.69)'
 
 [[node]]
 id = "equation_12_53"
@@ -228,3 +175,31 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.48)'
 id = "example_12_1_solution"
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 12.1, equation (12.67)'
+
+[[node]]
+id = "equation_12_61_apply_node"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.61)'
+
+[[node]]
+id = "equation_12_61_support"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, the support of the shape functions'
+
+[[node]]
+id = "equation_12_61_basis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, the degrees of freedom of X_h^1'
+
+[[node]]
+id = "equation_12_62"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.62)'
+
+[[node]]
+id = "equation_12_62_shape"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, the reference shape functions'
+
+[[node]]
+id = "equation_12_61_stiffness_tridiagonal"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, A_fe is tridiagonal'
+
+[[node]]
+id = "equation_12_61_stiffness_condNumber"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, K_2(A_fe) = O(h^-2)'

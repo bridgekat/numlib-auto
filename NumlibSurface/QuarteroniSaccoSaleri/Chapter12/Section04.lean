@@ -22,12 +22,13 @@ form is.
 
 ## What is here and what is not
 
-The nodes of §12.4.1–12.4.4, the finite element space (12.57) and Example 12.1 are proved. The
-rest of §12.4.5–12.4.6 — the interpolation estimate (12.58), Property 12.1, the shape functions
-(12.61)–(12.66) and the structure of `A_fe` — waits on the hat-function part of
-`Numlib/Variational/FiniteElementInterval.lean`, which is not yet written; so does the spectral
-Galerkin method (12.68)–(12.69), which additionally needs §12.3. §12.4.2's distributions are
-Mathlib's `Distribution` on `Opens.Ioo 0 1` and are likewise not restated here.
+The nodes of §12.4.1–12.4.5 are proved: the weak formulation, the Galerkin method and its
+analysis, the finite element space (12.57), the shape functions (12.61)–(12.62) and the
+hierarchical basis (12.66), the convergence estimates (12.58)–(12.60) for `k = 1`, the structure
+and conditioning of `A_fe`, and Example 12.1. Still open are the quadratic shape functions
+(12.63)–(12.65), which wait on `FiniteElement.quadraticShape`; the spectral Galerkin method
+(12.68)–(12.69); and §12.4.2's distributions, which are Mathlib's `Distribution` on
+`Opens.Ioo 0 1` and are not restated here.
 
 ## Conventions
 
@@ -60,6 +61,15 @@ bounded `EllipticInterval.form 0 1 α β γ` and `EllipticInterval.load 0 1 f`
 * `laxMilgram_lemma`, `laxMilgram_lemma_bound`, `laxMilgram_lemma_galerkin`, `equation_12_56` —
   Lax–Milgram and Céa in an abstract Hilbert space.
 * `galerkinMatrix_posDef`, `galerkinMatrix_isSymm` — the stiffness matrix.
+* `equation_12_58`, `property_12_1`, `property_12_1_l2` — the convergence of the finite element
+  method for `k = 1`: the interpolation bound, the `H¹` estimate `O(h)` and the `L²` estimate
+  `O(h²)`.
+* `equation_12_61_apply_node`, `equation_12_61_support`, `equation_12_61_basis`,
+  `equation_12_62_shape`, `equation_12_66` — the shape functions of `X_h^1`, their supports,
+  the nodal degrees of freedom, the reference element and the hierarchical basis.
+* `equation_12_61_stiffness`, `equation_12_61_stiffness_tridiagonal`,
+  `equation_12_61_stiffness_condNumber` — `A_fe` is tridiagonal, with `K₂(A_fe) = cot²(π h/2)`
+  for the model problem.
 * `example_12_1` — the exact solution of (12.67).
 -/
 
@@ -368,6 +378,222 @@ theorem equation_12_57_finrank {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartit
     (hn : 1 ≤ n) (k : ℕ) :
     Module.finrank ℝ (FiniteElement.lagrangeSpace zero_lt_one n x k) = n * k + 1 :=
   FiniteElement.finrank_lagrangeSpace zero_lt_one hx hn k
+
+/-! ### The convergence of the finite element method (12.58)–(12.60) -/
+
+section Convergence
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **(12.58)**: the Galerkin error is bounded by the interpolation error, because the
+interpolant `Π_h^1 u` of the exact solution lies in `V_h = X_h^{1,0}`. Combined with Céa's lemma
+in the form of Theorem 12.3, `|u - u_h|_{H¹₀} ≤ C |u - Π_h^1 u|_{H¹₀}` with
+`C = α₀⁻¹(‖α‖_∞ + C_P² ‖γ‖_∞)`, which is the step that turns the estimate of the Galerkin error
+into an estimate of the interpolation error. -/
+theorem equation_12_58 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
+    (hα : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α t)
+    (hγ : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ t)
+    (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u uh : SobolevInterval 1 0 1}
+    (hu : equation_12_46 α 0 γ f equation_12_42 u)
+    (huh : equation_12_46 α 0 γ f (equation_12_57 n x 1) uh) :
+    equation_12_49 (u - uh)
+      ≤ α₀⁻¹ * (‖α‖ + (1 / Real.sqrt 2) ^ 2 * ‖γ‖)
+        * equation_12_49 (u - FiniteElement.lagrangeInterp hx hn u) :=
+  theorem_12_3 α γ hα₀ hα hγ f (equation_12_57_le n x 1) hu huh
+    (FiniteElement.lagrangeInterp_mem_lagrangeSpaceZero zero_lt_one hx hn hu.1)
+
+/-- **Property 12.1, the `H¹` estimate (12.59)**, for `k = 1` and `s = 2` (so `l = 1`): the
+finite element error satisfies `‖u - u_h‖_{H¹₀(0,1)} ≤ (M/α₀) C h ‖u‖_{H²(0,1)}` with
+`M/α₀ = α₀⁻¹(‖α‖_∞ + C_P² ‖γ‖_∞)` and `C = 1`. The book states it for every `k ≥ 1` and
+`s ≥ 2` with `l = min(k, s - 1)` and quotes the proof from [QV94] Theorem 6.2.1; the case
+`l = 1` is (12.58) together with the interpolation estimate (8.27), which is what
+`FiniteElement.seminorm_sub_lagrangeInterp_le` supplies. -/
+theorem property_12_1 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
+    (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
+    (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
+    (hα : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α t)
+    (hγ : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ t)
+    (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (U : SobolevInterval 2 0 1)
+    {u uh : SobolevInterval 1 0 1} (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
+    (hu : equation_12_46 α 0 γ f equation_12_42 u)
+    (huh : equation_12_46 α 0 γ f (equation_12_57 n x 1) uh) :
+    equation_12_49 (u - uh)
+      ≤ α₀⁻¹ * (‖α‖ + (1 / Real.sqrt 2) ^ 2 * ‖γ‖) * (h * SobolevInterval.seminorm 2 0 1 U) := by
+  refine (equation_12_58 hx hn α γ hα₀ hα hγ f hu huh).trans ?_
+  have hC : 0 ≤ α₀⁻¹ * (‖α‖ + (1 / Real.sqrt 2) ^ 2 * ‖γ‖) := by positivity
+  refine mul_le_mul_of_nonneg_left ?_ hC
+  have h1 := FiniteElement.seminorm_sub_lagrangeInterp_le zero_lt_one hx hn hmesh U
+  rwa [hU] at h1
+
+/-- **Property 12.1, the `L²` estimate (12.60)**, for `k = 1` and `s = 2`:
+`‖u - u_h‖_{L²(0,1)} ≤ C h² ‖u‖_{H²(0,1)}` with an explicit `C` independent of `h` and `u`. The
+Aubin–Nitsche duality argument `EllipticInterval.galerkin_norm_sub_le_l2` — whose approximation
+hypothesis is met by the piecewise linear interpolant with `δ = h` — gains one power of `h` over
+the `H¹` estimate of `property_12_1`. The book quotes it from [QV94]. -/
+theorem property_12_1_l2 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ} (hh : 0 ≤ h)
+    (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
+    (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α : ℝ → ℝ}
+    (hαL : αL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] α) (hα : ContDiffOn ℝ 1 α (Icc 0 1))
+    {α₀ A₁ : ℝ} (hα₀ : 0 < α₀) (hαpos : ∀ t ∈ Icc (0 : ℝ) 1, α₀ ≤ α t)
+    (hA₁ : ∀ t ∈ Icc (0 : ℝ) 1, |derivWithin α (Icc 0 1) t| ≤ A₁)
+    (hγ : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γL t)
+    (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (U : SobolevInterval 2 0 1)
+    {u uh : SobolevInterval 1 0 1} (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
+    (hu : equation_12_46 αL 0 γL f equation_12_42 u)
+    (huh : equation_12_46 αL 0 γL f (equation_12_57 n x 1) uh) :
+    ‖deriv (u - uh) 0‖
+      ≤ (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖)
+          * ((1 / Real.sqrt 2) ^ 2 / α₀ + 1 / Real.sqrt 2 / α₀
+            + α₀⁻¹ * (‖γL‖ * ((1 / Real.sqrt 2) ^ 2 / α₀) + 1 + A₁ * (1 / Real.sqrt 2 / α₀)))
+          * (α₀⁻¹ * (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖))
+        * h ^ 2 * SobolevInterval.seminorm 2 0 1 U := by
+  have hαae : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ αL t := by
+    filter_upwards [hαL, ae_restrict_mem measurableSet_Ioo] with t ht htI
+    rw [ht]
+    exact hαpos t (Ioo_subset_Icc_self htI)
+  have hl2 := EllipticInterval.galerkin_norm_sub_le_l2 zero_lt_one αL γL hαL hα hα₀ hαpos hA₁ hγ f
+    (equation_12_57_le n x 1) hh
+    (fun Φ hΦ ↦ FiniteElement.exists_mem_lagrangeSpaceZero_seminorm_sub_le zero_lt_one hx hn
+      hmesh Φ hΦ) hu huh
+  have hH1 := property_12_1 hx hn hmesh αL γL hα₀ hαae hγ f U hU hu huh
+  have hMs : 0 ≤ ‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖ := by positivity
+  have hA₁0 : 0 ≤ A₁ := (abs_nonneg _).trans (hA₁ 0 (left_mem_Icc.2 zero_le_one))
+  have hCreg : 0 ≤ (1 / Real.sqrt 2) ^ 2 / α₀ + 1 / Real.sqrt 2 / α₀
+      + α₀⁻¹ * (‖γL‖ * ((1 / Real.sqrt 2) ^ 2 / α₀) + 1 + A₁ * (1 / Real.sqrt 2 / α₀)) := by
+    have : (0 : ℝ) < Real.sqrt 2 := Real.sqrt_pos.2 (by norm_num)
+    positivity
+  have hnorm : ((1 : ℝ) - 0) / Real.sqrt 2 = 1 / Real.sqrt 2 := by norm_num
+  rw [hnorm] at hl2
+  calc ‖deriv (u - uh) 0‖
+      ≤ (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖)
+          * ((1 / Real.sqrt 2) ^ 2 / α₀ + 1 / Real.sqrt 2 / α₀
+            + α₀⁻¹ * (‖γL‖ * ((1 / Real.sqrt 2) ^ 2 / α₀) + 1 + A₁ * (1 / Real.sqrt 2 / α₀)))
+          * h * SobolevInterval.seminorm 1 0 1 (u - uh) := hl2
+    _ ≤ (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖)
+          * ((1 / Real.sqrt 2) ^ 2 / α₀ + 1 / Real.sqrt 2 / α₀
+            + α₀⁻¹ * (‖γL‖ * ((1 / Real.sqrt 2) ^ 2 / α₀) + 1 + A₁ * (1 / Real.sqrt 2 / α₀)))
+          * h * (α₀⁻¹ * (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖)
+            * (h * SobolevInterval.seminorm 2 0 1 U)) := by
+        have : (0 : ℝ) ≤ (‖αL‖ + (1 / Real.sqrt 2) ^ 2 * ‖γL‖)
+            * ((1 / Real.sqrt 2) ^ 2 / α₀ + 1 / Real.sqrt 2 / α₀
+              + α₀⁻¹ * (‖γL‖ * ((1 / Real.sqrt 2) ^ 2 / α₀) + 1
+                + A₁ * (1 / Real.sqrt 2 / α₀))) * h := by positivity
+        exact mul_le_mul_of_nonneg_left hH1 this
+    _ = _ := by ring
+
+end Convergence
+
+/-! ### The shape functions of `X_h^1` (12.61)–(12.62) -/
+
+section ShapeFunctions
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The shape functions (12.61)** of `X_h^1`: the continuous piecewise linear `φ_i` with
+`φ_i(x_j) = δ_{ij}`, as elements of `H^1(0, 1)`. -/
+noncomputable def equation_12_61 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) (i : ℕ) :
+    SobolevInterval 1 0 1 :=
+  FiniteElement.hatFunction hx hn i
+
+/-- **The Lagrange interpolation property** `φ_i(x_j) = δ_{ij}` of (12.61). -/
+theorem equation_12_61_apply_node (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {i j : ℕ}
+    (hj : j ≤ n) : rep (equation_12_61 hx hn i) (x j) = if i = j then 1 else 0 :=
+  FiniteElement.rep_hatFunction_node hx hn hj
+
+/-- **The support of `φ_i` is `I_{i-1} ∪ I_i`** (§12.4.5): `φ_i` vanishes on every other
+element of the partition. -/
+theorem equation_12_61_support (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {i k : ℕ}
+    (hk : k < n) (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht1 : x k ≤ t) (ht2 : t ≤ x (k + 1)) :
+    rep (equation_12_61 hx hn i) t = 0 := by
+  rw [equation_12_61, FiniteElement.rep_hatFunction hx hn i
+    ⟨(hx.left_le hk.le).trans ht1, ht2.trans (hx.le_right hk)⟩]
+  exact FiniteElement.hatFun_eq_zero_of_panel hx hk h1 h2 ht1 ht2
+
+/-- **The shape functions span `X_h^1`**: they are a basis, the `n + 1` nodal values being the
+degrees of freedom (§12.4.5). -/
+noncomputable def equation_12_61_basis (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) :
+    Module.Basis (Fin (n + 1)) ℝ (FiniteElement.lagrangeSpace zero_lt_one n x 1) :=
+  FiniteElement.hatBasis zero_lt_one hx hn
+
+/-- The coordinates in the shape function basis are the nodal values. -/
+theorem equation_12_61_basis_repr (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (v : FiniteElement.lagrangeSpace zero_lt_one n x 1) (j : Fin (n + 1)) :
+    (equation_12_61_basis hx hn).repr v j = rep (v : SobolevInterval 1 0 1) (x (j : ℕ)) :=
+  FiniteElement.hatBasis_repr zero_lt_one hx hn v j
+
+/-- **The affine map (12.62)** `x = φ(ξ) = x_i + ξ(x_{i+1} - x_i)` of the reference interval onto
+the element `I_i`, with its inverse `ξ(x) = (x - x_i)/(x_{i+1} - x_i)`. -/
+noncomputable def equation_12_62 (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ := FiniteElement.affineMap x i
+
+/-- (12.62) is inverted by the reference coordinate. -/
+theorem equation_12_62_refCoord (hx : Spline.IsPartition 0 1 n x) {i : ℕ} (hi : i < n) (t : ℝ) :
+    equation_12_62 x i (FiniteElement.refCoord x i t) = t :=
+  FiniteElement.affineMap_refCoord (hx.step i hi).ne t
+
+/-- **`φ_i = φ̂₀ ∘ ξ` and `φ_{i+1} = φ̂₁ ∘ ξ` on the element `I_i`** (§12.4.5), with the reference
+shape functions `φ̂₀(ξ) = 1 - ξ` and `φ̂₁(ξ) = ξ`. -/
+theorem equation_12_62_shape (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {k : ℕ} (hk : k < n)
+    {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
+    rep (equation_12_61 hx hn k) t = FiniteElement.referenceHat 0 (FiniteElement.refCoord x k t) ∧
+      rep (equation_12_61 hx hn (k + 1)) t
+        = FiniteElement.referenceHat 1 (FiniteElement.refCoord x k t) := by
+  have hmem : t ∈ Icc (0 : ℝ) 1 :=
+    ⟨(hx.left_le hk.le).trans h1, h2.trans (hx.le_right hk)⟩
+  constructor
+  · rw [equation_12_61, FiniteElement.rep_hatFunction hx hn k hmem]
+    exact FiniteElement.hatFun_eq_referenceHat_zero hx hk h1 h2
+  · rw [equation_12_61, FiniteElement.rep_hatFunction hx hn (k + 1) hmem]
+    exact FiniteElement.hatFun_eq_referenceHat_one hx hk h1 h2
+
+end ShapeFunctions
+
+/-- **The hierarchical basis (12.66)** `ψ̂₀(ξ) = 1 - ξ`, `ψ̂₁(ξ) = (1 - ξ)ξ`, `ψ̂₂(ξ) = ξ` is a
+basis of `P_2` on the reference interval: the book's check that
+`α₀ + ξ(α₁ - α₀ + α₂) - α₁ξ² ≡ 0` forces `α₀ = α₁ = α₂ = 0`. -/
+theorem equation_12_66 : LinearIndependent ℝ FiniteElement.referenceHierarchical :=
+  FiniteElement.referenceHierarchical_linearIndependent
+
+/-! ### The structure and conditioning of `A_fe` (§12.4.5) -/
+
+section Stiffness
+
+open scoped Matrix.Norms.L2Operator
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **`A_fe` is tridiagonal for `k = 1`** (§12.4.5): `a_{ij} = 0` when `j ∉ {i - 1, i, i + 1}`,
+because the supports of `φ_i` and `φ_j` then meet in a null set. -/
+theorem equation_12_61_stiffness (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {i j : ℕ}
+    (hij : i + 1 < j ∨ j + 1 < i) :
+    FiniteElement.stiffnessMatrix 0 1 α β γ (fun k : ℕ ↦ equation_12_61 hx hn k) i j = 0 :=
+  FiniteElement.stiffnessMatrix_eq_zero_of_lt hx hn α β γ hij
+
+/-- **`A_fe` is tridiagonal**, in the sense of `Matrix.IsTridiagonal`, in the interior shape
+function basis of `V_h = X_h^{1,0}` (§12.4.5). -/
+theorem equation_12_61_stiffness_tridiagonal (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) :
+    (FiniteElement.stiffnessMatrix 0 1 α β γ
+      fun k : Fin (n - 1) ↦ equation_12_61 hx hn ((k : ℕ) + 1)).IsTridiagonal :=
+  FiniteElement.isTridiagonal_stiffnessMatrix hx hn α β γ
+
+/-- **The conditioning of `A_fe`** (§12.4.5, `K₂(A_fe) = O(h^{-2})`): for the model problem
+`-u'' = f` on the uniform mesh of step `h = 1/n`, `K₂(A_fe) = cot²(π h/2)`, which the book quotes
+from [QV94] in the `O(h^{-2})` form; `Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two_le`
+gives `cot²(π h/2) ≤ 4/(π h)²`. -/
+theorem equation_12_61_stiffness_condNumber (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
+    ‖FiniteElement.stiffnessMatrix 0 1 (FiniteElement.constLinfty 0 1 1)
+        (FiniteElement.constLinfty 0 1 0) (FiniteElement.constLinfty 0 1 0)
+        fun i : Fin (n - 1) ↦ equation_12_61 hx hn ((i : ℕ) + 1)‖
+      * ‖(FiniteElement.stiffnessMatrix 0 1 (FiniteElement.constLinfty 0 1 1)
+        (FiniteElement.constLinfty 0 1 0) (FiniteElement.constLinfty 0 1 0)
+        fun i : Fin (n - 1) ↦ equation_12_61 hx hn ((i : ℕ) + 1))⁻¹‖
+      = Real.cot (Real.pi / (2 * (n : ℝ))) ^ 2 :=
+  FiniteElement.condNumber_stiffnessMatrix_model hx hn hh huni
+
+end Stiffness
 
 /-! ### Example 12.1 -/
 

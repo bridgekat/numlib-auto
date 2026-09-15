@@ -182,6 +182,51 @@ theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterv
   simp only [integral_const_mul]
   linear_combination β * ibp
 
+/-! ### The Galerkin approximation (12.72)–(12.76) -/
+
+/-- The zero constant is the zero element of `L^∞(a, b)`. -/
+theorem constLinf_zero (a b : ℝ) : AdvectionDiffusion.constLinf a b 0 = 0 := by
+  refine Lp.ext ?_
+  filter_upwards [AdvectionDiffusion.coeFn_constLinf a b 0,
+    Lp.coeFn_zero ℝ ⊤ (volume.restrict (Set.Ioo a b))] with t h1 h2
+  rw [h1, h2]
+  rfl
+
+/-- **The Galerkin `P_1` approximation (12.72)–(12.73)** of the advection–diffusion problem
+(12.70): `u_h ∈ X_h^1` with `u_h(0) = 0`, `u_h(1) = 1` and
+`a(u_h, v_h) = ∫₀¹ (ε u_h' v_h' + β u_h' v_h) = 0` for every `v_h ∈ X_h^{1,0}`. -/
+def equation_12_72 (ε β : ℝ) (n : ℕ) (x : ℕ → ℝ) (uh : SobolevInterval 1 0 1) : Prop :=
+  uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1 ∧
+    SobolevInterval.rep uh 0 = 0 ∧ SobolevInterval.rep uh 1 = 1 ∧
+    ∀ vh ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x 1,
+      EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
+        (AdvectionDiffusion.constLinf 0 1 β) 0 uh vh = 0
+
+/-- **(12.75)–(12.76)**: on the uniform partition `x_i = i h`, `h = 1/n`, the Galerkin problem
+(12.72) for the piecewise linear function with nodal values `u_i` is the difference equation
+`(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0` at the interior nodes, which by
+`equation_12_77` is the centred finite difference scheme; in terms of the local Péclet number
+`Pe = |β| h/(2ε)` it is `(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0` for `β > 0`. -/
+theorem equation_12_75 (ε β : ℝ) {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
+    (hn : 1 ≤ n) {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (u : ℕ → ℝ)
+    (hu0 : u 0 = 0) (hun : u n = 1) :
+    equation_12_72 ε β n x
+        (∑ j ∈ Finset.range (n + 1), u j • FiniteElement.hatFunction hx hn j)
+      ↔ ∀ i, 1 ≤ i → i < n →
+        ε / h * (-u (i - 1) + 2 * u i - u (i + 1)) + β / 2 * (u (i + 1) - u (i - 1)) = 0 := by
+  have hmem := FiniteElement.sum_hatFunction_mem_lagrangeSpace zero_lt_one hx hn u
+  have hzero := FiniteElement.rep_sum_hatFunction zero_lt_one hx hn u (j := 0) (Nat.zero_le n)
+  have hone := FiniteElement.rep_sum_hatFunction zero_lt_one hx hn u (j := n) le_rfl
+  rw [hx.first] at hzero
+  rw [hx.last] at hone
+  rw [equation_12_72, ← constLinf_zero 0 1]
+  have hgal := FiniteElement.galerkin_iff_centredScheme zero_lt_one hx hn hh huni ε β u
+  constructor
+  · rintro ⟨-, -, -, hvar⟩
+    exact hgal.1 hvar
+  · intro hdiff
+    exact ⟨hmem, by rw [hzero, hu0], by rw [hone, hun], hgal.2 hdiff⟩
+
 /-! ### The centred difference equation (12.76) and its oscillation -/
 
 /-- **The solution of the centred difference equation (12.76)** with `u_0 = 0`, `u_n = 1`:

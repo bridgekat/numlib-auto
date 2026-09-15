@@ -272,40 +272,27 @@ id = "seminorm_sub_stabilized_le"
 
 [[node]]
 id = "seminorm_sub_stabilized_le_upwind"
-kind = "theorem"
-desc = '''**Theorem 12.4, upwind, `k = 1`**: with `φ = phiUpwind`, `k = 1`, the uniform mesh of size `h`, and
-`ů ∈ H²(0, 1)`, `|ů - ů_h|₁ ≤ C h (|ů|₁ + |ů|₂)` with `C = (2 + 2 C_P Pe_gl) C₂ + β/(2ε)` (any
-explicit constant independent of `h` and `ů`). From `seminorm_sub_stabilized_le` with `w = Π_h¹ ů`, the
-interpolation estimate `|ů - Π_h¹ ů|₁ ≤ C₂ h |ů|₂` (Quarteroni–Sacco–Saleri (8.27), chapter 8's
-`Numlib/Approximation/SobolevInterpolation.lean`, node
-`integral_sq_deriv_sub_piecewisePolyInterpCLM_le` / `sobolevSeminorm_sub_piecewisePolyInterp_le`), and
-`ε φ^UP(Pe)/ε_h ≤ Pe = β h/(2ε)`. ★★
-
-Blocked: the generic bound `AdvectionDiffusion.seminorm_sub_stabilized_le` is proved and takes an
-arbitrary subspace `K ≤ H¹₀(a, b)` with an arbitrary `w ∈ K`; what is missing is the finite element
-space itself and the fact that the Lagrange interpolant of `ů` lies in it, that is
-`FiniteElement.lagrangeSpace` / `lagrangeSpaceZero` of `Numlib/Variational/FiniteElementInterval.lean`,
-which was being written concurrently in another worktree and is not visible from this branch. Chapter
-8's `sobolevSeminorm_sub_piecewisePolyInterp_le` bounds a *sum of panel integrals* of
-`(u^{(m)} - p_j^{(m)})²`, so turning it into `SobolevInterval.seminorm 1 a b (ů - Π_h ů)` also needs the
-interpolant as an element of `H¹(a, b)` with its weak derivative identified panelwise — exactly what
-`lagrangeSpace` provides. Estimate: half a day once that module exists; a day if the interpolant has to
-be built here.'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "FiniteElement.lagrangeSpace", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
 
 [[node]]
 id = "seminorm_sub_stabilized_le_sg"
 kind = "theorem"
-desc = '''**Theorem 12.4, Scharfetter–Gummel, `k = 1` and `k = 2`**: (i) for `k = 1`, `|ů - ů_h|₁ ≤ C₂ h |ů|₂` —
-even the book's factor `(1 + 2 Pe_gl C_P)` is absent, because by `sg_nodal_exact` `ů_h = Π_h¹ ů` exactly
-(both are the piecewise linear interpolants of the same nodal values, `u_h = ů_h + x` being nodally
-exact), so the error *is* the interpolation error; (ii) for `k = 2`, `|ů - ů_h|₁ ≤ C h² (|ů|₁ + |ů|₃)` for
-`ů ∈ H³`, from `seminorm_sub_stabilized_le` with `w = Π_h² ů`, the estimate `|ů - Π_h² ů|₁ ≤ C h² |ů|₃`
-(`sobolevSeminorm_sub_piecewisePolyInterp_le`) and `phiSG_le_sq`: `ε φ^SG(Pe)/ε_h ≤ Pe²/3`. ★★
+desc = '''**Theorem 12.4, Scharfetter-Gummel, k = 1 and k = 2**: (i) for `k = 1`,
+`|u - u_h|_1 <= C_2 h |u|_2` - even the book's factor `(1 + 2 Pe_gl C_P)` is absent, because by
+`sg_nodal_exact` `u_h = Pi_h^1 u` exactly, so the error *is* the interpolation error; (ii) for
+`k = 2`, `|u - u_h|_1 <= C h^2 (|u|_1 + |u|_3)` for `u` in `H^3`, from
+`seminorm_sub_stabilized_le` with `w = Pi_h^2 u`, the estimate `|u - Pi_h^2 u|_1 <= C h^2 |u|_3`
+and `phiSG_le_sq`. **
 
-Blocked: same missing dependency as `seminorm_sub_stabilized_le_upwind` — the finite element space
-`FiniteElement.lagrangeSpace` and the interpolant inside `H¹(a, b)`. Clause (i) additionally needs the
-nodal-exactness bridge "the `P_1` Galerkin solution is determined by its nodal values", which is
-`FiniteElement.galerkin_iff_centredScheme`; the scalar half, `AdvectionDiffusion.sg_nodal_exact`, is
-proved. Estimate: half a day on top of the upwind node.'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.sg_nodal_exact", "AdvectionDiffusion.phiSG_le_sq", "FiniteElement.lagrangeSpace", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
+Blocked: the finite element space and the `P_1` interpolant are now in place
+(`FiniteElement.lagrangeInterp`, `FiniteElement.seminorm_sub_lagrangeInterp_le`), and the
+analogue of the upwind bound with `phiSG_le_sq` in place of `phi^UP <= Pe` is immediate; what is
+missing is the *sharp* form the plan asks for. Clause (i) needs the bridge "the `P_1` Galerkin
+solution of the stabilized problem is the piecewise linear function whose nodal values solve the
+viscosity difference scheme" - which is `FiniteElement.galerkin_iff_centredScheme` applied with
+`eps := AdvectionDiffusion.viscosity eps beta h phiSG` (the stabilized form *is*
+`EllipticInterval.form` at that constant, and `FiniteElement.constLinfty` and
+`AdvectionDiffusion.constLinf` are the same element) - followed by `sg_nodal_exact` and the
+identification of the exact weak solution with `AdvectionDiffusion.exactSolution`, which is a
+chain of four surface-level steps. Clause (ii) needs `FiniteElement.quadraticShape` and the `P_2`
+interpolant, which are not written. Estimated half a day for (i), a day for (ii).'''
+deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.sg_nodal_exact", "AdvectionDiffusion.phiSG_le_sq", "FiniteElement.lagrangeInterp", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind"]

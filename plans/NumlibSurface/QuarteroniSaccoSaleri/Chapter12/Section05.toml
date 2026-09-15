@@ -126,35 +126,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.84), 
 
 [[node]]
 id = "equation_12_72"
-kind = "definition"
-desc = '''The Galerkin `P_1` approximation (12.72)–(12.73) of (12.70): find `u_h ∈ X_h^1` with `u_h(0) = 0`,
-`u_h(1) = 1` and `a(u_h, v_h) = ∫ (ε u_h' v_h' + β u_h' v_h) = 0` for all `v_h ∈ X_h^{1,0}` —
-`EllipticInterval.form _ ε β 0` on `FiniteElement.lagrangeSpace _ 1 x` tested against
-`FiniteElement.lagrangeSpaceZero _ 1 x`. ★
-
-Blocked: `FiniteElement.lagrangeSpace` (`Numlib/Variational/FiniteElementInterval.lean`) does not
-exist on this branch — it was being written concurrently in another worktree. The form itself is
-available as `EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
-(AdvectionDiffusion.constLinf 0 1 β) 0` (see `QuarteroniSaccoSaleri.Chapter12.remark_12_5`, which
-states Remark 12.5 for it); only the trial and test spaces are missing. Estimate: an hour once the
-finite element module lands.'''
-deps = ["EllipticInterval.form", "FiniteElement.lagrangeSpace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.72)–(12.73)'
 
 [[node]]
 id = "equation_12_75"
-kind = "theorem"
-desc = '''(12.75)–(12.76): on the uniform partition `x_i = ih`, `h = 1/n`, the Galerkin problem (12.72) is the
-difference equation `(ε/h)(-u_{i-1} + 2u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0`, `i = 1, …, n - 1`, for the
-nodal values, equivalently `(Pe - 1) u_{i+1} + 2 u_i - (Pe + 1) u_{i-1} = 0` with the local Péclet number
-`Pe = |β| h/(2ε)` (for `β > 0`). `FiniteElement.galerkin_iff_centredScheme`. ★
-
-Blocked: same missing dependency as `equation_12_72`. The difference equation itself and its
-equivalence with the centred finite difference scheme (12.77) are proved —
-`QuarteroniSaccoSaleri.Chapter12.equation_12_77`, from
-`AdvectionDiffusion.viscosityScheme_zero_iff` — so what is missing is exactly the step "the
-Galerkin problem is that difference equation", which is `FiniteElement.galerkin_iff_centredScheme`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_72", "QuarteroniSaccoSaleri.Chapter12.equation_12_71", "FiniteElement.galerkin_iff_centredScheme"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.75)–(12.76)'
 
 [[node]]
@@ -171,16 +146,19 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
 [[node]]
 id = "theorem_12_4"
 kind = "theorem"
-desc = '''Theorem 12.4, (12.85): for `k = 1`, `|ů - ů_h|_{H¹(0,1)} ≤ C h G(ů)` with `C` independent of `h` and `ů`, where
-`G(ů) = |ů|_{H¹} + |ů|_{H²}` for the upwind method and `G(ů) = |ů|_{H²}` for the SG method; and (12.86): for
-`k = 2` the SG method gives `|ů - ů_h|_{H¹} ≤ C h² (|ů|_{H¹} + |ů|_{H³})`. Hypotheses: `ε, β > 0`, uniform mesh
-`h = 1/n`, `ů ∈ H²(0,1)` resp. `H³(0,1)`. The displayed statement is garbled in the source text and the
-sentence "where `u(x) = u(x) - x`" should read `ů(x) = u(x) - x` (errata). ★★
+desc = '''Theorem 12.4, (12.85): for `k = 1`, `|u - u_h|_{H1(0,1)} <= C h G(u)` with `C` independent of `h`
+and `u`, where `G(u) = |u|_{H1} + |u|_{H2}` for the upwind method and `G(u) = |u|_{H2}` for the SG
+method; and (12.86): for `k = 2` the SG method gives `|u - u_h|_{H1} <= C h^2 (|u|_{H1} + |u|_{H3})`.
+The displayed statement is garbled in the source text and the sentence "where `u(x) = u(x) - x`"
+should read `u*(x) = u(x) - x` (errata). **
 
-Blocked: the Strang-form bound behind it is proved and stated for an arbitrary subspace
-`K ≤ H¹₀(0, 1)` — `AdvectionDiffusion.seminorm_sub_stabilized_le` — but the two clauses that
-instantiate it, `AdvectionDiffusion.seminorm_sub_stabilized_le_upwind` and
-`seminorm_sub_stabilized_le_sg`, need `FiniteElement.lagrangeSpace` and the Lagrange interpolant
-inside `H¹(0, 1)`; see the `Blocked:` paragraphs of those two backbone nodes.'''
+Blocked: the upwind clause is proved as the backbone node
+`AdvectionDiffusion.seminorm_sub_stabilized_le_upwind`; the Scharfetter-Gummel clauses are
+`AdvectionDiffusion.seminorm_sub_stabilized_le_sg`, which is still open (see its `Blocked:`
+paragraph). This surface node states both, so it waits on the SG half.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_84", "QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind", "AdvectionDiffusion.seminorm_sub_stabilized_le_sg"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.4'
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4'
+
+[[node]]
+id = "constLinf_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.73)'

@@ -123,81 +123,25 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, uncondit
 [[node]]
 id = "thetaMethod_stable_iff_of_lt_half"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, Δt ≤ 2/((1-2θ)λ_h^{N_h})'
+
 [[node]]
 id = "massMatrix_apply_eq_integral"
-kind = "theorem"
-desc = '''`massMatrix n i j = ∫ x in (0:ℝ)..1, φ_j x * φ_i x` for the hat functions `φ_i` of the
-uniform mesh (chapter 12's basis of (12.57) with `k = 1`): `∫ φ_i² = 2h/3`, `∫ φ_i φ_{i+1} = h/6`,
-`∫ φ_i φ_j = 0` for `|i - j| ≥ 2`. This corrects the hint of Exercise 2 (see the group
-description). ★★
-
-Blocked: needs chapter 12's hat basis `FiniteElement.hatFunction` of the finite element space
-(12.57), which is not in the library (§12.4 is being written concurrently). With it the proof is
-three interval integrals of products of piecewise linear functions; estimated one hour.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix", "FiniteElement.hatFunction"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, M = (m_ij), and Exercise 13.2 (hint)'''
 
 [[node]]
 id = "exercise_13_2"
-kind = "theorem"
-desc = '''Exercise 2 (mass lumping): the composite trapezoidal rule (9.11) on the nodes `x_i`
-applied to `∫₀¹ φ_j φ_i` gives `h ∑_k φ_j(x_k) φ_i(x_k) = h δ_ij`, so the lumped mass matrix is
-`M̃ = h • 1`, which is nonsingular; and the exact integrals are those of
-`massMatrix_apply_eq_integral` (the hint's values are wrong, see the group description). ★
-
-Blocked: needs `massMatrix_apply_eq_integral`, hence chapter 12's `FiniteElement.hatFunction`.
-The trapezoidal part (`Quadrature.trapezoidSum` at the nodes `x_i`, where `φ_j(x_k) = δ_{jk}`) is
-immediate once the hat basis exists; estimated one hour after it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix_apply_eq_integral", "Quadrature.trapezoidSum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.2'
 
 [[node]]
 id = "pencil_hasEigenvalue_iff"
-kind = "theorem"
-desc = '''The eigenvalues of the form `heatForm ν` on the uniform-mesh `P₁` space, i.e. of the
-pencil `(A_fe, M)` with `A_fe = (ν/h) tridiag(-1,2,-1)`, `M = (h/6) tridiag(1,4,1)`, `h = 1/n`, are
-`λ_h^i = (6 ν / h²) (1 - cos θ_i) / (2 + cos θ_i)`, `θ_i = i π h`, `i = 1, …, n - 1`. Proof: both
-matrices are diagonalized by the sine vectors `Matrix.sineVec`
-(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec`), with eigenvalues `(ν/h)(2 - 2cos θ_i)` and
-`(h/6)(4 + 2 cos θ_i)`, so the sine vectors are the generalized eigenvectors with the quotient
-eigenvalues, and they span. ★★
-
-Blocked: needs chapter 12's `FiniteElement.stiffnessMatrix` `A_fe = (ν/h) tridiag(-1, 2, -1)`,
-which is not in the library. The mathematics is available: both matrices are
-`Matrix.symmTridiagonalToeplitz`, `Matrix.symmTridiagonalToeplitz_mulVec_sineVec` diagonalizes
-both by the sine vectors, and `Matrix.pencilSpectrum_mul_mul_of_isUnit` together with
-`Matrix.pencilSpectrum_diagonal` turns the congruence by the (orthogonal) sine matrix into the
-quotient formula. What must be written is the congruence identity
-`Sᵀ tridiag(a, b, a) S = diagonal (b + 2 a cos θ_k)` for the sine matrix `S`, which
-`Matrix.sineOrthonormalBasis` and the columnwise eigenvector relation give; estimated 2-3 hours.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix", "QuarteroniSaccoSaleri.Chapter13.equation_13_22", "Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "Matrix.sineOrthonormalBasis"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the eigenvalues λ_h^i'
 
 [[node]]
 id = "pencil_maxEigenvalue_bounds"
-kind = "theorem"
-desc = '''The unnumbered inverse estimate of §13.3.1 (cited from [QV94] §6.3.2), on the uniform
-mesh with `n ≥ 2`: `3 ν h⁻² ≤ λ_h^{N_h} ≤ 12 ν h⁻²` for the largest eigenvalue `λ_h^{N_h} = max_i
-λ_h^i`. Proof: `g(θ) = (1 - cos θ)/(2 + cos θ)` is increasing on `[0, π]` and `≤ 2`, so `λ_h^{N_h}
-= (6ν/h²) g(π - πh) ≤ 12 ν h⁻²`; and `g(π - πh) = (1 + cos πh)/(2 - cos πh) ≥ 1/2` for `h ≤ 1/2`.
-The book prints `λ_h^{N_h} = c₂ h⁻²` for the upper bound; read `≤`. ★
-
-Blocked: needs `pencil_hasEigenvalue_iff`, hence chapter 12's `FiniteElement.stiffnessMatrix`.
-After it the proof is the monotonicity of `g(θ) = (1 - cos θ)/(2 + cos θ)` on `[0, π]` and
-`g ≤ 2`; estimated one hour.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.pencil_hasEigenvalue_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, c₁h⁻² ≤ λ_h^{N_h} ≤ c₂h⁻²'
 
 [[node]]
 id = "equation_13_23"
-kind = "theorem"
-desc = '''(13.23): for `0 ≤ θ < 1/2` on the uniform `P₁` mesh, the θ-method is stable (`‖u_h^{k+1}‖
-≤ ‖u_h^k‖` for all data) whenever `Δt ≤ C₁(θ) h²` with `C₁(θ) = 1 / (6 ν (1 - 2θ))`, from
-`thetaMethod_stable_iff_of_lt_half` and `λ_h^{N_h} ≤ 12 ν h⁻²`. ★
-
-Blocked: needs `pencil_maxEigenvalue_bounds`. Given it, this is
-`thetaMethod_stable_iff_of_lt_half` with `λ_max ≤ 12 ν h⁻²`; estimated half an hour.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half", "QuarteroniSaccoSaleri.Chapter13.pencil_maxEigenvalue_bounds"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.23)'
 
 [[node]]
@@ -223,3 +167,23 @@ norms of the exact solution and parabolic regularity (smoothing estimates `‖u_
 for the improved form, i.e. the classical theory of the heat equation that is a known blocker.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_21"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the convergence result ‖u(t^k) − u_h^k‖ ≤ C(Δt^{p(θ)} + h^{r+1})'''
+
+[[node]]
+id = "massMatrix_eq_gram"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, the mass matrix M'
+
+[[node]]
+id = "heatStiffnessMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, the stiffness matrix A_fe'
+
+[[node]]
+id = "heatStiffnessMatrix_eq_gram"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, the stiffness matrix A_fe'
+
+[[node]]
+id = "smul_sub_smul_symmTridiagonalToeplitz"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the pencil A_fe - λ M'
+
+[[node]]
+id = "hasEigenvalue_zero_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the generalized eigenproblem'

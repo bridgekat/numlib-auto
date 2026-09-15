@@ -1,5 +1,8 @@
 import Numlib.Analysis.Sobolev.Interval
+import Numlib.Approximation.CompositeQuadrature
+import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.FiniteDifference.Parabolic
+import Numlib.Variational.FiniteElementInterval
 
 /-!
 # Quarteroni–Sacco–Saleri §13.3: finite elements for the heat equation, the θ-method
@@ -25,13 +28,17 @@ The concrete side is `heatForm` on `H¹(0, 1)`: (13.18) is `heatForm ν v v = ν
 that constant is what the energy estimate after (13.13) uses.
 
 The mass matrix of the uniform-mesh piecewise linear space is
-`massMatrix n = (h/6) tridiag(1, 4, 1)`, `h = 1/n`, positive definite. Its identification with
-the integrals `∫ φ_j φ_i` of the hat basis, Exercise 2 (mass lumping), the eigenvalues of the
-pencil `(A_fe, M)` and (13.23) wait on the finite element space and stiffness matrix of chapter
-12 (`FiniteElement.hatFunction`, `FiniteElement.stiffnessMatrix`), which are not in the library
-yet. **Erratum**: the hint of Exercise 2 prints `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the
-exact integrals are `∫ φ_i² = 2h/3` and `∫ φ_i φ_{i±1} = h/6`, i.e. `M = (h/6) tridiag(1, 4, 1)`,
-which is what Program 100 assembles.
+`massMatrix n = (h/6) tridiag(1, 4, 1)`, `h = 1/n`, positive definite, and the stiffness matrix
+of the heat form is `heatStiffnessMatrix ν n = (ν/h) tridiag(-1, 2, -1)`; both are the Gram
+matrices of chapter 12's hat basis (`massMatrix_eq_gram`, `heatStiffnessMatrix_eq_gram`), so
+`massMatrix_apply_eq_integral` identifies the entries with the integrals `∫ φ_j φ_i` and
+`exercise_13_2` computes the lumped matrix `M̃ = h · I`. Since both matrices are
+`Matrix.symmTridiagonalToeplitz`, so is `A_fe - λ M`, and `pencil_hasEigenvalue_iff` reads the
+generalized eigenvalues `λ_h^i = (6ν/h²)(1 - cos θ_i)/(2 + cos θ_i)` off the cosine spectrum;
+`pencil_maxEigenvalue_bounds` gives `3ν h^{-2} ≤ λ_h^{N_h} ≤ 12ν h^{-2}` and `equation_13_23`
+the stability condition `Δt ≤ h²/(6ν(1 - 2θ))`. **Erratum**: the hint of Exercise 2 prints
+`m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the exact integrals are `∫ φ_i² = 2h/3` and
+`∫ φ_i φ_{i±1} = h/6`, i.e. `M = (h/6) tridiag(1, 4, 1)`, which is what Program 100 assembles.
 
 ## Conventions
 
@@ -204,6 +211,276 @@ theorem massMatrix_posDef {n : ℕ} (hn : 0 < n) : (massMatrix n).PosDef := by
 
 end MatrixForm
 
+/-! ### The mass matrix of the uniform-mesh `P₁` space -/
+
+section MassMatrix
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- The mass matrix of §13.3 is the Gram matrix of the interior hat functions of the uniform
+mesh, `M = (h/6) tridiag(1, 4, 1)` with `h = 1/n`. -/
+theorem massMatrix_eq_gram (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) :
+    massMatrix n
+      = FiniteElement.massMatrix 0 1 fun i : Fin (n - 1) ↦ FiniteElement.hatFunction hx hn
+        ((i : ℕ) + 1) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  rw [FiniteElement.massMatrix_uniform_eq hx hn (by positivity) huni, massMatrix]
+  congr 1
+  field_simp
+
+/-- **The mass matrix is the matrix of the `L²` products of the hat functions**
+([quarteroni2000numerical] §13.3, `m_ij = ∫₀¹ φ_j φ_i`): on the uniform mesh
+`∫ φ_i² = 2h/3`, `∫ φ_i φ_{i±1} = h/6` and `∫ φ_i φ_j = 0` for `|i - j| ≥ 2`, which is
+`M = (h/6) tridiag(1, 4, 1)`.
+
+**Erratum**: the hint of Exercise 13.2 prints `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the
+correct values are those above. -/
+theorem massMatrix_apply_eq_integral (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (i j : Fin (n - 1)) :
+    massMatrix n i j = ∫ t in Set.Ioo (0 : ℝ) 1,
+      FiniteElement.hatFun n x ((j : ℕ) + 1) t * FiniteElement.hatFun n x ((i : ℕ) + 1) t := by
+  rw [massMatrix_eq_gram hx hn huni, FiniteElement.massMatrix, FiniteElement.stiffnessMatrix_apply,
+    FiniteElement.form_apply_hatFunction hx hn 0 0 1 ((i : ℕ) + 1) ((j : ℕ) + 1)]
+  refine setIntegral_congr_fun measurableSet_Ioo fun t _ ↦ ?_
+  simp [FiniteElement.hatFormIntegrand]
+
+/-- **Exercise 13.2, mass lumping**: the composite trapezoidal rule (9.11) on the nodes `x_k`
+applied to `∫₀¹ φ_j φ_i` gives `h ∑_k φ_j(x_k) φ_i(x_k) = h δ_{ij}`, so the lumped mass matrix is
+`M̃ = h · I`, which is nonsingular; the exact integrals are those of
+`massMatrix_apply_eq_integral`. -/
+theorem exercise_13_2 (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
+    (hxu : ∀ k ≤ n, x k = (k : ℝ) * h) (i j : Fin (n - 1)) :
+    Quadrature.trapezoidSum (fun t ↦ FiniteElement.hatFun n x ((j : ℕ) + 1) t
+        * FiniteElement.hatFun n x ((i : ℕ) + 1) t) 0 h n
+      = if i = j then h else 0 := by
+  have hI : (i : ℕ) + 1 < n := by have := i.isLt; omega
+  have hJ : (j : ℕ) + 1 < n := by have := j.isLt; omega
+  have hnode : ∀ k : ℕ, k ≤ n → ∀ m : ℕ,
+      FiniteElement.hatFun n x m ((0 : ℝ) + (k : ℝ) * h) = if m = k then 1 else 0 := by
+    intro k hk m
+    rw [show (0 : ℝ) + (k : ℝ) * h = x k by rw [hxu k hk]; ring]
+    exact FiniteElement.hatFun_apply_node hx hn hk
+  have hterm : ∀ k ∈ Finset.range n,
+      h / 2 * (FiniteElement.hatFun n x ((j : ℕ) + 1) ((0 : ℝ) + (k : ℝ) * h)
+          * FiniteElement.hatFun n x ((i : ℕ) + 1) ((0 : ℝ) + (k : ℝ) * h)
+        + FiniteElement.hatFun n x ((j : ℕ) + 1) ((0 : ℝ) + ((k : ℝ) + 1) * h)
+          * FiniteElement.hatFun n x ((i : ℕ) + 1) ((0 : ℝ) + ((k : ℝ) + 1) * h))
+      = h / 2 * ((if (j : ℕ) + 1 = k then (1 : ℝ) else 0)
+            * (if (i : ℕ) + 1 = k then (1 : ℝ) else 0)
+          + (if (j : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)
+            * (if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)) := by
+    intro k hk
+    have hkn : k ≤ n := le_of_lt (Finset.mem_range.1 hk)
+    have hk1 : k + 1 ≤ n := Finset.mem_range.1 hk
+    have hcast : (0 : ℝ) + ((k : ℝ) + 1) * h = (0 : ℝ) + ((k + 1 : ℕ) : ℝ) * h := by
+      push_cast; ring
+    rw [hnode k hkn, hnode k hkn, hcast, hnode (k + 1) hk1, hnode (k + 1) hk1]
+  rw [Quadrature.trapezoidSum, Finset.sum_congr rfl hterm, ← Finset.mul_sum,
+    Finset.sum_add_distrib]
+  by_cases hij : i = j
+  · subst hij
+    have hc1 : ∀ k ∈ Finset.range n, ((if (i : ℕ) + 1 = k then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k then (1 : ℝ) else 0)) = if (i : ℕ) + 1 = k then (1 : ℝ) else 0 :=
+      fun k _ ↦ by split_ifs <;> ring
+    have hc2 : ∀ k ∈ Finset.range n, ((if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)) = if (i : ℕ) = k then (1 : ℝ) else 0 := by
+      intro k _
+      by_cases hk : (i : ℕ) = k
+      · simp [hk]
+      · simp [hk]
+    have e1 : ∑ k ∈ Finset.range n, (if (i : ℕ) + 1 = k then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k then (1 : ℝ) else 0) = 1 := by
+      rw [Finset.sum_congr rfl hc1,
+        Finset.sum_ite_eq (Finset.range n) ((i : ℕ) + 1) (fun _ ↦ (1 : ℝ))]
+      simp [Finset.mem_range, hI]
+    have e2 : ∑ k ∈ Finset.range n, (if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0) = 1 := by
+      rw [Finset.sum_congr rfl hc2,
+        Finset.sum_ite_eq (Finset.range n) ((i : ℕ)) (fun _ ↦ (1 : ℝ))]
+      simp [Finset.mem_range]
+      omega
+    rw [e1, e2]
+    simp
+    ring
+  · have e0 : ∀ k ∈ Finset.range n, ((if (j : ℕ) + 1 = k then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k then (1 : ℝ) else 0)) = 0 := by
+      intro k _
+      have : ¬ ((j : ℕ) + 1 = k ∧ (i : ℕ) + 1 = k) := by
+        rintro ⟨h1, h2⟩
+        exact hij (Fin.ext (by omega))
+      split_ifs with a1 a2 <;> simp_all
+    have e1 : ∀ k ∈ Finset.range n, ((if (j : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)
+        * (if (i : ℕ) + 1 = k + 1 then (1 : ℝ) else 0)) = 0 := by
+      intro k _
+      have : ¬ ((j : ℕ) + 1 = k + 1 ∧ (i : ℕ) + 1 = k + 1) := by
+        rintro ⟨h1, h2⟩
+        exact hij (Fin.ext (by omega))
+      split_ifs with a1 a2 <;> simp_all
+    rw [Finset.sum_congr rfl e0, Finset.sum_congr rfl e1]
+    simp [hij]
+
+end MassMatrix
+
+/-! ### The eigenvalues of the pencil `(A_fe, M)` (§13.3.1) -/
+
+section Pencil
+
+open scoped Real
+
+/-- The stiffness matrix of the heat form on the uniform-mesh piecewise linear space,
+`A_fe = (ν/h) tridiag(-1, 2, -1)` with `h = 1/n` ([quarteroni2000numerical] §13.3). -/
+noncomputable def heatStiffnessMatrix (ν : ℝ) (n : ℕ) :
+    Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ :=
+  (ν * (n : ℝ)) • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2
+
+/-- The stiffness matrix of §13.3 is the Gram matrix of the interior hat functions for the heat
+form `a(u, v) = ν ∫ u' v'` on the uniform mesh. -/
+theorem heatStiffnessMatrix_eq_gram {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
+    (hn : 1 ≤ n) (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (ν : ℝ) :
+    heatStiffnessMatrix ν n
+      = FiniteElement.stiffnessMatrix 0 1 (FiniteElement.constLinfty 0 1 ν)
+        (FiniteElement.constLinfty 0 1 0) (FiniteElement.constLinfty 0 1 0)
+        fun i : Fin (n - 1) ↦ FiniteElement.hatFunction hx hn ((i : ℕ) + 1) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  rw [FiniteElement.stiffnessMatrix_uniform_eq hx hn (by positivity) huni ν 0 0,
+    heatStiffnessMatrix]
+  simp only [zero_div, zero_mul, zero_smul, add_zero]
+  congr 1
+  field_simp
+
+/-- The difference of two scaled symmetric tridiagonal Toeplitz matrices is one again. -/
+theorem smul_sub_smul_symmTridiagonalToeplitz (N : ℕ) (c d a b a' b' : ℝ) :
+    c • Matrix.symmTridiagonalToeplitz N a b - d • Matrix.symmTridiagonalToeplitz N a' b'
+      = Matrix.symmTridiagonalToeplitz N (c * a - d * a') (c * b - d * b') := by
+  ext i j
+  simp only [Matrix.sub_apply, Matrix.smul_apply, smul_eq_mul,
+    Matrix.symmTridiagonalToeplitz_apply']
+  split_ifs <;> ring
+
+/-- `0` is an eigenvalue of a matrix exactly when the matrix is singular. -/
+theorem hasEigenvalue_zero_iff {N : ℕ} (T : Matrix (Fin N) (Fin N) ℝ) :
+    Module.End.HasEigenvalue (Matrix.toEuclideanLin T) 0
+      ↔ ∃ ξ : Fin N → ℝ, ξ ≠ 0 ∧ T *ᵥ ξ = 0 := by
+  constructor
+  · intro hT
+    obtain ⟨v, hv, hv0⟩ := hT.exists_hasEigenvector
+    rw [Module.End.mem_eigenspace_iff, zero_smul] at hv
+    refine ⟨WithLp.ofLp v, fun hc ↦ hv0 ?_, ?_⟩
+    · exact (WithLp.ofLp_eq_zero (p := 2)).1 hc
+    · have := congrArg (WithLp.ofLp (p := 2)) hv
+      rwa [Matrix.toEuclideanLin_apply, WithLp.ofLp_toLp, WithLp.ofLp_zero] at this
+  · rintro ⟨ξ, hξ, hT⟩
+    refine Module.End.hasEigenvalue_of_hasEigenvector
+      (x := WithLp.toLp 2 ξ) ⟨?_, fun hc ↦ hξ ?_⟩
+    · rw [Module.End.mem_eigenspace_iff, zero_smul, Matrix.toEuclideanLin_toLp, hT]
+      rfl
+    · exact (WithLp.toLp_eq_zero (p := 2)).1 hc
+
+/-- **The eigenvalues of the pencil `(A_fe, M)`** ([quarteroni2000numerical] §13.3.1): on the
+uniform mesh with `h = 1/n`, `λ` is a generalized eigenvalue of `A_fe ξ = λ M ξ` exactly when
+`λ = (6ν/h²)(1 - cos θ_i)/(2 + cos θ_i)` for one of the angles `θ_i = i π h`,
+`i = 1, …, n - 1`. Both matrices are `Matrix.symmTridiagonalToeplitz`, so their difference
+`A_fe - λ M` is one too, and it is singular exactly when one of the cosine eigenvalues of
+`Matrix.symmTridiagonalToeplitz` vanishes. -/
+theorem pencil_hasEigenvalue_iff {n : ℕ} (hn : 1 ≤ n) (ν : ℝ) (lam : ℝ) :
+    (∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
+        heatStiffnessMatrix ν n *ᵥ ξ = lam • (massMatrix n *ᵥ ξ))
+      ↔ ∃ k : Fin (n - 1), lam = 6 * ν * (n : ℝ) ^ 2
+        * (1 - Real.cos (((k : ℕ) + 1 : ℝ) * π / (n : ℝ)))
+        / (2 + Real.cos (((k : ℕ) + 1 : ℝ) * π / (n : ℝ))) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hcast : ((n - 1 : ℕ) : ℝ) + 1 = (n : ℝ) := by
+    rw [Nat.cast_sub hn, Nat.cast_one]; ring
+  set A := -(ν * (n : ℝ)) - lam * (1 / (6 * (n : ℝ))) with hA
+  set B := 2 * (ν * (n : ℝ)) - 4 * (lam * (1 / (6 * (n : ℝ)))) with hB
+  have hdiff : heatStiffnessMatrix ν n - lam • massMatrix n
+      = Matrix.symmTridiagonalToeplitz (n - 1) A B := by
+    rw [heatStiffnessMatrix, massMatrix, smul_smul,
+      smul_sub_smul_symmTridiagonalToeplitz (n - 1) (ν * (n : ℝ)) (lam * (1 / (6 * (n : ℝ))))
+        (-1) 2 1 4]
+    congr 1 <;> [rw [hA]; rw [hB]] <;> ring
+  have hiff : (∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
+      heatStiffnessMatrix ν n *ᵥ ξ = lam • (massMatrix n *ᵥ ξ))
+      ↔ ∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
+        Matrix.symmTridiagonalToeplitz (n - 1) A B *ᵥ ξ = 0 := by
+    refine exists_congr fun ξ ↦ and_congr_right fun _ ↦ ?_
+    have hsm : (lam • massMatrix n) *ᵥ ξ = lam • (massMatrix n *ᵥ ξ) := by
+      ext i
+      simp [Matrix.mulVec, dotProduct, Finset.mul_sum, mul_assoc]
+    rw [← hdiff, Matrix.sub_mulVec, hsm, sub_eq_zero]
+  rw [hiff, ← hasEigenvalue_zero_iff,
+    Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff A B 0]
+  simp only [hcast]
+  refine exists_congr fun k ↦ ?_
+  set c := Real.cos (((k : ℕ) + 1 : ℝ) * π / (n : ℝ)) with hc
+  have hcpos : 0 < 2 + c := by
+    have := Real.neg_one_le_cos (((k : ℕ) + 1 : ℝ) * π / (n : ℝ))
+    rw [← hc] at this
+    linarith
+  constructor
+  · intro heq
+    rw [hB, hA] at heq
+    field_simp at heq ⊢
+    nlinarith [heq]
+  · intro heq
+    rw [hB, hA, heq]
+    field_simp
+    ring
+
+/-- **The inverse estimate of §13.3.1** (quoted there from [QV94] §6.3.2): on the uniform mesh
+with `n ≥ 2`, every eigenvalue of the pencil is at most `12 ν h^{-2}`, and one of them is at
+least `3 ν h^{-2}`; so the largest eigenvalue `λ_h^{N_h}` satisfies
+`3 ν h^{-2} ≤ λ_h^{N_h} ≤ 12 ν h^{-2}`. The book prints `λ_h^{N_h} = c₂ h^{-2}` for the upper
+bound; read `≤`. -/
+theorem pencil_maxEigenvalue_bounds {n : ℕ} (hn : 2 ≤ n) {ν : ℝ} (hν : 0 < ν) :
+    (∀ lam : ℝ, (∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
+        heatStiffnessMatrix ν n *ᵥ ξ = lam • (massMatrix n *ᵥ ξ)) →
+      lam ≤ 12 * ν * (n : ℝ) ^ 2) ∧
+    ∃ lam : ℝ, (∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
+        heatStiffnessMatrix ν n *ᵥ ξ = lam • (massMatrix n *ᵥ ξ)) ∧
+      3 * ν * (n : ℝ) ^ 2 ≤ lam := by
+  have hn1 : 1 ≤ n := by omega
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn1
+  constructor
+  · intro lam hlam
+    obtain ⟨k, rfl⟩ := (pencil_hasEigenvalue_iff hn1 ν lam).1 hlam
+    set θ := ((k : ℕ) + 1 : ℝ) * π / (n : ℝ) with hθ
+    have hcpos : 0 < 2 + Real.cos θ := by
+      have := Real.neg_one_le_cos θ
+      linarith
+    rw [div_le_iff₀ hcpos]
+    have h1 := Real.neg_one_le_cos θ
+    nlinarith [mul_nonneg (mul_nonneg hν.le (sq_nonneg ((n : ℝ))))
+      (by linarith : (0 : ℝ) ≤ 1 + Real.cos θ)]
+  · have hk : (n - 2 : ℕ) < n - 1 := by omega
+    refine ⟨_, (pencil_hasEigenvalue_iff hn1 ν _).2 ⟨⟨n - 2, hk⟩, rfl⟩, ?_⟩
+    have hval : (((⟨n - 2, hk⟩ : Fin (n - 1)) : ℕ) + 1 : ℝ) * π / (n : ℝ)
+        = π - π / (n : ℝ) := by
+      rw [Fin.val_mk]
+      have : ((n - 2 : ℕ) : ℝ) = (n : ℝ) - 2 := by
+        rw [Nat.cast_sub (by omega)]; norm_num
+      rw [this]
+      field_simp
+      ring
+    rw [hval, Real.cos_pi_sub]
+    set c := Real.cos (π / (n : ℝ)) with hc
+    have hcnn : 0 ≤ c := by
+      rw [hc]
+      have hpi := Real.pi_pos
+      have hpos : (0 : ℝ) < π / (n : ℝ) := by positivity
+      refine Real.cos_nonneg_of_mem_Icc ⟨by linarith, ?_⟩
+      rw [div_le_div_iff₀ hn' (by norm_num)]
+      have : (2 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      nlinarith [Real.pi_pos]
+    have hc1 : c ≤ 1 := Real.cos_le_one _
+    have hden : 0 < 2 + -c := by linarith
+    rw [le_div_iff₀ hden]
+    nlinarith [mul_nonneg (mul_nonneg hν.le (sq_nonneg ((n : ℝ)))) hcnn,
+      mul_nonneg (mul_nonneg hν.le (sq_nonneg ((n : ℝ)))) (by linarith : (0 : ℝ) ≤ 1 - c)]
+
+end Pencil
+
 /-! ### The θ-method on the Galerkin problem (13.17)–(13.21) -/
 
 section ThetaMethod
@@ -365,6 +642,35 @@ theorem thetaMethod_stable_iff_of_lt_half [CompleteSpace V] {a : SesqForm ℝ V}
     Δt ≤ 2 / ((1 - 2 * θ) * lmax)
   rw [Variational.IsThetaStep.forall_norm_le_iff_of_lt_half ha hc hcoer hθ0 hΔt hw₀ hle,
     le_div_iff₀ hpos, mul_comm Δt ((1 - 2 * θ) * lmax)]
+
+/-- **(13.23)** ([quarteroni2000numerical] (13.23)): for `0 ≤ θ < 1/2` the θ-method on the
+uniform `P₁` mesh is stable — `‖u_h^{k+1}‖ ≤ ‖u_h^k‖` for every datum — whenever
+`Δt ≤ C₁(θ) h²` with `C₁(θ) = 1/(6 ν (1 - 2θ))`, because the largest eigenvalue of the pencil
+satisfies `λ_h^{N_h} ≤ 12 ν h^{-2}` (`pencil_maxEigenvalue_bounds`) and the sharp condition is
+`Δt ≤ 2/((1 - 2θ) λ_h^{N_h})` (`thetaMethod_stable_iff_of_lt_half`). -/
+theorem equation_13_23 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+    [CompleteSpace V] {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ} (hc : 0 < c)
+    (hcoer : a.IsCoerciveWith c) {θ Δt : ℝ} (hθ0 : 0 ≤ θ) (hθ : θ < 1 / 2) (hΔt : 0 < Δt)
+    {lmax : ℝ} {w₀ : V} (hw₀ : definition_13_1 a lmax w₀) (hle : ∀ v, a v v ≤ lmax * ‖v‖ ^ 2)
+    {ν : ℝ} (hν : 0 < ν) {n : ℕ} (hn : 1 ≤ n) (hlmax : lmax ≤ 12 * ν * (n : ℝ) ^ 2)
+    (hstep : Δt ≤ 1 / (6 * ν * (1 - 2 * θ)) * (1 / (n : ℝ)) ^ 2) :
+    ∀ u u' : V, equation_13_17 a θ Δt 0 0 u u' → ‖u'‖ ≤ ‖u‖ := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hlmaxpos : 0 < lmax := equation_13_22_pos hc hcoer hw₀
+  have hθ' : 0 < 1 - 2 * θ := by linarith
+  refine (thetaMethod_stable_iff_of_lt_half ha hc hcoer hθ0 hθ hΔt hw₀ hle).2 ?_
+  have hpos : 0 < (1 - 2 * θ) * lmax := by positivity
+  rw [le_div_iff₀ hpos]
+  have hbound : (1 - 2 * θ) * lmax ≤ (1 - 2 * θ) * (12 * ν * (n : ℝ) ^ 2) := by
+    exact mul_le_mul_of_nonneg_left hlmax hθ'.le
+  have hstep' : Δt * ((1 - 2 * θ) * (12 * ν * (n : ℝ) ^ 2)) ≤ 2 := by
+    calc Δt * ((1 - 2 * θ) * (12 * ν * (n : ℝ) ^ 2))
+        ≤ (1 / (6 * ν * (1 - 2 * θ)) * (1 / (n : ℝ)) ^ 2)
+          * ((1 - 2 * θ) * (12 * ν * (n : ℝ) ^ 2)) := by
+          refine mul_le_mul_of_nonneg_right hstep (by positivity)
+      _ = 2 := by field_simp; ring
+  nlinarith [mul_le_mul_of_nonneg_left hbound hΔt.le]
+
 
 end Eigen
 
