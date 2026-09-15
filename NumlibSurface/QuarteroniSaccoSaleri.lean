@@ -52,6 +52,8 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section05
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section02
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section03
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section03

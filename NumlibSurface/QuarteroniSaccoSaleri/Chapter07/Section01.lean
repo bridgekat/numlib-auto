@@ -717,6 +717,138 @@ theorem example_7_4_fixedPoint :
   refine ⟨?_, ?_, ?_, ?_⟩ <;> ext i <;> fin_cases i <;>
     simp [example_7_4_F, example_7_4_G₁, example_7_4_G₂, h35] <;> norm_num
 
+-- TODO(backbone): natural home `Numlib/LinearAlgebra/Matrix/Complexify`, beside
+-- `Matrix.complexSpectralRadius_zero`; it is `spectrum.spectralRadius_one` for the
+-- complexification.
+/-- The spectral radius of the identity matrix is `1`. -/
+theorem _root_.Matrix.complexSpectralRadius_one {m : Type*} [Fintype m] [DecidableEq m]
+    [Nonempty m] : Matrix.complexSpectralRadius (1 : Matrix m m ℝ) = 1 := by
+  rw [Matrix.complexSpectralRadius, Matrix.complexify_one, spectrum.spectralRadius_one]
+
+/-- The Jacobian matrix of a map `ℝ² → ℝ²` read off the derivatives of its two scalar
+components. -/
+private theorem jacobianMatrix_pair {g₀ g₁ : EuclideanSpace ℝ (Fin 2) → ℝ}
+    {L₀ L₁ : EuclideanSpace ℝ (Fin 2) →L[ℝ] ℝ} {p : EuclideanSpace ℝ (Fin 2)}
+    (h₀ : HasFDerivAt g₀ L₀ p) (h₁ : HasFDerivAt g₁ L₁ p) :
+    jacobianMatrix (fun x => !₂[g₀ x, g₁ x]) p
+      = !![L₀ (EuclideanSpace.single 0 1), L₀ (EuclideanSpace.single 1 1);
+           L₁ (EuclideanSpace.single 0 1), L₁ (EuclideanSpace.single 1 1)] := by
+  have hpi : HasFDerivAt (fun x : EuclideanSpace ℝ (Fin 2) => ![g₀ x, g₁ x])
+      (ContinuousLinearMap.pi ![L₀, L₁]) p := by
+    refine hasFDerivAt_pi'' fun i => ?_
+    fin_cases i
+    · simpa using h₀
+    · simpa using h₁
+  have hd : HasFDerivAt (fun x : EuclideanSpace ℝ (Fin 2) => !₂[g₀ x, g₁ x])
+      (((EuclideanSpace.equiv (Fin 2) ℝ).symm : (Fin 2 → ℝ) →L[ℝ] EuclideanSpace ℝ (Fin 2)).comp
+        (ContinuousLinearMap.pi ![L₀, L₁])) p :=
+    ((EuclideanSpace.equiv (Fin 2) ℝ).symm.hasFDerivAt).comp p hpi
+  ext i j
+  rw [jacobianMatrix_apply, hd.fderiv]
+  fin_cases i <;> fin_cases j <;> simp
+
+/-- **Example 7.4, the analytic part.** The Jacobian matrices of the two iteration functions at
+their fixed points are `J_{G₁}(x₁*) = [[0, -1/2], [0, 0]]` and
+`J_{G₂}(x₂*) = [[0, -1/2], [4/3, 0]]`, of spectral radii `0` and `√(2/3) < 1` respectively; so
+Property 7.3 applies to both schemes and both converge locally. -/
+theorem example_7_4_spectralRadius :
+    jacobianMatrix example_7_4_G₁ !₂[0, 1] = !![0, -(1 / 2); 0, 0] ∧
+      jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)] = !![0, -(1 / 2); 4 / 3, 0] ∧
+      complexSpectralRadius (jacobianMatrix example_7_4_G₁ !₂[0, 1]) = 0 ∧
+      complexSpectralRadius (jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)])
+        = ENNReal.ofReal (√(2 / 3)) ∧
+      complexSpectralRadius (jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)]) < 1 := by
+  have h35 : √(1 - (4 / 5 : ℝ) ^ 2) = 3 / 5 := by
+    rw [show (1 : ℝ) - (4 / 5) ^ 2 = (3 / 5) ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+  have h0A : (!₂[(0 : ℝ), 1] : EuclideanSpace ℝ (Fin 2)) 0 = 0 := rfl
+  have h0B : (!₂[(4 / 5 : ℝ), -(3 / 5)] : EuclideanSpace ℝ (Fin 2)) 0 = 4 / 5 := rfl
+  -- the first component of both iteration functions
+  have hA0 : ∀ p : EuclideanSpace ℝ (Fin 2),
+      HasFDerivAt (fun x : EuclideanSpace ℝ (Fin 2) => (1 - x 1) / 2)
+        ((2 : ℝ)⁻¹ • (-(EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)))) p := fun p =>
+    (((EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).hasFDerivAt (x := p)).const_sub 1).mul_const
+      (2 : ℝ)⁻¹
+  -- the second component of `G₁` at `(0, 1)`
+  have hA1 : HasFDerivAt (fun x : EuclideanSpace ℝ (Fin 2) => √(1 - x 0 ^ 2))
+      (0 : EuclideanSpace ℝ (Fin 2) →L[ℝ] ℝ) !₂[0, 1] := by
+    have hu := (((EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).hasFDerivAt
+      (x := (!₂[(0 : ℝ), 1] : EuclideanSpace ℝ (Fin 2)))).pow 2).const_sub 1
+    have hne : (1 : ℝ) - (!₂[(0 : ℝ), 1] : EuclideanSpace ℝ (Fin 2)) 0 ^ 2 ≠ 0 := by
+      rw [h0A]; norm_num
+    refine (hu.sqrt hne).congr_fderiv ?_
+    ext v
+    simp
+  -- the second component of `G₂` at `(4/5, -3/5)`
+  have hB1 : HasFDerivAt (fun x : EuclideanSpace ℝ (Fin 2) => -√(1 - x 0 ^ 2))
+      ((4 / 3 : ℝ) • EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)) !₂[4 / 5, -(3 / 5)] := by
+    have hu := (((EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).hasFDerivAt
+      (x := (!₂[(4 / 5 : ℝ), -(3 / 5)] : EuclideanSpace ℝ (Fin 2)))).pow 2).const_sub 1
+    have hne : (1 : ℝ) - (!₂[(4 / 5 : ℝ), -(3 / 5)] : EuclideanSpace ℝ (Fin 2)) 0 ^ 2 ≠ 0 := by
+      rw [h0B]; norm_num
+    refine ((hu.sqrt hne).neg).congr_fderiv ?_
+    ext v
+    simp only [_root_.neg_apply, _root_.smul_apply, EuclideanSpace.coe_proj, smul_eq_mul,
+      nsmul_eq_mul, Nat.cast_ofNat, Matrix.cons_val_zero, h35]
+    ring
+  have hJ1 : jacobianMatrix example_7_4_G₁ !₂[0, 1] = !![0, -(1 / 2); 0, 0] := by
+    rw [show example_7_4_G₁ = fun x : EuclideanSpace ℝ (Fin 2) =>
+        !₂[(1 - x 1) / 2, √(1 - x 0 ^ 2)] from rfl, jacobianMatrix_pair (hA0 _) hA1]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp
+  have hJ2 : jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)] = !![0, -(1 / 2); 4 / 3, 0] := by
+    rw [show example_7_4_G₂ = fun x : EuclideanSpace ℝ (Fin 2) =>
+        !₂[(1 - x 1) / 2, -√(1 - x 0 ^ 2)] from rfl, jacobianMatrix_pair (hA0 _) hB1]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp
+  -- the square of the spectral radius of the second Jacobian, from `J² = -(2/3) I`
+  have hsq2 : complexSpectralRadius (jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)]) ^ 2
+      = ENNReal.ofReal (2 / 3 : ℝ) := by
+    rw [hJ2]
+    have hsq : (!![0, -(1 / 2); 4 / 3, 0] : Matrix (Fin 2) (Fin 2) ℝ) ^ 2
+        = (-(2 / 3) : ℝ) • 1 := by
+      rw [pow_two]
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        simp [Matrix.mul_apply, Fin.sum_univ_two] <;> norm_num
+    have h := Matrix.complexSpectralRadius_pow
+      (!![0, -(1 / 2); 4 / 3, 0] : Matrix (Fin 2) (Fin 2) ℝ) (by norm_num : 2 ≠ 0)
+    rw [hsq, Matrix.complexSpectralRadius_smul, Matrix.complexSpectralRadius_one, mul_one] at h
+    rw [← h, nnnorm_neg, ENNReal.ofReal_div_of_pos (by norm_num : (0 : ℝ) < 3)]
+    norm_num
+  have hsq2rho : complexSpectralRadius (jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)])
+      = ENNReal.ofReal (√(2 / 3)) := by
+    have hinj : ∀ a b : ENNReal, a ^ 2 = b ^ 2 → a = b := by
+      intro a b hab
+      by_contra hne
+      rcases lt_or_gt_of_ne hne with hlt | hlt
+      · exact absurd hab (ne_of_lt ((ENNReal.pow_lt_pow_left_iff (by norm_num)).2 hlt))
+      · exact absurd hab.symm (ne_of_lt ((ENNReal.pow_lt_pow_left_iff (by norm_num)).2 hlt))
+    refine hinj _ _ ?_
+    rw [hsq2, ← ENNReal.ofReal_pow (Real.sqrt_nonneg _),
+      Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2 / 3)]
+  refine ⟨hJ1, hJ2, ?_, hsq2rho, ?_⟩
+  · rw [hJ1]
+    have hsq : (!![0, -(1 / 2); 0, 0] : Matrix (Fin 2) (Fin 2) ℝ) ^ 2 = 0 := by
+      rw [pow_two]
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_two]
+    have h := Matrix.complexSpectralRadius_pow (!![0, -(1 / 2); 0, 0] : Matrix (Fin 2) (Fin 2) ℝ)
+      (two_ne_zero)
+    rw [hsq, Matrix.complexSpectralRadius_zero] at h
+    exact (pow_eq_zero_iff two_ne_zero).1 h.symm
+  · by_contra hc
+    rw [not_lt] at hc
+    have h1 : (1 : ENNReal) ≤ complexSpectralRadius
+        (jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)]) ^ 2 := by
+      calc (1 : ENNReal) = 1 ^ 2 := (one_pow 2).symm
+        _ ≤ _ := ENNReal.pow_le_pow_left hc
+    rw [hsq2] at h1
+    have h2 : ENNReal.ofReal (2 / 3 : ℝ) < 1 := by
+      rw [show (1 : ENNReal) = ENNReal.ofReal 1 from ENNReal.ofReal_one.symm,
+        ENNReal.ofReal_lt_ofReal_iff (by norm_num)]
+      norm_num
+    exact absurd h1 (not_le.2 h2)
+
 end Example74
 
 /-- **Remark 7.1, corrected.** (a) Newton's method is the fixed-point iteration of

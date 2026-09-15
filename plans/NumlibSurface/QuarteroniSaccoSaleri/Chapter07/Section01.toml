@@ -104,18 +104,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
 
 [[node]]
 id = "example_7_4_spectralRadius"
-kind = "theorem"
-desc = '''Example 7.4, the analytic part: `jacobianMatrix G₁ (0, 1) = !![0, -1/2; 0, 0]`,
-`jacobianMatrix G₂ (4/5, -3/5) = !![0, -1/2; 4/3, 0]`, with complex spectral radii `0` and
-`√(2/3) < 1`, so `property_7_3` applies to both schemes at their respective fixed points. Needs
-`fderiv` of `√(1 - x₁²)` at `x₁ ∈ {0, 4/5}` (`Real.sqrt`, `HasDerivAt.sqrt`) and the eigenvalues
-`±i √(2/3)` of the second matrix (`Matrix.mem_spectrum_complexify_iff` with the characteristic
-polynomial `X² + 2/3`). Surface only. ★★
-
-Blocked: not attempted for lack of budget — two `fderiv` computations of `√(1 - x₁²)` on
-`EuclideanSpace ℝ (Fin 2)` through `hasFDerivAt_euclidean`, and the spectrum of a `2 × 2` real matrix
-through its characteristic polynomial; an estimated 100–150 lines.'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.example_7_4_fixedPoint", "QuarteroniSaccoSaleri.Chapter07.jacobianMatrix", "QuarteroniSaccoSaleri.Chapter07.property_7_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
 
 [[node]]
@@ -168,4 +156,8 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
 
 [[node]]
 id = "example_7_4_G₂"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
+
+[[node]]
+id = "_root_.Matrix.complexSpectralRadius_one"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'

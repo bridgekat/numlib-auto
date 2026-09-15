@@ -1,239 +1,175 @@
 namespace = "QuarteroniSaccoSaleri.Chapter07"
-desc = '''
-§7.3, constrained optimization in `EuclideanSpace ℝ (Fin n)`: the optimality conditions on a
-convex set (Property 7.9), strong convexity (7.49) and Property 7.10, equality constraints with
-Definition 7.2 and the Lagrange multipliers of Property 7.11, inequality constraints with
-Definition 7.3 and the Kuhn–Tucker conditions of Properties 7.12–7.15, the penalty method and
-Property 7.16, Example 7.7 and the augmented Lagrangian with Property 7.17. Constraints are
-families `h : Fin m → ℝⁿ → ℝ`, `g : Fin r → ℝⁿ → ℝ`; the book's `J_h(x)` whose columns are the
-`∇h_i(x)` is the family `fun i => gradient (h i) x`. Backbone: `Numlib/Optimization/Constrained`,
-`Numlib/Optimization/Descent`, `Numlib/Analysis/Convex/Gateaux`, `Numlib/Variational/Minimization`;
-Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt` and `StrongConvexOn`.
-'''
 
 [[node]]
 id = "property_7_9_necessary"
-kind = "theorem"
-desc = '''Property 7.9 (1): `Ω` convex, `xstar ∈ Ω`, `f` differentiable at `xstar`, and `xstar` a local
-minimizer of `f` on `Ω` (`IsLocalMinOn f Ω xstar`; the book's `B(x*; R)` is the neighbourhood)
-imply (7.48): `∀ x ∈ Ω, 0 ≤ ⟪gradient f xstar, x - xstar⟫`.
-`Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`. ★'''
-deps = ["Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.9'
 
 [[node]]
 id = "property_7_9_sufficient"
-kind = "theorem"
-desc = '''Property 7.9 (2): if moreover `f` is convex on `Ω` (`ConvexOn ℝ Ω f`, (7.21)) and
-differentiable on `Ω`, then (7.48) at `xstar ∈ Ω` implies that `xstar` is a global minimizer of `f`
-on `Ω`, `IsMinOn f Ω xstar`. The `mpr` direction of `isMinOn_iff_forall_lineDeriv_nonneg`
-(`Numlib/Analysis/Convex/Gateaux`) with `HasFDerivAt.hasLineDerivAt`, as checked in the
-prototype. This is the sufficiency half of Rockafellar's Theorem 27.4, and a second route is the
-subgradient form `ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone`
-(`Numlib/Analysis/Convex/Optimization/Minimum`): (7.48) says `-∇f(x*)` is normal to `Ω` at `x*`
-(`isMinOn_iff_neg_mem_normalCone` in `Numlib/Variational/Inequality/NormalCone` is that reading),
-and `∇f(x*)` is a subgradient at `x*` of `f` extended by `+∞` off `Ω`, by `ConvexOn.add_lineDeriv_le`;
-proving it both ways is a consistency check of the bridge. ★'''
-deps = ["isMinOn_iff_forall_lineDeriv_nonneg", "QuarteroniSaccoSaleri.Chapter07.property_7_9_necessary", "ConvexAnalysis.le_of_mem_subdifferential_of_neg_mem_normalCone"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.9'
 
 [[node]]
 id = "IsStronglyConvexOn"
-kind = "definition"
-desc = '''(7.49): `IsStronglyConvexOn f Ω ρ : Prop := 0 < ρ ∧ ∀ x ∈ Ω, ∀ y ∈ Ω, ∀ α ∈ Icc 0 1,
-f (α • x + (1 - α) • y) ≤ α * f x + (1 - α) * f y - α * (1 - α) * ρ * ‖x - y‖ ^ 2`, with
-`isStronglyConvexOn_iff : IsStronglyConvexOn f Ω ρ ↔ 0 < ρ ∧ StrongConvexOn Ω (2 * ρ) f` for convex
-`Ω` (Mathlib's modulus is `m / 2 · r²`, so `m = 2 ρ`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.49'
 
 [[node]]
+id = "isStronglyConvexOn_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.49'
+
+[[node]]
+id = "strongConvexOn_isCoerciveFunctionalOn"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
+
+[[node]]
+id = "existsUnique_isMinOn_of_strongConvexOn'"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
+
+[[node]]
 id = "property_7_10"
-kind = "theorem"
-desc = '''Property 7.10, with the hypothesis the book omits: for `Ω` nonempty, closed and convex and
-`f` strongly convex on `Ω` (`IsStronglyConvexOn f Ω ρ`) *and lower semicontinuous on `Ω`* (the
-book's examples are continuous; without it the statement is false, see
-`existsUnique_isMinOn_of_strongConvexOn`), there is exactly one local minimizer of `f` on `Ω`, and
-it is the global one: `∃! xstar, xstar ∈ Ω ∧ IsMinOn f Ω xstar`, and `IsLocalMinOn f Ω x → x ∈ Ω → IsMinOn f Ω x`.
-`existsUnique_isMinOn_of_strongConvexOn` (`Numlib/Variational/Minimization`) and Mathlib's
-`IsMinOn.of_isLocalMinOn_of_convexOn`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.IsStronglyConvexOn", "existsUnique_isMinOn_of_strongConvexOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.10'
 
 [[node]]
 id = "definition_7_2"
-kind = "definition"
-desc = '''Definition 7.2: `IsRegularPoint h x`, for `h : Fin m → EuclideanSpace ℝ (Fin n) → ℝ`, is
-`(∀ i, h i x = 0) ∧ LinearIndependent ℝ (fun i => gradient (h i) x)` — the columns `∇h_i(x*)` of
-`J_h(x*)` are linearly independent, for `h_i` differentiable near `x*`. It is
-`Constrained.IsRegularPoint h (fun i x => toDual (gradient (h i) x)) x`
-(`definition_7_2_iff`). ★'''
-deps = ["Constrained.IsRegularPoint", "Constrained.feasibleEq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.2'
+
+[[node]]
+id = "definition_7_2_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.2'
 
 [[node]]
 id = "lagrangian"
-kind = "definition"
-desc = '''The Lagrangian `ℒ(x, λ) = f x + λᵀ h x` of (7.50) and its partial Jacobian `J_ℒ(x, λ) =
-∇f(x) + ∑ λ_i ∇h_i(x)`: `lagrangian f h x l := Constrained.lagrangian f h x l`, with
-`gradient_lagrangian : gradient (lagrangian f h · l) x = gradient f x + ∑ i, l i • gradient (h i) x`
-for `f`, `h i` differentiable at `x`. ★'''
-deps = ["Constrained.lagrangian"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
+
+[[node]]
+id = "lagrangian_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
+
+[[node]]
+id = "gradient_lagrangian"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
 
 [[node]]
 id = "property_7_11"
-kind = "theorem"
-desc = '''Property 7.11, first part, with the regularity hypothesis the statement needs (the book
-introduces regular points just before and omits the word; without it multipliers can fail to
-exist, `min x` s.t. `x² = 0`): if `xstar` is a regular point (`definition_7_2`) and a local
-minimizer of `f` on `{x | h x = 0}`, with `f`, `h_i` of class `C¹` near `xstar`, then
-`∃! l : Fin m → ℝ, gradient f xstar + ∑ i, l i • gradient (h i) xstar = 0`, i.e.
-`J_ℒ(xstar, l) = 0`. `Constrained.existsUnique_multipliers_of_isLocalMinOn`, with
-`ContDiffAt.hasStrictFDerivAt` supplying the strict differentiability Mathlib's theorem wants. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.definition_7_2", "QuarteroniSaccoSaleri.Chapter07.lagrangian", "Constrained.existsUnique_multipliers_of_isLocalMinOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.11'
 
 [[node]]
 id = "property_7_11_sufficient"
-kind = "theorem"
-desc = '''Property 7.11, second part: if `h xstar = 0`, `f`, `h_i` are `C²` near `xstar`, and some
-`l` satisfies `J_ℒ(xstar, l) = 0` and `zᵀ H_ℒ(xstar, l) z > 0` for every `z ≠ 0` with
-`⟪gradient (h i) xstar, z⟫ = 0` for all `i` (`H_ℒ = hessianMatrix (lagrangian f h · l) xstar`), then
-`xstar` is a strict local minimizer of `f` on `{x | h x = 0}`.
-`Constrained.isLocalMin_of_lagrangian_second_order`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.property_7_11", "QuarteroniSaccoSaleri.Chapter07.hessianMatrix", "Constrained.isLocalMin_of_lagrangian_second_order"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.11'
 
 [[node]]
 id = "definition_7_3"
-kind = "definition"
-desc = '''Definition 7.3: for `h : Fin m → ℝⁿ → ℝ` and `g : Fin r → ℝⁿ → ℝ`, `activeSet g x := {j | g j x = 0}`
-(`𝒥(x*)`) and `IsRegularPointIneq h g x` is feasibility `h x = 0`, `g x ≤ 0` together with linear
-independence of `∇h_i(x)`, `i = 1..m`, and `∇g_j(x)`, `j ∈ 𝒥(x)`; it is
-`Constrained.IsRegularPointIneq` with the gradient data. ★'''
-deps = ["Constrained.activeSet", "Constrained.IsRegularPointIneq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.3'
+
+[[node]]
+id = "definition_7_3_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.3'
 
 [[node]]
 id = "property_7_12"
-kind = "theorem"
-desc = '''Property 7.12 (Karush–Kuhn–Tucker necessary conditions): if `xstar` is a regular
-(`definition_7_3`) local minimizer of `f` on `{x | h x = 0 ∧ g x ≤ 0}` and `f`, `h_i`, `g_j` are
-`C¹` near `xstar`, then there is exactly one pair `(l, μ)` with
-`gradient f xstar + ∑ i, l i • gradient (h i) xstar + ∑ j, μ j • gradient (g j) xstar = 0`
-(`J_ℳ = 0` for `ℳ = f + λᵀh + μᵀg`), `μ ≥ 0` and `μ_j g_j(xstar) = 0` for all `j`:
-`∃! p : (Fin m → ℝ) × (Fin r → ℝ), Constrained.IsKKTPoint … xstar p.1 p.2`. Existence is
-`Constrained.exists_kkt_of_isLocalMinOn` (★★★ in the backbone: implicit function theorem plus
-Farkas), uniqueness `Constrained.kkt_multipliers_unique`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.definition_7_3", "Constrained.IsKKTPoint", "Constrained.exists_kkt_of_isLocalMinOn", "Constrained.kkt_multipliers_unique"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.12'
 
 [[node]]
-id = "nonlinearProgram"
-kind = "definition"
-desc = '''The nonlinear programming problem (7.52): maximize `f` subject to `g_i x ≤ b_i` (`i ≤ l`),
-`g_i x ≥ b_i` (`l < i ≤ k`), `g_i x = b_i` (`k < i ≤ m`) and `x ≥ 0`, encoded as data
-`(f, g, b, l, k)` with the feasible region `feasibleRegion g b l k`, the index sets `I_=`, `I_≠`,
-`J_=`, `J_>` at a point, and the Lagrangian
-`ℒ(x, λ) = f x + ∑_{i ≤ m} λ_i (b_i - g_i x) - ∑_{i} λ_{m+i} x_i` of §7.3.1. Its translation into
-the `min -f`, `h = 0`, `g̃ ≤ 0` form of Property 7.12 (`b_i - g_i x ≤ 0` for the `≥` constraints,
-`-x_i ≤ 0` for the sign constraints) is `nonlinearProgram_toStandard`. ★'''
-deps = []
+id = "real_inner_eq_sum"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
+
+[[node]]
+id = "innerSL_eq_sum_smul_proj"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3'
+
+[[node]]
+id = "feasibleRegion"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
 
 [[node]]
+id = "mem_feasibleRegion"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "nonlinearLagrangian"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3.1'
+
+[[node]]
+id = "nonlinearLagrangian_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3.1'
+
+[[node]]
+id = "gradient_nonlinearLagrangian"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3.1'
+
+[[node]]
+id = "standardEq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardEqDeriv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardSign"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardSign_of_lt"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardSign_of_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardIneq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "standardIneqDeriv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "nonlinearProgram_toStandard"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.52'
+
+[[node]]
+id = "IsRegularNLP"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.3.1'
+
+[[node]]
+id = "exists_kuhnTucker"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.13'
+
+[[node]]
 id = "property_7_13"
-kind = "theorem"
-desc = '''Property 7.13 (Kuhn–Tucker conditions I and II), under the constraint qualification the book
-mentions after Property 7.14 and does not state — taken as regularity (Definition 7.3) of the
-standard-form problem `nonlinearProgram_toStandard`: if `f` has a constrained local maximum at
-`xstar` for (7.52) and `f`, `g_i` are `C¹`, there is `λstar : Fin (m + n) → ℝ` with
-`∇_x ℒ(xstar, λstar) ≤ 0` componentwise, with equality in every component `i ∈ J_>` (first
-condition), and `(∇_x ℒ(xstar, λstar))ᵀ xstar = 0` (second condition). Proof: `property_7_12` for
-the standard form; the multipliers of the sign constraints `-x_i ≤ 0` are the components
-`λ_{m+i} ≥ 0`, complementarity gives the equality on `J_>` and the second condition. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.nonlinearProgram", "QuarteroniSaccoSaleri.Chapter07.property_7_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.13'
 
 [[node]]
 id = "property_7_14"
-kind = "theorem"
-desc = '''Property 7.14 (Kuhn–Tucker conditions III and IV), same hypotheses as `property_7_13`:
-`∂ℒ/∂λ_i (xstar, λstar) = b_i - g_i xstar` is `≥ 0` for `i ≤ l`, `≤ 0` for `l < i ≤ k`, `= 0` for
-`k < i ≤ m` (feasibility), and `∑_{i ≤ m} λstar_i (b_i - g_i xstar) = 0` (complementarity; the
-book's fourth condition `(∇_λ ℒ)ᵀ x* = 0` is a misprint for `(∇_λ ℒ)ᵀ λ* = 0` — the vectors
-`∇_λ ℒ ∈ ℝ^{m+n}` and `x* ∈ ℝⁿ` do not even have the same length, and the complementary slackness
-of the KKT conditions is `λ*ᵀ ∇_λ ℒ = 0`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.nonlinearProgram", "QuarteroniSaccoSaleri.Chapter07.property_7_12", "QuarteroniSaccoSaleri.Chapter07.property_7_13"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.14'
 
 [[node]]
 id = "property_7_15"
-kind = "theorem"
-desc = '''Property 7.15 (sufficiency): if `f` is concave on the feasible region, `(xstar, λstar)`
-satisfies the Kuhn–Tucker conditions I–IV (with `xstar` feasible), and `g_i` is convex where
-`λstar_i > 0` and concave where `λstar_i < 0`, then `xstar` is a global maximizer of `f` on the
-feasible region: `IsMaxOn f (feasibleRegion g b l k) xstar`. Proof:
-`Constrained.isMinOn_of_lagrangian_convexOn` for `-f` with the standard-form constraints
-(`C = univ`; the sign conditions make each `λ_i (g_i x - b_i)` convex and `≤ 0` on the feasible
-region; the sign constraints `-x_i ≤ 0` with multipliers `λ_{m+i} ≥ 0` are linear). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.nonlinearProgram", "QuarteroniSaccoSaleri.Chapter07.property_7_13", "QuarteroniSaccoSaleri.Chapter07.property_7_14", "Constrained.isMinOn_of_lagrangian_convexOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.15'
 
 [[node]]
 id = "equation_7_53"
-kind = "theorem"
-desc = '''(7.53): the penalized Lagrangian `ℒ_α x = f x + ½ α ‖h x‖²` is `Constrained.penalized f h α`,
-and on the constraint set `{x | h x = 0}` it coincides with `f` (the text's "if the constraint was
-exactly satisfied, minimizing `f` would be equivalent to minimizing `ℒ_α`"). ★'''
-deps = ["Constrained.penalized"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.53'
 
 [[node]]
 id = "property_7_16"
-kind = "theorem"
-desc = '''Property 7.16, in the form that is true: `f : ℝⁿ → ℝ`, `h : ℝⁿ → ℝᵐ` continuous on a closed
-`Ω`, `α_k > 0` monotonically divergent, `xstar` a global minimizer of `f` on `{x ∈ Ω | h x = 0}`
-and `xstar_k` a global minimizer of `ℒ_{α_k}` on `Ω` for each `k`. Then every cluster point of
-`xstar_k` lies in `Ω`, satisfies the constraint and is a global minimizer of `f` on
-`{x ∈ Ω | h x = 0}` (`Constrained.penalty_clusterPt`); and if the constrained minimizer is unique
-and the `xstar_k` are bounded (e.g. `Ω` compact) then `xstar_k → xstar`
-(`Constrained.tendsto_penalty_of_unique`). The book asserts convergence to `x*` outright, which
-fails when the constrained problem has several minimizers. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_53", "Constrained.penalty_clusterPt", "Constrained.tendsto_penalty_of_unique"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.16'
 
 [[node]]
 id = "equation_7_55"
-kind = "theorem"
-desc = '''(7.55): the augmented Lagrangian `𝒢_α(x, λ) = f x + λᵀ h x + ½ α ‖h x‖²` is
-`Constrained.augmented f h α λ`, `𝒢_α(·, 0) = ℒ_α`, and the text's observation: a solution `xstar`
-of (7.50) is a minimizer of `𝒢_α(·, λ)` over the constraint set `{x | h x = 0}` for every `λ`, `α`
-(there `𝒢_α = f`). ★'''
-deps = ["Constrained.augmented", "QuarteroniSaccoSaleri.Chapter07.equation_7_53"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.55'
 
 [[node]]
 id = "property_7_16_augmented"
-kind = "theorem"
-desc = '''The text after (7.56): Property 7.16 also holds for the method of multipliers (7.56) when the
-multiplier sequence `λ_k` is bounded — with the hypotheses of `property_7_16` and `xstar_k` a
-global minimizer of `𝒢_{α_k}(·, λ_k)` on `Ω`, every cluster point of `xstar_k` is a constrained
-global minimizer. `Constrained.augmented_clusterPt`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_55", "Constrained.augmented_clusterPt"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.16'
 
 [[node]]
 id = "example_7_7"
-kind = "theorem"
-desc = '''Example 7.7: for `f x = -x⁴` on `ℝ` with the constraint `x = 0`, the constrained problem has
-the solution `0`, but for every `α` and `λ` the augmented Lagrangian
-`𝒢_α(x, λ) = -x⁴ + λ x + ½ α x²` has no global minimizer on `ℝ` (it tends to `-∞`), so problem
-(7.56) has no solution. The book's "no longer admits a minimum at `x = 0` for any `α_k ≠ 0`" is to
-be read as this: for `λ = 0` and `α > 0` the point `0` *is* a strict local minimizer
-(`𝒢'' (0) = α > 0`), which is recorded as `example_7_7_isLocalMin`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_55"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.7'
+
+[[node]]
+id = "example_7_7_isLocalMin"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.7'
 
 [[node]]
@@ -252,6 +188,15 @@ content of the statement, comes from applying the implicit function theorem in t
 variables `(x, λ̃, 1/α)` at `1/α = 0` (Bertsekas' proof), together with the Debreu–Finsler lemma
 (condition 3 follows from condition 2 for `ᾱ` large) — a page of careful analysis whose only
 consumer is the convergence-rate discussion that follows, which the book itself only quotes. The
-book states it without proof. ★★★'''
+book states it without proof. ★★★
+
+Blocked: not attempted, by the planner's own judgement, which re-reading the book (lines
+12579–12600) confirms. The content of the statement is the *uniformity* of `δ, γ, M` in `α`, so a
+single application of Mathlib's implicit function theorem to `∇_x 𝒢_α(x, λ) = 0` at a fixed `α`
+does not give it. Missing: (a) a parametrized implicit function theorem giving joint
+differentiability in `(λ, α)` together with a Lipschitz bound in the parameter, applied in the
+compactified variable `1/α` at `1/α = 0`; (b) the Debreu–Finsler lemma (`zᵀ H z > 0` on `ker J`
+implies `H + α JᵀJ` positive definite for large `α`), a compactness argument on the unit sphere.
+Estimate: (b) ★★, half a day; (a) ★★★, a day or more. Nothing in the project depends on it.'''
 deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_55", "QuarteroniSaccoSaleri.Chapter07.property_7_11", "QuarteroniSaccoSaleri.Chapter07.definition_7_2"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'
