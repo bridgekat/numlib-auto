@@ -1,94 +1,40 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
-desc = '''
-§10.10: approximation of derivatives — the general scheme (10.57), the forward, centred and
-backward differences with their Taylor errors (10.59)–(10.64), the second difference
-(10.65)–(10.66), compact schemes (10.67)–(10.69) and the pseudo-spectral derivative with its
-differentiation matrix (10.72)–(10.73). All of it is `Numlib/FiniteDifference/Derivative`; the
-quoted estimate (10.71) is not formalized. Example 10.4 is numerical and skipped; the wave-number
-discussion of §10.10.2 and the boundary closure of the compact scheme are prose and get no node.
-'''
 
 [[node]]
 id = "equation_10_57"
-kind = "definition"
-desc = '''(10.57): on the uniform grid `x_k = a + k h`, `h = (b - a)/n`, a difference scheme with
-coefficients `α_{-m..m}`, `β_{-m'..m'}` is the relation `h ∑_{k=-m}^{m} α_k u_{i-k} =
-∑_{k=-m'}^{m'} β_k f(x_{i-k})` between the approximations `uᵢ` of `f'(xᵢ)` and the nodal values.
-A predicate on `u : ℤ → ℝ`, stated for the interior indices where the stencil fits. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.57)'
 
 [[node]]
 id = "equation_10_60"
-kind = "theorem"
-desc = '''(10.59)–(10.60): the forward difference `u^{FD}_i = (f(x_{i+1}) - f(xᵢ))/h` satisfies
-`f'(xᵢ) - u^{FD}_i = -(h/2) f''(ξᵢ)` for some `ξᵢ ∈ (xᵢ, x_{i+1})`, for `f ∈ C²[a, b]`; it is
-(10.57) with `m = 0`, `α_0 = 1`, `m' = 1`, `β_{-1} = 1`, `β_0 = -1`, `β_1 = 0`. Restates
-`FiniteDifference.deriv_sub_forwardDiff_eq`. ★'''
-deps = ["FiniteDifference.forwardDiff", "FiniteDifference.deriv_sub_forwardDiff_eq", "QuarteroniSaccoSaleri.Chapter10.equation_10_57"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.59)–(10.60)'
 
 [[node]]
 id = "equation_10_62"
-kind = "theorem"
-desc = '''(10.61)–(10.62): the centred difference `u^{CD}_i = (f(x_{i+1}) - f(x_{i-1}))/(2h)` satisfies
-`f'(xᵢ) - u^{CD}_i = -(h²/6) f^{(3)}(ξᵢ)` for some `ξᵢ ∈ (x_{i-1}, x_{i+1})`, for `f ∈ C³[a, b]`.
-Restates `FiniteDifference.deriv_sub_centredDiff_eq`. ★'''
-deps = ["FiniteDifference.centredDiff", "FiniteDifference.deriv_sub_centredDiff_eq", "QuarteroniSaccoSaleri.Chapter10.equation_10_57"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.61)–(10.62)'
 
 [[node]]
 id = "equation_10_64"
-kind = "theorem"
-desc = '''(10.63)–(10.64): the backward difference `u^{BD}_i = (f(xᵢ) - f(x_{i-1}))/h` satisfies
-`f'(xᵢ) - u^{BD}_i = (h/2) f''(ξᵢ)` for some `ξᵢ ∈ (x_{i-1}, xᵢ)`. Restates
-`FiniteDifference.deriv_sub_backwardDiff_eq`. ★'''
-deps = ["FiniteDifference.backwardDiff", "FiniteDifference.deriv_sub_backwardDiff_eq", "QuarteroniSaccoSaleri.Chapter10.equation_10_57"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.63)–(10.64)'
 
 [[node]]
 id = "equation_10_66"
-kind = "theorem"
-desc = '''(10.65)–(10.66): for `f ∈ C⁴[a, b]` the second difference
-`u''_i = (f(x_{i+1}) - 2f(xᵢ) + f(x_{i-1}))/h²` satisfies
-`f''(xᵢ) - u''_i = -(h²/24) (f⁗(xᵢ + θᵢ h) + f⁗(xᵢ - ωᵢ h))` with `0 < θᵢ, ωᵢ < 1`. Restates
-`FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`. ★'''
-deps = ["FiniteDifference.secondCentredDiff", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.65)–(10.66)'
 
 [[node]]
 id = "equation_10_68"
-kind = "theorem"
-desc = '''(10.67)–(10.68) and the expansion of the consistency error: for `f ∈ C⁷` near `xᵢ`, the
-consistency error `σᵢ(h)` of the compact scheme
-`α u_{i-1} + uᵢ + α u_{i+1} = (β/2h)(f_{i+1} - f_{i-1}) + (γ/4h)(f_{i+2} - f_{i-2})` satisfies
-`σᵢ(h) = (2α + 1 - β - γ) f'(xᵢ) + h² (α - β/6 - 2γ/3) f^{(3)}(xᵢ) + h⁴ (α/12 - β/120 - 2γ/15) f⁽⁵⁾(xᵢ)
-+ O(h⁶)`. Restates `FiniteDifference.compactError_expansion`. Erratum: the book's display carries
-a spurious factor `1/2` on both `h²` terms (`α h²/2` and `-(h²/2)(β/6 + 2γ/3)`); the order-4
-condition `6α = β + 4γ` it draws is nevertheless correct. ★'''
-deps = ["FiniteDifference.compactError", "FiniteDifference.compactError_expansion"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.67)–(10.68)'
 
 [[node]]
 id = "equation_10_69"
-kind = "theorem"
-desc = '''(10.69) and the order conditions: the compact scheme is second order when `2α + 1 = β + γ`,
-fourth order when also `6α = β + 4γ`, sixth order when also `10α = β + 16γ`
-(`FiniteDifference.compactError_isBigO_pow_six` and its lower-order forms); the three conditions
-have the unique solution `α = 1/3`, `β = 14/9`, `γ = 1/9` (`FiniteDifference.order_six_unique`),
-and `α = 1/4`, `β = 3/2`, `γ = 0` is a fourth-order scheme, while `α = γ = 0`, `β = 1` is the
-centred difference (10.61). ★'''
-deps = ["FiniteDifference.compactError_isBigO_pow_six", "FiniteDifference.order_six_unique", "QuarteroniSaccoSaleri.Chapter10.equation_10_68"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.69) and the order conditions of §10.10.2'''
 
 [[node]]
 id = "pseudoSpectralDerivative"
-kind = "definition"
-desc = '''§10.10.3: the pseudo-spectral derivative `𝒟_n f = (Π^{GL}_{n,w} f)' ∈ P_{n-1}` of `f ∈ C[-1, 1]`,
-the derivative of the interpolant at the Chebyshev–Gauss–Lobatto nodes (10.21), as
-`derivative (Lagrange.interpolate univ (node n) (f ∘ node n))`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_21"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.10.3, the pseudo-spectral derivative'
+
+[[node]]
+id = "degree_pseudoSpectralDerivative_lt"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.10.3, `𝒟_n f ∈ ℙ_{n-1}(I)`'
 
 [[node]]
 id = "equation_10_71"
@@ -101,23 +47,8 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.71)'
 
 [[node]]
 id = "equation_10_72"
-kind = "theorem"
-desc = '''(10.72): `(𝒟_n f)(x̄ᵢ) = ∑ⱼ f(x̄ⱼ) l̄ⱼ'(x̄ᵢ)`, i.e. `f' = D f` with the pseudo-spectral
-differentiation matrix `Dᵢⱼ = l̄ⱼ'(x̄ᵢ)` (`Lagrange.derivMatrix`). Restates
-`Lagrange.eval_derivative_interpolate_node` at the Chebyshev–Gauss–Lobatto nodes; the second
-derivative is `D² f`. ★'''
-deps = ["Lagrange.derivMatrix", "Lagrange.eval_derivative_interpolate_node", "QuarteroniSaccoSaleri.Chapter10.pseudoSpectralDerivative"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.72)'
 
 [[node]]
 id = "equation_10_73"
-kind = "theorem"
-desc = '''(10.73): for the nodes `x̄ⱼ = -cos (jπ/n)` the entries of `D` are
-`D_{lj} = (d_l/d_j) (-1)^{l+j} / (x̄_l - x̄_j)` for `l ≠ j`, `D_{jj} = -x̄_j / (2(1 - x̄_j²))` for
-`1 ≤ j ≤ n - 1`, `D_{00} = -(2n² + 1)/6` and `D_{nn} = (2n² + 1)/6`. Restates
-`Lagrange.chebyshevLobattoDerivMatrix_apply`. Erratum: the book prints `D_{nn} = (2n² + 1)/3`;
-since `D` has trace `0` (its interior diagonal is odd under `j ↦ n - j` and its only eigenvalue is
-`0`, Example 5.13) the value is `(2n² + 1)/6`, the standard entry of [CHQZ88] p. 69 up to the
-reversal of the node order. ★'''
-deps = ["Lagrange.chebyshevLobattoDerivMatrix_apply", "QuarteroniSaccoSaleri.Chapter10.equation_10_72"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.73)'
