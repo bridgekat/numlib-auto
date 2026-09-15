@@ -130,34 +130,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.53)'
 
 [[node]]
 id = "leapFrog_truncation"
-kind = "theorem"
-desc = '''The leap-frog scheme (13.44) is second order for the wave equation: for `u : ℝ → ℝ → ℝ`
-four times continuously differentiable with `|∂_t⁴ u| ≤ M`, `|∂_x⁴ u| ≤ M'`, the residual
-`[u(x, t+Δt) - 2u(x,t) + u(x, t-Δt)]/Δt² - γ² [u(x+Δx, t) - 2u(x,t) + u(x-Δx, t)]/Δx² - (u_tt -
-γ² u_xx)(x, t)` is bounded by `(M/12) Δt² + (γ² M'/12) Δx²`; the book says "second order if `Δt =
-Δx`", which is this bound read with `Δt = Δx`. Two one-variable second-difference Taylor bounds
-(chapter 10's `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`). ★★
-
-Blocked: not attempted for lack of time. `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`
-is the one-variable engine; what is missing is the two-variable interface — the iterated partial
-derivatives of `u` as named functions and the restriction of `u` to the two coordinate lines
-through `(x, t)` — the same interface `FiniteDifference.Hyperbolic.residual_threePoint_expansion`
-waits on. Estimate: half a day once that exists.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, "The Leap-frog and Newmark methods are both second order accurate if Δt = Δx"'''
 
 [[node]]
 id = "newmark_truncation"
-kind = "theorem"
-desc = '''The Newmark scheme (13.45) is second order for the wave equation when `θ = 1/2` (any `β`):
-inserting a smooth solution `u`, `v = u_t` of `u_tt = γ² u_xx` (`f = 0`) into (13.45), the residuals
-of the two relations, divided by `Δt`, are `O(Δt² + Δx²)`; for `θ ≠ 1/2` the second relation
-is only first order, with residual `(θ - 1/2) Δt u_ttt + O(Δt² + Δx²)`. The book states second order
-for both methods without the condition `θ = 1/2`. ★★★
-
-Blocked: not attempted; waits on the same two-variable Taylor interface as `leapFrog_truncation`,
-and additionally on the algebra of the two Newmark relations.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_45", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, "The Leap-frog and Newmark methods are both second order accurate if Δt = Δx"'''
 
 [[node]]
@@ -171,14 +147,35 @@ desc = '''Remark 13.4, leap-frog: the leap-frog scheme (13.44) for the wave equa
 `‖·‖_{Δ,2}` under `γλ < 1`. Written as the two-level system for `(u^{n+1}, u^n)` on the periodic
 grid, its `2 × 2` amplification matrix on the `k`-th mode is `G_k = !![2c_k, -1; 1, 0]` with `c_k =
 1 - 2(γλ)² sin²(φ_k/2)`, whose eigenvalues are the roots of `z² - 2c_k z + 1`; for `|c_k| < 1` they
-are distinct of modulus one and `‖G_k^n‖` is bounded uniformly in `n` and `k`. The book writes
-`Δt ≤ Δx/|γ|`: at `γλ = 1` the mode `φ_k = π` has a double root `z = -1` with a Jordan block,
-`‖G_k^n‖ ~ n`, and (13.46) fails; the strict inequality is needed. ★★★
+are distinct of modulus one and `‖G_k^n‖` is bounded uniformly in `n` and `k`. ★★★'''
+wrong = '''False as stated, for every `γλ`, and not because of the `γλ = 1` Jordan block the
+earlier note describes. The constant mode `k = 0` has `φ_0 = 0`, hence `c_0 = 1`, so `G_0 =
+!![2, -1; 1, 0] = I + N` is a Jordan block and `G_0^n = !![n+1, -n; n, 1-n]` grows linearly: the
+scheme reproduces `u^n = u^0 + n (u^1 - u^0)`, the exact `u_0 + v_0 t` of a spatially constant wave
+solution. Uniformity in `k` fails as well: for `|c| < 1` the Chebyshev form `G^n = U_{n-1}(c) G -
+U_{n-2}(c) I` has `U_{n-1}(cos θ) = sin(nθ)/sin θ`, and on the first mode `θ ≈ γ λ Δx`, `n ≈ T/(λΔx)`
+give `sin(nθ)/sin θ ≈ sin(γT)/(γλΔx) → ∞`. Both are the same phenomenon: the quantity the wave
+equation controls is the energy, not `‖(u^{n+1}, u^n)‖_{Δ,2}`. Superseded by
+`remark_13_4_leapFrog_energy`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
 
-Blocked: not attempted for lack of time. The block-circulant reduction exists
-(`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`); what is missing is the uniform
-bound on the powers of a `2 × 2` matrix with two distinct unimodular eigenvalues, uniform in `k` —
-an explicit diagonalization whose conditioning is controlled by `1 - (γλ)²`. Estimate: two days.'''
+[[node]]
+id = "remark_13_4_leapFrog_energy"
+kind = "theorem"
+desc = '''Remark 13.4, leap-frog, in the variables the wave equation controls: with the state
+`w^n = ((u^{n+1} - u^n)/Δt, u^n)` instead of `(u^{n+1}, u^n)`, the leap-frog scheme (13.44) on the
+periodic grid satisfies `‖w^n‖_{Δ,2} ≤ C_T ‖w^0‖_{Δ,2}` for `n Δt ≤ T` under the strict CFL
+condition `γλ < 1`. On the `k`-th mode the change of variables conjugates `G_k = !![2c_k, -1; 1, 0]`
+into a matrix whose powers are bounded by `C/(1 - (γλ)²)`-type constants uniformly in `k`,
+including the constant mode, where it reproduces `u^n = u^0 + (n Δt) w^0_1` and `n Δt ≤ T`. The
+block-circulant reduction `FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode` is in
+place. ★★★
+
+Blocked: not attempted. What is missing is the uniform bound on the powers of the conjugated
+`2 × 2` matrix, which in Chebyshev form is `|U_{n-1}(c_k)| ≤ n` near `c = 1` and
+`|U_{n-1}(c_k)| ≤ 1/√(1 - c_k²)` away from it; the two regimes have to be combined against
+`n Δt ≤ T`. Estimate: two days.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
 
@@ -194,6 +191,12 @@ real coefficients). ★★★
 
 Blocked: not attempted for lack of time; needs the same uniform power bound as
 `remark_13_4_leapFrog` plus the Schur–Cohn criterion for a real quadratic, which the project does
-not have. Estimate: three days.'''
+not have. Estimate: three days.
+
+Blocked, second reading: the state vector named here, `(u, Δt v)`, is the wrong one, for the same
+reason that sinks `remark_13_4_leapFrog`. On the constant mode `k = 0` the scheme is `u' = u + Δt v`,
+`v' = v`, so in the variables `(u, Δt v)` the mode matrix is the Jordan block `!![1, 1; 0, 1]`, whose
+powers grow like `n`; in the unscaled variables `(u, v)` it is `!![1, Δt; 0, 1]`, whose powers are
+`!![1, n Δt; 0, 1]` and are bounded because `n Δt ≤ T`. State the node in `(u, v)`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_45", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Newmark method'

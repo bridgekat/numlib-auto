@@ -1,0 +1,68 @@
+[[node]]
+id = "HasPartialDerivFst"
+
+[[node]]
+id = "HasPartialDerivSnd"
+
+[[node]]
+id = "hasPartialDerivFst_swap_iff"
+
+[[node]]
+id = "hasPartialDerivSnd_swap_iff"
+
+[[node]]
+id = "HasPartialDerivFst.add"
+
+[[node]]
+id = "HasPartialDerivFst.const_mul"
+
+[[node]]
+id = "HasPartialDerivSnd.add"
+
+[[node]]
+id = "HasPartialDerivSnd.const_mul"
+
+[[node]]
+id = "HasPartialDerivFst.congr"
+
+[[node]]
+id = "HasPartialDerivSnd.congr"
+
+[[node]]
+id = "HasPartialDerivs"
+
+[[node]]
+id = "HasPartialDerivs.eq_zero_zero"
+
+[[node]]
+id = "HasPartialDerivs.hasPartialDerivFst"
+
+[[node]]
+id = "HasPartialDerivs.hasPartialDerivSnd"
+
+[[node]]
+id = "HasPartialDerivs.swap"
+
+[[node]]
+id = "HasPartialDerivs.differentiable_fst"
+
+[[node]]
+id = "HasPartialDerivs.deriv_fst"
+
+[[node]]
+id = "HasPartialDerivs.differentiable_snd"
+
+[[node]]
+id = "HasPartialDerivs.deriv_snd"
+
+[[node]]
+id = "HasPartialDerivs.contDiff_fst"
+
+[[node]]
+id = "HasPartialDerivs.contDiff_snd"
+
+[[node]]
+id = "HasPartialDerivs.iteratedDeriv_fst"
+
+[[node]]
+id = "HasPartialDerivs.iteratedDeriv_snd"

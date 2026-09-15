@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
 import Mathlib.Analysis.InnerProductSpace.l2Space
+import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.PDE.Transport
 import Numlib.FiniteDifference.Derivative
@@ -1469,6 +1470,723 @@ def IsModifiedSolution (a mu nu : ℝ) (v : ℝ → ℝ → ℝ) : Prop :=
     Transport.HasPartialsOn Set.univ v vx vt ∧ Transport.HasPartialsOn Set.univ vx vxx vxt ∧
       Transport.HasPartialsOn Set.univ vxx vxxx vxxt ∧
       ∀ x t : ℝ, vt x t + a * vx x t = mu * vxx x t + nu * vxxx x t
+
+/-! ### Taylor expansion along the coordinate lines -/
+
+section PartialTaylor
+
+variable {v : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {M : ℝ} {i j : ℕ}
+
+/-- A function differentiable on the whole plane has its first partial derivative as the
+derivative of the restriction to a horizontal line.
+
+TODO(backbone): this and its companion belong beside `Transport.HasPartialsOn`. -/
+theorem hasPartialDerivFst_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
+    (h : Transport.HasPartialsOn Set.univ u ux ut) : HasPartialDerivFst u ux := by
+  intro x t
+  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
+      (Transport.partialsCLM (ux x t) (ut x t)) (x, t) := by
+    have h1 := h (x, t) (Set.mem_univ _)
+    rwa [hasFDerivWithinAt_univ] at h1
+  have hline : HasDerivAt (fun y : ℝ => (y, t)) (1, 0) x :=
+    (hasDerivAt_id x).prodMk (hasDerivAt_const x t)
+  have h2 := h0.comp_hasDerivAt x hline
+  simp only [Transport.partialsCLM_apply, mul_one, mul_zero, add_zero, Function.comp_def] at h2
+  exact h2
+
+/-- A function differentiable on the whole plane has its second partial derivative as the
+derivative of the restriction to a vertical line. -/
+theorem hasPartialDerivSnd_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
+    (h : Transport.HasPartialsOn Set.univ u ux ut) : HasPartialDerivSnd u ut := by
+  intro x t
+  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
+      (Transport.partialsCLM (ux x t) (ut x t)) (x, t) := by
+    have h1 := h (x, t) (Set.mem_univ _)
+    rwa [hasFDerivWithinAt_univ] at h1
+  have hline : HasDerivAt (fun s : ℝ => (x, s)) (0, 1) t :=
+    (hasDerivAt_const t x).prodMk (hasDerivAt_id t)
+  have h2 := h0.comp_hasDerivAt t hline
+  simp only [Transport.partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
+  exact h2
+
+/-- **First-order Taylor expansion in space**: for a family of iterated partial derivatives with
+`|∂_x^{i+2} ∂_t^j v| ≤ M`, `|D_{i,j}(x + h, t) - D_{i,j}(x, t) - h D_{i+1,j}(x, t)| ≤ M h²/2`. -/
+theorem abs_taylor_fst_one (hD : HasPartialDerivs v D) (hM : ∀ y s, |D (i + 2) j y s| ≤ M)
+    (x t h : ℝ) : |D i j (x + h) t - D i j x t - h * D (i + 1) j x t| ≤ M * h ^ 2 / 2 := by
+  have hc : ContDiff ℝ 2 fun y => D i j y t := by exact_mod_cast hD.contDiff_fst 2 i j t
+  have hb : ∀ y, |iteratedDeriv 2 (fun y => D i j y t) y| ≤ M := by
+    rw [hD.iteratedDeriv_fst]
+    exact fun y => hM y t
+  simpa [hD.deriv_fst] using abs_taylor_one hc hb x h
+
+/-- **Second-order Taylor expansion in space**. -/
+theorem abs_taylor_fst_two (hD : HasPartialDerivs v D) (hM : ∀ y s, |D (i + 3) j y s| ≤ M)
+    (x t h : ℝ) :
+    |D i j (x + h) t - D i j x t - h * D (i + 1) j x t - h ^ 2 / 2 * D (i + 2) j x t|
+      ≤ M * |h| ^ 3 / 6 := by
+  have hc : ContDiff ℝ 3 fun y => D i j y t := by exact_mod_cast hD.contDiff_fst 3 i j t
+  have hb : ∀ y, |iteratedDeriv 3 (fun y => D i j y t) y| ≤ M := by
+    rw [hD.iteratedDeriv_fst]
+    exact fun y => hM y t
+  simpa [hD.deriv_fst, hD.iteratedDeriv_fst] using abs_taylor_two hc hb x h
+
+/-- **Third-order Taylor expansion in space**. -/
+theorem abs_taylor_fst_three (hD : HasPartialDerivs v D) (hM : ∀ y s, |D (i + 4) j y s| ≤ M)
+    (x t h : ℝ) :
+    |D i j (x + h) t - D i j x t - h * D (i + 1) j x t - h ^ 2 / 2 * D (i + 2) j x t
+        - h ^ 3 / 6 * D (i + 3) j x t| ≤ M * h ^ 4 / 24 := by
+  have hc : ContDiff ℝ 4 fun y => D i j y t := by exact_mod_cast hD.contDiff_fst 4 i j t
+  have hb : ∀ y, |iteratedDeriv 4 (fun y => D i j y t) y| ≤ M := by
+    rw [hD.iteratedDeriv_fst]
+    exact fun y => hM y t
+  simpa [hD.deriv_fst, hD.iteratedDeriv_fst] using abs_taylor_three hc hb x h
+
+/-- **First-order Taylor expansion in time**. -/
+theorem abs_taylor_snd_one (hD : HasPartialDerivs v D) (hM : ∀ y s, |D i (j + 2) y s| ≤ M)
+    (x t h : ℝ) : |D i j x (t + h) - D i j x t - h * D i (j + 1) x t| ≤ M * h ^ 2 / 2 :=
+  abs_taylor_fst_one hD.swap (fun y s => hM s y) t x h
+
+/-- **Second-order Taylor expansion in time**. -/
+theorem abs_taylor_snd_two (hD : HasPartialDerivs v D) (hM : ∀ y s, |D i (j + 3) y s| ≤ M)
+    (x t h : ℝ) :
+    |D i j x (t + h) - D i j x t - h * D i (j + 1) x t - h ^ 2 / 2 * D i (j + 2) x t|
+      ≤ M * |h| ^ 3 / 6 :=
+  abs_taylor_fst_two hD.swap (fun y s => hM s y) t x h
+
+/-- **Third-order Taylor expansion in time**. -/
+theorem abs_taylor_snd_three (hD : HasPartialDerivs v D) (hM : ∀ y s, |D i (j + 4) y s| ≤ M)
+    (x t h : ℝ) :
+    |D i j x (t + h) - D i j x t - h * D i (j + 1) x t - h ^ 2 / 2 * D i (j + 2) x t
+        - h ^ 3 / 6 * D i (j + 3) x t| ≤ M * h ^ 4 / 24 :=
+  abs_taylor_fst_three hD.swap (fun y s => hM s y) t x h
+
+/-- **The second central difference in the first variable approximates the second partial
+derivative**, with the constant `M h²/12` of the symmetric third-order expansion (the odd terms
+cancel). -/
+theorem abs_secondDiff_fst_sub_le (hD : HasPartialDerivs v D)
+    (hM : ∀ y s, |D (i + 4) j y s| ≤ M) {h : ℝ} (hh : 0 < h) (x t : ℝ) :
+    |(D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2 - D (i + 2) j x t|
+      ≤ M * h ^ 2 / 12 := by
+  have hh' : h ≠ 0 := ne_of_gt hh
+  have hp := abs_taylor_fst_three hD hM x t h
+  have hm := abs_taylor_fst_three hD hM x t (-h)
+  rw [show x + -h = x - h from by ring, show M * (-h) ^ 4 / 24 = M * h ^ 4 / 24 from by ring] at hm
+  have hid : ((D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2
+        - D (i + 2) j x t) * h ^ 2
+      = (D i j (x + h) t - D i j x t - h * D (i + 1) j x t - h ^ 2 / 2 * D (i + 2) j x t
+          - h ^ 3 / 6 * D (i + 3) j x t)
+        + (D i j (x - h) t - D i j x t - -h * D (i + 1) j x t - (-h) ^ 2 / 2 * D (i + 2) j x t
+          - (-h) ^ 3 / 6 * D (i + 3) j x t) := by
+    field_simp
+    ring
+  refine le_of_mul_le_mul_right ?_ (by positivity : (0 : ℝ) < h ^ 2)
+  calc |(D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2 - D (i + 2) j x t| * h ^ 2
+      = |((D i j (x + h) t - 2 * D i j x t + D i j (x - h) t) / h ^ 2
+          - D (i + 2) j x t) * h ^ 2| := by
+        rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < h ^ 2)]
+    _ ≤ M * h ^ 4 / 24 + M * h ^ 4 / 24 := by
+        rw [hid]
+        exact (abs_add_le _ _).trans (add_le_add hp hm)
+    _ = M * h ^ 2 / 12 * h ^ 2 := by ring
+
+/-- **The second central difference in the second variable approximates the second partial
+derivative**. -/
+theorem abs_secondDiff_snd_sub_le (hD : HasPartialDerivs v D)
+    (hM : ∀ y s, |D i (j + 4) y s| ≤ M) {h : ℝ} (hh : 0 < h) (x t : ℝ) :
+    |(D i j x (t + h) - 2 * D i j x t + D i j x (t - h)) / h ^ 2 - D i (j + 2) x t|
+      ≤ M * h ^ 2 / 12 :=
+  abs_secondDiff_fst_sub_le hD.swap (fun y s => hM s y) hh t x
+
+/-! ### The residual of a three-point scheme, expanded -/
+
+/-- **The residual of a three-point scheme expanded to third order**
+([quarteroni2000numerical] §13.9.1): Taylor's formula in `t` along the vertical line and in `x`
+along the horizontal line through `(x, t)` turns
+
+`τ = [v(x, t + Δt) - (cm v(x - Δx, t) + c0 v(x, t) + cp v(x + Δx, t))] / Δt`
+
+into `v_t + (Δt/2) v_tt + (Δt²/6) v_ttt - Δt⁻¹ [(cm + c0 + cp - 1) v + Δx (cp - cm) v_x +
+(Δx²/2)(cp + cm) v_xx + (Δx³/6)(cp - cm) v_xxx]` up to the two fourth-order remainders. Every
+equivalent-equation computation of §13.9.1 is algebra over this identity. -/
+theorem residual_threePoint_expansion (hD : HasPartialDerivs v D)
+    (hM : ∀ i j, i + j = 4 → ∀ y s, |D i j y s| ≤ M) (cm c0 cp : ℝ) {Δt Δx : ℝ} (hΔt : 0 < Δt)
+    (x t : ℝ) :
+    |residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+          - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+            + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)|
+      ≤ M * (Δt ^ 3 / 24 + (|cm| + |cp|) * Δx ^ 4 / (24 * Δt)) := by
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hv : D 0 0 = v := hD.eq_zero_zero
+  have hRt : |v x (t + Δt) - v x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t
+      - Δt ^ 3 / 6 * D 0 3 x t| ≤ M * Δt ^ 4 / 24 := by
+    have h := abs_taylor_snd_three hD (hM 0 4 rfl) x t Δt
+    rwa [hv] at h
+  have hRp : |v (x + Δx) t - v x t - Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t
+      - Δx ^ 3 / 6 * D 3 0 x t| ≤ M * Δx ^ 4 / 24 := by
+    have h := abs_taylor_fst_three hD (hM 4 0 rfl) x t Δx
+    rwa [hv] at h
+  have hRm : |v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t
+      + Δx ^ 3 / 6 * D 3 0 x t| ≤ M * Δx ^ 4 / 24 := by
+    have h := abs_taylor_fst_three hD (hM 4 0 rfl) x t (-Δx)
+    rw [hv, show x + -Δx = x - Δx from by ring,
+      show v (x - Δx) t - v x t - -Δx * D 1 0 x t - (-Δx) ^ 2 / 2 * D 2 0 x t
+          - (-Δx) ^ 3 / 6 * D 3 0 x t
+        = v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t
+          + Δx ^ 3 / 6 * D 3 0 x t from by ring,
+      show M * (-Δx) ^ 4 / 24 = M * Δx ^ 4 / 24 from by ring] at h
+    exact h
+  have hid : (residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+          - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+            + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)) * Δt
+      = (v x (t + Δt) - v x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t
+          - Δt ^ 3 / 6 * D 0 3 x t)
+        - cm * (v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t
+            + Δx ^ 3 / 6 * D 3 0 x t)
+        - cp * (v (x + Δx) t - v x t - Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t
+            - Δx ^ 3 / 6 * D 3 0 x t) := by
+    rw [residual_threePoint]
+    field_simp
+    ring
+  refine le_of_mul_le_mul_right ?_ hΔt
+  calc |residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+          - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+            + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t
+            + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)| * Δt
+      = |(residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+            - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+              + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t
+              + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)) * Δt| := by
+        rw [abs_mul, abs_of_pos hΔt]
+    _ ≤ M * Δt ^ 4 / 24 + |cm| * (M * Δx ^ 4 / 24) + |cp| * (M * Δx ^ 4 / 24) := by
+        rw [hid]
+        refine (abs_sub_le' _ _).trans (add_le_add ((abs_sub_le' _ _).trans
+          (add_le_add hRt ?_)) ?_)
+        · rw [abs_mul]
+          exact mul_le_mul_of_nonneg_left hRm (abs_nonneg cm)
+        · rw [abs_mul]
+          exact mul_le_mul_of_nonneg_left hRp (abs_nonneg cp)
+    _ = M * (Δt ^ 3 / 24 + (|cm| + |cp|) * Δx ^ 4 / (24 * Δt)) * Δt := by
+        field_simp
+        ring
+
+/-! ### The equivalent equation of the upwind scheme -/
+
+/-- **The Taylor expansions of the upwind residual** ([quarteroni2000numerical] (13.57)–(13.58)):
+for `a > 0` the residual of (13.41) on a smooth `v` is `v_t + a v_x` up to `O(Δt + Δx)`, and
+`v_t + (Δt/2) v_tt + a v_x - (a Δx/2) v_xx` up to `O(Δt² + Δx²)`.
+
+The book prints (13.58) with `a (v_x + (Δx/2) v_xx)`; the backward difference
+`(v(x, t) - v(x - Δx, t))/Δx` is `v_x - (Δx/2) v_xx + O(Δx²)`, so the sign there is an erratum —
+and the minus sign is what produces the `μ = a Δx/2 - a² Δt/2` of (13.59). -/
+theorem abs_residual_upwind_sub_le (hD : HasPartialDerivs v D) {a Δt Δx lam : ℝ} (ha : 0 < a)
+    (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hM₂ : ∀ i j, i + j = 2 → ∀ y s, |D i j y s| ≤ M) (x t : ℝ) :
+    |residual (upwind a lam) Δt Δx v x t - (D 0 1 x t + a * D 1 0 x t)|
+      ≤ Δt / 2 * M + a * Δx / 2 * M := by
+  subst hlam
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hv : D 0 0 = v := hD.eq_zero_zero
+  have hRt : |v x (t + Δt) - v x t - Δt * D 0 1 x t| ≤ M * Δt ^ 2 / 2 := by
+    have h := abs_taylor_snd_one hD (hM₂ 0 2 rfl) x t Δt
+    rwa [hv] at h
+  have hRm : |v (x - Δx) t - v x t + Δx * D 1 0 x t| ≤ M * Δx ^ 2 / 2 := by
+    have h := abs_taylor_fst_one hD (hM₂ 2 0 rfl) x t (-Δx)
+    rw [hv, show x + -Δx = x - Δx from by ring,
+      show v (x - Δx) t - v x t - -Δx * D 1 0 x t
+        = v (x - Δx) t - v x t + Δx * D 1 0 x t from by ring,
+      show M * (-Δx) ^ 2 / 2 = M * Δx ^ 2 / 2 from by ring] at h
+    exact h
+  have hid : (residual (upwind a (Δt / Δx)) Δt Δx v x t - (D 0 1 x t + a * D 1 0 x t)) * Δt
+      = (v x (t + Δt) - v x t - Δt * D 0 1 x t)
+        - Δt / Δx * a * (v (x - Δx) t - v x t + Δx * D 1 0 x t) := by
+    rw [upwind_eq_of_pos ha, residual_threePoint]
+    field_simp
+    ring
+  refine le_of_mul_le_mul_right ?_ hΔt
+  calc |residual (upwind a (Δt / Δx)) Δt Δx v x t - (D 0 1 x t + a * D 1 0 x t)| * Δt
+      = |(residual (upwind a (Δt / Δx)) Δt Δx v x t - (D 0 1 x t + a * D 1 0 x t)) * Δt| := by
+        rw [abs_mul, abs_of_pos hΔt]
+    _ ≤ M * Δt ^ 2 / 2 + Δt / Δx * a * (M * Δx ^ 2 / 2) := by
+        rw [hid]
+        refine (abs_sub_le' _ _).trans (add_le_add hRt ?_)
+        rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * a by
+          rw [abs_of_nonneg (by positivity)]]
+        exact mul_le_mul_of_nonneg_left hRm (by positivity)
+    _ = (Δt / 2 * M + a * Δx / 2 * M) * Δt := by field_simp
+
+/-- **The second Taylor expansion of the upwind residual** ([quarteroni2000numerical] (13.58)):
+the residual is `v_t + (Δt/2) v_tt + a v_x - (a Δx/2) v_xx` up to `O(Δt² + Δx²)`. -/
+theorem abs_residual_upwind_sub_le_two (hD : HasPartialDerivs v D) {a Δt Δx lam : ℝ} (ha : 0 < a)
+    (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hM₃ : ∀ i j, i + j = 3 → ∀ y s, |D i j y s| ≤ M) (x t : ℝ) :
+    |residual (upwind a lam) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t - a * Δx / 2 * D 2 0 x t)|
+      ≤ Δt ^ 2 / 6 * M + a * Δx ^ 2 / 6 * M := by
+  subst hlam
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hv : D 0 0 = v := hD.eq_zero_zero
+  have hRt : |v x (t + Δt) - v x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t|
+      ≤ M * Δt ^ 3 / 6 := by
+    have h := abs_taylor_snd_two hD (hM₃ 0 3 rfl) x t Δt
+    rw [hv, abs_of_pos hΔt] at h
+    exact h
+  have hRm : |v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t|
+      ≤ M * Δx ^ 3 / 6 := by
+    have h := abs_taylor_fst_two hD (hM₃ 3 0 rfl) x t (-Δx)
+    rw [hv, show x + -Δx = x - Δx from by ring,
+      show v (x - Δx) t - v x t - -Δx * D 1 0 x t - (-Δx) ^ 2 / 2 * D 2 0 x t
+        = v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t from by ring,
+      abs_neg, abs_of_pos hΔx] at h
+    exact h
+  have hid : (residual (upwind a (Δt / Δx)) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t - a * Δx / 2 * D 2 0 x t)) * Δt
+      = (v x (t + Δt) - v x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t)
+        - Δt / Δx * a * (v (x - Δx) t - v x t + Δx * D 1 0 x t - Δx ^ 2 / 2 * D 2 0 x t) := by
+    rw [upwind_eq_of_pos ha, residual_threePoint]
+    field_simp
+    ring
+  refine le_of_mul_le_mul_right ?_ hΔt
+  calc |residual (upwind a (Δt / Δx)) Δt Δx v x t
+        - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t - a * Δx / 2 * D 2 0 x t)| * Δt
+      = |(residual (upwind a (Δt / Δx)) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t
+            - a * Δx / 2 * D 2 0 x t)) * Δt| := by rw [abs_mul, abs_of_pos hΔt]
+    _ ≤ M * Δt ^ 3 / 6 + Δt / Δx * a * (M * Δx ^ 3 / 6) := by
+        rw [hid]
+        refine (abs_sub_le' _ _).trans (add_le_add hRt ?_)
+        rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * a by
+          rw [abs_of_nonneg (by positivity)]]
+        exact mul_le_mul_of_nonneg_left hRm (by positivity)
+    _ = (Δt ^ 2 / 6 * M + a * Δx ^ 2 / 6 * M) * Δt := by field_simp
+
+/-- **A solution of the equivalent equation, read through a family of named partial derivatives**:
+the relation (13.56) between the members of the family
+(`FiniteDifference.Hyperbolic.IsModifiedSolution` quantifies its partial derivatives
+existentially, and the derivative of a function is unique). -/
+theorem IsModifiedSolution.eq_of_hasPartialDerivs {a mu nu : ℝ} (hv : IsModifiedSolution a mu nu v)
+    (hD : HasPartialDerivs v D) (x t : ℝ) :
+    D 0 1 x t + a * D 1 0 x t = mu * D 2 0 x t + nu * D 3 0 x t := by
+  obtain ⟨vx, vt, vxx, vxt, vxxx, vxxt, h1, h2, h3, heq⟩ := hv
+  have hv0 : HasPartialDerivFst v (D 1 0) := by
+    rw [← hD.eq_zero_zero]
+    exact hD.hasPartialDerivFst 0 0
+  have hv1 : HasPartialDerivSnd v (D 0 1) := by
+    rw [← hD.eq_zero_zero]
+    exact hD.hasPartialDerivSnd 0 0
+  have e1 : ∀ y s, vx y s = D 1 0 y s :=
+    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h1) hv0 fun _ _ => rfl
+  have e2 : ∀ y s, vt y s = D 0 1 y s :=
+    HasPartialDerivSnd.congr (hasPartialDerivSnd_of_hasPartialsOn h1) hv1 fun _ _ => rfl
+  have e3 : ∀ y s, vxx y s = D 2 0 y s :=
+    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h2)
+      (hD.hasPartialDerivFst 1 0) e1
+  have e4 : ∀ y s, vxxx y s = D 3 0 y s :=
+    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h3)
+      (hD.hasPartialDerivFst 2 0) e3
+  rw [← e1, ← e2, ← e3, ← e4]
+  exact heq x t
+
+/-- **The equivalent equation differentiated**: every iterated partial derivative of a solution of
+`v_t + a v_x = μ v_xx + ν v_xxx` satisfies the same relation
+(`∂_x^i ∂_t^j` of [quarteroni2000numerical] (13.56)). -/
+theorem IsModifiedSolution.partial_eq {a mu nu : ℝ} (hv : IsModifiedSolution a mu nu v)
+    (hD : HasPartialDerivs v D) (i j : ℕ) (x t : ℝ) :
+    D i (j + 1) x t + a * D (i + 1) j x t = mu * D (i + 2) j x t + nu * D (i + 3) j x t := by
+  have stepFst : ∀ i j : ℕ, (∀ y s : ℝ, D i (j + 1) y s + a * D (i + 1) j y s
+        = mu * D (i + 2) j y s + nu * D (i + 3) j y s) →
+      ∀ y s : ℝ, D (i + 1) (j + 1) y s + a * D (i + 2) j y s
+        = mu * D (i + 3) j y s + nu * D (i + 4) j y s := fun i j h =>
+    HasPartialDerivFst.congr
+      ((hD.hasPartialDerivFst i (j + 1)).add ((hD.hasPartialDerivFst (i + 1) j).const_mul a))
+      (((hD.hasPartialDerivFst (i + 2) j).const_mul mu).add
+        ((hD.hasPartialDerivFst (i + 3) j).const_mul nu)) h
+  have stepSnd : ∀ i j : ℕ, (∀ y s : ℝ, D i (j + 1) y s + a * D (i + 1) j y s
+        = mu * D (i + 2) j y s + nu * D (i + 3) j y s) →
+      ∀ y s : ℝ, D i (j + 2) y s + a * D (i + 1) (j + 1) y s
+        = mu * D (i + 2) (j + 1) y s + nu * D (i + 3) (j + 1) y s := fun i j h =>
+    HasPartialDerivSnd.congr
+      ((hD.hasPartialDerivSnd i (j + 1)).add ((hD.hasPartialDerivSnd (i + 1) j).const_mul a))
+      (((hD.hasPartialDerivSnd (i + 2) j).const_mul mu).add
+        ((hD.hasPartialDerivSnd (i + 3) j).const_mul nu)) h
+  have key : ∀ j i : ℕ, ∀ y s : ℝ, D i (j + 1) y s + a * D (i + 1) j y s
+      = mu * D (i + 2) j y s + nu * D (i + 3) j y s := by
+    intro j
+    induction j with
+    | zero =>
+      intro i
+      induction i with
+      | zero => exact hv.eq_of_hasPartialDerivs hD
+      | succ i ih => exact stepFst i 0 ih
+    | succ j ihj => exact fun i => stepSnd i j (ihj i)
+  exact key j i x t
+
+/-- **The second-order equivalent equation of the upwind scheme**
+([quarteroni2000numerical] (13.59)): for `a > 0` and `μ = a Δx/2 - a² Δt/2`, a solution of
+`v_t + a v_x = μ v_xx` leaves the upwind scheme a residual `O(Δt² + Δt Δx + Δx²)` — one order
+better than the `O(Δt + Δx)` left by a solution of the transport equation itself
+(`FiniteDifference.Hyperbolic.abs_truncationError_upwind_le`).
+
+The mechanism is that the equation is differentiated into `v_tt = a² v_xx + μ (v_xxt - a v_xxx)`
+(`FiniteDifference.Hyperbolic.IsModifiedSolution.partial_eq`), which cancels the `(Δt/2) v_tt` of
+(13.58) against the `-(a Δx/2) v_xx` exactly when `μ` has the stated value. -/
+theorem abs_residual_upwind_le_of_isModifiedSolution (hD : HasPartialDerivs v D)
+    {a mu Δt Δx lam : ℝ} (ha : 0 < a) (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hmu : mu = a * Δx / 2 - a ^ 2 * Δt / 2) (hv : IsModifiedSolution a mu 0 v)
+    (hM : ∀ i j, i + j = 3 → ∀ y s, |D i j y s| ≤ M) (x t : ℝ) :
+    |residual (upwind a lam) Δt Δx v x t|
+      ≤ M * (1 + a) ^ 3 * (Δt ^ 2 + Δt * Δx + Δx ^ 2) := by
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 3 rfl 0 0)
+  have hE := abs_residual_upwind_sub_le_two hD ha hΔt hΔx hlam hM x t
+  -- the equation and its two derivatives
+  have p00 : D 0 1 x t + a * D 1 0 x t = mu * D 2 0 x t + 0 * D 3 0 x t :=
+    hv.eq_of_hasPartialDerivs hD x t
+  have p01 : D 0 2 x t + a * D 1 1 x t = mu * D 2 1 x t + 0 * D 3 1 x t :=
+    hv.partial_eq hD 0 1 x t
+  have p10 : D 1 1 x t + a * D 2 0 x t = mu * D 3 0 x t + 0 * D 4 0 x t :=
+    hv.partial_eq hD 1 0 x t
+  have hkey : residual (upwind a lam) Δt Δx v x t
+      = Δt * mu / 2 * (D 2 1 x t - a * D 3 0 x t)
+        + (residual (upwind a lam) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t - a * Δx / 2 * D 2 0 x t)) := by
+    linear_combination p00 + (Δt / 2) * p01 - (a * Δt / 2) * p10 + D 2 0 x t * hmu
+  have hmuabs : |mu| ≤ a * Δx / 2 + a ^ 2 * Δt / 2 := by
+    rw [hmu]
+    refine (abs_sub_le' _ _).trans ?_
+    rw [abs_of_nonneg (by positivity : (0 : ℝ) ≤ a * Δx / 2),
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ a ^ 2 * Δt / 2)]
+  have hb1 : |D 2 1 x t - a * D 3 0 x t| ≤ M + a * M := by
+    refine (abs_sub_le' _ _).trans (add_le_add (hM 2 1 rfl x t) ?_)
+    rw [abs_mul, abs_of_pos ha]
+    exact mul_le_mul_of_nonneg_left (hM 3 0 rfl x t) ha.le
+  calc |residual (upwind a lam) Δt Δx v x t|
+      ≤ |Δt * mu / 2 * (D 2 1 x t - a * D 3 0 x t)|
+        + |residual (upwind a lam) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + a * D 1 0 x t - a * Δx / 2 * D 2 0 x t)| := by
+        conv_lhs => rw [hkey]
+        exact abs_add_le _ _
+    _ ≤ Δt * (a * Δx / 2 + a ^ 2 * Δt / 2) / 2 * (M + a * M)
+        + (Δt ^ 2 / 6 * M + a * Δx ^ 2 / 6 * M) := by
+        refine add_le_add ?_ hE
+        rw [abs_mul, abs_div, abs_mul, abs_of_pos hΔt, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        refine mul_le_mul ?_ hb1 (abs_nonneg _) (by positivity)
+        gcongr
+    _ = M * ((1 + a) * a / 4 * (Δt * Δx) + ((1 + a) * a ^ 2 / 4 + 1 / 6) * Δt ^ 2
+        + a / 6 * Δx ^ 2) := by ring
+    _ ≤ M * ((1 + a) ^ 3 * (Δt * Δx) + (1 + a) ^ 3 * Δt ^ 2 + (1 + a) ^ 3 * Δx ^ 2) := by
+        have h1 : (1 + a) * a / 4 ≤ (1 + a) ^ 3 := by nlinarith [ha.le, sq_nonneg a]
+        have h2 : (1 + a) * a ^ 2 / 4 + 1 / 6 ≤ (1 + a) ^ 3 := by nlinarith [ha.le, sq_nonneg a]
+        have h3 : a / 6 ≤ (1 + a) ^ 3 := by nlinarith [ha.le, sq_nonneg a]
+        refine mul_le_mul_of_nonneg_left (add_le_add (add_le_add ?_ ?_) ?_) hM0
+        · exact mul_le_mul_of_nonneg_right h1 (by positivity)
+        · exact mul_le_mul_of_nonneg_right h2 (by positivity)
+        · exact mul_le_mul_of_nonneg_right h3 (by positivity)
+    _ = M * (1 + a) ^ 3 * (Δt ^ 2 + Δt * Δx + Δx ^ 2) := by ring
+
+/-! ### The third-order equivalent equation of a three-point scheme -/
+
+/-- Bounding one term of an expansion by the bound on its derivative factor. -/
+private theorem abs_mul_le_of_abs_le {c d N : ℝ} (h : |d| ≤ N) : |c * d| ≤ |c| * N := by
+  rw [abs_mul]
+  exact mul_le_mul_of_nonneg_left h (abs_nonneg c)
+
+/-- **The third-order equivalent equation of a conservative three-point scheme**
+([quarteroni2000numerical] §13.9.1, Table 13.2): let `c = threePoint cm c0 cp` be consistent
+(`cm + c0 + cp = 1`) with `cp - cm = -λ a`, and let `μ`, `ν` be the Warming–Hyett coefficients,
+i.e. `(Δx²/2)(cp + cm) = Δt (μ + a² Δt/2)` and `ν + a Δx²/6 = a μ Δt + a³ Δt²/6`. Then a solution
+of the equivalent equation `v_t + a v_x = μ v_xx + ν v_xxx` leaves the scheme a residual made
+entirely of terms carrying a factor `μ²`, `μν`, `ν`, `Δt μ` or `Δt ν`: the `O(Δx)` term in `v_xx`
+and the `O(Δx²)` term in `v_xxx` both cancel, which is exactly what fixes `μ` and `ν`.
+
+The proof substitutes `∂_t = -a ∂_x + μ ∂_x² + ν ∂_x³` five times
+(`FiniteDifference.Hyperbolic.IsModifiedSolution.partial_eq`) into the two time derivatives of
+`Hyperbolic.residual_threePoint_expansion`, which is why partial derivatives up to order `5`
+enter. With `Δt = λ Δx` and `λ` fixed, `μ = O(Δx)` and `ν = O(Δx²)`, so the bound is `O(Δx³)`,
+one order better than the `O(Δx²)` of the second-order equivalent equation. -/
+theorem abs_residual_threePoint_le_of_isModifiedSolution (hD : HasPartialDerivs v D)
+    {a mu nu Δt Δx lam cm c0 cp : ℝ} (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hsum : cm + c0 + cp = 1) (hdiff : cp - cm = -(lam * a))
+    (hplus : Δx ^ 2 / 2 * (cp + cm) = Δt * (mu + a ^ 2 * Δt / 2))
+    (hnu : nu + a * Δx ^ 2 / 6 = a * mu * Δt + a ^ 3 * Δt ^ 2 / 6)
+    (hv : IsModifiedSolution a mu nu v) (hM : ∀ i j, i + j ≤ 5 → ∀ y s, |D i j y s| ≤ M)
+    (x t : ℝ) :
+    |residual (Stencil.threePoint cm c0 cp) Δt Δx v x t|
+      ≤ M * (Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6
+          + Δt ^ 3 / 24 + (|cm| + |cp|) * Δx ^ 4 / (24 * Δt)) := by
+  subst hlam
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by omega) 0 0)
+  have hexp := residual_threePoint_expansion (Δx := Δx) hD (fun i j h => hM i j (by omega))
+    cm c0 cp hΔt x t
+  have q00 : D 0 1 x t + a * D 1 0 x t = mu * D 2 0 x t + nu * D 3 0 x t :=
+    hv.eq_of_hasPartialDerivs hD x t
+  have q01 : D 0 2 x t + a * D 1 1 x t = mu * D 2 1 x t + nu * D 3 1 x t :=
+    hv.partial_eq hD 0 1 x t
+  have q10 : D 1 1 x t + a * D 2 0 x t = mu * D 3 0 x t + nu * D 4 0 x t :=
+    hv.partial_eq hD 1 0 x t
+  have q20 : D 2 1 x t + a * D 3 0 x t = mu * D 4 0 x t + nu * D 5 0 x t :=
+    hv.partial_eq hD 2 0 x t
+  have q02 : D 0 3 x t + a * D 1 2 x t = mu * D 2 2 x t + nu * D 3 2 x t :=
+    hv.partial_eq hD 0 2 x t
+  have q11 : D 1 2 x t + a * D 2 1 x t = mu * D 3 1 x t + nu * D 4 1 x t :=
+    hv.partial_eq hD 1 1 x t
+  have hE : D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+        - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+          + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt
+      = D 0 1 x t + a * D 1 0 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+        - (mu + a ^ 2 * Δt / 2) * D 2 0 x t + a * Δx ^ 2 / 6 * D 3 0 x t := by
+    rw [hsum, hdiff, hplus]
+    field_simp
+    ring
+  have hE2 : D 0 1 x t + a * D 1 0 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+        - (mu + a ^ 2 * Δt / 2) * D 2 0 x t + a * Δx ^ 2 / 6 * D 3 0 x t
+      = (Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6) * D 4 0 x t
+        + (Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6) * D 5 0 x t
+        + (Δt * nu / 2 - Δt ^ 2 * a * mu / 6) * D 3 1 x t
+        + -(Δt ^ 2 * a * nu / 6) * D 4 1 x t
+        + Δt ^ 2 * mu / 6 * D 2 2 x t
+        + Δt ^ 2 * nu / 6 * D 3 2 x t := by
+    linear_combination q00 + (Δt / 2) * q01 - (a * Δt / 2) * q10
+      + (mu * Δt / 2 + a ^ 2 * Δt ^ 2 / 6) * q20 + (Δt ^ 2 / 6) * q02 - (a * Δt ^ 2 / 6) * q11
+      + D 3 0 x t * hnu
+  have hkey : residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+      = ((Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6) * D 4 0 x t
+          + (Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6) * D 5 0 x t
+          + (Δt * nu / 2 - Δt ^ 2 * a * mu / 6) * D 3 1 x t
+          + -(Δt ^ 2 * a * nu / 6) * D 4 1 x t
+          + Δt ^ 2 * mu / 6 * D 2 2 x t
+          + Δt ^ 2 * nu / 6 * D 3 2 x t)
+        + (residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+            - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+              + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t
+              + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)) := by
+    linear_combination hE.trans hE2
+  have hT : |(Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6) * D 4 0 x t
+        + (Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6) * D 5 0 x t
+        + (Δt * nu / 2 - Δt ^ 2 * a * mu / 6) * D 3 1 x t
+        + -(Δt ^ 2 * a * nu / 6) * D 4 1 x t
+        + Δt ^ 2 * mu / 6 * D 2 2 x t
+        + Δt ^ 2 * nu / 6 * D 3 2 x t|
+      ≤ (|Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6|
+          + |Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6|
+          + |Δt * nu / 2 - Δt ^ 2 * a * mu / 6| + |-(Δt ^ 2 * a * nu / 6)|
+          + |Δt ^ 2 * mu / 6| + |Δt ^ 2 * nu / 6|) * M := by
+    have b1 := abs_mul_le_of_abs_le (c := Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6)
+      (hM 4 0 (by omega) x t)
+    have b2 := abs_mul_le_of_abs_le (c := Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6)
+      (hM 5 0 (by omega) x t)
+    have b3 := abs_mul_le_of_abs_le (c := Δt * nu / 2 - Δt ^ 2 * a * mu / 6)
+      (hM 3 1 (by omega) x t)
+    have b4 := abs_mul_le_of_abs_le (c := -(Δt ^ 2 * a * nu / 6)) (hM 4 1 (by omega) x t)
+    have b5 := abs_mul_le_of_abs_le (c := Δt ^ 2 * mu / 6) (hM 2 2 (by omega) x t)
+    have b6 := abs_mul_le_of_abs_le (c := Δt ^ 2 * nu / 6) (hM 3 2 (by omega) x t)
+    calc |(Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6) * D 4 0 x t
+          + (Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6) * D 5 0 x t
+          + (Δt * nu / 2 - Δt ^ 2 * a * mu / 6) * D 3 1 x t
+          + -(Δt ^ 2 * a * nu / 6) * D 4 1 x t
+          + Δt ^ 2 * mu / 6 * D 2 2 x t
+          + Δt ^ 2 * nu / 6 * D 3 2 x t|
+        ≤ |Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6| * M
+            + |Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6| * M
+            + |Δt * nu / 2 - Δt ^ 2 * a * mu / 6| * M + |-(Δt ^ 2 * a * nu / 6)| * M
+            + |Δt ^ 2 * mu / 6| * M + |Δt ^ 2 * nu / 6| * M :=
+          (abs_add_le _ _).trans (add_le_add ((abs_add_le _ _).trans (add_le_add
+            ((abs_add_le _ _).trans (add_le_add ((abs_add_le _ _).trans (add_le_add
+              ((abs_add_le _ _).trans (add_le_add b1 b2)) b3)) b4)) b5)) b6)
+      _ = _ := by ring
+  have hcoef : |Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6|
+        + |Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6|
+        + |Δt * nu / 2 - Δt ^ 2 * a * mu / 6| + |-(Δt ^ 2 * a * nu / 6)|
+        + |Δt ^ 2 * mu / 6| + |Δt ^ 2 * nu / 6|
+      ≤ Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+        + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6 := by
+    have e1 : |Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6|
+        ≤ Δt * (mu ^ 2 + |a| * |nu|) / 2 + Δt ^ 2 * a ^ 2 * |mu| / 6 := by
+      refine (abs_add_le _ _).trans (add_le_add ?_ ?_)
+      · rw [abs_div, abs_mul, abs_of_pos hΔt, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        gcongr
+        refine (abs_sub _ _).trans ?_
+        rw [abs_mul, abs_of_nonneg (sq_nonneg mu)]
+      · rw [abs_div, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+          abs_of_nonneg (sq_nonneg a), abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    have e2 : |Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6|
+        ≤ Δt * (|mu| * |nu|) / 2 + Δt ^ 2 * a ^ 2 * |nu| / 6 := by
+      refine (abs_add_le _ _).trans (add_le_add ?_ ?_)
+      · rw [abs_div, abs_mul, abs_mul, abs_of_pos hΔt,
+          abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        exact le_of_eq (by ring)
+      · rw [abs_div, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+          abs_of_nonneg (sq_nonneg a), abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    have e3 : |Δt * nu / 2 - Δt ^ 2 * a * mu / 6|
+        ≤ Δt * |nu| / 2 + Δt ^ 2 * |a| * |mu| / 6 := by
+      refine (abs_sub _ _).trans (add_le_add ?_ ?_)
+      · rw [abs_div, abs_mul, abs_of_pos hΔt, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+      · rw [abs_div, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+          abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    have e4 : |-(Δt ^ 2 * a * nu / 6)| = Δt ^ 2 * |a| * |nu| / 6 := by
+      rw [abs_neg, abs_div, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+        abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    have e5 : |Δt ^ 2 * mu / 6| = Δt ^ 2 * |mu| / 6 := by
+      rw [abs_div, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+        abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    have e6 : |Δt ^ 2 * nu / 6| = Δt ^ 2 * |nu| / 6 := by
+      rw [abs_div, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < Δt ^ 2),
+        abs_of_pos (by norm_num : (0 : ℝ) < 6)]
+    rw [e4, e5, e6]
+    linarith [e1, e2, e3]
+  calc |residual (Stencil.threePoint cm c0 cp) Δt Δx v x t|
+      ≤ |(Δt * (mu ^ 2 - a * nu) / 2 + Δt ^ 2 * a ^ 2 * mu / 6) * D 4 0 x t
+          + (Δt * mu * nu / 2 + Δt ^ 2 * a ^ 2 * nu / 6) * D 5 0 x t
+          + (Δt * nu / 2 - Δt ^ 2 * a * mu / 6) * D 3 1 x t
+          + -(Δt ^ 2 * a * nu / 6) * D 4 1 x t
+          + Δt ^ 2 * mu / 6 * D 2 2 x t
+          + Δt ^ 2 * nu / 6 * D 3 2 x t|
+        + |residual (Stencil.threePoint cm c0 cp) Δt Δx v x t
+          - (D 0 1 x t + Δt / 2 * D 0 2 x t + Δt ^ 2 / 6 * D 0 3 x t
+            - ((cm + c0 + cp - 1) * v x t + Δx * (cp - cm) * D 1 0 x t
+              + Δx ^ 2 / 2 * (cp + cm) * D 2 0 x t
+              + Δx ^ 3 / 6 * (cp - cm) * D 3 0 x t) / Δt)| := by
+        conv_lhs => rw [hkey]
+        exact abs_add_le _ _
+    _ ≤ (Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6) * M
+        + M * (Δt ^ 3 / 24 + (|cm| + |cp|) * Δx ^ 4 / (24 * Δt)) :=
+        add_le_add (hT.trans (mul_le_mul_of_nonneg_right hcoef hM0)) hexp
+    _ = M * (Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6
+          + Δt ^ 3 / 24 + (|cm| + |cp|) * Δx ^ 4 / (24 * Δt)) := by ring
+
+/-- **The third-order equivalent equation of the upwind scheme** ([quarteroni2000numerical]
+(13.60) and Table 13.2, upwind row): for `a > 0`, `μ = a Δx/2 - a² Δt/2` and the Warming–Hyett
+`ν = -(a/6)(Δx² - 3 a Δx Δt + 2 a² Δt²)`, a solution of `v_t + a v_x = μ v_xx + ν v_xxx` leaves
+the upwind scheme a residual made of terms carrying `μ²`, `μν`, `ν`, `Δt μ` or `Δt ν`. With
+`λ = Δt/Δx` fixed this is `O(Δx³)`, one order better than (13.59).
+
+Erratum: the text after (13.60) gives `ν = (a/6)(a² Δt² - Δx²)`, which disagrees with Table 13.2;
+the table's value, used here, is the correct one — the text omits the `-2 a μ ∂_xxx` contribution
+when it substitutes `v_tt`. -/
+theorem abs_residual_upwind_le_of_isModifiedSolution_third (hD : HasPartialDerivs v D)
+    {a mu nu Δt Δx lam : ℝ} (ha : 0 < a) (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hmu : mu = a * Δx / 2 - a ^ 2 * Δt / 2)
+    (hnu : nu = -(a / 6) * (Δx ^ 2 - 3 * a * Δx * Δt + 2 * a ^ 2 * Δt ^ 2))
+    (hv : IsModifiedSolution a mu nu v) (hM : ∀ i j, i + j ≤ 5 → ∀ y s, |D i j y s| ≤ M)
+    (x t : ℝ) :
+    |residual (upwind a lam) Δt Δx v x t|
+      ≤ M * (Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6
+          + Δt ^ 3 / 24 + lam * a * Δx ^ 4 / (24 * Δt)) := by
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hlam0 : 0 < lam := by rw [hlam]; positivity
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by omega) 0 0)
+  rw [upwind_eq_of_pos ha]
+  refine (abs_residual_threePoint_le_of_isModifiedSolution hD hΔt hΔx hlam (by ring) (by ring)
+    ?_ ?_ hv hM x t).trans ?_
+  · rw [hmu, hlam]
+    field_simp
+    ring
+  · rw [hnu, hmu]
+    ring
+  · have hcc : |lam * a| + |(0 : ℝ)| = lam * a := by
+      rw [abs_of_pos (by positivity), abs_zero, add_zero]
+    rw [hcc]
+
+/-- **The third-order equivalent equation of the Lax–Friedrichs scheme**
+([quarteroni2000numerical] Table 13.2 and Exercise 13.8): with `λ = Δt/Δx`,
+`μ = (Δx²/(2Δt))(1 - (aλ)²)` and `ν = (a Δx²/3)(1 - (aλ)²)`, a solution of the equivalent equation
+leaves the scheme a residual of the same shape, `O(Δx³)` at fixed `λ`. Here `μ = O(Δx²/Δt)`, which
+is why Lax–Friedrichs is only consistent when `Δx²/Δt → 0`. -/
+theorem abs_residual_laxFriedrichs_le_of_isModifiedSolution (hD : HasPartialDerivs v D)
+    {a mu nu Δt Δx lam : ℝ} (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hmu : mu = Δx ^ 2 / (2 * Δt) * (1 - (a * lam) ^ 2))
+    (hnu : nu = a * Δx ^ 2 / 3 * (1 - (a * lam) ^ 2))
+    (hv : IsModifiedSolution a mu nu v) (hM : ∀ i j, i + j ≤ 5 → ∀ y s, |D i j y s| ≤ M)
+    (x t : ℝ) :
+    |residual (laxFriedrichs a lam) Δt Δx v x t|
+      ≤ M * (Δt * (mu ^ 2 + |a| * |nu| + |mu| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * (|mu| + |nu|) / 6
+          + Δt ^ 3 / 24 + (1 + |lam * a|) * Δx ^ 4 / (24 * Δt)) := by
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by omega) 0 0)
+  rw [laxFriedrichs]
+  refine (abs_residual_threePoint_le_of_isModifiedSolution hD hΔt hΔx hlam (by ring) (by ring)
+    ?_ ?_ hv hM x t).trans ?_
+  · rw [hmu, hlam]
+    field_simp
+    ring
+  · rw [hnu, hmu, hlam]
+    field_simp
+    ring
+  · have hcc : |(1 + lam * a) / 2| + |(1 - lam * a) / 2| ≤ 1 + |lam * a| := by
+      have h1 : |(1 + lam * a) / 2| ≤ (1 + |lam * a|) / 2 := by
+        rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        gcongr
+        exact (abs_add_le _ _).trans (by rw [abs_one])
+      have h2 : |(1 - lam * a) / 2| ≤ (1 + |lam * a|) / 2 := by
+        rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        gcongr
+        exact (abs_sub _ _).trans (by rw [abs_one])
+      linarith
+    gcongr
+
+/-- **The third-order equivalent equation of the Lax–Wendroff scheme**
+([quarteroni2000numerical] Table 13.2 and Exercise 13.8): with `λ = Δt/Δx`, `μ = 0` — the scheme
+is second order accurate, so it has no dissipative term — and `ν = (a Δx²/6)((aλ)² - 1)`, a
+solution of the equivalent equation leaves the scheme a residual `O(Δx³)` at fixed `λ`. -/
+theorem abs_residual_laxWendroff_le_of_isModifiedSolution (hD : HasPartialDerivs v D)
+    {a nu Δt Δx lam : ℝ} (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)
+    (hnu : nu = a * Δx ^ 2 / 6 * ((a * lam) ^ 2 - 1))
+    (hv : IsModifiedSolution a 0 nu v) (hM : ∀ i j, i + j ≤ 5 → ∀ y s, |D i j y s| ≤ M)
+    (x t : ℝ) :
+    |residual (laxWendroff a lam) Δt Δx v x t|
+      ≤ M * (Δt * (|a| * |nu| + |nu|) / 2
+          + Δt ^ 2 * (a ^ 2 + |a| + 1) * |nu| / 6
+          + Δt ^ 3 / 24 + |lam * a| * (1 + |lam * a|) * Δx ^ 4 / (24 * Δt)) := by
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by omega) 0 0)
+  rw [laxWendroff]
+  refine (abs_residual_threePoint_le_of_isModifiedSolution hD hΔt hΔx hlam (by ring) (by ring)
+    ?_ ?_ hv hM x t).trans ?_
+  · rw [hlam]
+    field_simp
+    ring
+  · rw [hnu, hlam]
+    field_simp
+    ring
+  · have hb : |1 + lam * a| ≤ 1 + |lam * a| := by
+      have h := abs_add_le (1 : ℝ) (lam * a)
+      rw [abs_one] at h
+      exact h
+    have hb2 : |lam * a - 1| ≤ 1 + |lam * a| := by
+      have h := abs_sub (lam * a) (1 : ℝ)
+      rw [abs_one] at h
+      linarith
+    have hcc : |lam * a / 2 * (1 + lam * a)| + |lam * a / 2 * (lam * a - 1)|
+        ≤ |lam * a| * (1 + |lam * a|) := by
+      have h1 : |lam * a / 2 * (1 + lam * a)| ≤ |lam * a| / 2 * (1 + |lam * a|) := by
+        rw [abs_mul, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        exact mul_le_mul_of_nonneg_left hb (by positivity)
+      have h2 : |lam * a / 2 * (lam * a - 1)| ≤ |lam * a| / 2 * (1 + |lam * a|) := by
+        rw [abs_mul, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+        exact mul_le_mul_of_nonneg_left hb2 (by positivity)
+      linarith
+    simp only [abs_zero]
+    refine mul_le_mul_of_nonneg_left ?_ hM0
+    have hfac : (|lam * a / 2 * (1 + lam * a)| + |lam * a / 2 * (lam * a - 1)|) * Δx ^ 4
+        / (24 * Δt) ≤ |lam * a| * (1 + |lam * a|) * Δx ^ 4 / (24 * Δt) := by
+      gcongr
+    linarith [hfac]
+
+end PartialTaylor
 
 end Hyperbolic
 

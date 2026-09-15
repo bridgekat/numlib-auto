@@ -115,6 +115,204 @@ theorem table_13_1_truncation_upwind {u₀ : ℝ → ℝ} {M₂ a Δt Δx lam : 
       ≤ a ^ 2 / 2 * M₂ * Δt + |a| / 2 * M₂ * Δx :=
   Hyperbolic.abs_truncationError_upwind_le hu hM₂ hΔt hΔx hlam ξ
 
+/-- **Leap-frog is second order accurate** (§13.8.1, "The Leap-frog and Newmark methods are both
+second order accurate if `Δt = Δx`"): for a smooth `u` with fourth partial derivatives bounded by
+`M` in time and `M'` in space, the residual left in (13.44) by the exact solution,
+
+`[u(x, t + Δt) - 2u(x, t) + u(x, t - Δt)]/Δt² - γ² [u(x + Δx, t) - 2u(x, t) + u(x - Δx, t)]/Δx²
+  - (u_tt - γ² u_xx)(x, t)`,
+
+is at most `(M/12) Δt² + (γ² M'/12) Δx²`. On a solution of the wave equation the last term
+vanishes, and the leap-frog truncation error is `O(Δt² + Δx²)` — second order for every ratio
+`Δt/Δx`, not only for `Δt = Δx`. Both second central differences are the symmetric third-order
+Taylor expansion, whose odd terms cancel (Quarteroni–Sacco–Saleri, *Numerical Mathematics*,
+§13.8.1 and equation (13.44)). -/
+theorem leapFrog_truncation {u : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {γ M M' Δt Δx : ℝ}
+    (hD : HasPartialDerivs u D) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
+    (hM : ∀ y s, |D 0 4 y s| ≤ M) (hM' : ∀ y s, |D 4 0 y s| ≤ M') (x t : ℝ) :
+    |(u x (t + Δt) - 2 * u x t + u x (t - Δt)) / Δt ^ 2
+        - γ ^ 2 * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2)
+        - (D 0 2 x t - γ ^ 2 * D 2 0 x t)|
+      ≤ M / 12 * Δt ^ 2 + γ ^ 2 * M' / 12 * Δx ^ 2 := by
+  have hu : D 0 0 = u := hD.eq_zero_zero
+  have h1 : |(u x (t + Δt) - 2 * u x t + u x (t - Δt)) / Δt ^ 2 - D 0 2 x t|
+      ≤ M * Δt ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_snd_sub_le (i := 0) (j := 0) hD hM hΔt x t
+    rwa [hu] at h
+  have h2 : |(u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t|
+      ≤ M' * Δx ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_fst_sub_le (i := 0) (j := 0) hD hM' hΔx x t
+    rwa [hu] at h
+  have hid : (u x (t + Δt) - 2 * u x t + u x (t - Δt)) / Δt ^ 2
+        - γ ^ 2 * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2)
+        - (D 0 2 x t - γ ^ 2 * D 2 0 x t)
+      = ((u x (t + Δt) - 2 * u x t + u x (t - Δt)) / Δt ^ 2 - D 0 2 x t)
+        - γ ^ 2 * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t) := by ring
+  rw [hid]
+  refine (abs_sub _ _).trans ?_
+  rw [abs_mul, abs_of_nonneg (sq_nonneg γ)]
+  calc |(u x (t + Δt) - 2 * u x t + u x (t - Δt)) / Δt ^ 2 - D 0 2 x t|
+        + γ ^ 2 * |(u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t|
+      ≤ M * Δt ^ 2 / 12 + γ ^ 2 * (M' * Δx ^ 2 / 12) :=
+        add_le_add h1 (mul_le_mul_of_nonneg_left h2 (sq_nonneg γ))
+    _ = M / 12 * Δt ^ 2 + γ ^ 2 * M' / 12 * Δx ^ 2 := by ring
+
+/-- **Newmark is second order accurate exactly when `θ = 1/2`** (§13.8.1). Inserting a smooth
+solution `u` of the wave equation `u_tt = γ² u_xx`, with `v = u_t`, into the two relations (13.45)
+and dividing each by `Δt` leaves residuals of size `O(Δt² + Δx²)`: the first for every `β`, the
+second for `θ = 1/2` — and only then, since the velocity update is the θ-method for `v' = u_tt`
+and its leading error term is `(1/2 - θ) Δt u_ttt`, which vanishes only at `θ = 1/2`. The book
+states second order for the Newmark method without that condition, which is an erratum; its
+Table 13.3 experiments use `θ = 1/2`.
+
+The first relation needs the wave equation itself, the second needs it differentiated once in
+time, `u_ttt = γ² u_xxt` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §13.8.1 and
+equation (13.45)). -/
+theorem newmark_truncation {u : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {γ β M Δt Δx lam : ℝ}
+    (hD : HasPartialDerivs u D) (hΔt : 0 < Δt) (hΔt1 : Δt ≤ 1) (hΔx : 0 < Δx)
+    (hlam : lam = Δt / Δx) (hwave : ∀ y s, D 0 2 y s = γ ^ 2 * D 2 0 y s)
+    (hM : ∀ i j, i + j ≤ 4 → ∀ y s, |D i j y s| ≤ M) (x t : ℝ) :
+    |(u x (t + Δt) - u x t - (Δt * D 0 1 x t
+          + (γ * lam) ^ 2
+            * (β * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+              + (1 / 2 - β) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t)))) / Δt|
+        ≤ M * ((1 / 6 + 3 / 2 * γ ^ 2 * |β|) * Δt ^ 2
+          + γ ^ 2 * (|β| + |1 / 2 - β|) / 12 * Δx ^ 2) ∧
+      |(D 0 1 x (t + Δt) - D 0 1 x t - (γ * lam) ^ 2 / Δt
+          * (1 / 2 * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+            + (1 - 1 / 2) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t))) / Δt|
+        ≤ M * ((1 / 6 + γ ^ 2 / 4) * Δt ^ 2 + γ ^ 2 / 12 * Δx ^ 2) := by
+  subst hlam
+  have hΔt' : Δt ≠ 0 := ne_of_gt hΔt
+  have hΔx' : Δx ≠ 0 := ne_of_gt hΔx
+  have hu : D 0 0 = u := hD.eq_zero_zero
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 4 (by norm_num) 0 0)
+  have hzero : D 0 2 x t - γ ^ 2 * D 2 0 x t = 0 := by rw [hwave x t]; ring
+  have hwave3 : ∀ y s, D 0 3 y s = γ ^ 2 * D 2 1 y s :=
+    HasPartialDerivSnd.congr (hD.hasPartialDerivSnd 0 2)
+      ((hD.hasPartialDerivSnd 2 0).const_mul (γ ^ 2)) hwave
+  have hzero3 : D 0 3 x t - γ ^ 2 * D 2 1 x t = 0 := by rw [hwave3 x t]; ring
+  have hE1 : |u x (t + Δt) - u x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t|
+      ≤ M * Δt ^ 3 / 6 := by
+    have h := Hyperbolic.abs_taylor_snd_two (i := 0) (j := 0) hD (hM 0 3 (by norm_num)) x t Δt
+    rw [hu, abs_of_pos hΔt] at h
+    exact h
+  have heps : |D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t - Δt ^ 2 / 2 * D 0 3 x t|
+      ≤ M * Δt ^ 3 / 6 := by
+    have h := Hyperbolic.abs_taylor_snd_two (i := 0) (j := 1) hD (hM 0 4 (by norm_num)) x t Δt
+    rw [abs_of_pos hΔt] at h
+    exact h
+  have hep : |(u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+      - D 2 0 x (t + Δt)| ≤ M * Δx ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_fst_sub_le (i := 0) (j := 0) hD
+      (hM 4 0 (by norm_num)) hΔx x (t + Δt)
+    rwa [hu] at h
+  have heq : |(u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t|
+      ≤ M * Δx ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_fst_sub_le (i := 0) (j := 0) hD
+      (hM 4 0 (by norm_num)) hΔx x t
+    rwa [hu] at h
+  have he1 : |D 2 0 x (t + Δt) - D 2 0 x t - Δt * D 2 1 x t| ≤ M * Δt ^ 2 / 2 :=
+    Hyperbolic.abs_taylor_snd_one (i := 2) (j := 0) hD (hM 2 2 (by norm_num)) x t Δt
+  have hb21 : |D 2 1 x t| ≤ M := hM 2 1 (by norm_num) x t
+  constructor
+  · have hid : (u x (t + Δt) - u x t - (Δt * D 0 1 x t
+          + (γ * (Δt / Δx)) ^ 2
+            * (β * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+              + (1 / 2 - β) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t)))) / Δt * Δt
+        = (u x (t + Δt) - u x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t)
+          + Δt ^ 2 / 2 * (D 0 2 x t - γ ^ 2 * D 2 0 x t)
+          - γ ^ 2 * Δt ^ 2 * β
+            * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+              - D 2 0 x (t + Δt))
+          - γ ^ 2 * Δt ^ 2 * (1 / 2 - β)
+            * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t)
+          - γ ^ 2 * Δt ^ 2 * β * (D 2 0 x (t + Δt) - D 2 0 x t - Δt * D 2 1 x t)
+          - γ ^ 2 * Δt ^ 3 * β * D 2 1 x t := by
+      field_simp
+      ring
+    rw [hzero, mul_zero, add_zero] at hid
+    refine le_of_mul_le_mul_right ?_ hΔt
+    calc |(u x (t + Δt) - u x t - (Δt * D 0 1 x t
+            + (γ * (Δt / Δx)) ^ 2
+              * (β * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+                + (1 / 2 - β) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t)))) / Δt| * Δt
+        = |(u x (t + Δt) - u x t - (Δt * D 0 1 x t
+            + (γ * (Δt / Δx)) ^ 2
+              * (β * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+                + (1 / 2 - β) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t)))) / Δt * Δt| := by
+          rw [abs_mul, abs_of_pos hΔt]
+      _ ≤ M * Δt ^ 3 / 6 + γ ^ 2 * Δt ^ 2 * |β| * (M * Δx ^ 2 / 12)
+          + γ ^ 2 * Δt ^ 2 * |1 / 2 - β| * (M * Δx ^ 2 / 12)
+          + γ ^ 2 * Δt ^ 2 * |β| * (M * Δt ^ 2 / 2) + γ ^ 2 * Δt ^ 3 * |β| * M := by
+          rw [hid]
+          have habs : ∀ c d e : ℝ, |c| ≤ e →
+              |γ ^ 2 * Δt ^ 2 * d * c| ≤ γ ^ 2 * Δt ^ 2 * |d| * e := by
+            intro c d e hc
+            rw [abs_mul, abs_mul, abs_mul, abs_of_nonneg (sq_nonneg γ),
+              abs_of_nonneg (by positivity : (0 : ℝ) ≤ Δt ^ 2)]
+            exact mul_le_mul_of_nonneg_left hc (by positivity)
+          have habs' : |γ ^ 2 * Δt ^ 3 * β * D 2 1 x t| ≤ γ ^ 2 * Δt ^ 3 * |β| * M := by
+            rw [abs_mul, abs_mul, abs_mul, abs_of_nonneg (sq_nonneg γ),
+              abs_of_nonneg (by positivity : (0 : ℝ) ≤ Δt ^ 3)]
+            exact mul_le_mul_of_nonneg_left hb21 (by positivity)
+          refine (abs_sub _ _).trans (add_le_add ((abs_sub _ _).trans (add_le_add
+            ((abs_sub _ _).trans (add_le_add ((abs_sub _ _).trans
+              (add_le_add hE1 (habs _ _ _ hep))) (habs _ _ _ heq))) (habs _ _ _ he1))) habs')
+      _ ≤ M * ((1 / 6 + 3 / 2 * γ ^ 2 * |β|) * Δt ^ 2
+          + γ ^ 2 * (|β| + |1 / 2 - β|) / 12 * Δx ^ 2) * Δt := by
+          have hbe : (0 : ℝ) ≤ |β| := abs_nonneg β
+          have hbe' : (0 : ℝ) ≤ |1 / 2 - β| := abs_nonneg (1 / 2 - β)
+          have hd : (0 : ℝ) ≤ Δt - Δt ^ 2 := by nlinarith
+          have hd2 : (0 : ℝ) ≤ Δt ^ 3 - Δt ^ 4 := by nlinarith
+          have k1 : (0 : ℝ) ≤ γ ^ 2 * |β| * M * Δx ^ 2 * (Δt - Δt ^ 2) :=
+            mul_nonneg (by positivity) hd
+          have k2 : (0 : ℝ) ≤ γ ^ 2 * |1 / 2 - β| * M * Δx ^ 2 * (Δt - Δt ^ 2) :=
+            mul_nonneg (by positivity) hd
+          have k3 : (0 : ℝ) ≤ γ ^ 2 * |β| * M * (Δt ^ 3 - Δt ^ 4) :=
+            mul_nonneg (by positivity) hd2
+          nlinarith [k1, k2, k3]
+  · have hid : (D 0 1 x (t + Δt) - D 0 1 x t - (γ * (Δt / Δx)) ^ 2 / Δt
+          * (1 / 2 * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+            + (1 - 1 / 2) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t))) / Δt * Δt
+        = (D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t - Δt ^ 2 / 2 * D 0 3 x t)
+          + Δt * (D 0 2 x t - γ ^ 2 * D 2 0 x t)
+          + Δt ^ 2 / 2 * (D 0 3 x t - γ ^ 2 * D 2 1 x t)
+          - γ ^ 2 * Δt / 2
+            * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+              - D 2 0 x (t + Δt))
+          - γ ^ 2 * Δt / 2
+            * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t)
+          - γ ^ 2 * Δt / 2 * (D 2 0 x (t + Δt) - D 2 0 x t - Δt * D 2 1 x t) := by
+      field_simp
+      ring
+    rw [hzero, hzero3, mul_zero, mul_zero, add_zero, add_zero] at hid
+    refine le_of_mul_le_mul_right ?_ hΔt
+    calc |(D 0 1 x (t + Δt) - D 0 1 x t - (γ * (Δt / Δx)) ^ 2 / Δt
+            * (1 / 2 * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+              + (1 - 1 / 2) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t))) / Δt| * Δt
+        = |(D 0 1 x (t + Δt) - D 0 1 x t - (γ * (Δt / Δx)) ^ 2 / Δt
+            * (1 / 2 * (u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt))
+              + (1 - 1 / 2) * (u (x + Δx) t - 2 * u x t + u (x - Δx) t))) / Δt * Δt| := by
+          rw [abs_mul, abs_of_pos hΔt]
+      _ ≤ M * Δt ^ 3 / 6 + γ ^ 2 * Δt / 2 * (M * Δx ^ 2 / 12)
+          + γ ^ 2 * Δt / 2 * (M * Δx ^ 2 / 12) + γ ^ 2 * Δt / 2 * (M * Δt ^ 2 / 2) := by
+          rw [hid]
+          have habs : ∀ c e : ℝ, |c| ≤ e → |γ ^ 2 * Δt / 2 * c| ≤ γ ^ 2 * Δt / 2 * e := by
+            intro c e hc
+            rw [abs_mul, abs_div, abs_mul, abs_of_nonneg (sq_nonneg γ), abs_of_pos hΔt,
+              abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+            exact mul_le_mul_of_nonneg_left hc (by positivity)
+          exact (abs_sub _ _).trans (add_le_add ((abs_sub _ _).trans (add_le_add
+            ((abs_sub _ _).trans (add_le_add heps (habs _ _ hep))) (habs _ _ heq)))
+            (habs _ _ he1))
+      _ ≤ M * ((1 / 6 + γ ^ 2 / 4) * Δt ^ 2 + γ ^ 2 / 12 * Δx ^ 2) * Δt := by
+          have h3 : Δt ^ 3 ≤ Δt ^ 2 := by nlinarith
+          nlinarith [mul_nonneg hM0 (sq_nonneg Δx), mul_nonneg hM0 (sq_nonneg Δt),
+            mul_nonneg (mul_nonneg hM0 (sq_nonneg γ)) (sq_nonneg Δx),
+            mul_nonneg (mul_nonneg hM0 (sq_nonneg γ)) (sq_nonneg Δt),
+            sq_nonneg γ, hΔt.le, hΔx.le]
+
 /-- **Convergence** (end of §13.8.1): the iterates started from the sampled datum approach the
 exact solution uniformly on the grid, over a finite horizon. -/
 def isConvergent (a : ℝ) (u₀ : ℝ → ℝ) (c : ℝ → ℝ → Stencil) (T : ℝ) : Prop :=

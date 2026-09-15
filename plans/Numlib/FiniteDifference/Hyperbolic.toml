@@ -254,75 +254,60 @@ id = "forwardEulerCentred_not_isStableFamily"
 
 [[node]]
 id = "residual_threePoint_expansion"
-kind = "theorem"
-desc = '''The general three-point expansion: for `v` with continuous partial derivatives up to order
-`4` bounded by `M` on a neighbourhood of `(x, t)` containing `[x - Δx, x + Δx] × [t, t + Δt]`,
-`|residual (threePoint cm c0 cp) Δt Δx v x t - (∂_t v + (Δt/2) ∂_tt v + (Δt²/6) ∂_ttt v - Δt⁻¹ ((cm +
-c0 + cp - 1) v + Δx (cp - cm) ∂_x v + (Δx²/2)(cp + cm) ∂_xx v + (Δx³/6)(cp - cm) ∂_xxx v))| ≤ M (Δt³/24
-+ (|cm| + |cp|) Δx⁴ / (24 Δt))`, all derivatives at `(x, t)`. Two one-variable Taylor expansions
-(in `t` and in `x`) with Lagrange remainders. Every modified-equation computation is algebra on
-top of this. ★★★
-
-Blocked: not attempted for lack of time. The one-variable engine exists
-(`Hyperbolic.abs_taylor_one`/`_two`/`_three` over `FiniteDifference.abs_sub_sum_taylor_le`); what is
-missing is a *two-variable* Taylor interface — the iterated partial derivatives of `v` as named
-functions (`Transport.HasPartialsOn` iterated, as in `Hyperbolic.IsModifiedSolution`) together with
-the one-variable expansions along the two coordinate lines through `(x, t)`. Estimate: a 150-line
-lemma plus the API, one to two days including the four consumers below.'''
-deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Stencil.threePoint"]
 
 [[node]]
 id = "abs_residual_upwind_sub_le"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri (13.57)–(13.58) for upwind with `a > 0`: `|residual (upwind a lam) Δt
-Δx v x t - (∂_t v + a ∂_x v)| ≤ (Δt/2) M₂ + (a Δx/2) M₂` and `|residual … - (∂_t v + (Δt/2) ∂_tt v + a
-∂_x v - (a Δx/2) ∂_xx v)| ≤ (Δt²/6) M₃ + (a Δx²/6) M₃` with `M₂`, `M₃` bounds on the second, third
-partial derivatives near `(x, t)`. Special case of `residual_threePoint_expansion` at lower order,
-or directly. ★★
-
-Blocked: waits on the two-variable Taylor interface of `residual_threePoint_expansion`.'''
-deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Hyperbolic.upwind"]
 
 [[node]]
 id = "abs_residual_upwind_le_of_isModifiedSolution"
-kind = "theorem"
-desc = '''The second-order equivalent equation of upwind (Quarteroni–Sacco–Saleri (13.59)): for `a >
-0`, `μ = a Δx / 2 - a² Δt / 2`, and `v` an `IsModifiedSolution a μ 0` with second and third partial
-derivatives bounded by `M`, `|residual (upwind a lam) Δt Δx v x t| ≤ C(a, M) (Δt² + Δt Δx + Δx²)`
-for `lam = Δt/Δx`. ★★★
-
-Blocked: waits on the two-variable Taylor interface of `residual_threePoint_expansion`.'''
-deps = ["FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le", "FiniteDifference.Hyperbolic.IsModifiedSolution"]
 
 [[node]]
 id = "abs_residual_upwind_le_of_isModifiedSolution_third"
-kind = "theorem"
-desc = '''The third-order equivalent equation of upwind (Table 13.2 of Quarteroni–Sacco–Saleri, the
-Warming–Hyett coefficients): for `a > 0`, `lam = Δt/Δx` fixed, `μ = a Δx / 2 - a² Δt / 2`, `ν = -(a /
-6) (Δx² - 3 a Δx Δt + 2 a² Δt²)`, and `v` an `IsModifiedSolution a μ ν` with partial derivatives up
-to order `4` bounded by `M`: `|residual (upwind a lam) Δt Δx v x t| ≤ C(a, lam, M) Δx³`. The
-table's `ν`, not the text's `(a/6)(a²Δt² - Δx²)`, is the correct one (`notes/book-errata.md`). ★★★
-
-Blocked: waits on the two-variable Taylor interface of `residual_threePoint_expansion`.'''
-deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution"]
 
 [[node]]
 id = "abs_residual_laxFriedrichs_le_of_isModifiedSolution"
-kind = "theorem"
-desc = '''Lax–Friedrichs' equivalent equation (Table 13.2): with `lam = Δt/Δx` fixed, `μ = (Δx² / (2
-Δt)) (1 - (a lam)²)`, `ν = (a Δx² / 3) (1 - (a lam)²)`, an `IsModifiedSolution a μ ν` with bounded
-fourth derivatives has `|residual (laxFriedrichs a lam) Δt Δx v x t| ≤ C Δx³`
-(Quarteroni–Sacco–Saleri, Exercise 13.8). ★★★
-
-Blocked: waits on the two-variable Taylor interface of `residual_threePoint_expansion`.'''
-deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution", "FiniteDifference.Hyperbolic.laxFriedrichs"]
 
 [[node]]
 id = "abs_residual_laxWendroff_le_of_isModifiedSolution"
-kind = "theorem"
-desc = '''Lax–Wendroff's equivalent equation (Table 13.2): with `lam = Δt/Δx` fixed, `μ = 0`, `ν = (a Δx² / 6)
-((a lam)² - 1)`, an `IsModifiedSolution a 0 ν` with bounded fourth derivatives has `|residual
-(laxWendroff a lam) Δt Δx v x t| ≤ C Δx³`. ★★★
 
-Blocked: waits on the two-variable Taylor interface of `residual_threePoint_expansion`.'''
-deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution", "FiniteDifference.Hyperbolic.laxWendroff"]
+[[node]]
+id = "hasPartialDerivFst_of_hasPartialsOn"
+
+[[node]]
+id = "hasPartialDerivSnd_of_hasPartialsOn"
+
+[[node]]
+id = "abs_taylor_fst_one"
+
+[[node]]
+id = "abs_taylor_fst_two"
+
+[[node]]
+id = "abs_taylor_fst_three"
+
+[[node]]
+id = "abs_taylor_snd_one"
+
+[[node]]
+id = "abs_taylor_snd_two"
+
+[[node]]
+id = "abs_taylor_snd_three"
+
+[[node]]
+id = "abs_secondDiff_fst_sub_le"
+
+[[node]]
+id = "abs_secondDiff_snd_sub_le"
+
+[[node]]
+id = "abs_residual_upwind_sub_le_two"
+
+[[node]]
+id = "IsModifiedSolution.eq_of_hasPartialDerivs"
+
+[[node]]
+id = "IsModifiedSolution.partial_eq"
+
+[[node]]
+id = "abs_residual_threePoint_le_of_isModifiedSolution"

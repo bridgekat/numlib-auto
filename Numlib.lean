@@ -3,6 +3,7 @@ import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex

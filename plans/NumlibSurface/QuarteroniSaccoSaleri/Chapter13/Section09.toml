@@ -26,54 +26,16 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.61)�
 
 [[node]]
 id = "equation_13_57"
-kind = "theorem"
-desc = '''(13.57)–(13.58), the Taylor expansions of the upwind residual: for a smooth `v` and `a >
-0`, the residual `R v (x,t) = [v(x, t+Δt) - v(x,t)]/Δt + a [v(x,t) - v(x-Δx, t)]/Δx` satisfies `|R v -
-(v_t + a v_x)| ≤ (Δt/2) sup|v_tt| + (aΔx/2) sup|v_xx|` (13.57) and `|R v - (v_t + (Δt/2) v_tt + a v_x
-- (aΔx/2) v_xx)| ≤ (Δt²/6) sup|v_ttt| + (aΔx²/6) sup|v_xxx|` (13.58). ★★
-
-Blocked: waits on the backbone node `FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le`,
-which is open for want of a two-variable Taylor interface (see its plan entry). The scheme's
-residual itself, `FiniteDifference.Hyperbolic.residual`, and the equivalent equation
-`IsModifiedSolution` are proved and available.'''
-deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.57)–(13.58)'
 
 [[node]]
 id = "equation_13_59"
-kind = "theorem"
-desc = '''(13.59), the second-order equivalent equation of upwind: with `μ = aΔx/2 - a²Δt/2`, `a >
-0`, every `C³` solution `v` of `v_t + a v_x = μ v_xx` with bounded third derivatives makes the
-upwind residual `O(Δt² + Δt Δx + Δx²)`, whereas on solutions of the transport equation it is only
-`O(Δt + Δx)`. ★★★
-
-Blocked: waits on `FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_57", "QuarteroniSaccoSaleri.Chapter13.equation_13_56", "FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.59)'
 
 [[node]]
 id = "equation_13_60"
-kind = "theorem"
-desc = '''(13.60) and Table 13.2 (upwind row), the third-order equivalent equation of upwind, with
-`λ = Δt/Δx` fixed: with `μ = aΔx/2 - a²Δt/2` and `ν = -(a/6)(Δx² - 3aΔxΔt + 2a²Δt²)`, every `C⁴`
-solution `v` of `v_t + a v_x = μ v_xx + ν v_xxx` with bounded fourth derivatives makes the upwind
-residual `O(Δx³)`. Erratum: the text gives `ν = (a/6)(a²Δt² - Δx²)`; Table 13.2's value (the
-Warming–Hyett coefficient) is the correct one and is what the node states. ★★★
-
-Blocked: waits on
-`FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution_third`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_59", "FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution_third"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.60) and Table 13.2, upwind'
 
 [[node]]
 id = "exercise_13_8"
-kind = "theorem"
-desc = '''Exercise 8 and Table 13.2 for Lax–Friedrichs and Lax–Wendroff, with `λ = Δt/Δx` fixed:
-every `C⁴` solution with bounded fourth derivatives of `v_t + a v_x = μ v_xx + ν v_xxx` makes the
-Lax–Friedrichs residual `O(Δx³)` when `μ = (Δx²/(2Δt))(1 - (aλ)²)` and `ν = (aΔx²/3)(1 - (aλ)²)`,
-and the Lax–Wendroff residual `O(Δx³)` when `μ = 0` and `ν = (aΔx²/6)((aλ)² - 1)`. ★★★
-
-Blocked: waits on `FiniteDifference.Hyperbolic.residual_threePoint_expansion` and the two
-consequences named in its deps.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_56", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.abs_residual_laxFriedrichs_le_of_isModifiedSolution", "FiniteDifference.Hyperbolic.abs_residual_laxWendroff_le_of_isModifiedSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.8 and Table 13.2'
