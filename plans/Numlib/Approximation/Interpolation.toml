@@ -101,7 +101,20 @@ A cruder bound `≤ 1 + (2/π) log (n+1) + c` with an explicit `c` is acceptable
 (the book uses only the logarithmic growth). Compare `norm_trigInterpCLM_le` of
 `Numlib/Approximation/TrigonometricInterpolation`, the same estimate for equispaced trigonometric
 interpolation, whose proof route (Lebesgue function of translates of the Dirichlet kernel) is the
-model. ★★★'''
+model. ★★★
+
+Blocked: not attempted in two passes. The reduction to a supremum is free
+(`Lagrange.norm_interpolateCLM` gives `max_t ∑_j |ℓ_j(t)|`), but everything after it is Rivlin's
+estimate of that supremum, which has no shortcut: substituting `t = cos θ`, `x_j = cos θ_j` with
+`θ_j = (2j+1)π/(2(n+1))` and `cos θ - cos θ_j = -2 sin((θ+θ_j)/2) sin((θ-θ_j)/2)` turns the
+Lebesgue function into `(|cos((n+1)θ)|/(n+1)) ∑_j sin θ_j / |2 sin((θ+θ_j)/2) sin((θ-θ_j)/2)|`,
+and the logarithm comes out of comparing that sum with a harmonic sum through
+`∫ dφ / sin φ = log tan (φ/2)`. `norm_trigInterpCLM_le` of
+`Numlib/Approximation/TrigonometricInterpolation` is the same estimate for the Dirichlet kernel
+and runs to several hundred lines; the Chebyshev case is a separate development of the same size,
+with the two terms nearest the evaluation point again needing their own treatment. Estimated
+500-800 lines; extracting a shared "a sum of reciprocal sines is at most a logarithm" lemma from
+`norm_trigInterpCLM_le` would be the right first step.'''
 deps = ["Lagrange.norm_interpolateCLM", "Lagrange.interpolateCLM"]
 
 [[node]]

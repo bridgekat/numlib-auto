@@ -11,27 +11,14 @@ id = "abs_integral_taylorRemainder_div_rpow_le"
 
 [[node]]
 id = "contDiffOn_taylorRemainder_div_rpow"
-kind = "theorem"
-desc = '''**Regularity of the subtracted integrand** (the claim after (9.52)). For `a < b`,
-`0 ≤ μ < 1`, `φ` of class `C^{p+1}` on an open `U ⊇ Icc a b`, the function
-`g x = if x = a then 0 else (φ x - taylorWithinEval φ p U a x) / (x - a)^μ` is of class `C^p` on
-`Icc a b` — `ContDiffOn ℝ p g (Icc a b)` — with `iteratedDerivWithin j g (Icc a b) a = 0` for
-`j ≤ p`, and for `j ≤ p` the derivative `g^{(j)}` is `O((x - a)^{p + 1 - j - μ})` near `a`. Away
-from `a` this is the quotient rule; at `a` it is the Leibniz formula
-`g^{(j)} = ∑_{i ≤ j} C(j, i) R^{(j-i)} · D^i (x - a)^{-μ}` with `R = φ - Φ_p` and
-`R^{(j-i)} = O((x - a)^{p + 1 - j + i})` (Taylor's theorem for the derivative of the remainder),
-each term being `O((x - a)^{p + 1 - j - μ}) → 0`; one-sided differentiability at `a` by the mean
-value theorem (`HasDerivWithinAt` from `tendsto` of the difference quotient). This is the
-hypothesis under which the composite Newton–Cotes error formula applies to `g` when `p ≥ n + 2`
-(even `n`) or `p ≥ n + 1` (odd `n`). In this module's convention `Φ_p` is
-`taylorWithinEval φ p univ a` (`taylorWithinEval_univ_eq_sum`) and `φ` is `C^{p+1}` on an open
-`U ⊇ Icc a b`. ★★★
-Blocked: not attempted this round (the one ★★★ node of the module, needed only for the remark
-after (9.52)); the route above stands, with `exists_sub_taylorWithinEval_univ_eq` supplying the
-Taylor bound of each derivative of the remainder `R^{(j-i)}`, and an `Icc`-version of
-`contDiffOn_of_hasDerivAt_chain` (through `contDiffOn_succ_iff_derivWithin` with
-`uniqueDiffOn_Icc`) assembling the chain; estimate two to three focused hours.'''
-deps = []
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.2, the claim after (9.52)"
+
+[[node]]
+id = "hasDerivAt_taylorWithinEval_univ"
+
+[[node]]
+id = "iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.2, the claim after (9.52)"
 
 [[node]]
 id = "integrableOn_Ioi_of_tendsto_rpow_mul"

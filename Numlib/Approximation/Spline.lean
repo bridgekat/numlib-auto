@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.Taylor
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Quadrature
 import Numlib.LinearAlgebra.Matrix.DiagDominant
@@ -59,6 +60,12 @@ quotes.
 * `Spline.integral_sub_deriv2_mul_deriv2_eq_zero`, `Spline.holladay`, `Spline.holladay_eq_iff`,
   `Spline.holladay_clamped`, `Spline.integral_sq_sub_deriv2_clampedInterp_le`: Holladay's
   orthogonality identity and the minimum-norm and best-approximation properties.
+* `Spline.norm_deriv2_sub_clampedInterp_le`, `Spline.norm_deriv2_sub_clampedInterp_le_of_mem`,
+  `Spline.norm_deriv_sub_clampedInterp_le`, `Spline.norm_sub_clampedInterp_le`: for a `C⁴`
+  function with `|f⁗| ≤ K` and panel lengths at most `h`, the moments of the clamped spline are
+  within `(3/4) h² K` of `f''` at the nodes, and on all of `[a, b]` the clamped spline satisfies
+  `|f'' - s''| ≤ (7/4) h² K`, `|f' - s'| ≤ (7/4) h³ K`, `|f - s| ≤ (7/8) h⁴ K`. The constants are
+  not the sharp ones of Hall and Meyer.
 
 ## Implementation notes
 
@@ -3487,5 +3494,678 @@ theorem existsUnique_isCubicInterp_periodic (hx : IsPartition a b n x) (hn : 2 �
         exact e₁.symm.trans ((hlt 0 (by omega)).trans e₂)
     exact (h₁.eqOn_cubicSplineFun hx hn1).trans
       ((cubicSplineFun_eqOn_of_moment_eq hx hn1 hall).trans (h₂.eqOn_cubicSplineFun hx hn1).symm)
+
+/-! ### Error bounds for the clamped interpolatory spline
+
+For `f` of class `C⁴` with `|f⁗| ≤ K` on `[a, b]` and a partition of mesh at most `h`, the clamped
+interpolatory cubic spline `s` of `f` satisfies `|f'' - s''| ≤ (7/4) h² K`,
+`|f' - s'| ≤ (7/4) h³ K` and `|f - s| ≤ (7/8) h⁴ K` on `[a, b]`.
+
+The argument is the classical one (Stoer and Bulirsch, *Introduction to Numerical Analysis*,
+Theorem 2.4.3.3): the vector of exact values `f''(x_i)` satisfies the moment system (8.48) up to a
+residual which Taylor expansion bounds by `(3/4) h² K`, so the moments are within `(3/4) h² K` of
+`f''` at the nodes because `‖A⁻¹‖_∞ ≤ 1` (`linfty_opNorm_inv_momentMatrix_le`); on a panel `s''` is
+the linear interpolant of two moments, hence within `(3/4) h² K + h² K` of `f''`; and `f - s`
+vanishes at the nodes, so two applications of the mean value theorem — with Rolle's theorem in
+between — give the `h³` and `h⁴` bounds.
+
+The constants are not sharp: the sharp `5/384, 1/24, 3/8` for the function, its slope and its
+second derivative are the theorem of Hall and Meyer, *Optimal error bounds for cubic spline
+interpolation* (J. Approx. Theory 16, 1976), which is not formalized here.
+
+The function is assumed `C⁴` on all of `ℝ` rather than on `Icc a b`; this matches
+`Numlib/Approximation/Interpolation`'s `norm_sub_piecewiseLinearInterpCLM_le` and avoids carrying
+within-derivatives at the two endpoints through every Taylor expansion. -/
+
+section ClampedError
+
+/-- **Taylor's theorem with a uniform remainder bound on `[a, b]`**: if `g` is `C^{m+1}` and its
+`(m+1)`-st derivative is bounded by `K` on `[a, b]`, then the `m`-th Taylor polynomial of `g` at
+`c ∈ [a, b]` approximates `g` at `t ∈ [a, b]` to within `K |t - c|^{m+1}/(m+1)!`. -/
+private theorem abs_sub_taylorSum_le {m : ℕ} {g : ℝ → ℝ} {K c t : ℝ}
+    (hg : ContDiff ℝ (m + 1) g) (hc : c ∈ Icc a b) (ht : t ∈ Icc a b)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv (m + 1) g y| ≤ K) :
+    |g t - ∑ k ∈ Finset.range (m + 1),
+        (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c|
+      ≤ K * |t - c| ^ (m + 1) / ((m + 1).factorial : ℝ) := by
+  rcases eq_or_ne c t with rfl | hne
+  · rw [Finset.sum_range_succ', sub_self]
+    have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
+    simp
+  have hsub : uIcc c t ⊆ Icc a b := uIcc_subset_Icc hc ht
+  obtain ⟨ξ, hξ, hT⟩ := taylor_mean_remainder_lagrange_iteratedDeriv hne hg.contDiffOn
+  have hpoly : taylorWithinEval g m (uIcc c t) c t
+      = ∑ k ∈ Finset.range (m + 1), (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c := by
+    rw [taylor_within_apply]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_uIcc hne)
+      (hg.contDiffAt.of_le (by
+        exact_mod_cast (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk)).trans (Nat.le_succ m)))
+      left_mem_uIcc, smul_eq_mul]
+    ring
+  rw [hpoly] at hT
+  rw [show g t - ∑ k ∈ Finset.range (m + 1),
+        (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
+      = iteratedDeriv (m + 1) g ξ * (t - c) ^ (m + 1) / ((m + 1).factorial : ℝ) from hT]
+  rw [abs_div, abs_mul, abs_pow, Nat.abs_cast]
+  gcongr
+  exact hK ξ (hsub (Ioo_subset_Icc_self hξ))
+
+/-- The third-order Taylor bound of a `C⁴` function between two points of `[a, b]`. -/
+private theorem abs_sub_taylor_three_le {g : ℝ → ℝ} {K c t : ℝ} (hg : ContDiff ℝ 4 g)
+    (hc : c ∈ Icc a b) (ht : t ∈ Icc a b)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 g y| ≤ K) :
+    |g t - (g c + (t - c) * deriv g c + (t - c) ^ 2 / 2 * iteratedDeriv 2 g c
+        + (t - c) ^ 3 / 6 * iteratedDeriv 3 g c)| ≤ K * |t - c| ^ 4 / 24 := by
+  have hg' : ContDiff ℝ ((3 : ℕ) + 1) g := by norm_num; exact hg
+  have hK' : ∀ y ∈ Icc a b, |iteratedDeriv ((3 : ℕ) + 1) g y| ≤ K := by simpa using hK
+  have h1 := abs_sub_taylorSum_le hg' hc ht hK'
+  have hsum : ∑ k ∈ Finset.range ((3 : ℕ) + 1),
+      (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
+      = g c + (t - c) * deriv g c + (t - c) ^ 2 / 2 * iteratedDeriv 2 g c
+        + (t - c) ^ 3 / 6 * iteratedDeriv 3 g c := by
+    rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+      Finset.sum_range_one, iteratedDeriv_zero, iteratedDeriv_one]
+    norm_num [Nat.factorial]
+  rw [hsum] at h1
+  calc |g t - (g c + (t - c) * deriv g c + (t - c) ^ 2 / 2 * iteratedDeriv 2 g c
+        + (t - c) ^ 3 / 6 * iteratedDeriv 3 g c)|
+      ≤ K * |t - c| ^ ((3 : ℕ) + 1) / (((3 : ℕ) + 1).factorial : ℝ) := h1
+    _ = K * |t - c| ^ 4 / 24 := by norm_num [Nat.factorial]
+
+/-- The first-order Taylor bound of a `C²` function between two points of `[a, b]`. -/
+private theorem abs_sub_taylor_one_le {g : ℝ → ℝ} {K c t : ℝ} (hg : ContDiff ℝ 2 g)
+    (hc : c ∈ Icc a b) (ht : t ∈ Icc a b)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 2 g y| ≤ K) :
+    |g t - (g c + (t - c) * deriv g c)| ≤ K * |t - c| ^ 2 / 2 := by
+  have hg' : ContDiff ℝ ((1 : ℕ) + 1) g := by norm_num; exact hg
+  have hK' : ∀ y ∈ Icc a b, |iteratedDeriv ((1 : ℕ) + 1) g y| ≤ K := by simpa using hK
+  have h1 := abs_sub_taylorSum_le hg' hc ht hK'
+  have hsum : ∑ k ∈ Finset.range ((1 : ℕ) + 1),
+      (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
+      = g c + (t - c) * deriv g c := by
+    rw [Finset.sum_range_succ, Finset.sum_range_one, iteratedDeriv_zero, iteratedDeriv_one]
+    norm_num [Nat.factorial]
+  rw [hsum] at h1
+  calc |g t - (g c + (t - c) * deriv g c)|
+      ≤ K * |t - c| ^ ((1 : ℕ) + 1) / (((1 : ℕ) + 1).factorial : ℝ) := h1
+    _ = K * |t - c| ^ 2 / 2 := by norm_num [Nat.factorial]
+
+/-- The second derivative of a `C⁴` function is `C²`. -/
+private theorem contDiff_iteratedDeriv_two {f : ℝ → ℝ} (hf : ContDiff ℝ 4 f) :
+    ContDiff ℝ 2 (iteratedDeriv 2 f) := by
+  have h2 : iteratedDeriv 2 f = deriv (deriv f) := by rw [iteratedDeriv_succ, iteratedDeriv_one]
+  rw [h2]
+  exact (hf.deriv' (n := 3)).deriv' (n := 2)
+
+/-- Iterated derivatives of the second derivative are shifted iterated derivatives. -/
+private theorem iteratedDeriv_iteratedDeriv_two (f : ℝ → ℝ) (j : ℕ) :
+    iteratedDeriv j (iteratedDeriv 2 f) = iteratedDeriv (j + 2) f := by
+  have h2 : iteratedDeriv 2 f = deriv (deriv f) := by rw [iteratedDeriv_succ, iteratedDeriv_one]
+  rw [h2, show j + 2 = j + 1 + 1 from rfl, iteratedDeriv_succ', iteratedDeriv_succ']
+
+/-- A `C²` function has its second iterated derivative as the derivative of its derivative. -/
+private theorem hasDerivAt_deriv_of_contDiff_two {g : ℝ → ℝ} (hg : ContDiff ℝ 2 g) (y : ℝ) :
+    HasDerivAt (deriv g) (iteratedDeriv 2 g y) y := by
+  have h : ContDiff ℝ 1 (deriv g) := hg.deriv' (n := 1)
+  rw [iteratedDeriv_succ, iteratedDeriv_one]
+  exact ((h.differentiable (by norm_num)) y).hasDerivAt
+
+/-- The two Taylor remainders used in the residual estimates: of `f` to order three and of `f''` to
+order one, both about `c` and evaluated at `c + w`. -/
+private theorem abs_taylor_pair {f : ℝ → ℝ} {K c : ℝ} (hf : ContDiff ℝ 4 f)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+    {w : ℝ} (hc : c ∈ Icc a b) (hcw : c + w ∈ Icc a b) :
+    |f (c + w) - (f c + w * deriv f c + w ^ 2 / 2 * iteratedDeriv 2 f c
+        + w ^ 3 / 6 * iteratedDeriv 3 f c)| ≤ K * |w| ^ 4 / 24 ∧
+    |iteratedDeriv 2 f (c + w) - (iteratedDeriv 2 f c + w * iteratedDeriv 3 f c)|
+      ≤ K * |w| ^ 2 / 2 := by
+  have hw : c + w - c = w := by ring
+  refine ⟨?_, ?_⟩
+  · have h := abs_sub_taylor_three_le hf hc hcw hK
+    rwa [hw] at h
+  · have hKg : ∀ y ∈ Icc a b, |iteratedDeriv 2 (iteratedDeriv 2 f) y| ≤ K := by
+      intro y hy
+      rw [iteratedDeriv_iteratedDeriv_two]
+      exact hK y hy
+    have h := abs_sub_taylor_one_le (contDiff_iteratedDeriv_two hf) hc hcw hKg
+    rw [hw, ← iteratedDeriv_succ] at h
+    exact h
+
+/-- Two positive numbers below `h` satisfy `u² - uv + v² ≤ h²`. -/
+private theorem sq_sub_mul_add_sq_le {u v hm : ℝ} (hu : 0 < u) (hv : 0 < v) (huh : u ≤ hm)
+    (hvh : v ≤ hm) : u ^ 2 - u * v + v ^ 2 ≤ hm ^ 2 := by
+  rcases le_total u v with h | h
+  · nlinarith
+  · nlinarith
+
+section Residual
+
+variable {f : ℝ → ℝ} {K c u v hm : ℝ}
+
+/-- **The residual of an interior moment row** at the exact second derivatives of `f`: the row
+`μ_i f''(x_{i-1}) + 2 f''(x_i) + λ_i f''(x_{i+1}) - d_i` of (8.47) is at most `(3/4) h² K` in
+absolute value. -/
+private theorem abs_interior_residual_le (hf : ContDiff ℝ 4 f)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+    (hu : 0 < u) (hv : 0 < v) (huh : u ≤ hm) (hvh : v ≤ hm)
+    (hcv : c - v ∈ Icc a b) (hc : c ∈ Icc a b) (hcu : c + u ∈ Icc a b) :
+    |v / (u + v) * iteratedDeriv 2 f (c - v) + 2 * iteratedDeriv 2 f c
+        + u / (u + v) * iteratedDeriv 2 f (c + u)
+        - 6 / (u + v) * ((f (c + u) - f c) / u - (f c - f (c - v)) / v)|
+      ≤ 3 / 4 * hm ^ 2 * K := by
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
+  have huv : (0 : ℝ) < u + v := by linarith
+  obtain ⟨e1, E1⟩ := abs_taylor_pair hf hK (w := u) hc hcu
+  obtain ⟨e2, E2⟩ := abs_taylor_pair hf hK (w := -v) hc (by rw [← sub_eq_add_neg]; exact hcv)
+  rw [← sub_eq_add_neg] at e2 E2
+  rw [abs_of_pos hu] at e1 E1
+  rw [abs_neg, abs_of_pos hv] at e2 E2
+  set F0 := f c
+  set F1 := deriv f c
+  set F2 := iteratedDeriv 2 f c
+  set F3 := iteratedDeriv 3 f c
+  set P := f (c + u)
+  set N := f (c - v)
+  set Gp := iteratedDeriv 2 f (c + u)
+  set Gn := iteratedDeriv 2 f (c - v)
+  set A := Gn - (F2 + -v * F3) with hA
+  set B := Gp - (F2 + u * F3) with hB
+  set p := P - (F0 + u * F1 + u ^ 2 / 2 * F2 + u ^ 3 / 6 * F3) with hp
+  set q := N - (F0 + -v * F1 + (-v) ^ 2 / 2 * F2 + (-v) ^ 3 / 6 * F3) with hq
+  have key : v / (u + v) * Gn + 2 * F2 + u / (u + v) * Gp
+      - 6 / (u + v) * ((P - F0) / u - (F0 - N) / v)
+      = v / (u + v) * A + u / (u + v) * B - 6 / (u + v) * (p / u + q / v) := by
+    rw [hA, hB, hp, hq]
+    field_simp
+    ring
+  rw [key]
+  have t3 : |p / u + q / v| ≤ K * u ^ 4 / 24 / u + K * v ^ 4 / 24 / v := by
+    calc |p / u + q / v| ≤ |p / u| + |q / v| := abs_add_le _ _
+      _ = |p| / u + |q| / v := by rw [abs_div, abs_div, abs_of_pos hu, abs_of_pos hv]
+      _ ≤ K * u ^ 4 / 24 / u + K * v ^ 4 / 24 / v := by gcongr
+  have hfin : v / (u + v) * (K * v ^ 2 / 2) + u / (u + v) * (K * u ^ 2 / 2)
+      + 6 / (u + v) * (K * u ^ 4 / 24 / u + K * v ^ 4 / 24 / v)
+      = 3 / 4 * K * (u ^ 2 - u * v + v ^ 2) := by
+    field_simp
+    ring
+  calc |v / (u + v) * A + u / (u + v) * B - 6 / (u + v) * (p / u + q / v)|
+      ≤ |v / (u + v) * A| + |u / (u + v) * B| + |6 / (u + v) * (p / u + q / v)| := by
+        rw [sub_eq_add_neg, ← abs_neg (6 / (u + v) * (p / u + q / v))]
+        exact abs_add_three _ _ _
+    _ = v / (u + v) * |A| + u / (u + v) * |B| + 6 / (u + v) * |p / u + q / v| := by
+        rw [abs_mul, abs_mul, abs_mul, abs_of_pos (by positivity : (0:ℝ) < v / (u + v)),
+          abs_of_pos (by positivity : (0:ℝ) < u / (u + v)),
+          abs_of_pos (by positivity : (0:ℝ) < 6 / (u + v))]
+    _ ≤ v / (u + v) * (K * v ^ 2 / 2) + u / (u + v) * (K * u ^ 2 / 2)
+        + 6 / (u + v) * (K * u ^ 4 / 24 / u + K * v ^ 4 / 24 / v) := by gcongr
+    _ = 3 / 4 * K * (u ^ 2 - u * v + v ^ 2) := hfin
+    _ ≤ 3 / 4 * hm ^ 2 * K := by
+        have := sq_sub_mul_add_sq_le hu hv huh hvh
+        nlinarith
+
+/-- **The residual of the left clamped closure row** at the exact second derivatives of `f`. -/
+private theorem abs_left_residual_le (hf : ContDiff ℝ 4 f)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+    (hu : 0 < u) (huh : u ≤ hm) (hc : c ∈ Icc a b) (hcu : c + u ∈ Icc a b) :
+    |2 * iteratedDeriv 2 f c + iteratedDeriv 2 f (c + u)
+        - 6 / u * ((f (c + u) - f c) / u - deriv f c)| ≤ 3 / 4 * hm ^ 2 * K := by
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
+  obtain ⟨e1, E1⟩ := abs_taylor_pair hf hK (w := u) hc hcu
+  rw [abs_of_pos hu] at e1 E1
+  set F0 := f c
+  set F1 := deriv f c
+  set F2 := iteratedDeriv 2 f c
+  set F3 := iteratedDeriv 3 f c
+  set P := f (c + u)
+  set Gp := iteratedDeriv 2 f (c + u)
+  set B := Gp - (F2 + u * F3) with hB
+  set p := P - (F0 + u * F1 + u ^ 2 / 2 * F2 + u ^ 3 / 6 * F3) with hp
+  have key : 2 * F2 + Gp - 6 / u * ((P - F0) / u - F1) = B - 6 / u ^ 2 * p := by
+    rw [hB, hp]; field_simp; ring
+  rw [key]
+  calc |B - 6 / u ^ 2 * p| ≤ |B| + |6 / u ^ 2 * p| := by
+        rw [sub_eq_add_neg, ← abs_neg (6 / u ^ 2 * p)]; exact abs_add_le _ _
+    _ = |B| + 6 / u ^ 2 * |p| := by
+        rw [abs_mul, abs_of_pos (by positivity : (0:ℝ) < 6 / u ^ 2)]
+    _ ≤ K * u ^ 2 / 2 + 6 / u ^ 2 * (K * u ^ 4 / 24) := by gcongr
+    _ = 3 / 4 * u ^ 2 * K := by field_simp; ring
+    _ ≤ 3 / 4 * hm ^ 2 * K := by
+        have h2 : u ^ 2 ≤ hm ^ 2 := by
+          nlinarith [mul_nonneg (sub_nonneg.2 huh) (by linarith : (0:ℝ) ≤ hm + u)]
+        nlinarith [mul_nonneg (sub_nonneg.2 h2) hK0]
+
+/-- **The residual of the right clamped closure row** at the exact second derivatives of `f`. -/
+private theorem abs_right_residual_le (hf : ContDiff ℝ 4 f)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+    (hv : 0 < v) (hvh : v ≤ hm) (hcv : c - v ∈ Icc a b) (hc : c ∈ Icc a b) :
+    |iteratedDeriv 2 f (c - v) + 2 * iteratedDeriv 2 f c
+        - 6 / v * (deriv f c - (f c - f (c - v)) / v)| ≤ 3 / 4 * hm ^ 2 * K := by
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
+  obtain ⟨e2, E2⟩ := abs_taylor_pair hf hK (w := -v) hc (by rw [← sub_eq_add_neg]; exact hcv)
+  rw [← sub_eq_add_neg] at e2 E2
+  rw [abs_neg, abs_of_pos hv] at e2 E2
+  set F0 := f c
+  set F1 := deriv f c
+  set F2 := iteratedDeriv 2 f c
+  set F3 := iteratedDeriv 3 f c
+  set N := f (c - v)
+  set Gn := iteratedDeriv 2 f (c - v)
+  set A := Gn - (F2 + -v * F3) with hA
+  set q := N - (F0 + -v * F1 + (-v) ^ 2 / 2 * F2 + (-v) ^ 3 / 6 * F3) with hq
+  have key : Gn + 2 * F2 - 6 / v * (F1 - (F0 - N) / v) = A - 6 / v ^ 2 * q := by
+    rw [hA, hq]; field_simp; ring
+  rw [key]
+  calc |A - 6 / v ^ 2 * q| ≤ |A| + |6 / v ^ 2 * q| := by
+        rw [sub_eq_add_neg, ← abs_neg (6 / v ^ 2 * q)]; exact abs_add_le _ _
+    _ = |A| + 6 / v ^ 2 * |q| := by
+        rw [abs_mul, abs_of_pos (by positivity : (0:ℝ) < 6 / v ^ 2)]
+    _ ≤ K * v ^ 2 / 2 + 6 / v ^ 2 * (K * v ^ 4 / 24) := by gcongr
+    _ = 3 / 4 * v ^ 2 * K := by field_simp; ring
+    _ ≤ 3 / 4 * hm ^ 2 * K := by
+        have h2 : v ^ 2 ≤ hm ^ 2 := by
+          nlinarith [mul_nonneg (sub_nonneg.2 hvh) (by linarith : (0:ℝ) ≤ hm + v)]
+        nlinarith [mul_nonneg (sub_nonneg.2 h2) hK0]
+
+/-- **A crude bound on the error of linear interpolation** between two points of `[a, b]`: the
+affine function through `(p, g p)` and `(q, g q)` differs from `g` by at most `K (q - p)²`, where
+`K` bounds `|g''|`. (The sharp constant is `K (q - p)²/8`; it is not needed here.) -/
+private theorem abs_linearInterp_sub_le {g : ℝ → ℝ} {K p q t : ℝ} (hg : ContDiff ℝ 2 g)
+    (hK : ∀ y ∈ Icc a b, |iteratedDeriv 2 g y| ≤ K) (hpq : p < q)
+    (hsub : Icc p q ⊆ Icc a b) (ht : t ∈ Icc p q) :
+    |g p * (q - t) / (q - p) + g q * (t - p) / (q - p) - g t| ≤ K * (q - p) ^ 2 := by
+  have hp : p ∈ Icc a b := hsub ⟨le_rfl, hpq.le⟩
+  have hq : q ∈ Icc a b := hsub ⟨hpq.le, le_rfl⟩
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK p hp)
+  have hd : (0 : ℝ) < q - p := sub_pos.mpr hpq
+  have e1 := abs_sub_taylor_one_le hg hp hq hK
+  have e2 := abs_sub_taylor_one_le hg hp (hsub ht) hK
+  rw [abs_of_pos hd] at e1
+  rw [abs_of_nonneg (by linarith [ht.1] : (0:ℝ) ≤ t - p)] at e2
+  set eq' := g q - (g p + (q - p) * deriv g p) with heq'
+  set et := g t - (g p + (t - p) * deriv g p) with het
+  have key : g p * (q - t) / (q - p) + g q * (t - p) / (q - p) - g t
+      = (t - p) / (q - p) * eq' - et := by
+    rw [heq', het]; field_simp; ring
+  rw [key]
+  have hθ : (t - p) / (q - p) ≤ 1 := (div_le_one hd).mpr (by linarith [ht.2])
+  have hθ0 : (0 : ℝ) ≤ (t - p) / (q - p) := div_nonneg (by linarith [ht.1]) hd.le
+  calc |(t - p) / (q - p) * eq' - et| ≤ |(t - p) / (q - p) * eq'| + |et| := by
+        rw [sub_eq_add_neg, ← abs_neg et]; exact abs_add_le _ _
+    _ = (t - p) / (q - p) * |eq'| + |et| := by rw [abs_mul, abs_of_nonneg hθ0]
+    _ ≤ 1 * (K * (q - p) ^ 2 / 2) + K * (t - p) ^ 2 / 2 := by gcongr
+    _ ≤ 1 * (K * (q - p) ^ 2 / 2) + K * (q - p) ^ 2 / 2 := by
+        gcongr
+        · linarith [ht.1]
+        · linarith [ht.2]
+    _ = K * (q - p) ^ 2 := by ring
+
+end Residual
+
+/-- **The second derivative of the interpolatory cubic spline is linear on every panel**, taking
+the moments at the two ends ([quarteroni2000numerical] (8.46)). -/
+theorem iteratedDeriv_two_cubicInterp_eq_of_mem (hx : IsPartition a b n x) (hn : 1 ≤ n)
+    {f : ℕ → ℝ} {lam0 mun d0 dn : ℝ} (hl0 : 0 ≤ lam0) (hl1 : lam0 ≤ 1) (hm0 : 0 ≤ mun)
+    (hm1 : mun ≤ 1) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
+    (ht : t ∈ Icc (x (i - 1)) (x i)) :
+    iteratedDeriv 2 (cubicInterp n x f lam0 mun d0 dn) t
+      = iteratedDeriv 2 (cubicInterp n x f lam0 mun d0 dn) (x (i - 1)) * (x i - t)
+          / (x i - x (i - 1))
+        + iteratedDeriv 2 (cubicInterp n x f lam0 mun d0 dn) (x i) * (t - x (i - 1))
+          / (x i - x (i - 1)) := by
+  have hM : ∀ j, 1 ≤ j → j < n → IsMomentEq x f (momentVec n x f lam0 mun d0 dn) j :=
+    fun _ h1 h2 => isMomentEq_momentVec hx hn hl0 hl1 hm0 hm1 h1 h2
+  rw [iteratedDeriv_two_cubicInterp_node hx hn hl0 hl1 hm0 hm1 (show i - 1 ≤ n by omega),
+    iteratedDeriv_two_cubicInterp_node hx hn hl0 hl1 hm0 hm1 hin, cubicInterp,
+    iteratedDeriv_two_cubicSplineFun hx hn hM,
+    panelGlue_eq_of_mem hx (fun _ h1 h2 => panelCubicD2_apply_node_succ hx h1 h2) hi1 hin
+      (Icc_subset_extPanel i ht),
+    panelCubicD2_apply _ _ _ (hx.lt (by omega) hin)]
+
+/-- The second derivative of the clamped spline is linear on every panel. -/
+private theorem iteratedDeriv_two_clampedInterp_eq_of_mem (hx : IsPartition a b n x) (hn : 1 ≤ n)
+    {f : ℕ → ℝ} (f'0 f'n : ℝ) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n) {t : ℝ}
+    (ht : t ∈ Icc (x (i - 1)) (x i)) :
+    iteratedDeriv 2 (clampedInterp n x f f'0 f'n) t
+      = iteratedDeriv 2 (clampedInterp n x f f'0 f'n) (x (i - 1)) * (x i - t)
+          / (x i - x (i - 1))
+        + iteratedDeriv 2 (clampedInterp n x f f'0 f'n) (x i) * (t - x (i - 1))
+          / (x i - x (i - 1)) :=
+  iteratedDeriv_two_cubicInterp_eq_of_mem hx hn zero_le_one le_rfl zero_le_one le_rfl hi1 hin ht
+
+section Bounds
+
+open scoped Matrix.Norms.Operator
+
+variable (hx : IsPartition a b n x) (hn : 1 ≤ n) {f : ℝ → ℝ} {K hm : ℝ} (hf : ContDiff ℝ 4 f)
+  (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+  (hmesh : ∀ i, 1 ≤ i → i ≤ n → panelLength x i ≤ hm)
+include hx hn hf hK hmesh
+
+/-- **The moments of the clamped spline approximate `f''` to second order** (Stoer and Bulirsch,
+*Introduction to Numerical Analysis*, Theorem 2.4.3.3): for `f` of class `C⁴` with `|f⁗| ≤ K` on
+`[a, b]` and panel lengths at most `h`, the clamped interpolatory spline `s` of the nodal values of
+`f` satisfies `|s''(x_i) - f''(x_i)| ≤ (3/4) h² K` at every node.
+
+The vector of exact values `f''(x_i)` satisfies the moment system (8.48) up to a residual bounded
+by `(3/4) h² K` — Taylor expansion of `f` and of `f''` about `x_i` for the interior rows, and the
+two clamped closure rows separately — and `‖A⁻¹‖_∞ ≤ 1` by
+`linfty_opNorm_inv_momentMatrix_le`. -/
+theorem norm_deriv2_sub_clampedInterp_le {i : ℕ} (hi : i ≤ n) :
+    |iteratedDeriv 2 (clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b)) (x i)
+      - iteratedDeriv 2 f (x i)| ≤ 3 / 4 * hm ^ 2 * K := by
+  classical
+  rw [← hx.first, ← hx.last]
+  suffices key : ∀ d0 dn : ℝ,
+      d0 = 6 / (x 1 - x 0) * ((f (x 1) - f (x 0)) / (x 1 - x 0) - deriv f (x 0)) →
+      dn = 6 / (x n - x (n - 1))
+        * (deriv f (x n) - (f (x n) - f (x (n - 1))) / (x n - x (n - 1))) →
+      |iteratedDeriv 2 (cubicInterp n x (fun j => f (x j)) 1 1 d0 dn) (x i)
+        - iteratedDeriv 2 f (x i)| ≤ 3 / 4 * hm ^ 2 * K from key _ _ rfl rfl
+  intro d0 dn hd0 hdn
+  have hpos : ∀ j, 1 ≤ j → j ≤ n → 0 < panelLength x j := fun j h1 h2 => hx.panelLength_pos h1 h2
+  have hmem : ∀ j, j ≤ n → x j ∈ Icc a b := fun j hj => ⟨hx.left_le hj, hx.le_right hj⟩
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK a ⟨le_rfl, hx.le⟩)
+  set fd : ℕ → ℝ := fun j => f (x j) with hfd
+  set A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ := momentMatrix n (panelLength x) 1 1 with hA
+  set d : Fin (n + 1) → ℝ := momentRhs n (panelLength x) fd d0 dn with hd
+  set Mv : Fin (n + 1) → ℝ := A⁻¹.mulVec d with hMv
+  set Fv : Fin (n + 1) → ℝ := fun j => iteratedDeriv 2 f (x j) with hFv
+  have hmv : momentVec n x fd 1 1 d0 dn = extendFin Mv := rfl
+  rw [iteratedDeriv_two_cubicInterp_node hx hn zero_le_one le_rfl zero_le_one le_rfl hi, hmv,
+    extendFin_of_lt (i := i) _ (show i < n + 1 by omega),
+    show iteratedDeriv 2 f (x i) = Fv ⟨i, by omega⟩ from rfl]
+  have hrow : ∀ j : Fin (n + 1), |d j - (A.mulVec Fv) j| ≤ 3 / 4 * hm ^ 2 * K := by
+    intro j
+    rw [hA, momentMatrix_mulVec_apply]
+    rcases eq_or_ne (j : ℕ) 0 with hj0 | hj0
+    · -- the left closure row
+      have h1n : (1 : ℕ) < n + 1 := by omega
+      have hdj : d j = d0 := by simp only [hd, momentRhs, hj0, reduceIte]
+      have hlam : momentLam (panelLength x) 1 (j : ℕ) = 1 := by
+        simp only [momentLam, hj0, reduceIte]
+      have hext : extendFin Fv ((j : ℕ) + 1) = iteratedDeriv 2 f (x 1) := by
+        rw [hj0, extendFin_of_lt _ h1n]
+      have hFvj : Fv j = iteratedDeriv 2 f (x 0) := by rw [hFv]; simp [hj0]
+      have hmu : (if (j : ℕ) = 0 then (0 : ℝ) else extendFin Fv ((j : ℕ) - 1)) = 0 := by
+        simp [hj0]
+      rw [hdj, hlam, hext, hFvj, hmu, hd0]
+      have hu : 0 < x 1 - x 0 := sub_pos.mpr (hx.step 0 (by omega))
+      have hcu : x 0 + (x 1 - x 0) ∈ Icc a b := by
+        rw [show x 0 + (x 1 - x 0) = x 1 from by ring]; exact hmem 1 hn
+      have hres := abs_left_residual_le (a := a) (b := b) (hm := hm) hf hK hu
+        (by simpa [panelLength] using hmesh 1 le_rfl hn) (hmem 0 (by omega)) hcu
+      rw [show x 0 + (x 1 - x 0) = x 1 from by ring] at hres
+      rw [show 6 / (x 1 - x 0) * ((f (x 1) - f (x 0)) / (x 1 - x 0) - deriv f (x 0))
+          - (2 * iteratedDeriv 2 f (x 0) + 1 * iteratedDeriv 2 f (x 1) + _ * 0)
+          = -(2 * iteratedDeriv 2 f (x 0) + iteratedDeriv 2 f (x 1)
+              - 6 / (x 1 - x 0) * ((f (x 1) - f (x 0)) / (x 1 - x 0) - deriv f (x 0)))
+        from by ring, abs_neg]
+      exact hres
+    · rcases eq_or_ne (j : ℕ) n with hjn | hjn
+      · -- the right closure row
+        have hdj : d j = dn := by
+          simp only [hd, momentRhs]
+          rw [ite_eq_right hj0, ite_eq_left hjn]
+        have hext : extendFin Fv ((j : ℕ) + 1) = 0 := extendFin_of_le _ (by omega)
+        have hmu : momentMu n (panelLength x) 1 (j : ℕ) = 1 := by
+          simp only [momentMu, hjn, reduceIte]
+        have hext2 : (if (j : ℕ) = 0 then (0 : ℝ) else extendFin Fv ((j : ℕ) - 1))
+            = iteratedDeriv 2 f (x (n - 1)) := by
+          rw [ite_eq_right hj0, hjn, extendFin_of_lt _ (show n - 1 < n + 1 by omega)]
+        have hFvj : Fv j = iteratedDeriv 2 f (x n) := by rw [hFv]; simp [hjn]
+        rw [hdj, hext, hmu, hext2, hFvj, hdn, mul_zero]
+        have hv : 0 < x n - x (n - 1) := sub_pos.mpr (hx.lt (by omega) le_rfl)
+        have hcv : x n - (x n - x (n - 1)) ∈ Icc a b := by
+          rw [show x n - (x n - x (n - 1)) = x (n - 1) from by ring]; exact hmem _ (by omega)
+        have hres := abs_right_residual_le (a := a) (b := b) (hm := hm) hf hK hv
+          (by simpa [panelLength] using hmesh n hn le_rfl) hcv (hmem n le_rfl)
+        rw [show x n - (x n - x (n - 1)) = x (n - 1) from by ring] at hres
+        rw [show 6 / (x n - x (n - 1))
+              * (deriv f (x n) - (f (x n) - f (x (n - 1))) / (x n - x (n - 1)))
+            - (2 * iteratedDeriv 2 f (x n) + 0 + 1 * iteratedDeriv 2 f (x (n - 1)))
+            = -(iteratedDeriv 2 f (x (n - 1)) + 2 * iteratedDeriv 2 f (x n)
+                - 6 / (x n - x (n - 1))
+                  * (deriv f (x n) - (f (x n) - f (x (n - 1))) / (x n - x (n - 1))))
+          from by ring, abs_neg]
+        exact hres
+      · -- an interior row
+        have hjn' : (j : ℕ) < n := lt_of_le_of_ne (Nat.lt_succ_iff.mp j.2) hjn
+        have hj1 : 1 ≤ (j : ℕ) := Nat.one_le_iff_ne_zero.mpr hj0
+        have hdj : d j = 6 / (panelLength x (j : ℕ) + panelLength x ((j : ℕ) + 1))
+            * ((f (x ((j : ℕ) + 1)) - f (x (j : ℕ))) / panelLength x ((j : ℕ) + 1)
+              - (f (x (j : ℕ)) - f (x ((j : ℕ) - 1))) / panelLength x (j : ℕ)) := by
+          simp only [hd, momentRhs, hfd]
+          rw [ite_eq_right hj0, ite_eq_right hjn]
+        have hlam : momentLam (panelLength x) 1 (j : ℕ)
+            = panelLength x ((j : ℕ) + 1)
+              / (panelLength x (j : ℕ) + panelLength x ((j : ℕ) + 1)) := by
+          simp only [momentLam, ite_eq_right hj0]
+        have hmu : momentMu n (panelLength x) 1 (j : ℕ)
+            = panelLength x (j : ℕ)
+              / (panelLength x (j : ℕ) + panelLength x ((j : ℕ) + 1)) := by
+          simp only [momentMu, ite_eq_right hjn]
+        have hext : extendFin Fv ((j : ℕ) + 1) = iteratedDeriv 2 f (x ((j : ℕ) + 1)) :=
+          extendFin_of_lt _ (by omega)
+        have hext2 : (if (j : ℕ) = 0 then (0 : ℝ) else extendFin Fv ((j : ℕ) - 1))
+            = iteratedDeriv 2 f (x ((j : ℕ) - 1)) := by
+          rw [ite_eq_right hj0, extendFin_of_lt _ (show (j : ℕ) - 1 < n + 1 by omega)]
+        have hFvj : Fv j = iteratedDeriv 2 f (x (j : ℕ)) := rfl
+        have hpl1 : panelLength x (j : ℕ) = x (j : ℕ) - x ((j : ℕ) - 1) := rfl
+        have hpl2 : panelLength x ((j : ℕ) + 1) = x ((j : ℕ) + 1) - x (j : ℕ) := by
+          simp [panelLength]
+        rw [hdj, hlam, hmu, hext, hext2, hFvj, hpl1, hpl2]
+        have hu : 0 < x ((j : ℕ) + 1) - x (j : ℕ) := sub_pos.mpr (hx.step _ hjn')
+        have hv : 0 < x (j : ℕ) - x ((j : ℕ) - 1) := sub_pos.mpr (hx.lt (by omega) (by omega))
+        have hcu : x (j : ℕ) + (x ((j : ℕ) + 1) - x (j : ℕ)) ∈ Icc a b := by
+          rw [show x (j : ℕ) + (x ((j : ℕ) + 1) - x (j : ℕ)) = x ((j : ℕ) + 1) from by ring]
+          exact hmem _ (by omega)
+        have hcv : x (j : ℕ) - (x (j : ℕ) - x ((j : ℕ) - 1)) ∈ Icc a b := by
+          rw [show x (j : ℕ) - (x (j : ℕ) - x ((j : ℕ) - 1)) = x ((j : ℕ) - 1) from by ring]
+          exact hmem _ (by omega)
+        have hres := abs_interior_residual_le (a := a) (b := b) (hm := hm) hf hK hu hv
+          (by simpa [panelLength] using hmesh ((j : ℕ) + 1) (by omega) (by omega))
+          (by simpa [panelLength] using hmesh (j : ℕ) hj1 (by omega))
+          hcv (hmem _ (by omega)) hcu
+        rw [show x (j : ℕ) + (x ((j : ℕ) + 1) - x (j : ℕ)) = x ((j : ℕ) + 1) from by ring,
+          show x (j : ℕ) - (x (j : ℕ) - x ((j : ℕ) - 1)) = x ((j : ℕ) - 1) from by ring] at hres
+        rw [show (6 / (x (j : ℕ) - x ((j : ℕ) - 1) + (x ((j : ℕ) + 1) - x (j : ℕ)))
+              * ((f (x ((j : ℕ) + 1)) - f (x (j : ℕ))) / (x ((j : ℕ) + 1) - x (j : ℕ))
+                - (f (x (j : ℕ)) - f (x ((j : ℕ) - 1))) / (x (j : ℕ) - x ((j : ℕ) - 1)))
+            - (2 * iteratedDeriv 2 f (x (j : ℕ))
+              + (x ((j : ℕ) + 1) - x (j : ℕ))
+                / (x (j : ℕ) - x ((j : ℕ) - 1) + (x ((j : ℕ) + 1) - x (j : ℕ)))
+                * iteratedDeriv 2 f (x ((j : ℕ) + 1))
+              + (x (j : ℕ) - x ((j : ℕ) - 1))
+                / (x (j : ℕ) - x ((j : ℕ) - 1) + (x ((j : ℕ) + 1) - x (j : ℕ)))
+                * iteratedDeriv 2 f (x ((j : ℕ) - 1))))
+            = -((x (j : ℕ) - x ((j : ℕ) - 1))
+                  / ((x ((j : ℕ) + 1) - x (j : ℕ)) + (x (j : ℕ) - x ((j : ℕ) - 1)))
+                  * iteratedDeriv 2 f (x ((j : ℕ) - 1))
+                + 2 * iteratedDeriv 2 f (x (j : ℕ))
+                + (x ((j : ℕ) + 1) - x (j : ℕ))
+                  / ((x ((j : ℕ) + 1) - x (j : ℕ)) + (x (j : ℕ) - x ((j : ℕ) - 1)))
+                  * iteratedDeriv 2 f (x ((j : ℕ) + 1))
+                - 6 / ((x ((j : ℕ) + 1) - x (j : ℕ)) + (x (j : ℕ) - x ((j : ℕ) - 1)))
+                  * ((f (x ((j : ℕ) + 1)) - f (x (j : ℕ))) / (x ((j : ℕ) + 1) - x (j : ℕ))
+                    - (f (x (j : ℕ)) - f (x ((j : ℕ) - 1))) / (x (j : ℕ) - x ((j : ℕ) - 1))))
+          from by ring, abs_neg]
+        exact hres
+  calc |Mv ⟨i, by omega⟩ - Fv ⟨i, by omega⟩| = ‖(Mv - Fv) ⟨i, by omega⟩‖ := by
+        rw [Pi.sub_apply, Real.norm_eq_abs]
+    _ ≤ ‖Mv - Fv‖ := norm_le_pi_norm _ _
+    _ ≤ 3 / 4 * hm ^ 2 * K := by
+        refine le_trans
+          (norm_le_norm_momentMatrix_mulVec hpos zero_le_one le_rfl zero_le_one le_rfl _) ?_
+        have hmul : A.mulVec (Mv - Fv) = d - A.mulVec Fv := by
+          rw [Matrix.mulVec_sub, hMv, hA,
+            momentMatrix_mulVec_momentVec hx zero_le_one le_rfl zero_le_one le_rfl fd d0 dn]
+        rw [hmul]
+        refine (pi_norm_le_iff_of_nonneg (by positivity)).mpr fun j => ?_
+        rw [Pi.sub_apply, Real.norm_eq_abs]
+        exact hrow j
+
+/-- **The clamped spline's second derivative approximates `f''` to second order on all of
+`[a, b]`**: `|s''(t) - f''(t)| ≤ (7/4) h² K`. On a panel `s''` is the linear interpolant of its two
+end moments, which are within `(3/4) h² K` of `f''` at the ends
+(`norm_deriv2_sub_clampedInterp_le`), and the linear interpolant of `f''` is within `h² K` of
+`f''`. -/
+theorem norm_deriv2_sub_clampedInterp_le_of_mem {t : ℝ} (ht : t ∈ Icc a b) :
+    |iteratedDeriv 2 (clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b)) t
+      - iteratedDeriv 2 f t| ≤ 7 / 4 * hm ^ 2 * K := by
+  obtain ⟨i, hi1, hin, hmem, -⟩ := hx.exists_mem_panel hn ht
+  have hpq : x (i - 1) < x i := hx.lt (by omega) hin
+  have hsub : Icc (x (i - 1)) (x i) ⊆ Icc a b :=
+    Icc_subset_Icc (hx.left_le (by omega)) (hx.le_right hin)
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK a ⟨le_rfl, hx.le⟩)
+  have hd : (0 : ℝ) < x i - x (i - 1) := sub_pos.mpr hpq
+  have hmesh' : x i - x (i - 1) ≤ hm := by simpa [panelLength] using hmesh i hi1 hin
+  have hlin := iteratedDeriv_two_clampedInterp_eq_of_mem hx hn (f := fun j => f (x j))
+    (deriv f a) (deriv f b) hi1 hin hmem
+  set s := clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) with hs
+  set p := x (i - 1) with hp
+  set q := x i with hq
+  have hlin' : iteratedDeriv 2 s t
+      = iteratedDeriv 2 s p * (q - t) / (q - p) + iteratedDeriv 2 s q * (t - p) / (q - p) := hlin
+  have hα : (0 : ℝ) ≤ (q - t) / (q - p) := div_nonneg (by linarith [hmem.2]) hd.le
+  have hβ : (0 : ℝ) ≤ (t - p) / (q - p) := div_nonneg (by linarith [hmem.1]) hd.le
+  have hαβ : (q - t) / (q - p) + (t - p) / (q - p) = 1 := by field_simp; ring
+  have h1 : |iteratedDeriv 2 s p - iteratedDeriv 2 f p| ≤ 3 / 4 * hm ^ 2 * K :=
+    norm_deriv2_sub_clampedInterp_le hx hn hf hK hmesh (by omega)
+  have h2 : |iteratedDeriv 2 s q - iteratedDeriv 2 f q| ≤ 3 / 4 * hm ^ 2 * K :=
+    norm_deriv2_sub_clampedInterp_le hx hn hf hK hmesh hin
+  have h3 : |iteratedDeriv 2 f p * (q - t) / (q - p) + iteratedDeriv 2 f q * (t - p) / (q - p)
+      - iteratedDeriv 2 f t| ≤ K * (q - p) ^ 2 :=
+    abs_linearInterp_sub_le (contDiff_iteratedDeriv_two hf)
+      (fun y hy => by rw [iteratedDeriv_iteratedDeriv_two]; exact hK y hy) hpq hsub hmem
+  calc |iteratedDeriv 2 s t - iteratedDeriv 2 f t|
+      = |((iteratedDeriv 2 s p - iteratedDeriv 2 f p) * ((q - t) / (q - p))
+            + (iteratedDeriv 2 s q - iteratedDeriv 2 f q) * ((t - p) / (q - p)))
+          + (iteratedDeriv 2 f p * (q - t) / (q - p) + iteratedDeriv 2 f q * (t - p) / (q - p)
+            - iteratedDeriv 2 f t)| := by
+        congr 1
+        rw [hlin']
+        ring
+    _ ≤ |(iteratedDeriv 2 s p - iteratedDeriv 2 f p) * ((q - t) / (q - p))
+            + (iteratedDeriv 2 s q - iteratedDeriv 2 f q) * ((t - p) / (q - p))|
+          + |iteratedDeriv 2 f p * (q - t) / (q - p) + iteratedDeriv 2 f q * (t - p) / (q - p)
+            - iteratedDeriv 2 f t| := abs_add_le _ _
+    _ ≤ (3 / 4 * hm ^ 2 * K * ((q - t) / (q - p)) + 3 / 4 * hm ^ 2 * K * ((t - p) / (q - p)))
+          + K * (q - p) ^ 2 := by
+        refine add_le_add ?_ h3
+        calc |(iteratedDeriv 2 s p - iteratedDeriv 2 f p) * ((q - t) / (q - p))
+              + (iteratedDeriv 2 s q - iteratedDeriv 2 f q) * ((t - p) / (q - p))|
+            ≤ |(iteratedDeriv 2 s p - iteratedDeriv 2 f p) * ((q - t) / (q - p))|
+              + |(iteratedDeriv 2 s q - iteratedDeriv 2 f q) * ((t - p) / (q - p))| :=
+              abs_add_le _ _
+          _ = |iteratedDeriv 2 s p - iteratedDeriv 2 f p| * ((q - t) / (q - p))
+              + |iteratedDeriv 2 s q - iteratedDeriv 2 f q| * ((t - p) / (q - p)) := by
+              rw [abs_mul, abs_mul, abs_of_nonneg hα, abs_of_nonneg hβ]
+          _ ≤ 3 / 4 * hm ^ 2 * K * ((q - t) / (q - p))
+              + 3 / 4 * hm ^ 2 * K * ((t - p) / (q - p)) := by gcongr
+    _ = 3 / 4 * hm ^ 2 * K + K * (q - p) ^ 2 := by rw [← mul_add, hαβ, mul_one]
+    _ ≤ 3 / 4 * hm ^ 2 * K + K * hm ^ 2 := by
+        have : (q - p) ^ 2 ≤ hm ^ 2 := by nlinarith
+        nlinarith
+    _ = 7 / 4 * hm ^ 2 * K := by ring
+
+/-- **The clamped spline's slope approximates `f'` to third order**: `|s'(t) - f'(t)| ≤ (7/4) h³ K`
+on `[a, b]`. The error `f - s` vanishes at both ends of every panel, so by Rolle's theorem its
+derivative vanishes somewhere inside; the mean value theorem against the second-derivative bound
+`norm_deriv2_sub_clampedInterp_le_of_mem` then costs one factor `h`. -/
+theorem norm_deriv_sub_clampedInterp_le {t : ℝ} (ht : t ∈ Icc a b) :
+    |deriv (clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b)) t - deriv f t|
+      ≤ 7 / 4 * hm ^ 3 * K := by
+  obtain ⟨i, hi1, hin, hmem, -⟩ := hx.exists_mem_panel hn ht
+  have hpq : x (i - 1) < x i := hx.lt (by omega) hin
+  have hsub : Icc (x (i - 1)) (x i) ⊆ Icc a b :=
+    Icc_subset_Icc (hx.left_le (by omega)) (hx.le_right hin)
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK a ⟨le_rfl, hx.le⟩)
+  have hmesh' : x i - x (i - 1) ≤ hm := by simpa [panelLength] using hmesh i hi1 hin
+  have hm0 : (0 : ℝ) ≤ hm := le_trans (by linarith) hmesh'
+  set s := clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) with hs
+  have hs2 : ContDiff ℝ 2 s := contDiff_clampedInterp hx hn _ _
+  have hf2 : ContDiff ℝ 2 f := hf.of_le (by norm_num)
+  have hde : ∀ y, HasDerivAt (fun z => s z - f z) (deriv s y - deriv f y) y := fun y =>
+    ((hs2.differentiable (by norm_num)) y).hasDerivAt.sub
+      ((hf.differentiable (by norm_num)) y).hasDerivAt
+  have hdde : ∀ y, HasDerivAt (fun z => deriv s z - deriv f z)
+      (iteratedDeriv 2 s y - iteratedDeriv 2 f y) y := fun y =>
+    (hasDerivAt_deriv_of_contDiff_two hs2 y).sub (hasDerivAt_deriv_of_contDiff_two hf2 y)
+  have hderiv_e : deriv (fun z => s z - f z) = fun y => deriv s y - deriv f y :=
+    funext fun y => (hde y).deriv
+  have hnode : ∀ j ≤ n, s (x j) - f (x j) = 0 := fun j hj => by
+    rw [hs, sub_eq_zero]; exact cubicInterp_apply_node hx hn hj
+  obtain ⟨ξ, hξ, hξ0⟩ := exists_deriv_eq_zero (f := fun z => s z - f z) hpq
+    (fun y _ => ((hde y).continuousAt).continuousWithinAt)
+    (by rw [hnode (i - 1) (by omega), hnode i hin])
+  rw [hderiv_e] at hξ0
+  have hξm : ξ ∈ Icc (x (i - 1)) (x i) := Ioo_subset_Icc_self hξ
+  have hbound : ∀ y ∈ Icc (x (i - 1)) (x i),
+      ‖iteratedDeriv 2 s y - iteratedDeriv 2 f y‖ ≤ 7 / 4 * hm ^ 2 * K := fun y hy => by
+    rw [Real.norm_eq_abs]
+    exact norm_deriv2_sub_clampedInterp_le_of_mem hx hn hf hK hmesh (hsub hy)
+  have hmvt := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le
+    (f := fun z => deriv s z - deriv f z)
+    (f' := fun z => iteratedDeriv 2 s z - iteratedDeriv 2 f z)
+    (fun y _ => (hdde y).hasDerivWithinAt) hbound (convex_Icc _ _) hξm hmem
+  simp only [hξ0, sub_zero, Real.norm_eq_abs] at hmvt
+  calc |deriv s t - deriv f t| ≤ 7 / 4 * hm ^ 2 * K * |t - ξ| := hmvt
+    _ ≤ 7 / 4 * hm ^ 2 * K * hm := by
+        have habs : |t - ξ| ≤ hm := by
+          rw [abs_sub_le_iff]
+          constructor <;> [linarith [hmem.2, hξm.1]; linarith [hmem.1, hξm.2]]
+        gcongr
+    _ = 7 / 4 * hm ^ 3 * K := by ring
+
+/-- **An `O(h⁴)` error bound for the clamped cubic spline with explicit constants**, behind
+[quarteroni2000numerical] Property 8.3: for `f` of class `C⁴` with `|f⁗| ≤ K` on `[a, b]` and panel
+lengths at most `h`, the clamped interpolatory spline `s` of the nodal values of `f` satisfies
+`|s(t) - f(t)| ≤ (7/8) h⁴ K` on `[a, b]`.
+
+The error vanishes at both ends of every panel, so the mean value theorem against
+`norm_deriv_sub_clampedInterp_le` applied from either end gives `|s - f| ≤ (7/4) h³ K · h/2`.
+
+The constants are those of Stoer and Bulirsch, *Introduction to Numerical Analysis*,
+Theorem 2.4.3.3, not the sharp constants `5/384, 1/24, 3/8` of Hall and Meyer, *Optimal error
+bounds for cubic spline interpolation* (J. Approx. Theory 16, 1976). -/
+theorem norm_sub_clampedInterp_le {t : ℝ} (ht : t ∈ Icc a b) :
+    |clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) t - f t|
+      ≤ 7 / 8 * hm ^ 4 * K := by
+  obtain ⟨i, hi1, hin, hmem, -⟩ := hx.exists_mem_panel hn ht
+  have hpq : x (i - 1) < x i := hx.lt (by omega) hin
+  have hsub : Icc (x (i - 1)) (x i) ⊆ Icc a b :=
+    Icc_subset_Icc (hx.left_le (by omega)) (hx.le_right hin)
+  have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK a ⟨le_rfl, hx.le⟩)
+  have hmesh' : x i - x (i - 1) ≤ hm := by simpa [panelLength] using hmesh i hi1 hin
+  have hm0 : (0 : ℝ) ≤ hm := le_trans (by linarith) hmesh'
+  set s := clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) with hs
+  have hs2 : ContDiff ℝ 2 s := contDiff_clampedInterp hx hn _ _
+  have hde : ∀ y, HasDerivAt (fun z => s z - f z) (deriv s y - deriv f y) y := fun y =>
+    ((hs2.differentiable (by norm_num)) y).hasDerivAt.sub
+      ((hf.differentiable (by norm_num)) y).hasDerivAt
+  have hnode : ∀ j ≤ n, s (x j) - f (x j) = 0 := fun j hj => by
+    rw [hs, sub_eq_zero]; exact cubicInterp_apply_node hx hn hj
+  have hbound : ∀ y ∈ Icc (x (i - 1)) (x i), ‖deriv s y - deriv f y‖ ≤ 7 / 4 * hm ^ 3 * K :=
+    fun y hy => by
+      rw [Real.norm_eq_abs]
+      exact norm_deriv_sub_clampedInterp_le hx hn hf hK hmesh (hsub hy)
+  have hmvt : ∀ y ∈ Icc (x (i - 1)) (x i), ∀ z ∈ Icc (x (i - 1)) (x i),
+      ‖(s z - f z) - (s y - f y)‖ ≤ 7 / 4 * hm ^ 3 * K * ‖z - y‖ := fun y hy z hz =>
+    Convex.norm_image_sub_le_of_norm_hasDerivWithin_le (f := fun w => s w - f w)
+      (f' := fun w => deriv s w - deriv f w) (fun w _ => (hde w).hasDerivWithinAt) hbound
+      (convex_Icc _ _) hy hz
+  have h1 := hmvt _ ⟨le_rfl, hpq.le⟩ t hmem
+  have h2 := hmvt _ ⟨hpq.le, le_rfl⟩ t hmem
+  rw [hnode (i - 1) (by omega), sub_zero, Real.norm_eq_abs, Real.norm_eq_abs,
+    abs_of_nonneg (by linarith [hmem.1] : (0:ℝ) ≤ t - x (i - 1))] at h1
+  rw [hnode i hin, sub_zero, Real.norm_eq_abs, Real.norm_eq_abs, abs_sub_comm t (x i),
+    abs_of_nonneg (by linarith [hmem.2] : (0:ℝ) ≤ x i - t)] at h2
+  have hC : (0 : ℝ) ≤ 7 / 4 * hm ^ 3 * K := by positivity
+  nlinarith [h1, h2, mul_le_mul_of_nonneg_left hmesh' hC]
+
+end Bounds
+
+end ClampedError
 
 end Spline

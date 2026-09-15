@@ -121,46 +121,22 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.2 (the 
 
 [[node]]
 id = "norm_deriv2_sub_clampedInterp_le"
-kind = "theorem"
-desc = '''**The moments approximate `f''` to second order**: for `hx : IsPartition a b n x`, `f` of
-class `C⁴` on `Icc a b` with `|f⁗| ≤ K`, mesh `h = max h_i`, and `s = clampedInterp x (f ∘ x) (f'(a)) (f'(b))`:
-`max_i |M_i - f''(x_i)| ≤ (3/4) h² K`. Proof: the vector `F_i = f''(x_i)` satisfies the moment system
-up to a residual `r_i = μ_i F_{i-1} + 2F_i + λ_i F_{i+1} - d_i` which Taylor expansion of `f` and
-`f''` about `x_i` bounds by `(3/4) h² K` (Stoer–Bulirsch, *Introduction to Numerical Analysis*,
-Theorem 2.4.3.3 has this computation); then `M - F = A⁻¹ r` and
-`linfty_opNorm_inv_momentMatrix_le`. Mathlib's `taylor_mean_remainder_lagrange` gives the
-expansions. ★★★
+source = "Stoer–Bulirsch, Introduction to Numerical Analysis, Theorem 2.4.3.3"
 
-Blocked: not attempted in this pass. Everything the proof needs is in place (`cubicInterp`,
-`momentVec`, `momentMatrix_mulVec_momentVec`, `linfty_opNorm_inv_momentMatrix_le`,
-`iteratedDeriv_two_cubicInterp_node`); what remains is the Taylor-expansion bound on the residual
-`r_i = μ_i f''(x_{i-1}) + 2 f''(x_i) + λ_i f''(x_{i+1}) - d_i`, which needs
-`taylor_mean_remainder_lagrange` for `f` and `f''` about `x_i` on both sides and the bookkeeping of
-the `h_i`, `h_{i+1}` factors, plus the two clamped end rows separately. Estimated ★★★, ~300 lines.'''
-deps = ["Spline.cubicInterp", "Spline.linfty_opNorm_inv_momentMatrix_le", "Spline.moment_eq_of_contDiffOn"]
+[[node]]
+id = "iteratedDeriv_two_cubicInterp_eq_of_mem"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.46)"
+
+[[node]]
+id = "norm_deriv2_sub_clampedInterp_le_of_mem"
+source = "Stoer–Bulirsch, Introduction to Numerical Analysis, Theorem 2.4.3.3"
+
+[[node]]
+id = "norm_deriv_sub_clampedInterp_le"
 source = "Stoer–Bulirsch, Introduction to Numerical Analysis, Theorem 2.4.3.3"
 
 [[node]]
 id = "norm_sub_clampedInterp_le"
-kind = "theorem"
-desc = '''**An `O(h⁴)` error bound for the clamped cubic spline with explicit (non-sharp) constants**
-(behind QSS Property 8.3): under the hypotheses of `norm_deriv2_sub_clampedInterp_le`, for
-`t ∈ Icc a b`, `|f''(t) - s''(t)| ≤ (7/4) h² K`, `|f'(t) - s'(t)| ≤ (7/4) h³ K` and
-`|f(t) - s(t)| ≤ (7/8) h⁴ K` (Stoer–Bulirsch's constants; any explicit constants will do). From
-the moment bound: on a panel `s''` is the linear interpolant of `M_{i-1}, M_i`, which is within
-`(3/4) h² K` of the linear interpolant of `f''(x_{i-1}), f''(x_i)`, itself within `h² K/8` of
-`f''` (`norm_sub_piecewiseLinearInterpCLM_le`); then `f' - s'` vanishes somewhere in each panel by
-Rolle (`f - s` vanishes at both ends), so integrating once over at most `h` gives the `h³` bound,
-and `f - s` vanishes at the panel's left end so integrating again gives `h⁴`. The sharp constants
-`5/384, 1/24, 3/8` of Property 8.3 are the Hall–Meyer theorem (J. Approx. Theory 16, 1976) and
-are not attempted; see the surface node `property_8_3`. ★★★
-
-Blocked: depends on `norm_deriv2_sub_clampedInterp_le`, which is not proved; the remaining steps
-(the linear interpolant of `M` versus that of `f''` on a panel, Rolle for `f' - s'`, and two
-integrations) are routine once it is. `integral_sq_sub_deriv2_clampedInterp_le` gives the `L²`
-form of the second-derivative estimate meanwhile, and `SobolevInterpolation` gives the piecewise
-polynomial `L²` estimates with explicit constants.'''
-deps = ["Spline.norm_deriv2_sub_clampedInterp_le", "norm_sub_piecewiseLinearInterpCLM_le"]
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3 (with non-sharp constants); Stoer–Bulirsch, Theorem 2.4.3.3"
 
 [[node]]

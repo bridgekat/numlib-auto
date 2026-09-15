@@ -30,20 +30,20 @@ smooth, and integrals over `[a, ∞)`.
   `∫_a^∞ f = lim_{t→∞} ∫_a^t f` (9.53).
 * `Quadrature.integral_Ioi_eq_integral_Ioo_inv` — the inversion `x = 1/t` (9.55),
   `∫_c^∞ f = ∫_0^{1/c} f(1/t)/t² dt`.
+* `Quadrature.contDiffOn_taylorRemainder_div_rpow` — the regularity claim after (9.52): the
+  subtracted integrand `(φ - Φ_p)/(x - a)^μ`, continued by `0` at `a`, is of class `C^p` on
+  `[a, b]` for `μ < 1` and `φ` of class `C^{p+1}` on an open set containing `[a, b]`. This is the
+  hypothesis under which the composite Newton–Cotes error formulae apply to the regularized
+  integrand of Method 2.
+* `Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero` — and all its derivatives up
+  to order `p` within `[a, b]` vanish at `a`.
+* `Quadrature.hasDerivAt_taylorWithinEval_univ` — the derivative of the Taylor polynomial of `φ`
+  at `a` is the Taylor polynomial of `φ'` at `a`, one degree lower.
 
 Nothing here is a quadrature rule: these are the identities and regularity facts that let the
 composite Newton–Cotes error formulae of `Numlib/Approximation/NewtonCotes` be applied to a
 regularized integrand. The operator-level theory of product integration for weakly singular
 kernels is `Numlib/IntegralEquations/ProductIntegration` and is not repeated.
-
-## Not yet proved
-
-The regularity of the subtracted integrand `(φ - Φ_p)/(x - a)^μ` up to the endpoint — the claim
-after (9.52) that it is `C^p` on `[a, b]` with vanishing derivatives at `a` when `φ ∈ C^{p+1}` — is
-the module's one delicate statement (`Quadrature.contDiffOn_taylorRemainder_div_rpow`, open in
-the plan): away from `a` it is the quotient rule, at `a` the Leibniz formula with Taylor's theorem
-for each derivative of the remainder and one-sided differentiability from the difference
-quotients.
 
 ## Conventions
 
@@ -256,6 +256,307 @@ theorem abs_integral_taylorRemainder_div_rpow_le {ε : ℝ} (hε : 0 < ε) (hμ1
       field_simp
     rw [e]
     gcongr
+
+/-! ### Regularity of the subtracted integrand
+
+The function `(φ - Φ_p)/(x - a)^μ`, continued by `0` at `a`, is of class `C^p` on `[a, b]` when
+`φ` is `C^{p+1}` on an open set containing it and `μ < 1` ([quarteroni2000numerical] §9.8.2, the
+claim after (9.52)); this is the hypothesis under which the composite Newton–Cotes error formulae
+of `Numlib/Approximation/NewtonCotes` apply to the regularized integrand of Method 2.
+
+The proof is an induction on the order of smoothness in which the *pair* of the Taylor degree `p`
+and of the excess `i` of the exponent `ν = μ + i` varies. Away from `a` the quotient rule gives
+the derivative of `(φ - Φ_p)/(x - a)^{μ+i}` as
+`(φ' - Φ_p')/(x - a)^{μ+i} - (μ + i) (φ - Φ_p)/(x - a)^{μ+i+1}`, whose two summands are again of
+the same shape, with the pairs `(p - 1, i)` and `(p, i + 1)` and one order less smoothness. At `a`
+the derivative comes from Mathlib's `hasDerivWithinAt_Ici_of_tendsto_deriv`, both summands tending
+to `0` because `φ - Φ_p = O((x - a)^{p+1})` while the exponent stays below `p + 1`. The same
+induction carries the vanishing of every derivative at `a`, since the two summands vanish there.
+
+The hypothesis `0 ≤ μ` of the book is not needed: only `μ < 1` enters.
+-/
+
+/-- The subtracted integrand, continued by `0` at `a`. -/
+private noncomputable def remDiv (φ : ℝ → ℝ) (p : ℕ) (a ν : ℝ) : ℝ → ℝ :=
+  fun x => if x = a then 0 else (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ ν
+
+private theorem remDiv_apply_of_ne {p : ℕ} {ν x : ℝ} (hx : x ≠ a) :
+    remDiv φ p a ν x = (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ ν := ite_eq_right hx
+
+@[simp]
+private theorem remDiv_self {p : ℕ} {ν : ℝ} : remDiv φ p a ν a = 0 := ite_eq_left rfl
+
+/-- A bound on `|φ^{(p+1)}|` on the compact interval. -/
+private theorem exists_bound_iteratedDeriv {p : ℕ} {U : Set ℝ} (hU : IsOpen U)
+    (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
+    ∃ M, 0 ≤ M ∧ ∀ x ∈ Icc a b, |iteratedDeriv (p + 1) φ x| ≤ M := by
+  have hcont : ContinuousOn (iteratedDeriv (p + 1) φ) (Icc a b) := by
+    have h : ContinuousOn (iteratedDerivWithin (p + 1) φ U) U :=
+      hφ.continuousOn_iteratedDerivWithin (m := p + 1) le_rfl hU.uniqueDiffOn
+    exact (h.mono hsub).congr fun x hx => (iteratedDerivWithin_of_isOpen hU (hsub hx)).symm
+  obtain ⟨M, hM⟩ := (isCompact_Icc (a := a) (b := b)).exists_bound_of_continuousOn
+    (f := iteratedDeriv (p + 1) φ) hcont
+  refine ⟨|M| + 1, by positivity, fun x hx => ?_⟩
+  have := hM x hx
+  rw [Real.norm_eq_abs] at this
+  calc |iteratedDeriv (p + 1) φ x| ≤ M := this
+    _ ≤ |M| + 1 := by cases abs_cases M <;> linarith
+
+/-- The subtracted integrand is `O((x - a)^{p + 1 - ν})` on `[a, b]`. -/
+private theorem abs_remDiv_le (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1) {U : Set ℝ}
+    (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
+    ∃ C, 0 ≤ C ∧ ∀ x ∈ Icc a b, |remDiv φ p a ν x| ≤ C * (x - a) ^ ((p : ℝ) + 1 - ν) := by
+  obtain ⟨M, hM0, hM⟩ := exists_bound_iteratedDeriv hU hsub hφ
+  refine ⟨M / (p + 1).factorial, by positivity, fun x hx => ?_⟩
+  rcases eq_or_ne x a with rfl | hxa
+  · rw [remDiv_self, sub_self, Real.zero_rpow (by linarith), mul_zero, abs_zero]
+  · have hxa' : 0 < x - a := lt_of_le_of_ne (by linarith [hx.1]) (Ne.symm (sub_ne_zero.mpr hxa))
+    obtain ⟨ξ, hξ, hrem⟩ := exists_sub_taylorWithinEval_univ_eq (φ := φ) (p := p) (Ne.symm hxa) hU
+      ((uIcc_subset_Icc ⟨le_rfl, hab.le⟩ hx).trans hsub) hφ
+    have hξm : ξ ∈ Icc a b := by
+      rw [uIoo_of_lt (lt_of_le_of_ne hx.1 (Ne.symm hxa))] at hξ
+      exact ⟨hξ.1.le, hξ.2.le.trans hx.2⟩
+    rw [remDiv_apply_of_ne hxa, hrem, abs_div, abs_div, abs_mul, abs_pow, abs_of_pos hxa',
+      abs_of_pos (Real.rpow_pos_of_pos hxa' ν), Nat.abs_cast]
+    rw [div_div, div_le_iff₀ (by positivity)]
+    have hpow : (x - a) ^ (p + 1) = (x - a) ^ ((p : ℝ) + 1 - ν) * (x - a) ^ ν := by
+      rw [← Real.rpow_natCast (x - a) (p + 1), ← Real.rpow_add hxa']
+      push_cast
+      ring_nf
+    calc |iteratedDeriv (p + 1) φ ξ| * (x - a) ^ (p + 1)
+        ≤ M * (x - a) ^ (p + 1) := by gcongr; exact hM ξ hξm
+      _ = M / (p + 1).factorial * (x - a) ^ ((p : ℝ) + 1 - ν)
+          * ((p + 1).factorial * (x - a) ^ ν) := by
+          rw [hpow]; field_simp
+
+/-- The Taylor polynomial at `a` is continuous. -/
+private theorem continuous_taylorWithinEval_univ (φ : ℝ → ℝ) (p : ℕ) (a : ℝ) :
+    Continuous (fun x => taylorWithinEval φ p univ a x) := by
+  simp only [taylorWithinEval_univ_eq_sum]
+  fun_prop
+
+/-- **The derivative of the Taylor polynomial** is the Taylor polynomial of the derivative. -/
+theorem hasDerivAt_taylorWithinEval_univ (φ : ℝ → ℝ) (q : ℕ) (a x : ℝ) :
+    HasDerivAt (fun y => taylorWithinEval φ (q + 1) univ a y)
+      (taylorWithinEval (deriv φ) q univ a x) x := by
+  have hL : (fun y => taylorWithinEval φ (q + 1) univ a y)
+      = fun y => (∑ k ∈ Finset.range (q + 1),
+            iteratedDeriv (k + 1) φ a * (y - a) ^ (k + 1) / ((k + 1).factorial : ℝ))
+          + φ a := by
+    funext y
+    rw [taylorWithinEval_univ_eq_sum, show q + 1 + 1 = (q + 1) + 1 from rfl,
+      Finset.sum_range_succ']
+    norm_num
+  rw [hL, taylorWithinEval_univ_eq_sum]
+  have hterm : ∀ k ∈ Finset.range (q + 1),
+      HasDerivAt (fun y : ℝ => iteratedDeriv (k + 1) φ a * (y - a) ^ (k + 1)
+          / ((k + 1).factorial : ℝ))
+        (iteratedDeriv k (deriv φ) a * (x - a) ^ k / (k.factorial : ℝ)) x := by
+    intro k _
+    have hp : HasDerivAt (fun y : ℝ => (y - a) ^ (k + 1)) (((k : ℝ) + 1) * (x - a) ^ k) x := by
+      have h0 := (hasDerivAt_pow (k + 1) (x - a)).comp x ((hasDerivAt_id x).sub_const a)
+      simpa [Function.comp_def] using h0
+    have := (hp.const_mul (iteratedDeriv (k + 1) φ a)).div_const (((k + 1).factorial : ℝ))
+    refine this.congr_deriv ?_
+    rw [Nat.factorial_succ, iteratedDeriv_succ']
+    have hk : ((k.factorial : ℝ)) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero k)
+    push_cast
+    field_simp
+  have hsum := HasDerivAt.fun_sum hterm
+  exact hsum.add_const (φ a)
+
+/-- **The derivative of the subtracted integrand** away from `a`. -/
+private theorem hasDerivAt_remDiv {x ν : ℝ} (hx : a < x) {q : ℕ} {U : Set ℝ} (hU : IsOpen U)
+    (hxU : x ∈ U) (hφ : DifferentiableOn ℝ φ U) :
+    HasDerivAt (remDiv φ (q + 1) a ν)
+      (remDiv (deriv φ) q a ν x - ν * remDiv φ (q + 1) a (ν + 1) x) x := by
+  have hxa : 0 < x - a := by linarith
+  have hxa' : x ≠ a := ne_of_gt hx
+  have hφx : HasDerivAt φ (deriv φ x) x :=
+    ((hφ x hxU).differentiableAt (hU.mem_nhds hxU)).hasDerivAt
+  have hR : HasDerivAt (fun y => φ y - taylorWithinEval φ (q + 1) univ a y)
+      (deriv φ x - taylorWithinEval (deriv φ) q univ a x) x :=
+    hφx.sub (hasDerivAt_taylorWithinEval_univ φ q a x)
+  have hW : HasDerivAt (fun y : ℝ => (y - a) ^ (-ν)) (-ν * (x - a) ^ (-ν - 1)) x := by
+    have := (((hasDerivAt_id x).sub_const a).rpow_const
+      (p := -ν) (Or.inl (by simpa using hxa.ne')))
+    simpa using this
+  have hprod := hR.mul hW
+  have heq : remDiv φ (q + 1) a ν
+      =ᶠ[nhds x] fun y => (φ y - taylorWithinEval φ (q + 1) univ a y) * (y - a) ^ (-ν) := by
+    filter_upwards [Ioi_mem_nhds hx] with y hy
+    have hy' : 0 < y - a := sub_pos.mpr (mem_Ioi.mp hy)
+    rw [remDiv_apply_of_ne (ne_of_gt hy), Real.rpow_neg hy'.le, div_eq_mul_inv]
+  refine (hprod.congr_of_eventuallyEq heq).congr_deriv ?_
+  rw [remDiv_apply_of_ne (φ := deriv φ) hxa', remDiv_apply_of_ne hxa',
+    show -ν - 1 = -(ν + 1) by ring, Real.rpow_neg hxa.le ν, Real.rpow_neg hxa.le (ν + 1)]
+  ring
+
+/-- The subtracted integrand tends to `0` at the singular endpoint. -/
+private theorem tendsto_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1) {U : Set ℝ}
+    (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
+    Tendsto (remDiv φ p a ν) (𝓝[Icc a b] a) (𝓝 0) := by
+  obtain ⟨C, hC0, hC⟩ := abs_remDiv_le hab hν hU hsub hφ
+  have hlim : Tendsto (fun x : ℝ => C * (x - a) ^ ((p : ℝ) + 1 - ν)) (𝓝[Icc a b] a) (𝓝 0) := by
+    have h1 : Tendsto (fun x : ℝ => x - a) (𝓝[Icc a b] a) (𝓝 0) := by
+      have h0 : Tendsto (fun x : ℝ => x - a) (𝓝 a) (𝓝 0) := by
+        simpa using (continuous_sub_right a).tendsto a
+      exact h0.mono_left nhdsWithin_le_nhds
+    have h2 : Tendsto (fun z : ℝ => z ^ ((p : ℝ) + 1 - ν)) (𝓝 0) (𝓝 0) := by
+      have hc := Real.continuousAt_rpow_const (0 : ℝ) ((p : ℝ) + 1 - ν) (Or.inr (by linarith))
+      rw [ContinuousAt, Real.zero_rpow (by linarith)] at hc
+      exact hc
+    simpa using (h2.comp h1).const_mul C
+  refine squeeze_zero_norm' ?_ hlim
+  filter_upwards [self_mem_nhdsWithin] with x hx
+  simpa using hC x hx
+
+/-- **The subtracted integrand is continuous up to the singular endpoint.** -/
+private theorem continuousOn_remDiv (hab : a < b) {p : ℕ} {ν : ℝ} (hν : ν < p + 1)
+    {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
+    ContinuousOn (remDiv φ p a ν) (Icc a b) := by
+  intro x hx
+  rcases eq_or_lt_of_le hx.1 with rfl | hxa
+  · rw [ContinuousWithinAt, remDiv_self]
+    exact tendsto_remDiv hab hν hU hsub hφ
+  · have hxa' : x ≠ a := ne_of_gt hxa
+    have h1 : ContinuousAt φ x := hφ.continuousOn.continuousAt (hU.mem_nhds (hsub hx))
+    have h2 : ContinuousAt (fun y => taylorWithinEval φ p univ a y) x :=
+      (continuous_taylorWithinEval_univ φ p a).continuousAt
+    have h3 : ContinuousAt (fun y : ℝ => (y - a) ^ ν) x :=
+      ContinuousAt.rpow_const (by fun_prop) (Or.inl (sub_ne_zero.mpr hxa'))
+    have h4 : ((x - a) ^ ν) ≠ 0 := ne_of_gt (Real.rpow_pos_of_pos (sub_pos.mpr hxa) ν)
+    have hcont : ContinuousAt
+        (fun y => (φ y - taylorWithinEval φ p univ a y) / (y - a) ^ ν) x := (h1.sub h2).div h3 h4
+    refine hcont.continuousWithinAt.congr_of_eventuallyEq ?_ (remDiv_apply_of_ne hxa')
+    filter_upwards [nhdsWithin_le_nhds (Ioi_mem_nhds hxa)] with y hy
+    exact remDiv_apply_of_ne (ne_of_gt (mem_Ioi.mp hy))
+
+/-- The induction behind `contDiffOn_taylorRemainder_div_rpow`. -/
+private theorem contDiffOn_remDiv (hab : a < b) (hμ1 : μ < 1) {U : Set ℝ} (hU : IsOpen U)
+    (hsub : Icc a b ⊆ U) :
+    ∀ (m i : ℕ) (ψ : ℝ → ℝ), ContDiffOn ℝ ((i + m + 1 : ℕ)) ψ U →
+      ContDiffOn ℝ m (remDiv ψ (i + m) a (μ + i)) (Icc a b) ∧
+        ∀ j ≤ m, iteratedDerivWithin j (remDiv ψ (i + m) a (μ + i)) (Icc a b) a = 0 := by
+  intro m
+  induction m with
+  | zero =>
+    intro i ψ hψ
+    refine ⟨?_, fun j hj => ?_⟩
+    · rw [Nat.cast_zero, contDiffOn_zero]
+      exact continuousOn_remDiv hab (by push_cast; linarith) hU hsub (by simpa using hψ)
+    · rw [Nat.le_zero.1 hj, iteratedDerivWithin_zero, remDiv_self]
+  | succ m ih =>
+    intro i ψ hψ
+    have hψ' : ContDiffOn ℝ ((i + m + 2 : ℕ)) ψ U := by
+      refine hψ.of_le ?_
+      norm_cast
+    have hd : ContDiffOn ℝ ((i + m + 1 : ℕ)) (deriv ψ) U := by
+      refine hψ'.deriv_of_isOpen hU ?_
+      norm_cast
+    obtain ⟨hF1, hF1z⟩ := ih i (deriv ψ) hd
+    obtain ⟨hF2, hF2z⟩ : ContDiffOn ℝ m (remDiv ψ (i + 1 + m) a (μ + ((i + 1 : ℕ) : ℝ)))
+          (Icc a b) ∧
+        ∀ j ≤ m, iteratedDerivWithin j (remDiv ψ (i + 1 + m) a (μ + ((i + 1 : ℕ) : ℝ)))
+          (Icc a b) a = 0 := by
+      refine ih (i + 1) ψ (hψ.of_le ?_)
+      norm_cast
+      omega
+    have hidx : i + 1 + m = i + (m + 1) := by omega
+    have hnu : μ + ((i + 1 : ℕ) : ℝ) = μ + i + 1 := by push_cast; ring
+    rw [hidx, hnu] at hF2 hF2z
+    set F1 := remDiv (deriv ψ) (i + m) a (μ + i) with hF1def
+    set F2 := remDiv ψ (i + (m + 1)) a (μ + i + 1) with hF2def
+    have hdiff : DifferentiableOn ℝ ψ U :=
+      hψ.differentiableOn (by norm_cast)
+    have hpt : ∀ x, a < x → x ∈ U →
+        HasDerivAt (remDiv ψ (i + (m + 1)) a (μ + i)) (F1 x - (μ + i) * F2 x) x := by
+      intro x hx hxU
+      have h := hasDerivAt_remDiv (φ := ψ) (q := i + m) (ν := μ + i) hx hU hxU hdiff
+      rw [show i + m + 1 = i + (m + 1) from by omega] at h
+      exact h
+    have hFa : F1 a - (μ + i) * F2 a = 0 := by
+      rw [hF1def, hF2def, remDiv_self, remDiv_self]; ring
+    have hcontOn : ContinuousOn (remDiv ψ (i + (m + 1)) a (μ + i)) (Icc a b) :=
+      continuousOn_remDiv hab (by push_cast; linarith) hU hsub (by simpa using hψ)
+    have hderiv : ∀ x ∈ Icc a b, HasDerivWithinAt (remDiv ψ (i + (m + 1)) a (μ + i))
+        (F1 x - (μ + i) * F2 x) (Icc a b) x := by
+      intro x hx
+      rcases eq_or_lt_of_le hx.1 with rfl | hxa
+      · rw [hFa]
+        have hfilt : 𝓝[Ioo a b] a = 𝓝[>] a := by
+          rw [show Ioo a b = Iio b ∩ Ioi a from Set.ext fun y => and_comm,
+            nhdsWithin_inter_of_mem (mem_nhdsWithin_of_mem_nhds (Iio_mem_nhds hab))]
+        have hcont0 : ContinuousWithinAt (remDiv ψ (i + (m + 1)) a (μ + i)) (Ioo a b) a :=
+          (hcontOn a ⟨le_rfl, hab.le⟩).mono Ioo_subset_Icc_self
+        have hdiffOn : DifferentiableOn ℝ (remDiv ψ (i + (m + 1)) a (μ + i)) (Ioo a b) :=
+          fun y hy => ((hpt y hy.1 (hsub (Ioo_subset_Icc_self hy))).differentiableAt
+            ).differentiableWithinAt
+        have hlim : Tendsto (deriv (remDiv ψ (i + (m + 1)) a (μ + i))) (𝓝[>] a) (𝓝 0) := by
+          rw [← hfilt]
+          refine Tendsto.congr' (f₁ := fun y => F1 y - (μ + (i : ℝ)) * F2 y) ?_ ?_
+          · filter_upwards [self_mem_nhdsWithin] with y hy
+            exact ((hpt y hy.1 (hsub (Ioo_subset_Icc_self hy))).deriv).symm
+          · have t1 : Tendsto F1 (𝓝[Ioo a b] a) (𝓝 0) :=
+              (tendsto_remDiv hab (by push_cast; linarith) hU hsub hd).mono_left
+                (nhdsWithin_mono a Ioo_subset_Icc_self)
+            have t2 : Tendsto F2 (𝓝[Ioo a b] a) (𝓝 0) :=
+              (tendsto_remDiv (φ := ψ) (p := i + (m + 1)) (ν := μ + i + 1) hab
+                (by push_cast; linarith) hU hsub (by simpa using hψ)).mono_left
+                (nhdsWithin_mono a Ioo_subset_Icc_self)
+            simpa using t1.sub (t2.const_mul (μ + i))
+        exact (hasDerivWithinAt_Ici_of_tendsto_deriv hdiffOn hcont0
+          (Ioo_mem_nhdsGT hab) hlim).mono Icc_subset_Ici_self
+      · exact (hpt x hxa (hsub hx)).hasDerivWithinAt
+    have hderivWithin : EqOn (derivWithin (remDiv ψ (i + (m + 1)) a (μ + i)) (Icc a b))
+        (fun x => F1 x - (μ + i) * F2 x) (Icc a b) :=
+      fun x hx => (hderiv x hx).derivWithin ((uniqueDiffOn_Icc hab) x hx)
+    have hderivWithin' : EqOn (derivWithin (remDiv ψ (i + (m + 1)) a (μ + i)) (Icc a b))
+        (F1 - fun y => (μ + (i : ℝ)) • F2 y) (Icc a b) := fun x hx => by
+      rw [hderivWithin hx]
+      simp [smul_eq_mul]
+    have ha : a ∈ Icc a b := ⟨le_rfl, hab.le⟩
+    have hcastm : ((m + 1 : ℕ) : WithTop ℕ∞) = (m : WithTop ℕ∞) + 1 := by push_cast; ring
+    refine ⟨?_, fun j hj => ?_⟩
+    · rw [hcastm, contDiffOn_succ_iff_derivWithin (uniqueDiffOn_Icc hab)]
+      refine ⟨fun x hx => (hderiv x hx).differentiableWithinAt, by simp, ?_⟩
+      refine (hF1.sub (hF2.const_smul (μ + i))).congr fun x hx => ?_
+      rw [hderivWithin hx]
+      simp [smul_eq_mul]
+    · rcases Nat.eq_zero_or_pos j with rfl | hj0
+      · rw [iteratedDerivWithin_zero, remDiv_self]
+      · obtain ⟨j', rfl⟩ : ∃ j', j = j' + 1 := ⟨j - 1, by omega⟩
+        have hj' : j' ≤ m := by omega
+        have hj'' : ((j' : ℕ) : WithTop ℕ∞) ≤ ((m : ℕ) : WithTop ℕ∞) := by exact_mod_cast hj'
+        rw [iteratedDerivWithin_succ', iteratedDerivWithin_congr hderivWithin' ha,
+          iteratedDerivWithin_sub ha (uniqueDiffOn_Icc hab) ((hF1.of_le hj'') a ha)
+            (((hF2.const_smul (μ + (i : ℝ))).of_le hj'') a ha),
+          iteratedDerivWithin_fun_const_smul_field, hF1z j' hj', hF2z j' hj', smul_zero, sub_zero]
+
+/-- **Regularity of the subtracted integrand** ([quarteroni2000numerical] §9.8.2, the claim after
+(9.52)). -/
+theorem contDiffOn_taylorRemainder_div_rpow (hab : a < b) (hμ1 : μ < 1) {p : ℕ}
+    {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U) :
+    ContDiffOn ℝ p
+      (fun x => if x = a then 0 else (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ μ)
+      (Icc a b) := by
+  have h := (contDiffOn_remDiv hab hμ1 hU hsub p 0 φ (by simpa using hφ)).1
+  simp only [Nat.cast_zero, add_zero, zero_add] at h
+  exact h
+
+/-- **The subtracted integrand has vanishing derivatives at the singular endpoint**
+([quarteroni2000numerical] §9.8.2, the second half of the claim after (9.52)): under the
+hypotheses of `contDiffOn_taylorRemainder_div_rpow`, all its derivatives up to order `p` within
+`[a, b]` vanish at `a`. -/
+theorem iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero (hab : a < b) (hμ1 : μ < 1) {p : ℕ}
+    {U : Set ℝ} (hU : IsOpen U) (hsub : Icc a b ⊆ U) (hφ : ContDiffOn ℝ (p + 1 : ℕ) φ U)
+    {j : ℕ} (hj : j ≤ p) :
+    iteratedDerivWithin j
+      (fun x => if x = a then 0 else (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ μ)
+      (Icc a b) a = 0 := by
+  have h := (contDiffOn_remDiv hab hμ1 hU hsub p 0 φ (by simpa using hφ)).2 j hj
+  simp only [Nat.cast_zero, add_zero, zero_add] at h
+  exact h
 
 end Endpoint
 

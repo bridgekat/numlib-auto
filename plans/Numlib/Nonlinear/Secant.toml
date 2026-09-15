@@ -137,35 +137,47 @@ id = "RegulaFalsi.mul_neg_iterate"
 id = "RegulaFalsi.iterate_mem_uIcc"
 
 [[node]]
-id = "RegulaFalsi.tendsto_iterate"
-kind = "theorem"
-desc = '''**Convergence of regula falsi, and its linear order.** If `f` is continuous on
-`uIcc xm1 x₀` with `f x₀ * f xm1 < 0`, `ContDiffAt ℝ 2 f α` at the (assumed unique) root `α` in
-the interval with `deriv f α ≠ 0` and `iteratedDeriv 2 f α ≠ 0`, then
-`Tendsto (RegulaFalsi.iterate f xm1 x₀) atTop (𝓝 α)` and `ConvergesWithOrder … α 1`. Route
-(Ralston–Rabinowitz §8.3, which the book cites without proof): the secant point of a bracketing pair
-is a convex combination and the errors satisfy the secant identity `sub_root_eq_mul_newton`, so
-the iterates converge to a root; near `α` the sign of `f''` is constant, so from some index on one
-endpoint of the bracket is retained forever and the method *is* the chord method
-`Chord.step f (f[x_{k'}, α])`-like with slope `f[x_k, x_{k'}] → f[α, x_{k'}] = q`, whose factor
-`1 - f'(α)/q ∈ (0, 1)` by convexity; linear convergence then follows from `Chord.tendsto_iterate`
-with a variable slope converging to `q`. Long case analysis; low priority — the book only quotes
-the order and nothing downstream uses it. If a formalizer finds the general statement too costly,
-state and prove the case in which `f` is convex or concave on the interval (the "one fixed
-endpoint" case of Figure 6.3, left), which is the honest content. ★★★
+id = "RegulaFalsi.chord"
 
-Blocked: not attempted beyond the bracketing invariants. What exists: `RegulaFalsi.mul_neg_step`,
-`secantPoint_mem_uIcc` (the secant point is `x + t (x' - x)` with `t = f x / (f x - f x') ∈ [0, 1]`),
-and the secant error identity `Secant.sub_root_eq_mul_newton`, which gives
-`|e_{k+1}| = |e_k| |e_{k'}| |f[x_k, x_{k'}, α] / f[x_k, x_{k'}]|`. What is missing is the
-nested-bracket argument: the sorted brackets `[l_k, r_k]` are nested, `l = lim l_k ≤ r = lim r_k`;
-if `l < r` and both `f l, f r ≠ 0` the secant points converge to a point strictly inside `(l, r)`
-while each becomes an endpoint — contradiction; with the unique root `α` one of `l, r` is `α` and
-eventually every secant point replaces the same endpoint, so `x_k → α`; then the ratio
-`|e_{k+1}| / |e_k| → |f[α, x_{k'}, α] / f[α, x_{k'}]|` with the eventually fixed partner `x_{k'}`,
-which gives `ConvergesWithOrder … 1`. Estimate: 150–250 lines, one focused session; the
-convex/concave case is not shorter, because the fixed endpoint still has to be identified.'''
-deps = ["ConvergesWithOrder", "RegulaFalsi.iterate", "RegulaFalsi.iterate_mem_uIcc", "RegulaFalsi.mul_neg_iterate", "Secant.sub_root_eq_mul_newton", "Chord.tendsto_iterate"]
+[[node]]
+id = "RegulaFalsi.secantPoint_eq_chord"
+
+[[node]]
+id = "RegulaFalsi.chord_comm"
+
+[[node]]
+id = "RegulaFalsi.step_eq_self"
+
+[[node]]
+id = "RegulaFalsi.snd_step_eq"
+
+[[node]]
+id = "RegulaFalsi.state_mem_uIcc"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
+
+[[node]]
+id = "RegulaFalsi.tendsto_iterate"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
+
+[[node]]
+id = "RegulaFalsi.convergesWithOrder_one_iterate"
+kind = "theorem"
+desc = """**Regula falsi converges linearly** (the order quoted in [quarteroni2000numerical] §6.2.2,
+citing Ralston and Rabinowitz 8.3 without proof): under the hypotheses of
+`RegulaFalsi.tendsto_iterate` together with `ContDiffAt R 2 f a`, `deriv f a != 0` and
+`iteratedDeriv 2 f a != 0`, the iterates converge to `a` with order `1`.
+
+Blocked: only the convergence half is proved (`RegulaFalsi.tendsto_iterate`). What is missing is
+the eventually-fixed-endpoint analysis: near the root the sign of the second derivative is
+constant, so from some index on one end of the bracket is never replaced again and the method
+becomes the chord method with a variable slope `f[x_k, x_k1] -> f[a, x_k1] = q`; the ratio
+`|e_{k+1}|/|e_k|` then tends to `|f[a, x_k1, a]/f[a, x_k1]| = |1 - f'(a)/q|`, which lies strictly
+between `0` and `1` by convexity. Identifying the fixed endpoint is the whole difficulty, and it
+is not shortened by assuming `f` convex on the interval. The pieces that exist are
+`Secant.sub_root_eq_mul_newton` (the secant error identity), `Chord.tendsto_sub_div_sub` and
+`RegulaFalsi.state_mem_uIcc`. Estimated 150-250 lines."""
+deps = ["ConvergesWithOrder", "RegulaFalsi.tendsto_iterate", "Secant.sub_root_eq_mul_newton", "Chord.tendsto_iterate"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
 
 [[node]]
 id = "Muller.step"
