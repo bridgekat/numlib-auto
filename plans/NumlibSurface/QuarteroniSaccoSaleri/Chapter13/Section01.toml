@@ -1,44 +1,35 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.1, the heat equation: the initial boundary value problem (13.1)–(13.4) as a classical-solution
-predicate, the sine-series solution (13.5) for finite sine data, the energy and the a priori
-estimate (13.7). Everything is stated for classical solutions on `[0, 1] × [0, T]`, which is what
-the book's derivation ("interchanged differentiation and integration", integration by parts)
-uses; the weak formulation is §13.3's (13.12).
-'''
 
 [[node]]
-id = "IsHeatSolution"
-kind = "definition"
-desc = '''The classical Dirichlet problem (13.1)–(13.4) on `[0, 1] × [0, T]`: for `ν > 0`,
-`f : ℝ → ℝ → ℝ` (as `f x t`) and `u₀ : ℝ → ℝ`, a function `u : ℝ → ℝ → ℝ` (as `u x t`) is a
-solution when for every `(x, t) ∈ [0, 1] × [0, T]` the partial derivatives exist as
-`HasDerivWithinAt (fun t => u x t) (u_t x t) (Icc 0 T) t`, `HasDerivWithinAt (fun x => u x t)
-(u_x x t) (Icc 0 1) x`, `HasDerivWithinAt (fun x => u_x x t) (u_xx x t) (Icc 0 1) x`, with
-`u_t x t - ν * u_xx x t = f x t`, `u 0 t = 0`, `u 1 t = 0` and `u x 0 = u₀ x`; the derivative
-functions `u_t`, `u_x`, `u_xx` are existentially quantified inside the predicate and required
-continuous on the rectangle. ★'''
-deps = []
+id = "IsHeatSolutionWith"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.1)–(13.4)'
 
 [[node]]
-id = "equation_13_5"
-kind = "theorem"
-desc = '''(13.5) for finite sine data: with `ν = 1`, `f = 0` and `u₀ x = ∑ n ∈ Finset.range N, c n *
-sin (n π x)`, the function `u x t = ∑ n ∈ Finset.range N, c n * exp (-(n π)² t) * sin (n π x)`
-satisfies `IsHeatSolution 1 0 u₀ u` for every `T`, and `c n = 2 ∫₀¹ u₀ x sin (n π x) dx` for
-`1 ≤ n < N` (orthogonality of the sines, `∫₀¹ sin (m π x) sin (n π x) dx = δ_{mn} / 2`). The
-book's infinite series for general `u₀` is the classical theory and is not claimed. Proof: termwise
-differentiation of a finite sum, `Real.sin`, `Real.exp` derivative rules. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.IsHeatSolution"]
+id = "IsHeatSolution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.1)–(13.4)'
+
+[[node]]
+id = "sineDatum"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.5)'
 
 [[node]]
+id = "sineSolution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.5)'
+
+[[node]]
+id = "equation_13_5"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.5)'
+
+[[node]]
+id = "integral_sin_mul_sin"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the sine coefficients c_n of (13.5)'
+
+[[node]]
+id = "equation_13_5_coeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the sine coefficients c_n of (13.5)'
+
+[[node]]
 id = "energy"
-kind = "definition"
-desc = '''The energy `E t = ∫ x in (0 : ℝ)..1, u x t ^ 2` of a function `u : ℝ → ℝ → ℝ`, and
-`F t = ∫ x in (0 : ℝ)..1, f x t ^ 2` of the source. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy E(t)'
 
 [[node]]
@@ -55,6 +46,21 @@ the compact rectangle); `∫ u u_xx = -∫ u_x ^ 2` by integration by parts with
 `u 0 t = u 1 t = 0` (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`); Cauchy–Schwarz
 `∫ f u ≤ √F √E`; Poincaré `E ≤ C_P ^ 2 ∫ u_x ^ 2` for `x ↦ u x t`, which vanishes at `0`; Young
 `2 √F √E ≤ γ E + F / γ`; the resulting `E' + γ E ≤ F / γ` is integrated by the differential
-Gronwall lemma with forcing. ★★★'''
+Gronwall lemma with forcing. ★★★
+
+Blocked: the missing step is the differentiation under the integral sign `E'(t) = 2 ∫₀¹ u u_t dx`
+*one-sidedly at* `t = 0`. Mathlib's `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`
+(`Mathlib/Analysis/Calculus/ParametricIntervalIntegral.lean:97`) needs a two-sided `HasDerivAt` on a
+ball around the parameter, which a classical solution on `[0, T]` has only at interior times, and
+there is no `HasDerivWithinAt` variant on this pin, while
+`Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le` asks for a right-derivative at every
+`t ∈ Ico 0 T`, `t = 0` included. Two routes, both several hours: (i) Fubini on the rectangle,
+`E(t) - E(0) = ∫₀ᵗ (∫₀¹ 2 u u_t dx) ds` by `MeasureTheory.integral_integral_swap` for the
+continuous integrand, after which `Gronwall.hasDerivWithinAt_integral_Ici` gives the one-sided
+derivative for free; (ii) prove the estimate on `[ε, T]` and let `ε → 0⁺` by continuity of `E`.
+Everything else the book's argument needs is available: integration by parts `∫ u u_xx = -∫ u_x²`
+from the boundary conditions, Cauchy–Schwarz, Poincaré on `(0, 1)` with `C_P = 1/√2` (classically
+from `v(x) = ∫₀ˣ v'`, or by putting `x ↦ u x t` into `H¹₀(0, 1)` and using
+`SobolevIntervalZero.norm_deriv_zero_le`), Young's inequality and the Gronwall lemma.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.IsHeatSolution", "QuarteroniSaccoSaleri.Chapter13.energy", "Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.7)'

@@ -259,6 +259,7 @@ import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm
 import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.LaxEquivalence
+import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FiniteDifference.VonNeumann
