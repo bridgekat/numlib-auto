@@ -1,155 +1,51 @@
 namespace = "QuarteroniSaccoSaleri.Chapter07"
-desc = '''
-§7.1, solution of systems of nonlinear equations: Newton's method (7.4) and Theorem 7.1, the
-composite Newton–SOR method (7.8) through Exercise 7.1, the difference-Jacobian method
-(7.9)–(7.10) and Property 7.1, Broyden's method (7.11)–(7.14) and Property 7.2, and the
-fixed-point iteration (7.17) with Definition 7.1, Theorem 7.2, Property 7.3, Example 7.4 and
-Remark 7.1. Newton's iteration is the backbone's `Newton.iterate`; Broyden's is `Broyden.iterate`;
-the difference Jacobian is `Matrix.differenceJacobian`. The Jacobian matrix `J_F(x)` is
-`jacobianMatrix F x`, the matrix of `fderiv ℝ F x` in the standard basis of
-`EuclideanSpace ℝ (Fin n)`.
-'''
 
 [[node]]
 id = "equation_7_4"
-kind = "theorem"
-desc = '''(7.4): for `F : E → E` and `F' : E → E →L[ℝ] E` on a finite-dimensional real normed space,
-`x : ℕ → E := Newton.iterate F F' x₀` satisfies, whenever `F' (x k)` is invertible (`e : E ≃L[ℝ] E`
-with `e = F' (x k)`), `F' (x k) (x (k+1) - x k) = -F (x k)` and `x (k+1) = x k + (x (k+1) - x k)`
-— the linear system for `δx^{(k)}` followed by the update. Same shape as
-`AtkinsonHan.Chapter05.equation_5_4_7`. ★'''
-deps = ["Newton.iterate", "Newton.step", "Newton.iterate_succ"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.4'
 
 [[node]]
 id = "theorem_7_1"
-kind = "theorem"
-desc = '''Theorem 7.1. `E` a finite-dimensional real normed space (any vector norm; the matrix norm is
-the induced operator norm, which is what "consistent" buys), `F : E → E`, `F' : E → E →L[ℝ] E`,
-`F xstar = 0`, `e : E ≃L[ℝ] E` with `(e : E →L E) = F' xstar` and `‖e.symm‖ ≤ C`, `0 < R`, `0 < L`,
-`∀ x ∈ ball xstar R, HasFDerivAt F (F' x) x` (the book's `C¹` on a convex open `D ⊇ B(x*; R)`), and
-`∀ x y ∈ ball xstar R, ‖F' x - F' y‖ ≤ L ‖x - y‖`. Then `∃ r > 0, ∀ x₀ ∈ ball xstar r`, with
-`x k := Newton.iterate F F' x₀ k`: (∀ k, ∃ e' : E ≃L[ℝ] E, e' = F' (x k)) (the sequence is
-uniquely defined), `Tendsto x atTop (𝓝 xstar)`, and (7.5)
-`∀ k, ‖x (k+1) - xstar‖ ≤ C * L * ‖x k - xstar‖ ^ 2`. Direct from
-`Newton.forall_norm_iterate_succ_sub_le_of_mem_ball` with `r = min R (1 / (2 C L))`. ★'''
-deps = ["Newton.forall_norm_iterate_succ_sub_le_of_mem_ball", "Newton.tendsto_iterate", "QuarteroniSaccoSaleri.Chapter07.equation_7_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.1'
 
 [[node]]
 id = "newtonSORIterate"
-kind = "definition"
-desc = '''The `m`-step Newton–SOR method of §7.1.2 (2): given `F : (Fin n → ℝ) → (Fin n → ℝ)`, a
-Jacobian function `J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ`, a relaxation parameter `ω ≠ 0`
-and `m : ℕ`, one outer step maps `x` to `x + δ_m` where `δ_0 = 0` and `δ_{r+1} = M δ_r - ω (D - ω E)⁻¹ F x`
-is the SOR iteration (7.7) for `J x · δ = -F x`, with `D`, `-E`, `-F` the diagonal, strictly lower
-and strictly upper parts of `J x` (`Matrix.sorSplitting`) and `M` its iteration operator
-(`Matrix.sorSplitting_iterationOperator`); `newtonSORIterate F J ω m x₀ k` iterates it. Stated
-on `Fin n → ℝ` because the splitting is a matrix operation; nothing is proved about it beyond
-`exercise_7_1`. ★'''
-deps = ["Matrix.sorSplitting", "Matrix.sorSplitting_iterationOperator", "Stationary.step"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.7'
 
 [[node]]
 id = "exercise_7_1"
-kind = "theorem"
-desc = '''Exercise 7.1, cited in §7.1.2 for (7.8): the `m`-step Newton–SOR iterate is
-`x^{(k+1)} = x^{(k)} - ω (M_k^{m-1} + ⋯ + M_k + I) (D_k - ω E_k)⁻¹ F(x^{(k)})`, i.e.
-`newtonSORIterate F J ω m x₀ (k+1) = x k - ω • (∑ j ∈ Finset.range m, M_k ^ j) *ᵥ ((D_k - ω E_k)⁻¹ *ᵥ F (x k))`,
-under `IsUnit (Matrix.diagPart (J (x k)))`. Proof: `Stationary.step_iterate_eq_pow_add_sum` from
-`δ_0 = 0`. The one-step Newton–SOR method is the case `m = 1`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.newtonSORIterate", "Stationary.step_iterate_eq_pow_add_sum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 7.1'
 
 [[node]]
 id = "equation_7_9"
-kind = "theorem"
-desc = '''(7.9): `Matrix.differenceJacobian F x h` has entries
-`(F (x + h j • EuclideanSpace.single j 1) i - F x i) / h j`, its `j`-th column being the forward
-difference of `F` along `e_j` with increment `h j`. Definitional. ★'''
-deps = ["Matrix.differenceJacobian"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.9'
 
 [[node]]
 id = "property_7_1"
-kind = "theorem"
-desc = '''Property 7.1, first part, on `EuclideanSpace ℝ (Fin n)`: under the hypotheses of
-`theorem_7_1` (with the Euclidean norm; the book's `‖·‖₁` only changes constants, see
-`Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`), `∃ ε > 0, ∃ η > 0`, such that for every
-increment sequence `h : ℕ → Fin n → ℝ` with `∀ k j, 0 < |h k j| ∧ |h k j| ≤ η` and every
-`x₀ ∈ ball xstar ε`, the sequence (7.10)
-`x (k+1) = x k - (toEuclideanLin (differenceJacobian F (x k) (h k))).inverse (F (x k))` is well
-defined (every difference Jacobian is invertible) and converges linearly to `xstar`
-(`‖x (k+1) - xstar‖ ≤ ‖x k - xstar‖ / 2` and `Tendsto`). Proof:
-`Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` with
-`B k = toEuclideanLin (differenceJacobian F (x k) (h k))` and the error bound
-`‖B k - F' (x k)‖ ≤ √n (L/2) η` from `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`,
-choosing `η` so that this is below the backbone's threshold. The book states the result without
-proof. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.theorem_7_1", "QuarteroniSaccoSaleri.Chapter07.equation_7_9", "Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le", "Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
 
 [[node]]
 id = "property_7_1_quadratic"
-kind = "theorem"
-desc = '''Property 7.1, second part: in the situation of `property_7_1`, if moreover
-`∀ k, ∀ j, |h k j| ≤ C' * ‖x k - xstar‖`, then the convergence is quadratic:
-`∃ K, ∀ k, ‖x (k+1) - xstar‖ ≤ K * ‖x k - xstar‖ ^ 2`. From
-`Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul` with the derivative error
-`√n (L/2) C' ‖x k - xstar‖`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.property_7_1", "Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
 
 [[node]]
 id = "property_7_1_residual"
-kind = "theorem"
-desc = '''Property 7.1, the "or, equivalently" clause: the conclusion of `property_7_1_quadratic`
-also holds when `∀ k, ∀ j, |h k j| ≤ c * ‖F (x k)‖`. Proof: on the ball, `F` is Lipschitz with
-constant `‖F' xstar‖ + L R` (mean value inequality) and `F xstar = 0`, so
-`‖F (x k)‖ ≤ (‖F' xstar‖ + L R) ‖x k - xstar‖` and `property_7_1_quadratic` applies with
-`C' = c (‖F' xstar‖ + L R)`. (The converse direction of the "equivalence", `‖x - xstar‖ ≤ 2C ‖F x‖`
-near a regular root, is not needed for the conclusion.) ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.property_7_1_quadratic"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
 
 [[node]]
 id = "equation_7_11"
-kind = "theorem"
-desc = '''(7.11): one step of Broyden's method solves `Q_k δx^{(k+1)} = -F(x^{(k)})` and sets
-`x^{(k+1)} = x^{(k)} + δx^{(k+1)}`: for `σ : Broyden.State E` with `σ.Q` invertible,
-`σ.Q ((Broyden.step F σ).x - σ.x) = -F σ.x`. ★'''
-deps = ["Broyden.step", "Broyden.State"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.11'
 
 [[node]]
 id = "equation_7_12"
-kind = "theorem"
-desc = '''(7.12) with `j = 1`, the secant condition: the matrix produced by Broyden's step satisfies
-`Q_{k+1} (x_{k+1} - x_k) = F x_{k+1} - F x_k` whenever `x_{k+1} ≠ x_k`, i.e.
-`(Broyden.step F σ).Q ((Broyden.step F σ).x - σ.x) = F (Broyden.step F σ).x - F σ.x`. From
-`Broyden.update_apply_self`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_11", "Broyden.update_apply_self"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.12'
 
 [[node]]
 id = "equation_7_14"
-kind = "theorem"
-desc = '''(7.14) in matrix form: `Matrix.broydenUpdate Q s y = Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s`,
-and its operator form `toEuclideanLin (broydenUpdate Q s y) = Broyden.update (toEuclideanLin Q) s y`.
-Definitional plus the bridge lemma. ★'''
-deps = ["Matrix.broydenUpdate", "Broyden.update"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.14'
 
 [[node]]
 id = "broydenUpdate_leastChange"
-kind = "theorem"
-desc = '''The characterization the book derives (7.14) from: Broyden's `Q_k` is the matrix that
-satisfies the secant condition (7.12), `j = 1`, and for which `(Q_k - Q_{k-1}) s = 0` for every `s`
-orthogonal to `δx^{(k)}` — the minimum possible value of the quantity the text minimizes — and it
-is the unique such matrix. Clauses: `Broyden.update_apply_self`,
-`Broyden.update_sub_apply_of_inner_eq_zero`, and uniqueness (an operator determined on
-`span {s}` and on `s^⊥` is determined). ★'''
-deps = ["Broyden.update_apply_self", "Broyden.update_sub_apply_of_inner_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1.4'
 
 [[node]]
@@ -166,92 +62,44 @@ characterization of superlinear convergence
 `‖(Q_k - J_F(xstar)) s_k‖ / ‖s_k‖ → 0`, obtained from a telescoping Frobenius-norm identity
 `‖Q_{k+1} - J*‖_F² ≤ ‖Q_k - J*‖_F² - ‖(Q_k - J*) s_k‖² / ‖s_k‖² + O(‖e_k‖)`; several pages of
 estimates with no counterpart in Mathlib or the backbone. The book states it without proof. It
-is reachable in principle, but not worth its cost until a second source needs it. ★★★'''
+is reachable in principle, but not worth its cost until a second source needs it. ★★★
+
+Blocked: not attempted, as planned — the Dennis–Moré theory (bounded deterioration is in the
+backbone as `Matrix.frobenius_norm_broydenUpdate_sub_le_add`; the linear-convergence induction and
+the superlinear characterization are several pages of estimates, an estimated 300–500 lines).'''
 deps = ["Broyden.iterate", "Matrix.frobenius_norm_broydenUpdate_sub_le_add", "QuarteroniSaccoSaleri.Chapter07.theorem_7_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.2'
 
 [[node]]
 id = "definition_7_1"
-kind = "definition"
-desc = '''Definition 7.1: `IsContractiveOn (G : E → E) (D₀ : Set E) : Prop := ∃ α < 1, ∀ x ∈ D₀, ∀ y ∈ D₀,
-‖G x - G y‖ ≤ α * ‖x - y‖`, for a real normed space `E` (the book's "suitable vector norm" is the
-norm of `E`, so a different norm is a different `E`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.1'
 
 [[node]]
 id = "definition_7_1_iff"
-kind = "theorem"
-desc = '''`IsContractiveOn G D₀ ↔ ∃ K : NNReal, K < 1 ∧ LipschitzOnWith K G D₀` (a negative `α` is
-replaced by `max α 0`, which still works). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.definition_7_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 7.1'
 
 [[node]]
 id = "theorem_7_2"
-kind = "theorem"
-desc = '''Theorem 7.2 (contraction mapping theorem): if `G` is contractive on a closed *nonempty*
-`D₀` (the book omits nonemptiness; the empty set satisfies every hypothesis and has no fixed
-point) and `Set.MapsTo G D₀ D₀`, then `∃! x, x ∈ D₀ ∧ G x = x`. Directly
-`exists_unique_fixedPoint_of_mapsTo` (`Numlib/Nonlinear/FixedPoint`), on the complete space
-`EuclideanSpace ℝ (Fin n)` or any complete `E`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.definition_7_1", "exists_unique_fixedPoint_of_mapsTo"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.2'
 
 [[node]]
 id = "theorem_7_2_tendsto"
-kind = "theorem"
-desc = '''The content of the existence proof of Theorem 7.2: for every `x₀ ∈ D₀` the iterates (7.17)
-`G^[k] x₀` converge to the fixed point, with
-`‖G^[k+p] x₀ - G^[k] x₀‖ ≤ α^k / (1 - α) ‖G x₀ - x₀‖` and hence
-`‖G^[k] x₀ - xstar‖ ≤ α^k / (1 - α) ‖G x₀ - x₀‖`. From `dist_iterate_le_of_mapsTo`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.theorem_7_2", "dist_iterate_le_of_mapsTo"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.2'
 
 [[node]]
 id = "jacobianMatrix"
-kind = "definition"
-desc = '''The Jacobian matrix `J_F(x)` of `F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)`:
-`jacobianMatrix F x := LinearMap.toMatrix b b (fderiv ℝ F x)` with `b = (EuclideanSpace.basisFun (Fin n) ℝ).toBasis`,
-so that `(jacobianMatrix F x) i j = ∂F_i/∂x_j (x)` when `F` is differentiable at `x`, with the
-bridge `toEuclideanLin_jacobianMatrix : Matrix.toEuclideanLin (jacobianMatrix F x) = fderiv ℝ F x`
-(as `EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1'
 
 [[node]]
 id = "property_7_3"
-kind = "theorem"
-desc = '''Property 7.3: `G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)`, `D` a set,
-`xstar ∈ interior D`, `G xstar = xstar`, `∀ᶠ x in 𝓝 xstar, ContDiffAt ℝ 1 G x` (continuously
-differentiable in a neighbourhood), and `(Matrix.complexSpectralRadius (jacobianMatrix G xstar)).toReal < 1`.
-Then `∃ S ∈ 𝓝 xstar, S ⊆ D ∧ ∀ x₀ ∈ S, (∀ k, G^[k] x₀ ∈ D) ∧ Tendsto (fun k => G^[k] x₀) atTop (𝓝 xstar)`.
-Proof: `Matrix.exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one` with the
-bridge `toEuclideanLin_jacobianMatrix` gives `∃ m, ‖(fderiv ℝ G xstar) ^ m‖ < 1`; `ContDiffAt 1`
-near `xstar` gives `HasFDerivAt` near `xstar` and continuity of `fderiv ℝ G` at `xstar`; then
-`tendsto_iterate_of_exists_norm_pow_fderiv_lt_one` and
-`exists_ball_mapsTo_iterate_of_exists_norm_pow_fderiv_lt_one` (`Numlib/Nonlinear/FixedPoint`).
-The book cites Ortega–Rheinboldt for the proof. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.jacobianMatrix", "tendsto_iterate_of_exists_norm_pow_fderiv_lt_one", "exists_ball_mapsTo_iterate_of_exists_norm_pow_fderiv_lt_one", "Matrix.exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.3'
 
 [[node]]
 id = "property_7_3_norm"
-kind = "theorem"
-desc = '''The remark after Property 7.3: it suffices that `‖J_G(xstar)‖ < 1` in some induced matrix
-norm — stated for the spectral norm, `‖Matrix.toEuclideanLin (jacobianMatrix G xstar)‖ < 1`, from
-which the conclusion of `property_7_3` follows by `tendsto_iterate_of_norm_fderiv_lt_one` (the
-`m = 1` case), with the geometric rate `q^k`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.jacobianMatrix", "tendsto_iterate_of_norm_fderiv_lt_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.3'
 
 [[node]]
 id = "example_7_4_fixedPoint"
-kind = "theorem"
-desc = '''Example 7.4, the algebraic part: with `G₁ x = ((1 - x₂)/2, √(1 - x₁²))` and
-`G₂ x = ((1 - x₂)/2, -√(1 - x₁²))` on `EuclideanSpace ℝ (Fin 2)`, `G₁ (0, 1) = (0, 1)`,
-`G₂ (4/5, -3/5) = (4/5, -3/5)`, and both points solve `F x = (x₁² + x₂² - 1, 2 x₁ + x₂ - 1) = 0`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
 
 [[node]]
@@ -262,21 +110,62 @@ desc = '''Example 7.4, the analytic part: `jacobianMatrix G₁ (0, 1) = !![0, -1
 `√(2/3) < 1`, so `property_7_3` applies to both schemes at their respective fixed points. Needs
 `fderiv` of `√(1 - x₁²)` at `x₁ ∈ {0, 4/5}` (`Real.sqrt`, `HasDerivAt.sqrt`) and the eigenvalues
 `±i √(2/3)` of the second matrix (`Matrix.mem_spectrum_complexify_iff` with the characteristic
-polynomial `X² + 2/3`). Surface only. ★★'''
+polynomial `X² + 2/3`). Surface only. ★★
+
+Blocked: not attempted for lack of budget — two `fderiv` computations of `√(1 - x₁²)` on
+`EuclideanSpace ℝ (Fin 2)` through `hasFDerivAt_euclidean`, and the spectrum of a `2 × 2` real matrix
+through its characteristic polynomial; an estimated 100–150 lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter07.example_7_4_fixedPoint", "QuarteroniSaccoSaleri.Chapter07.jacobianMatrix", "QuarteroniSaccoSaleri.Chapter07.property_7_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
 
 [[node]]
 id = "remark_7_1"
-kind = "theorem"
-desc = '''Remark 7.1, corrected. (a) Newton's method is the fixed-point iteration of
-`G_N x = x - J_F(x)⁻¹ F x` (7.19): `Newton.step F F' = G_N` definitionally, and when `F' x` is
-invertible, `Newton.step F F' x = x ↔ F x = 0`. (b) With the residual `r_k = F x_k`, the Newton
-increment satisfies `J_F(x_k) (x_{k+1} - x_k) = -r_k`, the preconditioned Richardson step with
-preconditioner `J_F(x_k)`; the damped variant `J_F(x_k) (x_{k+1} - x_k) = -α_k r_k` is the
-quasi-Newton step of §7.1.3 with `Q_k = J_F(x_k)`. The book prints the preconditioner as
-`I - J_{G_N}(x^{(k)})`, which is wrong: `J_{G_N}(x) = -(D(J_F⁻¹)(x) ·) F(x)`, so `I - J_{G_N}(x) ≠ J_F(x)`
-in general (it equals `I` at a root, where `J_F` need not be `I`); the identity that holds is with
-`J_F(x^{(k)})`. ★'''
-deps = ["Newton.step", "Newton.step_eq_self_of_eq_zero", "QuarteroniSaccoSaleri.Chapter07.equation_7_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 7.1'
+
+[[node]]
+id = "newtonSORStep"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.7'
+
+[[node]]
+id = "sorIterationMatrix_eq_sorSplitting_iterationOperator"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.7'
+
+[[node]]
+id = "affineStep_iterate_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 7.1'
+
+[[node]]
+id = "equation_7_10"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.10'
+
+[[node]]
+id = "equation_7_10_succ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.10'
+
+[[node]]
+id = "_root_.Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le_of_mem"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.1'
+
+[[node]]
+id = "jacobianMatrix_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1'
+
+[[node]]
+id = "toEuclideanLin_jacobianMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1'
+
+[[node]]
+id = "toEuclideanCLM_jacobianMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1'
+
+[[node]]
+id = "example_7_4_F"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
+
+[[node]]
+id = "example_7_4_G₁"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
+
+[[node]]
+id = "example_7_4_G₂"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'

@@ -1,148 +1,65 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.13, over- and underdetermined systems: least squares (3.73)–(3.74), Theorem 3.8 by QR, the
-minimal-norm problem (3.76) and Theorem 3.9 by the pseudoinverse, Example 3.11, and the
-underdetermined full-rank case. Backbone: `Numlib/LinearAlgebra/Matrix/LeastSquares`,
-`Numlib/LinearAlgebra/Matrix/SVD` (`Matrix.pinv`). The `fl(Aᵀ A)` example, Remark 3.8 and Example
-3.12 are not nodes.
-'''
 
 [[node]]
 id = "equation_3_73"
-kind = "definition"
-desc = '''(3.73): `x* : Fin n → ℝ` is a least-squares solution of `A x = b`, `A : Matrix (Fin m) (Fin n) ℝ`, `m
-≥ n`, if `Φ(x*) = ‖A x* - b‖₂² ≤ Φ(x)` for all `x`: `Matrix.IsLeastSquaresSolution A b x*` on
-`EuclideanSpace ℝ (Fin m)`. ★'''
-deps = ["Matrix.IsLeastSquaresSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.73)'
 
 [[node]]
 id = "equation_3_73_iff"
-kind = "theorem"
-desc = '''(3.73) on plain vectors is the backbone's `Matrix.IsLeastSquaresSolution A (toLp 2 b) (toLp 2 x*)`.'''
-deps = ["Matrix.IsLeastSquaresSolution", "QuarteroniSaccoSaleri.Chapter03.equation_3_73"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.73)'
 
 [[node]]
 id = "equation_3_74"
-kind = "theorem"
-desc = '''(3.74), the normal equations: `x*` is a least-squares solution iff `Aᵀ A x* = Aᵀ b`;
-`Matrix.isLeastSquaresSolution_iff_normalEquations`. (The book derives it from `∇Φ(x*) = 0`; the
-projection theorem gives the equivalence without calculus.) ★'''
-deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations", "QuarteroniSaccoSaleri.Chapter03.equation_3_73"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.74)'
 
 [[node]]
 id = "normalMatrix_posDef"
-kind = "theorem"
-desc = '''§3.13: if `A` has full rank (`LinearIndependent ℝ Aᵀ`), `B = Aᵀ A` is symmetric positive definite, the
-normal equations are nonsingular and the least-squares solution exists uniquely;
-`Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`,
-`Matrix.existsUnique_isLeastSquaresSolution`. ★'''
-deps = ["Matrix.posDef_conjTranspose_mul_self_of_linearIndependent", "Matrix.existsUnique_isLeastSquaresSolution", "QuarteroniSaccoSaleri.Chapter03.equation_3_74"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.13'
 
 [[node]]
 id = "normalEquations_cholesky"
-kind = "theorem"
-desc = '''§3.13, after (3.74): for full-rank `A`, `Aᵀ A = Hᵀ H` with `H` the Cholesky factor of Theorem 3.6, and
-the least-squares solution is obtained by solving `Hᵀ y = Aᵀ b` and `H x* = y`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_6", "QuarteroniSaccoSaleri.Chapter03.equation_3_74", "QuarteroniSaccoSaleri.Chapter03.normalMatrix_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.13'
 
 [[node]]
 id = "theorem_3_8"
-kind = "theorem"
-desc = '''Theorem 3.8, (3.75): for full-rank `A` with QR factorization `A = Q R` and reduced factors `Q̃`, `R̃` of
-(3.48), the unique least-squares solution is `x* = R̃⁻¹ Q̃ᵀ b`; `Matrix.isLeastSquaresSolution_of_qr`
-with `Matrix.IsQR.reduced`, uniqueness from `normalMatrix_posDef`. ★'''
-deps = ["Matrix.isLeastSquaresSolution_of_qr", "Matrix.IsQR.reduced", "QuarteroniSaccoSaleri.Chapter03.property_3_3", "QuarteroniSaccoSaleri.Chapter03.normalMatrix_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.8'
 
 [[node]]
 id = "theorem_3_8_min"
-kind = "theorem"
-desc = '''Theorem 3.8, the minimum: `Φ(x*) = ∑_{i=n+1}^{m} ((Qᵀ b)_i)²`, and for every `x`, `‖A x - b‖₂² = ‖R̃ x -
-Q̃ᵀ b‖₂² + ∑_{i>n} ((Qᵀ b)_i)²` (the proof's display); `Matrix.norm_sub_sq_eq_of_isQR`. ★'''
-deps = ["Matrix.norm_sub_sq_eq_of_isQR", "QuarteroniSaccoSaleri.Chapter03.theorem_3_8", "QuarteroniSaccoSaleri.Chapter03.definition_3_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.8'
 
 [[node]]
 id = "equation_3_76"
-kind = "definition"
-desc = '''(3.76): `x*` of minimal Euclidean norm among the least-squares solutions;
-`Matrix.IsMinNormLeastSquaresSolution A b x*`. Consistent with (3.73) for full-rank `A`, where the
-least-squares solution is unique. ★'''
-deps = ["Matrix.IsMinNormLeastSquaresSolution", "QuarteroniSaccoSaleri.Chapter03.equation_3_73"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.76)'
 
 [[node]]
 id = "equation_3_76_iff"
-kind = "theorem"
-desc = '''(3.76) on plain vectors is the backbone's `Matrix.IsMinNormLeastSquaresSolution A (toLp 2 b) (toLp 2 x*)`.'''
-deps = ["Matrix.IsMinNormLeastSquaresSolution", "QuarteroniSaccoSaleri.Chapter03.equation_3_76"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.76)'
 
 [[node]]
 id = "equation_3_76_of_linearIndependent"
-kind = "theorem"
-desc = '''§3.13: "(3.76) is consistent with (3.73) if `A` has full rank" — the least-squares solution being unique,
-(3.76) and (3.73) then have the same solutions.'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_76", "QuarteroniSaccoSaleri.Chapter03.normalMatrix_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.76)'
 
 [[node]]
 id = "theorem_3_9"
-kind = "theorem"
-desc = '''Theorem 3.9, (3.77): for any `A : Matrix (Fin m) (Fin n) ℝ`, `x* = A⁺ b` (`Matrix.pinv`, the
-pseudoinverse of Definition 1.15 as restated by chapter 1 from `LinearAlgebra/Matrix/SVD`) is a
-solution of (3.76); `Matrix.isMinNormLeastSquaresSolution_pinv`. The book's proof through `A = U Σ
-Vᵀ` is the singular-system expansion `Matrix.exists_singularSystem`. ★'''
-deps = ["Matrix.isMinNormLeastSquaresSolution_pinv", "Matrix.pinv", "QuarteroniSaccoSaleri.Chapter03.equation_3_76"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.9'
 
 [[node]]
 id = "theorem_3_9_unique"
-kind = "theorem"
-desc = '''Theorem 3.9, uniqueness: every solution of (3.76) equals `A⁺ b`;
-`Matrix.IsMinNormLeastSquaresSolution.eq_pinv`. ★'''
-deps = ["Matrix.IsMinNormLeastSquaresSolution.eq_pinv", "QuarteroniSaccoSaleri.Chapter03.theorem_3_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.9'
 
 [[node]]
 id = "example_3_11"
-kind = "theorem"
-desc = '''Example 3.11: for `A = !![1, 0; 0, 0; 0, 0]` (rank 1) and `b = ![1, 2, 3]`, `A⁺ b = ![1, 0]`; and for
-the perturbed `A_ε = !![1, 0; 0, ε; 0, 0]` with `ε = 10⁻¹²` (full rank), the unique least-squares
-solution is `![1, 2 · 10¹²]` (`= ![1, 2/ε]`). `A⁺` by the Penrose conditions (`Matrix.pinv_unique`:
-`A⁺ = !![1, 0, 0; 0, 0, 0]`), the second by `theorem_3_8`/`normalMatrix_posDef` and `norm_num`.
-Illustrates the discontinuity of `x*` in the data when `A` is rank deficient. ★'''
-deps = ["Matrix.pinv_unique", "QuarteroniSaccoSaleri.Chapter03.theorem_3_9", "QuarteroniSaccoSaleri.Chapter03.normalMatrix_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.11'
 
 [[node]]
 id = "example_3_11_perturbed"
-kind = "theorem"
-desc = '''Example 3.11, the perturbed system: for `ε ≠ 0`, `A_ε = !![1, 0; 0, ε; 0, 0]` has rank `2` (independent
-columns) and its least-squares solutions are exactly `![1, 2 / ε]`, which for `ε = 10⁻¹²` is
-`![1, 2 · 10¹²]`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_74", "QuarteroniSaccoSaleri.Chapter03.example_3_11"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.11'
 
 [[node]]
 id = "underdetermined_minNorm"
-kind = "theorem"
-desc = '''§3.13, underdetermined systems: for `m < n` and `A` of full row rank (`LinearIndependent ℝ A`), the
-minimal-norm solution of `A x = b` is `Aᵀ (A Aᵀ)⁻¹ b`, obtained from the QR factorization of `Aᵀ`;
-`Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose` with `theorem_3_9`. ★'''
-deps = ["Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose", "QuarteroniSaccoSaleri.Chapter03.theorem_3_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.13'
 
 [[node]]
 id = "underdetermined_qr"
-kind = "theorem"
-desc = '''§3.13, underdetermined systems: for `m < n`, `A` of full row rank and a QR factorization `Aᵀ = Q R` with
-reduced factors `Q̃`, `R̃`, `R̃` is nonsingular, `A Aᵀ = R̃ᵀ R̃`, and the minimal-norm solution is
-`Aᵀ (A Aᵀ)⁻¹ b = Q̃ R̃⁻ᵀ b`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.underdetermined_minNorm", "QuarteroniSaccoSaleri.Chapter03.property_3_3", "Matrix.IsQR.isUnit_firstRows_of_linearIndependent"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.13'

@@ -1,85 +1,33 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.7, banded systems: band preservation (Property 3.4), the Thomas algorithm (3.53)–(3.55) with its
-stability bounds, and the division-free variant (3.56). Backbone: `Numlib/LinearAlgebra/Matrix/LU`,
-`Numlib/LinearAlgebra/Matrix/Hessenberg` (bandwidths), `Numlib/FloatingPoint/LU`. The banded storage
-format, Programs 10–13 and the operation counts are not nodes.
-'''
 
 [[node]]
 id = "property_3_4_lower"
-kind = "theorem"
-desc = '''Property 3.4: if `A : Matrix (Fin n) (Fin n) ℝ` has an LU factorization (the unique one, i.e. under
-Theorem 3.4's hypothesis — without it the claim fails, see the backbone node) and lower bandwidth
-`p`, then `L` has lower bandwidth `p`; `Matrix.IsLU.hasLowerBandwidth` with
-`Matrix.HasLowerBandwidth`. ★'''
-deps = ["Matrix.IsLU.hasLowerBandwidth", "Matrix.HasLowerBandwidth", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.4'
 
 [[node]]
 id = "property_3_4_upper"
-kind = "theorem"
-desc = '''Property 3.4: under the same hypotheses, if `A` has upper bandwidth `q` then `U` has upper
-bandwidth `q`; `Matrix.IsLU.hasUpperBandwidth`. ★'''
-deps = ["Matrix.IsLU.hasUpperBandwidth", "Matrix.HasUpperBandwidth", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.4'
 
 [[node]]
 id = "equation_3_53"
-kind = "theorem"
-desc = '''(3.53), the Thomas algorithm: for the nonsingular tridiagonal `A = tridiag(b, a, c)` with `α₁ = a₁`,
-`β_i = b_i / α_{i-1}`, `α_i = a_i - β_i c_{i-1}` (`Matrix.thomasAlpha`, `Matrix.thomasBeta`), `A = L
-U` with `L` unit lower bidiagonal with subdiagonal `β` and `U` upper bidiagonal with diagonal `α` and
-superdiagonal `c`, provided no `α_i` vanishes; `Matrix.isLU_tridiagonal_thomas`. It is the
-Doolittle factorization of `A` (`equation_3_43`). ★'''
-deps = ["Matrix.isLU_tridiagonal_thomas", "Matrix.thomasAlpha", "Matrix.thomasBeta", "QuarteroniSaccoSaleri.Chapter03.equation_3_43"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.53)'
 
 [[node]]
 id = "equation_3_54"
-kind = "theorem"
-desc = '''(3.54): forward substitution on the bidiagonal `L` is `y₁ = f₁`, `y_i = f_i - β_i y_{i-1}`, i.e.
-`Matrix.forwardSubst L f` unfolds to this two-term recurrence when `L` is unit lower bidiagonal
-(`Matrix.forwardSubst_apply` with all but one summand zero). ★'''
-deps = ["Matrix.forwardSubst_apply", "QuarteroniSaccoSaleri.Chapter03.equation_3_53", "QuarteroniSaccoSaleri.Chapter03.equation_3_22"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.54)'
 
 [[node]]
 id = "equation_3_55"
-kind = "theorem"
-desc = '''(3.55): backward substitution on the bidiagonal `U` is `x_n = y_n / α_n`, `x_i = (y_i - c_i x_{i+1}) /
-α_i`; `Matrix.backSubst U y` unfolds to it. Together, `A *ᵥ (backSubst U (forwardSubst L f)) = f`
-(`Matrix.mulVec_luSolve`). ★'''
-deps = ["Matrix.backSubst", "Matrix.mulVec_luSolve", "QuarteroniSaccoSaleri.Chapter03.equation_3_53", "QuarteroniSaccoSaleri.Chapter03.equation_3_23"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.55)'
 
 [[node]]
 id = "thomas_backward_error"
-kind = "theorem"
-desc = '''§3.7.1, stability: the computed factors of the Thomas algorithm (admissible
-`FloatingPoint.RoundsThomas m a b c α̂ β̂`) satisfy `L̂ Û = A + δA` with `|δA| ≤ (4u + 3u² + u³) |L̂|
-|Û|`; `FloatingPoint.exists_roundsThomas_mul_eq_add`. ★'''
-deps = ["FloatingPoint.exists_roundsThomas_mul_eq_add", "FloatingPoint.RoundsThomas"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.7.1'
 
 [[node]]
 id = "thomas_backward_error_posDef"
-kind = "theorem"
-desc = '''§3.7.1: if `A` is also symmetric positive definite or an M-matrix, `|δA| ≤ (4u + 3u² + u³) / (1 - u)
-|A|`. The book's implicit "for `u` small enough" (Higham Theorem 9.14) is made the hypothesis that
-the computed pivots `α̂_i` are positive, under which the sign pattern of `L̂`, `Û` gives `|L̂||Û| = |L̂
-Û|`; `FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos`. The "similar result if `A` is
-diagonally dominant" (Higham 9.14, last sentence: the bound times `3`) is `thomas_backward_error`
-with Higham Theorem 9.13, not planned. ★'''
-deps = ["FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos", "QuarteroniSaccoSaleri.Chapter03.thomas_backward_error"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.7.1'
 
 [[node]]
 id = "equation_3_56"
-kind = "theorem"
-desc = '''§3.7.2, (3.56): with `γ_i = (a_i - b_i γ_{i-1} c_{i-1})⁻¹` (`γ₀ = 0`; `Matrix.thomasGamma`, equal to
-`α_i⁻¹`), `A = L D Mᵀ` with `L = bidiag(b, γ⁻¹)`, `D = diag γ`, `Mᵀ = bidiag(γ⁻¹, c)` (the displayed
-factorization; `Matrix.tridiagonal_eq_mul_diagonal_mul`), and the substitutions read `y₁ = γ₁ f₁`,
-`y_i = γ_i (f_i - b_i y_{i-1})`, `x_n = y_n`, `x_i = y_i - γ_i c_i x_{i+1}`, without divisions. ★'''
-deps = ["Matrix.thomasGamma", "QuarteroniSaccoSaleri.Chapter03.equation_3_53"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.56)'

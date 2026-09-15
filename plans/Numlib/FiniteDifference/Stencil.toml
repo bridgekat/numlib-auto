@@ -1,188 +1,150 @@
 namespace = "FiniteDifference"
-desc = '''
-Constant-coefficient explicit difference schemes on the integer grid `ℤ`, as finitely supported
-stencils acting on grid functions, and the notions that make sense for any family of such
-schemes: the discrete `ℓ^p` norms `‖v‖_{Δ,p} = Δx^{1/p} ‖v‖_p`, stability of a family of schemes over
-a horizon, the numerical domain of dependence, monotone (positive-coefficient) stencils and their
-maximum principle, and the `ℓ^p → ℓ^p` operator bound `∑_s |c_s|`.
 
-A **stencil** is `c : ℤ →₀ ℝ`, acting by `(c u) j = ∑_s c s * u (j - s)` — a convolution on `ℤ` with
-finitely many terms — so `c s` is the weight of the neighbour `s` steps to the *left*. The
-three-point stencils `Stencil.threePoint cm c0 cp`, sending `u` to `j ↦ cm u_{j-1} + c0 u_j + cp
-u_{j+1}`, cover every explicit scheme of Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §13.7;
-the conservative form `u_j - λ (h(u_j, u_{j+1}) - h(u_{j-1}, u_j))` of their (13.36) with a linear
-flux `h(u, v) = α u + β v` is `Stencil.ofFlux λ α β`.
+[[node]]
+id = "_root_.Memℓp.comp_equiv"
 
-Three facts carry the theory. (1) **Finite speed of propagation**: `(c^n u) j` depends only on `u`
-within `n r` of `j` when the stencil has radius `r`; this is the numerical domain of dependence and
-the source of the Courant–Friedrichs–Lewy necessary condition. (2) **Monotone stencils** (`c ≥ 0`,
-`∑ c = 1`) are convex averages, hence nonexpansive in every `ℓ^p` and satisfy the discrete maximum
-principle; the upwind and Lax–Friedrichs schemes are monotone exactly under the CFL condition.
-(3) In general `‖c‖_{ℓ^p → ℓ^p} ≤ ∑_s |c_s|` (Young's inequality on `ℤ`, from the triangle inequality
-and the shift isometries), and for `p = 2` the sharp bound is the supremum of the symbol `∑_s c_s
-e^{-isφ}`, which is where the periodic von Neumann analysis of `Numlib/FiniteDifference/VonNeumann`
-meets the whole-line schemes.
+[[node]]
+id = "_root_.lp.compEquivₗᵢ"
 
-The family notions — stability `‖Q^n‖ ≤ C_T` for `n Δt ≤ T` and small steps, stated over a
-*dependent* family of spaces so that periodic grids `Fin N` and the line `ℤ` are both instances —
-are the Definition 6.3.1 of Atkinson–Han (whose surface has them for a fixed space) and (13.46)
-of Quarteroni–Sacco–Saleri. The heat-equation explicit scheme, the transport schemes and any
-constant-coefficient scheme of Strikwerda or Richtmyer–Morton are instances.
-'''
+[[node]]
+id = "_root_.lp.shiftₗᵢ"
 
 [[node]]
 id = "Stencil"
-kind = "definition"
-desc = '''`Stencil := ℤ →₀ ℝ`, a finitely supported family of real weights; `Stencil.apply c u : ℤ →
-ℝ := fun j => c.sum fun s a => a * u (j - s)`, with `Stencil.applyₗ c : (ℤ → ℝ) →ₗ[ℝ] (ℤ → ℝ)` the
-linear map. ★'''
-deps = []
+
+[[node]]
+id = "Stencil.apply"
+
+[[node]]
+id = "Stencil.applyₗ"
+
+[[node]]
+id = "Stencil.apply_congr"
 
 [[node]]
 id = "Stencil.threePoint"
-kind = "definition"
-desc = '''`Stencil.threePoint cm c0 cp := Finsupp.single 1 cm + Finsupp.single 0 c0 + Finsupp.single
-(-1) cp`, with `Stencil.threePoint_apply : apply (threePoint cm c0 cp) u j = cm * u (j - 1) + c0 * u
-j + cp * u (j + 1)`. ★'''
-deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "Stencil.threePoint_apply"
+
+[[node]]
+id = "Stencil.support_threePoint_subset"
+
+[[node]]
+id = "Stencil.threePoint_sum"
 
 [[node]]
 id = "Stencil.ofFlux"
-kind = "definition"
-desc = '''The conservative form with a linear numerical flux: `Stencil.ofFlux lam α β := threePoint
-(lam * α) (1 - lam * (α - β)) (-(lam * β))`, so that `apply (ofFlux lam α β) u j = u j - lam * ((α * u
-j + β * u (j+1)) - (α * u (j-1) + β * u j))` (`Stencil.ofFlux_apply`). ★'''
-deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "Stencil.ofFlux_apply"
 
 [[node]]
 id = "IsConservativeForm"
-kind = "definition"
-desc = '''`IsConservativeForm (lam : ℝ) (h : ℝ → ℝ → ℝ) (step : (ℤ → ℝ) → (ℤ → ℝ)) : Prop := ∀ u j,
-step u j = u j - lam * (h (u j) (u (j + 1)) - h (u (j - 1)) (u j))`: the scheme advances by the
-difference of a numerical flux across the two half-cells (Quarteroni–Sacco–Saleri (13.36), the
-form every conservative scheme for `u_t + f(u)_x = 0` takes). ★'''
-deps = []
+
+[[node]]
+id = "Stencil.isConservativeForm_iff"
 
 [[node]]
 id = "Stencil.isConservativeForm_ofFlux"
-kind = "theorem"
-desc = '''`IsConservativeForm lam (fun u v => α * u + β * v) (Stencil.apply (ofFlux lam α β))`, and
-conversely a step in conservative form with a linear flux is `apply (ofFlux lam α β)`. ★'''
-deps = ["FiniteDifference.IsConservativeForm", "FiniteDifference.Stencil.ofFlux"]
 
 [[node]]
 id = "Stencil.iterate_apply_congr_of_eqOn"
-kind = "theorem"
-desc = '''Finite speed of propagation: if `∀ s ∈ c.support, |s| ≤ r` and `u = v` on `{i | |i - j| ≤ n
-* r}`, then `(Stencil.apply c)^[n] u j = (Stencil.apply c)^[n] v j`. Induction on `n`: one
-application at `i` reads `u` on `{|i' - i| ≤ r}`. This is the numerical domain of dependence
-`D_Δt(x_j, t^n) ⊆ {|x - x_j| ≤ n r Δx}` of Quarteroni–Sacco–Saleri §13.8.3. ★★'''
-deps = ["FiniteDifference.Stencil"]
 
 [[node]]
 id = "Stencil.IsMonotone"
-kind = "definition"
-desc = '''`Stencil.IsMonotone c : Prop := (∀ s, 0 ≤ c s) ∧ c.sum (fun _ a => a) = 1`: a monotone (positive,
-consistent) stencil is a convex average of neighbouring values. ★'''
-deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "Stencil.IsMonotone.apply_le"
+
+[[node]]
+id = "Stencil.IsMonotone.le_apply"
+
+[[node]]
+id = "Stencil.IsMonotone.iterate_apply_le"
+
+[[node]]
+id = "Stencil.IsMonotone.le_iterate_apply"
 
 [[node]]
 id = "Stencil.IsMonotone.apply_le_iSup"
-kind = "theorem"
-desc = '''Discrete maximum principle: for a monotone `c` and `u` bounded above, `apply c u j ≤ ⨆ i, u
-i`; dually `Stencil.IsMonotone.iInf_le_apply` for `u` bounded below; and iterated,
-`Stencil.IsMonotone.iterate_apply_le_iSup`: `(apply c)^[n] u j ≤ ⨆ i, u i`. In particular the sup
-norm is nonincreasing (Quarteroni–Sacco–Saleri (13.53)). ★'''
-deps = ["FiniteDifference.Stencil.IsMonotone"]
 
 [[node]]
 id = "Stencil.IsMonotone.iInf_le_apply"
-kind = "theorem"
-desc = '''`⨅ i, u i ≤ apply c u j` for a monotone `c` and `u` bounded below (the lower half of the
-maximum principle; `min (u_j, u_{j-1}) ≤ u_j^{n+1}` for upwind). ★'''
-deps = ["FiniteDifference.Stencil.IsMonotone"]
 
 [[node]]
-id = "lp.shiftₗᵢ"
-kind = "definition"
-desc = '''Translation by `s` on `ℓ^p(ℤ)`: `lp.shiftₗᵢ p s : lp (fun _ : ℤ => ℝ) p ≃ₗᵢ[ℝ] lp (fun _ : ℤ
-=> ℝ) p`, `(shiftₗᵢ p s u) j = u (j - s)`, built from `Memℓp` transported along the bijection
-`Equiv.subRight s` of `ℤ` (the `lp` norm is a sum or supremum over `ℤ`, invariant under
-bijections). Helper for the operator bounds below; Mathlib has no shift on `lp` (grepped `lp`
-with `shift`, `translate`, `comp_equiv`). ★★'''
-deps = []
+id = "Stencil.IsMonotone.iterate_apply_le_iSup"
+
+[[node]]
+id = "Stencil.IsMonotone.iInf_le_iterate_apply"
 
 [[node]]
 id = "Stencil.memℓp_apply"
-kind = "theorem"
-desc = '''`Memℓp u p → Memℓp (Stencil.apply c u) p` for any `1 ≤ p ≤ ∞`: a finite linear combination
-of shifts. ★'''
-deps = ["FiniteDifference.Stencil", "FiniteDifference.lp.shiftₗᵢ"]
 
 [[node]]
 id = "Stencil.lpCLM"
-kind = "definition"
-desc = '''`Stencil.lpCLM c p : lp (fun _ : ℤ => ℝ) p →L[ℝ] lp (fun _ : ℤ => ℝ) p` for `[Fact (1 ≤ p)]`,
-the stencil as a bounded operator on `ℓ^p(ℤ)`: `lpCLM c p = ∑ s ∈ c.support, c s • shiftₗᵢ p s`. ★'''
-deps = ["FiniteDifference.Stencil.memℓp_apply", "FiniteDifference.lp.shiftₗᵢ"]
+
+[[node]]
+id = "Stencil.coeFn_lpCLM"
 
 [[node]]
 id = "Stencil.norm_lpCLM_le"
-kind = "theorem"
-desc = '''`‖Stencil.lpCLM c p‖ ≤ ∑ s ∈ c.support, |c s|` (Young's inequality on `ℤ` for a finitely
-supported kernel: triangle inequality plus the isometry of each shift). ★'''
-deps = ["FiniteDifference.Stencil.lpCLM"]
 
 [[node]]
 id = "Stencil.IsMonotone.norm_lpCLM_le_one"
-kind = "theorem"
-desc = '''A monotone stencil is nonexpansive in every `ℓ^p`: `‖Stencil.lpCLM c p‖ ≤ 1`, from
-`norm_lpCLM_le` with `∑ |c_s| = ∑ c_s = 1`. Gives the `‖·‖_{Δ,1}` stability of upwind and
-Lax–Friedrichs under CFL with constant `1` (Quarteroni–Sacco–Saleri §13.8.3). ★'''
-deps = ["FiniteDifference.Stencil.IsMonotone", "FiniteDifference.Stencil.norm_lpCLM_le"]
+
+[[node]]
+id = "Stencil.IsMonotone.norm_lpCLM_apply_le"
 
 [[node]]
 id = "Stencil.symbol"
-kind = "definition"
-desc = '''The symbol of a stencil, `Stencil.symbol c φ := ∑ s ∈ c.support, (c s : ℂ) * exp (-(I * s *
-φ))`: the amplification factor of the mode `j ↦ e^{ijφ}`, `apply c (fun j => e^{ijφ}) = symbol c φ
-• (fun j => e^{ijφ})` (`Stencil.apply_exp_eq_symbol_smul`, complex-valued grid functions). ★'''
-deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "Stencil.apply_exp_eq_symbol_smul"
+
+[[node]]
+id = "Stencil.symbol_add_two_pi"
+
+[[node]]
+id = "Stencil.symbol_threePoint"
 
 [[node]]
 id = "Stencil.norm_lpCLM_two_le_of_symbol_le"
 kind = "theorem"
-desc = '''`ℓ²` bound from the symbol: if `‖Stencil.symbol c φ‖ ≤ ρ` for all `φ ∈ [0, 2π]`, then
-`‖Stencil.lpCLM c 2‖ ≤ ρ`. Proof: Plancherel on `ℤ` — `ℓ²(ℤ) ≅ L²(AddCircle (2π))` by
-`fourierBasis` (Mathlib's `HilbertBasis ℤ ℂ (Lp ℂ 2 haarAddCircle)`), under which `apply c`
-becomes multiplication by the bounded function `symbol c`; the real `ℓ²` embeds in the complex
-one. The whole-line counterpart of Theorem 13.1 of Quarteroni–Sacco–Saleri, which the book only
-proves on the periodic grid. ★★★'''
+desc = '''`ℓ²` bound from the symbol: if `‖Stencil.symbol c φ‖ ≤ ρ` for all `φ`, then
+`‖Stencil.lpCLM c 2‖ ≤ ρ`. Proof: Plancherel on `ℤ` — for a finitely supported `u` the
+trigonometric polynomial `U(φ) = ∑_j u_j e^{ijφ}` has `∫_0^{2π} |U|² = 2π ∑ |u_j|²` (orthogonality
+of the exponentials, finite sums only) and `apply c u` has the trigonometric polynomial
+`symbol c (-φ) U(φ)`, so `∑ |apply c u|² ≤ ρ² ∑ |u_j|²`; the general `u ∈ ℓ²` follows by density
+(`lp.hasSum_single`) and continuity of `lpCLM`. Alternatively `ℓ²(ℤ) ≅ L²(AddCircle (2π))` by
+Mathlib's `fourierBasis`, under which `apply c` is multiplication by the bounded function
+`symbol c`. The whole-line counterpart of Theorem 13.1 of Quarteroni–Sacco–Saleri, which the book
+only proves on the periodic grid. ★★★
+
+Blocked: not attempted in this round for lack of time after `VonNeumann` and `BoundaryValue`;
+both routes above are open, the finite-Parseval one needs the orthogonality integral
+`∫_0^{2π} e^{i(j-k)φ} dφ = 2π δ_{jk}` (Mathlib has it only as `fourierCoeff` orthogonality on
+`AddCircle`) and the passage from finitely supported `u` to `ℓ²` through `lp.hasSum_single`;
+estimated 150–250 lines.'''
 deps = ["FiniteDifference.Stencil.lpCLM", "FiniteDifference.Stencil.symbol"]
 
 [[node]]
 id = "discreteNorm"
-kind = "definition"
-desc = '''`discreteNorm (p : ℝ≥0∞) (Δx : ℝ) (v : lp (fun _ : ℤ => ℝ) p) : ℝ := Δx ^ (1 / p).toReal * ‖v‖`:
-`‖v‖_{Δ,p} = (Δx ∑_j |v_j|^p)^{1/p}` for finite `p` and `sup_j |v_j|` for `p = ∞`, the discrete
-`L^p(ℝ)` norms (Quarteroni–Sacco–Saleri (13.47)). `discreteNorm_eq_sqrt_mul_sum` unfolds it for `p
-= 2`. ★'''
-deps = []
+
+[[node]]
+id = "discreteNorm_top"
+
+[[node]]
+id = "discreteNorm_two_eq_sqrt"
+
+[[node]]
+id = "discreteNorm_one"
 
 [[node]]
 id = "IsStableFamily"
-kind = "definition"
-desc = '''Stability of a family of schemes over every finite horizon: for `E : ι → Type*` normed
-spaces, `Δt Δx : ι → ℝ` and `Q : ∀ i, E i →L[ℝ] E i`, `IsStableFamily Δt Δx Q : Prop := ∀ T > 0, ∃ C
-δ₀ : ℝ, 0 < δ₀ ∧ ∀ i, 0 < Δt i → Δt i ≤ δ₀ → 0 < Δx i → Δx i ≤ δ₀ → ∀ n : ℕ, n * Δt i ≤ T → ‖Q i ^
-n‖ ≤ C`. With `E i` the grid-function space and the discrete norm a constant multiple of the
-`ℓ^p` norm, `‖Q^n‖ ≤ C` is `‖u^n‖_Δ ≤ C ‖u^0‖_Δ` (Quarteroni–Sacco–Saleri (13.46); the fixed-space
-form is `AtkinsonHan.Chapter06.IsStableScheme`). ★'''
-deps = []
 
 [[node]]
 id = "IsStableFamily.norm_le_of_isStableFamily"
-kind = "theorem"
-desc = '''Unfolding: a stable family satisfies `‖(Q i ^ n) u‖ ≤ C ‖u‖` for `n Δt i ≤ T` and small
-steps; and `TwoLevel.norm_sub_le_of_stable` applies to each member with `M₀ = C`. ★'''
-deps = ["FiniteDifference.IsStableFamily", "FiniteDifference.norm_sub_le_of_stable"]
+
+[[node]]
+id = "IsStableFamily.exists_norm_sub_le"

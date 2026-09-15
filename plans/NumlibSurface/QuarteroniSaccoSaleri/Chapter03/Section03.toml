@@ -1,196 +1,85 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.3, Gaussian elimination and the LU factorization: the stage recurrence (3.29)–(3.31) as
-`Matrix.gemStage`, the Hilbert matrix of Remark 3.2, the zero-pivot example (3.33), GEM as a
-factorization (3.34)–(3.37), Theorem 3.4 with (3.38)–(3.39) and Example 3.3, Property 3.2, the
-rounding-error bounds (3.40)–(3.41), and the compact forms (3.42)–(3.43) (Doolittle, Crout).
-Backbone: `Numlib/LinearAlgebra/Matrix/LU`, `LU/Elimination`, `Numlib/FloatingPoint/LU`. Example
-3.2 (GEM run on `H₃` in exact rationals) and Programs 4–6 are not nodes.
-'''
 
 [[node]]
 id = "equation_3_31"
-kind = "theorem"
-desc = '''(3.30)–(3.31): the stages `A^{(k)}` of GEM are `Matrix.gemStage A (k-1)` (`0`-based), and for `k <
-n`, with `m_ik = a^{(k)}_ik / a^{(k)}_kk`, `a^{(k+1)}_ij = a^{(k)}_ij - m_ik a^{(k)}_kj` for `i, j > k`
-and rows `i ≤ k` unchanged; `Matrix.elimStep_apply_of_lt`, `Matrix.elimStep_apply_of_not_lt` through
-`Matrix.gemStage`. The right-hand side update `b^{(k+1)}` is the same recurrence on the augmented
-column (`gemStage` of `fromColumns A b`) — or, equivalently, `b^{(n)} = forwardSubst L b`, which is
-how the surface reads "GEM on `[A | b]`". ★'''
-deps = ["Matrix.gemStage", "Matrix.elimStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.31)'
 
 [[node]]
 id = "remark_3_2"
-kind = "theorem"
-desc = '''Remark 3.2, (3.32): the Hilbert matrix `H_n`, `h_ij = 1 / (i + j - 1)`, as `Matrix.hilbert n` of
-`Numlib/LinearAlgebra/Matrix/Cauchy` (`0`-based entries `1 / (i + j + 1)`), with `hilbert_apply`;
-it is nonsingular (`Matrix.isUnit_hilbert`) and symmetric positive definite (`Matrix.posDef_hilbert`),
-so GEM without pivoting applies to it (Example 3.2, Theorem 3.6). "The paradigm of an
-ill-conditioned matrix" is prose. ★'''
-deps = ["Matrix.hilbert", "Matrix.isUnit_hilbert", "Matrix.posDef_hilbert"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.2'
 
 [[node]]
 id = "equation_3_33"
-kind = "theorem"
-desc = '''(3.33): `A = !![1, 2, 3; 2, 4, 5; 7, 8, 9]` is nonsingular with nonzero diagonal, its second stage
-is `Matrix.gemStage A 1 = !![1, 2, 3; 0, 0, -1; 0, -6, -12]`, so the pivot `a^{(2)}_22 = 0`, and its
-leading minors are `d₁ = 1`, `d₂ = 0`. `decide`/`norm_num` after unfolding. ★'''
-deps = ["Matrix.gemStage", "QuarteroniSaccoSaleri.Chapter03.equation_3_31"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.33)'
 
 [[node]]
 id = "equation_3_35"
-kind = "theorem"
-desc = '''(3.35): `A^{(k+1)} = M_k A^{(k)}` with the Gaussian transformation `M_k = I - m_k e_kᵀ`;
-`Matrix.gemStage_succ_eq_gaussTransform_mul`, `Matrix.gaussTransform`. ★'''
-deps = ["Matrix.gemStage_succ_eq_gaussTransform_mul", "Matrix.gaussTransform"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.35)'
 
 [[node]]
 id = "equation_3_36"
-kind = "theorem"
-desc = '''(3.36): `M_k⁻¹ = 2 I - M_k = I + m_k e_kᵀ`, and `(m_i e_iᵀ)(m_j e_jᵀ) = 0` for `i ≠ j`;
-`Matrix.gaussTransform` inverted by `Matrix.elimMul` (`gaussTransform_mul_elimMul`) and
-`Matrix.elimMultipliers_mul_elimMultipliers_of_ne`. ★'''
-deps = ["Matrix.gaussTransform", "Matrix.elimMul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.36)'
 
 [[node]]
 id = "equation_3_37"
-kind = "theorem"
-desc = '''(3.37) and `A = L U`: when no pivot vanishes, `A = M_1⁻¹ ⋯ M_{n-1}⁻¹ U = (I + ∑ m_i e_iᵀ) U`, the
-first factor being the unit lower triangular matrix of multipliers `Matrix.gemLower A` and `U =
-Matrix.gemStage A n`; `Matrix.isLU_gemLower_gemStage`. ★'''
-deps = ["Matrix.isLU_gemLower_gemStage", "Matrix.gemLower", "QuarteroniSaccoSaleri.Chapter03.equation_3_35", "QuarteroniSaccoSaleri.Chapter03.equation_3_36"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.37)'
 
 [[node]]
 id = "theorem_3_4"
-kind = "theorem"
-desc = '''Theorem 3.4: the LU factorization of `A : Matrix (Fin n) (Fin n) ℝ` with `l_ii = 1` exists and is
-unique iff the leading principal submatrices `A_i`, `i = 1, …, n - 1`, are nonsingular — `(∃! LU,
-Matrix.IsLU A LU.1 LU.2) ↔ ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`;
-`Matrix.existsUnique_isLU_iff`. ★'''
-deps = ["Matrix.existsUnique_isLU_iff", "Matrix.IsLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.4'
 
 [[node]]
 id = "equation_3_39"
-kind = "theorem"
-desc = '''(3.38)–(3.39): if `A = L U` (unit lower `L`) then `A_i = L^{(i)} U^{(i)}` for the leading blocks and
-`det A_i = u_11 ⋯ u_ii`; hence `det A = u_11 ⋯ u_nn` (the display after Example 3.3) and the pivots
-are `u_ii = d_i / d_{i-1}`; `Matrix.IsLU.toBlock_le`, `Matrix.IsLU.det_leadingPrincipalSubmatrix`,
-`Matrix.IsLU.det_eq_prod_diag`, `Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor`. ★'''
-deps = ["Matrix.IsLU.toBlock_le", "Matrix.IsLU.det_leadingPrincipalSubmatrix", "Matrix.IsLU.det_eq_prod_diag", "Matrix.IsLU.diag_upper_eq_div_leadingPrincipalMinor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.39)'
 
 [[node]]
 id = "example_3_3_b"
-kind = "theorem"
-desc = '''Example 3.3: the singular `B = !![1, 2; 1, 2]` has `B₁ = 1` nonsingular and hence a unique LU
-factorization (`L = !![1, 0; 1, 1]`, `U = !![1, 2; 0, 0]`); from `theorem_3_4`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.3'
 
 [[node]]
 id = "example_3_3_c"
-kind = "theorem"
-desc = '''Example 3.3: the nonsingular `C = !![0, 1; 1, 0]` admits no unit-lower LU factorization: `¬ ∃ L U,
-Matrix.IsLU C L U` (`u₁₁ = 0` forces `l₂₁ u₁₁ = 1`). ★'''
-deps = ["Matrix.IsLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.3'
 
 [[node]]
 id = "example_3_3_d"
-kind = "theorem"
-desc = '''Example 3.3: `D = !![0, 1; 0, 2]` admits the factorizations `D = L_β U_β`, `L_β = !![1, 0; β, 1]`,
-`U_β = !![0, 1; 0, 2 - β]`, for every `β : ℝ` — `∀ β, Matrix.IsLU D (L_β) (U_β)`, so the
-factorization is not unique. ★'''
-deps = ["Matrix.IsLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.3'
 
 [[node]]
 id = "property_3_2_row"
-kind = "theorem"
-desc = '''Property 3.2, rows: a *nonsingular* matrix diagonally dominant by rows (Definition 1.24, weak) has an
-LU factorization; `Matrix.exists_isLU_of_isDiagDominant`. The book omits nonsingularity, without
-which the statement is false (`!![0, 0; 1, 1]`); with strict dominance nonsingularity is automatic
-(`Matrix.IsStrictDiagDominant.isUnit`). ★'''
-deps = ["Matrix.exists_isLU_of_isDiagDominant", "Matrix.IsDiagDominant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.2'
 
 [[node]]
 id = "property_3_2_col"
-kind = "theorem"
-desc = '''Property 3.2, columns: a nonsingular matrix diagonally dominant by columns has an LU factorization
-with `|l_ij| ≤ 1` for all `i, j`; `Matrix.exists_isLU_of_isColDiagDominant`. ★'''
-deps = ["Matrix.exists_isLU_of_isColDiagDominant", "Matrix.IsColDiagDominant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.2'
 
 [[node]]
 id = "equation_3_40"
-kind = "theorem"
-desc = '''(3.40): the computed factors `L̂`, `Û` of GEM (admissible `FloatingPoint.RoundsLU m A L̂ Û`, `n u <
-1`) satisfy `L̂ Û = A + δA` with `|δA| ≤ n u / (1 - n u) |L̂| |Û|`; `FloatingPoint.exists_roundsLU_mul_eq_add`.
-★'''
-deps = ["FloatingPoint.exists_roundsLU_mul_eq_add", "FloatingPoint.RoundsLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.40)'
 
 [[node]]
 id = "equation_3_41"
-kind = "theorem"
-desc = '''(3.41): if `L̂`, `Û` have nonnegative entries and `2 n u < 1`, then `|δA| ≤ n u / (1 - 2 n u) |A|`;
-`FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg`. ★'''
-deps = ["FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg", "QuarteroniSaccoSaleri.Chapter03.equation_3_40"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.41)'
 
 [[node]]
 id = "equation_3_42"
-kind = "theorem"
-desc = '''(3.42): `A = L U` (unit lower `L`, upper `U`) iff `a_ij = ∑_{r=1}^{min(i,j)} l_ir u_rj` for all `i, j`;
-`Matrix.IsLU.apply_eq_sum` and its converse (the sum is `(L U) i j` by triangularity). ★'''
-deps = ["Matrix.IsLU.apply_eq_sum"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.42)'
 
 [[node]]
 id = "equation_3_43"
-kind = "theorem"
-desc = '''(3.43), the Doolittle recurrence: `u_kj = a_kj - ∑_{r<k} l_kr u_rj` (`j ≥ k`), `l_ik = (a_ik -
-∑_{r<k} l_ir u_rk) / u_kk` (`i > k`) — `Matrix.luPacked`, `Matrix.luLower`, `Matrix.luUpper` — and
-under the hypothesis of Theorem 3.4 it produces the LU factorization, `Matrix.isLU_luLower_luUpper`,
-which is then the one GEM produces (`Matrix.luLower_eq_gemLower`: "the `ijk` version of GEM"). ★'''
-deps = ["Matrix.luPacked", "Matrix.isLU_luLower_luUpper", "Matrix.luLower_eq_gemLower", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.43)'
 
 [[node]]
 id = "crout"
-kind = "theorem"
-desc = '''§3.3.4, the Crout factorization (`u_kk = 1`): `l_ik = a_ik - ∑_{r<k} l_ir u_rk` (`i ≥ k`), `u_kj =
-(a_kj - ∑_{r<k} l_kr u_rj) / l_kk` (`j > k`); with `Matrix.croutLower A = (luUpper Aᵀ)ᵀ`, `croutUpper
-A = (luLower Aᵀ)ᵀ`, `croutLower A * croutUpper A = A` and `croutUpper A` is unit upper triangular
-under the hypothesis of Theorem 3.4 for `Aᵀ` (the same hypothesis). ★'''
-deps = ["Matrix.croutLower", "QuarteroniSaccoSaleri.Chapter03.equation_3_43"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.3.4'
 
 [[node]]
 id = "gemMultipliers"
-kind = "definition"
-desc = 'The multiplier vector `m_k` of stage `k` of GEM, (3.30), read on `Matrix.gemStage A k`.'
-deps = ["Matrix.gemStage"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.30)'
 
 [[node]]
 id = "gemRhs"
-kind = "definition"
-desc = 'The right-hand sides `b^{(k)}` of the systems (3.29), by the recurrence of (3.31).'
-deps = ["QuarteroniSaccoSaleri.Chapter03.gemMultipliers"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.29)'
 
 [[node]]
 id = "equation_3_29"
-kind = "theorem"
-desc = '(3.29): every system `A^{(k)} x = b^{(k)}` of GEM has the same solutions as `A x = b`.'
-deps = ["QuarteroniSaccoSaleri.Chapter03.gemRhs", "Matrix.gemStage_succ_eq_gaussTransform_mul"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.29)'

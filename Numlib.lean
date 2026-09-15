@@ -257,8 +257,11 @@ import Numlib.Eigen.QRAlgorithm
 import Numlib.Eigen.RayleighRitz
 import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm
+import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.LaxEquivalence
+import Numlib.FiniteDifference.Stencil
 import Numlib.FiniteDifference.TwoLevel
+import Numlib.FiniteDifference.VonNeumann
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.LU
 import Numlib.FloatingPoint.Model
@@ -352,6 +355,7 @@ import Numlib.Optimization.ConjugateGradient
 import Numlib.Optimization.Constrained
 import Numlib.Optimization.Descent
 import Numlib.Optimization.LineSearch
+import Numlib.Optimization.QuasiNewton
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse
@@ -385,6 +389,7 @@ import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.EllipticInterval
+import Numlib.Variational.Evolution
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation

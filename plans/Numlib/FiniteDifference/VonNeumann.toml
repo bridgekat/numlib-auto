@@ -1,191 +1,145 @@
 namespace = "FiniteDifference"
-desc = '''
-Von Neumann stability analysis: constant-coefficient two-level schemes on the periodic grid of
-`N` nodes are circulant matrices, the discrete Fourier modes are their common eigenvectors, the
-eigenvalues are the **amplification factors** `γ_k`, and the discrete Parseval identity turns
-`‖Q^n‖₂` into `max_k |γ_k|^n`. Hence the two halves of the classical criterion: `|γ_k| ≤ 1` for all
-`k` gives `‖Q^n u‖₂ ≤ ‖u‖₂` for every `n` (the sufficient condition, Theorem 13.1 of
-Quarteroni–Sacco–Saleri, *Numerical Mathematics*), and stability over a horizon `T` forces `|γ_k| ≤
-1 + C Δt` (the necessary condition of von Neumann, which the book uses to call the forward
-Euler/centred scheme unconditionally unstable).
-
-The explicit scheme with stencil `c : Fin N → ℂ` is `Matrix.circulant c`; a two-level scheme `B
-u^{n+1} = C u^n` with circulant `B`, `C` (backward Euler/centred, the θ-schemes) is `B⁻¹ C`, whose
-amplification factors are the quotients. Everything rests on `Numlib/Analysis/Fourier/DFT`: the
-Fourier mode `k` is the `k`-th column of `Matrix.dft N`, `γ = (dft N)ᴴ c` is the discrete Fourier
-transform of the stencil, and Parseval is the orthogonality `Matrix.conjTranspose_dft_mul_dft`
-(the book's Lemma 10.1). A stencil on `ℤ` (`Numlib/FiniteDifference/Stencil`) is wrapped onto `Fin
-N` by `Stencil.toPeriodic`, and the three-point formula `γ_k = c0 + cm e^{-iφ_k} + cp e^{iφ_k}`, `φ_k
-= 2πk/N`, is the one every concrete computation uses.
-
-Multi-level schemes (leap-frog, Newmark) are two-level schemes for a vector of unknowns; their
-periodic form is a block circulant, diagonalized modewise into `m × m` amplification matrices
-`G_k`, and `‖Q^n‖₂ = max_k ‖G_k^n‖₂`. That reduction is stated here; the analysis of `G_k^n` for a
-particular scheme (root conditions, Jordan blocks) is the scheme's business.
-
-Dissipation and dispersion — comparing `γ_k` with the exact factor `e^{-iakΔt}` — are properties
-of a scheme for a particular equation and live with the schemes
-(`Numlib/FiniteDifference/Hyperbolic`).
-'''
 
 [[node]]
 id = "periodicScheme"
-kind = "definition"
-desc = '''`periodicScheme (c : Fin N → ℂ) : Matrix (Fin N) (Fin N) ℂ := Matrix.circulant c`, the
-explicit constant-coefficient scheme `(Q u) j = ∑ s, c s * u (j - s)` on the periodic grid
-(subtraction in `Fin N`). ★'''
-deps = []
+
+[[node]]
+id = "periodicScheme_mulVec_apply"
 
 [[node]]
 id = "fourierMode"
-kind = "definition"
-desc = '''`fourierMode N k : Fin N → ℂ := fun j => Matrix.dft N j k`, the grid values `e^{ikjh}`, `h =
-2π/N`, of the `k`-th harmonic. ★'''
-deps = []
 
 [[node]]
 id = "amplificationFactor"
-kind = "definition"
-desc = '''`amplificationFactor (c : Fin N → ℂ) (k : Fin N) : ℂ := ((Matrix.dft N)ᴴ *ᵥ c) k = ∑ s, c s *
-ω^{-sk}`, the discrete Fourier transform of the stencil at `k`. ★'''
-deps = []
+
+[[node]]
+id = "fourierMode_sub"
 
 [[node]]
 id = "periodicScheme_mulVec_fourierMode"
-kind = "theorem"
-desc = '''The Fourier modes are eigenvectors of every circulant: `periodicScheme c *ᵥ fourierMode N
-k = amplificationFactor c k • fourierMode N k`. Proof: `(circulant c *ᵥ e_k) j = ∑_s c s ω^{(j-s)k}
-= ω^{jk} ∑_s c s ω^{-sk}`, reindexing the sum over `Fin N` by the bijection `s ↦ j - s`
-(`Fintype.sum_equiv (Equiv.subLeft j)`) and `ω^{(j - s) k} = ω^{jk} ω^{-sk}` through `ZMod`
-exponents (`Matrix.dft_eq_zmodDft` or the primitive-root identities). ★★'''
-deps = ["FiniteDifference.periodicScheme", "FiniteDifference.fourierMode", "FiniteDifference.amplificationFactor"]
 
 [[node]]
 id = "periodicScheme_pow_mulVec_fourierMode"
-kind = "theorem"
-desc = '''`(periodicScheme c ^ n) *ᵥ fourierMode N k = amplificationFactor c k ^ n • fourierMode N
-k` (Quarteroni–Sacco–Saleri (13.52), the recursion on one harmonic). Induction. ★'''
-deps = ["FiniteDifference.periodicScheme_mulVec_fourierMode"]
+
+[[node]]
+id = "mul_dft_eq_of_forall_mulVec_fourierMode"
+
+[[node]]
+id = "eq_dft_mul_diagonal_of_forall_mulVec_fourierMode"
 
 [[node]]
 id = "periodicScheme_eq_dft_mul_diagonal"
-kind = "theorem"
-desc = '''Spectral decomposition of a circulant: `periodicScheme c = N⁻¹ • dft N * diagonal
-(amplificationFactor c) * (dft N)ᴴ`, from the eigenvector relation and `dft * dftᴴ = N • 1`
-(`Matrix.dft_mul_conjTranspose_dft`). Mathlib's `Matrix.circulant` has no spectral statement
-(grepped `circulant` with `eigen`, `dft`, `fourier`). ★★'''
-deps = ["FiniteDifference.periodicScheme_mulVec_fourierMode"]
+
+[[node]]
+id = "sum_normSq_mulVec_of_conjTranspose_mul"
 
 [[node]]
 id = "sum_normSq_conjTranspose_dft_mulVec"
-kind = "theorem"
-desc = '''Discrete Parseval: `∑ k, ‖((dft N)ᴴ *ᵥ y) k‖ ^ 2 = N * ∑ j, ‖y j‖ ^ 2` for `y : Fin N → ℂ`;
-equivalently `‖(dft N)ᴴ *ᵥ y‖₂² = N ‖y‖₂²` in `EuclideanSpace`. From `(dft N)ᴴ * dft N = N • 1`
-(`Matrix.conjTranspose_dft_mul_dft`, the book's Lemma 10.1) by expanding `‖Fᴴ y‖² = yᴴ F Fᴴ y`.
-★'''
-deps = []
+
+[[node]]
+id = "sum_normSq_dft_mulVec"
+
+[[node]]
+id = "norm_toEuclideanLin_conjTranspose_dft"
+
+[[node]]
+id = "norm_toEuclideanLin_dft"
+
+[[node]]
+id = "norm_toEuclideanLin_diagonal_le"
+
+[[node]]
+id = "norm_toEuclideanLin_le_of_forall_mulVec_fourierMode"
+
+[[node]]
+id = "pow_mulVec_fourierMode_of_forall_mulVec_fourierMode"
+
+[[node]]
+id = "norm_toEuclideanLin_pow_le_of_forall_mulVec_fourierMode"
 
 [[node]]
 id = "norm_toEuclideanLin_periodicScheme_pow"
-kind = "theorem"
-desc = '''`‖toEuclideanLin (periodicScheme c ^ n) u‖ ≤ ρ ^ n * ‖u‖` for `u : EuclideanSpace ℂ (Fin
-N)` whenever `‖amplificationFactor c k‖ ≤ ρ` for all `k` and `0 ≤ ρ`. Proof: write `u = N⁻¹ ∑_k
-û_k e_k` with `û = dftᴴ u` (inversion, `Matrix.dft_mulVec_conjTranspose_dft_mulVec`), apply
-`Q^n` modewise, and use Parseval twice: `‖Q^n u‖² = N⁻¹ ∑ |γ_k|^{2n} |û_k|² ≤ ρ^{2n} N⁻¹ ∑ |û_k|² =
-ρ^{2n} ‖u‖²`. ★★'''
-deps = ["FiniteDifference.periodicScheme_pow_mulVec_fourierMode", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec"]
 
 [[node]]
 id = "norm_toEuclideanLin_periodicScheme_pow_le"
-kind = "theorem"
-desc = '''**Von Neumann's sufficient condition** (Quarteroni–Sacco–Saleri, Theorem 13.1): if
-`‖amplificationFactor c k‖ ≤ 1` for all `k`, then `‖toEuclideanLin (periodicScheme c ^ n) u‖ ≤ ‖u‖`
-for all `n` and `u`, i.e. the scheme is stable in `‖·‖_{Δ,2}` with constant `1`; also the operator
-norm form `‖toEuclideanCLM (periodicScheme c ^ n)‖ ≤ 1`. The case `ρ = 1` of the previous node.
-★'''
-deps = ["FiniteDifference.norm_toEuclideanLin_periodicScheme_pow"]
+
+[[node]]
+id = "norm_toEuclideanCLM_periodicScheme_pow_le"
+
+[[node]]
+id = "fourierMode_ne_zero"
+
+[[node]]
+id = "norm_pow_le_norm_toEuclideanCLM_pow_of_mulVec_fourierMode"
 
 [[node]]
 id = "norm_amplificationFactor_pow_le"
-kind = "theorem"
-desc = '''The lower bound `‖amplificationFactor c k‖ ^ n ≤ ‖toEuclideanCLM (periodicScheme c ^ n)‖`
-for every `k`, `n`: test the operator on the unit vector `fourierMode N k / √N` (of norm `1` by
-Parseval). ★'''
-deps = ["FiniteDifference.periodicScheme_pow_mulVec_fourierMode", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec"]
+
+[[node]]
+id = "norm_le_one_add_of_forall_norm_pow_le_of_mulVec_fourierMode"
 
 [[node]]
 id = "norm_amplificationFactor_le_one_add_of_forall_norm_pow_le"
-kind = "theorem"
-desc = '''**Von Neumann's necessary condition**: if `‖toEuclideanCLM (periodicScheme c ^ n)‖ ≤ C`
-for every `n` with `n * Δt ≤ T` (with `1 ≤ C`, `0 < Δt ≤ T / 2`), then `‖amplificationFactor c k‖ ≤ 1
-+ 2 * (C - 1) * Δt / T` for every `k`. Proof: with `n = ⌊T/Δt⌋ ≥ 1`, `|γ_k|^n ≤ C` gives `|γ_k| ≤
-C^{1/n} ≤ 1 + (C - 1)/n` (Bernoulli, `one_add_mul_le_pow`) and `1/n ≤ 2Δt/T`. So a family stable in
-the sense of `IsStableFamily` has amplification factors at most `1 + K Δt`; conversely a mode with
-`|γ_k| ≥ 1 + ε` independent of the mesh makes `‖Q^n‖ ≥ (1 + ε)^{T/Δt}` unbounded — the argument
-by which Quarteroni–Sacco–Saleri §13.8.4 conclude that the forward Euler/centred scheme is
-unconditionally unstable. ★★'''
-deps = ["FiniteDifference.norm_amplificationFactor_pow_le"]
 
 [[node]]
 id = "periodicTwoLevel"
-kind = "definition"
-desc = '''The implicit two-level scheme `B u^{n+1} = C u^n` with circulant `B = circulant b`, `C =
-circulant c`: `periodicTwoLevel b c := (circulant b)⁻¹ * circulant c`, with `amplificationFactor₂ b
-c k := amplificationFactor c k / amplificationFactor b k`. ★'''
-deps = ["FiniteDifference.periodicScheme", "FiniteDifference.amplificationFactor"]
+
+[[node]]
+id = "amplificationFactor₂"
+
+[[node]]
+id = "isUnit_periodicScheme_of_forall_ne_zero"
+
+[[node]]
+id = "inv_periodicScheme_mulVec_fourierMode"
 
 [[node]]
 id = "periodicTwoLevel_mulVec_fourierMode"
-kind = "theorem"
-desc = '''If `amplificationFactor b k ≠ 0` for all `k` then `circulant b` is invertible and
-`periodicTwoLevel b c *ᵥ fourierMode N k = amplificationFactor₂ b c k • fourierMode N k`; hence
-`norm_toEuclideanLin_periodicScheme_pow(_le)` and `norm_amplificationFactor_pow_le` hold verbatim
-for `periodicTwoLevel` with `amplificationFactor₂` (state them as `_two_level` variants, or state the
-three norm results for any matrix whose columns of `dft N` are eigenvectors with eigenvalues `γ`
-— `norm_toEuclideanLin_pow_of_forall_mulVec_fourierMode` — and derive both cases). The second
-route is the one to take: one lemma `‖A^n u‖ ≤ (max_k |γ_k|)^n ‖u‖` for any `A` with `A e_k = γ_k
-e_k`. ★★'''
-deps = ["FiniteDifference.periodicTwoLevel", "FiniteDifference.periodicScheme_mulVec_fourierMode", "FiniteDifference.periodicScheme_eq_dft_mul_diagonal"]
+
+[[node]]
+id = "norm_toEuclideanLin_periodicTwoLevel_pow_le"
 
 [[node]]
 id = "Stencil.toPeriodic"
-kind = "definition"
-desc = '''Wrapping a stencil `c : ℤ →₀ ℝ` onto the periodic grid: `Stencil.toPeriodic N c : Fin N → ℂ
-:= fun j => ∑ s ∈ c.support, if ((s : ZMod N) : Fin N) = j then (c s : ℂ) else 0` (`N ≠ 0`); for a
-three-point stencil and `N ≥ 3` the three weights land on `0`, `1`, `N - 1`. `periodicScheme
-(toPeriodic N c) *ᵥ u` agrees with `Stencil.apply c` on `N`-periodic grid functions
-(`Stencil.periodicScheme_toPeriodic_mulVec`). ★★'''
-deps = ["FiniteDifference.periodicScheme", "FiniteDifference.Stencil"]
 
 [[node]]
-id = "amplificationFactor_toPeriodic_threePoint"
-kind = "theorem"
-desc = '''The three-point amplification factor: for `N ≥ 3`, `amplificationFactor (Stencil.toPeriodic
-N (Stencil.threePoint cm c0 cp)) k = c0 + cm * exp (-(I * φ)) + cp * exp (I * φ)` with `φ = 2 π k /
-N`. Every entry of Table 13.1's stability column in Quarteroni–Sacco–Saleri is this formula plus
-a modulus computation. Also the symbol form on `ℤ`: `Stencil.symbol (threePoint cm c0 cp) φ = c0 +
-cm e^{-iφ} + cp e^{iφ}`, so the periodic factors are the symbol sampled at `φ_k`
-(`amplificationFactor_toPeriodic_eq_symbol`). ★'''
-deps = ["FiniteDifference.Stencil.toPeriodic", "FiniteDifference.Stencil.threePoint", "FiniteDifference.amplificationFactor", "FiniteDifference.Stencil.symbol"]
+id = "Stencil.periodicScheme_toPeriodic_mulVec"
+
+[[node]]
+id = "Stencil.amplificationFactor_toPeriodic_eq_symbol"
+
+[[node]]
+id = "Stencil.amplificationFactor_toPeriodic_threePoint"
 
 [[node]]
 id = "periodicBlockScheme"
-kind = "definition"
-desc = '''Multi-level schemes as block circulants: for `G : Fin N → Matrix (Fin m) (Fin m) ℂ` (the
-stencil of `m × m` blocks), `periodicBlockScheme G : Matrix (Fin N × Fin m) (Fin N × Fin m) ℂ :=
-Matrix.of fun (j, p) (l, q) => G (j - l) p q`; its amplification matrix at mode `k` is
-`amplificationMatrix G k := ∑ s, ω^{-sk} • G s`. Leap-frog for the wave equation is the case `m =
-2` with unknowns `(u^{n+1}, u^n)`. ★'''
-deps = ["FiniteDifference.periodicScheme"]
+
+[[node]]
+id = "amplificationMatrix"
+
+[[node]]
+id = "modeTensor"
+
+[[node]]
+id = "periodicBlockScheme_mulVec_modeTensor"
 
 [[node]]
 id = "periodicBlockScheme_pow_mulVec_fourierMode"
+
+[[node]]
+id = "norm_toEuclideanCLM_periodicBlockScheme_pow_le"
 kind = "theorem"
-desc = '''`(periodicBlockScheme G ^ n) *ᵥ (fourierMode N k ⊗ v) = fourierMode N k ⊗ ((amplificationMatrix
-G k ^ n) *ᵥ v)` for `v : Fin m → ℂ` (the mode times a block vector, `(j, p) ↦ ω^{jk} v p`), and
-consequently `‖toEuclideanCLM (periodicBlockScheme G ^ n)‖ = max_k ‖toEuclideanCLM
-(amplificationMatrix G k ^ n)‖` (`norm_periodicBlockScheme_pow`): the `ℓ²` stability of a
-multi-level scheme is the uniform boundedness of the powers of its `m × m` amplification
-matrices. Same proof as the scalar case blockwise, with Parseval applied to each block
-component. ★★★'''
-deps = ["FiniteDifference.periodicBlockScheme", "FiniteDifference.periodicScheme_pow_mulVec_fourierMode", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec"]
+desc = '''`‖toEuclideanCLM (periodicBlockScheme G ^ n)‖ ≤ max_k ‖toEuclideanCLM (amplificationMatrix G k ^
+n)‖` (and the reverse inequality, so that the `ℓ²` stability of a multi-level scheme is the uniform
+boundedness of the powers of its `m × m` amplification matrices). Proof: the block decomposition
+`periodicBlockScheme G = N⁻¹ (F ⊗ 1) blockDiagonal (amplificationMatrix G) (Fᴴ ⊗ 1)`
+(`Matrix.kroneckerMap` with `Matrix.blockDiagonal`), Parseval blockwise
+(`sum_normSq_conjTranspose_dft_mulVec` applied to each block component `u (·, p)`), and the
+norm of a block diagonal matrix as the maximum of the blocks; the lower bound tests
+`periodicBlockScheme G ^ n` on `modeTensor N k v` (`periodicBlockScheme_pow_mulVec_fourierMode`).
+★★★
+
+Blocked: not attempted in this round; the eigenvector relation `periodicBlockScheme_pow_mulVec_fourierMode`
+is proved, the Kronecker/block-diagonal norm bookkeeping (block Parseval, the norm of
+`blockDiagonal`, the reindexing `Fin N × Fin m`) is estimated at 150 lines.'''
+deps = ["FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec"]

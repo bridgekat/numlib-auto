@@ -1,354 +1,173 @@
 namespace = "QuarteroniSaccoSaleri.Chapter07"
-desc = '''
-§7.2, unconstrained optimization of `f : EuclideanSpace ℝ (Fin n) → ℝ`: the optimality conditions
-of Property 7.4 with the Hessian matrix, descent methods (7.25)–(7.28) and Theorem 7.3, the line
-search conditions (7.31)–(7.34) and Property 7.5, the quadratic case (7.35)–(7.39) with Lemma 7.1
-(Kantorovich) and Property 7.6 (conjugate directions), the nonlinear CG coefficients of Remark
-7.2, Newton's method for minimization (7.40), the global convergence Properties 7.7–7.8, and the
-secant updates (7.42)–(7.46) of §7.2.7. Gradients are Mathlib's `HasGradientAt` / `gradient`, the
-derivative data of the backbone being `f' x = InnerProductSpace.toDual ℝ _ (gradient f x)`; the
-Hessian matrix is `hessianMatrix f x`, the matrix of the second derivative in the standard basis.
-Backbone: `Numlib/Optimization/{Descent,LineSearch,ConjugateGradient,QuasiNewton}`,
-`Numlib/Projection/{OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
-`Numlib/Analysis/InnerProductSpace/Energy`. §7.2.1 (Hooke–Jeeves, Nelder–Mead) states nothing and
-has no nodes beyond the minimizer of the Rosenbrock function in Example 7.5.
-'''
 
 [[node]]
 id = "hessianMatrix"
-kind = "definition"
-desc = '''The Hessian matrix `H(x)` of `f : EuclideanSpace ℝ (Fin n) → ℝ`:
-`hessianMatrix f x i j := fderiv ℝ (fun y => fderiv ℝ f y (e j)) x (e i)` with `e = EuclideanSpace.single · 1`,
-i.e. `∂²f/∂x_i∂x_j (x)`; with the bridge `hessianMatrix_apply : (hessianMatrix f x) i j =
-(fderiv ℝ (fderiv ℝ f) x) (e i) (e j)` and, for `ContDiffAt ℝ 2 f x`, symmetry
-(`Mathlib`: `ContDiffAt.isSymmSndFDerivAt`). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
 
 [[node]]
 id = "property_7_4_gradient"
-kind = "theorem"
-desc = '''Property 7.4 (a): if `IsLocalMin f xstar` and `f` is differentiable at `xstar` then
-`gradient f xstar = 0`. Mathlib: `IsLocalMin.fderiv_eq_zero` / `IsLocalMin.hasFDerivAt_eq_zero`
-(`Mathlib/Analysis/Calculus/LocalExtr/Basic.lean`), translated through
-`hasGradientAt_iff_hasFDerivAt`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.4'
 
 [[node]]
 id = "property_7_4_hessian"
-kind = "theorem"
-desc = '''Property 7.4 (b): if `IsLocalMin f xstar` and `ContDiffAt ℝ 2 f xstar` (the book's
-`f ∈ C²(B(x*; R))`), then `(hessianMatrix f xstar).PosSemidef`. From
-`Descent.nonneg_apply_apply_of_isLocalMin` applied to `v = toEuclideanLin`-coordinates:
-`0 ≤ f'' v v = vᵀ H v` for all `v`, and symmetry of `H` from `ContDiffAt 2`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.hessianMatrix", "Descent.nonneg_apply_apply_of_isLocalMin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.4'
 
 [[node]]
 id = "property_7_4_sufficient"
-kind = "theorem"
-desc = '''Property 7.4 (c), corrected — the book's "if `x* ∈ B(x*; R)` and `H(x*)` is positive definite
-then `x*` is a local minimizer" omits the hypothesis `∇f(x*) = 0` (false without it: `f x = x + x²`
-at `0`): if `ContDiffAt ℝ 2 f xstar`, `gradient f xstar = 0` and `(hessianMatrix f xstar).PosDef`,
-then `xstar` is a strict local minimizer, `∃ δ > 0, ∀ y ∈ ball xstar δ, y ≠ xstar → f xstar < f y`
-(hence `IsLocalMin f xstar`). From `Descent.isLocalMin_of_coercive_second` with coercivity of the
-Hessian form from `Matrix.posDef_iff_isSymmetricCoercive`
-(`Numlib/Analysis/InnerProductSpace/Coercive`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.hessianMatrix", "Descent.isLocalMin_of_coercive_second", "Matrix.posDef_iff_isSymmetricCoercive"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.4'
 
 [[node]]
 id = "IsCriticalPoint"
-kind = "definition"
-desc = '''`IsCriticalPoint f x : Prop := gradient f x = 0`, the critical points of §7.2, with the
-remark following Property 7.4 as `isMinOn_of_convexOn_of_isCriticalPoint`: for `f` convex on
-`univ` and differentiable at `x`, a critical point is a global minimizer (Property 7.9 (2) with
-`Ω = univ`, `isMinOn_iff_forall_lineDeriv_nonneg`). ★'''
-deps = ["isMinOn_iff_forall_lineDeriv_nonneg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
 
 [[node]]
 id = "example_7_5"
-kind = "theorem"
-desc = '''The one statement of Example 7.5 (otherwise a numerical comparison, skipped): the Rosenbrock
-function `f x = 100 (x₂ - x₁²)² + (1 - x₁)²` (7.24) has the global minimizer `(1, 1)`,
-`IsMinOn f univ (1, 1)` with `f (1, 1) = 0`, and it is the unique one. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.5'
 
 [[node]]
 id = "equation_7_27"
-kind = "theorem"
-desc = '''(7.27)–(7.28): if `d` is a descent direction at `x` in the sense of (7.26),
-`⟪gradient f x, d⟫ < 0`, and `f` is differentiable at `x`, then `∃ ε > 0, ∀ α ∈ Ioo 0 ε,
-f (x + α • d) < f x`. `Descent.exists_forall_lt_of_isDescentDirection` with
-`f' x = toDual (gradient f x)`. ★'''
-deps = ["Descent.IsDescentDirection", "Descent.exists_forall_lt_of_isDescentDirection"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.27'
 
 [[node]]
 id = "steepestDescent_isDescentDirection"
-kind = "theorem"
-desc = '''The gradient method's direction `d = -gradient f x` is a descent direction when
-`gradient f x ≠ 0`, with `⟪gradient f x, d⟫ = -‖gradient f x‖²` (the display in §7.2.2), and the
-Newton and inexact-Newton directions `d = -B⁻¹ gradient f x` are descent directions for positive
-definite `B` (`Descent.isDescentDirection_neg_gradient`,
-`Descent.isDescentDirection_neg_inverse_of_isCoercive`, `Matrix.posDef_iff_isSymmetricCoercive`). ★'''
-deps = ["Descent.isDescentDirection_neg_gradient", "Descent.isDescentDirection_neg_inverse_of_isCoercive"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.2'
 
 [[node]]
 id = "theorem_7_3"
-kind = "theorem"
-desc = '''Theorem 7.3: for a descent method (7.25) whose step `α_k` is a local minimizer of
-`φ α = f (x_k + α d_k)` (7.29), with `f` differentiable at `x_{k+1} = x_k + α_k d_k`,
-`⟪gradient f x_{k+1}, d_k⟫ = 0`. `Descent.fderiv_apply_eq_zero_of_isLocalMin_line`. ★'''
-deps = ["Descent.IsDescentSequence", "Descent.fderiv_apply_eq_zero_of_isLocalMin_line"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.3'
 
 [[node]]
 id = "equation_7_31"
-kind = "theorem"
-desc = '''(7.31) in the book's form: for `α > 0`, `LineSearch.Armijo f f' σ x d α ↔
--σ * ⟪gradient f x, d⟫ ≤ (f x - f (x + α • d)) / α` (the average descent rate `v_M(x_{k+1})` is at
-least the fraction `σ` of the initial rate; the book's outer `0 ≥ v_M` clause is the sign of
-`f x - f(x + α d)` once `α ≤` … and is not part of the condition). ★'''
-deps = ["LineSearch.Armijo"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.31'
 
 [[node]]
 id = "equation_7_32"
-kind = "theorem"
-desc = '''(7.32): `LineSearch.StrongWolfeCurvature f' β x d α ↔ |⟪gradient f (x + α • d), d⟫| ≤ β * |⟪gradient f x, d⟫|`,
-and (7.33): `LineSearch.WolfeCurvature f' β x d α ↔ β * ⟪gradient f x, d⟫ ≤ ⟪gradient f (x + α • d), d⟫`,
-with `StrongWolfeCurvature → WolfeCurvature` for a descent direction. ★'''
-deps = ["LineSearch.StrongWolfeCurvature", "LineSearch.WolfeCurvature"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.32'
 
 [[node]]
 id = "equation_7_34"
-kind = "theorem"
-desc = '''(7.34), the Goldstein conditions: for a descent direction and `α > 0`,
-`LineSearch.Goldstein f f' σ x d α ↔ σ ≤ (f (x + α • d) - f x) / (α * ⟪gradient f x, d⟫) ∧ … ≤ 1 - σ`.
-The Armijo rule `α_k = β^{m_k} ᾱ` with the first `m_k` satisfying (7.31) is well defined by
-`LineSearch.eventually_armijo_of_isDescentDirection`. ★'''
-deps = ["LineSearch.Goldstein", "LineSearch.eventually_armijo_of_isDescentDirection"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.34'
 
 [[node]]
 id = "property_7_5"
-kind = "theorem"
-desc = '''Property 7.5: if `f` is `C¹` on `ℝⁿ` and bounded below, `∀ x, M ≤ f x`, then at every step
-of a descent method (descent direction `d_k` at `x_k`), for `σ ∈ (0, 1/2)` and `β ∈ (σ, 1)`, there
-is an interval `I = [c, C]`, `0 < c < C`, such that every `α ∈ I` satisfies (7.31) and (7.32) (hence
-also (7.31) and (7.33)). `LineSearch.exists_Icc_armijo_wolfe`. ★'''
-deps = ["LineSearch.exists_Icc_armijo_wolfe", "QuarteroniSaccoSaleri.Chapter07.equation_7_31", "QuarteroniSaccoSaleri.Chapter07.equation_7_32"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.5'
 
 [[node]]
 id = "equation_7_35"
-kind = "theorem"
-desc = '''(7.35) and the display after it: for `A : Matrix (Fin n) (Fin n) ℝ` symmetric positive
-definite and `b`, the quadratic `f x = ½ xᵀ A x - bᵀ x` is
-`energyFunctional (Matrix.toEuclideanLin A) b`, its gradient is `gradient f x = A x - b = -r` and
-its Hessian matrix is `hessianMatrix f x = A` for every `x`
-(`hasGradientAt_energyFunctional`). Consequently the minimizer of `f` is the solution of `A x = b`
-(Property 7.9 (2) / `isMinOn_iff_forall_lineDeriv_nonneg`, or `IsGalerkin.quadratic_le`). ★'''
-deps = ["energyFunctional", "hasGradientAt_energyFunctional", "QuarteroniSaccoSaleri.Chapter07.hessianMatrix"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.35'
 
 [[node]]
 id = "equation_7_36"
-kind = "theorem"
-desc = '''(7.36): for the quadratic (7.35) and a direction `d` with `dᵀ A d ≠ 0`, the exact line
-search `α ↦ f (x + α d)` has the unique minimizer `α = dᵀ r / dᵀ A d` with `r = b - A x`, i.e. the
-minimizer along the line is `Projection.step1 (toEuclideanLin A) b d d x`. From
-`Projection.step1_isPetrovGalerkin` and `IsGalerkin.quadratic_le` (Galerkin on `span {d}` minimizes
-the quadratic over the line), or directly from `d/dα f(x + α d) = -dᵀ r + α dᵀ A d`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_35", "Projection.step1", "Projection.step1_isPetrovGalerkin", "IsGalerkin.quadratic_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.36'
 
 [[node]]
 id = "equation_7_38"
-kind = "theorem"
-desc = '''(7.37)–(7.38): with the step (7.36) along `d_k`, `‖x_{k+1} - x*‖_A² = ρ_k ‖x_k - x*‖_A²`,
-`ρ_k = 1 - σ_k`, `σ_k = (d_kᵀ r_k)² / ((d_kᵀ A d_k)(r_kᵀ A⁻¹ r_k))`, and `ρ_k < 1` unless
-`d_k ⟂ r_k`, in which case `ρ_k = 1`. `Projection.energyNorm_step1_sq_eq` with
-`r_kᵀ A⁻¹ r_k = ‖x_k - x*‖_A²`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_36", "Projection.energyNorm_step1_sq_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.38'
 
 [[node]]
 id = "equation_7_39"
-kind = "theorem"
-desc = '''(7.39): for steepest descent, `d_k = r_k`, with the exact step,
-`‖x_{k+1} - x*‖_A ≤ (λmax - λmin)/(λmax + λmin) ‖x_k - x*‖_A`, `λmax`, `λmin` the extreme
-eigenvalues of `A`. `Projection.energyNorm_steepestDescentStep_le` with
-`Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_38", "Projection.energyNorm_steepestDescentStep_le", "Projection.steepestDescentStep", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.39'
 
 [[node]]
 id = "lemma_7_1"
-kind = "theorem"
-desc = '''Lemma 7.1 (Kantorovich inequality): for `A` symmetric positive definite with extreme
-eigenvalues `λmax ≥ λmin > 0` and `y ≠ 0`,
-`4 λmax λmin / (λmax + λmin)² ≤ (yᵀ y)² / ((yᵀ A y)(yᵀ A⁻¹ y))`. The reciprocal form of
-`Projection.kantorovich_inequality` (`Numlib/Projection/OneDimensional.lean:235`,
-`re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)²/(4 λmax λmin) ‖x‖⁴`), rearranged. ★'''
-deps = ["Projection.kantorovich_inequality", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 7.1'
 
 [[node]]
 id = "property_7_6_orthogonal"
-kind = "theorem"
-desc = '''Property 7.6, last clause: for pairwise `A`-conjugate directions `d` and the steps (7.36),
-`r_{k+1}ᵀ d_m = 0` for all `m ≤ k`. `ConjugateDirection.inner_residual_direction_eq_zero`. ★'''
-deps = ["ConjugateDirection.IsConjugateFamily", "ConjugateDirection.iterate", "ConjugateDirection.inner_residual_direction_eq_zero", "QuarteroniSaccoSaleri.Chapter07.equation_7_36"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.6'
 
 [[node]]
 id = "property_7_6_isMinOn"
-kind = "theorem"
-desc = '''Property 7.6, second clause: `x_{k+1}` minimizes the quadratic (7.35) over the affine
-subspace `x_0 + span {d_0, …, d_k}` (the book's "subspace generated by `x_0, d_0, …, d_k`").
-`ConjugateDirection.isGalerkin_iterate` with `IsGalerkin.quadratic_le`. ★'''
-deps = ["ConjugateDirection.isGalerkin_iterate", "IsGalerkin.quadratic_le", "QuarteroniSaccoSaleri.Chapter07.equation_7_35"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.6'
 
 [[node]]
 id = "property_7_6_termination"
-kind = "theorem"
-desc = '''Property 7.6, first clause: a conjugate direction method with the steps (7.36) reaches the
-minimizer in at most `n` steps, `A x_n = b`. `ConjugateDirection.iterate_eq_of_finrank_le`. ★'''
-deps = ["ConjugateDirection.iterate_eq_of_finrank_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.6'
 
 [[node]]
 id = "conjugateGradient_eq_CG"
-kind = "theorem"
-desc = '''The conjugate gradient method for function minimization displayed in §7.2.4 —
-`d_0 = r_0`, `d_{k+1} = r_{k+1} + β_k d_k`, `β_k = -r_{k+1}ᵀ A d_k / d_kᵀ A d_k = r_{k+1}ᵀ r_{k+1} / r_kᵀ r_k`,
-`x_{k+1} = x_k + α_k d_k` with (7.36) — is `CG.iterate (toEuclideanLin A) b x₀`: the two
-expressions of `β_k` agree (`CG.beta_iterate`) and `α_k` is `CG.alpha`. Its error estimate
-`‖x_k - x*‖_A ≤ 2 ((√K₂(A) - 1)/(√K₂(A) + 1))^k ‖x_0 - x*‖_A` is chapter 4's restatement of
-`Krylov.IsGalerkinIterate.energyNorm_error_le` and is not restated here. ★'''
-deps = ["CG.iterate", "CG.alpha", "CG.beta", "QuarteroniSaccoSaleri.Chapter07.equation_7_36"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.4'
 
 [[node]]
 id = "remark_7_2"
-kind = "theorem"
-desc = '''Remark 7.2: the Fletcher–Reeves and Polak–Ribière coefficients,
-`β_k^{FR} = ‖∇f(x_k)‖² / ‖∇f(x_{k-1})‖²` and `β_k^{PR} = ∇f(x_k)ᵀ(∇f(x_k) - ∇f(x_{k-1})) / ‖∇f(x_{k-1})‖²`
-(`NonlinearCG.betaFletcherReeves`, `NonlinearCG.betaPolakRibiere`), with `β_1 = 0`, define
-nonlinear CG methods `NonlinearCG.iterate (gradient f) β α x₀` for any step rule `α`; on the
-quadratic (7.35) with exact line searches both reproduce `CG.iterate`
-(`NonlinearCG.iterate_eq_CG_iterate_of_quadratic`), which is the sense in which they extend the
-method to non-quadratic `f`. ★'''
-deps = ["NonlinearCG.betaFletcherReeves", "NonlinearCG.betaPolakRibiere", "NonlinearCG.iterate", "NonlinearCG.iterate_eq_CG_iterate_of_quadratic", "QuarteroniSaccoSaleri.Chapter07.conjugateGradient_eq_CG"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 7.2'
 
 [[node]]
 id = "equation_7_40"
-kind = "theorem"
-desc = '''(7.40), Newton's method for minimization, `x_{k+1} = x_k - H_k⁻¹ ∇f(x_k)`, is
-`Newton.iterate (gradient f) (fun x => toEuclideanLin (hessianMatrix f x))`, and the text's
-"a result analogous to Theorem 7.1 holds": if `∇f(x*) = 0`, `H(x*)` is invertible and `H` is
-Lipschitz near `x*`, the iterates converge locally quadratically to `x*` — `theorem_7_1` applied
-to `F = gradient f`, `F' = H`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.theorem_7_1", "QuarteroniSaccoSaleri.Chapter07.hessianMatrix", "Newton.iterate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.40'
 
 [[node]]
 id = "equation_7_41"
-kind = "theorem"
-desc = '''The second half of the remark after (7.41): for the quadratic (7.35) with `A` invertible,
-Newton's method (7.40) converges in one step, `Newton.iterate (gradient f) H x₀ 1 = A⁻¹ b`, because
-`H = A` and `∇f x₀ = A x₀ - b`. From `equation_7_35`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_35", "QuarteroniSaccoSaleri.Chapter07.equation_7_40"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.41'
 
 [[node]]
 id = "property_7_7"
-kind = "theorem"
-desc = '''Property 7.7 (Wolfe; Zoutendijk): if `f` is `C¹` with `L`-Lipschitz gradient,
-`‖∇f x - ∇f y‖ ≤ L ‖x - y‖`, and `x_k` is generated by a descent method (`Descent.IsDescentSequence`)
-whose steps satisfy (7.31) and (7.33) with `0 < σ < β < 1`, then one of: (1) `∇f(x_k) = 0` for
-some `k` (the termination case, excluded by `IsDescentSequence.descent` and stated separately
-as the trivial alternative); (2) `f(x_k) → -∞`; (3) `∇f(x_k)ᵀ d_k / ‖d_k‖ → 0`. Stated as
-(1) ∨ (2) ∨ (3) for a sequence satisfying the recurrence with descent directions until a
-critical point is hit; the nontrivial part is `LineSearch.tendsto_atBot_or_tendsto_zero`. The book
-cites Wolfe [Wol69], [Wol71] for the proof. ★★'''
-deps = ["LineSearch.tendsto_atBot_or_tendsto_zero", "LineSearch.zoutendijk", "QuarteroniSaccoSaleri.Chapter07.equation_7_31", "QuarteroniSaccoSaleri.Chapter07.equation_7_32"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.7'
 
 [[node]]
 id = "property_7_8"
-kind = "theorem"
-desc = '''Property 7.8, read as intended: if `f` is `C¹`, `x_k` is bounded and "gradient-like" in the
-book's sense that every limit (cluster point) of `x_k` is a critical point, then
-`Tendsto (fun k => gradient f (x k)) atTop (𝓝 0)`. `Descent.tendsto_fderiv_zero_of_forall_clusterPt`.
-Read literally ("a convergent sequence whose limit is a critical point"), the statement is the
-continuity of `∇f` and is also provided, as `property_7_8_of_tendsto`. ★'''
-deps = ["Descent.tendsto_fderiv_zero_of_forall_clusterPt", "QuarteroniSaccoSaleri.Chapter07.IsCriticalPoint"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.8'
 
 [[node]]
 id = "equation_7_42"
-kind = "theorem"
-desc = '''(7.42): the rank-one update `B_{k+1} = B_k + (y_k - B_k s_k) cᵀ / (cᵀ s_k)`
-(`Matrix.rankOneSecantUpdate`) satisfies the secant equation `B_{k+1} s_k = y_k` whenever
-`cᵀ s_k ≠ 0` (`Matrix.rankOneSecantUpdate_mulVec`), and `c = s_k` gives Broyden's update
-(`Matrix.broydenUpdate`) of §7.1.4. ★'''
-deps = ["Matrix.rankOneSecantUpdate", "Matrix.rankOneSecantUpdate_mulVec", "Matrix.broydenUpdate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.42'
 
 [[node]]
 id = "equation_7_43"
-kind = "theorem"
-desc = '''(7.43): the symmetric rank-one update `Matrix.sr1Update B s y` is symmetric when `B` is and
-satisfies `B_{k+1} s_k = y_k` when `(y_k - B_k s_k)ᵀ s_k ≠ 0` (`Matrix.sr1Update_isSymm`). ★'''
-deps = ["Matrix.sr1Update", "Matrix.sr1Update_isSymm", "QuarteroniSaccoSaleri.Chapter07.equation_7_42"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.43'
 
 [[node]]
 id = "equation_7_44"
-kind = "theorem"
-desc = '''(7.44): with `C_k = B_k⁻¹`, `B_k` symmetric invertible and `(s_k - C_k y_k)ᵀ y_k ≠ 0`,
-`(sr1Update B_k s_k y_k)⁻¹ = C_k + (s_k - C_k y_k)(s_k - C_k y_k)ᵀ / ((s_k - C_k y_k)ᵀ y_k)`, by the
-Sherman–Morrison formula (3.57). `Matrix.sr1Update_inv`. ★'''
-deps = ["Matrix.sr1Update_inv", "Matrix.inv_add_vecMulVec", "QuarteroniSaccoSaleri.Chapter07.equation_7_43"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.44'
 
 [[node]]
 id = "equation_7_46"
-kind = "theorem"
-desc = '''(7.45)–(7.46): the symmetrization iteration `B^{(2j+1)} = B^{(2j)} + (y - B^{(2j)} s) cᵀ / (cᵀ s)`,
-`B^{(2j+2)} = (B^{(2j+1)} + B^{(2j+1)ᵀ}) / 2` from `B^{(0)} = B_k` converges, as `j → ∞`, to the
-matrix (7.46), `Matrix.generalSymmetricUpdate B_k s y c`; with `c = s` the limit is the
-Powell-symmetric-Broyden matrix `Matrix.psbUpdate B_k s y`, which is symmetric and satisfies the
-secant equation. `Matrix.tendsto_symmetrizationStep_iterate`, `Matrix.psbUpdate_isSymm`. The book
-says "it can be shown". ★★'''
-deps = ["Matrix.symmetrizationStep", "Matrix.generalSymmetricUpdate", "Matrix.psbUpdate", "Matrix.tendsto_symmetrizationStep_iterate", "Matrix.psbUpdate_isSymm"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.46'
 
 [[node]]
 id = "psbLeastChange"
-kind = "theorem"
-desc = '''The unnumbered characterization after (7.46): `B_SPB = psbUpdate B_k s_k y_k` is the unique
-solution of: find symmetric `B̄` with `B̄ s_k = y_k` minimizing `‖B̄ - B_k‖_F`.
-`Matrix.frobenius_norm_psbUpdate_sub_le` (with its equality clause), for symmetric `B_k`. ★'''
-deps = ["Matrix.frobenius_norm_psbUpdate_sub_le", "QuarteroniSaccoSaleri.Chapter07.equation_7_46"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.7'
 
 [[node]]
 id = "psbBoundedDeterioration"
-kind = "theorem"
-desc = '''The last display of §7.2.7: if `H` (the Hessian of `f`) is `L`-Lipschitz on the open
-convex `D ∋ x_k, x_{k+1}` and `y_k = ∇f(x_{k+1}) - ∇f(x_k)`, `s_k = x_{k+1} - x_k`, then
-`‖B_SPB - H(x_{k+1})‖_F ≤ ‖B_k - H(x_k)‖_F + 3 L ‖s_k‖`.
-`Matrix.frobenius_norm_psbUpdate_sub_le_add` with `hessianMatrix`. ★'''
-deps = ["Matrix.frobenius_norm_psbUpdate_sub_le_add", "QuarteroniSaccoSaleri.Chapter07.hessianMatrix", "QuarteroniSaccoSaleri.Chapter07.psbLeastChange"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2.7'
+
+[[node]]
+id = "fderiv_eq_innerSL_gradient"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "gradient_eq_toDual_symm_fderiv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "hessianMatrix_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "toEuclideanLin_hessianMatrix_apply"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "inner_toEuclideanLin_hessianMatrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "hessianMatrix_isSymm"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "hasFDerivAt_gradient"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "isMinOn_of_convexOn_of_isCriticalPoint"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.2'
+
+[[node]]
+id = "rosenbrock"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.24'
+
+[[node]]
+id = "property_7_8_of_tendsto"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.8'

@@ -1,294 +1,193 @@
 namespace = "QuarteroniSaccoSaleri.Chapter04"
-desc = '''
-Quarteroni–Sacco–Saleri §4.4: Krylov subspaces from the Richardson residual polynomial
-((4.51)–(4.54)), the dimension formula (Property 4.7) and Example 4.8, the Arnoldi algorithm
-((4.55)–(4.56)) and its breakdown, the two Krylov specifications (4.57)–(4.58), the Arnoldi method
-for linear systems (FOM: (4.62), Theorem 4.13, the residual formula (4.63)), GMRES ((4.64)–(4.66),
-Property 4.8, the Givens form of the residual norm), projection methods (Remark 4.4), the Lanczos
-method for symmetric systems and the conjugate residual method (§4.4.3, Remark 4.5). Example 4.9 is a
-MATLAB run; Programs 21–24 are not nodes (the Arnoldi and Lanczos processes they implement are
-`Arnoldi.vec`/`Lanczos.alpha, beta` of the backbone, restated here as `arnoldi`). FOM(m), IOM,
-GMRES(m) and QGMRES are named without any result and have no node.
 
-Vectors are `EuclideanSpace ℝ (Fin n)` with `op A = toEuclideanLin A`; the book's `K_m(A; v)` is
-`Krylov.subspace (op A) v m` after `Matrix.krylov_subspace_toEuclideanLin`, its `deg_A(v)` is
-`Krylov.grade`, its `V_k`, `H_k`, `Ĥ_k` are `Arnoldi.vec`, `Arnoldi.hessenbergSq`, `Arnoldi.hessenberg`
-started at `r₀` (the backbone normalizes `v_1 = r₀/‖r₀‖` itself). The Saad surface's
-`Chapter06/Common.lean` and `Section03.lean` do the same translation for the same book-level objects;
-this file repeats only the definitions, not the proofs, which are the backbone's.
-'''
+[[node]]
+id = "toEuclideanLin_aeval"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.51'
 
 [[node]]
 id = "equation_4_51"
-kind = "theorem"
-desc = '''(4.51): for the nonstationary Richardson method with `P = 1` (`nonstationaryRichardson A 1 α b x₀`),
-`r_k = (∏ j < k, (1 - α_j A)) r_0`, i.e. `b - op A x_k = aeval (op A) (∏ j ∈ range k, (1 - C (α j) * X)) r₀`,
-so `r_k = p_k(A) r₀` with `p_k` of degree `k`, `p_k 0 = 1`. `Richardson.residual_iterate_eq_prod`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.nonstationaryRichardson", "Richardson.residual_iterate_eq_prod"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.51'
 
 [[node]]
 id = "krylovSubspace"
-kind = "definition"
-desc = '''(4.52): `krylovSubspace A v m = Submodule.span ℝ (Set.range fun i : Fin m => op (A ^ (i : ℕ)) v)`,
-the Krylov subspace `K_m(A; v) = span {v, A v, …, A^{m-1} v}` of order `m`; `krylovSubspace_eq`
-identifies it with `Krylov.subspace (op A) v m` (`Matrix.krylov_subspace_toEuclideanLin`), and the
-sentence after (4.52) — it is `{p(A) v : deg p ≤ m - 1}` — is `Krylov.subspace_eq_map_degreeLT`. ★'''
-deps = ["Krylov.subspace", "Matrix.krylov_subspace_toEuclideanLin", "Krylov.subspace_eq_map_degreeLT"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.52'
+
+[[node]]
+id = "krylovSubspace_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.52'
+
+[[node]]
+id = "mem_krylovSubspace_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.52'
 
 [[node]]
 id = "equation_4_53"
-kind = "theorem"
-desc = '''(4.53)–(4.54): the Richardson iterate lies in `W_k = {x₀ + y : y ∈ K_k(A; r₀)}`, i.e.
-`nonstationaryRichardson A 1 α b x₀ k - x₀ ∈ krylovSubspace A r₀ k`, and every element of `W_k` has
-the form `x₀ + q_{k-1}(A) r₀` with `deg q_{k-1} ≤ k - 1` ("Krylov method"). `Richardson.iterate_sub_mem_subspace`,
-`Krylov.mem_subspace_iff_exists_aeval`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.krylovSubspace", "QuarteroniSaccoSaleri.Chapter04.nonstationaryRichardson", "Richardson.iterate_sub_mem_subspace", "Krylov.mem_subspace_iff_exists_aeval"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.53'
 
 [[node]]
 id = "degree"
-kind = "definition"
-desc = '''The degree of `v` with respect to `A`, `deg_A(v)`: the minimum degree of a monic nonzero polynomial
-`p : ℝ[X]` with `p(A) v = 0` (Property 4.7's definition), `sInf {d | ∃ p : ℝ[X], p.Monic ∧ p.natDegree = d ∧ aeval (op A) p v = 0}`;
-`degree_eq_grade : degree A v = Krylov.grade (op A) v`, by `Krylov.natDegree_minpolyVec` and
-`Krylov.pow_apply_mem_subspace_iff_exists_monic`. Its value is at most `n` (Cayley–Hamilton,
-`Krylov.grade_le_finrank`), as the book remarks. ★'''
-deps = ["Krylov.grade", "Krylov.minpolyVec", "Krylov.natDegree_minpolyVec", "Krylov.pow_apply_mem_subspace_iff_exists_monic", "Krylov.grade_le_finrank"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.7'
+
+[[node]]
+id = "degree_eq_grade"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.7'
+
+[[node]]
+id = "degree_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.7'
 
 [[node]]
 id = "property_4_7"
-kind = "theorem"
-desc = '''Property 4.7: `Module.finrank ℝ (krylovSubspace A v m) = m ↔ m ≤ degree A v`, and the sentence
-after it, `Module.finrank ℝ (krylovSubspace A v m) = min m (degree A v)` (so the dimension is
-nondecreasing in `m`). `Krylov.finrank_subspace` with `degree_eq_grade`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.krylovSubspace", "QuarteroniSaccoSaleri.Chapter04.degree", "Krylov.finrank_subspace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.7'
 
 [[node]]
+id = "example_4_8_matrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.8'
+
+[[node]]
 id = "example_4_8"
-kind = "theorem"
-desc = '''Example 4.8: for `A = tridiag₄(-1, 2, -1)` and `v = ![1, 1, 1, 1]`, `(A² - 3A + 1) v = 0` and no monic
-polynomial of degree `1` annihilates `v` (`A v = ![1, 0, 0, 1]` is not a multiple of `v`), so
-`degree A v = 2` and `krylovSubspace A v m` has dimension `2` for every `m ≥ 2`; while
-`w = ![1, 1, -1, 1]` has `degree A w = 4`. Finite computations (`decide`/`norm_num` on the explicit
-Krylov vectors and `property_4_7`); the degree-`4` claim is the linear independence of
-`w, A w, A² w, A³ w`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.degree", "QuarteroniSaccoSaleri.Chapter04.property_4_7", "QuarteroniSaccoSaleri.Chapter04.krylovSubspace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.8'
 
 [[node]]
 id = "arnoldi"
-kind = "definition"
-desc = '''The Arnoldi algorithm (4.55) in the book's form, started from a unit vector `v₁`: the sequence
-`arnoldiV A v₁ : ℕ → 𝔼` with `arnoldiV 0 = v₁`, coefficients `h i k = inner ℝ (arnoldiV i) (op A (arnoldiV k))`
-for `i ≤ k`, `w k = op A (arnoldiV k) - ∑ i ≤ k, h i k • arnoldiV i`, `h (k+1) k = ‖w k‖`, and
-`arnoldiV (k+1) = ‖w k‖⁻¹ • w k` (`0` at a breakdown `w k = 0`, since `0⁻¹ = 0`). `0`-based, so
-`arnoldiV A v₁ (k - 1)` is the book's `v_k`. Together with `arnoldiH`, its coefficient function. ★'''
-deps = ["Arnoldi.vec", "Arnoldi.coeff", "Arnoldi.w"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
+
+[[node]]
+id = "arnoldiH"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
+
+[[node]]
+id = "arnoldiW"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
+
+[[node]]
+id = "arnoldi_succ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
+
+[[node]]
+id = "arnoldi_eq_vec_of_vec_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
 
 [[node]]
 id = "arnoldi_eq_vec"
-kind = "theorem"
-desc = '''For `‖v₁‖ = 1`: `arnoldiV A v₁ k = Arnoldi.vec (op A) v₁ k` and `arnoldiH A v₁ i k = Arnoldi.coeff (op A) v₁ i k`
-for all `i k`; hence the vectors are orthonormal up to the grade (`Arnoldi.orthonormal`), span the
-Krylov subspaces (`Arnoldi.span_vec`: "if the method terminates at step `m` then `v_1, …, v_m` form a
-basis of `K_m(A; v)`") and satisfy the Hessenberg relation (`Arnoldi.apply_vec`). Induction using
-`Arnoldi.vec_succ_eq` and `Arnoldi.w`; the same identification as `SaadSparse.Chapter06.arnoldiCGS_eq_vec`.
-★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.arnoldi", "Arnoldi.vec", "Arnoldi.coeff", "Arnoldi.vec_succ_eq", "Arnoldi.w", "Arnoldi.orthonormal", "Arnoldi.span_vec", "Arnoldi.apply_vec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
 
 [[node]]
+id = "arnoldi_normalize"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
+
+[[node]]
+id = "arnoldi_basis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
+
+[[node]]
+id = "V"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
+
+[[node]]
+id = "H"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
+
+[[node]]
+id = "Hhat"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
+
+[[node]]
 id = "equation_4_56"
-kind = "theorem"
-desc = '''(4.56): with `V_m` the `n × m` matrix of columns `v_1, …, v_m` and `Ĥ_m` the `(m+1) × m` matrix of
-the coefficients `h_ij` (zero for `i > j + 1`), for `m ≤ degree A v₁`:
-`V_mᵀ * A * V_m = H_m` (the leading `m × m` block) and `V_{m+1}ᵀ * A * V_m = Ĥ_m`, `Ĥ_m` being upper
-Hessenberg (`Arnoldi.hessenberg_isUpperHessenbergRect`). `Arnoldi.hessenbergSq_eq_toMatrix_compression`,
-`Arnoldi.coeff`, `Arnoldi.coeff_eq_zero_of_lt`, through `arnoldi_eq_vec`; the matrix `V_m` is
-`Matrix.of fun i j => arnoldiV A v₁ j i` as in `SaadSparse.Chapter06.V`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.arnoldi_eq_vec", "Arnoldi.hessenberg", "Arnoldi.hessenbergSq", "Arnoldi.hessenbergSq_eq_toMatrix_compression", "Arnoldi.coeff_eq_zero_of_lt", "Arnoldi.hessenberg_isUpperHessenbergRect"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
 
 [[node]]
 id = "arnoldi_breakdown_iff"
-kind = "theorem"
-desc = '''"The algorithm terminates at an intermediate step `k < m` iff `deg_A(v_1) = k`": for `‖v₁‖ = 1`,
-`w k = 0 ↔ degree A v₁ ≤ k + 1`, i.e. the first vanishing `w_k` (`0`-based) is at `k = deg - 1`,
-the book's `v_{k+1}` being the first vector that cannot be formed. `Arnoldi.vec_eq_zero_iff`,
-`Arnoldi.coeff_succ_self_eq_zero_iff`, `degree_eq_grade`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.arnoldi_eq_vec", "QuarteroniSaccoSaleri.Chapter04.degree", "Arnoldi.vec_eq_zero_iff", "Arnoldi.coeff_succ_self_eq_zero_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.55'
 
 [[node]]
+id = "toEuclideanLin_injective_of_isUnit"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.13'
+
+[[node]]
 id = "equation_4_57"
-kind = "definition"
-desc = '''(4.57), the Arnoldi method for linear systems (FOM): `IsFOMIterate A b x₀ k x := x - x₀ ∈ krylovSubspace A r₀ k ∧ ∀ v ∈ krylovSubspace A r₀ k, inner ℝ v (b - op A x) = 0`,
-with `r₀ = b - op A x₀`; it is `Krylov.IsGalerkinIterate (op A) b x₀ k x` (`isFOMIterate_iff`), and
-(4.59)–(4.62): for `k ≤ degree A r₀` and `v₁ = r₀/‖r₀‖`, `x = x₀ + V_k z` is the FOM iterate iff
-`H_k z = ‖r₀‖ e₁` (`Krylov.isGalerkinIterate_iff_mulVec_eq`), which has a unique solution iff `H_k` is
-nonsingular (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.krylovSubspace", "Krylov.IsGalerkinIterate", "Krylov.isGalerkinIterate_iff_mulVec_eq", "Krylov.existsUnique_isGalerkinIterate_iff_isUnit", "QuarteroniSaccoSaleri.Chapter04.equation_4_56"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.57'
+
+[[node]]
+id = "equation_4_57_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.57'
 
 [[node]]
 id = "equation_4_58"
-kind = "definition"
-desc = '''(4.58), GMRES: `IsGMRESIterate A b x₀ k x := x - x₀ ∈ krylovSubspace A r₀ k ∧ ∀ y, y - x₀ ∈ krylovSubspace A r₀ k → ‖b - op A x‖ ≤ ‖b - op A y‖`;
-it is `Krylov.IsMinResidualIterate (op A) b x₀ k x` (`isGMRESIterate_iff`), it exists for every `k`
-(`Krylov.exists_isMinResidualIterate`) and is unique for invertible `A`
-(`Krylov.existsUnique_isMinResidualIterate_of_injective`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.krylovSubspace", "Krylov.IsMinResidualIterate", "Krylov.exists_isMinResidualIterate", "Krylov.existsUnique_isMinResidualIterate_of_injective"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.58'
 
 [[node]]
+id = "equation_4_58_iff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.58'
+
+[[node]]
+id = "e₁"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.62'
+
+[[node]]
+id = "smul_e₁_eq_firstVec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.62'
+
+[[node]]
+id = "V_mulVec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.59'
+
+[[node]]
+id = "equation_4_62"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.62'
+
+[[node]]
 id = "theorem_4_13"
-kind = "theorem"
-desc = '''Theorem 4.13: for `IsUnit A`, the Arnoldi method yields the solution after at most `n` iterations:
-at `m = degree A r₀ ≤ n` the FOM iterate exists uniquely and `op A x = b`; a fortiori for every
-`k ≥ degree A r₀` (`k = n` included). The book's two cases — termination at `n` because `K_n = ℝⁿ`,
-or breakdown at `m < n` where "inverting the first relation in (4.56)" gives `x^{(m)} = A⁻¹ b` — are
-both `Krylov.existsUnique_isGalerkinIterate_of_grade_le` (existence needs `A` injective, which the
-book uses silently) with `Krylov.grade_le_finrank`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_57", "QuarteroniSaccoSaleri.Chapter04.degree", "Krylov.existsUnique_isGalerkinIterate_of_grade_le", "Krylov.IsGalerkinIterate.apply_eq_of_grade_le", "Krylov.grade_le_finrank"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.13'
 
 [[node]]
 id = "equation_4_63"
-kind = "theorem"
-desc = '''The residual formula before (4.63): if `x = x₀ + V_k z` with `H_k z = ‖r₀‖ e₁` and `k < degree A r₀`,
-then `‖b - op A x‖ = h_{k+1,k} * |z_k|` (last components, `1`-based), because the residual is
-`-(h_{k+1,k} z_k) v_{k+1}` with `‖v_{k+1}‖ = 1`. `Krylov.residual_galerkin_eq` / `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq`
-and `Arnoldi.norm_vec_eq_one_of_lt_grade`; the stopping test (4.63) is this quantity divided by
-`‖r₀‖`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_57", "Krylov.residual_galerkin_eq", "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq", "Arnoldi.norm_vec_eq_one_of_lt_grade"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.63'
 
 [[node]]
 id = "equation_4_65"
-kind = "theorem"
-desc = '''(4.64)–(4.65): for `x = x₀ + V_k z` and `k ≤ degree A r₀`, `b - op A x = r₀ - A V_k z = V_{k+1} (‖r₀‖ e₁ - Ĥ_k z)`,
-the residual expanded in the Arnoldi basis. `Krylov.HessenbergRelation₂.residual_eq` for
-`Arnoldi.hessenbergRelation`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_56", "Krylov.HessenbergRelation₂.residual_eq", "Arnoldi.hessenbergRelation"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.65'
 
 [[node]]
 id = "equation_4_66"
-kind = "theorem"
-desc = '''(4.66): for `k ≤ degree A r₀`, `x₀ + V_k z` is the GMRES iterate iff `z` minimizes
-`‖‖r₀‖ e₁ - Ĥ_k y‖₂` over `y : Fin k → ℝ` (the orthogonal `V_{k+1}` preserving the norm,
-`Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`). `Krylov.isMinResidualIterate_iff_isMinOn`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_58", "QuarteroniSaccoSaleri.Chapter04.equation_4_65", "Krylov.isMinResidualIterate_iff_isMinOn", "Krylov.norm_residual_eq_norm_firstVec_sub_mulVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.66'
 
 [[node]]
 id = "property_4_8"
-kind = "theorem"
-desc = '''Property 4.8: for `IsUnit A` and `m < n`, a breakdown of the Arnoldi process at step `m`
-(`degree A r₀ = m`, i.e. `h_{m+1,m} = 0` by `arnoldi_breakdown_iff`) occurs iff the GMRES iterate
-`x^{(m)}` is the exact solution: `degree A r₀ ≤ m ↔ ∀ x, IsGMRESIterate A b x₀ m x → op A x = b`
-(and then the iterate exists uniquely). `→`: `Krylov.IsMinResidualIterate.apply_eq_of_grade_le` (with
-injectivity of `A`); `←`: `Krylov.grade_le_of_apply_eq` applied to the iterate. Also GMRES terminates
-at most after `n` iterations (`Krylov.grade_le_finrank`). Saad's Proposition 6.10,
-`SaadSparse.Chapter06.proposition_6_10`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_58", "QuarteroniSaccoSaleri.Chapter04.arnoldi_breakdown_iff", "Krylov.IsMinResidualIterate.apply_eq_of_grade_le", "Krylov.grade_le_of_apply_eq", "Krylov.grade_le_finrank"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.8'
 
 [[node]]
 id = "gmres_norm_residual_eq_norm_gamma"
-kind = "theorem"
-desc = '''The Givens paragraph after Program 23: `Ĥ_k` is factored as `Q_kᵀ R_k` by `k` plane rotations
-(`Krylov.givensQ_mul_hessenbergOf`: `Q_k Ĥ_k = R̄_k` upper triangular with zero last row), minimizing
-`‖‖r₀‖ e₁ - Ĥ_k z‖` is minimizing `‖f_k - R_k z‖` with `f_k = Q_k (‖r₀‖ e₁)`
-(`Krylov.givensQ_mulVec_firstVec`), and "the `(k+1)`-th component of `f_k` is, in absolute value, the
-Euclidean norm of the residual at the `k`-th step": for `k < degree A r₀` and the GMRES iterate `x`,
-`‖b - op A x‖ = |Krylov.gamma (arnoldiH A v₁) ‖r₀‖ k|` (`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma`),
-which is what makes the residual available without forming `x^{(k)}`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_66", "QuarteroniSaccoSaleri.Chapter04.arnoldi_eq_vec", "Krylov.givensQ_mul_hessenbergOf", "Krylov.givensQ_mulVec_firstVec", "Krylov.gamma", "Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.66'
 
 [[node]]
 id = "remark_4_4"
-kind = "definition"
-desc = '''Remark 4.4, projection methods: `IsProjectionMethod A b x₀ Y L x := x - x₀ ∈ Y ∧ b - op A x ∈ Lᗮ`
-(the book writes `x ∈ Y_k`; read with the affine translate `x₀ + Y_k`, as the Krylov instances
-require), orthogonal when `L = Y`, oblique otherwise; it is `IsPetrovGalerkin (op A) b x₀ Y L x`
-(`isProjectionMethod_iff`). ★'''
-deps = ["IsPetrovGalerkin", "IsGalerkin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.4'
+
+[[node]]
+id = "remark_4_4_iff"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.4'
 
 [[node]]
 id = "remark_4_4_krylov"
-kind = "theorem"
-desc = '''Remark 4.4, the Krylov instances: FOM is the orthogonal projection method with `Y_k = L_k = K_k(A; r₀)`
-(`IsFOMIterate A b x₀ k x ↔ IsProjectionMethod A b x₀ (krylovSubspace A r₀ k) (krylovSubspace A r₀ k) x`,
-by definition), and GMRES is the oblique projection method with `Y_k = K_k(A; r₀)`, `L_k = A Y_k`
-(`IsGMRESIterate A b x₀ k x ↔ IsProjectionMethod A b x₀ K (K.map (op A)) x`), which is
-`IsMinResidual.iff_isPetrovGalerkin`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.remark_4_4", "QuarteroniSaccoSaleri.Chapter04.equation_4_57", "QuarteroniSaccoSaleri.Chapter04.equation_4_58", "IsMinResidual.iff_isPetrovGalerkin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.4'
 
 [[node]]
 id = "remark_4_4_gaussSeidel"
-kind = "theorem"
-desc = '''Remark 4.4, "the Gauss–Seidel method is an orthogonal projection method where at the `k`-th step
-`K = span (e_k)`, the projection steps being carried out cyclically from `1` to `n`": one Gauss–Seidel
-sweep `Matrix.sorSweep A 1 b x` is the composition, in increasing index order, of the `n`
-one-dimensional projection steps onto `span {e_i}` with `L = span {e_i}`
-(`Projection.step1 (op A) b (e i) (e i)`), each a Galerkin step. It is
-`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep` at the trivial block labelling
-`π = id` (`Matrix.blockDiagPart_id` makes the block splitting the point one), read through
-`Matrix.sorSweep_eq_mulVecStep`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.remark_4_4", "Matrix.sorSweep_eq_mulVecStep", "Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep", "Matrix.blockGaussSeidelSplitting", "Projection.step1", "Projection.step1_isPetrovGalerkin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.4'
 
 [[node]]
 id = "lanczos_tridiagonal"
-kind = "theorem"
-desc = '''§4.4.3, first paragraph: for symmetric `A` (`A.IsSymm`) the Arnoldi matrix `H_m` is symmetric and
-tridiagonal, `H_m = T_m` with `α_i = h_ii`, `β_i = h_{i-1,i}`: `Arnoldi.hessenbergSq (op A) v₁ m = (Lanczos.tridiag (op A) v₁ m).map (algebraMap ℝ ℝ)`
-(`Lanczos.hessenbergSq_eq_map_tridiag`), `Lanczos.tridiag_isSymm`, `Lanczos.tridiag_isTridiagonal`,
-and the three-term recurrence `Lanczos.apply_vec` is what Program 24 computes. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.arnoldi_eq_vec", "Lanczos.hessenbergSq_eq_map_tridiag", "Lanczos.tridiag", "Lanczos.tridiag_isSymm", "Lanczos.tridiag_isTridiagonal", "Lanczos.apply_vec"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.56'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.4.3'
 
 [[node]]
 id = "lanczos_residual_eq_smul"
-kind = "theorem"
-desc = '''§4.4.3, "`r^{(k)} = γ_k v_{k+1}` for a suitable `γ_k`, so that the residuals are all mutually
-orthogonal": for symmetric `A`, the FOM/Lanczos iterate at step `k < degree A r₀` has residual
-`b - op A x = -(β_k z_k) • v_{k+1}` (a multiple of the next Lanczos vector,
-`Krylov.IsGalerkinIterate.residual_mem_span`, with the scalar from `Krylov.residual_galerkin_eq`), and
-residuals at different steps are orthogonal (`Krylov.IsGalerkinIterate.inner_residual_eq_zero`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_57", "QuarteroniSaccoSaleri.Chapter04.lanczos_tridiagonal", "Krylov.IsGalerkinIterate.residual_mem_span", "Krylov.residual_galerkin_eq", "Krylov.IsGalerkinIterate.inner_residual_eq_zero"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.63'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.4.3'
 
 [[node]]
 id = "remark_4_5"
-kind = "theorem"
-desc = '''Remark 4.5: for `A.PosDef` the CG iterate is the Lanczos-method (FOM) iterate,
-`IsFOMIterate A b x₀ k (cgX A b x₀ k)` (`CG.isGalerkinIterate` through `cg_eq_CG`), the CG residuals
-are multiples of the Lanczos vectors (`cgR A b x₀ k = ((-1)^k * ‖r_k‖) • arnoldiV A v₁ k`,
-`CG.arnoldi_vec_eq` with `arnoldi_eq_vec`), and the directions `p_j` are mutually `A`-conjugate
-(`equation_4_42`) — the book's `P_kᵀ A P_k` diagonal. The book's route through the `LU` factorization
-`H_k = L_k U_k`, `P_k = V_k U_k⁻¹`, is the D-Lanczos algorithm (Saad §6.7.1; formalized as
-`SaadSparse.Chapter06.dLanczosX`, `cgX_eq_dLanczosX`), which this surface does not restate: the
-remark's content is the identification of the two iterates, and that is the Galerkin property. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "QuarteroniSaccoSaleri.Chapter04.equation_4_57", "QuarteroniSaccoSaleri.Chapter04.equation_4_42", "QuarteroniSaccoSaleri.Chapter04.arnoldi_eq_vec", "CG.isGalerkinIterate", "CG.arnoldi_vec_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.5'
 
 [[node]]
 id = "cr_residual_conjugate"
-kind = "theorem"
-desc = '''§4.4.3, last paragraph: for `A.PosDef` the conjugate residual method (`CR.iterate (op A) b x₀`)
-produces the GMRES iterates of the symmetric case, `IsGMRESIterate A b x₀ k (CR.iterate … k).x`
-(`CR.isMinResidualIterate`), and "enjoys the property that the residuals are mutually `A`-conjugate":
-`inner ℝ (CR.residual i) (op A (CR.residual j)) = 0` for `i ≠ j` (`CR.inner_residual_apply_residual_eq_zero`).
-GCR and ORTHOMIN are named without content and have no node. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_58", "CR.iterate", "CR.isMinResidualIterate", "CR.inner_residual_apply_residual_eq_zero", "Matrix.posDef_iff_isSymmetricCoercive"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.5'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.4.3'

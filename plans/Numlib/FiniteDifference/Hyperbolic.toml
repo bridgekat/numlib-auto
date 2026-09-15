@@ -243,7 +243,7 @@ desc = '''On the periodic grid (`N ≥ 3`, `φ = 2πk/N`): `amplificationFactor 
 (forwardEulerCentred a lam)) k = 1 - I * (lam * a) * sin φ`, with `‖·‖ ^ 2 = 1 + (lam a)² sin² φ`; so
 `1 < ‖γ_k‖` whenever `a ≠ 0` and `sin φ ≠ 0` (`one_lt_norm_amplificationFactor_forwardEulerCentred`).
 From `amplificationFactor_toPeriodic_threePoint` and `e^{iφ} - e^{-iφ} = 2i sin φ`. ★'''
-deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint"]
 
 [[node]]
 id = "forwardEulerCentred_not_isStableFamily"
@@ -264,7 +264,7 @@ desc = '''`amplificationFactor (toPeriodic N (upwind a lam)) k = 1 - lam * a * (
 (1 - lam |a|) (1 - cos φ)`. `norm_amplificationFactor_upwind_le_one_iff`: for `N ≥ 2`, `(∀ k, ‖γ_k‖ ≤
 1) ↔ lam * |a| ≤ 1`. (Quarteroni–Sacco–Saleri Exercise 13.6; the book's `a < 0` formula has the
 wrong sign in the exponent, harmless for the modulus.) ★★'''
-deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint"]
 
 [[node]]
 id = "amplificationFactor_laxFriedrichs"
@@ -272,7 +272,7 @@ kind = "theorem"
 desc = '''`amplificationFactor (toPeriodic N (laxFriedrichs a lam)) k = cos φ - I * (lam * a) * sin φ`,
 `‖γ_k‖ ^ 2 = cos² φ + (lam a)² sin² φ`; `norm_amplificationFactor_laxFriedrichs_le_one_iff`: for `N ≥
 3`, `(∀ k, ‖γ_k‖ ≤ 1) ↔ |lam * a| ≤ 1`. ★'''
-deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint"]
 
 [[node]]
 id = "amplificationFactor_laxWendroff"
@@ -282,7 +282,7 @@ a) sin φ`, with `‖γ_k‖ ^ 2 = 1 - 4 (lam a)² (1 - (lam a)²) sin⁴(φ/2)`
 `sin² φ = (1 - cos φ)(1 + cos φ)`); `norm_amplificationFactor_laxWendroff_le_one_iff`: for `N ≥ 2`,
 `(∀ k, ‖γ_k‖ ≤ 1) ↔ |lam * a| ≤ 1`. With `Stencil.norm_lpCLM_two_le_of_symbol_le` this gives the
 `ℓ²(ℤ)` stability of Lax–Wendroff under CFL (`laxWendroff_norm_lpCLM_two_le_one`). ★★'''
-deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Stencil.norm_lpCLM_two_le_of_symbol_le"]
+deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Stencil.norm_lpCLM_two_le_of_symbol_le"]
 
 [[node]]
 id = "amplificationFactor_backwardEulerCentred"
@@ -290,7 +290,7 @@ kind = "theorem"
 desc = '''The periodic backward Euler/centred scheme `periodicTwoLevel (toPeriodic N (threePoint
 (-(lam a/2)) 1 (lam a/2))) (Pi.single 0 1)` has `amplificationFactor₂ … k = 1 / (1 + I (lam a) sin φ)`,
 of modulus `≤ 1` for every `lam`, `a`, `k`. ★'''
-deps = ["FiniteDifference.periodicTwoLevel", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+deps = ["FiniteDifference.periodicTwoLevel", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint"]
 
 [[node]]
 id = "exactAmplification"

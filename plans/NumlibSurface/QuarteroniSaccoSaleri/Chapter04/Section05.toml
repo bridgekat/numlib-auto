@@ -1,93 +1,93 @@
 namespace = "QuarteroniSaccoSaleri.Chapter04"
-desc = '''
-Quarteroni–Sacco–Saleri §4.5: the Lanczos bi-orthogonalization for unsymmetric matrices — the
-coupled recurrences, the bi-orthogonality (4.67), the tridiagonal `T_m = Z_mᵀ A V_m`, the Lanczos
-method for unsymmetric systems `x^{(m)} = x₀ + V_m y^{(m)}`, `T_m y^{(m)} = ‖r₀‖ e₁`, and its residual
-formula — and the one-sentence descriptions of BiCG, QMR, CGS and BiCGStab. Everything is
-`Numlib/Krylov/BiLanczos` (Saad's Algorithm 7.1, with the same normalization: the book's `γ_{k+1}`
-is Saad's `δ_{j+1}`, its `β_{k+1}` Saad's `β_{j+1}`, its `z` Saad's `w`) and `Numlib/Krylov/Hessenberg`.
-Example 4.10 is a MATLAB run and Program 25 is not a node. CGS and BiCGStab are *named* here only
-("the matrix-vector products involving `Aᵀ` are removed"; "a more regular convergence"), with no
-algorithm printed and no result stated, so they have no node; their algorithms exist in the Saad
-surface (`SaadSparse.Chapter07.cgs`, `bicgstab`, `NumlibSurface/SaadSparse/Chapter07/Section04.lean`).
-'''
+
+[[node]]
+id = "biLanczosStep"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "biLanczos"
-kind = "definition"
-desc = '''The bi-orthogonalization algorithm of §4.5 in the book's letters, on `𝔼 = EuclideanSpace ℝ (Fin n)`:
-from `v₁`, `z₁` with `inner ℝ z₁ v₁ = 1`, `β₁ = γ₁ = 0`, `v₀ = z₀ = 0`, at step `k` set
-`α_k = inner ℝ z_k (op A v_k)`, `ṽ_{k+1} = op A v_k - α_k • v_k - β_k • v_{k-1}`,
-`z̃_{k+1} = op Aᵀ z_k - α_k • z_k - γ_k • z_{k-1}`, `γ_{k+1} = √|inner ℝ z̃_{k+1} ṽ_{k+1}|`,
-`β_{k+1} = inner ℝ z̃_{k+1} ṽ_{k+1} / γ_{k+1}`, `v_{k+1} = ṽ_{k+1}/γ_{k+1}`, `z_{k+1} = z̃_{k+1}/β_{k+1}`
-(`0` past a breakdown `γ_{k+1} = 0`, by `0⁻¹ = 0`). As a state recursion `biLanczosStep` iterated to
-`biLanczos A v₁ z₁ k`, with readers `blV`, `blZ`, `blAlpha`, `blBeta`, `blGamma`; `1`-based in the
-book, `0`-based here. ★'''
-deps = ["BiLanczos.step", "BiLanczos.state", "BiLanczos.vec", "BiLanczos.dualVec"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "blV"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "blZ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "blAlpha"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "blBeta"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "blGamma"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "biLanczos_succ"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "biLanczosStep_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "biLanczos_eq"
-kind = "theorem"
-desc = '''For `inner ℝ z₁ v₁ = 1`: `blV A v₁ z₁ k = BiLanczos.vec (op A) (op Aᵀ) v₁ z₁ k`,
-`blZ … k = BiLanczos.dualVec … k`, `blAlpha … k = BiLanczos.alpha … k`, `blGamma … (k+1) = BiLanczos.delta … k`,
-`blBeta … (k+1) = BiLanczos.beta … k` (index shift as in the backbone's convention), where the adjoint
-`B = op Aᵀ` satisfies `⟪A x, y⟫ = ⟪x, B y⟫`. Induction on `k`, matching the two recurrences clause by
-clause. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos", "BiLanczos.vec", "BiLanczos.dualVec", "BiLanczos.alpha", "BiLanczos.beta", "BiLanczos.delta", "BiLanczos.vec_succ", "BiLanczos.dualVec_succ"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "inner_toEuclideanLin_transpose"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "noBreakdown_of"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "equation_4_67"
-kind = "theorem"
-desc = '''(4.67), bi-orthogonality: if no breakdown occurs before step `m` (`BiLanczos.NoBreakdown (op A) (op Aᵀ) v₁ z₁ m`),
-then `inner ℝ (blZ A v₁ z₁ i) (blV A v₁ z₁ j) = if i = j then 1 else 0` for `i, j ≤ m`, and the two
-families span `K_{m+1}(A; v₁)` and `K_{m+1}(Aᵀ; z₁)`. `BiLanczos.inner_vec_dualVec`,
-`BiLanczos.span_vec`, `BiLanczos.span_dualVec` through `biLanczos_eq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos_eq", "BiLanczos.NoBreakdown", "BiLanczos.inner_vec_dualVec", "BiLanczos.span_vec", "BiLanczos.span_dualVec"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+
+[[node]]
+id = "T"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "That"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "Vmat"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "Zmat"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "T_apply_eq_coeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
+
+[[node]]
+id = "That_apply_eq_coeff"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "biLanczos_tridiag"
-kind = "theorem"
-desc = '''`Z_mᵀ A V_m = T_m`, the tridiagonal matrix with diagonal `α_i`, superdiagonal `β_{i+1}` and
-subdiagonal `γ_{i+1}`: for `NoBreakdown … m`, `inner ℝ (blZ i) (op A (blV j)) = T i j` for `i, j < m`,
-where `T i j` is `α_i` on the diagonal, `β_{j}` at `(j - 1, j)`, `γ_{i}` at `(i, i - 1)`, `0` elsewhere.
-`BiLanczos.inner_dualVec_apply_vec` and `BiLanczos.coeff`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_67", "BiLanczos.inner_dualVec_apply_vec", "BiLanczos.coeff"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "lanczosUnsym_norm_residual"
-kind = "theorem"
-desc = '''The Lanczos method for unsymmetric systems and its residual: with `v₁ = r₀/‖r₀‖`, `z₁ = v₁`
-(Program 25's choice, `⟪z₁, v₁⟫ = 1`), `NoBreakdown … m`, and `y` solving `T_m y = ‖r₀‖ e₁`, the
-iterate `x = x₀ + V_m y` has residual `b - op A x = -(γ_{m+1} y_m) • v_{m+1}`, hence
-`‖b - op A x‖ = |γ_{m+1} * y_m| * ‖v_{m+1}‖` (the book's stopping formula, the book's `1`-based `e_mᵀ y_m`
-being the last component). The bi-Lanczos basis satisfies the Hessenberg relation without
-orthonormality (`BiLanczos.hessenbergRelation`), so `Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq`
-applies verbatim; `‖v_{m+1}‖` is not `1` here, which is why the book keeps it. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos_eq", "BiLanczos.hessenbergRelation", "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "bicg_isPetrovGalerkin"
-kind = "theorem"
-desc = '''§4.5, item 1: BiCG "can be derived by the unsymmetric Lanczos method in the same way as the
-conjugate gradient method is obtained from the FOM method": the BiCG iterate `BCG.iterate (op A) (op Aᵀ) b x₀ r*₀ k`
-is the Petrov–Galerkin iterate with `Y = K_k(A; r₀)`, `L = K_k(Aᵀ; r*₀)`
-(`IsProjectionMethod A b x₀ (krylovSubspace A r₀ k) (krylovSubspace Aᵀ r*₀ k) …`), under
-`BCG.NoBreakdown`. `BCG.isPetrovGalerkin` through `remark_4_4`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.remark_4_4", "QuarteroniSaccoSaleri.Chapter04.krylovSubspace", "BCG.iterate", "BCG.isPetrovGalerkin", "BCG.NoBreakdown"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'
 
 [[node]]
 id = "qmr_norm_residual_le"
-kind = "theorem"
-desc = '''§4.5, item 2: QMR "is analogous to GMRES, the only difference being that the Arnoldi
-orthonormalization is replaced by the Lanczos bi-orthogonalization": the QMR iterate
-`x = x₀ + V_m y` with `y` minimizing the quasi-residual `‖‖r₀‖ e₁ - T̄_m y‖₂` (`QMR.IsQuasiMinResidual`)
-has true residual at most `‖V_{m+1}‖₂` times the quasi-residual, `QMR.norm_residual_le_norm_quasiResidual`
-(Saad Prop 7.3), the gap with GMRES being exactly the non-orthonormality of `V_{m+1}`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter04.biLanczos_eq", "QMR.IsQuasiMinResidual", "QMR.norm_residual_le_norm_quasiResidual"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.67'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.5'

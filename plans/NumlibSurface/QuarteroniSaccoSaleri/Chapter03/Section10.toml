@@ -1,60 +1,23 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.10, accuracy of GEM: the backward error of the solve (3.64)–(3.65), the growth factor (3.66)
-with Wilkinson's bound (3.67) and the growth-factor bounds for special classes, Examples 3.7–3.8,
-and the digit-count heuristic (3.69). Backbone: `Numlib/FloatingPoint/LU`,
-`Numlib/LinearAlgebra/Matrix/LU/Pivoting`. The book's first-order displays (`+ O(u²)`) are stated in
-their rigorous `γ`-forms (Higham Theorems 9.4–9.5), which imply them; the residual display before
-Example 3.8 is `equation_3_21`.
-'''
 
 [[node]]
 id = "equation_3_64"
-kind = "theorem"
-desc = '''(3.64), rigorous form: the solution `x̂` computed by GEM (admissible factors `FloatingPoint.RoundsLU m A
-L̂ Û` and substitutions) solves `(A + δA) x̂ = b` with `|δA| ≤ γ_{3n} |L̂| |Û|` (`3 n u < 1`);
-`FloatingPoint.exists_roundsLU_solve_eq`. The book's `|δA| ≤ n u (3|A| + 5|L̂||Û|) + O(u²)`
-(Golub–Van Loan) is the first-order form: `γ_{3n} = 3 n u + O(u²)` and `|A| ≤ |L̂||Û| + O(u)` by
-(3.40), so the rigorous bound implies it with a smaller constant. ★'''
-deps = ["FloatingPoint.exists_roundsLU_solve_eq", "QuarteroniSaccoSaleri.Chapter03.equation_3_40", "QuarteroniSaccoSaleri.Chapter03.equation_3_24"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.64)'
 
 [[node]]
 id = "equation_3_65"
-kind = "theorem"
-desc = '''(3.65), rigorous form: with partial pivoting (`|l̂_ij| ≤ 1`, hence `‖L̂‖_∞ ≤ n`), `‖δA‖_∞ ≤ n γ_{3n}
-‖Û‖_∞`; from `equation_3_64` by `Matrix.linfty_opNorm_le_of_abs_entrywiseLE` and
-`‖|L̂||Û|‖_∞ ≤ ‖L̂‖_∞ ‖Û‖_∞`. The book's `n u (3‖A‖_∞ + 5 n ‖Û‖_∞) + O(u²)` follows. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_64", "Matrix.linfty_opNorm_le_of_abs_entrywiseLE", "QuarteroniSaccoSaleri.Chapter03.equation_3_52"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.65)'
 
 [[node]]
 id = "equation_3_66"
-kind = "definition"
-desc = '''(3.66), the growth factor `ρ_n = max_{i,j,k} |â^{(k)}_ij| / max_{i,j} |a_ij|`: `Matrix.growthFactor A`
-on the exact stages `Matrix.gemStage` (the book writes the computed `â^{(k)}_ij`; Higham explains
-after his Theorem 9.5 why bounds are available only for the exact ones). For GEPP,
-`growthFactor (P A)` with `P` the permutation `Matrix.gemPivotStage` produces. ★'''
-deps = ["Matrix.growthFactor", "Matrix.gemStage"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.66)'
 
 [[node]]
 id = "equation_3_67"
-kind = "theorem"
-desc = '''(3.67), Wilkinson, conditional form: if the computed factors satisfy `|l̂_ij| ≤ 1` and `|û_ij| ≤ ρ
-max_{i,j} |a_ij|`, then `‖δA‖_∞ ≤ n² γ_{3n} ρ ‖A‖_∞` for the `δA` of `equation_3_64`;
-`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`. With `ρ = ρ_n` this is the book's `8 u n³ ρ_n
-‖A‖_∞ + O(u²)` up to the constant (`n² γ_{3n} = 3 n³ u + O(u²)`); the hypotheses are exactly the
-facts about `L̂`, `Û` that the book (like Higham) borrows from the exact factors. ★'''
-deps = ["FloatingPoint.linfty_opNorm_le_of_roundsLU_solve", "QuarteroniSaccoSaleri.Chapter03.equation_3_66", "QuarteroniSaccoSaleri.Chapter03.equation_3_65"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.67)'
 
 [[node]]
 id = "growthFactor_le_two_pow"
-kind = "theorem"
-desc = '''§3.10: with partial pivoting `ρ_n ≤ 2^{n-1}`; `Matrix.growthFactor_le_two_pow` (multipliers of
-modulus `≤ 1`) with `Matrix.gemPivotStage_permMatrix_mul_isLU`. Exercise 5's matrix attains it. ★'''
-deps = ["Matrix.growthFactor_le_two_pow", "Matrix.gemPivotStage_permMatrix_mul_isLU", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
@@ -70,34 +33,18 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
 id = "growthFactor_tridiagonal"
-kind = "theorem"
-desc = '''§3.10 (1), tridiagonal case: `ρ_n ≤ 2` with partial pivoting; `Matrix.growthFactor_le_two_of_isTridiagonal`.
-★'''
-deps = ["Matrix.growthFactor_le_two_of_isTridiagonal", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
 id = "growthFactor_hessenberg"
-kind = "theorem"
-desc = '''§3.10 (2): for upper Hessenberg `A`, `ρ_n ≤ n` with partial pivoting;
-`Matrix.growthFactor_le_card_of_isUpperHessenberg`. ★'''
-deps = ["Matrix.growthFactor_le_card_of_isUpperHessenberg", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
 id = "growthFactor_posDef"
-kind = "theorem"
-desc = '''§3.10 (3): for symmetric positive definite `A`, `ρ_n = 1` (no pivoting);
-`Matrix.growthFactor_eq_one_of_posDef`. ★'''
-deps = ["Matrix.growthFactor_eq_one_of_posDef", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
 id = "growthFactor_colDiagDominant"
-kind = "theorem"
-desc = '''§3.10 (4): for `A` strictly diagonally dominant by columns, `ρ_n ≤ 2`;
-`Matrix.growthFactor_le_two_of_isColDiagDominant`. ★'''
-deps = ["Matrix.growthFactor_le_two_of_isColDiagDominant", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
@@ -111,53 +58,25 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
 [[node]]
 id = "example_3_7_cond"
-kind = "theorem"
-desc = '''Example 3.7, (3.68): for `ε > 0`, `A = !![ε, 1; 1, 0]` has `K_∞(A) = (1 + ε)²` (`A⁻¹ = !![0, 1; 1,
--ε]`, `‖A‖_∞ = ‖A⁻¹‖_∞ = 1 + ε`), and `x = ![1, 1]` solves `A x = ![1 + ε, 1]`. `norm_num` with the
-row-sum formula `Matrix.linfty_opNorm_def`. ★'''
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.7'
 
 [[node]]
 id = "example_3_7_lu"
-kind = "theorem"
-desc = '''Example 3.7 with Exercise 6: the LU factorization of `!![ε, 1; 1, 0]` without pivoting is `L =
-!![1, 0; ε⁻¹, 1]`, `U = !![ε, 1; 0, -ε⁻¹]` (`Matrix.IsLU`, unique by Theorem 3.4), whose entries are
-of modulus `ε⁻¹`; with partial pivoting `P A = !![1, 0; ε, 1] * !![1, 0; 0, 1]` (rows exchanged),
-whose factors are bounded by `1`. The numerical run of Example 3.7 is not a node. ★'''
-deps = ["Matrix.IsLU", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4", "QuarteroniSaccoSaleri.Chapter03.example_3_7_cond"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.7'
 
 [[node]]
 id = "example_3_8"
-kind = "theorem"
-desc = '''Example 3.8: `A = !![1, 1.0001; 1.0001, 1]` has `K_∞(A) = 20001` (`A⁻¹ = -(1/(1.0001² - 1)) !![1,
--1.0001; -1.0001, 1]`, row sums `2.0001 / 0.00020001 = 10000.5`, product `2.0001 · 10000.5 =
-20001`); and for `x̂ = ![-4.499775, 5.5002249]` the residual `b - A x̂` has `‖·‖_∞ ≤ 0.001`
-although `‖x̂ - x‖_∞ ≥ 4` with `x = A⁻¹ ![1, 1]` (`x ≈ ![0.499975, 0.499975]`). `norm_num`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_21"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.8'
 
 [[node]]
 id = "equation_3_69"
-kind = "theorem"
-desc = '''(3.69), the rigorous display before it: with `γ = u` in Theorem 3.3 and `u K_∞(A) ≤ 1/2`,
-`‖δx‖_∞ / ‖x‖_∞ ≤ 2 u K_∞(A) / (1 - u K_∞(A)) ≤ 4 u K_∞(A)`; from `theorem_3_3`. The "`≃ u K_∞(A)`" and
-the "`t - m` exact digits" that follow are heuristics, not nodes. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.69)'
 
 [[node]]
 id = "equation_3_66_spec"
-kind = "theorem"
-desc = '(3.66) spelled out, and `|a^{(k)}_ij| ≤ ρ_n max |a_ij|` for every stage, `Û` included.'
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.66)'
 
 [[node]]
 id = "residual_error_bound"
-kind = "theorem"
-desc = '''§3.10, the display before Example 3.8: `‖x - x̂‖/‖x‖ ≤ K(A) ‖r̂‖/(‖A‖‖x‖) ≤ K(A) ‖r̂‖/‖b‖` for the
-residual `r̂ = b - A x̂`, in any induced `p`-norm.'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.condNumber"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'

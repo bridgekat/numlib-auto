@@ -1,300 +1,118 @@
 namespace = "Variational"
-desc = '''
-Galerkin semi-discretizations of linear evolution problems and their time discretization by the
-θ-method, at the level where the estimates are proved: a finite-dimensional (or any) real inner
-product space `K` — the trial space with the `L²` inner product — a bounded bilinear form `a t :
-SesqForm ℝ K` (the spatial operator, possibly time-dependent) and a source `F t : K →L[ℝ] ℝ`. The
-semi-discrete problem is the linear ODE `⟪u'(t), v⟫ + a t (u t) v = F t v` for all `v ∈ K`
-(`IsSemidiscreteGalerkin`), and every energy estimate of the parabolic and hyperbolic chapters
-of Quarteroni–Sacco–Saleri, *Numerical Mathematics* (§13.1, §13.3, §13.10) is one of three
-consequences of the identity `d/dt ‖u‖² = 2 (F t (u t) - a t (u t) (u t))`:
 
-* **exponential decay** under `L²`-coercivity `γ ‖v‖² ≤ a v v` — the heat equation's `E(t) ≤
-  e^{-γt} E(0) + γ⁻¹ ∫ e^{γ(s-t)} F(s) ds`, with `γ = ν / C_P²` from Poincaré;
-* **dissipation** under `μ₀ ‖v‖² + ½ Q(v) ≤ a v v` with a nonnegative "boundary/jump" functional `Q`
-  — the transport estimates with the outflow term `a(β) u(β)²` and the DG jump terms;
-* **Gronwall growth** under `-m(t) ‖v‖² + ½ Q(v) ≤ a v v` — the estimate when the reaction term
-  has the wrong sign.
+[[node]]
+id = "_root_.SesqForm.ofBilin"
 
-The θ-method `⟪(u⁺ - u)/Δt, v⟫ + a (θ u⁺ + (1-θ) u) v = θ ℓ₁ v + (1-θ) ℓ₀ v` (`IsThetaStep`) is
-analysed twice, because the two arguments have different hypotheses. The **energy identity** `½
-(‖u⁺‖² - ‖u‖²) = -Δt a(w, w) - (θ - ½) ‖u⁺ - u‖²`, `w = θ u⁺ + (1-θ) u`, needs only positivity of `a`
-and gives unconditional stability for `θ ≥ ½` and, for backward Euler, the telescoping bounds
-`‖u^n‖² + 2Δt ∑ a(u^{k+1}, u^{k+1}) ≤ ‖u^0‖²` and their versions with sources; it covers the
-nonsymmetric transport forms. The **spectral argument** needs a symmetric coercive `a`: the
-eigenpairs of the form relative to the inner product (`IsFormEigenpair`, the discrete version of
-"eigenvalues of a bilinear form", Definition 13.1 of the book) form an orthonormal basis in which
-the step multiplies the `i`-th coordinate by `r_θ(λ_i Δt) = (1 - (1-θ) λ_i Δt) / (1 + θ λ_i Δt)`, so
-for `θ < ½` stability holds iff `(1 - 2θ) λ_max Δt ≤ 2`. The sufficiency half for `θ < ½` is also
-obtained without eigenvectors from the operator Cauchy–Schwarz inequality `‖B w‖² ≤ λ_max ⟪B w,
-w⟫` for the positive symmetric operator `B` of the form, which is what the matrix-level module
-`Numlib/FiniteDifference/Parabolic` uses in the `M`-inner product.
-
-The last section is the upwind discontinuous Galerkin form for `u_t + a u_x + a₀ u` on the broken
-polynomial space of `Numlib/Approximation/BrokenPolynomial`, whose energy identity `b(v, v) = ½ a(β)
-v⁻(β)² + ½ ∑_j a(x_j) [v]_j² + ∫ (a₀ - a'/2) v²` is what feeds the dissipation estimate; the
-continuous Galerkin form is its restriction to the jump-free subspace. The coordinate
-descriptions (mass and stiffness matrices) are in `Numlib/FiniteDifference/Parabolic`, which
-imports this module.
-
-Consumers: chapter 13 of the book throughout; Thomée's *Galerkin FEM for parabolic problems*
-states the same lemmas; Atkinson–Han's Example 6.2.8/6.2.13 (the heat equation schemes) could be
-restated through `IsThetaStep` with `K` the sine polynomials.
-'''
+[[node]]
+id = "_root_.SesqForm.ofBilin_apply"
 
 [[node]]
 id = "IsSemidiscreteGalerkin"
-kind = "definition"
-desc = '''For a real inner product space `K`, `a : ℝ → SesqForm ℝ K`, `F : ℝ → K →L[ℝ] ℝ`, `u₀ : K`, `T
-: ℝ`, `u : ℝ → K`: `IsSemidiscreteGalerkin a F u₀ T u : Prop := u 0 = u₀ ∧ ∃ u' : ℝ → K, ∀ t ∈ Icc 0
-T, HasDerivWithinAt u (u' t) (Icc 0 T) t ∧ ∀ v, ⟪u' t, v⟫_ℝ + a t (u t) v = F t v`. The derivative
-within the closed interval is the one-sided convention at the endpoints, as in
-`FiniteDifference.IsSolution`. (Quarteroni–Sacco–Saleri (13.13), (13.65), (13.68); with `K = V`
-the weak formulation (13.12) itself.) ★'''
-deps = []
 
 [[node]]
 id = "IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq"
-kind = "theorem"
-desc = '''`HasDerivWithinAt (fun t => ‖u t‖ ^ 2) (2 * (F t (u t) - a t (u t) (u t))) (Icc 0 T) t` for `t
-∈ Icc 0 T`: `HasDerivWithinAt.norm_sq` gives `2 ⟪u' t, u t⟫` and the equation with `v = u t`
-evaluates it. ★'''
-deps = ["Variational.IsSemidiscreteGalerkin"]
+
+[[node]]
+id = "IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq_Ici"
 
 [[node]]
 id = "IsSemidiscreteGalerkin.norm_sq_le_exp"
-kind = "theorem"
-desc = '''Exponential energy estimate: if `γ > 0`, `∀ t v, γ * ‖v‖ ^ 2 ≤ a t v v`, and `φ : ℝ → ℝ` is
-continuous on `Icc 0 T` with `‖F t‖ ≤ φ t`, then for `t ∈ Icc 0 T`, `‖u t‖ ^ 2 ≤ exp (-γ t) * ‖u₀‖ ^ 2
-+ γ⁻¹ * ∫ s in (0:ℝ)..t, exp (γ (s - t)) * φ s ^ 2`. Proof: `E = ‖u‖²` has `E' = 2 F(u) - 2 a(u,u) ≤ 2
-φ ‖u‖ - 2γ E ≤ (γ E + φ²/γ) - 2γ E = -γ E + φ²/γ` (Young `2 φ √E ≤ γ E + φ²/γ`), then the linear
-differential Gronwall inequality `Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le`
-(`Numlib/Analysis/ODE/Gronwall`). The book's (13.7) for the heat equation with `γ = ν / C_P²` and
-`φ = ‖f(t)‖_{L²}`. ★★★'''
-deps = ["Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq", "Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le"]
 
 [[node]]
 id = "IsSemidiscreteGalerkin.norm_sq_add_integral_le"
-kind = "theorem"
-desc = '''Dissipative energy estimate: if `μ₀ > 0`, `Q : ℝ → K → ℝ` with `0 ≤ Q t v`, `t ↦ Q t (u t)`
-continuous on `Icc 0 T`, `∀ t v, μ₀ * ‖v‖ ^ 2 + Q t v / 2 ≤ a t v v`, and `‖F t‖ ≤ φ t` with `φ`
-continuous, then for `t ∈ Icc 0 T`, `‖u t‖ ^ 2 + ∫ s in (0:ℝ)..t, (μ₀ * ‖u s‖ ^ 2 + Q s (u s)) ≤ ‖u₀‖
-^ 2 + μ₀⁻¹ * ∫ s in (0:ℝ)..t, φ s ^ 2`. Proof: `E' + 2μ₀ E + Q(u) ≤ 2 φ ‖u‖ ≤ μ₀ E + φ²/μ₀`, integrate
-(`intervalIntegral.integral_eq_sub_of_hasDerivAt`-type FTC on `Icc 0 T` with the one-sided
-derivative, and monotonicity of the integral). Quarteroni–Sacco–Saleri (13.66) and (13.69). ★★'''
-deps = ["Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq"]
 
 [[node]]
 id = "IsSemidiscreteGalerkin.norm_le_of_nonneg"
-kind = "theorem"
-desc = '''Energy conservation/dissipation without source: if `F = 0` and `0 ≤ a t v v` for all `t`,
-`v`, then `t ↦ ‖u t‖` is antitone on `Icc 0 T`; in particular `‖u t‖ ≤ ‖u₀‖`. From
-`hasDerivWithinAt_norm_sq` and `antitoneOn_of_deriv_nonpos` (or its `HasDerivWithinAt` form). ★'''
-deps = ["Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq"]
 
 [[node]]
 id = "IsSemidiscreteGalerkin.norm_sq_add_integral_le_exp"
-kind = "theorem"
-desc = '''Gronwall-type estimate when the form is not dissipative: if `m : ℝ → ℝ` is continuous,
-nonnegative, `∀ t v, -(m t) * ‖v‖ ^ 2 + Q t v / 2 ≤ a t v v` with `0 ≤ Q t v` continuous along `u`,
-and `‖F t‖ ≤ φ t`, then for `t ∈ Icc 0 T`, `‖u t‖ ^ 2 + ∫ s in (0:ℝ)..t, Q s (u s) ≤ (‖u₀‖ ^ 2 + ∫ s in
-(0:ℝ)..t, φ s ^ 2) * exp (∫ s in (0:ℝ)..t, (1 + 2 * m s))`. Proof: `Φ(t) = ‖u t‖² + ∫₀ᵗ Q` has `Φ' ≤
-(1 + 2m) ‖u‖² + φ² ≤ (1 + 2m) Φ + φ²`, then `Gronwall.le_mul_exp_integral_of_hasDerivWithinAt_le`.
-Quarteroni–Sacco–Saleri (13.67). ★★'''
-deps = ["Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq", "Gronwall.le_mul_exp_integral_of_hasDerivWithinAt_le"]
 
 [[node]]
 id = "IsThetaStep"
-kind = "definition"
-desc = '''`IsThetaStep (a : SesqForm ℝ K) (θ Δt : ℝ) (ℓ₀ ℓ₁ : K →L[ℝ] ℝ) (u u' : K) : Prop := ∀ v, ⟪Δt⁻¹
-• (u' - u), v⟫_ℝ + a (θ • u' + (1 - θ) • u) v = θ * ℓ₁ v + (1 - θ) * ℓ₀ v`: `u'` is the θ-method update
-of `u` (Quarteroni–Sacco–Saleri (13.17); `θ = 0, 1, ½` are forward Euler, backward Euler,
-Crank–Nicolson). ★'''
-deps = []
+
+[[node]]
+id = "IsThetaStep.iff_forall_inner_add"
 
 [[node]]
 id = "IsThetaStep.existsUnique"
-kind = "theorem"
-desc = '''For `[FiniteDimensional ℝ K]`, `0 ≤ θ`, `0 < Δt` and `a` positive (`0 ≤ a v v`), every `u` has
-a unique θ-step `u'`: the form `(v, w) ↦ ⟪v, w⟫ + θ Δt a v w` is coercive with constant `1`, so
-`SesqForm.laxMilgram` solves `⟪u', v⟫ + θ Δt a u' v = ⟪u, v⟫ - (1-θ) Δt a u v + Δt (θ ℓ₁ v + (1-θ)
-ℓ₀ v)`. ★'''
-deps = ["Variational.IsThetaStep", "SesqForm.laxMilgram"]
 
 [[node]]
 id = "half_norm_sq_sub_le_inner_sub"
-kind = "theorem"
-desc = '''`(1/2) * (‖u‖ ^ 2 - ‖v‖ ^ 2) ≤ ⟪u - v, u⟫_ℝ` in any real inner product space: `⟪u - v, u⟫ =
-‖u‖² - ⟪v, u⟫ ≥ ‖u‖² - ‖u‖ ‖v‖ ≥ ‖u‖² - ½(‖u‖² + ‖v‖²)`. (Hint of Quarteroni–Sacco–Saleri, Exercise
-13.3.) ★'''
-deps = []
 
 [[node]]
 id = "IsThetaStep.energy_identity"
-kind = "theorem"
-desc = '''The θ-method energy identity, source-free: for `IsThetaStep a θ Δt 0 0 u u'` and `Δt ≠ 0`,
-with `w = θ • u' + (1 - θ) • u`, `(1/2) * (‖u'‖ ^ 2 - ‖u‖ ^ 2) = -(Δt * a w w) - (θ - 1/2) * ‖u' -
-u‖ ^ 2`. Test with `v = w` and use `w = ½(u' + u) + (θ - ½)(u' - u)`, `⟪u' - u, u' + u⟫ = ‖u'‖² -
-‖u‖²`. ★'''
-deps = ["Variational.IsThetaStep"]
 
 [[node]]
 id = "IsThetaStep.norm_le_of_half_le"
-kind = "theorem"
-desc = '''Unconditional stability for `θ ≥ ½`: if `1/2 ≤ θ`, `0 < Δt`, `∀ v, 0 ≤ a v v`, and
-`IsThetaStep a θ Δt 0 0 u u'`, then `‖u'‖ ≤ ‖u‖`. Immediate from `energy_identity` (both terms on
-the right are `≤ 0`). No symmetry of `a` is needed. ★'''
-deps = ["Variational.IsThetaStep.energy_identity"]
 
 [[node]]
 id = "IsThetaStep.norm_sq_add_two_mul_le"
-kind = "theorem"
-desc = '''The backward Euler energy inequality (Quarteroni–Sacco–Saleri (13.19)): for `0 < Δt` and
-`IsThetaStep a 1 Δt 0 0 u u'`, `‖u'‖ ^ 2 + 2 * Δt * a u' u' ≤ ‖u‖ ^ 2`. Test with `v = u'`: `‖u'‖² -
-⟪u, u'⟫ + Δt a(u', u') = 0` and `⟪u, u'⟫ ≤ ½(‖u‖² + ‖u'‖²)` (`half_norm_sq_sub_le_inner_sub`). No
-positivity of `a` is used. ★'''
-deps = ["Variational.IsThetaStep", "Variational.half_norm_sq_sub_le_inner_sub"]
 
 [[node]]
 id = "IsThetaStep.norm_sq_add_sum_le"
-kind = "theorem"
-desc = '''Telescoped (Quarteroni–Sacco–Saleri (13.20)): if `u : ℕ → K` satisfies `IsThetaStep a 1 Δt
-0 0 (u k) (u (k+1))` for all `k < n` and `0 < Δt`, then `‖u n‖ ^ 2 + 2 * Δt * ∑ k ∈ Finset.range n, a
-(u (k+1)) (u (k+1)) ≤ ‖u 0‖ ^ 2`. Induction with `norm_sq_add_two_mul_le`. ★'''
-deps = ["Variational.IsThetaStep.norm_sq_add_two_mul_le"]
+
+[[node]]
+id = "IsThetaStep.norm_sq_add_mul_le_of_coercive"
 
 [[node]]
 id = "IsThetaStep.norm_sq_add_sum_le_of_coercive"
-kind = "theorem"
-desc = '''With sources, under `L²`-coercivity (Quarteroni–Sacco–Saleri (13.21), Remark 13.1,
-Exercise 13.4): if `0 < α`, `∀ v, α * ‖v‖ ^ 2 ≤ a v v`, `0 < Δt`, and `IsThetaStep a 1 Δt (ℓ k) (ℓ
-(k+1)) (u k) (u (k+1))` for `k < n`, then `‖u n‖ ^ 2 + Δt * ∑ k ∈ range n, a (u (k+1)) (u (k+1)) ≤ ‖u
-0‖ ^ 2 + α⁻¹ * ∑ k ∈ range n, Δt * ‖ℓ (k+1)‖ ^ 2`. One step: `‖u'‖² + 2Δt a(u',u') ≤ ‖u‖² + 2Δt ℓ₁(u')
-≤ ‖u‖² + Δt (‖ℓ₁‖²/α + α ‖u'‖²)` and `α ‖u'‖² ≤ a(u',u')`. The book's constant `C(n)` is `max 1 α⁻¹`
-here, independent of `n`. ★★'''
-deps = ["Variational.IsThetaStep", "Variational.half_norm_sq_sub_le_inner_sub"]
+
+[[node]]
+id = "IsThetaStep.norm_sq_add_two_mul_le_of_le"
 
 [[node]]
 id = "IsThetaStep.norm_sq_add_sum_le_of_le"
-kind = "theorem"
-desc = '''With sources, without coercivity (the book's `C(n)`): if `0 ≤ a v v`, `0 < Δt ≤ 1/2`, and
-`IsThetaStep a 1 Δt (ℓ k) (ℓ (k+1)) (u k) (u (k+1))` for `k < n`, then `‖u n‖ ^ 2 + 2 * Δt * ∑ k ∈
-range n, a (u (k+1)) (u (k+1)) ≤ (1 - Δt)⁻¹ ^ n * (‖u 0‖ ^ 2 + ∑ k ∈ range n, Δt * ‖ℓ (k+1)‖ ^ 2)`, and
-`(1 - Δt)⁻¹ ^ n ≤ exp (2 n Δt)`. One step: `(1 - Δt) ‖u'‖² + 2Δt a(u',u') ≤ ‖u‖² + Δt ‖ℓ₁‖²`; then
-induction (a discrete Gronwall in its simplest form). ★★'''
-deps = ["Variational.IsThetaStep", "Variational.half_norm_sq_sub_le_inner_sub"]
+
+[[node]]
+id = "IsThetaStep.inv_one_sub_pow_le_exp"
 
 [[node]]
 id = "IsFormEigenpair"
-kind = "definition"
-desc = '''`IsFormEigenpair (a : SesqForm ℝ K) (lam : ℝ) (w : K) : Prop := w ≠ 0 ∧ ∀ v, a w v = lam * ⟪w,
-v⟫_ℝ`: eigenvalue and eigenvector of a bilinear form relative to the inner product
-(Quarteroni–Sacco–Saleri, Definition 13.1, and its discrete form (13.22) on `V_h`); equivalently
-`w` is an eigenvector of `SesqForm.toOperator a` with eigenvalue `lam`
-(`isFormEigenpair_iff_hasEigenvector`). ★'''
-deps = []
+
+[[node]]
+id = "isFormEigenpair_iff_hasEigenvector"
+
+[[node]]
+id = "IsFormEigenpair.le_of_coercive"
 
 [[node]]
 id = "IsFormEigenpair.pos_of_coercive"
-kind = "theorem"
-desc = '''If `0 < c` and `∀ v, c * ‖v‖ ^ 2 ≤ a v v`, every eigenvalue is positive: `IsFormEigenpair a lam
-w → c ≤ lam` (test with `v = w`). ★'''
-deps = ["Variational.IsFormEigenpair"]
+
+[[node]]
+id = "IsFormEigenpair.le_of_le"
 
 [[node]]
 id = "exists_orthonormalBasis_isFormEigenpair"
-kind = "theorem"
-desc = '''For `[FiniteDimensional ℝ K]` and a Hermitian (symmetric) `a`, there are `lam : Fin (finrank ℝ
-K) → ℝ` and an orthonormal basis `b` of `K` with `IsFormEigenpair a (lam i) (b i)` for all `i`: the
-spectral theorem `LinearMap.IsSymmetric.eigenvectorBasis` for `toOperator a`, symmetric by
-`SesqForm.isHermitian_iff_toOperator_isSymmetric`. (The book's claim that the eigenvectors of a
-symmetric coercive form on `V_h` form an `L²`-orthonormal basis.) ★★'''
-deps = ["Variational.IsFormEigenpair", "SesqForm.isHermitian_iff_toOperator_isSymmetric"]
 
 [[node]]
 id = "isFormEigenpair_iff_gramMatrix_mulVec"
-kind = "theorem"
-desc = '''In coordinates: for a basis `φ : Module.Basis ι ℝ K` (`ι` finite) and `ξ : ι → ℝ`,
-`IsFormEigenpair a lam (∑ j, ξ j • φ j) ↔ ξ ≠ 0 ∧ SesqForm.gramMatrix a φ *ᵥ ξ = lam • SesqForm.gramMatrix
-(innerSL ℝ) φ *ᵥ ξ` — the generalized eigenvalue problem `A_fe w = λ_h M w` of
-Quarteroni–Sacco–Saleri (13.22), with `M` the mass matrix. Bilinearity plus
-`SesqForm.dotProduct_gramMatrix_mulVec_real`. ★'''
-deps = ["Variational.IsFormEigenpair", "SesqForm.gramMatrix", "SesqForm.dotProduct_gramMatrix_mulVec_real"]
 
 [[node]]
 id = "IsThetaStep.inner_eq_of_isFormEigenpair"
-kind = "theorem"
-desc = '''The θ-method in an eigenvector direction: if `IsThetaStep a θ Δt 0 0 u u'`, `IsFormEigenpair
-a lam w`, `a` Hermitian, and `1 + θ * lam * Δt ≠ 0`, then `⟪u', w⟫ = (1 - (1 - θ) * lam * Δt) / (1 + θ
-* lam * Δt) * ⟪u, w⟫`. Test with `v = w` and use `a x w = a w x = lam ⟪w, x⟫` (symmetry). This is the
-recursion `u_i^{k+1} = u_i^k [1 - (1-θ) λ_h^i Δt] / [1 + θ λ_h^i Δt]` of Quarteroni–Sacco–Saleri
-§13.3.1. ★'''
-deps = ["Variational.IsThetaStep", "Variational.IsFormEigenpair"]
-
-[[node]]
-id = "IsThetaStep.forall_norm_le_iff_of_lt_half"
-kind = "theorem"
-desc = '''Conditional stability for `θ < ½`, symmetric coercive case: let `[FiniteDimensional ℝ K]`,
-`a` Hermitian with `∀ v, 0 < c ∧ c ‖v‖² ≤ a v v`, `0 ≤ θ < 1/2`, `0 < Δt`, and `lmax` the largest
-eigenvalue (`IsFormEigenpair a lmax w₀` for some `w₀` and `∀ v, a v v ≤ lmax * ‖v‖ ^ 2`). Then `(∀ u
-u', IsThetaStep a θ Δt 0 0 u u' → ‖u'‖ ≤ ‖u‖) ↔ (1 - 2 * θ) * lmax * Δt ≤ 2`. Proof: in the
-orthonormal eigenbasis (`exists_orthonormalBasis_isFormEigenpair`) the step scales coordinate `i`
-by `r_i = (1 - (1-θ) λ_i Δt)/(1 + θ λ_i Δt)` (`inner_eq_of_isFormEigenpair`), so `‖u'‖² = ∑ r_i²
-|⟪u, b_i⟫|²` and the step is nonexpansive iff `|r_i| ≤ 1` for all `i`; `|r_i| ≤ 1 ↔ (1 - 2θ) λ_i Δt ≤
-2` since the denominator is positive, and the condition is monotone in `λ_i`. (Quarteroni–Sacco–
-Saleri §13.3.1, `Δt ≤ 2/((1 - 2θ) λ_h^{N_h})`.) ★★'''
-deps = ["Variational.IsThetaStep.inner_eq_of_isFormEigenpair", "Variational.exists_orthonormalBasis_isFormEigenpair", "Variational.IsFormEigenpair.pos_of_coercive"]
 
 [[node]]
 id = "IsThetaStep.norm_le_of_le_of_lt_half"
-kind = "theorem"
-desc = '''The sufficiency half for `θ < ½` without eigenvectors, valid in any real inner product
-space: if `a` is Hermitian, `0 ≤ a v v ≤ lmax * ‖v‖ ^ 2` for all `v`, `0 ≤ θ < 1/2`, `0 < Δt`, `(1 - 2
-* θ) * lmax * Δt ≤ 2`, and `IsThetaStep a θ Δt 0 0 u u'`, then `‖u'‖ ≤ ‖u‖`. Proof: by
-`energy_identity` it suffices that `(½ - θ) ‖u' - u‖² ≤ Δt a(w, w)`; from the step, `u' - u = -Δt B
-w` with `B = toOperator a`, so `‖u' - u‖² = Δt² ‖B w‖² ≤ Δt² lmax ⟪B w, w⟫ = Δt² lmax a(w,w)` by the
-operator Cauchy–Schwarz inequality `LinearMap.IsSymmetricBoundedBy.norm_apply_sq_le`
-(`Numlib/Analysis/InnerProductSpace/Coercive`, EXT); then `(½ - θ) Δt lmax ≤ 1`. This is the form
-the matrix module uses in the `M`-inner product. ★★'''
-deps = ["Variational.IsThetaStep.energy_identity", "LinearMap.IsSymmetricBoundedBy.norm_apply_sq_le"]
+
+[[node]]
+id = "IsThetaStep.smul_of_isFormEigenpair"
+
+[[node]]
+id = "IsThetaStep.forall_norm_le_iff_of_lt_half"
 
 [[node]]
 id = "transportForm"
-kind = "definition"
-desc = '''The transport form on the broken polynomial space `W = BrokenPolynomial x r` of a partition
-`x : Fin (n+1) → ℝ` of `[α, β]`, for `a : ℝ → ℝ` and `a₀ : ℝ → ℝ → ℝ`: `transportForm a a₀ t : SesqForm
-ℝ W`, `(u, v) ↦ ∑ i, ∫ s in x i..x (i+1), (a s * deriv (u i) s + a₀ s t * u i s) * v i s` (each `u i` a
-polynomial, evaluated as a function), bounded because `W` is finite-dimensional. ★'''
-deps = ["BrokenPolynomial"]
+
+[[node]]
+id = "transportForm_apply"
 
 [[node]]
 id = "dgUpwindForm"
-kind = "definition"
-desc = '''The upwind discontinuous Galerkin form: `dgUpwindForm a a₀ t : SesqForm ℝ W`, `(u, v) ↦
-transportForm a a₀ t u v + ∑ i, a (x i) * (BrokenPolynomial.jump u i) * BrokenPolynomial.traceRight u
-i`… precisely `∑ i : Fin n, a (x i) * (traceRight u i - traceLeft u i) * traceRight v i` with the
-convention `traceLeft u 0 = 0` (`BrokenPolynomial.jump` with the inflow value `0`); the inflow
-datum enters the right-hand side as `a (x 0) * φ t * traceRight v 0`. Quarteroni–Sacco–Saleri
-(13.68). ★'''
-deps = ["Variational.transportForm", "BrokenPolynomial.jump", "BrokenPolynomial.traceRight"]
+
+[[node]]
+id = "dgUpwindForm_apply"
 
 [[node]]
 id = "dgUpwindForm_apply_self"
-kind = "theorem"
-desc = '''The DG energy identity: for `a` continuously differentiable on `[α, β]` and `v ∈ W`,
-`dgUpwindForm a a₀ t v v = a (x n) * traceLeft v n ^ 2 / 2 + ∑ i : Fin n, a (x i) * jump v i ^ 2 / 2 +
-∑ i, ∫ s in x i..x (i+1), (a₀ s t - deriv a s / 2) * v i s ^ 2`. Proof: on each panel
-`∫ a v v' = ½ a(x_{i+1}) v⁻(x_{i+1})² - ½ a(x_i) v⁺(x_i)² - ½ ∫ a' v²`
-(`BrokenPolynomial.integral_mul_deriv_mul_eq`, integration by parts of polynomials against `a`),
-and at each node `½ a v⁻² - ½ a v⁺² + a (v⁺ - v⁻) v⁺ = ½ a (v⁺ - v⁻)²` (with `v⁻(x_0) = 0`). ★★'''
-deps = ["Variational.dgUpwindForm", "BrokenPolynomial.integral_mul_deriv_mul_eq"]
 
 [[node]]
 id = "transportForm_apply_self_of_continuous"
-kind = "theorem"
-desc = '''For `v` in the continuous subspace (`∀ i, jump v i = 0` for `0 < i`): `transportForm a a₀ t v v
-= a (x n) * traceLeft v n ^ 2 / 2 - a (x 0) * traceRight v 0 ^ 2 / 2 + ∑ i, ∫ s in x i..x (i+1), (a₀ s
-t - deriv a s / 2) * v i s ^ 2`. From `dgUpwindForm_apply_self` (the jump terms vanish except at
-`x 0`, where `jump v 0 = traceRight v 0` accounts for the `-½ a(x 0) v(α)²`). Quarteroni–Sacco–Saleri
-§13.10.1, the identity behind (13.66). ★'''
-deps = ["Variational.dgUpwindForm_apply_self", "BrokenPolynomial.continuous"]

@@ -242,9 +242,9 @@ id = "amplificationFactor_forwardEulerCentred"
 kind = "theorem"
 desc = '''The amplification factor of forward Euler/centred on the periodic grid: `γ_k = 1 - i λ a
 sin φ_k`, `φ_k = kh`, so `|γ_k|² = 1 + λ²a² sin²φ_k`, and `|γ_k| > 1` whenever `a ≠ 0` and `sin φ_k ≠
-0`. From `FiniteDifference.amplificationFactor_toPeriodic_threePoint`: for a three-point stencil
+0`. From `FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint`: for a three-point stencil
 `(cm, c0, cp)`, `γ_k = c0 + cm e^{-iφ_k} + cp e^{iφ_k}`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_37", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_forwardEulerCentred"]
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_37", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_forwardEulerCentred"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, γ_k = 1 − (aΔt/h) i sin(kh)'
 
 [[node]]
@@ -299,7 +299,7 @@ the group description), with `|γ_k|² = 1 - 2λ|a|(1 - λ|a|)(1 - cos φ_k)`; h
 `k` iff `λ|a| ≤ 1`, i.e. `Δt ≤ h/|a|`, the CFL condition (the "if" for all `N`; the "only if" as soon
 as some `φ_k ≠ 0 mod 2π`, i.e. `N ≥ 2`). `FiniteDifference.Hyperbolic.amplificationFactor_upwind`,
 `norm_amplificationFactor_upwind_le_one_iff`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_41", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_upwind", "FiniteDifference.Hyperbolic.norm_amplificationFactor_upwind_le_one_iff"]
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_41", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_upwind", "FiniteDifference.Hyperbolic.norm_amplificationFactor_upwind_le_one_iff"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.6 and §13.8.4, the upwind amplification coefficients'''
 
 [[node]]
@@ -316,7 +316,7 @@ kind = "theorem"
 desc = '''The Lax–Friedrichs amplification factor: `γ_k = cos φ_k - i λa sin φ_k`, `|γ_k|² = cos²φ_k +
 λ²a² sin²φ_k`, so `|γ_k| ≤ 1` for all `k` iff `|λa| ≤ 1` (for `N ≥ 3`, so that some `sin φ_k ≠ 0`).
 ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxFriedrichs"]
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxFriedrichs"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Friedrichs amplification'''
 
 [[node]]
@@ -325,7 +325,7 @@ kind = "theorem"
 desc = '''The Lax–Wendroff amplification factor: `γ_k = 1 - λ²a²(1 - cos φ_k) - i λa sin φ_k`, with
 `|γ_k|² = 1 - 4 λ²a² (1 - λ²a²) sin⁴(φ_k/2)`, so `|γ_k| ≤ 1` for all `k` iff `|λa| ≤ 1` (for `N ≥
 2`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxWendroff"]
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxWendroff"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Wendroff amplification'''
 
 [[node]]

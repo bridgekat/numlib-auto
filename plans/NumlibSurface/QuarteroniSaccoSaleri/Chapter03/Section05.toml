@@ -1,55 +1,21 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
-desc = '''
-§3.5, pivoting: Example 3.5 with the permutation (3.50), the pivoted stages (3.51), `P A = L U`
-(3.52) and `P A Q = L U` for complete pivoting, and the identification of `L` with the multipliers of
-GEM on `P A`. Backbone: `Numlib/LinearAlgebra/Matrix/LU/Pivoting`. Example 3.6, Remarks 3.3–3.4
-(numerical and prose) and Program 9 are not nodes.
-'''
 
 [[node]]
 id = "example_3_5"
-kind = "theorem"
-desc = '''Example 3.5 with (3.50): for the matrix `A` of (3.33), exchanging rows 2 and 3 after the first stage
-gives `A^{(2)} = !![1, 2, 3; 0, -6, -12; 0, 0, -1] = U`, with `M^{(1)} = !![1, 0, 0; -2, 1, 0; -7, 0,
-1]`, `M^{(2)} = 1`, `P = !![1, 0, 0; 0, 0, 1; 0, 1, 0]`, and `A = M₁⁻¹ P M₂⁻¹ U`, i.e. `P A = L U`
-with `L = !![1, 0, 0; 7, 1, 0; 2, 0, 1]`. `decide`/`norm_num` on `3 × 3` integer matrices. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_33", "Matrix.IsLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.5'
 
 [[node]]
 id = "equation_3_51"
-kind = "theorem"
-desc = '''(3.51): GEM with partial pivoting produces `U = A^{(n)} = M_{n-1} P_{n-1} ⋯ M_1 P_1 A` — the state of
-`Matrix.gemPivotStage A Matrix.partialPivotRow n` is this product (`gemPivotStage_eq_prod`), each
-`P_k` the transposition matrix of the row exchange at step `k` and `M_k` the Gaussian transformation
-of the exchanged matrix. ★'''
-deps = ["Matrix.gemPivotStage", "Matrix.partialPivotRow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.51)'
 
 [[node]]
 id = "equation_3_52"
-kind = "theorem"
-desc = '''(3.52): every `A : Matrix (Fin n) (Fin n) ℝ` has a permutation matrix `P` and a unit lower
-triangular `L` with `|l_ij| ≤ 1`, and an upper triangular `U`, with `P A = L U`;
-`Matrix.exists_permMatrix_mul_isLU`, and for the recurrence of (3.51)
-`Matrix.gemPivotStage_permMatrix_mul_isLU`. The book proves it for nonsingular `A` (so that a
-nonzero pivot always exists); the statement holds for all `A`. ★'''
-deps = ["Matrix.exists_permMatrix_mul_isLU", "Matrix.gemPivotStage_permMatrix_mul_isLU", "QuarteroniSaccoSaleri.Chapter03.equation_3_51"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.52)'
 
 [[node]]
 id = "completePivoting"
-kind = "theorem"
-desc = '''§3.5, complete pivoting: there are permutation matrices `P`, `Q` with `P A Q = L U`, `L` unit lower
-triangular with `|l_ij| ≤ 1`; `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`. ★'''
-deps = ["Matrix.exists_permMatrix_mul_mul_permMatrix_isLU"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.5'
 
 [[node]]
 id = "pivoting_multipliers"
-kind = "theorem"
-desc = '''§3.5: "the entries of `L` coincide with the multipliers computed by LU factorization, without
-pivoting, when applied to `P A`" — if `P A = L U` and `P A` satisfies Theorem 3.4's hypothesis then `L
-= Matrix.gemLower (P A)`; `Matrix.IsLU.eq_of_permMatrix_mul`. ★'''
-deps = ["Matrix.IsLU.eq_of_permMatrix_mul", "QuarteroniSaccoSaleri.Chapter03.equation_3_52", "QuarteroniSaccoSaleri.Chapter03.equation_3_37"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.5'
