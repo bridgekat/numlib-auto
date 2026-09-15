@@ -179,6 +179,7 @@ import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
+import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Interval
@@ -259,6 +260,7 @@ import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm
 import Numlib.FiniteDifference.BoundaryValue
 import Numlib.FiniteDifference.Derivative
+import Numlib.FiniteDifference.Hyperbolic
 import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.Parabolic
 import Numlib.FiniteDifference.Stencil

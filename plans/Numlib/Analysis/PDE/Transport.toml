@@ -1,175 +1,91 @@
 namespace = "Transport"
-desc = '''
-The linear transport equation `u_t + a u_x + a₀ u = f` and constant-coefficient linear hyperbolic
-systems `u_t + A u_x = 0`, solved by the method of characteristics, for classical solutions on
-`ℝ × [0, ∞)` (or a strip `[α, β] × [0, T]`).
 
-Everything is the chain rule. A **characteristic** is an integral curve `x' = a(x, t)` of the speed
-field; along it a `C¹` solution satisfies the ordinary differential equation `d/dt u(x(t), t) = f -
-a₀ u`, so for the homogeneous constant-speed equation the solution is constant along the lines
-`x = x₀ + a t` — which gives at once the explicit solution `u₀(x - at)`, its uniqueness among `C¹`
-solutions, the bound `|u| ≤ sup |u₀|`, and finite speed of propagation. A **hyperbolic system**
-is one with `A` real-diagonalizable, `A = T Λ T⁻¹`; the characteristic variables `w = T⁻¹ u` solve
-`p` decoupled scalar equations, whence the solution formula `u(x, t) = ∑_k w_k(x - λ_k t, 0) ω^k`
-and the domain of dependence `{x̄ - λ_k t̄}`. The wave equation `u_tt = γ² u_xx` is the system for
-`(u_x, u_t)` with `A = !![0, -1; -γ², 0]`, eigenvalues `±γ`.
+[[node]]
+id = "partialsCLM"
 
-Source: Quarteroni–Sacco–Saleri, *Numerical Mathematics*, §13.5–13.6 (and §13.10's inflow problem
-(13.64)); the same material opens every text on hyperbolic equations (LeVeque, Strikwerda).
-Differentiability is taken as `HasFDerivAt` on `ℝ × ℝ` (or partial `HasDerivAt`s in each variable
-with continuity, whichever the formalizer finds smoother — the chain rule along `t ↦ (x t, t)`
-wants the Fréchet form); `t ≥ 0` is handled by one-sided derivatives within `Ici 0` or by taking
-solutions on all of `ℝ`, which loses nothing for the explicit formulas.
-'''
+[[node]]
+id = "HasPartialsOn"
+
+[[node]]
+id = "HasPartialsOn.sum"
+
+[[node]]
+id = "hasPartialsOn_comp_sub"
 
 [[node]]
 id = "IsSolution"
-kind = "definition"
-desc = '''`IsSolution (a a₀ f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u : ℝ → ℝ → ℝ) : Prop` (arguments `x t`): `u` is
-`C¹` on `ℝ × Ici 0` (Fréchet differentiable with continuous derivative, one-sided in `t` at `0`),
-`∂_t u x t + a x t * ∂_x u x t + a₀ x t * u x t = f x t` for `t ≥ 0`, and `u x 0 = u₀ x`. ★'''
-deps = []
 
 [[node]]
 id = "IsCharacteristic"
-kind = "definition"
-desc = '''`IsCharacteristic (a : ℝ → ℝ → ℝ) (x₀ : ℝ) (x : ℝ → ℝ) : Prop := x 0 = x₀ ∧ ∀ t ≥ 0,
-HasDerivWithinAt x (a (x t) t) (Ici 0) t`; `characteristic_const : IsCharacteristic (fun _ _ => a)
-x₀ (fun t => x₀ + a * t)` and its uniqueness (`IsCharacteristic.eq_of_const`: any characteristic of
-a constant field is that line). ★'''
-deps = []
-
-[[node]]
-id = "IsSolution.hasDerivAt_comp_characteristic"
-kind = "theorem"
-desc = '''Along a characteristic the solution satisfies an ODE: for `IsSolution a a₀ f u₀ u` and
-`IsCharacteristic a x₀ x`, `HasDerivWithinAt (fun t => u (x t) t) (f (x t) t - a₀ (x t) t * u (x t) t)
-(Ici 0) t` for `t ≥ 0`. Chain rule `HasFDerivAt.comp_hasDerivWithinAt` for `t ↦ (x t, t)`. ★★'''
-deps = ["Transport.IsSolution", "Transport.IsCharacteristic"]
-
-[[node]]
-id = "IsSolution.comp_characteristic_const"
-kind = "theorem"
-desc = '''For the homogeneous equation `a₀ = f = 0`, `u` is constant along characteristics: `u (x t) t
-= u₀ x₀` for `t ≥ 0`. From the previous node and `constant_of_derivWithin_zero`/`is_const_of_deriv_eq_zero`
-on `Ici 0`. ★'''
-deps = ["Transport.IsSolution.hasDerivAt_comp_characteristic"]
-
-[[node]]
-id = "isSolution_comp_sub"
-kind = "theorem"
-desc = '''The travelling wave: for `u₀` continuously differentiable, `IsSolution (fun _ _ => a) 0 0 u₀ (fun
-x t => u₀ (x - a * t))`. ★'''
-deps = ["Transport.IsSolution"]
-
-[[node]]
-id = "IsSolution.eq_comp_sub"
-kind = "theorem"
-desc = '''Uniqueness: `IsSolution (fun _ _ => a) 0 0 u₀ u → ∀ x, ∀ t ≥ 0, u x t = u₀ (x - a * t)`. Apply
-`comp_characteristic_const` to the line through `x₀ = x - a t`. ★'''
-deps = ["Transport.IsSolution.comp_characteristic_const", "Transport.IsCharacteristic"]
-
-[[node]]
-id = "IsSolution.abs_le_sup"
-kind = "theorem"
-desc = '''`|u x t| ≤ ⨆ s, |u₀ s|` for `t ≥ 0` and bounded `u₀`, for a solution of the homogeneous
-constant-speed equation. ★'''
-deps = ["Transport.IsSolution.eq_comp_sub"]
-
-[[node]]
-id = "IsSystemSolution"
-kind = "definition"
-desc = '''`IsSystemSolution (A : Matrix (Fin p) (Fin p) ℝ) (u₀ : ℝ → Fin p → ℝ) (u : ℝ → ℝ → Fin p → ℝ)
-: Prop`: `u` is `C¹` on `ℝ × Ici 0`, `∂_t u x t + A *ᵥ ∂_x u x t = 0` for `t ≥ 0`, `u x 0 = u₀ x`. ★'''
-deps = []
-
-[[node]]
-id = "IsHyperbolic"
-kind = "definition"
-desc = '''`IsHyperbolic (A : Matrix (Fin p) (Fin p) ℝ) : Prop := ∃ (T : Matrix (Fin p) (Fin p) ℝ) (lam :
-Fin p → ℝ), IsUnit T ∧ A = T * diagonal lam * T⁻¹` (real diagonalizable); `IsStrictlyHyperbolic A :=
-∃ T lam, IsUnit T ∧ Function.Injective lam ∧ A = T * diagonal lam * T⁻¹`. `IsHyperbolic.mulVec_col : A
-*ᵥ (Tᵀ k) = lam k • Tᵀ k` (the columns of `T` are right eigenvectors). ★'''
-deps = []
-
-[[node]]
-id = "IsSystemSolution.characteristicVariables"
-kind = "theorem"
-desc = '''If `A = T * diagonal lam * T⁻¹` (`IsUnit T`) and `IsSystemSolution A u₀ u`, then for each `k`,
-`IsSolution (fun _ _ => lam k) 0 0 (fun x => (T⁻¹ *ᵥ u₀ x) k) (fun x t => (T⁻¹ *ᵥ u x t) k)`: the
-characteristic variables `w = T⁻¹ u` solve decoupled scalar equations. Linearity of the derivative
-under `T⁻¹ *ᵥ`. ★'''
-deps = ["Transport.IsSystemSolution", "Transport.IsHyperbolic", "Transport.IsSolution"]
-
-[[node]]
-id = "isSystemSolution_sum"
-kind = "theorem"
-desc = '''The solution formula: for `A = T * diagonal lam * T⁻¹` and `u₀` continuously differentiable,
-`IsSystemSolution A u₀ (fun x t => ∑ k, (T⁻¹ *ᵥ u₀ (x - lam k * t)) k • Tᵀ k)`, i.e. `u = ∑_k w_k(x -
-λ_k t, 0) ω^k`. ★★'''
-deps = ["Transport.IsSystemSolution", "Transport.IsHyperbolic"]
-
-[[node]]
-id = "IsSystemSolution.eq_sum"
-kind = "theorem"
-desc = '''Uniqueness for hyperbolic systems: `IsSystemSolution A u₀ u` with `A = T * diagonal lam * T⁻¹`
-gives `u x t = ∑ k, (T⁻¹ *ᵥ u₀ (x - lam k * t)) k • Tᵀ k` for `t ≥ 0`, from
-`characteristicVariables` and `IsSolution.eq_comp_sub` componentwise, then `u = T w`. ★'''
-deps = ["Transport.IsSystemSolution.characteristicVariables", "Transport.IsSolution.eq_comp_sub"]
-
-[[node]]
-id = "domainOfDependence"
-kind = "definition"
-desc = '''`domainOfDependence (lam : Fin p → ℝ) (x̄ t̄ : ℝ) : Set ℝ := Set.range fun k => x̄ - lam k * t̄`
-(Quarteroni–Sacco–Saleri (13.31)), and `IsSystemSolution.eq_of_eqOn_domainOfDependence`: two data
-agreeing on `domainOfDependence lam x̄ t̄` give solutions agreeing at `(x̄, t̄)`. ★'''
-deps = ["Transport.IsSystemSolution.eq_sum"]
-
-[[node]]
-id = "IsWaveSolution"
-kind = "definition"
-desc = '''`IsWaveSolution (γ : ℝ) (f u₀ v₀ : …) (α β : ℝ) (u : ℝ → ℝ → ℝ) : Prop`: `u` is `C²` on `[α, β] ×
-Ici 0`, `∂_tt u - γ² ∂_xx u = f`, `u x 0 = u₀ x`, `∂_t u x 0 = v₀ x`, `u α t = 0 = u β t`
-(Quarteroni–Sacco–Saleri (13.33)–(13.34)); `waveMatrix γ : Matrix (Fin 2) (Fin 2) ℝ := !![0, -1;
--γ ^ 2, 0]`. ★'''
-deps = []
-
-[[node]]
-id = "IsWaveSolution.isSystemSolution"
-kind = "theorem"
-desc = '''For `f = 0` and a `C²` wave solution `u` (on all of `ℝ` in `x`, or restricted to the strip),
-`ω = ![∂_x u, ∂_t u]` satisfies `∂_t ω + waveMatrix γ *ᵥ ∂_x ω = 0` with data `![u₀', v₀]`
-(`IsSystemSolution` on the strip): the two rows are `∂_t ∂_x u = ∂_x ∂_t u` (symmetry of second
-derivatives, `ContDiffAt.isSymmSndFDerivAt`) and the wave equation. ★★'''
-deps = ["Transport.IsWaveSolution", "Transport.IsSystemSolution"]
-
-[[node]]
-id = "waveMatrix_isStrictlyHyperbolic"
-kind = "theorem"
-desc = '''For `γ ≠ 0`, `IsStrictlyHyperbolic (waveMatrix γ)` with `T = !![1, 1; -γ, γ]`, `lam = ![γ, -γ]`:
-a `2 × 2` matrix identity. ★'''
-deps = ["Transport.IsWaveSolution", "Transport.IsHyperbolic"]
-
-[[node]]
-id = "IsStrictlyHyperbolic"
-kind = "definition"
-desc = '''`IsStrictlyHyperbolic (A : Matrix (Fin p) (Fin p) ℝ) : Prop := ∃ T lam, IsUnit T ∧ Function.Injective
-lam ∧ A = T * diagonal lam * T⁻¹`; `IsStrictlyHyperbolic.isHyperbolic`. ★'''
-deps = ["Transport.IsHyperbolic"]
 
 [[node]]
 id = "characteristic_const"
-kind = "theorem"
-desc = '''`IsCharacteristic (fun _ _ => a) x₀ (fun t => x₀ + a * t)`, and `IsCharacteristic.eq_of_const`:
-every characteristic of the constant field `a` through `x₀` is that line (uniqueness for `x' = a`,
-by `is_const_of_deriv_eq_zero` applied to `x t - a t`). ★'''
-deps = ["Transport.IsCharacteristic"]
+
+[[node]]
+id = "IsCharacteristic.eq_of_const"
+
+[[node]]
+id = "IsSolution.hasDerivAt_comp_characteristic"
+
+[[node]]
+id = "IsSolution.comp_characteristic_const"
+
+[[node]]
+id = "isSolution_comp_sub"
+
+[[node]]
+id = "IsSolution.eq_comp_sub"
+
+[[node]]
+id = "IsSolution.abs_le_sup"
+
+[[node]]
+id = "IsSystemSolutionOn"
+
+[[node]]
+id = "IsSystemSolution"
+
+[[node]]
+id = "IsHyperbolic"
+
+[[node]]
+id = "IsStrictlyHyperbolic"
+
+[[node]]
+id = "IsStrictlyHyperbolic.isHyperbolic"
+
+[[node]]
+id = "mulVec_eq_sum_smul_col"
+
+[[node]]
+id = "mulVec_col_eq_smul"
+
+[[node]]
+id = "IsSystemSolution.characteristicVariables"
+
+[[node]]
+id = "isSystemSolution_sum"
+
+[[node]]
+id = "IsSystemSolution.eq_sum"
+
+[[node]]
+id = "domainOfDependence"
+
+[[node]]
+id = "IsSystemSolution.eq_of_eqOn_domainOfDependence"
+
+[[node]]
+id = "waveMatrix"
+
+[[node]]
+id = "waveMatrix_isStrictlyHyperbolic"
+
+[[node]]
+id = "IsWaveSolution"
+
+[[node]]
+id = "IsWaveSolution.isSystemSolution"
 
 [[node]]
 id = "IsInflowSolution"
-kind = "definition"
-desc = '''The inflow problem on a strip: `IsInflowSolution (a : ℝ → ℝ) (a₀ f : ℝ → ℝ → ℝ) (φ : ℝ → ℝ) (u₀ : ℝ →
-ℝ) (α β T : ℝ) (u : ℝ → ℝ → ℝ) : Prop`: `u` is `C¹` on `Icc α β × Icc 0 T`, `∂_t u + a x ∂_x u + a₀ x t u = f x
-t` there, `u α t = φ t`, `u x 0 = u₀ x` (Quarteroni–Sacco–Saleri (13.64), with `a > 0` so that `α` is the
-inflow end). Definition only. ★'''
-deps = ["Transport.IsSolution"]

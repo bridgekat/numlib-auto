@@ -1,47 +1,28 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.9, dissipation and dispersion: the exact amplification `g_k = e^{-iakΔt}` (13.54)–(13.55),
-the phase angle, the amplification and dispersion errors of a scheme, and §13.9.1, the
-equivalent (modified) equations (13.56)–(13.60) with Table 13.2, and the Fourier-mode solution
-(13.61)–(13.63) that explains the two coefficients. The definitions are `Numlib/FiniteDifference/
-Hyperbolic`'s; the modified equations are made rigorous as *consistency of higher order with the
-modified equation*: a smooth solution `v` of `v_t + a v_x = μ v_xx` (resp. `+ ν v_xxx`) inserted
-into the scheme leaves a residual one order (resp. two orders) smaller than the scheme's
-truncation error on solutions of the transport equation. Figures 13.7–13.9 are plots; the
-fourth-order Lax–Wendroff equation at the end of §13.9.1 is an unnumbered display and is listed
-in the report, not planned.
-'''
 
 [[node]]
 id = "equation_13_54"
-kind = "theorem"
-desc = '''(13.54)–(13.55): the exact solution acts on the `k`-th Fourier mode by the factor `g_k =
-e^{-iakΔt}` per time step: for `u₀ x = ∑_k α_k e^{ikx}` (finite sum), `u(x_j, t^n) = u₀(x_j - a n
-Δt) = ∑_k α_k e^{ikjh} g_k^n`, and with the phase angle `φ_k = k Δx`, `g_k = e^{-iaλφ_k}`.
-`FiniteDifference.Hyperbolic.exactAmplification a Δt k`, `phaseAngle k Δx`. ★'''
-deps = ["FiniteDifference.Hyperbolic.exactAmplification", "FiniteDifference.Hyperbolic.phaseAngle", "QuarteroniSaccoSaleri.Chapter13.equation_13_26_solution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.54)–(13.55)'
 
 [[node]]
 id = "amplificationError"
-kind = "definition"
-desc = '''The amplification (dissipation) error of the `k`-th harmonic, `ε_a(k) = |γ_k| / |g_k| =
-|γ_k|`, and the dispersion error `ε_d(k) = ω/(ka) = ω Δx/(φ_k a)` where `γ_k = |γ_k| e^{-iωΔt}`, i.e.
-`ω Δt = -arg γ_k` and `ε_d(k) = -arg γ_k / (a λ φ_k)`:
-`FiniteDifference.Hyperbolic.amplificationError γ = ‖γ‖`,
-`FiniteDifference.Hyperbolic.dispersionError a λ φ γ = -Complex.arg γ / (a * λ * φ)`. The
-statement "`|g_k| = 1` whereas `|γ_k| ≤ 1` for stability" is `norm_exactAmplification`. ★'''
-deps = ["FiniteDifference.Hyperbolic.amplificationError", "FiniteDifference.Hyperbolic.dispersionError", "FiniteDifference.Hyperbolic.norm_exactAmplification"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.9, ε_a(k) and ε_d(k)'
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.9, ε_a(k)'
+
+[[node]]
+id = "dispersionError"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.9, ε_d(k)'
+
+[[node]]
+id = "amplificationError_exact"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.9, |g_k| = 1'
 
 [[node]]
 id = "equation_13_56"
-kind = "definition"
-desc = '''The equivalent equation (13.56) `v_t + a v_x = μ v_xx + ν v_xxx`: `v : ℝ → ℝ → ℝ` is a
-classical solution when it is three times differentiable and the identity holds pointwise:
-`FiniteDifference.Hyperbolic.IsModifiedSolution a μ ν v`. ★'''
-deps = ["FiniteDifference.Hyperbolic.IsModifiedSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.56)'
+
+[[node]]
+id = "equation_13_63"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.61)–(13.63)'
 
 [[node]]
 id = "equation_13_57"
@@ -49,8 +30,12 @@ kind = "theorem"
 desc = '''(13.57)–(13.58), the Taylor expansions of the upwind residual: for a smooth `v` and `a >
 0`, the residual `R v (x,t) = [v(x, t+Δt) - v(x,t)]/Δt + a [v(x,t) - v(x-Δx, t)]/Δx` satisfies `|R v -
 (v_t + a v_x)| ≤ (Δt/2) sup|v_tt| + (aΔx/2) sup|v_xx|` (13.57) and `|R v - (v_t + (Δt/2) v_tt + a v_x
-- (aΔx/2) v_xx)| ≤ (Δt²/6) sup|v_ttt| + (aΔx²/6) sup|v_xxx|` (13.58). Two one-variable Taylor
-bounds. `FiniteDifference.Hyperbolic.residual`, `abs_residual_upwind_sub_le`. ★★'''
+- (aΔx/2) v_xx)| ≤ (Δt²/6) sup|v_ttt| + (aΔx²/6) sup|v_xxx|` (13.58). ★★
+
+Blocked: waits on the backbone node `FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le`,
+which is open for want of a two-variable Taylor interface (see its plan entry). The scheme's
+residual itself, `FiniteDifference.Hyperbolic.residual`, and the equivalent equation
+`IsModifiedSolution` are proved and available.'''
 deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.57)–(13.58)'
 
@@ -58,14 +43,11 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.57)�
 id = "equation_13_59"
 kind = "theorem"
 desc = '''(13.59), the second-order equivalent equation of upwind: with `μ = aΔx/2 - a²Δt/2`, `a >
-0`, every `C³` solution `v` of `v_t + a v_x = μ v_xx` with third derivatives bounded by `M₃` makes
-the upwind residual second order small: `|R v (x,t)| ≤ C (Δt² + Δt Δx + Δx²)` with `C` depending on
-`a`, `M₃` and the second derivatives' bound, whereas on solutions of the transport equation it is
-only `O(Δt + Δx)`. Proof: (13.58), then `v_tt = a² v_xx + O(Δx + Δt)` obtained by differentiating
-the modified equation in `t` and in `x` (`v_tt = -a v_xt + μ v_xxt`, `v_xt = -a v_xx + μ v_xxx`, so
-`v_tt - a² v_xx = μ(v_xxt - a v_xxx)` with `|μ| ≤ (a/2)(Δx + aΔt)`), and the coefficient of `v_xx`
-cancels: `μ + a²Δt/2 - aΔx/2 = 0`. Needs symmetry of mixed partials (`ContDiffAt.isSymmSndFDerivAt`).
-`FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution`. ★★★'''
+0`, every `C³` solution `v` of `v_t + a v_x = μ v_xx` with bounded third derivatives makes the
+upwind residual `O(Δt² + Δt Δx + Δx²)`, whereas on solutions of the transport equation it is only
+`O(Δt + Δx)`. ★★★
+
+Blocked: waits on `FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_57", "QuarteroniSaccoSaleri.Chapter13.equation_13_56", "FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.59)'
 
@@ -73,15 +55,13 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.59)'
 id = "equation_13_60"
 kind = "theorem"
 desc = '''(13.60) and Table 13.2 (upwind row), the third-order equivalent equation of upwind, with
-`λ = Δt/Δx` fixed: with `μ = aΔx/2 - a²Δt/2` and `ν = -(a/6)(Δx² - 3aΔxΔt + 2a²Δt²) = -(aΔx²/6)(1 -
-aλ)(1 - 2aλ)`, every `C⁴` solution `v` of `v_t + a v_x = μ v_xx + ν v_xxx` with bounded fourth
-derivatives makes the upwind residual `O(Δx³)`, one order better than (13.59). Same method one
-order further: keep the third-order Taylor terms `(Δt²/6) v_ttt - (aΔx²/6) v_xxx`, express `v_tt` to
-second order and `v_ttt` to first order through the modified equation (`v_tt = a² v_xx - 2aμ v_xxx
-+ O(Δx²)`, `v_ttt = -a³ v_xxx + O(Δx)`), and the `v_xxx` coefficient vanishes exactly for the stated
-`ν`. Erratum: the text gives `ν = (a/6)(a²Δt² - Δx²)`, which omits the `-2aμ Δt/2 · v_xxx`
-contribution of `v_tt`; Table 13.2's value (the Warming–Hyett coefficient) is the correct one and
-is what the node states. ★★★'''
+`λ = Δt/Δx` fixed: with `μ = aΔx/2 - a²Δt/2` and `ν = -(a/6)(Δx² - 3aΔxΔt + 2a²Δt²)`, every `C⁴`
+solution `v` of `v_t + a v_x = μ v_xx + ν v_xxx` with bounded fourth derivatives makes the upwind
+residual `O(Δx³)`. Erratum: the text gives `ν = (a/6)(a²Δt² - Δx²)`; Table 13.2's value (the
+Warming–Hyett coefficient) is the correct one and is what the node states. ★★★
+
+Blocked: waits on
+`FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution_third`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_59", "FiniteDifference.Hyperbolic.abs_residual_upwind_le_of_isModifiedSolution_third"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.60) and Table 13.2, upwind'
 
@@ -91,21 +71,9 @@ kind = "theorem"
 desc = '''Exercise 8 and Table 13.2 for Lax–Friedrichs and Lax–Wendroff, with `λ = Δt/Δx` fixed:
 every `C⁴` solution with bounded fourth derivatives of `v_t + a v_x = μ v_xx + ν v_xxx` makes the
 Lax–Friedrichs residual `O(Δx³)` when `μ = (Δx²/(2Δt))(1 - (aλ)²)` and `ν = (aΔx²/3)(1 - (aλ)²)`,
-and the Lax–Wendroff residual `O(Δx³)` when `μ = 0` and `ν = (aΔx²/6)((aλ)² - 1)`. Through the
-general three-point expansion `FiniteDifference.Hyperbolic.residual_threePoint_expansion`
-(`∑_s c_s v(x - sΔx) = (∑ c_s) v - Δx (∑ s c_s) v_x + (Δx²/2)(∑ s² c_s) v_xx - (Δx³/6)(∑ s³ c_s)
-v_xxx + O(Δx⁴)`) and the same substitutions of `v_tt`, `v_ttt` as in (13.60). ★★★'''
+and the Lax–Wendroff residual `O(Δx³)` when `μ = 0` and `ν = (aΔx²/6)((aλ)² - 1)`. ★★★
+
+Blocked: waits on `FiniteDifference.Hyperbolic.residual_threePoint_expansion` and the two
+consequences named in its deps.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_56", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.abs_residual_laxFriedrichs_le_of_isModifiedSolution", "FiniteDifference.Hyperbolic.abs_residual_laxWendroff_le_of_isModifiedSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.8 and Table 13.2'
-
-[[node]]
-id = "equation_13_63"
-kind = "theorem"
-desc = '''(13.61)–(13.63): the complex-valued function `v(x, t) = e^{-μk²t} e^{ik[x - (a + νk²)t]}`
-solves `v_t + a v_x = μ v_xx + ν v_xxx` with `v(x, 0) = e^{ikx}` for every real `μ, ν` and `k ∈ ℤ`
-(the book's `μ > 0` is not needed for the identity, only for boundedness); for `μ = ν = 0` it is
-`e^{ik(x - at)}` (13.62). Direct differentiation of the exponential; a real-valued version takes
-real parts. The interpretation (`|v|` decays like `e^{-μk²t}`, the phase speed is `a + νk²`) is
-read off the formula. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_56"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.61)–(13.63)'

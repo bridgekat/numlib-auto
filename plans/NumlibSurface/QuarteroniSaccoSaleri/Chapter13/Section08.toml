@@ -1,81 +1,132 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.8, analysis of the finite difference schemes for `u_t + a u_x = 0`: consistency and order
-(§13.8.1, Table 13.1's truncation errors), the stability definition (13.46) in the discrete norms
-(13.47) (§13.8.2), the CFL condition (13.48) and its geometric reading through the numerical
-domain of dependence (13.49), the `ℓ¹` stability of upwind and Lax–Friedrichs under CFL (§13.8.3),
-and the von Neumann analysis (§13.8.4): the amplification factors, Theorem 13.1 on the periodic
-grid, the unconditional instability of forward Euler/centred, the CFL condition of upwind
-(Exercise 6), the discrete maximum principle (13.53), and Remark 13.4 on leap-frog and Newmark.
-Exercise 7 (backward Euler/centred is `ℓ²`-nonexpansive) is here too.
-
-Two corrections of the book. (i) §13.8.3 says the CFL condition (13.48) is "necessary and
-sufficient" for the stability of any explicit scheme (13.36); it is necessary, and the book's own
-§13.8.4 shows forward Euler/centred satisfies it and is unstable. The nodes state necessity
-(`cfl_necessary`) and sufficiency scheme by scheme. (ii) The upwind amplification factor for
-`a < 0` is printed with `e^{-ikh} - 1`; the scheme `u_j - λa(u_{j+1} - u_j)` gives `1 - λa(e^{ikh} -
-1)`; the modulus, hence the stability condition, is unaffected.
-
-The truncation errors are stated for the exact solution `u(x, t) = u₀(x - at)`, so that every
-Taylor expansion is of the single-variable function `u₀` at the foot `ξ = x_j - a t^n` of the
-characteristic: `τ_j^n = [u₀(ξ - aΔt) - ∑_s c_s u₀(ξ - sΔx)] / Δt`
-(`FiniteDifference.Hyperbolic.truncationError`). The periodic-grid statements use `N` nodes on
-`[0, 2π]`, `h = 2π/N`, and the `k`-th Fourier mode `j ↦ e^{ikjh}` for `k ∈ Fin N`, which is the
-book's `k ∈ [-N/2, N/2 - 1]` up to the period.
-'''
 
 [[node]]
 id = "truncationError"
-kind = "definition"
-desc = '''The local truncation error of §13.8.1 for a stencil `c` and the exact solution `u₀(x -
-at)`: `τ_j^n = [u(x_j, t^{n+1}) - (c u(·, t^n))_j] / Δt`, which in terms of the foot `ξ = x_j - a t^n`
-is `FiniteDifference.Hyperbolic.truncationError c a Δt Δx u₀ ξ = (u₀ (ξ - a Δt) - c.sum (fun s cs =>
-cs * u₀ (ξ - s Δx))) / Δt`; and `τ(Δt, Δx) = sup_ξ |τ|`. For (13.37) this is the book's displayed
-formula. The scheme is consistent when `τ(Δt, Δx) → 0` as `(Δt, Δx) → 0` and of order `(p, q)` when
-`τ(Δt, Δx) ≤ C (Δt^p + Δx^q)`: `FiniteDifference.Hyperbolic.IsConsistent`,
-`FiniteDifference.Hyperbolic.IsOfOrder`. ★'''
-deps = ["FiniteDifference.Hyperbolic.truncationError", "FiniteDifference.Hyperbolic.IsConsistent", "FiniteDifference.Hyperbolic.IsOfOrder"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, τ_j^n and τ(Δt, Δx)'
 
 [[node]]
+id = "truncationError_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, τ_j^n'
+
+[[node]]
+id = "isConsistent"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, consistency'
+
+[[node]]
+id = "isOfOrder"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, order p in time and q in space'
+
+[[node]]
+id = "isOfOrder_isConsistent"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, consistency'
+
+[[node]]
 id = "table_13_1_truncation_forwardEulerCentred"
-kind = "theorem"
-desc = '''Forward (and backward) Euler/centred is `O(Δt + Δx²)`: for `u₀ : ℝ → ℝ` with `|u₀''| ≤ M₂`,
-`|u₀⁽³⁾| ≤ M₃` everywhere, `|truncationError (forwardEulerCentred a λ) a Δt Δx u₀ ξ| ≤ (a²/2) M₂
-Δt + (|a|/6) M₃ Δx²` for `λ = Δt/Δx`. Taylor: `u₀(ξ - aΔt) - u₀(ξ) = -aΔt u₀'(ξ) + O(Δt²)` and
-`(u₀(ξ+Δx) - u₀(ξ-Δx))/(2Δx) = u₀'(ξ) + O(Δx²)` (`taylor_mean_remainder_bound`). The backward
-scheme's error, defined with the centred difference at `t^{n+1}`, has the same bound. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.truncationError", "QuarteroniSaccoSaleri.Chapter13.equation_13_37", "FiniteDifference.Hyperbolic.abs_truncationError_forwardEulerCentred_le"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, the forward/backward Euler centred method is O(Δt + Δx²)'''
 
 [[node]]
 id = "table_13_1_truncation_laxFriedrichs"
-kind = "theorem"
-desc = '''Lax–Friedrichs is `O(Δx²/Δt + Δt + Δx²)` (Table 13.1 writes `Δx` for the last term): with
-`|u₀''| ≤ M₂`, `|u₀⁽³⁾| ≤ M₃`, `|truncationError (laxFriedrichs a λ) …| ≤ (M₂/2) Δx²/Δt + (a²/2) M₂ Δt
-+ (|a|/6) M₃ Δx²`; the extra term is `[u₀(ξ) - ½(u₀(ξ+Δx) + u₀(ξ-Δx))]/Δt = -(Δx²/(2Δt)) u₀''(η)`.
-★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.truncationError", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.Hyperbolic.abs_truncationError_laxFriedrichs_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 13.1, Lax–Friedrichs τ(Δt, Δx)'
 
 [[node]]
 id = "table_13_1_truncation_laxWendroff"
-kind = "theorem"
-desc = '''Lax–Wendroff is `O(Δt² + Δx²)`: with `|u₀⁽³⁾| ≤ M₃` and `|u₀⁽⁴⁾| ≤ M₄`,
-`|truncationError (laxWendroff a λ) …| ≤ C (Δt² + Δx²)` with `C` depending on `a, M₃, M₄` (the
-`Δt`, `Δx` and `Δt²`-free parts of the expansion cancel exactly because `u₀(ξ - aΔt) - u₀ + aΔt u₀'
-- (a²Δt²/2) u₀''` is third order and the stencil reproduces `-aΔt u₀' + (a²Δt²/2) u₀''` from the
-centred first and second differences). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.truncationError", "QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Hyperbolic.abs_truncationError_laxWendroff_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 13.1, Lax–Wendroff τ(Δt, Δx)'
 
 [[node]]
 id = "table_13_1_truncation_upwind"
-kind = "theorem"
-desc = '''Upwind is `O(Δt + Δx)`: with `|u₀''| ≤ M₂`, `|truncationError (upwind a λ) …| ≤ (a²/2) M₂
-Δt + (|a|/2) M₂ Δx`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.truncationError", "QuarteroniSaccoSaleri.Chapter13.equation_13_41", "FiniteDifference.Hyperbolic.abs_truncationError_upwind_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 13.1, upwind τ(Δt, Δx)'
+
+[[node]]
+id = "isConvergent"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, the definition of convergence'
+
+[[node]]
+id = "equation_13_47"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.47)'
+
+[[node]]
+id = "equation_13_46"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.46)'
+
+[[node]]
+id = "exercise_13_7"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.7'
+
+[[node]]
+id = "equation_13_48"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.48)'
+
+[[node]]
+id = "numericalDomainOfDependence"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, D_Δt(x_j, t^n) ⊂ {|x − x_j| ≤ nΔx}'''
+
+[[node]]
+id = "equation_13_49"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.49)'
+
+[[node]]
+id = "cfl_necessary"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, the CFL condition as a necessary condition'''
+
+[[node]]
+id = "upwind_isMonotone"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, "Both λa and 1 − λa are nonnegative if (13.48) holds"'''
+
+[[node]]
+id = "upwind_discreteNorm_le"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, ‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1} for upwind'''
+
+[[node]]
+id = "laxFriedrichs_discreteNorm_le"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, ‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1} for Lax–Friedrichs'''
+
+[[node]]
+id = "laxWendroff_stable"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, "Also the Lax-Wendroff scheme is stable under the usual assumption (13.48)"'''
+
+[[node]]
+id = "equation_13_52"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.52)'
+
+[[node]]
+id = "amplificationFactor_forwardEulerCentred"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, γ_k = 1 − (aΔt/h) i sin(kh)'
+
+[[node]]
+id = "exactSolution_abs_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, |u(x,t)| ≤ max |u₀|'
+
+[[node]]
+id = "theorem_13_1"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 13.1'
+
+[[node]]
+id = "theorem_13_1_necessary"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, the von Neumann analysis'
+
+[[node]]
+id = "exercise_13_6"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.6 and §13.8.4, the upwind amplification coefficients'''
+
+[[node]]
+id = "upwind_stable_l2"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, "if the CFL condition is satisfied, the upwind scheme is stable with respect to the ‖·‖_{Δ,2} norm"'''
+
+[[node]]
+id = "amplificationFactor_laxFriedrichs"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Friedrichs amplification'''
+
+[[node]]
+id = "amplificationFactor_laxWendroff"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Wendroff amplification'''
+
+[[node]]
+id = "amplificationFactor_backwardEulerCentred"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.2 and Figure 13.7, the backward Euler/centred scheme'''
+
+[[node]]
+id = "equation_13_53"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.53)'
 
 [[node]]
 id = "leapFrog_truncation"
@@ -85,7 +136,13 @@ four times continuously differentiable with `|∂_t⁴ u| ≤ M`, `|∂_x⁴ u| 
 `[u(x, t+Δt) - 2u(x,t) + u(x, t-Δt)]/Δt² - γ² [u(x+Δx, t) - 2u(x,t) + u(x-Δx, t)]/Δx² - (u_tt -
 γ² u_xx)(x, t)` is bounded by `(M/12) Δt² + (γ² M'/12) Δx²`; the book says "second order if `Δt =
 Δx`", which is this bound read with `Δt = Δx`. Two one-variable second-difference Taylor bounds
-(chapter 10's `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`). ★★'''
+(chapter 10's `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`). ★★
+
+Blocked: not attempted for lack of time. `FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq`
+is the one-variable engine; what is missing is the two-variable interface — the iterated partial
+derivatives of `u` as named functions and the restriction of `u` to the two coordinate lines
+through `(x, t)` — the same interface `FiniteDifference.Hyperbolic.residual_threePoint_expansion`
+waits on. Estimate: half a day once that exists.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, "The Leap-frog and Newmark methods are both second order accurate if Δt = Δx"'''
 
@@ -95,257 +152,17 @@ kind = "theorem"
 desc = '''The Newmark scheme (13.45) is second order for the wave equation when `θ = 1/2` (any `β`):
 inserting a smooth solution `u`, `v = u_t` of `u_tt = γ² u_xx` (`f = 0`) into (13.45), the residuals
 of the two relations, divided by `Δt`, are `O(Δt² + Δx²)`; for `θ ≠ 1/2` the second relation
-(the velocity update `v^{n+1} - v^n = Δt [θ ü^{n+1} + (1-θ) ü^n]` up to the spatial error) is only
-first order, with residual `(θ - 1/2) Δt u_ttt + O(Δt² + Δx²)`. The book states second order for
-both methods without the condition `θ = 1/2`; its experiments (Table 13.3) are consistent with
-`θ = 1/2`. ★★★'''
+is only first order, with residual `(θ - 1/2) Δt u_ttt + O(Δt² + Δx²)`. The book states second order
+for both methods without the condition `θ = 1/2`. ★★★
+
+Blocked: not attempted; waits on the same two-variable Taylor interface as `leapFrog_truncation`,
+and additionally on the algebra of the two Newmark relations.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_45", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, "The Leap-frog and Newmark methods are both second order accurate if Δt = Δx"'''
 
 [[node]]
-id = "isConvergent"
-kind = "definition"
-desc = '''Convergence (end of §13.8.1): a family of schemes `(Δt, Δx) ↦ Q` is convergent for the
-datum `u₀` when `sup_{j, nΔt ≤ T} |u(x_j, t^n) - u_j^n| → 0` as `(Δt, Δx) → 0`, where `u^n = Q^n
-(u₀(x_·))`: `FiniteDifference.Hyperbolic.IsConvergent a u₀ Q T`. ★'''
-deps = ["FiniteDifference.Hyperbolic.IsConvergent"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.1, the definition of convergence'
-
-[[node]]
-id = "equation_13_47"
-kind = "definition"
-desc = '''The discrete norms (13.47): `‖v‖_{Δ,p} = (Δx ∑_j |v_j|^p)^{1/p}` for `p = 1, 2` and
-`‖v‖_{Δ,∞} = sup_j |v_j|`, on grid functions `v : ℤ → ℝ` in `lp (fun _ : ℤ => ℝ) p`:
-`FiniteDifference.discreteNorm p Δx v = Δx ^ (1/p) * ‖v‖` (with `Δx^0 = 1` for `p = ∞`). ★'''
-deps = ["FiniteDifference.discreteNorm"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.47)'
-
-[[node]]
-id = "equation_13_46"
-kind = "definition"
-desc = '''Stability (13.46): a family of schemes `Q : ι → (E i →L[ℝ] E i)` on grids with steps `Δt
-i`, `Δx i` is stable when for every `T > 0` there are `C_T` and `δ₀ > 0` such that `‖Q i ^ n‖ ≤ C_T`
-whenever `Δt i, Δx i ∈ (0, δ₀]` and `n Δt i ≤ T`, i.e. `‖u^n‖_Δ ≤ C_T ‖u^0‖_Δ` (the discrete norm
-is a constant multiple of the `ℓ^p` norm, so operator-norm stability is the same in either):
-`FiniteDifference.IsStableFamily Δt Δx Q`. ★'''
-deps = ["FiniteDifference.IsStableFamily", "QuarteroniSaccoSaleri.Chapter13.equation_13_47"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.46)'
-
-[[node]]
-id = "exercise_13_7"
-kind = "theorem"
-desc = '''Exercise 7: for the backward Euler/centred scheme (13.43) on `ℓ²(ℤ)`, `‖u^{n+1}‖_{Δ,2} ≤
-‖u^n‖_{Δ,2}` for every `n`, and hence the scheme is unconditionally stable in `‖·‖_{Δ,2}` with `C_T
-= 1`. Proof, as the hint: `‖u^{n+1}‖² = ⟪B u^{n+1}, u^{n+1}⟫ = ⟪u^n, u^{n+1}⟫ ≤ ‖u^n‖ ‖u^{n+1}‖`
-because the centred difference is skew-adjoint (`∑_j (u_{j+1} - u_{j-1}) u_j = 0`, the telescoping
-sum): `FiniteDifference.Hyperbolic.norm_backwardEulerCentred_apply_le`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_43", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.Hyperbolic.norm_backwardEulerCentred_apply_le"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.7'
-
-[[node]]
-id = "equation_13_48"
-kind = "definition"
-desc = '''The CFL condition (13.48): `|a λ| = |a Δt/Δx| ≤ 1`; the CFL number is `a λ`. For a variable
-speed `a(x, t)`: `Δt ≤ Δx / sup |a|`; for the system (13.30): `|λ_k Δt/Δx| ≤ 1` for every eigenvalue.
-`FiniteDifference.Hyperbolic.CFL a λ : Prop := |a * λ| ≤ 1`, and the two variants. ★'''
-deps = ["FiniteDifference.Hyperbolic.CFL"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.48)'
-
-[[node]]
-id = "numericalDomainOfDependence"
-kind = "theorem"
-desc = '''The numerical domain of dependence: for a three-point stencil `c` (support in `{-1, 0,
-1}`), `(c^n u)_j` depends only on `u_{j-n}, …, u_{j+n}`: if `u = v` on `{i | |i - j| ≤ n}` then `(c^n
-u)_j = (c^n v)_j` (`Stencil.iterate_apply_congr_of_eqOn`), so `D_Δt(x_j, t^n) ⊆ {x : |x - x_j| ≤ n
-Δx = t^n/λ}` (the display after (13.48)), and for fixed `λ`, `D₀(x̄, t̄) = {|x - x̄| ≤ t̄/λ}`. ★★'''
-deps = ["FiniteDifference.Stencil.iterate_apply_congr_of_eqOn"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, D_Δt(x_j, t^n) ⊂ {|x − x_j| ≤ nΔx}'''
-
-[[node]]
-id = "equation_13_49"
-kind = "theorem"
-desc = '''(13.49): for the scalar equation, the CFL condition `|aλ| ≤ 1` holds iff the domain of
-dependence `D(x̄, t̄) = {x̄ - a t̄}` (13.31) is contained in `D₀(x̄, t̄) = {x : |x - x̄| ≤ t̄/λ}` for
-some/every `t̄ > 0`: `|a t̄| ≤ t̄/λ ↔ |a| λ ≤ 1`. For a system, iff every `x̄ - λ_k t̄` lies in `D₀`.
-★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_48", "QuarteroniSaccoSaleri.Chapter13.equation_13_31"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.49)'
-
-[[node]]
-id = "cfl_necessary"
-kind = "theorem"
-desc = '''The CFL condition is necessary for convergence (the content of §13.8.3's claim, with
-"sufficient" removed — see the group description): for any family of three-point explicit schemes
-`c(Δt, Δx)` with fixed ratio `λ = Δt/Δx` and `|aλ| > 1`, there is a smooth compactly supported
-`u₀` (a `ContDiffBump` centred at `-a` of radius `(|a| - 1/λ)/2`, so that `u₀` vanishes on `[-1/λ,
-1/λ]` and `u₀(-a) = 1`) such that for every `Δt = 1/n`, `n ≥ 1`, the numerical solution at `(x, t) =
-(0, 1)` is `(c^n u₀(x_·))_0 = 0` while the exact solution is `u(0, 1) = u₀(-a) = 1`; hence the
-family is not convergent (`isConvergent` fails for this `u₀`). From
-`numericalDomainOfDependence`: `(c^n u₀)_0` depends on `u₀` on `{|x| ≤ nΔx = 1/λ}`, where it
-vanishes. `FiniteDifference.Hyperbolic.not_isConvergent_of_one_lt_abs_mul`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.numericalDomainOfDependence", "QuarteroniSaccoSaleri.Chapter13.isConvergent", "QuarteroniSaccoSaleri.Chapter13.equation_13_26_solution", "FiniteDifference.Hyperbolic.not_isConvergent_of_one_lt_abs_mul"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, the CFL condition as a necessary condition'''
-
-[[node]]
-id = "upwind_isMonotone"
-kind = "theorem"
-desc = '''Under CFL, `0 ≤ λa ≤ 1`, the upwind stencil (13.50) `threePoint (λa) (1 - λa) 0` has
-nonnegative coefficients summing to `1`: `Stencil.IsMonotone (upwind a λ)`; likewise Lax–Friedrichs
-`threePoint ((1+λa)/2) 0 ((1-λa)/2)` for `|λa| ≤ 1`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_41", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.Stencil.IsMonotone", "FiniteDifference.Hyperbolic.upwind_isMonotone", "FiniteDifference.Hyperbolic.laxFriedrichs_isMonotone"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, "Both λa and 1 − λa are nonnegative if (13.48) holds"'''
-
-[[node]]
-id = "upwind_discreteNorm_le"
-kind = "theorem"
-desc = '''`ℓ¹` stability of upwind under CFL (the display after (13.50)): for `0 ≤ λa ≤ 1` and `u^n ∈
-ℓ¹(ℤ)`, `‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1}`, so (13.46) holds with `C_T = 1`. A monotone stencil is
-nonexpansive in every `ℓ^p` (`Stencil.IsMonotone.norm_lpCLM_le_one`: `‖c u‖_p ≤ (∑_s |c_s|)
-‖u‖_p = ‖u‖_p`, by the triangle inequality and the shift isometries of `ℓ^p`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.upwind_isMonotone", "QuarteroniSaccoSaleri.Chapter13.equation_13_47", "FiniteDifference.Stencil.IsMonotone.norm_lpCLM_le_one"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, ‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1} for upwind'''
-
-[[node]]
-id = "laxFriedrichs_discreteNorm_le"
-kind = "theorem"
-desc = '''`ℓ¹` stability of Lax–Friedrichs under CFL, `|λa| ≤ 1`: `‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1}`,
-from `u_j^{n+1} = ½(1 - λa) u_{j+1}^n + ½(1 + λa) u_{j-1}^n` and the same monotone-stencil
-lemma. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.upwind_isMonotone", "QuarteroniSaccoSaleri.Chapter13.equation_13_47", "FiniteDifference.Stencil.IsMonotone.norm_lpCLM_le_one"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, ‖u^{n+1}‖_{Δ,1} ≤ ‖u^n‖_{Δ,1} for Lax–Friedrichs'''
-
-[[node]]
-id = "laxWendroff_stable"
-kind = "theorem"
-desc = '''Lax–Wendroff is stable under CFL (stated by the book with a reference to [QV94]): on the
-periodic grid, `|γ_k| ≤ 1` for all `k` when `|λa| ≤ 1` (`amplificationFactor_laxWendroff`), so by
-Theorem 13.1 `‖u^n‖_{Δ,2} ≤ ‖u^0‖_{Δ,2}`; on `ℓ²(ℤ)` the same bound `‖laxWendroff‖_{ℓ²→ℓ²} ≤ 1`
-follows from the symbol bound by Plancherel on `ℤ` (`Stencil.norm_lpCLM_two_le_of_symbol_le`).
-★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_40", "QuarteroniSaccoSaleri.Chapter13.amplificationFactor_laxWendroff", "QuarteroniSaccoSaleri.Chapter13.theorem_13_1", "FiniteDifference.Stencil.norm_lpCLM_two_le_of_symbol_le"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.3, "Also the Lax-Wendroff scheme is stable under the usual assumption (13.48)"'''
-
-[[node]]
-id = "equation_13_52"
-kind = "theorem"
-desc = '''(13.52), the von Neumann recursion on the periodic grid of `N` nodes: with `u_j^0 = ∑_k
-α_k e^{ikjh}` (`h = 2π/N`, `k ∈ Fin N`), any constant-coefficient explicit scheme `Q = circulant c`
-gives `u^n_j = ∑_k α_k γ_k^n e^{ikjh}` with `γ_k` the amplification coefficient `∑_s c_s e^{-iksh}`:
-`FiniteDifference.periodicScheme_pow_mulVec_fourierMode` (each mode is an eigenvector of `Q` with
-eigenvalue `γ_k`) extended by linearity. For forward Euler/centred, `γ_k = 1 - i λ a sin(kh)`
-(`amplificationFactor_forwardEulerCentred`). ★'''
-deps = ["FiniteDifference.periodicScheme_pow_mulVec_fourierMode", "FiniteDifference.amplificationFactor", "QuarteroniSaccoSaleri.Chapter13.amplificationFactor_forwardEulerCentred"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.52)'
-
-[[node]]
-id = "amplificationFactor_forwardEulerCentred"
-kind = "theorem"
-desc = '''The amplification factor of forward Euler/centred on the periodic grid: `γ_k = 1 - i λ a
-sin φ_k`, `φ_k = kh`, so `|γ_k|² = 1 + λ²a² sin²φ_k`, and `|γ_k| > 1` whenever `a ≠ 0` and `sin φ_k ≠
-0`. From `FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint`: for a three-point stencil
-`(cm, c0, cp)`, `γ_k = c0 + cm e^{-iφ_k} + cp e^{iφ_k}`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_37", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_forwardEulerCentred"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, γ_k = 1 − (aΔt/h) i sin(kh)'
-
-[[node]]
 id = "forwardEulerCentred_not_isStable"
-kind = "theorem"
-desc = '''Forward Euler/centred is unconditionally unstable in `‖·‖_{Δ,2}`: for every `λ > 0`, `a ≠
-0` and `T > 0`, the family `N ↦ periodicScheme (forwardEulerCentred a λ)` on `N` nodes (`h = 2π/N`,
-`Δt = λh`) is not stable, because for `4 ∣ N` the mode `k = N/4` has `|γ_k| = √(1 + λ²a²)`
-independent of `N`, so `‖Q_N^n‖₂ ≥ (1 + λ²a²)^{n/2}` with `n = ⌊T/Δt⌋ → ∞`, exceeding any `C_T`.
-`FiniteDifference.norm_amplificationFactor_pow_le` for the lower bound, then the negation of
-`IsStableFamily`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.amplificationFactor_forwardEulerCentred", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.norm_amplificationFactor_pow_le", "FiniteDifference.Hyperbolic.forwardEulerCentred_not_isStableFamily"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, "The centred discretization scheme (13.37) is thus unconditionally unstable"'''
-
-[[node]]
-id = "exactSolution_abs_le"
-kind = "theorem"
-desc = '''The exact solution is bounded by its datum: `|u(x, t)| = |u₀(x - at)| ≤ sup |u₀|` for all
-`x`, `t > 0` (`Transport.IsSolution.abs_le_sup` for the `C¹` solution, which is `u₀(x - at)`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_26_solution", "Transport.IsSolution.abs_le_sup"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, |u(x,t)| ≤ max |u₀|'
-
-[[node]]
-id = "theorem_13_1"
-kind = "theorem"
-desc = '''Theorem 13.1: if `|γ_k| ≤ 1` for all `k ∈ Fin N`, the scheme `Q = circulant c` on the
-periodic grid is stable in `‖·‖_{Δ,2}`: `‖Q^n u‖₂ ≤ ‖u‖₂` for every `n` and `u`, i.e. (13.46) with
-`C_T = 1`. Proof as the book: expand `u` in the Fourier modes, `Q^n` multiplies the `k`-th
-coefficient by `γ_k^n`, and Lemma 10.1 (the orthogonality `∑_j e^{i(k-m)jh} = N δ_{km}`, i.e.
-`Matrix.conjTranspose_dft_mul_dft`) is the discrete Parseval identity `‖u‖₂² = N⁻¹ ∑_k |û_k|²`.
-`FiniteDifference.norm_toEuclideanLin_periodicScheme_pow_le`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_52", "FiniteDifference.norm_toEuclideanLin_periodicScheme_pow_le", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec", "Matrix.conjTranspose_dft_mul_dft"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 13.1'
-
-[[node]]
-id = "theorem_13_1_necessary"
-kind = "theorem"
-desc = '''The converse half (von Neumann's necessary condition, not stated as a theorem by the
-book but used in its instability argument): `|γ_k|^n ≤ ‖Q^n‖₂` for every `k`, `n`
-(`FiniteDifference.norm_amplificationFactor_pow_le`), so a family stable with constant `C_T` on
-`[0, T]` has `|γ_k| ≤ 1 + 2 (C_T - 1) Δt / T` for `Δt ≤ T/2`
-(`FiniteDifference.norm_amplificationFactor_le_one_add_of_forall_norm_pow_le`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_52", "FiniteDifference.norm_amplificationFactor_pow_le", "FiniteDifference.norm_amplificationFactor_le_one_add_of_forall_norm_pow_le"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, the von Neumann analysis'
-
-[[node]]
-id = "exercise_13_6"
-kind = "theorem"
-desc = '''Exercise 6 and the upwind amplification factor: `γ_k = 1 - λa(1 - e^{-iφ_k})` for `a > 0`
-and `γ_k = 1 - λa(e^{iφ_k} - 1)` for `a < 0` (the book prints `e^{-ikh} - 1` in the second case; see
-the group description), with `|γ_k|² = 1 - 2λ|a|(1 - λ|a|)(1 - cos φ_k)`; hence `|γ_k| ≤ 1` for all
-`k` iff `λ|a| ≤ 1`, i.e. `Δt ≤ h/|a|`, the CFL condition (the "if" for all `N`; the "only if" as soon
-as some `φ_k ≠ 0 mod 2π`, i.e. `N ≥ 2`). `FiniteDifference.Hyperbolic.amplificationFactor_upwind`,
-`norm_amplificationFactor_upwind_le_one_iff`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_41", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_upwind", "FiniteDifference.Hyperbolic.norm_amplificationFactor_upwind_le_one_iff"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.6 and §13.8.4, the upwind amplification coefficients'''
-
-[[node]]
-id = "upwind_stable_l2"
-kind = "theorem"
-desc = '''Under CFL the upwind scheme is stable in `‖·‖_{Δ,2}` on the periodic grid, `‖Q^n u‖₂ ≤
-‖u‖₂`: Theorem 13.1 with Exercise 6. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.theorem_13_1", "QuarteroniSaccoSaleri.Chapter13.exercise_13_6"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, "if the CFL condition is satisfied, the upwind scheme is stable with respect to the ‖·‖_{Δ,2} norm"'''
-
-[[node]]
-id = "amplificationFactor_laxFriedrichs"
-kind = "theorem"
-desc = '''The Lax–Friedrichs amplification factor: `γ_k = cos φ_k - i λa sin φ_k`, `|γ_k|² = cos²φ_k +
-λ²a² sin²φ_k`, so `|γ_k| ≤ 1` for all `k` iff `|λa| ≤ 1` (for `N ≥ 3`, so that some `sin φ_k ≠ 0`).
-★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxFriedrichs"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Friedrichs amplification'''
-
-[[node]]
-id = "amplificationFactor_laxWendroff"
-kind = "theorem"
-desc = '''The Lax–Wendroff amplification factor: `γ_k = 1 - λ²a²(1 - cos φ_k) - i λa sin φ_k`, with
-`|γ_k|² = 1 - 4 λ²a² (1 - λ²a²) sin⁴(φ_k/2)`, so `|γ_k| ≤ 1` for all `k` iff `|λa| ≤ 1` (for `N ≥
-2`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Stencil.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Hyperbolic.amplificationFactor_laxWendroff"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4 and Figure 13.7, the Lax–Wendroff amplification'''
-
-[[node]]
-id = "amplificationFactor_backwardEulerCentred"
-kind = "theorem"
-desc = '''The backward Euler/centred amplification factor: `γ_k = 1 / (1 + i λa sin φ_k)`, `|γ_k| ≤
-1` for every `λ`, `a`, `k` — unconditional `ℓ²` stability on the periodic grid, the periodic
-counterpart of Exercise 7. `FiniteDifference.periodicTwoLevel_mulVec_fourierMode`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_43", "FiniteDifference.periodicTwoLevel_mulVec_fourierMode", "FiniteDifference.Hyperbolic.amplificationFactor_backwardEulerCentred"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.2 and Figure 13.7, the backward Euler/centred scheme'''
-
-[[node]]
-id = "equation_13_53"
-kind = "theorem"
-desc = '''(13.53), the discrete maximum principle: under CFL `0 ≤ λa ≤ 1`, the upwind scheme
-satisfies `min(u_j^n, u_{j-1}^n) ≤ u_j^{n+1} ≤ max(u_j^n, u_{j-1}^n)`, hence `inf_l u_l^0 ≤ u_j^n ≤
-sup_l u_l^0` for all `j, n` and `‖u^n‖_{Δ,∞} ≤ ‖u^0‖_{Δ,∞}` (for bounded `u^0`):
-`Stencil.IsMonotone.iInf_le_apply`, `Stencil.IsMonotone.apply_le_iSup`, iterated. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.upwind_isMonotone", "FiniteDifference.Stencil.IsMonotone.apply_le_iSup", "FiniteDifference.Stencil.IsMonotone.iInf_le_apply"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.53)'
 
 [[node]]
 id = "remark_13_4_leapFrog"
@@ -354,11 +171,14 @@ desc = '''Remark 13.4, leap-frog: the leap-frog scheme (13.44) for the wave equa
 `‖·‖_{Δ,2}` under `γλ < 1`. Written as the two-level system for `(u^{n+1}, u^n)` on the periodic
 grid, its `2 × 2` amplification matrix on the `k`-th mode is `G_k = !![2c_k, -1; 1, 0]` with `c_k =
 1 - 2(γλ)² sin²(φ_k/2)`, whose eigenvalues are the roots of `z² - 2c_k z + 1`; for `|c_k| < 1` they
-are distinct of modulus one and `‖G_k^n‖` is bounded uniformly in `n` and `k` by a constant
-depending on `1 - (γλ)²`. The book writes `Δt ≤ Δx/|γ|`: at `γλ = 1` the mode `φ_k = π` has `c_k =
--1`, a double root `z = -1` with a Jordan block, `‖G_k^n‖ ~ n`, and (13.46) fails; the strict
-inequality is needed (reading recorded in the report). Needs the block-circulant form of
-`VonNeumann` (`FiniteDifference.periodicBlockScheme`) for the reduction to `G_k`. ★★★'''
+are distinct of modulus one and `‖G_k^n‖` is bounded uniformly in `n` and `k`. The book writes
+`Δt ≤ Δx/|γ|`: at `γλ = 1` the mode `φ_k = π` has a double root `z = -1` with a Jordan block,
+`‖G_k^n‖ ~ n`, and (13.46) fails; the strict inequality is needed. ★★★
+
+Blocked: not attempted for lack of time. The block-circulant reduction exists
+(`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`); what is missing is the uniform
+bound on the powers of a `2 × 2` matrix with two distinct unimodular eigenvalues, uniform in `k` —
+an explicit diagonalization whose conditioning is controlled by `1 - (γλ)²`. Estimate: two days.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
 
@@ -370,6 +190,10 @@ desc = '''Remark 13.4, Newmark: the Newmark scheme (13.45) is unconditionally st
 matrix `G_k(β, θ, s)`, `s = (γλ)² · 4 sin²(φ_k/2)`, and the condition `2β ≥ θ ≥ 1/2` is exactly the
 condition that the characteristic polynomial of `G_k` has both roots in the closed unit disc for
 every `s ≥ 0` with a uniform bound on `‖G_k^n‖` (a Schur–Cohn computation on a quadratic with
-real coefficients). Stated on the periodic grid through `periodicBlockScheme`. ★★★'''
+real coefficients). ★★★
+
+Blocked: not attempted for lack of time; needs the same uniform power bound as
+`remark_13_4_leapFrog` plus the Schur–Cohn criterion for a real quadratic, which the project does
+not have. Estimate: three days.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_45", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Newmark method'

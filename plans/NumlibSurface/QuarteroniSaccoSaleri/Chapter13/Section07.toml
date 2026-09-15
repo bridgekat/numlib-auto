@@ -1,143 +1,69 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.7, finite difference schemes for the transport equation (13.26) on the grid `x_j = j Δx`,
-`j ∈ ℤ`, `t^n = n Δt`, `λ = Δt / Δx`. Every explicit scheme is a three-point stencil acting on grid
-functions `ℤ → ℝ` (`FiniteDifference.Stencil`, `Numlib/FiniteDifference/Stencil`), and the
-concrete ones — forward Euler/centred (13.37), Lax–Friedrichs (13.39), Lax–Wendroff (13.40),
-upwind (13.41) — are `Numlib/FiniteDifference/Hyperbolic`'s `forwardEulerCentred`,
-`laxFriedrichs`, `laxWendroff`, `upwind`. The conservative form (13.36) with a numerical flux, the
-flux of each scheme ((13.38) and the three unnumbered ones), the artificial-viscosity form
-(13.42) with Table 13.1's `k` and `h^{diff}` (Exercise 5), the implicit backward Euler/centred
-scheme (13.43), and the leap-frog (13.44) and Newmark (13.45) schemes for the wave equation are
-the nodes. Stencil convention: `Stencil.threePoint cm c0 cp` sends `u` to `j ↦ cm u_{j-1} + c0
-u_j + cp u_{j+1}`.
-'''
 
 [[node]]
 id = "equation_13_36"
-kind = "definition"
-desc = '''The conservative form (13.36): a one-step map `step : (ℤ → ℝ) → (ℤ → ℝ)` is in
-conservative form with numerical flux `h : ℝ → ℝ → ℝ` and `λ` when `step u j = u j - λ (h (u j) (u
-(j+1)) - h (u (j-1)) (u j))` for all `u`, `j`: `FiniteDifference.IsConservativeForm λ h step`. For a
-linear flux `h u v = α u + β v` the map is the stencil `Stencil.ofFlux λ α β = threePoint (λα) (1 -
-λ(α - β)) (-λβ)` (`Stencil.isConservativeForm_ofFlux`). ★'''
-deps = ["FiniteDifference.IsConservativeForm", "FiniteDifference.Stencil.ofFlux", "FiniteDifference.Stencil.isConservativeForm_ofFlux"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.36)'
+
+[[node]]
+id = "equation_13_36_ofFlux"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.36)'
 
 [[node]]
 id = "equation_13_37"
-kind = "definition"
-desc = '''Forward Euler/centred (13.37): `u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n)`, the
-stencil `FiniteDifference.Hyperbolic.forwardEulerCentred a λ = threePoint (λa/2) 1 (-λa/2)`. ★'''
-deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.37)'
 
 [[node]]
 id = "equation_13_38"
-kind = "theorem"
-desc = '''(13.38): the forward Euler/centred scheme is in conservative form with the flux
-`h(u, v) = (a/2)(u + v)`: `forwardEulerCentred a λ = Stencil.ofFlux λ (a/2) (a/2)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_36", "QuarteroniSaccoSaleri.Chapter13.equation_13_37", "FiniteDifference.Hyperbolic.forwardEulerCentred_eq_ofFlux"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.38)'
 
 [[node]]
 id = "equation_13_39"
-kind = "definition"
-desc = '''Lax–Friedrichs (13.39): `u_j^{n+1} = ½(u_{j+1}^n + u_{j-1}^n) - (λa/2)(u_{j+1}^n -
-u_{j-1}^n)`, the stencil `laxFriedrichs a λ = threePoint ((1 + λa)/2) 0 ((1 - λa)/2)`. ★'''
-deps = ["FiniteDifference.Hyperbolic.laxFriedrichs"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.39)'
 
 [[node]]
 id = "equation_13_39_flux"
-kind = "theorem"
-desc = '''The Lax–Friedrichs flux: `laxFriedrichs a λ = Stencil.ofFlux λ (a/2 + 1/(2λ)) (a/2 -
-1/(2λ))` for `λ ≠ 0`, i.e. `h(u,v) = ½[a(u + v) - λ⁻¹(v - u)]`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_36", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "FiniteDifference.Hyperbolic.laxFriedrichs_eq_ofFlux"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.7.1, the Lax–Friedrichs numerical flux'
 
 [[node]]
 id = "equation_13_40"
-kind = "definition"
-desc = '''Lax–Wendroff (13.40): `u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n) + (λ²a²/2)(u_{j+1}^n
-- 2u_j^n + u_{j-1}^n)`, the stencil `laxWendroff a λ = threePoint ((λa/2)(1 + λa)) (1 - λ²a²)
-((λa/2)(λa - 1))`. ★'''
-deps = ["FiniteDifference.Hyperbolic.laxWendroff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.40)'
 
 [[node]]
 id = "equation_13_40_flux"
-kind = "theorem"
-desc = '''The Lax–Wendroff flux: `laxWendroff a λ = Stencil.ofFlux λ (a/2 + λa²/2) (a/2 - λa²/2)`,
-i.e. `h(u,v) = ½[a(u + v) - λa²(v - u)]`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_36", "QuarteroniSaccoSaleri.Chapter13.equation_13_40", "FiniteDifference.Hyperbolic.laxWendroff_eq_ofFlux"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.7.1, the Lax–Wendroff numerical flux'
 
 [[node]]
 id = "equation_13_41"
-kind = "definition"
-desc = '''Upwind (13.41): `u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n) + (λ|a|/2)(u_{j+1}^n -
-2u_j^n + u_{j-1}^n)`, the stencil `upwind a λ = threePoint (λ a⁺) (1 - λ|a|) (λ a⁻)` with `a⁺ = max
-a 0`, `a⁻ = max (-a) 0`; for `a > 0` it is (13.50), `threePoint (λa) (1 - λa) 0`
-(`upwind_eq_of_pos`). ★'''
-deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Hyperbolic.upwind_eq_of_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.41)'
 
 [[node]]
+id = "equation_13_50"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.50)'
+
+[[node]]
 id = "equation_13_41_flux"
-kind = "theorem"
-desc = '''The upwind flux: `upwind a λ = Stencil.ofFlux λ ((a + |a|)/2) ((a - |a|)/2)`, i.e. `h(u,v) =
-½[a(u + v) - |a|(v - u)]`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_36", "QuarteroniSaccoSaleri.Chapter13.equation_13_41", "FiniteDifference.Hyperbolic.upwind_eq_ofFlux"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.7.1, the upwind numerical flux'
 
 [[node]]
 id = "equation_13_42"
-kind = "definition"
-desc = '''The artificial-viscosity form (13.42): `u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n) +
-(k/2)(u_{j+1}^n - 2u_j^n + u_{j-1}^n)/Δx²`, the stencil `artificialViscosity a λ Δx k = threePoint
-(λa/2 + k/(2Δx²)) (1 - k/Δx²) (-λa/2 + k/(2Δx²))`. ★'''
-deps = ["FiniteDifference.Hyperbolic.artificialViscosity"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.42)'
 
 [[node]]
 id = "exercise_13_5"
-kind = "theorem"
-desc = '''Exercise 5 and Table 13.1: with `λ = Δt/Δx`, `laxFriedrichs a λ = artificialViscosity a λ
-Δx (Δx²)`, `laxWendroff a λ = artificialViscosity a λ Δx (a² Δt²)`, `upwind a λ = artificialViscosity
-a λ Δx (|a| Δx Δt)`; and each flux is `h^{FE} + h^{diff}` with `h^{diff}(u,v) = -(1/(2λ))(v - u)`,
-`-(λa²/2)(v - u)`, `-(|a|/2)(v - u)` respectively (`Stencil.ofFlux` is additive in the flux
-coefficients). Three equalities of three-point stencils, `ring` after unfolding. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_42", "QuarteroniSaccoSaleri.Chapter13.equation_13_39", "QuarteroniSaccoSaleri.Chapter13.equation_13_40", "QuarteroniSaccoSaleri.Chapter13.equation_13_41", "QuarteroniSaccoSaleri.Chapter13.equation_13_38", "FiniteDifference.Hyperbolic.laxFriedrichs_eq_artificialViscosity", "FiniteDifference.Hyperbolic.laxWendroff_eq_artificialViscosity", "FiniteDifference.Hyperbolic.upwind_eq_artificialViscosity"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.5 and Table 13.1'
 
 [[node]]
 id = "equation_13_43"
-kind = "definition"
-desc = '''Backward Euler/centred (13.43): `u^{n+1} + (λa/2)(u_{j+1}^{n+1} - u_{j-1}^{n+1}) = u_j^n`.
-On `ℓ²(ℤ)` this is `B u^{n+1} = u^n` with `B = 1 + (λa/2) D₀`, `D₀ u j = u (j+1) - u (j-1)` the
-centred difference, a skew-adjoint bounded operator; `B` is invertible with `‖B⁻¹‖ ≤ 1`
-(`FiniteDifference.Hyperbolic.backwardEulerCentred a λ : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp … 2` is
-`B⁻¹`). On the periodic grid it is the two-level scheme `periodicTwoLevel (threePoint (-λa/2) 1
-(λa/2)) (Pi.single 0 1)`. ★★'''
-deps = ["FiniteDifference.Hyperbolic.backwardEulerCentred", "FiniteDifference.Hyperbolic.isSkewAdjoint_centredDiffCLM"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.43)'
 
 [[node]]
+id = "equation_13_43_spec"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.43) and Exercise 13.7'
+
+[[node]]
 id = "equation_13_44"
-kind = "definition"
-desc = '''Leap-frog (13.44) for the wave equation: a sequence `u : ℕ → ℤ → ℝ` satisfies it when
-`u (n+2) j - 2 u (n+1) j + u n j = (γλ)² (u (n+1) (j+1) - 2 u (n+1) j + u (n+1) (j-1))` for all `n,
-j`: `FiniteDifference.Hyperbolic.IsLeapFrog γ λ u`. ★'''
-deps = ["FiniteDifference.Hyperbolic.IsLeapFrog"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.44)'
 
 [[node]]
 id = "equation_13_45"
-kind = "definition"
-desc = '''Newmark (13.45): `(u, v) : ℕ → ℤ → ℝ × ℝ` satisfies it with parameters `0 ≤ β ≤ 1/2`, `0 ≤ θ
-≤ 1` when, with `w n j = u n (j+1) - 2 u n j + u n (j-1)`, `u (n+1) j - u n j = Δt v n j + (γλ)² (β w
-(n+1) j + (1/2 - β) w n j)` and `v (n+1) j - v n j = ((γλ)²/Δt)(θ w (n+1) j + (1-θ) w n j)`:
-`FiniteDifference.Hyperbolic.IsNewmark γ λ Δt β θ u v`. ★'''
-deps = ["FiniteDifference.Hyperbolic.IsNewmark"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.45)'

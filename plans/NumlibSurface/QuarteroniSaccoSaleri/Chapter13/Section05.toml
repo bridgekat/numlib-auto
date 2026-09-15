@@ -1,71 +1,37 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.5, the scalar transport problem: the Cauchy problem (13.26), its travelling-wave solution
-`u₀(x - at)`, the characteristic curves (13.27), constancy of the solution along them (which
-gives uniqueness among `C¹` solutions), the ODE along characteristics for the general problem
-(13.28), and the Burgers example 13.3. Everything is classical calculus; the backbone home is
-`Numlib/Analysis/PDE/Transport`. Inflow points and weak solutions are prose here and are not
-nodes.
-'''
 
 [[node]]
 id = "equation_13_26"
-kind = "definition"
-desc = '''The transport Cauchy problem (13.26): `u : ℝ → ℝ → ℝ` (as `u x t`) is a classical solution
-with speed `a` and datum `u₀` on `ℝ × [0, ∞)` when `u` is differentiable in both variables at every
-`(x, t)` with `t ≥ 0` (one-sided at `t = 0`) and `∂_t u x t + a ∂_x u x t = 0`, `u x 0 = u₀ x`:
-`Transport.IsSolution a 0 0 u₀ u` of the backbone with `a₀ = 0`, `f = 0`. ★'''
-deps = ["Transport.IsSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.26)'
 
 [[node]]
 id = "equation_13_26_solution"
-kind = "theorem"
-desc = '''The solution of (13.26) is the travelling wave: for differentiable `u₀`, `u x t = u₀ (x -
-a t)` is a solution (`Transport.isSolution_comp_sub`), and it is the only `C¹` solution
-(`Transport.IsSolution.eq_comp_sub`: any solution with continuous partial derivatives equals it
-for `t ≥ 0`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_26", "Transport.isSolution_comp_sub", "Transport.IsSolution.eq_comp_sub"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.5, u(x,t) = u₀(x − at)'
 
 [[node]]
 id = "equation_13_27"
-kind = "definition"
-desc = '''The characteristic curves (13.27): `x : ℝ → ℝ` with `x' t = a` for `t > 0` and `x 0 = x₀`,
-for a speed field `a : ℝ → ℝ → ℝ` (as `a x t`) in general; for constant `a` the unique solution is
-the line `x t = x₀ + a t` (`Transport.characteristic_const`). ★'''
-deps = ["Transport.IsCharacteristic", "Transport.characteristic_const"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.27)'
 
 [[node]]
+id = "equation_13_27_line"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.5, x(t) = x₀ + at'
+
+[[node]]
 id = "equation_13_27_const_along"
-kind = "theorem"
-desc = '''`du/dt = 0` along characteristics: if `u` is a `C¹` solution of (13.26) and `x` is a
-characteristic, then `t ↦ u (x t) t` has derivative `∂_x u · a + ∂_t u = 0`, hence is constant:
-`u (x₀ + a t) t = u₀ x₀` (`Transport.IsSolution.comp_characteristic_const`, the chain rule
-`HasFDerivAt.comp_hasDerivAt`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_26", "QuarteroniSaccoSaleri.Chapter13.equation_13_27", "Transport.IsSolution.comp_characteristic_const"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.5, du/dt = 0 on (x(t), t)'
 
 [[node]]
 id = "equation_13_28"
-kind = "theorem"
-desc = '''(13.28), the general problem `∂_t u + a ∂_x u + a₀ u = f` with `a, a₀, f` functions of
-`(x, t)`: along a characteristic `x' = a (x t) t`, a `C¹` solution satisfies `d/dt u (x t) t = f (x
-t) t - a₀ (x t) t · u (x t) t` (`Transport.IsSolution.hasDerivAt_comp_characteristic`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_27", "Transport.IsSolution", "Transport.IsSolution.hasDerivAt_comp_characteristic"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.28)'
 
 [[node]]
+id = "burgersDatum"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 13.3, the initial datum'
+
+[[node]]
+id = "burgersDatum_sub_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 13.3'
+
+[[node]]
 id = "example_13_3"
-kind = "theorem"
-desc = '''Example 13.3 (Burgers equation (13.29)): with `u₀ x = 1` for `x ≤ 0`, `1 - x` on `[0,1]`,
-`0` for `x ≥ 1`, the characteristic through `(x₀, 0)` is `x t = x₀ + t u₀ x₀` (the solution of `x' =
-u₀ x₀` since `u` is constant along it), explicitly `x₀ + t`, `x₀ + t(1 - x₀)`, `x₀` on the three
-ranges; and these lines do not intersect exactly while `t < 1`: the map `x₀ ↦ x₀ + t u₀ x₀` is
-strictly increasing (injective) for `0 ≤ t < 1` and not injective for `t ≥ 1` (`x₀ = 0` and `x₀ = 1`
-both reach `1` at `t = 1`). Stated for the explicit piecewise map; the fact that characteristics of
-Burgers are straight lines with slope `u₀(x₀)` is `Transport.IsSolution.comp_characteristic_const`
-applied to the quasilinear equation and is recorded as prose. ★★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 13.3'
