@@ -25,40 +25,16 @@ id = "theorem_7_4_1_complex"
 id = "theorem_7_4_1"
 
 [[node]]
+id = "exercise_7_4_2"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Exercise 7.4.2'
+
+[[node]]
+id = "equation_7_4_1_complex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.1)'
+
+[[node]]
 id = "equation_7_4_1"
-kind = "theorem"
-desc = '''(7.4.1), the norm equivalence that the book states after the membership criterion of
-Theorem 7.4.1: there are `c_1, c_2 > 0` with
-`c_1 ||v||_{H^k(R^d)} <= || (1 + |xi|^2)^{k/2} Fv ||_{L^2(R^d)} <= c_2 ||v||_{H^k(R^d)}`
-for every `v` in `H^k(R^d)`, the left-hand norm being the one Definition 7.2.2 displays,
-`[sum_{|a| <= k} ||d^a v||_{L^2}^2]^{1/2}`, which is the norm of
-`SobolevMultiIndex R (stdBasis d) k 2 (top) volume` by `definition_7_2_2_multiIndex_norm`.
-
-The *membership* half of Theorem 7.4.1 is proved, as `theorem_7_4_1`, and does not give this: it
-goes through Mathlib's `TemperedDistribution.MemSobolev.fourierMultiplierCLM_of_bounded`, which
-is a soft statement about bounded symbols and carries no constants. What (7.4.1) needs on top is
-
-(1) **Exercise 7.4.2**, the two-sided symbol inequality
-`c_1 (sum_{|a| <= k} |xi^a|^2)^{1/2} <= (1 + |xi|^2)^{k/2} <= c_2 (sum_{|a| <= k} |xi^a|^2)^{1/2}`.
-The upper bound is easy: `|xi^a|^2 <= (1 + |xi|^2)^{|a|} <= (1 + |xi|^2)^k` for `|a| <= k`, and the
-sum has `#{a : |a| <= k}` terms. For the lower bound the multinomial expansion is *not* needed --
-the cheap route is the largest coordinate. With `t = max_i |xi_i|` one has `|xi|^2 <= d t^2`, so
-`(1 + |xi|^2)^k <= (1 + d)^k max(1, t^2)^k = (1 + d)^k max(1, t^{2k})`, and `t^{2k} = (xi^a)^2` for
-the multi-index `a = k e_i` at a maximizing `i`, which has `|a| = k`; since the sum also contains
-the term `a = 0`, whose value is `1`, the whole of `max(1, t^{2k})` is bounded by
-`sum_{|a| <= k} (xi^a)^2`. So `c_1 = (1 + d)^{-k/2}` works, with no combinatorics at all.
-
-(2) **The Fourier transform of a weak derivative on the whole space**,
-`F(d^a v) = (2 pi i xi)^a Fv` in `L^2`, which follows from Mathlib's
-`TemperedDistribution.fourier_lineDerivOp_eq` iterated, once the weak derivative is identified with
-the distributional one by `MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn`
-of `Numlib/Analysis/Sobolev/Tempered.lean`, and once the `L^2` representative is read off as in
-`fourier_aeEq_symbol_mul_fourier_of_besselPotential_eq`.
-
-With those two, Plancherel (`MeasureTheory.Lp.norm_fourier_eq`, as used in `equation_7_4_2_norm`)
-turns `sum_{|a| <= k} ||d^a v||_{L^2}^2` into `int sum_{|a| <= k} (2 pi)^{2|a|} |xi^a|^2 |Fv|^2`
-and the symbol inequality compares it with `int (1 + |xi|^2)^k |Fv|^2`.'''
-deps = ["theorem_7_4_1", "definition_7_2_2_multiIndex_norm", "equation_7_4_2_norm"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.1)'
 
 [[node]]
 id = "example_7_4_2"
@@ -68,7 +44,22 @@ i.e. `‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^k(Ω)}` (7.4.3). The proof invert
 applies Cauchy-Schwarz against `∫ (1+|ξ|^2)^{-k} dξ < ∞ ↔ k > d/2`, extends by density from
 `C_0^∞(ℝ^d)`, and then transfers to `Ω` by the extension operator. Not formalized: Step 3 is
 Theorem 7.3.5 and Step 2 is Theorem 7.3.4, so this is the §7.3 embedding on a domain again -- the
-chapter's obstruction, not the Fourier analysis.'''
+chapter's obstruction, not the Fourier analysis.
+
+Blocked: re-checked 2026-09-15 against Mathlib at this pin. Step 3 is the extension operator of
+Theorem 7.3.5, which does not exist here or in Mathlib (`Stein`, `Calderon`, `extensionOperator`:
+zero relevant occurrences), so the statement *on a domain* stays out of reach. Steps 1 and 2 --
+the whole-space embedding `H^k(R^d)` into the bounded continuous functions for `k > d/2` -- are
+*not* blocked: Mathlib's `TemperedDistribution.MemSobolev.fourier_memL1` (needing
+`finrank R E < 2 s`) is exactly the Cauchy-Schwarz step, built on
+`integrable_rpow_neg_one_add_norm_sq`, and what remains is to read the continuous representative
+off the inverse Fourier transform of an `L^1` function and bound it by the `L^1` norm. The
+friction there is that `MeasureTheory.Lp.fourierInv_toTemperedDistribution_eq`
+(`Mathlib/Analysis/Fourier/LpSpace.lean`) is stated for `p = 2` only, so the `L^1` end of that
+bridge -- that the distributional inverse Fourier transform of an `L^1` function is the pointwise
+integral, which `VectorFourier.fourierIntegral_continuous` then makes a bounded continuous
+function -- has to be built. Estimated 150-250 lines for that whole-space clause, which would be
+a new node; the domain node itself still needs 7.3.5.'''
 deps = ["theorem_7_4_1", "theorem_7_3_4", "theorem_7_3_5", "definition_7_3_6"]
 
 [[node]]
@@ -79,5 +70,9 @@ desc = '''Example 7.4.3: on a Lipschitz domain `Ω ⊆ ℝ^d`,
 argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and the optimal
 `λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`. Not formalized: like Example 7.4.2 it reaches the domain only
 through the extension operator of Theorem 7.3.5 and the density of Theorem 7.3.4, which are the
-chapter's obstruction.'''
+chapter's obstruction.
+
+Blocked: re-checked 2026-09-15. Same obstruction as `example_7_4_2` and downstream of it; the
+scaling argument adds nothing that is missing, the extension operator of Theorem 7.3.5 is what
+is missing.'''
 deps = ["example_7_4_2", "theorem_7_3_5"]

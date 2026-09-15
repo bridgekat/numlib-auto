@@ -123,7 +123,15 @@ desc = '''Example 7.2.7: if a bounded Lipschitz `Ω` is partitioned into Lipschi
 Not formalized: the proof integrates by parts on each `Ω_n` and cancels the interface integrals
 `∫_{∂Ω_n} v φ ν_i`, so it needs surface measure on a Lipschitz boundary and the integration by
 parts formula of §7.6, which rests on the trace of Theorem 7.3.10. The Lipschitz hypothesis itself
-is now available, as `definition_7_2_1_lipschitzDomain`.'''
+is now available, as `definition_7_2_1_lipschitzDomain`.
+
+Blocked: re-checked 2026-09-15 against Mathlib at this pin. The obstruction is the boundary
+integral `∫_{∂Ω_n} v φ ν_i` of the proof: Mathlib's divergence theorem
+(`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) is for boxes only, there is no
+Gauss-Green on a Lipschitz domain, and `finite perimeter` / `reducedBoundary` have zero
+occurrences. `MeasureTheory.Measure.hausdorffMeasure` exists, so the boundary *measure* can be
+named, but no theorem relates it to the boundary charts. See the `Blocked` note on
+`theorem_7_3_10` for the full inventory.'''
 deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "proposition_7_6_1"]
 
 [[node]]
@@ -133,7 +141,10 @@ desc = '''Example 7.2.8: the converse of Example 7.2.7 -- if `v ∈ W^{k+1,p}(Ω
 `v ∈ C^k(closure Ω_n)` for each sub-domain, then `v ∈ C^k(closure Ω)`; together the two give
 `v ∈ C^k(closure Ω) ↔ v ∈ W^{k+1,p}(Ω)` under element-wise regularity. Not formalized: the
 argument produces a nonzero interface integral `∫_γ (v|_{Ω_{n₁}} - v|_{Ω_{n₂}}) φ ν_i`, so it
-needs surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.'''
+needs surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.
+
+Blocked: re-checked 2026-09-15; the same obstruction as `example_7_2_7`, of which this is the
+converse, and downstream of it.'''
 deps = ["example_7_2_7", "proposition_7_6_1"]
 
 [[node]]
@@ -176,5 +187,20 @@ W^{s,p}(D_i)}` with `‖v‖ = max_i ‖v ∘ g_i‖_{W^{s,p}(D_i)}`; `H^s(∂Ω
 boundary before `L^2(∂Ω)` is even definable. The patch system itself is now available --
 `definition_7_2_1_finite_cover` produces exactly the `(x_i, r_i)` and the `g_i` -- and so are the
 `W^{s,p}(D_i)` of the patches, `SobolevSlobodeckij`; what is missing is the measure on `∂Ω`, and
-with it the independence of the norm from the choice of patches.'''
+with it the independence of the norm from the choice of patches.
+
+Blocked: re-checked 2026-09-15, and the reason above needs one correction. `L^2(∂Ω)` *is*
+nameable at this pin: `Lp ℝ 2 ((μH[(d : ℝ)] : Measure (EuclideanSpace ℝ (Fin (d+1)))).restrict
+(frontier Ω))`, Mathlib having `MeasureTheory.Measure.hausdorffMeasure`. Two things still stand in
+the way of a faithful transcription. (1) The pullback `v ∘ g_i` of the display is `x' ↦ v (T_i⁻¹
+(x', g_i x'))` in the rigid motion `T_i` that `IsBoundaryGraphAt` carries, and its domain `D_i` --
+the projection `EuclideanSpace.init '' (T_i '' ball x_i r_i)` -- is *not* exposed by
+`IsBoundaryGraphAt`, which quantifies `T` and `g` existentially and names no chart domain; stating
+the definition therefore needs either a bundled patch structure or an `Opens` argument supplied by
+hand. (2) Nothing could be proved about the result: the independence of the norm from the choice
+of patches, and even that the chart conditions are consistent with membership of `L^2(∂Ω)`, need
+the area formula relating `μH[d]` on `frontier Ω` to Lebesgue measure on `D_i` through the graph
+map, which Mathlib does not have (no Gauss-Green beyond boxes, `finite perimeter` and
+`reducedBoundary` with zero occurrences). Writing the definition is perhaps 100 lines of
+bookkeeping; writing a *usable* one is `notes/fem-roadmap.md` Decision C.'''
 deps = ["definition_7_2_1_finite_cover", "definition_7_2_10"]

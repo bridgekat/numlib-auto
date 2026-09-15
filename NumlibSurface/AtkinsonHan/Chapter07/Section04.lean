@@ -30,9 +30,23 @@ multiplying back by `(1 + |ξ|^2)^{-s/2}`, which is bounded exactly when `s ≥ 
 
 The book's (7.4.1), the *equivalence* of `‖(1 + |ξ|^2)^{k/2} ℱv‖_{L^2}` with the Sobolev norm
 `[∑_{|α| ≤ k} ‖∂^α v‖_{L^2}^2]^{1/2}` of Definition 7.2.2, is a separate statement from
-Theorem 7.4.1's membership criterion and is *not* proved here; the open node `equation_7_4_1`
-records what it needs. `memSobolev_iteratedLineDerivOp` and `memLp_iteratedLineDerivOp` are the
-derivative side of the criterion in the Bessel-potential reading, and delegate to the backbone.
+Theorem 7.4.1's membership criterion — which goes through Mathlib's
+`TemperedDistribution.MemSobolev.fourierMultiplierCLM_of_bounded`, a soft statement about bounded
+symbols that carries no constants. It is `equation_7_4_1`, with `equation_7_4_1_complex` its
+complex-valued form, and it rests on two things. The first is **Exercise 7.4.2**, the two-sided
+symbol inequality `c₁ (∑_{|α| ≤ k} |ξ^α|²)^{1/2} ≤ (1 + |ξ|²)^{k/2} ≤ c₂ (∑_{|α| ≤ k}
+|ξ^α|²)^{1/2}`, proved here as `exercise_7_4_2`; the lower bound needs no multinomial expansion,
+only the largest coordinate. The second is the Fourier transform of a weak derivative on the whole
+space, `ℱ(∂^α v) = (2πiξ)^α ℱv`, which is `fourier_weakDeriv_aeEq` — Mathlib's
+`TemperedDistribution.fourier_lineDerivOp_eq` iterated (`fourier_iteratedLineDerivOp_eq`), pushed
+onto the `L²` representatives by the injectivity of `MeasureTheory.Lp.toTemperedDistributionCLM`.
+Plancherel then turns `∑_{|α| ≤ k} ‖∂^α v‖²_{L²}` into `∫ (∑_{|α| ≤ k} (2π)^{2|α|} |ξ^α|²) |ℱv|²`
+and the symbol inequality compares it with `∫ (1 + |ξ|²)^k |ℱv|²`.
+`memSobolev_iteratedLineDerivOp` and `memLp_iteratedLineDerivOp` are the derivative side of the
+criterion in the Bessel-potential reading, and delegate to the backbone.
+
+The material supporting (7.4.1) is general and belongs in the backbone; the blocks that do are
+marked `TODO(backbone)` with their natural home.
 
 Examples 7.4.2 and 7.4.3 are not formalized. Their Step 3 carries a whole-space estimate onto a
 Lipschitz domain through the extension operator of Theorem 7.3.5, and their Step 2 is the density
@@ -244,5 +258,643 @@ theorem theorem_7_4_1 {k : ℕ} (v : Lp ℝ 2 (volume : Measure (EuclideanSpace 
     filter_upwards [Complex.ofRealCLM.coeFn_compLp v] with x hx using hx
   exact ⟨fun h ↦ (memSobolevMultiIndex_ofReal_iff.2 h).congr_ae hae.symm,
     fun h ↦ memSobolevMultiIndex_ofReal_iff.1 (h.congr_ae hae)⟩
+
+
+/-! ### (7.4.1): the norm equivalence
+
+The material of this section is general and belongs in the backbone; it is written here because
+this is the only consumer so far. Each block carries a `TODO(backbone)` marker naming its natural
+home.
+-/
+
+section Backbone
+
+/-- TODO(backbone): belongs in `Mathlib/Algebra/BigOperators/Group/Multiset` — the product of a
+finite sum of multisets is the product of the products. -/
+theorem prod_multiset_sum {ι M : Type*} [CommMonoid M] [Fintype ι] (f : ι → Multiset M) :
+    (∑ i, f i).prod = ∏ i, (f i).prod := by
+  classical
+  induction (Finset.univ : Finset ι) using Finset.cons_induction with
+  | empty => simp
+  | cons a s ha ih => rw [Finset.sum_cons, Multiset.prod_add, Finset.prod_cons, ih]
+
+/-- TODO(backbone): belongs beside `multiIndexTuple` in `Numlib/Analysis/Sobolev/MultiIndex.lean`
+— a product over the tuple of directions naming a multi-index `α` is the product over the index
+type of the `α i`-th powers, the tuple listing `b i` exactly `α i` times. -/
+theorem prod_multiIndexTuple {ι E M : Type*} [Fintype ι] [LinearOrder ι] [CommMonoid M]
+    (b : ι → E) (α : ι → ℕ) (g : E → M) :
+    (∏ j, g (multiIndexTuple b α j)) = ∏ i, (g (b i)) ^ α i := by
+  classical
+  have h1 : (∏ j, g (multiIndexTuple b α j))
+      = ((multiIndexDirections b α).map g : Multiset M).prod := by
+    rw [multiIndexDirections_eq_ofFn]
+    simp [← List.prod_ofFn, Function.comp_def]
+  rw [h1, show ((List.map g (multiIndexDirections b α) : List M) : Multiset M)
+      = Multiset.map g ((multiIndexDirections b α : List E) : Multiset E) from rfl,
+    coe_multiIndexDirections b α,
+    show Multiset.map g (∑ i, Multiset.replicate (α i) (b i))
+        = ∑ i, Multiset.replicate (α i) (g (b i)) by
+      induction (Finset.univ : Finset ι) using Finset.cons_induction with
+      | empty => simp
+      | cons a s ha ih =>
+        rw [Finset.sum_cons, Multiset.map_add, ih, Finset.sum_cons, Multiset.map_replicate],
+    prod_multiset_sum]
+  exact Finset.prod_congr rfl fun i _ ↦ Multiset.prod_replicate _ _
+
+end Backbone
+
+section Symbol
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- TODO(backbone): belongs in `Numlib/Analysis/Sobolev/Tempered.lean`. The symbol of the iterated
+directional derivative along the tuple `m`: `ξ ↦ ∏_j ⟪ξ, m j⟫`, so that the Fourier transform of
+`∂^{m}` is multiplication by `(2πi)^n` times this. -/
+def lineSymbol {n : ℕ} (m : Fin n → E) : E → ℂ := fun ξ ↦ ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ)
+
+/-- The symbol of `∂^{m}` evaluated at a point. -/
+@[simp]
+theorem lineSymbol_apply {n : ℕ} (m : Fin n → E) (ξ : E) :
+    lineSymbol m ξ = ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ) := rfl
+
+/-- The symbol of `∂^{m}` splits off its first factor. -/
+theorem lineSymbol_succ {n : ℕ} (m : Fin (n + 1) → E) :
+    lineSymbol m = (fun ξ : E ↦ ((inner ℝ ξ (m 0) : ℝ) : ℂ)) * lineSymbol (Fin.tail m) := by
+  funext ξ
+  rw [lineSymbol_apply, Pi.mul_apply, lineSymbol_apply, Fin.prod_univ_succ]
+  rfl
+
+/-- The symbol of the empty tuple of directions is `1`. -/
+theorem lineSymbol_zero (m : Fin 0 → E) : lineSymbol m = fun _ : E ↦ (1 : ℂ) := by
+  funext ξ
+  simp
+
+/-- The symbol of `∂^{m}` has temperate growth, being a product of linear forms. -/
+theorem hasTemperateGrowth_lineSymbol {n : ℕ} (m : Fin n → E) :
+    (lineSymbol m).HasTemperateGrowth := by
+  induction n with
+  | zero => rw [lineSymbol_zero]; exact Function.HasTemperateGrowth.const (1 : ℂ)
+  | succ n ih =>
+    rw [lineSymbol_succ]
+    exact Function.HasTemperateGrowth.mul (by fun_prop) (ih (Fin.tail m))
+
+end Symbol
+
+section FourierDeriv
+
+variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℂ F]
+
+/-- TODO(backbone): belongs in `Numlib/Analysis/Sobolev/Tempered.lean`, beside Mathlib's
+`TemperedDistribution.fourier_lineDerivOp_eq`, of which it is the iterate. **The Fourier transform
+of an iterated directional derivative of a tempered distribution** is multiplication by
+`(2πi)^n ∏_j ⟪ξ, m j⟫`. -/
+theorem fourier_iteratedLineDerivOp_eq {n : ℕ} (m : Fin n → E) (f : 𝓢'(E, F)) :
+    𝓕 (∂^{m} f) = ((2 * (Real.pi : ℂ) * Complex.I) ^ n) •
+      smulLeftCLM F (lineSymbol m) (𝓕 f) := by
+  induction n with
+  | zero =>
+    rw [iteratedLineDerivOp_fin_zero, pow_zero, one_smul, lineSymbol_zero, smulLeftCLM_const,
+      one_smul]
+  | succ n ih =>
+    rw [iteratedLineDerivOp_succ_left, fourier_lineDerivOp_eq, ih (Fin.tail m), map_smul,
+      smulLeftCLM_smulLeftCLM_apply (hasTemperateGrowth_lineSymbol _) (by fun_prop),
+      smul_smul, show lineSymbol (Fin.tail m) * (fun x : E ↦ ((inner ℝ x (m 0) : ℝ) : ℂ))
+        = lineSymbol m by rw [lineSymbol_succ]; ring]
+    congr 1
+    ring
+
+/-- **The Fourier transform of a weak derivative on the whole space.** If the `L²` function `w` is
+the weak derivative `∂^{m} v` of the `L²` function `v` — read distributionally, which by
+`MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn` is the weak derivative of
+Definition 7.1.3 — and the product of the symbol with `ℱv` is again `L²`, then
+`ℱw = (2πi)^n (∏_j ⟪ξ, m j⟫) ℱv` almost everywhere. -/
+theorem fourier_weakDeriv_aeEq {n : ℕ} (m : Fin n → E)
+    {v w : Lp ℂ 2 (volume : Measure E)}
+    (hvw : ∂^{m} (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ)))
+    (hmem : MemLp (fun ξ ↦ lineSymbol m ξ * (𝓕 v) ξ) 2 (volume : Measure E)) :
+    ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : E → ℂ) =ᵐ[volume]
+      fun ξ ↦ (2 * (Real.pi : ℂ) * Complex.I) ^ n * (lineSymbol m ξ * (𝓕 v) ξ) := by
+  have h1 : ((hmem.toLp _ : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
+      = smulLeftCLM ℂ (lineSymbol m) ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) :=
+    toTemperedDistribution_eq_smulLeftCLM (hasTemperateGrowth_lineSymbol m) hmem.coeFn_toLp
+  have h2 : ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
+      = (((2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ : Lp ℂ 2 (volume : Measure E))
+          : 𝓢'(E, ℂ)) := by
+    rw [← Lp.fourier_toTemperedDistribution_eq, ← hvw, fourier_iteratedLineDerivOp_eq,
+      Lp.fourier_toTemperedDistribution_eq, ← h1]
+    exact ((Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2).map_smul _ _).symm
+  have hinj : Function.Injective (Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2) :=
+    LinearMap.ker_eq_bot.1 Lp.ker_toTemperedDistributionCLM_eq_bot
+  have h4 : (𝓕 w : Lp ℂ 2 (volume : Measure E))
+      = (2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ := hinj h2
+  rw [h4]
+  filter_upwards [Lp.coeFn_smul ((2 * (Real.pi : ℂ) * Complex.I) ^ n) (hmem.toLp _),
+    hmem.coeFn_toLp] with ξ h h'
+  rw [h, Pi.smul_apply, h', smul_eq_mul]
+
+end FourierDeriv
+
+section SymbolBounds
+
+variable {d k : ℕ}
+
+/-- The monomial `ξ^α = ∏_i ξ_i^{α_i}` of the multi-index `α`. -/
+def xiPow (α : Fin d → ℕ) (ξ : EuclideanSpace ℝ (Fin d)) : ℝ := ∏ i, ξ i ^ α i
+
+/-- `ξ^α` is continuous in `ξ`. -/
+theorem continuous_xiPow (α : Fin d → ℕ) :
+    Continuous (fun ξ : EuclideanSpace ℝ (Fin d) ↦ xiPow α ξ) :=
+  continuous_finsetProd _ fun i _ ↦ ((EuclideanSpace.proj (𝕜 := ℝ) i).continuous).pow _
+
+/-- `|ξ^α|² ≤ (1 + |ξ|²)^{|α|}`, because every coordinate is bounded by the norm. -/
+theorem sq_xiPow_le (α : Fin d → ℕ) (ξ : EuclideanSpace ℝ (Fin d)) :
+    xiPow α ξ ^ 2 ≤ (1 + ‖ξ‖ ^ 2) ^ (∑ i, α i) := by
+  rw [xiPow, ← Finset.prod_pow, ← Finset.prod_pow_eq_pow_sum]
+  refine Finset.prod_le_prod (fun i _ ↦ by positivity) fun i _ ↦ ?_
+  rw [← pow_mul, mul_comm (α i) 2, pow_mul]
+  refine pow_le_pow_left₀ (by positivity) ?_ _
+  have := abs_apply_le_norm ξ i
+  nlinarith [abs_nonneg (ξ i), sq_abs (ξ i), norm_nonneg ξ]
+
+/-- `|ξ^α|² ≤ (1 + |ξ|²)^k` for `|α| ≤ k`. -/
+theorem sq_xiPow_le_pow {α : Fin d → ℕ} (hα : ∑ i, α i ≤ k) (ξ : EuclideanSpace ℝ (Fin d)) :
+    xiPow α ξ ^ 2 ≤ (1 + ‖ξ‖ ^ 2) ^ k :=
+  (sq_xiPow_le α ξ).trans (pow_le_pow_right₀ (by nlinarith [norm_nonneg ξ]) hα)
+
+/-- `(x ^ (k/2))² = x^k` for `x ≥ 0`. -/
+theorem sq_rpow_half_natCast {x : ℝ} (hx : 0 ≤ x) (k : ℕ) : (x ^ ((k : ℝ) / 2)) ^ 2 = x ^ k := by
+  rw [← Real.rpow_natCast (x ^ ((k : ℝ) / 2)) 2, ← Real.rpow_mul hx, div_mul_eq_mul_div,
+    mul_comm, mul_div_assoc, show ((2 : ℕ) : ℝ) * ((k : ℝ) / 2) = ((k : ℕ) : ℝ) by
+      push_cast; ring, Real.rpow_natCast]
+
+/-- `x ^ (k/2) = √(x^k)` for `x ≥ 0`. -/
+theorem rpow_half_eq_sqrt_pow {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
+    x ^ ((k : ℝ) / 2) = Real.sqrt (x ^ k) := by
+  rw [← sq_rpow_half_natCast hx k, Real.sqrt_sq (Real.rpow_nonneg hx _)]
+
+/-- `|ξ^α| ≤ (1 + |ξ|²)^{k/2}` for `|α| ≤ k`: the bound that puts `ξ^α ℱv` in `L²` whenever
+`(1 + |ξ|²)^{k/2} ℱv` is. -/
+theorem abs_xiPow_le_rpow {α : Fin d → ℕ} (hα : ∑ i, α i ≤ k) (ξ : EuclideanSpace ℝ (Fin d)) :
+    |xiPow α ξ| ≤ (1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) := by
+  have hb : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2 := by positivity
+  have h2 : |xiPow α ξ| ^ 2 ≤ ((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2)) ^ 2 := by
+    rw [sq_rpow_half_natCast hb k, sq_abs]
+    exact sq_xiPow_le_pow hα ξ
+  exact le_of_pow_le_pow_left₀ two_ne_zero (Real.rpow_nonneg hb _) h2
+
+/-- The sum `∑_{|α| ≤ k} |ξ^α|²` of the squared monomials of order at most `k`, the quantity
+Exercise 7.4.2 compares with `(1 + |ξ|²)^{k/2}`. -/
+noncomputable def xiPowSum (d k : ℕ) (ξ : EuclideanSpace ℝ (Fin d)) : ℝ :=
+  ∑ α : MultiIndexLE (Fin d) k, xiPow α.1 ξ ^ 2
+
+/-- The term of `∑_{|α| ≤ k} |ξ^α|²` at `α = 0` is `1`, so the sum is at least `1`. -/
+theorem one_le_xiPowSum (ξ : EuclideanSpace ℝ (Fin d)) : 1 ≤ xiPowSum d k ξ := by
+  have h0 : xiPow (0 : MultiIndexLE (Fin d) k).1 ξ ^ 2 = 1 := by simp [xiPow]
+  rw [xiPowSum, ← h0]
+  exact Finset.single_le_sum (f := fun α : MultiIndexLE (Fin d) k ↦ xiPow α.1 ξ ^ 2)
+    (fun α _ ↦ sq_nonneg _) (Finset.mem_univ 0)
+
+/-- The easy half of Exercise 7.4.2: each of the `#{α : |α| ≤ k}` terms of `∑_{|α| ≤ k} |ξ^α|²`
+is at most `(1 + |ξ|²)^k`. -/
+theorem xiPowSum_le (ξ : EuclideanSpace ℝ (Fin d)) :
+    xiPowSum d k ξ ≤ (Fintype.card (MultiIndexLE (Fin d) k) : ℝ) * (1 + ‖ξ‖ ^ 2) ^ k := by
+  rw [xiPowSum, ← Finset.card_univ, ← nsmul_eq_mul, ← Finset.sum_const]
+  exact Finset.sum_le_sum fun α _ ↦ sq_xiPow_le_pow α.2 ξ
+
+/-- The multi-index `k e_{i₀}`, the one whose monomial is `ξ_{i₀}^k`. -/
+def topMultiIndex (k : ℕ) (i₀ : Fin d) : MultiIndexLE (Fin d) k :=
+  ⟨fun i ↦ if i = i₀ then k else 0, by simp⟩
+
+/-- The monomial of `k e_{i₀}` is `ξ_{i₀}^k`. -/
+theorem xiPow_topMultiIndex (i₀ : Fin d) (ξ : EuclideanSpace ℝ (Fin d)) :
+    xiPow (topMultiIndex k i₀).1 ξ = ξ i₀ ^ k := by
+  have h1 : ∀ i : Fin d, i ≠ i₀ → ξ i ^ (topMultiIndex k i₀).1 i = 1 := by
+    intro i hi
+    simp [topMultiIndex, hi]
+  rw [xiPow, Finset.prod_eq_single i₀ (fun i _ hi ↦ h1 i hi) (by simp)]
+  simp [topMultiIndex]
+
+/-- For `k ≥ 1` the sum `∑_{|α| ≤ k} |ξ^α|²` dominates its `α = 0` and `α = k e_{i₀}` terms. -/
+theorem add_sq_xiPow_topMultiIndex_le (hk : k ≠ 0) (i₀ : Fin d)
+    (ξ : EuclideanSpace ℝ (Fin d)) : 1 + (ξ i₀ ^ k) ^ 2 ≤ xiPowSum d k ξ := by
+  classical
+  have hne : (0 : MultiIndexLE (Fin d) k) ≠ topMultiIndex k i₀ := by
+    intro h
+    have hval := congrFun (congrArg Subtype.val h) i₀
+    simp [topMultiIndex] at hval
+    exact hk hval.symm
+  have hle := Finset.sum_le_sum_of_subset_of_nonneg
+    (f := fun α : MultiIndexLE (Fin d) k ↦ xiPow α.1 ξ ^ 2)
+    (Finset.subset_univ ({0, topMultiIndex k i₀} : Finset (MultiIndexLE (Fin d) k)))
+    (fun α _ _ ↦ sq_nonneg _)
+  have h0 : xiPow (0 : MultiIndexLE (Fin d) k).1 ξ ^ 2 = 1 := by simp [xiPow]
+  rw [Finset.sum_pair hne, h0, xiPow_topMultiIndex] at hle
+  exact hle
+
+/-- The hard half of Exercise 7.4.2: `(1 + |ξ|²)^k ≤ (1 + d)^k ∑_{|α| ≤ k} |ξ^α|²`. With
+`a = ξ_{i₀}²` at a coordinate of largest absolute value, `|ξ|² ≤ d a`, and
+`(1 + d a)^k ≤ (1 + d)^k max(1, a)^k ≤ (1 + d)^k (1 + a^k)`, whose two summands are the terms of
+the sum at `α = 0` and at `α = k e_{i₀}`. No multinomial expansion is needed. -/
+theorem pow_one_add_norm_sq_le (d k : ℕ) (ξ : EuclideanSpace ℝ (Fin d)) :
+    (1 + ‖ξ‖ ^ 2) ^ k ≤ ((1 : ℝ) + d) ^ k * xiPowSum d k ξ := by
+  rcases Nat.eq_zero_or_pos k with hk | hk
+  · subst hk
+    simpa using one_le_xiPowSum (k := 0) ξ
+  rcases Nat.eq_zero_or_pos d with hd | hd
+  · subst hd
+    have hξ : ‖ξ‖ = 0 := by simp [EuclideanSpace.norm_eq]
+    rw [hξ]
+    have h1 := one_le_xiPowSum (d := 0) (k := k) ξ
+    have h2 : (1 : ℝ) ≤ ((1 : ℝ) + (0 : ℕ)) ^ k := by norm_num
+    calc (1 + (0 : ℝ) ^ 2) ^ k = 1 := by norm_num
+      _ ≤ ((1 : ℝ) + (0 : ℕ)) ^ k * xiPowSum 0 k ξ := by nlinarith
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_max_image (Finset.univ : Finset (Fin d))
+    (fun i ↦ ξ i ^ 2) ⟨⟨0, hd⟩, Finset.mem_univ _⟩
+  have ha0 : (0 : ℝ) ≤ ξ i₀ ^ 2 := sq_nonneg _
+  have hnorm : ‖ξ‖ ^ 2 ≤ (d : ℝ) * ξ i₀ ^ 2 := by
+    rw [← sum_sq_apply ξ]
+    calc ∑ i, ξ i ^ 2 ≤ ∑ _i : Fin d, ξ i₀ ^ 2 :=
+          Finset.sum_le_sum fun i _ ↦ hi₀ i (Finset.mem_univ i)
+      _ = (d : ℝ) * ξ i₀ ^ 2 := by simp
+  have hmax : 1 + (d : ℝ) * ξ i₀ ^ 2 ≤ (1 + d) * max 1 (ξ i₀ ^ 2) := by
+    have h1 : (1 : ℝ) ≤ max 1 (ξ i₀ ^ 2) := le_max_left _ _
+    have h2 : ξ i₀ ^ 2 ≤ max 1 (ξ i₀ ^ 2) := le_max_right _ _
+    have h3 : (0 : ℝ) ≤ d := Nat.cast_nonneg d
+    nlinarith
+  have hmaxk : (max 1 (ξ i₀ ^ 2)) ^ k ≤ 1 + (ξ i₀ ^ 2) ^ k := by
+    rcases le_total (ξ i₀ ^ 2) 1 with h | h
+    · rw [max_eq_left h, one_pow]
+      have : (0 : ℝ) ≤ (ξ i₀ ^ 2) ^ k := by positivity
+      linarith
+    · rw [max_eq_right h]
+      linarith [zero_le_one (α := ℝ)]
+  have hlow : 1 + (ξ i₀ ^ 2) ^ k ≤ xiPowSum d k ξ := by
+    calc 1 + (ξ i₀ ^ 2) ^ k = 1 + (ξ i₀ ^ k) ^ 2 := by rw [← pow_mul, ← pow_mul, mul_comm]
+      _ ≤ xiPowSum d k ξ := add_sq_xiPow_topMultiIndex_le hk.ne' i₀ ξ
+  calc (1 + ‖ξ‖ ^ 2) ^ k ≤ (1 + (d : ℝ) * ξ i₀ ^ 2) ^ k :=
+        pow_le_pow_left₀ (by positivity) (by linarith) _
+    _ ≤ ((1 + (d : ℝ)) * max 1 (ξ i₀ ^ 2)) ^ k := pow_le_pow_left₀ (by positivity) hmax _
+    _ = (1 + (d : ℝ)) ^ k * (max 1 (ξ i₀ ^ 2)) ^ k := by rw [mul_pow]
+    _ ≤ (1 + (d : ℝ)) ^ k * xiPowSum d k ξ :=
+        mul_le_mul_of_nonneg_left (hmaxk.trans hlow) (by positivity)
+
+/-- **Exercise 7.4.2**: there are `c₁, c₂ > 0` with
+`c₁ (∑_{|α| ≤ k} |ξ^α|²)^{1/2} ≤ (1 + |ξ|²)^{k/2} ≤ c₂ (∑_{|α| ≤ k} |ξ^α|²)^{1/2}` for every
+`ξ ∈ ℝ^d`. This is the two-sided symbol inequality that turns Plancherel's identity into the norm
+equivalence (7.4.1); the constants are `c₁ = #{α : |α| ≤ k}^{-1/2}` and `c₂ = (1 + d)^{k/2}`. -/
+theorem exercise_7_4_2 (d k : ℕ) :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin d),
+        c₁ * Real.sqrt (∑ α : MultiIndexLE (Fin d) k, |xiPow α.1 ξ| ^ 2)
+            ≤ (1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2)
+          ∧ (1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2)
+            ≤ c₂ * Real.sqrt (∑ α : MultiIndexLE (Fin d) k, |xiPow α.1 ξ| ^ 2) := by
+  have hne : Nonempty (MultiIndexLE (Fin d) k) := ⟨0⟩
+  have hMpos : (0 : ℝ) < (Fintype.card (MultiIndexLE (Fin d) k) : ℝ) := by
+    exact_mod_cast Fintype.card_pos
+  refine ⟨(Real.sqrt (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹,
+    Real.sqrt (((1 : ℝ) + d) ^ k), inv_pos.2 (Real.sqrt_pos.2 hMpos),
+    Real.sqrt_pos.2 (by positivity), fun ξ ↦ ?_⟩
+  have hb : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2 := by positivity
+  have hS : (∑ α : MultiIndexLE (Fin d) k, |xiPow α.1 ξ| ^ 2) = xiPowSum d k ξ :=
+    Finset.sum_congr rfl fun α _ ↦ sq_abs _
+  rw [hS, rpow_half_eq_sqrt_pow hb k]
+  refine ⟨?_, ?_⟩
+  · rw [inv_mul_le_iff₀ (Real.sqrt_pos.2 hMpos), ← Real.sqrt_mul hMpos.le]
+    exact Real.sqrt_le_sqrt (xiPowSum_le ξ)
+  · rw [← Real.sqrt_mul (by positivity)]
+    exact Real.sqrt_le_sqrt (pow_one_add_norm_sq_le d k ξ)
+
+end SymbolBounds
+
+section NormEquivalence
+
+variable {d k : ℕ}
+
+/-- The `ℝ≥0∞` norm of a real multiple of a complex number, squared. -/
+theorem enorm_sq_ofReal_mul (r : ℝ) (z : ℂ) :
+    ‖(r : ℂ) * z‖ₑ ^ 2 = ENNReal.ofReal (r ^ 2) * ‖z‖ₑ ^ 2 := by
+  rw [enorm_mul, mul_pow]
+  congr 1
+  rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg _), Complex.norm_real, Real.norm_eq_abs,
+    sq_abs]
+
+/-- The `ℝ≥0∞` norm of a scalar multiple of a real multiple of a complex number, squared. -/
+theorem enorm_sq_mul_ofReal_mul (c : ℂ) (r : ℝ) (z : ℂ) :
+    ‖c * ((r : ℂ) * z)‖ₑ ^ 2 = ENNReal.ofReal (‖c‖ ^ 2 * r ^ 2) * ‖z‖ₑ ^ 2 := by
+  rw [enorm_mul, enorm_mul, mul_pow, mul_pow, ENNReal.ofReal_mul (by positivity), mul_assoc]
+  congr 2
+  · rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg c)]
+  · rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg _), Complex.norm_real, Real.norm_eq_abs,
+      sq_abs]
+
+/-- TODO(backbone): belongs beside `MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm` in
+`Numlib/Analysis/Convolution/Lp.lean`. The square of the `L²` seminorm is the Lebesgue integral of
+the squared norms. -/
+theorem sq_eLpNorm_two {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] (f : E → ℂ)
+    (μ : Measure E) : eLpNorm f 2 μ ^ 2 = ∫⁻ ξ, ‖f ξ‖ₑ ^ 2 ∂μ := by
+  have h := lintegral_rpow_enorm_eq_rpow_eLpNorm (μ := μ) (p := 2) (f := f)
+    (by norm_num) (by norm_num)
+  have h2 : ∀ x : ℝ≥0∞, x ^ (2 : ℝ) = x ^ (2 : ℕ) := fun x ↦ by
+    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast]
+  simp only [ENNReal.toReal_ofNat, h2] at h
+  exact h.symm
+
+/-- Plancherel's identity in the form of `eLpNorm`: the Fourier transform preserves the `L²`
+seminorm of the representative. -/
+theorem eLpNorm_fourier_eq (w : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))) :
+    eLpNorm ((𝓕 w : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d))))
+        : EuclideanSpace ℝ (Fin d) → ℂ) 2 volume
+      = eLpNorm (w : EuclideanSpace ℝ (Fin d) → ℂ) 2 volume := by
+  have h := Lp.norm_fourier_eq w
+  rw [Lp.norm_def, Lp.norm_def] at h
+  exact (ENNReal.toReal_eq_toReal_iff' (Lp.eLpNorm_ne_top _) (Lp.eLpNorm_ne_top _)).1 h
+
+/-- The symbol of `∂^α` in the standard basis is the monomial `ξ^α`: `⟪ξ, e_i⟫ = ξ_i`, and the
+tuple of directions naming `α` lists `e_i` exactly `α_i` times. -/
+theorem lineSymbol_multiIndexTuple (α : Fin d → ℕ) (ξ : EuclideanSpace ℝ (Fin d)) :
+    lineSymbol (multiIndexTuple (stdBasis d) α) ξ = ((xiPow α ξ : ℝ) : ℂ) := by
+  rw [lineSymbol_apply,
+    prod_multiIndexTuple (M := ℂ) (stdBasis d) α fun e ↦ ((inner ℝ ξ e : ℝ) : ℂ), xiPow,
+    Complex.ofReal_prod]
+  refine Finset.prod_congr rfl fun i _ ↦ ?_
+  rw [show (inner ℝ ξ (stdBasis d i) : ℝ) = ξ i by
+    simp [stdBasis, EuclideanSpace.inner_single_right], Complex.ofReal_pow]
+
+/-- If `(1 + |ξ|²)^{k/2} ℱv` lies in `L²` then so does `ξ^α ℱv` for every `|α| ≤ k`, by
+`abs_xiPow_le_rpow`. -/
+theorem memLp_lineSymbol_mul_fourier
+    {v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))}
+    (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+      (volume : Measure (EuclideanSpace ℝ (Fin d))))
+    {α : Fin d → ℕ} (hα : ∑ i, α i ≤ k) :
+    MemLp (fun ξ ↦ lineSymbol (multiIndexTuple (stdBasis d) α) ξ * (𝓕 v) ξ) 2
+      (volume : Measure (EuclideanSpace ℝ (Fin d))) := by
+  refine hF.mono ?_ ?_
+  · exact ((hasTemperateGrowth_lineSymbol
+      (multiIndexTuple (stdBasis d) α)).1.continuous.aestronglyMeasurable).mul
+      (Lp.aestronglyMeasurable _)
+  · filter_upwards with ξ
+    rw [norm_mul, norm_mul, lineSymbol_multiIndexTuple, Complex.norm_real, Complex.norm_real,
+      Real.norm_eq_abs, Real.norm_eq_abs,
+      abs_of_nonneg (Real.rpow_nonneg (by positivity : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2) _)]
+    exact mul_le_mul_of_nonneg_right (abs_xiPow_le_rpow hα ξ) (norm_nonneg _)
+
+/-- **Plancherel for one weak derivative.** For `v ∈ H^k(ℝ^d)` and `|α| ≤ k`,
+`‖∂^α v‖²_{L²} = ∫ (2π)^{2|α|} |ξ^α|² |ℱv(ξ)|² dξ`. -/
+theorem sq_eLpNorm_weakDeriv {v w : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))}
+    {α : Fin d → ℕ} (hα : ∑ i, α i ≤ k)
+    (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+      (volume : Measure (EuclideanSpace ℝ (Fin d))))
+    (hvw : HasWeakIteratedLineDerivOn (multiIndexTuple (stdBasis d) α)
+      (v : EuclideanSpace ℝ (Fin d) → ℂ) (w : EuclideanSpace ℝ (Fin d) → ℂ) ⊤ volume) :
+    eLpNorm (w : EuclideanSpace ℝ (Fin d) → ℂ) 2 volume ^ 2
+      = ∫⁻ ξ, ENNReal.ofReal ((2 * Real.pi) ^ (2 * (∑ i, α i)) * xiPow α ξ ^ 2)
+          * ‖(𝓕 v) ξ‖ₑ ^ 2 ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := by
+  have hae := fourier_weakDeriv_aeEq (multiIndexTuple (stdBasis d) α)
+    (Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn hvw)
+    (memLp_lineSymbol_mul_fourier hF hα)
+  rw [← eLpNorm_fourier_eq w, sq_eLpNorm_two]
+  refine lintegral_congr_ae ?_
+  filter_upwards [hae] with ξ hξ
+  rw [hξ, lineSymbol_multiIndexTuple, enorm_sq_mul_ofReal_mul]
+  congr 2
+  rw [norm_pow, norm_mul, norm_mul, Complex.norm_I, Complex.norm_ofNat, Complex.norm_real,
+    Real.norm_eq_abs, abs_of_nonneg Real.pi_pos.le, mul_one, ← pow_mul]
+  ring
+
+/-- The full Fourier symbol `∑_{|α| ≤ k} |(2π ξ)^α|²` of the `H^k` norm: by Plancherel,
+`∑_{|α| ≤ k} ‖∂^α v‖²_{L²} = ∫ (∑_{|α| ≤ k} (2π)^{2|α|} |ξ^α|²) |ℱv|²`. -/
+noncomputable def fullSymbol (d k : ℕ) (ξ : EuclideanSpace ℝ (Fin d)) : ℝ :=
+  ∑ α : MultiIndexLE (Fin d) k, (2 * Real.pi) ^ (2 * (∑ i, α.1 i)) * xiPow α.1 ξ ^ 2
+
+/-- `1 ≤ 2π`. -/
+theorem one_le_two_pi : (1 : ℝ) ≤ 2 * Real.pi := by nlinarith [Real.two_le_pi]
+
+/-- The full symbol is continuous. -/
+theorem continuous_fullSymbol (d k : ℕ) :
+    Continuous (fun ξ : EuclideanSpace ℝ (Fin d) ↦ fullSymbol d k ξ) :=
+  continuous_finsetSum _ fun α _ ↦ continuous_const.mul ((continuous_xiPow α.1).pow 2)
+
+/-- Every factor `(2π)^{2|α|}` is at least `1`, so the full symbol dominates `∑_{|α| ≤ k}
+|ξ^α|²`. -/
+theorem xiPowSum_le_fullSymbol (ξ : EuclideanSpace ℝ (Fin d)) :
+    xiPowSum d k ξ ≤ fullSymbol d k ξ := by
+  refine Finset.sum_le_sum fun α _ ↦ ?_
+  nlinarith [one_le_pow₀ (n := 2 * (∑ i, α.1 i)) one_le_two_pi, sq_nonneg (xiPow α.1 ξ)]
+
+/-- Every factor `(2π)^{2|α|}` is at most `(2π)^{2k}`. -/
+theorem fullSymbol_le_xiPowSum (ξ : EuclideanSpace ℝ (Fin d)) :
+    fullSymbol d k ξ ≤ (2 * Real.pi) ^ (2 * k) * xiPowSum d k ξ := by
+  rw [xiPowSum, Finset.mul_sum]
+  refine Finset.sum_le_sum fun α _ ↦ ?_
+  exact mul_le_mul_of_nonneg_right
+    (pow_le_pow_right₀ one_le_two_pi (Nat.mul_le_mul_left 2 α.2)) (sq_nonneg _)
+
+/-- One half of the symbol comparison: `(1 + |ξ|²)^k ≤ (1 + d)^k ∑_{|α| ≤ k} |(2π ξ)^α|²`. -/
+theorem pow_le_fullSymbol (ξ : EuclideanSpace ℝ (Fin d)) :
+    (1 + ‖ξ‖ ^ 2) ^ k ≤ ((1 : ℝ) + d) ^ k * fullSymbol d k ξ :=
+  (pow_one_add_norm_sq_le d k ξ).trans
+    (mul_le_mul_of_nonneg_left (xiPowSum_le_fullSymbol ξ) (by positivity))
+
+/-- The other half of the symbol comparison:
+`∑_{|α| ≤ k} |(2π ξ)^α|² ≤ (2π)^{2k} #{α : |α| ≤ k} (1 + |ξ|²)^k`. -/
+theorem fullSymbol_le_pow (ξ : EuclideanSpace ℝ (Fin d)) :
+    fullSymbol d k ξ ≤ ((2 * Real.pi) ^ (2 * k)
+      * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ)) * (1 + ‖ξ‖ ^ 2) ^ k := by
+  rw [mul_assoc]
+  exact (fullSymbol_le_xiPowSum ξ).trans
+    (mul_le_mul_of_nonneg_left (xiPowSum_le ξ) (by positivity))
+
+/-- The integrand of the Fourier-side quadratic form is a.e.-measurable. -/
+theorem aemeasurable_symbol_mul {g : EuclideanSpace ℝ (Fin d) → ℝ} (hg : Continuous g)
+    (v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))) :
+    AEMeasurable (fun ξ ↦ ENNReal.ofReal (g ξ) * ‖(𝓕 v) ξ‖ₑ ^ 2)
+      (volume : Measure (EuclideanSpace ℝ (Fin d))) :=
+  (ENNReal.measurable_ofReal.comp hg.measurable).aemeasurable.mul
+    ((Lp.aestronglyMeasurable (𝓕 v)).enorm.pow_const 2)
+
+/-- `‖(1 + |ξ|²)^{k/2} ℱv‖²_{L²} = ∫ (1 + |ξ|²)^k |ℱv|²`. -/
+theorem sq_eLpNorm_symbol_mul_fourier
+    (v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))) :
+    eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume ^ 2
+      = ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖(𝓕 v) ξ‖ₑ ^ 2
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := by
+  rw [sq_eLpNorm_two]
+  refine lintegral_congr fun ξ ↦ ?_
+  rw [enorm_sq_ofReal_mul, sq_rpow_half_natCast (by positivity : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2) k]
+
+/-- **Plancherel for the whole Sobolev norm**: `∑_{|α| ≤ k} ‖∂^α v‖²_{L²}` is the integral of the
+full symbol against `|ℱv|²`. -/
+theorem sq_eLpNorm_sum
+    {v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))}
+    {w : MultiIndexLE (Fin d) k → Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))}
+    (hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+      (volume : Measure (EuclideanSpace ℝ (Fin d))))
+    (hw : ∀ α : MultiIndexLE (Fin d) k, HasWeakIteratedLineDerivOn
+      (multiIndexTuple (stdBasis d) α.1) (v : EuclideanSpace ℝ (Fin d) → ℂ)
+      (w α : EuclideanSpace ℝ (Fin d) → ℂ) ⊤ volume) :
+    ∑ α : MultiIndexLE (Fin d) k, eLpNorm (w α : EuclideanSpace ℝ (Fin d) → ℂ) 2 volume ^ 2
+      = ∫⁻ ξ, ENNReal.ofReal (fullSymbol d k ξ) * ‖(𝓕 v) ξ‖ₑ ^ 2
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := by
+  rw [Finset.sum_congr rfl (fun α _ ↦ sq_eLpNorm_weakDeriv α.2 hF (hw α)),
+    ← lintegral_finsetSum' _ (fun α _ ↦ aemeasurable_symbol_mul
+      (continuous_const.mul ((continuous_xiPow α.1).pow 2)) v)]
+  refine lintegral_congr fun ξ ↦ ?_
+  rw [← Finset.sum_mul, ← ENNReal.ofReal_sum_of_nonneg (fun α _ ↦ by positivity)]
+  rfl
+
+/-- **(7.4.1)** for the complex-valued functions that §7.4 allows throughout: there are
+`c₁, c₂ > 0` with
+
+`c₁ ‖v‖_{H^k(ℝ^d)} ≤ ‖(1 + |ξ|²)^{k/2} ℱv‖_{L²(ℝ^d)} ≤ c₂ ‖v‖_{H^k(ℝ^d)}`
+
+for every `v ∈ H^k(ℝ^d)`, the left-hand norm being the one Definition 7.2.2 displays,
+`[∑_{|α| ≤ k} ‖∂^α v‖²_{L²}]^{1/2}`, which is the norm of
+`SobolevMultiIndex ℂ (stdBasis d) k 2 ⊤ volume` by `SobolevMultiIndex.norm_eq_sum`
+(`definition_7_2_2_multiIndex_norm` is that display for real-valued functions). The hypothesis is
+that the family `w` consists of the weak derivatives `∂^α v` of Definition 7.1.3, which — `v` and
+each `w α` lying in `L²(ℝ^d)` — is exactly membership of `H^k(ℝ^d)`.
+
+The proof is Plancherel applied to each `∂^α v` (whose Fourier transform is `(2πi ξ)^α ℱv`, by
+`sq_eLpNorm_weakDeriv`) followed by the symbol inequality of Exercise 7.4.2. The constants are
+`c₁ = ((2π)^{2k} #{α : |α| ≤ k})^{-1/2}` and `c₂ = (1 + d)^{k/2}`. -/
+theorem equation_7_4_1_complex (d k : ℕ) :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+      ∀ (v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d))))
+        (w : MultiIndexLE (Fin d) k → Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))),
+        (∀ α : MultiIndexLE (Fin d) k, HasWeakIteratedLineDerivOn
+            (multiIndexTuple (stdBasis d) α.1) (v : EuclideanSpace ℝ (Fin d) → ℂ)
+            (w α : EuclideanSpace ℝ (Fin d) → ℂ) ⊤ volume) →
+        c₁ * (∑ α, ‖w α‖ ^ 2) ^ ((1 : ℝ) / 2)
+            ≤ (eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+                volume).toReal
+          ∧ (eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2
+                volume).toReal ≤ c₂ * (∑ α, ‖w α‖ ^ 2) ^ ((1 : ℝ) / 2) := by
+  have hne : Nonempty (MultiIndexLE (Fin d) k) := ⟨0⟩
+  have hMpos : (0 : ℝ) < (Fintype.card (MultiIndexLE (Fin d) k) : ℝ) := by
+    exact_mod_cast Fintype.card_pos
+  have ha1 : (0 : ℝ) < ((2 * Real.pi) ^ (2 * k)
+      * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹ := by positivity
+  have ha2 : (0 : ℝ) < ((1 : ℝ) + d) ^ k := by positivity
+  refine ⟨Real.sqrt (((2 * Real.pi) ^ (2 * k)
+      * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹), Real.sqrt (((1 : ℝ) + d) ^ k),
+    Real.sqrt_pos.2 ha1, Real.sqrt_pos.2 ha2, ?_⟩
+  intro v w hw
+  obtain ⟨N, hN⟩ : ∃ N : ℝ≥0∞, N = eLpNorm
+      (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume := ⟨_, rfl⟩
+  obtain ⟨A, hAdef⟩ : ∃ A : ℝ≥0∞, A = ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖(𝓕 v) ξ‖ₑ ^ 2
+      ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := ⟨_, rfl⟩
+  obtain ⟨B, hBdef⟩ : ∃ B : ℝ≥0∞, B = ∫⁻ ξ, ENNReal.ofReal (fullSymbol d k ξ) * ‖(𝓕 v) ξ‖ₑ ^ 2
+      ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := ⟨_, rfl⟩
+  rw [← hN]
+  have hres : ((⊤ : Opens (EuclideanSpace ℝ (Fin d))) : Set (EuclideanSpace ℝ (Fin d)))
+      = Set.univ := rfl
+  have hv : MemSobolevMultiIndex (stdBasis d) (v : EuclideanSpace ℝ (Fin d) → ℂ) k 2 ⊤ volume := by
+    refine ⟨?_, fun α hα ↦ ⟨(w ⟨α, hα⟩ : EuclideanSpace ℝ (Fin d) → ℂ), hw ⟨α, hα⟩, ?_⟩⟩
+    · rw [hres, Measure.restrict_univ]; exact Lp.memLp v
+    · rw [hres, Measure.restrict_univ]; exact Lp.memLp (w ⟨α, hα⟩)
+  have hF : MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume :=
+    (theorem_7_4_1_complex v).1 hv
+  have hA : N ^ 2 = A := by rw [hN, hAdef]; exact sq_eLpNorm_symbol_mul_fourier v
+  have hB : ∑ α : MultiIndexLE (Fin d) k, eLpNorm (w α : EuclideanSpace ℝ (Fin d) → ℂ) 2 volume ^ 2
+      = B := by rw [hBdef]; exact sq_eLpNorm_sum hF hw
+  have hcomp1 : ENNReal.ofReal (((2 * Real.pi) ^ (2 * k)
+      * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹) * B ≤ A := by
+    rw [hAdef, hBdef, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+    refine lintegral_mono fun ξ ↦ ?_
+    rw [← mul_assoc, ← ENNReal.ofReal_mul ha1.le]
+    gcongr
+    calc ((2 * Real.pi) ^ (2 * k) * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹
+          * fullSymbol d k ξ
+        ≤ ((2 * Real.pi) ^ (2 * k) * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))⁻¹
+          * (((2 * Real.pi) ^ (2 * k) * (Fintype.card (MultiIndexLE (Fin d) k) : ℝ))
+            * (1 + ‖ξ‖ ^ 2) ^ k) :=
+          mul_le_mul_of_nonneg_left (fullSymbol_le_pow ξ) ha1.le
+      _ = (1 + ‖ξ‖ ^ 2) ^ k := by field_simp
+  have hcomp2 : A ≤ ENNReal.ofReal (((1 : ℝ) + d) ^ k) * B := by
+    rw [hAdef, hBdef, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+    refine lintegral_mono fun ξ ↦ ?_
+    rw [← mul_assoc, ← ENNReal.ofReal_mul ha2.le]
+    gcongr
+    exact pow_le_fullSymbol ξ
+  have hAfin : A ≠ ⊤ := by rw [← hA, hN]; exact ENNReal.pow_ne_top hF.eLpNorm_lt_top.ne
+  have hBfin : B ≠ ⊤ := by
+    rw [← hB]
+    exact (ENNReal.sum_lt_top.2 fun α _ ↦
+      ENNReal.pow_lt_top (Lp.eLpNorm_ne_top (w α)).lt_top).ne
+  have hPsum : ∑ α : MultiIndexLE (Fin d) k, ‖w α‖ ^ 2 = B.toReal := by
+    rw [← hB, ENNReal.toReal_sum fun α _ ↦ ENNReal.pow_ne_top (Lp.eLpNorm_ne_top (w α))]
+    exact Finset.sum_congr rfl fun α _ ↦ by rw [Lp.norm_def, ← ENNReal.toReal_pow]
+  have hNsq : N.toReal ^ 2 = A.toReal := by rw [← ENNReal.toReal_pow, hA]
+  have hsumnn : (0 : ℝ) ≤ ∑ α : MultiIndexLE (Fin d) k, ‖w α‖ ^ 2 :=
+    Finset.sum_nonneg fun _ _ ↦ sq_nonneg _
+  have hP2 : ((∑ α : MultiIndexLE (Fin d) k, ‖w α‖ ^ 2) ^ ((1 : ℝ) / 2)) ^ 2
+      = ∑ α : MultiIndexLE (Fin d) k, ‖w α‖ ^ 2 := by
+    rw [← Real.rpow_natCast _ 2, ← Real.rpow_mul hsumnn]
+    norm_num
+  constructor
+  · refine le_of_pow_le_pow_left₀ two_ne_zero ENNReal.toReal_nonneg ?_
+    rw [mul_pow, Real.sq_sqrt ha1.le, hP2, hPsum, hNsq]
+    have h := ENNReal.toReal_mono hAfin hcomp1
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal ha1.le] at h
+  · refine le_of_pow_le_pow_left₀ two_ne_zero (by positivity) ?_
+    rw [mul_pow, Real.sq_sqrt ha2.le, hP2, hPsum, hNsq]
+    have h := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hBfin) hcomp2
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal ha2.le] at h
+
+/-- Complexification preserves the `L²` norm. -/
+theorem norm_ofRealCLM_compLp (f : Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))) :
+    ‖Complex.ofRealCLM.compLp f‖ = ‖f‖ := by
+  rw [Lp.norm_def, Lp.norm_def]
+  congr 1
+  refine eLpNorm_congr_norm_ae ?_
+  filter_upwards [Complex.ofRealCLM.coeFn_compLp f] with x hx
+  rw [hx]
+  simp
+
+/-- **(7.4.1)**: there are `c₁, c₂ > 0` with
+
+`c₁ ‖v‖_{H^k(ℝ^d)} ≤ ‖(1 + |ξ|²)^{k/2} ℱv‖_{L²(ℝ^d)} ≤ c₂ ‖v‖_{H^k(ℝ^d)}`
+
+for every real `v ∈ H^k(ℝ^d)`, so that `‖(1 + |ξ|²)^{k/2} ℱv‖_{L²}` is a norm on `H^k(ℝ^d)`
+equivalent to the canonical one. The left-hand norm is the one Definition 7.2.2 displays,
+`[∑_{|α| ≤ k} ‖∂^α v‖²_{L²}]^{1/2}`, which is the norm of
+`SobolevMultiIndex ℝ (stdBasis d) k 2 ⊤ volume` by `definition_7_2_2_multiIndex_norm`; the
+hypothesis is that `w α` is the weak `∂^α v` of Definition 7.1.3 for every `|α| ≤ k`, which — `v`
+and each `w α` lying in `L²(ℝ^d)` — is membership of `H^k(ℝ^d)`.
+
+As in `theorem_7_4_1`, `ℱv` is read as the Fourier transform of the complexification of `v`;
+`equation_7_4_1_complex` is the statement for the complex-valued functions §7.4 allows
+throughout. -/
+theorem equation_7_4_1 (d k : ℕ) :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+      ∀ (v : Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin d))))
+        (w : MultiIndexLE (Fin d) k → Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))),
+        (∀ α : MultiIndexLE (Fin d) k, definition_7_1_3_multiIndex α.1
+            (v : EuclideanSpace ℝ (Fin d) → ℝ) (w α : EuclideanSpace ℝ (Fin d) → ℝ) ⊤) →
+        c₁ * (∑ α, ‖w α‖ ^ 2) ^ ((1 : ℝ) / 2)
+            ≤ (eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ)
+                * (𝓕 (Complex.ofRealCLM.compLp v)) ξ) 2 volume).toReal
+          ∧ (eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ)
+                * (𝓕 (Complex.ofRealCLM.compLp v)) ξ) 2 volume).toReal
+            ≤ c₂ * (∑ α, ‖w α‖ ^ 2) ^ ((1 : ℝ) / 2) := by
+  obtain ⟨c₁, c₂, hc₁, hc₂, h⟩ := equation_7_4_1_complex d k
+  refine ⟨c₁, c₂, hc₁, hc₂, fun v w hw ↦ ?_⟩
+  have hres : ((⊤ : Opens (EuclideanSpace ℝ (Fin d))) : Set (EuclideanSpace ℝ (Fin d)))
+      = Set.univ := rfl
+  have hcoe : ∀ f : Lp ℝ 2 (volume : Measure (EuclideanSpace ℝ (Fin d))),
+      (fun x ↦ (((f : EuclideanSpace ℝ (Fin d) → ℝ) x : ℝ) : ℂ))
+        =ᵐ[volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin d))) : Set _)]
+        ((Complex.ofRealCLM.compLp f : Lp ℂ 2 _) : EuclideanSpace ℝ (Fin d) → ℂ) := by
+    intro f
+    rw [hres, Measure.restrict_univ]
+    filter_upwards [Complex.ofRealCLM.coeFn_compLp f] with x hx using hx.symm
+  have key := h (Complex.ofRealCLM.compLp v) (fun α ↦ Complex.ofRealCLM.compLp (w α)) fun α ↦
+    (HasWeakIteratedLineDerivOn.ofReal_iff.1 (hw α)).congr_ae (hcoe v) (hcoe (w α))
+  simpa only [norm_ofRealCLM_compLp] using key
+
+end NormEquivalence
 
 end AtkinsonHan.Chapter07

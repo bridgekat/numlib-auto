@@ -32,6 +32,9 @@ holds for `m = 0` and `m = 1`. Not formalized: it is Corollary 10.3.7 instantiat
 blocked by that corollary and, through it, by Theorem 10.3.3. `H²(K)` itself, with its norm and
 seminorm, is available: `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` and
 `definition_7_2_2_multiIndex_norm` are proved.
+
+Blocked: re-checked 2026-09-15; downstream of corollary_10_3_7 and hence of theorem_10_3_3,
+whose own blockers are AtkinsonHan.Chapter07.theorem_7_3_7 and theorem_7_3_17.
 '''
 deps = ["corollary_10_3_7"]
 
@@ -48,6 +51,13 @@ is the §7.3 theory over it — the embedding `H^{k+1}(K̂) ↪ C(K̂)` that mak
 (`AtkinsonHan.Chapter07.theorem_7_3_17`, which rests on Deny–Lions, `theorem_7_3_12`), all open.
 Beware the near-match: `exercise_10_3_3` is Exercise 10.3.3, the angle criterion for regularity, a
 different result with the same number, and it *is* formalized.
+
+Blocked: re-checked 2026-09-15 against Mathlib at this pin. Both blockers stand:
+Rellich-Kondrachov (under theorem_7_3_17 via theorem_7_3_12) and the Sobolev embedding
+(theorem_7_3_7 via the extension operator theorem_7_3_5) have zero counterpart in Mathlib.
+The Bramble-Hilbert half has a compactness-free route -- Brenner and Scott's averaged Taylor
+polynomials, notes/fem-roadmap.md Decision A -- which would unblock this node and the four
+that hang off it without touching Rellich-Kondrachov at all.
 '''
 deps = ["AtkinsonHan.Chapter07.theorem_7_3_17", "AtkinsonHan.Chapter07.theorem_7_3_7", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
 
@@ -65,6 +75,48 @@ proved, and no §7.3 result enters: what is missing is the change-of-variables c
 the chain rule for a weak derivative along an affine map — of which
 `HasWeakIteratedLineDerivOn.contDiff_comp` (`Numlib/Analysis/Sobolev/Mollification.lean`) is the
 first-order form — with the Jacobian factor in the `L²` norm. This one is simply unwritten.
+
+Blocked: not blocked mathematically — re-checked 2026-09-15 — but it is a *task*, not a node, and
+was left for one. One correction first: `HasWeakIteratedLineDerivOn.contDiff_comp` is **not** the
+first-order form of what is wanted. It is the chain rule for `f ∘ v` with `f : ℝ → ℝ` a `C¹`
+function composed on the *outside*; what 10.3.4 needs is a change of variables in the *domain*,
+`v ∘ F` with `F` affine, and that has no form, first-order or otherwise, anywhere in the tree.
+The route, in four pieces:
+
+(1) **Transport of test functions.** For an affine equivalence `F x = T x + b` of `ℝ^d` and
+`Ωhat = F ⁻¹' Ω`, the map sending a test function on `Ωhat` to its composition with `F⁻¹` lands in
+the test functions on `Ω`: smooth by composition, `tsupport` the continuous image of a compact set
+and inside `Ω`. About 40 lines; `TestFunction.compConstSub` in
+`Numlib/Analysis/Sobolev/Mollification.lean` is the template for the four structure fields.
+
+(2) **The affine change of variables for a weak derivative**, the missing backbone lemma:
+`HasWeakIteratedFDerivOn n v w Ω μ` gives `HasWeakIteratedFDerivOn n (v ∘ F) (fun x ↦ (w (F
+x)).compContinuousLinearMap fun _ ↦ T) (F ⁻¹' Ω) μ`. The proof is the defining identity read once:
+`iteratedFDeriv ℝ n (φ ∘ F) x z = iteratedFDeriv ℝ n φ (F x) (T ∘ z)` by
+`ContinuousLinearMap.iteratedFDeriv_comp_right` together with `iteratedFDeriv_comp_add_left` —
+exactly the pair `Mollification.lean` already uses for the reflection — then the integral
+substitution from `MeasureTheory.Measure.map_linearMap_addHaar_eq_smul_addHaar` with
+`integral_map`, whose Jacobian factor cancels between the two sides of the identity. This is the
+piece worth having on its own.
+
+(3) **The seminorm bound needs no tensor-versus-multi-index norm comparison**, which is what makes
+the whole thing tractable. Expanding each `T e_i` in the basis by multilinearity
+(`ContinuousMultilinearMap.apply_eq_sum_basis` in `Numlib/Analysis/Sobolev/MultiIndex.lean`) gives
+the `alpha`-th weak derivative of `v ∘ F` at `x` as a sum, over tuples `l : Fin m → Fin d`, of
+products of matrix entries of `T` times `(∂^{multiIndexCount l} v) (F x)`; and each entry is at
+most `‖T‖`. So the pointwise bound is `‖T‖^m d^m` times the largest `|∂^β v| ∘ F` with `|β| = m`.
+Summing over the multi-indices of order `m` and changing variables in the `L²` norm gives
+(10.3.5) with `c = d^m (#{α : |α| = m})^{1/2}`, which depends only on `d` and `m`, as the book
+says. (10.3.6) is the same statement for `F⁻¹`, and the membership equivalence follows from the
+two bounds.
+
+(4) `MemSobolevMultiIndex.memSobolev` supplies the tensor-valued weak derivatives that (2) and (3)
+are phrased over, and `MemSobolev.memSobolevMultiIndex` returns to the multi-index seminorm the
+book displays; both are proved.
+
+Estimated 400-600 lines across the four pieces, of which (2) is the only novel mathematics.
+Nothing in §7.3 enters at any point, so this node is independent of everything else open in this
+group.
 '''
 deps = ["AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
 
@@ -77,6 +129,9 @@ Theorem 10.3.5: for `k > 0`, `m ≤ k + 1` and `ℙ_k(K̂) ⊆ X̂`, the element
 every `v ∈ H^{k+1}(K)`, with `c` depending only on `K̂` and `Π̂`. Not formalized: it is Theorem
 10.3.1 combined with Theorems 10.3.3 and 10.3.4 and Lemma 10.2.2, so it is blocked by those two,
 not by the `H^m` seminorm, which is available.
+
+Blocked: re-checked 2026-09-15; downstream of theorem_10_3_3 and theorem_10_3_4, the second
+of which is a bounded task and not a mathematical gap -- see its own note.
 '''
 deps = ["theorem_10_3_1", "theorem_10_3_3", "theorem_10_3_4", "lemma_10_2_2"]
 
@@ -91,6 +146,8 @@ regularity turns the `h_K` and `ρ_K` of (10.3.7) into a bound in `h_K` alone. N
 Theorem 10.3.5 read on a regular family, so it is blocked by that theorem and, through it, by
 Theorem 10.3.3; `IsRegularFamily`, the Definition 10.3.6 half of its hypotheses, is formalized
 here.
+
+Blocked: re-checked 2026-09-15; downstream of theorem_10_3_5, hence of theorem_10_3_3.
 '''
 deps = ["theorem_10_3_5", "IsRegularFamily"]
 
@@ -104,5 +161,9 @@ piecewise by `(Π_h v)|_K = Π_K v`, obeys (10.3.13),
 independent of `h`. Not formalized: on top of Corollary 10.3.7 it needs the additivity of the `H^m`
 norm over a triangulation of `Ω`, hence a triangulation scaffold, which the chapter's group
 description puts out of scope; the Sobolev space itself is available.
+
+Blocked: re-checked 2026-09-15; downstream of corollary_10_3_7, and in addition the
+triangulation scaffold its global norm additivity needs is a deliberate scope exclusion of
+the chapter's group description, not a mathematical gap.
 '''
 deps = ["corollary_10_3_7"]
