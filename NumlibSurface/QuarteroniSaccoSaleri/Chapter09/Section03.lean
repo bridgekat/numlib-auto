@@ -21,10 +21,11 @@ Exercise 4; Table 9.6 shows the negative weight of the nine-node closed formula.
 The backbone is `Numlib/Approximation/NewtonCotes`: the weights `Quadrature.newtonCotesWeight`,
 `Quadrature.openNewtonCotesWeight`, the rules `Quadrature.closedNewtonCotes`,
 `Quadrature.openNewtonCotes`, the constants `Quadrature.newtonCotesM`, `Quadrature.newtonCotesK`
-(and their open versions), and the error theorem for the closed formulae with even `n`,
-`Quadrature.exists_sub_closedNewtonCotes_eq_of_even`, which is the case the book proves. The
-divided difference `f[x₀, …, x_n, x]` is chapter 8's `DividedDifference.newton f (Fin.snoc x t)`,
-and (9.21) is the integrated form of chapter 8's (8.20).
+(and their open versions), and the error theorems for the formulae with even `n`,
+`Quadrature.exists_sub_closedNewtonCotes_eq_of_even` — the case the book proves — and
+`Quadrature.exists_sub_openNewtonCotes_eq_of_even`. The divided difference `f[x₀, …, x_n, x]` is
+chapter 8's `DividedDifference.newton f (Fin.snoc x t)`, and (9.21) is the integrated form of
+chapter 8's (8.20).
 
 ## Main results
 
@@ -36,17 +37,24 @@ and (9.21) is the integrated form of chapter 8's (8.20).
 * `theorem_9_2_closed_even`, `theorem_9_2_M_closed` — (9.19) for the closed formulae with even
   `n`: `E_n(f) = M_n/(n + 2)! h^{n+3} f^{(n+2)}(ξ)`, `ξ ∈ (a, b)`, with
   `M_n = ∫₀ⁿ t π_{n+1}(t) dt < 0`.
+* `theorem_9_2_open_even` — (9.19) for the open formulae with even `n`, with
+  `M_n = ∫₋₁ⁿ⁺¹ t π_{n+1}(t) dt > 0`; for `n = 0` it is the midpoint error (9.6).
 * `theorem_9_2_degreeOfExactness_even`, `theorem_9_2_order_even` — the degree of exactness
   `n + 1` and the order of infinitesimal `n + 3` of the closed formulae with even `n`.
+* `theorem_9_2_degreeOfExactness_odd`, `theorem_9_2_order_odd` — the degree of exactness `n` of
+  the closed formulae with odd `n` (the error at `x^{n+1}` is `h^{n+2} K_n`, so `K_n` is pinned
+  down) and the order of infinitesimal `n + 2`, with a non-sharp constant.
 * `equation_9_21`, `exercise_9_4` — the error as `∫ f[x₀, …, x_n, x] ω_{n+1}(x) dx`, and the
   derivative identity `d/dx f[x₀, …, x_n, x] = f[x₀, …, x_n, x, x]`.
 
 ## Not yet stated
 
-The clauses of Theorem 9.2 for odd `n` and for the open formulae ((9.20), and (9.19) with
-`M_n > 0`), which the book states without proof, wait on the backbone's sign analysis of the
-corresponding Peano kernels (`Quadrature.exists_sub_closedNewtonCotes_eq_of_odd` and its open
-companions); their nodes are open in the plan.
+The error formula (9.20) itself, for odd `n` — closed and open — which the book states without
+proof, waits on the backbone's sign analysis of the order-`n` Peano kernel of a rule with an odd
+number of panels (`Quadrature.exists_sub_closedNewtonCotes_eq_of_odd` and
+`Quadrature.exists_sub_openNewtonCotes_eq_of_odd`); their nodes are open in the plan. Its two
+consequences, the degree of exactness and the order of infinitesimal, are stated and proved
+without it.
 
 ## Conventions
 
@@ -141,6 +149,27 @@ theorem theorem_9_2_M_closed (hn : Even n) (hn0 : 0 < n) :
   ⟨by simp only [Quadrature.newtonCotesM, Quadrature.intNodal_eval],
     Quadrature.newtonCotesM_neg hn hn0⟩
 
+/-- **Theorem 9.2, open formulae with even `n`, (9.19).** For even `n` and `f ∈ C^{n+2}([a, b])`,
+the error of the open Newton–Cotes formula is `E_n(f) = M_n/(n + 2)! h^{n+3} f^{(n+2)}(ξ)` with
+`h = (b - a)/(n + 2)`, `ξ ∈ (a, b)` and `M_n = ∫₋₁ⁿ⁺¹ t π_{n+1}(t) dt > 0`
+(`Quadrature.openNewtonCotesM n`, positive by `Quadrature.openNewtonCotesM_pos`); for `n = 0`,
+where `M₀ = 2/3` and `h = (b - a)/2`, it is the midpoint error (9.6). The book states the open
+case without proof, referring to [IK66]; the backbone's
+`Quadrature.exists_sub_openNewtonCotes_eq_of_even` proves it along the same route as the closed
+case — (9.21), integration by parts against `W(x) = ∫_a^x ω_{n+1}` (which for the open nodes is
+*negative* inside `(a, b)`), (9.22), Peano's kernel theorem and the mean value theorem. -/
+theorem theorem_9_2_open_even (hn : Even n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
+    (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
+    (∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - Quadrature.openNewtonCotes n f a b
+        = Quadrature.openNewtonCotesM n / (n + 2).factorial * ((b - a) / (n + 2)) ^ (n + 3)
+          * iteratedDeriv (n + 2) f ξ) ∧
+      Quadrature.openNewtonCotesM n
+          = ∫ t in (-1 : ℝ)..((n : ℝ) + 1), t * ∏ i : Fin (n + 1), (t - (i : ℕ)) ∧
+        0 < Quadrature.openNewtonCotesM n :=
+  ⟨Quadrature.exists_sub_openNewtonCotes_eq_of_even hn hab hU hUab hf,
+    by simp only [Quadrature.openNewtonCotesM, Quadrature.intNodal_eval],
+    Quadrature.openNewtonCotesM_pos hn⟩
+
 /-- **Theorem 9.2, the degree of exactness of the closed formulae with even `n`.** "From (9.19),
 it turns out that the degree of exactness is equal to `n + 1`": the closed formula is exact on
 `ℙ_{n+1}` and not on `x^{n+2}`. -/
@@ -171,6 +200,40 @@ theorem theorem_9_2_order_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU : I
         gcongr
         exact hM ξ (Ioo_subset_Icc_self hξ)
     _ = _ := by ring
+
+/-- **Theorem 9.2, the degree of exactness of the closed formulae with odd `n`.** "The degree of
+exactness is thus equal to `n`": the closed formula with odd `n` is exact on `ℙ_n`, its error at
+`x^{n+1}` is `h^{n+2} K_n` with `h = (b - a)/n` and `K_n = ∫₀ⁿ π_{n+1}(t) dt < 0`
+(`Quadrature.newtonCotesK_neg`), and it is therefore not exact on `x^{n+1}`. The error at the
+first non-reproduced monomial is the one (9.20) predicts, so the constant `K_n` of (9.20) is
+pinned down even though (9.20) itself waits on the sign analysis of the odd Peano kernel. -/
+theorem theorem_9_2_degreeOfExactness_odd (hn : Odd n) (hab : a < b) :
+    (∀ p : ℝ[X], p.degree ≤ n →
+        (∫ x in a..b, p.eval x) = Quadrature.closedNewtonCotes n (fun x => p.eval x) a b) ∧
+      ((∫ x in a..b, x ^ (n + 1))
+            - Quadrature.closedNewtonCotes n (fun x => x ^ (n + 1)) a b
+          = ((b - a) / n) ^ (n + 2) * Quadrature.newtonCotesK n ∧
+        (∫ x in a..b, x ^ (n + 1)) ≠ Quadrature.closedNewtonCotes n (fun x => x ^ (n + 1)) a b) :=
+  ⟨fun _ hp => Quadrature.integral_eq_closedNewtonCotes_of_degree_le hn.pos hab hp,
+    Quadrature.integral_sub_closedNewtonCotes_pow_eq hn.pos hab,
+    Quadrature.not_integral_eq_closedNewtonCotes_of_odd hn hab⟩
+
+/-- **Theorem 9.2, the order of infinitesimal of the closed formulae with odd `n`.** "The order of
+infinitesimal is `n + 2`": for `f ∈ C^{n+1}([a, b])` with `|f^{(n+1)}| ≤ M` on `[a, b]`,
+`|E_n(f)| ≤ M/(n + 1)! (∫₀ⁿ |π_{n+1}|) h^{n+2}`, `h = (b - a)/n` — the error is `O(h^{n+2})`.
+
+The book reads the order off (9.20); since (9.20) itself waits on the sign analysis of the odd
+Peano kernel, the backbone proves the bound directly from the Lagrange interpolation error
+(`Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn`), at the cost of the larger constant
+`∫₀ⁿ |π_{n+1}|` in place of the sharp `|K_n| = |∫₀ⁿ π_{n+1}|`. -/
+theorem theorem_9_2_order_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
+    (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}
+    (hM : ∀ x ∈ Icc a b, |iteratedDeriv (n + 1) f x| ≤ M) :
+    |(∫ x in a..b, f x) - Quadrature.closedNewtonCotes n f a b|
+      ≤ M / (n + 1).factorial * ((b - a) / n) ^ (n + 2)
+        * ∫ t in (0 : ℝ)..n, |∏ i : Fin (n + 1), (t - (i : ℕ))| := by
+  simpa only [Quadrature.intNodal_eval] using
+    Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn hn.pos hab hU hUab hf hM
 
 /-! ### The divided-difference form of the error -/
 

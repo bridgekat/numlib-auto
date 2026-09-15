@@ -10,8 +10,10 @@ kind = "theorem"
 desc = '''Theorem 9.3, odd `n` (9.27): for odd `n`, `f ∈ C^{n+1}([a, b])`,
 `∃ η ∈ Icc a b, ∫_a^b f - compositeNewtonCotes n f a b m = (b - a)/(n + 1)! * K_n/n^{n+2} * H^{n+1} * f^{(n+1)}(η)`;
 `n = 1` is the composite trapezoidal error `-(b - a) H²/12 f''`. ★
-Blocked: the backbone companion `Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd` (which
-waits on the odd-`n` sign analysis `Quadrature.newtonCotesK_neg`, ★★★) is still open.'''
+Blocked: the backbone companion `Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd` is still
+open; it waits on `Quadrature.exists_sub_closedNewtonCotes_eq_of_odd`, whose remaining gap (the
+constant sign of the order-`n` Peano kernel) is recorded in that node's `desc`. The convergence
+remark the book draws from (9.27) no longer waits on it: `theorem_9_3_tendsto_odd` is proved.'''
 deps = ["Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd", "QuarteroniSaccoSaleri.Chapter09.theorem_9_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.3 (9.27)'
 
@@ -21,12 +23,6 @@ source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.4 (convergen
 
 [[node]]
 id = "theorem_9_3_tendsto_odd"
-kind = "theorem"
-desc = '''"For `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`", odd `n`: under the hypotheses of (9.27),
-`Tendsto (fun m => compositeNewtonCotes n f a b m) atTop (𝓝 (∫_a^b f))`. From the bound of
-`theorem_9_3_odd` with `sup |f^{(n+1)}|` and `H^{n+1} → 0`, as `theorem_9_3_tendsto_even`. ★
-Blocked: `theorem_9_3_odd` is blocked on the backbone's odd-`n` composite error formula.'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.theorem_9_3_odd"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.4 (convergence remark after Theorem 9.3)'''
 
 [[node]]

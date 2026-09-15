@@ -20,21 +20,26 @@ The backbone is `Numlib/Approximation/NewtonCotes`: `Quadrature.compositeNewtonC
 `Quadrature.exists_sub_compositeNewtonCotes_eq_of_even` (Theorem 9.3 with the corrected
 constant), `Quadrature.abs_sub_compositeNewtonCotes_le` and
 `Quadrature.tendsto_compositeNewtonCotes` (Property 9.1, whose bound the backbone proves with the
-constant `1`; the book's `2` follows).
+constant `1`; the book's `2` follows), and
+`Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn` (convergence for a smooth integrand,
+without a sign hypothesis on the weights).
 
 ## Main results
 
 * `equation_9_25` — the composite formula written as the double sum of the book.
 * `theorem_9_3_even` — (9.26), the composite error for even `n`, with the corrected constant.
-* `theorem_9_3_tendsto_even` — `E_{n,m}(f) → 0` as `m → ∞` for even `n`.
+* `theorem_9_3_tendsto_even`, `theorem_9_3_tendsto_odd` — `E_{n,m}(f) → 0` as `m → ∞`, for even
+  `n` from (9.26) and for odd `n` from the backbone's `O(H^{n+1})` interpolation bound.
 * `property_9_1`, `property_9_1_midpoint`, `property_9_1_bound` — convergence for `f ∈ C⁰([a, b])`
   and nonnegative weights (for the closed formulae, and for the composite midpoint formula, which
   is the open one with `n = 0`), and the modulus-of-continuity bound.
 
 ## Not yet stated
 
-Theorem 9.3 for odd `n` (9.27) and its convergence remark wait on the backbone's odd-`n` error
-formula (`Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd`); their nodes are open.
+Theorem 9.3 for odd `n` (9.27) waits on the backbone's odd-`n` panel error formula
+(`Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd`, itself waiting on the sign of the
+order-`n` Peano kernel); its node is open. The convergence remark for odd `n` does not need it and
+is `theorem_9_3_tendsto_odd`.
 
 ## Conventions
 
@@ -120,6 +125,19 @@ theorem theorem_9_3_tendsto_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU :
   have hH : Tendsto (fun m : ℕ => ((b - a) / (m : ℝ)) ^ (n + 2)) atTop (𝓝 0) := by
     simpa using (tendsto_const_div_atTop_nhds_zero_nat (b - a)).pow (n + 2)
   simpa using hH.const_mul C
+
+/-- **§9.4: "for `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`"**, for odd `n` and
+`f ∈ C^{n+1}([a, b])`: `I_{n,m}(f) → ∫_a^b f` as the number of subintervals grows.
+
+The book reads this off (9.27). Since (9.27) itself waits on the sign analysis of the order-`n`
+Peano kernel, the backbone proves the convergence from the `O(H^{n+1})` bound that the Lagrange
+interpolation error gives for every `n` — `Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`,
+which, unlike Property 9.1, needs no sign hypothesis on the weights. -/
+theorem theorem_9_3_tendsto_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
+    (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
+    Tendsto (fun m => Quadrature.compositeNewtonCotes n f a b m) atTop
+      (𝓝 (∫ x in a..b, f x)) :=
+  Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn hn.pos hab hU hUab hf
 
 /-! ### Property 9.1 -/
 

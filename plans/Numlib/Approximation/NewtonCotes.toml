@@ -182,6 +182,12 @@ id = "closedNewtonCotes_node_mem"
 id = "closedNewtonCotes_node_injective"
 
 [[node]]
+id = "openNewtonCotes_node_mem"
+
+[[node]]
+id = "openNewtonCotes_node_injective"
+
+[[node]]
 id = "isExactOn_closedNewtonCotes"
 
 [[node]]
@@ -192,6 +198,9 @@ id = "integral_pow_sub_midpoint_of_odd"
 
 [[node]]
 id = "integral_eq_closedNewtonCotes_of_even"
+
+[[node]]
+id = "integral_eq_openNewtonCotes_of_even"
 
 [[node]]
 id = "sum_newtonCotesWeight_mul_pow"
@@ -354,6 +363,15 @@ id = "exists_sub_closedNewtonCotes_eq_of_even"
 id = "not_integral_eq_closedNewtonCotes_of_even"
 
 [[node]]
+id = "integral_sub_closedNewtonCotes_pow_eq"
+
+[[node]]
+id = "not_integral_eq_closedNewtonCotes_of_odd"
+
+[[node]]
+id = "abs_sub_closedNewtonCotes_le_of_contDiffOn"
+
+[[node]]
 id = "exists_sub_closedNewtonCotes_eq_of_odd"
 kind = "theorem"
 desc = '''**Theorem 9.2, closed rules, odd `n`** ([quarteroni2000numerical] (9.20)): for odd `n`,
@@ -368,41 +386,52 @@ Route as for even `n`: Peano's theorem at order `n` (exactness to degree `n`,
 `x^{n+1}/(n+1)!` (`∫_a^b ω_{n+1} = h^{n+2} K_n`, no integration by parts needed), and
 `exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos`. Not attempted this round. ★★★
 
-Blocked: the sign ingredients are now proved (`newtonCotesK_neg`, and
-`integral_intNodal_nonpos_of_odd` is the `W ≤ 0` the route asks for), but the route above is
-wrong at one step: the *divided-difference core* does not give the hypothesis the bump argument
-needs. For odd `n` the primitive `W(x) = ∫_a^x ω` does not vanish at `b` (`W(b) = h^{n+2} K_n < 0`),
-so the integration by parts must use `V = W - W(b) ≥ 0` (nonnegative because
-`W(x) + W(n - x) = K_n` and `W ≤ 0`), which yields `E(f) = -φ(a) V(a) - ∫ φ' V ≤ 0` only when
-*both* `f^{(n+1)} ≥ 0` and `f^{(n+2)} ≥ 0`, i.e. when `φ ≥ 0` and `φ' ≥ 0`. A bump `ψ` with
-`g^{(n+1)} = ψ` has `g^{(n+2)} = ψ'` of both signs, so the contradiction argument of
-`peanoKernel_closedNewtonCotes_nonpos_of_even` does not run; test functions with `g^{(n+2)} ≥ 0`
-only give `∫_s^b K ≤ 0` for every `s`, which does not imply `K ≤ 0`. What is missing is a direct
-proof that the order-`n` Peano kernel of the odd closed rule has constant sign (Steffensen's
-theorem); the derivative identity `K_m' = -K_{m-1}` between the Peano kernels of one rule at
-consecutive orders is the usual starting point. Estimated 300–500 lines with that idea in hand.'''
+Blocked: the sign ingredients are proved (`newtonCotesK_neg`; `integral_intNodal_nonpos_of_odd` is
+the `W ≤ 0` the route asks for), and its two consequences are now proved without it
+(`integral_sub_closedNewtonCotes_pow_eq` pins the error at `x^{n+1}` to `h^{n+2} K_n`, so the
+degree of exactness is exactly `n`, and `abs_sub_closedNewtonCotes_le_of_contDiffOn` gives the
+`O(h^{n+2})` order); what is missing is only the constant-sign statement for the order-`n` Peano
+kernel. Two routes were analysed and both fall short.
+
+(1) *The divided-difference route cannot work.* For odd `n` the primitive `W(x) = ∫_a^x ω` does not
+vanish at `b` (`W(b) = h^{n+2} K_n < 0`), and ω is *even* about the midpoint, so
+`W(x) + W(a + b - x) = W(b)`. By parts against `W` gives `E = φ(b) W(b) - ∫ φ' W` and against
+`V = W - W(b) = W(a+b-·) ≤ 0` gives `E = -φ(a) V(a) - ∫ φ' V`; the first yields `E ≤ 0` when
+`f^{(n+1)} ≥ 0` and `f^{(n+2)} ≤ 0`, the second when `f^{(n+1)} ≥ 0` and `f^{(n+2)} ≥ 0`. So the
+route proves `E(f) ≤ 0` exactly for `f^{(n+1)}` nonnegative *and monotone*; the convex cone of
+nonnegative monotone functions on `[a, b]` contains no function vanishing at both endpoints, hence
+no bump, so the contradiction argument of `peanoKernel_closedNewtonCotes_nonpos_of_even` cannot be
+run from it, and testing against it only yields `∫_a^s K ≤ 0` and `∫_s^b K ≤ 0` for every `s`.
+
+(2) *The `K_m' = -K_{m-1}` route reduces the problem to the weights.* Differentiating
+`peanoKernel` in `t` gives `K_m' = -K_{m-1}` for `m ≥ 1`, and the moment equations give
+`K_m(a) = K_m(b) = 0` for `1 ≤ m ≤ n`. Iterating from the order-0 kernel, on the reference
+interval `[0, n]` with nodes `0, …, n`,
+
+  `K_n(t) = -(1/(n-1)!) ∫_0^t D(s) (t - s)^{n-1} ds`,  `D(s) = (∑_{i ≤ s} w_i) - s`,
+
+so `K_n ≤ 0` on `[0, n]` is exactly `∫_0^t D(s)(t-s)^{n-1} ds ≥ 0`. `D` is the sawtooth that jumps
+up by `w_i` at each integer and falls with slope `-1`; `D(0^+) = w_0 > 0`, `D(n^-) = -w_n < 0`,
+`D(n) = 0`, so Steffensen's simple sufficient condition `D ≥ 0` fails at the right end. Nor does
+sign counting suffice: `K_0, …, K_{n-1}` all have vanishing integral (again the moments), so each
+integration removes one sign change, but for `n = 3` (weights `3/8, 9/8, 9/8, 3/8`) `D` already has
+five sign changes, leaving a bound of two rather than zero. What is missing is quantitative control
+of the partial sums `∑_{i ≤ k} w_i` of the Newton–Cotes weights for general `n` — already the last
+panel is the inequality `w_n ≥ 1/(n + 1)`, since `n! K(t) = (n - t)^n [(n - t)/(n + 1) - w_n]` on
+`[n - 1, n]`. Estimated at several hundred lines *on top of* a workable idea for that inequality.'''
 deps = ["newtonCotesK_neg", "integral_eq_closedNewtonCotes_of_degree_le", "Quadrature.error_eq_integral_peanoKernel", "exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos"]
 
 [[node]]
-id = "exists_sub_openNewtonCotes_eq_of_even"
-kind = "theorem"
-desc = '''**Theorem 9.2, open rules, even `n`** ([quarteroni2000numerical] (9.19)): for even `n`,
-`a < b`, `h = (b - a)/(n + 2)` and `f ∈ C^{n+2}` on an open `U ⊇ Icc a b`,
-`∃ ξ ∈ Ioo a b, ∫_a^b f - openNewtonCotes n f a b
-  = openNewtonCotesM n / (n + 2)! * h^(n + 3) * iteratedDeriv (n + 2) f ξ`;
-for `n = 0` this is the midpoint formula `exists_sub_midpoint_eq` with `ξ` in the open
-interval. Same route as the closed case with `openNewtonCotesM_pos` and the open nodes
-`a + (i + 1) h`; the Peano kernel is nonnegative. Not attempted this round. ★★★
+id = "sub_openNewtonCotes_nonneg_of_even"
 
-Blocked: `openNewtonCotesM_pos` and the kernel-sign ingredient
-(`integral_intNodal_neg_one_mul_nonneg`, which gives `W̃ ≤ 0` on `[-1, n+1]` and `W̃(-1) = W̃(n+1)
-= 0`, exactly what the divided-difference core needs) are now proved, so the route is open; what
-remains is the ~450-line port of the closed even-`n` machinery to the open nodes
-`a + (i+1) h`: the extra exactness at degree `n + 1` for even `n` (the open analogue of
-`integral_eq_closedNewtonCotes_of_even`, from `openNewtonCotesWeight_symm`), the core
-`sub_openNewtonCotes_nonneg_of_even`, the bump argument for the kernel sign, and the kernel
-integral `∫_a^b K_{n+1} = M̃_n/(n+2)! h^{n+3}`. Not attempted for lack of time.'''
-deps = ["openNewtonCotesM_pos", "integral_eq_openNewtonCotes_of_degree_le", "openNewtonCotesWeight_symm", "Quadrature.error_eq_integral_peanoKernel", "exists_mem_Ioo_integral_mul_eq_mul_integral"]
+[[node]]
+id = "peanoKernel_openNewtonCotes_nonneg_of_even"
+
+[[node]]
+id = "integral_peanoKernel_openNewtonCotes_of_even"
+
+[[node]]
+id = "exists_sub_openNewtonCotes_eq_of_even"
 
 [[node]]
 id = "exists_sub_openNewtonCotes_eq_of_odd"
@@ -413,11 +442,12 @@ desc = '''**Theorem 9.2, open rules, odd `n`** ([quarteroni2000numerical] (9.20)
   = openNewtonCotesK n / (n + 1)! * h^(n + 2) * iteratedDeriv (n + 1) f η`.
 Same route with `openNewtonCotesK_pos`. Not attempted this round. ★★★
 
-Blocked: `openNewtonCotesK_pos` is proved and `integral_intNodal_neg_one_mul_nonneg` gives the
-sign of `W̃` for odd `n` as well, but this node inherits the obstruction of
+Blocked: `openNewtonCotesK_pos` is proved and `integral_intNodal_neg_one_mul_nonneg` gives the sign
+of `W̃` for odd `n` as well, but this node inherits the obstruction of
 `exists_sub_closedNewtonCotes_eq_of_odd`: for odd `n` the primitive does not vanish at both ends
-(`W̃(n+1) = K̃_n > 0`), so the bump argument for the order-`n` Peano kernel does not run. See the
-note there.'''
+(`W̃(n+1) = K̃_n > 0`), so the bump argument for the order-`n` Peano kernel does not run. The
+reduction `K_n = -I^n K_0` and the analysis of what is missing are recorded there; the open case
+differs only in the nodes and the reference interval.'''
 deps = ["openNewtonCotesK_pos", "integral_eq_openNewtonCotes_of_degree_le", "Quadrature.error_eq_integral_peanoKernel", "exists_mem_Ioo_integral_mul_eq_mul_integral"]
 
 # Composite rules
@@ -437,7 +467,9 @@ desc = '''**Theorem 9.3, odd `n`** ([quarteroni2000numerical] (9.27)): for odd `
 does. ★
 
 Blocked: waits on `exists_sub_closedNewtonCotes_eq_of_odd`; the summation step itself is ★ and
-copies `exists_sub_compositeNewtonCotes_eq_of_even` verbatim.'''
+copies `exists_sub_compositeNewtonCotes_eq_of_even` verbatim. The *consequence* the surface needs,
+`E_{n,m}(f) → 0`, no longer waits on it: `tendsto_compositeNewtonCotes_of_contDiffOn` proves it
+from the `O(H^{n+1})` bound `abs_sub_compositeNewtonCotes_le_of_contDiffOn`.'''
 deps = ["exists_sub_closedNewtonCotes_eq_of_odd", "compositeNewtonCotes", "exists_sum_mul_eq_of_forall_mem"]
 
 [[node]]
@@ -445,6 +477,12 @@ id = "abs_sub_compositeNewtonCotes_le"
 
 [[node]]
 id = "tendsto_compositeNewtonCotes"
+
+[[node]]
+id = "abs_sub_compositeNewtonCotes_le_of_contDiffOn"
+
+[[node]]
+id = "tendsto_compositeNewtonCotes_of_contDiffOn"
 
 # Hermite quadrature and the corrected trapezoidal rule
 

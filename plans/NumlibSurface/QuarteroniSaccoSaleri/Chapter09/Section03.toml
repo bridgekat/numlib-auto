@@ -26,23 +26,16 @@ kind = "theorem"
 desc = '''Theorem 9.2, closed formulae, odd `n` (9.20): for odd `n`, `f ∈ C^{n+1}([a, b])`,
 `∃ η ∈ Ioo a b, ∫_a^b f - closedNewtonCotes n f a b = K_n/(n + 1)! * h^{n+2} * f^{(n+1)}(η)`,
 `K_n = ∫_0^n π_{n+1} < 0`. Stated by the book without proof. ★
-Blocked: the backbone companion `Quadrature.exists_sub_closedNewtonCotes_eq_of_odd` (the sign
-analysis of the odd/open Peano kernel, ★★★) is still open; the surface clause is stated once it
-is proved.'''
+Blocked: the backbone companion `Quadrature.exists_sub_closedNewtonCotes_eq_of_odd` is still open
+— what is missing is the constant sign of the order-`n` Peano kernel, whose reduction to a
+statement about the partial sums of the weights is recorded in that node's `desc`. The two
+consequences the book draws from (9.20) no longer wait on it: `theorem_9_2_degreeOfExactness_odd`
+and `theorem_9_2_order_odd` are proved.'''
 deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_odd", "Quadrature.newtonCotesK_neg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.20), closed'
 
 [[node]]
 id = "theorem_9_2_open_even"
-kind = "theorem"
-desc = '''Theorem 9.2, open formulae, even `n` (9.19): `∃ ξ ∈ Ioo a b, ∫_a^b f - openNewtonCotes n f a b
-= M_n/(n + 2)! * h^{n+3} * f^{(n+2)}(ξ)` with `h = (b - a)/(n + 2)` and
-`M_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt > 0`; for `n = 0` this is (9.6). Stated by the book without
-proof. ★
-Blocked: the backbone companion `Quadrature.exists_sub_openNewtonCotes_eq_of_even` (the sign
-analysis of the odd/open Peano kernel, ★★★) is still open; the surface clause is stated once it
-is proved.'''
-deps = ["Quadrature.exists_sub_openNewtonCotes_eq_of_even", "Quadrature.openNewtonCotesM_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.19), open'
 
 [[node]]
@@ -51,9 +44,9 @@ kind = "theorem"
 desc = '''Theorem 9.2, open formulae, odd `n` (9.20): `∃ η ∈ Ioo a b, ∫_a^b f - openNewtonCotes n f a b
 = K_n/(n + 1)! * h^{n+2} * f^{(n+1)}(η)`, `K_n = ∫_{-1}^{n+1} π_{n+1} > 0`. Stated by the book
 without proof. ★
-Blocked: the backbone companion `Quadrature.exists_sub_openNewtonCotes_eq_of_odd` (the sign
-analysis of the odd/open Peano kernel, ★★★) is still open; the surface clause is stated once it
-is proved.'''
+Blocked: the backbone companion `Quadrature.exists_sub_openNewtonCotes_eq_of_odd` is still open;
+it inherits the obstruction of `Quadrature.exists_sub_closedNewtonCotes_eq_of_odd`, recorded in
+that node's `desc`.'''
 deps = ["Quadrature.exists_sub_openNewtonCotes_eq_of_odd", "Quadrature.openNewtonCotesK_pos"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (9.20), open'
 
@@ -75,14 +68,11 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Table 9.6'
 
 [[node]]
 id = "theorem_9_2_degreeOfExactness_odd"
-kind = "theorem"
-desc = '''The last sentence of Theorem 9.2 for odd `n`: the closed rule has degree of exactness
-exactly `n` — exact on `ℙ_n` (`Quadrature.integral_eq_closedNewtonCotes_of_degree_le`) and not on
-`x^{n+1}`, whose error is `h^{n+2} K_n` — and the order of infinitesimal is `n + 2`. ★
-Blocked: the non-exactness on `x^{n+1}` and the order need `Quadrature.newtonCotesK_neg` and
-`Quadrature.exists_sub_closedNewtonCotes_eq_of_odd`, both open in the backbone.'''
-deps = ["Quadrature.integral_eq_closedNewtonCotes_of_degree_le", "Quadrature.newtonCotesK_neg", "Quadrature.exists_sub_closedNewtonCotes_eq_of_odd"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (degree of exactness, odd `n`)'''
+
+[[node]]
+id = "theorem_9_2_order_odd"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.2 (order of infinitesimal, odd `n`)'''
 
 [[node]]
 id = "theorem_9_2_M_closed"
