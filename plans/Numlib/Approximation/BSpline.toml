@@ -66,45 +66,58 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4"
 
 [[node]]
 id = "sum_smul_bspline_insertKnot"
-kind = "theorem"
-desc = '''**Knot insertion preserves the spline** (Remark 8.4): for nondecreasing `x`,
-`∑ i, insertKnotCoeff x k j x̃ c i * bspline (insertKnot x j x̃) k i t = ∑ i, c i * bspline x k i t`
-(sums over the appropriate ranges). Proof: the one-knot insertion formula for a single B-spline,
-`B_{i,k}(x) = ω_i B̃_{i,k} + (1 - ω_{i+1}) B̃_{i+1,k}` (Boehm 1980; de Boor, chapter X, (10)),
-proved by induction on `k` from the Cox–de Boor recursion; then regroup the sum. ★★★
-
-Blocked: not attempted in two passes. The definitions `insertKnot`, `insertKnotWeight`,
-`insertKnotCoeff` and `monotone_insertKnot` are in place, and the reduction of the sum identity to
-Boehm's single-spline formula `B_{i,k} = w_i B'_{i,k} + (1 - w_{i+1}) B'_{i+1,k}` is three lines
-(expand, shift the second sum by one, collect `insertKnotCoeff`). Two routes were worked out for
-the single-spline formula; both are large.
-
-(1) Induction on `k` from `bspline_succ`. Expanding both sides in `B'_{i,k-1}`, `B'_{i+1,k-1}`,
-`B'_{i+2,k-1}` and matching coefficients reduces the step to three identities between rational
-functions of `t`, with `a_m = insertKnotWeight x (k-1) j y m` and `w_m = insertKnotWeight x k j y m`
-and `v_{m,d}` / `v'_{m,d}` the Cox-de Boor weights on `x` / on `insertKnot x j y`:
-`v_{i,k} a_i = w_i v'_{i,k}`;
-`(1 - v_{i+1,k}) (1 - a_{i+2}) = (1 - w_{i+1}) (1 - v'_{i+2,k})`;
-`v_{i,k} (1 - a_{i+1}) + (1 - v_{i+1,k}) a_{i+1} = w_i (1 - v'_{i+1,k}) + (1 - w_{i+1}) v'_{i+1,k}`.
-Each needs the regime of `i` relative to `j` and `j - k` (about five regimes) plus the degenerate
-coincident-knot subcases of the `0/0 = 0` convention; estimated 400-600 lines.
-
-(2) For `StrictMono x` and `y` interior to its panel, through
-`bspline_eq_mul_newton_truncPow`. Write `S` for the `k + 3` nodes `x_i, ..., x_{i+k+1}` together
-with `y`. The three divided differences of order `k + 1` over `S` minus `y`, over `S` minus
-`x_{i+k+1}` and over `S` minus `x_i` are the three B-splines involved, and they satisfy
-`g[S - y] = b g[S - x_{i+k+1}] + (1 - b) g[S - x_i]` with `b = (y - x_i)/(x_{i+k+1} - x_i)`: all
-three annihilate polynomials of degree at most `k`, the annihilator of `P_k` in the dual of the
-`(k+3)`-point space is two-dimensional, and evaluation at `s^{k+1}` and `s^{k+2}` (values `1` and
-the sum of the nodes) pins the relation down. It can also be checked coefficientwise on the
-Lagrange form `f[u_0..u_m] = sum_r f(u_r)/prod_{s != r}(u_r - u_s)`: with
-`P_u = prod_{s in S, s != u}(u - s)`, the coefficient of `f(u)` is `(u - y)/P_u` on the left and
-`b (u - x_{i+k+1})/P_u + (1 - b)(u - x_i)/P_u` on the right, and the two agree because `b` and
-`1 - b` are exactly the barycentric coordinates of `y` between `x_i` and `x_{i+k+1}`. The cost here
-is the `Fin`-indexed bookkeeping of "the node set minus one element" against
-`DividedDifference.newton`, and it only covers strictly increasing knots. Estimated 300-500 lines.'''
-deps = ["BSpline.insertKnot", "BSpline.bspline"]
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4; Boehm 1980"
+
+[[node]]
+id = "bspline_eq_insert_comb"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4; Boehm 1980"
+
+[[node]]
+id = "bspline_eq_insert_comb_of_mem"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4; Boehm 1980"
+
+[[node]]
+id = "bspline_eq_insert_comb_of_left"
+
+[[node]]
+id = "bspline_eq_insert_comb_of_right"
+
+[[node]]
+id = "bspline_eq_mul_newtonOn"
+
+[[node]]
+id = "strictMono_insertKnot"
+
+[[node]]
+id = "insertShift"
+
+[[node]]
+id = "insertShift_injective"
+
+[[node]]
+id = "insertKnot_insertShift"
+
+[[node]]
+id = "map_insertShift"
+
+[[node]]
+id = "sum_smul_bspline_insertKnot_of_monotone"
+kind = "theorem"
+desc = '''**Boehm's knot insertion at a knot that is not interior to its panel.** The same identity
+as `sum_smul_bspline_insertKnot` for a *nondecreasing* knot sequence and a new knot
+`x̃ ∈ Ico (x j) (x (j + 1))`, which is the range [quarteroni2000numerical] Remark 8.4 states; the
+proved version needs `StrictMono x` and `x̃ ∈ Ioo (x j) (x (j + 1))`. ★★★
+
+Blocked: the proof of `bspline_eq_insert_comb` runs through
+`bspline_eq_mul_newton_truncPow`, the divided-difference form of the B-spline, which is stated for
+distinct knots only; at `x̃ = x j` the inserted sequence has a double knot and the divided
+difference over it is undefined (the explicit sum `DividedDifference.newtonOn` divides by zero).
+Two routes out, neither attempted: a continuity argument in `x̃` (the Cox–de Boor weights are
+continuous where their denominators do not vanish, but exactly the degenerating panel is the one
+in question), or an induction on the degree from `bspline_succ` with its `0/0 = 0` convention,
+which is the 400-600-line route (1) this node's predecessor recorded.'''
+deps = ["sum_smul_bspline_insertKnot"]
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4"
 
 [[node]]
 id = "curve"

@@ -83,7 +83,15 @@ book quotes without proof; neither Mathlib nor the backbone has any lower bound 
 Lebesgue constants (the backbone's `PeriodicCont.log_le_lebesgueConstant` is the *trigonometric*
 one, whose proof is an explicit Dirichlet-kernel integral with no algebraic analogue). Even the
 weaker `¬ BddAbove (range (lebesgueConstant X))`, which is all Faber's theorem needs, is Bernstein's
-or Faber's theorem and is not elementary.'''
+or Faber's theorem and is not elementary.
+Re-examined 2026-09-16 against the new `SineSum.sum_term_le` of
+`Numlib/Approximation/Interpolation` (a logarithmic *upper* bound for Lebesgue-type sums of
+reciprocal sines, which is what `Lagrange.norm_interpolateCLM_chebyshev_le` now runs on): it is of
+no help here, since every step of it is an upper estimate and what is wanted is a lower one. The
+cheapest true lower bound in sight is still the equispaced one — evaluate the Lebesgue function at
+the midpoint of the first panel, where the basis product telescopes into a ratio of factorials and
+gives `Λ_n ≥ 2^{n-3}/n²` — which bounds one interpolation matrix, not all of them, and so refutes
+nothing about `erdos_lebesgueConstant` or `faber` as they are stated.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2 (Erdős 1961)'
 
@@ -124,7 +132,22 @@ optional — see the report's open questions)
 Blocked: not attempted this round; the engine `DividedDifference.newton_inv_sub` (real) and
 `DividedDifference.newtonOn_inv_sub` (any field, so over `ℂ` with `Finset.univ`) now exist in
 `Numlib/Approximation/NewtonForm`, and what remains is the Riemann-sum estimate of the exponent and
-the certified margin at `t = √20`, 500–800 lines that nothing downstream uses.'''
+the certified margin at `t = √20`, 500–800 lines that nothing downstream uses.
+Sharpened route (2026-09-16). Two changes make the estimate materially easier than the `t = √20`
+plan above. First, take the **rational** evaluation point `t = 4.9` and restrict to **odd** `n`:
+`t` is a node exactly when `100 ∣ n`, so it never is, and every nonzero `t - x_j = (99 n - 100 j)/(10 n)`
+has `|t - x_j| ≥ 1/(10 n)` — an elementary separation that replaces the Liouville-type argument the
+irrational point needed (for `t = √20` the elementary form is `|20 q² - p²| ≥ 1`). Odd `n` also
+picks the branch where `∏_j (i - x_j)` is real, so `κ(t) = 1/(1 + t²)` with no case split, and
+`¬ Tendsto` needs only a subsequence. Second, the margin is larger: with
+`φ(t) = ∫_{-5}^5 log|t - s| ds = |t - 5| log|t - 5| - |t - 5| + (t + 5) log (t + 5) - (t + 5)`,
+`φ(4.9) = 0.1 log 0.1 - 0.1 + 9.9 log 9.9 - 9.9 ≈ 12.47` against
+`ψ = ∫_0^5 log (1 + s²) ds = 5 log 26 - 10 + 2 arctan 5 ≈ 9.04`, a margin of `≈ 3.4` instead of
+`≈ 1.9`. The identity to start from is exact:
+`|E_n(t)| = κ(t) ∏_j |t - x_j| / √(1 + x_j²)`, so `log |E_n(t)| = log κ(t) + ∑_j (log|t - x_j| - ½ log(1 + x_j²))`,
+and what remains is the one-sided Riemann-sum comparison of that sum with `(n/10)(φ(t) - ψ)`, for
+which the integrands are monotone on each side of their singularity. Estimated 400-600 lines, the
+bulk of it certified numeric bounds for `log 9.9`, `log 26` and `arctan 5`.'''
 deps = ["DividedDifference.sub_eval_interpolate_eq_newton", "DividedDifference.newton_inv_sub"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
 

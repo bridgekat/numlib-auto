@@ -2,6 +2,9 @@ import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.Calculus.LocalExtr.Rolle
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.TietzeExtension
 import Numlib.Approximation.Unisolvent
@@ -61,6 +64,9 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   `2 n` zeros in a period (`haarCondition_trigPolyLE`, in `Numlib.Approximation.Chebyshev`), so
   interpolation by such polynomials at `2 n + 1` distinct nodes has exactly one solution.
   `trigInterpCLM` is the resulting bounded projection onto `trigPolyLE T n` at the equispaced nodes.
+* `SineSum.sum_term_le` bounds a Lebesgue-type sum of reciprocal sines by `2 + (2/π) log M`, and
+  `Lagrange.norm_interpolateCLM_chebyshev_le` reads off from it the **logarithmic growth of the
+  Lebesgue constant of the Chebyshev nodes** `x_j = cos ((2j + 1)π/(2(n + 1)))` of `[-1, 1]`.
 
 ## Implementation notes
 
@@ -564,6 +570,34 @@ theorem isGreatest_norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X}
 theorem norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     ‖interpolateCLM x‖ = sSup (Set.range fun t : X => ∑ i, |basisCM x i t|) :=
   (isGreatest_norm_interpolateCLM hx).csSup_eq.symm
+
+omit [CompactSpace X] in
+/-- Permuting the nodes permutes the Lagrange basis functions. -/
+theorem basisCM_comp_equiv (x : Fin (n + 1) → X) (s : Equiv.Perm (Fin (n + 1)))
+    (i : Fin (n + 1)) : basisCM (x ∘ s) i = basisCM x (s i) := by
+  ext t
+  rw [basisCM_apply, basisCM_apply, Lagrange.basis, Lagrange.basis]
+  refine congrArg (Polynomial.eval (t : ℝ)) ?_
+  have hmap : (Finset.univ.erase i).map s.toEmbedding = Finset.univ.erase (s i) := by
+    ext c
+    simp only [Finset.mem_map, Finset.mem_erase, Finset.mem_univ, Equiv.coe_toEmbedding,
+      and_true]
+    constructor
+    · rintro ⟨j, hj, rfl⟩
+      exact fun h => hj (s.injective h)
+    · intro h
+      exact ⟨s.symm c, fun hc => h (by rw [← hc, Equiv.apply_symm_apply]), by simp⟩
+  rw [← hmap, Finset.prod_map]
+  rfl
+
+/-- **Interpolation depends on the nodes only as a set**: permuting them leaves the interpolation
+operator unchanged. -/
+theorem interpolateCLM_comp_equiv (x : Fin (n + 1) → X) (s : Equiv.Perm (Fin (n + 1))) :
+    interpolateCLM (x ∘ s) = interpolateCLM x := by
+  rw [interpolateCLM, interpolateCLM, ← Equiv.sum_comp s
+    (fun i => (ContinuousMap.evalCLM (R := ℝ) (x i)).smulRight (basisCM x i))]
+  exact Finset.sum_congr rfl fun i _ => by rw [basisCM_comp_equiv]; rfl
+
 
 end Lagrange
 
@@ -1646,3 +1680,707 @@ theorem eq_trigInterpCLM {f g : C(AddCircle T, ℝ)} (hg : g ∈ trigPolyLE T n)
   exact congrArg Subtype.val (h1.trans h2.symm)
 
 end Trigonometric
+
+open Real Set
+open scoped Real
+
+/-! ### A logarithmic bound for Lebesgue-type sums of reciprocal sines
+
+The Lebesgue functions of interpolation at equally spaced angles — trigonometric interpolation at
+the roots of unity, and Lagrange interpolation at the Chebyshev nodes after the substitution
+`t = cos θ` — are all sums of the shape
+
+`∑_{i < M} |sin (π (k + δ))| / (M |sin (π (k + δ) / M)|)`,
+
+`k` running over `M` consecutive integers. `SineSum.sum_term_le` bounds such a sum by
+`2 + (2/π) log M`, uniformly in the offset `δ ∈ [0, 1)` and in where the run of indices starts.
+
+The private lemmas of `Numlib/Approximation/TrigonometricInterpolation` prove the same estimate
+for the odd value `M = 2 n + 1` only; they should be replaced by this one.
+-/
+
+namespace SineSum
+
+/-- `|sin (n x)| ≤ n |sin x|` for a natural number `n`. -/
+theorem abs_sin_natCast_mul_le (n : ℕ) (x : ℝ) : |Real.sin ((n : ℝ) * x)| ≤ n * |Real.sin x| := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    have h : ((k : ℕ) + 1 : ℝ) * x = (k : ℝ) * x + x := by ring
+    push_cast
+    rw [h, Real.sin_add]
+    refine (abs_add_le _ _).trans ?_
+    rw [abs_mul, abs_mul]
+    have h1 : |Real.sin ((k : ℝ) * x)| * |Real.cos x| ≤ (k : ℝ) * |Real.sin x| :=
+      le_trans (by nlinarith [abs_nonneg (Real.sin ((k : ℝ) * x)), Real.abs_cos_le_one x]) ih
+    have h2 : |Real.cos ((k : ℝ) * x)| * |Real.sin x| ≤ 1 * |Real.sin x| := by
+      gcongr
+      exact Real.abs_cos_le_one _
+    linarith
+
+/-- `|sin (y + n π)| = |sin y|`. -/
+theorem abs_sin_add_natCast_mul_pi (n : ℕ) (y : ℝ) :
+    |Real.sin (y + (n : ℝ) * π)| = |Real.sin y| := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    push_cast
+    rw [show y + ((k : ℝ) + 1) * π = (y + (k : ℝ) * π) + π by ring, Real.sin_add_pi, abs_neg, ih]
+
+/-- `|sin (y + m π)| = |sin y|` for an integer `m`. -/
+theorem abs_sin_add_intCast_mul_pi (m : ℤ) (y : ℝ) :
+    |Real.sin (y + (m : ℝ) * π)| = |Real.sin y| := by
+  rw [Real.sin_add, Real.sin_int_mul_pi, Real.cos_int_mul_pi, mul_zero, add_zero, abs_mul,
+    abs_zpow, abs_neg, abs_one, one_zpow, mul_one]
+
+/-- One term of the Lebesgue-type sum: `|sin (π (k + δ))| / (M |sin (π (k + δ) / M)|)`. -/
+noncomputable def term (M : ℕ) (δ : ℝ) (k : ℤ) : ℝ :=
+  |Real.sin (π * ((k : ℝ) + δ))| / ((M : ℝ) * |Real.sin (π * ((k : ℝ) + δ) / M)|)
+
+/-- The terms are periodic in the index with period `M`. -/
+theorem term_periodic (M : ℕ) (δ : ℝ) (k : ℤ) : term M δ (k + M) = term M δ k := by
+  have hnum : Real.sin (π * (((k + (M : ℤ) : ℤ) : ℝ) + δ))
+      = Real.sin (π * ((k : ℝ) + δ) + (M : ℝ) * π) := by
+    congr 1
+    push_cast
+    ring
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp [term]
+  have hMr : (M : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hM.ne'
+  have hden : π * (((k + (M : ℤ) : ℤ) : ℝ) + δ) / M = π * ((k : ℝ) + δ) / M + π := by
+    field_simp
+    push_cast
+    ring
+  rw [term, term, hnum, hden, abs_sin_add_natCast_mul_pi, Real.sin_add_pi, abs_neg]
+
+/-- Every term is nonnegative. -/
+theorem term_nonneg (M : ℕ) (δ : ℝ) (k : ℤ) : 0 ≤ term M δ k :=
+  div_nonneg (abs_nonneg _) (by positivity)
+
+/-- Every term is at most `1`, because `|sin (M u)| ≤ M |sin u|`. -/
+theorem term_le_one {M : ℕ} (hM : 0 < M) (δ : ℝ) (k : ℤ) : term M δ k ≤ 1 := by
+  have hMr : (0 : ℝ) < M := Nat.cast_pos.2 hM
+  rcases eq_or_lt_of_le (abs_nonneg (Real.sin (π * ((k : ℝ) + δ) / M))) with h | h
+  · rw [term, ← h, mul_zero, div_zero]; norm_num
+  · rw [term, div_le_one (by positivity)]
+    have hx : π * ((k : ℝ) + δ) = (M : ℝ) * (π * ((k : ℝ) + δ) / M) := by field_simp
+    nth_rewrite 1 [hx]
+    exact abs_sin_natCast_mul_le M _
+
+/-- The sum of `M` consecutive terms does not depend on where it starts. -/
+theorem sum_range_shift (M : ℕ) (δ : ℝ) (c : ℤ) :
+    ∑ i ∈ Finset.range M, term M δ (c + i) = ∑ i ∈ Finset.range M, term M δ i := by
+  have key : ∀ d : ℤ, ∑ i ∈ Finset.range M, term M δ (d + 1 + i)
+      = ∑ i ∈ Finset.range M, term M δ (d + i) := by
+    intro d
+    have h1 : ∑ i ∈ Finset.range M, term M δ (d + 1 + i)
+        = ∑ i ∈ Finset.range M, (fun j : ℕ => term M δ (d + j)) (i + 1) := by
+      refine Finset.sum_congr rfl fun i _ => ?_
+      congr 1
+      push_cast
+      ring
+    have h2 := Finset.sum_range_succ' (fun j : ℕ => term M δ (d + j)) M
+    have h3 := Finset.sum_range_succ (fun j : ℕ => term M δ (d + j)) M
+    have h4 : term M δ (d + (M : ℕ)) = term M δ (d + (0 : ℕ)) := by
+      rw [Nat.cast_zero, add_zero]
+      exact term_periodic M δ d
+    rw [h1]
+    linarith
+  induction c using Int.induction_on with
+  | zero => simp
+  | succ i ih => rw [key (i : ℤ)]; exact ih
+  | pred i ih =>
+    rw [← key (-(i : ℤ) - 1), show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring]
+    exact ih
+
+/-- The power series of `log ((1 + w) / (1 - w))` has nonnegative terms for `0 ≤ w < 1`, so it
+dominates the sum of its first two: `2 w + (2/3) w³ ≤ log (1 + w) - log (1 - w)`. -/
+private theorem add_le_log_sub_log {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w < 1) :
+    2 * w + 2 / 3 * w ^ 3 ≤ Real.log (1 + w) - Real.log (1 - w) := by
+  have habs : |w| < 1 := by rwa [abs_of_nonneg hw0]
+  have hsum := Real.hasSum_log_sub_log_of_abs_lt_one habs
+  have hnn : ∀ k : ℕ, 0 ≤ (2 : ℝ) * (1 / (2 * (k : ℝ) + 1)) * w ^ (2 * k + 1) := by
+    intro k
+    have hk : (0 : ℝ) ≤ 1 / (2 * (k : ℝ) + 1) := by positivity
+    have : (0 : ℝ) ≤ w ^ (2 * k + 1) := pow_nonneg hw0 _
+    positivity
+  have h := sum_le_hasSum (Finset.range 2) (fun i _ => hnn i) hsum
+  refine le_trans (le_of_eq ?_) h
+  rw [Finset.sum_range_succ, Finset.sum_range_one]
+  norm_num
+
+/-- For `0 < h ≤ π/6`, `h ≤ sin h + (sin h)³ / 3`. -/
+private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6) :
+    h ≤ Real.sin h + Real.sin h ^ 3 / 3 := by
+  have hb : h ≤ 2 / 3 := by
+    have := Real.pi_le_four
+    linarith
+  have hs : h - h ^ 3 / 6 ≤ Real.sin h := Real.sin_ge_sub_cube hh0.le
+  have hsq : h ^ 2 ≤ 0.45 := by nlinarith
+  have hcube : h ^ 3 ≤ 0.45 * h := by nlinarith
+  have h1 : 0.925 * h ≤ Real.sin h := by linarith
+  have h2 : (0.925 * h) ^ 3 ≤ Real.sin h ^ 3 := pow_le_pow_left₀ (by positivity) h1 3
+  have h3 : (0.925 * h) ^ 3 = 0.791453125 * h ^ 3 := by ring
+  nlinarith [pow_pos hh0 3]
+
+/-- **The midpoint bound for the cosecant.** For `0 < h ≤ π/6` and `h < φ < π - h`,
+`2 h / sin φ ≤ log (tan ((φ + h)/2)) - log (tan ((φ - h)/2))`: the comparison
+`2h / sin φ ≤ ∫_{φ - h}^{φ + h} dy / sin y` in algebraic form. -/
+private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6)
+    (hφ1 : h < φ) (hφ2 : φ < π - h) :
+    2 * h / Real.sin φ
+      ≤ Real.log (Real.tan ((φ + h) / 2)) - Real.log (Real.tan ((φ - h) / 2)) := by
+  have hpi := Real.pi_pos
+  set A := (φ + h) / 2 with hA
+  set B := (φ - h) / 2 with hB
+  have hB0 : 0 < B := by rw [hB]; linarith
+  have hA2 : A < π / 2 := by rw [hA]; linarith
+  have hsinA : 0 < Real.sin A := Real.sin_pos_of_pos_of_lt_pi (by linarith) (by linarith)
+  have hsinB : 0 < Real.sin B := Real.sin_pos_of_pos_of_lt_pi hB0 (by linarith)
+  have hcosA : 0 < Real.cos A := Real.cos_pos_of_mem_Ioo ⟨by linarith, hA2⟩
+  have hcosB : 0 < Real.cos B := Real.cos_pos_of_mem_Ioo ⟨by linarith, by linarith⟩
+  have hs : Real.sin φ = Real.sin A * Real.cos B + Real.cos A * Real.sin B := by
+    rw [show φ = A + B by rw [hA, hB]; ring, Real.sin_add]
+  have he : Real.sin h = Real.sin A * Real.cos B - Real.cos A * Real.sin B := by
+    rw [show h = A - B by rw [hA, hB]; ring, Real.sin_sub]
+  have hs0 : 0 < Real.sin φ := by rw [hs]; positivity
+  have he0 : 0 < Real.sin h := Real.sin_pos_of_pos_of_lt_pi hh0 (by linarith)
+  have hes : Real.sin h < Real.sin φ := by
+    rw [hs, he]; nlinarith [mul_pos hcosA hsinB]
+  set w := Real.sin h / Real.sin φ with hw
+  have hw0 : 0 ≤ w := by rw [hw]; positivity
+  have hw1 : w < 1 := by rw [hw, div_lt_one hs0]; exact hes
+  have htanA : 0 < Real.tan A := by rw [Real.tan_eq_sin_div_cos]; positivity
+  have htanB : 0 < Real.tan B := by rw [Real.tan_eq_sin_div_cos]; positivity
+  have hratio : Real.tan A / Real.tan B = (1 + w) / (1 - w) := by
+    rw [Real.tan_eq_sin_div_cos, Real.tan_eq_sin_div_cos, hw, hs, he]
+    field_simp
+    ring
+  have hlog : Real.log (Real.tan A) - Real.log (Real.tan B) = Real.log (1 + w) - Real.log (1 - w) :=
+    by rw [← Real.log_div htanA.ne' htanB.ne', hratio,
+      Real.log_div (by linarith) (by linarith)]
+  rw [hlog]
+  refine le_trans ?_ (add_le_log_sub_log hw0 hw1)
+  have hle : h ≤ Real.sin h + Real.sin h ^ 3 / 3 := le_sin_add_sin_cube_div hh0 hh
+  have hs2 : Real.sin φ ^ 2 ≤ 1 := by nlinarith [Real.sin_le_one φ, Real.neg_one_le_sin φ]
+  have hnum : 0 ≤ 2 * Real.sin h * Real.sin φ ^ 2 + 2 / 3 * Real.sin h ^ 3
+      - 2 * h * Real.sin φ ^ 2 := by
+    nlinarith [mul_nonneg (sq_nonneg (Real.sin φ)) (sub_nonneg.2 hle),
+      mul_nonneg (sub_nonneg.2 hs2) (pow_pos he0 3).le]
+  rw [← sub_nonneg, hw]
+  have hid : 2 * (Real.sin h / Real.sin φ) + 2 / 3 * (Real.sin h / Real.sin φ) ^ 3
+      - 2 * h / Real.sin φ
+      = (2 * Real.sin h * Real.sin φ ^ 2 + 2 / 3 * Real.sin h ^ 3 - 2 * h * Real.sin φ ^ 2)
+        / Real.sin φ ^ 3 := by
+    field_simp
+  rw [hid]
+  exact div_nonneg hnum (by positivity)
+
+/-- A sum whose first and last terms are at most `1` and whose interior terms are dominated by a
+telescoping difference is at most `2` plus the total difference. -/
+private theorem sum_le_of_telescope {M : ℕ} (G Ψ : ℕ → ℝ) (C : ℝ)
+    (hend : ∀ c, G c ≤ 1) (hmid : ∀ i, i < M → G (i + 1) ≤ C * (Ψ (i + 1) - Ψ i)) :
+    ∑ c ∈ Finset.range (M + 2), G c ≤ 2 + C * (Ψ M - Ψ 0) := by
+  have h1 : ∑ c ∈ Finset.range (M + 2), G c
+      = (∑ i ∈ Finset.range M, G (i + 1)) + G (M + 1) + G 0 := by
+    rw [Finset.sum_range_succ' G (M + 1), Finset.sum_range_succ (fun i => G (i + 1)) M]
+  have h2 : ∑ i ∈ Finset.range M, G (i + 1) ≤ ∑ i ∈ Finset.range M, C * (Ψ (i + 1) - Ψ i) :=
+    Finset.sum_le_sum fun i hi => hmid i (Finset.mem_range.1 hi)
+  have h3 : ∑ i ∈ Finset.range M, C * (Ψ (i + 1) - Ψ i) = C * (Ψ M - Ψ 0) := by
+    rw [← Finset.mul_sum, Finset.sum_range_sub Ψ M]
+  rw [h1]
+  have e1 := hend (M + 1)
+  have e2 := hend 0
+  linarith [h2.trans_eq h3]
+
+/-- If the `M`-scaled sine is positive, the term is at most `1 / (M sin …)`. -/
+private theorem term_le_inv {M : ℕ} {δ : ℝ} (k : ℤ)
+    (hpos : 0 < Real.sin (π * ((k : ℝ) + δ) / M)) :
+    term M δ k ≤ 1 / ((M : ℝ) * Real.sin (π * ((k : ℝ) + δ) / M)) := by
+  rw [term, abs_of_pos hpos]
+  gcongr
+  · exact Real.abs_sin_le_one _
+
+/-- **A logarithmic bound for a Lebesgue-type sum of reciprocal sines.** For `M ≥ 3`, `δ ∈ [0, 1)`
+and any starting index `c`,
+
+`∑_{i < M} |sin (π (c + i + δ))| / (M |sin (π (c + i + δ) / M)|) ≤ 2 + (2/π) log M`.
+
+The two terms nearest the evaluation point are bounded by `1` each (`|sin (M u)| ≤ M |sin u|`) and
+the remaining ones by the midpoint comparison `2q / sin φ ≤ ∫_{φ-q}^{φ+q} dy / sin y` with
+`q = π / (2 M)` the half-spacing, whose right-hand sides telescope to at most `2 log M`. -/
+theorem sum_term_le {M : ℕ} (hM : 3 ≤ M) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ < 1) (c : ℤ) :
+    ∑ i ∈ Finset.range M, term M δ (c + i) ≤ 2 + 2 / π * Real.log M := by
+  rw [sum_range_shift]
+  have hpi := Real.pi_pos
+  have hpi3 : (3 : ℝ) < π := by
+    have h := Real.sin_lt (show (0 : ℝ) < π / 6 by positivity)
+    rw [Real.sin_pi_div_six] at h
+    linarith
+  have hMr3 : (3 : ℝ) ≤ (M : ℝ) := by exact_mod_cast hM
+  have hM0 : (0 : ℝ) < (M : ℝ) := by linarith
+  set q : ℝ := π / (2 * (M : ℝ)) with hq
+  have hq0 : 0 < q := by rw [hq]; positivity
+  have hqM : 2 * (M : ℝ) * q = π := by rw [hq]; field_simp
+  have hq6 : q ≤ π / 6 := by
+    rw [hq, div_le_div_iff₀ (by positivity) (by norm_num)]
+    nlinarith
+  have hphi : ∀ y : ℝ, π * y / (M : ℝ) = 2 * q * y := by
+    intro y
+    rw [hq]
+    field_simp
+  have hend : ∀ i : ℕ, term M δ (i : ℤ) ≤ 1 := fun i => term_le_one (by omega) δ _
+  have hmid : ∀ i : ℕ, i < M - 2 → term M δ (((i + 1 : ℕ) : ℤ))
+      ≤ 1 / π * (Real.log (Real.tan ((2 * q * (((i + 1 : ℕ) : ℝ) + 1 + δ) - q) / 2))
+        - Real.log (Real.tan ((2 * q * ((i : ℝ) + 1 + δ) - q) / 2))) := by
+    intro i hi
+    have hiR : (i : ℝ) + 1 ≤ (M : ℝ) - 2 := by
+      have h1 : i + 3 ≤ M := by omega
+      have h2 : ((i : ℝ) + 3) ≤ (M : ℝ) := by exact_mod_cast h1
+      linarith
+    have harg : π * ((((i + 1 : ℕ) : ℤ) : ℝ) + δ) / (M : ℝ) = 2 * q * ((i : ℝ) + 1 + δ) := by
+      rw [← hphi]
+      congr 2
+      push_cast
+      ring
+    have hφ1 : q < 2 * q * ((i : ℝ) + 1 + δ) := by nlinarith
+    have hφ2 : 2 * q * ((i : ℝ) + 1 + δ) < π - q := by rw [← hqM]; nlinarith
+    have hsin : 0 < Real.sin (2 * q * ((i : ℝ) + 1 + δ)) :=
+      Real.sin_pos_of_pos_of_lt_pi (by linarith) (by linarith)
+    have hle := term_le_inv (M := M) (δ := δ) ((i + 1 : ℕ) : ℤ) (by rw [harg]; exact hsin)
+    rw [harg] at hle
+    refine hle.trans ?_
+    have hrw : 1 / ((M : ℝ) * Real.sin (2 * q * ((i : ℝ) + 1 + δ)))
+        = 1 / π * (2 * q / Real.sin (2 * q * ((i : ℝ) + 1 + δ))) := by
+      rw [← hqM]
+      field_simp
+    have hΨ1 : 2 * q * (((i + 1 : ℕ) : ℝ) + 1 + δ) - q
+        = 2 * q * ((i : ℝ) + 1 + δ) + q := by push_cast; ring
+    rw [hrw, hΨ1]
+    exact mul_le_mul_of_nonneg_left (two_mul_div_sin_le hq0 hq6 hφ1 hφ2) (by positivity)
+  have hsum := sum_le_of_telescope (M := M - 2) (fun i : ℕ => term M δ (i : ℤ))
+    (fun i : ℕ => Real.log (Real.tan ((2 * q * ((i : ℝ) + 1 + δ) - q) / 2))) (1 / π) hend hmid
+  rw [show M - 2 + 2 = M by omega] at hsum
+  refine hsum.trans ?_
+  have hb0 : 0 < (3 - 2 * δ) * q / 2 := by nlinarith
+  have hbpi : (3 - 2 * δ) * q / 2 < π / 2 := by nlinarith
+  have ha0 : 0 < (1 + 2 * δ) * q / 2 := by nlinarith
+  have hapi : (1 + 2 * δ) * q / 2 < π / 2 := by nlinarith
+  have hMc : (((M - 2 : ℕ) : ℝ)) = (M : ℝ) - 2 := by
+    rw [Nat.cast_sub (by omega : 2 ≤ M)]
+    norm_num
+  have hΨtop : Real.log (Real.tan ((2 * q * ((((M - 2 : ℕ)) : ℝ) + 1 + δ) - q) / 2))
+      = -Real.log (Real.tan ((3 - 2 * δ) * q / 2)) := by
+    rw [hMc, show (2 * q * ((M : ℝ) - 2 + 1 + δ) - q) / 2 = π / 2 - (3 - 2 * δ) * q / 2 by
+      rw [← hqM]; ring, Real.tan_pi_div_two_sub, Real.log_inv]
+  have hΨbot : Real.log (Real.tan ((2 * q * (((0 : ℕ) : ℝ) + 1 + δ) - q) / 2))
+      = Real.log (Real.tan ((1 + 2 * δ) * q / 2)) := by
+    norm_num
+    ring_nf
+  have hla : Real.log ((1 + 2 * δ) * q / 2) ≤ Real.log (Real.tan ((1 + 2 * δ) * q / 2)) :=
+    Real.log_le_log ha0 (Real.lt_tan ha0 hapi).le
+  have hlb : Real.log ((3 - 2 * δ) * q / 2) ≤ Real.log (Real.tan ((3 - 2 * δ) * q / 2)) :=
+    Real.log_le_log hb0 (Real.lt_tan hb0 hbpi).le
+  have hprod : Real.log ((3 - 2 * δ) * q / 2) + Real.log ((1 + 2 * δ) * q / 2)
+      = Real.log (((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2)) :=
+    (Real.log_mul hb0.ne' ha0.ne').symm
+  have hge : 1 / (M : ℝ) ^ 2 ≤ ((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2) := by
+    have h16 : (16 : ℝ) ≤ 3 * π ^ 2 := by nlinarith
+    rw [hq, div_le_iff₀ (by positivity)]
+    field_simp
+    nlinarith [sq_nonneg δ, mul_nonneg hδ0 (sub_nonneg.2 hδ1.le)]
+  have hlog2 : -(2 * Real.log (M : ℝ))
+      ≤ Real.log (((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2)) := by
+    have h := Real.log_le_log (by positivity) hge
+    rw [one_div, Real.log_inv, Real.log_pow] at h
+    push_cast at h
+    linarith
+  rw [hΨtop, hΨbot]
+  have hfin : -Real.log (Real.tan ((3 - 2 * δ) * q / 2))
+      - Real.log (Real.tan ((1 + 2 * δ) * q / 2)) ≤ 2 * Real.log (M : ℝ) := by linarith
+  have hmul := mul_le_mul_of_nonneg_left hfin (le_of_lt (by positivity : (0 : ℝ) < 1 / π))
+  have heq : 1 / π * (2 * Real.log (M : ℝ)) = 2 / π * Real.log (M : ℝ) := by ring
+  linarith
+
+end SineSum
+
+open Polynomial
+
+/-! ### The Lebesgue constant of the Chebyshev nodes
+
+The `n + 1` Chebyshev nodes of `[-1, 1]` are `x_j = cos θ_j` with `θ_j = (2j + 1)π/(2(n + 1))`,
+the zeros of the Chebyshev polynomial `T_{n+1}`. Their Lagrange basis functions have the closed
+form `ℓ_j(cos θ) = (-1)^j cos((n+1)θ) sin θ_j / ((n + 1)(cos θ - x_j))`, so the Lebesgue function
+is a sum of reciprocal sines of the half sums and half differences `(θ_j ± θ)/2`; those angles
+are `π (k + δ)/(2n + 2)` for `2 n + 2` consecutive integers `k`, and `SineSum.sum_term_le`
+applies.
+-/
+
+
+namespace Lagrange
+
+variable {n : ℕ}
+
+/-- The angle of the `j`-th Chebyshev node of order `n + 1`. -/
+noncomputable def chebAngle (n j : ℕ) : ℝ := (2 * j + 1) * π / (2 * (n + 1))
+
+/-- The `n + 1` Chebyshev nodes. -/
+noncomputable def chebNode (n : ℕ) (j : Fin (n + 1)) : ℝ := Real.cos (chebAngle n j)
+
+/-- The angle of a Chebyshev node lies strictly inside `(0, π)`. -/
+theorem chebAngle_mem (n j : ℕ) (hj : j ≤ n) : chebAngle n j ∈ Ioo 0 π := by
+  have hpi := Real.pi_pos
+  constructor
+  · have : (0:ℝ) < 2 * (j:ℝ) + 1 := by positivity
+    exact div_pos (by positivity) (by positivity)
+  · rw [chebAngle, div_lt_iff₀ (by positivity)]
+    have : (j:ℝ) ≤ n := by exact_mod_cast hj
+    nlinarith
+
+/-- The sine of the angle of a Chebyshev node is positive. -/
+theorem sin_chebAngle_pos (n j : ℕ) (hj : j ≤ n) : 0 < Real.sin (chebAngle n j) :=
+  Real.sin_pos_of_pos_of_lt_pi (chebAngle_mem n j hj).1 (chebAngle_mem n j hj).2
+
+/-- The `n + 1` Chebyshev nodes are distinct. -/
+theorem chebNode_injective (n : ℕ) : Function.Injective (chebNode n) := by
+  intro i j hij
+  have hi := chebAngle_mem n i (Nat.lt_succ_iff.1 i.2)
+  have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
+  have : chebAngle n i = chebAngle n j :=
+    Real.injOn_cos ⟨hi.1.le, hi.2.le⟩ ⟨hj.1.le, hj.2.le⟩ hij
+  have hpi := Real.pi_pos
+  have h2 : ((i:ℕ):ℝ) = ((j:ℕ):ℝ) := by
+    simp only [chebAngle] at this
+    field_simp at this
+    linarith
+  exact Fin.ext (by exact_mod_cast h2)
+
+
+/-- The Chebyshev nodes are the zeros of `T_{n+1}`. -/
+theorem eval_chebyshevT_chebNode (n : ℕ) (j : Fin (n + 1)) :
+    (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval (chebNode n j) = 0 := by
+  have hpi := Real.pi_pos
+  rw [chebNode, chebAngle, Chebyshev.T_real_cos, Real.cos_eq_zero_iff]
+  refine ⟨(j : ℕ), ?_⟩
+  have h : ((n : ℝ) + 1) ≠ 0 := by positivity
+  push_cast
+  field_simp
+
+/-- `T_{n+1} = 2^n ∏_j (X - x_j)`: the Chebyshev polynomial is `2^n` times the nodal polynomial
+of its own zeros, both sides being of degree `n + 1` with leading coefficient `2^n` and agreeing
+at the `n + 1` distinct nodes. -/
+theorem chebyshevT_eq_nodal (n : ℕ) :
+    Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)
+      = Polynomial.C ((2 : ℝ) ^ n) * Lagrange.nodal Finset.univ (chebNode n) := by
+  have hcard : (Finset.univ : Finset (Fin (n + 1))).card = n + 1 := by simp
+  have hdegT : (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
+    rw [Chebyshev.degree_T]
+    norm_cast
+  have hdegN : (Polynomial.C ((2 : ℝ) ^ n) * Lagrange.nodal Finset.univ (chebNode n)).degree
+      = ((n + 1 : ℕ) : WithBot ℕ) := by
+    rw [Polynomial.degree_C_mul (by positivity), Lagrange.degree_nodal, hcard]
+  refine Polynomial.eq_of_degree_le_of_eval_index_eq Finset.univ
+    (chebNode_injective n).injOn ?_ ?_ ?_ ?_
+  · rw [hdegT, hcard]
+  · rw [hdegT, hdegN]
+  · rw [Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C,
+      (Lagrange.nodal_monic).leadingCoeff, mul_one, Chebyshev.leadingCoeff_T]
+    congr 1
+  · intro j _
+    rw [eval_chebyshevT_chebNode, Polynomial.eval_mul, Polynomial.eval_C, Lagrange.eval_nodal,
+      Finset.prod_eq_zero (Finset.mem_univ j) (by ring), mul_zero]
+
+/-- `sin ((n + 1) θ_j) = (-1)^j` at the angle of the `j`-th Chebyshev node. -/
+theorem sin_succ_mul_chebAngle (n j : ℕ) :
+    Real.sin (((n : ℝ) + 1) * chebAngle n j) = (-1) ^ j := by
+  have hpi := Real.pi_pos
+  have h : ((n : ℝ) + 1) * chebAngle n j = (j : ℝ) * π + π / 2 := by
+    rw [chebAngle]
+    field_simp
+  rw [h, Real.sin_add_pi_div_two, Real.cos_nat_mul_pi]
+
+/-- The derivative of the nodal polynomial at a Chebyshev node:
+`2^n ω'(x_j) sin θ_j = (n + 1) (-1)^j`, from `T_{n+1}' = (n + 1) U_n` and
+`U_n(cos θ) sin θ = sin ((n + 1) θ)`. -/
+theorem eval_derivative_nodal_chebNode (n : ℕ) (j : Fin (n + 1)) :
+    (2 : ℝ) ^ n * (Polynomial.derivative (Lagrange.nodal Finset.univ (chebNode n))).eval
+        (chebNode n j) * Real.sin (chebAngle n j) = ((n : ℝ) + 1) * (-1) ^ (j : ℕ) := by
+  have hT := congrArg Polynomial.derivative (chebyshevT_eq_nodal n)
+  rw [Chebyshev.T_derivative_eq_U, Polynomial.derivative_C_mul] at hT
+  have hev := congrArg (fun p : ℝ[X] => p.eval (chebNode n j)) hT
+  simp only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_intCast] at hev
+  rw [show ((n + 1 : ℕ) : ℤ) - 1 = ((n : ℕ) : ℤ) by push_cast; ring] at hev
+  have hU : (Chebyshev.U ℝ ((n : ℕ) : ℤ)).eval (chebNode n j) * Real.sin (chebAngle n j)
+      = (-1) ^ (j : ℕ) := by
+    rw [chebNode, Chebyshev.U_real_cos, ← sin_succ_mul_chebAngle n j]
+    norm_num
+  calc (2 : ℝ) ^ n * (Polynomial.derivative (Lagrange.nodal Finset.univ (chebNode n))).eval
+        (chebNode n j) * Real.sin (chebAngle n j)
+      = (((n + 1 : ℕ) : ℤ) : ℝ) * ((Chebyshev.U ℝ ((n : ℕ) : ℤ)).eval (chebNode n j)
+          * Real.sin (chebAngle n j)) := by rw [← hev]; ring
+    _ = ((n : ℝ) + 1) * (-1) ^ (j : ℕ) := by rw [hU]; push_cast; ring
+
+/-- **The Lagrange basis functions of the Chebyshev nodes**, in division-free form:
+`ℓ_j(t) (n + 1) (t - x_j) = T_{n+1}(t) (-1)^j sin θ_j`. -/
+theorem eval_basis_chebNode (n : ℕ) (j : Fin (n + 1)) {t : ℝ} (ht : t ≠ chebNode n j) :
+    (Lagrange.basis Finset.univ (chebNode n) j).eval t * (((n : ℝ) + 1) * (t - chebNode n j))
+      = (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval t * ((-1) ^ (j : ℕ) * Real.sin (chebAngle n j)) := by
+  set D := (Polynomial.derivative (Lagrange.nodal Finset.univ (chebNode n))).eval (chebNode n j)
+    with hD
+  have hs := sin_chebAngle_pos n j (Nat.lt_succ_iff.1 j.2)
+  have hkey := eval_derivative_nodal_chebNode n j
+  have hsign : ((-1 : ℝ)) ^ (j : ℕ) * (-1) ^ (j : ℕ) = 1 := by
+    rw [← pow_add, ← two_mul, pow_mul]
+    norm_num
+  have hD0 : D ≠ 0 := by
+    intro h
+    rw [← hD, h] at hkey
+    have : ((n : ℝ) + 1) * (-1) ^ (j : ℕ) ≠ 0 := by
+      refine mul_ne_zero (by positivity) ?_
+      exact pow_ne_zero _ (by norm_num)
+    simp only [mul_zero, zero_mul] at hkey
+    exact this hkey.symm
+  have hnw : Lagrange.nodalWeight Finset.univ (chebNode n) j = D⁻¹ := by
+    rw [Lagrange.nodalWeight_eq_eval_derivative_nodal (Finset.mem_univ j), hD]
+  have hbasis := Lagrange.eval_basis_not_at_node (s := Finset.univ) (v := chebNode n)
+    (Finset.mem_univ j) ht
+  rw [hnw] at hbasis
+  have hnodal : (Lagrange.nodal Finset.univ (chebNode n)).eval t * 2 ^ n
+      = (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval t := by
+    rw [chebyshevT_eq_nodal, Polynomial.eval_mul, Polynomial.eval_C]; ring
+  rw [← hD] at hkey
+  rw [hbasis, ← hnodal]
+  field_simp
+  linear_combination (-(Lagrange.nodal Finset.univ (chebNode n)).eval t * (-1 : ℝ) ^ (j : ℕ))
+      * hkey - ((Lagrange.nodal Finset.univ (chebNode n)).eval t * ((n : ℝ) + 1)) * hsign
+
+/-- The Chebyshev nodes lie in `[-1, 1]`. -/
+theorem chebNode_mem_Icc (n : ℕ) (j : Fin (n + 1)) : chebNode n j ∈ Icc (-1 : ℝ) 1 :=
+  ⟨Real.neg_one_le_cos _, Real.cos_le_one _⟩
+
+/-- The sine of the half difference of the evaluation angle and a node angle vanishes only at
+the node itself. -/
+theorem sin_half_sub_chebAngle_ne_zero (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π)
+    (hne : Real.cos θ ≠ chebNode n j) : Real.sin ((chebAngle n j - θ) / 2) ≠ 0 := by
+  have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
+  intro h
+  have h1 : (chebAngle n j - θ) / 2 ∈ Ioo (-(π / 2)) (π / 2) := by
+    constructor <;> [linarith [hθ.2, hj.1]; linarith [hθ.1, hj.2]]
+  have h2 : (chebAngle n j - θ) / 2 = 0 := by
+    by_contra hz
+    rcases lt_or_gt_of_ne hz with hlt | hgt
+    · exact absurd h (Real.sin_neg_of_neg_of_neg_pi_lt hlt (by linarith [h1.1,
+        Real.pi_pos])).ne
+    · exact absurd h (Real.sin_pos_of_pos_of_lt_pi hgt (by linarith [h1.2, Real.pi_pos])).ne'
+  exact hne (by rw [chebNode, show θ = chebAngle n j by linarith])
+
+/-- The sine of the half sum of the evaluation angle and a node angle is positive. -/
+theorem sin_half_add_chebAngle_pos (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π) :
+    0 < Real.sin ((chebAngle n j + θ) / 2) := by
+  have hj := chebAngle_mem n j (Nat.lt_succ_iff.1 j.2)
+  exact Real.sin_pos_of_pos_of_lt_pi (by linarith [hθ.1, hj.1]) (by linarith [hθ.2, hj.2])
+
+/-- **The Lebesgue function of the Chebyshev nodes, term by term.** For `θ ∈ [0, π]` with
+`cos θ` not a node, the `j`-th Lagrange basis function at `cos θ` is bounded by the two
+reciprocal sines of the half difference and the half sum of the angles. -/
+theorem abs_eval_basis_chebNode_le (n : ℕ) (j : Fin (n + 1)) {θ : ℝ} (hθ : θ ∈ Icc 0 π)
+    (hne : Real.cos θ ≠ chebNode n j) :
+    |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+      ≤ |Real.cos (((n : ℝ) + 1) * θ)| / (2 * ((n : ℝ) + 1) * |Real.sin ((chebAngle n j - θ) / 2)|)
+        + |Real.cos (((n : ℝ) + 1) * θ)|
+            / (2 * ((n : ℝ) + 1) * |Real.sin ((chebAngle n j + θ) / 2)|) := by
+  have hN : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  set A := (chebAngle n j - θ) / 2 with hA
+  set B := (chebAngle n j + θ) / 2 with hB
+  have hsA : Real.sin A ≠ 0 := sin_half_sub_chebAngle_ne_zero n j hθ hne
+  have hsB : 0 < Real.sin B := sin_half_add_chebAngle_pos n j hθ
+  have hAA : 0 < |Real.sin A| := abs_pos.2 hsA
+  have hBB : 0 < |Real.sin B| := abs_pos.2 hsB.ne'
+  have hdiff : |Real.cos θ - chebNode n j| = 2 * (|Real.sin A| * |Real.sin B|) := by
+    have h : Real.cos θ - chebNode n j = 2 * Real.sin B * Real.sin A := by
+      rw [chebNode, Real.cos_sub_cos, hA, hB]
+      rw [show (θ - chebAngle n ↑j) / 2 = -((chebAngle n ↑j - θ) / 2) by ring, Real.sin_neg,
+        show (θ + chebAngle n ↑j) / 2 = (chebAngle n ↑j + θ) / 2 by ring]
+      ring
+    rw [h, abs_mul, abs_mul, abs_two]
+    ring
+  have hsum : Real.sin (chebAngle n j) = Real.sin A * Real.cos B + Real.cos A * Real.sin B := by
+    rw [← Real.sin_add, hA, hB]
+    congr 1
+    ring
+  have hkey := eval_basis_chebNode n j (t := Real.cos θ) hne
+  rw [Chebyshev.T_real_cos, show (((n + 1 : ℕ) : ℤ) : ℝ) = (n : ℝ) + 1 by push_cast; ring] at hkey
+  have habs : |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+      * (((n : ℝ) + 1) * (2 * (|Real.sin A| * |Real.sin B|)))
+      = |Real.cos (((n : ℝ) + 1) * θ)| * |Real.sin (chebAngle n j)| := by
+    have h := congrArg abs hkey
+    simp only [abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul, abs_of_pos hN, hdiff] at h
+    exact h
+  have hsinle : |Real.sin (chebAngle n j)| ≤ |Real.sin A| + |Real.sin B| := by
+    rw [hsum]
+    refine (abs_add_le _ _).trans ?_
+    rw [abs_mul, abs_mul]
+    have c1 : |Real.sin A| * |Real.cos B| ≤ |Real.sin A| * 1 := by
+      gcongr; exact Real.abs_cos_le_one _
+    have c2 : |Real.cos A| * |Real.sin B| ≤ 1 * |Real.sin B| := by
+      gcongr; exact Real.abs_cos_le_one _
+    linarith
+  have hrhs : |Real.cos (((n : ℝ) + 1) * θ)| / (2 * ((n : ℝ) + 1) * |Real.sin A|)
+      + |Real.cos (((n : ℝ) + 1) * θ)| / (2 * ((n : ℝ) + 1) * |Real.sin B|)
+      = |Real.cos (((n : ℝ) + 1) * θ)| * (|Real.sin B| + |Real.sin A|)
+        / (2 * ((n : ℝ) + 1) * (|Real.sin A| * |Real.sin B|)) := by
+    field_simp
+  rw [hrhs, le_div_iff₀ (by positivity)]
+  calc |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+        * (2 * ((n : ℝ) + 1) * (|Real.sin A| * |Real.sin B|))
+      = |Real.cos (((n : ℝ) + 1) * θ)| * |Real.sin (chebAngle n j)| := by rw [← habs]; ring
+    _ ≤ |Real.cos (((n : ℝ) + 1) * θ)| * (|Real.sin B| + |Real.sin A|) := by
+        refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+        linarith
+
+/-- At a node the Lebesgue function of any injective node family equals `1`. -/
+theorem sum_abs_eval_basis_at_node {m : ℕ} {v : Fin (m + 1) → ℝ} (hv : Function.Injective v)
+    (i : Fin (m + 1)) : ∑ j, |(Lagrange.basis Finset.univ v j).eval (v i)| = 1 := by
+  rw [Finset.sum_eq_single i]
+  · rw [Lagrange.eval_basis_self hv.injOn (Finset.mem_univ i), abs_one]
+  · intro j _ hji
+    rw [Lagrange.eval_basis_of_ne hji (Finset.mem_univ i), abs_zero]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
+/-- **The Lebesgue function of the `n + 1` Chebyshev nodes is at most `2 + (2/π) log (2n + 2)`.**
+The evaluation point is written as `cos θ` with `θ ∈ [0, π]`. -/
+theorem sum_abs_eval_basis_chebNode_le (n : ℕ) {θ : ℝ} (hθ : θ ∈ Icc 0 π) :
+    ∑ j : Fin (n + 1), |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+      ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
+  have hpi := Real.pi_pos
+  have hlog : 0 ≤ Real.log (2 * (n : ℝ) + 2) :=
+    Real.log_nonneg (by linarith [Nat.cast_nonneg (α := ℝ) n])
+  have hone : (1 : ℝ) ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
+    have : 0 ≤ 2 / π * Real.log (2 * (n : ℝ) + 2) := by positivity
+    linarith
+  -- at a node the Lebesgue function is `1`
+  by_cases hnode : ∃ i : Fin (n + 1), Real.cos θ = chebNode n i
+  · obtain ⟨i, hi⟩ := hnode
+    rw [hi, sum_abs_eval_basis_at_node (chebNode_injective n) i]
+    exact hone
+  simp only [not_exists] at hnode
+  -- the case `n = 0`: a single node, the Lebesgue function is the constant `1`
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · refine le_trans (le_of_eq ?_) hone
+    simp [Lagrange.basis]
+  -- the general case
+  have hN : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  set N : ℕ := n + 1 with hNdef
+  set M : ℕ := 2 * N with hMdef
+  have hM3 : 3 ≤ M := by omega
+  have hMr : (M : ℝ) = 2 * ((n : ℝ) + 1) := by rw [hMdef, hNdef]; push_cast; ring
+  set mu : ℝ := (N : ℝ) * θ / π - 1 / 2 with hmu
+  set c0 : ℤ := ⌊mu⌋ with hc0
+  set δ : ℝ := Int.fract mu with hδ
+  have hδ0 : 0 ≤ δ := Int.fract_nonneg _
+  have hδ1 : δ < 1 := Int.fract_lt_one _
+  have hmuval : (c0 : ℝ) + δ = mu := by rw [hc0, hδ]; exact Int.floor_add_fract mu
+  have hNr : (N : ℝ) = (n : ℝ) + 1 := by rw [hNdef]; push_cast; ring
+  -- the numerator of every term is `|cos ((n+1) θ)|`
+  have hnum : ∀ k : ℤ, |Real.sin (π * ((k : ℝ) + δ))| = |Real.cos (((n : ℝ) + 1) * θ)| := by
+    intro k
+    have h : π * ((k : ℝ) + δ) = ((n : ℝ) + 1) * θ - π / 2 + ((k - c0 : ℤ) : ℝ) * π := by
+      have : (δ : ℝ) = mu - (c0 : ℝ) := by linarith [hmuval]
+      rw [this, hmu, hNr]
+      push_cast
+      field_simp
+      ring
+    rw [h, SineSum.abs_sin_add_intCast_mul_pi, Real.sin_sub_pi_div_two, abs_neg]
+  -- the two denominators
+  have hden1 : ∀ j : Fin (n + 1), π * (((c0 - (j : ℕ) : ℤ) : ℝ) + δ) / (M : ℝ)
+      = -((chebAngle n j - θ) / 2) := by
+    intro j
+    have hδv : (δ : ℝ) = mu - (c0 : ℝ) := by linarith [hmuval]
+    rw [hδv, hmu, hNr, chebAngle, hMr]
+    push_cast
+    field_simp
+    ring
+  have hden2 : ∀ j : Fin (n + 1), π * (((c0 + (j : ℕ) + 1 : ℤ) : ℝ) + δ) / (M : ℝ)
+      = (chebAngle n j + θ) / 2 := by
+    intro j
+    have hδv : (δ : ℝ) = mu - (c0 : ℝ) := by linarith [hmuval]
+    rw [hδv, hmu, hNr, chebAngle, hMr]
+    push_cast
+    field_simp
+    ring
+  -- the term-by-term bound
+  have hterm : ∀ j : Fin (n + 1),
+      |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+        ≤ SineSum.term M δ (c0 - (j : ℕ)) + SineSum.term M δ (c0 + (j : ℕ) + 1) := by
+    intro j
+    refine (abs_eval_basis_chebNode_le n j hθ (hnode j)).trans (le_of_eq ?_)
+    rw [SineSum.term, SineSum.term, hnum, hnum, hden1, hden2, Real.sin_neg, abs_neg, hMr]
+  -- sum and reindex
+  have hsum : ∑ j : Fin (n + 1), (SineSum.term M δ (c0 - (j : ℕ))
+      + SineSum.term M δ (c0 + (j : ℕ) + 1))
+      = ∑ i ∈ Finset.range M, SineSum.term M δ ((c0 - (N : ℤ) + 1) + i) := by
+    rw [Fin.sum_univ_eq_sum_range (fun j : ℕ => SineSum.term M δ (c0 - (j : ℤ))
+      + SineSum.term M δ (c0 + (j : ℤ) + 1)) (n + 1), Finset.sum_add_distrib]
+    have hleft : ∑ j ∈ Finset.range N, SineSum.term M δ (c0 - (j : ℤ))
+        = ∑ j ∈ Finset.range N, SineSum.term M δ ((c0 - (N : ℤ) + 1) + j) := by
+      rw [← Finset.sum_range_reflect (fun j : ℕ => SineSum.term M δ (c0 - (j : ℤ))) N]
+      refine Finset.sum_congr rfl fun j hj => ?_
+      have hjN : j < N := Finset.mem_range.1 hj
+      congr 1
+      have h1 : ((N - 1 - j : ℕ) : ℤ) = (N : ℤ) - 1 - j := by
+        have : j ≤ N - 1 := by omega
+        push_cast [Nat.cast_sub (by omega : 1 ≤ N), Nat.cast_sub this]
+        ring
+      rw [h1]
+      ring
+    have hright : ∑ j ∈ Finset.range N, SineSum.term M δ (c0 + (j : ℤ) + 1)
+        = ∑ j ∈ Finset.range N, SineSum.term M δ ((c0 - (N : ℤ) + 1) + ((N : ℕ) + j : ℕ)) := by
+      refine Finset.sum_congr rfl fun j _ => ?_
+      congr 1
+      push_cast
+      ring
+    rw [hleft, hright, hMdef, two_mul]
+    exact (Finset.sum_range_add _ N N).symm
+  calc ∑ j : Fin (n + 1), |(Lagrange.basis Finset.univ (chebNode n) j).eval (Real.cos θ)|
+      ≤ ∑ j : Fin (n + 1), (SineSum.term M δ (c0 - (j : ℕ))
+          + SineSum.term M δ (c0 + (j : ℕ) + 1)) := Finset.sum_le_sum fun j _ => hterm j
+    _ = ∑ i ∈ Finset.range M, SineSum.term M δ ((c0 - (N : ℤ) + 1) + i) := hsum
+    _ ≤ 2 + 2 / π * Real.log (M : ℝ) := SineSum.sum_term_le hM3 hδ0 hδ1 _
+    _ = 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by rw [hMr]; ring_nf
+
+/-- The `n + 1` Chebyshev nodes as points of `[-1, 1]`. -/
+noncomputable def chebNodeIcc (n : ℕ) (j : Fin (n + 1)) : Icc (-1 : ℝ) 1 :=
+  ⟨chebNode n j, chebNode_mem_Icc n j⟩
+
+/-- **The Lebesgue constant of the Chebyshev nodes grows logarithmically**: the norm of the
+Lagrange interpolation operator at the `n + 1` Chebyshev nodes
+`x_j = cos ((2j + 1) π / (2 (n + 1)))` of `[-1, 1]` satisfies
+
+`‖Π_n‖ ≤ 2 + (2/π) log (2 n + 2)`.
+
+Rivlin's sharp form of this estimate ([Rivlin, *An Introduction to the Approximation of
+Functions*][rivlin1969introduction], Theorem 1.2; [quarteroni2000numerical] (10.25)) is
+`‖Π_n‖ ≤ (2/π) log (n + 1) + 1`, whose two sides differ by less than `0.04` for every `n`; what
+is proved here keeps the sharp factor `2/π` — and so the growth rate the applications consume —
+but pays a larger additive constant, one for each of the two nodes nearest the evaluation point
+and `(2/π) log 2` for the passage to the
+`2 n + 2` reflected angles. The maximum of the Lebesgue function is in fact attained at `t = ±1`,
+where it equals `(1/(n+1)) ∑_j cot ((2j + 1) π / (4 (n + 1)))`; that identification, which is what
+the sharp constant needs, is not proved here. -/
+theorem norm_interpolateCLM_chebyshev_le (n : ℕ) :
+    ‖Lagrange.interpolateCLM (chebNodeIcc n)‖ ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 2) := by
+  have hinj : Function.Injective (chebNodeIcc n) := fun i j hij =>
+    chebNode_injective n (congrArg Subtype.val hij)
+  have : Nonempty (Icc (-1 : ℝ) 1) := ⟨⟨1, by norm_num⟩⟩
+  obtain ⟨t, ht⟩ := (Lagrange.isGreatest_norm_interpolateCLM hinj).1
+  rw [← ht]
+  have htmem : (t : ℝ) ∈ Icc (-1 : ℝ) 1 := t.2
+  have hcos : Real.cos (Real.arccos (t : ℝ)) = (t : ℝ) := Real.cos_arccos htmem.1 htmem.2
+  have hθ : Real.arccos (t : ℝ) ∈ Icc 0 π := ⟨Real.arccos_nonneg _, Real.arccos_le_pi _⟩
+  have := sum_abs_eval_basis_chebNode_le n hθ
+  rw [hcos] at this
+  refine le_trans (le_of_eq ?_) this
+  exact Finset.sum_congr rfl fun i _ => by rw [Lagrange.basisCM_apply]; rfl
+
+end Lagrange

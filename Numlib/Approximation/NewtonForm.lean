@@ -167,6 +167,68 @@ theorem newtonOn_map {κ : Type*} [DecidableEq κ] (e : κ ↪ ι) (t : Finset �
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Finset.map_erase, Finset.prod_map]
 
+/-- The divided difference depends on the nodes only through their values on the index set. -/
+theorem newtonOn_congr {w : ι → F} (h : ∀ i ∈ s, v i = w i) (f : F → F) :
+    newtonOn s v f = newtonOn s w f := by
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [h i hi]
+  congr 1
+  exact Finset.prod_congr rfl fun l hl => by rw [h l (Finset.mem_of_mem_erase hl)]
+
+/-- **Deleting one node**, written as a sum over the whole index set: the term of the deleted
+node carries the factor `v a - v a = 0`, so it may be added back. -/
+theorem newtonOn_erase_eq_sum (hvs : Set.InjOn v s) (f : F → F) {a : ι} (ha : a ∈ s) :
+    newtonOn (s.erase a) v f
+      = ∑ w ∈ s, f (v w) * (v w - v a) / ∏ j ∈ s.erase w, (v w - v j) := by
+  rw [newtonOn, ← Finset.sum_erase _ (f := fun w => f (v w) * (v w - v a)
+    / ∏ j ∈ s.erase w, (v w - v j)) (a := a) (by simp)]
+  refine Finset.sum_congr rfl fun w hw => ?_
+  obtain ⟨hwa, hws⟩ := Finset.mem_erase.1 hw
+  have hne : v w - v a ≠ 0 := sub_ne_zero.2 fun h => hwa (hvs hws ha h)
+  have hsplit : ∏ j ∈ s.erase w, (v w - v j)
+      = (v w - v a) * ∏ j ∈ (s.erase w).erase a, (v w - v j) :=
+    (Finset.mul_prod_erase _ _ (Finset.mem_erase.2 ⟨Ne.symm hwa, ha⟩)).symm
+  rw [hsplit, Finset.erase_right_comm]
+  field_simp
+
+/-- **A three-term identity for divided differences.** If the node `v p` is the affine combination
+`b • v q + (1 - b) • v r` of two other nodes of the family, then the divided difference over the
+index set with `p` deleted is that same combination of the ones with `q` and with `r` deleted.
+In the explicit form of `newtonOn_erase_eq_sum` it is the pointwise identity
+`v w - v p = b (v w - v q) + (1 - b) (v w - v r)`. This is the engine of Boehm's knot insertion
+for B-splines. -/
+theorem newtonOn_erase_eq_affine_comb (hvs : Set.InjOn v s) {p q r : ι} (hp : p ∈ s) (hq : q ∈ s)
+    (hr : r ∈ s) {b : F} (hb : v p = b * v q + (1 - b) * v r) (f : F → F) :
+    newtonOn (s.erase p) v f
+      = b * newtonOn (s.erase q) v f + (1 - b) * newtonOn (s.erase r) v f := by
+  rw [newtonOn_erase_eq_sum hvs f hp, newtonOn_erase_eq_sum hvs f hq,
+    newtonOn_erase_eq_sum hvs f hr, Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun w _ => ?_
+  rw [hb]
+  field_simp
+  ring
+
+/-- The divided difference over the `m + 1` consecutive nodes `v i, …, v (i + m)` of a sequence,
+as a divided difference over the index interval. -/
+theorem newton_shift_eq_newtonOn (v : ℕ → ℝ) (g : ℝ → ℝ) (m i : ℕ) :
+    newton g (fun r : Fin (m + 1) => v (i + r)) = newtonOn (Finset.Icc i (i + m)) v g := by
+  have hinj : Function.Injective (fun r : Fin (m + 1) => i + (r : ℕ)) :=
+    fun a b h => Fin.ext (by simpa using h)
+  have hmap : (Finset.univ : Finset (Fin (m + 1))).map ⟨_, hinj⟩ = Finset.Icc i (i + m) := by
+    ext c
+    simp only [Finset.mem_map, Finset.mem_univ, Function.Embedding.coeFn_mk, true_and,
+      Finset.mem_Icc]
+    constructor
+    · rintro ⟨r, rfl⟩
+      have := r.isLt
+      omega
+    · rintro ⟨h1, h2⟩
+      refine ⟨⟨c - i, by omega⟩, ?_⟩
+      change i + (c - i) = c
+      omega
+  rw [← hmap, newtonOn_map, newton_eq_newtonOn]
+  rfl
+
 /-- **The divided difference is the top coefficient of the interpolant**: for injective nodes,
 `newtonOn s v f` is the coefficient of `X^{#s - 1}` in `Lagrange.interpolate s v (f ∘ v)`. This is
 `Lagrange.coeff_eq_sum` read backwards. -/

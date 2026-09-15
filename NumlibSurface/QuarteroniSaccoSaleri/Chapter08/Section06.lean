@@ -46,15 +46,18 @@ by divided differences, the B-spline basis).
 * `property_8_2`, `property_8_2_eq_iff`, `exercise_8_11`, `exercise_8_11_eq_iff`,
   `clampedSpline_bestApprox_deriv2` — Holladay's minimum-norm property and the best
   approximation of `f''` by the clamped spline.
+* `property_8_3_weak` — Property 8.3 with non-sharp constants, for the clamped spline.
+* `remark_8_4` — Boehm's knot insertion.
 * `equation_8_53`, `bSpline_support`, `bSpline_nonneg`, `equation_8_54`, `equation_8_54_zero`,
   `equation_8_54_definition_8_2`, `remark_8_3_left`, `remark_8_3_right`, `example_8_9`,
   `equation_8_56`, `equation_8_56_repr`, `equation_8_57`, `equation_8_57_right` — B-splines.
 
 ## Not formalized
 
-Property 8.3 (`property_8_3`), the minimal-support characterization of B-splines quoted from
-Schoenberg (`bSpline_minimalSupport`) and Boehm's knot insertion of Remark 8.4 (`remark_8_4`)
-are stated in the plan and left open there; see the plan for the reasons.
+Property 8.3 with the sharp Hall–Meyer constants (`property_8_3`) and the minimal-support
+characterization of B-splines quoted from Schoenberg (`bSpline_minimalSupport`) are stated in the
+plan and left open there; see the plan for the reasons. `property_8_3_weak` is Property 8.3 with
+non-sharp constants.
 
 ## Conventions
 
@@ -710,6 +713,41 @@ theorem clampedSpline_bestApprox_deriv2 {sf : ℝ → ℝ}
 
 end Cubic
 
+/-! #### Property 8.3: the error of the clamped interpolatory cubic spline -/
+
+/-- **Property 8.3 with non-sharp constants.** Let `f ∈ C⁴([a, b])` with `|f⁗| ≤ K` on `[a, b]`,
+let `a = x₀ < ⋯ < x_n = b` be a partition whose panels all have length at most `h`, and let `s₃` be
+the **clamped** interpolatory cubic spline of `f` (`s₃'(a) = f'(a)`, `s₃'(b) = f'(b)`). Then
+
+`‖f - s₃‖_∞ ≤ (7/8) h⁴ K`, `‖f' - s₃'‖_∞ ≤ (7/4) h³ K`, `|f''(x_i) - s₃''(x_i)| ≤ (3/4) h² K`.
+
+This is Property 8.3 of [quarteroni2000numerical] for `r = 0, 1, 2` with the constants `7/8`, `7/4`
+and `3/4` in place of the book's sharp `5/384`, `1/24` and `3/8`, and with the case `r = 2`
+restricted to the nodes. The book states Property 8.3 without proof and without saying which end
+conditions it means; the sharp constants are those of Hall and Meyer for the clamped spline (see
+the plan node `property_8_3`), and for the natural spline the `O(h⁴)` rate fails altogether. The
+backbone bounds are `Spline.norm_sub_clampedInterp_le`, `Spline.norm_deriv_sub_clampedInterp_le`
+and `Spline.norm_deriv2_sub_clampedInterp_le`; `IsCubicInterpSpline.eqOn_clampedInterp` identifies
+any clamped interpolatory cubic spline with `Spline.clampedInterp` on `[a, b]`. -/
+theorem property_8_3_weak {f : ℝ → ℝ} {K hm : ℝ} (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+    (hf : ContDiff ℝ 4 f) (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
+    (hmesh : ∀ i, 1 ≤ i → i ≤ n → Spline.panelLength x i ≤ hm) :
+    (∀ t ∈ Icc a b, |f t - Spline.clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b) t|
+        ≤ 7 / 8 * hm ^ 4 * K) ∧
+      (∀ t ∈ Icc a b, |deriv f t
+        - deriv (Spline.clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b)) t|
+        ≤ 7 / 4 * hm ^ 3 * K) ∧
+      (∀ i ≤ n, |iteratedDeriv 2 f (x i)
+        - iteratedDeriv 2 (Spline.clampedInterp n x (fun j => f (x j)) (deriv f a) (deriv f b))
+            (x i)| ≤ 3 / 4 * hm ^ 2 * K) := by
+  refine ⟨fun t ht => ?_, fun t ht => ?_, fun i hi => ?_⟩
+  · rw [abs_sub_comm]
+    exact Spline.norm_sub_clampedInterp_le hx hn hf hK hmesh ht
+  · rw [abs_sub_comm]
+    exact Spline.norm_deriv_sub_clampedInterp_le hx hn hf hK hmesh ht
+  · rw [abs_sub_comm]
+    exact Spline.norm_deriv2_sub_clampedInterp_le hx hn hf hK hmesh hi
+
 /-! ### §8.6.2: B-splines -/
 
 /-- **Definition 8.2, the normalized B-spline.** The normalized B-spline `B_{i,k+1}` of degree `k`
@@ -936,5 +974,28 @@ theorem equation_8_57_right (hx : Monotone x) (hn : 1 ≤ n)
     Tendsto (fun t => ∑ i ∈ Finset.range (n + k), c i * BSpline.bspline x k i t)
       (𝓝[<] x (n + k)) (𝓝 (c (n + k - 1))) :=
   BSpline.sum_smul_bspline_right hx hn hcoin hlt c
+
+/-- **Remark 8.4, Boehm's knot insertion.** Let `s_k = ∑_{i=-k}^{n-1} c_i B_{i,k+1}` be a spline of
+degree `k` on the knots `x` (in the shifted indexing, `∑_{i < n + k} c_i B_{i,k}`) and let `x̃` be a
+new knot in the panel `(x_j, x_{j+1})`, `k ≤ j < n + k`. Then `s_k` is also the spline
+`∑_{i < n + k + 1} d_i B̃_{i,k}` on the refined knot sequence `BSpline.insertKnot x j x̃`, with
+
+`d_i = ω_i c_i + (1 - ω_i) c_{i-1}`, `ω_i = 1` for `i + k ≤ j`,
+`ω_i = (x̃ - x_i)/(x_{i+k} - x_i)` for `j - k < i ≤ j`, `ω_i = 0` for `i > j`
+
+(the book prints `c_i` in both places; the second must be `c_{i-1}` — see the errata).
+`BSpline.sum_smul_bspline_insertKnot`.
+
+Two readings. The knots are taken strictly increasing and `x̃` strictly interior to its panel,
+where the book writes `x̃ ∈ [x_j, x_{j+1})`: the endpoint case `x̃ = x_j` creates a double knot,
+for which the divided-difference proof of `BSpline.bspline_eq_insert_comb` does not apply. And
+`k ≤ j < n + k` says that the new knot falls in a panel of the data range, which is what makes the
+two end coefficients come out right. -/
+theorem remark_8_4 (hx : StrictMono x) (hk : 1 ≤ k) {j : ℕ} (hkj : k ≤ j) (hjn : j < n + k)
+    {xt : ℝ} (hxt : xt ∈ Ioo (x j) (x (j + 1))) (c : ℕ → ℝ) (t : ℝ) :
+    ∑ i ∈ Finset.range (n + k + 1),
+        BSpline.insertKnotCoeff x k j xt c i * BSpline.bspline (BSpline.insertKnot x j xt) k i t
+      = ∑ i ∈ Finset.range (n + k), c i * BSpline.bspline x k i t :=
+  BSpline.sum_smul_bspline_insertKnot hx hk hxt hkj hjn c t
 
 end QuarteroniSaccoSaleri.Chapter08

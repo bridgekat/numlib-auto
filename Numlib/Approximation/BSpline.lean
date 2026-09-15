@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Convex.Combination
 import Numlib.Approximation.DividedDifference
+import Numlib.Approximation.NewtonForm
 import Numlib.Approximation.Spline
 
 /-!
@@ -43,8 +44,9 @@ Guide to Splines*, chapters IX–XI.
 * `BSpline.bspline_apply_of_coincident_left`, `BSpline.bspline_apply_of_coincident_right`,
   `BSpline.sum_smul_bspline_left`, `BSpline.sum_smul_bspline_right`: coincident knots and the
   endpoint values (8.57); `BSpline.bspline_uniform_cubic`: Example 8.9.
-* `BSpline.insertKnot`, `BSpline.insertKnotCoeff`: the knot sequence and coefficients of Boehm's
-  knot insertion (the insertion identity itself is not proved here).
+* `BSpline.insertKnot`, `BSpline.insertKnotCoeff`, `BSpline.bspline_eq_insert_comb` and
+  `BSpline.sum_smul_bspline_insertKnot`: Boehm's knot insertion, for strictly increasing knots
+  and a new knot interior to its panel.
 * `BSpline.curve`, `BSpline.curve_mem_convexHull`, `BSpline.curve_update_eq_of_notMem`: parametric
   B-spline curves.
 
@@ -1074,5 +1076,281 @@ theorem monotone_insertKnot (hx : Monotone x) {j : ℕ} {y : ℝ} (hy : y ∈ Ic
       exact hy.2.le
     · rw [ite_eq_right h1, ite_eq_right h4, ite_eq_right (by omega), ite_eq_right (by omega)]
       exact hx (by omega)
+
+section KnotInsertion
+
+variable {j : ℕ} {y : ℝ}
+
+/-- The inserted knot sequence is strictly increasing when the new knot is interior to its
+panel. -/
+theorem strictMono_insertKnot (hx : StrictMono x) (hy : y ∈ Ioo (x j) (x (j + 1))) :
+    StrictMono (insertKnot x j y) := by
+  refine strictMono_nat_of_lt_succ fun m => ?_
+  unfold insertKnot
+  by_cases h1 : m ≤ j
+  · by_cases h2 : m + 1 ≤ j
+    · rw [ite_eq_left h1, ite_eq_left h2]; exact hx (by omega)
+    · have hmj : m = j := by omega
+      subst hmj
+      rw [ite_eq_left h1, ite_eq_right h2, ite_eq_left rfl]; exact hy.1
+  · by_cases h4 : m = j + 1
+    · subst h4
+      rw [ite_eq_right h1, ite_eq_left rfl, ite_eq_right (by omega), ite_eq_right (by omega),
+        Nat.add_sub_cancel]
+      exact hy.2
+    · rw [ite_eq_right h1, ite_eq_right h4, ite_eq_right (by omega), ite_eq_right (by omega)]
+      exact hx (by omega)
+
+/-- The index shift that identifies the original knots inside the inserted sequence. -/
+def insertShift (j m : ℕ) : ℕ := if m ≤ j then m else m + 1
+
+/-- The index shift is injective. -/
+theorem insertShift_injective (j : ℕ) : Function.Injective (insertShift j) := by
+  intro a b h
+  unfold insertShift at h
+  split_ifs at h <;> omega
+
+/-- The inserted sequence, read through the index shift, is the original one. -/
+theorem insertKnot_insertShift (x : ℕ → ℝ) (j : ℕ) (y : ℝ) (m : ℕ) :
+    insertKnot x j y (insertShift j m) = x m := by
+  unfold insertKnot insertShift
+  split_ifs <;> first | rfl | omega
+
+/-- The B-spline as a divided difference over the index interval. -/
+theorem bspline_eq_mul_newtonOn {v : ℕ → ℝ} (hv : StrictMono v) (hk : 1 ≤ k) (i : ℕ) (t : ℝ) :
+    bspline v k i t = (v (i + k + 1) - v i) *
+      DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) v
+        (fun s => Quadrature.truncPow k s t) := by
+  rw [bspline_eq_mul_newton_truncPow hv hk i t,
+    DividedDifference.newton_shift_eq_newtonOn v _ (k + 1) i, ← Nat.add_assoc]
+
+/-- Erasing the right endpoint of an index interval. -/
+private theorem erase_Icc_top (i m : ℕ) :
+    (Finset.Icc i (m + 1)).erase (m + 1) = Finset.Icc i m := by
+  ext c
+  simp only [Finset.mem_erase, Finset.mem_Icc]
+  omega
+
+/-- Erasing the left endpoint of an index interval. -/
+private theorem erase_Icc_bot (i m : ℕ) : (Finset.Icc i m).erase i = Finset.Icc (i + 1) m := by
+  ext c
+  simp only [Finset.mem_erase, Finset.mem_Icc]
+  omega
+
+/-- The index shift carries the original index interval onto the inserted one with the new index
+removed. -/
+theorem map_insertShift (hij : i ≤ j) (hjk : j ≤ i + k) :
+    (Finset.Icc i (i + k + 1)).map ⟨insertShift j, insertShift_injective j⟩
+      = (Finset.Icc i (i + k + 2)).erase (j + 1) := by
+  ext c
+  simp only [Finset.mem_map, Finset.mem_Icc, Function.Embedding.coeFn_mk, Finset.mem_erase,
+    insertShift]
+  constructor
+  · rintro ⟨m, ⟨h1, h2⟩, rfl⟩
+    split_ifs with h <;> omega
+  · rintro ⟨hne, h1, h2⟩
+    rcases le_or_gt c j with h | h
+    · exact ⟨c, ⟨h1, by omega⟩, by rw [ite_eq_left h]⟩
+    · exact ⟨c - 1, ⟨by omega, by omega⟩, by rw [ite_eq_right (by omega)]; omega⟩
+
+/-- **Boehm's knot-insertion formula for one B-spline**, in the main regime `i ≤ j ≤ i + k`
+where the new knot falls inside the support of `B_{i,k}`. -/
+theorem bspline_eq_insert_comb_of_mem (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (hij : i ≤ j) (hjk : j ≤ i + k) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  set Y := insertKnot x j y with hYdef
+  set g : ℝ → ℝ := fun s => Quadrature.truncPow k s t with hg
+  have hY : StrictMono Y := strictMono_insertKnot hx hy
+  have hYr : Y i = x i := by rw [hYdef, insertKnot, ite_eq_left hij]
+  have hYp : Y (j + 1) = y := by
+    rw [hYdef, insertKnot, ite_eq_right (by omega), ite_eq_left rfl]
+  have hYq : Y (i + k + 2) = x (i + k + 1) := by
+    rw [hYdef, insertKnot, ite_eq_right (by omega), ite_eq_right (by omega)]
+    congr 1
+  have hxlt : x i < x (i + k + 1) := hx (by omega)
+  have hsub : x (i + k + 1) - x i ≠ 0 := sub_ne_zero.2 (by linarith)
+  set T : Finset ℕ := Finset.Icc i (i + k + 2) with hT
+  have hpT : j + 1 ∈ T := by rw [hT]; simp only [Finset.mem_Icc]; omega
+  have hqT : i + k + 2 ∈ T := by rw [hT]; simp only [Finset.mem_Icc]; omega
+  have hrT : i ∈ T := by rw [hT]; simp only [Finset.mem_Icc]; omega
+  set b : ℝ := (y - x i) / (x (i + k + 1) - x i) with hbdef
+  have hb : Y (j + 1) = b * Y (i + k + 2) + (1 - b) * Y i := by
+    rw [hYp, hYq, hYr, hbdef]
+    field_simp
+    ring
+  -- the three divided differences
+  have hkey := DividedDifference.newtonOn_erase_eq_affine_comb
+    (hY.injective.injOn.mono (Set.subset_univ _) : Set.InjOn Y (T : Set ℕ)) hpT hqT hrT hb g
+  -- identify the three index sets
+  have hTq : T.erase (i + k + 2) = Finset.Icc i (i + k + 1) := by
+    rw [hT, show i + k + 2 = (i + k + 1) + 1 from rfl, erase_Icc_top]
+  have hTr : T.erase i = Finset.Icc (i + 1) (i + k + 2) := erase_Icc_bot _ _
+  have hTp : T.erase (j + 1) = (Finset.Icc i (i + k + 1)).map
+      ⟨insertShift j, insertShift_injective j⟩ := (map_insertShift hij hjk).symm
+  have hYx : Y ∘ insertShift j = x := funext fun m => insertKnot_insertShift x j y m
+  have hleft : DividedDifference.newtonOn (T.erase (j + 1)) Y g
+      = DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) x g := by
+    rw [hTp, DividedDifference.newtonOn_map]
+    exact DividedDifference.newtonOn_congr (fun m _ => congrFun hYx m) g
+  -- rewrite the three B-splines
+  have hBx : bspline x k i t = (x (i + k + 1) - x i)
+      * DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) x g :=
+    bspline_eq_mul_newtonOn hx hk i t
+  have hBY : bspline Y k i t = (Y (i + k + 1) - Y i)
+      * DividedDifference.newtonOn (T.erase (i + k + 2)) Y g := by
+    rw [hTq]; exact bspline_eq_mul_newtonOn hY hk i t
+  have hBY1 : bspline Y k (i + 1) t = (Y (i + k + 2) - Y (i + 1))
+      * DividedDifference.newtonOn (T.erase i) Y g := by
+    rw [hTr]
+    have h := bspline_eq_mul_newtonOn hY hk (i + 1) t
+    rwa [show i + 1 + k + 1 = i + k + 2 by omega] at h
+  -- the two coefficient identities
+  have hA : insertKnotWeight x k j y i * (Y (i + k + 1) - Y i) = y - x i := by
+    rcases eq_or_lt_of_le hjk with hje | hjl
+    · subst hje
+      rw [insertKnotWeight, ite_eq_left le_rfl, hYr, one_mul,
+        show Y (i + k + 1) = y by rw [hYdef, insertKnot, ite_eq_right (by omega), ite_eq_left rfl]]
+    · have h1 : ¬ i + k ≤ j := by omega
+      have h2 : Y (i + k + 1) = x (i + k) := by
+        rw [hYdef, insertKnot, ite_eq_right (by omega), ite_eq_right (by omega)]
+        congr 1
+      have h3 : x (i + k) - x i ≠ 0 := sub_ne_zero.2 (hx (by omega)).ne'
+      rw [insertKnotWeight, ite_eq_right h1, ite_eq_left hij, hYr, h2]
+      field_simp
+  have hB : (1 - insertKnotWeight x k j y (i + 1)) * (Y (i + k + 2) - Y (i + 1))
+      = x (i + k + 1) - y := by
+    rcases eq_or_lt_of_le hij with hje | hjl
+    · have h1 : ¬ i + 1 + k ≤ j := by omega
+      have h2 : ¬ i + 1 ≤ j := by omega
+      have h5 : Y (i + 1) = y := by
+        rw [hYdef, insertKnot, ite_eq_right h2, ite_eq_left (by omega)]
+      rw [insertKnotWeight, ite_eq_right h1, ite_eq_right h2, sub_zero, one_mul, hYq, h5]
+    · have h1 : ¬ i + 1 + k ≤ j := by omega
+      have h2 : i + 1 ≤ j := hjl
+      have h3 : Y (i + 1) = x (i + 1) := by rw [hYdef, insertKnot, ite_eq_left h2]
+      have h4 : x (i + k + 1) - x (i + 1) ≠ 0 := sub_ne_zero.2 (hx (by omega)).ne'
+      rw [insertKnotWeight, ite_eq_right h1, ite_eq_left h2, hYq, h3,
+        show i + 1 + k = i + k + 1 by omega]
+      field_simp
+      ring
+  rw [hBx, hBY, hBY1, ← hleft, hkey, ← mul_assoc, ← mul_assoc, hA, hB, hbdef]
+  field_simp
+  ring
+
+/-- Boehm's formula when the new knot lies to the right of the support of `B_{i,k}`: the B-spline
+is unchanged. -/
+theorem bspline_eq_insert_comb_of_right (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (hji : i + k + 1 ≤ j) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  set Y := insertKnot x j y with hYdef
+  have hY : StrictMono Y := strictMono_insertKnot hx hy
+  have h1 : insertKnotWeight x k j y i = 1 := by
+    rw [insertKnotWeight, ite_eq_left (by omega)]
+  have h2 : insertKnotWeight x k j y (i + 1) = 1 := by
+    rw [insertKnotWeight, ite_eq_left (by omega)]
+  have hcongr : ∀ m ∈ Finset.Icc i (i + k + 1), Y m = x m := by
+    intro m hm
+    rw [Finset.mem_Icc] at hm
+    rw [hYdef, insertKnot, ite_eq_left (by omega)]
+  rw [h1, h2, one_mul, sub_self, zero_mul, add_zero,
+    bspline_eq_mul_newtonOn hY hk i t, bspline_eq_mul_newtonOn hx hk i t,
+    DividedDifference.newtonOn_congr hcongr,
+    hcongr (i + k + 1) (Finset.mem_Icc.2 ⟨by omega, le_rfl⟩),
+    hcongr i (Finset.mem_Icc.2 ⟨le_rfl, by omega⟩)]
+
+/-- Boehm's formula when the new knot lies to the left of the support of `B_{i,k}`: the B-spline is
+the shifted one. -/
+theorem bspline_eq_insert_comb_of_left (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (hij : j < i) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  set Y := insertKnot x j y with hYdef
+  set g : ℝ → ℝ := fun s => Quadrature.truncPow k s t with hg
+  have hY : StrictMono Y := strictMono_insertKnot hx hy
+  have h1 : insertKnotWeight x k j y i = 0 := by
+    rw [insertKnotWeight, ite_eq_right (by omega), ite_eq_right (by omega)]
+  have h2 : insertKnotWeight x k j y (i + 1) = 0 := by
+    rw [insertKnotWeight, ite_eq_right (by omega), ite_eq_right (by omega)]
+  have hshift : ∀ m, i ≤ m → Y (m + 1) = x m := by
+    intro m hm
+    rw [hYdef, insertKnot, ite_eq_right (by omega), ite_eq_right (by omega), Nat.add_sub_cancel]
+  have hmap : (Finset.Icc i (i + k + 1)).map ⟨fun m => m + 1, add_left_injective 1⟩
+      = Finset.Icc (i + 1) (i + k + 2) := by
+    ext c
+    simp only [Finset.mem_map, Finset.mem_Icc, Function.Embedding.coeFn_mk]
+    constructor
+    · rintro ⟨m, ⟨hm1, hm2⟩, rfl⟩
+      omega
+    · rintro ⟨hc1, hc2⟩
+      exact ⟨c - 1, ⟨by omega, by omega⟩, by omega⟩
+  have hBY1 : bspline Y k (i + 1) t = (x (i + k + 1) - x i)
+      * DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) x g := by
+    have h := bspline_eq_mul_newtonOn hY hk (i + 1) t
+    rw [show i + 1 + k + 1 = i + k + 2 by omega, ← hmap, DividedDifference.newtonOn_map] at h
+    rw [h]
+    have hc : DividedDifference.newtonOn (Finset.Icc i (i + k + 1))
+        (Y ∘ ⇑(⟨fun m => m + 1, add_left_injective 1⟩ : ℕ ↪ ℕ)) g
+        = DividedDifference.newtonOn (Finset.Icc i (i + k + 1)) x g :=
+      DividedDifference.newtonOn_congr (fun m hm => hshift m (Finset.mem_Icc.1 hm).1) g
+    rw [hc, show i + k + 2 = (i + k + 1) + 1 from rfl, hshift (i + k + 1) (by omega),
+      hshift i le_rfl]
+  rw [h1, h2, zero_mul, zero_add, sub_zero, one_mul, hBY1, bspline_eq_mul_newtonOn hx hk i t]
+
+/-- **Boehm's knot-insertion formula for one B-spline** ([quarteroni2000numerical] Remark 8.4): for
+strictly increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})`,
+`B_{i,k} = ω_i B̂_{i,k} + (1 - ω_{i+1}) B̂_{i+1,k}` with the weights `ω` of `insertKnotWeight`;
+[Boehm, *Inserting new knots into B-spline curves*][boehm1980inserting]. -/
+theorem bspline_eq_insert_comb (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (i : ℕ) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  rcases lt_or_ge j i with h | h
+  · exact bspline_eq_insert_comb_of_left hx hk hy h t
+  · rcases le_or_gt j (i + k) with h2 | h2
+    · exact bspline_eq_insert_comb_of_mem hx hk hy h h2 t
+    · exact bspline_eq_insert_comb_of_right hx hk hy (by omega) t
+
+/-- **Knot insertion preserves the spline** ([quarteroni2000numerical] Remark 8.4): for strictly
+increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})` whose index
+satisfies `k ≤ j < N`, the spline `∑_{i < N} c_i B_{i,k}` is `∑_{i < N + 1} d_i B̂_{i,k}` on the
+refined knots, with the coefficients `d_i = ω_i c_i + (1 - ω_i) c_{i-1}` of `insertKnotCoeff`. -/
+theorem sum_smul_bspline_insertKnot (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
+    ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t
+      = ∑ i ∈ Finset.range N, c i * bspline x k i t := by
+  set Y := insertKnot x j y with hYdef
+  set a : ℕ → ℝ := insertKnotWeight x k j y with ha
+  have ha0 : a 0 = 1 := by rw [ha, insertKnotWeight, ite_eq_left (by omega)]
+  have haN : a N = 0 := by
+    rw [ha, insertKnotWeight, ite_eq_right (by omega), ite_eq_right (by omega)]
+  have hL : ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline Y k i t
+      = (∑ i ∈ Finset.range (N + 1), a i * c i * bspline Y k i t)
+        + ∑ i ∈ Finset.range (N + 1), (1 - a i) * c (i - 1) * bspline Y k i t := by
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun i _ => by rw [insertKnotCoeff, ← ha]; ring
+  have hL1 : ∑ i ∈ Finset.range (N + 1), a i * c i * bspline Y k i t
+      = ∑ i ∈ Finset.range N, a i * c i * bspline Y k i t := by
+    rw [Finset.sum_range_succ, haN, zero_mul, zero_mul, add_zero]
+  have hL2 : ∑ i ∈ Finset.range (N + 1), (1 - a i) * c (i - 1) * bspline Y k i t
+      = ∑ i ∈ Finset.range N, (1 - a (i + 1)) * c i * bspline Y k (i + 1) t := by
+    rw [Finset.sum_range_succ' (fun i => (1 - a i) * c (i - 1) * bspline Y k i t) N, ha0,
+      sub_self, zero_mul, zero_mul, add_zero]
+    exact Finset.sum_congr rfl fun i _ => by rw [Nat.add_sub_cancel]
+  have hR : ∑ i ∈ Finset.range N, c i * bspline x k i t
+      = (∑ i ∈ Finset.range N, a i * c i * bspline Y k i t)
+        + ∑ i ∈ Finset.range N, (1 - a (i + 1)) * c i * bspline Y k (i + 1) t := by
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [bspline_eq_insert_comb hx hk hy i t, ← ha, ← hYdef]
+    ring
+  rw [hL, hL1, hL2, hR]
+
+end KnotInsertion
 
 end BSpline

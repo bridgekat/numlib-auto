@@ -84,7 +84,31 @@ lemma over `W^{k+1,∞}`. Honest caveat for a future pass: the sup-norm case is 
 theorem at a point of `T` (`taylor_mean_remainder_bound` in several variables via
 `ContDiff` along segments) plus the boundedness of the reference basis functions, which are
 polynomials in the barycentric coordinates and so bounded on `T` by a constant depending on `k`
-only — and needs no shape regularity; it is a `★★★` bookkeeping project, not a blocker.'''
+only — and needs no shape regularity; it is a `★★★` bookkeeping project, not a blocker.
+Blocked, sharpened (2026-09-16). Re-checked against what §8.5 now has. The surface already carries
+the affine map `equation_8_34`, its bijectivity, `equation_8_35_finrank` (`dim 𝒫_k(T) = d_k`) and
+`equation_8_38_comp` (the element interpolant is the reference interpolant read through `F_T`), so
+the shape of the statement is settled: with a nodal basis `l̂_1, …, l̂_{d_k}` of `𝒫_k` on the
+reference triangle given as data, `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1) / (k + 1)!` works for every `T` at
+once, because `l_m = l̂_m ∘ F_T^{-1}` has the same sup norm. Two ingredients are missing, and both
+are real work rather than blockers.
+
+* **A nodal basis to instantiate it with.** The `d_k` points of the principal lattice are
+  `𝒫_k`-unisolvent on a triangle (Ciarlet, Theorem 2.2.1); the project has
+  `Approximation.IsUnisolvent` and `Approximation.nodalInterp` but no two-dimensional instance of
+  either, and the lattice proof is an induction on `k` over the lines `λ_3 = j/k`. Stating (8.39)
+  with the reference basis as a hypothesis avoids this entirely and is the recommended reading.
+* **A multivariate Taylor remainder.** `‖f - P_a f‖_{∞,T} ≤ h_T^{k+1} ‖D^{k+1} f‖_{∞,T}/(k + 1)!`
+  for the Taylor polynomial at a vertex `a`, by restricting to the segment `[a, x] ⊆ T` and using
+  Mathlib's one-dimensional `taylor_mean_remainder_lagrange_iteratedDeriv` on
+  `s ↦ f (a + s • (x - a))`, whose `j`-th derivative is
+  `iteratedFDeriv ℝ j f (a + s • (x - a)) (fun _ => x - a)` and so is bounded by
+  `‖iteratedFDeriv ℝ j f‖ ‖x - a‖^j`. That identification of the derivatives along a segment is
+  the piece Mathlib does not state directly and is worth about 150 lines on its own; it would also
+  serve `Numlib/Analysis/Calculus/PartialDeriv`.
+
+Estimated 350-500 lines for (8.39) with the basis as data, and about 60 more for (8.40) once a
+triangulation type exists. Still left "not formalized" here per the brief's two-dimensional rule.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_38_comp"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.39)'
 

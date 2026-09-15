@@ -418,7 +418,33 @@ integration removes one sign change, but for `n = 3` (weights `3/8, 9/8, 9/8, 3/
 five sign changes, leaving a bound of two rather than zero. What is missing is quantitative control
 of the partial sums `∑_{i ≤ k} w_i` of the Newton–Cotes weights for general `n` — already the last
 panel is the inequality `w_n ≥ 1/(n + 1)`, since `n! K(t) = (n - t)^n [(n - t)/(n + 1) - w_n]` on
-`[n - 1, n]`. Estimated at several hundred lines *on top of* a workable idea for that inequality.'''
+`[n - 1, n]`. Estimated at several hundred lines *on top of* a workable idea for that inequality.
+
+(3) *The statement is true, and the obstruction is now located precisely.* An exact rational
+computation of the order-`n` Peano kernel on `[0, n]` (weights by exact integration of the Lagrange
+basis, `n! K_{n+1}(t) = (n - t)^{n+1}/(n + 1) - ∑_{i > t} w_i (i - t)^n`) gives `K_{n+1} ≤ 0` at
+`40` sample points per panel for every odd `n ≤ 17`, so no counterexample is hiding and the node is
+not `wrong`. Three structural facts were found, none of which closes the gap.
+
+* `K_{n+1}` is **symmetric** about `n/2` (the rule is symmetric, and for odd `n` the identity
+  `(x - u)_+^n - (u - x)_+^n = (x - u)^n` is annihilated by `E`), and it **vanishes to order `n` at
+  both endpoints**: `K_m(0) = K_m(n) = 0` for `2 ≤ m ≤ n + 1` are the moment equations, and
+  `K_m' = -K_{m-1}`.
+* Equivalently `Φ(t) := ∑_i w_i (t - i)_+^n - t^{n+1}/(n+1) ≥ 0` on `[0, n]`, where
+  `Φ^{(n)} = n! D` and `Φ^{(j)}(0) = Φ^{(j)}(n) = 0` for `j < n`; so `D ⊥ 𝒫_{n-1}` on `[0, n]`. The
+  Rolle count then says: *if* `D` had at most `n` sign changes, `Φ` would have no interior zero and
+  the theorem would follow. But `D` has `2n - 1` sign changes — one inside each of the `n` panels
+  and one at each of the `n - 1` interior knots — so the count falls short by exactly `n - 1`.
+* No intermediate kernel helps. `K_m ≤ 0` for `2 ≤ m ≤ n` is **false**: it would make `K_{m+1}`
+  monotone with `K_{m+1}(0) = K_{m+1}(n) = 0`, hence `K_{m+1} ≡ 0`. In particular Steffensen's
+  criterion `∫_0^u D ≥ 0` for all `u` (which is `K_2 ≤ 0`) fails for every `n ≥ 2`.
+
+The first panel alone is the inequality `w_0 ≥ 1/(n + 1)`, that is
+`∫_0^1 ∏_{j=1}^n (1 - x/j) dx ≥ 1/(n + 1)`, and that one **is** provable: `log (1 - x/j)` is
+concave, so `∏_{j=2}^n (1 - x/j) ≥ n^{-x}` on `[0, 1]`, and
+`∫_0^1 (1 - x) n^{-x} dx = (1/λ)(1 - (1 - 1/n)/λ)` with `λ = log n` exceeds `1/(n + 1)` for every
+`n ≥ 1`. The panels after the first need the partial sums `∑_{i ≤ k} w_i` of the weights, for which
+no comparable elementary bound was found; that is the whole of what is missing.'''
 deps = ["newtonCotesK_neg", "integral_eq_closedNewtonCotes_of_degree_le", "Quadrature.error_eq_integral_peanoKernel", "exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos"]
 
 [[node]]

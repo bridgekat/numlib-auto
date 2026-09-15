@@ -22,6 +22,18 @@ id = "newton_eq_newtonOn"
 id = "newtonOn_map"
 
 [[node]]
+id = "newtonOn_congr"
+
+[[node]]
+id = "newtonOn_erase_eq_sum"
+
+[[node]]
+id = "newtonOn_erase_eq_affine_comb"
+
+[[node]]
+id = "newton_shift_eq_newtonOn"
+
+[[node]]
 id = "newtonOn_eq_coeff"
 
 [[node]]
@@ -151,5 +163,27 @@ optional)
 
 Blocked: not attempted this round, being optional and a development of its own (the simplex
 integral and its dominated-convergence continuity, roughly 300 lines); the rest of the module
-does not depend on it.'''
+does not depend on it.
+Blocked, sharpened (2026-09-16). The continuity is automatic away from the fully diagonal points,
+and the whole difficulty is there. Induct on `m`: in `confluent_succ` the branch
+`v 0 ≠ v (Fin.last _)` is an *open* condition on `v`, the quotient is continuous there by the
+inductive hypothesis applied to `Fin.tail v` and `Fin.init v` and by the nonvanishing denominator,
+and this already covers every partially coincident nondecreasing tuple (for instance `(c, c, d)`
+with `c < d`). What is left is continuity at `w = (c, …, c)`, where `confluent f w = f^{(m)}(c)/m!`
+by `confluent_const`. Subtracting the degree-`m` Taylor polynomial `P` of `f` at `c` reduces that to
+two facts about `g = f - P`, whose derivatives up to order `m` vanish at `c`:
+
+* `confluent P v = P.coeff m` for every `v` (the confluent divided difference of a polynomial of
+  degree `≤ m` over `m + 1` nodes is its leading coefficient), and
+* a crude bound `|confluent g v| ≤ C_m · sup_{[v 0, v (last)]} |g^{(m)}|` with *any* constant
+  `C_m`, which tends to `0` as the hull shrinks to `c` because `g^{(m)}` is continuous and
+  `g^{(m)}(c) = 0`.
+
+Both follow at once from the mean value property `confluent f v = f^{(m)}(ξ)/m!` for some `ξ` in
+the hull, and that is the single missing ingredient. It is the statement that `confluent f v` is
+the leading coefficient of `Hermite.interpolate` at the nodes of `v` taken with multiplicities,
+combined with `Hermite.exists_sub_interpolate_eq`, and the cost is entirely in turning a
+nondecreasing `v : Fin (m + 1) → ℝ` into distinct nodes with multiplicities and matching the two
+recursions. Estimated 250-400 lines — less than the Hermite–Genocchi simplex integral the original
+route asked for, and it reuses `Numlib/Approximation/Hermite` as it stands.'''
 deps = ["DividedDifference.confluent", "DividedDifference.exists_newton_eq_iteratedDeriv_div"]

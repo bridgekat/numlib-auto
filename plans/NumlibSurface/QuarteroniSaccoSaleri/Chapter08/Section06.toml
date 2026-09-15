@@ -76,11 +76,20 @@ book without proof; the `O(h⁴)` bound with non-sharp constants for `r = 0, 1, 
 `Spline.norm_sub_clampedInterp_le` (`★★★`) and the surface can state that version as
 `property_8_3_weak` once it exists.
 
-Blocked: depends on the open backbone nodes `Spline.norm_deriv2_sub_clampedInterp_le` and
-`Spline.norm_sub_clampedInterp_le` (the `O(h⁴)` bound with non-sharp constants); the sharp constants are
-Hall–Meyer's theorem, not attempted. Left open on purpose in this pass.'''
+Blocked: the backbone bounds with non-sharp constants are now proved
+(`Spline.norm_sub_clampedInterp_le`, `Spline.norm_deriv_sub_clampedInterp_le`,
+`Spline.norm_deriv2_sub_clampedInterp_le`) and the surface states them as `property_8_3_weak`;
+what stays open here is only the *sharp* Hall–Meyer constants `5/384`, `1/24`, `3/8` and the
+clause `r = 3`, which the book quotes without proof. Not attempted: Hall–Meyer's proof is a
+separate development (an explicit two-point boundary value problem for the error of the moment
+system), and no other node needs it.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.norm_sub_clampedInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3'
+
+[[node]]
+id = "property_8_3_weak"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3 (with non-sharp
+constants)'''
 
 [[node]]
 id = "definition_8_2"
@@ -144,17 +153,7 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.57)'
 
 [[node]]
 id = "remark_8_4"
-kind = "theorem"
-desc = '''Remark 8.4, Boehm's knot insertion: for a spline `s_k = ∑_{i=-k}^{n-1} c_i B_{i,k+1}` and a new
-knot `x̃ ∈ [x_j, x_{j+1})`, the same function is `∑ d_i B̃_{i,k+1}` on the refined knots `y` with
-`d_i = ω_i c_i + (1 - ω_i) c_{i-1}` (the book prints `c_i` twice; report, errata), where `ω_i = 1`
-for `i ≤ j - k`, `ω_i = (y_{j+1} - y_i)/(y_{i+k+1} - y_i)` for `j - k < i ≤ j`, `ω_i = 0` for `i > j`.
-`BSpline.sum_smul_bspline_insertKnot` with `BSpline.insertKnot`, `BSpline.insertKnotCoeff`. ★
-
-Blocked: depends on the open backbone node `BSpline.sum_smul_bspline_insertKnot` (Boehm's insertion
-identity, ★★★), which is not proved; the surface statement is a direct restatement once it is.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_56", "BSpline.sum_smul_bspline_insertKnot", "BSpline.insertKnot"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4'
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4"
 
 [[node]]
 id = "mem_definition_8_1_iff"
