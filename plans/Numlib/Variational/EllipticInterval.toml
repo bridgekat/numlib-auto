@@ -16,6 +16,21 @@ id = "coeFn_mulL"
 id = "norm_mulL_apply_le"
 
 [[node]]
+id = "constLinf"
+
+[[node]]
+id = "coeFn_constLinf"
+
+[[node]]
+id = "norm_constLinf"
+
+[[node]]
+id = "constLinf_zero"
+
+[[node]]
+id = "mulL_constLinf"
+
+[[node]]
 id = "pairing"
 
 [[node]]

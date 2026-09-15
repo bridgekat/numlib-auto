@@ -725,13 +725,25 @@ Stated here on one abstract normed space `W` (their `V + V_N` carrying the discr
 norm `‖·‖_N`): the exact solution `u`, a form `a_N` bounded on `W × K` and coercive on `K`, a
 functional `ℓ_N` on `K`; the Hilbert space `V` and the original problem never enter. -/
 
-variable {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
+section Defn
+
+variable {W : Type*} [AddCommGroup W] [Module 𝕜 W]
 
 /-- The generalized Galerkin problem `u_N ∈ K`, `a_N u_N v = ℓ_N v` for all `v ∈ K`
-([han2009theoretical], (9.3.1)). -/
+([han2009theoretical], (9.3.1)).
+
+Only the module structure of `W` is used: the norm enters the *analysis* of the method
+(`strang_first`), not its statement.  This matters for discretizations whose trial space is not
+a subspace of a normed function space — a generalized Galerkin method whose form evaluates
+derivatives pointwise at quadrature nodes, for instance, lives naturally on the polynomials
+`𝕜[X]`, which carry no norm. -/
 def IsGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜) (ℓN : W →ₗ[𝕜] 𝕜) (K : Submodule 𝕜 W)
     (uN : W) : Prop :=
   uN ∈ K ∧ ∀ v ∈ K, aN uN v = ℓN v
+
+end Defn
+
+variable {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
 /-- Strang's first lemma ([han2009theoretical], Thm 9.3.1, estimate (9.3.2)): with `a_N` bounded by
 `M` on `W × K` and coercive with constant `c` on `K`, `‖u - u_N‖ ≤ (1 + M/c) ‖u - v‖ + δ/c`, where

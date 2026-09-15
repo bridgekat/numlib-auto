@@ -136,28 +136,51 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.75)�
 id = "remark_12_6_piecewise_const"
 kind = "theorem"
 desc = '''Remark 12.6's general claim: if `f` is piecewise constant over the grid partition, the
-Scharfetter–Gummel scheme yields a nodally exact solution, irrespective of `h`. Not formalized: the
-book quotes it from [HGR96, pp. 44–45] and proves nothing; only the homogeneous case is needed by
-Theorem 12.4 (the lifted problem's constant right-hand side `-β` reduces to it), and that case is
+Scharfetter-Gummel scheme yields a nodally exact solution of `-eps u'' + beta u' = f` with
+`u(0) = 0`, `u(1) = 1`, irrespective of `h`.
+
+Not formalized, and not merely unreached: the book quotes it from [HGR96, pp. 44-45] and proves
+nothing, and the argument is not the one behind the homogeneous case.  What
+`AdvectionDiffusion.sg_nodal_exact` uses is that the discrete amplification ratio
+`(1 + Pe*)/(1 - Pe*)` equals `e^{2 Pe}` exactly, which fixes the *homogeneous* solution at the
+nodes; for a piecewise constant `f` one needs in addition that the particular solution of the
+two-point problem on each panel is reproduced exactly by the scheme's right-hand side, i.e. the
+Green's function of `-eps u'' + beta u'` on a panel and the exactness of the trapezoidal/exponential
+quadrature against a constant.  That is a new development (the exponentially fitted Green's
+function of one panel), not a rearrangement of what is here; estimated one day, and it is used
+nowhere in the book -- Theorem 12.4 needs only the homogeneous case, which is
 `QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.6'
 
 [[node]]
-id = "theorem_12_4"
-kind = "theorem"
-desc = '''Theorem 12.4, (12.85): for `k = 1`, `|u - u_h|_{H1(0,1)} <= C h G(u)` with `C` independent of `h`
-and `u`, where `G(u) = |u|_{H1} + |u|_{H2}` for the upwind method and `G(u) = |u|_{H2}` for the SG
-method; and (12.86): for `k = 2` the SG method gives `|u - u_h|_{H1} <= C h^2 (|u|_{H1} + |u|_{H3})`.
-The displayed statement is garbled in the source text and the sentence "where `u(x) = u(x) - x`"
-should read `u*(x) = u(x) - x` (errata). **
+id = "equation_12_84_problem"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.84)'
 
-Blocked: the upwind clause is proved as the backbone node
-`AdvectionDiffusion.seminorm_sub_stabilized_le_upwind`; the Scharfetter-Gummel clauses are
-`AdvectionDiffusion.seminorm_sub_stabilized_le_sg`, which is still open (see its `Blocked:`
-paragraph). This surface node states both, so it waits on the SG half.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_84", "QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind", "AdvectionDiffusion.seminorm_sub_stabilized_le_sg"]
-source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4'
+[[node]]
+id = "theorem_12_4"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4, (12.85), SG, k = 1'
+
+[[node]]
+id = "theorem_12_4_upwind"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4, (12.85), upwind, k = 1'
+
+[[node]]
+id = "equation_12_86"
+kind = "theorem"
+desc = '''Theorem 12.4, (12.86): for `k = 2` the Scharfetter-Gummel method gives the improved estimate
+`|u - u_h|_{H1(0,1)} <= C h^2 (|u|_{H1(0,1)} + |u|_{H3(0,1)})` for `u` in `H^3(0, 1)`, with `C`
+independent of `h` and of `u`.  Restates `AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic`
+on the trial space `X_h^{2,0}` of (12.57) at `k = 2`, whose basis is `equation_12_63_basis`.
+
+Blocked: the backbone node `AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic` is open;
+see its `Blocked:` paragraph in `plans/Numlib/Variational/AdvectionDiffusion.toml`.  The quadratic
+shape functions and their basis exist now ((12.63)-(12.65) are proved); what is missing is the
+`P_2` interpolation operator into `H^1(0, 1)` and the identification of its weak derivative, the
+`P_2` analogue of `FiniteElement.lagrangeInterp` and `coeFn_deriv_lagrangeInterp`.  Estimated one
+day.'''
+deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic", "QuarteroniSaccoSaleri.Chapter12.equation_12_63_basis"]
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4, (12.86)'
 
 [[node]]
 id = "constLinf_zero"

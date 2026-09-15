@@ -58,6 +58,10 @@ together with the discretizations that cure the oscillations of the centred sche
   `seminorm_sub_stabilized_le`: `a_h(v, v) = ε_h |v|²_{H^1}` on `H^1_0(a, b)`, the continuity
   constant `M_h = ε_h + |β| C_P`, and the error bound of [quarteroni2000numerical] (12.87)–(12.89)
   in Strang form.
+* `AdvectionDiffusion.rep_eq_exactSolution_of_galerkin_sg` and
+  `seminorm_sub_stabilized_le_sg`: **the `P_1` Scharfetter–Gummel finite element solution of the
+  model problem is nodally exact**, hence equal to the piecewise linear interpolant of the exact
+  solution, so its error is the interpolation error and (12.85) holds with the constant `1`.
 
 ## Implementation notes
 
@@ -68,7 +72,7 @@ constrained at the indices `0, …, n`. The difference equations are stated in t
 
 The bilinear form is not defined again here: `EllipticInterval.form` already takes `L^∞`
 coefficients, and the stabilized form is that form at the constant coefficients `ε_h`, `β`, `0`
-(`AdvectionDiffusion.constLinf` packages a constant as an element of `L^∞(a, b)`). Everything
+(`EllipticInterval.constLinf` packages a constant as an element of `L^∞(a, b)`). Everything
 about it therefore inherits the conventions of `Numlib/Variational/EllipticInterval.lean`: the
 space is `SobolevInterval 1 a b`, the Dirichlet test space is `SobolevIntervalZero a b`, and the
 discrete problem is `IsGalerkinSolution` in a subspace `K ≤ H^1_0(a, b)` — no finite element
@@ -987,34 +991,9 @@ theorem viscosityScheme_isMMatrix {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (m 
 
 section Form
 
+open EllipticInterval (constLinf coeFn_constLinf norm_constLinf mulL_constLinf)
+
 variable {a b : ℝ}
-
-/-- A constant, as an element of `L^∞(a, b)`: the coefficients of the advection–diffusion form
-are constants, and `EllipticInterval.form` takes them in `L^∞`. -/
-def constLinf (a b : ℝ) (c : ℝ) : Lp ℝ ⊤ (volume.restrict (Ioo a b)) :=
-  (memLp_top_const c).toLp _
-
-/-- The function of `AdvectionDiffusion.constLinf a b c` is the constant `c`. -/
-theorem coeFn_constLinf (a b c : ℝ) :
-    constLinf a b c =ᵐ[volume.restrict (Ioo a b)] fun _ => c :=
-  MemLp.coeFn_toLp _
-
-/-- The `L^∞(a, b)` norm of a constant is its absolute value. -/
-theorem norm_constLinf (hab : a < b) (c : ℝ) : ‖constLinf a b c‖ = |c| := by
-  have hμ : volume.restrict (Ioo a b) ≠ 0 := by
-    rw [Ne, Measure.restrict_eq_zero, Real.volume_Ioo, ENNReal.ofReal_eq_zero, not_le]
-    linarith
-  rw [Lp.norm_def, eLpNorm_congr_ae (coeFn_constLinf a b c), eLpNorm_exponent_top,
-    eLpNormEssSup_const c hμ]
-  simp [Real.norm_eq_abs]
-
-/-- Multiplication by a constant coefficient is the scalar multiple. -/
-theorem mulL_constLinf (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
-    EllipticInterval.mulL (constLinf a b c) f = c • f := by
-  refine Lp.ext ?_
-  filter_upwards [EllipticInterval.coeFn_mulL (constLinf a b c) f, coeFn_constLinf a b c,
-    Lp.coeFn_smul c f] with x h1 h2 h3
-  rw [h1, h2, h3, Pi.smul_apply, smul_eq_mul]
 
 /-- **The stabilized bilinear form** of [quarteroni2000numerical] (12.84),
 `a_h(u, v) = ∫_a^b (ε_h u' v' + β u' v)` with the numerical viscosity
@@ -1294,6 +1273,120 @@ theorem seminorm_sub_stabilized_le_upwind (hab : a < b) {n : ℕ} {x : ℕ → �
     _ ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε + |β| / (2 * ε)) * h
           * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 2 a b U) := by
         nlinarith [mul_nonneg (mul_nonneg ha0 hh) h1, mul_nonneg (mul_nonneg hbeta hh) h2]
+
+/-! ### Theorem 12.4 for the Scharfetter-Gummel method -/
+
+section ScharfetterGummelFEM
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The scheme with viscosity in the stencil form of the `P_1` Galerkin method**: multiplying
+(12.79) by `h` gives `(ε_h/h)(-u_{i-1} + 2 u_i - u_{i+1}) + (β/2)(u_{i+1} - u_{i-1}) = 0`, the
+equation the piecewise linear Galerkin method produces ([quarteroni2000numerical] §12.5.2).
+This is `AdvectionDiffusion.viscosityScheme_zero_iff` for a general viscosity function. -/
+theorem viscosityScheme_iff_galerkinStencil {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (hn : n ≠ 0)
+    (u : ℕ → ℝ) :
+    viscosityScheme ε β n φ u ↔ u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
+      viscosity ε β (meshWidth n) φ / meshWidth n * (-u i + 2 * u (i + 1) - u (i + 2))
+        + β / 2 * (u (i + 2) - u i) = 0 := by
+  have hh := meshWidth_pos hn
+  rw [viscosityScheme]
+  refine and_congr Iff.rfl (and_congr Iff.rfl (forall_congr' fun i => imp_congr_right fun _ => ?_))
+  rw [show viscosity ε β (meshWidth n) φ / meshWidth n * (-u i + 2 * u (i + 1) - u (i + 2))
+        + β / 2 * (u (i + 2) - u i)
+      = meshWidth n * (-viscosity ε β (meshWidth n) φ
+          * ((u (i + 2) - 2 * u (i + 1) + u i) / meshWidth n ^ 2)
+        + β * ((u (i + 2) - u i) / (2 * meshWidth n))) by field_simp; ring]
+  exact ⟨fun h => by rw [h, mul_zero], fun h => by
+    simpa [hh.ne'] using (mul_eq_zero.1 h).resolve_left hh.ne'⟩
+
+/-- The stabilized form (12.84) in the spelling of `FiniteElement.galerkin_iff_centredScheme`. -/
+theorem stabilizedForm_eq_form_constLinf (a b : ℝ) (ε β h : ℝ) (φ : ℝ → ℝ) :
+    stabilizedForm a b ε β h φ
+      = EllipticInterval.form a b (EllipticInterval.constLinf a b (viscosity ε β h φ))
+          (EllipticInterval.constLinf a b β) (EllipticInterval.constLinf a b 0) := by
+  rw [stabilizedForm, EllipticInterval.constLinf_zero]
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The `P_1` Scharfetter–Gummel approximation of the model problem is nodally exact**
+([quarteroni2000numerical] Remark 12.6): on the uniform mesh of `n` panels of `[0, 1]`, a
+continuous piecewise linear `u_h` with `u_h(0) = 0`, `u_h(1) = 1` that solves the stabilized
+Galerkin problem (12.84) with the Scharfetter–Gummel viscosity takes the values of the exact
+solution (12.70) at every node.  The proof is the chain
+`FiniteElement.galerkin_iff_centredScheme` (the Galerkin system is the centred difference scheme
+at the viscosity `ε_h`), `AdvectionDiffusion.viscosityScheme_iff_galerkinStencil` and
+`AdvectionDiffusion.sg_nodal_exact`. -/
+theorem rep_eq_exactSolution_of_galerkin_sg (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
+    {uh : SobolevInterval 1 0 1} (huh : uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1)
+    (huh0 : SobolevInterval.rep uh 0 = 0) (huh1 : SobolevInterval.rep uh 1 = 1)
+    (hdisc : ∀ v ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x 1,
+      stabilizedForm 0 1 ε β (meshWidth n) phiSG uh v = 0) {i : ℕ} (hi : i ≤ n) :
+    SobolevInterval.rep uh (x i) = exactSolution ε β (x i) := by
+  have hn0 : n ≠ 0 := by omega
+  have hh : 0 < meshWidth n := meshWidth_pos hn0
+  set c : ℕ → ℝ := fun j ↦ SobolevInterval.rep uh (x j)
+  -- `u_h` is the combination of the hat functions with its nodal values
+  have hexp : uh = ∑ j ∈ Finset.range (n + 1), c j • FiniteElement.hatFunction hx hn j :=
+    FiniteElement.eq_of_rep_node_eq zero_lt_one hx hn huh
+      (FiniteElement.sum_hatFunction_mem_lagrangeSpace zero_lt_one hx hn c)
+      fun j hj ↦ (FiniteElement.rep_sum_hatFunction zero_lt_one hx hn c hj).symm
+  -- the Galerkin system is the centred stencil at the viscosity `ε_h`
+  have hstencil : ∀ j, 1 ≤ j → j < n →
+      viscosity ε β (meshWidth n) phiSG / meshWidth n * (-c (j - 1) + 2 * c j - c (j + 1))
+        + β / 2 * (c (j + 1) - c (j - 1)) = 0 := by
+    refine (FiniteElement.galerkin_iff_centredScheme zero_lt_one hx hn hh huni _ β c).1 ?_
+    intro v hv
+    have := hdisc v hv
+    rwa [stabilizedForm_eq_form_constLinf, hexp] at this
+  -- hence the nodal values solve the scheme with viscosity
+  have hscheme : viscosityScheme ε β n phiSG c := by
+    refine (viscosityScheme_iff_galerkinStencil hn0 c).2 ⟨?_, ?_, fun j hj ↦ ?_⟩
+    · change SobolevInterval.rep uh (x 0) = 0
+      rw [hx.first]; exact huh0
+    · change SobolevInterval.rep uh (x n) = 1
+      rw [hx.last]; exact huh1
+    · simpa using hstencil (j + 1) (by omega) (by omega)
+  have hnodal : SobolevInterval.rep uh (x i) = exactSolution ε β ((i : ℝ) * meshWidth n) :=
+    sg_nodal_exact hε hβ hn0 hscheme hi
+  rw [hnodal, FiniteElement.node_eq_of_uniform hx huni hi, zero_add]
+
+/-- **Theorem 12.4 for the Scharfetter-Gummel method with `k = 1`**
+([quarteroni2000numerical] (12.85)): on the uniform mesh of `n` panels of `[0, 1]` the
+`P_1` Scharfetter-Gummel approximation of the model problem (12.70) satisfies
+
+`|ů - ů_h|_{H¹(0,1)} ≤ h |ů|_{H²(0,1)}`,
+
+which is the book's `C h G(ů)` with `G(ů) = |ů|_{H²}` and the constant `C = 1`: the book's
+factor `(1 + 2 Pe_gl C_P)` is absent, because by `AdvectionDiffusion.sg_nodal_exact` the
+discrete solution is *nodally exact*, so `ů_h = Π_h^1 ů` and the Galerkin error **is** the
+interpolation error of (8.27).  The statement is written for the unlifted pair `u`, `u_h` —
+`u` the exact solution (12.70) with `u(0) = 0`, `u(1) = 1`, and `u_h ∈ X_h^1` the stabilized
+Galerkin solution with the same boundary values — which is the same inequality: the lifting
+`ū(x) = x` cancels in `ů - ů_h = u - u_h`, and `|ů|_{H²} = |u|_{H²}` because `ū` is affine. -/
+theorem seminorm_sub_stabilized_le_sg (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (huni : ∀ k < n, x (k + 1) - x k = meshWidth n) {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β)
+    {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
+    (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
+    (hunode : ∀ i ≤ n, SobolevInterval.rep u (x i) = exactSolution ε β (x i))
+    (huh : uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1)
+    (huh0 : SobolevInterval.rep uh 0 = 0) (huh1 : SobolevInterval.rep uh 1 = 1)
+    (hdisc : ∀ v ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x 1,
+      stabilizedForm 0 1 ε β (meshWidth n) phiSG uh v = 0) :
+    SobolevInterval.seminorm 1 0 1 (u - uh)
+      ≤ meshWidth n * SobolevInterval.seminorm 2 0 1 U := by
+  have heq : uh = FiniteElement.lagrangeInterp hx hn u :=
+    FiniteElement.eq_of_rep_node_eq zero_lt_one hx hn huh
+      (FiniteElement.lagrangeInterp_mem_lagrangeSpace zero_lt_one hx hn u)
+      fun i hi ↦ by
+        rw [rep_eq_exactSolution_of_galerkin_sg hx hn huni hε hβ huh huh0 huh1 hdisc hi,
+          FiniteElement.rep_lagrangeInterp_node zero_lt_one hx hn u hi, hunode i hi]
+  rw [heq, ← hU]
+  exact FiniteElement.seminorm_sub_lagrangeInterp_le zero_lt_one hx hn
+    (fun k hk ↦ le_of_eq (huni k hk)) U
+
+end ScharfetterGummelFEM
 
 end Form
 

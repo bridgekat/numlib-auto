@@ -112,6 +112,46 @@ theorem norm_mulL_apply_le (α : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
         gcongr; exact ContinuousLinearMap.opNorm_mul_le ℝ ℝ
     _ = ‖α‖ * ‖f‖ := by ring
 
+/-! ### Constant coefficients -/
+
+/-- **A constant, as an element of `L^∞(a, b)`**: the coefficients of the elliptic form
+`EllipticInterval.form` live in `L^∞(a, b)`, and the constant-coefficient problems — the model
+problem of [quarteroni2000numerical] §12.2, the advection-diffusion problem of §12.5 and the
+heat equation of §13.2 — need the constants in that space. -/
+def constLinf (a b : ℝ) (c : ℝ) : Lp ℝ ⊤ (volume.restrict (Ioo a b)) :=
+  (memLp_top_const c).toLp _
+
+/-- The function of `EllipticInterval.constLinf a b c` is the constant `c`. -/
+theorem coeFn_constLinf (a b c : ℝ) :
+    constLinf a b c =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ c :=
+  MemLp.coeFn_toLp _
+
+/-- The `L^∞(a, b)` norm of a constant is its absolute value. -/
+theorem norm_constLinf (hab : a < b) (c : ℝ) : ‖constLinf a b c‖ = |c| := by
+  have hμ : volume.restrict (Ioo a b) ≠ 0 := by
+    rw [Ne, Measure.restrict_eq_zero, Real.volume_Ioo, ENNReal.ofReal_eq_zero, not_le]
+    linarith
+  rw [Lp.norm_def, eLpNorm_congr_ae (coeFn_constLinf a b c), eLpNorm_exponent_top,
+    eLpNormEssSup_const c hμ]
+  simp [Real.norm_eq_abs]
+
+/-- The zero constant is the zero element of `L^∞(a, b)`. -/
+@[simp]
+theorem constLinf_zero (a b : ℝ) : constLinf a b 0 = 0 := by
+  refine Lp.ext ?_
+  filter_upwards [coeFn_constLinf a b 0, Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ioo a b))]
+    with x h1 h2
+  rw [h1, h2]
+  rfl
+
+/-- Multiplication by a constant coefficient is the scalar multiple. -/
+theorem mulL_constLinf (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
+    mulL (constLinf a b c) f = c • f := by
+  refine Lp.ext ?_
+  filter_upwards [coeFn_mulL (constLinf a b c) f, coeFn_constLinf a b c, Lp.coeFn_smul c f]
+    with x h1 h2 h3
+  rw [h1, h2, h3, Pi.smul_apply, smul_eq_mul]
+
 variable (a b) in
 /-- The pairing `(u, v) ↦ ⟪T u^{(i)}, v^{(j)}⟫_{L²(a, b)}` of the derivatives of orders `i, j` of
 elements of `H^1(a, b)` through a bounded operator `T` on `L²(a, b)`, as a bounded bilinear

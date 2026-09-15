@@ -17,23 +17,6 @@ id = "referenceHat"
 
 [[node]]
 id = "quadraticShape"
-kind = "definition"
-desc = '''The shape functions of `X_h^2` (12.63)-(12.64): with the `2(N+1) + 1` nodes `x_0 < x_1 < ...`
-(panel endpoints at even indices, midpoints at odd), `FiniteElement.quadraticShape hab x i :
-SobolevInterval 1 a b` is the continuous piecewise quadratic with `phi_i(x_j) = delta_ij`: for even `i`
-two quadratic pieces on the two adjacent panels, for odd `i` the bubble supported in one panel.
-Theorems `quadraticShape_apply_node`, `quadraticShape_support`, and
-`quadraticBasis : Module.Basis (Fin (2 (N + 1) + 1)) R (lagrangeSpace hab 2 x)`. **
-
-Blocked: not reached. The `P_1` layer is finished and is the template: `hatFun` is built as a
-`R -> R` from the normalized panel ramps, its weak derivative is the explicit step function
-`hatDerivFun`, `memSobolevInterval_of_piecewise_contDiffOn` puts it in `H^1`, and the basis comes
-from `basisOfLinearIndependentOfCardEqFinrank` with `finrank_lagrangeSpace`. The quadratic case
-needs the same four steps for the two-panel element `[x_{2k}, x_{2k+2}]` and the three nodal
-Lagrange polynomials on it; there is no ramp trick, so the global function must be assembled
-panelwise and the panel integrals of `FiniteElement.integral_panel_affine_mul` replaced by their
-quadratic analogues. Estimated four hours.'''
-deps = ["FiniteElement.lagrangeSpace", "FiniteElement.finrank_lagrangeSpace"]
 
 [[node]]
 id = "stiffnessMatrix"
@@ -100,9 +83,6 @@ id = "hatBasisZero"
 id = "finrank_lagrangeSpaceZero_one"
 
 [[node]]
-id = "constLinfty"
-
-[[node]]
 id = "massMatrix"
 
 [[node]]
@@ -158,3 +138,36 @@ id = "rep_sum_hatFunction"
 
 [[node]]
 id = "sum_hatFunction_mem_lagrangeSpace"
+
+[[node]]
+id = "evenNodes"
+
+[[node]]
+id = "quadShapeFun"
+
+[[node]]
+id = "quadShapeFun_apply_node"
+
+[[node]]
+id = "quadShapeFun_eq_zero_of_panel"
+
+[[node]]
+id = "rep_quadraticShape_node"
+
+[[node]]
+id = "rep_quadraticShape_eq_zero_of_panel"
+
+[[node]]
+id = "rep_quadraticShape_eq_referenceQuadratic"
+
+[[node]]
+id = "quadraticShape_mem_lagrangeSpaceZero"
+
+[[node]]
+id = "quadraticBasis"
+
+[[node]]
+id = "eq_of_rep_node_eq"
+
+[[node]]
+id = "node_eq_of_uniform"

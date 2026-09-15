@@ -52,15 +52,18 @@ three-term relations are written at the indices `i`, `i + 1`, `i + 2` rather tha
 * `equation_12_84`, `equation_12_84_self` — the stabilized finite element problem and the energy
   identity `a_h(v, v) = ε_h |v|²_{H¹}` behind it.
 
+* `equation_12_84_problem`, `theorem_12_4`, `theorem_12_4_upwind` — the stabilized finite
+  element problem and Theorem 12.4's estimate (12.85) for `k = 1`: `C h (|ů|_{H¹} + |ů|_{H²})`
+  for the upwind method, and `h |ů|_{H²}` for the Scharfetter–Gummel method, whose nodal
+  exactness makes the Galerkin error equal to the interpolation error.
+
 ## Not formalized here
 
-The identification of the Galerkin problem (12.72)–(12.73) with the difference equation (12.75),
-and hence Theorem 12.4, need the Lagrange finite element space `X_h^k` inside `H¹(0, 1)`
-(`Numlib/Variational/FiniteElementInterval.lean`); the plan records them as open nodes with the
-missing dependency. Remark 12.6's nodal exactness for a piecewise constant right-hand side is
-quoted by the book from [HGR96] and is not formalized either; the homogeneous case, which is what
-the proof of Theorem 12.4 uses, is `remark_12_6_nodal_exact`. Example 12.3 is a numerical
-experiment.
+Theorem 12.4's estimate (12.86), the `k = 2` Scharfetter–Gummel rate, waits on the `P_2`
+interpolation operator into `H¹(0, 1)`; the plan records it as the open node `equation_12_86`.
+Remark 12.6's nodal exactness for a piecewise constant right-hand side is quoted by the book from
+[HGR96] and is not formalized; the homogeneous case, which is what the proof of Theorem 12.4
+uses, is `remark_12_6_nodal_exact`. Example 12.3 is a numerical experiment.
 -/
 
 open Filter MeasureTheory Set
@@ -116,30 +119,30 @@ open SobolevInterval in
 `β ∫ (u' g_v + g_u v') = β [g_u g_v]₀¹`, which vanishes because `v` does at both endpoints. -/
 theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterval 1 0 1}
     (hv : v ∈ SobolevIntervalZero 0 1) :
-    EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
-        (AdvectionDiffusion.constLinf 0 1 β) 0 u v
+    EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
+        (EllipticInterval.constLinf 0 1 β) 0 u v
       = ∫ x in Ioo (0 : ℝ) 1, (ε * deriv u 1 x - β * rep u x) * deriv v 1 x := by
   have hab : (0 : ℝ) < 1 := one_pos
-  have hcε := AdvectionDiffusion.coeFn_constLinf 0 1 ε
-  have hcβ := AdvectionDiffusion.coeFn_constLinf 0 1 β
-  have hc1 := AdvectionDiffusion.coeFn_constLinf 0 1 1
+  have hcε := EllipticInterval.coeFn_constLinf 0 1 ε
+  have hcβ := EllipticInterval.coeFn_constLinf 0 1 β
+  have hc1 := EllipticInterval.coeFn_constLinf 0 1 1
   have hru := fn_ae_eq_rep hab u
   have hrv := fn_ae_eq_rep hab v
   -- the three integrands, and their integrability
   have i1 : IntegrableOn (fun x => ε * (deriv u 1 x * deriv v 1 x)) (Ioo (0 : ℝ) 1) := by
-    refine (EllipticInterval.integrable_mul_mul (AdvectionDiffusion.constLinf 0 1 ε)
+    refine (EllipticInterval.integrable_mul_mul (EllipticInterval.constLinf 0 1 ε)
       (deriv u 1) (deriv v 1)).congr ?_
     filter_upwards [hcε] with x hx
     rw [hx]
     ring
   have i2 : IntegrableOn (fun x => deriv u 1 x * rep v x) (Ioo (0 : ℝ) 1) := by
-    refine (EllipticInterval.integrable_mul_mul (AdvectionDiffusion.constLinf 0 1 1)
+    refine (EllipticInterval.integrable_mul_mul (EllipticInterval.constLinf 0 1 1)
       (deriv u 1) (deriv v 0)).congr ?_
     filter_upwards [hc1, hrv] with x h1 h2
     rw [h1, SobolevInterval.deriv_zero, h2]
     ring
   have i3 : IntegrableOn (fun x => rep u x * deriv v 1 x) (Ioo (0 : ℝ) 1) := by
-    refine (EllipticInterval.integrable_mul_mul (AdvectionDiffusion.constLinf 0 1 1)
+    refine (EllipticInterval.integrable_mul_mul (EllipticInterval.constLinf 0 1 1)
       (deriv u 0) (deriv v 1)).congr ?_
     filter_upwards [hc1, hru] with x h1 h2
     rw [h1, SobolevInterval.deriv_zero, h2]
@@ -150,19 +153,19 @@ theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterv
     mul_zero, mul_zero, sub_zero, EllipticInterval.intervalIntegral_eq_setIntegral_Ioo hab.le,
     integral_add i2 i3] at ibp
   rw [EllipticInterval.form_apply]
-  have e1 : ∀ x : ℝ, (AdvectionDiffusion.constLinf 0 1 ε : ℝ → ℝ) x = ε →
-      (AdvectionDiffusion.constLinf 0 1 β : ℝ → ℝ) x = β → fn v x = rep v x →
+  have e1 : ∀ x : ℝ, (EllipticInterval.constLinf 0 1 ε : ℝ → ℝ) x = ε →
+      (EllipticInterval.constLinf 0 1 β : ℝ → ℝ) x = β → fn v x = rep v x →
       ((0 : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) : ℝ → ℝ) x = 0 →
-      (AdvectionDiffusion.constLinf 0 1 ε : ℝ → ℝ) x * deriv u 1 x * deriv v 1 x
-        + (AdvectionDiffusion.constLinf 0 1 β : ℝ → ℝ) x * deriv u 1 x * deriv v 0 x
+      (EllipticInterval.constLinf 0 1 ε : ℝ → ℝ) x * deriv u 1 x * deriv v 1 x
+        + (EllipticInterval.constLinf 0 1 β : ℝ → ℝ) x * deriv u 1 x * deriv v 0 x
         + ((0 : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) : ℝ → ℝ) x * deriv u 0 x * deriv v 0 x
       = ε * (deriv u 1 x * deriv v 1 x) + β * (deriv u 1 x * rep v x) := by
     intro x h1 h2 h3 h4
     rw [h1, h2, h4, SobolevInterval.deriv_zero, h3]
     ring
   have hform : ∫ x in Ioo (0 : ℝ) 1,
-      ((AdvectionDiffusion.constLinf 0 1 ε : ℝ → ℝ) x * deriv u 1 x * deriv v 1 x
-        + (AdvectionDiffusion.constLinf 0 1 β : ℝ → ℝ) x * deriv u 1 x * deriv v 0 x
+      ((EllipticInterval.constLinf 0 1 ε : ℝ → ℝ) x * deriv u 1 x * deriv v 1 x
+        + (EllipticInterval.constLinf 0 1 β : ℝ → ℝ) x * deriv u 1 x * deriv v 0 x
         + ((0 : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) : ℝ → ℝ) x * deriv u 0 x
           * deriv v 0 x)
       = (∫ x in Ioo (0 : ℝ) 1, ε * (deriv u 1 x * deriv v 1 x))
@@ -185,12 +188,8 @@ theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterv
 /-! ### The Galerkin approximation (12.72)–(12.76) -/
 
 /-- The zero constant is the zero element of `L^∞(a, b)`. -/
-theorem constLinf_zero (a b : ℝ) : AdvectionDiffusion.constLinf a b 0 = 0 := by
-  refine Lp.ext ?_
-  filter_upwards [AdvectionDiffusion.coeFn_constLinf a b 0,
-    Lp.coeFn_zero ℝ ⊤ (volume.restrict (Set.Ioo a b))] with t h1 h2
-  rw [h1, h2]
-  rfl
+theorem constLinf_zero (a b : ℝ) : EllipticInterval.constLinf a b 0 = 0 :=
+  EllipticInterval.constLinf_zero a b
 
 /-- **The Galerkin `P_1` approximation (12.72)–(12.73)** of the advection–diffusion problem
 (12.70): `u_h ∈ X_h^1` with `u_h(0) = 0`, `u_h(1) = 1` and
@@ -199,8 +198,8 @@ def equation_12_72 (ε β : ℝ) (n : ℕ) (x : ℕ → ℝ) (uh : SobolevInterv
   uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1 ∧
     SobolevInterval.rep uh 0 = 0 ∧ SobolevInterval.rep uh 1 = 1 ∧
     ∀ vh ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x 1,
-      EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
-        (AdvectionDiffusion.constLinf 0 1 β) 0 uh vh = 0
+      EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
+        (EllipticInterval.constLinf 0 1 β) 0 uh vh = 0
 
 /-- **(12.75)–(12.76)**: on the uniform partition `x_i = i h`, `h = 1/n`, the Galerkin problem
 (12.72) for the piecewise linear function with nodal values `u_i` is the difference equation
@@ -415,10 +414,66 @@ theorem equation_12_84_self {ε β h : ℝ} (φ : ℝ → ℝ) {v : SobolevInter
 stabilized form and the Galerkin form (12.73). -/
 theorem equation_12_84_sub (ε β h : ℝ) (φ : ℝ → ℝ) (u v : SobolevInterval 1 0 1) :
     equation_12_84 ε β h φ u v
-        - EllipticInterval.form 0 1 (AdvectionDiffusion.constLinf 0 1 ε)
-          (AdvectionDiffusion.constLinf 0 1 β) 0 u v
+        - EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
+          (EllipticInterval.constLinf 0 1 β) 0 u v
       = ε * φ (meshPeclet β h ε)
         * ⟪SobolevInterval.deriv u 1, SobolevInterval.deriv v 1⟫_ℝ :=
   AdvectionDiffusion.stabilizedForm_sub_form 0 1 ε β h φ u v
+
+/-! ### Theorem 12.4, the convergence of the stabilized finite element method -/
+
+/-- **The stabilized finite element problem (12.84)** for the model problem (12.70), written
+without the lifting: `u_h ∈ X_h^k` with `u_h(0) = 0`, `u_h(1) = 1` and
+`a_h(u_h, v_h) = 0` for every `v_h ∈ X_h^{k,0}`.  The book's form — find `ů_h ∈ X_h^{k,0}` with
+`a_h(ů_h, v_h) = -∫₀¹ β v_h` — is this one after subtracting the lifting `ū(x) = x`, since
+`a_h(ū, v_h) = ∫₀¹ β v_h` for `v_h` vanishing at both endpoints. -/
+def equation_12_84_problem (ε β h : ℝ) (φ : ℝ → ℝ) (k n : ℕ) (x : ℕ → ℝ)
+    (uh : SobolevInterval 1 0 1) : Prop :=
+  uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x k ∧
+    SobolevInterval.rep uh 0 = 0 ∧ SobolevInterval.rep uh 1 = 1 ∧
+    ∀ vh ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x k,
+      equation_12_84 ε β h φ uh vh = 0
+
+/-- **Theorem 12.4, (12.85) for the Scharfetter–Gummel method with `k = 1`**: on the uniform
+mesh of `n` panels, the `P_1` stabilized approximation of the model problem (12.70) satisfies
+`|ů - ů_h|_{H¹(0,1)} ≤ C h |ů|_{H²(0,1)}` with `C` independent of `h` and `ů`; in fact `C = 1`,
+the book's factor `(1 + 2 Pe_gl C_P)` being absent because the Scharfetter–Gummel solution is
+nodally exact (Remark 12.6), so that `ů_h = Π_h^1 ů` and the Galerkin error **is** the
+interpolation error.  The statement is written for the unlifted pair `u`, `u_h`, which is the
+same inequality: `ů - ů_h = u - u_h` and `|ů|_{H²} = |u|_{H²}` because the lifting `ū(x) = x`
+is affine.  The upwind clause of the theorem is `theorem_12_4_upwind`, and the `k = 2` clause
+(12.86) is `equation_12_86`. -/
+theorem theorem_12_4 {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    (huni : ∀ k < n, x (k + 1) - x k = AdvectionDiffusion.meshWidth n) {ε β : ℝ} (hε : 0 < ε)
+    (hβ : 0 < β) {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
+    (hU : SobolevInterval.inclusionCLM 1 0 1 U = u)
+    (hunode : ∀ i ≤ n, SobolevInterval.rep u (x i) = AdvectionDiffusion.exactSolution ε β (x i))
+    (hdisc : equation_12_84_problem ε β (AdvectionDiffusion.meshWidth n)
+      AdvectionDiffusion.phiSG 1 n x uh) :
+    SobolevInterval.seminorm 1 0 1 (u - uh)
+      ≤ AdvectionDiffusion.meshWidth n * SobolevInterval.seminorm 2 0 1 U :=
+  AdvectionDiffusion.seminorm_sub_stabilized_le_sg hx hn huni hε hβ U hU hunode
+    hdisc.1 hdisc.2.1 hdisc.2.2.1 hdisc.2.2.2
+
+/-- **Theorem 12.4, (12.85) for the upwind method with `k = 1`**: with `ů ∈ H¹₀(0, 1) ∩ H²(0, 1)`
+the solution of the lifted problem `a(ů, v) = ℓ(v)` on `X_h^{1,0}` and `ů_h` the solution of the
+upwind-stabilized problem (12.84) with the same right-hand side,
+`|ů - ů_h|_{H¹(0,1)} ≤ C h (|ů|_{H¹(0,1)} + |ů|_{H²(0,1)})` with
+`C = 2 + C_P |β|/ε + |β|/(2ε)` and `C_P = 1/√2`, independent of `h` and of `ů`. -/
+theorem theorem_12_4_upwind {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x) (hn : 1 ≤ n)
+    {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
+    {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
+    (hU : SobolevInterval.inclusionCLM 1 0 1 U = u) (hu : u ∈ SobolevIntervalZero 0 1)
+    (hexact : ∀ v ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n x 1,
+      EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
+        (EllipticInterval.constLinf 0 1 β) 0 u v = ℓ v)
+    (hdisc : IsGalerkinSolution (equation_12_84 ε β h AdvectionDiffusion.phiUpwind) ℓ
+      (FiniteElement.lagrangeSpaceZero zero_lt_one n x 1) uh) :
+    SobolevInterval.seminorm 1 0 1 (u - uh)
+      ≤ (2 + 1 / Real.sqrt 2 * |β| / ε + |β| / (2 * ε)) * h
+        * (SobolevInterval.seminorm 1 0 1 u + SobolevInterval.seminorm 2 0 1 U) := by
+  have key := AdvectionDiffusion.seminorm_sub_stabilized_le_upwind zero_lt_one hx hn hε hmesh U hU
+    hu hexact hdisc
+  simpa using key
 
 end QuarteroniSaccoSaleri.Chapter12

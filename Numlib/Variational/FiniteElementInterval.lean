@@ -36,6 +36,10 @@ to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSp
   and `X_h^{1,0}` they form.
 * `FiniteElement.affineMap`, `FiniteElement.referenceHat`, `FiniteElement.referenceQuadratic`,
   `FiniteElement.referenceHierarchical` — the reference element (12.62), (12.65), (12.66).
+* `FiniteElement.evenNodes`, `FiniteElement.quadShapeFun`, `FiniteElement.quadraticShape` — the
+  element partition of a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}`, the shape functions
+  (12.63)-(12.64) as functions `ℝ → ℝ`, and the corresponding elements of `H^1(a, b)`;
+  `FiniteElement.quadraticBasis` is the nodal basis of `X_h^2` they form.
 * `FiniteElement.stiffnessMatrix`, `FiniteElement.massMatrix` — the matrices `A_fe` of (12.48)
   and `M` of (13.14) of a family of trial functions.
 
@@ -60,6 +64,10 @@ to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSp
   positive definiteness and `K₂(A_fe) = cot²(π h/2)` for the model problem.
 * `FiniteElement.galerkin_iff_centredScheme` — the `P_1` Galerkin system on a uniform mesh is the
   centred difference scheme (12.75).
+* `FiniteElement.rep_quadraticShape_node` — `φ_i(x_j) = δ_{ij}` for the quadratic shape
+  functions; `FiniteElement.rep_quadraticShape_eq_zero_of_panel` — their local supports;
+  `FiniteElement.rep_quadraticShape_eq_referenceQuadratic` — they are the images of (12.65)
+  under the affine map (12.62) when the interior nodes are the midpoints.
 
 ## Implementation notes on the hat functions
 
@@ -1206,14 +1214,7 @@ end PanelSum
 
 /-! ### The stiffness and mass matrices -/
 
-/-- A constant coefficient as an element of `L^∞(a, b)`. -/
-noncomputable def constLinfty (a b : ℝ) (c : ℝ) : Lp ℝ ⊤ (volume.restrict (Ioo a b)) :=
-  (ContinuousOn.memLp_top_restrict_Ioo (a := a) (b := b) (g := fun _ ↦ c) continuousOn_const).toLp _
-
-/-- The `L^∞` class of a constant is that constant almost everywhere. -/
-theorem coeFn_constLinfty (a b c : ℝ) :
-    ⇑(constLinfty a b c) =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ c :=
-  MemLp.coeFn_toLp _
+open EllipticInterval
 
 variable (a b) in
 /-- **The stiffness matrix** `A_fe` of [quarteroni2000numerical] (12.48): `A_ij = a(φ_j, φ_i)`
@@ -1231,12 +1232,12 @@ variable (a b) in
 /-- **The mass matrix** `M_ij = ∫_a^b φ_j φ_i` ([quarteroni2000numerical] (13.14)): the Gram
 matrix of the trial functions for the `L²(a, b)` inner product. -/
 noncomputable def massMatrix {ι : Type*} (φ : ι → SobolevInterval 1 a b) : Matrix ι ι ℝ :=
-  stiffnessMatrix a b (constLinfty a b 0) (constLinfty a b 0) (constLinfty a b 1) φ
+  stiffnessMatrix a b (constLinf a b 0) (constLinf a b 0) (constLinf a b 1) φ
 
 /-- The entries of the mass matrix are `m_{ij} = ∫ φ_j φ_i`. -/
 theorem massMatrix_apply {ι : Type*} (φ : ι → SobolevInterval 1 a b) (i j : ι) :
     massMatrix a b φ i j =
-      EllipticInterval.form a b (constLinfty a b 0) (constLinfty a b 0) (constLinfty a b 1)
+      EllipticInterval.form a b (constLinf a b 0) (constLinf a b 0) (constLinf a b 1)
         (φ j) (φ i) := rfl
 
 section Form
@@ -1247,12 +1248,12 @@ variable {n : ℕ} {x : ℕ → ℝ}
 `FiniteElement.hatFormIntegrand`. -/
 theorem form_apply_hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (ε β γ : ℝ)
     (i j : ℕ) :
-    EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b γ)
+    EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         (hatFunction hx hn j) (hatFunction hx hn i)
       = ∫ t in Ioo a b, hatFormIntegrand n x ε β γ j i t := by
   rw [EllipticInterval.form_apply]
   refine integral_congr_ae ?_
-  filter_upwards [coeFn_constLinfty a b ε, coeFn_constLinfty a b β, coeFn_constLinfty a b γ,
+  filter_upwards [coeFn_constLinf a b ε, coeFn_constLinf a b β, coeFn_constLinf a b γ,
     coeFn_deriv_hatFunction_one hx hn j, coeFn_deriv_hatFunction_one hx hn i,
     coeFn_deriv_hatFunction_zero hx hn j, coeFn_deriv_hatFunction_zero hx hn i]
     with t h1 h2 h3 h4 h5 h6 h7
@@ -1263,7 +1264,7 @@ theorem form_apply_hatFunction (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) 
 contributions. -/
 theorem form_apply_hatFunction_eq_sum (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
     (ε β γ : ℝ) (i j : ℕ) :
-    EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b γ)
+    EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         (hatFunction hx hn j) (hatFunction hx hn i)
       = ∑ k ∈ Finset.range n, ∫ t in (x k)..(x (k + 1)), hatFormIntegrand n x ε β γ j i t := by
   rw [form_apply_hatFunction hx hn ε β γ i j,
@@ -1277,7 +1278,7 @@ vanishes otherwise. -/
 theorem form_apply_hatFunction_uniform (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) {i j : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
-    EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b γ)
+    EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         (hatFunction hx hn j) (hatFunction hx hn i)
       = if j = i then 2 * ε / h + 2 * γ * h / 3
         else if j + 1 = i then -(ε / h) - β / 2 + γ * h / 6
@@ -1408,7 +1409,7 @@ assembled by Program 95): in the interior hat basis of `X_h^{1,0}` with constant
 `β = γ = 0` this is `ε h` times the centred finite difference matrix. -/
 theorem stiffnessMatrix_uniform_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β γ : ℝ) :
-    (stiffnessMatrix a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b γ)
+    (stiffnessMatrix a b (constLinf a b ε) (constLinf a b β) (constLinf a b γ)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
       = (ε / h) • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2
         + (β / 2) • Matrix.tridiagonalToeplitz (n - 1) (-1) 0 1
@@ -1493,7 +1494,7 @@ variable {n : ℕ} {x : ℕ → ℝ}
 which is `h` times the centred finite difference matrix. -/
 theorem stiffnessMatrix_model_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
-    (stiffnessMatrix a b (constLinfty a b 1) (constLinfty a b 0) (constLinfty a b 0)
+    (stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))
       = h⁻¹ • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2 := by
   rw [stiffnessMatrix_uniform_eq hx hn hh huni 1 0 0]
@@ -1505,9 +1506,9 @@ between `A_fe` and its inverse; in terms of the mesh size `h = (b - a)/n` this i
 `O(h⁻²)` that the book quotes from [QV94]. -/
 theorem condNumber_stiffnessMatrix_model (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
-    ‖stiffnessMatrix a b (constLinfty a b 1) (constLinfty a b 0) (constLinfty a b 0)
+    ‖stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1)‖
-      * ‖(stiffnessMatrix a b (constLinfty a b 1) (constLinfty a b 0) (constLinfty a b 0)
+      * ‖(stiffnessMatrix a b (constLinf a b 1) (constLinf a b 0) (constLinf a b 0)
         fun i : Fin (n - 1) ↦ hatFunction hx hn ((i : ℕ) + 1))⁻¹‖
       = Real.cot (Real.pi / (2 * (n : ℝ))) ^ 2 := by
   rw [stiffnessMatrix_model_eq hx hn hh huni]
@@ -1562,16 +1563,16 @@ difference stencil ([quarteroni2000numerical] (12.75)). -/
 theorem form_sum_hatFunction_uniform (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) {h : ℝ}
     (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) {i : ℕ}
     (hi1 : 1 ≤ i) (hi2 : i < n) :
-    EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b 0)
+    EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b 0)
         (∑ j ∈ Finset.range (n + 1), u j • hatFunction hx hn j) (hatFunction hx hn i)
       = ε / h * (-u (i - 1) + 2 * u i - u (i + 1)) + β / 2 * (u (i + 1) - u (i - 1)) := by
   have hne : h ≠ 0 := hh.ne'
   obtain ⟨m, rfl⟩ : ∃ m, i = m + 1 := ⟨i - 1, by omega⟩
-  have hlin : EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β)
-        (constLinfty a b 0) (∑ j ∈ Finset.range (n + 1), u j • hatFunction hx hn j)
+  have hlin : EllipticInterval.form a b (constLinf a b ε) (constLinf a b β)
+        (constLinf a b 0) (∑ j ∈ Finset.range (n + 1), u j • hatFunction hx hn j)
         (hatFunction hx hn (m + 1))
-      = ∑ j ∈ Finset.range (n + 1), u j * EllipticInterval.form a b (constLinfty a b ε)
-        (constLinfty a b β) (constLinfty a b 0) (hatFunction hx hn j)
+      = ∑ j ∈ Finset.range (n + 1), u j * EllipticInterval.form a b (constLinf a b ε)
+        (constLinf a b β) (constLinf a b 0) (hatFunction hx hn j)
         (hatFunction hx hn (m + 1)) := by
     rw [map_sum]
     simp only [sum_apply]
@@ -1607,7 +1608,7 @@ every interior node. -/
 theorem galerkin_iff_centredScheme (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (ε β : ℝ) (u : ℕ → ℝ) :
     (∀ v ∈ lagrangeSpaceZero hab n x 1,
-        EllipticInterval.form a b (constLinfty a b ε) (constLinfty a b β) (constLinfty a b 0)
+        EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) (constLinf a b 0)
           (∑ j ∈ Finset.range (n + 1), u j • hatFunction hx hn j) v = 0)
       ↔ ∀ i, 1 ≤ i → i < n →
         ε / h * (-u (i - 1) + 2 * u i - u (i + 1)) + β / 2 * (u (i + 1) - u (i - 1)) = 0 := by
@@ -1964,5 +1965,699 @@ theorem exists_mem_lagrangeSpaceZero_seminorm_sub_le (hab : a < b)
   exact mul_le_mul_of_nonneg_left (SobolevInterval.seminorm_le_norm Φ) h0
 
 end Interp
+
+
+/-! ### The quadratic element `X_h^2`
+
+The shape functions of [quarteroni2000numerical] (12.63)-(12.64) are built, like the hat
+functions, as honest functions `ℝ → ℝ` and only then pushed into `H^1(a, b)`.  The node sequence
+is the book's own relabelling `x_0 < x_1 < ⋯ < x_{2n}`, the even-indexed nodes being the
+endpoints of the `n` elements `[x_{2m}, x_{2m+2}]` and the odd-indexed ones their interior
+nodes; `FiniteElement.evenNodes` extracts the element partition.  The formulas (12.63)-(12.64)
+are the local Lagrange bases of the three nodes of an element, so nothing below assumes that the
+interior node is the *midpoint*; that hypothesis enters only in the reference description
+(12.65).
+
+There is no ramp trick here: the sum of the two quadratic branches of an even-indexed shape
+function is not `1` on an element, because the bubble takes up the slack.  Instead each branch is
+clamped to the element it belongs to — `FiniteElement.quadFall` is `1` to the left of its element
+and `0` to its right, `FiniteElement.quadRise` the other way round — and the shape function at an
+even node is the **product** of the rise across the element on its left and the fall across the
+element on its right, which is `φ̂₂` on the one and `φ̂₀` on the other and `0` elsewhere.  The
+shape function at an odd node is the bubble, clamped to vanish outside its element.
+
+The element of `H^1(a, b)` is obtained from `FiniteElement.exists_mem_lagrangeSpace`: a
+continuous piecewise polynomial *is* the continuous representative of an element of `X_h^2`, and
+the embedding `H^1(a, b) ↪ C([a, b], ℝ)` is injective, so the element is unique and every nodal
+statement about it is a statement about `FiniteElement.quadShapeFun`.
+-/
+
+/-- The quadratic Lagrange basis polynomial at `p` for the three nodes `p`, `q`, `r`. -/
+noncomputable def quadPoly (p q r : ℝ) : Polynomial ℝ :=
+  Polynomial.C ((p - q) * (p - r))⁻¹ * Polynomial.X ^ 2 +
+    Polynomial.C (-(q + r) * ((p - q) * (p - r))⁻¹) * Polynomial.X +
+    Polynomial.C (q * r * ((p - q) * (p - r))⁻¹)
+
+/-- The quadratic Lagrange basis function at `p` for the three nodes `p`, `q`, `r`. -/
+noncomputable def quadLagrangeFun (p q r : ℝ) : ℝ → ℝ :=
+  fun t ↦ (t - q) * (t - r) / ((p - q) * (p - r))
+
+theorem quadPoly_eval (p q r t : ℝ) : (quadPoly p q r).eval t = quadLagrangeFun p q r t := by
+  simp only [quadPoly, quadLagrangeFun, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X, div_eq_mul_inv]
+  ring
+
+theorem quadPoly_degree_le (p q r : ℝ) : (quadPoly p q r).degree ≤ 2 :=
+  Polynomial.degree_quadratic_le
+
+theorem quadLagrangeFun_self {p q r : ℝ} (hq : p ≠ q) (hr : p ≠ r) :
+    quadLagrangeFun p q r p = 1 := by
+  rw [quadLagrangeFun, div_self]
+  exact mul_ne_zero (sub_ne_zero.2 hq) (sub_ne_zero.2 hr)
+
+theorem quadLagrangeFun_left (p q r : ℝ) : quadLagrangeFun p q r q = 0 := by
+  simp [quadLagrangeFun]
+
+theorem quadLagrangeFun_right (p q r : ℝ) : quadLagrangeFun p q r r = 0 := by
+  simp [quadLagrangeFun]
+
+theorem continuous_quadLagrangeFun (p q r : ℝ) : Continuous (quadLagrangeFun p q r) := by
+  unfold quadLagrangeFun
+  fun_prop
+
+
+/-! ### The clamped pieces on an element -/
+
+/-- The element `[x_{2k}, x_{2k+2}]` of the quadratic mesh, with `t` clamped into it. -/
+noncomputable def quadClamp (x : ℕ → ℝ) (k : ℕ) (t : ℝ) : ℝ :=
+  min (max t (x (2 * k))) (x (2 * k + 2))
+
+theorem quadClamp_of_le {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (hx : x (2 * k) ≤ x (2 * k + 2))
+    (ht : t ≤ x (2 * k)) : quadClamp x k t = x (2 * k) := by
+  rw [quadClamp, max_eq_right ht, min_eq_left hx]
+
+theorem quadClamp_of_mem {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (h1 : x (2 * k) ≤ t)
+    (h2 : t ≤ x (2 * k + 2)) : quadClamp x k t = t := by
+  rw [quadClamp, max_eq_left h1, min_eq_left h2]
+
+theorem quadClamp_of_ge {x : ℕ → ℝ} {k : ℕ} {t : ℝ} (hx : x (2 * k) ≤ x (2 * k + 2))
+    (ht : x (2 * k + 2) ≤ t) : quadClamp x k t = x (2 * k + 2) := by
+  rw [quadClamp, max_eq_left (hx.trans ht), min_eq_right ht]
+
+theorem continuous_quadClamp (x : ℕ → ℝ) (k : ℕ) : Continuous (quadClamp x k) :=
+  (continuous_id.max continuous_const).min continuous_const
+
+/-- `φ̂₀` on the element `k`: the quadratic that is `1` at `x_{2k}` and `0` at the other two
+nodes of the element, clamped to be `1` to the left of the element and `0` to its right. -/
+noncomputable def quadFall (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  fun t ↦ quadLagrangeFun (x (2 * k)) (x (2 * k + 1)) (x (2 * k + 2)) (quadClamp x k t)
+
+/-- `φ̂₁` on the element `k`: the bubble, `1` at the interior node `x_{2k+1}` and `0` outside
+the element. -/
+noncomputable def quadBubble (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  fun t ↦ quadLagrangeFun (x (2 * k + 1)) (x (2 * k)) (x (2 * k + 2)) (quadClamp x k t)
+
+/-- `φ̂₂` on the element `k`: the quadratic that is `1` at `x_{2k+2}` and `0` at the other two
+nodes of the element, clamped to be `0` to the left of the element and `1` to its right. -/
+noncomputable def quadRise (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  fun t ↦ quadLagrangeFun (x (2 * k + 2)) (x (2 * k)) (x (2 * k + 1)) (quadClamp x k t)
+
+theorem continuous_quadFall (x : ℕ → ℝ) (k : ℕ) : Continuous (quadFall x k) :=
+  (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
+
+theorem continuous_quadBubble (x : ℕ → ℝ) (k : ℕ) : Continuous (quadBubble x k) :=
+  (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
+
+theorem continuous_quadRise (x : ℕ → ℝ) (k : ℕ) : Continuous (quadRise x k) :=
+  (continuous_quadLagrangeFun _ _ _).comp (continuous_quadClamp x k)
+
+section Element
+
+variable {x : ℕ → ℝ} {k : ℕ}
+
+/-- The three nodes of an element are distinct. -/
+theorem quad_ne (h1 : x (2 * k) < x (2 * k + 1)) (h2 : x (2 * k + 1) < x (2 * k + 2)) :
+    x (2 * k) ≠ x (2 * k + 1) ∧ x (2 * k) ≠ x (2 * k + 2) ∧ x (2 * k + 1) ≠ x (2 * k + 2) :=
+  ⟨h1.ne, (h1.trans h2).ne, h2.ne⟩
+
+theorem quadFall_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
+    quadFall x k t = quadLagrangeFun (x (2 * k)) (x (2 * k + 1)) (x (2 * k + 2)) t := by
+  rw [quadFall, quadClamp_of_mem h1 h2]
+
+theorem quadBubble_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
+    quadBubble x k t = quadLagrangeFun (x (2 * k + 1)) (x (2 * k)) (x (2 * k + 2)) t := by
+  rw [quadBubble, quadClamp_of_mem h1 h2]
+
+theorem quadRise_of_mem {t : ℝ} (h1 : x (2 * k) ≤ t) (h2 : t ≤ x (2 * k + 2)) :
+    quadRise x k t = quadLagrangeFun (x (2 * k + 2)) (x (2 * k)) (x (2 * k + 1)) t := by
+  rw [quadRise, quadClamp_of_mem h1 h2]
+
+theorem quadFall_of_le {t : ℝ} (h1 : x (2 * k) < x (2 * k + 1))
+    (h2 : x (2 * k + 1) < x (2 * k + 2)) (ht : t ≤ x (2 * k)) : quadFall x k t = 1 := by
+  rw [quadFall, quadClamp_of_le (h1.trans h2).le ht,
+    quadLagrangeFun_self h1.ne (h1.trans h2).ne]
+
+theorem quadFall_of_ge {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) :
+    quadFall x k t = 0 := by
+  rw [quadFall, quadClamp_of_ge h ht, quadLagrangeFun_right]
+
+theorem quadRise_of_le {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : t ≤ x (2 * k)) :
+    quadRise x k t = 0 := by
+  rw [quadRise, quadClamp_of_le h ht, quadLagrangeFun_left]
+
+theorem quadRise_of_ge {t : ℝ} (h1 : x (2 * k) < x (2 * k + 1))
+    (h2 : x (2 * k + 1) < x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) : quadRise x k t = 1 := by
+  rw [quadRise, quadClamp_of_ge (h1.trans h2).le ht,
+    quadLagrangeFun_self (h1.trans h2).ne' h2.ne']
+
+theorem quadBubble_of_le {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : t ≤ x (2 * k)) :
+    quadBubble x k t = 0 := by
+  rw [quadBubble, quadClamp_of_le h ht, quadLagrangeFun_left]
+
+theorem quadBubble_of_ge {t : ℝ} (h : x (2 * k) ≤ x (2 * k + 2)) (ht : x (2 * k + 2) ≤ t) :
+    quadBubble x k t = 0 := by
+  rw [quadBubble, quadClamp_of_ge h ht, quadLagrangeFun_right]
+
+end Element
+
+
+/-! ### The global shape functions of `X_h^2` -/
+
+/-- The left factor of the shape function at an even node `x_{2k}`: the constant `1` for `k = 0`,
+the quadratic rise across the element `k - 1` for `1 ≤ k ≤ n`, and `0` beyond. -/
+noncomputable def quadStepL (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  if k = 0 then fun _ ↦ 1 else if k ≤ n then quadRise x (k - 1) else fun _ ↦ 0
+
+/-- The right factor of the shape function at an even node `x_{2k}`: the quadratic fall across
+the element `k`, and the constant `1` when there is no such element. -/
+noncomputable def quadStepR (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  if k < n then quadFall x k else fun _ ↦ 1
+
+/-- The shape function at an odd (interior) node `x_{2k+1}`: the bubble of the element `k`, and
+`0` when there is no such element. -/
+noncomputable def quadStepB (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : ℝ → ℝ :=
+  if k < n then quadBubble x k else fun _ ↦ 0
+
+/-- **The shape functions of `X_h^2`** of [quarteroni2000numerical] (12.63)-(12.64), as functions
+`ℝ → ℝ`. -/
+noncomputable def quadShapeFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ :=
+  fun t ↦ if i % 2 = 0 then quadStepL n x (i / 2) t * quadStepR n x (i / 2) t
+    else quadStepB n x (i / 2) t
+
+theorem quadStepL_zero (n : ℕ) (x : ℕ → ℝ) : quadStepL n x 0 = fun _ ↦ 1 := by simp [quadStepL]
+
+theorem quadStepL_succ {n k : ℕ} (x : ℕ → ℝ) (hk : k + 1 ≤ n) :
+    quadStepL n x (k + 1) = quadRise x k := by simp [quadStepL, hk]
+
+theorem quadStepL_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : n < k) : quadStepL n x k = fun _ ↦ 0 := by
+  rw [quadStepL]
+  have hk0 : ¬ k = 0 := by omega
+  simp [hk0, Nat.not_le.2 hk]
+
+theorem quadStepR_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : k < n) : quadStepR n x k = quadFall x k := by
+  simp [quadStepR, hk]
+
+theorem quadStepR_of_le {n k : ℕ} (x : ℕ → ℝ) (hk : n ≤ k) : quadStepR n x k = fun _ ↦ 1 := by
+  simp [quadStepR, Nat.not_lt.2 hk]
+
+theorem quadStepB_of_lt {n k : ℕ} (x : ℕ → ℝ) (hk : k < n) :
+    quadStepB n x k = quadBubble x k := by simp [quadStepB, hk]
+
+theorem quadStepB_of_le {n k : ℕ} (x : ℕ → ℝ) (hk : n ≤ k) :
+    quadStepB n x k = fun _ ↦ 0 := by simp [quadStepB, Nat.not_lt.2 hk]
+
+theorem continuous_quadStepL (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepL n x k) := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk0
+  · rw [quadStepL_zero]; exact continuous_const
+  rcases le_or_gt k n with hk | hk
+  · obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+    rw [quadStepL_succ x hk]; exact continuous_quadRise x k'
+  · rw [quadStepL_of_lt x hk]; exact continuous_const
+
+theorem continuous_quadStepR (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepR n x k) := by
+  rcases lt_or_ge k n with hk | hk
+  · rw [quadStepR_of_lt x hk]; exact continuous_quadFall x k
+  · rw [quadStepR_of_le x hk]; exact continuous_const
+
+theorem continuous_quadStepB (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : Continuous (quadStepB n x k) := by
+  rcases lt_or_ge k n with hk | hk
+  · rw [quadStepB_of_lt x hk]; exact continuous_quadBubble x k
+  · rw [quadStepB_of_le x hk]; exact continuous_const
+
+theorem quadShapeFun_even (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
+    quadShapeFun n x (2 * k) t = quadStepL n x k t * quadStepR n x k t := by
+  have h1 : (2 * k) % 2 = 0 := by omega
+  have h2 : (2 * k) / 2 = k := by omega
+  simp only [quadShapeFun, h1, h2, reduceIte]
+
+theorem quadShapeFun_even_succ (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
+    quadShapeFun n x (2 * k + 2) t = quadStepL n x (k + 1) t * quadStepR n x (k + 1) t := by
+  have h1 : (2 * k + 2) % 2 = 0 := by omega
+  have h2 : (2 * k + 2) / 2 = k + 1 := by omega
+  simp only [quadShapeFun, h1, h2, reduceIte]
+
+theorem quadShapeFun_odd (n : ℕ) (x : ℕ → ℝ) (k : ℕ) (t : ℝ) :
+    quadShapeFun n x (2 * k + 1) t = quadStepB n x k t := by
+  have h1 : (2 * k + 1) % 2 = 1 := by omega
+  have h2 : (2 * k + 1) / 2 = k := by omega
+  simp only [quadShapeFun, h1, h2]
+  norm_num
+
+theorem continuous_quadShapeFun (n : ℕ) (x : ℕ → ℝ) (i : ℕ) :
+    Continuous (quadShapeFun n x i) := by
+  rcases Nat.even_or_odd i with ⟨j, hj⟩ | ⟨j, hj⟩
+  · have hij : i = 2 * j := by omega
+    subst hij
+    have he : quadShapeFun n x (2 * j) = fun t ↦ quadStepL n x j t * quadStepR n x j t :=
+      funext fun t ↦ quadShapeFun_even n x j t
+    rw [he]
+    exact (continuous_quadStepL n x j).mul (continuous_quadStepR n x j)
+  · have hij : i = 2 * j + 1 := by omega
+    subst hij
+    have he : quadShapeFun n x (2 * j + 1) = quadStepB n x j :=
+      funext fun t ↦ quadShapeFun_odd n x j t
+    rw [he]
+    exact continuous_quadStepB n x j
+
+/-- Only the `2n + 1` nodes carry a shape function. -/
+theorem quadShapeFun_of_lt {n : ℕ} (x : ℕ → ℝ) {i : ℕ} (hi : 2 * n < i) :
+    quadShapeFun n x i = fun _ ↦ 0 := by
+  funext t
+  rcases Nat.even_or_odd i with ⟨j, hj⟩ | ⟨j, hj⟩
+  · have hij : i = 2 * j := by omega
+    subst hij
+    rw [quadShapeFun_even, quadStepL_of_lt x (by omega)]
+    simp
+  · have hij : i = 2 * j + 1 := by omega
+    subst hij
+    rw [quadShapeFun_odd, quadStepB_of_le x (by omega)]
+
+section Panel
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its left endpoint is the local
+Lagrange basis function `φ̂₀` of [quarteroni2000numerical] (12.63). -/
+theorem quadShapeFun_even_left (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
+    {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m) t
+      = quadLagrangeFun (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2)) t := by
+  have hL : quadStepL n x m t = 1 := by
+    rcases Nat.eq_zero_or_pos m with rfl | hm0
+    · rw [quadStepL_zero]
+    · obtain ⟨m2, rfl⟩ : ∃ m2, m = m2 + 1 := ⟨m - 1, by omega⟩
+      rw [quadStepL_succ x (by omega)]
+      refine quadRise_of_ge (hx.lt (by omega) (by omega)) (hx.lt (by omega) (by omega)) ?_
+      have he : 2 * m2 + 2 = 2 * (m2 + 1) := by ring
+      rw [he]; exact h1
+  rw [quadShapeFun_even, hL, quadStepR_of_lt x hm, one_mul, quadFall_of_mem h1 h2]
+
+/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its interior node is the bubble
+`φ̂₁` of [quarteroni2000numerical] (12.64). -/
+theorem quadShapeFun_midpoint {m : ℕ} (hm : m < n) {t : ℝ} (h1 : x (2 * m) ≤ t)
+    (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m + 1) t
+      = quadLagrangeFun (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2)) t := by
+  rw [quadShapeFun_odd, quadStepB_of_lt x hm, quadBubble_of_mem h1 h2]
+
+/-- On the element `[x_{2m}, x_{2m+2}]` the shape function at its right endpoint is `φ̂₂`
+of [quarteroni2000numerical] (12.63). -/
+theorem quadShapeFun_even_right (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ} (hm : m < n)
+    {t : ℝ} (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m + 2) t
+      = quadLagrangeFun (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1)) t := by
+  have hR : quadStepR n x (m + 1) t = 1 := by
+    rcases lt_or_ge (m + 1) n with hm1 | hm1
+    · rw [quadStepR_of_lt x hm1]
+      refine quadFall_of_le (hx.lt (by omega) (by omega)) (hx.lt (by omega) (by omega)) ?_
+      have he : 2 * (m + 1) = 2 * m + 2 := by ring
+      rw [he]; exact h2
+    · rw [quadStepR_of_le x hm1]
+  rw [quadShapeFun_even_succ, quadStepL_succ x (by omega), hR, mul_one, quadRise_of_mem h1 h2]
+
+/-- **The local support of the quadratic shape functions** ([quarteroni2000numerical] §12.4.5):
+on the element `[x_{2m}, x_{2m+2}]` only the three shape functions of its own nodes are
+nonzero. -/
+theorem quadShapeFun_eq_zero_of_panel (hx : Spline.IsPartition a b (2 * n) x) {m i : ℕ}
+    (hm : m < n) (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2)
+    {t : ℝ} (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) : quadShapeFun n x i t = 0 := by
+  rcases lt_or_ge (2 * n) i with hi | hi
+  · rw [quadShapeFun_of_lt x hi]
+  rcases Nat.even_or_odd i with ⟨j, hj⟩ | ⟨j, hj⟩
+  · have hij : i = 2 * j := by omega
+    subst hij
+    rw [quadShapeFun_even]
+    rcases lt_trichotomy j m with h | h | h
+    · have hz : quadStepR n x j t = 0 := by
+        rw [quadStepR_of_lt x (by omega)]
+        refine quadFall_of_ge (hx.mono (by omega) (by omega)) ?_
+        exact (hx.mono (show 2 * j + 2 ≤ 2 * m by omega) (by omega)).trans ht1
+      rw [hz, mul_zero]
+    · omega
+    · obtain ⟨j2, rfl⟩ : ∃ j2, j = j2 + 1 := ⟨j - 1, by omega⟩
+      have hz : quadStepL n x (j2 + 1) t = 0 := by
+        rw [quadStepL_succ x (by omega)]
+        refine quadRise_of_le (hx.mono (by omega) (by omega)) (ht2.trans ?_)
+        exact hx.mono (show 2 * m + 2 ≤ 2 * j2 by omega) (by omega)
+      rw [hz, zero_mul]
+  · have hij : i = 2 * j + 1 := by omega
+    subst hij
+    rw [quadShapeFun_odd, quadStepB_of_lt x (by omega)]
+    rcases lt_trichotomy j m with h | h | h
+    · refine quadBubble_of_ge (hx.mono (by omega) (by omega)) ?_
+      exact (hx.mono (show 2 * j + 2 ≤ 2 * m by omega) (by omega)).trans ht1
+    · omega
+    · refine quadBubble_of_le (hx.mono (by omega) (by omega)) (ht2.trans ?_)
+      exact hx.mono (show 2 * m + 2 ≤ 2 * j by omega) (by omega)
+
+/-- **The Lagrange interpolation property `φ_i(x_l) = δ_{il}` on one element**
+([quarteroni2000numerical] §12.4.5). -/
+theorem quadShapeFun_apply_node_of_panel (hx : Spline.IsPartition a b (2 * n) x) {m i l : ℕ}
+    (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
+    quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
+  have h01 : x (2 * m) < x (2 * m + 1) := hx.step _ (by omega)
+  have h12 : x (2 * m + 1) < x (2 * m + 2) := hx.step _ (by omega)
+  have ht1 : x (2 * m) ≤ x l := hx.mono hl1 (by omega)
+  have ht2 : x l ≤ x (2 * m + 2) := hx.mono hl2 (by omega)
+  have hnode : l = 2 * m ∨ l = 2 * m + 1 ∨ l = 2 * m + 2 := by omega
+  by_cases hi0 : i = 2 * m
+  · subst hi0
+    rw [quadShapeFun_even_left hx hm ht1 ht2]
+    rcases hnode with rfl | rfl | rfl
+    · rw [quadLagrangeFun_self h01.ne (h01.trans h12).ne]; simp
+    · rw [quadLagrangeFun_left]; simp
+    · rw [quadLagrangeFun_right]; simp
+  by_cases hi1 : i = 2 * m + 1
+  · subst hi1
+    rw [quadShapeFun_midpoint hm ht1 ht2]
+    rcases hnode with rfl | rfl | rfl
+    · rw [quadLagrangeFun_left]; simp
+    · rw [quadLagrangeFun_self h01.ne' h12.ne]; simp
+    · rw [quadLagrangeFun_right]; simp
+  by_cases hi2 : i = 2 * m + 2
+  · subst hi2
+    rw [quadShapeFun_even_right hx hm ht1 ht2]
+    rcases hnode with rfl | rfl | rfl
+    · rw [quadLagrangeFun_left]; simp
+    · rw [quadLagrangeFun_right]; simp
+    · rw [quadLagrangeFun_self (h01.trans h12).ne' h12.ne']; simp
+  · rw [quadShapeFun_eq_zero_of_panel hx hm hi0 hi1 hi2 ht1 ht2]
+    have hil : i ≠ l := by rcases hnode with rfl | rfl | rfl <;> omega
+    simp [hil]
+
+/-- **The Lagrange interpolation property** `φ_i(x_l) = δ_{il}` of
+[quarteroni2000numerical] (12.63)-(12.64). -/
+theorem quadShapeFun_apply_node (hx : Spline.IsPartition a b (2 * n) x) {i l : ℕ}
+    (hl : l ≤ 2 * n) (hn : 1 ≤ n) : quadShapeFun n x i (x l) = if i = l then 1 else 0 := by
+  rcases lt_or_ge l (2 * n) with hlt | hge
+  · exact quadShapeFun_apply_node_of_panel hx (m := l / 2) (by omega) (by omega) (by omega)
+  · have hll : l = 2 * n := le_antisymm hl hge
+    subst hll
+    exact quadShapeFun_apply_node_of_panel hx (m := n - 1) (by omega) (by omega) (by omega)
+
+end Panel
+
+/-! ### The element partition and the shape functions inside `H^1(a, b)` -/
+
+/-- The endpoints of the `n` elements of a quadratic mesh: the even-indexed nodes
+`x_0 < x_2 < ⋯ < x_{2n}` of [quarteroni2000numerical] §12.4.5. -/
+noncomputable def evenNodes (x : ℕ → ℝ) : ℕ → ℝ := fun k ↦ x (2 * k)
+
+theorem evenNodes_apply (x : ℕ → ℝ) (k : ℕ) : evenNodes x k = x (2 * k) := rfl
+
+theorem evenNodes_succ (x : ℕ → ℝ) (k : ℕ) : evenNodes x (k + 1) = x (2 * k + 2) := by
+  simp only [evenNodes, Nat.mul_succ]
+
+/-- The even-indexed nodes of a partition into `2n` panels form a partition into `n` elements. -/
+theorem isPartition_evenNodes {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition a b (2 * n) x) :
+    Spline.IsPartition a b n (evenNodes x) where
+  step j hj := by
+    rw [evenNodes_apply, evenNodes_succ]
+    exact hx.lt (by omega) (by omega)
+  first := hx.first
+  last := hx.last
+
+/-- The shape function of `X_h^2`, as a continuous function on `[a, b]`. -/
+noncomputable def quadShapeCM (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (i : ℕ) : C(Icc a b, ℝ) :=
+  ⟨fun t ↦ quadShapeFun n x i t, (continuous_quadShapeFun n x i).comp continuous_subtype_val⟩
+
+@[simp]
+theorem quadShapeCM_apply (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (i : ℕ) (t : Icc a b) :
+    quadShapeCM a b n x i t = quadShapeFun n x i t := rfl
+
+/-- **The shape functions of `X_h^2` are continuous piecewise quadratics**: on every element
+`[x_{2m}, x_{2m+2}]` the shape function is one of the three local Lagrange polynomials, or
+zero. -/
+theorem quadShapeCM_mem_splineSpace {n : ℕ} {x : ℕ → ℝ}
+    (hx : Spline.IsPartition a b (2 * n) x) (i : ℕ) :
+    quadShapeCM a b n x i ∈ Spline.splineSpace a b n (evenNodes x) 2 0 := by
+  refine ⟨quadShapeFun n x i, ?_, fun t ↦ rfl, fun m hm ↦ ?_⟩
+  · rw [Nat.cast_zero]
+    exact contDiffOn_zero.2 (continuous_quadShapeFun n x i).continuousOn
+  have hIcc : Icc (evenNodes x m) (evenNodes x (m + 1)) = Icc (x (2 * m)) (x (2 * m + 2)) := by
+    rw [evenNodes_apply, evenNodes_succ]
+  rw [hIcc]
+  by_cases hi0 : i = 2 * m
+  · subst hi0
+    exact ⟨quadPoly (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2)), quadPoly_degree_le _ _ _,
+      fun t ht ↦ by
+        rw [quadShapeFun_even_left hx hm ht.1 ht.2]; exact (quadPoly_eval _ _ _ t).symm⟩
+  by_cases hi1 : i = 2 * m + 1
+  · subst hi1
+    exact ⟨quadPoly (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2)), quadPoly_degree_le _ _ _,
+      fun t ht ↦ by
+        rw [quadShapeFun_midpoint hm ht.1 ht.2]; exact (quadPoly_eval _ _ _ t).symm⟩
+  by_cases hi2 : i = 2 * m + 2
+  · subst hi2
+    exact ⟨quadPoly (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1)), quadPoly_degree_le _ _ _,
+      fun t ht ↦ by
+        rw [quadShapeFun_even_right hx hm ht.1 ht.2]; exact (quadPoly_eval _ _ _ t).symm⟩
+  · exact ⟨0, by simp, fun t ht ↦ by
+      rw [quadShapeFun_eq_zero_of_panel hx hm hi0 hi1 hi2 ht.1 ht.2]; simp⟩
+
+section QuadElement
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The shape functions `φ_i` of `X_h^2`** ([quarteroni2000numerical] (12.63)-(12.64)), as
+elements of `H^1(a, b)`: the unique element whose continuous representative is
+`FiniteElement.quadShapeFun`.  The nodes `x_0 < x_1 < ⋯ < x_{2n}` are those of the quadratic
+mesh, the even-indexed ones being the endpoints of the `n` elements and the odd-indexed ones
+their interior nodes; `φ_i(x_j) = δ_{ij}`
+(`FiniteElement.rep_quadraticShape_node`). -/
+noncomputable def quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (i : ℕ) : SobolevInterval 1 a b :=
+  (exists_mem_lagrangeSpace hab (isPartition_evenNodes hx) hn
+    (quadShapeCM_mem_splineSpace hx i)).choose
+
+/-- The continuous representative of the quadratic shape element is
+`FiniteElement.quadShapeFun`. -/
+theorem toContinuousMap_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (i : ℕ) :
+    SobolevInterval.toContinuousMap hab (quadraticShape hab hx hn i) = quadShapeCM a b n x i :=
+  (exists_mem_lagrangeSpace hab (isPartition_evenNodes hx) hn
+    (quadShapeCM_mem_splineSpace hx i)).choose_spec
+
+/-- The continuous representative of the quadratic shape element, pointwise. -/
+theorem rep_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+    (i : ℕ) {t : ℝ} (ht : t ∈ Icc a b) :
+    SobolevInterval.rep (quadraticShape hab hx hn i) t = quadShapeFun n x i t :=
+  congrArg (fun f : C(Icc a b, ℝ) ↦ f ⟨t, ht⟩) (toContinuousMap_quadraticShape hab hx hn i)
+
+/-- **The quadratic shape elements lie in `X_h^2`.** -/
+theorem quadraticShape_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (i : ℕ) :
+    quadraticShape hab hx hn i ∈ lagrangeSpace hab n (evenNodes x) 2 := by
+  rw [mem_lagrangeSpace_iff, toContinuousMap_quadraticShape]
+  exact quadShapeCM_mem_splineSpace hx i
+
+/-- **`φ_i(x_j) = δ_{ij}`** for the quadratic shape elements of `H^1(a, b)`
+([quarteroni2000numerical] (12.63)-(12.64)). -/
+theorem rep_quadraticShape_node (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) {i l : ℕ} (hl : l ≤ 2 * n) :
+    SobolevInterval.rep (quadraticShape hab hx hn i) (x l) = if i = l then 1 else 0 := by
+  have hmem : x l ∈ Icc a b := Set.mem_Icc.2 ⟨hx.left_le (by omega), hx.le_right (by omega)⟩
+  rw [rep_quadraticShape hab hx hn i hmem]
+  exact quadShapeFun_apply_node hx hl hn
+
+/-- **The local support of the quadratic shape functions** ([quarteroni2000numerical] §12.4.5):
+`φ_i` vanishes on every element none of whose three nodes is `x_i`; in particular the bubble
+`φ_{2m+1}` is supported in the single element `[x_{2m}, x_{2m+2}]`. -/
+theorem rep_quadraticShape_eq_zero_of_panel (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {m i : ℕ} (hm : m < n)
+    (hne0 : i ≠ 2 * m) (hne1 : i ≠ 2 * m + 1) (hne2 : i ≠ 2 * m + 2) {t : ℝ}
+    (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) :
+    SobolevInterval.rep (quadraticShape hab hx hn i) t = 0 := by
+  have hmem : t ∈ Icc a b :=
+    Set.mem_Icc.2 ⟨(hx.left_le (show 2 * m ≤ 2 * n by omega)).trans ht1,
+      ht2.trans (hx.le_right (show 2 * m + 2 ≤ 2 * n by omega))⟩
+  rw [rep_quadraticShape hab hx hn i hmem]
+  exact quadShapeFun_eq_zero_of_panel hx hm hne0 hne1 hne2 ht1 ht2
+
+/-- The quadratic shape functions as elements of `X_h^2`, indexed by the `2n + 1` nodes. -/
+noncomputable def quadraticElem (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (i : Fin (2 * n + 1)) : lagrangeSpace hab n (evenNodes x) 2 :=
+  ⟨quadraticShape hab hx hn (i : ℕ), quadraticShape_mem_lagrangeSpace hab hx hn (i : ℕ)⟩
+
+/-- The quadratic shape functions are linearly independent: evaluating a vanishing combination
+at the node `x_j` returns its `j`-th coefficient. -/
+theorem linearIndependent_quadraticElem (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) :
+    LinearIndependent ℝ (quadraticElem hab hx hn) := by
+  rw [Fintype.linearIndependent_iff]
+  intro g hg j
+  have hjn : (j : ℕ) ≤ 2 * n := Nat.lt_succ_iff.1 j.isLt
+  have hmem : x (j : ℕ) ∈ Icc a b :=
+    Set.mem_Icc.2 ⟨hx.left_le hjn, hx.le_right hjn⟩
+  have hsub : (∑ i, g i • quadraticShape hab hx hn (i : ℕ)) = 0 := by
+    have := congrArg (Subtype.val) hg
+    simpa [quadraticElem] using this
+  have hval := congrArg (nodalCLM hab _ hmem) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, nodalCLM_apply] at hval
+  rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
+    (rep_quadraticShape_node hab hx hn (i := (i : ℕ)) (l := (j : ℕ)) hjn)] at hval
+  simpa [Fin.val_inj] using hval
+
+/-- **The nodal basis of `X_h^2`** ([quarteroni2000numerical] (12.63)-(12.64)): the `2n + 1`
+shape functions attached to the nodes of the quadratic mesh are a basis of `X_h^2`, the nodal
+values being the degrees of freedom. -/
+noncomputable def quadraticBasis (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) : Module.Basis (Fin (2 * n + 1)) ℝ (lagrangeSpace hab n (evenNodes x) 2) :=
+  haveI := finiteDimensional_lagrangeSpace hab (isPartition_evenNodes hx) hn 2
+  basisOfLinearIndependentOfCardEqFinrank (linearIndependent_quadraticElem hab hx hn)
+    (by
+      rw [Fintype.card_fin, finrank_lagrangeSpace hab (isPartition_evenNodes hx) hn 2]
+      ring)
+
+/-- The quadratic basis consists of the quadratic shape functions. -/
+@[simp]
+theorem quadraticBasis_apply (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+    (i : Fin (2 * n + 1)) : quadraticBasis hab hx hn i = quadraticElem hab hx hn i := by
+  have := finiteDimensional_lagrangeSpace hab (isPartition_evenNodes hx) hn 2
+  rw [quadraticBasis, coe_basisOfLinearIndependentOfCardEqFinrank]
+
+/-! ### The quadratic reference element -/
+
+/-- The quadratic Lagrange basis function, unfolded. -/
+theorem quadLagrangeFun_apply (p q r t : ℝ) :
+    quadLagrangeFun p q r t = (t - q) * (t - r) / ((p - q) * (p - r)) := rfl
+
+/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_zero`. -/
+theorem quadRef_aux_zero {p q t : ℝ} (hpq : p ≠ q) :
+    (t - (p + q) / 2) * (t - q) / ((p - (p + q) / 2) * (p - q))
+      = (1 - (t - p) / (q - p)) * (1 - 2 * ((t - p) / (q - p))) := by
+  obtain ⟨d, hd, rfl⟩ : ∃ d, d ≠ 0 ∧ q = p + d := ⟨q - p, sub_ne_zero.2 hpq.symm, by ring⟩
+  rw [show (p + (p + d)) / 2 = p + d / 2 by ring, show p - (p + d / 2) = -(d / 2) by ring,
+    show p - (p + d) = -d by ring, show p + d - p = d by ring]
+  field_simp
+  ring
+
+/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_one`. -/
+theorem quadRef_aux_one {p q t : ℝ} (hpq : p ≠ q) :
+    (t - p) * (t - q) / (((p + q) / 2 - p) * ((p + q) / 2 - q))
+      = 4 * (1 - (t - p) / (q - p)) * ((t - p) / (q - p)) := by
+  obtain ⟨d, hd, rfl⟩ : ∃ d, d ≠ 0 ∧ q = p + d := ⟨q - p, sub_ne_zero.2 hpq.symm, by ring⟩
+  rw [show (p + (p + d)) / 2 - p = d / 2 by ring,
+    show (p + (p + d)) / 2 - (p + d) = -(d / 2) by ring, show p + d - p = d by ring]
+  field_simp
+  ring
+
+/-- The algebraic identity behind `FiniteElement.quadShapeFun_eq_referenceQuadratic_two`. -/
+theorem quadRef_aux_two {p q t : ℝ} (hpq : p ≠ q) :
+    (t - p) * (t - (p + q) / 2) / ((q - p) * (q - (p + q) / 2))
+      = (t - p) / (q - p) * (2 * ((t - p) / (q - p)) - 1) := by
+  obtain ⟨d, hd, rfl⟩ : ∃ d, d ≠ 0 ∧ q = p + d := ⟨q - p, sub_ne_zero.2 hpq.symm, by ring⟩
+  rw [show (p + (p + d)) / 2 = p + d / 2 by ring, show p + d - (p + d / 2) = d / 2 by ring,
+    show p + d - p = d by ring]
+  field_simp
+  ring
+
+/-- **`φ_{2m} = φ̂₀ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)): the reference
+shape functions of `X_h^2` describe the element only when its interior node is the midpoint. -/
+theorem quadShapeFun_eq_referenceQuadratic_zero (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+    (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
+    (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m) t = referenceQuadratic 0 (refCoord (evenNodes x) m t) := by
+  have hne : x (2 * m) ≠ x (2 * m + 2) :=
+    (hx.lt (show 2 * m < 2 * m + 2 by omega) (by omega)).ne
+  rw [quadShapeFun_even_left hx hm h1 h2, quadLagrangeFun_apply, hmid]
+  simp only [referenceQuadratic, Matrix.cons_val_zero, refCoord_apply, evenNodes_succ]
+  exact quadRef_aux_zero hne
+
+/-- **`φ_{2m+1} = φ̂₁ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
+theorem quadShapeFun_eq_referenceQuadratic_one (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+    (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
+    (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m + 1) t = referenceQuadratic 1 (refCoord (evenNodes x) m t) := by
+  have hne : x (2 * m) ≠ x (2 * m + 2) :=
+    (hx.lt (show 2 * m < 2 * m + 2 by omega) (by omega)).ne
+  rw [quadShapeFun_midpoint hm h1 h2, quadLagrangeFun_apply, hmid]
+  simp only [referenceQuadratic, Matrix.cons_val_one, refCoord_apply, evenNodes_succ]
+  exact quadRef_aux_one hne
+
+/-- **`φ_{2m+2} = φ̂₂ ∘ ξ` on the element `I_m`** ([quarteroni2000numerical] (12.65)). -/
+theorem quadShapeFun_eq_referenceQuadratic_two (hx : Spline.IsPartition a b (2 * n) x) {m : ℕ}
+    (hm : m < n) (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
+    (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    quadShapeFun n x (2 * m + 2) t = referenceQuadratic 2 (refCoord (evenNodes x) m t) := by
+  have hne : x (2 * m) ≠ x (2 * m + 2) :=
+    (hx.lt (show 2 * m < 2 * m + 2 by omega) (by omega)).ne
+  rw [quadShapeFun_even_right hx hm h1 h2, quadLagrangeFun_apply, hmid]
+  simp only [referenceQuadratic, Matrix.cons_val_two, Matrix.tail_cons, Matrix.head_cons,
+    refCoord_apply, evenNodes_succ]
+  exact quadRef_aux_two hne
+
+/-- **The shape functions (12.63)-(12.64) are the images of the reference shape functions
+(12.65) under the affine map (12.62)** ([quarteroni2000numerical] §12.4.5), for a mesh whose
+interior nodes are the midpoints of the elements. -/
+theorem rep_quadraticShape_eq_referenceQuadratic (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
+    (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ}
+    (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    SobolevInterval.rep (quadraticShape hab hx hn (2 * m)) t
+        = referenceQuadratic 0 (refCoord (evenNodes x) m t) ∧
+      SobolevInterval.rep (quadraticShape hab hx hn (2 * m + 1)) t
+        = referenceQuadratic 1 (refCoord (evenNodes x) m t) ∧
+      SobolevInterval.rep (quadraticShape hab hx hn (2 * m + 2)) t
+        = referenceQuadratic 2 (refCoord (evenNodes x) m t) := by
+  have hmem : t ∈ Icc a b :=
+    Set.mem_Icc.2 ⟨(hx.left_le (show 2 * m ≤ 2 * n by omega)).trans h1,
+      h2.trans (hx.le_right (show 2 * m + 2 ≤ 2 * n by omega))⟩
+  refine ⟨?_, ?_, ?_⟩
+  · rw [rep_quadraticShape hab hx hn _ hmem]
+    exact quadShapeFun_eq_referenceQuadratic_zero hx hm hmid h1 h2
+  · rw [rep_quadraticShape hab hx hn _ hmem]
+    exact quadShapeFun_eq_referenceQuadratic_one hx hm hmid h1 h2
+  · rw [rep_quadraticShape hab hx hn _ hmem]
+    exact quadShapeFun_eq_referenceQuadratic_two hx hm hmid h1 h2
+
+/-- **The interior quadratic shape elements lie in `X_h^{2,0}`** ([quarteroni2000numerical]
+(12.57) at `k = 2`): they vanish at both endpoints. -/
+theorem quadraticShape_mem_lagrangeSpaceZero (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {i : ℕ} (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
+    quadraticShape hab hx hn i ∈ lagrangeSpaceZero hab n (evenNodes x) 2 := by
+  refine ⟨quadraticShape_mem_lagrangeSpace hab hx hn i,
+    SobolevIntervalZero.mem_of_rep_eq_zero hab _ ?_ ?_⟩
+  · have h := rep_quadraticShape_node hab hx hn (i := i) (l := 0) (Nat.zero_le _)
+    rw [hx.first] at h
+    rw [h]
+    simp [h0]
+  · have h := rep_quadraticShape_node hab hx hn (i := i) (l := 2 * n) le_rfl
+    rw [hx.last] at h
+    rw [h]
+    simp [hi]
+
+
+end QuadElement
+/-! ### The nodal values as degrees of freedom -/
+
+section Nodal
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The nodal values are the degrees of freedom of `X_h^1`**: two continuous piecewise linear
+functions with the same values at the nodes are equal ([quarteroni2000numerical] §12.4.5). -/
+theorem eq_of_rep_node_eq (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
+    {v w : SobolevInterval 1 a b} (hv : v ∈ lagrangeSpace hab n x 1)
+    (hw : w ∈ lagrangeSpace hab n x 1)
+    (h : ∀ i ≤ n, SobolevInterval.rep v (x i) = SobolevInterval.rep w (x i)) : v = w := by
+  refine (eq_sum_hatFunction hab hx hn ⟨v, hv⟩).trans
+    (Eq.trans ?_ (eq_sum_hatFunction hab hx hn ⟨w, hw⟩).symm)
+  exact Finset.sum_congr rfl fun i _ ↦ by
+    rw [h (i : ℕ) (Nat.lt_succ_iff.1 i.isLt)]
+
+/-- **The nodes of a uniform mesh** are `x_i = a + i h`. -/
+theorem node_eq_of_uniform (hx : Spline.IsPartition a b n x) {h : ℝ}
+    (huni : ∀ k < n, x (k + 1) - x k = h) {i : ℕ} (hi : i ≤ n) : x i = a + i * h := by
+  induction i with
+  | zero => simp [hx.first]
+  | succ m ih =>
+      have hstep := huni m (by omega)
+      have hm := ih (by omega)
+      push_cast
+      rw [show x (m + 1) = x m + h by linarith, hm]
+      ring
+
+end Nodal
 
 end FiniteElement

@@ -241,18 +241,6 @@ id = "isMMatrix_smul_tridiagonalToeplitz"
 id = "viscosityScheme_isMMatrix"
 
 [[node]]
-id = "constLinf"
-
-[[node]]
-id = "coeFn_constLinf"
-
-[[node]]
-id = "norm_constLinf"
-
-[[node]]
-id = "mulL_constLinf"
-
-[[node]]
 id = "stabilizedForm"
 
 [[node]]
@@ -275,24 +263,35 @@ id = "seminorm_sub_stabilized_le_upwind"
 
 [[node]]
 id = "seminorm_sub_stabilized_le_sg"
-kind = "theorem"
-desc = '''**Theorem 12.4, Scharfetter-Gummel, k = 1 and k = 2**: (i) for `k = 1`,
-`|u - u_h|_1 <= C_2 h |u|_2` - even the book's factor `(1 + 2 Pe_gl C_P)` is absent, because by
-`sg_nodal_exact` `u_h = Pi_h^1 u` exactly, so the error *is* the interpolation error; (ii) for
-`k = 2`, `|u - u_h|_1 <= C h^2 (|u|_1 + |u|_3)` for `u` in `H^3`, from
-`seminorm_sub_stabilized_le` with `w = Pi_h^2 u`, the estimate `|u - Pi_h^2 u|_1 <= C h^2 |u|_3`
-and `phiSG_le_sq`. **
 
-Blocked: the finite element space and the `P_1` interpolant are now in place
-(`FiniteElement.lagrangeInterp`, `FiniteElement.seminorm_sub_lagrangeInterp_le`), and the
-analogue of the upwind bound with `phiSG_le_sq` in place of `phi^UP <= Pe` is immediate; what is
-missing is the *sharp* form the plan asks for. Clause (i) needs the bridge "the `P_1` Galerkin
-solution of the stabilized problem is the piecewise linear function whose nodal values solve the
-viscosity difference scheme" - which is `FiniteElement.galerkin_iff_centredScheme` applied with
-`eps := AdvectionDiffusion.viscosity eps beta h phiSG` (the stabilized form *is*
-`EllipticInterval.form` at that constant, and `FiniteElement.constLinfty` and
-`AdvectionDiffusion.constLinf` are the same element) - followed by `sg_nodal_exact` and the
-identification of the exact weak solution with `AdvectionDiffusion.exactSolution`, which is a
-chain of four surface-level steps. Clause (ii) needs `FiniteElement.quadraticShape` and the `P_2`
-interpolant, which are not written. Estimated half a day for (i), a day for (ii).'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.sg_nodal_exact", "AdvectionDiffusion.phiSG_le_sq", "FiniteElement.lagrangeInterp", "AdvectionDiffusion.seminorm_sub_stabilized_le_upwind"]
+[[node]]
+id = "viscosityScheme_iff_galerkinStencil"
+
+[[node]]
+id = "stabilizedForm_eq_form_constLinf"
+
+[[node]]
+id = "rep_eq_exactSolution_of_galerkin_sg"
+
+[[node]]
+id = "seminorm_sub_stabilized_le_sg_quadratic"
+kind = "theorem"
+desc = '''**Theorem 12.4, (12.86), Scharfetter-Gummel with `k = 2`**: for the model problem (12.70)
+with `u` in `H^3(0, 1)` and the trial space `X_h^{2,0}`, the stabilized Galerkin error satisfies
+`|u - u_h|_{H^1} <= C h^2 (|u|_{H^1} + |u|_{H^3})` with `C` independent of `h` and of `u`.  This
+is `AdvectionDiffusion.seminorm_sub_stabilized_le` with `w = Pi_h^2 u` together with
+`phiSG_le_sq` (which turns the consistency term `eps phi^SG(Pe)/eps_h` into `O(h^2)`) and the
+interpolation estimate `|u - Pi_h^2 u|_{H^1} <= h^2 |u|_{H^3}`.
+
+Blocked: the `P_2` shape functions and their basis are now in place
+(`FiniteElement.quadraticShape`, `quadraticBasis`), and the interpolation estimate itself is
+proved in broken form as `sobolevSeminorm_sub_piecewisePolyInterp_le` (`k = 2`, `m = 1`) in
+`Numlib/Approximation/SobolevInterpolation.lean`.  What is missing is the `P_2` analogue of the
+`P_1` interpolation layer of `Numlib/Variational/FiniteElementInterval.lean`: an operator
+`quadraticInterp : H^1(a, b) -> H^1(a, b)` landing in `X_h^{2,0}`, the identification of its
+weak derivative with the panelwise derivative of the local Lagrange polynomials (the analogue of
+`coeFn_deriv_lagrangeInterp`, which for `P_1` is the panelwise difference quotient and is the
+longest proof in that file), and the bridge from the broken sum of
+`sobolevSeminorm_sub_piecewisePolyInterp_le` to the `H^1` seminorm of the error.  Estimated one
+day.'''
+deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le", "AdvectionDiffusion.phiSG_le_sq", "FiniteElement.quadraticShape"]

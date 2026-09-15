@@ -339,8 +339,8 @@ form `a(u, v) = ν ∫ u' v'` on the uniform mesh. -/
 theorem heatStiffnessMatrix_eq_gram {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 n x)
     (hn : 1 ≤ n) (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (ν : ℝ) :
     heatStiffnessMatrix ν n
-      = FiniteElement.stiffnessMatrix 0 1 (FiniteElement.constLinfty 0 1 ν)
-        (FiniteElement.constLinfty 0 1 0) (FiniteElement.constLinfty 0 1 0)
+      = FiniteElement.stiffnessMatrix 0 1 (EllipticInterval.constLinf 0 1 ν)
+        (EllipticInterval.constLinf 0 1 0) (EllipticInterval.constLinf 0 1 0)
         fun i : Fin (n - 1) ↦ FiniteElement.hatFunction hx hn ((i : ℕ) + 1) := by
   have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
   rw [FiniteElement.stiffnessMatrix_uniform_eq hx hn (by positivity) huni ν 0 0,

@@ -18,41 +18,23 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.12'
 
 [[node]]
 id = "equation_12_45"
-kind = "definition"
-desc = '''§12.4.2: `𝒟(0,1) = 𝓓(Opens.Ioo 0 1, ℝ)` (Mathlib's `TestFunction`) and `𝒟'(0,1) = 𝓓'(Opens.Ioo 0 1, ℝ)`
-(Mathlib's `Distribution`, the continuous linear functionals on `𝓓`), and the distributional derivative
-(12.45): `equation_12_45 k T : 𝓓'(Opens.Ioo 0 1, ℝ)` is the `k`-fold `Distribution.lineDerivCLM 1`, with
-`equation_12_45_apply : ⟪T^{(k)}, φ⟫ = (-1)^k ⟪T, φ^{(k)}⟫` (`Distribution.lineDerivCLM_apply` iterated, and
-`iteratedDeriv` of the test function). Every distribution is infinitely differentiable by construction.
-The two example functionals `⟨T, x⟩ = x(0)` and `⟨S, x⟩ = ∫ x sin` on `C[0,1]` are `ContinuousMap.evalCLM`
-and an integral against a continuous function, both in Mathlib. ★
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.45)'
 
-Blocked: not attempted this round either (the round's budget went to the hat functions, the
-stiffness matrix and the convergence estimates). Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
-whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
-distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
-to learn.'''
-deps = []
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.45)'
+[[node]]
+id = "equation_12_45_apply"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.45)'
+
+[[node]]
+id = "heaviside"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.2'
+
+[[node]]
+id = "regularDistribution"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.2'
 
 [[node]]
 id = "equation_12_45_heaviside"
-kind = "theorem"
-desc = '''The example after (12.45): the distributional derivative of the Heaviside function `H = indicator
-(Ici 0)` is the Dirac mass at `0` — in the only form available without a "regular distribution"
-constructor (Mathlib has `Distribution.delta` but no `L¹_loc → 𝓓'` map): for every `φ : 𝓓(⊤ : Opens ℝ, ℝ)`,
-`-∫ x, H x * deriv φ x = φ 0` (`= Distribution.delta 0 φ`), by the fundamental theorem of calculus on
-`[0, R]` with `φ(R) = 0`. And `equation_12_45_of_contDiff`: if `T` is (integration against) a `C¹` function
-then its distributional derivative is its classical derivative — `hasWeakDerivOn_of_contDiffOn` of
-`Numlib/Analysis/Sobolev/Interval.lean`, which is the same integration by parts. ★
-
-Blocked: not attempted this round either (the round's budget went to the hat functions, the
-stiffness matrix and the convergence estimates). Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
-whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
-distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
-to learn.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_45", "hasWeakDerivOn_of_contDiffOn"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.2, the Heaviside example after (12.45)'''
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.2'
 
 [[node]]
 id = "equation_12_46"
@@ -112,18 +94,27 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.61)�
 
 [[node]]
 id = "equation_12_63"
-kind = "definition"
-desc = '''The shape functions of `X_h^2` (12.63)-(12.64) at the `2n + 1` nodes (endpoints even, midpoints odd),
-with `phi_i(x_j) = delta_ij`, the reference functions (12.65) and the bubble function's support being one
-interval: `FiniteElement.quadraticShape`, `quadraticShape_apply_node`, `quadraticShape_support`,
-`FiniteElement.referenceQuadratic` (which is written), `quadraticShape_eq_referenceQuadratic_comp`. *
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.63)-(12.64)'
 
-Blocked: `FiniteElement.quadraticShape` was not reached; see its `Blocked:` paragraph in
-`plans/Numlib/Variational/FiniteElementInterval.toml`. The reference functions (12.65) themselves
-are `FiniteElement.referenceQuadratic`, which is proved; only the global piecewise quadratic shape
-functions and their basis are missing.'''
-deps = ["FiniteElement.quadraticShape", "FiniteElement.referenceHat"]
-source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.63)-(12.65)'
+[[node]]
+id = "equation_12_63_apply_node"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.63)-(12.64)'
+
+[[node]]
+id = "equation_12_63_support"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.5'
+
+[[node]]
+id = "equation_12_63_basis"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.5'
+
+[[node]]
+id = "equation_12_63_mem_zero"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.57)'
+
+[[node]]
+id = "equation_12_65"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.65)'
 
 [[node]]
 id = "equation_12_66"
@@ -140,28 +131,27 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 12.1, equa
 
 [[node]]
 id = "equation_12_68"
-kind = "definition"
-desc = '''The spectral (generalized Galerkin) method (12.68)-(12.69): find `u_n` in `P_n^0` with
-`a_n(u_n, v_n) = (f, v_n)_n` for all `v_n` in `P_n^0`, where `a_n(u, v) = (alpha u', v')_n +
-(beta u', v)_n + (gamma u, v)_n` replaces the integrals of (12.44) by the Gauss-Lobatto formula
-(12.37); and `equation_12_68_eq_collocation`: for `alpha = 1`, `beta = gamma = 0` it coincides
-with the collocation problem (12.36), by `equation_12_38`. *
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.68)'
 
-Blocked: §12.3's `equation_12_37` and `equation_12_38` are now proved, so the obstacle is only
-the shape of the backbone predicate. `IsGeneralizedGalerkinSolution` takes its space `W` with
-`[NormedAddCommGroup W] [NormedSpace k W]`, while the natural `W` here is the polynomials
-`R[X]` — the discrete form evaluates `u'` *pointwise* at the Gauss-Lobatto nodes, which no
-element of `H^1(-1, 1)` or `L^2(-1, 1)` offers. Two ways out, neither attempted: generalize
-`IsGeneralizedGalerkinSolution` (and the Strang lemma's statement, which does need the norm) to
-a plain module for the definition alone; or instantiate `W` at `ContDiffMapIcc` (the `C^k` maps
-on `[-1, 1]`, which is a normed space and carries `u'`) and take `K` to be the image of the
-polynomials of degree at most `n` vanishing at the endpoints. The second needs the image
-submodule and the bilinearity of the three discrete pairings; estimated half a day. The
-collocation equivalence additionally needs the discrete integration by parts
-`(p', q')_n = (-p'', q)_n`, which is `equation_12_37_exact` twice around the polynomial
-integration by parts on `[-1, 1]`.'''
-deps = ["IsGeneralizedGalerkinSolution", "QuarteroniSaccoSaleri.Chapter12.equation_12_37", "QuarteroniSaccoSaleri.Chapter12.equation_12_38"]
-source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equations (12.68)-(12.69)'
+[[node]]
+id = "polyZero"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.3'
+
+[[node]]
+id = "equation_12_69"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.69)'
+
+[[node]]
+id = "spectralLoad"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, equation (12.68)'
+
+[[node]]
+id = "equation_12_69_model"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.7'
+
+[[node]]
+id = "equation_12_68_eq_collocation"
+source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, section 12.4.7'
 
 [[node]]
 id = "equation_12_53"
