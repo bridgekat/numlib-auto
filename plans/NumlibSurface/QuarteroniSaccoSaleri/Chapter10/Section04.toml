@@ -18,23 +18,40 @@ id = "equation_10_34"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.33)–(10.34)'
 
 [[node]]
+id = "legendreLobattoNode_mem_Icc"
+
+[[node]]
 id = "legendreLobattoWeight_bounds"
-kind = "theorem"
-desc = '''The unnumbered bounds after (10.34) (quoted from [BM92] p. 76): `2/(n(n+1)) ≤ ᾱⱼ ≤ C/n` for a
-constant `C` independent of `n`. Not formalized: the lower bound is (10.34) with `|L_n(x)| ≤ 1` on
-`[-1, 1]`, which is not in Mathlib or the backbone (it needs the Laplace integral representation
-or the Bonnet–Legendre argument); the upper bound is an asymptotic of the Legendre polynomials at
-the Lobatto nodes that the book only cites.'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_34"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.4, bounds on the Gauss–Lobatto weights'
 
 [[node]]
 id = "equation_10_36"
 kind = "theorem"
-desc = '''(10.36)–(10.37): `|(f, v_n) - (f, v_n)_n| ≤ C n^{-s} ‖f‖_s ‖v_n‖_{L²(-1,1)}` for every
-`v_n ∈ P_n`, and `|∫_{-1}^1 f - I^{GL}_n f| ≤ C n^{-s} ‖f‖_s`, together with the Legendre analogues
-of (10.22) and (10.24). Not formalized: quoted from [CHQZ88] without proof, the same missing
-spectral machinery as `equation_10_22` and `equation_10_27`.'''
+desc = '''(10.36)-(10.37): `|(f, v_n) - (f, v_n)_n| <= C n^{-s} ‖f‖_s ‖v_n‖_{L^2(-1,1)}` for every `v_n` in
+`P_n`, and `|int_{-1}^1 f - I^{GL}_n f| <= C n^{-s} ‖f‖_s` at `v_n = 1` with `‖1‖ = sqrt 2`,
+together with the Legendre analogues of (10.22) and (10.24), stated with the norm (10.35). Quoted
+from [CHQZ88].
+
+Blocked: this is one of five nodes of chapter 10 ((10.22), (10.24), (10.26)-(10.27), (10.36)-(10.37)
+and (10.71)) that state the same spectral-approximation estimate for the Chebyshev or the Legendre
+weight. All five rest on a module that does not exist here and has no counterpart in Mathlib, call
+it `Approximation/SpectralProjection`, with three layers:
+(i) the *projection* estimate `‖f - P_n f‖_w <= C n^{-s} |f|_{s,w}` for the truncation `P_n` of the
+orthogonal series, in the **non-uniformly** weighted seminorm
+`|f|_{s,w} = (sum_{k<=s} ‖(1-x^2)^{k/2} f^{(k)}‖_w^2)^{1/2}`. It comes from repeating the
+integration by parts against the singular Sturm-Liouville operator of the weight — for Chebyshev
+`L u = (1-x^2)^{1/2} ((1-x^2)^{1/2} u')'` with `L T_k = -k^2 T_k`, for Legendre
+`L u = ((1-x^2) u')'` with `L L_k = -k(k+1) L_k` — whose boundary terms vanish because the factor
+`(1-x^2)` does. Only the Legendre operator identity exists here, as
+`Polynomial.legendre_ode` and `Polynomial.quad_mul_derivative_legendre`.
+(ii) the comparison of that seminorm with the **uniformly** weighted norm `‖f‖_{s,w}` of (10.23)
+that the book states the estimates in: a Hardy-type inequality on `(-1, 1)`.
+(iii) the *aliasing* step from the projection to the interpolant at the Gauss-Lobatto nodes, which
+is (10.27)/(10.36) itself: the discrete inner product is the exact one on `P_{2n-1}`, so the
+difference is controlled by the tail of the series, and the tail is estimated again by (i).
+[CHQZ88] p. 298 and [BM92] give several pages to each layer; nothing here is a single lemma.
+Estimated well over a thousand lines and a plan of its own. The surface nodes are restatements
+once that module exists.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_34", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.36)–(10.37), and the Legendre forms of (10.22), (10.24)'''
 

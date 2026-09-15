@@ -1,0 +1,41 @@
+namespace = "SchwartzMap"
+
+[[node]]
+id = "integrable_pow_norm_mul_norm"
+
+[[node]]
+id = "integrable_norm_sq"
+
+[[node]]
+id = "integrable_sq_mul_norm_sq"
+
+[[node]]
+id = "tendsto_mul_mul_conj"
+
+[[node]]
+id = "hasDerivAt_mul_mul_conj"
+
+[[node]]
+id = "integral_norm_sq_add_two_mul_re"
+
+[[node]]
+id = "coe_derivCLM"
+
+[[node]]
+id = "integrable_two_mul_re"
+
+[[node]]
+id = "integrable_abs_mul_norm_mul_norm_deriv"
+
+[[node]]
+id = "integral_norm_sq_le_two_mul"
+
+[[node]]
+id = "heisenberg_uncertainty_deriv"
+
+[[node]]
+id = "integral_norm_sq_deriv"
+
+[[node]]
+id = "heisenberg_uncertainty"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.88)'

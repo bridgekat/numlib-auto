@@ -5,20 +5,17 @@ id = "laguerre"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.5, the Laguerre polynomials'
 
 [[node]]
+id = "laguerreMeasure_compl_Ioi"
+
+[[node]]
+id = "laguerreMeasure_ae_nonneg"
+
+[[node]]
 id = "equation_10_41"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41), exactness and weights'
 
 [[node]]
 id = "equation_10_41_error"
-kind = "theorem"
-desc = '''(10.41), the remainder: for `φ ∈ C^{2n}[0, ∞)` with `φ^{(2n)}` bounded on `[0, ∞)` and the
-integrals convergent, `∫_0^∞ e^{-x} φ - ∑ α_k φ(x_k) = ((n!)²/(2n)!) φ^{(2n)}(ξ)` for some
-`ξ ∈ (0, ∞)`. Not formalized: the mean value form of the Gauss remainder on an unbounded interval
-requires `φ^{(2n)}` to attain the value `E/normSq`, which the intermediate value theorem gives on a
-compact interval (`Quadrature.exists_gauss_error_eq`) but not on `(0, ∞)` without an extra
-hypothesis; the book states it without proof (citing [DR75]). The constant is
-`normSq laguerreMeasure n / (2n)! = (n!)²/(2n)!`.'''
-deps = ["Quadrature.exists_gauss_error_eq", "QuarteroniSaccoSaleri.Chapter10.equation_10_41"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41), the remainder term'
 
 [[node]]
@@ -31,10 +28,4 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.42), exactness
 
 [[node]]
 id = "equation_10_42_error"
-kind = "theorem"
-desc = '''(10.42), the remainder: `∫ e^{-x²} φ - ∑ α_k φ(x_k) = (n! √π / (2^n (2n)!)) φ^{(2n)}(ξ)` for
-some `ξ ∈ ℝ`, for `φ ∈ C^{2n}(ℝ)` with the integrals convergent. Not formalized: as
-`equation_10_41_error`, the mean value form on an unbounded interval; the constant is
-`normSq hermiteMeasure n / (2n)! = n! √π / (2^n (2n)!)`.'''
-deps = ["Quadrature.exists_gauss_error_eq", "QuarteroniSaccoSaleri.Chapter10.equation_10_42"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.42), the remainder term'

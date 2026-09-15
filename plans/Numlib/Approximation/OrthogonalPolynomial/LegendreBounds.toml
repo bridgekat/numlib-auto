@@ -1,0 +1,46 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "legendre_eval_neg_one"
+
+[[node]]
+id = "legendreEnergy"
+
+[[node]]
+id = "derivative_legendreEnergy"
+
+[[node]]
+id = "eval_legendreEnergy_one"
+
+[[node]]
+id = "eval_legendreEnergy_neg_one"
+
+[[node]]
+id = "deriv_eval_legendreEnergy"
+
+[[node]]
+id = "monotoneOn_eval_legendreEnergy"
+
+[[node]]
+id = "antitoneOn_eval_legendreEnergy"
+
+[[node]]
+id = "eval_legendreEnergy_le_one"
+
+[[node]]
+id = "eval_legendreEnergy_zero_le"
+
+[[node]]
+id = "eval_legendre_sq_le_one"
+
+[[node]]
+id = "abs_eval_legendre_le_one"
+
+[[node]]
+id = "one_le_eval_legendre_zero_sq"
+
+[[node]]
+id = "inv_le_eval_legendreEnergy_zero"
+
+[[node]]
+id = "inv_le_eval_legendre_sq"

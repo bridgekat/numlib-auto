@@ -39,9 +39,31 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.10.3, `𝒟_n
 [[node]]
 id = "equation_10_71"
 kind = "theorem"
-desc = '''(10.71): `‖f' - 𝒟_n f‖_w ≤ C n^{1-m} ‖f‖_{m,w}` for every `m ≥ 2` with `‖f‖_{m,w} < ∞`. Not
-formalized: quoted from [CHQZ88] without proof, the derivative form of the missing weighted
-Sobolev estimate `equation_10_22`.'''
+desc = '''(10.71): `‖f' - D_n f‖_w <= C n^{1-m} ‖f‖_{m,w}` for every `m >= 2` with `‖f‖_{m,w}` finite, where
+`D_n f` is the pseudo-spectral derivative `(Pi^{GL}_{n,w} f)'` of §10.10.3. Quoted from [CHQZ88].
+This is the derivative form of (10.22): differentiation loses one power of `n`, which is an inverse
+inequality on `P_n` applied to the interpolation error.
+
+Blocked: this is one of five nodes of chapter 10 ((10.22), (10.24), (10.26)-(10.27), (10.36)-(10.37)
+and (10.71)) that state the same spectral-approximation estimate for the Chebyshev or the Legendre
+weight. All five rest on a module that does not exist here and has no counterpart in Mathlib, call
+it `Approximation/SpectralProjection`, with three layers:
+(i) the *projection* estimate `‖f - P_n f‖_w <= C n^{-s} |f|_{s,w}` for the truncation `P_n` of the
+orthogonal series, in the **non-uniformly** weighted seminorm
+`|f|_{s,w} = (sum_{k<=s} ‖(1-x^2)^{k/2} f^{(k)}‖_w^2)^{1/2}`. It comes from repeating the
+integration by parts against the singular Sturm-Liouville operator of the weight — for Chebyshev
+`L u = (1-x^2)^{1/2} ((1-x^2)^{1/2} u')'` with `L T_k = -k^2 T_k`, for Legendre
+`L u = ((1-x^2) u')'` with `L L_k = -k(k+1) L_k` — whose boundary terms vanish because the factor
+`(1-x^2)` does. Only the Legendre operator identity exists here, as
+`Polynomial.legendre_ode` and `Polynomial.quad_mul_derivative_legendre`.
+(ii) the comparison of that seminorm with the **uniformly** weighted norm `‖f‖_{s,w}` of (10.23)
+that the book states the estimates in: a Hardy-type inequality on `(-1, 1)`.
+(iii) the *aliasing* step from the projection to the interpolant at the Gauss-Lobatto nodes, which
+is (10.27)/(10.36) itself: the discrete inner product is the exact one on `P_{2n-1}`, so the
+difference is controlled by the tail of the series, and the tail is estimated again by (i).
+[CHQZ88] p. 298 and [BM92] give several pages to each layer; nothing here is a single lemma.
+Estimated well over a thousand lines and a plan of its own. The surface nodes are restatements
+once that module exists.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.pseudoSpectralDerivative", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.71)'
 

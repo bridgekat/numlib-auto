@@ -1,3 +1,4 @@
+import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section02
 
 /-!
@@ -9,7 +10,8 @@ Springer, 2000, §10.4.
 For the Legendre weight `w ≡ 1` the Gauss nodes are the zeros of `L_{n+1}` with weights
 `αⱼ = 2/((1 - xⱼ²) L'_{n+1}(xⱼ)²)` (10.32), and the Gauss–Lobatto nodes are `x̄₀ = -1`, `x̄_n = 1`
 and the zeros of `L_n'` (10.33) with weights `ᾱⱼ = 2/(n(n + 1) L_n(x̄ⱼ)²)` (10.34). The section
-quotes bounds on the Lobatto weights and the Legendre forms of the spectral estimates
+quotes bounds on the Lobatto weights (proved here from `Numlib/Approximation/OrthogonalPolynomial/
+LegendreBounds`) and the Legendre forms of the spectral estimates
 ((10.36)–(10.37), with the norm (10.35)), and derives the discrete Legendre transform: the
 interpolant at the Gauss–Lobatto nodes is `∑_{k ≤ n} f̃_k L_k` (10.38), with
 `f(x̄ⱼ) = ∑_k f̃_k L_k(x̄ⱼ)` (10.39) and the coefficients (10.40).
@@ -35,14 +37,15 @@ for `OrthogonalPolynomial.legendreMeasure`, with `OrthogonalPolynomial.family_eq
   `-1`, `1` and the zeros of `L_n'` exist; for any such family the weights
   `2/(n(n + 1) L_n(x̄ⱼ)²)` are well defined, positive and give degree of exactness `2n - 1`, and
   every zero of `L_n'` in `(-1, 1)` is a node.
+* `legendreLobattoWeight_bounds` — the bounds `2/(n(n + 1)) ≤ ᾱⱼ ≤ C/n` quoted after (10.34),
+  with the explicit constant `C = 8`.
 * `equation_10_40` — the discrete Legendre transform (10.38)–(10.40), the discrete norms of the
   Legendre polynomials (the hint of Exercise 6), and the identification of the interpolant with
   the discrete truncation `f_n^*` of (10.4).
 
 ## Not formalized
 
-`legendreLobattoWeight_bounds` (the bounds `2/(n(n + 1)) ≤ ᾱⱼ ≤ C/n`, quoted from [BM92]) and
-`equation_10_36` (the spectral estimates (10.36)–(10.37)) are left in the plan with the reason.
+`equation_10_36` (the spectral estimates (10.36)–(10.37)) is left in the plan with the reason.
 
 ## Conventions
 
@@ -219,6 +222,74 @@ theorem equation_10_34 (hn : 1 ≤ n) :
       rw [hroot.resolve_left hc, mul_zero]
     · rw [← integral_legendreMeasure, ← hexact p hp]
       exact Finset.sum_congr rfl fun j _ => by rw [hform j]
+
+/-! ### The bounds on the Gauss–Lobatto weights -/
+
+/-- **A Legendre–Gauss–Lobatto node lies in `[-1, 1]`, and `(1 - x̄ⱼ²) L_n'(x̄ⱼ) = 0` there.** The
+two endpoints kill the factor `1 - x²`; an interior node is a zero of `L_n'`, hence a zero of the
+`(n-1)`-st orthogonal polynomial of the modified weight `(1 - x²) dx`
+(`Quadrature.derivative_legendre_eq_family`), and the zeros of an orthogonal polynomial lie inside
+the interval carrying its weight. -/
+theorem legendreLobattoNode_mem_Icc (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (h0 : x 0 = -1)
+    (hl : x (Fin.last n) = 1)
+    (hint : ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
+      (derivative (legendre n)).eval (x j) = 0) (j : Fin (n + 1)) :
+    x j ∈ Icc (-1 : ℝ) 1 ∧ (1 - x j ^ 2) * (derivative (legendre n)).eval (x j) = 0 := by
+  rcases eq_or_ne (j : ℕ) 0 with hj0 | hj0
+  · rw [show j = 0 from Fin.ext hj0, h0]
+    norm_num
+  rcases eq_or_ne (j : ℕ) n with hjn | hjn
+  · rw [show j = Fin.last n from Fin.ext (by simpa using hjn), hl]
+    norm_num
+  have hroot := hint j (Nat.pos_of_ne_zero hj0)
+    (lt_of_le_of_ne (Nat.lt_succ_iff.mp j.2) hjn)
+  refine ⟨?_, by rw [hroot, mul_zero]⟩
+  have hw := isWeight_legendreMeasure
+  have hsupp := legendreMeasure_compl_Icc
+  have hc : (n : ℝ) * (legendre n).leadingCoeff ≠ 0 :=
+    mul_ne_zero (by exact_mod_cast (by omega : n ≠ 0))
+      (leadingCoeff_ne_zero.mpr (legendre_ne_zero n))
+  have hfam : (family (lobattoMeasure legendreMeasure) (n - 1)).eval (x j) = 0 := by
+    rw [derivative_legendre_eq_family hn, eval_mul, eval_C, mul_eq_zero] at hroot
+    exact hroot.resolve_left hc
+  exact Ioo_subset_Icc_self
+    (root_family_mem_Ioo (isWeight_lobattoMeasure hw hsupp) (lobattoMeasure_compl_Icc hsupp) hfam)
+
+/-- **The bounds on the Legendre–Gauss–Lobatto weights** quoted after (10.34): there is a constant
+`C` independent of `n` with
+
+`2 / (n(n + 1)) ≤ ᾱⱼ ≤ C / n`, `j = 0, …, n`,
+
+for the weights `ᾱⱼ = 2/(n(n + 1) L_n(x̄ⱼ)²)` of (10.34) at any family of Gauss–Lobatto nodes
+(10.33). The book quotes this from Bernardi and Maday; it is proved here with the explicit
+constant `C = 8` from the two bounds of
+`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`: `L_n(x̄ⱼ)² ≤ 1` on `[-1, 1]` gives the
+lower bound, and `L_n(x̄ⱼ)² ≥ 1/(4n)` at a point where `(1 - x²) L_n'` vanishes gives the upper
+one. Injectivity of the nodes is not needed. -/
+theorem legendreLobattoWeight_bounds :
+    ∃ c : ℝ, ∀ n : ℕ, 1 ≤ n → ∀ x : Fin (n + 1) → ℝ, x 0 = -1 → x (Fin.last n) = 1 →
+      (∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
+        (derivative (legendre n)).eval (x j) = 0) →
+      ∀ j : Fin (n + 1),
+        2 / ((n : ℝ) * ((n : ℝ) + 1)) ≤
+            2 / ((n : ℝ) * ((n : ℝ) + 1) * (legendre n).eval (x j) ^ 2) ∧
+          2 / ((n : ℝ) * ((n : ℝ) + 1) * (legendre n).eval (x j) ^ 2) ≤ c / n := by
+  refine ⟨8, fun n hn x h0 hl hint j => ?_⟩
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  obtain ⟨hmem, hcrit⟩ := legendreLobattoNode_mem_Icc hn h0 hl hint j
+  have hup : (legendre n).eval (x j) ^ 2 ≤ 1 := eval_legendre_sq_le_one n hmem
+  have hlow : 1 / (4 * (n : ℝ)) ≤ (legendre n).eval (x j) ^ 2 :=
+    inv_le_eval_legendre_sq hn hmem hcrit
+  rw [div_le_iff₀ (by positivity : (0 : ℝ) < 4 * (n : ℝ))] at hlow
+  have hpos : 0 < (legendre n).eval (x j) ^ 2 := by nlinarith [hnR, hlow]
+  constructor
+  · rw [div_le_div_iff₀ (by positivity) (by positivity)]
+    nlinarith [mul_nonneg (by positivity : (0 : ℝ) ≤ 2 * ((n : ℝ) * ((n : ℝ) + 1)))
+      (by linarith : (0 : ℝ) ≤ 1 - (legendre n).eval (x j) ^ 2)]
+  · rw [div_le_div_iff₀ (by positivity) hnR]
+    nlinarith [hnR, hlow,
+      mul_nonneg (by positivity : (0 : ℝ) ≤ 2 * ((n : ℝ) + 1))
+        (by linarith : (0 : ℝ) ≤ (legendre n).eval (x j) ^ 2 * (4 * (n : ℝ)) - 1)]
 
 /-! ### The discrete Legendre transform (10.38)–(10.40) -/
 

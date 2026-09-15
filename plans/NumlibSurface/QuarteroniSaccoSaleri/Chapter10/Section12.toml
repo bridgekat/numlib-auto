@@ -24,13 +24,15 @@ id = "continuousTransform_eq_integral_fourier"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.1, the wavelet transform as a bank of filters'''
 
 [[node]]
+id = "timeResolution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.1, the resolution in time'
+
+[[node]]
+id = "freqResolution"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.12.1, the bandwidth of the wavelet filter'''
+
+[[node]]
 id = "equation_10_88"
-kind = "theorem"
-desc = '''(10.88), the Heisenberg inequality `Δt Δω ≥ 1/2` for the time and frequency resolutions of a
-signal. Not formalized: the book defines neither `Δt` nor `Δω` (the standard statement is
-`(∫ t² |f|²)(∫ ν² |𝓕 f|²) ≥ ‖f‖⁴/(16π²)` for `f ∈ L²` with `t f, ν 𝓕 f ∈ L²`), and Mathlib has no
-uncertainty principle (grep `Heisenberg`, `uncertainty`: no hits).'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.88)'
 
 [[node]]

@@ -60,23 +60,44 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.23), (10.35)'
 [[node]]
 id = "equation_10_22"
 kind = "theorem"
-desc = '''(10.22): there is `C` independent of `n` with `‖f - Π^{GL}_{n,w} f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for
-every `f ∈ C^s[-1, 1]`, `s ≥ 1`, where `Π^{GL}_{n,w} f` is the interpolant of degree `n` (the book
-prints "degree `n + 1`") at the nodes (10.21). Not formalized: a weighted-Sobolev spectral estimate
-quoted from [CHQZ88] p. 298 without proof; it needs the Chebyshev projection error in weighted
-`H^s` and the aliasing bound for the Chebyshev discrete transform, none of which exists here or in
-Mathlib.'''
+desc = '''(10.22): there is `C` independent of `n` with `‖f - Pi^{GL}_{n,w} f‖_w <= C n^{-s} ‖f‖_{s,w}` for
+every `f` with `s >= 1` derivatives in `L^2_w`, where `Pi^{GL}_{n,w} f` is the interpolant of
+degree `n` (the book prints "degree `n + 1`") at the Chebyshev-Gauss-Lobatto nodes (10.21). Quoted
+from [CHQZ88] p. 298 without proof.
+
+Blocked: this is one of five nodes of chapter 10 ((10.22), (10.24), (10.26)-(10.27), (10.36)-(10.37)
+and (10.71)) that state the same spectral-approximation estimate for the Chebyshev or the Legendre
+weight. All five rest on a module that does not exist here and has no counterpart in Mathlib, call
+it `Approximation/SpectralProjection`, with three layers:
+(i) the *projection* estimate `‖f - P_n f‖_w <= C n^{-s} |f|_{s,w}` for the truncation `P_n` of the
+orthogonal series, in the **non-uniformly** weighted seminorm
+`|f|_{s,w} = (sum_{k<=s} ‖(1-x^2)^{k/2} f^{(k)}‖_w^2)^{1/2}`. It comes from repeating the
+integration by parts against the singular Sturm-Liouville operator of the weight — for Chebyshev
+`L u = (1-x^2)^{1/2} ((1-x^2)^{1/2} u')'` with `L T_k = -k^2 T_k`, for Legendre
+`L u = ((1-x^2) u')'` with `L L_k = -k(k+1) L_k` — whose boundary terms vanish because the factor
+`(1-x^2)` does. Only the Legendre operator identity exists here, as
+`Polynomial.legendre_ode` and `Polynomial.quad_mul_derivative_legendre`.
+(ii) the comparison of that seminorm with the **uniformly** weighted norm `‖f‖_{s,w}` of (10.23)
+that the book states the estimates in: a Hardy-type inequality on `(-1, 1)`.
+(iii) the *aliasing* step from the projection to the interpolant at the Gauss-Lobatto nodes, which
+is (10.27)/(10.36) itself: the discrete inner product is the exact one on `P_{2n-1}`, so the
+difference is controlled by the tail of the series, and the tail is estimated again by (i).
+[CHQZ88] p. 298 and [BM92] give several pages to each layer; nothing here is a single lemma.
+Estimated well over a thousand lines and a plan of its own. The surface nodes are restatements
+once that module exists.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_21", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.22)'
 
 [[node]]
 id = "equation_10_24"
 kind = "theorem"
-desc = '''(10.24) (Exercise 3): `‖f - Π^{GL}_{n,w} f‖_∞ ≤ C n^{1/2 - s} ‖f‖_{s,w}`, and the same for the
-interpolant at the Gauss nodes (10.20). Not formalized: follows from (10.22) and its derivative
-form `‖(f - Π f)'‖_w ≤ C n^{1-s} ‖f‖_{s,w}` through the Gagliardo–Nirenberg inequality
-`‖f‖_∞ ≤ ‖f‖^{1/2} ‖f'‖^{1/2}`; the book leaves it to Exercise 3 and the derivative estimate is
-quoted.'''
+desc = '''(10.24) (Exercise 3): `‖f - Pi^{GL}_{n,w} f‖_inf <= C n^{1/2 - s} ‖f‖_{s,w}`, and the same for the
+interpolant at the Gauss nodes (10.20); hence pointwise convergence for `f` of class `C^1`.
+
+Blocked: on (10.22) and on its derivative form `‖(f - Pi f)'‖_w <= C n^{1-s} ‖f‖_{s,w}` (which is
+(10.71)), joined by the Gagliardo-Nirenberg inequality `‖v‖_inf <= C ‖v‖^{1/2} ‖v'‖^{1/2}` on
+`(-1, 1)` — the last of which is the only cheap ingredient and is not in the library either. See
+the blocking note on `equation_10_22` for the missing module; this node adds nothing to it.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_22"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.24); Exercise 10.3'
 
@@ -91,7 +112,9 @@ nodes is `Lagrange.norm_interpolateCLM_chebyshev_le`. ★
 Blocked: the backbone node `Lagrange.norm_interpolateCLM_chebyshev_le` (Rivlin's bound on the
 Lebesgue constant of the Chebyshev nodes, ★★★ in `Approximation/Interpolation`) is open; the
 surface node is a two-line restatement once it exists (the nodes (10.20) are
-`chebyshevGaussNode n j` of this module, read as points of `Icc (-1) 1`).'''
+`chebyshevGaussNode n j` of this module, read as points of `Icc (-1) 1`). Re-checked 2026-09-16:
+the backbone node is still open, its own `desc` carries the analysis of why, and nothing has
+appeared in Mathlib that shortens it.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.interpolation_error_le_lebesgue", "Lagrange.norm_interpolateCLM_chebyshev_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'
 
@@ -105,11 +128,31 @@ source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.3, converge
 [[node]]
 id = "equation_10_27"
 kind = "theorem"
-desc = '''(10.26)–(10.27): `|(f, v_n)_w - (f, v_n)_n| ≤ C n^{-s} ‖f‖_{s,w} ‖v_n‖_w` for every
-`v_n ∈ P_n`, hence `|∫ f w - I^{GL}_{n,w} f| ≤ C √π n^{-s} ‖f‖_{s,w}` at `v_n = 1`. Not
-formalized: quoted from [CHQZ88] without proof; (10.27) is the aliasing estimate for the Chebyshev
-discrete inner product, the same missing weighted-Sobolev machinery as (10.22). The reduction
-of (10.26) to (10.27) with `‖1‖_w = √π` is elementary.'''
+desc = '''(10.26)-(10.27): `|(f, v_n)_w - (f, v_n)_n| <= C n^{-s} ‖f‖_{s,w} ‖v_n‖_w` for every `v_n` in
+`P_n`, hence `|int f w - I^{GL}_{n,w} f| <= C sqrt(pi) n^{-s} ‖f‖_{s,w}` at `v_n = 1`, where
+`‖1‖_w = sqrt(pi)`. The reduction of (10.26) to (10.27) is elementary; (10.27) is the aliasing
+estimate for the Chebyshev discrete inner product (10.28), quoted from [CHQZ88].
+
+Blocked: this is one of five nodes of chapter 10 ((10.22), (10.24), (10.26)-(10.27), (10.36)-(10.37)
+and (10.71)) that state the same spectral-approximation estimate for the Chebyshev or the Legendre
+weight. All five rest on a module that does not exist here and has no counterpart in Mathlib, call
+it `Approximation/SpectralProjection`, with three layers:
+(i) the *projection* estimate `‖f - P_n f‖_w <= C n^{-s} |f|_{s,w}` for the truncation `P_n` of the
+orthogonal series, in the **non-uniformly** weighted seminorm
+`|f|_{s,w} = (sum_{k<=s} ‖(1-x^2)^{k/2} f^{(k)}‖_w^2)^{1/2}`. It comes from repeating the
+integration by parts against the singular Sturm-Liouville operator of the weight — for Chebyshev
+`L u = (1-x^2)^{1/2} ((1-x^2)^{1/2} u')'` with `L T_k = -k^2 T_k`, for Legendre
+`L u = ((1-x^2) u')'` with `L L_k = -k(k+1) L_k` — whose boundary terms vanish because the factor
+`(1-x^2)` does. Only the Legendre operator identity exists here, as
+`Polynomial.legendre_ode` and `Polynomial.quad_mul_derivative_legendre`.
+(ii) the comparison of that seminorm with the **uniformly** weighted norm `‖f‖_{s,w}` of (10.23)
+that the book states the estimates in: a Hardy-type inequality on `(-1, 1)`.
+(iii) the *aliasing* step from the projection to the interpolant at the Gauss-Lobatto nodes, which
+is (10.27)/(10.36) itself: the discrete inner product is the exact one on `P_{2n-1}`, so the
+difference is controlled by the tail of the series, and the tail is estimated again by (i).
+[CHQZ88] p. 298 and [BM92] give several pages to each layer; nothing here is a single lemma.
+Estimated well over a thousand lines and a plan of its own. The surface nodes are restatements
+once that module exists.'''
 deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_28", "QuarteroniSaccoSaleri.Chapter10.equation_10_23"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.26)–(10.27)'
 

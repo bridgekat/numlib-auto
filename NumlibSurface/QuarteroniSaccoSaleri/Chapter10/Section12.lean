@@ -1,4 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Gaussian.FourierTransform
+import Numlib.Analysis.Fourier.Uncertainty
 import Numlib.Analysis.Wavelet.ContinuousTransform
 
 /-!
@@ -31,6 +32,8 @@ below are in the frequency `ν` of Mathlib's `𝓕`.
 * `equation_10_86` — the filter `𝓕 h_{s,τ}(ν) = √s 𝓕h(sν) e^{-2πiντ}`.
 * `definition_10_4_eq_inner`, `continuousTransform_eq_integral_fourier` — `W_f(s, τ)` as the `L²`
   inner product `⟪h_{s,τ}, f⟫` and as a bank of filters on the Fourier side.
+* `timeResolution`, `freqResolution`, `equation_10_88` — the resolutions `Δt`, `Δω` in time and in
+  angular frequency and the Heisenberg inequality `Δt Δω ≥ 1/2`.
 * `example_10_10`, `example_10_11` — the transforms of the Haar wavelet and of the real part of the
   Morlet wavelet.
 * `discreteWavelet_two_one`, `orthonormalWavelet_reconstruction` — the dyadic discrete wavelets
@@ -50,14 +53,18 @@ below are in the frequency `ν` of Mathlib's `𝓕`.
 
 ## Not formalized
 
-The Heisenberg inequality (10.88): the book defines neither `Δt` nor `Δω`, and Mathlib has no
-uncertainty principle (`equation_10_88` stays an open node of the plan with the reason). The
-bandwidth and quality-factor discussion after Example 10.11 is prose.
+The bandwidth and quality-factor discussion after Example 10.11 is prose.
+
+## Errata (continued)
+
+* §10.12.1 prints the bandwidth `Δω` with an outer square where a square root is meant; the
+  definition used here is `Δω = (∫ ω²|H(ω)|² dω / ∫ |H(ω)|² dω)^{1/2}`, which is what makes
+  (10.88) dimensionally correct and what `Δω_s = Δω/s` in the display after it requires.
 -/
 
 open MeasureTheory Filter Topology Complex Set
 
-open scoped FourierTransform ComplexConjugate Real
+open scoped FourierTransform ComplexConjugate Real SchwartzMap
 
 namespace QuarteroniSaccoSaleri.Chapter10
 
@@ -108,6 +115,89 @@ theorem continuousTransform_eq_integral_fourier {h f : ℝ → ℂ} (hh1 : MemLp
     definition_10_4 h f s τ
       = Real.sqrt s * ∫ ν, 𝓕 f ν * conj (𝓕 h (s * ν)) * Complex.exp ((2 * π * ν * τ) * I) :=
   Wavelet.continuousTransform_eq_integral_fourier hh1 hh2 hf1 hf2 hs τ
+
+/-! ### (10.88): the Heisenberg inequality -/
+
+/-- **The resolution in time** of a signal `h`, `Δt = (∫ t² |h(t)|² dt / ∫ |h(t)|² dt)^{1/2}` —
+the root mean square spread of `|h|²` about the origin. The book uses `Δt` in (10.88) without
+defining it; this is the standard definition, the one that makes the bandwidth `Δω` of §10.12.1
+its counterpart in frequency. -/
+noncomputable def timeResolution (h : ℝ → ℂ) : ℝ :=
+  Real.sqrt ((∫ t : ℝ, t ^ 2 * ‖h t‖ ^ 2) / ∫ t : ℝ, ‖h t‖ ^ 2)
+
+/-- **The resolution in angular frequency** of a signal `h`,
+`Δω = (∫ ω² |H(ω)|² dω / ∫ |H(ω)|² dω)^{1/2}`, where `H(ω) = 𝓕h(ω/2π)` is the book's Fourier
+transform in the variable `ω = 2πν`. This is the bandwidth of §10.12.1, with the square root the
+book's display omits. -/
+noncomputable def freqResolution (h : ℝ → ℂ) : ℝ :=
+  Real.sqrt ((∫ ω : ℝ, ω ^ 2 * ‖𝓕 h (ω / (2 * π))‖ ^ 2) / ∫ ω : ℝ, ‖𝓕 h (ω / (2 * π))‖ ^ 2)
+
+/-- **(10.88), the Heisenberg inequality.** For a nonzero signal `h`,
+
+`Δt Δω ≥ 1/2`:
+
+the resolution in time and the resolution in frequency cannot both be made small, so a signal is
+not a point of the time–frequency plane but occupies a rectangle of area at least `1/2`.
+
+Stated for a Schwartz signal, the class in which all four integrals of `Δt` and `Δω` converge and
+in which the backbone's `SchwartzMap.heisenberg_uncertainty` is proved; the general `L²` statement
+needs `t h(t)` and `ν 𝓕h(ν)` in `L²` and a density argument, which is not formalized. Passing from
+the frequency `ν` of Mathlib's `𝓕` to the book's `ω = 2πν` multiplies the numerator of `Δω²` by
+`8π³` and its denominator by `2π`, so `Δω² = 4π² ∫ ν²|𝓕h|² / ∫|h|²`, and the backbone bound
+`(∫|h|²)² ≤ 16π² (∫ t²|h|²)(∫ ν²|𝓕h|²)` is exactly `Δt² Δω² ≥ 1/4`. -/
+theorem equation_10_88 (h : 𝓢(ℝ, ℂ)) (hne : (h : ℝ → ℂ) ≠ 0) :
+    1 / 2 ≤ timeResolution (h : ℝ → ℂ) * freqResolution (h : ℝ → ℂ) := by
+  have hpi : (0 : ℝ) < 2 * π := by positivity
+  set A := ∫ t : ℝ, t ^ 2 * ‖h t‖ ^ 2 with hAdef
+  set N := ∫ t : ℝ, ‖h t‖ ^ 2 with hNdef
+  set B := ∫ v : ℝ, v ^ 2 * ‖𝓕 (h : ℝ → ℂ) v‖ ^ 2 with hBdef
+  have hA0 : 0 ≤ A := integral_nonneg fun t => by positivity
+  have hB0 : 0 ≤ B := integral_nonneg fun t => by positivity
+  have hN0 : 0 < N := by
+    rw [hNdef, integral_pos_iff_support_of_nonneg (fun t => by positivity)
+      (SchwartzMap.integrable_norm_sq h)]
+    have hsupp : Function.support (fun t : ℝ => ‖h t‖ ^ 2) = {t : ℝ | h t ≠ 0} := by
+      ext t
+      simp [Function.mem_support]
+    obtain ⟨t₀, ht₀⟩ : ∃ t, (h : ℝ → ℂ) t ≠ 0 := by
+      by_contra hc
+      push Not at hc
+      exact hne (funext hc)
+    rw [hsupp]
+    exact (isOpen_ne_fun h.continuous continuous_const).measure_pos volume ⟨t₀, ht₀⟩
+  have hplan : ∫ v : ℝ, ‖𝓕 (h : ℝ → ℂ) v‖ ^ 2 = N := by
+    have hp := SchwartzMap.integral_norm_sq_fourier h
+    rw [SchwartzMap.fourier_coe] at hp
+    exact hp
+  have hden : (∫ ω : ℝ, ‖𝓕 (h : ℝ → ℂ) (ω / (2 * π))‖ ^ 2) = 2 * π * N := by
+    rw [Measure.integral_comp_div (fun v : ℝ => ‖𝓕 (h : ℝ → ℂ) v‖ ^ 2) (2 * π), hplan,
+      abs_of_pos hpi, smul_eq_mul]
+  have hnum : (∫ ω : ℝ, ω ^ 2 * ‖𝓕 (h : ℝ → ℂ) (ω / (2 * π))‖ ^ 2) = 8 * π ^ 3 * B := by
+    have hc := Measure.integral_comp_div
+      (fun v : ℝ => (2 * π * v) ^ 2 * ‖𝓕 (h : ℝ → ℂ) v‖ ^ 2) (2 * π)
+    have hl : (∫ ω : ℝ, (2 * π * (ω / (2 * π))) ^ 2 * ‖𝓕 (h : ℝ → ℂ) (ω / (2 * π))‖ ^ 2)
+        = ∫ ω : ℝ, ω ^ 2 * ‖𝓕 (h : ℝ → ℂ) (ω / (2 * π))‖ ^ 2 := by
+      refine integral_congr_ae (Filter.Eventually.of_forall fun ω => ?_)
+      have hω : 2 * π * (ω / (2 * π)) = ω := by field_simp
+      simp only [hω]
+    have hr : (∫ v : ℝ, (2 * π * v) ^ 2 * ‖𝓕 (h : ℝ → ℂ) v‖ ^ 2) = 4 * π ^ 2 * B := by
+      rw [hBdef, ← integral_const_mul]
+      refine integral_congr_ae (Filter.Eventually.of_forall fun v => ?_)
+      ring
+    rw [hl, hr, abs_of_pos hpi, smul_eq_mul] at hc
+    rw [hc]
+    ring
+  have hkey : N ^ 2 ≤ 16 * π ^ 2 * A * B := SchwartzMap.heisenberg_uncertainty h
+  rw [timeResolution, freqResolution, hden, hnum, ← hAdef, ← hNdef,
+    ← Real.sqrt_mul (by positivity)]
+  have hprod : A / N * (8 * π ^ 3 * B / (2 * π * N)) = 4 * π ^ 2 * A * B / N ^ 2 := by
+    field_simp
+    ring
+  rw [hprod, show (1 : ℝ) / 2 = Real.sqrt (1 / 4) by
+    rw [show (1 : ℝ) / 4 = (1 / 2) ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
+  refine Real.sqrt_le_sqrt ?_
+  rw [le_div_iff₀ (by positivity)]
+  nlinarith [hkey]
 
 /-! ### Examples 10.10–10.11 -/
 

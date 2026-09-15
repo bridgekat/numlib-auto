@@ -145,6 +145,7 @@ import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
+import Numlib.Analysis.Fourier.Uncertainty
 import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
@@ -210,6 +211,7 @@ import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Extrapolation
 import Numlib.Approximation.GaussLobatto
+import Numlib.Approximation.GaussRemainder
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
@@ -223,6 +225,7 @@ import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.OrthogonalPolynomial.Classical
+import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial
