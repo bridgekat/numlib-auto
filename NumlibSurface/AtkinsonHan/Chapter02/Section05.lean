@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.Normed.Module.HahnBanach
+import Numlib.Analysis.Sobolev.Interval
 
 /-!
 # Atkinson–Han §2.5: linear functionals
@@ -18,11 +19,19 @@ linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 
 * `corollary_2_5_6`, `corollary_2_5_7` — norming functionals and the dual description (2.5.4) of
   the norm.
 * `theorem_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
+* `example_2_5_9_l2`, `example_2_5_9` — Example 2.5.9: the identification of `(L²(Ω))'` with
+  `L²(Ω)`, and the representer of point evaluation on `H¹(a, b)`, which solves (2.5.8).
+
+`H¹(a, b)` is the backbone's `SobolevInterval 1 a b`
+(`Numlib/Analysis/Sobolev/Interval.lean`), a Hilbert space whose inner product is
+`(u, v)_{H¹} = ∫_a^b (u' v' + u v)` (`sobolevInterval_inner_eq_intervalIntegral`), and
+point evaluation at `c ∈ [a, b]` is bounded on it because `H¹(a, b)` embeds in `C[a, b]`
+(`SobolevInterval.toContinuousMap`), which is the hint of Exercise 2.5.5.
 
 ## Not formalized here
 
-Example 2.5.1 (`(Lᵖ)' = Lᵖ'`), Example 2.5.3 (point evaluation on `L^∞`) and Example 2.5.9
-(`H¹(a,b)`) are out of scope: they need `Lᵖ` duality and Sobolev spaces.
+Example 2.5.1 (`(Lᵖ)' = Lᵖ'`) and Example 2.5.3 (point evaluation on `L^∞`) are out of scope:
+they need `Lᵖ`–`L^{p'}` duality, which Mathlib does not have.
 -/
 
 open Filter Topology
@@ -112,5 +121,72 @@ theorem theorem_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜
         exact (hu v).symm
       rw [← this, LinearIsometryEquiv.symm_apply_apply]
   · exact ((InnerProductSpace.toDual 𝕜 H).symm.norm_map ℓ).symm
+
+/-! ### Example 2.5.9: the Riesz representer of point evaluation on `H¹(a, b)` -/
+
+section Example259
+
+open MeasureTheory Set
+
+variable {a b : ℝ}
+
+-- TODO(backbone): a general fact about `H^1(a, b)`; natural home
+-- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.inner_eq`.
+/-- **The inner product of `H^1(a, b)` as an integral**:
+`(u, v)_{H¹} = ∫_a^b (u'(x) v'(x) + u(x) v(x)) dx`. It is `SobolevInterval.inner_eq` with the two
+`L²(a, b)` inner products written out, the sum of the integrands being integrable by
+`MeasureTheory.L2.integrable_inner`. -/
+theorem sobolevInterval_inner_eq_intervalIntegral (hab : a ≤ b) (u v : SobolevInterval 1 a b) :
+    inner ℝ u v = ∫ x in a..b, (SobolevInterval.deriv u 1 x * SobolevInterval.deriv v 1 x
+      + SobolevInterval.fn u x * SobolevInterval.fn v x) := by
+  rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo,
+    SobolevInterval.inner_eq, Fin.sum_univ_two, L2.inner_def, L2.inner_def,
+    ← integral_add (L2.integrable_inner _ _) (L2.integrable_inner _ _)]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+  simp [RCLike.inner_apply, SobolevInterval.deriv_zero]
+  ring
+
+-- TODO(backbone): a general fact about `H^1(a, b)`; natural home
+-- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.toContinuousMap`.
+/-- **Point evaluation on `H^1(a, b)`** (2.5.7), `ℓ_c(v) = v(c)` for `c ∈ [a, b]`, as a bounded
+linear functional: the composition of the embedding `H^1(a, b) ↪ C[a, b]` with evaluation at `c`.
+This is Exercise 2.5.5. -/
+noncomputable def sobolevIntervalEvalCLM (hab : a < b) (c : Icc a b) :
+    StrongDual ℝ (SobolevInterval 1 a b) :=
+  (ContinuousMap.evalCLM ℝ c).comp (SobolevInterval.toContinuousMap hab)
+
+@[simp]
+theorem sobolevIntervalEvalCLM_apply (hab : a < b) (c : Icc a b) (u : SobolevInterval 1 a b) :
+    sobolevIntervalEvalCLM hab c u = SobolevInterval.toContinuousMap hab u c := rfl
+
+/-- **Example 2.5.9**, the `L²` half: for `Ω ⊆ ℝ^d` the Riesz representation theorem puts the
+bounded linear functionals on `L²(Ω)` in one-to-one correspondence with `L²(Ω)` itself through
+(2.5.5), so `(L²(Ω))' = L²(Ω)`. It is `theorem_2_5_8` read on `L²(Ω)`. -/
+theorem example_2_5_9_l2 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d)))
+    (ℓ : StrongDual ℝ (Lp ℝ 2 (volume.restrict Ω))) :
+    ∃! u : Lp ℝ 2 (volume.restrict Ω), ∀ v, ℓ v = inner ℝ u v :=
+  (theorem_2_5_8 ℓ).1
+
+/-- **Example 2.5.9**, the `H¹(a, b)` half: for `c ∈ [a, b]` the functional `ℓ(v) = v(c)` of
+(2.5.7) has a unique Riesz representer `u ∈ H¹(a, b)`, characterized by (2.5.8),
+
+`∫_a^b (u'(x) v'(x) + u(x) v(x)) dx = v(c)` for every `v ∈ H¹(a, b)`.
+
+Here `v(c)` is the value at `c` of the continuous representative of `v`, the embedding
+`H¹(a, b) ↪ C[a, b]`. The book calls `u` the generalized solution of `-u'' + u = δ(x - c)` with
+`u'(a) = u'(b) = 0`; that boundary value problem is not formalized. -/
+theorem example_2_5_9 (hab : a < b) (c : Icc a b) :
+    ∃! u : SobolevInterval 1 a b, ∀ v : SobolevInterval 1 a b,
+      (∫ x in a..b, (SobolevInterval.deriv u 1 x * SobolevInterval.deriv v 1 x
+          + SobolevInterval.fn u x * SobolevInterval.fn v x)) =
+        SobolevInterval.toContinuousMap hab v c := by
+  obtain ⟨u, hu, huniq⟩ := (theorem_2_5_8 (sobolevIntervalEvalCLM hab c)).1
+  refine ⟨u, fun v => ?_, fun u' hu' => huniq u' fun v => ?_⟩
+  · rw [← sobolevInterval_inner_eq_intervalIntegral hab.le u v]
+    exact (hu v).symm
+  · rw [sobolevInterval_inner_eq_intervalIntegral hab.le u' v]
+    exact (hu' v).symm
+
+end Example259
 
 end AtkinsonHan.Chapter02

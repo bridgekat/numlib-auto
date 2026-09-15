@@ -37,7 +37,14 @@ then gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in the maximum norm and in
 `‖v‖_{2,h_x} = √h_x ‖v‖₂`, so the order is 2 in `h_x` and 1 in `h_t`. Not formalized: it is the
 concrete heat-equation instance of `theorem_6_3_2'`, needing a classical solution of the
 initial-boundary value problem to Taylor-expand — the book assumes one exists — and, for the
-`‖·‖_{2,h_x}` half, the Toeplitz spectrum of `exercise_6_3_1`, which is itself open.'''
+`‖·‖_{2,h_x}` half, the Toeplitz spectrum of `exercise_6_3_1`.
+
+Blocked: rechecked 2026-09-15. The reason stands only in its first half: the classical solution of
+the initial-boundary value problem that (6.3.6) Taylor-expands is what is missing, and it is the
+heat-equation theory of `example_6_2_4`. The second half of the stated reason is wrong —
+`exercise_6_3_1` is proved (`NumlibSurface/AtkinsonHan/Chapter06/Section03.lean`), so the Toeplitz
+spectrum is available and the `‖·‖_{2,h_x}` half of the bound is not blocked by it.
+'''
 deps = ["theorem_6_3_2'", "exercise_6_3_1", "AtkinsonHan.Chapter06.example_6_2_4"]
 
 [[node]]
@@ -49,5 +56,9 @@ Diagonal dominance gives `‖Q‖_∞ ≤ 1` directly, and `λ_j(Q₁) = 1 + 4r 
 `‖Q‖₂ < 1`, so the scheme is unconditionally stable; with `|τ̄_j^m| ≤ c(h_x² + h_t)` and
 `‖τ^m‖ ≤ ‖τ̄^m‖`, Theorem 6.3.2 gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in both norms, again of
 order 2 in `h_x` and 1 in `h_t`. Not formalized: as for Example 6.3.3 — a classical solution of
-the heat equation to Taylor-expand, and the Toeplitz spectrum of `exercise_6_3_1`.'''
+the heat equation to Taylor-expand.
+
+Blocked: rechecked 2026-09-15; as for `example_6_3_3`, and only the classical solution is missing
+(`exercise_6_3_1` is proved).
+'''
 deps = ["theorem_6_3_2'", "exercise_6_3_1", "example_6_3_3"]

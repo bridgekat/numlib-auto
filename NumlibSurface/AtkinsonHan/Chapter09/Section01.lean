@@ -5,6 +5,7 @@ import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Projection.Basic
 import Numlib.Projection.Optimality
 import Numlib.Variational.Forms
+import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
@@ -19,6 +20,16 @@ load vector (9.1.5), the Ritz formulation (9.1.6)–(9.1.8), Céa's inequality (
 estimates (9.1.11)–(9.1.12)) with its symmetric sharpening, and the convergence corollary
 (Corollary 9.1.4, (9.1.13)–(9.1.14)).  All of that is the backbone's `IsGalerkinSolution` theory
 read through the definitional bridge `galerkinProblem_iff`.
+
+Example 9.1.1 is the concrete instance: `-u'' = f` on `(0, 1)` with `u(0) = u(1) = 0`, weakly
+posed on `H¹₀(0, 1)` — the backbone's `SobolevIntervalZero 0 1` of
+`Numlib/Analysis/Sobolev/Interval.lean` — with the polynomial trial space
+`V_N = span{x^i(1 - x) : 1 ≤ i ≤ N}`, whose stiffness matrix entries the example displays. The
+bilinear form, its boundedness and its coercivity on `H¹₀(0, 1)` are the backbone's
+`EllipticInterval.form` and `EllipticInterval.form_isCoerciveWith_restrict`. Example 9.1.2 is the
+same problem with the trigonometric trial space `span{sin(iπx) : 1 ≤ i ≤ N}`, which is orthogonal
+for the energy inner product, so the Galerkin system is diagonal and the Galerkin solution is the
+kernel approximation (9.1.10).
 
 Exercise 9.1.3, the Fourier expansion of the Green kernel of Example 9.1.2, and Exercise 9.1.4,
 which turns the Galerkin method into a second proof that (9.1.1) is solvable, close the section.
@@ -454,6 +465,538 @@ theorem existsUnique_solution_of_galerkin [CompleteSpace V] (hM : a.IsBoundedWit
   refine sub_eq_zero.mp (eq_zero_of_galerkinProblem_zero hc₀ ha
     ⟨Submodule.mem_top, fun v _ => ?_⟩)
   simp [map_sub, LinearMap.sub_apply, hy v, hu v]
+
+/-! ### Example 9.1.1: the Galerkin method for `-u'' = f` with the basis `xⁱ(1 - x)`
+
+The weak problem is `u ∈ H¹₀(0, 1)` with `∫₀¹ u' v' = ∫₀¹ f v` for all `v ∈ H¹₀(0, 1)`, and the
+trial space is `V_N = span{xⁱ(1 - x) : 1 ≤ i ≤ N}`. The exponents are indexed from `0` here, so
+`polyBasis k` is `x^{k+1}(1 - x)` and `polyBasis` over `Fin N` spans exactly the book's `V_N`.
+
+*Erratum.* With the book's own indexing — the basis `xⁱ(1 - x)` for `i = 1, …, N` and the matrix
+entry `A_{ij} = ∫₀¹ [xʲ(1 - x)]' [xⁱ(1 - x)]' dx` — the displayed formula is off by one: at
+`i = j = 1` it gives `2/15` while the integral is `1/3`. The displayed formula is the entry for
+the exponents `i + 1`, `j + 1`, which is what the `0`-based indexing used here makes it, so
+`example_9_1_1` states the book's formula verbatim in `(i : ℝ)` and `(j : ℝ)`.
+
+The condition numbers of Table 9.1 are numerical output and are not formalized. -/
+
+section Example911
+
+open MeasureTheory Set SobolevInterval
+open scoped ContDiff
+
+noncomputable section
+
+/-- The basis function `x^{k+1}(1 - x)` of Example 9.1.1. -/
+def polyBasisFun (k : ℕ) : ℝ → ℝ := fun x => x ^ (k + 1) * (1 - x)
+
+theorem contDiff_polyBasisFun (k : ℕ) : ContDiff ℝ ω (polyBasisFun k) := by
+  unfold polyBasisFun; fun_prop
+
+theorem contDiffOn_polyBasisFun (k : ℕ) :
+    ContDiffOn ℝ ((1 : ℕ) : ℕ∞ω) (polyBasisFun k) (Icc (0 : ℝ) 1) :=
+  ((contDiff_polyBasisFun k).of_le le_top).contDiffOn
+
+/-- The derivative of `x^{k+1}(1 - x)` is `(k+1) x^k - (k+2) x^{k+1}`. -/
+theorem deriv_polyBasisFun (k : ℕ) (x : ℝ) :
+    _root_.deriv (polyBasisFun k) x = ((k : ℝ) + 1) * x ^ k - ((k : ℝ) + 2) * x ^ (k + 1) := by
+  unfold polyBasisFun
+  have h1 : HasDerivAt (fun x : ℝ => 1 - x) (-1) x := (hasDerivAt_id x).const_sub 1
+  have h : HasDerivAt (fun x : ℝ => x ^ (k + 1) * (1 - x))
+      ((k + 1 : ℕ) * x ^ (k + 1 - 1) * (1 - x) + x ^ (k + 1) * (-1)) x :=
+    (hasDerivAt_pow (k + 1) x).mul h1
+  rw [h.deriv]
+  push_cast
+  ring
+
+/-- The basis function `x^{k+1}(1 - x)` as an element of `H¹(0, 1)`. -/
+def polyBasis (k : ℕ) : SobolevInterval 1 0 1 :=
+  ContDiffMapIcc.toSobolevInterval zero_le_one zero_lt_one 1
+    (ContDiffMapIcc.ofContDiffOn zero_le_one zero_lt_one (contDiffOn_polyBasisFun k))
+
+theorem coeFn_deriv_polyBasis_zero (k : ℕ) :
+    (SobolevInterval.deriv (polyBasis k) 0 : ℝ → ℝ)
+      =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] polyBasisFun k := by
+  refine (ContDiffMapIcc.coeFn_derivLp _ 0).trans ?_
+  refine (ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall fun x hx => ?_)
+  rw [IccExtend_of_mem zero_le_one _ (Ioo_subset_Icc_self hx)]
+  rfl
+
+theorem coeFn_deriv_polyBasis_one (k : ℕ) :
+    (SobolevInterval.deriv (polyBasis k) 1 : ℝ → ℝ)
+      =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
+      fun x => ((k : ℝ) + 1) * x ^ k - ((k : ℝ) + 2) * x ^ (k + 1) := by
+  refine (ContDiffMapIcc.coeFn_derivLp _ 1).trans ?_
+  refine (ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall fun x hx => ?_)
+  have hx' : x ∈ Icc (0 : ℝ) 1 := Ioo_subset_Icc_self hx
+  rw [IccExtend_of_mem zero_le_one _ hx',
+    ContDiffMapIcc.deriv_ofContDiffOn zero_le_one zero_lt_one (contDiffOn_polyBasisFun k) 1
+      ⟨x, hx'⟩,
+    iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc zero_lt_one)
+      ((contDiff_polyBasisFun k).contDiffAt.of_le le_top) hx']
+  simpa using deriv_polyBasisFun k x
+
+/-- `x^{k+1}(1 - x)` vanishes at both endpoints, so it lies in `H¹₀(0, 1)`. -/
+theorem polyBasis_mem (k : ℕ) : polyBasis k ∈ SobolevIntervalZero 0 1 := by
+  have hc : ContinuousOn (polyBasisFun k) (Icc (0 : ℝ) 1) :=
+    (contDiff_polyBasisFun k).continuous.continuousOn
+  rw [mem_sobolevIntervalZero_iff zero_lt_one]
+  refine ⟨?_, ?_⟩ <;>
+    rw [toContinuousMap_eq_of_continuousOn zero_lt_one _ hc (coeFn_deriv_polyBasis_zero k)] <;>
+    simp [polyBasisFun]
+
+/-- The constant coefficient `1`, as an element of `L^∞(0, 1)`. -/
+def oneLinf : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)) :=
+  (ContinuousOn.memLp_top_restrict_Ioo (g := fun _ => (1 : ℝ)) continuousOn_const).toLp _
+
+theorem coeFn_oneLinf : (oneLinf : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] fun _ => (1 : ℝ) :=
+  MemLp.coeFn_toLp _
+
+theorem one_le_oneLinf : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), (1 : ℝ) ≤ oneLinf x := by
+  filter_upwards [coeFn_oneLinf] with x hx
+  rw [hx]
+
+theorem zero_le_zeroLinf :
+    ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)),
+      (0 : ℝ) ≤ (0 : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) x := by
+  filter_upwards [Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))] with x hx
+  rw [hx]
+  rfl
+
+/-- **The bilinear form of (9.1.9)**, `a(u, v) = ∫₀¹ u' v'` on `H¹(0, 1)`: the backbone's
+`EllipticInterval.form` with `α = 1`, `β = γ = 0`. -/
+def dirichletForm : SesqForm ℝ (SobolevInterval 1 0 1) := EllipticInterval.form 0 1 oneLinf 0 0
+
+theorem dirichletForm_apply (u v : SobolevInterval 1 0 1) :
+    dirichletForm u v = ∫ x in Ioo (0 : ℝ) 1, SobolevInterval.deriv u 1 x *
+      SobolevInterval.deriv v 1 x := by
+  rw [dirichletForm, EllipticInterval.form_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [coeFn_oneLinf, Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))] with x h1 h0
+  rw [h1, h0]
+  simp
+
+/-- **The trial space `V_N`** of Example 9.1.1, `span{xⁱ(1 - x) : 1 ≤ i ≤ N}`. -/
+def polySpace (N : ℕ) : Submodule ℝ (SobolevInterval 1 0 1) :=
+  Submodule.span ℝ (Set.range fun i : Fin N => polyBasis i)
+
+theorem polySpace_le (N : ℕ) : polySpace N ≤ SobolevIntervalZero 0 1 :=
+  Submodule.span_le.2 (by rintro _ ⟨i, rfl⟩; exact polyBasis_mem i)
+
+instance (N : ℕ) : FiniteDimensional ℝ (polySpace N) :=
+  FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
+
+theorem integral_pow_unit (n : ℕ) : ∫ x in (0 : ℝ)..1, x ^ n = 1 / (n + 1) := by
+  rw [integral_pow]; simp
+
+/-- **Unique solvability of the weak problem in any subspace of `H¹₀(0, 1)`**, by Lax–Milgram:
+the form is coercive there by the Poincaré inequality. Taking `K = H¹₀(0, 1)` gives the weak
+problem of Example 9.1.1, and `K = V_N` its Galerkin approximation. -/
+theorem existsUnique_dirichletGalerkin {K : Submodule ℝ (SobolevInterval 1 0 1)}
+    (hK : K ≤ SobolevIntervalZero 0 1) [CompleteSpace K]
+    (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
+    ∃! u, IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f) K u := by
+  have hc : (0 : ℝ) < 1 / (1 + ((1 : ℝ) - 0) ^ 2 / 2) := by norm_num
+  have hcoer : (dirichletForm.restrict K).IsCoerciveWith (1 / (1 + ((1 : ℝ) - 0) ^ 2 / 2)) := by
+    intro v
+    have h := EllipticInterval.form_isCoerciveWith_restrict (a := 0) (b := 1) zero_lt_one oneLinf 0
+      one_le_oneLinf zero_le_zeroLinf zero_le_one ⟨(v : SobolevInterval 1 0 1), hK v.2⟩
+    rw [SesqForm.restrict_apply] at h
+    rw [SesqForm.restrict_apply]
+    simpa [Submodule.coe_norm, dirichletForm] using h
+  obtain ⟨w, hw, hwu⟩ := SesqForm.laxMilgram (dirichletForm.restrict K)
+    ((EllipticInterval.load 0 1 f).comp K.subtypeL) hc hcoer
+  refine ⟨(w : SobolevInterval 1 0 1), ⟨w.2, fun v hv => hw ⟨v, hv⟩⟩, ?_⟩
+  rintro y ⟨hyK, hy⟩
+  exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z => hy (z : SobolevInterval 1 0 1) z.2)
+
+/-- The stiffness matrix entry of Example 9.1.1:
+`∫₀¹ [x^{j+1}(1 - x)]' [x^{i+1}(1 - x)]' dx`, expanded and integrated term by term. -/
+theorem dirichletForm_polyBasis (i j : ℕ) :
+    dirichletForm (polyBasis j) (polyBasis i)
+      = ((i : ℝ) + 1) * ((j : ℝ) + 1) / ((i : ℝ) + (j : ℝ) + 1)
+        + ((i : ℝ) + 2) * ((j : ℝ) + 2) / ((i : ℝ) + (j : ℝ) + 3)
+        - (((i : ℝ) + 1) * ((j : ℝ) + 2) + ((i : ℝ) + 2) * ((j : ℝ) + 1))
+            / ((i : ℝ) + (j : ℝ) + 2) := by
+  rw [dirichletForm_apply,
+    show (∫ x in Ioo (0 : ℝ) 1, SobolevInterval.deriv (polyBasis j) 1 x *
+          SobolevInterval.deriv (polyBasis i) 1 x)
+        = ∫ x in Ioo (0 : ℝ) 1,
+          (((j : ℝ) + 1) * x ^ j - ((j : ℝ) + 2) * x ^ (j + 1)) *
+            (((i : ℝ) + 1) * x ^ i - ((i : ℝ) + 2) * x ^ (i + 1)) from ?_]
+  · rw [← EllipticInterval.intervalIntegral_eq_setIntegral_Ioo zero_le_one]
+    have hexp : ∀ x : ℝ,
+        (((j : ℝ) + 1) * x ^ j - ((j : ℝ) + 2) * x ^ (j + 1)) *
+          (((i : ℝ) + 1) * x ^ i - ((i : ℝ) + 2) * x ^ (i + 1))
+        = (((j : ℝ) + 1) * ((i : ℝ) + 1)) * x ^ (i + j)
+          + (-(((j : ℝ) + 1) * ((i : ℝ) + 2)) - ((j : ℝ) + 2) * ((i : ℝ) + 1)) * x ^ (i + j + 1)
+          + (((j : ℝ) + 2) * ((i : ℝ) + 2)) * x ^ (i + j + 2) := fun x => by ring
+    simp only [hexp]
+    have hint : ∀ (c : ℝ) (n : ℕ), IntervalIntegrable (fun x : ℝ => c * x ^ n) volume 0 1 :=
+      fun c n => (continuous_const.mul (continuous_pow n)).intervalIntegrable _ _
+    rw [intervalIntegral.integral_add ((hint _ _).add (hint _ _)) (hint _ _),
+      intervalIntegral.integral_add (hint _ _) (hint _ _),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul,
+      intervalIntegral.integral_const_mul, integral_pow_unit, integral_pow_unit,
+      integral_pow_unit]
+    have h1 : ((i : ℝ) + (j : ℝ) + 1) ≠ 0 := by positivity
+    have h2 : ((i : ℝ) + (j : ℝ) + 2) ≠ 0 := by positivity
+    have h3 : ((i : ℝ) + (j : ℝ) + 3) ≠ 0 := by positivity
+    push_cast
+    field_simp
+    ring
+  · refine integral_congr_ae ?_
+    filter_upwards [coeFn_deriv_polyBasis_one j, coeFn_deriv_polyBasis_one i] with x hj hi
+    rw [hj, hi]
+
+/-- The load vector entry of Example 9.1.1, `b_i = ∫₀¹ f(x) x^{i+1}(1 - x) dx`. -/
+theorem load_polyBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : ℕ) :
+    EllipticInterval.load 0 1 f (polyBasis i) = ∫ x in Ioo (0 : ℝ) 1, f x * polyBasisFun i x := by
+  rw [EllipticInterval.load_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [coeFn_deriv_polyBasis_zero i] with x hx
+  rw [hx]
+
+/-- **Example 9.1.1.** For `-u'' = f` on `(0, 1)` with `u(0) = u(1) = 0`, weakly posed on
+`V = H¹₀(0, 1)` with `a(u, v) = ∫₀¹ u' v'` and `ℓ(v) = ∫₀¹ f v`:
+
+* the weak problem has exactly one solution, by Lax–Milgram;
+* so does its Galerkin approximation on `V_N = span{xⁱ(1 - x) : 1 ≤ i ≤ N}`;
+* the stiffness matrix entries are the ones the book displays, and the load vector entries are
+  `b_i = ∫₀¹ f(x) xⁱ(1 - x) dx`.
+
+The exponents are `0`-indexed here (`polyBasis i` is `x^{i+1}(1 - x)`), which is the indexing
+under which the book's displayed entry formula is correct; see the section's erratum note. Table
+9.1, the condition numbers showing this basis to be a poor one, is numerical output and is not
+formalized. -/
+theorem example_9_1_1 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
+    (∃! u, IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f)
+        (SobolevIntervalZero 0 1) u) ∧
+      (∃! uN, IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f) (polySpace N) uN) ∧
+      (∀ i j : Fin N,
+        stiffnessMatrix (BilinForm.ofCLM dirichletForm) (fun i : Fin N => polyBasis i) i j =
+          ((i : ℝ) + 1) * ((j : ℝ) + 1) / ((i : ℝ) + (j : ℝ) + 1)
+            + ((i : ℝ) + 2) * ((j : ℝ) + 2) / ((i : ℝ) + (j : ℝ) + 3)
+            - (((i : ℝ) + 1) * ((j : ℝ) + 2) + ((i : ℝ) + 2) * ((j : ℝ) + 1))
+                / ((i : ℝ) + (j : ℝ) + 2)) ∧
+      (∀ i : Fin N, loadVector (EllipticInterval.load 0 1 f) (fun i : Fin N => polyBasis i) i
+        = ∫ x in Ioo (0 : ℝ) 1, f x * polyBasisFun i x) := by
+  refine ⟨existsUnique_dirichletGalerkin le_rfl f,
+    existsUnique_dirichletGalerkin (polySpace_le N) f, fun i j => ?_, fun i => load_polyBasis f i⟩
+  rw [stiffnessMatrix_apply, BilinForm.ofCLM_apply]
+  exact dirichletForm_polyBasis i j
+
+end
+
+end Example911
+
+/-! ### Example 9.1.2: the same problem with the basis `sin(iπx)`
+
+The trial space is `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`, indexed from `0` here as in Example 9.1.1,
+so `sineBasis k` is `sin((k+1)πx)`. The basis is orthogonal for `a(u, v) = ∫₀¹ u' v'`, the
+Galerkin system is diagonal, and the Galerkin solution is the kernel approximation (9.1.10) with
+the `N`-term truncation of the Green kernel; the full kernel is `exercise_9_1_3`. -/
+
+section Example912
+
+open MeasureTheory Set SobolevInterval
+open scoped ContDiff
+
+noncomputable section
+
+-- TODO(backbone): the three cosine integrals below have no Galerkin content and are
+-- Mathlib-shaped; natural home `Numlib/Analysis/Fourier/` beside the trigonometric bases, or
+-- Mathlib's `Analysis/SpecialFunctions/Integrals`.
+/-- `∫₀¹ cos (c x) dx = sin c / c` for `c ≠ 0`. -/
+theorem integral_cos_mul_unit {c : ℝ} (hc : c ≠ 0) :
+    ∫ x in (0 : ℝ)..1, Real.cos (c * x) = Real.sin c / c := by
+  have hd : ∀ x ∈ uIcc (0 : ℝ) 1,
+      HasDerivAt (fun y : ℝ => Real.sin (c * y) / c) (Real.cos (c * x)) x := by
+    intro x _
+    have h1 : HasDerivAt (fun y : ℝ => c * y) c x := by
+      simpa using (hasDerivAt_id x).const_mul c
+    have h2 : HasDerivAt (fun y : ℝ => Real.sin (c * y)) (Real.cos (c * x) * c) x :=
+      (Real.hasDerivAt_sin (c * x)).comp x h1
+    simpa [mul_div_assoc, mul_div_cancel_right₀ _ hc] using h2.div_const c
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _)]
+  simp
+
+/-- `∫₀¹ cos (k π x) dx` is `1` for `k = 0` and `0` otherwise. -/
+theorem integral_cos_intMul_pi_unit (k : ℤ) :
+    ∫ x in (0 : ℝ)..1, Real.cos ((k : ℝ) * π * x) = if k = 0 then 1 else 0 := by
+  rcases eq_or_ne k 0 with rfl | hk
+  · simp
+  · have hc : ((k : ℝ) * π) ≠ 0 := mul_ne_zero (Int.cast_ne_zero.2 hk) Real.pi_ne_zero
+    rw [ite_eq_right hk, integral_cos_mul_unit hc, Real.sin_int_mul_pi k, zero_div]
+
+/-- **Orthogonality of the cosines** on `(0, 1)`:
+`∫₀¹ cos (m π x) cos (n π x) dx = δ_{mn} / 2` for positive integers `m` and `n`. -/
+theorem integral_cos_mul_cos_unit {m n : ℕ} (hm : 0 < m) (hn : 0 < n) :
+    ∫ x in (0 : ℝ)..1, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
+      = if m = n then 1 / 2 else 0 := by
+  have hprod : ∀ x : ℝ, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
+      = (Real.cos ((((m : ℤ) - n : ℤ) : ℝ) * π * x)
+          + Real.cos ((((m : ℤ) + n : ℤ) : ℝ) * π * x)) / 2 := by
+    intro x
+    have h1 : ((((m : ℤ) - n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x - (n : ℝ) * π * x := by
+      push_cast; ring
+    have h2 : ((((m : ℤ) + n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x + (n : ℝ) * π * x := by
+      push_cast; ring
+    rw [h1, h2, Real.cos_sub, Real.cos_add]
+    ring
+  simp only [hprod]
+  have hint : ∀ k : ℤ, IntervalIntegrable (fun x : ℝ => Real.cos ((k : ℝ) * π * x)) volume 0 1 :=
+    fun k => (Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _
+  rw [intervalIntegral.integral_div, intervalIntegral.integral_add (hint _) (hint _),
+    integral_cos_intMul_pi_unit, integral_cos_intMul_pi_unit]
+  have hne : ((m : ℤ) + n) ≠ 0 := by positivity
+  rw [ite_eq_right hne]
+  rcases eq_or_ne m n with rfl | hmn
+  · simp
+  · rw [ite_eq_right hmn,
+      ite_eq_right (by simpa [sub_eq_zero] using fun h => hmn (by exact_mod_cast h))]
+    norm_num
+
+/-- The basis function `sin((k+1) π x)` of Example 9.1.2. -/
+def sineBasisFun (k : ℕ) : ℝ → ℝ := fun x => Real.sin (((k : ℝ) + 1) * π * x)
+
+theorem contDiff_sineBasisFun (k : ℕ) : ContDiff ℝ ω (sineBasisFun k) := by
+  unfold sineBasisFun; fun_prop
+
+theorem contDiffOn_sineBasisFun (k : ℕ) :
+    ContDiffOn ℝ ((1 : ℕ) : ℕ∞ω) (sineBasisFun k) (Icc (0 : ℝ) 1) :=
+  ((contDiff_sineBasisFun k).of_le le_top).contDiffOn
+
+theorem deriv_sineBasisFun (k : ℕ) (x : ℝ) :
+    _root_.deriv (sineBasisFun k) x
+      = ((k : ℝ) + 1) * π * Real.cos (((k : ℝ) + 1) * π * x) := by
+  unfold sineBasisFun
+  have h1 : HasDerivAt (fun y : ℝ => ((k : ℝ) + 1) * π * y) (((k : ℝ) + 1) * π) x := by
+    simpa using (hasDerivAt_id x).const_mul (((k : ℝ) + 1) * π)
+  have h2 : HasDerivAt (fun y : ℝ => Real.sin (((k : ℝ) + 1) * π * y))
+      (Real.cos (((k : ℝ) + 1) * π * x) * (((k : ℝ) + 1) * π)) x :=
+    (Real.hasDerivAt_sin _).comp x h1
+  rw [h2.deriv]
+  ring
+
+/-- `sin((k+1) π x)` as an element of `H¹(0, 1)`. -/
+def sineBasis (k : ℕ) : SobolevInterval 1 0 1 :=
+  ContDiffMapIcc.toSobolevInterval zero_le_one zero_lt_one 1
+    (ContDiffMapIcc.ofContDiffOn zero_le_one zero_lt_one (contDiffOn_sineBasisFun k))
+
+theorem coeFn_deriv_sineBasis_zero (k : ℕ) :
+    (SobolevInterval.deriv (sineBasis k) 0 : ℝ → ℝ)
+      =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] sineBasisFun k := by
+  refine (ContDiffMapIcc.coeFn_derivLp _ 0).trans ?_
+  refine (ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall fun x hx => ?_)
+  rw [IccExtend_of_mem zero_le_one _ (Ioo_subset_Icc_self hx)]
+  rfl
+
+theorem coeFn_deriv_sineBasis_one (k : ℕ) :
+    (SobolevInterval.deriv (sineBasis k) 1 : ℝ → ℝ)
+      =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
+      fun x => ((k : ℝ) + 1) * π * Real.cos (((k : ℝ) + 1) * π * x) := by
+  refine (ContDiffMapIcc.coeFn_derivLp _ 1).trans ?_
+  refine (ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall fun x hx => ?_)
+  have hx' : x ∈ Icc (0 : ℝ) 1 := Ioo_subset_Icc_self hx
+  rw [IccExtend_of_mem zero_le_one _ hx',
+    ContDiffMapIcc.deriv_ofContDiffOn zero_le_one zero_lt_one (contDiffOn_sineBasisFun k) 1
+      ⟨x, hx'⟩,
+    iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc zero_lt_one)
+      ((contDiff_sineBasisFun k).contDiffAt.of_le le_top) hx']
+  simpa using deriv_sineBasisFun k x
+
+theorem rep_sineBasis (k : ℕ) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
+    SobolevInterval.rep (sineBasis k) x = sineBasisFun k x :=
+  rep_eq_of_continuousOn zero_lt_one _ (contDiff_sineBasisFun k).continuous.continuousOn
+    (coeFn_deriv_sineBasis_zero k) hx
+
+theorem sineBasis_mem (k : ℕ) : sineBasis k ∈ SobolevIntervalZero 0 1 := by
+  have hc : ContinuousOn (sineBasisFun k) (Icc (0 : ℝ) 1) :=
+    (contDiff_sineBasisFun k).continuous.continuousOn
+  rw [mem_sobolevIntervalZero_iff zero_lt_one]
+  refine ⟨?_, ?_⟩ <;>
+    rw [toContinuousMap_eq_of_continuousOn zero_lt_one _ hc (coeFn_deriv_sineBasis_zero k)]
+  · simp [sineBasisFun]
+  · have hone : ((k : ℝ) + 1) * π * 1 = ((k + 1 : ℕ) : ℝ) * π := by push_cast; ring
+    simp only [sineBasisFun, hone, Real.sin_nat_mul_pi]
+
+/-- **The orthogonality relation of Example 9.1.2**:
+`∫₀¹ (sin jπx)' (sin iπx)' dx = i j π² δ_{ij} / 2`. -/
+theorem dirichletForm_sineBasis (i j : ℕ) :
+    dirichletForm (sineBasis j) (sineBasis i)
+      = if i = j then ((i : ℝ) + 1) * ((j : ℝ) + 1) * π ^ 2 / 2 else 0 := by
+  rw [dirichletForm_apply,
+    show (∫ x in Ioo (0 : ℝ) 1, SobolevInterval.deriv (sineBasis j) 1 x *
+          SobolevInterval.deriv (sineBasis i) 1 x)
+        = ∫ x in Ioo (0 : ℝ) 1,
+          (((j : ℝ) + 1) * π * Real.cos (((j : ℝ) + 1) * π * x)) *
+            (((i : ℝ) + 1) * π * Real.cos (((i : ℝ) + 1) * π * x)) from ?_]
+  · rw [← EllipticInterval.intervalIntegral_eq_setIntegral_Ioo zero_le_one]
+    have hre : ∀ x : ℝ,
+        (((j : ℝ) + 1) * π * Real.cos (((j : ℝ) + 1) * π * x)) *
+          (((i : ℝ) + 1) * π * Real.cos (((i : ℝ) + 1) * π * x))
+        = (((j : ℝ) + 1) * π * (((i : ℝ) + 1) * π)) *
+            (Real.cos (((j + 1 : ℕ) : ℝ) * π * x) * Real.cos (((i + 1 : ℕ) : ℝ) * π * x)) := by
+      intro x
+      push_cast
+      ring
+    simp only [hre]
+    rw [intervalIntegral.integral_const_mul,
+      integral_cos_mul_cos_unit (Nat.succ_pos j) (Nat.succ_pos i)]
+    rcases eq_or_ne i j with rfl | hij
+    · rw [ite_eq_left (rfl : i = i), ite_eq_left (rfl : i + 1 = i + 1)]
+      ring
+    · rw [ite_eq_right hij, ite_eq_right (by simpa using fun h => hij (by omega))]
+      ring
+  · refine integral_congr_ae ?_
+    filter_upwards [coeFn_deriv_sineBasis_one j, coeFn_deriv_sineBasis_one i] with x hj hi
+    rw [hj, hi]
+
+-- TODO(backbone): a general fact about `H^1(a, b)`; natural home
+-- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.rep_add` and `rep_smul`.
+/-- The continuous representative of a finite linear combination in `H¹(0, 1)`. -/
+theorem rep_finset_sum {ι : Type*} (s : Finset ι) (c : ι → ℝ) (φ : ι → SobolevInterval 1 0 1)
+    {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
+    SobolevInterval.rep (∑ j ∈ s, c j • φ j) x = ∑ j ∈ s, c j * SobolevInterval.rep (φ j) x := by
+  classical
+  induction s using Finset.induction with
+  | empty =>
+      rw [Finset.sum_empty, Finset.sum_empty]
+      exact rep_eq_of_continuousOn zero_lt_one 0 continuousOn_const SobolevMultiIndex.fn_zero hx
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, Finset.sum_insert ha, rep_add zero_lt_one _ _ hx, Pi.add_apply,
+        rep_smul zero_lt_one _ _ hx, Pi.smul_apply, smul_eq_mul, ih]
+
+/-- **The trial space of Example 9.1.2**, `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`. -/
+def sineSpace (N : ℕ) : Submodule ℝ (SobolevInterval 1 0 1) :=
+  Submodule.span ℝ (Set.range fun i : Fin N => sineBasis i)
+
+theorem sineSpace_le (N : ℕ) : sineSpace N ≤ SobolevIntervalZero 0 1 :=
+  Submodule.span_le.2 (by rintro _ ⟨i, rfl⟩; exact sineBasis_mem i)
+
+instance (N : ℕ) : FiniteDimensional ℝ (sineSpace N) :=
+  FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
+
+/-- **The Galerkin coefficient** `ξ_i = (2 / (π² i²)) ∫₀¹ f(x) sin(iπx) dx` of Example 9.1.2. -/
+def sineCoeff (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (k : ℕ) : ℝ :=
+  2 / (π ^ 2 * ((k : ℝ) + 1) ^ 2) * ∫ x in Ioo (0 : ℝ) 1, f x * sineBasisFun k x
+
+/-- **The Galerkin solution** `u_N = ∑ ξ_j sin(jπx)` of Example 9.1.2. -/
+def sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) : SobolevInterval 1 0 1 :=
+  ∑ j : Fin N, sineCoeff f j • sineBasis j
+
+theorem load_sineBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : ℕ) :
+    EllipticInterval.load 0 1 f (sineBasis i) = ∫ x in Ioo (0 : ℝ) 1, f x * sineBasisFun i x := by
+  rw [EllipticInterval.load_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [coeFn_deriv_sineBasis_zero i] with x hx
+  rw [hx]
+
+/-- The diagonal Galerkin system of Example 9.1.2 is solved by `ξ_i = (2/(π² i²)) ∫₀¹ f sin(iπx)`:
+the coefficients of `sineGalerkin` do solve the Galerkin problem on `V_N`. -/
+theorem isGalerkinSolution_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
+    IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f) (sineSpace N)
+      (sineGalerkin f N) := by
+  classical
+  refine ⟨Submodule.sum_mem _ fun j _ =>
+    Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩), ?_⟩
+  intro v hv
+  induction hv using Submodule.span_induction with
+  | mem x hx =>
+      obtain ⟨i, rfl⟩ := hx
+      have hsum : dirichletForm (sineGalerkin f N) (sineBasis i)
+          = ∑ j : Fin N, sineCoeff f j * dirichletForm (sineBasis j) (sineBasis i) := by
+        rw [sineGalerkin, map_sum]
+        simp only [FunLike.coe_sum, Finset.sum_apply, map_smul, FunLike.coe_smul, Pi.smul_apply,
+          smul_eq_mul]
+      rw [hsum]
+      simp only [dirichletForm_sineBasis, mul_ite, mul_zero]
+      have hfin : ∀ j : Fin N, ((i : ℕ) = (j : ℕ)) = (i = j) := fun j => by simp [Fin.val_inj]
+      simp only [hfin]
+      rw [Finset.sum_ite_eq Finset.univ i
+        (fun j : Fin N => sineCoeff f j * (((i : ℝ) + 1) * ((j : ℝ) + 1) * π ^ 2 / 2)),
+        ite_eq_left (Finset.mem_univ i), load_sineBasis, sineCoeff]
+      have hpi : (π : ℝ) ≠ 0 := Real.pi_ne_zero
+      have hik : ((i : ℝ) + 1) ≠ 0 := by positivity
+      field_simp
+  | zero => simp
+  | add x y _ _ ihx ihy => rw [map_add, map_add, ihx, ihy]
+  | smul c x _ ih => rw [map_smul, map_smul, ih]
+
+/-- **The kernel form (9.1.10) of the Galerkin solution**: `u_N(x) = ∫₀¹ f(t) K_N(x, t) dt` with
+`K_N(x, t) = (2/π²) ∑_{j ≤ N} sin(jπx) sin(jπt) / j²`, the `N`-term truncation of the Green
+kernel of `exercise_9_1_3`. -/
+theorem rep_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) {x : ℝ}
+    (hx : x ∈ Icc (0 : ℝ) 1) :
+    SobolevInterval.rep (sineGalerkin f N) x
+      = ∫ t in Ioo (0 : ℝ) 1, f t * (2 / π ^ 2 *
+          ∑ j : Fin N, sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2) := by
+  have hintg : ∀ j : Fin N, IntegrableOn
+      (fun t => f t * (2 / π ^ 2 * (sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2)))
+      (Ioo (0 : ℝ) 1) := by
+    intro j
+    have hg : ContinuousOn
+        (fun t => 2 / π ^ 2 * (sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2))
+        (Icc (0 : ℝ) 1) := by
+      have hcont : Continuous (sineBasisFun (j : ℕ)) := (contDiff_sineBasisFun j).continuous
+      fun_prop
+    exact (EllipticInterval.integrableOn_continuousOn_mul hg f).congr_fun
+      (fun t _ => mul_comm _ _) measurableSet_Ioo
+  rw [sineGalerkin, rep_finset_sum _ _ _ hx]
+  have hterm : ∀ j : Fin N, sineCoeff f j * SobolevInterval.rep (sineBasis j) x
+      = ∫ t in Ioo (0 : ℝ) 1,
+        f t * (2 / π ^ 2 * (sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2)) := by
+    intro j
+    have hpi : (π : ℝ) ≠ 0 := Real.pi_ne_zero
+    have hjk : ((j : ℝ) + 1) ≠ 0 := by positivity
+    have hre : ∀ t : ℝ,
+        (f : ℝ → ℝ) t * (2 / π ^ 2 * (sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2))
+        = (2 / (π ^ 2 * ((j : ℝ) + 1) ^ 2) * sineBasisFun j x) *
+            ((f : ℝ → ℝ) t * sineBasisFun j t) := by
+      intro t
+      field_simp
+    rw [rep_sineBasis j hx, sineCoeff]
+    simp only [hre]
+    rw [integral_const_mul]
+    ring
+  simp only [hterm]
+  rw [← integral_finsetSum _ fun j _ => hintg j]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+  dsimp only
+  rw [Finset.mul_sum, Finset.mul_sum]
+
+/-- **Example 9.1.2.** The same boundary value problem (9.1.9) with the trigonometric trial space
+`V_N = span{sin(iπx) : 1 ≤ i ≤ N}`:
+
+* the basis is orthogonal for the energy inner product,
+  `∫₀¹ (sin jπx)' (sin iπx)' dx = i j π² δ_{ij} / 2`, so the Galerkin system is diagonal;
+* its unique solution is `u_N = ∑ ξ_j sin(jπx)` with `ξ_i = (2/(π² i²)) ∫₀¹ f(x) sin(iπx) dx`;
+* and `u_N` is the kernel approximation (9.1.10), `u_N(x) = ∫₀¹ f(t) K_N(x, t) dt` with
+  `K_N(x, t) = (2/π²) ∑_{j ≤ N} sin(jπx) sin(jπt)/j²`, the `N`-term truncation of the Green
+  kernel of `exercise_9_1_3`.
+
+Exponents are `0`-indexed, `sineBasis k = sin((k+1)πx)`. -/
+theorem example_9_1_2 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
+    (∀ i j : ℕ, dirichletForm (sineBasis j) (sineBasis i)
+        = if i = j then ((i : ℝ) + 1) * ((j : ℝ) + 1) * π ^ 2 / 2 else 0) ∧
+      (∀ uN, IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f) (sineSpace N) uN ↔
+        uN = ∑ j : Fin N, (2 / (π ^ 2 * ((j : ℝ) + 1) ^ 2) *
+          ∫ x in Ioo (0 : ℝ) 1, f x * sineBasisFun j x) • sineBasis j) ∧
+      (∀ x ∈ Icc (0 : ℝ) 1, SobolevInterval.rep (sineGalerkin f N) x
+        = ∫ t in Ioo (0 : ℝ) 1, f t * (2 / π ^ 2 *
+            ∑ j : Fin N, sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2)) := by
+  refine ⟨dirichletForm_sineBasis, fun uN => ⟨fun h => ?_, fun h => ?_⟩,
+    fun x hx => rep_sineGalerkin f N hx⟩
+  · obtain ⟨w, -, huniq⟩ := existsUnique_dirichletGalerkin (sineSpace_le N) f
+    exact (huniq uN h).trans (huniq _ (isGalerkinSolution_sineGalerkin f N)).symm
+  · rw [h]
+    exact isGalerkinSolution_sineGalerkin f N
+
+end
+
+end Example912
 
 end Chapter09
 

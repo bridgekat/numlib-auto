@@ -135,5 +135,12 @@ spherical harmonics, with `K φ_k = 4π/(2k + 1) φ_k` (2.8.34) and `dim N(μ_k 
 `μ_k = 4π/(2k + 1)`, and they form a basis of `L²(D)` in agreement with Theorem 2.8.15. Not
 formalized: the book states it without proof, citing Mikhlin for the compactness, and it needs both
 the surface measure of the sphere as an integration theory — Mathlib has `Measure.toSphere` but no
-integration formula in this shape — and spherical harmonics, of which Mathlib has none.'''
+integration formula in this shape — and spherical harmonics, of which Mathlib has none.
+
+Blocked: rechecked 2026-09-15; the reason stands. Spherical harmonics are still absent from
+Mathlib (`SphericalHarmonic`, `sphericalHarmonic`, `Gegenbauer`: zero occurrences; Mathlib's
+`Legendre` is `legendreSym`, the quadratic residue symbol), and this node is one
+of the six that the same gap holds up (with `AtkinsonHan.Chapter07.definition_7_5_8`,
+`theorem_7_5_9`, `theorem_7_5_10`, `AtkinsonHan.Chapter14.theorem_14_1_1`, `theorem_14_2_5`).
+'''
 deps = ["theorem_2_8_15", "isCompactOperator_of_isAdmissibleKernel"]

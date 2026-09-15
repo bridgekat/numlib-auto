@@ -52,7 +52,12 @@ convex space. Estimate: around a hundred lines.
 (2) The reduction from the *sequential* hypothesis to the *topological* weak compactness that
 Kakutani's argument consumes. That is the hard half of Eberlein–Šmulian, whose proof builds
 alternating sequences of vectors and functionals to produce a separable subspace, and Mathlib has
-nothing in that direction. Estimate: several hundred lines, a task of its own.'''
+nothing in that direction. Estimate: several hundred lines, a task of its own.
+
+Blocked: rechecked 2026-09-15; the reason stands. Neither Goldstine's theorem nor the
+sequential-to-topological half of Eberlein–Šmulian has appeared in Mathlib on this pin
+(`Goldstine`, `Smulian`, `Eberlein`: zero occurrences).
+'''
 deps = ["definition_2_7_4"]
 
 [[node]]
@@ -65,7 +70,11 @@ has a subsequence converging weakly to an element of the space. Split into its t
 is one line once the converse exists. Where the book applies the theorem (its Theorems 3.3.8,
 3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as the backbone's
 class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`, which `theorem_2_7_5_mp`
-now discharges from reflexivity.'''
+now discharges from reflexivity.
+
+Blocked: rechecked 2026-09-15; it is one line once `theorem_2_7_5_mpr` exists, and nothing
+else is missing.
+'''
 deps = ["theorem_2_7_5_mp", "theorem_2_7_5_mpr"]
 
 [[node]]

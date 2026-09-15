@@ -31,24 +31,13 @@ id = "equation_2_4_4"
 id = "quadrature_convergence"
 
 [[node]]
-id = "example_2_4_2"
-kind = "theorem"
-desc = '''Example 2.4.2: the differentiation operator `D : C¹[0, 1] → L²(0, 1)`, `D v = v'`, has
-`‖D v‖₂ ≤ ‖v‖_{1,2}` and hence `‖D‖ ≤ 1` for the inner product norm
-`‖v‖_{1,2} = (‖v‖₂² + ‖v'‖₂²)^{1/2}`, so Theorem 2.4.1 extends it to
-`D̂ ∈ 𝓛(H¹(0, 1), L²(0, 1))`, the derivative on the Sobolev space `H¹(0, 1)` that is the
-completion of `C¹[0, 1]` in that norm.
+id = "example_2_4_2_norm_le"
 
-Still open, and *not* unblocked by `C¹[0, 1]` now existing.  The underlying space is the backbone's
-`ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`
-(`Numlib.Analysis.Calculus.ContDiffMapIcc`), but two things are missing.  The norm here is the
-`H¹` *inner product* norm `(‖v‖₂² + ‖v'‖₂²)^{1/2}`, not the supremum norm `‖v‖_∞ + ‖v'‖_∞` that
-`ContDiffMapIcc` carries, so it would have to be put on the same carrier as a second normed
-structure; and the target of the extension, `H¹(0, 1)`, is the backbone's `SobolevMultiIndex`
-of `Numlib/Analysis/Sobolev/MultiIndex.lean` on `E = ℝ` — the planned `SobolevInterval 1 0 1` of
-`Numlib/Analysis/Sobolev/Interval` — and identifying it with the completion is the density of
-`C¹[0, 1]` in `H¹(0, 1)`, which is the one-dimensional case of Meyers–Serrin
-(`Numlib/Analysis/Sobolev/Density.lean` has it on any open set for `C^∞ ∩ W^{k,p}`, not for
-functions smooth up to the boundary).  So the remaining obstruction is the density statement,
-not the space.'''
-deps = ["theorem_2_4_1"]
+[[node]]
+id = "example_2_4_2_dense"
+
+[[node]]
+id = "example_2_4_2"
+
+[[node]]
+id = "example_2_4_2_opNorm_le"

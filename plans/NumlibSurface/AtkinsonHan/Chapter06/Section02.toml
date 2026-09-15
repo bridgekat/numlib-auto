@@ -46,7 +46,19 @@ solution is `u(x, t) = Σ_{j ≤ n} b_j e^{-ν j² t} sin(jx)` (6.2.7), and the 
 `max_x |u(x, t)| ≤ max_x |u₀(x)|`, so the solution operators `S(t) : V₀ ⊆ V → V` are bounded and
 the problem is well posed. Not formalized: the bound is read off the maximum principle for the
 heat equation, which the book quotes from a partial differential equations text and for which
-Mathlib has no parabolic theory.'''
+Mathlib has no parabolic theory.
+
+Blocked: rechecked 2026-09-15; the reason stands. Of the three ingredients, two are ordinary and
+the third is not. Density of the sine polynomials (6.2.5) in `C₀[0, π]` is Fejér on the odd
+periodic extension, and that `u` of (6.2.7) solves (6.2.1) in the sense of `IsSolution` is a
+finite-sum computation, `d/dt` and `ν ∂²/∂x²` both multiplying the `j`-th term by `-ν j²`. What
+is missing is the bound `max_x |u(x, t)| ≤ max_x |u₀(x)|`, which the book takes from the maximum
+principle. Mathlib has no parabolic theory and no positivity for the periodic heat kernel
+(`jacobiTheta₂` carries the functional equation, not positivity). The two routes are (a) the
+classical `w = u - M - εt` argument on the rectangle, which needs "the second derivative is
+≤ 0 at an interior maximum" — Mathlib has `IsLocalMax.deriv_eq_zero` but no second-order form —
+and (b) Poisson summation for the theta kernel. Estimate: several hundred lines either way.
+'''
 deps = ["IsWellPosed", "solutionOperator"]
 
 [[node]]
@@ -60,7 +72,12 @@ bounded, and Taylor expansion of the smooth solution (6.2.7) gives
 `‖[C(Δt) u(t) - u(t + Δt)]/Δt‖ ≤ c Δt`, i.e. consistency with `V_c = V₀`. For the backward scheme
 `‖C(Δt)‖ ≤ 1` whatever `r`. Not formalized: the consistency half Taylor-expands the solution of
 Example 6.2.4, so it carries the same heat-equation theory Mathlib lacks, and the book's
-presentation does not separate the norm bound (6.2.8) from it.'''
+presentation does not separate the norm bound (6.2.8) from it.
+
+Blocked: rechecked 2026-09-15; the reason stands. The stability half is separable and elementary
+(`‖C(Δt)‖ ≤ |1 - 2r| + 2r` is a bound on the odd-periodic shift combination), but the consistency
+half Taylor-expands (6.2.7), so it rests on `example_6_2_4`.
+'''
 deps = ["example_6_2_4", "IsConsistent", "IsStable"]
 
 [[node]]
@@ -72,5 +89,10 @@ consistent, convergent (6.2.11); since in fact `‖C(Δt)‖ = |1 - 2r| + 2r`, t
 is necessary too (Exercise 6.2.3), so the scheme is conditionally stable and conditionally
 convergent, while the backward scheme is unconditionally stable and convergent. Not formalized:
 it is the heat-equation instance of `theorem_6_2_11` and rests wholly on Examples 6.2.4 and 6.2.8,
-which are not formalized either.'''
+which are not formalized either.
+
+Blocked: rechecked 2026-09-15; the reason stands. It is `theorem_6_2_11` and `corollary_6_2_12`
+applied to `example_6_2_8`, both of which are proved, so this node costs nothing beyond its two
+dependencies.
+'''
 deps = ["example_6_2_8", "theorem_6_2_11", "corollary_6_2_12"]

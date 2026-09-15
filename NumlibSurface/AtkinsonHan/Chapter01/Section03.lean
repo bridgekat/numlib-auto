@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Function.L2Space
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Sobolev.Interval
 import Numlib.Approximation.OrthogonalPolynomial
 import NumlibSurface.AtkinsonHan.Chapter01.Section01
 import NumlibSurface.AtkinsonHan.Chapter01.Section02
@@ -44,6 +45,8 @@ Mathlib's `InnerProductSpace`, `CompleteSpace`, `inner 𝕜 x y = 0`, `Submodule
   `definition_1_3_10_iff` — the restated definitions read back as the Mathlib notions, and the
   orthogonal complement as a closed subspace.
 * `example_1_3_6` — `ℂ^d`, `ℓ²` and `L²(μ)` are Hilbert spaces, with the book's inner products.
+* `example_1_3_7` — `H^m(a, b) = W^{m,2}(a, b)` is a Hilbert space, with the book's inner
+  product `(f, g)_{H^m} = ∑_{j ≤ m} (f^{(j)}, g^{(j)})_{L²(a,b)}`.
 * `theorem_1_3_2` — the Cauchy–Schwarz inequality, with its equality case.
 * `proposition_1_3_3` — the inner product is continuous in both arguments.
 * `theorem_1_3_4` — Fréchet–von Neumann–Jordan: a norm comes from an inner product exactly when
@@ -73,9 +76,15 @@ inner product and norm is a polynomial integral over `(-1, 1)`. The answer is th
 book's `vₙ` are `√((2n + 1)/2)` times those. Elements of `L²(-1, 1)` are equivalence classes, so
 the displayed formulas are almost-everywhere equalities of functions.
 
+`H^m(a, b)` is the backbone's `SobolevInterval m a b` of
+`Numlib/Analysis/Sobolev/Interval.lean`, which is `W^{m,2}(a, b)` described by weak derivatives —
+the description the book defers to Chapter 7 — rather than as the completion of `C^m[a, b]` that
+Example 1.2.28 (b) takes as the definition. The two agree, and that they do is the density of
+`C^m[a, b]` in `H^m(a, b)`, proved here only for `m = 1` (`Chapter02.example_2_4_2_dense`).
+
 ## Not formalized here
 
-Example 1.3.7 and Example 1.2.28 (b) need Sobolev spaces and are out of scope for the project.
+Example 1.2.28 (b) is out of scope; its plan entry records why.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology
@@ -200,6 +209,16 @@ theorem example_1_3_6 (d : ℕ) {α : Type*} [MeasurableSpace α] (μ : Measure 
   · rw [L2.inner_def]
     refine integral_congr_ae (Eventually.of_forall fun a => ?_)
     simp [RCLike.inner_apply]
+
+/-- **Example 1.3.7.** `H^m(a, b) = W^{m,2}(a, b)` is a Hilbert space, with the inner product
+`(f, g)_{H^m} = ∑_{j ≤ m} (f^{(j)}, g^{(j)})` taken over `L²(a, b)`. Here `f^{(j)}` is the `j`-th
+weak derivative, `SobolevInterval.deriv`. The embedding `H¹(a, b) ⊆ C[a, b]` the book recalls from
+Exercise 1.2.20 is the backbone's `SobolevInterval.toContinuousMap`. -/
+theorem example_1_3_7 (m : ℕ) (a b : ℝ) :
+    (∀ f g : SobolevInterval m a b, inner ℝ g f =
+        ∑ j : Fin (m + 1), inner ℝ (SobolevInterval.deriv g j) (SobolevInterval.deriv f j)) ∧
+      CompleteSpace (SobolevInterval m a b) :=
+  ⟨fun f g => SobolevInterval.inner_eq g f, inferInstance⟩
 
 /-- **Definition 1.3.8.** Two vectors `u` and `v` are *orthogonal* when `(u, v) = 0`; an element
 `v` is orthogonal to a subset `U` when it is orthogonal to every `u ∈ U`, which is

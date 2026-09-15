@@ -23,14 +23,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.3.6"
 
 [[node]]
 id = "example_1_3_7"
-kind = "theorem"
-desc = '''
-Example 1.3.7: `Hᵐ(a, b) = W^{m,2}(a, b)` is a Hilbert space under
-`(f, g)_{Hᵐ} = ∑_{j≤m} (f^{(j)}, g^{(j)})_{L²(a,b)}`.  Not formalized: §1.3's module doc puts it out
-of scope with Example 1.2.28 (b).  It needs Sobolev spaces on an interval — weak derivatives, which
-Mathlib does not have there — and the project's plan places Sobolev theory outside its scope.
-'''
-deps = ["definition_1_3_1", "example_1_2_28_b"]
 
 [[node]]
 id = "definition_1_3_8"
