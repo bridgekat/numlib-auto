@@ -60,6 +60,28 @@ id = "inner_def"
 id = "norm_sq_eq"
 
 [[node]]
+id = "mul_norm_sq_le_sum_integral"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity behind (13.66) and (13.69)"
+
+[[node]]
+id = "traceRightL"
+
+[[node]]
+id = "traceLeftL"
+
+[[node]]
+id = "jumpL"
+
+[[node]]
+id = "continuous_traceRight"
+
+[[node]]
+id = "continuous_traceLeft"
+
+[[node]]
+id = "continuous_jump"
+
+[[node]]
 id = "integral_mul_deriv_mul_eq"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the panel integration by parts behind (13.69)"
 

@@ -326,6 +326,81 @@ theorem norm_sq_eq [Fact (StrictMono x)] (v : BrokenPolynomial x r) :
   rw [← real_inner_self_eq_norm_sq, inner_def]
   exact Finset.sum_congr rfl fun i _ => integral_congr fun s _ => (sq _).symm
 
+/-- **A weighted panel integral dominates a multiple of the squared norm**: if `c ≤ w` on
+`[x 0, x n]` then `c ‖v‖²_{L²} ≤ ∑ i, ∫_{x i}^{x (i+1)} w vᵢ²`, since `‖v‖² = ∑ i, ∫ vᵢ²` and the
+integrands compare panelwise. With `w = a₀ - a'/2` and `c = μ₀` this is the coercivity behind the
+energy estimates of the transport equation ([quarteroni2000numerical] (13.66), (13.69)); with
+`c = -μ*` it is the lower bound used when the reaction coefficient has the wrong sign. -/
+theorem mul_norm_sq_le_sum_integral [hx : Fact (StrictMono x)] {w : ℝ → ℝ}
+    (hw : IntervalIntegrable w volume (x 0) (x (Fin.last n))) {c : ℝ}
+    (hc : ∀ s ∈ Icc (x 0) (x (Fin.last n)), c ≤ w s) (v : BrokenPolynomial x r) :
+    c * ‖v‖ ^ 2 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, w s * (v i).eval s ^ 2 := by
+  have hm : Monotone x := hx.out.monotone
+  have hsub : ∀ i : Fin n, [[x i.castSucc, x i.succ]] ⊆ [[x 0, x (Fin.last n)]] := fun i => by
+    rw [uIcc_of_le (hm (Fin.castSucc_lt_succ (i := i)).le), uIcc_of_le (hm (Fin.zero_le _))]
+    exact Icc_subset_Icc (hm (Fin.zero_le _)) (hm (Fin.le_last _))
+  rw [norm_sq_eq, Finset.mul_sum]
+  refine Finset.sum_le_sum fun i _ => ?_
+  rw [← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_mono_on (hm (Fin.castSucc_lt_succ (i := i)).le)
+    (((v i).continuous.pow 2).intervalIntegrable _ _ |>.const_mul c)
+    ((hw.mono_set (hsub i)).mul_continuousOn ((v i).continuous.pow 2).continuousOn)
+    fun s hs => ?_
+  have hmem : s ∈ Icc (x 0) (x (Fin.last n)) := by
+    have := hsub i (by rw [uIcc_of_le (hm (Fin.castSucc_lt_succ (i := i)).le)]; exact hs)
+    rwa [uIcc_of_le (hm (Fin.zero_le _))] at this
+  exact mul_le_mul_of_nonneg_right (hc s hmem) (sq_nonneg _)
+
+/-! ### The traces as continuous linear functionals -/
+
+section TraceL
+
+variable [Fact (StrictMono x)]
+
+variable (x r) in
+/-- **The right trace as a continuous linear functional** `v ↦ v⁺(x i)`: every linear map on the
+finite-dimensional space `BrokenPolynomial x r` is continuous. -/
+def traceRightL (i : Fin n) : BrokenPolynomial x r →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap (traceRightₗ x r i)
+
+@[simp]
+theorem traceRightL_apply (i : Fin n) (v : BrokenPolynomial x r) :
+    traceRightL x r i v = traceRight v i := rfl
+
+variable (x r) in
+/-- **The left trace as a continuous linear functional** `v ↦ v⁻(x i)`. -/
+def traceLeftL (i : Fin (n + 1)) : BrokenPolynomial x r →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap (traceLeftₗ x r i)
+
+@[simp]
+theorem traceLeftL_apply (i : Fin (n + 1)) (v : BrokenPolynomial x r) :
+    traceLeftL x r i v = traceLeft v i := traceLeftₗ_apply i v
+
+variable (x r) in
+/-- **The jump as a continuous linear functional** `v ↦ [v]ᵢ`. -/
+def jumpL (i : Fin n) : BrokenPolynomial x r →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap (jumpₗ x r i)
+
+@[simp]
+theorem jumpL_apply (i : Fin n) (v : BrokenPolynomial x r) : jumpL x r i v = jump v i :=
+  jumpₗ_apply i v
+
+/-- The right trace is continuous. -/
+theorem continuous_traceRight (i : Fin n) :
+    Continuous fun v : BrokenPolynomial x r => traceRight v i :=
+  (traceRightL x r i).continuous
+
+/-- The left trace is continuous. -/
+theorem continuous_traceLeft (i : Fin (n + 1)) :
+    Continuous fun v : BrokenPolynomial x r => traceLeft v i :=
+  (traceLeftL x r i).continuous.congr fun v => traceLeftL_apply i v
+
+/-- The jump is continuous. -/
+theorem continuous_jump (i : Fin n) : Continuous fun v : BrokenPolynomial x r => jump v i :=
+  (jumpL x r i).continuous.congr fun v => jumpL_apply i v
+
+end TraceL
+
 /-! ### Integration by parts on the panels -/
 
 /-- **Panel integration by parts**: for `a` differentiable on `[u, v]` with continuous derivative

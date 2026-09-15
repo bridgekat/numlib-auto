@@ -185,6 +185,7 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section07
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section08
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section09
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section10
 import NumlibSurface.Rockafellar
 import NumlibSurface.Rockafellar.Part1
 import NumlibSurface.Rockafellar.Part1.Section01

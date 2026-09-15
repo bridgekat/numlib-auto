@@ -1,162 +1,79 @@
 namespace = "QuarteroniSaccoSaleri.Chapter13"
-desc = '''
-§13.10, finite elements for the transport problem (13.64) `u_t + a u_x + a₀ u = f` on `(α, β)` with
-`a > 0` (inflow at `α`): the continuous Galerkin semi-discretization (13.65) and its energy
-estimates (13.66)–(13.67) (Exercise 9), the discontinuous Galerkin semi-discretization (13.68)
-with the upwind numerical flux and its estimate (13.69) (Exercise 10), the two quoted convergence
-rates (`h^r` for cG, `h^{r+1/2}` for dG; not formalized), and §13.10.2, backward Euler in time
-(13.70) with its unconditional stability.
-
-Both semi-discretizations are `Variational.IsSemidiscreteGalerkin` on a finite-dimensional trial
-space with the `L²(α, β)` inner product, and both energy estimates are the one abstract lemma
-`Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le` applied with the *energy identity* of
-the respective form: `b(v, v) = ½ a(β) v(β)² - ½ a(α) v(α)² + ∫ (a₀ - a'/2) v²` for the continuous
-space, and `b_DG(v, v) = ½ a(β) v⁻(β)² + ½ ∑_j a(x_j) [v]_j² + ∫ (a₀ - a'/2) v²` for the broken
-space. The trial spaces are the broken polynomial space `BrokenPolynomial x r`
-(`Numlib/Approximation/BrokenPolynomial`) and its continuous subspace, so that the continuous
-identity is the discontinuous one with zero jumps.
-
-Readings: in (13.66), (13.67) and the display after (13.70) the boundary term is printed `a(β)
-∫₀ᵗ u_h²(τ) dτ`, resp. `a(β)(u_h^{j+1}(β))²` summed over `j = 1..m`; read `u_h(β, τ)²` and
-`u_h^j(β)²`. In (13.66) the source term is `∫₀ᵗ μ₀⁻¹ ‖f‖²`; the estimate as derived has the factor
-`2` on the dissipative terms only if `2⟨f, u⟩` is split as `μ₀‖u‖² + μ₀⁻¹‖f‖²`, which is what the
-nodes state.
-'''
 
 [[node]]
 id = "equation_13_64"
-kind = "definition"
-desc = '''The transport initial boundary value problem (13.64) on `Q_T = (α, β) × (0, T)`: `u_t + a
-u_x + a₀ u = f` with `a = a(x) > 0`, `a₀ = a₀(x, t)`, `f = f(x, t)`, inflow datum `u(α, t) = φ(t)`,
-initial datum `u(x, 0) = u₀(x)`: `Transport.IsSolution` on the strip with the two side conditions
-(`Transport.IsInflowSolution a a₀ f φ u₀ α β T u`). Definition only. ★'''
-deps = ["Transport.IsInflowSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.64)'
 
 [[node]]
+id = "equation_13_64_def"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.64)'
+
+[[node]]
+id = "inflowSpace"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, V_h^{in}'''
+
+[[node]]
+id = "mem_inflowSpace_iff"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, V_h^{in}'''
+
+[[node]]
 id = "transportForm"
-kind = "definition"
-desc = '''The transport bilinear form on the broken polynomial space `W_h = BrokenPolynomial x r`
-of the partition `α = x₀ < … < x_n = β` (each element a polynomial of degree `≤ r` on each `I_j`,
-with the `L²(α, β)` inner product `∑_j ∫_{I_j} p_j q_j`): `b_t(u, v) = ∑_j ∫_{I_j} (a u' + a₀(·, t) u)
-v`, a `SesqForm ℝ W_h` for each `t` (`Variational.transportForm a a₀ t`); the continuous space
-`V_h = X_h^r` is the subspace `{v | ∀ j, jump v j = 0}` (`BrokenPolynomial.continuous`) and
-`V_h^{in} = {v ∈ V_h | v(α) = 0}`. ★'''
-deps = ["BrokenPolynomial", "BrokenPolynomial.continuous", "Variational.transportForm"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, V_h = X_h^r, V_h^{in} and the form of (13.65)'''
 
 [[node]]
+id = "transportForm_apply"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the form of (13.65)'''
+
+[[node]]
 id = "equation_13_65"
-kind = "definition"
-desc = '''The continuous Galerkin semi-discretization (13.65) with `φ = 0`: `u_h : ℝ → V_h^{in}`
-with `⟪u_h' t, v_h⟫ + b_t(u_h t, v_h) = ⟪f t, v_h⟫` for all `v_h ∈ V_h^{in}`, `u_h 0 = u_{0,h}`:
-`Variational.IsSemidiscreteGalerkin (transportForm a a₀ · restricted to V_h^{in}) (t ↦ ⟪f t, ·⟫)
-u_{0,h} T u_h`. (The inhomogeneous case `u_h(α, t) = φ_h(t)` is the same equation on the affine
-space and is not separately planned.) ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.transportForm", "Variational.IsSemidiscreteGalerkin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.65)'
 
 [[node]]
 id = "transportForm_apply_self"
-kind = "theorem"
-desc = '''The energy identity of the continuous transport form: for `a` continuously
-differentiable on `[α, β]` and `v ∈ V_h` (continuous, piecewise polynomial), `b_t(v, v) = ½ a(β)
-v(β)² - ½ a(α) v(α)² + ∫_α^β (a₀(·, t) - a'/2) v²`; for `v ∈ V_h^{in}` the `α` term vanishes. Proof:
-`∫_{I_j} a v v' = ½[a v²]_{x_j}^{x_{j+1}} - ½∫_{I_j} a' v²` on each panel
-(`intervalIntegral.integral_mul_deriv_eq_deriv_mul`), summed with the telescoping of the boundary
-terms because `v` is continuous. `Variational.transportForm_apply_self_of_continuous`, a special
-case of the broken identity `dgUpwindForm_apply_self` with zero jumps. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.transportForm", "Variational.transportForm_apply_self_of_continuous"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the derivation of (13.66) with v_h = u_h(t)'''
 
 [[node]]
+id = "le_transportForm_restrict"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity hypothesis of (13.66)'''
+
+[[node]]
 id = "equation_13_66"
-kind = "theorem"
-desc = '''(13.66): under `0 < μ₀ ≤ a₀(x, t) - a'(x)/2` on `[α, β] × [0, T]`, the solution of (13.65)
-with `φ = 0` satisfies, for `t ∈ [0, T]`, `‖u_h(t)‖²_{L²} + ∫₀ᵗ μ₀ ‖u_h(τ)‖²_{L²} dτ + a(β) ∫₀ᵗ u_h(β,
-τ)² dτ ≤ ‖u_{0,h}‖²_{L²} + ∫₀ᵗ μ₀⁻¹ ‖f(τ)‖²_{L²} dτ`. From
-`Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le` with `Q_t(v) = a(β) v(β)²` and the
-energy identity `b_t(v,v) ≥ μ₀ ‖v‖² + ½ Q_t(v)`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "QuarteroniSaccoSaleri.Chapter13.transportForm_apply_self", "Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.66)'
 
 [[node]]
 id = "equation_13_66_conservation"
-kind = "theorem"
-desc = '''Energy conservation (the display after (13.66)): if `f = 0` and `a₀ - a'/2 ≥ 0` (in
-particular `a₀ = 0` with `a` constant or nonincreasing), then `‖u_h(t)‖_{L²} ≤ ‖u_{0,h}‖_{L²}` for
-all `t ≥ 0` (`t ↦ ‖u_h t‖` is antitone): `Variational.IsSemidiscreteGalerkin.norm_le_of_nonneg`
-with `b_t(v, v) = ½ a(β) v(β)² + ∫ (a₀ - a'/2) v² ≥ 0`. The book states it under `f = a₀ = 0`;
-the extra hypothesis `a' ≤ 0` (automatic for constant `a`) is what the identity needs. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "QuarteroniSaccoSaleri.Chapter13.transportForm_apply_self", "Variational.IsSemidiscreteGalerkin.norm_le_of_nonneg"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, ‖u_h(t)‖ ≤ ‖u_{0,h}‖, conservation of the energy'''
+
+[[node]]
+id = "equation_13_66_conservation_le"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, ‖u_h(t)‖ ≤ ‖u_{0,h}‖, conservation of the energy'''
 
 [[node]]
 id = "equation_13_67"
-kind = "theorem"
-desc = '''(13.67) and Exercise 9: without (13.66), with `μ*(t) = max_{[α,β]} |a₀(x, t) - a'(x)/2|`
-(the book writes `μ(x, t)` for `a₀ - a'/2`), `‖u_h(t)‖² + a(β) ∫₀ᵗ u_h(β, τ)² dτ ≤ (‖u_{0,h}‖² + ∫₀ᵗ
-‖f(τ)‖² dτ) exp(∫₀ᵗ (1 + 2 μ*(τ)) dτ)`. From `Variational.IsSemidiscreteGalerkin.norm_sq_add_
-integral_le_exp` (the Gronwall form: `d/dt ‖u‖² + Q(u) ≤ (1 + 2μ*) ‖u‖² + ‖f‖²`, then the
-differential Gronwall lemma with variable coefficient `Gronwall.le_mul_exp_integral_of_hasDerivWithinAt_le`
-applied to `‖u(t)‖² + ∫₀ᵗ Q`), with the identity `transportForm_apply_self`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "QuarteroniSaccoSaleri.Chapter13.transportForm_apply_self", "Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le_exp", "Gronwall.le_mul_exp_integral_of_hasDerivWithinAt_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.67) and Exercise 13.9'
 
 [[node]]
 id = "exercise_13_9"
-kind = "theorem"
-desc = 'Exercise 9 is `equation_13_67`; this node records the exercise and is proved by it. ★'
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_67"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.9'
 
 [[node]]
 id = "equation_13_68"
-kind = "definition"
-desc = '''The discontinuous Galerkin semi-discretization (13.68) on `W_h = BrokenPolynomial x r`:
-`⟪u_h' t, v_h⟫ + b^{DG}_t(u_h t, v_h) = ⟪f t, v_h⟫ + a(x₀) φ(t) v_h⁺(x₀)` for all `v_h ∈ W_h`, where
-`b^{DG}_t(u, v) = ∑_{i<n} [∫_{I_i} (a u' + a₀(·,t) u) v + a(x_i) (u⁺(x_i) - u⁻(x_i)) v⁺(x_i)]` with
-the convention `u⁻(x₀) = 0` (the inflow value `φ` is moved to the right-hand side as a source):
-`Variational.dgUpwindForm a a₀ t`, and `Variational.IsSemidiscreteGalerkin (dgUpwindForm a a₀ ·)
-(t ↦ ⟪f t, ·⟫ + a(x₀) φ t · eval⁺ x₀) u_{0,h} T u_h`. The jumps `[u]_j = u⁺(x_j) - u⁻(x_j)` are
-`BrokenPolynomial.jump`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.transportForm", "Variational.dgUpwindForm", "BrokenPolynomial.jump", "Variational.IsSemidiscreteGalerkin"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.68)'
 
 [[node]]
 id = "dgUpwindForm_apply_self"
-kind = "theorem"
-desc = '''The energy identity of the upwind DG form: for `a` continuously differentiable, `a > 0`,
-and `v ∈ W_h`, `b^{DG}_t(v, v) = ½ a(β) v⁻(β)² + ½ ∑_{j=0}^{n-1} a(x_j) [v]_j² + ∫_α^β (a₀(·,t) -
-a'/2) v²`, with `[v]_0 = v⁺(x₀)`. Proof: integrate by parts on each panel, `∫_{I_i} a v v' = ½ a
-v⁻(x_{i+1})² - ½ a v⁺(x_i)² - ½ ∫_{I_i} a' v²`, and combine with the flux term at each node:
-`½ a v⁻² - ½ a v⁺² + a (v⁺ - v⁻) v⁺ = ½ a (v⁺ - v⁻)²`. `Variational.dgUpwindForm_apply_self`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_68", "Variational.dgUpwindForm_apply_self"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the stability estimate (13.69), its energy identity'''
 
 [[node]]
+id = "le_dgUpwindForm"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity hypothesis behind (13.69)'''
+
+[[node]]
 id = "equation_13_69"
-kind = "theorem"
-desc = '''(13.69): under `0 < μ₀ ≤ a₀ - a'/2`, the DG solution satisfies, for `t ∈ [0, T]`,
-`‖u_h(t)‖² + ∫₀ᵗ (2 μ₀ ‖u_h(τ)‖² + a(β) u_h⁻(β, τ)² + ∑_{j=1}^{n-1} a(x_j) [u_h(τ)]_j²) dτ ≤
-‖u_{0,h}‖² + ∫₀ᵗ (μ₀⁻¹ ‖f(τ)‖² + a(α) φ(τ)²) dτ`, which is the book's (13.69) with explicit
-constants (`C = max(1, μ₀⁻¹)` after weakening `2μ₀ ‖u_h‖²` to `‖u_h‖²` for `μ₀ ≥ 1/2`). Proof: test
-with `v_h = u_h(t)`; `d/dt ‖u_h‖² = 2⟪f, u_h⟫ + 2 a(α) φ u_h⁺(α) - 2 b^{DG}(u_h, u_h)`; the identity
-`dgUpwindForm_apply_self`; `2 a(α) φ u_h⁺(α) ≤ a(α) φ² + a(α) u_h⁺(α)²`, the latter absorbed by the
-`j = 0` jump term; `2⟪f, u_h⟫ ≤ μ₀⁻¹ ‖f‖² + μ₀ ‖u_h‖²`; integrate in time. The interior jumps `j ≥ 1`
-and the outflow term survive. Through `Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq`
-and the integration of a pointwise inequality. ★★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_68", "QuarteroniSaccoSaleri.Chapter13.dgUpwindForm_apply_self", "Variational.IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.69)'
 
 [[node]]
 id = "exercise_13_10"
-kind = "theorem"
-desc = '''Exercise 10: (13.69) with `f = 0` (and `φ = 0`), i.e. `‖u_h(t)‖² + ∫₀ᵗ (2μ₀ ‖u_h‖² + a(β)
-u_h⁻(β)² + ∑_{j=0}^{n-1} a(x_j) [u_h]_j²) ≤ ‖u_{0,h}‖²` — with the full `j = 0` jump term, since
-nothing needs absorbing. `Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le` with
-`Q_t(v) = a(β) v⁻(β)² + ∑_j a(x_j) [v]_j²`, as the hint says (take `v_h = u_h(t)`). ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_68", "QuarteroniSaccoSaleri.Chapter13.dgUpwindForm_apply_self", "Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.10'
 
 [[node]]
@@ -169,7 +86,19 @@ the interpolation error of degree-`r` piecewise polynomials in `H¹` for the *ti
 exact solution and an error equation with the `L²` projection; the piecewise polynomial
 interpolation estimates in Sobolev norms are chapter 8's Theorem 8.3
 (`Approximation/SobolevInterpolation`, open) and the argument needs them for every `r`, plus
-regularity of `u` that the book only assumes. The book states it without proof.'''
+regularity of `u` that the book only assumes. The book states it without proof.
+
+Blocked: the stability half is now proved (`equation_13_66`, `equation_13_67`), and the error
+equation `⟪∂ₜ(u - u_h), v_h⟫ + b_t(u - u_h, v_h) = 0` for `v_h ∈ V_h^{in}` would follow from
+`equation_13_64` once the exact solution is paired against the discrete space. What is missing is
+(i) the degree-`r` interpolation estimate
+`‖v - Π_h v‖_{L²} + h ‖(v - Π_h v)'‖_{L²} ≤ C h^{r+1} |v|_{H^{r+1}}` on a general mesh, open for
+every `r` in `Approximation/SobolevInterpolation` (only `r = 1` exists, in
+`Variational/FiniteElementInterval`); (ii) a projection of the *time-dependent* exact solution
+into `V_h^{in}` commuting with `∂ₜ`, which needs `u(·, t) ∈ H^{r+1}(α, β)` uniformly in `t` and a
+Bochner-space argument the project has no vocabulary for; (iii) an explicit-constant form of the
+`O(·)` statement. A multi-day task resting on an open chapter-8 group; the book quotes the result
+from [QV94] without proof, so it is left open.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "QuarteroniSaccoSaleri.Chapter13.equation_13_66"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the error estimate for continuous finite elements of degree r'''
 
@@ -180,31 +109,33 @@ desc = '''The discontinuous Galerkin error estimate quoted from [QV94] §14.3.3:
 `max_{t ≤ T} ‖u - u_h‖_{L²} + (∫₀ᵀ ‖u - u_h‖²_{L²} + ∑_j a(x_j) [u - u_h]_j² dt)^{1/2} = O(‖u₀ -
 u_{0,h}‖ + h^{r+1/2})` (the printed left side has a garbled `∫_{j=0}^{T_{n-1}}`; read `∫₀ᵀ
 ∑_{j=0}^{n-1}`). Not formalized: as for `cG_convergence`, with in addition the trace inequality
-on each element that produces the half power `h^{r+1/2}`.'''
+on each element that produces the half power `h^{r+1/2}`.
+
+Blocked: everything `cG_convergence` is blocked on, plus the elementwise trace inequality
+`|v(x_j)|² ≤ C (h_j⁻¹ ‖v‖²_{L²(I_j)} + h_j ‖v'‖²_{L²(I_j)})` for polynomials on a panel, which
+`Approximation/BrokenPolynomial` does not have (it has only the inverse inequality
+`inverseInequality_linear`, for `r = 1`). That trace inequality is a self-contained and
+worthwhile addition to `BrokenPolynomial` for general `r`, but on its own it does not close this
+node. The book quotes the result from [QV94] without proof, so it is left open.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_68", "QuarteroniSaccoSaleri.Chapter13.equation_13_69"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the convergence estimate for discontinuous finite elements of degree r'''
 
 [[node]]
 id = "equation_13_70"
-kind = "definition"
-desc = '''Backward Euler in time for (13.65), (13.70): `u_h^{n+1} ∈ V_h` with `u_h^{n+1}(α) =
-φ^{n+1}` and `Δt⁻¹ ⟪u_h^{n+1} - u_h^n, v_h⟫ + b_{t^{n+1}}(u_h^{n+1}, v_h) = ⟪f^{n+1}, v_h⟫` for all
-`v_h ∈ V_h^{in}`; with `φ = 0` it is `Variational.IsThetaStep (transportForm a a₀ t^{n+1}) 1 Δt _
-⟪f^{n+1}, ·⟫ u_h^n u_h^{n+1}` on `V_h^{in}`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "Variational.IsThetaStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.70)'
+
+[[node]]
+id = "isThetaStep_of_equation_13_70"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.70)'
 
 [[node]]
 id = "equation_13_70_stability"
-kind = "theorem"
-desc = '''Unconditional stability of (13.70): with `f = 0`, `φ = 0` and `μ₀ ≤ a₀ - a'/2`, `μ₀ ≥ 0`,
-each step satisfies `(2Δt)⁻¹ (‖u_h^{n+1}‖² - ‖u_h^n‖²) + a(β) u_h^{n+1}(β)² + μ₀ ‖u_h^{n+1}‖² ≤ 0`
-(the display after (13.70), which drops the factor `½` on `a(β)(u_h^{n+1}(β))²` and `μ₀‖·‖²`
-relative to the identity; the inequality holds as printed since both terms are nonnegative),
-hence by summation `‖u_h^m‖² + 2Δt ∑_{j=1}^m (μ₀ ‖u_h^j‖² + ½ a(β) u_h^j(β)²) ≤ ‖u_h^0‖²` and in
-particular `‖u_h^m‖_{L²} ≤ ‖u_h^0‖_{L²}` for all `m`. This is
-`Variational.IsThetaStep.norm_sq_add_two_mul_le` (which needs no symmetry) with
-`transportForm_apply_self`, and `Variational.IsThetaStep.norm_sq_add_sum_le`. The DG version
-(13.68) with backward Euler is the same statement with `dgUpwindForm`. ★★'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_70", "QuarteroniSaccoSaleri.Chapter13.transportForm_apply_self", "Variational.IsThetaStep.norm_sq_add_two_mul_le", "Variational.IsThetaStep.norm_sq_add_sum_le"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.2, the stability of the backward Euler scheme (13.70)'''
+
+[[node]]
+id = "equation_13_70_sum"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.2, the summed stability of (13.70)'''
+
+[[node]]
+id = "equation_13_70_norm_le"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.2, ‖u_h^m‖ ≤ ‖u_h^0‖ for all m ≥ 0'''

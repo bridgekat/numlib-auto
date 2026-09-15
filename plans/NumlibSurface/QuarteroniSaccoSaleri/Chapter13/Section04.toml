@@ -18,6 +18,23 @@ meshes may change between slabs), `‖u(t^n) - U^n‖_{L²(0,1)} ≤ C(u_{0h}, f
 Not formalized: the book quotes [EEHJ96]; the proof is a duality (Aubin–Nitsche in space–time)
 argument needing the discrete backward parabolic problem and parabolic regularity of the heat
 equation, i.e. the classical heat-equation theory recorded as a blocker in `notes/frontier.md`;
-the space–time spaces themselves are not planned.'''
+the space–time spaces themselves are not planned.
+
+Blocked: three independent gaps, checked 2026-09-16. (i) The space–time spaces `Q_q(S_k)`,
+`V_{h,Δt}`, `Y_{h,k}`, the time jump `[v^k]` and the cG(1)dG(q) form do not exist anywhere in the
+project and are not planned; building them is a new backbone module — per slab a tensor product of
+chapter 12's spatial `X_h^1` with `P_q(I_k)`, with a *different* spatial mesh on each slab (which is
+the point of `B_{k,k-1}`), plus one-sided time traces, for which `Approximation/BrokenPolynomial`
+is the right shape in the time direction only. (ii) The estimate compares `U^n` with the *exact*
+weak solution `u(t^n)`; `equation_13_12` is a definition only, because existence, uniqueness and
+regularity of weak solutions of (13.12) is Lions' theorem in the Bochner spaces
+`L²(0, T; H¹₀) ∩ H¹(0, T; H⁻¹)`, which neither this project nor Mathlib has. (iii) The [EEHJ96]
+proof is a space–time duality (Aubin–Nitsche) argument over the discrete backward parabolic
+problem, needing a strong-stability estimate for it and parabolic regularity of the heat equation
+— `notes/frontier.md` blocker 9, "Mathlib has no parabolic theory". The book's constant
+`C(u_{0h}, f, u, n)` is unspecified, so even the shape of the statement (`∃ C` after which data?)
+is a judgement call. Estimate: weeks, dominated by (ii) and (iii), neither of which is numerical
+analysis. Nothing short of that closes the node, so it stays open; the section contributes no
+other numbered item.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.25)'

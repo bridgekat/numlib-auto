@@ -107,6 +107,7 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section06
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section07
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section08
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section09
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter13.Section10
 
 /-!
 # Quarteroni, Sacco and Saleri, *Numerical Mathematics*
