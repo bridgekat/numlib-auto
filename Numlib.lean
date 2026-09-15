@@ -257,6 +257,7 @@ import Numlib.Eigen.QRAlgorithm
 import Numlib.Eigen.RayleighRitz
 import Numlib.Eigen.ReducedResolvent
 import Numlib.Eigen.Sturm
+import Numlib.FiniteDifference.BoundaryValue
 import Numlib.FiniteDifference.Derivative
 import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.Parabolic
@@ -392,6 +393,7 @@ import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.AdvectionDiffusion
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Evolution
+import Numlib.Variational.FiniteElementInterval
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation

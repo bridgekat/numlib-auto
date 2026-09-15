@@ -1,67 +1,19 @@
 namespace = "QuarteroniSaccoSaleri.Chapter12"
-desc = '''
-§12.4, the Galerkin method: the weak formulation (12.41)–(12.44) with `H^1_0(0,1)` (12.42), the
-distributions of §12.4.2, the Galerkin problem (12.46) and its linear system (12.48), the
-stability (12.51), Theorem 12.3, the Lax–Milgram and Céa lemmas (12.54)–(12.56), the positive
-definiteness of the stiffness matrix, the finite element spaces `X_h^{k,0}` (12.57) with Property
-12.1, the shape functions (12.61)–(12.66), the structure of `A_fe`, Example 12.1's exact
-solution, and the spectral Galerkin method (12.68)–(12.69). The Sobolev spaces are
-`Numlib/Analysis/Sobolev/Interval.lean`, the form and its theory
-`Numlib/Variational/EllipticInterval.lean`, the finite elements
-`Numlib/Variational/FiniteElementInterval.lean`, the abstract Galerkin theory
-`Numlib/Variational/{LaxMilgram,Galerkin}.lean`, and the distributions Mathlib's
-`Distribution` on `Opens.Ioo 0 1`.
-
-Property 12.1's `H¹` estimate is Céa plus the interpolation estimate of Theorem 8.3, which chapter
-8 states in `Numlib/Approximation/SobolevInterpolation.lean` (this plan expects the ids
-`integral_sq_sub_piecewiseLinearInterpCLM_le` for `k = 1` and
-`sobolevSeminorm_sub_piecewisePolyInterp_le` for general `k`); its `L²` estimate is
-Aubin–Nitsche with the one-dimensional `H²` regularity. Both are quoted by the book from [QV94].
-'''
 
 [[node]]
 id = "equation_12_42"
-kind = "definition"
-desc = '''`H^1_0(0,1)` of (12.42): `equation_12_42 := SobolevIntervalZero 0 1`, with the book's description as the
-theorem `equation_12_42_iff : u ∈ SobolevIntervalZero 0 1 ↔ (u ∈ H^1(0,1) and) g_u 0 = 0 ∧ g_u 1 = 0`, `g_u`
-the continuous representative — `mem_sobolevIntervalZero_iff`; and the space `V` of the text (continuous,
-piecewise `C¹`, vanishing at the ends) is contained in it by `memSobolevInterval_of_piecewise_contDiffOn`
-(`equation_12_42_of_piecewise`). Also `H^1(0,1) := SobolevInterval 1 0 1` and the fact that its elements
-are continuous (`SobolevInterval.toContinuousMap`), which §12.4.5 uses. ★'''
-deps = ["SobolevIntervalZero", "mem_sobolevIntervalZero_of_toContinuousMap_eq_zero", "SobolevIntervalZero.toContinuousMap_eq_zero", "memSobolevInterval_of_piecewise_contDiffOn", "SobolevInterval.toContinuousMap"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.42)'
 
 [[node]]
 id = "equation_12_44"
-kind = "definition"
-desc = '''The bilinear form (12.44), `a(u, v) = ∫_0^1 α u' v' + ∫_0^1 β u' v + ∫_0^1 γ u v` on `H^1_0(0,1)` for
-`α β γ` continuous on `[0, 1]` with `α ≥ α₀ > 0`: `equation_12_44 α β γ := EllipticInterval.form _ α β γ`
-(restricted to `SobolevIntervalZero 0 1`), with `equation_12_44_apply` its value and the `L²` product `(f, v)
-= ∫ f v` as `EllipticInterval.load`. ★'''
-deps = ["EllipticInterval.form", "QuarteroniSaccoSaleri.Chapter12.equation_12_42"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.44)'
 
 [[node]]
 id = "equation_12_43"
-kind = "theorem"
-desc = '''The weak formulation (12.43): if `u ∈ C²[0, 1]` satisfies (12.41), `-(α u')' + β u' + γ u = f` with
-`u(0) = u(1) = 0`, `α ∈ C¹[0, 1]`, `β, γ, f ∈ C[0, 1]`, then `u ∈ V = H^1_0(0,1)` and `a(u, v) = (f, v)` for all
-`v ∈ V`. `EllipticInterval.isWeakSolution_of_classical`. With the nonhomogeneous Dirichlet lifting
-`ū(x) = x u₁ + (1 - x) u₀`, `ů = u - ū ∈ V`, `a(ů, v) = (f, v) - a(ū, v)` (`equation_12_43_lift`), and the
-homogeneous Neumann case `u'(0) = u'(1) = 0` with `V = H^1(0,1)` (`equation_12_43_neumann`), both
-`EllipticInterval.isWeakSolution_of_classical_neumann`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_44", "EllipticInterval.isWeakSolution_of_classical", "EllipticInterval.isWeakSolution_of_classical_neumann"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.43)'
 
 [[node]]
 id = "exercise_12_12"
-kind = "theorem"
-desc = '''Exercise 12.12, cited at the end of §12.4.1: for (12.41) with the nonhomogeneous Neumann conditions
-`α u'(0) = w₀`, `α u'(1) = w₁`, the classical solution satisfies (12.43) with `V = H^1(0,1)` and right-hand
-side `(f, v) + w₁ v(1) - w₀ v(0)`; and for the mixed conditions `α u'(0) = w₀`, `u(1) = u₁`, with
-`V = {v ∈ H^1 : v(1) = 0}` and right-hand side `(f, v) - w₀ v(0)` after lifting `u₁`.
-`EllipticInterval.isWeakSolution_of_classical_neumann`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_43", "EllipticInterval.isWeakSolution_of_classical_neumann"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.12'
 
 [[node]]
@@ -73,7 +25,12 @@ desc = '''§12.4.2: `𝒟(0,1) = 𝓓(Opens.Ioo 0 1, ℝ)` (Mathlib's `TestFunct
 `equation_12_45_apply : ⟪T^{(k)}, φ⟫ = (-1)^k ⟪T, φ^{(k)}⟫` (`Distribution.lineDerivCLM_apply` iterated, and
 `iteratedDeriv` of the test function). Every distribution is infinitely differentiable by construction.
 The two example functionals `⟨T, x⟩ = x(0)` and `⟨S, x⟩ = ∫ x sin` on `C[0,1]` are `ContinuousMap.evalCLM`
-and an integral against a continuous function, both in Mathlib. ★'''
+and an integral against a continuous function, both in Mathlib. ★
+
+Blocked: not attempted. Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
+whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
+distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
+to learn.'''
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.45)'
 
@@ -86,109 +43,53 @@ constructor (Mathlib has `Distribution.delta` but no `L¹_loc → 𝓓'` map): f
 `-∫ x, H x * deriv φ x = φ 0` (`= Distribution.delta 0 φ`), by the fundamental theorem of calculus on
 `[0, R]` with `φ(R) = 0`. And `equation_12_45_of_contDiff`: if `T` is (integration against) a `C¹` function
 then its distributional derivative is its classical derivative — `hasWeakDerivOn_of_contDiffOn` of
-`Numlib/Analysis/Sobolev/Interval.lean`, which is the same integration by parts. ★'''
+`Numlib/Analysis/Sobolev/Interval.lean`, which is the same integration by parts. ★
+
+Blocked: not attempted. Mathlib's `Distribution` and `TestFunction` on `Opens.Ioo 0 1` carry the
+whole statement (`Distribution.lineDerivCLM`, `Distribution.delta`), but the restatement needs the
+distribution notation and the `TestFunction.lineDerivCLM` API, which this round had no budget
+to learn.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_45", "hasWeakDerivOn_of_contDiffOn"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.2, the Heaviside example after (12.45)'''
 
 [[node]]
 id = "equation_12_46"
-kind = "definition"
-desc = '''The Galerkin problem (12.46): for a finite-dimensional subspace `V_h ≤ V = H^1_0(0,1)`, find `u_h ∈ V_h`
-with `a(u_h, v_h) = (f, v_h)` for all `v_h ∈ V_h` — `equation_12_46 α β γ f V_h u_h := IsGalerkinSolution
-(equation_12_44 α β γ) (EllipticInterval.load f) V_h u_h`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_44", "IsGalerkinSolution"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.46)'
 
 [[node]]
 id = "equation_12_48"
-kind = "theorem"
-desc = '''(12.47)–(12.48): with a basis `φ_1, …, φ_N` of `V_h`, `u_h = ∑ u_j φ_j` solves (12.46) iff the coefficients
-solve the linear system `A_G u = f_G` with the stiffness matrix `(A_G)_{ij} = a(φ_j, φ_i)` and `(f_G)_i =
-(f, φ_i)`. `IsGalerkinSolution.iff_gramMatrix_mulVec` with `SesqForm.gramMatrix`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_46", "IsGalerkinSolution.iff_gramMatrix_mulVec", "SesqForm.gramMatrix"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.47)–(12.48)'
 
 [[node]]
 id = "equation_12_49"
-kind = "definition"
-desc = '''The norm (12.49) on `H^1_0(0,1)`, `|v|_{H¹(0,1)} = (∫_0^1 |v'|²)^{1/2}`: `equation_12_49 :=
-SobolevInterval.seminorm 1 0 1`, a norm on `H^1_0` by Poincaré (`SobolevIntervalZero.seminorm_eq_zero_iff`),
-equivalent to the `H^1` norm (`SobolevIntervalZero.norm_le_seminorm`). ★'''
-deps = ["SobolevInterval.seminorm", "SobolevIntervalZero.norm_deriv_zero_le", "QuarteroniSaccoSaleri.Chapter12.equation_12_42"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.49)'
 
 [[node]]
 id = "equation_12_50"
-kind = "theorem"
-desc = '''The coercivity of the form: for `β = 0`, `γ ≥ 0`: `α₀ |v|²_{H¹} ≤ a(v, v)`; and in general under (12.50),
-`-β'/2 + γ ≥ 0` on `[0, 1]` with `β ∈ C¹[0, 1]`, the same bound on `H^1_0(0,1)` — which "ensures that the
-Galerkin problem (12.46) admits a unique solution depending continuously on the data".
-`EllipticInterval.form_isCoerciveWith_seminorm` and `form_isCoerciveWith_seminorm_of_le`; unique
-solvability by `IsGalerkinSolution.existsUnique` on the finite-dimensional (hence complete) `V_h`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_44", "QuarteroniSaccoSaleri.Chapter12.equation_12_49", "EllipticInterval.form_isCoerciveWith_seminorm", "EllipticInterval.form_isCoerciveWith_seminorm_of_le", "IsGalerkinSolution.existsUnique"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.50)'
 
 [[node]]
 id = "equation_12_51"
-kind = "theorem"
-desc = '''The stability estimate (12.51): for `β = 0`, `γ ≥ 0`, `f ∈ L²(0,1)`, the Galerkin solution satisfies
-`|u_h|_{H¹(0,1)} ≤ (C_P / α₀) ‖f‖_{L²(0,1)}` with `C_P = 1/√2`, uniformly in `V_h` (and the same for the
-exact weak solution). `EllipticInterval.existsUnique_isWeakSolution`'s estimate clause /
-`galerkin_seminorm_le`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_50", "EllipticInterval.existsUnique_isWeakSolution", "SobolevIntervalZero.norm_deriv_zero_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.51)'
 
 [[node]]
 id = "theorem_12_3"
-kind = "theorem"
-desc = '''Theorem 12.3: with `C = α₀⁻¹ (‖α‖_∞ + C_P² ‖γ‖_∞)` (case `β = 0`, `γ ≥ 0`), the Galerkin error satisfies
-`|u - u_h|_{H¹(0,1)} ≤ C min_{w_h ∈ V_h} |u - w_h|_{H¹(0,1)}`, stated as `∀ w_h ∈ V_h, |u - u_h| ≤ C |u - w_h|`
-(the minimum over a finite-dimensional subspace is attained, but the inequality for every `w_h` is the
-content). `EllipticInterval.galerkin_seminorm_sub_le`, i.e. `seminorm_sub_le_of_galerkin_orthogonal` with
-the seminorm bounds `form_isBoundedWith` and `form_isCoerciveWith_seminorm`; the Galerkin orthogonality
-(12.53) `a(u - u_h, v_h) = 0` is `IsGalerkinSolution.apply_sub_eq_zero` (`equation_12_53`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_46", "QuarteroniSaccoSaleri.Chapter12.equation_12_49", "EllipticInterval.galerkin_seminorm_sub_le", "IsGalerkinSolution.apply_sub_eq_zero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.3'
 
 [[node]]
 id = "laxMilgram_lemma"
-kind = "theorem"
-desc = '''The Lax–Milgram lemma as stated after Theorem 12.3, (12.54)–(12.55): for a real Hilbert space `V`, a
-bilinear form `a` coercive (`a(v,v) ≥ α₀ ‖v‖²`) and continuous (`|a(u,v)| ≤ M ‖u‖ ‖v‖`), and a functional
-with `|(f, v)| ≤ K ‖v‖`, both the continuous problem (12.43) and the Galerkin problem (12.46) in any closed
-subspace have unique solutions with `‖u‖_V ≤ K/α₀`, `‖u_h‖_V ≤ K/α₀`. `SesqForm.laxMilgram` with
-`SesqForm.norm_le_of_forall_apply_eq`, and `IsGalerkinSolution.existsUnique`. Real forms are `SesqForm ℝ V`
-without conversion (module doc of `Numlib/Variational/Forms.lean`). ★'''
-deps = ["SesqForm.laxMilgram", "IsGalerkinSolution.existsUnique", "SesqForm.IsCoerciveWith", "SesqForm.IsBoundedWith"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.4, the Lax–Milgram lemma, equations (12.54)–(12.55)'''
 
 [[node]]
 id = "equation_12_56"
-kind = "theorem"
-desc = '''Céa's lemma (12.56): under (12.54)–(12.55), `‖u - u_h‖_V ≤ (M/α₀) min_{w_h ∈ V_h} ‖u - w_h‖_V`.
-`IsGalerkinSolution.norm_sub_le_infDist` (the infimum form) and `IsGalerkinSolution.norm_sub_le` (for
-each `w_h`). ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.laxMilgram_lemma", "IsGalerkinSolution.norm_sub_le_infDist", "IsGalerkinSolution.norm_sub_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.56)'
 
 [[node]]
 id = "galerkinMatrix_posDef"
-kind = "theorem"
-desc = '''The claims closing §12.4.4: under the coercivity (12.54) the stiffness matrix `A_G` is positive definite
-(`vᵀ A_G v = a(v_h, v_h) ≥ α₀ ‖v_h‖² > 0` for `v ≠ 0`), and `A_G` is symmetric iff `a` is symmetric on `V_h`;
-so for (12.41) with `β = γ = 0` it is s.p.d., and with `β, γ ≠ 0` positive definite under (12.50).
-`SesqForm.gramMatrix_posDef`, `SesqForm.gramMatrix_isSymm_iff`, `FiniteElement.stiffnessMatrix_posDef`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_48", "QuarteroniSaccoSaleri.Chapter12.equation_12_50", "SesqForm.gramMatrix_posDef", "FiniteElement.stiffnessMatrix_posDef"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.4, the positive definiteness of the stiffness matrix'''
 
 [[node]]
 id = "equation_12_57"
-kind = "definition"
-desc = '''The finite element space (12.57): for a partition `0 = x_0 < ⋯ < x_n = 1`, `h = max h_j`, and `k ≥ 1`,
-`V_h = X_h^{k,0} = {v_h ∈ X_h^k : v_h(0) = v_h(1) = 0}` — `FiniteElement.lagrangeSpaceZero _ k x`, a subspace
-of `H^1_0(0,1)`; with `equation_12_57_finrank : finrank V_h = n k - 1` (`FiniteElement.finrank_lagrangeSpace`)
-and `X_h^k` (8.22) itself as `FiniteElement.lagrangeSpace`. ★'''
-deps = ["FiniteElement.lagrangeSpace", "FiniteElement.finrank_lagrangeSpace", "QuarteroniSaccoSaleri.Chapter12.equation_12_42"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.57)'
 
 [[node]]
@@ -198,7 +99,10 @@ desc = '''(12.58) and the `k = 1` estimate below it: `min_{w_h ∈ V_h} |u - w_h
 interpolant `Π_h^k u` of the continuous representative of `u ∈ H^1_0` lies in `V_h`;
 `FiniteElement.piecewisePolyInterp_mem_lagrangeSpaceZero`), and for `k = 1`, `u ∈ H²(0,1)`:
 `|u - u_h|_{H¹₀(0,1)} ≤ (M/α₀) C h ‖u‖_{H²(0,1)}` from Céa (12.56) and (8.27) — chapter 8's expected
-`integral_sq_sub_piecewiseLinearInterpCLM_le`. ★'''
+`integral_sq_sub_piecewiseLinearInterpCLM_le`. ★
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_57", "QuarteroniSaccoSaleri.Chapter12.theorem_12_3", "integral_sq_sub_piecewiseLinearInterpCLM_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.58)'
 
@@ -212,7 +116,10 @@ finite element approximation of degree `k ≥ 1`, `‖u - u_h‖_{H¹₀(0,1)} �
 `sobolevSeminorm_sub_piecewisePolyInterp_le`, which the book proves for `k = 1` only and
 quotes from [QV94] otherwise — so this node is proved for `k = 1` when chapter 8 proves (8.27), and
 inherits "not formalized" from chapter 8 for `k ≥ 2` if chapter 8 does not prove (8.26)). ★ given the
-interpolation estimate.'''
+interpolation estimate.
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_58", "QuarteroniSaccoSaleri.Chapter12.theorem_12_3", "sobolevSeminorm_sub_piecewisePolyInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.1, equation (12.59)'
 
@@ -223,7 +130,10 @@ desc = '''Property 12.1, the `L²` estimate (12.60): under the same assumptions 
 `‖u - u_h‖_{L²(0,1)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(0,1)}`. Aubin–Nitsche: `EllipticInterval.galerkin_norm_sub_le_l2`
 (which needs the one-dimensional `H²` regularity `EllipticInterval.isWeakSolution_mem_sobolevInterval_two`
 of the dual problem and the `k = 1` interpolation estimate for it) combined with `property_12_1`. The
-book quotes it from [QV94]. ★★★ through the two backbone nodes.'''
+book quotes it from [QV94]. ★★★ through the two backbone nodes.
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.property_12_1", "EllipticInterval.galerkin_norm_sub_le_l2", "EllipticInterval.isWeakSolution_mem_sobolevInterval_two"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.1, equation (12.60)'
 
@@ -235,7 +145,10 @@ desc = '''The shape functions of `X_h^1` (12.61), `φ_i` piecewise linear with `
 with the `n + 1` nodal values as degrees of freedom: `FiniteElement.hatFunction`, `hatFunction_support`,
 `hatFunction_apply_node`, `FiniteElement.hatBasis`. With (12.62) the affine map `x = φ(ξ) = x_i + ξ (x_{i+1}
 - x_i)` and the reference shape functions `φ̂₀(ξ) = 1 - ξ`, `φ̂₁(ξ) = ξ`, `φ_i = φ̂₀ ∘ ξ`, `φ_{i+1} = φ̂₁ ∘ ξ` on
-`I_i` (`FiniteElement.referenceShape`, `hatFunction_eq_referenceHat_comp`). ★'''
+`I_i` (`FiniteElement.referenceShape`, `hatFunction_eq_referenceHat_comp`). ★
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["FiniteElement.hatFunction", "FiniteElement.hatBasis", "FiniteElement.referenceShape"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.61)–(12.62)'
 
@@ -246,7 +159,10 @@ desc = '''The shape functions of `X_h^2` (12.63)–(12.64) at the `2n + 1` nodes
 with `φ_i(x_j) = δ_ij`, the reference functions (12.65) `φ̂₀ = (1 - ξ)(1 - 2ξ)`, `φ̂₁ = 4(1 - ξ)ξ`, `φ̂₂ = ξ(2ξ - 1)`,
 and the bubble function's support being one interval: `FiniteElement.quadraticShape`,
 `quadraticShape_apply_node`, `quadraticShape_support`, `referenceQuadratic`,
-`quadraticShape_eq_referenceQuadratic_comp`. ★'''
+`quadraticShape_eq_referenceQuadratic_comp`. ★
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["FiniteElement.quadraticShape", "FiniteElement.referenceShape"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.63)–(12.65)'
 
@@ -255,7 +171,10 @@ id = "equation_12_66"
 kind = "theorem"
 desc = '''The hierarchical basis (12.66) `ψ̂₀ = 1 - ξ`, `ψ̂₁ = (1 - ξ)ξ`, `ψ̂₂ = ξ` is a basis of `P_2` on the
 reference interval: linearly independent (`α₀ + ξ(α₁ - α₀ + α₂) - α₁ξ² ≡ 0 ⟹ α₀ = α₁ = α₂ = 0`, the book's
-check) and of the right cardinality. `FiniteElement.referenceHierarchical_linearIndependent`. ★'''
+check) and of the right cardinality. `FiniteElement.referenceHierarchical_linearIndependent`. ★
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["FiniteElement.referenceShape"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.66)'
 
@@ -268,18 +187,15 @@ is pentadiagonal. `FiniteElement.stiffnessMatrix_eq_zero_of_lt`. And the conditi
 `K₂(A_fe) = O(h⁻²)`: `stiffnessMatrix_condNumber` states it for the model problem `-u'' = f` on the uniform
 mesh, `K₂(A_fe) = cot²(πh/2) ≤ 4/(π² h²)` (`FiniteElement.condNumber_stiffnessMatrix_model`,
 `Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two`); the general-coefficient claim is quoted from
-[QV94, §6.3.2] and is not a node. ★'''
+[QV94, §6.3.2] and is not a node. ★
+
+Blocked: waits on `Numlib/Variational/FiniteElementInterval.lean`, which is not yet written (this
+round did not reach it); see the report of `agent/bvp` for the route.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_61", "FiniteElement.stiffnessMatrix_eq_zero_of_lt", "Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5, the structure and conditioning of the stiffness matrix'''
 
 [[node]]
 id = "example_12_1"
-kind = "theorem"
-desc = '''Example 12.1: the exact solution of `-μ A u'' + σ p u = 0` on `(0, L)`, `u(0) = u₀`, `u'(L) = 0`
-(12.67) is `u(x) = u₀ cosh(m (L - x)) / cosh(m L)` with `m = √(σ p / (μ A))` (`μ, A, σ, p, L > 0`): it is
-`C^∞`, satisfies the equation and both boundary conditions, and is the unique `C²` solution (the difference
-of two solutions `w` satisfies `w'' = m² w`, `w(0) = 0`, `w'(L) = 0`, so `∫ w'² + m² w² = [w w']_0^L = 0`).
-The numerical part of the example (Figure 12.6) is not a node. ★'''
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 12.1, equation (12.67)'
 
@@ -292,6 +208,23 @@ integrals of (12.44) by the Gauss–Lobatto formula (12.37) — `IsGeneralizedGa
 `Numlib/Variational/Galerkin.lean` with `W = P_n^0` (as a subspace of `H^1_0(-1,1)`), `aN = a_n`, `ℓN = (f,
 ·)_n`; and `equation_12_68_eq_collocation`: for `α = 1`, `β = γ = 0` it coincides with the collocation problem
 (12.36), by `equation_12_38`. Its error estimate "of the same kind as (12.39)" is asserted through the
-Strang lemma and [QV94] and is not a node beyond `theorem_12_2`'s status. ★'''
+Strang lemma and [QV94] and is not a node beyond `theorem_12_2`'s status. ★
+
+Blocked: needs §12.3's `equation_12_37`/`equation_12_38`, which are not written (that section is
+not in this round's task).'''
 deps = ["IsGeneralizedGalerkinSolution", "QuarteroniSaccoSaleri.Chapter12.equation_12_37", "QuarteroniSaccoSaleri.Chapter12.equation_12_38"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.68)–(12.69)'
+
+
+[[node]]
+id = "equation_12_53"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.53)'
+
+[[node]]
+id = "equation_12_48_matrix"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.48)'
+
+[[node]]
+id = "example_12_1_solution"
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 12.1, equation (12.67)'

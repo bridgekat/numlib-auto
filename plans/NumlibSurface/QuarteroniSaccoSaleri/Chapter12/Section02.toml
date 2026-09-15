@@ -1,137 +1,48 @@
 namespace = "QuarteroniSaccoSaleri.Chapter12"
-desc = '''
-§12.2, the finite difference approximation of the model problem: the scheme (12.6)–(12.8), the
-operator `L_h` (12.9), the discrete inner product and norms, Lemma 12.1, Lemma 12.2, the
-stability (12.17), the consistency (12.20) with Remark 12.2, the error equation of Remark 12.3,
-the discrete Green's function (12.24)–(12.26), Theorem 12.1, and the variable-coefficient scheme
-of §12.2.3 with the Neumann mirror-imaging row. Every node is the `[0, 1]` case of
-`Numlib/FiniteDifference/BoundaryValue.lean`: the book's `n` subintervals and `n - 1` interior
-nodes are the backbone's `n - 1` (written `N`, with `n = N + 1` and `h = 1/(N + 1)`).
-
-The exercises the text cites — 2 (`A_fd` is an M-matrix), 4 (the inequality (12.15)), 5 (the
-bound (12.23)), 6 (the discrete Green's function is `h G`), 7 (`T_h 1 = x(1 - x)/2`), 10 (Robin
-rows) and 11 (the fourth-order operator) — are nodes here; Exercises 1, 3 and 9 are not cited
-and are not.
-'''
 
 [[node]]
 id = "finiteDifferenceMatrix"
-kind = "definition"
-desc = '''`A_fd = h⁻² tridiag_{n-1}(-1, 2, -1)` of (12.8): `finiteDifferenceMatrix N := ((1/(N+1))^2)⁻¹ •
-Matrix.symmTridiagonalToeplitz N (-1) 2`, an `N × N` real matrix for `N = n - 1` interior nodes. With the
-book's three claims as clauses: `finiteDifferenceMatrix_isSymm`, `finiteDifferenceMatrix_posDef` (the
-quadratic form identity `xᵀ A_fd x = h⁻² [x_1² + x_{n-1}² + ∑ (x_i - x_{i-1})²]` and positivity, from
-`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`), `finiteDifferenceMatrix_diagDominant`
-(the book says "diagonally dominant by rows": weakly, the first and last rows strictly; stated as
-`∀ i, ∑_{j ≠ i} |A i j| ≤ |A i i|`). The scheme (12.6)–(12.7): `IsFiniteDifferenceSolution f u :=
-u ∈ FiniteDifference.gridZero N ∧ FiniteDifference.discreteLaplacian N h u = fun j ↦ f (x_j)`, and
-`isFiniteDifferenceSolution_iff_mulVec : … ↔ finiteDifferenceMatrix N *ᵥ interior u = f ∘ x`
-(`FiniteDifference.discreteLaplacian_eq_mulVec`). ★'''
-deps = ["Matrix.symmTridiagonalToeplitz", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two", "FiniteDifference.discreteLaplacian_eq_mulVec", "FiniteDifference.gridZero"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.6)–(12.8)'
 
 [[node]]
 id = "exercise_12_2"
-kind = "theorem"
-desc = '''Exercise 12.2, cited in §12.2: `(finiteDifferenceMatrix N).IsMMatrix`, hence the discrete maximum
-principle `0 ≤ f ⟹ 0 ≤ u` for the finite difference solution (`Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`).
-From `Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two` (a positive scalar multiple of an M-matrix
-is one). The book's hint — continuity of `(A + αI)⁻¹` in `α` — is not the route. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.finiteDifferenceMatrix", "Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two", "Matrix.IsMMatrix.nonneg_of_mulVec_nonneg"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.2'
 
 [[node]]
 id = "equation_12_9"
-kind = "definition"
-desc = '''The operator `L_h` (12.9) and the reformulation (12.10): `equation_12_9 := FiniteDifference.discreteLaplacian
-N (1/(N+1))`, with the discrete inner product `(w_h, v_h)_h = h ∑ c_k w_k v_k` of §12.2.1 as
-`FiniteDifference.discreteInner`, `‖v_h‖_h` as `FiniteDifference.discreteNorm`, `‖|v_h|‖_h` (12.12) as
-`FiniteDifference.discreteH1Seminorm`, and `‖v_h‖_{h,∞}` as the `Pi` supremum norm — restatements by
-`rfl`, recorded so that the section's statements read as the book's. ★'''
-deps = ["FiniteDifference.discreteLaplacian", "FiniteDifference.discreteInner", "FiniteDifference.discreteH1Seminorm"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.9)–(12.13)'
 
 [[node]]
-id = "lemma_12_1"
-kind = "theorem"
-desc = '''Lemma 12.1: `L_h` is symmetric, `(L_h w_h, v_h)_h = (w_h, L_h v_h)_h` for `w_h, v_h ∈ V_h^0`
-(`lemma_12_1_symm`), and positive definite, `0 ≤ (L_h v_h, v_h)_h` with equality only for `v_h = 0`
-(`lemma_12_1_pos`); with the identity (12.13) `(L_h v_h, v_h)_h = ‖|v_h|‖_h²` (`equation_12_13`). All from
-`FiniteDifference.discreteInner_discreteLaplacian_eq` and its clauses, the summation by parts of the
-proof being `FiniteDifference.sum_sub_mul_eq_sub_sum`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_9", "FiniteDifference.discreteInner_discreteLaplacian_eq", "FiniteDifference.sum_sub_mul_eq_sub_sum"]
+id = "lemma_12_1_symm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 12.1'
 
 [[node]]
 id = "exercise_12_4"
-kind = "theorem"
-desc = '''Exercise 12.4, the inequality (12.15) used in the proof of Lemma 12.2: `(∑_{k=1}^m p_k)² ≤ m ∑_{k=1}^m p_k²`
-for every `m ≥ 1` and real `p_1, …, p_m`. Mathlib: `sq_sum_le_card_mul_sum_sq`
-(`Mathlib/Algebra/Order/Chebyshev.lean`). The book calls it the Minkowski inequality; it is
-Cauchy–Schwarz against the constant vector. ★'''
 deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.4 and equation (12.15)'
 
 [[node]]
 id = "lemma_12_2"
-kind = "theorem"
-desc = '''Lemma 12.2, the discrete Poincaré inequality (12.14): `‖v_h‖_h ≤ (1/√2) ‖|v_h|‖_h` for every
-`v_h ∈ V_h^0` on the grid `x_j = j/n`. `FiniteDifference.discreteNorm_le_discreteH1Seminorm` at `(N + 1) h = 1`.
-Remark 12.1's reading with the discrete derivative `v_h^{(1)}`, `‖v_h‖_h ≤ (1/√2) ‖v_h^{(1)}‖_h`, is
-`FiniteDifference.discreteH1Seminorm_eq_norm_discreteDeriv`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_9", "FiniteDifference.discreteNorm_le_discreteH1Seminorm", "QuarteroniSaccoSaleri.Chapter12.exercise_12_4"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 12.2'
 
 [[node]]
 id = "remark_12_1"
-kind = "theorem"
-desc = '''Remark 12.1, the continuous Poincaré inequality (12.16): for every interval `[a, b]` there is `C_P > 0`
-with `‖v‖_{L²(a,b)} ≤ C_P ‖v'‖_{L²(a,b)}` for all `v ∈ C¹[a, b]` with `v(a) = v(b) = 0`; here with
-`C_P = (b - a)/√2`. From `SobolevInterval.norm_le_of_eq_integral` with `w = v'` and the fundamental theorem
-of calculus (`v(x) = ∫_a^x v'`); no Sobolev space is needed for this form. Its `H^1_0` form, with the
-same constant, is `SobolevIntervalZero.norm_deriv_zero_le`. ★'''
-deps = ["SobolevInterval.norm_le_of_eq_integral", "SobolevIntervalZero.norm_deriv_zero_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.1 and equation (12.16)'
 
 [[node]]
 id = "equation_12_17"
-kind = "theorem"
-desc = '''The stability estimate (12.17): if `u_h ∈ V_h^0` solves (12.10) with datum `f`, then `‖u_h‖_h ≤ (1/2)
-‖f_h‖_h`, `f_h` the grid function of the nodal values of `f` (its endpoint values do not matter since the
-weights meet `u_0 = u_n = 0`); consequently the finite difference problem has a unique solution.
-`FiniteDifference.discreteNorm_le_of_discreteLaplacian_eq` at `(N + 1) h = 1`, and
-`FiniteDifference.discreteLaplacian_injective_on_gridZero`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.lemma_12_2", "QuarteroniSaccoSaleri.Chapter12.lemma_12_1", "FiniteDifference.discreteNorm_le_of_discreteLaplacian_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.17)'
 
 [[node]]
 id = "equation_12_20"
-kind = "theorem"
-desc = '''Consistency, (12.18)–(12.20): with `τ_h(x_j) = (L_h u)(x_j) - f(x_j)` the local truncation error
-(`FiniteDifference.truncationError 0 1 N u f`) and `f ∈ C²[0, 1]`, `u` the solution of (12.1)–(12.2),
-`‖τ_h‖_{h,∞} ≤ (h²/12) ‖f''‖_∞`; and (12.19), `τ_h(x_j) = -(h²/24)(u⁗(ξ_j) + u⁗(η_j))` for some
-`ξ_j ∈ (x_{j-1}, x_j)`, `η_j ∈ (x_j, x_{j+1})` (the book prints `+`; see the errata — with `u⁗ = -f''` the
-two readings agree). `FiniteDifference.abs_truncationError_le_of_contDiffOn` with `u ∈ C⁴` from
-`equation_12_3` (`u'' = -f ∈ C²`). Hence `‖τ_h‖_{h,∞} → 0` as `h → 0`: the scheme is consistent. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_9", "QuarteroniSaccoSaleri.Chapter12.equation_12_3", "FiniteDifference.truncationError", "FiniteDifference.abs_truncationError_le_of_contDiffOn"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.18)–(12.20)'
 
 [[node]]
 id = "remark_12_2"
-kind = "theorem"
-desc = '''Remark 12.2: the integral-remainder form (12.21), `τ_h(x_j) = h⁻² (R₄(x_j + h) + R₄(x_j - h))` with
-`R₄(x_j ± h) = ± ∫ (u^{(3)}(t) - u^{(3)}(x_j)) (x_j ± h - t)²/2 dt`, and the consequence that `u ∈ C^{3,1}(0,1)`
-— `u^{(3)}` Lipschitz with constant `M` — already gives `‖τ_h‖_{h,∞} ≤ M h²` (in fact `M h²/12`).
-`FiniteDifference.abs_truncationError_le_of_lipschitzOnWith`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_20", "FiniteDifference.abs_truncationError_le_of_lipschitzOnWith"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.2 and equation (12.21)'
 
 [[node]]
 id = "remark_12_3"
-kind = "theorem"
-desc = '''Remark 12.3, the error equation (12.22): with `e = u - u_h` the discretization error grid function,
-`L_h e = L_h u - f_h = τ_h`. `FiniteDifference.error_eq_of_discreteLaplacian_eq`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_20", "FiniteDifference.truncationError"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.3 and equation (12.22)'
 
 [[node]]
@@ -143,101 +54,79 @@ desc = '''Exercise 12.5, the bound (12.23) of Remark 12.3: `‖τ_h‖_h² ≤ 3
 that the printed hint drops; the resulting three terms are squared with
 `(a + b + c)² ≤ 3(a² + b² + c²)` and Cauchy–Schwarz gives `‖f‖_h²` from the first and `‖f‖_{L²}²` from
 the two integrals). The statement is in terms of `f = -u''` only. ★★ (an integration-by-parts identity
-per node plus the summation; the book's hint is schematic).'''
+per node plus the summation; the book's hint is schematic).
+
+Blocked: not attempted. Needs an integration-by-parts identity for the order-three Taylor integral
+remainder at each node (the printed hint drops the `1/h²` factors and the `/2` of the kernels), then
+Cauchy–Schwarz on each of the two integrals against `‖f‖_{L²(x_j-h, x_j+h)}` and a summation over
+`j` that has to keep the panels from being counted twice. `Numlib/FiniteDifference/BoundaryValue`
+has the one-sided Taylor integral remainder only as the *bound*
+`abs_sub_taylor_three_le_of_lipschitz` (private), so the identity itself would have to be
+re-derived from Mathlib's `taylor_integral_remainder`. Estimated 200-300 lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.remark_12_3", "QuarteroniSaccoSaleri.Chapter12.equation_12_20"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.5 and equation (12.23)'
 
 [[node]]
-id = "equation_12_24"
-kind = "definition"
-desc = '''The discrete Green's function (12.24)–(12.25): `discreteGreen N k : Fin (N + 2) → ℝ` is the grid
-function `G^k ∈ V_h^0` with `L_h G^k = e^k`, defined as the zero-extension of the `k`-th column of
-`(finiteDifferenceMatrix N)⁻¹`, and `T_h g := ∑_k g(x_k) G^k` is `L_h⁻¹` on interior grid functions
-(`equation_12_25 : L_h (T_h g) = g`). The representation (12.26), `u_h = T_h f`, i.e. `u_h(x_j) = h
-∑_{k} G(x_j, x_k) f(x_k)`, is `equation_12_26` — from Exercise 12.6. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.finiteDifferenceMatrix", "QuarteroniSaccoSaleri.Chapter12.equation_12_9"]
+id = "discreteGreen"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.24)–(12.26)'
 
 [[node]]
 id = "exercise_12_6"
-kind = "theorem"
-desc = '''Exercise 12.6, used in §12.2.2: `G^k(x_j) = h G(x_j, x_k)` with `G` the Green's function (12.4) —
-i.e. `(finiteDifferenceMatrix N)⁻¹ j k = h * greenFunction (x_j) (x_k)`, which with `A_fd = h⁻² T` is
-`T⁻¹ j k = h⁻¹ G(x_j, x_k) = (n) · min(x_j, x_k)(1 - max(x_j, x_k))`, exactly
-`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply` rewritten with `x_j = (j + 1)/(N + 1)`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_24", "QuarteroniSaccoSaleri.Chapter12.greenFunction", "Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.6'
 
 [[node]]
 id = "exercise_12_7"
-kind = "theorem"
-desc = '''Exercise 12.7, used in the proof of Theorem 12.1: for `g = 1`, `T_h g (x_j) = x_j (1 - x_j)/2`.
-`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_sum` scaled by `h²`, or
-`FiniteDifference.discreteLaplacian_parabola` read through `equation_12_25`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_24", "QuarteroniSaccoSaleri.Chapter12.exercise_12_6", "Matrix.inv_symmTridiagonalToeplitz_neg_one_two_sum", "FiniteDifference.discreteLaplacian_parabola"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.7'
 
 [[node]]
 id = "equation_12_28"
-kind = "theorem"
-desc = '''The maximum-norm stability (12.28), proved inside Theorem 12.1: `‖u_h‖_{h,∞} ≤ (1/8) ‖f‖_{h,∞}` for the
-finite difference solution, and more generally `‖e‖_{h,∞} ≤ (1/8) ‖L_h e‖_{h,∞}` for every `e ∈ V_h^0`.
-`FiniteDifference.norm_le_of_discreteLaplacian_eq` on `[0, 1]`. The book's proof sums the discrete
-Green's function with Exercise 12.7; the backbone's is the M-matrix comparison principle with the
-same comparison function — see the group description of `Numlib/FiniteDifference/BoundaryValue.lean`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.exercise_12_7", "FiniteDifference.norm_le_of_discreteLaplacian_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.28)'
 
 [[node]]
 id = "theorem_12_1"
-kind = "theorem"
-desc = '''Theorem 12.1: for `f ∈ C²[0, 1]` and `u` the solution of (12.1)–(12.2), the nodal error of the finite
-difference solution `u_h` satisfies `‖u - u_h‖_{h,∞} ≤ (h²/96) ‖f''‖_∞` — second-order convergence in the
-discrete maximum norm. `FiniteDifference.norm_sub_le_of_discreteLaplacian_eq` with `(b - a) = 1`, the
-solution `u` and its `C⁴` regularity supplied by `equation_12_3`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_28", "QuarteroniSaccoSaleri.Chapter12.equation_12_20", "QuarteroniSaccoSaleri.Chapter12.remark_12_3", "QuarteroniSaccoSaleri.Chapter12.equation_12_3", "FiniteDifference.norm_sub_le_of_discreteLaplacian_eq"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.1'
 
 [[node]]
 id = "equation_12_32"
-kind = "definition"
-desc = '''The variable-coefficient scheme (12.31)–(12.34) of §12.2.3 for `-(α u')' + γ u = f`, `u(0) = d₀`,
-`u(1) = d₁`: the operator `L_h` with midpoint fluxes `J_{j+1/2}(w) = α_{j+1/2} (w_{j+1} - w_j)/h`
-(`FiniteDifference.variableCoeffOperator 0 1 N α γ`), the solution predicate with the Dirichlet data,
-and the matrix (12.34) `A_fd = h⁻² tridiag(a, d, a) + diag(c)` (`FiniteDifference.variableCoeffMatrix`;
-the book's `a = (α_{1/2}, …)` needs a minus sign, see the errata). With the two claims after (12.34) as
-`equation_12_34_posDef` (symmetric positive definite for `α ≥ α₀ > 0`, `γ ≥ 0`;
-`FiniteDifference.variableCoeffMatrix_posDef`) and `equation_12_34_diagDominant` (strictly diagonally
-dominant if `γ > 0`). ★'''
-deps = ["FiniteDifference.variableCoeffOperator", "FiniteDifference.variableCoeffMatrix_posDef"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.31)–(12.34)'
 
 [[node]]
 id = "equation_12_35"
-kind = "definition"
-desc = '''The mirror-imaging discretization of the Neumann condition `J(u)(1) = g₁`, (12.35) and the display
-below it: the last equation `-α_{n-1/2} u_{n-1}/h² + (α_{n-1/2}/h² + γ_n/2) u_n = g₁/h + f_n/2`, as
-`FiniteDifference.IsNeumannSolution`. A definition; the book's "second-order accurate" is not proved
-there and is not a node. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_32", "FiniteDifference.neumannBoundaryRow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.35)'
 
 [[node]]
 id = "exercise_12_10"
-kind = "definition"
-desc = '''Exercise 12.10, referred to at the end of §12.2.3: the Robin conditions `λ₀ u(0) + μ₀ u'(0) = g₀`,
-`λ₁ u(1) + μ₁ u'(1) = g₁` (the book prints `u(0)` twice, see the errata) discretized by mirror imaging,
-with the rows displayed in the exercise's solution: at `x_0`, `(α_{1/2}/h² + γ_0/2 + α_0 λ₀/(μ₀ h)) u_0 -
-α_{1/2} u_1/h² = α_0 g₀/(μ₀ h) + f_0/2`, and symmetrically at `x_n`. `FiniteDifference.IsRobinSolution`. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_35", "FiniteDifference.neumannBoundaryRow"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.10'
 
 [[node]]
 id = "exercise_12_11"
-kind = "definition"
-desc = '''Exercise 12.11, referred to in §12.2: the centred discretization of the fourth-order operator
-`L u = -u⁗` is `L_h ∘ L_h` — the composition of `FiniteDifference.discreteLaplacian` with itself on grid
-functions extended by the boundary conditions (the entry `(u_{j+2} - 4u_{j+1} + 6u_j - 4u_{j-1} +
-u_{j-2})/h⁴` up to sign; `exercise_12_11_apply`). A definition with its entry formula. ★'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.11'
+
+
+[[node]]
+id = "lemma_12_1_pos"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 12.1'
+
+[[node]]
+id = "equation_12_13"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.13)'
+
+[[node]]
+id = "discreteSolutionOperator"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.25)'
+
+[[node]]
+id = "equation_12_25"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.25)'
+
+[[node]]
+id = "equation_12_26"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.26)'
+
+[[node]]
+id = "IsFiniteDifferenceSolution"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (12.6) and (12.10)'
+
+[[node]]
+id = "meshSize"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 12.2'
