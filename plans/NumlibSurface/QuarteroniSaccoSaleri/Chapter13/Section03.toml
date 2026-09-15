@@ -149,22 +149,50 @@ id = "equation_13_24"
 kind = "theorem"
 desc = '''(13.24): for a pseudo-spectral Galerkin discretization of degree `N`, the θ-method with
 `0 ≤ θ < 1/2` is stable only if `Δt ≤ C₂(θ) N⁻⁴`, because the largest eigenvalue of the spectral
-stiffness matrix grows like `N⁴`. Not formalized: the plan has no spectral (Legendre/Chebyshev
-Galerkin) stiffness matrix, and the `O(N⁴)` bound on its largest eigenvalue is a polynomial
-inverse inequality (Markov's inequality in `L²` form, `‖p'‖ ≤ C N² ‖p‖`) that the book states
-without proof, citing [QV94].'''
+stiffness matrix grows like `N⁴`. The book gives no proof — "with an analogous proof, it can be
+shown" — and cites [QV94] for the eigenvalue growth.
+
+Blocked: re-read 2026-09-16; the "not formalized" verdict stands, but for a sharper reason than the
+plan first gave. The *abstract* half is in place: `thetaMethod_stable_iff_of_lt_half` already says
+that for `θ < 1/2` stability is exactly `Δt ≤ 2/((1 - 2θ) λ_max)`, for any coercive symmetric form
+and any conforming space, so (13.24) is that statement plus a two-sided estimate
+`c₁ N⁴ ≤ λ_max ≤ c₂ N⁴` for the spectral pencil. Chapter 10 does have the pseudo-spectral
+derivative and the matrix (10.73) (`QuarteroniSaccoSaleri.Chapter10.pseudoSpectralDerivative`,
+`equation_10_73`), so the stiffness matrix `-D̃²` is constructible; what is missing is the
+eigenvalue estimate. Its upper half is the `L²` Markov inequality
+`‖p′‖_{L²(-1,1)} ≤ C N² ‖p‖_{L²(-1,1)}` for `p ∈ ℙ_N` (whence `λ_max ≤ C² N⁴`), and its lower half
+needs a test polynomial attaining the rate; neither is in `Numlib` (the only inverse inequality
+there is `BrokenPolynomial.inverseInequality_linear`, for piecewise linears) nor in Mathlib, which
+has Bernstein *polynomials* but no Markov–Bernstein inequality. The `L²` Markov inequality follows
+from the Legendre expansion and `‖L_k′‖² = k(k+1)(2k+1)/2`-type identities — the same Legendre
+normalization that `equation_12_38_stability` waits on. Estimate: two days once the Legendre
+facts exist.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.24)'
+
 
 [[node]]
 id = "thetaMethod_convergence"
 kind = "theorem"
 desc = '''The convergence estimates after (13.24): `‖u(t^k) - u_h^k‖_{L²} ≤ C(u₀, f, u)(Δt^{p(θ)} +
 h^{r+1})` with `p(θ) = 1` for `θ ≠ 1/2`, `p(1/2) = 2`, and for `f = 0`, `θ ∈ {1, 1/2}`, the
-improved `‖u(t^k) - u_h^k‖ ≤ C[(h/√t^k)^{r+1} + (Δt/t^k)^{p(θ)}] ‖u₀‖`. Not formalized: the book
-quotes [QV94] pp. 394–395; the proofs need the `L²` projection error `O(h^{r+1})` in `H²`-type
-norms of the exact solution and parabolic regularity (smoothing estimates `‖u_t(t)‖ ≤ C ‖u₀‖ / t`)
-for the improved form, i.e. the classical theory of the heat equation that is a known blocker.'''
+improved `‖u(t^k) - u_h^k‖ ≤ C[(h/√t^k)^{r+1} + (Δt/t^k)^{p(θ)}] ‖u₀‖`. The book quotes both from
+[QV94] pp. 394–395 and proves neither.
+
+Blocked: re-read 2026-09-16; the verdict stands. The two stability ingredients the book names are
+proved here — (13.21) is `equation_13_21` and the θ-step is `equation_13_17` — so what is missing is
+entirely on the *consistency* side, and it is missing in three independent places. (i) The `L²`
+projection/interpolation error `O(h^{r+1})` for general `r` needs Theorem 8.3 for all degrees, which
+chapter 8 proves only for `r = 1` ((8.27)) and quotes for `r ≥ 2` ((8.26)). (ii) The time-truncation
+error of the θ-method applied to the *semi-discrete* problem needs `u_tt` (and `u_ttt` for
+`θ = 1/2`) bounded in `L²(0, 1)` uniformly in `t`, i.e. time regularity of the exact solution of
+(13.12), which is Bochner-space parabolic theory the library does not have (the classical
+`IsHeatSolution` of §13.1 carries only `u_t`, `u_x`, `u_xx`). (iii) The improved `f = 0` estimates
+need the parabolic smoothing bounds `‖u_t(t)‖ ≤ C‖u₀‖/t` and `‖u(t)‖_{H^{r+1}} ≤ C‖u₀‖/t^{(r+1)/2}`,
+which are the analytic-semigroup estimates for the Dirichlet Laplacian — a theory nothing in this
+corpus develops. A faithful statement would also have to existentially quantify one constant `C`
+over all `h` and `Δt`, so no weakened form is available either. Estimate: a Bochner-space module
+plus (i), several weeks.'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_21"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the convergence result ‖u(t^k) − u_h^k‖ ≤ C(Δt^{p(θ)} + h^{r+1})'''
 

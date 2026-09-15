@@ -311,3 +311,81 @@ id = "IsModifiedSolution.partial_eq"
 
 [[node]]
 id = "abs_residual_threePoint_le_of_isModifiedSolution"
+
+[[node]]
+id = "two_mul_abs_inner_le"
+
+[[node]]
+id = "IsLeapFrogOp"
+
+[[node]]
+id = "leapFrogEnergy"
+
+[[node]]
+id = "leapFrogEnergy_succ"
+
+[[node]]
+id = "leapFrogEnergy_eq_zero"
+
+[[node]]
+id = "abs_leapFrogEnergy_sub_le"
+
+[[node]]
+id = "leapFrog_stability"
+
+[[node]]
+id = "IsNewmarkOp"
+
+[[node]]
+id = "newmarkEnergy"
+
+[[node]]
+id = "newmarkEnergy_succ_sub"
+
+[[node]]
+id = "newmarkEnergy_succ_le"
+
+[[node]]
+id = "newmarkEnergy_le"
+
+[[node]]
+id = "newmark_stability"
+
+[[node]]
+id = "forwardDiffCLM"
+
+[[node]]
+id = "forwardDiffCLM_apply"
+
+[[node]]
+id = "secondDiffCLM"
+
+[[node]]
+id = "secondDiffCLM_apply"
+
+[[node]]
+id = "inner_forwardDiffCLM"
+
+[[node]]
+id = "discreteWaveOp"
+
+[[node]]
+id = "discreteWaveOp_apply"
+
+[[node]]
+id = "inner_discreteWaveOp"
+
+[[node]]
+id = "inner_discreteWaveOp_self"
+
+[[node]]
+id = "norm_forwardDiffCLM_le"
+
+[[node]]
+id = "discreteWaveOp_isSymmetricBoundedBy"
+
+[[node]]
+id = "isLeapFrogOp_of_isLeapFrog"
+
+[[node]]
+id = "isNewmarkOp_of_isNewmark"

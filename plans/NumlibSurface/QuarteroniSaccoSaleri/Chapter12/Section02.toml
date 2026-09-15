@@ -46,24 +46,31 @@ id = "remark_12_3"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.3 and equation (12.22)'
 
 [[node]]
-id = "exercise_12_5"
-kind = "theorem"
-desc = '''Exercise 12.5, the bound (12.23) of Remark 12.3: `‖τ_h‖_h² ≤ 3 (‖f‖_h² + ‖f‖²_{L²(0,1)})` for `f ∈ C²[0,1]`
-(so that `u ∈ C⁴`; the hint integrates (12.21) by parts twice on each side to write `τ_j` as
-`-u''(x_j)` plus two integrals of `u''` against the kernels `(x_j ∓ h - t)`, up to the factors `1/h²`
-that the printed hint drops; the resulting three terms are squared with
-`(a + b + c)² ≤ 3(a² + b² + c²)` and Cauchy–Schwarz gives `‖f‖_h²` from the first and `‖f‖_{L²}²` from
-the two integrals). The statement is in terms of `f = -u''` only. ★★ (an integration-by-parts identity
-per node plus the summation; the book's hint is schematic).
+id = "sq_integral_mul_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.5, the Cauchy–Schwarz step'
 
-Blocked: not attempted. Needs an integration-by-parts identity for the order-three Taylor integral
-remainder at each node (the printed hint drops the `1/h²` factors and the `/2` of the kernels), then
-Cauchy–Schwarz on each of the two integrals against `‖f‖_{L²(x_j-h, x_j+h)}` and a summation over
-`j` that has to keep the panels from being counted twice. `Numlib/FiniteDifference/BoundaryValue`
-has the one-sided Taylor integral remainder only as the *bound*
-`abs_sub_taylor_three_le_of_lipschitz` (private), so the identity itself would have to be
-re-derived from Mathlib's `taylor_integral_remainder`. Estimated 200-300 lines.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.remark_12_3", "QuarteroniSaccoSaleri.Chapter12.equation_12_20"]
+[[node]]
+id = "integral_mul_sub_right"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.2, the integral remainder'
+
+[[node]]
+id = "integral_mul_sub_left"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 12.2, the integral remainder'
+
+[[node]]
+id = "secondDiff_eq_integral"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.21)'
+
+[[node]]
+id = "node_bound"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.5, the nodal estimate'
+
+[[node]]
+id = "sum_panel_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.5, the panel count'
+
+[[node]]
+id = "exercise_12_5"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.5 and equation (12.23)'
 
 [[node]]

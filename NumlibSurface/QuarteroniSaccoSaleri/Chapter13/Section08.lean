@@ -558,4 +558,104 @@ theorem equation_13_53 {a lam : ℝ} (h0 : 0 ≤ lam * |a|) (h1 : lam * |a| ≤ 
   ⟨(Hyperbolic.upwind_isMonotone h0 h1).iInf_le_iterate_apply hbb n j,
     (Hyperbolic.upwind_isMonotone h0 h1).iterate_apply_le_iSup hba n j⟩
 
+/-! ### Remark 13.4, the schemes for the wave equation
+
+The printed claim "the leap-frog method (13.44) is stable under the CFL restriction
+`Δt ≤ Δx/|γ|`" is **false** if stability is read as (13.46) for the state `(u^{n+1}, uⁿ)`, for
+*every* value of `γλ`: `remark_13_4_leapFrog` in the plan carries the counterexample (the constant
+mode gives the Jordan block `I + N`). What the wave equation controls is its energy, and in the
+energy variables — the discrete velocity `(u^{n+1} - uⁿ)/Δt` and the discrete gradient
+`∇_h uⁿ/Δx` — the statement is true, with a constant uniform in `n`, and that is
+`remark_13_4_leapFrog_energy`. The same reading repairs Newmark: the state `(u, Δt v)` has a Jordan
+block on the constant mode, the energy `‖vⁿ‖² + γ²‖∇_h uⁿ‖²/Δx²` does not.
+
+Both are read off the abstract theorems
+`FiniteDifference.Hyperbolic.{leapFrog_stability, newmark_stability}` for a symmetric positive
+semidefinite operator, instantiated at `FiniteDifference.Hyperbolic.discreteWaveOp γ Δx`, the
+`ℓ²(ℤ)` operator `-γ² δ²/Δx²`. Since `‖v‖_{Δ,2}² = Δx ‖v‖²`, the inequalities below are the same
+in the discrete norm (13.47) as in the `ℓ²` norm: the factor `Δx` cancels.
+-/
+
+section WaveEquation
+
+open scoped RealInnerProductSpace
+
+/-- **Remark 13.4, leap-frog**, in the variables the wave equation controls. Under the strict CFL
+condition `|γ| λ < 1` the leap-frog scheme (13.44) on `ℓ²(ℤ)` satisfies
+
+`‖(u^{n+1} - uⁿ)/Δt‖² + γ² ‖∇_h uⁿ‖²/Δx² ≤ (1 + |γ|λ)/(1 - |γ|λ) · (the same at n = 0)`
+
+for every `n` — no finite horizon is needed, because the discrete energy
+`‖u^{n+1} - uⁿ‖² + γ²Δt²‖∇_h u^{n+1}‖·‖∇_h uⁿ‖`-type quantity is *conserved* exactly
+(`FiniteDifference.Hyperbolic.leapFrogEnergy_succ`) and is equivalent to the left-hand side with
+constants `1 ± |γ|λ`. The hypothesis `γ ≠ 0` only excludes the degenerate case in which (13.44)
+carries no space operator and the CFL restriction says nothing
+(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Remark 13.4, the Leap-Frog method). -/
+theorem remark_13_4_leapFrog_energy {γ Δt Δx lam : ℝ} (hγ : γ ≠ 0) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
+    (hlam : lam = Δt / Δx) (hcfl : |γ| * lam < 1) {u : ℕ → lp (fun _ : ℤ => ℝ) 2}
+    (h : equation_13_44 γ lam fun n => ⇑(u n)) (n : ℕ) :
+    ‖u (n + 1) - u n‖ ^ 2 / Δt ^ 2 + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u n)‖ ^ 2 / Δx ^ 2
+      ≤ (1 + |γ| * lam) / (1 - |γ| * lam)
+        * (‖u 1 - u 0‖ ^ 2 / Δt ^ 2
+          + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u 0)‖ ^ 2 / Δx ^ 2) := by
+  have hlampos : 0 < lam := by rw [hlam]; positivity
+  have hkap : 0 < |γ| * lam := mul_pos (abs_pos.2 hγ) hlampos
+  have hop := Hyperbolic.isLeapFrogOp_of_isLeapFrog hΔx.ne' hlam h
+  have hA := Hyperbolic.discreteWaveOp_isSymmetricBoundedBy γ Δx
+  have hCFLeq : Δt ^ 2 * (4 * γ ^ 2 / Δx ^ 2) = 4 * (|γ| * lam) ^ 2 := by
+    rw [hlam, mul_pow, sq_abs]
+    field_simp
+  have hst := Hyperbolic.leapFrog_stability hA hkap hcfl hCFLeq.le hop n
+  simp only [ContinuousLinearMap.coe_coe] at hst
+  have hΔt2 : (0 : ℝ) < Δt ^ 2 := by positivity
+  have hL : ∀ m : ℕ, ‖u (m + 1) - u m‖ ^ 2 / Δt ^ 2
+      + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u m)‖ ^ 2 / Δx ^ 2
+      = (‖u (m + 1) - u m‖ ^ 2
+        + Δt ^ 2 * ⟪Hyperbolic.discreteWaveOp γ Δx (u m), u m⟫) / Δt ^ 2 := by
+    intro m
+    rw [Hyperbolic.inner_discreteWaveOp_self]
+    field_simp
+  have h0 := hL 0
+  rw [show (0 : ℕ) + 1 = 1 from rfl] at h0
+  rw [hL n, h0, ← mul_div_assoc]
+  gcongr
+
+/-- **Remark 13.4, Newmark**: for `2β ≥ θ ≥ 1/2` the Newmark scheme (13.45) on `ℓ²(ℤ)` is
+unconditionally stable — for every `Δt` and `Δx` — in the energy
+`‖vⁿ‖² + γ² ‖∇_h uⁿ‖²/Δx²`, which never exceeds the initial Newmark energy, the same quantity plus
+`(Δt²(2β - θ)/2) ‖γ² δ² u⁰/Δx²‖²`. The extra term is the one the parameters of the method add; it
+vanishes exactly when `2β = θ`, and for `2β = θ = 1/2` the energy is conserved. The state
+`(u, Δt v)` named in the earlier plan is the wrong one: on the constant mode it is advanced by the
+Jordan block `!![1, 1; 0, 1]`, whose powers grow linearly
+(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Remark 13.4, the Newmark method, cited there
+from [Joh90]). -/
+theorem remark_13_4_newmark {γ Δt Δx lam β θ : ℝ} (hΔt : 0 < Δt) (hΔx : 0 < Δx)
+    (hlam : lam = Δt / Δx) (hth : 1 / 2 ≤ θ) (hbt : θ ≤ 2 * β)
+    {u v : ℕ → lp (fun _ : ℤ => ℝ) 2}
+    (h : equation_13_45 γ lam Δt β θ (fun n => ⇑(u n)) fun n => ⇑(v n)) (n : ℕ) :
+    ‖v n‖ ^ 2 + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u n)‖ ^ 2 / Δx ^ 2
+      ≤ ‖v 0‖ ^ 2 + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u 0)‖ ^ 2 / Δx ^ 2
+        + Δt ^ 2 * (2 * β - θ) / 2 * (γ ^ 2 / Δx ^ 2) ^ 2
+          * ‖Hyperbolic.secondDiffCLM (u 0)‖ ^ 2 := by
+  have hop := Hyperbolic.isNewmarkOp_of_isNewmark hΔt.ne' hΔx.ne' hlam h
+  have hA := Hyperbolic.discreteWaveOp_isSymmetricBoundedBy γ Δx
+  have hst := Hyperbolic.newmark_stability hA hth hbt hop n
+  simp only [ContinuousLinearMap.coe_coe] at hst
+  have hnorm : ∀ w : lp (fun _ : ℤ => ℝ) 2,
+      ‖Hyperbolic.discreteWaveOp γ Δx w‖ ^ 2
+        = (γ ^ 2 / Δx ^ 2) ^ 2 * ‖Hyperbolic.secondDiffCLM w‖ ^ 2 := by
+    intro w
+    have hw : Hyperbolic.discreteWaveOp γ Δx w
+        = (-(γ ^ 2 / Δx ^ 2)) • Hyperbolic.secondDiffCLM w := rfl
+    rw [hw, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, neg_sq]
+  rw [Hyperbolic.inner_discreteWaveOp_self, Hyperbolic.inner_discreteWaveOp_self,
+    hnorm] at hst
+  have he : ∀ w : lp (fun _ : ℤ => ℝ) 2,
+      γ ^ 2 / Δx ^ 2 * ‖Hyperbolic.forwardDiffCLM w‖ ^ 2
+        = γ ^ 2 * ‖Hyperbolic.forwardDiffCLM w‖ ^ 2 / Δx ^ 2 := fun w => by ring
+  rw [he, he] at hst
+  linarith
+
+end WaveEquation
+
 end QuarteroniSaccoSaleri.Chapter13

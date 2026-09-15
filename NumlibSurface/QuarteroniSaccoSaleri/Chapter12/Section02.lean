@@ -56,7 +56,8 @@ discrete maximum norm `‖·‖_{h,∞}` is the supremum norm `‖·‖` of `Fin
 * `exercise_12_4`, `lemma_12_2`, `remark_12_1` — the inequality (12.15), the discrete Poincaré
   inequality (12.14) and its continuous counterpart (12.16).
 * `equation_12_17` — the stability estimate `‖u_h‖_h ≤ ‖f_h‖_h / 2`, and uniqueness.
-* `equation_12_19`, `equation_12_20`, `remark_12_2`, `remark_12_3` — consistency.
+* `equation_12_19`, `equation_12_20`, `remark_12_2`, `remark_12_3` — consistency, and
+  `exercise_12_5` the bound (12.23) `‖τ_h‖_h² ≤ 3(‖f‖_h² + ‖f‖²_{L²(0,1)})`.
 * `equation_12_24`, `equation_12_25`, `equation_12_26`, `exercise_12_6`, `exercise_12_7` — the
   discrete Green's function.
 * `equation_12_28`, `theorem_12_1` — maximum-norm stability and `O(h²)` convergence.
@@ -430,6 +431,415 @@ theorem remark_12_3 (N : ℕ) {f : ℝ → ℝ} (u : ℝ → ℝ) {uh : Fin (N +
     equation_12_9 N (u ∘ FiniteDifference.uniformGrid 0 1 N - uh)
       = FiniteDifference.truncationError 0 1 N u f :=
   FiniteDifference.error_eq_of_discreteLaplacian_eq u f hu.2
+
+/-! ### Exercise 12.5, the `‖·‖_h` bound (12.23) on the truncation error -/
+
+section Exercise125
+
+open intervalIntegral
+
+-- TODO(backbone): Cauchy–Schwarz for interval integrals; Mathlib has Hölder only for
+-- `lintegral` and for `MemLp` data. Natural home: beside `intervalIntegral.integral_mono` in
+-- `Mathlib/MeasureTheory/Integral/IntervalIntegral`.
+/-- **Cauchy–Schwarz for interval integrals**: `(∫ f k)² ≤ (∫ f²)(∫ k²)` on `[p, q]`, by the
+nonnegativity of `∫ (λ f + k)²` and the discriminant. -/
+theorem sq_integral_mul_le {f k : ℝ → ℝ} {p q : ℝ} (hpq : p ≤ q)
+    (hf : ContinuousOn f (Icc p q)) (hk : ContinuousOn k (Icc p q)) :
+    (∫ t in p..q, f t * k t) ^ 2 ≤ (∫ t in p..q, f t ^ 2) * ∫ t in p..q, k t ^ 2 := by
+  have hff : IntervalIntegrable (fun t => f t ^ 2) volume p q :=
+    (hf.pow 2).intervalIntegrable_of_Icc hpq
+  have hkk : IntervalIntegrable (fun t => k t ^ 2) volume p q :=
+    (hk.pow 2).intervalIntegrable_of_Icc hpq
+  have hfk : IntervalIntegrable (fun t => f t * k t) volume p q :=
+    (hf.mul hk).intervalIntegrable_of_Icc hpq
+  have hexp : ∀ l : ℝ, (∫ t in p..q, (l * f t + k t) ^ 2)
+      = (∫ t in p..q, f t ^ 2) * (l * l) + 2 * (∫ t in p..q, f t * k t) * l
+        + ∫ t in p..q, k t ^ 2 := by
+    intro l
+    have hcongr : ∀ t ∈ uIcc p q, (l * f t + k t) ^ 2
+        = l ^ 2 * f t ^ 2 + (2 * l) * (f t * k t) + k t ^ 2 := fun t _ => by ring
+    rw [integral_congr hcongr, integral_add ((hff.const_mul _).add (hfk.const_mul _)) hkk,
+      integral_add (hff.const_mul _) (hfk.const_mul _),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul]
+    ring
+  have hnn : ∀ l : ℝ, 0 ≤ (∫ t in p..q, f t ^ 2) * (l * l)
+      + 2 * (∫ t in p..q, f t * k t) * l + ∫ t in p..q, k t ^ 2 := by
+    intro l
+    rw [← hexp l]
+    exact integral_nonneg hpq fun t _ => sq_nonneg _
+  have hd := discrim_le_zero hnn
+  rw [discrim] at hd
+  nlinarith [hd]
+
+/-- **Taylor's formula with integral remainder, right end**:
+`∫_p^q u''(t)(q - t) dt = u(q) - u(p) - (q - p) u'(p)`, by the fundamental theorem of calculus
+applied to the primitive `u'(t)(q - t) + u(t)`. Only interior differentiability is asked for, so it
+applies on a panel abutting an endpoint of `[0, 1]`. -/
+theorem integral_mul_sub_right {u u₁ u₂ : ℝ → ℝ} {p q : ℝ} (hpq : p ≤ q)
+    (hu : ContinuousOn u (Icc p q)) (hu₁ : ContinuousOn u₁ (Icc p q))
+    (hu₂ : ContinuousOn u₂ (Icc p q))
+    (hd1 : ∀ t ∈ Ioo p q, HasDerivAt u (u₁ t) t)
+    (hd2 : ∀ t ∈ Ioo p q, HasDerivAt u₁ (u₂ t) t) :
+    (∫ t in p..q, u₂ t * (q - t)) = u q - u p - (q - p) * u₁ p := by
+  have hF : ContinuousOn (fun t => u₁ t * (q - t) + u t) (Icc p q) :=
+    (hu₁.mul (continuousOn_const.sub continuousOn_id)).add hu
+  have hderiv : ∀ t ∈ Ioo p q,
+      HasDerivAt (fun s => u₁ s * (q - s) + u s) (u₂ t * (q - t)) t := by
+    intro t ht
+    have h1 : HasDerivAt (fun s => q - s) (-1 : ℝ) t := by
+      simpa using (hasDerivAt_id t).const_sub q
+    have he : u₂ t * (q - t) = u₂ t * (q - t) + u₁ t * (-1) + u₁ t := by ring
+    rw [he]
+    exact ((hd2 t ht).mul h1).add (hd1 t ht)
+  have hint : IntervalIntegrable (fun t => u₂ t * (q - t)) volume p q :=
+    (hu₂.mul (continuousOn_const.sub continuousOn_id)).intervalIntegrable_of_Icc hpq
+  rw [integral_eq_sub_of_hasDerivAt_of_le hpq hF hderiv hint]
+  ring
+
+
+/-- **Taylor's formula with integral remainder, left end**:
+`∫_p^q u''(t)(t - p) dt = u(p) - u(q) + (q - p) u'(q)`, by the fundamental theorem of calculus
+applied to the primitive `u'(t)(t - p) - u(t)`. -/
+theorem integral_mul_sub_left {u u₁ u₂ : ℝ → ℝ} {p q : ℝ} (hpq : p ≤ q)
+    (hu : ContinuousOn u (Icc p q)) (hu₁ : ContinuousOn u₁ (Icc p q))
+    (hu₂ : ContinuousOn u₂ (Icc p q))
+    (hd1 : ∀ t ∈ Ioo p q, HasDerivAt u (u₁ t) t)
+    (hd2 : ∀ t ∈ Ioo p q, HasDerivAt u₁ (u₂ t) t) :
+    (∫ t in p..q, u₂ t * (t - p)) = u p - u q + (q - p) * u₁ q := by
+  have hG : ContinuousOn (fun t => u₁ t * (t - p) - u t) (Icc p q) :=
+    (hu₁.mul (continuousOn_id.sub continuousOn_const)).sub hu
+  have hderiv : ∀ t ∈ Ioo p q,
+      HasDerivAt (fun s => u₁ s * (s - p) - u s) (u₂ t * (t - p)) t := by
+    intro t ht
+    have h1 : HasDerivAt (fun s => s - p) (1 : ℝ) t := by
+      simpa using (hasDerivAt_id t).sub_const p
+    have he : u₂ t * (t - p) = u₂ t * (t - p) + u₁ t * 1 - u₁ t := by ring
+    rw [he]
+    exact ((hd2 t ht).mul h1).sub (hd1 t ht)
+  have hint : IntervalIntegrable (fun t => u₂ t * (t - p)) volume p q :=
+    (hu₂.mul (continuousOn_id.sub continuousOn_const)).intervalIntegrable_of_Icc hpq
+  rw [integral_eq_sub_of_hasDerivAt_of_le hpq hG hderiv hint]
+  ring
+
+/-- The square of the right Taylor kernel integrates to `h³/3`. -/
+theorem integral_kernel_sq_right {x h : ℝ} (hh : 0 ≤ h) :
+    (∫ t in x..(x + h), (x + h - t) ^ 2) = h ^ 3 / 3 := by
+  have hle : x ≤ x + h := by linarith
+  have hderiv : ∀ t ∈ Ioo x (x + h),
+      HasDerivAt (fun s => -(x + h - s) ^ 3 / 3) ((x + h - t) ^ 2) t := by
+    intro t _
+    have h1 : HasDerivAt (fun s : ℝ => x + h - s) (-1 : ℝ) t := by
+      simpa using (hasDerivAt_id t).const_sub (x + h)
+    have h2 := ((h1.pow 3).neg.div_const 3)
+    have he : (x + h - t) ^ 2 = -((3 : ℕ) * (x + h - t) ^ (3 - 1) * (-1)) / 3 := by
+      push_cast
+      ring
+    rw [he]
+    exact h2
+  have hcont : ContinuousOn (fun s : ℝ => -(x + h - s) ^ 3 / 3) (Icc x (x + h)) :=
+    (((continuousOn_const.sub continuousOn_id).pow 3).neg.div_const 3)
+  have hint : IntervalIntegrable (fun t => (x + h - t) ^ 2) volume x (x + h) :=
+    (((continuousOn_const.sub continuousOn_id).pow 2)).intervalIntegrable_of_Icc hle
+  rw [integral_eq_sub_of_hasDerivAt_of_le hle hcont hderiv hint]
+  ring
+
+/-- The square of the left Taylor kernel integrates to `h³/3`. -/
+theorem integral_kernel_sq_left {x h : ℝ} (hh : 0 ≤ h) :
+    (∫ t in (x - h)..x, (t - (x - h)) ^ 2) = h ^ 3 / 3 := by
+  have hle : x - h ≤ x := by linarith
+  have hderiv : ∀ t ∈ Ioo (x - h) x,
+      HasDerivAt (fun s => (s - (x - h)) ^ 3 / 3) ((t - (x - h)) ^ 2) t := by
+    intro t _
+    have h1 : HasDerivAt (fun s : ℝ => s - (x - h)) (1 : ℝ) t := by
+      simpa using (hasDerivAt_id t).sub_const (x - h)
+    have h2 := (h1.pow 3).div_const 3
+    have he : (t - (x - h)) ^ 2 = ((3 : ℕ) * (t - (x - h)) ^ (3 - 1) * 1) / 3 := by
+      push_cast
+      ring
+    rw [he]
+    exact h2
+  have hcont : ContinuousOn (fun s : ℝ => (s - (x - h)) ^ 3 / 3) (Icc (x - h) x) :=
+    (((continuousOn_id.sub continuousOn_const).pow 3).div_const 3)
+  have hint : IntervalIntegrable (fun t => (t - (x - h)) ^ 2) volume (x - h) x :=
+    (((continuousOn_id.sub continuousOn_const).pow 2)).intervalIntegrable_of_Icc hle
+  rw [integral_eq_sub_of_hasDerivAt_of_le hle hcont hderiv hint]
+  ring
+
+
+/-- **(12.21) in terms of the datum**: for a solution `u` of (12.1)–(12.2) and a node `x` with
+`[x - h, x + h] ⊆ [0, 1]`, the second difference of `u` is minus the two Taylor remainders of
+`u'' = -f`:
+`u(x+h) - 2u(x) + u(x-h) = -(∫_x^{x+h} f(t)(x+h-t) dt + ∫_{x-h}^x f(t)(t-x+h) dt)`. -/
+theorem secondDiff_eq_integral {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1))
+    (hu : IsSolution f u) {x h : ℝ} (hh : 0 < h) (hx0 : 0 ≤ x - h) (hx1 : x + h ≤ 1) :
+    u (x + h) - 2 * u x + u (x - h)
+      = -((∫ t in x..(x + h), f t * (x + h - t))
+          + ∫ t in (x - h)..x, f t * (t - (x - h))) := by
+  set u₁ := derivWithin u (Icc (0 : ℝ) 1) with hu₁def
+  have hcu : ContinuousOn u (Icc (0 : ℝ) 1) := hu.contDiffOn.continuousOn
+  have hcu1 : ContinuousOn u₁ (Icc (0 : ℝ) 1) :=
+    hu.contDiffOn.continuousOn_derivWithin (uniqueDiffOn_Icc zero_lt_one) (by norm_num)
+  have hcf : ContinuousOn (fun t => -f t) (Icc (0 : ℝ) 1) := hf.neg
+  have hd1 : ∀ t ∈ Ioo (0 : ℝ) 1, HasDerivAt u (u₁ t) t := fun t ht =>
+    (hasDerivAt_of_contDiffOn_two hu.contDiffOn ht).1
+  have hd2 : ∀ t ∈ Ioo (0 : ℝ) 1, HasDerivAt u₁ (-f t) t := by
+    intro t ht
+    have h2 := (hasDerivAt_of_contDiffOn_two hu.contDiffOn ht).2
+    have he : iteratedDeriv 2 u t = -f t := by rw [← hu.equation_12_1 t ht]; ring
+    rwa [he] at h2
+  have hxpos : 0 < x := lt_of_lt_of_le hh (by linarith)
+  have hsubR : Icc x (x + h) ⊆ Icc (0 : ℝ) 1 := Icc_subset_Icc (by linarith) hx1
+  have hsubL : Icc (x - h) x ⊆ Icc (0 : ℝ) 1 := Icc_subset_Icc hx0 (by linarith)
+  have hoR : Ioo x (x + h) ⊆ Ioo (0 : ℝ) 1 := fun t ht => ⟨by linarith [ht.1], by linarith [ht.2]⟩
+  have hoL : Ioo (x - h) x ⊆ Ioo (0 : ℝ) 1 := fun t ht => ⟨by linarith [ht.1], by linarith [ht.2]⟩
+  have hR := integral_mul_sub_right (u := u) (u₁ := u₁) (u₂ := fun t => -f t)
+    (by linarith : x ≤ x + h) (hcu.mono hsubR) (hcu1.mono hsubR) (hcf.mono hsubR)
+    (fun t ht => hd1 t (hoR ht)) (fun t ht => hd2 t (hoR ht))
+  have hL := integral_mul_sub_left (u := u) (u₁ := u₁) (u₂ := fun t => -f t)
+    (by linarith : x - h ≤ x) (hcu.mono hsubL) (hcu1.mono hsubL) (hcf.mono hsubL)
+    (fun t ht => hd1 t (hoL ht)) (fun t ht => hd2 t (hoL ht))
+  have eR : (∫ t in x..(x + h), -f t * (x + h - t))
+      = -∫ t in x..(x + h), f t * (x + h - t) := by
+    rw [← intervalIntegral.integral_neg]
+    exact integral_congr fun t _ => by ring
+  have eL : (∫ t in (x - h)..x, -f t * (t - (x - h)))
+      = -∫ t in (x - h)..x, f t * (t - (x - h)) := by
+    rw [← intervalIntegral.integral_neg]
+    exact integral_congr fun t _ => by ring
+  rw [eR] at hR
+  rw [eL] at hL
+  have hxx : x - (x - h) = h := by ring
+  rw [hxx] at hL
+  have hxx2 : x + h - x = h := by ring
+  rw [hxx2] at hR
+  linarith
+
+
+/-- **The nodal estimate behind (12.23)**: at every interior node,
+`h τ_h(x)² ≤ ∫_{x-h}^{x+h} f² + 3 h f(x)²`. The three terms of
+`τ_h(x) = h⁻²(I⁺ + I⁻) - f(x)` are squared through `(a + b + c)² ≤ 3(a² + b² + c²)` and the two
+integrals are bounded by Cauchy–Schwarz against the kernels, whose squares integrate to `h³/3`. -/
+theorem node_bound {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u)
+    {x h : ℝ} (hh : 0 < h) (hx0 : 0 ≤ x - h) (hx1 : x + h ≤ 1) :
+    h * (-(u (x + h) - 2 * u x + u (x - h)) / h ^ 2 - f x) ^ 2
+      ≤ (∫ t in (x - h)..(x + h), f t ^ 2) + 3 * h * f x ^ 2 := by
+  have hxpos : 0 < x := lt_of_lt_of_le hh (by linarith)
+  have hsubR : Icc x (x + h) ⊆ Icc (0 : ℝ) 1 := Icc_subset_Icc (by linarith) hx1
+  have hsubL : Icc (x - h) x ⊆ Icc (0 : ℝ) 1 := Icc_subset_Icc hx0 (by linarith)
+  set A := ∫ t in x..(x + h), f t * (x + h - t) with hA
+  set B := ∫ t in (x - h)..x, f t * (t - (x - h)) with hB
+  set FR := ∫ t in x..(x + h), f t ^ 2 with hFR
+  set FL := ∫ t in (x - h)..x, f t ^ 2 with hFL
+  have hid := secondDiff_eq_integral hf hu hh hx0 hx1
+  have hA2 : A ^ 2 ≤ FR * (h ^ 3 / 3) := by
+    have hcs := sq_integral_mul_le (k := fun t => x + h - t) (by linarith : x ≤ x + h)
+      (hf.mono hsubR) ((continuous_const.sub continuous_id).continuousOn)
+    rw [integral_kernel_sq_right hh.le] at hcs
+    exact hcs
+  have hB2 : B ^ 2 ≤ FL * (h ^ 3 / 3) := by
+    have hcs := sq_integral_mul_le (k := fun t => t - (x - h)) (by linarith : x - h ≤ x)
+      (hf.mono hsubL) ((continuous_id.sub continuous_const).continuousOn)
+    rw [integral_kernel_sq_left hh.le] at hcs
+    exact hcs
+  have hadj : FL + FR = ∫ t in (x - h)..(x + h), f t ^ 2 := by
+    rw [hFL, hFR]
+    exact integral_add_adjacent_intervals
+      ((hf.mono hsubL).pow 2 |>.intervalIntegrable_of_Icc (by linarith))
+      ((hf.mono hsubR).pow 2 |>.intervalIntegrable_of_Icc (by linarith))
+  have hexpr : -(u (x + h) - 2 * u x + u (x - h)) / h ^ 2 - f x = (A + B) / h ^ 2 - f x := by
+    rw [hid]
+    ring
+  rw [hexpr, ← hadj]
+  have hh3 : (0 : ℝ) < h ^ 3 := by positivity
+  have hrw : h * ((A + B) / h ^ 2 - f x) ^ 2 = (A + B - f x * h ^ 2) ^ 2 / h ^ 3 := by
+    field_simp
+  rw [hrw, div_le_iff₀ hh3]
+  nlinarith [sq_nonneg (A - B), sq_nonneg (A + f x * h ^ 2), sq_nonneg (B + f x * h ^ 2),
+    hA2, hB2, hh.le, sq_nonneg h, hh3]
+
+
+/-- The nodes of the uniform grid of `[0, 1]` are `x_j = j h`. -/
+theorem grid_eq_mul (N : ℕ) (j : Fin (N + 2)) :
+    uniformGrid 0 1 N j = (j : ℕ) * meshSize N := by
+  rw [uniformGrid_apply, meshSize_def, zero_add]
+
+/-- **The panel count**: each of the `n - 1` double panels `[x_{j-1}, x_{j+1}]` covers two of the
+`n` panels, and every panel is covered at most twice, so
+`∑_j ∫_{x_{j-1}}^{x_{j+1}} f² ≤ 2 ∫_0^1 f²`. -/
+theorem sum_panel_le (N : ℕ) {f : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1)) :
+    ∑ i : Fin N, (∫ t in (uniformGrid 0 1 N i.castSucc.castSucc)..
+        (uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+      ≤ 2 * ∫ t in (0 : ℝ)..1, f t ^ 2 := by
+  have hh : 0 < meshSize N := by
+    rw [meshSize_eq]
+    positivity
+  set a : ℕ → ℝ := fun k => (k : ℝ) * meshSize N with ha
+  have hamono : ∀ k l : ℕ, k ≤ l → a k ≤ a l := by
+    intro k l hkl
+    exact mul_le_mul_of_nonneg_right (by exact_mod_cast hkl) hh.le
+  have ha0 : a 0 = 0 := by simp [ha]
+  have haN : a (N + 1) = 1 := by
+    rw [ha, meshSize_eq]
+    push_cast
+    field_simp
+  have hasub : ∀ k, k ≤ N → Icc (a k) (a (k + 1)) ⊆ Icc (0 : ℝ) 1 := by
+    intro k hk
+    refine Icc_subset_Icc ?_ ?_
+    · rw [← ha0]; exact hamono 0 k (Nat.zero_le k)
+    · rw [← haN]; exact hamono (k + 1) (N + 1) (by omega)
+  set Q : ℕ → ℝ := fun k => ∫ t in (a k)..(a (k + 1)), f t ^ 2 with hQ
+  have hQint : ∀ k, k ≤ N → IntervalIntegrable (fun t => f t ^ 2) volume (a k) (a (k + 1)) :=
+    fun k hk => ((hf.mono (hasub k hk)).pow 2).intervalIntegrable_of_Icc
+      (hamono k (k + 1) (by omega))
+  have hQnn : ∀ k, 0 ≤ Q k := fun k =>
+    integral_nonneg (hamono k (k + 1) (by omega)) fun t _ => sq_nonneg _
+  have hQsum : ∑ k ∈ Finset.range (N + 1), Q k = ∫ t in (0 : ℝ)..1, f t ^ 2 := by
+    rw [intervalIntegral.sum_integral_adjacent_intervals (fun k hk => hQint k (by omega)),
+      ha0, haN]
+  have hgrid : ∀ j : Fin (N + 2), uniformGrid 0 1 N j = a (j : ℕ) := fun j => grid_eq_mul N j
+  have hP : ∀ j : Fin (N + 1),
+      (∫ t in (uniformGrid 0 1 N j.castSucc)..(uniformGrid 0 1 N j.succ), f t ^ 2)
+        = Q (j : ℕ) := by
+    intro j
+    rw [hQ, grid_eq_mul, grid_eq_mul]
+    norm_num [ha, Fin.val_succ]
+  have hsplit : ∀ i : Fin N,
+      (∫ t in (uniformGrid 0 1 N i.castSucc.castSucc)..(uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+        = Q (i.castSucc : ℕ) + Q (i.succ : ℕ) := by
+    intro i
+    have e1 := (hP i.castSucc).symm
+    have e2 := (hP i.succ).symm
+    rw [e1, e2, ← Fin.succ_castSucc]
+    refine (integral_add_adjacent_intervals ?_ ?_).symm
+    · rw [hgrid, hgrid]
+      exact hQint (i : ℕ) i.isLt.le
+    · rw [hgrid, hgrid]
+      exact hQint ((i : ℕ) + 1) i.isLt
+  have hcast : ∑ i : Fin N, Q (i.castSucc : ℕ) ≤ ∑ k ∈ Finset.range (N + 1), Q k := by
+    rw [← Fin.sum_univ_eq_sum_range (fun k => Q k) (N + 1), Fin.sum_univ_castSucc]
+    linarith [hQnn ((Fin.last N : Fin (N + 1)) : ℕ)]
+  have hsucc : ∑ i : Fin N, Q (i.succ : ℕ) ≤ ∑ k ∈ Finset.range (N + 1), Q k := by
+    rw [← Fin.sum_univ_eq_sum_range (fun k => Q k) (N + 1), Fin.sum_univ_succ]
+    linarith [hQnn ((0 : Fin (N + 1)) : ℕ)]
+  calc ∑ i : Fin N, (∫ t in (uniformGrid 0 1 N i.castSucc.castSucc)..
+          (uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+      = ∑ i : Fin N, (Q (i.castSucc : ℕ) + Q (i.succ : ℕ)) :=
+        Finset.sum_congr rfl fun i _ => hsplit i
+    _ = (∑ i : Fin N, Q (i.castSucc : ℕ)) + ∑ i : Fin N, Q (i.succ : ℕ) := Finset.sum_add_distrib
+    _ ≤ (∑ k ∈ Finset.range (N + 1), Q k) + ∑ k ∈ Finset.range (N + 1), Q k :=
+        add_le_add hcast hsucc
+    _ = 2 * ∫ t in (0 : ℝ)..1, f t ^ 2 := by rw [hQsum]; ring
+
+
+/-- The interior part of the trapezoidal sum is at most the whole: `h ∑_{j=1}^{n-1} w_j² ≤ ‖w‖_h²`,
+the two endpoint terms of the trapezoidal weights being nonnegative. -/
+theorem sum_interior_le_discreteInner (N : ℕ) {h : ℝ} (hh : 0 ≤ h) (w : Fin (N + 2) → ℝ) :
+    h * ∑ i : Fin N, w i.succ.castSucc ^ 2 ≤ FiniteDifference.discreteInner N h w w := by
+  have hsum : ∑ k : Fin (N + 2), FiniteDifference.gridWeight N k * w k * w k
+      = FiniteDifference.gridWeight N 0 * w 0 * w 0
+        + ((∑ i : Fin N, FiniteDifference.gridWeight N i.castSucc.succ * w i.castSucc.succ
+              * w i.castSucc.succ)
+          + FiniteDifference.gridWeight N (Fin.last N).succ * w (Fin.last N).succ
+              * w (Fin.last N).succ) := by
+    rw [Fin.sum_univ_succ, Fin.sum_univ_castSucc]
+  have hmid : ∀ i : Fin N, FiniteDifference.gridWeight N i.castSucc.succ * w i.castSucc.succ
+      * w i.castSucc.succ = w i.succ.castSucc ^ 2 := by
+    intro i
+    rw [Fin.succ_castSucc, FiniteDifference.gridWeight_succ_castSucc]
+    ring
+  have h0 : 0 ≤ FiniteDifference.gridWeight N 0 * w 0 * w 0 := by
+    have := FiniteDifference.gridWeight_nonneg (n := N) 0
+    nlinarith [sq_nonneg (w 0)]
+  have hl : 0 ≤ FiniteDifference.gridWeight N (Fin.last N).succ * w (Fin.last N).succ
+      * w (Fin.last N).succ := by
+    have := FiniteDifference.gridWeight_nonneg (n := N) (Fin.last N).succ
+    nlinarith [sq_nonneg (w (Fin.last N).succ)]
+  rw [FiniteDifference.discreteInner, hsum, Finset.sum_congr rfl fun i (_ : i ∈ Finset.univ) =>
+    hmid i]
+  nlinarith [h0, hl, hh]
+
+/-- **Exercise 12.5, the bound (12.23) of Remark 12.3**:
+`‖τ_h‖_h² ≤ 3 (‖f‖_h² + ‖f‖²_{L²(0,1)})`, so that the discrete second derivative of the
+discretization error stays bounded as `h → 0` whenever the two norms of `f` on the right do.
+
+The proof is the book's hint made precise (the printed hint drops the factors `h⁻²` and the `/2` of
+the kernels; see `notes/book-errata.md`): integrate (12.21) by parts twice on each side to write
+`τ_h(x_j)` as `-f(x_j)` plus `h⁻²` times two integrals of `f` against the kernels `x_j + h - t` and
+`t - x_j + h`; square with `(a + b + c)² ≤ 3(a² + b² + c²)`, bound each integral by Cauchy–Schwarz,
+and sum, each panel being counted at most twice. Continuity of `f` is all that is used — the book's
+`f ∈ C²([0, 1])` is what its route to `u ∈ C⁴` needs, and is not needed here
+(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Exercise 12.5 and equation (12.23)). -/
+theorem exercise_12_5 (N : ℕ) {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1))
+    (hu : IsSolution f u) :
+    FiniteDifference.discreteL2Norm N (meshSize N)
+        (FiniteDifference.ofInterior N (FiniteDifference.truncationError 0 1 N u f)) ^ 2
+      ≤ 3 * (FiniteDifference.discreteL2Norm N (meshSize N)
+            (f ∘ FiniteDifference.uniformGrid 0 1 N) ^ 2 + ∫ t in (0 : ℝ)..1, f t ^ 2) := by
+  set h := meshSize N with hdef
+  have hh : 0 < h := by rw [hdef, meshSize_eq]; positivity
+  set τ := FiniteDifference.truncationError 0 1 N u f with hτ
+  -- the left-hand side is `h ∑ τ_i²`
+  have hlhs : FiniteDifference.discreteL2Norm N h (FiniteDifference.ofInterior N τ) ^ 2
+      = h * ∑ i : Fin N, τ i ^ 2 := by
+    rw [FiniteDifference.discreteL2Norm_sq hh.le,
+      FiniteDifference.discreteInner_ofInterior h τ (FiniteDifference.ofInterior_mem_gridZero τ),
+      FiniteDifference.interior_ofInterior]
+    exact congrArg (h * ·) (Finset.sum_congr rfl fun i _ => (sq (τ i)).symm)
+  -- the node estimate
+  have hnode : ∀ i : Fin N, h * τ i ^ 2
+      ≤ (∫ t in (FiniteDifference.uniformGrid 0 1 N i.castSucc.castSucc)..
+          (FiniteDifference.uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+        + 3 * h * f (FiniteDifference.uniformGrid 0 1 N i.succ.castSucc) ^ 2 := by
+    intro i
+    set x := FiniteDifference.uniformGrid 0 1 N i.succ.castSucc with hx
+    have hxp : FiniteDifference.uniformGrid 0 1 N i.succ.succ = x + h := by
+      rw [hx, hdef, meshSize_def]
+      exact FiniteDifference.uniformGrid_succ i.succ
+    have hxm : FiniteDifference.uniformGrid 0 1 N i.castSucc.castSucc = x - h := by
+      have e := FiniteDifference.uniformGrid_succ (a := 0) (b := 1) i.castSucc
+      rw [Fin.succ_castSucc] at e
+      rw [hx, hdef, meshSize_def, e]
+      ring
+    have hx0 : 0 ≤ x - h := by
+      rw [← hxm]
+      exact (FiniteDifference.uniformGrid_mem_Icc zero_le_one _).1
+    have hx1 : x + h ≤ 1 := by
+      rw [← hxp]
+      exact (FiniteDifference.uniformGrid_mem_Icc zero_le_one _).2
+    have hτi : τ i = -(u (x + h) - 2 * u x + u (x - h)) / h ^ 2 - f x := by
+      rw [hτ, FiniteDifference.truncationError_apply, FiniteDifference.discreteLaplacian_apply]
+      simp only [Function.comp_apply]
+      rw [show FiniteDifference.gridStep 0 1 N = h from by rw [hdef, meshSize_def], hxp, hxm,
+        ← hx]
+    rw [hτi, hxp, hxm]
+    exact node_bound hf hu hh hx0 hx1
+  calc FiniteDifference.discreteL2Norm N h (FiniteDifference.ofInterior N τ) ^ 2
+      = ∑ i : Fin N, h * τ i ^ 2 := by rw [hlhs, Finset.mul_sum]
+    _ ≤ ∑ i : Fin N, ((∫ t in (FiniteDifference.uniformGrid 0 1 N i.castSucc.castSucc)..
+          (FiniteDifference.uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+        + 3 * h * f (FiniteDifference.uniformGrid 0 1 N i.succ.castSucc) ^ 2) :=
+        Finset.sum_le_sum fun i _ => hnode i
+    _ = (∑ i : Fin N, ∫ t in (FiniteDifference.uniformGrid 0 1 N i.castSucc.castSucc)..
+          (FiniteDifference.uniformGrid 0 1 N i.succ.succ), f t ^ 2)
+        + 3 * (h * ∑ i : Fin N,
+            f (FiniteDifference.uniformGrid 0 1 N i.succ.castSucc) ^ 2) := by
+        rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.mul_sum]
+        refine congrArg _ (Finset.sum_congr rfl fun i _ => by ring)
+    _ ≤ 2 * (∫ t in (0 : ℝ)..1, f t ^ 2)
+        + 3 * FiniteDifference.discreteInner N h (f ∘ FiniteDifference.uniformGrid 0 1 N)
+            (f ∘ FiniteDifference.uniformGrid 0 1 N) := by
+        have h1 := sum_panel_le N hf
+        have h2 := sum_interior_le_discreteInner N hh.le (f ∘ FiniteDifference.uniformGrid 0 1 N)
+        simp only [Function.comp_apply] at h2
+        linarith
+    _ ≤ 3 * (FiniteDifference.discreteL2Norm N h (f ∘ FiniteDifference.uniformGrid 0 1 N) ^ 2
+          + ∫ t in (0 : ℝ)..1, f t ^ 2) := by
+        rw [FiniteDifference.discreteL2Norm_sq hh.le]
+        have hnn : 0 ≤ ∫ t in (0 : ℝ)..1, f t ^ 2 :=
+          integral_nonneg zero_le_one fun t _ => sq_nonneg _
+        linarith
+
+end Exercise125
 
 /-! ### The discrete Green's function (12.24)–(12.26) -/
 

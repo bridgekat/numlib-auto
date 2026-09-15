@@ -1,3 +1,4 @@
+import Numlib.FiniteDifference.Hyperbolic
 import Numlib.FiniteDifference.Parabolic
 
 /-!
@@ -23,9 +24,15 @@ is *sufficient* (`equation_13_11_of_le`, even with equality) but not necessary, 
 exact threshold `2 / (ν μ_max)` is slightly larger. Backward Euler is unconditionally
 asymptotically stable (`backwardEuler_tendsto`).
 
-All the work is in `Numlib/FiniteDifference/Parabolic` and
-`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`; this file is the specialization to
-`M = 1`, `A = ν A_fd`.
+Accuracy is Exercise 13.1, `exercise_13_1`: the local truncation error of the θ-method is
+`O(Δt + h²)` in general and `O(Δt² + h²)` at `θ = 1/2`, with explicit constants. It is a
+one-variable Taylor estimate in each direction over the two-variable interface
+`HasPartialDerivs` of `Numlib/Analysis/Calculus/PartialDeriv` — the same route §13.8 takes for the
+schemes of the wave equation.
+
+All the work is in `Numlib/FiniteDifference/Parabolic`,
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and the Taylor bounds of
+`Numlib/FiniteDifference/Hyperbolic`; this file is the specialization to `M = 1`, `A = ν A_fd`.
 
 ## Conventions
 
@@ -36,7 +43,7 @@ function of the previous iterate rather than a relation, since at mass matrix `1
 matrix `1 + ν θ Δt A_fd` is always invertible.
 -/
 
-open Set Filter Topology
+open Set Filter Topology FiniteDifference
 open scoped Real Matrix
 
 namespace QuarteroniSaccoSaleri.Chapter13
@@ -246,5 +253,139 @@ theorem backwardEuler_tendsto (hn : 0 < n) {ν Δt : ℝ} (hν : 0 < ν) (hΔt :
     rw [FiniteDifference.thetaAmplification]
     simp [smul_smul, mul_comm]
   rwa [hamp] at h
+
+/-! ### Exercise 13.1, the accuracy of the θ-method -/
+
+/-- **Exercise 13.1, the local truncation error of the θ-method** (§13.2, "its local truncation
+error is of the order of `Δt + h²` if `θ ≠ 1/2` while it is of the order of `Δt² + h²` if
+`θ = 1/2`"). Insert a smooth solution `u` of the heat equation `u_t - ν u_xx = f` into the
+θ-scheme (13.9) written at the node `(x, t)`,
+
+`[u(x, t+Δt) - u(x, t)]/Δt - ν [θ δ²_x u(x, t+Δt) + (1-θ) δ²_x u(x, t)]
+   - [θ f(x, t+Δt) + (1-θ) f(x, t)]`,
+
+with `δ²_x v(x) = (v(x+Δx) - 2v(x) + v(x-Δx))/Δx²`. With all partial derivatives of total order at
+most `4` bounded by `M` and `Δt ≤ 1`, the residual is at most
+`M (1/2 + 3|θ|/2) Δt + |ν| (|θ| + |1-θ|) M Δx²/12`, and at `θ = 1/2` at most
+`(5/12) M Δt² + |ν| M Δx²/12`.
+
+The residual splits into a time part and a space part: subtracting
+`θ u_t(x, t+Δt) + (1-θ) u_t(x, t)` and using the equation at both levels turns the source terms
+into `ν` times the two second-difference defects `δ²_x u - u_xx`, each `O(Δx²)`
+(`FiniteDifference.Hyperbolic.abs_secondDiff_fst_sub_le`), while the time part is
+`[u(t+Δt) - u(t)]/Δt - u_t(t) - θ [u_t(t+Δt) - u_t(t)]`, which is `O(Δt)` in general and, at
+`θ = 1/2`, the trapezoidal defect `O(Δt²)` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*,
+Exercise 13.1, cited in §13.2). -/
+theorem exercise_13_1 {u f : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {ν θ M Δt Δx : ℝ}
+    (hD : HasPartialDerivs u D) (hΔt : 0 < Δt) (hΔt1 : Δt ≤ 1) (hΔx : 0 < Δx)
+    (hheat : ∀ y s, D 0 1 y s - ν * D 2 0 y s = f y s)
+    (hM : ∀ i j, i + j ≤ 4 → ∀ y s, |D i j y s| ≤ M) (x t : ℝ) :
+    |(u x (t + Δt) - u x t) / Δt
+          - ν * (θ * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2)
+            + (1 - θ) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2))
+          - (θ * f x (t + Δt) + (1 - θ) * f x t)|
+        ≤ M * (1 / 2 + 3 / 2 * |θ|) * Δt + |ν| * (|θ| + |1 - θ|) * M / 12 * Δx ^ 2 ∧
+      |(u x (t + Δt) - u x t) / Δt
+          - ν * (1 / 2 * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2)
+            + (1 - 1 / 2) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2))
+          - (1 / 2 * f x (t + Δt) + (1 - 1 / 2) * f x t)|
+        ≤ 5 / 12 * M * Δt ^ 2 + |ν| * M / 12 * Δx ^ 2 := by
+  have hu : D 0 0 = u := hD.eq_zero_zero
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0 0 (by norm_num) x t)
+  have hEp : |(u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+      - D 2 0 x (t + Δt)| ≤ M * Δx ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_fst_sub_le (i := 0) (j := 0) hD
+      (hM 4 0 (by norm_num)) hΔx x (t + Δt)
+    rwa [hu] at h
+  have hE0 : |(u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t|
+      ≤ M * Δx ^ 2 / 12 := by
+    have h := Hyperbolic.abs_secondDiff_fst_sub_le (i := 0) (j := 0) hD
+      (hM 4 0 (by norm_num)) hΔx x t
+    rwa [hu] at h
+  have hT1 : |u x (t + Δt) - u x t - Δt * D 0 1 x t| ≤ M * Δt ^ 2 / 2 := by
+    have h := Hyperbolic.abs_taylor_snd_one (i := 0) (j := 0) hD (hM 0 2 (by norm_num)) x t Δt
+    rwa [hu] at h
+  have hT2 : |D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t| ≤ M * Δt ^ 2 / 2 :=
+    Hyperbolic.abs_taylor_snd_one (i := 0) (j := 1) hD (hM 0 3 (by norm_num)) x t Δt
+  have hT3 : |u x (t + Δt) - u x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t|
+      ≤ M * Δt ^ 3 / 6 := by
+    have h := Hyperbolic.abs_taylor_snd_two (i := 0) (j := 0) hD (hM 0 3 (by norm_num)) x t Δt
+    rw [hu, abs_of_pos hΔt] at h
+    exact h
+  have hD02 : |D 0 2 x t| ≤ M := hM 0 2 (by norm_num) x t
+  have hsplit : ∀ c : ℝ, (u x (t + Δt) - u x t) / Δt
+        - ν * (c * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2)
+          + (1 - c) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2))
+        - (c * f x (t + Δt) + (1 - c) * f x t)
+      = ((u x (t + Δt) - u x t) / Δt - c * D 0 1 x (t + Δt) - (1 - c) * D 0 1 x t)
+        - ν * (c * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+              - D 2 0 x (t + Δt))
+          + (1 - c) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t)) := by
+    intro c
+    rw [← hheat x (t + Δt), ← hheat x t]
+    ring
+  have hspace : ∀ c : ℝ, |ν * (c * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt)
+        + u (x - Δx) (t + Δt)) / Δx ^ 2 - D 2 0 x (t + Δt))
+      + (1 - c) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t))|
+      ≤ |ν| * (|c| + |1 - c|) * M / 12 * Δx ^ 2 := by
+    intro c
+    rw [abs_mul]
+    have hb : |c * ((u (x + Δx) (t + Δt) - 2 * u x (t + Δt) + u (x - Δx) (t + Δt)) / Δx ^ 2
+          - D 2 0 x (t + Δt))
+        + (1 - c) * ((u (x + Δx) t - 2 * u x t + u (x - Δx) t) / Δx ^ 2 - D 2 0 x t)|
+        ≤ (|c| + |1 - c|) * M / 12 * Δx ^ 2 := by
+      refine (abs_add_le _ _).trans ?_
+      rw [abs_mul, abs_mul]
+      have h1 := mul_le_mul_of_nonneg_left hEp (abs_nonneg c)
+      have h2 := mul_le_mul_of_nonneg_left hE0 (abs_nonneg (1 - c))
+      nlinarith [h1, h2]
+    exact (mul_le_mul_of_nonneg_left hb (abs_nonneg ν)).trans (le_of_eq (by ring))
+  constructor
+  · rw [hsplit θ]
+    refine (abs_sub _ _).trans (add_le_add ?_ (hspace θ))
+    have hA : (u x (t + Δt) - u x t) / Δt - θ * D 0 1 x (t + Δt) - (1 - θ) * D 0 1 x t
+        = ((u x (t + Δt) - u x t - Δt * D 0 1 x t) / Δt)
+          - θ * (D 0 1 x (t + Δt) - D 0 1 x t) := by
+      field_simp
+      ring
+    rw [hA]
+    have hq1 : |(u x (t + Δt) - u x t - Δt * D 0 1 x t) / Δt| ≤ M * Δt / 2 := by
+      rw [abs_div, abs_of_pos hΔt, div_le_iff₀ hΔt]
+      nlinarith [hT1]
+    have hq2 : |D 0 1 x (t + Δt) - D 0 1 x t| ≤ 3 / 2 * (M * Δt) := by
+      have h := (abs_add_le (D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t) (Δt * D 0 2 x t)).trans
+        (add_le_add hT2 (le_of_eq (abs_mul Δt (D 0 2 x t))))
+      have h2 : |Δt| * |D 0 2 x t| ≤ Δt * M := by
+        rw [abs_of_pos hΔt]
+        exact mul_le_mul_of_nonneg_left hD02 hΔt.le
+      have h3 : |D 0 1 x (t + Δt) - D 0 1 x t| ≤ M * Δt ^ 2 / 2 + |Δt| * |D 0 2 x t| := by
+        have he : D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t + Δt * D 0 2 x t
+            = D 0 1 x (t + Δt) - D 0 1 x t := by ring
+        rw [he] at h
+        exact h
+      nlinarith [h3, h2, mul_nonneg (mul_nonneg hM0 hΔt.le) (by linarith : (0 : ℝ) ≤ 1 - Δt)]
+    have hq3 := mul_le_mul_of_nonneg_left hq2 (abs_nonneg θ)
+    refine (abs_sub _ _).trans ?_
+    rw [abs_mul]
+    nlinarith [hq1, hq3]
+  · rw [hsplit (1 / 2)]
+    have hsp : |ν| * (|(1 : ℝ) / 2| + |1 - 1 / 2|) * M / 12 * Δx ^ 2 = |ν| * M / 12 * Δx ^ 2 := by
+      rw [abs_of_pos (by norm_num : (0 : ℝ) < 1 / 2),
+        abs_of_pos (by norm_num : (0 : ℝ) < 1 - 1 / 2)]
+      ring
+    refine (abs_sub _ _).trans (add_le_add ?_ (hsp ▸ hspace (1 / 2)))
+    have hA : (u x (t + Δt) - u x t) / Δt - 1 / 2 * D 0 1 x (t + Δt) - (1 - 1 / 2) * D 0 1 x t
+        = ((u x (t + Δt) - u x t - Δt * D 0 1 x t - Δt ^ 2 / 2 * D 0 2 x t)
+            - Δt / 2 * (D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t)) / Δt := by
+      field_simp
+      ring
+    rw [hA, abs_div, abs_of_pos hΔt, div_le_iff₀ hΔt]
+    have hb := (abs_sub _ _).trans (add_le_add hT3
+      (le_of_eq (abs_mul (Δt / 2) (D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t))))
+    have hd : |Δt / 2| * |D 0 1 x (t + Δt) - D 0 1 x t - Δt * D 0 2 x t|
+        ≤ Δt / 2 * (M * Δt ^ 2 / 2) := by
+      rw [abs_div, abs_of_pos hΔt, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+      exact mul_le_mul_of_nonneg_left hT2 (by positivity)
+    nlinarith [hb, hd]
 
 end QuarteroniSaccoSaleri.Chapter13

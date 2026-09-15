@@ -162,41 +162,8 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the L
 
 [[node]]
 id = "remark_13_4_leapFrog_energy"
-kind = "theorem"
-desc = '''Remark 13.4, leap-frog, in the variables the wave equation controls: with the state
-`w^n = ((u^{n+1} - u^n)/Δt, u^n)` instead of `(u^{n+1}, u^n)`, the leap-frog scheme (13.44) on the
-periodic grid satisfies `‖w^n‖_{Δ,2} ≤ C_T ‖w^0‖_{Δ,2}` for `n Δt ≤ T` under the strict CFL
-condition `γλ < 1`. On the `k`-th mode the change of variables conjugates `G_k = !![2c_k, -1; 1, 0]`
-into a matrix whose powers are bounded by `C/(1 - (γλ)²)`-type constants uniformly in `k`,
-including the constant mode, where it reproduces `u^n = u^0 + (n Δt) w^0_1` and `n Δt ≤ T`. The
-block-circulant reduction `FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode` is in
-place. ★★★
-
-Blocked: not attempted. What is missing is the uniform bound on the powers of the conjugated
-`2 × 2` matrix, which in Chebyshev form is `|U_{n-1}(c_k)| ≤ n` near `c = 1` and
-`|U_{n-1}(c_k)| ≤ 1/√(1 - c_k²)` away from it; the two regimes have to be combined against
-`n Δt ≤ T`. Estimate: two days.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
 
 [[node]]
 id = "remark_13_4_newmark"
-kind = "theorem"
-desc = '''Remark 13.4, Newmark: the Newmark scheme (13.45) is unconditionally stable when `2β ≥ θ
-≥ 1/2` (cited from [Joh90]). On the `k`-th mode the pair `(u, Δt v)` is advanced by a `2 × 2`
-matrix `G_k(β, θ, s)`, `s = (γλ)² · 4 sin²(φ_k/2)`, and the condition `2β ≥ θ ≥ 1/2` is exactly the
-condition that the characteristic polynomial of `G_k` has both roots in the closed unit disc for
-every `s ≥ 0` with a uniform bound on `‖G_k^n‖` (a Schur–Cohn computation on a quadratic with
-real coefficients). ★★★
-
-Blocked: not attempted for lack of time; needs the same uniform power bound as
-`remark_13_4_leapFrog` plus the Schur–Cohn criterion for a real quadratic, which the project does
-not have. Estimate: three days.
-
-Blocked, second reading: the state vector named here, `(u, Δt v)`, is the wrong one, for the same
-reason that sinks `remark_13_4_leapFrog`. On the constant mode `k = 0` the scheme is `u' = u + Δt v`,
-`v' = v`, so in the variables `(u, Δt v)` the mode matrix is the Jordan block `!![1, 1; 0, 1]`, whose
-powers grow like `n`; in the unscaled variables `(u, v)` it is `!![1, Δt; 0, 1]`, whose powers are
-`!![1, n Δt; 0, 1]` and are bounded because `n Δt ≤ T`. State the node in `(u, v)`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_45", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Newmark method'

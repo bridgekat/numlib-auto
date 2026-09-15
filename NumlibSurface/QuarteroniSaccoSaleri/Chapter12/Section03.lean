@@ -27,6 +27,9 @@ collocation problem is equivalent to the discrete weak form
 
 * `equation_12_37_exact` — the discrete scalar product is the integral on `P_{2n-1}`, and
   `equation_12_37_self_nonneg` that it is a positive form.
+* `equation_12_37_sum_weights`, `equation_12_37_le_sup`, `equation_12_37_inner_mul_le` — the
+  weights sum to `2`, hence `‖f‖_n ≤ √2 ‖f‖_∞`, and Cauchy–Schwarz for `(·, ·)_n`: the two steps
+  of the stability estimate after (12.38) that do not need the quoted norm equivalence.
 * `equation_12_38` — collocation (12.36) is the discrete weak form (12.38).
 * `equation_12_38_energy` — `(L_n v, v)_n = (L_n v, v) = ‖v'‖²_{L²(-1,1)}` for `v ∈ P_n^0`.
 * `exercise_12_8` — Young's inequality `ab ≤ ε a² + b²/(4ε)` (12.40), used in the proofs of
@@ -38,7 +41,9 @@ The stability bound `‖u_n'‖_{L²} ≤ √6 C_P ‖f‖_∞` after (12.38) an
 book quotes without proof from [CHQZ88]: the norm equivalence
 `‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²}` on `P_n` (p. 286) and the quadrature error bound (10.36) in
 weighted Sobolev norms, neither of which chapter 10 has. The plan keeps them as open nodes with the
-reason.
+reason; every *other* step of both arguments — the energy identity, Cauchy–Schwarz for `(·, ·)_n`,
+`‖f‖_n ≤ √2 ‖f‖_∞`, Young's inequality, Poincaré — is proved here or in
+`Numlib/Analysis/Sobolev/Interval`.
 
 ## Conventions
 
@@ -133,6 +138,53 @@ theorem equation_12_37_self_nonneg {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : I
   refine Finset.sum_nonneg fun j _ => ?_
   have hw := (hx.weight_pos j).le
   nlinarith [sq_nonneg (v (x j))]
+
+/-- **The Gauss–Lobatto weights sum to the length of the interval**, `∑_j w_j = 2`: the rule is
+exact on the constants. -/
+theorem equation_12_37_sum_weights {n : ℕ} {x w : Fin (n + 1) → ℝ}
+    (hx : IsLegendreLobatto n x w) : ∑ j, w j = 2 := by
+  have hdeg : (1 : ℝ[X]).degree ≤ ((2 * n - 1 : ℕ) : WithBot ℕ) := by
+    rw [degree_one]
+    exact_mod_cast Nat.zero_le _
+  have h := hx.exact 1 hdeg
+  rw [OrthogonalPolynomial.integral_legendreMeasure] at h
+  simp only [eval_one, mul_one] at h
+  rw [h]
+  norm_num
+
+/-- **`‖f‖_n ≤ √2 ‖f‖_∞`**, in the squared form `(f, f)_n ≤ 2 M²` for a bound `M` on the nodal
+values: the first of the two estimates the stability bound after (12.38) uses. -/
+theorem equation_12_37_le_sup {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
+    {f : ℝ → ℝ} {M : ℝ} (hM : ∀ j, |f (x j)| ≤ M) :
+    equation_12_37 n x w f f ≤ 2 * M ^ 2 := by
+  have hsum := equation_12_37_sum_weights hx
+  have hle : ∀ j : Fin (n + 1), f (x j) * f (x j) * w j ≤ M ^ 2 * w j := by
+    intro j
+    have hw := (hx.weight_pos j).le
+    have hsq : f (x j) * f (x j) ≤ M ^ 2 := by
+      have := abs_nonneg (f (x j))
+      nlinarith [hM j, sq_abs (f (x j))]
+    exact mul_le_mul_of_nonneg_right hsq hw
+  calc equation_12_37 n x w f f = ∑ j, f (x j) * f (x j) * w j := equation_12_37_eq n x w f f
+    _ ≤ ∑ j, M ^ 2 * w j := Finset.sum_le_sum fun j _ => hle j
+    _ = M ^ 2 * ∑ j, w j := by rw [Finset.mul_sum]
+    _ = 2 * M ^ 2 := by rw [hsum]; ring
+
+/-- **Cauchy–Schwarz for the discrete scalar product (12.37)**: `(u, v)_n² ≤ (u, u)_n (v, v)_n`,
+which is the step `(f, v_n)_n ≤ ‖f‖_n ‖v_n‖_n` of the stability estimate after (12.38). -/
+theorem equation_12_37_inner_mul_le {n : ℕ} {x w : Fin (n + 1) → ℝ}
+    (hx : IsLegendreLobatto n x w) (u v : ℝ → ℝ) :
+    equation_12_37 n x w u v ^ 2
+      ≤ equation_12_37 n x w u u * equation_12_37 n x w v v := by
+  have hw : ∀ j : Fin (n + 1), (0 : ℝ) ≤ w j := fun j => (hx.weight_pos j).le
+  have key := Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul (Finset.univ : Finset (Fin (n + 1)))
+    (r := fun j => u (x j) * v (x j) * w j) (f := fun j => u (x j) * u (x j) * w j)
+    (g := fun j => v (x j) * v (x j) * w j)
+    (fun j _ => by nlinarith [hw j, sq_nonneg (u (x j))])
+    (fun j _ => by nlinarith [hw j, sq_nonneg (v (x j))])
+    (fun j _ => by nlinarith [hw j, sq_nonneg (u (x j) * v (x j) * w j)])
+  rw [equation_12_37_eq, equation_12_37_eq, equation_12_37_eq]
+  exact key
 
 /-! ### The discrete weak form (12.38) -/
 

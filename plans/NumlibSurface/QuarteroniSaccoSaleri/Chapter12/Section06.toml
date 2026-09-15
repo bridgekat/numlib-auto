@@ -32,31 +32,69 @@ v_h|_∂Ω = 0}` over a triangulation `𝒯_h` of `Ω̄`, and the form `a(u_h, v
 formalized: a triangulation of a plane domain and continuous piecewise polynomials on it do not
 exist in the library (the Atkinson–Han plan's Chapter 10 group records the triangulation scaffold as a
 deliberate scope exclusion), and `H^1_0(Ω)` with a boundary trace is `notes/frontier.md` blocker 2. The
-book defines it and proves nothing about it.'''
+book defines it and proves nothing about it.
+
+Blocked: re-examined 2026-09-16 and the verdict stands. Three things are missing and none is
+one-dimensional: (i) a triangulation of a plane domain — a finite family of nondegenerate triangles
+with pairwise disjoint interiors whose union is `Ω̄` and which meet edge to edge — with the affine
+map to a reference triangle, none of which is in Mathlib or in `Numlib`; (ii) `H¹(Ω)` for a plane
+`Ω` *is* available (`Numlib/Analysis/Sobolev/MultiIndex` with `Ω : Opens (Fin 2 → ℝ)`), but
+`H¹₀(Ω)` as "vanishing on `∂Ω`" needs the trace operator, which needs the surface measure on
+`∂Ω` (`notes/frontier.md` blocker 2); the closure definition `SobolevMultiIndexZero` is available
+and would let the *space* be defined, but not the membership criterion the book states; (iii) the
+piecewise-polynomial subspace of `H¹(Ω)` needs the fact that a continuous piecewise-smooth function
+on a triangulation is weakly differentiable, whose proof is the divergence theorem on each triangle
+plus the cancellation of the interface terms — the same missing divergence theorem as
+`exercise_12_15`. The one-dimensional counterpart is
+`Variational.FiniteElement.lagrangeSpace`; a faithful two-dimensional statement is a module of its
+own, not a node. Estimate: weeks, gated on the triangulation scaffold.'''
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.94)'
 
 [[node]]
 id = "exercise_12_15"
 kind = "theorem"
 desc = '''Green's formula (12.95), Exercise 12.15: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u, v`
-smooth on a bounded plane domain `Ω`. Not formalized for a general domain: it needs the divergence
-theorem on `Ω` with a boundary measure and normal (Mathlib's divergence theorem is for boxes,
-`MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable`; there is no surface measure
-on a curve — `notes/frontier.md` blocker 2). On a rectangle, with the boundary integral written as four
-line integrals, it is a corollary of Mathlib's box theorem applied to `v ∇u` with the identity
-`div(v ∇u) = v Δu + ∇u · ∇v` (the exercise's hint), and could be stated if wanted.'''
+smooth on a bounded plane domain `Ω`.
+
+Blocked: the *rectangle* case is now proved, as `exercise_12_15_rectangle`, by the exercise's own
+hint (`div (v ∇u) = v Δu + ∇u · ∇v`) over Mathlib's
+`MeasureTheory.integral_divergence_prod_Icc_of_hasFDerivAt_off_countable_of_le`, with the boundary
+integral written as the four sides each carrying its outward normal. What a *general* bounded plane
+domain needs, and the library does not have, is exactly two objects and one theorem: the surface
+measure `dγ` on `∂Ω` (`Measure.hausdorffMeasure 1` restricted to `frontier Ω` is definable today,
+but nothing relates it to a parametrization of the boundary, so no `∫_∂Ω` can be computed or
+integrated by parts), the outward unit normal `n` (no normal field for a `C¹` or Lipschitz boundary
+exists), and the divergence theorem on `Ω` itself — Mathlib's divergence theorems are for boxes
+(`MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable` and the plane corollary
+used here) and for nothing else. `Numlib/Analysis/Calculus/CurvilinearLaplacian` carries the
+Laplacian in polar and spherical coordinates and no integration theorem, so it does not help. This
+is `notes/frontier.md` blocker 2 in its integration form. Estimate: a Mathlib-scale project.'''
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15'
+
+[[node]]
+id = "exercise_12_15_rectangle"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15, on a rectangle'
 
 [[node]]
 id = "property_12_2"
 kind = "theorem"
 desc = '''Property 12.2: for `u ∈ H^1_0(Ω) ∩ H^s(Ω)`, `s ≥ 2`, and its finite element approximation `u_h ∈ V_h` of
 degree `k ≥ 1` on a triangulation, `‖u - u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}(Ω)}` with `l = min(k, s -
-1)` (12.96), and `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}` (12.97). Not formalized:
-the two-dimensional finite element space (12.94) does not exist, and the interpolation estimate behind
-(12.96) is the multi-dimensional Bramble–Hilbert / Deny–Lions theory that `notes/frontier.md` lists
-under blocker 1; the `L²` estimate additionally needs `H²` regularity of the Poisson problem on a convex
-polygon. The book quotes both from [QV94, Theorem 6.2.1]. Céa's lemma itself
-(`IsGalerkinSolution.norm_sub_le_infDist`) is available.'''
+1)` (12.96), and `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}` (12.97). The book quotes both from
+[QV94, Theorem 6.2.1] and proves neither.
+
+Blocked: re-examined 2026-09-16. The abstract half is available and is *not* the obstruction —
+Céa’s lemma is `IsGalerkinSolution.norm_sub_le_infDist` and its seminorm form
+`seminorm_sub_le_of_galerkin_orthogonal`, both proved, and they reduce (12.96) to the interpolation
+estimate `inf_{v_h ∈ V_h} |u - v_h|_{H¹} ≤ C h^l |u|_{H^{l+1}}`. Three ingredients of that estimate
+are missing, in increasing order of cost: (a) the space `V_h` itself, which is `equation_12_94`
+and is blocked on the triangulation scaffold; (b) the multi-dimensional Bramble–Hilbert lemma —
+the reachable route is Brenner–Scott’s averaged Taylor polynomial, which uses no compactness and
+which `notes/lessons.md` already names as the single highest-leverage gap (blocker 1 of
+`notes/frontier.md`); (c) for (12.97), the Aubin–Nitsche duality argument needs `H²` regularity of
+the Poisson problem on a convex polygon, which is a genuine elliptic-regularity theorem nobody in
+this corpus proves. The one-dimensional counterparts are all proved (`property_12_1`,
+`property_12_1_l2`), so the shape of the argument is settled; only the two-dimensional analysis is
+absent. Estimate: gated on (a) and (b), each a module of its own.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_94"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.2, equations (12.96)–(12.97)'

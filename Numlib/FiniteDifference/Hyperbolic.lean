@@ -2188,6 +2188,465 @@ theorem abs_residual_laxWendroff_le_of_isModifiedSolution (hD : HasPartialDerivs
 
 end PartialTaylor
 
+/-! ### The energy of the second-order schemes for the wave equation
+
+[quarteroni2000numerical] Remark 13.4 asserts that the leap-frog scheme (13.44) is stable under
+the CFL restriction and that the Newmark scheme (13.45) is unconditionally stable for
+`2β ≥ θ ≥ 1/2`. Neither claim is about the Euclidean norm of the state `(u^{n+1}, uⁿ)`: on the
+constant mode the leap-frog amplification matrix is `!![2, -1; 1, 0] = I + N`, a Jordan block whose
+powers grow linearly for *every* CFL number, and the `(u, Δt v)` state of Newmark has the Jordan
+block `!![1, 1; 0, 1]` there. What both schemes control is the **energy** of the wave equation,
+`‖u_t‖² + γ²‖u_x‖²`, and that is what is proved here.
+
+Both are stated for an abstract symmetric positive semidefinite `A : E →ₗ[ℝ] E` on a real inner
+product space, standing for the discretized `-γ² ∂ₓ²`: `IsLeapFrogOp A Δt u` is
+`u^{n+2} - 2u^{n+1} + uⁿ = -Δt² A u^{n+1}` and `IsNewmarkOp A Δt β θ u v` is the Newmark pair.
+`leapFrogEnergy` is conserved exactly (`leapFrogEnergy_succ`) and is equivalent to
+`‖u^{n+1} - uⁿ‖² + Δt² ⟪A uⁿ, uⁿ⟫` with constants `1 ± κ` whenever `Δt² λmax ≤ 4κ²`
+(`abs_leapFrogEnergy_sub_le`), whence the stability bound `leapFrog_stability`; for the discrete
+Laplacian `λmax = 4γ²/Δx²` and `κ = |γ| Δt/Δx`, so the hypothesis is exactly the strict CFL
+condition. `newmarkEnergy` is nonincreasing for `2β ≥ θ ≥ 1/2` with no restriction on `Δt`
+(`newmarkEnergy_succ_le`), whence `newmark_stability`.
+
+The concrete operator on `ℓ²(ℤ)` is `discreteWaveOp γ Δx = -(γ²/Δx²) δ²`, built from the second
+difference `secondDiffCLM`; summation by parts (`inner_forwardDiffCLM`) turns its quadratic form
+into `(γ²/Δx²)‖∇_h u‖²`, which is what makes it positive semidefinite and bounded by `4γ²/Δx²`.
+-/
+
+section SecondOrderEnergy
+
+open scoped RealInnerProductSpace
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+variable {A : E →ₗ[ℝ] E} {lmax Δt β θ : ℝ} {u v : ℕ → E}
+
+/-- **Cauchy–Schwarz for a positive semidefinite symmetric operator**, in the scaled form
+`2 |t| |⟪A x, y⟫| ≤ t² ⟪A x, x⟫ + ⟪A y, y⟫`: expand `0 ≤ ⟪A (t x ∓ y), t x ∓ y⟫`. (A general fact
+about `LinearMap.IsSymmetricBoundedBy A 0 lmax` over `ℝ`; it is kept here because this file is its
+only consumer.) -/
+theorem two_mul_abs_inner_le (hA : A.IsSymmetricBoundedBy 0 lmax) (t : ℝ) (x y : E) :
+    2 * |t| * |⟪A x, y⟫| ≤ t ^ 2 * ⟪A x, x⟫ + ⟪A y, y⟫ := by
+  have hpos : ∀ z : E, 0 ≤ ⟪A z, z⟫ := by
+    intro z
+    have h := hA.le_re_inner z
+    simpa using h
+  have hsymm : ∀ p q : E, ⟪A p, q⟫ = ⟪A q, p⟫ := by
+    intro p q
+    rw [hA.isSymmetric p q, real_inner_comm]
+  have expand : ∀ s : ℝ, ⟪A (s • x - y), s • x - y⟫
+      = s ^ 2 * ⟪A x, x⟫ - 2 * s * ⟪A x, y⟫ + ⟪A y, y⟫ := by
+    intro s
+    simp only [map_sub, map_smul, inner_sub_left, inner_sub_right, real_inner_smul_left,
+      real_inner_smul_right]
+    rw [hsymm y x]
+    ring
+  have h1 := hpos (t • x - y)
+  have h2 := hpos ((-t) • x - y)
+  rw [expand] at h1
+  rw [expand] at h2
+  have hkey : |2 * t * ⟪A x, y⟫| ≤ t ^ 2 * ⟪A x, x⟫ + ⟪A y, y⟫ := by
+    rw [abs_le]
+    constructor <;> nlinarith [h1, h2]
+  calc 2 * |t| * |⟪A x, y⟫| = |2 * t * ⟪A x, y⟫| := by
+        rw [abs_mul, abs_mul, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 2)]
+    _ ≤ _ := hkey
+
+/-! #### Leap-frog -/
+
+/-- **The leap-frog scheme for the abstract wave equation** `u'' + A u = 0`:
+`u^{n+2} - 2 u^{n+1} + uⁿ = -Δt² A u^{n+1}`. It is the operator form of
+[quarteroni2000numerical] (13.44), which is the case `A = -γ² δ²/Δx²`. -/
+def IsLeapFrogOp (A : E →ₗ[ℝ] E) (Δt : ℝ) (u : ℕ → E) : Prop :=
+  ∀ n, u (n + 2) - (2 : ℝ) • u (n + 1) + u n = (-(Δt ^ 2)) • A (u (n + 1))
+
+/-- **The discrete energy of the leap-frog scheme**,
+`Eⁿ = ‖u^{n+1} - uⁿ‖² + Δt² ⟪A u^{n+1}, uⁿ⟫`. Divided by `Δt²` it is the discretization
+`‖u_t‖² + ⟪A u, u⟫` of the energy of the wave equation, with the potential term evaluated at two
+consecutive levels. -/
+noncomputable def leapFrogEnergy (A : E →ₗ[ℝ] E) (Δt : ℝ) (u : ℕ → E) (n : ℕ) : ℝ :=
+  ‖u (n + 1) - u n‖ ^ 2 + Δt ^ 2 * ⟪A (u (n + 1)), u n⟫
+
+/-- **The leap-frog scheme conserves its energy exactly**, for symmetric `A` and every `Δt`. -/
+theorem leapFrogEnergy_succ (hA : A.IsSymmetric) (h : IsLeapFrogOp A Δt u) (n : ℕ) :
+    leapFrogEnergy A Δt u (n + 1) = leapFrogEnergy A Δt u n := by
+  have hsymm : ∀ p q : E, ⟪A p, q⟫ = ⟪A q, p⟫ := fun p q => by
+    rw [hA p q, real_inner_comm]
+  have hstep : u (n + 2) - (2 : ℝ) • u (n + 1) + u n = (-(Δt ^ 2)) • A (u (n + 1)) := h n
+  have hdiff : ‖u (n + 2) - u (n + 1)‖ ^ 2 - ‖u (n + 1) - u n‖ ^ 2
+      = ⟪u (n + 2) - u n, u (n + 2) - (2 : ℝ) • u (n + 1) + u n⟫ := by
+    simp only [inner_sub_left, inner_add_right, inner_sub_right, real_inner_smul_right,
+      @norm_sub_sq_real]
+    have e1 : ⟪u n, u (n + 2)⟫ = ⟪u (n + 2), u n⟫ := real_inner_comm _ _
+    have e2 : ⟪u (n + 1), u n⟫ = ⟪u n, u (n + 1)⟫ := real_inner_comm _ _
+    have e3 : ⟪u (n + 2), u (n + 2)⟫ = ‖u (n + 2)‖ ^ 2 := real_inner_self_eq_norm_sq _
+    have e4 : ⟪u n, u n⟫ = ‖u n‖ ^ 2 := real_inner_self_eq_norm_sq _
+    have e5 : ⟪u (n + 1), u (n + 2)⟫ = ⟪u (n + 2), u (n + 1)⟫ := real_inner_comm _ _
+    linarith
+  have hcross : ⟪u (n + 2) - u n, u (n + 2) - (2 : ℝ) • u (n + 1) + u n⟫
+      = -(Δt ^ 2 * (⟪A (u (n + 1)), u (n + 2)⟫ - ⟪A (u (n + 1)), u n⟫)) := by
+    rw [hstep, real_inner_smul_right, inner_sub_left, real_inner_comm (u (n + 2)),
+      real_inner_comm (u n)]
+    ring
+  have hlast : ⟪A (u (n + 2)), u (n + 1)⟫ = ⟪A (u (n + 1)), u (n + 2)⟫ :=
+    hsymm (u (n + 2)) (u (n + 1))
+  change ‖u (n + 2) - u (n + 1)‖ ^ 2 + Δt ^ 2 * ⟪A (u (n + 2)), u (n + 1)⟫
+    = ‖u (n + 1) - u n‖ ^ 2 + Δt ^ 2 * ⟪A (u (n + 1)), u n⟫
+  rw [hcross] at hdiff
+  rw [hlast]
+  linarith
+
+/-- The leap-frog energy of every level equals that of the initial pair. -/
+theorem leapFrogEnergy_eq_zero (hA : A.IsSymmetric) (h : IsLeapFrogOp A Δt u) (n : ℕ) :
+    leapFrogEnergy A Δt u n = leapFrogEnergy A Δt u 0 := by
+  induction n with
+  | zero => rfl
+  | succ k ih => rw [leapFrogEnergy_succ hA h k, ih]
+
+/-- **The leap-frog energy is equivalent to the norm of the state `(u^{n+1} - uⁿ, uⁿ)` measured in
+velocity and potential energy**, with constants `1 ± κ`, whenever `Δt² λmax ≤ 4 κ²`. This is where
+the CFL condition enters, and it is uniform over all modes, the constant one included. -/
+theorem abs_leapFrogEnergy_sub_le (hA : A.IsSymmetricBoundedBy 0 lmax) {kap : ℝ} (hkap : 0 < kap)
+    (hCFL : Δt ^ 2 * lmax ≤ 4 * kap ^ 2) (u : ℕ → E) (n : ℕ) :
+    |leapFrogEnergy A Δt u n - (‖u (n + 1) - u n‖ ^ 2 + Δt ^ 2 * ⟪A (u n), u n⟫)|
+      ≤ kap * (‖u (n + 1) - u n‖ ^ 2 + Δt ^ 2 * ⟪A (u n), u n⟫) := by
+  set D := u (n + 1) - u n with hD
+  have hexp : leapFrogEnergy A Δt u n - (‖D‖ ^ 2 + Δt ^ 2 * ⟪A (u n), u n⟫)
+      = Δt ^ 2 * ⟪A D, u n⟫ := by
+    have hsplit : A (u (n + 1)) = A D + A (u n) := by rw [hD, map_sub]; abel
+    rw [leapFrogEnergy, hsplit, inner_add_left]
+    ring
+  have hcs := two_mul_abs_inner_le hA (1 / (2 * kap)) D (u n)
+  have hbd : ⟪A D, D⟫ ≤ lmax * ‖D‖ ^ 2 := by simpa using hA.re_inner_le D
+  have hsq : (0 : ℝ) ≤ ‖D‖ ^ 2 := sq_nonneg _
+  have hDt : (0 : ℝ) ≤ Δt ^ 2 := sq_nonneg _
+  have habs : (0 : ℝ) < 1 / (2 * kap) := by positivity
+  rw [abs_of_pos habs] at hcs
+  have hkey : Δt ^ 2 * |⟪A D, u n⟫| ≤ kap * (‖D‖ ^ 2 + Δt ^ 2 * ⟪A (u n), u n⟫) := by
+    have h1 : |⟪A D, u n⟫| ≤ 1 / (4 * kap) * ⟪A D, D⟫ + kap * ⟪A (u n), u n⟫ := by
+      have h2 : 2 * (1 / (2 * kap)) = 1 / kap := by field_simp
+      rw [h2] at hcs
+      have h3 : 1 / kap * |⟪A D, u n⟫| ≤ (1 / (2 * kap)) ^ 2 * ⟪A D, D⟫ + ⟪A (u n), u n⟫ := hcs
+      have h4 : (1 / (2 * kap)) ^ 2 = 1 / (4 * kap ^ 2) := by field_simp; ring
+      rw [h4] at h3
+      have h5 := mul_le_mul_of_nonneg_left h3 hkap.le
+      calc |⟪A D, u n⟫| = kap * (1 / kap * |⟪A D, u n⟫|) := by field_simp
+        _ ≤ kap * (1 / (4 * kap ^ 2) * ⟪A D, D⟫ + ⟪A (u n), u n⟫) := h5
+        _ = 1 / (4 * kap) * ⟪A D, D⟫ + kap * ⟪A (u n), u n⟫ := by field_simp
+    have h5 : Δt ^ 2 * (1 / (4 * kap) * ⟪A D, D⟫) ≤ kap * ‖D‖ ^ 2 := by
+      have h6 : Δt ^ 2 * ⟪A D, D⟫ ≤ Δt ^ 2 * (lmax * ‖D‖ ^ 2) :=
+        mul_le_mul_of_nonneg_left hbd hDt
+      have h7 : Δt ^ 2 * (lmax * ‖D‖ ^ 2) ≤ 4 * kap ^ 2 * ‖D‖ ^ 2 := by nlinarith
+      have h8 : Δt ^ 2 * (1 / (4 * kap) * ⟪A D, D⟫) = 1 / (4 * kap) * (Δt ^ 2 * ⟪A D, D⟫) := by
+        ring
+      have h9 : (0 : ℝ) < 1 / (4 * kap) := by positivity
+      rw [h8]
+      calc 1 / (4 * kap) * (Δt ^ 2 * ⟪A D, D⟫)
+          ≤ 1 / (4 * kap) * (4 * kap ^ 2 * ‖D‖ ^ 2) :=
+            mul_le_mul_of_nonneg_left (h6.trans h7) h9.le
+        _ = kap * ‖D‖ ^ 2 := by field_simp
+    nlinarith [mul_le_mul_of_nonneg_left h1 hDt]
+  rw [hexp, abs_mul, abs_of_nonneg hDt]
+  exact hkey
+
+/-- **Energy stability of the leap-frog scheme**: under the strict CFL condition `Δt² λmax ≤ 4 κ²`
+with `κ < 1`, the discrete energy `‖u^{n+1} - uⁿ‖² + Δt² ⟪A uⁿ, uⁿ⟫` stays bounded by
+`(1 + κ)/(1 - κ)` times its initial value, for *all* `n` — no horizon is needed. -/
+theorem leapFrog_stability (hA : A.IsSymmetricBoundedBy 0 lmax) {kap : ℝ} (hkap : 0 < kap)
+    (hkap1 : kap < 1) (hCFL : Δt ^ 2 * lmax ≤ 4 * kap ^ 2) (h : IsLeapFrogOp A Δt u) (n : ℕ) :
+    ‖u (n + 1) - u n‖ ^ 2 + Δt ^ 2 * ⟪A (u n), u n⟫
+      ≤ (1 + kap) / (1 - kap) * (‖u 1 - u 0‖ ^ 2 + Δt ^ 2 * ⟪A (u 0), u 0⟫) := by
+  have hn := abs_leapFrogEnergy_sub_le hA hkap hCFL u n
+  have h0 := abs_leapFrogEnergy_sub_le hA hkap hCFL u 0
+  have hE := leapFrogEnergy_eq_zero hA.isSymmetric h n
+  rw [abs_le] at hn h0
+  have hpos : (0 : ℝ) ≤ ‖u (0 + 1) - u 0‖ ^ 2 + Δt ^ 2 * ⟪A (u 0), u 0⟫ := by
+    have hq := hA.le_re_inner (u 0)
+    simp only [zero_mul, RCLike.re_to_real] at hq
+    positivity
+  have h1 : (0 : ℝ) < 1 - kap := by linarith
+  rw [div_mul_eq_mul_div, le_div_iff₀ h1]
+  have e1 : u (0 + 1) = u 1 := rfl
+  rw [e1] at h0 hpos
+  nlinarith [hn.1, hn.2, h0.1, h0.2, hE, hpos]
+
+/-! #### Newmark -/
+
+/-- **The Newmark scheme for the abstract wave equation** `u'' + A u = 0` with the parameters `β`
+and `θ` and the auxiliary velocity `v`. It is the operator form of [quarteroni2000numerical]
+(13.45), which is the case `A = -γ² δ²/Δx²`. -/
+def IsNewmarkOp (A : E →ₗ[ℝ] E) (Δt β θ : ℝ) (u v : ℕ → E) : Prop :=
+  ∀ n, u (n + 1) - u n
+        = Δt • v n - (Δt ^ 2) • (β • A (u (n + 1)) + (1 / 2 - β) • A (u n)) ∧
+      v (n + 1) - v n = (-Δt) • (θ • A (u (n + 1)) + (1 - θ) • A (u n))
+
+/-- **The discrete energy of the Newmark scheme**,
+`Eⁿ = ‖vⁿ‖² + ⟪A uⁿ, uⁿ⟫ + (Δt²(2β - θ)/2) ‖A uⁿ‖²`: the kinetic and potential energies plus the
+term the parameters of the method add. For `2β = θ = 1/2` it is exactly `‖v‖² + ⟪A u, u⟫`. -/
+noncomputable def newmarkEnergy (A : E →ₗ[ℝ] E) (Δt β θ : ℝ) (u v : ℕ → E) (n : ℕ) : ℝ :=
+  ‖v n‖ ^ 2 + ⟪A (u n), u n⟫ + Δt ^ 2 * (2 * β - θ) / 2 * ‖A (u n)‖ ^ 2
+
+/-- **The energy identity of the Newmark scheme**: the energy decreases by exactly
+`(2θ - 1) ⟪A D, D⟫ + Δt²(2β - θ)(θ - 1/2) ‖A D‖²` over one step, where `D = u^{n+1} - uⁿ`. Only
+symmetry of `A` is used; no hypothesis on `Δt`, `β` or `θ`. -/
+theorem newmarkEnergy_succ_sub (hA : A.IsSymmetric) (h : IsNewmarkOp A Δt β θ u v) (n : ℕ) :
+    newmarkEnergy A Δt β θ u v (n + 1) - newmarkEnergy A Δt β θ u v n
+      = -(2 * θ - 1) * ⟪A (u (n + 1) - u n), u (n + 1) - u n⟫
+        - Δt ^ 2 * (2 * β - θ) * (θ - 1 / 2) * ‖A (u (n + 1) - u n)‖ ^ 2 := by
+  obtain ⟨h1, h2⟩ := h n
+  have hAD : A (u (n + 1) - u n) = A (u (n + 1)) - A (u n) := map_sub _ _ _
+  have hw : θ • A (u (n + 1)) + (1 - θ) • A (u n) = A (θ • u (n + 1) + (1 - θ) • u n) := by
+    simp [map_add, map_smul]
+  have e2 : Δt • v n = (u (n + 1) - u n)
+      + (Δt ^ 2) • (β • A (u (n + 1)) + (1 / 2 - β) • A (u n)) := by
+    rw [h1]; abel
+  have hsum : Δt • (v (n + 1) + v n) = (2 : ℝ) • (u (n + 1) - u n)
+      + (Δt ^ 2 * (2 * β - θ)) • (A (u (n + 1)) - A (u n)) := by
+    have e : v (n + 1) + v n = (v (n + 1) - v n) + (v n + v n) := by abel
+    rw [e, smul_add, smul_add, h2, e2, smul_smul]
+    module
+  have hvel : ‖v (n + 1)‖ ^ 2 - ‖v n‖ ^ 2 = ⟪v (n + 1) - v n, v (n + 1) + v n⟫ := by
+    simp only [inner_sub_left, inner_add_right]
+    have f1 : ⟪v (n + 1), v (n + 1)⟫ = ‖v (n + 1)‖ ^ 2 := real_inner_self_eq_norm_sq _
+    have f2 : ⟪v n, v n⟫ = ‖v n‖ ^ 2 := real_inner_self_eq_norm_sq _
+    have f3 : ⟪v n, v (n + 1)⟫ = ⟪v (n + 1), v n⟫ := real_inner_comm _ _
+    linarith
+  have hA1 : ⟪A (θ • u (n + 1) + (1 - θ) • u n), Δt • (v (n + 1) + v n)⟫
+      = 2 * ⟪A (θ • u (n + 1) + (1 - θ) • u n), u (n + 1) - u n⟫
+        + Δt ^ 2 * (2 * β - θ)
+          * ⟪A (θ • u (n + 1) + (1 - θ) • u n), A (u (n + 1)) - A (u n)⟫ := by
+    rw [hsum, inner_add_right, real_inner_smul_right, real_inner_smul_right]
+  rw [real_inner_smul_right] at hA1
+  have hkey : ‖v (n + 1)‖ ^ 2 - ‖v n‖ ^ 2
+      = -(2 * ⟪A (θ • u (n + 1) + (1 - θ) • u n), u (n + 1) - u n⟫)
+        - Δt ^ 2 * (2 * β - θ)
+          * ⟪A (θ • u (n + 1) + (1 - θ) • u n), A (u (n + 1)) - A (u n)⟫ := by
+    rw [hvel, h2, hw, real_inner_smul_left]
+    linear_combination -hA1
+  have hsq : ⟪A (u (n + 1)), u n⟫ = ⟪A (u n), u (n + 1)⟫ := by
+    rw [hA (u (n + 1)) (u n), real_inner_comm]
+  have hpq : ⟪A (u (n + 1)), A (u n)⟫ = ⟪A (u n), A (u (n + 1))⟫ := real_inner_comm _ _
+  have e1 : ⟪A (θ • u (n + 1) + (1 - θ) • u n), u (n + 1) - u n⟫
+      = θ * ⟪A (u (n + 1)), u (n + 1)⟫ - (2 * θ - 1) * ⟪A (u n), u (n + 1)⟫
+        - (1 - θ) * ⟪A (u n), u n⟫ := by
+    simp only [map_add, map_smul, inner_add_left, inner_sub_right, real_inner_smul_left]
+    rw [hsq]
+    ring
+  have e5 : ⟪A (θ • u (n + 1) + (1 - θ) • u n), A (u (n + 1)) - A (u n)⟫
+      = θ * ⟪A (u (n + 1)), A (u (n + 1))⟫ - (2 * θ - 1) * ⟪A (u n), A (u (n + 1))⟫
+        - (1 - θ) * ⟪A (u n), A (u n)⟫ := by
+    simp only [map_add, map_smul, inner_add_left, inner_sub_right, real_inner_smul_left]
+    rw [hpq]
+    ring
+  have e3 : ⟪A (u (n + 1) - u n), u (n + 1) - u n⟫
+      = ⟪A (u (n + 1)), u (n + 1)⟫ - 2 * ⟪A (u n), u (n + 1)⟫ + ⟪A (u n), u n⟫ := by
+    rw [hAD, inner_sub_left, inner_sub_right, inner_sub_right, hsq]
+    ring
+  have e4 : ‖A (u (n + 1) - u n)‖ ^ 2 = ⟪A (u (n + 1)), A (u (n + 1))⟫
+      - 2 * ⟪A (u n), A (u (n + 1))⟫ + ⟪A (u n), A (u n)⟫ := by
+    rw [← real_inner_self_eq_norm_sq, hAD, inner_sub_left, inner_sub_right, inner_sub_right, hpq]
+    ring
+  have hnq : ‖A (u (n + 1))‖ ^ 2 = ⟪A (u (n + 1)), A (u (n + 1))⟫ :=
+    (real_inner_self_eq_norm_sq _).symm
+  have hnp : ‖A (u n)‖ ^ 2 = ⟪A (u n), A (u n)⟫ := (real_inner_self_eq_norm_sq _).symm
+  rw [e1, e5] at hkey
+  simp only [newmarkEnergy]
+  rw [e3, e4, hnq, hnp]
+  linear_combination hkey
+
+/-- **The Newmark energy is nonincreasing when `2β ≥ θ ≥ 1/2`**, for every `Δt`: this is the
+unconditional stability of [quarteroni2000numerical] Remark 13.4. -/
+theorem newmarkEnergy_succ_le (hA : A.IsSymmetricBoundedBy 0 lmax) (hth : 1 / 2 ≤ θ)
+    (hbt : θ ≤ 2 * β) (h : IsNewmarkOp A Δt β θ u v) (n : ℕ) :
+    newmarkEnergy A Δt β θ u v (n + 1) ≤ newmarkEnergy A Δt β θ u v n := by
+  have hid := newmarkEnergy_succ_sub hA.isSymmetric h n
+  have hpos : 0 ≤ ⟪A (u (n + 1) - u n), u (n + 1) - u n⟫ := by
+    simpa using hA.le_re_inner (u (n + 1) - u n)
+  have h1 : 0 ≤ (2 * θ - 1) * ⟪A (u (n + 1) - u n), u (n + 1) - u n⟫ :=
+    mul_nonneg (by linarith) hpos
+  have h2 : 0 ≤ Δt ^ 2 * (2 * β - θ) * (θ - 1 / 2) * ‖A (u (n + 1) - u n)‖ ^ 2 := by
+    have hc : (0 : ℝ) ≤ Δt ^ 2 * (2 * β - θ) * (θ - 1 / 2) :=
+      mul_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by linarith)
+    positivity
+  linarith
+
+/-- The Newmark energy never exceeds its initial value when `2β ≥ θ ≥ 1/2`. -/
+theorem newmarkEnergy_le (hA : A.IsSymmetricBoundedBy 0 lmax) (hth : 1 / 2 ≤ θ)
+    (hbt : θ ≤ 2 * β) (h : IsNewmarkOp A Δt β θ u v) (n : ℕ) :
+    newmarkEnergy A Δt β θ u v n ≤ newmarkEnergy A Δt β θ u v 0 := by
+  induction n with
+  | zero => exact le_refl _
+  | succ k ih => exact (newmarkEnergy_succ_le hA hth hbt h k).trans ih
+
+/-- **Unconditional stability of the Newmark scheme** for `2β ≥ θ ≥ 1/2`: the kinetic plus
+potential energy `‖vⁿ‖² + ⟪A uⁿ, uⁿ⟫` never exceeds the initial Newmark energy, for every `Δt`. -/
+theorem newmark_stability (hA : A.IsSymmetricBoundedBy 0 lmax) (hth : 1 / 2 ≤ θ)
+    (hbt : θ ≤ 2 * β) (h : IsNewmarkOp A Δt β θ u v) (n : ℕ) :
+    ‖v n‖ ^ 2 + ⟪A (u n), u n⟫
+      ≤ ‖v 0‖ ^ 2 + ⟪A (u 0), u 0⟫ + Δt ^ 2 * (2 * β - θ) / 2 * ‖A (u 0)‖ ^ 2 := by
+  have hmono := newmarkEnergy_le hA hth hbt h n
+  have hextra : 0 ≤ Δt ^ 2 * (2 * β - θ) / 2 * ‖A (u n)‖ ^ 2 := by
+    have hc : (0 : ℝ) ≤ Δt ^ 2 * (2 * β - θ) / 2 :=
+      div_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by norm_num)
+    positivity
+  simp only [newmarkEnergy] at hmono
+  linarith
+
+/-! #### The discrete wave operator on `ℓ²(ℤ)` -/
+
+/-- **The forward difference** `∇_h u j = u_{j+1} - u_j` as a bounded operator on `ℓ²(ℤ)`. -/
+noncomputable def forwardDiffCLM : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2 :=
+  Stencil.lpCLM (Stencil.threePoint 0 (-1) 1) 2
+
+/-- The forward difference acts by `u ↦ (j ↦ u_{j+1} - u_j)`. -/
+theorem forwardDiffCLM_apply (u : lp (fun _ : ℤ => ℝ) 2) (j : ℤ) :
+    forwardDiffCLM u j = u (j + 1) - u j := by
+  rw [forwardDiffCLM, Stencil.lpCLM_apply, Stencil.threePoint_apply]
+  simp only [smul_eq_mul, neg_mul, one_mul, zero_mul]
+  ring
+
+/-- **The second difference** `δ² u j = u_{j+1} - 2 u_j + u_{j-1}` as a bounded operator on
+`ℓ²(ℤ)`; it is the space operator of the leap-frog and Newmark schemes. -/
+noncomputable def secondDiffCLM : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2 :=
+  Stencil.lpCLM (Stencil.threePoint 1 (-2) 1) 2
+
+/-- The second difference acts by `u ↦ (j ↦ u_{j+1} - 2 u_j + u_{j-1})`. -/
+theorem secondDiffCLM_apply (u : lp (fun _ : ℤ => ℝ) 2) (j : ℤ) :
+    secondDiffCLM u j = u (j + 1) - 2 * u j + u (j - 1) := by
+  rw [secondDiffCLM, Stencil.lpCLM_apply, Stencil.threePoint_apply]
+  simp only [smul_eq_mul, neg_mul, one_mul]
+  ring
+
+/-- The forward difference is the difference of the shift by `-1` and the identity. -/
+private theorem forwardDiffCLM_eq_sub (u : lp (fun _ : ℤ => ℝ) 2) :
+    forwardDiffCLM u = lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) 2 (-1) u - u := by
+  refine lp.ext (funext fun j => ?_)
+  rw [lp.coeFn_sub]
+  simp [forwardDiffCLM_apply, sub_neg_eq_add]
+
+/-- The second difference in terms of the two unit shifts. -/
+private theorem secondDiffCLM_eq_sub (u : lp (fun _ : ℤ => ℝ) 2) :
+    secondDiffCLM u
+      = lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) 2 (-1) u - (2 : ℝ) • u
+        + lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) 2 1 u := by
+  refine lp.ext (funext fun j => ?_)
+  rw [lp.coeFn_add, lp.coeFn_sub, lp.coeFn_smul]
+  simp [secondDiffCLM_apply, sub_neg_eq_add]
+
+/-- **Summation by parts on `ℓ²(ℤ)`**: `⟪∇_h u, ∇_h w⟫ = -⟪δ² u, w⟫`. -/
+theorem inner_forwardDiffCLM (u w : lp (fun _ : ℤ => ℝ) 2) :
+    ⟪forwardDiffCLM u, forwardDiffCLM w⟫ = -⟪secondDiffCLM u, w⟫ := by
+  rw [forwardDiffCLM_eq_sub u, forwardDiffCLM_eq_sub w, secondDiffCLM_eq_sub u]
+  rw [inner_sub_left, inner_sub_right, inner_sub_right, inner_add_left, inner_sub_left,
+    inner_shift_left, inner_shift_left, inner_shift_left, real_inner_smul_left]
+  rw [shift_shift, show (- -1 + -1 : ℤ) = 0 by norm_num, shift_zero]
+  ring
+
+/-- **The discrete wave operator** `-γ² δ²/Δx²` on `ℓ²(ℤ)`: the space operator of the wave equation
+`u_tt = γ² u_xx` discretized by centred differences ([quarteroni2000numerical] (13.44)–(13.45)). -/
+noncomputable def discreteWaveOp (γ Δx : ℝ) :
+    lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2 :=
+  (-(γ ^ 2 / Δx ^ 2)) • secondDiffCLM
+
+/-- The discrete wave operator acts by `-γ²/Δx² (u_{j+1} - 2 u_j + u_{j-1})`. -/
+theorem discreteWaveOp_apply (γ Δx : ℝ) (u : lp (fun _ : ℤ => ℝ) 2) (j : ℤ) :
+    discreteWaveOp γ Δx u j = -(γ ^ 2 / Δx ^ 2) * (u (j + 1) - 2 * u j + u (j - 1)) := by
+  have h : discreteWaveOp γ Δx u = (-(γ ^ 2 / Δx ^ 2)) • secondDiffCLM u := rfl
+  rw [h, lp.coeFn_smul, Pi.smul_apply, smul_eq_mul, secondDiffCLM_apply]
+
+/-- The form of the discrete wave operator is the discrete Dirichlet form
+`(γ²/Δx²) ⟪∇_h u, ∇_h w⟫`. -/
+theorem inner_discreteWaveOp (γ Δx : ℝ) (u w : lp (fun _ : ℤ => ℝ) 2) :
+    ⟪discreteWaveOp γ Δx u, w⟫ = γ ^ 2 / Δx ^ 2 * ⟪forwardDiffCLM u, forwardDiffCLM w⟫ := by
+  have h : discreteWaveOp γ Δx u = (-(γ ^ 2 / Δx ^ 2)) • secondDiffCLM u := rfl
+  rw [h, real_inner_smul_left, inner_forwardDiffCLM]
+  ring
+
+/-- The energy of the discrete wave operator is `(γ²/Δx²) ‖∇_h u‖²`, the discrete `γ² ∫ u_x²`. -/
+theorem inner_discreteWaveOp_self (γ Δx : ℝ) (u : lp (fun _ : ℤ => ℝ) 2) :
+    ⟪discreteWaveOp γ Δx u, u⟫ = γ ^ 2 / Δx ^ 2 * ‖forwardDiffCLM u‖ ^ 2 := by
+  rw [inner_discreteWaveOp, real_inner_self_eq_norm_sq]
+
+/-- The forward difference is bounded by `2` on `ℓ²(ℤ)`. -/
+theorem norm_forwardDiffCLM_le (u : lp (fun _ : ℤ => ℝ) 2) :
+    ‖forwardDiffCLM u‖ ≤ 2 * ‖u‖ := by
+  rw [forwardDiffCLM_eq_sub]
+  refine (norm_sub_le _ _).trans ?_
+  rw [(lp.shiftₗᵢ (E := ℝ) (𝕜 := ℝ) 2 (-1)).norm_map]
+  ring_nf
+  exact le_refl _
+
+/-- **The discrete wave operator is symmetric and positive semidefinite with quadratic form
+bounded by `4γ²/Δx²`**: the discrete counterpart of `0 ≤ -γ² ∂ₓ² ≤ 4γ²/Δx²`, and the source of the
+CFL constant. -/
+theorem discreteWaveOp_isSymmetricBoundedBy (γ Δx : ℝ) :
+    ((discreteWaveOp γ Δx : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2) :
+      lp (fun _ : ℤ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℤ => ℝ) 2).IsSymmetricBoundedBy 0
+      (4 * γ ^ 2 / Δx ^ 2) := by
+  have hc : (0 : ℝ) ≤ γ ^ 2 / Δx ^ 2 := by positivity
+  refine ⟨?_, ?_, ?_⟩
+  · intro x y
+    change ⟪discreteWaveOp γ Δx x, y⟫ = ⟪x, discreteWaveOp γ Δx y⟫
+    have h1 : ⟪x, discreteWaveOp γ Δx y⟫ = ⟪discreteWaveOp γ Δx y, x⟫ := real_inner_comm _ _
+    have h2 : ⟪forwardDiffCLM y, forwardDiffCLM x⟫ = ⟪forwardDiffCLM x, forwardDiffCLM y⟫ :=
+      real_inner_comm _ _
+    rw [h1, inner_discreteWaveOp, inner_discreteWaveOp, h2]
+  · intro x
+    change 0 * ‖x‖ ^ 2 ≤ RCLike.re (inner ℝ (discreteWaveOp γ Δx x) x)
+    simp only [RCLike.re_to_real, zero_mul]
+    rw [inner_discreteWaveOp_self]
+    positivity
+  · intro x
+    change RCLike.re (inner ℝ (discreteWaveOp γ Δx x) x) ≤ _
+    simp only [RCLike.re_to_real]
+    rw [inner_discreteWaveOp_self]
+    have h1 : ‖forwardDiffCLM x‖ ^ 2 ≤ (2 * ‖x‖) ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) (norm_forwardDiffCLM_le x) 2
+    calc γ ^ 2 / Δx ^ 2 * ‖forwardDiffCLM x‖ ^ 2
+        ≤ γ ^ 2 / Δx ^ 2 * (2 * ‖x‖) ^ 2 := mul_le_mul_of_nonneg_left h1 hc
+      _ = 4 * γ ^ 2 / Δx ^ 2 * ‖x‖ ^ 2 := by ring
+
+/-- **The leap-frog scheme (13.44) is the operator scheme of `discreteWaveOp`** when the levels
+lie in `ℓ²(ℤ)` and `λ = Δt/Δx`. -/
+theorem isLeapFrogOp_of_isLeapFrog {γ lam Δt Δx : ℝ} (hΔx : Δx ≠ 0) (hlam : lam = Δt / Δx)
+    {u : ℕ → lp (fun _ : ℤ => ℝ) 2} (h : IsLeapFrog γ lam fun n => ⇑(u n)) :
+    IsLeapFrogOp
+      ((discreteWaveOp γ Δx : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2) :
+        lp (fun _ : ℤ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℤ => ℝ) 2) Δt u := by
+  intro n
+  refine lp.ext (funext fun j => ?_)
+  have hstep := h n j
+  simp only [lp.coeFn_add, lp.coeFn_sub, lp.coeFn_smul, Pi.add_apply, Pi.sub_apply, Pi.smul_apply,
+    smul_eq_mul, ContinuousLinearMap.coe_coe, discreteWaveOp_apply]
+  rw [hstep, hlam]
+  field_simp
+
+/-- **The Newmark scheme (13.45) is the operator scheme of `discreteWaveOp`** when the levels lie
+in `ℓ²(ℤ)` and `λ = Δt/Δx`. -/
+theorem isNewmarkOp_of_isNewmark {γ lam Δt Δx β θ : ℝ} (hΔt : Δt ≠ 0) (hΔx : Δx ≠ 0)
+    (hlam : lam = Δt / Δx) {u v : ℕ → lp (fun _ : ℤ => ℝ) 2}
+    (h : IsNewmark γ lam Δt β θ (fun n => ⇑(u n)) fun n => ⇑(v n)) :
+    IsNewmarkOp
+      ((discreteWaveOp γ Δx : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2) :
+        lp (fun _ : ℤ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℤ => ℝ) 2) Δt β θ u v := by
+  intro n
+  constructor
+  · refine lp.ext (funext fun j => ?_)
+    have hstep := (h n j).1
+    simp only [lp.coeFn_add, lp.coeFn_sub, lp.coeFn_smul, Pi.add_apply, Pi.sub_apply,
+      Pi.smul_apply, smul_eq_mul, ContinuousLinearMap.coe_coe, discreteWaveOp_apply]
+    rw [hstep, hlam]
+    field_simp
+    ring
+  · refine lp.ext (funext fun j => ?_)
+    have hstep := (h n j).2
+    simp only [lp.coeFn_add, lp.coeFn_sub, lp.coeFn_smul, Pi.add_apply, Pi.sub_apply,
+      Pi.smul_apply, smul_eq_mul, ContinuousLinearMap.coe_coe, discreteWaveOp_apply]
+    rw [hstep, hlam]
+    field_simp
+    ring
+
+end SecondOrderEnergy
+
 end Hyperbolic
 
 end FiniteDifference

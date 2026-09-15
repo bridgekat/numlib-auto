@@ -33,34 +33,41 @@ id = "energy"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy E(t)'
 
 [[node]]
-id = "equation_13_7"
-kind = "theorem"
-desc = '''(13.7), the a priori energy estimate for a classical solution: if `IsHeatSolution ν f u₀
-u` on `[0, 1] × [0, T]` with `ν > 0`, then for `γ = ν / C_P ^ 2` (with `C_P` the Poincaré
-constant of `(0, 1)` from (12.16), `C_P = 1` in the sharp form `‖v‖ ≤ ‖v'‖` for `v` vanishing at
-`0`, or any constant for which (12.16) holds) and every `t ∈ [0, T]`,
-`energy u t ≤ exp (-γ t) * energy u 0 + (1 / γ) * ∫ s in (0 : ℝ)..t, exp (γ (s - t)) * F s`.
-Proof, as the book: `E` is differentiable on `[0, T]` with `E' = 2 ∫ u u_t` (differentiation under
-the integral, `hasDerivAt_integral_of_dominated_loc_of_deriv_le` with the continuity of `u_t` on
-the compact rectangle); `∫ u u_xx = -∫ u_x ^ 2` by integration by parts with the boundary values
-`u 0 t = u 1 t = 0` (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`); Cauchy–Schwarz
-`∫ f u ≤ √F √E`; Poincaré `E ≤ C_P ^ 2 ∫ u_x ^ 2` for `x ↦ u x t`, which vanishes at `0`; Young
-`2 √F √E ≤ γ E + F / γ`; the resulting `E' + γ E ≤ F / γ` is integrated by the differential
-Gronwall lemma with forcing. ★★★
+id = "heat_continuousOn"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
 
-Blocked: the missing step is the differentiation under the integral sign `E'(t) = 2 ∫₀¹ u u_t dx`
-*one-sidedly at* `t = 0`. Mathlib's `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`
-(`Mathlib/Analysis/Calculus/ParametricIntervalIntegral.lean:97`) needs a two-sided `HasDerivAt` on a
-ball around the parameter, which a classical solution on `[0, T]` has only at interior times, and
-there is no `HasDerivWithinAt` variant on this pin, while
-`Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le` asks for a right-derivative at every
-`t ∈ Ico 0 T`, `t = 0` included. Two routes, both several hours: (i) Fubini on the rectangle,
-`E(t) - E(0) = ∫₀ᵗ (∫₀¹ 2 u u_t dx) ds` by `MeasureTheory.integral_integral_swap` for the
-continuous integrand, after which `Gronwall.hasDerivWithinAt_integral_Ici` gives the one-sided
-derivative for free; (ii) prove the estimate on `[ε, T]` and let `ε → 0⁺` by continuity of `E`.
-Everything else the book's argument needs is available: integration by parts `∫ u u_xx = -∫ u_x²`
-from the boundary conditions, Cauchy–Schwarz, Poincaré on `(0, 1)` with `C_P = 1/√2` (classically
-from `v(x) = ∫₀ˣ v'`, or by putting `x ↦ u x t` into `H¹₀(0, 1)` and using
-`SobolevIntervalZero.norm_deriv_zero_le`), Young's inequality and the Gronwall lemma.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.IsHeatSolution", "QuarteroniSaccoSaleri.Chapter13.energy", "Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le"]
+[[node]]
+id = "poincare_classical"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "heat_ibp"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "clampRect"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "clampRect_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "continuous_clampRect"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "heat_energy_sub"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "heat_continuousOn_source"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "heat_differential_inequality"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy estimate (13.7)'
+
+[[node]]
+id = "equation_13_7"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.7)'
