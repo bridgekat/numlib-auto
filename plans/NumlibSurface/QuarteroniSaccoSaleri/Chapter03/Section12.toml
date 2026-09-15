@@ -36,11 +36,21 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
 id = "iterativeRefinement_fixedPrecision"
 kind = "theorem"
 desc = '''§3.12.2, FPR: "if `‖|A⁻¹| |L̂| |Û|‖_∞` is sufficiently small, the relative error is reduced at each
-step by a factor `ρ ≃ 2 n cond(A, x) u`" (Higham Theorem 12.2). Not formalized: the statement is
-asymptotic ("`≃`", "sufficiently small") in the book and in Higham; a rigorous form is Higham's
-Theorem 12.3 (one step, componentwise backward error `≤ 2 γ_{n+1}` plus a first-order term), whose
-formalization is a substantial componentwise analysis on top of `FloatingPoint/LU` and is left for
-a later round. ★★★'''
+step by a factor `ρ ≃ 2 n cond(A, x) u`" (Higham Theorem 12.2). ★★★
+
+Blocked. As printed the statement is not a proposition: "`≃`" and "sufficiently small" are both
+unquantified, and in Higham the two displays are the *limiting accuracy* of the refined solution,
+not a per-step contraction factor. The algebra behind them is now proved here:
+`refinementStep_error_fp` gives, for one step in the relational rounding model,
+`(A + ΔA)(x - x⁽ⁱ⁺¹⁾) = ΔA (x - x⁽ⁱ⁾) - ξ - (A + ΔA) η` with `|ΔA| ≤ γ_{3n}|L̂||Û|`,
+`|ξ| ≤ γ_{n+1}(|A||x⁽ⁱ⁾| + |b|)` and `|η| ≤ u |x⁽ⁱ⁾ + z⁽ⁱ⁾|`, and `norm_refinementStep_error_le` turns
+it into `‖x - x⁽ⁱ⁺¹⁾‖ ≤ ‖(A + ΔA)⁻¹ ΔA‖ ‖x - x⁽ⁱ⁾‖ + ‖(A + ΔA)⁻¹‖ ‖ξ‖ + ‖η‖`. Three steps remain
+to the book's form: (i) replace `(A + ΔA)⁻¹` by `A⁻¹` by a Neumann bound, which is what turns the
+contraction factor into `γ_{3n} ‖ |A⁻¹||L̂||Û| ‖_∞` and makes "sufficiently small" the hypothesis
+`γ_{3n} ‖ |A⁻¹||L̂||Û| ‖_∞ < 1`; (ii) bound the floor `‖ |A⁻¹| (|A||x̂| + |b|) ‖_∞` by
+`2 cond(A, x) ‖x‖_∞ + O(u)` (`Matrix.skeelCondAt` is in `Conditioning/LinearSystem/Componentwise`),
+which is where `2 n cond(A, x) u` comes from; (iii) iterate the recursion to a limiting-accuracy
+statement. Estimate: 250 lines on top of what is here.'''
 deps = ["QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep", "QuarteroniSaccoSaleri.Chapter03.remark_3_7", "QuarteroniSaccoSaleri.Chapter03.equation_3_64"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
 
@@ -48,8 +58,23 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
 id = "iterativeRefinement_mixedPrecision"
 kind = "theorem"
 desc = '''§3.12.2, MPR: with residuals in double the working precision, `ρ ≃ u`, independent of the condition
-number (Higham Theorem 12.1). Not formalized, for the same reason as `iterativeRefinement_fixedPrecision`;
-the model would also need two `RoundingModel`s (working and residual precision), which
-`FloatingPoint/Model` supports but nothing yet uses. ★★★'''
+number (Higham Theorem 12.1). ★★★
+
+Blocked for the same reason as `iterativeRefinement_fixedPrecision`, plus one structural item: the
+residual is computed in a second, finer model. That is expressible — `refinementStep_error_fp`
+takes the residual hypothesis as `FloatingPoint.RoundsAffineStep m (-A) b x̂ r̂`, and a mixed
+statement would use a second `RoundingModel` `m'` with `m'.u ≤ m.u²` there and `m` everywhere else,
+plus one rounding of `r̂` back to the working precision — but nothing in the library yet carries
+two models in one statement, and the (i)–(iii) of `iterativeRefinement_fixedPrecision` are needed
+as well. Estimate: 300 lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_fixedPrecision"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "refinementStep_error"
+
+[[node]]
+id = "norm_refinementStep_error_le"
+
+[[node]]
+id = "refinementStep_error_fp"

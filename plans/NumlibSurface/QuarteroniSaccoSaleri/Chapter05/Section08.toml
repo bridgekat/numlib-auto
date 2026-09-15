@@ -32,9 +32,19 @@ id = "golubKahan_svd"
 kind = "theorem"
 desc = '''§5.8.3, the iterative phase: the implicit QR iteration on the bidiagonal `B` produces
 orthogonal `W`, `Z` with `Wᵀ B Z = diag σ`, and `U = 𝒰 diag(W, I)`, `V = 𝒱 Z` is the SVD of `A`;
-the computed singular values are those of `A + δA` with `‖δA‖₂ ≤ C_{mn} u ‖A‖₂`. Not formalized:
-the iteration is described only by its limit, whose existence is the SVD itself (Property 1.7,
-`LinearAlgebra/Matrix/SVD`), and the error bound is a floating-point statement the book cites
-without proof.'''
+the computed singular values are those of `A + δA` with `‖δA‖₂ ≤ C_{mn} u ‖A‖₂`.
+
+Blocked, but the node bundles two claims of very different status and a later round should split
+it. (a) The *limit* clause is provable and the route is short: `Matrix.exists_svd` applied to the
+square `B` gives orthogonal `W`, `Z` with `Wᵀ B Z = Σ`, and composing with `equation_5_57`
+(`𝒰ᵀ A 𝒱 = (B; 0)`, proved) gives `Uᵀ A V = (Σ; 0)` for `U = 𝒰 · diag(W, I_{m-n})` and `V = 𝒱 Z`.
+What that costs is the block matrix `diag(W, I_{m-n})` on `Fin m` with the split at `n`
+(`Matrix.fromBlocks` reindexed along `finSumFinEquiv`, or a direct `if (i : ℕ) < n` definition with
+its orthogonality) — index bookkeeping, perhaps 150 lines. Note it proves nothing about the
+*iteration*: the book's content here is that the SVD can be computed from `B`, and the existence
+statement is Property 1.7 again. (b) The *stability* clause is out of reach for the same reason as
+`Chapter05.equation_5_46`: there is no floating-point model of an orthogonal transformation in
+`Numlib/FloatingPoint/*`, and the book quotes the bound without proof and without naming
+`C_{mn}`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_57"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.3'

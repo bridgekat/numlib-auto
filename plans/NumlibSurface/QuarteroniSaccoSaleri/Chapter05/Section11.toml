@@ -18,22 +18,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
 
 [[node]]
 id = "property_5_12_min"
-kind = "theorem"
-desc = '''Property 5.12, the smallest eigenvalue (the display after it): `λ_n ≤ η_m ≤ λ_n + (λ_1 - λ_n)
-tan²φ_n / T_{m-1}(1 + 2ρ_n)²` with `ρ_n = (λ_{n-1} - λ_n)/(λ_1 - λ_{n-1})`, `cos φ_n = |q₁ᵀ u_n|`.
-`property_5_12` applied to `-A`, whose Krylov subspaces are those of `A`
-(`Krylov.subspace_neg`, new if absent) and whose Ritz values are the negatives. ★★
-
-Blocked: the reduction to `property_5_12` for `-A` needs four general facts the backbone does not
-have — `Krylov.subspace (-A) v m = Krylov.subspace A v m`, `compression (-A) K = -compression A K`,
-the reflection of the sorted eigenvalues `(hT.neg).eigenvalues hn i = -hT.eigenvalues hn (Fin.rev i)`
-(provable from `LinearMap.IsSymmetric.isGreatest_eigenvalues`/`isLeast_eigenvalues` and the
-uniqueness of greatest elements under negation), and, for the angle `φ_n`, that the eigenvector
-`(hT.neg).eigenvectorBasis hn 0` of `-A` is a unimodular multiple of `u_n` when `λ_n` is simple
-(`Submodule.tanAngle` is invariant under such a rescaling). Each is routine but together they are
-an afternoon; the natural fix is either those four backbone lemmas or a mirror
-`Lanczos.kaniel_paige_saad` for the smallest Ritz value. Estimate: 150 lines.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'
 
 [[node]]

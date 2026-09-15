@@ -32,7 +32,10 @@ stages are the plain stages of `P A` up to the order of the rows). `max_{i,j} |a
   the backward error of GEM and the growth factor.
 * `growthFactor_le_two_pow`, `growthFactor_tridiagonal`, `growthFactor_hessenberg`,
   `growthFactor_posDef`, `growthFactor_colDiagDominant` — the bounds on `ρ_n`; the banded bound
-  (Bohte) and the complete-pivoting bound (Wilkinson) are planned as not formalized.
+  (Bohte) and the complete-pivoting bound (Wilkinson) are planned as not formalized. The backbone
+  proves a weaker banded bound with the same qualitative content, `ρ_n ≤ 2^{p+q}` for lower
+  bandwidth `p` and upper bandwidth `q` (`Matrix.growthFactor_le_two_pow_of_hasBandwidth`); it is
+  not restated here because it is not the book's inequality.
 * `example_3_7_cond`, `example_3_7_lu`, `residual_error_bound`, `example_3_8`, `equation_3_69`
   — the examples and the role of the condition number.
 

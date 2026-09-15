@@ -1,5 +1,6 @@
 import Numlib.Eigen.Pencil
-import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section03
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section04
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
 
 /-!
 # Quarteroni–Sacco–Saleri §5.9: the generalized eigenvalue problem
@@ -31,12 +32,15 @@ positive definite `B` is `Matrix.PosDef`.
 * `pencilSpectrum_eq_spectrum_of_isUnit` — §5.9.1, `n` finite eigenvalues iff `B` is nonsingular,
   and then `σ(A, B) = σ(C)` for the solution `C` of `B C = A`.
 * `property_5_10` — the generalized Schur decomposition.
+* `generalizedRealSchur_of_isUnit` — the generalized *real* Schur form, for a nonsingular `B`.
 * `theorem_5_7`, `theorem_5_7_eigenvectors` — symmetric-definite pencils.
 
 ## Not formalized
 
-The generalized *real* Schur form stated after Property 5.10 (`generalizedRealSchur`), which
-nothing downstream uses, and the rounding-error statement after the QR–Cholesky algorithm
+The generalized *real* Schur form stated after Property 5.10 for an arbitrary regular pencil
+(`generalizedRealSchur`): the case of a nonsingular `B` is `generalizedRealSchur_of_isUnit`,
+proved here the way the book's own QZ sketch proceeds, but for a singular `B` there is no `B⁻¹ A`
+to take the real Schur form of. Also the rounding-error statement after the QR–Cholesky algorithm
 (`qrCholesky_stability`), a floating-point claim the book quotes without proof; both stay open
 nodes of the plan with the reason. The QZ iteration and the QR–Cholesky algorithm are described
 without a theorem and are not nodes.
@@ -274,5 +278,38 @@ theorem theorem_5_7_eigenvectors {A B X : Matrix (Fin n) (Fin n) ℝ} {lam : Fin
   have hA' : star X * A * X = diagonal lam := by
     rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
   exact (Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal hX hB' hA' i).2
+
+/-- **The generalized real Schur form of a pencil with nonsingular `B`**, stated (without proof,
+citing [GL89] §7.7) after Property 5.10: for real `A`, `B` there are orthogonal `Ŭ`, `Z̃` such that
+`T̃ = Ŭᵀ A Z̃` is upper quasi-triangular and `S̃ = Ŭᵀ B Z̃` is upper triangular. As in the book's
+own description of the QZ iteration, which applies the QR algorithm to `𝒜 ℬ⁻¹`, this is proved for a
+nonsingular `B`: take `Z̃` from the real Schur form of `B⁻¹ A` (Property 5.8), so that
+`Z̃ᵀ B⁻¹ A Z̃ = T` is quasi upper triangular, and `Ŭ` from a QR factorization `B Z̃ = Ŭ R`
+(Definition 3.1); then `Ŭᵀ B Z̃ = R` is upper triangular and `Ŭᵀ A Z̃ = R T` is quasi upper
+triangular, a triangular matrix times a quasi triangular one. The quasi-triangular shape is that
+of Property 5.8: the blocks are the fibres of a monotone `p : Fin n → ℕ` with at most two indices
+each. -/
+theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det) :
+    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
+      Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧
+        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular := by
+  obtain ⟨Z, hZ, p, hmono, hcard, htri, -⟩ := property_5_8 (B⁻¹ * A)
+  obtain ⟨U, hU, R, hR, -, hBZ⟩ :=
+    (Chapter03.definition_3_1_iff (B * Z)).1.1 (Chapter03.definition_3_1_iff (B * Z)).2
+  have hZZ : Z * Zᵀ = 1 := (Matrix.mem_orthogonalGroup_iff _ ℝ).1 hZ
+  have hUU : Uᵀ * U = 1 := (Matrix.mem_orthogonalGroup_iff' _ ℝ).1 hU
+  have hkey : Uᵀ * B * Z = R := by
+    rw [Matrix.mul_assoc, hBZ, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+  have hRtri : R.IsUpperTriangular := fun i j hij => hR i j hij
+  refine ⟨U, hU, Z, hZ, p, hmono, hcard, ?_, by rw [hkey]; exact hRtri⟩
+  have hAZ : R * (Zᵀ * (B⁻¹ * A) * Z) = Uᵀ * A * Z := by
+    rw [← hkey]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc Z Zᵀ, hZZ, Matrix.one_mul, ← Matrix.mul_assoc B B⁻¹,
+      Matrix.mul_nonsing_inv B hB, Matrix.one_mul]
+  rw [← hAZ]
+  refine Matrix.BlockTriangular.mul (fun i j hij => hRtri ?_) htri
+  by_contra hji
+  exact absurd (hmono (not_lt.1 hji)) (not_le.2 hij)
 
 end QuarteroniSaccoSaleri.Chapter05

@@ -127,11 +127,24 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 id = "equation_5_46"
 kind = "theorem"
 desc = '''(5.46), backward stability of the Householder reduction: the computed `Ĥ` satisfies
-`Ĥ = Qᵀ (A + E) Q` with `‖E‖_F ≤ c n² u ‖A‖_F`. Not formalized: a rounding-error analysis of a
-two-sided product of computed reflectors in the model of `Numlib/FloatingPoint/Model`; the
-backbone has no floating-point model of a Householder application, and the book states the
-bound without proof (Wilkinson, p. 351). Likewise the unnumbered `‖E‖₂ ≃ u ‖A‖₂` for the
-Hessenberg-QR iteration after Program 30 and (5.12).'''
+`Ĥ = Qᵀ (A + E) Q` with `‖E‖_F ≤ c n² u ‖A‖_F`. The book states it without proof (Wilkinson,
+p. 351). Likewise the unnumbered `‖E‖₂ ≃ u ‖A‖₂` for the Hessenberg-QR iteration after Program 30
+and (5.12), which carries a `≃` and is not a proposition at all.
+
+Blocked, and the verdict is confirmed, not inherited: unlike the growth-factor and Kaniel–Paige
+items of this round, (5.46) is genuinely out of reach on this pin. It is a proposition
+(`∃ c, ∀ n A, …`), but proving it needs a *new floating-point module* that does not exist:
+`Numlib/FloatingPoint/*` carries `System`, `Model`, `InnerProduct`, `Substitution`, `LU` and
+`Stationary` — dot products, triangular solves and Gaussian elimination — and nothing about
+orthogonal transformations. What is missing, concretely, is (i) a relational `RoundsHouseholder`
+predicate for the computed reflector `v̂` of a vector and for the computed application
+`(I - β v vᵀ) x` ([higham2002accuracy] Lemma 19.2–19.3, `‖fl(Px) - Px‖₂ ≤ c₁ γ_n ‖x‖₂`), (ii) the
+accumulation of `2(n-2)` such applications on the two sides of `A`
+([higham2002accuracy] Lemma 19.3: a product of computed Householder transformations is an exactly
+orthogonal one of a nearby matrix), and (iii) the Frobenius-norm bookkeeping that turns the
+per-application `γ` into `c n² u`. Estimate: a `FloatingPoint/Householder` module of several
+hundred lines, on the model of `FloatingPoint/Substitution`; it would also close the QR–Cholesky
+estimate of §5.9.2 and the Golub–Kahan bound of §5.8.3.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_45"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.46)'
 

@@ -30,9 +30,10 @@ The growth factor `ρ_N = max_{i,j,k} |a^{(k)}_{ij}| / max_{i,j} |a_{ij}|`
 defines it on the computed stages, and [higham2002accuracy] (after Theorem 9.5) explains why the
 exact one is the one that can be bounded. Of the bounds of [quarteroni2000numerical] §3.10, this
 module proves `2^{N-1}` under bounded multipliers (hence for partial pivoting), `1` for symmetric
-positive definite matrices, `2` for column diagonally dominant matrices, `2` for tridiagonal and
-`N` for upper Hessenberg matrices under partial pivoting; Bohte's band bound and Wilkinson's
-complete-pivoting bound are stated in the plan as not formalized.
+positive definite matrices, `2` for column diagonally dominant matrices, `2` for tridiagonal,
+`N` for upper Hessenberg and `2^{p+q}` for banded matrices of lower bandwidth `p` and upper
+bandwidth `q` under partial pivoting. Bohte's sharper band bound `2^{2p-1} - (p-1) 2^{p-2}` and
+Wilkinson's complete-pivoting bound are stated in the plan as not formalized.
 
 ## Main definitions
 
@@ -54,7 +55,8 @@ complete-pivoting bound are stated in the plan as not formalized.
   multipliers of partial pivoting.
 * `Matrix.growthFactor_le_two_pow`, `Matrix.growthFactor_eq_one_of_posDef`,
   `Matrix.growthFactor_le_two_of_isColDiagDominant`, `Matrix.growthFactor_le_two_of_isTridiagonal`,
-  `Matrix.growthFactor_le_card_of_isUpperHessenberg`.
+  `Matrix.growthFactor_le_card_of_isUpperHessenberg`,
+  `Matrix.growthFactor_le_two_pow_of_hasBandwidth`.
 
 ## Implementation notes
 
@@ -1301,12 +1303,12 @@ theorem abs_div_le_one_of_abs_le {a b : ℝ} (h : |a| ≤ |b|) : |a / b| ≤ 1 :
   · rw [abs_div, div_le_one (abs_pos.2 hb)]
     exact h
 
-/-- When the rows more than one below `p` vanish in column `p`, partial pivoting chooses the
-row `p` or the row `p + 1`: a pivot further down would be zero, so the whole column below `p`
-would vanish and the first maximal row would be `p` itself. -/
-theorem partialPivotRow_le_succ {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fin N) (Fin N) 𝕜)
-    (p : Fin N) (h : ∀ i : Fin N, (p : ℕ) + 1 < i → M i p = 0) :
-    ((partialPivotRow M p : Fin N) : ℕ) ≤ (p : ℕ) + 1 := by
+/-- When the rows more than `b` below `p` vanish in column `p`, partial pivoting chooses a row at
+most `b` below `p`: a pivot further down would be zero, so the whole column below `p` would vanish
+and the first maximal row would be `p` itself. -/
+theorem partialPivotRow_le_add {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fin N) (Fin N) 𝕜)
+    (p : Fin N) (b : ℕ) (h : ∀ i : Fin N, (p : ℕ) + b < i → M i p = 0) :
+    ((partialPivotRow M p : Fin N) : ℕ) ≤ (p : ℕ) + b := by
   by_contra hlt
   push Not at hlt
   have h0 : M (partialPivotRow M p) p = 0 := h _ hlt
@@ -1314,6 +1316,13 @@ theorem partialPivotRow_le_succ {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (F
     apply_eq_zero_of_partialPivotRow_eq_zero M p h0 hr
   rw [hself] at hlt
   omega
+
+/-- When the rows more than one below `p` vanish in column `p`, partial pivoting chooses the
+row `p` or the row `p + 1`, the case `b = 1` of `Matrix.partialPivotRow_le_add`. -/
+theorem partialPivotRow_le_succ {𝕜 : Type*} [NormedField 𝕜] (M : Matrix (Fin N) (Fin N) 𝕜)
+    (p : Fin N) (h : ∀ i : Fin N, (p : ℕ) + 1 < i → M i p = 0) :
+    ((partialPivotRow M p : Fin N) : ℕ) ≤ (p : ℕ) + 1 :=
+  partialPivotRow_le_add M p 1 h
 
 variable {A : Matrix (Fin N) (Fin N) ℝ}
 
@@ -1657,5 +1666,249 @@ theorem growthFactor_le_two_of_isTridiagonal (hA : A.IsTridiagonal) :
     exact (abs_apply_le_supAbs A i' j).trans (le_mul_of_one_le_left hμ one_le_two)
 
 end Tridiagonal
+
+section Band
+
+variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {p q : ℕ}
+
+/-- Once a column has been eliminated it stays zero below its diagonal entry, whether or not the
+pivot was zero: under partial pivoting a zero pivot means a zero column, so no hypothesis on the
+pivots is needed, unlike in `Matrix.gemStage_apply_eq_zero_of_lt`. -/
+theorem gemPivotStage_partialPivotRow_apply_eq_zero_of_lt (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
+    ∀ i j : Fin N, (j : ℕ) < k → j < i → (gemPivotStage A partialPivotRow k).1 i j = 0 := by
+  induction k with
+  | zero => exact fun i j hj _ => absurd hj (Nat.not_lt_zero _)
+  | succ k ih =>
+    intro i j hj hji
+    by_cases hk : k < N
+    swap
+    · rw [gemPivotStage_succ_of_le A _ (not_lt.1 hk)]
+      exact ih i j (by omega) hji
+    set P : Fin N := ⟨k, hk⟩ with hP
+    set M := (gemPivotStage A partialPivotRow k).1 with hM
+    set r := partialPivotRow M P with hr
+    have hMk : (gemPivotStage A partialPivotRow (k + 1)).1 =
+        elimStep (M.submatrix (Equiv.swap P r) id) P := by
+      rw [gemPivotStage_succ_of_lt A partialPivotRow hk]
+      rfl
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hjk | hjk
+    · -- an earlier column: the pivot row is already zero there, so nothing changes
+      have hPr : (P : ℕ) ≤ (r : ℕ) := le_partialPivotRow M P
+      have hswap : ∀ i : Fin N, j < i → j < Equiv.swap P r i := by
+        intro i hi
+        rcases eq_or_ne i P with rfl | hiP
+        · rw [Equiv.swap_apply_left]
+          exact Fin.lt_def.2 (by omega)
+        rcases eq_or_ne i r with rfl | hir
+        · rw [Equiv.swap_apply_right]
+          exact Fin.lt_def.2 (by omega)
+        · rwa [Equiv.swap_apply_of_ne_of_ne hiP hir]
+      have hrow : (M.submatrix (Equiv.swap P r) id) P j = 0 := by
+        simp only [submatrix_apply, id_eq]
+        exact ih _ j hjk (hswap P (Fin.lt_def.2 (by omega)))
+      rw [hMk, elimStep_apply_of_pivot_row_eq_zero _ _ _ hrow, submatrix_apply, id_eq]
+      exact ih _ j hjk (hswap i hji)
+    · -- the column just eliminated
+      have hjP : j = P := Fin.ext hjk
+      subst hjP
+      exact gemPivotStage_partialPivotRow_succ_apply_pivot hk hji
+
+/-- **The shape invariant of partial pivoting on a banded matrix** ([higham2002accuracy] §9.5,
+[quarteroni2000numerical] §3.10 (1)): if `A` has lower bandwidth `p` and upper bandwidth `q` then,
+at the start of stage `k`, the rows `k + p` and below are still the original rows of `A` (they have
+not met a pivot yet), and every row above them vanishes past the column `k + p + q`: the
+interchanges widen the upper band from `q` to `p + q` and no further, because a pivot row is at
+most `p` below the pivot index. -/
+theorem gemPivotStage_partialPivotRow_hasBandwidth_invariant (hp : A.HasLowerBandwidth p)
+    (hq : A.HasUpperBandwidth q) (k : ℕ) :
+    (∀ i j : Fin N, k + p ≤ (i : ℕ) → (gemPivotStage A partialPivotRow k).1 i j = A i j) ∧
+      (∀ i j : Fin N, (i : ℕ) < k + p → k + p + q < (j : ℕ) →
+        (gemPivotStage A partialPivotRow k).1 i j = 0) := by
+  rw [hasLowerBandwidth_iff_fin] at hp
+  rw [hasUpperBandwidth_iff_fin] at hq
+  induction k with
+  | zero =>
+    refine ⟨fun i j _ => rfl, fun i j hi hj => ?_⟩
+    rw [gemPivotStage_zero]
+    exact hq i j (by omega)
+  | succ k ih =>
+    obtain ⟨h1, h2⟩ := ih
+    by_cases hk : k < N
+    swap
+    · rw [gemPivotStage_succ_of_le A _ (not_lt.1 hk)]
+      exact ⟨fun i j hi => h1 i j (by omega), fun i j hi hj => h2 i j (by omega) (by omega)⟩
+    set P : Fin N := ⟨k, hk⟩ with hP
+    have hPk : (P : ℕ) = k := rfl
+    set M := (gemPivotStage A partialPivotRow k).1 with hM
+    set r := partialPivotRow M P with hr
+    have hMk : (gemPivotStage A partialPivotRow (k + 1)).1 =
+        elimStep (M.submatrix (Equiv.swap P r) id) P := by
+      rw [gemPivotStage_succ_of_lt A partialPivotRow hk]
+      rfl
+    set M' := M.submatrix (Equiv.swap P r) id with hM'
+    -- the pivot row lies at most `p` below the pivot index
+    have hcol : ∀ i : Fin N, (P : ℕ) + p < i → M i P = 0 := fun i hi => by
+      rw [h1 i P (by omega)]
+      exact hp i P (by omega)
+    have hrp : (r : ℕ) ≤ k + p := partialPivotRow_le_add M P p hcol
+    have hkr : k ≤ (r : ℕ) := le_partialPivotRow M P
+    have hM'_of : ∀ i : Fin N, i ≠ P → i ≠ r → ∀ j, M' i j = M i j := fun i hiP hir j => by
+      simp [hM', Equiv.swap_apply_of_ne_of_ne hiP hir]
+    have hM'P : ∀ j, M' P j = M r j := fun j => by simp [hM']
+    -- the pivot row vanishes past the column `k + p + q`
+    have hpivrow : ∀ j : Fin N, k + p + q < (j : ℕ) → M' P j = 0 := by
+      intro j hj
+      rw [hM'P]
+      rcases Nat.lt_or_ge (r : ℕ) (k + p) with hrk | hrk
+      · exact h2 r j hrk hj
+      · rw [h1 r j (by omega)]
+        exact hq r j (by omega)
+    refine ⟨fun i j hi => ?_, fun i j hi hj => ?_⟩
+    · -- the rows `k + 1 + p` and below are untouched
+      have hiP : i ≠ P := fun e => by rw [e] at hi; omega
+      have hir : i ≠ r := fun e => by rw [e] at hi; omega
+      rw [hMk, elimStep_apply_of_lt _ (Fin.lt_def.2 (by omega)), hM'_of i hiP hir,
+        hM'_of i hiP hir, h1 i P (by omega), hp i P (by omega)]
+      simp [h1 i j (by omega)]
+    · -- the support of the rows above them
+      have hrow : ∀ i : Fin N, (i : ℕ) < k + 1 + p → M' i j = 0 := by
+        intro i hi
+        rcases eq_or_ne i P with rfl | hiP
+        · exact hpivrow j (by omega)
+        rcases eq_or_ne i r with rfl | hir
+        · simp only [hM', submatrix_apply, Equiv.swap_apply_right, id_eq]
+          rcases Nat.lt_or_ge (k : ℕ) (k + p) with hkp | hkp
+          · exact h2 P j hkp (by omega)
+          · rw [h1 P j (by omega)]
+            exact hq P j (by omega)
+        · rw [hM'_of i hiP hir]
+          rcases Nat.lt_or_ge (i : ℕ) (k + p) with hik | hik
+          · exact h2 i j hik (by omega)
+          · rw [h1 i j (by omega)]
+            exact hq i j (by omega)
+      rw [hMk, elimStep_apply, hrow P (by omega), mul_zero, ite_self, sub_zero]
+      exact hrow i hi
+
+/-- **The band bound on the stages of Gaussian elimination with partial pivoting**: with `A` of
+lower bandwidth `p` and upper bandwidth `q`, an entry of column `j` at stage `k` is at most `2^m`
+times the largest entry of `A`, where `m = min k j - (j - (p + q))` counts the stages before `k`
+that touch column `j`. A stage touches a column only while the pivot row — supported in the columns
+`k` to `k + p + q` by `Matrix.gemPivotStage_partialPivotRow_hasBandwidth_invariant` — reaches it,
+and each such stage at most doubles the column, since the multipliers are bounded by one. -/
+theorem abs_gemPivotStage_le_of_hasBandwidth (hp : A.HasLowerBandwidth p)
+    (hq : A.HasUpperBandwidth q) (k : ℕ) (i j : Fin N) :
+    |(gemPivotStage A partialPivotRow k).1 i j| ≤
+      2 ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * A.supAbs := by
+  have hμ := supAbs_nonneg A
+  induction k generalizing i with
+  | zero => simpa using abs_apply_le_supAbs A i j
+  | succ k ih =>
+    have hmono : (2 : ℝ) ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) ≤
+        2 ^ (min (k + 1) (j : ℕ) - ((j : ℕ) - (p + q))) :=
+      pow_le_pow_right₀ one_le_two (by omega)
+    by_cases hk : k < N
+    swap
+    · rw [gemPivotStage_succ_of_le A _ (not_lt.1 hk)]
+      exact (ih i).trans (mul_le_mul_of_nonneg_right hmono hμ)
+    set P : Fin N := ⟨k, hk⟩ with hP
+    have hPk : (P : ℕ) = k := rfl
+    set M := (gemPivotStage A partialPivotRow k).1 with hM
+    set r := partialPivotRow M P with hr
+    have hMk : (gemPivotStage A partialPivotRow (k + 1)).1 =
+        elimStep (M.submatrix (Equiv.swap P r) id) P := by
+      rw [gemPivotStage_succ_of_lt A partialPivotRow hk]
+      rfl
+    set M' := M.submatrix (Equiv.swap P r) id with hM'
+    have hih' : ∀ i : Fin N, |M' i j| ≤ 2 ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * A.supAbs :=
+      fun i => ih _
+    have hPr : P ≤ r := le_partialPivotRow M P
+    have hkr : k ≤ (r : ℕ) := hPr
+    have hband := gemPivotStage_partialPivotRow_hasBandwidth_invariant hp hq k
+    have hb1 : ∀ i j : Fin N, k + p ≤ (i : ℕ) → M i j = A i j := hband.1
+    have hb2 : ∀ i j : Fin N, (i : ℕ) < k + p → k + p + q < (j : ℕ) → M i j = 0 := hband.2
+    have hcol : ∀ i : Fin N, (P : ℕ) + p < i → M i P = 0 := fun i hi => by
+      rw [hb1 i P (by omega)]
+      exact hasLowerBandwidth_iff_fin.1 hp i P (by omega)
+    have hrp : (r : ℕ) ≤ k + p := partialPivotRow_le_add M P p hcol
+    rcases Nat.lt_or_ge (j : ℕ) k with hjk | hjk
+    · -- an earlier column: the pivot row vanishes there
+      have hjr : j < r := lt_of_lt_of_le (show j < P from Fin.lt_def.2 (by omega)) hPr
+      have hrow : M' P j = 0 := by
+        simp only [hM', submatrix_apply, Equiv.swap_apply_left, id_eq]
+        exact gemPivotStage_partialPivotRow_apply_eq_zero_of_lt A k r j hjk hjr
+      rw [hMk, elimStep_apply_of_pivot_row_eq_zero _ _ _ hrow]
+      exact (hih' i).trans (mul_le_mul_of_nonneg_right hmono hμ)
+    rcases Nat.lt_or_ge (k : ℕ) (j : ℕ) with hjk' | hjk'
+    swap
+    · -- the column just eliminated
+      have hjP : j = P := Fin.ext (by omega)
+      by_cases hi : P < i
+      · rw [hjP, gemPivotStage_partialPivotRow_succ_apply_pivot hk hi, abs_zero]
+        exact mul_nonneg (by positivity) hμ
+      · rw [hMk, elimStep_apply_of_not_lt _ hi]
+        exact (hih' i).trans (mul_le_mul_of_nonneg_right hmono hμ)
+    rcases Nat.lt_or_ge (k + p + q) (j : ℕ) with hjq | hjq
+    · -- past the band of the pivot row
+      have hrow : M' P j = 0 := by
+        simp only [hM', submatrix_apply, Equiv.swap_apply_left, id_eq]
+        rcases Nat.lt_or_ge (r : ℕ) (k + p) with hrk | hrk
+        · exact hb2 r j hrk hjq
+        · rw [hb1 r j (by omega)]
+          exact hasUpperBandwidth_iff_fin.1 hq r j (by omega)
+      rw [hMk, elimStep_apply_of_pivot_row_eq_zero _ _ _ hrow]
+      exact (hih' i).trans (mul_le_mul_of_nonneg_right hmono hμ)
+    · -- inside the band: one more doubling, which the counter allows
+      have hpow : (2 : ℝ) ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * 2 ≤
+          2 ^ (min (k + 1) (j : ℕ) - ((j : ℕ) - (p + q))) := by
+        rw [← pow_succ]
+        exact pow_le_pow_right₀ one_le_two (by omega)
+      by_cases hi : P < i
+      · rw [hMk, elimStep_apply_of_lt _ hi, ← div_eq_mul_inv]
+        have hmul : |M' i P / M' P P| ≤ 1 := by
+          refine abs_div_le_one_of_abs_le ?_
+          simp only [hM', submatrix_apply, Equiv.swap_apply_left, id_eq]
+          have hτ : P ≤ Equiv.swap P r i := by
+            rcases eq_or_ne i P with rfl | hiP
+            · rwa [Equiv.swap_apply_left]
+            rcases eq_or_ne i r with rfl | hir
+            · rw [Equiv.swap_apply_right]
+            · rw [Equiv.swap_apply_of_ne_of_ne hiP hir]
+              exact hi.le
+          simpa [Real.norm_eq_abs] using norm_apply_le_partialPivotRow M P hτ
+        calc |M' i j - M' i P / M' P P * M' P j|
+            ≤ |M' i j| + |M' i P / M' P P| * |M' P j| := by
+              rw [← abs_mul]; exact abs_sub _ _
+          _ ≤ |M' i j| + 1 * |M' P j| :=
+              add_le_add le_rfl (mul_le_mul_of_nonneg_right hmul (abs_nonneg _))
+          _ ≤ 2 ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * A.supAbs +
+                2 ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * A.supAbs := by
+              rw [one_mul]; exact add_le_add (hih' i) (hih' P)
+          _ = 2 ^ (min k (j : ℕ) - ((j : ℕ) - (p + q))) * 2 * A.supAbs := by ring
+          _ ≤ 2 ^ (min (k + 1) (j : ℕ) - ((j : ℕ) - (p + q))) * A.supAbs :=
+              mul_le_mul_of_nonneg_right hpow hμ
+      · rw [hMk, elimStep_apply_of_not_lt _ hi]
+        exact (hih' i).trans (mul_le_mul_of_nonneg_right hmono hμ)
+
+/-- **A band bound for the growth factor of Gaussian elimination with partial pivoting**: for `A`
+of lower bandwidth `p` and upper bandwidth `q` the growth factor is at most `2^{p+q}`, a bound
+independent of the order of the matrix. [quarteroni2000numerical] §3.10 (1) and
+[higham2002accuracy] Theorem 9.11 quote Bohte's sharper `2^{2p-1} - (p-1) 2^{p-2}` for `p = q`,
+which this does not reach (it gives `2^{2p}`); the tridiagonal case `p = q = 1` is sharpened to `2`
+by `Matrix.growthFactor_le_two_of_isTridiagonal`. -/
+theorem growthFactor_le_two_pow_of_hasBandwidth (hp : A.HasLowerBandwidth p)
+    (hq : A.HasUpperBandwidth q) :
+    growthFactor ((gemPivotStage A partialPivotRow N).2.permMatrix ℝ * A) ≤ 2 ^ (p + q) := by
+  have hpiv : ∀ (M : Matrix (Fin N) (Fin N) ℝ) k, k ≤ partialPivotRow M k := fun M k =>
+    le_partialPivotRow M k
+  have hμ := supAbs_nonneg A
+  rw [Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul]
+  refine growthFactor_le_of_forall_abs_le _ (by positivity) fun k i j hk => ?_
+  rw [supAbs_submatrix_equiv, gemStage_submatrix_eq_submatrix_gemPivotStage A partialPivotRow
+    hpiv k, submatrix_apply, id_eq]
+  refine (abs_gemPivotStage_le_of_hasBandwidth hp hq k _ j).trans
+    (mul_le_mul_of_nonneg_right ?_ hμ)
+  exact pow_le_pow_right₀ one_le_two (by omega)
+
+end Band
 
 end Matrix

@@ -36,9 +36,23 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 id = "cyclicJacobi_quadratic"
 kind = "theorem"
 desc = '''The quadratic convergence of the cyclic Jacobi method: if `|λ_i - λ_j| ≥ δ` for `i ≠ j` then
-`Ψ(A^{(k+N)}) ≤ Ψ(A^{(k)})² / (δ √2)`. Not formalized: Wilkinson's theorem ([Wil62], [Wil65]),
-stated by the book without proof; its proof needs the asymptotic analysis of a full sweep near a
-diagonal matrix, which nothing in the backbone approaches.'''
+`Ψ(A^{(k+N)}) ≤ Ψ(A^{(k)})² / (δ √2)`. Wilkinson's theorem ([Wil62], [Wil65]), stated by the book
+without proof.
+
+Blocked, and this one is a real theorem rather than an asymptotic gesture, so the verdict was
+re-examined. Two findings. (a) The inequality needs no smallness hypothesis, contrary to what its
+"quadratic convergence" reading suggests, because it is *trivial* whenever
+`Ψ(A^{(k)}) ≥ δ √2`: `Ψ` is non-increasing along any sequence of Jacobi rotations
+(`Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero`, the book's (5.64)), so the right-hand
+side then exceeds `Ψ(A^{(k)})` itself. All the content is in the regime `Ψ < δ √2`. (b) That
+regime is Wilkinson's analysis of one full sweep near a diagonal matrix: each rotation angle is
+`O(Ψ/δ)` by Gershgorin (the diagonal entries are within `Ψ` of the eigenvalues), and the pairs
+annihilated earlier in the sweep are refilled only to second order — an induction over the
+`n(n-1)/2` rotations of a sweep carrying a second-order bound on every off-diagonal entry, with no
+counterpart anywhere in the library. Estimate: this is the hardest unproved item of chapter 5,
+comfortably over a thousand lines, and it needs a sweep-indexed invariant that does not exist yet.
+It is not, as the earlier verdict suggested, blocked on a missing definition: `cyclicJacobiSweep`
+and `Matrix.offDiagNormSq` are both here.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.cyclicJacobiSweep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.1'
 

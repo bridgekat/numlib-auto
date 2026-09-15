@@ -24,10 +24,14 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 id = "growthFactor_band"
 kind = "theorem"
 desc = '''§3.10 (1): for banded `A` with upper and lower bandwidth `p`, `ρ_n ≤ 2^{2p-1} - (p-1) 2^{p-2}`
-(Bohte). Not formalized: the book states it without proof; see
-`Matrix.growthFactor_le_of_hasBandwidth` for the reason (a combinatorial band-propagation argument
-with no library counterpart). The tridiagonal consequence `ρ_n ≤ 2` is `growthFactor_tridiagonal`.
-★★★'''
+(Bohte). The tridiagonal consequence `ρ_n ≤ 2` is `growthFactor_tridiagonal`. ★★★
+
+Blocked: the book states it without proof and the printed constant is out of reach; see
+`Matrix.growthFactor_le_of_hasBandwidth` for what is missing. The weaker rigorous band bound
+`ρ_n ≤ 2^{p+q}` for lower bandwidth `p` and upper bandwidth `q` — which carries the point of the
+book's item (1), that the growth factor of a banded matrix is bounded independently of `n` — is
+`Matrix.growthFactor_le_two_pow_of_hasBandwidth` and is not restated here, since it is not the
+book's statement.'''
 deps = ["Matrix.growthFactor_le_of_hasBandwidth", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 
@@ -50,9 +54,15 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 [[node]]
 id = "growthFactor_completePivoting"
 kind = "theorem"
-desc = '''§3.10: with complete pivoting `ρ_n ≤ n^{1/2} (2 · 3^{1/2} ⋯ n^{1/(n-1)})^{1/2}` (Wilkinson). Not
-formalized: stated without proof in the book; needs Hadamard's determinant inequality, absent from
-Mathlib (`Matrix.growthFactor_le_of_completePivoting`). ★★★'''
+desc = '''§3.10: with complete pivoting `ρ_n ≤ n^{1/2} (2 · 3^{1/2} ⋯ n^{1/(n-1)})^{1/2}` (Wilkinson). ★★★
+
+Blocked: stated without proof in the book. The proof is reconstructed in the `desc` of the backbone
+node `Matrix.growthFactor_le_of_completePivoting` (Hadamard's inequality on the leading blocks of
+every reduced matrix, then a telescoping induction over the pivots); it is ordinary mathematics,
+but three things are missing: a stage recurrence for complete pivoting (the library's
+`Matrix.gemPivotStage` permutes rows only), Hadamard's determinant inequality (absent from Mathlib
+and from this project, though cheap from `Matrix.exists_unitary_mul_upperTriangular`), and the
+`rpow` bookkeeping of the induction. See the backbone node for the details.'''
 deps = ["Matrix.growthFactor_le_of_completePivoting", "QuarteroniSaccoSaleri.Chapter03.completePivoting", "QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'
 

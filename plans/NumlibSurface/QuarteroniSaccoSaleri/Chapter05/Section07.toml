@@ -44,10 +44,18 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 id = "equation_5_53_quadratic"
 kind = "theorem"
 desc = '''The quadratic convergence of the single-shift iteration (5.52)–(5.53): if
-`|t_{n,n-1}^{(k)}| / ‖T⁽⁰⁾‖₂ = η_k < 1` then `|t_{n,n-1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ = O(η_k²)`. Not
-formalized: a local convergence theorem for Rayleigh quotient iteration on Hessenberg matrices
-([Dem97] pp. 161–163), which the book states without proof and the backbone has no Rayleigh
-quotient iteration for (`Numlib/Eigen/PowerMethod` records that it is not formalized either).'''
+`|t_{n,n-1}^{(k)}| / ‖T⁽⁰⁾‖₂ = η_k < 1` then `|t_{n,n-1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ = O(η_k²)`.
+
+Blocked, on two counts. First, as printed the display is not a proposition: `O(η_k²)` for a *single*
+`k`, with no constant and no neighbourhood, says nothing; the statement that is meant (and that
+[Dem97] pp. 161–163 proves) is `∃ c ε₀ > 0, ∀ k, |t_{n,n-1}^{(k)}| ≤ ε₀ →
+|t_{n,n-1}^{(k+1)}| ≤ c |t_{n,n-1}^{(k)}|²`, under the hypotheses the book leaves implicit: `T⁽⁰⁾`
+unreduced upper Hessenberg and `λ_n` a simple eigenvalue (with `λ_n` real, or the double-shift
+form). Second, the proof identifies the shifted QR step with a step of Rayleigh quotient iteration
+on the last row and then quotes the local quadratic convergence of that iteration — which the
+backbone does not have; `Numlib/Eigen/PowerMethod` records Rayleigh quotient iteration itself as
+not formalized. Estimate: Rayleigh quotient iteration with its local convergence (a `Eigen/`
+module of its own) plus the identification, several hundred lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_53"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
 
@@ -66,9 +74,14 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.55)'
 [[node]]
 id = "doubleShiftQr_quadratic"
 kind = "theorem"
-desc = '''The claim that the QR iteration with Francis shift converges quadratically. Not formalized: the
-book states it without proof (citing [Fra61], [GL89] §7.5, [Dem97] §4.4.5), notes that special
-matrices defeat it (Exercise 14), and calls a shift strategy that guarantees convergence for all
-matrices an open problem.'''
+desc = '''The claim that the QR iteration with Francis shift converges quadratically.
+
+Blocked, and the book itself says why it cannot be stated as printed: it cites [Fra61], [GL89]
+§7.5 and [Dem97] §4.4.5 without proof, notes that special matrices defeat the strategy (the cyclic
+permutation matrix of Exercise 14, which is `property_5_9_counterexample` here — it is fixed by the
+iteration), and calls a shift strategy that provably converges for *all* matrices an open problem.
+So any faithful statement must carry a genericity hypothesis that the book does not supply. Beyond
+that, the proof is the single-shift one (`equation_5_53_quadratic`) in the `2 × 2` block form, so it
+is blocked on the same missing Rayleigh quotient iteration theory.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_55"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.2'
