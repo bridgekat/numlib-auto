@@ -146,3 +146,18 @@ desc = '''(3.69), the rigorous display before it: with `γ = u` in Theorem 3.3 a
 the "`t - m` exact digits" that follow are heuristics, not nodes. ★'''
 deps = ["QuarteroniSaccoSaleri.Chapter03.theorem_3_3"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.69)'
+
+[[node]]
+id = "equation_3_66_spec"
+kind = "theorem"
+desc = '(3.66) spelled out, and `|a^{(k)}_ij| ≤ ρ_n max |a_ij|` for every stage, `Û` included.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_66"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.66)'
+
+[[node]]
+id = "residual_error_bound"
+kind = "theorem"
+desc = '''§3.10, the display before Example 3.8: `‖x - x̂‖/‖x‖ ≤ K(A) ‖r̂‖/(‖A‖‖x‖) ≤ K(A) ‖r̂‖/‖b‖` for the
+residual `r̂ = b - A x̂`, in any induced `p`-norm.'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.10'

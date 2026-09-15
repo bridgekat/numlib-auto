@@ -18,7 +18,7 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.1'
 
 [[node]]
 id = "remark_3_7"
-kind = "definition"
+kind = "theorem"
 desc = '''Remark 3.7: the Skeel condition numbers `cond(A) = ‖|A⁻¹| |A|‖_∞` and `cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞
 / ‖x‖_∞` (the book's display is garbled, `‖|A⁻¹| A |x| x‖_∞`, and is read this way):
 `Matrix.skeelCond`, `Matrix.skeelCondAt`. ★'''
@@ -47,6 +47,14 @@ desc = '''§3.12.2, steps 1–3: `x^{(i+1)} = x^{(i)} + z` with `r^{(i)} = b - A
 through the LU factorization, i.e. `z = C r^{(i)}` with `C` the (approximate) inverse the LU solve
 realizes: `Refinement.step C A b`. The stopping test (step 4) is not a node. ★'''
 deps = ["Refinement.step"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "iterativeRefinementStep_eq"
+kind = "theorem"
+desc = '''The surface step is the backbone `Refinement.step` on `PiLp p (Fin n → ℝ)`, and it is the
+stationary iteration `x ↦ (I - C A) x + C b` (`Refinement.step_eq_stationary_step`).'''
+deps = ["Refinement.step_eq_stationary_step", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
 
 [[node]]

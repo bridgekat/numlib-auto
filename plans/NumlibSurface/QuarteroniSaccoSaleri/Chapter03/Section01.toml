@@ -215,3 +215,47 @@ admissible `FloatingPoint.RoundsAffineStep m (-A) b y r̂` with `(n + 1) u < 1`,
 `Matrix.norm_sub_le_of_computedResidual` does the rest. ★'''
 deps = ["Matrix.norm_sub_le_of_computedResidual", "FloatingPoint.exists_roundsAffineStep_eq_add"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.4'
+
+[[node]]
+id = "condNumber"
+kind = "definition"
+desc = '''(3.4): the condition number `K_p(A) = ‖A‖_p ‖A⁻¹‖_p` in the induced `p`-norm, the backbone's
+`Matrix.condNumberLp p A`; chapter 1 has no restatement of it, so it lives here.'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.4)'
+
+[[node]]
+id = "condNumber_eq_condNumberLp"
+kind = "theorem"
+desc = '`K_p(A) = Matrix.condNumberLp p A`, by definition.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.4)'
+
+[[node]]
+id = "condNumber_eq"
+kind = "theorem"
+desc = '`K_p(A)` is the `NormedRing.condNumber` of the operator `x ↦ A x` on `PiLp p (Fin n → ℝ)`.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.4)'
+
+[[node]]
+id = "condNumber_two_eq"
+kind = "theorem"
+desc = '`K₂(A)` is the `NormedRing.condNumber` of `A` in the scoped `L2Operator` norm.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "exists_lpCLM_eq"
+kind = "theorem"
+desc = '''Every operator on `PiLp p (Fin n → ℝ)` is `Matrix.lpCLM p M` for a matrix `M`; the transport
+Remark 3.1 needs. Belongs in the backbone beside `Matrix.lpCLM`.'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.1'
+
+[[node]]
+id = "example_3_1_matrix"
+kind = "definition"
+desc = 'Example 3.1: the matrix `A = !![α, α⁻¹; 0, α⁻¹]`.'
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.1'

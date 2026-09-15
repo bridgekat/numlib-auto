@@ -127,3 +127,76 @@ subtracting the projections on `q̃_1, …, q̃_k` one after the other, equals t
 ∑_{j ≤ k} ⟪q̃_j, a_{k+1}⟫ q̃_j`; `InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`. ★'''
 deps = ["InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum", "QuarteroniSaccoSaleri.Chapter03.equation_3_49"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "theorem_3_6_iff"
+kind = "theorem"
+desc = 'The backbone `Matrix.IsCholesky A H` over `ℝ` is (3.44): `H` upper triangular, positive diagonal, `Hᵀ H = A`.'
+deps = ["Matrix.IsCholesky"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.6'
+
+[[node]]
+id = "ldl_hilbert_three"
+kind = "theorem"
+desc = 'The displayed `L D Lᵀ` factorization of the Hilbert matrix `H₃` of §3.4.2.'
+deps = ["Matrix.hilbert"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.2'
+
+[[node]]
+id = "definition_3_1_iff"
+kind = "theorem"
+desc = 'Definition 3.1 spelled out (orthogonal `Q`, `R` zero below the diagonal and in the trailing rows), and existence.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.definition_3_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 3.1'
+
+[[node]]
+id = "property_3_3_diag_ne_zero_iff"
+kind = "theorem"
+desc = 'After (3.49): the diagonal of the reduced factor `R̃` has no zero iff `A` has full column rank.'
+deps = ["Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "columns"
+kind = "definition"
+desc = 'The columns of `A : Matrix (Fin m) (Fin n) ℝ` as vectors of `EuclideanSpace ℝ (Fin m)`.'
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "gramSchmidtQ"
+kind = "definition"
+desc = 'The matrix `Q̃` of the normalized Gram–Schmidt vectors of the columns of `A` (§3.4.3).'
+deps = ["QuarteroniSaccoSaleri.Chapter03.columns"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "gramSchmidtR"
+kind = "definition"
+desc = 'The matrix `R̃` of Gram–Schmidt coefficients `(q̃_i, a_j)` (§3.4.3).'
+deps = ["QuarteroniSaccoSaleri.Chapter03.columns"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "gramSchmidt_qr"
+kind = "theorem"
+desc = '''Gram–Schmidt computes the reduced QR factorization: `A = Q̃ R̃`, `Q̃ᵀ Q̃ = 1`, `R̃` upper triangular with
+positive diagonal. Belongs in the backbone beside `Matrix.exists_qr`, whose proof builds these factors.'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.gramSchmidtQ", "QuarteroniSaccoSaleri.Chapter03.gramSchmidtR"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "modifiedGramSchmidtSweep"
+kind = "definition"
+desc = '''One step of modified Gram–Schmidt, the vectors `a^{(1)}, a^{(2)}, …` of §3.4.3; the planned backbone
+`InnerProductSpace.modifiedGramSchmidtSweep`, written here until that group is done.'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'
+
+[[node]]
+id = "modifiedGramSchmidtSweep_eq_sub_sum"
+kind = "theorem"
+desc = '''For mutually orthogonal `q`, the modified sweep equals `a - ∑_{i<j} ⟪q i, a⟫ q i`; the planned backbone
+`InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.modifiedGramSchmidtSweep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'

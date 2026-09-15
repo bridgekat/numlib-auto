@@ -64,6 +64,26 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.6'
 id = "remark_3_6_cond"
 kind = "theorem"
 desc = '''Remark 3.6, last display: if `A` is symmetric positive definite then `K₂(S) ≤ K₂(A)`;
-`Matrix.PosDef.condNumber_schurComplement_le`. ★'''
+`Matrix.PosDef.condNumber_schurComplement_le`. ★
+
+Blocked: the backbone node `Matrix.PosDef.condNumber_schurComplement_le` (`SchurComplement` EXT, ★★★) is
+open; it needs `λ_max(S) ≤ λ_max(A)` (Loewner `S ≤ A₃₃` and the principal-submatrix bound) and
+`λ_min(S) ≥ λ_min(A)` (`S⁻¹ = (A⁻¹)₃₃`, Cauchy interlacing `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`
+of `Eigen/MinMax`), then `κ₂ = λ_max / λ_min` (`Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`). Not attempted
+in the surface; estimate half a day of backbone work once the sorted/unsorted eigenvalue bridge is in place.'''
 deps = ["Matrix.PosDef.condNumber_schurComplement_le", "QuarteroniSaccoSaleri.Chapter03.remark_3_6_schur"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.6'
+
+[[node]]
+id = "adjacencyGraph_adj"
+kind = "theorem"
+desc = 'The paths of `G(A)` are the nonzero entries of `A`.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.adjacencyGraph"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.9'
+
+[[node]]
+id = "equation_3_59_iff"
+kind = "theorem"
+desc = '(3.59) spelled out: `(i, j) ∈ E(A)` iff `0 < i - j ≤ m_i(A)` with `m_i(A) = i - min {j < i : a_ij ≠ 0}`.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_59"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.59)'

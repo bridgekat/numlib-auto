@@ -22,7 +22,7 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.31)'
 
 [[node]]
 id = "remark_3_2"
-kind = "definition"
+kind = "theorem"
 desc = '''Remark 3.2, (3.32): the Hilbert matrix `H_n`, `h_ij = 1 / (i + j - 1)`, as `Matrix.hilbert n` of
 `Numlib/LinearAlgebra/Matrix/Cauchy` (`0`-based entries `1 / (i + j + 1)`), with `hilbert_apply`;
 it is nonsingular (`Matrix.isUnit_hilbert`) and symmetric positive definite (`Matrix.posDef_hilbert`),
@@ -173,3 +173,24 @@ A = (luLower Aᵀ)ᵀ`, `croutLower A * croutUpper A = A` and `croutUpper A` is 
 under the hypothesis of Theorem 3.4 for `Aᵀ` (the same hypothesis). ★'''
 deps = ["Matrix.croutLower", "QuarteroniSaccoSaleri.Chapter03.equation_3_43"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.3.4'
+
+[[node]]
+id = "gemMultipliers"
+kind = "definition"
+desc = 'The multiplier vector `m_k` of stage `k` of GEM, (3.30), read on `Matrix.gemStage A k`.'
+deps = ["Matrix.gemStage"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.30)'
+
+[[node]]
+id = "gemRhs"
+kind = "definition"
+desc = 'The right-hand sides `b^{(k)}` of the systems (3.29), by the recurrence of (3.31).'
+deps = ["QuarteroniSaccoSaleri.Chapter03.gemMultipliers"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.29)'
+
+[[node]]
+id = "equation_3_29"
+kind = "theorem"
+desc = '(3.29): every system `A^{(k)} x = b^{(k)}` of GEM has the same solutions as `A x = b`.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.gemRhs", "Matrix.gemStage_succ_eq_gaussTransform_mul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.29)'

@@ -40,3 +40,10 @@ desc = '''§3.11, "`K₂(A) = K₂(R)` due to Property 1.8" (Exercise 14): if `A
 `K₂(A) = K₂(R)`; `Matrix.l2_opNorm_unitary_mul`. ★'''
 deps = ["Matrix.l2_opNorm_unitary_mul", "QuarteroniSaccoSaleri.Chapter03.definition_3_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'
+
+[[node]]
+id = "condEstimate_two_eq"
+kind = "theorem"
+desc = 'For `p = 2` the surface estimate is the backbone `condEstimate` on `EuclideanSpace`, the adjoint being the transpose.'
+deps = ["QuarteroniSaccoSaleri.Chapter03.condEstimate", "_root_.condEstimate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'
