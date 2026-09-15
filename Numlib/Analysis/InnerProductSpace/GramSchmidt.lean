@@ -168,4 +168,83 @@ theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 
     rwa [RCLike.conj_conj, map_one] at this
   rw [hue, hε1, one_smul]
 
+section ModifiedGramSchmidt
+
+variable (𝕜)
+
+/-- **One sweep of the modified Gram–Schmidt process** against a list of vectors `q 0, q 1, …`:
+starting from `a`, the component along `q 0` is removed, then the component of the *result* along
+`q 1`, and so on. Formally `modifiedGramSchmidtSweep 𝕜 q a 0 = a` and
+`modifiedGramSchmidtSweep 𝕜 q a (j + 1) = v - ⟪q j, v⟫ • q j` with
+`v = modifiedGramSchmidtSweep 𝕜 q a j`.
+
+Recomputing each inner product on the current vector is what distinguishes the modified process
+from the classical one, which takes all inner products against the original `a`; in exact
+arithmetic the two agree for an orthogonal family (`modifiedGramSchmidtSweep_eq_sub_sum`), and the
+modified order of operations is the numerically stable one. A finite family `q : Fin k → E` is
+used through its extension by zero, on which the sweep stalls after step `k`. -/
+noncomputable def modifiedGramSchmidtSweep (q : ℕ → E) (a : E) : ℕ → E
+  | 0 => a
+  | j + 1 =>
+    modifiedGramSchmidtSweep q a j - inner 𝕜 (q j) (modifiedGramSchmidtSweep q a j) • q j
+
+@[simp]
+theorem modifiedGramSchmidtSweep_zero (q : ℕ → E) (a : E) :
+    modifiedGramSchmidtSweep 𝕜 q a 0 = a :=
+  rfl
+
+theorem modifiedGramSchmidtSweep_succ (q : ℕ → E) (a : E) (j : ℕ) :
+    modifiedGramSchmidtSweep 𝕜 q a (j + 1) = modifiedGramSchmidtSweep 𝕜 q a j -
+      inner 𝕜 (q j) (modifiedGramSchmidtSweep 𝕜 q a j) • q j :=
+  rfl
+
+/-- **The modified sweep against an orthogonal family is the classical Gram–Schmidt vector**:
+`modifiedGramSchmidtSweep 𝕜 q a k = a - ∑ j < k, ⟪q j, a⟫ • q j`. Each subtraction leaves the
+inner products with the later `q j` unchanged, because the vector subtracted at step `i` is a
+multiple of `q i ⊥ q j`. Only pairwise orthogonality is used, not normalization; for an
+orthonormal family pass `fun _ _ h => hq.2 h`. -/
+theorem modifiedGramSchmidtSweep_eq_sub_sum {q : ℕ → E}
+    (hq : Pairwise fun i j => inner 𝕜 (q i) (q j) = 0) (a : E) (k : ℕ) :
+    modifiedGramSchmidtSweep 𝕜 q a k = a - ∑ j ∈ Finset.range k, inner 𝕜 (q j) a • q j := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hinner : inner 𝕜 (q k) (modifiedGramSchmidtSweep 𝕜 q a k) = inner 𝕜 (q k) a := by
+      rw [ih, inner_sub_right, inner_sum]
+      refine sub_eq_self.2 (Finset.sum_eq_zero fun j hj => ?_)
+      rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
+    rw [modifiedGramSchmidtSweep_succ, hinner, ih, Finset.sum_range_succ, sub_sub]
+
+/-- The rank-one term of the classical Gram–Schmidt formula, written with the normalized
+vectors: `⟪gramSchmidtNormed f i, x⟫ • gramSchmidtNormed f i` is the orthogonal projection of `x`
+on the line through `gramSchmidt f i`. -/
+private theorem inner_gramSchmidtNormed_smul_self (f : ι → E) (i : ι) (x : E) :
+    inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i =
+      (inner 𝕜 (gramSchmidt 𝕜 f i) x / (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2) • gramSchmidt 𝕜 f i := by
+  rw [gramSchmidtNormed, inner_smul_left, smul_smul, RCLike.conj_inv, RCLike.conj_ofReal]
+  rcases eq_or_ne ((‖gramSchmidt 𝕜 f i‖ : 𝕜)) 0 with h | h
+  · rw [h]; simp
+  · congr 1
+    field_simp
+
+/-- **The modified Gram–Schmidt method computes the Gram–Schmidt vectors**: sweeping `f n` against
+the normalized vectors `gramSchmidtNormed 𝕜 f 0, …, gramSchmidtNormed 𝕜 f (n - 1)` one after the
+other returns `gramSchmidt 𝕜 f n`. -/
+theorem modifiedGramSchmidt_eq_gramSchmidt (f : ℕ → E) (n : ℕ) :
+    modifiedGramSchmidtSweep 𝕜 (gramSchmidtNormed 𝕜 f) (f n) n = gramSchmidt 𝕜 f n := by
+  have hq : Pairwise fun i j =>
+      inner 𝕜 (gramSchmidtNormed 𝕜 f i) (gramSchmidtNormed 𝕜 f j) = 0 := by
+    intro i j hij
+    rw [gramSchmidtNormed, gramSchmidtNormed, inner_smul_left, inner_smul_right,
+      gramSchmidt_orthogonal 𝕜 f hij, mul_zero, mul_zero]
+  rw [modifiedGramSchmidtSweep_eq_sub_sum 𝕜 hq, eq_comm, eq_sub_iff_add_eq, ← Nat.Iio_eq_range]
+  have hsum : ∑ i ∈ Finset.Iio n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) (f n) •
+        gramSchmidtNormed 𝕜 f i = ∑ i ∈ Finset.Iio n,
+        (inner 𝕜 (gramSchmidt 𝕜 f i) (f n) / (‖gramSchmidt 𝕜 f i‖ : 𝕜) ^ 2) • gramSchmidt 𝕜 f i :=
+    Finset.sum_congr rfl fun i _ => inner_gramSchmidtNormed_smul_self 𝕜 f i (f n)
+  rw [hsum]
+  exact (gramSchmidt_def'' 𝕜 f n).symm
+
+end ModifiedGramSchmidt
+
 end InnerProductSpace

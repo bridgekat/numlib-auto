@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Normed.Lp.lpSpace
 import Mathlib.Analysis.SpecialFunctions.Complex.Circle
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Numlib.FiniteDifference.TwoLevel
 
@@ -432,6 +433,269 @@ theorem symbol_threePoint (cm c0 cp : ℝ) (φ : ℝ) :
   ring_nf
 
 end Symbol
+
+/-! ### The `ℓ²` bound from the symbol
+
+The operator norm of a stencil on `ℓ²(ℤ)` is at most the supremum of the modulus of its symbol —
+the whole-line counterpart of the von Neumann analysis on a periodic grid. The proof is Parseval's
+identity on `ℤ` for trigonometric polynomials, which needs nothing but the orthogonality of the
+exponentials over one period (`∫_0^{2π} e^{ikφ} dφ = 2π δ_{k0}`, a finite computation), together
+with the fact that the symbol of a convolution is the product of the symbols. The bound for a
+finitely supported grid function extends to all of `ℓ²` by summing over larger and larger finite
+sets of indices. -/
+
+section SymbolLTwo
+
+open Complex
+
+/-- `conj (e^{-isφ}) = e^{isφ}` for an integer `s` and a real `φ`. -/
+private theorem conj_exp_neg_int_mul (s : ℤ) (φ : ℝ) :
+    (starRingEnd ℂ) (exp (-(I * s * φ))) = exp (I * s * φ) := by
+  rw [← Complex.exp_conj]
+  congr 1
+  simp
+
+/-- **Orthogonality of the exponentials over one period**: `∫_0^{2π} e^{ikφ} dφ` is `2π` when
+`k = 0` and `0` otherwise. -/
+private theorem integral_exp_int_mul (k : ℤ) :
+    (∫ φ in (0 : ℝ)..(2 * Real.pi), exp (I * k * φ))
+      = if k = 0 then ((2 * Real.pi : ℝ) : ℂ) else 0 := by
+  rcases eq_or_ne k 0 with rfl | hk
+  · simp
+  · rw [ite_eq_right hk]
+    have hc : (I * (k : ℂ)) ≠ 0 := mul_ne_zero Complex.I_ne_zero (Int.cast_ne_zero.2 hk)
+    have h := integral_exp_mul_complex (a := (0 : ℝ)) (b := 2 * Real.pi) hc
+    have htop : Complex.exp (I * (k : ℂ) * ((2 * Real.pi : ℝ) : ℂ)) = 1 := by
+      rw [show I * (k : ℂ) * ((2 * Real.pi : ℝ) : ℂ) = (k : ℂ) * (2 * Real.pi * I) by
+        push_cast; ring]
+      exact Complex.exp_int_mul_two_pi_mul_I k
+    rw [h, htop]
+    simp
+
+/-- **Parseval's identity for a trigonometric polynomial**: for finitely many complex
+coefficients, `∫_0^{2π} |∑_s v_s e^{-isφ}|² dφ = 2π ∑_s |v_s|²`. -/
+private theorem integral_norm_sq_trigPoly (A : Finset ℤ) (v : ℤ → ℂ) :
+    (∫ φ in (0 : ℝ)..(2 * Real.pi), ‖∑ s ∈ A, v s * exp (-(I * s * φ))‖ ^ 2)
+      = 2 * Real.pi * ∑ s ∈ A, ‖v s‖ ^ 2 := by
+  have hexpand : ∀ φ : ℝ,
+      (∑ s ∈ A, v s * exp (-(I * s * φ))) * (starRingEnd ℂ) (∑ s ∈ A, v s * exp (-(I * s * φ)))
+        = ∑ s ∈ A, ∑ t ∈ A, v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ) := by
+    intro φ
+    simp only [map_sum, map_mul, conj_exp_neg_int_mul]
+    rw [Finset.sum_mul_sum]
+    refine Finset.sum_congr rfl fun s _ => Finset.sum_congr rfl fun t _ => ?_
+    rw [show v s * exp (-(I * s * φ)) * ((starRingEnd ℂ) (v t) * exp (I * t * φ))
+        = v s * (starRingEnd ℂ) (v t) * (exp (-(I * s * φ)) * exp (I * t * φ)) by ring,
+      ← Complex.exp_add]
+    congr 2
+    ring
+  have hcint : ∀ s t : ℤ, IntervalIntegrable
+      (fun φ : ℝ => v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+      MeasureTheory.volume 0 (2 * Real.pi) := by
+    intro s t
+    exact (by fun_prop : Continuous fun φ : ℝ =>
+      v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ)).intervalIntegrable _ _
+  have hsumint : ∀ s : ℤ, IntervalIntegrable
+      (fun φ : ℝ => ∑ t ∈ A, v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+      MeasureTheory.volume 0 (2 * Real.pi) := fun s =>
+    (by fun_prop : Continuous fun φ : ℝ =>
+      ∑ t ∈ A, v s * (starRingEnd ℂ) (v t)
+        * exp (I * ((t : ℂ) - (s : ℂ)) * φ)).intervalIntegrable _ _
+  have hdiag : ∀ s t : ℤ,
+      (∫ φ in (0 : ℝ)..(2 * Real.pi),
+          v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+        = if t = s then ((2 * Real.pi : ℝ) : ℂ) * (v s * (starRingEnd ℂ) (v t)) else 0 := by
+    intro s t
+    rw [intervalIntegral.integral_const_mul]
+    have hk : (fun φ : ℝ => exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+        = fun φ : ℝ => exp (I * ((t - s : ℤ) : ℂ) * φ) := by
+      funext φ; push_cast; ring_nf
+    rw [hk, integral_exp_int_mul (t - s)]
+    rcases eq_or_ne t s with rfl | hts
+    · simp [mul_comm]
+    · rw [ite_eq_right (sub_ne_zero.2 hts), ite_eq_right hts, mul_zero]
+  have hcomplex : (∫ φ in (0 : ℝ)..(2 * Real.pi),
+      ((‖∑ s ∈ A, v s * exp (-(I * s * φ))‖ ^ 2 : ℝ) : ℂ))
+      = ((2 * Real.pi * ∑ s ∈ A, ‖v s‖ ^ 2 : ℝ) : ℂ) := by
+    have hpt : ∀ φ : ℝ, ((‖∑ s ∈ A, v s * exp (-(I * s * φ))‖ ^ 2 : ℝ) : ℂ)
+        = (∑ s ∈ A, v s * exp (-(I * s * φ))) *
+          (starRingEnd ℂ) (∑ s ∈ A, v s * exp (-(I * s * φ))) := by
+      intro φ
+      rw [Complex.mul_conj, Complex.normSq_eq_norm_sq]
+    rw [intervalIntegral.integral_congr fun φ _ => (hpt φ).trans (hexpand φ),
+      intervalIntegral.integral_finsetSum (f := fun s (φ : ℝ) =>
+          ∑ t ∈ A, v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+        fun s _ => hsumint s]
+    have hstep : ∀ s ∈ A, (∫ φ in (0 : ℝ)..(2 * Real.pi),
+        ∑ t ∈ A, v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+          = ((2 * Real.pi : ℝ) : ℂ) * ((‖v s‖ : ℝ) : ℂ) ^ 2 := by
+      intro s hs
+      rw [intervalIntegral.integral_finsetSum (f := fun t (φ : ℝ) =>
+            v s * (starRingEnd ℂ) (v t) * exp (I * ((t : ℂ) - (s : ℂ)) * φ))
+          fun t _ => hcint s t,
+        Finset.sum_congr rfl fun t _ => hdiag s t, Finset.sum_ite_eq' A s]
+      rw [ite_eq_left hs, Complex.mul_conj, Complex.normSq_eq_norm_sq]
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl hstep, ← Finset.mul_sum]
+    push_cast
+    ring
+  rw [intervalIntegral.integral_ofReal] at hcomplex
+  exact_mod_cast hcomplex
+
+/-- Reindexing a sum of the shifted coefficients: `∑_{j ∈ A} w(j - s) e^{-ijφ}` equals
+`∑_{t ∈ supp w} w(t) e^{-i(s+t)φ}` as soon as `A` contains `s + supp w`. -/
+private theorem sum_shift_eq (s : ℤ) (A : Finset ℤ) (w : ℤ →₀ ℝ)
+    (hA : ∀ t ∈ w.support, s + t ∈ A) (φ : ℝ) :
+    (∑ j ∈ A, ((w (j - s) : ℝ) : ℂ) * exp (-(I * j * φ)))
+      = ∑ t ∈ w.support, ((w t : ℝ) : ℂ) * exp (-(I * ((s : ℂ) + t) * φ)) := by
+  classical
+  have hmap : (∑ t ∈ w.support, ((w t : ℝ) : ℂ) * exp (-(I * ((s : ℂ) + t) * φ)))
+      = ∑ j ∈ w.support.map ⟨(s + ·), add_right_injective s⟩,
+          ((w (j - s) : ℝ) : ℂ) * exp (-(I * j * φ)) := by
+    rw [Finset.sum_map]
+    refine Finset.sum_congr rfl fun t _ => ?_
+    simp only [Function.Embedding.coeFn_mk, add_sub_cancel_left]
+    push_cast
+    ring_nf
+  rw [hmap]
+  refine (Finset.sum_subset (fun j hj => ?_) fun j hjA hj => ?_).symm
+  · obtain ⟨t, ht, rfl⟩ := Finset.mem_map.1 hj
+    exact hA t ht
+  · have hw : w (j - s) = 0 := by
+      by_contra hne
+      refine hj (Finset.mem_map.2 ⟨j - s, Finsupp.mem_support_iff.2 hne, ?_⟩)
+      simp only [Function.Embedding.coeFn_mk]
+      ring
+    rw [hw]
+    simp
+
+/-- **The symbol of a convolution is the product of the symbols**, in the form needed below: the
+trigonometric polynomial of `c ⋆ w` is `symbol c φ` times that of `w`. -/
+private theorem sum_apply_mul_exp (c : Stencil) (w : ℤ →₀ ℝ) (A : Finset ℤ)
+    (hA : ∀ s ∈ c.support, ∀ t ∈ w.support, s + t ∈ A) (φ : ℝ) :
+    (∑ j ∈ A, ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ) * exp (-(I * j * φ)))
+      = symbol c φ * ∑ t ∈ w.support, ((w t : ℝ) : ℂ) * exp (-(I * t * φ)) := by
+  have hlhs : (∑ j ∈ A, ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ) * exp (-(I * j * φ)))
+      = ∑ s ∈ c.support, ∑ j ∈ A,
+          (c s : ℂ) * (((w (j - s) : ℝ) : ℂ) * exp (-(I * j * φ))) := by
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [apply_apply]
+    push_cast [smul_eq_mul]
+    rw [Finset.sum_mul]
+    exact Finset.sum_congr rfl fun s _ => by ring
+  rw [hlhs, symbol, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun s hs => ?_
+  rw [← Finset.mul_sum, sum_shift_eq s A w (fun t ht => hA s hs t ht) φ, Finset.mul_sum,
+    Finset.mul_sum]
+  refine Finset.sum_congr rfl fun t _ => ?_
+  rw [show (-(I * ((s : ℂ) + t) * φ)) = -(I * s * φ) + -(I * t * φ) by ring, Complex.exp_add]
+  ring
+
+/-- **The `ℓ²` bound for a finitely supported grid function**: `∑_j |(c ⋆ w)_j|² ≤ ρ² ∑_t |w_t|²`
+whenever the symbol is bounded by `ρ`, by Parseval on both sides. -/
+private theorem sum_sq_apply_le (c : Stencil) {ρ : ℝ} (hρ : ∀ φ : ℝ, ‖symbol c φ‖ ≤ ρ)
+    (w : ℤ →₀ ℝ) (A : Finset ℤ) (hA : ∀ s ∈ c.support, ∀ t ∈ w.support, s + t ∈ A) :
+    (∑ j ∈ A, apply c (w : ℤ → ℝ) j ^ 2) ≤ ρ ^ 2 * ∑ t ∈ w.support, w t ^ 2 := by
+  have hpi : (0 : ℝ) < 2 * Real.pi := by positivity
+  set U : ℝ → ℂ := fun φ => ∑ t ∈ w.support, ((w t : ℝ) : ℂ) * exp (-(I * t * φ)) with hU
+  have hleft := integral_norm_sq_trigPoly A fun j => ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ)
+  have hright := integral_norm_sq_trigPoly w.support fun t => ((w t : ℝ) : ℂ)
+  have hmono : (∫ φ in (0 : ℝ)..(2 * Real.pi),
+      ‖∑ j ∈ A, ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ) * exp (-(I * j * φ))‖ ^ 2)
+      ≤ ρ ^ 2 * ∫ φ in (0 : ℝ)..(2 * Real.pi), ‖U φ‖ ^ 2 := by
+    rw [← intervalIntegral.integral_const_mul]
+    refine intervalIntegral.integral_mono_on hpi.le
+      ((by fun_prop : Continuous fun φ : ℝ =>
+        ‖∑ j ∈ A, ((apply c (w : ℤ → ℝ) j : ℝ) : ℂ) * exp (-(I * j * φ))‖ ^ 2).intervalIntegrable
+          _ _)
+      ((by fun_prop : Continuous fun φ : ℝ => ρ ^ 2 * ‖U φ‖ ^ 2).intervalIntegrable _ _)
+      fun φ _ => ?_
+    rw [sum_apply_mul_exp c w A hA φ, norm_mul, mul_pow]
+    exact mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (norm_nonneg _) (hρ φ) 2) (by positivity)
+  rw [hleft, hright] at hmono
+  have hcast : ∀ x : ℝ, ‖((x : ℝ) : ℂ)‖ ^ 2 = x ^ 2 := by
+    intro x
+    rw [Complex.norm_real, Real.norm_eq_abs, sq_abs]
+  simp only [hcast] at hmono
+  nlinarith [hmono, Real.pi_pos]
+
+/-- **The `ℓ²` operator norm of a stencil is bounded by the supremum of its symbol**: if
+`‖symbol c φ‖ ≤ ρ` for every `φ`, then `‖lpCLM c 2‖ ≤ ρ`.
+
+This is the sharp `ℓ²` bound, replacing the crude `∑_s |c s|` of `Stencil.norm_lpCLM_le`, and is
+the whole-line counterpart of the periodic von Neumann criterion of
+`Numlib.FiniteDifference.VonNeumann`. The proof is Parseval's identity for trigonometric
+polynomials (`∫_0^{2π} |∑_s v_s e^{-isφ}|² = 2π ∑_s |v_s|²`, from the orthogonality of the
+exponentials over one period), applied to a finitely supported truncation of the grid function and
+to its image, followed by a passage to the limit over the finite sets of indices. -/
+theorem norm_lpCLM_two_le_of_symbol_le (c : Stencil) {ρ : ℝ} (hρ : ∀ φ : ℝ, ‖symbol c φ‖ ≤ ρ) :
+    ‖lpCLM c 2‖ ≤ ρ := by
+  classical
+  have hρ0 : 0 ≤ ρ := le_trans (norm_nonneg _) (hρ 0)
+  refine ContinuousLinearMap.opNorm_le_bound _ hρ0 fun u => ?_
+  have htoReal : ((2 : ℝ≥0∞)).toReal = 2 := by norm_num
+  have hnorm_sq : ∀ v : lp (fun _ : ℤ => ℝ) 2, ‖v‖ ^ 2 = ∑' j : ℤ, (v j) ^ 2 := by
+    intro v
+    have h := lp.norm_rpow_eq_tsum (p := (2 : ℝ≥0∞)) (by rw [htoReal]; norm_num) v
+    rw [htoReal] at h
+    have hr : ∀ x : ℝ, x ^ (2 : ℝ) = x ^ 2 := fun x => by
+      rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+    simp only [hr, Real.norm_eq_abs, sq_abs] at h
+    exact h
+  have hsummable : Summable fun j : ℤ => (lpCLM c 2 u j) ^ 2 := by
+    have h := lp.hasSum_norm (p := (2 : ℝ≥0∞)) (by rw [htoReal]; norm_num) (lpCLM c 2 u)
+    rw [htoReal] at h
+    have hr : ∀ x : ℝ, x ^ (2 : ℝ) = x ^ 2 := fun x => by
+      rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+    simp only [hr, Real.norm_eq_abs, sq_abs] at h
+    exact h.summable
+  have hkey : ∀ B : Finset ℤ, (∑ j ∈ B, (lpCLM c 2 u j) ^ 2) ≤ ρ ^ 2 * ‖u‖ ^ 2 := by
+    intro B
+    -- the finitely supported truncation of `u` that `(c ⋆ u)` sees on `B`
+    set A : Finset ℤ := Finset.image₂ (fun j s => j - s) B c.support with hA
+    set w : ℤ →₀ ℝ := Finsupp.onFinset A (fun t => if t ∈ A then (u : ℤ → ℝ) t else 0)
+      (fun t ht => by by_contra hnot; rw [ite_eq_right hnot] at ht; exact ht rfl) with hw
+    have hwA : ∀ t ∈ A, w t = (u : ℤ → ℝ) t := by
+      intro t ht
+      simp only [hw, Finsupp.onFinset_apply, ite_eq_left ht]
+    have hwsupp : w.support ⊆ A := Finsupp.support_onFinset_subset
+    have hagree : ∀ j ∈ B, apply c (w : ℤ → ℝ) j = apply c (u : ℤ → ℝ) j := by
+      intro j hj
+      rw [apply_apply, apply_apply]
+      refine Finset.sum_congr rfl fun s hs => ?_
+      rw [hwA (j - s) (Finset.mem_image₂.2 ⟨j, hj, s, hs, rfl⟩)]
+    set A₂ : Finset ℤ := B ∪ Finset.image₂ (fun s t => s + t) c.support w.support with hA₂
+    have hAA : ∀ s ∈ c.support, ∀ t ∈ w.support, s + t ∈ A₂ := fun s hs t ht =>
+      Finset.mem_union_right _ (Finset.mem_image₂.2 ⟨s, hs, t, ht, rfl⟩)
+    have hsub : B ⊆ A₂ := Finset.subset_union_left
+    calc (∑ j ∈ B, (lpCLM c 2 u j) ^ 2)
+        = ∑ j ∈ B, apply c (w : ℤ → ℝ) j ^ 2 := by
+          refine Finset.sum_congr rfl fun j hj => ?_
+          rw [lpCLM_apply, hagree j hj]
+      _ ≤ ∑ j ∈ A₂, apply c (w : ℤ → ℝ) j ^ 2 :=
+          Finset.sum_le_sum_of_subset_of_nonneg hsub fun j _ _ => sq_nonneg _
+      _ ≤ ρ ^ 2 * ∑ t ∈ w.support, w t ^ 2 := sum_sq_apply_le c hρ w A₂ hAA
+      _ ≤ ρ ^ 2 * ‖u‖ ^ 2 := by
+          refine mul_le_mul_of_nonneg_left ?_ (sq_nonneg ρ)
+          rw [hnorm_sq u]
+          have hsum : Summable fun j : ℤ => ((u : ℤ → ℝ) j) ^ 2 := by
+            have h := lp.hasSum_norm (p := (2 : ℝ≥0∞)) (by rw [htoReal]; norm_num) u
+            rw [htoReal] at h
+            have hr : ∀ x : ℝ, x ^ (2 : ℝ) = x ^ 2 := fun x => by
+              rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+            simp only [hr, Real.norm_eq_abs, sq_abs] at h
+            exact h.summable
+          refine le_trans (le_of_eq (Finset.sum_congr rfl fun t ht => ?_))
+            (hsum.sum_le_tsum w.support fun j _ => sq_nonneg _)
+          rw [hwA t (hwsupp ht)]
+  have hle : ‖lpCLM c 2 u‖ ^ 2 ≤ (ρ * ‖u‖) ^ 2 := by
+    rw [hnorm_sq (lpCLM c 2 u), mul_pow]
+    exact hsummable.tsum_le_of_sum_le hkey
+  nlinarith [norm_nonneg (lpCLM c 2 u), mul_nonneg hρ0 (norm_nonneg u), hle]
+
+end SymbolLTwo
 
 end Stencil
 

@@ -110,23 +110,6 @@ id = "Stencil.symbol_threePoint"
 
 [[node]]
 id = "Stencil.norm_lpCLM_two_le_of_symbol_le"
-kind = "theorem"
-desc = '''`ℓ²` bound from the symbol: if `‖Stencil.symbol c φ‖ ≤ ρ` for all `φ`, then
-`‖Stencil.lpCLM c 2‖ ≤ ρ`. Proof: Plancherel on `ℤ` — for a finitely supported `u` the
-trigonometric polynomial `U(φ) = ∑_j u_j e^{ijφ}` has `∫_0^{2π} |U|² = 2π ∑ |u_j|²` (orthogonality
-of the exponentials, finite sums only) and `apply c u` has the trigonometric polynomial
-`symbol c (-φ) U(φ)`, so `∑ |apply c u|² ≤ ρ² ∑ |u_j|²`; the general `u ∈ ℓ²` follows by density
-(`lp.hasSum_single`) and continuity of `lpCLM`. Alternatively `ℓ²(ℤ) ≅ L²(AddCircle (2π))` by
-Mathlib's `fourierBasis`, under which `apply c` is multiplication by the bounded function
-`symbol c`. The whole-line counterpart of Theorem 13.1 of Quarteroni–Sacco–Saleri, which the book
-only proves on the periodic grid. ★★★
-
-Blocked: not attempted in this round for lack of time after `VonNeumann` and `BoundaryValue`;
-both routes above are open, the finite-Parseval one needs the orthogonality integral
-`∫_0^{2π} e^{i(j-k)φ} dφ = 2π δ_{jk}` (Mathlib has it only as `fourierCoeff` orthogonality on
-`AddCircle`) and the passage from finitely supported `u` to `ℓ²` through `lp.hasSum_single`;
-estimated 150–250 lines.'''
-deps = ["FiniteDifference.Stencil.lpCLM", "FiniteDifference.Stencil.symbol"]
 
 [[node]]
 id = "discreteNorm"

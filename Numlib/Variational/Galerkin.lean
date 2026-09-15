@@ -27,6 +27,12 @@ import Numlib.Variational.LaxMilgram
 * The Aubin–Nitsche duality argument `norm_map_sq_le_of_dual` and its uniform form
   `norm_map_le_of_dual_approx`, which bound the Galerkin error in a norm *weaker* than the one the
   form is coercive in ([han2009theoretical] Thm 10.4.3, Cor 10.4.4).
+* Céa's lemma and Strang's first lemma in a *seminorm* `q`, relative to a subspace `W` on which the
+  form is bounded and coercive for `q` (`seminorm_sub_le_of_galerkin_orthogonal`,
+  `seminorm_sub_le_of_generalizedGalerkin`).  These carry no topology and no completeness, and they
+  are what the `H¹`-seminorm estimates of [quarteroni2000numerical] Thm 12.3 and Thm 12.4 need: on
+  `H¹(a, b)` the elliptic form is bounded and coercive for `|·|_{H¹}` only on the subspace
+  `H¹₀(a, b)`, so a statement quantifying boundedness over the whole space would not apply.
 -/
 
 open scoped InnerProductSpace
@@ -889,3 +895,112 @@ theorem norm_map_le_of_dual_approx {a : SesqForm 𝕜 V} {M δ : ℝ} (hM : a.Is
     exact le_of_mul_le_mul_right (by linarith : ‖ι e‖ * ‖ι e‖ ≤ M * δ * ‖e‖ * ‖ι e‖) h0
 
 end AubinNitsche
+
+/-! ### Céa's and Strang's lemmas in a seminorm
+
+The quasi-optimality arguments above need neither a topology nor an inner product: they are the
+two-line manipulation `c q(e)² ≤ a(e, e) = a(e, u - w) ≤ M q(e) q(u - w)`, valid for a seminorm `q`
+on a bare real vector space.  Two generalizations matter for the finite-element estimates of
+[quarteroni2000numerical] §12.4:
+
+* the error is measured in a *seminorm*, because the natural constants of an elliptic problem on an
+  interval are those of the `H¹` seminorm and not of the `H¹` norm;
+* boundedness and coercivity hold only *relative to a submodule* `W`, because a Poincaré inequality
+  — which is what makes the form bounded and coercive in the seminorm — holds only on the subspace
+  of functions vanishing at the boundary.
+
+`IsGalerkinSolution.norm_sub_le` and `strang_first` are the norm cases on a Hilbert space. -/
+
+section SeminormQuasiOptimal
+
+/-- **Céa's lemma in a seminorm, relative to a subspace `W`**: if the bilinear form `B` is bounded
+by `M` and coercive with constant `c` for the seminorm `q` on `W`, then for `u ∈ W` and `uh ∈ K ≤ W`
+with the Galerkin orthogonality `B (u - uh) v = 0` on `K`,
+
+  `q (u - uh) ≤ (M / c) * q (u - w)`  for every `w ∈ K`.
+
+Only additivity of `B` in its second slot is used, so `B` is taken as a plain function; no topology,
+completeness or inner product enters.  `0 ≤ M` is not assumed: it follows from the two bounds tested
+at `u - w`. -/
+theorem seminorm_sub_le_of_galerkin_orthogonal {V : Type*} [AddCommGroup V] [Module ℝ V]
+    (q : Seminorm ℝ V) (B : V → V → ℝ) (hadd : ∀ x y z, B x (y + z) = B x y + B x z)
+    {W : Submodule ℝ V} {M c : ℝ} (hc : 0 < c)
+    (hM : ∀ u ∈ W, ∀ v ∈ W, |B u v| ≤ M * q u * q v) (hcoer : ∀ v ∈ W, c * q v ^ 2 ≤ B v v)
+    {K : Submodule ℝ V} (hK : K ≤ W) {u uh : V} (hu : u ∈ W) (huh : uh ∈ K)
+    (horth : ∀ v ∈ K, B (u - uh) v = 0) {w : V} (hw : w ∈ K) :
+    q (u - uh) ≤ M / c * q (u - w) := by
+  have he : u - uh ∈ W := W.sub_mem hu (hK huh)
+  have hsplit : B (u - uh) (u - uh) = B (u - uh) (u - w) := by
+    have h : u - uh = (u - w) + (w - uh) := by abel
+    nth_rewrite 2 [h]
+    rw [hadd, horth _ (K.sub_mem hw huh), add_zero]
+  have key : c * q (u - uh) ^ 2 ≤ M * q (u - uh) * q (u - w) := by
+    calc c * q (u - uh) ^ 2 ≤ B (u - uh) (u - uh) := hcoer _ he
+      _ = B (u - uh) (u - w) := hsplit
+      _ ≤ |B (u - uh) (u - w)| := le_abs_self _
+      _ ≤ M * q (u - uh) * q (u - w) := hM _ he _ (W.sub_mem hu (hK hw))
+  have hM0 : 0 ≤ M * q (u - w) := by
+    rcases eq_or_lt_of_le (apply_nonneg q (u - w)) with h | h
+    · rw [← h, mul_zero]
+    · have hw' : u - w ∈ W := W.sub_mem hu (hK hw)
+      have h1 : c * q (u - w) ^ 2 ≤ M * q (u - w) ^ 2 :=
+        (hcoer _ hw').trans ((le_abs_self _).trans
+          (by have := hM _ hw' _ hw'; rwa [mul_assoc, ← sq] at this))
+      have hcM : c ≤ M := le_of_mul_le_mul_right h1 (by positivity)
+      exact mul_nonneg (hc.le.trans hcM) h.le
+  rcases eq_or_lt_of_le (apply_nonneg q (u - uh)) with h | h
+  · rw [← h]
+    exact div_mul_eq_mul_div M c (q (u - w)) ▸ div_nonneg hM0 hc.le
+  · rw [div_mul_eq_mul_div, le_div_iff₀ hc]
+    nlinarith [key, apply_nonneg q (u - w)]
+
+/-- **Strang's first lemma in a seminorm, relative to a subspace `W`**: for a perturbed form `B`
+bounded by `M` on `W × K` and coercive with constant `c` on `K` for the seminorm `q`, a functional
+`ℓ`, a solution `uN ∈ K` of the perturbed problem `B uN v = ℓ v` on `K`, and an element `u ∈ W`
+whose consistency defect is `|B u v - ℓ v| ≤ δ q v` on `K`,
+
+  `q (u - uN) ≤ (1 + M / c) * q (u - w) + δ / c`  for every `w ∈ K`.
+
+The first term is the Céa-type approximation error and the second measures how far `u` is from
+solving the perturbed problem; `δ = 0` recovers `seminorm_sub_le_of_galerkin_orthogonal` up to the
+constant.  Only additivity of `B` in its *first* slot is used, and `ℓ` may be any function.  As in
+`strang_first`, `0 ≤ M` and `0 ≤ δ` have to be assumed: the two bounds are vacuous when `q` vanishes
+on `K`. -/
+theorem seminorm_sub_le_of_generalizedGalerkin {V : Type*} [AddCommGroup V] [Module ℝ V]
+    (q : Seminorm ℝ V) (B : V → V → ℝ) (ℓ : V → ℝ)
+    (hsub : ∀ x y z, B (x - y) z = B x z - B y z) {W : Submodule ℝ V} {M c δ : ℝ} (hc : 0 < c)
+    (hM0 : 0 ≤ M) (hδ0 : 0 ≤ δ) {K : Submodule ℝ V} (hK : K ≤ W)
+    (hM : ∀ x ∈ W, ∀ v ∈ K, |B x v| ≤ M * q x * q v) (hcoer : ∀ v ∈ K, c * q v ^ 2 ≤ B v v)
+    {u uN : V} (hu : u ∈ W) (huN : uN ∈ K) (hgal : ∀ v ∈ K, B uN v = ℓ v)
+    (hδ : ∀ v ∈ K, |B u v - ℓ v| ≤ δ * q v) {w : V} (hw : w ∈ K) :
+    q (u - uN) ≤ (1 + M / c) * q (u - w) + δ / c := by
+  have heK : uN - w ∈ K := K.sub_mem huN hw
+  have hid : B (uN - w) (uN - w) =
+      -(B u (uN - w) - ℓ (uN - w)) + B (u - w) (uN - w) := by
+    rw [hsub, hsub, hgal _ heK]; ring
+  have key : c * q (uN - w) ^ 2 ≤ (δ + M * q (u - w)) * q (uN - w) := by
+    have h1 := hδ _ heK
+    have h2 := hM _ (W.sub_mem hu (hK hw)) _ heK
+    calc c * q (uN - w) ^ 2 ≤ B (uN - w) (uN - w) := hcoer _ heK
+      _ ≤ |B u (uN - w) - ℓ (uN - w)| + |B (u - w) (uN - w)| := by
+          rw [hid]
+          exact (le_abs_self _).trans ((abs_add_le _ _).trans (by rw [abs_neg]))
+      _ ≤ (δ + M * q (u - w)) * q (uN - w) := by nlinarith
+  have hstep : c * q (uN - w) ≤ δ + M * q (u - w) := by
+    rcases eq_or_lt_of_le (apply_nonneg q (uN - w)) with h | h
+    · rw [← h, mul_zero]
+      have := mul_nonneg hM0 (apply_nonneg q (u - w))
+      linarith
+    · exact le_of_mul_le_mul_right (by nlinarith) h
+  have htri : q (u - uN) ≤ q (u - w) + q (uN - w) := by
+    have h : u - uN = (u - w) - (uN - w) := by abel
+    rw [h]
+    exact (map_sub_le_add q _ _)
+  have hdiv : q (uN - w) ≤ (δ + M * q (u - w)) / c := by
+    rw [le_div_iff₀ hc, mul_comm]
+    exact hstep
+  calc q (u - uN) ≤ q (u - w) + q (uN - w) := htri
+    _ ≤ q (u - w) + (δ + M * q (u - w)) / c := by gcongr
+    _ = (1 + M / c) * q (u - w) + δ / c := by field_simp; ring
+
+end SeminormQuasiOptimal

@@ -1564,6 +1564,253 @@ theorem newtonCotesK_eq_zero_of_even (hn : Even n) : newtonCotesK n = 0 := by
   rw [sub_self, integral_same] at h
   exact h.symm
 
+/-- **The sign of the nodal polynomial to the left of its first node**: `(-1)^{n+1} π_{n+1}(t) > 0`
+for `t < 0`, since all `n + 1` factors `t - i` are negative there. This is the panel `(-1, 0)` of
+the open rules, which the `ℕ`-indexed `intNodal_eval_mul_neg_one_pow_pos` does not reach. -/
+theorem intNodal_eval_mul_neg_one_pow_pos_of_neg {t : ℝ} (ht : t < 0) :
+    0 < (-1) ^ (n + 1) * (intNodal n).eval t := by
+  have hcard : ((-1 : ℝ)) ^ (n + 1) = ∏ _i : Fin (n + 1), (-1 : ℝ) := by
+    rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+  rw [intNodal_eval, hcard, ← Finset.prod_mul_distrib]
+  refine Finset.prod_pos fun i _ => ?_
+  have : (0 : ℝ) ≤ ((i : ℕ) : ℝ) := Nat.cast_nonneg _
+  nlinarith
+
+/-- `W(x) = ∫_0^x π_{n+1} > 0` beyond the last node, for even `n`: `W(n) = 0` and the integrand is
+positive on `(n, x)`. -/
+theorem integral_intNodal_pos_of_even_of_lt (hn : Even n) {x : ℝ} (hx : (n : ℝ) < x) :
+    0 < ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
+  have hsplit := integral_add_adjacent_intervals (intervalIntegrable_intNodal n 0 (n : ℝ))
+    (intervalIntegrable_intNodal n (n : ℝ) x)
+  have h0 : (∫ t in (0 : ℝ)..(n : ℝ), (intNodal n).eval t) = 0 := by
+    have := newtonCotesK_eq_zero_of_even hn
+    rwa [newtonCotesK] at this
+  have hlast : 0 < ∫ t in (n : ℝ)..x, (intNodal n).eval t :=
+    intervalIntegral_pos_of_pos_on (intervalIntegrable_intNodal n _ _)
+      (fun t ht => intNodal_eval_pos_of_lt ht.1) hx
+  rw [← hsplit, h0]
+  linarith
+
+/-- `W(x) = ∫_0^x π_{n+1} ≥ 0` on the whole half-line, for even `n`. -/
+theorem integral_intNodal_nonneg_of_even' (hn : Even n) {x : ℝ} (hx : 0 ≤ x) :
+    0 ≤ ∫ t in (0 : ℝ)..x, (intNodal n).eval t := by
+  rcases le_or_gt x n with h | h
+  · exact integral_intNodal_nonneg_of_even hn hx h
+  · exact (integral_intNodal_pos_of_even_of_lt hn h).le
+
+/-- **The recursion for the primitive of the nodal polynomial**: integrating
+`π_{n+2}(t) = π_{n+1}(t) (t - (n + 1))` by parts against the primitive `V(t) = ∫_u^t π_{n+1}`,
+
+  `∫_u^x π_{n+2} = (x - (n + 1)) V(x) - ∫_u^x V`,
+
+with no boundary term at `u` because `V(u) = 0`. Both the open and the closed sign analyses come
+from this identity: for `x ≤ n + 1` the two terms on the right have the sign of `-V`. -/
+private theorem integral_intNodal_succ_eq (p : ℕ) (u x : ℝ) :
+    (∫ t in u..x, (intNodal (p + 1)).eval t)
+      = (x - ((p : ℝ) + 1)) * (∫ t in u..x, (intNodal p).eval t)
+        - ∫ t in u..x, ∫ s in u..t, (intNodal p).eval s := by
+  have hVd : ∀ t : ℝ, HasDerivAt (fun y => ∫ s in u..y, (intNodal p).eval s)
+      ((intNodal p).eval t) t := fun t =>
+    ((Polynomial.continuous _).integral_hasStrictDerivAt u t).hasDerivAt
+  have hparts := integral_mul_deriv_eq_deriv_mul (a := u) (b := x)
+    (u := fun t => t - ((p : ℝ) + 1)) (u' := fun _ => (1 : ℝ))
+    (v := fun y => ∫ s in u..y, (intNodal p).eval s) (v' := fun t => (intNodal p).eval t)
+    (fun t _ => (hasDerivAt_id t).sub_const _) (fun t _ => hVd t) intervalIntegrable_const
+    (intervalIntegrable_intNodal p u x)
+  simp only [integral_same, mul_zero, sub_zero, one_mul] at hparts
+  rw [integral_congr (g := fun t => (t - ((p : ℝ) + 1)) * (intNodal p).eval t)
+    fun t _ => by rw [intNodal_succ_eval]; ring]
+  rw [hparts]
+
+/-- **`W(x) = ∫_0^x π_{n+1} ≤ 0` on `[0, n]` for odd `n`**, the odd-`n` companion of
+`integral_intNodal_nonneg_of_even`: writing `n = p + 1` with `p` even and integrating by parts
+(`integral_intNodal_succ_eq`), both terms are nonpositive because the primitive of `π_{p+1}` is
+nonnegative and `x ≤ p + 1`. -/
+theorem integral_intNodal_nonpos_of_odd (hn : Odd n) {x : ℝ} (hx0 : 0 ≤ x) (hxn : x ≤ n) :
+    (∫ t in (0 : ℝ)..x, (intNodal n).eval t) ≤ 0 := by
+  obtain ⟨m, rfl⟩ := hn
+  have hpe : Even (2 * m) := even_two_mul m
+  have hcast : ((2 * m + 1 : ℕ) : ℝ) = ((2 * m : ℕ) : ℝ) + 1 := by push_cast; ring
+  rw [integral_intNodal_succ_eq (2 * m) 0 x]
+  rw [hcast] at hxn
+  have h1 : (x - (((2 * m : ℕ) : ℝ) + 1)) *
+      (∫ t in (0 : ℝ)..x, (intNodal (2 * m)).eval t) ≤ 0 :=
+    mul_nonpos_of_nonpos_of_nonneg (by linarith) (integral_intNodal_nonneg_of_even' hpe hx0)
+  have h2 : 0 ≤ ∫ t in (0 : ℝ)..x, ∫ s in (0 : ℝ)..t, (intNodal (2 * m)).eval s :=
+    integral_nonneg hx0 fun t ht => integral_intNodal_nonneg_of_even' hpe ht.1
+  linarith
+
+/-- **`K_n < 0` for odd `n`** ([quarteroni2000numerical] Theorem 9.2, (9.20), stated there without
+proof): `K_n = ∫_0^n π_{n+1}(t) dt` is negative. With `n = p + 1` and `p` even, integration by parts
+(`integral_intNodal_succ_eq`) gives `K_n = -∫_0^{p+1} W_p` with `W_p(x) = ∫_0^x π_{p+1} ≥ 0`, and
+`W_p` is positive at `p + 1/2`. -/
+theorem newtonCotesK_neg (hn : Odd n) : newtonCotesK n < 0 := by
+  obtain ⟨m, rfl⟩ := hn
+  have hpe : Even (2 * m) := even_two_mul m
+  have hcast : ((2 * m + 1 : ℕ) : ℝ) = ((2 * m : ℕ) : ℝ) + 1 := by push_cast; ring
+  rw [newtonCotesK, hcast, integral_intNodal_succ_eq (2 * m) 0, sub_self, zero_mul, zero_sub,
+    neg_lt_zero]
+  have hWc : Continuous fun y : ℝ => ∫ s in (0 : ℝ)..y, (intNodal (2 * m)).eval s :=
+    continuous_iff_continuousAt.2 fun y =>
+      (((Polynomial.continuous _).integral_hasStrictDerivAt 0 y).hasDerivAt).continuousAt
+  refine integral_pos_of_continuousOn_of_nonneg (by positivity) hWc.continuousOn
+    (fun t ht => integral_intNodal_nonneg_of_even' hpe ht.1) (c := ((2 * m : ℕ) : ℝ) + 1 / 2)
+    ⟨by positivity, by linarith⟩ ?_
+  exact integral_intNodal_pos_of_even_of_lt hpe (by linarith)
+
+/-- For even `n` the nodal polynomial integrates to zero over the interval `[-1, n+1]` of the open
+rules: it is odd about the midpoint `n/2`, which is also the midpoint of `[-1, n + 1]`. -/
+theorem integral_intNodal_neg_one_eq_zero_of_even (hn : Even n) :
+    (∫ t in (-1 : ℝ)..((n : ℝ) + 1), (intNodal n).eval t) = 0 := by
+  have h := integral_intNodal_sub_eq hn ((n : ℝ) + 1)
+  rw [show (n : ℝ) - ((n : ℝ) + 1) = -1 by ring] at h
+  have hsym : (∫ t in (-1 : ℝ)..(0 : ℝ), (intNodal n).eval t)
+      = -∫ t in (0 : ℝ)..(-1 : ℝ), (intNodal n).eval t := integral_symm _ _
+  have hsplit := integral_add_adjacent_intervals (intervalIntegrable_intNodal n (-1) 0)
+    (intervalIntegrable_intNodal n 0 ((n : ℝ) + 1))
+  rw [← hsplit, hsym, h]
+  ring
+
+/-- **The sign of `W̃(x) = ∫_{-1}^x π_{n+1}` on `[-1, n + 1]`**, the interval of the open
+Newton–Cotes rules: `(-1)^{n+1} W̃ ≥ 0`, that is, `W̃ ≤ 0` for even `n` and `W̃ ≥ 0` for odd `n`.
+
+The proof is an induction on `n` through `integral_intNodal_succ_eq`: on `[-1, n + 1]` the two
+terms of that identity both carry the sign opposite to the previous `W̃`, and the last panel
+`[n + 1, n + 2]` is handled by the positivity of `π_{n+2}` beyond its last node when `n + 1` is
+odd, and by `integral_intNodal_neg_one_eq_zero_of_even` when `n + 1` is even. -/
+theorem integral_intNodal_neg_one_mul_nonneg :
+    ∀ (n : ℕ) (x : ℝ), -1 ≤ x → x ≤ (n : ℝ) + 1 →
+      0 ≤ (-1) ^ (n + 1) * ∫ t in (-1 : ℝ)..x, (intNodal n).eval t := by
+  intro n
+  induction n with
+  | zero =>
+    intro x hx1 hx2
+    have hval : (∫ t in (-1 : ℝ)..x, (intNodal 0).eval t) = (x ^ 2 - 1) / 2 := by
+      rw [integral_congr (g := fun t : ℝ => t) fun t _ => by
+        simp [intNodal_eval], integral_id]
+      norm_num
+    rw [hval]
+    push_cast at hx2
+    nlinarith
+  | succ p ih =>
+    have hmain : ∀ x : ℝ, -1 ≤ x → x ≤ (p : ℝ) + 1 →
+        0 ≤ (-1) ^ (p + 2) * ∫ t in (-1 : ℝ)..x, (intNodal (p + 1)).eval t := by
+      intro x hx1 hx2
+      rw [integral_intNodal_succ_eq p (-1) x]
+      have hterm1 : 0 ≤ (-1 : ℝ) ^ (p + 2) *
+          ((x - ((p : ℝ) + 1)) * ∫ t in (-1 : ℝ)..x, (intNodal p).eval t) := by
+        have h := ih x hx1 hx2
+        have hrw : (-1 : ℝ) ^ (p + 2) *
+            ((x - ((p : ℝ) + 1)) * ∫ t in (-1 : ℝ)..x, (intNodal p).eval t)
+            = (((p : ℝ) + 1) - x) *
+              ((-1) ^ (p + 1) * ∫ t in (-1 : ℝ)..x, (intNodal p).eval t) := by
+          rw [pow_succ]; ring
+        rw [hrw]
+        exact mul_nonneg (by linarith) h
+      have hterm2 : 0 ≤ (-1 : ℝ) ^ (p + 2) *
+          (-∫ t in (-1 : ℝ)..x, ∫ s in (-1 : ℝ)..t, (intNodal p).eval s) := by
+        have hrw : (-1 : ℝ) ^ (p + 2) *
+            (-∫ t in (-1 : ℝ)..x, ∫ s in (-1 : ℝ)..t, (intNodal p).eval s)
+            = ∫ t in (-1 : ℝ)..x, (-1) ^ (p + 1) * ∫ s in (-1 : ℝ)..t, (intNodal p).eval s := by
+          rw [integral_const_mul, pow_succ]; ring
+        rw [hrw]
+        exact integral_nonneg hx1 fun t ht => ih t ht.1 (by linarith [ht.2])
+      have hsum := add_nonneg hterm1 hterm2
+      linarith [hsum]
+    intro x hx1 hx2
+    rcases le_or_gt x ((p : ℝ) + 1) with hx | hx
+    · exact hmain x hx1 hx
+    · have hcast : (((p + 1 : ℕ) : ℝ)) = (p : ℝ) + 1 := by push_cast; ring
+      push_cast at hx2
+      rcases Nat.even_or_odd (p + 1) with hpe | hpo
+      · have hzero := integral_intNodal_neg_one_eq_zero_of_even hpe
+        rw [hcast] at hzero
+        have hsplit2 := integral_add_adjacent_intervals
+          (intervalIntegrable_intNodal (p + 1) (-1) x)
+          (intervalIntegrable_intNodal (p + 1) x ((p : ℝ) + 1 + 1))
+        have htail : 0 ≤ ∫ t in x..((p : ℝ) + 1 + 1), (intNodal (p + 1)).eval t := by
+          refine integral_nonneg (by linarith) fun t ht => ?_
+          rcases eq_or_lt_of_le (le_trans hx.le ht.1) with heq | hlt
+          · rw [← heq, ← hcast, intNodal_eval_natCast le_rfl]
+          · exact (intNodal_eval_pos_of_lt (by rwa [hcast])).le
+        have hev : (-1 : ℝ) ^ (p + 1 + 1) = -1 := hpe.add_one.neg_one_pow
+        rw [hev, neg_one_mul, neg_nonneg]
+        linarith
+      · have hhead := hmain ((p : ℝ) + 1) (by linarith) le_rfl
+        have hsplit := integral_add_adjacent_intervals
+          (intervalIntegrable_intNodal (p + 1) (-1) ((p : ℝ) + 1))
+          (intervalIntegrable_intNodal (p + 1) ((p : ℝ) + 1) x)
+        have htail : 0 ≤ ∫ t in ((p : ℝ) + 1)..x, (intNodal (p + 1)).eval t := by
+          refine integral_nonneg hx.le fun t ht => ?_
+          rcases eq_or_lt_of_le ht.1 with heq | hlt
+          · rw [← heq, ← hcast, intNodal_eval_natCast le_rfl]
+          · exact (intNodal_eval_pos_of_lt (by rwa [hcast])).le
+        have hsign : (0 : ℝ) ≤ (-1) ^ (p + 1 + 1) := by
+          rcases Nat.even_or_odd p with h | h
+          · rw [(h.add_one.add_one).neg_one_pow]; norm_num
+          · exact absurd h.add_one (Nat.not_even_iff_odd.2 hpo)
+        rw [← hsplit, mul_add]
+        exact add_nonneg hhead (mul_nonneg hsign htail)
+
+/-- **`M̃_n > 0` for even `n`** ([quarteroni2000numerical] Theorem 9.2, (9.19), stated there without
+proof): the constant `M̃_n = ∫_{-1}^{n+1} t π_{n+1}(t) dt` of the open rules with even `n` is
+positive. Integrating by parts, `M̃_n = -∫_{-1}^{n+1} W̃` because `W̃(-1) = 0` and
+`W̃(n + 1) = 0` (`integral_intNodal_neg_one_eq_zero_of_even`), and `W̃ ≤ 0` by
+`integral_intNodal_neg_one_mul_nonneg`, strictly on the first panel. -/
+theorem openNewtonCotesM_pos (hn : Even n) : 0 < openNewtonCotesM n := by
+  have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg _
+  set W : ℝ → ℝ := fun y => ∫ s in (-1 : ℝ)..y, (intNodal n).eval s with hW
+  have hWd : ∀ t : ℝ, HasDerivAt W ((intNodal n).eval t) t := fun t =>
+    ((Polynomial.continuous _).integral_hasStrictDerivAt (-1) t).hasDerivAt
+  have hWc : Continuous W := continuous_iff_continuousAt.2 fun y => (hWd y).continuousAt
+  have hparts := integral_mul_deriv_eq_deriv_mul (a := (-1 : ℝ)) (b := (n : ℝ) + 1)
+    (u := fun t => t) (u' := fun _ => (1 : ℝ)) (v := W) (v' := fun t => (intNodal n).eval t)
+    (fun t _ => hasDerivAt_id' t) (fun t _ => hWd t) intervalIntegrable_const
+    (intervalIntegrable_intNodal n _ _)
+  have hWtop : W ((n : ℝ) + 1) = 0 := integral_intNodal_neg_one_eq_zero_of_even hn
+  have hWbot : W (-1) = 0 := by simp [hW]
+  have hWnonpos : ∀ t ∈ Icc (-1 : ℝ) ((n : ℝ) + 1), 0 ≤ -W t := by
+    intro t ht
+    have h := integral_intNodal_neg_one_mul_nonneg n t ht.1 ht.2
+    rw [hn.add_one.neg_one_pow, neg_one_mul] at h
+    simpa [hW] using h
+  have hneg : 0 < -W (-(1 / 2) : ℝ) := by
+    have h := intervalIntegral_pos_of_pos_on (f := fun t => -(intNodal n).eval t)
+      (intervalIntegrable_intNodal n (-1) (-(1 / 2))).neg
+      (fun t ht => by
+        have h2 := intNodal_eval_mul_neg_one_pow_pos_of_neg (n := n) (t := t)
+          (by linarith [ht.2])
+        rw [hn.add_one.neg_one_pow] at h2
+        linarith)
+      (by norm_num)
+    rw [integral_neg] at h
+    simpa [hW] using h
+  have hpos : 0 < ∫ t in (-1 : ℝ)..((n : ℝ) + 1), -W t :=
+    integral_pos_of_continuousOn_of_nonneg (by linarith) hWc.neg.continuousOn hWnonpos
+      (c := -(1 / 2)) ⟨by norm_num, by linarith⟩ hneg
+  rw [integral_neg] at hpos
+  have hone : (∫ x in (-1 : ℝ)..((n : ℝ) + 1), 1 * W x)
+      = ∫ x in (-1 : ℝ)..((n : ℝ) + 1), W x := integral_congr fun x _ => one_mul _
+  rw [openNewtonCotesM, hparts, hWtop, hWbot, hone]
+  linarith
+
+/-- **`K̃_n > 0` for odd `n`** ([quarteroni2000numerical] Theorem 9.2, (9.20)): the constant
+`K̃_n = ∫_{-1}^{n+1} π_{n+1}(t) dt` of the open rules with odd `n` is positive. The integral over
+`[-1, n]` is nonnegative by `integral_intNodal_neg_one_mul_nonneg`, and the last panel `[n, n + 1]`
+contributes a positive amount because `π_{n+1} > 0` beyond its last node. -/
+theorem openNewtonCotesK_pos (hn : Odd n) : 0 < openNewtonCotesK n := by
+  have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg _
+  have hhead : 0 ≤ ∫ t in (-1 : ℝ)..(n : ℝ), (intNodal n).eval t := by
+    have h := integral_intNodal_neg_one_mul_nonneg n (n : ℝ) (by linarith) (by linarith)
+    rwa [hn.add_one.neg_one_pow, one_mul] at h
+  have htail : 0 < ∫ t in (n : ℝ)..((n : ℝ) + 1), (intNodal n).eval t :=
+    intervalIntegral_pos_of_pos_on (intervalIntegrable_intNodal n _ _)
+      (fun t ht => intNodal_eval_pos_of_lt ht.1) (by linarith)
+  have hsplit := integral_add_adjacent_intervals (intervalIntegrable_intNodal n (-1) (n : ℝ))
+    (intervalIntegrable_intNodal n (n : ℝ) ((n : ℝ) + 1))
+  rw [openNewtonCotesK, ← hsplit]
+  linarith
+
 end Sign
 
 /-! ### The error of the closed rules with even `n` -/

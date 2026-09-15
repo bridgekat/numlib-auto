@@ -399,40 +399,19 @@ theorem existsUnique_isWeakSolution (hab : a < b) (α γ : Lp ℝ ⊤ (volume.re
 /-- **Céa's lemma in a seminorm**, relative to a subspace `W`: if the bilinear form `B` is
 bounded by `M` and coercive with constant `c` for the seminorm `q` on `W`, then for `u ∈ W` and
 `uh ∈ K ≤ W` with the Galerkin orthogonality `B (u - uh) v = 0` on `K`,
-`q (u - uh) ≤ (M / c) q (u - w)` for every `w ∈ K`. Only additivity of `B` in its second slot
-is used. The relativization to `W` matters: on `H^1(a, b)` the form is bounded in the
-seminorm only on `H^1_0(a, b)`. Belongs in `Numlib/Variational/Galerkin.lean`. -/
+`q (u - uh) ≤ (M / c) q (u - w)` for every `w ∈ K`.
+
+This is the general lemma `_root_.seminorm_sub_le_of_galerkin_orthogonal` of
+`Numlib/Variational/Galerkin`, restated here in the namespace of its consumer
+`galerkin_seminorm_sub_le`; the proof is there. -/
 theorem seminorm_sub_le_of_galerkin_orthogonal {V : Type*} [AddCommGroup V] [Module ℝ V]
     (q : Seminorm ℝ V) (B : V → V → ℝ) (hadd : ∀ x y z, B x (y + z) = B x y + B x z)
     {W : Submodule ℝ V} {M c : ℝ} (hc : 0 < c)
     (hM : ∀ u ∈ W, ∀ v ∈ W, |B u v| ≤ M * q u * q v) (hcoer : ∀ v ∈ W, c * q v ^ 2 ≤ B v v)
     {K : Submodule ℝ V} (hK : K ≤ W) {u uh : V} (hu : u ∈ W) (huh : uh ∈ K)
     (horth : ∀ v ∈ K, B (u - uh) v = 0) {w : V} (hw : w ∈ K) :
-    q (u - uh) ≤ M / c * q (u - w) := by
-  have he : u - uh ∈ W := W.sub_mem hu (hK huh)
-  have hsplit : B (u - uh) (u - uh) = B (u - uh) (u - w) := by
-    have : u - uh = (u - w) + (w - uh) := by abel
-    nth_rewrite 2 [this]
-    rw [hadd, horth _ (K.sub_mem hw huh), add_zero]
-  have key : c * q (u - uh) ^ 2 ≤ M * q (u - uh) * q (u - w) := by
-    calc c * q (u - uh) ^ 2 ≤ B (u - uh) (u - uh) := hcoer _ he
-      _ = B (u - uh) (u - w) := hsplit
-      _ ≤ |B (u - uh) (u - w)| := le_abs_self _
-      _ ≤ M * q (u - uh) * q (u - w) := hM _ he _ (W.sub_mem hu (hK hw))
-  have hM0 : 0 ≤ M * q (u - w) := by
-    rcases eq_or_lt_of_le (apply_nonneg q (u - w)) with h | h
-    · rw [← h, mul_zero]
-    · have hw' : u - w ∈ W := W.sub_mem hu (hK hw)
-      have h1 : c * q (u - w) ^ 2 ≤ M * q (u - w) ^ 2 :=
-        (hcoer _ hw').trans ((le_abs_self _).trans
-          (by have := hM _ hw' _ hw'; rwa [mul_assoc, ← sq] at this))
-      have hcM : c ≤ M := le_of_mul_le_mul_right h1 (by positivity)
-      exact mul_nonneg (hc.le.trans hcM) h.le
-  rcases eq_or_lt_of_le (apply_nonneg q (u - uh)) with h | h
-  · rw [← h]
-    exact div_mul_eq_mul_div M c (q (u - w)) ▸ div_nonneg hM0 hc.le
-  · rw [div_mul_eq_mul_div, le_div_iff₀ hc]
-    nlinarith [key, apply_nonneg q (u - w)]
+    q (u - uh) ≤ M / c * q (u - w) :=
+  _root_.seminorm_sub_le_of_galerkin_orthogonal q B hadd hc hM hcoer hK hu huh horth hw
 
 open SobolevInterval in
 /-- **Céa's lemma with the constant of [quarteroni2000numerical] Theorem 12.3**: for the weak

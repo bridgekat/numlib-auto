@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Convex.Function
+import Mathlib.Analysis.Convex.Strong
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.Semicontinuity.Basic
 
@@ -132,3 +133,113 @@ theorem IsMinOn.eq_of_strictConvexOn {f : V → ℝ} {K : Set V} (hf : StrictCon
   StrictConvexOn.eq_of_isMinOn hf h₁ h₂ hu₁ hu₂
 
 end Uniqueness
+
+section StrongConvex
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+/-- **A strongly convex functional is coercive**: if `f` is `m`-strongly convex on a set `K` with
+`0 < m` and is bounded below on `K ∩ ball x₀ r` for one point `x₀ ∈ K` and one radius `r > 0`, then
+`IsCoerciveFunctionalOn f K`.
+
+Strong convexity alone does not give coercivity: a discontinuous linear functional `ℓ` on an
+infinite-dimensional space is convex, so on a Hilbert space `x ↦ ℓ x + ‖x‖ ^ 2` is strongly convex
+while tending to `-∞` along a suitable sequence, and it is unbounded below on every ball. A local
+lower bound is therefore part of the hypotheses; lower semicontinuity at a point of `K` supplies
+one, which is how `existsUnique_isMinOn_of_strongConvexOn` uses this.
+
+The proof is the standard interpolation argument: for `y ∈ K` far from `x₀`, the point
+`z = (1 - t) • x₀ + t • y` with `t = r / (2 ‖y - x₀‖)` lies in `K ∩ ball x₀ r`, so it is subject to
+the lower bound, and the strong convexity inequality at `z` reads
+`f y ≥ (m/4) ‖y - x₀‖² - A ‖y - x₀‖` with `A = 2 (|c| + |f x₀|) / r`: the quadratic term beats the
+linear one. `StrongConvexOn K m f` is Mathlib's `UniformConvexOn K (fun ρ => m / 2 * ρ ^ 2) f`, so
+a modulus `ρ ‖x - y‖²` in the literature is `m = 2 ρ` here. -/
+theorem StrongConvexOn.isCoerciveFunctionalOn {K : Set V} {f : V → ℝ} {m : ℝ}
+    (hf : StrongConvexOn K m f) (hm : 0 < m) {x₀ : V} (hx₀ : x₀ ∈ K) {r : ℝ} (hr : 0 < r)
+    (hbdd : BddBelow (f '' (K ∩ Metric.ball x₀ r))) : IsCoerciveFunctionalOn f K := by
+  obtain ⟨c, hc⟩ := hbdd
+  set A : ℝ := 2 * (|c| + |f x₀|) / r with hA
+  have hA0 : 0 ≤ A := by rw [hA]; positivity
+  intro M
+  refine ⟨‖x₀‖ + max r (4 / m * (A + |M| + 1) + 1), fun y hy hynorm => ?_⟩
+  set s : ℝ := ‖y - x₀‖ with hsdef
+  have hsge : max r (4 / m * (A + |M| + 1) + 1) ≤ s := by
+    have h1 : ‖y‖ - ‖x₀‖ ≤ s := by rw [hsdef]; exact norm_sub_norm_le y x₀
+    linarith
+  have hsr : r ≤ s := (le_max_left _ _).trans hsge
+  have hs1 : 4 / m * (A + |M| + 1) + 1 ≤ s := (le_max_right _ _).trans hsge
+  have hspos : 0 < s := lt_of_lt_of_le hr hsr
+  set t : ℝ := r / (2 * s) with htdef
+  have htpos : 0 < t := by rw [htdef]; exact div_pos hr (by linarith)
+  have hthalf : t ≤ 1 / 2 := by
+    rw [htdef, div_le_iff₀ (by linarith)]; linarith
+  have ht1 : 0 ≤ 1 - t := by linarith
+  have hts : t * s = r / 2 := by rw [htdef]; field_simp
+  have hzK : (1 - t) • x₀ + t • y ∈ K := hf.1 hx₀ hy ht1 htpos.le (by ring)
+  have hzball : (1 - t) • x₀ + t • y ∈ Metric.ball x₀ r := by
+    have hrw : (1 - t) • x₀ + t • y - x₀ = t • (y - x₀) := by module
+    rw [Metric.mem_ball, dist_eq_norm, hrw, norm_smul, Real.norm_eq_abs, abs_of_pos htpos,
+      ← hsdef, hts]
+    linarith
+  have hcz : c ≤ f ((1 - t) • x₀ + t • y) := hc ⟨_, ⟨hzK, hzball⟩, rfl⟩
+  have hsc := hf.2 hx₀ hy ht1 htpos.le (by ring : 1 - t + t = 1)
+  simp only [smul_eq_mul] at hsc
+  rw [norm_sub_rev, ← hsdef] at hsc
+  have hfx₀ : (1 - t) * f x₀ ≤ |f x₀| :=
+    calc (1 - t) * f x₀ ≤ (1 - t) * |f x₀| := mul_le_mul_of_nonneg_left (le_abs_self _) ht1
+      _ ≤ 1 * |f x₀| := mul_le_mul_of_nonneg_right (by linarith) (abs_nonneg _)
+      _ = |f x₀| := one_mul _
+  have key : c - |f x₀| + m / 4 * (t * s ^ 2) ≤ t * f y := by
+    have h2 : m / 4 * (t * s ^ 2) ≤ (1 - t) * t * (m / 2 * s ^ 2) := by
+      nlinarith [mul_nonneg (mul_nonneg (mul_nonneg htpos.le (sq_nonneg s)) hm.le)
+        (by linarith : (0 : ℝ) ≤ 1 - 2 * t)]
+    linarith
+  have hAts : A * (t * s) = |c| + |f x₀| := by rw [hts, hA]; field_simp
+  have hfy : m / 4 * s ^ 2 - A * s ≤ f y := by
+    refine le_of_mul_le_mul_left ?_ htpos
+    have hrw : t * (m / 4 * s ^ 2 - A * s) = m / 4 * (t * s ^ 2) - A * (t * s) := by ring
+    rw [hrw, hAts]
+    linarith [neg_abs_le c]
+  have hs1' : (1 : ℝ) ≤ s := by
+    have : 0 ≤ 4 / m * (A + |M| + 1) := by positivity
+    linarith
+  have hlin : |M| + 1 ≤ m / 4 * s - A := by
+    have hmul : m / 4 * (4 / m * (A + |M| + 1) + 1) ≤ m / 4 * s :=
+      mul_le_mul_of_nonneg_left hs1 (by positivity)
+    have hid : m / 4 * (4 / m * (A + |M| + 1) + 1) = A + |M| + 1 + m / 4 := by field_simp
+    rw [hid] at hmul
+    linarith
+  nlinarith [mul_le_mul_of_nonneg_left hlin hspos.le, le_abs_self M, abs_nonneg M]
+
+variable [FiniteDimensional ℝ V]
+
+/-- **Existence and uniqueness of the minimizer of a strongly convex functional** on a nonempty
+closed set of a finite-dimensional real normed space: a lower semicontinuous `m`-strongly convex
+`f` with `0 < m` has exactly one minimizer on `K`.
+
+Convexity of `K` is part of `StrongConvexOn K m f`. Lower semicontinuity cannot be dropped, though
+textbook statements often do: on `K = [0, 1]` the function `f x = (x - 1) ^ 2` for `x < 1` and
+`f 1 = 5` is strongly convex on `K` and has no minimizer there. Existence is
+`exists_isMinOn_of_isClosed_of_finiteDimensional` fed by `StrongConvexOn.isCoerciveFunctionalOn`,
+whose local lower bound comes from lower semicontinuity at a point of `K`; uniqueness is
+`IsMinOn.eq_of_strictConvexOn` applied to `StrongConvexOn.strictConvexOn`. -/
+theorem existsUnique_isMinOn_of_strongConvexOn {K : Set V} (hcl : IsClosed K) (hne : K.Nonempty)
+    {f : V → ℝ} {m : ℝ} (hm : 0 < m) (hf : StrongConvexOn K m f)
+    (hlsc : LowerSemicontinuousOn f K) : ∃! u, u ∈ K ∧ IsMinOn f K u := by
+  obtain ⟨x₀, hx₀⟩ := hne
+  obtain ⟨r, hr, hball⟩ : ∃ r > 0, ∀ x ∈ Metric.ball x₀ r, x ∈ K → f x₀ - 1 < f x := by
+    have h := hlsc x₀ hx₀ (f x₀ - 1) (by linarith)
+    rw [eventually_nhdsWithin_iff, Metric.eventually_nhds_iff_ball] at h
+    exact h
+  have hbdd : BddBelow (f '' (K ∩ Metric.ball x₀ r)) := by
+    refine ⟨f x₀ - 1, ?_⟩
+    rintro _ ⟨x, ⟨hxK, hxb⟩, rfl⟩
+    exact (hball x hxb hxK).le
+  obtain ⟨u, huK, humin⟩ :=
+    exists_isMinOn_of_isClosed_of_finiteDimensional (𝕜 := ℝ) (⊤ : Submodule ℝ V) (by simp) hcl
+      ⟨x₀, hx₀⟩ hlsc (hf.isCoerciveFunctionalOn hm hx₀ hr hbdd)
+  refine ⟨u, ⟨huK, humin⟩, ?_⟩
+  rintro v ⟨hvK, hvmin⟩
+  exact IsMinOn.eq_of_strictConvexOn (hf.strictConvexOn hm) hvmin humin hvK huK
+
+end StrongConvex

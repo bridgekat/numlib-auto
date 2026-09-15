@@ -573,6 +573,187 @@ theorem periodicBlockScheme_pow_mulVec_fourierMode (G : Fin N → Matrix (Fin m)
     rw [pow_succ', ← mulVec_mulVec, ih, periodicBlockScheme_mulVec_modeTensor, pow_succ',
       ← mulVec_mulVec]
 
+/-! #### The `ℓ²` norm of the powers of a block scheme
+
+The scalar argument transposes: expanding a block grid function in the tensored modes
+`e_k ⊗ v` diagonalizes the block circulant into the `m × m` amplification matrices, and the
+discrete Parseval identity applied to each block component turns the `ℓ²` norm of the powers into
+the maximum of the norms of the powers of the amplification matrices. -/
+
+/-- The modulus of an entry of a Fourier mode is `1`. -/
+private theorem norm_fourierMode (k j : Fin N) : ‖fourierMode N k j‖ = 1 := by
+  rw [fourierMode_apply, norm_pow]
+  have h : Complex.exp (2 * π * I / N) = Complex.exp (((2 * π / N : ℝ) : ℂ) * I) := by
+    congr 1
+    push_cast
+    ring
+  rw [h, Complex.norm_exp_ofReal_mul_I, one_pow]
+
+/-- **Blockwise Parseval**: `∑_{k,p} |û(k, p)|² = N ∑_{j,p} |u(j, p)|²` for the componentwise
+transform `û(k, p) = (Fᴴ u(·, p))(k)`. -/
+private theorem sum_normSq_blockDft (u : Fin N × Fin m → ℂ) :
+    (∑ kp : Fin N × Fin m, ‖((Matrix.dft N)ᴴ *ᵥ fun j => u (j, kp.2)) kp.1‖ ^ 2)
+      = N * ∑ jp : Fin N × Fin m, ‖u jp‖ ^ 2 := by
+  have h : ∀ p : Fin m, (∑ k : Fin N, ‖((Matrix.dft N)ᴴ *ᵥ fun j => u (j, p)) k‖ ^ 2)
+      = N * ∑ j : Fin N, ‖u (j, p)‖ ^ 2 :=
+    fun p => sum_normSq_conjTranspose_dft_mulVec fun j => u (j, p)
+  rw [Fintype.sum_prod_type_right, Fintype.sum_prod_type_right, Finset.mul_sum]
+  exact Finset.sum_congr rfl fun p _ => h p
+
+/-- **Blockwise Parseval** for the inverse transform. -/
+private theorem sum_normSq_blockExpand (v : Fin N × Fin m → ℂ) :
+    (∑ jp : Fin N × Fin m, ‖(Matrix.dft N *ᵥ fun k => v (k, jp.2)) jp.1‖ ^ 2)
+      = N * ∑ kp : Fin N × Fin m, ‖v kp‖ ^ 2 := by
+  have h : ∀ p : Fin m, (∑ j : Fin N, ‖(Matrix.dft N *ᵥ fun k => v (k, p)) j‖ ^ 2)
+      = N * ∑ k : Fin N, ‖v (k, p)‖ ^ 2 :=
+    fun p => sum_normSq_dft_mulVec fun k => v (k, p)
+  rw [Fintype.sum_prod_type_right, Fintype.sum_prod_type_right, Finset.mul_sum]
+  exact Finset.sum_congr rfl fun p _ => h p
+
+/-- A superposition of tensored modes is the inverse transform of its coefficients, componentwise.
+-/
+private theorem sum_modeTensor_apply (w : Fin N → Fin m → ℂ) (jp : Fin N × Fin m) :
+    (∑ k : Fin N, modeTensor N k (w k)) jp = (Matrix.dft N *ᵥ fun k => w k jp.2) jp.1 := by
+  rw [Finset.sum_apply, mulVec, dotProduct]
+  rfl
+
+/-- The squared `ℓ²` norm of a tensored mode: `‖e_k ⊗ w‖² = N ‖w‖²`. -/
+private theorem sum_normSq_modeTensor (k : Fin N) (w : Fin m → ℂ) :
+    (∑ jp : Fin N × Fin m, ‖modeTensor N k w jp‖ ^ 2) = N * ∑ p, ‖w p‖ ^ 2 := by
+  have h : ∀ j : Fin N, (∑ p, ‖modeTensor N k w (j, p)‖ ^ 2) = ∑ p, ‖w p‖ ^ 2 := by
+    intro j
+    refine Finset.sum_congr rfl fun p _ => ?_
+    rw [modeTensor, norm_mul, norm_fourierMode, one_mul]
+  rw [Fintype.sum_prod_type, Finset.sum_congr rfl fun j _ => h j, Finset.sum_const,
+    Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+
+/-- An operator-norm bound on a matrix, in the form of a bound between sums of squares. -/
+private theorem sum_normSq_mulVec_le {M : Matrix (Fin m) (Fin m) ℂ} {ρ : ℝ}
+    (hρ : ‖toEuclideanCLM (𝕜 := ℂ) M‖ ≤ ρ) (w : Fin m → ℂ) :
+    (∑ p, ‖(M *ᵥ w) p‖ ^ 2) ≤ ρ ^ 2 * ∑ p, ‖w p‖ ^ 2 := by
+  have hρ0 : 0 ≤ ρ := le_trans (norm_nonneg _) hρ
+  have h := (toEuclideanCLM (𝕜 := ℂ) M).le_opNorm (WithLp.toLp 2 w)
+  rw [toEuclideanCLM_toLp] at h
+  have h2 : ‖(WithLp.toLp 2 (M *ᵥ w) : EuclideanSpace ℂ (Fin m))‖
+      ≤ ρ * ‖(WithLp.toLp 2 w : EuclideanSpace ℂ (Fin m))‖ :=
+    h.trans (mul_le_mul_of_nonneg_right hρ (norm_nonneg _))
+  have key : ∀ a b : ℝ, 0 ≤ a → 0 ≤ b → √a ≤ ρ * √b → a ≤ ρ ^ 2 * b := by
+    intro a b ha hb hab
+    nlinarith [Real.sq_sqrt ha, Real.sq_sqrt hb, Real.sqrt_nonneg a, Real.sqrt_nonneg b]
+  exact key _ _ (by positivity) (by positivity) (by simpa [EuclideanSpace.norm_eq] using h2)
+
+/-- The squared `ℓ²` norm of the image of a block grid function under the powers of a block
+scheme, bounded through the amplification matrices. -/
+private theorem sum_normSq_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
+    {ρ : ℝ} {n : ℕ} (hN : 0 < N)
+    (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ)
+    (y : Fin N × Fin m → ℂ) :
+    (∑ jp : Fin N × Fin m, ‖((periodicBlockScheme G ^ n) *ᵥ y) jp‖ ^ 2)
+      ≤ ρ ^ 2 * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2 := by
+  have hNC : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
+  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
+  set û : Fin N × Fin m → ℂ :=
+    fun kp => ((Matrix.dft N)ᴴ *ᵥ fun j => y (j, kp.2)) kp.1 with hû
+  set z : Fin N × Fin m → ℂ :=
+    fun kp => ((amplificationMatrix G kp.1 ^ n) *ᵥ fun q => û (kp.1, q)) kp.2 with hz
+  -- `y` is the inverse transform of `û`, hence a superposition of tensored modes
+  have hinv : ∀ p : Fin m, (Matrix.dft N *ᵥ fun k => û (k, p)) = (N : ℂ) • fun j => y (j, p) := by
+    intro p
+    change (Matrix.dft N *ᵥ ((Matrix.dft N)ᴴ *ᵥ fun j => y (j, p))) = _
+    rw [mulVec_mulVec, Matrix.dft_mul_conjTranspose_dft, smul_mulVec, one_mulVec]
+  have hy : y = ((N : ℂ))⁻¹ • ∑ k : Fin N, modeTensor N k (fun q => û (k, q)) := by
+    funext jp
+    rw [Pi.smul_apply, smul_eq_mul, sum_modeTensor_apply, hinv jp.2, Pi.smul_apply, smul_eq_mul,
+      ← mul_assoc, inv_mul_cancel₀ hNC, one_mul]
+  -- the powers act modewise
+  have hstep : ∀ k : Fin N, (periodicBlockScheme G ^ n) *ᵥ modeTensor N k (fun q => û (k, q))
+      = modeTensor N k (fun q => z (k, q)) :=
+    fun k => periodicBlockScheme_pow_mulVec_fourierMode G k (fun q => û (k, q)) n
+  have hBy : (periodicBlockScheme G ^ n) *ᵥ y
+      = fun jp => ((N : ℂ))⁻¹ * (Matrix.dft N *ᵥ fun k => z (k, jp.2)) jp.1 := by
+    rw [hy, mulVec_smul, mulVec_sum, Finset.sum_congr rfl fun k _ => hstep k]
+    funext jp
+    rw [Pi.smul_apply, smul_eq_mul, sum_modeTensor_apply]
+  -- Parseval on both sides
+  have h1 : (∑ jp : Fin N × Fin m, ‖((periodicBlockScheme G ^ n) *ᵥ y) jp‖ ^ 2)
+      = ((N : ℝ))⁻¹ * ∑ kp : Fin N × Fin m, ‖z kp‖ ^ 2 := by
+    rw [hBy]
+    simp only [norm_mul, norm_inv, Complex.norm_natCast, mul_pow]
+    rw [← Finset.mul_sum, sum_normSq_blockExpand]
+    field_simp
+  have hblock : ∀ k : Fin N, (∑ p : Fin m, ‖z (k, p)‖ ^ 2)
+      ≤ ρ ^ 2 * ∑ p : Fin m, ‖û (k, p)‖ ^ 2 :=
+    fun k => sum_normSq_mulVec_le (hρ k) fun q => û (k, q)
+  have h2 : (∑ kp : Fin N × Fin m, ‖z kp‖ ^ 2) ≤ ρ ^ 2 * ∑ kp : Fin N × Fin m, ‖û kp‖ ^ 2 := by
+    rw [Fintype.sum_prod_type, Fintype.sum_prod_type, Finset.mul_sum]
+    exact Finset.sum_le_sum fun k _ => hblock k
+  have h3 : (∑ kp : Fin N × Fin m, ‖û kp‖ ^ 2) = N * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2 :=
+    sum_normSq_blockDft y
+  rw [h3] at h2
+  rw [h1]
+  calc ((N : ℝ))⁻¹ * ∑ kp : Fin N × Fin m, ‖z kp‖ ^ 2
+      ≤ ((N : ℝ))⁻¹ * (ρ ^ 2 * ((N : ℝ) * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2)) :=
+        mul_le_mul_of_nonneg_left h2 (by positivity)
+    _ = ρ ^ 2 * ∑ jp : Fin N × Fin m, ‖y jp‖ ^ 2 := by field_simp
+
+/-- **The `ℓ²` bound for the powers of a block scheme**: if every amplification matrix satisfies
+`‖G_kⁿ‖₂ ≤ ρ`, then `‖Bⁿ u‖₂ ≤ ρ ‖u‖₂`. Expanding `u` in the tensored modes diagonalizes `Bⁿ`
+into the blocks `G_kⁿ` (`FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode`), and
+discrete Parseval applied to each block component of the transform turns the modewise bounds into
+the global one. -/
+theorem norm_toEuclideanLin_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
+    {ρ : ℝ} {n : ℕ} (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ)
+    (u : EuclideanSpace ℂ (Fin N × Fin m)) :
+    ‖toEuclideanLin (periodicBlockScheme G ^ n) u‖ ≤ ρ * ‖u‖ := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+    simp
+  have hρ0 : 0 ≤ ρ := le_trans (norm_nonneg _) (hρ ⟨0, hN⟩)
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Real.sqrt_sq hρ0,
+    ← Real.sqrt_mul (sq_nonneg ρ)]
+  refine Real.sqrt_le_sqrt ?_
+  exact sum_normSq_periodicBlockScheme_pow_le G hN hρ (WithLp.ofLp u)
+
+/-- The operator-norm form: `‖Bⁿ‖₂ ≤ ρ` when every amplification matrix satisfies `‖G_kⁿ‖₂ ≤ ρ`.
+-/
+theorem norm_toEuclideanCLM_periodicBlockScheme_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
+    {ρ : ℝ} {n : ℕ} (hρ0 : 0 ≤ ρ)
+    (hρ : ∀ k, ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖ ≤ ρ) :
+    ‖toEuclideanCLM (𝕜 := ℂ) (periodicBlockScheme G ^ n)‖ ≤ ρ :=
+  ContinuousLinearMap.opNorm_le_bound _ hρ0 fun u =>
+    norm_toEuclideanLin_periodicBlockScheme_pow_le G hρ u
+
+/-- **The amplification matrices bound the norm of the powers from below**:
+`‖G_kⁿ‖₂ ≤ ‖Bⁿ‖₂` for every mode `k`, by testing `Bⁿ` on the tensored modes `e_k ⊗ v`, whose norm
+is `√N ‖v‖`. With `norm_toEuclideanCLM_periodicBlockScheme_pow_le` this makes the `ℓ²` stability
+of a multi-level scheme exactly the uniform boundedness of the powers of its `m × m`
+amplification matrices. -/
+theorem norm_toEuclideanCLM_amplificationMatrix_pow_le (G : Fin N → Matrix (Fin m) (Fin m) ℂ)
+    (k : Fin N) (n : ℕ) :
+    ‖toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n)‖
+      ≤ ‖toEuclideanCLM (𝕜 := ℂ) (periodicBlockScheme G ^ n)‖ := by
+  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr k.pos
+  have hsqrt : (0 : ℝ) < √N := Real.sqrt_pos.mpr hNR
+  have hnorm : ∀ u : Fin m → ℂ,
+      ‖(WithLp.toLp 2 (modeTensor N k u) : EuclideanSpace ℂ (Fin N × Fin m))‖
+        = √N * ‖(WithLp.toLp 2 u : EuclideanSpace ℂ (Fin m))‖ := by
+    intro u
+    rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq, ← Real.sqrt_mul (Nat.cast_nonneg N)]
+    congr 1
+    simpa using sum_normSq_modeTensor k u
+  refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => ?_
+  have h := (toEuclideanCLM (𝕜 := ℂ) (periodicBlockScheme G ^ n)).le_opNorm
+    (WithLp.toLp 2 (modeTensor N k (WithLp.ofLp v)))
+  rw [toEuclideanCLM_toLp, periodicBlockScheme_pow_mulVec_fourierMode, hnorm, hnorm] at h
+  have hv : (WithLp.toLp 2 (WithLp.ofLp v) : EuclideanSpace ℂ (Fin m)) = v := rfl
+  rw [hv] at h
+  have hgv : toEuclideanCLM (𝕜 := ℂ) (amplificationMatrix G k ^ n) v
+      = WithLp.toLp 2 ((amplificationMatrix G k ^ n) *ᵥ WithLp.ofLp v) := rfl
+  rw [hgv]
+  nlinarith [h, norm_nonneg (WithLp.toLp 2 ((amplificationMatrix G k ^ n) *ᵥ WithLp.ofLp v) :
+    EuclideanSpace ℂ (Fin m)), norm_nonneg v,
+    norm_nonneg (toEuclideanCLM (𝕜 := ℂ) (periodicBlockScheme G ^ n))]
+
 end Block
 
 end FiniteDifference

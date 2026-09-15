@@ -11,18 +11,9 @@ id = "span_gramSchmidt_of_isLowerSet"
 
 [[node]]
 id = "modifiedGramSchmidtSweep"
-kind = "definition"
-desc = '''One step of modified Gram–Schmidt on a vector `a` against a list `q : Fin k → E`:
-`InnerProductSpace.modifiedGramSchmidtSweep q a 0 = a`, `InnerProductSpace.modifiedGramSchmidtSweep q a (j+1) = v - ⟪q j, v⟫ • q j` with
-`v = InnerProductSpace.modifiedGramSchmidtSweep q a j` — QSS's `a^{(1)}_{k+1}, a^{(2)}_{k+1}, …` sequence. ★'''
-deps = []
 
 [[node]]
 id = "modifiedGramSchmidtSweep_eq_sub_sum"
-kind = "theorem"
-desc = '''QSS §3.4.3's display: if `q` is orthonormal then `InnerProductSpace.modifiedGramSchmidtSweep q a k = a - ∑ j, ⟪q j, a⟫ •
-q j`, so the modified sweep produces the classical Gram–Schmidt vector; with `q = gramSchmidtNormed
-𝕜 f` on `Iio n` and `a = f n` this is `gramSchmidt 𝕜 f n` (`modifiedGramSchmidt_eq_gramSchmidt`, via
-Mathlib's `gramSchmidt_def''`). Induction on `k`: the inner product `⟪q j, v⟫` is unchanged by the
-earlier subtractions because `⟪q j, q i⟫ = 0`. ★★'''
-deps = ["InnerProductSpace.modifiedGramSchmidtSweep"]
+
+[[node]]
+id = "modifiedGramSchmidt_eq_gramSchmidt"

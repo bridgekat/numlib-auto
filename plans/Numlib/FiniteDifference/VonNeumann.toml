@@ -127,19 +127,10 @@ id = "periodicBlockScheme_mulVec_modeTensor"
 id = "periodicBlockScheme_pow_mulVec_fourierMode"
 
 [[node]]
-id = "norm_toEuclideanCLM_periodicBlockScheme_pow_le"
-kind = "theorem"
-desc = '''`‖toEuclideanCLM (periodicBlockScheme G ^ n)‖ ≤ max_k ‖toEuclideanCLM (amplificationMatrix G k ^
-n)‖` (and the reverse inequality, so that the `ℓ²` stability of a multi-level scheme is the uniform
-boundedness of the powers of its `m × m` amplification matrices). Proof: the block decomposition
-`periodicBlockScheme G = N⁻¹ (F ⊗ 1) blockDiagonal (amplificationMatrix G) (Fᴴ ⊗ 1)`
-(`Matrix.kroneckerMap` with `Matrix.blockDiagonal`), Parseval blockwise
-(`sum_normSq_conjTranspose_dft_mulVec` applied to each block component `u (·, p)`), and the
-norm of a block diagonal matrix as the maximum of the blocks; the lower bound tests
-`periodicBlockScheme G ^ n` on `modeTensor N k v` (`periodicBlockScheme_pow_mulVec_fourierMode`).
-★★★
+id = "norm_toEuclideanLin_periodicBlockScheme_pow_le"
 
-Blocked: not attempted in this round; the eigenvector relation `periodicBlockScheme_pow_mulVec_fourierMode`
-is proved, the Kronecker/block-diagonal norm bookkeeping (block Parseval, the norm of
-`blockDiagonal`, the reindexing `Fin N × Fin m`) is estimated at 150 lines.'''
-deps = ["FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode", "FiniteDifference.sum_normSq_conjTranspose_dft_mulVec"]
+[[node]]
+id = "norm_toEuclideanCLM_periodicBlockScheme_pow_le"
+
+[[node]]
+id = "norm_toEuclideanCLM_amplificationMatrix_pow_le"
