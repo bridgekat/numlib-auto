@@ -1,0 +1,50 @@
+[[node]]
+id = "exists_taylorWithinEval_add_iteratedDeriv_mul"
+
+[[node]]
+id = "taylorWithinEval_eq_sum_of_contDiffAt"
+
+[[node]]
+id = "abs_sub_sum_taylor_le_of_contDiffOn"
+
+[[node]]
+id = "abs_sub_sum_taylor_le"
+
+[[node]]
+id = "abs_sub_sum_taylor_le_of_convex"
+
+[[node]]
+id = "abs_sub_sum_taylor_le_of_contDiff"
+
+[[node]]
+id = "abs_taylor_one"
+
+[[node]]
+id = "abs_taylor_two"
+
+[[node]]
+id = "abs_taylor_three"
+
+[[node]]
+id = "hasDerivWithinAt_comp_const_sub_Icc"
+
+[[node]]
+id = "norm_sub_taylorSum_le"
+
+[[node]]
+id = "norm_sub_sub_smul_le_mul_sq_div_two"
+
+[[node]]
+id = "norm_sub_sub_smul_le_mul_sq_div_two'"
+
+[[node]]
+id = "norm_sub_sub_smul_add_le_mul_pow_three_div_twelve"
+
+[[node]]
+id = "norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six"
+
+[[node]]
+id = "norm_sub_taylor_segment_le"
+
+[[node]]
+id = "norm_sub_sub_smul_apply_le_of_hasFDerivAt"

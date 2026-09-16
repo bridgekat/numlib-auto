@@ -42,9 +42,9 @@ values `Dₙ(xₖ - xⱼ) = (2 n + 1)/2` for `j = k` and `0` otherwise
   `Λₙ(x) = (2/(2 n + 1)) ∑ⱼ |Dₙ(x - xⱼ)|`.
 * `norm_trigInterpCLM_le` — a Rivlin-type bound on that supremum,
   `‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`, read off from `SineSum.sum_term_le` of
-  `Numlib/Approximation/Interpolation` at `M = 2 n + 1`. It carries the sharp coefficient `2/π` of
-  [han2009theoretical], (3.7.20) but a larger additive constant; the theorem's own doc comment
-  says why the constant printed there is not the one proved here.
+  `Numlib/Analysis/SpecialFunctions/SineSum` at `M = 2 n + 1`. It carries the sharp coefficient
+  `2/π` of [han2009theoretical], (3.7.20) but a larger additive constant; the theorem's own doc
+  comment says why the constant printed there is not the one proved here.
 * `le_norm_trigInterpCLM_one` — `5/3 ≤ ‖𝓘₁‖`, which is what makes the constant printed in
   [han2009theoretical], (3.7.20) too small.
 
@@ -330,7 +330,8 @@ differ by about `0.04` for every `n`. What is proved here keeps the sharp `2/π`
 `𝓞(log n)` growth that the convergence rate (3.7.22) consumes, but pays a larger additive
 constant, one for each of the two nodes nearest the evaluation point.
 
-The estimate itself is `SineSum.sum_term_le` of `Numlib/Approximation/Interpolation`, which bounds
+The estimate itself is `SineSum.sum_term_le` of `Numlib/Analysis/SpecialFunctions/SineSum`, which
+bounds
 `∑_{i < M} |sin (π (k + i + δ))| / (M |sin (π (k + i + δ)/M)|)` by `2 + (2/π) log M` for every
 `M ≥ 3`. Writing the evaluation point as `x = 2 π (c₀ + δ)/M` with `M = 2 n + 1` and `0 ≤ δ < 1`,
 the closed form `2 sin (u/2) Dₙ(u) = sin (M u / 2)` turns each term of the Lebesgue function into

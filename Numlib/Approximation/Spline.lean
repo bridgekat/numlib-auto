@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.Taylor
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Quadrature
 import Numlib.LinearAlgebra.Matrix.DiagDominant
@@ -157,6 +158,18 @@ theorem exists_mem_panel (hn : 1 ≤ n) {t : ℝ} (ht : t ∈ Icc a b) :
       exact absurd ht.2 (not_le.mpr h)
     have := S.le_max' _ (Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hm1, h⟩)
     omega
+
+/-- **The nodes of a uniform mesh** are `x_i = a + i h`. -/
+theorem node_eq_of_uniform {h : ℝ} (huni : ∀ j < n, x (j + 1) - x j = h) {i : ℕ} (hi : i ≤ n) :
+    x i = a + i * h := by
+  induction i with
+  | zero => simp [hx.first]
+  | succ m ih =>
+      have hstep := huni m (by omega)
+      have hm := ih (by omega)
+      push_cast
+      rw [show x (m + 1) = x m + h by linarith, hm]
+      ring
 
 end IsPartition
 
@@ -3519,38 +3532,6 @@ within-derivatives at the two endpoints through every Taylor expansion. -/
 
 section ClampedError
 
-/-- **Taylor's theorem with a uniform remainder bound on `[a, b]`**: if `g` is `C^{m+1}` and its
-`(m+1)`-st derivative is bounded by `K` on `[a, b]`, then the `m`-th Taylor polynomial of `g` at
-`c ∈ [a, b]` approximates `g` at `t ∈ [a, b]` to within `K |t - c|^{m+1}/(m+1)!`. -/
-private theorem abs_sub_taylorSum_le {m : ℕ} {g : ℝ → ℝ} {K c t : ℝ}
-    (hg : ContDiff ℝ (m + 1) g) (hc : c ∈ Icc a b) (ht : t ∈ Icc a b)
-    (hK : ∀ y ∈ Icc a b, |iteratedDeriv (m + 1) g y| ≤ K) :
-    |g t - ∑ k ∈ Finset.range (m + 1),
-        (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c|
-      ≤ K * |t - c| ^ (m + 1) / ((m + 1).factorial : ℝ) := by
-  rcases eq_or_ne c t with rfl | hne
-  · rw [Finset.sum_range_succ', sub_self]
-    have hK0 : 0 ≤ K := (abs_nonneg _).trans (hK c hc)
-    simp
-  have hsub : uIcc c t ⊆ Icc a b := uIcc_subset_Icc hc ht
-  obtain ⟨ξ, hξ, hT⟩ := taylor_mean_remainder_lagrange_iteratedDeriv hne hg.contDiffOn
-  have hpoly : taylorWithinEval g m (uIcc c t) c t
-      = ∑ k ∈ Finset.range (m + 1), (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c := by
-    rw [taylor_within_apply]
-    refine Finset.sum_congr rfl fun k hk => ?_
-    rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_uIcc hne)
-      (hg.contDiffAt.of_le (by
-        exact_mod_cast (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk)).trans (Nat.le_succ m)))
-      left_mem_uIcc, smul_eq_mul]
-    ring
-  rw [hpoly] at hT
-  rw [show g t - ∑ k ∈ Finset.range (m + 1),
-        (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
-      = iteratedDeriv (m + 1) g ξ * (t - c) ^ (m + 1) / ((m + 1).factorial : ℝ) from hT]
-  rw [abs_div, abs_mul, abs_pow, Nat.abs_cast]
-  gcongr
-  exact hK ξ (hsub (Ioo_subset_Icc_self hξ))
-
 /-- The third-order Taylor bound of a `C⁴` function between two points of `[a, b]`. -/
 private theorem abs_sub_taylor_three_le {g : ℝ → ℝ} {K c t : ℝ} (hg : ContDiff ℝ 4 g)
     (hc : c ∈ Icc a b) (ht : t ∈ Icc a b)
@@ -3559,7 +3540,7 @@ private theorem abs_sub_taylor_three_le {g : ℝ → ℝ} {K c t : ℝ} (hg : Co
         + (t - c) ^ 3 / 6 * iteratedDeriv 3 g c)| ≤ K * |t - c| ^ 4 / 24 := by
   have hg' : ContDiff ℝ ((3 : ℕ) + 1) g := by norm_num; exact hg
   have hK' : ∀ y ∈ Icc a b, |iteratedDeriv ((3 : ℕ) + 1) g y| ≤ K := by simpa using hK
-  have h1 := abs_sub_taylorSum_le hg' hc ht hK'
+  have h1 := abs_sub_sum_taylor_le_of_convex (convex_Icc a b) hg' hc ht hK'
   have hsum : ∑ k ∈ Finset.range ((3 : ℕ) + 1),
       (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
       = g c + (t - c) * deriv g c + (t - c) ^ 2 / 2 * iteratedDeriv 2 g c
@@ -3580,7 +3561,7 @@ private theorem abs_sub_taylor_one_le {g : ℝ → ℝ} {K c t : ℝ} (hg : Cont
     |g t - (g c + (t - c) * deriv g c)| ≤ K * |t - c| ^ 2 / 2 := by
   have hg' : ContDiff ℝ ((1 : ℕ) + 1) g := by norm_num; exact hg
   have hK' : ∀ y ∈ Icc a b, |iteratedDeriv ((1 : ℕ) + 1) g y| ≤ K := by simpa using hK
-  have h1 := abs_sub_taylorSum_le hg' hc ht hK'
+  have h1 := abs_sub_sum_taylor_le_of_convex (convex_Icc a b) hg' hc ht hK'
   have hsum : ∑ k ∈ Finset.range ((1 : ℕ) + 1),
       (t - c) ^ k / (k.factorial : ℝ) * iteratedDeriv k g c
       = g c + (t - c) * deriv g c := by

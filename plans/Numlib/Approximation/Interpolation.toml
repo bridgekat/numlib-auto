@@ -93,12 +93,6 @@ source = '''Rivlin, An Introduction to the Approximation of Functions, Theorem 1
 Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'''
 
 [[node]]
-id = "_root_.SineSum.term"
-
-[[node]]
-id = "_root_.SineSum.sum_term_le"
-
-[[node]]
 id = "Lagrange.chebAngle"
 
 [[node]]

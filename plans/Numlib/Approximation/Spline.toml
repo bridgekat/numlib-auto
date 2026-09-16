@@ -147,6 +147,9 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property of
 id = "IsPartition.exists_mem_panel"
 
 [[node]]
+id = "IsPartition.node_eq_of_uniform"
+
+[[node]]
 id = "truncPowFamily"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)"
 

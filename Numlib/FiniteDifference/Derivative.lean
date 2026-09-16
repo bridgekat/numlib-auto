@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Topology.Order.IntermediateValue
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.Approximation.GaussLobatto
 
 /-!
@@ -69,63 +70,6 @@ open Set Filter Topology Asymptotics Finset Polynomial Matrix
 open scoped Nat
 
 namespace FiniteDifference
-
-/-! ### Taylor's theorem in two-sided form -/
-
-section Taylor
-
-variable {f : ℝ → ℝ} {x₀ x : ℝ} {n : ℕ}
-
-/-- Taylor's theorem with the Lagrange remainder, the derivative in the remainder being the
-two-sided `iteratedDeriv` (the intermediate point is interior to the interval). -/
-theorem exists_taylorWithinEval_add_iteratedDeriv_mul (hne : x₀ ≠ x)
-    (hf : ContDiffOn ℝ (n + 1) f (uIcc x₀ x)) :
-    ∃ ξ ∈ uIoo x₀ x, f x = taylorWithinEval f n (uIcc x₀ x) x₀ x
-      + iteratedDeriv (n + 1) f ξ * (x - x₀) ^ (n + 1) / (n + 1)! := by
-  have hs : UniqueDiffOn ℝ (uIcc x₀ x) := uniqueDiffOn_uIcc hne
-  have hsub : uIoo x₀ x ⊆ uIcc x₀ x := Ioo_subset_Icc_self
-  obtain ⟨ξ, hξ, h⟩ := taylor_mean_remainder_lagrange hne (hf.of_le (by exact_mod_cast n.le_succ))
-    ((hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast n.lt_succ_self) hs).mono hsub)
-  refine ⟨ξ, hξ, ?_⟩
-  have hξ' : uIcc x₀ x ∈ 𝓝 ξ := mem_nhds_iff.2 ⟨uIoo x₀ x, hsub, isOpen_Ioo, hξ⟩
-  rw [iteratedDerivWithin_eq_iteratedDeriv hs (hf.contDiffAt hξ') (hsub hξ)] at h
-  linarith
-
-/-- The Taylor polynomial of `f` at an interior point `x₀` of a set on which `f` is `C^n`, written
-with the two-sided iterated derivatives. -/
-theorem taylorWithinEval_eq_sum_of_contDiffAt (hne : x₀ ≠ x) (hf : ContDiffAt ℝ n f x₀) :
-    taylorWithinEval f n (uIcc x₀ x) x₀ x
-      = ∑ k ∈ range (n + 1), (x - x₀) ^ k / k ! * iteratedDeriv k f x₀ := by
-  rw [taylor_within_apply]
-  refine sum_congr rfl fun k hk => ?_
-  rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_uIcc hne)
-    (hf.of_le (by exact_mod_cast Nat.lt_succ_iff.1 (mem_range.1 hk))) left_mem_uIcc, smul_eq_mul]
-  ring
-
-/-- **Taylor's theorem with a uniform remainder bound on a ball**: if `f` is `C^{n+1}` on
-`ball x ε` with `|f^{(n+1)}| ≤ M` there, then for every `y` in the ball
-`|f y - ∑_{k ≤ n} (y - x)^k / k! f^{(k)}(x)| ≤ M |y - x|^{n+1} / (n + 1)!`. -/
-theorem abs_sub_sum_taylor_le {ε M : ℝ} (hf : ContDiffOn ℝ (n + 1) f (Metric.ball x₀ ε))
-    (hM : ∀ t ∈ Metric.ball x₀ ε, |iteratedDeriv (n + 1) f t| ≤ M) {y : ℝ}
-    (hy : y ∈ Metric.ball x₀ ε) :
-    |f y - ∑ k ∈ range (n + 1), (y - x₀) ^ k / k ! * iteratedDeriv k f x₀|
-      ≤ M * |y - x₀| ^ (n + 1) / (n + 1)! := by
-  have hx₀ : x₀ ∈ Metric.ball x₀ ε := Metric.mem_ball_self (Metric.pos_of_mem_ball hy)
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM x₀ hx₀)
-  rcases eq_or_ne x₀ y with rfl | hne
-  · rw [sum_range_succ', sub_self]
-    simp
-  have hsub : uIcc x₀ y ⊆ Metric.ball x₀ ε := fun t ht => by
-    rw [Metric.mem_ball, Real.dist_eq]
-    exact (abs_sub_left_of_mem_uIcc ht).trans_lt (by rwa [Metric.mem_ball, Real.dist_eq] at hy)
-  obtain ⟨ξ, hξ, hT⟩ := exists_taylorWithinEval_add_iteratedDeriv_mul hne (hf.mono hsub)
-  rw [taylorWithinEval_eq_sum_of_contDiffAt hne
-    ((hf.contDiffAt (Metric.isOpen_ball.mem_nhds hx₀)).of_le (by exact_mod_cast n.le_succ))] at hT
-  rw [hT, add_sub_cancel_left, abs_div, abs_mul, abs_pow, Nat.abs_cast]
-  gcongr
-  exact hM ξ (hsub (Ioo_subset_Icc_self hξ))
-
-end Taylor
 
 /-! ### The classical difference quotients -/
 

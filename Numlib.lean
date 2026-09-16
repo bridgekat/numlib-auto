@@ -5,6 +5,7 @@ import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.RootMultiplicity
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
 import Numlib.Analysis.Convex.Bifunction.Algebra
@@ -173,6 +174,7 @@ import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Embedding
+import Numlib.Analysis.Normed.Operator.Multilinear
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
@@ -197,6 +199,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
+import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.Wavelet.ContinuousTransform
 import Numlib.Analysis.Wavelet.Daubechies

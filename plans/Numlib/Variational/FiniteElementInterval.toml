@@ -170,9 +170,6 @@ id = "quadraticBasis"
 id = "eq_of_rep_node_eq"
 
 [[node]]
-id = "node_eq_of_uniform"
-
-[[node]]
 id = "quadraticInterp"
 
 [[node]]

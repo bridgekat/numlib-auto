@@ -1354,7 +1354,7 @@ theorem rep_eq_exactSolution_of_galerkin_sg (hx : Spline.IsPartition 0 1 n x) (h
     · simpa using hstencil (j + 1) (by omega) (by omega)
   have hnodal : SobolevInterval.rep uh (x i) = exactSolution ε β ((i : ℝ) * meshWidth n) :=
     sg_nodal_exact hε hβ hn0 hscheme hi
-  rw [hnodal, FiniteElement.node_eq_of_uniform hx huni hi, zero_add]
+  rw [hnodal, hx.node_eq_of_uniform huni hi, zero_add]
 
 /-- **Theorem 12.4 for the Scharfetter-Gummel method with `k = 1`**
 ([quarteroni2000numerical] (12.85)): on the uniform mesh of `n` panels of `[0, 1]` the

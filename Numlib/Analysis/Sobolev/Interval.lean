@@ -42,7 +42,8 @@ of the test functions in the multi-index space.
   corresponding predicate on functions, `SobolevInterval.deriv u j` the `j`-th weak derivative in
   `L²(a, b)`, and `SobolevInterval.seminorm m a b` the seminorm `|u|_{H^m} = ‖u^{(m)}‖_{L²}`;
 * `SobolevInterval.toContinuousMap hab`, the embedding `H^1(a, b) ↪ C[a, b]`, sending `u` to
-  its continuous representative;
+  its continuous representative, and `SobolevInterval.nodalCLM hab t ht`, the evaluation of that
+  representative at one point of `[a, b]` as a bounded linear functional;
 * `SobolevIntervalZero a b`, the space `H^1_0(a, b)`;
 * `SobolevInterval.derivCLM m a b`, weak differentiation `H^{m+1}(a, b) → H^m(a, b)`, and
   `ContDiffMapIcc.toSobolevInterval`, the inclusion `C^k[a, b] → H^k(a, b)`.
@@ -107,6 +108,22 @@ def Ioo (a b : ℝ) : Opens ℝ := ⟨Set.Ioo a b, isOpen_Ioo⟩
 theorem coe_Ioo (a b : ℝ) : (Opens.Ioo a b : Set ℝ) = Set.Ioo a b := rfl
 
 end TopologicalSpace.Opens
+
+/-! ### Finite sums in `L^p` -/
+
+/-- The coercion of a finite sum in `L^p` is almost everywhere the sum of the coercions. Mathlib
+has `lp.coeFn_sum` for the sequence spaces `lp E p`, but nothing for `MeasureTheory.Lp`. -/
+theorem MeasureTheory.Lp.coeFn_sum {μ : Measure ℝ} (s : Finset ℕ) (F : ℕ → Lp ℝ 2 μ) :
+    ⇑(∑ i ∈ s, F i) =ᵐ[μ] fun t ↦ ∑ i ∈ s, F i t := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact Lp.coeFn_zero ℝ 2 μ
+  | insert i s hi ih =>
+    rw [Finset.sum_insert hi]
+    filter_upwards [Lp.coeFn_add (F i) (∑ j ∈ s, F j), ih] with t h1 h2
+    rw [h1, Pi.add_apply, h2, Finset.sum_insert hi]
 
 /-! ### Weak derivatives on an interval -/
 
@@ -1028,6 +1045,17 @@ def toContinuousMap (hab : a < b) : SobolevInterval 1 a b →L[ℝ] C(Icc a b, �
 /-- The embedding is the continuous representative on `[a, b]`. -/
 theorem toContinuousMap_apply (hab : a < b) (u : SobolevInterval 1 a b) (x : Icc a b) :
     toContinuousMap hab u x = rep u x := rfl
+
+/-- **Evaluation of the continuous representative** at a point of `[a, b]`, as a bounded linear
+functional on `H^1(a, b)`; it is what turns an argument about pointwise values into a linear one. -/
+noncomputable def nodalCLM (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) :
+    SobolevInterval 1 a b →L[ℝ] ℝ :=
+  (ContinuousMap.evalCLM ℝ (⟨t, ht⟩ : Icc a b)).comp (toContinuousMap hab)
+
+/-- Nodal evaluation is the continuous representative. -/
+@[simp]
+theorem nodalCLM_apply (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) (u : SobolevInterval 1 a b) :
+    nodalCLM hab t ht u = rep u t := rfl
 
 /-- **The embedding constant of `H^1(a, b) ↪ C[a, b]`**:
 `‖u‖_∞ ≤ ((b - a)^{-1/2} + (b - a)^{1/2}) ‖u‖_{H^1}`. -/

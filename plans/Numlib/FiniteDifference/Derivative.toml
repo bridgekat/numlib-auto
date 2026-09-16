@@ -1,15 +1,6 @@
 namespace = "FiniteDifference"
 
 [[node]]
-id = "exists_taylorWithinEval_add_iteratedDeriv_mul"
-
-[[node]]
-id = "taylorWithinEval_eq_sum_of_contDiffAt"
-
-[[node]]
-id = "abs_sub_sum_taylor_le"
-
-[[node]]
 id = "forwardDiff"
 
 [[node]]

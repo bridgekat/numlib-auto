@@ -1,0 +1,5 @@
+[[node]]
+id = "SineSum.term"
+
+[[node]]
+id = "SineSum.sum_term_le"

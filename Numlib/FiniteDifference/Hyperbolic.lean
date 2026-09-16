@@ -37,9 +37,10 @@ The exact solution of `u_t + a u_x = 0` is the travelling wave `u₀(x - a t)`
 combination of values of the *single-variable* function `u₀` near the foot `ξ = x_j - a t^n` of the
 characteristic: `Hyperbolic.truncationError`, with `Hyperbolic.truncationError_eq_of_isSolution`
 the bridge to the two-variable form of §13.8.1. Taylor's theorem with the Lagrange remainder
-(`FiniteDifference.abs_sub_sum_taylor_le`) then gives the `τ` column of Table 13.1 with explicit
-constants: `O(Δt + Δx²)` for forward Euler/centred, `O(Δx²/Δt + Δt + Δx²)` for Lax–Friedrichs,
-`O(Δt² + Δx²)` for Lax–Wendroff, `O(Δt + Δx)` for upwind. `Hyperbolic.IsOfOrder` and
+(`abs_sub_sum_taylor_le` of `Numlib/Analysis/Calculus/Taylor`) then gives the `τ` column of
+Table 13.1 with explicit constants: `O(Δt + Δx²)` for forward Euler/centred,
+`O(Δx²/Δt + Δt + Δx²)` for Lax–Friedrichs, `O(Δt² + Δx²)` for Lax–Wendroff,
+`O(Δt + Δx)` for upwind. `Hyperbolic.IsOfOrder` and
 `Hyperbolic.IsConsistent` are the definitions of §13.8.1, and `Hyperbolic.IsConvergent` is
 convergence at the grid points.
 
@@ -233,86 +234,13 @@ theorem laxFriedrichs_isMonotone {a lam : ℝ} (h : |lam * a| ≤ 1) :
   rw [abs_le] at h
   exact isMonotone_threePoint (by linarith [h.1]) le_rfl (by linarith [h.2]) (by ring)
 
-/-! ### Taylor expansions of the initial datum -/
+/-! ### A triangle inequality for the truncation-error estimates -/
 
 /-- The triangle inequality for a difference. -/
 private theorem abs_sub_le' (x y : ℝ) : |x - y| ≤ |x| + |y| := by
   calc |x - y| = |x + -y| := by rw [sub_eq_add_neg]
     _ ≤ |x| + |-y| := abs_add_le _ _
     _ = |x| + |y| := by rw [abs_neg]
-
-/-- **Taylor's theorem with a uniform remainder bound on the whole line**: for `g` of class
-`C^{n+1}` with `|g^{(n+1)}| ≤ M` everywhere,
-`|g (ξ + h) - ∑_{k ≤ n} h^k/k! g^{(k)}(ξ)| ≤ M |h|^{n+1}/(n+1)!`. -/
-theorem abs_sub_sum_taylor_le_of_contDiff {g : ℝ → ℝ} {n : ℕ} {M : ℝ}
-    (hg : ContDiff ℝ (n + 1) g) (hM : ∀ y, |iteratedDeriv (n + 1) g y| ≤ M) (ξ h : ℝ) :
-    |g (ξ + h) - ∑ k ∈ Finset.range (n + 1), h ^ k / k ! * iteratedDeriv k g ξ|
-      ≤ M * |h| ^ (n + 1) / (n + 1)! := by
-  have hmem : ξ + h ∈ Metric.ball ξ (|h| + 1) := by
-    have hd : dist (ξ + h) ξ = |h| := by rw [Real.dist_eq]; ring_nf
-    rw [Metric.mem_ball, hd]
-    linarith
-  have h1 := FiniteDifference.abs_sub_sum_taylor_le (f := g) (x₀ := ξ) (n := n) (ε := |h| + 1)
-    hg.contDiffOn (fun t _ => hM t) hmem
-  simpa using h1
-
-/-- **First-order Taylor**: `|g (ξ + h) - g ξ - h g'(ξ)| ≤ M h²/2` for `|g''| ≤ M`. -/
-theorem abs_taylor_one {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 2 g)
-    (hM : ∀ y, |iteratedDeriv 2 g y| ≤ M) (ξ h : ℝ) :
-    |g (ξ + h) - g ξ - h * deriv g ξ| ≤ M * h ^ 2 / 2 := by
-  have hg' : ContDiff ℝ ((1 : ℕ) + 1) g := by norm_num; exact hg
-  have hM' : ∀ y, |iteratedDeriv ((1 : ℕ) + 1) g y| ≤ M := by norm_num; exact hM
-  have h1 := abs_sub_sum_taylor_le_of_contDiff hg' hM' ξ h
-  have hsum : ∑ k ∈ Finset.range ((1 : ℕ) + 1), h ^ k / k ! * iteratedDeriv k g ξ
-      = g ξ + h * deriv g ξ := by
-    rw [Finset.sum_range_succ, Finset.sum_range_one, iteratedDeriv_zero, iteratedDeriv_one]
-    norm_num [Nat.factorial]
-  rw [hsum, ← sub_sub] at h1
-  calc |g (ξ + h) - g ξ - h * deriv g ξ| ≤ M * |h| ^ ((1 : ℕ) + 1) / ((1 : ℕ) + 1)! := h1
-    _ = M * h ^ 2 / 2 := by norm_num [sq_abs]
-
-/-- **Second-order Taylor**: `|g (ξ + h) - g ξ - h g' - h²/2 g''| ≤ M |h|³/6` for `|g'''| ≤ M`. -/
-theorem abs_taylor_two {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 3 g)
-    (hM : ∀ y, |iteratedDeriv 3 g y| ≤ M) (ξ h : ℝ) :
-    |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ| ≤ M * |h| ^ 3 / 6 := by
-  have hg' : ContDiff ℝ ((2 : ℕ) + 1) g := by norm_num; exact hg
-  have hM' : ∀ y, |iteratedDeriv ((2 : ℕ) + 1) g y| ≤ M := by norm_num; exact hM
-  have h1 := abs_sub_sum_taylor_le_of_contDiff hg' hM' ξ h
-  have hsum : ∑ k ∈ Finset.range ((2 : ℕ) + 1), h ^ k / k ! * iteratedDeriv k g ξ
-      = g ξ + h * deriv g ξ + h ^ 2 / 2 * iteratedDeriv 2 g ξ := by
-    rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one, iteratedDeriv_zero,
-      iteratedDeriv_one]
-    norm_num [Nat.factorial]
-  rw [hsum, ← sub_sub, ← sub_sub] at h1
-  calc |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ|
-      ≤ M * |h| ^ ((2 : ℕ) + 1) / ((2 : ℕ) + 1)! := h1
-    _ = M * |h| ^ 3 / 6 := by norm_num
-
-/-- **Third-order Taylor**: `|g (ξ + h) - g ξ - h g' - h²/2 g'' - h³/6 g'''| ≤ M h⁴/24` for a
-fourth derivative bounded by `M`. -/
-theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
-    (hM : ∀ y, |iteratedDeriv 4 g y| ≤ M) (ξ h : ℝ) :
-    |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ
-      - h ^ 3 / 6 * iteratedDeriv 3 g ξ| ≤ M * h ^ 4 / 24 := by
-  have hg' : ContDiff ℝ ((3 : ℕ) + 1) g := by norm_num; exact hg
-  have hM' : ∀ y, |iteratedDeriv ((3 : ℕ) + 1) g y| ≤ M := by norm_num; exact hM
-  have h1 := abs_sub_sum_taylor_le_of_contDiff hg' hM' ξ h
-  have hsum : ∑ k ∈ Finset.range ((3 : ℕ) + 1), h ^ k / k ! * iteratedDeriv k g ξ
-      = g ξ + h * deriv g ξ + h ^ 2 / 2 * iteratedDeriv 2 g ξ
-        + h ^ 3 / 6 * iteratedDeriv 3 g ξ := by
-    rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one,
-      iteratedDeriv_zero, iteratedDeriv_one]
-    norm_num [Nat.factorial]
-    try ring
-  rw [hsum, ← sub_sub, ← sub_sub, ← sub_sub] at h1
-  calc |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ
-        - h ^ 3 / 6 * iteratedDeriv 3 g ξ|
-      ≤ M * |h| ^ ((3 : ℕ) + 1) / ((3 : ℕ) + 1)! := h1
-    _ = M * h ^ 4 / 24 := by
-        rw [show |h| ^ ((3 : ℕ) + 1) = h ^ 4 by
-          rw [show (3 : ℕ) + 1 = 4 from rfl, ← abs_pow,
-            abs_of_nonneg (by positivity : (0 : ℝ) ≤ h ^ 4)]]
-        norm_num
 
 /-! ### The local truncation error -/
 

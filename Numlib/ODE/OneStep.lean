@@ -4,6 +4,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecificLimits.Normed
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.ODE.Gronwall
 
 /-!
@@ -52,10 +53,11 @@ convergence with order `p`.
 **The elementary methods** forward Euler, backward Euler, Crank–Nicolson, Heun and the θ-method
 `theta f θ` that contains the first three, their Lipschitz constants in terms of that of `f`, and
 their local truncation errors from the Taylor bounds `norm_sub_sub_smul_le_mul_sq_div_two` and
-`norm_sub_sub_smul_add_le_mul_pow_three_div_twelve` (stated for explicit derivative functions on
-a closed interval, which is weaker than `C²`/`C³` regularity and is what the mean value
-inequality needs): the Euler methods have order 1 with constant `M₂ / 2`, Crank–Nicolson order 2
-with `M₃ / 12` ([quarteroni2000numerical] Exercise 11.2), Heun order 2 (Exercise 11.1), the
+`norm_sub_sub_smul_add_le_mul_pow_three_div_twelve` of `Numlib/Analysis/Calculus/Taylor` (stated
+for explicit derivative functions on a closed interval, which is weaker than `C²`/`C³`
+regularity and is what the mean value inequality needs): the Euler methods have order 1 with
+constant `M₂ / 2`, Crank–Nicolson order 2 with `M₃ / 12` ([quarteroni2000numerical]
+Exercise 11.2), Heun order 2 (Exercise 11.1), the
 θ-method order 1 with `|θ - 1/2| M₂` plus the Crank–Nicolson term.
 
 **Absolute stability** (§11.3.3). The test equation `testField λ = fun _ y => λ * y` on `ℂ`;
@@ -74,131 +76,6 @@ forward Euler and Heun are not.
 
 open Set Filter Topology Asymptotics
 open Finset (range)
-
-/-! ### Taylor bounds with explicit derivatives on a closed interval
-
-Second- and third-order Taylor remainder bounds for a curve `y : ℝ → E` on `Icc a b` given by
-*derivative functions* `y'`, `y''`, `y'''` with `HasDerivWithinAt … (Icc a b)`, rather than by a
-`ContDiffOn` hypothesis and `iteratedDerivWithin`. They are what the truncation-error estimates
-of one-step methods need and are proved by the comparison lemma
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary`. They are Mathlib-shaped and belong in a
-calculus module; they live here until one exists. -/
-
-section Taylor
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {a b M : ℝ} {y y' y'' y''' : ℝ → E}
-
-/-- Reflecting a curve with derivative `y'` on `Icc a b` through the midpoint gives a curve with
-derivative `-y' (a + b - s)` on `Icc a b`. -/
-theorem hasDerivWithinAt_comp_const_sub_Icc
-    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s) {s : ℝ} (hs : s ∈ Icc a b) :
-    HasDerivWithinAt (fun s => y (a + b - s)) (-y' (a + b - s)) (Icc a b) s := by
-  have hmem : a + b - s ∈ Icc a b := ⟨by linarith [hs.2], by linarith [hs.1]⟩
-  have h1 : HasDerivWithinAt (fun s : ℝ => a + b - s) (-1) (Icc a b) s :=
-    (hasDerivWithinAt_id s (Icc a b)).const_sub (a + b)
-  have hmaps : MapsTo (fun s : ℝ => a + b - s) (Icc a b) (Icc a b) := fun x hx =>
-    ⟨by linarith [hx.2], by linarith [hx.1]⟩
-  have := (hy _ hmem).scomp s h1 hmaps
-  simpa [Function.comp_def, neg_one_smul] using this
-
-/-- **Second-order Taylor bound, forward form**: if `y'` is the derivative of `y` and `y''` that
-of `y'` on `Icc a b`, with `‖y''‖ ≤ M` there, then
-`‖y b - y a - (b - a) • y' a‖ ≤ M (b - a)² / 2`. -/
-theorem norm_sub_sub_smul_le_mul_sq_div_two (hab : a ≤ b)
-    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
-    (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
-    (hM : ∀ s ∈ Icc a b, ‖y'' s‖ ≤ M) :
-    ‖y b - y a - (b - a) • y' a‖ ≤ M * (b - a) ^ 2 / 2 := by
-  have hg : ∀ s ∈ Icc a b, HasDerivWithinAt (fun s => y s - y a - (s - a) • y' a)
-      (y' s - y' a) (Icc a b) s := by
-    intro s hs
-    have := ((hy s hs).sub_const (y a)).sub
-      (((hasDerivWithinAt_id s (Icc a b)).sub_const a).smul_const (y' a))
-    exact this.congr_deriv (by simp)
-  have hbound : ∀ s ∈ Icc a b, ‖y' s - y' a‖ ≤ M * (s - a) := by
-    intro s hs
-    have := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hy' hM (convex_Icc a b)
-      (left_mem_Icc.2 hab) hs
-    rwa [Real.norm_of_nonneg (by linarith [hs.1])] at this
-  have hB : ∀ s, HasDerivAt (fun s => M * (s - a) ^ 2 / 2) (M * (s - a)) s := by
-    intro s
-    have h1 : HasDerivAt (fun s : ℝ => (s - a) ^ 2) (2 * (s - a)) s := by
-      have := (hasDerivAt_pow 2 (s - a)).comp s ((hasDerivAt_id s).sub_const a)
-      simpa [Function.comp_def] using this
-    exact ((h1.const_mul M).div_const 2).congr_deriv (by ring)
-  have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary (f' := fun s => y' s - y' a)
-    (HasDerivWithinAt.continuousOn hg)
-    (fun s hs => (hg s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hs))
-    (B := fun s => M * (s - a) ^ 2 / 2) (B' := fun s => M * (s - a)) (by simp) hB
-    (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
-  simpa using key
-
-/-- **Second-order Taylor bound, backward form**: under the hypotheses of
-`norm_sub_sub_smul_le_mul_sq_div_two`, `‖y a - y b - (a - b) • y' b‖ ≤ M (b - a)² / 2`. -/
-theorem norm_sub_sub_smul_le_mul_sq_div_two' (hab : a ≤ b)
-    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
-    (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
-    (hM : ∀ s ∈ Icc a b, ‖y'' s‖ ≤ M) :
-    ‖y a - y b - (a - b) • y' b‖ ≤ M * (b - a) ^ 2 / 2 := by
-  have hy1 : ∀ s ∈ Icc a b, HasDerivWithinAt (fun s => y (a + b - s)) (-y' (a + b - s))
-      (Icc a b) s := fun s hs => hasDerivWithinAt_comp_const_sub_Icc hy hs
-  have hy2 : ∀ s ∈ Icc a b, HasDerivWithinAt (fun s => -y' (a + b - s)) (y'' (a + b - s))
-      (Icc a b) s := fun s hs =>
-    (hasDerivWithinAt_comp_const_sub_Icc hy' hs).neg.congr_deriv (neg_neg _)
-  have hM2 : ∀ s ∈ Icc a b, ‖y'' (a + b - s)‖ ≤ M := fun s hs =>
-    hM _ ⟨by linarith [hs.2], by linarith [hs.1]⟩
-  have := norm_sub_sub_smul_le_mul_sq_div_two hab hy1 hy2 hM2
-  simp only [add_sub_cancel_right, add_sub_cancel_left, smul_neg, ← neg_smul, neg_sub] at this
-  exact this
-
-/-- **Third-order Taylor bound for the trapezoidal rule**: if `y'`, `y''`, `y'''` are the
-successive derivatives of `y` on `Icc a b` with `‖y'''‖ ≤ M` there, then
-`‖y b - y a - ((b - a) / 2) • (y' a + y' b)‖ ≤ M (b - a)³ / 12`. This is the Peano-kernel
-bound of the trapezoidal rule for `∫_a^b y' = y b - y a`, obtained here without integrals: the
-residual `g s = y s - y a - ((s - a)/2) (y' a + y' s)` has derivative
-`(1/2) (y' s - y' a - (s - a) y'' s)`, a backward second-order remainder of `y'` bounded by
-`M (s - a)² / 4`, and the comparison with `M (s - a)³ / 12` concludes. -/
-theorem norm_sub_sub_smul_add_le_mul_pow_three_div_twelve (hab : a ≤ b)
-    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt y (y' s) (Icc a b) s)
-    (hy' : ∀ s ∈ Icc a b, HasDerivWithinAt y' (y'' s) (Icc a b) s)
-    (hy'' : ∀ s ∈ Icc a b, HasDerivWithinAt y'' (y''' s) (Icc a b) s)
-    (hM : ∀ s ∈ Icc a b, ‖y''' s‖ ≤ M) :
-    ‖y b - y a - ((b - a) / 2) • (y' a + y' b)‖ ≤ M * (b - a) ^ 3 / 12 := by
-  have hg : ∀ s ∈ Icc a b, HasDerivWithinAt (fun s => y s - y a - ((s - a) / 2) • (y' a + y' s))
-      ((1 / 2 : ℝ) • (y' s - y' a - (s - a) • y'' s)) (Icc a b) s := by
-    intro s hs
-    have h1 : HasDerivWithinAt (fun s : ℝ => (s - a) / 2) (1 / 2) (Icc a b) s :=
-      ((hasDerivWithinAt_id s (Icc a b)).sub_const a).div_const 2
-    have := ((hy s hs).sub_const (y a)).sub (h1.smul ((hy' s hs).const_add (y' a)))
-    refine this.congr_deriv ?_
-    module
-  have hbound : ∀ s ∈ Icc a b, ‖(1 / 2 : ℝ) • (y' s - y' a - (s - a) • y'' s)‖ ≤
-      M * (s - a) ^ 2 / 4 := by
-    intro s hs
-    have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
-    have := norm_sub_sub_smul_le_mul_sq_div_two' (y := y') (y' := y'') (y'' := y''') hs.1
-      (fun u hu => (hy' u (hsub hu)).mono hsub) (fun u hu => (hy'' u (hsub hu)).mono hsub)
-      (fun u hu => hM u (hsub hu))
-    rw [norm_smul, Real.norm_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2)]
-    have e : y' s - y' a - (s - a) • y'' s = -(y' a - y' s - (a - s) • y'' s) := by
-      rw [← neg_sub s a, neg_smul]; abel
-    rw [e, norm_neg]
-    linarith
-  have hB : ∀ s, HasDerivAt (fun s => M * (s - a) ^ 3 / 12) (M * (s - a) ^ 2 / 4) s := by
-    intro s
-    have h1 : HasDerivAt (fun s : ℝ => (s - a) ^ 3) (3 * (s - a) ^ 2) s := by
-      have := (hasDerivAt_pow 3 (s - a)).comp s ((hasDerivAt_id s).sub_const a)
-      simpa [Function.comp_def] using this
-    exact ((h1.const_mul M).div_const 12).congr_deriv (by ring)
-  have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
-    (f' := fun s => (1 / 2 : ℝ) • (y' s - y' a - (s - a) • y'' s))
-    (HasDerivWithinAt.continuousOn hg)
-    (fun s hs => (hg s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem hs))
-    (B := fun s => M * (s - a) ^ 3 / 12) (B' := fun s => M * (s - a) ^ 2 / 4) (by simp) hB
-    (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
-  simpa using key
-
-end Taylor
 
 namespace ODE
 

@@ -292,12 +292,6 @@ id = "ButcherTableau.isStages_testField_one_ofReal"
 id = "ButcherTableau.stabilityFunction_ofReal"
 
 [[node]]
-id = "_root_.norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six"
-
-[[node]]
-id = "_root_.norm_sub_sub_smul_apply_le_of_hasFDerivAt"
-
-[[node]]
 id = "_root_.ODE.autonomize"
 
 [[node]]
@@ -314,24 +308,6 @@ id = "ButcherTableau.globalLte_autonomize"
 
 [[node]]
 id = "ButcherTableau.hasOrderFor_autonomize_iff"
-
-[[node]]
-id = "_root_.norm_sub_taylorSum_le"
-
-[[node]]
-id = "_root_.norm_sub_taylor_segment_le"
-
-[[node]]
-id = "_root_.ContinuousLinearMap.le_opNorm₃"
-
-[[node]]
-id = "_root_.norm_bilinear_diag_sub_le"
-
-[[node]]
-id = "_root_.norm_trilinear_diag_sub_le"
-
-[[node]]
-id = "_root_.ContinuousLinearMap.norm_comp_le_of_norm_le_one"
 
 [[node]]
 id = "exists_forall_norm_stage_sub_le"

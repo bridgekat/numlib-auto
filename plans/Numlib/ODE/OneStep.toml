@@ -1,18 +1,6 @@
 namespace = "ODE"
 
 [[node]]
-id = "_root_.hasDerivWithinAt_comp_const_sub_Icc"
-
-[[node]]
-id = "_root_.norm_sub_sub_smul_le_mul_sq_div_two"
-
-[[node]]
-id = "_root_.norm_sub_sub_smul_le_mul_sq_div_two'"
-
-[[node]]
-id = "_root_.norm_sub_sub_smul_add_le_mul_pow_three_div_twelve"
-
-[[node]]
 id = "gridCount"
 
 [[node]]

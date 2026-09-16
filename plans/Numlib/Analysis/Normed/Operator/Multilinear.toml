@@ -1,0 +1,11 @@
+[[node]]
+id = "ContinuousLinearMap.le_opNorm₃"
+
+[[node]]
+id = "norm_bilinear_diag_sub_le"
+
+[[node]]
+id = "norm_trilinear_diag_sub_le"
+
+[[node]]
+id = "ContinuousLinearMap.norm_comp_le_of_norm_le_one"

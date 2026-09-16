@@ -742,17 +742,6 @@ theorem hatFunction_mem_lagrangeSpaceZero (hab : a < b) (hx : Spline.IsPartition
     rw [h]
     simp [hi]
 
-/-- Evaluation of the continuous representative at a point of `[a, b]`, as a bounded linear
-functional on `H^1(a, b)`; it is what turns a nodal-value argument into a linear one. -/
-noncomputable def nodalCLM (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) :
-    SobolevInterval 1 a b →L[ℝ] ℝ :=
-  (ContinuousMap.evalCLM ℝ (⟨t, ht⟩ : Icc a b)).comp (SobolevInterval.toContinuousMap hab)
-
-/-- Nodal evaluation is the continuous representative. -/
-@[simp]
-theorem nodalCLM_apply (hab : a < b) (t : ℝ) (ht : t ∈ Icc a b) (u : SobolevInterval 1 a b) :
-    nodalCLM hab t ht u = SobolevInterval.rep u t := rfl
-
 /-- The hat functions as elements of `X_h^1`, indexed by the `n + 1` nodes. -/
 noncomputable def hatElem (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n)
     (i : Fin (n + 1)) : lagrangeSpace hab n x 1 :=
@@ -768,8 +757,8 @@ theorem linearIndependent_hatElem (hab : a < b) (hx : Spline.IsPartition a b n x
   have hsub : (∑ i, g i • hatFunction hx hn (i : ℕ)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElem] using this
-  have hval := congrArg (nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -799,8 +788,8 @@ theorem hatBasis_repr (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 1 �
       = (v : SobolevInterval 1 a b) := by
     have := congrArg (Subtype.val) ((hatBasis hab hx hn).sum_repr v)
     simpa [hatElem] using this
-  have hval := congrArg (nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg ((hatBasis hab hx hn).repr v i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ)) (j := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -833,8 +822,8 @@ theorem linearIndependent_hatElemZero (hab : a < b) (hx : Spline.IsPartition a b
   have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElemZero] using this
-  have hval := congrArg (nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -1459,8 +1448,8 @@ theorem linearIndependent_hatElemH0 (hab : a < b) (hx : Spline.IsPartition a b n
   have hsub : (∑ i, g i • hatFunction hx hn ((i : ℕ) + 1)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [hatElemH0] using this
-  have hval := congrArg (nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hjn)) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_hatFunction_node hx hn (i := (i : ℕ) + 1) (j := (j : ℕ) + 1) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -1728,19 +1717,6 @@ section Interp
 
 variable {n : ℕ} {x : ℕ → ℝ}
 
-/-- The coercion of a finite sum in `L^p` is almost everywhere the sum of the coercions. -/
-theorem coeFn_lp_sum {μ : Measure ℝ} (s : Finset ℕ) (F : ℕ → Lp ℝ 2 μ) :
-    ⇑(∑ i ∈ s, F i) =ᵐ[μ] fun t ↦ ∑ i ∈ s, F i t := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact Lp.coeFn_zero ℝ 2 μ
-  | insert i s hi ih =>
-    rw [Finset.sum_insert hi]
-    filter_upwards [Lp.coeFn_add (F i) (∑ j ∈ s, F j), ih] with t h1 h2
-    rw [h1, Pi.add_apply, h2, Finset.sum_insert hi]
-
 /-- **The piecewise linear interpolant** `Π_h^1 u` of [quarteroni2000numerical] §8.3, as an
 element of `H^1(a, b)`: the combination of the hat functions with the nodal values of the
 continuous representative of `u`. -/
@@ -1760,10 +1736,10 @@ theorem rep_sum_hatFunction (hab : a < b) (hx : Spline.IsPartition a b n x) (hn 
     (c : ℕ → ℝ) {j : ℕ} (hj : j ≤ n) :
     SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j) = c j := by
   have h : SobolevInterval.rep (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) (x j)
-      = nodalCLM hab _ (node_mem_Icc hx hj)
+      = SobolevInterval.nodalCLM hab _ (node_mem_Icc hx hj)
         (∑ i ∈ Finset.range (n + 1), c i • hatFunction hx hn i) := rfl
   rw [h, map_sum]
-  simp only [map_smul, smul_eq_mul, nodalCLM_apply]
+  simp only [map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply]
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (c i * ·)
     (rep_hatFunction_node hx hn (i := i) (j := j) hj)]
   simp [Finset.sum_ite_eq' (Finset.range (n + 1)) j, Nat.lt_succ_iff.2 hj]
@@ -1838,7 +1814,7 @@ theorem coeFn_deriv_lagrangeInterp (hx : Spline.IsPartition a b n x) (hn : 1 ≤
     rw [hderivL, lagrangeInterp, map_sum]
     exact Finset.sum_congr rfl fun i _ ↦ by rw [map_smul, ← hderivL]
   rw [hsum]
-  have hcoe := coeFn_lp_sum (Finset.range (n + 1))
+  have hcoe := Lp.coeFn_sum (Finset.range (n + 1))
     (fun i ↦ SobolevInterval.rep u (x i) • SobolevInterval.deriv (hatFunction hx hn i) 1)
   have hall : ∀ᵐ t ∂(volume.restrict (Ioo a b)), ∀ i ∈ Finset.range (n + 1),
       (SobolevInterval.rep u (x i) • SobolevInterval.deriv (hatFunction hx hn i) 1) t
@@ -2498,8 +2474,8 @@ theorem linearIndependent_quadraticElem (hab : a < b)
   have hsub : (∑ i, g i • quadraticShape hab hx hn (i : ℕ)) = 0 := by
     have := congrArg (Subtype.val) hg
     simpa [quadraticElem] using this
-  have hval := congrArg (nodalCLM hab _ hmem) hsub
-  simp only [map_sum, map_smul, smul_eq_mul, map_zero, nodalCLM_apply] at hval
+  have hval := congrArg (SobolevInterval.nodalCLM hab _ hmem) hsub
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero, SobolevInterval.nodalCLM_apply] at hval
   rw [Finset.sum_congr rfl fun i _ ↦ congrArg (g i * ·)
     (rep_quadraticShape_node hab hx hn (i := (i : ℕ)) (l := (j : ℕ)) hjn)] at hval
   simpa [Fin.val_inj] using hval
@@ -2652,18 +2628,6 @@ theorem eq_of_rep_node_eq (hab : a < b) (hx : Spline.IsPartition a b n x) (hn : 
   exact Finset.sum_congr rfl fun i _ ↦ by
     rw [h (i : ℕ) (Nat.lt_succ_iff.1 i.isLt)]
 
-/-- **The nodes of a uniform mesh** are `x_i = a + i h`. -/
-theorem node_eq_of_uniform (hx : Spline.IsPartition a b n x) {h : ℝ}
-    (huni : ∀ k < n, x (k + 1) - x k = h) {i : ℕ} (hi : i ≤ n) : x i = a + i * h := by
-  induction i with
-  | zero => simp [hx.first]
-  | succ m ih =>
-      have hstep := huni m (by omega)
-      have hm := ih (by omega)
-      push_cast
-      rw [show x (m + 1) = x m + h by linarith, hm]
-      ring
-
 end Nodal
 
 /-! ### The piecewise quadratic interpolation operator into `H^1(a, b)` -/
@@ -2686,10 +2650,11 @@ theorem rep_sum_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n
       = ∑ i ∈ Finset.range (2 * n + 1), c i * quadShapeFun n x i t := by
   have h : SobolevInterval.rep
         (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
-      = nodalCLM hab t ht (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) :=
+      = SobolevInterval.nodalCLM hab t ht
+        (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) :=
     rfl
   rw [h, map_sum]
-  simp only [map_smul, smul_eq_mul, nodalCLM_apply]
+  simp only [map_smul, smul_eq_mul, SobolevInterval.nodalCLM_apply]
   exact Finset.sum_congr rfl fun i _ ↦ by rw [rep_quadraticShape hab hx hn i ht]
 
 /-- The representative of the quadratic interpolant is the nodal combination of the shape
