@@ -93,6 +93,9 @@ id = "equation_11_73_step"
 id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three"
 
 [[node]]
+id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn"
+
+[[node]]
 id = "equation_11_76_errorIndicator"
 
 [[node]]
@@ -121,15 +124,4 @@ id = "stabilityFunction"
 
 [[node]]
 id = "equation_11_73_order"
-kind = "theorem"
-desc = '''The classical method (11.73) has order four:
-`equation_11_14 (equation_11_70_increment equation_11_73 f) t₀ T y 4` along every `C⁴`-smooth
-solution of a problem with a `C⁴` field. The surface restatement of `ODE.rk4_hasOrderFor`
-(★★★ in the backbone); the restatement itself is ★.
-
-Blocked: `ODE.rk4_hasOrderFor` is still open. Its `desc` now carries the verified expansion of the
-four stages and of `y^{(2)}, y^{(3)}, y^{(4)}` in the elementary differentials of the autonomised
-field, together with the reduction `ODE.ButcherTableau.hasOrderFor_autonomize_iff` proved this
-round; what is missing is the four analytic pieces listed there.'''
-deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_73", "QuarteroniSaccoSaleri.Chapter11.equation_11_14", "ODE.rk4_hasOrderFor"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.73'

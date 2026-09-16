@@ -15,8 +15,7 @@ the Runge–Kutta–Fehlberg pair (§11.8.2); the implicit families of §11.8.3;
 (11.77) and the regions of absolute stability (§11.8.4).
 
 Everything is the scalar case `E = ℝ` of `Numlib/ODE/RungeKutta` (the test problem on `ℂ`), with
-the one-step theory of §11.3. Butcher's order barriers (Property 11.4), the order four of the
-classical method (`ODE.rk4_hasOrderFor`, open in the backbone), Remarks 11.4–11.5, the
+the one-step theory of §11.3. Butcher's order barriers (Property 11.4), Remarks 11.4–11.5, the
 step-doubling estimates (11.74)–(11.75) and the maximal orders of the implicit families are not
 formalized.
 
@@ -34,8 +33,8 @@ formalized.
 ## Main results
 
 * `rungeKutta_consistent_iff`, `rungeKutta_convergent` — consistency and convergence.
-* `equation_11_73_step`, `twoStageOrderConditions` — the classical method and the two-stage
-  order conditions.
+* `equation_11_73_step`, `equation_11_73_order`, `twoStageOrderConditions` — the classical
+  method written out, its order four, and the two-stage order conditions.
 * `gaussLegendre_tableaux`, `radau_tableaux`, `lobatto_tableaux`, `dirk_tableau` — §11.8.3.
 * `equation_11_77`, `rungeKutta_absStable_iff`, `rungeKutta_explicit_stabilityFunction` —
   absolute stability.
@@ -200,8 +199,8 @@ theorem rungeKutta_convergent (tab : ButcherTableau s) (hex : equation_11_71_exp
 
 /-- **The classical explicit four-stage method of order four (11.73)**,
 `u_{n+1} = u_n + (h/6)(K₁ + 2K₂ + 2K₃ + K₄)`, `K₁ = f_n`, `K₂ = f(t_n + h/2, u_n + (h/2)K₁)`,
-`K₃ = f(t_n + h/2, u_n + (h/2)K₂)`, `K₄ = f(t_{n+1}, u_n + hK₃)`; `ODE.rk4`. Its order four
-(`equation_11_73_order`) rests on `ODE.rk4_hasOrderFor`, open in the backbone. -/
+`K₃ = f(t_n + h/2, u_n + (h/2)K₂)`, `K₄ = f(t_{n+1}, u_n + hK₃)`; `ODE.rk4`. Its order four is
+`equation_11_73_order`. -/
 noncomputable def equation_11_73 : ButcherTableau 4 :=
   rk4
 
@@ -251,6 +250,18 @@ theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three {a b : ℝ} (hl
         iteratedDerivWithin 2 (derivWithin y (Icc a b)) (Icc a b) from
         iteratedDerivWithin_succ']
 
+-- TODO(backbone): a calculus module should hold this, with the two- and three-level forms above.
+/-- A `C^k` function on `[a, b]`, `a < b`, has within `[a, b]` the derivative
+`iteratedDerivWithin (j + 1) y [a, b]` of `iteratedDerivWithin j y [a, b]` for every `j < k`: the
+general form of `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`. -/
+theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn {a b : ℝ} (hlt : a < b) {y : ℝ → ℝ}
+    {k : WithTop ℕ∞} (hy : ContDiffOn ℝ k y (Icc a b)) {j : ℕ} (hj : (j : WithTop ℕ∞) < k)
+    {s : ℝ} (hs : s ∈ Icc a b) :
+    HasDerivWithinAt (iteratedDerivWithin j y (Icc a b))
+      (iteratedDerivWithin (j + 1) y (Icc a b) s) (Icc a b) s := by
+  rw [iteratedDerivWithin_succ]
+  exact ((hy.differentiableOn_iteratedDerivWithin hj (uniqueDiffOn_Icc hlt)) s hs).hasDerivWithinAt
+
 /-- **The two-stage order conditions (§11.8.1)**: a two-stage explicit RK method satisfying
 (11.72) has order two iff `b₁ + b₂ = 1` and `c₂ b₂ = 1/2`. The necessity is read on the test
 problems `y' = 1` and `y' = 2t` (`ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`); the
@@ -296,6 +307,55 @@ theorem twoStageOrderConditions (tab : ButcherTableau 2) (hex : equation_11_71_e
     exact tab.hasOrderFor_two_of hex hrow hb hcb hF hF' hM₂ hy.2 h2' h3 hM₃
   · norm_num [ButcherTableau.heun]
   · norm_num [ButcherTableau.modifiedEuler]
+
+/-! ### The order of the classical method (11.73) -/
+
+/-- **The classical method (11.73) has order four** (§11.8, "an example of a fourth-order RK
+method is provided by the following explicit 4-stage method"; §11.8.1, "retaining all the terms
+up to the fifth one, we get scheme (11.73)"): along every solution `y ∈ C⁵([t₀, t₀ + T])` of a
+Cauchy problem whose field `f` is `C⁴` on `ℝ × ℝ` with its derivatives of orders one to four
+bounded, `τ(h) = O(h⁴)` — (11.14) with `p = 4` for the increment (11.70) of (11.73). The scalar
+case of `ODE.rk4_hasOrderFor`: the successive Fréchet derivatives it asks for are the iterated
+`fderiv` of `(t, v) ↦ f t v`, which exist by `contDiff_succ_iff_fderiv`, and the derivatives
+`y'', …, y⁽⁵⁾` are the `iteratedDerivWithin` of `y` on `[t₀, t₀ + T]`, whose fifth is bounded by
+compactness. The bounds on the derivatives of the field make the constant uniform over the
+horizon; that a `C⁴` field has `C⁵` solutions is assumed rather than derived, as in §11.8.1
+(`twoStageOrderConditions`). -/
+theorem equation_11_73_order {M₁ M₂ M₃ M₄ : ℝ} (hf : ContDiff ℝ 4 (Function.uncurry f))
+    (hM₁ : ∀ p : ℝ × ℝ, ‖fderiv ℝ (Function.uncurry f) p‖ ≤ M₁)
+    (hM₂ : ∀ p : ℝ × ℝ, ‖fderiv ℝ (fderiv ℝ (Function.uncurry f)) p‖ ≤ M₂)
+    (hM₃ : ∀ p : ℝ × ℝ, ‖fderiv ℝ (fderiv ℝ (fderiv ℝ (Function.uncurry f))) p‖ ≤ M₃)
+    (hM₄ : ∀ p : ℝ × ℝ,
+      ‖fderiv ℝ (fderiv ℝ (fderiv ℝ (fderiv ℝ (Function.uncurry f)))) p‖ ≤ M₄)
+    (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y)
+    (hy5 : ContDiffOn ℝ 5 y (Icc t₀ (t₀ + T))) :
+    equation_11_14 (equation_11_70_increment equation_11_73 f) t₀ T y 4 := by
+  have h4 : (4 : WithTop ℕ∞) = 3 + 1 := rfl
+  have h3 : (3 : WithTop ℕ∞) = 2 + 1 := rfl
+  have h2 : (2 : WithTop ℕ∞) = 1 + 1 := rfl
+  have hf' := hf
+  rw [h4, contDiff_succ_iff_fderiv] at hf'
+  obtain ⟨hd₀, -, hf3⟩ := hf'
+  rw [h3, contDiff_succ_iff_fderiv] at hf3
+  obtain ⟨hd₁, -, hf2⟩ := hf3
+  rw [h2, contDiff_succ_iff_fderiv] at hf2
+  obtain ⟨hd₂, -, hf1⟩ := hf2
+  have hd₃ := hf1.differentiable one_ne_zero
+  have hlt : t₀ < t₀ + T := by linarith
+  have hy₂ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (fun s => f s (y s))
+      (iteratedDerivWithin 2 y (Icc t₀ (t₀ + T)) s) (Icc t₀ (t₀ + T)) s := fun s hs => by
+    have h := hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn hlt hy5 (j := 1) (by norm_num) hs
+    rw [iteratedDerivWithin_one] at h
+    exact h.congr (fun s' hs' => (derivWithin_eq_of_cauchyProblem hT hy hs').symm)
+      (derivWithin_eq_of_cauchyProblem hT hy hs).symm
+  obtain ⟨M₅, hM₅⟩ := (isCompact_Icc (a := t₀) (b := t₀ + T)).exists_bound_of_continuousOn
+    (hy5.continuousOn_iteratedDerivWithin (m := 5) le_rfl (uniqueDiffOn_Icc hlt))
+  exact rk4_hasOrderFor (fun p => (hd₀ p).hasFDerivAt) (fun p => (hd₁ p).hasFDerivAt)
+    (fun p => (hd₂ p).hasFDerivAt) (fun p => (hd₃ p).hasFDerivAt) hM₁ hM₂ hM₃ hM₄ hy.2 hy₂
+    (fun s hs => hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn hlt hy5 (by norm_num) hs)
+    (fun s hs => hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn hlt hy5 (by norm_num) hs)
+    (fun s hs => hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn hlt hy5 (by norm_num) hs)
+    hM₅
 
 /-! ### §11.8.2: embedded pairs -/
 

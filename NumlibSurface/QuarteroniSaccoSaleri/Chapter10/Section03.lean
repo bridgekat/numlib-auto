@@ -32,6 +32,8 @@ the form `tendsto_of_isExactOnMeasure` of §10.2.
 * `chebyshevGaussNode n j`, `chebyshevLobattoNode n j` — the nodes (10.20) and (10.21) with the
   book's sign; the weights and the factors `dⱼ` are the backbone's
   `Polynomial.Chebyshev.lobattoWeight` and `lobattoFactor`, whose values are restated.
+* `chebyshevGaussNodeIcc n j` — the Gauss nodes as points of `[-1, 1]`, the node family of the
+  interpolant `Π^G_n`; they are the backbone's `Lagrange.chebNodeIcc n` reversed.
 * `equation_10_23 μ s f` — the weighted Sobolev norm `‖f‖_{s,μ}` of (10.23) (and (10.35)).
 * `equation_10_28 n f g` — the discrete scalar product `(f, g)_n` of the Gauss–Lobatto rule.
 * `chebyshevDiscreteCoeff n f k` — the discrete coefficients `f̃_k` of (10.31).
@@ -43,8 +45,10 @@ the form `tendsto_of_isExactOnMeasure` of §10.2.
 * `equation_10_21` — the Chebyshev–Gauss–Lobatto formula: increasing nodes from `-1` to `1`, the
   factors `dⱼ` and weights, exactness on `ℙ_{2n-1}`, and the interior nodes as zeros of
   `T_n' = n U_{n-1}`.
-* `chebyshevGaussNode_mem_Icc`, `equation_10_25_interpolation_error` — the first half of (10.25),
-  `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)` at the Chebyshev nodes, from §10.8.
+* `equation_10_25_interpolation_error`, `equation_10_25` — (10.25) at the Chebyshev nodes: the
+  first inequality `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)` from §10.8, and then the Lebesgue
+  constant bound `Λ_n ≤ 2 + (2/π) log(2n + 2)` of the backbone
+  (`Lagrange.norm_interpolateCLM_chebyshev_le`) with the resulting error estimate.
 * `lobatto_tendsto` — `I^{GL}_{n,w}(f) → ∫_{-1}^1 f (1 - x²)^{-1/2} dx` for `f ∈ C⁰([-1, 1])`.
 * `equation_10_31` — the Chebyshev discrete transform (10.29)–(10.31) and the identification of
   the interpolant with the discrete truncation `f_n^*` of (10.4).
@@ -52,10 +56,13 @@ the form `tendsto_of_isExactOnMeasure` of §10.2.
 ## Not formalized
 
 `equation_10_22`, `equation_10_24`, `equation_10_27` are the weighted-Sobolev estimates quoted from
-[CHQZ88] without proof; `equation_10_25` waits on the bound `Λ_n ≤ (2/π) log(n + 1) + 1` for the
-Lebesgue constant of the Chebyshev nodes (`Lagrange.norm_interpolateCLM_chebyshev_le`, an open
-backbone node), its first inequality being `equation_10_25_interpolation_error`. The plan carries
-them.
+[CHQZ88] without proof; the plan carries them. The bound on the Lebesgue constant printed in
+(10.25), Rivlin's `Λ_n ≤ (2/π) log(n + 1) + 1`, is deliberately absent: `equation_10_25` carries
+the backbone's `2 + (2/π) log(2n + 2)` instead, which has the same growth rate and a larger
+additive constant. The printed bound is attained at `n = 0` (`Λ_0 = 1`), so no step of a proof of
+it may lose anything, and it rests on two further theorems (the Lebesgue function is maximal at
+`±1`, and Rivlin's bound on the resulting cotangent sum) that nothing else needs; see
+`## Not formalized` in `Numlib/Approximation/Interpolation`.
 
 ## Conventions
 
@@ -169,20 +176,83 @@ theorem chebyshevGaussNode_mem_Icc (n j : ℕ) : chebyshevGaussNode n j ∈ Icc 
     rw [chebyshevGaussNode, neg_le]
     exact neg_one_le_cos _⟩
 
+/-- The Chebyshev–Gauss nodes (10.20) as points of `[-1, 1]`: the node family of the interpolant
+`Π^G_n` of (10.25). -/
+noncomputable def chebyshevGaussNodeIcc (n : ℕ) (j : Fin (n + 1)) : Icc (-1 : ℝ) 1 :=
+  ⟨chebyshevGaussNode n j, chebyshevGaussNode_mem_Icc n j⟩
+
+/-- The book's Gauss node `x_{n-j}` is the backbone's Chebyshev node `Lagrange.chebNode n j`,
+`cos((2j + 1)π/(2(n + 1)))`, indexed through `Fin.rev`. -/
+theorem chebyshevGaussNode_rev (j : Fin (n + 1)) :
+    chebyshevGaussNode n (Fin.rev j) = Lagrange.chebNode n j := by
+  rw [chebyshevGaussNode_eq (Nat.lt_succ_iff.mp (Fin.rev j).2), Lagrange.chebNode,
+    Lagrange.chebAngle]
+  have hj : n - (Fin.rev j : ℕ) = j := by rw [Fin.val_rev]; omega
+  rw [hj]
+  congr 1
+  push_cast
+  ring
+
+/-- The book's Gauss nodes are the backbone's `Lagrange.chebNodeIcc n` enumerated in the opposite
+order: a permutation of the same family, so the two interpolation operators coincide. -/
+theorem chebyshevGaussNodeIcc_eq (n : ℕ) :
+    chebyshevGaussNodeIcc n = Lagrange.chebNodeIcc n ∘ Fin.revPerm := by
+  funext j
+  apply Subtype.ext
+  change chebyshevGaussNode n j = Lagrange.chebNode n (Fin.rev j)
+  rw [← chebyshevGaussNode_rev (Fin.rev j), Fin.rev_rev]
+
+/-- The Chebyshev–Gauss nodes are distinct. -/
+theorem injective_chebyshevGaussNodeIcc (n : ℕ) : Function.Injective (chebyshevGaussNodeIcc n) :=
+  fun _ _ h => (equation_10_20 n).1.injective (congrArg Subtype.val h)
+
 /-- **(10.25), the first inequality.** For the interpolant `Π^G_n f` of `f ∈ C⁰([-1, 1])` at the
 `n + 1` Chebyshev–Gauss nodes (10.20), `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, where `Λ_n` is the
 Lebesgue constant of the Chebyshev nodes and `E_n^*(f)` the best approximation error of §10.8:
-the bound `interpolation_error_le_lebesgue` of §10.8 at these nodes. The second part of (10.25),
-Rivlin's estimate `Λ_n ≤ (2/π) log(n + 1) + 1`, is the open `equation_10_25`. -/
+the bound `interpolation_error_le_lebesgue` of §10.8 at these nodes. The bound on `Λ_n` is
+`equation_10_25`. -/
 theorem equation_10_25_interpolation_error (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
-    ‖f - Lagrange.interpolateCLM
-        (fun j : Fin (n + 1) => (⟨chebyshevGaussNode n j, chebyshevGaussNode_mem_Icc n j⟩ :
-          Icc (-1 : ℝ) 1)) f‖ ≤
-      (1 + sSup (Set.range fun t : Icc (-1 : ℝ) 1 => ∑ i, |Lagrange.basisCM
-          (fun j : Fin (n + 1) => (⟨chebyshevGaussNode n j, chebyshevGaussNode_mem_Icc n j⟩ :
-            Icc (-1 : ℝ) 1)) i t|)) * bestApproximationError (-1) 1 n f :=
-  interpolation_error_le_lebesgue (fun _ _ h =>
-    (equation_10_20 n).1.injective (congrArg Subtype.val h)) f
+    ‖f - Lagrange.interpolateCLM (chebyshevGaussNodeIcc n) f‖ ≤
+      (1 + sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
+          ∑ i, |Lagrange.basisCM (chebyshevGaussNodeIcc n) i t|)) *
+        bestApproximationError (-1) 1 n f :=
+  interpolation_error_le_lebesgue (injective_chebyshevGaussNodeIcc n) f
+
+/-- **(10.25).** For the interpolant `Π^G_n f` of `f ∈ C⁰([-1, 1])` at the `n + 1` Chebyshev–Gauss
+nodes (10.20),
+
+`‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, with `Λ_n ≤ 2 + (2/π) log(2n + 2)`,
+
+where `Λ_n = max_{[-1, 1]} ∑ⱼ |lⱼ|` is the Lebesgue constant of the Chebyshev nodes and `E_n^*(f)`
+the best approximation error of §10.8. The first inequality is
+`equation_10_25_interpolation_error`; the bound on `Λ_n` is the backbone's
+`Lagrange.norm_interpolateCLM_chebyshev_le`, since `Λ_n = ‖Π^G_n‖` (`Lagrange.norm_interpolateCLM`)
+and the book's nodes are the backbone's `Lagrange.chebNodeIcc n` in the opposite order
+(`chebyshevGaussNodeIcc_eq`, `Lagrange.interpolateCLM_comp_equiv`).
+
+The book prints Rivlin's sharper `Λ_n ≤ (2/π) log(n + 1) + 1` ([rivlin1969introduction],
+Theorem 1.2; the book's [Riv74], p. 13). That constant is deliberately not formalized: at `n = 0`
+it equals `Λ_0 = 1`, so no step of a proof of it may lose anything, and it needs two further
+theorems that nothing else in the library uses — that the Lebesgue function attains its maximum
+at `±1`, and Rivlin's bound on the cotangent sum it equals there. The route through
+`SineSum.sum_term_le` that proves the backbone bound loses `1.441…` in the additive constant
+against a margin of `0.0375`; see `## Not formalized` in `Numlib/Approximation/Interpolation`. The
+growth rate `(2/π) log n`, which is what every application consumes, is the same. -/
+theorem equation_10_25 (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
+    sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
+        ∑ i, |Lagrange.basisCM (chebyshevGaussNodeIcc n) i t|) ≤
+      2 + 2 / π * Real.log (2 * n + 2) ∧
+    ‖f - Lagrange.interpolateCLM (chebyshevGaussNodeIcc n) f‖ ≤
+      (1 + (2 + 2 / π * Real.log (2 * n + 2))) * bestApproximationError (-1) 1 n f := by
+  have : Nonempty (Icc (-1 : ℝ) 1) := ⟨⟨1, by norm_num⟩⟩
+  have hΛ : sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
+      ∑ i, |Lagrange.basisCM (chebyshevGaussNodeIcc n) i t|) ≤
+        2 + 2 / π * Real.log (2 * n + 2) := by
+    rw [← Lagrange.norm_interpolateCLM (injective_chebyshevGaussNodeIcc n),
+      chebyshevGaussNodeIcc_eq, Lagrange.interpolateCLM_comp_equiv]
+    exact Lagrange.norm_interpolateCLM_chebyshev_le n
+  refine ⟨hΛ, (equation_10_25_interpolation_error n f).trans ?_⟩
+  exact mul_le_mul_of_nonneg_right (by linarith) Metric.infDist_nonneg
 
 /-! ### The Chebyshev–Gauss–Lobatto formula (10.21) -/
 

@@ -39,6 +39,8 @@ the Laguerre and Hermite weights of `Numlib/Approximation/OrthogonalPolynomial/C
 * `example_9_10` — the Fresnel series.
 * `equation_9_51`, `equation_9_52` — Method 2: the exact singular part, and the regularized
   integrand `g(x) = (x - a)^{p+1-μ} φ^{(p+1)}(ξ(x))/(p + 1)!`.
+* `equation_9_52_regularity` — the sentence after (9.52): `g`, continued by `0` at `a`, is of
+  class `C^p` on `[a, b]` with its first `p` derivatives vanishing at `a`.
 * `equation_9_53`, `equation_9_54` — the improper integral as a limit, and its splitting at an
   arbitrary `c`.
 * `integrable_of_tendsto_rpow_mul` — the decay criterion.
@@ -47,11 +49,12 @@ the Laguerre and Hermite weights of `Numlib/Approximation/OrthogonalPolynomial/C
 
 ## Not formalized
 
-The sentence after (9.52) — that the regularized integrand `g`, extended by `0` at `a`, is of
-class `C^p` on `[a, b]`, which is what makes the composite Newton–Cotes error formula applicable
-to it when `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n` odd) — rests on the open backbone node
-`Quadrature.contDiffOn_taylorRemainder_div_rpow`; its own node `equation_9_52_regularity` is open
-in the plan. Examples 9.11 and 9.12 are numerical runs and are not formalized.
+The consequence the book draws from the regularity of `g` after (9.52) — that a composite
+Newton–Cotes error estimate applies to `I_1` when `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n`
+odd) — is not restated: `theorem_9_3_even` asks for smoothness on an open set containing `[a, b]`,
+while `g` is `C^p` on `[a, b]` itself, so the application would need a `C^p` extension of `g`
+across the endpoints, which the library does not have. Examples 9.11 and 9.12 are numerical runs
+and are not formalized.
 
 ## Conventions
 
@@ -380,6 +383,35 @@ theorem equation_9_52 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   refine ⟨ξ, hξmem, hξeq, intervalIntegral.integral_congr_ae ?_⟩
   rw [uIoc_of_le hab.le]
   filter_upwards with x hx using hξeq x hx
+
+/-- **The sentence after (9.52): the regularized integrand does not blow up at `a`.** For `μ < 1`
+and `φ` of class `C^{p+1}` on an open set containing `[a, b]`, the integrand
+`g(x) = (φ(x) - Φ_p(x))/(x - a)^μ` of Method 2, continued by `0` at `x = a`, is of class `C^p` on
+`[a, b]`, and its derivatives of order `≤ p` within `[a, b]` vanish at `a` — "its first `p`
+derivatives are finite at `x = a`". The backbone's
+`Quadrature.contDiffOn_taylorRemainder_div_rpow` and
+`Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero`, which hold without the book's
+standing `0 ≤ μ`. This is the regularity under which the book applies a composite Newton–Cotes
+error estimate to `I_1`, for `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n` odd); that step is not
+restated, see the module docstring. -/
+theorem equation_9_52_regularity (hab : a < b) (hμ1 : μ < 1) (hU : IsOpen U)
+    (hUab : Icc a b ⊆ U) (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) :
+    ContDiffOn ℝ (p : WithTop ℕ∞) (fun x => if x = a then 0 else
+        (φ x - ∑ k ∈ Finset.range (p + 1),
+          iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ) (Icc a b) ∧
+      ∀ j ≤ p, iteratedDerivWithin j (fun x => if x = a then 0 else
+        (φ x - ∑ k ∈ Finset.range (p + 1),
+          iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ)
+        (Icc a b) a = 0 := by
+  have hg : (fun x => if x = a then 0 else
+      (φ x - ∑ k ∈ Finset.range (p + 1),
+        iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ)
+      = fun x => if x = a then 0 else (φ x - taylorWithinEval φ p univ a x) / (x - a) ^ μ := by
+    funext x
+    rw [Quadrature.taylorWithinEval_univ_eq_sum]
+  rw [hg]
+  exact ⟨Quadrature.contDiffOn_taylorRemainder_div_rpow hab hμ1 hU hUab hφ, fun j hj =>
+    Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero hab hμ1 hU hUab hφ hj⟩
 
 /-! ### §9.8.3 Integrals over unbounded intervals -/
 

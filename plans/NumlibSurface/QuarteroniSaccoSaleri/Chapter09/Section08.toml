@@ -34,18 +34,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.52)'
 
 [[node]]
 id = "equation_9_52_regularity"
-kind = "theorem"
-desc = '''The sentence after (9.52): the regularized integrand `g = (φ - Φ_p)/(x - a)^μ`
-"does not blow up at `a`, since its first `p` derivatives are finite at `a`" — `g` extended by `0`
-at `a` is `C^p` on `[a, b]` with `g^{(j)}(a) = 0` for `j ≤ p`, so the composite Newton–Cotes error
-formula (Theorem 9.3) applies to it when `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n` odd). Split off
-from `equation_9_52`, which now carries the numbered identity (9.52) itself.
-
-Blocked: this is exactly the open backbone node `Quadrature.contDiffOn_taylorRemainder_div_rpow`
-(★★★; `plans/Numlib/Approximation/SingularIntegral.toml` carries its proof route and a
-two-to-three-hour estimate). Nothing else is missing: the surface statement is one line once the
-backbone node is proved.'''
-deps = ["Quadrature.contDiffOn_taylorRemainder_div_rpow", "QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.2, the sentence after (9.52)'
 
 [[node]]
