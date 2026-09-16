@@ -90,11 +90,12 @@ regularity of `u` that the book only assumes. The book states it without proof.
 
 Blocked: the stability half is now proved (`equation_13_66`, `equation_13_67`), and the error
 equation `⟪∂ₜ(u - u_h), v_h⟫ + b_t(u - u_h, v_h) = 0` for `v_h ∈ V_h^{in}` would follow from
-`equation_13_64` once the exact solution is paired against the discrete space. What is missing is
-(i) the degree-`r` interpolation estimate
-`‖v - Π_h v‖_{L²} + h ‖(v - Π_h v)'‖_{L²} ≤ C h^{r+1} |v|_{H^{r+1}}` on a general mesh, open for
-every `r` in `Approximation/SobolevInterpolation` (only `r = 1` exists, in
-`Variational/FiniteElementInterval`); (ii) a projection of the *time-dependent* exact solution
+`equation_13_64` once the exact solution is paired against the discrete space. **Correction
+(2026-09-17):** the degree-`r` interpolation estimate is *not* missing —
+`sobolevSeminorm_sub_piecewisePolyInterp_le` in `Approximation/SobolevInterpolation` gives
+`∑_j ∫_{I_j} |(v - Π_h v)^{(m)}|² ≤ h^{2(r+1-m)} |v|²_{H^{r+1}}` for every degree `r` and every
+`m ≤ r`, in broken form, and the `P_1`/`P_2` element layers of `Variational/FiniteElementInterval`
+show how it is read on an element space. What is missing is (ii) a projection of the *time-dependent* exact solution
 into `V_h^{in}` commuting with `∂ₜ`, which needs `u(·, t) ∈ H^{r+1}(α, β)` uniformly in `t` and a
 Bochner-space argument the project has no vocabulary for; (iii) an explicit-constant form of the
 `O(·)` statement. A multi-day task resting on an open chapter-8 group; the book quotes the result
@@ -111,7 +112,9 @@ u_{0,h}‖ + h^{r+1/2})` (the printed left side has a garbled `∫_{j=0}^{T_{n-1
 ∑_{j=0}^{n-1}`). Not formalized: as for `cG_convergence`, with in addition the trace inequality
 on each element that produces the half power `h^{r+1/2}`.
 
-Blocked: everything `cG_convergence` is blocked on, plus the elementwise trace inequality
+Blocked: everything `cG_convergence` is blocked on (see its correction: the interpolation
+estimate exists for every degree; the Bochner-space projection is the gap), plus the elementwise
+trace inequality
 `|v(x_j)|² ≤ C (h_j⁻¹ ‖v‖²_{L²(I_j)} + h_j ‖v'‖²_{L²(I_j)})` for polynomials on a panel, which
 `Approximation/BrokenPolynomial` does not have (it has only the inverse inequality
 `inverseInequality_linear`, for `r = 1`). That trace inequality is a self-contained and
