@@ -167,19 +167,6 @@ source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4, (12.85),
 
 [[node]]
 id = "equation_12_86"
-kind = "theorem"
-desc = '''Theorem 12.4, (12.86): for `k = 2` the Scharfetter-Gummel method gives the improved estimate
-`|u - u_h|_{H1(0,1)} <= C h^2 (|u|_{H1(0,1)} + |u|_{H3(0,1)})` for `u` in `H^3(0, 1)`, with `C`
-independent of `h` and of `u`.  Restates `AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic`
-on the trial space `X_h^{2,0}` of (12.57) at `k = 2`, whose basis is `equation_12_63_basis`.
-
-Blocked: the backbone node `AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic` is open;
-see its `Blocked:` paragraph in `plans/Numlib/Variational/AdvectionDiffusion.toml`.  The quadratic
-shape functions and their basis exist now ((12.63)-(12.65) are proved); what is missing is the
-`P_2` interpolation operator into `H^1(0, 1)` and the identification of its weak derivative, the
-`P_2` analogue of `FiniteElement.lagrangeInterp` and `coeFn_deriv_lagrangeInterp`.  Estimated one
-day.'''
-deps = ["AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic", "QuarteroniSaccoSaleri.Chapter12.equation_12_63_basis"]
 source = 'Quarteroni-Sacco-Saleri, Numerical Mathematics, Theorem 12.4, (12.86)'
 
 [[node]]

@@ -42,6 +42,9 @@ to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSp
   `FiniteElement.quadraticBasis` is the nodal basis of `X_h^2` they form.
 * `FiniteElement.stiffnessMatrix`, `FiniteElement.massMatrix` — the matrices `A_fe` of (12.48)
   and `M` of (13.14) of a family of trial functions.
+* `FiniteElement.lagrangeInterp`, `FiniteElement.quadraticInterp` — the nodal interpolation
+  operators `Π_h^1` and `Π_h^2` of (8.27) as maps `H^1(a, b) → H^1(a, b)`;
+  `FiniteElement.quadElemPoly` is the local Lagrange polynomial of one quadratic element.
 
 ## Main results
 
@@ -68,6 +71,9 @@ to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSp
   functions; `FiniteElement.rep_quadraticShape_eq_zero_of_panel` — their local supports;
   `FiniteElement.rep_quadraticShape_eq_referenceQuadratic` — they are the images of (12.65)
   under the affine map (12.62) when the interior nodes are the midpoints.
+* `FiniteElement.seminorm_sub_lagrangeInterp_le` and
+  `FiniteElement.seminorm_sub_quadraticInterp_le` — the interpolation estimate (8.26) in the
+  `H^1` seminorm, `|u - Π_h^k u|_{H^1} ≤ h^k |u|_{H^{k+1}}` for `k = 1` and `k = 2`.
 
 ## Implementation notes on the hat functions
 
@@ -2659,5 +2665,305 @@ theorem node_eq_of_uniform (hx : Spline.IsPartition a b n x) {h : ℝ}
       ring
 
 end Nodal
+
+/-! ### The piecewise quadratic interpolation operator into `H^1(a, b)` -/
+
+section QuadInterp
+
+variable {n : ℕ} {x : ℕ → ℝ}
+
+/-- **The piecewise quadratic interpolant** `Π_h^2 u` of [quarteroni2000numerical] §8.3 and
+§12.4.5, as an element of `H^1(a, b)`: the combination of the quadratic shape functions with the
+nodal values of the continuous representative of `u`. -/
+noncomputable def quadraticInterp (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (u : SobolevInterval 1 a b) : SobolevInterval 1 a b :=
+  ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) • quadraticShape hab hx hn i
+
+/-- **A combination of the quadratic shape functions has the expected representative**. -/
+theorem rep_sum_quadraticShape (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+    (c : ℕ → ℝ) {t : ℝ} (ht : t ∈ Icc a b) :
+    SobolevInterval.rep (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
+      = ∑ i ∈ Finset.range (2 * n + 1), c i * quadShapeFun n x i t := by
+  have h : SobolevInterval.rep
+        (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) t
+      = nodalCLM hab t ht (∑ i ∈ Finset.range (2 * n + 1), c i • quadraticShape hab hx hn i) :=
+    rfl
+  rw [h, map_sum]
+  simp only [map_smul, smul_eq_mul, nodalCLM_apply]
+  exact Finset.sum_congr rfl fun i _ ↦ by rw [rep_quadraticShape hab hx hn i ht]
+
+/-- The representative of the quadratic interpolant is the nodal combination of the shape
+functions. -/
+theorem rep_quadraticInterp (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n)
+    (u : SobolevInterval 1 a b) {t : ℝ} (ht : t ∈ Icc a b) :
+    SobolevInterval.rep (quadraticInterp hab hx hn u) t
+      = ∑ i ∈ Finset.range (2 * n + 1), SobolevInterval.rep u (x i) * quadShapeFun n x i t :=
+  rep_sum_quadraticShape hab hx hn _ ht
+
+/-- **The quadratic interpolant matches `u` at the nodes**. -/
+theorem rep_quadraticInterp_node (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {l : ℕ} (hl : l ≤ 2 * n) :
+    SobolevInterval.rep (quadraticInterp hab hx hn u) (x l) = SobolevInterval.rep u (x l) := by
+  have hmem : x l ∈ Icc a b := ⟨hx.left_le hl, hx.le_right hl⟩
+  rw [rep_quadraticInterp hab hx hn u hmem,
+    Finset.sum_congr rfl fun i _ ↦ congrArg (SobolevInterval.rep u (x i) * ·)
+      (quadShapeFun_apply_node hx hl hn)]
+  simp [Finset.sum_ite_eq' (Finset.range (2 * n + 1)) l, Nat.lt_succ_iff.2 hl]
+
+/-- **The quadratic interpolant lies in `X_h^2`.** -/
+theorem quadraticInterp_mem_lagrangeSpace (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (u : SobolevInterval 1 a b) :
+    quadraticInterp hab hx hn u ∈ lagrangeSpace hab n (evenNodes x) 2 :=
+  Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _
+    (quadraticShape_mem_lagrangeSpace hab hx hn i)
+
+/-- **The quadratic interpolant of an element of `H^1_0(a, b)` lies in `X_h^{2,0}`.** -/
+theorem quadraticInterp_mem_lagrangeSpaceZero (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {u : SobolevInterval 1 a b}
+    (hu : u ∈ SobolevIntervalZero a b) :
+    quadraticInterp hab hx hn u ∈ lagrangeSpaceZero hab n (evenNodes x) 2 := by
+  refine ⟨quadraticInterp_mem_lagrangeSpace hab hx hn u,
+    SobolevIntervalZero.mem_of_rep_eq_zero hab _ ?_ ?_⟩
+  · have h := rep_quadraticInterp_node hab hx hn u (l := 0) (Nat.zero_le _)
+    rw [hx.first] at h
+    rw [h]
+    exact SobolevIntervalZero.rep_left_eq_zero hab hu
+  · have h := rep_quadraticInterp_node hab hx hn u (l := 2 * n) le_rfl
+    rw [hx.last] at h
+    rw [h]
+    exact SobolevIntervalZero.rep_right_eq_zero hab hu
+
+/-! ### The local Lagrange polynomial of an element -/
+
+/-- **The local quadratic Lagrange interpolant** of the nodal values `c` on the element
+`[x_{2m}, x_{2m+2}]`, as a polynomial. -/
+noncomputable def quadElemPoly (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) : Polynomial ℝ :=
+  c (2 * m) • quadPoly (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2))
+    + c (2 * m + 1) • quadPoly (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2))
+    + c (2 * m + 2) • quadPoly (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1))
+
+/-- The local Lagrange interpolant has degree at most two. -/
+theorem quadElemPoly_degree_le (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) :
+    (quadElemPoly x c m).degree ≤ 2 :=
+  (Polynomial.degree_add_le _ _).trans (max_le
+    ((Polynomial.degree_add_le _ _).trans (max_le
+      ((Polynomial.degree_smul_le _ _).trans (quadPoly_degree_le _ _ _))
+      ((Polynomial.degree_smul_le _ _).trans (quadPoly_degree_le _ _ _))))
+    ((Polynomial.degree_smul_le _ _).trans (quadPoly_degree_le _ _ _)))
+
+/-- The value of the local Lagrange interpolant. -/
+theorem quadElemPoly_eval (x : ℕ → ℝ) (c : ℕ → ℝ) (m : ℕ) (t : ℝ) :
+    (quadElemPoly x c m).eval t
+      = c (2 * m) * quadLagrangeFun (x (2 * m)) (x (2 * m + 1)) (x (2 * m + 2)) t
+        + c (2 * m + 1) * quadLagrangeFun (x (2 * m + 1)) (x (2 * m)) (x (2 * m + 2)) t
+        + c (2 * m + 2) * quadLagrangeFun (x (2 * m + 2)) (x (2 * m)) (x (2 * m + 1)) t := by
+  simp [quadElemPoly, quadPoly_eval]
+
+/-- **The local Lagrange interpolant takes the nodal values at the three nodes of its
+element.** -/
+theorem quadElemPoly_eval_node (hx : Spline.IsPartition a b (2 * n) x) (c : ℕ → ℝ) {m l : ℕ}
+    (hm : m < n) (hl1 : 2 * m ≤ l) (hl2 : l ≤ 2 * m + 2) :
+    (quadElemPoly x c m).eval (x l) = c l := by
+  have h01 : x (2 * m) < x (2 * m + 1) := hx.step _ (by omega)
+  have h12 : x (2 * m + 1) < x (2 * m + 2) := hx.step _ (by omega)
+  have h02 : x (2 * m) < x (2 * m + 2) := h01.trans h12
+  have hnode : l = 2 * m ∨ l = 2 * m + 1 ∨ l = 2 * m + 2 := by omega
+  rw [quadElemPoly_eval]
+  rcases hnode with rfl | rfl | rfl
+  · rw [quadLagrangeFun_self h01.ne h02.ne, quadLagrangeFun_left, quadLagrangeFun_left]
+    ring
+  · rw [quadLagrangeFun_self h01.ne' h12.ne, quadLagrangeFun_left, quadLagrangeFun_right]
+    ring
+  · rw [quadLagrangeFun_self h02.ne' h12.ne', quadLagrangeFun_right, quadLagrangeFun_right]
+    ring
+
+/-- **On an element the quadratic interpolant is the local Lagrange polynomial.** -/
+theorem rep_quadraticInterp_eq_eval (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) (u : SobolevInterval 1 a b) {m : ℕ} (hm : m < n) {t : ℝ}
+    (h1 : x (2 * m) ≤ t) (h2 : t ≤ x (2 * m + 2)) :
+    SobolevInterval.rep (quadraticInterp hab hx hn u) t
+      = (quadElemPoly x (fun i ↦ SobolevInterval.rep u (x i)) m).eval t := by
+  have hmem : t ∈ Icc a b :=
+    ⟨(hx.left_le (show 2 * m ≤ 2 * n by omega)).trans h1,
+      h2.trans (hx.le_right (show 2 * m + 2 ≤ 2 * n by omega))⟩
+  have hsub : ({2 * m, 2 * m + 1, 2 * m + 2} : Finset ℕ) ⊆ Finset.range (2 * n + 1) := by
+    intro i hi
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hi
+    rw [Finset.mem_range]
+    rcases hi with rfl | rfl | rfl <;> omega
+  have hzero : ∀ i ∈ Finset.range (2 * n + 1), i ∉ ({2 * m, 2 * m + 1, 2 * m + 2} : Finset ℕ) →
+      SobolevInterval.rep u (x i) * quadShapeFun n x i t = 0 := by
+    intro i _ hi
+    simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hi
+    rw [quadShapeFun_eq_zero_of_panel hx hm hi.1 hi.2.1 hi.2.2 h1 h2, mul_zero]
+  rw [rep_quadraticInterp hab hx hn u hmem, ← Finset.sum_subset hsub hzero,
+    Finset.sum_insert (by simp only [Finset.mem_insert, Finset.mem_singleton]; omega),
+    Finset.sum_insert (by simp only [Finset.mem_singleton]; omega), Finset.sum_singleton,
+    quadShapeFun_even_left hx hm h1 h2, quadShapeFun_midpoint hm h1 h2,
+    quadShapeFun_even_right hx hm h1 h2, quadElemPoly_eval]
+  ring
+
+/-! ### The interpolation estimate for `X_h^2` -/
+
+/-- **The interpolation estimate (8.26) in the `H^1` seminorm at `k = 2`**
+([quarteroni2000numerical] (8.26), Theorem 8.3 at `k = 2`, `m = 1`, with the constant `1`): for
+`u ∈ H³(a, b)` on a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}` whose `n` elements
+`[x_{2m}, x_{2m+2}]` have length at most `h`,
+`|u - Π_h^2 u|_{H¹(a,b)} ≤ h² |u|_{H³(a,b)}`.  The route is chapter 8's panel estimate
+`integral_sq_iteratedDeriv_sub_le`, applied on each element to the local Lagrange polynomial
+`FiniteElement.quadElemPoly`: inside an element the continuous representative of `Π_h^2 u` *is*
+that polynomial (`FiniteElement.rep_quadraticInterp_eq_eval`), so the weak derivative of the
+interpolant is its classical derivative there, by `SobolevInterval.ae_deriv_rep_eq`. -/
+theorem seminorm_sub_quadraticInterp_le (hab : a < b) (hx : Spline.IsPartition a b (2 * n) x)
+    (hn : 1 ≤ n) {h : ℝ} (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
+    (u : SobolevInterval 3 a b) :
+    SobolevInterval.seminorm 1 a b
+        (SobolevInterval.inclusionCLM 1 a b (SobolevInterval.inclusionCLM 2 a b u)
+          - quadraticInterp hab hx hn
+              (SobolevInterval.inclusionCLM 1 a b (SobolevInterval.inclusionCLM 2 a b u)))
+      ≤ h ^ 2 * SobolevInterval.seminorm 3 a b u := by
+  set u₁ := SobolevInterval.inclusionCLM 1 a b (SobolevInterval.inclusionCLM 2 a b u) with hu₁
+  set w := quadraticInterp hab hx hn u₁ with hw
+  set c : ℕ → ℝ := fun i ↦ SobolevInterval.rep u₁ (x i) with hc
+  obtain ⟨f, hf, hae, hftc⟩ := SobolevInterval.exists_contDiff_ae_eq hab u
+  -- the continuous representative of `u₁` is the `C²` representative `f`
+  have hfn : SobolevInterval.fn u₁ =ᵐ[volume.restrict (Ioo a b)] f := by
+    rw [hu₁, SobolevInterval.fn_inclusionCLM, SobolevInterval.fn_inclusionCLM]
+    have h0 := hae 0
+    simpa [SobolevInterval.deriv_zero] using h0
+  have hrep : EqOn (SobolevInterval.rep u₁) f (Icc a b) :=
+    SobolevInterval.rep_eq_of_continuousOn hab u₁ hf.continuous.continuousOn hfn
+  have hderiv : ⇑(SobolevInterval.deriv u₁ 1) =ᵐ[volume.restrict (Ioo a b)] _root_.deriv f := by
+    rw [hu₁, SobolevInterval.deriv_inclusionCLM, SobolevInterval.deriv_inclusionCLM]
+    have h1 := hae 1
+    simpa using h1
+  -- the elements
+  have hstep : ∀ m, m < n → x (2 * m) < x (2 * m + 2) := fun m hm ↦ hx.lt (by omega) (by omega)
+  have hIcc : ∀ m, m < n → Icc (x (2 * m)) (x (2 * m + 2)) ⊆ Icc a b := fun m hm s hs ↦
+    ⟨(hx.left_le (show 2 * m ≤ 2 * n by omega)).trans hs.1,
+      hs.2.trans (hx.le_right (show 2 * m + 2 ≤ 2 * n by omega))⟩
+  have huIcc : ∀ m, m < n → Set.uIcc (x (2 * m)) (x (2 * m + 2)) ⊆ Set.uIcc a b := fun m hm ↦ by
+    rw [Set.uIcc_of_le hab.le, Set.uIcc_of_le (hstep m hm).le]
+    exact hIcc m hm
+  -- the interpolant is the local Lagrange polynomial on each element
+  have hlocal : ∀ m, m < n → ∀ t, x (2 * m) ≤ t → t ≤ x (2 * m + 2) →
+      SobolevInterval.rep w t = (quadElemPoly x c m).eval t := by
+    intro m hm t h1 h2
+    rw [hw, rep_quadraticInterp_eq_eval hab hx hn u₁ hm h1 h2, hc]
+  have hIoo : ∀ m, m < n → Ioo (x (2 * m)) (x (2 * m + 2)) ⊆ Ioo a b := fun m hm s hs ↦
+    ⟨lt_of_le_of_lt (hx.left_le (show 2 * m ≤ 2 * n by omega)) hs.1,
+      lt_of_lt_of_le hs.2 (hx.le_right (show 2 * m + 2 ≤ 2 * n by omega))⟩
+  have hftc' : ∀ s ∈ Icc a b, ∀ t ∈ Icc a b,
+      iteratedDeriv 2 f t - iteratedDeriv 2 f s
+        = ∫ r in s..t, SobolevInterval.deriv u (Fin.last 3) r := hftc
+  have hgint : IntervalIntegrable (⇑(SobolevInterval.deriv u (Fin.last 3))) volume a b :=
+    SobolevInterval.intervalIntegrable_deriv hab.le u _
+  have hg2int : IntervalIntegrable
+      (fun t ↦ SobolevInterval.deriv u (Fin.last 3) t ^ 2) volume a b :=
+    SobolevInterval.intervalIntegrable_deriv_sq hab.le u _
+  -- the panel estimate on one element
+  have hpanel : ∀ m, m < n →
+      ∫ t in x (2 * m)..x (2 * m + 2), SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2
+        ≤ h ^ 4 * ∫ t in x (2 * m)..x (2 * m + 2),
+            SobolevInterval.deriv u (Fin.last 3) t ^ 2 := by
+    intro m hm
+    have hlt := hstep m hm
+    have heq : ∫ t in x (2 * m)..x (2 * m + 2),
+          SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2
+        = ∫ t in x (2 * m)..x (2 * m + 2),
+            (iteratedDeriv 1 f t
+              - (Polynomial.derivative^[1] (quadElemPoly x c m)).eval t) ^ 2 := by
+      rw [intervalIntegral.integral_of_le hlt.le, intervalIntegral.integral_of_le hlt.le,
+        integral_Ioc_eq_integral_Ioo, integral_Ioc_eq_integral_Ioo]
+      refine setIntegral_congr_ae measurableSet_Ioo ?_
+      filter_upwards [(ae_restrict_iff' measurableSet_Ioo).1
+          (Lp.coeFn_sub (SobolevInterval.deriv u₁ 1) (SobolevInterval.deriv w 1)),
+        (ae_restrict_iff' measurableSet_Ioo).1 hderiv,
+        SobolevInterval.ae_deriv_rep_eq hab.le w] with t hcs hdf hdr htmem
+      have htab : t ∈ Ioo a b := hIoo m hm htmem
+      have hev : SobolevInterval.rep w =ᶠ[nhds t] fun s ↦ (quadElemPoly x c m).eval s := by
+        filter_upwards [Icc_mem_nhds htmem.1 htmem.2] with s hs
+        exact hlocal m hm s hs.1 hs.2
+      have hdw : SobolevInterval.deriv w 1 t
+          = (Polynomial.derivative (quadElemPoly x c m)).eval t := by
+        rw [← hdr ⟨htab.1, htab.2.le⟩, hev.deriv_eq, Polynomial.deriv]
+      have he : SobolevInterval.deriv (u₁ - w) (Fin.last 1)
+          = SobolevInterval.deriv u₁ 1 - SobolevInterval.deriv w 1 := rfl
+      rw [he, hcs htab, Pi.sub_apply, hdf htab, hdw, iteratedDeriv_one, Function.iterate_one]
+    have hinj : Function.Injective (fun i : Fin 3 ↦ x (2 * m + (i : ℕ))) := by
+      intro i j hij
+      dsimp only at hij
+      by_contra hne
+      have hi := i.isLt
+      have hj := j.isLt
+      have hij' : (i : ℕ) ≠ (j : ℕ) := fun hh ↦ hne (Fin.ext hh)
+      rcases lt_or_gt_of_ne hij' with hlt' | hlt'
+      · exact absurd hij (hx.lt (by omega) (by omega)).ne
+      · exact absurd hij (hx.lt (by omega) (by omega)).ne'
+    have hymem : ∀ i : Fin 3, x (2 * m + (i : ℕ)) ∈ Icc (x (2 * m)) (x (2 * m + 2)) := by
+      intro i
+      have hi := i.isLt
+      exact ⟨hx.mono (by omega) (by omega), hx.mono (by omega) (by omega)⟩
+    have hpy : ∀ i : Fin 3, (quadElemPoly x c m).eval (x (2 * m + (i : ℕ)))
+        = f (x (2 * m + (i : ℕ))) := by
+      intro i
+      have hi := i.isLt
+      rw [quadElemPoly_eval_node hx c hm (by omega) (by omega)]
+      simp only [hc]
+      exact hrep (hIcc m hm (hymem i))
+    have key := integral_sq_iteratedDeriv_sub_le (m := 1) hlt (hmesh m hm) hf
+      (hgint.mono_set (huIcc m hm)) (hg2int.mono_set (huIcc m hm))
+      (fun s hs t ht ↦ hftc' s (hIcc m hm hs) t (hIcc m hm ht))
+      (quadElemPoly_degree_le x c m) hinj hymem hpy (by norm_num)
+    rw [heq]
+    refine key.trans (le_of_eq ?_)
+    norm_num
+  -- summing over the elements
+  have hDint : ∀ m, m < n → IntervalIntegrable
+      (fun t ↦ SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2) volume
+        (x (2 * m)) (x (2 * m + 2)) := fun m hm ↦
+    (SobolevInterval.intervalIntegrable_deriv_sq hab.le (u₁ - w) (Fin.last 1)).mono_set
+      (huIcc m hm)
+  have hGint : ∀ m, m < n → IntervalIntegrable
+      (fun t ↦ SobolevInterval.deriv u (Fin.last 3) t ^ 2) volume
+        (x (2 * m)) (x (2 * m + 2)) := fun m hm ↦ hg2int.mono_set (huIcc m hm)
+  have hsplitD : ∑ m ∈ Finset.range n,
+        ∫ t in x (2 * m)..x (2 * m + 2), SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2
+      = ∫ t in a..b, SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2 := by
+    have hsum := intervalIntegral.sum_integral_adjacent_intervals
+      (a := fun m ↦ x (2 * m)) (n := n)
+      (f := fun t ↦ SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2) (μ := volume)
+      (fun k hk ↦ by rw [show 2 * (k + 1) = 2 * k + 2 from by ring]; exact hDint k hk)
+    simpa only [Nat.mul_succ, Nat.mul_zero, hx.first, hx.last] using hsum
+  have hsplitG : ∑ m ∈ Finset.range n,
+        ∫ t in x (2 * m)..x (2 * m + 2), SobolevInterval.deriv u (Fin.last 3) t ^ 2
+      = ∫ t in a..b, SobolevInterval.deriv u (Fin.last 3) t ^ 2 := by
+    have hsum := intervalIntegral.sum_integral_adjacent_intervals
+      (a := fun m ↦ x (2 * m)) (n := n)
+      (f := fun t ↦ SobolevInterval.deriv u (Fin.last 3) t ^ 2) (μ := volume)
+      (fun k hk ↦ by rw [show 2 * (k + 1) = 2 * k + 2 from by ring]; exact hGint k hk)
+    simpa only [Nat.mul_succ, Nat.mul_zero, hx.first, hx.last] using hsum
+  have hkey : ∫ t in a..b, SobolevInterval.deriv (u₁ - w) (Fin.last 1) t ^ 2
+      ≤ h ^ 4 * ∫ t in a..b, SobolevInterval.deriv u (Fin.last 3) t ^ 2 := by
+    rw [← hsplitD, ← hsplitG, Finset.mul_sum]
+    exact Finset.sum_le_sum fun m hm ↦ hpanel m (Finset.mem_range.1 hm)
+  -- take square roots
+  have h0 : 0 ≤ h := by
+    have e1 := hstep 0 hn
+    have e2 := hmesh 0 hn
+    linarith
+  have hsq : SobolevInterval.seminorm 1 a b (u₁ - w) ^ 2
+      ≤ (h ^ 2 * SobolevInterval.seminorm 3 a b u) ^ 2 := by
+    rw [SobolevInterval.seminorm_sq_eq_integral hab.le,
+      show (h ^ 2 * SobolevInterval.seminorm 3 a b u) ^ 2
+        = h ^ 4 * SobolevInterval.seminorm 3 a b u ^ 2 from by ring,
+      SobolevInterval.seminorm_sq_eq_integral hab.le u]
+    exact hkey
+  have hB : 0 ≤ h ^ 2 * SobolevInterval.seminorm 3 a b u :=
+    mul_nonneg (by positivity) (apply_nonneg _ _)
+  exact (pow_le_pow_iff_left₀ (apply_nonneg (SobolevInterval.seminorm 1 a b) (u₁ - w)) hB
+    two_ne_zero).1 hsq
+
+end QuadInterp
 
 end FiniteElement

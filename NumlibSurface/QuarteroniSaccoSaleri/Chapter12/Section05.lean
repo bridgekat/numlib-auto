@@ -56,11 +56,11 @@ three-term relations are written at the indices `i`, `i + 1`, `i + 2` rather tha
   element problem and Theorem 12.4's estimate (12.85) for `k = 1`: `C h (|ů|_{H¹} + |ů|_{H²})`
   for the upwind method, and `h |ů|_{H²}` for the Scharfetter–Gummel method, whose nodal
   exactness makes the Galerkin error equal to the interpolation error.
+* `equation_12_86` — Theorem 12.4's estimate (12.86) for `k = 2`:
+  `C h² (|ů|_{H¹} + |ů|_{H³})` for the Scharfetter–Gummel method with `P_2` elements.
 
 ## Not formalized here
 
-Theorem 12.4's estimate (12.86), the `k = 2` Scharfetter–Gummel rate, waits on the `P_2`
-interpolation operator into `H¹(0, 1)`; the plan records it as the open node `equation_12_86`.
 Remark 12.6's nodal exactness for a piecewise constant right-hand side is quoted by the book from
 [HGR96] and is not formalized; the homogeneous case, which is what the proof of Theorem 12.4
 uses, is `remark_12_6_nodal_exact`. Example 12.3 is a numerical experiment.
@@ -474,6 +474,34 @@ theorem theorem_12_4_upwind {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition
         * (SobolevInterval.seminorm 1 0 1 u + SobolevInterval.seminorm 2 0 1 U) := by
   have key := AdvectionDiffusion.seminorm_sub_stabilized_le_upwind zero_lt_one hx hn hε hmesh U hU
     hu hexact hdisc
+  simpa using key
+
+/-- **Theorem 12.4, (12.86): the improved `k = 2` estimate for the Scharfetter–Gummel method**:
+on a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}` of `[0, 1]` whose `n` elements
+`[x_{2m}, x_{2m+2}]` have length at most `h`, with the trial space `X_h^{2,0}` of (12.57) at
+`k = 2` — whose nodal basis is `equation_12_63_basis` — the Scharfetter–Gummel-stabilized
+Galerkin solution of (12.84) satisfies
+`|ů - ů_h|_{H¹(0,1)} ≤ C h² (|ů|_{H¹(0,1)} + |ů|_{H³(0,1)})` with
+`C = 2 + C_P |β|/ε + β²/(12 ε²)` and `C_P = 1/√2`, independent of `h` and of `ů`.  The gain of
+one power of `h` over (12.85) comes from two places at once: the `P_2` interpolation estimate
+`|ů - Π_h^2 ů|_{H¹} ≤ h² |ů|_{H³}` of (8.26), and `φ^{SG}(Pe) ≤ Pe²/3`, which makes the
+stabilization term `O(h²)` where the upwind one is `O(h)`. -/
+theorem equation_12_86 {n : ℕ} {x : ℕ → ℝ} (hx : Spline.IsPartition 0 1 (2 * n) x) (hn : 1 ≤ n)
+    {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
+    {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1}
+    (U : SobolevInterval 3 0 1)
+    (hU : SobolevInterval.inclusionCLM 1 0 1 (SobolevInterval.inclusionCLM 2 0 1 U) = u)
+    (hu : u ∈ SobolevIntervalZero 0 1)
+    (hexact : ∀ v ∈ FiniteElement.lagrangeSpaceZero zero_lt_one n (FiniteElement.evenNodes x) 2,
+      EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
+        (EllipticInterval.constLinf 0 1 β) 0 u v = ℓ v)
+    (hdisc : IsGalerkinSolution (equation_12_84 ε β h AdvectionDiffusion.phiSG) ℓ
+      (FiniteElement.lagrangeSpaceZero zero_lt_one n (FiniteElement.evenNodes x) 2) uh) :
+    SobolevInterval.seminorm 1 0 1 (u - uh)
+      ≤ (2 + 1 / Real.sqrt 2 * |β| / ε + β ^ 2 / (12 * ε ^ 2)) * h ^ 2
+        * (SobolevInterval.seminorm 1 0 1 u + SobolevInterval.seminorm 3 0 1 U) := by
+  have key := AdvectionDiffusion.seminorm_sub_stabilized_le_sg_quadratic zero_lt_one hx hn hε
+    hmesh U hU hu hexact hdisc
   simpa using key
 
 end QuarteroniSaccoSaleri.Chapter12

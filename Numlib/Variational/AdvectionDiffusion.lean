@@ -62,6 +62,10 @@ together with the discretizations that cure the oscillations of the centred sche
   `seminorm_sub_stabilized_le_sg`: **the `P_1` Scharfetter–Gummel finite element solution of the
   model problem is nodally exact**, hence equal to the piecewise linear interpolant of the exact
   solution, so its error is the interpolation error and (12.85) holds with the constant `1`.
+* `AdvectionDiffusion.seminorm_sub_stabilized_le_upwind` and
+  `seminorm_sub_stabilized_le_sg_quadratic`: Theorem 12.4's two general clauses, the first-order
+  rate (12.85) of the upwind method with `P_1` elements and the second-order rate (12.86) of the
+  Scharfetter–Gummel method with `P_2` elements, both with an explicit constant.
 
 ## Implementation notes
 
@@ -1385,6 +1389,102 @@ theorem seminorm_sub_stabilized_le_sg (hx : Spline.IsPartition 0 1 n x) (hn : 1 
   rw [heq, ← hU]
   exact FiniteElement.seminorm_sub_lagrangeInterp_le zero_lt_one hx hn
     (fun k hk ↦ le_of_eq (huni k hk)) U
+
+/-- **Theorem 12.4 for the Scharfetter-Gummel method with `k = 2`**
+([quarteroni2000numerical] (12.86)): on a quadratic mesh `x_0 < x_1 < ⋯ < x_{2n}` whose `n`
+elements `[x_{2m}, x_{2m+2}]` have length at most `h`, with the `P_2` finite element space
+`X_h^{2,0}` as trial space, the Scharfetter–Gummel-stabilized Galerkin error satisfies
+`|ů - ů_h|_{H¹} ≤ C h² (|ů|_{H¹} + |ů|_{H³})` with `C = 2 + C_P |β|/ε + β²/(12 ε²)`
+independent of `h` and of `ů`.  This is `AdvectionDiffusion.seminorm_sub_stabilized_le` with
+`w = Π_h^2 ů` (`FiniteElement.quadraticInterp`), the interpolation estimate (8.26) at `k = 2`,
+`m = 1` (`FiniteElement.seminorm_sub_quadraticInterp_le`), and
+`ε φ^{SG}(Pe)/ε_h ≤ φ^{SG}(Pe) ≤ Pe²/3 = β² h²/(12 ε²)` (`AdvectionDiffusion.phiSG_le_sq`): the
+Scharfetter–Gummel consistency defect is second order in `h` where the upwind one
+(`seminorm_sub_stabilized_le_upwind`) is only first order, which is what upgrades the rate of
+(12.85) to that of (12.86). -/
+theorem seminorm_sub_stabilized_le_sg_quadratic (hab : a < b)
+    (hx : Spline.IsPartition a b (2 * n) x) (hn : 1 ≤ n) {ε β h : ℝ} (hε : 0 < ε)
+    (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
+    {ℓ : SobolevInterval 1 a b →L[ℝ] ℝ} {u uh : SobolevInterval 1 a b}
+    (U : SobolevInterval 3 a b)
+    (hU : SobolevInterval.inclusionCLM 1 a b (SobolevInterval.inclusionCLM 2 a b U) = u)
+    (hu : u ∈ SobolevIntervalZero a b)
+    (hexact : ∀ v ∈ FiniteElement.lagrangeSpaceZero hab n (FiniteElement.evenNodes x) 2,
+      EllipticInterval.form a b (constLinf a b ε) (constLinf a b β) 0 u v = ℓ v)
+    (hdisc : IsGalerkinSolution (stabilizedForm a b ε β h phiSG) ℓ
+      (FiniteElement.lagrangeSpaceZero hab n (FiniteElement.evenNodes x) 2) uh) :
+    SobolevInterval.seminorm 1 a b (u - uh)
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε + β ^ 2 / (12 * ε ^ 2)) * h ^ 2
+        * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 3 a b U) := by
+  have hh : 0 ≤ h := by
+    have e1 : x (2 * 0) < x (2 * 0 + 2) := hx.lt (by omega) (by omega)
+    have e2 := hmesh 0 hn
+    linarith
+  have hPe : 0 ≤ localPeclet β h ε := localPeclet_nonneg hh hε.le
+  have hφ : 0 ≤ phiSG (localPeclet β h ε) := phiSG_nonneg hPe
+  have hεh : 0 < viscosity ε β h phiSG := viscosity_pos hε hφ
+  have hεle : ε ≤ viscosity ε β h phiSG := by
+    rw [viscosity]
+    nlinarith
+  have key := seminorm_sub_stabilized_le hab hε hφ
+    (FiniteElement.lagrangeSpaceZero_le_sobolevIntervalZero hab n (FiniteElement.evenNodes x) 2)
+    hu hexact hdisc (FiniteElement.quadraticInterp_mem_lagrangeSpaceZero hab hx hn hu)
+  -- the interpolation error, (8.26) with `k = 2`, `m = 1`
+  have hinterp : SobolevInterval.seminorm 1 a b (u - FiniteElement.quadraticInterp hab hx hn u)
+      ≤ h ^ 2 * SobolevInterval.seminorm 3 a b U := by
+    have h1 := FiniteElement.seminorm_sub_quadraticInterp_le hab hx hn hmesh U
+    rwa [hU] at h1
+  -- the two constants
+  have hCP : 0 ≤ (b - a) / Real.sqrt 2 := by
+    have := hab.le
+    positivity
+  have hc1 : 1 + (viscosity ε β h phiSG + (b - a) / Real.sqrt 2 * |β|)
+        / viscosity ε β h phiSG ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by
+    rw [add_div, div_self hεh.ne', ← add_assoc]
+    have : (b - a) / Real.sqrt 2 * |β| / viscosity ε β h phiSG
+        ≤ (b - a) / Real.sqrt 2 * |β| / ε :=
+      div_le_div_of_nonneg_left (by positivity) hε hεle
+    linarith
+  have hc2 : ε * phiSG (localPeclet β h ε) / viscosity ε β h phiSG
+      ≤ β ^ 2 / (12 * ε ^ 2) * h ^ 2 := by
+    have hle : ε * phiSG (localPeclet β h ε) / viscosity ε β h phiSG
+        ≤ ε * phiSG (localPeclet β h ε) / ε :=
+      div_le_div_of_nonneg_left (by positivity) hε hεle
+    refine hle.trans ?_
+    rw [mul_div_cancel_left₀ _ hε.ne']
+    refine (phiSG_le_sq hPe).trans (le_of_eq ?_)
+    rw [localPeclet, div_pow, mul_pow, sq_abs]
+    field_simp
+    ring
+  -- assembling
+  have h1 : 0 ≤ SobolevInterval.seminorm 1 a b u := apply_nonneg _ _
+  have h2 : 0 ≤ SobolevInterval.seminorm 3 a b U := apply_nonneg _ _
+  have h3 : 0 ≤ SobolevInterval.seminorm 1 a b
+      (u - FiniteElement.quadraticInterp hab hx hn u) := apply_nonneg _ _
+  have hbeta : 0 ≤ β ^ 2 / (12 * ε ^ 2) := by positivity
+  have ha0 : 0 ≤ 2 + (b - a) / Real.sqrt 2 * |β| / ε := by positivity
+  have hh2 : 0 ≤ h ^ 2 := sq_nonneg h
+  refine key.trans ?_
+  have hA : (1 + (viscosity ε β h phiSG + (b - a) / Real.sqrt 2 * |β|)
+        / viscosity ε β h phiSG)
+      * SobolevInterval.seminorm 1 a b (u - FiniteElement.quadraticInterp hab hx hn u)
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε)
+        * (h ^ 2 * SobolevInterval.seminorm 3 a b U) :=
+    mul_le_mul hc1 hinterp h3 ha0
+  have hB : ε * phiSG (localPeclet β h ε) / viscosity ε β h phiSG
+        * SobolevInterval.seminorm 1 a b u
+      ≤ β ^ 2 / (12 * ε ^ 2) * h ^ 2 * SobolevInterval.seminorm 1 a b u :=
+    mul_le_mul_of_nonneg_right hc2 h1
+  calc (1 + (viscosity ε β h phiSG + (b - a) / Real.sqrt 2 * |β|)
+          / viscosity ε β h phiSG)
+        * SobolevInterval.seminorm 1 a b (u - FiniteElement.quadraticInterp hab hx hn u)
+        + ε * phiSG (localPeclet β h ε) / viscosity ε β h phiSG
+          * SobolevInterval.seminorm 1 a b u
+      ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε) * (h ^ 2 * SobolevInterval.seminorm 3 a b U)
+        + β ^ 2 / (12 * ε ^ 2) * h ^ 2 * SobolevInterval.seminorm 1 a b u := add_le_add hA hB
+    _ ≤ (2 + (b - a) / Real.sqrt 2 * |β| / ε + β ^ 2 / (12 * ε ^ 2)) * h ^ 2
+          * (SobolevInterval.seminorm 1 a b u + SobolevInterval.seminorm 3 a b U) := by
+        nlinarith [mul_nonneg (mul_nonneg ha0 hh2) h1, mul_nonneg (mul_nonneg hbeta hh2) h2]
 
 end ScharfetterGummelFEM
 

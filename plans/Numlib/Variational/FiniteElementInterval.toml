@@ -171,3 +171,39 @@ id = "eq_of_rep_node_eq"
 
 [[node]]
 id = "node_eq_of_uniform"
+
+[[node]]
+id = "quadraticInterp"
+
+[[node]]
+id = "rep_sum_quadraticShape"
+
+[[node]]
+id = "rep_quadraticInterp"
+
+[[node]]
+id = "rep_quadraticInterp_node"
+
+[[node]]
+id = "quadraticInterp_mem_lagrangeSpace"
+
+[[node]]
+id = "quadraticInterp_mem_lagrangeSpaceZero"
+
+[[node]]
+id = "quadElemPoly"
+
+[[node]]
+id = "quadElemPoly_degree_le"
+
+[[node]]
+id = "quadElemPoly_eval"
+
+[[node]]
+id = "quadElemPoly_eval_node"
+
+[[node]]
+id = "rep_quadraticInterp_eq_eval"
+
+[[node]]
+id = "seminorm_sub_quadraticInterp_le"
