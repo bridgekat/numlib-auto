@@ -176,8 +176,6 @@ id = "PredictorCorrector.hasOrderFor_of"
 [[node]]
 id = "PredictorCorrector.abm_charPoly"
 
-[[node]]
-id = "_root_.norm_sub_sum_smul_le"
 
 [[node]]
 id = "LinearMultistep.rhs"
@@ -328,18 +326,6 @@ id = "PredictorCorrector.norm_lte_le"
 
 [[node]]
 id = "PredictorCorrector.HasOrderFor"
-
-[[node]]
-id = "_root_.LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le"
-
-[[node]]
-id = "_root_.LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le"
-
-[[node]]
-id = "_root_.LinearRecurrence.exists_isSolution_real_frequently_le"
-
-[[node]]
-id = "_root_.Polynomial.satisfiesRootCondition_C_mul_iff"
 
 [[node]]
 id = "LinearMultistep.charPoly_monic_of_bm1_eq_zero"

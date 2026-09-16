@@ -1,7 +1,7 @@
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
-import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.LinearAlgebra.Lagrange
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.ODE.DifferenceEquation
 import Numlib.ODE.RungeKutta
 import Numlib.RingTheory.Polynomial.SchurCohn
@@ -38,9 +38,9 @@ expansion of `L[w; h](t)` about `t` (`opL_eq_sum_add_remainder`): with the tower
 `L[w; h](t) = ∑_{m ≤ q} (h^m/m!) C_m y_m(t) + O(K h^{q+1})`, where
 `C_m = 1 - ∑ (-j)^m a_j - m ∑_{j=-1}^p (-j)^{m-1} b_j` (`taylorCoeff`) is `1` minus the left side
 of the `m`-th order condition; the error constant of a method of order `q` is
-`errorConstant q = C_{q+1}/(q+1)!` (the values of the book's Table 11.1). The Taylor bound itself,
-`norm_sub_sum_smul_le`, is stated for explicit derivative functions with `HasDerivWithinAt` on a
-closed interval, like the second- and third-order bounds of `Numlib/ODE/OneStep`. The necessity
+`errorConstant q = C_{q+1}/(q+1)!` (the values of the book's Table 11.1). The Taylor bound itself
+is `norm_sub_sum_smul_le` of `Numlib/Analysis/Calculus/Taylor`, stated for explicit derivative
+functions with `HasDerivWithinAt` on a closed interval. The necessity
 halves test the monomials `t ↦ t^i` (`opL_pow`, `lte_pow_node`).
 
 **Characteristic polynomials and root conditions.** `rho = X^{p+1} - ∑ a_j X^{p-j}`,
@@ -98,138 +98,6 @@ characteristic polynomials of Example 11.10.
 
 open Set Filter Topology Asymptotics Polynomial
 open Finset (range)
-
-/-! ### A Taylor bound with explicit derivatives on a closed interval
-
-The Taylor remainder bound for a tower of derivative functions `y 0, y 1, …, y n` with
-`HasDerivWithinAt (y m) (y (m+1) s) (Icc a b) s`, at an arbitrary expansion point `c ∈ [a, b]`
-and evaluation point `x ∈ [a, b]` on either side of it. It extends the second- and third-order
-bounds of `Numlib/ODE/OneStep` and is proved the same way, by the comparison lemma
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary` and induction on the order; the backward
-case is the forward case for the reflected tower `s ↦ (-1)^m • y m (a + b - s)`. Mathlib's
-`taylor_mean_remainder_bound` expands at the left endpoint of the interval only. Mathlib-shaped;
-it lives here until a calculus module holds it. -/
-
-section Taylor
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {a b K : ℝ} {y : ℕ → ℝ → E}
-
-/-- The Taylor bound in the forward direction: for a tower `y` of derivatives on `Icc a b` with
-`‖y n‖ ≤ K` there, `‖y 0 b - ∑_{m < n} ((b - a)^m / m!) y m a‖ ≤ K (b - a)^n / n!`. -/
-theorem norm_sub_sum_smul_le_of_le (hab : a ≤ b) (n : ℕ)
-    (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
-    (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) :
-    ‖y 0 b - ∑ m ∈ range n, ((b - a) ^ m / m.factorial) • y m a‖ ≤
-      K * (b - a) ^ n / n.factorial := by
-  induction n generalizing y b with
-  | zero =>
-    simp only [Finset.range_zero, Finset.sum_empty, sub_zero, pow_zero, mul_one,
-      Nat.factorial_zero, Nat.cast_one, div_one]
-    exact hK b (right_mem_Icc.2 hab)
-  | succ n ih =>
-    -- the residual and its derivative
-    set g : ℝ → E := fun s => y 0 s - ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a
-    have hg : ∀ s ∈ Icc a b, HasDerivWithinAt g
-        (y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
-      intro s hs
-      have h1 : HasDerivWithinAt (fun s => ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a)
-          (∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
-        have e : (fun s => ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a) =
-            fun s => (∑ m ∈ range n, ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a) +
-              ((s - a) ^ 0 / (0 : ℕ).factorial) • y 0 a := by
-          funext s
-          rw [Finset.sum_range_succ']
-        rw [e]
-        have h0 : HasDerivWithinAt (fun s : ℝ => ((s - a) ^ 0 / (0 : ℕ).factorial) • y 0 a) 0
-            (Icc a b) s := by
-          simp only [pow_zero, Nat.factorial_zero, Nat.cast_one, div_one, one_smul]
-          exact hasDerivWithinAt_const _ _ _
-        have hsum : HasDerivWithinAt
-            (fun s => ∑ m ∈ range n, ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a)
-            (∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
-          refine HasDerivWithinAt.fun_sum
-            (A := fun m s => ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a)
-            (A' := fun m => ((s - a) ^ m / m.factorial) • y (m + 1) a) fun m _ => ?_
-          have : HasDerivWithinAt (fun s : ℝ => (s - a) ^ (m + 1) / (m + 1).factorial)
-              ((s - a) ^ m / m.factorial) (Icc a b) s := by
-            have := (((hasDerivAt_id' s).hasDerivWithinAt (s := Icc a b)).sub_const a).pow (m + 1)
-              |>.div_const ((m + 1).factorial : ℝ)
-            refine this.congr_deriv ?_
-            rw [Nat.factorial_succ, Nat.cast_mul, Nat.add_sub_cancel]
-            field_simp
-          exact this.smul_const (y (m + 1) a)
-        exact (hsum.add h0).congr_deriv (add_zero _)
-      exact (hy 0 (Nat.succ_pos n) s hs).sub h1
-    have hbound : ∀ s ∈ Icc a b,
-        ‖y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a‖ ≤
-          K * (s - a) ^ n / n.factorial := by
-      intro s hs
-      have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
-      exact ih (y := fun m => y (m + 1)) hs.1
-        (fun m hm u hu => (hy (m + 1) (by omega) u (hsub hu)).mono hsub)
-        (fun u hu => hK u (hsub hu))
-    have hB : ∀ s, HasDerivAt (fun s => K * (s - a) ^ (n + 1) / (n + 1).factorial)
-        (K * (s - a) ^ n / n.factorial) s := by
-      intro s
-      have := (((hasDerivAt_id' s).sub_const a).pow (n + 1)).const_mul K |>.div_const
-        ((n + 1).factorial : ℝ)
-      refine this.congr_deriv ?_
-      rw [Nat.factorial_succ, Nat.cast_mul, Nat.add_sub_cancel]
-      field_simp
-    have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
-      (f' := fun s => y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a)
-      (HasDerivWithinAt.continuousOn hg)
-      (fun s hs => (hg s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin
-        (Icc_mem_nhdsGE_of_mem hs))
-      (B := fun s => K * (s - a) ^ (n + 1) / (n + 1).factorial)
-      (B' := fun s => K * (s - a) ^ n / n.factorial) (by simp [g, Finset.sum_range_succ', pow_succ])
-      hB
-      (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
-    simpa [g] using key
-
-/-- The reflected tower `s ↦ (-1)^m • y m (a + b - s)` is a tower of derivatives on `Icc a b`. -/
-theorem hasDerivWithinAt_reflect (m : ℕ)
-    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s) {s : ℝ}
-    (hs : s ∈ Icc a b) :
-    HasDerivWithinAt (fun s => ((-1 : ℝ) ^ m) • y m (a + b - s))
-      (((-1 : ℝ) ^ (m + 1)) • y (m + 1) (a + b - s)) (Icc a b) s := by
-  have := (hasDerivWithinAt_comp_const_sub_Icc hy hs).const_smul ((-1 : ℝ) ^ m)
-  refine this.congr_deriv ?_
-  rw [pow_succ, smul_neg, mul_neg_one, neg_smul]
-
-/-- **The Taylor bound at an arbitrary expansion point**: for a tower `y` of derivatives on
-`Icc a b` with `‖y n‖ ≤ K` there, and `c, x ∈ Icc a b`,
-`‖y 0 x - ∑_{m < n} ((x - c)^m / m!) y m c‖ ≤ K |x - c|^n / n!`. With `n = 0` it reads
-`‖y 0 x‖ ≤ K`, with `n = 1` it is the mean value inequality. -/
-theorem norm_sub_sum_smul_le (n : ℕ)
-    (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
-    (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) {c x : ℝ} (hc : c ∈ Icc a b) (hx : x ∈ Icc a b) :
-    ‖y 0 x - ∑ m ∈ range n, ((x - c) ^ m / m.factorial) • y m c‖ ≤
-      K * |x - c| ^ n / n.factorial := by
-  rcases le_total c x with hcx | hxc
-  · have hsub : Icc c x ⊆ Icc a b := Icc_subset_Icc hc.1 hx.2
-    have := norm_sub_sum_smul_le_of_le hcx n
-      (fun m hm s hs => (hy m hm s (hsub hs)).mono hsub) (fun s hs => hK s (hsub hs))
-    rwa [abs_of_nonneg (sub_nonneg.2 hcx)]
-  · have hsub : Icc x c ⊆ Icc a b := Icc_subset_Icc hx.1 hc.2
-    -- reflect through the midpoint of `[x, c]`
-    have hy' : ∀ m < n, ∀ s ∈ Icc x c, HasDerivWithinAt (fun s => ((-1 : ℝ) ^ m) • y m (x + c - s))
-        (((-1 : ℝ) ^ (m + 1)) • y (m + 1) (x + c - s)) (Icc x c) s := fun m hm s hs =>
-      hasDerivWithinAt_reflect m (fun u hu => (hy m hm u (hsub hu)).mono hsub) hs
-    have hK' : ∀ s ∈ Icc x c, ‖((-1 : ℝ) ^ n) • y n (x + c - s)‖ ≤ K := fun s hs => by
-      rw [norm_smul, norm_pow, norm_neg, norm_one, one_pow, one_mul]
-      exact hK _ (hsub ⟨by linarith [hs.2], by linarith [hs.1]⟩)
-    have key := norm_sub_sum_smul_le_of_le (y := fun m s => ((-1 : ℝ) ^ m) • y m (x + c - s)) hxc n
-      hy' hK'
-    simp only [pow_zero, one_smul, add_sub_cancel_right, add_sub_cancel_left] at key
-    rw [abs_of_nonpos (sub_nonpos.2 hxc), neg_sub]
-    convert key using 3
-    refine Finset.sum_congr rfl fun m _ => ?_
-    rw [smul_smul, ← neg_sub c x, neg_pow]
-    congr 1
-    ring
-
-end Taylor
 
 namespace ODE
 
@@ -1182,110 +1050,6 @@ theorem isOrbit_zero_iff_isSolution {h t₀ : ℝ} {u : ℕ → ℝ} :
 
 end Recurrence
 
-end LinearMultistep
-
-end ODE
-
-/-! ### Lemma 11.3 on a finite horizon, and for sequences in a normed space
-
-Two forms of the bound (11.63) of [quarteroni2000numerical] Lemma 11.3 that the zero-stability
-estimate needs and `Numlib/ODE/DifferenceEquation` does not provide: the hypothesis restricted to
-the steps `n + k ≤ N` (the recursion of a perturbed orbit is only controlled while its nodes stay
-in the horizon), and the sequence with values in a real normed space (the difference of two
-orbits). The horizon form extends the sequence by `mkSolWith`; the vector form reduces to the
-complex scalar form through a norming functional (Hahn–Banach, `exists_dual_vector''`). They
-belong in `Numlib/ODE/DifferenceEquation`. -/
-
-namespace LinearRecurrence
-
-/-- A sequence satisfying the inhomogeneous recurrence for the steps `n + k ≤ N` agrees, up to
-`N`, with the solution `mkSolWith` of the recurrence whose source is truncated after `N` and whose
-initial data are its own. -/
-theorem eq_mkSolWith_of_le {R : Type*} [CommSemiring R] (E : LinearRecurrence R) {φ u : ℕ → R}
-    {N : ℕ}
-    (hu : ∀ n, n + E.order ≤ N →
-      u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)) :
-    ∀ n ≤ N, u n = E.mkSolWith (fun l => if l ≤ N then φ l else 0) (fun j => u j) n := by
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro hn
-    by_cases h' : n < E.order
-    · exact (E.mkSolWith_eq_init (fun l => if l ≤ N then φ l else 0) (fun j => u j) ⟨n, h'⟩).symm
-    · obtain ⟨m, rfl⟩ : ∃ m, n = m + E.order := ⟨n - E.order, by omega⟩
-      rw [hu m hn, E.isSolutionWith_mkSolWith _ _ m]
-      simp only [hn, ite_true]
-      congr 1
-      refine Finset.sum_congr rfl fun k _ => ?_
-      rw [ih (m + k) (by have := k.is_lt; omega) (by have := k.is_lt; omega)]
-
-/-- **Lemma 11.3 on a finite horizon** ([quarteroni2000numerical] (11.63)), over `ℂ`: for a
-recurrence of positive order satisfying the root condition there is `M > 0` such that every
-sequence `u` satisfying the recurrence with source `φ` for the steps `n + k ≤ N` obeys
-`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. -/
-theorem norm_le_of_satisfiesRootCondition_of_le (E : LinearRecurrence ℂ) (hk : 0 < E.order)
-    (hE : E.charPoly.SatisfiesRootCondition) :
-    ∃ M : ℝ, 0 < M ∧ ∀ (N : ℕ) (φ u : ℕ → ℂ),
-      (∀ n, n + E.order ≤ N → u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)) →
-      ∀ n ≤ N, ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Finset.Icc E.order n, ‖φ l‖) := by
-  obtain ⟨M, hM0, hM⟩ := E.norm_le_of_satisfiesRootCondition hk hE
-  refine ⟨M, hM0, fun N φ u hu n hn => ?_⟩
-  set φ' : ℕ → ℂ := fun l => if l ≤ N then φ l else 0
-  have key := hM φ' (E.mkSolWith φ' fun j => u j) (E.isSolutionWith_mkSolWith φ' _) n
-  rw [← E.eq_mkSolWith_of_le hu n hn] at key
-  refine key.trans (le_of_eq ?_)
-  congr 2
-  · exact iSup_congr fun j => by rw [E.mkSolWith_eq_init]
-  · refine Finset.sum_congr rfl fun l hl => ?_
-    simp only [φ', (Finset.mem_Icc.1 hl).2.trans hn, ite_true]
-
-/-- **Lemma 11.3 on a finite horizon, for sequences in a normed space**: for a real recurrence of
-positive order whose complexification satisfies the root condition, there is `M > 0` such that
-every sequence `u` in a real normed space `V` satisfying
-`u (n + k) = ∑ α_i • u (n + i) + φ (n + k)` for the steps `n + k ≤ N` obeys
-`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. By the complex scalar case applied
-to `g ∘ u` for a norming functional `g` of `u n`. -/
-theorem norm_le_of_satisfiesRootCondition_smul_of_le (E : LinearRecurrence ℝ) (hk : 0 < E.order)
-    (hE : (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition)
-    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] :
-    ∃ M : ℝ, 0 < M ∧ ∀ (N : ℕ) (φ u : ℕ → V),
-      (∀ n, n + E.order ≤ N → u (n + E.order) = ∑ i, E.coeffs i • u (n + i) + φ (n + E.order)) →
-      ∀ n ≤ N, ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Finset.Icc E.order n, ‖φ l‖) := by
-  obtain ⟨M, hM0, hM⟩ := (E.map (algebraMap ℝ ℂ)).norm_le_of_satisfiesRootCondition_of_le hk hE
-  refine ⟨M, hM0, fun N φ u hu n hn => ?_⟩
-  obtain ⟨g, hg1, hgx⟩ := exists_dual_vector'' ℝ (u n)
-  set v : ℕ → ℂ := fun l => ((g (u l) : ℝ) : ℂ)
-  set ψ : ℕ → ℂ := fun l => ((g (φ l) : ℝ) : ℂ)
-  have hv : ∀ m, m + (E.map (algebraMap ℝ ℂ)).order ≤ N →
-      v (m + (E.map (algebraMap ℝ ℂ)).order) =
-        ∑ i, (E.map (algebraMap ℝ ℂ)).coeffs i * v (m + i) +
-          ψ (m + (E.map (algebraMap ℝ ℂ)).order) := by
-    intro m hm
-    simp only [v, ψ, map_order, hu m hm, map_add, map_sum, map_smul, smul_eq_mul]
-    push_cast
-    rfl
-  have key := hM N ψ v hv n hn
-  have hvn : ‖v n‖ = ‖u n‖ := by
-    simp only [v, hgx, Complex.norm_real, RCLike.ofReal_real_eq_id, id, Real.norm_eq_abs,
-      abs_norm]
-  have hle : ∀ x : V, ‖((g x : ℝ) : ℂ)‖ ≤ ‖x‖ := fun x => by
-    rw [Complex.norm_real]
-    exact (g.le_opNorm x).trans (mul_le_of_le_one_left (norm_nonneg _) hg1)
-  rw [hvn] at key
-  refine key.trans (mul_le_mul_of_nonneg_left (add_le_add ?_ ?_) hM0.le)
-  · exact ciSup_mono (Finite.bddAbove_range _) fun j => hle (u j)
-  · exact Finset.sum_le_sum fun l _ => hle (φ l)
-
-end LinearRecurrence
-
-namespace ODE
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-namespace LinearMultistep
-
-variable (M : LinearMultistep) {f : ℝ → E → E} {h t₀ T : ℝ} {n : ℕ}
-
 /-! ### Zero-stability: the estimate (11.65) -/
 
 section ZeroStability
@@ -1682,69 +1446,6 @@ theorem isConvergentWithOrderFor_of_satisfiesRootCondition (hroot : M.SatisfiesR
         nlinarith [mul_nonneg hT hc.le, mul_nonneg (mul_nonneg hT hc.le) hε, mul_nonneg hK.le hp]
 
 end Theorem115
-
-end LinearMultistep
-
-end ODE
-
-/-! ### A real solution growing at least linearly
-
-The necessity half of Theorem 11.5 scales the counterexample of Theorem 11.4 by `h ≈ T/n`, so the
-unbounded real solution of `Numlib/ODE/DifferenceEquation` is not enough: it must be at least
-linear in `n` along a subsequence. The complex witnesses `r^n` (`‖r‖ > 1`, Bernoulli's inequality)
-and `n r^n` (`‖r‖ = 1`) are, and one of the real and imaginary parts inherits it frequently.
-Belongs in `Numlib/ODE/DifferenceEquation`. -/
-
-namespace LinearRecurrence
-
-/-- When the root condition fails there is a complex solution with `‖w n‖ ≥ c n` for all `n`,
-`c > 0`. -/
-theorem exists_isSolution_norm_ge_of_not_satisfiesRootCondition (E : LinearRecurrence ℂ)
-    (h : ¬ E.charPoly.SatisfiesRootCondition) :
-    ∃ w : ℕ → ℂ, E.IsSolution w ∧ ∃ c : ℝ, 0 < c ∧ ∀ n : ℕ, c * n ≤ ‖w n‖ := by
-  simp only [Polynomial.SatisfiesRootCondition, not_forall, not_and] at h
-  obtain ⟨r, hr, hr'⟩ := h
-  by_cases h1 : 1 < ‖r‖
-  · refine ⟨fun n => r ^ n, (E.geom_sol_iff_root_charPoly r).2 hr, ‖r‖ - 1, by linarith,
-      fun n => ?_⟩
-    rw [norm_pow]
-    have := one_add_mul_le_pow (a := ‖r‖ - 1) (by linarith) n
-    rw [add_sub_cancel] at this
-    linarith
-  · obtain ⟨hle, hmult⟩ := hr' (not_lt.1 h1)
-    have hpos : 0 < E.charPoly.rootMultiplicity r :=
-      (rootMultiplicity_pos E.charPoly_monic.ne_zero).2 hr
-    refine ⟨fun n => (n : ℂ) * r ^ n,
-      E.isSolution_mul_pow_of_one_lt_rootMultiplicity (by omega), 1, one_pos, fun n => ?_⟩
-    simp [norm_pow, hle]
-
-/-- **A real solution growing at least linearly along a subsequence**: a real recurrence whose
-complexification violates the root condition has a real solution `u` with `c n ≤ |u n|` for
-infinitely many `n`, for some `c > 0`. -/
-theorem exists_isSolution_real_frequently_le (E : LinearRecurrence ℝ)
-    (h : ¬ (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition) :
-    ∃ u : ℕ → ℝ, E.IsSolution u ∧ ∃ c : ℝ, 0 < c ∧ ∃ᶠ n in atTop, c * n ≤ |u n| := by
-  obtain ⟨w, hw, c, hc, hcw⟩ :=
-    (E.map (algebraMap ℝ ℂ)).exists_isSolution_norm_ge_of_not_satisfiesRootCondition h
-  have hor : ∃ᶠ n in atTop, c / 2 * n ≤ |(w n).re| ∨ c / 2 * n ≤ |(w n).im| := by
-    refine Eventually.frequently (Eventually.of_forall fun n => ?_)
-    have := (hcw n).trans (Complex.norm_le_abs_re_add_abs_im (w n))
-    by_contra hcon
-    push Not at hcon
-    linarith [hcon.1, hcon.2]
-  rcases Filter.frequently_or_distrib.1 hor with H | H
-  · exact ⟨_, E.isSolution_re_of_map hw, c / 2, by positivity, H⟩
-  · exact ⟨_, E.isSolution_im_of_map hw, c / 2, by positivity, H⟩
-
-end LinearRecurrence
-
-namespace ODE
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-namespace LinearMultistep
-
-variable (M : LinearMultistep) {f : ℝ → E → E} {h t₀ T : ℝ} {n : ℕ}
 
 section Theorem115Necessity
 
@@ -2961,15 +2662,6 @@ the scheme is determined and every solution of the recurrence is *bounded*. -/
 def absStabilityRegionStar : Set ℂ :=
   {z | 1 - z * M.bm1 ≠ 0 ∧ ∀ u : ℕ → ℂ, (M.toLinearRecurrence z).IsSolution u →
     BddAbove (Set.range fun n => ‖u n‖)}
-
-/-- The root condition is invariant under a nonzero constant factor. -/
-theorem _root_.Polynomial.satisfiesRootCondition_C_mul_iff {K : Type*} [NormedField K] {c : K}
-    (hc : c ≠ 0) (P : K[X]) : (C c * P).SatisfiesRootCondition ↔ P.SatisfiesRootCondition := by
-  rcases eq_or_ne P 0 with rfl | hP
-  · simp
-  · have hne : C c * P ≠ 0 := mul_ne_zero (C_ne_zero.2 hc) hP
-    simp only [Polynomial.SatisfiesRootCondition, IsRoot, eval_mul, eval_C, mul_eq_zero, hc,
-      false_or, rootMultiplicity_mul hne, rootMultiplicity_C, zero_add]
 
 /-- **`𝒜*` is the root condition on `Π(z)`** ([quarteroni2000numerical] Remark 11.3, through
 Lemma 11.3): `z ∈ 𝒜* ↔ 1 - z b_{-1} ≠ 0 ∧ Π(z)` satisfies the root condition. -/

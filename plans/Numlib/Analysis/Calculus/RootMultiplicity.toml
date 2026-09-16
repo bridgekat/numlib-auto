@@ -60,3 +60,9 @@ id = "IsRootOfMultiplicity.exists_eq_pow_mul_deriv"
 
 [[node]]
 id = "ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv"
+
+[[node]]
+id = "ContDiffAt.eventually_hasDerivAt"
+
+[[node]]
+id = "ContDiffAt.continuousAt_deriv"

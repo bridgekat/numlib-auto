@@ -202,12 +202,6 @@ private theorem sqrt_coeff_pos (n : ℕ) : 0 < √((2 * (n : ℝ) + 1) / 2) :=
 theorem degree_legendreNormalized (n : ℕ) : (legendreNormalized n).degree = n := by
   rw [legendreNormalized, degree_C_mul (sqrt_coeff_pos n).ne', degree_legendre]
 
-/-- The Legendre weight is carried by `[-1, 1]`, so Weierstrass applies to it. -/
-theorem legendreMeasure_compl_Icc : legendreMeasure (Set.Icc (-1 : ℝ) 1)ᶜ = 0 := by
-  have hempty : (Set.Icc (-1 : ℝ) 1)ᶜ ∩ Set.Ioo (-1 : ℝ) 1 = ∅ :=
-    Set.eq_empty_iff_forall_notMem.2 fun x hx => hx.1 (Set.Ioo_subset_Icc_self hx.2)
-  rw [legendreMeasure, Measure.restrict_apply' measurableSet_Ioo, hempty, measure_empty]
-
 /-- The normalized Legendre polynomials as elements of `L²(-1, 1)`. -/
 noncomputable def legendreLp (n : ℕ) : Lp ℝ 2 legendreMeasure :=
   isWeight_legendreMeasure.toLpₗ (legendreNormalized n)

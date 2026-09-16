@@ -1,10 +1,4 @@
 [[node]]
-id = "exists_ball_abs_slope_sub_deriv_le"
-
-[[node]]
-id = "exists_ball_abs_newton_three_sub_le"
-
-[[node]]
 id = "Chord.step"
 
 [[node]]

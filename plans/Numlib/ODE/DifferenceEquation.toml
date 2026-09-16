@@ -5,6 +5,9 @@ id = "Polynomial.SatisfiesRootCondition"
 id = "Polynomial.satisfiesRootCondition_iff_derivative"
 
 [[node]]
+id = "Polynomial.satisfiesRootCondition_C_mul_iff"
+
+[[node]]
 id = "Polynomial.SatisfiesStrongRootCondition"
 
 [[node]]
@@ -59,6 +62,9 @@ id = "LinearRecurrence.norm_kroneckerSol_le_of_satisfiesRootCondition"
 id = "LinearRecurrence.norm_le_of_satisfiesRootCondition"
 
 [[node]]
+id = "LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le"
+
+[[node]]
 id = "LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition"
 
 [[node]]
@@ -75,6 +81,12 @@ id = "LinearRecurrence.isSolution_im_of_map"
 
 [[node]]
 id = "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"
+
+[[node]]
+id = "LinearRecurrence.exists_isSolution_real_frequently_le"
+
+[[node]]
+id = "LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le"
 
 [[node]]
 id = "Polynomial.satisfiesRootCondition_of_roots"

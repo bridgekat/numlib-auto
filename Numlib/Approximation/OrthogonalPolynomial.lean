@@ -1967,6 +1967,13 @@ theorem integral_legendreMeasure (f : ℝ → ℝ) :
 theorem isWeight_legendreMeasure : IsWeight legendreMeasure :=
   isWeight_volume_restrict_Ioo (by norm_num)
 
+/-- The Legendre weight is carried by `[-1, 1]`: it gives no mass to the complement. This is the
+hypothesis under which `hilbertBasisOfDegreeEq` applies Weierstrass to it. -/
+theorem legendreMeasure_compl_Icc : legendreMeasure (Set.Icc (-1 : ℝ) 1)ᶜ = 0 := by
+  have hempty : (Set.Icc (-1 : ℝ) 1)ᶜ ∩ Set.Ioo (-1 : ℝ) 1 = ∅ :=
+    Set.eq_empty_iff_forall_notMem.2 fun x hx => hx.1 (Set.Ioo_subset_Icc_self hx.2)
+  rw [legendreMeasure, Measure.restrict_apply' measurableSet_Ioo, hempty, measure_empty]
+
 /-! ### Identifying a classical family with the monic family -/
 
 variable {μ : Measure ℝ}

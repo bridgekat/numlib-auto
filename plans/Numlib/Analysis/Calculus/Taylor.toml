@@ -29,6 +29,9 @@ id = "abs_taylor_three"
 id = "hasDerivWithinAt_comp_const_sub_Icc"
 
 [[node]]
+id = "norm_sub_sum_smul_le"
+
+[[node]]
 id = "norm_sub_taylorSum_le"
 
 [[node]]

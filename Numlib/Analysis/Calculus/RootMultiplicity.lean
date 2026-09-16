@@ -33,7 +33,9 @@ lemma is proved from the integral representation
 `dslope f a b = ∫₀¹ f'(a + t (b - a)) dt`, whose `k`-th derivative in `b` is
 `∫₀¹ tᵏ f^{(k+1)}(a + t (b - a)) dt`, differentiated under the integral sign. Hadamard's lemma and
 the two helpers on iterated derivatives over an open set are upstreaming candidates (natural home:
-`Mathlib.Analysis.Calculus.DSlope`).
+`Mathlib.Analysis.Calculus.DSlope`), and so are their pointwise `C¹` forms
+`ContDiffAt.eventually_hasDerivAt` and `ContDiffAt.continuousAt_deriv`: a function `C¹` at a point
+has `deriv` as its derivative on a whole neighbourhood, on which `deriv` is continuous.
 -/
 
 open Filter Topology Set Nat
@@ -103,6 +105,25 @@ theorem ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv {f : ℝ → ℝ} {a : �
   exact ⟨r, hr, fun j hj x hx =>
     (hfu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball hj hx,
     (hfu.mono hru).continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball le_rfl⟩
+
+/-- On a neighbourhood of a point where `h` is `C¹`, `h` has derivative `deriv h`. -/
+theorem ContDiffAt.eventually_hasDerivAt {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
+    ∀ᶠ x in 𝓝 a, HasDerivAt h (deriv h x) x := by
+  obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
+  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
+  filter_upwards [Metric.ball_mem_nhds a hr] with x hx
+  have := (hhu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen (N := 1) Metric.isOpen_ball
+    (j := 0) one_pos hx
+  simpa using this
+
+/-- The derivative of a `C¹` function is continuous at the point. -/
+theorem ContDiffAt.continuousAt_deriv {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
+    ContinuousAt (deriv h) a := by
+  obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
+  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
+  have := ((hhu.mono hru).continuousOn_iteratedDeriv_of_isOpen (N := 1) Metric.isOpen_ball
+    (j := 1) le_rfl).continuousAt (Metric.ball_mem_nhds a hr)
+  simpa using this
 
 end OpenSet
 

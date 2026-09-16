@@ -1,9 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
 
 [[node]]
-id = "legendreMeasure_compl_Icc"
-
-[[node]]
 id = "equation_10_32"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.32)'
 

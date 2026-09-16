@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Nonlinear.Newton
 import Numlib.Nonlinear.Order
 
@@ -81,25 +82,6 @@ end Defs
 section Multiple
 
 variable {f : ℝ → ℝ} {α : ℝ} {m : ℕ}
-
-/-- On a neighbourhood of a point where `h` is `C¹`, `h` has derivative `deriv h`. -/
-theorem _root_.ContDiffAt.eventually_hasDerivAt {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
-    ∀ᶠ x in 𝓝 a, HasDerivAt h (deriv h x) x := by
-  obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
-  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
-  filter_upwards [Metric.ball_mem_nhds a hr] with x hx
-  have := (hhu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen (N := 1) Metric.isOpen_ball
-    (j := 0) one_pos hx
-  simpa using this
-
-/-- The derivative of a `C¹` function is continuous at the point. -/
-theorem _root_.ContDiffAt.continuousAt_deriv {h : ℝ → ℝ} {a : ℝ} (hh : ContDiffAt ℝ 1 h a) :
-    ContinuousAt (deriv h) a := by
-  obtain ⟨u, hu, hhu⟩ := hh.contDiffOn le_rfl (by simp)
-  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
-  have := ((hhu.mono hru).continuousOn_iteratedDeriv_of_isOpen (N := 1) Metric.isOpen_ball
-    (j := 1) le_rfl).continuousAt (Metric.ball_mem_nhds a hr)
-  simpa using this
 
 /-- **The derivative near a multiple root.** If `f x = (x - α)^{m+1} h x` with `h` `C¹` at `α`,
 then near `α`, `f'(x) = (x - α)^m ((m + 1) h x + (x - α) h'(x))`. -/

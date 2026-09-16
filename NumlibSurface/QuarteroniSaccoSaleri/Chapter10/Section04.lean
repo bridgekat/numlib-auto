@@ -63,15 +63,6 @@ namespace QuarteroniSaccoSaleri.Chapter10
 
 variable {n : ℕ}
 
--- TODO(backbone): the Legendre weight is carried by `[-1, 1]`; belongs beside
--- `OrthogonalPolynomial.isWeight_legendreMeasure`.
-/-- The Legendre weight gives no mass outside `[-1, 1]`. -/
-theorem legendreMeasure_compl_Icc : legendreMeasure (Icc (-1 : ℝ) 1)ᶜ = 0 := by
-  rw [legendreMeasure, Measure.restrict_apply' measurableSet_Ioo]
-  have hempty : (Icc (-1 : ℝ) 1)ᶜ ∩ Ioo (-1 : ℝ) 1 = ∅ :=
-    Set.eq_empty_of_forall_notMem fun t ht => ht.1 (Ioo_subset_Icc_self ht.2)
-  rw [hempty, measure_empty]
-
 /-! ### The Legendre–Gauss formula (10.32) -/
 
 /-- **(10.32), the Legendre–Gauss formula.** For `n ≥ 0` the Gauss nodes are the `n + 1` zeros

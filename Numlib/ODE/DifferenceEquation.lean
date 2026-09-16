@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Analysis.SpecificLimits.Normed
 import Numlib.Algebra.LinearRecurrence
@@ -27,6 +28,8 @@ is `Numlib/Algebra/LinearRecurrence`; this module adds the norms.
   `Polynomial.satisfiesRootCondition_of_isSchurStable` establishes it for `c (X - 1) Q` with `Q`
   Schur stable (`Numlib/RingTheory/Polynomial/SchurCohn`) — the shape of the first characteristic
   polynomial of a consistent multistep method.
+* `Polynomial.satisfiesRootCondition_C_mul_iff` — the condition is invariant under multiplication
+  by a nonzero constant, which is how the absolute stability region reads it off `Π(z)`.
 
 Both are stated for a polynomial over any normed field; for a real polynomial the condition of
 interest is that of its image in `ℂ[X]`, which is how `ODE/Multistep` reads the first
@@ -60,6 +63,18 @@ carry the names of the book's statements.
   an unbounded *real* solution, the real or imaginary part of the complex one. This is the witness
   the necessity halves of the book's Theorems 11.4 and 11.5 need; the book's `ε (r + r̄) ^ n` is not
   a solution.
+* `LinearRecurrence.norm_le_of_satisfiesRootCondition_of_le` and
+  `LinearRecurrence.norm_le_of_satisfiesRootCondition_smul_of_le` — the two forms of (11.63) that a
+  perturbed orbit needs: the hypothesis restricted to the steps `n + k ≤ N` (the recursion of a
+  perturbed orbit is controlled only while its nodes stay inside the horizon), and the sequence
+  with values in a real normed space (the difference of two orbits). The horizon form extends the
+  sequence by `mkSolWith` (`LinearRecurrence.eq_mkSolWith_of_le`); the vector form reduces to the
+  complex scalar form through a norming functional (Hahn–Banach, `exists_dual_vector''`).
+* `LinearRecurrence.exists_isSolution_norm_ge_of_not_satisfiesRootCondition` and
+  `LinearRecurrence.exists_isSolution_real_frequently_le` — the necessity witnesses made
+  quantitative: when the root condition fails there is a complex solution with `c n ≤ ‖w n‖` for
+  every `n`, and a real solution with `c n ≤ |u n|` for infinitely many `n`. A convergence proof
+  that scales the counterexample by `h ≈ T/n` needs this, not mere unboundedness.
 
 Consumers: `ODE/Multistep` (zero-stability, convergence, absolute stability) and the boundary-value
 difference equations of chapter 12.
@@ -92,6 +107,15 @@ theorem satisfiesRootCondition_iff_derivative {P : K[X]} (hP : P ≠ 0) :
   · intro hd
     by_contra hne
     exact hd (h2.1 (by omega)).2
+
+/-- The root condition is invariant under a nonzero constant factor. -/
+theorem satisfiesRootCondition_C_mul_iff {c : K} (hc : c ≠ 0) (P : K[X]) :
+    (C c * P).SatisfiesRootCondition ↔ P.SatisfiesRootCondition := by
+  rcases eq_or_ne P 0 with rfl | hP
+  · simp
+  · have hne : C c * P ≠ 0 := mul_ne_zero (C_ne_zero.2 hc) hP
+    simp only [Polynomial.SatisfiesRootCondition, IsRoot, eval_mul, eval_C, mul_eq_zero, hc,
+      false_or, rootMultiplicity_mul hne, rootMultiplicity_C, zero_add]
 
 /-- **The strong root condition** ([quarteroni2000numerical] Definition 11.11, (11.57)): the root
 condition, and `1` is the only root of modulus one. -/
@@ -160,6 +184,29 @@ theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c
 end Polynomial
 
 namespace LinearRecurrence
+
+/-! ### Solutions on a finite horizon -/
+
+/-- A sequence satisfying the inhomogeneous recurrence for the steps `n + k ≤ N` agrees, up to
+`N`, with the solution `mkSolWith` of the recurrence whose source is truncated after `N` and whose
+initial data are its own. -/
+theorem eq_mkSolWith_of_le {R : Type*} [CommSemiring R] (E : LinearRecurrence R) {φ u : ℕ → R}
+    {N : ℕ}
+    (hu : ∀ n, n + E.order ≤ N →
+      u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)) :
+    ∀ n ≤ N, u n = E.mkSolWith (fun l => if l ≤ N then φ l else 0) (fun j => u j) n := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn
+    by_cases h' : n < E.order
+    · exact (E.mkSolWith_eq_init (fun l => if l ≤ N then φ l else 0) (fun j => u j) ⟨n, h'⟩).symm
+    · obtain ⟨m, rfl⟩ : ∃ m, n = m + E.order := ⟨n - E.order, by omega⟩
+      rw [hu m hn, E.isSolutionWith_mkSolWith _ _ m]
+      simp only [hn, ite_true]
+      congr 1
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [ih (m + k) (by have := k.is_lt; omega) (by have := k.is_lt; omega)]
 
 section RCLike
 
@@ -412,6 +459,26 @@ theorem norm_le_of_satisfiesRootCondition (hk : 0 < E.order)
       ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Icc E.order n, ‖φ l‖) :=
   E.norm_le_of_satisfiesRootCondition_of_splits hk (IsAlgClosed.splits _) hE
 
+/-- **Lemma 11.3 on a finite horizon** ([quarteroni2000numerical] (11.63)), over `ℂ`: for a
+recurrence of positive order satisfying the root condition there is `M > 0` such that every
+sequence `u` satisfying the recurrence with source `φ` for the steps `n + k ≤ N` obeys
+`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. -/
+theorem norm_le_of_satisfiesRootCondition_of_le (hk : 0 < E.order)
+    (hE : E.charPoly.SatisfiesRootCondition) :
+    ∃ M : ℝ, 0 < M ∧ ∀ (N : ℕ) (φ u : ℕ → ℂ),
+      (∀ n, n + E.order ≤ N → u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)) →
+      ∀ n ≤ N, ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Finset.Icc E.order n, ‖φ l‖) := by
+  obtain ⟨M, hM0, hM⟩ := E.norm_le_of_satisfiesRootCondition hk hE
+  refine ⟨M, hM0, fun N φ u hu n hn => ?_⟩
+  set φ' : ℕ → ℂ := fun l => if l ≤ N then φ l else 0
+  have key := hM φ' (E.mkSolWith φ' fun j => u j) (E.isSolutionWith_mkSolWith φ' _) n
+  rw [← E.eq_mkSolWith_of_le hu n hn] at key
+  refine key.trans (le_of_eq ?_)
+  congr 2
+  · exact iSup_congr fun j => by rw [E.mkSolWith_eq_init]
+  · refine Finset.sum_congr rfl fun l hl => ?_
+    simp only [φ', (Finset.mem_Icc.1 hl).2.trans hn, ite_true]
+
 /-- **Lemma 11.3** ([quarteroni2000numerical]) over `ℂ`: for a recurrence of positive order, the
 uniform bound (11.63) holds for some `M > 0` iff the characteristic polynomial satisfies the root
 condition. -/
@@ -436,6 +503,27 @@ theorem forall_tendsto_zero_iff :
     (∀ u : ℕ → ℂ, E.IsSolution u → Tendsto u atTop (𝓝 0)) ↔
       ∀ r : ℂ, E.charPoly.IsRoot r → ‖r‖ < 1 :=
   E.forall_tendsto_zero_iff_of_splits (IsAlgClosed.splits _)
+
+/-- When the root condition fails there is a complex solution with `‖w n‖ ≥ c n` for all `n`,
+`c > 0`. -/
+theorem exists_isSolution_norm_ge_of_not_satisfiesRootCondition
+    (h : ¬ E.charPoly.SatisfiesRootCondition) :
+    ∃ w : ℕ → ℂ, E.IsSolution w ∧ ∃ c : ℝ, 0 < c ∧ ∀ n : ℕ, c * n ≤ ‖w n‖ := by
+  simp only [Polynomial.SatisfiesRootCondition, not_forall, not_and] at h
+  obtain ⟨r, hr, hr'⟩ := h
+  by_cases h1 : 1 < ‖r‖
+  · refine ⟨fun n => r ^ n, (E.geom_sol_iff_root_charPoly r).2 hr, ‖r‖ - 1, by linarith,
+      fun n => ?_⟩
+    rw [norm_pow]
+    have := one_add_mul_le_pow (a := ‖r‖ - 1) (by linarith) n
+    rw [add_sub_cancel] at this
+    linarith
+  · obtain ⟨hle, hmult⟩ := hr' (not_lt.1 h1)
+    have hpos : 0 < E.charPoly.rootMultiplicity r :=
+      (rootMultiplicity_pos E.charPoly_monic.ne_zero).2 hr
+    refine ⟨fun n => (n : ℂ) * r ^ n,
+      E.isSolution_mul_pow_of_one_lt_rootMultiplicity (by omega), 1, one_pos, fun n => ?_⟩
+    simp [norm_pow, hle]
 
 end Complex
 
@@ -479,6 +567,61 @@ theorem exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition
   refine hw' ⟨A + B, ?_⟩
   rintro _ ⟨n, rfl⟩
   exact (Complex.norm_le_abs_re_add_abs_im _).trans (add_le_add (hA ⟨n, rfl⟩) (hB ⟨n, rfl⟩))
+
+/-- **A real solution growing at least linearly along a subsequence**: a real recurrence whose
+complexification violates the root condition has a real solution `u` with `c n ≤ |u n|` for
+infinitely many `n`, for some `c > 0`. -/
+theorem exists_isSolution_real_frequently_le
+    (h : ¬ (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition) :
+    ∃ u : ℕ → ℝ, E.IsSolution u ∧ ∃ c : ℝ, 0 < c ∧ ∃ᶠ n in atTop, c * n ≤ |u n| := by
+  obtain ⟨w, hw, c, hc, hcw⟩ :=
+    (E.map (algebraMap ℝ ℂ)).exists_isSolution_norm_ge_of_not_satisfiesRootCondition h
+  have hor : ∃ᶠ n in atTop, c / 2 * n ≤ |(w n).re| ∨ c / 2 * n ≤ |(w n).im| := by
+    refine Eventually.frequently (Eventually.of_forall fun n => ?_)
+    have := (hcw n).trans (Complex.norm_le_abs_re_add_abs_im (w n))
+    by_contra hcon
+    push Not at hcon
+    linarith [hcon.1, hcon.2]
+  rcases Filter.frequently_or_distrib.1 hor with H | H
+  · exact ⟨_, E.isSolution_re_of_map hw, c / 2, by positivity, H⟩
+  · exact ⟨_, E.isSolution_im_of_map hw, c / 2, by positivity, H⟩
+
+/-- **Lemma 11.3 on a finite horizon, for sequences in a normed space**: for a real recurrence of
+positive order whose complexification satisfies the root condition, there is `M > 0` such that
+every sequence `u` in a real normed space `V` satisfying
+`u (n + k) = ∑ α_i • u (n + i) + φ (n + k)` for the steps `n + k ≤ N` obeys
+`‖u n‖ ≤ M (max_{j<k} ‖u j‖ + ∑_{l=k}^n ‖φ l‖)` for `n ≤ N`. By the complex scalar case applied
+to `g ∘ u` for a norming functional `g` of `u n`. -/
+theorem norm_le_of_satisfiesRootCondition_smul_of_le (hk : 0 < E.order)
+    (hE : (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition)
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] :
+    ∃ M : ℝ, 0 < M ∧ ∀ (N : ℕ) (φ u : ℕ → V),
+      (∀ n, n + E.order ≤ N → u (n + E.order) = ∑ i, E.coeffs i • u (n + i) + φ (n + E.order)) →
+      ∀ n ≤ N, ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Finset.Icc E.order n, ‖φ l‖) := by
+  obtain ⟨M, hM0, hM⟩ := (E.map (algebraMap ℝ ℂ)).norm_le_of_satisfiesRootCondition_of_le hk hE
+  refine ⟨M, hM0, fun N φ u hu n hn => ?_⟩
+  obtain ⟨g, hg1, hgx⟩ := exists_dual_vector'' ℝ (u n)
+  set v : ℕ → ℂ := fun l => ((g (u l) : ℝ) : ℂ)
+  set ψ : ℕ → ℂ := fun l => ((g (φ l) : ℝ) : ℂ)
+  have hv : ∀ m, m + (E.map (algebraMap ℝ ℂ)).order ≤ N →
+      v (m + (E.map (algebraMap ℝ ℂ)).order) =
+        ∑ i, (E.map (algebraMap ℝ ℂ)).coeffs i * v (m + i) +
+          ψ (m + (E.map (algebraMap ℝ ℂ)).order) := by
+    intro m hm
+    simp only [v, ψ, map_order, hu m hm, map_add, map_sum, map_smul, smul_eq_mul]
+    push_cast
+    rfl
+  have key := hM N ψ v hv n hn
+  have hvn : ‖v n‖ = ‖u n‖ := by
+    simp only [v, hgx, Complex.norm_real, RCLike.ofReal_real_eq_id, id, Real.norm_eq_abs,
+      abs_norm]
+  have hle : ∀ x : V, ‖((g x : ℝ) : ℂ)‖ ≤ ‖x‖ := fun x => by
+    rw [Complex.norm_real]
+    exact (g.le_opNorm x).trans (mul_le_of_le_one_left (norm_nonneg _) hg1)
+  rw [hvn] at key
+  refine key.trans (mul_le_mul_of_nonneg_left (add_le_add ?_ ?_) hM0.le)
+  · exact ciSup_mono (Finite.bddAbove_range _) fun j => hle (u j)
+  · exact Finset.sum_le_sum fun l _ => hle (φ l)
 
 end Real
 

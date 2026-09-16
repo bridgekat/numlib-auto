@@ -43,9 +43,6 @@ id = "legendreNormalized"
 id = "degree_legendreNormalized"
 
 [[node]]
-id = "legendreMeasure_compl_Icc"
-
-[[node]]
 id = "legendreLp"
 
 [[node]]

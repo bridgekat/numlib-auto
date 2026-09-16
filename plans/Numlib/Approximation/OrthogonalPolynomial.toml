@@ -109,6 +109,9 @@ id = "legendreMeasure"
 id = "isWeight_legendreMeasure"
 
 [[node]]
+id = "legendreMeasure_compl_Icc"
+
+[[node]]
 id = "integral_family_mul_of_degree_lt"
 
 [[node]]

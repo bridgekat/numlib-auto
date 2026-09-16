@@ -30,11 +30,14 @@ For a curve `y : ℝ → E` the hypotheses are a chain of *derivative functions*
 `ContDiffOn` hypothesis: `HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s` for `k ≤ n`. This is
 what the truncation errors of one-step methods and the order conditions of Runge–Kutta methods
 have to hand, and it avoids `iteratedDerivWithin` at the endpoints entirely. The general bound is
-`norm_sub_taylorSum_le`, proved by induction on `n` from
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary`; `norm_sub_sub_smul_le_mul_sq_div_two`
-(`n = 1`) and `norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`) are its low-order
-cases, `norm_sub_sub_smul_le_mul_sq_div_two'` is the second-order bound expanded at the right
-endpoint, and `norm_sub_sub_smul_add_le_mul_pow_three_div_twelve` is the Peano-kernel bound of the
+`norm_sub_sum_smul_le`, which expands at an arbitrary point `c` of the interval and evaluates at
+an arbitrary `x` on either side of it; forwards it is `norm_sub_sum_smul_le_of_le`, proved by
+induction on the order from `image_norm_le_of_norm_deriv_right_le_deriv_boundary`, and backwards it
+is the forward case for the reflected tower. Expanding at the left endpoint gives
+`norm_sub_taylorSum_le`, of which `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
+`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`) are the low-order cases,
+`norm_sub_sub_smul_le_mul_sq_div_two'` is the second-order bound expanded at the right endpoint,
+and `norm_sub_sub_smul_add_le_mul_pow_three_div_twelve` is the Peano-kernel bound of the
 trapezoidal rule, obtained without integrals.
 
 Along a segment of a normed space the same bounds are read off the curve `s ↦ G (p + s • w)`,
@@ -231,98 +234,150 @@ theorem hasDerivWithinAt_comp_const_sub_Icc
   have := (hy _ hmem).scomp s h1 hmaps
   simpa [Function.comp_def, neg_one_smul] using this
 
+/-! #### The expansion at an arbitrary point of the interval
+
+The Taylor remainder bound for a tower of derivative functions `y 0, y 1, …, y n` with
+`HasDerivWithinAt (y m) (y (m+1) s) (Icc a b) s`, at an arbitrary expansion point `c ∈ [a, b]`
+and evaluation point `x ∈ [a, b]` on either side of it. It extends the second- and third-order
+bounds below and is proved the same way, by the comparison lemma
+`image_norm_le_of_norm_deriv_right_le_deriv_boundary` and induction on the order; the backward
+case is the forward case for the reflected tower `s ↦ (-1)^m • y m (a + b - s)`. Mathlib's
+`taylor_mean_remainder_bound` expands at the left endpoint of the interval only. -/
+
+section Taylor
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {a b K : ℝ} {y : ℕ → ℝ → E}
+
+/-- The Taylor bound in the forward direction: for a tower `y` of derivatives on `Icc a b` with
+`‖y n‖ ≤ K` there, `‖y 0 b - ∑_{m < n} ((b - a)^m / m!) y m a‖ ≤ K (b - a)^n / n!`. -/
+theorem norm_sub_sum_smul_le_of_le (hab : a ≤ b) (n : ℕ)
+    (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
+    (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) :
+    ‖y 0 b - ∑ m ∈ range n, ((b - a) ^ m / m.factorial) • y m a‖ ≤
+      K * (b - a) ^ n / n.factorial := by
+  induction n generalizing y b with
+  | zero =>
+    simp only [Finset.range_zero, Finset.sum_empty, sub_zero, pow_zero, mul_one,
+      Nat.factorial_zero, Nat.cast_one, div_one]
+    exact hK b (right_mem_Icc.2 hab)
+  | succ n ih =>
+    -- the residual and its derivative
+    set g : ℝ → E := fun s => y 0 s - ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a
+    have hg : ∀ s ∈ Icc a b, HasDerivWithinAt g
+        (y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
+      intro s hs
+      have h1 : HasDerivWithinAt (fun s => ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a)
+          (∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
+        have e : (fun s => ∑ m ∈ range (n + 1), ((s - a) ^ m / m.factorial) • y m a) =
+            fun s => (∑ m ∈ range n, ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a) +
+              ((s - a) ^ 0 / (0 : ℕ).factorial) • y 0 a := by
+          funext s
+          rw [Finset.sum_range_succ']
+        rw [e]
+        have h0 : HasDerivWithinAt (fun s : ℝ => ((s - a) ^ 0 / (0 : ℕ).factorial) • y 0 a) 0
+            (Icc a b) s := by
+          simp only [pow_zero, Nat.factorial_zero, Nat.cast_one, div_one, one_smul]
+          exact hasDerivWithinAt_const _ _ _
+        have hsum : HasDerivWithinAt
+            (fun s => ∑ m ∈ range n, ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a)
+            (∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a) (Icc a b) s := by
+          refine HasDerivWithinAt.fun_sum
+            (A := fun m s => ((s - a) ^ (m + 1) / (m + 1).factorial) • y (m + 1) a)
+            (A' := fun m => ((s - a) ^ m / m.factorial) • y (m + 1) a) fun m _ => ?_
+          have : HasDerivWithinAt (fun s : ℝ => (s - a) ^ (m + 1) / (m + 1).factorial)
+              ((s - a) ^ m / m.factorial) (Icc a b) s := by
+            have := (((hasDerivAt_id' s).hasDerivWithinAt (s := Icc a b)).sub_const a).pow (m + 1)
+              |>.div_const ((m + 1).factorial : ℝ)
+            refine this.congr_deriv ?_
+            rw [Nat.factorial_succ, Nat.cast_mul, Nat.add_sub_cancel]
+            field_simp
+          exact this.smul_const (y (m + 1) a)
+        exact (hsum.add h0).congr_deriv (add_zero _)
+      exact (hy 0 (Nat.succ_pos n) s hs).sub h1
+    have hbound : ∀ s ∈ Icc a b,
+        ‖y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a‖ ≤
+          K * (s - a) ^ n / n.factorial := by
+      intro s hs
+      have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
+      exact ih (y := fun m => y (m + 1)) hs.1
+        (fun m hm u hu => (hy (m + 1) (by omega) u (hsub hu)).mono hsub)
+        (fun u hu => hK u (hsub hu))
+    have hB : ∀ s, HasDerivAt (fun s => K * (s - a) ^ (n + 1) / (n + 1).factorial)
+        (K * (s - a) ^ n / n.factorial) s := by
+      intro s
+      have := (((hasDerivAt_id' s).sub_const a).pow (n + 1)).const_mul K |>.div_const
+        ((n + 1).factorial : ℝ)
+      refine this.congr_deriv ?_
+      rw [Nat.factorial_succ, Nat.cast_mul, Nat.add_sub_cancel]
+      field_simp
+    have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
+      (f' := fun s => y 1 s - ∑ m ∈ range n, ((s - a) ^ m / m.factorial) • y (m + 1) a)
+      (HasDerivWithinAt.continuousOn hg)
+      (fun s hs => (hg s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin
+        (Icc_mem_nhdsGE_of_mem hs))
+      (B := fun s => K * (s - a) ^ (n + 1) / (n + 1).factorial)
+      (B' := fun s => K * (s - a) ^ n / n.factorial) (by simp [g, Finset.sum_range_succ', pow_succ])
+      hB
+      (fun s hs => hbound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
+    simpa [g] using key
+
+/-- The reflected tower `s ↦ (-1)^m • y m (a + b - s)` is a tower of derivatives on `Icc a b`. -/
+theorem hasDerivWithinAt_reflect (m : ℕ)
+    (hy : ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s) {s : ℝ}
+    (hs : s ∈ Icc a b) :
+    HasDerivWithinAt (fun s => ((-1 : ℝ) ^ m) • y m (a + b - s))
+      (((-1 : ℝ) ^ (m + 1)) • y (m + 1) (a + b - s)) (Icc a b) s := by
+  have := (hasDerivWithinAt_comp_const_sub_Icc hy hs).const_smul ((-1 : ℝ) ^ m)
+  refine this.congr_deriv ?_
+  rw [pow_succ, smul_neg, mul_neg_one, neg_smul]
+
+/-- **The Taylor bound at an arbitrary expansion point**: for a tower `y` of derivatives on
+`Icc a b` with `‖y n‖ ≤ K` there, and `c, x ∈ Icc a b`,
+`‖y 0 x - ∑_{m < n} ((x - c)^m / m!) y m c‖ ≤ K |x - c|^n / n!`. With `n = 0` it reads
+`‖y 0 x‖ ≤ K`, with `n = 1` it is the mean value inequality. -/
+theorem norm_sub_sum_smul_le (n : ℕ)
+    (hy : ∀ m < n, ∀ s ∈ Icc a b, HasDerivWithinAt (y m) (y (m + 1) s) (Icc a b) s)
+    (hK : ∀ s ∈ Icc a b, ‖y n s‖ ≤ K) {c x : ℝ} (hc : c ∈ Icc a b) (hx : x ∈ Icc a b) :
+    ‖y 0 x - ∑ m ∈ range n, ((x - c) ^ m / m.factorial) • y m c‖ ≤
+      K * |x - c| ^ n / n.factorial := by
+  rcases le_total c x with hcx | hxc
+  · have hsub : Icc c x ⊆ Icc a b := Icc_subset_Icc hc.1 hx.2
+    have := norm_sub_sum_smul_le_of_le hcx n
+      (fun m hm s hs => (hy m hm s (hsub hs)).mono hsub) (fun s hs => hK s (hsub hs))
+    rwa [abs_of_nonneg (sub_nonneg.2 hcx)]
+  · have hsub : Icc x c ⊆ Icc a b := Icc_subset_Icc hx.1 hc.2
+    -- reflect through the midpoint of `[x, c]`
+    have hy' : ∀ m < n, ∀ s ∈ Icc x c, HasDerivWithinAt (fun s => ((-1 : ℝ) ^ m) • y m (x + c - s))
+        (((-1 : ℝ) ^ (m + 1)) • y (m + 1) (x + c - s)) (Icc x c) s := fun m hm s hs =>
+      hasDerivWithinAt_reflect m (fun u hu => (hy m hm u (hsub hu)).mono hsub) hs
+    have hK' : ∀ s ∈ Icc x c, ‖((-1 : ℝ) ^ n) • y n (x + c - s)‖ ≤ K := fun s hs => by
+      rw [norm_smul, norm_pow, norm_neg, norm_one, one_pow, one_mul]
+      exact hK _ (hsub ⟨by linarith [hs.2], by linarith [hs.1]⟩)
+    have key := norm_sub_sum_smul_le_of_le (y := fun m s => ((-1 : ℝ) ^ m) • y m (x + c - s)) hxc n
+      hy' hK'
+    simp only [pow_zero, one_smul, add_sub_cancel_right, add_sub_cancel_left] at key
+    rw [abs_of_nonpos (sub_nonpos.2 hxc), neg_sub]
+    convert key using 3
+    refine Finset.sum_congr rfl fun m _ => ?_
+    rw [smul_smul, ← neg_sub c x, neg_pow]
+    congr 1
+    ring
+
+end Taylor
+
 /-- **Taylor's theorem with a bound on the top derivative**, for a curve in a normed space over a
 closed interval: if `Y 0, …, Y (n + 1)` is a chain of successive derivatives on `Icc a b` and
 `‖Y (n + 1)‖ ≤ M` there, then `Y 0 b` differs from its Taylor polynomial at `a` by at most
-`M (b - a)^{n+1} / (n+1)!`. The proof is induction on `n`: the residual has derivative the residual
-of the shifted family, which the induction hypothesis bounds on `[a, s]`, and
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary` compares it with
-`M (s - a)^{n+2} / (n+2)!`. It subsumes `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
+`M (b - a)^{n+1} / (n+1)!`. This is `norm_sub_sum_smul_le_of_le` expanded at the left endpoint;
+it subsumes `norm_sub_sub_smul_le_mul_sq_div_two` (`n = 1`) and
 `norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` (`n = 2`). -/
 theorem norm_sub_taylorSum_le {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
     {M a b : ℝ} {Y : ℕ → ℝ → X} {n : ℕ} (hab : a ≤ b)
     (hY : ∀ k ≤ n, ∀ s ∈ Icc a b, HasDerivWithinAt (Y k) (Y (k + 1) s) (Icc a b) s)
     (hM : ∀ s ∈ Icc a b, ‖Y (n + 1) s‖ ≤ M) :
     ‖Y 0 b - ∑ k ∈ range (n + 1), ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a‖ ≤
-      M * (b - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) := by
-  induction n generalizing Y b with
-  | zero =>
-    have key := (convex_Icc a b).norm_image_sub_le_of_norm_hasDerivWithin_le
-      (f := Y 0) (f' := Y 1) (fun s hs => hY 0 le_rfl s hs) (fun s hs => hM s hs)
-      (left_mem_Icc.2 hab) (right_mem_Icc.2 hab)
-    rw [Real.norm_eq_abs, abs_of_nonneg (by linarith)] at key
-    have e1 : ∑ k ∈ range (0 + 1), ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a = Y 0 a := by
-      simp
-    have e2 : M * (b - a) ^ (0 + 1) / (Nat.factorial (0 + 1) : ℝ) = M * (b - a) := by
-      simp
-    rw [e1, e2]
-    exact key
-  | succ n ih =>
-    set G : ℝ → X := fun s => Y 0 s - Y 0 a -
-      ∑ k ∈ range (n + 1), ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a
-      with hGdef
-    set G' : ℝ → X := fun s => Y 1 s -
-      ∑ k ∈ range (n + 1), ((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a with hG'def
-    have hpoly : ∀ (k : ℕ) (s : ℝ), HasDerivAt
-        (fun s : ℝ => ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a)
-        (((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a) s := by
-      intro k s
-      have h1 : HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ))
-          ((s - a) ^ k / (Nat.factorial k : ℝ)) s := by
-        have h2 := (((hasDerivAt_id s).sub_const a).fun_pow (k + 1)).div_const
-          ((Nat.factorial (k + 1) : ℝ))
-        refine h2.congr_deriv ?_
-        simp only [id_eq, Nat.add_sub_cancel]
-        rw [Nat.factorial_succ]
-        have hf : ((Nat.factorial k : ℝ)) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero k)
-        push_cast
-        field_simp
-      simpa using h1.smul_const (Y (k + 1) a)
-    have hGder : ∀ s ∈ Icc a b, HasDerivWithinAt G (G' s) (Icc a b) s := by
-      intro s hs
-      have hsum : HasDerivWithinAt
-          (fun s : ℝ => ∑ k ∈ range (n + 1),
-            ((s - a) ^ (k + 1) / (Nat.factorial (k + 1) : ℝ)) • Y (k + 1) a)
-          (∑ k ∈ range (n + 1), ((s - a) ^ k / (Nat.factorial k : ℝ)) • Y (k + 1) a)
-          (Icc a b) s :=
-        HasDerivWithinAt.fun_sum fun k _ => (hpoly k s).hasDerivWithinAt
-      exact ((hY 0 (by omega) s hs).sub_const (Y 0 a)).sub hsum
-    have hG'bound : ∀ s ∈ Icc a b,
-        ‖G' s‖ ≤ M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) := by
-      intro s hs
-      have hsub : Icc a s ⊆ Icc a b := Icc_subset_Icc_right hs.2
-      exact ih (Y := fun k => Y (k + 1)) (b := s) hs.1
-        (fun k _ s' hs' => ((hY (k + 1) (by omega) s' (hsub hs')).mono hsub))
-        (fun s' hs' => hM s' (hsub hs'))
-    have hB : ∀ s : ℝ, HasDerivAt
-        (fun s : ℝ => M * (s - a) ^ (n + 2) / (Nat.factorial (n + 2) : ℝ))
-        (M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ)) s := by
-      intro s
-      have h1 := (((hasDerivAt_id s).sub_const a).fun_pow (n + 2)).const_mul M
-      have h2 := h1.div_const ((Nat.factorial (n + 2) : ℝ))
-      refine h2.congr_deriv ?_
-      simp only [id_eq]
-      rw [Nat.factorial_succ (n + 1)]
-      have hf : ((Nat.factorial (n + 1) : ℝ)) ≠ 0 :=
-        Nat.cast_ne_zero.2 (Nat.factorial_ne_zero (n + 1))
-      push_cast
-      field_simp
-      ring
-    have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
-      (f := G) (f' := G') (HasDerivWithinAt.continuousOn hGder)
-      (fun s hs => (hGder s (Ico_subset_Icc_self hs)).mono_of_mem_nhdsWithin
-        (Icc_mem_nhdsGE_of_mem hs))
-      (B := fun s => M * (s - a) ^ (n + 2) / (Nat.factorial (n + 2) : ℝ))
-      (B' := fun s => M * (s - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ))
-      (by simp [hGdef]) hB
-      (fun s hs => hG'bound s (Ico_subset_Icc_self hs)) (right_mem_Icc.2 hab)
-    have heq : Y 0 b - ∑ k ∈ range (n + 1 + 1),
-        ((b - a) ^ k / (Nat.factorial k : ℝ)) • Y k a = G b := by
-      rw [hGdef, Finset.sum_range_succ']
-      simp only [pow_zero, Nat.factorial_zero, Nat.cast_one, div_one, one_smul]
-      abel
-    rw [heq]
-    exact key
+      M * (b - a) ^ (n + 1) / (Nat.factorial (n + 1) : ℝ) :=
+  norm_sub_sum_smul_le_of_le hab (n + 1) (fun m hm => hY m (by omega)) hM
 
 /-- **Second-order Taylor bound, forward form**: if `y'` is the derivative of `y` and `y''` that
 of `y'` on `Icc a b`, with `‖y''‖ ≤ M` there, then

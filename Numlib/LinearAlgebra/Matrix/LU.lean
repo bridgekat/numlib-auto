@@ -18,7 +18,7 @@ triangular, `U` upper triangular, `L * U = A`) and everything that is true of th
 independently of how it is computed. The algorithms — the elimination stages of Gaussian
 elimination, the Doolittle recurrence, pivoting and the growth factor — belong to
 `Numlib/LinearAlgebra/Matrix/LU/Elimination` and `…/LU/Pivoting`; the substitution solves to
-`Numlib/LinearSolve/Direct/Substitution`; the rounding-error analysis to `Numlib/FloatingPoint/LU`;
+`Numlib/Direct/Substitution`; the rounding-error analysis to `Numlib/FloatingPoint/LU`;
 Cholesky to `Numlib/LinearAlgebra/Matrix/Cholesky`.
 
 ## Main definitions

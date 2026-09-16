@@ -13,12 +13,6 @@ id = "scalarStep_eq_step"
 id = "hasDerivAt_scalarStep"
 
 [[node]]
-id = "_root_.ContDiffAt.eventually_hasDerivAt"
-
-[[node]]
-id = "_root_.ContDiffAt.continuousAt_deriv"
-
-[[node]]
 id = "deriv_eq_of_eq_pow_mul"
 
 [[node]]

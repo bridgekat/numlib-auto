@@ -104,14 +104,7 @@ theorem subspace_mono : Monotone (subspace A v) := by
 /-- `(-A)^i v = (-1)^i (A^i v)`: the generators of the Krylov sequence of `-A` differ from those of
 `A` by a sign only. -/
 theorem neg_pow_apply (i : ℕ) : ((-A) ^ i) v = (-1 : R) ^ i • (A ^ i) v := by
-  induction i with
-  | zero => simp
-  | succ i ih =>
-    have hsplit : ((-A) ^ (i + 1)) v = (-A) (((-A) ^ i) v) := by
-      rw [pow_succ', Module.End.mul_apply]
-    rw [hsplit, ih, LinearMap.neg_apply, map_smul, ← Module.End.mul_apply, ← pow_succ',
-      pow_succ']
-    module
+  rw [← neg_one_smul R A, smul_pow, LinearMap.smul_apply]
 
 /-- **The Krylov subspaces of `-A` are those of `A`**: the generators differ by the signs `(-1)^i`,
 which do not change a span. A method whose iterates live in `𝒦_m(A, v)` therefore runs unchanged on
