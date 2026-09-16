@@ -11,4 +11,11 @@ the surface specializes to `EuclideanSpace ℝ (Fin n)`. The quadratic case — 
 along a direction, steepest descent, conjugate directions, Kantorovich's inequality — is
 `Numlib/Projection/OneDimensional`, `Numlib/Projection/ConjugateDirection`
 and `Numlib/Krylov/CG`, not repeated here.
+
+This directory is the algorithms. The convex-analytic duality theory of an extremum problem —
+conjugates, Lagrangians, perturbation functions, duality gaps, Fenchel's theorem — is
+`Numlib/Analysis/Convex/Optimization`, which shares the word and nothing else: it is in the
+`ConvexAnalysis` namespace, this directory in `Descent`, `LineSearch`, `NonlinearCG` and
+`Constrained`. `Constrained` is where the two meet, and it cites the convex results it uses by
+their full `ConvexAnalysis` names.
 '''

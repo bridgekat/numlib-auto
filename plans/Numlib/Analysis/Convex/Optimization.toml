@@ -4,4 +4,11 @@ convex programs, Lagrange multipliers, adjoint bifunctions and dual programs, no
 gaps, Fenchel's theorem, and the Moreau envelope with its proximal mapping. An algorithmic project
 attaches here — `Prox` and `Minimum` are the statements an iteration is proved to converge to, and
 `Perturbation` is the general form a new duality scheme should instantiate.
+
+This directory is the duality theory of an extremum problem, not an algorithm for one, and it is
+not `Numlib/Optimization`, the top-level directory of numerical methods (descent, line search,
+nonlinear conjugate gradients, quasi-Newton, constrained optimization). The two share a word and
+nothing else: everything here is in the `ConvexAnalysis` namespace, everything there in `Descent`,
+`LineSearch`, `NonlinearCG` or `Constrained`. `Numlib/Optimization/Constrained` is where they meet,
+and it names what it borrows from here in full.
 '''

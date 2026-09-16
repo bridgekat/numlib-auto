@@ -1,0 +1,31 @@
+namespace = 'Rockafellar'
+
+[[node]]
+id = 'Rn'
+
+[[node]]
+id = 'pairing'
+
+[[node]]
+id = 'flip_pairing'
+
+[[node]]
+id = 'pairing_comm'
+
+[[node]]
+id = 'forall_pairing_le_comm'
+
+[[node]]
+id = 'forall_pairing_lt_comm'
+
+[[node]]
+id = 'pairingProd'
+
+[[node]]
+id = 'pairingAdjoint'
+
+[[node]]
+id = 'pairingProd_euclideanProdEquiv'
+
+[[node]]
+id = 'linFn'

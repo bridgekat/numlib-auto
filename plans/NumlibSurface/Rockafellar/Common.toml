@@ -1,0 +1,4 @@
+desc = '''
+The setup the Rockafellar surface is written in: the Euclidean instantiation of the backbone's
+dual pair, so that the book's sections, which work throughout in coordinates, do not restate it.
+'''

@@ -135,10 +135,8 @@ carry each proof. Nothing here is tied to a particular text. `NumlibSurface.Rock
 surface that tests it against one.
 
 This module imports the whole of `Numlib.Analysis.Convex` and adds nothing of its own. The
-general theory described below was merged from the tdaf repository; beside it the directory
-keeps this project's older, independent modules of convexity facts Mathlib lacks (natural home:
-`Mathlib.Analysis.Convex`) — `Gateaux`, `StrictConvexSpace` and `Uniform` — which predate the merge
-and are not part of the layout below. Where the two meet, the meeting is a bridge module:
+directory is one library, laid out below, and its natural home upstream is
+`Mathlib.Analysis.Convex`. Where it meets the rest of the project the meeting is a bridge module:
 `Optimization/Projection` reads the metric projection of `Numlib/Analysis/Normed/Module/BestApprox`
 as a proximal mapping, `Saddle/Real` reads the real-valued saddle-point theory of Atkinson–Han
 through `IsSaddlePointOn`, and `Numlib/Variational/Inequality/NormalCone` reads the elliptic
@@ -180,6 +178,16 @@ from its interior. `Helly`, `HellyRefined` and `LinearInequalities` are the theo
 alternative. `Homogeneous`, `Homogenize`, `Indicator`, `Lattice`, `Line` and `EuclideanProd` are
 the small standing pieces, and `Eponyms` collects the results that have names.
 
+**Real-valued convexity on a normed space.** Three modules keep to Mathlib's `ConvexOn` for
+`f : E → ℝ`, where the extended-real convention would only get in the way, and are the entry points
+from the numerical side of the project. `Gateaux` characterizes convexity on a convex set by the
+directional derivatives: the tangent functional is a global minorant exactly when the gradient is a
+monotone operator exactly when `f` is convex, and a constrained minimum is then a variational
+inequality. `StrictConvexSpace` derives Mathlib's `StrictConvexSpace ℝ V` from strict convexity of
+a power of the norm, the form in which a best-approximation uniqueness theorem asks for it.
+`Uniform` proves the Radon–Riesz property — weak convergence with convergent norms gives norm
+convergence — for uniformly convex spaces and, as an equivalence, for inner product spaces.
+
 **`Operations`.** Sums, suprema, images and inverse images, infimal convolution: which preserve
 convexity, and which preserve closedness.
 
@@ -201,7 +209,12 @@ polyhedrality allows.
 
 **`Optimization`.** The minimum and the maximum of a convex function, ordinary and generalized
 convex programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality
-gaps, Fenchel's duality theorem, and the Moreau envelope with its proximal mapping.
+gaps, Fenchel's duality theorem, and the Moreau envelope with its proximal mapping. This is the
+duality theory of an extremum problem, and not an algorithm for one: descent methods, line searches,
+nonlinear conjugate gradients and quasi-Newton updates are the separate top-level directory
+`Numlib/Optimization`, whose declarations sit in `Descent`, `LineSearch`, `NonlinearCG` and
+`Constrained` rather than in `ConvexAnalysis`. The two meet in `Numlib/Optimization/Constrained`,
+which cites the results it borrows from here by their full `ConvexAnalysis` names.
 
 **`Saddle`.** Concave-convex functions, their two partial closures and the equivalence classes
 these generate, continuity and differentiability, minimax problems, and the conjugacy that carries

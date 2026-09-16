@@ -42,8 +42,6 @@ Both the backbone and the surface libraries are covered by structured plans in [
 
 To start new plans for a formalization project or complete open items in existing plans, refer to [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Provenance
+## Licence
 
-`Numlib/Analysis/Convex` (with `Numlib/Order` and `Numlib/LinearAlgebra/Subspace`) and `NumlibSurface/Rockafellar` were merged from the [tdaf](https://github.com/bridgekat/tdaf) repository at its commit `a44b1de`, Copyright (c) 2026 Great Bay University.
-
-This repository carries no licence file at present: the MIT text that accompanied the tdaf merge has been removed pending a move to Apache 2.0 for the project as a whole.
+This repository carries no licence file at present, pending a move to Apache 2.0 for the project as a whole.
