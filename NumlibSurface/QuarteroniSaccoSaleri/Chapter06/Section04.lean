@@ -25,8 +25,16 @@ backbone is `Numlib/RingTheory/Polynomial/{Horner, RuleOfSigns}` over Mathlib's
   `p.map Complex.ofRealHom`; Mathlib's `cauchyBound` gives the strict inequality, the book's `≤`.
 * (6.28): `g_m ∈ P_m` is read as a polynomial of degree exactly `m` (otherwise the remainder is not
   unique), and `ρ ∈ P_{m-1}` as `degree ρ < m`, which also covers `m = 0`.
-* Muller's order `p ≈ 1.84` (`muller_order`) is not formalized: the book cites Hildebrand without
-  proof and nothing depends on it.
+* Muller's order (`muller_order`) is stated in the book's own sense of order, Definition 6.1, with
+  `p = Real.tribonacci ≈ 1.8393` — the real root of `p³ = p² + p + 1`, which is what the printed
+  `p ≃ 1.84` names. The book's sharper *limit* form
+  `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6` is **not** claimed here: the backbone's
+  `Muller.exists_ball_convergesWithOrder` proves the two-sided bounds of
+  `Muller.LocalData.step_bounds`, whose constants tend to `|f⁽³⁾(α) / (6 f'(α))|` as the ball and
+  the tolerance shrink but are not driven to it along a single orbit. Property 6.2 for the secant
+  method is treated the same way. The book quotes the limit from Hildebrand without proof.
+* Muller's method is formalized in real arithmetic only, hence for a simple *real* root; see the
+  backbone module's discussion of the radicand of (6.30).
 -/
 
 open Filter Polynomial Set Topology
@@ -223,9 +231,29 @@ section Muller
 /-- **(6.30), Muller's method**: from three distinct starting values `x^{(0)}, x^{(1)}, x^{(2)}`,
 `x^{(k+1)} = x^{(k)} - 2 f(x^{(k)}) / (w ∓ √(w² - 4 f(x^{(k)}) f[x^{(k)}, x^{(k-1)}, x^{(k-2)}]))`,
 the zero of the quadratic interpolant through the last three iterates with the sign maximizing the
-modulus of the denominator. Real arithmetic only (`Muller.step`). -/
+modulus of the denominator. Real arithmetic only (`Muller.iterate`); the index is shifted so that
+`equation_6_30 f x₀ x₁ x₂ k` is the book's `x^{(k+2)}`. -/
 noncomputable def equation_6_30 (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
-  ((Muller.step f)^[k] (x₀, x₁, x₂)).2.2
+  Muller.iterate f x₀ x₁ x₂ k
+
+/-- **The convergence claim after (6.30).** Let `f ∈ C³(J)` on a neighbourhood `J` of a root `α`
+with `f'(α) ≠ 0` (and `f⁽³⁾(α) ≠ 0`, which the order needs, exactly as Property 6.2 needs
+`f''(α) ≠ 0` for the secant method). Then there is `ε > 0` such that from any three distinct
+starting values in `(α - ε, α + ε)`, none of them `α`, the sequence (6.30) converges to `α` with
+order `p = Real.tribonacci ≈ 1.8393` in the sense of Definition 6.1 — the book's `p ≃ 1.84`, the
+real root of `p³ = p² + p + 1`. The backbone's `Muller.exists_ball_convergesWithOrder`. The book's
+limit form of the statement, with the constant `|f⁽³⁾(α) / f'(α)| / 6`, is not claimed; see the
+readings above. -/
+theorem muller_order {f : ℝ → ℝ} {α : ℝ} (hf : ContDiffAt ℝ 3 f α) (hα : f α = 0)
+    (hf' : deriv f α ≠ 0) (hf3 : iteratedDeriv 3 f α ≠ 0) :
+    ∃ ε > 0, ∀ x₀ ∈ Ioo (α - ε) (α + ε), ∀ x₁ ∈ Ioo (α - ε) (α + ε),
+      ∀ x₂ ∈ Ioo (α - ε) (α + ε), x₀ ≠ x₁ → x₀ ≠ x₂ → x₁ ≠ x₂ → x₀ ≠ α → x₁ ≠ α → x₂ ≠ α →
+      definition_6_1 (equation_6_30 f x₀ x₁ x₂) α Real.tribonacci := by
+  obtain ⟨ε, hε, h⟩ := Muller.exists_ball_convergesWithOrder hα hf hf' hf3
+  refine ⟨ε, hε, fun x₀ h0 x₁ h1 x₂ h2 n01 n02 n12 a0 a1 a2 => ?_⟩
+  rw [← Real.ball_eq_Ioo] at h0 h1 h2
+  exact definition_6_1_of_convergesWithOrder Real.one_lt_tribonacci.le
+    (h x₀ h0 x₁ h1 x₂ h2 n01 n02 n12 a0 a1 a2)
 
 end Muller
 

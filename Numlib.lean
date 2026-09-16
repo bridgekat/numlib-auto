@@ -197,6 +197,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
+import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.Wavelet.ContinuousTransform
 import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar

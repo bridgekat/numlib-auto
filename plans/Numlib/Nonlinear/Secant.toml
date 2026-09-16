@@ -8,7 +8,34 @@ id = "_root_.DividedDifference.newton_three_eq"
 id = "_root_.DividedDifference.newton_three_eq_newton_two_dslope"
 
 [[node]]
+id = "_root_.DividedDifference.newton_four_eq"
+
+[[node]]
+id = "_root_.DividedDifference.newton_four_eq_newton_three_dslope"
+
+[[node]]
+id = "_root_.DividedDifference.newton_three_swap₁"
+
+[[node]]
+id = "_root_.DividedDifference.newton_three_swap₂"
+
+[[node]]
+id = "_root_.DividedDifference.newton_three_eq_of_newton_form"
+
+[[node]]
+id = "_root_.DividedDifference.exists_newton_three_eq_of_lt"
+
+[[node]]
+id = "_root_.DividedDifference.exists_newton_three_eq"
+
+[[node]]
 id = "exists_ball_abs_slope_sub_deriv_le"
+
+[[node]]
+id = "_root_.ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv"
+
+[[node]]
+id = "exists_ball_abs_newton_three_sub_le"
 
 [[node]]
 id = "Chord.step"
@@ -134,9 +161,6 @@ id = "RegulaFalsi.mul_neg_step"
 id = "RegulaFalsi.mul_neg_iterate"
 
 [[node]]
-id = "RegulaFalsi.iterate_mem_uIcc"
-
-[[node]]
 id = "RegulaFalsi.chord"
 
 [[node]]
@@ -156,6 +180,9 @@ id = "RegulaFalsi.state_mem_uIcc"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
 
 [[node]]
+id = "RegulaFalsi.iterate_mem_uIcc"
+
+[[node]]
 id = "RegulaFalsi.tendsto_iterate"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.2.2"
 
@@ -170,42 +197,120 @@ id = "RegulaFalsi.sub_mul_sub_neg_of_mul_neg"
 
 [[node]]
 id = "RegulaFalsi.le_abs_newton_two_of_mul_neg"
+
+[[node]]
+id = "Muller.quadCoeff"
+
+[[node]]
+id = "Muller.linCoeff"
+
+[[node]]
+id = "Muller.radicand"
+
+[[node]]
+id = "Muller.den"
+
+[[node]]
+id = "Muller.next"
+
+[[node]]
+id = "Muller.interp"
+
 [[node]]
 id = "Muller.step"
 
 [[node]]
-id = "Muller.exists_ball_convergesWithOrder"
-kind = "theorem"
-desc = '''**Muller's method has order `p ≈ 1.84`**, the real root of `p³ = p² + p + 1`: for
-`f α = 0`, `ContDiffAt ℝ 3 f α`, `deriv f α ≠ 0` (and `iteratedDeriv 3 f α ≠ 0` for the lower
-bound), from three distinct starting values close enough to `α` the iterates converge with
-`ConvergesWithOrder … α p`. The book states the limit form `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / (6 f'(α))|`
-citing Hildebrand without proof. Planned as a statement only, at difficulty ★★★.
+id = "Muller.interp_apply_node"
 
-Blocked: not attempted this round; nothing in the corpus depends on it and three pieces are
-missing, each substantial.
-(i) **The step is not yet tied to the quadratic interpolant.** `Muller.step` is defined by the
-formula (6.30) with `Real.sqrt` and the max-modulus sign rule; what the error analysis needs is
-`q (step …) = 0` for the interpolating quadratic `q` through the three points, which holds only
-where the radicand `w² - 4 f(x_k) d` is nonnegative — true near a simple root
-(`w → f'(α) ≠ 0`, `f(x_k) → 0`) but a real hypothesis to establish, and false in the complex
-regime the book actually uses for polynomial roots.
-(ii) **The error identity.** With `q` the interpolant, the interpolation error at the node `α` is
-`-q(α) = f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`
-(`DividedDifference.sub_eval_interpolate_eq_newton` at four nodes, the three-node analogue of
-`Secant.sub_root_eq_mul_newton`), while `q(α) = a (α - x_{k+1})(α - r₂)` with `r₂` the second root
-and `a = f[x_{k-2}, x_{k-1}, x_k]`; so
-`e_{k+1} (a e_{k+1} + q'(x_{k+1})) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`
-and `q'(x_{k+1}) → f'(α) ≠ 0`. The second root has to be eliminated this way; there is no clean
-`chord`-style symmetric form as for the secant method.
-(iii) **The order itself.** The three-term analogue of `Secant.exists_le_mul_rpow_goldenRatio`:
-in `u_k = log e_k` the two-sided bound `m |e_k e_{k-1} e_{k-2}| ≤ |e_{k+1}| ≤ M |e_k e_{k-1} e_{k-2}|`
-must be turned into boundedness of `u_{k+1} - p u_k` with `p³ = p² + p + 1`. The golden-ratio proof
-uses `φ⁻¹ = φ - 1` (`Real.goldenRatio_sq`) to collapse the two product bounds into a *linear*
-recursion `s_{k+2} ≤ L + (1 - φ⁻¹) s_k`; the tribonacci constant has no such Mathlib support (it is
-not in Mathlib at all — it would have to be introduced as the root of `X³ - X² - X - 1` by the
-intermediate value theorem, with `1 < p < 2` and `p³ = p² + p + 1` proved from that), and the
-collapse is a three-term linear recursion in `(s_k, s_{k-1})` whose companion matrix has spectral
-radius `< 1` — provable, but a second piece of `Algebra/LinearRecurrence` work.
-Estimate: 400–600 lines over the three pieces.'''
-deps = ["ConvergesWithOrder", "Muller.step"]
+[[node]]
+id = "Muller.abs_linCoeff_le_abs_den"
+
+[[node]]
+id = "Muller.den_quadratic"
+
+[[node]]
+id = "Muller.interp_next_eq_zero"
+
+[[node]]
+id = "Muller.interp_root_eq"
+
+[[node]]
+id = "Muller.sub_next_mul_eq"
+
+[[node]]
+id = "Muller.LocalData"
+
+[[node]]
+id = "Muller.LocalData.mono"
+
+[[node]]
+id = "Muller.Small"
+
+[[node]]
+id = "Muller.IsAdmissible"
+
+[[node]]
+id = "Muller.IsAdmissible.abs_lt₀"
+
+[[node]]
+id = "Muller.IsAdmissible.eps_pos"
+
+[[node]]
+id = "Muller.IsAdmissible.abs_lt₁"
+
+[[node]]
+id = "Muller.IsAdmissible.abs_lt₂"
+
+[[node]]
+id = "Muller.LocalData.abs_quadCoeff_le"
+
+[[node]]
+id = "Muller.LocalData.abs_apply_le"
+
+[[node]]
+id = "Muller.LocalData.abs_linCoeff_sub_le"
+
+[[node]]
+id = "Muller.LocalData.le_abs_linCoeff"
+
+[[node]]
+id = "Muller.LocalData.abs_linCoeff_le"
+
+[[node]]
+id = "Muller.LocalData.nonneg_radicand"
+
+[[node]]
+id = "Muller.LocalData.le_abs_den"
+
+[[node]]
+id = "Muller.LocalData.den_ne_zero"
+
+[[node]]
+id = "Muller.LocalData.abs_quadCoeff_mul_next_sub_le"
+
+[[node]]
+id = "Muller.LocalData.effSlope_bounds"
+
+[[node]]
+id = "Muller.exists_localData"
+
+[[node]]
+id = "Muller.LocalData.step_bounds"
+
+[[node]]
+id = "Muller.LocalData.isAdmissible_step"
+
+[[node]]
+id = "Muller.iterate"
+
+[[node]]
+id = "Muller.iterate_succ_state"
+
+[[node]]
+id = "Muller.tendsto_zero_of_le_half"
+
+[[node]]
+id = "Muller.exists_le_mul_rpow_tribonacci"
+
+[[node]]
+id = "Muller.exists_ball_convergesWithOrder"

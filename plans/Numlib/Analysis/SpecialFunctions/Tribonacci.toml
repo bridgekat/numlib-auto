@@ -1,0 +1,34 @@
+namespace = "Real"
+
+[[node]]
+id = "strictMonoOn_cubic_sub"
+
+[[node]]
+id = "exists_root_cubic_sub"
+
+[[node]]
+id = "tribonacci"
+
+[[node]]
+id = "tribonacci_mem_Icc"
+
+[[node]]
+id = "tribonacci_pow_three"
+
+[[node]]
+id = "one_lt_tribonacci"
+
+[[node]]
+id = "tribonacci_lt_two"
+
+[[node]]
+id = "tribonacci_le_iff"
+
+[[node]]
+id = "tribonacci_unique"
+
+[[node]]
+id = "tribonacci_lt_1_84"
+
+[[node]]
+id = "lt_tribonacci_1_83"

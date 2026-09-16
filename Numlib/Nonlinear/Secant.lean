@@ -1,4 +1,5 @@
 import Mathlib.NumberTheory.Real.GoldenRatio
+import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Approximation.DividedDifference
 import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.ScalarNewton
@@ -13,10 +14,10 @@ method (`q_k` the difference quotient over the last two iterates; `Secant`), reg
 difference quotient over the last two iterates bracketing the root; `RegulaFalsi`) and Muller's
 method (the zero of the quadratic interpolant through the last three iterates; `Muller`).
 
-The secant and regula falsi iterations carry state (a pair of points), so they are `step` functions
-on `ℝ × ℝ` with `iterate f x₋₁ x₀ k` reading off the `k`-th point, as `Numlib/Nonlinear/Bisection`
-does with brackets. Lean's `a / 0 = 0` makes a secant step with `f x_k = f x_{k-1}` stall at `x_k`;
-the theorems assume what excludes it.
+The secant, regula falsi and Muller iterations carry state (a pair of points, a triple for
+Muller), so they are `step` functions on `ℝ × ℝ` (on `ℝ × ℝ × ℝ`) with `iterate f x₋₁ x₀ k` reading
+off the `k`-th point, as `Numlib/Nonlinear/Bisection` does with brackets. Lean's `a / 0 = 0` makes a
+secant step with `f x_k = f x_{k-1}` stall at `x_k`; the theorems assume what excludes it.
 
 ## The secant error analysis
 
@@ -41,7 +42,6 @@ at a multiple root the secant method is only linear.
 
 Chord convergence is the scalar Ostrowski theorem (`Numlib/Nonlinear/FixedPoint`) applied to
 `φ_chord = x - f x / q`; it is the `𝕜 = ℝ` case of `Newton.chordStep` (`Chord.step_eq_chordStep`).
-Muller's method is a definition only, in real arithmetic; its order `p ≈ 1.84` is not formalized.
 
 ## Regula falsi
 
@@ -57,6 +57,39 @@ the root with `f'(α) ≠ 0`, but no convexity and no identification of the endp
 eventually frozen: the two divided differences of the secant error identity are bounded
 *uniformly over the bracket*, from below by the minimum of `|dslope f α|` on it and from above
 by splitting on whether the two points of the bracket are close together or far apart.
+
+## Muller's method
+
+Muller's method replaces the secant line by the quadratic `Muller.interp` interpolating the last
+*three* iterates and takes the zero of it nearest the last one, `Muller.next`
+([quarteroni2000numerical] (6.30)). The library's theorem is about the **real** regime near a
+simple real root, and that is a decision, not an oversight: there the radicand `w² - 4 f(x_k) d`
+under the square root of (6.30) is automatically nonnegative
+(`Muller.LocalData.nonneg_radicand`), so `Real.sqrt` is the right square root and `Muller.next` is
+a genuine zero of the interpolant (`Muller.interp_next_eq_zero`). The complex regime the book
+actually exploits — Muller's method started from real data finding complex roots of a polynomial —
+is out of scope: a negative radicand is exactly a complex-conjugate pair of zeros of the parabola,
+and pursuing it would mean running the whole iteration over `ℂ`.
+
+The error analysis mirrors the secant one with one term more. Expanding the interpolant about the
+new point, rather than naming the second zero of the parabola, gives Muller's error identity
+(`Muller.sub_next_mul_eq`)
+`e_{k+1} (w + d (α + x_{k+1} - 2 x_k)) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`,
+whose left-hand factor tends to `f'(α) ≠ 0`. The sign rule of (6.30) is used exactly there, through
+`|w| ≤ |den|` (`Muller.abs_linCoeff_le_abs_den`), to keep the step `x_{k+1} - x_k` short and so to
+exclude the far zero of the parabola. Bounding the divided differences now needs second divided
+differences at three *arbitrary* nodes, where no node can be singled out to play the role `α` plays
+for the secant method; `exists_ball_abs_newton_three_sub_le` supplies them from the mean value form
+`f[x, y, z] = f''(ξ)/2` (`DividedDifference.exists_newton_three_eq`: Rolle's theorem twice on `f`
+minus its Newton interpolant). The resulting two-sided bound
+`c |e_{k-2} e_{k-1} e_k| ≤ |e_{k+1}| ≤ C |e_{k-2} e_{k-1} e_k|` gives convergence and, when
+`f⁽³⁾(α) ≠ 0`, the order `Real.tribonacci ≈ 1.8393` (`Muller.exists_ball_convergesWithOrder`,
+[quarteroni2000numerical] §6.4.3, quoted there from Hildebrand without proof and printed as
+`p ≃ 1.84`). The tribonacci constant is not in Mathlib; it is
+`Numlib/Analysis/SpecialFunctions/Tribonacci`. In logarithmic variables the two bounds combine into
+`s_{k+3} ≤ L + (2 - p) s_{k+1} + ((p - 1)/p) s_k`, whose two coefficients are positive and sum to
+`1 - (p - 1)²/p < 1`, so the same monotone induction as for the golden ratio bounds the solutions
+(`Muller.exists_le_mul_rpow_tribonacci`) — the companion matrix never has to be diagonalized.
 -/
 
 open Filter Topology Set
@@ -66,7 +99,9 @@ namespace DividedDifference
 -- TODO(orchestrator): the three explicit formulas below belong in
 -- `Numlib/Approximation/DividedDifference`, beside `newton_pair`.
 
-variable (f : ℝ → ℝ) {x y z : ℝ}
+section Explicit
+
+variable (f : ℝ → ℝ) {w x y z : ℝ}
 
 /-- The Newton divided difference at two nodes, explicitly: `f[x, y] = (f y - f x) / (y - x)`. -/
 theorem newton_two_eq (hxy : x ≠ y) : newton f ![x, y] = (f y - f x) / (y - x) := by
@@ -106,6 +141,163 @@ theorem newton_three_eq_newton_two_dslope (a : ℝ) (hxy : x ≠ y) (hxa : x ≠
   field_simp
   ring
 
+/-- The Newton divided difference at four nodes, explicitly. -/
+theorem newton_four_eq {w : ℝ} :
+    newton f ![w, x, y, z] =
+      f w / ((w - x) * (w - y) * (w - z)) + f x / ((x - w) * (x - y) * (x - z)) +
+        f y / ((y - w) * (y - x) * (y - z)) + f z / ((z - w) * (z - x) * (z - y)) := by
+  rw [newton, Fin.sum_univ_four]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+    Matrix.cons_val_three]
+  rw [show (Finset.univ.erase (0 : Fin 4)) = {1, 2, 3} from rfl,
+    show (Finset.univ.erase (1 : Fin 4)) = {0, 2, 3} from rfl,
+    show (Finset.univ.erase (2 : Fin 4)) = {0, 1, 3} from rfl,
+    show (Finset.univ.erase (3 : Fin 4)) = {0, 1, 2} from rfl]
+  simp
+  ring
+
+/-- **A four-node divided difference through `a` is a three-node divided difference of
+`dslope f a`**: `f[x, y, z, a] = g[x, y, z]` with `g = dslope f a`, for distinct `x, y, z, a`.
+The four-node analogue of `DividedDifference.newton_three_eq_newton_two_dslope`, and what turns
+the third divided difference of Muller's error identity into a *second* divided difference of a
+function whose second derivative at the root is `f⁽³⁾(α) / 3`. -/
+theorem newton_four_eq_newton_three_dslope (a : ℝ) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (hxa : x ≠ a) (hya : y ≠ a) (hza : z ≠ a) :
+    newton f ![x, y, z, a] = newton (dslope f a) ![x, y, z] := by
+  rw [newton_four_eq, newton_three_eq, dslope_of_ne f hxa, dslope_of_ne f hya,
+    dslope_of_ne f hza, slope_def_field, slope_def_field, slope_def_field]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - z ≠ 0 := sub_ne_zero.2 hxz
+  have h3 : y - z ≠ 0 := sub_ne_zero.2 hyz
+  have h4 : x - a ≠ 0 := sub_ne_zero.2 hxa
+  have h5 : y - a ≠ 0 := sub_ne_zero.2 hya
+  have h6 : z - a ≠ 0 := sub_ne_zero.2 hza
+  have h1' : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h2' : z - x ≠ 0 := sub_ne_zero.2 hxz.symm
+  have h3' : z - y ≠ 0 := sub_ne_zero.2 hyz.symm
+  have h4' : a - x ≠ 0 := sub_ne_zero.2 hxa.symm
+  have h5' : a - y ≠ 0 := sub_ne_zero.2 hya.symm
+  have h6' : a - z ≠ 0 := sub_ne_zero.2 hza.symm
+  field_simp
+  ring
+
+/-- Divided differences are symmetric in their nodes: swapping the first two. -/
+theorem newton_three_swap₁ : newton f ![x, y, z] = newton f ![y, x, z] := by
+  rw [newton_three_eq, newton_three_eq]; ring
+
+/-- Divided differences are symmetric in their nodes: swapping the last two. -/
+theorem newton_three_swap₂ : newton f ![x, y, z] = newton f ![x, z, y] := by
+  rw [newton_three_eq, newton_three_eq]; ring
+
+/-- **Newton's form of the quadratic interpolant**, read at the third node:
+`f z = f x + (z - x) f[x, y] + (z - x)(z - y) f[x, y, z]` for distinct `x, y, z`. An algebraic
+identity in the three values of `f`. -/
+theorem newton_three_eq_of_newton_form (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z) :
+    f z = f x + (z - x) * ((f y - f x) / (y - x)) + (z - x) * (z - y) * newton f ![x, y, z] := by
+  rw [newton_three_eq]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - z ≠ 0 := sub_ne_zero.2 hxz
+  have h3 : y - z ≠ 0 := sub_ne_zero.2 hyz
+  have h1' : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h2' : z - x ≠ 0 := sub_ne_zero.2 hxz.symm
+  have h3' : z - y ≠ 0 := sub_ne_zero.2 hyz.symm
+  field_simp
+  ring
+
+end Explicit
+
+section MeanValueForm
+
+variable {f f₁ f₂ : ℝ → ℝ} {x y z : ℝ}
+
+/-- **The mean value form of the second divided difference**, for sorted nodes: on a convex set
+where `f` is twice differentiable with derivatives `f₁, f₂`, and `x < y < z` in it, there is `ξ`
+in the set with `f[x, y, z] = f₂(ξ) / 2` ([han2009theoretical] §3.2). Rolle's theorem twice on
+`f` minus its Newton interpolant `f(x) + (t - x) f[x, y] + (t - x)(t - y) f[x, y, z]`, whose
+second derivative is `f₂ - 2 f[x, y, z]`.
+
+Unlike the two-node case (`exists_ball_abs_slope_sub_deriv_le`, a mean value *inequality*), no
+node is distinguished here, so `dslope` cannot be used to lower the order; that is why the file
+carries a Rolle argument at all. -/
+theorem exists_newton_three_eq_of_lt {s : Set ℝ} (hs : Convex ℝ s)
+    (hx : x ∈ s) (hz : z ∈ s) (hxy : x < y) (hyz : y < z)
+    (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :
+    ∃ ξ ∈ s, newton f ![x, y, z] = f₂ ξ / 2 := by
+  have hsub : Icc x z ⊆ s := hs.ordConnected.out hx hz
+  set c : ℝ := newton f ![x, y, z] with hc
+  set b : ℝ := (f y - f x) / (y - x) with hb
+  set E : ℝ → ℝ := fun t => f t - (f x + (t - x) * b + (t - x) * (t - y) * c) with hE
+  set E₁ : ℝ → ℝ := fun t => f₁ t - (b + ((t - x) + (t - y)) * c) with hE₁
+  have hxz : x < z := hxy.trans hyz
+  have hEd : ∀ u ∈ s, HasDerivAt E (E₁ u) u := fun u hu => by
+    have hd1 : HasDerivAt (fun t : ℝ => (t - x) * b) b u := by
+      simpa using ((hasDerivAt_id u).sub_const x).mul_const b
+    have hd2 : HasDerivAt (fun t : ℝ => (t - x) * (t - y) * c) ((u - y + (u - x)) * c) u := by
+      simpa using (((hasDerivAt_id u).sub_const x).mul
+        ((hasDerivAt_id u).sub_const y)).mul_const c
+    have h := (hf u hu).sub (((hasDerivAt_const u (f x)).add hd1).add hd2)
+    simp only [hE, hE₁]
+    exact h.congr_deriv (by ring)
+  have hE₁d : ∀ u ∈ s, HasDerivAt E₁ (f₂ u - 2 * c) u := fun u hu => by
+    have hd : HasDerivAt (fun t : ℝ => b + (t - x + (t - y)) * c) (2 * c) u := by
+      have h0 := ((((hasDerivAt_id u).sub_const x).add
+        ((hasDerivAt_id u).sub_const y)).mul_const c).const_add b
+      exact h0.congr_deriv (by ring)
+    simp only [hE₁]
+    exact ((hf₁ u hu).sub hd).congr_deriv (by ring)
+  have hEx : E x = 0 := by simp [hE]
+  have hEy : E y = 0 := by
+    have hyx : y - x ≠ 0 := sub_ne_zero.2 hxy.ne'
+    simp only [hE, hb, sub_self, mul_zero, zero_mul, add_zero]
+    rw [mul_div_assoc', mul_comm, mul_div_assoc, div_self hyx, mul_one]
+    ring
+  have hEz : E z = 0 := by
+    have h := newton_three_eq_of_newton_form (f := f) hxy.ne hxz.ne hyz.ne
+    simp only [hE, hb, hc]
+    linarith
+  have hsubxy : Icc x y ⊆ s := (Icc_subset_Icc le_rfl hyz.le).trans hsub
+  have hsubyz : Icc y z ⊆ s := (Icc_subset_Icc hxy.le le_rfl).trans hsub
+  have hcont : ∀ t : Set ℝ, t ⊆ s → ContinuousOn E t :=
+    fun t ht u hu => (hEd u (ht hu)).continuousAt.continuousWithinAt
+  obtain ⟨ξ₁, hξ₁, h1⟩ := exists_hasDerivAt_eq_zero hxy (hcont _ hsubxy) (hEx.trans hEy.symm)
+    fun u hu => hEd u (hsubxy (Ioo_subset_Icc_self hu))
+  obtain ⟨ξ₂, hξ₂, h2⟩ := exists_hasDerivAt_eq_zero hyz (hcont _ hsubyz) (hEy.trans hEz.symm)
+    fun u hu => hEd u (hsubyz (Ioo_subset_Icc_self hu))
+  have hξ₁₂ : ξ₁ < ξ₂ := hξ₁.2.trans hξ₂.1
+  have hsub₁₂ : Icc ξ₁ ξ₂ ⊆ s := (Icc_subset_Icc hξ₁.1.le hξ₂.2.le).trans hsub
+  have hcont₁ : ContinuousOn E₁ (Icc ξ₁ ξ₂) :=
+    fun u hu => (hE₁d u (hsub₁₂ hu)).continuousAt.continuousWithinAt
+  obtain ⟨ξ, hξ, h3⟩ := exists_hasDerivAt_eq_zero hξ₁₂ hcont₁ (h1.trans h2.symm)
+    fun u hu => hE₁d u (hsub₁₂ (Ioo_subset_Icc_self hu))
+  exact ⟨ξ, hsub ⟨(hξ₁.1.trans hξ.1).le, (hξ.2.trans hξ₂.2).le⟩, by linarith⟩
+
+/-- **The mean value form of the second divided difference** at three distinct nodes in a convex
+set where `f` is twice differentiable: `f[x, y, z] = f₂(ξ) / 2` for some `ξ` in the set. The
+sorted case `exists_newton_three_eq_of_lt` plus the symmetry of `newton` in its nodes. -/
+theorem exists_newton_three_eq {s : Set ℝ} (hs : Convex ℝ s)
+    (hx : x ∈ s) (hy : y ∈ s) (hz : z ∈ s) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :
+    ∃ ξ ∈ s, newton f ![x, y, z] = f₂ ξ / 2 := by
+  rcases hxy.lt_or_gt with h1 | h1
+  · rcases hyz.lt_or_gt with h2 | h2
+    · exact exists_newton_three_eq_of_lt hs hx hz h1 h2 hf hf₁
+    · rcases hxz.lt_or_gt with h3 | h3
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hx hy h3 h2 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₂]; exact hv⟩
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hz hy h3 h1 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₂, newton_three_swap₁]; exact hv⟩
+  · rcases hyz.lt_or_gt with h2 | h2
+    · rcases hxz.lt_or_gt with h3 | h3
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hy hz h1 h3 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₁]; exact hv⟩
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hy hx h2 h3 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₁, newton_three_swap₂]; exact hv⟩
+    · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hz hx h2 h1 hf hf₁
+      exact ⟨ξ, hξ, by
+        rw [newton_three_swap₂, newton_three_swap₁, newton_three_swap₂]; exact hv⟩
+
+end MeanValueForm
+
 end DividedDifference
 
 section MeanValue
@@ -136,6 +328,56 @@ theorem exists_ball_abs_slope_sub_deriv_le {h : ℝ → ℝ} {a : ℝ} (hh : Con
       ((h y - deriv h a * y) - (h x - deriv h a * x)) / (y - x) by field_simp; ring, abs_div,
     div_le_iff₀ (abs_pos.2 hne)]
   exact key
+
+-- TODO(orchestrator): a general fact about `C^N` functions; natural home
+-- `Numlib/Analysis/Calculus/RootMultiplicity`, beside
+-- `ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen`.
+
+/-- **A `C^N` function is `N` times differentiable on a ball**: around a point where `f` is `C^N`
+there is a ball on which each iterated derivative up to order `N - 1` has the next one as its
+derivative, and the `N`-th is continuous. -/
+theorem ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv {f : ℝ → ℝ} {a : ℝ} {N : ℕ}
+    (hf : ContDiffAt ℝ N f a) :
+    ∃ δ > 0, (∀ j < N, ∀ x ∈ Metric.ball a δ,
+        HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f x) x) ∧
+      ContinuousOn (iteratedDeriv N f) (Metric.ball a δ) := by
+  obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
+  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
+  exact ⟨r, hr, fun j hj x hx =>
+    (hfu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball hj hx,
+    (hfu.mono hru).continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball le_rfl⟩
+
+/-- **Second divided differences of a `C²` function are close to `f''(a)/2`** near a point: for
+every `η > 0` there is a ball around `a` on which `|f[x, y, z] - f''(a)/2| ≤ η` for all pairwise
+distinct `x, y, z` in it. The three-node analogue of `exists_ball_abs_slope_sub_deriv_le`, and —
+unlike it — a genuine mean value *theorem* (`DividedDifference.exists_newton_three_eq`, Rolle
+twice) rather than a mean value inequality, because no node can be singled out to lower the order
+through `dslope`. -/
+theorem exists_ball_abs_newton_three_sub_le {f : ℝ → ℝ} {a : ℝ} (hf : ContDiffAt ℝ 2 f a)
+    {η : ℝ} (hη : 0 < η) :
+    ∃ δ > 0, ∀ x ∈ Metric.ball a δ, ∀ y ∈ Metric.ball a δ, ∀ z ∈ Metric.ball a δ,
+      x ≠ y → x ≠ z → y ≠ z →
+      |DividedDifference.newton f ![x, y, z] - iteratedDeriv 2 f a / 2| ≤ η := by
+  obtain ⟨r, hr, hd, hc⟩ :=
+    ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv (N := 2) (by exact_mod_cast hf)
+  have hca : ContinuousAt (iteratedDeriv 2 f) a := hc.continuousAt (Metric.ball_mem_nhds a hr)
+  obtain ⟨δ₁, hδ₁, hb⟩ := Metric.eventually_nhds_iff.1
+    (hca.eventually (Metric.closedBall_mem_nhds (iteratedDeriv 2 f a) hη))
+  refine ⟨min r δ₁, lt_min hr hδ₁, fun x hx y hy z hz hxy hxz hyz => ?_⟩
+  have hsub : Metric.ball a (min r δ₁) ⊆ Metric.ball a r :=
+    Metric.ball_subset_ball (min_le_left _ _)
+  obtain ⟨ξ, hξ, hv⟩ := DividedDifference.exists_newton_three_eq
+    (f₁ := iteratedDeriv 1 f) (f₂ := iteratedDeriv 2 f)
+    (convex_ball a (min r δ₁)) hx hy hz hxy hxz hyz
+    (fun u hu => by
+      simpa only [iteratedDeriv_zero, zero_add] using hd 0 (by norm_num) u (hsub hu))
+    (fun u hu => hd 1 (by norm_num) u (hsub hu))
+  have hξ' : |iteratedDeriv 2 f ξ - iteratedDeriv 2 f a| ≤ η := by
+    have h := hb (Metric.mem_ball.1 (Metric.ball_subset_ball (min_le_right r δ₁) hξ))
+    rwa [Real.dist_eq] at h
+  rw [hv, show iteratedDeriv 2 f ξ / 2 - iteratedDeriv 2 f a / 2
+    = (iteratedDeriv 2 f ξ - iteratedDeriv 2 f a) / 2 by ring, abs_div, abs_two]
+  linarith
 
 end MeanValue
 
@@ -1317,19 +1559,832 @@ end RegulaFalsi
 
 namespace Muller
 
-/-- One **Muller step** ([quarteroni2000numerical] (6.30)) from the triple `(x_{k-2}, x_{k-1}, x_k)`
-to `(x_{k-1}, x_k, x_{k+1})`: with `d = f[x_k, x_{k-1}, x_{k-2}]`,
-`w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d` and the zero of the quadratic interpolant nearest to
-`x_k`, `x_{k+1} = x_k - 2 f(x_k) / (w ± √(w² - 4 f(x_k) d))`, the sign maximizing the modulus of
-the denominator. Real arithmetic only: the square root is `Real.sqrt`, junk `0` for a negative
-radicand (a complex pair of zeros of the parabola), where the complex version that finds complex
-roots of polynomials would continue with `Complex.cpow`. A definition only; the book states no
-theorem about it beyond the cited order `p ≈ 1.84`. -/
+open DividedDifference
+
+/-! ### The quadratic interpolant -/
+
+/-- The **leading coefficient of the Muller interpolant**, the second divided difference
+`d = f[x_k, x_{k-1}, x_{k-2}]` of [quarteroni2000numerical] §6.4.3. -/
+noncomputable def quadCoeff (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ := newton f ![x₂, x₁, x₀]
+
+/-- The **linear coefficient of the Muller interpolant** at `x_k`, the `w` of
+[quarteroni2000numerical] §6.4.3: `w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) f[x_k, x_{k-1}, x_{k-2}]`,
+so that the interpolant reads `p₂(x) = f(x_k) + w (x - x_k) + d (x - x_k)²`. -/
+noncomputable def linCoeff (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
+  newton f ![x₂, x₁] + (x₂ - x₁) * quadCoeff f x₀ x₁ x₂
+
+/-- The **radicand** `w² - 4 f(x_k) d` under the square root of (6.30). It is nonnegative near a
+simple real root (`Muller.LocalData.nonneg_radicand`), where `w → f'(α) ≠ 0` and `f(x_k) → 0`, but
+not in general: a negative radicand is exactly the case of a complex-conjugate pair of zeros of the
+parabola, which is what makes the complex form of the method find complex roots. -/
+noncomputable def radicand (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
+  linCoeff f x₀ x₁ x₂ ^ 2 - 4 * f x₂ * quadCoeff f x₀ x₁ x₂
+
+/-- The **denominator** of (6.30), `w ± √(w² - 4 f(x_k) d)` with the sign chosen to maximize its
+modulus. The choice is what makes the step pick the zero of the parabola *nearest* to `x_k`, and it
+enters the analysis through `Muller.abs_linCoeff_le_abs_den`. -/
+noncomputable def den (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ :=
+  if |linCoeff f x₀ x₁ x₂ - Real.sqrt (radicand f x₀ x₁ x₂)|
+      ≤ |linCoeff f x₀ x₁ x₂ + Real.sqrt (radicand f x₀ x₁ x₂)| then
+    linCoeff f x₀ x₁ x₂ + Real.sqrt (radicand f x₀ x₁ x₂)
+  else linCoeff f x₀ x₁ x₂ - Real.sqrt (radicand f x₀ x₁ x₂)
+
+/-- The **new point of a Muller step**, `x_{k+1} = x_k - 2 f(x_k) / den`
+([quarteroni2000numerical] (6.30), with the numerator rationalized). -/
+noncomputable def next (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) : ℝ := x₂ - 2 * f x₂ / den f x₀ x₁ x₂
+
+/-- The **quadratic interpolant** of `f` at `x_{k-2}, x_{k-1}, x_k` in Newton's form based at
+`x_k`, `p₂(t) = f(x_k) + w (t - x_k) + d (t - x_k)²` ([quarteroni2000numerical] §6.4.3). It
+interpolates (`Muller.interp_apply_node`) and `Muller.next` is one of its zeros
+(`Muller.interp_next_eq_zero`). -/
+noncomputable def interp (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (t : ℝ) : ℝ :=
+  f x₂ + linCoeff f x₀ x₁ x₂ * (t - x₂) + quadCoeff f x₀ x₁ x₂ * (t - x₂) ^ 2
+
+variable {f : ℝ → ℝ} {α ε η x₀ x₁ x₂ : ℝ}
+
+/-- One **Muller step** ([quarteroni2000numerical] (6.30)) from the triple
+`(x_{k-2}, x_{k-1}, x_k)` to `(x_{k-1}, x_k, x_{k+1})`, where `x_{k+1} = Muller.next` is the zero
+`x_k - 2 f(x_k) / (w ± √(w² - 4 f(x_k) d))` of the quadratic interpolant nearest to `x_k`, the sign
+maximizing the modulus of the denominator. Real arithmetic only: the square root is `Real.sqrt`,
+junk `0` for a negative radicand (a complex pair of zeros of the parabola), where the complex
+version that finds complex roots of polynomials would continue with `Complex.cpow`. -/
 noncomputable def step (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) : ℝ × ℝ × ℝ :=
-  let d := DividedDifference.newton f ![s.2.2, s.2.1, s.1]
-  let w := DividedDifference.newton f ![s.2.2, s.2.1] + (s.2.2 - s.2.1) * d
-  let r := Real.sqrt (w ^ 2 - 4 * f s.2.2 * d)
-  let den := if |w - r| ≤ |w + r| then w + r else w - r
-  (s.2.1, s.2.2, s.2.2 - 2 * f s.2.2 / den)
+  (s.2.1, s.2.2, next f s.1 s.2.1 s.2.2)
+
+/-- **The Newton form interpolates**: `p₂` takes the value of `f` at each of the three nodes, for
+distinct nodes. This is what makes `Muller.interp` *the* quadratic interpolant, and it is the piece
+that ties `Muller.step` to [quarteroni2000numerical] §6.4.3. -/
+theorem interp_apply_node (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂) :
+    interp f x₀ x₁ x₂ x₀ = f x₀ ∧ interp f x₀ x₁ x₂ x₁ = f x₁ ∧
+      interp f x₀ x₁ x₂ x₂ = f x₂ := by
+  have a01 : x₀ - x₁ ≠ 0 := sub_ne_zero.2 h01
+  have a02 : x₀ - x₂ ≠ 0 := sub_ne_zero.2 h02
+  have a12 : x₁ - x₂ ≠ 0 := sub_ne_zero.2 h12
+  have a10 : x₁ - x₀ ≠ 0 := sub_ne_zero.2 h01.symm
+  have a20 : x₂ - x₀ ≠ 0 := sub_ne_zero.2 h02.symm
+  have a21 : x₂ - x₁ ≠ 0 := sub_ne_zero.2 h12.symm
+  refine ⟨?_, ?_, by simp [interp]⟩ <;>
+    · rw [interp, linCoeff, quadCoeff, newton_three_eq, newton_two_eq _ h12.symm]
+      field_simp
+      ring
+
+/-- **The sign rule makes the denominator at least as large as `w`**: `|w| ≤ |den|`, because
+`2|w| = |(w + r) + (w - r)| ≤ |w + r| + |w - r|` and `den` is whichever of `w ± r` has the larger
+modulus. This one inequality is the whole content of the sign rule for the error analysis: it is
+what keeps `x_{k+1}` near `x_k` rather than at the far zero of the parabola. -/
+theorem abs_linCoeff_le_abs_den (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) :
+    |linCoeff f x₀ x₁ x₂| ≤ |den f x₀ x₁ x₂| := by
+  rw [den]
+  set w := linCoeff f x₀ x₁ x₂
+  set r := Real.sqrt (radicand f x₀ x₁ x₂)
+  have key : 2 * |w| ≤ |w + r| + |w - r| := by
+    have h := abs_add_le (w + r) (w - r)
+    rwa [show (w + r) + (w - r) = 2 * w by ring, abs_mul, abs_two] at h
+  split_ifs with h
+  · linarith
+  · linarith [not_le.1 h]
+
+/-- **The denominator solves `den² - 2 w den + 4 d f(x_k) = 0`** when the radicand is nonnegative,
+since `den = w ± r` with `r² = w² - 4 f(x_k) d`. -/
+theorem den_quadratic (hrad : 0 ≤ radicand f x₀ x₁ x₂) :
+    den f x₀ x₁ x₂ ^ 2 - 2 * linCoeff f x₀ x₁ x₂ * den f x₀ x₁ x₂ +
+      4 * quadCoeff f x₀ x₁ x₂ * f x₂ = 0 := by
+  have hr : Real.sqrt (radicand f x₀ x₁ x₂) ^ 2
+      = linCoeff f x₀ x₁ x₂ ^ 2 - 4 * f x₂ * quadCoeff f x₀ x₁ x₂ := by
+    rw [Real.sq_sqrt hrad, radicand]
+  rw [den]
+  split_ifs <;> linear_combination hr
+
+/-- **The Muller step lands on a zero of the quadratic interpolant** — this is the defining
+property of the method, and it needs the radicand to be nonnegative (real arithmetic) and the
+denominator to be nonzero. With `h = -2 f(x_k)/den`,
+`p₂(x_k + h) = f(x_k) (den² - 2 w den + 4 d f(x_k)) / den²`, which vanishes by
+`Muller.den_quadratic`. -/
+theorem interp_next_eq_zero (hrad : 0 ≤ radicand f x₀ x₁ x₂) (hden : den f x₀ x₁ x₂ ≠ 0) :
+    interp f x₀ x₁ x₂ (next f x₀ x₁ x₂) = 0 := by
+  have hkey := den_quadratic (f := f) (x₀ := x₀) (x₁ := x₁) (x₂ := x₂) hrad
+  rw [interp, next]
+  field_simp
+  linear_combination f x₂ * hkey
+
+/-- **The value of the interpolant at the root** is the divided-difference form of the
+interpolation error there: for `f α = 0` and distinct nodes different from `α`,
+`p₂(α) = -f[x_{k-2}, x_{k-1}, x_k, α] (α - x_{k-2})(α - x_{k-1})(α - x_k)`. The four-node analogue
+of `Secant.sub_root_eq_mul_newton`, and like it an algebraic identity in the values of `f`
+([han2009theoretical] (3.2.5) written out). -/
+theorem interp_root_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂)
+    (h0 : x₀ ≠ α) (h1 : x₁ ≠ α) (h2 : x₂ ≠ α) :
+    interp f x₀ x₁ x₂ α =
+      -(newton f ![x₀, x₁, x₂, α] * ((α - x₀) * (α - x₁) * (α - x₂))) := by
+  rw [interp, linCoeff, quadCoeff, newton_three_eq, newton_two_eq _ h12.symm, newton_four_eq, hα]
+  have a01 : x₀ - x₁ ≠ 0 := sub_ne_zero.2 h01
+  have a02 : x₀ - x₂ ≠ 0 := sub_ne_zero.2 h02
+  have a12 : x₁ - x₂ ≠ 0 := sub_ne_zero.2 h12
+  have a10 : x₁ - x₀ ≠ 0 := sub_ne_zero.2 h01.symm
+  have a20 : x₂ - x₀ ≠ 0 := sub_ne_zero.2 h02.symm
+  have a21 : x₂ - x₁ ≠ 0 := sub_ne_zero.2 h12.symm
+  have b0 : x₀ - α ≠ 0 := sub_ne_zero.2 h0
+  have b1 : x₁ - α ≠ 0 := sub_ne_zero.2 h1
+  have b2 : x₂ - α ≠ 0 := sub_ne_zero.2 h2
+  have c0 : α - x₀ ≠ 0 := sub_ne_zero.2 h0.symm
+  have c1 : α - x₁ ≠ 0 := sub_ne_zero.2 h1.symm
+  have c2 : α - x₂ ≠ 0 := sub_ne_zero.2 h2.symm
+  field_simp
+  ring
+
+/-- **Muller's error identity.** With `e_j = α - x_j` and `d, w` the coefficients of the
+interpolant, the new error satisfies
+
+`e_{k+1} (w + d (α + x_{k+1} - 2 x_k)) = -f[x_{k-2}, x_{k-1}, x_k, α] e_{k-2} e_{k-1} e_k`.
+
+The factor on the left is `p₂'(x_{k+1}) + d e_{k+1}`, which tends to `f'(α) ≠ 0`; the second zero
+of the parabola is eliminated not by naming it but by expanding `p₂` about `x_{k+1}`, where
+`p₂(x_{k+1}) = 0` (`Muller.interp_next_eq_zero`) leaves `p₂(α) = e_{k+1} (p₂'(x_{k+1}) + d e_{k+1})`
+exactly. Compare `Secant.sub_root_eq_mul_newton`, where the corresponding relation is linear in the
+new error. -/
+theorem sub_next_mul_eq (hα : f α = 0) (h01 : x₀ ≠ x₁) (h02 : x₀ ≠ x₂) (h12 : x₁ ≠ x₂)
+    (h0 : x₀ ≠ α) (h1 : x₁ ≠ α) (h2 : x₂ ≠ α)
+    (hrad : 0 ≤ radicand f x₀ x₁ x₂) (hden : den f x₀ x₁ x₂ ≠ 0) :
+    (α - next f x₀ x₁ x₂) * (linCoeff f x₀ x₁ x₂ +
+        quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)) =
+      -(newton f ![x₀, x₁, x₂, α] * ((α - x₀) * (α - x₁) * (α - x₂))) := by
+  have h := interp_next_eq_zero hrad hden
+  rw [← interp_root_eq hα h01 h02 h12 h0 h1 h2, ← sub_zero (interp f x₀ x₁ x₂ α), ← h,
+    interp, interp]
+  ring
+
+/-! ### Local bounds -/
+
+/-- **The local bounds driving the Muller analysis** on `ball α ε`, all with the same tolerance
+`η`: the first divided difference at distinct nodes is within `η` of `f'(α)`, the second at three
+distinct nodes within `η` of `f''(α)/2`, the third through `α` within `η` of `f⁽³⁾(α)/6`, and
+`dslope f α` within `η` of `f'(α)`. `Muller.exists_localData` produces them near a simple root of a
+`C³` function. -/
+structure LocalData (f : ℝ → ℝ) (α ε η : ℝ) : Prop where
+  first : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, x ≠ y →
+    |newton f ![x, y] - deriv f α| ≤ η
+  second : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, ∀ z ∈ Metric.ball α ε,
+    x ≠ y → x ≠ z → y ≠ z → |newton f ![x, y, z] - iteratedDeriv 2 f α / 2| ≤ η
+  third : ∀ x ∈ Metric.ball α ε, ∀ y ∈ Metric.ball α ε, ∀ z ∈ Metric.ball α ε,
+    x ≠ y → x ≠ z → y ≠ z → x ≠ α → y ≠ α → z ≠ α →
+    |newton f ![x, y, z, α] - iteratedDeriv 3 f α / 6| ≤ η
+  base : ∀ x ∈ Metric.ball α ε, |dslope f α x - deriv f α| ≤ η
+
+/-- Local bounds persist on a smaller ball. -/
+theorem LocalData.mono (h : LocalData f α ε η) {ε' : ℝ} (hle : ε' ≤ ε) : LocalData f α ε' η :=
+  ⟨fun x hx y hy => h.first x (Metric.ball_subset_ball hle hx) y (Metric.ball_subset_ball hle hy),
+   fun x hx y hy z hz => h.second x (Metric.ball_subset_ball hle hx) y
+      (Metric.ball_subset_ball hle hy) z (Metric.ball_subset_ball hle hz),
+   fun x hx y hy z hz => h.third x (Metric.ball_subset_ball hle hx) y
+      (Metric.ball_subset_ball hle hy) z (Metric.ball_subset_ball hle hz),
+   fun x hx => h.base x (Metric.ball_subset_ball hle hx)⟩
+
+/-- **The smallness conditions** on the ball radius `ε` and the tolerance `η` that the Muller step
+estimates need, all relative to `|f'(α)|` and the bound `|f''(α)|/2 + η` on the second divided
+difference: `8 η ≤ |f'(α)|` keeps `w` within `|f'(α)|/4` of `f'(α)`, the second makes the
+`(x_k - x_{k-1}) d` term of `w` small, and the third makes `4 f(x_k) d` small enough for the
+radicand to stay nonnegative and the step `x_{k+1} - x_k` short. -/
+structure Small (f : ℝ → ℝ) (α ε η : ℝ) : Prop where
+  eps_pos : 0 < ε
+  eta_pos : 0 < η
+  deriv_ne : deriv f α ≠ 0
+  eta_le : 8 * η ≤ |deriv f α|
+  eps_le : 16 * (ε * (|iteratedDeriv 2 f α| / 2 + η)) ≤ |deriv f α|
+  eps_le' : 32 * (ε * ((|deriv f α| + η) * (|iteratedDeriv 2 f α| / 2 + η))) ≤ |deriv f α| ^ 2
+
+/-- A triple `(x_{k-2}, x_{k-1}, x_k)` of consecutive Muller iterates is **admissible** in
+`ball α ε` when all three points lie in the ball, are pairwise distinct, and differ from `α`:
+exactly what the error identity `Muller.sub_next_mul_eq` needs. -/
+structure IsAdmissible (α ε x₀ x₁ x₂ : ℝ) : Prop where
+  mem₀ : x₀ ∈ Metric.ball α ε
+  mem₁ : x₁ ∈ Metric.ball α ε
+  mem₂ : x₂ ∈ Metric.ball α ε
+  ne₀₁ : x₀ ≠ x₁
+  ne₀₂ : x₀ ≠ x₂
+  ne₁₂ : x₁ ≠ x₂
+  ne₀ : x₀ ≠ α
+  ne₁ : x₁ ≠ α
+  ne₂ : x₂ ≠ α
+
+/-- The oldest point of an admissible triple is within `ε` of the root. -/
+theorem IsAdmissible.abs_lt₀ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₀ - α| < ε := by
+  rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₀
+
+/-- An admissible triple exists only in a ball of positive radius. -/
+theorem IsAdmissible.eps_pos (hs : IsAdmissible α ε x₀ x₁ x₂) : 0 < ε :=
+  lt_of_le_of_lt (abs_nonneg _) hs.abs_lt₀
+
+/-- The middle point of an admissible triple is within `ε` of the root. -/
+theorem IsAdmissible.abs_lt₁ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₁ - α| < ε := by
+  rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₁
+
+/-- The newest point of an admissible triple is within `ε` of the root. -/
+theorem IsAdmissible.abs_lt₂ (hs : IsAdmissible α ε x₀ x₁ x₂) : |x₂ - α| < ε := by
+  rw [← Real.dist_eq]; exact Metric.mem_ball.1 hs.mem₂
+
+/-- The leading coefficient of the interpolant is bounded by `|f''(α)|/2 + η`. -/
+theorem LocalData.abs_quadCoeff_le (hdata : LocalData f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    |quadCoeff f x₀ x₁ x₂| ≤ |iteratedDeriv 2 f α| / 2 + η := by
+  have h := hdata.second x₂ hs.mem₂ x₁ hs.mem₁ x₀ hs.mem₀ hs.ne₁₂.symm hs.ne₀₂.symm hs.ne₀₁.symm
+  have h2 := abs_sub_abs_le_abs_sub (newton f ![x₂, x₁, x₀]) (iteratedDeriv 2 f α / 2)
+  rw [abs_div, abs_two] at h2
+  rw [quadCoeff]
+  linarith
+
+/-- `|f(x_k)| ≤ ε (|f'(α)| + η)` on the ball, from `f(x) = (x - α) · dslope f α x`. -/
+theorem LocalData.abs_apply_le (hα : f α = 0) (hdata : LocalData f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) : |f x₂| ≤ ε * (|deriv f α| + η) := by
+  have hds : f x₂ = (x₂ - α) * dslope f α x₂ := by
+    have h := sub_smul_dslope f α x₂
+    rw [hα, sub_zero, smul_eq_mul] at h
+    exact h.symm
+  have hdsb : |dslope f α x₂| ≤ |deriv f α| + η := by
+    have h := hdata.base x₂ hs.mem₂
+    have h2 := abs_sub_abs_le_abs_sub (dslope f α x₂) (deriv f α)
+    linarith
+  rw [hds, abs_mul]
+  exact mul_le_mul hs.abs_lt₂.le hdsb (abs_nonneg _) hs.eps_pos.le
+
+/-- **The linear coefficient is close to `f'(α)`**: `|w - f'(α)| ≤ |f'(α)|/4`, since
+`w = f[x_k, x_{k-1}] + (x_k - x_{k-1}) d` with the first term within `η` of `f'(α)` and
+`|x_k - x_{k-1}| < 2ε`. -/
+theorem LocalData.abs_linCoeff_sub_le (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    |linCoeff f x₀ x₁ x₂ - deriv f α| ≤ |deriv f α| / 4 := by
+  have hd := hdata.abs_quadCoeff_le hs
+  have hfirst := hdata.first x₂ hs.mem₂ x₁ hs.mem₁ hs.ne₁₂.symm
+  have hx : |x₂ - x₁| ≤ 2 * ε := by
+    calc |x₂ - x₁| ≤ |x₂ - α| + |α - x₁| := abs_sub_le _ _ _
+      _ ≤ 2 * ε := by rw [abs_sub_comm α x₁]; linarith [hs.abs_lt₁, hs.abs_lt₂]
+  have hmul : |(x₂ - x₁) * quadCoeff f x₀ x₁ x₂| ≤ 2 * ε * (|iteratedDeriv 2 f α| / 2 + η) := by
+    rw [abs_mul]
+    exact mul_le_mul hx hd (abs_nonneg _) (by linarith [hs.eps_pos])
+  have htri : |linCoeff f x₀ x₁ x₂ - deriv f α|
+      ≤ |newton f ![x₂, x₁] - deriv f α| + |(x₂ - x₁) * quadCoeff f x₀ x₁ x₂| := by
+    rw [linCoeff, show newton f ![x₂, x₁] + (x₂ - x₁) * quadCoeff f x₀ x₁ x₂ - deriv f α
+      = (newton f ![x₂, x₁] - deriv f α) + (x₂ - x₁) * quadCoeff f x₀ x₁ x₂ by ring]
+    exact abs_add_le _ _
+  linarith [hsm.eta_le, hsm.eps_le]
+
+/-- `3 |f'(α)| / 4 ≤ |w|`. -/
+theorem LocalData.le_abs_linCoeff (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) : 3 * |deriv f α| / 4 ≤ |linCoeff f x₀ x₁ x₂| := by
+  have h := hdata.abs_linCoeff_sub_le hsm hs
+  have h2 := abs_sub_abs_le_abs_sub (deriv f α) (linCoeff f x₀ x₁ x₂)
+  rw [abs_sub_comm] at h2
+  linarith
+
+/-- `|w| ≤ 5 |f'(α)| / 4`. -/
+theorem LocalData.abs_linCoeff_le (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) : |linCoeff f x₀ x₁ x₂| ≤ 5 * |deriv f α| / 4 := by
+  have h := hdata.abs_linCoeff_sub_le hsm hs
+  have h2 := abs_sub_abs_le_abs_sub (linCoeff f x₀ x₁ x₂) (deriv f α)
+  linarith
+
+/-- **The radicand is nonnegative near a simple real root**, so the real form of Muller's method
+is the right one there: `w² ≥ 9 f'(α)²/16` while `|4 f(x_k) d| ≤ |f'(α)|²/8`. This is the
+hypothesis of `Muller.interp_next_eq_zero` discharged. -/
+theorem LocalData.nonneg_radicand (hα : f α = 0) (hdata : LocalData f α ε η)
+    (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) : 0 ≤ radicand f x₀ x₁ x₂ := by
+  have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
+  have hwlo := hdata.le_abs_linCoeff hsm hs
+  have hd := hdata.abs_quadCoeff_le hs
+  have hfx := hdata.abs_apply_le hα hs
+  have hlin2 : (3 * |deriv f α| / 4) ^ 2 ≤ linCoeff f x₀ x₁ x₂ ^ 2 := by
+    rw [← sq_abs (linCoeff f x₀ x₁ x₂)]
+    exact pow_le_pow_left₀ (by positivity) hwlo 2
+  have hprod : |4 * f x₂ * quadCoeff f x₀ x₁ x₂|
+      ≤ 4 * (ε * (|deriv f α| + η)) * (|iteratedDeriv 2 f α| / 2 + η) := by
+    rw [abs_mul, abs_mul, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 4)]
+    refine mul_le_mul (mul_le_mul_of_nonneg_left hfx (by norm_num)) hd (abs_nonneg _) ?_
+    exact mul_nonneg (by norm_num) (mul_nonneg hs.eps_pos.le
+      (by linarith [abs_nonneg (deriv f α), hsm.eta_pos]))
+  rw [radicand]
+  linarith [(abs_le.1 hprod).2, hsm.eps_le', sq_nonneg (deriv f α), sq_abs (deriv f α)]
+
+/-- `3 |f'(α)| / 4 ≤ |den|`, by the sign rule (`Muller.abs_linCoeff_le_abs_den`). -/
+theorem LocalData.le_abs_den (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) : 3 * |deriv f α| / 4 ≤ |den f x₀ x₁ x₂| :=
+  (hdata.le_abs_linCoeff hsm hs).trans (abs_linCoeff_le_abs_den f x₀ x₁ x₂)
+
+/-- The denominator of a Muller step from an admissible triple is nonzero. -/
+theorem LocalData.den_ne_zero (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) : den f x₀ x₁ x₂ ≠ 0 := fun h => by
+  have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
+  have h2 := hdata.le_abs_den hsm hs
+  rw [h, abs_zero] at h2
+  linarith
+
+/-- **The step is short**: `|d| |x_{k+1} - x_k| ≤ |f'(α)| / 12`, since
+`|x_{k+1} - x_k| |den| = 2 |f(x_k)|` with `|f(x_k)|` of order `ε` and `|den|` bounded below. -/
+theorem LocalData.abs_quadCoeff_mul_next_sub_le (hα : f α = 0) (hdata : LocalData f α ε η)
+    (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    |quadCoeff f x₀ x₁ x₂| * |next f x₀ x₁ x₂ - x₂| ≤ |deriv f α| / 12 := by
+  have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
+  have hd := hdata.abs_quadCoeff_le hs
+  have hfx := hdata.abs_apply_le hα hs
+  have hden0 := hdata.den_ne_zero hsm hs
+  have hnx : |next f x₀ x₁ x₂ - x₂| * |den f x₀ x₁ x₂| = 2 * |f x₂| := by
+    rw [next, show x₂ - 2 * f x₂ / den f x₀ x₁ x₂ - x₂ = -(2 * f x₂ / den f x₀ x₁ x₂) by ring,
+      abs_neg, abs_div, div_mul_cancel₀ _ (abs_ne_zero.2 hden0), abs_mul]
+    norm_num
+  have hstep : |next f x₀ x₁ x₂ - x₂| * (3 * |deriv f α| / 4) ≤ 2 * (ε * (|deriv f α| + η)) := by
+    have h1 : |next f x₀ x₁ x₂ - x₂| * (3 * |deriv f α| / 4)
+        ≤ |next f x₀ x₁ x₂ - x₂| * |den f x₀ x₁ x₂| :=
+      mul_le_mul_of_nonneg_left (hdata.le_abs_den hsm hs) (abs_nonneg _)
+    rw [hnx] at h1
+    linarith
+  have e1 : |quadCoeff f x₀ x₁ x₂| * (|next f x₀ x₁ x₂ - x₂| * (3 * |deriv f α| / 4))
+      ≤ (|iteratedDeriv 2 f α| / 2 + η) * (2 * (ε * (|deriv f α| + η))) :=
+    mul_le_mul hd hstep (mul_nonneg (abs_nonneg _) (by positivity))
+      (by linarith [abs_nonneg (iteratedDeriv 2 f α), hsm.eta_pos])
+  refine le_of_mul_le_mul_right ?_ (show (0:ℝ) < 3 * |deriv f α| / 4 by positivity)
+  linarith [e1, hsm.eps_le', sq_abs (deriv f α)]
+
+/-- **The factor in Muller's error identity is close to `f'(α)`**:
+`|f'(α)|/2 ≤ |w + d (α + x_{k+1} - 2 x_k)| ≤ 3 |f'(α)|/2`, because `α + x_{k+1} - 2 x_k` is
+`(α - x_k) + (x_{k+1} - x_k)`, both short. This is where the sign rule of (6.30) is used: it is
+what bounds `x_{k+1} - x_k`, and hence excludes the far zero of the parabola. -/
+theorem LocalData.effSlope_bounds (hα : f α = 0) (hdata : LocalData f α ε η)
+    (hsm : Small f α ε η) (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    |deriv f α| / 2 ≤ |linCoeff f x₀ x₁ x₂ +
+        quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)| ∧
+      |linCoeff f x₀ x₁ x₂ + quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)|
+        ≤ 3 * |deriv f α| / 2 := by
+  have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
+  have hd := hdata.abs_quadCoeff_le hs
+  have h3 := hdata.abs_quadCoeff_mul_next_sub_le hα hsm hs
+  have h2 : |quadCoeff f x₀ x₁ x₂| * |x₂ - α| ≤ |deriv f α| / 16 := by
+    have h : |quadCoeff f x₀ x₁ x₂| * |x₂ - α| ≤ (|iteratedDeriv 2 f α| / 2 + η) * ε :=
+      mul_le_mul hd hs.abs_lt₂.le (abs_nonneg _)
+        (by linarith [abs_nonneg (iteratedDeriv 2 f α), hsm.eta_pos])
+    linarith [hsm.eps_le]
+  have hsplit : |α + next f x₀ x₁ x₂ - 2 * x₂| ≤ |x₂ - α| + |next f x₀ x₁ x₂ - x₂| := by
+    rw [show α + next f x₀ x₁ x₂ - 2 * x₂ = -(x₂ - α) + (next f x₀ x₁ x₂ - x₂) by ring]
+    refine (abs_add_le _ _).trans ?_
+    rw [abs_neg]
+  have hsub : |quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)|
+      ≤ 7 * |deriv f α| / 48 := by
+    rw [abs_mul]
+    have h4 := mul_le_mul_of_nonneg_left hsplit (abs_nonneg (quadCoeff f x₀ x₁ x₂))
+    linarith
+  have hwlo := hdata.le_abs_linCoeff hsm hs
+  have hwhi := hdata.abs_linCoeff_le hsm hs
+  refine ⟨?_, ?_⟩
+  · have h := abs_sub_abs_le_abs_sub (linCoeff f x₀ x₁ x₂)
+      (linCoeff f x₀ x₁ x₂ + quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂))
+    rw [show linCoeff f x₀ x₁ x₂ - (linCoeff f x₀ x₁ x₂ +
+      quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂))
+      = -(quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)) by ring, abs_neg] at h
+    linarith
+  · have h := abs_add_le (linCoeff f x₀ x₁ x₂)
+      (quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂))
+    linarith
+
+/-- **Local bounds near a simple root of a `C³` function.** For every `η > 0` there is a ball
+around `α` carrying `Muller.LocalData`. The third divided difference is handled by
+`DividedDifference.newton_four_eq_newton_three_dslope`, which turns `f[x, y, z, α]` into the second
+divided difference of `g = dslope f α`, a `C²` function at `α` with
+`g''(α)/2 = f⁽³⁾(α)/6` (Hadamard's lemma, `ContDiffAt.dslope_same` and
+`iteratedDeriv_dslope_same`). -/
+theorem exists_localData (hf : ContDiffAt ℝ 3 f α) (hη : 0 < η) :
+    ∃ ε > 0, LocalData f α ε η := by
+  have hf1 : ContDiffAt ℝ 1 f α := hf.of_le (by norm_num)
+  have hf2 : ContDiffAt ℝ 2 f α := hf.of_le (by norm_num)
+  have hf3 : ContDiffAt ℝ ((2 : ℕ) + 1 : ℕ) f α := by simpa using hf
+  have hg : ContDiffAt ℝ ((2 : ℕ)) (dslope f α) α := ContDiffAt.dslope_same (n := 2) hf3
+  have hgd : iteratedDeriv 2 (dslope f α) α / 2 = iteratedDeriv 3 f α / 6 := by
+    rw [iteratedDeriv_dslope_same hf3]
+    norm_num
+    ring
+  obtain ⟨δ₁, hδ₁, h₁⟩ := exists_ball_abs_slope_sub_deriv_le hf1 hη
+  obtain ⟨δ₂, hδ₂, h₂⟩ := exists_ball_abs_newton_three_sub_le hf2 hη
+  obtain ⟨δ₃, hδ₃, h₃⟩ := exists_ball_abs_newton_three_sub_le (by exact_mod_cast hg) hη
+  obtain ⟨δ₄, hδ₄, h₄⟩ := Metric.eventually_nhds_iff.1
+    (hg.continuousAt.eventually (Metric.closedBall_mem_nhds (dslope f α α) hη))
+  have m₁ : min (min δ₁ δ₂) (min δ₃ δ₄) ≤ δ₁ := (min_le_left _ _).trans (min_le_left _ _)
+  have m₂ : min (min δ₁ δ₂) (min δ₃ δ₄) ≤ δ₂ := (min_le_left _ _).trans (min_le_right _ _)
+  have m₃ : min (min δ₁ δ₂) (min δ₃ δ₄) ≤ δ₃ := (min_le_right _ _).trans (min_le_left _ _)
+  have m₄ : min (min δ₁ δ₂) (min δ₃ δ₄) ≤ δ₄ := (min_le_right _ _).trans (min_le_right _ _)
+  refine ⟨min (min δ₁ δ₂) (min δ₃ δ₄), by positivity, ?_, ?_, ?_, ?_⟩
+  · intro x hx y hy hxy
+    rw [newton_two_eq _ hxy]
+    exact h₁ x (Metric.ball_subset_ball m₁ hx) y (Metric.ball_subset_ball m₁ hy) hxy
+  · intro x hx y hy z hz hxy hxz hyz
+    exact h₂ x (Metric.ball_subset_ball m₂ hx) y (Metric.ball_subset_ball m₂ hy) z
+      (Metric.ball_subset_ball m₂ hz) hxy hxz hyz
+  · intro x hx y hy z hz hxy hxz hyz hxα hyα hzα
+    rw [newton_four_eq_newton_three_dslope f α hxy hxz hyz hxα hyα hzα, ← hgd]
+    exact h₃ x (Metric.ball_subset_ball m₃ hx) y (Metric.ball_subset_ball m₃ hy) z
+      (Metric.ball_subset_ball m₃ hz) hxy hxz hyz
+  · intro x hx
+    have h := h₄ (Metric.ball_subset_ball m₄ hx)
+    rw [Real.dist_eq, dslope_same] at h
+    exact h
+
+/-! ### One step -/
+
+/-- **One Muller step from an admissible triple.** Under the local bounds and the smallness
+conditions, with `m` and `M` chosen so that `m (3|f'(α)|/2) ≤ |f⁽³⁾(α)|/6 - η` and
+`|f⁽³⁾(α)|/6 + η ≤ M (|f'(α)|/2)` and `M ε² ≤ 1/2`, the new point obeys the two-sided error bound
+
+`m |e_{k-2} e_{k-1} e_k| ≤ |e_{k+1}| ≤ M |e_{k-2} e_{k-1} e_k|`,
+
+stays in the ball and differs from the two previous iterates. Muller's error identity
+(`Muller.sub_next_mul_eq`) divided by the factor bounded in `Muller.LocalData.effSlope_bounds`. -/
+theorem LocalData.step_bounds (hα : f α = 0) (hdata : LocalData f α ε η) (hsm : Small f α ε η)
+    {m M : ℝ} (hm : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η)
+    (hM : |iteratedDeriv 3 f α| / 6 + η ≤ M * (|deriv f α| / 2)) (hMε : M * ε ^ 2 ≤ 1 / 2)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    m * (|x₀ - α| * |x₁ - α| * |x₂ - α|) ≤ |next f x₀ x₁ x₂ - α| ∧
+      |next f x₀ x₁ x₂ - α| ≤ M * (|x₀ - α| * |x₁ - α| * |x₂ - α|) ∧
+      next f x₀ x₁ x₂ ∈ Metric.ball α ε ∧
+      next f x₀ x₁ x₂ ≠ x₁ ∧ next f x₀ x₁ x₂ ≠ x₂ := by
+  have ha : 0 < |deriv f α| := abs_pos.2 hsm.deriv_ne
+  have habs6 : |iteratedDeriv 3 f α / 6| = |iteratedDeriv 3 f α| / 6 := by
+    rw [abs_div]; norm_num
+  have hN := hdata.third x₀ hs.mem₀ x₁ hs.mem₁ x₂ hs.mem₂ hs.ne₀₁ hs.ne₀₂ hs.ne₁₂ hs.ne₀ hs.ne₁
+    hs.ne₂
+  have hNlo : |iteratedDeriv 3 f α| / 6 - η ≤ |newton f ![x₀, x₁, x₂, α]| := by
+    have h := abs_sub_abs_le_abs_sub (iteratedDeriv 3 f α / 6) (newton f ![x₀, x₁, x₂, α])
+    rw [abs_sub_comm, habs6] at h
+    linarith
+  have hNhi : |newton f ![x₀, x₁, x₂, α]| ≤ |iteratedDeriv 3 f α| / 6 + η := by
+    have h := abs_sub_abs_le_abs_sub (newton f ![x₀, x₁, x₂, α]) (iteratedDeriv 3 f α / 6)
+    rw [habs6] at h
+    linarith
+  obtain ⟨hLlo, hLhi⟩ := hdata.effSlope_bounds hα hsm hs
+  have hident : |next f x₀ x₁ x₂ - α| *
+      |linCoeff f x₀ x₁ x₂ + quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)|
+      = |newton f ![x₀, x₁, x₂, α]| * (|x₀ - α| * |x₁ - α| * |x₂ - α|) := by
+    have h := sub_next_mul_eq hα hs.ne₀₁ hs.ne₀₂ hs.ne₁₂ hs.ne₀ hs.ne₁ hs.ne₂
+      (hdata.nonneg_radicand hα hsm hs) (hdata.den_ne_zero hsm hs)
+    have h' := congrArg abs h
+    rw [abs_mul, abs_neg, abs_mul, abs_mul, abs_mul, abs_sub_comm α x₀, abs_sub_comm α x₁,
+      abs_sub_comm α x₂] at h'
+    rw [abs_sub_comm (next f x₀ x₁ x₂) α, h']
+  have hP : 0 ≤ |x₀ - α| * |x₁ - α| * |x₂ - α| := by positivity
+  have hM0 : 0 < M := by
+    have h : 0 < M * (|deriv f α| / 2) := by
+      linarith [abs_nonneg (iteratedDeriv 3 f α), hsm.eta_pos]
+    nlinarith [h, ha]
+  have hupper : |next f x₀ x₁ x₂ - α| ≤ M * (|x₀ - α| * |x₁ - α| * |x₂ - α|) := by
+    have h1 : |next f x₀ x₁ x₂ - α| * (|deriv f α| / 2)
+        ≤ |next f x₀ x₁ x₂ - α| *
+          |linCoeff f x₀ x₁ x₂ + quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)| :=
+      mul_le_mul_of_nonneg_left hLlo (abs_nonneg _)
+    rw [hident] at h1
+    have h2 : |newton f ![x₀, x₁, x₂, α]| * (|x₀ - α| * |x₁ - α| * |x₂ - α|)
+        ≤ M * (|deriv f α| / 2) * (|x₀ - α| * |x₁ - α| * |x₂ - α|) :=
+      mul_le_mul_of_nonneg_right (hNhi.trans hM) hP
+    refine le_of_mul_le_mul_right ?_ (show (0:ℝ) < |deriv f α| / 2 by positivity)
+    linarith
+  have hlower : m * (|x₀ - α| * |x₁ - α| * |x₂ - α|) ≤ |next f x₀ x₁ x₂ - α| := by
+    have h1 : |next f x₀ x₁ x₂ - α| *
+        |linCoeff f x₀ x₁ x₂ + quadCoeff f x₀ x₁ x₂ * (α + next f x₀ x₁ x₂ - 2 * x₂)|
+        ≤ |next f x₀ x₁ x₂ - α| * (3 * |deriv f α| / 2) :=
+      mul_le_mul_of_nonneg_left hLhi (abs_nonneg _)
+    rw [hident] at h1
+    have h2 : m * (3 * |deriv f α| / 2) * (|x₀ - α| * |x₁ - α| * |x₂ - α|)
+        ≤ |newton f ![x₀, x₁, x₂, α]| * (|x₀ - α| * |x₁ - α| * |x₂ - α|) :=
+      mul_le_mul_of_nonneg_right (hm.trans hNlo) hP
+    refine le_of_mul_le_mul_right ?_ (show (0:ℝ) < 3 * |deriv f α| / 2 by positivity)
+    linarith
+  have hεnn : (0:ℝ) ≤ ε := hs.eps_pos.le
+  have hkey₁ : |x₀ - α| * |x₁ - α| * |x₂ - α| ≤ ε * |x₁ - α| * ε :=
+    mul_le_mul (mul_le_mul_of_nonneg_right hs.abs_lt₀.le (abs_nonneg _)) hs.abs_lt₂.le
+      (abs_nonneg _) (mul_nonneg hεnn (abs_nonneg _))
+  have hkey₂ : |x₀ - α| * |x₁ - α| * |x₂ - α| ≤ ε * ε * |x₂ - α| :=
+    mul_le_mul_of_nonneg_right
+      (mul_le_mul hs.abs_lt₀.le hs.abs_lt₁.le (abs_nonneg _) hεnn) (abs_nonneg _)
+  have hsmall₁ : |next f x₀ x₁ x₂ - α| ≤ |x₁ - α| / 2 :=
+    calc |next f x₀ x₁ x₂ - α| ≤ M * (|x₀ - α| * |x₁ - α| * |x₂ - α|) := hupper
+      _ ≤ M * (ε * |x₁ - α| * ε) := by gcongr
+      _ = M * ε ^ 2 * |x₁ - α| := by ring
+      _ ≤ 1 / 2 * |x₁ - α| := by gcongr
+      _ = |x₁ - α| / 2 := by ring
+  have hsmall₂ : |next f x₀ x₁ x₂ - α| ≤ |x₂ - α| / 2 :=
+    calc |next f x₀ x₁ x₂ - α| ≤ M * (|x₀ - α| * |x₁ - α| * |x₂ - α|) := hupper
+      _ ≤ M * (ε * ε * |x₂ - α|) := by gcongr
+      _ = M * ε ^ 2 * |x₂ - α| := by ring
+      _ ≤ 1 / 2 * |x₂ - α| := by gcongr
+      _ = |x₂ - α| / 2 := by ring
+  refine ⟨hlower, hupper, ?_, fun h => ?_, fun h => ?_⟩
+  · rw [Metric.mem_ball, Real.dist_eq]
+    linarith [hs.abs_lt₂, abs_nonneg (x₂ - α)]
+  · rw [h] at hsmall₁
+    linarith [abs_pos.2 (sub_ne_zero.2 hs.ne₁)]
+  · rw [h] at hsmall₂
+    linarith [abs_pos.2 (sub_ne_zero.2 hs.ne₂)]
+
+/-- With `0 < m` (which needs `f⁽³⁾(α) ≠ 0` and `η < |f⁽³⁾(α)|/6`), admissibility is preserved by
+a Muller step. -/
+theorem LocalData.isAdmissible_step (hα : f α = 0) (hdata : LocalData f α ε η)
+    (hsm : Small f α ε η) {m M : ℝ} (hm0 : 0 < m)
+    (hm : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η)
+    (hM : |iteratedDeriv 3 f α| / 6 + η ≤ M * (|deriv f α| / 2)) (hMε : M * ε ^ 2 ≤ 1 / 2)
+    (hs : IsAdmissible α ε x₀ x₁ x₂) :
+    IsAdmissible α ε x₁ x₂ (next f x₀ x₁ x₂) := by
+  obtain ⟨hlo, hup, hmem, hne₁, hne₂⟩ := hdata.step_bounds hα hsm hm hM hMε hs
+  have hne : next f x₀ x₁ x₂ ≠ α := by
+    intro h
+    rw [h, sub_self, abs_zero] at hlo
+    have : 0 < m * (|x₀ - α| * |x₁ - α| * |x₂ - α|) := by
+      have h0 := abs_pos.2 (sub_ne_zero.2 hs.ne₀)
+      have h1 := abs_pos.2 (sub_ne_zero.2 hs.ne₁)
+      have h2 := abs_pos.2 (sub_ne_zero.2 hs.ne₂)
+      positivity
+    linarith
+  exact ⟨hs.mem₁, hs.mem₂, hmem, hs.ne₁₂, Ne.symm hne₁, Ne.symm hne₂, hs.ne₁, hs.ne₂, hne⟩
+
+/-! ### The orbit -/
+
+/-- The **Muller iteration** from three starting values: `iterate f x₀ x₁ x₂ k` is the book's
+`x^{(k+2)}`, so that `iterate f x₀ x₁ x₂ 0 = x₂` and each further value is one application of
+`Muller.step` ([quarteroni2000numerical] (6.30)). -/
+noncomputable def iterate (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
+  ((step f)^[k] (x₀, x₁, x₂)).2.2
+
+/-- One more Muller step shifts the state and appends `Muller.next`. -/
+theorem iterate_succ_state (f : ℝ → ℝ) (s : ℝ × ℝ × ℝ) (k : ℕ) :
+    (step f)^[k + 1] s = (((step f)^[k] s).2.1, ((step f)^[k] s).2.2,
+      next f ((step f)^[k] s).1 ((step f)^[k] s).2.1 ((step f)^[k] s).2.2) := by
+  rw [Function.iterate_succ_apply']
+  rfl
+
+/-- **Decay in steps of three.** If `E k ≥ 0` and `E (k+3) ≤ E k / 2` then `E k → 0`: each residue
+class mod `3` decays geometrically. This is how the upper bound
+`|e_{k+1}| ≤ M |e_{k-2} e_{k-1} e_k| ≤ M ε² |e_{k-2}|` alone gives convergence of Muller's method,
+the three-term analogue of `Secant.tendsto_zero_of_le_mul` (for which the sharper Fibonacci decay
+was available, since there both factors could be taken small). -/
+theorem tendsto_zero_of_le_half {E : ℕ → ℝ} (hE : ∀ k, 0 ≤ E k)
+    (hrec : ∀ k, E (k + 3) ≤ E k / 2) : Tendsto E atTop (𝓝 0) := by
+  set C := max (E 0) (max (E 1) (E 2)) with hC
+  have hC0 : 0 ≤ C := (hE 0).trans (le_max_left _ _)
+  have key : ∀ j i, i < 3 → E (3 * j + i) ≤ C / 2 ^ j := by
+    intro j
+    induction j with
+    | zero =>
+      intro i hi
+      simp only [Nat.mul_zero, Nat.zero_add, pow_zero, div_one]
+      rcases i with _ | _ | _ | i
+      · exact le_max_left _ _
+      · exact (le_max_left _ _).trans (le_max_right _ _)
+      · exact (le_max_right _ _).trans (le_max_right _ _)
+      · omega
+    | succ j ih =>
+      intro i hi
+      have hidx : 3 * (j + 1) + i = 3 * j + i + 3 := by ring
+      rw [hidx]
+      calc E (3 * j + i + 3) ≤ E (3 * j + i) / 2 := hrec _
+        _ ≤ C / 2 ^ j / 2 := by gcongr; exact ih i hi
+        _ = C / 2 ^ (j + 1) := by rw [pow_succ]; ring
+  have hbound : ∀ n, E n ≤ C / 2 ^ (n / 3) := by
+    intro n
+    have h := key (n / 3) (n % 3) (Nat.mod_lt _ (by norm_num))
+    rwa [Nat.div_add_mod] at h
+  refine squeeze_zero hE hbound ?_
+  have h1 : Tendsto (fun j : ℕ => C / 2 ^ j) atTop (𝓝 0) := by
+    have h := (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0:ℝ) ≤ 1 / 2)
+      (by norm_num : (1:ℝ) / 2 < 1)).const_mul C
+    rw [mul_zero] at h
+    refine h.congr fun j => ?_
+    rw [one_div, inv_pow, ← div_eq_mul_inv]
+  refine h1.comp (tendsto_atTop_atTop.2 fun b => ⟨3 * b, fun n hn => by omega⟩)
+
+/-- **The tribonacci order from a two-sided triple-product recursion.** If a positive sequence
+satisfies `c e_k e_{k+1} e_{k+2} ≤ e_{k+3} ≤ C e_k e_{k+1} e_{k+2}` with `0 < c`, then
+`e_{k+1} ≤ B e_k ^ T` for all `k`, `T = Real.tribonacci` the root of `T³ = T² + T + 1`.
+
+In the logarithmic variables `u_k = log e_k` and `s_k = u_{k+1} - T u_k`, the upper bound gives
+`s_{k+3} ≤ log C + (1 - T) u_{k+3} + u_{k+2} + u_{k+1}` and the lower bound — used with the
+*negative* coefficient `1 - T` — turns this into
+
+`s_{k+3} ≤ L + (2 - T) s_{k+1} + ((T - 1)/T) s_k`,
+
+where the two identities `(2 - T)(T + 1) = (T - 1)/T` and `1 - (2 - T) - (T - 1)/T = (T - 1)²/T`
+are the cubic read twice. Both coefficients are positive and sum to less than `1` — exactly because
+`T ≠ 1` — so the same monotone induction as in the golden-ratio case
+(`Secant.exists_le_mul_rpow_goldenRatio`) bounds `s` above by
+`max (L / (1 - a - b)) (max (s 0) (max (s 1) (s 2)))`, and no spectral-radius argument for the
+two-dimensional recursion is needed. [isaacson1994analysis] pp. 99-101 give the golden-ratio
+analogue in limit form; this is the bound form the order of Definition 6.1 asks for. -/
+theorem exists_le_mul_rpow_tribonacci {e : ℕ → ℝ} {c C : ℝ} (hc : 0 < c) (hpos : ∀ k, 0 < e k)
+    (hupper : ∀ k, e (k + 3) ≤ C * (e (k + 2) * e (k + 1) * e k))
+    (hlower : ∀ k, c * (e (k + 2) * e (k + 1) * e k) ≤ e (k + 3)) :
+    ∃ B > 0, ∀ k, e (k + 1) ≤ B * e k ^ Real.tribonacci := by
+  have hprod : ∀ k, 0 < e (k + 2) * e (k + 1) * e k := fun k =>
+    mul_pos (mul_pos (hpos _) (hpos _)) (hpos _)
+  have hC : 0 < C := by
+    by_contra hC
+    push Not at hC
+    have := mul_nonpos_of_nonpos_of_nonneg hC (hprod 0).le
+    linarith [hupper 0, hpos 3]
+  set p := Real.tribonacci with hp
+  have hcube : p ^ 3 = p ^ 2 + p + 1 := by rw [hp]; exact Real.tribonacci_pow_three
+  have hp1 : 1 < p := Real.one_lt_tribonacci
+  have hp2 : p < 2 := Real.tribonacci_lt_two
+  have hp0 : 0 < p := lt_trans one_pos hp1
+  have hA0 : 0 < 2 - p := by linarith
+  have hB0 : 0 < (p - 1) / p := by positivity
+  have hAB : (2 - p) + (p - 1) / p < 1 := by
+    have h : (1 : ℝ) - (2 - p) - (p - 1) / p = (p - 1) ^ 2 / p := by field_simp; ring
+    have h2 : 0 < (p - 1) ^ 2 / p := div_pos (by nlinarith) hp0
+    linarith
+  have hcoef : (p - 1) / p - (2 - p) * p = 2 - p := by
+    field_simp
+    nlinarith [hcube]
+  have hbp : (p - 1) / p * p = p - 1 := div_mul_cancel₀ _ hp0.ne'
+  set u : ℕ → ℝ := fun k => Real.log (e k) with hu
+  have hu_up : ∀ k, u (k + 3) ≤ Real.log C + (u (k + 2) + u (k + 1) + u k) := fun k => by
+    have h := Real.log_le_log (hpos _) (hupper k)
+    rw [Real.log_mul hC.ne' (hprod k).ne', Real.log_mul (mul_pos (hpos _) (hpos _)).ne'
+      (hpos _).ne', Real.log_mul (hpos _).ne' (hpos _).ne'] at h
+    simp only [hu]
+    linarith
+  have hu_lo : ∀ k, Real.log c + (u (k + 2) + u (k + 1) + u k) ≤ u (k + 3) := fun k => by
+    have h := Real.log_le_log (mul_pos hc (hprod k)) (hlower k)
+    rw [Real.log_mul hc.ne' (hprod k).ne', Real.log_mul (mul_pos (hpos _) (hpos _)).ne'
+      (hpos _).ne', Real.log_mul (hpos _).ne' (hpos _).ne'] at h
+    simp only [hu]
+    linarith
+  set s : ℕ → ℝ := fun k => u (k + 1) - p * u k with hs
+  set L : ℝ := Real.log C + (1 - p) * Real.log c with hL
+  have hrec : ∀ k, s (k + 3) ≤ L + (2 - p) * s (k + 1) + (p - 1) / p * s k := fun k => by
+    have h1 := hu_up (k + 1)
+    have h2 := mul_le_mul_of_nonneg_left (hu_lo k) (by linarith : (0:ℝ) ≤ p - 1)
+    have hrhs : L + (2 - p) * (u (k + 2) - p * u (k + 1)) + (p - 1) / p * (u (k + 1) - p * u k)
+        = L + (2 - p) * u (k + 2) + ((p - 1) / p - (2 - p) * p) * u (k + 1)
+          - ((p - 1) / p * p) * u k := by ring
+    simp only [hs]
+    rw [hrhs, hcoef, hbp, hL]
+    have h3 : k + 1 + 3 = k + 4 := by omega
+    rw [h3] at h1
+    linarith
+  set S : ℝ := max (L / (1 - (2 - p) - (p - 1) / p)) (max (s 0) (max (s 1) (s 2))) with hS
+  have hSpos : (0 : ℝ) < 1 - (2 - p) - (p - 1) / p := by linarith
+  have hLS : L ≤ (1 - (2 - p) - (p - 1) / p) * S := by
+    have := le_max_left (L / (1 - (2 - p) - (p - 1) / p)) (max (s 0) (max (s 1) (s 2)))
+    rwa [div_le_iff₀ hSpos, mul_comm] at this
+  have hbound : ∀ k, s k ≤ S ∧ s (k + 1) ≤ S ∧ s (k + 2) ≤ S := by
+    intro k
+    induction k with
+    | zero => exact ⟨(le_max_left _ _).trans (le_max_right _ _),
+        (le_max_left _ _).trans ((le_max_right _ _).trans (le_max_right _ _)),
+        (le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _))⟩
+    | succ k ih =>
+      refine ⟨ih.2.1, ih.2.2, ?_⟩
+      calc s (k + 3) ≤ L + (2 - p) * s (k + 1) + (p - 1) / p * s k := hrec k
+        _ ≤ (1 - (2 - p) - (p - 1) / p) * S + (2 - p) * S + (p - 1) / p * S := by
+            gcongr
+            · exact ih.2.1
+            · exact ih.1
+        _ = S := by ring
+  refine ⟨Real.exp S, Real.exp_pos S, fun k => ?_⟩
+  have hk : u (k + 1) ≤ S + p * u k := by
+    have := (hbound k).1
+    simp only [hs] at this
+    linarith
+  calc e (k + 1) = Real.exp (u (k + 1)) := (Real.exp_log (hpos _)).symm
+    _ ≤ Real.exp (S + p * u k) := Real.exp_le_exp.2 hk
+    _ = Real.exp S * e k ^ p := by
+        rw [Real.exp_add, Real.rpow_def_of_pos (hpos k), mul_comm (Real.log _)]
+
+/-! ### Local convergence with order the tribonacci constant -/
+
+/-- **Muller's method has order the tribonacci constant `p ≈ 1.8393`**
+([quarteroni2000numerical] §6.4.3, where it is printed as `p ≃ 1.84` and quoted from [Hil87]
+without proof). If `f α = 0`, `f` is `C³` at `α`, `f'(α) ≠ 0` and `f⁽³⁾(α) ≠ 0`, then there is
+`ε > 0` such that from any three distinct starting values in `(α - ε, α + ε)`, none of them `α`,
+the Muller iterates converge to `α` with order `Real.tribonacci` in the sense of
+`ConvergesWithOrder`.
+
+The hypothesis `f⁽³⁾(α) ≠ 0` is what the *order* needs, exactly as `f''(α) ≠ 0` is needed for the
+secant method's golden-ratio order (`Secant.exists_ball_convergesWithOrder_goldenRatio`): without a
+lower bound on the error the two-sided recursion degenerates. The book states the sharper limit
+form `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6`, which this bound form does not claim; the
+constant is visible in `Muller.LocalData.step_bounds`, whose `m` and `M` both tend to
+`|f⁽³⁾(α)/(6 f'(α))|` as `ε, η → 0`. -/
+theorem exists_ball_convergesWithOrder (hα : f α = 0) (hf : ContDiffAt ℝ 3 f α)
+    (hf' : deriv f α ≠ 0) (hf3 : iteratedDeriv 3 f α ≠ 0) :
+    ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, ∀ x₁ ∈ Metric.ball α ε, ∀ x₂ ∈ Metric.ball α ε,
+      x₀ ≠ x₁ → x₀ ≠ x₂ → x₁ ≠ x₂ → x₀ ≠ α → x₁ ≠ α → x₂ ≠ α →
+      ConvergesWithOrder (iterate f x₀ x₁ x₂) α Real.tribonacci := by
+  have hA : 0 < |deriv f α| := abs_pos.2 hf'
+  have hT : 0 < |iteratedDeriv 3 f α| := abs_pos.2 hf3
+  have hB : 0 ≤ |iteratedDeriv 2 f α| := abs_nonneg _
+  set η : ℝ := min (|deriv f α| / 8) (|iteratedDeriv 3 f α| / 12) with hηdef
+  have hη : 0 < η := lt_min (by positivity) (by positivity)
+  have hηA : 8 * η ≤ |deriv f α| := by
+    have := min_le_left (|deriv f α| / 8) (|iteratedDeriv 3 f α| / 12); rw [hηdef]; linarith
+  have hηT : η ≤ |iteratedDeriv 3 f α| / 12 := min_le_right _ _
+  set M : ℝ := 2 * (|iteratedDeriv 3 f α| / 6 + η) / |deriv f α| with hMdef
+  set m : ℝ := 2 * (|iteratedDeriv 3 f α| / 6 - η) / (3 * |deriv f α|) with hmdef
+  have hM0 : 0 < M := by rw [hMdef]; positivity
+  have hm0 : 0 < m := by
+    rw [hmdef]
+    have : 0 < |iteratedDeriv 3 f α| / 6 - η := by linarith
+    positivity
+  have hMeq' : M * (|deriv f α| / 2) = |iteratedDeriv 3 f α| / 6 + η := by
+    rw [hMdef]; field_simp
+  have hmeq' : m * (3 * |deriv f α| / 2) = |iteratedDeriv 3 f α| / 6 - η := by
+    rw [hmdef]; field_simp
+  have hMeq : |iteratedDeriv 3 f α| / 6 + η ≤ M * (|deriv f α| / 2) := hMeq'.ge
+  have hmeq : m * (3 * |deriv f α| / 2) ≤ |iteratedDeriv 3 f α| / 6 - η := hmeq'.le
+  obtain ⟨δ, hδ, hdata⟩ := exists_localData hf hη
+  have hBη : 0 < |iteratedDeriv 2 f α| / 2 + η := by positivity
+  have hAη : 0 < |deriv f α| + η := by positivity
+  set c₁ : ℝ := |deriv f α| / (16 * (|iteratedDeriv 2 f α| / 2 + η)) with hc₁
+  set c₂ : ℝ := |deriv f α| ^ 2 / (32 * ((|deriv f α| + η) * (|iteratedDeriv 2 f α| / 2 + η)))
+    with hc₂
+  set c₃ : ℝ := 1 / (2 * M) with hc₃
+  have hc₁0 : 0 < c₁ := by rw [hc₁]; positivity
+  have hc₂0 : 0 < c₂ := by rw [hc₂]; positivity
+  have hc₃0 : 0 < c₃ := by rw [hc₃]; positivity
+  set ε : ℝ := min δ (min 1 (min c₁ (min c₂ c₃))) with hεdef
+  have hε : 0 < ε := lt_min hδ (lt_min one_pos (lt_min hc₁0 (lt_min hc₂0 hc₃0)))
+  have hεδ : ε ≤ δ := min_le_left _ _
+  have hε1 : ε ≤ 1 := (min_le_right _ _).trans (min_le_left _ _)
+  have hεc₁ : ε ≤ c₁ := (min_le_right _ _).trans ((min_le_right _ _).trans (min_le_left _ _))
+  have hεc₂ : ε ≤ c₂ :=
+    (min_le_right _ _).trans ((min_le_right _ _).trans ((min_le_right _ _).trans (min_le_left _ _)))
+  have hεc₃ : ε ≤ c₃ :=
+    (min_le_right _ _).trans ((min_le_right _ _).trans ((min_le_right _ _).trans
+      (min_le_right _ _)))
+  have hsm : Small f α ε η := by
+    refine ⟨hε, hη, hf', hηA, ?_, ?_⟩
+    · have h := (le_div_iff₀ (by positivity : (0:ℝ) < 16 * (|iteratedDeriv 2 f α| / 2 + η))).1
+        (hεc₁.trans_eq hc₁)
+      linarith
+    · have h := (le_div_iff₀ (by positivity :
+        (0:ℝ) < 32 * ((|deriv f α| + η) * (|iteratedDeriv 2 f α| / 2 + η)))).1
+        (hεc₂.trans_eq hc₂)
+      linarith
+  have hMε : M * ε ^ 2 ≤ 1 / 2 := by
+    have h := (le_div_iff₀ (by positivity : (0:ℝ) < 2 * M)).1 (hεc₃.trans_eq hc₃)
+    have hMe : 0 ≤ M * ε := mul_nonneg hM0.le hε.le
+    calc M * ε ^ 2 = M * ε * ε := by ring
+      _ ≤ M * ε * 1 := by gcongr
+      _ = M * ε := by ring
+      _ ≤ 1 / 2 := by linarith
+  have hdata' : LocalData f α ε η := hdata.mono hεδ
+  refine ⟨ε, hε, fun x₀ hx₀ x₁ hx₁ x₂ hx₂ h01 h02 h12 h0 h1 h2 => ?_⟩
+  have hs : IsAdmissible α ε x₀ x₁ x₂ := ⟨hx₀, hx₁, hx₂, h01, h02, h12, h0, h1, h2⟩
+  set s : ℝ × ℝ × ℝ := (x₀, x₁, x₂) with hsdef
+  set X : ℕ → ℝ := fun k => ((step f)^[k] s).1 with hXdef
+  have hX1 : ∀ k, X (k + 1) = ((step f)^[k] s).2.1 := fun k => by
+    simp only [hXdef, iterate_succ_state]
+  have hX2 : ∀ k, X (k + 2) = ((step f)^[k] s).2.2 := fun k => by
+    simp only [hXdef, show k + 2 = k + 1 + 1 from rfl, iterate_succ_state]
+  have hX3 : ∀ k, X (k + 3) = next f (X k) (X (k + 1)) (X (k + 2)) := fun k => by
+    rw [hX1 k, hX2 k]
+    simp only [hXdef, show k + 3 = k + 1 + 1 + 1 from rfl, iterate_succ_state]
+  have hadm : ∀ k, IsAdmissible α ε (X k) (X (k + 1)) (X (k + 2)) := by
+    intro k
+    induction k with
+    | zero => exact hs
+    | succ k ih =>
+      have h := hdata'.isAdmissible_step hα hsm hm0 hmeq hMeq hMε ih
+      rwa [← hX3 k] at h
+  set e : ℕ → ℝ := fun k => |X k - α| with hedef
+  have hepos : ∀ k, 0 < e k := fun k => abs_pos.2 (sub_ne_zero.2 (hadm k).ne₀)
+  have helt : ∀ k, e k < ε := fun k => (hadm k).abs_lt₀
+  have hbounds : ∀ k, m * (e k * e (k + 1) * e (k + 2)) ≤ e (k + 3) ∧
+      e (k + 3) ≤ M * (e k * e (k + 1) * e (k + 2)) := by
+    intro k
+    obtain ⟨hlo, hup, -, -, -⟩ := hdata'.step_bounds hα hsm hmeq hMeq hMε (hadm k)
+    rw [hedef]
+    simp only [hX3 k]
+    exact ⟨hlo, hup⟩
+  have hhalf : ∀ k, e (k + 3) ≤ e k / 2 := by
+    intro k
+    have hup := (hbounds k).2
+    have hb : e (k + 1) * e (k + 2) ≤ ε * ε :=
+      mul_le_mul (helt (k + 1)).le (helt (k + 2)).le (hepos (k + 2)).le hε.le
+    have h1 : M * (e k * e (k + 1) * e (k + 2)) ≤ M * ε ^ 2 * e k :=
+      calc M * (e k * e (k + 1) * e (k + 2)) = M * e k * (e (k + 1) * e (k + 2)) := by ring
+        _ ≤ M * e k * (ε * ε) :=
+            mul_le_mul_of_nonneg_left hb (mul_nonneg hM0.le (hepos k).le)
+        _ = M * ε ^ 2 * e k := by ring
+    have h2 : M * ε ^ 2 * e k ≤ 1 / 2 * e k :=
+      mul_le_mul_of_nonneg_right hMε (hepos k).le
+    linarith
+  have htend0 : Tendsto e atTop (𝓝 0) :=
+    tendsto_zero_of_le_half (fun k => abs_nonneg _) hhalf
+  have htendX : Tendsto X atTop (𝓝 α) := by
+    rw [tendsto_iff_dist_tendsto_zero]
+    exact htend0.congr fun k => by rw [Real.dist_eq]
+  have hiter : ∀ k, iterate f x₀ x₁ x₂ k = X (k + 2) := fun k => by rw [hX2 k, iterate]
+  refine ⟨?_, ?_⟩
+  · refine (htendX.comp (tendsto_add_atTop_nat 2)).congr fun k => ?_
+    rw [hiter k]
+    rfl
+  obtain ⟨Bc, hBc, hbound⟩ := exists_le_mul_rpow_tribonacci (c := m) (C := M) hm0 hepos
+    (fun k => by linarith [(hbounds k).2]) (fun k => by linarith [(hbounds k).1])
+  refine ⟨Bc, hBc, Eventually.of_forall fun k => ?_⟩
+  have h := hbound (k + 2)
+  rw [Real.norm_eq_abs, Real.norm_eq_abs, hiter k, hiter (k + 1)]
+  exact h
 
 end Muller
