@@ -77,41 +77,6 @@ open scoped RealInnerProductSpace Interval
 
 noncomputable section
 
-namespace Variational.IsSemidiscreteGalerkin
-
-variable {K : Type*} [NormedAddCommGroup K] [InnerProductSpace ℝ K] {a : ℝ → SesqForm ℝ K}
-  {F : ℝ → K →L[ℝ] ℝ} {u₀ : K} {T : ℝ} {u : ℝ → K}
-
-/-- **The energy estimate in its raw integrated form**: if the energy identity
-`d/dt ‖u‖² = 2 (F(u) - a(u, u))` is dominated by `g - w` pointwise on `[0, T)`, with `w` and `g`
-continuous, then `‖u t‖² + ∫₀ᵗ w ≤ ‖u₀‖² + ∫₀ᵗ g`. It is the variation-of-constants inequality
-with zero coefficient applied to `Φ = ‖u‖² + ∫₀ᵗ w`, and it is what
-`IsSemidiscreteGalerkin.norm_sq_add_integral_le` proves after spending Young's inequality on the
-source; keeping the pointwise bound as a hypothesis is what estimates whose source is absorbed by
-a *boundary* term need ([quarteroni2000numerical] (13.69), where the inflow datum is absorbed by
-the jump at `x₀`).
-
-This lemma is general and belongs beside `IsSemidiscreteGalerkin.norm_sq_add_integral_le` in
-`Numlib/Variational/Evolution.lean`; it is written here because this file is its first
-consumer. -/
-theorem norm_sq_add_integral_le_integral (h : IsSemidiscreteGalerkin a F u₀ T u) {w g : ℝ → ℝ}
-    (hw : ContinuousOn w (Icc 0 T)) (hg : ContinuousOn g (Icc 0 T))
-    (bound : ∀ s ∈ Ico 0 T, 2 * (F s (u s) - a s (u s) (u s)) + w s ≤ g s)
-    {t : ℝ} (ht : t ∈ Icc 0 T) :
-    ‖u t‖ ^ 2 + ∫ s in (0 : ℝ)..t, w s ≤ ‖u₀‖ ^ 2 + ∫ s in (0 : ℝ)..t, g s := by
-  set Φ : ℝ → ℝ := fun s => ‖u s‖ ^ 2 + ∫ q in (0 : ℝ)..s, w q with hΦ
-  have hΦc : ContinuousOn Φ (Icc 0 T) :=
-    h.continuousOn_norm_sq.add (Gronwall.continuousOn_integral_Icc hw)
-  have hΦ' : ∀ s ∈ Ico 0 T, HasDerivWithinAt Φ
-      (2 * (F s (u s) - a s (u s) (u s)) + w s) (Ici s) s := fun s hs =>
-    (h.hasDerivWithinAt_norm_sq_Ici hs).add (Gronwall.hasDerivWithinAt_integral_Ici hw hs)
-  have key := Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le (p := fun _ => (0 : ℝ)) (q := g)
-    hΦc hΦ' continuousOn_const hg (fun s hs => by simpa using bound s hs) ht
-  have h1 : ‖u 0‖ ^ 2 = ‖u₀‖ ^ 2 := by rw [h.1]
-  simpa [hΦ, h1] using key
-
-end Variational.IsSemidiscreteGalerkin
-
 namespace QuarteroniSaccoSaleri.Chapter13
 
 section Transport

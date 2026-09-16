@@ -19,6 +19,9 @@ id = "IsSemidiscreteGalerkin.hasDerivWithinAt_norm_sq_Ici"
 id = "IsSemidiscreteGalerkin.norm_sq_le_exp"
 
 [[node]]
+id = "IsSemidiscreteGalerkin.norm_sq_add_integral_le_integral"
+
+[[node]]
 id = "IsSemidiscreteGalerkin.norm_sq_add_integral_le"
 
 [[node]]

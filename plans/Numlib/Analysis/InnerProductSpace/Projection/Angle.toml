@@ -99,3 +99,6 @@ id = "Submodule.tan_angle"
 
 [[node]]
 id = "LinearIndependent.exists_forall_sum_norm_le"
+
+[[node]]
+id = "Submodule.tanAngle_smul"

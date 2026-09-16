@@ -1,5 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.FloatingPoint.LU
+import Numlib.FloatingPoint.Stationary
 import Numlib.Stationary.Basic
 
 /-!
@@ -21,6 +23,13 @@ a direct solve.
   `‖R‖` of the book's Property 3.1 with the factors in the other order. The finite-precision
   statements of §3.12.2 (`ρ ≃ 2 n cond(A, x) u` in fixed precision, `ρ ≃ u` in mixed precision;
   [higham2002accuracy] Theorems 12.1–12.2) are asymptotic and are not formalized.
+* **One computed step** (§3.12.2 again), the rigorous content those asymptotics summarize: the
+  error identity `(A + ΔA)(x - ŷ) = ΔA (x - x̂) - ξ - (A + ΔA) η` for a residual, a solve and an
+  update each carrying a backward error (`Refinement.step_error`), its `∞`-norm form
+  (`Refinement.norm_step_error_le`), and its instantiation in the relational rounding model of
+  `Numlib/FloatingPoint`, where the three errors are bounded by `γ_{3n} |L| |U|`,
+  `γ_{n+1}(|A| |x̂| + |b|)` and `u |x̂ + ẑ|` (`Refinement.step_error_fp`). These are stated on
+  matrices over `ℝ`, since the rounding models are.
 * **Scaling** (§3.12.1): `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x` for nonsingular `D₁`,
   `D₂` (`Matrix.scaled_mulVec_eq_iff`), diagonal in the book and arbitrary here.
 * **Condition estimation** (§3.11): the basic inequality `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖`
@@ -117,6 +126,120 @@ theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] {C A 
   · intro h b x₀
     rw [step_eq_stationary_step]
     exact h (C b) x₀
+
+end Refinement
+
+/-! ### The error of one computed refinement step
+
+`Refinement.step` is the step in exact arithmetic; what an implementation computes is something
+else, and the three results here are the error analysis of one computed step. They are stated on
+matrices over `ℝ`, because the rounding models of `Numlib/FloatingPoint` are. -/
+
+namespace Refinement
+
+open Matrix
+
+variable {n : ℕ}
+
+/-- **The error of one computed refinement step, exactly** ([quarteroni2000numerical] §3.12.2,
+[higham2002accuracy] §12.1). Let `x` solve `A x = b`, let `xhat` be the current iterate, let the
+computed residual be `rhat = b - A xhat + ξ`, let the computed correction `zhat` solve the
+perturbed system `(A + ΔA) zhat = rhat` — which is what a solve with computed `LU` factors
+delivers, [quarteroni2000numerical] (3.64) — and let the computed update be
+`yhat = xhat + zhat + η`. Then
+
+`(A + ΔA) (x - yhat) = ΔA (x - xhat) - ξ - (A + ΔA) η`.
+
+Every term on the right is small: `ΔA` is the backward error of the solve, `ξ` that of the residual
+and `η` that of the update, so the new error is the old error multiplied by `(A + ΔA)⁻¹ ΔA` plus a
+floor of the size of the rounding errors. This is the algebraic core of the convergence claim of
+[quarteroni2000numerical] §3.12.2 and of [higham2002accuracy] Theorems 12.1–12.2. It is an
+identity: no hypothesis on the sizes of `ΔA`, `ξ`, `η` is used. -/
+theorem step_error {A ΔA : Matrix (Fin n) (Fin n) ℝ}
+    {b x xhat zhat yhat rhat ξ η : Fin n → ℝ} (hx : A *ᵥ x = b)
+    (hr : rhat = b - A *ᵥ xhat + ξ) (hz : (A + ΔA) *ᵥ zhat = rhat)
+    (hy : yhat = xhat + zhat + η) :
+    (A + ΔA) *ᵥ (x - yhat) = ΔA *ᵥ (x - xhat) - ξ - (A + ΔA) *ᵥ η := by
+  have hr' : rhat = (A + ΔA) *ᵥ (x - xhat) - ΔA *ᵥ (x - xhat) + ξ := by
+    rw [hr, ← hx, add_mulVec, mulVec_sub]
+    abel
+  rw [hr'] at hz
+  rw [hy, show x - (xhat + zhat + η) = x - xhat - zhat - η by abel, mulVec_sub, mulVec_sub, hz]
+  abel
+
+open scoped Matrix.Norms.Operator in
+/-- **The error recursion of a computed refinement step, in the `∞`-norm.** With the data of
+`step_error` and `A + ΔA` nonsingular,
+
+`‖x - yhat‖_∞ ≤ ‖(A + ΔA)⁻¹ ΔA‖_∞ ‖x - xhat‖_∞ + ‖(A + ΔA)⁻¹‖_∞ ‖ξ‖_∞ + ‖η‖_∞`:
+
+the error is reduced by the factor `‖(A + ΔA)⁻¹ ΔA‖_∞` down to a floor set by the residual and
+update roundings. With `|ΔA| ≤ γ_{3n} |L| |U|` from the LU backward error the factor is at most
+`γ_{3n} ‖ |(A + ΔA)⁻¹| |L| |U| ‖_∞`, which is the quantity [quarteroni2000numerical] §3.12.2 asks
+to be "sufficiently small", with `(A + ΔA)⁻¹` in place of `A⁻¹`. -/
+theorem norm_step_error_le {A ΔA : Matrix (Fin n) (Fin n) ℝ}
+    {b x xhat zhat yhat rhat ξ η : Fin n → ℝ} (hinv : IsUnit (A + ΔA).det) (hx : A *ᵥ x = b)
+    (hr : rhat = b - A *ᵥ xhat + ξ) (hz : (A + ΔA) *ᵥ zhat = rhat) (hy : yhat = xhat + zhat + η) :
+    ‖x - yhat‖ ≤ ‖(A + ΔA)⁻¹ * ΔA‖ * ‖x - xhat‖ + ‖(A + ΔA)⁻¹‖ * ‖ξ‖ + ‖η‖ := by
+  have hid := step_error hx hr hz hy
+  have hsol : x - yhat = ((A + ΔA)⁻¹ * ΔA) *ᵥ (x - xhat) - (A + ΔA)⁻¹ *ᵥ ξ - η := by
+    have h1 : (A + ΔA) *ᵥ (x - yhat + η) = ΔA *ᵥ (x - xhat) - ξ := by
+      rw [mulVec_add, hid]; abel
+    have h2 := congrArg (fun v => (A + ΔA)⁻¹ *ᵥ v) h1
+    simp only [mulVec_mulVec, nonsing_inv_mul _ hinv, one_mulVec, mulVec_sub] at h2
+    rw [show x - yhat = x - yhat + η - η by abel, h2, mulVec_sub]
+  calc ‖x - yhat‖ = ‖((A + ΔA)⁻¹ * ΔA) *ᵥ (x - xhat) - (A + ΔA)⁻¹ *ᵥ ξ - η‖ := by rw [hsol]
+    _ ≤ ‖((A + ΔA)⁻¹ * ΔA) *ᵥ (x - xhat) - (A + ΔA)⁻¹ *ᵥ ξ‖ + ‖η‖ := norm_sub_le _ _
+    _ ≤ ‖((A + ΔA)⁻¹ * ΔA) *ᵥ (x - xhat)‖ + ‖(A + ΔA)⁻¹ *ᵥ ξ‖ + ‖η‖ := by
+        gcongr
+        exact norm_sub_le _ _
+    _ ≤ ‖(A + ΔA)⁻¹ * ΔA‖ * ‖x - xhat‖ + ‖(A + ΔA)⁻¹‖ * ‖ξ‖ + ‖η‖ := by
+        gcongr <;> exact linfty_opNorm_mulVec _ _
+
+open FloatingPoint in
+/-- **One computed refinement step in the relational rounding model**
+([quarteroni2000numerical] §3.12.2, steps 1–3; [higham2002accuracy] §12.1), with the three backward
+errors named. The residual is computed as an affine step
+(`FloatingPoint.RoundsAffineStep m (-A) b xhat rhat`), the correction by a solve with the computed
+factors `L`, `U` of `A` (`FloatingPoint.RoundsLU` and the two substitutions), and the update
+entrywise. Then there are `ΔA`, `ξ`, `η` with
+
+`|ΔA| ≤ γ_{3n} |L| |U|`, `|ξ| ≤ γ_{n+1} (|A| |xhat| + |b|)`, `|η_i| ≤ u |xhat_i + zhat_i|`
+
+satisfying the error identity of `step_error`. This is the rigorous content behind the asymptotic
+convergence factors `ρ ≃ 2n cond(A, x) u` (fixed precision) and `ρ ≃ u` (mixed precision) that
+[quarteroni2000numerical] §3.12.2 quotes from [higham2002accuracy] Theorems 12.1–12.2; those two
+are asymptotic statements and are not formalized. -/
+theorem step_error_fp [NeZero n] {m : RoundingModel ℝ} (hu : m.u < 1)
+    (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) {A L U : Matrix (Fin n) (Fin n) ℝ}
+    {b x xhat rhat y zhat yhat : Fin n → ℝ} (hx : A *ᵥ x = b)
+    (hres : RoundsAffineStep m (-A) b xhat rhat) (hLU : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)
+    (hfwd : RoundsForwardSubst m L rhat y) (hbck : RoundsBackSubst m U y zhat)
+    (hupd : ∀ i, m.Rounds (xhat i + zhat i) (yhat i)) :
+    ∃ ΔA : Matrix (Fin n) (Fin n) ℝ, ∃ ξ η : Fin n → ℝ,
+      ΔA.abs ≤ₑ gamma m.u (3 * n) • (L.abs * U.abs) ∧
+        |ξ| ≤ gamma m.u (n + 1) • (A.abs *ᵥ |xhat| + |b|) ∧
+        (∀ i, |η i| ≤ m.u * |xhat i + zhat i|) ∧
+        (A + ΔA) *ᵥ (x - yhat) = ΔA *ᵥ (x - xhat) - ξ - (A + ΔA) *ᵥ η := by
+  have hn : 1 ≤ n := Nat.one_le_iff_ne_zero.2 (NeZero.ne n)
+  have hcard' : ((Fintype.card (Fin n) + 1 : ℕ) : ℝ) * m.u < 1 := by
+    have h1 : ((Fintype.card (Fin n) + 1 : ℕ) : ℝ) ≤ ((3 * n : ℕ) : ℝ) := by
+      simp only [Fintype.card_fin]
+      push_cast
+      have : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      linarith
+    nlinarith [m.u_nonneg]
+  have hcard3 : ((3 * Fintype.card (Fin n) : ℕ) : ℝ) * m.u < 1 := by
+    simpa [Fintype.card_fin] using hcard
+  obtain ⟨ξ, hξeq, hξle⟩ := exists_roundsAffineStep_eq_add hu hcard' hres
+  obtain ⟨ΔA, hΔA, hsolve⟩ := exists_roundsLU_solve_eq hu hcard3 hLU hd hfwd hbck
+  refine ⟨ΔA, ξ, yhat - (xhat + zhat), by simpa [Fintype.card_fin] using hΔA, ?_,
+    fun i => by simpa using m.abs_sub_le (hupd i), ?_⟩
+  · have habs : (-A).abs = A.abs := by ext i j; simp
+    simpa [Fintype.card_fin, habs] using hξle
+  · refine step_error hx ?_ hsolve (by ext i; simp)
+    rw [hξeq, neg_mulVec]
+    abel
 
 end Refinement
 

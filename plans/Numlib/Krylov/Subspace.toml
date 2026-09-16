@@ -83,3 +83,9 @@ id = "pow_comp_apply"
 
 [[node]]
 id = "map_subspace_comp"
+
+[[node]]
+id = "neg_pow_apply"
+
+[[node]]
+id = "subspace_neg"

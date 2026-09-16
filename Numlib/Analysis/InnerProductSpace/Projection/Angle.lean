@@ -191,6 +191,13 @@ theorem sinAngle_of_mem {u : E} (h : u ∈ K) : K.sinAngle u = 0 := by
 theorem tanAngle_of_mem {u : E} (h : u ∈ K) : K.tanAngle u = 0 := by
   rw [tanAngle, starProjection_eq_self_iff.2 h, sub_self, norm_zero, zero_div]
 
+/-- **Rescaling a vector does not change its angle with `K`**: both the numerator and the
+denominator of `tanAngle` are homogeneous of degree one, so the factor `‖c‖` cancels. It is what
+lets an angle bound be stated at a normalized eigenvector and used at an arbitrary one. -/
+theorem tanAngle_smul {c : 𝕜} (hc : c ≠ 0) (u : E) : K.tanAngle (c • u) = K.tanAngle u := by
+  rw [tanAngle, tanAngle, map_smul, ← smul_sub, norm_smul, norm_smul,
+    mul_div_mul_left _ _ (norm_ne_zero_iff.2 hc)]
+
 /-- A nonzero vector of `K` makes a zero angle with `K`. -/
 theorem angle_of_mem {u : E} (hu : u ≠ 0) (h : u ∈ K) : K.angle u = 0 := by
   rw [angle, K.cosAngle_of_mem hu h, Real.arccos_one]

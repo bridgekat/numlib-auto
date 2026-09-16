@@ -30,3 +30,6 @@ id = "compressionBy.aeval_apply_of_forall_pow_mem"
 
 [[node]]
 id = "compressionBy.apply_aeval_of_forall_pow_lt_mem"
+
+[[node]]
+id = "compression.neg"

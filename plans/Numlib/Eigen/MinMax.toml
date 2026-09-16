@@ -86,3 +86,21 @@ id = "Matrix.toEuclideanLinearIsometry_apply"
 
 [[node]]
 id = "Matrix.IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace"
+
+[[node]]
+id = "LinearMap.rayleighQuotient_neg"
+
+[[node]]
+id = "LinearMap.IsSymmetric.neg"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_congr"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_compression_congr"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_neg"
+
+[[node]]
+id = "LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg"

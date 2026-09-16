@@ -30,3 +30,12 @@ id = "condEstimate_le_condNumber"
 
 [[node]]
 id = "Refinement.norm_pow_le_pow_norm"
+
+[[node]]
+id = "Refinement.step_error"
+
+[[node]]
+id = "Refinement.norm_step_error_le"
+
+[[node]]
+id = "Refinement.step_error_fp"

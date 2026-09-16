@@ -101,6 +101,31 @@ theorem subspace_mono : Monotone (subspace A v) := by
   simp only [subspace_eq_span_image_Iio]
   exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio h))
 
+/-- `(-A)^i v = (-1)^i (A^i v)`: the generators of the Krylov sequence of `-A` differ from those of
+`A` by a sign only. -/
+theorem neg_pow_apply (i : ℕ) : ((-A) ^ i) v = (-1 : R) ^ i • (A ^ i) v := by
+  induction i with
+  | zero => simp
+  | succ i ih =>
+    have hsplit : ((-A) ^ (i + 1)) v = (-A) (((-A) ^ i) v) := by
+      rw [pow_succ', Module.End.mul_apply]
+    rw [hsplit, ih, LinearMap.neg_apply, map_smul, ← Module.End.mul_apply, ← pow_succ',
+      pow_succ']
+    module
+
+/-- **The Krylov subspaces of `-A` are those of `A`**: the generators differ by the signs `(-1)^i`,
+which do not change a span. A method whose iterates live in `𝒦_m(A, v)` therefore runs unchanged on
+`-A`, which is the reduction that turns a bound on a largest eigenvalue into one on a smallest. -/
+theorem subspace_neg (m : ℕ) : subspace (-A) v m = subspace A v m := by
+  refine le_antisymm ?_ ?_ <;> rw [subspace, subspace, Submodule.span_le] <;>
+    rintro _ ⟨i, rfl⟩ <;> simp only [SetLike.mem_coe]
+  · rw [neg_pow_apply]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+  · have h := neg_pow_apply (-A) v (i : ℕ)
+    rw [neg_neg] at h
+    rw [h]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
 /-- Every Krylov subspace sits inside the full Krylov space. -/
 theorem subspace_le_fullSubspace (m : ℕ) : subspace A v m ≤ fullSubspace A v :=
   Submodule.span_mono <| by rintro _ ⟨i, rfl⟩; exact ⟨(i : ℕ), rfl⟩

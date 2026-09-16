@@ -148,6 +148,12 @@ operator is Hermitian. -/
 theorem isSymmetric (hA : A.IsSymmetric) : (compression A K).IsSymmetric := fun x y => by
   rw [inner_apply, inner_apply', hA]
 
+/-- **Compression commutes with negation**: the compression of `-A` is the negative of the
+compression of `A`, both projection and inclusion being linear. It is what turns a statement about
+the largest Ritz value of `A` into the matching statement about the smallest one. -/
+theorem neg : compression (-A) K = -compression A K :=
+  LinearMap.ext fun x => by simp [compression]
+
 /-- Matrix of the compression in an orthonormal basis of `K` is `⟪v i, A (v j)⟫`. -/
 theorem toMatrix_orthonormalBasis {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : OrthonormalBasis ι 𝕜 K) :

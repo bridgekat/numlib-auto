@@ -259,176 +259,6 @@ theorem property_5_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 �
   rw [htan, mul_div_assoc]
   linarith [hkps.2]
 
-/-! ### Auxiliary facts about `-A`
-
-Property 5.12 for the smallest Ritz value is Property 5.12 for `-A`, whose Krylov subspaces are
-those of `A` and whose eigenvalues and Ritz values are the negatives of those of `A`, in reversed
-order. The lemmas of this section are the general facts that reduction needs; they are stated here
-for want of a home in the backbone, and each says in its doc comment where it belongs.
--/
-
-section Helpers
-
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-
-/-- The negative of a symmetric operator is symmetric.
-
-Belongs in `Numlib/Eigen/MinMax.lean`; written here because this round's task did not own that
-module. -/
-theorem isSymmetric_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) : (-T).IsSymmetric := fun x y => by
-  simp only [LinearMap.neg_apply, inner_neg_left, inner_neg_right, hT x y]
-
-/-- The Rayleigh quotient of `-T` is the negative of that of `T`.
-
-Belongs in `Numlib/Eigen/MinMax.lean`. -/
-theorem rayleighQuotient_neg (T : E →ₗ[𝕜] E) (x : E) :
-    (-T).rayleighQuotient x = -T.rayleighQuotient x := by
-  simp [LinearMap.rayleighQuotient, inner_neg_left, neg_div]
-
-variable [FiniteDimensional 𝕜 E] {n : ℕ}
-
-/-- The sorted eigenvalues depend on the operator only, not on the proof that it is symmetric.
-
-Belongs in `Numlib/Eigen/MinMax.lean`. -/
-theorem eigenvalues_congr {T T' : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hT' : T'.IsSymmetric)
-    (h : T = T') (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
-    hT.eigenvalues hn i = hT'.eigenvalues hn i := by
-  subst h; rfl
-
-/-- **The eigenvalues of `-T` are the negatives of those of `T`, in reversed order**: with both
-lists sorted decreasingly, the `i`-th eigenvalue of `-T` is minus the `(n - 1 - i)`-th of `T`. The
-proof is Courant–Fischer: negating the Rayleigh quotient exchanges the max–min characterization of
-`hT.eigenvalues hn i` (`isGreatest_eigenvalues`, over subspaces of dimension `i + 1`) with the
-min–max characterization of `hT.eigenvalues hn i.rev` (`isLeast_eigenvalues`, over subspaces of
-dimension `n - i.rev = i + 1`), so the two sets of bounds coincide.
-
-Belongs in `Numlib/Eigen/MinMax.lean`. -/
-theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
-    (i : Fin n) : (isSymmetric_neg hT).eigenvalues hn i = -hT.eigenvalues hn i.rev := by
-  have hrev : n - ((i.rev : Fin n) : ℕ) = (i : ℕ) + 1 := by
-    have := i.isLt
-    simp only [Fin.val_rev]
-    omega
-  refine ((isSymmetric_neg hT).isGreatest_eigenvalues hn i).unique ⟨?_, ?_⟩
-  · obtain ⟨⟨S, hS, hbd⟩, -⟩ := hT.isLeast_eigenvalues hn i.rev
-    refine ⟨S, by rw [hS, hrev], fun x hx hx0 => ?_⟩
-    rw [rayleighQuotient_neg]
-    linarith [hbd x hx hx0]
-  · rintro c ⟨S, hS, hc⟩
-    have hmem : -c ∈ {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = n - ((i.rev : Fin n) : ℕ) ∧
-        ∀ x ∈ S, x ≠ 0 → T.rayleighQuotient x ≤ c} := by
-      refine ⟨S, by rw [hS, hrev], fun x hx hx0 => ?_⟩
-      have := hc x hx hx0
-      rw [rayleighQuotient_neg] at this
-      linarith
-    have := (hT.isLeast_eigenvalues hn i.rev).2 hmem
-    linarith
-
-
-omit [FiniteDimensional 𝕜 E] in
-/-- The compression of `-T` to a subspace is the negative of the compression of `T`.
-
-Belongs in `Numlib/Analysis/InnerProductSpace/Projection/Compression.lean`. -/
-theorem compression_neg (T : E →ₗ[𝕜] E) (K : Submodule 𝕜 E) [K.HasOrthogonalProjection] :
-    compression (-T) K = -compression T K :=
-  LinearMap.ext fun x => by simp [compression]
-
-/-- The eigenvalues of the compressions to two equal subspaces agree. The subspaces are variables,
-so that `subst` can do the transport that a `rw` inside a dependent type cannot.
-
-Belongs in `Numlib/Eigen/MinMax.lean`. -/
-theorem eigenvalues_compression_congr {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {K L : Submodule 𝕜 E}
-    [K.HasOrthogonalProjection] [L.HasOrthogonalProjection] (hKL : K = L) {m : ℕ}
-    (hK : Module.finrank 𝕜 K = m) (hL : Module.finrank 𝕜 L = m) (i : Fin m) :
-    (compression.isSymmetric T K hT).eigenvalues hK i
-      = (compression.isSymmetric T L hT).eigenvalues hL i := by
-  subst hKL; rfl
-
-omit [FiniteDimensional 𝕜 E] in
-/-- `(-T)^i v = (-1)^i (T^i v)`.
-
-Belongs in `Numlib/Krylov/Subspace.lean`. -/
-theorem apply_pow_neg (T : E →ₗ[𝕜] E) (v : E) (i : ℕ) :
-    ((-T) ^ i) v = (-1 : 𝕜) ^ i • (T ^ i) v := by
-  induction i with
-  | zero => simp
-  | succ i ih =>
-    have hsplit : ((-T) ^ (i + 1)) v = (-T) (((-T) ^ i) v) := by
-      rw [pow_succ', Module.End.mul_apply]
-    rw [hsplit, ih, LinearMap.neg_apply, map_smul, ← Module.End.mul_apply, ← pow_succ',
-      pow_succ']
-    module
-
-omit [FiniteDimensional 𝕜 E] in
-/-- **The Krylov subspaces of `-T` are those of `T`**: the generators differ by the signs
-`(-1)^i`, which do not change a span.
-
-Belongs in `Numlib/Krylov/Subspace.lean`. -/
-theorem krylovSubspace_neg (T : E →ₗ[𝕜] E) (v : E) (m : ℕ) :
-    Krylov.subspace (-T) v m = Krylov.subspace T v m := by
-  refine le_antisymm ?_ ?_ <;> rw [Krylov.subspace, Krylov.subspace, Submodule.span_le] <;>
-    rintro _ ⟨i, rfl⟩ <;> simp only [SetLike.mem_coe]
-  · change ((-T) ^ (i : ℕ)) v ∈ _
-    rw [apply_pow_neg]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
-  · change (T ^ (i : ℕ)) v ∈ _
-    have h := apply_pow_neg (-T) v (i : ℕ)
-    rw [neg_neg] at h
-    rw [h]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
-
-
-omit [FiniteDimensional 𝕜 E] in
-/-- The angle between a subspace and a vector does not change when the vector is rescaled.
-
-Belongs in `Numlib/Analysis/InnerProductSpace/Projection/Angle.lean`. -/
-theorem tanAngle_smul (K : Submodule 𝕜 E) [K.HasOrthogonalProjection] {c : 𝕜} (hc : c ≠ 0)
-    (u : E) : K.tanAngle (c • u) = K.tanAngle u := by
-  rw [Submodule.tanAngle, Submodule.tanAngle, map_smul, ← smul_sub, norm_smul, norm_smul,
-    mul_div_mul_left _ _ (norm_ne_zero_iff.2 hc)]
-
-/-- **A simple extreme eigenvalue of `-T` has the same eigenvector line as its partner for `T`**:
-if the `i.rev`-th eigenvalue of `T` is simple, the `i`-th eigenvector of `-T` is a nonzero multiple
-of the `i.rev`-th eigenvector of `T`. Expanding the eigenvector of `-T` in the eigenbasis of `T`,
-the coefficients at the other indices carry the factor `λ_j - λ_{i.rev} ≠ 0` and vanish.
-
-Belongs in `Numlib/Eigen/MinMax.lean`. -/
-theorem exists_smul_eigenvectorBasis_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
-    (hn : Module.finrank 𝕜 E = n) (i : Fin n)
-    (hsimple : ∀ j : Fin n, j ≠ i.rev → hT.eigenvalues hn j ≠ hT.eigenvalues hn i.rev) :
-    ∃ c : 𝕜, c ≠ 0 ∧
-      (isSymmetric_neg hT).eigenvectorBasis hn i = c • hT.eigenvectorBasis hn i.rev := by
-  set b := hT.eigenvectorBasis hn with hb
-  set w := (isSymmetric_neg hT).eigenvectorBasis hn i with hw
-  have hTw : T w = (hT.eigenvalues hn i.rev : 𝕜) • w := by
-    have h := (isSymmetric_neg hT).apply_eigenvectorBasis hn i
-    rw [eigenvalues_neg hT hn i, LinearMap.neg_apply] at h
-    have h' := congrArg Neg.neg h
-    rwa [neg_neg, RCLike.ofReal_neg, neg_smul, neg_neg] at h'
-  have hzero : ∀ j : Fin n, j ≠ i.rev → b.repr w j = 0 := by
-    intro j hj
-    have h1 := hT.eigenvectorBasis_apply_self_apply hn w j
-    rw [hTw, map_smul] at h1
-    simp only [PiLp.smul_apply, smul_eq_mul] at h1
-    have h2 : ((hT.eigenvalues hn j : 𝕜) - (hT.eigenvalues hn i.rev : 𝕜)) * b.repr w j = 0 := by
-      rw [sub_mul]
-      rw [← h1]
-      ring
-    rcases mul_eq_zero.1 h2 with h3 | h3
-    · exact absurd (by exact_mod_cast sub_eq_zero.1 h3) (hsimple j hj)
-    · exact h3
-  have hsum : ∑ j, b.repr w j • b j = w := b.sum_repr w
-  rw [Finset.sum_eq_single i.rev (fun j _ hj => by rw [hzero j hj, zero_smul])
-    (fun h => absurd (Finset.mem_univ _) h)] at hsum
-  refine ⟨b.repr w i.rev, ?_, hsum.symm⟩
-  intro h0
-  rw [h0, zero_smul] at hsum
-  exact (isSymmetric_neg hT).eigenvectorBasis_ne_zero hn i hsum.symm
-
-end Helpers
-
-variable {n : ℕ}
-
 /-- **Property 5.12, the smallest eigenvalue** (the display after Property 5.12). In the setting of
 `property_5_12` — `A` symmetric with eigenvalues `λ_1 ≥ … ≥ λ_n` and orthonormal eigenvectors
 `u_1, …, u_n`, `η_1 ≥ … ≥ η_m` the eigenvalues of `H_m` — with `cos φ_n = |(q^(1))ᵀ u_n|` and
@@ -436,12 +266,13 @@ variable {n : ℕ}
 
 `λ_n ≤ η_m ≤ λ_n + (λ_1 - λ_n) tan²φ_n / T_{m-1}(1 + 2ρ_n)²`.
 
-This is `property_5_12` for `-A`: the Krylov subspaces are the same (`krylovSubspace_neg`), the
-compression is negated (`compression_neg`), and sorted eigenvalues are negated and reversed
-(`eigenvalues_neg`), so the largest Ritz value of `-A` is `-η_m` and the largest eigenvalue of `-A`
-is `-λ_n`. The strict inequalities `λ_n < λ_{n-1} < λ_1` keep `ρ_n` finite and make `λ_n` simple,
-which is what identifies the eigenvector of `-A` for `-λ_n` with `u_n` up to a scalar
-(`exists_smul_eigenvectorBasis_neg`); `(q^(1))ᵀ u_n ≠ 0` keeps `tan φ_n` finite. -/
+This is `property_5_12` for `-A`: the Krylov subspaces are the same (`Krylov.subspace_neg`), the
+compression is negated (`compression.neg`), and sorted eigenvalues are negated and reversed
+(`LinearMap.IsSymmetric.eigenvalues_neg`), so the largest Ritz value of `-A` is `-η_m` and the
+largest eigenvalue of `-A` is `-λ_n`. The strict inequalities `λ_n < λ_{n-1} < λ_1` keep `ρ_n`
+finite and make `λ_n` simple, which is what identifies the eigenvector of `-A` for `-λ_n` with
+`u_n` up to a scalar (`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg`);
+`(q^(1))ᵀ u_n ≠ 0` keeps `tan φ_n` finite. -/
 theorem property_5_12_min {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m)
@@ -493,32 +324,33 @@ theorem property_5_12_min {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn :
     intro h
     rw [h] at hanti
     exact absurd hanti (not_le.2 hgap)
-  obtain ⟨c, hc0, hcw⟩ := exists_smul_eigenvectorBasis_neg hT hnE i0 hsimple
+  obtain ⟨c, hc0, hcw⟩ := hT.exists_smul_eigenvectorBasis_neg hnE i0 hsimple
   rw [hrev0] at hcw
   -- the Krylov subspace and the compression
   have hmneg : Module.finrank ℝ (Krylov.subspace (-T) q₁ m) = m := by
-    rw [krylovSubspace_neg]; exact hm
-  have hkps := Lanczos.kaniel_paige_saad (isSymmetric_neg hT) hnE hmneg ⟨0, hm0⟩ i0 i1 i0 il
+    rw [Krylov.subspace_neg]; exact hm
+  have hkps := Lanczos.kaniel_paige_saad hT.neg hnE hmneg ⟨0, hm0⟩ i0 i1 i0 il
     rfl (by simp [hi0, hi1]) (fun j => Fin.le_def.2 (Nat.zero_le _))
     (fun j => Fin.le_def.2 (by simp only [hil]; omega))
     (by rw [hcw, real_inner_smul_left]
         exact mul_ne_zero hc0 (fun h => hc (by rw [real_inner_comm]; exact h)))
-    (by rw [eigenvalues_neg hT hnE i0, eigenvalues_neg hT hnE i1, hrev0, hrev1]; linarith)
-    (by rw [eigenvalues_neg hT hnE i1, eigenvalues_neg hT hnE il, hrev1, hrevl]; linarith)
+    (by rw [hT.eigenvalues_neg hnE i0, hT.eigenvalues_neg hnE i1, hrev0, hrev1]; linarith)
+    (by rw [hT.eigenvalues_neg hnE i1, hT.eigenvalues_neg hnE il, hrev1, hrevl]; linarith)
     (fun j hj => absurd (Fin.lt_def.mp hj) (Nat.not_lt_zero _))
     (k := m - 1) (by simp; omega)
   -- rewrite the three quantities of the conclusion
   have hrevm : ((⟨0, hm0⟩ : Fin m).rev) = ⟨m - 1, by omega⟩ := Fin.ext (by simp [Fin.val_rev])
   have hηm : (compression.isSymmetric (-T) (Krylov.subspace (-T) q₁ m)
-      (isSymmetric_neg hT)).eigenvalues hmneg ⟨0, hm0⟩
+      hT.neg).eigenvalues hmneg ⟨0, hm0⟩
       = -lanczosEigenvalues A q₁ m ⟨m - 1, by omega⟩ := by
-    rw [eigenvalues_compression_congr (isSymmetric_neg hT) (krylovSubspace_neg T q₁ m) hmneg hm,
-      eigenvalues_congr _ (isSymmetric_neg (compression.isSymmetric T (Krylov.subspace T q₁ m) hT))
-        (compression_neg T (Krylov.subspace T q₁ m)) hm,
-      eigenvalues_neg (compression.isSymmetric T (Krylov.subspace T q₁ m) hT) hm,
+    rw [hT.neg.eigenvalues_compression_congr (Krylov.subspace_neg T q₁ m) hmneg hm,
+      LinearMap.IsSymmetric.eigenvalues_congr _
+        (compression.isSymmetric T (Krylov.subspace T q₁ m) hT).neg
+        (compression.neg T (Krylov.subspace T q₁ m)) hm,
+      (compression.isSymmetric T (Krylov.subspace T q₁ m) hT).eigenvalues_neg hm,
       hrevm, lanczosEigenvalues_eq hA q₁ hm]
-  rw [hηm, eigenvalues_neg hT hnE i0, eigenvalues_neg hT hnE i1, eigenvalues_neg hT hnE il,
-    hrev0, hrev1, hrevl, hcw, tanAngle_smul _ hc0] at hkps
+  rw [hηm, hT.eigenvalues_neg hnE i0, hT.eigenvalues_neg hnE i1, hT.eigenvalues_neg hnE il,
+    hrev0, hrev1, hrevl, hcw, Submodule.tanAngle_smul _ hc0] at hkps
   have hmin : IsMin (⟨0, hm0⟩ : Fin m) := fun j _ => Fin.le_iff_val_le_val.mpr (Nat.zero_le _)
   simp only [Finset.Iio_eq_empty.mpr hmin, Finset.prod_empty, one_mul, Set.mem_Icc,
     div_pow] at hkps

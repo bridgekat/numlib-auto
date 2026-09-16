@@ -30,7 +30,13 @@ for all `v ∈ K` (`Variational.IsSemidiscreteGalerkin`, [quarteroni2000numerica
   has the wrong sign.
 
 All three are instances of the differential Gronwall inequalities of
-`Numlib/Analysis/ODE/Gronwall.lean`, with the derivative of the energy taken within `[0, T]`.
+`Numlib/Analysis/ODE/Gronwall.lean`, with the derivative of the energy taken within `[0, T]`. The
+raw integrated form `IsSemidiscreteGalerkin.norm_sq_add_integral_le_integral` sits below the
+dissipation estimate: from a pointwise `2 (F(u) - a(u, u)) + w ≤ g` on `[0, T)` with `w`, `g`
+continuous it gives `‖u t‖² + ∫₀ᵗ w ≤ ‖u₀‖² + ∫₀ᵗ g`, and `norm_sq_add_integral_le` is that with
+Young's inequality already spent on the source. An estimate whose source is absorbed by a
+*boundary* term rather than by coercivity — (13.69), where the inflow datum is absorbed by the jump
+at `x₀` — has no `φ` to put on the right and needs the raw form.
 
 The θ-method `⟪(u⁺ - u)/Δt, v⟫ + a (θ u⁺ + (1-θ) u) v = θ ℓ₁ v + (1-θ) ℓ₀ v`
 (`Variational.IsThetaStep`, [quarteroni2000numerical] (13.17)) is a *relation* between
@@ -188,13 +194,38 @@ theorem norm_sq_le_exp (h : IsSemidiscreteGalerkin a F u₀ T u) {γ : ℝ} (hγ
   congr 1
   exact integral_congr fun s _ => by ring
 
+/-- **The energy estimate in its raw integrated form**: if the energy identity
+`d/dt ‖u‖² = 2 (F(u) - a(u, u))` is dominated by `g - w` pointwise on `[0, T)`, with `w` and `g`
+continuous, then `‖u t‖² + ∫₀ᵗ w ≤ ‖u₀‖² + ∫₀ᵗ g`. It is the variation-of-constants inequality with
+zero coefficient applied to `Φ = ‖u‖² + ∫₀ᵗ w`.
+
+This is the common form of the three estimates below: `norm_sq_add_integral_le` is this one after
+Young's inequality has been spent on the source. Keeping the pointwise bound as a hypothesis is
+what estimates whose source is absorbed by a *boundary* term need — [quarteroni2000numerical]
+(13.69), where the inflow datum of the discontinuous Galerkin method is absorbed by the jump at
+`x₀`, and there is no `φ` to put on the right. -/
+theorem norm_sq_add_integral_le_integral (h : IsSemidiscreteGalerkin a F u₀ T u) {w g : ℝ → ℝ}
+    (hw : ContinuousOn w (Icc 0 T)) (hg : ContinuousOn g (Icc 0 T))
+    (bound : ∀ s ∈ Ico 0 T, 2 * (F s (u s) - a s (u s) (u s)) + w s ≤ g s)
+    {t : ℝ} (ht : t ∈ Icc 0 T) :
+    ‖u t‖ ^ 2 + ∫ s in (0 : ℝ)..t, w s ≤ ‖u₀‖ ^ 2 + ∫ s in (0 : ℝ)..t, g s := by
+  set Φ : ℝ → ℝ := fun s => ‖u s‖ ^ 2 + ∫ q in (0 : ℝ)..s, w q with hΦ
+  have hΦc : ContinuousOn Φ (Icc 0 T) :=
+    h.continuousOn_norm_sq.add (Gronwall.continuousOn_integral_Icc hw)
+  have hΦ' : ∀ s ∈ Ico 0 T, HasDerivWithinAt Φ
+      (2 * (F s (u s) - a s (u s) (u s)) + w s) (Ici s) s := fun s hs =>
+    (h.hasDerivWithinAt_norm_sq_Ici hs).add (Gronwall.hasDerivWithinAt_integral_Ici hw hs)
+  have key := Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le (p := fun _ => (0 : ℝ)) (q := g)
+    hΦc hΦ' continuousOn_const hg (fun s hs => by simpa using bound s hs) ht
+  have h1 : ‖u 0‖ ^ 2 = ‖u₀‖ ^ 2 := by rw [h.1]
+  simpa [hΦ, h1] using key
+
 /-- **The dissipative energy estimate** ([quarteroni2000numerical] (13.66), (13.69)): if
 `μ₀ ‖v‖² + ½ Q t v ≤ a t v v` with `μ₀ > 0` and a functional `Q` continuous along the solution
 (the outflow term `a(β) v(β)²` and the jump terms of the discontinuous Galerkin form), and
 `‖F t‖ ≤ φ t` with `φ` continuous, then
 `‖u t‖² + ∫₀ᵗ (μ₀ ‖u‖² + Q(u)) ≤ ‖u₀‖² + μ₀⁻¹ ∫₀ᵗ φ²`. Proof: `E' + μ₀ ‖u‖² + Q(u) ≤ φ² / μ₀` by
-Young's inequality, integrated through the variation-of-constants inequality with zero
-coefficient. No sign of `Q` is needed. -/
+Young's inequality, and then `norm_sq_add_integral_le_integral`. No sign of `Q` is needed. -/
 theorem norm_sq_add_integral_le (h : IsSemidiscreteGalerkin a F u₀ T u) {μ₀ : ℝ} (hμ : 0 < μ₀)
     {Q : ℝ → K → ℝ} (hQc : ContinuousOn (fun t => Q t (u t)) (Icc 0 T))
     (hcoer : ∀ t ∈ Icc 0 T, ∀ v, μ₀ * ‖v‖ ^ 2 + Q t v / 2 ≤ a t v v)
@@ -202,16 +233,10 @@ theorem norm_sq_add_integral_le (h : IsSemidiscreteGalerkin a F u₀ T u) {μ₀
     {t : ℝ} (ht : t ∈ Icc 0 T) :
     ‖u t‖ ^ 2 + ∫ s in (0 : ℝ)..t, (μ₀ * ‖u s‖ ^ 2 + Q s (u s))
       ≤ ‖u₀‖ ^ 2 + μ₀⁻¹ * ∫ s in (0 : ℝ)..t, φ s ^ 2 := by
-  set w : ℝ → ℝ := fun s => μ₀ * ‖u s‖ ^ 2 + Q s (u s) with hw
-  have hwc : ContinuousOn w (Icc 0 T) := (h.continuousOn_norm_sq.const_smul μ₀).add hQc
-  set Φ : ℝ → ℝ := fun s => ‖u s‖ ^ 2 + ∫ r in (0 : ℝ)..s, w r with hΦ
-  have hΦc : ContinuousOn Φ (Icc 0 T) :=
-    h.continuousOn_norm_sq.add (Gronwall.continuousOn_integral_Icc hwc)
-  have hΦ' : ∀ s ∈ Ico 0 T, HasDerivWithinAt Φ
-      (2 * (F s (u s) - a s (u s) (u s)) + w s) (Ici s) s := fun s hs =>
-    (h.hasDerivWithinAt_norm_sq_Ici hs).add (Gronwall.hasDerivWithinAt_integral_Ici hwc hs)
+  have hwc : ContinuousOn (fun s => μ₀ * ‖u s‖ ^ 2 + Q s (u s)) (Icc 0 T) :=
+    (continuousOn_const.mul h.continuousOn_norm_sq).add hQc
   have bound : ∀ s ∈ Ico 0 T,
-      2 * (F s (u s) - a s (u s) (u s)) + w s ≤ 0 * Φ s + φ s ^ 2 / μ₀ := by
+      2 * (F s (u s) - a s (u s) (u s)) + (μ₀ * ‖u s‖ ^ 2 + Q s (u s)) ≤ φ s ^ 2 / μ₀ := by
     intro s hs
     have hs' : s ∈ Icc 0 T := Ico_subset_Icc_self hs
     have h1 : F s (u s) ≤ φ s * ‖u s‖ :=
@@ -219,12 +244,9 @@ theorem norm_sq_add_integral_le (h : IsSemidiscreteGalerkin a F u₀ T u) {μ₀
         (mul_le_mul_of_nonneg_right (hF s hs') (norm_nonneg _)))
     have h2 := hcoer s hs' (u s)
     have h3 := two_mul_mul_norm_le hμ (φ s) (u s)
-    simp only [hw, zero_mul, zero_add]
     linarith
-  have key := Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le (q := fun s => φ s ^ 2 / μ₀)
-    hΦc hΦ' continuousOn_const ((hφ.pow 2).div_const μ₀) bound ht
-  simp only [hΦ, h.1, integral_same, add_zero, integral_zero, neg_zero, exp_zero, one_mul] at key
-  refine key.trans (le_of_eq ?_)
+  refine (h.norm_sq_add_integral_le_integral (g := fun s => φ s ^ 2 / μ₀) hwc
+    ((hφ.pow 2).div_const μ₀) bound ht).trans (le_of_eq ?_)
   rw [← integral_const_mul]
   congr 1
   exact integral_congr fun s _ => by ring

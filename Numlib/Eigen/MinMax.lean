@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.Matrix.ToEuclideanLin
 
 /-!
@@ -40,6 +41,10 @@ i`.
   `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` (a principal submatrix): Cauchy interlacing,
   `λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)` whenever the quadratic form of `S` on an `m`-dimensional
   space is that of `T` pulled back along a linear isometry.
+* `LinearMap.IsSymmetric.eigenvalues_neg`: the eigenvalues of `-T` are the negatives of those of
+  `T` in reversed order, which is the reduction that turns any statement about a largest eigenvalue
+  into the matching statement about a smallest one; `exists_smul_eigenvectorBasis_neg` transports
+  the eigenvector as well, at a simple eigenvalue.
 
 ## Implementation notes
 
@@ -108,6 +113,17 @@ theorem rayleighQuotient_sub (A B : E →ₗ[𝕜] E) (x : E) :
     (A - B).rayleighQuotient x = A.rayleighQuotient x - B.rayleighQuotient x := by
   rw [rayleighQuotient, rayleighQuotient, rayleighQuotient, sub_apply, inner_sub_left, map_sub,
     sub_div]
+
+/-- The Rayleigh quotient of `-T` is the negative of that of `T`.  This is what exchanges the
+max–min and min–max characterizations of the eigenvalues (`IsSymmetric.eigenvalues_neg`). -/
+theorem rayleighQuotient_neg (T : E →ₗ[𝕜] E) (x : E) :
+    (-T).rayleighQuotient x = -T.rayleighQuotient x := by
+  simp [LinearMap.rayleighQuotient, inner_neg_left, neg_div]
+
+/-- The negative of a symmetric operator is symmetric.  The companion of Mathlib's
+`LinearMap.IsSymmetric.add`, `sub` and `smul`. -/
+theorem IsSymmetric.neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) : (-T).IsSymmetric := fun x y => by
+  simp only [LinearMap.neg_apply, inner_neg_left, inner_neg_right, hT x y]
 
 end LinearMap
 
@@ -573,6 +589,99 @@ theorem eigenvalues_restrict_interlace {K : Submodule 𝕜 E} {S : K →ₗ[𝕜
     hT.eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩ ≤ hS.eigenvalues hm i ∧
       hS.eigenvalues hm i ≤ hT.eigenvalues hn (Fin.castLE hmn i) :=
   hT.eigenvalues_interlace_of_linearIsometry hn hS hm hmn K.subtypeₗᵢ hSK i
+
+end LinearMap.IsSymmetric
+
+/-! ### Negation
+
+Every statement about a largest eigenvalue is a statement about a smallest one for `-T`, and this
+section is the dictionary: `eigenvalues_neg` for the values, `exists_smul_eigenvectorBasis_neg` for
+the vectors at a simple eigenvalue, and the two congruences that let a `rw` happen inside the
+dependent types `hT.eigenvalues hn` and `(compression.isSymmetric T K hT).eigenvalues hK`. -/
+
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E] {n : ℕ}
+
+/-- The sorted eigenvalues depend on the operator only, not on the proof that it is symmetric. The
+operators are variables, so that `subst` can do the transport that a `rw` inside a dependent type
+cannot. -/
+theorem eigenvalues_congr {T T' : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hT' : T'.IsSymmetric)
+    (h : T = T') (hn : Module.finrank 𝕜 E = n) (i : Fin n) :
+    hT.eigenvalues hn i = hT'.eigenvalues hn i := by
+  subst h; rfl
+
+/-- The eigenvalues of the compressions to two equal subspaces agree. The subspaces are variables,
+so that `subst` can do the transport that a `rw` inside a dependent type cannot. -/
+theorem eigenvalues_compression_congr {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {K L : Submodule 𝕜 E}
+    [K.HasOrthogonalProjection] [L.HasOrthogonalProjection] (hKL : K = L) {m : ℕ}
+    (hK : Module.finrank 𝕜 K = m) (hL : Module.finrank 𝕜 L = m) (i : Fin m) :
+    (compression.isSymmetric T K hT).eigenvalues hK i
+      = (compression.isSymmetric T L hT).eigenvalues hL i := by
+  subst hKL; rfl
+
+/-- **The eigenvalues of `-T` are the negatives of those of `T`, in reversed order**: with both
+lists sorted decreasingly, the `i`-th eigenvalue of `-T` is minus the `(n - 1 - i)`-th of `T`. The
+proof is Courant–Fischer: negating the Rayleigh quotient exchanges the max–min characterization of
+`hT.eigenvalues hn i` (`isGreatest_eigenvalues`, over subspaces of dimension `i + 1`) with the
+min–max characterization of `hT.eigenvalues hn i.rev` (`isLeast_eigenvalues`, over subspaces of
+dimension `n - i.rev = i + 1`), so the two sets of bounds coincide. -/
+theorem eigenvalues_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) (hn : Module.finrank 𝕜 E = n)
+    (i : Fin n) : hT.neg.eigenvalues hn i = -hT.eigenvalues hn i.rev := by
+  have hrev : n - ((i.rev : Fin n) : ℕ) = (i : ℕ) + 1 := by
+    have := i.isLt
+    simp only [Fin.val_rev]
+    omega
+  refine (hT.neg.isGreatest_eigenvalues hn i).unique ⟨?_, ?_⟩
+  · obtain ⟨⟨S, hS, hbd⟩, -⟩ := hT.isLeast_eigenvalues hn i.rev
+    refine ⟨S, by rw [hS, hrev], fun x hx hx0 => ?_⟩
+    rw [rayleighQuotient_neg]
+    linarith [hbd x hx hx0]
+  · rintro c ⟨S, hS, hc⟩
+    have hmem : -c ∈ {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = n - ((i.rev : Fin n) : ℕ) ∧
+        ∀ x ∈ S, x ≠ 0 → T.rayleighQuotient x ≤ c} := by
+      refine ⟨S, by rw [hS, hrev], fun x hx hx0 => ?_⟩
+      have := hc x hx hx0
+      rw [rayleighQuotient_neg] at this
+      linarith
+    have := (hT.isLeast_eigenvalues hn i.rev).2 hmem
+    linarith
+
+/-- **A simple extreme eigenvalue of `-T` has the same eigenvector line as its partner for `T`**:
+if the `i.rev`-th eigenvalue of `T` is simple, the `i`-th eigenvector of `-T` is a nonzero multiple
+of the `i.rev`-th eigenvector of `T`. Expanding the eigenvector of `-T` in the eigenbasis of `T`,
+the coefficients at the other indices carry the factor `λ_j - λ_{i.rev} ≠ 0` and vanish. -/
+theorem exists_smul_eigenvectorBasis_neg {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
+    (hn : Module.finrank 𝕜 E = n) (i : Fin n)
+    (hsimple : ∀ j : Fin n, j ≠ i.rev → hT.eigenvalues hn j ≠ hT.eigenvalues hn i.rev) :
+    ∃ c : 𝕜, c ≠ 0 ∧
+      hT.neg.eigenvectorBasis hn i = c • hT.eigenvectorBasis hn i.rev := by
+  set b := hT.eigenvectorBasis hn with hb
+  set w := hT.neg.eigenvectorBasis hn i with hw
+  have hTw : T w = (hT.eigenvalues hn i.rev : 𝕜) • w := by
+    have h := hT.neg.apply_eigenvectorBasis hn i
+    rw [eigenvalues_neg hT hn i, LinearMap.neg_apply] at h
+    have h' := congrArg Neg.neg h
+    rwa [neg_neg, RCLike.ofReal_neg, neg_smul, neg_neg] at h'
+  have hzero : ∀ j : Fin n, j ≠ i.rev → b.repr w j = 0 := by
+    intro j hj
+    have h1 := hT.eigenvectorBasis_apply_self_apply hn w j
+    rw [hTw, map_smul] at h1
+    simp only [PiLp.smul_apply, smul_eq_mul] at h1
+    have h2 : ((hT.eigenvalues hn j : 𝕜) - (hT.eigenvalues hn i.rev : 𝕜)) * b.repr w j = 0 := by
+      rw [sub_mul]
+      rw [← h1]
+      ring
+    rcases mul_eq_zero.1 h2 with h3 | h3
+    · exact absurd (by exact_mod_cast sub_eq_zero.1 h3) (hsimple j hj)
+    · exact h3
+  have hsum : ∑ j, b.repr w j • b j = w := b.sum_repr w
+  rw [Finset.sum_eq_single i.rev (fun j _ hj => by rw [hzero j hj, zero_smul])
+    (fun h => absurd (Finset.mem_univ _) h)] at hsum
+  refine ⟨b.repr w i.rev, ?_, hsum.symm⟩
+  intro h0
+  rw [h0, zero_smul] at hsum
+  exact hT.neg.eigenvectorBasis_ne_zero hn i hsum.symm
 
 end LinearMap.IsSymmetric
 
