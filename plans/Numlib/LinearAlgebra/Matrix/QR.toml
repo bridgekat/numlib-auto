@@ -235,3 +235,15 @@ id = "householder_mul_self"
 
 [[node]]
 id = "householder_mem_unitaryGroup"
+
+[[node]]
+id = "sum_norm_sq_mulVec_of_mem_unitaryGroup"
+
+[[node]]
+id = "norm_det_of_mem_unitaryGroup"
+
+[[node]]
+id = "norm_det_le_prod_sqrt_sum_norm_sq"
+
+[[node]]
+id = "norm_det_le_of_forall_norm_le"

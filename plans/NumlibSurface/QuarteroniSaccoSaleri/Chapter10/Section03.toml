@@ -104,18 +104,28 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.24); Exercise 
 [[node]]
 id = "equation_10_25"
 kind = "theorem"
-desc = '''(10.25): `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)` for the interpolant at the Chebyshev nodes
-(10.20), with `Λ_n ≤ (2/π) log (n+1) + 1` (Rivlin). The first inequality is
-`interpolation_error_le_lebesgue` (§10.8); the bound on the Lebesgue constant of the Chebyshev
-nodes is `Lagrange.norm_interpolateCLM_chebyshev_le`. ★
+desc = '''(10.25): `‖f - Pi^G_n f‖_inf <= (1 + Lambda_n) E_n^*(f)` for the interpolant at the Chebyshev
+nodes (10.20). The first inequality is `interpolation_error_le_lebesgue` (§10.8) and is proved, as
+`equation_10_25_interpolation_error`; this node is the combination with the bound on the Lebesgue
+constant.
 
-Blocked: the backbone node `Lagrange.norm_interpolateCLM_chebyshev_le` (Rivlin's bound on the
-Lebesgue constant of the Chebyshev nodes, ★★★ in `Approximation/Interpolation`) is open; the
-surface node is a two-line restatement once it exists (the nodes (10.20) are
-`chebyshevGaussNode n j` of this module, read as points of `Icc (-1) 1`). Re-checked 2026-09-16:
-the backbone node is still open, its own `desc` carries the analysis of why, and nothing has
-appeared in Mathlib that shortens it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.interpolation_error_le_lebesgue", "Lagrange.norm_interpolateCLM_chebyshev_le"]
+Ready (re-checked 2026-09-16, correcting a stale note that said otherwise). The backbone node
+`Lagrange.norm_interpolateCLM_chebyshev_le` is **proved**, with the constant
+`2 + (2/pi) log (2n+2)`; what was open was the variant `..._rivlin` carrying the book's printed
+`(2/pi) log (n+1) + 1`, and that node has been removed, because at `n = 0` the Lebesgue constant is
+exactly `1`, equal to the printed bound, so no step of any proof of it may give anything away, and
+the two theorems it needs (Ehlich-Zeller monotonicity, Rivlin's cotangent-sum bound) are
+research-level. See the `## Not formalized` section of `Numlib/Approximation/Interpolation.lean`.
+
+So state this node with the proved constant and say in the doc comment that the book's is sharper
+and why it is not available. Three steps, none long. (i) The book's nodes are a *permutation* of the
+backbone's, not a reflection: `chebyshevGaussNode n j = Lagrange.chebNode n (n - j)`, so
+`Lagrange.interpolateCLM_comp_equiv` at the reversal of `Fin (n+1)` identifies the two interpolation
+operators. (ii) `Lagrange.norm_interpolateCLM` identifies the `sSup` of the Lebesgue
+function appearing in `equation_10_25_interpolation_error` with the operator norm the backbone
+bounds. (iii) Combine. The module doc's `## Not formalized` paragraph must be updated in the same
+breath: it currently names `Lagrange.norm_interpolateCLM_chebyshev_le` as open, which it is not.'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_25_interpolation_error", "Lagrange.norm_interpolateCLM_chebyshev_le", "Lagrange.interpolateCLM_comp_equiv", "Lagrange.norm_interpolateCLM"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'
 
 [[node]]
