@@ -1833,20 +1833,9 @@ end LinearMultistep
 
 end ODE
 
-/-! ### The root condition from the roots -/
+/-! ### The root condition for the polynomials of the examples -/
 
 namespace Polynomial
-
-variable {K : Type*} [NormedField K] [DecidableEq K]
-
-/-- A nonzero polynomial whose roots lie in the closed unit disc, the roots of modulus one being
-simple (`count = 1` in the multiset of roots), satisfies the root condition. Belongs in
-`Numlib/ODE/DifferenceEquation`. -/
-theorem satisfiesRootCondition_of_roots {P : K[X]} (hP : P ≠ 0) (h1 : ∀ r ∈ P.roots, ‖r‖ ≤ 1)
-    (h2 : ∀ r ∈ P.roots, ‖r‖ = 1 → P.roots.count r = 1) : P.SatisfiesRootCondition := by
-  intro r hr
-  have hmem : r ∈ P.roots := (mem_roots hP).2 hr
-  exact ⟨h1 r hmem, fun h => by rw [← count_roots]; exact h2 r hmem h⟩
 
 /-- `(X - 1)(X + 1)`, read in `ℂ[X]`, satisfies the root condition: the roots `±1` are simple. -/
 theorem satisfiesRootCondition_X_sq_sub_one :
@@ -1894,46 +1883,6 @@ theorem satisfiesRootCondition_X_pow_mul_X_sub_one (p : ℕ) :
         Multiset.count_singleton]
       simp
 
-
-/-- **From Schur stability to the root condition**: if `P = c (X - 1) Q` with `c ≠ 0` and every
-complex root of `Q` has modulus `< 1` (`Polynomial.IsSchurStable`), then `P`, read in `ℂ[X]`,
-satisfies the root condition — its roots lie in the closed unit disc and the only one of modulus
-one is the simple root `1`. Belongs in `Numlib/ODE/DifferenceEquation`. -/
-theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c ≠ 0)
-    (hQ : Q.IsSchurStable) (hP : P = C c * ((X - C 1) * Q)) :
-    (P.map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
-  classical
-  set Qc : ℂ[X] := Q.map (algebraMap ℝ ℂ) with hQc
-  have hQeval : ∀ z : ℂ, Qc.eval z = aeval z Q := fun z => by rw [hQc, eval_map, aeval_def]
-  have hQ1 : Qc.eval 1 ≠ 0 := by
-    rw [hQeval]
-    exact hQ.aeval_ne_zero (by simp)
-  have hQ0 : Qc ≠ 0 := fun h0 => hQ1 (by rw [h0]; simp)
-  have hcne : (c : ℂ) ≠ 0 := by exact_mod_cast hc
-  have hmap : P.map (algebraMap ℝ ℂ) = C (c : ℂ) * ((X - C 1) * Qc) := by
-    rw [hP, hQc]
-    simp [Polynomial.map_mul, Polynomial.map_sub]
-  have hXne : (X - C 1 : ℂ[X]) ≠ 0 := X_sub_C_ne_zero 1
-  have hprod : (X - C 1 : ℂ[X]) * Qc ≠ 0 := mul_ne_zero hXne hQ0
-  have hall : C (c : ℂ) * ((X - C 1) * Qc) ≠ 0 := mul_ne_zero (by simpa using hcne) hprod
-  rw [hmap]
-  intro r hr
-  have hfac : (r - 1) * Qc.eval r = 0 := by
-    have h := hr
-    simp only [IsRoot, eval_mul, eval_C, eval_sub, eval_X] at h
-    exact (mul_eq_zero.1 h).resolve_left hcne
-  rcases mul_eq_zero.1 hfac with h1 | h2
-  · have hr1 : r = 1 := by linear_combination h1
-    subst hr1
-    refine ⟨by simp, fun _ => ?_⟩
-    have hc1 : ¬ (C (c : ℂ)).IsRoot 1 := by simp [IsRoot, hcne]
-    have hq1 : ¬ Qc.IsRoot 1 := hQ1
-    rw [rootMultiplicity_mul hall, rootMultiplicity_mul hprod,
-      rootMultiplicity_eq_zero hc1, rootMultiplicity_eq_zero hq1,
-      rootMultiplicity_X_sub_C_self]
-  · rw [hQeval] at h2
-    have hlt : ‖r‖ < 1 := hQ r h2
-    exact ⟨hlt.le, fun h => absurd h hlt.ne⟩
 
 end Polynomial
 

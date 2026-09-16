@@ -5,12 +5,6 @@ id = "laguerre"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.5, the Laguerre polynomials'
 
 [[node]]
-id = "laguerreMeasure_compl_Ioi"
-
-[[node]]
-id = "laguerreMeasure_ae_nonneg"
-
-[[node]]
 id = "equation_10_41"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.41), exactness and weights'
 

@@ -212,7 +212,6 @@ import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Extrapolation
 import Numlib.Approximation.GaussLobatto
-import Numlib.Approximation.GaussRemainder
 import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation

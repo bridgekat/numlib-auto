@@ -1,4 +1,4 @@
-import Numlib.Approximation.GaussRemainder
+import Numlib.Approximation.Quadrature
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section02
 
 /-!
@@ -18,7 +18,7 @@ with the zeros of `ℋ_n` and weights `α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)�
 `φ ∈ ℙ_{2n-1}`. The remainder terms of (10.41)–(10.42) are the mean value forms
 `((n!)²/(2n)!) φ^{(2n)}(ξ)` and `(n! √π / (2ⁿ (2n)!)) φ^{(2n)}(ξ)`; the book quotes them from
 [DR75], and they come here from `Quadrature.exists_gauss_error_eq_of_convex`, the Gauss remainder
-for a weight carried by an arbitrary interval.
+for a weight carried by an arbitrary convex set.
 
 The backbone is `Numlib/Approximation/OrthogonalPolynomial/Classical` — `Polynomial.laguerre`,
 `Polynomial.physHermite` (the physicists' family; Mathlib's `Polynomial.hermite` is the
@@ -66,19 +66,6 @@ namespace QuarteroniSaccoSaleri.Chapter10
 variable {n : ℕ}
 
 /-! ### The Laguerre polynomials and the Gauss–Laguerre formula (10.41) -/
-
--- TODO(backbone): the Laguerre weight is carried by `(0, ∞)`; belongs beside
--- `OrthogonalPolynomial.isWeight_laguerreMeasure`.
-/-- The Laguerre weight `e^{-x}` of §10.5 gives no mass outside `(0, ∞)`. -/
-theorem laguerreMeasure_compl_Ioi : laguerreMeasure (Ioi (0 : ℝ))ᶜ = 0 := by
-  refine withDensity_absolutelyContinuous _ _ ?_
-  rw [Measure.restrict_apply' measurableSet_Ioi, Set.compl_inter_self, measure_empty]
-
-/-- Almost every point of the Laguerre weight of §10.5 is nonnegative. -/
-theorem laguerreMeasure_ae_nonneg : ∀ᵐ t ∂laguerreMeasure, (0 : ℝ) ≤ t := by
-  have h : ∀ᵐ t ∂laguerreMeasure, t ∈ Ioi (0 : ℝ) := by
-    rw [MeasureTheory.ae_iff]; exact laguerreMeasure_compl_Ioi
-  filter_upwards [h] with t ht using le_of_lt ht
 
 /-- **§10.5, the Laguerre polynomials.** `ℒ_n(x) = e^x (d/dx)^n (e^{-x} x^n)`, `n ≥ 0`, are
 orthogonal on `[0, ∞)` with respect to the weight `w(x) = e^{-x}`, with

@@ -724,6 +724,18 @@ theorem isWeight_laguerreMeasure : IsWeight laguerreMeasure := by
     simp only [eval_pow, eval_X]
     ring
 
+/-- **The Laguerre weight gives no mass outside `(0, ∞)`**: it is a density against Lebesgue
+measure restricted to `(0, ∞)`. -/
+theorem laguerreMeasure_compl_Ioi : laguerreMeasure (Ioi (0 : ℝ))ᶜ = 0 := by
+  refine withDensity_absolutelyContinuous _ _ ?_
+  rw [Measure.restrict_apply' measurableSet_Ioi, Set.compl_inter_self, measure_empty]
+
+/-- Almost every point for the Laguerre weight is nonnegative. -/
+theorem laguerreMeasure_ae_nonneg : ∀ᵐ t ∂laguerreMeasure, (0 : ℝ) ≤ t := by
+  have h : ∀ᵐ t ∂laguerreMeasure, t ∈ Ioi (0 : ℝ) := by
+    rw [MeasureTheory.ae_iff]; exact laguerreMeasure_compl_Ioi
+  filter_upwards [h] with t ht using le_of_lt ht
+
 /-- **The monic orthogonal polynomials of the Laguerre weight are `(-1)^n ℒ_n`**, so the
 Gauss–Laguerre nodes are the zeros of `ℒ_n`.
 

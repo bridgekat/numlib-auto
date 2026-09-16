@@ -42,6 +42,12 @@ the `LU` factorization (`Numlib/LinearAlgebra/Matrix/LU`) and the incomplete fac
   `U = A^{(N)}` the last stage, when the pivots `a_kk^{(k)}`, `k < N - 1`, are nonzero; and
   `Matrix.gemStage_pivots_ne_zero_iff`: those pivots are nonzero exactly when the strict leading
   principal submatrices of `A` are nonsingular (the book's sentence after (3.33)).
+* `Matrix.elimStep_submatrix_orderEmbedding` and `Matrix.gemStage_submatrix_blockEmb`: elimination
+  commutes with the restriction to a block of indices carried by an order embedding, so that the
+  elimination of the trailing block of `A^{(k)}` on the `j` consecutive indices `k, …, k + j - 1`
+  (`Matrix.blockEmb`) is the restriction of the global elimination;
+  `Matrix.elimStep_submatrix_id_of_apply_self`: one step commutes with a permutation of the columns
+  fixing the pivot.
 * `Matrix.isLU_luLower_luUpper`: the Doolittle recurrence computes the LU factorization whenever
   the strict leading principal submatrices are nonsingular; `Matrix.luLower_eq_gemLower`: every
   loop order computes the same factors; `Matrix.croutLower_mul_croutUpper`: the Crout
@@ -437,6 +443,59 @@ theorem gemStage_pivots_ne_zero_iff :
     exact hdet ⟨⟨m, hm⟩, le_rfl⟩ (mem_univ _)
 
 end Stages
+
+/-! ### Restriction to a block of indices
+
+Elimination is local: the formula for the entry `(i, j)` of one step uses only the entries
+`(i, j)`, `(i, p)`, `(p, p)` and `(p, j)`, so it commutes with the restriction to any subset of
+the indices carried by an order embedding, and with any permutation of the columns fixing the
+pivot. For the consecutive block `k, …, k + j - 1` of `Matrix.blockEmb` this says that the
+elimination of a trailing block of `A^{(k)}` is the restriction of the global elimination. -/
+
+/-- One step of elimination commutes with a permutation of the columns that fixes the pivot. -/
+theorem elimStep_submatrix_id_of_apply_self {m : Type*} [LinearOrder m] [Fintype m]
+    (M : Matrix m m K) {p : m} {ρ : Equiv.Perm m} (hρ : ρ p = p) :
+    elimStep (M.submatrix id ρ) p = (elimStep M p).submatrix id ρ := by
+  ext i j
+  simp only [elimStep_apply, submatrix_apply, id, hρ]
+
+/-- The order embedding `Fin j ↪o Fin N`, `i ↦ k + i`, of a block of `j` consecutive indices
+starting at `k`. -/
+def blockEmb (k j N : ℕ) (h : k + j ≤ N) : Fin j ↪o Fin N :=
+  OrderEmbedding.ofStrictMono (fun i => ⟨k + i, by have := i.isLt; omega⟩)
+    (fun a b hab => by simp only [Fin.lt_def] at hab ⊢; omega)
+
+/-- The value of `Matrix.blockEmb`. -/
+@[simp]
+theorem blockEmb_apply {k j N : ℕ} (h : k + j ≤ N) (i : Fin j) (hki : k + (i : ℕ) < N) :
+    blockEmb k j N h i = ⟨k + (i : ℕ), hki⟩ := rfl
+
+/-- One step of elimination commutes with the restriction to a subset of the indices carried by
+an order embedding: the formula for the entry `(i, j)` uses only the entries `(i, j)`, `(i, p)`,
+`(p, p)` and `(p, j)`, all inside the block. -/
+theorem elimStep_submatrix_orderEmbedding {m n K : Type*} [LinearOrder m] [Fintype m]
+    [LinearOrder n] [Fintype n] [Field K] (M : Matrix n n K) (e : m ↪o n) (p : m) :
+    elimStep (M.submatrix e e) p = (elimStep M (e p)).submatrix e e := by
+  ext i j
+  simp only [elimStep_apply, submatrix_apply, e.lt_iff_lt]
+
+/-- **Gaussian elimination on a trailing block is the restriction of the global elimination**:
+the `t`-th stage of the elimination of the block of `A^{(k)}` on the indices `k, …, k + j - 1` is
+the block of `A^{(k + t)}` on the same indices, for `t ≤ j`. -/
+theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
+    {k j : ℕ} (h : k + j ≤ N) :
+    ∀ t ≤ j, gemStage ((gemStage A k).submatrix (blockEmb k j N h) (blockEmb k j N h)) t =
+      (gemStage A (k + t)).submatrix (blockEmb k j N h) (blockEmb k j N h) := by
+  intro t
+  induction t with
+  | zero => intro _; simp
+  | succ t ih =>
+    intro ht
+    have htj : t < j := by omega
+    have hkt : k + t < N := by omega
+    rw [gemStage_succ_of_lt _ htj, ih (by omega), elimStep_submatrix_orderEmbedding]
+    have he : blockEmb k j N h ⟨t, htj⟩ = (⟨k + t, hkt⟩ : Fin N) := rfl
+    rw [he, ← gemStage_succ_of_lt A hkt, Nat.add_assoc]
 
 /-! ### The Doolittle recurrence -/
 

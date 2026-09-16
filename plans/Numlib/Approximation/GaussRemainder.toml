@@ -1,8 +1,0 @@
-[[node]]
-id = "OrthogonalPolynomial.lt_root_family"
-
-[[node]]
-id = "OrthogonalPolynomial.root_family_lt"
-
-[[node]]
-id = "Quadrature.exists_gauss_error_eq_of_convex"

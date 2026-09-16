@@ -105,12 +105,6 @@ complete-pivoting recurrence carries a second permutation with the same bookkeep
 new geometric fact is that an elimination step commutes with a permutation of the *columns* that
 fixes the pivot (`Matrix.elimStep_submatrix_id_of_apply_self`).
 
-`Matrix.blockEmb`, `Matrix.elimStep_submatrix_orderEmbedding` and
-`Matrix.gemStage_submatrix_blockEmb` — the elimination of a trailing block of consecutive indices
-is the restriction of the global elimination — are about `Matrix.gemStage` alone and belong in
-`Numlib/LinearAlgebra/Matrix/LU/Elimination`; they are here because that module was owned by
-another agent when they were written.
-
 ## References
 
 * [quarteroni2000numerical] §3.5, §3.10.
@@ -762,13 +756,6 @@ theorem le_apply_of_forall_lt_apply_eq {ρ : Equiv.Perm (Fin N)} {m : ℕ}
 /-- Taking a submatrix along a product of permutations is taking two submatrices. -/
 theorem submatrix_perm_mul {m α : Type*} (M : Matrix m m α) (s t s' t' : Equiv.Perm m) :
     M.submatrix (s * t) (s' * t') = (M.submatrix s s').submatrix t t' := rfl
-
-/-- One step of elimination commutes with a permutation of the columns that fixes the pivot. -/
-theorem elimStep_submatrix_id_of_apply_self {m : Type*} [LinearOrder m] [Fintype m]
-    (M : Matrix m m K) {p : m} {ρ : Equiv.Perm m} (hρ : ρ p = p) :
-    elimStep (M.submatrix id ρ) p = (elimStep M p).submatrix id ρ := by
-  ext i j
-  simp only [elimStep_apply, submatrix_apply, id, hρ]
 
 /-- One step of elimination commutes with a permutation of the rows fixing the pivot and every
 index below it together with a permutation of the columns fixing the pivot. -/
@@ -2328,44 +2315,6 @@ theorem HasDominantPivots.absGemPivot_eq_zero_of_le (hA : A.HasDominantPivots) {
   have := hA m hm ⟨k, hk⟩ ⟨k, hk⟩ hmk hmk
   rw [h0, abs_zero, abs_nonpos_iff] at this
   exact this
-
-/-- The order embedding `Fin j ↪o Fin N`, `i ↦ k + i`, of a block of `j` consecutive indices
-starting at `k`. -/
-def blockEmb (k j N : ℕ) (h : k + j ≤ N) : Fin j ↪o Fin N :=
-  OrderEmbedding.ofStrictMono (fun i => ⟨k + i, by have := i.isLt; omega⟩)
-    (fun a b hab => by simp only [Fin.lt_def] at hab ⊢; omega)
-
-/-- The value of `Matrix.blockEmb`. -/
-@[simp]
-theorem blockEmb_apply {k j N : ℕ} (h : k + j ≤ N) (i : Fin j) (hki : k + (i : ℕ) < N) :
-    blockEmb k j N h i = ⟨k + (i : ℕ), hki⟩ := rfl
-
-/-- One step of elimination commutes with the restriction to a subset of the indices carried by
-an order embedding: the formula for the entry `(i, j)` uses only the entries `(i, j)`, `(i, p)`,
-`(p, p)` and `(p, j)`, all inside the block. -/
-theorem elimStep_submatrix_orderEmbedding {m n K : Type*} [LinearOrder m] [Fintype m]
-    [LinearOrder n] [Fintype n] [Field K] (M : Matrix n n K) (e : m ↪o n) (p : m) :
-    elimStep (M.submatrix e e) p = (elimStep M (e p)).submatrix e e := by
-  ext i j
-  simp only [elimStep_apply, submatrix_apply, e.lt_iff_lt]
-
-/-- **Gaussian elimination on a trailing block is the restriction of the global elimination**:
-the `t`-th stage of the elimination of the block of `A^{(k)}` on the indices `k, …, k + j - 1` is
-the block of `A^{(k + t)}` on the same indices, for `t ≤ j`. -/
-theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
-    {k j : ℕ} (h : k + j ≤ N) :
-    ∀ t ≤ j, gemStage ((gemStage A k).submatrix (blockEmb k j N h) (blockEmb k j N h)) t =
-      (gemStage A (k + t)).submatrix (blockEmb k j N h) (blockEmb k j N h) := by
-  intro t
-  induction t with
-  | zero => intro _; simp
-  | succ t ih =>
-    intro ht
-    have htj : t < j := by omega
-    have hkt : k + t < N := by omega
-    rw [gemStage_succ_of_lt _ htj, ih (by omega), elimStep_submatrix_orderEmbedding]
-    have he : blockEmb k j N h ⟨t, htj⟩ = (⟨k + t, hkt⟩ : Fin N) := rfl
-    rw [he, ← gemStage_succ_of_lt A hkt, Nat.add_assoc]
 
 /-- **Hadamard's inequality on the reduced matrices**, the first half of Wilkinson's argument for
 [higham2002accuracy] (9.14): under dominance, if the pivots `a^{(k+t)}_{k+t,k+t}` of a run of `j`

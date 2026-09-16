@@ -136,3 +136,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 10.4"
 
 [[node]]
 id = "discreteInner_family_self"
+
+[[node]]
+id = "exists_gauss_error_eq_of_convex"

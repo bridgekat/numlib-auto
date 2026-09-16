@@ -1,38 +1,5 @@
 [[node]]
-id = "_root_.DividedDifference.newton_two_eq"
-
-[[node]]
-id = "_root_.DividedDifference.newton_three_eq"
-
-[[node]]
-id = "_root_.DividedDifference.newton_three_eq_newton_two_dslope"
-
-[[node]]
-id = "_root_.DividedDifference.newton_four_eq"
-
-[[node]]
-id = "_root_.DividedDifference.newton_four_eq_newton_three_dslope"
-
-[[node]]
-id = "_root_.DividedDifference.newton_three_swap₁"
-
-[[node]]
-id = "_root_.DividedDifference.newton_three_swap₂"
-
-[[node]]
-id = "_root_.DividedDifference.newton_three_eq_of_newton_form"
-
-[[node]]
-id = "_root_.DividedDifference.exists_newton_three_eq_of_lt"
-
-[[node]]
-id = "_root_.DividedDifference.exists_newton_three_eq"
-
-[[node]]
 id = "exists_ball_abs_slope_sub_deriv_le"
-
-[[node]]
-id = "_root_.ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv"
 
 [[node]]
 id = "exists_ball_abs_newton_three_sub_le"

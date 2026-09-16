@@ -75,3 +75,9 @@ id = "LinearRecurrence.isSolution_im_of_map"
 
 [[node]]
 id = "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"
+
+[[node]]
+id = "Polynomial.satisfiesRootCondition_of_roots"
+
+[[node]]
+id = "Polynomial.satisfiesRootCondition_of_isSchurStable"

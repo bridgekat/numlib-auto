@@ -57,3 +57,6 @@ id = "Polynomial.iteratedDeriv_eval"
 
 [[node]]
 id = "IsRootOfMultiplicity.exists_eq_pow_mul_deriv"
+
+[[node]]
+id = "ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv"

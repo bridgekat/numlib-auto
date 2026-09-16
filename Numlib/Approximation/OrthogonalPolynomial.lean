@@ -46,7 +46,9 @@ recurrence, the orthonormal family obtained by scaling it, and the truncated exp
   `OrthogonalPolynomial.cdKernel μ N t = ∑_{k ≤ N} (p_k(t)/‖p_k‖²) p_k`, whose integral is `1`.
 * `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real roots —
   the nodes of the `n`-point Gauss quadrature rule of `μ` — and
-  `OrthogonalPolynomial.root_family_mem_Ioo` puts them strictly inside any interval carrying `μ`.
+  `OrthogonalPolynomial.root_family_mem_Ioo` puts them strictly inside any interval carrying `μ`,
+  its one-sided halves `OrthogonalPolynomial.lt_root_family` and
+  `OrthogonalPolynomial.root_family_lt` strictly inside any one-sided bound on the carrier.
 * `OrthogonalPolynomial.charpoly_jacobiMatrix`: the characteristic polynomial of the symmetric
   tridiagonal `OrthogonalPolynomial.jacobiMatrix μ n` built from `alpha` and `√beta` is
   `family μ n`, so the Gauss nodes are its eigenvalues (Golub–Welsch).
@@ -606,21 +608,21 @@ theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
         Finset.prod_image fun i _ j _ h =>
           (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective h
 
-/-- **The roots of an orthogonal polynomial lie inside the interval carrying the weight.** If
-`μ (Icc a b)ᶜ = 0` and `x₀` is a root of `family μ n`, then `a < x₀ < b`.
+/-- **A root of an orthogonal polynomial is strictly to the right of a left bound of the weight.**
+If `μ`-almost every point is at least `a` and `x₀` is a root of `family μ n`, then `a < x₀`.
 
-Write `family μ n = (X - x₀) q` with `q` of degree `n - 1`; orthogonality of `family μ n` to `q`
-gives `∫ (t - x₀) q(t)² ∂μ = 0`. Were `x₀ ≤ a`, the integrand would be nonnegative `μ`-almost
-everywhere, so the nonzero polynomial `(X - x₀) q²` would integrate to zero against a weight,
-which `OrthogonalPolynomial.IsWeight.integral_eval_pos_of_ae_nonneg` forbids; symmetrically for
-`b ≤ x₀`.
+Write `family μ n = (X - x₀) q` with `q` of degree less than `n`; orthogonality of `family μ n` to
+`q` gives `∫ (t - x₀) q(t)² ∂μ = 0`. Were `x₀ ≤ a`, the integrand would be nonnegative
+`μ`-almost everywhere, and a nonzero polynomial of constant sign cannot integrate to zero against a
+weight.
+
+`OrthogonalPolynomial.root_family_mem_Ioo` is the conjunction of this and
+`OrthogonalPolynomial.root_family_lt`; the one-sided form is what a weight whose carrier is
+unbounded on the other side, such as the Laguerre weight on `(0, ∞)`, needs.
 
 Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
-theorem root_family_mem_Ioo (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {n : ℕ}
-    {x₀ : ℝ} (hx₀ : (family μ n).eval x₀ = 0) : x₀ ∈ Set.Ioo a b := by
-  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
-    rw [MeasureTheory.ae_iff]
-    exact hsupp
+theorem lt_root_family (hw : IsWeight μ) {a : ℝ} (hae : ∀ᵐ t ∂μ, a ≤ t) {n : ℕ} {x₀ : ℝ}
+    (hx₀ : (family μ n).eval x₀ = 0) : a < x₀ := by
   obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
     ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
   have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
@@ -635,23 +637,59 @@ theorem root_family_mem_Ioo (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc 
     simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
     ring
   have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
-  constructor
-  · by_contra h
-    push Not at h
-    refine (hw.integral_eval_pos_of_ae_nonneg hne ?_).ne' hzero
-    filter_upwards [hae] with t ht
+  by_contra h
+  push Not at h
+  refine (hw.integral_eval_pos_of_ae_nonneg hne ?_).ne' hzero
+  filter_upwards [hae] with t ht
+  simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+  exact mul_nonneg (by linarith) (sq_nonneg _)
+
+/-- **A root of an orthogonal polynomial is strictly to the left of a right bound of the weight.**
+If `μ`-almost every point is at most `b` and `x₀` is a root of `family μ n`, then `x₀ < b`; the
+mirror image of `OrthogonalPolynomial.lt_root_family`.
+
+Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
+theorem root_family_lt (hw : IsWeight μ) {b : ℝ} (hae : ∀ᵐ t ∂μ, t ≤ b) {n : ℕ} {x₀ : ℝ}
+    (hx₀ : (family μ n).eval x₀ = 0) : x₀ < b := by
+  obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
+    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
+  have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
+  have hqdeg : q.degree < n := by
+    have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
+    rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
+    exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
+  have hzero : ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
+    rw [← integral_family_mul_of_degree_lt hw hqdeg]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+    rw [hq]
     simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
-    exact mul_nonneg (by linarith [ht.1]) (sq_nonneg _)
-  · by_contra h
-    push Not at h
-    have hzero' : ∫ t, (-((X - C x₀) * q ^ 2)).eval t ∂μ = 0 := by
-      simp only [eval_neg]
-      rw [integral_neg, hzero, neg_zero]
-    refine (hw.integral_eval_pos_of_ae_nonneg (neg_ne_zero.mpr hne) ?_).ne' hzero'
-    filter_upwards [hae] with t ht
-    simp only [eval_neg, eval_mul, eval_sub, eval_X, eval_C, eval_pow]
-    rw [neg_mul_eq_neg_mul]
-    exact mul_nonneg (by linarith [ht.2]) (sq_nonneg _)
+    ring
+  have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
+  by_contra h
+  push Not at h
+  have hzero' : ∫ t, (-((X - C x₀) * q ^ 2)).eval t ∂μ = 0 := by
+    simp only [eval_neg]
+    rw [integral_neg, hzero, neg_zero]
+  refine (hw.integral_eval_pos_of_ae_nonneg (neg_ne_zero.mpr hne) ?_).ne' hzero'
+  filter_upwards [hae] with t ht
+  simp only [eval_neg, eval_mul, eval_sub, eval_X, eval_C, eval_pow]
+  rw [neg_mul_eq_neg_mul]
+  exact mul_nonneg (by linarith) (sq_nonneg _)
+
+/-- **The roots of an orthogonal polynomial lie inside the interval carrying the weight.** If
+`μ (Icc a b)ᶜ = 0` and `x₀` is a root of `family μ n`, then `a < x₀ < b`.
+
+The conjunction of the one-sided forms `OrthogonalPolynomial.lt_root_family` and
+`OrthogonalPolynomial.root_family_lt`, applied to the two halves of `t ∈ Icc a b`.
+
+Reference: [quarteroni2000numerical] §10.2; [kress1998numerical] §9.3. -/
+theorem root_family_mem_Ioo (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {n : ℕ}
+    {x₀ : ℝ} (hx₀ : (family μ n).eval x₀ = 0) : x₀ ∈ Set.Ioo a b := by
+  have hae : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  exact ⟨lt_root_family hw (hae.mono fun _ ht => ht.1) hx₀,
+    root_family_lt hw (hae.mono fun _ ht => ht.2) hx₀⟩
 
 /-! ### The three-term recurrence -/
 

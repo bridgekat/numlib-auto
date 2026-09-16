@@ -40,3 +40,32 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.5)"
 [[node]]
 id = "newton_pair"
 
+[[node]]
+id = "newton_two_eq"
+
+[[node]]
+id = "newton_three_eq"
+
+[[node]]
+id = "newton_three_eq_newton_two_dslope"
+
+[[node]]
+id = "newton_four_eq"
+
+[[node]]
+id = "newton_four_eq_newton_three_dslope"
+
+[[node]]
+id = "newton_three_swap₁"
+
+[[node]]
+id = "newton_three_swap₂"
+
+[[node]]
+id = "newton_three_eq_of_newton_form"
+
+[[node]]
+id = "exists_newton_three_eq_of_lt"
+
+[[node]]
+id = "exists_newton_three_eq"

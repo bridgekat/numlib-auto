@@ -90,6 +90,20 @@ theorem contDiffOn_of_hasDerivAt_chain {G : ℕ → 𝕜 → F} (hU : IsOpen U) 
           iteratedDerivWithin_congr hderiv hb, iteratedDerivWithin_of_isOpen hU hb]
         exact h2 k (by omega) hb
 
+/-- **A `C^N` function is `N` times differentiable on a ball**: around a point where `f` is `C^N`
+there is a ball on which each iterated derivative up to order `N - 1` has the next one as its
+derivative, and the `N`-th is continuous. -/
+theorem ContDiffAt.exists_ball_hasDerivAt_iteratedDeriv {f : ℝ → ℝ} {a : ℝ} {N : ℕ}
+    (hf : ContDiffAt ℝ N f a) :
+    ∃ δ > 0, (∀ j < N, ∀ x ∈ Metric.ball a δ,
+        HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f x) x) ∧
+      ContinuousOn (iteratedDeriv N f) (Metric.ball a δ) := by
+  obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
+  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
+  exact ⟨r, hr, fun j hj x hx =>
+    (hfu.mono hru).hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball hj hx,
+    (hfu.mono hru).continuousOn_iteratedDeriv_of_isOpen Metric.isOpen_ball le_rfl⟩
+
 end OpenSet
 
 section Hadamard

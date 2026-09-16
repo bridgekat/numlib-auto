@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Calculus.DSlope
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
@@ -47,6 +49,15 @@ the name or the error formula.
   with `firstOrder`.
 * `DividedDifference.sub_eval_interpolate_eq_newton` — the divided-difference form of the
   interpolation error.
+* `DividedDifference.newton_two_eq`, `DividedDifference.newton_three_eq`,
+  `DividedDifference.newton_four_eq` — the explicit quotient forms at two, three and four distinct
+  nodes, with the symmetries `DividedDifference.newton_three_swap₁`,
+  `DividedDifference.newton_three_swap₂` and the order reductions
+  `DividedDifference.newton_three_eq_newton_two_dslope`,
+  `DividedDifference.newton_four_eq_newton_three_dslope` of a divided difference through a fixed
+  node `a` to one of `dslope f a`.
+* `DividedDifference.exists_newton_three_eq` — the mean value form of the second divided difference
+  at three *arbitrary* nodes, `f[x, y, z] = f''(ξ)/2`, by Rolle's theorem twice.
 
 ## References
 
@@ -293,20 +304,221 @@ theorem sub_eval_interpolate_eq_newton {m : ℕ} (f : ℝ → ℝ) {v : Fin (m +
   rw [← this]
   ring
 
+/-! ### Explicit formulas at two, three and four nodes
+
+Read off the definition of `DividedDifference.newton`, these are algebraic identities in the values
+of `f` at distinct nodes: the quotient forms, the symmetry of a three-node difference in its nodes,
+Newton's form of the quadratic interpolant, and the reduction of a divided difference
+one of whose nodes is held fixed to a divided difference of `dslope f a` of one order less. -/
+
+section Explicit
+
+variable (f : ℝ → ℝ) {w x y z : ℝ}
+
+/-- The Newton divided difference at two nodes, explicitly: `f[x, y] = (f y - f x) / (y - x)`. -/
+theorem newton_two_eq (hxy : x ≠ y) : newton f ![x, y] = (f y - f x) / (y - x) := by
+  have hne : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  rw [newton, Fin.sum_univ_two]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+  rw [show (Finset.univ.erase (0 : Fin 2)) = {1} from rfl,
+    show (Finset.univ.erase (1 : Fin 2)) = {0} from rfl]
+  simp only [Finset.prod_singleton, Matrix.cons_val_zero, Matrix.cons_val_one]
+  field_simp
+  ring
+
+/-- The Newton divided difference at three nodes, explicitly. -/
+theorem newton_three_eq :
+    newton f ![x, y, z] = f x / ((x - y) * (x - z)) + f y / ((y - x) * (y - z)) +
+      f z / ((z - x) * (z - y)) := by
+  rw [newton, Fin.sum_univ_three]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two]
+  rw [show (Finset.univ.erase (0 : Fin 3)) = {1, 2} from rfl,
+    show (Finset.univ.erase (1 : Fin 3)) = {0, 2} from rfl,
+    show (Finset.univ.erase (2 : Fin 3)) = {0, 1} from rfl]
+  simp
+
+/-- **A divided difference through a node `a` is a divided difference of `dslope f a`**:
+`f[x, y, a] = g[x, y]` with `g = dslope f a`, for distinct `x, y, a`. This is the recursive
+definition of divided differences read with `a` as the first node. -/
+theorem newton_three_eq_newton_two_dslope (a : ℝ) (hxy : x ≠ y) (hxa : x ≠ a) (hya : y ≠ a) :
+    newton f ![x, y, a] = newton (dslope f a) ![x, y] := by
+  rw [newton_three_eq, newton_two_eq _ hxy, dslope_of_ne f hxa, dslope_of_ne f hya,
+    slope_def_field, slope_def_field]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - a ≠ 0 := sub_ne_zero.2 hxa
+  have h3 : y - a ≠ 0 := sub_ne_zero.2 hya
+  have h4 : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h5 : a - x ≠ 0 := sub_ne_zero.2 hxa.symm
+  have h6 : a - y ≠ 0 := sub_ne_zero.2 hya.symm
+  field_simp
+  ring
+
+/-- The Newton divided difference at four nodes, explicitly. -/
+theorem newton_four_eq {w : ℝ} :
+    newton f ![w, x, y, z] =
+      f w / ((w - x) * (w - y) * (w - z)) + f x / ((x - w) * (x - y) * (x - z)) +
+        f y / ((y - w) * (y - x) * (y - z)) + f z / ((z - w) * (z - x) * (z - y)) := by
+  rw [newton, Fin.sum_univ_four]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+    Matrix.cons_val_three]
+  rw [show (Finset.univ.erase (0 : Fin 4)) = {1, 2, 3} from rfl,
+    show (Finset.univ.erase (1 : Fin 4)) = {0, 2, 3} from rfl,
+    show (Finset.univ.erase (2 : Fin 4)) = {0, 1, 3} from rfl,
+    show (Finset.univ.erase (3 : Fin 4)) = {0, 1, 2} from rfl]
+  simp
+  ring
+
+/-- **A four-node divided difference through `a` is a three-node divided difference of
+`dslope f a`**: `f[x, y, z, a] = g[x, y, z]` with `g = dslope f a`, for distinct `x, y, z, a`.
+The four-node analogue of `DividedDifference.newton_three_eq_newton_two_dslope`: it turns a third
+divided difference one of whose nodes is `a` into a *second* divided difference of a function whose
+second derivative at `a` is `f⁽³⁾(a) / 3`. -/
+theorem newton_four_eq_newton_three_dslope (a : ℝ) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (hxa : x ≠ a) (hya : y ≠ a) (hza : z ≠ a) :
+    newton f ![x, y, z, a] = newton (dslope f a) ![x, y, z] := by
+  rw [newton_four_eq, newton_three_eq, dslope_of_ne f hxa, dslope_of_ne f hya,
+    dslope_of_ne f hza, slope_def_field, slope_def_field, slope_def_field]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - z ≠ 0 := sub_ne_zero.2 hxz
+  have h3 : y - z ≠ 0 := sub_ne_zero.2 hyz
+  have h4 : x - a ≠ 0 := sub_ne_zero.2 hxa
+  have h5 : y - a ≠ 0 := sub_ne_zero.2 hya
+  have h6 : z - a ≠ 0 := sub_ne_zero.2 hza
+  have h1' : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h2' : z - x ≠ 0 := sub_ne_zero.2 hxz.symm
+  have h3' : z - y ≠ 0 := sub_ne_zero.2 hyz.symm
+  have h4' : a - x ≠ 0 := sub_ne_zero.2 hxa.symm
+  have h5' : a - y ≠ 0 := sub_ne_zero.2 hya.symm
+  have h6' : a - z ≠ 0 := sub_ne_zero.2 hza.symm
+  field_simp
+  ring
+
+/-- Divided differences are symmetric in their nodes: swapping the first two. -/
+theorem newton_three_swap₁ : newton f ![x, y, z] = newton f ![y, x, z] := by
+  rw [newton_three_eq, newton_three_eq]; ring
+
+/-- Divided differences are symmetric in their nodes: swapping the last two. -/
+theorem newton_three_swap₂ : newton f ![x, y, z] = newton f ![x, z, y] := by
+  rw [newton_three_eq, newton_three_eq]; ring
+
+/-- **Newton's form of the quadratic interpolant**, read at the third node:
+`f z = f x + (z - x) f[x, y] + (z - x)(z - y) f[x, y, z]` for distinct `x, y, z`. An algebraic
+identity in the three values of `f`. -/
+theorem newton_three_eq_of_newton_form (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z) :
+    f z = f x + (z - x) * ((f y - f x) / (y - x)) + (z - x) * (z - y) * newton f ![x, y, z] := by
+  rw [newton_three_eq]
+  have h1 : x - y ≠ 0 := sub_ne_zero.2 hxy
+  have h2 : x - z ≠ 0 := sub_ne_zero.2 hxz
+  have h3 : y - z ≠ 0 := sub_ne_zero.2 hyz
+  have h1' : y - x ≠ 0 := sub_ne_zero.2 hxy.symm
+  have h2' : z - x ≠ 0 := sub_ne_zero.2 hxz.symm
+  have h3' : z - y ≠ 0 := sub_ne_zero.2 hyz.symm
+  field_simp
+  ring
+
+end Explicit
+
 /-- The Newton divided difference at two distinct nodes is the difference quotient, hence the value
 of `DividedDifference.firstOrder` there: the two sections describe the same object. -/
 theorem newton_pair (hf : ∀ x, HasDerivAt f (f' x) x) (hc' : Continuous f') {s t : ℝ}
     (hst : s ≠ t) : newton f ![t, s] = firstOrder f' s t := by
   have hne : s - t ≠ 0 := sub_ne_zero.2 hst
-  have hval : newton f ![t, s] = (f s - f t) / (s - t) := by
-    rw [newton, Fin.sum_univ_two]
-    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
-    rw [show (Finset.univ.erase (0 : Fin 2)) = {1} from rfl,
-      show (Finset.univ.erase (1 : Fin 2)) = {0} from rfl]
-    simp only [Finset.prod_singleton, Matrix.cons_val_zero, Matrix.cons_val_one]
-    field_simp
-    ring
+  have hval : newton f ![t, s] = (f s - f t) / (s - t) := newton_two_eq f hst.symm
   rw [hval, sub_eq_mul_firstOrder hf hc' s t]
   field_simp
+
+/-! ### The mean value form of the second divided difference -/
+
+section MeanValueForm
+
+variable {f f₁ f₂ : ℝ → ℝ} {x y z : ℝ}
+
+/-- **The mean value form of the second divided difference**, for sorted nodes: on a convex set
+where `f` is twice differentiable with derivatives `f₁, f₂`, and `x < y < z` in it, there is `ξ`
+in the set with `f[x, y, z] = f₂(ξ) / 2` ([han2009theoretical] §3.2). Rolle's theorem twice on
+`f` minus its Newton interpolant `f(x) + (t - x) f[x, y] + (t - x)(t - y) f[x, y, z]`, whose
+second derivative is `f₂ - 2 f[x, y, z]`.
+
+No node is distinguished here, so `DividedDifference.newton_three_eq_newton_two_dslope` cannot be
+used to lower the order to a plain difference quotient of `dslope f a`; the Rolle argument is what
+replaces it. -/
+theorem exists_newton_three_eq_of_lt {s : Set ℝ} (hs : Convex ℝ s)
+    (hx : x ∈ s) (hz : z ∈ s) (hxy : x < y) (hyz : y < z)
+    (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :
+    ∃ ξ ∈ s, newton f ![x, y, z] = f₂ ξ / 2 := by
+  have hsub : Icc x z ⊆ s := hs.ordConnected.out hx hz
+  set c : ℝ := newton f ![x, y, z] with hc
+  set b : ℝ := (f y - f x) / (y - x) with hb
+  set E : ℝ → ℝ := fun t => f t - (f x + (t - x) * b + (t - x) * (t - y) * c) with hE
+  set E₁ : ℝ → ℝ := fun t => f₁ t - (b + ((t - x) + (t - y)) * c) with hE₁
+  have hxz : x < z := hxy.trans hyz
+  have hEd : ∀ u ∈ s, HasDerivAt E (E₁ u) u := fun u hu => by
+    have hd1 : HasDerivAt (fun t : ℝ => (t - x) * b) b u := by
+      simpa using ((hasDerivAt_id u).sub_const x).mul_const b
+    have hd2 : HasDerivAt (fun t : ℝ => (t - x) * (t - y) * c) ((u - y + (u - x)) * c) u := by
+      simpa using (((hasDerivAt_id u).sub_const x).mul
+        ((hasDerivAt_id u).sub_const y)).mul_const c
+    have h := (hf u hu).sub (((hasDerivAt_const u (f x)).add hd1).add hd2)
+    simp only [hE, hE₁]
+    exact h.congr_deriv (by ring)
+  have hE₁d : ∀ u ∈ s, HasDerivAt E₁ (f₂ u - 2 * c) u := fun u hu => by
+    have hd : HasDerivAt (fun t : ℝ => b + (t - x + (t - y)) * c) (2 * c) u := by
+      have h0 := ((((hasDerivAt_id u).sub_const x).add
+        ((hasDerivAt_id u).sub_const y)).mul_const c).const_add b
+      exact h0.congr_deriv (by ring)
+    simp only [hE₁]
+    exact ((hf₁ u hu).sub hd).congr_deriv (by ring)
+  have hEx : E x = 0 := by simp [hE]
+  have hEy : E y = 0 := by
+    have hyx : y - x ≠ 0 := sub_ne_zero.2 hxy.ne'
+    simp only [hE, hb, sub_self, mul_zero, zero_mul, add_zero]
+    rw [mul_div_assoc', mul_comm, mul_div_assoc, div_self hyx, mul_one]
+    ring
+  have hEz : E z = 0 := by
+    have h := newton_three_eq_of_newton_form (f := f) hxy.ne hxz.ne hyz.ne
+    simp only [hE, hb, hc]
+    linarith
+  have hsubxy : Icc x y ⊆ s := (Icc_subset_Icc le_rfl hyz.le).trans hsub
+  have hsubyz : Icc y z ⊆ s := (Icc_subset_Icc hxy.le le_rfl).trans hsub
+  have hcont : ∀ t : Set ℝ, t ⊆ s → ContinuousOn E t :=
+    fun t ht u hu => (hEd u (ht hu)).continuousAt.continuousWithinAt
+  obtain ⟨ξ₁, hξ₁, h1⟩ := exists_hasDerivAt_eq_zero hxy (hcont _ hsubxy) (hEx.trans hEy.symm)
+    fun u hu => hEd u (hsubxy (Ioo_subset_Icc_self hu))
+  obtain ⟨ξ₂, hξ₂, h2⟩ := exists_hasDerivAt_eq_zero hyz (hcont _ hsubyz) (hEy.trans hEz.symm)
+    fun u hu => hEd u (hsubyz (Ioo_subset_Icc_self hu))
+  have hξ₁₂ : ξ₁ < ξ₂ := hξ₁.2.trans hξ₂.1
+  have hsub₁₂ : Icc ξ₁ ξ₂ ⊆ s := (Icc_subset_Icc hξ₁.1.le hξ₂.2.le).trans hsub
+  have hcont₁ : ContinuousOn E₁ (Icc ξ₁ ξ₂) :=
+    fun u hu => (hE₁d u (hsub₁₂ hu)).continuousAt.continuousWithinAt
+  obtain ⟨ξ, hξ, h3⟩ := exists_hasDerivAt_eq_zero hξ₁₂ hcont₁ (h1.trans h2.symm)
+    fun u hu => hE₁d u (hsub₁₂ (Ioo_subset_Icc_self hu))
+  exact ⟨ξ, hsub ⟨(hξ₁.1.trans hξ.1).le, (hξ.2.trans hξ₂.2).le⟩, by linarith⟩
+
+/-- **The mean value form of the second divided difference** at three distinct nodes in a convex
+set where `f` is twice differentiable: `f[x, y, z] = f₂(ξ) / 2` for some `ξ` in the set. The
+sorted case `exists_newton_three_eq_of_lt` plus the symmetry of `newton` in its nodes. -/
+theorem exists_newton_three_eq {s : Set ℝ} (hs : Convex ℝ s)
+    (hx : x ∈ s) (hy : y ∈ s) (hz : z ∈ s) (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (hf : ∀ u ∈ s, HasDerivAt f (f₁ u) u) (hf₁ : ∀ u ∈ s, HasDerivAt f₁ (f₂ u) u) :
+    ∃ ξ ∈ s, newton f ![x, y, z] = f₂ ξ / 2 := by
+  rcases hxy.lt_or_gt with h1 | h1
+  · rcases hyz.lt_or_gt with h2 | h2
+    · exact exists_newton_three_eq_of_lt hs hx hz h1 h2 hf hf₁
+    · rcases hxz.lt_or_gt with h3 | h3
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hx hy h3 h2 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₂]; exact hv⟩
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hz hy h3 h1 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₂, newton_three_swap₁]; exact hv⟩
+  · rcases hyz.lt_or_gt with h2 | h2
+    · rcases hxz.lt_or_gt with h3 | h3
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hy hz h1 h3 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₁]; exact hv⟩
+      · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hy hx h2 h3 hf hf₁
+        exact ⟨ξ, hξ, by rw [newton_three_swap₁, newton_three_swap₂]; exact hv⟩
+    · obtain ⟨ξ, hξ, hv⟩ := exists_newton_three_eq_of_lt hs hz hx h2 h1 hf hf₁
+      exact ⟨ξ, hξ, by
+        rw [newton_three_swap₂, newton_three_swap₁, newton_three_swap₂]; exact hv⟩
+
+end MeanValueForm
 
 end DividedDifference

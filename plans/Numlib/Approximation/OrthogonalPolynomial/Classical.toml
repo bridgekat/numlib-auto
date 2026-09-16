@@ -197,3 +197,9 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 83"
 [[node]]
 id = "alpha_beta_hermiteMeasure"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Program 84"
+
+[[node]]
+id = "laguerreMeasure_compl_Ioi"
+
+[[node]]
+id = "laguerreMeasure_ae_nonneg"

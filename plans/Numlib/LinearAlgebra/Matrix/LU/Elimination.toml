@@ -80,3 +80,12 @@ id = "croutUpper"
 
 [[node]]
 id = "croutLower_mul_croutUpper"
+
+[[node]]
+id = "blockEmb"
+
+[[node]]
+id = "elimStep_submatrix_orderEmbedding"
+
+[[node]]
+id = "gemStage_submatrix_blockEmb"

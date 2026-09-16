@@ -223,15 +223,6 @@ id = "HasDominantPivots.gemStage_apply_eq_zero"
 id = "HasDominantPivots.gemStage_eq_of_pivot_eq_zero"
 
 [[node]]
-id = "blockEmb"
-
-[[node]]
-id = "elimStep_submatrix_orderEmbedding"
-
-[[node]]
-id = "gemStage_submatrix_blockEmb"
-
-[[node]]
 id = "prod_absGemPivot_le"
 
 [[node]]
