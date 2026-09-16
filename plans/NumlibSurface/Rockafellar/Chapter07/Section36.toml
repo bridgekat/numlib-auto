@@ -34,7 +34,6 @@ source = 'Rockafellar 1970, Theorem 36.4'
 
 [[node]]
 id = 'theorem_36_4_minimax'
-desc = 'Equivalent saddle-functions have the same minimax value.'
 source = 'Rockafellar 1970, Theorem 36.4'
 
 [[node]]

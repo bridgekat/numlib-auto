@@ -198,6 +198,8 @@ with the same closure have the same supremum, and the iterated extrema see only 
 theorem theorem_36_4_maximin (h : SaddleEquiv K L) : maximin K = maximin L :=
   SaddleEquiv.maximin_eq h
 
+/-- **Theorem 36.4**: equivalent saddle-functions have the same `inf sup`, the mirror of
+`theorem_36_4_maximin`. -/
 theorem theorem_36_4_minimax (h : SaddleEquiv K L) : minimax K = minimax L :=
   SaddleEquiv.minimax_eq h
 
