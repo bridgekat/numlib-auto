@@ -44,4 +44,6 @@ To start new plans for a formalization project or complete open items in existin
 
 ## Provenance
 
-`Numlib/Analysis/Convex` (with `Numlib/Order` and `Numlib/LinearAlgebra/Subspace`) and `NumlibSurface/Rockafellar` (with `NumlibSurface/Common`) were merged from the [tdaf](https://github.com/bridgekat/tdaf) repository at its commit `a44b1de`, under the MIT licence, Copyright (c) 2026 Great Bay University; the licence text is in [`LICENSE-tdaf`](LICENSE-tdaf).
+`Numlib/Analysis/Convex` (with `Numlib/Order` and `Numlib/LinearAlgebra/Subspace`) and `NumlibSurface/Rockafellar` were merged from the [tdaf](https://github.com/bridgekat/tdaf) repository at its commit `a44b1de`, Copyright (c) 2026 Great Bay University.
+
+This repository carries no licence file at present: the MIT text that accompanied the tdaf merge has been removed pending a move to Apache 2.0 for the project as a whole.
