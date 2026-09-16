@@ -5,15 +5,17 @@ import Numlib.Analysis.Convex.Saddle.Minimax
 import NumlibSurface.Rockafellar.Chapter05.Section25
 
 /-!
-# Rockafellar, §29: Bifunctions and Generalized Convex Programs
+# Rockafellar §29: bifunctions and generalized convex programs
 
-The generalization of an ordinary convex program to a *convex bifunction* — an objective function
-together with a distinguished family of perturbations of it — and the identification of its
-Kuhn–Tucker vectors with the subgradients of the perturbation function at the origin. This is the
-hinge of Part VI: §30's duality theory is stated entirely in this vocabulary.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §29
+(pp. 291–306): the generalization of an ordinary convex program to a *convex bifunction* — an
+objective function together with a distinguished family of perturbations of it — and the
+identification of its Kuhn–Tucker vectors with the subgradients of the perturbation function at
+the origin. This is the hinge of Part VI: §30's duality theory is stated entirely in this
+vocabulary.
 
 All 12 numbered results of §29 are formalized: Theorems 29.1, 29.2, 29.3 and 29.4 and Corollaries
-29.1.1–29.1.6, 29.3.1 and 29.4.1.
+29.1.1–29.1.6, 29.3.1 and 29.4.1. Corollary 29.4.1 is printed with no proof.
 
 Almost all of §29's vocabulary is the backbone's under the book's own names: `Bifun (Rn m) (Rn n)`,
 `graphFn`, `ConvexBifun`, `ClosedBifun`, `domBifun`, `infBifun` for the perturbation function
@@ -23,17 +25,36 @@ objective function `F0` is `F 0`; the optimal value in `(P)` is `infBifun F 0`. 
 is deliberately *not* `argmin (F 0)` — the book asks for `(F0)(x)` to be *finite* and equal to the
 optimal value, so an inconsistent program has no optimal solutions although `argmin (F 0) = ℝⁿ`.
 
+## Main results
+
+* `theorem_29_1`, `theorem_29_1_convexFn`, `theorem_29_1_dom`, `theorem_29_1_set` — the
+  perturbation function `inf F` is convex with `dom (inf F) = dom F`, and at a finite optimal value
+  the Kuhn–Tucker vectors are exactly `-∂(inf F)(0)`.
+* `corollary_29_1_1_*` — the ε-subgradient description, the directional derivative
+  `(inf F)'(0; ·)`, and convexity, closedness and the support function of the Kuhn–Tucker set.
+* `corollary_29_1_2`, `corollary_29_1_3`, `corollary_29_1_3_eq`, `corollary_29_1_3_partial` —
+  when no Kuhn–Tucker vector exists, and when there is exactly one, namely `-∇(inf F)(0)`.
+* `corollary_29_1_4_nonempty`, `corollary_29_1_4_dirDeriv`, `corollary_29_1_5_isCompact` with its
+  five clauses, `corollary_29_1_6_bot`, `corollary_29_1_6_top` — strong and strict consistency, and
+  the dichotomy `inf Fu = -∞` for one `u` or for none.
+* `theorem_29_2_objective`, `theorem_29_2_infBifun`, `theorem_29_2_argmin_nonempty`,
+  `theorem_29_2_kuhnTucker_nonempty`, `theorem_29_2_polyhedral_argmin`,
+  `theorem_29_2_polyhedral_kuhnTucker` — the polyhedral case, where consistency alone suffices.
+* `theorem_29_3`, `theorem_29_3_isSaddlePoint`, `corollary_29_3_1_stronglyConsistent`,
+  `corollary_29_3_1_strictlyConsistent`, `corollary_29_3_1_polyhedral` — optimality plus a
+  Kuhn–Tucker vector is a saddle-point of the Lagrangian, under three constraint qualifications.
+* `theorem_29_4_apply`, `theorem_29_4_inf`, `theorem_29_4_dom_subset`,
+  `theorem_29_4_dom_subset_closure`, and the `corollary_29_4_1_*` clauses — what closing a
+  bifunction preserves.
+
+## Where the book needs correcting
+
 **Corollary 29.4.1 is false as printed.** Its perturbation clause — that the perturbation functions
 of `(P)` and `(cl P)` agree on a neighbourhood of `0` — drops the properness that its own
 Theorem 29.4 carries. `corollary_29_4_1_perturbation` transcribes the claim as printed and
 `corollary_29_4_1_perturbation_false` refutes it, with the counterexample `originBifun` on `ℝ¹`.
 The corrected statement is `corollary_29_4_1_eventually`, which adds `Proper (graphFn F)`. Every
 other clause of the corollary holds as printed and is proved here.
-
-## References
-
-* [rockafellar1970convex] §29 (pp. 291–306).
-  Corollary 29.4.1 is stated there with no printed proof.
 -/
 
 open Filter Topology

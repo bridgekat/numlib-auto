@@ -8,17 +8,30 @@ import NumlibSurface.Rockafellar.Chapter03.Section16
 import NumlibSurface.Rockafellar.Chapter04.Section19
 
 /-!
-# Rockafellar, §31: Fenchel's Duality Theorem
+# Rockafellar §31: Fenchel's duality theorem
 
-Fenchel's Duality Theorem and the version of it that a linear transformation `A` allows, the same
-pair of extremum problems read as a convex program and its dual in the sense of §§29–30, the two
-dual-cone corollaries, and Moreau's decomposition theorem. This is where Part III's conjugacy and
-Part VI's programs meet.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §31
+(pp. 327–341): Fenchel's Duality Theorem and the version of it that a linear transformation `A`
+allows, the same pair of extremum problems read as a convex program and its dual in the sense of
+§§29–30, the two dual-cone corollaries, and Moreau's decomposition theorem. This is where Part
+III's conjugacy and Part VI's programs meet.
 
 All 12 numbered results of §31 are formalized: Theorems 31.1, 31.2, 31.3, 31.4 and 31.5 and
 Corollaries 31.2.1, 31.3.1, 31.4.1, 31.4.2, 31.4.3, 31.5.1 and 31.5.2, together with the polyhedral
 strengthenings of Theorem 31.1, Theorem 31.4 and Corollary 31.2.1, and the unnumbered contraction
 property of the proximation, `prox_contraction`.
+
+Two assertions the book leaves unproved are proved here. **Corollary 31.2.1's polyhedral
+strengthening** is announced with "the proof will not be given here"; both halves are
+`corollary_31_2_1_a_polyhedral_right` and `corollary_31_2_1_a_polyhedral_left`. **Corollary 31.5.1**
+is stated with no proof; `corollary_31_5_1` is a genuine `Homeomorph`, its inverse continuous by the
+contraction property of the proximation.
+
+Several statements carry weaker hypotheses than the book's. Theorem 31.1's finiteness clause needs
+only a point of `dom f ∩ dom g` and one of `dom g* ∩ dom f*`, not their relative interiors;
+closedness is unused under condition (a) in Corollary 31.2.1, Theorem 31.3 and Corollary 31.3.1;
+Theorem 31.2's properness clause needs no relative-interior hypothesis; and Corollary 31.4.3 needs
+`K` closed only for the attainment of its first infimum.
 
 ## Main definitions
 
@@ -34,21 +47,36 @@ Everything else is a backbone object used without a surface copy. Rockafellar's 
 on `ℝⁿ` the transpose is canonical and `isAdjointPair_adjoint` supplies the datum that the
 pairing-parametrised backbone asks for.
 
-Two assertions the book leaves unproved are proved here. **Corollary 31.2.1's polyhedral
-strengthening** is announced with "the proof will not be given here"; both halves are
-`corollary_31_2_1_a_polyhedral_right` and `corollary_31_2_1_a_polyhedral_left`. **Corollary 31.5.1**
-is stated with no proof; `corollary_31_5_1` is a genuine `Homeomorph`, its inverse continuous by the
-contraction property of the proximation.
+## Main results
 
-Several statements carry weaker hypotheses than the book's. Theorem 31.1's finiteness clause needs
-only a point of `dom f ∩ dom g` and one of `dom g* ∩ dom f*`, not their relative interiors;
-closedness is unused under condition (a) in Corollary 31.2.1, Theorem 31.3 and Corollary 31.3.1;
-Theorem 31.2's properness clause needs no relative-interior hypothesis; and Corollary 31.4.3 needs
-`K` closed only for the attainment of its first infimum.
+* `theorem_31_1_weak`, `theorem_31_1_a`, `theorem_31_1_b`, their `_attained` clauses, the four
+  `theorem_31_1_*_polyhedral_*` strengthenings, and `theorem_31_1_finite` — Fenchel's duality
+  theorem: `inf (f - g) = sup (g* - f*)`, with attainment on the side the qualification is about.
+* `theorem_31_2_convex`, `theorem_31_2_proper`, `theorem_31_2_closed`, `theorem_31_2_infBifun`,
+  `theorem_31_2_domBifun`, `theorem_31_2_relint_domBifun`, `theorem_31_2_adjoint`,
+  `theorem_31_2_supBifun_adjoint`, and the two `_stronglyConsistent_iff` — the Fenchel problem as a
+  convex program in the sense of §29, and its adjoint.
+* `corollary_31_2_1_a`, `corollary_31_2_1_b`, their `_attained` and polyhedral forms — the
+  perturbed form of the theorem.
+* `theorem_31_3`, `theorem_31_3_weak`, `theorem_31_3_iInf`, `theorem_31_3_iSup`, `theorem_31_3_id`,
+  `theorem_31_3_kuhnTucker_concave`, `corollary_31_3_1`, `corollary_31_3_1_id` — the optimality
+  conditions `A*x* ∈ ∂f(x)` and `x* ∈ ∂g(Ax)` and what they give.
+* `theorem_31_4_dualCone`, `theorem_31_4_a`, `theorem_31_4_b`, their `_attained` and polyhedral
+  forms, `theorem_31_4_weak`, `theorem_31_4_optimality*` — the dual-cone form:
+  `inf_K f = -inf_{K*} f*`.
+* `corollary_31_4_1_*`, `corollary_31_4_2_*`, `corollary_31_4_3*` — the same over a translated
+  cone, over a subspace and its orthogonal complement, and for a co-finite objective.
+* `theorem_31_5`, `theorem_31_5_apply`, `theorem_31_5_finite`, `theorem_31_5_existsUnique`,
+  `theorem_31_5_argmin_iff`, `theorem_31_5_argmin_eq`, `theorem_31_5_gradient`,
+  `theorem_31_5_gradient_conj` — Moreau's theorem `(f □ w) + (f* □ w) = w` with `w = ½|·|²`, and
+  the proximation as the gradient of the Moreau envelope.
+* `prox_eq_iff_sub_mem_subdifferential`, `prox_add_prox_conj_eq`, `prox_conj_eq_sub`,
+  `prox_continuous`, `prox_contraction`, `prox_lipschitzWith_one`, `corollary_31_5_1` — Moreau's
+  decomposition `z = prox (z | f) + prox (z | f*)` and the homeomorphism it defines.
+* `corollary_31_5_2` — `∂f` is a maximal monotone mapping.
 
 ## References
 
-* [rockafellar1970convex] §31 (pp. 327–341).
 * J.-J. Moreau, *Proximité et dualité dans un espace hilbertien*, Bull. Soc. Math. France **93**
   (1965), 273–299 — Theorem 31.5 and Corollary 31.5.2.
 -/
@@ -160,12 +188,8 @@ theorem theorem_31_1_b {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (⨅ x, f x - g x) = ⨆ y : Rn n, concaveConj (pairing n) g y - conj (pairing n) f y :=
   fenchel_duality_of_closed hf hg.neg (isExactSum_conj_of_relint hf hg hyf hyg)
 
-/-! ### Theorem 31.1: the polyhedral strengthening
-
-"If `g` is actually polyhedral, `ri (dom g)` and `ri (dom g*)` can be replaced by `dom g` and
-`dom g*` in (a) and (b), respectively (and the closure assumption in (b) is superfluous). Similarly
-if `f` is polyhedral." All four readings are Theorem 20.1 in place of Theorem 16.4, and the closure
-assumption really is superfluous: a proper polyhedral convex function is closed. -/
+/-- **Theorem 31.1**: under condition (b) the *infimum* `inf {f(x) - g(x)}` is attained at some
+`x`. Specialises `exists_sub_eq_iInf`. -/
 theorem theorem_31_1_b_attained {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConcaveFn g) {y₀ : Rn n} (hyf : y₀ ∈ ri (dom (conj (pairing n) f)))
     (hyg : y₀ ∈ ri (domConcave (concaveConj (pairing n) g))) :
@@ -1056,9 +1080,12 @@ noncomputable def corollary_31_5_1 {f : Rn n → EReal} (hf : ClosedProperConvex
     ↥(subgradientRel (pairing n) f) ≃ₜ Rn n :=
   subgradientRelHomeomorph hf
 
+/-- The homeomorphism of Corollary 31.5.1 is the book's map `(x, x*) ↦ x + x*`. -/
 @[simp] theorem corollary_31_5_1_apply {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (p : ↥(subgradientRel (pairing n) f)) : corollary_31_5_1 hf p = p.1.1 + p.1.2 := rfl
 
+/-- Its inverse is Moreau's decomposition `z ↦ (prox (z ∣ f), z - prox (z ∣ f))` of
+Corollary 31.5.1. -/
 @[simp] theorem corollary_31_5_1_symm_apply {f : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (z : Rn n) :
     (corollary_31_5_1 hf).symm z
@@ -1343,8 +1370,8 @@ private theorem adjointBifun_fenchelBifun_ne_bot_iff (A : Rn n →ₗ[ℝ] Rn m)
     refine EReal.add_ne_bot_iff.2 ⟨ne_of_gt h1, ?_⟩
     simpa using (lt_top_iff_ne_top.1 h2)
 
-/-- The concave effective domain of `F*` is `dom f* - A* (dom g*)`: the mirror of
-`theorem_31_2_domBifun`. -/
+/-- **Theorem 31.2**: the concave effective domain of `F*` is `dom f* - A* (dom g*)`, the mirror
+of `theorem_31_2_domBifun`. -/
 theorem theorem_31_2_domConcaveBifun_adjoint (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal}
     {g : Rn m → EReal} (hpf : Proper f) (hpg : ProperConcave g) :
     domConcaveBifun (adjointBifun (pairing m) (pairing n) (fenchelBifun A f g))

@@ -2,12 +2,15 @@ import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter07.Section33
 
 /-!
-# Rockafellar, §34: Closures and Equivalence Classes
+# Rockafellar §34: closures and equivalence classes
 
-The lower and upper closures `cl₂ cl₁ K` and `cl₁ cl₂ K`, the effective domain `dom K`,
-equivalence and closedness of saddle-functions, the class `Ω (F)`, the kernel, and simple
-saddle-functions. All ten numbered results of §34 are formalized: Theorems 34.1–34.5 (34.3 in six
-clauses (a)–(f)), Corollaries 34.2.1–34.2.4 and Corollary 34.5.1.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §34
+(pp. 359–369): the lower and upper closures `cl₂ cl₁ K` and `cl₁ cl₂ K`, the effective domain
+`dom K`, equivalence and closedness of saddle-functions, the class `Ω (F)`, the kernel, and simple
+saddle-functions.
+
+All ten numbered results of §34 are formalized: Theorems 34.1–34.5 (34.3 in six clauses (a)–(f)),
+Corollaries 34.2.1–34.2.4 and Corollary 34.5.1.
 
 The orientation convention for `cl₁` and `cl₂` is stated in `Chapter07/Section33.lean` and used here
 unchanged; `lowerCl K = cl₂ (cl₁ K)` and `upperCl K = cl₁ (cl₂ K)`.
@@ -17,6 +20,44 @@ uses: the natural primitive is not a saddle-function but a closed convex bifunct
 order interval `Ω (F) = {K | K̲ ≤ K ≤ K̄}` is exactly one equivalence class of closed
 concave-convex functions. Theorem 34.1 then says the two closures always land on such a pair.
 
+## Main definitions
+
+* `Ω F` — for a closed convex bifunction `F`, the collection of concave-convex `K` with
+  `K̲ ≤ K ≤ K̄`; `mem_bifunSaddleClass_of_mem_Ω` is the bridge to the backbone's order interval.
+
+## Main results
+
+* `dom₁_eq`, `dom₂_eq`, `domSaddle_eq`, `properSaddleFn_iff`, `saddleEquiv_iff`,
+  `closedSaddleFn_iff` — the section's vocabulary: `dom K = dom₁ K × dom₂ K`, proper, equivalent
+  and closed.
+* `theorem_34_2_lower_mem`, `theorem_34_2_upper_mem`, `theorem_34_2_cl₁`, `theorem_34_2_cl₂`,
+  `theorem_34_2_closed`, `theorem_34_2_equiv`, `theorem_34_2_maximal`, `theorem_34_2_converse`,
+  `theorem_34_2_mem_self`, `theorem_34_2_dom₁`, `theorem_34_2_dom₂`, `theorem_34_2_dom`,
+  `theorem_34_2_bifunOfSaddleFn`, `theorem_34_2_bifun_apply`, `theorem_34_2_adjoint`,
+  `theorem_34_2_eq_of_mem_relint_dom₁`, `theorem_34_2_eq_of_mem_relint_dom₂` — `Ω (F)` is exactly
+  one equivalence class of closed saddle-functions, with least member `K̲` and greatest `K̄`, and
+  `F` is recovered from any member of it.
+* `theorem_34_1_lower`, `theorem_34_1_upper`, `theorem_34_1_lower_eq`, `theorem_34_1_upper_eq` —
+  the lower and upper closures are lower and upper closed, and the iterated closures stabilise.
+* `corollary_34_2_1_dom`, `corollary_34_2_1_eq_of_mem_relint_dom₁`,
+  `corollary_34_2_1_eq_of_mem_relint_dom₂` — equivalent saddle-functions share their effective
+  domain and agree over its relative interior in each argument.
+* `corollary_34_2_2_*` — a lower, upper or fully closed saddle-function is closed; each class has
+  exactly one lower closed member, its least, and one upper closed member, its greatest.
+* `corollary_34_2_3`, `corollary_34_2_3_not_equiv` — the only improper closed saddle-functions are
+  the two constants `±∞`, and they are not equivalent.
+* `corollary_34_2_4_*` — the class of the extensions of a finite continuous `K` on `C × D`.
+* `theorem_34_3_a` through `theorem_34_3_f`, `theorem_34_3` — the six-clause characterisation of
+  closedness by the behaviour of the slices on `ri C`, `C ∖ ri C` and off `C`, and dually.
+* `kernel_eq_restrictFn`, `kernel_eq_iff'`, `simpleSaddleFn_iff`, `simpleSaddleFn_of_closed`,
+  `simpleSaddleFn_bifunBracket` — the kernel and simple saddle-functions.
+* `theorem_34_4` — two closed proper concave-convex functions are equivalent exactly when they have
+  the same kernel.
+* `theorem_34_5`, `theorem_34_5_le`, `theorem_34_5_equiv`, `theorem_34_5_closed`,
+  `theorem_34_5_proper`, `theorem_34_5_kernel`, `theorem_34_5_mem_of_kernel_eq`,
+  `corollary_34_5_1` — the kernel of a simple proper concave-convex function is the kernel of one
+  equivalence class of closed proper saddle-functions.
+
 ## Divergences from the book
 
 Theorem 34.2's `dom K = dom F × dom F*` is a product identity and only that: the book argues the
@@ -25,10 +66,6 @@ two factors separately, and that step fails for improper `F` — with graph func
 `theorem_34_2_dom₁` and `theorem_34_2_dom₂` carry a nonemptiness hypothesis the book suppresses.
 Theorem 34.1 is proved with no hypothesis at all, stronger than the book's statement, and
 Corollary 34.2.4 asks only for separate continuity of the slices where the book asks for joint.
-
-## References
-
-* [rockafellar1970convex] §34, pp. 359–369.
 -/
 
 namespace Rockafellar

@@ -8,16 +8,34 @@ import Numlib.Analysis.Convex.Subdifferential.Gradient
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §4: Convex Functions
+# Rockafellar §4: convex functions
 
-Convex functions on `ℝⁿ` with values in `[-∞, +∞]`: the secant and Jensen inequalities, the
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §4:
+convex functions on `ℝⁿ` with values in `[-∞, +∞]` — the secant and Jensen inequalities, the
 second-derivative tests, convexity of level sets, and positively homogeneous convex functions.
+
 All 11 numbered results of §4 are formalized.
 
 Rockafellar's convex function is defined on **all** of `ℝⁿ` and is convex when its epigraph is,
 which is the backbone's `ConvexFn` exactly. Only Theorems 4.4 and 4.5 take a finite `f`, being
 about `C²` functions; anywhere else `f : Rn n → ℝ` would be a mistranslation. Properness is
 imposed only where the book imposes it: Corollaries 4.7.1 and 4.7.2 and Theorem 4.8.
+
+## Main results
+
+* `theorem_4_1` — the secant inequality on a convex set `C` characterises convexity there, through
+  the extension by `+∞` off `C`.
+* `theorem_4_2` — the strict-inequality characterisation, stated for the full range `[-∞, +∞]`.
+* `theorem_4_3` — Jensen's inequality, `f (∑ λᵢ xᵢ) ≤ ∑ λᵢ f xᵢ`.
+* `theorem_4_4`, `theorem_4_5` — the second-derivative tests: `f'' ≥ 0` on an interval, and a
+  positive semi-definite Hessian on an open convex set.
+* `theorem_4_6`, `corollary_4_6_1` — the level sets of a convex function are convex, so the
+  solution set of any system of convex inequalities is convex.
+* `theorem_4_7` — a positively homogeneous function is convex exactly when it is subadditive.
+* `corollary_4_7_1`, `corollary_4_7_2` — subadditivity over a finite sum, and `f (-x) ≥ -f x`.
+* `theorem_4_8`, `theorem_4_8_basis` — a positively homogeneous proper convex `f` is linear on a
+  subspace `L` exactly when `f (-x) = -f x` on `L`, and it is enough to check that on a spanning
+  set.
 
 ## The extended arithmetic
 
@@ -38,10 +56,6 @@ The conventions §4 lays down are content, not boilerplate.
 
 `theorem_4_5` states positive semi-definiteness of the Hessian in the coordinate-free form
 `0 ≤ fderiv ℝ (fderiv ℝ f) x z z` rather than through the matrix of second partial derivatives.
-
-## References
-
-* [rockafellar1970convex] §4.
 -/
 
 namespace Rockafellar

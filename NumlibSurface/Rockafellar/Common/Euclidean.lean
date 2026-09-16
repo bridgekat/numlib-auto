@@ -20,6 +20,9 @@ import Mathlib.Tactic.TFAE
 /-!
 # Rockafellar: the Euclidean vocabulary of the surface
 
+Shared notation and glue lemmas for the surface library of R. Tyrrell Rockafellar, *Convex
+Analysis*, Princeton University Press, 1970.
+
 This module is not a section of the book. It is the vocabulary in which a book written in `ℝⁿ` is
 transcribed, and every section module of `NumlibSurface.Rockafellar` is stated in it: `Rn n` is
 `EuclideanSpace ℝ (Fin n)` and `pairing n` is its own inner product read as a bilinear map.
@@ -55,10 +58,6 @@ A textbook in `ℝⁿ` identifies a space with its dual, writing `x*` for a vect
 Both sides of `pairing n` are `Rn n`, so the book's `*` is a naming convention here and not a type
 distinction. The backbone keeps its two spaces apart precisely so that the general theory cannot
 use self-duality silently.
-
-## References
-
-* [rockafellar1970convex].
 -/
 
 namespace Rockafellar

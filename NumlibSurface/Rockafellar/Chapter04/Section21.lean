@@ -2,9 +2,10 @@ import Numlib.Analysis.Convex.HellyRefined
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §21: Helly's Theorem and Systems of Inequalities
+# Rockafellar §21: Helly's theorem and systems of inequalities
 
-Existence theorems for systems of convex inequalities, stated as pairs of mutually exclusive
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §21:
+existence theorems for systems of convex inequalities, stated as pairs of mutually exclusive
 alternatives, and the four forms of Helly's theorem that come out of them.
 
 All ten numbered results of §21 are formalized over `Rn n = ℝⁿ`: Theorems 21.1–21.6 and
@@ -12,11 +13,6 @@ Corollaries 21.3.1, 21.3.2, 21.6.1, 21.6.2, together with the unnumbered exercis
 21.3.2 (`helly_recession_iff_exists_isBounded`). Theorems 21.1, 21.2 and 21.3 read "one and only
 one of the following alternatives holds": `theorem_21_k` is the disjunction, the half with content,
 and `theorem_21_k_exclusive` says the alternatives cannot both hold.
-
-A **system of convex inequalities** is `fᵢ(x) ≤ αᵢ` for `i ∈ I₁` together with `fᵢ(x) < αᵢ` for
-`i ∈ I₂`, with arbitrary index sets and `-∞ ≤ αᵢ ≤ +∞`. That data is `ConvexSystem`, its solution
-set `ConvexSystem.solutions`, and the book's "consistent" `ConvexSystem.Consistent`. Every numbered
-theorem is stated with right-hand sides `0`, which `solutions_normalize` justifies.
 
 Two hypotheses look like slips and are not. **Theorem 21.1 asks `dom fᵢ ⊇ ri C`, not
 `dom fᵢ ⊇ C`**: separation produces the inequality only where every `fᵢ` is finite, and Corollary
@@ -28,9 +24,30 @@ would be false as stated. No `0⁺` bookkeeping appears in this section.
 The "Corollary 21.3.3" cited in the book's Comments and References for Part IV does not exist; the
 intended reference is Corollary 21.3.2, Helly's theorem.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §21.
+* `ConvexSystem` — a **system of convex inequalities**: `fᵢ(x) ≤ αᵢ` for `i ∈ I₁` together with
+  `fᵢ(x) < αᵢ` for `i ∈ I₂`, with arbitrary index sets and `-∞ ≤ αᵢ ≤ +∞`. Its solution set is
+  `ConvexSystem.solutions` and the book's "consistent" is `ConvexSystem.Consistent`. Every numbered
+  theorem is stated with right-hand sides `0`, which `solutions_normalize` justifies.
+* `IsAffineFn` — the book's "`fᵢ` is an affine function" for an `EReal`-valued function on all of
+  `ℝⁿ`, bridged by `isAffineFn_iff_eq_affineFn`.
+
+## Main results
+
+* `theorem_21_1`, `theorem_21_1_exclusive` — the basic alternative: either the system has a
+  solution in `C`, or a non-trivial non-negative combination of the `fᵢ` is non-negative on `C`.
+* `theorem_21_2`, `theorem_21_2_exclusive` — the same for a system mixing convex and affine
+  constraints.
+* `theorem_21_3`, `theorem_21_3_exclusive`, `corollary_21_3_1`, `corollary_21_3_2` — the
+  infinite-system alternative under a recession hypothesis, and Helly's theorem as its corollary.
+* `theorem_21_4`, `theorem_21_4_subsystem`, `theorem_21_5` — the polyhedral refinements: the
+  recession hypothesis may be weakened when all but finitely many constraints are affine.
+* `theorem_21_6`, `corollary_21_6_1`, `corollary_21_6_2`, `corollary_21_6_2_affine` — the finite
+  form of Helly's theorem without closedness, and the bound of `n + 1` non-zero multipliers.
+* `helly_recession_iff_exists_isBounded` — the unnumbered exercise after Corollary 21.3.2.
+* `convex_solutions`, `isClosed_solutions`, `solutions_eq_iInter`, `solutions_normalize`,
+  `pairing_eq_iff` — the elementary facts about solution sets that the section opens with.
 -/
 
 open Set

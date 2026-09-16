@@ -2,12 +2,20 @@ import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §1: Affine Sets
+# Rockafellar §1: affine sets
 
-Affine sets in `ℝⁿ`: the unique subspace each is parallel to, dimension, hyperplanes and the
-linear systems whose solution sets affine sets are, and affine transformations. All 8 numbered
-results of §1 are formalized. The content is linear algebra, so §1 specialises almost nothing from
-the backbone and is closed by Mathlib's affine-space and inner-product API.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §1:
+affine sets in `ℝⁿ`, the unique subspace each is parallel to, dimension, hyperplanes and the
+linear systems whose solution sets affine sets are, and affine transformations.
+
+All 8 numbered results of §1 are formalized. The content is linear algebra, so §1 specialises
+almost nothing from the backbone and is closed by Mathlib's affine-space and inner-product API.
+
+The converse half of `theorem_1_3` carries `0 < n`, which the book does not: in `ℝ⁰` the empty set
+has dimension `-1 = n - 1` and so is a hyperplane, yet there is no non-zero `b ∈ ℝ⁰` to represent
+it with. For `n ≥ 1` the hypothesis is vacuous, and `corollary_1_4_1` needs none. Theorem 1.4's
+`B` is a linear map `ℝⁿ →ₗ[ℝ] ℝᵐ` rather than an `m × n` matrix; the row decomposition the book
+writes is what `corollary_1_4_1` makes explicit, through a basis of `L⊥`.
 
 ## Main definitions
 
@@ -20,15 +28,26 @@ the backbone and is closed by Mathlib's affine-space and inner-product API.
 * `IsHyperplane` — an affine set of dimension `n - 1`.
 * `IsAffineMap` — the book's *affine transformation*.
 
-The converse half of `theorem_1_3` carries `0 < n`, which the book does not: in `ℝ⁰` the empty set
-has dimension `-1 = n - 1` and so is a hyperplane, yet there is no non-zero `b ∈ ℝ⁰` to represent
-it with. For `n ≥ 1` the hypothesis is vacuous, and `corollary_1_4_1` needs none. Theorem 1.4's
-`B` is a linear map `ℝⁿ →ₗ[ℝ] ℝᵐ` rather than an `m × n` matrix; the row decomposition the book
-writes is what `corollary_1_4_1` makes explicit, through a basis of `L⊥`.
+## Main results
 
-## References
-
-* [rockafellar1970convex] §1.
+* `theorem_1_1` — the subspaces of `ℝⁿ` are exactly the affine sets containing the origin.
+* `theorem_1_2`, `theorem_1_2_sub` — a non-empty affine set is parallel to a unique subspace,
+  namely `M - M`.
+* `theorem_1_3`, `theorem_1_3_exists`, `theorem_1_3_unique` — the hyperplanes of `ℝⁿ` are the
+  level sets `{x | ⟨x, b⟩ = β}` of a non-zero `b`, and `(b, β)` is determined up to a common
+  non-zero multiple.
+* `theorem_1_4`, `theorem_1_4_exists` — the affine sets are exactly the solution sets `{x | Bx = b}`
+  of systems of linear equations.
+* `corollary_1_4_1` — every affine set is an intersection of finitely many hyperplanes.
+* `theorem_1_5` — the affine transformations `ℝⁿ → ℝᵐ` are the maps `x ↦ Ax + a` with `A` linear.
+* `theorem_1_6`, `theorem_1_6_unique` — two affinely independent sets of `m + 1` points are
+  carried onto each other by a bijective affine transformation of `ℝⁿ`, uniquely when `m = n`.
+* `corollary_1_6_1` — any two affine sets of the same dimension are carried onto each other by a
+  bijective affine transformation of `ℝⁿ`.
+* `isAffineSet_iff_coe_affineSpan`, `dim_eq_finrank_direction` — the bridges to Mathlib's
+  `affineSpan` and `finrank` that the rest of the surface rewrites along.
+* `orthogonal_graph_eq_graph_neg_adjoint` — the unnumbered fact of §1 that §22 depends on: the
+  orthogonal complement of the graph of a linear `A` is the graph of `-A*`.
 -/
 
 namespace Rockafellar

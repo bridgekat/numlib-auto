@@ -4,9 +4,10 @@ import Numlib.Analysis.Convex.Subdifferential.Reconstruction
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §25: Differentiability of Convex Functions
+# Rockafellar §25: differentiability of convex functions
 
-The relation between the subdifferential `∂f` and the ordinary gradient `∇f`. Theorem 25.1
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §25:
+the relation between the subdifferential `∂f` and the ordinary gradient `∇f`. Theorem 25.1
 identifies the two where `∇f` exists, Theorems 25.3–25.5 say that is almost everywhere on
 `int (dom f)`, Theorem 25.6 reconstructs the whole of `∂f` from `∇f`, and Theorem 25.7 says that
 gradients of convex functions converge whenever the functions do.
@@ -15,21 +16,46 @@ All eleven numbered results of §25 are formalized: Theorems 25.1–25.7 and Cor
 25.1.2, 25.1.3, 25.5.1. Theorem 25.3 is stated over `ℝ` rather than `Rn 1`, the book's `I` being an
 open interval of the real line; the rest is over `Rn n` with `pairing n`.
 
-Rockafellar's `∇f(x)` is a *vector*, while the backbone's gradient is a continuous linear
-functional. `HasGradientVecAt f b x` and `gradientVec f x` are the vector readings, translated by
-`linFn`, which is the Fréchet–Riesz map. Differentiability of an extended-real-valued `f` is
-`DifferentiableAtFn`: a real-valued function agreeing with `f` near `x` and differentiable there,
-which is exactly what `∇f(x)` presupposes. `differentiableAtFn_iff_differentiableAt` is the
-dictionary to Mathlib's `DifferentiableAt` of the real trace.
-
 Not all of §25 is finite-dimensional. Theorem 25.1's forward half, both halves of Corollary 25.1.1,
 Theorem 25.2's necessity and Theorem 25.4's density clause hold over any normed space. What
 genuinely needs `ℝⁿ` is Theorem 25.1's converse, which runs through Corollary 11.6.1, together with
 the continuity and measure-zero clauses of Theorems 25.4 and 25.5.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §25.
+Rockafellar's `∇f(x)` is a *vector*, while the backbone's gradient is a continuous linear
+functional.
+
+* `HasGradientVecAt f b x`, `gradientVec f x` — the vector readings, translated by `linFn`, which
+  is the Fréchet–Riesz map.
+* `DifferentiableAtFn` — differentiability of an extended-real-valued `f`: a real-valued function
+  agreeing with `f` near `x` and differentiable there, which is exactly what `∇f(x)` presupposes.
+  `differentiableAtFn_iff_differentiableAt` is the dictionary to Mathlib's `DifferentiableAt` of
+  the real trace.
+
+## Main results
+
+* `theorem_25_1`, `theorem_25_1_forward`, `theorem_25_1_converse`, `theorem_25_1_le`,
+  `theorem_25_1_differentiableAtFn` — `f` is differentiable at `x` exactly when `∂f(x)` is a
+  singleton, and then `∂f(x) = {∇f(x)}`.
+* `corollary_25_1_1_proper`, `corollary_25_1_1_mem_interior`, `corollary_25_1_2`,
+  `corollary_25_1_3` — differentiability forces `x ∈ int (dom f)` and properness, the exposed
+  points of `epi f*`, and the gradients of a support function.
+* `theorem_25_2`, `theorem_25_2_dirDeriv`, `theorem_25_2_partial` — differentiability is linearity
+  of `f'(x; ·)`, and follows from the existence of the `n` partial derivatives.
+* `theorem_25_3_differentiableAtFn_iff`, `theorem_25_3_countable`, `theorem_25_3_dense`,
+  `theorem_25_3_continuousAt`, `theorem_25_3_monotone` — on the line, differentiability fails at
+  countably many points only, and `f'` is continuous and non-decreasing where it exists.
+* `theorem_25_4_continuousAt_iff`, `theorem_25_4_dense`, `theorem_25_4_measure` — the directional
+  version, and that the exceptional set in each direction is null.
+* `theorem_25_5_dense`, `theorem_25_5_measure`, `theorem_25_5_continuousOn`, `corollary_25_5_1` —
+  Rademacher for convex functions: `f` is differentiable on a dense set of full measure in
+  `int (dom f)`, with `∇f` continuous there, so a differentiable finite convex function on an open
+  convex set is continuously differentiable.
+* `theorem_25_6` — `∂f(x)` is recovered from the limits of nearby gradients together with the
+  normal cone: `∂f(x) = cl (conv S(x)) + K(x)`.
+* `theorem_25_7`, `theorem_25_7_uniform` — gradients converge, uniformly on compact subsets,
+  whenever the functions converge pointwise.
 -/
 
 open Filter MeasureTheory Topology
@@ -139,7 +165,7 @@ theorem theorem_25_1_converse (hf : ConvexFn f) (hp : Proper f)
   rw [hasGradientVecAt_iff_hasGradientAtFn, linFn_eq_toDual]
   exact hg
 
-/-- **Rockafellar, Theorem 25.1**, in full: for a proper convex function on `ℝⁿ`, having gradient
+/-- **Theorem 25.1**, in full: for a proper convex function on `ℝⁿ`, having gradient
 `b` at `x` and having `b` as sole subgradient at `x` are the same thing. -/
 theorem theorem_25_1 (hf : ConvexFn f) (hp : Proper f) :
     HasGradientVecAt f b x ↔ subdifferential (pairing n) f x = {b} :=
@@ -248,7 +274,7 @@ theorem theorem_25_3_countable (hf : ConvexFn f) (hp : Proper f) :
     {x ∈ interior (dom f) | ¬DifferentiableAtFn f x}.Countable :=
   countable_not_differentiableAtFn hf hp
 
-/-- **Rockafellar, Theorem 25.3**, the parenthesis: `D` is dense in `I`. -/
+/-- **Theorem 25.3**, the parenthesis: `D` is dense in `I`. -/
 theorem theorem_25_3_dense (hf : ConvexFn f) (hp : Proper f) :
     interior (dom f) ⊆ closure {z : ℝ | DifferentiableAtFn f z} :=
   subset_closure_differentiableAtFn hf hp

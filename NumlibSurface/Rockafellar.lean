@@ -31,53 +31,60 @@ tells them apart, as in `theorem_37_5_a` and `theorem_34_2_dom₁`. Everything i
 
 ## The outline
 
-**The directories `ChapterNN` are the book's Parts I–VIII**: `Chapter01` is Part I and
-`Chapter08` is Part VIII. The book groups its material into Parts and numbers the sections
-continuously 1–39 across them; the directories carry the surface layout every book in this
-project uses, and the section modules inside keep the book's own global numbers. So
-`Chapter04.Section17` is §17, which the book prints in Part IV.
+**The directories `ChapterNN` are the book's Parts I–VIII.** The book groups its material into
+Parts and numbers its sections continuously 1–39 across them; `ChapterNN` is the surface layout
+every book in this project uses, and the section modules inside keep the book's own global numbers.
 
-| Part | directory | § | subject |
-|---|---|---|---|
-| **I** Basic Concepts | `Chapter01` | 1 | Affine Sets |
-| | | 2 | Convex Sets and Cones |
-| | | 3 | The Algebra of Convex Sets |
-| | | 4 | Convex Functions |
-| | | 5 | Functional Operations |
-| **II** Topological Properties | `Chapter02` | 6 | Relative Interiors of Convex Sets |
-| | | 7 | Closures of Convex Functions |
-| | | 8 | Recession Cones and Unboundedness |
-| | | 9 | Some Closedness Criteria |
-| | | 10 | Continuity of Convex Functions |
-| **III** Duality Correspondences | `Chapter03` | 11 | Separation Theorems |
-| | | 12 | Conjugates of Convex Functions |
-| | | 13 | Support Functions |
-| | | 14 | Polars of Convex Sets |
-| | | 15 | Polars of Convex Functions |
-| | | 16 | Dual Operations |
-| **IV** Representation and Inequalities | `Chapter04` | 17 | Carathéodory's Theorem |
-| | | 18 | Extreme Points and Faces of Convex Sets |
-| | | 19 | Polyhedral Convex Sets and Functions |
-| | | 20 | Some Applications of Polyhedral Convexity |
-| | | 21 | Helly's Theorem and Systems of Inequalities |
-| | | 22 | Linear Inequalities |
-| **V** Differential Theory | `Chapter05` | 23 | Directional Derivatives and Subgradients |
-| | | 24 | Differential Continuity and Monotonicity |
-| | | 25 | Differentiability of Convex Functions |
-| | | 26 | The Legendre Transformation |
-| **VI** Constrained Extremum Problems | `Chapter06` | 27 | The Minimum of a Convex Function |
-| | | 28 | Ordinary Convex Programs and Lagrange Multipliers |
-| | | 29 | Bifunctions and Generalized Convex Programs |
-| | | 30 | Adjoint Bifunctions and Dual Programs |
-| | | 31 | Fenchel's Duality Theorem |
-| | | 32 | The Maximum of a Convex Function |
-| **VII** Saddle-Functions and Minimax | `Chapter07` | 33 | Saddle-Functions |
-| | | 34 | Closures and Equivalence Classes |
-| | | 35 | Continuity and Differentiability of Saddle-Functions |
-| | | 36 | Minimax Problems |
-| | | 37 | Conjugate Saddle-Functions and Minimax Theorems |
-| **VIII** Convex Algebra | `Chapter08` | 38 | The Algebra of Bifunctions |
-| | | 39 | Convex Processes |
+| § | module | subject |
+|---|---|---|
+| | `Common.Euclidean` | conventions: `Rn n`, the pairing `⟨·, ·⟩`, `linFn` |
+| **I** | | *Basic Concepts* |
+| 1 | `Chapter01.Section01` | Affine sets |
+| 2 | `Chapter01.Section02` | Convex sets and cones |
+| 3 | `Chapter01.Section03` | The algebra of convex sets |
+| 4 | `Chapter01.Section04` | Convex functions |
+| 5 | `Chapter01.Section05` | Functional operations |
+| **II** | | *Topological Properties* |
+| 6 | `Chapter02.Section06` | Relative interiors of convex sets |
+| 7 | `Chapter02.Section07` | Closures of convex functions |
+| 8 | `Chapter02.Section08` | Recession cones and unboundedness |
+| 9 | `Chapter02.Section09` | Some closedness criteria |
+| 10 | `Chapter02.Section10` | Continuity of convex functions |
+| **III** | | *Duality Correspondences* |
+| 11 | `Chapter03.Section11` | Separation theorems |
+| 12 | `Chapter03.Section12` | Conjugates of convex functions |
+| 13 | `Chapter03.Section13` | Support functions |
+| 14 | `Chapter03.Section14` | Polars of convex sets |
+| 15 | `Chapter03.Section15` | Polars of convex functions |
+| 16 | `Chapter03.Section16` | Dual operations |
+| **IV** | | *Representation and Inequalities* |
+| 17 | `Chapter04.Section17` | Carathéodory's theorem |
+| 18 | `Chapter04.Section18` | Extreme points and faces of convex sets |
+| 19 | `Chapter04.Section19` | Polyhedral convex sets and functions |
+| 20 | `Chapter04.Section20` | Some applications of polyhedral convexity |
+| 21 | `Chapter04.Section21` | Helly's theorem and systems of inequalities |
+| 22 | `Chapter04.Section22` | Linear inequalities |
+| **V** | | *Differential Theory* |
+| 23 | `Chapter05.Section23` | Directional derivatives and subgradients |
+| 24 | `Chapter05.Section24` | Differential continuity and monotonicity |
+| 25 | `Chapter05.Section25` | Differentiability of convex functions |
+| 26 | `Chapter05.Section26` | The Legendre transformation |
+| **VI** | | *Constrained Extremum Problems* |
+| 27 | `Chapter06.Section27` | The minimum of a convex function |
+| 28 | `Chapter06.Section28` | Ordinary convex programs and Lagrange multipliers |
+| 29 | `Chapter06.Section29` | Bifunctions and generalized convex programs |
+| 30 | `Chapter06.Section30` | Adjoint bifunctions and dual programs |
+| 31 | `Chapter06.Section31` | Fenchel's duality theorem |
+| 32 | `Chapter06.Section32` | The maximum of a convex function |
+| **VII** | | *Saddle-Functions and Minimax Theory* |
+| 33 | `Chapter07.Section33` | Saddle-functions |
+| 34 | `Chapter07.Section34` | Closures and equivalence classes |
+| 35 | `Chapter07.Section35` | Continuity and differentiability of saddle-functions |
+| 36 | `Chapter07.Section36` | Minimax problems |
+| 37 | `Chapter07.Section37` | Conjugate saddle-functions and minimax theorems |
+| **VIII** | | *Convex Algebra* |
+| 38 | `Chapter08.Section38` | The algebra of bifunctions |
+| 39 | `Chapter08.Section39` | Convex processes |
 
 Numbered results formalized, by Part: I 49, II 84, III 77, IV 65 of 70, V 49, VI 63, VII 58,
 VIII 21.

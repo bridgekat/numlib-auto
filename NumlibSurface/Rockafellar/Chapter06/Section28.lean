@@ -5,36 +5,51 @@ import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter05.Section23
 
 /-!
-# Rockafellar, §28: Ordinary Convex Programs and Lagrange Multipliers
+# Rockafellar §28: ordinary convex programs and Lagrange multipliers
 
-The ordinary convex program `(P)`, its Kuhn–Tucker coefficients, its Lagrangian `L`, and the
-equivalence between solving `(P)` and finding a saddle-point of `L`.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §28
+(pp. 273–290): the ordinary convex program `(P)`, its Kuhn–Tucker coefficients, its Lagrangian `L`,
+and the equivalence between solving `(P)` and finding a saddle-point of `L`.
 
 All nine numbered results of §28 are formalized: Theorems 28.1, 28.2, 28.3 and 28.4 and
 Corollaries 28.1.1, 28.2.1, 28.2.2, 28.3.1 and 28.4.1, together with the three Kuhn–Tucker
 conditions (a), (b), (c) of Theorem 28.3, the decomposition principle, and the section's two
-counterexamples `ex1` and `ex2`.
+counterexamples `ex1` and `ex2`. Corollaries 28.2.2, 28.3.1 and 28.4.1 are printed with no proof.
 
-## Implementation notes
+## Main definitions
 
-**A program is the tuple, not the objective function.** `OrdinaryConvexProgram n m` carries
-Rockafellar's `(m + 3)`-tuple `(C, f₀, f₁, …, f_m, r)` and his two blanket assumptions on it,
-because two programs with the same objective `f₀ + δ(· | C₀)` can have different Kuhn–Tucker
-coefficients. `eq_of_programLagrangian_eq` recovers the whole tuple from the Lagrangian alone.
+* `OrdinaryConvexProgram n m` — Rockafellar's `(m + 3)`-tuple `(C, f₀, f₁, …, f_m, r)` with his two
+  blanket assumptions. **A program is the tuple, not the objective function**: two programs with
+  the same objective `f₀ + δ(· | C₀)` can have different Kuhn–Tucker coefficients, and
+  `eq_of_programLagrangian_eq` recovers the whole tuple from the Lagrangian alone.
+* `programLagrangian`, `saddleFn` — the Lagrangian `L`, and the same function read on `ℝᵐ × ℝⁿ`,
+  the shape `IsSaddlePoint`, `maximin` and `minimax` take.
+* `lagrangeFn u` — Rockafellar's `h = f₀ + λ₁f₁ + ⋯ + λ_m f_m`, which is *not* the Lagrangian.
+* `activeIndices u` — `{i | λᵢ ≠ 0}`, the book's "(Omit terms with `λᵢ = 0`.)" — an omission that
+  is not cosmetic, since `∂fᵢ(x̄)` can be empty at a boundary point of `dom fᵢ` and
+  `0 · ∅ = ∅ ≠ {0}`.
+* `ex1`, `ex2` — the section's two counterexamples, each a program with a unique optimal solution
+  and no Kuhn–Tucker vector.
+
+## Main results
+
+* `theorem_28_1`, `corollary_28_1_1` — a Kuhn–Tucker vector turns `(P)` into the unconstrained
+  minimisation of `h`, and the optimal solutions are recovered from the minimisers of `h`.
+* `theorem_28_2`, `corollary_28_2_1`, `corollary_28_2_2` — the constraint qualifications under
+  which a Kuhn–Tucker vector exists, including Slater's condition and the affine case.
+* `theorem_28_3`, `theorem_28_3_kuhnTucker`, `corollary_28_3_1`, `corollary_28_3_1_kuhnTucker` —
+  the Kuhn–Tucker theorem: optimality together with a Kuhn–Tucker vector is exactly a saddle-point
+  of `L`, and exactly the three conditions (a), (b), (c).
+* `theorem_28_4`, `theorem_28_4_saddleValue`, `theorem_28_4_value`, `corollary_28_4_1` — `ū*` is a
+  Kuhn–Tucker vector exactly when `inf_x L(ū*, x)` is finite and equals both iterated extrema of
+  `L`, and that common value is then the optimal value of `(P)`.
+* `decomposition_C`, `decomposition_argmin_lagrangeFn` — the decomposition principle: when `C` and
+  the `fᵢ` split along a product of coordinate blocks, minimising `h` splits with them.
+* `ex1_not_exists_isKuhnTuckerVector`, `ex2_not_exists_isKuhnTuckerVector` — the two
+  counterexamples: a unique optimal solution is not enough for a Kuhn–Tucker vector to exist.
 
 **`r` counts the inequality constraints**, not the equalities: `f₁ ≤ 0, …, f_r ≤ 0` and
 `f_{r+1} = 0, …, f_m = 0`.
-
-`lagrangeFn u` is Rockafellar's `h = f₀ + λ₁f₁ + ⋯ + λ_m f_m`, which is *not* the Lagrangian: that
-is `programLagrangian`, and `saddleFn` is the same function read on `ℝᵐ × ℝⁿ`, the shape
-`IsSaddlePoint`, `maximin` and `minimax` take. `activeIndices u` is `{i | λᵢ ≠ 0}`, the book's
-"(Omit terms with `λᵢ = 0`.)" — an omission that is not cosmetic, since `∂fᵢ(x̄)` can be empty at a
-boundary point of `dom fᵢ` and `0 · ∅ = ∅ ≠ {0}`.
-
-## References
-
-* [rockafellar1970convex] §28 (pp. 273–290).
-  Corollaries 28.2.2, 28.3.1 and 28.4.1 are stated there with no printed proof.
 -/
 
 open Set Pointwise

@@ -5,9 +5,10 @@ import Numlib.Analysis.Convex.Subdifferential.Primitive
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §24: Differential Continuity and Monotonicity
+# Rockafellar §24: differential continuity and monotonicity
 
-The continuity and monotonicity properties of `∂f`, first on the line and then on `ℝⁿ`, ending with
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §24:
+the continuity and monotonicity properties of `∂f`, first on the line and then on `ℝⁿ`, ending with
 the characterisation of the subdifferentials as the maximal cyclically monotone mappings.
 
 All eleven numbered results of §24 are formalized: Theorems 24.1–24.9 and Corollaries 24.2.1,
@@ -24,12 +25,43 @@ Rockafellar's extension by `+∞` to the right of `dom f` and `-∞` to the left
 case-splits on the position of `x`. Where `f` is finite the guard is inert, and `f'₊(x) = f'(x; 1)`,
 `f'₋(x) = -f'(x; -1)`.
 
-The book gives two descriptions of a **complete non-decreasing curve** in `R²`: as
-`Γ = {(x, x*) | φ₋(x) ≤ x* ≤ φ₊(x)}` for a non-decreasing `φ` not everywhere infinite, and as a
-maximal totally ordered subset of `R²` for the coordinatewise ordering. The second is taken here as
-`IsCompleteNonDecreasingCurve`, Mathlib's `IsMaxChain (· ≤ ·)` on `ℝ × ℝ`; the first is the
-backbone's `monotoneCurve`, and `isCompleteNonDecreasingCurve_iff_exists_monotone` is the
-equivalence, which the book asserts without proof.
+## Main definitions
+
+* `IsCompleteNonDecreasingCurve` — the book's **complete non-decreasing curve** in `R²`, taken in
+  its order-theoretic description as Mathlib's `IsMaxChain (· ≤ ·)` on `ℝ × ℝ`. The book's other
+  description, `Γ = {(x, x*) | φ₋(x) ≤ x* ≤ φ₊(x)}` for a non-decreasing `φ` not everywhere
+  infinite, is the backbone's `monotoneCurve`, and
+  `isCompleteNonDecreasingCurve_iff_exists_monotone` is the equivalence, which the book asserts
+  without proof.
+* `subdifferentialNormal` — `∂f(x)_y`, the subgradients at which `y` is normal to `∂f(x)`; the
+  object Theorem 24.6 is about.
+
+## Main results
+
+* `theorem_24_1_monotone_rightDeriv`, `theorem_24_1_monotone_leftDeriv`, `theorem_24_1_finite_iff`,
+  `theorem_24_1_chain`, the four `theorem_24_1_tendsto_*` limits, and
+  `theorem_24_1_subdifferential` — `f'₊` and `f'₋` are non-decreasing, finite exactly on
+  `int (dom f)`, interlaced, one-sidedly continuous, and bracket `∂f(x)`.
+* `theorem_24_2`, `theorem_24_2_exists`, `theorem_24_2_unique`, `corollary_24_2_1_rightDeriv`,
+  `corollary_24_2_1_leftDeriv` — every non-decreasing `φ` is the derivative of a closed proper
+  convex function, unique up to a constant, recovered by integration.
+* `theorem_24_3`, `theorem_24_3_unique`, `theorem_24_3_swap`,
+  `theorem_24_3_subgradientRel_eq_monotoneCurve`,
+  `isCompleteNonDecreasingCurve_iff_exists_monotone` — the graphs of the subdifferentials on the
+  line are exactly the complete non-decreasing curves.
+* `theorem_24_4`, `theorem_24_4_seq` — the graph of `∂f` is closed.
+* `theorem_24_5_lt`, `theorem_24_5_limsup`, `theorem_24_5_subdifferential`,
+  `corollary_24_5_1_upperSemicontinuous`, `corollary_24_5_1_subdifferential` — directional
+  derivatives are upper semicontinuous jointly in the point and the direction, and subgradients of
+  nearby functions are near.
+* `theorem_24_6_lt`, `theorem_24_6_limsup`, `theorem_24_6_subdifferential` — the same along an
+  approach to a boundary point of `dom f` in a fixed direction.
+* `theorem_24_7_nonempty`, `theorem_24_7_bound`, `theorem_24_7_isCompact`,
+  `theorem_24_7_isClosed`, `theorem_24_7_isBounded` — `∂f(S)` is compact for `S` a compact subset
+  of `int (dom f)`, which is local boundedness of `∂f`.
+* `theorem_24_8`, `theorem_24_8_of_isCyclicallyMonotone`, `theorem_24_9`,
+  `theorem_24_9_subgradientRel`, `theorem_24_9_unique` — a mapping lies in some `∂f` exactly when
+  it is cyclically monotone, and the maximal ones are exactly the subdifferentials.
 
 **Maximal cyclic monotonicity is not maximal monotonicity.** Rockafellar warns explicitly that
 Corollary 31.5.2 does *not* follow from Theorem 24.9 together with "cyclically monotone implies
@@ -38,10 +70,6 @@ monotone", since a mapping maximal in the smaller class need not be maximal in t
 plain monotonicity, and nothing here bridges them. On the line the two classes do coincide
 (`isMonotoneRel_iff_isCyclicallyMonotone_line`), which is why Theorem 24.3 can speak of maximal
 chains at all.
-
-## References
-
-* [rockafellar1970convex] §24.
 -/
 
 open Set Filter Topology
@@ -63,7 +91,7 @@ theorem theorem_24_1_monotone_rightDeriv (hf : ConvexFn f) (hp : Proper f) :
     Monotone (rightDeriv f) :=
   monotone_rightDeriv hf hp
 
-/-- **Rockafellar, Theorem 24.1**: `f'₋` is a non-decreasing function on `R`. -/
+/-- **Theorem 24.1**: `f'₋` is a non-decreasing function on `R`. -/
 theorem theorem_24_1_monotone_leftDeriv (hf : ConvexFn f) (hp : Proper f) :
     Monotone (leftDeriv f) :=
   monotone_leftDeriv hf hp
@@ -74,7 +102,7 @@ theorem theorem_24_1_finite_iff (hf : ConvexFn f) (hp : Proper f) {x : ℝ} :
     (⊥ < leftDeriv f x ∧ rightDeriv f x < ⊤) ↔ x ∈ interior (dom f) :=
   bot_lt_leftDeriv_and_rightDeriv_lt_top_iff hf hp
 
-/-- **Rockafellar, Theorem 24.1**, the interlacing chain:
+/-- **Theorem 24.1**, the interlacing chain:
 `f'₊(z₁) ≤ f'₋(x) ≤ f'₊(x) ≤ f'₋(z₂)` when `z₁ < x < z₂`. -/
 theorem theorem_24_1_chain (hf : ConvexFn f) (hp : Proper f) {z₁ x z₂ : ℝ} (h₁ : z₁ < x)
     (h₂ : x < z₂) :
@@ -89,17 +117,17 @@ theorem theorem_24_1_tendsto_rightDeriv_Ioi (hf : ClosedProperConvexFn f) (x : �
     Tendsto (rightDeriv f) (𝓝[>] x) (𝓝 (rightDeriv f x)) :=
   tendsto_rightDeriv_nhdsWithin_Ioi hf x
 
-/-- **Rockafellar, Theorem 24.1**, second limit formula: `lim_{z ↑ x} f'₊(z) = f'₋(x)`. -/
+/-- **Theorem 24.1**, second limit formula: `lim_{z ↑ x} f'₊(z) = f'₋(x)`. -/
 theorem theorem_24_1_tendsto_rightDeriv_Iio (hf : ClosedProperConvexFn f) (x : ℝ) :
     Tendsto (rightDeriv f) (𝓝[<] x) (𝓝 (leftDeriv f x)) :=
   tendsto_rightDeriv_nhdsWithin_Iio hf x
 
-/-- **Rockafellar, Theorem 24.1**, third limit formula: `lim_{z ↓ x} f'₋(z) = f'₊(x)`. -/
+/-- **Theorem 24.1**, third limit formula: `lim_{z ↓ x} f'₋(z) = f'₊(x)`. -/
 theorem theorem_24_1_tendsto_leftDeriv_Ioi (hf : ClosedProperConvexFn f) (x : ℝ) :
     Tendsto (leftDeriv f) (𝓝[>] x) (𝓝 (rightDeriv f x)) :=
   tendsto_leftDeriv_nhdsWithin_Ioi hf x
 
-/-- **Rockafellar, Theorem 24.1**, fourth limit formula: `lim_{z ↑ x} f'₋(z) = f'₋(x)`. -/
+/-- **Theorem 24.1**, fourth limit formula: `lim_{z ↑ x} f'₋(z) = f'₋(x)`. -/
 theorem theorem_24_1_tendsto_leftDeriv_Iio (hf : ClosedProperConvexFn f) (x : ℝ) :
     Tendsto (leftDeriv f) (𝓝[<] x) (𝓝 (leftDeriv f x)) :=
   tendsto_leftDeriv_nhdsWithin_Iio hf x
@@ -209,7 +237,7 @@ theorem isCompleteNonDecreasingCurve_monotoneCurve {φ : ℝ → EReal} (hφ : M
   isCompleteNonDecreasingCurve_iff_isMaximalMonotoneRel.2
     (isMaximalMonotoneRel_monotoneCurve hφ hb ht)
 
-/-- **Rockafellar, Theorem 24.3**: the graphs of the subdifferential mappings of the closed proper
+/-- **Theorem 24.3**: the graphs of the subdifferential mappings of the closed proper
 convex functions on `R` are precisely the complete non-decreasing curves in `R²`. -/
 theorem theorem_24_3 :
     IsCompleteNonDecreasingCurve Γ ↔
@@ -289,7 +317,7 @@ of `epi f`. -/
 theorem theorem_24_4 (hf : ClosedProperConvexFn f) : IsClosed (subgradientRel (pairing n) f) :=
   isClosed_subgradientRel continuous_inner hf.proper hf.lowerSemicontinuous
 
-/-- **Rockafellar, Theorem 24.4** in the book's own words: if `xᵢ* ∈ ∂f(xᵢ)` with `xᵢ → x` and
+/-- **Theorem 24.4** in the book's own words: if `xᵢ* ∈ ∂f(xᵢ)` with `xᵢ → x` and
 `xᵢ* → x*`, then `x* ∈ ∂f(x)`. -/
 theorem theorem_24_4_seq (hf : ClosedProperConvexFn f) {xs ys : ℕ → Rn n} {x y : Rn n}
     (hmem : ∀ i, ys i ∈ subdifferential (pairing n) f (xs i)) (hx : Tendsto xs atTop (𝓝 x))
@@ -351,7 +379,7 @@ theorem theorem_24_5_limsup (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, Co
     (theorem_24_5_lt hC hCc hf hfin hg hgfin hconv hx hxs hys hμ₁).mono fun _ h => h.le
   exact le_trans (limsup_le_of_le (h := hev)) hμ₂.le
 
-/-- **Rockafellar, Theorem 24.5**, second assertion: given `ε > 0` there is an index `i₀` with
+/-- **Theorem 24.5**, second assertion: given `ε > 0` there is an index `i₀` with
 `∂fᵢ(xᵢ) ⊆ ∂f(x) + εB` for all `i ≥ i₀`, `B` the Euclidean unit ball. -/
 theorem theorem_24_5_subdifferential (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hfin : ∀ i, ∀ z ∈ C, f i z ≠ ⊥ ∧ f i z ≠ ⊤) (hg : ConvexFn g)
@@ -373,7 +401,7 @@ theorem corollary_24_5_1_upperSemicontinuous {f : Rn n → EReal} (hf : ConvexFn
     UpperSemicontinuousAt (fun p : Rn n × Rn n => dirDeriv f p.1 p.2) (x, y) :=
   upperSemicontinuousAt_dirDeriv hf hfp hx y
 
-/-- **Rockafellar, Corollary 24.5.1**, second assertion: for `x ∈ int (dom f)` and `ε > 0` there is
+/-- **Corollary 24.5.1**, second assertion: for `x ∈ int (dom f)` and `ε > 0` there is
 a `δ > 0` with `∂f(z) ⊆ ∂f(x) + εB` for every `z` within `δ` of `x`. -/
 theorem corollary_24_5_1_subdifferential {f : Rn n → EReal} (hf : ConvexFn f) (hfp : Proper f)
     {x : Rn n} (hx : x ∈ interior (dom f)) {ε : ℝ} (hε : 0 < ε) :
@@ -420,7 +448,7 @@ theorem theorem_24_6_lt (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f) {x
     ∀ᶠ i in atTop, dirDeriv f (xs i) z < (μ : EReal) :=
   eventually_dirDeriv_lt_of_tendsto_dir hf hfp hx hxsdom hxsne hxs hdir hy hα hαy hμ
 
-/-- **Rockafellar, Theorem 24.6**, first assertion, literally:
+/-- **Theorem 24.6**, first assertion, literally:
 `limsup_i f'(xᵢ; z) ≤ f'(x; y; z)` for every `z`. -/
 theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f) {xs : ℕ → Rn n}
     (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x) (hxs : Tendsto xs atTop (𝓝 x))
@@ -433,7 +461,7 @@ theorem theorem_24_6_limsup (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f
     (theorem_24_6_lt hf hfp hx hxsdom hxsne hxs hdir hy hα hαy hμ₁).mono fun _ h => h.le
   exact le_trans (limsup_le_of_le (h := hev)) hμ₂.le
 
-/-- **Rockafellar, Theorem 24.6**, second assertion: given `ε > 0` there is an index `i₀` with
+/-- **Theorem 24.6**, second assertion: given `ε > 0` there is an index `i₀` with
 `∂f(xᵢ) ⊆ ∂f(x)_y + εB` for all `i ≥ i₀`. -/
 theorem theorem_24_6_subdifferential (hf : ConvexFn f) (hfp : Proper f) (hx : x ∈ dom f)
     {xs : ℕ → Rn n} (hxsdom : ∀ i, xs i ∈ dom f) (hxsne : ∀ i, xs i ≠ x)
@@ -472,24 +500,24 @@ theorem theorem_24_7_bound (hf : ConvexFn f) (hp : Proper f) (hS : IsCompact S)
   rw [pairing_apply, real_inner_self_eq_norm_mul_norm] at h
   exact le_of_mul_le_mul_right (by linarith) (norm_pos_iff.2 hv0)
 
-/-- **Rockafellar, Theorem 24.7**: `∂f(S) = ⋃ {∂f(x) | x ∈ S}` is non-empty for a non-empty
+/-- **Theorem 24.7**: `∂f(S) = ⋃ {∂f(x) | x ∈ S}` is non-empty for a non-empty
 `S ⊆ int (dom f)`. This is Theorem 23.4 applied at any point of `S`. -/
 theorem theorem_24_7_nonempty (hf : ConvexFn f) (hp : Proper f) (hne : S.Nonempty)
     (hSD : S ⊆ interior (dom f)) : ((subgradientRel (pairing n) f).image S).Nonempty :=
   image_subgradientRel_nonempty hf hp hne hSD
 
-/-- **Rockafellar, Theorem 24.7**, topological half: `∂f(S)` is compact for a closed proper convex
+/-- **Theorem 24.7**, topological half: `∂f(S)` is compact for a closed proper convex
 `f` and a compact `S ⊆ int (dom f)`. Closedness of `∂f(S)` is Theorem 24.4. -/
 theorem theorem_24_7_isCompact (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (dom f)) : IsCompact ((subgradientRel (pairing n) f).image S) :=
   isCompact_image_subgradientRel hf hS hSD
 
-/-- **Rockafellar, Theorem 24.7**: `∂f(S)` is closed. -/
+/-- **Theorem 24.7**: `∂f(S)` is closed. -/
 theorem theorem_24_7_isClosed (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (dom f)) : IsClosed ((subgradientRel (pairing n) f).image S) :=
   (theorem_24_7_isCompact hf hS hSD).isClosed
 
-/-- **Rockafellar, Theorem 24.7**: `∂f(S)` is bounded. -/
+/-- **Theorem 24.7**: `∂f(S)` is bounded. -/
 theorem theorem_24_7_isBounded (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (dom f)) :
     Bornology.IsBounded ((subgradientRel (pairing n) f).image S) :=
@@ -521,7 +549,7 @@ theorem theorem_24_8_of_isCyclicallyMonotone (hρ : IsCyclicallyMonotone (pairin
     exists_convexFn_subgradientRel_of_isCyclicallyMonotone hρ hne
   exact ⟨g, ⟨hconv, hclosed, hproper⟩, hsub⟩
 
-/-- **Rockafellar, Theorem 24.8**: a multivalued mapping from `Rⁿ` to `Rⁿ` is contained in the
+/-- **Theorem 24.8**: a multivalued mapping from `Rⁿ` to `Rⁿ` is contained in the
 subdifferential of a closed proper convex function if and only if it is cyclically monotone. -/
 theorem theorem_24_8 :
     (∃ f : Rn n → EReal, ClosedProperConvexFn f ∧ ρ ⊆ subgradientRel (pairing n) f) ↔
@@ -535,7 +563,7 @@ theorem theorem_24_9_subgradientRel (hf : ClosedProperConvexFn f) :
     IsMaximalCyclicallyMonotone (pairing n) (subgradientRel (pairing n) f) :=
   isMaximalCyclicallyMonotone_subgradientRel hf
 
-/-- **Rockafellar, Theorem 24.9**: the subdifferential mappings of the closed proper convex
+/-- **Theorem 24.9**: the subdifferential mappings of the closed proper convex
 functions on `Rⁿ` are exactly the maximal cyclically monotone mappings from `Rⁿ` to `Rⁿ`. -/
 theorem theorem_24_9 :
     IsMaximalCyclicallyMonotone (pairing n) ρ ↔

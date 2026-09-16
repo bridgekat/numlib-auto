@@ -6,13 +6,14 @@ import NumlibSurface.Rockafellar.Chapter07.Section35
 import NumlibSurface.Rockafellar.Chapter07.Section36
 
 /-!
-# Rockafellar, §37: Conjugate Saddle-Functions and Minimax Theorems
+# Rockafellar §37: conjugate saddle-functions and minimax theorems
 
-The lower conjugate `K̲*` and the upper conjugate `K̄*` of a saddle-function, the conjugacy
-correspondence among equivalence classes of closed saddle-functions, the effective domain `C* × D*`
-of the conjugate class, the existence theorems for the saddle-value and for a saddle-point, and —
-as their special cases — Rockafellar's two finite-dimensional minimax theorems. Minimax theory is
-the conjugacy correspondence of §§33–34 read at the origin.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §37
+(pp. 388–400): the lower conjugate `K̲*` and the upper conjugate `K̄*` of a saddle-function, the
+conjugacy correspondence among equivalence classes of closed saddle-functions, the effective domain
+`C* × D*` of the conjugate class, the existence theorems for the saddle-value and for a
+saddle-point, and — as their special cases — Rockafellar's two finite-dimensional minimax theorems.
+Minimax theory is the conjugacy correspondence of §§33–34 read at the origin.
 
 All eighteen numbered results of §37 are formalized: Theorems 37.1–37.6 and Corollaries 37.1.1,
 37.1.2, 37.1.3, 37.2.1, 37.3.1, 37.3.2, 37.4.1, 37.5.1, 37.5.2, 37.5.3, 37.6.1, 37.6.2.
@@ -22,6 +23,48 @@ All eighteen numbered results of §37 are formalized: Theorems 37.1–37.6 and C
 §36's "minimise in the convex argument, maximise in the concave" are both in force. By Corollary
 37.1.1 the conjugates depend only on the equivalence class, so results are stated for a member of
 `Ω (F)` (§34) or for a closed concave-convex `K`, from which `exists_mem_Ω_of_closed` recovers `F`.
+
+## Main definitions
+
+* `lowerConj`, `upperConj` — the two conjugates `K̲*` and `K̄*`, with `lowerConj_apply` and
+  `upperConj_apply` the book's defining formulas.
+* `domSubdiff` — Rockafellar's `dom ∂K = {(u, v) | ∂K (u, v) ≠ ∅}`.
+
+## Main results
+
+* `theorem_37_1_upper`, `theorem_37_1_lower`, `theorem_37_1_conj_upper`,
+  `theorem_37_1_conj_lower` — the four formulas identifying the conjugates of a member of `Ω (F)`
+  with members of the conjugate class `Ω (F_*^*)`.
+* `corollary_37_1_1_*` — the conjugates are concave-convex, lower resp. upper closed, equivalent to
+  each other, proper when `K` is, depend only on the equivalence class of `K`, and conjugacy is
+  involutive up to equivalence.
+* `corollary_37_1_2_cl₁`, `corollary_37_1_2_cl₂`, `corollary_37_1_2_dom`,
+  `corollary_37_1_2_structure`, `corollary_37_1_2_eq_of_mem_relint_dom₁`,
+  `corollary_37_1_2_eq_of_mem_relint_dom₂` — `C* × D*` is the effective domain of both conjugates,
+  and they agree over its relative interior in each argument.
+* `minimax_eq_neg_lowerConj_zero`, `maximin_eq_neg_upperConj_zero`, `corollary_37_1_3_dom₁`,
+  `corollary_37_1_3_dom₂`, `corollary_37_1_3_finite` — the two iterated extrema are the conjugates
+  at the origin, so the saddle-value exists when the origin is interior to `C*` or to `D*`.
+* `theorem_37_2_dom₂`, `theorem_37_2_dom₂_recessionFn`, `corollary_37_2_1_dom₁`,
+  `corollary_37_2_1_dom₂` — the support function of `D*`, and when the origin is interior to it.
+* `theorem_37_3_a`, `theorem_37_3_b`, `theorem_37_3_finite`, `corollary_37_3_1_dom₁`,
+  `corollary_37_3_1_dom₂`, `corollary_37_3_2_left`, `corollary_37_3_2_right` — the existence
+  theorem for the saddle-value, with the bounded case and the minimax theorem it yields.
+* `theorem_37_4`, `theorem_37_4_convex`, `theorem_37_4_isClosed`, `theorem_37_4_relint`,
+  `theorem_37_4_dom`, `corollary_37_4_1_subdiff`, `corollary_37_4_1_eq` — a subgradient pair is a
+  saddle-point of the tilted function, `ri (dom K) ⊆ dom ∂K ⊆ dom K`, and `∂K` depends only on the
+  equivalence class.
+* `theorem_37_5_a` through `theorem_37_5_d`, `theorem_37_5_f` — the four equivalent conditions
+  relating `∂K`, `∂K*` and the subdifferential of the graph function `f`.
+* `corollary_37_5_1_isClosed`, `corollary_37_5_1_homeomorph`, `corollary_37_5_1_exists_homeomorph`,
+  `corollary_37_5_2`, `corollary_37_5_2_gradient` — the graph of `∂K` is closed and homeomorphic to
+  `ℝᵐ⁺ⁿ`, and the sign-corrected mapping `(u, v) ↦ {(−u*, v*) | (u*, v*) ∈ ∂K (u, v)}` is maximal
+  monotone.
+* `corollary_37_5_3`, `corollary_37_5_3_convex`, `corollary_37_5_3_isClosed`,
+  `corollary_37_5_3_exists_iff`, `corollary_37_5_3_exists_of_relint` — the saddle-points of `K` are
+  exactly `∂K* (0, 0)`, a closed convex product set.
+* `theorem_37_6`, `theorem_37_6_mem_dom`, `corollary_37_6_1`, `corollary_37_6_1_finite`,
+  `corollary_37_6_2` — the existence theorem for a saddle-point, and the classical minimax theorem.
 
 ## Divergences from the book
 
@@ -35,10 +78,6 @@ convexity, concavity and continuity **slice by slice** rather than jointly.
 
 Corollary 37.4.1 carries a closedness hypothesis the book does not state, and Corollary 37.5.1's
 homeomorphism comes out as `(u − u*, v* + v)` where the book prints `(u − u*, v + v*)`.
-
-## References
-
-* [rockafellar1970convex] §37, pp. 388–400.
 -/
 
 namespace Rockafellar
@@ -257,15 +296,16 @@ theorem corollary_37_1_1_upper_class (hF : ConvexBifun F) (hcl : ClosedBifun F) 
     (hL : L ∈ Ω F) : upperConj K = upperConj L :=
   (theorem_37_1_upper hF hcl hK).trans (theorem_37_1_upper hF hcl hL).symm
 
-/-- A saddle-function conjugate to a closed **proper** saddle-function is proper: the only
-improper closed saddle-functions are the constants `±∞`, and those are conjugate to each other. -/
+/-- **Corollary 37.1.1**: a saddle-function conjugate to a closed **proper** saddle-function is
+proper. The only improper closed saddle-functions are the constants `±∞`, and those are conjugate
+to each other. -/
 theorem corollary_37_1_1_proper_upper (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
     (hp : ProperSaddleFn K) : ProperSaddleFn (upperConj K) :=
   properSaddleFn_upperConjSaddle (pairing m) (pairing n) hF hcl
     (proper_graphFn_of_properSaddleFn (pairing m) (pairing n) (mem_bifunSaddleClass_of_mem_Ω hK)
       hp) (mem_bifunSaddleClass_of_mem_Ω hK)
 
-/-- The same for the lower conjugate. -/
+/-- **Corollary 37.1.1**: the same for the lower conjugate. -/
 theorem corollary_37_1_1_proper_lower (hF : ConvexBifun F) (hcl : ClosedBifun F) (hK : K ∈ Ω F)
     (hp : ProperSaddleFn K) : ProperSaddleFn (lowerConj K) :=
   properSaddleFn_lowerConjSaddle (pairing m) (pairing n) hF hcl
@@ -543,7 +583,8 @@ theorem theorem_37_4 (K : Rn m × Rn n → EReal) (p q : Rn m × Rn n) :
     q ∈ subdiff K p ↔ IsSaddlePoint (saddleTilt (pairing m) (pairing n) K q) p :=
   mem_saddleSubdifferential_iff_isSaddlePoint
 
-/-- `∂K (u, v)` is **convex**, with no hypothesis on `K`: it is a product of two convex sets. -/
+/-- **Theorem 37.4**: `∂K (u, v)` is **convex**, with no hypothesis on `K` — it is a product of
+two convex sets. -/
 theorem theorem_37_4_convex (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     Convex ℝ (subdiff K p) := convex_subdiff
 
@@ -556,8 +597,8 @@ private theorem isClosed_subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn
   rw [h]
   exact (isClosed_subdifferential _ _).preimage continuous_neg
 
-/-- `∂K (u, v)` is **closed**. The concave factor is assembled from §35's sign dictionary
-`mem_subdiff₁_iff_neg_mem_subdifferential_neg` and `isClosed_subdifferential`. -/
+/-- **Theorem 37.4**: `∂K (u, v)` is **closed**. The concave factor is assembled from §35's sign
+dictionary `mem_subdiff₁_iff_neg_mem_subdifferential_neg` and `isClosed_subdifferential`. -/
 theorem theorem_37_4_isClosed (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     IsClosed (subdiff K p) :=
   (isClosed_subdiff₁ K p).prod (isClosed_subdifferential _ _)
@@ -718,8 +759,8 @@ noncomputable def corollary_37_5_1_homeomorph (hF : ConvexBifun F) (hcl : Closed
     ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1} ≃ₜ (Rn m × Rn n) :=
   saddleSubdifferentialHomeomorph hF hcl hpr (mem_bifunSaddleClass_of_mem_Ω hK)
 
-/-- The homeomorphism is the book's map, with the two summands of the second component in the
-other order: `(u − u*, v* + v)` against the printed `(u − u*, v + v*)`. -/
+/-- **Corollary 37.5.1**: the homeomorphism is the book's map, with the two summands of the second
+component in the other order — `(u − u*, v* + v)` against the printed `(u − u*, v + v*)`. -/
 theorem corollary_37_5_1_homeomorph_apply (hF : ConvexBifun F) (hcl : ClosedBifun F)
     (hpr : Proper (graphFn F)) (hK : K ∈ Ω F)
     (r : ↥{r : (Rn m × Rn n) × (Rn m × Rn n) | r.2 ∈ subdiff K r.1}) :

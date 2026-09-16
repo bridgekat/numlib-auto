@@ -4,23 +4,54 @@ import Numlib.Analysis.Convex.Polyhedral.Ops
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §39: Convex Processes
+# Rockafellar §39: convex processes
 
-A **convex process** from `ℝᵐ` to `ℝⁿ` is a multivalued map whose graph is a convex cone containing
-the origin. It sits between a linear transformation and a convex bifunction, and it inherits a full
-duality theory from §§30–38. All nine numbered results of §39 are formalized: Theorems 39.1–39.8
-and Corollary 39.7.1.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §39
+(pp. 413–424). A **convex process** from `ℝᵐ` to `ℝⁿ` is a multivalued map whose graph is a convex
+cone containing the origin. It sits between a linear transformation and a convex bifunction, and it
+inherits a full duality theory from §§30–38.
 
-## Implementation notes
+All nine numbered results of §39 are formalized: Theorems 39.1–39.8 and Corollary 39.7.1.
 
 **Orientation is data, not a convention.** Rockafellar is explicit: "an oriented convex set is a
 pair consisting of a convex set and one of the words *supremum* or *infimum*". Theorems 39.5 and
 39.8 require two processes to carry the **same** orientation and Theorem 39.2 **flips** it, so both
 orientations have to be simultaneously expressible: a global convention of the kind §36 imposes on
-saddle-functions cannot even state Theorem 39.5. Hence `Orientation`, `OrientedProcess` and the
-dispatch `Orientation.adjointProcess`.
+saddle-functions cannot even state Theorem 39.5.
 
-`PolyhedralConvexProcess` is a surface definition; no numbered result of §39 needs it.
+## Main definitions
+
+* `Orientation`, `OrientedProcess`, `Orientation.adjointProcess` — the book's orientation and the
+  dispatch it drives; `adjoint`, `inv`, `add_process`, `smul_process`, `comp` and `bracket` are the
+  oriented operations built on it.
+* `Orientation.bracketSet`, `bracket` — the inner products `⟨C, x*⟩` and `⟨Au, x*⟩`, read as a
+  support function under the supremum orientation and as its reflection under the infimum one.
+* `imageFn` — the image `(Af)(x) = inf {f u | u ∈ A⁻¹x}` of a convex function under a process.
+* `PolyhedralConvexProcess` — a surface definition; no numbered result of §39 needs it.
+* `convexProcessEquivGraph`, `convexProcessCompleteLattice` — a convex process *is* its graph, and
+  the processes from `ℝᵐ` to `ℝⁿ` form a complete lattice under inclusion of graphs.
+
+## Main results
+
+* `eval_convex`, `dom_convex`, `range_convex`, `dom_inv`, `range_inv`, `add_eval_zero_subset`,
+  `comp_assoc`, `id_comp`, `comp_id`, `inv_comp`, `inv_comp_ne_id`, `comp_add_le`, `add_comp_le` —
+  the elementary algebra, including that `A⁻¹A` is not the identity and that the distributive laws
+  hold only as inclusions.
+* `theorem_39_1`, `theorem_39_1_isBounded` — a convex process with `dom A = ℝᵐ` and `A 0 = {0}` is
+  a linear transformation.
+* `theorem_39_2`, `theorem_39_2_orientation`, `theorem_39_2_isClosed`,
+  `theorem_39_2_eq_self_iff`, `theorem_39_2_indicatorBifun` — `A*` is a closed process of the
+  opposite orientation and `A** = cl A`.
+* `theorem_39_3_*` — `⟨Au, x*⟩` is positively homogeneous and convex resp. concave according to the
+  orientation, `⟨u, A* x*⟩` is its closure in `u`, and the two agree over `ri (dom A)`.
+* `theorem_39_4`, `theorem_39_4_eval` — the one-to-one correspondence between closed convex
+  processes and the saddle-functions `K (u, x*) = ⟨Au, x*⟩`.
+* `theorem_39_5`, `theorem_39_5_isClosed`, `theorem_39_5_closure`, `theorem_39_6` —
+  `(A₁ + A₂)* = A₁* + A₂*` and `(λA)* = λA*`.
+* `theorem_39_7`, `theorem_39_7_attained`, `theorem_39_7_closedFn`, `theorem_39_7_attained_image`,
+  `theorem_39_7_closure`, `corollary_39_7_1`, `corollary_39_7_1_isBounded` — the image of a convex
+  function, `(Af)* = A*⁻¹ f*`, and the closedness of `A C` for a closed convex `C`.
+* `theorem_39_8`, `theorem_39_8_isClosed`, `theorem_39_8_closure` — `(BA)* = A* B*`.
 
 ## Divergences from the book
 
@@ -38,10 +69,6 @@ closable by `IsExactSum.of_relint`.
 
 Theorem 39.3's last assertion is stated without closedness on the `u` side, where the book prefixes
 both halves with "if `A` is closed": that half is Corollary 33.2.1.
-
-## References
-
-* [rockafellar1970convex] §39, pp. 413–424.
 -/
 
 namespace Rockafellar

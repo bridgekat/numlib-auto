@@ -4,24 +4,15 @@ import Numlib.Analysis.Convex.Separation
 import NumlibSurface.Rockafellar.Chapter02.Section06
 
 /-!
-# Rockafellar, §11: Separation Theorems
+# Rockafellar §11: separation theorems
 
-The three notions of separation, the fundamental separation construction, and supporting
-hyperplanes. All 16 numbered results of §11 are formalized, in the book's own vocabulary: a
-hyperplane is `{x | ⟨x, b⟩ = β}` with `b ≠ 0`, and separation is an inclusion of the two sets in
-the opposing closed half-spaces.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §11:
+the three notions of separation, the fundamental separation construction, and supporting
+hyperplanes.
 
-## The section's definitions
-
-* `SeparatesRn b β C₁ C₂`, `SeparatesProperlyRn`, `SeparatesStrictlyRn`, `SeparatesStronglyRn` —
-  the section's four notions, each carrying `b ≠ 0` so that `{x | ⟨x, b⟩ = β}` really is a
-  hyperplane (Theorem 1.3). `SeparatesStronglyRn` is written as the book writes it, with `Cᵢ + εB`
-  inside the *open* half-spaces; `separatesStronglyRn_iff` is the bridge to the backbone's gap
-  definition, and is the substance of Theorem 11.1(c).
-* `SeparableProperly`, `SeparableStrongly` — "there exists a hyperplane separating `C₁` and `C₂`
-  properly / strongly", which is what every numbered result of the section is about.
-* `IsSupportingHalfSpace b β C` — the supporting half-space, bridged to the backbone's
-  `IsSupporting` by `isSupportingHalfSpace_iff`.
+All 16 numbered results of §11 are formalized, in the book's own vocabulary: a hyperplane is
+`{x | ⟨x, b⟩ = β}` with `b ≠ 0`, and separation is an inclusion of the two sets in the opposing
+closed half-spaces.
 
 The book quantifies over vectors where the backbone quantifies over continuous linear functionals;
 `exists_linFn` says the two are the same quantification in `ℝⁿ`, and every statement
@@ -37,9 +28,38 @@ every statement below are the book's.
 all, so the conclusion fails. Every other §11 result carries the book's own non-emptiness
 hypothesis anyway.
 
-## References
+## The section's definitions
 
-* [rockafellar1970convex] §11.
+* `SeparatesRn b β C₁ C₂`, `SeparatesProperlyRn`, `SeparatesStrictlyRn`, `SeparatesStronglyRn` —
+  the section's four notions, each carrying `b ≠ 0` so that `{x | ⟨x, b⟩ = β}` really is a
+  hyperplane (Theorem 1.3). `SeparatesStronglyRn` is written as the book writes it, with `Cᵢ + εB`
+  inside the *open* half-spaces; `separatesStronglyRn_iff` is the bridge to the backbone's gap
+  definition, and is the substance of Theorem 11.1(c).
+* `SeparableProperly`, `SeparableStrongly` — "there exists a hyperplane separating `C₁` and `C₂`
+  properly / strongly", which is what every numbered result of the section is about.
+* `IsSupportingHalfSpace b β C` — the supporting half-space, bridged to the backbone's
+  `IsSupporting` by `isSupportingHalfSpace_iff`.
+
+## Main results
+
+* `theorem_11_1_ab`, `theorem_11_1_c` — the three elementary reformulations of separation: an
+  inequality between an infimum and a supremum, one between a supremum and an infimum of support
+  values, and the `ε`-gap form of strong separation.
+* `theorem_11_2` — the fundamental construction: a relatively open convex set disjoint from an
+  affine set is separated from it by a hyperplane containing that affine set.
+* `theorem_11_3` — proper separation of two non-empty convex sets is possible exactly when their
+  relative interiors are disjoint.
+* `theorem_11_4`, `theorem_11_4_closure`, `corollary_11_4_1`, `corollary_11_4_2` — strong
+  separation, characterised by `0 ∉ cl (C₁ - C₂)` and by disjointness of closures with one
+  recession condition.
+* `theorem_11_5`, `corollary_11_5_1`, `corollary_11_5_2` — a closed convex set is the intersection
+  of the closed half-spaces containing it, so a convex set other than `ℝⁿ` lies in a hyperplane.
+* `theorem_11_6`, `corollary_11_6_1`, `corollary_11_6_2` — supporting hyperplanes: which subsets
+  of a convex set are the ones it supports, a non-zero normal at every boundary point, and the
+  characterisation of the relative boundary.
+* `theorem_11_7`, `theorem_11_7'`, `corollary_11_7_1`, `corollary_11_7_2`, `corollary_11_7_3` —
+  the homogeneous versions: when one of the sets is a cone the separating hyperplane may be taken
+  through the origin, so a closed convex cone is an intersection of homogeneous half-spaces.
 -/
 
 open Set Pointwise

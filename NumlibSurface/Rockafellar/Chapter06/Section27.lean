@@ -6,15 +6,18 @@ import NumlibSurface.Rockafellar.Chapter02.Section08
 import NumlibSurface.Rockafellar.Chapter05.Section25
 
 /-!
-# Rockafellar, §27: The Minimum of a Convex Function
+# Rockafellar §27: the minimum of a convex function
 
-The unconstrained minimum of a convex function and its duality with `f*` at the origin
-(Theorem 27.1); existence, compactness and well-posedness of the minimum set under a recession
-hypothesis (Theorems 27.2 and 27.3); and the optimality condition `0 ∈ ∂h(x) + N_C(x)` for
-minimising over a convex set (Theorem 27.4).
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §27
+(pp. 263–272): the unconstrained minimum of a convex function and its duality with `f*` at the
+origin (Theorem 27.1); existence, compactness and well-posedness of the minimum set under a
+recession hypothesis (Theorems 27.2 and 27.3); and the optimality condition `0 ∈ ∂h(x) + N_C(x)`
+for minimising over a convex set (Theorem 27.4).
 
 All 9 numbered results of §27 are formalized: Theorems 27.1–27.4 — 27.1 with its nine clauses
-(a)–(i) — and Corollaries 27.2.1, 27.2.2, 27.3.1, 27.3.2 and 27.3.3.
+(a)–(i) — and Corollaries 27.2.1, 27.2.2, 27.3.1, 27.3.2 and 27.3.3. Corollary 27.2.1 is printed
+with no proof, and the polyhedral clause of Theorem 27.3 is proved in the book from Helly's
+theorem.
 
 The book's *minimum set* of `f` is the backbone's `argmin f = {x | ∀ z, f x ≤ f z}`, whose unfolded
 form is the subgradient inequality at `x* = 0`; `mem_argmin_iff_isMinOn` is the bridge to Mathlib's
@@ -25,11 +28,40 @@ form is the subgradient inequality at `x* = 0`; `mem_argmin_iff_isMinOn` is the 
 Corollaries 27.2.1 and 27.2.2 are about minimising *sequences* and are stated that way;
 `corollary_27_2_1_infDist` records the backbone's arbitrary-filter form of the same fact.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §27 (pp. 263–272).
-  Corollary 27.2.1 is stated there with no printed proof, and the polyhedral clause of Theorem 27.3
-  is proved there from Helly's theorem.
+* `IsDirectionOfRecession f y` — Rockafellar's **direction of recession** of `f`: a non-zero `y`
+  along which `f` is non-increasing. `recessionConeFn_eq_zero_iff` reads "no direction of
+  recession" as `0⁺f = {0}`, the hypothesis of Theorems 27.2 and 27.3.
+
+## Main results
+
+* `theorem_27_1_a`, `theorem_27_1_a_bddBelow` — `inf f = -f*(0)`, with no hypothesis at all.
+* `theorem_27_1_b`, `theorem_27_1_b_attained`, `theorem_27_1_b_relint`,
+  `theorem_27_1_b_constancy` — the minimum set is `∂f*(0)`.
+* `theorem_27_1_c`, `theorem_27_1_d`, `theorem_27_1_d_recession`, `theorem_27_1_d_setOf_le`,
+  `theorem_27_1_e`, `theorem_27_1_e_differentiable`, `theorem_27_1_e_gradientVec` — when the
+  infimum is finite but unattained, when the minimum set is non-empty and bounded, and when it is
+  the single point `∇f*(0)`.
+* `theorem_27_1_f_setOf_le`, `theorem_27_1_f_argmin`, `theorem_27_1_f_polarCone`,
+  `theorem_27_1_g_setOf_le`, `theorem_27_1_g_argmin`, `theorem_27_1_h`, `theorem_27_1_i`,
+  `theorem_27_1_i_notMem` — the level sets share a recession cone, their support functions, the
+  limit of those as `α ↓ inf f`, and what `0 ∈ cl (dom f*)` says.
+* `theorem_27_2_finite`, `theorem_27_2_attained`, `theorem_27_2_argmin`, `theorem_27_2_wellPosed`,
+  `corollary_27_2_1_isBounded`, `corollary_27_2_1_clusterPt`, `corollary_27_2_2` — a closed proper
+  convex function with no direction of recession attains a finite infimum on a non-empty compact
+  minimum set, and every minimising sequence is bounded with all its cluster points minimisers.
+* `theorem_27_3`, `theorem_27_3_polyhedral`, `theorem_27_3_lineality`, `corollary_27_3_1`,
+  `corollary_27_3_2`, `corollary_27_3_3`, `corollary_27_3_3_polyhedral` — the same over a closed
+  convex set `C`, with the polyhedral refinements and the version for an arbitrary system of
+  convex inequalities.
+* `theorem_27_4_sufficient`, `theorem_27_4_necessary`, `theorem_27_4_necessary_polyhedral`,
+  `nearest_iff_sub_mem_normalCone` — the optimality condition `0 ∈ ∂h(x) + N_C(x)`, whose headline
+  application is the projection theorem.
+* `mem_argmin_of_localMin`, `convex_argmin_surface`, `isClosed_argmin`,
+  `subsingleton_argmin_of_strictConvexOnFn`, `mem_argmin_iff_zero_mem_subdifferential_surface` —
+  the section's opening remarks, including that a local minimum of a proper convex function is
+  global.
 -/
 
 open Bornology Filter Set Topology

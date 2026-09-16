@@ -4,11 +4,20 @@ import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §3: The Algebra of Convex Sets
+# Rockafellar §3: the algebra of convex sets
 
-Operations that preserve convexity: scalar multiples, sums, convex combinations of a family of
-sets, images and inverse images under linear maps, direct sums, partial addition, and the inverse
-sum. All 9 numbered results of §3 are formalized.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §3:
+the operations that preserve convexity — scalar multiples, sums, convex combinations of a family
+of sets, images and inverse images under linear maps, direct sums, partial addition, and the
+inverse sum.
+
+All 9 numbered results of §3 are formalized.
+
+`λC`, `−C` and `C₁ + C₂` need no definition of their own: they are Mathlib's pointwise `a • s`,
+`-s` and `s + t`, and the book's displayed formulas for them are those definitions on the nose.
+`ℝᵐ⁺ᵖ` is `Rn m × Rn p` here, which is the shape in which §3 actually uses it — a vector of
+`ℝᵐ⁺ᵖ` is written `(y, z)` throughout. `theorem_3_8_invSum` drops the convexity the book assumes,
+its proof not using it; `theorem_3_8_add` keeps it.
 
 ## Main definitions
 
@@ -25,15 +34,21 @@ sum. All 9 numbered results of §3 are formalized.
 * `coneLift` — the convex cone in `ℝⁿ⁺¹` with cross-section `C`, through which the book derives
   `#` from partial addition.
 
-`λC`, `−C` and `C₁ + C₂` need no definition of their own: they are Mathlib's pointwise `a • s`,
-`-s` and `s + t`, and the book's displayed formulas for them are those definitions on the nose.
-`ℝᵐ⁺ᵖ` is `Rn m × Rn p` here, which is the shape in which §3 actually uses it — a vector of
-`ℝᵐ⁺ᵖ` is written `(y, z)` throughout. `theorem_3_8_invSum` drops the convexity the book assumes,
-its proof not using it; `theorem_3_8_add` keeps it.
+## Main results
 
-## References
-
-* [rockafellar1970convex] §3.
+* `theorem_3_1`, `theorem_3_2` — the sum of two convex sets is convex, and `(λ₁ + λ₂) C =
+  λ₁ C + λ₂ C` for convex `C` and non-negative `λᵢ`; `add_self_eq_two_smul` is the consequence
+  `C + C = 2C` the book draws at once.
+* `theorem_3_3` — the convex hull of a union of non-empty convex sets is the union of their finite
+  convex combinations.
+* `theorem_3_4_image`, `theorem_3_4_preimage`, `corollary_3_4_1` — images and inverse images of
+  convex sets under a linear map are convex, and so is an orthogonal projection.
+* `theorem_3_5` — the direct sum `C ×ˢ D` of convex sets is convex.
+* `theorem_3_6`, `theorem_3_6_add`, `theorem_3_6_inter` — partial addition preserves convexity,
+  with ordinary addition and intersection as its two extreme cases.
+* `theorem_3_7` — the inverse sum `C₁ # C₂` of two convex sets is convex.
+* `theorem_3_8_add`, `theorem_3_8_invSum` — for convex cones containing the origin,
+  `K₁ + K₂ = conv (K₁ ∪ K₂)` and `K₁ # K₂ = K₁ ∩ K₂`.
 -/
 
 namespace Rockafellar

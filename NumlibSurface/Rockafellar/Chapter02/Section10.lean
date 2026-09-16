@@ -5,12 +5,25 @@ import Numlib.Analysis.Convex.Simplicial
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §10: Continuity of Convex Functions
+# Rockafellar §10: continuity of convex functions
 
-The situations in which a convex function is automatically upper semicontinuous, hence continuous,
-together with the equi-Lipschitz and convergence theory that follows from them. All 13 numbered
-results of §10 are formalized. The section is entirely finite-dimensional: every result rests on
-Theorem 6.2 — a non-empty convex set has a non-empty relative interior — somewhere.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §10:
+the situations in which a convex function is automatically upper semicontinuous, hence continuous,
+together with the equi-Lipschitz and convergence theory that follows from them.
+
+All 13 numbered results of §10 are formalized. The section is entirely finite-dimensional: every
+result rests on Theorem 6.2 — a non-empty convex set has a non-empty relative interior —
+somewhere.
+
+`corollary_10_5_1` spells the book's `liminf_{λ → ∞} f (λ y) / λ < ∞` as "for some `c`,
+`f (a y) ≤ c a` for arbitrarily large `a`", which avoids an `EReal` division convention; the two
+agree because the quotient is nondecreasing in `λ` (Theorem 8.5). Hypothesis (a) of `theorem_10_6`
+is stated with `cl C'` where the book writes `conv (cl C')`.
+
+`theorem_10_2` is unconditional. Rockafellar's proof triangulates a simplex around an interior
+point, a step he calls intuitively obvious and does not prove; upper semicontinuity relative to a
+simplex is instead obtained at *every* point of it by a direct barycentric estimate, so §20
+inherits no obligation from §10.
 
 ## The section's definitions
 
@@ -23,19 +36,25 @@ Theorem 6.2 — a non-empty convex set has a non-empty relative interior — som
 * **Pointwise bounded** and **uniformly bounded on `S`** are `PointwiseBoundedOn` and
   `UniformlyBoundedOn`, with bridges `pointwiseBoundedOn_iff` and `uniformlyBoundedOn_iff`.
 
-`corollary_10_5_1` spells the book's `liminf_{λ → ∞} f (λ y) / λ < ∞` as "for some `c`,
-`f (a y) ≤ c a` for arbitrarily large `a`", which avoids an `EReal` division convention; the two
-agree because the quotient is nondecreasing in `λ` (Theorem 8.5). Hypothesis (a) of `theorem_10_6`
-is stated with `cl C'` where the book writes `conv (cl C')`.
+## Main results
 
-`theorem_10_2` is unconditional. Rockafellar's proof triangulates a simplex around an interior
-point, a step he calls intuitively obvious and does not prove; upper semicontinuity relative to a
-simplex is instead obtained at *every* point of it by a direct barycentric estimate, so §20
-inherits no obligation from §10.
-
-## References
-
-* [rockafellar1970convex] §10.
+* `theorem_10_1`, `corollary_10_1_1` — a convex function is continuous relative to any relatively
+  open convex subset of its effective domain, so a finite convex function on `ℝⁿ` is continuous.
+* `theorem_10_2`, `theorem_10_2_closed` — upper semicontinuity, and continuity for closed `f`,
+  relative to a locally simplicial subset of `dom f`.
+* `theorem_10_3`, `theorem_10_3_unique` — the unique convex extension to a locally simplicial
+  convex set of a finite convex function bounded above on the simplices of `ri C`.
+* `theorem_10_4` — a proper convex function is Lipschitzian relative to any closed bounded subset
+  of `ri (dom f)`.
+* `theorem_10_5`, `theorem_10_5_lipschitzian`, `corollary_10_5_1`, `corollary_10_5_2` — uniform
+  continuity on `ℝⁿ` is equivalent to being Lipschitzian there, with two sufficient conditions.
+* `theorem_10_6`, `theorem_10_6_ab` — a pointwise bounded family of convex functions on a
+  relatively open convex set is equi-Lipschitzian on the compact subsets, under the book's
+  hypotheses and under its two weakenings.
+* `theorem_10_7`, `theorem_10_7_dense` — joint continuity of a convex function of a parameter.
+* `theorem_10_8`, `corollary_10_8_1`, `theorem_10_9` — pointwise convergence of finite convex
+  functions on a relatively open convex set is uniform on the compact subsets, and a convergent
+  subsequence exists whenever the sequence is pointwise bounded.
 -/
 
 open Filter Topology

@@ -9,10 +9,13 @@ import Numlib.Analysis.Convex.Recession.Closedness
 import NumlibSurface.Rockafellar.Chapter03.Section13
 
 /-!
-# Rockafellar, §16: Dual Operations
+# Rockafellar §16: dual operations
 
-The dual-operations dictionary: every operation of §5 has a dual operation, and conjugacy exchanges
-the two. All 15 numbered results of §16 are formalized.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16:
+the dual-operations dictionary — every operation of §5 has a dual operation, and conjugacy
+exchanges the two.
+
+All 15 numbered results of §16 are formalized.
 
 ## The uniform shape of the section
 
@@ -34,9 +37,28 @@ Rockafellar's, so no statement here carries an `IsAdjointPair` hypothesis even t
 backbone statement it specialises does. `λf` is `fun x => (l : EReal) * f x` and `fλ` is
 `smulRight f l`, both from §5.
 
-## References
+## Main results
 
-* [rockafellar1970convex] §16.
+* `theorem_16_1_left`, `theorem_16_1_right`, `theorem_16_1_left_zero`, `theorem_16_1_right_zero`,
+  `corollary_16_1_1`, `corollary_16_1_2` — scalar multiplication: `(λf)* = f*λ` and `(fλ)* = λf*`,
+  with the two limiting cases and the consequences for support functions and polars.
+* `lemma_16_2`, `corollary_16_2_1`, `corollary_16_2_2` — when a subspace meets `ri (dom f)`, and
+  the two qualifications the rest of the section uses.
+* `theorem_16_3_image`, `theorem_16_3_closure`, `theorem_16_3_exact`, `theorem_16_3_attained`,
+  `theorem_16_3_polyhedral`, `theorem_16_3_polyhedral_attained`, `corollary_16_3_1_image`,
+  `corollary_16_3_1_closure`, `corollary_16_3_1_exact`, `corollary_16_3_2_image`,
+  `corollary_16_3_2_preimage` — image and inverse image under a linear map are dual: `(gA)* =
+  A*g*`, with the support-function and polar corollaries.
+* `theorem_16_4_infConv`, `theorem_16_4_infConv_finset`, `theorem_16_4_closure`,
+  `theorem_16_4_exact`, `theorem_16_4_attained`, `theorem_16_4_exact_finset`,
+  `theorem_16_4_attained_finset` — addition and infimal convolution are dual: `(f □ g)* = f* + g*`.
+* `corollary_16_4_1_add`, `corollary_16_4_1_add_finset`, `corollary_16_4_1_closure`,
+  `corollary_16_4_1_exact`, `corollary_16_4_1_exact_finset`, `corollary_16_4_1_attained_finset`,
+  `corollary_16_4_2_add` — the same for support functions of sums and intersections, and
+  `(K₁ + K₂)° = K₁° ∩ K₂°`.
+* `theorem_16_5_convFn`, `theorem_16_5_closure`, `corollary_16_5_1_hull`,
+  `corollary_16_5_1_closure`, `corollary_16_5_2_hull`, `corollary_16_5_2_inter` — convex hull of a
+  collection and pointwise supremum are dual.
 -/
 
 open Set Pointwise

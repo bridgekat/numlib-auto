@@ -5,9 +5,10 @@ import Numlib.Analysis.Convex.Tangent
 import NumlibSurface.Rockafellar.Chapter02.Section06
 
 /-!
-# Rockafellar, §18: Extreme Points and Faces of Convex Sets
+# Rockafellar §18: extreme points and faces of convex sets
 
-The facial structure of a convex set, the internal representations `C = conv S` and
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §18:
+the facial structure of a convex set, the internal representations `C = conv S` and
 `C = cl (conv S)` it produces, and the external representation dual to the second.
 
 All sixteen numbered results of §18 are formalized over `Rn n = ℝⁿ`: Theorems 18.1–18.8 and
@@ -25,9 +26,37 @@ words and never proves, and `facesEquivFacesInterOrthogonal` is the face corresp
 "evidently" on p. 166. Corollaries 18.5.2 and 18.7.1 do not need the cone to contain more than the
 origin, and Corollary 18.7.1 is printed with no proof at all.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §18.
+* `IsExtremeRay`, `IsExposedRay` — the book's extreme and exposed rays of a convex cone, the
+  zero-dimensional objects that replace extreme points there.
+* `IsTangentHyperplaneAt` — the tangency relation Theorem 18.8 is stated in.
+* `facesEquivFacesInterOrthogonal` — the correspondence between the faces of `C` and those of
+  `C ∩ L^⊥`, for `L` the lineality space of `C`.
+
+## Main results
+
+* `isFace_iff`, `isFace_mono`, `isFace_trans`, `isFace_singleton_iff`, `mem_extremePoints_iff`,
+  `faces_isGLB`, `faces_isLUB` — the definitions of §18 and the complete lattice `F(C)` of faces.
+* `theorem_18_1`, `corollary_18_1_1`, `corollary_18_1_1_isClosed`, `corollary_18_1_2`,
+  `corollary_18_1_3`, `corollary_18_1_3_dim` — a subset of `C` meeting a face in a relative
+  interior point lies in that face, and the closedness and dimension consequences.
+* `theorem_18_2_union`, `theorem_18_2_disjoint`, `theorem_18_2_subset`, `theorem_18_2_maximal` —
+  the relative interiors of the faces partition `C`, and are its maximal relatively open convex
+  subsets.
+* `theorem_18_3`, `corollary_18_3_1_points`, `corollary_18_3_1_directions`,
+  `corollary_18_3_1_directions_of_isBounded` — the faces of `conv S`, and that extreme points and
+  directions of a hull come from its generators.
+* `theorem_18_4` — in a closed convex set that is neither an affine set nor a closed half of one,
+  every relative interior point lies on a segment joining two relative boundary points.
+* `theorem_18_5`, `theorem_18_5_lineality`, `corollary_18_5_1`, `corollary_18_5_2`,
+  `corollary_18_5_3` — the internal representation: a closed convex set containing no lines is the
+  convex hull of its extreme points and directions; Minkowski's theorem is the bounded case.
+* `theorem_18_6`, `theorem_18_6_closure` — Straszewicz's theorem: the exposed points are dense in
+  the extreme points.
+* `theorem_18_7`, `corollary_18_7_1` — the exposed representation `C = cl (conv S)`.
+* `theorem_18_8` — the external representation: an `n`-dimensional closed convex set in `ℝⁿ` is the
+  intersection of the closed half-spaces bounded by its tangent hyperplanes.
 -/
 
 open Set

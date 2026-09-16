@@ -3,11 +3,20 @@ import Numlib.Analysis.Convex.Duality.Ops
 import NumlibSurface.Rockafellar.Chapter02.Section07
 
 /-!
-# Rockafellar, §12: Conjugates of Convex Functions
+# Rockafellar §12: conjugates of convex functions
 
-The conjugacy correspondence `f ↦ f*`, its involutivity on closed proper convex functions, and the
-elementary table of operations under which the conjugate transforms by a change of variable. All 9
-numbered results of §12 are formalized.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12:
+the conjugacy correspondence `f ↦ f*`, its involutivity on closed proper convex functions, and the
+elementary table of operations under which the conjugate transforms by a change of variable.
+
+All 9 numbered results of §12 are formalized.
+
+Rockafellar prints **Theorem 12.4** with no proof at all. The argument here avoids the
+symmetrisation `f x = g (abs x)` that the surrounding prose suggests, and with it the question of
+whether `x ↦ g (abs x)` is convex. Writing `K` for the non-negative orthant, the one fact that
+makes the truncation `g⁺ = restrictFn K f*` harmless is `conj_posPart`: `f* (y⁺) = f* y`, where `y⁺`
+is the componentwise positive part. The supremum defining `f**` may then be taken over `K` alone,
+and Fenchel–Moreau finishes.
 
 ## The section's definitions
 
@@ -22,17 +31,24 @@ numbered results of §12 are formalized.
   off the non-negative orthant, non-decreasing for the componentwise order, convex, closed, and
   finite at the origin. `monotoneConjOrthant_apply` is the book's formula
   `g⁺(z*) = sup {⟨z, z*⟩ - g z | z ≥ 0}`.
+* **`corollary_12_2_1`** is a `def`: the involution of the closed proper convex functions that
+  Corollary 12.2.1 asserts, packaged as an `Equiv`.
 
-Rockafellar prints **Theorem 12.4** with no proof at all. The argument here avoids the
-symmetrisation `f x = g (abs x)` that the surrounding prose suggests, and with it the question of
-whether `x ↦ g (abs x)` is convex. Writing `K` for the non-negative orthant, the one fact that
-makes the truncation `g⁺ = restrictFn K f*` harmless is `conj_posPart`: `f* (y⁺) = f* y`, where `y⁺`
-is the componentwise positive part. The supremum defining `f**` may then be taken over `K` alone,
-and Fenchel–Moreau finishes.
+## Main results
 
-## References
-
-* [rockafellar1970convex] §12.
+* `theorem_12_1`, `corollary_12_1_1`, `corollary_12_1_2` — a closed convex function is the
+  pointwise supremum of the affine functions below it.
+* `theorem_12_2_convex`, `theorem_12_2_closed`, `theorem_12_2_proper`, `theorem_12_2_conj_clFn`,
+  `theorem_12_2_biconj` — the conjugate of a convex function is closed and convex, is proper
+  exactly when `f` is, is unchanged by closure, and `f** = cl f` (Fenchel–Moreau).
+* `corollary_12_2_1`, `corollary_12_2_2` — conjugacy is a symmetric one-to-one correspondence on
+  the closed proper convex functions, and the supremum defining `f*` may be restricted to
+  `ri (dom f)`.
+* `fenchel_inequality` — `⟨x, x*⟩ ≤ f x + f* x*` for proper convex `f`.
+* `theorem_12_3`, `corollary_12_3_1` — the change-of-variable table, and the invariance of
+  conjugacy under a group of orthogonal transformations.
+* `theorem_12_4_mem`, `theorem_12_4_involutive` — the monotone conjugate is again a non-decreasing
+  closed convex function on the orthant, and the operation is involutive.
 -/
 
 namespace Rockafellar
@@ -126,6 +142,7 @@ noncomputable def corollary_12_2_1 (n : ℕ) :
     {f : Rn n → EReal // ClosedProperConvexFn f} ≃ {g : Rn n → EReal // ClosedProperConvexFn g} :=
   conjEquiv (pairing n)
 
+/-- The correspondence of Corollary 12.2.1 sends `f` to its conjugate `f*`. -/
 @[simp] theorem corollary_12_2_1_apply (f : {f : Rn n → EReal // ClosedProperConvexFn f}) :
     ((corollary_12_2_1 n f : {g : Rn n → EReal // ClosedProperConvexFn g}) : Rn n → EReal)
       = conj (pairing n) f := rfl

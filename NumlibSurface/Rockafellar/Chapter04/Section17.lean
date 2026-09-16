@@ -3,8 +3,9 @@ import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter01.Section01
 
 /-!
-# Rockafellar, §17: Carathéodory's Theorem
+# Rockafellar §17: Carathéodory's theorem
 
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §17:
 Carathéodory's theorem for a set `S` that mixes **points and directions**, its closedness
 consequences, and the dual question of which half-spaces contain the solution set of a compact
 system of linear inequalities.
@@ -18,14 +19,31 @@ construction here is invariant under rescaling a member of `D` by a positive sca
 type is needed. `ray D` and `coneOf D` are the book's `ray S₁` and `cone S₁`, and `convexHullPD P D`
 is `conv S`.
 
+## Main definitions
+
+* `ray D`, `coneOf D` — the book's `ray S₁` and `cone S₁` for a set `D` of representative vectors.
+* `convexHullPD P D` — the book's `conv S` for a mixed set of points and directions, characterised
+  as the least such convex set by `convexHullPD_isLeast` and computed by `convexHullPD_eq_add`.
+
+## Main results
+
+* `theorem_17_1`, `theorem_17_1_simplex` — Carathéodory's theorem: a point of `conv S` is a convex
+  combination of at most `d + 1` elements of `S`, where `d = dim (conv S)`, and `conv S` is the
+  union of the generalized `d`-dimensional simplices with vertices in `S`.
+* `corollary_17_1_1`, `corollary_17_1_2`, `corollary_17_1_3`, `corollary_17_1_5` — the point,
+  cone and function forms of the same bound.
+* `theorem_17_2`, `theorem_17_2_isCompact`, `corollary_17_2_1` — `cl (conv S) = conv (cl S)` for
+  bounded `S`, `conv S` is compact when `S` is, and the convex hull of a continuous function on a
+  compact set is closed with its infimum attained.
+* `theorem_17_3` — which half-spaces contain the solution set of a compact system of linear
+  inequalities.
+
+## Where the book needs correcting
+
 Three statements diverge from the book. **Corollaries 17.1.4 and 17.1.6 are false as printed**:
 each is recorded as a proposition (`corollary_17_1_4`, `corollary_17_1_6`) and refuted on `ℝ¹`
 (`corollary_17_1_4_false`, `corollary_17_1_6_false`). **Theorem 17.3 is false without `0 ∉ S*`**,
 so `theorem_17_3` carries that hypothesis; the book's `x* ≠ 0` is conversely unnecessary.
-
-## References
-
-* [rockafellar1970convex] §17.
 -/
 
 namespace Rockafellar

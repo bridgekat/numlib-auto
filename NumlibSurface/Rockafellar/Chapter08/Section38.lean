@@ -2,24 +2,50 @@ import Numlib.Analysis.Convex.Bifunction.Cofinite
 import NumlibSurface.Rockafellar.Chapter06.Section30
 
 /-!
-# Rockafellar, §38: The Algebra of Bifunctions
+# Rockafellar §38: the algebra of bifunctions
 
-Addition, scalar multiplication, application and composition of convex bifunctions, and how each
-behaves under taking adjoints. All twelve numbered results of §38 are formalized: Theorems
-38.1–38.5 and 38.7, Lemma 38.6, and Corollaries 38.2.1, 38.4.1, 38.5.1, 38.7.1 and 38.7.2.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §38
+(pp. 401–412): addition, scalar multiplication, application and composition of convex bifunctions,
+and how each behaves under taking adjoints.
 
-## Implementation notes
+All twelve numbered results of §38 are formalized: Theorems 38.1–38.5 and 38.7, Lemma 38.6, and
+Corollaries 38.2.1, 38.4.1, 38.5.1, 38.7.1 and 38.7.2.
 
-Theorem 38.1's inner-product identity holds "if one sets `∞ − ∞ = −∞ + ∞ = −∞`", and its
-parenthetical adds "similarly for concave bifunctions, but with `∞ − ∞ = −∞ + ∞ = +∞`". Those are
-two different binary operations on `EReal`, named apart here as `convexAdd` — which is `EReal`'s
-own addition — and `concaveAdd`, which is not: `theorem_38_1_bracket_concave` is false with
-`convexAdd` in its place.
+## Main definitions
 
-Rockafellar's inner product `⟨f, g⟩` of a convex and a concave function is a **partial** operation;
-he states the definedness condition in prose and then writes `⟨f, g⟩` freely. Here
-`HasInnerProduct` is that condition, and it is an explicit hypothesis wherever an inner product is
-claimed to exist.
+* `convexAdd`, `concaveAdd` — the two `∞ − ∞` conventions of Theorem 38.1. The identity holds "if
+  one sets `∞ − ∞ = −∞ + ∞ = −∞`", and its parenthetical adds "similarly for concave bifunctions,
+  but with `∞ − ∞ = −∞ + ∞ = +∞`". Those are two different binary operations on `EReal`, named
+  apart here: `convexAdd` is `EReal`'s own addition and `concaveAdd` is not, and
+  `theorem_38_1_bracket_concave` is false with `convexAdd` in its place.
+* `HasInnerProduct`, `innerProduct` — Rockafellar's inner product `⟨f, g⟩` of a convex and a
+  concave function is a **partial** operation; he states the definedness condition in prose and
+  then writes `⟨f, g⟩` freely. `HasInnerProduct` is that condition, and it is an explicit
+  hypothesis wherever an inner product is claimed to exist.
+
+## Main results
+
+* `theorem_38_1_convex`, `theorem_38_1_dom`, `theorem_38_1_bracket`,
+  `theorem_38_1_bracket_concave` — the infimal convolution of convex bifunctions is convex with
+  `dom (F₁ □ F₂) = dom F₁ ∩ dom F₂`, and the inner-product identity in both orientations.
+* `infConvBifun_comm'`, `infConvBifun_assoc'` — `□` is commutative and associative.
+* `theorem_38_2`, `corollary_38_2_1_closed`, `corollary_38_2_1_adjoint` —
+  `(F₁ □ F₂)* = F₁* □ F₂*`, exactly under a qualification and up to closure otherwise.
+* `theorem_38_3_convex`, `theorem_38_3_bracket`, `theorem_38_3_adjoint`, `theorem_38_3_closed`,
+  `theorem_38_3_proper` — scalar multiplication `Fλ` and `(Fλ)* = F*λ`.
+* `theorem_38_4_convex`, `theorem_38_4_conj`, `theorem_38_4_attained`, `corollary_38_4_1_closed`,
+  `corollary_38_4_1_attained`, `corollary_38_4_1_conj` — application `Ff` of a bifunction to a
+  function, and `(Ff)* = F⁎* f*`.
+* `theorem_38_5_convex`, `theorem_38_5_adjoint`, `theorem_38_5_attained`,
+  `corollary_38_5_1_closed`, `corollary_38_5_1_attained`, `corollary_38_5_1_adjoint`,
+  `inverseBifun_compBifun'` — the product `GF` and `(GF)* = F* G*`.
+* `lemma_38_6_exists`, `lemma_38_6` — `⟨f*, g*⟩ = −⟨f, g⟩`.
+* `theorem_38_7`, `theorem_38_7_third`, `corollary_38_7_1`, `corollary_38_7_1_exists`,
+  `corollary_38_7_2_first`, `corollary_38_7_2_second`, `corollary_38_7_2_exists` — an adjoint
+  moves across the inner product.
+* `cofinite_iff_forall_bracket_finite`, `cofiniteBifun_bracket_eq`, `cofinite_infConvBifun'`,
+  `cofinite_adjoint_infConvBifun`, `cofinite_smulRightBifun'` — the closing discussion of co-finite
+  bifunctions, where every qualification disappears.
 
 ## Divergences from the book
 
@@ -33,10 +59,6 @@ demanded once per dual vector, where the book's single condition is uniform in i
 it is defined" — `infConv` is total on `EReal`, so improper bifunctions are included. That is
 *stronger* than the book. The caveat that is real is the one about bifunction **multiplication**,
 and it is not discharged.
-
-## References
-
-* [rockafellar1970convex] §38, pp. 401–412.
 -/
 
 open Set

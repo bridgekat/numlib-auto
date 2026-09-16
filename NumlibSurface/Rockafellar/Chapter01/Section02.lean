@@ -2,12 +2,20 @@ import Numlib.Analysis.Convex.Homogeneous
 import NumlibSurface.Rockafellar.Chapter01.Section01
 
 /-!
-# Rockafellar, §2: Convex Sets and Cones
+# Rockafellar §2: convex sets and cones
 
-Convex sets, convex hulls and convex combinations; the dimension of a convex set; cones, convex
-cones and the smallest convex cone including a set. All 13 numbered results of §2 are formalized.
-The section is thin: eight of them are one-line specialisations of Mathlib's `Convex`/`convexHull`
-API, and Theorem 2.6 is the backbone's `convex_iff_add_mem_of_isCone` verbatim.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §2:
+convex sets, convex hulls and convex combinations; the dimension of a convex set; cones, convex
+cones and the smallest convex cone including a set.
+
+All 13 numbered results of §2 are formalized. The section is thin: eight of them are one-line
+specialisations of Mathlib's `Convex`/`convexHull` API, and Theorem 2.6 is the backbone's
+`convex_iff_add_mem_of_isCone` verbatim.
+
+The dimension of a convex set is `dim` from §1: the dimension of the subspace parallel to `aff C`.
+
+Theorem 2.7 is split into four declarations, because the book's single sentence asserts four
+things.
 
 ## Main definitions
 
@@ -19,14 +27,22 @@ API, and Theorem 2.6 is the backbone's `convex_iff_add_mem_of_isCone` verbatim.
 * `posCombinations` — the *positive linear combinations* of a set, the object of Corollaries 2.6.1
   and 2.6.2.
 
-The dimension of a convex set is `dim` from §1: the dimension of the subspace parallel to `aff C`.
+## Main results
 
-Theorem 2.7 is split into four declarations, because the book's single sentence asserts four
-things.
-
-## References
-
-* [rockafellar1970convex] §2.
+* `theorem_2_1`, `corollary_2_1_1` — an arbitrary intersection of convex sets is convex, so the
+  solution set of any system of weak linear inequalities is convex.
+* `theorem_2_2`, `theorem_2_3`, `corollary_2_3_1` — a set is convex exactly when it contains the
+  convex combinations of its elements, and `conv S` is the set of those combinations.
+* `theorem_2_4` — the dimension of a convex set is the largest dimension of a simplex inside it.
+* `theorem_2_5`, `corollary_2_5_1` — the same as Theorem 2.1 for convex cones and homogeneous
+  systems.
+* `theorem_2_6`, `corollary_2_6_1` — a set is a convex cone exactly when it is closed under
+  addition and positive scalar multiplication, equivalently under positive linear combinations.
+* `corollary_2_6_2`, `corollary_2_6_3` — the smallest convex cone including a set: the positive
+  linear combinations in general, and `{λx | λ > 0, x ∈ C}` for a convex `C`.
+* `theorem_2_7_least`, `theorem_2_7_sub`, `theorem_2_7_aff`, `theorem_2_7_greatest` — for a convex
+  cone `K` containing the origin, the smallest subspace containing it is `K - K = aff K` and the
+  largest subspace contained in it is `(-K) ∩ K`.
 -/
 
 namespace Rockafellar

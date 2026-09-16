@@ -3,11 +3,14 @@ import Numlib.Analysis.Convex.Saddle.Subdifferential
 import NumlibSurface.Rockafellar.Chapter07.Section33
 
 /-!
-# Rockafellar, §35: Continuity and Differentiability of Saddle-Functions
+# Rockafellar §35: continuity and differentiability of saddle-functions
 
-The §10 continuity and convergence theorems and the §23/§24/§25 differential theory, read for a
-**concave-convex** function of a pair. All twelve numbered results of §35 are formalized: Theorems
-35.1–35.10 and Corollaries 35.7.1 and 35.8.1.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §35
+(pp. 370–378): the §10 continuity and convergence theorems and the §23/§24/§25 differential theory,
+read for a **concave-convex** function of a pair.
+
+All twelve numbered results of §35 are formalized: Theorems 35.1–35.10 and Corollaries 35.7.1 and
+35.8.1.
 
 **The sign asymmetry.** `K` is concave in `u` and convex in `v`, so `∂₁K (u, v)` holds the
 *super*gradients of the concave slice `K (·, v)` at `u` and `∂₂K (u, v)` the *sub*gradients of the
@@ -20,6 +23,33 @@ relation. The dictionary is `mem_subdiff₁_iff_neg_mem_subdifferential_neg`, an
 The `EReal`-valued `dirDeriv` of §23 is an infimum, which is that limit only along a line; the
 difference between the two is exactly what Theorem 35.6 is about.
 
+## Main definitions
+
+* `subdiff₁`, `subdiff₂`, `subdiff` — Rockafellar's `∂₁K`, `∂₂K` and `∂K = ∂₁K × ∂₂K`. `∂K` is a
+  **product**, not a set of pairs cut out by one inequality.
+
+## Main results
+
+* `theorem_35_1_continuousOn`, `theorem_35_1_lipschitzian` — a finite concave-convex function on a
+  relatively open `C × D` is continuous, and Lipschitzian on every compact subset.
+* `theorem_35_2`, `theorem_35_3`, `theorem_35_3_dense`, `theorem_35_4`, `theorem_35_5` — the
+  equi-Lipschitz, parametric-continuity and convergence theorems of §10, for saddle-functions.
+* `subdiff_eq_prod`, `mem_subdiff₁_iff`, `mem_subdiff₂_iff`,
+  `mem_subdiff₁_iff_neg_mem_subdifferential_neg`, `convex_subdiff`,
+  `subdifferentialFst_univ_eq`, `subdifferentialSnd_univ_eq`, `subdifferentialSaddle_univ_eq` —
+  the subdifferential of a saddle-function and the bridges between its two readings.
+* `theorem_35_6`, `theorem_35_6_tendsto`, `theorem_35_6_concaveConvex`, `theorem_35_6_posHom` —
+  the joint directional derivative exists, and is itself a finite positively homogeneous
+  concave-convex function.
+* `theorem_35_7_fst`, `theorem_35_7_snd`, `theorem_35_7_subdiff`, `corollary_35_7_1_fst`,
+  `corollary_35_7_1_snd`, `corollary_35_7_1_subdiff` — semicontinuity of the two directional
+  derivatives and of the subdifferential mapping.
+* `theorem_35_8`, `theorem_35_8_gradient`, `corollary_35_8_1` — differentiability is a unique
+  subgradient, and then `∂K (u, v) = {∇K (u, v)}`.
+* `theorem_35_9_measure`, `theorem_35_9_dense`, `theorem_35_9_continuousOn`, `theorem_35_10`,
+  `theorem_35_10_uniform` — differentiability almost everywhere with a continuous gradient, and
+  convergence of gradients, uniformly on compact subsets.
+
 ## Divergences from the book
 
 Theorems 35.6–35.10 are stated for a **real-valued** `K` on an open rectangle `C × D`, where the
@@ -31,10 +61,6 @@ extension, which makes the extra inequalities vacuous.
 The `εB` of Theorems 35.7, 35.9 and 35.10 is the **supremum** ball, Mathlib's norm on a product. It
 differs from the book's Euclidean ball by a factor bounded by `√2`, and every such statement
 quantifies over all `ε > 0`.
-
-## References
-
-* [rockafellar1970convex] §35, pp. 370–378.
 -/
 
 open Set Filter Topology MeasureTheory

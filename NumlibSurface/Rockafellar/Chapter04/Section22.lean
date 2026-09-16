@@ -2,20 +2,14 @@ import Numlib.Analysis.Convex.LinearInequalities
 import NumlibSurface.Rockafellar.Chapter03.Section14
 
 /-!
-# Rockafellar, §22: Linear Inequalities
+# Rockafellar §22: linear inequalities
 
-Finite systems of weak and strict linear inequalities, the theorems of the alternative that decide
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §22:
+finite systems of weak and strict linear inequalities, the theorems of the alternative that decide
 their solvability, and Farkas' Lemma.
 
 Four of §22's nine numbered results are formalized over `Rn n = ℝⁿ`: Theorems 22.1–22.3 and
-Corollary 22.3.1 (Farkas' Lemma). The other five — Lemmas 22.4 and 22.5, Corollary 22.4.1, and
-Theorems 22.6 and 22.7 (Tucker's complementarity theorem) — rest on the *elementary vectors* of a
-subspace, a development that is combinatorial matroid theory rather than convex analysis and is
-deliberately not formalized here; it is this project's one scope deferral. Theorems 22.6 and 22.7
-rest further on *Tucker representations* of a subspace, which the book describes only procedurally
-— solve the defining system for the last `N - n` coordinates in terms of the first `n`, for some
-permutation — so stating them at all needs a choice of `n` independent coordinate positions and the
-resulting change of basis. Corollary 31.4.2 is the one other result of the book resting on them.
+Corollary 22.3.1 (Farkas' Lemma).
 
 The book writes `⟨aᵢ, x⟩` with the coefficient vector first, while the backbone writes `B x (a i)`,
 because in general the solution vector and the coefficient vectors live in different spaces. On
@@ -25,9 +19,36 @@ Rockafellar's `Σ ζ*ⱼIⱼ > 0` (p. 202) is a **set containment**, `⊆ (0, +�
 `ζ*₁ζ₁ + ⋯ + ζ*_NζN > 0` for every choice of `ζⱼ ∈ Iⱼ`. The convention is stated once in the book,
 in a parenthesis far ahead of the theorem that uses it; `posIntervalCombo` records it.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §22.
+* `IsConsequence` — the book's *consequence* of a system of weak linear inequalities.
+* `IsRowsOf` — the matrix form of a system: `A` is the matrix whose rows are the `aᵢ`.
+* `IsRealInterval`, `rectangle`, `intervalCombo`, `posIntervalCombo` — the interval vocabulary of
+  p. 202, with `posIntervalCombo` carrying the set-containment reading of `Σ ζ*ⱼIⱼ > 0`.
+* `intervalVector`, `intervalSubspace`, `leIntervals`, `nonnegEqIntervals` — the translation of a
+  linear system in `ℝⁿ` into a subspace-meets-rectangle problem in `ℝᴺ`, `N = n + m`.
+
+## Main results
+
+* `theorem_22_1`, `theorem_22_1_matrix` — Gale's theorem of the alternative, in vector and matrix
+  form.
+* `theorem_22_2`, `not_consistent_iff` — Motzkin's transposition theorem for a mixed system.
+* `theorem_22_3`, `corollary_22_3_1`, `corollary_22_3_1_polar`, `solutions_eq_polarCone` — which
+  inequalities are consequences of a consistent system, Farkas' Lemma, and its reading as
+  `K°° = K` for a finitely generated cone.
+* `interval_reading_le`, `interval_reading_nonneg_eq` — the two interval readings of p. 202: a
+  linear system has a solution exactly when the subspace `L` meets the rectangle.
+
+## Not formalized
+
+Five of §22's nine numbered results — Lemmas 22.4 and 22.5, Corollary 22.4.1, and Theorems 22.6
+and 22.7 (Tucker's complementarity theorem) — rest on the *elementary vectors* of a subspace, a
+development that is combinatorial matroid theory rather than convex analysis and is deliberately
+not formalized here; it is this project's one scope deferral. Theorems 22.6 and 22.7 rest further
+on *Tucker representations* of a subspace, which the book describes only procedurally — solve the
+defining system for the last `N - n` coordinates in terms of the first `n`, for some permutation —
+so stating them at all needs a choice of `n` independent coordinate positions and the resulting
+change of basis. Corollary 31.4.2 is the one other result of the book resting on them.
 -/
 
 open Set Pointwise

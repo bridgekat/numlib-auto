@@ -5,17 +5,35 @@ import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter01.Section01
 
 /-!
-# Rockafellar, §7: Closures of Convex Functions
+# Rockafellar §7: closures of convex functions
 
-Lower semicontinuity, the lower semicontinuous hull, the closure `cl f` of a convex function, and
-closed convex functions. All 17 numbered results of §7 are formalized.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §7:
+lower semicontinuity, the lower semicontinuous hull, the closure `cl f` of a convex function, and
+closed convex functions.
 
-Lower semicontinuity is Mathlib's `LowerSemicontinuous`; the lower semicontinuous hull is
-`lscHull`, characterised as the greatest lsc minorant by `lscHull_isGreatest`; the closure of a
-convex function is `clFn`; and a closed convex function is one with `ClosedFn f`. Two unnumbered
-claims of the text are recorded as `closedFn_iff_lowerSemicontinuous_of_proper` and
-`closed_improper_eq_const` — the only closed improper convex functions are the constants `+∞`
-and `−∞`.
+All 17 numbered results of §7 are formalized. Lower semicontinuity is Mathlib's
+`LowerSemicontinuous`; the lower semicontinuous hull is `lscHull`, characterised as the greatest
+lsc minorant by `lscHull_isGreatest`; the closure of a convex function is `clFn`; and a closed
+convex function is one with `ClosedFn f`. Two unnumbered claims of the text are recorded as
+`closedFn_iff_lowerSemicontinuous_of_proper` and `closed_improper_eq_const` — the only closed
+improper convex functions are the constants `+∞` and `−∞`.
+
+## Main results
+
+* `theorem_7_1` — the three equivalent forms of lower semicontinuity: closed level sets, a closed
+  epigraph, and `liminf` at every point.
+* `theorem_7_2`, `corollary_7_2_1`, `corollary_7_2_2`, `corollary_7_2_3` — an improper convex
+  function is `-∞` throughout `ri (dom f)`, and the consequences for `cl f`.
+* `lemma_7_3`, `corollary_7_3_1`, `corollary_7_3_2`, `corollary_7_3_3`, `corollary_7_3_4` — the
+  relative interior of an epigraph, and the four comparison principles the book draws from it;
+  `corollary_7_3_4` is the one the rest of the book uses: two convex functions agreeing on a
+  common `ri (dom ·)` have the same closure.
+* `theorem_7_4`, `corollary_7_4_1`, `corollary_7_4_2` — `cl f` is a closed proper convex function
+  agreeing with `f` except perhaps on the relative boundary of `dom f`.
+* `theorem_7_5`, `theorem_7_5_improper`, `corollary_7_5_1` — `cl f` is the limit of `f` along line
+  segments from a point of `ri (dom f)`.
+* `theorem_7_6`, `corollary_7_6_1` — above the infimum, the level sets `{f ≤ α}` and `{f < α}`
+  have the same closure, relative interior, affine hull and dimension.
 
 ## The `cl f` case split, and the book's slip about `epi (cl f)`
 
@@ -29,10 +47,6 @@ The book then asserts `epi (cl f) = cl (epi f)` "by definition". **That is false
 `cl (epi f)` is `cl (dom f) × ℝ`. The identity holds for the *hull* with no hypothesis at all
 (`epi_lscHull`), and for `cl f` exactly when `f` is proper. No statement below inherits the slip:
 every use of it goes through `epi_lscHull` or through properness.
-
-## References
-
-* [rockafellar1970convex] §7.
 -/
 
 open Set Filter Topology

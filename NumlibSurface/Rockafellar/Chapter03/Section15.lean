@@ -3,11 +3,19 @@ import Numlib.Analysis.Convex.Recession.Cone
 import NumlibSurface.Rockafellar.Chapter03.Section13
 
 /-!
-# Rockafellar, §15: Polars of Convex Functions
+# Rockafellar §15: polars of convex functions
 
-Gauges and their polars, norms and Minkowski metrics, the gauge-like functions, and the polar `f°`
-and obverse of a nonnegative convex function vanishing at the origin. All 11 numbered results of
-§15 are formalized.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §15:
+gauges and their polars, norms and Minkowski metrics, the gauge-like functions, and the polar `f°`
+and obverse of a nonnegative convex function vanishing at the origin.
+
+All 11 numbered results of §15 are formalized.
+
+The unnumbered running text is recorded too: a gauge recovered from its own unit level set and the
+uniqueness of the closed convex set with a given closed gauge; the polar-pair inequality
+`⟨x, x*⟩ ≤ k(x) k°(x*)` with its Schwarz instance, the Euclidean norm being self-polar; the
+correspondence between norms and Minkowski metrics; the level sets of the obverse; and the closing
+display `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
 
 ## The section's definitions
 
@@ -30,15 +38,31 @@ and obverse of a nonnegative convex function vanishing at the origin. All 11 num
   `inf {μ* ≥ 0 | ⟨x, x*⟩ ≤ 1 + μ* f(x) for all x}`.
 * **The obverse** is `obverse f = inf {λ > 0 | (fλ)(x) ≤ 1}`, unfolded by `obverse_apply_rn`.
 
-The unnumbered running text is recorded too: a gauge recovered from its own unit level set and the
-uniqueness of the closed convex set with a given closed gauge; the polar-pair inequality
-`⟨x, x*⟩ ≤ k(x) k°(x*)` with its Schwarz instance, the Euclidean norm being self-polar; the
-correspondence between norms and Minkowski metrics; the level sets of the obverse; and the closing
-display `{f° ≤ α⁻¹} = α⁻¹ {f* ≤ α}`.
+## Main results
 
-## References
-
-* [rockafellar1970convex] §15.
+* `theorem_15_1_isGauge`, `theorem_15_1_closedFn`, `theorem_15_1_polar_polar`,
+  `theorem_15_1_gaugeFn` — the polar of a gauge is a closed gauge, `k°° = cl k`, and `k°` is the
+  gauge of `C°` when `k` is the gauge of `C`.
+* `corollary_15_1_1`, `corollary_15_1_1_gaugeEquiv`, `corollary_15_1_1_sets`, `corollary_15_1_2`,
+  `corollary_15_1_2_symm` — polarity is a symmetric one-to-one correspondence on the closed gauges,
+  matching the polarity of closed convex sets containing the origin, and gauge and support function
+  of such a set are polar to each other.
+* `theorem_15_2_isNorm`, `theorem_15_2_setOf_le_one`, `theorem_15_2_gaugeFn`,
+  `theorem_15_2_setOf_gaugeFn_le_one`, `theorem_15_2_polar` — the norms are exactly the gauges of
+  the symmetric closed bounded convex sets with the origin interior, and the polar of a norm is a
+  norm.
+* `theorem_15_3`, `theorem_15_3_conj`, `theorem_15_3_isGaugeLike_conj`, `corollary_15_3_1`,
+  `corollary_15_3_1_conj`, `corollary_15_3_2`, `corollary_15_3_2_isGauge`,
+  `corollary_15_3_2_inequality`, `corollary_15_3_2_polarSet` — the gauge-like closed proper convex
+  functions, their conjugates through the monotone conjugate `g⁺`, and the Hölder pair
+  `[(1/p) k^p]* = (1/q) (k°)^q`.
+* `theorem_15_4_nonneg`, `theorem_15_4_map_zero`, `theorem_15_4_convexFn`, `theorem_15_4_closedFn`,
+  `theorem_15_4_polar_polar`, `corollary_15_4_1` — `f°` is again nonnegative closed convex and
+  vanishes at the origin, `f°° = cl f`, and `f ↦ f°` is a symmetric one-to-one correspondence.
+* `theorem_15_5_isPolarFn`, `theorem_15_5_obverse_obverse`, `theorem_15_5_polarFn_eq_conj_obverse`,
+  `theorem_15_5_conj_eq_polarFn_obverse`, `theorem_15_5_conj_eq_obverse_polarFn`,
+  `theorem_15_5_polarFn_eq_obverse_conj`, `corollary_15_5_1` — the obverse, its involutivity, and
+  the four identities relating it to `*` and `°`, whence `f*° = f°*`.
 -/
 
 open Set Pointwise Bornology

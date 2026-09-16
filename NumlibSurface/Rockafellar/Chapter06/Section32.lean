@@ -7,17 +7,22 @@ import NumlibSurface.Rockafellar.Chapter02.Section08
 import NumlibSurface.Rockafellar.Chapter04.Section19
 
 /-!
-# Rockafellar, §32: The Maximum of a Convex Function
+# Rockafellar §32: the maximum of a convex function
 
-Maximising a convex function, which behaves nothing like minimising one. The maximum principle
-(Theorem 32.1) says that a relative interior maximiser forces constancy, so the maximum lives on
-the relative boundary — on a face, and ultimately at an extreme point (Theorem 32.3 and its four
-corollaries). Theorem 32.4 reads the same fact through subgradients: at a maximiser every
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §32
+(pp. 342–348): maximising a convex function, which behaves nothing like minimising one. The maximum
+principle (Theorem 32.1) says that a relative interior maximiser forces constancy, so the maximum
+lives on the relative boundary — on a face, and ultimately at an extreme point (Theorem 32.3 and
+its four corollaries). Theorem 32.4 reads the same fact through subgradients: at a maximiser every
 subgradient is a non-zero normal vector.
 
 All 11 numbered results of §32 are formalized: Theorems 32.1, 32.2, 32.3 and 32.4 and Corollaries
 32.1.1, 32.2.1, 32.3.1, 32.3.2, 32.3.3, 32.3.4 and 32.4.1, together with the section's two examples
 and the unnumbered remarks that carry mathematical content.
+
+Two statements are stronger than the book's: `theorem_32_1` drops the convexity of `C`, which its
+proof does not use, and `corollary_32_4_1` applies Theorem 32.4 to `S` directly instead of passing
+to `conv S`.
 
 ## Main definitions
 
@@ -32,6 +37,26 @@ and the unnumbered remarks that carry mathematical content.
   `corollary_32_3_4_linearSystem` can be the book's own sentence on the basis of the simplex method.
 * `parabolicSet`, `parabolicFn`, `parabolicCap`, `quarticCap` — the section's two examples.
 
+## Main results
+
+* `theorem_32_1`, `theorem_32_1_const`, `theorem_32_1_affineSubspace`, `corollary_32_1_1` — the
+  maximum principle: a maximiser in `ri C` forces `f` constant on `C`, and `W` is a union of faces.
+* `theorem_32_2`, `theorem_32_2_attained`, `corollary_32_2_1`, `corollary_32_2_1_attained` — the
+  supremum over `conv S` equals the supremum over `S`, and the relative-boundary version.
+* `theorem_32_3`, `theorem_32_3_attained`, `theorem_32_3_containsNoLine` — the supremum is the
+  supremum over the extreme points of `C ∩ L^⊥`, `L` the lineality space.
+* `corollary_32_3_1`, `corollary_32_3_2`, `corollary_32_3_2_finite`, `corollary_32_3_2_iSup`,
+  `corollary_32_3_3`, `corollary_32_3_4`, `corollary_32_3_4_finite`,
+  `corollary_32_3_4_linearSystem` — attainment at an extreme point over a compact convex set and
+  over a polyhedral one, which is the basis of the simplex method.
+* `theorem_32_4_proper`, `theorem_32_4_nonempty`, `theorem_32_4_normal`, `theorem_32_4_ne_zero`,
+  `corollary_32_4_1`, `theorem_32_4_ball` — at a maximiser every subgradient is a non-zero normal
+  vector to `C`.
+* `corollary_32_3_2_not_attained_of_subset_dom`,
+  `corollary_32_3_2_not_bddAbove_of_subset_dom` — the two examples, stated and refuted.
+
+## Where the book needs correcting
+
 **Corollary 32.3.2's finiteness clause is false as printed.** "Then the supremum of `f` relative to
 `C` is finite" fails for the improper `f ≡ −∞`, whose domain is `ℝⁿ`, so that `ri (dom f)` contains
 every compact convex `C` while the supremum is `−∞`. `corollary_32_3_2` and
@@ -41,16 +66,7 @@ The two examples both use `parabolicFn`, `f(ξ₁, ξ₂) = ξ₁²/ξ₂ − ξ
 and `+∞` elsewhere, which is convex, closed and proper because it is the support function of
 `parabolicSet`. They show that `C ⊆ ri (dom f)` in Corollary 32.3.2 cannot be weakened to
 `C ⊆ dom f` even for closed `f`: on `parabolicCap` the supremum is `1` and unattained, and on
-`quarticCap` it is `+∞`. Both weakenings are stated and refuted in Lean, as
-`corollary_32_3_2_not_attained_of_subset_dom` and `corollary_32_3_2_not_bddAbove_of_subset_dom`.
-
-Two statements are stronger than the book's: `theorem_32_1` drops the convexity of `C`, which its
-proof does not use, and `corollary_32_4_1` applies Theorem 32.4 to `S` directly instead of passing
-to `conv S`.
-
-## References
-
-* [rockafellar1970convex] §32 (pp. 342–348).
+`quarticCap` it is `+∞`.
 -/
 
 open scoped Pointwise

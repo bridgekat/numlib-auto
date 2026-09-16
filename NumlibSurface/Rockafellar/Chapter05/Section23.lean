@@ -9,12 +9,15 @@ import NumlibSurface.Rockafellar.Chapter03.Section16
 import NumlibSurface.Rockafellar.Chapter04.Section19
 
 /-!
-# Rockafellar, §23: Directional Derivatives and Subgradients
+# Rockafellar §23: directional derivatives and subgradients
 
-The one-sided directional derivative `f'(x; y)`, the subdifferential `∂f(x)`, and the duality
-`x* ∈ ∂f(x) ⟺ f(x) + f*(x*) = ⟨x, x*⟩` that makes the two calculable. This is where Parts II and
-III are cashed in: Theorem 23.2 is Corollary 13.2.1 applied to `f'(x; ·)`, Theorem 23.4 is Theorem
-7.2 with Corollary 7.4.2, Theorem 23.8 is Theorem 16.4, and Theorem 23.9 is Theorem 16.3.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §23:
+the one-sided directional derivative `f'(x; y)`, the subdifferential `∂f(x)`, and the duality
+`x* ∈ ∂f(x) ⟺ f(x) + f*(x*) = ⟨x, x*⟩` that makes the two calculable.
+
+This is where Parts II and III are cashed in: Theorem 23.2 is Corollary 13.2.1 applied to
+`f'(x; ·)`, Theorem 23.4 is Theorem 7.2 with Corollary 7.4.2, Theorem 23.8 is Theorem 16.4, and
+Theorem 23.9 is Theorem 16.3.
 
 All sixteen numbered results of §23 are formalized over `Rn n = ℝⁿ`: Theorems 23.1–23.10 and
 Corollaries 23.5.1–23.5.4, 23.7.1, 23.8.1.
@@ -26,9 +29,43 @@ and proves in Theorem 23.1 that the two agree, which here is `theorem_23_1_monot
 mapping `∂f` as a `SetRel`, so that Corollary 23.5.1 is `SetRel.inv` applied to it. `normalCone` is
 `N_C(x)` and `epsSubdifferential` is `∂_ε f(x)`.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §23.
+* `nonsmoothMaxFn` — the book's example on p. 218, `f(ξ₁, ξ₂) = max {g(ξ₁), |ξ₂|}`, which witnesses
+  that `dom ∂f` need not be convex (`notConvex_domSubdifferential_nonsmoothMaxFn`).
+
+## Main results
+
+* `theorem_23_1_monotone`, `theorem_23_1_iInf`, `theorem_23_1_posHomogeneous`,
+  `theorem_23_1_convex`, `theorem_23_1_zero`, `theorem_23_1_neg_le` — the difference quotient is
+  non-decreasing in `λ`, so `f'(x; ·)` is the infimum over `λ > 0`; it is a positively homogeneous
+  convex function vanishing at the origin, with `-f'(x; -y) ≤ f'(x; y)`.
+* `theorem_23_2`, `theorem_23_2_closure` — `x* ∈ ∂f(x)` exactly when `f'(x; ·) ≥ ⟨x*, ·⟩`, and
+  `cl f'(x; ·)` is the support function of `∂f(x)`.
+* `theorem_23_3_proper`, `theorem_23_3_two_sided`, `theorem_23_3_relint` — what subdifferentiability
+  at a point gives, and what its failure gives.
+* `theorem_23_4_nonempty`, `theorem_23_4_notMem_dom`, `theorem_23_4_proper`, `theorem_23_4_closed`,
+  `theorem_23_4_supportFn`, `theorem_23_4_isBounded_iff`, `theorem_23_4_finite_iff` — a proper
+  convex function is subdifferentiable throughout `ri (dom f)`, with `∂f(x)` non-empty and bounded
+  exactly on `int (dom f)`.
+* `theorem_23_5_a` through `theorem_23_5_d`, `theorem_23_5_a_star`, `theorem_23_5_b_star`,
+  `theorem_23_5_a_star_star` — the four equivalent conditions for `x* ∈ ∂f(x)` and their three
+  starred companions, of which `f(x) + f*(x*) = ⟨x, x*⟩` is the one the rest of the book uses.
+* `corollary_23_5_1`, `corollary_23_5_1_mem`, `corollary_23_5_2_clFn`,
+  `corollary_23_5_2_subdifferential`, `corollary_23_5_3`, `corollary_23_5_4`,
+  `corollary_23_5_4_inv` — `∂f*` is the inverse mapping of `∂f`, and the subdifferentials of a
+  support function and of the indicator of a cone.
+* `theorem_23_6` — `f'(x; y)` as the limit of the `ε`-subgradient support values.
+* `theorem_23_7`, `corollary_23_7_1`, `corollary_23_7_1_smul` — the subgradients are normals to the
+  level set through `x` whenever the minimum is not attained there.
+* `theorem_23_8`, `theorem_23_8_subset`, `theorem_23_8_polyhedral`, `corollary_23_8_1`,
+  `corollary_23_8_1_subset` — the sum rule `∂(f₁ + ⋯ + fₘ) = ∂f₁ + ⋯ + ∂fₘ` and its normal-cone
+  form, under the relative-interior and the polyhedral qualifications.
+* `theorem_23_9`, `theorem_23_9_subset`, `theorem_23_9_polyhedral` — the chain rule
+  `∂(hA)(x) = A*∂h(Ax)`.
+* `theorem_23_10_nonempty`, `theorem_23_10_polyhedral`, `theorem_23_10_dirDeriv_polyhedral`,
+  `theorem_23_10_dirDeriv_proper`, `theorem_23_10_supportFn` — the polyhedral case, where no
+  qualification is needed at all.
 -/
 
 open Set Pointwise

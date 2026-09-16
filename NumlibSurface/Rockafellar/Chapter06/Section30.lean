@@ -3,11 +3,12 @@ import Numlib.Analysis.Convex.Saddle.Minimax
 import NumlibSurface.Rockafellar.Chapter06.Section29
 
 /-!
-# Rockafellar, §30: Adjoint Bifunctions and Dual Programs
+# Rockafellar §30: adjoint bifunctions and dual programs
 
-The **adjoint** `F*` of a convex bifunction, the **dual program** `(P*)` it defines, and the exact
-circumstances — Rockafellar calls them *normality* — under which the two programs have the same
-optimal value.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §30
+(pp. 307–326): the **adjoint** `F*` of a convex bifunction, the **dual program** `(P*)` it defines,
+and the exact circumstances — Rockafellar calls them *normality* — under which the two programs
+have the same optimal value.
 
 All 10 numbered results of §30 are formalized: Theorems 30.1, 30.2, 30.3, 30.4 and 30.5 and
 Corollaries 30.2.1, 30.2.2, 30.2.3, 30.5.1 and 30.5.2, with one declaration per clause for the
@@ -23,19 +24,40 @@ every backbone theorem about `adjointBifun` applies to it verbatim. `Normal`, `C
 `ConcaveConsistent`, `ConcaveKuhnTucker`, `ConcavePolyhedralBifun`, `supBifun`,
 `concaveAdjointBifun` and `clBifun` are the backbone's under the book's own definitions.
 
+Four statements drop closedness that the book assumes — Corollary 30.2.1's first half, the first
+formulas of Corollaries 30.2.2 and 30.2.3, and Theorem 30.3's (a) ⟺ (c). Each runs on
+Fenchel–Moreau for `inf F`, and the adjoint cannot tell `F` from `cl F`.
+
+## Main results
+
+* `theorem_30_1_concave`, `theorem_30_1_closed`, `theorem_30_1_proper`, `theorem_30_1_biadjoint`,
+  `theorem_30_1_biadjoint_closed`, `theorem_30_1_injective`, `theorem_30_1_surjective`,
+  `theorem_30_1_polyhedral` — the adjoint is a one-to-one correspondence between the closed proper
+  convex bifunctions and the closed proper concave ones, with `F** = cl F`.
+* `theorem_30_2_first` through `theorem_30_2_fourth` — the four conjugacy formulas relating the
+  objectives and perturbation functions of `(P)` and `(P*)`.
+* `corollary_30_2_1_dual`, `corollary_30_2_1_primal`, `corollary_30_2_2_first`,
+  `corollary_30_2_2_second`, `corollary_30_2_2_weak`, `corollary_30_2_3_first`,
+  `corollary_30_2_3_second` — consistency of one program read off the other, and weak duality
+  `inf F0 ≥ sup F*0`.
+* `theorem_30_3`, `theorem_30_3_a_iff_b`, `theorem_30_3_a_iff_c`, `theorem_30_3_b_iff_c` — the
+  three equivalent forms of normality.
+* `theorem_30_4_a` through `theorem_30_4_j`, and `gale_kuhn_tucker_duality` — the ten sufficient
+  conditions for normality, and the Gale–Kuhn–Tucker duality theorem they yield.
+* `theorem_30_5`, `theorem_30_5_dual`, `corollary_30_5_1` with its three clauses,
+  `corollary_30_5_1_eq`, `corollary_30_5_2`, `corollary_30_5_2_dual` — under normality the
+  Kuhn–Tucker vectors of each program are the optimal solutions of the other, and the saddle-points
+  of the Lagrangian are the optimal pairs.
+* `abnormalBifun_duality_gap`, `noDualSolutionBifun_*` — the two counterexamples: a duality gap,
+  and a normal program whose dual has no optimal solution.
+
+## Where the book needs correcting
+
 **Theorem 30.4(i) and (j) are false as the book states them.** Rockafellar disposes of them in six
 words — "Of course, (i) and (j) are contained in (g) and (h)" — and the containment needs the
 objective to be proper. With `F0 ≡ +∞` every point is an optimal solution, so that set is non-empty
 and bounded while no sublevel set of `F0` is. `theorem_30_4_i` therefore assumes `Proper (F 0)` and
 `theorem_30_4_j` assumes `Proper fun v => -(F* 0) v`; with those the containment is right.
-
-Four statements drop closedness that the book assumes — Corollary 30.2.1's first half, the first
-formulas of Corollaries 30.2.2 and 30.2.3, and Theorem 30.3's (a) ⟺ (c). Each runs on
-Fenchel–Moreau for `inf F`, and the adjoint cannot tell `F` from `cl F`.
-
-## References
-
-* [rockafellar1970convex] §30 (pp. 307–326).
 -/
 
 open Filter Set Topology

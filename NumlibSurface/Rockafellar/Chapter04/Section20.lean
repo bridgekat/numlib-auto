@@ -5,23 +5,15 @@ import NumlibSurface.Rockafellar.Chapter03.Section12
 import NumlibSurface.Rockafellar.Chapter03.Section16
 
 /-!
-# Rockafellar, §20: Some Applications of Polyhedral Convexity
+# Rockafellar §20: some applications of polyhedral convexity
 
-The separation theorems, closure conditions and conjugacy formulas of Parts II and III, refined by
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20:
+the separation theorems, closure conditions and conjugacy formulas of Parts II and III, refined by
 assuming *some* of the convexity polyhedral.
 
 All eight numbered results of §20 are formalized over `Rn n = ℝⁿ`: Theorems 20.1–20.5 and
 Corollaries 20.1.1, 20.2.1, 20.3.1, together with the unnumbered all-polyhedral computation of the
 opening paragraph (`theorem_20_1_pair_exact`).
-
-## The asymmetry of Theorem 20.1
-
-Theorem 16.4 makes `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*` exact when the sets `ri (dom fᵢ)` have a common
-point. Theorem 20.1 says that for a *polyhedral* summand the relative interior may be dropped: only
-`dom fᵢ` need take part in the intersection, and when every summand is polyhedral no relative
-interior appears at all. The asymmetry comes from two segment lemmas: a proper polyhedral function
-is already closed, so Corollary 7.5.1 asks only for a point of `dom f`, whereas Theorem 7.5 asks
-for a point of `ri (dom g)`.
 
 `IsExactSum` and `IsExactFinsetSum` are the backbone's names for the conclusion Theorems 16.4 and
 20.1 share; the `m`-ary statements are proved for the family, not by induction on the binary ones,
@@ -31,9 +23,37 @@ and the index set is split membership-wise so that no `DecidableEq` instance ent
 backbone's functional-indexed `Polyhedral` by `isPolyhedral_iff_polyhedral`; a polyhedral convex
 *function* is the backbone's `PolyhedralFn` directly.
 
-## References
+## Main definitions
 
-* [rockafellar1970convex] §20.
+* `IsPolyhedral` — the book's polyhedral convex set, an intersection of finitely many closed
+  half-spaces `{x | ⟨x, bᵢ⟩ ≤ βᵢ}`.
+* `SeparableProperlyNotContaining` — the sharpened separation of §20: properly, and with the
+  hyperplane containing neither set.
+
+## Main results
+
+* `theorem_20_1_exact`, `theorem_20_1_attained`, `theorem_20_1_exact_finset`,
+  `theorem_20_1_attained_finset`, `theorem_20_1_pair_exact`, `theorem_20_1_pair_attained` — a
+  polyhedral summand needs only `dom fᵢ`, not `ri (dom fᵢ)`, in the qualification of Theorem 16.4.
+* `corollary_20_1_1`, `corollary_20_1_1_attained`, `corollary_20_1_1_finset`,
+  `corollary_20_1_1_attained_finset` — the dual form, for the infimal convolute.
+* `theorem_20_2`, `corollary_20_2_1` — with `C₁` polyhedral, proper separation not containing `C₂`
+  is possible exactly when `C₁ ∩ ri C₂ = ∅`.
+* `theorem_20_3`, `corollary_20_3_1` — with `C₁` polyhedral and `C₂` closed, strong separation
+  needs only disjointness plus a recession condition.
+* `theorem_20_4` — a closed bounded `C` inside `int D` can be sandwiched by a polyhedral convex
+  `P`: `C ⊆ int P` and `P ⊆ int D`.
+* `theorem_20_5`, `theorem_20_5_polytope` — every polyhedral convex set, and every polytope, is
+  locally simplicial; this is what §10's continuity theorems are applied to.
+
+## The asymmetry of Theorem 20.1
+
+Theorem 16.4 makes `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*` exact when the sets `ri (dom fᵢ)` have a common
+point. Theorem 20.1 says that for a *polyhedral* summand the relative interior may be dropped: only
+`dom fᵢ` need take part in the intersection, and when every summand is polyhedral no relative
+interior appears at all. The asymmetry comes from two segment lemmas: a proper polyhedral function
+is already closed, so Corollary 7.5.1 asks only for a point of `dom f`, whereas Theorem 7.5 asks
+for a point of `ri (dom g)`.
 -/
 
 open Set Pointwise

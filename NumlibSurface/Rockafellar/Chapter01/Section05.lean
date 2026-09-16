@@ -7,16 +7,44 @@ import Numlib.Analysis.Convex.Operations.InfConv
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar, §5: Functional Operations
+# Rockafellar §5: functional operations
 
-The operations that build new convex functions out of old: outer composition, addition, infimal
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §5:
+the operations that build new convex functions out of old — outer composition, addition, infimal
 convolution `□`, pointwise suprema, the convex hull of a collection, and image and inverse image
-under a linear map. All 8 numbered results of §5 are formalized.
+under a linear map.
 
-Theorems 5.7 and 5.8 carry no letter labels in the book, so the declaration suffixes are the
-book's own symbols: `gA` and `Ah` for 5.7, and the four displayed function names `f`, `g`, `h`,
-`k` for 5.8. `ℝⁿ⁺¹` is `Rn n × ℝ` here, which is what "a convex set `F` in `ℝⁿ⁺¹`" means when
-Theorem 5.3 goes on to write `(x, μ) ∈ F`.
+All 8 numbered results of §5 are formalized. Theorems 5.7 and 5.8 carry no letter labels in the
+book, so the declaration suffixes are the book's own symbols: `gA` and `Ah` for 5.7, and the four
+displayed function names `f`, `g`, `h`, `k` for 5.8. `ℝⁿ⁺¹` is `Rn n × ℝ` here, which is what "a
+convex set `F` in `ℝⁿ⁺¹`" means when Theorem 5.3 goes on to write `(x, μ) ∈ F`.
+
+## Main results
+
+* `theorem_5_1` — `φ ∘ f` is convex for convex `f` and non-decreasing convex `φ`.
+* `theorem_5_2` — the sum of two proper convex functions is convex.
+* `theorem_5_3` — the lower boundary of a convex set in `ℝⁿ⁺¹` is a convex function; it is the
+  construction the rest of the section is phrased through.
+* `theorem_5_4`, `convexFn_infimalConvolution` — the infimal convolute of proper convex functions
+  is convex, and `□` needs no properness in the epigraph form.
+* `infimalConvolution_apply`, `dom_infimalConvolution`, `infimalConvolution_isCommMonoid` — the
+  classical formula `(f □ g) x = infᵧ {f (x - y) + g y}`, the effective domain `dom f + dom g`,
+  and commutativity and associativity with `δ(· | 0)` as identity.
+* `convexFn_leftSMul`, `convexFn_rightSMul`, `rightSMul_apply_pos`, `rightSMul_zero`,
+  `rightSMul_zero_of_top`, `posHomogeneous_iff_rightSMul_eq` — the two scalar multiplications of
+  the section, and `f` positively homogeneous exactly when `fλ = f` for all `λ > 0`.
+* `isGreatest_posHomGen`, `posHomGen_apply` — the positively homogeneous convex function generated
+  by `h`, and its formula `inf {(hλ) x | λ ≥ 0}`.
+* `theorem_5_5` — a pointwise supremum of convex functions is convex; `convexFn_maxCoord` and
+  `convexFn_tchebycheffNorm` are the section's two illustrations of it.
+* `isGreatest_conv`, `isGreatest_convCollection`, `theorem_5_6` — the convex hull of a function
+  and of a collection, and its explicit formula for proper convex `fᵢ`.
+* `coe_iInf_convexFns`, `coe_iSup_convexFns` — the convex functions on `ℝⁿ` form a complete
+  lattice, with `conv {fᵢ}` as infimum and the pointwise supremum as supremum.
+* `theorem_5_7_gA`, `theorem_5_7_Ah` — inverse image and image of a convex function under a linear
+  transformation.
+* `theorem_5_8_f`, `theorem_5_8_g`, `theorem_5_8_h`, `theorem_5_8_k` — the four functions of
+  Theorem 5.8, obtained by adding in `x` alone, in `λ` alone, and in both.
 
 ## Two traps
 
@@ -29,10 +57,6 @@ adding epigraphs rather than by the infimum formula, which would be `∞ - ∞`;
 **`f0` is defined by cases**, as in the book: `rightSMul_zero` gives `f0 = δ(· | 0)` when
 `f ≢ +∞`, and `rightSMul_zero_of_top` gives `f0 = f` when `f ≡ +∞`. `hom_apply_smul` is where
 that case split meets §4's `0 · ∞ = 0`, and the two agree.
-
-## References
-
-* [rockafellar1970convex] §5.
 -/
 
 open Set Pointwise

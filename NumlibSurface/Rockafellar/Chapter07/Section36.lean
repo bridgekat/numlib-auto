@@ -2,13 +2,16 @@ import Numlib.Analysis.Convex.Saddle.Subdifferential
 import NumlibSurface.Rockafellar.Chapter07.Section33
 
 /-!
-# Rockafellar, §36: Minimax Problems
+# Rockafellar §36: minimax problems
 
-The two iterated extrema `sup inf` and `inf sup`, the saddle-value and the saddle-point, the
-reduction of a minimax problem on `C × D` to one on all of `ℝᵐ × ℝⁿ`, the inverse bifunction `F_*`,
-and the identification of the Lagrangians of closed convex programs with the upper closed
-concave-convex functions. All seven numbered results of §36 are formalized: Lemmas 36.1 and 36.2,
-Theorems 36.3–36.6 and Corollary 36.3.1.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §36
+(pp. 379–387): the two iterated extrema `sup inf` and `inf sup`, the saddle-value and the
+saddle-point, the reduction of a minimax problem on `C × D` to one on all of `ℝᵐ × ℝⁿ`, the inverse
+bifunction `F_*`, and the identification of the Lagrangians of closed convex programs with the
+upper closed concave-convex functions.
+
+All seven numbered results of §36 are formalized: Lemmas 36.1 and 36.2, Theorems 36.3–36.6 and
+Corollary 36.3.1.
 
 **Orientation.** From here to the end of the book, *minimization takes place in the convex argument
 and maximization in the concave one*. For a concave-convex `K (u, v)` — concave in the first
@@ -21,9 +24,33 @@ convention.
 `HasSaddleValue` is the bare equality of the two iterated extrema. Finiteness of the common value
 is a separate conclusion, drawn where the book draws it, in Corollary 36.3.1.
 
-## References
+## Main results
 
-* [rockafellar1970convex] §36, pp. 379–387.
+* `hasSaddleValue_iff_maximin_eq`, `isSaddlePoint_iff_forall` — the saddle-value and the
+  saddle-point, unfolded.
+* `lemma_36_1`, `lemma_36_1_on` — `sup inf ≤ inf sup`, with no hypothesis at all.
+* `lemma_36_2`, `lemma_36_2_saddleValue` — a saddle-point is exactly a pair at which both outer
+  extrema are attained, and there both extrema equal `K (ū, v̄)`.
+* `maximin_restricted`, `minimax_restricted` — the outer extrema may always be taken over
+  `dom₁ K` and `dom₂ K`.
+* `theorem_36_3_maximin`, `theorem_36_3_minimax`, `theorem_36_3_saddlePoint` — for a closed proper
+  saddle-function the minimax problem on `ℝᵐ × ℝⁿ` is the one on `C × D`, with the same
+  saddle-points.
+* `corollary_36_3_1_mem_dom`, `corollary_36_3_1_finite` — a saddle-point lies in `dom K`, and the
+  saddle-value is then finite.
+* `theorem_36_4_maximin`, `theorem_36_4_minimax`, `theorem_36_4_hasSaddleValue`,
+  `theorem_36_4_saddlePoint` — equivalent saddle-functions have the same extrema, the same
+  saddle-value and the same saddle-points.
+* `concaveBifun_inverseBifun`, `inverseBifun_involutive`, `concaveAdjointBifun_inverseBifun`,
+  `inverseBifunBracket_apply` — the inverse bifunction `F_*`, involutory and commuting with the
+  adjoint.
+* `theorem_36_5`, `theorem_36_5_upperClosed`, `theorem_36_5_unique`,
+  `saddleLagrangian_concaveConvex` — the Lagrangians of closed convex programs are exactly the
+  upper closed concave-convex functions, each the Lagrangian of one and only one program.
+* `zero_mem_saddleSubdifferential_iff_isSaddlePoint`, `kuhnTucker_condition_iff`,
+  `theorem_36_6_stronglyConsistent`, `theorem_36_6_strictlyConsistent`, `theorem_36_6_polyhedral`,
+  `theorem_36_6_kuhnTucker` — the Kuhn–Tucker condition `(0, 0) ∈ ∂L (ū*, x̄)` as a saddle-point
+  condition, under the three constraint qualifications.
 -/
 
 namespace Rockafellar

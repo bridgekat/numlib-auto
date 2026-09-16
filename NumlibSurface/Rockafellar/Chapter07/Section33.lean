@@ -3,13 +3,15 @@ import Numlib.Analysis.Convex.Saddle.Conjugate
 import NumlibSurface.Rockafellar.Chapter06.Section30
 
 /-!
-# Rockafellar, §33: Saddle-Functions
+# Rockafellar §33: saddle-functions
 
-Concave-convex and convex-concave functions on `ℝᵐ × ℝⁿ`, the partial closures `cl₁` and `cl₂`,
-and the correspondence — "at the heart of the theory of saddle-functions" — between
-saddle-functions and convex bifunctions from `ℝᵐ` to `ℝⁿ`. All eleven numbered results of §33 are
-formalized: Theorems 33.1–33.3 and Corollaries 33.1.1, 33.1.2, 33.1.3, 33.2.1, 33.2.2, 33.3.1,
-33.3.2, 33.3.3.
+Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §33
+(pp. 349–358): concave-convex and convex-concave functions on `ℝᵐ × ℝⁿ`, the partial closures `cl₁`
+and `cl₂`, and the correspondence — "at the heart of the theory of saddle-functions" — between
+saddle-functions and convex bifunctions from `ℝᵐ` to `ℝⁿ`.
+
+All eleven numbered results of §33 are formalized: Theorems 33.1–33.3 and Corollaries 33.1.1,
+33.1.2, 33.1.3, 33.2.1, 33.2.2, 33.3.1, 33.3.2, 33.3.3.
 
 **Orientation.** A concave-convex `K (u, v)` is concave in the first argument and convex in the
 second, and the two closures are named after the *argument* they close, not the sense in which
@@ -18,16 +20,39 @@ argument convexly. So `K` is **lower closed** when `cl₂ (cl₁ K) = K` and **u
 `cl₁ (cl₂ K) = K`. Reversing any of this silently swaps every statement of §§34–37. A
 *convex-concave* `K` is reached by negation; see `convexConcave_lowerClosed_iff`.
 
-## Implementation notes
+## Main definitions
 
-Rockafellar overloads `⟨·, ·⟩` for the conjugate of a convex `f`, of a concave `f`, and of a slice
-of a convex or a concave bifunction; these are separate names here. The bifunction brackets are
-uncurried, as functions of the pair `(u, x*)`, the form every closedness predicate is stated
-against.
+* `cl₁`, `cl₂` — the two partial closures.
+* `conjBracket`, `concaveConjBracket`, `bifunBracket`, `concaveBifunBracket`, `adjointBracket` —
+  Rockafellar's overloaded `⟨·, ·⟩`, split into one name per meaning: the conjugate of a convex
+  `f`, of a concave `f`, and of a slice of a convex, of a concave, and of an adjoint bifunction.
+  The bifunction brackets are uncurried, as functions of the pair `(u, x*)`, the form every
+  closedness predicate is stated against.
+* `bifunOfSaddleFn` — the convex bifunction attached to a saddle-function, `Fu = K (u, ·)*`; the
+  inverse of the bracket correspondence.
 
-## References
+## Main results
 
-* [rockafellar1970convex] §33, pp. 349–358.
+* `theorem_33_1_concaveConvex`, `theorem_33_1_convexClosed`, `theorem_33_1_inversion`,
+  `theorem_33_1_convexBifun`, `theorem_33_1_imageClosed`, `theorem_33_1_bracket_eq` — the bracket
+  of a convex bifunction is a convex-closed concave-convex function, and the construction inverts.
+* `corollary_33_1_1_cl₁_concaveConvex`, `corollary_33_1_1_cl₂_concaveConvex`,
+  `corollary_33_1_1_cl₁_concaveClosed`, `corollary_33_1_1_cl₂_convexClosed` — the partial closures
+  preserve concave-convexity and close the argument they name.
+* `corollary_33_1_2` — the two relations `K (u, x*) = ⟨Fu, x*⟩` and `Fu = K (u, ·)*` are inverse
+  bijections, packaged as an `Equiv`.
+* `corollary_33_1_3_convex`, `corollary_33_1_3_concave`, `corollary_33_1_3_inversion` — the
+  polyhedral case.
+* `theorem_33_2_first`, `theorem_33_2_second`, `corollary_33_2_1_primal`, `corollary_33_2_1_dual`,
+  `corollary_33_2_2`, `corollary_33_2_2_exceptional` — `⟨u, F*x*⟩ = cl₁ ⟨Fu, x*⟩` and
+  `cl₂ ⟨u, F*x*⟩ = ⟨(cl F)u, x*⟩`, with the relative-interior and polyhedral cases where the
+  closures are inert.
+* `theorem_33_3`, `theorem_33_3_lowerClosed`, `corollary_33_3_1`, `corollary_33_3_2`,
+  `corollary_33_3_3` with its `dom` and formula clauses — the one-to-one correspondence between
+  closed convex bifunctions and lower (resp. upper) closed concave-convex functions.
+* `fullyClosed_iff_lowerClosed_and_upperClosed`, `convexConcave_lowerClosed_iff`,
+  `convexConcave_upperClosed_iff`, `fullyClosedFn_of_finite` — the relations between the closedness
+  notions, and the convex-concave convention.
 -/
 
 open Set
@@ -515,7 +540,7 @@ theorem corollary_33_3_3 (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClose
   exists_unique_bifun_of_simpleExt (pairing m) (pairing n) hC hCcl hDcl hCne hconv hconc hDne
     hcontD hcontC
 
-/-- That bifunction is `K̲ (u, ·)*`, and its bracket is `K̲` again. -/
+/-- **Corollary 33.3.3**: that bifunction is `K̲ (u, ·)*`, and its bracket is `K̲` again. -/
 theorem corollary_33_3_3_bracket (hC : Convex ℝ C) (hDcl : IsClosed D)
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
@@ -524,7 +549,7 @@ theorem corollary_33_3_3_bracket (hC : Convex ℝ C) (hDcl : IsClosed D)
   (theorem_33_1_bracket_eq (concaveConvexFn_lowerSimpleExt hC hconv hconc)).trans
     (partialCl₂_lowerSimpleExt hDcl hcontD)
 
-/-- Its adjoint bracket is `K̄`. -/
+/-- **Corollary 33.3.3**: and its adjoint bracket is `K̄`. -/
 theorem corollary_33_3_3_adjointBracket (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
