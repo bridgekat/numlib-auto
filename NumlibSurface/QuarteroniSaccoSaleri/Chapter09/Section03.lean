@@ -47,14 +47,16 @@ chapter 8's (8.20).
 * `equation_9_21`, `exercise_9_4` — the error as `∫ f[x₀, …, x_n, x] ω_{n+1}(x) dx`, and the
   derivative identity `d/dx f[x₀, …, x_n, x] = f[x₀, …, x_n, x, x]`.
 
-## Not yet stated
+## Deliberately not stated
 
 The error formula (9.20) itself, for odd `n` — closed and open — which the book states without
-proof, waits on the backbone's sign analysis of the order-`n` Peano kernel of a rule with an odd
-number of panels (`Quadrature.exists_sub_closedNewtonCotes_eq_of_odd` and
-`Quadrature.exists_sub_openNewtonCotes_eq_of_odd`); their nodes are open in the plan. Its two
-consequences, the degree of exactness and the order of infinitesimal, are stated and proved
-without it.
+proof, is neither in this file nor in its plan. It needs the constant sign of the order-`n` Peano
+kernel of a rule with an odd number of panels, which reduces to an inequality on the partial sums
+of the Newton–Cotes weights: true, certified by exact rational arithmetic for every odd `n ≤ 31`,
+but out of reach of a formal proof. The module doc comment of the backbone
+`Numlib/Approximation/NewtonCotes` carries the reduction, the certificate and what closing the
+gap would take. Its two consequences, the degree of exactness and the order of infinitesimal, are
+stated and proved without it — `theorem_9_2_degreeOfExactness_odd` and `theorem_9_2_order_odd`.
 
 ## Conventions
 

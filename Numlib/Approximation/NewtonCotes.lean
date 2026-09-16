@@ -52,8 +52,9 @@ The midpoint, trapezoidal and Simpson rules are the cases `n = 0` (open), `n = 1
 * `Quadrature.integral_sub_closedNewtonCotes_pow_eq`,
   `Quadrature.not_integral_eq_closedNewtonCotes_of_odd`,
   `Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn` — for odd `n`, where the sharp error
-  formula is still open: the error at `x^{n+1}` is exactly `h^{n+2} K_n ≠ 0`, so the degree of
-  exactness is `n`, and the `O(h^{n+2})` bound that the interpolation error gives for every `n`.
+  formula is not in the library (see *The sharp error formula for odd `n`* below): the error at
+  `x^{n+1}` is exactly `h^{n+2} K_n ≠ 0`, so the degree of exactness is `n`, and the `O(h^{n+2})`
+  bound that the interpolation error gives for every `n`.
 * `Quadrature.openNewtonCotesM_pos`, `Quadrature.integral_intNodal_neg_one_mul_nonneg`,
   `Quadrature.exists_sub_openNewtonCotes_eq_of_even` — the same for the *open* rules with even
   `n`: `W̃(x) = ∫_{-1}^x π_{n+1} ≤ 0` on `[-1, n + 1]` with `M̃_n > 0`, and the error
@@ -85,6 +86,111 @@ iterated `dslope` of `f - Π_n f` at the nodes (Hadamard's lemma,
 away from the nodes by `DividedDifference.hasDerivAt_newton_snoc`. The positivity of `W` is the
 fact that the unit-panel integrals of `π_{n+1}` alternate in sign with decreasing modulus up to the
 midpoint, through the identity `π_{n+1}(t + 1)(t - n) = π_{n+1}(t)(t + 1)`.
+
+## The sharp error formula for odd `n`, and why it is not here
+
+For odd `n` the sharp error of the closed rule is [quarteroni2000numerical] (9.20),
+`∫_a^b f - I_n(f) = K_n/(n + 1)! h^{n+2} f^{(n+1)}(η)` for some `η ∈ (a, b)`, `h = (b - a)/n`,
+with the open analogue at `K̃_n > 0` and `h = (b - a)/(n + 2)` and the composite form (9.27); the
+book states all three without proof. They are not in this module, and deliberately not in its plan
+either: the statements are true, but no proof of them is within reach of the library, and this
+section is the record of exactly what is missing. Everything the book draws from (9.20) is proved
+without it — `integral_sub_closedNewtonCotes_pow_eq` pins the error at `x^{n+1}` to `h^{n+2} K_n`,
+so the degree of exactness is exactly `n` (`not_integral_eq_closedNewtonCotes_of_odd`);
+`abs_sub_closedNewtonCotes_le_of_contDiffOn` and `abs_sub_compositeNewtonCotes_le_of_contDiffOn`
+give the orders `O(h^{n+2})` and `O(H^{n+1})` with a non-sharp constant; and
+`tendsto_compositeNewtonCotes_of_contDiffOn` gives the convergence. Only the sharp constant is
+missing.
+
+**The reduction.** Peano's theorem at order `n` applies (exactness to degree `n` is
+`integral_eq_closedNewtonCotes_of_degree_le`) and the mean value lemma
+`exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos` finishes, so the whole of (9.20) is the
+constant sign of the order-`n` Peano kernel. On the reference interval `[0, n]` with nodes
+`0, …, n` and weights `w_i = newtonCotesWeight n i` that kernel is `-Φ/n!`, where
+
+  `Φ(t) = ∑_i w_i (t - i)_+^n - t^{n+1}/(n + 1)`,
+
+so (9.20) *is* the inequality `Φ ≥ 0` on `[0, n]`. `Φ` is symmetric about `n/2` (for odd `n` the
+rule annihilates `(x - t)^n`), vanishes to order exactly `n` at each endpoint
+(`Φ(t) = w_0 t^n - t^{n+1}/(n + 1)` near `0`, and `w_0 > 0`), and `Φ^{(n)} = n! D` where
+
+  `D(s) = (∑_{i ≤ s} w_i) - s`
+
+is the sawtooth of the *partial sums of the weights*: it falls with slope `-1` on each panel and
+jumps by `w_i` at each node, and the moment equations say `D ⊥ 𝒫_{n-1}` on `[0, n]`. The open
+rules differ only in the nodes and the reference interval, and the composite case (9.27) is the
+routine summation of the panel formulae.
+
+**The statement is true.** For every odd `n ≤ 31`, `Φ ≥ 0` is *certified* — not sampled — by exact
+rational arithmetic: the Bernstein coefficients of each panel polynomial of `Φ`, subdivided until
+all of them are nonnegative. The same computation certifies `Φ(n/2) > 0` and `Φ' ≥ 0` on
+`[0, n/2]`, that is, that `Φ` is unimodal.
+
+**Three routes, and where each stops.**
+
+*Integration by parts.* For odd `n`, `W(x) = ∫_0^x π_{n+1}` does not vanish at the right endpoint
+(`W(n) = K_n < 0`, `newtonCotesK_neg`) and `π_{n+1}` is even about the midpoint, so
+`W(x) + W(n - x) = W(n)`. Integrating the divided-difference form of the error by parts against
+`W ≤ 0`, or against `W - W(n) ≥ 0`, proves `∫_a^b f - I_n(f) ≤ 0` exactly on the cone of `f` whose
+`f^{(n+1)}` is nonnegative *and monotone*. That cone contains no bump, so the contradiction
+argument of `peanoKernel_closedNewtonCotes_nonpos_of_even` cannot start; testing against the cone
+yields only `∫_0^s Φ ≥ 0` and `∫_s^n Φ ≥ 0` for every `s`.
+
+*Iterated Steffensen on the half interval.* Let `D_j` be the `j`-th primitive of `D` vanishing to
+order `j` at `0`, so that `D_j = Φ^{(n-j)}/n!` and Taylor's formula with integral remainder reads
+
+  `Φ(t) = (n!/(n - j - 1)!) ∫_0^t D_j(u) (t - u)^{n-j-1} du`.
+
+For *even* `j` the weight `(t - u)^{n-j-1}` is nonnegative, so `D_j ≥ 0` on `[0, n/2]` would give
+`Φ ≥ 0` there and the symmetry of `Φ` would finish. Even `j` is also the only parity worth trying:
+`D_j` is antisymmetric about `n/2` for even `j`, while for odd `j` it is symmetric, and then
+`D_j ≥ 0` on the half interval forces `D_j ≥ 0` on all of `[0, n]`, hence `D_{j+1} ≡ 0` — which is
+why Steffensen's criterion `D_1 ≥ 0` fails for every `n ≥ 2`, and with it every odd `j ≤ n - 2`.
+But exact computation kills the even family too: `D_j ≥ 0` on `[0, n/2]` fails for every even
+`j ≤ n - 3` — already at `j = 2`, the inequality `∑_i w_i (t - i)_+^2 ≥ t^3/3` on `[0, n/2]`, which
+fails at `n = 5` — and holds only at `j = n - 1`, where it is the unimodality `Φ' ≥ 0`, a statement
+of the same strength as the theorem itself.
+
+*Rolle, with the symmetry.* `Φ` has a zero of multiplicity exactly `n` at each endpoint, so if it
+has `Z` zeros in `(0, n)` counted with multiplicity then `Φ^{(n)} = n! D` has at least `n + Z` sign
+changes; writing `sc(n)` for the number of sign changes of `D` on `(0, n)`, this is
+
+  `Z ≤ sc(n) - n`.
+
+If `Φ(n/2) > 0` and `Φ` were negative somewhere, its negative set would be symmetric about `n/2`
+and would avoid `n/2`, so `Φ` would have two sign changes in `(0, n/2)` and two in `(n/2, n)`, that
+is `Z ≥ 4`. Hence, `sc(n)` being odd,
+
+  **`sc(n) ≤ n + 2` together with `Φ(n/2) > 0` proves (9.20) for that `n`.**
+
+Exact computation of the weights gives `sc(n) = 5, 9, 13, 13, 13, 13, 17, 17, 21, 21, …` at
+`n = 3, 5, 7, 9, 11, 13, 15, …`, and `sc(n) = n` for `n ≡ 1 (mod 4)`, `n + 2` for `n ≡ 3 (mod 4)`,
+throughout `11 ≤ n ≤ 61`. So the criterion holds at `n = 3` and at every odd `n` with
+`11 ≤ n ≤ 61`, and fails exactly at `n = 5, 7, 9`, three finite cases that the certificate above
+settles. (An earlier record of this obstruction said that `D` has `2n - 1` sign changes; that is
+true only for `n ≤ 7`. From `n = 9` on the weights oscillate, `D` loses sign changes, and the count
+comes within one of closing the theorem — the rule is *easier* the worse its weights behave.)
+
+**What is left.** `D` changes sign inside panel `k` exactly when `d_k := (∑_{i ≤ k} w_i) - k` lies
+in `(0, 1)`, and at the node `k + 1` exactly when `d_k - 1` and `d_{k+1}` have opposite signs.
+There are `n` panels and `n - 1` interior nodes, so `sc(n) ≤ n + 2` follows from
+
+  **`(∑_{i ≤ k} w_i) ∉ (k, k + 1)` for every `k ∈ {1, …, n - 2}` with `k ≠ (n - 1)/2`,**
+
+and that is the whole of what is missing. The three exceptional indices are forced and harmless:
+`d_0 = w_0 ∈ (0, 1)`, `d_{(n-1)/2} = 1/2` by `newtonCotesWeight_symm` and `sum_newtonCotesWeight`,
+and `d_{n-1} = 1 - w_n ∈ (0, 1)`. The displayed condition holds for every odd `n` with
+`13 ≤ n ≤ 61` — there `d_k ∈ (0, 1)` at those three indices and nowhere else — and fails only for
+`n ≤ 11`, where the weights are still positive and small enough that every partial sum lies in its
+own panel; those `n` are covered by the certificate. A proof for general `n` therefore needs the
+sign pattern of the partial sums of the Newton–Cotes weights, uniformly in `n`, that is
+asymptotics of the weights, of which only the first panel is elementary: `w_0 ≥ 1/(n + 1)` because
+`log (1 - x/j)` is concave, so `∏_{j=2}^n (1 - x/j) ≥ n^{-x}` on `[0, 1]` and
+`∫_0^1 (1 - x) n^{-x} dx = (1/λ)(1 - (1 - 1/n)/λ)`, `λ = log n`, exceeds `1/(n + 1)` for `n ≥ 1`.
+It also needs `Φ(n/2) > 0` for general `n`, and an iterated Rolle count with multiplicities for a
+`C^{n-1}` piecewise polynomial, which Mathlib does not have. That is a research paper with several
+hundred lines of Lean on top of it, so the three nodes were removed from the plan rather than left
+open.
 
 ## References
 
@@ -2589,8 +2695,8 @@ class `C^{n+1}`: with `h = (b - a)/n` and `|f^{(n+1)}| ≤ M` on `[a, b]`,
 The error is the integral of the interpolation error `f - Π_n f`, which the Lagrange error formula
 bounds by `M/(n+1)! |ω_{n+1}|`; the substitution `x = a + τ h` scales `∫_a^b |ω_{n+1}|` to
 `h^{n+2} ∫_0^n |π_{n+1}|`. For odd `n` this is the order of infinitesimal `n + 2` of the error;
-the sharp constant `K_n/(n + 1)!` is the content of the (still open)
-`Quadrature.exists_sub_closedNewtonCotes_eq_of_odd`. -/
+the sharp constant `K_n/(n + 1)!` of [quarteroni2000numerical] (9.20) is not in the library, for
+the reason recorded in the module doc comment. -/
 theorem abs_sub_closedNewtonCotes_le_of_contDiffOn (hn : 0 < n) (hab : a < b) {U : Set ℝ}
     (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}

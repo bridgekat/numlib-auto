@@ -34,12 +34,13 @@ without a sign hypothesis on the weights).
   and nonnegative weights (for the closed formulae, and for the composite midpoint formula, which
   is the open one with `n = 0`), and the modulus-of-continuity bound.
 
-## Not yet stated
+## Deliberately not stated
 
-Theorem 9.3 for odd `n` (9.27) waits on the backbone's odd-`n` panel error formula
-(`Quadrature.exists_sub_compositeNewtonCotes_eq_of_odd`, itself waiting on the sign of the
-order-`n` Peano kernel); its node is open. The convergence remark for odd `n` does not need it and
-is `theorem_9_3_tendsto_odd`.
+Theorem 9.3 for odd `n` (9.27) is neither in this file nor in its plan: it is the summation of the
+odd-`n` panel formula (9.20), whose sign analysis the module doc comment of the backbone
+`Numlib/Approximation/NewtonCotes` records as out of reach, together with the reduction and an
+exact-rational certificate that the underlying inequality does hold for every odd `n ≤ 31`. The
+convergence remark for odd `n` does not need it and is `theorem_9_3_tendsto_odd`.
 
 ## Conventions
 
