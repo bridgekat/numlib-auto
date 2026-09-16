@@ -1,4 +1,5 @@
 import Numlib.Eigen.QRAlgorithm
+import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section03
 
@@ -30,19 +31,29 @@ stated.
 * `equation_5_33` — every iterate is orthogonally similar to `A`, through the accumulated factor
   `Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾`.
 * `property_5_8` — the real Schur form.
+* `qrAccum_not_tendsto` — the accumulated factors of the unshifted iteration need not converge,
+  the counterexample to (5.35).
 
 ## Readings and errata
 
 Property 5.8 runs two statements together: the existence of the real Schur form (5.34), which is
-`property_5_8`, and the claim (5.35) that its orthogonal matrix is the limit of the accumulated
-factors `Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾` of the *unshifted* iteration (5.32). The second is false as printed:
-for the cyclic permutation matrix of Exercise 14 (`exercise_5_14`) every factor `Q⁽ᵏ⁾` is the
-matrix itself, so the accumulated product is `Aᵏ`, which cycles with period `3`; and the book's own
-Example 5.9 shows iterates that do not approach the real Schur form at all. It is the node
-`property_5_8_limit` of the plan, marked wrong and not formalized. In (5.34) "a matrix of order 2
-having complex conjugate eigenvalues" is read as "a `2 × 2` real block with no real eigenvalue":
-the characteristic polynomial of such a block is a real quadratic without real roots, so its two
-complex eigenvalues are conjugate and non-real, and conversely.
+`property_5_8`, and the claim (5.35) that its orthogonal matrix is `lim_k Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾`, the
+accumulated factors of the *unshifted* iteration (5.32). **The second is false as printed**, and
+nothing in the library replaces it, because the book offers no hypotheses under which it holds:
+what it has in mind is the convergence of the *shifted* iteration of §5.7, whose general behaviour
+it calls an open problem. The counterexample is the cyclic permutation matrix
+`A = [0 0 1; 1 0 0; 0 1 0]` of Exercise 14 (`exercise_5_14`): its columns are orthonormal, so the
+QR factorization with positive diagonal is `A = A · I`, every factor `Q⁽ᵏ⁾` is `A` itself, the
+iteration never moves, and the accumulated product is `Aᵏ`, which cycles with period `3` and has no
+limit — `qrAccum_not_tendsto`. A real Schur form of `A` exists all the same, by `property_5_8`, and
+the iterate `A` is not even quasi-triangular. The book's own Example 5.9 is the second symptom:
+there the iterates converge, but to a "cheating" quasi-triangular matrix that is not the real Schur
+form of the starting matrix, as the text observes. Property 5.9 of §5.5 is where a convergence
+statement with hypotheses lives.
+
+In (5.34) "a matrix of order 2 having complex conjugate eigenvalues" is read as "a `2 × 2` real
+block with no real eigenvalue": the characteristic polynomial of such a block is a real quadratic
+without real roots, so its two complex eigenvalues are conjugate and non-real, and conversely.
 -/
 
 open Filter Finset Matrix Topology
@@ -113,5 +124,63 @@ theorem property_5_8 (A : Matrix (Fin N) (Fin N) ℝ) :
       ∀ k, #{i | p i = k} = 2 → ∀ μ : ℝ,
         μ ∉ spectrum ℝ ((Qᵀ * A * Q).toBlock (fun i => p i = k) (fun i => p i = k)) :=
   exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks A
+
+/-! ### (5.35): the accumulated orthogonal factors need not converge -/
+
+/-- **The limit clause (5.35) of Property 5.8 is false for the unshifted iteration (5.32).** For
+the cyclic permutation matrix `A = [0 0 1; 1 0 0; 0 1 0]` of Exercise 14 the columns of `A` are
+already orthonormal, so the QR factorization with a positive diagonal is `A = A · I`: every factor
+is `Q⁽ᵏ⁾ = A` and `R⁽ᵏ⁾ = I`, the iteration never moves, and the accumulated factor is
+`Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾ = Matrix.qrAccum A k = Aᵏ`. Since `A³ = I` and `A ≠ I` that sequence cycles with
+period `3` and has no limit, so it converges to no orthogonal matrix at all, let alone to one
+realizing a real Schur form of `A` — which exists nonetheless, by `property_5_8`.
+
+Only the existence clause (5.34) is a theorem about the unshifted iteration. The convergence the
+book has in mind is that of the shifted iteration of §5.7, which the book itself describes as not
+settled in general; see the module doc (Quarteroni–Sacco–Saleri, *Numerical Mathematics*,
+Property 5.8, (5.35)). -/
+theorem qrAccum_not_tendsto :
+    let A : Matrix (Fin 3) (Fin 3) ℝ := !![0, 0, 1; 1, 0, 0; 0, 1, 0]
+    (∀ k, Matrix.qrAccum A k = A ^ k) ∧ ¬∃ Q, Tendsto (Matrix.qrAccum A) atTop (𝓝 Q) := by
+  intro A
+  have hAA : Aᴴ * A = 1 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [A, Matrix.mul_apply, Fin.sum_univ_three]
+  have hdet : IsUnit A.det := by
+    have h : A.det = 1 := by simp [A, Matrix.det_fin_three]
+    rw [h]
+    exact isUnit_one
+  have hqr : qrQ A = A ∧ qrR A = 1 :=
+    qr_unique (qrQ_mul_qrR A).symm (Matrix.mul_one A).symm (conjTranspose_qrQ_mul_self A) hAA
+      (isUpperTriangular_qrR A) blockTriangular_one (qrR_diag_pos hdet) (fun j => by simp)
+  have hfix : ∀ k, Matrix.qrIterate A k = A := by
+    intro k
+    induction k with
+    | zero => rfl
+    | succ k ih => rw [Matrix.qrIterate_succ, ih, hqr.1, hqr.2, Matrix.one_mul]
+  have haccum : ∀ k, Matrix.qrAccum A k = A ^ k := by
+    intro k
+    induction k with
+    | zero => rw [Matrix.qrAccum_zero, pow_zero]
+    | succ k ih => rw [Matrix.qrAccum_succ, ih, hfix, hqr.1, pow_succ]
+  refine ⟨haccum, ?_⟩
+  rintro ⟨Q, hQ⟩
+  have hA3 : A ^ 3 = 1 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [A, pow_succ, Matrix.mul_apply, Fin.sum_univ_three]
+  have h3 : Tendsto (fun k : ℕ => 3 * k) atTop atTop :=
+    tendsto_atTop_mono (fun k => Nat.le_mul_of_pos_left k (by norm_num)) tendsto_id
+  have h3' : Tendsto (fun k : ℕ => 3 * k + 1) atTop atTop :=
+    tendsto_atTop_mono (fun k => Nat.le_succ _) h3
+  have hcyc : Tendsto (fun k : ℕ => Matrix.qrAccum A (3 * k)) atTop (𝓝 Q) := hQ.comp h3
+  have hcyc' : Tendsto (fun k : ℕ => Matrix.qrAccum A (3 * k + 1)) atTop (𝓝 Q) := hQ.comp h3'
+  simp only [haccum, pow_mul, hA3, one_pow] at hcyc
+  simp only [haccum, pow_succ, pow_mul, hA3, one_pow, Matrix.one_mul] at hcyc'
+  have h1 : Q = 1 := tendsto_nhds_unique hcyc tendsto_const_nhds
+  have h2 : Q = A := tendsto_nhds_unique hcyc' tendsto_const_nhds
+  rw [h1] at h2
+  have := congrFun (congrFun h2 0) 0
+  simp [A] at this
 
 end QuarteroniSaccoSaleri.Chapter05

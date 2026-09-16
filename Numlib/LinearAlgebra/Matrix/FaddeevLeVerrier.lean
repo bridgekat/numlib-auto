@@ -32,6 +32,18 @@ The identity that makes the traces come out is **Jacobi's formula**
 it coefficient by coefficient gives `trace (charpolyHorner A k) = (N - k) p.coeff (N - k)`, which is
 the trace form of Newton's identities.
 
+## The signs
+
+`B_{k+1} = α_{k+1} • 1 - A B_k` subtracts, so the closed forms alternate in sign, and the unsigned
+forms `B_k = H_k` and `α_k = -p.coeff (N - k)` that suggest themselves are false already at
+`k = 1`. For `A = diag(a, b)` the characteristic polynomial is `X² - (a + b) X + a b`, so
+`H₁ = A + p.coeff 1 • 1 = diag(-b, -a)`, while the recurrence gives `α₁ = tr A = a + b` and
+`B₁ = α₁ • 1 - A = diag(b, a) = -H₁`; one step further, `α₂ = a b = +p.coeff 0`, not `-p.coeff 0`.
+The book prints only the recurrence, `B_n = 0` and `A⁻¹ = B_{n-1}/α_n`, all of which are sign-free,
+so nothing here contradicts [quarteroni2000numerical] §3.6; the caution is for anyone who reads the
+closed forms off the recurrence by eye. `Matrix.faddeevB_eq_smul_charpolyHorner` and
+`Matrix.faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff` are the signed statements.
+
 ## Implementation notes
 
 The closed forms hold for `k ≤ N` only: beyond `N` the recurrence produces zeros while the

@@ -57,22 +57,6 @@ id = "faddeevAlpha_succ"
 id = "faddeevB_succ"
 
 [[node]]
-id = "faddeevB_eq_sum_charpoly_coeff"
-kind = "theorem"
-desc = '''`faddeevB A k = ∑ i ∈ range (k + 1), (charpoly A).coeff (n - i) • A ^ (k - i)` (Horner's partial sums
-of the characteristic polynomial evaluated at `A`, `n = Fintype.card n`) and `faddeevAlpha A k = -
-(charpoly A).coeff (n - k)`. Induction on `k` with the trace identity: `tr(A B_{k-1}) = ∑_{i<k} c_{n-i}
-tr(A^{k-i})` and Newton's identities for the power sums of the eigenvalues, or directly
-`Matrix.derivative_det_one_add_X_smul` read coefficientwise. ★★★'''
-deps = ["Matrix.faddeevB"]
-wrong = '''The signs are wrong: with the book's recurrence `B_{k+1} = α_{k+1} • 1 - A B_k` one has
-`B_k = (-1)^k • ∑ i ∈ range (k + 1), (charpoly A).coeff (n - i) • A ^ (k - i)` and
-`faddeevAlpha A k = (-1)^k * (charpoly A).coeff (n - k)` (for `k ≤ n`; e.g. `A = diag(a, b)` gives
-`B₁ = diag(b, a) = -(A + c₁ • 1)` and `α₂ = a b = +c₀`). Corrected nodes:
-`Matrix.faddeevB_eq_smul_charpolyHorner` and `Matrix.faddeevAlpha_eq_neg_one_pow_mul_charpoly_coeff`,
-with the Horner sums `Matrix.charpolyHorner`.'''
-
-[[node]]
 id = "faddeevB_eq_smul_charpolyHorner"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §3.6"
 

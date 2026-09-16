@@ -561,13 +561,23 @@ theorem equation_13_53 {a lam : ℝ} (h0 : 0 ≤ lam * |a|) (h1 : lam * |a| ≤ 
 /-! ### Remark 13.4, the schemes for the wave equation
 
 The printed claim "the leap-frog method (13.44) is stable under the CFL restriction
-`Δt ≤ Δx/|γ|`" is **false** if stability is read as (13.46) for the state `(u^{n+1}, uⁿ)`, for
-*every* value of `γλ`: `remark_13_4_leapFrog` in the plan carries the counterexample (the constant
-mode gives the Jordan block `I + N`). What the wave equation controls is its energy, and in the
-energy variables — the discrete velocity `(u^{n+1} - uⁿ)/Δt` and the discrete gradient
-`∇_h uⁿ/Δx` — the statement is true, with a constant uniform in `n`, and that is
-`remark_13_4_leapFrog_energy`. The same reading repairs Newmark: the state `(u, Δt v)` has a Jordan
-block on the constant mode, the energy `‖vⁿ‖² + γ²‖∇_h uⁿ‖²/Δx²` does not.
+`Δt ≤ Δx/|γ|`" is **false** if stability is read as (13.46) for the state `(u^{n+1}, uⁿ)`, and it
+is false at *every* value of `γλ`, not only at `γλ = 1`. The counterexample is the constant mode:
+the grid function `u_j^n = n` solves (13.44) for every `γ` and every `λ`, both sides of the scheme
+vanishing identically, so the iterates started from the bounded data `u⁰ ≡ 0`, `u¹ ≡ 1` are
+`uⁿ ≡ n` and grow linearly — unbounded in `‖·‖_{Δ,∞}`, and in `‖·‖_{Δ,2}` on any periodic grid.
+That is `remark_13_4_leapFrog_constantMode`. In the amplification form of §13.8.4 it is the `k = 0`
+mode: `φ₀ = 0` gives `c₀ = 1`, so the `2 × 2` matrix `G₀ = !![2, -1; 1, 0] = I + N` is a Jordan
+block and `G₀ⁿ = !![n+1, -n; n, 1-n]`. The bound fails to be uniform in `k` as well: for `|c| < 1`
+the Chebyshev form `Gⁿ = U_{n-1}(c) G - U_{n-2}(c) I` has `U_{n-1}(cos θ) = sin(nθ)/sin θ`, and on
+the first mode `θ ≈ γλΔx`, `n ≈ T/(λΔx)` give `sin(nθ)/sin θ ≈ sin(γT)/(γλΔx) → ∞`.
+
+What the wave equation controls is its energy, and in the energy variables — the discrete velocity
+`(u^{n+1} - uⁿ)/Δt` and the discrete gradient `∇_h uⁿ/Δx` — the remark is true, with a constant
+uniform in `n` and with the CFL restriction read strictly, `|γ|λ < 1`; that is
+`remark_13_4_leapFrog`, which is therefore the library's rendering of the remark's leap-frog
+clause. The same reading repairs Newmark: the state `(u, Δt v)` has a Jordan block on the constant
+mode, the energy `‖vⁿ‖² + γ²‖∇_h uⁿ‖²/Δx²` does not.
 
 Both are read off the abstract theorems
 `FiniteDifference.Hyperbolic.{leapFrog_stability, newmark_stability}` for a symmetric positive
@@ -580,6 +590,27 @@ section WaveEquation
 
 open scoped RealInnerProductSpace
 
+/-- **Remark 13.4's leap-frog claim fails in the state `(u^{n+1}, uⁿ)`, at every CFL number.** The
+spatially constant grid function `u_j^n = n` solves (13.44) for every `γ` and every `λ`, both sides
+of the scheme vanishing identically. Its data are bounded — `u⁰ ≡ 0` and `u¹ ≡ 1` — and its
+iterates are not, so no stability estimate (13.46) for the state `(u^{n+1}, uⁿ)` can hold, however
+small the CFL number `γλ` is. This is the `k = 0` mode of the von Neumann analysis, where the
+amplification matrix `!![2, -1; 1, 0]` is a Jordan block; the scheme reproduces there the exact
+solution `u₀ + v₀ t` of a spatially constant wave, which the `ℓ²`-type norms (13.47) cannot bound
+by the data. The remark becomes true in the energy variables, as `remark_13_4_leapFrog`
+(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Remark 13.4, the Leap-Frog method). -/
+theorem remark_13_4_leapFrog_constantMode (γ lam : ℝ) :
+    let u : ℕ → ℤ → ℝ := fun n _ => n
+    equation_13_44 γ lam u ∧ u 0 = 0 ∧ u 1 = 1 ∧ ¬∃ C : ℝ, ∀ n j, |u n j| ≤ C := by
+  intro u
+  refine ⟨fun n j => by simp only [u]; push_cast; ring, funext fun j => by simp [u],
+    funext fun j => by simp [u], ?_⟩
+  rintro ⟨C, hC⟩
+  obtain ⟨n, hn⟩ := exists_nat_gt C
+  have h := hC n 0
+  rw [show u n 0 = (n : ℝ) from rfl, abs_of_nonneg (Nat.cast_nonneg n)] at h
+  exact absurd h (not_le.2 hn)
+
 /-- **Remark 13.4, leap-frog**, in the variables the wave equation controls. Under the strict CFL
 condition `|γ| λ < 1` the leap-frog scheme (13.44) on `ℓ²(ℤ)` satisfies
 
@@ -589,9 +620,15 @@ for every `n` — no finite horizon is needed, because the discrete energy
 `‖u^{n+1} - uⁿ‖² + γ²Δt²‖∇_h u^{n+1}‖·‖∇_h uⁿ‖`-type quantity is *conserved* exactly
 (`FiniteDifference.Hyperbolic.leapFrogEnergy_succ`) and is equivalent to the left-hand side with
 constants `1 ± |γ|λ`. The hypothesis `γ ≠ 0` only excludes the degenerate case in which (13.44)
-carries no space operator and the CFL restriction says nothing
-(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Remark 13.4, the Leap-Frog method). -/
-theorem remark_13_4_leapFrog_energy {γ Δt Δx lam : ℝ} (hγ : γ ≠ 0) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
+carries no space operator and the CFL restriction says nothing.
+
+The energy variables are not a convenience either. Read in the state `(u^{n+1}, uⁿ)` and its norms
+(13.47), the remark is false at every CFL number, because the constant mode is a Jordan block of
+the scheme: `remark_13_4_leapFrog_constantMode`. The CFL restriction is also read strictly here,
+`|γ|λ < 1`; at `|γ|λ = 1` the equivalence of the conserved energy with the left-hand side
+degenerates (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Remark 13.4, the Leap-Frog
+method). -/
+theorem remark_13_4_leapFrog {γ Δt Δx lam : ℝ} (hγ : γ ≠ 0) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
     (hlam : lam = Δt / Δx) (hcfl : |γ| * lam < 1) {u : ℕ → lp (fun _ : ℤ => ℝ) 2}
     (h : equation_13_44 γ lam fun n => ⇑(u n)) (n : ℕ) :
     ‖u (n + 1) - u n‖ ^ 2 / Δt ^ 2 + γ ^ 2 * ‖Hyperbolic.forwardDiffCLM (u n)‖ ^ 2 / Δx ^ 2

@@ -72,8 +72,13 @@ is the general (7.2.1), `v ∈ W^{k,p}(Ω) ↔ λ > k - d/p`. For `λ` a nonnega
 is a polynomial, hence in `W^{k,p}(Ω)` for every `k`, while `λ > k - d/p` fails once
 `k ≥ λ + d/p`; already `λ = 0`, `k = 1`, `d = p = 2` is a counterexample, and the case `λ = 0` is
 proved here as `example_7_2_5_const`. The doc comment of `example_7_2_5_memW1p` spells this out.
-The `W^{k,p}` case for `k ≥ 2` is not formalized: it needs bounds on the derivatives of `|x|^λ` of
-every order, which the homogeneity of the function supplies but which are not available here.
+
+The corrected form of (7.2.1) reads `|x|^λ ∈ W^{k,p}(Ω) ↔ λ > k - d/p` for every real `λ` that is
+**not** a nonnegative even integer — the excluded values being exactly those at which `|x|^λ` is a
+polynomial and the equivalence's right-hand side is therefore too strong. That corrected form is
+the node `example_7_2_5` of the plan, and its case `k ≥ 2` is not formalized: it needs bounds on
+the derivatives of `|x|^λ` of every order, which the homogeneity of the function supplies but which
+are not available here, together with a composition rule for weak derivatives.
 
 Example 7.2.6 is here as `example_7_2_6`: on `Ω = B(0,β) ⊆ ℝ^2` with `0 < β < 1` the function
 `v(x) = log(log(1/|x|))` has `∫_Ω |∇v|^2 = -2π/log β`, has finite `L^2(Ω)` norm, lies in

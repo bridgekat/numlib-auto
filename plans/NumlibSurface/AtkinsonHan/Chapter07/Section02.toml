@@ -74,33 +74,33 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example
 [[node]]
 id = "example_7_2_5"
 kind = "theorem"
-desc = '''Example 7.2.5, the `W^{k,p}` half: on the unit ball of `ℝ^d`, `|x|^λ ∈ W^{k,p}(Ω) ↔
-λ > k - d/p` (7.2.1), which the book leaves to Exercise 7.2.7.'''
-deps = ["definition_7_2_2_multiIndex", "example_7_2_5_memLp"]
-wrong = '''False as stated. For `λ` a nonnegative even integer `|x|^λ = (x·x)^{λ/2}` is a
-polynomial, hence lies in `W^{k,p}(Ω)` for every `k` and `p` on the bounded `Ω`, while
-`λ > k - d/p` fails as soon as `k ≥ λ + d/p`; the smallest counterexample is `λ = 0`, `k = 1`,
-`d = p = 2`, where `v ≡ 1 ∈ W^{1,2}(Ω)` but `0 > 1 - 1` is false; the membership at `λ = 0` is
-proved, for every `k` and `p` and every ball, as `example_7_2_5_const`. The book's own displayed
-first-order equivalence `v ∈ W^{1,p}(Ω) ↔ λ > 1 - d/p` fails at the same point: it reads
-`|∇v| = |λ| |x|^{λ-1}` off as lying in `L^p(Ω)` exactly when `(λ-1)p + d > 0`, which needs the
-factor `|λ|` to be nonzero. The corrected first-order statement is `example_7_2_5_memW1p`, with
-the hypothesis `λ ≠ 0`; the removable-singularity step the book passes over is
-`hasWeakIteratedLineDerivOn_normRpow`.
+desc = '''Example 7.2.5, the `W^{k,p}` half (7.2.1), corrected: on the unit ball of `ℝ^d`, for a
+real `λ` that is **not** a nonnegative even integer, `|x|^λ ∈ W^{k,p}(Ω) ↔ λ > k - d/p`. The book
+prints (7.2.1) with no restriction on `λ` and leaves it to Exercise 7.2.7; as printed it is false.
+For `λ` a nonnegative even integer `|x|^λ = (x·x)^{λ/2}` is a polynomial, hence lies in
+`W^{k,p}(Ω)` for every `k` and every `p` on the bounded `Ω`, while `λ > k - d/p` fails as soon as
+`k ≥ λ + d/p`; the smallest counterexample is `λ = 0`, `k = 1`, `d = p = 2`, where `v ≡ 1` lies in
+`W^{1,2}(Ω)` but `0 > 1 - 1` is false. The membership at `λ = 0` is proved, for every `k` and `p`
+and every ball, as `example_7_2_5_const`. The book's own displayed first-order equivalence
+`v ∈ W^{1,p}(Ω) ↔ λ > 1 - d/p` fails at the same point: it reads `|∇v| = |λ| |x|^{λ-1}` off as
+lying in `L^p(Ω)` exactly when `(λ-1)p + d > 0`, which needs the factor `|λ|` to be nonzero. The
+corrected case `k = 1` is proved, as `example_7_2_5_memW1p`; the removable-singularity step the
+book passes over is `hasWeakIteratedLineDerivOn_normRpow`.
 
-The corrected statement for `k ≥ 2` — the same equivalence for `λ` not a nonnegative even integer
-— is not proved here, and would need two things. The sufficiency direction needs the upper bound
-`‖D^n |x|^λ‖ ≤ C_n |x|^{λ-n}` away from the origin, which homogeneity of `|x|^λ` and compactness
-of the unit sphere supply, together with a composition rule for weak derivatives —
-`HasWeakIteratedLineDerivOn y f w Ω μ` and `HasWeakIteratedLineDerivOn ![z] w u Ω μ` giving
-`HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ`, whose proof is
-`ContDiff.iteratedFDeriv_succ_apply_left'` applied to the test function and which belongs in
-`Numlib/Analysis/Sobolev/WeakDeriv.lean` — so that the order-`n` weak derivative comes from
-iterating `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`. The necessity direction
+Blocked: the case `k ≥ 2` of the corrected statement is not proved, and would need two things. The
+sufficiency direction needs the upper bound `‖D^n |x|^λ‖ ≤ C_n |x|^{λ-n}` away from the origin,
+which homogeneity of `|x|^λ` and compactness of the unit sphere supply, together with a composition
+rule for weak derivatives — `HasWeakIteratedLineDerivOn y f w Ω μ` and
+`HasWeakIteratedLineDerivOn ![z] w u Ω μ` giving `HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ`,
+whose proof is `ContDiff.iteratedFDeriv_succ_apply_left'` applied to the test function and which
+belongs in `Numlib/Analysis/Sobolev/WeakDeriv.lean` — so that the order-`n` weak derivative comes
+from iterating `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`. The necessity direction
 needs a matching lower bound, which degenerates exactly where `D^n |x|^λ` vanishes identically off
-the origin: for `λ` a nonnegative even integer, where the equivalence is itself false, and, when
+the origin: for `λ` a nonnegative even integer, which the corrected statement excludes, and, when
 `d = 1`, also for `λ` a nonnegative odd integer and `n > λ`, where the equivalence is still true
 but has to be proved from the jump of `D^λ |x|^λ` at the origin instead.'''
+deps = ["definition_7_2_2_multiIndex", "example_7_2_5_memLp"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1)'
 
 [[node]]
 id = "hasWeakIteratedLineDerivOn_logLogNorm"

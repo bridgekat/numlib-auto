@@ -141,27 +141,11 @@ id = "forwardEulerCentred_not_isStable"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.8.4, "The centred discretization scheme (13.37) is thus unconditionally unstable"'''
 
 [[node]]
-id = "remark_13_4_leapFrog"
-kind = "theorem"
-desc = '''Remark 13.4, leap-frog: the leap-frog scheme (13.44) for the wave equation is stable in
-`‖·‖_{Δ,2}` under `γλ < 1`. Written as the two-level system for `(u^{n+1}, u^n)` on the periodic
-grid, its `2 × 2` amplification matrix on the `k`-th mode is `G_k = !![2c_k, -1; 1, 0]` with `c_k =
-1 - 2(γλ)² sin²(φ_k/2)`, whose eigenvalues are the roots of `z² - 2c_k z + 1`; for `|c_k| < 1` they
-are distinct of modulus one and `‖G_k^n‖` is bounded uniformly in `n` and `k`. ★★★'''
-wrong = '''False as stated, for every `γλ`, and not because of the `γλ = 1` Jordan block the
-earlier note describes. The constant mode `k = 0` has `φ_0 = 0`, hence `c_0 = 1`, so `G_0 =
-!![2, -1; 1, 0] = I + N` is a Jordan block and `G_0^n = !![n+1, -n; n, 1-n]` grows linearly: the
-scheme reproduces `u^n = u^0 + n (u^1 - u^0)`, the exact `u_0 + v_0 t` of a spatially constant wave
-solution. Uniformity in `k` fails as well: for `|c| < 1` the Chebyshev form `G^n = U_{n-1}(c) G -
-U_{n-2}(c) I` has `U_{n-1}(cos θ) = sin(nθ)/sin θ`, and on the first mode `θ ≈ γ λ Δx`, `n ≈ T/(λΔx)`
-give `sin(nθ)/sin θ ≈ sin(γT)/(γλΔx) → ∞`. Both are the same phenomenon: the quantity the wave
-equation controls is the energy, not `‖(u^{n+1}, u^n)‖_{Δ,2}`. Superseded by
-`remark_13_4_leapFrog_energy`.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_44", "QuarteroniSaccoSaleri.Chapter13.equation_13_46", "FiniteDifference.periodicBlockScheme_pow_mulVec_fourierMode"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
+id = "remark_13_4_leapFrog_constantMode"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method, disproved in the state (u^{n+1}, uⁿ)'''
 
 [[node]]
-id = "remark_13_4_leapFrog_energy"
+id = "remark_13_4_leapFrog"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.4, the Leap-Frog method'
 
 [[node]]

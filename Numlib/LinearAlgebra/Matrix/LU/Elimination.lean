@@ -59,7 +59,14 @@ order `p < i` of the index type is used, to say which rows lie below the pivot.
 The last pivot `a_{N-1,N-1}^{(N-1)}` is never used as a divisor, so the factorization theorems ask
 only for the pivots `k` with `k + 1 < N` to be nonzero; this is what makes them equivalent to the
 nonsingularity of the *strict* leading principal submatrices, and lets a singular matrix with
-nonsingular strict leading blocks (Example 3.3's `B`) be factored.
+nonsingular strict leading blocks (Example 3.3's `B`) be factored. The restriction is not a
+convenience: quantifying `Matrix.gemStage_pivots_ne_zero_iff` over *all* the pivots would make it
+false. For `B = !![1, 2; 1, 2]` of [quarteroni2000numerical] Example 3.3 the strict leading
+principal submatrices are the empty one and `!![1]`, both units, while the last pivot is
+`b₂₂ - (b₂₁/b₁₁) b₁₂ = 2 - 2 = 0`; the `1 × 1` zero matrix is the same failure with an empty strict
+block. The last pivot is `det A / det A(< N - 1)`, so it vanishes for every singular `A` whose
+strict leading blocks are nonsingular. The book restricts its own condition the same way, to
+`k = 1, …, n - 1`, in the sentence after (3.33) and in Theorem 3.4.
 
 Everything is over a field, and nothing here is numerical: pivoting and the growth factor belong
 to `Numlib/LinearAlgebra/Matrix/LU/Pivoting`.
@@ -397,7 +404,9 @@ theorem isLU_leadingPrincipalSubmatrix_gemStage {k : ℕ} (hk : k < N)
 exactly when every `A(< k)` is a unit. Forwards, `det A(< k) = ∏_{m < k} a_mm^{(m)}`; backwards,
 by strong induction, `A = L_k A^{(k)}` restricts to the leading block of order `k + 1`, whose
 determinant `∏_{m ≤ k} a_mm^{(m)}` is nonzero. The last pivot `a_{N-1,N-1}^{(N-1)}` is excluded on
-both sides: it is `det A / det A(< N - 1)`, which vanishes for a singular `A`. -/
+both sides, and must be: it is `det A / det A(< N - 1)`, which vanishes for a singular `A`, as for
+`B = !![1, 2; 1, 2]` of [quarteroni2000numerical] Example 3.3, whose strict leading principal
+submatrices are units and whose last pivot is `0`. -/
 theorem gemStage_pivots_ne_zero_iff :
     (∀ (m : ℕ) (hm : m < N), m + 1 < N → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0) ↔
       ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k) := by

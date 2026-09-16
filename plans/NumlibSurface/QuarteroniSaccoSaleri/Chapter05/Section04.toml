@@ -21,23 +21,5 @@ id = "property_5_8"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8'
 
 [[node]]
-id = "property_5_8_limit"
-kind = "theorem"
-desc = '''Property 5.8, the limit clause (5.35): the orthogonal matrix of the real Schur form is
-`lim_k Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾`, the accumulated factors of the unshifted QR iteration (5.32). Not
-formalized: the statement is false as printed. For the cyclic permutation matrix of order `3`
-(Exercise 14) every `qrQ` is the matrix itself and `Matrix.qrAccum A k = A^k` cycles with period
-`3`, so the product does not converge; for a matrix with complex eigenvalues of equal modulus the
-iterates need not approach quasi-triangular form at all (Example 5.9). What is true is the
-existence of the form (`property_5_8`) and the convergence of the *shifted* iteration in the
-cases §5.7 describes, which the book itself calls an open problem in general. The book cites
-[GL89] pp. 341–342 for the existence proof only.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_8", "QuarteroniSaccoSaleri.Chapter05.exercise_5_14"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8'
-wrong = '''False as printed. For the cyclic permutation matrix `A` of Exercise 14 (`exercise_5_14`)
-`qrQ A = A` and `qrR A = 1`, so every iterate is `A`, the accumulated factor
-`Q⁽⁰⁾ Q⁽¹⁾ ⋯ Q⁽ᵏ⁾ = Matrix.qrAccum A k = A ^ k` cycles with period `3` and has no limit; and for
-Example 5.9 the iterates converge to a "cheating" quasi-triangular form that is not the real Schur
-form of `A`, as the book itself observes. Only the existence clause (5.34) is a theorem
-(`property_5_8`); the convergence of the shifted iteration that the book has in mind is left
-unproved by it (§5.7).'''
+id = "qrAccum_not_tendsto"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8, (5.35), disproved'

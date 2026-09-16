@@ -68,24 +68,3 @@ id = "IsResolvent.eq_of_backwardError_eq_zero"
 
 [[node]]
 id = "enorm_sub_le_absCondNumberWithin_mul_backwardError"
-kind = "theorem"
-desc = '''**Forward error ≤ condition number × backward error**: if `IsResolvent F S G` and
-`backwardError F S d xhat < ENNReal.ofReal η`, then `‖xhat - G d‖ₑ ≤ absCondNumberWithin G S d η *
-backwardError F S d xhat`. For every admissible `δd` with `F xhat (d + δd) = 0` and `‖δd‖ < η`,
-`xhat = G (d + δd)` and `‖G (d + δd) - G d‖ₑ ≤ absCondNumberWithin … * ‖δd‖ₑ` by `le_iSup₂`; take the
-infimum over such `δd` (`ENNReal.mul_iInf` with the hypothesis restricting to `‖δd‖ < η`; the
-infimum over the restricted set equals the unrestricted one because the latter is `< ofReal η`).
-★★'''
-deps = ["Conditioning.backwardError", "Conditioning.absCondNumberWithin", "Conditioning.IsResolvent"]
-wrong = '''False as stated when the condition number is `⊤` and the backward error is `0` without
-being attained: `D = X = ℝ`, `S = univ`, `G d = 0`, `G y = 1` for `y ≠ d`, `F x y = x - G y`
-(so `IsResolvent F univ G`), `xhat = 1`. Then `F 1 (d + δd) = 0` for every `δd ≠ 0`, so
-`backwardError F univ d 1 = 0 < ofReal η`, and `absCondNumberWithin G univ d η = ⊤`, but
-`‖xhat - G d‖ₑ = 1 > ⊤ * 0 = 0`. The multiplication `⊤ * 0 = 0` of `ℝ≥0∞` does not commute with
-the infimum. Corrected as
-`enorm_sub_le_absCondNumberWithin_mul_backwardError_of_continuousWithinAt`, with the resolvent
-continuous at `d` within `S` (the book's standing well-posedness); the pointwise bound for one
-perturbation, `enorm_sub_le_absCondNumberWithin_mul_enorm`, needs no hypothesis.'''
-
-[[node]]
-id = "enorm_sub_le_absCondNumberWithin_mul_backwardError_of_continuousWithinAt"

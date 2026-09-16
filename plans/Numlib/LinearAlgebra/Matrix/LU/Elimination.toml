@@ -46,19 +46,6 @@ id = "isLU_gemLower_gemStage"
 id = "isLU_leadingPrincipalSubmatrix_gemStage"
 
 [[node]]
-id = "gemStage_pivot_ne_zero_iff"
-kind = "theorem"
-desc = '''The pivots are nonzero iff the strict leading principal submatrices are nonsingular:
-`(∀ k : Fin N, gemStage A k k k ≠ 0) ↔ ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`
-(and then `gemStage A k k k = d_{k+1} / d_k`, `IsLU.diag_upper_eq_div_leadingPrincipalMinor`).
-Forward by `isLU_gemLower_gemStage` and `IsLU.det_leadingPrincipalSubmatrix`; backward by
-induction: the first `k` stages only depend on the leading block, so a zero pivot at `k` makes
-`det A(≤ k) = 0`. This is the book's sentence after (3.33). ★★'''
-deps = ["Matrix.gemStage", "Matrix.isLU_gemLower_gemStage", "Matrix.IsLU.det_leadingPrincipalSubmatrix", "Matrix.strictLeadingPrincipalSubmatrix"]
-wrong = '''False as stated: the last pivot `gemStage A (N-1) (N-1) (N-1) = det A / det A(< N-1)` vanishes for a singular `A` whose strict leading principal submatrices are all nonsingular (`N = 1`, `A = 0`: the strict block is empty, a unit, and the pivot is `0`; Example 3.3's `B = !![1, 2; 1, 2]` likewise). The book's condition is on the pivots `k = 1, …, n - 1` only. Corrected as `gemStage_pivots_ne_zero_iff`, which quantifies over the pivots `k` with `k + 1 < N`, the ones the elimination divides by.'''
-
-
-[[node]]
 id = "gemStage_pivots_ne_zero_iff"
 
 [[node]]

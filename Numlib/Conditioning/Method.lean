@@ -39,9 +39,22 @@ stability is a bound on the powers of an operator, and neither theorem is an ins
 
 The *backward error* of §2.3 (`Conditioning.backwardError`) is the infimum size of a perturbation
 of the datum for which a computed `x̂` is an exact solution, and the module ends with "forward error
-≤ condition number × backward error". The normwise, weighted backward error of a linear system
-(Rigal–Gaches) is the root-namespace `backwardError` of `Numlib/Conditioning/LinearSystem`; the
-two are different quantities.
+≤ condition number × backward error" (`enorm_sub_le_absCondNumberWithin_mul_backwardError`). The
+normwise, weighted backward error of a linear system (Rigal–Gaches) is the root-namespace
+`backwardError` of `Numlib/Conditioning/LinearSystem`; the two are different quantities.
+
+That last bound carries the hypothesis that the resolvent is continuous at the datum within the
+admissible data — the well-posedness the book assumes of the problem in §2.1 — and the hypothesis
+is not a convenience. Without it the inequality is **false**, because `ℝ≥0∞` has `⊤ * 0 = 0` and
+the multiplication does not commute with the infimum defining the backward error. Take
+`D = X = Y = ℝ`, `S = univ`, `G 0 = 0` and `G y = 1` for `y ≠ 0`, `F x y = x - G y` (so that
+`IsResolvent F univ G` holds), `d = 0` and `x̂ = 1`. Every `δd ≠ 0` satisfies `F x̂ (d + δd) = 0`,
+so `backwardError F univ 0 1 = 0`, an infimum that is not attained; and
+`absCondNumberWithin G univ 0 η = ⊤`, since `‖G δd - G 0‖ₑ / ‖δd‖ₑ = 1/|δd|` is unbounded on the
+perturbations. The right-hand side is `⊤ * 0 = 0` while the left-hand side is `‖x̂ - G 0‖ₑ = 1`.
+The pointwise bound for a single perturbation, `enorm_sub_le_absCondNumberWithin_mul_enorm`, needs
+no hypothesis; only the passage to the infimum does, and continuity is exactly what makes a zero
+backward error force `x̂ = G d` (`IsResolvent.eq_of_backwardError_eq_zero`).
 
 The datum `d` is fixed here and does not vary with `n` (the book's `d_n`); a data approximation is
 composed into `Gn n` when needed.
@@ -305,10 +318,16 @@ theorem IsResolvent.eq_of_backwardError_eq_zero (hG : IsResolvent F S G)
 /-- **Forward error ≤ condition number × backward error** ([quarteroni2000numerical] §2.3): for
 a well-posed problem (a resolvent continuous at `d` within the admissible data) and a computed
 `x̂` whose backward error is `< η`, `‖x̂ - G d‖ₑ ≤ absCondNumberWithin G S d η * backwardError F S
-d x̂`. Continuity is needed only when the condition number is `⊤` and the backward error `0`
-without being attained; in every other case the bound is the infimum of the pointwise bounds
-`enorm_sub_le_absCondNumberWithin_mul_enorm`. -/
-theorem enorm_sub_le_absCondNumberWithin_mul_backwardError_of_continuousWithinAt
+d x̂`.
+
+The continuity hypothesis is the book's standing well-posedness (§2.1) and cannot be dropped: with
+`D = X = Y = ℝ`, `S = univ`, `G 0 = 0`, `G y = 1` for `y ≠ 0`, `F x y = x - G y`, `d = 0` and
+`x̂ = 1`, the backward error is `0` (every `δd ≠ 0` is an exact perturbation) and the condition
+number is `⊤`, so the right-hand side is `⊤ * 0 = 0` and the left-hand side is `1`. Continuity is
+needed only in that case — the condition number `⊤` and the backward error `0` without being
+attained — and in every other case the bound is the infimum of the pointwise bounds
+`enorm_sub_le_absCondNumberWithin_mul_enorm`, which need no hypothesis. -/
+theorem enorm_sub_le_absCondNumberWithin_mul_backwardError
     (hG : IsResolvent F S G) (hc : ContinuousWithinAt G S d) {η : ℝ}
     (hη : backwardError F S d xhat < ENNReal.ofReal η) :
     ‖xhat - G d‖ₑ ≤ absCondNumberWithin G S d η * backwardError F S d xhat := by
