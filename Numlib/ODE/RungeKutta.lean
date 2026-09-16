@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Topology.Algebra.Polynomial
@@ -39,7 +40,14 @@ classical fourth-order method (11.73) is `rk4`, with its algebraic order conditi
 (`rk4_orderConditions`). Property 11.4 (Butcher's barriers) is quoted, not formalized.
 A tableau satisfying the row-sum condition sees a non-autonomous problem as the autonomous
 problem `Y' = (1, f(Y))` on `ℝ × E` and has the same order along the two (`autonomize`,
-`hasOrderFor_autonomize_iff`), which is the reduction an order-four proof starts from.
+`hasOrderFor_autonomize_iff`); that reduction is what lets the fourth order of the classical
+method be proved in the elementary differentials of a single field, and `rk4_hasOrderFor` is the
+result: `rk4` has order `4` along every solution of a problem whose field is `C⁴` with bounded
+derivatives. Its proof expands one stage once and for all
+(`exists_forall_norm_stage_sub_le`), instantiates that three times to expand the increment
+(`exists_forall_norm_rk4_increment_sub_le`), and matches the expansion against the Taylor series
+of the solution (`rk4_hasOrderFor_autonomous`); the `h³` coefficients agree only after the
+symmetry of the second derivative is used, at exactly one place.
 
 **Adaptivity** (§11.8.2). `EmbeddedPair s` is a tableau with a second weight vector `b̂`; the
 error indicator `h ∑_i (b_i - b̂_i) K_i` is the difference of the two solutions sharing the stages
@@ -58,7 +66,23 @@ proved.
 `Matrix.inv` (zero on a singular matrix). On the test equation `y' = λ y` one step multiplies by
 `R(hλ)` when `I - hλ A` is invertible (`stepRel_testField_iff`), so that
 `z ∈ absStabilityRegion ↔ ‖R z‖ < 1` under that invertibility
-(`mem_absStabilityRegion_iff_of_isUnit`). For an explicit tableau `A` is nilpotent, so
+(`mem_absStabilityRegion_iff_of_isUnit`).
+
+*Erratum (§11.8.4).* The book states the characterization `𝒜 = {z : |R(z)| < 1}` with no
+hypothesis, although its own derivation of `R` inverts `I - hλ A`. The invertibility is a genuine
+hypothesis on the method, and it is a hypothesis rather than a further clause of the
+characterization: for `A = !![0, 1; 1, 0]`, `b = (1/2, 1/2)` and `z = -1` the matrix
+`I - zA = !![1, 1; 1, 1]` is singular, yet the stage system `K₁ + K₂ = z u` is solvable for every
+datum and every solution gives the same step `v = u (1 + z/2) = u/2`, so every datum has an orbit
+and every orbit tends to `0`, that is, `z ∈ 𝒜` in the sense of `OneStep.IsAbsStable`, while
+`R(z) = 1` with Mathlib's `Matrix.inv`. So `z ∈ 𝒜 ↔ IsUnit (I - zA) ∧ ‖R z‖ < 1` is *false*. The
+corrected forms are `mem_absStabilityRegion_iff_of_isUnit` (the book's claim under the hypothesis
+its derivation uses), `mem_absStabilityRegion_iff_of_isExplicit` (no hypothesis is needed for an
+explicit tableau, the only case the book goes on to use) and
+`not_mem_absStabilityRegion_of_forall_ne` (the singular case in which the stage system has no
+solution, and `z ∉ 𝒜` for the opposite reason). Also in `notes/book-errata.md`.
+
+For an explicit tableau `A` is nilpotent, so
 `I - zA` is always invertible with determinant `1`, and `R` is the polynomial
 `1 + ∑_{k<s} z^{k+1} bᵀ A^k 𝟙 = det (I - zA + z 𝟙 bᵀ)` (`stabilityFunction_eq_sum_of_isExplicit`,
 `stabilityFunction_eq_det_of_isExplicit`, the matrix determinant lemma); a consistent explicit
@@ -1972,6 +1996,71 @@ theorem _root_.norm_sub_sub_smul_apply_le_of_hasFDerivAt (hF : ∀ p, HasFDerivA
 
 end Taylor
 
+/-! ### Multilinear estimates
+
+Four elementary bounds for continuous multilinear maps presented in curried form, used by the
+order-four expansion of the Runge–Kutta stages: the three-argument operator bound, the two
+diagonal-difference estimates that keep the first-order cross terms of `B w w` and `C w w w` when
+`w` is perturbed, and the fact that post-composition with a norm-nonincreasing map does not
+increase the operator norm. Mathlib-shaped; they live here until a calculus module takes them. -/
+
+section Multilinear
+
+variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+
+/-- **The operator bound for a trilinear map** in curried form:
+`‖C x y z‖ ≤ ‖C‖ ‖x‖ ‖y‖ ‖z‖`, the three-argument companion of
+`ContinuousLinearMap.le_opNorm₂`. -/
+theorem _root_.ContinuousLinearMap.le_opNorm₃ (C : X →L[ℝ] X →L[ℝ] X →L[ℝ] X) (x y z : X) :
+    ‖C x y z‖ ≤ ‖C‖ * ‖x‖ * ‖y‖ * ‖z‖ := by
+  calc ‖C x y z‖ ≤ ‖C x y‖ * ‖z‖ := ContinuousLinearMap.le_opNorm _ _
+    _ ≤ ‖C‖ * ‖x‖ * ‖y‖ * ‖z‖ := by
+        gcongr
+        exact ContinuousLinearMap.le_opNorm₂ _ _ _
+
+/-- **The diagonal of a bilinear map under a perturbation**: with `e` a first approximation of the
+perturbation `d`, `B (g + d) (g + d)` differs from `B g g + B e g + B g e` by
+`B (d - e) g + B g (d - e) + B d d`, hence by at most `‖B‖ (2 ‖g‖ ‖d - e‖ + ‖d‖²)`. This is what
+bounds the `h³` error of a Runge–Kutta stage ([quarteroni2000numerical] §11.8). -/
+theorem _root_.norm_bilinear_diag_sub_le (B : X →L[ℝ] X →L[ℝ] X) (g d e : X) :
+    ‖B (g + d) (g + d) - B g g - B e g - B g e‖
+      ≤ ‖B‖ * ‖d - e‖ * ‖g‖ + ‖B‖ * ‖g‖ * ‖d - e‖ + ‖B‖ * ‖d‖ * ‖d‖ := by
+  have key : B (g + d) (g + d) - B g g - B e g - B g e
+      = B (d - e) g + B g (d - e) + B d d := by
+    simp only [map_add, map_sub, _root_.add_apply, _root_.sub_apply]
+    abel
+  rw [key]
+  refine norm_add₃_le.trans ?_
+  gcongr <;> exact ContinuousLinearMap.le_opNorm₂ _ _ _
+
+/-- **The diagonal of a trilinear map is Lipschitz on bounded sets**:
+`C x x x - C y y y = C (x - y) x x + C y (x - y) x + C y y (x - y)`, so the difference is at most
+`‖C‖ (‖x‖² + ‖x‖‖y‖ + ‖y‖²) ‖x - y‖` ([quarteroni2000numerical] §11.8). -/
+theorem _root_.norm_trilinear_diag_sub_le (C : X →L[ℝ] X →L[ℝ] X →L[ℝ] X) (x y : X) :
+    ‖C x x x - C y y y‖
+      ≤ ‖C‖ * ‖x - y‖ * ‖x‖ * ‖x‖ + ‖C‖ * ‖y‖ * ‖x - y‖ * ‖x‖
+        + ‖C‖ * ‖y‖ * ‖y‖ * ‖x - y‖ := by
+  have key : C x x x - C y y y = C (x - y) x x + C y (x - y) x + C y y (x - y) := by
+    simp only [map_sub, _root_.sub_apply]
+    abel
+  rw [key]
+  refine norm_add₃_le.trans ?_
+  gcongr <;> exact ContinuousLinearMap.le_opNorm₃ _ _ _ _
+
+/-- **Post-composition with a norm-nonincreasing map does not increase the operator norm**:
+`‖J ∘L L‖ ≤ ‖L‖` when `‖J‖ ≤ 1`. Applied at each level of multilinearity, this is what carries a
+bound on the derivatives of `f` to the derivatives of the autonomized field `(1, f)`. -/
+theorem _root_.ContinuousLinearMap.norm_comp_le_of_norm_le_one {𝕜 : Type*} [RCLike 𝕜]
+    {E F G : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F]
+    [NormedSpace 𝕜 F] [NormedAddCommGroup G] [NormedSpace 𝕜 G] (J : F →L[𝕜] G) (hJ : ‖J‖ ≤ 1)
+    (L : E →L[𝕜] F) : ‖J.comp L‖ ≤ ‖L‖ := by
+  refine (ContinuousLinearMap.opNorm_comp_le _ _).trans ?_
+  calc ‖J‖ * ‖L‖ ≤ 1 * ‖L‖ := by
+        refine mul_le_mul_of_nonneg_right hJ (ContinuousLinearMap.opNorm_nonneg L)
+    _ = ‖L‖ := one_mul _
+
+end Multilinear
+
 namespace ButcherTableau
 
 /-- **The two-stage order-two conditions are sufficient** ([quarteroni2000numerical] §11.8.1):
@@ -2071,5 +2160,718 @@ theorem hasOrderFor_two_of (tab : ButcherTableau 2) (hex : tab.IsExplicit) (hrow
         field_simp
 
 end ButcherTableau
+
+/-! ### The classical method has order four
+
+The order-four proof of `rk4_hasOrderFor` runs entirely in the **autonomous** picture supplied by
+`hasOrderFor_autonomize_iff`: on a normed space `X` with a field `G : X → X` whose Fréchet
+derivatives `G₁, G₂, G₃, G₄` are globally bounded, the stages of the classical tableau at `p` are
+`L₁ = G p`, `L₂ = G(p + (h/2) L₁)`, `L₃ = G(p + (h/2) L₂)`, `L₄ = G(p + h L₃)`, and each is the
+*same* expansion of one more stage, which `exists_forall_norm_stage_sub_le` does once and for
+all. -/
+
+section RungeKuttaFour
+
+variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+
+/-- **One Runge–Kutta stage, expanded to third order in the step**, for an autonomous field
+`G : X → X` with globally bounded Fréchet derivatives `G₁, …, G₄`
+([quarteroni2000numerical] §11.8, the expansion behind (11.73)). If the previous stage value `v`
+agrees with `G p + h a + h² q` to within `γ h³`, then the stage `G (p + θ h v)` agrees with
+
+`G p + θh·G₁ g + θh²·G₁ a + θh³·G₁ q + (θ²h²/2)·G₂(g, g) + (θ²h³/2)·(G₂(a, g) + G₂(g, a))
+  + (θ³h³/6)·G₃(g, g, g)`, `g = G p`,
+
+to within `c h⁴` for `h ∈ (0, 1]`, with `c` independent of the base point `p` — which is what a
+uniform bound on the local truncation error needs. The three stages `L₂, L₃, L₄` of the classical
+method are the three instances `(θ, a, q) = (1/2, 0, 0)`, `(1/2, G₁g/2, G₂(g,g)/8)` and
+`(1, G₁g/2, G₁(G₁g)/4 + G₂(g,g)/8)`. The proof is `norm_sub_taylor_segment_le` at `w = θh·v`
+followed by the multilinear expansion of `G₂ w w` and `G₃ w w w`
+(`norm_bilinear_diag_sub_le`, `norm_trilinear_diag_sub_le`). -/
+theorem exists_forall_norm_stage_sub_le
+    {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
+    {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
+    {M₁ M₂ M₃ M₄ : ℝ}
+    (hd1 : ∀ p, HasFDerivAt G (G₁ p) p) (hd2 : ∀ p, HasFDerivAt G₁ (G₂ p) p)
+    (hd3 : ∀ p, HasFDerivAt G₂ (G₃ p) p) (hd4 : ∀ p, HasFDerivAt G₃ (G₄ p) p)
+    (hM₁ : ∀ p, ‖G₁ p‖ ≤ M₁) (hM₂ : ∀ p, ‖G₂ p‖ ≤ M₂) (hM₃ : ∀ p, ‖G₃ p‖ ≤ M₃)
+    (hM₄ : ∀ p, ‖G₄ p‖ ≤ M₄) (R γ θ : ℝ) (hθ : 0 ≤ θ) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ (p v a q : X) (h : ℝ), h ∈ Ioc (0 : ℝ) 1 → ‖G p‖ ≤ R → ‖a‖ ≤ R →
+      ‖q‖ ≤ R → ‖v - (G p + h • a + h ^ 2 • q)‖ ≤ γ * h ^ 3 →
+      ‖G (p + (θ * h) • v) - (G p + (θ * h) • G₁ p (G p) + (θ * h ^ 2) • G₁ p a
+          + (θ * h ^ 3) • G₁ p q + (θ ^ 2 * h ^ 2 / 2) • G₂ p (G p) (G p)
+          + (θ ^ 2 * h ^ 3 / 2) • (G₂ p a (G p) + G₂ p (G p) a)
+          + (θ ^ 3 * h ^ 3 / 6) • G₃ p (G p) (G p) (G p))‖ ≤ c * h ^ 4 := by
+  have hM₁0 : (0 : ℝ) ≤ M₁ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₁ (0 : X))) (hM₁ 0)
+  have hM₂0 : (0 : ℝ) ≤ M₂ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₂ (0 : X))) (hM₂ 0)
+  have hM₃0 : (0 : ℝ) ≤ M₃ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₃ (0 : X))) (hM₃ 0)
+  have hM₄0 : (0 : ℝ) ≤ M₄ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₄ (0 : X))) (hM₄ 0)
+  refine ⟨max (M₄ * (θ * (R + (2 * R + γ))) ^ 4 / 24 + θ * M₁ * γ
+    + θ ^ 2 * M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) / 2
+    + θ ^ 3 * M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) / 6) 0, le_max_right _ _, ?_⟩
+  intro p v a q h hh hgR haR hqR hv
+  refine le_trans ?_ (mul_le_mul_of_nonneg_right (le_max_left _ (0 : ℝ)) (by positivity))
+  obtain ⟨hh0, hh1⟩ := hh
+  have hR0 : (0 : ℝ) ≤ R := (norm_nonneg _).trans hgR
+  have hγ0 : (0 : ℝ) ≤ γ :=
+    (mul_nonneg_iff_of_pos_right (pow_pos hh0 3)).1 ((norm_nonneg _).trans hv)
+  have hpow : ∀ m n : ℕ, m ≤ n → h ^ n ≤ h ^ m :=
+    fun _ _ hmn => pow_le_pow_of_le_one hh0.le hh1 hmn
+  have hh2 : h ^ 2 ≤ h := by simpa using hpow 1 2 (by norm_num)
+  have hh3 : h ^ 3 ≤ h := by simpa using hpow 1 3 (by norm_num)
+  have hh32 : h ^ 3 ≤ h ^ 2 := hpow 2 3 (by norm_num)
+  obtain ⟨ρ, hρn, rfl⟩ : ∃ r : X, ‖r‖ ≤ γ * h ^ 3 ∧ v = G p + (h • a + h ^ 2 • q + r) :=
+    ⟨v - (G p + h • a + h ^ 2 • q), by simpa using hv, by abel⟩
+  set g : X := G p with hgdef
+  set A : X →L[ℝ] X := G₁ p with hAdef
+  set B : X →L[ℝ] X →L[ℝ] X := G₂ p with hBdef
+  set C : X →L[ℝ] X →L[ℝ] X →L[ℝ] X := G₃ p with hCdef
+  have hAn : ‖A‖ ≤ M₁ := by rw [hAdef]; exact hM₁ p
+  have hBn : ‖B‖ ≤ M₂ := by rw [hBdef]; exact hM₂ p
+  have hCn : ‖C‖ ≤ M₃ := by rw [hCdef]; exact hM₃ p
+  set d : X := h • a + h ^ 2 • q + ρ with hddef
+  set w : X := (θ * h) • (g + d) with hwdef
+  have taylor := norm_sub_taylor_segment_le hd1 hd2 hd3 hd4 hM₄ p w
+  rw [← hgdef, ← hAdef, ← hBdef, ← hCdef] at taylor
+  clear_value w d g A B C
+  -- elementary bounds
+  have hK0 : (0 : ℝ) ≤ 2 * R + γ := by linarith
+  have hRK0 : (0 : ℝ) ≤ R + (2 * R + γ) := by linarith
+  have hh20 : (0 : ℝ) ≤ h ^ 2 := by positivity
+  have hdn : ‖d‖ ≤ (2 * R + γ) * h := by
+    rw [hddef]
+    refine norm_add₃_le.trans ?_
+    rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, abs_of_pos hh0,
+      abs_of_nonneg hh20]
+    have e1 : h * ‖a‖ ≤ h * R := mul_le_mul_of_nonneg_left haR hh0.le
+    have e2 : h ^ 2 * ‖q‖ ≤ h * R := mul_le_mul hh2 hqR (norm_nonneg _) hh0.le
+    have e3 : ‖ρ‖ ≤ γ * h := hρn.trans (mul_le_mul_of_nonneg_left hh3 hγ0)
+    linarith
+  have hdan : ‖d - h • a‖ ≤ (R + γ) * h ^ 2 := by
+    have e : d - h • a = h ^ 2 • q + ρ := by rw [hddef]; abel
+    rw [e]
+    refine (norm_add_le _ _).trans ?_
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hh20]
+    have e2 : h ^ 2 * ‖q‖ ≤ h ^ 2 * R := mul_le_mul_of_nonneg_left hqR hh20
+    have e3 : ‖ρ‖ ≤ γ * h ^ 2 := hρn.trans (mul_le_mul_of_nonneg_left hh32 hγ0)
+    have hring : h ^ 2 * R + γ * h ^ 2 = (R + γ) * h ^ 2 := by ring
+    linarith
+  have hgdn : ‖g + d‖ ≤ R + (2 * R + γ) := by
+    refine (norm_add_le _ _).trans ?_
+    have hle : (2 * R + γ) * h ≤ (2 * R + γ) * 1 := mul_le_mul_of_nonneg_left hh1 hK0
+    rw [mul_one] at hle
+    linarith [hgR, hdn]
+  have hwn : ‖w‖ ≤ θ * (R + (2 * R + γ)) * h := by
+    rw [hwdef, norm_smul, Real.norm_eq_abs, abs_of_nonneg (mul_nonneg hθ hh0.le)]
+    calc θ * h * ‖g + d‖ ≤ θ * h * (R + (2 * R + γ)) :=
+          mul_le_mul_of_nonneg_left hgdn (mul_nonneg hθ hh0.le)
+      _ = θ * (R + (2 * R + γ)) * h := by ring
+  -- the four pieces
+  have hX2 : A w - ((θ * h) • A g + (θ * h ^ 2) • A a + (θ * h ^ 3) • A q) = (θ * h) • A ρ := by
+    rw [hwdef, hddef]
+    simp only [map_add, map_smul]
+    module
+  have hX3 : (2⁻¹ : ℝ) • B w w
+      - ((θ ^ 2 * h ^ 2 / 2) • B g g + (θ ^ 2 * h ^ 3 / 2) • (B a g + B g a))
+      = (θ ^ 2 * h ^ 2 / 2) • (B (g + d) (g + d) - B g g - B (h • a) g - B g (h • a)) := by
+    rw [hwdef]
+    simp only [map_smul, _root_.smul_apply, map_add]
+    module
+  have hX4 : (6⁻¹ : ℝ) • C w w w - (θ ^ 3 * h ^ 3 / 6) • C g g g
+      = (θ ^ 3 * h ^ 3 / 6) • (C (g + d) (g + d) (g + d) - C g g g) := by
+    rw [hwdef]
+    simp only [map_smul, _root_.smul_apply]
+    module
+  have b1 : ‖G (p + w) - g - A w - (2⁻¹ : ℝ) • B w w - (6⁻¹ : ℝ) • C w w w‖
+      ≤ M₄ * (θ * (R + (2 * R + γ))) ^ 4 / 24 * h ^ 4 := by
+    have hw4 : ‖w‖ ^ 4 ≤ (θ * (R + (2 * R + γ))) ^ 4 * h ^ 4 := by
+      calc ‖w‖ ^ 4 ≤ (θ * (R + (2 * R + γ)) * h) ^ 4 :=
+            pow_le_pow_left₀ (norm_nonneg _) hwn 4
+        _ = (θ * (R + (2 * R + γ))) ^ 4 * h ^ 4 := by ring
+    have h5 : M₄ * ‖w‖ ^ 4 ≤ M₄ * ((θ * (R + (2 * R + γ))) ^ 4 * h ^ 4) :=
+      mul_le_mul_of_nonneg_left hw4 hM₄0
+    refine taylor.trans ?_
+    linarith
+  have b2 : ‖A w - ((θ * h) • A g + (θ * h ^ 2) • A a + (θ * h ^ 3) • A q)‖
+      ≤ θ * M₁ * γ * h ^ 4 := by
+    rw [hX2, norm_smul, Real.norm_eq_abs, abs_of_nonneg (mul_nonneg hθ hh0.le)]
+    have hAρ : ‖A ρ‖ ≤ M₁ * (γ * h ^ 3) :=
+      (A.le_opNorm ρ).trans (mul_le_mul hAn hρn (norm_nonneg _) hM₁0)
+    calc θ * h * ‖A ρ‖ ≤ θ * h * (M₁ * (γ * h ^ 3)) :=
+          mul_le_mul_of_nonneg_left hAρ (mul_nonneg hθ hh0.le)
+      _ = θ * M₁ * γ * h ^ 4 := by ring
+  have b3 : ‖(2⁻¹ : ℝ) • B w w
+      - ((θ ^ 2 * h ^ 2 / 2) • B g g + (θ ^ 2 * h ^ 3 / 2) • (B a g + B g a))‖
+      ≤ θ ^ 2 * M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) / 2 * h ^ 4 := by
+    rw [hX3, norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ θ ^ 2 * h ^ 2 / 2)]
+    have hb : ‖B (g + d) (g + d) - B g g - B (h • a) g - B g (h • a)‖
+        ≤ M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) * h ^ 2 := by
+      refine (norm_bilinear_diag_sub_le B g d (h • a)).trans ?_
+      have t1 : ‖B‖ * ‖d - h • a‖ * ‖g‖ ≤ M₂ * ((R + γ) * h ^ 2) * R :=
+        mul_le_mul (mul_le_mul hBn hdan (norm_nonneg _) hM₂0) hgR (norm_nonneg _)
+          (mul_nonneg hM₂0 (by positivity))
+      have t2 : ‖B‖ * ‖g‖ * ‖d - h • a‖ ≤ M₂ * R * ((R + γ) * h ^ 2) :=
+        mul_le_mul (mul_le_mul hBn hgR (norm_nonneg _) hM₂0) hdan (norm_nonneg _)
+          (mul_nonneg hM₂0 hR0)
+      have t3 : ‖B‖ * ‖d‖ * ‖d‖ ≤ M₂ * ((2 * R + γ) * h) * ((2 * R + γ) * h) :=
+        mul_le_mul (mul_le_mul hBn hdn (norm_nonneg _) hM₂0) hdn (norm_nonneg _)
+          (mul_nonneg hM₂0 (mul_nonneg hK0 hh0.le))
+      have hring : M₂ * ((R + γ) * h ^ 2) * R + M₂ * R * ((R + γ) * h ^ 2)
+          + M₂ * ((2 * R + γ) * h) * ((2 * R + γ) * h)
+          = M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) * h ^ 2 := by ring
+      linarith
+    calc θ ^ 2 * h ^ 2 / 2 * ‖B (g + d) (g + d) - B g g - B (h • a) g - B g (h • a)‖
+        ≤ θ ^ 2 * h ^ 2 / 2 * (M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) * h ^ 2) :=
+          mul_le_mul_of_nonneg_left hb (by positivity)
+      _ = θ ^ 2 * M₂ * (2 * R * (R + γ) + (2 * R + γ) ^ 2) / 2 * h ^ 4 := by ring
+  have b4 : ‖(6⁻¹ : ℝ) • C w w w - (θ ^ 3 * h ^ 3 / 6) • C g g g‖
+      ≤ θ ^ 3 * M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) / 6 * h ^ 4 := by
+    rw [hX4, norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ θ ^ 3 * h ^ 3 / 6)]
+    have hsub : (g + d) - g = d := by abel
+    have hkey := norm_trilinear_diag_sub_le C (g + d) g
+    rw [hsub] at hkey
+    have hb : ‖C (g + d) (g + d) (g + d) - C g g g‖
+        ≤ M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) * h := by
+      refine hkey.trans ?_
+      have hgR' : ‖g‖ ≤ R + (2 * R + γ) := hgR.trans (by linarith)
+      have t1 : ‖C‖ * ‖d‖ * ‖g + d‖ * ‖g + d‖
+          ≤ M₃ * ((2 * R + γ) * h) * (R + (2 * R + γ)) * (R + (2 * R + γ)) :=
+        mul_le_mul (mul_le_mul (mul_le_mul hCn hdn (norm_nonneg _) hM₃0) hgdn (norm_nonneg _)
+          (mul_nonneg hM₃0 (mul_nonneg hK0 hh0.le))) hgdn (norm_nonneg _)
+          (mul_nonneg (mul_nonneg hM₃0 (mul_nonneg hK0 hh0.le)) hRK0)
+      have t2 : ‖C‖ * ‖g‖ * ‖d‖ * ‖g + d‖
+          ≤ M₃ * (R + (2 * R + γ)) * ((2 * R + γ) * h) * (R + (2 * R + γ)) :=
+        mul_le_mul (mul_le_mul (mul_le_mul hCn hgR' (norm_nonneg _) hM₃0) hdn (norm_nonneg _)
+          (mul_nonneg hM₃0 hRK0)) hgdn (norm_nonneg _)
+          (mul_nonneg (mul_nonneg hM₃0 hRK0) (mul_nonneg hK0 hh0.le))
+      have t3 : ‖C‖ * ‖g‖ * ‖g‖ * ‖d‖
+          ≤ M₃ * (R + (2 * R + γ)) * (R + (2 * R + γ)) * ((2 * R + γ) * h) :=
+        mul_le_mul (mul_le_mul (mul_le_mul hCn hgR' (norm_nonneg _) hM₃0) hgR' (norm_nonneg _)
+          (mul_nonneg hM₃0 hRK0)) hdn (norm_nonneg _)
+          (mul_nonneg (mul_nonneg hM₃0 hRK0) hRK0)
+      have hring : M₃ * ((2 * R + γ) * h) * (R + (2 * R + γ)) * (R + (2 * R + γ))
+          + M₃ * (R + (2 * R + γ)) * ((2 * R + γ) * h) * (R + (2 * R + γ))
+          + M₃ * (R + (2 * R + γ)) * (R + (2 * R + γ)) * ((2 * R + γ) * h)
+          = M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) * h := by ring
+      linarith
+    calc θ ^ 3 * h ^ 3 / 6 * ‖C (g + d) (g + d) (g + d) - C g g g‖
+        ≤ θ ^ 3 * h ^ 3 / 6 * (M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) * h) :=
+          mul_le_mul_of_nonneg_left hb (by positivity)
+      _ = θ ^ 3 * M₃ * (3 * (R + (2 * R + γ)) ^ 2 * (2 * R + γ)) / 6 * h ^ 4 := by ring
+  have hdec : G (p + w) - (g + (θ * h) • A g + (θ * h ^ 2) • A a + (θ * h ^ 3) • A q
+      + (θ ^ 2 * h ^ 2 / 2) • B g g + (θ ^ 2 * h ^ 3 / 2) • (B a g + B g a)
+      + (θ ^ 3 * h ^ 3 / 6) • C g g g)
+      = (G (p + w) - g - A w - (2⁻¹ : ℝ) • B w w - (6⁻¹ : ℝ) • C w w w)
+        + (A w - ((θ * h) • A g + (θ * h ^ 2) • A a + (θ * h ^ 3) • A q))
+        + ((2⁻¹ : ℝ) • B w w
+            - ((θ ^ 2 * h ^ 2 / 2) • B g g + (θ ^ 2 * h ^ 3 / 2) • (B a g + B g a)))
+        + ((6⁻¹ : ℝ) • C w w w - (θ ^ 3 * h ^ 3 / 6) • C g g g) := by abel
+  rw [hdec]
+  refine (norm_add_le _ _).trans ?_
+  refine (add_le_add norm_add₃_le le_rfl).trans ?_
+  linarith [b1, b2, b3, b4]
+
+/-- **The increment of the classical method, expanded to third order in the step**, for an
+autonomous field `G : X → X` with globally bounded Fréchet derivatives
+([quarteroni2000numerical] (11.73)). Writing `g = G p`, the increment
+`(L₁ + 2L₂ + 2L₃ + L₄)/6` of the four stages at `p` agrees with
+
+`g + (h/2)·G₁ g + (h²/6)·(G₂(g,g) + G₁(G₁ g))
+  + (h³/24)·(G₃(g,g,g) + G₂(G₁ g, g) + 2 G₂(g, G₁ g) + G₁(G₂(g,g)) + G₁(G₁(G₁ g)))`
+
+— the truncated Taylor series `g + (h/2) Y⁽²⁾ + (h²/6) Y⁽³⁾ + (h³/24) Y⁽⁴⁾` of an integral curve
+through `p` — to within `c h⁴` for `h ∈ (0, 1]`, uniformly over `p` with `‖G p‖ ≤ M₀`. The three
+stages are the three instances of `exists_forall_norm_stage_sub_le`; the last matching of
+coefficients uses the symmetry `G₂(u, v) = G₂(v, u)` of the second derivative
+(`second_derivative_symmetric`), because the stages produce `(1/16)(G₂(G₁g, g) + G₂(g, G₁g))`
+where the Taylor series produces `(1/24) G₂(G₁g, g) + (2/24) G₂(g, G₁g)`. -/
+theorem exists_forall_norm_rk4_increment_sub_le
+    {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
+    {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
+    {M₁ M₂ M₃ M₄ : ℝ}
+    (hd1 : ∀ p, HasFDerivAt G (G₁ p) p) (hd2 : ∀ p, HasFDerivAt G₁ (G₂ p) p)
+    (hd3 : ∀ p, HasFDerivAt G₂ (G₃ p) p) (hd4 : ∀ p, HasFDerivAt G₃ (G₄ p) p)
+    (hM₁ : ∀ p, ‖G₁ p‖ ≤ M₁) (hM₂ : ∀ p, ‖G₂ p‖ ≤ M₂) (hM₃ : ∀ p, ‖G₃ p‖ ≤ M₃)
+    (hM₄ : ∀ p, ‖G₄ p‖ ≤ M₄) (M₀ : ℝ) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ (p : X) (h : ℝ), h ∈ Ioc (0 : ℝ) 1 → ‖G p‖ ≤ M₀ →
+      ‖(1 / 6 : ℝ) • (G p + (2 : ℝ) • G (p + (h / 2) • G p)
+            + (2 : ℝ) • G (p + (h / 2) • G (p + (h / 2) • G p))
+            + G (p + h • G (p + (h / 2) • G (p + (h / 2) • G p))))
+          - (G p + (h / 2) • G₁ p (G p)
+            + (h ^ 2 / 6) • (G₂ p (G p) (G p) + G₁ p (G₁ p (G p)))
+            + (h ^ 3 / 24) • (G₃ p (G p) (G p) (G p) + G₂ p (G₁ p (G p)) (G p)
+              + (2 : ℝ) • G₂ p (G p) (G₁ p (G p)) + G₁ p (G₂ p (G p) (G p))
+              + G₁ p (G₁ p (G₁ p (G p)))))‖ ≤ c * h ^ 4 := by
+  have hM₁0 : (0 : ℝ) ≤ M₁ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₁ (0 : X))) (hM₁ 0)
+  have hM₂0 : (0 : ℝ) ≤ M₂ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₂ (0 : X))) (hM₂ 0)
+  have hM₃0 : (0 : ℝ) ≤ M₃ :=
+    le_trans (ContinuousLinearMap.opNorm_nonneg (G₃ (0 : X))) (hM₃ 0)
+  obtain ⟨c₂, hc₂0, hc₂⟩ := exists_forall_norm_stage_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄
+    (M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀)) 0 (1 / 2) (by norm_num)
+  obtain ⟨c₃, hc₃0, hc₃⟩ := exists_forall_norm_stage_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄
+    (M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀)) (c₂ + M₃ * M₀ ^ 3) (1 / 2) (by norm_num)
+  obtain ⟨c₄, hc₄0, hc₄⟩ := exists_forall_norm_stage_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄
+    (M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀))
+    (c₃ + 3 * (M₁ * M₂ * M₀ ^ 2) + M₃ * M₀ ^ 3) 1 zero_le_one
+  refine ⟨(2 * c₂ + 2 * c₃ + c₄) / 6, by linarith, ?_⟩
+  intro p h hh hp
+  have hh0 : (0 : ℝ) < h := hh.1
+  have hh1 : h ≤ 1 := hh.2
+  have hh43 : h ^ 4 ≤ h ^ 3 := pow_le_pow_of_le_one hh0.le hh1 (by norm_num)
+  have hM₀0 : (0 : ℝ) ≤ M₀ := (norm_nonneg _).trans hp
+  have q1 : (0 : ℝ) ≤ M₁ * M₀ := mul_nonneg hM₁0 hM₀0
+  have q2 : (0 : ℝ) ≤ M₁ * (M₁ * M₀) := mul_nonneg hM₁0 q1
+  have q3 : (0 : ℝ) ≤ M₂ * (M₀ * M₀) := mul_nonneg hM₂0 (mul_nonneg hM₀0 hM₀0)
+  have hR0 : (0 : ℝ) ≤ M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀) := by linarith
+  have hpR : ‖G p‖ ≤ M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀) := by linarith
+  -- bounds on the elementary differentials at `p`
+  have nAg : ‖G₁ p (G p)‖ ≤ M₁ * M₀ := (G₁ p).le_of_opNorm_le_of_le (hM₁ p) hp
+  have nAAg : ‖G₁ p (G₁ p (G p))‖ ≤ M₁ * (M₁ * M₀) := (G₁ p).le_of_opNorm_le_of_le (hM₁ p) nAg
+  have nBgg : ‖G₂ p (G p) (G p)‖ ≤ M₂ * M₀ * M₀ :=
+    ContinuousLinearMap.le_of_opNorm₂_le_of_le _ (hM₂ p) hp hp
+  have nABgg : ‖G₁ p (G₂ p (G p) (G p))‖ ≤ M₁ * M₂ * M₀ ^ 2 := by
+    refine ((G₁ p).le_of_opNorm_le_of_le (hM₁ p) nBgg).trans (le_of_eq ?_)
+    ring
+  have nBag : ‖G₂ p (G₁ p (G p)) (G p)‖ ≤ M₁ * M₂ * M₀ ^ 2 := by
+    refine (ContinuousLinearMap.le_of_opNorm₂_le_of_le _ (hM₂ p) nAg hp).trans (le_of_eq ?_)
+    ring
+  have nBga : ‖G₂ p (G p) (G₁ p (G p))‖ ≤ M₁ * M₂ * M₀ ^ 2 := by
+    refine (ContinuousLinearMap.le_of_opNorm₂_le_of_le _ (hM₂ p) hp nAg).trans (le_of_eq ?_)
+    ring
+  have nCggg : ‖G₃ p (G p) (G p) (G p)‖ ≤ M₃ * M₀ ^ 3 := by
+    refine ((G₃ p (G p) (G p)).le_of_opNorm_le_of_le
+      (ContinuousLinearMap.le_of_opNorm₂_le_of_le _ (hM₃ p) hp hp) hp).trans (le_of_eq ?_)
+    ring
+  -- a crude bound for the `h³` tails
+  have shave : ∀ (k : ℝ) (x : X) (b : ℝ), 1 ≤ k → ‖x‖ ≤ b → ‖(h ^ 3 / k) • x‖ ≤ h ^ 3 * b := by
+    intro k x b hk hx
+    have hb : (0 : ℝ) ≤ b := (norm_nonneg _).trans hx
+    have hk0 : (0 : ℝ) < k := by linarith
+    have h30 : (0 : ℝ) ≤ h ^ 3 := by positivity
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (div_nonneg h30 hk0.le)]
+    calc h ^ 3 / k * ‖x‖ ≤ h ^ 3 / k * b := mul_le_mul_of_nonneg_left hx (div_nonneg h30 hk0.le)
+      _ ≤ h ^ 3 * b := by
+          refine mul_le_mul_of_nonneg_right ?_ hb
+          rw [div_le_iff₀ hk0]
+          nlinarith
+  -- the second stage
+  have hb₂ : ‖G (p + (h / 2) • G p) - (G p + (h / 2) • G₁ p (G p)
+      + (h ^ 2 / 8) • G₂ p (G p) (G p) + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))‖
+      ≤ c₂ * h ^ 4 := by
+    have hx := hc₂ p (G p) 0 0 h hh hpR (by simpa using hR0) (by simpa using hR0) (by simp)
+    rw [show (1 : ℝ) / 2 * h = h / 2 from by ring] at hx
+    refine le_trans (le_of_eq ?_) hx
+    congr 1
+    simp only [map_zero, _root_.zero_apply, smul_zero, add_zero]
+    module
+  -- the third stage
+  have hin₃ : ‖G (p + (h / 2) • G p) - (G p + h • ((1 / 2 : ℝ) • G₁ p (G p))
+      + h ^ 2 • ((1 / 8 : ℝ) • G₂ p (G p) (G p)))‖ ≤ (c₂ + M₃ * M₀ ^ 3) * h ^ 3 := by
+    have e : G (p + (h / 2) • G p) - (G p + h • ((1 / 2 : ℝ) • G₁ p (G p))
+        + h ^ 2 • ((1 / 8 : ℝ) • G₂ p (G p) (G p)))
+        = (G (p + (h / 2) • G p) - (G p + (h / 2) • G₁ p (G p)
+            + (h ^ 2 / 8) • G₂ p (G p) (G p) + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p)))
+          + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p) := by module
+    rw [e]
+    refine (norm_add_le _ _).trans ?_
+    have t1 : c₂ * h ^ 4 ≤ c₂ * h ^ 3 := mul_le_mul_of_nonneg_left hh43 hc₂0
+    have t2 := shave 48 (G₃ p (G p) (G p) (G p)) (M₃ * M₀ ^ 3) (by norm_num) nCggg
+    linarith
+  have na₃ : ‖((1 : ℝ) / 2) • G₁ p (G p)‖ ≤ M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀) := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2)]
+    linarith
+  have nq₃ : ‖((1 : ℝ) / 8) • G₂ p (G p) (G p)‖
+      ≤ M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀) := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 8)]
+    linarith
+  have hb₃ : ‖G (p + (h / 2) • G (p + (h / 2) • G p)) - (G p + (h / 2) • G₁ p (G p)
+      + (h ^ 2 / 4) • G₁ p (G₁ p (G p)) + (h ^ 2 / 8) • G₂ p (G p) (G p)
+      + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p)
+      + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+      + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))‖ ≤ c₃ * h ^ 4 := by
+    have hx := hc₃ p (G (p + (h / 2) • G p)) ((1 / 2 : ℝ) • G₁ p (G p))
+      ((1 / 8 : ℝ) • G₂ p (G p) (G p)) h hh hpR na₃ nq₃ hin₃
+    rw [show (1 : ℝ) / 2 * h = h / 2 from by ring] at hx
+    refine le_trans (le_of_eq ?_) hx
+    congr 1
+    simp only [map_smul, _root_.smul_apply]
+    module
+  -- the fourth stage
+  have hin₄ : ‖G (p + (h / 2) • G (p + (h / 2) • G p))
+      - (G p + h • ((1 / 2 : ℝ) • G₁ p (G p))
+        + h ^ 2 • ((1 / 4 : ℝ) • G₁ p (G₁ p (G p)) + (1 / 8 : ℝ) • G₂ p (G p) (G p)))‖
+      ≤ (c₃ + 3 * (M₁ * M₂ * M₀ ^ 2) + M₃ * M₀ ^ 3) * h ^ 3 := by
+    have e : G (p + (h / 2) • G (p + (h / 2) • G p))
+        - (G p + h • ((1 / 2 : ℝ) • G₁ p (G p))
+          + h ^ 2 • ((1 / 4 : ℝ) • G₁ p (G₁ p (G p)) + (1 / 8 : ℝ) • G₂ p (G p) (G p)))
+        = (G (p + (h / 2) • G (p + (h / 2) • G p)) - (G p + (h / 2) • G₁ p (G p)
+            + (h ^ 2 / 4) • G₁ p (G₁ p (G p)) + (h ^ 2 / 8) • G₂ p (G p) (G p)
+            + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p)
+            + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p)))
+          + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p)
+          + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+          + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p) := by module
+    rw [e]
+    refine (norm_add_le _ _).trans ?_
+    refine (add_le_add ((norm_add_le _ _).trans (add_le_add norm_add₃_le le_rfl)) le_rfl).trans ?_
+    have t1 : c₃ * h ^ 4 ≤ c₃ * h ^ 3 := mul_le_mul_of_nonneg_left hh43 hc₃0
+    have t2 := shave 16 (G₁ p (G₂ p (G p) (G p))) (M₁ * M₂ * M₀ ^ 2) (by norm_num) nABgg
+    have t3 := shave 16 (G₂ p (G₁ p (G p)) (G p)) (M₁ * M₂ * M₀ ^ 2) (by norm_num) nBag
+    have t4 := shave 16 (G₂ p (G p) (G₁ p (G p))) (M₁ * M₂ * M₀ ^ 2) (by norm_num) nBga
+    have t5 := shave 48 (G₃ p (G p) (G p) (G p)) (M₃ * M₀ ^ 3) (by norm_num) nCggg
+    linarith
+  have nq₄ : ‖(1 / 4 : ℝ) • G₁ p (G₁ p (G p)) + (1 / 8 : ℝ) • G₂ p (G p) (G p)‖
+      ≤ M₀ + M₁ * M₀ + M₁ * (M₁ * M₀) + M₂ * (M₀ * M₀) := by
+    refine (norm_add_le _ _).trans ?_
+    rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs,
+      abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 4), abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 8)]
+    linarith
+  have hb₄ : ‖G (p + h • G (p + (h / 2) • G (p + (h / 2) • G p)))
+      - (G p + h • G₁ p (G p) + (h ^ 2 / 2) • G₁ p (G₁ p (G p))
+      + (h ^ 2 / 2) • G₂ p (G p) (G p) + (h ^ 3 / 4) • G₁ p (G₁ p (G₁ p (G p)))
+      + (h ^ 3 / 8) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 4) • G₂ p (G₁ p (G p)) (G p)
+      + (h ^ 3 / 4) • G₂ p (G p) (G₁ p (G p))
+      + (h ^ 3 / 6) • G₃ p (G p) (G p) (G p))‖ ≤ c₄ * h ^ 4 := by
+    have hx := hc₄ p (G (p + (h / 2) • G (p + (h / 2) • G p))) ((1 / 2 : ℝ) • G₁ p (G p))
+      ((1 / 4 : ℝ) • G₁ p (G₁ p (G p)) + (1 / 8 : ℝ) • G₂ p (G p) (G p)) h hh hpR na₃ nq₄ hin₄
+    rw [show (1 : ℝ) * h = h from by ring] at hx
+    refine le_trans (le_of_eq ?_) hx
+    congr 1
+    simp only [map_smul, map_add, _root_.smul_apply]
+    module
+  -- assembling the increment
+  have hsym : G₂ p (G₁ p (G p)) (G p) = G₂ p (G p) (G₁ p (G p)) :=
+    second_derivative_symmetric hd1 (hd2 p) (G₁ p (G p)) (G p)
+  have hfinal : (1 / 6 : ℝ) • (G p
+        + (2 : ℝ) • (G p + (h / 2) • G₁ p (G p) + (h ^ 2 / 8) • G₂ p (G p) (G p)
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))
+        + (2 : ℝ) • (G p + (h / 2) • G₁ p (G p) + (h ^ 2 / 4) • G₁ p (G₁ p (G p))
+            + (h ^ 2 / 8) • G₂ p (G p) (G p) + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p))
+            + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p) + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))
+        + (G p + h • G₁ p (G p) + (h ^ 2 / 2) • G₁ p (G₁ p (G p))
+            + (h ^ 2 / 2) • G₂ p (G p) (G p) + (h ^ 3 / 4) • G₁ p (G₁ p (G₁ p (G p)))
+            + (h ^ 3 / 8) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 4) • G₂ p (G₁ p (G p)) (G p)
+            + (h ^ 3 / 4) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 6) • G₃ p (G p) (G p) (G p)))
+      = G p + (h / 2) • G₁ p (G p)
+        + (h ^ 2 / 6) • (G₂ p (G p) (G p) + G₁ p (G₁ p (G p)))
+        + (h ^ 3 / 24) • (G₃ p (G p) (G p) (G p) + G₂ p (G₁ p (G p)) (G p)
+          + (2 : ℝ) • G₂ p (G p) (G₁ p (G p)) + G₁ p (G₂ p (G p) (G p))
+          + G₁ p (G₁ p (G₁ p (G p)))) := by
+    rw [hsym]
+    module
+  rw [← hfinal, ← smul_sub]
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 6)]
+  have hsplit : (G p + (2 : ℝ) • G (p + (h / 2) • G p)
+        + (2 : ℝ) • G (p + (h / 2) • G (p + (h / 2) • G p))
+        + G (p + h • G (p + (h / 2) • G (p + (h / 2) • G p))))
+      - (G p
+        + (2 : ℝ) • (G p + (h / 2) • G₁ p (G p) + (h ^ 2 / 8) • G₂ p (G p) (G p)
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))
+        + (2 : ℝ) • (G p + (h / 2) • G₁ p (G p) + (h ^ 2 / 4) • G₁ p (G₁ p (G p))
+            + (h ^ 2 / 8) • G₂ p (G p) (G p) + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p))
+            + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p) + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p))
+        + (G p + h • G₁ p (G p) + (h ^ 2 / 2) • G₁ p (G₁ p (G p))
+            + (h ^ 2 / 2) • G₂ p (G p) (G p) + (h ^ 3 / 4) • G₁ p (G₁ p (G₁ p (G p)))
+            + (h ^ 3 / 8) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 4) • G₂ p (G₁ p (G p)) (G p)
+            + (h ^ 3 / 4) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 6) • G₃ p (G p) (G p) (G p)))
+      = (2 : ℝ) • (G (p + (h / 2) • G p) - (G p + (h / 2) • G₁ p (G p)
+            + (h ^ 2 / 8) • G₂ p (G p) (G p) + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p)))
+        + (2 : ℝ) • (G (p + (h / 2) • G (p + (h / 2) • G p)) - (G p + (h / 2) • G₁ p (G p)
+            + (h ^ 2 / 4) • G₁ p (G₁ p (G p)) + (h ^ 2 / 8) • G₂ p (G p) (G p)
+            + (h ^ 3 / 16) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 16) • G₂ p (G₁ p (G p)) (G p)
+            + (h ^ 3 / 16) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 48) • G₃ p (G p) (G p) (G p)))
+        + (G (p + h • G (p + (h / 2) • G (p + (h / 2) • G p)))
+            - (G p + h • G₁ p (G p) + (h ^ 2 / 2) • G₁ p (G₁ p (G p))
+            + (h ^ 2 / 2) • G₂ p (G p) (G p) + (h ^ 3 / 4) • G₁ p (G₁ p (G₁ p (G p)))
+            + (h ^ 3 / 8) • G₁ p (G₂ p (G p) (G p)) + (h ^ 3 / 4) • G₂ p (G₁ p (G p)) (G p)
+            + (h ^ 3 / 4) • G₂ p (G p) (G₁ p (G p))
+            + (h ^ 3 / 6) • G₃ p (G p) (G p) (G p))) := by
+    module
+  rw [hsplit]
+  have hn2 : ∀ x : X, ‖(2 : ℝ) • x‖ = 2 * ‖x‖ := fun x => by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 2)]
+  refine le_trans (mul_le_mul_of_nonneg_left norm_add₃_le (by norm_num : (0 : ℝ) ≤ 1 / 6)) ?_
+  rw [hn2, hn2]
+  linarith
+
+/-- **The classical Runge–Kutta method has order four on an autonomous problem**
+([quarteroni2000numerical] (11.73), §11.8.1): for a field `G : X → X` with global Fréchet
+derivatives `G₁, G₂, G₃, G₄` bounded by `M₁, M₂, M₃, M₄`, and an integral curve `Y` of `G` on
+`[t₀, t₀ + T]` whose successive derivatives `Y⁽²⁾, …, Y⁽⁵⁾` exist there with `‖Y⁽⁵⁾‖ ≤ M₅`,
+`rk4` has order `4` along `Y`. The chain rule identifies `Y⁽²⁾ = G₁ g`,
+`Y⁽³⁾ = G₂(g,g) + G₁(G₁ g)` and
+`Y⁽⁴⁾ = G₃(g,g,g) + G₂(G₁g, g) + 2 G₂(g, G₁g) + G₁(G₂(g,g)) + G₁(G₁(G₁g))` with `g = G(Y s)`
+(`UniqueDiffWithinAt.eq_deriv` and `HasDerivWithinAt.clm_apply`); `norm_sub_taylorSum_le` at
+order four and `exists_forall_norm_rk4_increment_sub_le` then bound the local truncation error by
+`(M₅/120 + c) h⁴` for every `h ∈ (0, 1]`, uniformly over the grid. The restriction to `h ≤ 1` is
+why the conclusion is assembled by `IsBigO.of_bound` on `Ioc 0 1` rather than by
+`OneStep.hasOrderFor_of_forall_norm_lte_le`. -/
+theorem rk4_hasOrderFor_autonomous {t₀ T : ℝ}
+    {G : X → X} {G₁ : X → X →L[ℝ] X} {G₂ : X → X →L[ℝ] X →L[ℝ] X}
+    {G₃ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X} {G₄ : X → X →L[ℝ] X →L[ℝ] X →L[ℝ] X →L[ℝ] X}
+    {M₁ M₂ M₃ M₄ M₅ : ℝ}
+    (hd1 : ∀ p, HasFDerivAt G (G₁ p) p) (hd2 : ∀ p, HasFDerivAt G₁ (G₂ p) p)
+    (hd3 : ∀ p, HasFDerivAt G₂ (G₃ p) p) (hd4 : ∀ p, HasFDerivAt G₃ (G₄ p) p)
+    (hM₁ : ∀ p, ‖G₁ p‖ ≤ M₁) (hM₂ : ∀ p, ‖G₂ p‖ ≤ M₂) (hM₃ : ∀ p, ‖G₃ p‖ ≤ M₃)
+    (hM₄ : ∀ p, ‖G₄ p‖ ≤ M₄) {Y Y₂ Y₃ Y₄ Y₅ : ℝ → X}
+    (hY : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt Y (G (Y s)) (Icc t₀ (t₀ + T)) s)
+    (hY₂ : ∀ s ∈ Icc t₀ (t₀ + T),
+      HasDerivWithinAt (fun s => G (Y s)) (Y₂ s) (Icc t₀ (t₀ + T)) s)
+    (hY₃ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt Y₂ (Y₃ s) (Icc t₀ (t₀ + T)) s)
+    (hY₄ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt Y₃ (Y₄ s) (Icc t₀ (t₀ + T)) s)
+    (hY₅ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt Y₄ (Y₅ s) (Icc t₀ (t₀ + T)) s)
+    (hM₅ : ∀ s ∈ Icc t₀ (t₀ + T), ‖Y₅ s‖ ≤ M₅) :
+    OneStep.HasOrderFor (rk4.explicitIncrement fun _ => G) t₀ T Y 4 := by
+  rcases le_or_gt T 0 with hT | hT
+  · refine OneStep.hasOrderFor_of_forall_norm_lte_le (C := 0) fun h hh n hn => ?_
+    have hz : gridCount T h = 0 := Nat.floor_of_nonpos (div_nonpos_of_nonpos_of_nonneg hT hh.le)
+    rw [hz] at hn
+    exact absurd hn (Nat.not_lt_zero _)
+  have hTlt : t₀ < t₀ + T := by linarith
+  have hI : ∀ s ∈ Icc t₀ (t₀ + T), UniqueDiffWithinAt ℝ (Icc t₀ (t₀ + T)) s :=
+    fun s hs => uniqueDiffOn_Icc hTlt s hs
+  -- the chain rule along the integral curve
+  have hGY : ∀ s ∈ Icc t₀ (t₀ + T),
+      HasDerivWithinAt (fun s => G (Y s)) (G₁ (Y s) (G (Y s))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hd1 (Y s)).comp_hasDerivWithinAt s (hY s hs)
+  have hA : ∀ s ∈ Icc t₀ (t₀ + T),
+      HasDerivWithinAt (fun s => G₁ (Y s)) (G₂ (Y s) (G (Y s))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hd2 (Y s)).comp_hasDerivWithinAt s (hY s hs)
+  have hB : ∀ s ∈ Icc t₀ (t₀ + T),
+      HasDerivWithinAt (fun s => G₂ (Y s)) (G₃ (Y s) (G (Y s))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hd3 (Y s)).comp_hasDerivWithinAt s (hY s hs)
+  have e₂ : ∀ s ∈ Icc t₀ (t₀ + T), Y₂ s = G₁ (Y s) (G (Y s)) :=
+    fun s hs => (hI s hs).eq_deriv _ (hY₂ s hs) (hGY s hs)
+  have hY₂' : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (fun s => G₁ (Y s) (G (Y s)))
+      (G₂ (Y s) (G (Y s)) (G (Y s)) + G₁ (Y s) (G₁ (Y s) (G (Y s)))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hA s hs).clm_apply (hGY s hs)
+  have e₃ : ∀ s ∈ Icc t₀ (t₀ + T),
+      Y₃ s = G₂ (Y s) (G (Y s)) (G (Y s)) + G₁ (Y s) (G₁ (Y s) (G (Y s))) := by
+    intro s hs
+    exact (hI s hs).eq_deriv _ (hY₃ s hs) ((hY₂' s hs).congr (fun y hy => e₂ y hy) (e₂ s hs))
+  have hBg : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (fun s => G₂ (Y s) (G (Y s)))
+      (G₃ (Y s) (G (Y s)) (G (Y s)) + G₂ (Y s) (G₁ (Y s) (G (Y s)))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hB s hs).clm_apply (hGY s hs)
+  have hBgg : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (fun s => G₂ (Y s) (G (Y s)) (G (Y s)))
+      ((G₃ (Y s) (G (Y s)) (G (Y s)) + G₂ (Y s) (G₁ (Y s) (G (Y s)))) (G (Y s))
+        + G₂ (Y s) (G (Y s)) (G₁ (Y s) (G (Y s)))) (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hBg s hs).clm_apply (hGY s hs)
+  have hAAg : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt (fun s => G₁ (Y s) (G₁ (Y s) (G (Y s))))
+      (G₂ (Y s) (G (Y s)) (G₁ (Y s) (G (Y s)))
+        + G₁ (Y s) (G₂ (Y s) (G (Y s)) (G (Y s)) + G₁ (Y s) (G₁ (Y s) (G (Y s)))))
+      (Icc t₀ (t₀ + T)) s :=
+    fun s hs => (hA s hs).clm_apply (hY₂' s hs)
+  have e₄ : ∀ s ∈ Icc t₀ (t₀ + T), Y₄ s = G₃ (Y s) (G (Y s)) (G (Y s)) (G (Y s))
+      + G₂ (Y s) (G₁ (Y s) (G (Y s))) (G (Y s))
+      + (2 : ℝ) • G₂ (Y s) (G (Y s)) (G₁ (Y s) (G (Y s)))
+      + G₁ (Y s) (G₂ (Y s) (G (Y s)) (G (Y s)))
+      + G₁ (Y s) (G₁ (Y s) (G₁ (Y s) (G (Y s)))) := by
+    intro s hs
+    have hraw : Y₄ s = (G₃ (Y s) (G (Y s)) (G (Y s)) + G₂ (Y s) (G₁ (Y s) (G (Y s)))) (G (Y s))
+        + G₂ (Y s) (G (Y s)) (G₁ (Y s) (G (Y s)))
+        + (G₂ (Y s) (G (Y s)) (G₁ (Y s) (G (Y s)))
+          + G₁ (Y s) (G₂ (Y s) (G (Y s)) (G (Y s)) + G₁ (Y s) (G₁ (Y s) (G (Y s))))) :=
+      (hI s hs).eq_deriv _ (hY₄ s hs)
+        (((hBgg s hs).add (hAAg s hs)).congr (fun y hy => e₃ y hy) (e₃ s hs))
+    rw [hraw]
+    simp only [_root_.add_apply, map_add]
+    module
+  -- the uniform bound on the field along the curve, and the increment expansion
+  obtain ⟨M₀, hM₀⟩ :=
+    isCompact_Icc.exists_bound_of_continuousOn (HasDerivWithinAt.continuousOn hY₂)
+  obtain ⟨c, hc0, hc⟩ :=
+    exists_forall_norm_rk4_increment_sub_le hd1 hd2 hd3 hd4 hM₁ hM₂ hM₃ hM₄ M₀
+  have hM₅0 : (0 : ℝ) ≤ M₅ := (norm_nonneg _).trans (hM₅ t₀ (left_mem_Icc.2 hTlt.le))
+  refine IsBigO.of_bound (M₅ / 120 + c) ?_
+  filter_upwards [Ioc_mem_nhdsGT zero_lt_one] with h hh
+  have hh0 : (0 : ℝ) < h := hh.1
+  have hne : h ≠ 0 := ne_of_gt hh0
+  rw [Real.norm_of_nonneg (OneStep.globalLte_nonneg _), Real.norm_of_nonneg (by positivity)]
+  refine OneStep.globalLte_le (by positivity) fun n hn => ?_
+  have ht := node_mem_Icc_of_lt (t₀ := t₀) hh0 hn
+  have hth := node_add_mem_Icc_of_lt (t₀ := t₀) hh0 hn
+  set t := node t₀ h n with htdef
+  have hsub : Icc t (t + h) ⊆ Icc t₀ (t₀ + T) := Icc_subset_Icc ht.1 hth.2
+  -- Taylor's theorem at order four along the curve
+  obtain ⟨Z, z0, z1, z2, z3, z4, z5⟩ : ∃ Z : ℕ → ℝ → X, Z 0 = Y ∧ Z 1 = (fun s => G (Y s)) ∧
+      Z 2 = Y₂ ∧ Z 3 = Y₃ ∧ Z 4 = Y₄ ∧ Z 5 = Y₅ :=
+    ⟨fun k => match k with
+      | 0 => Y
+      | 1 => fun s => G (Y s)
+      | 2 => Y₂
+      | 3 => Y₃
+      | 4 => Y₄
+      | _ => Y₅, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  have hZ : ∀ k ≤ 4, ∀ s ∈ Icc t (t + h),
+      HasDerivWithinAt (Z k) (Z (k + 1) s) (Icc t (t + h)) s := by
+    intro k hk s hs
+    rcases k with _ | _ | _ | _ | _ | k
+    · rw [z0, z1]; exact (hY s (hsub hs)).mono hsub
+    · rw [z1, z2]; exact (hY₂ s (hsub hs)).mono hsub
+    · rw [z2, z3]; exact (hY₃ s (hsub hs)).mono hsub
+    · rw [z3, z4]; exact (hY₄ s (hsub hs)).mono hsub
+    · rw [z4, z5]; exact (hY₅ s (hsub hs)).mono hsub
+    · omega
+  have hsum : ∑ k ∈ range (4 + 1), (h ^ k / (Nat.factorial k : ℝ)) • Z k t
+      = Y t + h • G (Y t) + (h ^ 2 / 2) • Y₂ t + (h ^ 3 / 6) • Y₃ t + (h ^ 4 / 24) • Y₄ t := by
+    simp only [Finset.sum_range_succ, Finset.range_zero, Finset.sum_empty, zero_add,
+      z0, z1, z2, z3, z4]
+    norm_num
+  have ktaylor : ‖Y (t + h) - (Y t + h • G (Y t) + (h ^ 2 / 2) • Y₂ t + (h ^ 3 / 6) • Y₃ t
+      + (h ^ 4 / 24) • Y₄ t)‖ ≤ M₅ * h ^ 5 / 120 := by
+    have k := norm_sub_taylorSum_le (Y := Z) (n := 4) (M := M₅) (a := t) (b := t + h)
+      (by linarith) hZ (fun s hs => by rw [z5]; exact hM₅ s (hsub hs))
+    rw [add_sub_cancel_left, z0, hsum] at k
+    refine k.trans (le_of_eq ?_)
+    norm_num [Nat.factorial]
+  -- the increment
+  rw [OneStep.lte_eq_inv_smul hne, norm_smul, norm_inv, Real.norm_of_nonneg hh0.le]
+  set Φ := rk4.explicitIncrement (fun _ => G) t (Y t) (Y (t + h)) h with hΦdef
+  have hΦ : Φ = (1 / 6 : ℝ) • (G (Y t) + (2 : ℝ) • G (Y t + (h / 2) • G (Y t))
+      + (2 : ℝ) • G (Y t + (h / 2) • G (Y t + (h / 2) • G (Y t)))
+      + G (Y t + h • G (Y t + (h / 2) • G (Y t + (h / 2) • G (Y t))))) := by
+    rw [hΦdef]
+    exact explicitIncrement_rk4 (fun _ => G) t (Y t) (Y (t + h)) h
+  clear_value Φ
+  have hinc : ‖Φ - (G (Y t) + (h / 2) • Y₂ t + (h ^ 2 / 6) • Y₃ t + (h ^ 3 / 24) • Y₄ t)‖
+      ≤ c * h ^ 4 := by
+    have hx := hc (Y t) h hh (hM₀ t ht)
+    rw [← e₄ t ht, ← e₃ t ht, ← e₂ t ht] at hx
+    rw [hΦ]
+    exact hx
+  have key : Y (t + h) - Y t - h • Φ
+      = (Y (t + h) - (Y t + h • G (Y t) + (h ^ 2 / 2) • Y₂ t + (h ^ 3 / 6) • Y₃ t
+          + (h ^ 4 / 24) • Y₄ t))
+        - h • (Φ - (G (Y t) + (h / 2) • Y₂ t + (h ^ 2 / 6) • Y₃ t + (h ^ 3 / 24) • Y₄ t)) := by
+    module
+  rw [key]
+  have hb : ‖(Y (t + h) - (Y t + h • G (Y t) + (h ^ 2 / 2) • Y₂ t + (h ^ 3 / 6) • Y₃ t
+      + (h ^ 4 / 24) • Y₄ t))
+      - h • (Φ - (G (Y t) + (h / 2) • Y₂ t + (h ^ 2 / 6) • Y₃ t + (h ^ 3 / 24) • Y₄ t))‖
+      ≤ M₅ * h ^ 5 / 120 + h * (c * h ^ 4) := by
+    refine (norm_sub_le _ _).trans (add_le_add ktaylor ?_)
+    rw [norm_smul, Real.norm_of_nonneg hh0.le]
+    exact mul_le_mul_of_nonneg_left hinc hh0.le
+  calc h⁻¹ * ‖(Y (t + h) - (Y t + h • G (Y t) + (h ^ 2 / 2) • Y₂ t + (h ^ 3 / 6) • Y₃ t
+          + (h ^ 4 / 24) • Y₄ t))
+          - h • (Φ - (G (Y t) + (h / 2) • Y₂ t + (h ^ 2 / 6) • Y₃ t + (h ^ 3 / 24) • Y₄ t))‖
+      ≤ h⁻¹ * (M₅ * h ^ 5 / 120 + h * (c * h ^ 4)) :=
+        mul_le_mul_of_nonneg_left hb (inv_nonneg.2 hh0.le)
+    _ = (M₅ / 120 + c) * h ^ 4 := by field_simp
+
+end RungeKuttaFour
+
+/-- **The classical Runge–Kutta method has order four** ([quarteroni2000numerical] (11.73),
+§11.8.1; the order conditions themselves are `rk4_orderConditions`): if the field
+`F(t, v) = f t v` on `ℝ × E` has global Fréchet derivatives `F₁, F₂, F₃, F₄` bounded by
+`M₁, M₂, M₃, M₄`, and `y` solves `y' = f(·, y)` on `[t₀, t₀ + T]` with derivatives
+`y⁽²⁾, …, y⁽⁵⁾` there and `‖y⁽⁵⁾‖ ≤ M₅`, then `rk4` has order `4` along `y`.
+
+The proof is `hasOrderFor_autonomize_iff`: the row-sum condition makes the method see the
+autonomous field `G(t, v) = (1, f t v)` on `ℝ × E`, whose Fréchet derivatives are the
+post-compositions of `F₁, …, F₄` with the isometry `w ↦ (0, w)` (hence bounded by the same
+constants) and whose integral curve is `s ↦ (s, y s)`; `rk4_hasOrderFor_autonomous` finishes.
+Bounded derivatives up to order four are needed because the constant must be uniform over the
+horizon; they are not needed off a neighbourhood of the curve, but no such localization is made
+here. -/
+theorem rk4_hasOrderFor {t₀ T : ℝ} {f : ℝ → E → E}
+    {F₁ : ℝ × E → ℝ × E →L[ℝ] E} {F₂ : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
+    {F₃ : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
+    {F₄ : ℝ × E → ℝ × E →L[ℝ] ℝ × E →L[ℝ] ℝ × E →L[ℝ] ℝ × E →L[ℝ] E}
+    {M₁ M₂ M₃ M₄ M₅ : ℝ}
+    (hF₁ : ∀ p, HasFDerivAt (Function.uncurry f) (F₁ p) p)
+    (hF₂ : ∀ p, HasFDerivAt F₁ (F₂ p) p) (hF₃ : ∀ p, HasFDerivAt F₂ (F₃ p) p)
+    (hF₄ : ∀ p, HasFDerivAt F₃ (F₄ p) p)
+    (hM₁ : ∀ p, ‖F₁ p‖ ≤ M₁) (hM₂ : ∀ p, ‖F₂ p‖ ≤ M₂) (hM₃ : ∀ p, ‖F₃ p‖ ≤ M₃)
+    (hM₄ : ∀ p, ‖F₄ p‖ ≤ M₄) {y y₂ y₃ y₄ y₅ : ℝ → E}
+    (hy : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt y (f s (y s)) (Icc t₀ (t₀ + T)) s)
+    (hy₂ : ∀ s ∈ Icc t₀ (t₀ + T),
+      HasDerivWithinAt (fun s => f s (y s)) (y₂ s) (Icc t₀ (t₀ + T)) s)
+    (hy₃ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt y₂ (y₃ s) (Icc t₀ (t₀ + T)) s)
+    (hy₄ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt y₃ (y₄ s) (Icc t₀ (t₀ + T)) s)
+    (hy₅ : ∀ s ∈ Icc t₀ (t₀ + T), HasDerivWithinAt y₄ (y₅ s) (Icc t₀ (t₀ + T)) s)
+    (hM₅ : ∀ s ∈ Icc t₀ (t₀ + T), ‖y₅ s‖ ≤ M₅) :
+    OneStep.HasOrderFor (rk4.explicitIncrement f) t₀ T y 4 := by
+  have hM₄0 : (0 : ℝ) ≤ M₄ := le_trans (ContinuousLinearMap.opNorm_nonneg (F₄ 0)) (hM₄ 0)
+  refine (rk4.hasOrderFor_autonomize_iff rk4_isExplicit rk4_isRowSum rk4_isConsistent y 4).1 ?_
+  have hauto : (autonomize f) = fun _ (q : ℝ × E) => ((1 : ℝ), Function.uncurry f q) := rfl
+  rw [hauto]
+  -- the norm-one lift `L ↦ (0, L ·)` at each level of multilinearity
+  set J : E →L[ℝ] ℝ × E := ContinuousLinearMap.inr ℝ ℝ E with hJdef
+  have hJn : ‖J‖ ≤ 1 := by
+    rw [hJdef]
+    refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v => ?_
+    simp [Prod.norm_def]
+  set Λ₁ := ContinuousLinearMap.compL ℝ (ℝ × E) E (ℝ × E) J with hΛ₁def
+  set Λ₂ := ContinuousLinearMap.compL ℝ (ℝ × E) (ℝ × E →L[ℝ] E) (ℝ × E →L[ℝ] ℝ × E) Λ₁
+    with hΛ₂def
+  set Λ₃ := ContinuousLinearMap.compL ℝ (ℝ × E) (ℝ × E →L[ℝ] ℝ × E →L[ℝ] E)
+    (ℝ × E →L[ℝ] ℝ × E →L[ℝ] ℝ × E) Λ₂ with hΛ₃def
+  have hΛ₁n : ‖Λ₁‖ ≤ 1 := by
+    refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun L => ?_
+    rw [one_mul, hΛ₁def]
+    exact ContinuousLinearMap.norm_comp_le_of_norm_le_one J hJn L
+  have hΛ₂n : ‖Λ₂‖ ≤ 1 := by
+    refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun L => ?_
+    rw [one_mul, hΛ₂def]
+    exact ContinuousLinearMap.norm_comp_le_of_norm_le_one Λ₁ hΛ₁n L
+  -- the derivatives of the autonomized field
+  have hG1 : ∀ p : ℝ × E,
+      HasFDerivAt (fun q : ℝ × E => ((1 : ℝ), Function.uncurry f q)) (J.comp (F₁ p)) p := by
+    intro p
+    have h1 : HasFDerivAt (fun q : ℝ × E => J (Function.uncurry f q)) (J.comp (F₁ p)) p :=
+      J.hasFDerivAt.comp p (hF₁ p)
+    have h2 := h1.const_add ((1 : ℝ), (0 : E))
+    have he : (fun q : ℝ × E => ((1 : ℝ), (0 : E)) + J (Function.uncurry f q))
+        = fun q : ℝ × E => ((1 : ℝ), Function.uncurry f q) := by
+      funext q
+      rw [hJdef]
+      simp
+    rw [he] at h2
+    exact h2
+  have hG2 : ∀ p : ℝ × E, HasFDerivAt (fun q => J.comp (F₁ q)) (Λ₁.comp (F₂ p)) p :=
+    fun p => Λ₁.hasFDerivAt.comp p (hF₂ p)
+  have hG3 : ∀ p : ℝ × E, HasFDerivAt (fun q => Λ₁.comp (F₂ q)) (Λ₂.comp (F₃ p)) p :=
+    fun p => Λ₂.hasFDerivAt.comp p (hF₃ p)
+  have hG4 : ∀ p : ℝ × E, HasFDerivAt (fun q => Λ₂.comp (F₃ q)) (Λ₃.comp (F₄ p)) p :=
+    fun p => Λ₃.hasFDerivAt.comp p (hF₄ p)
+  have hn1 : ∀ p, ‖J.comp (F₁ p)‖ ≤ M₁ := fun p =>
+    (ContinuousLinearMap.norm_comp_le_of_norm_le_one J hJn (F₁ p)).trans (hM₁ p)
+  have hn2 : ∀ p, ‖Λ₁.comp (F₂ p)‖ ≤ M₂ := fun p =>
+    (ContinuousLinearMap.norm_comp_le_of_norm_le_one Λ₁ hΛ₁n (F₂ p)).trans (hM₂ p)
+  have hn3 : ∀ p, ‖Λ₂.comp (F₃ p)‖ ≤ M₃ := fun p =>
+    (ContinuousLinearMap.norm_comp_le_of_norm_le_one Λ₂ hΛ₂n (F₃ p)).trans (hM₃ p)
+  have hn4 : ∀ p, ‖Λ₃.comp (F₄ p)‖ ≤ M₄ := by
+    intro p
+    refine ContinuousLinearMap.opNorm_le_bound _ hM₄0 fun v => ?_
+    have hv : (Λ₃.comp (F₄ p)) v = Λ₂.comp (F₄ p v) := rfl
+    rw [hv]
+    refine (ContinuousLinearMap.norm_comp_le_of_norm_le_one Λ₂ hΛ₂n (F₄ p v)).trans ?_
+    exact (F₄ p).le_of_opNorm_le_of_le (hM₄ p) le_rfl
+  refine rk4_hasOrderFor_autonomous (M₅ := M₅) hG1 hG2 hG3 hG4 hn1 hn2 hn3 hn4
+    (Y := fun s => (s, y s)) (Y₂ := fun s => ((0 : ℝ), y₂ s)) (Y₃ := fun s => ((0 : ℝ), y₃ s))
+    (Y₄ := fun s => ((0 : ℝ), y₄ s)) (Y₅ := fun s => ((0 : ℝ), y₅ s)) ?_ ?_ ?_ ?_ ?_ ?_
+  · exact fun s hs => (hasDerivWithinAt_id s _).prodMk (hy s hs)
+  · exact fun s hs => (hasDerivWithinAt_const s _ (1 : ℝ)).prodMk (hy₂ s hs)
+  · exact fun s hs => (hasDerivWithinAt_const s _ (0 : ℝ)).prodMk (hy₃ s hs)
+  · exact fun s hs => (hasDerivWithinAt_const s _ (0 : ℝ)).prodMk (hy₄ s hs)
+  · exact fun s hs => (hasDerivWithinAt_const s _ (0 : ℝ)).prodMk (hy₅ s hs)
+  · intro s hs
+    rw [Prod.norm_mk, norm_zero, max_eq_right (norm_nonneg _)]
+    exact hM₅ s hs
 
 end ODE

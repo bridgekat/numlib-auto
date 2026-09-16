@@ -50,57 +50,7 @@ id = "rk4"
 
 [[node]]
 id = "rk4_hasOrderFor"
-kind = "theorem"
-desc = '''The classical method has order four: for `f` with `(t, v) ↦ f t v` of class `C⁴` with
-bounded derivatives up to order 4 and `y` a solution on `Icc t₀ (t₀ + T)`,
-`OneStep.HasOrderFor (rk4.explicitIncrement f) t₀ T y 4`. ★★★
 
-Blocked: not proved. What this round added is the reduction that removes half the bookkeeping, and
-the verified algebra; what is missing is four analytic pieces.
-
-**The reduction (done).** `ButcherTableau.hasOrderFor_autonomize_iff` says an explicit tableau with
-`c_i = ∑_j a_ij` and `∑_i b_i = 1` has order `p` along `y` for `f` exactly when it has order `p`
-along `Y s = (s, y s)` for the autonomous field `G = autonomize f` on `ℝ × E`,
-`G(t, v) = (1, f t v)` (the stages correspond as `L_i = (1, K_i)`,
-`explicitStages_autonomize`, and the truncation errors as `(0, τ)`). So it suffices to prove the
-**autonomous** statement on a normed space `X`: for `G : X → X` with global Fréchet derivatives
-`G₁, G₂, G₃, G₄` and bounds, and `Y' = G(Y)` on the horizon,
-`‖Y(t+h) - Y(t) - (h/6)(L₁ + 2L₂ + 2L₃ + L₄)‖ ≤ c h⁵`.
-
-**The algebra (verified by hand, 2026-09-16).** Write `g = G(Y)`, `A = G₁(Y)`, `B = G₂(Y)`,
-`C = G₃(Y)`. The chain rule on `Y' = G(Y)` gives
-`Y^{(2)} = A g`, `Y^{(3)} = B(g, g) + A(A g)`,
-`Y^{(4)} = C(g, g, g) + B(A g, g) + 2 B(g, A g) + A(B(g, g)) + A(A(A g))`.
-The stages expand (all remainders `O(h⁴)`) as
-`L₂ = g + (h/2) A g + (h²/8) B(g,g) + (h³/48) C(g,g,g)`,
-`L₃ = g + (h/2) A g + h²[(1/4) A(A g) + (1/8) B(g,g)]
-      + h³[(1/16) A(B(g,g)) + (1/16)(B(g, A g) + B(A g, g)) + (1/48) C(g,g,g)]`,
-`L₄ = g + h A g + h²[(1/2) A(A g) + (1/2) B(g,g)]
-      + h³[(1/4) A(A(A g)) + (1/8) A(B(g,g)) + (1/4)(B(g, A g) + B(A g, g)) + (1/6) C(g,g,g)]`,
-and `(1/6)(L₁ + 2L₂ + 2L₃ + L₄) = g + (h/2) Y^{(2)} + (h²/6) Y^{(3)} + (h³/24) Y^{(4)} + O(h⁴)` —
-the coefficients match term by term: `C(g,g,g)` at `1/24`, `A(B(g,g))` at `1/24`, `A(A(A g))` at
-`1/24`, and the pair `B(g, A g) + B(A g, g)` at `1/16` each, against `Y^{(4)}/24`. The last match
-needs `B(a, b) = B(b, a)` (Mathlib's `second_derivative_symmetric`): the stage sum produces the
-symmetric combination `(1/16)(B(g,Ag) + B(Ag,g))` while `Y^{(4)}/24` produces
-`(1/24) B(Ag,g) + (2/24) B(g,Ag)`, and the two agree only after symmetrisation.
-
-**Done (i): a vector-valued Taylor bound of arbitrary order in one real variable**,
-`norm_sub_taylorSum_le`, and **(ii): the order-four segment bound**,
-`norm_sub_taylor_segment_le`. Both are proved in the module; (i) also now carries
-`norm_sub_sub_smul_sub_smul_le_mul_pow_three_div_six` as its `n = 2` case.
-
-**Missing (iii): the chain-rule identification** of `y^{(2)}, y^{(3)}, y^{(4)}` with the displayed
-elementary differentials, at every point of the horizon, by `UniqueDiffWithinAt.eq_deriv` as
-`hasOrderFor_two_of` does for `y^{(2)}` — three rounds instead of one, the second and third going
-through `HasDerivWithinAt.clm_apply`. The statement should take `y^{(2)}, y^{(3)}, y^{(4)}, y^{(5)}`
-as explicit functions with a bound on the last, following `hasOrderFor_two_of`; computing `y^{(5)}`
-symbolically is fifteen terms and is not needed.
-**(iv): the three stage expansions** with `O(h⁴)` remainders, the only genuinely long part: each is
-an application of (ii) followed by multilinear expansion of `B w w` and `C w w w` around
-`w = (h/2)•g` or `h•g`, with the cross terms kept and the rest absorbed. Phrasing each as
-`∃ c, ∀ h ∈ Ioc 0 1, ∀ p, ‖L_i - (polynomial in h)‖ ≤ c h⁴` avoids computing any constant.
-Estimate: 400–500 lines for (iii) and (iv); (iv) is about two thirds.'''
-deps = ["ODE.rk4", "ODE.OneStep.HasOrderFor", "ODE.ButcherTableau.hasOrderFor_autonomize_iff"]
 [[node]]
 id = "EmbeddedPair"
 
@@ -118,27 +68,6 @@ id = "ButcherTableau.stabilityFunction"
 
 [[node]]
 id = "ButcherTableau.stepRel_testField_iff"
-
-[[node]]
-id = "ButcherTableau.mem_absStabilityRegion_iff"
-kind = "theorem"
-wrong = '''False as stated: the invertibility clause is not necessary for absolute stability.
-Counterexample: `A = !![0, 1; 1, 0]`, `b = (1/2, 1/2)`, `z = -1`: `I - zA = !![1, 1; 1, 1]` is
-singular, but the stage system `K₁ + K₂ = z u` is solvable for every datum and every solution
-gives the same step `v = u (1 + z/2)`, so every datum has an orbit and every orbit is
-`(1/2)^n u₀ → 0`: `z ∈ absStabilityRegion` in the sense of `OneStep.IsAbsStable`, while
-`R(z) = 1` with Mathlib's `Matrix.inv` (which is `0` on a singular matrix). The corrected
-statement is `mem_absStabilityRegion_iff_of_isUnit`, the equivalence under the invertibility
-hypothesis, together with `mem_absStabilityRegion_iff_of_isExplicit` (no clause needed for an
-explicit tableau) and `not_mem_absStabilityRegion_of_forall_ne` for the singular case in which
-the stage system has no solution.'''
-desc = '''`z ∈ OneStep.absStabilityRegion tab.stepRel ↔ IsUnit (1 - z • A.map _) ∧ ‖tab.stabilityFunction z‖ < 1`
-(the region of §11.8.4; the invertibility clause is the existence clause of `IsAbsStable`, which
-fails exactly when `1 - zA` is singular — then some datum has no orbit or the stage system has
-several solutions with orbits that do not all decay). `stepRel_testField_iff`,
-`tendsto_pow_atTop_nhds_zero_iff_norm_lt_one`, and `OneStep.absStabilityRegion_eq_of_scaleInvariant`
-(the stage system depends on `(h, λ)` only through `hλ`). ★★'''
-deps = ["ODE.ButcherTableau.stepRel_testField_iff", "ODE.OneStep.absStabilityRegion", "ODE.OneStep.absStabilityRegion_eq_of_scaleInvariant"]
 
 [[node]]
 id = "ButcherTableau.stabilityFunction_eq_det_of_isExplicit"
@@ -391,3 +320,24 @@ id = "_root_.norm_sub_taylorSum_le"
 
 [[node]]
 id = "_root_.norm_sub_taylor_segment_le"
+
+[[node]]
+id = "_root_.ContinuousLinearMap.le_opNorm₃"
+
+[[node]]
+id = "_root_.norm_bilinear_diag_sub_le"
+
+[[node]]
+id = "_root_.norm_trilinear_diag_sub_le"
+
+[[node]]
+id = "_root_.ContinuousLinearMap.norm_comp_le_of_norm_le_one"
+
+[[node]]
+id = "exists_forall_norm_stage_sub_le"
+
+[[node]]
+id = "exists_forall_norm_rk4_increment_sub_le"
+
+[[node]]
+id = "rk4_hasOrderFor_autonomous"
