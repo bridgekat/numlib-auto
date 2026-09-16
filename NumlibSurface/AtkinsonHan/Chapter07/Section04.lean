@@ -45,8 +45,9 @@ and the symbol inequality compares it with `∫ (1 + |ξ|²)^k |ℱv|²`.
 `memSobolev_iteratedLineDerivOp` and `memLp_iteratedLineDerivOp` are the derivative side of the
 criterion in the Bessel-potential reading, and delegate to the backbone.
 
-The material supporting (7.4.1) is general and belongs in the backbone; the blocks that do are
-marked `TODO(backbone)` with their natural home.
+The general material supporting (7.4.1) — the symbol of an iterated directional derivative and
+the Fourier transform of a weak derivative — lives in `Numlib/Analysis/Sobolev/Tempered`; what
+remains here is the bound on the symbol in the standard basis and the equivalence itself.
 
 Examples 7.4.2 and 7.4.3 are not formalized. Their Step 3 carries a whole-space estimate onto a
 Lipschitz domain through the extension operator of Theorem 7.3.5, and their Step 2 is the density
@@ -66,21 +67,6 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDim
   [MeasurableSpace E] [BorelSpace E]
 
 /-! ### Multiplying an `L^2` function by a symbol -/
-
-/-- Multiplying an `L^2` function by a function of temperate growth is, on tempered distributions,
-`TemperedDistribution.smulLeftCLM`: if `w` agrees almost everywhere with `g · u`, then `w` and
-`g · u` are the same distribution. -/
-private theorem toTemperedDistribution_eq_smulLeftCLM {g : E → ℂ} (hg : g.HasTemperateGrowth)
-    {u w : Lp ℂ 2 (volume : Measure E)}
-    (h : (w : E → ℂ) =ᵐ[volume] fun ξ ↦ g ξ * (u : E → ℂ) ξ) :
-    (w : 𝓢'(E, ℂ)) = smulLeftCLM ℂ g (u : 𝓢'(E, ℂ)) := by
-  ext f
-  rw [Lp.toTemperedDistribution_apply, smulLeftCLM_apply_apply, Lp.toTemperedDistribution_apply]
-  refine integral_congr_ae ?_
-  filter_upwards [h] with ξ hξ
-  rw [hξ, SchwartzMap.smulLeftCLM_apply_apply hg]
-  simp only [smul_eq_mul]
-  ring
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- The symbol `(1 + |ξ|^2)^{s/2}` has temperate growth. -/
@@ -260,140 +246,7 @@ theorem theorem_7_4_1 {k : ℕ} (v : Lp ℝ 2 (volume : Measure (EuclideanSpace 
     fun h ↦ memSobolevMultiIndex_ofReal_iff.1 (h.congr_ae hae)⟩
 
 
-/-! ### (7.4.1): the norm equivalence
-
-The material of this section is general and belongs in the backbone; it is written here because
-this is the only consumer so far. Each block carries a `TODO(backbone)` marker naming its natural
-home.
--/
-
-section Backbone
-
-/-- TODO(backbone): belongs in `Mathlib/Algebra/BigOperators/Group/Multiset` — the product of a
-finite sum of multisets is the product of the products. -/
-theorem prod_multiset_sum {ι M : Type*} [CommMonoid M] [Fintype ι] (f : ι → Multiset M) :
-    (∑ i, f i).prod = ∏ i, (f i).prod := by
-  classical
-  induction (Finset.univ : Finset ι) using Finset.cons_induction with
-  | empty => simp
-  | cons a s ha ih => rw [Finset.sum_cons, Multiset.prod_add, Finset.prod_cons, ih]
-
-/-- TODO(backbone): belongs beside `multiIndexTuple` in `Numlib/Analysis/Sobolev/MultiIndex.lean`
-— a product over the tuple of directions naming a multi-index `α` is the product over the index
-type of the `α i`-th powers, the tuple listing `b i` exactly `α i` times. -/
-theorem prod_multiIndexTuple {ι E M : Type*} [Fintype ι] [LinearOrder ι] [CommMonoid M]
-    (b : ι → E) (α : ι → ℕ) (g : E → M) :
-    (∏ j, g (multiIndexTuple b α j)) = ∏ i, (g (b i)) ^ α i := by
-  classical
-  have h1 : (∏ j, g (multiIndexTuple b α j))
-      = ((multiIndexDirections b α).map g : Multiset M).prod := by
-    rw [multiIndexDirections_eq_ofFn]
-    simp [← List.prod_ofFn, Function.comp_def]
-  rw [h1, show ((List.map g (multiIndexDirections b α) : List M) : Multiset M)
-      = Multiset.map g ((multiIndexDirections b α : List E) : Multiset E) from rfl,
-    coe_multiIndexDirections b α,
-    show Multiset.map g (∑ i, Multiset.replicate (α i) (b i))
-        = ∑ i, Multiset.replicate (α i) (g (b i)) by
-      induction (Finset.univ : Finset ι) using Finset.cons_induction with
-      | empty => simp
-      | cons a s ha ih =>
-        rw [Finset.sum_cons, Multiset.map_add, ih, Finset.sum_cons, Multiset.map_replicate],
-    prod_multiset_sum]
-  exact Finset.prod_congr rfl fun i _ ↦ Multiset.prod_replicate _ _
-
-end Backbone
-
-section Symbol
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-
-/-- TODO(backbone): belongs in `Numlib/Analysis/Sobolev/Tempered.lean`. The symbol of the iterated
-directional derivative along the tuple `m`: `ξ ↦ ∏_j ⟪ξ, m j⟫`, so that the Fourier transform of
-`∂^{m}` is multiplication by `(2πi)^n` times this. -/
-def lineSymbol {n : ℕ} (m : Fin n → E) : E → ℂ := fun ξ ↦ ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ)
-
-/-- The symbol of `∂^{m}` evaluated at a point. -/
-@[simp]
-theorem lineSymbol_apply {n : ℕ} (m : Fin n → E) (ξ : E) :
-    lineSymbol m ξ = ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ) := rfl
-
-/-- The symbol of `∂^{m}` splits off its first factor. -/
-theorem lineSymbol_succ {n : ℕ} (m : Fin (n + 1) → E) :
-    lineSymbol m = (fun ξ : E ↦ ((inner ℝ ξ (m 0) : ℝ) : ℂ)) * lineSymbol (Fin.tail m) := by
-  funext ξ
-  rw [lineSymbol_apply, Pi.mul_apply, lineSymbol_apply, Fin.prod_univ_succ]
-  rfl
-
-/-- The symbol of the empty tuple of directions is `1`. -/
-theorem lineSymbol_zero (m : Fin 0 → E) : lineSymbol m = fun _ : E ↦ (1 : ℂ) := by
-  funext ξ
-  simp
-
-/-- The symbol of `∂^{m}` has temperate growth, being a product of linear forms. -/
-theorem hasTemperateGrowth_lineSymbol {n : ℕ} (m : Fin n → E) :
-    (lineSymbol m).HasTemperateGrowth := by
-  induction n with
-  | zero => rw [lineSymbol_zero]; exact Function.HasTemperateGrowth.const (1 : ℂ)
-  | succ n ih =>
-    rw [lineSymbol_succ]
-    exact Function.HasTemperateGrowth.mul (by fun_prop) (ih (Fin.tail m))
-
-end Symbol
-
-section FourierDeriv
-
-variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℂ F]
-
-/-- TODO(backbone): belongs in `Numlib/Analysis/Sobolev/Tempered.lean`, beside Mathlib's
-`TemperedDistribution.fourier_lineDerivOp_eq`, of which it is the iterate. **The Fourier transform
-of an iterated directional derivative of a tempered distribution** is multiplication by
-`(2πi)^n ∏_j ⟪ξ, m j⟫`. -/
-theorem fourier_iteratedLineDerivOp_eq {n : ℕ} (m : Fin n → E) (f : 𝓢'(E, F)) :
-    𝓕 (∂^{m} f) = ((2 * (Real.pi : ℂ) * Complex.I) ^ n) •
-      smulLeftCLM F (lineSymbol m) (𝓕 f) := by
-  induction n with
-  | zero =>
-    rw [iteratedLineDerivOp_fin_zero, pow_zero, one_smul, lineSymbol_zero, smulLeftCLM_const,
-      one_smul]
-  | succ n ih =>
-    rw [iteratedLineDerivOp_succ_left, fourier_lineDerivOp_eq, ih (Fin.tail m), map_smul,
-      smulLeftCLM_smulLeftCLM_apply (hasTemperateGrowth_lineSymbol _) (by fun_prop),
-      smul_smul, show lineSymbol (Fin.tail m) * (fun x : E ↦ ((inner ℝ x (m 0) : ℝ) : ℂ))
-        = lineSymbol m by rw [lineSymbol_succ]; ring]
-    congr 1
-    ring
-
-/-- **The Fourier transform of a weak derivative on the whole space.** If the `L²` function `w` is
-the weak derivative `∂^{m} v` of the `L²` function `v` — read distributionally, which by
-`MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn` is the weak derivative of
-Definition 7.1.3 — and the product of the symbol with `ℱv` is again `L²`, then
-`ℱw = (2πi)^n (∏_j ⟪ξ, m j⟫) ℱv` almost everywhere. -/
-theorem fourier_weakDeriv_aeEq {n : ℕ} (m : Fin n → E)
-    {v w : Lp ℂ 2 (volume : Measure E)}
-    (hvw : ∂^{m} (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ)))
-    (hmem : MemLp (fun ξ ↦ lineSymbol m ξ * (𝓕 v) ξ) 2 (volume : Measure E)) :
-    ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : E → ℂ) =ᵐ[volume]
-      fun ξ ↦ (2 * (Real.pi : ℂ) * Complex.I) ^ n * (lineSymbol m ξ * (𝓕 v) ξ) := by
-  have h1 : ((hmem.toLp _ : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
-      = smulLeftCLM ℂ (lineSymbol m) ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) :=
-    toTemperedDistribution_eq_smulLeftCLM (hasTemperateGrowth_lineSymbol m) hmem.coeFn_toLp
-  have h2 : ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
-      = (((2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ : Lp ℂ 2 (volume : Measure E))
-          : 𝓢'(E, ℂ)) := by
-    rw [← Lp.fourier_toTemperedDistribution_eq, ← hvw, fourier_iteratedLineDerivOp_eq,
-      Lp.fourier_toTemperedDistribution_eq, ← h1]
-    exact ((Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2).map_smul _ _).symm
-  have hinj : Function.Injective (Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2) :=
-    LinearMap.ker_eq_bot.1 Lp.ker_toTemperedDistributionCLM_eq_bot
-  have h4 : (𝓕 w : Lp ℂ 2 (volume : Measure E))
-      = (2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ := hinj h2
-  rw [h4]
-  filter_upwards [Lp.coeFn_smul ((2 * (Real.pi : ℂ) * Complex.I) ^ n) (hmem.toLp _),
-    hmem.coeFn_toLp] with ξ h h'
-  rw [h, Pi.smul_apply, h', smul_eq_mul]
-
-end FourierDeriv
+/-! ### (7.4.1): the norm equivalence -/
 
 section SymbolBounds
 
@@ -588,18 +441,6 @@ theorem enorm_sq_mul_ofReal_mul (c : ℂ) (r : ℝ) (z : ℂ) :
   · rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg c)]
   · rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg _), Complex.norm_real, Real.norm_eq_abs,
       sq_abs]
-
-/-- TODO(backbone): belongs beside `MeasureTheory.lintegral_rpow_enorm_eq_rpow_eLpNorm` in
-`Numlib/Analysis/Convolution/Lp.lean`. The square of the `L²` seminorm is the Lebesgue integral of
-the squared norms. -/
-theorem sq_eLpNorm_two {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] (f : E → ℂ)
-    (μ : Measure E) : eLpNorm f 2 μ ^ 2 = ∫⁻ ξ, ‖f ξ‖ₑ ^ 2 ∂μ := by
-  have h := lintegral_rpow_enorm_eq_rpow_eLpNorm (μ := μ) (p := 2) (f := f)
-    (by norm_num) (by norm_num)
-  have h2 : ∀ x : ℝ≥0∞, x ^ (2 : ℝ) = x ^ (2 : ℕ) := fun x ↦ by
-    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast]
-  simp only [ENNReal.toReal_ofNat, h2] at h
-  exact h.symm
 
 /-- Plancherel's identity in the form of `eLpNorm`: the Fourier transform preserves the `L²`
 seminorm of the representative. -/

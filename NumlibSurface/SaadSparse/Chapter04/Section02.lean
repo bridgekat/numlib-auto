@@ -86,21 +86,17 @@ theorem tendsto_zero_of_entries {M : ℕ → Matrix (Fin n) (Fin n) ℝ}
     tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => h i j
   exact key
 
-/-- If `M k → 0` then `M k v → 0` for every fixed `v`. -/
+/-- If `M k → 0` then `M k v → 0` for every fixed `v` (backbone
+`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`). -/
 theorem tendsto_mulVec_zero {M : ℕ → Matrix (Fin n) (Fin n) ℝ} (h : Tendsto M atTop (𝓝 0))
-    (v : Fin n → ℝ) : Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) := by
-  have hc : Continuous fun B : Matrix (Fin n) (Fin n) ℝ => B *ᵥ v :=
-    Continuous.matrix_mulVec continuous_id continuous_const
-  have h1 := (hc.tendsto 0).comp h
-  simpa [Function.comp_def] using h1
+    (v : Fin n → ℝ) : Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) :=
+  Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero.mp h v
 
-/-- Conversely, if `M k v → 0` for every `v` then `M k → 0`. -/
+/-- Conversely, if `M k v → 0` for every `v` then `M k → 0` (backbone
+`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`). -/
 theorem tendsto_zero_of_forall_mulVec {M : ℕ → Matrix (Fin n) (Fin n) ℝ}
-    (h : ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0)) : Tendsto M atTop (𝓝 0) := by
-  refine tendsto_zero_of_entries fun i j => ?_
-  have hsingle : ∀ k, (M k *ᵥ Pi.single j 1) i = M k i j := fun k => by
-    simp [mulVec, dotProduct, Pi.single_apply, Finset.sum_ite_eq']
-  simpa only [hsingle, Pi.zero_apply] using tendsto_pi_nhds.mp (h (Pi.single j 1)) i
+    (h : ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0)) : Tendsto M atTop (𝓝 0) :=
+  Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero.mpr h
 
 /-! ### The affine iteration (4.28)–(4.30) -/
 

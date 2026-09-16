@@ -136,3 +136,21 @@ id = "panelPoly"
 
 [[node]]
 id = "piecewiseLinearInterpCLM_apply_of_mem"
+
+[[node]]
+id = "Lagrange.eq_basis_of_eval"
+
+[[node]]
+id = "Lagrange.basis_comp_affine"
+
+[[node]]
+id = "Lagrange.eval_derivative_basis_self"
+
+[[node]]
+id = "Lagrange.nodal_eq_of_forall_eval_eq_zero"
+
+[[node]]
+id = "Lagrange.exists_eq_iff_eval_nodal_eq_zero"
+
+[[node]]
+id = "Lagrange.interpolate_comp_equiv"

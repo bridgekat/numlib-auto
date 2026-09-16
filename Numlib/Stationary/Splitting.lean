@@ -549,6 +549,15 @@ theorem _root_.Stationary.Splitting.complexSpectralRadius_iterationOperator {A :
   rw [complexSpectralRadius, Splitting.complexify_iterationOperator]
 
 omit [LinearOrder n] in
+/-- A splitting whose iteration matrix has `ρ(B) < 1` splits a nonsingular matrix: `1 - B = P⁻¹ A`
+is invertible. -/
+theorem _root_.Stationary.Splitting.isUnit_of_complexSpectralRadius_lt_one {A : Matrix n n ℝ}
+    (s : Splitting A) (hs : complexSpectralRadius s.iterationOperator < 1) : IsUnit A := by
+  have hu := isUnit_one_sub_of_complexSpectralRadius_lt_one hs
+  rw [s.one_sub_iterationOperator] at hu
+  exact isUnit_of_mul_isUnit_right hu
+
+omit [LinearOrder n] in
 /-- The Jacobi iteration matrix of `complexify A` is the complexification of that of `A`. -/
 theorem complexify_jacobi_iterationOperator (A : Matrix n n ℝ) (h : IsUnit (diagPart A))
     (h' : IsUnit (diagPart (complexify A))) :

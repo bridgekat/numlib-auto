@@ -62,13 +62,6 @@ theorem hasDerivAt_iteratedDeriv_of_contDiffOn (hU : IsOpen U) (hUab : Icc a b �
     ∀ x ∈ Icc a b, HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f x) x :=
   fun _ hx => hf.hasDerivAt_iteratedDeriv_of_isOpen hU hj (hUab hx)
 
--- TODO(backbone): a polynomial-calculus module should hold this (NewtonCotes has it privately).
-/-- A real polynomial function is `C^k` on any set. -/
-theorem _root_.Polynomial.contDiffOn_eval (p : ℝ[X]) (k : WithTop ℕ∞) (s : Set ℝ) :
-    ContDiffOn ℝ k (fun x => p.eval x) s :=
-  (by simpa [Polynomial.coe_aeval_eq_eval] using p.contDiff_aeval (𝕜 := ℝ) k :
-    ContDiff ℝ k fun x => p.eval x).contDiffOn
-
 /-- For `f ∈ C^N` on an open set `U ⊇ [a, b]`, `f` itself has `f'` as its derivative at every
 point of `[a, b]`. -/
 theorem hasDerivAt_of_contDiffOn (hU : IsOpen U) (hUab : Icc a b ⊆ U) {N : ℕ}
@@ -118,7 +111,7 @@ theorem equation_9_6 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     ((continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf2).intervalIntegrable_of_Icc hab.le)
   rw [Quadrature.midpointRule] at hpeano
   rw [hpeano]
-  obtain ⟨ξ, hξ, h⟩ := Quadrature.exists_mem_Ioo_integral_mul_eq_mul_integral hab
+  obtain ⟨ξ, hξ, h⟩ := intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral hab
     (Quadrature.continuous_midpointKernel a b).continuousOn
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf2)
     (fun t _ => Quadrature.midpointKernel_nonneg a b t)
@@ -185,7 +178,7 @@ theorem equation_9_12 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (by rw [huIcc]; exact hasDerivAt_of_contDiffOn hU hUab hf2 two_pos)
     (by rw [huIcc]; exact hasDerivAt_iteratedDeriv_of_contDiffOn hU hUab hf2 one_lt_two)
     ((continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf2).intervalIntegrable_of_Icc hab.le)]
-  obtain ⟨ξ, hξ, h⟩ := Quadrature.exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos hab
+  obtain ⟨ξ, hξ, h⟩ := intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos hab
     (K := fun t => (t - a) * (t - b) / 2) (by fun_prop)
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf2)
     (fun t ht => by

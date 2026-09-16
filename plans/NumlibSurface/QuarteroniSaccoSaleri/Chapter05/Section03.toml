@@ -57,10 +57,4 @@ id = "sum_repr_erase_mem_iSup_maxGenEigenspace"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.19)'
 
 [[node]]
-id = "spectrum_eq_range_of_basis"
-
-[[node]]
-id = "ringInverse_toEuclideanLin"
-
-[[node]]
 id = "isUnit_sub_smul_one_of_notMem_spectrum"

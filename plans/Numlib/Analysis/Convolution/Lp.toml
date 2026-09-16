@@ -64,3 +64,6 @@ id = "MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply"
 
 [[node]]
 id = "MeasureTheory.LocallyIntegrableOn.convolutionExistsAt"
+
+[[node]]
+id = "MeasureTheory.sq_eLpNorm_two"

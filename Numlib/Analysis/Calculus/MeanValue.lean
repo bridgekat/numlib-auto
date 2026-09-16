@@ -6,10 +6,19 @@ import Numlib.Approximation.DividedDifference
 /-!
 # Mean value inequalities with explicit constants
 
-Three mean value statements the error analyses of this library need and Mathlib does not carry:
-the second-order inequality with the sharp constant, and two local statements saying that a
-difference quotient of a `C¹` function is uniformly close to the derivative near a point, and a
-second divided difference of a `C²` function uniformly close to half the second derivative.
+Four mean value statements the error analyses of this library need and Mathlib does not carry:
+the first-order inequality with the derivative frozen at a third point, the second-order
+inequality with the sharp constant, and two local statements saying that a difference quotient of
+a `C¹` function is uniformly close to the derivative near a point, and a second divided difference
+of a `C²` function uniformly close to half the second derivative.
+
+## The inequality with the derivative frozen at a third point
+
+If `f` has derivative `f' w` on a convex set `s` containing `x` and `y`, and
+`‖f' w - f' z‖ ≤ L ‖w - z‖` on `s` for a point `z` not necessarily in `s`, then
+`‖f y - f x - f' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`
+(`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`, Dennis–Schnabel Lemma 4.1.15),
+the first step of every superlinear convergence proof for a quasi-Newton method.
 
 ## The sharp second-order inequality
 
@@ -35,6 +44,114 @@ in which a local convergence proof of a derivative-free rootfinder
 (`Numlib/Nonlinear/Secant`) needs its divided differences controlled; neither has any rootfinding
 content of its own.
 -/
+
+/-! ### The mean value inequality with the derivative taken at a third point -/
+
+section ThirdPoint
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
+  [NormedSpace ℝ F]
+
+/-- **Mean value inequality with the derivative frozen at a third point** (Dennis–Schnabel
+Lemma 4.1.15): if `f` has derivative `f' w` on a convex set `s` containing `x` and `y`, and
+`‖f' w - f' z‖ ≤ L ‖w - z‖` on `s` for some point `z` (not necessarily in `s`), then
+`‖f y - f x - f' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`.
+
+The case `z = x` is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` of
+`Numlib/Analysis/Calculus/MeanValue`, whose proof this follows: along the segment
+`t ↦ f (x + t (y - x)) - f x - t f' z (y - x)` the derivative is bounded by
+`L ‖y - x‖ ((1 - t) ‖x - z‖ + t ‖y - z‖)`, which is the derivative of the boundary
+`L ‖y - x‖ (‖x - z‖ t + (‖y - z‖ - ‖x - z‖) t² / 2)`. -/
+theorem Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add {f : E → F}
+    {f' : E → E →L[ℝ] F} {s : Set E} (hs : Convex ℝ s) (hf : ∀ w ∈ s, HasFDerivAt f (f' w) w)
+    {L : ℝ} {x y z : E} (hx : x ∈ s) (hy : y ∈ s) (hL : ∀ w ∈ s, ‖f' w - f' z‖ ≤ L * ‖w - z‖) :
+    ‖f y - f x - f' z (y - x)‖ ≤ L / 2 * (‖x - z‖ + ‖y - z‖) * ‖y - x‖ := by
+  set a : ℝ := ‖x - z‖ with ha
+  set b : ℝ := ‖y - z‖ with hb
+  have hmem : ∀ t ∈ Set.Icc (0 : ℝ) 1, x + t • (y - x) ∈ s := by
+    intro t ht
+    have h := hs hx hy (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t) ht.1 (by ring)
+    have he : x + t • (y - x) = (1 - t) • x + t • y := by module
+    rw [he]
+    exact h
+  have hcd : ∀ t : ℝ, HasDerivAt (fun v : ℝ => x + v • (y - x)) (y - x) t := fun t => by
+    simpa only [id_eq, one_smul] using ((hasDerivAt_id t).smul_const (y - x)).const_add x
+  have hd : ∀ t ∈ Set.Icc (0 : ℝ) 1,
+      HasDerivAt (fun v : ℝ => f (x + v • (y - x)) - f x - v • (f' z (y - x)))
+        (f' (x + t • (y - x)) (y - x) - f' z (y - x)) t := by
+    intro t ht
+    have h1 := (hf _ (hmem t ht)).comp_hasDerivAt t (hcd t)
+    have h2 : HasDerivAt (fun v : ℝ => v • (f' z (y - x))) (f' z (y - x)) t := by
+      simpa only [id_eq, one_smul] using (hasDerivAt_id t).smul_const (f' z (y - x))
+    exact (h1.sub_const (f x)).sub h2
+  have hB : ∀ t : ℝ,
+      HasDerivAt (fun v : ℝ => L * ‖y - x‖ * (a * v + (b - a) * (v ^ 2 / 2)))
+        (L * ‖y - x‖ * (a + (b - a) * t)) t := by
+    intro t
+    have h1 : HasDerivAt (fun v : ℝ => v ^ 2 / 2) t t := by
+      simpa using (hasDerivAt_pow 2 t).div_const 2
+    have h2 : HasDerivAt (fun v : ℝ => a * v + (b - a) * (v ^ 2 / 2)) (a * 1 + (b - a) * t) t :=
+      ((hasDerivAt_id' t).const_mul a).add (h1.const_mul (b - a))
+    have h3 : HasDerivAt (fun v : ℝ => L * ‖y - x‖ * (a * v + (b - a) * (v ^ 2 / 2)))
+        (L * ‖y - x‖ * (a * 1 + (b - a) * t)) t := h2.const_mul (L * ‖y - x‖)
+    rwa [mul_one] at h3
+  have hbound : ∀ t ∈ Set.Ico (0 : ℝ) 1,
+      ‖f' (x + t • (y - x)) (y - x) - f' z (y - x)‖ ≤ L * ‖y - x‖ * (a + (b - a) * t) := by
+    intro t ht
+    have h1 : f' (x + t • (y - x)) (y - x) - f' z (y - x)
+        = (f' (x + t • (y - x)) - f' z) (y - x) := by simp
+    have h3 : ‖f' (x + t • (y - x)) - f' z‖ ≤ L * ‖x + t • (y - x) - z‖ :=
+      hL _ (hmem t ⟨ht.1, ht.2.le⟩)
+    have h4 : ‖x + t • (y - x) - z‖ ≤ (1 - t) * a + t * b := by
+      have he : x + t • (y - x) - z = (1 - t) • (x - z) + t • (y - z) := by module
+      rw [he]
+      refine (norm_add_le _ _).trans (le_of_eq ?_)
+      rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg ht.1,
+        abs_of_nonneg (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t)]
+    have hL0 : 0 ≤ L * ‖x + t • (y - x) - z‖ := (norm_nonneg _).trans h3
+    have h5 : L * ‖x + t • (y - x) - z‖ ≤ L * ((1 - t) * a + t * b) := by
+      rcases le_or_gt 0 L with hL' | hL'
+      · exact mul_le_mul_of_nonneg_left h4 hL'
+      · -- `L < 0` forces `x = y = z`, and then both sides vanish
+        have hxz : ‖x - z‖ = 0 := by
+          have h := hL x hx
+          have := norm_nonneg (f' x - f' z)
+          have := norm_nonneg (x - z)
+          nlinarith
+        have hyz : ‖y - z‖ = 0 := by
+          have h := hL y hy
+          have := norm_nonneg (f' y - f' z)
+          have := norm_nonneg (y - z)
+          nlinarith
+        have h0 : ‖x + t • (y - x) - z‖ = 0 := by
+          have := norm_nonneg (x + t • (y - x) - z)
+          nlinarith
+        have ha0 : a = 0 := hxz
+        have hb0 : b = 0 := hyz
+        rw [h0, ha0, hb0]
+        simp
+    rw [h1]
+    calc ‖(f' (x + t • (y - x)) - f' z) (y - x)‖
+        ≤ ‖f' (x + t • (y - x)) - f' z‖ * ‖y - x‖ := ContinuousLinearMap.le_opNorm _ _
+      _ ≤ L * ((1 - t) * a + t * b) * ‖y - x‖ :=
+          mul_le_mul_of_nonneg_right (h3.trans h5) (norm_nonneg _)
+      _ = L * ‖y - x‖ * (a + (b - a) * t) := by ring
+  have hzero : ‖f (x + (0 : ℝ) • (y - x)) - f x - (0 : ℝ) • (f' z (y - x))‖
+      ≤ L * ‖y - x‖ * (a * 0 + (b - a) * ((0 : ℝ) ^ 2 / 2)) := by simp
+  have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
+    (f := fun v : ℝ => f (x + v • (y - x)) - f x - v • (f' z (y - x)))
+    (f' := fun v : ℝ => f' (x + v • (y - x)) (y - x) - f' z (y - x)) (a := 0) (b := 1)
+    (fun t ht => (hd t ht).continuousAt.continuousWithinAt)
+    (fun t ht => (hd t ⟨ht.1, ht.2.le⟩).hasDerivWithinAt) hzero hB hbound
+    (Set.right_mem_Icc.2 zero_le_one)
+  have hx1 : x + (1 : ℝ) • (y - x) = y := by module
+  rw [hx1, one_smul] at key
+  calc ‖f y - f x - f' z (y - x)‖ ≤ L * ‖y - x‖ * (a * 1 + (b - a) * ((1 : ℝ) ^ 2 / 2)) := key
+    _ = L / 2 * (a + b) * ‖y - x‖ := by ring
+
+end ThirdPoint
+
+/-! ### The sharp second-order inequality -/
 
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [IsRCLikeNormedField 𝕜]
   [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedSpace ℝ E]

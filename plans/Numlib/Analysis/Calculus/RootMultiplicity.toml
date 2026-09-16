@@ -66,3 +66,15 @@ id = "ContDiffAt.eventually_hasDerivAt"
 
 [[node]]
 id = "ContDiffAt.continuousAt_deriv"
+
+[[node]]
+id = "hasDerivAt_deriv_of_contDiffAt_two"
+
+[[node]]
+id = "ContDiff.dslope"
+
+[[node]]
+id = "Polynomial.contDiff_eval"
+
+[[node]]
+id = "Polynomial.contDiffOn_eval"

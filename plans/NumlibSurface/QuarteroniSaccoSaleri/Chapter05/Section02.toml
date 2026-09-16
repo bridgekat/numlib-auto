@@ -57,9 +57,6 @@ id = "equation_5_11_eq_eigenvalueCondNumber"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.11)'
 
 [[node]]
-id = "finrank_maxGenEigenspace_toEuclideanLin"
-
-[[node]]
 id = "inner_toEuclideanLin_eq_of_conjTranspose_eq"
 
 [[node]]

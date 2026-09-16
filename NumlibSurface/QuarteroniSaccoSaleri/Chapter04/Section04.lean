@@ -33,9 +33,9 @@ are `V`, `H`, `Hhat`. The two Krylov methods are the specifications `equation_4_
 
 ## Contents
 
-* `toEuclideanLin_aeval`, `equation_4_51`, `krylovSubspace`, `krylovSubspace_eq`,
-  `mem_krylovSubspace_iff`, `equation_4_53`, `degree`, `degree_eq_grade`, `degree_le`,
-  `property_4_7`, `example_4_8` — Krylov subspaces and the degree.
+* `equation_4_51`, `krylovSubspace`, `krylovSubspace_eq`, `mem_krylovSubspace_iff`,
+  `equation_4_53`, `degree`, `degree_eq_grade`, `degree_le`, `property_4_7`, `example_4_8` —
+  Krylov subspaces and the degree.
 * `arnoldi`, `arnoldiH`, `arnoldiW`, `arnoldi_zero`, `arnoldi_succ`, `arnoldi_eq_vec`,
   `arnoldi_normalize`, `arnoldi_basis`, `V`, `H`, `Hhat`, `equation_4_56`,
   `arnoldi_breakdown_iff` — the Arnoldi algorithm (4.55)–(4.56).
@@ -69,17 +69,6 @@ variable {n : ℕ}
 /-! ### (4.51)–(4.54): Krylov subspaces -/
 
 section Krylov
-
--- TODO(backbone): belongs in `Numlib/Analysis/Matrix/ToEuclideanLin`; the Saad surface proves the
--- same lemma as `SaadSparse.Chapter06.toEuclideanLin_aeval`.
-/-- `p(A)` as an operator is `p` of the operator: `Matrix.toEuclideanLin` is an algebra map. -/
-theorem toEuclideanLin_aeval (A : Matrix (Fin n) (Fin n) ℝ) (p : ℝ[X]) :
-    toEuclideanLin (aeval A p) = aeval (toEuclideanLin A) p := by
-  induction p using Polynomial.induction_on' with
-  | add p q hp hq => simp only [map_add, hp, hq]
-  | monomial k c =>
-    rw [aeval_monomial, aeval_monomial, ← Algebra.smul_def, ← Algebra.smul_def, map_smul,
-      toEuclideanLin_pow]
 
 variable (A : Matrix (Fin n) (Fin n) ℝ)
 

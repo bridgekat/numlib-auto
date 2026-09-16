@@ -385,6 +385,16 @@ theorem lintegral_rpow_enorm_eq_rpow_eLpNorm (hp₀ : p ≠ 0) (hp : p ≠ ∞) 
   rw [eLpNorm_eq_eLpNorm' hp₀ hp,
     lintegral_rpow_enorm_eq_rpow_eLpNorm' (ENNReal.toReal_pos hp₀ hp)]
 
+/-- The square of the `L²` seminorm is the Lebesgue integral of the squared norms. -/
+theorem sq_eLpNorm_two {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] (f : E → ℂ)
+    (μ : Measure E) : eLpNorm f 2 μ ^ 2 = ∫⁻ ξ, ‖f ξ‖ₑ ^ 2 ∂μ := by
+  have h := lintegral_rpow_enorm_eq_rpow_eLpNorm (μ := μ) (p := 2) (f := f)
+    (by norm_num) (by norm_num)
+  have h2 : ∀ x : ℝ≥0∞, x ^ (2 : ℝ) = x ^ (2 : ℕ) := fun x ↦ by
+    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast]
+  simp only [ENNReal.toReal_ofNat, h2] at h
+  exact h.symm
+
 /-- The Lebesgue integral of the enorm of a nonnegative probability density is `1`. -/
 theorem lintegral_enorm_eq_one {φ : α → ℝ} (hφ₀ : ∀ t, 0 ≤ φ t) (hφ : Integrable φ μ)
     (hφ₁ : ∫ t, φ t ∂μ = 1) : ∫⁻ t, ‖φ t‖ₑ ∂μ = 1 := by

@@ -717,14 +717,6 @@ theorem example_7_4_fixedPoint :
   refine ⟨?_, ?_, ?_, ?_⟩ <;> ext i <;> fin_cases i <;>
     simp [example_7_4_F, example_7_4_G₁, example_7_4_G₂, h35] <;> norm_num
 
--- TODO(backbone): natural home `Numlib/LinearAlgebra/Matrix/Complexify`, beside
--- `Matrix.complexSpectralRadius_zero`; it is `spectrum.spectralRadius_one` for the
--- complexification.
-/-- The spectral radius of the identity matrix is `1`. -/
-theorem _root_.Matrix.complexSpectralRadius_one {m : Type*} [Fintype m] [DecidableEq m]
-    [Nonempty m] : Matrix.complexSpectralRadius (1 : Matrix m m ℝ) = 1 := by
-  rw [Matrix.complexSpectralRadius, Matrix.complexify_one, spectrum.spectralRadius_one]
-
 /-- The Jacobian matrix of a map `ℝ² → ℝ²` read off the derivatives of its two scalar
 components. -/
 private theorem jacobianMatrix_pair {g₀ g₁ : EuclideanSpace ℝ (Fin 2) → ℝ}

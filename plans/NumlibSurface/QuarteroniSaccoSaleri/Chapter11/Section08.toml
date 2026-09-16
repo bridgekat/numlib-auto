@@ -90,12 +90,6 @@ id = "rungeKutta_lte_spec"
 id = "equation_11_73_step"
 
 [[node]]
-id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three"
-
-[[node]]
-id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn"
-
-[[node]]
 id = "equation_11_76_errorIndicator"
 
 [[node]]

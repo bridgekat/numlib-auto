@@ -1013,3 +1013,119 @@ theorem memSobolevMultiIndex_ofReal_iff {b : Module.Basis ι ℝ E} {f : E → �
     exact ⟨fun x ↦ ((w x : ℝ) : ℂ), hw.comp_continuousLinearMap Complex.ofRealCLM, hwL.ofReal⟩
 
 end Complexify
+
+/-! ### Multiplying an `L²` function by a symbol -/
+
+section SmulLeft
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E]
+
+/-- Multiplying an `L^2` function by a function of temperate growth is, on tempered distributions,
+`TemperedDistribution.smulLeftCLM`: if `w` agrees almost everywhere with `g · u`, then `w` and
+`g · u` are the same distribution. -/
+theorem toTemperedDistribution_eq_smulLeftCLM {g : E → ℂ} (hg : g.HasTemperateGrowth)
+    {u w : Lp ℂ 2 (volume : Measure E)}
+    (h : (w : E → ℂ) =ᵐ[volume] fun ξ ↦ g ξ * (u : E → ℂ) ξ) :
+    (w : 𝓢'(E, ℂ)) = smulLeftCLM ℂ g (u : 𝓢'(E, ℂ)) := by
+  ext f
+  rw [Lp.toTemperedDistribution_apply, smulLeftCLM_apply_apply, Lp.toTemperedDistribution_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [h] with ξ hξ
+  rw [hξ, SchwartzMap.smulLeftCLM_apply_apply hg]
+  simp only [smul_eq_mul]
+  ring
+
+end SmulLeft
+
+/-! ### The symbol of an iterated directional derivative -/
+
+section Symbol
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- The symbol of the iterated directional derivative along the tuple `m`: `ξ ↦ ∏_j ⟪ξ, m j⟫`, so
+that the Fourier transform of `∂^{m}` is multiplication by `(2πi)^n` times this. -/
+def lineSymbol {n : ℕ} (m : Fin n → E) : E → ℂ := fun ξ ↦ ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ)
+
+/-- The symbol of `∂^{m}` evaluated at a point. -/
+@[simp]
+theorem lineSymbol_apply {n : ℕ} (m : Fin n → E) (ξ : E) :
+    lineSymbol m ξ = ∏ j, ((inner ℝ ξ (m j) : ℝ) : ℂ) := rfl
+
+/-- The symbol of `∂^{m}` splits off its first factor. -/
+theorem lineSymbol_succ {n : ℕ} (m : Fin (n + 1) → E) :
+    lineSymbol m = (fun ξ : E ↦ ((inner ℝ ξ (m 0) : ℝ) : ℂ)) * lineSymbol (Fin.tail m) := by
+  funext ξ
+  rw [lineSymbol_apply, Pi.mul_apply, lineSymbol_apply, Fin.prod_univ_succ]
+  rfl
+
+/-- The symbol of the empty tuple of directions is `1`. -/
+theorem lineSymbol_zero (m : Fin 0 → E) : lineSymbol m = fun _ : E ↦ (1 : ℂ) := by
+  funext ξ
+  simp
+
+/-- The symbol of `∂^{m}` has temperate growth, being a product of linear forms. -/
+theorem hasTemperateGrowth_lineSymbol {n : ℕ} (m : Fin n → E) :
+    (lineSymbol m).HasTemperateGrowth := by
+  induction n with
+  | zero => rw [lineSymbol_zero]; exact Function.HasTemperateGrowth.const (1 : ℂ)
+  | succ n ih =>
+    rw [lineSymbol_succ]
+    exact Function.HasTemperateGrowth.mul (by fun_prop) (ih (Fin.tail m))
+
+end Symbol
+
+section FourierDeriv
+
+variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℂ F]
+
+/-- **The Fourier transform of an iterated directional derivative of a tempered distribution** is
+multiplication by `(2πi)^n ∏_j ⟪ξ, m j⟫`: Mathlib's `TemperedDistribution.fourier_lineDerivOp_eq`
+iterated. -/
+theorem fourier_iteratedLineDerivOp_eq {n : ℕ} (m : Fin n → E) (f : 𝓢'(E, F)) :
+    𝓕 (∂^{m} f) = ((2 * (Real.pi : ℂ) * Complex.I) ^ n) •
+      smulLeftCLM F (lineSymbol m) (𝓕 f) := by
+  induction n with
+  | zero =>
+    rw [iteratedLineDerivOp_fin_zero, pow_zero, one_smul, lineSymbol_zero, smulLeftCLM_const,
+      one_smul]
+  | succ n ih =>
+    rw [iteratedLineDerivOp_succ_left, fourier_lineDerivOp_eq, ih (Fin.tail m), map_smul,
+      smulLeftCLM_smulLeftCLM_apply (hasTemperateGrowth_lineSymbol _) (by fun_prop),
+      smul_smul, show lineSymbol (Fin.tail m) * (fun x : E ↦ ((inner ℝ x (m 0) : ℝ) : ℂ))
+        = lineSymbol m by rw [lineSymbol_succ]; ring]
+    congr 1
+    ring
+
+/-- **The Fourier transform of a weak derivative on the whole space.** If the `L²` function `w` is
+the weak derivative `∂^{m} v` of the `L²` function `v` — read distributionally, which by
+`MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn` is the weak derivative of
+Definition 7.1.3 — and the product of the symbol with `ℱv` is again `L²`, then
+`ℱw = (2πi)^n (∏_j ⟪ξ, m j⟫) ℱv` almost everywhere. -/
+theorem fourier_weakDeriv_aeEq {n : ℕ} (m : Fin n → E)
+    {v w : Lp ℂ 2 (volume : Measure E)}
+    (hvw : ∂^{m} (v : 𝓢'(E, ℂ)) = (w : 𝓢'(E, ℂ)))
+    (hmem : MemLp (fun ξ ↦ lineSymbol m ξ * (𝓕 v) ξ) 2 (volume : Measure E)) :
+    ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : E → ℂ) =ᵐ[volume]
+      fun ξ ↦ (2 * (Real.pi : ℂ) * Complex.I) ^ n * (lineSymbol m ξ * (𝓕 v) ξ) := by
+  have h1 : ((hmem.toLp _ : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
+      = smulLeftCLM ℂ (lineSymbol m) ((𝓕 v : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ)) :=
+    toTemperedDistribution_eq_smulLeftCLM (hasTemperateGrowth_lineSymbol m) hmem.coeFn_toLp
+  have h2 : ((𝓕 w : Lp ℂ 2 (volume : Measure E)) : 𝓢'(E, ℂ))
+      = (((2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ : Lp ℂ 2 (volume : Measure E))
+          : 𝓢'(E, ℂ)) := by
+    rw [← Lp.fourier_toTemperedDistribution_eq, ← hvw, fourier_iteratedLineDerivOp_eq,
+      Lp.fourier_toTemperedDistribution_eq, ← h1]
+    exact ((Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2).map_smul _ _).symm
+  have hinj : Function.Injective (Lp.toTemperedDistributionCLM ℂ (volume : Measure E) 2) :=
+    LinearMap.ker_eq_bot.1 Lp.ker_toTemperedDistributionCLM_eq_bot
+  have h4 : (𝓕 w : Lp ℂ 2 (volume : Measure E))
+      = (2 * (Real.pi : ℂ) * Complex.I) ^ n • hmem.toLp _ := hinj h2
+  rw [h4]
+  filter_upwards [Lp.coeFn_smul ((2 * (Real.pi : ℂ) * Complex.I) ^ n) (hmem.toLp _),
+    hmem.coeFn_toLp] with ξ h h'
+  rw [h, Pi.smul_apply, h', smul_eq_mul]
+
+end FourierDeriv

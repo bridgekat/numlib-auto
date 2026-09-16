@@ -93,3 +93,12 @@ id = "Polynomial.satisfiesRootCondition_of_roots"
 
 [[node]]
 id = "Polynomial.satisfiesRootCondition_of_isSchurStable"
+
+[[node]]
+id = "Polynomial.norm_eval_le_two_pow_natDegree"
+
+[[node]]
+id = "Polynomial.satisfiesRootCondition_X_sq_sub_one"
+
+[[node]]
+id = "Polynomial.satisfiesRootCondition_X_pow_mul_X_sub_one"

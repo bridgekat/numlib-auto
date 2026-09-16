@@ -211,10 +211,10 @@ theorem norm_sq_add_integral_le_integral (h : IsSemidiscreteGalerkin a F u₀ T 
     ‖u t‖ ^ 2 + ∫ s in (0 : ℝ)..t, w s ≤ ‖u₀‖ ^ 2 + ∫ s in (0 : ℝ)..t, g s := by
   set Φ : ℝ → ℝ := fun s => ‖u s‖ ^ 2 + ∫ q in (0 : ℝ)..s, w q with hΦ
   have hΦc : ContinuousOn Φ (Icc 0 T) :=
-    h.continuousOn_norm_sq.add (Gronwall.continuousOn_integral_Icc hw)
+    h.continuousOn_norm_sq.add (intervalIntegral.continuousOn_integral_Icc hw)
   have hΦ' : ∀ s ∈ Ico 0 T, HasDerivWithinAt Φ
       (2 * (F s (u s) - a s (u s) (u s)) + w s) (Ici s) s := fun s hs =>
-    (h.hasDerivWithinAt_norm_sq_Ici hs).add (Gronwall.hasDerivWithinAt_integral_Ici hw hs)
+    (h.hasDerivWithinAt_norm_sq_Ici hs).add (intervalIntegral.hasDerivWithinAt_integral_Ici hw hs)
   have key := Gronwall.le_exp_integral_mul_of_hasDerivWithinAt_le (p := fun _ => (0 : ℝ)) (q := g)
     hΦc hΦ' continuousOn_const hg (fun s hs => by simpa using bound s hs) ht
   have h1 : ‖u 0‖ ^ 2 = ‖u₀‖ ^ 2 := by rw [h.1]
@@ -286,10 +286,10 @@ theorem norm_sq_add_integral_le_exp (h : IsSemidiscreteGalerkin a F u₀ T u) {m
       ≤ (‖u₀‖ ^ 2 + ∫ s in (0 : ℝ)..t, φ s ^ 2) * exp (∫ s in (0 : ℝ)..t, (1 + 2 * m s)) := by
   set Φ : ℝ → ℝ := fun s => ‖u s‖ ^ 2 + ∫ r in (0 : ℝ)..s, Q r (u r) with hΦ
   have hΦc : ContinuousOn Φ (Icc 0 T) :=
-    h.continuousOn_norm_sq.add (Gronwall.continuousOn_integral_Icc hQc)
+    h.continuousOn_norm_sq.add (intervalIntegral.continuousOn_integral_Icc hQc)
   have hΦ' : ∀ s ∈ Ico 0 T, HasDerivWithinAt Φ
       (2 * (F s (u s) - a s (u s) (u s)) + Q s (u s)) (Ici s) s := fun s hs =>
-    (h.hasDerivWithinAt_norm_sq_Ici hs).add (Gronwall.hasDerivWithinAt_integral_Ici hQc hs)
+    (h.hasDerivWithinAt_norm_sq_Ici hs).add (intervalIntegral.hasDerivWithinAt_integral_Ici hQc hs)
   have bound : ∀ s ∈ Ico 0 T,
       2 * (F s (u s) - a s (u s) (u s)) + Q s (u s) ≤ (1 + 2 * m s) * Φ s + φ s ^ 2 := by
     intro s hs

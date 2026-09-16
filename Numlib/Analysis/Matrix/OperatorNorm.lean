@@ -103,26 +103,6 @@ open Finset
 
 open scoped ENNReal NNReal NormedRing
 
-/-! ### Seminorms on `n → 𝕜` over `RCLike 𝕜` -/
-
-section Seminorm
-
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
-
-/-- Equivalence of norms for a definite seminorm on `n → 𝕜` over `RCLike 𝕜`: the real statement
-`Seminorm.exists_bounds` applied to the restriction of scalars. -/
-theorem Seminorm.exists_bounds_rclike (p : Seminorm 𝕜 (n → 𝕜)) (hp : ∀ x, p x = 0 → x = 0) :
-    ∃ c C : ℝ, 0 < c ∧ 0 < C ∧ ∀ x, c * ‖x‖ ≤ p x ∧ p x ≤ C * ‖x‖ :=
-  (p.restrictScalars ℝ).exists_bounds hp
-
-omit [Fintype n] in
-/-- A seminorm on `n → 𝕜` over `RCLike 𝕜` is continuous. -/
-theorem Seminorm.continuous_rclike [Finite n] (p : Seminorm 𝕜 (n → 𝕜)) : Continuous p := by
-  cases nonempty_fintype n
-  exact (p.restrictScalars ℝ).continuous_of_finiteDimensional
-
-end Seminorm
-
 namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [Fintype n]
@@ -960,11 +940,6 @@ section Unitary
 
 variable [DecidableEq m]
 
-/-- A unitary matrix acts isometrically on `EuclideanSpace`. -/
-theorem norm_toEuclideanLin_apply_of_mem_unitaryGroup {U : Matrix n n 𝕜}
-    (hU : U ∈ unitaryGroup n 𝕜) (x : EuclideanSpace 𝕜 n) : ‖toEuclideanLin U x‖ = ‖x‖ := by
-  rw [toEuclideanLin_apply, norm_toLp_mulVec_of_mem_unitaryGroup hU]
-
 /-- **The spectral norm of a unitary matrix is `1`**, [quarteroni2000numerical] Theorem 1.2,
 last clause. -/
 theorem l2_opNorm_of_mem_unitaryGroup [Nonempty n] {U : Matrix n n 𝕜}
@@ -1226,6 +1201,70 @@ theorem l2_opNorm_le_sqrt_card_mul_of_forall_norm_le [DecidableEq n] (A : Matrix
     _ = (Fintype.card m : ℝ) * Fintype.card n * M ^ 2 := by
         simp [Finset.sum_const, Finset.card_univ, mul_assoc]
 
+/-! #### Real matrices: outer products and the projection off a line -/
+
+section Real
+
+open WithLp
+
+variable [DecidableEq n]
+
+/-- The Frobenius norm of an outer product is at most the product of the Euclidean norms (it is
+in fact equal to it). -/
+theorem frobenius_norm_vecMulVec_le (u v : n → ℝ) :
+    ‖vecMulVec u v‖ ≤ ‖toLp 2 u‖ * ‖toLp 2 v‖ := by
+  rw [vecMulVec_eq Unit, ← frobenius_norm_replicateCol (ι := Unit) u,
+    ← frobenius_norm_replicateRow (ι := Unit) v]
+  exact frobenius_norm_mul _ _
+
+omit [DecidableEq n] in
+/-- `sᵀ s` is the squared Euclidean norm of `s`. -/
+theorem dotProduct_self_eq_norm_sq (s : n → ℝ) : s ⬝ᵥ s = ‖toLp 2 s‖ ^ 2 := by
+  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
+
+/-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
+private theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
+    ‖A‖ ^ 2 = trace (Aᵀ * A) := by
+  have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
+  simpa [conjTranspose_eq_transpose_of_trivial] using h
+
+/-- **Projecting the rows off a line does not increase the Frobenius norm**: with
+`P = s sᵀ / (sᵀ s)` the orthogonal projector onto `span {s}`, `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is
+Pythagoras, `‖A‖_F² = ‖A (1 - P)‖_F² + ‖A P‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, using
+that `P` is symmetric and idempotent. -/
+theorem frobenius_norm_mul_one_sub_le (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
+    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ≤ ‖A‖ := by
+  set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
+  have hss : s ⬝ᵥ s ≠ 0 := by
+    rw [dotProduct_self_eq_norm_sq]
+    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
+  have hPt : Pᵀ = P := by
+    rw [hPdef, transpose_smul, transpose_vecMulVec]
+  have hPP : P * P = P := by
+    rw [hPdef, Matrix.smul_mul, Matrix.mul_smul, vecMulVec_mul_vecMulVec, vecMulVec_smul,
+      smul_smul, smul_smul]
+    congr 1
+    field_simp
+  have hQt : (1 - P)ᵀ = 1 - P := by rw [transpose_sub, transpose_one, hPt]
+  have hQQ : (1 - P) * (1 - P) = 1 - P := by
+    rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
+      Matrix.mul_one, hPP]
+    abel
+  -- the three squared norms as traces
+  have h1 : ‖A * (1 - P)‖ ^ 2 = trace (Aᵀ * A * (1 - P)) := by
+    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hQt, Matrix.mul_assoc,
+      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hQQ, ← Matrix.mul_assoc]
+  have h2 : ‖A * P‖ ^ 2 = trace (Aᵀ * A * P) := by
+    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hPt, Matrix.mul_assoc,
+      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
+  have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose A
+  have hsum : ‖A * (1 - P)‖ ^ 2 + ‖A * P‖ ^ 2 = ‖A‖ ^ 2 := by
+    rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
+  have hle : ‖A * (1 - P)‖ ^ 2 ≤ ‖A‖ ^ 2 := by nlinarith [sq_nonneg ‖A * P‖]
+  exact le_of_sq_le_sq hle (norm_nonneg _)
+
+end Real
+
 end Frobenius
 
 /-! ### `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)` -/
@@ -1340,6 +1379,60 @@ theorem linfty_opNorm_le_mul_of_abs_entrywiseLE {A B : Matrix m n ℝ} {c : ℝ}
   calc ‖A‖ = ‖A.abs‖ := (linfty_opNorm_abs A).symm
     _ ≤ ‖c • B.abs‖ := linfty_opNorm_le_of_abs_entrywiseLE hle
     _ = c * ‖B‖ := by rw [norm_smul, Real.norm_of_nonneg hc, linfty_opNorm_abs]
+
+/-! #### Row sums, entries, and sup norms of real vectors -/
+
+/-- A bound on every row sum bounds the maximum-row-sum norm. -/
+theorem linfty_opNorm_le_of_forall_sum_le {B : Matrix m n ℝ} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ i, ∑ j, |B i j| ≤ c) : ‖B‖ ≤ c := by
+  rw [Matrix.linfty_opNorm_def, ← NNReal.coe_mk c hc, NNReal.coe_le_coe]
+  refine Finset.sup_le fun i _ => ?_
+  rw [← NNReal.coe_le_coe, NNReal.coe_sum, NNReal.coe_mk]
+  simpa only [coe_nnnorm, Real.norm_eq_abs] using h i
+
+/-- Every row sum is at most the maximum-row-sum norm. -/
+theorem sum_abs_apply_le_linfty_opNorm (B : Matrix m n ℝ) (i : m) :
+    ∑ j, |B i j| ≤ ‖B‖ := by
+  rw [Matrix.linfty_opNorm_def]
+  have := Finset.le_sup (f := fun i : m => ∑ j : n, ‖B i j‖₊) (Finset.mem_univ i)
+  rw [← NNReal.coe_le_coe, NNReal.coe_sum] at this
+  simpa only [coe_nnnorm, Real.norm_eq_abs] using this
+
+/-- Every entry is at most the maximum-row-sum norm. -/
+theorem abs_apply_le_linfty_opNorm (B : Matrix m n ℝ) (i : m) (j : n) :
+    |B i j| ≤ ‖B‖ :=
+  (Finset.single_le_sum (f := fun j => |B i j|) (fun _ _ => abs_nonneg _)
+    (Finset.mem_univ j)).trans (Matrix.sum_abs_apply_le_linfty_opNorm B i)
+
+/-- The sup norm is monotone in the entrywise absolute value. -/
+theorem norm_le_norm_of_abs_le {v w : n → ℝ} (h : |v| ≤ w) : ‖v‖ ≤ ‖w‖ := by
+  rw [pi_norm_le_iff_of_nonneg (norm_nonneg w)]
+  intro i
+  calc ‖v i‖ = |v i| := Real.norm_eq_abs _
+    _ ≤ w i := h i
+    _ ≤ ‖w i‖ := le_abs_self _
+    _ ≤ ‖w‖ := norm_le_pi_norm w i
+
+/-- The sup norm of the entrywise absolute value. -/
+theorem norm_abs_eq (v : n → ℝ) : ‖|v|‖ = ‖v‖ := by
+  rw [Pi.norm_def, Pi.norm_def]
+  congr 1
+  refine congrArg _ (funext fun i => ?_)
+  simp [Pi.abs_apply, Real.nnnorm_abs]
+
+/-- The maximum absolute row sum of an entrywise nonnegative matrix is the sup norm of its row
+sums, `‖M 𝟙‖_∞ = ‖M‖_∞`. -/
+theorem norm_mulVec_one_of_entrywiseNonneg {M : Matrix n n ℝ} (hM : M.EntrywiseNonneg) :
+    ‖M *ᵥ (1 : n → ℝ)‖ = ‖M‖ := by
+  rw [Pi.norm_def, linfty_opNorm_def]
+  congr 1
+  refine congrArg _ (funext fun i => ?_)
+  rw [← NNReal.coe_inj, coe_nnnorm, NNReal.coe_sum, Real.norm_eq_abs]
+  simp only [coe_nnnorm, Real.norm_eq_abs]
+  rw [mulVec, dotProduct]
+  simp only [Pi.one_apply, mul_one]
+  rw [Finset.abs_sum_of_nonneg fun j _ => hM.apply i j]
+  exact Finset.sum_congr rfl fun j _ => (abs_of_nonneg (hM.apply i j)).symm
 
 end EntrywiseLE
 

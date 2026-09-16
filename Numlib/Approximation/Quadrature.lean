@@ -2,6 +2,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Tactic.Positivity.Finset
 import Mathlib.Topology.ContinuousMap.Weierstrass
 import Mathlib.Topology.TietzeExtension
+import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
@@ -288,6 +289,39 @@ theorem isInterpolatory_iff_isExactOn {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n 
     simp only [ContinuousLinearMap.comp_apply] at this
     rw [hval i, hfix i] at this
     exact this
+
+open Set intervalIntegral in
+/-- **Degree of exactness, read in the backbone.** A formula `∑ᵢ αᵢ f(xᵢ)` with nodes in `[a, b]`
+has degree of exactness at least `d` — `I_n(p) = I(p)` for every `p ∈ ℙ_d` — exactly when it is
+`Quadrature.IsExactOn` for the integral functional `ContinuousMap.integralIccCLM hab b` on
+`C([a, b], ℝ)`. -/
+theorem isExactOn_integralIccCLM_iff {a b : ℝ} (hab : a ≤ b) {m : ℕ} {x : Fin m → ℝ}
+    (hx : ∀ i, x i ∈ Icc a b) (α : Fin m → ℝ) (d : ℕ) :
+    Quadrature.IsExactOn (ContinuousMap.integralIccCLM hab b) α
+        (fun i => (⟨x i, hx i⟩ : Icc a b)) d ↔
+      ∀ p : ℝ[X], p.degree ≤ d → ∑ i, α i * p.eval (x i) = ∫ t in a..b, p.eval t := by
+  constructor
+  · intro h p hp
+    have hmem : p.toContinuousMapOn (Icc a b) ∈ polyLE (Icc a b) d :=
+      mem_polyLE_iff.mpr ⟨p, hp, fun t => rfl⟩
+    have hval := h _ hmem
+    rw [Quadrature.functional_apply, ContinuousMap.integralIccCLM_apply] at hval
+    simp only [Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply] at hval
+    rw [hval]
+    refine integral_congr fun t ht => ?_
+    rw [uIcc_of_le hab] at ht
+    rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ ht,
+      Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply]
+  · intro h q hq
+    obtain ⟨p, hp, hqp⟩ := mem_polyLE_iff.mp hq
+    rw [Quadrature.functional_apply, ContinuousMap.integralIccCLM_apply]
+    calc ∑ i, α i * q ⟨x i, hx i⟩ = ∑ i, α i * p.eval (x i) :=
+          Finset.sum_congr rfl fun i _ => by rw [hqp]
+      _ = ∫ t in a..b, p.eval t := h p hp
+      _ = ∫ t in a..b, ContinuousMap.IccExtend hab q t := by
+          refine integral_congr fun t ht => ?_
+          rw [uIcc_of_le hab] at ht
+          rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ ht, hqp]
 
 end Exactness
 
@@ -807,6 +841,120 @@ theorem isExactOnMeasure_volume_Icc_of_affine {a b : ℝ} (hab : a < b) {w x : F
         rw [show (b - a) / 2 * (-1) + (a + b) / 2 = a by ring,
           show (b - a) / 2 * 1 + (a + b) / 2 = b by ring, intervalIntegral.integral_of_le hab.le,
           integral_Icc_eq_integral_Ioc]
+
+/-! #### Positivity of weights, interpolatory rules, and convergence -/
+
+/-- **A weight is positive once a suitable test polynomial exists**: if the rule is exact on a
+nonzero polynomial `p ≥ 0` (`μ`-a.e.) vanishing at every node but `x i`, where it is positive, then
+`w i p(x i) = ∫ p ∂μ > 0`. -/
+theorem pos_of_isExactOnMeasure (hw : IsWeight μ) {n : ℕ} {w x : Fin n → ℝ} {d : ℕ}
+    (hexact : IsExactOnMeasure μ w x d) {p : ℝ[X]} (hp : p.degree ≤ d) (hp0 : p ≠ 0)
+    (hnn : ∀ᵐ t ∂μ, 0 ≤ p.eval t) (i : Fin n) (hzero : ∀ k, k ≠ i → p.eval (x k) = 0)
+    (hpos : 0 < p.eval (x i)) : 0 < w i := by
+  have h := hexact p hp
+  rw [Finset.sum_eq_single i (fun k _ hk => by rw [hzero k hk, mul_zero])
+    (fun h => absurd (Finset.mem_univ i) h)] at h
+  have hint := hw.integral_eval_pos_of_ae_nonneg hp0 hnn
+  rw [← h] at hint
+  exact (mul_pos_iff_of_pos_right hpos).mp hint
+
+/-- Distinct nodes that are all roots of `p_{N+1}` have `p_{N+1}` as nodal polynomial. -/
+theorem nodal_eq_family_of_forall_eval_eq_zero (μ : Measure ℝ) {N : ℕ} {x : Fin (N + 1) → ℝ}
+    (hx : Function.Injective x) (hroot : ∀ j, (family μ (N + 1)).eval (x j) = 0) :
+    Lagrange.nodal Finset.univ x = family μ (N + 1) := by
+  refine (sub_eq_zero.mp ?_).symm
+  refine Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ hx.injOn ?_
+    fun j _ => ?_
+  · have := degree_sub_lt_left (p := family μ (N + 1)) (q := Lagrange.nodal Finset.univ x)
+      (by rw [degree_family, Lagrange.degree_nodal]; simp) (family_ne_zero _ _)
+      (by rw [(monic_family _ _).leadingCoeff, Lagrange.nodal_monic.leadingCoeff])
+    rw [degree_family] at this
+    simpa using this
+  · rw [eval_sub, hroot j, Lagrange.eval_nodal_at_node (Finset.mem_univ j), sub_zero]
+
+/-- An interpolatory rule — weights `αᵢ = ∫ lᵢ ∂μ` — is the integral of the Lagrange
+interpolant: `∑ᵢ αᵢ f(xᵢ) = ∫ Π_n f ∂μ` for every function `f`. -/
+theorem sum_mul_eq_integral_interpolate (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
+    (hint : IsInterpolatoryMeasure μ α x) (f : ℝ → ℝ) :
+    ∑ i, α i * f (x i) =
+      ∫ t, (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t ∂μ := by
+  simp only [Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
+  rw [integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
+  exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul, hint i, mul_comm]
+
+/-- The weights of a rule with `n + 1` distinct nodes and degree of exactness at least `2n` are
+positive: exactness on `lᵢ² ∈ ℙ_{2n}` gives `αᵢ = ∫ lᵢ² ∂μ > 0`. -/
+theorem pos_of_isExactOnMeasure_of_le (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) {d : ℕ} (hd : 2 * n ≤ d) (hexact : IsExactOnMeasure μ α x d)
+    (i : Fin (n + 1)) : 0 < α i := by
+  refine pos_of_isExactOnMeasure hw hexact (p := Lagrange.basis Finset.univ x i ^ 2) ?_
+    (pow_ne_zero 2 (Lagrange.basis_ne_zero hx.injOn (Finset.mem_univ i)))
+    (Eventually.of_forall fun t => by rw [eval_pow]; positivity) i (fun k hk => ?_) ?_
+  · refine degree_le_of_natDegree_le ?_
+    rw [natDegree_pow, Lagrange.natDegree_basis hx.injOn (Finset.mem_univ i), Finset.card_univ,
+      Fintype.card_fin, Nat.add_sub_cancel]
+    exact hd
+  · rw [eval_pow, Lagrange.eval_basis_of_ne (Ne.symm hk) (Finset.mem_univ k)]
+    norm_num
+  · rw [eval_pow, Lagrange.eval_basis_self hx.injOn (Finset.mem_univ i)]
+    norm_num
+
+/-- Permuting the nodes and weights of a rule together does not change its exactness. -/
+theorem isExactOnMeasure_comp_equiv {m : ℕ} {w x : Fin m → ℝ}
+    (σ : Equiv.Perm (Fin m)) {d : ℕ} :
+    IsExactOnMeasure μ (w ∘ σ) (x ∘ σ) d ↔ IsExactOnMeasure μ w x d := by
+  simp only [IsExactOnMeasure, Function.comp_apply]
+  exact forall₂_congr fun p _ => by rw [Equiv.sum_comp σ fun i => w i * p.eval (x i)]
+
+section
+
+open Set
+
+/-- The integral against a finite measure on `[a, b]` as a bounded functional on `C([a, b], ℝ)`.
+-/
+private noncomputable def integralCLM {a b : ℝ} (ν : Measure (Icc a b)) [IsFiniteMeasure ν] :
+    C(Icc a b, ℝ) →L[ℝ] ℝ :=
+  (L1.integralCLM (α := Icc a b) (E := ℝ) (μ := ν)).comp (ContinuousMap.toLp 1 ν ℝ)
+
+private theorem integralCLM_apply {a b : ℝ} (ν : Measure (Icc a b)) [IsFiniteMeasure ν]
+    (f : C(Icc a b, ℝ)) : integralCLM ν f = ∫ t, f t ∂ν := by
+  rw [integralCLM, ContinuousLinearMap.comp_apply, ← L1.integral_eq, L1.integral_eq_integral]
+  exact integral_congr_ae (ContinuousMap.coeFn_toLp (μ := ν) (𝕜 := ℝ) f)
+
+/-- **Convergence of quadrature rules with nonnegative weights.** For a finite weight `μ` carried
+by `[a, b]`, rules with distinct nodes in `[a, b]`, nonnegative weights and degrees of exactness
+`d k → ∞` for `μ` converge to `∫ f ∂μ` for every `f` continuous on `[a, b]`. -/
+theorem tendsto_of_isExactOnMeasure [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0)
+    {m d : ℕ → ℕ} {x α : ∀ k, Fin (m k) → ℝ} (hx : ∀ k, Function.Injective (x k))
+    (hmem : ∀ k i, x k i ∈ Icc a b) (hα : ∀ k i, 0 ≤ α k i) (hd : Tendsto d atTop atTop)
+    (hexact : ∀ k, IsExactOnMeasure μ (α k) (x k) (d k)) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Icc a b)) :
+    Tendsto (fun k => ∑ i, α k i * f (x k i)) atTop (𝓝 (∫ t, f t ∂μ)) := by
+  set ν : Measure (Icc a b) := μ.comap Subtype.val with hν
+  set L : C(Icc a b, ℝ) →L[ℝ] ℝ := integralCLM ν with hL
+  have hLapply : ∀ g : C(Icc a b, ℝ), L g = ∫ t, g t ∂(μ.comap Subtype.val) := fun g =>
+    integralCLM_apply ν g
+  set x' : ∀ k, Fin (m k) → Icc a b := fun k i => ⟨x k i, hmem k i⟩ with hx'
+  have hx'inj : ∀ k, Function.Injective (x' k) := fun k i j h =>
+    hx k (congrArg Subtype.val h)
+  have hexact' : ∀ k, IsExactOn L (α k) (x' k) (d k) := fun k =>
+    (isExactOnMeasure_iff_isExactOn hsupp (α k) (x' k) hLapply (d k)).mp (hexact k)
+  set g : C(Icc a b, ℝ) := ⟨fun t => f t, hf.domRestrict⟩ with hg
+  have hae : ∀ᵐ t ∂μ, t ∈ Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  have hLg : L g = ∫ t, f t ∂μ := by
+    rw [hLapply]
+    have h1 := integral_subtype_comap (μ := μ) (s := Icc a b) measurableSet_Icc fun t => f t
+    rw [Measure.restrict_eq_self_of_ae_mem hae] at h1
+    exact h1
+  have h := tendsto_of_nonneg hx'inj hd hexact' hα g
+  rw [hLg] at h
+  refine h.congr fun k => ?_
+  rw [functional_apply]
+  rfl
+
+end
 
 end ExactnessMeasure
 
@@ -1495,6 +1643,26 @@ theorem peanoKernel_eq {n : ℕ} {a b : ℝ} (w z : Fin n → ℝ) (m : ℕ) {t 
   rw [peanoKernel, integral_truncPow_flip ht.1 ht.2, hfac, sub_div, Finset.sum_div]
   congr 1
   field_simp
+
+/-- The truncated power `(y - t)_+^m` is continuous in `t` for `m ≥ 1`. -/
+theorem continuous_truncPow {m : ℕ} (hm : 1 ≤ m) (y : ℝ) : Continuous (truncPow m y) := by
+  unfold truncPow
+  refine Continuous.if_le (by fun_prop) continuous_const continuous_id continuous_const
+    fun t ht => ?_
+  have ht' : t = y := ht
+  rw [ht', sub_self, zero_pow (by omega)]
+
+open Set in
+/-- The Peano kernel of order `m ≥ 1` is continuous on the panel. -/
+theorem continuousOn_peanoKernel {a b : ℝ} {k : ℕ} (w z : Fin k → ℝ) {m : ℕ} (hm : 1 ≤ m) :
+    ContinuousOn (peanoKernel a b w z m) (Icc a b) := by
+  have hclosed : ∀ t ∈ Icc a b, peanoKernel a b w z m t
+      = (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
+        - ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ) := fun t ht => peanoKernel_eq w z m ht
+  refine ContinuousOn.congr ?_ hclosed
+  refine (by fun_prop : Continuous fun t : ℝ => (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ))
+    |>.continuousOn.sub (continuousOn_finsetSum _ fun i _ => ?_)
+  exact (((continuous_truncPow hm (z i)).const_mul (w i)).div_const _).continuousOn
 
 /-- **Peano's kernel theorem.**  A rule with weights `w` at nodes `z` in `[a, b]` that integrates
 every polynomial of degree at most `m` exactly has, at an integrand `F 0` carrying a chain of

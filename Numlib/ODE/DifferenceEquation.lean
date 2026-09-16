@@ -181,6 +181,76 @@ theorem satisfiesRootCondition_of_isSchurStable {P Q : ℝ[X]} {c : ℝ} (hc : c
     have hlt : ‖r‖ < 1 := hQ r h2
     exact ⟨hlt.le, fun h => absurd h hlt.ne⟩
 
+/-! ### The root condition for particular polynomials, and a bound on the unit disc -/
+
+/-- `(X - 1)(X + 1)`, read in `ℂ[X]`, satisfies the root condition: the roots `±1` are simple. -/
+theorem satisfiesRootCondition_X_sq_sub_one :
+    ((X ^ 2 - 1 : ℝ[X]).map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
+  classical
+  have hfac : ((X ^ 2 - 1 : ℝ[X]).map (algebraMap ℝ ℂ)) = (X - C 1) * (X - C (-1)) := by
+    simp only [Polynomial.map_sub, Polynomial.map_pow, map_X, Polynomial.map_one, map_neg, map_one]
+    ring
+  rw [hfac]
+  have hne : ((X - C 1) * (X - C (-1)) : ℂ[X]) ≠ 0 :=
+    mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
+  refine satisfiesRootCondition_of_roots hne ?_ ?_
+  · intro r hr
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
+      Multiset.mem_singleton] at hr
+    rcases hr with rfl | rfl <;> simp
+  · intro r hr _
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.mem_add, Multiset.mem_singleton,
+      Multiset.mem_singleton] at hr
+    rw [roots_mul hne, roots_X_sub_C, roots_X_sub_C, Multiset.count_add, Multiset.count_singleton,
+      Multiset.count_singleton]
+    rcases hr with rfl | rfl <;> norm_num
+
+/-- `X^p (X - 1)`, read in `ℂ[X]`, satisfies the root condition: the roots are `0`, of
+multiplicity `p`, and `1`, simple. -/
+theorem satisfiesRootCondition_X_pow_mul_X_sub_one (p : ℕ) :
+    ((X ^ p * (X - C 1) : ℝ[X]).map (algebraMap ℝ ℂ)).SatisfiesRootCondition := by
+  classical
+  rw [Polynomial.map_mul, Polynomial.map_pow, map_X, Polynomial.map_sub, map_X, map_C, map_one]
+  have hne : (X : ℂ[X]) ^ p * (X - C 1) ≠ 0 :=
+    mul_ne_zero (pow_ne_zero _ X_ne_zero) (X_sub_C_ne_zero 1)
+  have hroots : ((X : ℂ[X]) ^ p * (X - C 1)).roots = p • {0} + {1} := by
+    rw [roots_mul hne, roots_X_pow, roots_X_sub_C]
+  refine satisfiesRootCondition_of_roots hne ?_ ?_
+  · intro r hr
+    rw [hroots, Multiset.mem_add, Multiset.mem_singleton, Multiset.mem_nsmul,
+      Multiset.mem_singleton] at hr
+    rcases hr with ⟨-, rfl⟩ | rfl <;> simp
+  · intro r hr h1
+    rw [hroots, Multiset.mem_add, Multiset.mem_singleton, Multiset.mem_nsmul,
+      Multiset.mem_singleton] at hr
+    rcases hr with ⟨-, rfl⟩ | rfl
+    · simp at h1
+    · rw [hroots, Multiset.count_add, Multiset.count_nsmul, Multiset.count_singleton_self,
+        Multiset.count_singleton]
+      simp
+
+/-- A monic complex polynomial whose roots all lie in the open unit disc satisfies
+`|P(x)| ≤ 2^{deg P}` on the closed unit disc. -/
+theorem norm_eval_le_two_pow_natDegree {P : ℂ[X]} (hP : P.Monic)
+    (hroots : ∀ r, P.IsRoot r → ‖r‖ < 1) {x : ℂ} (hx : ‖x‖ ≤ 1) :
+    ‖P.eval x‖ ≤ 2 ^ P.natDegree := by
+  have hs := IsAlgClosed.splits P
+  rw [hs.eval_eq_prod_roots, hP.leadingCoeff, one_mul, ← splits_iff_card_roots.1 hs]
+  have key : ∀ s : Multiset ℂ, (∀ a ∈ s, ‖x - a‖ ≤ 2) →
+      ‖(s.map fun a => x - a).prod‖ ≤ 2 ^ Multiset.card s := by
+    intro s
+    induction s using Multiset.induction_on with
+    | empty => intro _; simp
+    | cons a s ih =>
+      intro hs'
+      rw [Multiset.map_cons, Multiset.prod_cons, Multiset.card_cons, pow_succ', norm_mul]
+      exact mul_le_mul (hs' a (Multiset.mem_cons_self a s))
+        (ih fun b hb => hs' b (Multiset.mem_cons_of_mem hb)) (norm_nonneg _) (by norm_num)
+  refine key _ fun a ha => ?_
+  have := hroots a ((mem_roots hP.ne_zero).1 ha)
+  calc ‖x - a‖ ≤ ‖x‖ + ‖a‖ := norm_sub_le _ _
+    _ ≤ 2 := by linarith
+
 end Polynomial
 
 namespace LinearRecurrence

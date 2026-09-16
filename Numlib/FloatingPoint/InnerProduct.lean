@@ -42,21 +42,6 @@ namespace FloatingPoint
 
 variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
-/-! ### The scalar step -/
-
-/-- One more rounding raises the order of a relative perturbation by one: `γ_k (1 + u) + u ≤
-γ_{k+1}`.  This is [higham2002accuracy] Lemma 3.3 together with `u ≤ γ₁`. -/
-theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
-    (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
-  have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
-  have hk : (k : K) * u < 1 := by rw [hcast] at h; linarith
-  have hgk : 0 ≤ gamma u k := gamma_nonneg hu hk
-  have hg1 : u ≤ gamma u 1 := le_gamma_one hu hu1
-  have hmain := gamma_add_gamma_add_mul_le (u := u) hu (j := k) (k := 1) h
-  have hmul : gamma u k * u ≤ gamma u k * gamma u 1 := mul_le_mul_of_nonneg_left hg1 hgk
-  rw [mul_add, mul_one]
-  linarith
-
 /-! ### Recursive summation -/
 
 /-- `RoundsSumFrom m s l t`: starting from the partial sum `s`, the terms of the list `l` are added

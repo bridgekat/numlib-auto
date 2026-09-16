@@ -121,3 +121,39 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
 
 [[node]]
 id = "IsLowerBidiagonal"
+
+[[node]]
+id = "IsUpperTriangular.inv"
+
+[[node]]
+id = "IsLowerTriangular.inv"
+
+[[node]]
+id = "charpoly_of_isLowerTriangular"
+
+[[node]]
+id = "strictLower_transpose"
+
+[[node]]
+id = "strictUpper_transpose"
+
+[[node]]
+id = "diagPart_transpose"
+
+[[node]]
+id = "diagPart_mulVec_apply"
+
+[[node]]
+id = "strictLower_mulVec_apply"
+
+[[node]]
+id = "strictUpper_mulVec_apply"
+
+[[node]]
+id = "mulVec_apply_eq_add_sum_erase"
+
+[[node]]
+id = "mul_apply_eq_zero_of_lt"
+
+[[node]]
+id = "isUpperHessenberg_iff_fin"

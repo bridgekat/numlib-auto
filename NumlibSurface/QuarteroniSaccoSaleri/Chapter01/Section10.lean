@@ -36,7 +36,7 @@ arbitrary norm" in §1.10–1.11 uses.
 * `property_1_10`, `property_1_11` — continuity of a norm, the norm `‖A x‖`.
 * `definition_1_18`, `table_1_1` — equivalence of norms, the constants `1`, `√n`, `n`.
 * `equation_1_15`, `property_1_12` — componentwise convergence, convergence in norm;
-  `tendsto_seminorm_iff_tendsto_norm` is the lemma behind the "topological equivalence" of
+  `Seminorm.tendsto_apply_iff_tendsto_norm` is the lemma behind the "topological equivalence" of
   norms.
 
 ## Readings
@@ -276,25 +276,6 @@ theorem equation_1_15 {n : ℕ} (b : Module.Basis (Fin n) ℝ V) (x : ℕ → V)
   simp only [Function.comp_def, ContinuousLinearEquiv.coe_toHomeomorph,
     LinearEquiv.coe_toContinuousLinearEquiv', Module.Basis.equivFun_apply]
 
--- TODO(backbone): belongs beside `Seminorm.exists_bounds` in
--- `Numlib/Analysis/Normed/Module/NormEquivalence`.
-/-- **Convergence to `0` does not depend on the norm.** For a definite seminorm `p` on the
-finite-dimensional space `V` and any `f : ι → V`, `p (f k) → 0` iff `‖f k‖ → 0`: the two-sided
-bound `c ‖v‖ ≤ p v ≤ C ‖v‖` squeezes each side by the other. -/
-theorem tendsto_seminorm_iff_tendsto_norm (p : Seminorm ℝ V) (hp : ∀ x, p x = 0 → x = 0)
-    {ι : Type*} {l : Filter ι} (f : ι → V) :
-    Tendsto (fun k => p (f k)) l (𝓝 0) ↔ Tendsto (fun k => ‖f k‖) l (𝓝 0) := by
-  obtain ⟨c, C, hc, hC, h⟩ := p.exists_bounds hp
-  constructor
-  · intro hf
-    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
-      (by simpa using hf.const_mul c⁻¹) (fun k => norm_nonneg _) fun k => ?_
-    rw [le_inv_mul_iff₀ hc]
-    exact (h (f k)).1
-  · intro hf
-    exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
-      (by simpa using hf.const_mul C) (fun k => apply_nonneg p _) fun k => (h (f k)).2
-
 /-- **Property 1.12**, and the topological equivalence of norms preceding it. For a norm `‖·‖`
 on a finite-dimensional space `V`, `lim_k x^(k) = x ⟺ lim_k ‖x - x^(k)‖ = 0`; and for any two
 norms `‖|·|‖`, `‖·‖` on `V`, `‖|x^(k)|‖ → 0 ⟺ ‖x^(k)‖ → 0`. -/
@@ -302,9 +283,9 @@ theorem property_1_12 (p q : Seminorm ℝ V) (hp : ∀ x, p x = 0 → x = 0)
     (hq : ∀ x, q x = 0 → x = 0) (x : ℕ → V) (y : V) :
     (Tendsto x atTop (𝓝 y) ↔ Tendsto (fun k => p (y - x k)) atTop (𝓝 0)) ∧
       (Tendsto (fun k => p (x k)) atTop (𝓝 0) ↔ Tendsto (fun k => q (x k)) atTop (𝓝 0)) := by
-  refine ⟨?_, (tendsto_seminorm_iff_tendsto_norm p hp x).trans
-    (tendsto_seminorm_iff_tendsto_norm q hq x).symm⟩
-  rw [tendsto_iff_norm_sub_tendsto_zero, tendsto_seminorm_iff_tendsto_norm p hp]
+  refine ⟨?_, (Seminorm.tendsto_apply_iff_tendsto_norm p hp x).trans
+    (Seminorm.tendsto_apply_iff_tendsto_norm q hq x).symm⟩
+  rw [tendsto_iff_norm_sub_tendsto_zero, Seminorm.tendsto_apply_iff_tendsto_norm p hp]
   simp only [norm_sub_rev]
 
 end Continuity

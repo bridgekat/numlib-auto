@@ -263,22 +263,6 @@ theorem det_hilbert_pos [LinearOrder K] [IsStrictOrderedRing K] (n : ℕ) :
   have h2 : (0 : K) < (j : K) - i := by linarith
   exact mul_pos h1 h2
 
-/-- On `Fin n`, the leading principal submatrix `A(≤ k)` of `Numlib/LinearAlgebra/Matrix/LU` is,
-up to the reindexing of `{i // i ≤ k}` by `Fin (k + 1)`, the submatrix along `Fin.castLE`, so the
-two have the same determinant. -/
-theorem det_leadingPrincipalSubmatrix_fin {R : Type*} [CommRing R] {n : ℕ}
-    (A : Matrix (Fin n) (Fin n) R) (k : Fin n) :
-    (A.leadingPrincipalSubmatrix k).det =
-      (A.submatrix (Fin.castLE (Nat.succ_le_of_lt k.2))
-        (Fin.castLE (Nat.succ_le_of_lt k.2))).det := by
-  let e : Fin (k + 1) ≃ {i : Fin n // i ≤ k} :=
-    { toFun := fun a => ⟨Fin.castLE (Nat.succ_le_of_lt k.2) a, Fin.le_def.2 (Nat.lt_succ_iff.1 a.2)⟩
-      invFun := fun i => ⟨i.1, Nat.lt_succ_of_le (Fin.le_def.1 i.2)⟩
-      left_inv := fun a => rfl
-      right_inv := fun i => rfl }
-  rw [← det_submatrix_equiv_self e]
-  rfl
-
 /-- The leading principal submatrices of the Hilbert matrix are Hilbert matrices. -/
 theorem hilbert_submatrix_castLE (n m : ℕ) (h : m ≤ n) :
     (hilbert K n).submatrix (Fin.castLE h) (Fin.castLE h) = hilbert K m := by

@@ -102,9 +102,6 @@ id = "galerkin_seminorm_sub_le"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, Theorem 12.3'
 
 [[node]]
-id = "integrableOn_continuousOn_mul"
-
-[[node]]
 id = "ofContDiffMapIcc"
 
 [[node]]
@@ -115,9 +112,6 @@ id = "deriv_ofContDiffMapIcc_one"
 
 [[node]]
 id = "rep_ofContDiffMapIcc"
-
-[[node]]
-id = "intervalIntegral_eq_setIntegral_Ioo"
 
 [[node]]
 id = "form_ofContDiffMapIcc_eq"
@@ -147,9 +141,6 @@ id = "hasWeakDerivOn_mulL_deriv"
 
 [[node]]
 id = "isWeakSolution_mem_sobolevInterval_two"
-
-[[node]]
-id = "Lp.norm_le_of_abs_le"
 
 [[node]]
 id = "exists_sobolevInterval_two"

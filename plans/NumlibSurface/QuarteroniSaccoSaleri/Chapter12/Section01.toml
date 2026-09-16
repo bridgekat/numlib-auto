@@ -67,19 +67,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1, the regula
 [[node]]
 id = "equation_12_5_of_forall_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.5), with an explicit bound on `|f|`'
-
-[[node]]
-id = "contDiffOn_two_of_hasDerivWithinAt"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1 (a calculus lemma used by (12.3); to move to the backbone)'
-
-[[node]]
-id = "iteratedDeriv_two_eq_of_hasDerivWithinAt"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1 (a calculus lemma used by (12.3); to move to the backbone)'
-
-[[node]]
-id = "hasDerivAt_of_contDiffOn_two"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1 (a calculus lemma used by (12.3); to move to the backbone)'
-
-[[node]]
-id = "eqOn_zero_of_hasDerivAt_zero"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1 (a calculus lemma used by (12.3); to move to the backbone)'

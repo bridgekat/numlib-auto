@@ -8,9 +8,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.32)'
 id = "legendreLobatto_nodal_eq"
 
 [[node]]
-id = "isExactOnMeasure_of_nodal_eq_lobattoNodal"
-
-[[node]]
 id = "equation_10_34"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.33)–(10.34)'
 

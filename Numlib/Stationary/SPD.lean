@@ -84,21 +84,6 @@ induced by a real splitting.
 open Filter Topology
 open scoped ENNReal NNReal ComplexOrder
 
-section Instances
-
-variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-  [FiniteDimensional 𝕜 E] {B : E →ₗ[𝕜] E} (hB : B.IsSymmetricCoercive)
-
-/-- The energy space of a finite-dimensional space is finite-dimensional. -/
-instance WithEnergy.instFiniteDimensional : FiniteDimensional 𝕜 (WithEnergy B hB) :=
-  (WithEnergy.equiv B hB).finiteDimensional
-
-/-- The energy space of a finite-dimensional space is complete. -/
-instance WithEnergy.instCompleteSpace : CompleteSpace (WithEnergy B hB) :=
-  FiniteDimensional.complete 𝕜 _
-
-end Instances
-
 namespace Stationary
 
 namespace Splitting
@@ -615,24 +600,6 @@ theorem euclidean_m_add_adjoint_sub :
     Matrix.complexify_sub, Matrix.complexify_add, ← conjTranspose_eq_transpose_of_trivial s.m,
     Matrix.complexify_conjTranspose, Matrix.star_eq_conjTranspose]
 
-/-- The Euclidean operator of a real symmetric matrix is a symmetric operator. -/
-theorem _root_.Matrix.IsHermitian.isSymmetric_toEuclideanCLM_complexify {X : Matrix n n ℝ}
-    (hX : X.IsHermitian) :
-    ((toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify X) :
-      EuclideanSpace ℂ n →L[ℂ] EuclideanSpace ℂ n) :
-        EuclideanSpace ℂ n →ₗ[ℂ] EuclideanSpace ℂ n).IsSymmetric := by
-  rw [coe_toEuclideanCLM_eq_toEuclideanLin]
-  exact isSymmetric_toEuclideanLin_iff.mpr ((Matrix.isHermitian_complexify_iff X).mpr hX)
-
-/-- The Euclidean operator of a real positive definite matrix is symmetric coercive. -/
-theorem _root_.Matrix.PosDef.isSymmetricCoercive_toEuclideanCLM_complexify {X : Matrix n n ℝ}
-    (hX : X.PosDef) :
-    ((toEuclideanCLM (n := n) (𝕜 := ℂ) (Matrix.complexify X) :
-      EuclideanSpace ℂ n →L[ℂ] EuclideanSpace ℂ n) :
-        EuclideanSpace ℂ n →ₗ[ℂ] EuclideanSpace ℂ n).IsSymmetricCoercive := by
-  rw [coe_toEuclideanCLM_eq_toEuclideanLin]
-  exact (posDef_iff_isSymmetricCoercive _).mp (posDef_complexify_iff.mpr hX)
-
 /-- **Householder–John for real matrices** ([saad2003iterative] Thm 4.10; [quarteroni2000numerical]
 Properties 4.1–4.2): for a positive definite `A` and a splitting with `M + Mᵀ - A` positive
 definite, `ρ(M⁻¹ N) < 1`.  It is `spectralRadius_lt_one_of_isSymmetricCoercive` for the induced
@@ -1014,6 +981,56 @@ theorem lt_two_of_sorSplitting_complexSpectralRadius_lt_one [Nonempty n] {A : Ma
   rw [pow_lt_one_iff_of_nonneg (abs_nonneg _) Fintype.card_ne_zero, abs_lt] at hdet
   exact ⟨by linarith [hdet.2], by linarith [hdet.1]⟩
 
+/-- **The SOR matrix of a lower triangular matrix has the single eigenvalue `1 - ω`**, so
+`ρ(B(ω)) = |1 - ω|` for every `ω ≠ 0`, the equality case of Kahan's bound: with `F = 0`,
+`B(ω) = (D - ωE)⁻¹ (1 - ω) D` is lower triangular with diagonal `1 - ω`, and its characteristic
+polynomial is `(λ - (1 - ω))ⁿ`. -/
+theorem complexSpectralRadius_sorSplitting_of_isLowerTriangular [Nonempty n] {A : Matrix n n ℝ}
+    (hA : A.IsLowerTriangular) (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
+    complexSpectralRadius (sorSplitting A h hω).iterationOperator = ENNReal.ofReal |1 - ω| := by
+  set M : Matrix n n ℝ := diagPart A + ω • strictLower A with hMdef
+  set B := (sorSplitting A h hω).iterationOperator with hBdef
+  have hd := (isUnit_diagPart_iff A).mp h
+  have hU : strictUpper A = 0 := by
+    ext i j
+    rw [strictUpper_apply, Matrix.zero_apply]
+    split_ifs with hij
+    · exact hA (OrderDual.toDual_lt_toDual.mpr hij)
+    · rfl
+  have hMtri : M.IsLowerTriangular := by
+    intro i j hij
+    have hij' : i < j := OrderDual.toDual_lt_toDual.mp hij
+    simp [hMdef, diagPart_apply, strictLower_apply, hij'.ne, asymm hij']
+  have hMii : ∀ i, M i i = A i i := fun i => by simp [hMdef, diagPart_apply, strictLower_apply]
+  have hMunit : IsUnit M := isUnit_diagPart_add_smul_strictLower h ω
+  have hMinv : M⁻¹.IsLowerTriangular := hMtri.inv
+  have hMinvii : ∀ i, M⁻¹ i i = (A i i)⁻¹ := fun i => by
+    have h1 := hMinv.mul_apply_self hMtri i
+    rw [nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp hMunit), one_apply_eq, hMii] at h1
+    exact eq_inv_of_mul_eq_one_left h1.symm
+  have hDtri : ((1 - ω) • diagPart A).IsLowerTriangular := by
+    rw [diagPart, ← diagonal_smul]
+    exact blockTriangular_diagonal _
+  have hB : B = M⁻¹ * ((1 - ω) • diagPart A) := by
+    rw [hBdef, sorSplitting_iterationOperator, hU, smul_zero, sub_zero]
+  have hBtri : B.IsLowerTriangular := by
+    rw [hB]
+    exact hMinv.mul hDtri
+  have hBii : ∀ i, B i i = 1 - ω := fun i => by
+    rw [hB, hMinv.mul_apply_self hDtri i, hMinvii]
+    simp only [Matrix.smul_apply, diagPart_apply, ite_true, smul_eq_mul]
+    rw [mul_comm (1 - ω), ← mul_assoc, inv_mul_cancel₀ (hd i), one_mul]
+  have hchar : B.charpoly = (Polynomial.X - Polynomial.C (1 - ω)) ^ Fintype.card n := by
+    rw [charpoly_of_isLowerTriangular B hBtri]
+    simp only [hBii, Finset.prod_const, Finset.card_univ]
+  refine complexSpectralRadius_eq_of_forall_mem_spectrum_iff fun μ => ?_
+  rw [mem_spectrum_complexify_iff, hchar, Polynomial.IsRoot.def]
+  simp only [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+    pow_eq_zero_iff Fintype.card_ne_zero, sub_eq_zero]
+  push_cast
+  rfl
+
 /-- The Householder–John matrix `Q = M + Mᵀ - A` of the SOR splitting of a symmetric `A` is `(2/ω -
 1) D`: the strictly lower part of `M` and the strictly upper part of `Mᵀ` reassemble `A - D`. -/
 theorem sorSplitting_m_add_transpose_sub {A : Matrix n n ℝ} (hA : A.IsHermitian)
@@ -1111,26 +1128,6 @@ theorem jorSplitting_complexSpectralRadius_lt_one_of_le_one {A : Matrix n n ℝ}
   exact complexSpectralRadius_affine_lt_one _ hω0 hω1 hJ
 
 
-omit [LinearOrder n] in
-/-- `ρ(X) < 1` iff every complex eigenvalue has modulus `< 1`, for a nonempty index type (so that
-the spectrum is nonempty and the spectral radius is attained). -/
-theorem complexSpectralRadius_lt_one_iff_forall_norm_lt [Nonempty n] (X : Matrix n n ℝ) :
-    complexSpectralRadius X < 1 ↔ ∀ μ ∈ spectrum ℂ (complexify X), ‖μ‖ < 1 := by
-  constructor
-  · intro h μ hμ
-    have : (‖μ‖₊ : ℝ≥0∞) ≤ complexSpectralRadius X :=
-      le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ hμ
-    have h1 := this.trans_lt h
-    rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm] at h1
-  · intro h
-    obtain ⟨μ, v, hv, hμv, hμ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius X
-    have hmem : μ ∈ spectrum ℂ (complexify X) :=
-      (mem_spectrum_iff_exists_mulVec_eq_smul _ _).mpr ⟨v, hv, hμv⟩
-    have h1 := h μ hmem
-    rw [hμ] at h1
-    rwa [← ENNReal.toReal_lt_toReal (complexSpectralRadius_ne_top X) ENNReal.one_ne_top,
-      ENNReal.toReal_one]
-
 /-- **Kahan's bound** `|1 - ω| ≤ ρ(G_ω)` ([quarteroni2000numerical] Theorem 4.7): the determinant
 of the SOR iteration matrix is `(1 - ω)ⁿ` (`Matrix.det_sorSplitting_iterationOperator`) and the
 product of the `n` complex eigenvalues, each of modulus at most `ρ(G_ω)`.  The corollary
@@ -1176,44 +1173,6 @@ end Matrix
 namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
-
-/-- A real vector as a vector of `EuclideanSpace ℂ n`. -/
-def toEuclideanComplex (e : n → ℝ) : EuclideanSpace ℂ n := WithLp.toLp 2 fun i => (e i : ℂ)
-
-omit [Fintype n] [DecidableEq n] in
-/-- A real vector is zero iff its complex Euclidean image is. -/
-theorem toEuclideanComplex_eq_zero_iff {e : n → ℝ} : toEuclideanComplex e = 0 ↔ e = 0 := by
-  constructor
-  · intro h
-    ext i
-    have := congrFun (congrArg WithLp.ofLp h) i
-    simpa [toEuclideanComplex] using this
-  · rintro rfl
-    ext i
-    simp [toEuclideanComplex]
-
-omit [DecidableEq n] in
-/-- The complexification of `A` acts on a real vector as `A` does. -/
-theorem complexify_mulVec_ofReal (A : Matrix n n ℝ) (e : n → ℝ) :
-    complexify A *ᵥ (fun i => (e i : ℂ)) = fun i => ((A *ᵥ e) i : ℂ) := by
-  ext i
-  simp [mulVec, dotProduct, complexify_apply]
-
-/-- The Euclidean operator of the complexification of `A` acts on a real vector as `A` does. -/
-theorem toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
-    toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e)
-      = toEuclideanComplex (A *ᵥ e) := by
-  rw [toEuclideanComplex, toEuclideanCLM_toLp, complexify_mulVec_ofReal]
-  rfl
-
-/-- The quadratic form of the Euclidean operator of `complexify A` at a real vector is the real
-quadratic form `(A e) ⬝ e`. -/
-theorem re_inner_toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
-    RCLike.re (inner ℂ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e))
-      (toEuclideanComplex e)) = (A *ᵥ e) ⬝ᵥ e := by
-  rw [toEuclideanCLM_complexify_toEuclideanComplex, toEuclideanComplex, toEuclideanComplex,
-    EuclideanSpace.inner_eq_star_dotProduct]
-  simp [dotProduct, mul_comm]
 
 /-- The energy norm of a real vector in the Euclidean energy space of a positive definite `A` is
 the real energy norm: `‖e‖_A² = (A e) ⬝ e`. -/
@@ -1267,6 +1226,46 @@ theorem exists_energyNorm_mulVec_iterationOperator_le (hA : A.PosDef)
   rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hA] at h2
 
+/-- **The uniform energy contraction dominates the spectral radius**: under the hypotheses of
+`exists_energyNorm_mulVec_iterationOperator_le` there is `q < 1` with both `ρ(G) ≤ q` and
+`‖G e‖_A² ≤ q² ‖e‖_A²` for every real `e`. The operator-norm bound `‖G‖_A ≤ q` on the complex energy
+space (`exists_energyNorm_iterationOperator_apply_le`) gives `ρ(G) ≤ ‖G‖_A ≤ q`, and the bound on
+real vectors is read off it as in `exists_energyNorm_mulVec_iterationOperator_le`. -/
+theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
+    (hQ : (s.m + s.mᵀ - A).PosDef) :
+    ∃ q : ℝ, q < 1 ∧ (complexSpectralRadius s.iterationOperator).toReal ≤ q ∧
+      ∀ e : n → ℝ, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) ≤
+        q ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
+  have hA' := hA.isSymmetricCoercive_toEuclideanCLM_complexify
+  have hQ' := hQ.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
+  rw [← euclidean_m_add_adjoint_sub] at hQ'
+  obtain ⟨q, hq1, hq⟩ := exists_energyNorm_iterationOperator_apply_le s.euclidean hA' hQ'
+  set T := energyIterationOperator s.euclidean hA' with hT
+  have hTle : ‖T‖ ≤ max q 0 := by
+    refine ContinuousLinearMap.opNorm_le_bound _ (le_max_right _ _) fun u => ?_
+    obtain ⟨x, rfl⟩ := (WithEnergy.equiv _ hA').surjective u
+    rw [hT, energyIterationOperator_apply, WithEnergy.norm_equiv, WithEnergy.norm_equiv]
+    exact (hq x).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (energyNorm_nonneg _ _))
+  have hρ : (complexSpectralRadius s.iterationOperator).toReal ≤ max q 0 := by
+    rw [← spectralRadius_euclidean_iterationOperator,
+      ← spectralRadius_energyIterationOperator s.euclidean hA', ← hT]
+    rcases subsingleton_or_nontrivial (WithEnergy _ hA') with hsub | hnt
+    · have : Subsingleton (WithEnergy _ hA' →L[ℂ] WithEnergy _ hA') :=
+        ⟨fun f g => by ext x; exact Subsingleton.elim _ _⟩
+      rw [spectrum.SpectralRadius.of_subsingleton, ENNReal.toReal_zero]
+      exact le_max_right _ _
+    · refine le_trans ?_ hTle
+      refine ENNReal.toReal_le_of_le_ofReal (norm_nonneg _) ?_
+      rw [ofReal_norm, enorm_eq_nnnorm]
+      exact spectrum.spectralRadius_le_nnnorm T
+  refine ⟨max q 0, max_lt hq1 zero_lt_one, hρ, fun e => ?_⟩
+  have h := hq (toEuclideanComplex e)
+  rw [euclidean_iterationOperator, toEuclideanCLM_complexify_toEuclideanComplex] at h
+  have h' := h.trans (mul_le_mul_of_nonneg_right (le_max_left q 0) (energyNorm_nonneg _ _))
+  have h2 := pow_le_pow_left₀ (energyNorm_nonneg _ _) h' 2
+  rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
+    energyNorm_toEuclideanCLM_complexify_sq hA] at h2
+
 /-- **`‖G e‖_A ≤ ρ(G) ‖e‖_A` for real matrices** ([quarteroni2000numerical] Property 4.1 and
 Corollary 4.1 in the generality of its closing remark: `A` positive definite and `M` symmetric,
 no hypothesis on `M⁻¹ A`), in the squared form `(A (G e)) ⬝ (G e) ≤ ρ(G)² ((A e) ⬝ e)`. -/
@@ -1305,15 +1304,14 @@ theorem energyNorm_m_mulVec_iterationOperator_le_complexSpectralRadius (hA : A.I
   rwa [energyNorm_toEuclideanCLM_complexify_sq hM, mul_pow,
     energyNorm_toEuclideanCLM_complexify_sq hM] at h2
 
-/-- **The spectral radius is attained in the real energy norm** ([quarteroni2000numerical] Property
-4.1, the equality `ρ(B) = ‖B‖_A` read on real vectors): for a positive definite `A` and a splitting
-with symmetric `M`, some real `e ≠ 0` has `(A (G e)) ⬝ (G e) = ρ(G)² ((A e) ⬝ e)`.  An eigenvalue of
-maximal modulus is real, because `G` is self-adjoint in the `A`-inner product, and a real eigenvalue
-of a real matrix has a real eigenvector. -/
-theorem exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius [Nonempty n]
-    (hA : A.PosDef) (hM : s.m.IsHermitian) :
-    ∃ e : n → ℝ, e ≠ 0 ∧ (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
-      = (complexSpectralRadius s.iterationOperator).toReal ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
+/-- For `A` positive definite and `M` symmetric, the iteration matrix `G = M⁻¹ N` has a real
+eigenvector `e ≠ 0` for a real eigenvalue of modulus `ρ(G)`: `G` is self-adjoint in the
+`A`-inner product, so an eigenvalue of maximal modulus is real, and a real eigenvalue of a real
+matrix has a real eigenvector. -/
+theorem exists_mulVec_iterationOperator_eq_smul [Nonempty n] (hA : A.PosDef)
+    (hM : s.m.IsHermitian) :
+    ∃ e : n → ℝ, e ≠ 0 ∧ ∃ μ : ℝ, |μ| = (complexSpectralRadius s.iterationOperator).toReal ∧
+      s.iterationOperator *ᵥ e = μ • e := by
   set G := s.iterationOperator with hG
   obtain ⟨μ, v, hv, hμv, hμρ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius G
   have hμmem : μ ∈ spectrum ℂ (Matrix.complexify G) :=
@@ -1336,11 +1334,20 @@ theorem exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius [Non
     ← exists_mulVec_eq_zero_iff] at hmemR
   obtain ⟨e, he, hGe⟩ := hmemR
   rw [sub_mulVec, Algebra.algebraMap_eq_smul_one, smul_mulVec, one_mulVec, sub_eq_zero] at hGe
+  refine ⟨e, he, μ.re, ?_, hGe.symm⟩
+  rw [← hμρ, hreal, Complex.norm_real, Real.norm_eq_abs, Complex.ofReal_re]
+
+/-- **The spectral radius is attained in the real energy norm** ([quarteroni2000numerical] Property
+4.1, the equality `ρ(B) = ‖B‖_A` read on real vectors): for a positive definite `A` and a splitting
+with symmetric `M`, some real `e ≠ 0` has `(A (G e)) ⬝ (G e) = ρ(G)² ((A e) ⬝ e)`, namely the
+real eigenvector of `Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`. -/
+theorem exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius [Nonempty n]
+    (hA : A.PosDef) (hM : s.m.IsHermitian) :
+    ∃ e : n → ℝ, e ≠ 0 ∧ (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e)
+      = (complexSpectralRadius s.iterationOperator).toReal ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
+  obtain ⟨e, he, μ, hμ, hGe⟩ := s.exists_mulVec_iterationOperator_eq_smul hA hM
   refine ⟨e, he, ?_⟩
-  have habs : |μ.re| = (complexSpectralRadius G).toReal := by
-    rw [← hμρ, hreal, Complex.norm_real, Real.norm_eq_abs, Complex.ofReal_re]
-  rw [← hGe, mulVec_smul, dotProduct_smul, smul_dotProduct, smul_eq_mul, smul_eq_mul, ← habs,
-    sq_abs]
+  rw [hGe, mulVec_smul, dotProduct_smul, smul_dotProduct, smul_eq_mul, smul_eq_mul, ← hμ, sq_abs]
   ring
 
 end Stationary.Splitting
@@ -1482,27 +1489,6 @@ variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
 section Parts
 
 variable {𝕜 : Type*} [Field 𝕜]
-
-omit [Fintype n] [DecidableEq n] in
-/-- The transpose of the strictly lower part is the strictly upper part of the transpose. -/
-theorem strictLower_transpose (A : Matrix n n 𝕜) : (strictLower A)ᵀ = strictUpper Aᵀ := by
-  ext i j
-  simp
-
-omit [Fintype n] [DecidableEq n] in
-/-- The transpose of the strictly upper part is the strictly lower part of the transpose. -/
-theorem strictUpper_transpose (A : Matrix n n 𝕜) : (strictUpper A)ᵀ = strictLower Aᵀ := by
-  ext i j
-  simp
-
-omit [Fintype n] [LinearOrder n] in
-/-- The transpose of the diagonal part is the diagonal part of the transpose. -/
-theorem diagPart_transpose (A : Matrix n n 𝕜) : (diagPart A)ᵀ = diagPart Aᵀ := by
-  ext i j
-  by_cases hij : i = j
-  · subst hij
-    simp
-  · simp [hij, Ne.symm hij]
 
 omit [Fintype n] in
 /-- For a symmetric `A`, `(D + ω L)ᵀ = D + ω U`. -/

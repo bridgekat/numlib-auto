@@ -476,6 +476,32 @@ weights `(1/6, 4/6, 1/6)` at the two endpoints and the midpoint of the panel. -/
 noncomputable def simpsonSum (g : ℝ → ℝ) (a h : ℝ) (N : ℕ) : ℝ :=
   ∑ j ∈ Finset.range N, h / 6 * (g (a + j * h) + 4 * g (a + j * h + h / 2) + g (a + (j + 1) * h))
 
+/-- **The composite Simpson rule is the first Romberg column, for any number of panels**:
+`S_N = (4 T_{2N} - T_N)/3` with `T_N` on the mesh `h` and `T_{2N}` on `h/2`, by reindexing the
+`2N`-panel trapezoidal sum by parity. -/
+theorem simpsonSum_eq_trapezoidSum (f : ℝ → ℝ) (a h : ℝ) (N : ℕ) :
+    Quadrature.simpsonSum f a h N
+      = (4 * Quadrature.trapezoidSum f a (h / 2) (2 * N) - Quadrature.trapezoidSum f a h N)
+        / 3 := by
+  have hsplit : ∀ (g : ℕ → ℝ) (N : ℕ),
+      ∑ j ∈ Finset.range (2 * N), g j = ∑ i ∈ Finset.range N, (g (2 * i) + g (2 * i + 1)) := by
+    intro g N
+    induction N with
+    | zero => simp
+    | succ N ih =>
+      rw [show 2 * (N + 1) = 2 * N + 1 + 1 by ring, Finset.sum_range_succ, Finset.sum_range_succ,
+        ih, Finset.sum_range_succ]
+      ring
+  rw [Quadrature.trapezoidSum, Quadrature.trapezoidSum, Quadrature.simpsonSum, hsplit,
+    Finset.mul_sum, ← Finset.sum_sub_distrib, Finset.sum_div]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  push_cast
+  have e1 : a + (2 * (i : ℝ) + 1) * (h / 2) = a + i * h + h / 2 := by ring
+  have e2 : a + (2 * (i : ℝ) + 1 + 1) * (h / 2) = a + (i + 1) * h := by ring
+  have e3 : a + 2 * (i : ℝ) * (h / 2) = a + i * h := by ring
+  rw [e1, e2, e3]
+  ring
+
 /-- **Convergence of a composite rule on the uniform mesh.** The shape shared by the uniform mesh
 convergence proofs: the partition `x_j = a + j h_n` of `[a, b]` into `N n` panels satisfies the
 hypotheses of `tendsto_compositeSum`, for a panel rule with nonnegative weights `ω` summing to one

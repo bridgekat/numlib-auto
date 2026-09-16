@@ -1,5 +1,6 @@
 import Numlib.Direct.Substitution
 import Numlib.FloatingPoint.Stationary
+import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.Stationary.Block
 import Numlib.Stationary.ConsistentlyOrdered
 import Numlib.Stationary.DiagDominant
@@ -120,16 +121,6 @@ theorem Splitting.consistent (s : Splitting A) (hA : IsUnit A) (b : Fin n → �
   rw [s.mulVecStep_eq_iterationOperator_mulVec_add] at h
   exact h.symm
 
--- TODO(backbone): belongs in `Numlib/Stationary/Splitting` beside
--- `Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one`.
-/-- A splitting whose iteration matrix has `ρ(B) < 1` splits a nonsingular matrix: `1 - B = P⁻¹ A`
-is invertible. -/
-theorem Splitting.isUnit_of_complexSpectralRadius_lt_one (s : Splitting A)
-    (hs : complexSpectralRadius s.iterationOperator < 1) : IsUnit A := by
-  have hu := isUnit_one_sub_of_complexSpectralRadius_lt_one hs
-  rw [s.one_sub_iterationOperator] at hu
-  exact isUnit_of_mul_isUnit_right hu
-
 /-- **Theorem 4.1 for a splitting, the sufficiency**: if `ρ(P⁻¹ N) < 1`, the iteration (4.6)
 converges to `A⁻¹ b` from every `x⁽⁰⁾`, for every `b` (`A` is then automatically nonsingular). -/
 theorem Splitting.tendsto (s : Splitting A) (hs : complexSpectralRadius s.iterationOperator < 1)
@@ -174,43 +165,6 @@ theorem property_4_1_spectralRadius_lt_one (hA : A.PosDef) (s : Splitting A) (hP
     (by rwa [add_transpose_sub_of_isHermitian hP.1])
   exact ⟨hρ, fun b x₀ => s.tendsto hρ b x₀⟩
 
--- TODO(backbone): the eigenvector behind
--- `Stationary.Splitting.exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius`,
--- which should be stated in this form so that every energy norm sees it.
-/-- For `A` positive definite and `P` symmetric, the iteration matrix `B = P⁻¹ N` has a real
-eigenvector `e ≠ 0` for a real eigenvalue of modulus `ρ(B)`: `B` is self-adjoint in the
-`A`-inner product, so an eigenvalue of maximal modulus is real, and a real eigenvalue of a real
-matrix has a real eigenvector. -/
-theorem Splitting.exists_mulVec_iterationOperator_eq_smul [NeZero n] (s : Splitting A)
-    (hA : A.PosDef) (hM : s.m.IsHermitian) :
-    ∃ e : Fin n → ℝ, e ≠ 0 ∧ ∃ μ : ℝ, |μ| = (complexSpectralRadius s.iterationOperator).toReal ∧
-      s.iterationOperator *ᵥ e = μ • e := by
-  set G := s.iterationOperator with hG
-  obtain ⟨μ, v, hv, hμv, hμρ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius G
-  have hμmem : μ ∈ spectrum ℂ (Matrix.complexify G) :=
-    (mem_spectrum_iff_exists_mulVec_eq_smul _ _).mpr ⟨v, hv, hμv⟩
-  have hA' := hA.isSymmetricCoercive_toEuclideanCLM_complexify
-  have hM' : (s.euclidean.m :
-      EuclideanSpace ℂ (Fin n) →ₗ[ℂ] EuclideanSpace ℂ (Fin n)).IsSymmetric := by
-    rw [Splitting.euclidean_m]
-    exact hM.isSymmetric_toEuclideanCLM_complexify
-  have hsa := Splitting.isSelfAdjoint_energyIterationOperator s.euclidean hA'
-    (Splitting.energyInner_iterationOperator_comm s.euclidean hA'.isSymmetric hM')
-  have hμmem' : μ ∈ spectrum ℂ (Splitting.energyIterationOperator s.euclidean hA') := by
-    rw [Splitting.spectrum_energyIterationOperator, Splitting.euclidean_iterationOperator,
-      AlgEquiv.spectrum_eq (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℂ))]
-    exact hμmem
-  have hreal : μ = (μ.re : ℂ) := hsa.mem_spectrum_eq_re hμmem'
-  have hmemR : μ.re ∈ spectrum ℝ G := by
-    rw [← ofReal_mem_spectrum_complexify_iff, ← hreal]
-    exact hμmem
-  rw [spectrum.mem_iff, isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
-    ← exists_mulVec_eq_zero_iff] at hmemR
-  obtain ⟨e, he, hGe⟩ := hmemR
-  rw [sub_mulVec, Algebra.algebraMap_eq_smul_one, smul_mulVec, one_mulVec, sub_eq_zero] at hGe
-  refine ⟨e, he, μ.re, ?_, hGe.symm⟩
-  rw [← hμρ, hreal, Complex.norm_real, Real.norm_eq_abs, Complex.ofReal_re]
-
 /-- The energy form of an eigenvector: `(X (B e)) ⬝ (B e) = μ² ((X e) ⬝ e)` when `B e = μ e`. -/
 private theorem energy_of_mulVec_eq_smul {B X : Matrix (Fin n) (Fin n) ℝ} {e : Fin n → ℝ} {μ : ℝ}
     (h : B *ᵥ e = μ • e) : (X *ᵥ (B *ᵥ e)) ⬝ᵥ (B *ᵥ e) = μ ^ 2 * ((X *ᵥ e) ⬝ᵥ e) := by
@@ -224,7 +178,7 @@ clause does not need `2P - A`), the operator norms of `B = P⁻¹ N` induced by 
 `Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius` and
 `Stationary.Splitting.energyNorm_m_mulVec_iterationOperator_le_complexSpectralRadius`; the
 equalities hold at a real eigenvector of modulus `ρ(B)`
-(`Splitting.exists_mulVec_iterationOperator_eq_smul`). -/
+(`Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`). -/
 theorem property_4_1_energyNorm [NeZero n] (hA : A.PosDef) (s : Splitting A) (hP : s.m.PosDef) :
     (∀ e, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) ≤
         (complexSpectralRadius s.iterationOperator).toReal ^ 2 * ((A *ᵥ e) ⬝ᵥ e)) ∧
@@ -263,20 +217,6 @@ theorem property_4_1_monotone (hA : A.PosDef) (s : Splitting A) (hP : s.m.PosDef
     (pow_lt_one_iff_of_nonneg ENNReal.toReal_nonneg two_ne_zero).mpr hρ'
   nlinarith
 
--- TODO(backbone): `Matrix.isUnit_of_posDef_add_transpose`, next to `Matrix.PosDef.isUnit`.
-/-- A real matrix whose symmetric part `P + Pᵀ` is positive definite is nonsingular: `P x = 0`
-forces `xᵀ (P + Pᵀ) x = 2 xᵀ P x = 0`. -/
-theorem isUnit_of_posDef_add_transpose {P : Matrix (Fin n) (Fin n) ℝ} (hP : (P + Pᵀ).PosDef) :
-    IsUnit P := by
-  by_contra h
-  obtain ⟨a, ha, ha2⟩ : ∃ a ≠ 0, P *ᵥ a = 0 := by
-    obtain ⟨a, b, hab⟩ := Function.not_injective_iff.mp <| mulVec_injective_iff_isUnit.not.mpr h
-    exact ⟨a - b, by simp [sub_eq_zero, hab, mulVec_sub]⟩
-  have hpos := hP.dotProduct_mulVec_pos ha
-  rw [star_trivial, add_mulVec, dotProduct_add, ha2, dotProduct_zero, zero_add, mulVec_transpose,
-    dotProduct_comm, ← dotProduct_mulVec, ha2, dotProduct_zero] at hpos
-  exact lt_irrefl _ hpos
-
 /-- **Property 4.2, `P` is invertible.** If `A` and `P + Pᵀ - A` are positive definite then `P` is
 nonsingular, so that `A = P - N` is a splitting in the sense of §4.2:
 `P + Pᵀ = (P + Pᵀ - A) + A` is positive definite. -/
@@ -284,55 +224,13 @@ theorem property_4_2_isUnit (hA : A.PosDef) {P : Matrix (Fin n) (Fin n) ℝ}
     (hQ : (P + Pᵀ - A).PosDef) : IsUnit P :=
   isUnit_of_posDef_add_transpose (by simpa using hQ.add hA)
 
--- TODO(backbone): `Stationary.Splitting.exists_energyNorm_mulVec_iterationOperator_le` should
--- state `ρ(B) ≤ q` (and `0 ≤ q`) as well; this is that strengthening, from the operator form.
-/-- **The uniform energy contraction dominates the spectral radius**: for `A` positive definite and
-`P + Pᵀ - A` positive definite there is `q < 1` with `ρ(B) ≤ q` and `‖B e‖_A ≤ q ‖e‖_A` for every
-real `e`. The operator-norm bound `‖B‖_A ≤ q` on the complex energy space
-(`Stationary.Splitting.exists_energyNorm_iterationOperator_apply_le`) gives `ρ(B) ≤ ‖B‖_A ≤ q`,
-and the bound on real vectors is read off it as in the backbone. -/
-theorem Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (s : Splitting A)
-    (hA : A.PosDef) (hQ : (s.m + s.mᵀ - A).PosDef) :
-    ∃ q : ℝ, q < 1 ∧ (complexSpectralRadius s.iterationOperator).toReal ≤ q ∧
-      ∀ e : Fin n → ℝ, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) ≤
-        q ^ 2 * ((A *ᵥ e) ⬝ᵥ e) := by
-  have hA' := hA.isSymmetricCoercive_toEuclideanCLM_complexify
-  have hQ' := hQ.isSymmetricCoercive_toEuclideanCLM_complexify.isCoercive
-  rw [← Splitting.euclidean_m_add_adjoint_sub] at hQ'
-  obtain ⟨q, hq1, hq⟩ := Splitting.exists_energyNorm_iterationOperator_apply_le s.euclidean hA' hQ'
-  set T := Splitting.energyIterationOperator s.euclidean hA' with hT
-  have hTle : ‖T‖ ≤ max q 0 := by
-    refine ContinuousLinearMap.opNorm_le_bound _ (le_max_right _ _) fun u => ?_
-    obtain ⟨x, rfl⟩ := (WithEnergy.equiv _ hA').surjective u
-    rw [hT, Splitting.energyIterationOperator_apply, WithEnergy.norm_equiv, WithEnergy.norm_equiv]
-    exact (hq x).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (energyNorm_nonneg _ _))
-  have hρ : (complexSpectralRadius s.iterationOperator).toReal ≤ max q 0 := by
-    rw [← Splitting.spectralRadius_euclidean_iterationOperator,
-      ← Splitting.spectralRadius_energyIterationOperator s.euclidean hA', ← hT]
-    rcases subsingleton_or_nontrivial (WithEnergy _ hA') with hsub | hnt
-    · have : Subsingleton (WithEnergy _ hA' →L[ℂ] WithEnergy _ hA') :=
-        ⟨fun f g => by ext x; exact Subsingleton.elim _ _⟩
-      rw [spectrum.SpectralRadius.of_subsingleton, ENNReal.toReal_zero]
-      exact le_max_right _ _
-    · refine le_trans ?_ hTle
-      refine ENNReal.toReal_le_of_le_ofReal (norm_nonneg _) ?_
-      rw [ofReal_norm, enorm_eq_nnnorm]
-      exact spectrum.spectralRadius_le_nnnorm T
-  refine ⟨max q 0, max_lt hq1 zero_lt_one, hρ, fun e => ?_⟩
-  have h := hq (toEuclideanComplex e)
-  rw [Splitting.euclidean_iterationOperator, toEuclideanCLM_complexify_toEuclideanComplex] at h
-  have h' := h.trans (mul_le_mul_of_nonneg_right (le_max_left q 0) (energyNorm_nonneg _ _))
-  have h2 := pow_le_pow_left₀ (energyNorm_nonneg _ _) h' 2
-  rwa [energyNorm_toEuclideanCLM_complexify_sq hA, mul_pow,
-    energyNorm_toEuclideanCLM_complexify_sq hA] at h2
-
 /-- **Property 4.2.** Let `A = P - N` with `A` symmetric positive definite. If `P + Pᵀ - A` is
 positive definite then `P` is invertible (`property_4_2_isUnit`, so that `A = P - N` is a
 splitting `s` in the sense of §4.2, with `P = s.m`), the iteration (4.7) converges for every
 `x⁽⁰⁾` and every `b`, and `ρ(B) ≤ ‖B‖_A < 1`: there is `q < 1` with `ρ(B) ≤ q` and
 `‖B e‖_A ≤ q ‖e‖_A` for every `e`. Householder–John
 (`Stationary.Splitting.complexSpectralRadius_lt_one_of_posDef`) and the uniform energy contraction
-(`Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le`). -/
+(`Stationary.Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le`). -/
 theorem property_4_2 (hA : A.PosDef) (s : Splitting A) (hQ : (s.m + s.mᵀ - A).PosDef) :
     complexSpectralRadius s.iterationOperator < 1 ∧
       (∀ b x₀, Tendsto (fun k => (s.mulVecStep b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ∧
@@ -772,16 +670,6 @@ theorem property_4_3_diagDominant (hA : A.IsStrictDiagDominant) {ω : ℝ} (hω0
   rw [sorSweep_eq_mulVecStep A hA.isUnit_diagPart hω0.ne' b]
   exact Splitting.tendsto _ (sorSplitting_complexSpectralRadius_lt_one_of_le_one hA _ hω0 hω1) b x₀
 
--- TODO(backbone): `Matrix.complexify_sorIterationMatrix`, beside `Matrix.sorIterationMatrix` in
--- `Numlib/Stationary/ConsistentlyOrdered`.
-/-- The SOR matrix of the complexification is the complexification of the SOR matrix, for every
-`ω` (at `ω ≠ 0` this is `Matrix.complexify_sor_iterationOperator`). -/
-theorem complexify_sorIterationMatrix (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) :
-    complexify (sorIterationMatrix A ω) = sorIterationMatrix (complexify A) ω := by
-  rw [sorIterationMatrix, sorIterationMatrix, complexify_mul, complexify_inv, complexify_add,
-    complexify_smul, complexify_sub, complexify_smul, complexify_smul, complexify_diagPart,
-    complexify_strictLower, complexify_strictUpper, Complex.ofReal_sub, Complex.ofReal_one]
-
 /-- The real Jacobi matrix has real eigenvalues, in the backbone's form, iff its complexification
 has. -/
 private theorem forall_im_eq_zero_iff (h : IsUnit (diagPart A)) :
@@ -916,65 +804,6 @@ theorem example_4_3_solution :
       fun _ => 5 / 2 :=
   example_4_3_mulVec 100
 
--- TODO(backbone): `Matrix.charpoly_of_isLowerTriangular`, the mirror of Mathlib's
--- `Matrix.charpoly_of_isUpperTriangular`.
-/-- The characteristic polynomial of a lower triangular matrix is `∏ᵢ (X - a_ii)`. -/
-theorem charpoly_of_isLowerTriangular {R : Type*} [CommRing R] {m : Type*} [Fintype m]
-    [DecidableEq m] [LinearOrder m] (M : Matrix m m R) (hM : M.IsLowerTriangular) :
-    M.charpoly = ∏ i, (Polynomial.X - Polynomial.C (M i i)) := by
-  simp [charpoly, det_of_isLowerTriangular _ hM.charmatrix]
-
--- TODO(backbone): `Matrix.IsLowerTriangular.complexSpectralRadius_sorSplitting`, for
--- `Numlib/Stationary/SPD` beside Kahan's bound, of which it is the equality case.
-/-- **The SOR matrix of a lower triangular matrix has the single eigenvalue `1 - ω`**, so
-`ρ(B(ω)) = |1 - ω|` for every `ω ≠ 0`: with `F = 0`, `B(ω) = (D - ωE)⁻¹ (1 - ω) D` is lower
-triangular with diagonal `1 - ω`, and its characteristic polynomial is `(λ - (1 - ω))ⁿ`. -/
-theorem complexSpectralRadius_sorSplitting_of_isLowerTriangular [NeZero n]
-    (hA : A.IsLowerTriangular) (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
-    complexSpectralRadius (sorSplitting A h hω).iterationOperator = ENNReal.ofReal |1 - ω| := by
-  set M : Matrix (Fin n) (Fin n) ℝ := diagPart A + ω • strictLower A with hMdef
-  set B := (sorSplitting A h hω).iterationOperator with hBdef
-  have hd := (isUnit_diagPart_iff A).mp h
-  have hU : strictUpper A = 0 := by
-    ext i j
-    rw [strictUpper_apply, Matrix.zero_apply]
-    split_ifs with hij
-    · exact hA (OrderDual.toDual_lt_toDual.mpr hij)
-    · rfl
-  have hMtri : M.IsLowerTriangular := by
-    intro i j hij
-    have hij' : i < j := OrderDual.toDual_lt_toDual.mp hij
-    simp [hMdef, diagPart_apply, strictLower_apply, hij'.ne, asymm hij']
-  have hMii : ∀ i, M i i = A i i := fun i => by simp [hMdef, diagPart_apply, strictLower_apply]
-  have hMunit : IsUnit M := isUnit_diagPart_add_smul_strictLower h ω
-  have hMinv : M⁻¹.IsLowerTriangular := hMtri.inv
-  have hMinvii : ∀ i, M⁻¹ i i = (A i i)⁻¹ := fun i => by
-    have h1 := hMinv.mul_apply_self hMtri i
-    rw [nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp hMunit), one_apply_eq, hMii] at h1
-    exact eq_inv_of_mul_eq_one_left h1.symm
-  have hDtri : ((1 - ω) • diagPart A).IsLowerTriangular := by
-    rw [diagPart, ← diagonal_smul]
-    exact blockTriangular_diagonal _
-  have hB : B = M⁻¹ * ((1 - ω) • diagPart A) := by
-    rw [hBdef, sorSplitting_iterationOperator, hU, smul_zero, sub_zero]
-  have hBtri : B.IsLowerTriangular := by
-    rw [hB]
-    exact hMinv.mul hDtri
-  have hBii : ∀ i, B i i = 1 - ω := fun i => by
-    rw [hB, hMinv.mul_apply_self hDtri i, hMinvii]
-    simp only [Matrix.smul_apply, diagPart_apply, ite_true, smul_eq_mul]
-    rw [mul_comm (1 - ω), ← mul_assoc, inv_mul_cancel₀ (hd i), one_mul]
-  have hchar : B.charpoly = (Polynomial.X - Polynomial.C (1 - ω)) ^ n := by
-    rw [charpoly_of_isLowerTriangular B hBtri]
-    simp only [hBii, prod_const, card_univ, Fintype.card_fin]
-  refine complexSpectralRadius_eq_of_forall_mem_spectrum_iff fun μ => ?_
-  rw [mem_spectrum_complexify_iff, hchar, Polynomial.IsRoot.def]
-  simp only [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
-    Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
-    pow_eq_zero_iff (NeZero.ne n), sub_eq_zero]
-  push_cast
-  rfl
-
 /-- Example 4.3's matrix is lower triangular. -/
 private theorem example_4_3_matrix_isLowerTriangular (m : ℕ) :
     (example_4_3_matrix m).IsLowerTriangular := by
@@ -994,7 +823,7 @@ private theorem example_4_3_matrix_isUnit_diagPart (m : ℕ) :
 /-- **Example 4.3, `ρ(B(3/2)) = 0.5`.** For the lower bidiagonal matrix of the example the SOR
 method with `ω = 3/2` "should be convergent, working in exact arithmetic, since
 `ρ(B(1.5)) = 0.5`": the matrix is lower triangular, so `ρ(B(ω)) = |1 - ω|` for every `ω`
-(`complexSpectralRadius_sorSplitting_of_isLowerTriangular`). -/
+(backbone `Matrix.complexSpectralRadius_sorSplitting_of_isLowerTriangular`). -/
 theorem example_4_3_spectralRadius :
     complexSpectralRadius (sorSplitting (example_4_3_matrix 100)
         (example_4_3_matrix_isUnit_diagPart 100) (by norm_num : (3 / 2 : ℝ) ≠ 0)).iterationOperator

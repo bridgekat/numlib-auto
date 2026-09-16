@@ -55,15 +55,6 @@ id = "peacemanRachfordTwoConst_self"
 id = "peacemanRachfordTwo_conj"
 
 [[node]]
-id = "spectralRadius_le_nnnorm_conj"
-
-[[node]]
-id = "le_of_mem_spectrum_real_of_isCoerciveWith"
-
-[[node]]
-id = "mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy"
-
-[[node]]
 id = "norm_cayleyTwo_le"
 
 [[node]]

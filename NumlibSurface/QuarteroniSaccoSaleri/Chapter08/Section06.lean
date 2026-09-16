@@ -404,30 +404,6 @@ theorem IsCubicInterpSpline.eqOn_naturalInterp (hn : 1 ≤ n) (hs : IsCubicInter
   hs.eqOn_cubicInterp hx hn le_rfl zero_le_one le_rfl zero_le_one
     ((equation_8_45_two_iff_hasClosure hx).mp hnat)
 
-/-- **The clamped end conditions are a closure of type (8.48)**: if the cubic spline `s`
-interpolating the values `f_i` has `s'(a) = f'₀` and `s'(b) = f'_n` (derivatives within `[a, b]`),
-its moments satisfy `2 M₀ + M₁ = (6/h₁)((f₁ - f₀)/h₁ - f'₀)` and
-`M_{n-1} + 2 M_n = (6/h_n)(f'_n - (f_n - f_{n-1})/h_n)`, by the one-sided slope formulas displayed
-before (8.47). -/
--- TODO(backbone): belongs to `Numlib/Approximation/Spline` beside `deriv_clampedInterp_endpoints`,
--- as the converse direction of the clamped closure.
-theorem IsCubicInterpSpline.hasClosure_of_derivWithin (hn : 1 ≤ n)
-    (hs : IsCubicInterpSpline a b n x f s) {f'0 f'n : ℝ} (h0 : derivWithin s (Icc a b) a = f'0)
-    (h1 : derivWithin s (Icc a b) b = f'n) :
-    Spline.HasClosure a b n x 1 1 (6 / (x 1 - x 0) * ((f 1 - f 0) / (x 1 - x 0) - f'0))
-      (6 / (x n - x (n - 1)) * (f'n - (f n - f (n - 1)) / (x n - x (n - 1)))) s := by
-  have hA := hs.derivWithin_left hx hn
-  have hB := hs.derivWithin_right hx hn
-  have hl : x 0 < x 1 := hx.step 0 hn
-  have hr : x (n - 1) < x n := hx.lt (Nat.sub_one_lt_of_le hn le_rfl) le_rfl
-  rw [h0, Spline.panelCubicD1_left hl] at hA
-  rw [h1, Spline.panelCubicD1_right hr] at hB
-  have hl' : x 1 - x 0 ≠ 0 := sub_ne_zero.mpr hl.ne'
-  have hr' : x n - x (n - 1) ≠ 0 := sub_ne_zero.mpr hr.ne'
-  refine ⟨?_, ?_⟩
-  · rw [hA]; field_simp; ring
-  · rw [hB]; field_simp; ring
-
 /-- **The clamped (constrained) cubic spline** (§8.6.1, the closure "of the form" (8.48) with
 `λ₀ = μ_n = 1` when the derivatives `f'(a)`, `f'(b)` are available; Exercise 11): for any
 prescribed end slopes `f'₀, f'_n` there is exactly one cubic spline interpolating the values `f_i`
@@ -492,17 +468,11 @@ theorem notAKnotSpline_existsUnique (hn : 3 ≤ n) (f : ℕ → ℝ) :
 variable (hn : 1 ≤ n)
 include hn
 
-/-- The clamped spline is an interpolatory cubic spline of its data. -/
--- TODO(backbone): belongs to `Numlib/Approximation/Spline` beside `contDiff_clampedInterp`.
-theorem isCubicInterp_clampedInterp (f : ℕ → ℝ) (f'0 f'n : ℝ) :
-    Spline.IsCubicInterp a b n x f (Spline.clampedInterp n x f f'0 f'n) :=
-  (Spline.isCubicInterp_cubicInterp hx hn zero_le_one le_rfl zero_le_one le_rfl).1
-
 /-- Every cardinal function is a `C²` piecewise cubic on the partition. -/
 theorem isCubicSpline_cardinalBasis (i : ℕ) :
     Spline.IsCubicSpline a b n x (Spline.cardinalBasis n x i) := by
   unfold Spline.cardinalBasis
-  split_ifs <;> exact (isCubicInterp_clampedInterp hx hn _ _ _).toIsCubicSpline
+  split_ifs <;> exact (Spline.isCubicInterp_clampedInterp hx hn _ _ _).toIsCubicSpline
 
 /-- Every cardinal function is `C²` on `ℝ`. -/
 theorem contDiff_cardinalBasis (i : ℕ) : ContDiff ℝ 2 (Spline.cardinalBasis n x i) := by

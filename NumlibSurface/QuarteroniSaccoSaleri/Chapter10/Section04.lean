@@ -117,7 +117,7 @@ theorem legendreLobatto_nodal_eq (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (hx : 
   have hc : (n : ℝ) * (legendre n).leadingCoeff ≠ 0 :=
     mul_ne_zero (by exact_mod_cast (by omega : n ≠ 0))
       (leadingCoeff_ne_zero.mpr (legendre_ne_zero n))
-  refine nodal_eq_of_forall_eval_eq_zero hx (lobattoNodal_monic _ _)
+  refine Lagrange.nodal_eq_of_forall_eval_eq_zero hx (lobattoNodal_monic _ _)
     (natDegree_eq_of_degree_eq_some (degree_lobattoNodal _ hn)) fun j => ?_
   rw [lobattoNodal, eval_mul, eval_sub, eval_pow, eval_X, eval_one]
   rcases eq_or_ne j 0 with rfl | hj0
@@ -132,25 +132,6 @@ theorem legendreLobatto_nodal_eq (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (hx : 
     rw [hder, eval_mul, eval_C, mul_eq_zero] at h
     exact h.resolve_left hc
   rw [hq, mul_zero]
-
--- TODO(backbone): an interpolatory rule at the roots of `Quadrature.lobattoNodal μ n` is exact to
--- degree `2n - 1`; this is the exactness half of `Quadrature.exists_gaussLobatto`, for any
--- enumeration of the nodes.
-/-- An interpolatory rule whose nodal polynomial is the Lobatto nodal polynomial has degree of
-exactness `2n - 1`: Jacobi's theorem with `Quadrature.integral_lobattoNodal_mul_of_degree_le`. -/
-theorem isExactOnMeasure_of_nodal_eq_lobattoNodal {μ : Measure ℝ} (hw : IsWeight μ)
-    (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (hn : 1 ≤ n) {x α : Fin (n + 1) → ℝ}
-    (hx : Function.Injective x) (hint : IsInterpolatoryMeasure μ α x)
-    (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal μ n) :
-    IsExactOnMeasure μ α x (2 * n - 1) := by
-  rcases Nat.lt_or_ge n 2 with hn2 | hn2
-  · obtain rfl : n = 1 := by omega
-    exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mp hint
-  · rw [show 2 * n - 1 = n + (n - 1) by omega, isExactOnMeasure_add_iff hw (by omega) hx α]
-    refine ⟨hint, fun p hp => ?_⟩
-    rw [hnodal]
-    exact integral_lobattoNodal_mul_of_degree_le hw hsupp hn2
-      (hp.trans (by exact_mod_cast (by omega : n - 1 - 1 ≤ n - 2)))
 
 /-- **(10.33)–(10.34), the Legendre–Gauss–Lobatto formula.** For `n ≥ 1` the Gauss–Lobatto nodes
 are `x̄₀ = -1`, `x̄_n = 1` and the zeros of `L_n'` for `j = 1, …, n - 1` (10.33) — such a family of
@@ -208,7 +189,7 @@ theorem equation_10_34 (hn : 1 ≤ n) :
     have hLn : ∀ j, (legendre n).eval (x j) ≠ 0 := fun j =>
       legendre_eval_ne_zero_of_nodal_eq_lobattoNodal hn hx hnodal j
     refine ⟨fun t ht hroot => ?_, hLn, fun j => by have := hLn j; positivity, fun p hp => ?_⟩
-    · rw [exists_eq_iff_eval_nodal_eq_zero, hnodal, lobattoNodal, eval_mul]
+    · rw [Lagrange.exists_eq_iff_eval_nodal_eq_zero, hnodal, lobattoNodal, eval_mul]
       rw [hder, eval_mul, eval_C, mul_eq_zero] at hroot
       rw [hroot.resolve_left hc, mul_zero]
     · rw [← integral_legendreMeasure, ← hexact p hp]

@@ -676,14 +676,6 @@ theorem toContinuousMap_range_eq_splineSpace (hx : StrictMono x) (hn : 0 < n) :
 
 end Glue
 
-/-- Interval integrals do not see the endpoints: two functions agreeing on the open interval have
-the same integral over it. -/
-private theorem intervalIntegral_congr_Ioo {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
-    (h : EqOn f g (Ioo u v)) : ∫ t in u..v, f t = ∫ t in u..v, g t := by
-  rw [integral_of_le huv, integral_of_le huv, integral_Ioc_eq_integral_Ioo,
-    integral_Ioc_eq_integral_Ioo]
-  exact setIntegral_congr_fun measurableSet_Ioo h
-
 /-! ### The embedding into `L²` -/
 
 section ToLp
@@ -743,7 +735,7 @@ theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :
     Finset.sum_range]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hE i (by omega), hE (i + 1) (by omega)]
-  exact intervalIntegral_congr_Ioo (hx (Fin.castSucc_lt_succ (i := i))).le fun t ht => by
+  exact integral_congr_Ioo (hx (Fin.castSucc_lt_succ (i := i))).le fun t ht => by
     rw [stepFun_apply_of_mem hx.monotone v (Ioo_subset_Ico_self ht)]
 
 variable [hx : Fact (StrictMono x)]

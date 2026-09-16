@@ -93,3 +93,57 @@ id = "inner_toLp_mulVec_of_mem_unitaryGroup"
 [[node]]
 id = "norm_toLp_mulVec_of_mem_unitaryGroup"
 
+
+[[node]]
+id = "toEuclideanComplex"
+
+[[node]]
+id = "toEuclideanComplex_eq_zero_iff"
+
+[[node]]
+id = "toEuclideanCLM_complexify_toEuclideanComplex"
+
+[[node]]
+id = "re_inner_toEuclideanCLM_complexify_toEuclideanComplex"
+
+[[node]]
+id = "IsHermitian.isSymmetric_toEuclideanCLM_complexify"
+
+[[node]]
+id = "PosDef.isSymmetricCoercive_toEuclideanCLM_complexify"
+
+[[node]]
+id = "toEuclideanLin_aeval"
+
+[[node]]
+id = "finrank_maxGenEigenspace_toEuclideanLin"
+
+[[node]]
+id = "norm_toEuclideanLin_apply_of_mem_unitaryGroup"
+
+[[node]]
+id = "isUnit_of_mem_unitaryGroup"
+
+[[node]]
+id = "spectrum_conjTranspose_mul_mul"
+
+[[node]]
+id = "unitaryLinearIsometryEquiv"
+
+[[node]]
+id = "unitaryLinearIsometryEquiv_apply"
+
+[[node]]
+id = "unitaryLinearIsometryEquiv_symm_apply"
+
+[[node]]
+id = "toEuclideanLinearIsometry"
+
+[[node]]
+id = "toEuclideanLinearIsometry_apply"
+
+[[node]]
+id = "ringInverse_toEuclideanLin"
+
+[[node]]
+id = "toEuclideanCLM_vecMulVec"

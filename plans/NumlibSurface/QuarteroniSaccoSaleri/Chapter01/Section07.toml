@@ -33,10 +33,6 @@ id = "equation_1_7"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.7)'
 
 [[node]]
-id = "spectralRadius_star"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
-
-[[node]]
 id = "spectralRadius_conjTranspose"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
 

@@ -3,6 +3,7 @@ import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.NewtonForm
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 import Numlib.Topology.Order.IntermediateValue
 
 /-!
@@ -209,168 +210,6 @@ namespace Quadrature
 section MeanValue
 
 variable {a b : ℝ} {K f : ℝ → ℝ}
-
-/-- **The weighted mean value theorem for integrals.** For `K ≥ 0` and `f` continuous on
-`[a, b]`, `∫_a^b K f = f(ξ) ∫_a^b K` for some `ξ ∈ [a, b]`: the integral lies between the
-extreme values of `f` times `∫ K`, and the intermediate value theorem supplies `ξ`. -/
-theorem exists_integral_mul_eq_mul_integral (hab : a ≤ b) (hK : ContinuousOn K (Icc a b))
-    (hf : ContinuousOn f (Icc a b)) (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) :
-    ∃ ξ ∈ Icc a b, ∫ t in a..b, K t * f t = f ξ * ∫ t in a..b, K t := by
-  have hne : (Icc a b).Nonempty := ⟨a, left_mem_Icc.2 hab⟩
-  obtain ⟨p, hp, hmin⟩ := isCompact_Icc.exists_isMinOn hne hf
-  obtain ⟨q, hq, hmax⟩ := isCompact_Icc.exists_isMaxOn hne hf
-  have hKf : IntervalIntegrable (fun t => K t * f t) volume a b :=
-    (hK.mul hf).intervalIntegrable_of_Icc hab
-  have hKc : ∀ c, IntervalIntegrable (fun t => K t * c) volume a b := fun c =>
-    (hK.mul continuousOn_const).intervalIntegrable_of_Icc hab
-  have hlow : f p * ∫ t in a..b, K t ≤ ∫ t in a..b, K t * f t := by
-    have := integral_mono_on hab (hKc (f p)) hKf fun t ht =>
-      mul_le_mul_of_nonneg_left (hmin ht) (hKnn t ht)
-    rwa [integral_mul_const, mul_comm] at this
-  have hhigh : (∫ t in a..b, K t * f t) ≤ f q * ∫ t in a..b, K t := by
-    have := integral_mono_on hab hKf (hKc (f q)) fun t ht =>
-      mul_le_mul_of_nonneg_left (hmax ht) (hKnn t ht)
-    rwa [integral_mul_const, mul_comm] at this
-  have hpq : uIcc p q ⊆ Icc a b := uIcc_subset_Icc hp hq
-  obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_uIcc
-    ((hf.mono hpq).mul continuousOn_const) (mem_uIcc_of_le hlow hhigh)
-  exact ⟨ξ, hpq hξ, hξval.symm⟩
-
-/-- A continuous nonnegative function on `[a, b]`, positive at an interior point, has a positive
-integral. -/
-theorem integral_pos_of_continuousOn_of_nonneg (hab : a < b) (hK : ContinuousOn K (Icc a b))
-    (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) {c : ℝ} (hc : c ∈ Ioo a b) (hKc : 0 < K c) :
-    0 < ∫ t in a..b, K t := by
-  have hcont : ContinuousAt K c :=
-    hK.continuousAt (Icc_mem_nhds hc.1 hc.2)
-  obtain ⟨δ, hδ, hδpos⟩ : ∃ δ > 0, ∀ t, |t - c| < δ → 0 < K t := by
-    have := (hcont.eventually (lt_mem_nhds hKc))
-    rw [Metric.eventually_nhds_iff] at this
-    obtain ⟨δ, hδ, h⟩ := this
-    exact ⟨δ, hδ, fun t ht => h (by rwa [Real.dist_eq])⟩
-  set ε := min δ (min (c - a) (b - c)) with hε
-  have hε0 : 0 < ε := lt_min hδ (lt_min (by linarith [hc.1]) (by linarith [hc.2]))
-  have hεδ : ε ≤ δ := min_le_left _ _
-  have hεa : ε ≤ c - a := (min_le_right _ _).trans (min_le_left _ _)
-  have hεb : ε ≤ b - c := (min_le_right _ _).trans (min_le_right _ _)
-  have hKint : IntervalIntegrable K volume a b := hK.intervalIntegrable_of_Icc hab.le
-  have hsub : ∀ u v, a ≤ u → u ≤ v → v ≤ b → IntervalIntegrable K volume u v :=
-    fun u v hu huv hv => hKint.mono_set
-      (by rw [uIcc_of_le huv, uIcc_of_le hab.le]; exact Icc_subset_Icc hu hv)
-  have h1 : IntervalIntegrable K volume a (c - ε) := hsub _ _ le_rfl (by linarith) (by linarith)
-  have h2 : IntervalIntegrable K volume (c - ε) (c + ε) :=
-    hsub _ _ (by linarith) (by linarith) (by linarith)
-  have h3 : IntervalIntegrable K volume (c + ε) b := hsub _ _ (by linarith) (by linarith) le_rfl
-  rw [← integral_add_adjacent_intervals (h1.trans h2) h3,
-    ← integral_add_adjacent_intervals h1 h2]
-  have hmid : 0 < ∫ t in c - ε..c + ε, K t := by
-    refine intervalIntegral_pos_of_pos_on h2 (fun t ht => hδpos t ?_) (by linarith)
-    rw [abs_lt]
-    exact ⟨by linarith [ht.1], by linarith [ht.2]⟩
-  have hleft : 0 ≤ ∫ t in a..c - ε, K t :=
-    integral_nonneg (by linarith) fun t ht => hKnn t ⟨ht.1, by linarith [ht.2]⟩
-  have hright : 0 ≤ ∫ t in c + ε..b, K t :=
-    integral_nonneg (by linarith) fun t ht => hKnn t ⟨by linarith [ht.1], ht.2⟩
-  linarith
-
-/-- **The weighted mean value theorem, with `ξ` inside the open interval.** For `K ≥ 0` with
-`∫_a^b K > 0` and `f` continuous, `∫ K f = f(ξ) ∫ K` with `ξ ∈ (a, b)`: if the mean value of `f`
-lies strictly between its extreme values, the intermediate value theorem gives an interior `ξ`;
-if it equals an extreme value, `f` takes that value wherever `K ≠ 0`, and `K ≠ 0` somewhere
-inside because its integral is positive. -/
-theorem exists_mem_Ioo_integral_mul_eq_mul_integral (hab : a < b)
-    (hK : ContinuousOn K (Icc a b)) (hf : ContinuousOn f (Icc a b))
-    (hKnn : ∀ t ∈ Icc a b, 0 ≤ K t) (hKpos : 0 < ∫ t in a..b, K t) :
-    ∃ ξ ∈ Ioo a b, ∫ t in a..b, K t * f t = f ξ * ∫ t in a..b, K t := by
-  set I : ℝ := ∫ t in a..b, K t with hI
-  have hne : (Icc a b).Nonempty := ⟨a, left_mem_Icc.2 hab.le⟩
-  obtain ⟨p, hp, hmin⟩ := isCompact_Icc.exists_isMinOn hne hf
-  obtain ⟨q, hq, hmax⟩ := isCompact_Icc.exists_isMaxOn hne hf
-  have hKf : IntervalIntegrable (fun t => K t * f t) volume a b :=
-    (hK.mul hf).intervalIntegrable_of_Icc hab.le
-  have hKc : ∀ c, IntervalIntegrable (fun t => K t * c) volume a b := fun c =>
-    (hK.mul continuousOn_const).intervalIntegrable_of_Icc hab.le
-  have hlow : f p * I ≤ ∫ t in a..b, K t * f t := by
-    have := integral_mono_on hab.le (hKc (f p)) hKf fun t ht =>
-      mul_le_mul_of_nonneg_left (hmin ht) (hKnn t ht)
-    rwa [integral_mul_const, mul_comm] at this
-  have hhigh : (∫ t in a..b, K t * f t) ≤ f q * I := by
-    have := integral_mono_on hab.le hKf (hKc (f q)) fun t ht =>
-      mul_le_mul_of_nonneg_left (hmax ht) (hKnn t ht)
-    rwa [integral_mul_const, mul_comm] at this
-  -- a continuous nonnegative function with zero integral vanishes inside
-  have hvanish : ∀ g : ℝ → ℝ, ContinuousOn g (Icc a b) → (∀ t ∈ Icc a b, 0 ≤ g t) →
-      (∫ t in a..b, g t) = 0 → ∀ t ∈ Ioo a b, g t = 0 := by
-    intro g hgc hg hgint t ht
-    by_contra hne
-    have hpos : 0 < g t := lt_of_le_of_ne (hg t (Ioo_subset_Icc_self ht)) (Ne.symm hne)
-    exact absurd hgint (integral_pos_of_continuousOn_of_nonneg hab hgc hg ht hpos).ne'
-  -- `K` is nonzero at some interior point, because its integral is positive
-  obtain ⟨ξ₀, hξ₀, hKξ₀⟩ : ∃ ξ ∈ Ioo a b, K ξ ≠ 0 := by
-    by_contra hall
-    push Not at hall
-    have : (∫ t in a..b, K t) = 0 := by
-      rw [integral_of_le hab.le, MeasureTheory.integral_Ioc_eq_integral_Ioo,
-        MeasureTheory.setIntegral_congr_fun measurableSet_Ioo (g := fun _ => (0 : ℝ))
-          fun t ht => hall t ht]
-      simp
-    exact absurd this hKpos.ne'
-  -- an extreme value is attained where `K` does not vanish
-  have hextreme : ∀ c, (∫ t in a..b, K t * f t) = f c * I → c ∈ Icc a b →
-      ((∀ t ∈ Icc a b, f c ≤ f t) ∨ ∀ t ∈ Icc a b, f t ≤ f c) →
-      ∃ ξ ∈ Ioo a b, ∫ t in a..b, K t * f t = f ξ * I := by
-    intro c hc hcmem hext
-    refine ⟨ξ₀, hξ₀, ?_⟩
-    suffices hfξ : f ξ₀ = f c by rw [hfξ, hc]
-    rcases hext with hext | hext
-    · have e : (fun t => K t * (f t - f c)) = fun t => K t * f t - K t * f c := by
-        funext t; ring
-      have h := hvanish (fun t => K t * (f t - f c)) (hK.mul (hf.sub continuousOn_const))
-        (fun t ht => mul_nonneg (hKnn t ht) (by linarith [hext t ht]))
-        (by rw [e, integral_sub hKf (hKc (f c)), integral_mul_const, hc]; ring) ξ₀ hξ₀
-      rcases mul_eq_zero.1 h with h | h
-      · exact absurd h hKξ₀
-      · linarith
-    · have e : (fun t => K t * (f c - f t)) = fun t => K t * f c - K t * f t := by
-        funext t; ring
-      have h := hvanish (fun t => K t * (f c - f t)) (hK.mul (continuousOn_const.sub hf))
-        (fun t ht => mul_nonneg (hKnn t ht) (by linarith [hext t ht]))
-        (by rw [e, integral_sub (hKc (f c)) hKf, integral_mul_const, hc]; ring) ξ₀ hξ₀
-      rcases mul_eq_zero.1 h with h | h
-      · exact absurd h hKξ₀
-      · linarith
-  -- the mean value of `f` is either strictly between the extremes or one of them
-  set μ : ℝ := (∫ t in a..b, K t * f t) / I with hμ
-  have hμI : (∫ t in a..b, K t * f t) = μ * I := by
-    rw [hμ, div_mul_cancel₀ _ hKpos.ne']
-  have hpμ : f p ≤ μ := by rw [hμ, le_div_iff₀ hKpos]; exact hlow
-  have hμq : μ ≤ f q := by rw [hμ, div_le_iff₀ hKpos]; exact hhigh
-  rcases eq_or_lt_of_le hpμ with hpμ' | hpμ'
-  · exact hextreme p (by rw [hμI, hpμ']) hp (Or.inl fun t ht => hmin ht)
-  rcases eq_or_lt_of_le hμq with hμq' | hμq'
-  · exact hextreme q (by rw [hμI, hμq']) hq (Or.inr fun t ht => hmax ht)
-  -- strictly between: the intermediate value theorem on the open interval between `p` and `q`
-  have hpq : p ≠ q := fun h => by rw [h] at hpμ'; linarith
-  rcases lt_or_gt_of_ne hpq with hlt | hlt
-  · obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_Ioo hlt.le
-      (hf.mono (Icc_subset_Icc hp.1 hq.2)) ⟨hpμ', hμq'⟩
-    exact ⟨ξ, ⟨lt_of_le_of_lt hp.1 hξ.1, lt_of_lt_of_le hξ.2 hq.2⟩, by rw [hμI, hξval]⟩
-  · obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_Ioo' hlt.le
-      (hf.mono (Icc_subset_Icc hq.1 hp.2)) ⟨hpμ', hμq'⟩
-    exact ⟨ξ, ⟨lt_of_le_of_lt hq.1 hξ.1, lt_of_lt_of_le hξ.2 hp.2⟩, by rw [hμI, hξval]⟩
-
-/-- The nonpositive-kernel form of `Quadrature.exists_mem_Ioo_integral_mul_eq_mul_integral`. -/
-theorem exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos (hab : a < b)
-    (hK : ContinuousOn K (Icc a b)) (hf : ContinuousOn f (Icc a b))
-    (hKnp : ∀ t ∈ Icc a b, K t ≤ 0) (hKneg : (∫ t in a..b, K t) < 0) :
-    ∃ ξ ∈ Ioo a b, ∫ t in a..b, K t * f t = f ξ * ∫ t in a..b, K t := by
-  have hKint : IntervalIntegrable K volume a b := hK.intervalIntegrable_of_Icc hab.le
-  obtain ⟨ξ, hξ, h⟩ := exists_mem_Ioo_integral_mul_eq_mul_integral (K := fun t => -K t) hab
-    hK.neg hf (fun t ht => neg_nonneg.2 (hKnp t ht)) (by rw [integral_neg]; linarith)
-  refine ⟨ξ, hξ, ?_⟩
-  have e : (fun t => -K t * f t) = fun t => -(K t * f t) := by funext t; ring
-  rw [e, integral_neg, integral_neg] at h
-  linarith
 
 /-- **Collecting panel errors.** If each of `m` panel errors is `c * u (ξ j)` with `ξ j ∈ [a, b]`
 and `u` continuous, their sum is `m * c * u ξ` for one `ξ ∈ [a, b]`: the discrete mean value
@@ -663,21 +502,6 @@ section Nodes
 
 variable {n : ℕ}
 
-/-- **A polynomial with the values of a Lagrange basis polynomial is that polynomial**: if
-`p` has degree less than the number of nodes, `p (v i) = 1` and `p (v j) = 0` for the other nodes
-`j ∈ s`, then `p = Lagrange.basis s v i`. -/
-theorem _root_.Lagrange.eq_basis_of_eval {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
-    {s : Finset ι} {v : ι → F} (hvs : Set.InjOn v s) {p : F[X]} (hp : p.degree < s.card)
-    {i : ι} (hi : i ∈ s) (h : ∀ j ∈ s, p.eval (v j) = if j = i then 1 else 0) :
-    p = Lagrange.basis s v i := by
-  refine Polynomial.eq_of_degrees_lt_of_eval_index_eq s hvs hp ?_ fun j hj => ?_
-  · rw [Lagrange.degree_basis hvs hi]
-    exact_mod_cast Nat.sub_lt (Finset.card_pos.2 ⟨i, hi⟩) one_pos
-  · rw [h j hj]
-    split_ifs with hji
-    · rw [hji, Lagrange.eval_basis_self hvs hi]
-    · rw [Lagrange.eval_basis_of_ne (Ne.symm hji) hj]
-
 /-- **The integer nodes** `0, 1, …, n`, the reference nodes of every Newton–Cotes rule. -/
 def intNode (n : ℕ) (i : Fin (n + 1)) : ℝ := (i : ℕ)
 
@@ -880,33 +704,6 @@ Reference: [quarteroni2000numerical], (9.25). -/
 noncomputable def compositeNewtonCotes (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) : ℝ :=
   ∑ j ∈ Finset.range m,
     closedNewtonCotes n f (a + j * ((b - a) / m)) (a + (j + 1) * ((b - a) / m))
-
-/-- The Lagrange basis polynomial of an affine image of nodes is the basis polynomial of the
-nodes composed with the affine map: `l_i(c + h t) = φ_i(t)` for `x_i = c + h v_i`, `h ≠ 0`. -/
-theorem _root_.Lagrange.basis_comp_affine {v : Fin (n + 1) → ℝ} (hv : Function.Injective v)
-    {c h : ℝ} (hh : h ≠ 0) (i : Fin (n + 1)) :
-    (Lagrange.basis Finset.univ (fun k => c + h * v k) i).comp (C h * X + C c)
-      = Lagrange.basis Finset.univ v i := by
-  have hinj : Function.Injective fun k => c + h * v k := fun k l hkl => by
-    have : h * v k = h * v l := by simpa using hkl
-    exact hv (mul_left_cancel₀ hh this)
-  refine Lagrange.eq_basis_of_eval hv.injOn ?_ (Finset.mem_univ _) fun j _ => ?_
-  · refine lt_of_le_of_lt Polynomial.degree_le_natDegree ?_
-    have h1 : (Lagrange.basis Finset.univ (fun k => c + h * v k) i).natDegree ≤ n := by
-      rw [Lagrange.natDegree_basis hinj.injOn (Finset.mem_univ i)]
-      simp
-    have h2 : (C h * X + C c).natDegree ≤ 1 := Polynomial.natDegree_linear_le
-    have := Polynomial.natDegree_comp_le (p := Lagrange.basis Finset.univ (fun k => c + h * v k) i)
-      (q := C h * X + C c)
-    simp only [Finset.card_univ, Fintype.card_fin]
-    exact_mod_cast lt_of_le_of_lt this (by nlinarith)
-  · rw [Polynomial.eval_comp, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
-      Polynomial.eval_X, Polynomial.eval_C, add_comm (h * v j) c]
-    split_ifs with hji
-    · rw [hji]
-      exact Lagrange.eval_basis_self (v := fun k => c + h * v k) hinj.injOn (Finset.mem_univ i)
-    · exact Lagrange.eval_basis_of_ne (v := fun k => c + h * v k) (Ne.symm hji)
-        (Finset.mem_univ j)
 
 /-- The integral over `[a, b]` of a Lagrange basis polynomial at the equispaced nodes
 `a + i h`, `h = (b - a)/n`, is `h` times the closed Newton–Cotes weight. -/
@@ -2035,23 +1832,6 @@ section Error
 
 variable {n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
-/-- A real polynomial function is smooth. -/
-private theorem contDiff_eval (p : ℝ[X]) (m : WithTop ℕ∞) : ContDiff ℝ m fun x => p.eval x := by
-  simpa [Polynomial.coe_aeval_eq_eval] using p.contDiff_aeval (𝕜 := ℝ) m
-
-/-- **Hadamard's lemma, globally**: if `g` is `C^{m+1}` then `dslope g c` is `C^m`. At `c` this is
-`ContDiffAt.dslope_same`; elsewhere `dslope g c` is the quotient `(g y - g c)/(y - c)`. -/
-theorem _root_.ContDiff.dslope {g : ℝ → ℝ} {m : ℕ} (hg : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) g)
-    (c : ℝ) : ContDiff ℝ m (dslope g c) := by
-  refine contDiff_iff_contDiffAt.2 fun x => ?_
-  rcases eq_or_ne x c with rfl | hxc
-  · exact hg.contDiffAt.dslope_same
-  · refine ContDiffAt.congr_of_eventuallyEq ?_ (dslope_eventuallyEq_slope_of_ne g hxc)
-    rw [slope_fun_def_field]
-    have hg' : ContDiffAt ℝ m g x := hg.contDiffAt.of_le (by exact_mod_cast Nat.le_succ m)
-    exact (hg'.sub contDiffAt_const).div (contDiffAt_id.sub contDiffAt_const)
-      (sub_ne_zero.2 hxc)
-
 /-- A continuous function is the `k`-th derivative of a `C^k` function: integrate it `k` times. -/
 theorem exists_contDiff_iteratedDeriv_eq (k : ℕ) {ψ : ℝ → ℝ} (hψ : Continuous ψ) :
     ∃ g : ℝ → ℝ, ContDiff ℝ k g ∧ iteratedDeriv k g = ψ := by
@@ -2071,25 +1851,6 @@ theorem exists_contDiff_iteratedDeriv_eq (k : ℕ) {ψ : ℝ → ℝ} (hψ : Con
       have hderiv : deriv (fun x => ∫ t in (0 : ℝ)..x, g t) = g := funext fun x =>
         ((hgc.integral_hasStrictDerivAt 0 x).hasDerivAt).deriv
       rw [hderiv, hgψ]
-
-/-- The truncated power `(y - t)_+^m` is continuous in `t` for `m ≥ 1`. -/
-theorem continuous_truncPow {m : ℕ} (hm : 1 ≤ m) (y : ℝ) : Continuous (truncPow m y) := by
-  unfold truncPow
-  refine Continuous.if_le (by fun_prop) continuous_const continuous_id continuous_const
-    fun t ht => ?_
-  have ht' : t = y := ht
-  rw [ht', sub_self, zero_pow (by omega)]
-
-/-- The Peano kernel of order `m ≥ 1` is continuous on the panel. -/
-theorem continuousOn_peanoKernel {k : ℕ} (w z : Fin k → ℝ) {m : ℕ} (hm : 1 ≤ m) :
-    ContinuousOn (peanoKernel a b w z m) (Icc a b) := by
-  have hclosed : ∀ t ∈ Icc a b, peanoKernel a b w z m t
-      = (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
-        - ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ) := fun t ht => peanoKernel_eq w z m ht
-  refine ContinuousOn.congr ?_ hclosed
-  refine (by fun_prop : Continuous fun t : ℝ => (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ))
-    |>.continuousOn.sub (continuousOn_finsetSum _ fun i _ => ?_)
-  exact (((continuous_truncPow hm (z i)).const_mul (w i)).div_const _).continuousOn
 
 /-- The nodes of the closed rule, `ℕ`-indexed, are distinct. -/
 private theorem node_injective (hn : 0 < n) (hab : a < b) {j k : ℕ}
@@ -3575,38 +3336,6 @@ vanish at every node, and their derivative is `1` at `x_k` and `0` at the other 
 Reference: [quarteroni2000numerical], (9.28). -/
 noncomputable def hermiteBasisM (x : Fin (n + 1) → ℝ) (k : Fin (n + 1)) : ℝ[X] :=
   (X - C (x k)) * Lagrange.basis Finset.univ x k ^ 2
-
-/-- The derivative of the Lagrange basis polynomial at its own node is `ω''(x_k)/(2 ω'(x_k))`:
-with `ω = (X - x_k) ω_k` and `l_k = ω_k/ω_k(x_k)`, one has `ω'(x_k) = ω_k(x_k)` and
-`ω''(x_k) = 2 ω_k'(x_k)`. -/
-theorem _root_.Lagrange.eval_derivative_basis_self {x : Fin (n + 1) → ℝ}
-    (hx : Function.Injective x) (k : Fin (n + 1)) :
-    (derivative (Lagrange.basis Finset.univ x k)).eval (x k)
-      = (derivative (derivative (Lagrange.nodal Finset.univ x))).eval (x k)
-        / (2 * (derivative (Lagrange.nodal Finset.univ x)).eval (x k)) := by
-  classical
-  set ωk : ℝ[X] := Lagrange.nodal (Finset.univ.erase k) x with hωk
-  have hbasis : Lagrange.basis Finset.univ x k = C (Lagrange.nodalWeight Finset.univ x k) * ωk := by
-    rw [Lagrange.basis_eq_prod_sub_inv_mul_nodal_div (Finset.mem_univ k),
-      ← Lagrange.nodal_erase_eq_nodal_div (Finset.mem_univ k)]
-  have hnodal : Lagrange.nodal Finset.univ x = (X - C (x k)) * ωk :=
-    Lagrange.nodal_eq_mul_nodal_erase (Finset.mem_univ k)
-  have hW : Lagrange.nodalWeight Finset.univ x k = (ωk.eval (x k))⁻¹ :=
-    Lagrange.nodalWeight_eq_eval_nodal_erase_inv
-  have hωk0 : ωk.eval (x k) ≠ 0 := by
-    rw [hωk, Lagrange.eval_nodal]
-    exact Finset.prod_ne_zero_iff.2 fun j hj =>
-      sub_ne_zero.2 fun h => (Finset.mem_erase.1 hj).1 (hx h).symm
-  have hd1 : derivative (Lagrange.nodal Finset.univ x) = ωk + (X - C (x k)) * derivative ωk := by
-    rw [hnodal, derivative_mul, derivative_X_sub_C, one_mul]
-  have hd2 : derivative (derivative (Lagrange.nodal Finset.univ x))
-      = 2 * derivative ωk + (X - C (x k)) * derivative (derivative ωk) := by
-    rw [hd1, derivative_add, derivative_mul, derivative_X_sub_C, one_mul]
-    ring
-  rw [hbasis, derivative_mul, derivative_C, zero_mul, zero_add, eval_mul, eval_C, hW, hd2, hd1]
-  simp only [eval_add, eval_mul, eval_sub, eval_X, eval_C, eval_ofNat, sub_self, zero_mul,
-    add_zero]
-  field_simp
 
 /-- **`𝓛_k` at the nodes**: `𝓛_k(x_j) = δ_{jk}`. -/
 theorem hermiteBasisL_eval_node {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)

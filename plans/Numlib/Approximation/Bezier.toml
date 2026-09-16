@@ -11,12 +11,6 @@ id = "bernsteinPolynomial.degree_le"
 id = "bernsteinPolynomial.linearIndependent'"
 
 [[node]]
-id = "Polynomial.toContinuousMapOnAlgHom_injective"
-
-[[node]]
-id = "finrank_polyLE"
-
-[[node]]
 id = "bernsteinPolynomial.toPolyLE"
 
 [[node]]

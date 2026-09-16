@@ -234,14 +234,6 @@ theorem laxFriedrichs_isMonotone {a lam : ℝ} (h : |lam * a| ≤ 1) :
   rw [abs_le] at h
   exact isMonotone_threePoint (by linarith [h.1]) le_rfl (by linarith [h.2]) (by ring)
 
-/-! ### A triangle inequality for the truncation-error estimates -/
-
-/-- The triangle inequality for a difference. -/
-private theorem abs_sub_le' (x y : ℝ) : |x - y| ≤ |x| + |y| := by
-  calc |x - y| = |x + -y| := by rw [sub_eq_add_neg]
-    _ ≤ |x| + |-y| := abs_add_le _ _
-    _ = |x| + |y| := by rw [abs_neg]
-
 /-! ### The local truncation error -/
 
 /-- **The local truncation error** of the scheme `c` for `u_t + a u_x = 0` on the exact solution
@@ -395,11 +387,11 @@ theorem abs_truncationError_forwardEulerCentred_le (hu : ContDiff ℝ 3 u₀)
         rw [abs_mul, abs_of_pos hΔt]
     _ ≤ M₂ * (a * Δt) ^ 2 / 2 + Δt / Δx * |a| / 2 * (M₃ * Δx ^ 3 / 6 + M₃ * Δx ^ 3 / 6) := by
         rw [hid]
-        refine (abs_sub_le' _ _).trans ?_
+        refine (abs_sub _ _).trans ?_
         rw [abs_mul, show |Δt / Δx * a / 2| = Δt / Δx * |a| / 2 by
           rw [abs_div, abs_mul, abs_div, abs_of_pos hΔt, abs_of_pos hΔx]; norm_num]
         gcongr
-        exact (abs_sub_le' _ _).trans (by gcongr)
+        exact (abs_sub _ _).trans (by gcongr)
     _ = (a ^ 2 / 2 * M₂ * Δt + |a| / 6 * M₃ * Δx ^ 2) * Δt := by field_simp; try ring
 
 /-- **The truncation error of the Lax–Friedrichs scheme** ([quarteroni2000numerical] Table 13.1):
@@ -439,7 +431,7 @@ theorem abs_truncationError_laxFriedrichs_le (hu : ContDiff ℝ 3 u₀)
     _ ≤ M₂ * (a * Δt) ^ 2 / 2 + (M₂ * Δx ^ 2 / 2 + M₂ * Δx ^ 2 / 2) / 2
         + Δt / Δx * |a| / 2 * (M₃ * Δx ^ 3 / 6 + M₃ * Δx ^ 3 / 6) := by
         rw [hid]
-        refine (abs_add_le _ _).trans (add_le_add ((abs_sub_le' _ _).trans ?_) ?_)
+        refine (abs_add_le _ _).trans (add_le_add ((abs_sub _ _).trans ?_) ?_)
         · refine add_le_add hR ?_
           rw [abs_div, show |(2 : ℝ)| = 2 from abs_of_pos two_pos]
           gcongr
@@ -447,7 +439,7 @@ theorem abs_truncationError_laxFriedrichs_le (hu : ContDiff ℝ 3 u₀)
         · rw [abs_mul, show |Δt / Δx * a / 2| = Δt / Δx * |a| / 2 by
             rw [abs_div, abs_mul, abs_div, abs_of_pos hΔt, abs_of_pos hΔx]; norm_num]
           gcongr
-          exact (abs_sub_le' _ _).trans (by gcongr)
+          exact (abs_sub _ _).trans (by gcongr)
     _ = (M₂ / 2 * Δx ^ 2 / Δt + a ^ 2 / 2 * M₂ * Δt + |a| / 6 * M₃ * Δx ^ 2) * Δt := by
         field_simp; try ring
 
@@ -502,7 +494,7 @@ theorem abs_truncationError_upwind_le (hu : ContDiff ℝ 2 u₀)
           rw [abs_mul, abs_of_pos hΔt]
       _ ≤ M₂ * (a * Δt) ^ 2 / 2 + Δt / Δx * |a| * (M₂ * Δx ^ 2 / 2) := by
           rw [hid]
-          refine (abs_sub_le' _ _).trans (add_le_add hR ?_)
+          refine (abs_sub _ _).trans (add_le_add hR ?_)
           rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * |a| by
             rw [abs_mul, abs_div, abs_of_pos hΔt, abs_of_pos hΔx]]
           gcongr
@@ -576,13 +568,13 @@ theorem abs_truncationError_laxWendroff_le (hu : ContDiff ℝ 4 u₀)
           rw [abs_mul, abs_of_pos hΔt]
       _ ≤ _ := by
           rw [hid]
-          refine (abs_sub_le' _ _).trans (add_le_add ((abs_add_le _ _).trans
+          refine (abs_sub _ _).trans (add_le_add ((abs_add_le _ _).trans
             (add_le_add ((abs_add_le _ _).trans (add_le_add hE ?_)) ?_)) ?_)
           · rw [abs_mul, habs1]
             gcongr
           · rw [abs_mul, habs2]
             gcongr
-            exact (abs_sub_le' _ _).trans (by gcongr)
+            exact (abs_sub _ _).trans (by gcongr)
           · rw [abs_mul, habs3]
             gcongr
             exact (abs_add_le _ _).trans (by gcongr)
@@ -684,7 +676,7 @@ theorem not_isConvergent_of_one_lt_abs_mul {a lam : ℝ} (hlam : 0 < lam) (hcfl 
       exact mul_le_mul_of_nonneg_right hiabs hΔxpos.le
     have hdist : r ≤ |(i : ℝ) * Δx - -a| := by
       have h1 : |a| - |(i : ℝ) * Δx| ≤ |(i : ℝ) * Δx + a| := by
-        have h4 := abs_sub_le' ((i : ℝ) * Δx + a) ((i : ℝ) * Δx)
+        have h4 := abs_sub ((i : ℝ) * Δx + a) ((i : ℝ) * Δx)
         rw [show (i : ℝ) * Δx + a - (i : ℝ) * Δx = a from by ring] at h4
         linarith
       have h3 : (i : ℝ) * Δx - -a = (i : ℝ) * Δx + a := by ring
@@ -1405,38 +1397,6 @@ section PartialTaylor
 
 variable {v : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {M : ℝ} {i j : ℕ}
 
-/-- A function differentiable on the whole plane has its first partial derivative as the
-derivative of the restriction to a horizontal line.
-
-TODO(backbone): this and its companion belong beside `Transport.HasPartialsOn`. -/
-theorem hasPartialDerivFst_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
-    (h : Transport.HasPartialsOn Set.univ u ux ut) : HasPartialDerivFst u ux := by
-  intro x t
-  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
-      (Transport.partialsCLM (ux x t) (ut x t)) (x, t) := by
-    have h1 := h (x, t) (Set.mem_univ _)
-    rwa [hasFDerivWithinAt_univ] at h1
-  have hline : HasDerivAt (fun y : ℝ => (y, t)) (1, 0) x :=
-    (hasDerivAt_id x).prodMk (hasDerivAt_const x t)
-  have h2 := h0.comp_hasDerivAt x hline
-  simp only [Transport.partialsCLM_apply, mul_one, mul_zero, add_zero, Function.comp_def] at h2
-  exact h2
-
-/-- A function differentiable on the whole plane has its second partial derivative as the
-derivative of the restriction to a vertical line. -/
-theorem hasPartialDerivSnd_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
-    (h : Transport.HasPartialsOn Set.univ u ux ut) : HasPartialDerivSnd u ut := by
-  intro x t
-  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
-      (Transport.partialsCLM (ux x t) (ut x t)) (x, t) := by
-    have h1 := h (x, t) (Set.mem_univ _)
-    rwa [hasFDerivWithinAt_univ] at h1
-  have hline : HasDerivAt (fun s : ℝ => (x, s)) (0, 1) t :=
-    (hasDerivAt_const t x).prodMk (hasDerivAt_id t)
-  have h2 := h0.comp_hasDerivAt t hline
-  simp only [Transport.partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
-  exact h2
-
 /-- **First-order Taylor expansion in space**: for a family of iterated partial derivatives with
 `|∂_x^{i+2} ∂_t^j v| ≤ M`, `|D_{i,j}(x + h, t) - D_{i,j}(x, t) - h D_{i+1,j}(x, t)| ≤ M h²/2`. -/
 theorem abs_taylor_fst_one (hD : HasPartialDerivs v D) (hM : ∀ y s, |D (i + 2) j y s| ≤ M)
@@ -1591,7 +1551,7 @@ theorem residual_threePoint_expansion (hD : HasPartialDerivs v D)
         rw [abs_mul, abs_of_pos hΔt]
     _ ≤ M * Δt ^ 4 / 24 + |cm| * (M * Δx ^ 4 / 24) + |cp| * (M * Δx ^ 4 / 24) := by
         rw [hid]
-        refine (abs_sub_le' _ _).trans (add_le_add ((abs_sub_le' _ _).trans
+        refine (abs_sub _ _).trans (add_le_add ((abs_sub _ _).trans
           (add_le_add hRt ?_)) ?_)
         · rw [abs_mul]
           exact mul_le_mul_of_nonneg_left hRm (abs_nonneg cm)
@@ -1641,7 +1601,7 @@ theorem abs_residual_upwind_sub_le (hD : HasPartialDerivs v D) {a Δt Δx lam : 
         rw [abs_mul, abs_of_pos hΔt]
     _ ≤ M * Δt ^ 2 / 2 + Δt / Δx * a * (M * Δx ^ 2 / 2) := by
         rw [hid]
-        refine (abs_sub_le' _ _).trans (add_le_add hRt ?_)
+        refine (abs_sub _ _).trans (add_le_add hRt ?_)
         rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * a by
           rw [abs_of_nonneg (by positivity)]]
         exact mul_le_mul_of_nonneg_left hRm (by positivity)
@@ -1687,7 +1647,7 @@ theorem abs_residual_upwind_sub_le_two (hD : HasPartialDerivs v D) {a Δt Δx la
             - a * Δx / 2 * D 2 0 x t)) * Δt| := by rw [abs_mul, abs_of_pos hΔt]
     _ ≤ M * Δt ^ 3 / 6 + Δt / Δx * a * (M * Δx ^ 3 / 6) := by
         rw [hid]
-        refine (abs_sub_le' _ _).trans (add_le_add hRt ?_)
+        refine (abs_sub _ _).trans (add_le_add hRt ?_)
         rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * a by
           rw [abs_of_nonneg (by positivity)]]
         exact mul_le_mul_of_nonneg_left hRm (by positivity)
@@ -1708,14 +1668,14 @@ theorem IsModifiedSolution.eq_of_hasPartialDerivs {a mu nu : ℝ} (hv : IsModifi
     rw [← hD.eq_zero_zero]
     exact hD.hasPartialDerivSnd 0 0
   have e1 : ∀ y s, vx y s = D 1 0 y s :=
-    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h1) hv0 fun _ _ => rfl
+    HasPartialDerivFst.congr (Transport.hasPartialDerivFst_of_hasPartialsOn h1) hv0 fun _ _ => rfl
   have e2 : ∀ y s, vt y s = D 0 1 y s :=
-    HasPartialDerivSnd.congr (hasPartialDerivSnd_of_hasPartialsOn h1) hv1 fun _ _ => rfl
+    HasPartialDerivSnd.congr (Transport.hasPartialDerivSnd_of_hasPartialsOn h1) hv1 fun _ _ => rfl
   have e3 : ∀ y s, vxx y s = D 2 0 y s :=
-    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h2)
+    HasPartialDerivFst.congr (Transport.hasPartialDerivFst_of_hasPartialsOn h2)
       (hD.hasPartialDerivFst 1 0) e1
   have e4 : ∀ y s, vxxx y s = D 3 0 y s :=
-    HasPartialDerivFst.congr (hasPartialDerivFst_of_hasPartialsOn h3)
+    HasPartialDerivFst.congr (Transport.hasPartialDerivFst_of_hasPartialsOn h3)
       (hD.hasPartialDerivFst 2 0) e3
   rw [← e1, ← e2, ← e3, ← e4]
   exact heq x t
@@ -1785,11 +1745,11 @@ theorem abs_residual_upwind_le_of_isModifiedSolution (hD : HasPartialDerivs v D)
     linear_combination p00 + (Δt / 2) * p01 - (a * Δt / 2) * p10 + D 2 0 x t * hmu
   have hmuabs : |mu| ≤ a * Δx / 2 + a ^ 2 * Δt / 2 := by
     rw [hmu]
-    refine (abs_sub_le' _ _).trans ?_
+    refine (abs_sub _ _).trans ?_
     rw [abs_of_nonneg (by positivity : (0 : ℝ) ≤ a * Δx / 2),
       abs_of_nonneg (by positivity : (0 : ℝ) ≤ a ^ 2 * Δt / 2)]
   have hb1 : |D 2 1 x t - a * D 3 0 x t| ≤ M + a * M := by
-    refine (abs_sub_le' _ _).trans (add_le_add (hM 2 1 rfl x t) ?_)
+    refine (abs_sub _ _).trans (add_le_add (hM 2 1 rfl x t) ?_)
     rw [abs_mul, abs_of_pos ha]
     exact mul_le_mul_of_nonneg_left (hM 3 0 rfl x t) ha.le
   calc |residual (upwind a lam) Δt Δx v x t|

@@ -1,12 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter10"
 
 [[node]]
-id = "isExactOnMeasure_comp_equiv"
-
-[[node]]
-id = "interpolate_comp_equiv"
-
-[[node]]
 id = "chebyshevGaussNode"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.20)'
 
@@ -116,9 +110,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.24); Exercise 
 [[node]]
 id = "equation_10_25"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'
-
-[[node]]
-id = "chebyshevMeasure_compl_Icc"
 
 [[node]]
 id = "lobatto_tendsto"

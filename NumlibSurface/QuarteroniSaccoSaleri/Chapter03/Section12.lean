@@ -185,24 +185,6 @@ theorem iterativeRefinement_exact (hA : IsUnit A) {xs : Fin n → ℝ} (hxs : A 
   rw [hz]
   exact h1
 
--- TODO(backbone): belongs in `Numlib/LinearAlgebra/Matrix/Complexify` beside
--- `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` (chapter 4's surface proves it too).
-/-- A sequence of real matrices tends to `0` iff `M k *ᵥ v → 0` for every vector `v`. -/
-private theorem tendsto_zero_iff_forall_mulVec_tendsto_zero {M : ℕ → Matrix (Fin n) (Fin n) ℝ} :
-    Tendsto M atTop (𝓝 0) ↔ ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) := by
-  constructor
-  · intro h v
-    have hc : Continuous fun D : Matrix (Fin n) (Fin n) ℝ => D *ᵥ v :=
-      Continuous.matrix_mulVec continuous_id continuous_const
-    simpa [Function.comp_def] using (hc.tendsto 0).comp h
-  · intro h
-    have key : Tendsto (fun k => (fun i j => M k i j : Fin n → Fin n → ℝ)) atTop
-        (𝓝 (fun _ _ => (0 : ℝ))) := by
-      refine tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => ?_
-      have hsingle : ∀ k, (M k *ᵥ Pi.single j 1) i = M k i j := fun k => by simp
-      simpa only [hsingle, Pi.zero_apply] using tendsto_pi_nhds.mp (h (Pi.single j 1)) i
-    exact key
-
 /-- The error recursion of iterative refinement in exact arithmetic: with `x*` a solution of
 `A x = b`, `x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)` (backbone `Refinement.iterate_sub_eq`). -/
 private theorem iterate_sub_eq' (C A : Matrix (Fin n) (Fin n) ℝ) {b xs : Fin n → ℝ}

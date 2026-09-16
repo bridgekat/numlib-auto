@@ -25,12 +25,6 @@ id = "isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"
 id = "isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular"
 
 [[node]]
-id = "IsUpperTriangular.inv"
-
-[[node]]
-id = "IsLowerTriangular.inv"
-
-[[node]]
 id = "IsUpperTriangular.isLowerTriangular_orderDual"
 
 [[node]]

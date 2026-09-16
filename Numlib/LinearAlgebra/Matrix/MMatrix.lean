@@ -371,14 +371,6 @@ a choice of `w`. -/
 
 section Criterion
 
-/-- Conjugation by a nonsingular matrix does not change the spectral radius: the spectrum of
-`C⁻¹ B C` is that of `B`. -/
-theorem complexSpectralRadius_conj {C : Matrix n n ℝ} (hC : IsUnit C) (B : Matrix n n ℝ) :
-    complexSpectralRadius (C⁻¹ * B * C) = complexSpectralRadius B := by
-  have hC' : IsUnit (complexify C) := (isUnit_complexify_iff C).2 hC
-  simp only [complexSpectralRadius, spectralRadius, complexify_mul, complexify_inv]
-  rw [← hC'.unit_spec, ← coe_units_inv, spectrum.units_conjugate']
-
 section Operator
 
 open scoped Matrix.Norms.Operator

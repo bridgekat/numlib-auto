@@ -115,6 +115,14 @@ theorem sorSplitting_iterationOperator_eq (A : Matrix n n 𝕜) (h : IsUnit (dia
     (hω : ω ≠ 0) : (sorSplitting A h hω).iterationOperator = sorIterationMatrix A ω :=
   sorSplitting_iterationOperator A h hω
 
+/-- The SOR matrix of the complexification is the complexification of the SOR matrix, for every
+`ω` (at `ω ≠ 0` this is `Matrix.complexify_sor_iterationOperator`). -/
+theorem complexify_sorIterationMatrix (A : Matrix n n ℝ) (ω : ℝ) :
+    complexify (sorIterationMatrix A ω) = sorIterationMatrix (complexify A) ω := by
+  rw [sorIterationMatrix, sorIterationMatrix, complexify_mul, complexify_inv, complexify_add,
+    complexify_smul, complexify_sub, complexify_smul, complexify_smul, complexify_diagPart,
+    complexify_strictLower, complexify_strictUpper, Complex.ofReal_sub, Complex.ofReal_one]
+
 end Parts
 
 section Def

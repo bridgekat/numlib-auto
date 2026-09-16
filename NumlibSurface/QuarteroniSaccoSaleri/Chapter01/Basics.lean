@@ -380,21 +380,6 @@ theorem isTriangular_inv_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
   · have := hu.invertible
     exact blockTriangular_inv_of_blockTriangular hU
 
--- TODO(backbone): the rectangular form of `Matrix.BlockTriangular.mul`, with a block map on
--- each of the three index types; it has no home in the backbone or in Mathlib yet.
-/-- The rectangular product rule behind the trapezoidal clause of §1.6.2: if `A i k = 0` whenever
-`c k < b i` and `B k j = 0` whenever `d j < c k`, then `(A * B) i j = 0` whenever `d j < b i`,
-because every term `A i k * B k j` of the product has `c k < b i` or `d j < b i ≤ c k`. -/
-theorem mul_apply_eq_zero_of_lt {α l m n R : Type*} [LinearOrder α] [Fintype m]
-    [NonUnitalNonAssocSemiring R] {b : l → α} {c : m → α} {d : n → α} {A : Matrix l m R}
-    {B : Matrix m n R} (hA : ∀ i k, c k < b i → A i k = 0) (hB : ∀ k j, d j < c k → B k j = 0)
-    {i : l} {j : n} (hij : d j < b i) : (A * B) i j = 0 := by
-  rw [mul_apply]
-  refine Finset.sum_eq_zero fun k _ => ?_
-  rcases lt_or_ge (c k) (b i) with h | h
-  · rw [hA i k h, zero_mul]
-  · rw [hB k j (hij.trans_le h), mul_zero]
-
 /-- **§1.6.2, third bullet, the trapezoidal case.** An `m × n` matrix is *upper trapezoidal* when
 `aᵢⱼ = 0` for `i > j` and *lower trapezoidal* when `aᵢⱼ = 0` for `i < j`; the product of two
 upper (lower) trapezoidal matrices is upper (lower) trapezoidal. -/
@@ -406,9 +391,10 @@ theorem isUpperTrapezoidal_mul {m p q : ℕ} (A : Matrix (Fin m) (Fin p) 𝕜)
       ((∀ (i : Fin m) (j : Fin p), (i : ℕ) < j → A i j = 0) →
         (∀ (i : Fin p) (j : Fin q), (i : ℕ) < j → B i j = 0) →
         ∀ (i : Fin m) (j : Fin q), (i : ℕ) < j → (A * B) i j = 0) :=
-  ⟨fun hA hB _ _ hij => mul_apply_eq_zero_of_lt (b := Fin.val) (c := Fin.val) (d := Fin.val)
-      hA hB hij,
-    fun hA hB _ _ hij => mul_apply_eq_zero_of_lt (b := fun i : Fin m => OrderDual.toDual i.val)
+  ⟨fun hA hB _ _ hij =>
+      Matrix.mul_apply_eq_zero_of_lt (b := Fin.val) (c := Fin.val) (d := Fin.val) hA hB hij,
+    fun hA hB _ _ hij =>
+      Matrix.mul_apply_eq_zero_of_lt (b := fun i : Fin m => OrderDual.toDual i.val)
       (c := fun k : Fin p => OrderDual.toDual k.val) (d := fun j : Fin q => OrderDual.toDual j.val)
       (fun i k h => hA i k h) (fun k j h => hB k j h) hij⟩
 

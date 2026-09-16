@@ -271,6 +271,42 @@ theorem multiIndexDirections_multiIndexCount_perm (b : ι → E) (m : Fin n → 
 
 end Count
 
+/-! ### Products over the tuple naming a multi-index -/
+
+section Products
+
+/-- The product of a finite sum of multisets is the product of the products. -/
+theorem prod_multiset_sum {ι M : Type*} [CommMonoid M] [Fintype ι] (f : ι → Multiset M) :
+    (∑ i, f i).prod = ∏ i, (f i).prod := by
+  classical
+  induction (Finset.univ : Finset ι) using Finset.cons_induction with
+  | empty => simp
+  | cons a s ha ih => rw [Finset.sum_cons, Multiset.prod_add, Finset.prod_cons, ih]
+
+/-- A product over the tuple of directions naming a multi-index `α` is the product over the index
+type of the `α i`-th powers, the tuple listing `b i` exactly `α i` times. -/
+theorem prod_multiIndexTuple {ι E M : Type*} [Fintype ι] [LinearOrder ι] [CommMonoid M]
+    (b : ι → E) (α : ι → ℕ) (g : E → M) :
+    (∏ j, g (multiIndexTuple b α j)) = ∏ i, (g (b i)) ^ α i := by
+  classical
+  have h1 : (∏ j, g (multiIndexTuple b α j))
+      = ((multiIndexDirections b α).map g : Multiset M).prod := by
+    rw [multiIndexDirections_eq_ofFn]
+    simp [← List.prod_ofFn, Function.comp_def]
+  rw [h1, show ((List.map g (multiIndexDirections b α) : List M) : Multiset M)
+      = Multiset.map g ((multiIndexDirections b α : List E) : Multiset E) from rfl,
+    coe_multiIndexDirections b α,
+    show Multiset.map g (∑ i, Multiset.replicate (α i) (b i))
+        = ∑ i, Multiset.replicate (α i) (g (b i)) by
+      induction (Finset.univ : Finset ι) using Finset.cons_induction with
+      | empty => simp
+      | cons a s ha ih =>
+        rw [Finset.sum_cons, Multiset.map_add, ih, Finset.sum_cons, Multiset.map_replicate],
+    prod_multiset_sum]
+  exact Finset.prod_congr rfl fun i _ ↦ Multiset.prod_replicate _ _
+
+end Products
+
 /-! ### Multilinear maps read in a basis -/
 
 section MultilinearBasis

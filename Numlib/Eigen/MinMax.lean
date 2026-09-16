@@ -689,23 +689,6 @@ namespace Matrix
 
 variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
-/-- A matrix `V` with orthonormal columns, `Vᴴ V = 1`, acts as a linear isometry
-`EuclideanSpace 𝕜 m →ₗᵢ EuclideanSpace 𝕜 n`. -/
-noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
-    EuclideanSpace 𝕜 m →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
-  toLinearMap := toEuclideanLin V
-  norm_map' y := by
-    have h : inner 𝕜 (toEuclideanLin V y) (toEuclideanLin V y) = inner 𝕜 y y := by
-      rw [← toEuclideanLin_conjTranspose_inner_left, ← Matrix.toEuclideanLin_mul_apply, hV,
-        toEuclideanLin_one, LinearMap.id_apply]
-    rw [← sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _), ← inner_self_eq_norm_sq (𝕜 := 𝕜),
-      ← inner_self_eq_norm_sq (𝕜 := 𝕜), h]
-
-/-- The isometry of `Matrix.toEuclideanLinearIsometry` acts as `toEuclideanLin V`. -/
-@[simp]
-theorem toEuclideanLinearIsometry_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
-    (y : EuclideanSpace 𝕜 m) : toEuclideanLinearIsometry hV y = toEuclideanLin V y := rfl
-
 /-- **Cauchy interlacing for a compression `Vᴴ A V`** with `Vᴴ V = 1` ([saad2011numerical]
 Theorem 1.10; [golub1989matrix] Theorem 8.1.7): the sorted eigenvalues
 (`Matrix.IsHermitian.eigenvalues₀`, decreasing) of the `m × m` Hermitian matrix `Vᴴ A V` interlace

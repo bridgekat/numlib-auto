@@ -34,15 +34,15 @@ Euclidean one; the spectral radius of a real matrix is `Matrix.complexSpectralRa
   "equivalently".
 * `example_4_1_consistent`, `example_4_1_iterate`, `example_4_1_not_tendsto`,
   `example_4_1_tendsto` — Example 4.1.
-* `tendsto_zero_iff_forall_mulVec_tendsto_zero`, `equation_4_4`, `affineStep_iterate_sub_iterate`,
+* `equation_4_4`, `affineStep_iterate_sub_iterate`,
   `complexSpectralRadius_lt_one_of_forall_tendsto`, `theorem_4_1`,
   `tendsto_of_algebraNorm_lt_one` — the error recursion, the convergence theorem and the
   sufficient condition `‖B‖ < 1`.
 * `definition_4_2_factor`, `definition_4_2_averageFactor`, `definition_4_2_rate`,
   `definition_4_2_eq`, `asymptoticConvergenceRate`, `equation_4_5`, `equation_4_5_factor`,
   `equation_4_5_symm` — Definition 4.2 and the asymptotic rate (4.5).
-* `complexSpectralRadius_eq_of_forall_mem_spectrum_iff`, `exercise_4_1` — Exercise 1, cited after
-  Definition 4.2.
+* `exercise_4_1` — Exercise 1, cited after Definition 4.2 (the spectral radius of a matrix with a
+  single real eigenvalue is `Matrix.complexSpectralRadius_eq_of_forall_mem_spectrum_iff`).
 
 Remark 4.1 (order, stationarity and linearity of a general iteration) is a classification and
 has no node.
@@ -182,26 +182,6 @@ theorem example_4_1_tendsto (b : Fin n → ℝ) :
 
 /-! ### Theorem 4.1 -/
 
--- TODO(backbone): belongs beside `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` in
--- `Numlib/LinearAlgebra/Matrix/Complexify` (the Saad surface proves the same two lemmas locally).
-/-- A sequence of real matrices tends to `0` iff its products with every fixed vector do:
-`M k *ᵥ v → 0` for all `v` gives every entry `M k i j = (M k *ᵥ eⱼ)ᵢ → 0`, and convergence in
-`Matrix (Fin n) (Fin n) ℝ` is entrywise. -/
-theorem tendsto_zero_iff_forall_mulVec_tendsto_zero {M : ℕ → Matrix (Fin n) (Fin n) ℝ} :
-    Tendsto M atTop (𝓝 0) ↔ ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) := by
-  constructor
-  · intro h v
-    have hc : Continuous fun C : Matrix (Fin n) (Fin n) ℝ => C *ᵥ v :=
-      Continuous.matrix_mulVec continuous_id continuous_const
-    simpa [Function.comp_def] using (hc.tendsto 0).comp h
-  · intro h
-    have key : Tendsto (fun k => (fun i j => M k i j : Fin n → Fin n → ℝ)) atTop
-        (𝓝 (fun _ _ => (0 : ℝ))) := by
-      refine tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => ?_
-      have hsingle : ∀ k, (M k *ᵥ Pi.single j 1) i = M k i j := fun k => by simp
-      simpa only [hsingle, Pi.zero_apply] using tendsto_pi_nhds.mp (h (Pi.single j 1)) i
-    exact key
-
 /-- **(4.4).** For a consistent method, the error `e⁽ᵏ⁾ = x⁽ᵏ⁾ - x` obeys `e⁽ᵏ⁺¹⁾ = B e⁽ᵏ⁾`, hence
 `e⁽ᵏ⁾ = Bᵏ e⁽⁰⁾` for all `k`; here `x = A⁻¹ b`. It is the backbone's `Stationary.step_iterate_sub`
 transported along `toLp_affineStep_iterate`. -/
@@ -338,22 +318,6 @@ theorem equation_4_5_symm {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {m : 
     l2_opNorm_eq_complexSpectralRadius_of_isHermitian hB', Real.log_pow]
   have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hm
   field_simp
-
--- TODO(backbone): `Matrix.complexSpectralRadius_eq_of_spectrum_eq_singleton`, beside
--- `Matrix.complexSpectralRadius` in `Numlib/LinearAlgebra/Matrix/Complexify`.
-/-- A real matrix whose only complex eigenvalue is the real number `r` has spectral radius `|r|`. -/
-theorem complexSpectralRadius_eq_of_forall_mem_spectrum_iff {B : Matrix (Fin n) (Fin n) ℝ} {r : ℝ}
-    (h : ∀ μ : ℂ, μ ∈ spectrum ℂ (complexify B) ↔ μ = r) :
-    complexSpectralRadius B = ENNReal.ofReal |r| := by
-  have hr : ENNReal.ofReal |r| = ((‖(r : ℂ)‖₊ : ℝ≥0) : ℝ≥0∞) := by
-    rw [← enorm_eq_nnnorm, ← ofReal_norm, Complex.norm_real, Real.norm_eq_abs]
-  rw [complexSpectralRadius, spectralRadius, hr]
-  refine le_antisymm (iSup₂_le fun μ hμ => ?_) ?_
-  · rw [h] at hμ
-    subst hμ
-    exact le_rfl
-  · exact le_iSup₂ (f := fun μ (_ : μ ∈ spectrum ℂ (complexify B)) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞))
-      (r : ℂ) ((h _).mpr rfl)
 
 /-- The spectrum of the complexification of a real `2 × 2` matrix, read off its characteristic
 polynomial `λ² - tr(B) λ + det B`. -/

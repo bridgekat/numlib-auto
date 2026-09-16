@@ -150,7 +150,7 @@ theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterv
   -- the boundary terms of the integration by parts vanish
   have ibp := integral_deriv_mul_add_mul_deriv hab u v
   rw [SobolevIntervalZero.rep_left_eq_zero hab hv, SobolevIntervalZero.rep_right_eq_zero hab hv,
-    mul_zero, mul_zero, sub_zero, EllipticInterval.intervalIntegral_eq_setIntegral_Ioo hab.le,
+    mul_zero, mul_zero, sub_zero, intervalIntegral.integral_eq_setIntegral_Ioo hab.le,
     integral_add i2 i3] at ibp
   rw [EllipticInterval.form_apply]
   have e1 : ∀ x : ℝ, (EllipticInterval.constLinf 0 1 ε : ℝ → ℝ) x = ε →

@@ -478,13 +478,6 @@ theorem galerkin_seminorm_sub_le (hab : a < b) (α γ : Lp ℝ ⊤ (volume.restr
 
 /-! ### Classical solutions are weak solutions -/
 
-/-- A function continuous on `[a, b]` is `L²(a, b)`-integrable against an `L²` function. -/
-theorem integrableOn_continuousOn_mul {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
-    (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
-    IntegrableOn (fun x ↦ g x * f x) (Ioo a b) :=
-  IntegrableOn.continuousOn_mul_of_subset hg ((Lp.memLp f).integrable one_le_two) isCompact_Icc
-    measurableSet_Ioo Ioo_subset_Icc_self
-
 /-- The element of `H^1(a, b)` carried by `u ∈ C²[a, b]`. -/
 def ofContDiffMapIcc (hab : a < b) (u : ContDiffMapIcc hab.le 2) : SobolevInterval 1 a b :=
   SobolevInterval.inclusionCLM 1 a b (ContDiffMapIcc.toSobolevInterval hab.le hab 2 u)
@@ -506,11 +499,6 @@ theorem rep_ofContDiffMapIcc (hab : a < b) (u : ContDiffMapIcc hab.le 2) :
     EqOn (SobolevInterval.rep (ofContDiffMapIcc hab u)) u.extend (Icc a b) :=
   SobolevInterval.rep_eq_of_continuousOn hab _ u.extend.continuous.continuousOn
     (deriv_ofContDiffMapIcc_zero hab u)
-
-/-- `∫_a^b F = ∫_{(a, b)} F`. -/
-theorem intervalIntegral_eq_setIntegral_Ioo (hab : a ≤ b) (F : ℝ → ℝ) :
-    ∫ x in a..b, F x = ∫ x in Ioo a b, F x := by
-  rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo]
 
 open SobolevInterval in
 /-- **Green's formula for a classical solution**: for `u ∈ C²[a, b]` with
@@ -543,8 +531,8 @@ theorem form_ofContDiffMapIcc_eq (hab : a < b) {α β γ f : ℝ → ℝ}
     ring
   -- integration by parts on the first term
   have ibp := integral_deriv_mul_eq_sub_integral_mul_deriv hab v hψAC
-  rw [intervalIntegral_eq_setIntegral_Ioo hab.le, intervalIntegral_eq_setIntegral_Ioo hab.le]
-    at ibp
+  rw [intervalIntegral.integral_eq_setIntegral_Ioo hab.le,
+    intervalIntegral.integral_eq_setIntegral_Ioo hab.le] at ibp
   -- integrability of the pieces
   have i1 : IntegrableOn (fun x ↦ deriv v 1 x * ψ x) (Ioo a b) := by
     have := integrableOn_continuousOn_mul hψc.continuousOn (deriv v 1)
@@ -659,7 +647,8 @@ theorem integral_mul_deriv_mul_rep_eq (hab : a < b) {β : ℝ → ℝ}
     rw [hg, deriv_fun_mul hd hd, h2 ht]
     ring
   rw [intervalIntegral.integral_congr_ae hderiv, intervalIntegral.integral_const_mul] at key
-  rw [← intervalIntegral_eq_setIntegral_Ioo hab.le, ← intervalIntegral_eq_setIntegral_Ioo hab.le]
+  rw [← intervalIntegral.integral_eq_setIntegral_Ioo hab.le,
+    ← intervalIntegral.integral_eq_setIntegral_Ioo hab.le]
   change 2 * ∫ x in a..b, β x * (deriv v 1 x * rep v x) = -∫ x in a..b, deriv β x * g x at key
   linarith
 
@@ -824,7 +813,8 @@ theorem isWeakSolution_mem_sobolevInterval_two (hab : a < b)
   have hweak := hasWeakDerivOn_mulL_deriv αL βL γL f hu
   obtain ⟨c, hc⟩ := hweak.exists_ae_eq_integral hab hWint
   set g : ℝ → ℝ := fun x ↦ c + ∫ t in a..x, W t with hgdef
-  have hgc : ContinuousOn g (Icc a b) := continuousOn_integral_of_integrableOn_Ioo hab.le hWint c
+  have hgc : ContinuousOn g (Icc a b) :=
+    intervalIntegral.continuousOn_integral_of_integrableOn_Ioo hab.le hWint c
   -- `g` as an element of `H^1(a, b)`
   have hg1 : MemSobolevInterval g 1 a b :=
     memSobolevInterval_one_iff.2 ⟨hgc.memLp_two_restrict_Ioo, W,
@@ -853,27 +843,6 @@ theorem isWeakSolution_mem_sobolevInterval_two (hab : a < b)
   exact memSobolevInterval_succ_iff.2 ⟨Lp.memLp _, deriv u 1, hasWeakDerivOn_fn u, hu'⟩
 
 /-! ### The `H²` estimate -/
-
-/-- An `L²(a, b)` function dominated almost everywhere by `c (|g| + d |h|)` has norm at most
-`c (‖g‖ + d ‖h‖)`. -/
-theorem Lp.norm_le_of_abs_le (f g h : Lp ℝ 2 (volume.restrict (Ioo a b))) {c d : ℝ} (hc : 0 ≤ c)
-    (hd : 0 ≤ d) (hle : ∀ᵐ x ∂(volume.restrict (Ioo a b)), |f x| ≤ c * (|g x| + d * |h x|)) :
-    ‖f‖ ≤ c * (‖g‖ + d * ‖h‖) := by
-  set k : Lp ℝ 2 (volume.restrict (Ioo a b)) := c • (|g| + d • |h|) with hk
-  have hfk : |f| ≤ |k| := by
-    rw [← Lp.coeFn_le]
-    filter_upwards [hle, Lp.coeFn_abs f, Lp.coeFn_abs k, Lp.coeFn_smul c (|g| + d • |h|),
-      Lp.coeFn_add |g| (d • |h|), Lp.coeFn_smul d |h|, Lp.coeFn_abs g, Lp.coeFn_abs h]
-      with x h1 h2 h3 h4 h5 h6 h7 h8
-    rw [h2, h3, hk, h4, Pi.smul_apply, h5, Pi.add_apply, h6, Pi.smul_apply, h7, h8, smul_eq_mul,
-      smul_eq_mul]
-    refine h1.trans (le_abs_self _)
-  calc ‖f‖ ≤ ‖k‖ := HasSolidNorm.solid hfk
-    _ ≤ c * (‖g‖ + d * ‖h‖) := by
-        rw [hk, norm_smul, Real.norm_eq_abs, abs_of_nonneg hc]
-        gcongr
-        refine (norm_add_le _ _).trans ?_
-        rw [norm_abs_eq_norm, norm_smul, norm_abs_eq_norm, Real.norm_eq_abs, abs_of_nonneg hd]
 
 open SobolevInterval in
 /-- An element `u ∈ H^1(a, b)` whose derivative `u'` is the function of an element

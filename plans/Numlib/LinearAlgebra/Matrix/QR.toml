@@ -109,9 +109,6 @@ id = "householder_householderTail_mulVec_apply_self"
 id = "norm_householder_householderTail_mulVec_apply_self"
 
 [[node]]
-id = "isUpperHessenberg_iff_fin"
-
-[[node]]
 id = "hessenbergReflector"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.41)'
 
@@ -247,3 +244,6 @@ id = "norm_det_le_prod_sqrt_sum_norm_sq"
 
 [[node]]
 id = "norm_det_le_of_forall_norm_le"
+
+[[node]]
+id = "householderAxis_ne_zero"

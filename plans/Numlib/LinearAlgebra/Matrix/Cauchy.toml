@@ -25,9 +25,6 @@ id = "isUnit_hilbert"
 id = "det_hilbert_pos"
 
 [[node]]
-id = "det_leadingPrincipalSubmatrix_fin"
-
-[[node]]
 id = "hilbert_submatrix_castLE"
 
 [[node]]

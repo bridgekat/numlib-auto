@@ -139,3 +139,30 @@ id = "discreteInner_family_self"
 
 [[node]]
 id = "exists_gauss_error_eq_of_convex"
+
+[[node]]
+id = "pos_of_isExactOnMeasure"
+
+[[node]]
+id = "nodal_eq_family_of_forall_eval_eq_zero"
+
+[[node]]
+id = "continuous_truncPow"
+
+[[node]]
+id = "continuousOn_peanoKernel"
+
+[[node]]
+id = "isExactOn_integralIccCLM_iff"
+
+[[node]]
+id = "sum_mul_eq_integral_interpolate"
+
+[[node]]
+id = "pos_of_isExactOnMeasure_of_le"
+
+[[node]]
+id = "tendsto_of_isExactOnMeasure"
+
+[[node]]
+id = "isExactOnMeasure_comp_equiv"

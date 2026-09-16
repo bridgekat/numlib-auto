@@ -36,19 +36,10 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-- The operator `x ↦ A x` on `𝕜ⁿ` defined by a square matrix; the book writes it `A` too. -/
 abbrev op (A : Matrix (Fin n) (Fin n) 𝕜) : 𝔼 →ₗ[𝕜] 𝔼 := Matrix.toEuclideanLin A
 
-/-- `p(A)` as an operator is `p` of the operator: `Matrix.toEuclideanLin` is an algebra map. -/
-theorem toEuclideanLin_aeval (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝕜[X]) :
-    Matrix.toEuclideanLin (aeval A p) = aeval (Matrix.toEuclideanLin A) p := by
-  induction p using Polynomial.induction_on' with
-  | add p q hp hq => simp only [map_add, hp, hq]
-  | monomial k c =>
-    rw [Polynomial.aeval_monomial, Polynomial.aeval_monomial, ← Algebra.smul_def,
-      ← Algebra.smul_def, map_smul, Matrix.toEuclideanLin_pow]
-
 /-- `p(A) x = p(op A) x`: the book's `p(A) v` read as an operator applied to `v`. -/
 theorem op_aeval (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝕜[X]) :
     op (aeval A p) = aeval (op A) p :=
-  toEuclideanLin_aeval A p
+  Matrix.toEuclideanLin_aeval A p
 
 /-! ### The Krylov subspace (6.2) -/
 
@@ -124,7 +115,7 @@ theorem grade_eq : grade A v = Krylov.grade (op A) v := by
       = {m : ℕ | ((op A) ^ m) v ∈ Krylov.subspace (op A) v m} := by
     ext d
     simp only [Set.mem_ofPred_eq, Krylov.pow_apply_mem_subspace_iff_exists_monic,
-      toEuclideanLin_aeval]
+      Matrix.toEuclideanLin_aeval]
   rw [Krylov.grade_eq_sInf]
   exact congrArg sInf hset
 

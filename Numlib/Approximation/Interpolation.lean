@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.TietzeExtension
+import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Approximation.Unisolvent
 
@@ -104,18 +105,6 @@ polynomial into an algebraic one — together with the dimension count `finrank_
 open scoped Polynomial
 
 namespace Polynomial
-
-/-- The iterated derivative of a polynomial function is the polynomial function of the iterated
-formal derivative. -/
-theorem iteratedDeriv_eval (P : ℝ[X]) (k : ℕ) :
-    iteratedDeriv k (fun s => P.eval s) = fun s => (Polynomial.derivative^[k] P).eval s := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [iteratedDeriv_succ, ih]
-    funext s
-    rw [Function.iterate_succ_apply']
-    exact _root_.Polynomial.deriv (𝕜 := ℝ) _
 
 /-- The iterated formal derivative is additive. -/
 theorem iterate_derivative_add {R : Type*} [CommRing R] (k : ℕ) (P Q : R[X]) :
@@ -257,6 +246,129 @@ theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero {n : ℕ} {a b : ℝ}
 /-! ### The interpolation error formula -/
 
 namespace Lagrange
+
+/-! #### Basis and nodal polynomials -/
+
+section BasisNodal
+
+open Polynomial
+
+/-- **A polynomial with the values of a Lagrange basis polynomial is that polynomial**: if
+`p` has degree less than the number of nodes, `p (v i) = 1` and `p (v j) = 0` for the other nodes
+`j ∈ s`, then `p = Lagrange.basis s v i`. -/
+theorem eq_basis_of_eval {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
+    {s : Finset ι} {v : ι → F} (hvs : Set.InjOn v s) {p : F[X]} (hp : p.degree < s.card)
+    {i : ι} (hi : i ∈ s) (h : ∀ j ∈ s, p.eval (v j) = if j = i then 1 else 0) :
+    p = Lagrange.basis s v i := by
+  refine Polynomial.eq_of_degrees_lt_of_eval_index_eq s hvs hp ?_ fun j hj => ?_
+  · rw [Lagrange.degree_basis hvs hi]
+    exact_mod_cast Nat.sub_lt (Finset.card_pos.2 ⟨i, hi⟩) one_pos
+  · rw [h j hj]
+    split_ifs with hji
+    · rw [hji, Lagrange.eval_basis_self hvs hi]
+    · rw [Lagrange.eval_basis_of_ne (Ne.symm hji) hj]
+
+/-- The Lagrange basis polynomial of an affine image of nodes is the basis polynomial of the
+nodes composed with the affine map: `l_i(c + h t) = φ_i(t)` for `x_i = c + h v_i`, `h ≠ 0`. -/
+theorem basis_comp_affine {n : ℕ} {v : Fin (n + 1) → ℝ} (hv : Function.Injective v)
+    {c h : ℝ} (hh : h ≠ 0) (i : Fin (n + 1)) :
+    (Lagrange.basis Finset.univ (fun k => c + h * v k) i).comp (C h * X + C c)
+      = Lagrange.basis Finset.univ v i := by
+  have hinj : Function.Injective fun k => c + h * v k := fun k l hkl => by
+    have : h * v k = h * v l := by simpa using hkl
+    exact hv (mul_left_cancel₀ hh this)
+  refine Lagrange.eq_basis_of_eval hv.injOn ?_ (Finset.mem_univ _) fun j _ => ?_
+  · refine lt_of_le_of_lt Polynomial.degree_le_natDegree ?_
+    have h1 : (Lagrange.basis Finset.univ (fun k => c + h * v k) i).natDegree ≤ n := by
+      rw [Lagrange.natDegree_basis hinj.injOn (Finset.mem_univ i)]
+      simp
+    have h2 : (C h * X + C c).natDegree ≤ 1 := Polynomial.natDegree_linear_le
+    have := Polynomial.natDegree_comp_le (p := Lagrange.basis Finset.univ (fun k => c + h * v k) i)
+      (q := C h * X + C c)
+    simp only [Finset.card_univ, Fintype.card_fin]
+    exact_mod_cast lt_of_le_of_lt this (by nlinarith)
+  · rw [Polynomial.eval_comp, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_X, Polynomial.eval_C, add_comm (h * v j) c]
+    split_ifs with hji
+    · rw [hji]
+      exact Lagrange.eval_basis_self (v := fun k => c + h * v k) hinj.injOn (Finset.mem_univ i)
+    · exact Lagrange.eval_basis_of_ne (v := fun k => c + h * v k) (Ne.symm hji)
+        (Finset.mem_univ j)
+
+/-- The derivative of the Lagrange basis polynomial at its own node is `ω''(x_k)/(2 ω'(x_k))`:
+with `ω = (X - x_k) ω_k` and `l_k = ω_k/ω_k(x_k)`, one has `ω'(x_k) = ω_k(x_k)` and
+`ω''(x_k) = 2 ω_k'(x_k)`. -/
+theorem eval_derivative_basis_self {n : ℕ} {x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) (k : Fin (n + 1)) :
+    (derivative (Lagrange.basis Finset.univ x k)).eval (x k)
+      = (derivative (derivative (Lagrange.nodal Finset.univ x))).eval (x k)
+        / (2 * (derivative (Lagrange.nodal Finset.univ x)).eval (x k)) := by
+  classical
+  set ωk : ℝ[X] := Lagrange.nodal (Finset.univ.erase k) x with hωk
+  have hbasis : Lagrange.basis Finset.univ x k = C (Lagrange.nodalWeight Finset.univ x k) * ωk := by
+    rw [Lagrange.basis_eq_prod_sub_inv_mul_nodal_div (Finset.mem_univ k),
+      ← Lagrange.nodal_erase_eq_nodal_div (Finset.mem_univ k)]
+  have hnodal : Lagrange.nodal Finset.univ x = (X - C (x k)) * ωk :=
+    Lagrange.nodal_eq_mul_nodal_erase (Finset.mem_univ k)
+  have hW : Lagrange.nodalWeight Finset.univ x k = (ωk.eval (x k))⁻¹ :=
+    Lagrange.nodalWeight_eq_eval_nodal_erase_inv
+  have hωk0 : ωk.eval (x k) ≠ 0 := by
+    rw [hωk, Lagrange.eval_nodal]
+    exact Finset.prod_ne_zero_iff.2 fun j hj =>
+      sub_ne_zero.2 fun h => (Finset.mem_erase.1 hj).1 (hx h).symm
+  have hd1 : derivative (Lagrange.nodal Finset.univ x) = ωk + (X - C (x k)) * derivative ωk := by
+    rw [hnodal, derivative_mul, derivative_X_sub_C, one_mul]
+  have hd2 : derivative (derivative (Lagrange.nodal Finset.univ x))
+      = 2 * derivative ωk + (X - C (x k)) * derivative (derivative ωk) := by
+    rw [hd1, derivative_add, derivative_mul, derivative_X_sub_C, one_mul]
+    ring
+  rw [hbasis, derivative_mul, derivative_C, zero_mul, zero_add, eval_mul, eval_C, hW, hd2, hd1]
+  simp only [eval_add, eval_mul, eval_sub, eval_X, eval_C, eval_ofNat, sub_self, zero_mul,
+    add_zero]
+  field_simp
+
+/-- A monic polynomial of degree `n + 1` vanishing at `n + 1` distinct points is their nodal
+polynomial. -/
+theorem nodal_eq_of_forall_eval_eq_zero {n : ℕ} {x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x)
+    {q : ℝ[X]} (hq : q.Monic) (hdeg : q.natDegree = n + 1) (hroot : ∀ i, q.eval (x i) = 0) :
+    Lagrange.nodal Finset.univ x = q := by
+  refine sub_eq_zero.mp (Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ
+    hx.injOn ?_ fun i _ => ?_)
+  · have := degree_sub_lt_left (p := Lagrange.nodal Finset.univ x) (q := q)
+      (by rw [Lagrange.degree_nodal, degree_eq_natDegree hq.ne_zero, hdeg]; simp)
+      Lagrange.nodal_ne_zero (by rw [Lagrange.nodal_monic.leadingCoeff, hq.leadingCoeff])
+    rwa [Lagrange.degree_nodal] at this
+  · rw [eval_sub, hroot i, Lagrange.eval_nodal_at_node (Finset.mem_univ i), sub_zero]
+
+/-- A point is a node of an injective family exactly when the nodal polynomial vanishes there. -/
+theorem exists_eq_iff_eval_nodal_eq_zero {n : ℕ} (x : Fin (n + 1) → ℝ) (t : ℝ) :
+    (∃ i, x i = t) ↔ (Lagrange.nodal Finset.univ x).eval t = 0 := by
+  rw [Lagrange.eval_nodal, Finset.prod_eq_zero_iff]
+  simp only [Finset.mem_univ, true_and, sub_eq_zero]
+  exact exists_congr fun i => eq_comm
+
+/-- The interpolant at a reindexed family of nodes is the interpolant at the original family. -/
+theorem interpolate_comp_equiv {m : ℕ} {x : Fin m → ℝ} (hx : Function.Injective x)
+    (σ : Equiv.Perm (Fin m)) (f : ℝ → ℝ) :
+    (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)) =
+      Lagrange.interpolate Finset.univ x fun i => f (x i) := by
+  have hxσ : Function.Injective (x ∘ σ) := hx.comp σ.injective
+  have hdeg : (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)).degree <
+      (Finset.univ : Finset (Fin m)).card :=
+    Lagrange.degree_interpolate_lt _ hxσ.injOn
+  have hev : ∀ i ∈ (Finset.univ : Finset (Fin m)),
+      (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)).eval (x i) = f (x i) := by
+    intro i _
+    have h := Lagrange.eval_interpolate_at_node (fun i => f ((x ∘ σ) i)) hxσ.injOn
+      (Finset.mem_univ (σ.symm i))
+    simp only [Function.comp_apply, Equiv.apply_symm_apply] at h
+    exact h
+  exact Lagrange.eq_interpolate_of_eval_eq _ hx.injOn hdeg hev
+
+end BasisNodal
+
+/-! #### The interpolation error formula -/
 
 /-- **The Lagrange interpolation error formula, for a function smooth only near the interval.**
 For `f` of class `C^{n+1}` on an open set containing `[a, b]` and `n + 1` distinct nodes in

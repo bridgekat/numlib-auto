@@ -3,18 +3,6 @@ namespace = "Quadrature"
 # Mean value lemmas
 
 [[node]]
-id = "exists_integral_mul_eq_mul_integral"
-
-[[node]]
-id = "integral_pos_of_continuousOn_of_nonneg"
-
-[[node]]
-id = "exists_mem_Ioo_integral_mul_eq_mul_integral"
-
-[[node]]
-id = "exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos"
-
-[[node]]
 id = "exists_sum_mul_eq_of_forall_mem"
 
 # The midpoint rule
@@ -56,9 +44,6 @@ id = "sub_composite_midpoint_eq"
 id = "tendsto_midpointSum"
 
 # Integer nodes, cardinal polynomials, the nodal polynomial
-
-[[node]]
-id = "_root_.Lagrange.eq_basis_of_eval"
 
 [[node]]
 id = "intNode"
@@ -138,9 +123,6 @@ id = "openNewtonCotes"
 
 [[node]]
 id = "compositeNewtonCotes"
-
-[[node]]
-id = "_root_.Lagrange.basis_comp_affine"
 
 [[node]]
 id = "integral_basis_eq_mul_newtonCotesWeight"
@@ -336,16 +318,7 @@ id = "openNewtonCotesM_pos"
 id = "openNewtonCotesK_pos"
 
 [[node]]
-id = "_root_.ContDiff.dslope"
-
-[[node]]
 id = "exists_contDiff_iteratedDeriv_eq"
-
-[[node]]
-id = "continuous_truncPow"
-
-[[node]]
-id = "continuousOn_peanoKernel"
 
 [[node]]
 id = "sub_closedNewtonCotes_nonpos_of_even"
@@ -407,9 +380,6 @@ id = "hermiteBasisL"
 
 [[node]]
 id = "hermiteBasisM"
-
-[[node]]
-id = "_root_.Lagrange.eval_derivative_basis_self"
 
 [[node]]
 id = "hermiteBasisL_eval_node"

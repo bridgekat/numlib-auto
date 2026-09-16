@@ -54,17 +54,6 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 
 section Units
 
-/-- The coercion of `ContinuousLinearEquiv.ofUnit u` is the underlying operator of `u`. -/
-private theorem coe_ofUnit (u : (V →L[𝕜] V)ˣ) :
-    ((ContinuousLinearEquiv.ofUnit u : V ≃L[𝕜] V) : V →L[𝕜] V) = (u : V →L[𝕜] V) := by
-  ext x; rfl
-
-/-- The inverse of `ContinuousLinearEquiv.ofUnit u` computes `Ring.inverse`. -/
-private theorem coe_ofUnit_symm (u : (V →L[𝕜] V)ˣ) :
-    ((ContinuousLinearEquiv.ofUnit u).symm : V →L[𝕜] V) = Ring.inverse (u : V →L[𝕜] V) := by
-  rw [Ring.inverse_unit]
-  ext x; rfl
-
 /-- Book-to-backbone bridge for "bijection with a bounded inverse": an operator of a normed space
 into itself is a unit of `V →L[𝕜] V` exactly when it is (the coercion of) a continuous linear
 equivalence. This is what lets the ring-level results of `Numlib.Analysis.Normed.Ring.Inverse`
@@ -73,7 +62,7 @@ theorem isUnit_iff_exists_continuousLinearEquiv (L : V →L[𝕜] V) :
     IsUnit L ↔ ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = L := by
   constructor
   · rintro ⟨u, rfl⟩
-    exact ⟨ContinuousLinearEquiv.ofUnit u, coe_ofUnit u⟩
+    exact ⟨ContinuousLinearEquiv.ofUnit u, ContinuousLinearEquiv.coe_ofUnit u⟩
   · rintro ⟨e, rfl⟩
     exact ⟨ContinuousLinearEquiv.toUnit e, rfl⟩
 
@@ -82,7 +71,8 @@ inverse of the equivalence with `Ring.inverse`, so backbone bounds on `Ring.inve
 private theorem exists_equiv_of_isUnit {L : V →L[𝕜] V} (h : IsUnit L) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = L ∧ (e.symm : V →L[𝕜] V) = Ring.inverse L := by
   obtain ⟨u, rfl⟩ := h
-  exact ⟨ContinuousLinearEquiv.ofUnit u, coe_ofUnit u, coe_ofUnit_symm u⟩
+  exact ⟨ContinuousLinearEquiv.ofUnit u, ContinuousLinearEquiv.coe_ofUnit u,
+    ContinuousLinearEquiv.coe_ofUnit_symm u⟩
 
 /-- Rescaling an invertible operator by a nonzero scalar keeps it invertible, and inverts the
 scalar on the inverse. -/
@@ -94,10 +84,11 @@ private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L
   have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
     ext x; exact e₀.symm_apply_apply x
   refine ⟨ContinuousLinearEquiv.ofUnit
-    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩, coe_ofUnit _, ?_⟩
+    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩,
+    ContinuousLinearEquiv.coe_ofUnit _, ?_⟩
   · rw [smul_mul_smul_comm, hcancel, mul_inv_cancel₀ hlam, one_smul]
   · rw [smul_mul_smul_comm, hcancel', inv_mul_cancel₀ hlam, one_smul]
-  · rw [coe_ofUnit_symm, Ring.inverse_unit]
+  · rw [ContinuousLinearEquiv.coe_ofUnit_symm, Ring.inverse_unit]
     rfl
 
 /-- Every operator on a trivial space has norm zero. Used to dispose of the degenerate case in

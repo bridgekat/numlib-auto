@@ -31,8 +31,9 @@ empty and the one for the largest is `A` without its last block row and column.
 * `blockLDU` — §3.8.1, the block LDU factorization with a factored leading block.
 * `theorem_3_7` — the existence and uniqueness of the block LU factorization.
 * `equation_3_57` — the Sherman–Morrison–Woodbury formula of §3.8.2.
-* `blockTridiagonal_isBlockBidiagonal`, `blockTridiagonal_lu` — §3.8.3, the block Thomas
-  recurrences `U₁ = A₁₁`, `L_{i-1} U_{i-1} = A_{i,i-1}`, `U_i = A_{ii} - L_{i-1} A_{i-1,i}`.
+* `blockTridiagonal_lu` — §3.8.3, the block Thomas recurrences, from the backbone's
+  `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal`: `U₁ = A₁₁`, `L_{i-1} U_{i-1} = A_{i,i-1}`,
+  `U_i = A_{ii} - L_{i-1} A_{i-1,i}`.
 
 The storage counts, the block Cholesky–Thomas reduction of a symmetric positive definite block
 tridiagonal system and the `(7/6)(n - 1) p³` flop count are prose.
@@ -41,8 +42,9 @@ tridiagonal system and the `(7/6)(n - 1) p³` flop count are prose.
 
 §3.8.3 posits the shape of the factors (`L` block unit lower bidiagonal, `U` block upper
 bidiagonal with the superdiagonal blocks of `A`) and reads off the recurrence by equating blocks.
-Here the shape is *proved*: `blockTridiagonal_isBlockBidiagonal` is the block form of Property
-3.4 — the lower clause under the hypothesis of Theorem 3.7, as in §3.7 — and `blockTridiagonal_lu`
+Here the shape is *proved*: the backbone's `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` is
+the block form of Property 3.4 — the lower clause under the hypothesis of Theorem 3.7, as in §3.7 —
+and `blockTridiagonal_lu`
 then states the three recurrences for any block LU factorization of a block tridiagonal matrix.
 -/
 
@@ -141,59 +143,10 @@ private theorem upper_apply_eq (h : IsBlockLU b A L U) {i j : Fin N}
   rw [h.mul_eq, Matrix.one_mul] at key
   exact key.symm
 
-/-- **§3.8.3, the block bandwidth of the factors.** For a block tridiagonal `A` — the blocks
-`A_{ij}` with `|i - j| ≥ 2` vanish — whose leading principal block submatrices are nonsingular,
-the block LU factors are block bidiagonal: `L` has only its diagonal and first subdiagonal
-blocks, `U` only its diagonal and first superdiagonal blocks. This is the block form of Property
-3.4; as there, the clause for `U` needs no hypothesis on the leading blocks, while the clause for
-`L` does (backbone `Matrix.IsBlockLU.toBlock`, `Matrix.IsBlockLU.toBlock_not_left`,
-`Matrix.IsBlockLU.toBlock_not_right`). -/
-theorem blockTridiagonal_isBlockBidiagonal (h : IsBlockLU b A L U)
-    (htriL : ∀ i j, (b j : ℕ) + 1 < b i → A i j = 0)
-    (htriU : ∀ i j, (b i : ℕ) + 1 < b j → A i j = 0)
-    (hlead : ∀ k : Fin m, IsUnit (A.toBlock (b · ≤ k) (b · ≤ k))) :
-    (∀ i j, (b j : ℕ) + 1 < b i → L i j = 0) ∧ ∀ i j, (b i : ℕ) + 1 < b j → U i j = 0 := by
-  constructor
-  · intro i j hij
-    have hp : ∀ x y : Fin N, b x ≤ b j → b y ≤ b x → b y ≤ b j := fun _ _ hx hyx => hyx.trans hx
-    have hLp : IsUnit (L.toBlock (b · ≤ b j) (b · ≤ b j)) :=
-      (h.toBlock hp).isBlockUnitLowerTriangular.isUnit
-    have hUp : IsUnit (U.toBlock (b · ≤ b j) (b · ≤ b j)) := by
-      have hmul := (h.toBlock hp).mul_eq
-      rw [isUnit_iff_isUnit_det] at hLp ⊢
-      have hAp := hlead (b j)
-      rw [isUnit_iff_isUnit_det, ← hmul, det_mul] at hAp
-      exact isUnit_of_mul_isUnit_right hAp
-    have hLeq : L.toBlock (fun x => ¬ b x ≤ b j) (b · ≤ b j) =
-        A.toBlock (fun x => ¬ b x ≤ b j) (b · ≤ b j) *
-          (U.toBlock (b · ≤ b j) (b · ≤ b j))⁻¹ := by
-      rw [h.toBlock_not_left hp, Matrix.mul_assoc,
-        mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hUp), Matrix.mul_one]
-    have hi : ¬ b i ≤ b j := not_le.2 (Fin.lt_def.2 (by omega))
-    have hentry := congrFun (congrFun hLeq ⟨i, hi⟩) ⟨j, le_rfl⟩
-    rw [toBlock_apply, mul_apply] at hentry
-    rw [hentry]
-    refine Finset.sum_eq_zero fun x _ => ?_
-    rw [toBlock_apply, htriL i x.1 (by have := Fin.le_def.1 x.2; omega), zero_mul]
-  · intro i j hij
-    have hp : ∀ x y : Fin N, b x ≤ b i → b y ≤ b x → b y ≤ b i := fun _ _ hx hyx => hyx.trans hx
-    have hLp : IsUnit (L.toBlock (b · ≤ b i) (b · ≤ b i)) :=
-      (h.toBlock hp).isBlockUnitLowerTriangular.isUnit
-    have hUeq : U.toBlock (b · ≤ b i) (fun x => ¬ b x ≤ b i) =
-        (L.toBlock (b · ≤ b i) (b · ≤ b i))⁻¹ *
-          A.toBlock (b · ≤ b i) (fun x => ¬ b x ≤ b i) := by
-      rw [h.toBlock_not_right hp, ← Matrix.mul_assoc,
-        nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hLp), Matrix.one_mul]
-    have hj : ¬ b j ≤ b i := not_le.2 (Fin.lt_def.2 (by omega))
-    have hentry := congrFun (congrFun hUeq ⟨i, le_rfl⟩) ⟨j, hj⟩
-    rw [toBlock_apply, mul_apply] at hentry
-    rw [hentry]
-    refine Finset.sum_eq_zero fun x _ => ?_
-    rw [toBlock_apply, htriU x.1 j (by have := Fin.le_def.1 x.2; omega), mul_zero]
-
 /-- **§3.8.3, the block Thomas factorization (3.58).** Let `A` be block tridiagonal with
 nonsingular leading principal block submatrices and let `A = L U` be its block LU factorization,
-which by `blockTridiagonal_isBlockBidiagonal` is block bidiagonal. Equating the blocks gives
+which by `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` is block bidiagonal. Equating the
+blocks gives
 `U₁ = A₁₁`, the superdiagonal blocks of `U` are those of `A`, and the remaining blocks are
 obtained sequentially, for `i = 2, …, n`, by solving `L_{i-1} U_{i-1} = A_{i,i-1}` for the
 subdiagonal block of `L` and computing `U_i = A_{ii} - L_{i-1} A_{i-1,i}`. -/
@@ -211,7 +164,7 @@ theorem blockTridiagonal_lu (h : IsBlockLU b A L U)
       (∀ k l : Fin m, (k : ℕ) + 1 = l →
         U.toBlock (b · = l) (b · = l) = A.toBlock (b · = l) (b · = l) -
           L.toBlock (b · = l) (b · = k) * A.toBlock (b · = k) (b · = l)) := by
-  obtain ⟨hLbd, hUbd⟩ := blockTridiagonal_isBlockBidiagonal h htriL htriU hlead
+  obtain ⟨hLbd, hUbd⟩ := IsBlockLU.blockBidiagonal_of_blockTridiagonal h htriL htriU hlead
   have hsuper : ∀ {i j : Fin N}, ((b i : ℕ) + 1 = b j ∨ ∀ x, b i ≤ b x) → U i j = A i j := by
     rintro i j (hij | hmin)
     · exact upper_apply_eq h fun j' hj' => hUbd j' j (by have := Fin.lt_def.1 hj'; omega)

@@ -130,33 +130,6 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n] {𝕜 : Type*} [Field 𝕜]
 
-/-! ### Rows of the triangular parts -/
-
-omit [LinearOrder n] in
-/-- Row `i` of `D v` is `a_ii v_i`. -/
-theorem diagPart_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
-    (diagPart A *ᵥ v) i = A i i * v i := by
-  rw [diagPart, mulVec_diagonal]
-  rfl
-
-omit [DecidableEq n] in
-/-- Row `i` of `L v` is `∑_{j < i} a_ij v_j`. -/
-theorem strictLower_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
-    (strictLower A *ᵥ v) i = ∑ j ∈ univ.filter (· < i), A i j * v j := by
-  simp [mulVec, dotProduct, sum_filter, ite_mul]
-
-omit [DecidableEq n] in
-/-- Row `i` of `U v` is `∑_{i < j} a_ij v_j`. -/
-theorem strictUpper_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
-    (strictUpper A *ᵥ v) i = ∑ j ∈ univ.filter (i < ·), A i j * v j := by
-  simp [mulVec, dotProduct, sum_filter, ite_mul]
-
-omit [LinearOrder n] in
-/-- Row `i` of `A v` split into the diagonal term and the rest. -/
-theorem mulVec_apply_eq_add_sum_erase (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
-    (A *ᵥ v) i = A i i * v i + ∑ j ∈ univ.erase i, A i j * v j := by
-  rw [mulVec, dotProduct, ← add_sum_erase _ _ (mem_univ i)]
-
 /-! ### The JOR and Jacobi sweeps -/
 
 omit [LinearOrder n] in

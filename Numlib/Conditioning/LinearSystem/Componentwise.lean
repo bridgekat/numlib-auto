@@ -41,44 +41,6 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-! ### Sup norms of real vectors and the entrywise order -/
-
-section PiNorm
-
-omit [DecidableEq n] in
-/-- The sup norm is monotone in the entrywise absolute value. -/
-theorem norm_le_norm_of_abs_le {v w : n → ℝ} (h : |v| ≤ w) : ‖v‖ ≤ ‖w‖ := by
-  rw [pi_norm_le_iff_of_nonneg (norm_nonneg w)]
-  intro i
-  calc ‖v i‖ = |v i| := Real.norm_eq_abs _
-    _ ≤ w i := h i
-    _ ≤ ‖w i‖ := le_abs_self _
-    _ ≤ ‖w‖ := norm_le_pi_norm w i
-
-omit [DecidableEq n] in
-/-- The sup norm of the entrywise absolute value. -/
-theorem norm_abs_eq (v : n → ℝ) : ‖|v|‖ = ‖v‖ := by
-  rw [Pi.norm_def, Pi.norm_def]
-  congr 1
-  refine congrArg _ (funext fun i => ?_)
-  simp [Pi.abs_apply, Real.nnnorm_abs]
-
-/-- The maximum absolute row sum of an entrywise nonnegative matrix is the sup norm of its row
-sums, `‖M 𝟙‖_∞ = ‖M‖_∞`. -/
-theorem norm_mulVec_one_of_entrywiseNonneg {M : Matrix n n ℝ} (hM : M.EntrywiseNonneg) :
-    ‖M *ᵥ (1 : n → ℝ)‖ = ‖M‖ := by
-  rw [Pi.norm_def, linfty_opNorm_def]
-  congr 1
-  refine congrArg _ (funext fun i => ?_)
-  rw [← NNReal.coe_inj, coe_nnnorm, NNReal.coe_sum, Real.norm_eq_abs]
-  simp only [coe_nnnorm, Real.norm_eq_abs]
-  rw [mulVec, dotProduct]
-  simp only [Pi.one_apply, mul_one]
-  rw [Finset.abs_sum_of_nonneg fun j _ => hM.apply i j]
-  exact Finset.sum_congr rfl fun j _ => (abs_of_nonneg (hM.apply i j)).symm
-
-end PiNorm
-
 /-! ### The Skeel condition numbers -/
 
 section Skeel

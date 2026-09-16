@@ -259,12 +259,6 @@ id = "abs_residual_laxFriedrichs_le_of_isModifiedSolution"
 id = "abs_residual_laxWendroff_le_of_isModifiedSolution"
 
 [[node]]
-id = "hasPartialDerivFst_of_hasPartialsOn"
-
-[[node]]
-id = "hasPartialDerivSnd_of_hasPartialsOn"
-
-[[node]]
 id = "abs_taylor_fst_one"
 
 [[node]]

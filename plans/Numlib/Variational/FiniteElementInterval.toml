@@ -44,12 +44,6 @@ id = "meshSize"
 deps = []
 
 [[node]]
-id = "toContinuousMap_injective"
-
-[[node]]
-id = "exists_toContinuousMap_eq"
-
-[[node]]
 id = "exists_mem_lagrangeSpace"
 
 [[node]]

@@ -155,21 +155,6 @@ theorem equation_1_7 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fi
 
 end SpectralRadius
 
--- TODO(backbone): belongs beside `spectralRadius_smul` in
--- `Numlib/Analysis/Normed/Algebra/SpectralRadius`.
-/-- The spectral radius is invariant under the star: `ρ(star a) = ρ(a)`, because
-`σ(star a) = star σ(a)` (`spectrum.map_star`) and the norm is star-invariant. -/
-theorem spectralRadius_star {𝕜 B : Type*} [NormedField 𝕜] [StarRing 𝕜] [NormedStarGroup 𝕜]
-    [Ring B] [Algebra 𝕜 B] [StarRing B] [StarModule 𝕜 B] (a : B) :
-    spectralRadius 𝕜 (star a) = spectralRadius 𝕜 a := by
-  have key : ∀ b : B, spectralRadius 𝕜 (star b) ≤ spectralRadius 𝕜 b := fun b =>
-    iSup₂_le fun k hk => by
-      rw [spectrum.map_star, Set.mem_star] at hk
-      calc ((‖k‖₊ : ℝ≥0) : ℝ≥0∞) = ‖star k‖₊ := by rw [nnnorm_star]
-        _ ≤ spectralRadius 𝕜 b :=
-          le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 b) => ((‖k‖₊ : ℝ≥0) : ℝ≥0∞)) (star k) hk
-  exact le_antisymm (key a) (by simpa using key (star a))
-
 /-- **§1.7, `ρ(Aᴴ) = ρ(A)`.** Since `λ ∈ σ(A)` iff `conj λ ∈ σ(Aᴴ)` and `|conj λ| = |λ|`,
 `ρ(Aᴴ) = ρ(A)`; also `ρ(Aᵀ) = ρ(A)`, the spectra being equal. -/
 theorem spectralRadius_conjTranspose (A : Matrix (Fin n) (Fin n) ℂ) :

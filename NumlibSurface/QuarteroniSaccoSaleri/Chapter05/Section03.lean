@@ -1,3 +1,4 @@
+import Numlib.LinearAlgebra.Matrix.Similar
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section02
 
 /-!
@@ -53,40 +54,6 @@ namespace QuarteroniSaccoSaleri.Chapter05
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### Bridges to the backbone -/
-
--- TODO(backbone): the operator form of `Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`;
--- natural home `Numlib/LinearAlgebra/Matrix/Similar` or `Numlib/Eigen/PowerMethod`.
-/-- The spectrum of an endomorphism with a basis of eigenvectors `b i`, `f (b i) = lam i • b i`, is
-the set of the `lam i`: in the basis `b` the endomorphism is the diagonal matrix of the `lam i`,
-whose spectrum is `Set.range lam`. -/
-theorem spectrum_eq_range_of_basis {E : Type*} [AddCommGroup E] [Module 𝕜 E] {ι : Type*}
-    [Finite ι] {f : Module.End 𝕜 E} (b : Module.Basis ι 𝕜 E) {lam : ι → 𝕜}
-    (hb : ∀ i, f (b i) = lam i • b i) : spectrum 𝕜 f = Set.range lam := by
-  cases nonempty_fintype ι
-  classical
-  have hmat : LinearMap.toMatrixAlgEquiv b f = diagonal lam := by
-    ext i j
-    rw [LinearMap.toMatrixAlgEquiv_apply, hb, map_smul, Finsupp.smul_apply, b.repr_self,
-      Finsupp.single_apply, diagonal_apply, smul_eq_mul]
-    by_cases h : i = j
-    · subst h; simp
-    · simp [h, Ne.symm h]
-  rw [← AlgEquiv.spectrum_eq (LinearMap.toMatrixAlgEquiv b), hmat, spectrum_diagonal]
-
--- TODO(backbone): natural home `Numlib/Analysis/Matrix/ToEuclideanLin`, beside
--- `Matrix.toEuclideanCLM_nonsing_inv`, of which this is the `Module.End` form.
-/-- For a nonsingular `M`, `toEuclideanLin M` is a unit of `Module.End` with `Ring.inverse` equal
-to `toEuclideanLin M⁻¹`. -/
-theorem ringInverse_toEuclideanLin {M : Matrix (Fin n) (Fin n) 𝕜} (hM : IsUnit M) :
-    IsUnit (toEuclideanLin M) ∧ Ring.inverse (toEuclideanLin M) = toEuclideanLin M⁻¹ := by
-  have hdet := (isUnit_iff_isUnit_det M).mp hM
-  let u : (Module.End 𝕜 (EuclideanSpace 𝕜 (Fin n)))ˣ :=
-    ⟨toEuclideanLin M, toEuclideanLin M⁻¹,
-      by rw [Module.End.mul_eq_comp, ← toEuclideanLin_mul, mul_nonsing_inv M hdet,
-        toEuclideanLin_one, Module.End.one_eq_id],
-      by rw [Module.End.mul_eq_comp, ← toEuclideanLin_mul, nonsing_inv_mul M hdet,
-        toEuclideanLin_one, Module.End.one_eq_id]⟩
-  exact ⟨⟨u, rfl⟩, Ring.inverse_unit u⟩
 
 /-- The shift `A − μ I` is nonsingular exactly when `μ ∉ σ(A)`. -/
 theorem isUnit_sub_smul_one_of_notMem_spectrum {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜}
@@ -197,7 +164,7 @@ theorem theorem_5_6_rayleigh {A : Matrix (Fin n) (Fin n) ℂ}
     hu (smul_ne_zero hα (x.ne_zero i₀))
     (sum_repr_erase_mem_iSup_maxGenEigenspace x hx q₀ {i₀} hne) (fun μ hμ hev => ?_) ?_
   · have hμ' : μ ∈ Set.range lam := by
-      rw [← spectrum_eq_range_of_basis x hx]
+      rw [← Module.End.spectrum_eq_range_of_basis x hx]
       exact Module.End.hasEigenvalue_iff_mem_spectrum.mp hev
     obtain ⟨i, rfl⟩ := hμ'
     exact hlt i fun h => hμ (h ▸ rfl)
@@ -350,7 +317,7 @@ theorem inverseIterate_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
   have hdom : ∀ ν, ν ≠ lam m → Module.End.HasEigenvalue (toEuclideanLin A) ν →
       ‖lam m - μ‖ < ‖ν - μ‖ := fun ν hν hev => by
     have hν' : ν ∈ Set.range lam := by
-      rw [← spectrum_eq_range_of_basis x hx]
+      rw [← Module.End.spectrum_eq_range_of_basis x hx]
       exact Module.End.hasEigenvalue_iff_mem_spectrum.mp hev
     obtain ⟨i, rfl⟩ := hν'
     exact hclose i fun h => hν (h ▸ rfl)
@@ -416,7 +383,7 @@ theorem powerIterate_of_eq {A : Matrix (Fin n) (Fin n) ℂ}
   have hdom' : ∀ μ, μ ≠ lam i₀ → Module.End.HasEigenvalue (toEuclideanLin A) μ →
       ‖μ‖ < ‖lam i₀‖ := fun μ hμ hev => by
     have hμ' : μ ∈ Set.range lam := by
-      rw [← spectrum_eq_range_of_basis x hx]
+      rw [← Module.End.spectrum_eq_range_of_basis x hx]
       exact Module.End.hasEigenvalue_iff_mem_spectrum.mp hev
     obtain ⟨i, rfl⟩ := hμ'
     exact hdom i (fun h => hμ (h ▸ rfl)) (fun h => hμ (h ▸ heq))

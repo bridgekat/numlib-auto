@@ -89,3 +89,6 @@ id = "l2_opNorm_le_of_posSemidef_of_posSemidef_sub"
 [[node]]
 id = "PosDef.condNumber_schurComplement_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.6"
+
+[[node]]
+id = "schurComplementSingle_transpose"

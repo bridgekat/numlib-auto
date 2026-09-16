@@ -4,6 +4,7 @@ import Mathlib.Analysis.Calculus.LagrangeMultipliers
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.LinearInequalities
 import Numlib.Analysis.Convex.Extremum.Program
@@ -172,63 +173,6 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
   exact sub_eq_zero.1 (coeff_eq_zero_of_sum_smul_eq_zero hx.2 h2 i)
 
 /-! ### The second-order sufficient condition -/
-
-omit [Fintype ι] [Fintype κ] in
-/-- Second-order Taylor expansion with Peano remainder: if `L` is differentiable near `x` with
-derivative `L'` and `L'` is differentiable at `x` with derivative `H`, then
-`L y - L x - L' x (y - x) - ½ H (y - x) (y - x) = o(‖y - x‖²)`. The mean value inequality along
-the segment `[x, y]` for `t ↦ L (x + t (y - x)) - t L' x (y - x) - ½ t² H (y - x) (y - x)`, whose
-derivative is `(L' (x + t (y - x)) - L' x - H (t (y - x))) (y - x)`, gives the estimate; no
-integrability of `L'` along the segment is needed. -/
-theorem isLittleO_taylor_two {L : E → ℝ} {L' : E → E →L[ℝ] ℝ} {H : E →L[ℝ] E →L[ℝ] ℝ} {x : E}
-    (hL : ∀ᶠ y in 𝓝 x, HasFDerivAt L (L' y) y) (hH : HasFDerivAt L' H x) :
-    (fun y => L y - L x - L' x (y - x) - H (y - x) (y - x) / 2) =o[𝓝 x] fun y => ‖y - x‖ ^ 2 := by
-  rw [Asymptotics.isLittleO_iff]
-  intro ε hε
-  have hH' : ∀ᶠ y in 𝓝 x, ‖L' y - L' x - H (y - x)‖ ≤ ε * ‖y - x‖ :=
-    Asymptotics.isLittleO_iff.1 (hasFDerivAt_iff_isLittleO.1 hH) hε
-  obtain ⟨δ, hδ, hball⟩ := Metric.eventually_nhds_iff.1 (hL.and hH')
-  refine Metric.eventually_nhds_iff.2 ⟨δ, hδ, fun y hy => ?_⟩
-  set w := y - x with hw
-  have hwδ : ‖w‖ < δ := by rwa [hw, ← dist_eq_norm]
-  have hmem : ∀ t ∈ Icc (0 : ℝ) 1, dist (x + t • w) x < δ := by
-    intro t ht
-    rw [dist_eq_norm, add_sub_cancel_left, norm_smul, Real.norm_eq_abs, abs_of_nonneg ht.1]
-    calc t * ‖w‖ ≤ 1 * ‖w‖ := mul_le_mul_of_nonneg_right ht.2 (norm_nonneg _)
-      _ < δ := by rwa [one_mul]
-  set φ : ℝ → ℝ := fun t => L (x + t • w) - t * L' x w - t ^ 2 / 2 * H w w with hφ
-  set φ' : ℝ → ℝ := fun t => (L' (x + t • w) - L' x - H (t • w)) w with hφ'
-  have hderiv : ∀ t ∈ Icc (0 : ℝ) 1, HasDerivWithinAt φ (φ' t) (Icc 0 1) t := by
-    intro t ht
-    have h1 : HasDerivAt (fun t : ℝ => x + t • w) w t := by
-      simpa using ((hasDerivAt_id t).smul_const w).const_add x
-    have h2 : HasDerivAt (fun t : ℝ => L (x + t • w)) (L' (x + t • w) w) t :=
-      (hball (hmem t ht)).1.comp_hasDerivAt t h1
-    have h3 : HasDerivAt (fun t : ℝ => t * L' x w) (L' x w) t := by
-      simpa using (hasDerivAt_id t).mul_const (L' x w)
-    have h4 : HasDerivAt (fun t : ℝ => t ^ 2 / 2 * H w w) (t * H w w) t :=
-      (((hasDerivAt_pow 2 t).div_const 2).mul_const (H w w)).congr_deriv (by norm_num)
-    refine ((h2.sub h3).sub h4).hasDerivWithinAt.congr_deriv ?_
-    simp only [hφ', sub_apply, map_smul, smul_apply, smul_eq_mul]
-  have hbound : ∀ t ∈ Ico (0 : ℝ) 1, ‖φ' t‖ ≤ ε * ‖w‖ ^ 2 := by
-    intro t ht
-    have h1 := (hball (hmem t (Ico_subset_Icc_self ht))).2
-    rw [add_sub_cancel_left] at h1
-    have h2 : ‖t • w‖ ≤ ‖w‖ := by
-      rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg ht.1]
-      exact mul_le_of_le_one_left (norm_nonneg _) ht.2.le
-    calc ‖φ' t‖ ≤ ‖L' (x + t • w) - L' x - H (t • w)‖ * ‖w‖ :=
-          ContinuousLinearMap.le_opNorm _ _
-      _ ≤ (ε * ‖t • w‖) * ‖w‖ := mul_le_mul_of_nonneg_right h1 (norm_nonneg _)
-      _ ≤ (ε * ‖w‖) * ‖w‖ := by gcongr
-      _ = ε * ‖w‖ ^ 2 := by ring
-  have hmv := norm_image_sub_le_of_norm_deriv_le_segment_01' hderiv hbound
-  have hφ1 : φ 1 - φ 0 = L y - L x - L' x (y - x) - H (y - x) (y - x) / 2 := by
-    simp only [hφ, one_smul, zero_smul, add_zero, one_mul, zero_mul, one_pow, sub_zero, hw,
-      add_sub_cancel]
-    ring
-  rw [hφ1] at hmv
-  simpa [hw] using hmv
 
 /-- [quarteroni2000numerical] Property 7.11, second part (the second-order sufficient condition;
 Nocedal–Wright Theorem 12.6): let `x` satisfy the equality constraints, let `f` and the `h_i` be

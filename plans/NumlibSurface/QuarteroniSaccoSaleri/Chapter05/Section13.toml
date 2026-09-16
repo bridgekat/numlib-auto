@@ -17,9 +17,6 @@ id = "exercise_5_9"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.9'
 
 [[node]]
-id = "tendsto_smul_powerIterate_of_mem_iSup"
-
-[[node]]
 id = "sum_repr_sdiff_mem_iSup_maxGenEigenspace"
 
 [[node]]

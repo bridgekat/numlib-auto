@@ -405,6 +405,29 @@ theorem IsStrictDiagDominant.posDef (hA : A.IsHermitian) (hd : A.IsStrictDiagDom
   have := (abs_lt.mp hlt).1
   linarith
 
+/-- A Hermitian, weakly row diagonally dominant matrix with nonnegative diagonal is positive
+semidefinite: by Gershgorin's theorem every eigenvalue lies in a disc centred at some `a_kk ≥ 0`
+of radius `∑_{j ≠ k} |a_kj| ≤ a_kk`, hence is nonnegative. It is the weak companion of
+`Matrix.IsStrictDiagDominant.posDef`; combined with nonsingularity
+(`Matrix.PosSemidef.posDef_iff_isUnit`) it gives positive definiteness. -/
+theorem IsDiagDominant.posSemidef (hA : A.IsHermitian) (hd : A.IsDiagDominant)
+    (hpos : ∀ i, 0 ≤ RCLike.re (A i i)) : A.PosSemidef := by
+  rw [hA.posSemidef_iff_eigenvalues_nonneg, Pi.le_def]
+  intro i
+  have hev : Module.End.HasEigenvalue (Matrix.toLin' A) (hA.eigenvalues i : 𝕜) := by
+    refine Module.End.hasEigenvalue_of_hasEigenvector (x := ⇑(hA.eigenvectorBasis i)) ⟨?_, ?_⟩
+    · rw [Module.End.mem_eigenspace_iff, toLin'_apply, hA.mulVec_eigenvectorBasis,
+        RCLike.real_smul_eq_coe_smul (K := 𝕜)]
+    · exact fun h => hA.eigenvectorBasis.orthonormal.ne_zero i ((WithLp.ofLp_eq_zero 2).mp h)
+  obtain ⟨k, hk⟩ := eigenvalue_mem_ball hev
+  rw [Metric.mem_closedBall, dist_eq_norm] at hk
+  have hle := hk.trans (hd k)
+  rw [← hA.coe_re_apply_self k, ← RCLike.ofReal_sub, RCLike.norm_ofReal, RCLike.norm_ofReal,
+    abs_of_nonneg (hpos k)] at hle
+  have h := (abs_le.mp hle).1
+  simp only [Pi.zero_apply]
+  linarith
+
 end PosDef
 
 section Complexify
@@ -450,14 +473,6 @@ end Complexify
 section Schur
 
 variable {K : Type*} [Field K]
-
-omit [Fintype n] [DecidableEq n] in
-/-- The transpose of a one-step Schur complement is the Schur complement of the transpose. -/
-theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
-    (A.schurComplementSingle p)ᵀ = Aᵀ.schurComplementSingle p := by
-  ext i j
-  simp only [transpose_apply, schurComplementSingle_apply]
-  ring
 
 variable {A : Matrix n n 𝕜}
 

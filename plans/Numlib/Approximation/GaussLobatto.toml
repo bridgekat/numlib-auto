@@ -32,9 +32,6 @@ id = "eq_lobattoNodal_of_eval_eq_zero"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.17)"
 
 [[node]]
-id = "pos_of_isExactOnMeasure"
-
-[[node]]
 id = "weight_eq_of_nodal_eq"
 source = "Davis–Rabinowitz, Methods of Numerical Integration, Section 2.7"
 
@@ -45,9 +42,6 @@ source = "Davis–Rabinowitz, Methods of Numerical Integration, Section 2.7"
 [[node]]
 id = "exists_gaussLobatto"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.17)–(10.18)"
-
-[[node]]
-id = "nodal_eq_family_of_forall_eval_eq_zero"
 
 [[node]]
 id = "legendreGaussWeight_eq"
@@ -119,3 +113,9 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 10.6"
 [[node]]
 id = "interpolate_eq_sum_dlt"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.38)–(10.40)"
+
+[[node]]
+id = "_root_.OrthogonalPolynomial.lobattoMeasure_jacobiMeasure"
+
+[[node]]
+id = "isExactOnMeasure_of_nodal_eq_lobattoNodal"

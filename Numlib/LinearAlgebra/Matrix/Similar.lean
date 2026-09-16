@@ -5,6 +5,7 @@ Natural home: `Mathlib.LinearAlgebra.Matrix.Similar`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.LinearAlgebra.Eigenspace.Basic
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
@@ -242,6 +243,24 @@ theorem isSimilar_diagonal_iff_iSup_eigenspace_eq_top (A : Matrix n n K) :
     refine ⟨fun j => dd (e.symm j), fun j => (e.symm j : n → K),
       hbind.comp _ e.symm.injective, fun j => ?_⟩
     exact Module.End.mem_eigenspace_iff.1 (hdd (e.symm j))
+
+/-- The spectrum of an endomorphism with a basis of eigenvectors `b i`, `f (b i) = lam i • b i`, is
+the set of the `lam i`: in the basis `b` the endomorphism is the diagonal matrix of the `lam i`,
+whose spectrum is `Set.range lam`. This is the operator form of
+`Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. -/
+theorem _root_.Module.End.spectrum_eq_range_of_basis {E : Type*} [AddCommGroup E] [Module K E]
+    {ι : Type*} [Finite ι] {f : Module.End K E} (b : Module.Basis ι K E) {lam : ι → K}
+    (hb : ∀ i, f (b i) = lam i • b i) : spectrum K f = Set.range lam := by
+  cases nonempty_fintype ι
+  classical
+  have hmat : LinearMap.toMatrixAlgEquiv b f = diagonal lam := by
+    ext i j
+    rw [LinearMap.toMatrixAlgEquiv_apply, hb, map_smul, Finsupp.smul_apply, b.repr_self,
+      Finsupp.single_apply, diagonal_apply, smul_eq_mul]
+    by_cases h : i = j
+    · subst h; simp
+    · simp [h, Ne.symm h]
+  rw [← AlgEquiv.spectrum_eq (LinearMap.toMatrixAlgEquiv b), hmat, spectrum_diagonal]
 
 end Field
 

@@ -22,12 +22,6 @@ id = "abs_sub_le_of_roundsBackSubst_of_abs_le_diag"
 id = "abs_sub_le_of_roundsBackSubst_of_isDiagDominant"
 
 [[node]]
-id = "abs_one_add_mul_one_add_sub_one_le_gamma"
-
-[[node]]
-id = "abs_one_add_div_one_add_sub_one_le_gamma"
-
-[[node]]
 id = "exists_roundsSumFrom_map_eq"
 
 [[node]]

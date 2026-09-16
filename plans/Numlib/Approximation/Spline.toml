@@ -281,3 +281,9 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the cycli
 
 [[node]]
 id = "isStrictDiagDominant_periodicMomentMatrix"
+
+[[node]]
+id = "IsCubicInterp.hasClosure_of_derivWithin"
+
+[[node]]
+id = "isCubicInterp_clampedInterp"

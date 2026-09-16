@@ -11,8 +11,10 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.PosDef
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.Topology.Instances.Matrix
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
@@ -226,6 +228,15 @@ theorem charpoly_complexify (A : Matrix n n ℝ) :
   have h : complexify A = A.map (algebraMap ℝ ℂ) := rfl
   rw [h, Matrix.charpoly_map]
 
+/-- A scalar is in the spectrum of a matrix over a field exactly when it is an eigenvalue with an
+eigenvector, `A x = μ x` for some `x ≠ 0`. -/
+theorem mem_spectrum_iff_exists_mulVec_eq_smul {K : Type*} [Field K] (A : Matrix n n K) (μ : K) :
+    μ ∈ spectrum K A ↔ ∃ x, x ≠ 0 ∧ A *ᵥ x = μ • x := by
+  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
+    isUnit_iff_ne_zero, not_not, ← Matrix.exists_mulVec_eq_zero_iff]
+  simp only [sub_mulVec, smul_mulVec, one_mulVec, sub_eq_zero]
+  exact exists_congr fun x => and_congr_right' eq_comm
+
 /-- The complex spectrum of a real matrix is the root set of its characteristic polynomial pushed
 forward to `ℂ`; no eigenvalue is lost, as one would be over `ℝ`.  This is the spectrum that
 governs the decay of `Aᵏ`: the real characteristic polynomial of a rotation has no root at all,
@@ -307,6 +318,33 @@ noncomputable def complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
 
 @[simp] theorem complexSpectralRadius_zero : complexSpectralRadius (0 : Matrix n n ℝ) = 0 := by
   rw [complexSpectralRadius, complexify_zero, spectrum.spectralRadius_zero]
+
+/-- The spectral radius of the identity matrix is `1`: it is `spectrum.spectralRadius_one` for
+the complexification. -/
+theorem complexSpectralRadius_one [Nonempty n] : complexSpectralRadius (1 : Matrix n n ℝ) = 1 := by
+  rw [complexSpectralRadius, complexify_one, spectrum.spectralRadius_one]
+
+/-- A real matrix whose only complex eigenvalue is the real number `r` has spectral radius `|r|`. -/
+theorem complexSpectralRadius_eq_of_forall_mem_spectrum_iff {B : Matrix n n ℝ} {r : ℝ}
+    (h : ∀ μ : ℂ, μ ∈ spectrum ℂ (complexify B) ↔ μ = r) :
+    complexSpectralRadius B = ENNReal.ofReal |r| := by
+  have hr : ENNReal.ofReal |r| = ((‖(r : ℂ)‖₊ : ℝ≥0) : ℝ≥0∞) := by
+    rw [← enorm_eq_nnnorm, ← ofReal_norm, Complex.norm_real, Real.norm_eq_abs]
+  rw [complexSpectralRadius, spectralRadius, hr]
+  refine le_antisymm (iSup₂_le fun μ hμ => ?_) ?_
+  · rw [h] at hμ
+    subst hμ
+    exact le_rfl
+  · exact le_iSup₂ (f := fun μ (_ : μ ∈ spectrum ℂ (complexify B)) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞))
+      (r : ℂ) ((h _).mpr rfl)
+
+/-- Conjugation by a nonsingular matrix does not change the spectral radius: the spectrum of
+`C⁻¹ B C` is that of `B`. -/
+theorem complexSpectralRadius_conj {C : Matrix n n ℝ} (hC : IsUnit C) (B : Matrix n n ℝ) :
+    complexSpectralRadius (C⁻¹ * B * C) = complexSpectralRadius B := by
+  have hC' : IsUnit (complexify C) := (isUnit_complexify_iff C).2 hC
+  simp only [complexSpectralRadius, spectralRadius, complexify_mul, complexify_inv]
+  rw [← hC'.unit_spec, ← coe_units_inv, spectrum.units_conjugate']
 
 /-- A matrix and its transpose have the same spectral radius, their characteristic polynomials
 being equal (Mathlib: `Matrix.spectrum_transpose`).  This is what turns a Perron eigenvector of
@@ -408,6 +446,33 @@ private theorem tendsto_pow_iff_tendsto_pow_toEuclideanCLM (M : Matrix n n ℂ) 
       (LinearMap.ker_eq_bot.mpr hinj)).isEmbedding
   rw [hemb.tendsto_nhds_iff, map_zero]
   simp only [Function.comp_def, toEuclideanCLMₗ, LinearMap.coe_mk, AddHom.coe_mk, map_pow]
+
+omit [DecidableEq n] in
+/-- A sequence of real matrices tends to `0` iff its products with every fixed vector do:
+`M k *ᵥ v → 0` for all `v` gives every entry `M k i j = (M k *ᵥ eⱼ)ᵢ → 0`, and convergence in
+`Matrix n n ℝ` is entrywise. -/
+theorem tendsto_zero_iff_forall_mulVec_tendsto_zero {M : ℕ → Matrix n n ℝ} :
+    Tendsto M atTop (𝓝 0) ↔ ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) := by
+  classical
+  constructor
+  · intro h v
+    have hc : Continuous fun C : Matrix n n ℝ => C *ᵥ v :=
+      Continuous.matrix_mulVec continuous_id continuous_const
+    simpa [Function.comp_def] using (hc.tendsto 0).comp h
+  · intro h
+    have key : Tendsto (fun k => (fun i j => M k i j : n → n → ℝ)) atTop
+        (𝓝 (fun _ _ => (0 : ℝ))) := by
+      refine tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => ?_
+      have hsingle : ∀ k, (M k *ᵥ Pi.single j 1) i = M k i j := fun k => by simp
+      simpa only [hsingle, Pi.zero_apply] using tendsto_pi_nhds.mp (h (Pi.single j 1)) i
+    exact key
+
+/-- Powers of a real matrix tend to zero iff they do on every vector: the case
+`M k = G ^ k` of `Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`. -/
+theorem tendsto_pow_zero_iff_forall_mulVec (G : Matrix n n ℝ) :
+    Tendsto (fun k => G ^ k) atTop (𝓝 0) ↔
+      ∀ u₀, Tendsto (fun k => (G ^ k) *ᵥ u₀) atTop (𝓝 0) :=
+  tendsto_zero_iff_forall_mulVec_tendsto_zero
 
 /-- `Aᵏ → 0` iff `ρ(A) < 1`, for real matrices (via the complexification and the Gelfand
 formula). -/
@@ -825,20 +890,6 @@ theorem exists_norm_toEuclideanCLM_pow_lt_one_of_complexSpectralRadius_lt_one {A
   exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one hA
     (coe_toEuclideanCLM_eq_toEuclideanLin A)
 
-/-- If `a m ^ (1 / m) → ρ > 0` for a nonnegative sequence, then `(1 / m) log (a m) → log ρ`: the
-continuity of `log` at a positive point, with `log (a ^ (1 / m)) = (1 / m) log a` also at
-`a = 0`. -/
-theorem _root_.tendsto_one_div_mul_log_of_tendsto_rpow_one_div {a : ℕ → ℝ} (ha : ∀ m, 0 ≤ a m)
-    {ρ : ℝ} (hρ : 0 < ρ) (h : Tendsto (fun m : ℕ => a m ^ (1 / m : ℝ)) atTop (𝓝 ρ)) :
-    Tendsto (fun m : ℕ => (1 / m : ℝ) * Real.log (a m)) atTop (𝓝 (Real.log ρ)) := by
-  refine ((Real.continuousAt_log hρ.ne').tendsto.comp h).congr' ?_
-  filter_upwards [eventually_ge_atTop 1] with m hm
-  simp only [Function.comp_apply]
-  rcases (ha m).eq_or_lt with h0 | h0
-  · rw [← h0, Real.zero_rpow (one_div_ne_zero (Nat.cast_ne_zero.2 (by omega))), Real.log_zero,
-      mul_zero]
-  · rw [Real.log_rpow h0]
-
 /-- **The average convergence rate tends to the asymptotic one**: for a real matrix `G` with
 `ρ(G) ≠ 0`, `-(1 / m) log ‖Gᵐ‖₂ → -log ρ(G)`, [quarteroni2000numerical] (4.5). It is Gelfand's
 formula `Matrix.tendsto_pow_rpow_complexSpectralRadius` composed with `log`; the same holds in the
@@ -910,6 +961,32 @@ theorem exists_eigenvector_norm_eq_complexSpectralRadius [Nonempty n] (G : Matri
     exact (sub_eq_zero.mp hv).symm
   · rw [hsr]
     simp
+
+omit [DecidableEq n] in
+/-- The complexification of `A` acts on a real vector as `A` does. -/
+theorem complexify_mulVec_ofReal (A : Matrix n n ℝ) (e : n → ℝ) :
+    complexify A *ᵥ (fun i => (e i : ℂ)) = fun i => ((A *ᵥ e) i : ℂ) := by
+  ext i
+  simp [mulVec, dotProduct, complexify_apply]
+
+/-- `ρ(X) < 1` iff every complex eigenvalue has modulus `< 1`, for a nonempty index type (so that
+the spectrum is nonempty and the spectral radius is attained). -/
+theorem complexSpectralRadius_lt_one_iff_forall_norm_lt [Nonempty n] (X : Matrix n n ℝ) :
+    complexSpectralRadius X < 1 ↔ ∀ μ ∈ spectrum ℂ (complexify X), ‖μ‖ < 1 := by
+  constructor
+  · intro h μ hμ
+    have : (‖μ‖₊ : ℝ≥0∞) ≤ complexSpectralRadius X :=
+      le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ hμ
+    have h1 := this.trans_lt h
+    rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm] at h1
+  · intro h
+    obtain ⟨μ, v, hv, hμv, hμ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius X
+    have hmem : μ ∈ spectrum ℂ (complexify X) :=
+      (mem_spectrum_iff_exists_mulVec_eq_smul _ _).mpr ⟨v, hv, hμv⟩
+    have h1 := h μ hmem
+    rw [hμ] at h1
+    rwa [← ENNReal.toReal_lt_toReal (complexSpectralRadius_ne_top X) ENNReal.one_ne_top,
+      ENNReal.toReal_one]
 
 /-- **The general convergence factor is attained.** Some nonzero real vector has its images under
 the powers of `G` frequently as large as `c ρ ^ k`, with a fixed `c > 0`: take the real or the

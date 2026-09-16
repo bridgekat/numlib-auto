@@ -13,9 +13,5 @@ id = "equation_3_57"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.57)'
 
 [[node]]
-id = "blockTridiagonal_isBlockBidiagonal"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.8.3'
-
-[[node]]
 id = "blockTridiagonal_lu"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.8.3'

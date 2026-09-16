@@ -337,4 +337,74 @@ theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ)
   · rw [show (1 : K) + ((1 + θ₁) / (1 + θ₂) - 1) = (1 + θ₁) / (1 + θ₂) by ring,
       div_mul_div_comm]
 
+/-! ### One more rounding, multiplied or divided -/
+
+/-- One more rounding raises the order of a relative perturbation by one: `γ_k (1 + u) + u ≤
+γ_{k+1}`.  This is [higham2002accuracy] Lemma 3.3 together with `u ≤ γ₁`. -/
+theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
+    (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
+  have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
+  have hk : (k : K) * u < 1 := by rw [hcast] at h; linarith
+  have hgk : 0 ≤ gamma u k := gamma_nonneg hu hk
+  have hg1 : u ≤ gamma u 1 := le_gamma_one hu hu1
+  have hmain := gamma_add_gamma_add_mul_le (u := u) hu (j := k) (k := 1) h
+  have hmul : gamma u k * u ≤ gamma u k * gamma u 1 := mul_le_mul_of_nonneg_left hg1 hgk
+  rw [mul_add, mul_one]
+  linarith
+
+/-- Multiplying a relative perturbation of order `k` by one rounding factor gives one of order
+`k + 1`: `(1 + θ_k)(1 + δ) = 1 + θ_{k+1}` ([higham2002accuracy] Lemma 3.3). -/
+theorem abs_one_add_mul_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
+    (h : ((k + 1 : ℕ) : K) * u < 1) {θ δ : K} (hθ : |θ| ≤ gamma u k) (hδ : |δ| ≤ u) :
+    |(1 + θ) * (1 + δ) - 1| ≤ gamma u (k + 1) := by
+  have hk : (k : K) * u < 1 := by
+    have : (k : K) * u ≤ ((k + 1 : ℕ) : K) * u := by push_cast; nlinarith
+    linarith
+  have hgk : 0 ≤ gamma u k := gamma_nonneg hu hk
+  calc |(1 + θ) * (1 + δ) - 1| = |θ + δ + θ * δ| := by ring_nf
+    _ ≤ |θ| + |δ| + |θ| * |δ| := by
+        refine (abs_add_le _ _).trans ?_
+        rw [abs_mul]
+        exact add_le_add (abs_add_le _ _) le_rfl
+    _ ≤ gamma u k + u + gamma u k * u :=
+        add_le_add (add_le_add hθ hδ) (mul_le_mul hθ hδ (abs_nonneg _) hgk)
+    _ = gamma u k * (1 + u) + u := by ring
+    _ ≤ gamma u (k + 1) := gamma_mul_one_add_add_le hu hu1 h
+
+/-- Dividing a relative perturbation of order `k` by one rounding factor gives one of order
+`k + 1`: `(1 + θ_k) / (1 + δ) = 1 + θ_{k+1}`, because `(γ_k + u) / (1 - u) ≤ γ_{k+1}`. This is the
+case `ρ = -1` of [higham2002accuracy] Lemma 3.1, and the reason a division costs one rounding and
+not the two of `FloatingPoint.IsRelPert.div`. -/
+theorem abs_one_add_div_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {k : ℕ}
+    (h : ((k + 1 : ℕ) : K) * u < 1) {θ δ : K} (hθ : |θ| ≤ gamma u k) (hδ : |δ| ≤ u) :
+    |(1 + θ) / (1 + δ) - 1| ≤ gamma u (k + 1) := by
+  have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
+  have hku : (k : K) * u < 1 := by
+    rw [hcast] at h
+    linarith
+  have hu1 : u < 1 := by
+    have : (0 : K) ≤ (k : K) * u := mul_nonneg (by positivity) hu
+    rw [hcast] at h
+    linarith
+  have hd : 0 < 1 + δ := by linarith [neg_le_of_abs_le hδ]
+  have hkey : (1 + θ) / (1 + δ) - 1 = (θ - δ) / (1 + δ) := by
+    field_simp
+    ring
+  rw [hkey, abs_div, abs_of_pos hd, div_le_iff₀ hd]
+  have hnum : |θ - δ| ≤ gamma u k + u :=
+    (abs_sub _ _).trans (add_le_add hθ hδ)
+  have hlow : 1 - u ≤ 1 + δ := by linarith [neg_le_of_abs_le hδ]
+  have hg1 : 0 ≤ gamma u (k + 1) := gamma_nonneg hu h
+  -- the scalar inequality `(γ_k + u) ≤ γ_{k+1} (1 - u)`
+  have hscalar : gamma u k + u ≤ gamma u (k + 1) * (1 - u) := by
+    rw [gamma_def, gamma_def, hcast]
+    have h1 : (0 : K) < 1 - (k : K) * u := by linarith
+    have h2 : (0 : K) < 1 - ((k : K) * u + u) := by linarith
+    rw [div_add' _ _ _ h1.ne', div_mul_eq_mul_div, div_le_div_iff₀ h1 h2]
+    have hk0 : (0 : K) ≤ k := by positivity
+    nlinarith [mul_nonneg hk0 hu, mul_nonneg (mul_nonneg hk0 hu) hu]
+  calc |θ - δ| ≤ gamma u k + u := hnum
+    _ ≤ gamma u (k + 1) * (1 - u) := hscalar
+    _ ≤ gamma u (k + 1) * (1 + δ) := mul_le_mul_of_nonneg_left hlow hg1
+
 end FloatingPoint

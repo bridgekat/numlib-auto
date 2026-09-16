@@ -7,9 +7,6 @@ id = "refTriangle"
 id = "integral_refTriangle_pow_mul_pow"
 
 [[node]]
-id = "isExactOn_iff_forall_monomial"
-
-[[node]]
 id = "isExactOn_centroid"
 
 [[node]]

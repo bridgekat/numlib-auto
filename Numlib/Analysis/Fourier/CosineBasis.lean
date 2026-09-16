@@ -361,3 +361,60 @@ theorem cosFun_zero_apply (x : Icc (0 : ℝ) π) : cosFun 0 x = 1 / √π := by
 theorem cosFun_apply_of_ne_zero {k : ℕ} (hk : k ≠ 0) (x : Icc (0 : ℝ) π) :
     cosFun k x = √(2 / π) * Real.cos (k * (x : ℝ)) := by
   simp [cosFun, cosMap, cosNorm_of_ne_zero hk]
+
+/-! ### Cosine integrals on the unit interval -/
+
+section UnitInterval
+
+/-- `∫₀¹ cos (c x) dx = sin c / c` for `c ≠ 0`. -/
+theorem integral_cos_mul_unit {c : ℝ} (hc : c ≠ 0) :
+    ∫ x in (0 : ℝ)..1, Real.cos (c * x) = Real.sin c / c := by
+  have hd : ∀ x ∈ uIcc (0 : ℝ) 1,
+      HasDerivAt (fun y : ℝ => Real.sin (c * y) / c) (Real.cos (c * x)) x := by
+    intro x _
+    have h1 : HasDerivAt (fun y : ℝ => c * y) c x := by
+      simpa using (hasDerivAt_id x).const_mul c
+    have h2 : HasDerivAt (fun y : ℝ => Real.sin (c * y)) (Real.cos (c * x) * c) x :=
+      (Real.hasDerivAt_sin (c * x)).comp x h1
+    simpa [mul_div_assoc, mul_div_cancel_right₀ _ hc] using h2.div_const c
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _)]
+  simp
+
+/-- `∫₀¹ cos (k π x) dx` is `1` for `k = 0` and `0` otherwise. -/
+theorem integral_cos_intMul_pi_unit (k : ℤ) :
+    ∫ x in (0 : ℝ)..1, Real.cos ((k : ℝ) * π * x) = if k = 0 then 1 else 0 := by
+  rcases eq_or_ne k 0 with rfl | hk
+  · simp
+  · have hc : ((k : ℝ) * π) ≠ 0 := mul_ne_zero (Int.cast_ne_zero.2 hk) Real.pi_ne_zero
+    rw [ite_eq_right hk, integral_cos_mul_unit hc, Real.sin_int_mul_pi k, zero_div]
+
+/-- **Orthogonality of the cosines** on `(0, 1)`:
+`∫₀¹ cos (m π x) cos (n π x) dx = δ_{mn} / 2` for positive integers `m` and `n`. -/
+theorem integral_cos_mul_cos_unit {m n : ℕ} (hm : 0 < m) (hn : 0 < n) :
+    ∫ x in (0 : ℝ)..1, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
+      = if m = n then 1 / 2 else 0 := by
+  have hprod : ∀ x : ℝ, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
+      = (Real.cos ((((m : ℤ) - n : ℤ) : ℝ) * π * x)
+          + Real.cos ((((m : ℤ) + n : ℤ) : ℝ) * π * x)) / 2 := by
+    intro x
+    have h1 : ((((m : ℤ) - n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x - (n : ℝ) * π * x := by
+      push_cast; ring
+    have h2 : ((((m : ℤ) + n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x + (n : ℝ) * π * x := by
+      push_cast; ring
+    rw [h1, h2, Real.cos_sub, Real.cos_add]
+    ring
+  simp only [hprod]
+  have hint : ∀ k : ℤ, IntervalIntegrable (fun x : ℝ => Real.cos ((k : ℝ) * π * x)) volume 0 1 :=
+    fun k => (Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _
+  rw [intervalIntegral.integral_div, intervalIntegral.integral_add (hint _) (hint _),
+    integral_cos_intMul_pi_unit, integral_cos_intMul_pi_unit]
+  have hne : ((m : ℤ) + n) ≠ 0 := by positivity
+  rw [ite_eq_right hne]
+  rcases eq_or_ne m n with rfl | hmn
+  · simp
+  · rw [ite_eq_right hmn,
+      ite_eq_right (by simpa [sub_eq_zero] using fun h => hmn (by exact_mod_cast h))]
+    norm_num
+
+end UnitInterval

@@ -94,9 +94,6 @@ id = "mem_pencilSpectrum_iff_det"
 id = "isRegularPencil_one"
 
 [[node]]
-id = "mem_spectrum_iff_exists_mulVec_eq_smul"
-
-[[node]]
 id = "IsRegularPencil.finite_pencilSpectrum"
 
 [[node]]
@@ -104,9 +101,6 @@ id = "pencilSpectrum_mul_mul_of_isUnit"
 
 [[node]]
 id = "pencilSpectrum_diagonal"
-
-[[node]]
-id = "PosDef.exists_isUnit_conj_eq_one"
 
 [[node]]
 id = "hasPencilEigenvector_col_of_conj_eq_diagonal"

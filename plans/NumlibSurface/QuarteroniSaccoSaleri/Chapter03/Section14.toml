@@ -1,10 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter03"
 
 [[node]]
-id = "posSemidef_of_isDiagDominant"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.12'
-
-[[node]]
 id = "regularizationMatrix"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.78)'
 

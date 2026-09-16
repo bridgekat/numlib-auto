@@ -31,7 +31,7 @@ for some `η ∈ (a, b)` (`EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_m
 * `EulerMaclaurin.exists_integral_eq_mul` — the one-panel identity with the mean value remainder
   `-B_{2k+2}/(2k+2)! g^{(2k+2)}(η)`, `η ∈ (0, 1)`, from the sign of the weight
   `B_{2k+2} - B_{2k+2}(t)` and the weighted mean value theorem
-  `Quadrature.exists_mem_Ioo_integral_mul_eq_mul_integral`.
+  `intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral`.
 * `EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul` — the composite formula: each panel is
   the reference panel scaled by `h`, the interior boundary terms telescope, and the `m` remainders
   are collected by the discrete mean value theorem on the open interval.
@@ -277,8 +277,8 @@ theorem exists_integral_eq_mul (k : ℕ) {F : ℕ → ℝ → ℝ}
     have := neg_one_pow_mul_bernoulli_pos (k := k + 1) (Nat.succ_pos k)
     rw [show 2 * (k + 1) = 2 * k + 2 by ring, pow_succ, pow_succ, ← hB] at this
     nlinarith
-  obtain ⟨η, hη, hηval⟩ := Quadrature.exists_mem_Ioo_integral_mul_eq_mul_integral zero_lt_one hKc
-    hc hKnn hKpos
+  obtain ⟨η, hη, hηval⟩ :=
+    intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral zero_lt_one hKc hc hKnn hKpos
   refine ⟨η, hη, ?_⟩
   have hsq : ((-1 : ℝ) ^ k) * (-1) ^ k = 1 := by
     rw [← pow_add, ← two_mul]

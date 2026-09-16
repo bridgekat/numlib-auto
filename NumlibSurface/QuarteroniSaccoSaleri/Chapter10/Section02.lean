@@ -42,8 +42,8 @@ The backbone is the measure-level exactness theory of `Numlib/Approximation/Quad
   positive, and the degree of exactness is `2n - 1`; `equation_10_19` — its interpolant.
 * `remark_10_2` — for a Jacobi weight the interior Gauss–Lobatto nodes are the zeros of
   `(J_n^{(α,β)})'`.
-* `tendsto_of_isExactOnMeasure`, `gauss_tendsto`, `gaussLobatto_tendsto` — convergence of
-  Gaussian and Gauss–Lobatto integration for every `f ∈ C⁰([-1, 1])`.
+* `gauss_tendsto`, `gaussLobatto_tendsto` — convergence of Gaussian and Gauss–Lobatto integration
+  for every `f ∈ C⁰([-1, 1])`, from the backbone's `Quadrature.tendsto_of_isExactOnMeasure`.
 * `remark_10_3` — integration over an arbitrary interval.
 
 ## Conventions
@@ -77,18 +77,6 @@ theorem isExactOnMeasure_iff_forall_sub_eq_zero {m : ℕ} (α x : Fin m → ℝ)
     IsExactOnMeasure μ α x r ↔
       ∀ p : ℝ[X], p.degree ≤ r → (∫ t, p.eval t ∂μ) - ∑ i, α i * p.eval (x i) = 0 :=
   forall₂_congr fun _ _ => by rw [sub_eq_zero, eq_comm]
-
--- TODO(backbone): an interpolatory rule is the integral of the Lagrange interpolant, at the
--- measure level; `Quadrature.isExactOn_iff_functional_eq` is the functional-level form.
-/-- An interpolatory rule — weights `αᵢ = ∫ lᵢ ∂μ` — is the integral of the Lagrange
-interpolant: `∑ᵢ αᵢ f(xᵢ) = ∫ Π_n f ∂μ` for every function `f`. -/
-theorem sum_mul_eq_integral_interpolate (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
-    (hint : IsInterpolatoryMeasure μ α x) (f : ℝ → ℝ) :
-    ∑ i, α i * f (x i) =
-      ∫ t, (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t ∂μ := by
-  simp only [Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
-  rw [integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
-  exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul, hint i, mul_comm]
 
 /-- **(10.13)–(10.14).** For `n + 1` distinct nodes `x₀, …, x_n` and a weight `w`, the rule
 `I_{n,w}(f) = ∑ᵢ αᵢ f(xᵢ)` has degree of exactness at least `n` exactly when its weights are
@@ -168,48 +156,6 @@ theorem equation_10_16 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Functi
   rw [← h]
   exact Lagrange.eval_nodal_at_node (Finset.mem_univ j)
 
--- TODO(backbone): `Quadrature.nodal_eq_family_of_forall_eval_eq_zero` for an arbitrary monic
--- polynomial of degree `n + 1` in place of `family μ (n + 1)`.
-/-- A monic polynomial of degree `n + 1` vanishing at `n + 1` distinct points is their nodal
-polynomial. -/
-theorem nodal_eq_of_forall_eval_eq_zero {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
-    {q : ℝ[X]} (hq : q.Monic) (hdeg : q.natDegree = n + 1) (hroot : ∀ i, q.eval (x i) = 0) :
-    Lagrange.nodal Finset.univ x = q := by
-  refine sub_eq_zero.mp (Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ
-    hx.injOn ?_ fun i _ => ?_)
-  · have := degree_sub_lt_left (p := Lagrange.nodal Finset.univ x) (q := q)
-      (by rw [Lagrange.degree_nodal, degree_eq_natDegree hq.ne_zero, hdeg]; simp)
-      Lagrange.nodal_ne_zero (by rw [Lagrange.nodal_monic.leadingCoeff, hq.leadingCoeff])
-    rwa [Lagrange.degree_nodal] at this
-  · rw [eval_sub, hroot i, Lagrange.eval_nodal_at_node (Finset.mem_univ i), sub_zero]
-
-/-- A point is a node of an injective family exactly when the nodal polynomial vanishes there. -/
-theorem exists_eq_iff_eval_nodal_eq_zero (x : Fin (n + 1) → ℝ) (t : ℝ) :
-    (∃ i, x i = t) ↔ (Lagrange.nodal Finset.univ x).eval t = 0 := by
-  rw [Lagrange.eval_nodal, Finset.prod_eq_zero_iff]
-  simp only [Finset.mem_univ, true_and, sub_eq_zero]
-  exact exists_congr fun i => eq_comm
-
--- TODO(backbone): the weights of a rule with `n + 1` distinct nodes exact to degree `≥ 2n` are
--- positive (the test polynomial `lᵢ²` in `Quadrature.pos_of_isExactOnMeasure`); the Gauss and
--- Gauss–Lobatto rules are both instances.
-/-- The weights of a rule with `n + 1` distinct nodes and degree of exactness at least `2n` are
-positive: exactness on `lᵢ² ∈ ℙ_{2n}` gives `αᵢ = ∫ lᵢ² ∂μ > 0`. -/
-theorem pos_of_isExactOnMeasure_of_le (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
-    (hx : Function.Injective x) {d : ℕ} (hd : 2 * n ≤ d) (hexact : IsExactOnMeasure μ α x d)
-    (i : Fin (n + 1)) : 0 < α i := by
-  refine pos_of_isExactOnMeasure hw hexact (p := Lagrange.basis Finset.univ x i ^ 2) ?_
-    (pow_ne_zero 2 (Lagrange.basis_ne_zero hx.injOn (Finset.mem_univ i)))
-    (Eventually.of_forall fun t => by rw [eval_pow]; positivity) i (fun k hk => ?_) ?_
-  · refine degree_le_of_natDegree_le ?_
-    rw [natDegree_pow, Lagrange.natDegree_basis hx.injOn (Finset.mem_univ i), Finset.card_univ,
-      Fintype.card_fin, Nat.add_sub_cancel]
-    exact hd
-  · rw [eval_pow, Lagrange.eval_basis_of_ne (Ne.symm hk) (Finset.mem_univ k)]
-    norm_num
-  · rw [eval_pow, Lagrange.eval_basis_self hx.injOn (Finset.mem_univ i)]
-    norm_num
-
 /-- **§10.2, after (10.16).** The weights of the Gauss quadrature formula — a rule with `n + 1`
 distinct nodes and degree of exactness `2n + 1` — are all positive, and its nodes are internal to
 the interval `(-1, 1)` when the weight is carried by `[-1, 1]` (the book cites [CHQZ88], p. 56).
@@ -274,35 +220,6 @@ theorem equation_10_19 (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
 
 /-! ### Remark 10.2: the Gauss–Lobatto nodes of a Jacobi weight -/
 
--- TODO(backbone): the Jacobi weights are carried by `[-1, 1]`; belongs beside
--- `OrthogonalPolynomial.isWeight_jacobiMeasure`.
-/-- The Jacobi weight `(1 - x)^α (1 + x)^β dx` on `(-1, 1)` gives no mass outside `[-1, 1]`. -/
-theorem jacobiMeasure_compl_Icc (α β : ℝ) : jacobiMeasure α β (Icc (-1 : ℝ) 1)ᶜ = 0 := by
-  refine withDensity_absolutelyContinuous _ _ ?_
-  rw [Measure.restrict_apply' measurableSet_Ioo]
-  have hempty : (Icc (-1 : ℝ) 1)ᶜ ∩ Ioo (-1 : ℝ) 1 = ∅ :=
-    Set.eq_empty_of_forall_notMem fun t ht => ht.1 (Ioo_subset_Icc_self ht.2)
-  rw [hempty, measure_empty]
-
--- TODO(backbone): the modified weight `(1 - x²) · jacobiMeasure α β` is
--- `jacobiMeasure (α + 1) (β + 1)`; `OrthogonalPolynomial.jacobiMeasure_one_one` is the case
--- `α = β = 0` of it, and `Quadrature.derivative_family_jacobiMeasure` is stated through it.
-/-- The Lobatto weight of a Jacobi weight is the Jacobi weight with both exponents raised by
-one. -/
-theorem lobattoMeasure_jacobiMeasure (α β : ℝ) :
-    lobattoMeasure (jacobiMeasure α β) = jacobiMeasure (α + 1) (β + 1) := by
-  rw [lobattoMeasure, jacobiMeasure, jacobiMeasure, ← withDensity_mul _ (by fun_prop) (by fun_prop)]
-  refine withDensity_congr_ae ?_
-  rw [EventuallyEq, ae_restrict_iff' measurableSet_Ioo]
-  refine Eventually.of_forall fun x hx => ?_
-  have h1 : 1 - x ≠ 0 := sub_ne_zero.mpr (ne_of_gt hx.2)
-  have h2 : 1 + x ≠ 0 := by linarith [hx.1]
-  have h1' : 0 ≤ 1 - x := by linarith [hx.2]
-  have h2' : 0 ≤ 1 + x := by linarith [hx.1]
-  rw [Pi.mul_apply, ← ENNReal.ofReal_mul (by positivity), rpow_add_one h1, rpow_add_one h2]
-  congr 1
-  ring
-
 /-- **Remark 10.2.** For the Gauss–Lobatto quadrature with respect to the Jacobi weight
 `w(x) = (1 - x)^α (1 + x)^β`, `α, β > -1` (the book prints `(1 - x)^α (1 - x)^β`), the internal
 nodes `x̄₁, …, x̄_{n-1}` are the roots of the polynomial `(J_n^{(α,β)})'`, the extremants of the
@@ -333,61 +250,13 @@ theorem remark_10_2 {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) (hn : 1 ≤ n)
   have ht' : t ^ 2 - 1 ≠ 0 := by nlinarith [ht.1, ht.2]
   -- `t` is a node iff `ω̄_{n+1}(t) = 0`
   have hnodal : Lagrange.nodal Finset.univ x = lobattoNodal (jacobiMeasure α β) n :=
-    nodal_eq_of_forall_eval_eq_zero hx (lobattoNodal_monic _ _)
+    Lagrange.nodal_eq_of_forall_eval_eq_zero hx (lobattoNodal_monic _ _)
       (natDegree_eq_of_degree_eq_some (degree_lobattoNodal _ hn)) hroot
-  rw [exists_eq_iff_eval_nodal_eq_zero, hnodal, lobattoNodal, hder, eval_mul, eval_mul, eval_sub,
-    eval_pow, eval_X, eval_one, eval_C, mul_eq_zero, mul_eq_zero, or_iff_right ht',
+  rw [Lagrange.exists_eq_iff_eval_nodal_eq_zero, hnodal, lobattoNodal, hder, eval_mul, eval_mul,
+    eval_sub, eval_pow, eval_X, eval_one, eval_C, mul_eq_zero, mul_eq_zero, or_iff_right ht',
     or_iff_right hnR]
 
 /-! ### Convergence of Gaussian integration -/
-
-/-- The integral against a finite measure on `[a, b]` as a bounded functional on `C([a, b], ℝ)`.
--/
-private noncomputable def integralCLM {a b : ℝ} (ν : Measure (Icc a b)) [IsFiniteMeasure ν] :
-    C(Icc a b, ℝ) →L[ℝ] ℝ :=
-  (L1.integralCLM (α := Icc a b) (E := ℝ) (μ := ν)).comp (ContinuousMap.toLp 1 ν ℝ)
-
-private theorem integralCLM_apply {a b : ℝ} (ν : Measure (Icc a b)) [IsFiniteMeasure ν]
-    (f : C(Icc a b, ℝ)) : integralCLM ν f = ∫ t, f t ∂ν := by
-  rw [integralCLM, ContinuousLinearMap.comp_apply, ← L1.integral_eq, L1.integral_eq_integral]
-  exact integral_congr_ae (ContinuousMap.coeFn_toLp (μ := ν) (𝕜 := ℝ) f)
-
--- TODO(backbone): the Szegő–Pólya criterion `Quadrature.tendsto_of_nonneg` read at the measure
--- level for real functions continuous on `[a, b]`, through
--- `Quadrature.isExactOnMeasure_iff_isExactOn`; the Gauss, Gauss–Lobatto, Chebyshev and Legendre
--- convergence statements are all instances.
-/-- **Convergence of quadrature rules with nonnegative weights.** For a finite weight `μ` carried
-by `[a, b]`, rules with distinct nodes in `[a, b]`, nonnegative weights and degrees of exactness
-`d k → ∞` for `μ` converge to `∫ f ∂μ` for every `f` continuous on `[a, b]`. -/
-theorem tendsto_of_isExactOnMeasure [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0)
-    {m d : ℕ → ℕ} {x α : ∀ k, Fin (m k) → ℝ} (hx : ∀ k, Function.Injective (x k))
-    (hmem : ∀ k i, x k i ∈ Icc a b) (hα : ∀ k i, 0 ≤ α k i) (hd : Tendsto d atTop atTop)
-    (hexact : ∀ k, IsExactOnMeasure μ (α k) (x k) (d k)) {f : ℝ → ℝ}
-    (hf : ContinuousOn f (Icc a b)) :
-    Tendsto (fun k => ∑ i, α k i * f (x k i)) atTop (𝓝 (∫ t, f t ∂μ)) := by
-  set ν : Measure (Icc a b) := μ.comap Subtype.val with hν
-  set L : C(Icc a b, ℝ) →L[ℝ] ℝ := integralCLM ν with hL
-  have hLapply : ∀ g : C(Icc a b, ℝ), L g = ∫ t, g t ∂(μ.comap Subtype.val) := fun g =>
-    integralCLM_apply ν g
-  set x' : ∀ k, Fin (m k) → Icc a b := fun k i => ⟨x k i, hmem k i⟩ with hx'
-  have hx'inj : ∀ k, Function.Injective (x' k) := fun k i j h =>
-    hx k (congrArg Subtype.val h)
-  have hexact' : ∀ k, IsExactOn L (α k) (x' k) (d k) := fun k =>
-    (isExactOnMeasure_iff_isExactOn hsupp (α k) (x' k) hLapply (d k)).mp (hexact k)
-  set g : C(Icc a b, ℝ) := ⟨fun t => f t, hf.domRestrict⟩ with hg
-  have hae : ∀ᵐ t ∂μ, t ∈ Icc a b := by
-    rw [MeasureTheory.ae_iff]
-    exact hsupp
-  have hLg : L g = ∫ t, f t ∂μ := by
-    rw [hLapply]
-    have h1 := integral_subtype_comap (μ := μ) (s := Icc a b) measurableSet_Icc fun t => f t
-    rw [Measure.restrict_eq_self_of_ae_mem hae] at h1
-    exact h1
-  have h := tendsto_of_nonneg hx'inj hd hexact' hα g
-  rw [hLg] at h
-  refine h.congr fun k => ?_
-  rw [functional_apply]
-  rfl
 
 /-- **§10.2, the convergence of Gaussian integration** (the book cites [Atk89], Chapter 5). For a
 weight `w` carried by `[-1, 1]`, the Gauss formulae with `n + 1` nodes — rules with `n + 1`

@@ -29,3 +29,12 @@ id = "IsRelPert.div"
 
 [[node]]
 id = "gamma_mono"
+
+[[node]]
+id = "abs_one_add_mul_one_add_sub_one_le_gamma"
+
+[[node]]
+id = "abs_one_add_div_one_add_sub_one_le_gamma"
+
+[[node]]
+id = "gamma_mul_one_add_add_le"

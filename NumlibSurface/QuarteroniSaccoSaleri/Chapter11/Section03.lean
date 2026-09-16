@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.ContDiff.Deriv
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.ODE.RungeKutta
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section02
@@ -23,7 +24,7 @@ regions), Examples 11.1–11.2, A-stability, and Remark 11.2 for the explicit Ru
 Everything is the scalar case `E = ℝ` of `Numlib/ODE/OneStep` and `Numlib/ODE/Gronwall` — the
 test equation on `E = ℂ` — with `Numlib/ODE/RungeKutta` for Remark 11.2. The book's `C²`
 solutions are bridged to the explicit-derivative hypotheses of the backbone by
-`hasDerivWithinAt_derivWithin_of_contDiffOn_two`.
+`hasDerivWithinAt_derivWithin_of_contDiffOn_two` of `Numlib/Analysis/Calculus/ContDiffOnIcc`.
 
 ## Main definitions
 
@@ -64,23 +65,6 @@ open Finset (range)
 namespace QuarteroniSaccoSaleri.Chapter11
 
 variable {f : ℝ → ℝ → ℝ} {Φ : ODE.OneStep.Increment ℝ} {t₀ T h h₀ Λ y₀ : ℝ} {y : ℝ → ℝ} {n : ℕ}
-
-/-! ### From `C²` regularity to explicit derivatives -/
-
-/-- A `C²` function on `[a, b]`, `a < b`, has the derivatives `y' = derivWithin y [a, b]` and
-`y'' = iteratedDerivWithin 2 y [a, b]` within `[a, b]` at every point of `[a, b]`; the bridge from
-the book's regularity hypotheses to the explicit-derivative hypotheses of `Numlib/ODE/OneStep`.
-TODO(backbone): a calculus module should hold this. -/
-theorem hasDerivWithinAt_derivWithin_of_contDiffOn_two {a b : ℝ} (hlt : a < b) {y : ℝ → ℝ}
-    (hy : ContDiffOn ℝ 2 y (Icc a b)) :
-    (∀ s ∈ Icc a b, HasDerivWithinAt y (derivWithin y (Icc a b) s) (Icc a b) s) ∧
-      ∀ s ∈ Icc a b, HasDerivWithinAt (derivWithin y (Icc a b))
-        (iteratedDerivWithin 2 y (Icc a b) s) (Icc a b) s := by
-  have h2 : (2 : WithTop ℕ∞) = 1 + 1 := rfl
-  rw [h2, contDiffOn_succ_iff_derivWithin (uniqueDiffOn_Icc hlt)] at hy
-  refine ⟨fun s hs => (hy.1 s hs).hasDerivWithinAt, fun s hs => ?_⟩
-  have := ((hy.2.2.differentiableOn one_ne_zero) s hs).hasDerivWithinAt
-  rwa [iteratedDerivWithin_succ, iteratedDerivWithin_one]
 
 /-- Along a solution of the Cauchy problem on `[t₀, t₀ + T]`, `T > 0`, the derivative within the
 interval is the field: `derivWithin y [t₀, t₀ + T] s = f(s, y(s))`. -/

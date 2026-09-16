@@ -202,23 +202,6 @@ theorem isUnit_iff_forall_diag_ne_zero_of_isLowerTriangular (hL : L.IsLowerTrian
     Finset.prod_ne_zero_iff]
   simp
 
-/-- The inverse of an upper triangular matrix is upper triangular. No hypothesis is needed: a
-singular matrix has inverse `0`. -/
-theorem IsUpperTriangular.inv (hU : U.IsUpperTriangular) : U⁻¹.IsUpperTriangular := by
-  by_cases h : IsUnit U.det
-  · have : Invertible U := invertibleOfIsUnitDet U h
-    exact blockTriangular_inv_of_blockTriangular hU
-  · rw [nonsing_inv_apply_not_isUnit U h]
-    exact blockTriangular_zero
-
-/-- The inverse of a lower triangular matrix is lower triangular. -/
-theorem IsLowerTriangular.inv (hL : L.IsLowerTriangular) : L⁻¹.IsLowerTriangular := by
-  by_cases h : IsUnit L.det
-  · have : Invertible L := invertibleOfIsUnitDet L h
-    exact blockTriangular_inv_of_blockTriangular hL
-  · rw [nonsing_inv_apply_not_isUnit L h]
-    exact blockTriangular_zero
-
 omit [Fintype n] in
 /-- An upper triangular matrix on `n` is a lower triangular matrix on the dual order `nᵒᵈ`. -/
 theorem IsUpperTriangular.isLowerTriangular_orderDual (hU : U.IsUpperTriangular) :

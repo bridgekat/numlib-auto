@@ -192,6 +192,23 @@ end Units
 
 namespace ContinuousLinearEquiv
 
+section OfUnit
+
+variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+
+/-- The coercion of `ContinuousLinearEquiv.ofUnit u` is the underlying operator of `u`. -/
+theorem coe_ofUnit (u : (V →L[𝕜] V)ˣ) :
+    ((ContinuousLinearEquiv.ofUnit u : V ≃L[𝕜] V) : V →L[𝕜] V) = (u : V →L[𝕜] V) := by
+  ext x; rfl
+
+/-- The inverse of `ContinuousLinearEquiv.ofUnit u` computes `Ring.inverse`. -/
+theorem coe_ofUnit_symm (u : (V →L[𝕜] V)ˣ) :
+    ((ContinuousLinearEquiv.ofUnit u).symm : V →L[𝕜] V) = Ring.inverse (u : V →L[𝕜] V) := by
+  rw [Ring.inverse_unit]
+  ext x; rfl
+
+end OfUnit
+
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace E]
 

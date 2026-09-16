@@ -383,6 +383,15 @@ theorem SesqForm.dotProduct_gramMatrix_mulVec_real (a : SesqForm ℝ W) (φ : ι
     η ⬝ᵥ (a.gramMatrix φ).mulVec ξ = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) :=
   a.dotProduct_gramMatrix_mulVec φ ξ η
 
+/-- The entries of `A ξ` for the stiffness matrix `A = a.gramMatrix φ`:
+`(A ξ) i = a (∑ j, ξ j • φ j) (φ i)`. -/
+theorem SesqForm.gramMatrix_mulVec_apply (a : SesqForm ℝ W) (φ : ι → W) (ξ : ι → ℝ)
+    (i : ι) : (a.gramMatrix φ).mulVec ξ i = a (∑ j, ξ j • φ j) (φ i) := by
+  rw [Matrix.mulVec, dotProduct]
+  simp only [SesqForm.gramMatrix_apply, map_sum, map_smulₛₗ, RCLike.conj_to_real,
+    _root_.sum_apply, _root_.smul_apply, smul_eq_mul]
+  exact Finset.sum_congr rfl fun j _ => mul_comm _ _
+
 /-- Coercivity of the form makes the quadratic form of the stiffness matrix strictly positive off
 the origin, provided the family is linearly independent.  Symmetry is not needed for this half. -/
 theorem SesqForm.gramMatrix_dotProduct_pos {a : SesqForm ℝ W} {c : ℝ} (hc : 0 < c)

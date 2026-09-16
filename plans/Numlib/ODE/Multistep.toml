@@ -131,6 +131,7 @@ id = "LinearMultistep.bdf_satisfiesRootCondition"
 
 [[node]]
 id = "LinearMultistep.bdf_satisfiesRootCondition_all"
+
 [[node]]
 id = "LinearMultistep.midpoint"
 
@@ -175,7 +176,6 @@ id = "PredictorCorrector.hasOrderFor_of"
 
 [[node]]
 id = "PredictorCorrector.abm_charPoly"
-
 
 [[node]]
 id = "LinearMultistep.rhs"
@@ -338,9 +338,6 @@ id = "LinearMultistep.not_isAStable_of_bm1_eq_zero"
 
 [[node]]
 id = "LinearMultistep.not_isThetaStable_of_bm1_eq_zero"
-
-[[node]]
-id = "_root_.Polynomial.norm_eval_le_two_pow_natDegree"
 
 [[node]]
 id = "LinearMultistep.isSchurStable_bdfFactor3"

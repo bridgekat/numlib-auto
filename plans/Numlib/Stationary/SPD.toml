@@ -140,12 +140,6 @@ id = "Stationary.Splitting.spectralRadius_euclidean_iterationOperator"
 id = "Stationary.Splitting.euclidean_m_add_adjoint_sub"
 
 [[node]]
-id = "Matrix.IsHermitian.isSymmetric_toEuclideanCLM_complexify"
-
-[[node]]
-id = "Matrix.PosDef.isSymmetricCoercive_toEuclideanCLM_complexify"
-
-[[node]]
 id = "Stationary.Splitting.posDef_of_complexSpectralRadius_lt_one"
 
 [[node]]
@@ -179,24 +173,6 @@ id = "Matrix.sorSplitting_m_add_transpose_sub"
 id = "Matrix.sorSplitting_m_add_transpose_sub_posDef"
 
 [[node]]
-id = "Matrix.complexSpectralRadius_lt_one_iff_forall_norm_lt"
-
-[[node]]
-id = "Matrix.toEuclideanComplex"
-
-[[node]]
-id = "Matrix.toEuclideanComplex_eq_zero_iff"
-
-[[node]]
-id = "Matrix.complexify_mulVec_ofReal"
-
-[[node]]
-id = "Matrix.toEuclideanCLM_complexify_toEuclideanComplex"
-
-[[node]]
-id = "Matrix.re_inner_toEuclideanCLM_complexify_toEuclideanComplex"
-
-[[node]]
 id = "Matrix.energyNorm_toEuclideanCLM_complexify_sq"
 
 [[node]]
@@ -212,15 +188,6 @@ id = "Matrix.exists_pos_ofReal_eq_of_mem_spectrum_inv_mul"
 id = "Matrix.PosDef.diagPart"
 
 [[node]]
-id = "Matrix.strictLower_transpose"
-
-[[node]]
-id = "Matrix.strictUpper_transpose"
-
-[[node]]
-id = "Matrix.diagPart_transpose"
-
-[[node]]
 id = "Matrix.diagPart_add_smul_strictLower_transpose"
 
 [[node]]
@@ -234,3 +201,15 @@ id = "Stationary.Splitting.mul_iterationOperator_posSemidef"
 
 [[node]]
 id = "Stationary.Splitting.exists_energyNorm_mulVec_iterationOperator_eq_complexSpectralRadius"
+
+[[node]]
+id = "Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
+
+[[node]]
+id = "Stationary.Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
+
+[[node]]
+id = "Matrix.complexSpectralRadius_sorSplitting_of_isLowerTriangular"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'

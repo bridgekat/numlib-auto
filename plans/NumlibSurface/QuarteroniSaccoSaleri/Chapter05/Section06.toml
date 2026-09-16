@@ -30,9 +30,6 @@ id = "equation_5_38_mem_orthogonalGroup"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.38)'
 
 [[node]]
-id = "householderAxis_ne_zero"
-
-[[node]]
 id = "equation_5_38_householderAxis"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.39)'
 

@@ -1,19 +1,10 @@
 namespace = "Gronwall"
 
 [[node]]
-id = "hasDerivWithinAt_integral_Ici"
-
-[[node]]
-id = "continuousOn_integral_Icc"
-
-[[node]]
 id = "le_exp_integral_mul_of_hasDerivWithinAt_le"
 
 [[node]]
 id = "le_mul_exp_integral_of_continuousOn"
-
-[[node]]
-id = "exists_continuous_nonneg_integral_abs_sub_le"
 
 [[node]]
 id = "le_mul_exp_integral"

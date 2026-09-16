@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Polynomial
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Schur
 
@@ -180,15 +181,6 @@ theorem mem_pencilSpectrum_iff_exists (A B : Matrix n n K) (μ : K) :
 theorem mem_pencilSpectrum_iff_isRoot (A B : Matrix n n K) (μ : K) :
     μ ∈ pencilSpectrum A B ↔ (pencilPoly A B).IsRoot μ := by
   rw [mem_pencilSpectrum_iff_det, IsRoot.def, pencilPoly_eval]
-
-/-- A scalar is in the spectrum of a matrix over a field exactly when it is an eigenvalue with an
-eigenvector, `A x = μ x` for some `x ≠ 0`. -/
-theorem mem_spectrum_iff_exists_mulVec_eq_smul (A : Matrix n n K) (μ : K) :
-    μ ∈ spectrum K A ↔ ∃ x, x ≠ 0 ∧ A *ᵥ x = μ • x := by
-  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
-    isUnit_iff_ne_zero, not_not, ← Matrix.exists_mulVec_eq_zero_iff]
-  simp only [sub_mulVec, smul_mulVec, one_mulVec, sub_eq_zero]
-  exact exists_congr fun x => and_congr_right' eq_comm
 
 /-- The pencil `(A, 1)` is the standard eigenvalue problem: `σ(A, 1) = σ(A)`. -/
 theorem pencilSpectrum_one (A : Matrix n n K) : pencilSpectrum A 1 = spectrum K A := by
@@ -539,37 +531,6 @@ section SymmetricDefinite
 open scoped ComplexOrder
 
 variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- A positive definite matrix is congruent to the identity: `Wᴴ B W = 1` for the invertible
-`W = V D^{-1/2}`, where `B = V D Vᴴ` is its spectral decomposition. This is the role the Cholesky
-factor `H` plays in [quarteroni2000numerical] Theorem 5.7 (`W = H⁻¹`), without a triangular
-structure. -/
-theorem PosDef.exists_isUnit_conj_eq_one {B : Matrix n n 𝕜} (hB : B.PosDef) :
-    ∃ W : Matrix n n 𝕜, IsUnit W ∧ star W * B * W = 1 := by
-  set V : Matrix n n 𝕜 := (hB.1.eigenvectorUnitary : Matrix n n 𝕜) with hVdef
-  have hV : star V * B * V = diagonal (RCLike.ofReal ∘ hB.1.eigenvalues) := by
-    have := hB.1.conjStarAlgAut_star_eigenvectorUnitary
-    rwa [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_star] at this
-  have hpos : ∀ i, 0 < hB.1.eigenvalues i := hB.eigenvalues_pos
-  set D : Matrix n n 𝕜 := diagonal fun i => (((Real.sqrt (hB.1.eigenvalues i))⁻¹ : ℝ) : 𝕜)
-    with hDdef
-  refine ⟨V * D, ?_, ?_⟩
-  · refine Unitary.isUnit_coe.mul ((isUnit_diagonal).mpr (Pi.isUnit_iff.mpr fun i => ?_))
-    rw [isUnit_iff_ne_zero]
-    exact_mod_cast (inv_ne_zero (Real.sqrt_pos.mpr (hpos i)).ne')
-  · have hassoc : star (V * D) * B * (V * D) = star D * (star V * B * V) * D := by
-      rw [star_mul]
-      simp only [Matrix.mul_assoc]
-    rw [hassoc, hV, hDdef, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal,
-      diagonal_mul_diagonal, ← diagonal_one]
-    congr 1
-    ext i
-    have hs : Real.sqrt (hB.1.eigenvalues i) ≠ 0 := (Real.sqrt_pos.mpr (hpos i)).ne'
-    simp only [Function.comp_apply, Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal]
-    rw [← RCLike.ofReal_mul, ← RCLike.ofReal_mul, ← RCLike.ofReal_one]
-    congr 1
-    field_simp
-    rw [Real.sq_sqrt (hpos i).le]
 
 /-- The columns of a congruence that carries `(A, B)` to `(diag d, 1)` are eigenvectors of the
 pencil: from `Mᴴ B M = 1` and `Mᴴ A M = diag d` with `M` invertible, `A (M eᵢ) = dᵢ B (M eᵢ)`.

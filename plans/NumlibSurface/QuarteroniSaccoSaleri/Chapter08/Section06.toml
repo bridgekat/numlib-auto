@@ -204,10 +204,6 @@ id = "IsCubicInterpSpline.eqOn_naturalInterp"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
-id = "IsCubicInterpSpline.hasClosure_of_derivWithin"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1, the slope formulas before (8.47)'
-
-[[node]]
 id = "clampedCubicSpline_existsUnique"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1 and Exercise 8.11'
 
@@ -218,10 +214,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 [[node]]
 id = "periodicCubicSpline_existsUnique"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.44)'
-
-[[node]]
-id = "isCubicInterp_clampedInterp"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.1'
 
 [[node]]
 id = "isCubicSpline_cardinalBasis"

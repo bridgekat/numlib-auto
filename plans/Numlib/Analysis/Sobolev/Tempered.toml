@@ -96,3 +96,27 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 
 [[node]]
 id = "memSobolevMultiIndex_ofReal_iff"
+
+[[node]]
+id = "toTemperedDistribution_eq_smulLeftCLM"
+
+[[node]]
+id = "lineSymbol"
+
+[[node]]
+id = "lineSymbol_apply"
+
+[[node]]
+id = "lineSymbol_succ"
+
+[[node]]
+id = "lineSymbol_zero"
+
+[[node]]
+id = "hasTemperateGrowth_lineSymbol"
+
+[[node]]
+id = "fourier_iteratedLineDerivOp_eq"
+
+[[node]]
+id = "fourier_weakDeriv_aeEq"

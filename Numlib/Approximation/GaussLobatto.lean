@@ -86,6 +86,22 @@ theorem lobattoMeasure_compl_Icc (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) :
     lobattoMeasure μ (Icc (-1 : ℝ) 1)ᶜ = 0 :=
   withDensity_absolutelyContinuous μ _ hsupp
 
+/-- The Lobatto weight of a Jacobi weight is the Jacobi weight with both exponents raised by
+one. -/
+theorem lobattoMeasure_jacobiMeasure (α β : ℝ) :
+    lobattoMeasure (jacobiMeasure α β) = jacobiMeasure (α + 1) (β + 1) := by
+  rw [lobattoMeasure, jacobiMeasure, jacobiMeasure, ← withDensity_mul _ (by fun_prop) (by fun_prop)]
+  refine withDensity_congr_ae ?_
+  rw [EventuallyEq, ae_restrict_iff' measurableSet_Ioo]
+  refine Eventually.of_forall fun x hx => ?_
+  have h1 : 1 - x ≠ 0 := sub_ne_zero.mpr (ne_of_gt hx.2)
+  have h2 : 1 + x ≠ 0 := by linarith [hx.1]
+  have h1' : 0 ≤ 1 - x := by linarith [hx.2]
+  have h2' : 0 ≤ 1 + x := by linarith [hx.1]
+  rw [Pi.mul_apply, ← ENNReal.ofReal_mul (by positivity), rpow_add_one h1, rpow_add_one h2]
+  congr 1
+  ring
+
 /-- **The modified weight is a weight.** Its moments are moments of `μ`, and its density is
 positive on `(-1, 1)`, where `μ` puts positive mass outside every finite set once the endpoints are
 added to that set. -/
@@ -355,21 +371,23 @@ theorem eq_lobattoNodal_of_eval_eq_zero (hw : IsWeight μ) (hsupp : μ (Icc (-1 
   rw [hgr, hr_eq]
   rfl
 
-/-! ### Positivity of weights, and the weights through the Christoffel–Darboux kernel -/
+/-- An interpolatory rule whose nodal polynomial is the Lobatto nodal polynomial has degree of
+exactness `2n - 1`: Jacobi's theorem with `Quadrature.integral_lobattoNodal_mul_of_degree_le`. -/
+theorem isExactOnMeasure_of_nodal_eq_lobattoNodal {n : ℕ} (hw : IsWeight μ)
+    (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (hn : 1 ≤ n) {x α : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) (hint : IsInterpolatoryMeasure μ α x)
+    (hnodal : Lagrange.nodal Finset.univ x = lobattoNodal μ n) :
+    IsExactOnMeasure μ α x (2 * n - 1) := by
+  rcases Nat.lt_or_ge n 2 with hn2 | hn2
+  · obtain rfl : n = 1 := by omega
+    exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mp hint
+  · rw [show 2 * n - 1 = n + (n - 1) by omega, isExactOnMeasure_add_iff hw (by omega) hx α]
+    refine ⟨hint, fun p hp => ?_⟩
+    rw [hnodal]
+    exact integral_lobattoNodal_mul_of_degree_le hw hsupp hn2
+      (hp.trans (by exact_mod_cast (by omega : n - 1 - 1 ≤ n - 2)))
 
-/-- **A weight is positive once a suitable test polynomial exists**: if the rule is exact on a
-nonzero polynomial `p ≥ 0` (`μ`-a.e.) vanishing at every node but `x i`, where it is positive, then
-`w i p(x i) = ∫ p ∂μ > 0`. -/
-theorem pos_of_isExactOnMeasure (hw : IsWeight μ) {n : ℕ} {w x : Fin n → ℝ} {d : ℕ}
-    (hexact : IsExactOnMeasure μ w x d) {p : ℝ[X]} (hp : p.degree ≤ d) (hp0 : p ≠ 0)
-    (hnn : ∀ᵐ t ∂μ, 0 ≤ p.eval t) (i : Fin n) (hzero : ∀ k, k ≠ i → p.eval (x k) = 0)
-    (hpos : 0 < p.eval (x i)) : 0 < w i := by
-  have h := hexact p hp
-  rw [Finset.sum_eq_single i (fun k _ hk => by rw [hzero k hk, mul_zero])
-    (fun h => absurd (Finset.mem_univ i) h)] at h
-  have hint := hw.integral_eval_pos_of_ae_nonneg hp0 hnn
-  rw [← h] at hint
-  exact (mul_pos_iff_of_pos_right hpos).mp hint
+/-! ### Positivity of weights, and the weights through the Christoffel–Darboux kernel -/
 
 /-- The Lagrange basis polynomial at a node, as the erased nodal polynomial divided by the
 derivative of the nodal polynomial at the node. -/
@@ -673,20 +691,6 @@ theorem exists_gaussLobatto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ
   exact ⟨x, w, hxinj, hx0, hxlast, hxmem, hpos, hexact, hnodal, hint⟩
 
 /-! ### The classical Gauss weights -/
-
-/-- Distinct nodes that are all roots of `p_{N+1}` have `p_{N+1}` as nodal polynomial. -/
-theorem nodal_eq_family_of_forall_eval_eq_zero (μ : Measure ℝ) {N : ℕ} {x : Fin (N + 1) → ℝ}
-    (hx : Function.Injective x) (hroot : ∀ j, (family μ (N + 1)).eval (x j) = 0) :
-    Lagrange.nodal Finset.univ x = family μ (N + 1) := by
-  refine (sub_eq_zero.mp ?_).symm
-  refine Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ hx.injOn ?_
-    fun j _ => ?_
-  · have := degree_sub_lt_left (p := family μ (N + 1)) (q := Lagrange.nodal Finset.univ x)
-      (by rw [degree_family, Lagrange.degree_nodal]; simp) (family_ne_zero _ _)
-      (by rw [(monic_family _ _).leadingCoeff, Lagrange.nodal_monic.leadingCoeff])
-    rw [degree_family] at this
-    simpa using this
-  · rw [eval_sub, hroot j, Lagrange.eval_nodal_at_node (Finset.mem_univ j), sub_zero]
 
 /-- **The Legendre–Gauss weights**: for the interpolatory rule at the `n + 1` zeros of `L_{n+1}`,
 `w_j = 2 / ((1 - x_j²) L_{n+1}'(x_j)²)`. From `Quadrature.gaussWeight_eq`,

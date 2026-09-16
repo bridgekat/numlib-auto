@@ -35,7 +35,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.1 (the
 [[node]]
 id = "bestApproximationError_eq"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.1 (the error `E_n^*(f)`)'
-
-[[node]]
-id = "exists_mem_Ioo_eq_zero_of_mul_neg"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.8, the interpolation property of the best approximation (its intermediate value step)'

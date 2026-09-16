@@ -21,7 +21,8 @@ matrices is Mathlib's scoped `Matrix.Norms.L2Operator` norm and `K₂(X) = ‖X�
 the inner product `inner ℂ y x`. A *simple* eigenvalue has algebraic multiplicity one (§1.7), the
 multiplicity of `λ` as a root of the characteristic polynomial: `A.charpoly.rootMultiplicity λ = 1`,
 which Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` identifies with the dimension of the
-generalized eigenspace the backbone works with (`finrank_maxGenEigenspace_toEuclideanLin`). A
+generalized eigenspace the backbone works with (`Matrix.finrank_maxGenEigenspace_toEuclideanLin`).
+A
 diagonalizable matrix is given by `X⁻¹ A X = diagonal d` with `X` nonsingular. The perturbation
 parameter `ε` of Theorem 5.4 and Property 5.5 is a complex `t`, the book's real `ε ≥ 0` being its
 restriction, and a "branch" `λ(ε), x(ε)` is a pair of functions `mu : ℂ → ℂ`, `v : ℂ → ℂⁿ` with
@@ -60,17 +61,6 @@ namespace QuarteroniSaccoSaleri.Chapter05
 variable {n : ℕ}
 
 /-! ### Bridges between the matrix and the operator vocabulary -/
-
--- TODO(backbone): natural home `Numlib/Analysis/Matrix/ToEuclideanLin`, beside
--- `Matrix.hasEigenvalue_toEuclideanLin_iff`.
-/-- The algebraic multiplicity of an eigenvalue of a matrix, the multiplicity of `μ` as a root of
-the characteristic polynomial (§1.7), is the dimension of the generalized eigenspace of
-`toEuclideanLin A`: Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` read through
-`Matrix.charpoly_toLin`. -/
-theorem finrank_maxGenEigenspace_toEuclideanLin (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) :
-    Module.finrank ℂ (Module.End.maxGenEigenspace (toEuclideanLin A) μ) =
-      A.charpoly.rootMultiplicity μ := by
-  rw [LinearMap.finrank_maxGenEigenspace_eq, toEuclideanLin_eq_toLin_orthonormal, charpoly_toLin]
 
 /-- A left eigenvector in the book's sense, `yᴴ A = λ yᴴ` (here `Aᴴ y = λ̄ y`), is a left
 eigenvector in the backbone's sense, `⟪y, A z⟫ = λ ⟪y, z⟫` for every `z`. -/

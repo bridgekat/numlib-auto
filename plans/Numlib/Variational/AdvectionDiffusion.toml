@@ -223,21 +223,6 @@ id = "centredRatio_stabilizedPeclet_phiSG"
 id = "sg_nodal_exact"
 
 [[node]]
-id = "neg_tridiagonalToeplitz"
-
-[[node]]
-id = "tridiagonalToeplitz_eq_add_smul"
-
-[[node]]
-id = "dotProduct_mulVec_tridiagonalToeplitz_antisymm"
-
-[[node]]
-id = "dotProduct_mulVec_tridiagonalToeplitz_pos"
-
-[[node]]
-id = "isMMatrix_smul_tridiagonalToeplitz"
-
-[[node]]
 id = "viscosityScheme_isMMatrix"
 
 [[node]]

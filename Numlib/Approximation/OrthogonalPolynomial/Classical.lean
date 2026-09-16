@@ -132,6 +132,13 @@ theorem isWeight_chebyshevMeasure : IsWeight chebyshevMeasure :=
       (by rw [integral_one_chebyshevMeasure]; exact pi_ne_zero))
     fun n => Polynomial.Chebyshev.integrable_measureT (by fun_prop)
 
+/-- The Chebyshev weight gives no mass outside `[-1, 1]`. -/
+theorem chebyshevMeasure_compl_Icc : chebyshevMeasure (Icc (-1 : ℝ) 1)ᶜ = 0 := by
+  rw [chebyshevMeasure, Chebyshev.measureT, Measure.restrict_apply' measurableSet_Ioc]
+  have hempty : (Icc (-1 : ℝ) 1)ᶜ ∩ Ioc (-1 : ℝ) 1 = ∅ :=
+    Set.eq_empty_of_forall_notMem fun t ht => ht.1 (Ioc_subset_Icc_self ht.2)
+  rw [hempty, measure_empty]
+
 /-- **The monic orthogonal polynomials of the Chebyshev weight are the monic rescalings of the
 Chebyshev polynomials**: `family chebyshevMeasure n = 2^{-(n-1)} T_n` (and `1` at `n = 0`).
 
@@ -239,6 +246,14 @@ theorem isWeight_jacobiMeasure {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) :
     norm_num at this
   · rw [integrable_jacobiMeasure_iff]
     exact integrableOn_jacobiDensity_mul hα hβ (continuous_pow n)
+
+/-- The Jacobi weight `(1 - x)^α (1 + x)^β dx` on `(-1, 1)` gives no mass outside `[-1, 1]`. -/
+theorem jacobiMeasure_compl_Icc (α β : ℝ) : jacobiMeasure α β (Icc (-1 : ℝ) 1)ᶜ = 0 := by
+  refine withDensity_absolutelyContinuous _ _ ?_
+  rw [Measure.restrict_apply' measurableSet_Ioo]
+  have hempty : (Icc (-1 : ℝ) 1)ᶜ ∩ Ioo (-1 : ℝ) 1 = ∅ :=
+    Set.eq_empty_of_forall_notMem fun t ht => ht.1 (Ioo_subset_Icc_self ht.2)
+  rw [hempty, measure_empty]
 
 /-- The Jacobi weight with `α = β = 0` is the Legendre weight.
 

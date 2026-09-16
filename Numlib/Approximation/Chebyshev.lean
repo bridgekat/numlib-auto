@@ -6,6 +6,7 @@ import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
+import Numlib.Topology.Order.IntermediateValue
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Normed.Module.BestApprox
 
@@ -97,6 +98,29 @@ instance instFiniteDimensionalPolyLE (X : Set ℝ) (n : ℕ) :
   rw [h]
   infer_instance
 
+/-- The restriction of polynomial functions to an infinite set is injective: a nonzero polynomial
+has finitely many roots. -/
+theorem Polynomial.toContinuousMapOnAlgHom_injective {X : Set ℝ} (hX : X.Infinite) :
+    Function.Injective (Polynomial.toContinuousMapOnAlgHom X) := by
+  intro p q hpq
+  rw [← sub_eq_zero]
+  refine Polynomial.eq_zero_of_infinite_isRoot _ (hX.mono fun x hx => ?_)
+  have := congrArg (fun g : C(X, ℝ) => g ⟨x, hx⟩) hpq
+  simp only [Polynomial.toContinuousMapOnAlgHom_apply, Polynomial.toContinuousMapOn_apply,
+    Polynomial.toContinuousMap_apply] at this
+  simp [Polynomial.IsRoot, this]
+
+/-- **The dimension of the polynomials of degree at most `n`** on an infinite subset of the line
+is `n + 1`: the restriction of `Polynomial.degreeLT ℝ (n + 1)` is injective there. -/
+theorem finrank_polyLE {X : Set ℝ} (hX : X.Infinite) (n : ℕ) :
+    Module.finrank ℝ (polyLE X n) = n + 1 := by
+  have h : polyLE X n
+      = (Polynomial.degreeLT ℝ (n + 1)).map (Polynomial.toContinuousMapOnAlgHom X).toLinearMap := by
+    rw [polyLE, Polynomial.degreeLT_succ_eq_degreeLE]
+  rw [h, LinearEquiv.finrank_eq
+      (Submodule.equivMapOfInjective _ (Polynomial.toContinuousMapOnAlgHom_injective hX) _).symm,
+    LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv ℝ (n + 1)), Module.finrank_fin_fun]
+
 /-- A subspace `V` of `C(X, ℝ)` satisfies the **Haar condition in dimension `d`** when no nonzero
 element of `V` vanishes at `d` distinct points of `X`. For a `d`-dimensional space this is the
 classical Haar condition; carrying `d` as a parameter keeps every use site free of a rank
@@ -186,17 +210,6 @@ def Equioscillates {X : Set ℝ} [CompactSpace X] (g : C(X, ℝ)) (m : ℕ) : Pr
   ∃ (σ : ℝ) (x : Fin m → X), (σ = 1 ∨ σ = -1) ∧ StrictMono (fun i => (x i : ℝ)) ∧
     ∀ i : Fin m, g (x i) = σ * (-1) ^ (i : ℕ) * ‖g‖
 
-/-- A continuous function changing sign on an interval has a root strictly inside it. -/
-private theorem exists_root_of_mul_neg {F : ℝ → ℝ} (hF : Continuous F) {u v : ℝ} (huv : u < v)
-    (h : F u * F v < 0) : ∃ z ∈ Set.Ioo u v, F z = 0 := by
-  rcases mul_neg_iff.mp h with ⟨hu, hv⟩ | ⟨hu, hv⟩
-  · obtain ⟨z, hz, hz0⟩ :=
-      intermediate_value_Ioo' huv.le hF.continuousOn (Set.mem_Ioo.mpr ⟨hv, hu⟩)
-    exact ⟨z, hz, hz0⟩
-  · obtain ⟨z, hz, hz0⟩ :=
-      intermediate_value_Ioo huv.le hF.continuousOn (Set.mem_Ioo.mpr ⟨hu, hv⟩)
-    exact ⟨z, hz, hz0⟩
-
 /-- **De la Vallée-Poussin's lower bound.** If the error `f - q` of some competitor `q` of degree at
 most `n` alternates in sign at `n + 2` increasing points of `X` with values of modulus at least `ε`,
 then no polynomial of degree at most `n` approximates `f` better than `ε`.
@@ -245,7 +258,8 @@ theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q :
   have hroot : ∀ i : Fin (n + 1), ∃ z ∈ Set.Ioo (x i.castSucc : ℝ) (x i.succ : ℝ),
       (P - Q).eval z = 0 := by
     intro i
-    refine exists_root_of_mul_neg (P - Q).continuous (hmono (Fin.castSucc_lt_succ (i := i))) ?_
+    refine (P - Q).continuous.exists_mem_Ioo_eq_zero_of_mul_neg
+      (hmono (Fin.castSucc_lt_succ (i := i))) ?_
     have h1 := hRval i.castSucc
     have h2 := hRval i.succ
     have hpar : ((-1 : ℝ)) ^ (i.succ : ℕ) = -((-1 : ℝ) ^ (i.castSucc : ℕ)) := by
@@ -880,7 +894,7 @@ theorem le_infDist_of_alternates_trig {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
   -- the intermediate value theorem produces `2 n + 1` roots
   have hroot : ∀ i : Fin (2 * n + 1), ∃ z ∈ Set.Ioo (x i.castSucc) (x i.succ), g ↑z = 0 := by
     intro i
-    refine exists_root_of_mul_neg hgcont (hmono (Fin.castSucc_lt_succ (i := i))) ?_
+    refine hgcont.exists_mem_Ioo_eq_zero_of_mul_neg (hmono (Fin.castSucc_lt_succ (i := i))) ?_
     have h1 := hgpos i.castSucc
     have h2 := hgpos i.succ
     have hpar : ((-1 : ℝ)) ^ (i.succ : ℕ) = -((-1 : ℝ) ^ (i.castSucc : ℕ)) := by

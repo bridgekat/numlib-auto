@@ -375,28 +375,6 @@ open scoped Matrix.Norms.Operator
 
 variable {μ ν : Type*} [Fintype μ] [Fintype ν]
 
-/-- A bound on every row sum bounds the maximum-row-sum norm. -/
-theorem _root_.Matrix.linfty_opNorm_le_of_forall_sum_le {B : Matrix μ ν ℝ} {c : ℝ} (hc : 0 ≤ c)
-    (h : ∀ i, ∑ j, |B i j| ≤ c) : ‖B‖ ≤ c := by
-  rw [Matrix.linfty_opNorm_def, ← NNReal.coe_mk c hc, NNReal.coe_le_coe]
-  refine Finset.sup_le fun i _ => ?_
-  rw [← NNReal.coe_le_coe, NNReal.coe_sum, NNReal.coe_mk]
-  simpa only [coe_nnnorm, Real.norm_eq_abs] using h i
-
-/-- Every row sum is at most the maximum-row-sum norm. -/
-theorem _root_.Matrix.sum_abs_apply_le_linfty_opNorm (B : Matrix μ ν ℝ) (i : μ) :
-    ∑ j, |B i j| ≤ ‖B‖ := by
-  rw [Matrix.linfty_opNorm_def]
-  have := Finset.le_sup (f := fun i : μ => ∑ j : ν, ‖B i j‖₊) (Finset.mem_univ i)
-  rw [← NNReal.coe_le_coe, NNReal.coe_sum] at this
-  simpa only [coe_nnnorm, Real.norm_eq_abs] using this
-
-/-- Every entry is at most the maximum-row-sum norm. -/
-theorem _root_.Matrix.abs_apply_le_linfty_opNorm (B : Matrix μ ν ℝ) (i : μ) (j : ν) :
-    |B i j| ≤ ‖B‖ :=
-  (Finset.single_le_sum (f := fun j => |B i j|) (fun _ _ => abs_nonneg _)
-    (Finset.mem_univ j)).trans (Matrix.sum_abs_apply_le_linfty_opNorm B i)
-
 /-- The largest entry is at most the maximum-row-sum norm. -/
 theorem _root_.Matrix.supAbs_le_linfty_opNorm (B : Matrix μ ν ℝ) : B.supAbs ≤ ‖B‖ :=
   Matrix.supAbs_le (norm_nonneg _) (Matrix.abs_apply_le_linfty_opNorm B)

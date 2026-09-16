@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -126,6 +127,25 @@ theorem strictUpper_blockTriangular (A : Matrix n n R) :
   simp only [strictUpper_apply, ite_eq_right_iff]
   exact fun h' => absurd h' (asymm h)
 
+/-- The transpose of the strictly lower part is the strictly upper part of the transpose. -/
+theorem strictLower_transpose (A : Matrix n n R) : (strictLower A)ᵀ = strictUpper Aᵀ := by
+  ext i j
+  simp
+
+/-- The transpose of the strictly upper part is the strictly lower part of the transpose. -/
+theorem strictUpper_transpose (A : Matrix n n R) : (strictUpper A)ᵀ = strictLower Aᵀ := by
+  ext i j
+  simp
+
+omit [LinearOrder n] in
+/-- The transpose of the diagonal part is the diagonal part of the transpose. -/
+theorem diagPart_transpose [DecidableEq n] (A : Matrix n n R) : (diagPart A)ᵀ = diagPart Aᵀ := by
+  ext i j
+  by_cases hij : i = j
+  · subst hij
+    simp
+  · simp [hij, Ne.symm hij]
+
 end Parts
 
 /-- Every matrix is the sum of its diagonal, strictly lower and strictly upper parts: the three
@@ -168,6 +188,39 @@ theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
   exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
 
 end DiagPart
+
+section MulVec
+
+/-! ### Rows of the triangular parts -/
+
+open Finset
+
+variable [Fintype n] [NonUnitalNonAssocSemiring R]
+
+omit [LinearOrder n] in
+/-- Row `i` of `D v` is `a_ii v_i`. -/
+theorem diagPart_mulVec_apply [DecidableEq n] (A : Matrix n n R) (v : n → R) (i : n) :
+    (diagPart A *ᵥ v) i = A i i * v i := by
+  rw [diagPart, mulVec_diagonal]
+  rfl
+
+/-- Row `i` of `L v` is `∑_{j < i} a_ij v_j`. -/
+theorem strictLower_mulVec_apply (A : Matrix n n R) (v : n → R) (i : n) :
+    (strictLower A *ᵥ v) i = ∑ j ∈ univ.filter (· < i), A i j * v j := by
+  simp [mulVec, dotProduct, sum_filter, ite_mul]
+
+/-- Row `i` of `U v` is `∑_{i < j} a_ij v_j`. -/
+theorem strictUpper_mulVec_apply (A : Matrix n n R) (v : n → R) (i : n) :
+    (strictUpper A *ᵥ v) i = ∑ j ∈ univ.filter (i < ·), A i j * v j := by
+  simp [mulVec, dotProduct, sum_filter, ite_mul]
+
+omit [LinearOrder n] in
+/-- Row `i` of `A v` split into the diagonal term and the rest. -/
+theorem mulVec_apply_eq_add_sum_erase [DecidableEq n] (A : Matrix n n R) (v : n → R) (i : n) :
+    (A *ᵥ v) i = A i i * v i + ∑ j ∈ univ.erase i, A i j * v j := by
+  rw [mulVec, dotProduct, ← add_sum_erase _ _ (mem_univ i)]
+
+end MulVec
 
 section Bidiagonal
 
@@ -276,6 +329,18 @@ theorem IsLowerTriangular.mul_apply_self {M N : Matrix n n R} (hM : M.IsLowerTri
 
 end Diag
 
+section Charpoly
+
+variable [Fintype n] [DecidableEq n] [CommRing R]
+
+/-- The characteristic polynomial of a lower triangular matrix is `∏ᵢ (X - a_ii)`, the mirror of
+Mathlib's `Matrix.charpoly_of_isUpperTriangular`. -/
+theorem charpoly_of_isLowerTriangular (M : Matrix n n R) (hM : M.IsLowerTriangular) :
+    M.charpoly = ∏ i, (Polynomial.X - Polynomial.C (M i i)) := by
+  simp [charpoly, det_of_isLowerTriangular _ hM.charmatrix]
+
+end Charpoly
+
 section UnitLowerTriangular
 
 /-- Unit lower triangular: lower triangular with ones on the diagonal, the shape of the `L`
@@ -313,6 +378,25 @@ theorem IsUnitLowerTriangular.det_eq_one [CommRing R] {L : Matrix n n R}
 theorem IsUnitLowerTriangular.isUnit [CommRing R] {L : Matrix n n R}
     (hL : L.IsUnitLowerTriangular) : IsUnit L :=
   (isUnit_iff_isUnit_det L).2 (by rw [hL.det_eq_one]; exact isUnit_one)
+
+/-- The inverse of an upper triangular matrix is upper triangular. No hypothesis is needed: a
+singular matrix has inverse `0`. -/
+theorem IsUpperTriangular.inv [CommRing R] [DecidableEq n] {U : Matrix n n R}
+    (hU : U.IsUpperTriangular) : U⁻¹.IsUpperTriangular := by
+  by_cases h : IsUnit U.det
+  · have : Invertible U := invertibleOfIsUnitDet U h
+    exact blockTriangular_inv_of_blockTriangular hU
+  · rw [nonsing_inv_apply_not_isUnit U h]
+    exact blockTriangular_zero
+
+/-- The inverse of a lower triangular matrix is lower triangular. -/
+theorem IsLowerTriangular.inv [CommRing R] [DecidableEq n] {L : Matrix n n R}
+    (hL : L.IsLowerTriangular) : L⁻¹.IsLowerTriangular := by
+  by_cases h : IsUnit L.det
+  · have : Invertible L := invertibleOfIsUnitDet L h
+    exact blockTriangular_inv_of_blockTriangular hL
+  · rw [nonsing_inv_apply_not_isUnit L h]
+    exact blockTriangular_zero
 
 /-- The inverse of a unit lower triangular matrix is unit lower triangular: the inverse of a
 lower triangular matrix is lower triangular, and the diagonal of `L⁻¹ * L = 1` is the product of
@@ -469,6 +553,11 @@ theorem isUpperHessenberg_iff_hasLowerBandwidth_one :
     A.IsUpperHessenberg ↔ A.HasLowerBandwidth 1 := by
   simp only [HasLowerBandwidth, one_lt_card_filter_le_lt_iff]
   rfl
+
+/-- On `Fin N`, upper Hessenberg is the condition `A i j = 0` for `j + 1 < i`. -/
+theorem isUpperHessenberg_iff_fin {N : ℕ} {A : Matrix (Fin N) (Fin N) R} :
+    A.IsUpperHessenberg ↔ ∀ i j : Fin N, (j : ℕ) + 1 < (i : ℕ) → A i j = 0 := by
+  rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasLowerBandwidth_iff_fin]
 
 /-- Tridiagonal means both bandwidths are `1` ([quarteroni2000numerical] §1.6.3). -/
 theorem isTridiagonal_iff_hasBandwidth_one :
@@ -730,5 +819,26 @@ theorem tridiagonalOf_mulVec [NonUnitalNonAssocSemiring S]
   split_ifs <;> first | omega | abel
 
 end TridiagonalOf
+
+/-! ### The rectangular product rule -/
+
+section Rectangular
+
+/-- **The rectangular product rule** behind the trapezoidal shapes, the rectangular form of
+`Matrix.BlockTriangular.mul` with a block map on each of the three index types: if `A i k = 0`
+whenever `c k < b i` and `B k j = 0` whenever `d j < c k`, then `(A * B) i j = 0` whenever
+`d j < b i`, because every term `A i k * B k j` of the product has `c k < b i` or
+`d j < b i ≤ c k`. -/
+theorem mul_apply_eq_zero_of_lt {α l m n R : Type*} [LinearOrder α] [Fintype m]
+    [NonUnitalNonAssocSemiring R] {b : l → α} {c : m → α} {d : n → α} {A : Matrix l m R}
+    {B : Matrix m n R} (hA : ∀ i k, c k < b i → A i k = 0) (hB : ∀ k j, d j < c k → B k j = 0)
+    {i : l} {j : n} (hij : d j < b i) : (A * B) i j = 0 := by
+  rw [mul_apply]
+  refine Finset.sum_eq_zero fun k _ => ?_
+  rcases lt_or_ge (c k) (b i) with h | h
+  · rw [hA i k h, zero_mul]
+  · rw [hB k j (hij.trans_le h), mul_zero]
+
+end Rectangular
 
 end Matrix

@@ -9,10 +9,6 @@ id = "charpoly_eq_of_isSimilar"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
 
 [[node]]
-id = "spectralRadius_eq_iSup_diff_singleton_zero"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
-
-[[node]]
 id = "spectrum_mul_comm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
 

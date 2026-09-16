@@ -599,12 +599,12 @@ theorem equation_13_7 {ν T : ℝ} (hν : 0 < ν) (hT : 0 ≤ T) {f : ℝ → �
     rw [hp]
     linarith [this]
   have hEc : ContinuousOn (energy u) (Icc (0 : ℝ) T) :=
-    ((Gronwall.continuousOn_integral_Icc hpc).const_add (energy u 0)).congr fun s hs =>
+    ((intervalIntegral.continuousOn_integral_Icc hpc).const_add (energy u 0)).congr fun s hs =>
       hEeq s hs
   have hE' : ∀ s ∈ Ico (0 : ℝ) T, HasDerivWithinAt (energy u) (p s) (Ici s) s := by
     intro s hs
     have h1 : HasDerivWithinAt (fun r => energy u 0 + ∫ r' in (0 : ℝ)..r, p r') (p s) (Ici s) s :=
-      (Gronwall.hasDerivWithinAt_integral_Ici hpc hs).const_add _
+      (intervalIntegral.hasDerivWithinAt_integral_Ici hpc hs).const_add _
     have h2 : HasDerivWithinAt (energy u) (p s) (Icc s T) s := by
       refine (h1.mono Icc_subset_Ici_self).congr (fun y hy => ?_) ?_
       · exact hEeq y ⟨le_trans hs.1 hy.1, hy.2⟩

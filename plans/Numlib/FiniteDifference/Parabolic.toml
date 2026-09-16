@@ -7,9 +7,6 @@ id = "IsSemidiscrete"
 id = "IsSemidiscrete.iff_normalForm"
 
 [[node]]
-id = "_root_.SesqForm.gramMatrix_mulVec_apply"
-
-[[node]]
 id = "forall_inner_add_eq_iff"
 
 [[node]]
@@ -53,9 +50,6 @@ id = "eq_thetaStep_iff_divided"
 
 [[node]]
 id = "_root_.Variational.IsThetaStep.iff_thetaStep"
-
-[[node]]
-id = "_root_.Matrix.PosDef.isSymmetricCoercive_toEuclideanLin"
 
 [[node]]
 id = "MassSpace"
@@ -104,9 +98,6 @@ id = "thetaStep_dotProduct_mulVec_le"
 
 [[node]]
 id = "thetaStep_dotProduct_mulVec_le_of_le"
-
-[[node]]
-id = "tendsto_pow_zero_iff_forall_mulVec"
 
 [[node]]
 id = "exists_conj_eq_diagonal"

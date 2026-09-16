@@ -123,34 +123,6 @@ theorem property_10_1_equioscillates (hab : a < b) {f p : C(Icc a b, ℝ)}
   rw [bestApproximationError_eq hp]
   simpa using hval j
 
--- TODO(backbone): a root of a continuous function on `[a, b]` strictly between two points where
--- it takes values of opposite strict signs; the same statement for `F : ℝ → ℝ` is private in
--- `Numlib/Approximation/Chebyshev` (`exists_root_of_mul_neg`), and this is where the alternation
--- vocabulary of that module would state it for `C(Icc a b, ℝ)`.
-/-- A continuous function on `[a, b]` taking values of opposite strict signs at `u < v` vanishes
-somewhere strictly between `u` and `v`: the intermediate value theorem. -/
-theorem exists_mem_Ioo_eq_zero_of_mul_neg {g : C(Icc a b, ℝ)} {u v : Icc a b}
-    (huv : (u : ℝ) < v) (h : g u * g v < 0) :
-    ∃ z : Icc a b, (u : ℝ) < z ∧ (z : ℝ) < v ∧ g z = 0 := by
-  have hab : a ≤ b := u.2.1.trans u.2.2
-  set G : ℝ → ℝ := IccExtend hab g with hG
-  have hGu : G u = g u := IccExtend_val hab g u
-  have hGv : G v = g v := IccExtend_val hab g v
-  have hcont : ContinuousOn G (Icc (u : ℝ) v) :=
-    (g.continuous.Icc_extend' (h := hab)).continuousOn
-  have key : ∃ z ∈ Ioo (u : ℝ) v, G z = 0 := by
-    rcases mul_neg_iff.mp h with ⟨hu, hv⟩ | ⟨hu, hv⟩
-    · obtain ⟨z, hz, hz0⟩ := intermediate_value_Ioo' huv.le hcont
-        (show (0 : ℝ) ∈ Ioo (G v) (G u) by rw [hGu, hGv]; exact ⟨hv, hu⟩)
-      exact ⟨z, hz, hz0⟩
-    · obtain ⟨z, hz, hz0⟩ := intermediate_value_Ioo huv.le hcont
-        (show (0 : ℝ) ∈ Ioo (G u) (G v) by rw [hGu, hGv]; exact ⟨hu, hv⟩)
-      exact ⟨z, hz, hz0⟩
-  obtain ⟨z, hz, hz0⟩ := key
-  have hzmem : z ∈ Icc a b := ⟨u.2.1.trans hz.1.le, hz.2.le.trans v.2.2⟩
-  refine ⟨⟨z, hzmem⟩, hz.1, hz.2, ?_⟩
-  rw [← hz0, hG, IccExtend_of_mem hab g hzmem]
-
 /-- **The consequence drawn after Property 10.1.** For the polynomial of best approximation
 `p_n^*` of `f ∈ C⁰([a, b])` with alternation points `x₀ < ⋯ < x_{n+1}` and sign
 `σ = ±1` as in Property 10.1, there exist `n + 1` points `x̃₀ < x̃₁ < ⋯ < x̃ₙ` in `[a, b]`, with
@@ -192,7 +164,7 @@ theorem property_10_1_interpolates {f p : C(Icc a b, ℝ)}
         linarith [hlt k]
       · rw [hfp]
         rfl
-    · refine exists_mem_Ioo_eq_zero_of_mul_neg (hlt k) ?_
+    · refine ContinuousMap.exists_mem_Ioo_eq_zero_of_mul_neg (hlt k) ?_
       have hsq : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
       have hpow : ((-1 : ℝ) ^ (k : ℕ)) * (-1) ^ (k : ℕ) = 1 := by
         rw [← mul_pow]

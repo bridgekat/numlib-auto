@@ -24,3 +24,9 @@ id = "Units.norm_inverse_add_le"
 
 [[node]]
 id = "Units.norm_inverse_add_sub_le"
+
+[[node]]
+id = "ContinuousLinearEquiv.coe_ofUnit"
+
+[[node]]
+id = "ContinuousLinearEquiv.coe_ofUnit_symm"

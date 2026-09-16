@@ -22,7 +22,8 @@ classical consequences of Gelfand's formula for the spectral radius, which Mathl
 ## Main statements
 
 * `spectralRadius_smul`, the absolute homogeneity `ρ(c • a) = ‖c‖ ρ(a)`, which needs no analytic
-  input and holds in any algebra over a normed field;
+  input and holds in any algebra over a normed field, with `spectralRadius_star` and
+  `spectralRadius_eq_iSup_diff_singleton_zero` (the star and the eigenvalue `0` do not change it);
 * `spectralRadius_lt_one_iff_tendsto_pow`, `spectralRadius_lt_one_iff_exists_norm_pow_lt_one` and
   `summable_pow_iff_spectralRadius_lt_one`, the three criteria in terms of the powers;
 * `exists_norm_pow_le_of_spectralRadius_lt`, geometric decay of the powers at any rate above the
@@ -65,6 +66,28 @@ theorem spectralRadius_smul (c : 𝕜) (a : B) :
     simp only [spectralRadius, hset, ← Set.image_smul, iSup_image, smul_eq_mul, nnnorm_mul,
       ENNReal.coe_mul, ENNReal.mul_iSup]
 
+/-- The spectral radius does not see the eigenvalue `0`: `ρ(a)` is the supremum of `‖λ‖₊` over
+`σ(a) ∖ {0}`, since `‖0‖₊ = 0` contributes nothing to a supremum in `ℝ≥0∞`. -/
+theorem spectralRadius_eq_iSup_diff_singleton_zero (a : B) :
+    spectralRadius 𝕜 a = ⨆ μ ∈ spectrum 𝕜 a \ {0}, (‖μ‖₊ : ℝ≥0∞) := by
+  refine le_antisymm (iSup₂_le fun μ hμ => ?_) (iSup₂_le fun μ hμ =>
+    le_iSup₂ (f := fun μ (_ : μ ∈ spectrum 𝕜 a) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) μ hμ.1)
+  rcases eq_or_ne μ 0 with rfl | h0
+  · simp
+  · exact le_iSup₂ (f := fun μ (_ : μ ∈ spectrum 𝕜 a \ {0}) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) μ ⟨hμ, h0⟩
+
+/-- The spectral radius is invariant under the star: `ρ(star a) = ρ(a)`, because
+`σ(star a) = star σ(a)` (`spectrum.map_star`) and the norm is star-invariant. -/
+theorem spectralRadius_star [StarRing 𝕜] [NormedStarGroup 𝕜] [StarRing B] [StarModule 𝕜 B]
+    (a : B) : spectralRadius 𝕜 (star a) = spectralRadius 𝕜 a := by
+  have key : ∀ b : B, spectralRadius 𝕜 (star b) ≤ spectralRadius 𝕜 b := fun b =>
+    iSup₂_le fun k hk => by
+      rw [spectrum.map_star, Set.mem_star] at hk
+      calc ((‖k‖₊ : ℝ≥0) : ℝ≥0∞) = ‖star k‖₊ := by rw [nnnorm_star]
+        _ ≤ spectralRadius 𝕜 b :=
+          le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 b) => ((‖k‖₊ : ℝ≥0) : ℝ≥0∞)) (star k) hk
+  exact le_antisymm (key a) (by simpa using key (star a))
+
 /-- The power rule `ρ(aⁿ) = ρ(a)ⁿ` for an element with nonempty spectrum of an algebra over an
 algebraically closed normed field: the spectral mapping theorem `spectrum.map_pow_of_nonempty`
 gives `σ(aⁿ) = (· ^ n) '' σ(a)`, and `‖·‖₊ ^ n` commutes with the supremum. Nonemptiness is only
@@ -102,6 +125,25 @@ theorem spectrum.spectralRadius_ne_top (a : A) : spectralRadius 𝕜 a ≠ ⊤ :
     (spectrum.spectralRadius_le_pow_nnnorm_pow_one_div 𝕜 a 0)
 
 end Finite
+
+section Conjugate
+
+variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [CompleteSpace E]
+
+/-- The spectral radius of an operator is at most the norm of any conjugate `v P v⁻¹` of it:
+similarity preserves the spectrum, and the spectral radius is at most the norm. -/
+theorem spectralRadius_le_nnnorm_conj {v : E →L[𝕜] E} (hv : IsUnit v) (P : E →L[𝕜] E) :
+    spectralRadius 𝕜 P ≤ ‖v * P * Ring.inverse v‖₊ := by
+  obtain ⟨u, rfl⟩ := hv
+  rw [Ring.inverse_unit]
+  rcases subsingleton_or_nontrivial E with _ | _
+  · have : Subsingleton (E →L[𝕜] E) := ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
+    simp [spectralRadius]
+  · rw [spectralRadius, ← spectrum.units_conjugate (a := P) (u := u), ← spectralRadius]
+    exact spectrum.spectralRadius_le_nnnorm _
+
+end Conjugate
 
 variable {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A] [NormOneClass A]
 

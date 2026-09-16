@@ -14,3 +14,12 @@ id = "exists_bounds"
 
 [[node]]
 id = "tendsto_rpow_one_div"
+
+[[node]]
+id = "tendsto_apply_iff_tendsto_norm"
+
+[[node]]
+id = "exists_bounds_rclike"
+
+[[node]]
+id = "continuous_rclike"

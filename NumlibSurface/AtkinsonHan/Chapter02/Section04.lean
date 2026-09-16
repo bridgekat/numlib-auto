@@ -201,110 +201,6 @@ section Example242
 
 open MeasureTheory Set
 
--- TODO(backbone): a general fact about `H^1(a, b)`; natural home
--- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.norm_sq_eq`.
-/-- `‖u‖_{H^1} ≤ ‖u‖_{L²} + ‖u'‖_{L²}`, from `‖u‖² = ‖u‖_{L²}² + ‖u'‖_{L²}²`. -/
-theorem sobolevInterval_norm_le_add {a b : ℝ} (u : SobolevInterval 1 a b) :
-    ‖u‖ ≤ ‖SobolevInterval.deriv u 0‖ + ‖SobolevInterval.deriv u 1‖ := by
-  have h := SobolevInterval.norm_sq_eq u
-  rw [Fin.sum_univ_two] at h
-  rw [← pow_le_pow_iff_left₀ (norm_nonneg u) (by positivity) two_ne_zero, h]
-  nlinarith [mul_nonneg (norm_nonneg (SobolevInterval.deriv u 0))
-    (norm_nonneg (SobolevInterval.deriv u 1))]
-
--- TODO(backbone): a general fact about `H^1(a, b)`; natural home
--- `Numlib/Analysis/Sobolev/Interval.lean`, beside `ContDiffMapIcc.toSobolevInterval`, whose doc
--- comment records that density is not proved there.
-/-- **`C¹[a, b]` is dense in `H^1(a, b)`.** Given `u ∈ H^1(a, b)`, approximate its weak derivative
-`u'` in `L²(a, b)` by a test function `ψ` (`exists_testFunction_norm_sub_toLp_le`) and take
-`v = u(a) + ∫_a^x ψ`, which is `C^∞` on `[a, b]`. Then `v - u = ∫_a^x (ψ - u')` vanishes at `a`,
-so Poincaré's inequality `SobolevInterval.norm_le_of_eq_integral` bounds `‖v - u‖_{L²}` by
-`((b - a)/√2) ‖ψ - u'‖_{L²}`, and `‖v - u‖_{H^1} ≤ (1 + (b - a)/√2) ‖ψ - u'‖_{L²}`. No
-mollification of `u` itself is needed. -/
-theorem denseRange_toSobolevInterval_one {a b : ℝ} (hab : a < b) :
-    DenseRange (ContDiffMapIcc.toSobolevInterval hab.le hab 1) := by
-  rw [Metric.denseRange_iff]
-  intro u ε hε
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab.le
-  set w : Lp ℝ 2 (volume.restrict (Ioo a b)) := SobolevInterval.deriv u 1 with hwdef
-  set K : ℝ := 1 + (b - a) / Real.sqrt 2 with hKdef
-  have hK0 : 0 < K := by
-    have : (0 : ℝ) ≤ (b - a) / Real.sqrt 2 := by positivity
-    linarith
-  obtain ⟨ψ, hψ⟩ := exists_testFunction_norm_sub_toLp_le hab w (ε := ε / (2 * K)) (by positivity)
-  set ψC : C(Icc a b, ℝ) := ⟨fun t => ψ t, ψ.continuous.comp continuous_subtype_val⟩ with hψC
-  set p : Fin 2 → C(Icc a b, ℝ) :=
-    ![ContinuousMap.antideriv hab.le ψC (SobolevInterval.repConst u), ψC] with hp
-  have hderiv : ∀ j : Fin 1, ContinuousMap.HasDerivIcc hab.le (p j.castSucc) (p j.succ) := by
-    intro j
-    fin_cases j
-    exact ContinuousMap.hasDerivIcc_antideriv hab.le ψC _
-  set v : ContDiffMapIcc hab.le 1 := ContDiffMapIcc.mk hab.le p hderiv with hv
-  refine ⟨v, ?_⟩
-  set d : SobolevInterval 1 a b := ContDiffMapIcc.toSobolevInterval hab.le hab 1 v - u with hd
-  have hIcc : ∀ x ∈ Icc a b, IccExtend hab.le ψC x = ψ x := fun x hx => by
-    rw [IccExtend_of_mem hab.le _ hx]; rfl
-  have hmid : (IccExtend hab.le (v.deriv 1) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)] (ψ : ℝ → ℝ) :=
-    (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx => by
-      have hv1 : v.deriv 1 = ψC := rfl
-      rw [hv1]
-      exact hIcc x (Ioo_subset_Icc_self hx))
-  have h1 : SobolevInterval.deriv d 1 = ψ.toLp₂ - w := by
-    rw [hd, SobolevInterval.deriv_sub]
-    congr 1
-    exact Lp.ext (((ContDiffMapIcc.coeFn_derivLp v 1).trans hmid).trans ψ.coeFn_toLp₂.symm)
-  have hWae : ((ψ.toLp₂ - w : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)] fun t => (ψ : ℝ → ℝ) t - w t := by
-    filter_upwards [Lp.coeFn_sub ψ.toLp₂ w, ψ.coeFn_toLp₂] with t ht1 ht2
-    rw [ht1, Pi.sub_apply, ht2]
-  have hv0 : (IccExtend hab.le (v.deriv 0) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)]
-      fun x => SobolevInterval.repConst u + ∫ s in a..x, (ψ : ℝ → ℝ) s := by
-    refine (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx => ?_)
-    have hxI : x ∈ Icc a b := Ioo_subset_Icc_self hx
-    have hv0' : v.deriv 0 = ContinuousMap.antideriv hab.le ψC (SobolevInterval.repConst u) := rfl
-    rw [hv0', IccExtend_of_mem hab.le _ hxI, ContinuousMap.antideriv_apply]
-    congr 1
-    refine intervalIntegral.integral_congr fun s hs => ?_
-    rw [uIcc_of_le hx.1.le] at hs
-    exact hIcc s ⟨hs.1, hs.2.trans hxI.2⟩
-  have hu0 : (SobolevInterval.deriv u 0 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
-      fun x => SobolevInterval.repConst u + ∫ t in a..x, w t :=
-    SobolevInterval.fn_ae_eq_rep hab u
-  have h0 : ((SobolevInterval.deriv d 0 : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)]
-      fun x => ∫ t in a..x, ((ψ.toLp₂ - w : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ) t := by
-    have hsub : SobolevInterval.deriv d 0 = v.derivLp 0 - SobolevInterval.deriv u 0 := by
-      rw [hd, SobolevInterval.deriv_sub]; rfl
-    rw [hsub]
-    filter_upwards [Lp.coeFn_sub (v.derivLp 0) (SobolevInterval.deriv u 0),
-      ContDiffMapIcc.coeFn_derivLp v 0, hv0, hu0, ae_restrict_mem measurableSet_Ioo] with
-      x hxs hx1 hx2 hx3 hxI
-    have hxIcc : x ∈ Icc a b := Ioo_subset_Icc_self hxI
-    rw [hxs, Pi.sub_apply, hx1, hx2, hx3, intervalIntegral_congr_ae_Ioo hWae hxIcc,
-      intervalIntegral.integral_sub (ψ.continuous.intervalIntegrable _ _)
-        ((SobolevInterval.integrableOn_deriv u 1).intervalIntegrable_of_Ioo
-          (left_mem_Icc.2 hab.le) hxIcc)]
-    ring
-  have hb0 : ‖SobolevInterval.deriv d 0‖ ≤ (b - a) / Real.sqrt 2 * (ε / (2 * K)) := by
-    refine (SobolevInterval.norm_le_of_eq_integral hab.le h0).trans ?_
-    gcongr
-    rw [norm_sub_rev]; exact hψ
-  have hb1 : ‖SobolevInterval.deriv d 1‖ ≤ ε / (2 * K) := by
-    rw [h1, norm_sub_rev]; exact hψ
-  have hfin : (b - a) / Real.sqrt 2 * (ε / (2 * K)) + ε / (2 * K) = ε / 2 := by
-    rw [hKdef]
-    have h2 : Real.sqrt 2 ≠ 0 := by positivity
-    field_simp
-    ring
-  calc dist u (ContDiffMapIcc.toSobolevInterval hab.le hab 1 v) = ‖d‖ := by
-        rw [hd, dist_eq_norm']
-    _ ≤ ‖SobolevInterval.deriv d 0‖ + ‖SobolevInterval.deriv d 1‖ := sobolevInterval_norm_le_add d
-    _ ≤ (b - a) / Real.sqrt 2 * (ε / (2 * K)) + ε / (2 * K) := by gcongr
-    _ = ε / 2 := hfin
-    _ < ε := by linarith
-
 /-- **Example 2.4.2**, the bound `‖D v‖₂ ≤ ‖v‖_{1,2}` on `C¹[0, 1]`: the `L²` norm of the
 derivative of `v` is at most the `H¹` norm of `v`, so the differentiation operator
 `D : C¹[0, 1] → L²(0, 1)` has `‖D‖_{V,W} ≤ 1` for the norm `‖·‖_{1,2}` of the book. -/
@@ -319,7 +215,7 @@ theorem example_2_4_2_norm_le (v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1
 inclusion is injective (`ContDiffMapIcc.toSobolevInterval_injective`). -/
 theorem example_2_4_2_dense :
     DenseRange (ContDiffMapIcc.toSobolevInterval (zero_le_one : (0 : ℝ) ≤ 1) zero_lt_one 1) :=
-  denseRange_toSobolevInterval_one zero_lt_one
+  ContDiffMapIcc.denseRange_toSobolevInterval_one zero_lt_one
 
 /-- **Example 2.4.2**: the differentiation operator `D v = v'` of `C¹[0, 1]` into `L²(0, 1)`
 extends uniquely to a bounded operator `D̂ ∈ 𝓛(H¹(0, 1), L²(0, 1))`, the extension supplied by

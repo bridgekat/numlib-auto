@@ -25,10 +25,6 @@ id = "definition_1_15"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.15'
 
 [[node]]
-id = "isUnit_of_rank_eq_card"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.9'
-
-[[node]]
 id = "definition_1_15_fullRank"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.15'
 

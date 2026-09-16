@@ -37,9 +37,6 @@ id = "example_4_1_tendsto"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.1'
 
 [[node]]
-id = "tendsto_zero_iff_forall_mulVec_tendsto_zero"
-
-[[node]]
 id = "theorem_4_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
 
@@ -90,9 +87,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.5'
 [[node]]
 id = "equation_4_5_symm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.5'
-
-[[node]]
-id = "complexSpectralRadius_eq_of_forall_mem_spectrum_iff"
 
 [[node]]
 id = "exercise_4_1"

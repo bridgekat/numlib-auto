@@ -111,6 +111,40 @@ def IsExactOn (μ : Measure (ι → ℝ)) (w : K → ℝ) (x : K → (ι → ℝ
 theorem IsExactOn.mono {w : K → ℝ} {x : K → (ι → ℝ)} {m m' : ℕ} (h : IsExactOn μ w x m)
     (hm : m' ≤ m) : IsExactOn μ w x m' := fun p hp => h p (hp.trans hm)
 
+/-- **Exactness on polynomials is exactness on monomials.** For a measure against which every
+monomial is integrable, a rule is exact to degree `m` iff it integrates every monomial
+`∏ᵢ yᵢ^{dᵢ}` of degree `∑ᵢ dᵢ ≤ m` exactly: both sides of the exactness identity are linear in
+the polynomial, which is the sum of its monomials. -/
+theorem isExactOn_iff_forall_monomial [Fintype ι]
+    (hμ : ∀ d : ι →₀ ℕ, Integrable (fun y => ∏ i, y i ^ d i) μ) (w : K → ℝ) (x : K → ι → ℝ)
+    (m : ℕ) :
+    IsExactOn μ w x m ↔
+      ∀ d : ι →₀ ℕ, d.degree ≤ m → ∑ k, w k * ∏ i, x k i ^ d i = ∫ y, ∏ i, y i ^ d i ∂μ := by
+  have hmono : ∀ (d : ι →₀ ℕ) (y : ι → ℝ),
+      MvPolynomial.eval y (MvPolynomial.monomial d (1 : ℝ)) = ∏ i, y i ^ d i := by
+    intro d y
+    rw [MvPolynomial.eval_monomial, one_mul, Finsupp.prod_fintype _ _ fun i => pow_zero _]
+  have hdeg : ∀ d : ι →₀ ℕ, (MvPolynomial.monomial d (1 : ℝ)).totalDegree = d.degree := by
+    intro d
+    rw [MvPolynomial.totalDegree_monomial _ one_ne_zero, Finsupp.degree_eq_sum, Finsupp.sum_fintype]
+    intro i; rfl
+  constructor
+  · intro h d hd
+    have := h (MvPolynomial.monomial d 1) (by rw [hdeg]; exact hd)
+    simpa only [hmono] using this
+  · intro h p hp
+    conv_lhs => rw [MvPolynomial.as_sum p]
+    conv_rhs => rw [MvPolynomial.as_sum p]
+    simp only [map_sum, MvPolynomial.eval_monomial, Finsupp.prod_fintype _ _ fun i => pow_zero _]
+    rw [integral_finsetSum _ fun d _ => (hμ d).const_mul _]
+    simp only [MeasureTheory.integral_const_mul, Finset.mul_sum]
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun d hd => ?_
+    rw [← h d ((MvPolynomial.le_totalDegree hd).trans hp |>.trans' ?_), Finset.mul_sum]
+    · exact Finset.sum_congr rfl fun k _ => by ring
+    · rw [Finsupp.degree_eq_sum, Finsupp.sum_fintype]
+      intro i; rfl
+
 /-- A rule exact to degree `2n` has `(p, q)_n = (p, q)` for all `p` and `q` of total degree at most
 `n`, because `p q` then has total degree at most `2n`. This is the identity that makes
 hyperinterpolation a projection. -/

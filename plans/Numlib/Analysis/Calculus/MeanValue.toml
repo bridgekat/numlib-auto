@@ -6,3 +6,7 @@ id = "exists_ball_abs_slope_sub_deriv_le"
 
 [[node]]
 id = "exists_ball_abs_newton_three_sub_le"
+
+[[node]]
+id = "Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add"
+source = "Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Lemma 4.1.15"

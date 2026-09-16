@@ -195,3 +195,15 @@ id = "_root_.Matrix.qrR_eq"
 
 [[node]]
 id = "_root_.Matrix.euclideanCol"
+
+[[node]]
+id = "_root_.Matrix.span_range_euclideanCol_eq_top"
+
+[[node]]
+id = "_root_.Matrix.toEuclideanLin_euclideanCol_of_conj_eq_diagonal"
+
+[[node]]
+id = "_root_.Matrix.isUnit_det_of_conj_eq_diagonal"
+
+[[node]]
+id = "_root_.Matrix.qrQ_eq_one_of_isUpperTriangular"

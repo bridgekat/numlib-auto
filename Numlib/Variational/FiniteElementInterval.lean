@@ -48,8 +48,6 @@ to the other, and the dimension `n k + 1` of `X_h^k` is `Spline.finrank_splineSp
 
 ## Main results
 
-* `FiniteElement.toContinuousMap_injective` — the embedding `H^1(a, b) ↪ C([a, b], ℝ)` is
-  injective.
 * `FiniteElement.exists_mem_lagrangeSpace` — every continuous piecewise polynomial is the
   continuous representative of an element of `H^1(a, b)`.
 * `FiniteElement.lagrangeSpace_eq_map_splineSpace` — the bridge between the two views.
@@ -111,31 +109,6 @@ theorem meshSize_nonneg (n : ℕ) (x : ℕ → ℝ) : 0 ≤ meshSize n x :=
 theorem sub_le_meshSize {n : ℕ} (x : ℕ → ℝ) {j : ℕ} (hj : j < n) :
     x (j + 1) - x j ≤ meshSize n x :=
   (Finset.le_fold_max _).2 (Or.inr ⟨j, Finset.mem_range.2 hj, le_rfl⟩)
-
-/-! ### The embedding `H^1(a, b) ↪ C([a, b], ℝ)` -/
-
--- TODO(backbone): general facts about `H^1(a, b)`; natural home
--- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.toContinuousMap`.
-/-- **The embedding `H^1(a, b) ↪ C([a, b], ℝ)` is injective**: the continuous representative
-determines the `L²` class of the function, and the weak derivative is determined by the function
-almost everywhere (`SobolevMultiIndex.ext_of_fn_ae_eq`). -/
-theorem toContinuousMap_injective (hab : a < b) :
-    Function.Injective (SobolevInterval.toContinuousMap hab) := by
-  intro u v huv
-  have h1 := SobolevInterval.coe_toContinuousMap_ae_eq hab u
-  have h2 := SobolevInterval.coe_toContinuousMap_ae_eq hab v
-  rw [huv] at h1
-  exact SobolevMultiIndex.ext_of_fn_ae_eq (h1.trans h2.symm)
-
--- TODO(backbone): same home as `toContinuousMap_injective`.
-/-- **A function of `H^1(a, b)` continuous on `[a, b]` is the continuous representative of an
-element**: if `g` is continuous on `[a, b]` and `MemSobolevInterval g 1 a b`, then some
-`u ∈ H^1(a, b)` has `g` as its continuous representative. -/
-theorem exists_toContinuousMap_eq (hab : a < b) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
-    (hmem : MemSobolevInterval g 1 a b) :
-    ∃ u : SobolevInterval 1 a b, ∀ t : Icc a b, SobolevInterval.toContinuousMap hab u t = g t := by
-  obtain ⟨u, hu⟩ := hmem.exists_sobolevMultiIndex
-  exact ⟨u, fun t ↦ SobolevInterval.toContinuousMap_eq_of_continuousOn hab u hg hu t⟩
 
 /-! ### The finite element spaces -/
 
@@ -218,7 +191,7 @@ theorem exists_mem_lagrangeSpace {n k : ℕ} {x : ℕ → ℝ} (hab : a < b)
       (Finset.le_sup' C (Finset.mem_univ j))
   obtain ⟨hmem, -⟩ :=
     memSobolevInterval_of_piecewise_contDiffOn hymono hy0 hylast hgcont hg' hbdd
-  obtain ⟨u, hu⟩ := exists_toContinuousMap_eq hab hgcont hmem
+  obtain ⟨u, hu⟩ := SobolevInterval.exists_toContinuousMap_eq hab hgcont hmem
   exact ⟨u, ContinuousMap.ext fun t ↦ (hu t).trans (hfg t).symm⟩
 
 /-- **`X_h^k` is the spline space read inside `H^1(a, b)`**: an element of `H^1(a, b)` lies in
@@ -249,7 +222,8 @@ noncomputable def lagrangeSpaceEquiv {n : ℕ} {x : ℕ → ℝ} (hab : a < b)
     (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (k : ℕ) :
     lagrangeSpace hab n x k ≃ₗ[ℝ] Spline.splineSpace a b n x k 0 :=
   LinearEquiv.ofBijective (toSplineSpace hab n x k)
-    ⟨fun u v huv ↦ Subtype.ext (toContinuousMap_injective hab (congrArg Subtype.val huv)),
+    ⟨fun u v huv ↦
+        Subtype.ext (SobolevInterval.toContinuousMap_injective hab (congrArg Subtype.val huv)),
       fun f ↦ by
         obtain ⟨u, hu⟩ := exists_mem_lagrangeSpace hab hx hn f.2
         exact ⟨⟨u, by rw [mem_lagrangeSpace_iff, hu]; exact f.2⟩, Subtype.ext hu⟩⟩
@@ -1203,7 +1177,7 @@ theorem integral_Ioo_eq_sum_panels (hx : Spline.IsPartition a b n x) {F : ℝ �
     (hF : ∀ k, IntervalIntegrable F volume (x k) (x (k + 1))) :
     ∫ t in Ioo a b, F t = ∑ k ∈ Finset.range n, ∫ t in (x k)..(x (k + 1)), F t := by
   rw [intervalIntegral.sum_integral_adjacent_intervals (a := x) fun k _ ↦ hF k,
-    ← EllipticInterval.intervalIntegral_eq_setIntegral_Ioo hx.le, hx.first, hx.last]
+    ← intervalIntegral.integral_eq_setIntegral_Ioo hx.le, hx.first, hx.last]
 
 end PanelSum
 

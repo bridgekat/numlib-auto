@@ -1,5 +1,6 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Topology.Algebra.Module.ContinuousLinearMap.Invertible
+import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Matrix.OperatorNorm
 
 /-!
@@ -30,123 +31,15 @@ On `Matrix n n ℝ` the update is `Matrix.broydenUpdate`, bridged to the operato
 step of every superlinear convergence proof for Broyden's method. The superlinear convergence
 theorem itself ([quarteroni2000numerical] Property 7.2, the Dennis–Moré theory) is not formalized.
 
-Two auxiliary facts are proved here because the library lacks them and they are what the
-estimates rest on: the mean value inequality with the derivative frozen at a *third* point,
-`‖F y - F x - F' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖` (Dennis–Schnabel Lemma
-4.1.15, `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add`, which belongs beside
-`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` in `Numlib/Analysis/Calculus/MeanValue`),
-and the Frobenius-norm contraction of the projection off a line,
-`‖A (1 - s sᵀ / sᵀ s)‖_F ≤ ‖A‖_F` (`Matrix.frobenius_norm_mul_one_sub_le`), by Pythagoras in the
-trace form `‖A‖_F² = tr(Aᵀ A)`.
+The estimates rest on two auxiliary facts: the mean value inequality with the derivative frozen
+at a *third* point, `‖F y - F x - F' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`
+(Dennis–Schnabel Lemma 4.1.15, `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add` of
+`Numlib/Analysis/Calculus/MeanValue`), and the Frobenius-norm contraction of the projection off a
+line, `‖A (1 - s sᵀ / sᵀ s)‖_F ≤ ‖A‖_F` (`Matrix.frobenius_norm_mul_one_sub_le` of
+`Numlib/Analysis/Matrix/OperatorNorm`, Pythagoras in the trace form `‖A‖_F² = tr(Aᵀ A)`).
 -/
 
 open scoped InnerProductSpace
-
-/-! ### The mean value inequality with the derivative taken at a third point -/
-
-section MeanValue
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
-  [NormedSpace ℝ F]
-
-/-- **Mean value inequality with the derivative frozen at a third point** (Dennis–Schnabel
-Lemma 4.1.15): if `f` has derivative `f' w` on a convex set `s` containing `x` and `y`, and
-`‖f' w - f' z‖ ≤ L ‖w - z‖` on `s` for some point `z` (not necessarily in `s`), then
-`‖f y - f x - f' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`.
-
-The case `z = x` is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` of
-`Numlib/Analysis/Calculus/MeanValue`, whose proof this follows: along the segment
-`t ↦ f (x + t (y - x)) - f x - t f' z (y - x)` the derivative is bounded by
-`L ‖y - x‖ ((1 - t) ‖x - z‖ + t ‖y - z‖)`, which is the derivative of the boundary
-`L ‖y - x‖ (‖x - z‖ t + (‖y - z‖ - ‖x - z‖) t² / 2)`. -/
-theorem Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le_add {f : E → F}
-    {f' : E → E →L[ℝ] F} {s : Set E} (hs : Convex ℝ s) (hf : ∀ w ∈ s, HasFDerivAt f (f' w) w)
-    {L : ℝ} {x y z : E} (hx : x ∈ s) (hy : y ∈ s) (hL : ∀ w ∈ s, ‖f' w - f' z‖ ≤ L * ‖w - z‖) :
-    ‖f y - f x - f' z (y - x)‖ ≤ L / 2 * (‖x - z‖ + ‖y - z‖) * ‖y - x‖ := by
-  set a : ℝ := ‖x - z‖ with ha
-  set b : ℝ := ‖y - z‖ with hb
-  have hmem : ∀ t ∈ Set.Icc (0 : ℝ) 1, x + t • (y - x) ∈ s := by
-    intro t ht
-    have h := hs hx hy (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t) ht.1 (by ring)
-    have he : x + t • (y - x) = (1 - t) • x + t • y := by module
-    rw [he]
-    exact h
-  have hcd : ∀ t : ℝ, HasDerivAt (fun v : ℝ => x + v • (y - x)) (y - x) t := fun t => by
-    simpa only [id_eq, one_smul] using ((hasDerivAt_id t).smul_const (y - x)).const_add x
-  have hd : ∀ t ∈ Set.Icc (0 : ℝ) 1,
-      HasDerivAt (fun v : ℝ => f (x + v • (y - x)) - f x - v • (f' z (y - x)))
-        (f' (x + t • (y - x)) (y - x) - f' z (y - x)) t := by
-    intro t ht
-    have h1 := (hf _ (hmem t ht)).comp_hasDerivAt t (hcd t)
-    have h2 : HasDerivAt (fun v : ℝ => v • (f' z (y - x))) (f' z (y - x)) t := by
-      simpa only [id_eq, one_smul] using (hasDerivAt_id t).smul_const (f' z (y - x))
-    exact (h1.sub_const (f x)).sub h2
-  have hB : ∀ t : ℝ,
-      HasDerivAt (fun v : ℝ => L * ‖y - x‖ * (a * v + (b - a) * (v ^ 2 / 2)))
-        (L * ‖y - x‖ * (a + (b - a) * t)) t := by
-    intro t
-    have h1 : HasDerivAt (fun v : ℝ => v ^ 2 / 2) t t := by
-      simpa using (hasDerivAt_pow 2 t).div_const 2
-    have h2 : HasDerivAt (fun v : ℝ => a * v + (b - a) * (v ^ 2 / 2)) (a * 1 + (b - a) * t) t :=
-      ((hasDerivAt_id' t).const_mul a).add (h1.const_mul (b - a))
-    have h3 : HasDerivAt (fun v : ℝ => L * ‖y - x‖ * (a * v + (b - a) * (v ^ 2 / 2)))
-        (L * ‖y - x‖ * (a * 1 + (b - a) * t)) t := h2.const_mul (L * ‖y - x‖)
-    rwa [mul_one] at h3
-  have hbound : ∀ t ∈ Set.Ico (0 : ℝ) 1,
-      ‖f' (x + t • (y - x)) (y - x) - f' z (y - x)‖ ≤ L * ‖y - x‖ * (a + (b - a) * t) := by
-    intro t ht
-    have h1 : f' (x + t • (y - x)) (y - x) - f' z (y - x)
-        = (f' (x + t • (y - x)) - f' z) (y - x) := by simp
-    have h3 : ‖f' (x + t • (y - x)) - f' z‖ ≤ L * ‖x + t • (y - x) - z‖ :=
-      hL _ (hmem t ⟨ht.1, ht.2.le⟩)
-    have h4 : ‖x + t • (y - x) - z‖ ≤ (1 - t) * a + t * b := by
-      have he : x + t • (y - x) - z = (1 - t) • (x - z) + t • (y - z) := by module
-      rw [he]
-      refine (norm_add_le _ _).trans (le_of_eq ?_)
-      rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg ht.1,
-        abs_of_nonneg (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t)]
-    have hL0 : 0 ≤ L * ‖x + t • (y - x) - z‖ := (norm_nonneg _).trans h3
-    have h5 : L * ‖x + t • (y - x) - z‖ ≤ L * ((1 - t) * a + t * b) := by
-      rcases le_or_gt 0 L with hL' | hL'
-      · exact mul_le_mul_of_nonneg_left h4 hL'
-      · -- `L < 0` forces `x = y = z`, and then both sides vanish
-        have hxz : ‖x - z‖ = 0 := by
-          have h := hL x hx
-          have := norm_nonneg (f' x - f' z)
-          have := norm_nonneg (x - z)
-          nlinarith
-        have hyz : ‖y - z‖ = 0 := by
-          have h := hL y hy
-          have := norm_nonneg (f' y - f' z)
-          have := norm_nonneg (y - z)
-          nlinarith
-        have h0 : ‖x + t • (y - x) - z‖ = 0 := by
-          have := norm_nonneg (x + t • (y - x) - z)
-          nlinarith
-        have ha0 : a = 0 := hxz
-        have hb0 : b = 0 := hyz
-        rw [h0, ha0, hb0]
-        simp
-    rw [h1]
-    calc ‖(f' (x + t • (y - x)) - f' z) (y - x)‖
-        ≤ ‖f' (x + t • (y - x)) - f' z‖ * ‖y - x‖ := ContinuousLinearMap.le_opNorm _ _
-      _ ≤ L * ((1 - t) * a + t * b) * ‖y - x‖ :=
-          mul_le_mul_of_nonneg_right (h3.trans h5) (norm_nonneg _)
-      _ = L * ‖y - x‖ * (a + (b - a) * t) := by ring
-  have hzero : ‖f (x + (0 : ℝ) • (y - x)) - f x - (0 : ℝ) • (f' z (y - x))‖
-      ≤ L * ‖y - x‖ * (a * 0 + (b - a) * ((0 : ℝ) ^ 2 / 2)) := by simp
-  have key := image_norm_le_of_norm_deriv_right_le_deriv_boundary
-    (f := fun v : ℝ => f (x + v • (y - x)) - f x - v • (f' z (y - x)))
-    (f' := fun v : ℝ => f' (x + v • (y - x)) (y - x) - f' z (y - x)) (a := 0) (b := 1)
-    (fun t ht => (hd t ht).continuousAt.continuousWithinAt)
-    (fun t ht => (hd t ⟨ht.1, ht.2.le⟩).hasDerivWithinAt) hzero hB hbound
-    (Set.right_mem_Icc.2 zero_le_one)
-  have hx1 : x + (1 : ℝ) • (y - x) = y := by module
-  rw [hx1, one_smul] at key
-  calc ‖f y - f x - f' z (y - x)‖ ≤ L * ‖y - x‖ * (a * 1 + (b - a) * ((1 : ℝ) ^ 2 / 2)) := key
-    _ = L / 2 * (a + b) * ‖y - x‖ := by ring
-
-end MeanValue
 
 namespace Broyden
 
@@ -277,15 +170,6 @@ open WithLp
 noncomputable def broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) : Matrix n n ℝ :=
   Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s
 
-/-- The outer product `u vᵀ` acts on `EuclideanSpace ℝ n` as the rank-one operator
-`w ↦ ⟪v, w⟫ u`. -/
-theorem toEuclideanCLM_vecMulVec (u v : n → ℝ) :
-    toEuclideanCLM (𝕜 := ℝ) (vecMulVec u v)
-      = InnerProductSpace.rankOne ℝ (toLp 2 u) (toLp 2 v) := by
-  ext w i
-  simp [ofLp_toEuclideanCLM, InnerProductSpace.rankOne_apply,
-    EuclideanSpace.inner_eq_star_dotProduct, vecMulVec_mulVec, dotProduct_comm, mul_comm]
-
 /-- The matrix update is the operator update: `toEuclideanCLM (broydenUpdate Q s y)` is
 `Broyden.update` of `toEuclideanCLM Q` with the secant pair read in `EuclideanSpace ℝ n`. -/
 theorem toEuclideanCLM_broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) :
@@ -297,19 +181,6 @@ theorem toEuclideanCLM_broydenUpdate (Q : Matrix n n ℝ) (s y : n → ℝ) :
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
-
-/-- The Frobenius norm of an outer product is at most the product of the Euclidean norms (it is
-in fact equal to it). -/
-theorem frobenius_norm_vecMulVec_le (u v : n → ℝ) :
-    ‖vecMulVec u v‖ ≤ ‖toLp 2 u‖ * ‖toLp 2 v‖ := by
-  rw [vecMulVec_eq Unit, ← frobenius_norm_replicateCol (ι := Unit) u,
-    ← frobenius_norm_replicateRow (ι := Unit) v]
-  exact frobenius_norm_mul _ _
-
-omit [DecidableEq n] in
-/-- `sᵀ s` is the squared Euclidean norm of `s`. -/
-theorem dotProduct_self_eq_norm_sq (s : n → ℝ) : s ⬝ᵥ s = ‖toLp 2 s‖ ^ 2 := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
 
 /-- **Least change in the Frobenius norm** (Dennis–Schnabel Lemma 8.1.1): among all matrices
 `Q'` satisfying the secant condition `Q' s = y`, Broyden's update is the closest to `Q`, since
@@ -327,47 +198,6 @@ theorem frobenius_norm_broydenUpdate_sub_le (Q Q' : Matrix n n ℝ) {s y : n →
         gcongr
         exact frobenius_norm_mulVec_le _ _
     _ = ‖Q' - Q‖ := by field_simp
-
-/-- The Frobenius norm squared of a real matrix is the trace of `Aᵀ A`. -/
-private theorem frobenius_norm_sq_eq_trace_transpose (A : Matrix n n ℝ) :
-    ‖A‖ ^ 2 = trace (Aᵀ * A) := by
-  have h := frobenius_norm_sq_eq_trace (𝕜 := ℝ) A
-  simpa [conjTranspose_eq_transpose_of_trivial] using h
-
-/-- **Projecting the rows off a line does not increase the Frobenius norm**: with
-`P = s sᵀ / (sᵀ s)` the orthogonal projector onto `span {s}`, `‖A (1 - P)‖_F ≤ ‖A‖_F`. This is
-Pythagoras, `‖A‖_F² = ‖A (1 - P)‖_F² + ‖A P‖_F²`, in the trace form `‖M‖_F² = tr(Mᵀ M)`, using
-that `P` is symmetric and idempotent. -/
-theorem frobenius_norm_mul_one_sub_le (A : Matrix n n ℝ) {s : n → ℝ} (hs : s ≠ 0) :
-    ‖A * (1 - (1 / (s ⬝ᵥ s)) • vecMulVec s s)‖ ≤ ‖A‖ := by
-  set P : Matrix n n ℝ := (1 / (s ⬝ᵥ s)) • vecMulVec s s with hPdef
-  have hss : s ⬝ᵥ s ≠ 0 := by
-    rw [dotProduct_self_eq_norm_sq]
-    exact pow_ne_zero _ (norm_ne_zero_iff.2 (by simpa using hs))
-  have hPt : Pᵀ = P := by
-    rw [hPdef, transpose_smul, transpose_vecMulVec]
-  have hPP : P * P = P := by
-    rw [hPdef, Matrix.smul_mul, Matrix.mul_smul, vecMulVec_mul_vecMulVec, vecMulVec_smul,
-      smul_smul, smul_smul]
-    congr 1
-    field_simp
-  have hQt : (1 - P)ᵀ = 1 - P := by rw [transpose_sub, transpose_one, hPt]
-  have hQQ : (1 - P) * (1 - P) = 1 - P := by
-    rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, Matrix.one_mul, Matrix.one_mul,
-      Matrix.mul_one, hPP]
-    abel
-  -- the three squared norms as traces
-  have h1 : ‖A * (1 - P)‖ ^ 2 = trace (Aᵀ * A * (1 - P)) := by
-    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hQt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hQQ, ← Matrix.mul_assoc]
-  have h2 : ‖A * P‖ ^ 2 = trace (Aᵀ * A * P) := by
-    rw [frobenius_norm_sq_eq_trace_transpose, transpose_mul, hPt, Matrix.mul_assoc,
-      trace_mul_comm, Matrix.mul_assoc, Matrix.mul_assoc, hPP, ← Matrix.mul_assoc]
-  have h3 : ‖A‖ ^ 2 = trace (Aᵀ * A) := frobenius_norm_sq_eq_trace_transpose A
-  have hsum : ‖A * (1 - P)‖ ^ 2 + ‖A * P‖ ^ 2 = ‖A‖ ^ 2 := by
-    rw [h1, h2, h3, ← trace_add, ← Matrix.mul_add, sub_add_cancel, Matrix.mul_one]
-  have hle : ‖A * (1 - P)‖ ^ 2 ≤ ‖A‖ ^ 2 := by nlinarith [sq_nonneg ‖A * P‖]
-  exact le_of_sq_le_sq hle (norm_nonneg _)
 
 /-- **Bounded deterioration of Broyden's update** (Dennis–Schnabel Lemma 8.2.1): if
 `F` has Jacobian `J` on a convex set `D` containing `x` and `x₊ = x + s`, with

@@ -47,3 +47,6 @@ id = "IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor"
 
 [[node]]
 id = "one_le_youngRadius"
+
+[[node]]
+id = "complexify_sorIterationMatrix"

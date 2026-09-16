@@ -644,11 +644,6 @@ noncomputable def croutLower : Matrix n n K := (luUpper Aᵀ)ᵀ
 transposed back. -/
 noncomputable def croutUpper : Matrix n n K := (luLower Aᵀ)ᵀ
 
-omit [Fintype n] in
-/-- The strict leading principal submatrices of the transpose are the transposes. -/
-theorem strictLeadingPrincipalSubmatrix_transpose {R : Type*} (A : Matrix n n R) (k : n) :
-    Aᵀ.strictLeadingPrincipalSubmatrix k = (A.strictLeadingPrincipalSubmatrix k)ᵀ := rfl
-
 /-- **The Crout factorization**: with nonsingular strict leading principal submatrices,
 `A = croutLower A * croutUpper A` with `croutLower A` lower triangular and `croutUpper A` unit
 upper triangular. -/

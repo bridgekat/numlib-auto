@@ -28,9 +28,8 @@ as there. Exercises 1–7 and 11–13 are numerical or are not used by the text.
 * `equation_5_72`, `equation_5_72_eq`, `exercise_5_8` — the companion matrix and the roots of a
   polynomial as eigenvalues.
 * `exercise_5_9` — `(λ, Uᴴ x)` is an eigenpair of `Uᴴ A U`.
-* `tendsto_smul_powerIterate_of_mem_iSup`, `sum_repr_sdiff_mem_iSup_maxGenEigenspace`,
-  `exercise_5_10` — the power method converges to the eigenpair dominant *among the components
-  present in `q⁽⁰⁾`*.
+* `sum_repr_sdiff_mem_iSup_maxGenEigenspace`, `exercise_5_10` — the power method converges to
+  the eigenpair dominant *among the components present in `q⁽⁰⁾`*.
 * `exercise_5_14` — the cyclic permutation matrix is fixed by the QR iteration, with and without
   the Rayleigh shift, and its eigenvalues are the cube roots of unity.
 
@@ -40,10 +39,10 @@ Exercise 10 assumes "all the assumptions needed to apply the power method except
 concludes convergence to `(λ₂, x₂)`; for that `λ₂` must dominate the eigenvalues that do occur in
 `q⁽⁰⁾`, `|λ₂| > |λ_i|` for `i ≥ 3`, which is the hypothesis stated, together with `α₂ ≠ 0`.
 The backbone's power-method theorem asks the dominant eigenvalue to dominate *all* eigenvalues of
-`A`, which `λ₂` does not; `tendsto_smul_powerIterate_of_mem_iSup` is the form with the domination
-restricted to the generalized eigenspaces the starting vector meets, which the backbone's decay
-estimate `Krylov.exists_norm_pow_apply_le_of_mem_iSup` already supports. Exercise 14's claim about
-Program 37 (the double-shift variant) is a computation and is not a node.
+`A`, which `λ₂` does not; the backbone's `Krylov.tendsto_smul_powerIterate_of_mem_iSup` is the
+form with the domination restricted to the generalized eigenspaces the starting vector meets.
+Exercise 14's claim about Program 37 (the double-shift variant) is a computation and is not a
+node.
 -/
 
 open Filter Finset Matrix Polynomial Topology
@@ -108,66 +107,6 @@ theorem exercise_5_9 {A U : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ Matrix.unita
 
 /-! ### Exercise 10: the power method with `α₁ = 0` -/
 
--- TODO(backbone): natural home `Numlib/Eigen/PowerMethod`, beside
--- `Krylov.tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`, whose domination
--- hypothesis quantifies over all the eigenvalues of `A`; this is the form for a starting vector
--- with no component along the dominant eigenvectors, which Exercise 5.10 needs.
-/-- **Essential convergence of the power method, dominance restricted to the components present.**
-Let `x₀ = u + w` with `A u = l • u`, `u ≠ 0`, `l ≠ 0`, and `w` in the span of the generalized
-eigenspaces of the eigenvalues `μ` with `p μ`, all of which have `‖μ‖ < r` for some `r < ‖l‖`.
-Then the normalized power iterates converge essentially to `u/‖u‖`,
-`(‖l‖/l)^k • powerIterate A x₀ k → u/‖u‖`, and their Rayleigh quotients converge to `l`. Backbone
-`Krylov.exists_norm_pow_apply_le_of_mem_iSup`, `Krylov.norm_inv_pow_smul_pow_apply_sub_le` and
-`Krylov.tendsto_inner_apply_of_tendsto_smul`. -/
-theorem tendsto_smul_powerIterate_of_mem_iSup {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜} {u w x₀ : E}
-    {p : 𝕜 → Prop} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
-    (hw : w ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) {r : ℝ} (hr0 : 0 ≤ r) (hrl : r < ‖l‖)
-    (hdom : ∀ μ, p μ → A.HasEigenvalue μ → ‖μ‖ < r) (hx₀ : x₀ = u + w) :
-    Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • Krylov.powerIterate A x₀ k) atTop
-        (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) ∧
-      Tendsto (fun k => (inner 𝕜 (Krylov.powerIterate A x₀ k) (A (Krylov.powerIterate A x₀ k)) : 𝕜))
-        atTop (𝓝 l) := by
-  have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
-  obtain ⟨C, hC⟩ := Krylov.exists_norm_pow_apply_le_of_mem_iSup hw hdom
-  set z : ℕ → E := fun k => (l ^ k)⁻¹ • (A ^ k) x₀ with hz
-  -- the scaled iterates converge to `u`
-  have hzt : Tendsto z atTop (𝓝 u) := by
-    rw [tendsto_iff_norm_sub_tendsto_zero]
-    refine squeeze_zero (g := fun k => C * (r / ‖l‖) ^ k) (fun k => norm_nonneg _)
-      (fun k => ?_) ?_
-    · change ‖(l ^ k)⁻¹ • (A ^ k) x₀ - u‖ ≤ C * (r / ‖l‖) ^ k
-      rw [hx₀]
-      exact Krylov.norm_inv_pow_smul_pow_apply_sub_le hl hu hC k
-    · rw [← mul_zero C]
-      exact (tendsto_pow_atTop_nhds_zero_of_lt_one (div_nonneg hr0 hl0.le)
-        ((div_lt_one hl0).mpr hrl)).const_mul C
-  -- normalizing
-  have hApp : ∀ k, (A ^ k) x₀ = l ^ k • z k := fun k => by
-    rw [hz, smul_smul, mul_inv_cancel₀ (pow_ne_zero k hl), one_smul]
-  have hcnorm : ∀ k, ‖((‖l‖ : 𝕜) / l) ^ k‖ = 1 := fun k => by
-    rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_norm, div_self hl0.ne', one_pow]
-  have heq : ∀ k, ((‖l‖ : 𝕜) / l) ^ k • Krylov.powerIterate A x₀ k = (‖z k‖ : 𝕜)⁻¹ • z k := by
-    intro k
-    rw [Krylov.powerIterate_eq_smul, hApp k, norm_smul, norm_pow, smul_smul, smul_smul]
-    congr 1
-    have h1 : ((‖l‖ : 𝕜)) ≠ 0 := RCLike.ofReal_ne_zero.mpr hl0.ne'
-    push_cast
-    rw [div_pow]
-    field_simp
-  have hnorm : Tendsto (fun k => ((‖z k‖ : 𝕜))⁻¹) atTop (𝓝 ((‖u‖ : 𝕜)⁻¹)) := by
-    refine Tendsto.inv₀ ?_ (RCLike.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hu0))
-    exact (RCLike.continuous_ofReal.tendsto _).comp hzt.norm
-  have hlim : Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • Krylov.powerIterate A x₀ k) atTop
-      (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
-    simpa only [heq] using hnorm.smul hzt
-  refine ⟨hlim, ?_⟩
-  have hun : ‖u‖ ≠ 0 := norm_ne_zero_iff.mpr hu0
-  refine Krylov.tendsto_inner_apply_of_tendsto_smul hA (u := (‖u‖ : 𝕜)⁻¹ • u) ?_ ?_ hcnorm hlim
-  · rw [map_smul, hu, smul_comm]
-  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
-      inv_mul_cancel₀ hun]
-
 /-- The components of `q₀ = ∑ α_i x_i` outside a set `s` of indices lie in the span of the
 generalized eigenspaces of the eigenvalues `λ_i`, `i ∉ s`: the `p`-general form of
 `sum_repr_erase_mem_iSup_maxGenEigenspace`. -/
@@ -189,7 +128,7 @@ theorem sum_repr_sdiff_mem_iSup_maxGenEigenspace {A : Matrix (Fin n) (Fin n) ℂ
 `(λ₂, x₂)`: `c_k • q⁽ᵏ⁾ → x₂/‖x₂‖₂` for the unimodular scalars
 `c_k = (|λ₂|/λ₂)^k |α₂|/α₂`, and `ν⁽ᵏ⁾ → λ₂`. The power method never needed `λ₂` to dominate the
 spectrum of `A`, only the components present in `q⁽⁰⁾`
-(`tendsto_smul_powerIterate_of_mem_iSup`). -/
+(`Krylov.tendsto_smul_powerIterate_of_mem_iSup`). -/
 theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n} (hi : i₁ ≠ i₀)
@@ -228,7 +167,7 @@ theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
   have hdom' : ∀ μ, ‖μ‖ < ‖lam i₁‖ → Module.End.HasEigenvalue (toEuclideanLin A) μ →
       ‖μ‖ < r := fun μ hμ hev => by
     have hμ' : μ ∈ Set.range lam := by
-      rw [← spectrum_eq_range_of_basis x hx]
+      rw [← Module.End.spectrum_eq_range_of_basis x hx]
       exact Module.End.hasEigenvalue_iff_mem_spectrum.mp hev
     obtain ⟨i, rfl⟩ := hμ'
     have hiS : i ∈ S := by
@@ -238,7 +177,7 @@ theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
       rw [hm]
       exact_mod_cast Finset.le_sup (f := fun i => ‖lam i‖₊) hiS
     rw [hr]; linarith
-  obtain ⟨hlim, hray⟩ := tendsto_smul_powerIterate_of_mem_iSup
+  obtain ⟨hlim, hray⟩ := Krylov.tendsto_smul_powerIterate_of_mem_iSup
     (LinearMap.continuous_of_finiteDimensional _) hl₁ hu hu0 hw hr0 hrl hdom' hsplit
   simp only [powerIterate_eq_krylov A hq₀, rayleighQuotient]
   refine ⟨?_, hray⟩

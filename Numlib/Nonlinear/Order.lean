@@ -245,6 +245,19 @@ theorem tendsto_sub_div_sub_of_hasDerivAt {φ' : ℝ} (hφ : HasDerivAt φ φ' �
   refine this.congr fun k => ?_
   simp [slope, hx, hα, Function.comp, vsub_eq_sub, div_eq_inv_mul]
 
+/-- **(6.18) from a derivative within a set**: along an orbit `x (k+1) = φ (x k)` converging to
+`α = φ α` inside a set `s` on which `φ` has derivative `φ'` at `α`, and never equal to `α`, the
+error ratios tend to `φ' α`. This is the form needed when `α` is an endpoint of `[a, b]`. -/
+theorem tendsto_sub_div_sub_of_hasDerivWithinAt {s : Set ℝ} {φ'α : ℝ}
+    (hφ : HasDerivWithinAt φ φ'α s α) (hα : φ α = α) {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k))
+    (hs : ∀ k, x k ∈ s) (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
+    Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 φ'α) := by
+  have hmem : Tendsto x atTop (𝓝[s \ {α}] α) :=
+    tendsto_nhdsWithin_iff.2 ⟨hlim, Eventually.of_forall fun k => ⟨hs k, hne k⟩⟩
+  have := (hasDerivWithinAt_iff_tendsto_slope.1 hφ).comp hmem
+  refine this.congr fun k => ?_
+  simp [slope, hx, hα, Function.comp, vsub_eq_sub, div_eq_inv_mul]
+
 /-- Along a sequence avoiding `α` whose error ratios tend to `l ≠ 1`, the increments
 `x (k+1) - x k` are eventually nonzero: `x (k+1) - x k = (x k - α) (r k - 1)` with `r k → l`. -/
 theorem eventually_sub_succ_ne_zero_of_tendsto_ratio {x : ℕ → ℝ} {l : ℝ} (hne : ∀ k, x k ≠ α)

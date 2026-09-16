@@ -473,7 +473,7 @@ the topology of `ℝ^{n×n}`, hence independent of `N`. A matrix `A` is *converg
 theorem tendsto_iff_tendsto_seminorm (N : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (hN : ∀ M, N M = 0 → M = 0) (M : ℕ → Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto M atTop (𝓝 B) ↔ Tendsto (fun k => N (M k - B)) atTop (𝓝 0) := by
-  rw [tendsto_seminorm_iff_tendsto_norm N hN fun k => M k - B]
+  rw [Seminorm.tendsto_apply_iff_tendsto_norm N hN fun k => M k - B]
   exact tendsto_iff_norm_sub_tendsto_zero
 
 open scoped Matrix.Norms.L2Operator in

@@ -417,6 +417,64 @@ theorem isCoerciveWith_iff_hermitianPart (A : E →L[𝕜] E) (c : ℝ) :
   simp only [LinearMap.IsCoerciveWith, ContinuousLinearMap.coe_coe,
     re_inner_hermitianPart_apply]
 
+omit [CompleteSpace E] in
+/-- `A + r` is coercive with constant `c + r`, since the shift adds `r ‖x‖²` to the quadratic form.
+-/
+theorem isCoerciveWith_add_smul_one {A : E →L[𝕜] E} {c : ℝ}
+    (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} :
+    ((A + (r : 𝕜) • (1 : E →L[𝕜] E) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith (c + r) := by
+  intro x
+  have happ : (A + (r : 𝕜) • (1 : E →L[𝕜] E)) x = A x + (r : 𝕜) • x := by simp
+  have h1 : RCLike.re (inner 𝕜 ((r : 𝕜) • x) x) = r * ‖x‖ ^ 2 := by
+    rw [inner_smul_left, RCLike.conj_ofReal, inner_self_eq_norm_sq_to_K, ← RCLike.ofReal_pow,
+      ← RCLike.ofReal_mul, RCLike.ofReal_re]
+  have hq : c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := hA x
+  rw [ContinuousLinearMap.coe_coe, happ, inner_add_left, map_add, h1, add_mul]
+  linarith
+
+section Complex
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
+
+/-- The real spectrum of a coercive operator with constant `c` lies in `[c, ∞)`: for `t < c` the
+shift `A - t` is coercive, hence invertible by Lax–Milgram. -/
+theorem le_of_mem_spectrum_real_of_isCoerciveWith {A : F →L[ℂ] F} {c : ℝ}
+    (hA : (A : F →ₗ[ℂ] F).IsCoerciveWith c) {t : ℝ} (ht : t ∈ spectrum ℝ A) : c ≤ t := by
+  by_contra hlt
+  rw [not_le] at hlt
+  have hcoer := isCoerciveWith_add_smul_one hA (r := -t)
+  obtain ⟨e, he, -⟩ :=
+    ContinuousLinearMap.exists_equiv_of_isCoerciveWith (by linarith : (0 : ℝ) < c + -t) hcoer
+  have hu : IsUnit (e : F →L[ℂ] F) :=
+    ⟨(ContinuousLinearEquiv.unitsEquiv ℂ F).symm e, by
+      ext x
+      rw [← ContinuousLinearEquiv.unitsEquiv_apply ℂ F, MulEquiv.apply_symm_apply]
+      rfl⟩
+  rw [he] at hu
+  refine spectrum.notMem_iff.mpr ?_ ht
+  have : algebraMap ℝ (F →L[ℂ] F) t - A = -(A + ((-t : ℝ) : ℂ) • (1 : F →L[ℂ] F)) := by
+    rw [Algebra.algebraMap_eq_smul_one, Complex.coe_smul]
+    module
+  rw [this]
+  exact hu.neg
+
+/-- The real spectrum of an operator whose quadratic form is enclosed in `[γ, δ]` lies in `[γ, δ]`
+(both bounds by `ContinuousLinearMap.le_of_mem_spectrum_real_of_isCoerciveWith`, the upper one
+applied to `-A`); no finite dimension is needed. -/
+theorem mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy {A : F →L[ℂ] F} {γ δ : ℝ}
+    (hA : (A : F →ₗ[ℂ] F).IsSymmetricBoundedBy γ δ) {t : ℝ} (ht : t ∈ spectrum ℝ A) :
+    t ∈ Set.Icc γ δ := by
+  refine ⟨le_of_mem_spectrum_real_of_isCoerciveWith hA.isCoerciveWith ht, ?_⟩
+  have hneg : ((-A : F →L[ℂ] F) : F →ₗ[ℂ] F).IsCoerciveWith (-δ) := fun x => by
+    have := hA.re_inner_le x
+    simp only [ContinuousLinearMap.coe_coe, neg_apply, inner_neg_left, map_neg] at this ⊢
+    linarith
+  have h := le_of_mem_spectrum_real_of_isCoerciveWith hneg (t := -t) (by
+    rw [← spectrum.neg_eq, Set.mem_neg, neg_neg]; exact ht)
+  linarith
+
+end Complex
+
 end ContinuousLinearMap
 
 namespace Matrix
@@ -454,5 +512,11 @@ theorem posDef_iff_isSymmetricCoercive (M : Matrix n n 𝕜) :
     have h := (LinearMap.isCoercive_iff_forall_pos _).1 hc (WithLp.toLp 2 y) (by simpa using hy)
     rw [re_inner_toEuclideanLin] at h
     simpa using h
+
+/-- The Euclidean operator of a positive definite matrix is symmetric coercive; dot-notation form
+of `Matrix.posDef_iff_isSymmetricCoercive`. -/
+theorem PosDef.isSymmetricCoercive_toEuclideanLin {M : Matrix n n 𝕜} (hM : M.PosDef) :
+    (toEuclideanLin M).IsSymmetricCoercive :=
+  (Matrix.posDef_iff_isSymmetricCoercive M).1 hM
 
 end Matrix

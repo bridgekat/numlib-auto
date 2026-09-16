@@ -259,20 +259,6 @@ theorem equation_8_23 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK :
 
 /-! ### Theorem 8.3: the `L²` estimates -/
 
-/-- Interval integrals between two points of `[a, b]` only see the integrand almost everywhere on
-`(a, b)`. -/
--- TODO(backbone): `Numlib/Approximation/SobolevInterpolation` has this lemma as a `private`
--- `intervalIntegral_congr_ae_Ioo_of_mem`; it should be public there.
-theorem intervalIntegral_congr_ae_Ioo_of_mem {f g : ℝ → ℝ}
-    (h : f =ᵐ[volume.restrict (Ioo a b)] g) {s t : ℝ} (hs : s ∈ Icc a b) (ht : t ∈ Icc a b) :
-    ∫ r in s..t, f r = ∫ r in s..t, g r := by
-  refine intervalIntegral.integral_congr_ae ?_
-  have ha : ∀ᵐ r : ℝ, r ≠ a := by simp [ae_iff, measure_singleton]
-  have hb : ∀ᵐ r : ℝ, r ≠ b := by simp [ae_iff, measure_singleton]
-  filter_upwards [(ae_restrict_iff' measurableSet_Ioo).1 h, ha, hb] with r hr hra hrb hrI
-  have hr' : r ∈ Icc a b := uIcc_subset_Icc hs ht (uIoc_subset_uIcc hrI)
-  exact hr ⟨lt_of_le_of_ne hr'.1 (Ne.symm hra), lt_of_le_of_ne hr'.2 hrb⟩
-
 /-- Inside a subinterval `I_j`, the `m`-th derivative of `Π_h^k F` (extended to `ℝ` by its
 endpoint values) is the `m`-th derivative of the Lagrange interpolant of `F` on `I_j`. -/
 theorem iteratedDeriv_IccExtend_piecewiseLagrangeInterp
@@ -445,7 +431,7 @@ theorem theorem_8_3_L2 (hx : Spline.IsPartition a b K fun j => (x j : ℝ)) (hK 
   have hs0 : 0 ≤ SobolevInterval.seminorm (k + 1) a b u := apply_nonneg _ _
   have hmesh' : ∀ j ≤ K - 1, (x (j + 1) : ℝ) - x j ≤ h := fun j hj => hmesh j (by omega)
   have hkey := integral_sq_sub_piecewisePolyInterpCLM_le_seminorm hab u hnode hmesh' hF
-  rw [intervalIntegral_congr_ae_Ioo_of_mem (g := fun t =>
+  rw [intervalIntegral.integral_congr_ae_Ioo_of_mem (g := fun t =>
       (IccExtend hab.le F t - IccExtend hab.le (piecewisePolyInterpCLM (K - 1) k x
         (equispacedPanelNodes x k) F) t) ^ 2) ?_ (left_mem_Icc.mpr hab.le)
       (right_mem_Icc.mpr hab.le)]

@@ -1,0 +1,4 @@
+desc = '''
+Measure theory: Mathlib-shaped glue about integrals and `Lp` spaces over an interval, kept apart
+from the numerical analysis that uses it.
+'''

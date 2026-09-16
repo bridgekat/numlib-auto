@@ -34,9 +34,6 @@ id = "lagrangian_hasFDerivAt"
 id = "existsUnique_multipliers_of_isLocalMinOn"
 
 [[node]]
-id = "isLittleO_taylor_two"
-
-[[node]]
 id = "isLocalMin_of_lagrangian_second_order"
 
 [[node]]

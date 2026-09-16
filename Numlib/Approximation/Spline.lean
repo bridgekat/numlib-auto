@@ -4,6 +4,7 @@ import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Quadrature
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # Polynomial splines and interpolatory cubic splines
@@ -172,11 +173,6 @@ theorem node_eq_of_uniform {h : ℝ} (huni : ∀ j < n, x (j + 1) - x j = h) {i 
       ring
 
 end IsPartition
-
-/-- Real polynomial functions are smooth. -/
-theorem _root_.Polynomial.contDiff_eval (P : ℝ[X]) (N : WithTop ℕ∞) :
-    ContDiff ℝ N fun t : ℝ => P.eval t := by
-  simpa only [coe_aeval_eq_eval] using P.contDiff_aeval (𝕜 := ℝ) N
 
 /-! ### The spline space -/
 
@@ -1892,6 +1888,11 @@ theorem contDiff_naturalInterp : ContDiff ℝ 2 (naturalInterp n x f) :=
 theorem contDiff_clampedInterp (f'0 f'n : ℝ) : ContDiff ℝ 2 (clampedInterp n x f f'0 f'n) :=
   contDiff_cubicInterp hx hn zero_le_one le_rfl zero_le_one le_rfl
 
+/-- The clamped spline is an interpolatory cubic spline of its data. -/
+theorem isCubicInterp_clampedInterp (f : ℕ → ℝ) (f'0 f'n : ℝ) :
+    IsCubicInterp a b n x f (clampedInterp n x f f'0 f'n) :=
+  (isCubicInterp_cubicInterp hx hn zero_le_one le_rfl zero_le_one le_rfl).1
+
 /-- **The natural spline has vanishing second derivative at the endpoints.** -/
 theorem iteratedDeriv_two_naturalInterp_endpoints :
     iteratedDeriv 2 (naturalInterp n x f) a = 0 ∧ iteratedDeriv 2 (naturalInterp n x f) b = 0 := by
@@ -2254,13 +2255,6 @@ theorem iteratedDeriv_two_eq_iteratedDerivWithin_of_contDiffOn {t : ℝ} (ht : t
 
 end C2
 
-/-- Two functions agreeing on the open interval have the same interval integral. -/
-theorem intervalIntegral_congr_Ioo {g h : ℝ → ℝ} (hab : a ≤ b) (hgh : ∀ t ∈ Ioo a b, g t = h t) :
-    ∫ t in a..b, g t = ∫ t in a..b, h t := by
-  rw [intervalIntegral.integral_of_le hab, intervalIntegral.integral_of_le hab,
-    MeasureTheory.integral_Ioc_eq_integral_Ioo, MeasureTheory.integral_Ioc_eq_integral_Ioo]
-  exact MeasureTheory.setIntegral_congr_fun measurableSet_Ioo fun t ht => hgh t ht
-
 /-! ### Holladay's identity and the minimum-norm property -/
 
 section Holladay
@@ -2583,7 +2577,7 @@ theorem intervalIntegral_iteratedDerivWithin_two_eq {s : ℝ → ℝ} (hs : Cont
     ∫ t in a..b, Φ t (iteratedDerivWithin 2 s (Icc a b) t)
       = ∫ t in a..b, Φ t (iteratedDeriv 2 s t) := by
   have hab := hx.lt_of_pos hn
-  refine intervalIntegral_congr_Ioo hab.le fun t ht => ?_
+  refine intervalIntegral.integral_congr_Ioo hab.le fun t ht => ?_
   rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hab) hs.contDiffAt
     (Ioo_subset_Icc_self ht)]
 
@@ -2613,7 +2607,7 @@ theorem holladay_eq_iff :
   constructor
   · exact eqOn_of_integral_sq_deriv2_eq hx hn hf hs (Or.inl ⟨h0, h1⟩)
   · intro heq
-    refine intervalIntegral_congr_Ioo hab.le fun t ht => ?_
+    refine intervalIntegral.integral_congr_Ioo hab.le fun t ht => ?_
     rw [Filter.EventuallyEq.iteratedDerivWithin_eq (x := t) (s := Icc a b) (n := 2)
       (f := naturalInterp n x fun i => f (x i)) (g := f)
       (eventually_nhdsWithin_of_forall fun u hu => (heq hu).symm)
@@ -3415,6 +3409,28 @@ theorem IsCubicInterp.derivWithin_right (hx : IsPartition a b n x) (hn : 1 ≤ n
     (hs.eqOn_panelCubic hx hn le_rfl) (right_mem_Icc.mpr hlt.le)).1
   calc derivWithin s (Icc a b) b = derivWithin s (Icc a b) (x n) := by rw [hx.last]
     _ = _ := this
+
+/-- **The clamped end conditions are a closure of type (8.48)**: if the cubic spline `s`
+interpolating the values `f_i` has `s'(a) = f'₀` and `s'(b) = f'_n` (derivatives within `[a, b]`),
+its moments satisfy `2 M₀ + M₁ = (6/h₁)((f₁ - f₀)/h₁ - f'₀)` and
+`M_{n-1} + 2 M_n = (6/h_n)(f'_n - (f_n - f_{n-1})/h_n)`, by the one-sided slope formulas
+`IsCubicInterp.derivWithin_left` and `IsCubicInterp.derivWithin_right`. -/
+theorem IsCubicInterp.hasClosure_of_derivWithin (hx : IsPartition a b n x) (hn : 1 ≤ n)
+    {f : ℕ → ℝ} {s : ℝ → ℝ} (hs : IsCubicInterp a b n x f s) {f'0 f'n : ℝ}
+    (h0 : derivWithin s (Icc a b) a = f'0) (h1 : derivWithin s (Icc a b) b = f'n) :
+    HasClosure a b n x 1 1 (6 / (x 1 - x 0) * ((f 1 - f 0) / (x 1 - x 0) - f'0))
+      (6 / (x n - x (n - 1)) * (f'n - (f n - f (n - 1)) / (x n - x (n - 1)))) s := by
+  have hA := hs.derivWithin_left hx hn
+  have hB := hs.derivWithin_right hx hn
+  have hl : x 0 < x 1 := hx.step 0 hn
+  have hr : x (n - 1) < x n := hx.lt (Nat.sub_one_lt_of_le hn le_rfl) le_rfl
+  rw [h0, panelCubicD1_left hl] at hA
+  rw [h1, panelCubicD1_right hr] at hB
+  have hl' : x 1 - x 0 ≠ 0 := sub_ne_zero.mpr hl.ne'
+  have hr' : x n - x (n - 1) ≠ 0 := sub_ne_zero.mpr hr.ne'
+  refine ⟨?_, ?_⟩
+  · rw [hA]; field_simp; ring
+  · rw [hB]; field_simp; ring
 
 /-- **Existence and uniqueness of the periodic cubic spline** ([quarteroni2000numerical] (8.44)
 with `k = 3`): for `n ≥ 2` panels there is exactly one interpolatory cubic spline of the data with

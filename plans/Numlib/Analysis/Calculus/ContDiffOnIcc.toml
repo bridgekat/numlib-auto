@@ -1,0 +1,20 @@
+[[node]]
+id = "contDiffOn_two_of_hasDerivWithinAt"
+
+[[node]]
+id = "iteratedDeriv_two_eq_of_hasDerivWithinAt"
+
+[[node]]
+id = "hasDerivAt_of_contDiffOn_two"
+
+[[node]]
+id = "eqOn_zero_of_hasDerivAt_zero"
+
+[[node]]
+id = "hasDerivWithinAt_derivWithin_of_contDiffOn_two"
+
+[[node]]
+id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three"
+
+[[node]]
+id = "hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn"

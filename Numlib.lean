@@ -1,5 +1,6 @@
 import Numlib.Algebra.LinearRecurrence
 import Numlib.Analysis.Calculus.ContDiffMapIcc
+import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
@@ -199,6 +200,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
+import Numlib.Analysis.SpecialFunctions.Log
 import Numlib.Analysis.SpecialFunctions.SineSum
 import Numlib.Analysis.SpecialFunctions.Tribonacci
 import Numlib.Analysis.Wavelet.ContinuousTransform
@@ -344,6 +346,7 @@ import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearAlgebra.Subspace
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.TwoGrid

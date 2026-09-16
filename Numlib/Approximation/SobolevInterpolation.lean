@@ -47,47 +47,7 @@ right-hand side `∫ g²` could be the junk value `0` of a non-integrable functi
 open Polynomial MeasureTheory intervalIntegral Set
 open scoped Interval Topology
 
-/-! ### Cauchy–Schwarz on an interval -/
-
-/-- **Cauchy–Schwarz for an interval integral**: `|∫_s^t g| ≤ √(v - u) √(∫_u^v g²)` for
-`s, t ∈ [u, v]` and `g` square integrable on `[u, v]`. -/
-theorem abs_intervalIntegral_le_sqrt_mul_sqrt {u v : ℝ} (huv : u ≤ v) {g : ℝ → ℝ}
-    (hg : IntervalIntegrable g volume u v) (hg2 : IntervalIntegrable (fun t => g t ^ 2) volume u v)
-    {s t : ℝ} (hs : s ∈ Icc u v) (ht : t ∈ Icc u v) :
-    |∫ r in s..t, g r| ≤ √(v - u) * √(∫ r in u..v, g r ^ 2) := by
-  have hsub : Ι s t ⊆ Ι u v := by
-    rw [← uIcc_of_le huv] at hs ht
-    exact uIoc_subset_uIoc_of_uIcc_subset_uIcc (uIcc_subset_uIcc hs ht)
-  have hgabs : IntervalIntegrable (fun r => |g r|) volume u v := hg.abs
-  -- reduce to the integral of `|g|` over the whole panel
-  have h1 : |∫ r in s..t, g r| ≤ ∫ r in u..v, |g r| := by
-    calc |∫ r in s..t, g r| ≤ ∫ r in Ι s t, |g r| := by
-          simpa only [Real.norm_eq_abs] using norm_integral_le_integral_norm_uIoc (f := g)
-      _ ≤ ∫ r in Ι u v, |g r| :=
-          setIntegral_mono_set hgabs.def' (Filter.Eventually.of_forall fun r => abs_nonneg _)
-            hsub.eventuallyLE
-      _ = ∫ r in u..v, |g r| := by rw [uIoc_of_le huv, integral_of_le huv]
-  -- Hölder with `p = q = 2` against the constant `1`
-  have h2 : ∫ r in u..v, |g r| ≤ √(v - u) * √(∫ r in u..v, g r ^ 2) := by
-    rw [integral_of_le huv, integral_of_le huv]
-    have hmeas : AEStronglyMeasurable g (volume.restrict (Ioc u v)) := hg.1.aestronglyMeasurable
-    have hgL2 : MemLp (fun r => |g r|) (ENNReal.ofReal 2) (volume.restrict (Ioc u v)) := by
-      rw [ENNReal.ofReal_ofNat]
-      exact ((memLp_two_iff_integrable_sq hmeas).2 hg2.1).abs
-    have h1L2 : MemLp (fun _ : ℝ => (1 : ℝ)) (ENNReal.ofReal 2) (volume.restrict (Ioc u v)) :=
-      memLp_const 1
-    have := integral_mul_le_Lp_mul_Lq_of_nonneg Real.HolderConjugate.two_two
-      (Filter.Eventually.of_forall fun _ => zero_le_one)
-      (Filter.Eventually.of_forall fun _ => abs_nonneg _) h1L2 hgL2
-    simp only [one_mul, Real.rpow_two, one_pow, sq_abs, ← Real.sqrt_eq_rpow] at this
-    rwa [setIntegral_const, Real.volume_real_Ioc_of_le huv, smul_eq_mul, mul_one] at this
-  exact h1.trans h2
-
 /-! ### The panel estimates -/
-
-/-- Real polynomial functions are smooth. -/
-private theorem contDiff_eval (P : ℝ[X]) (N : WithTop ℕ∞) : ContDiff ℝ N fun t : ℝ => P.eval t := by
-  simpa only [coe_aeval_eq_eval] using P.contDiff_aeval (𝕜 := ℝ) N
 
 /-- **The pointwise panel estimate** ([quarteroni2000numerical] (8.30)–(8.31) for general `k`): on a
 panel `[u, v]` of length at most `h`, if `p` of degree `≤ k` interpolates `f` at `k + 1` distinct
@@ -257,14 +217,6 @@ theorem sum_integral_sq_sub_panelPoly_le {a b : ℝ} {n k m : ℕ} {x : ℕ → 
   · rw [panelPoly, Lagrange.eval_interpolate_at_node _ (hnode.injective j hj).injOn
       (Finset.mem_univ i), hF]
 
-/-- Interval integrals do not see the endpoints: two functions agreeing on the open interval have
-the same integral over it. -/
-private theorem intervalIntegral_congr_Ioo {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
-    (h : EqOn f g (Ioo u v)) : ∫ t in u..v, f t = ∫ t in u..v, g t := by
-  rw [integral_of_le huv, integral_of_le huv, integral_Ioc_eq_integral_Ioo,
-    integral_Ioc_eq_integral_Ioo]
-  exact setIntegral_congr_fun measurableSet_Ioo h
-
 section PiecewisePolynomial
 
 variable {a b : ℝ} {n k : ℕ} {x : ℕ → Icc a b} {node : ℕ → Fin (k + 1) → Icc a b}
@@ -341,7 +293,7 @@ theorem integral_sq_deriv_sub_piecewisePolyInterpCLM_le (hnode : IsPanelNodes n 
   calc ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ), (deriv f t - deriv G t) ^ 2
       = ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ),
           (iteratedDeriv 1 f t - (derivative^[1] (panelPoly node j F)).eval t) ^ 2 :=
-        Finset.sum_congr rfl fun j hj => intervalIntegral_congr_Ioo
+        Finset.sum_congr rfl fun j hj => integral_congr_Ioo
           (hnode.step j (Nat.lt_succ_iff.1 (Finset.mem_range.1 hj))).le
           (hpanel j (Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)))
     _ ≤ h ^ (2 * (k + 1 - 1)) * ∫ t in a..b, g t ^ 2 :=
@@ -491,110 +443,6 @@ section Sobolev
 
 variable {a b : ℝ}
 
-/-- Interval integrals between two points of `[a, b]` only see the integrand almost everywhere on
-`(a, b)`. -/
-private theorem intervalIntegral_congr_ae_Ioo_of_mem {f g : ℝ → ℝ}
-    (h : f =ᵐ[volume.restrict (Ioo a b)] g) {s t : ℝ} (hs : s ∈ Icc a b) (ht : t ∈ Icc a b) :
-    ∫ r in s..t, f r = ∫ r in s..t, g r := by
-  refine intervalIntegral.integral_congr_ae ?_
-  have ha : ∀ᵐ r : ℝ, r ≠ a := by simp [ae_iff, measure_singleton]
-  have hb : ∀ᵐ r : ℝ, r ≠ b := by simp [ae_iff, measure_singleton]
-  filter_upwards [(ae_restrict_iff' measurableSet_Ioo).1 h, ha, hb] with r hr hra hrb hrI
-  have hr' : r ∈ Icc a b := uIcc_subset_Icc hs ht (uIoc_subset_uIcc hrI)
-  exact hr ⟨lt_of_le_of_ne hr'.1 (Ne.symm hra), lt_of_le_of_ne hr'.2 hrb⟩
-
-namespace SobolevInterval
-
-/-- **The `C^k` representative of an element of `H^{k+1}(a, b)`**: a function `f` of class `C^k` on
-all of `ℝ` that agrees almost everywhere on `(a, b)` with `u`, whose derivatives `f^{(j)}` for
-`j ≤ k` agree almost everywhere with the weak derivatives `u^{(j)}`, and whose `k`-th derivative is
-the integral of the top weak derivative `u^{(k+1)}` between any two points of `[a, b]`. By
-induction on `k`, integrating the representative of the weak derivative `u' ∈ H^k(a, b)`. -/
-theorem exists_contDiff_ae_eq (hab : a < b) {k : ℕ} (u : SobolevInterval (k + 1) a b) :
-    ∃ f : ℝ → ℝ, ContDiff ℝ k f ∧
-      (∀ j : Fin (k + 1), deriv u j.castSucc =ᵐ[volume.restrict (Ioo a b)] iteratedDeriv j f) ∧
-      ∀ s ∈ Icc a b, ∀ t ∈ Icc a b,
-        iteratedDeriv k f t - iteratedDeriv k f s = ∫ r in s..t, deriv u (Fin.last (k + 1)) r := by
-  induction k with
-  | zero =>
-    -- the antiderivative of the weak derivative, cut off outside `(a, b)`
-    set w : ℝ → ℝ := (Ioo a b).indicator (deriv u 1) with hw
-    have hwae : (deriv u 1 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] w :=
-      (ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall fun t ht => by
-        rw [hw, indicator_of_mem ht])
-    have hwint : Integrable w := (integrableOn_deriv u 1).integrable_indicator measurableSet_Ioo
-    obtain ⟨c, hc⟩ := (hasWeakDerivOn_fn u).exists_ae_eq_integral hab (integrableOn_deriv u 1)
-    refine ⟨fun x => c + ∫ t in a..x, w t, ?_, fun j => ?_, fun s hs t ht => ?_⟩
-    · rw [Nat.cast_zero, contDiff_zero]
-      exact continuous_const.add (hwint.continuous_primitive a)
-    · obtain rfl : j = 0 := Fin.ext (by omega)
-      refine hc.trans ((ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall
-        fun x hx => ?_))
-      simp only [Fin.val_zero, iteratedDeriv_zero]
-      rw [intervalIntegral_congr_ae_Ioo_of_mem hwae (left_mem_Icc.2 hab.le)
-        (Ioo_subset_Icc_self hx)]
-    · simp only [iteratedDeriv_zero]
-      rw [add_sub_add_left_eq_sub, integral_interval_sub_left hwint.intervalIntegrable
-        hwint.intervalIntegrable, intervalIntegral_congr_ae_Ioo_of_mem hwae.symm hs ht]
-      rfl
-  | succ k ih =>
-    obtain ⟨f', hf', hae', hftc'⟩ := ih (derivCLM (k + 1) a b u)
-    simp only [deriv_derivCLM, Fin.succ_last] at hae' hftc'
-    have hcont : Continuous f' := hf'.continuous
-    -- the representative of `u` is an antiderivative of the representative of `u'`
-    obtain ⟨c, hc⟩ := (hasWeakDerivOn_deriv_succ u 0).exists_ae_eq_integral hab
-      (integrableOn_deriv u _)
-    have h1 : (deriv u (0 : Fin (k + 2)).succ : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] f' := by
-      simpa only [Fin.succ_zero_eq_one, Fin.castSucc_zero, Fin.val_zero, iteratedDeriv_zero]
-        using hae' 0
-    set f : ℝ → ℝ := fun x => c + ∫ t in a..x, f' t with hf
-    have hderiv : ∀ x, HasDerivAt f (f' x) x := fun x =>
-      (hcont.integral_hasStrictDerivAt a x).hasDerivAt.const_add c
-    have hderiv' : _root_.deriv f = f' := funext fun x => (hderiv x).deriv
-    have hfC : ContDiff ℝ (k + 1) f :=
-      contDiff_succ_iff_deriv.2 ⟨fun x => (hderiv x).differentiableAt, by simp,
-        hderiv' ▸ hf'⟩
-    have hiter : ∀ j, iteratedDeriv (j + 1) f = iteratedDeriv j f' := fun j => by
-      rw [iteratedDeriv_succ', hderiv']
-    refine ⟨f, hfC, fun j => ?_, fun s hs t ht => ?_⟩
-    · induction j using Fin.cases with
-      | zero =>
-        refine hc.trans ((ae_restrict_iff' measurableSet_Ioo).2 (Filter.Eventually.of_forall
-          fun x hx => ?_))
-        simp only [Fin.val_zero, iteratedDeriv_zero, hf]
-        rw [intervalIntegral_congr_ae_Ioo_of_mem h1 (left_mem_Icc.2 hab.le)
-          (Ioo_subset_Icc_self hx)]
-      | succ i =>
-        rw [Fin.val_succ, hiter, ← Fin.succ_castSucc]
-        exact hae' i
-    · rw [hiter]
-      exact hftc' s hs t ht
-
-/-- The `L²(a, b)` norm of a weak derivative, as an interval integral. -/
-theorem norm_deriv_sq_eq_integral (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
-    (j : Fin (m + 1)) : ‖deriv u j‖ ^ 2 = ∫ t in a..b, deriv u j t ^ 2 := by
-  rw [norm_sq_eq_integral_sq, integral_of_le hab, integral_Ioc_eq_integral_Ioo]
-  simp only [sq_abs]
-
-/-- **The Sobolev seminorm as an interval integral**: `|u|²_{H^m(a, b)} = ∫_a^b |u^{(m)}|²`. -/
-theorem seminorm_sq_eq_integral (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b) :
-    seminorm m a b u ^ 2 = ∫ t in a..b, deriv u (Fin.last m) t ^ 2 := by
-  rw [seminorm_apply, norm_deriv_sq_eq_integral hab]
-
-/-- The weak derivatives are interval integrable on `[a, b]`. -/
-theorem intervalIntegrable_deriv (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
-    (j : Fin (m + 1)) : IntervalIntegrable (deriv u j) volume a b :=
-  (integrableOn_deriv u j).intervalIntegrable_of_Ioo (left_mem_Icc.2 hab) (right_mem_Icc.2 hab)
-
-/-- The squares of the weak derivatives are interval integrable on `[a, b]`. -/
-theorem intervalIntegrable_deriv_sq (hab : a ≤ b) {m : ℕ} (u : SobolevInterval m a b)
-    (j : Fin (m + 1)) : IntervalIntegrable (fun t => deriv u j t ^ 2) volume a b := by
-  have h : IntegrableOn (fun t => deriv u j t ^ 2) (Ioo a b) :=
-    (memLp_two_iff_integrable_sq (Lp.aestronglyMeasurable (deriv u j))).1 (Lp.memLp (deriv u j))
-  exact h.intervalIntegrable_of_Ioo (left_mem_Icc.2 hab) (right_mem_Icc.2 hab)
-
-end SobolevInterval
-
 open SobolevInterval in
 /-- **Theorem 8.3 over `H^{k+1}(a, b)`, broken form** ([quarteroni2000numerical] (8.26) with
 `C = 1`): for `u ∈ H^{k+1}(a, b)` with continuous representative `F` (any `F : C([a, b], ℝ)`
@@ -638,7 +486,7 @@ theorem sobolevSeminorm_sub_piecewisePolyInterp_le (hab : a < b) {k : ℕ}
         (iteratedDeriv m (IccExtend hab.le F) t - (derivative^[m] (panelPoly node j F)).eval t) ^ 2
       = ∑ j ∈ Finset.range (n + 1), ∫ t in (x j : ℝ)..(x (j + 1) : ℝ),
           (iteratedDeriv m f t - (derivative^[m] (panelPoly node j F)).eval t) ^ 2 :=
-        Finset.sum_congr rfl fun j hj => intervalIntegral_congr_Ioo
+        Finset.sum_congr rfl fun j hj => integral_congr_Ioo
           (hnode.step j (Nat.lt_succ_iff.1 (Finset.mem_range.1 hj))).le
           (hpanel j (Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)))
     _ ≤ _ := sum_integral_sq_sub_panelPoly_le hnode hmesh hf (intervalIntegrable_deriv hab.le u _)
@@ -664,8 +512,8 @@ theorem integral_sq_sub_piecewisePolyInterpCLM_le_seminorm (hab : a < b) {k : �
     eqOn_Icc_of_ae_eq hab F.continuous.Icc_extend'.continuousOn hf.continuous.continuousOn
       (hF.symm.trans hf0)
   have hF' : ∀ t, F t = f t := fun t => by rw [← IccExtend_val hab.le F t, hFf t.2]
-  rw [seminorm_sq_eq_integral hab.le, intervalIntegral_congr_Ioo hab.le
-    (g := fun t => (f t - IccExtend hab.le (piecewisePolyInterpCLM n k x node F) t) ^ 2)
+  rw [seminorm_sq_eq_integral hab.le, integral_congr_Ioo hab.le
+    (h := fun t => (f t - IccExtend hab.le (piecewisePolyInterpCLM n k x node F) t) ^ 2)
     (fun t ht => by simp only [hFf (Ioo_subset_Icc_self ht)])]
   exact integral_sq_sub_piecewisePolyInterpCLM_le hnode hmesh hf
     (intervalIntegrable_deriv hab.le u _) (intervalIntegrable_deriv_sq hab.le u _) hftc hF'

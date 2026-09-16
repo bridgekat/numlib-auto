@@ -23,18 +23,6 @@ id = "Stationary.Splitting.mulVecStep_fixed_iff"
 id = "Stationary.Splitting.mulVecStep_mulVecStep"
 
 [[node]]
-id = "Matrix.diagPart_mulVec_apply"
-
-[[node]]
-id = "Matrix.strictLower_mulVec_apply"
-
-[[node]]
-id = "Matrix.strictUpper_mulVec_apply"
-
-[[node]]
-id = "Matrix.mulVec_apply_eq_add_sum_erase"
-
-[[node]]
 id = "Matrix.jorSweep"
 
 [[node]]

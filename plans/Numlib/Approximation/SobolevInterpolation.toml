@@ -1,7 +1,4 @@
 [[node]]
-id = "abs_intervalIntegral_le_sqrt_mul_sqrt"
-
-[[node]]
 id = "abs_iteratedDeriv_sub_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.30)–(8.31)"
 
@@ -28,21 +25,6 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.27), first esti
 [[node]]
 id = "integral_sq_deriv_sub_piecewiseLinearInterpCLM_le"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.27), second estimate"
-
-[[node]]
-id = "SobolevInterval.exists_contDiff_ae_eq"
-
-[[node]]
-id = "SobolevInterval.norm_deriv_sq_eq_integral"
-
-[[node]]
-id = "SobolevInterval.seminorm_sq_eq_integral"
-
-[[node]]
-id = "SobolevInterval.intervalIntegrable_deriv"
-
-[[node]]
-id = "SobolevInterval.intervalIntegrable_deriv_sq"
 
 [[node]]
 id = "sobolevSeminorm_sub_piecewisePolyInterp_le"

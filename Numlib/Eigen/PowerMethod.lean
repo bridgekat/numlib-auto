@@ -1418,6 +1418,62 @@ theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {
   · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
       inv_mul_cancel₀ hun]
 
+/-- **Essential convergence of the power method, dominance restricted to the components present.**
+Let `x₀ = u + w` with `A u = l • u`, `u ≠ 0`, `l ≠ 0`, and `w` in the span of the generalized
+eigenspaces of the eigenvalues `μ` with `p μ`, all of which have `‖μ‖ < r` for some `r < ‖l‖`.
+Then the normalized power iterates converge essentially to `u/‖u‖`,
+`(‖l‖/l)^k • powerIterate A x₀ k → u/‖u‖`, and their Rayleigh quotients converge to `l`. Unlike
+`Krylov.tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`, the domination
+hypothesis quantifies only over the eigenvalues whose generalized eigenvectors occur in `w`, which
+is the form for a starting vector with no component along the dominant eigenvectors. -/
+theorem tendsto_smul_powerIterate_of_mem_iSup {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜}
+    {u w x₀ : E} {p : 𝕜 → Prop} (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
+    (hw : w ∈ ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) {r : ℝ} (hr0 : 0 ≤ r) (hrl : r < ‖l‖)
+    (hdom : ∀ μ, p μ → A.HasEigenvalue μ → ‖μ‖ < r) (hx₀ : x₀ = u + w) :
+    Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k) atTop
+        (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) ∧
+      Tendsto (fun k => (inner 𝕜 (powerIterate A x₀ k) (A (powerIterate A x₀ k)) : 𝕜))
+        atTop (𝓝 l) := by
+  have hl0 : (0 : ℝ) < ‖l‖ := norm_pos_iff.mpr hl
+  obtain ⟨C, hC⟩ := exists_norm_pow_apply_le_of_mem_iSup hw hdom
+  set z : ℕ → E := fun k => (l ^ k)⁻¹ • (A ^ k) x₀ with hz
+  -- the scaled iterates converge to `u`
+  have hzt : Tendsto z atTop (𝓝 u) := by
+    rw [tendsto_iff_norm_sub_tendsto_zero]
+    refine squeeze_zero (g := fun k => C * (r / ‖l‖) ^ k) (fun k => norm_nonneg _)
+      (fun k => ?_) ?_
+    · change ‖(l ^ k)⁻¹ • (A ^ k) x₀ - u‖ ≤ C * (r / ‖l‖) ^ k
+      rw [hx₀]
+      exact norm_inv_pow_smul_pow_apply_sub_le hl hu hC k
+    · rw [← mul_zero C]
+      exact (tendsto_pow_atTop_nhds_zero_of_lt_one (div_nonneg hr0 hl0.le)
+        ((div_lt_one hl0).mpr hrl)).const_mul C
+  -- normalizing
+  have hApp : ∀ k, (A ^ k) x₀ = l ^ k • z k := fun k => by
+    rw [hz, smul_smul, mul_inv_cancel₀ (pow_ne_zero k hl), one_smul]
+  have hcnorm : ∀ k, ‖((‖l‖ : 𝕜) / l) ^ k‖ = 1 := fun k => by
+    rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_norm, div_self hl0.ne', one_pow]
+  have heq : ∀ k, ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k = (‖z k‖ : 𝕜)⁻¹ • z k := by
+    intro k
+    rw [powerIterate_eq_smul, hApp k, norm_smul, norm_pow, smul_smul, smul_smul]
+    congr 1
+    have h1 : ((‖l‖ : 𝕜)) ≠ 0 := RCLike.ofReal_ne_zero.mpr hl0.ne'
+    push_cast
+    rw [div_pow]
+    field_simp
+  have hnorm : Tendsto (fun k => ((‖z k‖ : 𝕜))⁻¹) atTop (𝓝 ((‖u‖ : 𝕜)⁻¹)) := by
+    refine Tendsto.inv₀ ?_ (RCLike.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hu0))
+    exact (RCLike.continuous_ofReal.tendsto _).comp hzt.norm
+  have hlim : Tendsto (fun k => ((‖l‖ : 𝕜) / l) ^ k • powerIterate A x₀ k) atTop
+      (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
+    simpa only [heq] using hnorm.smul hzt
+  refine ⟨hlim, ?_⟩
+  have hun : ‖u‖ ≠ 0 := norm_ne_zero_iff.mpr hu0
+  refine tendsto_inner_apply_of_tendsto_smul hA (u := (‖u‖ : 𝕜)⁻¹ • u) ?_ ?_ hcnorm hlim
+  · rw [map_smul, hu, smul_comm]
+  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
+      inv_mul_cancel₀ hun]
+
 /-- **The Rayleigh quotients of inverse iteration converge to the eigenvalue nearest the shift**
 ([quarteroni2000numerical] (5.28), `σ^(k) → λ_m`): under the hypotheses of
 `Krylov.tendsto_smul_inverseIterate`, the Rayleigh quotients computed on `A` itself at the

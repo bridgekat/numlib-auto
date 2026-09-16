@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # Gronwall's lemma in integral form, and linear differential inequalities
@@ -23,8 +24,9 @@ satisfying `F' ≤ p F + q` on `[a, b)` is bounded by the solution of the equali
 integrated, and no integrability of `F'` is needed. The integral form for a continuous weight
 follows by applying it to the majorant `Ψ t = ∫_a^t p φ` shifted by `g t (e^{P} - 1)`, whose
 right derivative is `p φ` by the fundamental theorem of calculus
-(`Gronwall.hasDerivWithinAt_integral_Ici`); the book's version with a merely integrable weight
-follows from the continuous one by approximating the weight in `L¹` by continuous functions.
+(`intervalIntegral.hasDerivWithinAt_integral_Ici`); the book's version with a merely integrable
+weight follows from the continuous one by approximating the weight in `L¹` by continuous
+functions.
 
 Conventions. Intervals are `Icc a b` as in Mathlib's Gronwall file (the books' `[t₀, t₀ + T]` is
 `a = t₀`, `b = t₀ + T`); derivatives are right derivatives on `Ico a b` together with continuity
@@ -39,30 +41,6 @@ open MeasureTheory (volume)
 namespace Gronwall
 
 variable {a b t : ℝ}
-
-/-- The fundamental theorem of calculus in the form the comparison arguments below need: the
-primitive `u ↦ ∫_a^u p` of a function continuous on `Icc a b` has right derivative `p t` at every
-`t ∈ Ico a b`. -/
-theorem hasDerivWithinAt_integral_Ici {p : ℝ → ℝ} (hp : ContinuousOn p (Icc a b))
-    (ht : t ∈ Ico a b) : HasDerivWithinAt (fun u => ∫ s in a..u, p s) (p t) (Ici t) t := by
-  have ht' : t ∈ Icc a b := Ico_subset_Icc_self ht
-  have hint : IntervalIntegrable p volume a t := by
-    rw [intervalIntegrable_iff_integrableOn_Icc_of_le ht.1]
-    exact (hp.mono (Icc_subset_Icc_right ht.2.le)).integrableOn_Icc
-  have : Fact (t ∈ Icc a b) := ⟨ht'⟩
-  have h : HasDerivWithinAt (fun u => ∫ s in a..u, p s) (p t) (Icc a b) t :=
-    integral_hasDerivWithinAt_right hint
-      (hp.stronglyMeasurableAtFilter_nhdsWithin measurableSet_Icc t) (hp t ht')
-  exact h.mono_of_mem_nhdsWithin (Icc_mem_nhdsGE_of_mem ht)
-
-/-- The primitive `u ↦ ∫_a^u p` of a function continuous on `Icc a b` is continuous there. -/
-theorem continuousOn_integral_Icc {p : ℝ → ℝ} (hp : ContinuousOn p (Icc a b)) :
-    ContinuousOn (fun u => ∫ s in a..u, p s) (Icc a b) := by
-  rcases le_or_gt a b with hab | hab
-  · have h := continuousOn_primitive_interval (a := a) (b := b) (μ := volume) (f := p)
-      (by rw [uIcc_of_le hab]; exact hp.integrableOn_Icc)
-    rwa [uIcc_of_le hab] at h
-  · simp [Icc_eq_empty_of_lt hab]
 
 /-- **Variation-of-constants inequality.** If `F` is continuous on `Icc a b` with right
 derivative `F'` on `Ico a b`, `p` and `q` are continuous on `Icc a b`, and `F' ≤ p F + q` on
@@ -187,38 +165,6 @@ theorem le_mul_exp_integral_of_continuousOn {p g φ : ℝ → ℝ}
   simp only [P, Ψ, integral_same, exp_zero, sub_self, mul_zero, integral_zero, add_zero] at key
   have := hle t ht
   linarith
-
-/-- The `L¹` distance from an interval-integrable weight to a continuous nonnegative function can
-be made arbitrarily small: given `p` integrable on `a..b`, nonnegative on `Icc a b`, and `ε > 0`,
-there is a continuous `q ≥ 0` with `∫ s in a..b, |p s - q s| ≤ ε`. From the density of
-continuous functions in `L¹` (`Integrable.exists_hasCompactSupport_integral_sub_le`), applied to
-the indicator of `Ioc a b`, and truncation at `0`, which does not increase the distance to a
-nonnegative function. -/
-theorem exists_continuous_nonneg_integral_abs_sub_le {p : ℝ → ℝ} (hab : a ≤ b)
-    (hp : IntervalIntegrable p volume a b) (hp0 : ∀ t ∈ Icc a b, 0 ≤ p t) {ε : ℝ} (hε : 0 < ε) :
-    ∃ q : ℝ → ℝ, Continuous q ∧ (∀ s, 0 ≤ q s) ∧ ∫ s in a..b, |p s - q s| ≤ ε := by
-  have hP : MeasureTheory.Integrable ((Ioc a b).indicator p) volume :=
-    (MeasureTheory.integrable_indicator_iff measurableSet_Ioc).2
-      ((intervalIntegrable_iff_integrableOn_Ioc_of_le hab).1 hp)
-  obtain ⟨q₀, -, hq₀, hq₀c, hq₀i⟩ := hP.exists_hasCompactSupport_integral_sub_le hε
-  refine ⟨fun s => max (q₀ s) 0, hq₀c.max continuous_const, fun s => le_max_right _ _, ?_⟩
-  have hpI : MeasureTheory.IntegrableOn p (Ioc a b) volume :=
-    (intervalIntegrable_iff_integrableOn_Ioc_of_le hab).1 hp
-  have hqI : MeasureTheory.IntegrableOn (fun s => max (q₀ s) 0) (Ioc a b) volume :=
-    (hq₀c.max continuous_const).integrableOn_Ioc
-  calc ∫ s in a..b, |p s - max (q₀ s) 0|
-      = ∫ s in Ioc a b, |p s - max (q₀ s) 0| := integral_of_le hab
-    _ ≤ ∫ s in Ioc a b, ‖(Ioc a b).indicator p s - q₀ s‖ := by
-        refine MeasureTheory.setIntegral_mono_on (hpI.sub hqI).abs
-          (hP.sub hq₀i).norm.integrableOn measurableSet_Ioc fun s hs => ?_
-        rw [Set.indicator_of_mem hs, Real.norm_eq_abs]
-        have h0 : 0 ≤ p s := hp0 s (Ioc_subset_Icc_self hs)
-        calc |p s - max (q₀ s) 0| = |max (p s) 0 - max (q₀ s) 0| := by rw [max_eq_left h0]
-          _ ≤ |p s - q₀ s| := abs_max_sub_max_le_abs _ _ _
-    _ ≤ ∫ s, ‖(Ioc a b).indicator p s - q₀ s‖ :=
-        MeasureTheory.setIntegral_le_integral (hP.sub hq₀i).norm
-          (Filter.Eventually.of_forall fun _ => norm_nonneg _)
-    _ ≤ ε := hq₀
 
 /-- **Gronwall's lemma, integral form** ([quarteroni2000numerical] Lemma 11.1 as printed).
 Let `p` be integrable on `a..b` and nonnegative on

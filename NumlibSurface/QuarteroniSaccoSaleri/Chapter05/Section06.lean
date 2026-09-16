@@ -123,20 +123,6 @@ theorem equation_5_38_mem_orthogonalGroup {v : Fin N → ℝ} (hv : v ≠ 0) :
 
 /-! ### (5.39)–(5.42): reflectors that annihilate coordinates -/
 
--- TODO(backbone): `Matrix.householderAxis_ne_zero` is private in `Numlib/LinearAlgebra/Matrix/QR`;
--- this is the same statement, recovered from the unit length of `Matrix.householderVec`.
-/-- The axis `x + sign(x_m) ‖x‖₂ e_m` of (5.39) is nonzero when `x` is. -/
-theorem householderAxis_ne_zero {x : Fin N → ℝ} (hx : x ≠ 0) (m : Fin N) :
-    householderAxis x m ≠ 0 := by
-  intro h
-  have h1 := star_dotProduct_householderVec_self hx m
-  have h0 : householderVec x m = 0 := by
-    change (‖(WithLp.toLp 2 (householderAxis x m) : EuclideanSpace ℝ (Fin N))‖)⁻¹ •
-      householderAxis x m = 0
-    rw [h, smul_zero]
-  rw [h0, star_zero, zero_dotProduct] at h1
-  exact zero_ne_one h1
-
 /-- **The book's reflector of the axis (5.39) is the backbone's**: for every `x` and `m`,
 `equation_5_38 (householderAxis x m) = householder (householderVec x m)`, the backbone's unit
 vector `householderVec x m` being the normalized axis (or `0` when `x = 0`, both sides then being

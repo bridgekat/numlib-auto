@@ -85,10 +85,6 @@ id = "remark_11_2"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 11.2'
 
 [[node]]
-id = "hasDerivWithinAt_derivWithin_of_contDiffOn_two"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
-
-[[node]]
 id = "derivWithin_eq_of_cauchyProblem"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.3'
 

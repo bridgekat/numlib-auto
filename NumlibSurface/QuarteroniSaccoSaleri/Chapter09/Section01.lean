@@ -42,8 +42,9 @@ a target functional `L` is `Quadrature.IsExactOn L w x d`, "interpolatory" is
 * `isInterpolatory_lagrangeQuadrature`, `lagrangeQuadrature_eq_functional` — the formula read in
   the backbone's vocabulary: its weights are `∫ lᵢ`, so it is interpolatory for the integral on
   `C([a, b], ℝ)`, and its value at a continuous function is `Quadrature.functional` of it.
-* `isExactOn_integralIccCLM_iff` — "degree of exactness at least `d`" for a formula `∑ αᵢ f(xᵢ)`
-  on `[a, b]`, stated on real polynomials, is `Quadrature.IsExactOn` for the integral functional.
+* `Quadrature.isExactOn_integralIccCLM_iff` (backbone) — "degree of exactness at least `d`" for a
+  formula `∑ αᵢ f(xᵢ)` on `[a, b]`, stated on real polynomials, is `Quadrature.IsExactOn` for the
+  integral functional.
 * `degreeOfExactness_ge_of_interpolatory` — an interpolatory formula on `n + 1` distinct nodes is
   exact on `ℙ_n`.
 * `isInterpolatory_of_degreeOfExactness` — a formula on `n + 1` distinct nodes exact on `ℙ_n` has
@@ -151,38 +152,6 @@ theorem lagrangeQuadrature_eq_functional (hab : a ≤ b) {x : Fin (n + 1) → �
   rw [Quadrature.functional_apply, lagrangeQuadrature]
   exact Finset.sum_congr rfl fun i _ => by rw [IccExtend_of_mem hab _ (hx i)]
 
-/-- **Degree of exactness, read in the backbone.** A formula `∑ᵢ αᵢ f(xᵢ)` with nodes in `[a, b]`
-has degree of exactness at least `d` — `I_n(p) = I(p)` for every `p ∈ ℙ_d` — exactly when it is
-`Quadrature.IsExactOn` for the integral functional `ContinuousMap.integralIccCLM hab b` on
-`C([a, b], ℝ)`. -/
-theorem isExactOn_integralIccCLM_iff (hab : a ≤ b) {m : ℕ} {x : Fin m → ℝ}
-    (hx : ∀ i, x i ∈ Icc a b) (α : Fin m → ℝ) (d : ℕ) :
-    Quadrature.IsExactOn (ContinuousMap.integralIccCLM hab b) α
-        (fun i => (⟨x i, hx i⟩ : Icc a b)) d ↔
-      ∀ p : ℝ[X], p.degree ≤ d → ∑ i, α i * p.eval (x i) = ∫ t in a..b, p.eval t := by
-  constructor
-  · intro h p hp
-    have hmem : p.toContinuousMapOn (Icc a b) ∈ polyLE (Icc a b) d :=
-      mem_polyLE_iff.mpr ⟨p, hp, fun t => rfl⟩
-    have hval := h _ hmem
-    rw [Quadrature.functional_apply, ContinuousMap.integralIccCLM_apply] at hval
-    simp only [Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply] at hval
-    rw [hval]
-    refine integral_congr fun t ht => ?_
-    rw [uIcc_of_le hab] at ht
-    rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ ht,
-      Polynomial.toContinuousMapOn_apply, Polynomial.toContinuousMap_apply]
-  · intro h q hq
-    obtain ⟨p, hp, hqp⟩ := mem_polyLE_iff.mp hq
-    rw [Quadrature.functional_apply, ContinuousMap.integralIccCLM_apply]
-    calc ∑ i, α i * q ⟨x i, hx i⟩ = ∑ i, α i * p.eval (x i) :=
-          Finset.sum_congr rfl fun i _ => by rw [hqp]
-      _ = ∫ t in a..b, p.eval t := h p hp
-      _ = ∫ t in a..b, ContinuousMap.IccExtend hab q t := by
-          refine integral_congr fun t ht => ?_
-          rw [uIcc_of_le hab] at ht
-          rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ ht, hqp]
-
 /-! ### The degree of exactness of interpolatory formulae -/
 
 /-- **§9.1: "Any interpolatory quadrature formula that makes use of `n + 1` distinct nodes has
@@ -194,7 +163,7 @@ theorem degreeOfExactness_ge_of_interpolatory (hab : a ≤ b) {x : Fin (n + 1) �
     lagrangeQuadrature x a b (fun t => p.eval t) = ∫ t in a..b, p.eval t := by
   have hinj' : Function.Injective fun i => (⟨x i, hx i⟩ : Icc a b) := fun i j h =>
     hinj (congrArg Subtype.val h)
-  exact (isExactOn_integralIccCLM_iff hab hx _ n).1
+  exact (Quadrature.isExactOn_integralIccCLM_iff hab hx _ n).1
     ((Quadrature.isInterpolatory_iff_isExactOn hinj').1
       (isInterpolatory_lagrangeQuadrature hab hx)) p hp
 
@@ -211,7 +180,7 @@ theorem isInterpolatory_of_degreeOfExactness (hab : a ≤ b) {x : Fin (n + 1) �
     hinj (congrArg Subtype.val h)
   funext i
   exact ((Quadrature.isInterpolatory_iff_isExactOn hinj').2
-    ((isExactOn_integralIccCLM_iff hab hx α n).2 hexact) i).trans
+    ((Quadrature.isExactOn_integralIccCLM_iff hab hx α n).2 hexact) i).trans
     (isInterpolatory_lagrangeQuadrature hab hx i).symm
 
 end QuarteroniSaccoSaleri.Chapter09

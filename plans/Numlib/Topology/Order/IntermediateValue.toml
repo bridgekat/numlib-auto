@@ -3,3 +3,9 @@ id = "ContinuousOn.exists_sum_mul_eq_mul_sum"
 
 [[node]]
 id = "ContinuousOn.exists_sum_mul_eq_mul_sum_of_ordConnected"
+
+[[node]]
+id = "Continuous.exists_mem_Ioo_eq_zero_of_mul_neg"
+
+[[node]]
+id = "ContinuousMap.exists_mem_Ioo_eq_zero_of_mul_neg"

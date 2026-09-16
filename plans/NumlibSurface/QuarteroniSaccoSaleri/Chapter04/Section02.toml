@@ -17,9 +17,6 @@ id = "Splitting.consistent"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.6'
 
 [[node]]
-id = "Splitting.isUnit_of_complexSpectralRadius_lt_one"
-
-[[node]]
 id = "Splitting.tendsto"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
 
@@ -32,10 +29,6 @@ id = "property_4_1_spectralRadius_lt_one"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
 [[node]]
-id = "Splitting.exists_mulVec_iterationOperator_eq_smul"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
-
-[[node]]
 id = "property_4_1_energyNorm"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
@@ -44,15 +37,7 @@ id = "property_4_1_monotone"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.1'
 
 [[node]]
-id = "isUnit_of_posDef_add_transpose"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
-
-[[node]]
 id = "property_4_2_isUnit"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
-
-[[node]]
-id = "Splitting.exists_complexSpectralRadius_le_and_energyNorm_mulVec_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.2'
 
 [[node]]
@@ -192,9 +177,6 @@ id = "property_4_3_diagDominant"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.3'
 
 [[node]]
-id = "complexify_sorIterationMatrix"
-
-[[node]]
 id = "property_4_4"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.4'
 
@@ -208,13 +190,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
 
 [[node]]
 id = "example_4_3_solution"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
-
-[[node]]
-id = "charpoly_of_isLowerTriangular"
-
-[[node]]
-id = "complexSpectralRadius_sorSplitting_of_isLowerTriangular"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.3'
 
 [[node]]

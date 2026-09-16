@@ -156,3 +156,6 @@ id = "LinearMap.IsSymmetric.repr_pow_apply"
 
 [[node]]
 id = "LinearMap.IsSymmetric.re_inner_powerIterate_eq_div"
+
+[[node]]
+id = "Krylov.tendsto_smul_powerIterate_of_mem_iSup"

@@ -45,3 +45,12 @@ id = "dense_span_cosLp"
 
 [[node]]
 id = "integral_sin_nat_mul_sin_nat_mul"
+
+[[node]]
+id = "integral_cos_mul_unit"
+
+[[node]]
+id = "integral_cos_intMul_pi_unit"
+
+[[node]]
+id = "integral_cos_mul_cos_unit"

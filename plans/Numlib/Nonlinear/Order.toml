@@ -120,3 +120,6 @@ id = "hasIterationOrder_steffensenStep_two"
 
 [[node]]
 id = "tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity"
+
+[[node]]
+id = "tendsto_sub_div_sub_of_hasDerivWithinAt"

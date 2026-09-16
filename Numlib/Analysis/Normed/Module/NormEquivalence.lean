@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Normed.Module.FiniteDimension`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.RCLike.Lemmas
 import Mathlib.Analysis.Normed.Module.RCLike.Real
 import Mathlib.Analysis.Normed.Module.Seminorm.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
@@ -127,6 +128,23 @@ theorem exists_bounds (p : Seminorm ℝ E) (hp : ∀ x : E, p x = 0 → x = 0) :
   obtain ⟨C, hC, hCle⟩ := p.exists_le_mul_norm
   exact ⟨c, C, hc, hC, fun x => ⟨hcle x, hCle x⟩⟩
 
+/-- **Convergence to `0` does not depend on the norm.** For a definite seminorm `p` on the
+finite-dimensional space `E` and any `f : ι → E`, `p (f k) → 0` iff `‖f k‖ → 0`: the two-sided
+bound `c ‖v‖ ≤ p v ≤ C ‖v‖` squeezes each side by the other. -/
+theorem tendsto_apply_iff_tendsto_norm (p : Seminorm ℝ E) (hp : ∀ x, p x = 0 → x = 0)
+    {ι : Type*} {l : Filter ι} (f : ι → E) :
+    Tendsto (fun k => p (f k)) l (𝓝 0) ↔ Tendsto (fun k => ‖f k‖) l (𝓝 0) := by
+  obtain ⟨c, C, hc, hC, h⟩ := p.exists_bounds hp
+  constructor
+  · intro hf
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+      (by simpa using hf.const_mul c⁻¹) (fun k => norm_nonneg _) fun k => ?_
+    rw [le_inv_mul_iff₀ hc]
+    exact (h (f k)).1
+  · intro hf
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+      (by simpa using hf.const_mul C) (fun k => apply_nonneg p _) fun k => (h (f k)).2
+
 /-! ### Root asymptotics are the same for every norm -/
 
 /-- A positive constant has `k`-th roots tending to `1`, which is why the factor between two
@@ -160,3 +178,23 @@ theorem tendsto_rpow_one_div (p : Seminorm ℝ E) (hp : ∀ x : E, p x = 0 → x
     exact Real.rpow_le_rpow (apply_nonneg p _) (hb (f k)).2 (by positivity)
 
 end Seminorm
+
+/-! ### Seminorms on `n → 𝕜` over `RCLike 𝕜` -/
+
+section RCLike
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+
+/-- Equivalence of norms for a definite seminorm on `n → 𝕜` over `RCLike 𝕜`: the real statement
+`Seminorm.exists_bounds` applied to the restriction of scalars. -/
+theorem Seminorm.exists_bounds_rclike (p : Seminorm 𝕜 (n → 𝕜)) (hp : ∀ x, p x = 0 → x = 0) :
+    ∃ c C : ℝ, 0 < c ∧ 0 < C ∧ ∀ x, c * ‖x‖ ≤ p x ∧ p x ≤ C * ‖x‖ :=
+  (p.restrictScalars ℝ).exists_bounds hp
+
+omit [Fintype n] in
+/-- A seminorm on `n → 𝕜` over `RCLike 𝕜` is continuous. -/
+theorem Seminorm.continuous_rclike [Finite n] (p : Seminorm 𝕜 (n → 𝕜)) : Continuous p := by
+  cases nonempty_fintype n
+  exact (p.restrictScalars ℝ).continuous_of_finiteDimensional
+
+end RCLike

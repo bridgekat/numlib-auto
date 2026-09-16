@@ -132,3 +132,6 @@ id = "Stationary.Splitting.complexSpectralRadius_iterationOperator"
 
 [[node]]
 id = "Matrix.complexify_sor_iterationOperator"
+
+[[node]]
+id = "Stationary.Splitting.isUnit_of_complexSpectralRadius_lt_one"

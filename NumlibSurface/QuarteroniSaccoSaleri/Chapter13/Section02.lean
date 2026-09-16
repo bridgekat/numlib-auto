@@ -151,7 +151,7 @@ theorem equation_13_11 (ν Δt : ℝ) :
     (∀ u₀ : Fin (n - 1) → ℝ,
         Tendsto (fun k : ℕ => ((1 - (ν * Δt) • laplacianFD n) ^ k) *ᵥ u₀) atTop (𝓝 0)) ↔
       Matrix.complexSpectralRadius (1 - (ν * Δt) • laplacianFD n) < 1 :=
-  (FiniteDifference.tendsto_pow_zero_iff_forall_mulVec _).symm.trans
+  (Matrix.tendsto_pow_zero_iff_forall_mulVec _).symm.trans
     (Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one _)
 
 /-- **The eigenvalues of `A_fd`** ([quarteroni2000numerical] §13.2, the display after (13.11);

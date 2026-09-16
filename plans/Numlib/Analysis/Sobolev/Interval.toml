@@ -74,15 +74,6 @@ id = "TestFunction.deriv_primitive"
 id = "exists_testFunction_integral_eq_one"
 
 [[node]]
-id = "MeasureTheory.IntegrableOn.integrableOn_Icc_of_Ioo"
-
-[[node]]
-id = "MeasureTheory.IntegrableOn.intervalIntegrable_of_Ioo"
-
-[[node]]
-id = "continuousOn_integral_of_integrableOn_Ioo"
-
-[[node]]
 id = "absolutelyContinuousOnInterval_integral"
 
 [[node]]
@@ -249,18 +240,6 @@ id = "abs_intervalIntegral_le_sqrt_mul_norm"
 id = "integral_abs_le_sqrt_mul_norm"
 
 [[node]]
-id = "eqOn_Icc_of_ae_eq"
-
-[[node]]
-id = "AbsolutelyContinuousOnInterval.congr"
-
-[[node]]
-id = "ContinuousOn.memLp_top_restrict_Ioo"
-
-[[node]]
-id = "ContinuousOn.memLp_two_restrict_Ioo"
-
-[[node]]
 id = "SobolevInterval.hasWeakDerivOn_fn"
 
 [[node]]
@@ -360,9 +339,6 @@ id = "SobolevInterval.memLp_leibniz"
 id = "SobolevInterval.memSobolevInterval_mul"
 
 [[node]]
-id = "norm_sq_eq_integral_sq"
-
-[[node]]
 id = "integral_Ioo_sub_left"
 
 [[node]]
@@ -434,9 +410,6 @@ id = "hasWeakIteratedDerivOn_of_contDiffOn"
 id = "hasWeakDerivOn_of_contDiffOn"
 
 [[node]]
-id = "MeasureTheory.Lp.norm_le_sqrt_mul_of_ae_bound"
-
-[[node]]
 id = "ContDiffMapIcc.derivLp"
 
 [[node]]
@@ -483,3 +456,45 @@ id = "eq_add_integral_deriv_of_piecewise"
 
 [[node]]
 id = "memSobolevInterval_of_piecewise_contDiffOn"
+
+[[node]]
+id = "abs_intervalIntegral_le_sqrt_mul_sqrt"
+
+[[node]]
+id = "SobolevInterval.exists_contDiff_ae_eq"
+
+[[node]]
+id = "SobolevInterval.norm_deriv_sq_eq_integral"
+
+[[node]]
+id = "SobolevInterval.seminorm_sq_eq_integral"
+
+[[node]]
+id = "SobolevInterval.intervalIntegrable_deriv"
+
+[[node]]
+id = "SobolevInterval.intervalIntegrable_deriv_sq"
+
+[[node]]
+id = "SobolevInterval.toContinuousMap_injective"
+
+[[node]]
+id = "SobolevInterval.exists_toContinuousMap_eq"
+
+[[node]]
+id = "SobolevInterval.norm_le_add_norm_deriv"
+
+[[node]]
+id = "ContDiffMapIcc.denseRange_toSobolevInterval_one"
+
+[[node]]
+id = "SobolevInterval.inner_eq_intervalIntegral"
+
+[[node]]
+id = "SobolevInterval.evalCLM"
+
+[[node]]
+id = "SobolevInterval.evalCLM_apply"
+
+[[node]]
+id = "SobolevInterval.rep_finset_sum"

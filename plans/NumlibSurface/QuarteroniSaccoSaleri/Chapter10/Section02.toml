@@ -5,9 +5,6 @@ id = "isExactOnMeasure_iff_forall_sub_eq_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, the degree of exactness with respect to w'
 
 [[node]]
-id = "sum_mul_eq_integral_interpolate"
-
-[[node]]
 id = "equation_10_14"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.13)–(10.14)'
 
@@ -28,15 +25,6 @@ id = "equation_10_16"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.16)'
 
 [[node]]
-id = "nodal_eq_of_forall_eval_eq_zero"
-
-[[node]]
-id = "exists_eq_iff_eval_nodal_eq_zero"
-
-[[node]]
-id = "pos_of_isExactOnMeasure_of_le"
-
-[[node]]
 id = "gauss_weights_pos_nodes_mem_Ioo"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.2, positivity of the Gauss weights and location of the nodes'''
 
@@ -49,17 +37,8 @@ id = "equation_10_19"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.19)'
 
 [[node]]
-id = "jacobiMeasure_compl_Icc"
-
-[[node]]
-id = "lobattoMeasure_jacobiMeasure"
-
-[[node]]
 id = "remark_10_2"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 10.2'
-
-[[node]]
-id = "tendsto_of_isExactOnMeasure"
 
 [[node]]
 id = "gauss_tendsto"

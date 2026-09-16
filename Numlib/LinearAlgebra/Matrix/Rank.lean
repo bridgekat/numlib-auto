@@ -78,6 +78,14 @@ theorem finrank_ker_mulVecLin_conj {A P : Matrix n n K} (hP : IsUnit P) :
   rw [rank_conj hP] at h₁
   omega
 
+/-- A square matrix over a field of full rank is nonsingular: its kernel has dimension `0` by
+rank–nullity, so `x ↦ A x` is injective. -/
+theorem isUnit_of_rank_eq_card {A : Matrix n n K} (h : A.rank = Fintype.card n) : IsUnit A := by
+  have hk := rank_add_finrank_ker_mulVecLin A
+  rw [h] at hk
+  rw [← mulVec_injective_iff_isUnit, ← coe_mulVecLin, ← LinearMap.ker_eq_bot]
+  exact Submodule.finrank_eq_zero.1 (by omega)
+
 /-- The null spaces of the powers of a square matrix increase with the exponent. -/
 theorem ker_mulVecLin_pow_le_succ (A : Matrix n n K) (k : ℕ) :
     LinearMap.ker ((A ^ k).mulVecLin) ≤ LinearMap.ker ((A ^ (k + 1)).mulVecLin) := by

@@ -1,10 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter06"
 
 [[node]]
-id = "tendsto_sub_div_sub_of_hasDerivWithinAt"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.18)'
-
-[[node]]
 id = "theorem_6_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 6.1'
 
@@ -54,10 +50,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
 
 [[node]]
 id = "chord_tendsto"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
-
-[[node]]
-id = "hasDerivAt_deriv_of_contDiffAt_two"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
 
 [[node]]

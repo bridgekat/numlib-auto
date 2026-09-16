@@ -77,10 +77,6 @@ id = "isTriangular_inv_mul"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.2'
 
 [[node]]
-id = "mul_apply_eq_zero_of_lt"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.2'
-
-[[node]]
 id = "isUpperTrapezoidal_mul"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.2'
 

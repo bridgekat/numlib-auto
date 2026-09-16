@@ -88,9 +88,6 @@ id = "IsDiagDominant.diag_ne_zero_of_isUnit"
 id = "IsColDiagDominant.diag_ne_zero_of_isUnit"
 
 [[node]]
-id = "schurComplementSingle_transpose"
-
-[[node]]
 id = "IsColDiagDominant.sum_norm_sub_le"
 
 [[node]]
@@ -98,3 +95,6 @@ id = "IsColDiagDominant.schurComplementSingle"
 
 [[node]]
 id = "IsDiagDominant.schurComplementSingle"
+
+[[node]]
+id = "IsDiagDominant.posSemidef"

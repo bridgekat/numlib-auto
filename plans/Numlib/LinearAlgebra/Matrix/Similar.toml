@@ -54,3 +54,6 @@ id = "IsUnitarilySimilar.trans"
 [[node]]
 id = "isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §1.8 (after Property 1.6)"
+
+[[node]]
+id = "_root_.Module.End.spectrum_eq_range_of_basis"

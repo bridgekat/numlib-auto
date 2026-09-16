@@ -92,3 +92,18 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.4.5"
 
 [[node]]
 id = "condNumber_symmTridiagonalToeplitz_neg_one_two_le"
+
+[[node]]
+id = "neg_tridiagonalToeplitz"
+
+[[node]]
+id = "tridiagonalToeplitz_eq_add_smul"
+
+[[node]]
+id = "dotProduct_mulVec_tridiagonalToeplitz_antisymm"
+
+[[node]]
+id = "dotProduct_mulVec_tridiagonalToeplitz_pos"
+
+[[node]]
+id = "isMMatrix_smul_tridiagonalToeplitz"

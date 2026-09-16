@@ -1,4 +1,5 @@
 import Mathlib.NumberTheory.ZetaValues
+import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
@@ -624,7 +625,7 @@ theorem dirichletForm_polyBasis (i j : ℕ) :
         = ∫ x in Ioo (0 : ℝ) 1,
           (((j : ℝ) + 1) * x ^ j - ((j : ℝ) + 2) * x ^ (j + 1)) *
             (((i : ℝ) + 1) * x ^ i - ((i : ℝ) + 2) * x ^ (i + 1)) from ?_]
-  · rw [← EllipticInterval.intervalIntegral_eq_setIntegral_Ioo zero_le_one]
+  · rw [← intervalIntegral.integral_eq_setIntegral_Ioo zero_le_one]
     have hexp : ∀ x : ℝ,
         (((j : ℝ) + 1) * x ^ j - ((j : ℝ) + 2) * x ^ (j + 1)) *
           (((i : ℝ) + 1) * x ^ i - ((i : ℝ) + 2) * x ^ (i + 1))
@@ -704,60 +705,6 @@ open scoped ContDiff
 
 noncomputable section
 
--- TODO(backbone): the three cosine integrals below have no Galerkin content and are
--- Mathlib-shaped; natural home `Numlib/Analysis/Fourier/` beside the trigonometric bases, or
--- Mathlib's `Analysis/SpecialFunctions/Integrals`.
-/-- `∫₀¹ cos (c x) dx = sin c / c` for `c ≠ 0`. -/
-theorem integral_cos_mul_unit {c : ℝ} (hc : c ≠ 0) :
-    ∫ x in (0 : ℝ)..1, Real.cos (c * x) = Real.sin c / c := by
-  have hd : ∀ x ∈ uIcc (0 : ℝ) 1,
-      HasDerivAt (fun y : ℝ => Real.sin (c * y) / c) (Real.cos (c * x)) x := by
-    intro x _
-    have h1 : HasDerivAt (fun y : ℝ => c * y) c x := by
-      simpa using (hasDerivAt_id x).const_mul c
-    have h2 : HasDerivAt (fun y : ℝ => Real.sin (c * y)) (Real.cos (c * x) * c) x :=
-      (Real.hasDerivAt_sin (c * x)).comp x h1
-    simpa [mul_div_assoc, mul_div_cancel_right₀ _ hc] using h2.div_const c
-  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
-    ((Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _)]
-  simp
-
-/-- `∫₀¹ cos (k π x) dx` is `1` for `k = 0` and `0` otherwise. -/
-theorem integral_cos_intMul_pi_unit (k : ℤ) :
-    ∫ x in (0 : ℝ)..1, Real.cos ((k : ℝ) * π * x) = if k = 0 then 1 else 0 := by
-  rcases eq_or_ne k 0 with rfl | hk
-  · simp
-  · have hc : ((k : ℝ) * π) ≠ 0 := mul_ne_zero (Int.cast_ne_zero.2 hk) Real.pi_ne_zero
-    rw [ite_eq_right hk, integral_cos_mul_unit hc, Real.sin_int_mul_pi k, zero_div]
-
-/-- **Orthogonality of the cosines** on `(0, 1)`:
-`∫₀¹ cos (m π x) cos (n π x) dx = δ_{mn} / 2` for positive integers `m` and `n`. -/
-theorem integral_cos_mul_cos_unit {m n : ℕ} (hm : 0 < m) (hn : 0 < n) :
-    ∫ x in (0 : ℝ)..1, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
-      = if m = n then 1 / 2 else 0 := by
-  have hprod : ∀ x : ℝ, Real.cos ((m : ℝ) * π * x) * Real.cos ((n : ℝ) * π * x)
-      = (Real.cos ((((m : ℤ) - n : ℤ) : ℝ) * π * x)
-          + Real.cos ((((m : ℤ) + n : ℤ) : ℝ) * π * x)) / 2 := by
-    intro x
-    have h1 : ((((m : ℤ) - n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x - (n : ℝ) * π * x := by
-      push_cast; ring
-    have h2 : ((((m : ℤ) + n : ℤ) : ℝ) * π * x) = (m : ℝ) * π * x + (n : ℝ) * π * x := by
-      push_cast; ring
-    rw [h1, h2, Real.cos_sub, Real.cos_add]
-    ring
-  simp only [hprod]
-  have hint : ∀ k : ℤ, IntervalIntegrable (fun x : ℝ => Real.cos ((k : ℝ) * π * x)) volume 0 1 :=
-    fun k => (Real.continuous_cos.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _
-  rw [intervalIntegral.integral_div, intervalIntegral.integral_add (hint _) (hint _),
-    integral_cos_intMul_pi_unit, integral_cos_intMul_pi_unit]
-  have hne : ((m : ℤ) + n) ≠ 0 := by positivity
-  rw [ite_eq_right hne]
-  rcases eq_or_ne m n with rfl | hmn
-  · simp
-  · rw [ite_eq_right hmn,
-      ite_eq_right (by simpa [sub_eq_zero] using fun h => hmn (by exact_mod_cast h))]
-    norm_num
-
 /-- The basis function `sin((k+1) π x)` of Example 9.1.2. -/
 def sineBasisFun (k : ℕ) : ℝ → ℝ := fun x => Real.sin (((k : ℝ) + 1) * π * x)
 
@@ -833,7 +780,7 @@ theorem dirichletForm_sineBasis (i j : ℕ) :
         = ∫ x in Ioo (0 : ℝ) 1,
           (((j : ℝ) + 1) * π * Real.cos (((j : ℝ) + 1) * π * x)) *
             (((i : ℝ) + 1) * π * Real.cos (((i : ℝ) + 1) * π * x)) from ?_]
-  · rw [← EllipticInterval.intervalIntegral_eq_setIntegral_Ioo zero_le_one]
+  · rw [← intervalIntegral.integral_eq_setIntegral_Ioo zero_le_one]
     have hre : ∀ x : ℝ,
         (((j : ℝ) + 1) * π * Real.cos (((j : ℝ) + 1) * π * x)) *
           (((i : ℝ) + 1) * π * Real.cos (((i : ℝ) + 1) * π * x))
@@ -853,21 +800,6 @@ theorem dirichletForm_sineBasis (i j : ℕ) :
   · refine integral_congr_ae ?_
     filter_upwards [coeFn_deriv_sineBasis_one j, coeFn_deriv_sineBasis_one i] with x hj hi
     rw [hj, hi]
-
--- TODO(backbone): a general fact about `H^1(a, b)`; natural home
--- `Numlib/Analysis/Sobolev/Interval.lean`, beside `SobolevInterval.rep_add` and `rep_smul`.
-/-- The continuous representative of a finite linear combination in `H¹(0, 1)`. -/
-theorem rep_finset_sum {ι : Type*} (s : Finset ι) (c : ι → ℝ) (φ : ι → SobolevInterval 1 0 1)
-    {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
-    SobolevInterval.rep (∑ j ∈ s, c j • φ j) x = ∑ j ∈ s, c j * SobolevInterval.rep (φ j) x := by
-  classical
-  induction s using Finset.induction with
-  | empty =>
-      rw [Finset.sum_empty, Finset.sum_empty]
-      exact rep_eq_of_continuousOn zero_lt_one 0 continuousOn_const SobolevMultiIndex.fn_zero hx
-  | insert a s ha ih =>
-      rw [Finset.sum_insert ha, Finset.sum_insert ha, rep_add zero_lt_one _ _ hx, Pi.add_apply,
-        rep_smul zero_lt_one _ _ hx, Pi.smul_apply, smul_eq_mul, ih]
 
 /-- **The trial space of Example 9.1.2**, `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`. -/
 def sineSpace (N : ℕ) : Submodule ℝ (SobolevInterval 1 0 1) :=
@@ -942,9 +874,9 @@ theorem rep_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N :
         (Icc (0 : ℝ) 1) := by
       have hcont : Continuous (sineBasisFun (j : ℕ)) := (contDiff_sineBasisFun j).continuous
       fun_prop
-    exact (EllipticInterval.integrableOn_continuousOn_mul hg f).congr_fun
+    exact (MeasureTheory.integrableOn_continuousOn_mul hg f).congr_fun
       (fun t _ => mul_comm _ _) measurableSet_Ioo
-  rw [sineGalerkin, rep_finset_sum _ _ _ hx]
+  rw [sineGalerkin, rep_finset_sum zero_lt_one _ _ _ hx]
   have hterm : ∀ j : Fin N, sineCoeff f j * SobolevInterval.rep (sineBasis j) x
       = ∫ t in Ioo (0 : ℝ) 1,
         f t * (2 / π ^ 2 * (sineBasisFun j x * sineBasisFun j t / ((j : ℝ) + 1) ^ 2)) := by

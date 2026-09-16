@@ -32,3 +32,6 @@ id = "exists_det_submatrix_ne_zero"
 
 [[node]]
 id = "rank_eq_sup_card_det_submatrix_ne_zero"
+
+[[node]]
+id = "isUnit_of_rank_eq_card"

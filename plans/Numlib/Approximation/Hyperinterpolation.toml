@@ -32,3 +32,6 @@ id = "hyperinterp_eq_self"
 
 [[node]]
 id = "hyperinterp_hyperinterp"
+
+[[node]]
+id = "isExactOn_iff_forall_monomial"

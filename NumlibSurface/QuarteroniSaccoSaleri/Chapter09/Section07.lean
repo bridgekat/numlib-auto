@@ -135,34 +135,6 @@ theorem equation_9_40_trapezoid (hab : a < b) (hU : IsOpen U) (hUab : Icc a b �
   refine h.trans (le_of_eq ?_)
   ring
 
--- TODO(backbone): `Romberg.table_one_eq_simpsonSum` proves this for `N = 2^m` only; this
--- general form belongs beside it in `Numlib/Approximation/Extrapolation`.
-/-- **The composite Simpson rule is the first Romberg column, for any number of panels**:
-`S_N = (4 T_{2N} - T_N)/3` with `T_N` on the mesh `h` and `T_{2N}` on `h/2`, by reindexing the
-`2N`-panel trapezoidal sum by parity. -/
-theorem simpsonSum_eq_trapezoidSum (f : ℝ → ℝ) (a h : ℝ) (N : ℕ) :
-    Quadrature.simpsonSum f a h N
-      = (4 * Quadrature.trapezoidSum f a (h / 2) (2 * N) - Quadrature.trapezoidSum f a h N)
-        / 3 := by
-  have hsplit : ∀ (g : ℕ → ℝ) (N : ℕ),
-      ∑ j ∈ Finset.range (2 * N), g j = ∑ i ∈ Finset.range N, (g (2 * i) + g (2 * i + 1)) := by
-    intro g N
-    induction N with
-    | zero => simp
-    | succ N ih =>
-      rw [show 2 * (N + 1) = 2 * N + 1 + 1 by ring, Finset.sum_range_succ, Finset.sum_range_succ,
-        ih, Finset.sum_range_succ]
-      ring
-  rw [Quadrature.trapezoidSum, Quadrature.trapezoidSum, Quadrature.simpsonSum, hsplit,
-    Finset.mul_sum, ← Finset.sum_sub_distrib, Finset.sum_div]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  push_cast
-  have e1 : a + (2 * (i : ℝ) + 1) * (h / 2) = a + i * h + h / 2 := by ring
-  have e2 : a + (2 * (i : ℝ) + 1 + 1) * (h / 2) = a + (i + 1) * h := by ring
-  have e3 : a + 2 * (i : ℝ) * (h / 2) = a + i * h := by ring
-  rw [e1, e2, e3]
-  ring
-
 /-- **(9.39)–(9.40) for the composite Simpson rule** (`n = p = 2`, `2^{n+p} - 1 = 15`): "(9.40)
 predicts a reduction of the absolute error by a factor of `15` when passing from `m` to `2m`
 subintervals". For `f ∈ C⁶([a, b])` and `S_m` the composite Simpson rule on `m` panels, there is
@@ -191,7 +163,7 @@ theorem equation_9_40_simpson (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ 
     intro N hN
     have h1 := hC N hN
     have h2 := hC (2 * N) (by omega)
-    rw [simpsonSum_eq_trapezoidSum, show (b - a) / N / 2 = (b - a) / ((2 * N : ℕ) : ℝ) by
+    rw [Quadrature.simpsonSum_eq_trapezoidSum, show (b - a) / N / 2 = (b - a) / ((2 * N : ℕ) : ℝ) by
       push_cast; ring]
     have e2 : ((b - a) / ((2 * N : ℕ) : ℝ)) = (b - a) / N / 2 := by push_cast; ring
     rw [e2] at h2 ⊢

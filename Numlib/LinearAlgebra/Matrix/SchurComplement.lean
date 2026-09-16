@@ -291,6 +291,13 @@ noncomputable def schurComplementSingle (A : Matrix n n K) (p : n) :
 theorem schurComplementSingle_apply (A : Matrix n n K) (p : n) (i j : {i : n // i ≠ p}) :
     A.schurComplementSingle p i j = A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1 := rfl
 
+/-- The transpose of a one-step Schur complement is the Schur complement of the transpose. -/
+theorem schurComplementSingle_transpose (A : Matrix n n K) (p : n) :
+    (A.schurComplementSingle p)ᵀ = Aᵀ.schurComplementSingle p := by
+  ext i j
+  simp only [transpose_apply, schurComplementSingle_apply]
+  ring
+
 end Single
 
 section BlockLDU

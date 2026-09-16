@@ -1,21 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter05"
 
 [[node]]
-id = "unitaryLinearIsometryEquiv"
-
-[[node]]
-id = "unitaryLinearIsometryEquiv_apply"
-
-[[node]]
-id = "unitaryLinearIsometryEquiv_symm_apply"
-
-[[node]]
-id = "isUnit_of_mem_unitaryGroup"
-
-[[node]]
-id = "spectrum_conjTranspose_mul_mul"
-
-[[node]]
 id = "inverseIterate_conj"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.1'
 

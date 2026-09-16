@@ -21,20 +21,8 @@ id = "remark_5_2"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.2'
 
 [[node]]
-id = "toEuclideanLin_euclideanCol_of_conj_eq_diagonal"
-
-[[node]]
-id = "span_range_euclideanCol_eq_top"
-
-[[node]]
-id = "isUnit_det_of_conj_eq_diagonal"
-
-[[node]]
 id = "property_5_9_hypotheses"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
-
-[[node]]
-id = "qrQ_eq_one_of_isUpperTriangular"
 
 [[node]]
 id = "qrIterate_eq_self_of_isUpperTriangular"

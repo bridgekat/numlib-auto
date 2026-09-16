@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.Analysis.Calculus.PartialDeriv
 
 /-!
 # The linear transport equation and hyperbolic systems, solved along characteristics
@@ -487,5 +488,37 @@ def IsInflowSolution (a : ℝ → ℝ) (a₀ f : ℝ → ℝ → ℝ) (φ u₀ :
     (∀ x ∈ Icc α β, ∀ t ∈ Icc (0 : ℝ) T,
       ut x t + a x * ux x t + a₀ x t * u x t = f x t) ∧
     (∀ t ∈ Icc (0 : ℝ) T, u α t = φ t) ∧ ∀ x ∈ Icc α β, u x 0 = u₀ x
+
+/-! ### Partial derivatives along the coordinate lines -/
+
+/-- A function differentiable on the whole plane has its first partial derivative as the
+derivative of the restriction to a horizontal line. -/
+theorem hasPartialDerivFst_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
+    (h : HasPartialsOn Set.univ u ux ut) : HasPartialDerivFst u ux := by
+  intro x t
+  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
+      (partialsCLM (ux x t) (ut x t)) (x, t) := by
+    have h1 := h (x, t) (Set.mem_univ _)
+    rwa [hasFDerivWithinAt_univ] at h1
+  have hline : HasDerivAt (fun y : ℝ => (y, t)) (1, 0) x :=
+    (hasDerivAt_id x).prodMk (hasDerivAt_const x t)
+  have h2 := h0.comp_hasDerivAt x hline
+  simp only [partialsCLM_apply, mul_one, mul_zero, add_zero, Function.comp_def] at h2
+  exact h2
+
+/-- A function differentiable on the whole plane has its second partial derivative as the
+derivative of the restriction to a vertical line. -/
+theorem hasPartialDerivSnd_of_hasPartialsOn {u ux ut : ℝ → ℝ → ℝ}
+    (h : HasPartialsOn Set.univ u ux ut) : HasPartialDerivSnd u ut := by
+  intro x t
+  have h0 : HasFDerivAt (fun r : ℝ × ℝ => u r.1 r.2)
+      (partialsCLM (ux x t) (ut x t)) (x, t) := by
+    have h1 := h (x, t) (Set.mem_univ _)
+    rwa [hasFDerivWithinAt_univ] at h1
+  have hline : HasDerivAt (fun s : ℝ => (x, s)) (0, 1) t :=
+    (hasDerivAt_const t x).prodMk (hasDerivAt_id t)
+  have h2 := h0.comp_hasDerivAt t hline
+  simp only [partialsCLM_apply, mul_one, mul_zero, zero_add, Function.comp_def] at h2
+  exact h2
 
 end Transport

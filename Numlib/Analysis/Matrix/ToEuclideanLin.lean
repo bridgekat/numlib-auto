@@ -7,7 +7,9 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.Matrix.Spectrum
+import Mathlib.LinearAlgebra.Eigenspace.Zero
 import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.LinearAlgebra.Matrix.Complexify
 
 /-!
 # Matrices as operators on `EuclideanSpace`
@@ -79,6 +81,24 @@ matrix be read as a Krylov subspace of `toEuclideanLin A`. -/
 theorem toEuclideanLin_pow (A : Matrix n n 𝕜) (k : ℕ) :
     toEuclideanLin (A ^ k) = toEuclideanLin A ^ k :=
   toLpLin_pow 2 A k
+
+/-- `p(A)` as an operator is `p` of the operator: `Matrix.toEuclideanLin` is an algebra map. -/
+theorem toEuclideanLin_aeval (A : Matrix n n 𝕜) (p : Polynomial 𝕜) :
+    toEuclideanLin (Polynomial.aeval A p) = Polynomial.aeval (toEuclideanLin A) p := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | monomial k c =>
+    rw [Polynomial.aeval_monomial, Polynomial.aeval_monomial, ← Algebra.smul_def,
+      ← Algebra.smul_def, map_smul, toEuclideanLin_pow]
+
+/-- The algebraic multiplicity of an eigenvalue of a matrix, the multiplicity of `μ` as a root of
+the characteristic polynomial, is the dimension of the generalized eigenspace of
+`toEuclideanLin A`: Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` read through
+`Matrix.charpoly_toLin`. -/
+theorem finrank_maxGenEigenspace_toEuclideanLin (A : Matrix n n 𝕜) (μ : 𝕜) :
+    Module.finrank 𝕜 (Module.End.maxGenEigenspace (toEuclideanLin A) μ) =
+      A.charpoly.rootMultiplicity μ := by
+  rw [LinearMap.finrank_maxGenEigenspace_eq, toEuclideanLin_eq_toLin_orthonormal, charpoly_toLin]
 
 /-- The adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`. -/
 theorem toEuclideanLin_conjTranspose {m : Type*} [Fintype m] [DecidableEq m] (A : Matrix m n 𝕜) :
@@ -202,7 +222,65 @@ theorem inner_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 
   rw [← toEuclideanCLM_toLp U v, ← toEuclideanCLM_toLp U w]
   exact ContinuousLinearMap.inner_map_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) _ _
 
+/-- A unitary matrix acts isometrically on `EuclideanSpace`, in the `toEuclideanLin` form. -/
+theorem norm_toEuclideanLin_apply_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜)
+    (x : EuclideanSpace 𝕜 n) : ‖toEuclideanLin U x‖ = ‖x‖ := by
+  rw [toEuclideanLin_apply, norm_toLp_mulVec_of_mem_unitaryGroup hU]
+
+/-- A unitary matrix is a unit, with inverse `star Q`. -/
+theorem isUnit_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) : IsUnit U :=
+  ⟨⟨U, star U, mem_unitaryGroup_iff.mp hU, mem_unitaryGroup_iff'.mp hU⟩, rfl⟩
+
+/-- The similarity `Uᴴ A U` by a unitary matrix does not change the spectrum. -/
+theorem spectrum_conjTranspose_mul_mul {A : Matrix n n 𝕜} (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
+    spectrum 𝕜 (Uᴴ * A * U) = spectrum 𝕜 A := by
+  have hu : IsUnit U := isUnit_of_mem_unitaryGroup hU
+  have hinv : U⁻¹ = Uᴴ :=
+    inv_eq_left_inv (by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.mp hU)
+  have h := spectrum.units_conjugate' (R := 𝕜) (a := A) (u := hu.unit)
+  rwa [coe_units_inv, IsUnit.unit_spec, hinv] at h
+
+/-- A unitary matrix `U` as a linear isometry equivalence of `EuclideanSpace 𝕜 n`, acting as
+`toEuclideanLin U`, with inverse `toEuclideanLin Uᴴ`. -/
+noncomputable def unitaryLinearIsometryEquiv (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
+    EuclideanSpace 𝕜 n ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 n :=
+  Unitary.linearIsometryEquiv ⟨toEuclideanCLM (n := n) (𝕜 := 𝕜) U, toEuclideanCLM_mem_unitary hU⟩
+
+/-- The isometry of a unitary matrix acts as the matrix. -/
+theorem unitaryLinearIsometryEquiv_apply (hU : U ∈ Matrix.unitaryGroup n 𝕜)
+    (x : EuclideanSpace 𝕜 n) : unitaryLinearIsometryEquiv hU x = toEuclideanLin U x := rfl
+
+/-- The inverse of the isometry of a unitary matrix acts as its conjugate transpose. -/
+theorem unitaryLinearIsometryEquiv_symm_apply (hU : U ∈ Matrix.unitaryGroup n 𝕜)
+    (x : EuclideanSpace 𝕜 n) : (unitaryLinearIsometryEquiv hU).symm x = toEuclideanLin Uᴴ x := by
+  change (star (toEuclideanCLM (n := n) (𝕜 := 𝕜) U)) x = _
+  rw [← map_star, star_eq_conjTranspose]
+  rfl
+
 end Unitary
+
+section Isometry
+
+variable {m : Type*} [Fintype m] [DecidableEq m]
+
+/-- A matrix `V` with orthonormal columns, `Vᴴ V = 1`, acts as a linear isometry
+`EuclideanSpace 𝕜 m →ₗᵢ EuclideanSpace 𝕜 n`. -/
+noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
+    EuclideanSpace 𝕜 m →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
+  toLinearMap := toEuclideanLin V
+  norm_map' y := by
+    have h : inner 𝕜 (toEuclideanLin V y) (toEuclideanLin V y) = inner 𝕜 y y := by
+      rw [← toEuclideanLin_conjTranspose_inner_left, ← Matrix.toEuclideanLin_mul_apply, hV,
+        toEuclideanLin_one, LinearMap.id_apply]
+    rw [← sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _), ← inner_self_eq_norm_sq (𝕜 := 𝕜),
+      ← inner_self_eq_norm_sq (𝕜 := 𝕜), h]
+
+/-- The isometry of `Matrix.toEuclideanLinearIsometry` acts as `toEuclideanLin V`. -/
+@[simp]
+theorem toEuclideanLinearIsometry_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
+    (y : EuclideanSpace 𝕜 m) : toEuclideanLinearIsometry hV y = toEuclideanLin V y := rfl
+
+end Isometry
 
 section Applied
 
@@ -276,6 +354,19 @@ theorem toEuclideanCLM_nonsing_inv {A : Matrix n n 𝕜} (hA : IsUnit A) :
       = Ring.inverse (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := by
   rw [nonsing_inv_eq_ringInverse, toEuclideanCLM_ringInverse hA]
 
+/-- For a nonsingular `M`, `toEuclideanLin M` is a unit of `Module.End` with `Ring.inverse` equal
+to `toEuclideanLin M⁻¹`: the `Module.End` form of `Matrix.toEuclideanCLM_nonsing_inv`. -/
+theorem ringInverse_toEuclideanLin {M : Matrix n n 𝕜} (hM : IsUnit M) :
+    IsUnit (toEuclideanLin M) ∧ Ring.inverse (toEuclideanLin M) = toEuclideanLin M⁻¹ := by
+  have hdet := (isUnit_iff_isUnit_det M).mp hM
+  let u : (Module.End 𝕜 (EuclideanSpace 𝕜 n))ˣ :=
+    ⟨toEuclideanLin M, toEuclideanLin M⁻¹,
+      by rw [Module.End.mul_eq_comp, ← toEuclideanLin_mul, mul_nonsing_inv M hdet,
+        toEuclideanLin_one, Module.End.one_eq_id],
+      by rw [Module.End.mul_eq_comp, ← toEuclideanLin_mul, nonsing_inv_mul M hdet,
+        toEuclideanLin_one, Module.End.one_eq_id]⟩
+  exact ⟨⟨u, rfl⟩, Ring.inverse_unit u⟩
+
 /-- Applying an invertible matrix undoes applying its inverse, on `EuclideanSpace`: the applied
 form of `Matrix.mul_nonsing_inv`. -/
 theorem toEuclideanLin_mul_nonsing_inv_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
@@ -320,5 +411,79 @@ theorem isUnit_toEuclideanCLM_add_smul_one {A : Matrix n n 𝕜} {r : 𝕜}
   rwa [toEuclideanCLM_add_smul_one] at h
 
 end Shift
+
+section RankOne
+
+open WithLp
+
+/-- The outer product `u vᵀ` acts on `EuclideanSpace ℝ n` as the rank-one operator
+`w ↦ ⟪v, w⟫ u`. -/
+theorem toEuclideanCLM_vecMulVec (u v : n → ℝ) :
+    toEuclideanCLM (𝕜 := ℝ) (vecMulVec u v)
+      = InnerProductSpace.rankOne ℝ (toLp 2 u) (toLp 2 v) := by
+  ext w i
+  simp [ofLp_toEuclideanCLM, InnerProductSpace.rankOne_apply,
+    EuclideanSpace.inner_eq_star_dotProduct, vecMulVec_mulVec, dotProduct_comm, mul_comm]
+
+end RankOne
+
+section Complexify
+
+/-! ### Real matrices as operators on `EuclideanSpace ℂ n`
+
+A real matrix reaches the complex Hilbert-space theory (self-adjointness, coercivity, the
+spectral radius) through `Matrix.complexify` and `Matrix.toEuclideanCLM`; a real vector is read in
+`EuclideanSpace ℂ n` through `Matrix.toEuclideanComplex`. -/
+
+/-- A real vector as a vector of `EuclideanSpace ℂ n`. -/
+def toEuclideanComplex (e : n → ℝ) : EuclideanSpace ℂ n := WithLp.toLp 2 fun i => (e i : ℂ)
+
+omit [Fintype n] [DecidableEq n] in
+/-- A real vector is zero iff its complex Euclidean image is. -/
+theorem toEuclideanComplex_eq_zero_iff {e : n → ℝ} : toEuclideanComplex e = 0 ↔ e = 0 := by
+  constructor
+  · intro h
+    ext i
+    have := congrFun (congrArg WithLp.ofLp h) i
+    simpa [toEuclideanComplex] using this
+  · rintro rfl
+    ext i
+    simp [toEuclideanComplex]
+
+/-- The Euclidean operator of the complexification of `A` acts on a real vector as `A` does. -/
+theorem toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
+    toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e)
+      = toEuclideanComplex (A *ᵥ e) := by
+  rw [toEuclideanComplex, toEuclideanCLM_toLp, complexify_mulVec_ofReal]
+  rfl
+
+/-- The quadratic form of the Euclidean operator of `complexify A` at a real vector is the real
+quadratic form `(A e) ⬝ e`. -/
+theorem re_inner_toEuclideanCLM_complexify_toEuclideanComplex (A : Matrix n n ℝ) (e : n → ℝ) :
+    RCLike.re (inner ℂ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A) (toEuclideanComplex e))
+      (toEuclideanComplex e)) = (A *ᵥ e) ⬝ᵥ e := by
+  rw [toEuclideanCLM_complexify_toEuclideanComplex, toEuclideanComplex, toEuclideanComplex,
+    EuclideanSpace.inner_eq_star_dotProduct]
+  simp [dotProduct, mul_comm]
+
+/-- The Euclidean operator of a real symmetric matrix is a symmetric operator. -/
+theorem IsHermitian.isSymmetric_toEuclideanCLM_complexify {X : Matrix n n ℝ}
+    (hX : X.IsHermitian) :
+    ((toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify X) :
+      EuclideanSpace ℂ n →L[ℂ] EuclideanSpace ℂ n) :
+        EuclideanSpace ℂ n →ₗ[ℂ] EuclideanSpace ℂ n).IsSymmetric := by
+  rw [coe_toEuclideanCLM_eq_toEuclideanLin]
+  exact isSymmetric_toEuclideanLin_iff.mpr ((isHermitian_complexify_iff X).mpr hX)
+
+/-- The Euclidean operator of a real positive definite matrix is symmetric coercive. -/
+theorem PosDef.isSymmetricCoercive_toEuclideanCLM_complexify {X : Matrix n n ℝ}
+    (hX : X.PosDef) :
+    ((toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify X) :
+      EuclideanSpace ℂ n →L[ℂ] EuclideanSpace ℂ n) :
+        EuclideanSpace ℂ n →ₗ[ℂ] EuclideanSpace ℂ n).IsSymmetricCoercive := by
+  rw [coe_toEuclideanCLM_eq_toEuclideanLin]
+  exact (posDef_iff_isSymmetricCoercive _).mp (posDef_complexify_iff.mpr hX)
+
+end Complexify
 
 end Matrix

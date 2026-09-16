@@ -1,10 +1,6 @@
 namespace = "QuarteroniSaccoSaleri.Chapter04"
 
 [[node]]
-id = "toEuclideanLin_aeval"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.51'
-
-[[node]]
 id = "equation_4_51"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.51'
 

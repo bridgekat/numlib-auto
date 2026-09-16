@@ -63,3 +63,15 @@ id = "LinearMap.isCoercive_iff_forall_pos"
 
 [[node]]
 id = "Matrix.posDef_iff_isSymmetricCoercive"
+
+[[node]]
+id = "ContinuousLinearMap.le_of_mem_spectrum_real_of_isCoerciveWith"
+
+[[node]]
+id = "ContinuousLinearMap.mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy"
+
+[[node]]
+id = "ContinuousLinearMap.isCoerciveWith_add_smul_one"
+
+[[node]]
+id = "Matrix.PosDef.isSymmetricCoercive_toEuclideanLin"

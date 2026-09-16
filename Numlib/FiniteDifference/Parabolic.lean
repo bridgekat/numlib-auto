@@ -100,16 +100,6 @@ section Bridge
 
 variable {K : Type*} [NormedAddCommGroup K] [InnerProductSpace ℝ K] {ι : Type*} [Fintype ι]
 
-/-- The entries of `A ξ` for the stiffness matrix `A = a.gramMatrix φ`:
-`(A ξ) i = a (∑ j, ξ j • φ j) (φ i)`. Belongs beside `SesqForm.dotProduct_gramMatrix_mulVec_real`
-in `Numlib/Variational/Galerkin.lean`. -/
-theorem _root_.SesqForm.gramMatrix_mulVec_apply (a : SesqForm ℝ K) (φ : ι → K) (ξ : ι → ℝ)
-    (i : ι) : (a.gramMatrix φ *ᵥ ξ) i = a (∑ j, ξ j • φ j) (φ i) := by
-  rw [mulVec, dotProduct]
-  simp only [SesqForm.gramMatrix_apply, map_sum, map_smulₛₗ, RCLike.conj_to_real,
-    _root_.sum_apply, _root_.smul_apply, smul_eq_mul]
-  exact Finset.sum_congr rfl fun j _ => mul_comm _ _
-
 /-- The coordinate bridge for one equation: `⟪w, v⟫ + a z v = F v` for every `v` iff
 `M ξ_w + A ξ_z = (F (φ i))_i` for the coordinates `ξ_w = φ.equivFun w`, `ξ_z = φ.equivFun z` in
 the basis `φ`, the mass matrix `M = (innerSL ℝ).gramMatrix φ` and the stiffness matrix
@@ -321,12 +311,6 @@ section MassSpace
 
 variable {M : Matrix n n ℝ} (hM : M.PosDef)
 
-/-- The Euclidean operator of a positive definite matrix is symmetric coercive; dot-notation form
-of `Matrix.posDef_iff_isSymmetricCoercive`. -/
-theorem _root_.Matrix.PosDef.isSymmetricCoercive_toEuclideanLin (hM : M.PosDef) :
-    (toEuclideanLin M).IsSymmetricCoercive :=
-  (Matrix.posDef_iff_isSymmetricCoercive M).1 hM
-
 /-- **`ℝⁿ` with the `M`-inner product** `⟪x, y⟫_M = (M x) ⬝ᵥ y` of a positive definite matrix
 `M`: the energy space `WithEnergy` of the Euclidean operator of `M`. In this space the
 θ-method for `M u' + A u = f` is the form-level θ-method of `Numlib/Variational/Evolution`. -/
@@ -489,23 +473,6 @@ section Spectrum
 
 variable {M A : Matrix n n ℝ} {θ Δt : ℝ}
 
-/-- Powers of a real matrix tend to zero iff they do on every vector: the entries of `Gᵏ` are the
-entries of `Gᵏ eⱼ`. Belongs beside `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` in
-`Numlib/LinearAlgebra/Matrix/Complexify.lean`. -/
-theorem tendsto_pow_zero_iff_forall_mulVec (G : Matrix n n ℝ) :
-    Tendsto (fun k => G ^ k) atTop (𝓝 0) ↔
-      ∀ u₀, Tendsto (fun k => (G ^ k) *ᵥ u₀) atTop (𝓝 0) := by
-  constructor
-  · intro h u₀
-    have hc : Continuous fun C : Matrix n n ℝ => C *ᵥ u₀ :=
-      Continuous.matrix_mulVec continuous_id continuous_const
-    simpa [Function.comp_def] using (hc.tendsto 0).comp h
-  · intro h
-    refine tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => ?_
-    have hsingle : ∀ k, ((G ^ k) *ᵥ Pi.single j 1) i = (G ^ k) i j := fun k => by simp
-    have := tendsto_pi_nhds.mp (h (Pi.single j 1)) i
-    simpa only [hsingle, Pi.zero_apply, Matrix.zero_apply] using this
-
 /-- The simultaneous diagonalization of the symmetric-definite pencil `(A, M)`
 (`Matrix.exists_simultaneous_diagonalization`), in real form: `Wᵀ M W = 1`, `Wᵀ A W = diag d`,
 and the pencil spectrum is the range of `d`. -/
@@ -658,7 +625,7 @@ theorem forall_tendsto_thetaStep_iff (hM : M.PosDef) (hA : A.PosDef) (hθ : 0 �
     (hΔt : 0 ≤ Δt) :
     (∀ u₀, Tendsto (fun k => (thetaAmplification M A θ Δt ^ k) *ᵥ u₀) atTop (𝓝 0)) ↔
       ∀ lam ∈ pencilSpectrum A M, |1 - (1 - θ) * lam * Δt| < 1 + θ * lam * Δt := by
-  rw [← tendsto_pow_zero_iff_forall_mulVec, tendsto_pow_iff_complexSpectralRadius_lt_one,
+  rw [← Matrix.tendsto_pow_zero_iff_forall_mulVec, tendsto_pow_iff_complexSpectralRadius_lt_one,
     complexSpectralRadius_thetaAmplification_lt_one_iff hM hA hθ hΔt]
 
 /-- **Backward Euler is unconditionally asymptotically stable** ([quarteroni2000numerical] §13.2,

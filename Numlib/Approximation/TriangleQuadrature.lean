@@ -30,7 +30,7 @@ multivariate polynomials of total degree at most `m` against a measure — with
   `∫₀¹ xᵃ (1 - x)ᵇ = a! b!/(a + b + 1)!`, by integration by parts.
 * `Quadrature.integral_refTriangle_pow_mul_pow` — Dirichlet's integral on the triangle,
   `∫_{T̂} xᵃ yᵇ = a! b!/(a + b + 2)!`, by Fubini on `ℝ × ℝ` and the Beta integral.
-* `Quadrature.isExactOn_iff_forall_monomial`, `Quadrature.isExactOn_refTriangle_iff` — exactness
+* `Quadrature.isExactOn_refTriangle_iff` — exactness
   to degree `m` is exactness on the monomials of degree at most `m`; on `T̂` it is the finite
   system `∑_k w_k x_k^a y_k^b = a! b!/(a + b + 2)!`, `a + b ≤ m`.
 * `Quadrature.isExactOn_centroid`, `Quadrature.isExactOn_vertex`,
@@ -49,8 +49,7 @@ rule (9.57) over a triangulation is a finite sum of transported rules and is lef
 
 ## Implementation notes
 
-`isExactOn_iff_forall_monomial` is generic in the index type and belongs in `Hyperinterpolation`;
-it is here because this module is its first consumer. The degree bound for the affine substitution
+The degree bound for the affine substitution
 is `MvPolynomial.totalDegree_bind₁_le_of_totalDegree_le_one` of
 `Numlib/RingTheory/MvPolynomial/TotalDegree`. The integrals on `Fin 2 → ℝ` are transported to
 `ℝ × ℝ` by `MeasurableEquiv.finTwoArrow`, which is measure preserving.
@@ -107,40 +106,6 @@ theorem integral_pow_mul_one_sub_pow (a b : ℕ) :
 namespace Quadrature
 
 variable {ι K : Type*} [Fintype ι] [Fintype K]
-
-/-- **Exactness on polynomials is exactness on monomials.** For a measure against which every
-monomial is integrable, a rule is exact to degree `m` iff it integrates every monomial
-`∏ᵢ yᵢ^{dᵢ}` of degree `∑ᵢ dᵢ ≤ m` exactly: both sides of the exactness identity are linear in
-the polynomial, which is the sum of its monomials. -/
-theorem isExactOn_iff_forall_monomial [MeasurableSpace (ι → ℝ)] {μ : Measure (ι → ℝ)}
-    (hμ : ∀ d : ι →₀ ℕ, Integrable (fun y => ∏ i, y i ^ d i) μ) (w : K → ℝ) (x : K → ι → ℝ)
-    (m : ℕ) :
-    Approximation.IsExactOn μ w x m ↔
-      ∀ d : ι →₀ ℕ, d.degree ≤ m → ∑ k, w k * ∏ i, x k i ^ d i = ∫ y, ∏ i, y i ^ d i ∂μ := by
-  have hmono : ∀ (d : ι →₀ ℕ) (y : ι → ℝ),
-      MvPolynomial.eval y (MvPolynomial.monomial d (1 : ℝ)) = ∏ i, y i ^ d i := by
-    intro d y
-    rw [MvPolynomial.eval_monomial, one_mul, Finsupp.prod_fintype _ _ fun i => pow_zero _]
-  have hdeg : ∀ d : ι →₀ ℕ, (MvPolynomial.monomial d (1 : ℝ)).totalDegree = d.degree := by
-    intro d
-    rw [MvPolynomial.totalDegree_monomial _ one_ne_zero, Finsupp.degree_eq_sum, Finsupp.sum_fintype]
-    intro i; rfl
-  constructor
-  · intro h d hd
-    have := h (MvPolynomial.monomial d 1) (by rw [hdeg]; exact hd)
-    simpa only [hmono] using this
-  · intro h p hp
-    conv_lhs => rw [MvPolynomial.as_sum p]
-    conv_rhs => rw [MvPolynomial.as_sum p]
-    simp only [map_sum, MvPolynomial.eval_monomial, Finsupp.prod_fintype _ _ fun i => pow_zero _]
-    rw [integral_finsetSum _ fun d _ => (hμ d).const_mul _]
-    simp only [MeasureTheory.integral_const_mul, Finset.mul_sum]
-    rw [Finset.sum_comm]
-    refine Finset.sum_congr rfl fun d hd => ?_
-    rw [← h d ((MvPolynomial.le_totalDegree hd).trans hp |>.trans' ?_), Finset.mul_sum]
-    · exact Finset.sum_congr rfl fun k _ => by ring
-    · rw [Finsupp.degree_eq_sum, Finsupp.sum_fintype]
-      intro i; rfl
 
 section Affine
 
@@ -367,7 +332,7 @@ theorem isExactOn_refTriangle_iff (w : K → ℝ) (x : K → Fin 2 → ℝ) (m :
     Approximation.IsExactOn (volume.restrict refTriangle) w x m ↔
       ∀ a b : ℕ, a + b ≤ m →
         ∑ k, w k * (x k 0 ^ a * x k 1 ^ b) = (a ! * b ! : ℝ) / (a + b + 2)! := by
-  rw [isExactOn_iff_forall_monomial]
+  rw [Approximation.isExactOn_iff_forall_monomial]
   · constructor
     · intro h a b hab
       have := h (Finsupp.equivFunOnFinite.symm ![a, b]) (by

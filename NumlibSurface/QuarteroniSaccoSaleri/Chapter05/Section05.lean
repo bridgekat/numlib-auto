@@ -49,42 +49,6 @@ variable {N : ℕ}
 
 /-! ### Bridges to the backbone -/
 
--- TODO(backbone): natural home `Numlib/Eigen/QRAlgorithm`, beside `Matrix.euclideanCol_mul`.
-/-- The columns of the eigenvector matrix are eigenvectors: if `X⁻¹ A X = diag(λ)` with `X`
-nonsingular then `A` sends the `j`-th column of `X` to `λ_j` times itself. -/
-theorem toEuclideanLin_euclideanCol_of_conj_eq_diagonal {𝕜 : Type*} [RCLike 𝕜] {n : Type*}
-    [Fintype n] [DecidableEq n] {A X : Matrix n n 𝕜} (hX : IsUnit X) {lam : n → 𝕜}
-    (hD : X⁻¹ * A * X = diagonal lam) (j : n) :
-    toEuclideanLin A (euclideanCol X j) = lam j • euclideanCol X j := by
-  have hdet := (isUnit_iff_isUnit_det X).mp hX
-  have hAX : A * X = X * diagonal lam := by
-    rw [← hD, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.one_mul]
-  have hcol : euclideanCol (diagonal lam) j = lam j • euclideanCol (1 : Matrix n n 𝕜) j := by
-    ext i
-    simp [euclideanCol, diagonal_apply, one_apply]
-  rw [← toEuclideanLin_euclideanCol_one, ← toEuclideanLin_mul_apply, hAX, toEuclideanLin_mul_apply,
-    toEuclideanLin_euclideanCol_one, hcol, map_smul, toEuclideanLin_euclideanCol_one]
-
--- TODO(backbone): natural home `Numlib/Eigen/QRAlgorithm`, beside
--- `Matrix.linearIndependent_euclideanCol`.
-/-- The columns of a nonsingular `n × n` matrix span `EuclideanSpace 𝕜 (Fin n)`. -/
-theorem span_range_euclideanCol_eq_top {𝕜 : Type*} [RCLike 𝕜] {X : Matrix (Fin N) (Fin N) 𝕜}
-    (hX : IsUnit X.det) : Submodule.span 𝕜 (Set.range (euclideanCol X)) = ⊤ :=
-  (linearIndependent_euclideanCol hX).span_eq_top_of_card_eq_finrank'
-    (by rw [Fintype.card_fin, finrank_euclideanSpace_fin])
-
-/-- A matrix similar to a diagonal matrix with nonzero entries is nonsingular. -/
-theorem isUnit_det_of_conj_eq_diagonal {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
-    [DecidableEq n] {A X : Matrix n n 𝕜} (hX : IsUnit X) {lam : n → 𝕜}
-    (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0) : IsUnit A.det := by
-  have hdet := (isUnit_iff_isUnit_det X).mp hX
-  have hA : A = X * diagonal lam * X⁻¹ := by
-    rw [← hD, Matrix.mul_assoc, Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.mul_one,
-      ← Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.one_mul]
-  rw [hA, det_mul, det_mul, det_diagonal, det_nonsing_inv]
-  exact (hdet.mul (isUnit_iff_ne_zero.mpr (Finset.prod_ne_zero_iff.2 fun i _ => hne i))).mul
-    (Ring.inverse_unit hdet.unit ▸ hdet.unit⁻¹.isUnit)
-
 /-- The hypotheses of Property 5.9, in the form the backbone's `Matrix.tendsto_qrIterate` takes:
 the columns of `X` are a basis of eigenvectors, the eigenvalues are nonzero and strictly
 decreasing in modulus, and the canonical flag is in general position with respect to them. -/
@@ -127,17 +91,6 @@ theorem property_5_9 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : F
   obtain ⟨hA, hx, hxtop, heig, hsep', hgen⟩ := property_5_9_hypotheses hX hD hne hsep hminor
   simp only [qrIterate_eq]
   exact Matrix.tendsto_qrIterate hA hx hxtop heig hne hsep' hgen
-
-/-- An upper triangular matrix with a positive diagonal is its own triangular factor, with the
-identity as unitary factor: `qrQ A = 1` and `qrR A = A`, by the uniqueness of the QR
-factorization (`Matrix.qr_unique`). -/
-theorem qrQ_eq_one_of_isUpperTriangular {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsUpperTriangular)
-    (hd : ∀ j, 0 < A j j) : qrQ A = 1 ∧ qrR A = A := by
-  have hdet : IsUnit A.det := by
-    rw [det_of_isUpperTriangular hA]
-    exact isUnit_iff_ne_zero.mpr (Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne')
-  exact qr_unique (qrQ_mul_qrR A).symm (Matrix.one_mul A).symm (conjTranspose_qrQ_mul_self A)
-    (by simp) (isUpperTriangular_qrR A) hA (qrR_diag_pos hdet) hd
 
 /-- The QR iteration leaves an upper triangular matrix with a positive diagonal fixed. -/
 theorem qrIterate_eq_self_of_isUpperTriangular {A : Matrix (Fin N) (Fin N) ℝ}

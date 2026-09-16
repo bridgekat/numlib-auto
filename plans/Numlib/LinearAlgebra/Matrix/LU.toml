@@ -179,3 +179,12 @@ id = "thomasGamma"
 
 [[node]]
 id = "thomasGamma_eq_inv_thomasAlpha"
+
+[[node]]
+id = "IsBlockLU.blockBidiagonal_of_blockTridiagonal"
+
+[[node]]
+id = "strictLeadingPrincipalSubmatrix_transpose"
+
+[[node]]
+id = "det_leadingPrincipalSubmatrix_fin"

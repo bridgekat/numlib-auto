@@ -23,9 +23,6 @@ id = "eulerMaclaurinTerm"
 id = "abs_trapezoidSum_sub_le"
 
 [[node]]
-id = "simpsonSum_eq_trapezoidSum"
-
-[[node]]
 id = "simpsonRule"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.7.2 (`S_f(α, β)`)'
 

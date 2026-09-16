@@ -156,4 +156,26 @@ id = "tendsto_averageConvergenceRate"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (4.5)"
 
 [[node]]
-id = "_root_.tendsto_one_div_mul_log_of_tendsto_rpow_one_div"
+id = "tendsto_zero_iff_forall_mulVec_tendsto_zero"
+
+[[node]]
+id = "complexSpectralRadius_eq_of_forall_mem_spectrum_iff"
+
+[[node]]
+id = "complexSpectralRadius_one"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 7.4'
+
+[[node]]
+id = "tendsto_pow_zero_iff_forall_mulVec"
+
+[[node]]
+id = "complexSpectralRadius_conj"
+
+[[node]]
+id = "mem_spectrum_iff_exists_mulVec_eq_smul"
+
+[[node]]
+id = "complexSpectralRadius_lt_one_iff_forall_norm_lt"
+
+[[node]]
+id = "complexify_mulVec_ofReal"

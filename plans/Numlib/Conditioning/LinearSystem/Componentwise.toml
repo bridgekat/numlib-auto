@@ -31,15 +31,6 @@ id = "abs_sub_apply_div_le_of_abs_le_abs"
 id = "norm_sub_le_of_computedResidual"
 
 [[node]]
-id = "norm_le_norm_of_abs_le"
-
-[[node]]
-id = "norm_abs_eq"
-
-[[node]]
-id = "norm_mulVec_one_of_entrywiseNonneg"
-
-[[node]]
 id = "sub_eq_inv_mulVec_of_mulVec_eq"
 
 [[node]]

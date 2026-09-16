@@ -1,5 +1,6 @@
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Analysis.Calculus.ContDiff.Deriv
+import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.Calculus.DSlope
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
@@ -123,6 +124,17 @@ theorem ContDiffAt.continuousAt_deriv {h : ℝ → ℝ} {a : ℝ} (hh : ContDiff
   obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
   have := ((hhu.mono hru).continuousOn_iteratedDeriv_of_isOpen (N := 1) Metric.isOpen_ball
     (j := 1) le_rfl).continuousAt (Metric.ball_mem_nhds a hr)
+  simpa using this
+
+/-- The derivative of a `C²` function is differentiable at the point, with derivative the second
+derivative. -/
+theorem hasDerivAt_deriv_of_contDiffAt_two {f : ℝ → ℝ} {α : ℝ} (hf : ContDiffAt ℝ 2 f α) :
+    HasDerivAt (deriv f) (iteratedDeriv 2 f α) α := by
+  obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
+  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
+  have hfb : ContDiffOn ℝ (2 : ℕ) f (Metric.ball α r) := by exact_mod_cast hfu.mono hru
+  have := hfb.hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball (j := 1) one_lt_two
+    (Metric.mem_ball_self hr)
   simpa using this
 
 end OpenSet
@@ -316,6 +328,19 @@ theorem iterate_dslope_same_apply {m : ℕ} (hf : ContDiffAt ℝ m f a) :
   have := iteratedDeriv_iterate_dslope_same (m := m) (n := 0) (by simpa using hf)
   simpa [div_eq_inv_mul] using this
 
+/-- **Hadamard's lemma, globally**: if `g` is `C^{m+1}` then `dslope g c` is `C^m`. At `c` this is
+`ContDiffAt.dslope_same`; elsewhere `dslope g c` is the quotient `(g y - g c)/(y - c)`. -/
+theorem _root_.ContDiff.dslope {g : ℝ → ℝ} {m : ℕ} (hg : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) g)
+    (c : ℝ) : ContDiff ℝ m (dslope g c) := by
+  refine contDiff_iff_contDiffAt.2 fun x => ?_
+  rcases eq_or_ne x c with rfl | hxc
+  · exact hg.contDiffAt.dslope_same
+  · refine ContDiffAt.congr_of_eventuallyEq ?_ (dslope_eventuallyEq_slope_of_ne g hxc)
+    rw [slope_fun_def_field]
+    have hg' : ContDiffAt ℝ m g x := hg.contDiffAt.of_le (by exact_mod_cast Nat.le_succ m)
+    exact (hg'.sub contDiffAt_const).div (contDiffAt_id.sub contDiffAt_const)
+      (sub_ne_zero.2 hxc)
+
 end Hadamard
 
 section Multiplicity
@@ -447,6 +472,17 @@ theorem IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow (hm : 1 ≤ m)
 end Multiplicity
 
 namespace Polynomial
+
+/-- Real polynomial functions are smooth. -/
+theorem contDiff_eval (P : ℝ[X]) (N : WithTop ℕ∞) :
+    ContDiff ℝ N fun t : ℝ => P.eval t := by
+  simpa only [coe_aeval_eq_eval] using P.contDiff_aeval (𝕜 := ℝ) N
+
+/-- A real polynomial function is `C^k` on any set. -/
+theorem contDiffOn_eval (p : ℝ[X]) (k : WithTop ℕ∞) (s : Set ℝ) :
+    ContDiffOn ℝ k (fun x => p.eval x) s :=
+  (by simpa [Polynomial.coe_aeval_eq_eval] using p.contDiff_aeval (𝕜 := ℝ) k :
+    ContDiff ℝ k fun x => p.eval x).contDiffOn
 
 /-- The iterated derivative of a polynomial function is the function of the iterated
 `derivative`. -/

@@ -34,21 +34,6 @@ section Theorem61
 
 variable {φ φ' : ℝ → ℝ} {a b : ℝ}
 
--- TODO(orchestrator): a general fact about one-sided derivatives, the within-interval form of
--- `tendsto_sub_div_sub_of_hasDerivAt`; natural home `Numlib/Nonlinear/Order`.
-/-- **(6.18) from a derivative within a set**: along an orbit `x (k+1) = φ (x k)` converging to
-`α = φ α` inside a set `s` on which `φ` has derivative `φ'` at `α`, and never equal to `α`, the
-error ratios tend to `φ' α`. This is the form needed when `α` is an endpoint of `[a, b]`. -/
-theorem tendsto_sub_div_sub_of_hasDerivWithinAt {s : Set ℝ} {α φ'α : ℝ}
-    (hφ : HasDerivWithinAt φ φ'α s α) (hα : φ α = α) {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k))
-    (hs : ∀ k, x k ∈ s) (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
-    Tendsto (fun k => (x (k + 1) - α) / (x k - α)) atTop (𝓝 φ'α) := by
-  have hmem : Tendsto x atTop (𝓝[s \ {α}] α) :=
-    tendsto_nhdsWithin_iff.2 ⟨hlim, Eventually.of_forall fun k => ⟨hs k, hne k⟩⟩
-  have := (hasDerivWithinAt_iff_tendsto_slope.1 hφ).comp hmem
-  refine this.congr fun k => ?_
-  simp [slope, hx, hα, Function.comp, vsub_eq_sub, div_eq_inv_mul]
-
 -- `φ ∈ C¹[a, b]` (the continuity `hφ'` of the derivative) is the book's hypothesis 2; the proof
 -- uses only the derivative bound within the interval
 -- (`exists_unique_fixedPoint_Icc_of_abs_deriv_le`).
@@ -316,19 +301,6 @@ end Chord631
 section Newton631
 
 variable {f : ℝ → ℝ} {α : ℝ}
-
--- TODO(orchestrator): a general fact; natural home `Numlib/Analysis/Calculus/RootMultiplicity`
--- beside `ContDiffOn.hasDerivAt_iteratedDeriv_of_isOpen`.
-/-- The derivative of a `C²` function is differentiable at the point, with derivative the second
-derivative. -/
-theorem hasDerivAt_deriv_of_contDiffAt_two (hf : ContDiffAt ℝ 2 f α) :
-    HasDerivAt (deriv f) (iteratedDeriv 2 f α) α := by
-  obtain ⟨u, hu, hfu⟩ := hf.contDiffOn le_rfl (by simp)
-  obtain ⟨r, hr, hru⟩ := Metric.mem_nhds_iff.1 hu
-  have hfb : ContDiffOn ℝ (2 : ℕ) f (Metric.ball α r) := by exact_mod_cast hfu.mono hru
-  have := hfb.hasDerivAt_iteratedDeriv_of_isOpen Metric.isOpen_ball (j := 1) one_lt_two
-    (Metric.mem_ball_self hr)
-  simpa using this
 
 /-- **§6.3.1, Newton's method at a simple root.** For `φ_Newt(x) = x - f(x) / f'(x)` with `f α = 0`,
 `f ∈ C²` near `α` and `f'(α) ≠ 0`: `φ_Newt'(α) = 0`; and for `f ∈ C³`,

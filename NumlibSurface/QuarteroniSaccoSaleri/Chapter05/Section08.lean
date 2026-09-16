@@ -44,41 +44,6 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### §5.8.1: the Hessenberg inverse iteration -/
 
-/-- A unitary matrix `Q` as a linear isometry equivalence of `EuclideanSpace 𝕜 (Fin n)`, acting as
-`toEuclideanLin Q`, with inverse `toEuclideanLin Qᴴ`. -/
-noncomputable def unitaryLinearIsometryEquiv {Q : Matrix (Fin n) (Fin n) 𝕜}
-    (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) :
-    EuclideanSpace 𝕜 (Fin n) ≃ₗᵢ[𝕜] EuclideanSpace 𝕜 (Fin n) :=
-  Unitary.linearIsometryEquiv
-    ⟨toEuclideanCLM (n := Fin n) (𝕜 := 𝕜) Q, toEuclideanCLM_mem_unitary hQ⟩
-
-/-- The isometry of a unitary matrix acts as the matrix. -/
-theorem unitaryLinearIsometryEquiv_apply {Q : Matrix (Fin n) (Fin n) 𝕜}
-    (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) (x : EuclideanSpace 𝕜 (Fin n)) :
-    unitaryLinearIsometryEquiv hQ x = toEuclideanLin Q x := rfl
-
-/-- The inverse of the isometry of a unitary matrix acts as its conjugate transpose. -/
-theorem unitaryLinearIsometryEquiv_symm_apply {Q : Matrix (Fin n) (Fin n) 𝕜}
-    (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) (x : EuclideanSpace 𝕜 (Fin n)) :
-    (unitaryLinearIsometryEquiv hQ).symm x = toEuclideanLin Qᴴ x := by
-  change (star (toEuclideanCLM (n := Fin n) (𝕜 := 𝕜) Q)) x = _
-  rw [← map_star, star_eq_conjTranspose]
-  rfl
-
-/-- A unitary matrix is a unit, with inverse `star Q`. -/
-theorem isUnit_of_mem_unitaryGroup {Q : Matrix (Fin n) (Fin n) 𝕜}
-    (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) : IsUnit Q :=
-  ⟨⟨Q, star Q, mem_unitaryGroup_iff.mp hQ, mem_unitaryGroup_iff'.mp hQ⟩, rfl⟩
-
-/-- The similarity `H = Qᴴ A Q` does not change the spectrum. -/
-theorem spectrum_conjTranspose_mul_mul {A Q : Matrix (Fin n) (Fin n) 𝕜}
-    (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) : spectrum 𝕜 (Qᴴ * A * Q) = spectrum 𝕜 A := by
-  have hu : IsUnit Q := isUnit_of_mem_unitaryGroup hQ
-  have hinv : Q⁻¹ = Qᴴ :=
-    inv_eq_left_inv (by rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.mp hQ)
-  have h := spectrum.units_conjugate' (R := 𝕜) (a := A) (u := hu.unit)
-  rwa [coe_units_inv, IsUnit.unit_spec, hinv] at h
-
 /-- **§5.8.1, the Hessenberg inverse iteration.** Let `H = Qᴴ A Q` with `Q` unitary (the
 Hessenberg form of `A`, `Qᵀ A Q` for a real orthogonal `Q`), let `λ ∉ σ(A)` be an approximate
 eigenvalue, and let `q⁽⁰⁾` be a unit vector. Then the inverse iteration (5.28) applied to `H` from

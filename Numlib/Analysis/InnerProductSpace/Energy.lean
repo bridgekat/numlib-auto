@@ -273,6 +273,20 @@ theorem equiv_mem_submoduleMap_iff {K : Submodule 𝕜 E} {x : E} :
   rintro ⟨y, hy, hxy⟩
   rwa [(equiv A hA).injective hxy] at hy
 
+section FiniteDimensional
+
+variable [FiniteDimensional 𝕜 E]
+
+/-- The energy space of a finite-dimensional space is finite-dimensional. -/
+instance instFiniteDimensional : FiniteDimensional 𝕜 (WithEnergy A hA) :=
+  (equiv A hA).finiteDimensional
+
+/-- The energy space of a finite-dimensional space is complete. -/
+instance instCompleteSpace : CompleteSpace (WithEnergy A hA) :=
+  FiniteDimensional.complete 𝕜 _
+
+end FiniteDimensional
+
 /-- For bounded `A` the energy norm is equivalent to the original norm, so `equiv` is a
 continuous linear equivalence. -/
 theorem continuous_equiv {A : E →L[𝕜] E} (hA : (A : E →ₗ[𝕜] E).IsSymmetricCoercive) :

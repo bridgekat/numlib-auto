@@ -4,6 +4,7 @@ import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Eigen.PowerMethod
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
 # Orthogonal iteration and the QR algorithm
@@ -505,6 +506,37 @@ theorem linearIndependent_euclideanCol {A : Matrix n n 𝕜} (hA : IsUnit A.det)
     Matrix.linearIndependent_cols_iff_isUnit.2 ((Matrix.isUnit_iff_isUnit_det A).2 hA)
   exact LinearIndependent.of_comp (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap h
 
+/-- The columns of a nonsingular `n × n` matrix span `EuclideanSpace 𝕜 n`. -/
+theorem span_range_euclideanCol_eq_top {A : Matrix n n 𝕜} (hA : IsUnit A.det) :
+    Submodule.span 𝕜 (Set.range (euclideanCol A)) = ⊤ :=
+  (linearIndependent_euclideanCol hA).span_eq_top_of_card_eq_finrank'
+    (by rw [finrank_euclideanSpace])
+
+/-- The columns of the eigenvector matrix are eigenvectors: if `X⁻¹ A X = diag(λ)` with `X`
+nonsingular then `A` sends the `j`-th column of `X` to `λ_j` times itself. -/
+theorem toEuclideanLin_euclideanCol_of_conj_eq_diagonal {A X : Matrix n n 𝕜} (hX : IsUnit X)
+    {lam : n → 𝕜} (hD : X⁻¹ * A * X = diagonal lam) (j : n) :
+    toEuclideanLin A (euclideanCol X j) = lam j • euclideanCol X j := by
+  have hdet := (isUnit_iff_isUnit_det X).mp hX
+  have hAX : A * X = X * diagonal lam := by
+    rw [← hD, ← Matrix.mul_assoc, ← Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.one_mul]
+  have hcol : euclideanCol (diagonal lam) j = lam j • euclideanCol (1 : Matrix n n 𝕜) j := by
+    ext i
+    simp [euclideanCol, diagonal_apply, one_apply]
+  rw [← toEuclideanLin_euclideanCol_one, ← toEuclideanLin_mul_apply, hAX, toEuclideanLin_mul_apply,
+    toEuclideanLin_euclideanCol_one, hcol, map_smul, toEuclideanLin_euclideanCol_one]
+
+/-- A matrix similar to a diagonal matrix with nonzero entries is nonsingular. -/
+theorem isUnit_det_of_conj_eq_diagonal {A X : Matrix n n 𝕜} (hX : IsUnit X) {lam : n → 𝕜}
+    (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0) : IsUnit A.det := by
+  have hdet := (isUnit_iff_isUnit_det X).mp hX
+  have hA : A = X * diagonal lam * X⁻¹ := by
+    rw [← hD, Matrix.mul_assoc, Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.mul_one,
+      ← Matrix.mul_assoc, mul_nonsing_inv X hdet, Matrix.one_mul]
+  rw [hA, det_mul, det_mul, det_diagonal, det_nonsing_inv]
+  exact (hdet.mul (isUnit_iff_ne_zero.mpr (Finset.prod_ne_zero_iff.2 fun i _ => hne i))).mul
+    (Ring.inverse_unit hdet.unit ▸ hdet.unit⁻¹.isUnit)
+
 omit [Fintype n] in
 /-- The columns of the identity are the standard basis vectors. -/
 theorem euclideanCol_one (i : n) :
@@ -758,6 +790,17 @@ theorem qrAccum_mul_conjTranspose (A : Matrix n n 𝕜) (k : ℕ) :
 theorem conjTranspose_qrQ_mul_self (A : Matrix n n 𝕜) : (qrQ A)ᴴ * qrQ A = 1 := by
   simpa [Matrix.star_eq_conjTranspose] using
     Matrix.mem_unitaryGroup_iff'.1 (qrQ_mem_unitaryGroup A)
+
+/-- An upper triangular matrix with a positive diagonal is its own triangular factor, with the
+identity as unitary factor: `qrQ A = 1` and `qrR A = A`, by the uniqueness of the QR
+factorization (`Matrix.qr_unique`). -/
+theorem qrQ_eq_one_of_isUpperTriangular {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜}
+    (hA : A.IsUpperTriangular) (hd : ∀ j, 0 < A j j) : qrQ A = 1 ∧ qrR A = A := by
+  have hdet : IsUnit A.det := by
+    rw [det_of_isUpperTriangular hA]
+    exact isUnit_iff_ne_zero.mpr (Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne')
+  exact qr_unique (qrQ_mul_qrR A).symm (Matrix.one_mul A).symm (conjTranspose_qrQ_mul_self A)
+    (by simp) (isUpperTriangular_qrR A) hA (qrR_diag_pos hdet) hd
 
 set_option linter.unusedDecidableInType false in
 /-- The triangular factor read off the QR decomposition: `R = Qᴴ A`. -/

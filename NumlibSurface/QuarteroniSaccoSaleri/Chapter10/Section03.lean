@@ -25,7 +25,7 @@ the discrete norms of the `T_k` and the discrete transform are
 `Numlib/Approximation/GaussLobatto`, stated there at Mathlib's nodes `cos(jπ/n)`
 (`Polynomial.Chebyshev.node`); the book's nodes are these reversed, `x̄ⱼ = node n (n - j)`, and
 every statement here is transported along `j ↦ n - j`. Convergence is the Szegő–Pólya criterion in
-the form `tendsto_of_isExactOnMeasure` of §10.2.
+the backbone's measure-level form `Quadrature.tendsto_of_isExactOnMeasure`.
 
 ## Main definitions
 
@@ -78,35 +78,6 @@ open MeasureTheory Polynomial OrthogonalPolynomial Quadrature Real Set Filter To
 namespace QuarteroniSaccoSaleri.Chapter10
 
 variable {n : ℕ}
-
-/-! ### Reindexing a quadrature rule -/
-
--- TODO(backbone): exactness is invariant under a permutation of the nodes.
-/-- Permuting the nodes and weights of a rule together does not change its exactness. -/
-theorem isExactOnMeasure_comp_equiv {μ : Measure ℝ} {m : ℕ} {w x : Fin m → ℝ}
-    (σ : Equiv.Perm (Fin m)) {d : ℕ} :
-    IsExactOnMeasure μ (w ∘ σ) (x ∘ σ) d ↔ IsExactOnMeasure μ w x d := by
-  simp only [IsExactOnMeasure, Function.comp_apply]
-  exact forall₂_congr fun p _ => by rw [Equiv.sum_comp σ fun i => w i * p.eval (x i)]
-
--- TODO(backbone): the Lagrange interpolant does not depend on the enumeration of the nodes.
-/-- The interpolant at a reindexed family of nodes is the interpolant at the original family. -/
-theorem interpolate_comp_equiv {m : ℕ} {x : Fin m → ℝ} (hx : Function.Injective x)
-    (σ : Equiv.Perm (Fin m)) (f : ℝ → ℝ) :
-    (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)) =
-      Lagrange.interpolate Finset.univ x fun i => f (x i) := by
-  have hxσ : Function.Injective (x ∘ σ) := hx.comp σ.injective
-  have hdeg : (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)).degree <
-      (Finset.univ : Finset (Fin m)).card :=
-    Lagrange.degree_interpolate_lt _ hxσ.injOn
-  have hev : ∀ i ∈ (Finset.univ : Finset (Fin m)),
-      (Lagrange.interpolate Finset.univ (x ∘ σ) fun i => f ((x ∘ σ) i)).eval (x i) = f (x i) := by
-    intro i _
-    have h := Lagrange.eval_interpolate_at_node (fun i => f ((x ∘ σ) i)) hxσ.injOn
-      (Finset.mem_univ (σ.symm i))
-    simp only [Function.comp_apply, Equiv.apply_symm_apply] at h
-    exact h
-  exact Lagrange.eq_interpolate_of_eval_eq _ hx.injOn hdeg hev
 
 /-! ### The Chebyshev–Gauss formula (10.20) -/
 
@@ -388,15 +359,6 @@ noncomputable def equation_10_23 (μ : Measure ℝ) (s : ℕ) (f : ℝ → ℝ) 
 
 /-! ### Convergence of the Chebyshev–Gauss–Lobatto formula -/
 
--- TODO(backbone): the Chebyshev weight is carried by `[-1, 1]`; belongs beside
--- `OrthogonalPolynomial.isWeight_chebyshevMeasure`.
-/-- The Chebyshev weight gives no mass outside `[-1, 1]`. -/
-theorem chebyshevMeasure_compl_Icc : chebyshevMeasure (Icc (-1 : ℝ) 1)ᶜ = 0 := by
-  rw [chebyshevMeasure, Chebyshev.measureT, Measure.restrict_apply' measurableSet_Ioc]
-  have hempty : (Icc (-1 : ℝ) 1)ᶜ ∩ Ioc (-1 : ℝ) 1 = ∅ :=
-    Set.eq_empty_of_forall_notMem fun t ht => ht.1 (Ioc_subset_Icc_self ht.2)
-  rw [hempty, measure_empty]
-
 /-- **§10.3, the convergence of the Chebyshev–Gauss–Lobatto formula** (the book cites [Sze67],
 p. 342, for every `f` with finite weighted integral; stated for `f ∈ C⁰([-1, 1])`):
 
@@ -505,7 +467,7 @@ theorem equation_10_31 (hn : 1 ≤ n) (f : ℝ → ℝ) :
         fun j => f (((fun j : Fin (n + 1) => chebyshevLobattoNode n j) ∘ Fin.revPerm) j) := by
       ext j
       exact congrArg f (chebyshevLobattoNode_rev hn0 j).symm
-    rw [hnodes, hvals, interpolate_comp_equiv hinj Fin.revPerm f] at h
+    rw [hnodes, hvals, Lagrange.interpolate_comp_equiv hinj Fin.revPerm f] at h
     rw [h]
     exact Finset.sum_congr rfl fun k _ => by rw [chebyshevDiscreteCoeff_eq hn0]
   refine ⟨hcdt, fun j => ?_, ?_⟩

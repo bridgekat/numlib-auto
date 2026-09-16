@@ -112,6 +112,10 @@ def strictLeadingPrincipalSubmatrix (A : Matrix n n R) (k : n) :
     Matrix {i // i < k} {i // i < k} R :=
   A.toBlock (· < k) (· < k)
 
+/-- The strict leading principal submatrices of the transpose are the transposes. -/
+theorem strictLeadingPrincipalSubmatrix_transpose (A : Matrix n n R) (k : n) :
+    Aᵀ.strictLeadingPrincipalSubmatrix k = (A.strictLeadingPrincipalSubmatrix k)ᵀ := rfl
+
 /-- The leading principal minor `d_k = det A(≤ k, ≤ k)`. -/
 noncomputable def leadingPrincipalMinor [Fintype n] [CommRing R] (A : Matrix n n R) (k : n) :
     R :=
@@ -519,6 +523,85 @@ theorem IsLU.diag_upper_eq_div_leadingPrincipalMinor (h : IsLU A L U) {k : n}
 end Det
 
 /-! ### Existence and uniqueness of the block LU factorization -/
+
+/-! ### Leading principal submatrices on `Fin N` -/
+
+section Fin
+
+/-- On `Fin N`, the leading principal submatrix `A(≤ k)` is, up to the reindexing of `{i // i ≤ k}`
+by `Fin (k + 1)`, the submatrix along `Fin.castLE`, so the two have the same determinant. -/
+theorem det_leadingPrincipalSubmatrix_fin {R : Type*} [CommRing R] {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) R) (k : Fin N) :
+    (A.leadingPrincipalSubmatrix k).det =
+      (A.submatrix (Fin.castLE (Nat.succ_le_of_lt k.2))
+        (Fin.castLE (Nat.succ_le_of_lt k.2))).det := by
+  let e : Fin (k + 1) ≃ {i : Fin N // i ≤ k} :=
+    { toFun := fun a => ⟨Fin.castLE (Nat.succ_le_of_lt k.2) a, Fin.le_def.2 (Nat.lt_succ_iff.1 a.2)⟩
+      invFun := fun i => ⟨i.1, Nat.lt_succ_of_le (Fin.le_def.1 i.2)⟩
+      left_inv := fun a => rfl
+      right_inv := fun i => rfl }
+  rw [← det_submatrix_equiv_self e]
+  rfl
+
+end Fin
+
+/-! ### Block tridiagonal matrices -/
+
+section BlockTridiagonal
+
+/-- **The block bandwidth of the block LU factors** ([quarteroni2000numerical] §3.8.3). For a
+block tridiagonal `A` on `Fin N` with blocks labelled by a map `b : Fin N → Fin m` — the blocks
+`A_{ij}` with `|i - j| ≥ 2` vanish — whose leading principal block submatrices are nonsingular,
+the block LU factors are block bidiagonal: `L` has only its diagonal and first subdiagonal
+blocks, `U` only its diagonal and first superdiagonal blocks. This is the block form of
+`Matrix.IsLU.hasLowerBandwidth`; as there, the clause for `U` needs no hypothesis on the leading
+blocks, while the clause for `L` does (`Matrix.IsBlockLU.toBlock`,
+`Matrix.IsBlockLU.toBlock_not_left`, `Matrix.IsBlockLU.toBlock_not_right`). -/
+theorem IsBlockLU.blockBidiagonal_of_blockTridiagonal {N m : ℕ} {b : Fin N → Fin m} {K : Type*}
+    [Field K] {A L U : Matrix (Fin N) (Fin N) K} (h : IsBlockLU b A L U)
+    (htriL : ∀ i j, (b j : ℕ) + 1 < b i → A i j = 0)
+    (htriU : ∀ i j, (b i : ℕ) + 1 < b j → A i j = 0)
+    (hlead : ∀ k : Fin m, IsUnit (A.toBlock (b · ≤ k) (b · ≤ k))) :
+    (∀ i j, (b j : ℕ) + 1 < b i → L i j = 0) ∧ ∀ i j, (b i : ℕ) + 1 < b j → U i j = 0 := by
+  constructor
+  · intro i j hij
+    have hp : ∀ x y : Fin N, b x ≤ b j → b y ≤ b x → b y ≤ b j := fun _ _ hx hyx => hyx.trans hx
+    have hLp : IsUnit (L.toBlock (b · ≤ b j) (b · ≤ b j)) :=
+      (h.toBlock hp).isBlockUnitLowerTriangular.isUnit
+    have hUp : IsUnit (U.toBlock (b · ≤ b j) (b · ≤ b j)) := by
+      have hmul := (h.toBlock hp).mul_eq
+      rw [isUnit_iff_isUnit_det] at hLp ⊢
+      have hAp := hlead (b j)
+      rw [isUnit_iff_isUnit_det, ← hmul, det_mul] at hAp
+      exact isUnit_of_mul_isUnit_right hAp
+    have hLeq : L.toBlock (fun x => ¬ b x ≤ b j) (b · ≤ b j) =
+        A.toBlock (fun x => ¬ b x ≤ b j) (b · ≤ b j) *
+          (U.toBlock (b · ≤ b j) (b · ≤ b j))⁻¹ := by
+      rw [h.toBlock_not_left hp, Matrix.mul_assoc,
+        mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hUp), Matrix.mul_one]
+    have hi : ¬ b i ≤ b j := not_le.2 (Fin.lt_def.2 (by omega))
+    have hentry := congrFun (congrFun hLeq ⟨i, hi⟩) ⟨j, le_rfl⟩
+    rw [toBlock_apply, mul_apply] at hentry
+    rw [hentry]
+    refine Finset.sum_eq_zero fun x _ => ?_
+    rw [toBlock_apply, htriL i x.1 (by have := Fin.le_def.1 x.2; omega), zero_mul]
+  · intro i j hij
+    have hp : ∀ x y : Fin N, b x ≤ b i → b y ≤ b x → b y ≤ b i := fun _ _ hx hyx => hyx.trans hx
+    have hLp : IsUnit (L.toBlock (b · ≤ b i) (b · ≤ b i)) :=
+      (h.toBlock hp).isBlockUnitLowerTriangular.isUnit
+    have hUeq : U.toBlock (b · ≤ b i) (fun x => ¬ b x ≤ b i) =
+        (L.toBlock (b · ≤ b i) (b · ≤ b i))⁻¹ *
+          A.toBlock (b · ≤ b i) (fun x => ¬ b x ≤ b i) := by
+      rw [h.toBlock_not_right hp, ← Matrix.mul_assoc,
+        nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hLp), Matrix.one_mul]
+    have hj : ¬ b j ≤ b i := not_le.2 (Fin.lt_def.2 (by omega))
+    have hentry := congrFun (congrFun hUeq ⟨i, le_rfl⟩) ⟨j, hj⟩
+    rw [toBlock_apply, mul_apply] at hentry
+    rw [hentry]
+    refine Finset.sum_eq_zero fun x _ => ?_
+    rw [toBlock_apply, htriU x.1 j (by have := Fin.le_def.1 x.2; omega), mul_zero]
+
+end BlockTridiagonal
 
 section BlockExistence
 

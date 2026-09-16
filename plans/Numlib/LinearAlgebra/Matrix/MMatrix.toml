@@ -38,9 +38,6 @@ id = "Matrix.IsMMatrix.abs_inv_mulVec_le"
 id = "Matrix.IsMMatrix.norm_inv_mulVec_le"
 
 [[node]]
-id = "Matrix.complexSpectralRadius_conj"
-
-[[node]]
 id = "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_of_mulVec_lt"
 
 [[node]]

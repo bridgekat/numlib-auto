@@ -63,3 +63,14 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.26)"
 [[node]]
 id = "AlgebraNorm.one_div_one_add_le_norm_inverse_one_sub"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (1.26)"
+
+[[node]]
+id = "spectralRadius_le_nnnorm_conj"
+
+[[node]]
+id = "spectralRadius_star"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "spectralRadius_eq_iSup_diff_singleton_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'

@@ -184,3 +184,9 @@ id = "SobolevMultiIndexZero.testFunctions_le"
 
 [[node]]
 id = "SobolevMultiIndexZero.instCompleteSpace"
+
+[[node]]
+id = "prod_multiset_sum"
+
+[[node]]
+id = "prod_multiIndexTuple"

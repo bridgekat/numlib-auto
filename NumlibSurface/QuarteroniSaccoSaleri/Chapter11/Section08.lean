@@ -226,42 +226,6 @@ theorem equation_11_73_step :
 
 /-! ### §11.8.1: the two-stage order conditions -/
 
-/-- A `C³` function on `[a, b]`, `a < b`, has the derivatives `y'`, `y''`, `y'''` within `[a, b]`
-given by `derivWithin` and `iteratedDerivWithin`; the three-level form of
-`hasDerivWithinAt_derivWithin_of_contDiffOn_two`. -/
-theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three {a b : ℝ} (hlt : a < b)
-    {y : ℝ → ℝ} (hy : ContDiffOn ℝ 3 y (Icc a b)) :
-    (∀ s ∈ Icc a b, HasDerivWithinAt y (derivWithin y (Icc a b) s) (Icc a b) s) ∧
-    (∀ s ∈ Icc a b, HasDerivWithinAt (derivWithin y (Icc a b))
-      (iteratedDerivWithin 2 y (Icc a b) s) (Icc a b) s) ∧
-    ∀ s ∈ Icc a b, HasDerivWithinAt (iteratedDerivWithin 2 y (Icc a b))
-      (iteratedDerivWithin 3 y (Icc a b) s) (Icc a b) s := by
-  have h3 : (3 : WithTop ℕ∞) = 2 + 1 := rfl
-  rw [h3, contDiffOn_succ_iff_derivWithin (uniqueDiffOn_Icc hlt)] at hy
-  obtain ⟨h1, h2⟩ := hasDerivWithinAt_derivWithin_of_contDiffOn_two hlt hy.2.2
-  refine ⟨fun s hs => (hy.1 s hs).hasDerivWithinAt, fun s hs => ?_, fun s hs => ?_⟩
-  · have := h1 s hs
-    rwa [show iteratedDerivWithin 2 y (Icc a b) = derivWithin (derivWithin y (Icc a b)) (Icc a b)
-      by rw [iteratedDerivWithin_succ, iteratedDerivWithin_one]]
-  · have := h2 s hs
-    rwa [show iteratedDerivWithin 2 y (Icc a b) = derivWithin (derivWithin y (Icc a b)) (Icc a b)
-      by rw [iteratedDerivWithin_succ, iteratedDerivWithin_one],
-      show iteratedDerivWithin 3 y (Icc a b) =
-        iteratedDerivWithin 2 (derivWithin y (Icc a b)) (Icc a b) from
-        iteratedDerivWithin_succ']
-
--- TODO(backbone): a calculus module should hold this, with the two- and three-level forms above.
-/-- A `C^k` function on `[a, b]`, `a < b`, has within `[a, b]` the derivative
-`iteratedDerivWithin (j + 1) y [a, b]` of `iteratedDerivWithin j y [a, b]` for every `j < k`: the
-general form of `hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn_three`. -/
-theorem hasDerivWithinAt_iteratedDerivWithin_of_contDiffOn {a b : ℝ} (hlt : a < b) {y : ℝ → ℝ}
-    {k : WithTop ℕ∞} (hy : ContDiffOn ℝ k y (Icc a b)) {j : ℕ} (hj : (j : WithTop ℕ∞) < k)
-    {s : ℝ} (hs : s ∈ Icc a b) :
-    HasDerivWithinAt (iteratedDerivWithin j y (Icc a b))
-      (iteratedDerivWithin (j + 1) y (Icc a b) s) (Icc a b) s := by
-  rw [iteratedDerivWithin_succ]
-  exact ((hy.differentiableOn_iteratedDerivWithin hj (uniqueDiffOn_Icc hlt)) s hs).hasDerivWithinAt
-
 /-- **The two-stage order conditions (§11.8.1)**: a two-stage explicit RK method satisfying
 (11.72) has order two iff `b₁ + b₂ = 1` and `c₂ b₂ = 1/2`. The necessity is read on the test
 problems `y' = 1` and `y' = 2t` (`ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`); the

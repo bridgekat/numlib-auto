@@ -35,7 +35,3 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.2)–(9.3)'
 [[node]]
 id = "lagrangeQuadrature_eq_functional"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.3)'
-
-[[node]]
-id = "isExactOn_integralIccCLM_iff"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.1 (degree of exactness)'

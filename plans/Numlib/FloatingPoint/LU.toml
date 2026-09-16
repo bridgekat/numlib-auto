@@ -52,15 +52,6 @@ id = "gamma_div_one_sub_gamma"
 id = "gamma_lt_one"
 
 [[node]]
-id = "_root_.Matrix.linfty_opNorm_le_of_forall_sum_le"
-
-[[node]]
-id = "_root_.Matrix.sum_abs_apply_le_linfty_opNorm"
-
-[[node]]
-id = "_root_.Matrix.abs_apply_le_linfty_opNorm"
-
-[[node]]
 id = "_root_.Matrix.supAbs_le_linfty_opNorm"
 
 [[node]]

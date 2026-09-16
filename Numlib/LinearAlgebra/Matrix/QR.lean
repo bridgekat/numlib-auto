@@ -296,7 +296,8 @@ private theorem star_householderAxis_dotProduct_self (x : n → 𝕜) (i : n) :
   linear_combination ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) * h1
     + ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) ^ 2 * h2
 
-private theorem householderAxis_ne_zero {x : n → 𝕜} (hx : x ≠ 0) (i : n) :
+/-- The Householder axis `x + sign(x_i) ‖x‖₂ e_i` is nonzero when `x` is. -/
+theorem householderAxis_ne_zero {x : n → 𝕜} (hx : x ≠ 0) (i : n) :
     householderAxis x i ≠ 0 := by
   intro h
   have hd := star_householderAxis_dotProduct x i
@@ -961,12 +962,6 @@ end GramSchmidt
 section HessenbergReduction
 
 variable {N : ℕ}
-
-/-- On `Fin N`, upper Hessenberg is the condition `A i j = 0` for `j + 1 < i`. (Belongs beside
-`Matrix.hasLowerBandwidth_iff_fin` in `Numlib/LinearAlgebra/Matrix/Hessenberg`.) -/
-theorem isUpperHessenberg_iff_fin {R : Type*} [Zero R] {A : Matrix (Fin N) (Fin N) R} :
-    A.IsUpperHessenberg ↔ ∀ i j : Fin N, (j : ℕ) + 1 < (i : ℕ) → A i j = 0 := by
-  rw [isUpperHessenberg_iff_hasLowerBandwidth_one, hasLowerBandwidth_iff_fin]
 
 /-- The reflector of step `k` of the Householder reduction to Hessenberg form: the tail reflector
 of column `k` of `A` with pivot `k + 1`, [quarteroni2000numerical] (5.41) with `x` the `k`-th

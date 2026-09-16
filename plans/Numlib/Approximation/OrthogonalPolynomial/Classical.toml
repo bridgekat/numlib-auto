@@ -203,3 +203,9 @@ id = "laguerreMeasure_compl_Ioi"
 
 [[node]]
 id = "laguerreMeasure_ae_nonneg"
+
+[[node]]
+id = "jacobiMeasure_compl_Icc"
+
+[[node]]
+id = "chebyshevMeasure_compl_Icc"

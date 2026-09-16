@@ -57,9 +57,5 @@ id = "equation_1_15"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.15)'
 
 [[node]]
-id = "tendsto_seminorm_iff_tendsto_norm"
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.10'
-
-[[node]]
 id = "property_1_12"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.12'

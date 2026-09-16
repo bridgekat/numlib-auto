@@ -176,17 +176,6 @@ theorem definition_1_15 {A : Matrix (Fin m) (Fin n) ℂ} {U : Matrix (Fin m) (Fi
     A.pinv = V * (rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℂ) * star U :=
   pinv_eq_of_svd hU hV h
 
--- TODO(backbone): the converse of `Matrix.rank_of_isUnit` over a field, beside
--- `Matrix.rank_add_finrank_ker_mulVecLin` in `Numlib/LinearAlgebra/Matrix/Rank`.
-/-- A square matrix over a field of full rank is nonsingular: its kernel has dimension `0` by
-rank–nullity, so `x ↦ A x` is injective. -/
-theorem isUnit_of_rank_eq_card {K : Type*} [Field K] {A : Matrix (Fin n) (Fin n) K}
-    (h : A.rank = n) : IsUnit A := by
-  have hk := rank_add_finrank_ker_mulVecLin A
-  rw [Fintype.card_fin, h] at hk
-  rw [← mulVec_injective_iff_isUnit, ← coe_mulVecLin, ← LinearMap.ker_eq_bot]
-  exact Submodule.finrank_eq_zero.1 (by omega)
-
 /-- **Definition 1.15, the full-rank cases.** If `rank A = n` (`A ∈ ℂ^{m×n}` with independent
 columns, e.g. `n < m`) then `A⁺ = (Aᴴ A)⁻¹ Aᴴ` — for a real `A`, `(Aᵀ A)⁻¹ Aᵀ` — and if
 `n = m = rank A` then `A⁺ = A⁻¹` (backbone
@@ -195,12 +184,13 @@ theorem definition_1_15_fullRank (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (F
     (C : Matrix (Fin n) (Fin n) ℂ) :
     (A.rank = n → A.pinv = (Aᴴ * A)⁻¹ * Aᴴ) ∧ (B.rank = n → B.pinv = (Bᵀ * B)⁻¹ * Bᵀ) ∧
       (C.rank = n → C.pinv = C⁻¹) := by
-  refine ⟨fun hA => ?_, fun hB => ?_, fun hC => pinv_eq_inv (isUnit_of_rank_eq_card hC)⟩
+  refine ⟨fun hA => ?_, fun hB => ?_,
+    fun hC => pinv_eq_inv (isUnit_of_rank_eq_card (by rw [Fintype.card_fin]; exact hC))⟩
   · exact pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit
-      (isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hA]))
+      (isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hA, Fintype.card_fin]))
   · rw [← conjTranspose_eq_transpose_of_trivial]
     exact pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit
-      (isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hB]))
+      (isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hB, Fintype.card_fin]))
 
 /-- **Exercise 12** (cited by §1.9 for the properties of `A⁺`). Let `A ∈ ℂ^{m×n}` with
 `rank A = n`. Then (1) `A⁺ A = Iₙ`; (2) `A⁺ A A⁺ = A⁺` and `A A⁺ A = A` — these two hold for every
@@ -211,7 +201,8 @@ theorem exercise_1_12 (A : Matrix (Fin m) (Fin n) ℂ) (C : Matrix (Fin n) (Fin 
       (C.rank = n → C.pinv = C⁻¹) := by
   refine ⟨fun hA => ?_, ⟨pinv_mul_self_mul_pinv A, mul_pinv_mul_self A⟩,
     (definition_1_15_fullRank A 0 C).2.2⟩
-  have hG : IsUnit (Aᴴ * A) := isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hA])
+  have hG : IsUnit (Aᴴ * A) :=
+    isUnit_of_rank_eq_card (by rw [rank_conjTranspose_mul_self, hA, Fintype.card_fin])
   rw [(definition_1_15_fullRank A 0 C).1 hA, Matrix.mul_assoc,
     nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hG)]
 

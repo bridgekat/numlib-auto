@@ -69,3 +69,9 @@ id = "LinearMap.IsSymmetric.energyFunctional_add"
 
 [[node]]
 id = "LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq"
+
+[[node]]
+id = "WithEnergy.instFiniteDimensional"
+
+[[node]]
+id = "WithEnergy.instCompleteSpace"

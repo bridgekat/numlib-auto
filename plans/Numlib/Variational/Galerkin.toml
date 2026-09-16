@@ -120,3 +120,6 @@ id = "seminorm_sub_le_of_galerkin_orthogonal"
 
 [[node]]
 id = "seminorm_sub_le_of_generalizedGalerkin"
+
+[[node]]
+id = "SesqForm.gramMatrix_mulVec_apply"

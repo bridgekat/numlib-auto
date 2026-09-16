@@ -79,12 +79,6 @@ id = "LinearMap.IsSymmetric.rayleighQuotient_mem_Icc"
 id = "LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry"
 
 [[node]]
-id = "Matrix.toEuclideanLinearIsometry"
-
-[[node]]
-id = "Matrix.toEuclideanLinearIsometry_apply"
-
-[[node]]
 id = "Matrix.IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace"
 
 [[node]]

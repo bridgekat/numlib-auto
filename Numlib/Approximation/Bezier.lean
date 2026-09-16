@@ -32,7 +32,6 @@ Bernstein basis is the B-spline basis on the two knots `0, 1` each of multiplici
 * `bernsteinPolynomial.succ_succ`, `bernsteinPolynomial.succ_zero` — the recursion.
 * `bernsteinPolynomial.linearIndependent'` — linear independence over any field of characteristic
   zero (Mathlib's `bernsteinPolynomial.linearIndependent` is over `ℚ`).
-* `finrank_polyLE` — `dim 𝒫_n = n + 1` on an infinite subset of the line.
 * `bernsteinPolynomial.exists_basis_polyLE` — the Bernstein polynomials of degree `n` form a basis
   of the polynomials of degree at most `n` on any infinite subset of the line.
 * `Bezier.casteljau_eq_curve` — de Casteljau's algorithm evaluates the Bézier curve.
@@ -121,29 +120,6 @@ theorem linearIndependent' {F : Type*} [Field F] [CharZero F] (n : ℕ) :
       simp [hx]
 
 end bernsteinPolynomial
-
-/-- The restriction of polynomial functions to an infinite set is injective: a nonzero polynomial
-has finitely many roots. -/
-theorem Polynomial.toContinuousMapOnAlgHom_injective {X : Set ℝ} (hX : X.Infinite) :
-    Function.Injective (Polynomial.toContinuousMapOnAlgHom X) := by
-  intro p q hpq
-  rw [← sub_eq_zero]
-  refine Polynomial.eq_zero_of_infinite_isRoot _ (hX.mono fun x hx => ?_)
-  have := congrArg (fun g : C(X, ℝ) => g ⟨x, hx⟩) hpq
-  simp only [Polynomial.toContinuousMapOnAlgHom_apply, Polynomial.toContinuousMapOn_apply,
-    Polynomial.toContinuousMap_apply] at this
-  simp [Polynomial.IsRoot, this]
-
-/-- **The dimension of the polynomials of degree at most `n`** on an infinite subset of the line
-is `n + 1`: the restriction of `Polynomial.degreeLT ℝ (n + 1)` is injective there. -/
-theorem finrank_polyLE {X : Set ℝ} (hX : X.Infinite) (n : ℕ) :
-    Module.finrank ℝ (polyLE X n) = n + 1 := by
-  have h : polyLE X n
-      = (Polynomial.degreeLT ℝ (n + 1)).map (Polynomial.toContinuousMapOnAlgHom X).toLinearMap := by
-    rw [polyLE, Polynomial.degreeLT_succ_eq_degreeLE]
-  rw [h, LinearEquiv.finrank_eq
-      (Submodule.equivMapOfInjective _ (Polynomial.toContinuousMapOnAlgHom_injective hX) _).symm,
-    LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv ℝ (n + 1)), Module.finrank_fin_fun]
 
 /-- The Bernstein polynomial `b_{n,k}`, as an element of the polynomials of degree at most `n` on
 `X ⊆ ℝ`. -/

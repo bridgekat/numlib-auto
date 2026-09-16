@@ -73,19 +73,6 @@ theorem charpoly_eq_of_isSimilar {A B : Matrix (Fin n) (Fin n) ℂ} (h : IsSimil
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly, Matrix.mem_spectrum_iff_isRoot_charpoly,
     h.charpoly_eq]
 
--- TODO(backbone): belongs beside `spectralRadius_smul` in
--- `Numlib/Analysis/Normed/Algebra/SpectralRadius`.
-/-- The spectral radius does not see the eigenvalue `0`: `ρ(a)` is the supremum of `‖λ‖₊` over
-`σ(a) ∖ {0}`, since `‖0‖₊ = 0` contributes nothing to a supremum in `ℝ≥0∞`. -/
-theorem spectralRadius_eq_iSup_diff_singleton_zero {𝕜 B : Type*} [NormedField 𝕜] [Ring B]
-    [Algebra 𝕜 B] (a : B) :
-    spectralRadius 𝕜 a = ⨆ μ ∈ spectrum 𝕜 a \ {0}, (‖μ‖₊ : ℝ≥0∞) := by
-  refine le_antisymm (iSup₂_le fun μ hμ => ?_) (iSup₂_le fun μ hμ =>
-    le_iSup₂ (f := fun μ (_ : μ ∈ spectrum 𝕜 a) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) μ hμ.1)
-  rcases eq_or_ne μ 0 with rfl | h0
-  · simp
-  · exact le_iSup₂ (f := fun μ (_ : μ ∈ spectrum 𝕜 a \ {0}) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) μ ⟨hμ, h0⟩
-
 /-- **§1.8, the spectra of `AB` and `BA`.** For `A ∈ ℂ^{n×m}` and `B ∈ ℂ^{m×n}` the products `AB`
 and `BA` are not similar, but `σ(AB) ∖ {0} = σ(BA) ∖ {0}`: they share the spectrum apart from
 null eigenvalues, since `λᵐ p_{AB}(λ) = λⁿ p_{BA}(λ)` (Mathlib's `Matrix.charpoly_mul_comm'`);

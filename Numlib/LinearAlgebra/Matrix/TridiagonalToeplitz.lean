@@ -1087,6 +1087,66 @@ theorem tridiagonalToeplitz_hasEigenvalue_iff (n : ℕ) (a b c : ℝ) (hac : 0 �
   · rw [← habs, h]
   · rw [← habs, ← exists_eq_add_cos_neg_iff, h]
 
+/-! ### The centred advection-diffusion matrix `tridiag(-(1 + p), 2, -(1 - p))` -/
+
+/-- Negating a tridiagonal Toeplitz matrix negates its three bands. -/
+theorem neg_tridiagonalToeplitz (m : ℕ) (x y z : ℝ) :
+    -Matrix.tridiagonalToeplitz m x y z = Matrix.tridiagonalToeplitz m (-x) (-y) (-z) := by
+  ext i j
+  rw [Matrix.neg_apply, Matrix.tridiagonalToeplitz_apply, Matrix.tridiagonalToeplitz_apply]
+  split_ifs <;> simp
+
+/-- The matrix of the stabilized centred scheme splits into the symmetric model Laplacian and the
+antisymmetric centred advection matrix:
+`tridiag(-(1 + p), 2, -(1 - p)) = tridiag(-1, 2, -1) + p tridiag(-1, 0, 1)`. -/
+theorem tridiagonalToeplitz_eq_add_smul (m : ℕ) (p : ℝ) :
+    Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p))
+      = Matrix.symmTridiagonalToeplitz m (-1) 2 + p • Matrix.tridiagonalToeplitz m (-1) 0 1 := by
+  rw [Matrix.symmTridiagonalToeplitz_eq_tridiagonalToeplitz]
+  ext i j
+  rw [Matrix.add_apply, Matrix.smul_apply, Matrix.tridiagonalToeplitz_apply,
+    Matrix.tridiagonalToeplitz_apply, Matrix.tridiagonalToeplitz_apply, smul_eq_mul]
+  split_ifs <;> ring
+
+/-- The centred advection matrix `tridiag(-1, 0, 1)` is antisymmetric, so its quadratic form
+vanishes: the advective term contributes nothing to the energy of the discrete operator. -/
+theorem dotProduct_mulVec_tridiagonalToeplitz_antisymm {m : ℕ} (x : Fin m → ℝ) :
+    x ⬝ᵥ (Matrix.tridiagonalToeplitz m (-1) 0 1 *ᵥ x) = 0 := by
+  have htr : (Matrix.tridiagonalToeplitz m (-1) 0 1)ᵀ = -Matrix.tridiagonalToeplitz m (-1) 0 1 := by
+    rw [Matrix.tridiagonalToeplitz_transpose, neg_tridiagonalToeplitz]
+    norm_num
+  have h1 : x ⬝ᵥ (Matrix.tridiagonalToeplitz m (-1) 0 1 *ᵥ x)
+      = x ⬝ᵥ ((Matrix.tridiagonalToeplitz m (-1) 0 1)ᵀ *ᵥ x) := by
+    rw [Matrix.mulVec_transpose, Matrix.dotProduct_mulVec, dotProduct_comm]
+  rw [htr, Matrix.neg_mulVec, dotProduct_neg] at h1
+  linarith
+
+/-- The quadratic form of the stabilized scheme's matrix is that of the model Laplacian, hence
+positive: `xᵀ tridiag(-(1 + p), 2, -(1 - p)) x = xᵀ tridiag(-1, 2, -1) x > 0` for `x ≠ 0`,
+whatever `p`. -/
+theorem dotProduct_mulVec_tridiagonalToeplitz_pos {m : ℕ} (p : ℝ) {x : Fin m → ℝ} (hx : x ≠ 0) :
+    0 < x ⬝ᵥ (Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p)) *ᵥ x) := by
+  rw [tridiagonalToeplitz_eq_add_smul, Matrix.add_mulVec, dotProduct_add,
+    Matrix.smul_mulVec, dotProduct_smul, smul_eq_mul,
+    dotProduct_mulVec_tridiagonalToeplitz_antisymm, mul_zero, add_zero]
+  simpa using (Matrix.posDef_symmTridiagonalToeplitz_neg_one_two m).dotProduct_mulVec_pos hx
+
+/-- **The matrix of the stabilized scheme is an M-matrix** whenever `|Pe*| ≤ 1`
+([quarteroni2000numerical] Exercise 12.13): its off-diagonal entries `-(1 ± Pe*)` are
+nonpositive, and its quadratic form is that of the model Laplacian, which is positive definite. -/
+theorem isMMatrix_smul_tridiagonalToeplitz {m : ℕ} {c p : ℝ} (hc : 0 < c) (hp : |p| ≤ 1) :
+    (c • Matrix.tridiagonalToeplitz m (-(1 + p)) 2 (-(1 - p))).IsMMatrix := by
+  obtain ⟨hp1, hp2⟩ := abs_le.1 hp
+  refine Matrix.isMMatrix_of_forall_dotProduct_mulVec_pos (fun x hx => ?_) fun i j hij => ?_
+  · rw [Matrix.smul_mulVec, dotProduct_smul, smul_eq_mul]
+    exact mul_pos hc (dotProduct_mulVec_tridiagonalToeplitz_pos p hx)
+  · rw [Matrix.smul_apply, smul_eq_mul, Matrix.tridiagonalToeplitz_apply]
+    split_ifs with h1 h2 h3
+    · exact absurd (Fin.val_injective h1) hij
+    · nlinarith
+    · nlinarith
+    · simp
+
 end General
 
 end Matrix
