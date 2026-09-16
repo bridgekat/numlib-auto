@@ -93,27 +93,6 @@ source = '''Rivlin, An Introduction to the Approximation of Functions, Theorem 1
 Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.25)'''
 
 [[node]]
-id = "Lagrange.norm_interpolateCLM_chebyshev_le_rivlin"
-kind = "theorem"
-desc = '''**Rivlin's sharp constant** for the Lebesgue constant of the Chebyshev nodes: for the
-`n + 1` nodes `x_j = cos ((2j+1)π/(2(n+1)))` of `Icc (-1) 1`,
-`‖Lagrange.interpolateCLM (chebNodeIcc n)‖ ≤ (2/π) * Real.log (n + 1) + 1`, which is
-[quarteroni2000numerical] (10.25) as printed. ★★★
-
-Blocked: the logarithmic growth itself is proved, as `Lagrange.norm_interpolateCLM_chebyshev_le`,
-in the form `≤ 2 + (2/π) log (2n + 2)` `= (2/π) log (n + 1) + 2.441…`: the sharp factor `2/π`
-survives, the additive constant does not. What the route through `SineSum.sum_term_le` loses is
-(i) `(2/π) log 2` in passing from the `n + 1` nodes to the `2n + 2` angles `±θ_j`, (ii) the
-triangle inequality `|sin (A + B)| ≤ |sin A| + |sin B|` on the two halves, and (iii) the crude
-bound `1` on each of the two terms nearest the evaluation point. A sharp proof goes the other way:
-numerically the Lebesgue function attains its maximum at `t = ±1`, where it is exactly
-`(1/(n+1)) ∑_j cot ((2j+1)π/(4(n+1)))` (checked for `n + 1 ≤ 64`), and Rivlin bounds *that* sum by
-`(2/π) log (n+1) + 1` with a margin of about `0.037`. Both halves — "the maximum is at the
-endpoint" (an Ehlich–Zeller-type monotonicity of the local maxima) and the sharp cotangent-sum
-estimate — are separate developments; estimated 400-600 lines on top of what is here.'''
-deps = ["Lagrange.norm_interpolateCLM_chebyshev_le"]
-
-[[node]]
 id = "_root_.SineSum.term"
 
 [[node]]

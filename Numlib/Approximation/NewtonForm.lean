@@ -59,6 +59,9 @@ sum and the Leibniz formula, and `prefixNodal v k = ∏_{j < k} (X - x_j)` is th
   node at `x`.
 * `confluent`, `confluent_eq_newton`, `confluent_const` — confluent divided differences at
   repeated nodes.
+* `continuous_confluent` and `exists_confluent_eq_iteratedDeriv_div` — for `f` of class `C^m` the
+  confluent divided difference is continuous on the nondecreasing tuples, and it is again
+  `f^{(m)}(ξ)/m!` for a `ξ` between the extreme nodes.
 
 ## References
 
@@ -939,6 +942,213 @@ theorem confluent_const (f : ℝ → ℝ) (x : ℝ) :
   | zero => simp
   | succ m => rw [confluent_succ, ite_eq_left rfl]
 
+/-- Continuity of `confluent f` at a nondecreasing tuple whose extreme nodes differ. There the
+recursion of `confluent` takes its second branch on a whole neighbourhood — `v 0 ≠ v (last)` is an
+open condition — so the value is a quotient of two confluent divided differences over `m + 1`
+nodes by a nonvanishing denominator, and the continuity of those is the induction hypothesis
+`hC`. -/
+private lemma continuousWithinAt_confluent_of_ne {f : ℝ → ℝ}
+    (hC : ContinuousOn (fun w : Fin (m + 1) → ℝ => confluent f w) {w | Monotone w})
+    {v : Fin (m + 2) → ℝ} (hv : Monotone v) (hne : v 0 ≠ v (Fin.last (m + 1))) :
+    ContinuousWithinAt (fun u : Fin (m + 2) → ℝ => confluent f u) {u | Monotone u} v := by
+  set S : Set (Fin (m + 2) → ℝ) := {u | Monotone u} with hS
+  set T : Set (Fin (m + 1) → ℝ) := {w | Monotone w} with hT
+  have htailc : Continuous fun u : Fin (m + 2) → ℝ => Fin.tail u :=
+    continuous_pi fun i => continuous_apply _
+  have hinitc : Continuous fun u : Fin (m + 2) → ℝ => Fin.init u :=
+    continuous_pi fun i => continuous_apply _
+  have htailm : Set.MapsTo (fun u : Fin (m + 2) → ℝ => Fin.tail u) S T :=
+    fun u hu i j hij => hu (Fin.succ_le_succ_iff.mpr hij)
+  have hinitm : Set.MapsTo (fun u : Fin (m + 2) → ℝ => Fin.init u) S T :=
+    fun u hu i j hij => hu (Fin.castSucc_le_castSucc_iff.mpr hij)
+  have h1 : ContinuousWithinAt (fun u : Fin (m + 2) → ℝ => confluent f (Fin.tail u)) S v :=
+    ContinuousWithinAt.comp (hC _ (htailm hv)) htailc.continuousWithinAt htailm
+  have h2 : ContinuousWithinAt (fun u : Fin (m + 2) → ℝ => confluent f (Fin.init u)) S v :=
+    ContinuousWithinAt.comp (hC _ (hinitm hv)) hinitc.continuousWithinAt hinitm
+  have h3 : ContinuousWithinAt (fun u : Fin (m + 2) → ℝ => u (Fin.last (m + 1)) - u 0) S v := by
+    fun_prop
+  have hden : v (Fin.last (m + 1)) - v 0 ≠ 0 := sub_ne_zero.mpr (Ne.symm hne)
+  have hg : ContinuousWithinAt (fun u : Fin (m + 2) → ℝ =>
+      (confluent f (Fin.tail u) - confluent f (Fin.init u)) / (u (Fin.last (m + 1)) - u 0)) S v :=
+    (h1.sub h2).div h3 hden
+  refine hg.congr_of_eventuallyEq ?_ ?_
+  · have hO : IsOpen {u : Fin (m + 2) → ℝ | u 0 ≠ u (Fin.last (m + 1))} :=
+      isOpen_ne_fun (continuous_apply _) (continuous_apply _)
+    filter_upwards [mem_nhdsWithin_of_mem_nhds (hO.mem_nhds hne)] with u hu
+    rw [confluent_succ, ite_eq_right hu]
+  · rw [confluent_succ, ite_eq_right hne]
+
+/-- The mean-value form of a confluent divided difference over `m + 2` nondecreasing nodes,
+granted the continuity of `confluent f` over `m + 1` nodes.
+
+Away from the diagonal the tuple `v` is a limit of *strictly* increasing tuples `w n` taken inside
+`[v 0, v (last)]` — convex combinations of `v` with a uniform grid — along which
+`confluent f (w n) = newton f (w n) = f^{(m+1)}(ξ_n)/(m+1)!` by `confluent_eq_newton` and
+`exists_newton_eq_iteratedDeriv_div_of_contDiff`. The continuity supplied by `hC` through
+`continuousWithinAt_confluent_of_ne` passes to the limit, which therefore lies in the closed set
+`f^{(m+1)}([v 0, v (last)])`. -/
+private lemma exists_confluent_eq_of_continuousOn {f : ℝ → ℝ}
+    (hf : ContDiff ℝ ((m + 1 : ℕ) : WithTop ℕ∞) f)
+    (hC : ContinuousOn (fun w : Fin (m + 1) → ℝ => confluent f w) {w | Monotone w})
+    {v : Fin (m + 2) → ℝ} (hv : Monotone v) :
+    ∃ ξ ∈ Set.Icc (v 0) (v (Fin.last (m + 1))),
+      confluent f v = iteratedDeriv (m + 1) f ξ / (m + 1).factorial := by
+  have hle : v 0 ≤ v (Fin.last (m + 1)) := hv (Fin.zero_le _)
+  by_cases h0 : v 0 = v (Fin.last (m + 1))
+  · exact ⟨v 0, ⟨le_rfl, hle⟩, by rw [confluent_succ, ite_eq_left h0]⟩
+  have hab : v 0 < v (Fin.last (m + 1)) := lt_of_le_of_ne hle h0
+  have hba : (0 : ℝ) < v (Fin.last (m + 1)) - v 0 := sub_pos.mpr hab
+  have hm3 : (0 : ℝ) < (m : ℝ) + 3 := by positivity
+  -- a strictly increasing grid inside `[v 0, v (last)]`
+  set g : Fin (m + 2) → ℝ :=
+    fun i => v 0 + (v (Fin.last (m + 1)) - v 0) * ((i : ℝ) + 1) / ((m : ℝ) + 3) with hgdef
+  have hgmono : StrictMono g := by
+    intro i j hij
+    have hij' : ((i : ℕ) : ℝ) < ((j : ℕ) : ℝ) := by exact_mod_cast (hij : (i : ℕ) < (j : ℕ))
+    simp only [hgdef]
+    gcongr
+  have hgmem : ∀ i, g i ∈ Set.Icc (v 0) (v (Fin.last (m + 1))) := by
+    intro i
+    have hi : ((i : ℕ) : ℝ) ≤ (m : ℝ) + 1 := by
+      have := i.isLt
+      have : (i : ℕ) ≤ m + 1 := by omega
+      exact_mod_cast this
+    constructor
+    · simp only [hgdef]
+      have : (0 : ℝ) ≤ (v (Fin.last (m + 1)) - v 0) * ((i : ℝ) + 1) / ((m : ℝ) + 3) := by
+        positivity
+      linarith
+    · simp only [hgdef]
+      have h1 : (v (Fin.last (m + 1)) - v 0) * ((i : ℝ) + 1) / ((m : ℝ) + 3)
+          ≤ v (Fin.last (m + 1)) - v 0 := by
+        rw [div_le_iff₀ hm3]
+        nlinarith
+      linarith
+  have hvmem : ∀ i, v i ∈ Set.Icc (v 0) (v (Fin.last (m + 1))) :=
+    fun i => ⟨hv (Fin.zero_le _), hv (Fin.le_last _)⟩
+  -- the perturbed nodes: strictly increasing, and still inside `[v 0, v (last)]`
+  set w : ℕ → Fin (m + 2) → ℝ :=
+    fun n i => (1 - ((n : ℝ) + 1)⁻¹) * v i + ((n : ℝ) + 1)⁻¹ * g i with hwdef
+  have heps : ∀ n : ℕ, 0 < ((n : ℝ) + 1)⁻¹ ∧ ((n : ℝ) + 1)⁻¹ ≤ 1 := by
+    intro n
+    have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+    exact ⟨by positivity, by rw [inv_le_one₀ hn]; linarith [Nat.cast_nonneg (α := ℝ) n]⟩
+  have hwmono : ∀ n, StrictMono (w n) := by
+    intro n i j hij
+    have hn := heps n
+    have h1 : v i ≤ v j := hv hij.le
+    have h2 : g i < g j := hgmono hij
+    simp only [hwdef]
+    nlinarith [hn.1, hn.2]
+  have hwmem : ∀ n i, w n i ∈ Set.Icc (v 0) (v (Fin.last (m + 1))) := by
+    intro n i
+    have he := heps n
+    have h1 := hvmem i
+    have h2 := hgmem i
+    constructor <;> simp only [hwdef] <;> nlinarith [he.1, he.2, h1.1, h1.2, h2.1, h2.2]
+  have hwtend : Filter.Tendsto w Filter.atTop (nhds v) := by
+    rw [tendsto_pi_nhds]
+    intro i
+    have h0 : Filter.Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹) Filter.atTop (nhds 0) := by
+      simpa using tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)
+    have h1 : Filter.Tendsto (fun n : ℕ => (1 - ((n : ℝ) + 1)⁻¹) * v i + ((n : ℝ) + 1)⁻¹ * g i)
+        Filter.atTop (nhds ((1 - 0) * v i + 0 * g i)) :=
+      ((tendsto_const_nhds.sub h0).mul tendsto_const_nhds).add (h0.mul tendsto_const_nhds)
+    simp only [hwdef]
+    simpa using h1
+  have hxi : ∀ n, ∃ ξ ∈ Set.Icc (v 0) (v (Fin.last (m + 1))),
+      iteratedDeriv (m + 1) f ξ = ((m + 1).factorial : ℝ) * confluent f (w n) := by
+    intro n
+    obtain ⟨ξ, hξ, hval⟩ :=
+      exists_newton_eq_iteratedDeriv_div_of_contDiff hf (hwmono n).injective (hwmem n)
+    refine ⟨ξ, hξ, ?_⟩
+    rw [confluent_eq_newton f (hwmono n).injective, hval]
+    field_simp
+  choose ξ hξmem hξval using hxi
+  have hcont : Continuous (iteratedDeriv (m + 1) f) := hf.continuous_iteratedDeriv (m + 1) le_rfl
+  have hlim : Filter.Tendsto (fun n => iteratedDeriv (m + 1) f (ξ n)) Filter.atTop
+      (nhds (((m + 1).factorial : ℝ) * confluent f v)) := by
+    simp only [hξval]
+    refine Filter.Tendsto.const_mul _ ?_
+    exact (continuousWithinAt_confluent_of_ne hC hv h0).tendsto.comp
+      (tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within _ hwtend
+        (Filter.Eventually.of_forall fun n => (hwmono n).monotone))
+  have hclosed : IsClosed (iteratedDeriv (m + 1) f '' Set.Icc (v 0) (v (Fin.last (m + 1)))) :=
+    (isCompact_Icc.image hcont).isClosed
+  obtain ⟨ξ₀, hξ₀mem, hξ₀⟩ :=
+    hclosed.mem_of_tendsto hlim (Filter.Eventually.of_forall fun n => ⟨ξ n, hξmem n, rfl⟩)
+  refine ⟨ξ₀, hξ₀mem, ?_⟩
+  rw [hξ₀]
+  field_simp
+
+/-- **Continuity of the confluent divided difference** ([quarteroni2000numerical] Remark 8.3): for
+`f` of class `C^m`, the map `v ↦ f[v₀, …, v_m]` is continuous on the nondecreasing tuples
+`v : Fin (m + 1) → ℝ`. This is what makes `confluent` the right extension of `newton` to
+coincident nodes: the nondecreasing tuples with distinct entries are dense among the nondecreasing
+ones, so `confluent f` is the unique continuous extension of `newton f` from them.
+
+The induction on `m` alternates two facts. Where `v 0 ≠ v (last)` — an open condition that covers
+every partially coincident tuple — the value is a difference quotient of `confluent f` over `m`
+nodes, continuous by the induction hypothesis (`continuousWithinAt_confluent_of_ne`). That
+hypothesis in turn yields the mean-value form `f[v₀, …, v_m] = f^{(m)}(ξ)/m!` with
+`ξ ∈ [v 0, v (last)]` (`exists_confluent_eq_of_continuousOn`), and at a fully diagonal tuple
+`(c, …, c)`, where the value is `f^{(m)}(c)/m!`, that form together with the continuity of
+`f^{(m)}` gives the continuity directly. -/
+theorem continuous_confluent {f : ℝ → ℝ} (hf : ContDiff ℝ (m : WithTop ℕ∞) f) :
+    ContinuousOn (fun v : Fin (m + 1) → ℝ => confluent f v) {v | Monotone v} := by
+  induction m with
+  | zero =>
+    intro v _
+    simp only [confluent_zero]
+    exact (hf.continuous.comp (continuous_apply (0 : Fin 1))).continuousWithinAt
+  | succ m ih =>
+    have hC := ih (hf.of_le (by exact_mod_cast Nat.le_succ m))
+    intro v hv
+    by_cases h0 : v 0 = v (Fin.last (m + 1))
+    · have hval : confluent f v = iteratedDeriv (m + 1) f (v 0) / (m + 1).factorial := by
+        rw [confluent_succ, ite_eq_left h0]
+      have hcont : Continuous (iteratedDeriv (m + 1) f) :=
+        hf.continuous_iteratedDeriv (m + 1) le_rfl
+      have hfac : (0 : ℝ) < ((m + 1).factorial : ℝ) := by positivity
+      rw [ContinuousWithinAt, hval, Metric.tendsto_nhdsWithin_nhds]
+      intro ε hε
+      obtain ⟨δ, hδ, hδ'⟩ :=
+        Metric.continuous_iff.mp hcont (v 0) (ε * ((m + 1).factorial : ℝ)) (by positivity)
+      refine ⟨δ, hδ, fun u hu hud => ?_⟩
+      obtain ⟨ξ, hξ, hξval⟩ := exists_confluent_eq_of_continuousOn hf hC hu
+      have h1 : |u 0 - v 0| < δ := by
+        have := dist_le_pi_dist u v 0
+        rw [Real.dist_eq] at this
+        linarith [this, hud]
+      have h2 : |u (Fin.last (m + 1)) - v 0| < δ := by
+        have := dist_le_pi_dist u v (Fin.last (m + 1))
+        rw [Real.dist_eq, ← h0] at this
+        linarith [this, hud]
+      have h3 : dist ξ (v 0) < δ := by
+        rw [Real.dist_eq, abs_lt]
+        rw [abs_lt] at h1 h2
+        exact ⟨by linarith [hξ.1], by linarith [hξ.2]⟩
+      have h4 := hδ' ξ h3
+      rw [Real.dist_eq] at h4 ⊢
+      rw [hξval, div_sub_div_same, abs_div, abs_of_pos hfac, div_lt_iff₀ hfac]
+      exact h4
+    · exact continuousWithinAt_confluent_of_ne hC hv h0
+
+/-- **The mean-value form of a confluent divided difference** ([quarteroni2000numerical] (8.21)
+and Remark 8.3): for `f` of class `C^m` and a nondecreasing `v : Fin (m + 1) → ℝ`,
+`f[v₀, …, v_m] = f^{(m)}(ξ)/m!` for some `ξ ∈ [v₀, v_m]`. At distinct nodes this is
+`exists_newton_eq_iteratedDeriv_div` and at coincident nodes `confluent_const`; the content is
+that the two interpolate. -/
+theorem exists_confluent_eq_iteratedDeriv_div {f : ℝ → ℝ} (hf : ContDiff ℝ (m : WithTop ℕ∞) f)
+    {v : Fin (m + 1) → ℝ} (hv : Monotone v) :
+    ∃ ξ ∈ Set.Icc (v 0) (v (Fin.last m)), confluent f v = iteratedDeriv m f ξ / m.factorial := by
+  cases m with
+  | zero => exact ⟨v 0, ⟨le_rfl, hv (Fin.zero_le _)⟩, by simp⟩
+  | succ m =>
+    exact exists_confluent_eq_of_continuousOn hf
+      (continuous_confluent (hf.of_le (by exact_mod_cast Nat.le_succ m))) hv
+
 end Fin
+
 
 end DividedDifference

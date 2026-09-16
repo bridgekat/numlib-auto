@@ -68,6 +68,29 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   `Lagrange.norm_interpolateCLM_chebyshev_le` reads off from it the **logarithmic growth of the
   Lebesgue constant of the Chebyshev nodes** `x_j = cos ((2j + 1)π/(2(n + 1)))` of `[-1, 1]`.
 
+## Not formalized
+
+**Rivlin's sharp constant for the Lebesgue constant of the Chebyshev nodes**,
+`‖Π_n‖ ≤ (2/π) log (n + 1) + 1` ([rivlin1969introduction] Theorem 1.2;
+[quarteroni2000numerical] (10.25) as printed), is *not* here. What is proved is
+`Lagrange.norm_interpolateCLM_chebyshev_le`, `‖Π_n‖ ≤ 2 + (2/π) log (2n + 2)`: the sharp factor
+`2/π`, and so the growth rate every application consumes, with `1.441…` more in the additive
+constant. The sharp form is not a longer version of the same argument but two further theorems,
+neither of which anything else in this development needs:
+
+* the Lebesgue function attains its maximum at `t = ±1`, where it is exactly
+  `(1/(n+1)) ∑_{j ≤ n} cot ((2j + 1)π/(4(n + 1)))` — the monotonicity of the successive local
+  maxima towards the endpoints is of Ehlich–Zeller type, and is the whole difficulty; and
+* that cotangent sum is at most `(2/π) log (n + 1) + 1`.
+
+Neither step may give anything away. The Lebesgue constant is
+`(2/π)(log (n + 1) + γ + log (8/π)) + o(1) = (2/π) log (n + 1) + 0.9625…`, so the printed constant
+has an asymptotic margin of `0.0375`, and at `n = 0` the two sides are *equal*, both `1`. The route
+through `SineSum.sum_term_le` cannot be repaired to reach it: it loses `(2/π) log 2` in passing from
+the `n + 1` nodes to the `2n + 2` reflected angles `±θ_j`, a triangle inequality
+`|sin (A + B)| ≤ |sin A| + |sin B|` on the two halves, and a crude bound `1` on each of the two
+terms nearest the evaluation point — `1.441…` in all, against a budget of `0.0375`.
+
 ## Implementation notes
 
 Trigonometric interpolation has no formula for its cardinal basis here: the operator is built from
@@ -1695,8 +1718,8 @@ the roots of unity, and Lagrange interpolation at the Chebyshev nodes after the 
 `k` running over `M` consecutive integers. `SineSum.sum_term_le` bounds such a sum by
 `2 + (2/π) log M`, uniformly in the offset `δ ∈ [0, 1)` and in where the run of indices starts.
 
-The private lemmas of `Numlib/Approximation/TrigonometricInterpolation` prove the same estimate
-for the odd value `M = 2 n + 1` only; they should be replaced by this one.
+`Numlib/Approximation/TrigonometricInterpolation` reads its own Lebesgue bound
+`norm_trigInterpCLM_le` off this one at the odd value `M = 2 n + 1`.
 -/
 
 namespace SineSum

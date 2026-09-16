@@ -47,6 +47,10 @@ Guide to Splines*, chapters IX–XI.
 * `BSpline.insertKnot`, `BSpline.insertKnotCoeff`, `BSpline.bspline_eq_insert_comb` and
   `BSpline.sum_smul_bspline_insertKnot`: Boehm's knot insertion, for strictly increasing knots
   and a new knot interior to its panel.
+* `BSpline.tendsto_bspline_of_tendsto`, `BSpline.bspline_eq_insert_comb_of_monotone` and
+  `BSpline.sum_smul_bspline_insertKnot_of_monotone`: continuity of a B-spline in knots approached
+  from below, and Boehm's algorithm on the book's full range — nondecreasing knots and a new knot
+  `y ∈ [x_j, x_{j+1})`, so that an existing knot may have its multiplicity raised.
 * `BSpline.curve`, `BSpline.curve_mem_convexHull`, `BSpline.curve_update_eq_of_notMem`: parametric
   B-spline curves.
 
@@ -1040,6 +1044,83 @@ theorem sum_smul_bspline_right (hx : Monotone x) (hn : 1 ≤ n)
   have := ((tendsto_const_nhds (x := c N)).mul hB).add h0
   simpa using this
 
+/-! ### Continuity in the knots -/
+
+/-- **B-splines depend continuously on their knots, approached from below**: if the knot sequences
+`X n` are nondecreasing, lie strictly below `x` and converge to it pointwise, then
+`B^{X n}_{i,k}(t) → B^x_{i,k}(t)` for every fixed `t`.
+
+Approaching from below is what makes this true at *every* `t`, the knots included: the degree-`0`
+B-splines are eventually equal, because the half-open panel `[X n i, X n (i+1))` eventually contains
+a given `t ∈ [x i, x (i+1))` and never contains a `t ≥ x (i+1)`. In the Cox-de Boor recursion the
+weight `ω_{i,d+1}` may fail to converge — exactly when `x (i+d+1) = x i` — but then the B-spline it
+multiplies has empty support and is eventually `0`, so the product converges all the same. Used to
+pass from strictly increasing to merely nondecreasing knots in Boehm's algorithm. -/
+theorem tendsto_bspline_of_tendsto {X : ℕ → ℕ → ℝ} (hx : Monotone x) (hX : ∀ n, Monotone (X n))
+    (hlt : ∀ n m, X n m < x m) (hto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m)))
+    (k i : ℕ) (t : ℝ) :
+    Tendsto (fun n => bspline (X n) k i t) atTop (𝓝 (bspline x k i t)) := by
+  induction k generalizing i with
+  | zero =>
+    rcases lt_or_ge t (x i) with h | h
+    · have h0 : bspline x 0 i t = 0 := by
+        rw [bspline_zero, ite_eq_right (fun hc => absurd hc.1 (not_le.2 h))]
+      rw [h0]
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards [(hto i).eventually (eventually_gt_nhds h)] with n hn
+      rw [bspline_zero, ite_eq_right (fun hc => absurd hc.1 (not_le.2 hn))]
+    rcases lt_or_ge t (x (i + 1)) with h2 | h2
+    · have h0 : bspline x 0 i t = 1 := by rw [bspline_zero, ite_eq_left ⟨h, h2⟩]
+      rw [h0]
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards [(hto (i + 1)).eventually (eventually_gt_nhds h2)] with n hn
+      exact ((bspline_zero (X n) i t).trans (ite_eq_left ⟨(hlt n i).le.trans h, hn⟩)).symm
+    · have h0 : bspline x 0 i t = 0 := by
+        rw [bspline_zero, ite_eq_right (fun hc => absurd hc.2 (not_lt.2 h2))]
+      rw [h0]
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards with n
+      exact ((bspline_zero (X n) i t).trans
+        (ite_eq_right (fun hc => absurd hc.2 (not_lt.2 ((hlt n (i + 1)).le.trans h2))))).symm
+  | succ d ih =>
+    have key : ∀ p : ℕ, Tendsto (fun n => weight (X n) p (d + 1) t * bspline (X n) d p t) atTop
+        (𝓝 (weight x p (d + 1) t * bspline x d p t)) := by
+      intro p
+      by_cases hp : x (p + (d + 1)) = x p
+      · have hw : weight x p (d + 1) t = 0 := by rw [weight, ite_eq_left hp]
+        rw [hw, zero_mul]
+        refine Tendsto.congr' ?_ tendsto_const_nhds
+        have hev : ∀ᶠ n in atTop, t ∉ Ico (X n p) (X n (p + d + 1)) := by
+          rcases lt_or_ge t (x p) with h | h
+          · filter_upwards [(hto p).eventually (eventually_gt_nhds h)] with n hn
+            exact fun hc => absurd hc.1 (not_le.2 hn)
+          · filter_upwards with n
+            refine fun hc => absurd hc.2 (not_lt.2 ?_)
+            exact ((hlt n (p + d + 1)).le.trans (le_of_eq (show x (p + d + 1) = x p from hp))).trans
+              h
+        filter_upwards [hev] with n hn
+        rw [bspline_eq_zero_of_notMem (hX n) hn, mul_zero]
+      · have hlt' : x p < x (p + (d + 1)) := lt_of_le_of_ne (hx (by omega)) (Ne.symm hp)
+        have hd : Tendsto (fun n => X n (p + (d + 1)) - X n p) atTop
+            (𝓝 (x (p + (d + 1)) - x p)) := (hto _).sub (hto _)
+        have hne : (x (p + (d + 1)) - x p) ≠ 0 := sub_ne_zero.2 (by linarith)
+        have hwt : Tendsto (fun n => weight (X n) p (d + 1) t) atTop
+            (𝓝 (weight x p (d + 1) t)) := by
+          have hw : weight x p (d + 1) t = (t - x p) / (x (p + (d + 1)) - x p) := by
+            rw [weight, ite_eq_right hp]
+          have hq : Tendsto (fun n => (t - X n p) / (X n (p + (d + 1)) - X n p)) atTop
+              (𝓝 ((t - x p) / (x (p + (d + 1)) - x p))) :=
+            (tendsto_const_nhds.sub (hto p)).div hd hne
+          rw [hw]
+          refine hq.congr' ?_
+          filter_upwards [hd.eventually (eventually_ne_nhds hne)] with n hn
+          rw [weight, ite_eq_right (fun hc => hn (by rw [hc, sub_self]))]
+        exact hwt.mul (ih p)
+    have h1 := key i
+    have h2 := (ih (i + 1)).sub (key (i + 1))
+    simp only [bspline_succ, one_sub_mul]
+    exact h1.add h2
+
 /-! ### Knot insertion -/
 
 /-- **Boehm's knot insertion** ([quarteroni2000numerical] Remark 8.4): the knot sequence with the
@@ -1316,15 +1397,170 @@ theorem bspline_eq_insert_comb (hx : StrictMono x) (hk : 1 ≤ k)
     · exact bspline_eq_insert_comb_of_mem hx hk hy h h2 t
     · exact bspline_eq_insert_comb_of_right hx hk hy (by omega) t
 
-/-- **Knot insertion preserves the spline** ([quarteroni2000numerical] Remark 8.4): for strictly
-increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})` whose index
-satisfies `k ≤ j < N`, the spline `∑_{i < N} c_i B_{i,k}` is `∑_{i < N + 1} d_i B̂_{i,k}` on the
-refined knots, with the coefficients `d_i = ω_i c_i + (1 - ω_i) c_{i-1}` of `insertKnotCoeff`. -/
-theorem sum_smul_bspline_insertKnot (hx : StrictMono x) (hk : 1 ≤ k)
-    (hy : y ∈ Ioo (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
-    ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t
+/-- The Boehm weights converge with the knots, provided the panel `(x_j, x_{j+1})` is nonempty:
+the only knot-dependent branch is `(y - x_i)/(x_{i+k} - x_i)` for `i ≤ j < i + k`, whose
+denominator is then bounded below by `x_{j+1} - x_j > 0`. -/
+private theorem tendsto_insertKnotWeight {X : ℕ → ℕ → ℝ} {Z : ℕ → ℝ} (hx : Monotone x)
+    (hto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m))) (hZ : Tendsto Z atTop (𝓝 y))
+    (hj : x j < x (j + 1)) (i : ℕ) :
+    Tendsto (fun n => insertKnotWeight (X n) k j (Z n) i) atTop
+      (𝓝 (insertKnotWeight x k j y i)) := by
+  simp only [insertKnotWeight]
+  split_ifs with h1 h2
+  · exact tendsto_const_nhds
+  · have hne : x (i + k) - x i ≠ 0 := by
+      have h3 : x i ≤ x j := hx (by omega)
+      have h4 : x (j + 1) ≤ x (i + k) := hx (by omega)
+      exact sub_ne_zero.2 (by linarith)
+    exact (hZ.sub (hto i)).div ((hto (i + k)).sub (hto i)) hne
+  · exact tendsto_const_nhds
+
+/-- Boehm's one-spline formula for a nondecreasing knot sequence, from the strictly increasing
+case by passing to the limit along knots `X n` and inserted knots `Z n` that approach `x` and `y`
+from below. -/
+private theorem bspline_eq_insert_comb_of_limits {X : ℕ → ℕ → ℝ} {Z : ℕ → ℝ}
+    (hx : Monotone x) (hk : 1 ≤ k) (hy : y ∈ Ico (x j) (x (j + 1)))
+    (hXmono : ∀ n, StrictMono (X n)) (hXlt : ∀ n m, X n m < x m)
+    (hXto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m)))
+    (hZmem : ∀ n, Z n ∈ Ioo (X n j) (X n (j + 1))) (hZlt : ∀ n, Z n < y)
+    (hZto : Tendsto Z atTop (𝓝 y)) (i : ℕ) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  have hj : x j < x (j + 1) := lt_of_le_of_lt hy.1 hy.2
+  have hins1 : ∀ (v : ℕ → ℝ) (z : ℝ) {m : ℕ}, m ≤ j → insertKnot v j z m = v m :=
+    fun v z _ h => by rw [insertKnot, ite_eq_left h]
+  have hins2 : ∀ (v : ℕ → ℝ) (z : ℝ), insertKnot v j z (j + 1) = z :=
+    fun v z => by rw [insertKnot, ite_eq_right (by omega), ite_eq_left rfl]
+  have hins3 : ∀ (v : ℕ → ℝ) (z : ℝ) {m : ℕ}, j + 1 < m → insertKnot v j z m = v (m - 1) :=
+    fun v z _ h => by rw [insertKnot, ite_eq_right (by omega), ite_eq_right (by omega)]
+  set Y : ℕ → ℝ := insertKnot x j y with hYdef
+  set W : ℕ → ℕ → ℝ := fun n => insertKnot (X n) j (Z n) with hWdef
+  have hYmono : Monotone Y := monotone_insertKnot hx hy
+  have hWmono : ∀ n, StrictMono (W n) := fun n => strictMono_insertKnot (hXmono n) (hZmem n)
+  have hWlt : ∀ n m, W n m < Y m := by
+    intro n m
+    simp only [hWdef, hYdef]
+    rcases lt_trichotomy m (j + 1) with h | h | h
+    · rw [hins1 _ _ (show m ≤ j by omega), hins1 _ _ (show m ≤ j by omega)]
+      exact hXlt n m
+    · subst h
+      rw [hins2, hins2]
+      exact hZlt n
+    · rw [hins3 _ _ h, hins3 _ _ h]
+      exact hXlt n (m - 1)
+  have hWto : ∀ m, Tendsto (fun n => W n m) atTop (𝓝 (Y m)) := by
+    intro m
+    simp only [hWdef, hYdef]
+    rcases lt_trichotomy m (j + 1) with h | h | h
+    · rw [hins1 _ _ (show m ≤ j by omega)]
+      exact (hXto m).congr fun n => (hins1 _ _ (show m ≤ j by omega)).symm
+    · subst h
+      rw [hins2]
+      exact hZto.congr fun n => (hins2 _ _).symm
+    · rw [hins3 _ _ h]
+      exact (hXto (m - 1)).congr fun n => (hins3 _ _ h).symm
+  have hB := tendsto_bspline_of_tendsto hx (fun n => (hXmono n).monotone) hXlt hXto k i t
+  have hBY := tendsto_bspline_of_tendsto hYmono (fun n => (hWmono n).monotone) hWlt hWto k i t
+  have hBY1 :=
+    tendsto_bspline_of_tendsto hYmono (fun n => (hWmono n).monotone) hWlt hWto k (i + 1) t
+  have hw := tendsto_insertKnotWeight (k := k) hx hXto hZto hj i
+  have hw1 := tendsto_insertKnotWeight (k := k) hx hXto hZto hj (i + 1)
+  have hRHS : Tendsto (fun n => insertKnotWeight (X n) k j (Z n) i * bspline (W n) k i t
+      + (1 - insertKnotWeight (X n) k j (Z n) (i + 1)) * bspline (W n) k (i + 1) t) atTop
+      (𝓝 (insertKnotWeight x k j y i * bspline Y k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline Y k (i + 1) t)) :=
+    (hw.mul hBY).add ((tendsto_const_nhds.sub hw1).mul hBY1)
+  exact tendsto_nhds_unique
+    (hB.congr fun n => bspline_eq_insert_comb (hXmono n) hk (hZmem n) i t) hRHS
+
+/-- **Boehm's knot-insertion formula for one B-spline, at a knot that need not be interior to its
+panel** ([quarteroni2000numerical] Remark 8.4; [boehm1980inserting]): the identity
+`B_{i,k} = ω_i B̂_{i,k} + (1 - ω_{i+1}) B̂_{i+1,k}` for a merely *nondecreasing* knot sequence and
+a new knot `y ∈ [x_j, x_{j+1})`, so that `y = x_j` — raising the multiplicity of an existing knot —
+is allowed.
+
+The divided-difference proof of `bspline_eq_insert_comb` needs distinct knots, and at `y = x_j` the
+refined sequence has a double knot. Instead both sides are limits of the strictly increasing case:
+the knots `X n m = x_m - 2^{-m}(x_{j+1} - y)/(n+1)` are strictly increasing and approach `x` from
+below, `Z n = y - (y - X n j)/(n+2)` lies in the panel `(X n j, X n (j+1))` and approaches `y` from
+below, and `tendsto_bspline_of_tendsto` and `tendsto_insertKnotWeight` pass to the limit. -/
+theorem bspline_eq_insert_comb_of_monotone (hx : Monotone x) (hk : 1 ≤ k)
+    (hy : y ∈ Ico (x j) (x (j + 1))) (i : ℕ) (t : ℝ) :
+    bspline x k i t
+      = insertKnotWeight x k j y i * bspline (insertKnot x j y) k i t
+        + (1 - insertKnotWeight x k j y (i + 1)) * bspline (insertKnot x j y) k (i + 1) t := by
+  have hD : (0 : ℝ) < x (j + 1) - y := sub_pos.2 hy.2
+  set X : ℕ → ℕ → ℝ :=
+    fun n m => x m - (1 / 2 : ℝ) ^ m * ((x (j + 1) - y) / ((n : ℝ) + 1)) with hXdef
+  set Z : ℕ → ℝ := fun n => y - (y - X n j) / ((n : ℝ) + 2) with hZdef
+  have hq : ∀ n : ℕ, (0 : ℝ) < (x (j + 1) - y) / ((n : ℝ) + 1) := fun n => by positivity
+  have hpow : ∀ m : ℕ, (0 : ℝ) < (1 / 2 : ℝ) ^ m := fun m => by positivity
+  have hXlt : ∀ n m, X n m < x m := by
+    intro n m
+    have := mul_pos (hpow m) (hq n)
+    simp only [hXdef]
+    linarith
+  have hXmono : ∀ n, StrictMono (X n) := by
+    intro n
+    refine strictMono_nat_of_lt_succ fun m => ?_
+    have h1 : x m ≤ x (m + 1) := hx (by omega)
+    have h2 := hpow m
+    have h3 := hq n
+    simp only [hXdef, pow_succ]
+    nlinarith
+  have hXto : ∀ m, Tendsto (fun n => X n m) atTop (𝓝 (x m)) := by
+    have h0 : Tendsto (fun n : ℕ => (x (j + 1) - y) / ((n : ℝ) + 1)) atTop (𝓝 0) := by
+      have h := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_mul (x (j + 1) - y)
+      simpa [div_eq_mul_inv] using h
+    intro m
+    have h1 := tendsto_const_nhds (x := x m) |>.sub (h0.const_mul ((1 / 2 : ℝ) ^ m))
+    simp only [hXdef]
+    simpa using h1
+  have hyX : ∀ n, X n j < y := fun n => lt_of_lt_of_le (hXlt n j) hy.1
+  have hZlt : ∀ n, Z n < y := by
+    intro n
+    have h1 : (0 : ℝ) < (y - X n j) / ((n : ℝ) + 2) :=
+      div_pos (by linarith [hyX n]) (by positivity)
+    simp only [hZdef]
+    linarith
+  have hZ1 : ∀ n, X n j < Z n := by
+    intro n
+    have h1 : (0 : ℝ) < y - X n j := by linarith [hyX n]
+    have h2 : (1 : ℝ) < (n : ℝ) + 2 := by linarith [Nat.cast_nonneg (α := ℝ) n]
+    have h3 := div_lt_self h1 h2
+    simp only [hZdef]
+    linarith
+  have hZ2 : ∀ n, Z n < X n (j + 1) := by
+    intro n
+    have h1 : (1 / 2 : ℝ) ^ j ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
+    have h2 := hq n
+    have h3 : (x (j + 1) - y) / ((n : ℝ) + 1) ≤ x (j + 1) - y :=
+      div_le_self hD.le (by linarith [Nat.cast_nonneg (α := ℝ) n])
+    have h4 : y < X n (j + 1) := by
+      simp only [hXdef, pow_succ]
+      nlinarith [hpow j]
+    exact lt_trans (hZlt n) h4
+  have hZto : Tendsto Z atTop (𝓝 y) := by
+    have hden : Tendsto (fun n : ℕ => (n : ℝ) + 2) atTop atTop :=
+      tendsto_atTop_add_const_right _ 2 tendsto_natCast_atTop_atTop
+    have h3 : Tendsto (fun n => (y - X n j) / ((n : ℝ) + 2)) atTop (𝓝 0) :=
+      (tendsto_const_nhds.sub (hXto j)).div_atTop hden
+    simp only [hZdef]
+    simpa using tendsto_const_nhds (x := y) |>.sub h3
+  exact bspline_eq_insert_comb_of_limits hx hk hy hXmono hXlt hXto
+    (fun n => ⟨hZ1 n, hZ2 n⟩) hZlt hZto i t
+
+/-- The bookkeeping behind `sum_smul_bspline_insertKnot`: given the one-spline identity for every
+index, the spline `∑_{i < N} c_i B_{i,k}` equals `∑_{i < N+1} d_i B̂_{i,k}` with the Boehm
+coefficients `d_i`. The two hypotheses `k ≤ j` and `j < N` are what make the boundary weights
+`ω_0 = 1` and `ω_N = 0`, so that the two shifted sums close up. -/
+private theorem sum_smul_bspline_insert_of_comb {Y : ℕ → ℝ}
+    (hcomb : ∀ i, bspline x k i t = insertKnotWeight x k j y i * bspline Y k i t
+      + (1 - insertKnotWeight x k j y (i + 1)) * bspline Y k (i + 1) t)
+    (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) :
+    ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline Y k i t
       = ∑ i ∈ Finset.range N, c i * bspline x k i t := by
-  set Y := insertKnot x j y with hYdef
   set a : ℕ → ℝ := insertKnotWeight x k j y with ha
   have ha0 : a 0 = 1 := by rw [ha, insertKnotWeight, ite_eq_left (by omega)]
   have haN : a N = 0 := by
@@ -1347,9 +1583,31 @@ theorem sum_smul_bspline_insertKnot (hx : StrictMono x) (hk : 1 ≤ k)
         + ∑ i ∈ Finset.range N, (1 - a (i + 1)) * c i * bspline Y k (i + 1) t := by
     rw [← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun i _ => ?_
-    rw [bspline_eq_insert_comb hx hk hy i t, ← ha, ← hYdef]
+    rw [hcomb i]
     ring
   rw [hL, hL1, hL2, hR]
+
+/-- **Knot insertion preserves the spline** ([quarteroni2000numerical] Remark 8.4): for strictly
+increasing knots, `1 ≤ k` and a new knot `y` interior to the panel `(x_j, x_{j+1})` whose index
+satisfies `k ≤ j < N`, the spline `∑_{i < N} c_i B_{i,k}` is `∑_{i < N + 1} d_i B̂_{i,k}` on the
+refined knots, with the coefficients `d_i = ω_i c_i + (1 - ω_i) c_{i-1}` of `insertKnotCoeff`. -/
+theorem sum_smul_bspline_insertKnot (hx : StrictMono x) (hk : 1 ≤ k)
+    (hy : y ∈ Ioo (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
+    ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t
+      = ∑ i ∈ Finset.range N, c i * bspline x k i t :=
+  sum_smul_bspline_insert_of_comb (fun i => bspline_eq_insert_comb hx hk hy i t) hkj hjN c
+
+/-- **Knot insertion preserves the spline, at a knot that need not be interior to its panel**
+([quarteroni2000numerical] Remark 8.4): the same identity as `sum_smul_bspline_insertKnot` for a
+merely *nondecreasing* knot sequence and a new knot `y ∈ [x_j, x_{j+1})`, which is the range the
+book states. The case `y = x_j` raises the multiplicity of an existing knot; `x_j < x_{j+1}`, which
+`hy` forces, is exactly the requirement that the panel receiving the knot be nonempty. -/
+theorem sum_smul_bspline_insertKnot_of_monotone (hx : Monotone x) (hk : 1 ≤ k)
+    (hy : y ∈ Ico (x j) (x (j + 1))) (hkj : k ≤ j) {N : ℕ} (hjN : j < N) (c : ℕ → ℝ) (t : ℝ) :
+    ∑ i ∈ Finset.range (N + 1), insertKnotCoeff x k j y c i * bspline (insertKnot x j y) k i t
+      = ∑ i ∈ Finset.range N, c i * bspline x k i t :=
+  sum_smul_bspline_insert_of_comb
+    (fun i => bspline_eq_insert_comb_of_monotone hx hk hy i t) hkj hjN c
 
 end KnotInsertion
 

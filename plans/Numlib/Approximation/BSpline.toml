@@ -102,22 +102,13 @@ id = "map_insertShift"
 
 [[node]]
 id = "sum_smul_bspline_insertKnot_of_monotone"
-kind = "theorem"
-desc = '''**Boehm's knot insertion at a knot that is not interior to its panel.** The same identity
-as `sum_smul_bspline_insertKnot` for a *nondecreasing* knot sequence and a new knot
-`x̃ ∈ Ico (x j) (x (j + 1))`, which is the range [quarteroni2000numerical] Remark 8.4 states; the
-proved version needs `StrictMono x` and `x̃ ∈ Ioo (x j) (x (j + 1))`. ★★★
-
-Blocked: the proof of `bspline_eq_insert_comb` runs through
-`bspline_eq_mul_newton_truncPow`, the divided-difference form of the B-spline, which is stated for
-distinct knots only; at `x̃ = x j` the inserted sequence has a double knot and the divided
-difference over it is undefined (the explicit sum `DividedDifference.newtonOn` divides by zero).
-Two routes out, neither attempted: a continuity argument in `x̃` (the Cox–de Boor weights are
-continuous where their denominators do not vanish, but exactly the degenerating panel is the one
-in question), or an induction on the degree from `bspline_succ` with its `0/0 = 0` convention,
-which is the 400-600-line route (1) this node's predecessor recorded.'''
-deps = ["sum_smul_bspline_insertKnot"]
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.4"
+
+[[node]]
+id = "tendsto_bspline_of_tendsto"
+
+[[node]]
+id = "bspline_eq_insert_comb_of_monotone"
 
 [[node]]
 id = "curve"
