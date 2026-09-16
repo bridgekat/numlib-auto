@@ -31,11 +31,15 @@ stages are the plain stages of `P A` up to the order of the rows). `max_{i,j} |a
 * `equation_3_64`, `equation_3_65`, `equation_3_66`, `equation_3_66_spec`, `equation_3_67` —
   the backward error of GEM and the growth factor.
 * `growthFactor_le_two_pow`, `growthFactor_tridiagonal`, `growthFactor_hessenberg`,
-  `growthFactor_posDef`, `growthFactor_colDiagDominant` — the bounds on `ρ_n`; the banded bound
-  (Bohte) and the complete-pivoting bound (Wilkinson) are planned as not formalized. The backbone
-  proves a weaker banded bound with the same qualitative content, `ρ_n ≤ 2^{p+q}` for lower
-  bandwidth `p` and upper bandwidth `q` (`Matrix.growthFactor_le_two_pow_of_hasBandwidth`); it is
-  not restated here because it is not the book's inequality.
+  `growthFactor_posDef`, `growthFactor_colDiagDominant`, `growthFactor_completePivoting` — the
+  bounds on `ρ_n`. The banded bound of item (1), Bohte's `2^{2p-1} - (p-1) 2^{p-2}`, is *not*
+  here and is not planned: neither this book nor [higham2002accuracy] (Theorem 9.11) proves it,
+  both citing Bohte (1975), which the project does not have, and Higham's Problem 9.15 records
+  the general case as an open research problem. The backbone proves a weaker banded bound with
+  the same qualitative content — `ρ_n ≤ 2^{p+q}` for lower bandwidth `p` and upper bandwidth `q`,
+  `Matrix.growthFactor_le_two_pow_of_hasBandwidth`, bounded independently of `n` — which is not
+  restated here because it is not the book's inequality; the book's tridiagonal consequence
+  `ρ_n ≤ 2` is `growthFactor_tridiagonal`, proved sharply and independently.
 * `example_3_7_cond`, `example_3_7_lu`, `residual_error_bound`, `example_3_8`, `equation_3_69`
   — the examples and the role of the condition number.
 
@@ -187,8 +191,8 @@ theorem growthFactor_le_two_pow :
   ⟨fun hmul => Matrix.growthFactor_le_two_pow A hmul, growthFactor_le_two_pow_of_partialPivotRow A⟩
 
 /-- **§3.10 (1), the tridiagonal case.** For a tridiagonal `A`, GEM with partial pivoting has
-`ρ_n ≤ 2` (backbone `Matrix.growthFactor_le_two_of_isTridiagonal`); this is the case `p = 1` of
-Bohte's banded bound, which itself is not formalized. -/
+`ρ_n ≤ 2` (backbone `Matrix.growthFactor_le_two_of_isTridiagonal`); it is the case `p = 1` of
+Bohte's banded bound, which itself is not in the library (see the contents above). -/
 theorem growthFactor_tridiagonal (hA : A.IsTridiagonal) :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 :=
   growthFactor_le_two_of_isTridiagonal hA
@@ -210,6 +214,24 @@ pivoting; the bound holds for every nonsingular matrix weakly dominant by column
 `Matrix.growthFactor_le_two_of_isColDiagDominant`), and strict dominance gives both. -/
 theorem growthFactor_colDiagDominant (hA : A.IsStrictColDiagDominant) : equation_3_66 A ≤ 2 :=
   growthFactor_le_two_of_isColDiagDominant hA.isUnit hA.isColDiagDominant
+
+/-- **§3.10, complete pivoting (Wilkinson).** "Resorting to complete pivoting would seem to be
+mandatory, since it ensures that `ρ_n ≤ n^{1/2} (2 · 3^{1/2} · … · n^{1/(n-1)})^{1/2}`. Indeed
+this growth is slower than `2^{n-1}` as `n` increases." Here `P` and `Q` are the row and column
+permutations accumulated by the complete-pivoting recurrence `Matrix.gemFullPivotStage` for an
+arbitrary complete-pivoting strategy `piv` (`Matrix.IsCompletePivot`, of which
+`Matrix.completePivotEntry` is one), and `ρ_n` is the growth factor of `P A Q`, whose elimination
+stages are the pivoted ones up to the order of the rows and of the columns. Backbone
+`Matrix.growthFactor_le_wilkinson_of_isCompletePivot`, from
+`Matrix.growthFactor_le_of_completePivoting` under the stage dominance
+`|a^{(k)}_{ij}| ≤ |a^{(k)}_{kk}|` that complete pivoting arranges. -/
+theorem growthFactor_completePivoting
+    {piv : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n × Fin n} (hpiv : IsCompletePivot piv) :
+    equation_3_66 ((gemFullPivotStage A piv n).2.1.permMatrix ℝ * A *
+        ((gemFullPivotStage A piv n).2.2⁻¹).permMatrix ℝ) ≤
+      Real.sqrt n * Real.sqrt (∏ t ∈ range (n - 1), ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹) := by
+  rw [equation_3_66, permMatrix_mul_mul_permMatrix]
+  exact growthFactor_le_wilkinson_of_isCompletePivot A hpiv
 
 end Growth
 

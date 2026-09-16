@@ -78,6 +78,8 @@ the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.
 * `Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero` and
   `Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal`: the Golub–Kahan
   bidiagonalization.
+* `Matrix.norm_det_le_prod_sqrt_sum_norm_sq`: **Hadamard's determinant inequality**, a corollary
+  of the triangularization, with `Matrix.norm_det_le_of_forall_norm_le` its entrywise form.
 
 ## Implementation notes
 
@@ -1481,5 +1483,74 @@ theorem exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal (h : N ≤ M)
     exact hB _ _ (by simp; omega) (by simp; omega)
 
 end Bidiagonal
+
+/-! ### Hadamard's determinant inequality -/
+
+section Hadamard
+
+/-- A unitary matrix preserves the Euclidean length of a vector, in the form
+`∑ i, ‖(U *ᵥ v) i‖² = ∑ i, ‖v i‖²`: both sides are `star w ⬝ᵥ w` read as a real number, and
+`Uᴴ U = 1`. -/
+theorem sum_norm_sq_mulVec_of_mem_unitaryGroup {U : Matrix n n 𝕜}
+    (hU : U ∈ Matrix.unitaryGroup n 𝕜) (v : n → 𝕜) :
+    ∑ i, ‖(U *ᵥ v) i‖ ^ 2 = ∑ i, ‖v i‖ ^ 2 := by
+  have key : ∀ w : n → 𝕜, star w ⬝ᵥ w = ((∑ i, ‖w i‖ ^ 2 : ℝ) : 𝕜) := by
+    intro w
+    rw [dotProduct]
+    push_cast
+    exact Finset.sum_congr rfl fun i _ => by simpa using RCLike.conj_mul (w i)
+  have h : star (U *ᵥ v) ⬝ᵥ (U *ᵥ v) = star v ⬝ᵥ v := by
+    rw [star_mulVec, dotProduct_mulVec, vecMul_vecMul, ← star_eq_conjTranspose,
+      mem_unitaryGroup_iff'.1 hU, vecMul_one]
+  rw [key, key] at h
+  exact_mod_cast h
+
+/-- The determinant of a unitary matrix has modulus one. -/
+theorem norm_det_of_mem_unitaryGroup {U : Matrix n n 𝕜} (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
+    ‖U.det‖ = 1 := by
+  have h1 : ‖star U.det * U.det‖ = 1 := by
+    rw [_root_.Unitary.star_mul_self_of_mem (Matrix.det_of_mem_unitary hU), norm_one]
+  rw [norm_mul, norm_star] at h1
+  nlinarith [norm_nonneg U.det]
+
+variable [LinearOrder n]
+
+/-- **Hadamard's determinant inequality**: the modulus of a determinant is at most the product of
+the Euclidean lengths of the columns. Triangularize by a unitary matrix
+(`Matrix.exists_unitary_mul_isUpperTriangular`); the determinant of `U X` is that of `X` up to a
+unit-modulus factor, it is the product of the diagonal of the triangular factor, and each diagonal
+entry is bounded by the length of its column, which `U` has not changed. -/
+theorem norm_det_le_prod_sqrt_sum_norm_sq (X : Matrix n n 𝕜) :
+    ‖X.det‖ ≤ ∏ j, Real.sqrt (∑ i, ‖X i j‖ ^ 2) := by
+  obtain ⟨U, hU, hT⟩ := exists_unitary_mul_isUpperTriangular X
+  have hcol : ∀ j, ∑ i, ‖(U * X) i j‖ ^ 2 = ∑ i, ‖X i j‖ ^ 2 := fun j =>
+    sum_norm_sq_mulVec_of_mem_unitaryGroup hU _
+  have hX : ‖X.det‖ = ‖(U * X).det‖ := by
+    rw [det_mul, norm_mul, norm_det_of_mem_unitaryGroup hU, one_mul]
+  rw [hX, det_of_isUpperTriangular hT, norm_prod]
+  refine Finset.prod_le_prod (fun j _ => norm_nonneg _) fun j _ => ?_
+  rw [← hcol j]
+  calc ‖(U * X) j j‖ = Real.sqrt (‖(U * X) j j‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ Real.sqrt (∑ i, ‖(U * X) i j‖ ^ 2) :=
+        Real.sqrt_le_sqrt (Finset.single_le_sum (f := fun i => ‖(U * X) i j‖ ^ 2)
+          (fun i _ => by positivity) (Finset.mem_univ j))
+
+/-- **Hadamard's inequality in entrywise form**: a matrix of order `m` whose entries have modulus
+at most `c` has `‖det‖ ≤ m^{m/2} c^m`. -/
+theorem norm_det_le_of_forall_norm_le {X : Matrix n n 𝕜} {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ i j, ‖X i j‖ ≤ c) :
+    ‖X.det‖ ≤ (Real.sqrt (Fintype.card n) * c) ^ Fintype.card n := by
+  refine (norm_det_le_prod_sqrt_sum_norm_sq X).trans ?_
+  calc ∏ j, Real.sqrt (∑ i, ‖X i j‖ ^ 2)
+      ≤ ∏ _j : n, Real.sqrt (Fintype.card n * c ^ 2) := by
+        refine Finset.prod_le_prod (fun j _ => Real.sqrt_nonneg _) fun j _ => Real.sqrt_le_sqrt ?_
+        calc ∑ i, ‖X i j‖ ^ 2 ≤ ∑ _i : n, c ^ 2 :=
+              Finset.sum_le_sum fun i _ => by nlinarith [h i j, norm_nonneg (X i j)]
+          _ = Fintype.card n * c ^ 2 := by
+              rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    _ = (Real.sqrt (Fintype.card n) * c) ^ Fintype.card n := by
+        rw [Finset.prod_const, Finset.card_univ, Real.sqrt_mul (by positivity), Real.sqrt_sq hc]
+
+end Hadamard
 
 end Matrix

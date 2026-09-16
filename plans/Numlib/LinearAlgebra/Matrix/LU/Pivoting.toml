@@ -37,62 +37,7 @@ id = "growthFactor_le_card_of_isUpperHessenberg"
 id = "growthFactor_le_two_of_isColDiagDominant"
 
 [[node]]
-id = "growthFactor_le_of_hasBandwidth"
-kind = "theorem"
-desc = '''QSS §3.10 (1), Higham Theorem 9.11 (Bohte): for `A` with upper and lower bandwidth `p`, GEPP has
-`growthFactor ≤ 2^{2p-1} - (p-1) 2^{p-2}`. The tridiagonal case `p = 1` is
-`growthFactor_le_two_of_isTridiagonal`. ★★★
-
-Blocked: the *qualitative* content — a bound depending only on the bandwidth, not on the order — is
-now proved, as `growthFactor_le_two_pow_of_hasBandwidth`: `growthFactor ≤ 2^{p+q}` for lower
-bandwidth `p` and upper bandwidth `q`, by the band shape invariant
-`gemPivotStage_partialPivotRow_hasBandwidth_invariant` (the pivot row is supported in the columns
-`k … k+p+q`, so a stage touches a column at most `p+q` times) and a per-column doubling count.
-Bohte's *constant* is a factor two better at `p = q` (`2^{2p-1}` against `2^{2p}`, minus the
-correction term), and reaching it needs his finer analysis of how the entries of a single band row
-grow along a sweep — a second-order recursion in the pair (column offset, number of updates)
-rather than the crude "each update at most doubles the column". Neither the book nor Higham gives
-the proof; the source is Bohte, *Bounds for rounding errors in the Gaussian elimination for band
-systems*, J. Inst. Math. Appl. 16 (1975). Estimate: a further 300–500 lines on top of the invariant
-already here, and the printed constant must first be checked against that paper (the book's
-`- (p-1) 2^{p-2}` correction is unverified here).'''
-deps = ["Matrix.growthFactor", "Matrix.gemPivotStage", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
-
-[[node]]
 id = "growthFactor_le_of_completePivoting"
-kind = "theorem"
-desc = '''QSS §3.10, complete pivoting: `growthFactor ≤ √N (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}` (Wilkinson 1961,
-[higham2002accuracy] Theorem 9.8). ★★★
-
-Blocked, but the proof is now reconstructed and is ordinary mathematics; what is missing is the
-work, not the idea. Write `μ_k` for the `k`-th pivot of complete pivoting on `A`, so that
-`|a^{(k)}_{ij}| ≤ μ_k` for `i, j ≥ k` (the dominance clause of
-`exists_permMatrix_mul_mul_permMatrix_isLU`) and hence `growthFactor = max_k μ_k / μ_1`. Two
-ingredients: (i) the determinant of the leading `j × j` block of the `k`-th reduced matrix is
-`∏_{i=k}^{k+j-1} μ_i` (from `IsLU` and `det_eq_prod_diag`); (ii) Hadamard's inequality
-`|det B| ≤ ∏_j ‖B e_j‖₂ ≤ j^{j/2} (max |b|)^j`. Together: `P(k, j) : ∏_{i=k}^{k+j-1} μ_i ≤
-j^{j/2} μ_k^j` for every `k, j`. Taking logs and writing `L_s = log ∏_{i=r-s}^{r} μ_i`, the
-instances `P(r-s, s+1)` give `L_s ≥ ((s+1)/s)(L_{s-1} - (1/2) log(s+1))`, whence
-`L_s ≥ (s+1) log μ_r - (s+1) ∑_{j≤s} log(j+1)/(2j)`; feeding that into `P(1, r)` gives
-`log μ_r - log μ_1 ≤ (1/2) log r + ∑_{j<r} log(j+1)/(2j)`, which is exactly Wilkinson's bound.
-
-Three costs, the first of which the earlier verdict missed. **The subject of the statement does not
-exist yet**: `gemPivotStage A piv k` runs a strategy `piv : Matrix → Fin N → Fin N` that chooses a
-*row*, so the module has no stage recurrence for complete pivoting, and `growthFactor` is defined on
-`gemStage`, the unpivoted stages. The statement has therefore to be either about
-`growthFactor (P A Q)` for the `P`, `Q` of `exists_permMatrix_mul_mul_permMatrix_isLU`, or about a
-new two-sided recurrence; either way what the proof needs is the *stage* dominance
-`|a^{(k)}_{ij}| ≤ |a^{(k)}_{kk}|` for all `i, j ≥ k`, which is stronger than the
-`|U i j| ≤ |U i i|` that `exists_permMatrix_mul_mul_permMatrix_isLU` records and has to be extracted
-from its bordering induction. Second, Hadamard's inequality is still absent from Mathlib (grepped `Hadamard` under
-`Mathlib/LinearAlgebra/Matrix`: only `HadamardMatrix`, a different object) and from this project,
-but it is cheap here: `exists_unitary_mul_upperTriangular` (`Numlib/LinearAlgebra/Matrix/QR`) gives
-`B = Q R` with `Q` unitary and `R` upper triangular, so `|det B| = ∏ |r_jj| ≤ ∏ ‖B e_j‖₂`; it
-belongs in `QR.lean` or in a Mathlib PR, not here. The rest is the `rpow` bookkeeping of the
-telescoping induction above, which is the bulk of the work. Estimate: 400–600 lines including
-Hadamard. A cheap intermediate statement, if only "slower than `2^{N-1}`" is wanted, is
-`growthFactor ≤ √N · 2^{(N-1)/2}`, which follows from `P(1, N)` and `μ_{i+1} ≤ 2 μ_i` alone.'''
-deps = ["Matrix.growthFactor", "Matrix.exists_permMatrix_mul_mul_permMatrix_isLU"]
 
 [[node]]
 id = "schurComplementSingle_submatrix_ofSubtype"
@@ -234,3 +179,75 @@ id = "abs_gemPivotStage_le_of_hasBandwidth"
 
 [[node]]
 id = "growthFactor_le_two_pow_of_hasBandwidth"
+
+[[node]]
+id = "IsCompletePivot"
+
+[[node]]
+id = "exists_completePivotEntry"
+
+[[node]]
+id = "completePivotEntry"
+
+[[node]]
+id = "isCompletePivot_completePivotEntry"
+
+[[node]]
+id = "gemFullPivotStage"
+
+[[node]]
+id = "gemFullPivotStage_succ_of_lt"
+
+[[node]]
+id = "elimStep_submatrix_submatrix_of_forall_le"
+
+[[node]]
+id = "gemStage_submatrix_eq_submatrix_gemFullPivotStage"
+
+[[node]]
+id = "gemStage_submatrix_apply_self"
+
+[[node]]
+id = "permMatrix_mul_mul_permMatrix"
+
+[[node]]
+id = "HasDominantPivots"
+
+[[node]]
+id = "absGemPivot"
+
+[[node]]
+id = "HasDominantPivots.gemStage_apply_eq_zero"
+
+[[node]]
+id = "HasDominantPivots.gemStage_eq_of_pivot_eq_zero"
+
+[[node]]
+id = "blockEmb"
+
+[[node]]
+id = "elimStep_submatrix_orderEmbedding"
+
+[[node]]
+id = "gemStage_submatrix_blockEmb"
+
+[[node]]
+id = "prod_absGemPivot_le"
+
+[[node]]
+id = "wilkinsonGrowthBound"
+
+[[node]]
+id = "wilkinsonGrowthBound_mono"
+
+[[node]]
+id = "log_absGemPivot_le"
+
+[[node]]
+id = "absGemPivot_le_wilkinson"
+
+[[node]]
+id = "hasDominantPivots_submatrix_gemFullPivotStage"
+
+[[node]]
+id = "growthFactor_le_wilkinson_of_isCompletePivot"

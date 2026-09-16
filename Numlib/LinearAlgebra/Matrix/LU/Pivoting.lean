@@ -8,6 +8,7 @@ import Mathlib.Analysis.Normed.Field.Basic
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.LinearAlgebra.Matrix.Permutation
 import Numlib.LinearAlgebra.Matrix.LU.Elimination
+import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
 # Pivoting and the growth factor of Gaussian elimination
@@ -23,7 +24,9 @@ The *algorithm* level is the stage recurrence of Gaussian elimination
 `Matrix.gemPivotStage A piv k` runs `k` stages with an arbitrary strategy `piv`, returning the
 current matrix and the accumulated row permutation, and `Matrix.partialPivotRow` (the first row of
 maximal modulus in the current column) is the strategy of Gaussian elimination with partial
-pivoting.
+pivoting. `Matrix.gemFullPivotStage A piv k` is its two-sided counterpart, interchanging rows *and*
+columns for a strategy choosing a pair of indices, with `Matrix.completePivotEntry` the strategy of
+complete pivoting.
 
 The growth factor `ρ_N = max_{i,j,k} |a^{(k)}_{ij}| / max_{i,j} |a_{ij}|`
 ([quarteroni2000numerical] (3.66)) is defined on the *exact* stages and over `ℝ`; the book
@@ -31,17 +34,40 @@ defines it on the computed stages, and [higham2002accuracy] (after Theorem 9.5) 
 exact one is the one that can be bounded. Of the bounds of [quarteroni2000numerical] §3.10, this
 module proves `2^{N-1}` under bounded multipliers (hence for partial pivoting), `1` for symmetric
 positive definite matrices, `2` for column diagonally dominant matrices, `2` for tridiagonal,
-`N` for upper Hessenberg and `2^{p+q}` for banded matrices of lower bandwidth `p` and upper
-bandwidth `q` under partial pivoting. Bohte's sharper band bound `2^{2p-1} - (p-1) 2^{p-2}` and
-Wilkinson's complete-pivoting bound are stated in the plan as not formalized.
+`N` for upper Hessenberg, `2^{p+q}` for banded matrices of lower bandwidth `p` and upper
+bandwidth `q` under partial pivoting, and Wilkinson's
+`N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}` for complete pivoting.
+
+**Bohte's band bound is not here.** [quarteroni2000numerical] §3.10 (1) and
+[higham2002accuracy] Theorem 9.11 state that a matrix whose upper and lower bandwidths are both
+`p` has `ρ_n ≤ 2^{2p-1} - (p-1) 2^{p-2}` under partial pivoting. What this module proves instead
+is `Matrix.growthFactor_le_two_pow_of_hasBandwidth`, `ρ_N ≤ 2^{p+q}` for lower bandwidth `p` and
+upper bandwidth `q`; that carries the content of the book's item — the growth factor of a banded
+matrix is bounded independently of the order — and `Matrix.growthFactor_le_two_of_isTridiagonal`
+gives the book's tridiagonal consequence `2` sharply. Bohte's constant is about a factor two
+better at `p = q`, and no proof of it is available: the book states it without one, and
+[higham2002accuracy] refers to Z. Bohte, *Bounds for rounding errors in the Gaussian elimination
+for band systems*, J. Inst. Maths. Applics. 16 (1975), 133–142, which is not among the project's
+references; Problem 9.15 there records the sharp bound for `p ≠ q` as an open research problem.
+Reaching the printed constant would need Bohte's finer analysis of how the entries of one band row
+grow along a sweep — a second-order recursion in the pair (column offset, number of updates) in
+place of the "each update at most doubles the column" counting used here — and the constant itself
+could not be checked against its source. Nothing in the corpus consumes it, so it is not tracked.
 
 ## Main definitions
 
 * `Matrix.partialPivotRow M k`: the first row `r ≥ k` maximizing `‖M r k‖`.
+* `Matrix.IsCompletePivot`, `Matrix.completePivotEntry M k`: choosing an entry of maximal modulus
+  in the trailing block from `k` on, the strategy of complete pivoting.
 * `Matrix.gemPivotStage A piv k`: `k` stages of Gaussian elimination with the pivoting strategy
   `piv`, as a pair (current matrix, accumulated row permutation).
+* `Matrix.gemFullPivotStage A piv k`: the same for a strategy choosing an entry, as a triple
+  (current matrix, accumulated row permutation, accumulated column permutation).
 * `Matrix.supAbs A`: the largest absolute value of an entry of a real matrix, and
   `Matrix.growthFactor A`: the growth factor of Gaussian elimination without pivoting on `A`.
+* `Matrix.HasDominantPivots A`: every stage of the elimination has its pivot dominating the
+  trailing block, with `Matrix.absGemPivot A k` the modulus of the `k`-th pivot.
+* `Matrix.wilkinsonGrowthBound N`: `N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`.
 
 ## Main results
 
@@ -57,6 +83,13 @@ Wilkinson's complete-pivoting bound are stated in the plan as not formalized.
   `Matrix.growthFactor_le_two_of_isColDiagDominant`, `Matrix.growthFactor_le_two_of_isTridiagonal`,
   `Matrix.growthFactor_le_card_of_isUpperHessenberg`,
   `Matrix.growthFactor_le_two_pow_of_hasBandwidth`.
+* `Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`: the two-sided analogue for complete
+  pivoting, whence `Matrix.hasDominantPivots_submatrix_gemFullPivotStage`, the stage dominance
+  that complete pivoting buys.
+* `Matrix.growthFactor_le_of_completePivoting` and its algorithmic form
+  `Matrix.growthFactor_le_wilkinson_of_isCompletePivot`: **Wilkinson's bound**, by Hadamard's
+  determinant inequality (`Matrix.norm_det_le_of_forall_norm_le`) on the leading blocks of the
+  reduced matrices and a telescoping induction over the pivots.
 
 ## Implementation notes
 
@@ -67,12 +100,22 @@ indices of `Numlib/LinearAlgebra/Matrix/LU` (`Matrix.isLU_luLowerOfSchur_luUpper
 the pivot moved to the first index by a transposition and the permutation of the trailing block
 extended by `Equiv.Perm.ofSubtype`. The recurrence is on `Fin N`, as `Matrix.gemStage` is; the
 accumulated permutation is `σ_{k+1} = σ_k * swap k r_k`, so that its permutation matrix is
-`P_k ⋯ P_1` and the interchanges *after* stage `k`, `σ_k⁻¹ σ_N`, fix the indices below `k`.
+`P_k ⋯ P_1` and the interchanges *after* stage `k`, `σ_k⁻¹ σ_N`, fix the indices below `k`. The
+complete-pivoting recurrence carries a second permutation with the same bookkeeping, and the only
+new geometric fact is that an elimination step commutes with a permutation of the *columns* that
+fixes the pivot (`Matrix.elimStep_submatrix_id_of_apply_self`).
+
+`Matrix.blockEmb`, `Matrix.elimStep_submatrix_orderEmbedding` and
+`Matrix.gemStage_submatrix_blockEmb` — the elimination of a trailing block of consecutive indices
+is the restriction of the global elimination — are about `Matrix.gemStage` alone and belong in
+`Numlib/LinearAlgebra/Matrix/LU/Elimination`; they are here because that module was owned by
+another agent when they were written.
 
 ## References
 
 * [quarteroni2000numerical] §3.5, §3.10.
-* [higham2002accuracy] §9.3–9.5.
+* [higham2002accuracy] §9.3–9.5, (9.14) (Wilkinson's complete-pivoting bound) and
+  Theorem 9.11 (Bohte).
 -/
 
 open Finset
@@ -370,6 +413,47 @@ theorem partialPivotRow_eq_self_of_forall_eq_zero (h : ∀ r, k ≤ r → M r k 
 
 end PartialPivot
 
+/-! ### The complete-pivoting strategy -/
+
+section CompletePivot
+
+variable {n : Type*} [LinearOrder n] {𝕜 : Type*} [NormedField 𝕜]
+
+/-- **A complete-pivoting strategy** ([quarteroni2000numerical] §3.5, [higham2002accuracy] §9.3):
+`piv M k` returns a pair `(r, c)` of indices at or after `k` at which `‖M r c‖` is maximal over
+the whole trailing block, the rows and columns from `k` on. The interchanges such a strategy
+produces are run by `Matrix.gemFullPivotStage`. -/
+def IsCompletePivot (piv : Matrix n n 𝕜 → n → n × n) : Prop :=
+  ∀ (M : Matrix n n 𝕜) (k : n), k ≤ (piv M k).1 ∧ k ≤ (piv M k).2 ∧
+    ∀ i j, k ≤ i → k ≤ j → ‖M i j‖ ≤ ‖M (piv M k).1 (piv M k).2‖
+
+variable [Finite n]
+
+/-- Some entry of the trailing block from `k` on has maximal modulus in that block. -/
+theorem exists_completePivotEntry (M : Matrix n n 𝕜) (k : n) :
+    ∃ rc : n × n, k ≤ rc.1 ∧ k ≤ rc.2 ∧
+      ∀ i j, k ≤ i → k ≤ j → ‖M i j‖ ≤ ‖M rc.1 rc.2‖ := by
+  have : Fintype n := Fintype.ofFinite n
+  obtain ⟨rc, hrc, hmax⟩ := Finset.exists_max_image
+    (univ.filter fun rc : n × n => k ≤ rc.1 ∧ k ≤ rc.2) (fun rc => ‖M rc.1 rc.2‖)
+    ⟨(k, k), by simp⟩
+  obtain ⟨-, h1, h2⟩ := mem_filter.1 hrc
+  exact ⟨rc, h1, h2, fun i j hi hj => hmax (i, j) (mem_filter.2 ⟨mem_univ _, hi, hj⟩)⟩
+
+/-- **Complete pivoting** ([quarteroni2000numerical] §3.5): an entry of maximal modulus in the
+trailing block from `k` on. Unlike `Matrix.partialPivotRow` no canonical choice among the
+maximizing entries is made, because every complete-pivoting strategy obeys the same growth bound
+(`Matrix.growthFactor_le_wilkinson_of_isCompletePivot`). -/
+noncomputable def completePivotEntry (M : Matrix n n 𝕜) (k : n) : n × n :=
+  (exists_completePivotEntry M k).choose
+
+/-- `Matrix.completePivotEntry` is a complete-pivoting strategy. -/
+theorem isCompletePivot_completePivotEntry :
+    IsCompletePivot (completePivotEntry : Matrix n n 𝕜 → n → n × n) :=
+  fun M k => (exists_completePivotEntry M k).choose_spec
+
+end CompletePivot
+
 /-! ### Gaussian elimination with a pivoting strategy, on `Fin N` -/
 
 section Stages
@@ -592,6 +676,244 @@ theorem gemPivotStage_partialPivotRow_norm_gemLower_le_one {𝕜 : Type*} [Norme
   · simp
 
 end Stages
+
+/-! ### Gaussian elimination with complete pivoting, on `Fin N` -/
+
+section FullPivotStages
+
+variable {K : Type*} [Field K] {N : ℕ}
+
+/-- **Gaussian elimination with complete pivoting** ([quarteroni2000numerical] §3.5): with a
+strategy `piv` choosing a *pair* of indices, `gemFullPivotStage A piv k` is the triple of the
+matrix `A^{(k+1)}` after `k` stages, the accumulated row permutation `σ_k` and the accumulated
+column permutation `ρ_k`. Stage `k < N` chooses `(r, c) = piv A^{(k)} k`, swaps rows `k` and `r`
+and columns `k` and `c`, and eliminates column `k` below the pivot; the permutations become
+`σ_k * swap k r` and `ρ_k * swap k c`. Beyond `N` nothing happens. This is the two-sided analogue
+of `Matrix.gemPivotStage`, which permutes rows only. -/
+noncomputable def gemFullPivotStage (A : Matrix (Fin N) (Fin N) K)
+    (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N × Fin N) :
+    ℕ → Matrix (Fin N) (Fin N) K × Equiv.Perm (Fin N) × Equiv.Perm (Fin N)
+  | 0 => (A, 1, 1)
+  | k + 1 =>
+    if h : k < N then
+      (elimStep ((gemFullPivotStage A piv k).1.submatrix
+          (Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).1)
+          (Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).2)) ⟨k, h⟩,
+        (gemFullPivotStage A piv k).2.1 *
+          Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).1,
+        (gemFullPivotStage A piv k).2.2 *
+          Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).2)
+    else gemFullPivotStage A piv k
+
+variable (A : Matrix (Fin N) (Fin N) K) (piv : Matrix (Fin N) (Fin N) K → Fin N → Fin N × Fin N)
+
+/-- The row interchange of stage `k` of complete pivoting. -/
+noncomputable def gemFullPivotRowSwap (k : ℕ) (h : k < N) : Equiv.Perm (Fin N) :=
+  Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).1
+
+/-- The column interchange of stage `k` of complete pivoting. -/
+noncomputable def gemFullPivotColSwap (k : ℕ) (h : k < N) : Equiv.Perm (Fin N) :=
+  Equiv.swap ⟨k, h⟩ (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).2
+
+/-- Before the first stage: the matrix itself and two identity permutations. -/
+@[simp]
+theorem gemFullPivotStage_zero : gemFullPivotStage A piv 0 = (A, 1, 1) := rfl
+
+/-- Stage `k + 1`: interchange, eliminate, and record both interchanges. -/
+theorem gemFullPivotStage_succ_of_lt {k : ℕ} (h : k < N) :
+    gemFullPivotStage A piv (k + 1) =
+      (elimStep ((gemFullPivotStage A piv k).1.submatrix (gemFullPivotRowSwap A piv k h)
+          (gemFullPivotColSwap A piv k h)) ⟨k, h⟩,
+        (gemFullPivotStage A piv k).2.1 * gemFullPivotRowSwap A piv k h,
+        (gemFullPivotStage A piv k).2.2 * gemFullPivotColSwap A piv k h) := by
+  simp only [gemFullPivotStage, h, dite_true, gemFullPivotRowSwap, gemFullPivotColSwap]
+
+/-- Beyond `N`, the stages do not change. -/
+theorem gemFullPivotStage_succ_of_le {k : ℕ} (h : N ≤ k) :
+    gemFullPivotStage A piv (k + 1) = gemFullPivotStage A piv k := by
+  simp only [gemFullPivotStage, not_lt.2 h, dite_false]
+
+omit [Field K] in
+/-- A sequence of permutations built up by right multiplication by permutations that fix the
+indices below the step: the composite of the interchanges after step `m` fixes every index below
+`m`. Both the row and the column permutations of `Matrix.gemFullPivotStage` are of this shape. -/
+theorem perm_inv_mul_apply_of_step {σ : ℕ → Equiv.Perm (Fin N)}
+    (hstep : ∀ k, ∃ τ : Equiv.Perm (Fin N),
+      σ (k + 1) = σ k * τ ∧ ∀ i : Fin N, (i : ℕ) < k → τ i = i)
+    {m m' : ℕ} (hmm' : m ≤ m') {i : Fin N} (hi : (i : ℕ) < m) :
+    ((σ m)⁻¹ * σ m') i = i := by
+  induction m', hmm' using Nat.le_induction with
+  | base => simp
+  | succ m' hm ih =>
+    obtain ⟨τ, hτ, hfix⟩ := hstep m'
+    rw [hτ, ← mul_assoc, Equiv.Perm.mul_apply, hfix i (hi.trans_le hm), ih]
+
+omit [Field K] in
+/-- A permutation fixing every index below `m` maps the indices from `m` on to indices from `m`
+on. -/
+theorem le_apply_of_forall_lt_apply_eq {ρ : Equiv.Perm (Fin N)} {m : ℕ}
+    (h : ∀ i : Fin N, (i : ℕ) < m → ρ i = i) {i : Fin N} (hi : m ≤ (i : ℕ)) : m ≤ (ρ i : ℕ) := by
+  by_contra hcon
+  have h1 := h _ (not_le.1 hcon)
+  rw [ρ.injective.eq_iff] at h1
+  rw [h1] at hcon
+  exact hcon hi
+
+/-- Taking a submatrix along a product of permutations is taking two submatrices. -/
+theorem submatrix_perm_mul {m α : Type*} (M : Matrix m m α) (s t s' t' : Equiv.Perm m) :
+    M.submatrix (s * t) (s' * t') = (M.submatrix s s').submatrix t t' := rfl
+
+/-- One step of elimination commutes with a permutation of the columns that fixes the pivot. -/
+theorem elimStep_submatrix_id_of_apply_self {m : Type*} [LinearOrder m] [Fintype m]
+    (M : Matrix m m K) {p : m} {ρ : Equiv.Perm m} (hρ : ρ p = p) :
+    elimStep (M.submatrix id ρ) p = (elimStep M p).submatrix id ρ := by
+  ext i j
+  simp only [elimStep_apply, submatrix_apply, id, hρ]
+
+/-- One step of elimination commutes with a permutation of the rows fixing the pivot and every
+index below it together with a permutation of the columns fixing the pivot. -/
+theorem elimStep_submatrix_submatrix_of_forall_le {m : Type*} [LinearOrder m] [Fintype m]
+    (M : Matrix m m K) {p : m} {σ ρ : Equiv.Perm m} (hσ : ∀ i, i ≤ p → σ i = i) (hρ : ρ p = p) :
+    elimStep (M.submatrix σ ρ) p = (elimStep M p).submatrix σ ρ := by
+  have h1 : M.submatrix (σ : m → m) (ρ : m → m) = (M.submatrix id ρ).submatrix σ id := by
+    rw [submatrix_submatrix]
+    rfl
+  rw [h1, elimStep_submatrix_of_forall_le _ hσ, elimStep_submatrix_id_of_apply_self _ hρ,
+    submatrix_submatrix]
+  rfl
+
+/-- The row interchange of stage `k` fixes every index below `k`. -/
+theorem gemFullPivotRowSwap_apply_of_lt (hrow : ∀ M k, k ≤ (piv M k).1) {k : ℕ} (h : k < N)
+    {i : Fin N} (hi : (i : ℕ) < k) : gemFullPivotRowSwap A piv k h i = i := by
+  refine Equiv.swap_apply_of_ne_of_ne (fun hik => ?_) fun hir => ?_
+  · rw [hik] at hi
+    exact lt_irrefl _ hi
+  · have := hrow (gemFullPivotStage A piv k).1 ⟨k, h⟩
+    rw [← hir, Fin.le_def] at this
+    exact absurd (this.trans_lt hi) (lt_irrefl _)
+
+/-- The column interchange of stage `k` fixes every index below `k`. -/
+theorem gemFullPivotColSwap_apply_of_lt (hcol : ∀ M k, k ≤ (piv M k).2) {k : ℕ} (h : k < N)
+    {i : Fin N} (hi : (i : ℕ) < k) : gemFullPivotColSwap A piv k h i = i := by
+  refine Equiv.swap_apply_of_ne_of_ne (fun hik => ?_) fun hir => ?_
+  · rw [hik] at hi
+    exact lt_irrefl _ hi
+  · have := hcol (gemFullPivotStage A piv k).1 ⟨k, h⟩
+    rw [← hir, Fin.le_def] at this
+    exact absurd (this.trans_lt hi) (lt_irrefl _)
+
+/-- The row interchanges after stage `m` fix every index below `m`. -/
+theorem gemFullPivotStage_rowPerm_inv_mul_apply (hrow : ∀ M k, k ≤ (piv M k).1) {m m' : ℕ}
+    (hmm' : m ≤ m') {i : Fin N} (hi : (i : ℕ) < m) :
+    ((gemFullPivotStage A piv m).2.1⁻¹ * (gemFullPivotStage A piv m').2.1) i = i := by
+  refine perm_inv_mul_apply_of_step (σ := fun k => (gemFullPivotStage A piv k).2.1)
+    (fun k => ?_) hmm' hi
+  by_cases h : k < N
+  · exact ⟨gemFullPivotRowSwap A piv k h, by rw [gemFullPivotStage_succ_of_lt A piv h],
+      fun _ hj => gemFullPivotRowSwap_apply_of_lt A piv hrow h hj⟩
+  · exact ⟨1, by rw [gemFullPivotStage_succ_of_le A piv (not_lt.1 h), mul_one], fun _ _ => rfl⟩
+
+/-- The column interchanges after stage `m` fix every index below `m`. -/
+theorem gemFullPivotStage_colPerm_inv_mul_apply (hcol : ∀ M k, k ≤ (piv M k).2) {m m' : ℕ}
+    (hmm' : m ≤ m') {i : Fin N} (hi : (i : ℕ) < m) :
+    ((gemFullPivotStage A piv m).2.2⁻¹ * (gemFullPivotStage A piv m').2.2) i = i := by
+  refine perm_inv_mul_apply_of_step (σ := fun k => (gemFullPivotStage A piv k).2.2)
+    (fun k => ?_) hmm' hi
+  by_cases h : k < N
+  · exact ⟨gemFullPivotColSwap A piv k h, by rw [gemFullPivotStage_succ_of_lt A piv h],
+      fun _ hj => gemFullPivotColSwap_apply_of_lt A piv hcol h hj⟩
+  · exact ⟨1, by rw [gemFullPivotStage_succ_of_le A piv (not_lt.1 h), mul_one], fun _ _ => rfl⟩
+
+/-- **The stages of Gaussian elimination on `P A Q` are the completely pivoted stages, with their
+rows and columns permuted by the later interchanges**: with `σ` and `ρ` the final permutations of
+`gemFullPivotStage A piv`,
+`gemStage (A.submatrix σ ρ) k = (A^{(k+1)}).submatrix (σ_k⁻¹ σ) (ρ_k⁻¹ ρ)`. It is the two-sided
+form of `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`. -/
+theorem gemStage_submatrix_eq_submatrix_gemFullPivotStage (hrow : ∀ M k, k ≤ (piv M k).1)
+    (hcol : ∀ M k, k ≤ (piv M k).2) (k : ℕ) :
+    gemStage (A.submatrix (gemFullPivotStage A piv N).2.1 (gemFullPivotStage A piv N).2.2) k =
+      (gemFullPivotStage A piv k).1.submatrix
+        ((gemFullPivotStage A piv k).2.1⁻¹ * (gemFullPivotStage A piv N).2.1)
+        ((gemFullPivotStage A piv k).2.2⁻¹ * (gemFullPivotStage A piv N).2.2) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    by_cases h : k < N
+    · rw [gemStage_succ_of_lt _ h, ih, gemFullPivotStage_succ_of_lt A piv h]
+      dsimp only
+      have hk1 : (gemFullPivotStage A piv (k + 1)).2.1 =
+          (gemFullPivotStage A piv k).2.1 * gemFullPivotRowSwap A piv k h := by
+        rw [gemFullPivotStage_succ_of_lt A piv h]
+      have hk2 : (gemFullPivotStage A piv (k + 1)).2.2 =
+          (gemFullPivotStage A piv k).2.2 * gemFullPivotColSwap A piv k h := by
+        rw [gemFullPivotStage_succ_of_lt A piv h]
+      have hs : (gemFullPivotStage A piv k).2.1⁻¹ * (gemFullPivotStage A piv N).2.1 =
+          gemFullPivotRowSwap A piv k h *
+            ((gemFullPivotStage A piv (k + 1)).2.1⁻¹ * (gemFullPivotStage A piv N).2.1) := by
+        rw [hk1, _root_.mul_inv_rev, ← mul_assoc, ← mul_assoc, mul_inv_cancel, one_mul]
+      have hr : (gemFullPivotStage A piv k).2.2⁻¹ * (gemFullPivotStage A piv N).2.2 =
+          gemFullPivotColSwap A piv k h *
+            ((gemFullPivotStage A piv (k + 1)).2.2⁻¹ * (gemFullPivotStage A piv N).2.2) := by
+        rw [hk2, _root_.mul_inv_rev, ← mul_assoc, ← mul_assoc, mul_inv_cancel, one_mul]
+      rw [← hk1, ← hk2, hs, hr, submatrix_perm_mul]
+      refine elimStep_submatrix_submatrix_of_forall_le _ (fun i hi => ?_) ?_
+      · exact gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow h
+          (Nat.lt_succ_of_le (Fin.le_def.1 hi))
+      · exact gemFullPivotStage_colPerm_inv_mul_apply A piv hcol h (Nat.lt_succ_self k)
+    · rw [gemStage_succ_of_le _ (not_lt.1 h), ih, gemFullPivotStage_succ_of_le A piv (not_lt.1 h)]
+
+/-- The pivot of stage `k` of Gaussian elimination on `P A Q` is the entry chosen by the
+strategy: `(P A Q)^{(k)}_{kk} = A^{(k)}_{r c}` with `(r, c) = piv A^{(k)} k`. -/
+theorem gemStage_submatrix_apply_self (hrow : ∀ M k, k ≤ (piv M k).1)
+    (hcol : ∀ M k, k ≤ (piv M k).2) {k : ℕ} (h : k < N) :
+    gemStage (A.submatrix (gemFullPivotStage A piv N).2.1 (gemFullPivotStage A piv N).2.2) k
+        ⟨k, h⟩ ⟨k, h⟩ =
+      (gemFullPivotStage A piv k).1 (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).1
+        (piv (gemFullPivotStage A piv k).1 ⟨k, h⟩).2 := by
+  rw [gemStage_submatrix_eq_submatrix_gemFullPivotStage A piv hrow hcol, submatrix_apply]
+  have hk1 : (gemFullPivotStage A piv (k + 1)).2.1 =
+      (gemFullPivotStage A piv k).2.1 * gemFullPivotRowSwap A piv k h := by
+    rw [gemFullPivotStage_succ_of_lt A piv h]
+  have hk2 : (gemFullPivotStage A piv (k + 1)).2.2 =
+      (gemFullPivotStage A piv k).2.2 * gemFullPivotColSwap A piv k h := by
+    rw [gemFullPivotStage_succ_of_lt A piv h]
+  have hs : (gemFullPivotStage A piv k).2.1⁻¹ * (gemFullPivotStage A piv N).2.1 =
+      gemFullPivotRowSwap A piv k h *
+        ((gemFullPivotStage A piv (k + 1)).2.1⁻¹ * (gemFullPivotStage A piv N).2.1) := by
+    rw [hk1, _root_.mul_inv_rev, ← mul_assoc, ← mul_assoc, mul_inv_cancel, one_mul]
+  have hr : (gemFullPivotStage A piv k).2.2⁻¹ * (gemFullPivotStage A piv N).2.2 =
+      gemFullPivotColSwap A piv k h *
+        ((gemFullPivotStage A piv (k + 1)).2.2⁻¹ * (gemFullPivotStage A piv N).2.2) := by
+    rw [hk2, _root_.mul_inv_rev, ← mul_assoc, ← mul_assoc, mul_inv_cancel, one_mul]
+  rw [hs, Equiv.Perm.mul_apply,
+    gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow h (Nat.lt_succ_self k), hr,
+    Equiv.Perm.mul_apply,
+    gemFullPivotStage_colPerm_inv_mul_apply A piv hcol h (Nat.lt_succ_self k),
+    gemFullPivotRowSwap, gemFullPivotColSwap, Equiv.swap_apply_left, Equiv.swap_apply_left]
+
+/-- The later row interchanges map the indices from `m` on to indices from `m` on. -/
+theorem le_gemFullPivotStage_rowPerm_inv_mul_apply (hrow : ∀ M k, k ≤ (piv M k).1) {m m' : ℕ}
+    (hmm' : m ≤ m') {i : Fin N} (hi : m ≤ (i : ℕ)) :
+    m ≤ ((((gemFullPivotStage A piv m).2.1⁻¹ * (gemFullPivotStage A piv m').2.1) i : Fin N) : ℕ) :=
+  le_apply_of_forall_lt_apply_eq
+    (fun _ hj => gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow hmm' hj) hi
+
+/-- The later column interchanges map the indices from `m` on to indices from `m` on. -/
+theorem le_gemFullPivotStage_colPerm_inv_mul_apply (hcol : ∀ M k, k ≤ (piv M k).2) {m m' : ℕ}
+    (hmm' : m ≤ m') {i : Fin N} (hi : m ≤ (i : ℕ)) :
+    m ≤ ((((gemFullPivotStage A piv m).2.2⁻¹ * (gemFullPivotStage A piv m').2.2) i : Fin N) : ℕ) :=
+  le_apply_of_forall_lt_apply_eq
+    (fun _ hj => gemFullPivotStage_colPerm_inv_mul_apply A piv hcol hmm' hj) hi
+
+/-- The permutation-matrix form of a two-sided submatrix: `A.submatrix σ ρ` is `P A Q` with
+`P = σ.permMatrix K` and `Q = (ρ⁻¹).permMatrix K`. -/
+theorem permMatrix_mul_mul_permMatrix (σ ρ : Equiv.Perm (Fin N)) :
+    σ.permMatrix K * A * (ρ⁻¹).permMatrix K = A.submatrix σ ρ := by
+  rw [Equiv.Perm.permMatrix, Equiv.Perm.permMatrix, PEquiv.toMatrix_toPEquiv_mul,
+    PEquiv.mul_toMatrix_toPEquiv, submatrix_submatrix, Function.id_comp, Function.comp_id,
+    Equiv.Perm.inv_def, Equiv.symm_symm]
+
+end FullPivotStages
 
 /-! ### Nonsingular matrices have nonzero pivots under partial pivoting -/
 
@@ -1910,5 +2232,423 @@ theorem growthFactor_le_two_pow_of_hasBandwidth (hp : A.HasLowerBandwidth p)
   exact pow_le_pow_right₀ one_le_two (by omega)
 
 end Band
+
+/-! ### Complete pivoting: Wilkinson's growth bound -/
+
+section Wilkinson
+
+variable {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
+
+/-- `A.HasDominantPivots`: at every stage of Gaussian elimination *without* pivoting on `A` the
+pivot dominates the whole trailing block, `|a^{(k)}_{ij}| ≤ |a^{(k)}_{kk}|` for `i, j ≥ k`. This
+is what complete pivoting arranges (`Matrix.hasDominantPivots_submatrix_gemFullPivotStage`), and
+it is the hypothesis under which Wilkinson's bound of [quarteroni2000numerical] §3.10 holds. It is
+strictly stronger than the `‖U i j‖ ≤ ‖U i i‖` recorded by
+`Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`, which speaks about the final factor only. -/
+def HasDominantPivots (A : Matrix (Fin N) (Fin N) ℝ) : Prop :=
+  ∀ (k : ℕ) (hk : k < N) (i j : Fin N), k ≤ (i : ℕ) → k ≤ (j : ℕ) →
+    |gemStage A k i j| ≤ |gemStage A k ⟨k, hk⟩ ⟨k, hk⟩|
+
+/-- The modulus `|a^{(k)}_{kk}|` of the `k`-th pivot of Gaussian elimination without pivoting, as
+a total function of `k : ℕ` with the junk value `0` beyond the order of the matrix. -/
+noncomputable def absGemPivot (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) : ℝ :=
+  if h : k < N then |gemStage A k ⟨k, h⟩ ⟨k, h⟩| else 0
+
+/-- Below the order of the matrix, `Matrix.absGemPivot` is the modulus of the pivot. -/
+theorem absGemPivot_of_lt (A : Matrix (Fin N) (Fin N) ℝ) {k : ℕ} (h : k < N) :
+    absGemPivot A k = |gemStage A k ⟨k, h⟩ ⟨k, h⟩| := by simp [absGemPivot, h]
+
+/-- `Matrix.absGemPivot` is nonnegative. -/
+theorem absGemPivot_nonneg (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) : 0 ≤ absGemPivot A k := by
+  rw [absGemPivot]
+  split_ifs
+  · exact abs_nonneg _
+  · exact le_rfl
+
+/-- Dominance, in terms of `Matrix.absGemPivot`. -/
+theorem HasDominantPivots.abs_gemStage_le (hA : A.HasDominantPivots) {k : ℕ} (hk : k < N)
+    {i j : Fin N} (hi : k ≤ (i : ℕ)) (hj : k ≤ (j : ℕ)) :
+    |gemStage A k i j| ≤ absGemPivot A k := by
+  rw [absGemPivot_of_lt A hk]
+  exact hA k hk i j hi hj
+
+/-- **The shape of `A^{(k)}` under dominance**: stage `k` vanishes below the diagonal in the first
+`k` columns. This is `Matrix.gemStage_apply_eq_zero_of_lt` with the nonvanishing of the pivots
+replaced by dominance, which also covers a vanishing pivot: there the whole trailing block is
+zero, so the elimination step is the identity. -/
+theorem HasDominantPivots.gemStage_apply_eq_zero (hA : A.HasDominantPivots) (k : ℕ) {i j : Fin N}
+    (hjk : (j : ℕ) < k) (hji : j < i) : gemStage A k i j = 0 := by
+  induction k generalizing i j with
+  | zero => exact absurd hjk (Nat.not_lt_zero _)
+  | succ k ih =>
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hjk with hjk' | hjk'
+    · by_cases hkN : k < N
+      · rw [gemStage_succ_of_lt A hkN,
+          elimStep_apply_of_pivot_row_eq_zero _ _ _ (ih hjk' (Fin.mk_lt_of_lt_val hjk'))]
+        exact ih hjk' hji
+      · rw [gemStage_succ_of_le A (not_lt.1 hkN)]
+        exact ih hjk' hji
+    · have hkN : k < N := hjk' ▸ j.isLt
+      have hj : j = (⟨k, hkN⟩ : Fin N) := Fin.ext hjk'
+      subst hj
+      rw [gemStage_succ_of_lt A hkN, elimStep_apply_of_lt _ hji]
+      rcases eq_or_ne (gemStage A k ⟨k, hkN⟩ ⟨k, hkN⟩) 0 with h0 | h0
+      · have := hA k hkN i ⟨k, hkN⟩ (le_of_lt (Fin.lt_def.1 hji)) le_rfl
+        rw [h0, abs_zero, abs_nonpos_iff] at this
+        rw [this, h0]
+        ring
+      · rw [mul_assoc, inv_mul_cancel₀ h0, mul_one, sub_self]
+
+/-- **A vanishing pivot freezes the elimination**: under dominance a zero pivot at stage `m` means
+that the whole trailing block of `A^{(m)}` vanishes, and then every later stage equals `A^{(m)}`. -/
+theorem HasDominantPivots.gemStage_eq_of_pivot_eq_zero (hA : A.HasDominantPivots) {m : ℕ}
+    (hm : m < N) (h0 : gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ = 0) {k : ℕ} (hk : m ≤ k) :
+    gemStage A k = gemStage A m := by
+  induction k, hk using Nat.le_induction with
+  | base => rfl
+  | succ k hk ih =>
+    by_cases hkN : k < N
+    · rw [gemStage_succ_of_lt A hkN, ih]
+      have hrow : ∀ j : Fin N, gemStage A m ⟨k, hkN⟩ j = 0 := by
+        intro j
+        rcases lt_or_ge (j : ℕ) m with hj | hj
+        · exact hA.gemStage_apply_eq_zero m hj (Fin.lt_def.2 (lt_of_lt_of_le hj hk))
+        · have := hA m hm ⟨k, hkN⟩ j hk hj
+          rw [h0, abs_zero, abs_nonpos_iff] at this
+          exact this
+      ext i j
+      exact elimStep_apply_of_pivot_row_eq_zero _ _ _ (hrow j)
+    · rw [gemStage_succ_of_le A (not_lt.1 hkN), ih]
+
+/-- Under dominance the vanishing of a pivot propagates to every later pivot. -/
+theorem HasDominantPivots.absGemPivot_eq_zero_of_le (hA : A.HasDominantPivots) {m k : ℕ}
+    (hm : m < N) (hk : k < N) (hmk : m ≤ k) (h0 : absGemPivot A m = 0) : absGemPivot A k = 0 := by
+  rw [absGemPivot_of_lt A hm, abs_eq_zero] at h0
+  rw [absGemPivot_of_lt A hk, hA.gemStage_eq_of_pivot_eq_zero hm h0 hmk, abs_eq_zero]
+  have := hA m hm ⟨k, hk⟩ ⟨k, hk⟩ hmk hmk
+  rw [h0, abs_zero, abs_nonpos_iff] at this
+  exact this
+
+/-- The order embedding `Fin j ↪o Fin N`, `i ↦ k + i`, of a block of `j` consecutive indices
+starting at `k`. -/
+def blockEmb (k j N : ℕ) (h : k + j ≤ N) : Fin j ↪o Fin N :=
+  OrderEmbedding.ofStrictMono (fun i => ⟨k + i, by have := i.isLt; omega⟩)
+    (fun a b hab => by simp only [Fin.lt_def] at hab ⊢; omega)
+
+/-- The value of `Matrix.blockEmb`. -/
+@[simp]
+theorem blockEmb_apply {k j N : ℕ} (h : k + j ≤ N) (i : Fin j) (hki : k + (i : ℕ) < N) :
+    blockEmb k j N h i = ⟨k + (i : ℕ), hki⟩ := rfl
+
+/-- One step of elimination commutes with the restriction to a subset of the indices carried by
+an order embedding: the formula for the entry `(i, j)` uses only the entries `(i, j)`, `(i, p)`,
+`(p, p)` and `(p, j)`, all inside the block. -/
+theorem elimStep_submatrix_orderEmbedding {m n K : Type*} [LinearOrder m] [Fintype m]
+    [LinearOrder n] [Fintype n] [Field K] (M : Matrix n n K) (e : m ↪o n) (p : m) :
+    elimStep (M.submatrix e e) p = (elimStep M (e p)).submatrix e e := by
+  ext i j
+  simp only [elimStep_apply, submatrix_apply, e.lt_iff_lt]
+
+/-- **Gaussian elimination on a trailing block is the restriction of the global elimination**:
+the `t`-th stage of the elimination of the block of `A^{(k)}` on the indices `k, …, k + j - 1` is
+the block of `A^{(k + t)}` on the same indices, for `t ≤ j`. -/
+theorem gemStage_submatrix_blockEmb {K : Type*} [Field K] {N : ℕ} (A : Matrix (Fin N) (Fin N) K)
+    {k j : ℕ} (h : k + j ≤ N) :
+    ∀ t ≤ j, gemStage ((gemStage A k).submatrix (blockEmb k j N h) (blockEmb k j N h)) t =
+      (gemStage A (k + t)).submatrix (blockEmb k j N h) (blockEmb k j N h) := by
+  intro t
+  induction t with
+  | zero => intro _; simp
+  | succ t ih =>
+    intro ht
+    have htj : t < j := by omega
+    have hkt : k + t < N := by omega
+    rw [gemStage_succ_of_lt _ htj, ih (by omega), elimStep_submatrix_orderEmbedding]
+    have he : blockEmb k j N h ⟨t, htj⟩ = (⟨k + t, hkt⟩ : Fin N) := rfl
+    rw [he, ← gemStage_succ_of_lt A hkt, Nat.add_assoc]
+
+/-- **Hadamard's inequality on the reduced matrices**, the first half of Wilkinson's argument for
+[higham2002accuracy] (9.14): under dominance, if the pivots `a^{(k+t)}_{k+t,k+t}` of a run of `j`
+consecutive stages are nonzero, then their moduli multiply to at most `(√j |a^{(k)}_{kk}|)^j`.
+Indeed the block of `A^{(k)}` on the indices `k, …, k + j - 1` has those pivots as the diagonal of
+its own elimination, so its determinant is their product, while its entries are bounded by
+`|a^{(k)}_{kk}|` and `Matrix.norm_det_le_of_forall_norm_le` applies. -/
+theorem prod_absGemPivot_le (hA : A.HasDominantPivots) {k j : ℕ} (h : k + j ≤ N) (hj : 0 < j)
+    (hne : ∀ t, t < j → absGemPivot A (k + t) ≠ 0) :
+    ∏ t ∈ Finset.range j, absGemPivot A (k + t) ≤ (Real.sqrt j * absGemPivot A k) ^ j := by
+  have hkN : k < N := by omega
+  set e := blockEmb k j N h with he
+  set B := (gemStage A k).submatrix e e with hB
+  have hpivB : ∀ (m : ℕ) (hm : m < j), m + 1 < j → gemStage B m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0 := by
+    intro m hm _
+    have hkm : k + m < N := by omega
+    rw [hB, gemStage_submatrix_blockEmb A h m hm.le, submatrix_apply]
+    have := hne m hm
+    rw [absGemPivot_of_lt A hkm, ne_eq, abs_eq_zero] at this
+    exact this
+  have hupper : (gemStage B j).IsUpperTriangular := fun i j' hij =>
+    gemStage_apply_eq_zero_of_lt B (fun m hm _ hmj => hpivB m hm hmj) j'.isLt hij
+  have hdetB : B.det = ∏ i : Fin j, gemStage A (k + (i : ℕ)) (e i) (e i) := by
+    have h1 : gemLowerStage B j * gemStage B j = B := gemLowerStage_mul_gemStage B j
+    rw [← h1, det_mul, (isUnitLowerTriangular_gemLowerStage B j).det_eq_one, one_mul,
+      det_of_isUpperTriangular hupper]
+    refine Finset.prod_congr rfl fun i _ => ?_
+    rw [gemStage_submatrix_blockEmb A h j le_rfl, submatrix_apply]
+    exact gemStage_apply_of_le A (le_refl (k + (i : ℕ))) (by omega) _
+  have hentry : ∀ i i' : Fin j, ‖B i i'‖ ≤ absGemPivot A k := by
+    intro i i'
+    rw [hB, submatrix_apply, Real.norm_eq_abs]
+    exact hA.abs_gemStage_le hkN (Nat.le_add_right k _) (Nat.le_add_right k _)
+  have hHad := norm_det_le_of_forall_norm_le (absGemPivot_nonneg A k) hentry
+  rw [Fintype.card_fin] at hHad
+  rw [Real.norm_eq_abs, hdetB, abs_prod] at hHad
+  refine le_trans (le_of_eq ?_) hHad
+  rw [← Fin.prod_univ_eq_prod_range (fun t => absGemPivot A (k + t)) j]
+  refine Finset.prod_congr rfl fun i _ => ?_
+  have hki : k + (i : ℕ) < N := by omega
+  rw [absGemPivot_of_lt A hki]
+  rfl
+
+/-- **Wilkinson's growth bound** ([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)):
+`n^{1/2} (2 · 3^{1/2} · 4^{1/3} ⋯ n^{1/(n-1)})^{1/2}`, the bound on the growth factor
+of Gaussian elimination with complete pivoting on a matrix of order `n`. The inner product is
+written over `t = 0, …, n - 2` with the factor `(t + 2)^{1/(t+1)}`. -/
+noncomputable def wilkinsonGrowthBound (n : ℕ) : ℝ :=
+  Real.sqrt n * Real.sqrt (∏ t ∈ Finset.range (n - 1), ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹)
+
+/-- Every factor of Wilkinson's product is at least one. -/
+theorem one_le_wilkinsonFactor (t : ℕ) : (1 : ℝ) ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
+  have ht : (0 : ℝ) ≤ (t : ℝ) := Nat.cast_nonneg t
+  calc (1 : ℝ) = (1 : ℝ) ^ ((t : ℝ) + 1)⁻¹ := (Real.one_rpow _).symm
+    _ ≤ ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
+        Real.rpow_le_rpow zero_le_one (by linarith) (by positivity)
+
+/-- Wilkinson's product is at least one. -/
+theorem one_le_wilkinsonProd (n : ℕ) :
+    (1 : ℝ) ≤ ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
+  have h1 : (∏ _t ∈ Finset.range n, (1 : ℝ)) ≤
+      ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
+    Finset.prod_le_prod (fun _ _ => zero_le_one) fun t _ => one_le_wilkinsonFactor t
+  simpa using h1
+
+/-- Wilkinson's product is positive. -/
+theorem wilkinsonProd_pos (n : ℕ) :
+    (0 : ℝ) < ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
+  lt_of_lt_of_le zero_lt_one (one_le_wilkinsonProd n)
+
+/-- Wilkinson's product is monotone in the number of factors. -/
+theorem wilkinsonProd_mono {a b : ℕ} (h : a ≤ b) :
+    (∏ t ∈ Finset.range a, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹) ≤
+      ∏ t ∈ Finset.range b, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
+  induction b, h using Nat.le_induction with
+  | base => exact le_rfl
+  | succ b hb ih =>
+    rw [Finset.prod_range_succ]
+    exact ih.trans (by nlinarith [wilkinsonProd_pos b, one_le_wilkinsonFactor b])
+
+/-- Wilkinson's bound is nonnegative. -/
+theorem wilkinsonGrowthBound_nonneg (n : ℕ) : 0 ≤ wilkinsonGrowthBound n := by
+  unfold wilkinsonGrowthBound
+  positivity
+
+/-- Wilkinson's bound is positive on a nonempty matrix. -/
+theorem wilkinsonGrowthBound_pos {n : ℕ} (hn : 0 < n) : 0 < wilkinsonGrowthBound n :=
+  mul_pos (Real.sqrt_pos.2 (by exact_mod_cast hn)) (Real.sqrt_pos.2 (wilkinsonProd_pos _))
+
+/-- Wilkinson's bound is monotone in the order. -/
+theorem wilkinsonGrowthBound_mono {m n : ℕ} (h : m ≤ n) :
+    wilkinsonGrowthBound m ≤ wilkinsonGrowthBound n := by
+  have hmn : ((m : ℝ)) ≤ (n : ℝ) := by exact_mod_cast h
+  refine (_root_.mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt hmn)
+    (Real.sqrt_nonneg _)).trans ?_
+  exact _root_.mul_le_mul_of_nonneg_left
+    (Real.sqrt_le_sqrt (wilkinsonProd_mono (by omega))) (Real.sqrt_nonneg _)
+
+/-- The logarithm of Wilkinson's bound, the form in which the telescoping induction uses it. -/
+theorem log_wilkinsonGrowthBound {n : ℕ} (hn : 0 < n) :
+    Real.log (wilkinsonGrowthBound n) = Real.log n / 2 +
+      ∑ t ∈ Finset.range (n - 1), Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  rw [wilkinsonGrowthBound, Real.log_mul (Real.sqrt_pos.2 hn').ne'
+      (Real.sqrt_pos.2 (wilkinsonProd_pos _)).ne',
+    Real.log_sqrt hn'.le, Real.log_sqrt (wilkinsonProd_pos _).le,
+    Real.log_prod (fun t _ => by positivity), Finset.sum_div]
+  congr 1
+  refine Finset.sum_congr rfl fun t _ => ?_
+  have ht1 : ((t : ℝ) + 1) ≠ 0 := by positivity
+  rw [Real.log_rpow (by positivity)]
+  field_simp
+
+/-- **Wilkinson's telescoping estimate, in logarithmic form**: under dominance, if the first
+`r + 1` pivots are nonzero then
+`log μ_r ≤ log μ_0 + (1/2) log(r+1) + ∑_{t<r} log(t+2) / (2(t+1))`, where `μ_k` is the modulus of
+the `k`-th pivot. Neither [quarteroni2000numerical] nor [higham2002accuracy] proves (9.14) — both
+refer to Wilkinson's 1961 paper — so the argument is reconstructed here: writing
+`L_s` for the sum of the logarithms of the last `s + 1` pivots, `Matrix.prod_absGemPivot_le` on the
+run of `s + 2` pivots ending at `r` gives `L_{s+1} ≥ ((s+2)/(s+1)) (L_s - (1/2) log(s+2))`, whence
+`L_s ≥ (s+1) log μ_r - (s+1) ∑_{t<s} log(t+2)/(2(t+1))`; feeding `s = r` into
+`Matrix.prod_absGemPivot_le` on the whole run gives the statement. -/
+theorem log_absGemPivot_le (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N)
+    (hne : ∀ m, m ≤ r → absGemPivot A m ≠ 0) :
+    Real.log (absGemPivot A r) ≤ Real.log (absGemPivot A 0) + Real.log ((r : ℝ) + 1) / 2 +
+      ∑ t ∈ Finset.range r, Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) := by
+  have hpos : ∀ m, m ≤ r → 0 < absGemPivot A m := fun m hm =>
+    lt_of_le_of_ne (absGemPivot_nonneg A m) (Ne.symm (hne m hm))
+  have hP : ∀ k j : ℕ, k + j ≤ r + 1 → 0 < j →
+      ∑ i ∈ Finset.range j, Real.log (absGemPivot A (k + i)) ≤
+        (j : ℝ) / 2 * Real.log j + j * Real.log (absGemPivot A k) := by
+    intro k j hkj hj
+    have hkN : k + j ≤ N := by omega
+    have hnz : ∀ t, t < j → absGemPivot A (k + t) ≠ 0 := fun t ht => hne _ (by omega)
+    have hprodpos : (0 : ℝ) < ∏ t ∈ Finset.range j, absGemPivot A (k + t) :=
+      Finset.prod_pos fun t ht => hpos _ (by simp only [Finset.mem_range] at ht; omega)
+    have hsq : (0 : ℝ) < Real.sqrt j := Real.sqrt_pos.2 (by exact_mod_cast hj)
+    have hlog := Real.log_le_log hprodpos (prod_absGemPivot_le hA hkN hj hnz)
+    rw [Real.log_prod (fun t ht => (hpos _ (by simp only [Finset.mem_range] at ht; omega)).ne'),
+      Real.log_pow, Real.log_mul hsq.ne' (hne k (by omega)),
+      Real.log_sqrt (by positivity)] at hlog
+    linarith
+  have hclaim : ∀ s k : ℕ, k + s = r →
+      ((s : ℝ) + 1) * Real.log (absGemPivot A r) -
+          ((s : ℝ) + 1) * ∑ t ∈ Finset.range s, Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) ≤
+        ∑ i ∈ Finset.range (s + 1), Real.log (absGemPivot A (k + i)) := by
+    intro s
+    induction s with
+    | zero =>
+      intro k hk
+      have hkr : k = r := by omega
+      subst hkr
+      simp
+    | succ s ih =>
+      intro k hk
+      have hS1 : (0 : ℝ) < (s : ℝ) + 1 := by positivity
+      have hS2 : (0 : ℝ) < (s : ℝ) + 2 := by positivity
+      have IH := ih (k + 1) (by omega)
+      have hPk := hP k (s + 1 + 1) (by omega) (by omega)
+      have hcast : ((s + 1 + 1 : ℕ) : ℝ) = (s : ℝ) + 2 := by push_cast; ring
+      rw [hcast] at hPk
+      have hsplit : (∑ i ∈ Finset.range (s + 1 + 1), Real.log (absGemPivot A (k + i))) =
+          (∑ i ∈ Finset.range (s + 1), Real.log (absGemPivot A (k + 1 + i))) +
+            Real.log (absGemPivot A k) := by
+        rw [Finset.sum_range_succ' (fun i => Real.log (absGemPivot A (k + i))) (s + 1)]
+        congr 1
+        exact Finset.sum_congr rfl fun i _ => by rw [show k + (i + 1) = k + 1 + i by omega]
+      rw [Finset.sum_range_succ]
+      push_cast
+      set G := ∑ i ∈ Finset.range (s + 1 + 1), Real.log (absGemPivot A (k + i)) with hGd
+      set G' := ∑ i ∈ Finset.range (s + 1), Real.log (absGemPivot A (k + 1 + i)) with hG'd
+      set m := Real.log (absGemPivot A k) with hmd
+      set L := Real.log (absGemPivot A r) with hLd
+      set Ts := ∑ t ∈ Finset.range s, Real.log ((t : ℝ) + 2) / (2 * ((t : ℝ) + 1)) with hTd
+      set c := Real.log ((s : ℝ) + 2) with hcd
+      have hGm : ((s : ℝ) + 2) * m = ((s : ℝ) + 2) * (G - G') := by rw [hsplit]; ring
+      have step1 : ((s : ℝ) + 2) * G' - ((s : ℝ) + 2) / 2 * c ≤ ((s : ℝ) + 1) * G := by
+        linarith [hPk, hGm]
+      have step2 := _root_.mul_le_mul_of_nonneg_left IH hS2.le
+      have hcdiv : ((s : ℝ) + 1) * (((s : ℝ) + 1 + 1) * (c / (2 * ((s : ℝ) + 1)))) =
+          ((s : ℝ) + 2) * c / 2 := by
+        field_simp
+        ring
+      refine le_of_mul_le_mul_left ?_ hS1
+      nlinarith [step1, step2, hcdiv]
+  have hr1 : (0 : ℝ) < (r : ℝ) + 1 := by positivity
+  have hcast : ((r + 1 : ℕ) : ℝ) = (r : ℝ) + 1 := by push_cast; ring
+  have hfin := hclaim r 0 (by omega)
+  have hP0 := hP 0 (r + 1) (by omega) (by omega)
+  rw [hcast] at hP0
+  simp only [Nat.zero_add] at hfin hP0
+  refine le_of_mul_le_mul_left ?_ hr1
+  nlinarith [hfin, hP0]
+
+/-- **Wilkinson's estimate on one pivot**: under dominance the `r`-th pivot is at most
+`wilkinsonGrowthBound (r + 1)` times the first. -/
+theorem absGemPivot_le_wilkinson (hA : A.HasDominantPivots) {r : ℕ} (hr : r < N) :
+    absGemPivot A r ≤ wilkinsonGrowthBound (r + 1) * absGemPivot A 0 := by
+  rcases eq_or_ne (absGemPivot A r) 0 with h0 | h0
+  · rw [h0]
+    exact mul_nonneg (wilkinsonGrowthBound_nonneg _) (absGemPivot_nonneg A 0)
+  have hne : ∀ m, m ≤ r → absGemPivot A m ≠ 0 := fun m hm hzero =>
+    h0 (hA.absGemPivot_eq_zero_of_le (by omega) hr hm hzero)
+  have hposr : 0 < absGemPivot A r := lt_of_le_of_ne (absGemPivot_nonneg A r) (Ne.symm h0)
+  have hpos0 : 0 < absGemPivot A 0 :=
+    lt_of_le_of_ne (absGemPivot_nonneg A 0) (Ne.symm (hne 0 (Nat.zero_le r)))
+  have hB : 0 < wilkinsonGrowthBound (r + 1) := wilkinsonGrowthBound_pos (by omega)
+  have hcast : ((r + 1 : ℕ) : ℝ) = (r : ℝ) + 1 := by push_cast; ring
+  rw [← Real.log_le_log_iff hposr (by positivity), Real.log_mul hB.ne' hpos0.ne',
+    log_wilkinsonGrowthBound (n := r + 1) (by omega), hcast, Nat.add_sub_cancel]
+  have := log_absGemPivot_le hA hr hne
+  linarith
+
+/-- **Wilkinson's bound on the growth factor of complete pivoting**
+([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)): if the pivot dominates the
+trailing block at every stage — which is what complete pivoting arranges — then
+`ρ_N ≤ N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`. The largest entry of `A` is the first pivot, by
+dominance at stage `0`; every entry of every stage is either zero, by the shape of the reduced
+matrices, or bounded by the pivot of an earlier stage; and
+`Matrix.absGemPivot_le_wilkinson` bounds each pivot in terms of the first. -/
+theorem growthFactor_le_of_completePivoting {A : Matrix (Fin N) (Fin N) ℝ}
+    (hA : A.HasDominantPivots) : growthFactor A ≤ wilkinsonGrowthBound N := by
+  refine growthFactor_le_of_forall_abs_le A (wilkinsonGrowthBound_nonneg N) fun k i j hk => ?_
+  have hN : 0 < N := by omega
+  have hsup : A.supAbs = absGemPivot A 0 := by
+    refine le_antisymm (supAbs_le (absGemPivot_nonneg A 0) fun i' j' =>
+      hA.abs_gemStage_le hN (Nat.zero_le _) (Nat.zero_le _)) ?_
+    rw [absGemPivot_of_lt A hN]
+    exact abs_apply_le_supAbs A _ _
+  have main : ∀ m : ℕ, m < N → ∀ i' j' : Fin N, m ≤ (i' : ℕ) → m ≤ (j' : ℕ) →
+      |gemStage A m i' j'| ≤ wilkinsonGrowthBound N * A.supAbs := by
+    intro m hm i' j' hi' hj'
+    rw [hsup]
+    calc |gemStage A m i' j'| ≤ absGemPivot A m := hA.abs_gemStage_le hm hi' hj'
+      _ ≤ wilkinsonGrowthBound (m + 1) * absGemPivot A 0 := absGemPivot_le_wilkinson hA hm
+      _ ≤ wilkinsonGrowthBound N * absGemPivot A 0 :=
+          _root_.mul_le_mul_of_nonneg_right (wilkinsonGrowthBound_mono (by omega))
+            (absGemPivot_nonneg A 0)
+  have hzero : (0 : ℝ) ≤ wilkinsonGrowthBound N * A.supAbs :=
+    mul_nonneg (wilkinsonGrowthBound_nonneg N) (supAbs_nonneg A)
+  rcases le_or_gt k (i : ℕ) with hi | hi
+  · rcases le_or_gt k (j : ℕ) with hj | hj
+    · exact main k hk i j hi hj
+    · rw [hA.gemStage_apply_eq_zero k hj (Fin.lt_def.2 (lt_of_lt_of_le hj hi)), abs_zero]
+      exact hzero
+  · rw [gemStage_apply_of_le A (le_refl (i : ℕ)) hi.le j]
+    rcases le_or_gt (i : ℕ) (j : ℕ) with hij | hij
+    · exact main (i : ℕ) i.isLt i j le_rfl hij
+    · rw [hA.gemStage_apply_eq_zero (i : ℕ) hij (Fin.lt_def.2 hij), abs_zero]
+      exact hzero
+
+/-- **Complete pivoting makes the pivots dominant**: the stages of Gaussian elimination on
+`P A Q`, for the permutations accumulated by `Matrix.gemFullPivotStage` with a complete-pivoting
+strategy, have their pivot dominating the trailing block. -/
+theorem hasDominantPivots_submatrix_gemFullPivotStage (A : Matrix (Fin N) (Fin N) ℝ)
+    {piv : Matrix (Fin N) (Fin N) ℝ → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv) :
+    (A.submatrix (gemFullPivotStage A piv N).2.1
+      (gemFullPivotStage A piv N).2.2).HasDominantPivots := by
+  have hrow : ∀ M k, k ≤ (piv M k).1 := fun M k => (hpiv M k).1
+  have hcol : ∀ M k, k ≤ (piv M k).2 := fun M k => (hpiv M k).2.1
+  intro k hk i j hi hj
+  rw [gemStage_submatrix_apply_self A piv hrow hcol hk,
+    gemStage_submatrix_eq_submatrix_gemFullPivotStage A piv hrow hcol, submatrix_apply]
+  have hbound := (hpiv (gemFullPivotStage A piv k).1 ⟨k, hk⟩).2.2
+    (((gemFullPivotStage A piv k).2.1⁻¹ * (gemFullPivotStage A piv N).2.1) i)
+    (((gemFullPivotStage A piv k).2.2⁻¹ * (gemFullPivotStage A piv N).2.2) j)
+    (Fin.le_def.2 (le_gemFullPivotStage_rowPerm_inv_mul_apply A piv hrow hk.le hi))
+    (Fin.le_def.2 (le_gemFullPivotStage_colPerm_inv_mul_apply A piv hcol hk.le hj))
+  simpa only [Real.norm_eq_abs] using hbound
+
+/-- **The growth factor of Gaussian elimination with complete pivoting obeys Wilkinson's bound**
+([quarteroni2000numerical] §3.10, [higham2002accuracy] (9.14)): for every complete-pivoting
+strategy `piv`, the growth factor of the elimination of `P A Q` — whose stages are those of the
+pivoted elimination up to the order of the rows and of the columns
+(`Matrix.gemStage_submatrix_eq_submatrix_gemFullPivotStage`) — is at most
+`N^{1/2} (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}`, which grows more slowly than the `2^{N-1}` of partial
+pivoting. -/
+theorem growthFactor_le_wilkinson_of_isCompletePivot (A : Matrix (Fin N) (Fin N) ℝ)
+    {piv : Matrix (Fin N) (Fin N) ℝ → Fin N → Fin N × Fin N} (hpiv : IsCompletePivot piv) :
+    growthFactor (A.submatrix (gemFullPivotStage A piv N).2.1
+      (gemFullPivotStage A piv N).2.2) ≤ wilkinsonGrowthBound N :=
+  growthFactor_le_of_completePivoting (hasDominantPivots_submatrix_gemFullPivotStage A hpiv)
+
+end Wilkinson
 
 end Matrix
