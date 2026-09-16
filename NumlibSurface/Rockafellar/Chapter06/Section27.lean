@@ -1,5 +1,5 @@
-import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Extremum.Minimum
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import Numlib.Analysis.Convex.Subdifferential.StrictlyConvex
 import NumlibSurface.Rockafellar.Chapter02.Section08

@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Bifunction.Process
+import Numlib.Analysis.Convex.Process.Basic
 import Numlib.Analysis.Convex.Saddle.Kernel
 
 /-!
@@ -10,7 +10,7 @@ A convex process `A` carries two inner products,
 
 the first a maximisation over a value of `A`, the second a minimisation over a value of `A*`. They
 are the bracket and the concave bracket of the indicator bifunction of `A` and of its adjoint, so
-everything that separates them is a partial closure. `Bifunction/Process.lean` proves the clauses
+everything that separates them is a partial closure. `Process/Basic.lean` proves the clauses
 needing only the closure in `u`; this module adds those needing the closure in `x*` — where
 closedness of `A` enters — and those needing relative interiors.
 
@@ -32,7 +32,7 @@ closedness of `A` enters — and those needing relative interiors.
   properties it inverts.
 * `ConvexProcess.closedFn_imageBifun_indicatorBifun` and the results beside it — for a closed
   convex process `A` and a closed proper convex `f`, the image `Af` is closed, the infimum defining
-  `(Af)(x)` is attained, and `(Af)* = cl (A*⁻¹ f*)`. The open half is in `Bifunction/Process.lean`.
+  `(Af)(x)` is attained, and `(Af)* = cl (A*⁻¹ f*)`. The open half is in `Process/Basic.lean`.
 
 ## Implementation notes
 

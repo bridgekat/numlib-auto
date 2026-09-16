@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Face
 import Numlib.Analysis.Convex.Homogenize
-import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Polyhedral.Cone
 import Numlib.Analysis.Convex.Subdifferential.Gradient
 

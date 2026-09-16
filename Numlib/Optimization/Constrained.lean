@@ -6,7 +6,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.LinearInequalities
-import Numlib.Analysis.Convex.Optimization.Program
+import Numlib.Analysis.Convex.Extremum.Program
 
 /-!
 # Constrained optimization: Lagrange multipliers, Karush–Kuhn–Tucker, penalty methods
@@ -53,7 +53,7 @@ constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' :
 
 ## Design
 
-The smooth theory of this module and the convex theory of `Numlib/Analysis/Convex/Optimization`
+The smooth theory of this module and the convex theory of `Numlib/Analysis/Convex/Extremum`
 meet in two places: the sufficiency theorem, which is the tangent-functional inequality of
 `Numlib/Analysis/Convex/Gateaux`, and the Slater theorem, restated from the convex library. The
 Kuhn–Tucker theorem under LICQ is proved, not assumed: the tangent cone of the feasible set

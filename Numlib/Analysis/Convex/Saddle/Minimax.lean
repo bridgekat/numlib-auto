@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Optimization.Lagrangian
-import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Optimization.Normal
+import Numlib.Analysis.Convex.Extremum.Lagrangian
+import Numlib.Analysis.Convex.Extremum.Minimum
+import Numlib.Analysis.Convex.Extremum.Normal
 import Numlib.Analysis.Convex.Saddle.Kernel
 
 /-!

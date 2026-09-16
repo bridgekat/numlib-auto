@@ -10,9 +10,6 @@ import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
 import Numlib.Analysis.Convex.Bifunction.Algebra
 import Numlib.Analysis.Convex.Bifunction.Cofinite
-import Numlib.Analysis.Convex.Bifunction.LinearProcess
-import Numlib.Analysis.Convex.Bifunction.Process
-import Numlib.Analysis.Convex.Bifunction.ProcessDuality
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Closure
 import Numlib.Analysis.Convex.Concave
@@ -23,7 +20,6 @@ import Numlib.Analysis.Convex.Duality.ConcaveConj
 import Numlib.Analysis.Convex.Duality.ConcaveOps
 import Numlib.Analysis.Convex.Duality.Conjugate
 import Numlib.Analysis.Convex.Duality.Continuity
-import Numlib.Analysis.Convex.Duality.EnergyPairing
 import Numlib.Analysis.Convex.Duality.Exact
 import Numlib.Analysis.Convex.Duality.FiniteProduct
 import Numlib.Analysis.Convex.Duality.Gauge
@@ -43,6 +39,19 @@ import Numlib.Analysis.Convex.Epigraph
 import Numlib.Analysis.Convex.Eponyms
 import Numlib.Analysis.Convex.EuclideanProd
 import Numlib.Analysis.Convex.Exposed
+import Numlib.Analysis.Convex.Extremum.Adjoint
+import Numlib.Analysis.Convex.Extremum.ConeDuality
+import Numlib.Analysis.Convex.Extremum.Fenchel
+import Numlib.Analysis.Convex.Extremum.Lagrangian
+import Numlib.Analysis.Convex.Extremum.Maximum
+import Numlib.Analysis.Convex.Extremum.Minimum
+import Numlib.Analysis.Convex.Extremum.Moreau
+import Numlib.Analysis.Convex.Extremum.MoreauGradient
+import Numlib.Analysis.Convex.Extremum.Normal
+import Numlib.Analysis.Convex.Extremum.Perturbation
+import Numlib.Analysis.Convex.Extremum.Program
+import Numlib.Analysis.Convex.Extremum.Projection
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Face
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.Helly
@@ -60,19 +69,6 @@ import Numlib.Analysis.Convex.Operations.Epi
 import Numlib.Analysis.Convex.Operations.Hull
 import Numlib.Analysis.Convex.Operations.Image
 import Numlib.Analysis.Convex.Operations.InfConv
-import Numlib.Analysis.Convex.Optimization.Adjoint
-import Numlib.Analysis.Convex.Optimization.ConeDuality
-import Numlib.Analysis.Convex.Optimization.Fenchel
-import Numlib.Analysis.Convex.Optimization.Lagrangian
-import Numlib.Analysis.Convex.Optimization.Maximum
-import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Optimization.Moreau
-import Numlib.Analysis.Convex.Optimization.MoreauGradient
-import Numlib.Analysis.Convex.Optimization.Normal
-import Numlib.Analysis.Convex.Optimization.Perturbation
-import Numlib.Analysis.Convex.Optimization.Program
-import Numlib.Analysis.Convex.Optimization.Projection
-import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Closedness
 import Numlib.Analysis.Convex.Polyhedral.Cone
 import Numlib.Analysis.Convex.Polyhedral.Conjugate
@@ -86,6 +82,9 @@ import Numlib.Analysis.Convex.Polyhedral.Ops
 import Numlib.Analysis.Convex.Polyhedral.Recession
 import Numlib.Analysis.Convex.Polyhedral.Separation
 import Numlib.Analysis.Convex.Polyhedral.Simplicial
+import Numlib.Analysis.Convex.Process.Basic
+import Numlib.Analysis.Convex.Process.Duality
+import Numlib.Analysis.Convex.Process.Linear
 import Numlib.Analysis.Convex.Recession.Closedness
 import Numlib.Analysis.Convex.Recession.Cone
 import Numlib.Analysis.Convex.Recession.ConeHull
@@ -151,6 +150,7 @@ import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.NormPow
@@ -402,6 +402,7 @@ import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.AdvectionDiffusion
 import Numlib.Variational.EllipticInterval
+import Numlib.Variational.EnergyPairing
 import Numlib.Variational.Evolution
 import Numlib.Variational.FiniteElementInterval
 import Numlib.Variational.Forms
@@ -454,7 +455,7 @@ variational inequalities; `Numlib.ODE` for one-step, multistep and Runge–Kutta
 and `Numlib.Probability` for what Monte Carlo integration needs.
 
 One boundary is worth stating. The *theory* of an extremum problem — optimality conditions,
-duality, existence for convex data — is `Numlib.Analysis.Convex.Optimization`, which sits in the
+duality, existence for convex data — is `Numlib.Analysis.Convex.Extremum`, which sits in the
 middle of the convex library's import graph; iterative *methods* and the smooth nonconvex
 optimality theory are `Numlib.Optimization`. The dictionary between the two vocabularies
 (variational inequalities as normal-cone conditions, best approximation as a proximal map, saddle

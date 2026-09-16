@@ -4,7 +4,8 @@ The duality layer. `Pairing` fixes the dual pair every conjugate is taken agains
 the table matching each functional operation with its conjugate. `Relint`, `Continuity` and
 `Exact` are the constraint qualifications under which a closure may be dropped from a duality
 formula — cite one of them rather than proving a closure away by hand. `InnerPairing` is the
-symmetric positive definite self-pairing that stands in for an inner product, and
-`EnergyPairing` its dictionary to the symmetric coercive operators of
-`Numlib/Analysis/InnerProductSpace`.
+symmetric positive definite self-pairing that stands in for an inner product; its dictionary to the
+symmetric coercive operators and the sesquilinear forms of the variational layer is
+`Numlib/Variational/EnergyPairing`, which lives there and not here so that no module of this
+library depends on a numerical-analysis layer.
 '''

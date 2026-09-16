@@ -1,0 +1,18 @@
+desc = '''
+Extremum problems: the minimum and the maximum of a convex function, ordinary and generalized
+convex programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality
+gaps, Fenchel's theorem, and the Moreau envelope with its proximal mapping. An algorithmic project
+attaches here — `Prox` and `Minimum` are the statements an iteration is proved to converge to, and
+`Perturbation` is the general form a new duality scheme should instantiate.
+
+This directory is the duality theory of an extremum problem, not an algorithm for one. That is why
+it is named for the problem and not for the activity: `Numlib/Optimization` is the top-level
+directory of numerical methods (descent, line search, nonlinear conjugate gradients, quasi-Newton,
+constrained optimization), and in a library that already spends that word on the algorithms, a
+second directory spending it on the theory would say nothing true about which of the two it is.
+Every sibling here — `Duality`, `Recession`, `Subdifferential`, `Polyhedral`, `Saddle` — is named
+for a mathematical object, and an extremum problem is the object this one is about; the name is
+Rockafellar's own for Part VI, *Constrained Extremum Problems*, and Mathlib's for the subject
+(`Mathlib/Analysis/Convex/Extrema.lean`). `Numlib/Optimization/Constrained` is where the two
+directories meet, and it names what it borrows from here in full.
+'''

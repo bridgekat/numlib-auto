@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.Pairing
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Minimum
 import Numlib.Analysis.Convex.Subdifferential.Calculus
 import Numlib.Analysis.Convex.Subdifferential.Defs
 import Numlib.Analysis.Convex.Subdifferential.Monotone

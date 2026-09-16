@@ -1,5 +1,5 @@
 import Numlib.Analysis.Convex.Duality.Ops
-import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Subdifferential.LegendreType
 
 /-!
@@ -11,7 +11,7 @@ Moreau envelope `f □ w` is finite everywhere and differentiable everywhere, wi
 `∇(f □ w) z = z - prox (z | f)`,  `∇(f* □ w) z = prox (z | f)`.
 
 So the two halves of Moreau's splitting `z = prox (z | f) + prox (z | f*)` are the gradients of the
-two envelopes. The splitting itself is in `Optimization/Prox.lean`; what is added here is that
+two envelopes. The splitting itself is in `Extremum/Prox.lean`; what is added here is that
 `∂(f □ w) z` is a single point, and a convex function with a one-point subdifferential at `z` is
 differentiable there.
 

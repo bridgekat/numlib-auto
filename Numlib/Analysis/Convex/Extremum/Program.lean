@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Duality.Relint
 import Numlib.Analysis.Convex.Helly
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Minimum
 
 /-!
 # Ordinary convex programs and Lagrange multipliers

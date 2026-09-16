@@ -1,0 +1,24 @@
+[[node]]
+id = 'euclideanProdIsometry'
+
+[[node]]
+id = 'euclideanProdEquiv'
+
+[[node]]
+id = 'euclideanProdEquiv_apply_castAdd'
+desc = 'The concatenation `Rm x Rn = R(m+n)` reads the first `m` coordinates off the left factor.'
+
+[[node]]
+id = 'inner_euclideanProdEquiv'
+
+[[node]]
+id = 'euclideanOne'
+
+[[node]]
+id = 'euclideanTripleEquiv'
+
+[[node]]
+id = 'inner_euclideanTripleEquiv'
+
+[[node]]
+id = 'closure_image_euclideanTripleEquiv'

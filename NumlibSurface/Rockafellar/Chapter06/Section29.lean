@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Bifunction.LinearProcess
-import Numlib.Analysis.Convex.Optimization.Adjoint
-import Numlib.Analysis.Convex.Optimization.Perturbation
+import Numlib.Analysis.Convex.Extremum.Adjoint
+import Numlib.Analysis.Convex.Extremum.Perturbation
+import Numlib.Analysis.Convex.Process.Linear
 import Numlib.Analysis.Convex.Saddle.Minimax
 import NumlibSurface.Rockafellar.Chapter05.Section25
 

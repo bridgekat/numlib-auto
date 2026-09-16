@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Indicator
-import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Extremum.Minimum
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Subdifferential.Defs
 import Numlib.Analysis.Normed.Module.BestApprox
 

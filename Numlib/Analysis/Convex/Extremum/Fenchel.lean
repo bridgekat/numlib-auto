@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Duality.ConcaveConj
 import Numlib.Analysis.Convex.Duality.Polar
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Minimum
 
 /-!
 # Fenchel's duality theorem

@@ -1,5 +1,5 @@
-import Numlib.Analysis.Convex.Optimization.Lagrangian
-import Numlib.Analysis.Convex.Optimization.Program
+import Numlib.Analysis.Convex.Extremum.Lagrangian
+import Numlib.Analysis.Convex.Extremum.Program
 import Numlib.Analysis.Convex.Saddle.Minimax
 import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter05.Section23

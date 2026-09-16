@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Duality.ConcaveOps
 import Numlib.Analysis.Convex.Duality.Exact
 import Numlib.Analysis.Convex.Duality.Ops
-import Numlib.Analysis.Convex.Optimization.Fenchel
+import Numlib.Analysis.Convex.Extremum.Fenchel
 import Numlib.Analysis.Convex.Saddle.Defs
 
 /-!

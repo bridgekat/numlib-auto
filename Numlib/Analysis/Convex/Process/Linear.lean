@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Bifunction.Process
+import Numlib.Analysis.Convex.Process.Basic
 
 /-!
 # Linear transformations inside the convex algebra

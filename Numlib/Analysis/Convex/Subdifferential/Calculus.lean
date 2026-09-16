@@ -362,4 +362,48 @@ theorem normalCone_dom_eq_zero_of_subdifferential_eq_singleton {y₀ : F}
 
 end NormalConeDom
 
+/-! ### Transport along a linear isomorphism
+
+`conj_comp_linearEquiv` of `Duality/Conjugate` is the substitution rule for the conjugate. The
+subdifferential obeys the same rule, in the generality of an arbitrary adjoint pair of
+isomorphisms. -/
+
+section LinearEquivTransport
+
+variable {E F G H : Type*}
+variable [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
+variable [AddCommGroup G] [Module ℝ G] [AddCommGroup H] [Module ℝ H]
+
+/-- **Precomposing with a linear isomorphism moves the subdifferential along the transpose.**
+The companion of `conj_comp_linearEquiv` for `∂f`: if `A` and `A'` are adjoint isomorphisms, then
+`∂(g ∘ A)(x) = A' (∂g (A x))`. -/
+theorem subdifferential_comp_linearEquiv {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
+    (A : E ≃ₗ[ℝ] G) (A' : H ≃ₗ[ℝ] F)
+    (hA : IsAdjointPair B B' (A : E →ₗ[ℝ] G) (A' : H →ₗ[ℝ] F)) (g : G → EReal) (x : E) :
+    subdifferential B (fun u => g (A u)) x = A' '' subdifferential B' g (A x) := by
+  ext y
+  constructor
+  · intro hy
+    refine ⟨A'.symm y, fun w => ?_, A'.apply_symm_apply y⟩
+    have hw : g (A x) + ((B (A.symm w - x) y : ℝ) : EReal) ≤ g (A (A.symm w)) := hy (A.symm w)
+    rw [LinearEquiv.apply_symm_apply] at hw
+    have h2 := hA (A.symm w - x) (A'.symm y)
+    simp only [LinearEquiv.coe_coe] at h2
+    have h1 : A (A.symm w - x) = w - A x := by simp
+    have h3 : A' (A'.symm y) = y := A'.apply_symm_apply y
+    rw [h1, h3] at h2
+    rw [h2]
+    exact hw
+  · rintro ⟨v, hv, rfl⟩
+    intro w
+    have hw : g (A x) + ((B' (A w - A x) v : ℝ) : EReal) ≤ g (A w) := hv (A w)
+    have h2 := hA (w - x) v
+    simp only [LinearEquiv.coe_coe] at h2
+    have h1 : A (w - x) = A w - A x := map_sub A w x
+    rw [h1] at h2
+    rw [← h2]
+    exact hw
+
+end LinearEquivTransport
+
 end ConvexAnalysis

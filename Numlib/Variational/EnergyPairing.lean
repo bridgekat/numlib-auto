@@ -11,9 +11,16 @@ older library's. This module is the dictionary between the two: for a real symme
 the bilinear map `energyPairing A : E →ₗ[ℝ] E →ₗ[ℝ] ℝ`, `x ↦ y ↦ ⟪A x, y⟫`, is an inner pairing,
 its `pairingNorm` is the energy norm `energyNorm A`, and when `A` is bounded its quadratic form is
 continuous, so it is an `IsContinuousInnerPairing` — which is all that Moreau's theorem and the
-proximal calculus of `Optimization/Moreau` ask of a pairing. A real Hermitian coercive bounded form
-`a : SesqForm ℝ V` on a Hilbert space is the energy pairing of its operator `toOperator a`, so it
-inherits the same instance in one step.
+proximal calculus of `Numlib/Analysis/Convex/Extremum/Moreau` ask of a pairing. A real Hermitian
+coercive bounded form `a : SesqForm ℝ V` on a Hilbert space is the energy pairing of its operator
+`toOperator a`, so it inherits the same instance in one step.
+
+It is a bridge module, and it sits on the variational side because that is the more specific of the
+two subjects. `Numlib/Analysis/Convex` is a general library whose natural home upstream is
+`Mathlib.Analysis.Convex`; a module of it that imported `Numlib/Variational/Forms` would tie that
+library to a numerical-analysis layer, which is why this one is here and not there.
+`Numlib/Variational/Inequality/NormalCone` is the other bridge between these two vocabularies and
+sits here for the same reason.
 
 ## Main definitions
 

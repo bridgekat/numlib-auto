@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Duality.Pairing
 import Numlib.Analysis.Convex.Operations.Closed
-import Numlib.Analysis.Convex.Optimization.Lagrangian
+import Numlib.Analysis.Convex.Extremum.Lagrangian
 
 /-!
 # Adjoint bifunctions and dual programs

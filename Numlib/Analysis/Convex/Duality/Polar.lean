@@ -756,4 +756,41 @@ theorem polarCone_nonnegOrthant :
 
 end Orthant
 
+/-! ### Transport along a linear map
+
+Both rules are needed wherever a *cone* in a product is read in `ℝᵏ`: the polar consumes an
+adjointness datum, the pointed-cone hull needs only linearity. -/
+
+section LinearTransport
+
+variable {E F G H : Type*} [AddCommGroup E] [Module ℝ E] [AddCommGroup F] [Module ℝ F]
+  [AddCommGroup G] [Module ℝ G] [AddCommGroup H] [Module ℝ H]
+
+/-- **Polarity transports along an adjoint pair of isomorphisms.** If `A` and `A'` carry `B'` back
+to `B`, the polar of `A '' S` for `B'` is the image under `A'` of the polar of `S` for `B`. -/
+theorem polarCone_image_of_pairing_eq {B : E →ₗ[ℝ] F →ₗ[ℝ] ℝ} {B' : G →ₗ[ℝ] H →ₗ[ℝ] ℝ}
+    (A : E ≃ₗ[ℝ] G) (A' : F ≃ₗ[ℝ] H) (hA : ∀ p q, B' (A p) (A' q) = B p q) (S : Set E) :
+    polarCone B' (A '' S) = A' '' polarCone B S := by
+  ext w
+  constructor
+  · intro hw
+    refine ⟨A'.symm w, fun p hp => ?_, A'.apply_symm_apply w⟩
+    have hkey := hA p (A'.symm w)
+    rw [A'.apply_symm_apply] at hkey
+    rw [← hkey]
+    exact hw (A p) ⟨p, hp, rfl⟩
+  · rintro ⟨v, hv, rfl⟩ z ⟨p, hp, rfl⟩
+    rw [hA p v]
+    exact hv p hp
+
+/-- **The pointed-cone hull transports along a linear map**: `hull (A '' S) = A '' hull S`. This is
+`Submodule.map_span` over the semiring of non-negative reals, restated on the underlying sets. -/
+theorem coe_hull_image (A : E →ₗ[ℝ] G) (S : Set E) :
+    (PointedCone.hull ℝ (A '' S) : Set G) = A '' (PointedCone.hull ℝ S : Set E) := by
+  have h : PointedCone.hull ℝ (A '' S) = (PointedCone.hull ℝ S).map A :=
+    (Submodule.map_span (A : E →ₗ[{c : ℝ // 0 ≤ c}] G) S).symm
+  rw [h, PointedCone.coe_map]
+
+end LinearTransport
+
 end ConvexAnalysis

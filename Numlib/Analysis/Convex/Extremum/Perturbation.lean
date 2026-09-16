@@ -1,6 +1,6 @@
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Operations.Image
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Minimum
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import Numlib.Analysis.Convex.Subdifferential.Existence
 import Numlib.Analysis.Convex.Subdifferential.Gradient

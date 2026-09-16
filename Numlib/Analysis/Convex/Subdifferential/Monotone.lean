@@ -41,7 +41,7 @@ Closedness of the graph asks for *joint* continuity of the pairing,
 pass to the limit in `⟨z - xᵢ, yᵢ⟩` when both arguments move. In `ℝⁿ` the hypothesis is automatic.
 
 Maximal monotonicity of `∂f` for a closed proper convex `f` is not here: it is
-`isMaximalMonotoneRel_subgradientRel` in `Optimization/Prox.lean`, because its proof is Moreau's
+`isMaximalMonotoneRel_subgradientRel` in `Extremum/Prox.lean`, because its proof is Moreau's
 theorem and that file is downstream of this one.
 
 ## References

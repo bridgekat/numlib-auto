@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Optimization.Normal
+import Numlib.Analysis.Convex.Extremum.Normal
 import Numlib.Analysis.Convex.Saddle.Closure
 
 /-!

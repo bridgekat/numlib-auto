@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Optimization.Moreau
+import Numlib.Analysis.Convex.Extremum.Moreau
 import Numlib.Analysis.Convex.Subdifferential.Monotone
 
 /-!
@@ -7,8 +7,8 @@ import Numlib.Analysis.Convex.Subdifferential.Monotone
 For `f` closed proper convex and `w x = ½ B x x`, the infimum defining the Moreau envelope
 `(f □ w) z` is attained at exactly one point, the **proximal point** `prox (z | f)`, and the
 minimiser is characterised by `z - x ∈ ∂f x`. That is the attainment and uniqueness half of
-**Moreau's decomposition**; `Optimization/Moreau.lean` has the identity `(f □ w) + (f* □ w) = w`,
-and `Optimization/MoreauGradient.lean` the gradient formulas.
+**Moreau's decomposition**; `Extremum/Moreau.lean` has the identity `(f □ w) + (f* □ w) = w`,
+and `Extremum/MoreauGradient.lean` the gradient formulas.
 
 Two corollaries follow from the same monotonicity argument. Proximation is nonexpansive, so
 `(x, x*) ↦ x + x*` is a homeomorphism of the graph of `∂f` onto the space, and `∂f` is a *maximal

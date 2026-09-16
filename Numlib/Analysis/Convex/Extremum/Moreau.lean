@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.InnerPairing
 import Numlib.Analysis.Convex.Operations.InfConv
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Minimum
 
 /-!
 # Moreau's decomposition
@@ -13,8 +13,8 @@ splits `w` between a closed proper convex function and its conjugate:
 `(f □ w) + (f* □ w) = w`.
 
 This is the identity half of **Moreau's decomposition**. Attainment, uniqueness and the `prox`
-operator are in `Optimization/Prox.lean`, which needs finite dimensions; the gradient formulas are
-in `Optimization/MoreauGradient.lean`.
+operator are in `Extremum/Prox.lean`, which needs finite dimensions; the gradient formulas are
+in `Extremum/MoreauGradient.lean`.
 
 ## Main definitions
 
@@ -311,7 +311,7 @@ private theorem finite_of_add_eq_coe {A C : EReal} (hA : A ≠ ⊥) (hC : C ≠ 
 `(f x + w y) + (f* y + w x) = (f x + f* y) + (w x + w y)` while `⟨x, y⟩ + w x + w y = w z`, so
 Fenchel's inequality makes the left side at least `w z`, which is the sum of the two infima.
 
-That such a splitting exists and is unique is `Optimization/Prox.lean`. -/
+That such a splitting exists and is unique is `Extremum/Prox.lean`. -/
 theorem mem_subdifferential_iff_infConv_eq (hf : ClosedProperConvexFn f) {x y z : E}
     (hz : x + y = z) :
     y ∈ subdifferential (B) f x ↔

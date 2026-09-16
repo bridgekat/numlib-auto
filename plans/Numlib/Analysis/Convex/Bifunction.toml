@@ -1,5 +1,10 @@
 desc = '''
-Convex bifunctions and the algebra on them — addition, scalar multiplication, application,
-composition, adjoints — and convex processes, the multivalued maps whose graphs are convex cones
-through the origin. `Process` is where a linear-operator theory built on this would start.
+The algebra of convex bifunctions — addition, scalar multiplication, application to a function,
+composition, the inverse and the two adjoints — and the co-finiteness condition under which that
+algebra loses its side conditions. The bifunction itself is introduced where it is used,
+`Numlib/Analysis/Convex/Extremum/Perturbation`, as the parametrized family of minimisation problems
+a generalized convex program is; this directory is what can be done to one afterwards.
+
+Convex processes, which share this algebra and are embedded into it by `indicatorBifun`, are their
+own object and their own directory, `Numlib/Analysis/Convex/Process`.
 '''

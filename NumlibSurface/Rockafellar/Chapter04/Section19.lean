@@ -1,5 +1,5 @@
+import Numlib.Analysis.Convex.Extremum.Perturbation
 import Numlib.Analysis.Convex.HellyRefined
-import Numlib.Analysis.Convex.Optimization.Perturbation
 import Numlib.Analysis.Convex.Polyhedral.Closedness
 import Numlib.Analysis.Convex.Polyhedral.Conjugate
 import Numlib.Analysis.Convex.Polyhedral.Faces

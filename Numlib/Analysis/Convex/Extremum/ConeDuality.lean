@@ -1,7 +1,7 @@
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Duality.Continuity
 import Numlib.Analysis.Convex.Duality.Level
-import Numlib.Analysis.Convex.Optimization.Fenchel
+import Numlib.Analysis.Convex.Extremum.Fenchel
 
 /-!
 # Duality between a co-finite function and a closed convex cone

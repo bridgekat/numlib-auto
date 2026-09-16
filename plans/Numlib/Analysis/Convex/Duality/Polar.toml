@@ -72,3 +72,9 @@ id = 'polarCone_setOf_forall_le_zero'
 
 [[node]]
 id = 'polarCone_nonnegOrthant'
+
+[[node]]
+id = 'polarCone_image_of_pairing_eq'
+
+[[node]]
+id = 'coe_hull_image'

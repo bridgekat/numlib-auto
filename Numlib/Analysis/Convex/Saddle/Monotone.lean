@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Optimization.Prox
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Saddle.Differential
 import Numlib.Analysis.Convex.Saddle.Existence
 

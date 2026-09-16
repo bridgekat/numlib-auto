@@ -1,19 +1,6 @@
 namespace = 'ConvexAnalysis'
 
 [[node]]
-id = 'euclideanProdIsometry'
-
-[[node]]
-id = 'euclideanProdEquiv'
-
-[[node]]
-id = 'euclideanProdEquiv_apply_castAdd'
-desc = 'The concatenation `Rm x Rn = R(m+n)` reads the first `m` coordinates off the left factor.'
-
-[[node]]
-id = 'inner_euclideanProdEquiv'
-
-[[node]]
 id = 'isAdjointPair_euclideanProdEquiv'
 
 [[node]]
@@ -24,21 +11,3 @@ id = 'subdifferential_comp_euclideanProdEquiv'
 
 [[node]]
 id = 'relint_image_euclideanProdEquiv'
-
-[[node]]
-id = 'polarCone_image_of_pairing_eq'
-
-[[node]]
-id = 'coe_hull_image'
-
-[[node]]
-id = 'euclideanOne'
-
-[[node]]
-id = 'euclideanTripleEquiv'
-
-[[node]]
-id = 'inner_euclideanTripleEquiv'
-
-[[node]]
-id = 'closure_image_euclideanTripleEquiv'

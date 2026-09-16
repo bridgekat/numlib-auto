@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Bifunction.LinearProcess
-import Numlib.Analysis.Convex.Bifunction.ProcessDuality
 import Numlib.Analysis.Convex.Polyhedral.Ops
+import Numlib.Analysis.Convex.Process.Duality
+import Numlib.Analysis.Convex.Process.Linear
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!

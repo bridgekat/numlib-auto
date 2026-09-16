@@ -1,8 +1,5 @@
 import Numlib.Analysis.Convex.Bifunction.Algebra
 import Numlib.Analysis.Convex.Bifunction.Cofinite
-import Numlib.Analysis.Convex.Bifunction.LinearProcess
-import Numlib.Analysis.Convex.Bifunction.Process
-import Numlib.Analysis.Convex.Bifunction.ProcessDuality
 import Numlib.Analysis.Convex.Caratheodory
 import Numlib.Analysis.Convex.Closure
 import Numlib.Analysis.Convex.Concave
@@ -32,6 +29,19 @@ import Numlib.Analysis.Convex.Epigraph
 import Numlib.Analysis.Convex.Eponyms
 import Numlib.Analysis.Convex.EuclideanProd
 import Numlib.Analysis.Convex.Exposed
+import Numlib.Analysis.Convex.Extremum.Adjoint
+import Numlib.Analysis.Convex.Extremum.ConeDuality
+import Numlib.Analysis.Convex.Extremum.Fenchel
+import Numlib.Analysis.Convex.Extremum.Lagrangian
+import Numlib.Analysis.Convex.Extremum.Maximum
+import Numlib.Analysis.Convex.Extremum.Minimum
+import Numlib.Analysis.Convex.Extremum.Moreau
+import Numlib.Analysis.Convex.Extremum.MoreauGradient
+import Numlib.Analysis.Convex.Extremum.Normal
+import Numlib.Analysis.Convex.Extremum.Perturbation
+import Numlib.Analysis.Convex.Extremum.Program
+import Numlib.Analysis.Convex.Extremum.Projection
+import Numlib.Analysis.Convex.Extremum.Prox
 import Numlib.Analysis.Convex.Face
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.Helly
@@ -49,19 +59,6 @@ import Numlib.Analysis.Convex.Operations.Epi
 import Numlib.Analysis.Convex.Operations.Hull
 import Numlib.Analysis.Convex.Operations.Image
 import Numlib.Analysis.Convex.Operations.InfConv
-import Numlib.Analysis.Convex.Optimization.Adjoint
-import Numlib.Analysis.Convex.Optimization.ConeDuality
-import Numlib.Analysis.Convex.Optimization.Fenchel
-import Numlib.Analysis.Convex.Optimization.Lagrangian
-import Numlib.Analysis.Convex.Optimization.Maximum
-import Numlib.Analysis.Convex.Optimization.Minimum
-import Numlib.Analysis.Convex.Optimization.Moreau
-import Numlib.Analysis.Convex.Optimization.MoreauGradient
-import Numlib.Analysis.Convex.Optimization.Normal
-import Numlib.Analysis.Convex.Optimization.Perturbation
-import Numlib.Analysis.Convex.Optimization.Program
-import Numlib.Analysis.Convex.Optimization.Projection
-import Numlib.Analysis.Convex.Optimization.Prox
 import Numlib.Analysis.Convex.Polyhedral.Closedness
 import Numlib.Analysis.Convex.Polyhedral.Cone
 import Numlib.Analysis.Convex.Polyhedral.Conjugate
@@ -75,6 +72,9 @@ import Numlib.Analysis.Convex.Polyhedral.Ops
 import Numlib.Analysis.Convex.Polyhedral.Recession
 import Numlib.Analysis.Convex.Polyhedral.Separation
 import Numlib.Analysis.Convex.Polyhedral.Simplicial
+import Numlib.Analysis.Convex.Process.Basic
+import Numlib.Analysis.Convex.Process.Duality
+import Numlib.Analysis.Convex.Process.Linear
 import Numlib.Analysis.Convex.Recession.Closedness
 import Numlib.Analysis.Convex.Recession.Cone
 import Numlib.Analysis.Convex.Recession.ConeHull
@@ -136,11 +136,18 @@ surface that tests it against one.
 
 This module imports the whole of `Numlib.Analysis.Convex` and adds nothing of its own. The
 directory is one library, laid out below, and its natural home upstream is
-`Mathlib.Analysis.Convex`. Where it meets the rest of the project the meeting is a bridge module:
-`Optimization/Projection` reads the metric projection of `Numlib/Analysis/Normed/Module/BestApprox`
-as a proximal mapping, `Saddle/Real` reads the real-valued saddle-point theory of Atkinson–Han
-through `IsSaddlePointOn`, and `Numlib/Variational/Inequality/NormalCone` reads the elliptic
-variational inequality as a normal-cone and subgradient condition.
+`Mathlib.Analysis.Convex`. No module of it depends on a numerical-analysis layer of the project,
+which is what makes that an honest claim.
+
+Where it meets the rest of the project the meeting is a bridge module, and a bridge sits with the
+more specific of the two subjects. Two of them are here, because convex analysis is the more
+specific side: `Extremum/Projection` reads the metric projection of
+`Numlib/Analysis/Normed/Module/BestApprox` as a proximal mapping, and `Saddle/Real` reads the
+real-valued saddle-point theory of Atkinson–Han through `IsSaddlePointOn`. Two are elsewhere,
+because the numerical layer is the more specific side there:
+`Numlib/Variational/Inequality/NormalCone` reads the elliptic variational inequality as a
+normal-cone and subgradient condition, and `Numlib/Variational/EnergyPairing` reads the energy
+inner product of a symmetric coercive operator as an `IsInnerPairing`.
 
 ## Four levels of generality
 
@@ -207,29 +214,36 @@ transformation, essential smoothness and essential strict convexity.
 the polyhedral calculus, polyhedral functions and their conjugates, and the sharper qualifications
 polyhedrality allows.
 
-**`Optimization`.** The minimum and the maximum of a convex function, ordinary and generalized
-convex programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality
-gaps, Fenchel's duality theorem, and the Moreau envelope with its proximal mapping. This is the
-duality theory of an extremum problem, and not an algorithm for one: descent methods, line searches,
-nonlinear conjugate gradients and quasi-Newton updates are the separate top-level directory
-`Numlib/Optimization`, whose declarations sit in `Descent`, `LineSearch`, `NonlinearCG` and
-`Constrained` rather than in `ConvexAnalysis`. The two meet in `Numlib/Optimization/Constrained`,
-which cites the results it borrows from here by their full `ConvexAnalysis` names.
+**`Extremum`.** The minimum and the maximum of a convex function, ordinary and generalized convex
+programs, Lagrange multipliers, adjoint bifunctions and dual programs, normality and duality gaps,
+Fenchel's duality theorem, and the Moreau envelope with its proximal mapping. This is the duality
+theory of an extremum problem, and not an algorithm for one, which is why it is named for the
+problem: descent methods, line searches, nonlinear conjugate gradients and quasi-Newton updates are
+the separate top-level directory `Numlib/Optimization`, and that directory owns the word. The two
+meet in `Numlib/Optimization/Constrained`, which cites the results it borrows from here by their
+full `ConvexAnalysis` names.
 
 **`Saddle`.** Concave-convex functions, their two partial closures and the equivalence classes
 these generate, continuity and differentiability, minimax problems, and the conjugacy that carries
 the existence theory of saddle-values.
 
 **`Bifunction`.** The algebra of convex bifunctions — addition, scalar multiplication, application,
-composition, and their adjoints — and convex processes, the multivalued maps whose graphs are
-convex cones containing the origin.
+composition, the inverse and the two adjoints — and the co-finiteness condition under which that
+algebra loses its side conditions. The bifunction itself is introduced in `Extremum/Perturbation`,
+where it is the family of minimisation problems a generalized convex program offers.
+
+**`Process`.** Convex processes: the multivalued maps whose graphs are convex cones containing the
+origin, bundled as a `PointedCone`. They share the algebra of `Bifunction` and are embedded into it
+by `indicatorBifun`, but the object is its own — a cone, not a function — so it has its own
+directory, with the two embeddings that place it between a linear transformation and a bifunction,
+and the relative-interior theorems identifying its two inner products.
 
 ## Named results
 
 `Eponyms` aliases the results that carry a name, and is the quickest way in: `fenchel_moreau`
 (`f** = cl f`), `fenchel_inequality`, `jensen`, `caratheodory`, `krein_milman`, `minkowski_weyl`,
 `moreau_decomposition`, `subdifferential_maximalMonotone`, and `perspective`. Beyond those, the
-headline theorems are `fenchel_duality` in `Optimization.Fenchel`, the separation theorems in
+headline theorems are `fenchel_duality` in `Extremum.Fenchel`, the separation theorems in
 `Separation`, `helly_finite` in `Helly`, `polyhedral_iff_finitelyGenerated` in `Polyhedral.Defs`,
 and `ae_differentiableAtFn` in `Subdifferential.Rademacher`.
 

@@ -1,0 +1,12 @@
+desc = '''
+Convex processes: the multivalued maps whose graphs are convex cones through the origin, bundled as
+a `PointedCone ℝ (U × X)`. `Basic` is the definition and the algebra — adjoint, sum, product,
+inverse, and the two embeddings that place a process between a linear transformation
+(`ofLinearMap`) and a convex bifunction (`indicatorBifun`); `Linear` restricts every operation along
+the first embedding; `Duality` carries the two inner products of a process and the relative-interior
+theorems that identify them.
+
+The directory sits beside `Bifunction` rather than inside it because a process is its own object:
+its graph is a cone, not a function, and only its *duality* theory is read through the bifunction
+brackets. A linear-operator theory built on this library would start at `Basic`.
+'''

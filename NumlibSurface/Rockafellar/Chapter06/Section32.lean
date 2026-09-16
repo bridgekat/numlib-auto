@@ -1,5 +1,5 @@
 import Numlib.Analysis.Convex.Duality.Support
-import Numlib.Analysis.Convex.Optimization.Maximum
+import Numlib.Analysis.Convex.Extremum.Maximum
 import Numlib.Analysis.Convex.Subdifferential.Existence
 import Numlib.Analysis.Convex.Subdifferential.Rademacher
 import NumlibSurface.Rockafellar.Common.Euclidean

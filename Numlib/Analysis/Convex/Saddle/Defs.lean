@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Optimization.Adjoint
+import Numlib.Analysis.Convex.Extremum.Adjoint
 
 /-!
 # Saddle-functions and partial conjugacy

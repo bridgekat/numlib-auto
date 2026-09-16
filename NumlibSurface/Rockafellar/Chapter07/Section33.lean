@@ -1,4 +1,4 @@
-import Numlib.Analysis.Convex.Bifunction.ProcessDuality
+import Numlib.Analysis.Convex.Process.Duality
 import Numlib.Analysis.Convex.Saddle.Conjugate
 import NumlibSurface.Rockafellar.Chapter06.Section30
 

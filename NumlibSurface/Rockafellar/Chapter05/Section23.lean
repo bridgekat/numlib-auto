@@ -1,5 +1,5 @@
 import Mathlib.Analysis.Convex.SpecificFunctions.Pow
-import Numlib.Analysis.Convex.Optimization.Perturbation
+import Numlib.Analysis.Convex.Extremum.Perturbation
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import Numlib.Analysis.Convex.Recession.ConeHull
 import Numlib.Analysis.Convex.Subdifferential.Approx

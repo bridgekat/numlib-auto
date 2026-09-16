@@ -12,10 +12,10 @@ along a direction, steepest descent, conjugate directions, Kantorovich's inequal
 `Numlib/Projection/OneDimensional`, `Numlib/Projection/ConjugateDirection`
 and `Numlib/Krylov/CG`, not repeated here.
 
-This directory is the algorithms. The convex-analytic duality theory of an extremum problem —
-conjugates, Lagrangians, perturbation functions, duality gaps, Fenchel's theorem — is
-`Numlib/Analysis/Convex/Optimization`, which shares the word and nothing else: it is in the
-`ConvexAnalysis` namespace, this directory in `Descent`, `LineSearch`, `NonlinearCG` and
-`Constrained`. `Constrained` is where the two meet, and it cites the convex results it uses by
-their full `ConvexAnalysis` names.
+This directory is the algorithms, and it is the one that owns the word. The convex-analytic duality
+theory of an extremum problem — conjugates, Lagrangians, perturbation functions, duality gaps,
+Fenchel's theorem — is `Numlib/Analysis/Convex/Extremum`, named for the problem rather than for the
+activity so that the two directories are told apart by their names and not by a disclaimer.
+`Constrained` is where they meet, and it cites the convex results it uses by their full
+`ConvexAnalysis` names.
 '''

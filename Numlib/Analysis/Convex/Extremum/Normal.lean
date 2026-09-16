@@ -1,5 +1,5 @@
-import Numlib.Analysis.Convex.Optimization.Adjoint
-import Numlib.Analysis.Convex.Optimization.Minimum
+import Numlib.Analysis.Convex.Extremum.Adjoint
+import Numlib.Analysis.Convex.Extremum.Minimum
 
 /-!
 # Normality of a dual pair of convex programs

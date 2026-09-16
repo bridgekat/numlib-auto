@@ -1,6 +1,6 @@
-import Numlib.Analysis.Convex.Optimization.ConeDuality
-import Numlib.Analysis.Convex.Optimization.MoreauGradient
-import Numlib.Analysis.Convex.Optimization.Normal
+import Numlib.Analysis.Convex.Extremum.ConeDuality
+import Numlib.Analysis.Convex.Extremum.MoreauGradient
+import Numlib.Analysis.Convex.Extremum.Normal
 import Numlib.Analysis.Convex.Polyhedral.Duality
 import NumlibSurface.Rockafellar.Chapter03.Section12
 import NumlibSurface.Rockafellar.Chapter03.Section14
