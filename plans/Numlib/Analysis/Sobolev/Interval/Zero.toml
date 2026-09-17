@@ -1,173 +1,37 @@
-desc = '''
-The space `W_0^{1,p}(I)`, [brezis2011functional] §8.3: the closure of the test functions in
-`W^{1,p}(I)`, `1 ≤ p < ∞` (the type is defined for every `p`, but the boundary characterization
-needs `p < ∞`), with Theorem 8.12 (`u ∈ W_0^{1,p}(I)` iff `u = 0` on `∂I`), Remarks 13–14, 16 (i),
-18, Poincaré's inequality (Proposition 8.13) for general `p` with the constant `|I| / p^{1/p}` —
-which is the sharp `(b − a)/√2` of `Interval.lean` at `p = 2` — and the Poincaré–Wirtinger
-inequalities of Problem 47 (Comments on Chapter 8, 1(i)).
-
-### Design
-
-* `SobolevIntervalLpZero m p I := SobolevMultiIndexZero ℝ (Module.Basis.singleton Unit ℝ) m p I volume`,
-  a `Submodule ℝ (SobolevIntervalLp m p I)`, an `abbrev` with the order explicit as in
-  `SobolevIntervalLp m p I` (Remark 18's `W_0^{m,p}(I)` is the case `m`, no separate definition);
-  `SobolevIntervalZero a b` of `Interval.lean` becomes
-  `abbrev SobolevIntervalZero a b := SobolevIntervalLpZero 1 2 (Opens.Ioo a b)`
-  (definitionally what it is today, checked in the prototype). Closed, complete, a Hilbert space
-  at `p = 2`, separable and, for `1 < p < ∞`, reflexive — all as the general
-  `SobolevMultiIndexZero.instCompleteSpace`, `instSecondCountableTopology`, `instIsReflexive` of
-  `MultiIndex.toml` read on `E = ℝ` (no interval-specific instance nodes).
-* The test class is `𝓓(I, ℝ) = C_c^∞(I)` (brief D6) where the book closes `C_c^1(I)`; Remark 14 (i)
-  says the closures agree, and is a surface remark node — here `C_c^∞(I)` is dense in
-  `W_0^{1,p}(I)` by definition.
-* `u = 0` on `∂I` is `∀ x ∈ frontier (I : Set ℝ), rep u x = 0`; the frontier of an open interval
-  is its set of finite endpoints (empty for `ℝ`, so Remark 13 is the instance `I = ⊤` of Theorem
-  8.12).
-* Theorem 8.12's converse is *not* proved by the book's truncation `G(nu)/n`: on a bounded `I`
-  the proof of `SobolevIntervalZero.mem_of_rep_eq_zero` (approximate `u'` in `L^p` by a
-  mean-corrected test function and take its primitive, Poincaré controlling the error) works for
-  every `p < ∞` verbatim; on an unbounded `I` the cut-off `ζ_n u`, `ζ_n(x) = ζ(x/n)`, reduces to
-  the bounded case on `I ∩ (−2n, 2n)` and `ζ_n u → u` in `W^{1,p}` by dominated convergence.
-  Remark 14 (ii) then follows from Theorem 8.12 instead of being an ingredient of it.
-* Remark 18 (`W_0^{m,p}`) is proved by the same primitive argument with `m` moment conditions
-  (correct the approximating test function of `D^m u` by a fixed family of `m` test functions with
-  invertible moment matrix, and integrate `m` times), not by the book's Exercise 8.9, which
-  goes through Hardy-type inequalities.
-'''
-
 [[node]]
 id = "SobolevIntervalLpZero.rep_frontier_eq_zero"
-kind = "theorem"
-desc = '''**Theorem 8.12, the easy direction**: for `(hI : OrdConnected)`, `[Fact (1 ≤ p)]` (every `p`),
-`u ∈ SobolevIntervalLpZero 1 p I` and `x ∈ frontier (I : Set ℝ)`, `rep u x = 0`. Evaluation at
-`x ∈ closure I` is a continuous linear functional on `W^{1,p}(I)` (Theorem 8.8 (5),
-`SobolevIntervalLp.abs_rep_le_of_bounded` / `abs_rep_pow_le`; for a general `I` bundle it as
-`evalCLM'`), it vanishes on the test functions (a test function vanishes at the frontier of `I`,
-`TestFunction.eq_zero_of_notMem`), hence on their closure (`Submodule.topologicalClosure_minimal`,
-`ContinuousLinearMap.isClosed_ker`) — the proof of `SobolevIntervalZero.rep_left_eq_zero`.
-Specializes to `SobolevIntervalZero.rep_left_eq_zero`, `rep_right_eq_zero`,
-`toContinuousMap_eq_zero`; once proved, re-prove those from this. ★'''
-deps = ["SobolevIntervalLpZero", "SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_pow_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.12"
 
 [[node]]
 id = "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv"
-kind = "theorem"
-desc = '''**Proposition 8.13 (Poincaré's inequality, general `p`)**, in the elementary form first:
-for `a < b`, `1 ≤ p < ∞`, `w g : Lp ℝ p (volume.restrict (Ioo a b))` with
-`g =ᵐ fun x ↦ ∫ t in a..x, w t`, `‖g‖ ≤ (b - a) / p.toReal ^ (1 / p.toReal) * ‖w‖`
-(`norm_le_of_eq_integral`); and for `p = ∞`, `‖g‖ ≤ (b − a) ‖w‖`. Proof: `|g(x)| ≤ (x − a)^{1/p'} ‖w‖_p`
-by Hölder, so `‖g‖_p^p ≤ ‖w‖_p^p ∫_a^b (x − a)^{p−1} dx = ‖w‖_p^p (b − a)^p / p`. Then on
-`W_0^{1,p}`: for `u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)`, `rep u = ∫_a^x u'`
-(`rep_frontier_eq_zero` at `a`), hence `‖deriv u 0‖ ≤ (b − a) / p^{1/p} * ‖deriv u 1‖`
-(`norm_deriv_zero_le`), and the book's (13) `‖u‖_{W^{1,p}} ≤ C ‖u'‖_p` with
-`C = (1 + ((b − a)/p^{1/p})^p)^{1/p}` in the norm of the type (`norm_le_mul_norm_deriv`), so
-`‖u'‖_p` is an equivalent norm on `W_0^{1,p}(I)` (`seminorm_eq_zero_iff`, `norm_le_seminorm`).
-The book's `‖u‖_∞ ≤ ‖u'‖_1` is the case in `abs_rep_le_eLpNorm_one_deriv`. At `p = 2` the
-constant is `(b − a)/√2`: specializes to `SobolevInterval.norm_le_of_eq_integral`,
-`SobolevIntervalZero.norm_deriv_zero_le`, `norm_le_seminorm`, `seminorm_eq_zero_iff`,
-`rep_eq_integral`; once proved, re-prove those from these. ★★ (~200 lines)'''
-deps = ["SobolevIntervalLpZero.rep_frontier_eq_zero", "SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.13"
 
 [[node]]
 id = "SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded"
-kind = "theorem"
-desc = '''**Theorem 8.12, converse, bounded interval**: for `a < b`, `1 ≤ p < ∞`,
-`u : SobolevIntervalLp 1 p (Opens.Ioo a b)` with `rep u a = 0` and `rep u b = 0`,
-`u ∈ SobolevIntervalLpZero 1 p (Opens.Ioo a b)`. The proof of `SobolevIntervalZero.mem_of_rep_eq_zero`
-with `L²` replaced by `L^p`: `u'` has zero mean (`rep_sub_rep` from `a` to `b`); approximate `u'`
-in `L^p(a, b)` by a test function `ψ` (`MeasureTheory.MemLp.exists_contDiff_tsupport_subset`, `p < ∞`),
-correct its mean by a multiple of a fixed test function of integral one, take the primitive
-`φ = ∫_a^x ψ'` (`TestFunction.primitiveIic`, a test function), and bound `‖u − φ‖_{W^{1,p}}` by
-`‖u' − ψ'‖_p` through Poincaré's elementary form. Specializes to
-`SobolevIntervalZero.mem_of_rep_eq_zero`, `mem_sobolevIntervalZero_of_toContinuousMap_eq_zero`;
-once proved, re-prove those from this. ★★ (~250 lines, mostly a transcription)'''
-deps = ["SobolevIntervalLpZero", "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv", "TestFunction.primitiveIic", "MeasureTheory.MemLp.exists_contDiff_tsupport_subset", "TopologicalSpace.Opens.exists_testFunction_integral_eq_one"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.12"
 
 [[node]]
 id = "SobolevIntervalLp.tendsto_cutoff_smul"
-kind = "theorem"
-desc = '''**The cut-off sequence of Theorem 8.7's proof (b)**: for `ζ : ℝ → ℝ` smooth, `0 ≤ ζ ≤ 1`, `ζ = 1`
-on `[−1, 1]`, `ζ = 0` off `(−2, 2)` (`ContDiffBump`-built, `exists_contDiff_eqOn_one_closedBall_one`
-of `Density.lean`), `ζ_n x := ζ (x / n)`, and `u : SobolevIntervalLp 1 p I`, `1 ≤ p < ∞`: the
-products `ζ_n · rep u` lie in `W^{1,p}(I)` with derivative `ζ_n' ũ + ζ_n u'`
-(`HasWeakIteratedLineDerivOn.mul_contDiff`, or the AC calculus), and the elements `cutoff n u`
-they define converge to `u` in `W^{1,p}(I)`: `‖ζ_n u − u‖_p → 0` and `‖ζ_n u' − u'‖_p → 0` by
-dominated convergence, `‖ζ_n' ũ‖_p ≤ (‖ζ'‖_∞ / n) ‖u‖_p → 0`. Also `tsupport`-containment:
-`cutoff n u` vanishes off `I ∩ Ioo (−2n) (2n)`. Used by Theorem 8.12 on unbounded `I` and by
-Example 8 of §8.4 (`Numlib/Variational/EllipticInterval/BoundaryConditions`). Chapter 9a plans
-exactly this on any `Ω ⊆ ℝ^N` as `SobolevMultiIndex.tendsto_cutoff_smul` (`Cutoff.toml`), of
-which this is the `E = ℝ` instance — derive it from there if it has landed (not a listed
-dependency, so that this module does not wait on chapter 9a). ★ given chapter 9a's node (★★
-standalone)'''
-deps = ["SobolevIntervalLp.rep", "memSobolevIntervalLp_one_iff", "SobolevIntervalLp.hasWeakDerivOn_rep_mul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7, proof (b)"
 
 [[node]]
 id = "mem_sobolevIntervalLpZero_iff"
-kind = "theorem"
-desc = '''**Theorem 8.12**: for `(hI : (I : Set ℝ).OrdConnected)`, `1 ≤ p < ∞` and
-`u : SobolevIntervalLp 1 p I`, `u ∈ SobolevIntervalLpZero 1 p I ↔ ∀ x ∈ frontier (I : Set ℝ), rep u x = 0`.
-`→` is `rep_frontier_eq_zero`. `←`: case on the shape of `I` (`ℝ`, `Ioi a`, `Iio b`, `Ioo a b`;
-`TopologicalSpace.Opens.eq_intervals_of_ordConnected` of `Interval/Basic`). Bounded: the
-previous node. Unbounded: `v_n := cutoff n u` (`tendsto_cutoff_smul`) is in `W^{1,p}(I)`, vanishes
-off `I ∩ (−2n, 2n)` and at the finite endpoints of `I` (where `u` does), so its restriction to the
-bounded interval `J_n = I ∩ Ioo (−2n) (2n)` is in `W_0^{1,p}(J_n)` by the bounded case, hence is
-approximated in `W^{1,p}(J_n)` by test functions on `J_n`, which are test functions on `I`, and
-the `W^{1,p}(I)` distance equals the `W^{1,p}(J_n)` distance since both vanish off `J_n`; so
-`v_n ∈ W_0^{1,p}(I)`, and `v_n → u` closes it (`W_0^{1,p}` is closed). Specializes to
-`mem_sobolevIntervalZero_iff` at `p = 2`, `I = Opens.Ioo a b` (frontier `= {a, b}`); once proved,
-re-prove that one from this. ★★★ (~350 lines beyond the bounded case)'''
-deps = ["SobolevIntervalLpZero.rep_frontier_eq_zero", "SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded", "SobolevIntervalLp.tendsto_cutoff_smul", "SobolevIntervalLp.extensionCLM"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.12"
 
 [[node]]
 id = "sobolevIntervalLpZero_top"
-kind = "theorem"
-desc = '''**Remark 13**: `SobolevIntervalLpZero 1 p ⊤ = ⊤` for `1 ≤ p < ∞` — `W_0^{1,p}(ℝ) = W^{1,p}(ℝ)`.
-The instance `I = ⊤` of Theorem 8.12, `frontier univ = ∅`; equivalently Theorem 8.7 at `I = ℝ`. ★'''
-deps = ["mem_sobolevIntervalLpZero_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 13"
 
 [[node]]
 id = "SobolevIntervalLpZero.mem_of_hasCompactSupport"
-kind = "theorem"
-desc = '''**Remark 14 (ii)**: if `u : SobolevIntervalLp 1 p I`, `1 ≤ p < ∞`, and `rep u` has compact
-support inside `I` (`tsupport (rep u) ⊆ I`, or `HasCompactSupport (rep u)` with support in `I`),
-then `u ∈ SobolevIntervalLpZero 1 p I`: `rep u` vanishes at the frontier of `I` (a point of the
-frontier is not in the compact `tsupport ⊆ I`), Theorem 8.12; or, independently of Theorem 8.12,
-chapter 9a's Lemma 9.5 `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` (`Cutoff.toml`,
-any `Ω ⊆ ℝ^N`, by mollification) at `E = ℝ`. Remark 14 (i), "`C_c^∞(I)` is dense in
-`W_0^{1,p}(I)`", is the definition of `SobolevIntervalLpZero` here (`SobolevMultiIndexZero` is
-the closure of the image of `𝓓(I, ℝ)`) and gets no backbone node. ★'''
-deps = ["mem_sobolevIntervalLpZero_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 14"
 
 [[node]]
 id = "SobolevIntervalLp.exists_not_mem_closure_testFunctions"
-kind = "theorem"
-desc = '''**Remark 9**: on a bounded interval `Opens.Ioo a b`, `a < b`, `1 ≤ p < ∞`, the constant `1`
-(`memSobolevIntervalLp_of_contDiffOn`) is an element of `W^{1,p}(a, b)` not in
-`SobolevIntervalLpZero 1 p (Opens.Ioo a b)`, since its representative is `1` at `a`
-(`rep_frontier_eq_zero`). So no sequence of test functions on `I` converges to it in `W^{1,p}(I)`,
-in contrast to `L^p(I)` (`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). ★'''
-deps = ["SobolevIntervalLpZero.rep_frontier_eq_zero", "memSobolevIntervalLp_of_contDiffOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 9"
 
 [[node]]
 id = "mem_sobolevIntervalLpZero_iff_indicator_mem"
-kind = "theorem"
-desc = '''**Remark 16 (i)**: for `(hI : OrdConnected)`, `1 ≤ p < ∞` and `u : SobolevIntervalLp 1 p I`,
-`u ∈ SobolevIntervalLpZero 1 p I ↔ MemSobolevIntervalLp ((I : Set ℝ).indicator (fn u)) 1 p ⊤` — the
-zero extension `ū` lies in `W^{1,p}(ℝ)`. `→`: the zero extension of a test function on `I` is a
-test function on `ℝ`, zero extension is an isometry `L^p(I) → L^p(ℝ)`, and the weak derivative is
-closed under `L^p` limits (`hasWeakDerivOn_of_tendsto_eLpNorm` on `⊤`), so `ū ∈ W^{1,p}(ℝ)` with
-`(ū)' = \overline{u'}` (`indicator_deriv`). `←`: `ū ∈ W^{1,p}(ℝ)` has a continuous representative
-which vanishes a.e. off `I`, hence on the frontier of `I` (a boundary point is a limit of points
-outside `I`), so `rep u = 0` on `frontier I` and Theorem 8.12 applies. ★★ (~200 lines)'''
-deps = ["mem_sobolevIntervalLpZero_iff", "hasWeakDerivOn_of_tendsto_eLpNorm", "SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 16"
 
 [[node]]
@@ -189,45 +53,29 @@ by one each time), and it approximates `u` in `W^{m,p}` by Poincaré applied `m`
 `I`: the cut-off `ζ_n u` reduces to the bounded case as in Theorem 8.12 (the cut-off preserves the
 vanishing of the `D^j u` at finite endpoints — Leibniz). The book's route (Exercise 8.9, via
 Hardy-type inequalities `u/x^m ∈ L^p`) is not followed. The distinction
-`W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is the surface's `remark_8_18_ne`. ★★★ (~400 lines)'''
+`W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is the surface's `remark_8_18_ne`. ★★★ (~400 lines)
+
+Blocked: not attempted in wave 2 for budget reasons (★★★). The forward direction is cheap with
+`SobolevIntervalLp.derivOneCLM` composed with `SobolevIntervalLp.evalCLM'` (evaluation of `D^j u`
+is continuous on `W^{m,p}`) and `TestFunction.toSobolevIntervalLp`-style uniqueness of the weak
+derivatives; the converse needs the moment-corrected approximation described above. Now
+available: `SobolevIntervalLp.eLpNorm_integral_le` (Poincaré, elementary form, in
+`Interval/Higher`), `SobolevIntervalLp.shift`, `SobolevIntervalLp.cutoff` with
+`tendsto_cutoff_smul`, and `SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo` (the restriction
+argument) for the unbounded case.'''
 deps = ["SobolevIntervalLpZero", "mem_sobolevIntervalLpZero_iff", "TestFunction.primitiveIic", "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv", "SobolevIntervalLp.integral_deriv_mul_add_mul_deriv"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
 
 [[node]]
 id = "SobolevIntervalLp.abs_rep_sub_average_le"
-kind = "theorem"
-desc = '''**Poincaré–Wirtinger, Problem 47 A.1 (Comments on Chapter 8, 1(i))**: for `a < b`,
-`u : SobolevIntervalLp 1 1 (Opens.Ioo a b)` and `ū := ⨍ x in Ioo a b, fn u x` (the mean,
-`MeasureTheory.average`), `∀ x ∈ Icc a b, |rep u x - ū| ≤ ‖deriv u 1‖` — `‖u − ū‖_∞ ≤ ‖u'‖_1`;
-hence `eLpNorm (fn u - fun _ ↦ ū) ⊤ (volume.restrict (Ioo a b)) ≤ ‖deriv u 1‖ₑ`. Proof:
-`ũ(x) − ū = ⨍ (ũ(x) − ũ(y)) dy` and `|ũ(x) − ũ(y)| = |∫_y^x u'| ≤ ‖u'‖_1` (`rep_sub_rep`), no
-intermediate value theorem needed (the book's hint `ū = ũ(x₀)` is the alternative). For general
-`p` via `W^{1,p}(a, b) ⊆ W^{1,1}(a, b)` (`inclusion` between exponents on a finite measure,
-`MemLp.mono_exponent`) and Hölder: `‖u − ū‖_∞ ≤ (b − a)^{1/p'} ‖u'‖_p`. ★'''
-deps = ["SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
 [[node]]
 id = "SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv"
-kind = "theorem"
-desc = '''**Problem 47 A.4**: for `a < b` and `u ∈ SobolevIntervalLpZero 1 1 (Opens.Ioo a b)`,
-`∀ x ∈ Icc a b, |rep u x| ≤ (1/2) * ‖deriv u 1‖` — `‖u‖_∞ ≤ ½ ‖u'‖_1` on `W_0^{1,1}(I)`:
-`|ũ(x)| ≤ ∫_a^x |u'|` and `|ũ(x)| ≤ ∫_x^b |u'|` (`rep_frontier_eq_zero` at both ends), and the
-smaller of the two is at most half their sum. Also the general-`p` form on `W_0^{1,p}(a, b)`:
-`|ũ(x)| ≤ ½ (b − a)^{1/p'} ‖u'‖_p`. ★'''
-deps = ["SobolevIntervalLpZero.rep_frontier_eq_zero", "SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
 [[node]]
 id = "SobolevIntervalLp.eLpNorm_sub_average_le"
-kind = "theorem"
-desc = '''**Problem 47 A.6 (the `L^q`–`L^p` Poincaré–Wirtinger and Poincaré inequalities)**: for `a < b`,
-`1 ≤ p ≤ ∞`, `1 ≤ q ≤ ∞`: `‖u − ū‖_{L^q(a,b)} ≤ (b − a)^{1/q} (b − a)^{1/p'} ‖u'‖_p` for
-`u ∈ W^{1,p}(a, b)` (from A.1: `‖·‖_q ≤ |I|^{1/q} ‖·‖_∞`), and
-`‖u‖_{L^q(a,b)} ≤ ½ (b − a)^{1/q} (b − a)^{1/p'} ‖u'‖_p` for `u ∈ W_0^{1,p}(a, b)` (from A.4).
-The existence of best constants and their attainment (A.6's second half, B, C.3–C.4) are not
-planned. ★'''
-deps = ["SobolevIntervalLp.abs_rep_sub_average_le", "SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv", "SobolevIntervalLp.toLp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
 [[node]]
@@ -238,6 +86,210 @@ desc = '''**Problem 47 C.1–C.2**: for `u : SobolevIntervalLp 1 1 (Opens.Ioo 0 
 hence `≤ (1/2) * ‖deriv u 1‖` (C.2, since `2 t (1 − t) ≤ 1/2`): `∫∫ |ũ(x) − ũ(y)| dx dy ≤ ∫∫ ∫_{[y,x]} |u'|`
 and Fubini (`MeasureTheory.integral_integral_swap`) gives the weight `2 t (1 − t)` (the measure of
 `{(x, y) : t ∈ [y, x] or [x, y]}`). Stated on `(0, 1)`; on `(a, b)` the weight is
-`2 (t − a)(b − t)/(b − a)` and the constant `(b − a)/2`. ★★ (~150 lines)'''
+`2 (t − a)(b − t)/(b − a)` and the constant `(b − a)/2`. ★★ (~150 lines)
+
+Blocked: not attempted in wave 2 (the Fubini computation of the weight is the whole content; A.1
+and A.4 are proved for every `p` in `SobolevIntervalLp.abs_rep_sub_average_le` and
+`SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv`, and `SobolevIntervalLp.integrableOn_rep_Ioo`
+gives the integrability of `ũ` on `(a, b)`). In `ℝ≥0∞`: `‖ũ x − ū‖ₑ ≤ ∫⁻ y, ‖ũ x − ũ y‖ₑ ≤
+∫⁻ y, ∫⁻ t in Ι y x, ‖u' t‖ₑ` and `lintegral_lintegral_swap` twice.'''
 deps = ["SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
+
+[[node]]
+id = "SobolevIntervalLp.evalCLM'"
+
+[[node]]
+id = "SobolevIntervalLp.evalCLM'_apply"
+
+[[node]]
+id = "TopologicalSpace.Opens.notMem_of_mem_frontier"
+
+[[node]]
+id = "TopologicalSpace.Opens.mem_closure_of_mem_frontier"
+
+[[node]]
+id = "SobolevIntervalLpZero.mem_of_fn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLpZero.exists_mem_fn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.rep_eq_integral_of_rep_left_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_le_mul_eLpNorm_deriv_of_rep_left_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLp.norm_deriv_zero_le_of_rep_left_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLp.norm_le_mul_norm_deriv_of_rep_left_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLpZero.rep_left_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLpZero.rep_right_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLpZero.rep_eq_integral"
+
+[[node]]
+id = "SobolevIntervalLpZero.norm_deriv_zero_le"
+
+[[node]]
+id = "SobolevIntervalLpZero.norm_le_mul_norm_deriv"
+
+[[node]]
+id = "SobolevIntervalLpZero.norm_deriv_one_eq_zero_iff"
+
+[[node]]
+id = "SobolevIntervalLp.sobolevIntervalLpZero_Ioo_ne_top"
+
+[[node]]
+id = "SobolevIntervalLp.integrableOn_rep_Ioo"
+
+[[node]]
+id = "SobolevIntervalLpZero.two_mul_enorm_rep_le"
+
+[[node]]
+id = "SobolevIntervalLpZero.eLpNorm_le_half_mul"
+
+[[node]]
+id = "TestFunction.hasWeakDerivOn"
+
+[[node]]
+id = "TestFunction.toSobolevIntervalLp"
+
+[[node]]
+id = "TestFunction.fn_toSobolevIntervalLp_ae_eq"
+
+[[node]]
+id = "TestFunction.coeFn_deriv_toSobolevIntervalLp_one"
+
+[[node]]
+id = "TestFunction.toSobolevIntervalLp_mem_testFunctions"
+
+[[node]]
+id = "TestFunction.toSobolevIntervalLp_mem"
+
+[[node]]
+id = "MeasureTheory.enorm_setIntegral_Ioo_le_rpow_mul_eLpNorm"
+
+[[node]]
+id = "SobolevIntervalLp.ofContDiffOn"
+
+[[node]]
+id = "SobolevIntervalLp.fn_ofContDiffOn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_deriv_ofContDiffOn_one"
+
+[[node]]
+id = "SobolevIntervalLp.rep_ofContDiffOn"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffBump"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFn"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFn_of_abs_le"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFn_of_le_abs"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFn_nonneg"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFn_le_one"
+
+[[node]]
+id = "SobolevIntervalLp.contDiff_cutoffFn"
+
+[[node]]
+id = "SobolevIntervalLp.hasCompactSupport_cutoffFn"
+
+[[node]]
+id = "SobolevIntervalLp.exists_abs_deriv_cutoffFn_le"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_cutoffFn"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_deriv_cutoffFn"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffElem"
+
+[[node]]
+id = "SobolevIntervalLp.rep_cutoffElem"
+
+[[node]]
+id = "SobolevIntervalLp.cutoff"
+
+[[node]]
+id = "SobolevIntervalLp.rep_cutoff"
+
+[[node]]
+id = "SobolevIntervalLp.fn_cutoff"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_deriv_cutoff_one"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_restrict_compl_Icc_atTop"
+
+[[node]]
+id = "SobolevIntervalLp.hasWeakDerivOn_zero"
+
+[[node]]
+id = "SobolevIntervalLp.eq_of_fn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.eq_zero_of_rep_eq_zero"
+
+[[node]]
+id = "SobolevIntervalLp.restrictLp"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_restrictLp"
+
+[[node]]
+id = "SobolevIntervalLp.restrict"
+
+[[node]]
+id = "SobolevIntervalLp.fn_restrict_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_deriv_restrict_one"
+
+[[node]]
+id = "SobolevIntervalLp.rep_restrict"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_restrict_eq_of_ae_eq_zero_off"
+
+[[node]]
+id = "SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo"
+
+[[node]]
+id = "SobolevIntervalLpZero.mem_of_rep_eq_zero_off"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_sub_indicator"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_enorm_deriv_sub"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_indicator_deriv"
+
+[[node]]
+id = "SobolevIntervalLpZero.hasWeakDerivOn_indicator"
+
+[[node]]
+id = "SobolevIntervalLpZero.mem_of_tsupport_rep_subset"

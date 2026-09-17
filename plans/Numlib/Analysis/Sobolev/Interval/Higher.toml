@@ -1,117 +1,25 @@
-desc = '''
-The spaces `W^{m,p}(I)` of higher order, [brezis2011functional] §8.2, "The Sobolev spaces
-`W^{m,p}`": the two definitions agree (`Interval/Basic`'s `memSobolevIntervalLp_succ_iff` is the
-inductive one; `SobolevIntervalLp m p I` carries the `m` weak derivatives), the norm and the
-`H^m` inner product are in `Interval/Basic` too. What is here: the embedding
-`W^{m,p}(a, b) ↪ C^{m−1}[a, b]` into the backbone's `ContDiffMapIcc hab (m − 1)` (continuous for
-every `p`, compact for `1 < p ≤ ∞`), the reverse inclusion `C^k[a, b] → W^{k,p}(a, b)` with its
-density for `p < ∞` (which is what Atkinson–Han's Example 1.2.28 (b) needs), and the
-interpolation inequality `‖D^j u‖_p ≤ ε ‖D^m u‖_p + C(ε) ‖u‖_p` that makes `‖u‖_p + ‖D^m u‖_p` an
-equivalent norm — the book delegates it to Adams or to Exercise 8.6 (bounded `I`); the route
-planned here is the direct one-dimensional mean-value argument, which handles every `|I| ≤ ∞` and
-`p = 1` alike and needs no compactness.
-'''
-
 [[node]]
 id = "SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral"
-kind = "theorem"
-desc = '''The book's "easily shown" characterization: `MemSobolevIntervalLp u m p I ↔ MemLp u p (volume.restrict I) ∧ ∀ j ∈ Icc 1 m, ∃ g, MemLp g p (volume.restrict I) ∧ ∀ φ : 𝓓(I, ℝ), ∫ x in I, u x * iteratedDeriv j φ x = (-1) ^ j * ∫ x in I, g x * φ x`
-— `m` functions `g_1, …, g_m ∈ L^p(I)` with `∫ u D^j φ = (−1)^j ∫ g_j φ`. This is
-`memSobolevIntervalLp_iff` with `hasWeakIteratedDerivOn_iff` unfolded and the local integrability
-of an `L^p` function supplied (`MemLp.locallyIntegrableOn`). The successive derivatives
-`D u = g_1, D² u = g_2, …` are `SobolevIntervalLp.deriv u j`, and `hasWeakDerivOn_deriv_succ`
-says `D^{j+1} u = (D^j u)'`. ★'''
-deps = ["memSobolevIntervalLp_iff", "hasWeakIteratedDerivOn_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
 
 [[node]]
 id = "SobolevIntervalLp.toContDiffMapIcc"
-kind = "definition"
-desc = '''**`W^{m,p}(a, b) ⊆ C^{m−1}(Ī)` with continuous injection**: for `a < b`, `[Fact (1 ≤ p)]` and
-`k : ℕ`, `toContDiffMapIcc hab : SobolevIntervalLp (k + 1) p (Opens.Ioo a b) →L[ℝ] ContDiffMapIcc hab.le k`,
-sending `u` to the tuple of the representatives of `u, u', …, u^{(k)}` (each `deriv u j`, `j ≤ k`,
-is the function of an element of `W^{1,p}` — `derivCLM` iterated, or `mk` on the tail — so has a
-representative continuous on `[a, b]` by Theorem 8.2; consecutive representatives satisfy
-`ContinuousMap.HasDerivIcc` by `rep_sub_rep`, which is `ContinuousMap.hasDerivIcc_iff`), with
-`deriv_toContDiffMapIcc : (toContDiffMapIcc hab u).deriv j = ⟨rep (…), _⟩` and the bound
-`‖toContDiffMapIcc hab u‖ ≤ C ‖u‖`, `C = (k + 1) ((b − a)^{-1/p} + (b − a)^{1/p'})`
-(`abs_rep_le_of_bounded` on each derivative, `norm_deriv_le`). Injective
-(`toContDiffMapIcc_injective`, the function determines the element). At `k = 0` this is
-`toContinuousMap` up to `ContDiffMapIcc hab 0 ≃ C[a, b]`. Pairs with
-`SobolevInterval.exists_contDiff_ae_eq` (the unbundled `∃` form at `p = 2`), and its inverse
-direction is `ContDiffMapIcc.toSobolevIntervalLp` below. ★★ (~250 lines)'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded", "SobolevIntervalLp.deriv", "ContDiffMapIcc"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
 
 [[node]]
 id = "SobolevIntervalLp.isCompactOperator_toContDiffMapIcc"
-kind = "theorem"
-desc = '''**`W^{m,p}(a, b) ⊆ C^{m−1}(Ī)` with compact injection for `1 < p ≤ ∞`**:
-`IsCompactOperator (toContDiffMapIcc hab : SobolevIntervalLp (k + 1) p (Opens.Ioo a b) →L[ℝ] ContDiffMapIcc hab.le k)`.
-The map factors through `u ↦ (toContinuousMap hab (D^j u))_{j ≤ k}` into
-`PiLp 1 (Fin (k + 1) → C(Icc a b, ℝ))` (the ambient space of `ContDiffMapIcc`), each component
-compact by Theorem 8.8 (6) (`isCompactOperator_toContinuousMap` composed with the continuous
-`derivCLM`/`inclusionCLM`), and a finite product of compact operators is compact
-(`isCompactOperator_iff_isCompact_closure_image_ball`: the closure of the image of the ball lies in
-the product of the compact closures, `IsCompact.pi`-type / `isCompact_univ_pi`); the closed
-subspace `ContDiffMapIcc` inherits. ★★ (~150 lines)'''
-deps = ["SobolevIntervalLp.toContDiffMapIcc", "SobolevIntervalLp.isCompactOperator_toContinuousMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
 
 [[node]]
 id = "ContDiffMapIcc.toSobolevIntervalLp"
-kind = "definition"
-desc = '''**The inclusion `C^k[a, b] → W^{k,p}(a, b)`**: for `a < b`, `[Fact (1 ≤ p)]`,
-`toSobolevIntervalLp hab hlt k : ContDiffMapIcc hab k →L[ℝ] SobolevIntervalLp k p (Opens.Ioo a b)`,
-with `derivLp` (the `j`-th derivative extended off `[a, b]` as an `L^p` element),
-`deriv_toSobolevIntervalLp`, `fn_toSobolevIntervalLp_ae_eq`, `norm_toSobolevIntervalLp_le`
-(`‖u‖_{W^{k,p}} ≤ (b − a)^{1/p} ‖u‖_{C^k}`; `1` at `p = ∞`), `toSobolevIntervalLp_injective`.
-The definitions of `ContDiffMapIcc.derivLp`, `toSobolevIntervalₗ`, `toSobolevInterval` with `2`
-replaced by `p` (`ContinuousOn.memLp_top_restrict_Ioo` then `MemLp.mono_exponent`, or a direct
-`MemLp.of_bound`). Specializes to `ContDiffMapIcc.derivLp`, `coeFn_derivLp`, `derivLp_add`,
-`derivLp_smul`, `hasWeakIteratedDerivOn_derivLp`, `toSobolevIntervalₗ`, `deriv_toSobolevIntervalₗ`,
-`norm_derivLp_le`, `norm_toSobolevIntervalₗ_le`, `toSobolevInterval`, `deriv_toSobolevInterval`,
-`fn_toSobolevInterval_ae_eq`, `norm_toSobolevInterval_le`, `toSobolevInterval_injective` at
-`p = 2`; once proved, re-prove those from this. Its left inverse is `toContDiffMapIcc`
-(`toContDiffMapIcc_toSobolevIntervalLp`). ★★'''
-deps = ["SobolevIntervalLp.deriv", "hasWeakIteratedDerivOn_of_contDiffOn", "ContDiffMapIcc"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 2"
 
 [[node]]
 id = "ContDiffMapIcc.denseRange_toSobolevIntervalLp"
-kind = "theorem"
-desc = '''**`C^k[a, b]` is dense in `W^{k,p}(a, b)` for `1 ≤ p < ∞`, every `k`**:
-`DenseRange (toSobolevIntervalLp hab hlt k : ContDiffMapIcc hab k →L[ℝ] SobolevIntervalLp k p (Opens.Ioo a b))`.
-Two routes: Theorem 8.7 for the top derivative (approximate `u^{(k)} ∈ W^{1,p}(a, b)` by the
-restriction of a `C_c^∞(ℝ)` function `g` with `‖g − u^{(k)}‖_{W^{1,p}} < ε`, then integrate `k`
-times from `a` with the initial values `u^{(j)}(a)`, `j < k`, of the representatives; the `k`-fold
-primitive is `C^∞` on `[a, b]` and the errors in the lower derivatives are controlled by the
-Poincaré-type bound `‖∫_a^x h‖_p ≤ |I| ‖h‖_p` — the argument of
-`ContDiffMapIcc.denseRange_toSobolevInterval_one` with `L²` replaced by `L^p` and one primitive by
-`k`); or directly: approximate `u^{(k)}` in `L^p(a, b)` by a test function
-(`MeasureTheory.MemLp.exists_contDiff_tsupport_subset`) and integrate `k` times — the second needs
-no extension theorem and is the one to take. Specializes to
-`ContDiffMapIcc.denseRange_toSobolevInterval_one` of `Interval.lean` at `k = 1`, `p = 2` (not a
-dependency: this module must not import `Interval.lean` once the relocation is done); once proved, re-prove that
-one from this. This closes the density half of `AtkinsonHan.Chapter01.example_1_2_28_b`
-("the completion of `C^m[a, b]` in `‖·‖_{m,p}` is `W^{m,p}(a, b)`") for every `m`, `p < ∞`;
-the incompleteness half is the separate `exists_not_mem_range_toSobolevIntervalLp` below. ★★★
-(~300 lines)'''
-deps = ["ContDiffMapIcc.toSobolevIntervalLp", "MeasureTheory.MemLp.exists_contDiff_tsupport_subset", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7"
 
 [[node]]
 id = "ContDiffMapIcc.exists_not_mem_range_toSobolevIntervalLp"
-kind = "theorem"
-desc = '''**The inclusion `C^1[a, b] → W^{1,p}(a, b)` is not surjective**: for `a < b` and every `p`,
-`∃ u : SobolevIntervalLp 1 p (Opens.Ioo a b), u ∉ Set.range (toSobolevIntervalLp hab hlt 1)` —
-`x ↦ |x − (a + b)/2|` is in `W^{1,p}` (`memSobolevIntervalLp_abs`, translated) and has no `C¹`
-representative because its continuous representative is unique (`rep_eq_of_continuousOn`) and is
-not differentiable at the midpoint. So `C^1[a, b]` is not complete for the `W^{1,p}` norm (with
-the density node: it is a dense proper subspace). The incompleteness half of Atkinson–Han
-Example 1.2.28 (b) (`AtkinsonHan.Chapter01.example_1_2_28_b`, `notes/frontier.md` blocker 8's
-residue), for every `p`. ★★'''
-deps = ["ContDiffMapIcc.toSobolevIntervalLp", "memSobolevIntervalLp_abs", "SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (i)"
 
 [[node]]
@@ -132,6 +40,143 @@ by induction (`D^j u ∈ W^{m−j,p}`), the book's "for every `j`". Corollary `n
 norm `‖u‖_p + ‖D^m u‖_p` is equivalent to the `W^{m,p}` norm (`‖u‖ ≤ C (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖)`).
 ★★★ (~500 lines, the bookkeeping of the covering is the bulk; the case `|I| < ∞`, `p > 1` alone
 would follow from the compact embedding by Ehrling's lemma, the book's Exercise 8.6 route, once
-chapter 6 has Exercise 6.12)'''
+chapter 6 has Exercise 6.12)
+
+Blocked: not attempted in wave 2 for budget reasons (★★★, the covering bookkeeping). Available
+now for the direct route: the window estimate with an `L^q` function part
+(`SobolevIntervalLp.enorm_rep_le_of_Icc_subset'`), `SobolevIntervalLp.shift`, `derivOne`, and the
+restriction `SobolevIntervalLp.restrict` of `Interval/Zero` to a subinterval.'''
 deps = ["SobolevIntervalLp.deriv", "SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
+
+[[node]]
+id = "SobolevIntervalLp.derivOne"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_derivOne_zero"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_derivOne_one"
+
+[[node]]
+id = "SobolevIntervalLp.derivOne_add"
+
+[[node]]
+id = "SobolevIntervalLp.derivOne_smul"
+
+[[node]]
+id = "SobolevIntervalLp.fn_derivOne_zero"
+
+[[node]]
+id = "SobolevIntervalLp.norm_derivOne_le"
+
+[[node]]
+id = "SobolevIntervalLp.hasDerivWithinAt_rep_derivOne"
+
+[[node]]
+id = "SobolevIntervalLp.toContDiffMapIccTuple"
+
+[[node]]
+id = "SobolevIntervalLp.hasDerivIcc_toContDiffMapIccTuple"
+
+[[node]]
+id = "SobolevIntervalLp.toContDiffMapIccₗ"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_toContDiffMapIccₗ"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toContDiffMapIccₗ_le"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_toContDiffMapIcc"
+
+[[node]]
+id = "SobolevIntervalLp.toContDiffMapIcc_apply"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toContDiffMapIcc_le"
+
+[[node]]
+id = "SobolevIntervalLp.toContDiffMapIcc_injective"
+
+[[node]]
+id = "ContDiffMapIcc.memLp_IccExtend_deriv"
+
+[[node]]
+id = "ContDiffMapIcc.derivLpOf"
+
+[[node]]
+id = "ContDiffMapIcc.coeFn_derivLpOf"
+
+[[node]]
+id = "ContDiffMapIcc.derivLpOf_add"
+
+[[node]]
+id = "ContDiffMapIcc.derivLpOf_smul"
+
+[[node]]
+id = "ContDiffMapIcc.hasWeakIteratedDerivOn_derivLpOf"
+
+[[node]]
+id = "ContDiffMapIcc.toSobolevIntervalLpₗ"
+
+[[node]]
+id = "ContDiffMapIcc.deriv_toSobolevIntervalLpₗ"
+
+[[node]]
+id = "ContDiffMapIcc.norm_derivLpOf_le"
+
+[[node]]
+id = "ContDiffMapIcc.norm_toSobolevIntervalLpₗ_le"
+
+[[node]]
+id = "ContDiffMapIcc.deriv_toSobolevIntervalLp"
+
+[[node]]
+id = "ContDiffMapIcc.fn_toSobolevIntervalLp_ae_eq"
+
+[[node]]
+id = "ContDiffMapIcc.norm_toSobolevIntervalLp_le"
+
+[[node]]
+id = "ContDiffMapIcc.toSobolevIntervalLp_injective"
+
+[[node]]
+id = "ContDiffMapIcc.deriv_toContDiffMapIcc_toSobolevIntervalLp"
+
+[[node]]
+id = "SobolevIntervalLp.derivOneCLM"
+
+[[node]]
+id = "SobolevIntervalLp.derivOneCLM_apply"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_toContDiffMapIcc_eq"
+
+[[node]]
+id = "SobolevIntervalLp.isCompactEmbedding_toContDiffMapIcc"
+
+[[node]]
+id = "ContDiffMapIcc.memSobolevIntervalLp_abs_sub"
+
+[[node]]
+id = "SobolevIntervalLp.poincareConst_nonneg"
+
+[[node]]
+id = "SobolevIntervalLp.integrableOn_deriv_Ioo"
+
+[[node]]
+id = "SobolevIntervalLp.lintegral_ofReal_sub_rpow"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_integral_le"
+
+[[node]]
+id = "SobolevIntervalLp.shift"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_shift"
+
+[[node]]
+id = "SobolevIntervalLp.shift_sub"

@@ -219,6 +219,10 @@ import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Basic
+import Numlib.Analysis.Sobolev.Interval.Embedding
+import Numlib.Analysis.Sobolev.Interval.Extension
+import Numlib.Analysis.Sobolev.Interval.Higher
+import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic

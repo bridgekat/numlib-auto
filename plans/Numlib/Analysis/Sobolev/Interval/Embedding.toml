@@ -1,146 +1,25 @@
-desc = '''
-The Sobolev embeddings in one dimension and their calculus consequences, [brezis2011functional]
-Theorem 8.8 and Corollaries 8.9–8.11 with Remarks 10–12: `W^{1,p}(I) ⊆ L^∞(I)` continuously for
-every `1 ≤ p ≤ ∞` and every interval (5), compactly into `C(Ī)` for `1 < p ≤ ∞` and `I` bounded
-(6), and — stated in `Interval/DifferenceQuotient` — `W^{1,1}(I)` compactly into `L^q(I)`, `q < ∞`,
-for `I` bounded (7); decay at infinity
-(Corollary 8.9), the product rule with integration by parts (Corollary 8.10) and the chain rule
-(Corollary 8.11).
-
-### Route: the representative, not density
-
-The book proves (5) on `ℝ` for `C_c^1` functions and extends by density (Theorem 8.7) and to `I`
-by the extension operator. Here (5), 8.9, 8.10 and 8.11 are proved directly from the continuous
-representative of `Interval/Basic`, as `Interval.lean` does at `p = 2`:
-
-* bounded `I` of length `L`: `|ũ(x)| ≤ |ũ(y)| + ∫_I |u'|` for all `x, y`, averaged over `y`,
-  gives `|ũ(x)| ≤ L^{-1/p} ‖u‖_p + L^{1/p'} ‖u'‖_p` (Hölder twice) — at `p = 2` this is exactly
-  `SobolevInterval.abs_rep_le`'s constant `(b − a)^{-1/2} + (b − a)^{1/2}`;
-* unbounded `I`, `1 ≤ p < ∞`: `w = |ũ|^{p−1} ũ` is absolutely continuous on compacts with
-  `w' = p |ũ|^{p−1} u'` a.e., so `|w(x)| ≤ |w(y)| + p ∫_{[x,y]} |ũ|^{p−1} |u'| ≤ |w(y)| + p ‖u‖_p^{p−1} ‖u'‖_p`
-  (Hölder), and `liminf_{|y| → ∞, y ∈ I} |ũ(y)| = 0` because `ũ ∈ L^p(I)` is continuous
-  — hence `|ũ(x)|^p ≤ p ‖u‖_p^{p−1} ‖u'‖_p`, the book's (8), with the same localization on
-  tails giving Corollary 8.9 at once; `p = ∞` is trivial;
-* the product and chain rules are the absolutely continuous calculus of Mathlib
-  (`AbsolutelyContinuousOnInterval.mul`, `LipschitzOnWith.comp_absolutelyContinuousOnInterval`,
-  `.ae_differentiableAt`, `.integral_deriv_eq_sub`) followed by Lemma 8.2, exactly as
-  `SobolevInterval.memSobolevInterval_mul` at `p = 2`; the chain rule may also be read off the
-  backbone's `HasWeakIteratedLineDerivOn.contDiff_comp` after truncating `G'`.
-
-Theorem 8.7 is therefore not a dependency of anything here. (6) is Arzelà–Ascoli
-(`ContinuousMap.isCompact_closure_of_forall_norm_le`, backbone) on the uniformly Hölder unit ball.
-(7) is the one clause that consumes chapter 4's Kolmogorov–Riesz theorem, as the book does; so
-that this module does not wait on chapter 4, its node `SobolevIntervalLp.isCompactOperator_toLp_one`
-lives in `Interval/DifferenceQuotient` (the module that waits on chapter 4 anyway) and is only
-described here.
-Compactness is stated with Mathlib's `IsCompactOperator` on the bundled embedding, and
-`IsCompactEmbedding` (`Numlib/Analysis/Normed/Operator/Embedding.lean`) is recovered through
-`isCompactEmbedding_iff_isCompactOperator` where a consumer wants the Atkinson–Han relation.
-'''
-
 [[node]]
 id = "SobolevIntervalLp.abs_rep_le_of_bounded"
-kind = "theorem"
-desc = '''**Theorem 8.8 (5), bounded interval, with the constant**: for `a < b`, `[Fact (1 ≤ p)]`,
-`u : SobolevIntervalLp 1 p (Opens.Ioo a b)` and `x ∈ Icc a b`,
-`|rep u x| ≤ (b - a) ^ (-1 / p.toReal) * ‖deriv u 0‖ + (b - a) ^ (1 - 1 / p.toReal) * ‖deriv u 1‖`
-(read `1/p = 0` at `p = ∞`: `|rep u x| ≤ (b − a)⁻¹ ‖u‖_1 … ` — state the `p = ∞` case separately as
-`|rep u x| ≤ ‖u‖_∞ + (b − a) ‖u'‖_∞` or fold both into one statement with `p.toReal⁻¹`). The
-averaging argument of `SobolevInterval.abs_rep_le` with Hölder (`abs_intervalIntegral_le_sqrt_mul_norm`
-generalized: `|∫_x^y f| ≤ |y − x|^{1/p'} ‖f‖_{L^p}`, `MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg`
-against the indicator) in place of Cauchy–Schwarz. Specializes to `SobolevInterval.abs_rep_le` at
-`p = 2`; once proved, re-prove that one from this. Corollary `eLpNorm_top_le_of_bounded`:
-`eLpNorm (fn u) ⊤ (volume.restrict (Ioo a b)) ≤ ENNReal.ofReal (C * ‖u‖)` with
-`C = (b − a)^{-1/p} + (b − a)^{1/p'}`, and `memLp_top`. ★★ (~150 lines)'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.norm_deriv_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"
 
 [[node]]
 id = "SobolevIntervalLp.abs_rep_pow_le"
-kind = "theorem"
-desc = '''**Theorem 8.8 (5), unbounded interval, the inequality (8)**: for `(hI : OrdConnected)` with
-`(I : Set ℝ)` unbounded (`¬ Bornology.IsBounded (I : Set ℝ)`), `1 ≤ p < ∞`, `u : SobolevIntervalLp 1 p I`
-and `x ∈ closure I`: `|rep u x| ^ p.toReal ≤ p.toReal * ‖deriv u 0‖ ^ (p.toReal - 1) * ‖deriv u 1‖`.
-Proof as in the group `desc`: the AC function `w = |ũ|^{p−1} ũ` (`G(s) = |s|^{p−1} s` is `C¹` for
-`p > 1` with `G' = p |s|^{p−1}`, Lipschitz on bounded sets, `LipschitzOnWith.comp_absolutelyContinuousOnInterval`;
-for `p = 1`, `w = ũ` directly), `|w(x) − w(y)| ≤ p ∫ |ũ|^{p−1} |u'| ≤ p ‖u‖_p^{p−1} ‖u'‖_p`
-(Hölder with exponents `p' = p/(p−1)` and `p`), and `w(y_n) → 0` along a sequence `y_n → ±∞`
-in `I` (a continuous `L^p` function on an unbounded interval has `liminf |ũ| = 0` at the
-unbounded end: otherwise `|ũ| ≥ ε` on a half-line, contradicting integrability). Corollaries:
-`abs_rep_le_of_unbounded : |rep u x| ≤ p ^ (1/p) ‖u‖_p^{1/p'} ‖u'‖_p^{1/p} ≤ 2 ‖u‖` (since
-`p^{1/p} ≤ 2` and `a^{1/p'} b^{1/p} ≤ max a b ≤ ‖u‖`); `eLpNorm_top_le : eLpNorm (fn u) ⊤ (volume.restrict I) ≤ ENNReal.ofReal (2 * ‖u‖)`
-for every interval (bounded: the previous node with its constant; unbounded: this one; `p = ∞`:
-`‖deriv u 0‖ ≤ ‖u‖`), which is the book's (5) with `C = max(2, |I|^{-1/p} + |I|^{1/p'})`; and
-`memLp_top : MemLp (fn u) ⊤ (volume.restrict I)`. Also the bundled inclusion
-`inclusionLinfty : SobolevIntervalLp 1 p I →L[ℝ] Lp ℝ ⊤ (volume.restrict I)` of norm `≤ C`
-("`W^{1,p}(I) ⊂ L^∞(I)` with continuous injection"). ★★ (~250 lines)'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"
 
 [[node]]
 id = "SobolevIntervalLp.abs_rep_sub_rep_le"
-kind = "theorem"
-desc = '''**The Hölder estimate of Theorem 8.8's proof of (6)**: for `(hI : OrdConnected)`, `1 ≤ p ≤ ∞`,
-`u : SobolevIntervalLp 1 p I` and `x, y ∈ closure I`,
-`|rep u x - rep u y| ≤ ‖deriv u 1‖ * |x - y| ^ (1 - 1 / p.toReal)` (with `1/∞ = 0`: the Lipschitz
-bound of Proposition 8.4). From `rep_sub_rep` and Hölder on `[x, y]`. Also the uniform
-`Hölder`-continuity statement in Mathlib's vocabulary, `HolderOnWith (‖u'‖_p) ⟨1 − 1/p, _⟩ (rep u) (closure I)`.
-★'''
-deps = ["SobolevIntervalLp.rep"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8, proof of (6)"
 
 [[node]]
 id = "SobolevIntervalLp.toContinuousMap"
-kind = "definition"
-desc = '''**The embedding `W^{1,p}(a, b) ↪ C[a, b]`**: for `a < b`, `[Fact (1 ≤ p)]`,
-`toContinuousMap hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] C(Icc a b, ℝ)`, `u ↦ rep u`
-restricted to `[a, b]`, linear by `rep_add`/`rep_smul`, bounded by `abs_rep_le_of_bounded`
-(`norm_toContinuousMap_le` with the constant `(b − a)^{-1/p} + (b − a)^{1/p'}`), with
-`toContinuousMap_apply`, `coe_toContinuousMap_ae_eq`, `toContinuousMap_eq_of_continuousOn`,
-`toContinuousMap_sub_eq_integral` (the FTC), `toContinuousMap_injective`
-(`SobolevMultiIndex.ext_of_fn_ae_eq`), and `evalCLM hab (c : Icc a b) : StrongDual ℝ (SobolevIntervalLp 1 p (Opens.Ioo a b))`,
-point evaluation. Specializes to `SobolevInterval.toContinuousMap`, `toContinuousMapₗ`,
-`norm_toContinuousMap_le`, `norm_toContinuousMap_le'`, `toContinuousMap_apply`,
-`coe_toContinuousMap_ae_eq`, `toContinuousMap_eq_of_continuousOn`, `toContinuousMap_sub_eq_integral`,
-`absolutelyContinuousOnInterval_toContinuousMap`, `toContinuousMap_injective`,
-`exists_toContinuousMap_eq`, `evalCLM`, `evalCLM_apply` at `p = 2`, the value agreeing pointwise
-by uniqueness of the representative. For general `I` the corresponding bundled map is into the
-bounded continuous functions `closure I →ᵇ ℝ` (`toBoundedContinuousFunction`, optional). ★★'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded", "SobolevMultiIndex.ext_of_fn_ae_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"
 
 [[node]]
 id = "SobolevIntervalLp.isCompactOperator_toContinuousMap"
-kind = "theorem"
-desc = '''**Theorem 8.8 (6)**: for `a < b` and `1 < p ≤ ∞` (`[Fact (1 ≤ p)] (hp : 1 < p)`),
-`IsCompactOperator (toContinuousMap hab : SobolevIntervalLp 1 p (Opens.Ioo a b) →L[ℝ] C(Icc a b, ℝ))`.
-By `isCompactOperator_iff_isCompact_closure_image_ball`: the image of the unit ball is bounded in
-`C[a, b]` (5) and equicontinuous — uniformly Hölder with exponent `1 − 1/p > 0` by
-`abs_rep_sub_rep_le` (this is where `p > 1` enters; at `p = 1` the exponent is `0`) — so
-Arzelà–Ascoli `ContinuousMap.isCompact_closure_of_forall_norm_le` (backbone,
-`Numlib/Topology/ContinuousMap/ArzelaAscoli.lean`) makes its closure compact. Also
-`isCompactEmbedding_toContinuousMap : IsCompactEmbedding (toContinuousMap hab : _ →ₗ[ℝ] _)` through
-`isCompactEmbedding_iff_isCompactOperator` and injectivity. At `p = 2` this is the compactness of
-`SobolevInterval.toContinuousMap`, new even there; `Numlib/Variational/EllipticInterval/SturmLiouville`
-consumes it composed with `C[0,1] → L²(0,1)`. ★★ (~200 lines)'''
-deps = ["SobolevIntervalLp.toContinuousMap", "SobolevIntervalLp.abs_rep_sub_rep_le", "ContinuousMap.isCompact_closure_of_forall_norm_le", "isCompactEmbedding_iff_isCompactOperator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"
 
 [[node]]
 id = "SobolevIntervalLp.toLp"
-kind = "definition"
-desc = '''The inclusion `W^{1,p}(I) → L^q(I)` for `p ≤ q ≤ ∞` (any interval) and for every `q` when `I`
-is bounded: `toLp : SobolevIntervalLp 1 p I →L[ℝ] Lp ℝ q (volume.restrict I)`, `u ↦ fn u`
-(named as chapter 9a's `SobolevEuclidean.isContinuousEmbedding_toLp_*` and
-`SobolevMultiIndex.toLpₗ` of `Numlib/Analysis/Sobolev/Cutoff`, whose underlying linear map this
-is once that module exists; at `q = p` it is `SobolevMultiIndex.fnL`),
-continuous by **Remark 12** (`memLp_of_le : p ≤ q → MemLp (fn u) q (volume.restrict I)` with
-`‖u‖_q^q ≤ ‖u‖_∞^{q−p} ‖u‖_p^p`, i.e. `eLpNorm f q μ ≤ eLpNorm f ⊤ μ ^ (1 − p/q) * eLpNorm f p μ ^ (p/q)`
-— the interpolation `MeasureTheory.eLpNorm_le_eLpNorm_top_mul_eLpNorm`-type lemma or a direct
-`lintegral` computation) and by (5) plus `MemLp.mono_exponent` on a finite measure when `I` is
-bounded (`toLp_of_bounded`, every `1 ≤ q ≤ ∞`). The negative half of Remark 12 (`u ∉ L^q`
-for `q < p` in general, Exercise 8.1) is not planned. ★'''
-deps = ["SobolevIntervalLp.abs_rep_pow_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 12"
 
 [[node]]
@@ -158,99 +37,280 @@ theorem (`Helly` occurs only in `Convex/Radon.lean`); this is a Mathlib-shaped u
 candidate, best stated for `Monotone` functions first (`exists_subseq_tendsto_of_forall_monotone`,
 ~250 lines) and then for `W^{1,1}`. The `L^q` convergence of the subsequence (dominated
 convergence, `I` bounded) is an alternative proof of (7) at `q < ∞` that avoids Kolmogorov–Riesz.
-Low priority: nothing downstream consumes it. ★★★ (~400 lines)'''
+Low priority: nothing downstream consumes it. ★★★ (~400 lines)
+
+Blocked: not attempted in wave 2 (low priority by the plan's own account, nothing downstream consumes
+it). The route above stands; the monotone-function selection theorem is the natural first
+lemma, as a separate Mathlib-shaped node.'''
 deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10 and Exercise 8.3"
 
 [[node]]
 id = "SobolevIntervalLp.norm_equiv_of_bounded"
-kind = "theorem"
-desc = '''**Remark 11**: for `a < b`, `1 ≤ p ≤ ∞`, `1 ≤ q ≤ ∞` and `u : SobolevIntervalLp 1 p (Opens.Ioo a b)`,
-the quantity `‖u'‖_p + ‖u‖_q` is equivalent to the `W^{1,p}` norm: `‖u‖ ≤ C₁ (‖deriv u 1‖ + ‖fn u‖_{L^q})`
-and `‖deriv u 1‖ + ‖fn u‖_{L^q} ≤ C₂ ‖u‖` with `C₂ = 1 + (b − a)^{1/q} C₅` from (5)
-(`‖u‖_q ≤ |I|^{1/q} ‖u‖_∞`) and `C₁` from `|ũ(x)| ≤ |I|^{-1/q} ‖u‖_q + |I|^{1/p'} ‖u'‖_p`
-(the averaging argument of `abs_rep_le_of_bounded` with `‖u‖_1 ≤ |I|^{1/q'} ‖u‖_q` by Hölder),
-then `‖u‖_p ≤ |I|^{1/p} ‖u‖_∞`. ★★'''
-deps = ["SobolevIntervalLp.abs_rep_le_of_bounded", "SobolevIntervalLp.toLp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 11"
 
 [[node]]
 id = "SobolevIntervalLp.tendsto_rep_cocompact"
-kind = "theorem"
-desc = '''**Corollary 8.9 (decay at infinity)**: for `(hI : OrdConnected)` with `(I : Set ℝ)` unbounded,
-`1 ≤ p < ∞` and `u : SobolevIntervalLp 1 p I`,
-`Tendsto (rep u) (Filter.cocompact ℝ ⊓ 𝓟 (I : Set ℝ)) (𝓝 0)` — `ũ(x) → 0` as `|x| → ∞`, `x ∈ I`.
-Direct proof, no density: the tail estimate `|rep u x|^p ≤ p ‖u‖_{L^p(I ∩ Ioi x)}^{p−1} ‖u'‖_{L^p(I ∩ Ioi x)}`
-for `x` in the unbounded-above part (the argument of `abs_rep_pow_le` run on the tail `I ∩ Ioi x`,
-which is again an unbounded interval), and both tail norms tend to `0` as `x → ∞`
-(`MeasureTheory.tendsto_setIntegral_of_antitone`-type / continuity of the `L^p` norm from above on
-shrinking sets); symmetrically at `−∞`. ★★ (~150 lines)'''
-deps = ["SobolevIntervalLp.abs_rep_pow_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.9"
 
 [[node]]
 id = "SobolevIntervalLp.hasWeakDerivOn_rep_mul"
-kind = "theorem"
-desc = '''**Corollary 8.10 (product rule), weak-derivative form**: for `(hI : OrdConnected)`, `1 ≤ p ≤ ∞`
-and `u v : SobolevIntervalLp 1 p I`, `HasWeakDerivOn (fun t ↦ rep u t * rep v t) (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) I`.
-The product of the two representatives is absolutely continuous on every compact subinterval of
-`closure I` (`AbsolutelyContinuousOnInterval.mul`), with a.e. derivative `u' ṽ + ũ v'`
-(`ae_deriv_rep_eq`, `HasDerivAt.mul`), and equals `ũ(y₀)ṽ(y₀) + ∫_{y₀}^x (u' ṽ + ũ v')`
-(`AbsolutelyContinuousOnInterval.integral_deriv_eq_sub`, or the existing
-`integral_mul_add_mul_of_eq_integral` pattern), so Lemma 8.2 applies — `u' ṽ + ũ v'` is locally
-integrable as an `L^p` times a locally bounded continuous function. Specializes to
-`SobolevInterval.hasWeakDerivOn_rep_mul`, `rep_mul_rep_eq`, `integrableOn_leibniz` at `p = 2`;
-once proved, re-prove those from this. ★★'''
-deps = ["SobolevIntervalLp.rep", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.10"
 
 [[node]]
 id = "SobolevIntervalLp.memSobolevIntervalLp_mul"
-kind = "theorem"
-desc = '''**Corollary 8.10 (product rule)**: under the same hypotheses,
-`MemSobolevIntervalLp (fun t ↦ rep u t * rep v t) 1 p I` — `ũṽ ∈ L^p` because `ũ ∈ L^∞` (5) and
-`ṽ ∈ L^p`; `u' ṽ + ũ v' ∈ L^p` likewise (`memLp_leibniz`). Also the bundled product
-`mul : SobolevIntervalLp 1 p I → SobolevIntervalLp 1 p I → SobolevIntervalLp 1 p I` with
-`fn_mul`, `deriv_mul`, and the footnote's Banach-algebra estimate `‖mul u v‖ ≤ C ‖u‖ ‖v‖`
-(`norm_mul_le`, `C` from (5)). Specializes to `SobolevInterval.memSobolevInterval_mul`,
-`memLp_leibniz`; once proved, re-prove those from this. ★★'''
-deps = ["SobolevIntervalLp.hasWeakDerivOn_rep_mul", "SobolevIntervalLp.abs_rep_pow_le", "memSobolevIntervalLp_one_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.10"
 
 [[node]]
 id = "SobolevIntervalLp.integral_deriv_mul_add_mul_deriv"
-kind = "theorem"
-desc = '''**Corollary 8.10, integration by parts**: for `x, y ∈ closure I`,
-`∫ t in y..x, (deriv u 1 t * rep v t + rep u t * deriv v 1 t) = rep u x * rep v x - rep u y * rep v y`,
-i.e. `∫_y^x u' v = u(x)v(x) − u(y)v(y) − ∫_y^x u v'` (`integral_deriv_mul_eq_sub_integral_mul_deriv`
-form, and against an absolutely continuous or `C¹` factor `ψ`:
-`integral_deriv_mul_eq_sub_integral_mul_deriv_of_absolutelyContinuousOnInterval`,
-`integral_deriv_mul_contDiffOn`). From the FTC for the AC product (`rep_sub_rep` applied to the
-product's representation). Specializes to `SobolevInterval.integral_deriv_mul_add_mul_deriv`,
-`integral_deriv_mul_eq_sub_integral_mul_deriv`, `integral_deriv_mul_contDiffOn` (there with the
-endpoints `a`, `b`); once proved, re-prove those from this. ★'''
-deps = ["SobolevIntervalLp.hasWeakDerivOn_rep_mul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.10"
 
 [[node]]
 id = "SobolevIntervalLp.memSobolevIntervalLp_comp"
-kind = "theorem"
-desc = '''**Corollary 8.11 (chain rule)**: for `(hI : OrdConnected)`, `1 ≤ p ≤ ∞`, `G : ℝ → ℝ` with
-`ContDiff ℝ 1 G` and `G 0 = 0`, and `u : SobolevIntervalLp 1 p I`:
-`MemSobolevIntervalLp (fun t ↦ G (rep u t)) 1 p I` with
-`HasWeakDerivOn (G ∘ rep u) (fun t ↦ deriv G (rep u t) * deriv u 1 t) I`. With `M = ‖ũ‖_∞` (5),
-`|G s| ≤ C |s|` on `[−M, M]` (mean value theorem, `G 0 = 0`), so `G ∘ ũ ∈ L^p` and
-`(G' ∘ ũ) u' ∈ L^p` (`G'` bounded on `[−M, M]`); the identity is the backbone's
-`HasWeakIteratedLineDerivOn.contDiff_comp` (`Mollification.lean`: `C¹` with *globally* bounded
-derivative, `1 ≤ p < ∞`) applied to a `C¹` function `G̃` equal to `G` on `[−M − 1, M + 1]` with
-bounded derivative (cut `G'` off: `G̃ = G ∘ (clamp)`-free construction: `G̃(s) = G(s)` for
-`|s| ≤ M + 1`, affine beyond — or multiply `G'` by a smooth cut-off and integrate), and for
-`p = ∞` through `L^∞ ⊆ L^p_loc`; alternatively the absolutely continuous route:
-`G ∘ ũ` is AC on compacts (`LipschitzOnWith.comp_absolutelyContinuousOnInterval`, `G` Lipschitz on
-`[−M, M]`), differentiable a.e. with derivative `G'(ũ) u'` (`HasDerivAt.comp`), and Lemma 8.2.
-The hypothesis `G 0 = 0` is only used for `G ∘ ũ ∈ L^p` on an unbounded `I` (footnote 9);
-`memSobolevIntervalLp_comp_of_bounded` drops it for bounded `I`. Consumers: Theorem 8.12's proof
-in the book (not on the route planned here), the truncation `G(u − K)` of Theorem 8.19, and
-`Numlib/Variational/EllipticInterval/MaximumPrinciple`. ★★ (~200 lines)'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_pow_le", "HasWeakIteratedLineDerivOn.contDiff_comp", "memSobolevIntervalLp_one_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.11"
+
+[[node]]
+id = "ENNReal.toReal_one_sub_inv"
+
+[[node]]
+id = "one_sub_toReal_inv_nonneg"
+
+[[node]]
+id = "MeasureTheory.setLIntegral_enorm_le_rpow_mul_eLpNorm"
+
+[[node]]
+id = "MeasureTheory.enorm_intervalIntegral_le_rpow_mul_eLpNorm"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_restrict_eq_of_subset_closure"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_restrict_le_of_subset_closure"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_le_of_forall_sub_eq_integral"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_rep_le_of_Icc_subset"
+
+[[node]]
+id = "SobolevIntervalLp.toReal_ofReal_rpow_mul_enorm"
+
+[[node]]
+id = "SobolevIntervalLp.ofReal_rpow_mul_enorm_ne_top"
+
+[[node]]
+id = "SobolevIntervalLp.exists_Icc_subset_closure_of_not_isBounded"
+
+[[node]]
+id = "SobolevIntervalLp.abs_rep_le_of_unbounded"
+
+[[node]]
+id = "SobolevIntervalLp.embeddingConst"
+
+[[node]]
+id = "SobolevIntervalLp.two_le_embeddingConst"
+
+[[node]]
+id = "SobolevIntervalLp.embeddingConst_pos"
+
+[[node]]
+id = "SobolevIntervalLp.rpow_add_rpow_le_embeddingConst"
+
+[[node]]
+id = "SobolevIntervalLp.abs_rep_le"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_top_le"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_top"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_top_rep_le"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_top_rep"
+
+[[node]]
+id = "SobolevIntervalLp.holderOnWith_rep"
+
+[[node]]
+id = "SobolevIntervalLp.toContinuousMapₗ"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toContinuousMapₗ_le"
+
+[[node]]
+id = "SobolevIntervalLp.toContinuousMap_apply"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toContinuousMap_le"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toContinuousMap_le'"
+
+[[node]]
+id = "SobolevIntervalLp.coe_toContinuousMap_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.toContinuousMap_eq_of_continuousOn"
+
+[[node]]
+id = "SobolevIntervalLp.toContinuousMap_sub_eq_integral"
+
+[[node]]
+id = "SobolevIntervalLp.absolutelyContinuousOnInterval_toContinuousMap"
+
+[[node]]
+id = "SobolevIntervalLp.toContinuousMap_injective"
+
+[[node]]
+id = "SobolevIntervalLp.exists_toContinuousMap_eq"
+
+[[node]]
+id = "SobolevIntervalLp.evalCLM"
+
+[[node]]
+id = "SobolevIntervalLp.evalCLM_apply"
+
+[[node]]
+id = "SobolevIntervalLp.one_sub_toReal_inv_pos"
+
+[[node]]
+id = "SobolevIntervalLp.isCompactEmbedding_toContinuousMap"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_top_rpow"
+
+[[node]]
+id = "MeasureTheory.MemLp.of_le_of_memLp_top"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_le_of_le"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_of_le"
+
+[[node]]
+id = "SobolevIntervalLp.toLpₗ"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toLpₗ_le"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_toLp"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toLp_le"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_of_bounded"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_le_of_bounded"
+
+[[node]]
+id = "SobolevIntervalLp.toLpOfBoundedₗ"
+
+[[node]]
+id = "SobolevIntervalLp.norm_toLpOfBoundedₗ_le"
+
+[[node]]
+id = "SobolevIntervalLp.toLpOfBounded"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_toLpOfBounded"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_restrict_Ioi_atTop"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_restrict_Iio_atBot"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_rep_of_tendsto_window"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_eLpNorm_window_atTop"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_eLpNorm_window_atBot"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_rep_atTop"
+
+[[node]]
+id = "SobolevIntervalLp.tendsto_rep_atBot"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_rep"
+
+[[node]]
+id = "SobolevIntervalLp.continuousOn_rep'"
+
+[[node]]
+id = "SobolevIntervalLp.locallyIntegrableOn_leibniz"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_leibniz"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_rep_mul"
+
+[[node]]
+id = "SobolevIntervalLp.mul"
+
+[[node]]
+id = "SobolevIntervalLp.fn_mul"
+
+[[node]]
+id = "SobolevIntervalLp.coeFn_deriv_mul"
+
+[[node]]
+id = "SobolevIntervalLp.rep_mul"
+
+[[node]]
+id = "SobolevIntervalLp.integral_deriv_mul_eq_sub_integral_mul_deriv_of_absolutelyContinuousOnInterval"
+
+[[node]]
+id = "SobolevIntervalLp.integral_deriv_mul_contDiffOn"
+
+[[node]]
+id = "SobolevIntervalLp.integral_deriv_mul_eq_sub_integral_mul_deriv"
+
+[[node]]
+id = "SobolevIntervalLp.hasWeakDerivOn_comp"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_deriv_comp"
+
+[[node]]
+id = "SobolevIntervalLp.memLp_comp"
+
+[[node]]
+id = "SobolevIntervalLp.memSobolevIntervalLp_comp_of_bounded"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_rep_le_of_Icc_subset'"
+
+[[node]]
+id = "SobolevIntervalLp.abs_rep_le_of_bounded'"
+
+[[node]]
+id = "SobolevIntervalLp.norm_le_of_bounded'"
+
+[[node]]
+id = "SobolevIntervalLp.norm_deriv_add_norm_toLpOfBounded_le"
+
+[[node]]
+id = "lipschitzOnWith_abs_rpow"
+
+[[node]]
+id = "continuous_enorm_abs_rpow"
+
+[[node]]
+id = "SobolevIntervalLp.neBot_cocompact_inf_principal"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_abs_rep_rpow_le"
