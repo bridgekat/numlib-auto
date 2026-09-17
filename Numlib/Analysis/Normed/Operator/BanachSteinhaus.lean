@@ -4,14 +4,18 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Normed.Operator.BanachSteinhaus`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 
 /-!
-# The convergence half of the Banach–Steinhaus theorem
+# The convergence half of the Banach–Steinhaus theorem, and its corollaries
 
 Mathlib's `banach_steinhaus` is the uniform boundedness principle: a pointwise bounded family of
 operators out of a Banach space is bounded in norm. This file adds the companion that the
-applications use, and which needs neither completeness nor a Baire argument.
+applications use, and which needs neither completeness nor a Baire argument, together with the
+corollaries of the principle stated in [brezis2011functional] §2.2 that Mathlib does not state:
+the lower semicontinuity of the operator norm under pointwise convergence, and the two
+"weakly bounded implies bounded" statements.
 
 ## Main statements
 
@@ -27,6 +31,14 @@ applications use, and which needs neither completeness nor a Baire argument.
   `banach_steinhaus`: unbounded operator norms produce a vector whose images do not converge.
   With the Lebesgue constants of the Fourier projections this is the existence of a continuous
   function whose Fourier series diverges.
+* `ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto` — the operator norm is lower
+  semicontinuous under pointwise convergence of a uniformly bounded sequence,
+  `‖L‖ ≤ liminf ‖Lₙ‖` ([brezis2011functional], Corollary 2.3 (c)).
+* `isBounded_of_forall_dual_image_isBounded`, `isBounded_iff_forall_dual_image_isBounded` — a
+  set is bounded iff every bounded linear functional is bounded on it (Corollary 2.4, "weakly
+  bounded implies bounded"), by the uniform boundedness principle in the (always complete) dual.
+* `StrongDual.isBounded_of_forall_eval_isBounded` — a set of functionals on a Banach space that
+  is bounded at every point is bounded in norm (Corollary 2.5, "weak-∗ bounded implies bounded").
 -/
 
 open Filter Topology Bornology Metric
@@ -110,4 +122,77 @@ theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] {Ln : ℕ → V →
   obtain ⟨C, hC⟩ := banach_steinhaus fun v => exists_norm_le_of_tendsto (hcon v)
   exact h ⟨C, by rintro x ⟨n, rfl⟩; exact hC n⟩
 
+/-- **The operator norm is lower semicontinuous under pointwise convergence**
+([brezis2011functional], Corollary 2.3 (c)): if `Lₙ v → L v` for every `v` and the norms `‖Lₙ‖`
+are bounded, then `‖L‖ ≤ liminf ‖Lₙ‖`. For each `v ≠ 0`, `‖L v‖ / ‖v‖` is the limit of
+`‖Lₙ v‖ / ‖v‖ ≤ ‖Lₙ‖`, and the bound on the norms makes the comparison of `liminf`s legitimate.
+On a Banach space the boundedness of the norms is automatic (`banach_steinhaus`). -/
+theorem opNorm_le_liminf_opNorm_of_tendsto {L : V →L[𝕜] W} {Ln : ℕ → V →L[𝕜] W}
+    (h : ∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v)))
+    (hb : BddAbove (Set.range fun n => ‖Ln n‖)) :
+    ‖L‖ ≤ liminf (fun n => ‖Ln n‖) atTop := by
+  obtain ⟨C, hC⟩ := hb
+  have hC' : ∀ n, ‖Ln n‖ ≤ C := fun n => hC ⟨n, rfl⟩
+  have hcobdd : IsCoboundedUnder (· ≥ ·) atTop fun n => ‖Ln n‖ :=
+    isCoboundedUnder_ge_of_le atTop hC'
+  have hM : 0 ≤ liminf (fun n => ‖Ln n‖) atTop :=
+    le_liminf_of_le hcobdd (Eventually.of_forall fun n => norm_nonneg _)
+  refine opNorm_le_bound' L hM fun v hv => ?_
+  have hv' : 0 < ‖v‖ := lt_of_le_of_ne (norm_nonneg v) (Ne.symm hv)
+  rw [← div_le_iff₀ hv']
+  have hlim : Tendsto (fun n => ‖Ln n v‖ / ‖v‖) atTop (𝓝 (‖L v‖ / ‖v‖)) :=
+    (h v).norm.div_const _
+  calc ‖L v‖ / ‖v‖ = liminf (fun n => ‖Ln n v‖ / ‖v‖) atTop := hlim.liminf_eq.symm
+    _ ≤ liminf (fun n => ‖Ln n‖) atTop := by
+        refine liminf_le_liminf (Eventually.of_forall fun n => ?_)
+          (isBoundedUnder_of ⟨0, fun n => by positivity⟩) hcobdd
+        rw [div_le_iff₀ hv']
+        exact (Ln n).le_opNorm v
+
 end ContinuousLinearMap
+
+section Corollaries
+
+open NormedSpace
+
+variable {𝕜 G : Type*}
+
+/-- **Weakly bounded implies bounded** ([brezis2011functional], Corollary 2.4): a subset `B` of
+a normed space over `RCLike 𝕜` on which every bounded linear functional is bounded is bounded.
+The uniform boundedness principle in the (complete) dual `StrongDual 𝕜 G`, applied to the
+evaluations `f ↦ f b`, `b ∈ B`, bounds their norms uniformly, and evaluation at `b` has norm
+`‖b‖` (the canonical embedding in the bidual is an isometry). Completeness of `G` is not
+needed. -/
+theorem isBounded_of_forall_dual_image_isBounded [RCLike 𝕜] [NormedAddCommGroup G]
+    [NormedSpace 𝕜 G] {B : Set G} (h : ∀ f : StrongDual 𝕜 G, IsBounded (f '' B)) :
+    IsBounded B := by
+  have hpt : ∀ f : StrongDual 𝕜 G, ∃ C, ∀ b : B, ‖inclusionInDoubleDual 𝕜 G b f‖ ≤ C := fun f => by
+    obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (h f)
+    exact ⟨C, fun b => hC _ ⟨b, b.2, rfl⟩⟩
+  obtain ⟨C, hC⟩ := banach_steinhaus (g := fun b : B => inclusionInDoubleDual 𝕜 G b) hpt
+  refine isBounded_iff_forall_norm_le.2 ⟨C, fun b hb => ?_⟩
+  have := hC ⟨b, hb⟩
+  rwa [show inclusionInDoubleDual 𝕜 G b = inclusionInDoubleDualLi 𝕜 b from rfl,
+    (inclusionInDoubleDualLi 𝕜).norm_map] at this
+
+/-- A set is bounded iff every bounded linear functional is bounded on it
+([brezis2011functional], Corollary 2.4, as an equivalence). -/
+theorem isBounded_iff_forall_dual_image_isBounded [RCLike 𝕜] [NormedAddCommGroup G]
+    [NormedSpace 𝕜 G] {B : Set G} :
+    IsBounded B ↔ ∀ f : StrongDual 𝕜 G, IsBounded (f '' B) :=
+  ⟨fun hB f => f.lipschitzWith.isBounded_image hB, isBounded_of_forall_dual_image_isBounded⟩
+
+/-- **Weak-∗ bounded implies bounded** ([brezis2011functional], Corollary 2.5): a set of bounded
+linear functionals on a Banach space `G` that is bounded at every point of `G` is bounded in
+norm. This is the uniform boundedness principle itself, for the family of functionals indexed
+by the set. -/
+theorem StrongDual.isBounded_of_forall_eval_isBounded [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup G] [NormedSpace 𝕜 G] [CompleteSpace G] {B : Set (StrongDual 𝕜 G)}
+    (h : ∀ x : G, IsBounded ((fun f : StrongDual 𝕜 G => f x) '' B)) : IsBounded B := by
+  have hpt : ∀ x : G, ∃ C, ∀ f : B, ‖(f : StrongDual 𝕜 G) x‖ ≤ C := fun x => by
+    obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (h x)
+    exact ⟨C, fun f => hC _ ⟨f, f.2, rfl⟩⟩
+  obtain ⟨C, hC⟩ := banach_steinhaus (g := fun f : B => (f : StrongDual 𝕜 G)) hpt
+  exact isBounded_iff_forall_norm_le.2 ⟨C, fun f hf => hC ⟨f, hf⟩⟩
+
+end Corollaries

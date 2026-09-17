@@ -1,104 +1,29 @@
 namespace = "Brezis.Chapter02"
-desc = '''
-★ §2.7, the closed range theorem and the characterizations of surjective operators, for a
-densely defined closed `A : E →ₗ.[ℝ] F` between real Banach spaces and its adjoint
-`A.strongDualAdjoint`. Everything is the backbone
-`Numlib/Analysis/Normed/Operator/Unbounded/ClosedRange` (Theorems 2.19–2.21, Remark 20) and
-`Unbounded/Basic` (Remark 18 = Exercise 2.14), restated over `ℝ`; the book derives 2.19 from
-Theorem 2.16 by the product-space device and 2.20–2.21 from 2.19, the backbone proves them
-directly (see its `desc`). Remark 19 (the method of a priori estimates) is the (b) ⇒ (a)
-direction of Theorem 2.20 and has no separate node. Remark 20's `ℓ²` example continues
-`diagOperator` of §2.6.
-'''
 
 [[node]]
 id = "theorem_2_19"
-kind = "theorem"
-desc = '''★ Theorem 2.19 (the closed range theorem): for a densely defined closed `A : E →ₗ.[ℝ] F` between
-Banach spaces, the following are equivalent: (i) `IsClosed (LinearMap.range A.toFun : Set F)`;
-(ii) `IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual ℝ E))`;
-(iii) `LinearMap.range A.toFun = Submodule.strongDualCoannihilator A.strongDualAdjoint.ker` (`R(A) = N(A*)^⊥`);
-(iv) `LinearMap.range A.strongDualAdjoint.toFun = Submodule.strongDualAnnihilator A.ker` (`R(A*) = N(A)^⊥`).
-As a `List.TFAE`, the backbone `LinearPMap.IsClosed.isClosed_range_tfae` over `ℝ`. This is also
-Atkinson–Han's Theorem 8.2.7. ★'''
-deps = ["LinearPMap.IsClosed.isClosed_range_tfae"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
 
 [[node]]
 id = "remark_2_18"
-kind = "theorem"
-desc = '''Remark 18: for a closed `A : E →ₗ.[ℝ] F` between Banach spaces, `R(A)` is closed iff there is a
-constant `C` with `dist (u, N(A)) ≤ C ‖A u‖` for all `u ∈ D(A)`:
-`IsClosed (LinearMap.range A.toFun : Set F) ↔ ∃ C : ℝ, ∀ u : A.domain, Metric.infDist (u : E) (A.ker : Set E) ≤ C * ‖A u‖`.
-The backbone `LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le`, which is Exercise
-2.14 (`exercise_2_14_b`). ★'''
-deps = ["ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le", "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 18"
 
 [[node]]
 id = "theorem_2_20"
-kind = "theorem"
-desc = '''★ Theorem 2.20 (surjectivity by a priori estimates): for a densely defined closed
-`A : E →ₗ.[ℝ] F` between Banach spaces, the following are equivalent:
-(a) `LinearMap.range A.toFun = ⊤` (`A` is surjective);
-(b) `∃ C : ℝ, ∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual ℝ F)‖ ≤ C * ‖A.strongDualAdjoint v‖`;
-(c) `A.strongDualAdjoint.ker = ⊥ ∧ IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual ℝ E))`.
-The backbone `LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint` and
-`LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint`;
-Remark 19 is the direction (b) ⇒ (a). ★'''
-deps = ["LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint", "LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
 
 [[node]]
 id = "theorem_2_21"
-kind = "theorem"
-desc = '''★ Theorem 2.21 (the dual statement): for a densely defined closed `A : E →ₗ.[ℝ] F` between
-Banach spaces, the following are equivalent:
-(a) `LinearMap.range A.strongDualAdjoint.toFun = ⊤` (`A*` is surjective);
-(b) `∃ C : ℝ, ∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖`;
-(c) `A.ker = ⊥ ∧ IsClosed (LinearMap.range A.toFun : Set F)`.
-The backbone `LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm` and
-`LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range`. ★'''
-deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm", "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"
 
 [[node]]
 id = "remark_2_20"
-kind = "theorem"
-desc = '''Remark 20, the finite-dimensional case: for a densely defined closed `A : E →ₗ.[ℝ] F` between
-Banach spaces with `FiniteDimensional ℝ E ∨ FiniteDimensional ℝ F`,
-`LinearMap.range A.toFun = ⊤ ↔ A.strongDualAdjoint.ker = ⊥` and
-`LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔ A.ker = ⊥` — the classical finite-dimensional
-equivalences, because `R(A)` and `R(A*)` are then finite-dimensional, hence closed. The backbone
-`LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensional` and
-`…range_strongDualAdjoint_eq_top_iff_ker_eq_bot_of_finiteDimensional`. ★'''
-deps = ["LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensional", "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_of_finiteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
 
 [[node]]
 id = "remark_2_20_implications"
-kind = "theorem"
-desc = '''Remark 20, the general case: for a densely defined closed `A : E →ₗ.[ℝ] F`,
-`LinearMap.range A.toFun = ⊤ → A.strongDualAdjoint.ker = ⊥` (`A` surjective ⇒ `A*` injective)
-and `LinearMap.range A.strongDualAdjoint.toFun = ⊤ → A.ker = ⊥` (`A*` surjective ⇒ `A`
-injective). The backbone `LinearPMap.ker_strongDualAdjoint_eq_bot_of_range_eq_top` and
-`LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top`, i.e. Corollary 2.18 (ii)
-and (i). ★'''
-deps = ["LinearPMap.ker_strongDualAdjoint_eq_bot_of_range_eq_top", "LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
 
 [[node]]
 id = "remark_2_20_diag"
-kind = "theorem"
-desc = '''Remark 20, the example showing that the converses fail: on `ℓ² = lp (fun _ : ℕ => ℝ) 2`, the
-operator `A x = (xₙ / n)` (`diagOperator` of §2.6) is bounded, self-adjoint — `A* = A` read as
-`IsSelfAdjoint diagOperator` in the Hilbert sense (`⟪A x, y⟫ = ⟪x, A y⟫`), together with the
-Banach-adjoint form `diagOperator.strongDualMap v = v.comp diagOperator` transported by
-`InnerProductSpace.toDual` if wanted — injective (`Function.Injective diagOperator`), not
-surjective (`¬ Function.Surjective diagOperator`), with dense range
-(`Dense (Set.range diagOperator)`) that is not closed (`remark_2_12_range_not_closed`). So `A*`
-injective does not give `A` surjective, and `A` injective does not give `A*` surjective. ★★,
-about 80 lines on top of `diagOperator` (the inner-product identity is a `tsum` manipulation,
-`lp.inner_def`... check `PiLp`/`lp` inner product API: `lp.instInnerProductSpace`).'''
-deps = ["diagOperator", "remark_2_12_range_not_closed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"

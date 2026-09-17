@@ -1,228 +1,117 @@
 namespace = "Brezis.Chapter02"
-desc = '''
-§2.6, unbounded linear operators and the adjoint, for real Banach spaces `E F`. An unbounded
-operator `A : D(A) ⊆ E → F` is Mathlib's `LinearPMap`, `A : E →ₗ.[ℝ] F`, with `A.domain` the
-book's `D(A)` (brief D2); its graph, range and kernel are `A.graph`, `LinearMap.range A.toFun` and
-`A.ker`, closedness is `A.IsClosed`, and "densely defined" is `Dense (A.domain : Set E)`. The
-adjoint `A* : D(A*) ⊆ F* → E*` is the backbone `LinearPMap.strongDualAdjoint`
-(`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint`), whose domain is the book's (24) by
-`LinearPMap.mem_strongDualAdjoint_domain_iff` and whose values satisfy (25) by
-`LinearPMap.strongDualAdjoint_apply`; for a bounded operator the adjoint is
-`ContinuousLinearMap.strongDualMap` (Remark 16, brief D3). Remarks 11–12 and Proposition 2.17
-are `Unbounded/Basic` and `Unbounded/Adjoint`; Corollary 2.18 and the graph relation (27) are
-`Unbounded/Adjoint` over chapter 1's annihilators. The book's `F* × E* → E* × F*` isomorphism
-`I [v, f] = [−f, v]` is `LinearEquiv.skewSwap`, and `(E × F)* = E* × F*` is
-`ContinuousLinearMap.coprodEquivL`.
-
-Remarks 10, 13 and 14 are discussion (Remark 14 — the adjoint is defined by extension by
-continuity, not Hahn–Banach — is the backbone's definition). The first clauses of Remarks 15 and
-17 (counterexamples on `ℓ¹`, Exercises 2.22–2.23) are not planned (they need `(ℓ¹)* = ℓ^∞`, §11.3);
-the weak-∗ clauses are nodes, and the reflexive clause of Remark 15 is Theorem 3.24 (chapter 3),
-so it has no node here (surface dependencies run forward through the chapters).
-'''
 
 [[node]]
 id = "IsBoundedOperator"
-kind = "definition"
-desc = '''The Definition of §2.6, "bounded (or continuous)": an unbounded operator `A : E →ₗ.[ℝ] F` is
-bounded when `D(A) = E` and `‖A u‖ ≤ c ‖u‖` for some `c ≥ 0`:
-`def IsBoundedOperator (A : E →ₗ.[ℝ] F) : Prop := A.domain = ⊤ ∧ ∃ c : ℝ, 0 ≤ c ∧ ∀ u : A.domain, ‖A u‖ ≤ c * ‖(u : E)‖`.
-Remark 10 (the terminology is inconsistent but harmless) needs no node. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "isBoundedOperator_iff"
-kind = "theorem"
-desc = '''A bounded unbounded operator is a `ContinuousLinearMap` on all of `E`:
-`IsBoundedOperator A ↔ ∃ T : E →L[ℝ] F, A = T.toPMap ⊤`, by `LinearMap.mkContinuousOfExistsBound`
-on `A.toFun ∘ (LinearEquiv.ofTop _ h)` one way and `T.le_opNorm` the other; and the norm of a
-bounded operator, `sup_{u ≠ 0} ‖A u‖ / ‖u‖`, is `‖T‖` (`ContinuousLinearMap.opNorm_le_iff`,
-`ContinuousLinearMap.sSup_unitClosedBall_eq_norm`). ★'''
-deps = ["IsBoundedOperator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "mem_graph_iff"
-kind = "theorem"
-desc = '''The notation paragraph of §2.6: the graph `G(A) = {[u, A u] | u ∈ D(A)} ⊆ E × F` is
-`A.graph`, `(x, y) ∈ A.graph ↔ ∃ u : A.domain, (u : E) = x ∧ A u = y` (Mathlib's
-`LinearPMap.mem_graph_iff`); the range `R(A) = {A u | u ∈ D(A)}` is `LinearMap.range A.toFun`,
-`y ∈ LinearMap.range A.toFun ↔ ∃ u : A.domain, A u = y` (`LinearMap.mem_range`); the kernel
-`N(A) = {u ∈ D(A) | A u = 0}` is `A.ker`, `x ∈ A.ker ↔ ∃ u : A.domain, (u : E) = x ∧ A u = 0`
-(`LinearPMap.mem_ker_iff`); and "`A` is closed if `G(A)` is closed" is `A.IsClosed ↔ IsClosed (A.graph : Set (E × F))`
-(`Iff.rfl`). One node for the four identifications, `mem_graph_iff`, with `mem_range_iff`,
-`mem_ker_iff`, `isClosed_iff` alongside if wanted. ★'''
-deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
+
+[[node]]
+id = "mem_range_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
+
+[[node]]
+id = "mem_ker_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
+
+[[node]]
+id = "isClosed_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "remark_2_11"
-kind = "theorem"
-desc = '''Remark 11, how one proves that an operator is closed: `A.IsClosed ↔ ∀ (u : ℕ → A.domain) (x : E) (y : F), Tendsto (fun n => (u n : E)) atTop (𝓝 x) → Tendsto (fun n => A (u n)) atTop (𝓝 y) → ∃ hx : x ∈ A.domain, A ⟨x, hx⟩ = y`
-— (a) `x ∈ D(A)` and (b) `y = A x`. The backbone `LinearPMap.isClosed_iff_seq`. ★'''
-deps = ["LinearPMap.isClosed_iff_seq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
 
 [[node]]
 id = "remark_2_11_not_closed"
-kind = "theorem"
-desc = '''The warning of Remark 11: it does not suffice to consider sequences with `uₙ → 0` — that
-condition is Mathlib's `LinearPMap.IsClosable`, and a closable operator need not be closed:
-`∃ A : lp (fun _ : ℕ => ℝ) 2 →ₗ.[ℝ] lp (fun _ : ℕ => ℝ) 2, A.IsClosable ∧ ¬ A.IsClosed`. Witness:
-the zero operator on the finitely supported sequences,
-`A := (0 : _ →ₗ[ℝ] _).toPMap (⨆ n, LinearMap.range (lp.lsingle 2 n))` (or the submodule
-`{x | ∃ N, ∀ n ≥ N, x n = 0}`): closable since its graph is `D × {0}` whose closure
-`closure D × {0}` is a graph (`LinearPMap.IsClosable` with `f' = 0` on `⊤`), and not closed
-because `D` is dense (`lp.hasSum_single`: every `x ∈ ℓ²` is the limit of its truncations) but
-not everything (`x n = 1 / (n + 1)` is in `ℓ²` — `Real.summable_one_div_nat_pow` — and not
-finitely supported). ★★, about 60 lines; the density and non-closedness of `D` are the work.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
 
 [[node]]
 id = "remark_2_12"
-kind = "theorem"
-desc = '''Remark 12, first clause: if `A` is closed then `N(A)` is closed, `A.IsClosed → IsClosed (A.ker : Set E)`.
-The backbone `LinearPMap.IsClosed.isClosed_ker`. ★'''
-deps = ["LinearPMap.IsClosed.isClosed_ker"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 12"
 
 [[node]]
 id = "diagOperator"
-kind = "definition"
-desc = '''The operator of Remark 20 (and of Remark 12's second clause), on `ℓ² = lp (fun _ : ℕ => ℝ) 2`:
-`A x = (xₙ / n)ₙ ≥ 1`, indexed from `0` here as `A x n = x n / (n + 1)`:
-`def diagOperator : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2`, built from the pointwise
-map with membership by `memℓp_gen` (`|x n / (n+1)|² ≤ |x n|²`, `Summable.of_nonneg_of_le`) and
-the bound `‖A x‖ ≤ ‖x‖` (`lp.norm_le_of_forall_sum_le`-type lemmas, or
-`LinearMap.mkContinuousOfExistsBound`). ★★, about 60 lines of `lp` API. Its properties are
-`remark_2_12_range_not_closed` here and `remark_2_20_diag` in §2.7.'''
-deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "diagOperator_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "diagOperator_injective"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "diagOperator_single"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "dense_range_diagOperator"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "not_surjective_diagOperator"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
 
 [[node]]
 id = "remark_2_12_range_not_closed"
-kind = "theorem"
-desc = '''Remark 12, second clause: the range of a closed (even bounded) operator need not be closed —
-`¬ IsClosed (Set.range diagOperator)`, while `(diagOperator.toPMap ⊤).IsClosed`. Proof: the
-range contains every finitely supported sequence (`lp.single` is `A (n+1) • single`), hence is
-dense (`lp.hasSum_single`), but does not contain `y n = 1 / (n + 1)` (`y ∈ ℓ²`; a preimage would
-be the constant sequence `1`, not in `ℓ²`). ★★, about 50 lines.'''
-deps = ["diagOperator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 12"
 
 [[node]]
+id = "finSuppSubmodule"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
+
+[[node]]
+id = "dense_finSuppSubmodule"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
+
+[[node]]
+id = "finSuppSubmodule_ne_top"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
+
+[[node]]
 id = "adjoint_domain_iff"
-kind = "theorem"
-desc = '''The Definition of the adjoint, (24): for a densely defined `A : E →ₗ.[ℝ] F` and
-`v : StrongDual ℝ F`, `v ∈ A.strongDualAdjoint.domain ↔ ∃ c : ℝ, 0 ≤ c ∧ ∀ u : A.domain, |v (A u)| ≤ c * ‖(u : E)‖`
-(`Real.norm_eq_abs`). The backbone `LinearPMap.mem_strongDualAdjoint_domain_iff`; the book's
-`D(A*)` is the backbone's `A.strongDualAdjoint.domain`, a linear subspace of `F*` by
-construction. The density hypothesis is not needed for the domain. ★'''
-deps = ["LinearPMap.mem_strongDualAdjoint_domain_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "adjoint_apply"
-kind = "theorem"
-desc = '''The fundamental relation (25) between `A` and `A*`: for `hA : Dense (A.domain : Set E)`,
-`v : A.strongDualAdjoint.domain` and `u : A.domain`, `A.strongDualAdjoint v u = (v : StrongDual ℝ F) (A u)`,
-`⟨v, A u⟩_{F*, F} = ⟨A* v, u⟩_{E*, E}`. The backbone `LinearPMap.strongDualAdjoint_apply`. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "adjoint_apply_eq"
-kind = "theorem"
-desc = '''"The extension of `g` is unique, since `D(A)` is dense": for `hA : Dense (A.domain : Set E)`,
-`v : A.strongDualAdjoint.domain` and `f : StrongDual ℝ E` with `∀ u : A.domain, f u = v (A u)`,
-`A.strongDualAdjoint v = f`. The backbone `LinearPMap.strongDualAdjoint_apply_eq`. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "remark_2_15"
-kind = "theorem"
-desc = '''★ Remark 15, the weak-∗ clause: if `A` is closed (and densely defined), `D(A*)` is dense in `F*`
-for the weak-∗ topology `σ(F*, F)`:
-`Dense ((fun v => (StrongDual.toWeakDual v : WeakDual ℝ F)) '' (A.strongDualAdjoint.domain : Set (StrongDual ℝ F)))`.
-The backbone `LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint`. The first clause
-(`D(A*)` need not be norm-dense, Exercise 2.22) is not planned, and the last (`F` reflexive ⇒
-norm-dense) is Theorem 3.24, chapter 3. ★'''
-deps = ["LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 15"
 
 [[node]]
 id = "remark_2_16"
-kind = "theorem"
-desc = '''Remark 16: if `A` is bounded then so is `A*`, with `D(A*) = F*` and `‖A*‖ = ‖A‖`. For
-`T : E →L[ℝ] F`: `(T.toPMap ⊤).strongDualAdjoint = T.strongDualMap.toPMap ⊤` (the backbone
-`ContinuousLinearMap.toPMap_strongDualAdjoint` with `p = ⊤`) and `‖T.strongDualMap‖ = ‖T‖`
-(`ContinuousLinearMap.opNorm_strongDualMap`). In particular `A*` is `IsBoundedOperator`. ★'''
-deps = ["ContinuousLinearMap.toPMap_strongDualAdjoint", "ContinuousLinearMap.opNorm_strongDualMap", "IsBoundedOperator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "proposition_2_17"
-kind = "theorem"
-desc = '''Proposition 2.17: for a densely defined `A : E →ₗ.[ℝ] F`, `A.strongDualAdjoint.IsClosed`
-(`G(A*)` is closed in `F* × E*`). The backbone `LinearPMap.strongDualAdjoint_isClosed`. ★'''
-deps = ["LinearPMap.strongDualAdjoint_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.17"
 
 [[node]]
 id = "graph_adjoint_eq_annihilator_graph"
-kind = "theorem"
-desc = '''The orthogonality relation (27) between the graphs, `I [G(A*)] = G(A)^⊥` with
-`I [v, f] = [−f, v]`: for a densely defined `A`, with `I := LinearEquiv.skewSwap ℝ (StrongDual ℝ F) (StrongDual ℝ E)`
-and the identification `e := ContinuousLinearMap.coprodEquivL` of `E* × F*` with `(E × F)*`,
-`(A.strongDualAdjoint.graph.map (I : _ →ₗ[ℝ] _)).map (e : _ →ₗ[ℝ] _) = Submodule.strongDualAnnihilator A.graph`,
-and, in the book's pointwise form (28), `(v, f) ∈ A.strongDualAdjoint.graph ↔ ∀ u : A.domain, f u = v (A u)`.
-The backbone `LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph` and
-`LinearPMap.mem_graph_strongDualAdjoint_iff`. ★'''
-deps = ["LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph", "LinearPMap.mem_graph_strongDualAdjoint_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.17"
 
 [[node]]
 id = "corollary_2_18"
-kind = "theorem"
-desc = '''Corollary 2.18: for a densely defined closed `A : E →ₗ.[ℝ] F`,
-(i) `A.ker = Submodule.strongDualCoannihilator (LinearMap.range A.strongDualAdjoint.toFun)` (`N(A) = R(A*)^⊥`),
-(ii) `A.strongDualAdjoint.ker = Submodule.strongDualAnnihilator (LinearMap.range A.toFun)` (`N(A*) = R(A)^⊥`),
-(iii) `(LinearMap.range A.strongDualAdjoint.toFun).topologicalClosure ≤ Submodule.strongDualAnnihilator A.ker` (`N(A)^⊥ ⊇ closure R(A*)`),
-(iv) `Submodule.strongDualCoannihilator A.strongDualAdjoint.ker = (LinearMap.range A.toFun).topologicalClosure` (`N(A*)^⊥ = closure R(A)`).
-The four backbone nodes `LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint`,
-`LinearPMap.ker_strongDualAdjoint_eq_annihilator_range`,
-`LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker`,
-`LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range` (only (i) uses closedness);
-split as `corollary_2_18_i` … `corollary_2_18_iv` if convenient, this node being the
-conjunction. The book proves (i)–(ii) through Proposition 2.14 on `X = E × F` and mentions the
-direct proof of Exercise 2.18, which is the backbone's route. ★'''
-deps = ["LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint", "LinearPMap.ker_strongDualAdjoint_eq_annihilator_range", "LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker", "LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "remark_2_17"
-kind = "theorem"
-desc = '''Remark 17, the weak-∗ clause: for a densely defined closed `A`, `N(A)^⊥` is the closure of
-`R(A*)` for the weak-∗ topology `σ(E*, E)`:
-`(Submodule.strongDualAnnihilator A.ker).map (StrongDual.toWeakDual : StrongDual ℝ E →ₗ[ℝ] WeakDual ℝ E) = ((LinearMap.range A.strongDualAdjoint.toFun).map StrongDual.toWeakDual).topologicalClosure`.
-The backbone `LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint`.
-The first clause (`N(A)^⊥ ≠ closure R(A*)` can happen for bounded `A`, Exercise 2.23) is not
-planned. ★'''
-deps = ["LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 17"
 
 [[node]]
 id = "remark_2_17_reflexive"
-kind = "theorem"
-desc = '''Remark 17, the last clause: if `E` is reflexive (`[NormedSpace.IsReflexive ℝ E]`,
-`Numlib/Analysis/Normed/Module/Reflexive`), then `N(A)^⊥ = closure R(A*)` in norm:
-`Submodule.strongDualAnnihilator A.ker = (LinearMap.range A.strongDualAdjoint.toFun).topologicalClosure`
-for a densely defined closed `A`. Proof: Corollary 2.18 (i), `N(A) = R(A*)^⊥`, and the exact
-bipolar identity `(N^⊥)^⊥ = closure N` for subspaces `N ⊆ E*` of the dual of a reflexive space
-(chapter 1's "exact-when-reflexive companion" of Proposition 1.9 (ii), brief §5; the name is
-chapter 1's). ★'''
-deps = ["LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint", "Submodule.strongDualAnnihilator_strongDualCoannihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 17"

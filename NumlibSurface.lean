@@ -69,6 +69,8 @@ import NumlibSurface.AtkinsonHan.Chapter14.Section02
 import NumlibSurface.AtkinsonHan.Chapter14.Section03
 import NumlibSurface.AtkinsonHan.Chapter14.Section04
 import NumlibSurface.Brezis
+import NumlibSurface.Brezis.Chapter02.Section06
+import NumlibSurface.Brezis.Chapter02.Section07
 import NumlibSurface.Brezis.Chapter04.Section01
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01

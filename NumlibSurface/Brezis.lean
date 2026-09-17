@@ -1,3 +1,5 @@
+import NumlibSurface.Brezis.Chapter02.Section06
+import NumlibSurface.Brezis.Chapter02.Section07
 import NumlibSurface.Brezis.Chapter04.Section01
 
 /-!

@@ -16,56 +16,20 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.1"
 # boundedness principle of [brezis2011functional] §2.2 that Mathlib does not state. Corollary 2.3
 # (a) is `banach_steinhaus`, (b) is `LinearMap.mkContinuousOfExistsBound` (or
 # `continuousLinearMapOfTendsto` of `Mathlib/Analysis/LocallyConvex/Barrelled.lean`); (c), 2.4 and
-# 2.5 are the three nodes below. They need `Mathlib.Analysis.Normed.Module.DoubleDual` for the
-# canonical embedding, an import to add to the module.
+# 2.5 are the three nodes below.
 
 [[node]]
 id = "opNorm_le_liminf_opNorm_of_tendsto"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.3 (c): the operator norm is lower semicontinuous under
-pointwise convergence. For normed spaces `V W` over a `NontriviallyNormedField`,
-`L : V →L[𝕜] W`, `Ln : ℕ → V →L[𝕜] W` with `∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))` and
-`BddAbove (Set.range fun n => ‖Ln n‖)`, one has `‖L‖ ≤ Filter.liminf (fun n => ‖Ln n‖) atTop`.
-Proof: for each `v`, `‖L v‖ = lim ‖Ln n v‖ ≤ liminf (‖Ln n‖ ‖v‖)` (`Filter.liminf_le_liminf`
-with the bound making the `liminf` legitimate, as in `norm_le_liminf_norm_of_weak_tendsto` of
-`Numlib/Analysis/Normed/Module/WeakDual.lean`), then `opNorm_le_bound`. On a Banach space `V`
-the boundedness hypothesis is automatic by `banach_steinhaus`, which is how the surface states
-Corollary 2.3. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.3"
 
 [[node]]
 id = "_root_.isBounded_of_forall_dual_image_isBounded"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.4, "weakly bounded ⟹ bounded": for `RCLike 𝕜`, a normed space
-`G` and `B : Set G` with `∀ f : StrongDual 𝕜 G, Bornology.IsBounded (f '' B)`, `Bornology.IsBounded B`.
-Proof (the book's, lines 1327–1343): apply `banach_steinhaus` on the Banach space `StrongDual 𝕜 G`
-to the family `fun b : B => NormedSpace.inclusionInDoubleDual 𝕜 G b`, pointwise bounded by the
-hypothesis (`isBounded_iff_forall_norm_le`), and carry the uniform bound back through the
-isometry `NormedSpace.inclusionInDoubleDualLi` (Corollary 1.4 of the book). This is the proof of
-`exists_norm_le_of_tendsto_toWeakSpace` (`Numlib/Analysis/Normed/Module/WeakDual.lean`) with
-the sequence replaced by a set; that lemma should be re-proved from this one. Completeness of `G`
-is not needed (the dual is always complete). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.4"
 
 [[node]]
 id = "_root_.isBounded_iff_forall_dual_image_isBounded"
-kind = "theorem"
-desc = '''Corollary 2.4 as an equivalence: `Bornology.IsBounded B ↔ ∀ f : StrongDual 𝕜 G, Bornology.IsBounded (f '' B)`;
-the forward direction is `f.lipschitz.isBounded_image`. ★'''
-deps = ["isBounded_of_forall_dual_image_isBounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.4"
 
 [[node]]
 id = "_root_.StrongDual.isBounded_of_forall_eval_isBounded"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.5, "weak-∗ bounded ⟹ bounded": for a Banach space `G` over a
-`NontriviallyNormedField` and `B : Set (StrongDual 𝕜 G)` with
-`∀ x : G, Bornology.IsBounded ((fun f : StrongDual 𝕜 G => f x) '' B)`, `Bornology.IsBounded B`.
-Proof: `banach_steinhaus` on the family `fun f : B => (f : StrongDual 𝕜 G)`. Mathlib has the
-`WeakDual` form, `WeakDual.isBounded_iff_isVonNBounded` (`Mathlib/Analysis/Normed/Module/WeakDual.lean`),
-from which this also follows by `WithSeminorms.isVonNBounded_iff_seminorm_bounded`; the direct
-proof is five lines. Theorem 2.20 (a) ⇒ (b) applies it to `{v ∈ D(A*) | ‖A* v‖ ≤ 1}`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.5"

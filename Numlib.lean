@@ -192,7 +192,10 @@ import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Normed.Operator.Multilinear
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
+import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 import Numlib.Analysis.Normed.Operator.Unbounded.Basic
+import Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange
+import Numlib.Analysis.Normed.Operator.Unbounded.Reflexive
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.Cauchy

@@ -1,392 +1,111 @@
-desc = '''
-The Banach-space adjoint of a bounded operator, `T* : F* → E*`, and of an unbounded densely
-defined operator, `A* : D(A*) ⊆ F* → E*` (natural home:
-`Mathlib.Analysis.Normed.Operator.Unbounded.Adjoint`). Source: [brezis2011functional], §2.6.
-
-Mathlib has the *algebraic* `LinearMap.dualMap` on `Module.Dual`, and the Hilbert-space adjoints
-`ContinuousLinearMap.adjoint` (an isometry `(E →L[𝕜] F) ≃ₗᵢ⋆[𝕜] (F →L[𝕜] E)` through the Riesz
-representation) and `LinearPMap.adjoint` (`T†`, `Mathlib/Analysis/InnerProductSpace/LinearPMap.lean`).
-It has no continuous dual map `StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E` and no Banach-space adjoint of
-an unbounded operator (re-verified 2026-09-17: LeanSearch and grep over `Mathlib/Analysis` and
-`Mathlib/Topology/Algebra/Module` for `StrongDual … →L … StrongDual`, `dualMap`, `transpose`).
-
-Two definitions, both prototyped in `notes/brezis/ch02/proto/Adjoint.lean` (compiles at
-`v4.35.0-rc2` with the lemmas listed below proved; only the identification of Remark 16 is left
-as `sorry` there):
-
-* `ContinuousLinearMap.strongDualMap (T : E →L[𝕜] F) : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E`,
-  `T* v = v ∘ T`, over any `NontriviallyNormedField`, as `(ContinuousLinearMap.compL 𝕜 E F 𝕜).flip T`;
-  `‖T*‖ ≤ ‖T‖` from `opNorm_comp_le`, and `‖T*‖ = ‖T‖` over `RCLike 𝕜` by a norming functional
-  (`exists_dual_vector''`). The name `dualMap` is left free for a future Mathlib addition.
-* `LinearPMap.strongDualAdjoint (A : E →ₗ.[𝕜] F) : StrongDual 𝕜 F →ₗ.[𝕜] StrongDual 𝕜 E` over
-  `RCLike 𝕜`, following the pattern of Mathlib's `LinearPMap.adjoint` line by line: the domain is
-  `{v | Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)}`, equivalently
-  `∃ c, ∀ u : A.domain, ‖v (A u)‖ ≤ c * ‖u‖` (the book's (24)); the value on `v` is the extension
-  by continuity (`ContinuousLinearMap.extend` along `A.domain.subtypeL`, the book's Remark 14 —
-  no Hahn–Banach) of `u ↦ v (A u)` from the dense `D(A)` to `E`; the map `v ↦ A* v` is linear
-  because the extension is unique (`ContinuousLinearMap.ext_on`), which needs `Dense D(A)`, so
-  as in Mathlib the value is the junk `0` when the domain is not dense
-  (`toFun := if hA : Dense (A.domain : Set E) then strongDualAdjointAux hA else 0`). The auxiliary
-  declarations `strongDualAdjointDomain`, `strongDualAdjointDomainMkCLM`,
-  `strongDualAdjointDomainMkCLMExtend`, `strongDualAdjointAux` mirror `adjointDomain`,
-  `adjointDomainMkCLM`, `adjointDomainMkCLMExtend`, `adjointAux` and are not tracked.
-
-The rest of the module is the book's §2.6 after the definition: the fundamental relation
-`⟨A* v, u⟩ = ⟨v, A u⟩` (25) and the uniqueness it entails; Remark 16 (`A*` of a bounded operator is
-`strongDualMap`, with `‖T*‖ = ‖T‖`); Proposition 2.17 (`A*` is closed — the graph of `A*` is the
-intersection over `u ∈ D(A)` of the closed sets `{(v, f) | f u = v (A u)}`); the graph relation
-`I[G(A*)] = G(A)^⊥` with `I (v, f) = (−f, v)`, through the identification
-`(E × F)* ≃ E* × F*` (`ContinuousLinearMap.coprodEquivL`) and the annihilator of chapter 1's
-`Numlib/Analysis/Normed/Module/Annihilator`; Corollary 2.18, `N(A) = R(A*)^⊥`, `N(A*) = R(A)^⊥`,
-`closure R(A*) ⊆ N(A)^⊥`, `N(A*)^⊥ = closure R(A)`, proved directly (the book's Exercise 2.18
-rather than the product-space device of its proof, which would need the annihilator of `G(A)` in
-`(E × F)*`): (ii) and (iii) are unwinding the definitions, (iv) is (ii) with the bipolar identity
-`(M^⊥)^⊥ = closure M` of Proposition 1.9, and (i) uses the closedness of the graph — a
-`u ∈ R(A*)^⊥` with `(u, 0) ∉ G(A)` is separated from the closed subspace `G(A) ⊆ E × F` by a
-functional `φ` (`Submodule.exists_dual_eq_zero_of_notMem`), whose two components `g = φ ∘ inl`,
-`v = φ ∘ inr` satisfy `v (A x) = −g x` on `D(A)`, so `v ∈ D(A*)`, `A* v = −g`, and
-`(A* v) u = −φ (u, 0) ≠ 0` contradicts `u ∈ R(A*)^⊥`. The two weak-∗ statements of Remarks 15
-and 17 (`D(A*)` is weak-∗ dense in `F*`; `N(A)^⊥` is the weak-∗ closure of `R(A*)`) close the
-module; they rest on one separation lemma in `WeakDual 𝕜 E` — a functional outside a weak-∗
-closed subspace is separated from it by the evaluation at some point of `E`,
-`Submodule.exists_weakDual_eval_eq_zero_of_notMem`, a corollary of
-`WeakDual.geometric_hahn_banach_closed_point` — which lives in
-`Numlib/Analysis/Normed/Module/WeakClosed` (chapter 3's weak-topology module; this module imports
-it, not the other way round: the lemma was planned here first and moved at review, since it
-knows nothing about operators and Goldstine's lemma needs it too).
-
-Imports: `Numlib/Analysis/Normed/Module/{Annihilator,WeakClosed,DualSeparable}` and Mathlib. The
-reflexive-space theorems about `A*` (Theorem 3.24: `D(A*)` dense, `A** = A`) are the child module
-`Unbounded/Reflexive`.
-
-Naming: `strongDualMap`/`strongDualAdjoint` say "the adjoint through the strong dual", as
-opposed to Mathlib's inner-product `adjoint`; the bounded specializations of the kernel–range
-relations are stated for `strongDualMap` as well, since chapters 3 and 6 use them without ever
-forming a `LinearPMap`. In lemma names the annihilator `Submodule.strongDualAnnihilator` of
-chapter 1 is abbreviated to `annihilator` (`ker_strongDualAdjoint_eq_annihilator_range`), beside
-`strongDualCoannihilator`; the definition's full name is spelled out in the statements. No notation is
-introduced; `†` is Mathlib's Hilbert adjoint.
-'''
-
 [[node]]
 id = "ContinuousLinearMap.strongDualMap"
-kind = "definition"
-desc = '''The Banach-space adjoint (transpose) of a bounded operator, [brezis2011functional] Remark 2.16
-and D3 of the planning brief: for a `NontriviallyNormedField 𝕜` and normed spaces `E F`,
-`strongDualMap (T : E →L[𝕜] F) : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E := (ContinuousLinearMap.compL 𝕜 E F 𝕜).flip T`,
-so that `T.strongDualMap v = v.comp T`, `⟨T* v, u⟩ = ⟨v, T u⟩`. The bundled map
-`T ↦ T*` is `(compL 𝕜 E F 𝕜).flip` itself, a continuous linear map of norm `≤ 1`
-(`norm_compL_le`); over `RCLike 𝕜` it is the linear isometry `strongDualMapₗᵢ`. Prototyped in
-`notes/brezis/ch02/proto/Adjoint.lean`.
-
-**Mathlib already has the map**, as the TVS-general `ContinuousLinearMap.precomp 𝕜 T :
-(F →SL[τ] G) →L[𝕜₃] E →SL[ρ] G` (`Mathlib/Topology/Algebra/Module/Spaces/ContinuousLinearMap.lean`,
-`precomp 𝕜 T v = v.comp T` by `rfl`), specialised at `G = 𝕜`; what Mathlib lacks is every norm
-statement (`‖T*‖ = ‖T‖`, the isometry) and the annihilator/range calculus. So `strongDualMap` is
-an `abbrev` of `precomp 𝕜 T` at `G = 𝕜` (or is proved equal to it by `strongDualMap_eq_precomp`,
-`rfl`) so that Mathlib's lemmas about `precomp` apply unchanged — decide at formalization time
-which spelling elaborates better in the norm proofs. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.strongDualMap_apply"
-kind = "theorem"
-desc = '''`@[simp]`: `T.strongDualMap v u = v (T u)` for `v : StrongDual 𝕜 F`, `u : E`; by `rfl`. With it
-`strongDualMap_apply' : T.strongDualMap v = v.comp T`. ★'''
-deps = ["ContinuousLinearMap.strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.strongDualMap_comp"
-kind = "theorem"
-desc = '''`(S.comp T).strongDualMap = T.strongDualMap.comp S.strongDualMap` for `T : E →L[𝕜] F`,
-`S : F →L[𝕜] G` ([brezis2011functional] Exercise 2.25 (1), `(S ∘ T)* = T* ∘ S*`), together with
-`strongDualMap_id : (ContinuousLinearMap.id 𝕜 E).strongDualMap = ContinuousLinearMap.id 𝕜 _`,
-`strongDualMap_add`, `strongDualMap_smul`, `strongDualMap_zero`; all by `ext; rfl` or `simp`.
-Chapter 6 (Schauder, the Fredholm alternative for `I − T`) uses the `id`, `add` and `smul`
-lemmas: `(1 − T)* = 1 − T*`. ★'''
-deps = ["ContinuousLinearMap.strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 2.25"
 
 [[node]]
 id = "ContinuousLinearMap.toLinearMap_strongDualMap_apply"
-kind = "theorem"
-desc = '''Compatibility with Mathlib's algebraic dual map:
-`((T.strongDualMap v : StrongDual 𝕜 E) : E →ₗ[𝕜] 𝕜) = (T : E →ₗ[𝕜] F).dualMap (v : F →ₗ[𝕜] 𝕜)`,
-by `rfl`. So any statement about `LinearMap.dualMap` transfers. ★'''
-deps = ["ContinuousLinearMap.strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.opNorm_strongDualMap_le"
-kind = "theorem"
-desc = '''`‖T.strongDualMap‖ ≤ ‖T‖` over any `NontriviallyNormedField`, from `opNorm_le_bound` and
-`opNorm_comp_le v T` (the book's first inequality of Remark 16). ★'''
-deps = ["ContinuousLinearMap.strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.opNorm_strongDualMap"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.16, `‖T*‖ = ‖T‖`, over `RCLike 𝕜`. The converse inequality
-is Corollary 1.4 in the book: for each `u`, a norming functional `v` with `‖v‖ ≤ 1` and
-`v (T u) = ‖T u‖` (`exists_dual_vector''`) gives `‖T u‖ = ‖(T* v) u‖ ≤ ‖T*‖ ‖v‖ ‖u‖ ≤ ‖T*‖ ‖u‖`.
-Proved in the prototype `notes/brezis/ch02/proto/Adjoint.lean` (12 lines). ★'''
-deps = ["ContinuousLinearMap.opNorm_strongDualMap_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.strongDualMapₗᵢ"
-kind = "definition"
-desc = '''The bundled adjoint over `RCLike 𝕜`,
-`strongDualMapₗᵢ : (E →L[𝕜] F) →ₗᵢ[𝕜] (StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E)`, with
-`toFun := strongDualMap`, additivity and homogeneity from `strongDualMap_add`/`strongDualMap_smul`
-and `norm_map' := opNorm_strongDualMap`; `strongDualMapₗᵢ_apply` by `rfl`. Chapter 6's Schauder
-theorem (`T` compact iff `T*` compact) and chapter 3's Theorem 3.10 want the map `T ↦ T*` as a
-map. Unlike Mathlib's Hilbert `adjoint` this is not an equivalence (its image is the weak-∗
-continuous operators). ★'''
-deps = ["ContinuousLinearMap.opNorm_strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range"
-kind = "theorem"
-desc = '''Corollary 2.18 (ii) for a bounded operator: `T.strongDualMap.ker = Submodule.strongDualAnnihilator T.range`
-(`N(T*) = R(T)^⊥ ⊆ F*`), by unfolding: `T* v = 0 ↔ ∀ u, v (T u) = 0`. The annihilator is chapter
-1's `Submodule.strongDualAnnihilator (M : Submodule 𝕜 F) : Submodule 𝕜 (StrongDual 𝕜 F)`. Chapter 6's
-Fredholm alternative (`R(I − T) = N(I − T*)^⊥`) and chapter 3 use this bounded form directly. ★'''
-deps = ["ContinuousLinearMap.strongDualMap_apply", "Submodule.strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "ContinuousLinearMap.ker_eq_strongDualCoannihilator_range_strongDualMap"
-kind = "theorem"
-desc = '''Corollary 2.18 (i) for a bounded operator over `RCLike 𝕜`:
-`T.ker = Submodule.strongDualCoannihilator T.strongDualMap.range` (`N(T) = R(T*)^⊥ ⊆ E`). The inclusion
-`⊆` is unfolding; for `⊇`, if `v (T u) = 0` for every `v : StrongDual 𝕜 F` then `T u = 0` by a
-norming functional (`exists_dual_vector'`), so no closed-graph argument is needed in the bounded
-case. ★'''
-deps = ["ContinuousLinearMap.strongDualMap_apply", "Submodule.strongDualCoannihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "LinearPMap.strongDualAdjoint"
-kind = "definition"
-desc = '''**The Banach-space adjoint of an unbounded operator** ([brezis2011functional] §2.6, "Definition of
-the adjoint `A*`", and D2 of the planning brief): for `RCLike 𝕜`, normed spaces `E F` and
-`A : E →ₗ.[𝕜] F`, `A.strongDualAdjoint : StrongDual 𝕜 F →ₗ.[𝕜] StrongDual 𝕜 E` with
-`domain := {v | Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)}` (a `Submodule`, the book's (24)) and
-value on `v` the extension by continuity `((v ∘ A) : StrongDual 𝕜 A.domain).extend A.domain.subtypeL`
-of `u ↦ v (A u)` to `E`, packaged as a linear map when `Dense (A.domain : Set E)` and as the
-junk value `0` otherwise (exactly the design of Mathlib's `LinearPMap.adjoint`; see the group
-`desc` and `notes/brezis/ch02/proto/Adjoint.lean`, where this compiles). Neither `E` nor `F`
-needs to be complete for the definition. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "LinearPMap.mem_strongDualAdjoint_domain_iff"
-kind = "theorem"
-desc = '''The book's definition (24) of `D(A*)`: `v ∈ A.strongDualAdjoint.domain ↔ ∃ c : ℝ, ∀ u : A.domain, ‖v (A u)‖ ≤ c * ‖u‖`
-(from `ContinuousLinearMap.bound` and `LinearMap.mkContinuousOfExistsBound`); together with the
-defining form `mem_strongDualAdjointDomain_iff : v ∈ … ↔ Continuous ((v : F →ₗ[𝕜] 𝕜).comp A.toFun)`.
-Proved in the prototype. ★'''
-deps = ["LinearPMap.strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "LinearPMap.strongDualAdjoint_apply"
-kind = "theorem"
-desc = '''The fundamental relation (25), `⟨A* v, u⟩ = ⟨v, A u⟩`: for `hA : Dense (A.domain : Set E)`,
-`v : A.strongDualAdjoint.domain` and `u : A.domain`, `A.strongDualAdjoint v u = (v : StrongDual 𝕜 F) (A u)`;
-by `ContinuousLinearMap.extend_eq` along the dense uniform embedding `A.domain.subtypeL`
-(`Dense.denseRange_val`, `isUniformEmbedding_subtype_val`). Proved in the prototype. ★'''
-deps = ["LinearPMap.strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "LinearPMap.strongDualAdjoint_apply_eq"
-kind = "theorem"
-desc = '''Uniqueness of the extension ("the extension of `g` is unique, since `D(A)` is dense"): for
-`hA : Dense (A.domain : Set E)`, `v : A.strongDualAdjoint.domain` and `f : StrongDual 𝕜 E` with
-`∀ u : A.domain, f u = v (A u)`, `A.strongDualAdjoint v = f`; by `ContinuousLinearMap.ext_on`.
-Proved in the prototype. This and `mem_strongDualAdjoint_domain_of_exists` — `v ∈ D(A*)` as soon
-as some `f ∈ E*` satisfies `f u = v (A u)` on `D(A)` — are the two lemmas every later argument
-about `A*` goes through. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "LinearPMap.mem_strongDualAdjoint_domain_of_exists"
-kind = "theorem"
-desc = '''`(h : ∃ f : StrongDual 𝕜 E, ∀ u : A.domain, f u = v (A u)) : v ∈ A.strongDualAdjoint.domain`,
-with `c = ‖f‖` in `mem_strongDualAdjoint_domain_iff`. Proved in the prototype. ★'''
-deps = ["LinearPMap.mem_strongDualAdjoint_domain_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.6, Definition"
 
 [[node]]
 id = "LinearPMap.mem_graph_strongDualAdjoint_iff"
-kind = "theorem"
-desc = '''The graph of the adjoint, before any identification of `(E × F)*` ([brezis2011functional], the
-computation after Proposition 2.17): for `hA : Dense (A.domain : Set E)`,
-`(v, f) ∈ A.strongDualAdjoint.graph ↔ ∀ u : A.domain, f u = v (A u)`. Proved in the prototype
-from `strongDualAdjoint_apply`, `strongDualAdjoint_apply_eq` and
-`mem_strongDualAdjoint_domain_of_exists`. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.17"
 
 [[node]]
 id = "LinearPMap.strongDualAdjoint_isClosed"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 2.17: for `hA : Dense (A.domain : Set E)`, `A.strongDualAdjoint.IsClosed`.
-Proof: by `mem_graph_strongDualAdjoint_iff` the graph is `⋂ u : A.domain, {p | p.2 u = p.1 (A u)}`,
-an intersection of closed sets (`isClosed_eq` with `Continuous.clm_apply`). Proved in the
-prototype (10 lines). Without density the graph is `D(A*) × {0}`, which need not be closed, so the
-hypothesis is genuinely used (as in Mathlib's `adjoint_isClosed`). ★'''
-deps = ["LinearPMap.mem_graph_strongDualAdjoint_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.17"
 
 [[node]]
+id = "LinearPMap.IsClosed.exists_apply_ne_strongDualAdjoint_apply_of_notMem_graph"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 2.18"
+
+[[node]]
 id = "ContinuousLinearMap.toPMap_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.16, the identification: for `T : E →L[𝕜] F` and a dense
-`p : Submodule 𝕜 E`, `(T.toPMap p).strongDualAdjoint = T.strongDualMap.toPMap ⊤`, i.e.
-`D(T*) = F*` and `T* v = v ∘ T`. Proof: `LinearPMap.ext` — every `v` is in the domain by
-`mem_strongDualAdjoint_domain_of_exists` with `f = v.comp T`, and the values agree by
-`strongDualAdjoint_apply_eq`; the model is Mathlib's
-`ContinuousLinearMap.toPMap_adjoint_eq_adjoint_toPMap_of_dense`. With `p = ⊤` this is the
-statement that the two adjoints agree on bounded operators, and it is how every bounded corollary
-below is derived from the unbounded theorem. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists", "ContinuousLinearMap.strongDualMap_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 16"
 
 [[node]]
 id = "LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph"
-kind = "theorem"
-desc = '''The orthogonality relation between the graphs, [brezis2011functional] (27): with
-`I := LinearEquiv.skewSwap 𝕜 (StrongDual 𝕜 F) (StrongDual 𝕜 E)` (`I (v, f) = (−f, v)`) and
-`e := ContinuousLinearMap.coprodEquivL : (StrongDual 𝕜 E × StrongDual 𝕜 F) ≃L[𝕜] StrongDual 𝕜 (E × F)`
-(`e (g, v) = g.coprod v`, i.e. `(x, y) ↦ g x + v y`), for `hA : Dense (A.domain : Set E)`,
-`(A.strongDualAdjoint.graph.map (I : _ →ₗ[𝕜] _)).map (e : _ →ₗ[𝕜] _) = Submodule.strongDualAnnihilator A.graph`.
-Proof: `Submodule.ext`; an element of the left side is the functional `(x, y) ↦ −f x + v y` with
-`(v, f) ∈ G(A*)`, and it vanishes on `G(A) = {(u, A u)}` iff `f u = v (A u)` for all `u ∈ D(A)`,
-which is `mem_graph_strongDualAdjoint_iff`; conversely every `φ ∈ (E × F)*` is `e (φ ∘ inl, φ ∘ inr)`
-(`coprodEquivL` is surjective). ★★, about 60 lines of bookkeeping with `Submodule.mem_map` and
-the sign in `skewSwap`. Not used by the direct proofs of Corollary 2.18 below; recorded because
-it is the book's statement.'''
-deps = ["LinearPMap.mem_graph_strongDualAdjoint_iff", "Submodule.strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.17"
 
 [[node]]
 id = "LinearPMap.ker_strongDualAdjoint_eq_annihilator_range"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.18 (ii), `N(A*) = R(A)^⊥`: for `hA : Dense (A.domain : Set E)`,
-`A.strongDualAdjoint.ker = Submodule.strongDualAnnihilator (LinearMap.range A.toFun)`.
-Proof (Exercise 2.18 (1), direct): `v ∈ N(A*)` iff `v ∈ D(A*)` and `A* v = 0` iff
-`∀ u : A.domain, v (A u) = 0` — forward by `strongDualAdjoint_apply`, backward by
-`mem_strongDualAdjoint_domain_of_exists` with `f = 0` and `strongDualAdjoint_apply_eq` — iff
-`v ∈ R(A)^⊥` (`LinearPMap.mem_ker_iff`, `LinearMap.mem_range`). Closedness of `A` is not needed,
-although the book assumes it. ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists", "Submodule.strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.18 (i), `N(A) = R(A*)^⊥`: for `A` closed and
-`hA : Dense (A.domain : Set E)`,
-`A.ker = Submodule.strongDualCoannihilator (LinearMap.range A.strongDualAdjoint.toFun)`.
-Proof (Exercise 2.18 (2), the direct argument the book suggests): `⊆` is
-`(A* v) u = v (A u) = 0` for `u ∈ N(A)`. For `⊇`, let `u ∈ R(A*)^⊥` and suppose `u ∉ N(A)`, i.e.
-`(u, 0) ∉ A.graph` (`LinearPMap.mem_ker_iff`, `mem_graph_iff`); the graph is a closed submodule of
-`E × F`, so `Submodule.exists_dual_eq_zero_of_notMem` (`Numlib/Analysis/Normed/Module/DualSeparable`)
-gives `φ : StrongDual 𝕜 (E × F)` vanishing on `A.graph` with `φ (u, 0) ≠ 0`; put
-`g := φ.comp (ContinuousLinearMap.inl 𝕜 E F)`, `v := φ.comp (inr 𝕜 E F)`, so `g x + v (A x) = 0`
-for `x ∈ D(A)`; then `v ∈ D(A*)` with `A* v = −g` (`mem_strongDualAdjoint_domain_of_exists`,
-`strongDualAdjoint_apply_eq`), and `(A* v) u = −g u = −φ (u, 0) ≠ 0` contradicts `u ∈ R(A*)^⊥`.
-★★, about 60 lines. The book's proof through Proposition 2.14 on `X = E × F` would need the
-annihilator of `G(A)` in `(E × F)*` transported to `E* × F*`; the direct route avoids it.'''
-deps = ["LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists", "Submodule.exists_dual_eq_zero_of_notMem", "Submodule.strongDualCoannihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.18 (iii), `closure R(A*) ⊆ N(A)^⊥`: for
-`hA : Dense (A.domain : Set E)`,
-`(LinearMap.range A.strongDualAdjoint.toFun).topologicalClosure ≤ Submodule.strongDualAnnihilator A.ker`.
-Proof: `R(A*) ⊆ N(A)^⊥` since `(A* v) u = v (A u) = 0` for `u ∈ N(A)`, and the annihilator is
-closed (chapter 1's `Submodule.isClosed_strongDualAnnihilator`, or directly: an intersection of kernels of
-evaluations), so `Submodule.topologicalClosure_minimal`. The book derives it from (i) and
-Proposition 1.9 (ii); the direct proof needs neither closedness of `A` nor the bipolar
-inclusion. Equality can fail (Remark 17, Exercise 2.23). ★'''
-deps = ["LinearPMap.strongDualAdjoint_apply", "Submodule.strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.18 (iv), `N(A*)^⊥ = closure R(A)`: for
-`hA : Dense (A.domain : Set E)`,
-`Submodule.strongDualCoannihilator A.strongDualAdjoint.ker = (LinearMap.range A.toFun).topologicalClosure`.
-Proof: rewrite `N(A*) = R(A)^⊥` by `ker_strongDualAdjoint_eq_annihilator_range`, then the bipolar
-identity `(M^⊥)^⊥ = closure M` of Proposition 1.9 (i), chapter 1's
-`Submodule.strongDualCoannihilator_strongDualAnnihilator`. This is the form the closed range theorem and the
-Fredholm alternative use: `R(A)` closed ⇒ `R(A) = N(A*)^⊥`. ★'''
-deps = ["LinearPMap.ker_strongDualAdjoint_eq_annihilator_range", "Submodule.strongDualCoannihilator_strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.18"
 
 [[node]]
 id = "LinearPMap.ker_strongDualAdjoint_eq_bot_of_range_eq_top"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.20, "`A` surjective ⇒ `A*` injective": for
-`hA : Dense (A.domain : Set E)` and `LinearMap.range A.toFun = ⊤`, `A.strongDualAdjoint.ker = ⊥`.
-From `ker_strongDualAdjoint_eq_annihilator_range` and `Submodule.strongDualAnnihilator_top` (a functional vanishing
-everywhere is zero). ★'''
-deps = ["LinearPMap.ker_strongDualAdjoint_eq_annihilator_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
 
 [[node]]
 id = "LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.20, "`A*` surjective ⇒ `A` injective": for `A` closed,
-`hA : Dense (A.domain : Set E)` and `LinearMap.range A.strongDualAdjoint.toFun = ⊤`, `A.ker = ⊥`.
-From `ker_eq_strongDualCoannihilator_range_strongDualAdjoint` and `Submodule.strongDualCoannihilator_top` (the functionals
-separate points: `exists_dual_vector'`). The converses fail (the `ℓ²` example of Remark 20, in
-the surface). ★'''
-deps = ["LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
 
 [[node]]
+id = "LinearPMap.IsClosed.exists_mem_domain_strongDualAdjoint_apply_ne_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 15"
+
+[[node]]
 id = "LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.15 (the weak-∗ clause; Problem 9 B3 (ii)): for `A` closed and
-`hA : Dense (A.domain : Set E)`, the domain of `A*` is dense in `F*` for the weak-∗ topology,
-`Dense ((fun v => (StrongDual.toWeakDual v : WeakDual 𝕜 F)) '' (A.strongDualAdjoint.domain : Set (StrongDual 𝕜 F)))`.
-Proof: let `K` be the weak-∗ closure of the image, a closed submodule of `WeakDual 𝕜 F`
-(`Submodule.topologicalClosure`); if some `w ∉ K`, `Submodule.exists_weakDual_eval_eq_zero_of_notMem`
-gives `y : F` with `v y = 0` for all `v ∈ D(A*)` and `w y ≠ 0`, so `y ≠ 0`; then `(0, y) ∉ A.graph`
-(else `y = A 0 = 0`), and as in `ker_eq_strongDualCoannihilator_range_strongDualAdjoint` the separation of
-`(0, y)` from the closed graph (`Submodule.exists_dual_eq_zero_of_notMem`) produces `v ∈ D(A*)`
-with `v y ≠ 0`, a contradiction. The norm-closure statement fails in general (Exercise 2.22) and
-holds for reflexive `F` (Theorem 3.24, chapter 3). ★★, about 60 lines.'''
-deps = ["Submodule.exists_weakDual_eval_eq_zero_of_notMem", "Submodule.exists_dual_eq_zero_of_notMem", "LinearPMap.mem_strongDualAdjoint_domain_of_exists"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 15"
 
 [[node]]
 id = "LinearPMap.IsClosed.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 2.17 (the weak-∗ clause; Problem 9 B3 (i)): for `A` closed and
-`hA : Dense (A.domain : Set E)`, `N(A)^⊥` is the weak-∗ closure of `R(A*)`:
-`(Submodule.strongDualAnnihilator A.ker).map (StrongDual.toWeakDual : StrongDual 𝕜 E →ₗ[𝕜] WeakDual 𝕜 E) = ((LinearMap.range A.strongDualAdjoint.toFun).map StrongDual.toWeakDual).topologicalClosure`.
-Proof: `⊇` because `N(A)^⊥` contains `R(A*)` (`closure_range_strongDualAdjoint_le_annihilator_ker`)
-and is weak-∗ closed (an intersection of kernels of the evaluations `WeakDual.eval_continuous`);
-`⊆`: if `f ∈ N(A)^⊥` is not in the weak-∗ closure `K`, `Submodule.exists_weakDual_eval_eq_zero_of_notMem`
-gives `u : E` with `(A* v) u = 0` for all `v ∈ D(A*)` and `f u ≠ 0`; then `u ∈ R(A*)^⊥ = N(A)`
-(`ker_eq_strongDualCoannihilator_range_strongDualAdjoint`), so `f u = 0`, a contradiction. In particular
-`N(A)^⊥ = closure R(A*)` in norm when `E` is reflexive (weak-∗ = weak closure of a subspace =
-norm closure, Theorem 3.7; the surface's `remark_2_17_reflexive` states it through chapter 1's
-exact bipolar for reflexive spaces). ★★, about 60 lines.'''
-deps = ["Submodule.exists_weakDual_eval_eq_zero_of_notMem", "LinearPMap.IsClosed.ker_eq_strongDualCoannihilator_range_strongDualAdjoint", "LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 17"

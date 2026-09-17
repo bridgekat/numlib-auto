@@ -1,79 +1,7 @@
-desc = '''
-The Banach adjoint of a densely defined closed operator between *reflexive* spaces: `D(A⋆)` is
-dense and `A⋆⋆ = A` — [brezis2011functional] Theorem 3.24 (natural home:
-`Mathlib.Analysis.Normed.Operator.Unbounded.Adjoint`, as a section on reflexive spaces). The
-adjoint is `LinearPMap.strongDualAdjoint` of `Adjoint.lean`; reflexivity is
-`NormedSpace.IsReflexive` of `Numlib/Analysis/Normed/Module/Reflexive.lean`, with the product
-instance `NormedSpace.instIsReflexiveProd` and the reflexive bipolar identity
-`Submodule.strongDualAnnihilator_strongDualCoannihilator` of `Numlib/Analysis/Normed/Module/Annihilator.lean`.
-
-Placement. The chapter-3 plan put these two nodes in `Numlib/Analysis/Normed/Module/Reflexive/Kakutani.lean`,
-where they were the only nodes importing the operator theory of `Unbounded/Adjoint`; they were
-moved here at review so that `Reflexive/Kakutani.lean` stays a module about weak compactness and
-an operator-theory reader finds "`A⋆⋆ = A`" beside the adjoint. Imports: `Adjoint`,
-`Numlib/Analysis/Normed/Module/{Reflexive,WeakClosed}` (the second only for the alternative route
-of the first node). Nothing in `Adjoint` or `ClosedRange` depends on this module.
-
-Serves [brezis2011functional] §3.5 (`NumlibSurface/Brezis/Chapter03/Section05`, `theorem_3_24_a/b`).
-Estimated 300–400 lines, the second node being the expensive one.
-'''
-
 [[node]]
 id = "LinearPMap.dense_domain_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 3.24, first clause: if `F` is reflexive and
-`A : E →ₗ.[𝕜] F` is densely defined and closed, then the domain of its Banach adjoint
-`A⋆ : StrongDual 𝕜 F →ₗ.[𝕜] StrongDual 𝕜 E` is dense. For `[CompleteSpace E] [CompleteSpace F]
-[NormedSpace.IsReflexive 𝕜 F]`, `(A : E →ₗ.[𝕜] F) (hd : Dense (A.domain : Set E)) (hc : A.IsClosed)`:
-`Dense (A.strongDualAdjoint.domain : Set (StrongDual 𝕜 F))`. `LinearPMap.strongDualAdjoint` is
-the chapter-2 backbone (`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean`); its domain is
-`{v | ∃ c, ∀ u ∈ A.domain, ‖v (A u)‖ ≤ c * ‖u‖}`, and that characterization is all this proof
-uses. Only `F` needs to be reflexive; the book assumes both.
-
-Proof (lines 2705–2721). If the closure of `D(A⋆)` were proper, `Submodule.exists_dual_eq_zero_of_notMem`
-(`Numlib/Analysis/Normed/Module/DualSeparable.lean`) would give `φ : StrongDual 𝕜 (StrongDual 𝕜 F)`,
-`φ ≠ 0`, vanishing on `D(A⋆)`; by reflexivity `φ = J v₀` with `v₀ ≠ 0`. Then `(0, v₀) ∉ A.graph`
-(a graph element with first coordinate `0` has second coordinate `A 0 = 0`), and `A.graph` is a
-closed subspace of `E × F` (`hc`), so the same lemma in `E × F` gives `Φ : StrongDual 𝕜 (E × F)`
-with `Φ = 0` on the graph and `Φ (0, v₀) ≠ 0`. Write `f := Φ ∘L inl`, `v := Φ ∘L inr`; then
-`f u + v (A u) = 0` for `u ∈ D(A)`, so `‖v (A u)‖ ≤ ‖f‖ ‖u‖` and `v ∈ D(A⋆)`, while
-`φ v = (J v₀) v = v v₀ = Φ (0, v₀) ≠ 0` contradicts `φ = 0` on `D(A⋆)`. ★★ (about 80 lines.)
-
-Alternative, shorter route through chapter 2: `LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint`
-(`Unbounded/Adjoint.toml`, Brezis' Remark 2.15) proves `D(A⋆)` weak-* dense in `F⋆` for any
-closed densely defined `A`; when `F` is reflexive the weak-* topology of `F⋆` is its weak
-topology (`J_F` onto, so the two defining families of functionals coincide), and a subspace that
-is weakly dense is norm dense (Mazur, `Convex.isClosed_image_toWeakSpace_iff` applied to the norm
-closure). Either route; the second reuses ch2's separation lemma
-`Submodule.exists_weakDual_eval_eq_zero_of_notMem`, the first only chapter 2's definition
-`LinearPMap.mem_strongDualAdjoint_domain_iff`.'''
-deps = ["NormedSpace.IsReflexive", "Submodule.exists_dual_eq_zero_of_notMem", "LinearPMap.strongDualAdjoint", "LinearPMap.mem_strongDualAdjoint_domain_iff", "LinearPMap.IsClosed.dense_toWeakDual_domain_strongDualAdjoint", "Convex.isClosed_image_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.24"
 
 [[node]]
 id = "LinearPMap.graph_strongDualAdjoint_strongDualAdjoint"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 3.24, second clause, `A⋆⋆ = A`: for reflexive Banach
-spaces `E`, `F` and `A : E →ₗ.[𝕜] F` densely defined and closed, the double Banach adjoint
-`A⋆⋆ : StrongDual 𝕜 (StrongDual 𝕜 E) →ₗ.[𝕜] StrongDual 𝕜 (StrongDual 𝕜 F)` is `A` read through the
-canonical embeddings:
-`A.strongDualAdjoint.strongDualAdjoint.graph = A.graph.map ((NormedSpace.inclusionInDoubleDual 𝕜 E).prodMap (NormedSpace.inclusionInDoubleDual 𝕜 F) : E × F →ₗ[𝕜] _)`
-(the `LinearMap` coercions of the two embeddings, `LinearMap.prodMap`). `A⋆⋆` is defined because
-`A⋆` is densely defined by `LinearPMap.dense_domain_strongDualAdjoint` — the chapter-2 definition
-of `strongDualAdjoint` does not itself require a dense domain, only the values need it to be
-well defined, so state the hypothesis and cite that node. Equivalently, `A⋆⋆ (J_E u) = J_F (A u)`
-on `D(A⋆⋆) = J_E '' D(A)`.
-
-Proof (lines 2723–2735): the chapter-2 identities `I[G(A⋆)] = G(A)^⊥` and `I[G(A⋆⋆)] = G(A⋆)^⊥`
-(Brezis §2.6, display (27); chapter 2's `LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph`
-in `Unbounded/Adjoint.toml`, applied to `A` and to `A⋆`) give `G(A⋆⋆) = G(A)^⊥⊥` up to the rearrangement `I`, and `G(A)^⊥⊥ = closure G(A) = G(A)`
-in the reflexive space `E × F` (`NormedSpace.instIsReflexiveProd`; the reflexive half of
-Proposition 1.9 for `N ⊆ (E × F)⋆` is chapter 1's `Submodule.strongDualAnnihilator_strongDualCoannihilator`
-in `Annihilator.lean`, whose annihilators are `Submodule.strongDualAnnihilator` — the brief's
-`Submodule.annihilator` was renamed there because Mathlib owns that name). ★★★ — not for the
-mathematics but for the transport: the annihilators live in `(E × F)⋆` while `G(A⋆) ⊆ F⋆ × E⋆`,
-and every identification (`(E × F)⋆ ≃ E⋆ × F⋆`, the sign flip `I`, `J_{E × F} = J_E × J_F`) must be
-spelled out. Estimate 200–300 lines; a `Blocked:`-free node, but the last of this module to
-attack.'''
-deps = ["LinearPMap.dense_domain_strongDualAdjoint", "NormedSpace.instIsReflexiveProd", "LinearPMap.strongDualAdjoint", "LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph", "Submodule.strongDualAnnihilator_strongDualCoannihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.24"
