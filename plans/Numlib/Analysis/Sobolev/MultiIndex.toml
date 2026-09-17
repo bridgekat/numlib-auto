@@ -234,19 +234,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, the spaces
 
 [[node]]
 id = "SobolevMultiIndex.instIsReflexive"
-kind = "theorem"
-desc = '''**`W^{k,p}(Ω)` is reflexive for `1 < p < ∞`** ([brezis2011functional] Proposition 9.1,
-and Proposition 8.1 for the proof): the ambient `SobolevMultiIndexTuple` is a finite `PiLp p`
-product of the spaces `L^p(Ω)`, reflexive by chapter 4's `MeasureTheory.Lp.instIsReflexive`
-(Theorem 4.10) and `NormedSpace.instIsReflexivePiLp`, and `SobolevMultiIndex` is a closed subspace of it
-(`SobolevMultiIndex.isClosed`), so `NormedSpace.isReflexive_of_isClosed` applies. Stated as an
-instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]` (or the `Fact (1 ≤ p)` the group already carries
-plus explicit hypotheses — choose what instance search accepts). At `p = 2` the instance
-`NormedSpace.instIsReflexiveOfInnerProductSpace` already applies. ★★, ~60 lines.
-
-Blocked: `NormedSpace.instIsReflexivePiLp` (`Reflexive.toml`, another agent's group) is not in
-the tree yet; the instance is a ten-line corollary of it once it lands (2026-09-18, sob3).'''
-deps = ["SobolevMultiIndex.isClosed", "NormedSpace.isReflexive_of_isClosed", "NormedSpace.instIsReflexivePiLp", "MeasureTheory.Lp.instIsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
@@ -255,14 +242,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
 id = "SobolevMultiIndexZero.instIsReflexive"
-kind = "theorem"
-desc = '''`W_0^{k,p}(Ω)` is reflexive for `1 < p < ∞` ([brezis2011functional] §9.4, the sentence
-after the Definition): a closed subspace (`SobolevMultiIndexZero.isClosed`) of the reflexive
-`SobolevMultiIndex`, by `NormedSpace.isReflexive_of_isClosed`. ★
-
-Blocked: waits on `SobolevMultiIndex.instIsReflexive`, itself waiting on
-`NormedSpace.instIsReflexivePiLp` (2026-09-18, sob3).'''
-deps = ["SobolevMultiIndexZero.isClosed", "SobolevMultiIndex.instIsReflexive", "NormedSpace.isReflexive_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
 
 [[node]]

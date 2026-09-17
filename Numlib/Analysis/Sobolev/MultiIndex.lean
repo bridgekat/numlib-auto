@@ -8,7 +8,9 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Measure.SeparableMeasure
+import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Sobolev.Space
+import Numlib.MeasureTheory.Function.LpSpace.Duality
 
 /-!
 # `W^{k,p}(Ω)` indexed by multi-indices, and `H^k(Ω)` as a Hilbert space
@@ -1406,6 +1408,37 @@ instance SobolevMultiIndexZero.instSecondCountableTopology [SecondCountableTopol
   inferInstance
 
 end Separable
+
+/-! ### Reflexivity -/
+
+section Reflexive
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω : Opens E} {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
+
+/-- **`W^{k,p}(Ω)` is reflexive whenever `L^p(Ω)` is** ([brezis2011functional] Proposition 9.1,
+and Proposition 8.1 for the argument): the ambient space is a finite `ℓ^p` product of copies of
+`L^p(Ω)`, reflexive by `NormedSpace.instIsReflexivePiLp`, and `W^{k,p}(Ω)` is a closed subspace
+of it (`SobolevMultiIndex.isClosed`), so `NormedSpace.isReflexive_of_isClosed` applies. For real
+scalars and a σ-finite measure, `L^p(Ω)` is reflexive for `1 < p < ∞` by
+`MeasureTheory.Lp.instIsReflexive` (under `[Fact (1 < p)] [Fact (p ≠ ∞)]`); at `p = 2` the
+inner-product instance applies as well. -/
+instance SobolevMultiIndex.instIsReflexive
+    [NormedSpace.IsReflexive ℝ (Lp F p (μ.restrict (Ω : Set E)))] :
+    NormedSpace.IsReflexive ℝ (SobolevMultiIndex F b k p Ω μ) :=
+  NormedSpace.isReflexive_of_isClosed _ SobolevMultiIndex.isClosed
+
+/-- **`W_0^{k,p}(Ω)` is reflexive whenever `L^p(Ω)` is** ([brezis2011functional] §9.4, the
+sentence after the Definition): a closed subspace (`SobolevMultiIndexZero.isClosed`) of the
+reflexive `W^{k,p}(Ω)`. -/
+instance SobolevMultiIndexZero.instIsReflexive
+    [NormedSpace.IsReflexive ℝ (Lp F p (μ.restrict (Ω : Set E)))] :
+    NormedSpace.IsReflexive ℝ (SobolevMultiIndexZero F b k p Ω μ) :=
+  NormedSpace.isReflexive_of_isClosed _ SobolevMultiIndexZero.isClosed
+
+end Reflexive
 
 /-! ### The spaces `W^{k,p}(Ω)` and `W_0^{k,p}(Ω)` on an open subset of `ℝ^N` -/
 

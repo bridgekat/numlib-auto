@@ -1,33 +1,9 @@
 [[node]]
 id = "HasWeakIteratedLineDerivOn.convolution_of_integrable"
-kind = "theorem"
-desc = '''**Lemma 9.1**: for `ρ ∈ L^1(μ)` and `HasWeakIteratedLineDerivOn ![y] v w ⊤ μ` with
-`v, w ∈ L^p(μ)`, `1 ≤ p ≤ ∞`, one has
-`HasWeakIteratedLineDerivOn ![y] (ρ ⋆[lsmul ℝ ℝ, μ] v) (ρ ⋆[lsmul ℝ ℝ, μ] w) ⊤ μ`. Unlike
-`Mollification.lean`, `ρ` is not a bump, so `ρ ⋆ v` need not be smooth and the identity is proved
-by Fubini: `∫ (ρ ⋆ v) ∂_y φ = ∫ ρ(t) (∫ v(x − t) ∂_y φ(x) dx) dt = −∫ ρ(t) (∫ w(x − t) φ(x) dx) dt
-= −∫ (ρ ⋆ w) φ`, the inner identity being the weak derivative of the translate `v(· − t)` (a
-translate of a weak derivative is a weak derivative of the translate — `iteratedFDeriv_comp_add_left`
-on the test function, a small lemma `HasWeakIteratedLineDerivOn.comp_sub_const` to state
-first), and the integrability for Fubini from Young's inequality
-`MeasureTheory.eLpNorm_convolution_le` and Hölder. [brezis2011functional] Lemma 9.1 ("Adapt the
-proof of Lemma 8.4"); the one-dimensional Lemma 8.4 of chapter 8 is the case `E = ℝ`. Companion:
-the membership form is the next node. ★★, ~200 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakIteratedLineDerivOn", "MeasureTheory.eLpNorm_convolution_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.1"
 
 [[node]]
 id = "MemSobolev.convolution_of_integrable"
-kind = "theorem"
-desc = '''**Lemma 9.1, membership form**: for `ρ ∈ L^1(μ)` and `MemSobolev v 1 p ⊤ μ`, `1 ≤ p ≤ ∞`,
-`MemSobolev (ρ ⋆[lsmul ℝ ℝ, μ] v) 1 p ⊤ μ` with the weak gradient `ρ ⋆ w` and
-`sobolevNorm (ρ ⋆ v) 1 p ⊤ μ ≤ ‖ρ‖ₑ_1 * sobolevNorm v 1 p ⊤ μ` (Young's inequality
-`MeasureTheory.MemLp.convolution` on the function and on the gradient). ★, ~60 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakIteratedLineDerivOn.convolution_of_integrable", "MeasureTheory.MemLp.convolution", "MemSobolev"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.1"
 
 [[node]]
@@ -36,48 +12,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, proof of P
 
 [[node]]
 id = "MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto"
-kind = "theorem"
-desc = '''**Theorem 9.2 (Friedrichs)**, the local clause with one sequence for all `ω`: for
-`MemSobolev f 1 p Ω μ` with `1 ≤ p < ∞` and weak gradient `w` (tensor form), there is
-`u : ℕ → E → ℝ` with `∀ n, ContDiff ℝ ∞ (u n)`, `∀ n, HasCompactSupport (u n)`,
-`Tendsto (fun n ↦ eLpNorm (u n − f) p (μ.restrict Ω)) atTop (𝓝 0)`, and for every open `ω`
-with `IsCompact (closure ω)` and `closure ω ⊆ Ω`,
-`Tendsto (fun n ↦ eLpNorm (fderiv ℝ (u n) − w) p (μ.restrict ω)) atTop (𝓝 0)`. Proof
-([brezis2011functional] §9.1, proof of Theorem 9.2): `v_n := ρ_n ⋆ ū` with `ū = Ω.indicator f`
-and `w̄ = Ω.indicator w` both in `L^p(ℝ^N)`, `ρ_n` normalized bumps of radius `ε_n → 0`
-(`exists_seq_contDiffBump_tendsto_rOut_zero`, `Density.lean`); `v_n` is smooth
-(`MeasureTheory.LocallyIntegrable.contDiff_convolution_normed`), `v_n → ū` in `L^p(ℝ^N)`
-(`ContDiffBump.tendsto_eLpNorm_convolution_sub`), and at every `x` with `closedBall x ε_n ⊆ Ω`
-— all of `ω` once `ε_n` is below the distance from `closure ω` to `Ωᶜ`,
-`IsCompact.exists_pos_forall_closedBall_subset` — `fderiv (v_n) x = (ρ_n ⋆ w̄) x` by
-`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution` (the weak derivative of `ū` on `Ω` is `w̄`,
-by `congr_ae`), so `‖∇v_n − w̄‖_{L^p(ω)} ≤ ‖ρ_n ⋆ w̄ − w̄‖_{L^p(ℝ^N)} → 0` — this replaces the
-book's detour through `α` and Remark 4 (ii), which the commutation lemma makes unnecessary. Then
-`u_n := ζ_n v_n` (footnote 5 cut-offs): `u_n → ū` in `L^p(ℝ^N)` and `∇u_n = ζ_n ∇v_n + v_n ∇ζ_n`
-with `‖∇ζ_n‖_∞ = O(1/n)`, exactly as in `exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub`.
-The two limits are along the same index, so a diagonal choice `ε_n ≤ 1/n` suffices. ★★★,
-300–400 lines. A subsequence converging a.e. on `Ω` is then available from
-`tendstoInMeasure_of_tendsto_eLpNorm` and `TendstoInMeasure.exists_seq_tendsto_ae`, as the book
-uses in Propositions 9.4 and 9.5.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["MemSobolev", "HasWeakIteratedFDerivOn.iteratedFDeriv_convolution", "ContDiffBump.tendsto_eLpNorm_convolution_sub", "MeasureTheory.LocallyIntegrable.contDiff_convolution_normed", "exists_seq_contDiffBump_tendsto_rOut_zero", "IsCompact.exists_pos_forall_closedBall_subset", "MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub", "HasWeakIteratedFDerivOn.congr_ae"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.2"
 
 [[node]]
 id = "MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_of_ae_norm_le"
-kind = "theorem"
-desc = '''Theorem 9.2 with the `L^∞` bound preserved: under the hypotheses of
-`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` and `∀ᵐ x ∂μ.restrict Ω, |f x| ≤ M`,
-the sequence can be taken with `∀ n x, |u n x| ≤ M`. Mollification by a nonnegative normalized
-bump does not increase an `L^∞` bound (`‖ρ ⋆ ū‖_∞ ≤ ‖ū‖_∞`, from `enorm_convolution_le_lintegral_enorm`
-or Young at `p = ∞`), and `0 ≤ ζ_n ≤ 1`. This is the sentence "Checking the proof of Theorem 9.2,
-we see easily that we have further `‖u_n‖_∞ ≤ ‖u‖_∞`" of [brezis2011functional] §9.1, proof of
-Proposition 9.4, which the product rule at the endpoint `L^p × L^∞` (`Calculus.lean`) needs. ★★,
-~80 lines on top of the previous node (state both from one construction).
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.2 and the proof of Proposition 9.4"
 
 [[node]]
@@ -90,205 +28,134 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (
 
 [[node]]
 id = "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le"
-kind = "theorem"
-desc = '''**Proposition 9.3, (ii) ⇒ (i)**, `1 < p ≤ ∞`: if `u ∈ L^p(Ω)` and there is `C` with
-`|∫ x in Ω, fderiv ℝ φ x y • u x ∂μ| ≤ C * ‖y‖ * (eLpNorm φ p' (μ.restrict Ω)).toReal` for all
-test functions `φ` and directions `y`, then `∃ w, HasWeakFDerivOn u w Ω μ ∧ MemLp w p (μ.restrict Ω)`
-(and `eLpNorm w p ≤ C` up to the factor between the operator norm and the coordinate bounds —
-state `∃ w` with `MemSobolev u 1 p Ω μ` as the main conclusion). Proof
-([brezis2011functional] Proposition 9.3, "Proceed as in the proof of Proposition 8.3"): for each
-basis direction `e_i`, the functional `φ ↦ ∫ u ∂_i φ` on the test functions — dense in
-`L^{p'}(Ω)` since `p' < ∞`, `MeasureTheory.Lp.dense_contDiff_tsupport_subset`
-(`Numlib/Analysis/Normed/Lp/SmoothApprox.lean`) — is bounded, extends to
-`StrongDual ℝ (Lp ℝ p' (μ.restrict Ω))` (`ContinuousLinearMap.extend` / `DenseInducing.extend`),
-and is represented by `g_i ∈ L^p(Ω)` through chapter 4's Riesz representation theorem
-`MeasureTheory.Lp.exists_forall_eq_integral` (`plans/Numlib/MeasureTheory/Function/LpSpace/Duality.toml`;
-Theorems 4.11 for `1 < p' < ∞` and 4.14 for `p' = 1`, i.e. `p = ∞`, on the σ-finite
-`μ.restrict Ω`); then
-`∫ u ∂_i φ = ∫ g_i φ`, so `−g_i` is the weak derivative along `e_i`, and the tensor `w` is
-assembled from the `g_i` by `MemSobolevMultiIndex.memSobolev`. ★★, ~200 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn", "MeasureTheory.Lp.dense_contDiff_tsupport_subset", "MemSobolevMultiIndex.memSobolev", "MeasureTheory.Lp.exists_forall_eq_integral"]  # cross-ref: chapter 4, `LpSpace/Duality.toml` (Theorems 4.11, 4.14)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (ii) ⇒ (i)"
 
 [[node]]
 id = "HasWeakFDerivOn.eLpNorm_sub_translate_le"
-kind = "theorem"
-desc = '''**Proposition 9.3, (i) ⇒ (iii)**, `1 ≤ p < ∞`, the translation estimate: for
-`HasWeakFDerivOn u w Ω μ` with `u, w ∈ L^p(Ω)`, an open `ω ⊆ Ω` and a vector `h` such that the
-segments `x + t h`, `t ∈ [0, 1]`, stay in `Ω` for `x ∈ ω`
-(`∀ x ∈ ω, ∀ t ∈ Icc (0 : ℝ) 1, x + t • h ∈ Ω` — the book's `|h| < dist(ω, ∂Ω)`),
-`eLpNorm (fun x ↦ u (x + h) − u x) p (μ.restrict ω) ≤ ‖h‖ₑ * eLpNorm w p (μ.restrict Ω)`.
-Proof ([brezis2011functional] Proposition 9.3, proof of (i) ⇒ (iii), lines 10008–10030 of the
-source): for `u ∈ C_c^∞(ℝ^N)`, `u(x + h) − u(x) = ∫_0^1 ∇u(x + t h) · h dt`
-(`intervalIntegral.integral_eq_sub_of_hasDerivAt` along `t ↦ u (x + t • h)`), then Jensen
-`|·|^p ≤ |h|^p ∫_0^1 |∇u(x + th)|^p dt` (`ENNReal.rpow_lintegral_mul_le` or Hölder on `[0,1]`),
-Fubini in `(x, t)` and translation invariance of `μ` to get
-`‖τ_h u − u‖_{L^p(ω)}^p ≤ |h|^p ∫_0^1 ∫_{ω + t h} |∇u|^p ≤ |h|^p ‖∇u‖_{L^p(Ω)}^p`; then pass to
-`u ∈ W^{1,p}(Ω)` by the **proved local approximation** `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`
-(`Density.lean`): state the theorem first for `ω` with `closure ω` compact in `Ω` and
-`ω' := closure ω + [0,1] h` (compact, inside `Ω` by the segment hypothesis), take an open `V ⊇ ω'`
-with compact closure in `Ω`, and smooth `g_i → u`, `∇g_i → w` in `L^p(V)` — the smooth estimate
-on `ω` only sees `V` — and pass to the limit; a general open `ω` follows by monotone convergence
-over an exhaustion. This is cheaper than the book's route through Theorem 9.2
-(`MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto`, one sequence for all `ω`), which is
-not needed because the estimate is tested on one relatively compact set at a time; the node
-therefore does not wait for that ★★★ theorem. ★★★, 300–400 lines. Corollaries:
-`MemSobolev.eLpNorm_sub_translate_le` on the whole space, `Ω = ⊤`, every `h`:
-`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}` (★), and its typed form
-`SobolevEuclidean.eLpNorm_fn_sub_translate_le` (★) — the modulus that `Compactness.lean` feeds
-to Kolmogorov–Riesz–Fréchet.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn", "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm", "ENNReal.rpow_lintegral_mul_le", "MeasureTheory.measurePreserving_sub_left_of_isAddRightInvariant"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii)"
 
 [[node]]
 id = "SobolevEuclidean.eLpNorm_fn_sub_translate_le"
-kind = "theorem"
-desc = '''**Proposition 9.3 (i) ⇒ (iii) on the whole space, typed**: for `1 ≤ p < ∞`, every
-`u : SobolevEuclidean N 1 p ⊤` and every `h`,
-`eLpNorm (fun x ↦ fn u (x + h) − fn u x) p volume ≤ ‖h‖ₑ * ENNReal.ofReal (SobolevEuclidean.gradNorm u)`
-(the operator norm of the tensor gradient being bounded by the `ℓ^1` sum of the partial
-derivatives, the constant `N^{1−1/p}` may appear; state with `gradNorm` and that constant, or with
-the tensor gradient's `eLpNorm` and constant `1`) — the book's
-`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}`, the case `Ω = ω = ℝ^N` of
-`HasWeakFDerivOn.eLpNorm_sub_translate_le`, in which every segment stays in `Ω`. Also the
-predicate form `MemSobolev.eLpNorm_sub_translate_le`. This is the uniform translation modulus
-that `Compactness.lean` feeds to Kolmogorov–Riesz–Fréchet. ★, ~60 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn.eLpNorm_sub_translate_le", "SobolevEuclidean", "SobolevMultiIndex.gradNorm", "MemSobolevMultiIndex.memSobolev"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii), the case Ω = ℝ^N"
 
 [[node]]
 id = "HasWeakFDerivOn.eLpNorm_sub_translate_le_top"
-kind = "theorem"
-desc = '''Proposition 9.3, (i) ⇒ (iii) at `p = ∞`: under the hypotheses of
-`HasWeakFDerivOn.eLpNorm_sub_translate_le` with `u, w ∈ L^∞(Ω)` and `ω` bounded,
-`eLpNorm (fun x ↦ u (x + h) − u x) ∞ (μ.restrict ω) ≤ ‖h‖ₑ * eLpNorm w ∞ (μ.restrict Ω)`.
-The book says "apply the above (for `p < ∞`) and let `p → ∞`": on the bounded `ω'` the finite
-exponents give `‖τ_h u − u‖_{L^q(ω)} ≤ |h| ‖w‖_{L^∞} μ(ω')^{1/q}`, and the `L^∞` norm on a set
-of finite measure is at most the `liminf` of the `L^q` norms as `q → ∞` — a lemma to write
-(`MeasureTheory.eLpNorm_top_le_liminf_eLpNorm`, Chebyshev: if `|g| > c` on a set `A` of positive
-measure then `‖g‖_q ≥ c μ(A)^{1/q} → c`; grep found no such lemma in Mathlib under
-`eLpNorm_exponent_top` or `tendsto_eLpNorm`). ★★, ~150 lines including that lemma. This is what
-Remark 7 (the Lipschitz representative of `W^{1,∞}`) rests on.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn.eLpNorm_sub_translate_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii), the case p = ∞"
 
 [[node]]
 id = "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"
-kind = "theorem"
-desc = '''**Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`: if `u ∈ L^p(Ω)` and there is `C` with
-`eLpNorm (fun x ↦ u (x + h) − u x) p (μ.restrict ω) ≤ ofReal C * ‖h‖ₑ` for every open `ω` with
-compact closure in `Ω` and every `h` shorter than the distance from `closure ω` to `Ωᶜ`, then
-`|∫ x in Ω, fderiv ℝ φ x y • u x ∂μ| ≤ C * ‖y‖ * ‖φ‖_{p'}` for every test function `φ` and
-direction `y`. Proof ([brezis2011functional] Proposition 9.3, (iii) ⇒ (ii)): with `ω ⊇ supp φ`,
-`∫ (τ_h u − u) φ = ∫ u (φ(· − h) − φ)` (translation invariance), so
-`|∫ u (φ(y − t e) − φ(y))/t dy| ≤ C ‖e‖ ‖φ‖_{p'}` by Hölder against the hypothesis; as `t → 0`
-the difference quotients of the smooth compactly supported `φ` converge uniformly to `−∂_e φ`
-with supports in one compact, and `u` is integrable there, so dominated convergence gives the
-claim. ★★, ~200 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn", "MeasureTheory.measurePreserving_sub_left_of_isAddRightInvariant"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii) ⇒ (ii)"
 
 [[node]]
 id = "MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le"
-kind = "theorem"
-desc = '''**Remark 4 (i), second sentence**: for `1 < p ≤ ∞`, if `MemSobolev (u n) 1 p Ω μ`,
-`u n → u` in `L^p(Ω)` and the weak gradients satisfy `eLpNorm (w n) p (μ.restrict Ω) ≤ M` for all
-`n`, then `MemSobolev u 1 p Ω μ`. The bound (ii) of Proposition 9.3 passes to the limit:
-`|∫ u ∂_y φ| = lim |∫ u_n ∂_y φ| = lim |∫ φ w_n y| ≤ M ‖y‖ ‖φ‖_{p'}`, and (ii) ⇒ (i) applies.
-[brezis2011functional] Chapter 9, Remark 4 (i) ("When `1 < p ≤ ∞` it suffices to know … that
-`(∇u_n)` is bounded … (why?)"). The first sentence of the remark, convergence of the gradients,
-is `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm` (`Density.toml`). ★, ~80 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le", "HasWeakFDerivOn.abs_integral_smul_fderiv_le", "MemSobolev"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"
 
 [[node]]
 id = "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn"
-kind = "theorem"
-desc = '''**Remark 2, converse**: if `HasWeakFDerivOn u w Ω μ` and `w` is continuous on `Ω`
-(`ContinuousOn w Ω`), then there is `ũ : E → ℝ` with `ContDiffOn ℝ 1 ũ Ω`, `u =ᵐ[μ.restrict Ω] ũ`
-and `∀ x ∈ Ω, fderiv ℝ ũ x = w x`. Proof: on a ball `B ⊆ Ω` (with `closedBall ⊆ Ω`), the
-mollifications `u_ε = ρ_ε ⋆ u` are smooth with `∇u_ε = ρ_ε ⋆ w → w` *uniformly* on `B`
-(`HasWeakIteratedFDerivOn.iteratedFDeriv_convolution` and uniform continuity of `w` on a compact
-neighbourhood), and `u_ε → u` in `L^1(B)`; the mean value inequality makes `u_ε − u_ε(x_0)`
-uniformly Cauchy on `B` hmm — rather: `u_ε(x) − u_ε(x') = ∫_0^1 ∇u_ε(x' + t(x − x'))·(x − x') dt`
-converges uniformly, so `u_ε` minus its mean over `B` converges uniformly on `B` to a `C^1`
-function with derivative `w` (`hasFDerivAt_of_tendstoUniformlyOn`,
-`Mathlib/Analysis/Calculus/UniformLimitsDeriv.lean`), which agrees a.e. with `u` because both are
-`L^1(B)`-limits of `u_ε` up to constants and the constants converge; glue the local
-representatives (they agree a.e. on overlaps, hence everywhere by continuity) into one `ũ` on
-`Ω`. [brezis2011functional] Chapter 9, Remark 2 ("Conversely, one can show that …"). ★★,
-~250 lines. This is also the tool that makes the `C^k` representative of Corollary 9.13
-(`Embedding.lean`) possible, so it is not optional.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn", "HasWeakIteratedFDerivOn.iteratedFDeriv_convolution", "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
 
 [[node]]
 id = "HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex"
-kind = "theorem"
-desc = '''**Remark 7, convex case**: if `HasWeakFDerivOn u w Ω μ`, `Convex ℝ (Ω : Set E)`, and
-`∀ᵐ x ∂μ.restrict Ω, ‖w x‖ ≤ M`, then there is `ũ` with `u =ᵐ[μ.restrict Ω] ũ` and
-`LipschitzOnWith (Real.toNNReal M) ũ Ω`. Proof: for a convex open `ω ⊂⊂ Ω` at distance `> ε`
-from `Ωᶜ`, the mollification `u_ε` is smooth on a neighbourhood of `ω` with
-`‖∇u_ε‖ ≤ ‖ρ_ε ⋆ w‖ ≤ M` there, hence `M`-Lipschitz on the convex `ω` (mean value theorem,
-`Convex.lipschitzOnWith_of_nnnorm_fderiv_le`); a subsequence converges a.e. to `u`, so
-`|u(x) − u(y)| ≤ M |x − y|` for a.e. `x, y ∈ ω`, and an a.e.-Lipschitz function on a convex open set
-has a Lipschitz representative (extend from a full-measure dense set by
-`LipschitzOnWith.extend_real` / uniform continuity, `DenseInducing.extend`); the erosions
-`Ω_ε` of a convex set are convex and exhaust `Ω`, and the representatives agree on overlaps.
-[brezis2011functional] Chapter 9, Remark 7 ("in particular, if `Ω` is convex then
-`dist_Ω(x, y) = |x − y|`"); the general geodesic-distance statement is not planned (Mathlib has no
-intrinsic path metric). ★★, ~250 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn", "HasWeakIteratedFDerivOn.iteratedFDeriv_convolution", "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
 
 [[node]]
 id = "HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le"
-kind = "theorem"
-desc = '''**Remark 7, first sentence, any open `Ω`**: a function of `W^{1,∞}(Ω)` has a continuous
-representative on `Ω`: if `HasWeakFDerivOn u w Ω μ` and `∀ᵐ x ∂μ.restrict Ω, ‖w x‖ ≤ M`, then
-`∃ ũ, ContinuousOn ũ Ω ∧ u =ᵐ[μ.restrict Ω] ũ`, and `ũ` is locally `M`-Lipschitz (on every ball
-contained in `Ω`). Apply `HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex` on each ball
-`B ⊆ Ω` (`HasWeakFDerivOn.mono`) and glue: two continuous functions agreeing a.e. on an open set
-agree on it. ★★, ~120 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex", "HasWeakIteratedFDerivOn.mono"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
 
 [[node]]
 id = "HasWeakFDerivOn.ae_eq_const_of_isPreconnected"
-kind = "theorem"
-desc = '''**Remark 7, last sentence**: if `HasWeakFDerivOn u w Ω μ` with `w =ᵐ[μ.restrict Ω] 0` and
-`Ω` is connected (`IsPreconnected (Ω : Set E)`), then `u` is a.e. constant on `Ω`:
-`∃ c, u =ᵐ[μ.restrict Ω] fun _ ↦ c`. By `HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`
-with `M = 0` on every ball, `u` agrees a.e. with a locally constant continuous function on `Ω`,
-which is constant on the connected `Ω` (`IsPreconnected.constant` /
-`IsLocallyConstant.apply_eq_of_isPreconnected`). For a general `Ω`, the statement on each
-connected component follows by restriction (`HasWeakIteratedFDerivOn.mono` to a component, which
-is open). [brezis2011functional] Chapter 9, Remark 7 ("if `∇u = 0` a.e. on `Ω`, then `u` is
-constant on each connected component"). This is the `k = 1` case of "`|v|_{k,p,Ω} = 0` on a
-connected open set forces a polynomial of degree `< k`", the second ingredient Atkinson–Han's
-`theorem_7_3_12` lists. ★★, ~150 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands.'''
-deps = ["HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex", "HasWeakIteratedFDerivOn.mono"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
 
 [[node]]
 id = "ContDiffBump.norm_convolution_normed_le_of_ae_norm_le"
+
+[[node]]
+id = "MeasureTheory.integrable_smul_smul_sub_prod"
+
+[[node]]
+id = "TestFunction.compAddRight"
+
+[[node]]
+id = "TestFunction.compAddRight_coe"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.convolution_of_integrable"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.1"
+
+[[node]]
+id = "MemSobolev.sobolevNorm_convolution_le"
+
+[[node]]
+id = "iteratedFDeriv_one_eq_symm_fderiv"
+
+[[node]]
+id = "MemSobolev.exists_hasWeakFDerivOn"
+
+[[node]]
+id = "HasWeakFDerivOn.memSobolev"
+
+[[node]]
+id = "HasWeakFDerivOn.mono"
+
+[[node]]
+id = "HasWeakFDerivOn.ae_eq"
+
+[[node]]
+id = "MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto_aux"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.2"
+
+[[node]]
+id = "TestFunction.toLpₗ"
+
+[[node]]
+id = "TestFunction.toLpₗ_apply"
+
+[[node]]
+id = "exists_hasWeakIteratedLineDerivOn_of_forall_enorm_integral_smul_fderiv_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (ii) ⇒ (i)"
+
+[[node]]
+id = "MemSobolev.of_forall_enorm_integral_smul_fderiv_basis_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (ii) ⇒ (i)"
+
+[[node]]
+id = "MeasureTheory.lintegral_comp_add_right_restrict_le"
+
+[[node]]
+id = "MeasureTheory.aestronglyMeasurable_comp_add_right_restrict"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_comp_add_right_restrict_le"
+
+[[node]]
+id = "ContDiff.eLpNorm_sub_translate_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3, proof of (i) ⇒ (iii)"
+
+[[node]]
+id = "HasWeakFDerivOn.eLpNorm_sub_translate_le_univ"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii), the case Ω = ℝ^N"
+
+[[node]]
+id = "MemSobolev.eLpNorm_sub_translate_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii), the case Ω = ℝ^N"
+
+[[node]]
+id = "ContinuousLinearMap.norm_le_sum_norm_apply_single"
+
+[[node]]
+id = "SobolevEuclidean.eLpNorm_fn_sub_translate_le_gradNorm"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (i) ⇒ (iii), the case Ω = ℝ^N"
+
+[[node]]
+id = "HasWeakFDerivOn.exists_seq_contDiffBump_tendsto_ae"
+
+[[node]]
+id = "MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball"
+
+[[node]]
+id = "HasWeakFDerivOn.ae_ae_norm_sub_le_of_convex"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
+
+[[node]]
+id = "HasWeakFDerivOn.exists_ball_hasFDerivAt_ae_eq_of_continuousOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
