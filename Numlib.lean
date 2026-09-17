@@ -166,7 +166,10 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Analysis.Normed.Lp.SmoothApprox
+import Numlib.Analysis.Normed.Module.Annihilator
+import Numlib.Analysis.Normed.Module.Annihilator.ClosedSum
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.Analysis.Normed.Module.Complemented
 import Numlib.Analysis.Normed.Module.DualSeparable
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.Reflexive
@@ -178,6 +181,7 @@ import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Normed.Operator.Multilinear
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
+import Numlib.Analysis.Normed.Operator.Unbounded.Basic
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.Cauchy

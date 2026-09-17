@@ -6,7 +6,10 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Normed.Group.Quotient
 import Mathlib.Analysis.Normed.Module.Dual
+import Mathlib.Analysis.LocallyConvex.AbsConvex
+import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.Analysis.Normed.Module.HahnBanach
+import Mathlib.Analysis.RCLike.Lemmas
 import Mathlib.Topology.Algebra.Module.Basic
 
 /-!
@@ -106,3 +109,73 @@ theorem separableSpace_of_separableSpace_strongDual [SeparableSpace (StrongDual 
   rw [← isSeparable_univ_iff, ← Submodule.top_coe (R := 𝕜) (M := E), ← hMtop, hM,
     Submodule.topologicalClosure_coe]
   exact hsep.closure
+
+/-- **A separable normed space has a countable norming family of functionals**: there is a
+sequence `fₙ` in the closed unit ball of the dual such that every `x` satisfies
+`‖x‖ ≤ 3 ‖fₙ x‖` for some `n`. In particular the `fₙ` separate the points of `E`, which is what
+makes a weakly compact subset of a separable space metrizable ([brezis2011functional], Problem 10).
+
+Take a dense sequence `dₙ` and norming functionals `fₙ (dₙ) = ‖dₙ‖`, `‖fₙ‖ ≤ 1`; for `x` and `n`
+with `‖x - dₙ‖ < ‖x‖ / 3`, one has `‖fₙ x‖ ≥ ‖dₙ‖ - ‖x - dₙ‖ ≥ ‖x‖ - 2 ‖x - dₙ‖ > ‖x‖ / 3`.
+The constant `3` is not sharp. -/
+theorem exists_seq_strongDual_norming_of_separableSpace [SeparableSpace E] :
+    ∃ f : ℕ → StrongDual 𝕜 E, (∀ n, ‖f n‖ ≤ 1) ∧ ∀ x : E, ∃ n, ‖x‖ ≤ 3 * ‖f n x‖ := by
+  obtain ⟨d, hd⟩ : ∃ d : ℕ → E, DenseRange d := ⟨denseSeq E, denseRange_denseSeq E⟩
+  choose f hf1 hf2 using fun n => exists_dual_vector'' 𝕜 (d n)
+  refine ⟨f, hf1, fun x => ?_⟩
+  rcases eq_or_ne x 0 with rfl | hx
+  · exact ⟨0, by simp⟩
+  obtain ⟨n, hn⟩ := Metric.denseRange_iff.1 hd x (‖x‖ / 3) (by positivity)
+  rw [dist_eq_norm] at hn
+  refine ⟨n, ?_⟩
+  have h1 : ‖f n (d n)‖ = ‖d n‖ := by rw [hf2, RCLike.norm_ofReal, abs_norm]
+  have h2 : ‖f n (d n) - f n x‖ ≤ ‖x - d n‖ := by
+    rw [← map_sub, ← norm_neg, ← map_neg, neg_sub]
+    exact ((f n).le_of_opNorm_le (hf1 n) _).trans (by rw [one_mul])
+  have h3 := norm_sub_norm_le (f n (d n)) (f n x)
+  have h4 := norm_sub_norm_le x (d n)
+  linarith
+
+section LocallyConvex
+
+variable {E : Type*} [AddCommGroup E] [Module ℝ E] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E]
+  [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul 𝕜 E] [LocallyConvexSpace ℝ E]
+
+open scoped ComplexOrder in
+/-- **Separation from a closed absolutely convex set, in modulus.** In a locally convex space over
+`RCLike 𝕜`, a point `x` outside a nonempty closed absolutely convex set `s` is separated from it
+by a functional `f` with `‖f a‖ ≤ 1` on `s` and `1 < ‖f x‖`. This is the "polar" form of the
+geometric Hahn–Banach theorem `RCLike.geometric_hahn_banach_closed_point`: the real-part bound
+`re (g a) < u` on a balanced set upgrades to `‖g a‖ < u`, by rotating `a` with a unimodular
+scalar that makes `g a` a nonnegative real. Nonemptiness is needed: for `s = ∅` and `x = 0` no
+functional has `1 < ‖f 0‖`. The order on `𝕜` that `AbsConvex 𝕜 s` refers to is the scoped
+`ComplexOrder` one, as in Mathlib's `LinearMap.polar_AbsConvex`. -/
+theorem AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem {s : Set E} (hs : AbsConvex 𝕜 s)
+    (hne : s.Nonempty) (hc : IsClosed s) {x : E} (hx : x ∉ s) :
+    ∃ f : StrongDual 𝕜 E, (∀ a ∈ s, ‖f a‖ ≤ 1) ∧ 1 < ‖f x‖ := by
+  obtain ⟨g, u, hgs, hgx⟩ :=
+    RCLike.geometric_hahn_banach_closed_point (𝕜 := 𝕜) (convex_RCLike_iff_convex_real.1 hs.2) hc hx
+  have h0 : (0 : E) ∈ s := hs.1.zero_mem hne
+  have hu : 0 < u := by simpa using hgs 0 h0
+  -- on a balanced set the real-part bound is a modulus bound
+  have hnorm : ∀ a ∈ s, ‖g a‖ < u := by
+    intro a ha
+    rcases eq_or_ne (g a) 0 with h | h
+    · rw [h, norm_zero]; exact hu
+    set c : 𝕜 := (‖g a‖ : 𝕜) / g a with hc
+    have hc1 : ‖c‖ = 1 := by
+      rw [hc, norm_div, RCLike.norm_ofReal, abs_norm, div_self (norm_ne_zero_iff.2 h)]
+    have hca : c • a ∈ s := hs.1.smul_mem hc1.le ha
+    have := hgs _ hca
+    rwa [map_smul, smul_eq_mul, hc, div_mul_cancel₀ _ h, RCLike.ofReal_re] at this
+  refine ⟨((u⁻¹ : ℝ) : 𝕜) • g, fun a ha => ?_, ?_⟩
+  · rw [smul_apply, norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.2 hu),
+      ← div_eq_inv_mul, div_le_one hu]
+    exact (hnorm a ha).le
+  · calc 1 = u⁻¹ * u := (inv_mul_cancel₀ hu.ne').symm
+      _ < u⁻¹ * RCLike.re (g x) := by gcongr
+      _ = RCLike.re ((((u⁻¹ : ℝ) : 𝕜) • g) x) := by
+          rw [smul_apply, smul_eq_mul, RCLike.re_ofReal_mul]
+      _ ≤ ‖(((u⁻¹ : ℝ) : 𝕜) • g) x‖ := RCLike.re_le_norm _
+
+end LocallyConvex

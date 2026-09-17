@@ -1,117 +1,16 @@
 namespace = "Submodule"
-desc = '''
-When is the sum of two closed subspaces closed? — [brezis2011functional] Theorem 2.16, the four
-equivalent characterizations of "`G + L` closed" through the annihilators of the parent module
-`Numlib/Analysis/Normed/Module/Annihilator` (natural home: a section of
-`Mathlib.Analysis.Normed.Module.Dual` once the annihilators are there): for closed subspaces
-`G, L` of a Banach space `E` over `RCLike 𝕜`, `G + L` is closed iff `G^⊥ + L^⊥` is closed in `E*`
-iff `G + L = (G^⊥ ∩ L^⊥)^⊥` iff `G^⊥ + L^⊥ = (G ∩ L)^⊥`.
-
-Why a child module. The proof consumes chapter 2's Theorem 2.10 and Corollary 2.11
-(`Numlib/Analysis/Normed/Module/Complemented`: bounded decompositions of a closed `G + L`, and
-`dist(x, G ∩ L) ≤ C (dist(x, G) + dist(x, L))`) and the open-mapping step
-`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image`
-(`Numlib/Analysis/Normed/Operator/Unbounded/Basic`). Left in the parent, those two imports would
-have been inherited by every module that imports the annihilators — the weak topologies
-(`WeakClosed`, `Reflexive/Kakutani`, …), the Banach adjoint, the quotients, the compact operators
-— although none of them uses Theorem 2.16 (chapter 2's closed range theorem is proved directly).
-The chapter-1 plan foresaw the move ("if that layering ever bites, Theorem 2.16 moves to a child
-module `Annihilator/ClosedSum.lean` with no change of names"); it was made at review, and the
-ids are unchanged. The two distance formulas the proof uses,
-`Submodule.infDist_strongDualAnnihilator` and
-`exists_mem_strongDualAnnihilator_norm_le_one_apply_eq_infDist`, stay in the parent (Mathlib-only,
-and chapter 11's quotient duals use them). Consumer: chapter 2's surface (`Brezis.Chapter02.theorem_2_16`
-and its clauses) only.
-
-Order of attack: (a) ⇒ (d) ★★ (~80 lines) once `Submodule.exists_add_eq_norm_le_of_isClosed_sup`
-exists; (b) ⇒ (a) ★★★ (~250 lines) once `Submodule.exists_infDist_inf_le_of_isClosed_sup`,
-`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` and the separation lemma
-`AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` (`DualSeparable`) exist; the `TFAE` ★.
-About 350 lines.
-'''
 
 [[node]]
 id = "strongDualAnnihilator_inf_of_isClosed_sup"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 2.16, (a) ⇒ (d): if `G + L` is closed then
-`(G ∩ L)^⊥ = G^⊥ + L^⊥`.** For a Banach space `E` over `RCLike 𝕜` and closed subspaces `G L`
-with `IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)`:
-`(G ⊓ L).strongDualAnnihilator = G.strongDualAnnihilator ⊔ L.strongDualAnnihilator`.
-
-Proof (p. 46, lines 1638–1651). `⊇` is `topologicalClosure_sup_strongDualAnnihilator_le`
-without the closure. `⊆`: given `f ∈ (G ∩ L)^⊥`, define `φ : ↥(G ⊔ L) →ₗ[𝕜] 𝕜` by
-`φ (a + b) = f a` for `a ∈ G`, `b ∈ L` — well defined because two decompositions differ by an
-element of `G ∩ L`, on which `f` vanishes (`Submodule.mem_sup` for the decomposition). By
-Theorem 2.10 (chapter 2, `Complemented.lean`: since `G + L` is closed there is `C` such that
-every `z ∈ G + L` has a decomposition `z = a + b` with `‖a‖ ≤ C ‖z‖`) the functional is bounded,
-`|φ z| ≤ C ‖f‖ ‖z‖`, so `LinearMap.mkContinuous` makes it an element of `StrongDual 𝕜 ↥(G ⊔ L)`;
-extend it to `φ̃ ∈ E*` by `exists_extension_norm_eq`. Then `f - φ̃ ∈ G^⊥` (on `a ∈ G`,
-`φ̃ a = φ a = f a`) and `φ̃ ∈ L^⊥` (on `b ∈ L`, `φ̃ b = φ (0 + b) = f 0 = 0`), and
-`f = (f - φ̃) + φ̃`. ★★, ~80 lines; the well-definedness of `φ` is the fiddly part
-(define it on the quotient `(G × L) ⧸ ker (add)` or through `Submodule.mem_sup.choose`).'''
-deps = ["mem_strongDualAnnihilator", "strongDualAnnihilator_sup", "topologicalClosure_sup_strongDualAnnihilator_le", "Submodule.exists_add_eq_norm_le_of_isClosed_sup"]  # cross-ref: chapter 2, Theorem 2.10 in Numlib/Analysis/Normed/Module/Complemented (Complemented.toml)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.16"
 
 [[node]]
 id = "isClosed_sup_of_isClosed_sup_strongDualAnnihilator"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 2.16, (b) ⇒ (a): if `G^⊥ + L^⊥` is closed in `E*` then
-`G + L` is closed in `E`.** For a Banach space `E` over `RCLike 𝕜`, closed subspaces `G L` and
-`IsClosed ((G.strongDualAnnihilator ⊔ L.strongDualAnnihilator : Submodule 𝕜 (StrongDual 𝕜 E)) : Set (StrongDual 𝕜 E))`,
-conclude `IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)`.
-
-Proof (p. 46–47, lines 1652–1708), in four steps.
-1. Corollary 2.11 (chapter 2, `Complemented.lean`) in the Banach space `E*` applied to the closed
-   subspaces `G^⊥`, `L^⊥` whose sum is closed: `∃ C, ∀ f, dist(f, G^⊥ ∩ L^⊥) ≤ C (dist(f, G^⊥) + dist(f, L^⊥))`.
-2. Rewrite the three distances by `infDist_strongDualAnnihilator` — the right-hand ones as
-   `‖f|_G‖`, `‖f|_L‖`, the left one, through `strongDualAnnihilator_sup`
-   (`G^⊥ ∩ L^⊥ = (G + L)^⊥ = (closure (G + L))^⊥`), as `‖f|_{closure (G+L)}‖`. So
-   `‖f|_Y‖ ≤ C (‖f|_G‖ + ‖f|_L‖)` for all `f ∈ E*`, `Y := (G ⊔ L).topologicalClosure` (24).
-3. Deduce `closedBall 0 (1/C) ∩ Y ⊆ closure (B_G + B_L)` (25), `B_G`, `B_L` the closed unit balls
-   of `G`, `L` viewed in `E`: if `x₀ ∈ Y`, `‖x₀‖ ≤ 1/C`, `x₀ ∉ K := closure (B_G + B_L)`, then
-   `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` (`DualSeparable.lean`; `K` is
-   closed and absolutely convex, the closure of a Minkowski sum of balls) gives `f₀ ∈ E*` with
-   `‖f₀ y‖ ≤ 1` on `K` and `1 < ‖f₀ x₀‖`. For `a ∈ B_G`, `b ∈ B_L` rotate each by a unimodular
-   scalar so that `f₀ a` and `f₀ b` are nonnegative reals (the balls are balanced): then
-   `‖f₀ a‖ + ‖f₀ b‖ = ‖f₀ (a' + b')‖ ≤ 1`, hence `‖f₀|_G‖ + ‖f₀|_L‖ ≤ 1`
-   (`ContinuousLinearMap.opNorm_le_bound` twice, the book's "`sup_{B_G} f₀ + sup_{B_L} f₀ ≤ α`").
-   But (24) gives `‖f₀ x₀‖ ≤ ‖f₀|_Y‖ ‖x₀‖ ≤ C (‖f₀|_G‖ + ‖f₀|_L‖) / C ≤ 1`, contradicting
-   `1 < ‖f₀ x₀‖`. (Over `ℝ` the rotation is a sign; the lemma makes the argument
-   scalar-independent, and no real-part bookkeeping is needed.)
-4. The open-mapping "step 2": `T : G × L → Y`, `T (x, y) = x + y`, is bounded (a closed
-   `LinearPMap` with full domain, `ContinuousLinearMap.toPMap`), `G × L` is complete, and (25) is
-   `ball 0 (1/C) ⊆ closure (T '' ball 0 1)` up to the sup-norm on `G × L`. The
-   approximate-preimage ⇒ exact-preimage argument inside Mathlib's
-   `ContinuousLinearMap.exists_preimage_norm_le` (`Mathlib/Analysis/Normed/Operator/Banach.lean`)
-   is not a standalone Mathlib lemma; chapter 2 provides it as
-   `LinearPMap.IsClosed.exists_preimage_norm_le_of_approx` and, in exactly the book's form,
-   `LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image`
-   (`Numlib/Analysis/Normed/Operator/Unbounded/Basic`, which imports only Mathlib): from
-   `ball 0 c ⊆ closure (T '' unit ball)` conclude `ball 0 (c/2) ⊆ T '' unit ball`. Then `T` is
-   onto `Y`, i.e. `G + L = closure (G + L)`.
-★★★, ~250 lines; step 3 is the delicate one and deserves its own lemma
-(`closedBall_inter_le_closure_add_of_forall_norm_restrict_le`, name free).'''
-deps = ["infDist_strongDualAnnihilator", "strongDualAnnihilator_sup", "strongDualAnnihilator_topologicalClosure", "isClosed_strongDualAnnihilator", "Submodule.exists_infDist_inf_le_of_isClosed_sup", "LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image", "AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem"]  # cross-ref: chapter 2, Corollary 2.11 (Complemented.toml) and the book's form of the open-mapping step 2 (Unbounded/Basic.toml)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.16"
 
 [[node]]
 id = "tfae_isClosed_sup"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 2.16.** For a Banach space `E` over `RCLike 𝕜` and closed
-subspaces `G L : Submodule 𝕜 E`, the following are equivalent (`List.TFAE`):
-(a) `IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)`;
-(b) `IsClosed ((G.strongDualAnnihilator ⊔ L.strongDualAnnihilator : Submodule 𝕜 (StrongDual 𝕜 E)) : Set (StrongDual 𝕜 E))`;
-(c) `G ⊔ L = (G.strongDualAnnihilator ⊓ L.strongDualAnnihilator).strongDualCoannihilator`;
-(d) `G.strongDualAnnihilator ⊔ L.strongDualAnnihilator = (G ⊓ L).strongDualAnnihilator`.
-The shape elaborates (`notes/brezis/ch01/proto/annihilator.lean`).
-
-(a) ⟺ (c) by `strongDualCoannihilator_inf_strongDualAnnihilator` (the right side of (c) is
-`closure (G + L)`); (d) ⇒ (b) since annihilators are closed; (a) ⇒ (d) is
-`strongDualAnnihilator_inf_of_isClosed_sup`; (b) ⇒ (a) is
-`isClosed_sup_of_isClosed_sup_strongDualAnnihilator`. Chapter 2's closed range theorem
-(Theorem 2.19) is this theorem for `G = graph A` and `L = E × {0}` in `E × F`, so the four
-clauses are also exposed as the two `iff`s `isClosed_sup_iff_isClosed_sup_strongDualAnnihilator`
-((a) ⟺ (b)) and `isClosed_sup_iff_sup_strongDualAnnihilator_eq` ((a) ⟺ (d)) if ch2 prefers them;
-the formalizer may add those as nodes. ★ once the two implications exist.'''
-deps = ["strongDualCoannihilator_inf_strongDualAnnihilator", "isClosed_strongDualAnnihilator", "strongDualAnnihilator_inf_of_isClosed_sup", "isClosed_sup_of_isClosed_sup_strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.16"
+
+[[node]]
+id = "closedBall_inter_topologicalClosure_sup_subset_closure_add"

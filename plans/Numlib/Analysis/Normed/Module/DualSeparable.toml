@@ -6,47 +6,8 @@ id = "separableSpace_of_separableSpace_strongDual"
 
 [[node]]
 id = "exists_seq_strongDual_norming_of_separableSpace"
-kind = "theorem"
-desc = '''A separable normed space has a countable norming family of functionals: for
-`[SeparableSpace E]`, `∃ f : ℕ → StrongDual 𝕜 E, (∀ n, ‖f n‖ ≤ 1) ∧ ∀ x : E, ∃ n, ‖x‖ ≤ 3 * ‖f n x‖`.
-In particular the `f n` separate the points of `E` (`x ≠ 0 → ∃ n, f n x ≠ 0`), which is what makes
-a weakly compact subset of a separable space metrizable (Problem 10, part A1, in
-`Numlib/Analysis/Normed/Module/Reflexive/EberleinSmulian`).
-
-Proof: take a dense sequence `d n` (`denseSeq`) and norming functionals `f n` with `‖f n‖ = 1`,
-`f n (d n) = ‖d n‖` (`exists_dual_vector`, or `0` when `d n = 0`). Given `x`, pick `n` with
-`‖x - d n‖ < ‖x‖ / 3`; then `‖f n x‖ ≥ ‖f n (d n)‖ - ‖x - d n‖ = ‖d n‖ - ‖x - d n‖ ≥ ‖x‖ - 2 ‖x - d n‖ > ‖x‖ / 3`
-(for `x = 0` anything works). The constant `3` is not sharp and any fixed constant serves. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
 
 [[node]]
 id = "AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem"
-kind = "theorem"
-desc = '''**Separation from a closed absolutely convex set, in modulus**: over `RCLike 𝕜`, in a locally
-convex `𝕜`-space `E` (the variables of Mathlib's `RCLike.geometric_hahn_banach_closed_point`:
-`[Module 𝕜 E] [IsScalarTower ℝ 𝕜 E] [IsTopologicalAddGroup E] [ContinuousSMul 𝕜 E]
-[LocallyConvexSpace ℝ E]`; a normed space is the case every consumer uses), for `s : Set E` with
-`hs : AbsConvex 𝕜 s` (balanced and convex, `Mathlib/Analysis/LocallyConvex/AbsConvex.lean`),
-`hc : IsClosed s` and `x ∉ s`: `∃ f : StrongDual 𝕜 E, (∀ a ∈ s, ‖f a‖ ≤ 1) ∧ 1 < ‖f x‖`.
-This is the "polar" form of the geometric Hahn–Banach theorem — the step "`re (f a) < u` on a
-balanced set upgrades to `‖f a‖ ≤ u`" that [brezis2011functional] uses silently in the proofs of
-Theorem 2.16 ((25), lines 1673–1687), Theorem 2.20 (through 2.16), Lemma 3.3 (Helly) and Lemma 3.4
-(Goldstine), and that the chapter-2 report lists as "the one place I could not find a Mathlib lemma
-for". Mathlib has neither it nor the bipolar theorem (grep `bipolar`, `polar_polar`,
-`AbsConvex` in `Analysis/LocallyConvex/`: only `LinearMap.subset_bipolar`, `tripolar_eq_polar`).
-
-Proof: `RCLike.geometric_hahn_banach_closed_point hs.2 hc hx` gives `g : StrongDual 𝕜 E` and
-`u : ℝ` with `re (g a) < u` on `s` and `u < re (g x)`; `0 ∈ s` (balanced, nonempty — if `s = ∅`
-take any norming functional of `x`, `exists_dual_vector`) gives `0 < u`. For `a ∈ s` and a
-unimodular `c` with `c * g a = ‖g a‖` (`c := conj (g a) / ‖g a‖`, or `1` if `g a = 0`), `c • a ∈ s`
-(`Balanced`, `‖c‖ = 1`) so `‖g a‖ = re (g (c • a)) < u`. Put `f := u⁻¹ • g`: then `‖f a‖ < 1` on
-`s` and `‖f x‖ ≥ re (f x) > 1`. ★, about 40 lines. Consumers: chapter 1's
-`Submodule.isClosed_sup_of_isClosed_sup_strongDualAnnihilator` (step 3), chapter 2's
-`LinearPMap.ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint`, chapter 3's
-`NormedSpace.helly_iff`; the weak-∗ analogue with an evaluation as the functional is
-`WeakDual.geometric_hahn_banach_closed_point` (`WeakClosed.lean`), and combining the two gives the
-weak-∗ bipolar theorem for absolutely convex sets if a later development wants it. Added at
-review.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.16 (formula (25))"

@@ -1,144 +1,27 @@
-desc = '''
-Closed sums of closed subspaces and one-sided inverses of bounded operators in Banach spaces —
-what the open mapping theorem says about the geometry of subspaces (natural home:
-`Mathlib.Analysis.Normed.Module.Complemented`, whose Mathlib module of the same name already
-holds the basic equivalences and is imported here).
-
-What Mathlib has (re-verified 2026-09-17 at `v4.35.0-rc2`, and *not* to be re-proved):
-`Submodule.IsTopCompl` and `Submodule.ClosedComplemented`
-(`Mathlib/Topology/Algebra/Module/Complement.lean`), with
-`Submodule.isTopCompl_iff_isCompl_isClosed` and
-`Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl` in a Banach space
-(`Mathlib/Analysis/Normed/Module/Complemented.lean`) — the book's definition of a topological
-complement is exactly `IsCompl G L` with `L` closed, and the continuity of the two projections
-that follows from Theorem 2.10 is `Submodule.IsTopCompl.continuous_projectionOnto`;
-`Submodule.ClosedComplemented.of_finiteDimensional`, `…of_finiteDimensional_quotient` (Examples 1
-and 2) and `Submodule.isTopCompl_orthogonal` (Example 3); `ContinuousLinearMap.HasRightInverse`,
-`HasLeftInverse` (`Mathlib/Analysis/Normed/Module/ContinuousInverse.lean`) with
-`closedComplemented_ker_of_rightInverse` (Theorem 2.12 (i) ⇒ (ii)), `HasLeftInverse.isClosed_range`,
-`HasLeftInverse.closedComplemented_range` and
-`HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range` (Theorem 2.13, both
-directions).
-
-What is missing, and planned here:
-
-* **Theorem 2.10** of [brezis2011functional]: if `G`, `L` are closed subspaces of a Banach space
-  and `G + L` is closed, every `z ∈ G + L` decomposes as `z = x + y` with `x ∈ G`, `y ∈ L` and
-  `‖x‖, ‖y‖ ≤ C ‖z‖` — the open mapping theorem for the bounded surjection
-  `G × L → G ⊔ L`, `(x, y) ↦ x + y` between Banach spaces (Mathlib's product `G × L` carries the
-  sup norm, so the book's `‖x‖ + ‖y‖ ≤ (1/c) ‖z‖` becomes `max ‖x‖ ‖y‖ ≤ C ‖z‖`, the same up to
-  a factor 2);
-* **Corollary 2.11**: `dist (x, G ∩ L) ≤ C (dist (x, G) + dist (x, L))` for all `x ∈ E`, and its
-  converse (Remark 7 / Exercise 2.16): the inequality `dist (x, G ∩ L) ≤ C dist (x, L)` for
-  `x ∈ G` forces `G + L` closed. The converse is proved through the closed range criterion
-  `ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` of
-  `Numlib/Analysis/Normed/Operator/Unbounded/Basic` for the same map `G × L → E`, whose kernel is
-  `{(w, −w) | w ∈ G ∩ L}`; this replaces the book's telescoping-subsequence argument;
-* **Theorem 2.12 (ii) ⇒ (i)**: a surjective bounded operator whose kernel is complemented has a
-  bounded right inverse — the direction Mathlib lists as a TODO in `ContinuousInverse.lean`
-  ("If `f` is surjective, it has a continuous right inverse", stated there for Fredholm maps);
-  with it, `T.HasRightInverse ↔ T.ker.ClosedComplemented` for surjective `T`, and the `iff` form
-  of Theorem 2.13 for injective `T`.
-
-These are what Theorem 2.16 (the four characterizations of `G + L` closed through the
-annihilators, chapter 1's `Numlib/Analysis/Normed/Module/Annihilator/ClosedSum`) consumes, so this module
-must not import that one.
-
-Source: [brezis2011functional], §2.4 and Exercise 2.16.
-'''
-
 [[node]]
 id = "Submodule.exists_add_eq_norm_le_of_isClosed_sup"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 2.10: for a Banach space `E` over a `NontriviallyNormedField 𝕜`,
-closed submodules `G L : Submodule 𝕜 E` with `IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E)`, there
-is `C : ℝ`, `0 ≤ C`, such that
-`∀ z ∈ G ⊔ L, ∃ x ∈ G, ∃ y ∈ L, z = x + y ∧ ‖x‖ ≤ C * ‖z‖ ∧ ‖y‖ ≤ C * ‖z‖`.
-
-Proof (the book's, lines 1512–1522): `G`, `L` and `G ⊔ L` are Banach spaces
-(`IsClosed.completeSpace_coe`); the map `T : G × L →L[𝕜] ↥(G ⊔ L)`,
-`T (x, y) = ⟨x + y, add_mem_sup ..⟩` (`G.subtypeL.coprod L.subtypeL` with codomain restricted by
-`ContinuousLinearMap.codRestrict`) is surjective (`Submodule.mem_sup`), so
-`ContinuousLinearMap.exists_preimage_norm_le` gives `C` with a preimage `(x, y)` of norm
-`max ‖x‖ ‖y‖ ≤ C ‖z‖`. ★★, about 70 lines (the coercions between `↥(G ⊔ L)` and `E`).'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.10"
 
 [[node]]
 id = "Submodule.exists_infDist_inf_le_of_isClosed_sup"
-kind = "theorem"
-desc = '''[brezis2011functional] Corollary 2.11: under the hypotheses of Theorem 2.10 there is `C : ℝ` with
-`∀ x : E, Metric.infDist x (G ⊓ L : Set E) ≤ C * (Metric.infDist x G + Metric.infDist x L)`.
-Proof (lines 1532–1543): given `ε > 0` pick `a ∈ G`, `b ∈ L` within `ε` of the two distances
-(`Metric.exists_dist_lt_of_infDist_lt`, the submodules being nonempty), decompose `a − b = a' + b'`
-by `exists_add_eq_norm_le_of_isClosed_sup` with `‖a'‖ ≤ C ‖a − b‖`, note `a − a' ∈ G ⊓ L`, and
-estimate `infDist x (G ⊓ L) ≤ ‖x − (a − a')‖ ≤ ‖x − a‖ + C (‖x − a‖ + ‖x − b‖)`; let `ε → 0`
-(`le_of_forall_pos_le_add`). The constant is `1 + C`... more precisely `(1 + C) d_G + C d_L ≤ (1 + C)(d_G + d_L)`. ★★'''
-deps = ["Submodule.exists_add_eq_norm_le_of_isClosed_sup"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.11"
 
 [[node]]
 id = "Submodule.isClosed_sup_of_forall_infDist_inf_le"
-kind = "theorem"
-desc = '''[brezis2011functional] Exercise 2.16, the converse of Corollary 2.11 announced in Remark 7: for
-closed submodules `G L` of a Banach space and `C : ℝ` with
-`∀ x ∈ G, Metric.infDist x (G ⊓ L : Set E) ≤ C * Metric.infDist x L`, the sum `G ⊔ L` is closed.
-
-Proof: let `T : G × L →L[𝕜] E := G.subtypeL.coprod L.subtypeL`, whose range is `G ⊔ L`
-(`LinearMap.range_coprod`, `Submodule.range_subtype`) and whose kernel is
-`{(w, −w) | w ∈ G ⊓ L}` (`ContinuousLinearMap.ker_coprod_of_disjoint_range` does not apply since
-the ranges may meet; compute directly). By
-`ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` it suffices to bound
-`infDist (x, y) T.ker` by a multiple of `‖x + y‖`: for `w ∈ G ⊓ L`,
-`dist ((x, y), (w, −w)) = max ‖x − w‖ ‖y + w‖ ≤ ‖x − w‖ + ‖x + y‖ + ‖x − w‖`, so
-`infDist (x, y) T.ker ≤ 2 infDist x (G ⊓ L) + ‖x + y‖ ≤ 2C infDist x L + ‖x + y‖ ≤ (2C + 1) ‖x + y‖`,
-using `infDist x L ≤ ‖x − (−y)‖`. ★★, about 60 lines. Remark 7's form (the two-distance
-inequality (14) for all `x ∈ E`) is the special case, restricting to `x ∈ G` where
-`infDist x G = 0`.'''
-deps = ["ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 2.16"
 
 [[node]]
 id = "Submodule.isClosed_sup_iff_exists_infDist_inf_le"
-kind = "theorem"
-desc = '''Corollary 2.11 and Exercise 2.16 as one equivalence: for closed submodules `G L` of a Banach
-space, `IsClosed ((G ⊔ L : Submodule 𝕜 E) : Set E) ↔ ∃ C : ℝ, ∀ x, Metric.infDist x (G ⊓ L : Set E) ≤ C * (Metric.infDist x G + Metric.infDist x L)`
-([brezis2011functional] Remark 7). ★'''
-deps = ["Submodule.exists_infDist_inf_le_of_isClosed_sup", "Submodule.isClosed_sup_of_forall_infDist_inf_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 7"
 
 [[node]]
 id = "ContinuousLinearMap.HasRightInverse.of_surjective_of_closedComplemented_ker"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 2.12 (ii) ⇒ (i): for Banach spaces `E F` and `T : E →L[𝕜] F`
-surjective with `T.ker.ClosedComplemented`, `T.HasRightInverse`.
-Proof (lines 1586–1588): take a topological complement `L` of `T.ker`
-(`Submodule.ClosedComplemented.exists_isTopCompl`, closed by `IsTopCompl.isClosed'`, hence a
-Banach space); `T.comp L.subtypeL : L →L[𝕜] F` is bijective (injective since `L ⊓ T.ker = ⊥`,
-surjective since `T.ker ⊔ L = ⊤`), so `ContinuousLinearEquiv.ofBijective` inverts it
-continuously, and `S := L.subtypeL.comp e.symm` is a right inverse. Mathlib's
-`Mathlib/Analysis/Normed/Module/ContinuousInverse.lean` lists this direction as a TODO. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.12"
 
 [[node]]
 id = "ContinuousLinearMap.hasRightInverse_iff_closedComplemented_ker"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 2.12: for Banach spaces and `T : E →L[𝕜] F` surjective,
-`T.HasRightInverse ↔ T.ker.ClosedComplemented`. The forward direction is Mathlib's
-`ContinuousLinearMap.closedComplemented_ker_of_rightInverse` (the range of the right inverse is
-the complement, (i) ⇒ (ii) in the book), the converse is
-`HasRightInverse.of_surjective_of_closedComplemented_ker`. ★'''
-deps = ["ContinuousLinearMap.HasRightInverse.of_surjective_of_closedComplemented_ker"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.12"
 
 [[node]]
 id = "ContinuousLinearMap.hasLeftInverse_iff_isClosed_range_and_closedComplemented_range"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 2.13 as one equivalence: for Banach spaces and `T : E →L[𝕜] F`
-injective, `T.HasLeftInverse ↔ IsClosed (Set.range T) ∧ T.range.ClosedComplemented`. Both
-directions are Mathlib's: `HasLeftInverse.isClosed_range`, `HasLeftInverse.closedComplemented_range`
-and `HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`. Recorded so that
-Theorems 2.12 and 2.13 have the same shape. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.13"
