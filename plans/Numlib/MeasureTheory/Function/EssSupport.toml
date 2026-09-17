@@ -1,111 +1,52 @@
 namespace = "MeasureTheory"
-desc = '''
-The essential support of a function with respect to a measure (natural home:
-`Mathlib.MeasureTheory.Function.EssSupport`, beside `Mathlib/MeasureTheory/Measure/Support.lean`,
-which has the support of a *measure* and is what this is built on). Source: [brezis2011functional]
-Proposition 4.17 and Remark 9 of chapter 4 ("Support and convolution", lines 3878-3909),
-Proposition 4.18 and Remark 10 (3910-3931).
-
-Mathlib at v4.35.0-rc2 has `MeasureTheory.Measure.support μ` — the set of points all of whose
-neighbourhoods have positive measure — with `compl_support_eq_sUnion` (its complement is the
-union of the open null sets) and `support_mem_ae` (that complement is null, on a hereditarily
-Lindelof space), and nothing about the support of a function up to null sets (grep `essSupp`,
-`essentialSupport`, `aeSupport`). The book's `supp f` for an `L^p` class is exactly the support of
-the measure `μ.restrict (Function.support f)`: `x ∈ supp f` iff every neighbourhood of `x` meets
-`{f ≠ 0}` in a set of positive measure, and Proposition 4.17 — that `f = 0` a.e. on the union `ω`
-of all open sets on which `f = 0` a.e., which is what makes the definition sound — is
-`Measure.support_mem_ae` for that measure. So the module is a definition, the two clauses of
-Remark 9 (invariance under a.e. equality; agreement with `tsupport` for continuous functions and a
-measure positive on open sets), and Proposition 4.18, `supp (f ⋆ g) ⊆ closure (supp f + supp g)`
-for `f ∈ L^1`, `g ∈ L^p`, which is Mathlib's `support_convolution_subset` after replacing `f` and
-`g` by their restrictions to their essential supports. The space is a topological space with a
-`SecondCountableTopology` where Proposition 4.17 is used (the book's `ℝ^N`), and any topological
-space for the definition.
-
-Consumers: chapter 4's surface (Propositions 4.17-4.18, Remarks 9-10), and the chapter-9 nodes
-that speak of the support of a Sobolev function (Lemma 9.5, Remark 9.4 (ii)), which chapter 9a
-may state with `HasCompactSupport` of a representative instead — either way the equivalence is one
-line from `essSupport_eq_tsupport`.
-'''
 
 [[node]]
 id = "essSupport"
-kind = "definition"
-desc = '''`essSupport (μ : Measure α) (f : α → E) : Set α := (μ.restrict (Function.support f)).support`
-for `[TopologicalSpace α]` and `[Zero E]` — the essential support of `f` with respect to `μ`,
-[brezis2011functional] Proposition 4.17 "and definition of the support": the complement of the
-largest open set on which `f = 0` a.e. `Measure.compl_support_eq_sUnion` shows that
-`(essSupport μ f)ᶜ = ⋃₀ {U | IsOpen U ∧ μ (U ∩ support f) = 0}`, which is the book's `ω` (with
-`Measure.restrict_apply'`-free reading: `μ.restrict (support f) U = μ (U ∩ support f)` needs
-`support f` null-measurable, `Measure.restrict_apply₀'`; the definition itself does not).
-Prototype: `notes/brezis/ch04/proto/Shapes.lean`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.17 (definition of the support)"
 
 [[node]]
 id = "mem_essSupport_iff"
-kind = "theorem"
-desc = '''`x ∈ essSupport μ f ↔ ∀ U ∈ 𝓝 x, 0 < μ (U ∩ Function.support f)` for `f` a.e.-strongly
-measurable (so that `support f` is null-measurable and `Measure.restrict_apply₀'` applies); and
-`isClosed_essSupport : IsClosed (essSupport μ f)` (`Measure.isClosed_support`),
-`essSupport_subset_tsupport : essSupport μ f ⊆ tsupport f` (`Measure.support_restrict_subset`
-with `closure`), `essSupport_zero : essSupport μ (0 : α → E) = ∅`. ★'''
-deps = ["essSupport"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.17 (definition of the support)"
 
 [[node]]
 id = "ae_eq_zero_of_notMem_essSupport"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 4.17: for `[SecondCountableTopology α]` (the book's
-`ℝ^N`; `HereditarilyLindelofSpace` is what `Measure.support_mem_ae` asks and second countability
-implies it), `∀ᵐ x ∂μ, x ∉ essSupport μ f → f x = 0`; equivalently
-`f =ᵐ[μ.restrict (essSupport μ f)ᶜ] 0`. Proof: `Measure.support_mem_ae` for
-`μ.restrict (support f)` says `μ ((essSupport μ f)ᶜ ∩ support f) = 0`, i.e. `f = 0` a.e. off the
-essential support. The book's proof (a countable base of open sets) is the proof of
-`support_mem_ae`. ★'''
-deps = ["essSupport"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.17"
 
 [[node]]
 id = "essSupport_congr_ae"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 9 (a): `f =ᵐ[μ] g → essSupport μ f = essSupport μ g`, so
-the essential support is a function of the `L^p` class. Proof: `support f =ᵐ[μ] support g` as sets
-(`Filter.EventuallyEq` of the membership predicates) gives
-`μ.restrict (support f) = μ.restrict (support g)` (`Measure.restrict_congr_set`), hence equal
-supports. ★'''
-deps = ["essSupport"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 9 (a)"
 
 [[node]]
 id = "essSupport_eq_tsupport"
-kind = "theorem"
-desc = '''[brezis2011functional] Remark 9 (b): for `[μ.IsOpenPosMeasure]` and `f` continuous,
-`essSupport μ f = tsupport f`. One inclusion is `essSupport_subset_tsupport`; for the other, if
-`x ∈ tsupport f` then every open `U ∋ x` meets `support f` in a nonempty open set (`f` continuous,
-`isOpen_support`), which has positive measure. Lebesgue measure on `ℝ^N` and its restriction to an
-open set are `IsOpenPosMeasure` (for the restriction, as a measure on the subtype or via
-`Measure.restrict` on the open set — the surface states it on `ℝ^N` as the book does). ★'''
-deps = ["essSupport", "mem_essSupport_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 9 (b)"
 
 [[node]]
 id = "essSupport_convolution_subset"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 4.18: on a finite-dimensional real normed `G` with a
-Haar measure `μ` (`[BorelSpace G]`, `[μ.IsAddHaarMeasure]`), for `f : G → 𝕜` and `g : G → E`
-a.e.-strongly measurable (the book's `f ∈ L^1`, `g ∈ L^p`; only measurability is used, since the
-convolution is `0` where it does not exist),
-`essSupport μ (f ⋆[lsmul 𝕜 E, μ] g) ⊆ closure (essSupport μ f + essSupport μ g)`. Proof: let
-`f' := (essSupport μ f).indicator f`, `g' := (essSupport μ g).indicator g`; then `f' =ᵐ f` and
-`g' =ᵐ g` (`ae_eq_zero_of_notMem_essSupport`), and `f ⋆ g = f' ⋆ g'` *everywhere* (for each `x`
-the integrands agree a.e. in `t`, because `t ↦ x - t` preserves null sets:
-`quasiMeasurePreserving_sub_left`, `integral_congr_ae`); `Function.support f' ⊆ essSupport μ f`
-and likewise for `g'`, so Mathlib's `support_convolution_subset` gives
-`support (f' ⋆ g') ⊆ essSupport μ f + essSupport μ g`; take closures (`tsupport`) and use
-`essSupport_subset_tsupport` together with `essSupport_congr_ae`. Requires `[SecondCountableTopology G]`
-(automatic for finite-dimensional `G`) through Proposition 4.17. ★★, ~80 lines. Remark 10 (compact
-supports give a compact support of `f ⋆ g`) is the surface's, from this and
-`IsCompact.add`/`closure` of a compact set.'''
-deps = ["essSupport", "ae_eq_zero_of_notMem_essSupport", "essSupport_congr_ae", "mem_essSupport_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.18"
+
+# --- Added at formalization (agent `lp2`, 2026-09-18): the API lemmas the plan's
+# `mem_essSupport_iff` node listed in its desc, and the a.e. forms of Proposition 4.17. ---
+
+[[node]]
+id = "isClosed_essSupport"
+
+[[node]]
+id = "isOpen_compl_essSupport"
+
+[[node]]
+id = "essSupport_zero"
+
+[[node]]
+id = "mem_essSupport_iff_forall_mem_nhds"
+
+[[node]]
+id = "notMem_essSupport_iff"
+
+[[node]]
+id = "essSupport_subset_tsupport"
+
+[[node]]
+id = "indicator_essSupport_ae_eq"
+
+[[node]]
+id = "essSupport_eq_empty_iff"

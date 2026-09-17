@@ -1,68 +1,30 @@
 namespace = "MeasureTheory"
-desc = '''
-Hoelder's inequality for finitely many factors and the interpolation inequality between two `L^p`
-exponents (natural home: `Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp`). Source:
-[brezis2011functional] Remark 2 of chapter 4 (lines 3398-3413) and Exercise 4.4 (lines 4373-4392),
-which the remark cites for the proof.
-
-Mathlib at v4.35.0-rc2 has Hoelder for two factors in `eLpNorm` form
-(`eLpNorm_smul_le_mul_eLpNorm` with `HolderTriple p q r`, `MemLp.mul`), the `k`-factor form only for
-`lintegral`s of `ℝ≥0∞`-valued functions (`ENNReal.lintegral_prod_norm_pow_le`), and the comparison
-of exponents on a *finite* measure (`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`, `MemLp.mono_exponent`,
-Exercise 4.2); it has no interpolation inequality `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` (searched
-`interpolat`, `rpow_mul_eLpNorm_rpow`, `of_exponent_between`, LeanSearch). The interpolation
-inequality is what [brezis2011functional] Corollary 9.10 (`W^{1,p} ⊆ L^q` for `q ∈ [p, p^*]`) and
-the proof of Theorem 8.8 use, so it is a backbone node rather than a surface one.
-
-Proof of the interpolation inequality: with `1/r = α/p + (1-α)/q`, write
-`‖f‖^r = (‖f‖^p)^(αr/p) (‖f‖^q)^((1-α)r/q)`, whose exponents sum to `1`, and apply the two-exponent
-Hoelder inequality `ENNReal.lintegral_mul_norm_pow_le` to the `lintegral`; the endpoint `q = ∞`
-(then `α = p/r`) is the pointwise bound `‖f‖^r ≤ ‖f‖^p ‖f‖_∞^(r-p)` a.e., and `p = ∞` is symmetric.
-'''
 
 [[node]]
 id = "eLpNorm_finset_prod_le"
-kind = "theorem"
-desc = '''Hoelder's inequality for finitely many factors ([brezis2011functional] Remark 2 of
-chapter 4, first part; Exercise 4.4, question 1): for `[NormedCommRing R] [NormOneClass R]`,
-`s : Finset ι`, `f : ι → α → R` a.e.-strongly measurable, exponents `p : ι → ℝ≥0∞` and `r : ℝ≥0∞`
-with `∑ i ∈ s, (p i)⁻¹ = r⁻¹` (the book's `1/p = ∑ 1/pᵢ ≤ 1`; `r ≥ 1` is not needed for the
-inequality), `eLpNorm (∏ i ∈ s, f i) r μ ≤ ∏ i ∈ s, eLpNorm (f i) (p i) μ`. The `MemLp` corollary is
-**already Mathlib's** `MemLp.prod` / `MemLp.fun_prod` (`Function/LpSeminorm/CompareExp.lean`,
-stated with the exponent `(∑ i ∈ s, (p i)⁻¹)⁻¹`), found at review; only the inequality is new,
-and its proof is that lemma's `Finset.cons_induction` with `eLpNorm_smul_le_mul_eLpNorm` in place
-of `MemLp.mul`. Proof: `‖∏ f i‖ ≤ ∏ ‖f i‖` (`Finset.norm_prod_le`), then either
-induction on `s` with the two-factor `eLpNorm_smul_le_mul_eLpNorm` (`HolderTriple`, the hint of
-Exercise 4.4), or directly `ENNReal.lintegral_prod_norm_pow_le` on `‖f i‖ₑ ^ (p i)` with the
-exponents `r / p i` (sum `1`) when `r ≠ ∞` and all `p i ≠ ∞`; the factors with `p i = ∞` are
-pulled out by `eLpNorm_le_eLpNorm_mul_eLpNorm_top`. ★★, ~100 lines because of the `∞` cases.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 2 and Exercise 4.4"
 
 [[node]]
 id = "eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow"
-kind = "theorem"
-desc = '''The interpolation inequality ([brezis2011functional] Remark 2 of chapter 4, second part;
-Exercise 4.4, question 2): for `p q r : ℝ≥0∞` with `p ≤ r ≤ q`, `α : ℝ` with `α ∈ Icc 0 1` and
-`r⁻¹ = ENNReal.ofReal α * p⁻¹ + ENNReal.ofReal (1 - α) * q⁻¹`, and `f : α → E` a.e.-strongly
-measurable, `eLpNorm f r μ ≤ eLpNorm f p μ ^ α * eLpNorm f q μ ^ (1 - α)`. Proof as in the module
-description: for `r ≠ ∞` (hence `p ≠ ∞`), `eLpNorm f r μ ^ r = ∫⁻ ‖f‖ₑ ^ r = ∫⁻ (‖f‖ₑ ^ p) ^ (αr/p) * (‖f‖ₑ ^ q) ^ ((1-α)r/q)`
-and `ENNReal.lintegral_mul_norm_pow_le` with the exponents `a := αr/p`, `b := (1-α)r/q`, `a + b = 1`;
-then take the `1/r` power (`ENNReal.rpow_le_rpow`, `ENNReal.mul_rpow_of_nonneg`). If `q = ∞`:
-`‖f‖ₑ ^ r ≤ ‖f‖ₑ ^ p * eLpNormEssSup f μ ^ (r - p)` a.e. (`ae_le_eLpNormEssSup`), integrate, and
-`α = p/r`. If `r = ∞` then `p = q = ∞`, `α` arbitrary, trivial. The degenerate cases `α ∈ {0, 1}`
-reduce to `r = p` or `r = q`. The `ℝ≥0∞` exponent arithmetic is the whole cost. ★★, ~120 lines.
-Chapter 9's Corollary 9.10 and chapter 8's Theorem 8.8 proof consume it.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 2 and Exercise 4.4"
 
 [[node]]
 id = "MemLp.interpolate"
-kind = "theorem"
-desc = '''`MemLp f p μ → MemLp f q μ → p ≤ r → r ≤ q → MemLp f r μ` ([brezis2011functional] Remark 2 of
-chapter 4: "if `f ∈ L^p ∩ L^q` then `f ∈ L^r` for `p ≤ r ≤ q`"). Choose `α` with
-`r⁻¹ = α p⁻¹ + (1-α) q⁻¹` (`α := (r⁻¹ - q⁻¹)/(p⁻¹ - q⁻¹)` when `p ≠ q`, in `ℝ` after `toReal`) and
-apply `eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`; finiteness of the right side from the two
-hypotheses (`ENNReal.rpow_lt_top_of_nonneg`). ★'''
-deps = ["eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 2"
+
+# --- Added at formalization (agent `lp2`, 2026-09-18). `MemLp.interpolate` carries `hp : p ≠ 0`
+# (for `p = 0` the hypothesis `MemLp f 0 μ` is only measurability and the statement is false);
+# `eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow` needs no `p ≤ r ≤ q` (implied by the exponent
+# identity). ---
+
+[[node]]
+id = "eLpNorm_finset_prod_le_of_inv"
+
+[[node]]
+id = "eLpNorm_finset_fun_prod_le"
+
+[[node]]
+id = "exists_inv_eq_ofReal_mul_inv_add"
+
+[[node]]
+id = "lintegral_rpow_enorm_eq_rpow_eLpNorm"

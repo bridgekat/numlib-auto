@@ -1,224 +1,83 @@
-desc = '''
-Clarkson's inequalities and the uniform convexity of `Lp ℝ p μ` for `1 < p < ∞` (natural home:
-`Mathlib.Analysis.Convex.Uniform` lists "Hanner's inequalities" as a to-do, and
-`Mathlib.MeasureTheory.Function.LpSpace` has no uniform-convexity instance; both were re-checked at
-v4.35.0-rc2 by grep for `Clarkson`, `Hanner`, `UniformConvexSpace`). Source:
-[brezis2011functional] Theorem 4.10 (Steps 1-2, the first inequality for `2 ≤ p`), Remark 3 of
-chapter 4 (the second inequality for `1 < p ≤ 2`, quoted without proof), and Problem 20 (its
-proof), lines 3500-3573 and 17217-17280 with the partial solution at 20331-20391.
-
-Two inequalities, each in a pointwise real form and an integrated `Lp` form:
-
-* for `2 ≤ p < ∞`: `‖(f+g)/2‖_p^p + ‖(f-g)/2‖_p^p ≤ (‖f‖_p^p + ‖g‖_p^p)/2` (Clarkson's first
-  inequality, Theorem 4.10 (8)), from the real inequality
-  `|(a+b)/2|^p + |(a-b)/2|^p ≤ (|a|^p + |b|^p)/2` (9), itself from `α^p + β^p ≤ (α²+β²)^(p/2)` and
-  the convexity of `t ↦ t^(p/2)`;
-* for `1 < p ≤ 2` with conjugate `q`: `‖f+g‖_p^q + ‖f-g‖_p^q ≤ 2 (‖f‖_p^p + ‖g‖_p^p)^(q/p)`
-  (Clarkson's second inequality, Problem 20 (6)), from the real inequality
-  `|x+y|^r + |x-y|^r ≤ 2 (|x|^{r'} + |y|^{r'})^(r/r')` for `2 ≤ r` (Problem 20 (1)) applied at
-  `r = q`, integrated after raising to the power `p/q ≤ 1`, and the *reverse* Minkowski inequality
-  for the exponent `p/q ∈ (0, 1]` (Exercise 4.11 (1), method (ii) of Problem 20 C).
-
-The instance `UniformConvexSpace (Lp ℝ p μ)` is proved from the first inequality when `2 ≤ p`
-(Theorem 4.10, Step 2: `δ = 1 - (1 - (ε/2)^p)^(1/p)`) and from the second when `p ≤ 2`
-(Problem 20 C 2: `‖(f+g)/2‖^q ≤ 1 - (ε/2)^q`). The decision to go through Clarkson's second
-inequality rather than the duality trick of Theorem 4.10 Step 3 is that the latter yields only
-*reflexivity* for `1 < p < 2`, not uniform convexity, and the brief fixes the instance for the
-whole range; and rather than Morawetz's method (Exercise 4.12), because Problem 20 is on the
-allowlist and its Part C is exactly the instance. Morawetz's inequality
-`|a-b|^p ≤ C (|a|^p+|b|^p)^(1-p/2) (|a|^p+|b|^p-2|(a+b)/2|^p)^(p/2)` remains the fallback if the
-one-variable calculus of Problem 20 A resists: it needs one positivity argument on `[-1, 1]` and
-Hoelder, and covers all `1 < p < ∞` at once.
-
-The hard part is Problem 20 A (1): by homogeneity it is the one-variable inequality
-`(1 + x^(1/p))^p + (1 - x^(1/p))^p ≤ 2 (1 + x^(q/p))^(p/q)` on `(0, 1)`, proved by the concavity of
-the left side `f` (its second derivative is
-`(1 - 1/p) x^(-2+1/p) [(1 - x^(1/p))^(p-2) - (1 + x^(1/p))^(p-2)] ≤ 0`) and the tangent-line
-inequality `f x ≤ f y + (x - y) f' y` at `y = x^q`, whose right side simplifies to
-`2 (1 + x^(q/p))^(p-1)` because `p/q = p - 1` (verified by hand for the plan; the book only says
-"use (3) with `y = x^{p'}`").
-
-Exponents: `p q : ℝ≥0∞` with `[Fact (1 ≤ p)]` on the `Lp` statements and the conjugate as
-`[p.HolderConjugate q]`; the real statements take `p q : ℝ` with `p.HolderConjugate q`. The
-glue instance `MeasureTheory.fact_one_le_of_one_lt` (`Fact (1 < p) → Fact (1 ≤ p)`) lives in
-`LpSpace/Convergence`, the first module of the directory, so that this module and `Duality`
-both import it without importing each other (moved at review).
-
-Generality note (not planned, free if wanted): the first inequality and its proof are verbatim
-for functions with values in any inner product space `E` over `RCLike 𝕜` — the only input is
-`‖(a+b)/2‖² + ‖(a-b)/2‖² = (‖a‖² + ‖b‖²)/2`, the parallelogram law — so
-`Real.clarkson_pointwise_of_two_le`, `Lp.clarkson_of_two_le` and the `2 ≤ p` half of the
-instance could be stated for `Lp E p μ`; the `1 < p < 2` half through Problem 20 is genuinely
-real-scalar (its one-variable calculus), which is why the instance is stated for `Lp ℝ p μ`.
-'''
 
 [[node]]
 id = "Real.rpow_add_rpow_le_rpow_sq_add_sq"
-kind = "theorem"
-desc = '''For `0 ≤ α`, `0 ≤ β` and `2 ≤ p : ℝ`: `α ^ p + β ^ p ≤ (α ^ 2 + β ^ 2) ^ (p / 2)`
-([brezis2011functional] Theorem 4.10, inequality (10)). Mathlib's `Real.rpow_add_rpow_le`
-(`(a^q + b^q)^(1/q) ≤ (a^p + b^p)^(1/p)` for `0 < p ≤ q`) at `(p, q) := (2, p)`, raised to the
-power `p`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, inequality (10)"
 
 [[node]]
 id = "Real.clarkson_pointwise_of_two_le"
-kind = "theorem"
-desc = '''Clarkson's first inequality on `ℝ`: for `2 ≤ p : ℝ` and all `a b : ℝ`,
-`|(a + b) / 2| ^ p + |(a - b) / 2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2` ([brezis2011functional]
-Theorem 4.10, inequality (9), lines 3505-3527). Proof: `Real.rpow_add_rpow_le_rpow_sq_add_sq` with
-`α = |(a+b)/2|`, `β = |(a-b)/2|` gives the bound `((a² + b²)/2)^(p/2)`, and the convexity of
-`t ↦ t^(p/2)` on `[0, ∞)` (`convexOn_rpow`, `p/2 ≥ 1`) bounds that by `(|a|^p + |b|^p)/2`. ★★'''
-deps = ["Real.rpow_add_rpow_le_rpow_sq_add_sq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, inequality (9)"
 
 [[node]]
 id = "MeasureTheory.Lp.clarkson_of_two_le"
-kind = "theorem"
-desc = '''Clarkson's first inequality in `Lp ℝ p μ`: for `[Fact (1 ≤ p)]`, `2 ≤ p`, `p ≠ ∞` and
-`f g : Lp ℝ p μ`,
-`‖(2:ℝ)⁻¹ • (f + g)‖ ^ p.toReal + ‖(2:ℝ)⁻¹ • (f - g)‖ ^ p.toReal ≤ (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2`
-([brezis2011functional] Theorem 4.10, inequality (8)). Integrate
-`Real.clarkson_pointwise_of_two_le` pointwise: `‖h‖ ^ p.toReal = ∫ |h|^p` for `h ∈ Lp`
-(`Lp.norm_def`, `eLpNorm_eq_lintegral_rpow_enorm`, `lintegral` to `integral` via
-`integral_eq_lintegral_of_nonneg_ae`), then `integral_mono` on the pointwise inequality, with the
-integrability of `|f ± g|^p` from `Lp.memLp`. ★★'''
-deps = ["Real.clarkson_pointwise_of_two_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, inequality (8)"
 
 [[node]]
 id = "Real.two_mul_rpow_add_rpow_le"
-kind = "theorem"
-desc = '''Problem 20 A (2): for `2 ≤ p : ℝ`, `p.HolderConjugate q` and all `x y : ℝ`,
-`2 * (|x| ^ q + |y| ^ q) ^ (p / q) ≤ 2 ^ (p - 1) * (|x| ^ p + |y| ^ p)`. This is the convexity of
-`t ↦ t^(p/q)` (`p/q = p - 1 ≥ 1`) applied to the two-point average of `|x|^q` and `|y|^q`:
-`((|x|^q + |y|^q)/2)^(p/q) ≤ (|x|^p + |y|^p)/2`, i.e. `NNReal.rpow_arith_mean_le_arith_mean_rpow`
-or `convexOn_rpow` with weights `1/2`, then multiply out the powers of `2`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, inequality (2)"
 
 [[node]]
 id = "Real.clarkson_one_var_le"
-kind = "theorem"
-desc = '''Problem 20 A, questions 2-3: for `2 ≤ p : ℝ`, `p.HolderConjugate q` and `x ∈ Ioo 0 1`,
-`(1 + x ^ (1/p)) ^ p + (1 - x ^ (1/p)) ^ p ≤ 2 * (1 + x ^ (q/p)) ^ (p/q)`. The one-variable core of
-Clarkson's second inequality (lines 17229-17245; solution 20336-20340). Proof sketch: let
-`f x := (1 + x^(1/p))^p + (1 - x^(1/p))^p`. (i) `f` is twice differentiable on `(0, 1)` with
-`f'' x = (1 - 1/p) x^(-2 + 1/p) [(1 - x^(1/p))^(p-2) - (1 + x^(1/p))^(p-2)] ≤ 0` since `p ≥ 2`
-(`Real.hasDerivAt_rpow_const`, `HasDerivAt.rpow_const`, `Real.rpow_le_rpow`), so `f` is concave on
-`Ioo 0 1` (`concaveOn_of_deriv2_nonpos`). (ii) Concavity gives the tangent-line inequality
-`f x ≤ f y + (x - y) * f' y` for `x y ∈ Ioo 0 1`: `ConcaveOn.slope_anti` (the slopes from `y` are
-antitone) compared with the derivative at `y` — Mathlib's `ConvexOn.rightDeriv_le_slope` and
-`ConvexOn.le_slope_of_hasDerivWithinAt_Ioi` in `Mathlib/Analysis/Convex/Deriv.lean`, applied to
-`-f`; or, avoiding the convexity API altogether, the mean value theorem
-(`exists_hasDerivAt_eq_slope`) plus the antitonicity of `f'` (from `f'' ≤ 0`,
-`antitoneOn_of_deriv_nonpos`). (iii)
-At `y = x^q`, with `s := x^(q/p)`: `y^(1/p) = s`, `f y = (1+s)^p + (1-s)^p`,
-`f' y = s^(1-p) [(1+s)^(p-1) - (1-s)^(p-1)]`, and `x - y = s^(p/q) - s^p = s^(p-1) - s^p` because
-`p/q = p - 1`; hence `(x - y) f' y = (1 - s) [(1+s)^(p-1) - (1-s)^(p-1)]` and
-`f y + (x - y) f' y = (1+s)^(p-1) [(1+s) + (1-s)] = 2 (1+s)^(p-1) = 2 (1 + x^(q/p))^(p/q)`. The
-identities are `rpow` algebra (`Real.rpow_natCast`, `Real.rpow_mul`, `Real.rpow_sub`) once
-`p/q = p - 1` is rewritten (`Real.HolderConjugate.sub_one_mul_conj`-type lemmas). ★★★, ~300 lines,
-almost all of it the derivative computation and the `rpow` bookkeeping.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, questions A.2-A.3"
 
 [[node]]
 id = "Real.abs_add_rpow_add_abs_sub_rpow_le"
-kind = "theorem"
-desc = '''Problem 20 A (1): for `2 ≤ p : ℝ`, `p.HolderConjugate q` and all `x y : ℝ`,
-`|x + y| ^ p + |x - y| ^ p ≤ 2 * (|x| ^ q + |y| ^ q) ^ (p / q)`. From `Real.clarkson_one_var_le`
-by homogeneity (question A.4): both sides are symmetric in `x ↔ y`, even in each variable, and
-homogeneous of degree `p`, so assume `0 ≤ |y| ≤ |x|`, `x ≠ 0`, put `r := |y|/|x| ∈ [0, 1]` and
-`t := r^p`; then `{|x+y|, |x-y|} = {|x|(1+r), |x|(1-r)}`, so the left side is
-`|x|^p * ((1 + t^(1/p))^p + (1 - t^(1/p))^p)`, and the right side is
-`2 (|x|^q (1 + t^(q/p)))^(p/q) = |x|^p * 2 (1 + t^(q/p))^(p/q)` since `(|x|^q)^(p/q) = |x|^p` and
-`|x|^q t^(q/p) = |y|^q`. The endpoints `t ∈ {0, 1}` (`y = 0`, `|y| = |x|`) are direct. ★★'''
-deps = ["Real.clarkson_one_var_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, inequality (1)"
 
 [[node]]
 id = "MeasureTheory.Lp.norm_add_rpow_add_norm_sub_rpow_le"
-kind = "theorem"
-desc = '''Problem 20 B (4): for `[Fact (1 ≤ p)]`, `2 ≤ p`, `p ≠ ∞`, `[p.HolderConjugate q]` and
-`f g : Lp ℝ p μ`,
-`‖f + g‖ ^ p.toReal + ‖f - g‖ ^ p.toReal ≤ 2 * (‖f‖ ^ q.toReal + ‖g‖ ^ q.toReal) ^ (p.toReal / q.toReal)`.
-Proof (solution 20343-20352): integrate `Real.abs_add_rpow_add_abs_sub_rpow_le` pointwise to get
-`‖f+g‖^p + ‖f-g‖^p ≤ 2 ∫ (|f|^q + |g|^q)^(p/q)`; with `u := |f|^q`, `v := |g|^q` and the exponent
-`p/q = p - 1 ≥ 1`, Minkowski's inequality in `L^(p/q)` (`eLpNorm_add_le` at the exponent
-`ENNReal.ofReal (p/q)`) gives `∫ (u+v)^(p/q) ≤ (‖u‖_(p/q) + ‖v‖_(p/q))^(p/q)`, and
-`‖u‖_(p/q) = ‖f‖_p^q` (`eLpNorm_norm_rpow`). ★★'''
-deps = ["Real.abs_add_rpow_add_abs_sub_rpow_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, inequality (4)"
 
 [[node]]
 id = "MeasureTheory.Lp.two_mul_norm_rpow_add_norm_rpow_le"
-kind = "theorem"
-desc = '''Problem 20 B (5): under the hypotheses of `Lp.norm_add_rpow_add_norm_sub_rpow_le`,
-`2 * (‖f‖ ^ q.toReal + ‖g‖ ^ q.toReal) ^ (p.toReal / q.toReal) ≤ 2 ^ (p.toReal - 1) * (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal)`:
-`Real.two_mul_rpow_add_rpow_le` at `x = ‖f‖`, `y = ‖g‖`. Together with (4) this re-proves
-`Lp.clarkson_of_two_le` (Problem 20 B 2), which is why the book lists it; the direct proof above is
-kept as the primary one. ★'''
-deps = ["Real.two_mul_rpow_add_rpow_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, inequality (5)"
 
 [[node]]
 id = "ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one"
-kind = "theorem"
-desc = '''The reverse Minkowski inequality for exponents in `(0, 1]` (Exercise 4.11 (1),
-[brezis2011functional] lines 4467-4480, solution 14769-14780): for `0 < s ≤ 1` and
-`u v : α → ℝ≥0∞` a.e.-measurable,
-`(∫⁻ u ^ s ∂μ) ^ (1/s) + (∫⁻ v ^ s ∂μ) ^ (1/s) ≤ (∫⁻ (u + v) ^ s ∂μ) ^ (1/s)`. Not in Mathlib:
-`ENNReal.lintegral_Lp_add_le_of_le_one` is the *upper* bound with the constant `2^(1/s - 1)`, and
-`ENNReal.lintegral_Lp_add_le` is the case `1 ≤ s`. Proof: with `a := (∫⁻ u^s)^(1/s)` and
-`b := (∫⁻ v^s)^(1/s)` both nonzero and finite (if one is `0` or `∞` the inequality is immediate
-from monotonicity), the two-point concavity of `t ↦ t^s` with weights `a/(a+b)`, `b/(a+b)` gives
-pointwise `(u + v)^s = (a+b)^s (a/(a+b) · u/a + b/(a+b) · v/b)^s ≥ (a+b)^s (a/(a+b) (u/a)^s + b/(a+b) (v/b)^s)`;
-integrating, the two weighted averages are `1`, so `∫⁻ (u+v)^s ≥ (a+b)^s`. The concave two-point
-inequality is `NNReal.arith_mean_le_rpow_mean` (weights `w`, exponent `1/s ≥ 1`:
-`∑ w z ≤ (∑ w z^(1/s))^s`) read at `z = t^s`. The book's own proof goes through Hoelder for
-two-term sums instead (`a^(1/s) + b^(1/s) = ∫ a^(1/s-1) u^s + b^(1/s-1) v^s ≤ (a^(1/s) + b^(1/s))^(1-s) ∫ (u+v)^s`);
-either route is about 60 lines. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 4.11, question 1"
 
 [[node]]
 id = "MeasureTheory.Lp.clarkson_of_le_two"
-kind = "theorem"
-desc = '''Clarkson's second inequality (Problem 20 C (6), [brezis2011functional] Remark 3 of
-chapter 4): for `[Fact (1 ≤ p)]`, `1 < p`, `p ≤ 2`, `[p.HolderConjugate q]` and `f g : Lp ℝ p μ`,
-`‖f + g‖ ^ q.toReal + ‖f - g‖ ^ q.toReal ≤ 2 * (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) ^ (q.toReal / p.toReal)`.
-Proof by method (ii) of the book's hint (solution 20375-20391): `q ≥ 2` has conjugate `p`, so
-`Real.abs_add_rpow_add_abs_sub_rpow_le` at the exponent `q` gives pointwise
-`|f+g|^q + |f-g|^q ≤ 2 (|f|^p + |g|^p)^(q/p)`; raise to the power `p/q ≤ 1` and integrate:
-`∫ (|f+g|^q + |f-g|^q)^(p/q) ≤ 2^(p/q) (‖f‖^p + ‖g‖^p)`. The reverse Minkowski inequality
-`ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one` at `s = p/q` with `u = |f+g|^q`, `v = |f-g|^q` bounds
-the left side below by `(‖f+g‖_p^q + ‖f-g‖_p^q)^(p/q)` (since `∫ u^s = ‖f+g‖_p^p` and
-`(‖f+g‖^p)^(q/p) = ‖f+g‖^q`); raise both sides to `q/p`. Method (i), by duality from (4), would
-need the sup formula `(‖u‖_p^q + ‖v‖_p^q)^(1/q) = sup (∫ uφ + vψ)/(‖φ‖_q^p + ‖ψ‖_q^p)^(1/p)` and is
-not planned. ★★ given the two lemmas; the `ENNReal`/`Real` exponent bookkeeping is the cost.'''
-deps = ["Real.abs_add_rpow_add_abs_sub_rpow_le", "ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, inequality (6)"
 
 [[node]]
 id = "MeasureTheory.Lp.instUniformConvexSpace"
-kind = "theorem"
-desc = '''`instance [Fact (1 < p)] [Fact (p ≠ ∞)] : UniformConvexSpace (Lp ℝ p μ)` (the normed
-structure through `MeasureTheory.fact_one_le_of_one_lt`) — [brezis2011functional] Theorem 4.10
-Step 2 (`2 ≤ p`) and Remark 3 / Problem 20 C 2 (`1 < p ≤ 2`). Unfold
-`UniformConvexSpace.uniform_convex`: given `ε > 0`, `‖f‖ = ‖g‖ = 1` and `ε ≤ ‖f - g‖`, produce
-`δ > 0` with `‖f + g‖ ≤ 2 - δ`. Case `2 ≤ p`: `Lp.clarkson_of_two_le` gives
-`‖(f+g)/2‖^p ≤ 1 - (ε/2)^p`, so `‖f + g‖ ≤ 2 (1 - (ε/2)^p)^(1/p)` and
-`δ := 2 - 2 (1 - (ε/2)^p)^(1/p) > 0`. Case `p ≤ 2` with conjugate `q`: `Lp.clarkson_of_le_two` gives
-`‖f+g‖^q + ‖f-g‖^q ≤ 2 · 2^(q/p) = 2^q` (as `1 + q/p = q`), so `‖f + g‖ ≤ (2^q - ε^q)^(1/q)` and
-`δ := 2 - (2^q - ε^q)^(1/q) > 0`. Both cases: `Real.rpow_lt_rpow`, `Real.rpow_natCast`, and the
-monotonicity of `t ↦ t^(1/p)`. The instance is stated with `[Fact (1 < p)] [Fact (p ≠ ∞)]`
-(prototype `notes/brezis/ch04/proto/Shapes.lean`); state the theorem form
-`Lp.uniformConvexSpace_of_one_lt_of_ne_top (hp : 1 < p) (hp' : p ≠ ∞)` first and derive the
-instance from it, as for `Lp.instIsReflexive`. Consumers: `Duality` (none — reflexivity is
-proved there without it), chapter 3's Milman-Pettis (which re-derives reflexivity from it as the
-book does), chapter 11 (`ℓ^p` via `Measure.count`), and AH Exercise 2.7.4-type Radon-Riesz
-statements on `L^p`. ★★, ~120 lines.'''
-deps = ["MeasureTheory.fact_one_le_of_one_lt", "MeasureTheory.Lp.clarkson_of_two_le", "MeasureTheory.Lp.clarkson_of_le_two"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10 and Chapter 4, Remark 3"
+
+# --- Added at formalization (agent `lp2`, 2026-09-18): the steps of Problem 20 A as separate
+# lemmas, the `eLpNorm`-level forms of both inequalities, the `Lp` glue, the theorem form of the
+# instance. `ENNReal.Lp_add_le_lintegral_Lp_add_of_le_one` needs only `u` measurable. ---
+
+[[node]]
+id = "Real.le_add_mul_of_antitoneOn_hasDerivAt"
+
+[[node]]
+id = "Real.monotoneOn_one_add_rpow_sub_sub_one_rpow"
+
+[[node]]
+id = "Real.hasDerivAt_one_add_rpow_add_one_sub_rpow"
+
+[[node]]
+id = "Real.antitoneOn_deriv_one_add_rpow_add_one_sub_rpow"
+
+[[node]]
+id = "Real.one_add_rpow_add_one_sub_rpow_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 20, questions A.2-A.3"
+
+[[node]]
+id = "MeasureTheory.enorm_rpow_eq_ofReal_abs_rpow"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_two_le"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_add_rpow_add_eLpNorm_sub_rpow_le_of_le_two"
+
+[[node]]
+id = "MeasureTheory.Lp.norm_rpow"
+
+[[node]]
+id = "MeasureTheory.Lp.eLpNorm_rpow_ne_top"
+
+[[node]]
+id = "MeasureTheory.Lp.uniformConvexSpace_of_one_lt_of_ne_top"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10 and Chapter 4, Remark 3"

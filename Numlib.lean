@@ -369,8 +369,12 @@ import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearAlgebra.Subspace
+import Numlib.MeasureTheory.Function.EssSupport
+import Numlib.MeasureTheory.Function.LpInterpolation
+import Numlib.MeasureTheory.Function.LpSpace.Clarkson
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 import Numlib.MeasureTheory.Function.LpSpace.Duality
+import Numlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
