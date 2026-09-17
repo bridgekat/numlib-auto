@@ -625,7 +625,7 @@ theorem ae_deriv_hatFun_eq (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i :
 and piecewise `C¹` with bounded panel derivatives, so
 `memSobolevInterval_of_piecewise_contDiffOn` applies. -/
 theorem hasWeakDerivOn_hatFun (hx : Spline.IsPartition a b n x) (hn : 1 ≤ n) (i : ℕ) :
-    HasWeakDerivOn (hatFun n x i) (hatDerivFun n x i) a b := by
+    HasWeakDerivOn (hatFun n x i) (hatDerivFun n x i) (TopologicalSpace.Opens.Ioo a b) := by
   obtain ⟨N, rfl⟩ : ∃ N, n = N + 1 := ⟨n - 1, by omega⟩
   set y : Fin (N + 2) → ℝ := fun j ↦ x (j : ℕ) with hy
   have hymono : StrictMono y := fun i j hij ↦

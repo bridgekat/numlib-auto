@@ -726,17 +726,6 @@ end Lp
 
 namespace Lp
 
-/-- An element of `L^∞` is a.e. bounded by its norm. -/
-theorem ae_norm_le_norm_top {E : Type*} [NormedAddCommGroup E] (u : Lp E ∞ μ) :
-    ∀ᵐ x ∂μ, ‖u x‖ ≤ ‖u‖ := by
-  have hne : eLpNormEssSup (⇑u) μ ≠ ∞ := by
-    rw [← eLpNorm_exponent_top (Lp.aestronglyMeasurable u)]
-    exact Lp.eLpNorm_ne_top u
-  filter_upwards [ae_le_eLpNormEssSup (f := ⇑u) (μ := μ)] with x hx
-  rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable u)]
-  rw [← ofReal_norm] at hx
-  exact (ENNReal.ofReal_le_iff_le_toReal hne).1 hx
-
 /-- The pairing is isometric when `q ≠ ∞`, with no hypothesis on the measure: the reverse
 inequality `‖u‖_q ≤ ‖f ↦ ∫ u f‖` is witnessed by the extremal function `‖u‖ ^ (q - 2) conj u`
 ([brezis2011functional] Theorem 4.10, Step 3). -/

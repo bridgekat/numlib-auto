@@ -1,49 +1,4 @@
 [[node]]
-id = "TopologicalSpace.Opens.Ioo"
-
-[[node]]
-id = "TopologicalSpace.Opens.coe_Ioo"
-
-[[node]]
-id = "HasWeakIteratedDerivOn"
-
-[[node]]
-id = "HasWeakDerivOn"
-
-[[node]]
-id = "hasWeakIteratedDerivOn_one"
-
-[[node]]
-id = "hasWeakIteratedDerivOn_iff"
-
-[[node]]
-id = "hasWeakDerivOn_iff"
-
-[[node]]
-id = "HasWeakIteratedDerivOn.integral_iteratedDeriv_mul"
-
-[[node]]
-id = "HasWeakDerivOn.integral_deriv_mul"
-
-[[node]]
-id = "TestFunction.iteratedDerivApply_coe"
-
-[[node]]
-id = "TestFunction.derivApply_coe"
-
-[[node]]
-id = "HasWeakDerivOn.hasWeakIteratedDerivOn_succ"
-
-[[node]]
-id = "HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ"
-
-[[node]]
-id = "HasWeakIteratedDerivOn.hasWeakDerivOn_of_succ"
-
-[[node]]
-id = "hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn"
-
-[[node]]
 id = "TestFunction.eq_zero_of_le_left"
 
 [[node]]
@@ -51,9 +6,6 @@ id = "TestFunction.eq_zero_of_le_right"
 
 [[node]]
 id = "TestFunction.integral_eq_setIntegral_Ioo"
-
-[[node]]
-id = "TestFunction.integrable_volume"
 
 [[node]]
 id = "TestFunction.exists_tsupport_subset_Icc"
@@ -90,9 +42,6 @@ id = "HasWeakDerivOn.exists_ae_eq_integral"
 
 [[node]]
 id = "HasWeakDerivOn.exists_continuousOn_ae_eq"
-
-[[node]]
-id = "multiIndexTuple_singleton"
 
 [[node]]
 id = "SobolevInterval"
@@ -404,12 +353,6 @@ id = "mem_sobolevIntervalZero_iff"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.42)'
 
 [[node]]
-id = "hasWeakIteratedDerivOn_of_contDiffOn"
-
-[[node]]
-id = "hasWeakDerivOn_of_contDiffOn"
-
-[[node]]
 id = "ContDiffMapIcc.derivLp"
 
 [[node]]
@@ -450,9 +393,6 @@ id = "ContDiffMapIcc.norm_toSobolevInterval_le"
 
 [[node]]
 id = "ContDiffMapIcc.toSobolevInterval_injective"
-
-[[node]]
-id = "eq_add_integral_deriv_of_piecewise"
 
 [[node]]
 id = "memSobolevInterval_of_piecewise_contDiffOn"

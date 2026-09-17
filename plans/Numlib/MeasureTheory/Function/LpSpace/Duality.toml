@@ -125,9 +125,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14, the
 id = "eLpNormEssSup_congr_ae_measure"
 
 [[node]]
-id = "Lp.ae_norm_le_norm_top"
-
-[[node]]
 id = "Lp.coe_toDual"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11"
 

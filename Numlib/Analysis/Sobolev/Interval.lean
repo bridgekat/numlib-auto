@@ -5,15 +5,9 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/MultiIndex.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.Analysis.Calculus.BumpFunction.Normed
 import Mathlib.Analysis.Normed.Lp.SmoothApprox
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.MeasureTheory.Function.AbsolutelyContinuous
-import Mathlib.MeasureTheory.Function.LpOrder
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.AbsolutelyContinuousFun
 import Numlib.Analysis.Calculus.ContDiffMapIcc
-import Numlib.Analysis.Sobolev.MultiIndex
-import Numlib.MeasureTheory.Integral.IntervalIntegral
+import Numlib.Analysis.Sobolev.Interval.Basic
 
 /-!
 # Sobolev spaces on an interval
@@ -23,20 +17,19 @@ analogue in higher dimension: every function of `H^1(a, b)` has an absolutely co
 representative, `H^1(a, b)` embeds in `C[a, b]`, and Poincaré's inequality on `H^1_0(a, b)` holds
 with the explicit constant `(b - a)/√2`.
 
-`SobolevInterval m a b` is *not* a new space: it is the multi-index Sobolev space
+`SobolevInterval m a b` is *not* a new space: it is `SobolevIntervalLp m 2 (Opens.Ioo a b)` of
+`Numlib/Analysis/Sobolev/Interval/Basic.lean`, that is, the multi-index Sobolev space
 `SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume` of
 `Numlib/Analysis/Sobolev/MultiIndex.lean`, read on `E = ℝ` with the one-element basis, so that
 its components are the weak derivatives `u, u', …, u^{(m)}` in `L²(a, b)` and it is a Hilbert
 space for the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²}` on the nose
-(`SobolevMultiIndex.inner_eq`). `H^1_0(a, b)` is accordingly `SobolevMultiIndexZero`, the closure
-of the test functions in the multi-index space.
+(`SobolevMultiIndex.inner_eq`). `H^1_0(a, b)` is accordingly `SobolevIntervalLpZero 1 2 _`, the
+closure of the test functions in the multi-index space. The weak derivative on an interval,
+`HasWeakDerivOn f w (Opens.Ioo a b)`, and the general theory of `W^{m,p}(I)` on an arbitrary open
+`I ⊆ ℝ` live in `Interval/Basic.lean`; this module is the bounded `p = 2` layer over it.
 
 ## Main definitions
 
-* `TopologicalSpace.Opens.Ioo a b`, the open interval as an element of `Opens ℝ`;
-* `HasWeakDerivOn f w a b` and `HasWeakIteratedDerivOn k f w a b`, the first-order and the
-  `k`-th weak derivative on `(a, b)`, as `HasWeakIteratedLineDerivOn` along the constant tuple of
-  directions `1`;
 * `TestFunction.primitive`, the antiderivative of a test function on `(a, b)` with zero mean,
   which is again a test function;
 * `SobolevInterval m a b`, the space `H^m(a, b)`, with `MemSobolevInterval f m a b` the
@@ -97,19 +90,6 @@ open scoped ContDiff Distributions ENNReal InnerProductSpace Topology
 
 noncomputable section
 
-/-! ### The open interval as an open set -/
-
-namespace TopologicalSpace.Opens
-
-/-- The open interval `(a, b)` as an open set of `ℝ`. -/
-def Ioo (a b : ℝ) : Opens ℝ := ⟨Set.Ioo a b, isOpen_Ioo⟩
-
-/-- The underlying set of `Opens.Ioo a b` is `Set.Ioo a b`. -/
-@[simp]
-theorem coe_Ioo (a b : ℝ) : (Opens.Ioo a b : Set ℝ) = Set.Ioo a b := rfl
-
-end TopologicalSpace.Opens
-
 /-! ### Finite sums in `L^p` -/
 
 /-- The coercion of a finite sum in `L^p` is almost everywhere the sum of the coercions. Mathlib
@@ -125,126 +105,6 @@ theorem MeasureTheory.Lp.coeFn_sum {μ : Measure ℝ} (s : Finset ℕ) (F : ℕ 
     rw [Finset.sum_insert hi]
     filter_upwards [Lp.coeFn_add (F i) (∑ j ∈ s, F j), ih] with t h1 h2
     rw [h1, Pi.add_apply, h2, Finset.sum_insert hi]
-
-/-! ### Weak derivatives on an interval -/
-
-/-- The `k`-th weak derivative on the interval `(a, b)`: `HasWeakIteratedDerivOn k f w a b` says
-that `w` is the weak derivative of order `k` of `f` on `(a, b)`, that is, `f` and `w` are locally
-integrable on `(a, b)` and `∫_a^b φ^{(k)} f = (-1)^k ∫_a^b φ w` for every test function `φ` on
-`(a, b)`. It is `HasWeakIteratedLineDerivOn` along the constant tuple of directions `1`. -/
-abbrev HasWeakIteratedDerivOn (k : ℕ) (f w : ℝ → ℝ) (a b : ℝ) : Prop :=
-  HasWeakIteratedLineDerivOn (fun _ : Fin k ↦ (1 : ℝ)) f w (Opens.Ioo a b) volume
-
-/-- The first-order weak derivative on the interval `(a, b)`: `HasWeakDerivOn f w a b` says that
-`f` and `w` are locally integrable on `(a, b)` and `∫_a^b φ' f = -∫_a^b φ w` for every test
-function `φ` on `(a, b)`. This is `HasWeakIteratedDerivOn 1`. -/
-abbrev HasWeakDerivOn (f w : ℝ → ℝ) (a b : ℝ) : Prop :=
-  HasWeakIteratedLineDerivOn (fun _ : Fin 1 ↦ (1 : ℝ)) f w (Opens.Ioo a b) volume
-
-section Chain
-
-variable {a b : ℝ} {f v w : ℝ → ℝ} {k : ℕ}
-
-/-- The weak derivative of order one is `HasWeakDerivOn`. -/
-theorem hasWeakIteratedDerivOn_one : HasWeakIteratedDerivOn 1 f w a b ↔ HasWeakDerivOn f w a b :=
-  Iff.rfl
-
-/-- The `k`-th weak derivative on an interval unfolded: local integrability of both functions,
-and the integration by parts formula `∫_a^b φ^{(k)} f = (-1)^k ∫_a^b φ w` against every test
-function `φ` on `(a, b)`. -/
-theorem hasWeakIteratedDerivOn_iff :
-    HasWeakIteratedDerivOn k f w a b ↔ LocallyIntegrableOn f (Ioo a b) ∧
-      LocallyIntegrableOn w (Ioo a b) ∧ ∀ φ : 𝓓(Opens.Ioo a b, ℝ),
-        ∫ x in Ioo a b, iteratedDeriv k φ x * f x = (-1) ^ k * ∫ x in Ioo a b, φ x * w x := by
-  constructor
-  · rintro ⟨h1, h2, h3⟩
-    exact ⟨h1, h2, fun φ ↦ by
-      simpa only [smul_eq_mul, iteratedDeriv_eq_iteratedFDeriv, Opens.coe_Ioo] using h3 φ⟩
-  · rintro ⟨h1, h2, h3⟩
-    exact ⟨h1, h2, fun φ ↦ by
-      simpa only [smul_eq_mul, iteratedDeriv_eq_iteratedFDeriv, Opens.coe_Ioo] using h3 φ⟩
-
-/-- The first-order weak derivative on an interval unfolded: local integrability of both
-functions, and the integration by parts formula `∫_a^b φ' f = -∫_a^b φ w` against every test
-function `φ` on `(a, b)`. -/
-theorem hasWeakDerivOn_iff :
-    HasWeakDerivOn f w a b ↔ LocallyIntegrableOn f (Ioo a b) ∧ LocallyIntegrableOn w (Ioo a b) ∧
-      ∀ φ : 𝓓(Opens.Ioo a b, ℝ),
-        ∫ x in Ioo a b, deriv φ x * f x = -∫ x in Ioo a b, φ x * w x := by
-  rw [← hasWeakIteratedDerivOn_one, hasWeakIteratedDerivOn_iff]
-  simp only [iteratedDeriv_one, pow_one, neg_one_mul]
-
-/-- The integration by parts formula of the `k`-th weak derivative on an interval. -/
-theorem HasWeakIteratedDerivOn.integral_iteratedDeriv_mul (h : HasWeakIteratedDerivOn k f w a b)
-    (φ : 𝓓(Opens.Ioo a b, ℝ)) :
-    ∫ x in Ioo a b, iteratedDeriv k φ x * f x = (-1) ^ k * ∫ x in Ioo a b, φ x * w x :=
-  (hasWeakIteratedDerivOn_iff.1 h).2.2 φ
-
-/-- The integration by parts formula of the first-order weak derivative on an interval. -/
-theorem HasWeakDerivOn.integral_deriv_mul (h : HasWeakDerivOn f w a b)
-    (φ : 𝓓(Opens.Ioo a b, ℝ)) :
-    ∫ x in Ioo a b, deriv φ x * f x = -∫ x in Ioo a b, φ x * w x :=
-  (hasWeakDerivOn_iff.1 h).2.2 φ
-
-/-- The `k`-th derivative of a test function on an interval is the test function
-`TestFunction.iteratedFDerivApply` along the constant tuple `1`. -/
-theorem TestFunction.iteratedDerivApply_coe (φ : 𝓓(Opens.Ioo a b, ℝ)) (k : ℕ) :
-    (φ.iteratedFDerivApply k (fun _ ↦ (1 : ℝ)) : ℝ → ℝ) = iteratedDeriv k φ := rfl
-
-/-- The derivative of a test function on an interval is the test function
-`TestFunction.fderivApply` in the direction `1`. -/
-theorem TestFunction.derivApply_coe (φ : 𝓓(Opens.Ioo a b, ℝ)) :
-    (φ.fderivApply 1 : ℝ → ℝ) = deriv φ := rfl
-
-/-- Chaining weak derivatives on an interval: if `v` is the weak derivative of `f` and `w` the
-`k`-th weak derivative of `v`, then `w` is the `(k + 1)`-th weak derivative of `f`. The proof
-tests the first identity against `φ^{(k)}`, which is again a test function. -/
-theorem HasWeakDerivOn.hasWeakIteratedDerivOn_succ (h : HasWeakDerivOn f v a b)
-    (h' : HasWeakIteratedDerivOn k v w a b) : HasWeakIteratedDerivOn (k + 1) f w a b := by
-  refine hasWeakIteratedDerivOn_iff.2 ⟨h.locallyIntegrableOn, h'.locallyIntegrableOn_weakDeriv,
-    fun φ ↦ ?_⟩
-  have e1 := h.integral_deriv_mul (φ.iteratedFDerivApply k (fun _ ↦ 1))
-  rw [TestFunction.iteratedDerivApply_coe] at e1
-  rw [iteratedDeriv_succ, e1, h'.integral_iteratedDeriv_mul, pow_succ]
-  ring
-
-/-- Peeling the first weak derivative: if `v` is the weak derivative of `f` and `w` the
-`(k + 1)`-th weak derivative of `f`, then `w` is the `k`-th weak derivative of `v`. -/
-theorem HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ (h : HasWeakDerivOn f v a b)
-    (h' : HasWeakIteratedDerivOn (k + 1) f w a b) : HasWeakIteratedDerivOn k v w a b := by
-  refine hasWeakIteratedDerivOn_iff.2 ⟨h.locallyIntegrableOn_weakDeriv,
-    h'.locallyIntegrableOn_weakDeriv, fun φ ↦ ?_⟩
-  have e1 := h.integral_deriv_mul (φ.iteratedFDerivApply k (fun _ ↦ 1))
-  rw [TestFunction.iteratedDerivApply_coe, ← iteratedDeriv_succ,
-    h'.integral_iteratedDeriv_mul] at e1
-  rw [neg_eq_iff_eq_neg.1 e1.symm, pow_succ]
-  ring
-
-/-- Peeling the last weak derivative: if `v` is the `k`-th and `w` the `(k + 1)`-th weak
-derivative of `f`, then `w` is the weak derivative of `v`. This is what makes the weak
-derivatives of a function of `H^m(a, b)` a chain, each the weak derivative of the one before. -/
-theorem HasWeakIteratedDerivOn.hasWeakDerivOn_of_succ (h : HasWeakIteratedDerivOn k f v a b)
-    (h' : HasWeakIteratedDerivOn (k + 1) f w a b) : HasWeakDerivOn v w a b := by
-  refine hasWeakDerivOn_iff.2 ⟨h.locallyIntegrableOn_weakDeriv,
-    h'.locallyIntegrableOn_weakDeriv, fun φ ↦ ?_⟩
-  have e1 := h.integral_iteratedDeriv_mul (φ.fderivApply 1)
-  rw [TestFunction.derivApply_coe, ← iteratedDeriv_succ', h'.integral_iteratedDeriv_mul] at e1
-  have hk : ((-1 : ℝ) ^ k) ≠ 0 := pow_ne_zero _ (by norm_num)
-  refine mul_left_cancel₀ hk ?_
-  rw [← e1, pow_succ]
-  ring
-
-/-- The weak derivative along any tuple of `k` directions all equal to `1` is the `k`-th weak
-derivative on the interval; stated for a tuple whose length is only propositionally `k`, as the
-tuples `multiIndexTuple` naming a multi-index are. -/
-theorem hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn {n : ℕ} {y : Fin n → ℝ}
-    (hy : ∀ j, y j = 1) (hn : n = k) :
-    HasWeakIteratedLineDerivOn y f w (Opens.Ioo a b) volume ↔
-      HasWeakIteratedDerivOn k f w a b := by
-  subst hn
-  rw [show y = fun _ ↦ (1 : ℝ) from funext hy]
-
-end Chain
 
 /-! ### Test functions on an interval -/
 
@@ -266,10 +126,6 @@ theorem integral_eq_setIntegral_Ioo (ψ : 𝓓(Opens.Ioo a b, ℝ)) (g : ℝ →
     ∫ x in Ioo a b, ψ x * g x = ∫ x, ψ x * g x :=
   setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
     rw [ψ.eq_zero_of_notMem hx, zero_mul]
-
-/-- A test function on `(a, b)` is integrable for Lebesgue measure. -/
-theorem integrable_volume (φ : 𝓓(Opens.Ioo a b, ℝ)) : Integrable φ :=
-  φ.continuous.integrable_of_hasCompactSupport φ.hasCompactSupport
 
 /-- The support of a test function on `(a, b)` lies in a compact subinterval `[lo, hi]` with
 `a < lo` and `hi < b`. -/
@@ -388,7 +244,7 @@ integrable on `(a, b)` and any constant `c`, `w` is the weak derivative of `c + 
 `(a, b)`. The proof is integration by parts for absolutely continuous functions against a test
 function, together with the Lebesgue differentiation theorem. -/
 theorem hasWeakDerivOn_integral (hab : a ≤ b) (hw : IntegrableOn w (Ioo a b)) (c : ℝ) :
-    HasWeakDerivOn (fun x ↦ c + ∫ t in a..x, w t) w a b := by
+    HasWeakDerivOn (fun x ↦ c + ∫ t in a..x, w t) w (Opens.Ioo a b) := by
   set g : ℝ → ℝ := fun x ↦ c + ∫ t in a..x, w t with hg
   refine hasWeakDerivOn_iff.2
     ⟨((intervalIntegral.continuousOn_integral_of_integrableOn_Ioo hab hw c).mono
@@ -414,7 +270,7 @@ function `ψ₀` of integral one: for any test function `φ`, the function `φ -
 mean, so its antiderivative is a test function (`TestFunction.primitive`) whose derivative it
 is, and testing the hypothesis against that antiderivative gives `∫ φ (f - c) = 0`; the
 generalized variational lemma `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` finishes. -/
-theorem ae_eq_const_of_hasWeakDerivOn_zero (hab : a < b) (h : HasWeakDerivOn f 0 a b) :
+theorem ae_eq_const_of_hasWeakDerivOn_zero (hab : a < b) (h : HasWeakDerivOn f 0 (Opens.Ioo a b)) :
     ∃ c : ℝ, f =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ c := by
   obtain ⟨ψ₀, hψ₀⟩ := exists_testFunction_integral_eq_one hab
   refine ⟨∫ x in Ioo a b, ψ₀ x * f x, ?_⟩
@@ -433,7 +289,8 @@ theorem ae_eq_const_of_hasWeakDerivOn_zero (hab : a < b) (h : HasWeakDerivOn f 0
     have hχ := h.integral_deriv_mul (TestFunction.primitive hab (φ - m • ψ₀) hmean)
     rw [TestFunction.deriv_primitive] at hχ
     simp only [FunLike.coe_sub, FunLike.coe_smul, Pi.sub_apply, Pi.smul_apply,
-      smul_eq_mul, Pi.zero_apply, mul_zero, integral_zero, neg_zero, sub_mul, mul_assoc] at hχ
+      smul_eq_mul, Pi.zero_apply, mul_zero, integral_zero, neg_zero, sub_mul, mul_assoc,
+      Opens.coe_Ioo] at hχ
     have i1 : IntegrableOn (fun x ↦ φ x * f x) (Ioo a b) := (h.integrable_smul φ).integrableOn
     have i2 : IntegrableOn (fun x ↦ ψ₀ x * f x) (Ioo a b) := (h.integrable_smul ψ₀).integrableOn
     rw [integral_sub i1 (i2.const_mul m), integral_const_mul, sub_eq_zero] at hχ
@@ -449,11 +306,11 @@ theorem ae_eq_const_of_hasWeakDerivOn_zero (hab : a < b) (h : HasWeakDerivOn f 0
 `w` on `(a, b)` agrees almost everywhere on `(a, b)` with `c + ∫_a^x w` for some constant `c`.
 The difference of `f` and the antiderivative has weak derivative `0`, so it is almost everywhere
 constant by du Bois-Reymond's lemma. -/
-theorem HasWeakDerivOn.exists_ae_eq_integral (hab : a < b) (h : HasWeakDerivOn f w a b)
+theorem HasWeakDerivOn.exists_ae_eq_integral (hab : a < b) (h : HasWeakDerivOn f w (Opens.Ioo a b))
     (hw : IntegrableOn w (Ioo a b)) :
     ∃ c : ℝ, f =ᵐ[volume.restrict (Ioo a b)] fun x ↦ c + ∫ t in a..x, w t := by
   have h1 := hasWeakDerivOn_integral hab.le hw 0
-  have h2 : HasWeakDerivOn (fun x ↦ f x - (0 + ∫ t in a..x, w t)) 0 a b :=
+  have h2 : HasWeakDerivOn (fun x ↦ f x - (0 + ∫ t in a..x, w t)) 0 (Opens.Ioo a b) :=
     (h.sub h1).congr_ae (Eventually.of_forall fun x ↦ rfl)
       (Eventually.of_forall fun x ↦ sub_self _)
   obtain ⟨c, hc⟩ := ae_eq_const_of_hasWeakDerivOn_zero hab h2
@@ -463,7 +320,8 @@ theorem HasWeakDerivOn.exists_ae_eq_integral (hab : a < b) (h : HasWeakDerivOn f
 
 /-- The absolutely continuous representative, as a function continuous on `[a, b]` that is the
 integral of the weak derivative between any two points of `[a, b]`. -/
-theorem HasWeakDerivOn.exists_continuousOn_ae_eq (hab : a < b) (h : HasWeakDerivOn f w a b)
+theorem HasWeakDerivOn.exists_continuousOn_ae_eq (hab : a < b)
+    (h : HasWeakDerivOn f w (Opens.Ioo a b))
     (hw : IntegrableOn w (Ioo a b)) :
     ∃ g : ℝ → ℝ, ContinuousOn g (Icc a b) ∧ f =ᵐ[volume.restrict (Ioo a b)] g ∧
       ∀ x ∈ Icc a b, ∀ y ∈ Icc a b, g y - g x = ∫ t in x..y, w t := by
@@ -480,12 +338,6 @@ end Integral
 
 section Space
 
-/-- The tuple of directions naming a multi-index of the one-element basis of `ℝ` is constantly
-`1`. -/
-theorem multiIndexTuple_singleton (α : Unit → ℕ) (j : Fin (∑ i, α i)) :
-    multiIndexTuple (Module.Basis.singleton Unit ℝ) α j = 1 := by
-  simp [multiIndexTuple, multiIndexDirections, List.getElem_replicate]
-
 /-- **The Sobolev space `H^m(a, b) = W^{m,2}(a, b)`**: the multi-index Sobolev space
 `SobolevMultiIndex` of `Numlib/Analysis/Sobolev/MultiIndex.lean` on `E = ℝ` with the one-element
 basis, whose multi-indices of order at most `m` are the derivative orders `0, …, m`. Being an
@@ -493,12 +345,12 @@ basis, whose multi-indices of order at most `m` are the derivative orders `0, �
 space: it is a Hilbert space for the inner product
 `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²(a, b)}` (`SobolevInterval.inner_eq`). -/
 abbrev SobolevInterval (m : ℕ) (a b : ℝ) : Type :=
-  SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume
+  SobolevIntervalLp m 2 (Opens.Ioo a b)
 
 /-- `MemSobolevInterval f m a b` says that the function `f` belongs to `H^m(a, b)`: it lies in
 `L²(a, b)` together with its weak derivatives of orders `1, …, m`. -/
-def MemSobolevInterval (f : ℝ → ℝ) (m : ℕ) (a b : ℝ) : Prop :=
-  MemSobolevMultiIndex (Module.Basis.singleton Unit ℝ) f m 2 (Opens.Ioo a b) volume
+abbrev MemSobolevInterval (f : ℝ → ℝ) (m : ℕ) (a b : ℝ) : Prop :=
+  MemSobolevIntervalLp f m 2 (Opens.Ioo a b)
 
 variable {m : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 
@@ -506,7 +358,8 @@ variable {m : ℕ} {a b : ℝ} {f : ℝ → ℝ}
 derivative of `f` on `(a, b)` exists and lies in `L²(a, b)`. -/
 theorem memSobolevInterval_iff :
     MemSobolevInterval f m a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧ ∀ j ≤ m,
-      ∃ w : ℝ → ℝ, HasWeakIteratedDerivOn j f w a b ∧ MemLp w 2 (volume.restrict (Ioo a b)) := by
+      ∃ w : ℝ → ℝ, HasWeakIteratedDerivOn j f w (Opens.Ioo a b) ∧
+        MemLp w 2 (volume.restrict (Ioo a b)) := by
   constructor
   · rintro ⟨h1, h2⟩
     refine ⟨h1, fun j hj ↦ ?_⟩
@@ -534,7 +387,7 @@ derivatives of `f'` of orders `≤ m` are those of `f` of orders `≤ m + 1`; ba
 rule `HasWeakDerivOn.hasWeakIteratedDerivOn_succ`. -/
 theorem memSobolevInterval_succ_iff :
     MemSobolevInterval f (m + 1) a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧
-      ∃ w : ℝ → ℝ, HasWeakDerivOn f w a b ∧ MemSobolevInterval w m a b := by
+      ∃ w : ℝ → ℝ, HasWeakDerivOn f w (Opens.Ioo a b) ∧ MemSobolevInterval w m a b := by
   simp only [memSobolevInterval_iff]
   constructor
   · rintro ⟨h1, h2⟩
@@ -555,7 +408,7 @@ theorem memSobolevInterval_succ_iff :
 [quarteroni2000numerical] (12.42), without the boundary condition. -/
 theorem memSobolevInterval_one_iff :
     MemSobolevInterval f 1 a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧
-      ∃ w : ℝ → ℝ, HasWeakDerivOn f w a b ∧ MemLp w 2 (volume.restrict (Ioo a b)) := by
+      ∃ w : ℝ → ℝ, HasWeakDerivOn f w (Opens.Ioo a b) ∧ MemLp w 2 (volume.restrict (Ioo a b)) := by
   simp only [memSobolevInterval_succ_iff, memSobolevInterval_zero_iff]
 
 namespace SobolevInterval
@@ -563,17 +416,14 @@ namespace SobolevInterval
 /-- The function of an element of `H^m(a, b)`. -/
 abbrev fn (u : SobolevInterval m a b) : ℝ → ℝ := SobolevMultiIndex.fn u
 
-/-- The multi-index of the `j`-th derivative in one variable. -/
-def derivIndex (m : ℕ) (j : Fin (m + 1)) : MultiIndexLE Unit m :=
-  ⟨fun _ ↦ j, by simpa using Fin.is_le j⟩
+/-- The multi-index of the `j`-th derivative in one variable: `SobolevIntervalLp.derivIndex`. -/
+abbrev derivIndex (m : ℕ) (j : Fin (m + 1)) : MultiIndexLE Unit m :=
+  SobolevIntervalLp.derivIndex m j
 
 /-- The derivative orders `0, …, m` are the multi-indices of order at most `m` in one
-variable. -/
-def derivIndexEquiv (m : ℕ) : Fin (m + 1) ≃ MultiIndexLE Unit m where
-  toFun := derivIndex m
-  invFun α := ⟨α.1 (), by have := α.2; simpa using Nat.lt_succ_of_le this⟩
-  left_inv j := rfl
-  right_inv α := Subtype.ext (funext fun _ ↦ rfl)
+variable: `SobolevIntervalLp.derivIndexEquiv`. -/
+abbrev derivIndexEquiv (m : ℕ) : Fin (m + 1) ≃ MultiIndexLE Unit m :=
+  SobolevIntervalLp.derivIndexEquiv m
 
 /-- The `j`-th weak derivative `u^{(j)}` of `u ∈ H^m(a, b)`, as an element of `L²(a, b)`; `j = 0`
 is the function itself. -/
@@ -605,14 +455,15 @@ theorem ext {u v : SobolevInterval m a b} (h : ∀ j, deriv u j = deriv v j) : u
 /-- The `j`-th component of an element of `H^m(a, b)` is the `j`-th weak derivative of its
 function. -/
 theorem hasWeakIteratedDerivOn_deriv (u : SobolevInterval m a b) (j : Fin (m + 1)) :
-    HasWeakIteratedDerivOn j (fn u) (deriv u j) a b :=
+    HasWeakIteratedDerivOn j (fn u) (deriv u j) (Opens.Ioo a b) :=
   (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (multiIndexTuple_singleton _)
-    (by simp [derivIndex])).1 (SobolevMultiIndex.hasWeakIteratedLineDerivOn u (derivIndex m j))
+    (by simp [derivIndex, SobolevIntervalLp.derivIndex])).1
+    (SobolevMultiIndex.hasWeakIteratedLineDerivOn u (derivIndex m j))
 
 /-- The weak derivatives of an element of `H^m(a, b)` form a chain: `u^{(j+1)}` is the weak
 derivative of `u^{(j)}`. -/
 theorem hasWeakDerivOn_deriv_succ (u : SobolevInterval m a b) (j : Fin m) :
-    HasWeakDerivOn (deriv u j.castSucc) (deriv u j.succ) a b :=
+    HasWeakDerivOn (deriv u j.castSucc) (deriv u j.succ) (Opens.Ioo a b) :=
   (hasWeakIteratedDerivOn_deriv u j.castSucc).hasWeakDerivOn_of_succ
     (hasWeakIteratedDerivOn_deriv u j.succ)
 
@@ -700,7 +551,7 @@ theorem seminorm_le_norm (u : SobolevInterval m a b) : seminorm m a b u ≤ ‖u
 /-- Building an element of `H^m(a, b)` from `L²(a, b)` functions `v 0, …, v m` of which `v j` is
 the `j`-th weak derivative of `v 0`. -/
 def mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
-    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) a b) :
+    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) (Opens.Ioo a b)) :
     SobolevInterval m a b :=
   ⟨WithLp.toLp 2 fun α ↦ v ((derivIndexEquiv m).symm α), fun α ↦
     (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (multiIndexTuple_singleton _)
@@ -709,12 +560,13 @@ def mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
 /-- The weak derivatives of `SobolevInterval.mk v hv` are the `v j`. -/
 @[simp]
 theorem deriv_mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
-    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) a b) (j : Fin (m + 1)) :
+    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) (Opens.Ioo a b))
+    (j : Fin (m + 1)) :
     deriv (mk v hv) j = v j := rfl
 
 /-- The function of `SobolevInterval.mk v hv` is `v 0`. -/
 theorem fn_mk (v : Fin (m + 1) → Lp ℝ 2 (volume.restrict (Ioo a b)))
-    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) a b) :
+    (hv : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn (j : ℕ) (v 0) (v j) (Opens.Ioo a b)) :
     fn (mk v hv) = v 0 := rfl
 
 variable (m a b) in
@@ -885,7 +737,8 @@ variable {a b : ℝ}
 namespace SobolevInterval
 
 /-- The function of `u ∈ H^1(a, b)` has the weak derivative `u'`. -/
-theorem hasWeakDerivOn_fn (u : SobolevInterval 1 a b) : HasWeakDerivOn (fn u) (deriv u 1) a b := by
+theorem hasWeakDerivOn_fn (u : SobolevInterval 1 a b) :
+    HasWeakDerivOn (fn u) (deriv u 1) (Opens.Ioo a b) := by
   have := hasWeakDerivOn_deriv_succ u 0
   rwa [Fin.castSucc_zero, Fin.succ_zero_eq_one, deriv_zero] at this
 
@@ -918,7 +771,7 @@ theorem absolutelyContinuousOnInterval_rep (hab : a ≤ b) (u : SobolevInterval 
 
 /-- The continuous representative has the weak derivative `u'`. -/
 theorem hasWeakDerivOn_rep (hab : a ≤ b) (u : SobolevInterval 1 a b) :
-    HasWeakDerivOn (rep u) (deriv u 1) a b :=
+    HasWeakDerivOn (rep u) (deriv u 1) (Opens.Ioo a b) :=
   hasWeakDerivOn_integral hab (integrableOn_deriv u 1) _
 
 /-- The classical derivative of the continuous representative is `u'` almost everywhere. -/
@@ -1358,7 +1211,7 @@ theorem integrableOn_leibniz (hab : a < b) (u v : SobolevInterval 1 a b) :
 continuous representatives has the weak derivative `u' g_v + g_u v'` on `(a, b)`. -/
 theorem hasWeakDerivOn_rep_mul (hab : a < b) (u v : SobolevInterval 1 a b) :
     HasWeakDerivOn (fun t ↦ rep u t * rep v t)
-      (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) a b :=
+      (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) (Opens.Ioo a b) :=
   (hasWeakDerivOn_integral hab.le (integrableOn_leibniz hab u v) (repConst u * repConst v)).congr_ae
     ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun _ hx ↦
       (rep_mul_rep_eq hab u v (Ioo_subset_Icc_self hx)).symm)) (Eventually.of_forall fun _ ↦ rfl)
@@ -1437,7 +1290,7 @@ interval. A closed subspace of a Hilbert space, hence a Hilbert space. It is the
 [quarteroni2000numerical] §12.4.1, and by `mem_sobolevIntervalZero_iff` it is exactly the set
 (12.42) of functions of `H^1(a, b)` vanishing at both endpoints. -/
 abbrev SobolevIntervalZero (a b : ℝ) : Submodule ℝ (SobolevInterval 1 a b) :=
-  SobolevMultiIndexZero ℝ (Module.Basis.singleton Unit ℝ) 1 2 (Opens.Ioo a b) volume
+  SobolevIntervalLpZero 1 2 (Opens.Ioo a b)
 
 namespace SobolevIntervalZero
 
@@ -1708,7 +1561,7 @@ theorem SobolevIntervalZero.mem_of_rep_eq_zero (hab : a < b) (u : SobolevInterva
   have hCP0 : 0 ≤ CP := by positivity
   set M := Real.sqrt (1 + CP ^ 2) * (1 + Real.sqrt (b - a) * N) with hM
   have hM0 : 0 < M := by positivity
-  rw [← SetLike.mem_coe, SobolevIntervalZero, SobolevMultiIndexZero,
+  rw [← SetLike.mem_coe, SobolevIntervalZero, SobolevIntervalLpZero, SobolevMultiIndexZero,
     Submodule.topologicalClosure_coe, Metric.mem_closure_iff]
   intro ε hε
   set η := ε / (2 * M) with hη
@@ -1726,7 +1579,7 @@ theorem SobolevIntervalZero.mem_of_rep_eq_zero (hab : a < b) (u : SobolevInterva
       simp [hm]
   obtain ⟨φ, hφc⟩ : ∃ φ : 𝓓(Opens.Ioo a b, ℝ), (φ : ℝ → ℝ) = fun x ↦ ∫ t in a..x, ψ' t :=
     ⟨TestFunction.primitive hab ψ' hmean, rfl⟩
-  have hφ' : HasWeakDerivOn φ ψ' a b := by
+  have hφ' : HasWeakDerivOn φ ψ' (Opens.Ioo a b) := by
     have := hasWeakDerivOn_integral hab.le ψ'.integrable_volume.integrableOn 0
     refine this.congr_ae (Eventually.of_forall fun x ↦ ?_) (Eventually.of_forall fun _ ↦ rfl)
     rw [hφc]; simp
@@ -1735,12 +1588,12 @@ theorem SobolevIntervalZero.mem_of_rep_eq_zero (hab : a < b) (u : SobolevInterva
       deriv v 1 = ψ'.toLp₂ := by
     have hloc : LocallyIntegrableOn (φ.toLp₂ : ℝ → ℝ) (Ioo a b) :=
       (Lp.memLp φ.toLp₂).locallyIntegrableOn (Ω := Opens.Ioo a b) one_le_two
-    have h0 : HasWeakIteratedDerivOn 0 φ.toLp₂ φ.toLp₂ a b :=
+    have h0 : HasWeakIteratedDerivOn 0 φ.toLp₂ φ.toLp₂ (Opens.Ioo a b) :=
       HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _ hloc
-    have h1 : HasWeakIteratedDerivOn 1 φ.toLp₂ ψ'.toLp₂ a b :=
+    have h1 : HasWeakIteratedDerivOn 1 φ.toLp₂ ψ'.toLp₂ (Opens.Ioo a b) :=
       hφ'.congr_ae φ.coeFn_toLp₂.symm ψ'.coeFn_toLp₂.symm
     have hv : ∀ j : Fin 2, HasWeakIteratedDerivOn (j : ℕ) (![φ.toLp₂, ψ'.toLp₂] 0)
-        (![φ.toLp₂, ψ'.toLp₂] j) a b := by
+        (![φ.toLp₂, ψ'.toLp₂] j) (Opens.Ioo a b) := by
       intro j
       fin_cases j
       · exact h0
@@ -1832,29 +1685,6 @@ theorem mem_sobolevIntervalZero_iff (hab : a < b) (u : SobolevInterval 1 a b) :
 
 end Density
 
-/-! ### Classical derivatives are weak derivatives, and `C^k[a, b] → H^k(a, b)` -/
-
-section Classical
-
-variable {a b : ℝ} {f : ℝ → ℝ}
-
-/-- **A classical derivative is a weak derivative on an interval**, iterated form: for `f` of
-class `C^N` on `(a, b)` and `k ≤ N`, the `k`-th derivative `iteratedDeriv k f` is the `k`-th weak
-derivative of `f` on `(a, b)`. This is `ContDiffOn.hasWeakIteratedFDerivOn` read in the direction
-`1`; on the open interval `iteratedDeriv k f` agrees with `iteratedDerivWithin k f (Ioo a b)`. -/
-theorem hasWeakIteratedDerivOn_of_contDiffOn {N : ℕ∞ω} {k : ℕ} (hf : ContDiffOn ℝ N f (Ioo a b))
-    (hk : (k : ℕ∞ω) ≤ N) : HasWeakIteratedDerivOn k f (iteratedDeriv k f) a b :=
-  (ContDiffOn.hasWeakIteratedFDerivOn (Ω := Opens.Ioo a b) (μ := volume) hf hk).lineDeriv _
-
-/-- **A classical derivative is a weak derivative on an interval**: for `f` of class `C¹` on
-`(a, b)`, `deriv f` is the weak derivative of `f` on `(a, b)`. -/
-theorem hasWeakDerivOn_of_contDiffOn (hf : ContDiffOn ℝ 1 f (Ioo a b)) :
-    HasWeakDerivOn f (deriv f) a b := by
-  have := hasWeakIteratedDerivOn_of_contDiffOn (k := 1) hf le_rfl
-  rwa [iteratedDeriv_one] at this
-
-end Classical
-
 namespace ContDiffMapIcc
 
 variable {a b : ℝ} {hab : a ≤ b} {k : ℕ}
@@ -1887,9 +1717,11 @@ theorem derivLp_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
 the open interval the `j`-th entry of the tuple is the `j`-th classical derivative
 (`ContDiffMapIcc.deriv_eq_iteratedDerivWithin`), and a classical derivative is a weak one. -/
 theorem hasWeakIteratedDerivOn_derivLp (hlt : a < b) (u : ContDiffMapIcc hab k)
-    (j : Fin (k + 1)) : HasWeakIteratedDerivOn (j : ℕ) (u.derivLp 0) (u.derivLp j) a b := by
+    (j : Fin (k + 1)) :
+    HasWeakIteratedDerivOn (j : ℕ) (u.derivLp 0) (u.derivLp j) (Opens.Ioo a b) := by
   have hcd : ContDiffOn ℝ k u.extend (Ioo a b) := (u.contDiffOn hlt).mono Ioo_subset_Icc_self
-  have h := hasWeakIteratedDerivOn_of_contDiffOn hcd (k := j) (by exact_mod_cast Fin.is_le j)
+  have h := hasWeakIteratedDerivOn_of_contDiffOn (I := Opens.Ioo a b) hcd (k := j)
+    (by exact_mod_cast Fin.is_le j)
   refine h.congr_ae ?_ ?_
   · exact (coeFn_derivLp u 0).symm
   · refine EventuallyEq.trans ?_ (coeFn_derivLp u j).symm
@@ -2084,62 +1916,6 @@ section Piecewise
 
 variable {a b : ℝ}
 
-/-- **The fundamental theorem of calculus for a continuous piecewise-`C¹` function** on a
-partition `x 0 = a < x 1 < ⋯ < x (N + 1)`: for every node index `j`, `g' = deriv g` is bounded by
-`C` almost everywhere on `(a, x j)` and `g t = g a + ∫_a^t g'` on `[a, x j]`. By induction on
-`j`, the step being the fundamental theorem of calculus on one panel, where `g` is continuous up
-to the ends and differentiable inside; continuity of `g` at the nodes glues the panels. -/
-theorem eq_add_integral_deriv_of_piecewise {N : ℕ} {x : Fin (N + 2) → ℝ} (hx : StrictMono x)
-    (hxa : x 0 = a) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a (x (Fin.last (N + 1)))))
-    (hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 g (Ioo (x j.castSucc) (x j.succ)))
-    {C : ℝ} (hbdd : ∀ j : Fin (N + 1), ∀ t ∈ Ioo (x j.castSucc) (x j.succ), |deriv g t| ≤ C) :
-    ∀ j : Fin (N + 2), (∀ᵐ t, t ∈ Ioo a (x j) → |deriv g t| ≤ C) ∧
-      ∀ t ∈ Icc a (x j), g t = g a + ∫ s in a..t, deriv g s := by
-  have hmono : Monotone x := hx.monotone
-  have hxa' : ∀ j, a ≤ x j := fun j ↦ hxa ▸ hmono (Fin.zero_le j)
-  have hxb' : ∀ j, x j ≤ x (Fin.last (N + 1)) := fun j ↦ hmono (Fin.le_last j)
-  intro j
-  induction j using Fin.induction with
-  | zero =>
-    refine ⟨?_, fun t ht ↦ ?_⟩
-    · rw [hxa, Ioo_self]
-      exact Eventually.of_forall fun t ht ↦ absurd ht (notMem_empty t)
-    · rw [hxa, Icc_self, mem_singleton_iff] at ht
-      rw [ht, intervalIntegral.integral_same, add_zero]
-  | succ j ih =>
-    obtain ⟨ihae, ihfun⟩ := ih
-    have hlt : x j.castSucc < x j.succ := hx (Fin.castSucc_lt_succ (i := j))
-    -- the bound on the new panel, almost everywhere
-    have hae : ∀ᵐ t, t ∈ Ioo a (x j.succ) → |deriv g t| ≤ C := by
-      have hne : ∀ᵐ t : ℝ, t ≠ x j.castSucc := by simp [ae_iff, measure_singleton]
-      filter_upwards [ihae, hne] with t ht htne htI
-      rcases lt_or_gt_of_ne htne with h | h
-      · exact ht ⟨htI.1, h⟩
-      · exact hbdd j t ⟨h, htI.2⟩
-    refine ⟨hae, fun t ht ↦ ?_⟩
-    rcases le_or_gt t (x j.castSucc) with htj | htj
-    · exact ihfun t ⟨ht.1, htj⟩
-    -- integrability of the derivative on `(a, x (j+1))`
-    have hint : IntegrableOn (deriv g) (Ioo a (x j.succ)) :=
-      Measure.integrableOn_of_bounded (M := C) (by simp) (measurable_deriv g).aestronglyMeasurable
-        ((ae_restrict_iff' measurableSet_Ioo).2 (hae.mono fun t ht htI ↦ by
-          rw [Real.norm_eq_abs]; exact ht htI))
-    have hint' : ∀ y z, y ∈ Icc a (x j.succ) → z ∈ Icc a (x j.succ) →
-        IntervalIntegrable (deriv g) volume y z := fun y z hy hz ↦
-      (hint.integrableOn_Icc_of_Ioo.mono_set (uIcc_subset_Icc hy hz)).intervalIntegrable
-    -- the fundamental theorem of calculus on `[x j, t]`
-    have hftc : ∫ s in (x j.castSucc)..t, deriv g s = g t - g (x j.castSucc) := by
-      refine intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le htj.le
-        (hg.mono (Icc_subset_Icc (hxa' _) (ht.2.trans (hxb' _)))) (fun s hs ↦ ?_)
-        (hint' _ _ ⟨hxa' _, hlt.le⟩ ht)
-      have hs' : s ∈ Ioo (x j.castSucc) (x j.succ) := ⟨hs.1, hs.2.trans_le ht.2⟩
-      exact (((hg' j).differentiableOn one_ne_zero).differentiableAt
-        (isOpen_Ioo.mem_nhds hs')).hasDerivAt
-    have hj := ihfun (x j.castSucc) ⟨hxa' _, le_rfl⟩
-    rw [← intervalIntegral.integral_add_adjacent_intervals (hint' _ _ ⟨le_rfl, hxa' _⟩
-      ⟨hxa' _, hlt.le⟩) (hint' _ _ ⟨hxa' _, hlt.le⟩ ht), hftc, ← add_assoc, ← hj]
-    ring
-
 /-- **Continuous piecewise-`C¹` functions lie in `H^1(a, b)`**: for a partition
 `x 0 = a < x 1 < ⋯ < x (N + 1) = b` and `g` continuous on `[a, b]`, `C¹` on each open panel with
 the panel derivatives bounded by a common constant, `g ∈ H^1(a, b)` with weak derivative
@@ -2152,7 +1928,7 @@ theorem memSobolevInterval_of_piecewise_contDiffOn {N : ℕ} {x : Fin (N + 2) �
     (hg : ContinuousOn g (Icc a b))
     (hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 g (Ioo (x j.castSucc) (x j.succ)))
     (hbdd : ∃ C, ∀ j : Fin (N + 1), ∀ t ∈ Ioo (x j.castSucc) (x j.succ), |deriv g t| ≤ C) :
-    MemSobolevInterval g 1 a b ∧ HasWeakDerivOn g (deriv g) a b := by
+    MemSobolevInterval g 1 a b ∧ HasWeakDerivOn g (deriv g) (Opens.Ioo a b) := by
   obtain ⟨C, hC⟩ := hbdd
   have hab : a ≤ b := hxa ▸ hxb ▸ hx.monotone (Fin.zero_le _)
   obtain ⟨hae, hfun⟩ := eq_add_integral_deriv_of_piecewise hx hxa (hxb ▸ hg) hg' hC
@@ -2162,7 +1938,7 @@ theorem memSobolevInterval_of_piecewise_contDiffOn {N : ℕ} {x : Fin (N + 2) �
     MemLp.of_bound (measurable_deriv g).aestronglyMeasurable C
       ((ae_restrict_iff' measurableSet_Ioo).2 (hae.mono fun t ht htI ↦ by
         rw [Real.norm_eq_abs]; exact ht htI))
-  have hweak : HasWeakDerivOn g (deriv g) a b :=
+  have hweak : HasWeakDerivOn g (deriv g) (Opens.Ioo a b) :=
     (hasWeakDerivOn_integral hab (hmem.integrable one_le_two) (g a)).congr_ae
       ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun t ht ↦
         (hfun t (Ioo_subset_Icc_self ht)).symm)) (Eventually.of_forall fun _ ↦ rfl)

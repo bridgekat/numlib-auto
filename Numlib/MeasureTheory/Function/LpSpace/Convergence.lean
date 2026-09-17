@@ -212,4 +212,21 @@ theorem Lp.not_finiteDimensional_of_isOpen (μ : Measure G) [μ.IsOpenPosMeasure
 
 end Infinite
 
+/-! ### `L^∞` elements are bounded by their norm -/
+
+namespace Lp
+
+/-- An element of `L^∞` is a.e. bounded by its norm. -/
+theorem ae_norm_le_norm_top (u : Lp E ∞ μ) :
+    ∀ᵐ x ∂μ, ‖u x‖ ≤ ‖u‖ := by
+  have hne : eLpNormEssSup (⇑u) μ ≠ ∞ := by
+    rw [← eLpNorm_exponent_top (Lp.aestronglyMeasurable u)]
+    exact Lp.eLpNorm_ne_top u
+  filter_upwards [ae_le_eLpNormEssSup (f := ⇑u) (μ := μ)] with x hx
+  rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable u)]
+  rw [← ofReal_norm] at hx
+  exact (ENNReal.ofReal_le_iff_le_toReal hne).1 hx
+
+end Lp
+
 end MeasureTheory

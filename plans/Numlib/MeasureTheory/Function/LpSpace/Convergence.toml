@@ -15,3 +15,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10 (exp
 [[node]]
 id = "Lp.not_finiteDimensional_of_isOpen"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"
+
+[[node]]
+id = "Lp.ae_norm_le_norm_top"

@@ -36,23 +36,6 @@ inequalities of Problem 47 (Comments on Chapter 8, 1(i)).
 '''
 
 [[node]]
-id = "SobolevIntervalLpZero"
-kind = "definition"
-desc = '''`abbrev SobolevIntervalLpZero (m : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) : Submodule ℝ (SobolevIntervalLp m p I) :=
-SobolevMultiIndexZero ℝ (Module.Basis.singleton Unit ℝ) m p I volume` — `W_0^{m,p}(I)`, the closure
-of the test functions in `W^{m,p}(I)`; `W_0^{1,p}(I)` at `m = 1`, `H_0^1(I)` at `m = 1`, `p = 2`.
-The order is an explicit argument exactly as in `SobolevIntervalLp m p I` and chapter 9a's
-`SobolevEuclideanZero N k p Ω`, so that Remark 18's `W_0^{m,p}(I)` is the same abbreviation at
-order `m` (the book closes `C_c^m(I)`, which has the same closure) and needs no second
-definition. Inherits `isClosed`,
-`instCompleteSpace` from `SobolevMultiIndexZero`; `testFunctions_le`, `mem_of_fn_ae_eq` (an
-element whose function is a test function lies in it), `exists_mem_fn_ae_eq` (every test function
-occurs) as for `SobolevIntervalZero`. Specializes to `SobolevIntervalZero` (which becomes its
-abbrev), `SobolevIntervalZero.mem_of_fn_ae_eq`, `exists_mem_fn_ae_eq`. ★'''
-deps = ["SobolevIntervalLp", "SobolevMultiIndexZero", "SobolevMultiIndexZero.testFunctions_le", "TestFunction.exists_mem_sobolevMultiIndex_testFunctions"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
-
-[[node]]
 id = "SobolevIntervalLpZero.rep_frontier_eq_zero"
 kind = "theorem"
 desc = '''**Theorem 8.12, the easy direction**: for `(hI : OrdConnected)`, `[Fact (1 ≤ p)]` (every `p`),

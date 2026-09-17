@@ -726,7 +726,7 @@ theorem deriv_ae_eq_of_fn_ae_eq {v : SobolevInterval 1 a b}
     (φ : 𝓓(Opens.Ioo a b, ℝ)) (hv : fn v =ᵐ[volume.restrict (Ioo a b)] φ) :
     (deriv v 1 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] _root_.deriv φ := by
   have h1 := hasWeakDerivOn_fn v
-  have h2 : HasWeakDerivOn (fn v) (_root_.deriv φ) a b :=
+  have h2 : HasWeakDerivOn (fn v) (_root_.deriv φ) (Opens.Ioo a b) :=
     (hasWeakDerivOn_of_contDiffOn ((φ.contDiff.of_le (by simp)).contDiffOn)).congr_ae hv.symm
       (Eventually.of_forall fun _ ↦ rfl)
   exact (ae_restrict_iff' measurableSet_Ioo).2 (h1.ae_eq h2)
@@ -738,7 +738,7 @@ theorem hasWeakDerivOn_mulL_deriv (αL βL γL : Lp ℝ ⊤ (volume.restrict (Io
     (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
     (hu : IsGalerkinSolution (form a b αL βL γL) (load a b f) (SobolevIntervalZero a b) u) :
     HasWeakDerivOn (fun x ↦ αL x * deriv u 1 x)
-      (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x) a b := by
+      (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x) (Opens.Ioo a b) := by
   have hG : MemLp (fun x ↦ αL x * deriv u 1 x) 2 (volume.restrict (Ioo a b)) :=
     (Lp.memLp (mulL αL (deriv u 1))).ae_eq (coeFn_mulL αL (deriv u 1))
   have hW : MemLp (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x) 2
@@ -786,7 +786,7 @@ theorem hasWeakDerivOn_mulL_deriv (αL βL γL : Lp ℝ ⊤ (volume.restrict (Io
     refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
     simp only
     ring
-  rw [e3]
+  rw [Opens.coe_Ioo, e3]
   linarith
 
 open SobolevInterval in
@@ -852,12 +852,12 @@ open SobolevInterval in
 theorem exists_sobolevInterval_two (u U₁ : SobolevInterval 1 a b)
     (hU₁ : fn U₁ =ᵐ[volume.restrict (Ioo a b)] deriv u 1) :
     ∃ Φ : SobolevInterval 2 a b, inclusionCLM 1 a b Φ = u ∧ deriv Φ 2 = deriv U₁ 1 := by
-  have h1 : HasWeakDerivOn (deriv u 0) (deriv u 1) a b := by
+  have h1 : HasWeakDerivOn (deriv u 0) (deriv u 1) (Opens.Ioo a b) := by
     rw [deriv_zero]; exact hasWeakDerivOn_fn u
-  have h2 : HasWeakDerivOn (deriv u 1) (deriv U₁ 1) a b :=
+  have h2 : HasWeakDerivOn (deriv u 1) (deriv U₁ 1) (Opens.Ioo a b) :=
     (hasWeakDerivOn_fn U₁).congr_ae hU₁ (Eventually.of_forall fun _ ↦ rfl)
   have hv : ∀ j : Fin 3, HasWeakIteratedDerivOn (j : ℕ) (![deriv u 0, deriv u 1, deriv U₁ 1] 0)
-      (![deriv u 0, deriv u 1, deriv U₁ 1] j) a b := by
+      (![deriv u 0, deriv u 1, deriv U₁ 1] j) (Opens.Ioo a b) := by
     intro j
     fin_cases j
     · exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _

@@ -200,6 +200,7 @@ import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Interval
+import Numlib.Analysis.Sobolev.Interval.Basic
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
