@@ -75,3 +75,20 @@ id = "WithEnergy.instFiniteDimensional"
 
 [[node]]
 id = "WithEnergy.instCompleteSpace"
+
+[[node]]
+id = "WithEnergy.instCompleteSpace_of_continuousLinearMap"
+kind = "theorem"
+desc = '''The energy space of a *bounded* symmetric coercive operator on a complete space is complete:
+for `A : E →L[𝕜] E` with `hA : (A : E →ₗ[𝕜] E).IsSymmetricCoercive` and `[CompleteSpace E]`,
+`CompleteSpace (WithEnergy (A : E →ₗ[𝕜] E) hA)`. `Numlib/Analysis/InnerProductSpace/Energy.lean`
+has the instance only for finite-dimensional `E` (`WithEnergy.instCompleteSpace`), but its
+`WithEnergy.continuous_equiv` already shows that the identity `E ≃ₗ WithEnergy A hA` is continuous
+both ways for a bounded `A`, i.e. a `ContinuousLinearEquiv`, and completeness transfers along one
+(`ContinuousLinearEquiv.completeSpace` / `UniformEquiv.completeSpace_iff`). Needed so that
+`HilbertBasis ℕ ℝ (WithEnergy …)` (a linear isometry equivalence with `ℓ²`, which forces
+completeness, and `HilbertBasis.mkOfOrthogonalEqBot`'s `[CompleteSpace]`) makes sense for
+Remark 28 (b), and for the Dirichlet phase space `Wave.dirichletPhaseSpace` of chapter 10, which
+is `WithLp 2 (WithEnergy … × L²(Ω))`. A ~20-line lemma that belongs in `Energy.lean` beside the
+finite-dimensional instance; recorded here (its first consumer) until the orchestrator moves it. ★'''
+deps = ["WithEnergy", "LinearMap.IsSymmetricCoercive"]

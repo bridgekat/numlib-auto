@@ -1,0 +1,221 @@
+namespace = "Brezis.Chapter09"
+desc = '''
+Brezis §9.3, "Sobolev inequalities" (lines 10397–10779). A: the whole space — Theorem 9.9
+(Sobolev–Gagliardo–Nirenberg, `1 ≤ p < N`), Remark 10 (scaling), Lemma 9.4, Corollary 9.10,
+Corollary 9.11 (`p = N`), Theorem 9.12 (Morrey, `p > N`) with Remarks 11–12, Corollary 9.13
+(`W^{m,p}(ℝ^N)`), Remark 13 (`W^{N,1} ⊆ L^∞`). B: `Ω` of class `C^1` with bounded boundary, or
+the half space — Corollary 9.14 (three cases and the Hölder estimate, `W^{1,p}(Ω) ⊆ C(Ω̄)`),
+Corollary 9.15 (`W^{m,p}(Ω)`), Theorem 9.16 (Rellich–Kondrachov, three cases and `W^{1,p} ⊂⊂ L^p`),
+Remark 14 (optimality), Remark 15 (equivalent norms), Remark 16 (the limiting case `p = N`).
+
+Correspondence: A is `Numlib/Analysis/Sobolev/Embedding` (Mathlib's
+`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq` for compactly supported `C^1` functions is
+Theorem 9.9's first step; everything for `p ≥ N` is new), B is `EmbeddingDomain` (through the
+extension operator of §9.2) and `Compactness` (through chapter 4's Kolmogorov–M. Riesz–Fréchet
+theorem and the backbone's Arzelà–Ascoli). "Continuous injection" is `IsContinuousEmbedding`
+and "compact injection" `IsCompactEmbedding` (`Numlib/Analysis/Normed/Operator/Embedding`),
+along the inclusion `SobolevMultiIndex.toLpₗ` into `L^q(Ω)` and, for `p > N`,
+`SobolevEuclidean.toContinuousMapL` into `C(closure Ω, ℝ)`. The exponent `p* = Np/(N − p)` is
+written by its defining equation `1/p* = 1/p − 1/N` in `ℝ≥0`, as Mathlib does. The book's
+standing hypothesis for B is the node hypothesis `IsClassC1 Ω ∧ Bornology.IsBounded (frontier Ω)`
+or `Ω = EuclideanSpace.upperHalfSpace`, bundled in the backbone as `IsSobolevExtensionDomain N p Ω`
+(`Numlib/Analysis/Sobolev/Cutoff`). Constants: Theorem
+9.9 carries Mathlib's `SNormLESNormFDerivOfEqConst` (footnote 9's `(N−1)p/(N−p)` is not
+carried, see `Chapter09.toml`); the book's other constants are unspecified. Remark 14 (ii) (the
+injection into `L^{p*}` is never compact) is not planned.
+'''
+
+[[node]]
+id = "theorem_9_9"
+kind = "theorem"
+desc = '''Theorem 9.9 (Sobolev, Gagliardo, Nirenberg): for `1 ≤ p < N` and `1/p* = 1/p − 1/N`,
+`W^{1,p}(ℝ^N) ⊆ L^{p*}(ℝ^N)` — every `u ∈ sobolevSpace N p ⊤` has `fn u ∈ L^{p*}(ℝ^N)` — and there
+is `C = C(p, N)` with `‖u‖_{p*} ≤ C ‖∇u‖_p` for all `u ∈ W^{1,p}(ℝ^N)`, the gradient norm being
+`SobolevMultiIndex.gradNorm` (or the tensor gradient's `eLpNorm`). The backbone's
+`SobolevEuclidean.isContinuousEmbedding_toLp_of_eq` over `HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`
+(`Embedding`), from Mathlib's Gagliardo–Nirenberg–Sobolev inequality for compactly supported
+`C^1` functions by density and Fatou. ★'''
+deps = ["sobolevSpace", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq", "HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq", "SobolevMultiIndex.gradNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.9"
+
+[[node]]
+id = "remark_9_10"
+kind = "theorem"
+desc = '''Remark 10 (scaling): if there are `C` and `q ∈ [1, ∞]` with `‖u‖_q ≤ C ‖∇u‖_p` for all
+`u ∈ C_c^∞(ℝ^N)`, then `q = p*` (`1/q = 1/p − 1/N`). Proof: for a fixed `u ≠ 0` and
+`u_λ x = u (λ • x)`, `‖u_λ‖_q = λ^{−N/q} ‖u‖_q` and `‖∇u_λ‖_p = λ^{1 − N/p} ‖∇u‖_p`
+(`MeasureTheory.Measure.addHaar_smul`, `integral_comp_smul`, `fderiv_comp_smul`), so
+`λ^{1 + N/q − N/p}` is bounded above and below over `λ > 0`, forcing the exponent to vanish. A
+nonzero `u ∈ C_c^∞` exists (`ContDiffBump`). Surface-only. ★★'''
+deps = ["sobolevSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 10"
+
+[[node]]
+id = "lemma_9_4"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Lemma 9.4: for `N ≥ 2` and `f_1, …, f_N ∈ L^{N−1}(ℝ^{N−1})`, the function
+`f(x) = ∏_i f_i(x̃_i)`, `x̃_i` being `x` with the `i`-th coordinate omitted, lies in `L^1(ℝ^N)` with
+`‖f‖_{L^1(ℝ^N)} ≤ ∏_i ‖f_i‖_{L^{N−1}(ℝ^{N−1})}`. The backbone's
+`MeasureTheory.lintegral_prod_comp_succAbove_le` (`Embedding`, ★★★ there and without consumer:
+Mathlib's `lintegral_prod_lintegral_pow_le` is the special case Theorem 9.9's proof uses, so this
+node is only the book's lemma for its own sake). Stated on `Fin N → ℝ` with `x ∘ Fin.succAbove i`
+for `x̃_i`. ★'''
+deps = ["MeasureTheory.lintegral_prod_comp_succAbove_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
+
+[[node]]
+id = "corollary_9_10"
+kind = "theorem"
+desc = '''Corollary 9.10: for `1 ≤ p < N`, `W^{1,p}(ℝ^N) ⊆ L^q(ℝ^N)` with continuous injection for
+every `q ∈ [p, p*]`: `IsContinuousEmbedding` of the inclusion `sobolevSpace N p ⊤ →ₗ L^q(ℝ^N)`.
+The backbone's `SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le` (`Embedding`), by the
+interpolation inequality (Remark 2 of chapter 4, `MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`)
+and Young's inequality. ★'''
+deps = ["sobolevSpace", "SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.10"
+
+[[node]]
+id = "corollary_9_11"
+kind = "theorem"
+desc = '''Corollary 9.11 (the limiting case `p = N`): `W^{1,N}(ℝ^N) ⊆ L^q(ℝ^N)` with continuous
+injection for every `q ∈ [N, +∞)` (`N ≥ 2`), the constant depending on `q` and `N` (footnote 11:
+it blows up as `q → ∞`). The backbone's `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank`
+(`Embedding`, the `|u|^{m−1} u` iteration). ★'''
+deps = ["sobolevSpace", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.11"
+
+[[node]]
+id = "theorem_9_12"
+kind = "theorem"
+desc = '''Theorem 9.12 (Morrey): for `p > N`, `W^{1,p}(ℝ^N) ⊆ L^∞(ℝ^N)` with continuous injection
+(`theorem_9_12`: `MemLp (fn u) ∞ volume` and `‖u‖_∞ ≤ C ‖u‖_{W^{1,p}}`), and (25)
+`|u(x) − u(y)| ≤ C |x − y|^α ‖∇u‖_p` for a.e. `x, y ∈ ℝ^N`, `α = 1 − N/p`, `C = C(p, N)`
+(`theorem_9_12_holder`). The backbone's `HasWeakFDerivOn.exists_continuous_holderWith_ae_eq`
+(`Embedding`, the cube-average argument), whose continuous representative `ũ` satisfies the
+Hölder inequality everywhere, hence `u` a.e. Includes `p = ∞`. ★'''
+deps = ["sobolevSpace", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "SobolevMultiIndex.gradNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.12"
+
+[[node]]
+id = "remark_9_11"
+kind = "theorem"
+desc = '''Remark 11: for `p > N`, every `u ∈ W^{1,p}(ℝ^N)` has a continuous representative —
+`∃ ũ, Continuous ũ ∧ fn u =ᵐ[volume] ũ` — unique (two continuous functions a.e. equal are
+equal), which the book thereafter denotes `u`. The `Continuous` clause of
+`HasWeakFDerivOn.exists_continuous_holderWith_ae_eq`; the backbone's
+`SobolevEuclidean.toContinuousMapL` bundles `u ↦ ũ` as a bounded linear map into the bounded
+continuous functions. `remark_9_12`: for `N < p < ∞`, `ũ x → 0` as `‖x‖ → ∞`
+(`Tendsto ũ (cocompact _) (𝓝 0)`), the last clause of the same backbone node. ★'''
+deps = ["theorem_9_12", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 11 and Remark 12"
+
+[[node]]
+id = "corollary_9_13"
+kind = "theorem"
+desc = '''Corollary 9.13: for `m ≥ 1` and `1 ≤ p < ∞`, `W^{m,p}(ℝ^N) ⊆ L^q(ℝ^N)` with `1/q = 1/p − m/N`
+if `1/p − m/N > 0` (`corollary_9_13_lt`), `⊆ L^q(ℝ^N)` for all `q ∈ [p, ∞)` if `1/p − m/N = 0`
+(`corollary_9_13_eq`), `⊆ L^∞(ℝ^N)` if `1/p − m/N < 0` (`corollary_9_13_gt`), all with continuous
+injections; and if `m − N/p > 0` is not an integer, with `k = ⌊m − N/p⌋` and
+`θ = m − N/p − k`, `‖D^α u‖_∞ ≤ C ‖u‖_{W^{m,p}}` for `|α| ≤ k` and
+`|D^α u(x) − D^α u(y)| ≤ C ‖u‖_{W^{m,p}} |x − y|^θ` a.e. for `|α| = k`; in particular
+`W^{m,p}(ℝ^N) ⊆ C^k(ℝ^N)` modulo representatives (`corollary_9_13_holder`, footnotes 12–14). The
+backbone's `SobolevEuclidean.memLp_fn_of_order` and `SobolevEuclidean.exists_contDiff_ae_eq_of_order`
+(`Embedding`), "repeated applications of Theorem 9.9, Corollary 9.11 and Theorem 9.12". The node
+is the conjunction. ★'''
+deps = ["sobolevSpaceHigher", "SobolevEuclidean.memLp_fn_of_order", "SobolevEuclidean.exists_contDiff_ae_eq_of_order"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13"
+
+[[node]]
+id = "remark_9_13"
+kind = "theorem"
+desc = '''Remark 13: `W^{N,1}(ℝ^N) ⊆ L^∞(ℝ^N)` with `‖u‖_∞ ≤ C ‖u‖_{W^{N,1}}` (and a continuous
+representative). The backbone's `SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one`
+(`Embedding`), the iterated fundamental theorem of calculus. The remark's "but it is not true,
+in general, that `W^{m,p} ⊆ L^∞` for `p > 1` and `m = N/p`" is a counterexample and is not
+planned. ★'''
+deps = ["sobolevSpaceHigher", "SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 13"
+
+[[node]]
+id = "corollary_9_14"
+kind = "theorem"
+desc = '''Corollary 9.14: for `Ω` of class `C^1` with `Γ` bounded (or `Ω = ℝ^N_+`) and
+`1 ≤ p ≤ ∞`: `W^{1,p}(Ω) ⊆ L^{p*}(Ω)` if `p < N` (`corollary_9_14_lt`, stated for `q ∈ [p, p*]` as
+Corollary 9.10), `W^{1,p}(Ω) ⊆ L^q(Ω)` for all `q ∈ [p, +∞)` if `p = N` (`corollary_9_14_eq`),
+`W^{1,p}(Ω) ⊆ L^∞(Ω)` if `p > N` (`corollary_9_14_gt`), all with continuous injections; and for
+`p > N`, `|u(x) − u(y)| ≤ C ‖u‖_{W^{1,p}} |x − y|^α` a.e. `x, y ∈ Ω`, `α = 1 − N/p`, with a
+representative continuous on `Ω̄` — `W^{1,p}(Ω) ⊆ C(Ω̄)`, footnote 15 (`corollary_9_14_holder`).
+The backbone's `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt`,
+`…_of_eq`, `SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq` (`EmbeddingDomain`),
+under `IsSobolevExtensionDomain N p Ω` supplied by Theorem 9.7 (`IsSobolevExtensionDomain.of_isContDiffChartDomain`,
+`Extension`) or its half-space case (`IsSobolevExtensionDomain.upperHalfSpace`, `Reflection`). The node is the conjunction. Restated under `IsContDiffDomain 1 Ω`, this
+is Atkinson–Han's Theorem 7.3.7 at `k = 1` (`Chapter09.toml`). ★'''
+deps = ["IsClassC1", "sobolevSpace", "IsSobolevExtensionDomain", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.14"
+
+[[node]]
+id = "corollary_9_15"
+kind = "theorem"
+desc = '''Corollary 9.15: the conclusion of Corollary 9.13 holds with `ℝ^N` replaced by `Ω` of
+class `C^1` with `Γ` bounded (or `ℝ^N_+`) — the `L^q` clauses (`corollary_9_15_lp`) and, for
+`m − N/p > 0` not an integer, `W^{m,p}(Ω) ⊆ C^k(Ω̄)` with `k = ⌊m − N/p⌋`, where `C^k(Ω̄)` is the
+set of `u ∈ C^k(Ω)` all of whose derivatives of order `≤ k` extend continuously to `Ω̄`
+(footnote 16; `corollary_9_15_ck`). The backbone's `SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension`
+and `SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order` (`EmbeddingDomain`), "by repeated
+application of Corollary 9.14" — footnote 17: no `W^{m,p}` extension operator is used. Consumed
+by chapter 9b's Theorem 9.31 (`e_n ∈ C^∞(Ω)`); Atkinson–Han's Theorem 7.3.7 at every `k` under
+`C^1`. ★'''
+deps = ["IsClassC1", "sobolevSpaceHigher", "SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension", "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15"
+
+[[node]]
+id = "theorem_9_16"
+kind = "theorem"
+desc = '''Theorem 9.16 (Rellich–Kondrachov): for `Ω` bounded of class `C^1`, the following injections
+are compact (`IsCompactEmbedding`): `W^{1,p}(Ω) ⊂ L^q(Ω)` for all `q ∈ [1, p*)` if `p < N`
+(`theorem_9_16_lt`), `W^{1,p}(Ω) ⊂ L^q(Ω)` for all `q ∈ [p, +∞)` if `p = N` (`theorem_9_16_eq`),
+`W^{1,p}(Ω) ⊂ C(Ω̄)` if `p > N` (`theorem_9_16_gt`, along `SobolevEuclidean.toContinuousMapL`);
+in particular `W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection for all `p` and all `N`
+(`theorem_9_16_self`). The backbone's `SobolevEuclidean.isCompactEmbedding_toLp_of_lt`, `…_of_eq`,
+`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`, `SobolevEuclidean.isCompactEmbedding_toLp_self`
+(`Numlib/Analysis/Sobolev/Compactness`): Theorem 4.26 (chapter 4's Kolmogorov–M. Riesz–Fréchet,
+`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`) applied to
+`P(unit ball)` for `p < N`, Arzelà–Ascoli for `p > N`. The node is the conjunction. Restated under
+`IsContDiffDomain 1 Ω`, this is Atkinson–Han's Theorem 7.3.8 at `k = 1` (`Chapter09.toml`). ★'''
+deps = ["IsClassC1", "sobolevSpace", "SobolevEuclidean.isCompactEmbedding_toLp_of_lt", "SobolevEuclidean.isCompactEmbedding_toLp_of_eq", "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt", "SobolevEuclidean.isCompactEmbedding_toLp_self"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
+
+[[node]]
+id = "remark_9_14_i"
+kind = "theorem"
+desc = '''Remark 14 (i): if `Ω` is not bounded the injection `W^{1,p}(Ω) ⊂ L^p(Ω)` is in general not
+compact — stated for `Ω = ℝ^N`: the inclusion `sobolevSpace N p ⊤ →ₗ L^p(ℝ^N)` is not an
+`IsCompactEmbedding`. Proof: the translates `u_n x = φ (x − n e_1)` of a fixed
+`φ ∈ C_c^∞(ℝ^N)`, `φ ≠ 0`, are bounded in `W^{1,p}` (translation invariance) and pairwise at
+distance `2^{1/p} ‖φ‖_p` in `L^p` once their supports are disjoint, so no subsequence converges
+(the argument of chapter 4's `exercise_4_33`, `Brezis.Chapter04.exercise_4_33`, in `N`
+dimensions). Surface-only. Remark 14 (ii) (the injection into `L^{p*}` is never compact) needs a
+concentration counterexample and is not planned. ★★'''
+deps = ["sobolevSpace", "IsCompactEmbedding", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 14 (i)"
+
+[[node]]
+id = "remark_9_15"
+kind = "theorem"
+desc = '''Remark 15: for `Ω` bounded of class `C^1`, the norm `‖∇u‖_p + ‖u‖_q` is equivalent to the
+`W^{1,p}` norm as long as `1 ≤ q ≤ p*` if `1 ≤ p < N`, `1 ≤ q < ∞` if `p = N`, `1 ≤ q ≤ ∞` if
+`p > N`. The backbone's `SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded`
+(`EmbeddingDomain`) and `bookNorm_equiv`. ★'''
+deps = ["IsClassC1", "sobolevSpace", "SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded", "bookNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 15"
+
+[[node]]
+id = "remark_9_16"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 16 (the limiting case `p = N`): on `Ω = {x ∈ ℝ^N : |x| < 1/2}`, `N ≥ 2`, and for
+`0 < α < 1 − 1/N`, the function `u x = (log (1/|x|))^α` belongs to `W^{1,N}(Ω)` but not to
+`L^∞(Ω)`. The backbone's `memSobolevMultiIndex_logRpow` (`EmbeddingDomain`, via the
+removable-singularity lemma of `RemovableSingularity.lean`). Trudinger's inequality is quoted
+without proof and is not planned. ★'''
+deps = ["sobolevSpace", "memSobolevMultiIndex_logRpow"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"

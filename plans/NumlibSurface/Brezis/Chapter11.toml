@@ -1,0 +1,113 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, Chapter 11: miscellaneous complements — finite-codimensional subspaces (§11.1), quotient
+spaces (§11.2), the classical sequence spaces (§11.3), and Banach spaces over `ℂ` (§11.4). The
+chapter has no Comments section and no exercises; every numbered result of its main text
+(Propositions 11.1–11.37, Remarks 1 and 2) has a node in the section group beside this file, and
+so do the unnumbered "Definition" paragraphs and the displayed claims of §11.3 and §11.4 that
+carry a precise statement. Nothing is blocked: every node has a route with today's Mathlib and
+the backbone planned below.
+
+**Design.** The first three sections are stated over `ℝ`, as the book is, and delegate to
+Mathlib or to backbone modules written over `RCLike 𝕜`; §11.4 is the one place where the surface
+works over `ℂ`, and it obtains the complex statements either from Mathlib's `RCLike` theorems
+directly or, where the book itself argues through `E_ℝ`, from the real surface nodes of chapters
+1 and 5 applied to `E` with `NormedSpace.complexToReal` / `InnerProductSpace.complexToReal` and
+transported along `f ↦ Re f` (Proposition 11.22, Mathlib's `ContinuousLinearMap.extendRCLikeₗᵢ`).
+
+* **§11.1** is almost entirely Mathlib (`Submodule.closed_of_finiteDimensional`,
+  `LinearMap.continuous_of_finiteDimensional`, `Submodule.isClosed_sup_finiteDimensional`,
+  `Submodule.isClosed_mono_of_finiteDimensional_quotient`, `Submodule.CoFG` for finite
+  codimension, `Submodule.ClosedComplemented` for "admits a complement"); the four facts it lacks
+  — `dim X* = dim X` with Proposition 11.3, the complement half of 11.4, 11.6 and 11.7 — are the
+  new backbone `Numlib/Analysis/Normed/Module/FiniteCodim`.
+* **§11.2** rests on Mathlib's normed quotient (`Submodule.Quotient.normedAddCommGroup`,
+  `completeSpace`, `mkQL`, `liftQL`); the duals of a quotient and of a subspace (11.9, 11.10),
+  reflexivity and uniform convexity of a quotient (11.11, 11.12) and the dimension–codimension
+  relations (11.13, 11.14) are the new backbone `Numlib/Analysis/Normed/Module/Quotient`,
+  consuming chapter 1's annihilators `Submodule.strongDualAnnihilator` / `strongDualCoannihilator` (note
+  the name: the brief's `Submodule.annihilator` is Mathlib's ideal). Two of the book's proofs
+  are replaced by direct ones so that the module does not wait on chapter 3: 11.11 (Hahn–Banach
+  on `M^⊥` instead of Corollary 3.21) and 11.12 (near-attained representatives instead of
+  Corollary 3.23 and Milman–Pettis).
+* **§11.3** is Mathlib's `lp` for `ℓ^p` and the new backbone `Numlib/Analysis/Normed/Lp/Sequence`
+  for `c`, `c₀` (closed subspaces of `ℓ^∞`, `lp.convergent`, `lp.zeroAtInfty`), the duality
+  isometries `(ℓ^p)* = ℓ^{p'}`, `(c₀)* = ℓ¹`, `c* = ℓ¹ × ℝ`, reflexivity, non-reflexivity and
+  separability. The route decision (the brief asked for it): the book offers "Theorem 4.10 and
+  Exercise 4.12 with `Ω = ℕ`" or direct proofs. Reflexivity of `ℓ^p` is proved directly from the
+  duality — it costs fifty lines and makes the module independent of chapter 4; uniform
+  convexity is transported from chapter 4's `MeasureTheory.Lp.instUniformConvexSpace` along the
+  new isometry `lp.lpLIELpCount : lp (fun _ : α ↦ E) p ≃ₗᵢ[𝕜] Lp E p (Measure.count)`, because a
+  direct proof would repeat Clarkson's inequalities (with the reverse-Minkowski step for
+  `1 < p < 2`) for sums. Neither `c` nor a subspace-of-`ℓ^∞` form of `c₀` is in Mathlib
+  (`ZeroAtInftyContinuousMap` is a separate type; the bridge `lp.zeroAtInftyLIE` is planned).
+* **§11.4**: Propositions 11.22–11.29 are Mathlib (`extendRCLikeₗᵢ`, `exists_extension_norm_eq`
+  over `RCLike`, `geometric_hahn_banach_open` plus `extendRCLike`, `InnerProductSpace.toDual`,
+  the backbone's `SesqForm.laxMilgram` and
+  `ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot`) or chapters 1 and 5 on
+  `E_ℝ` (11.25 from Theorem 1.11, 11.26 from Theorem 5.2, 11.28 from Theorem 5.6). Propositions
+  11.30–11.32 (spectrum), 11.35 (normal operators) and the unitary clause of 11.37 are Mathlib
+  (`spectrum.nonempty`, `spectrum.isCompact`, Gelfand's formula, `spectrum.map_polynomial_aeval`,
+  `IsStarNormal.spectralRadius_eq_nnnorm` in the C⋆-algebra `H →L[ℂ] H`,
+  `spectrum.subset_circle_of_unitary`); 11.33's convexity is the backbone's Toeplitz–Hausdorff
+  theorem `LinearMap.convex_numericalRange` (`Numlib/Eigen/NumericalRange`); 11.34 is chapter 6's
+  `RCLike` Theorem 6.11 at `ℂ`. The new backbone `Numlib/Analysis/Normed/Algebra/Spectrum`
+  carries the eigenvalue half of the spectral mapping theorem, `σ(T) ⊆ closure W(T)` with the
+  resolvent bound and Remark 1's rotation, and the non-unitary isometry clause of 11.37; the
+  spectral decomposition of compact normal operators (11.36) with Remark 2 is
+  `Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal` (moved there at review, beside
+  chapter 6's `CompactSpectral/Basis`, whose assembly lemma it shares).
+
+**Correspondence.** Section01: 11.1–11.7, `finrank_dual`, `IsFiniteCodim`, `codim`,
+`admitsComplement_iff`. Section02: 11.8–11.14 (11.13 and 11.14 split by clause),
+`quotientNorm_eq_iInf`, `quotKerFactorization`. Section03: 11.15–11.21 (11.15, 11.16, 11.21 with
+clause nodes), `lpNorm_eq`, `lp_completeSpace`, `mem_c_iff`, `c₀_le_c_isClosed`, `holder_lp`,
+`l2_inner`, `lp_subset_c₀`, `lp_subset_lq`. Section04: 11.22–11.37 (11.28, 11.32, 11.37 split),
+Remarks 1 and 2, the definition nodes `IsClosedRealHyperplane`, `SeparatesRe`, `conjugateC`,
+`spectrum_eq_setOf_not_bijective`, `numericalRange_eq`, `isStarNormal_iff`,
+`unitary_iff_isometry_surjective`, the displayed claims `orthogonal_complex`,
+`conjugateC_indicator`, `inner_identities`, `laxMilgram_complex`, `adjoint_smul_conj`,
+`selfAdjoint_spectrum_subset_real`, `skewAdjoint_iff`, `skewAdjoint_spectrum_subset_imaginary`,
+`hasDerivAt_norm_sq`, and the two examples `example_rightShift`, `example_shift_two`.
+
+**Not planned.** (i) The bracketed warning of §11.1 that a subspace of finite codimension need
+not be closed (the kernel of a discontinuous functional, Exercise 1.5 — the existence of such a
+functional on an infinite-dimensional space is a Hamel-basis construction with no consumer);
+(ii) the example inside the proof of Proposition 11.14 that `dim N^⊥ < codim N` can happen
+(needs a non-reflexive `E` and `ξ ∈ E** ∖ J(E)`); (iii) the last row of §11.3's table,
+"`(ℓ^∞)*` is strictly bigger than `ℓ¹`" (a Banach-limit construction; not a numbered claim);
+(iv) the prose of §11.4 comparing chapters 2, 3, 4 and 8–9 over `ℂ`, the finite-dimensional
+motivation, and the computation `W(T) = {|λ| ≤ 1/2}` for `T(u₁, u₂) = (u₂, 0)`; (v) the
+non-compact half of Remark 2 (quoted from Halmos). Exercises and Problems: none is cited by the
+main text of this chapter as supplying a step; Problems 43 and 44 are referred to for facts about
+normal operators and isometries, which the nodes take from Mathlib
+(`isStarNormal_iff_norm_eq_adjoint`, `isometry_iff_adjoint_comp_self`) rather than from the
+problems, so no exercise or problem node is created here. The chapter has no Comments section.
+
+**Unblocked elsewhere.** No open node of Atkinson–Han or Quarteroni–Sacco–Saleri is closed by
+this chapter's backbone: the `ℓ^p` duality is not what `AtkinsonHan.Chapter02.example_2_5_1`
+needs (that is `L^p(Ω)`, chapter 4's), and no open node mentions quotients, finite codimension,
+the numerical range or normal operators. Within this book, `Numlib/Analysis/Normed/Module/FiniteCodim`
+(Proposition 11.7) is the finite-codimension bookkeeping behind chapter 6's Remark 6 on Theorem
+6.6 (d), `Quotient` (Proposition 11.9) gives chapter 2's closed range theorem its "`R(A)^⊥`" reading
+of a quotient dual if wanted, and the assembly lemma
+`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily` (now in chapter 6's
+`CompactSpectral/Basis`, set-indexed) is shared by Theorem 6.11 and Proposition 11.36.
+
+**Order of attack.** Backbone modules in dependency order, with estimates: (1)
+`Numlib/Analysis/Normed/Module/FiniteCodim` — Mathlib only, ≈350 lines; (2)
+`Numlib/Analysis/Normed/Module/Quotient` — needs chapter 1's `Annihilator` (definitions,
+`isClosed_strongDualAnnihilator`, `infDist_strongDualAnnihilator`, `le_strongDualAnnihilator_strongDualCoannihilator`)
+and (1) for 11.13–11.14, ≈700 lines; (3) `Numlib/Analysis/Normed/Lp/Sequence` — Mathlib and the
+existing `Reflexive` module, ≈1050 lines without the counting-measure bridge and uniform
+convexity, which add ≈250 and wait on chapter 4's `MeasureTheory.Lp.instUniformConvexSpace`; the
+`ℓ¹` non-reflexivity node waits on chapter 3's Corollary 3.21; (4)
+`Numlib/Analysis/Normed/Algebra/Spectrum` — Mathlib and the existing `NumericalRange` module,
+≈350 lines — and `Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal` (the compact normal
+spectral theorem, ≈400, after chapter 6's `CompactSpectral/Basis`). The
+surface sections then follow in order §11.1 → §11.2 → §11.3 → §11.4; §11.4 additionally waits
+on chapters 1 (Theorem 1.11 restated), 5 (Theorems 5.2, 5.6) and 6 (Theorem 6.11 over `RCLike`).
+'''

@@ -1,0 +1,126 @@
+namespace = "Heat"
+desc = '''
+The classical (pointwise) side of the heat equation: the parabolic maximum principle of
+[brezis2011functional] Theorem 10.6 for a function `u(x,t)` that is `C¹` in `t`, `C²` in `x`, with
+`∂ₜu - Δu ≤ 0` on a bounded cylinder — the maximum over `Ω̄ × [0,T]` is attained on the parabolic
+boundary `P = (Ω̄ × {0}) ∪ (Γ × [0,T])` — and Remark 4, the necessity of the compatibility
+conditions `Δ^j u₀ = 0` on `Γ` for a solution smooth up to `t = 0`. Nothing here uses a Sobolev
+space; the module imports Mathlib's `InnerProductSpace.laplacian` (`Δ f`, with
+`laplacian_eq_iteratedFDeriv_orthonormalBasis`) and the calculus of `Numlib/Analysis/PDE/Transport`
+for conventions. The function of two variables is `u : E × ℝ → ℝ` uncurried; `E` a
+finite-dimensional real inner product space (the surface takes `EuclideanSpace ℝ (Fin N)`);
+a diffusion constant `ν > 0` is carried
+(`∂ₜu - ν Δu ≤ 0`), the book's case being `ν = 1`, because the consumer
+`AtkinsonHan.Chapter06.example_6_2_4` has `u_t = ν u_xx`.
+
+This is the "classical half" of `notes/frontier.md` blocker 9: the missing ingredient there,
+"the second derivative is `≤ 0` at an interior maximum", is not absent from Mathlib but a
+contrapositive of its second-derivative test `isLocalMin_of_deriv_deriv_pos`
+(`Mathlib/Analysis/Calculus/DerivativeTest.lean`): a local maximum that is also a local minimum
+is a locally constant function, whose second derivative vanishes (`IsLocalMax.deriv_deriv_nonpos`,
+a `_root_` lemma needing only `ContinuousAt f x₀`, ★, first proved for chapter 8's Remark 26 in
+`Numlib/Variational/EllipticInterval/MaximumPrinciple` and to be relocated to a new
+`Numlib/Analysis/Calculus/DerivativeTest`; this module imports it from wherever it lives — the
+only reason it imports anything beyond Mathlib and `Transport`). The proof of Theorem 10.6 is then the book's, lines 12500–12530: `v = u + ε‖x‖²` has
+`∂ₜv - νΔv ≤ -2εNν < 0`; at a maximum of `v` over `Ω̄ × [0,T']`, `T' < T`, not on `P`, the
+`x`-Laplacian is `≤ 0` (apply the one-dimensional test to `s ↦ v(x₀ + s bᵢ, t₀)` in each direction
+of an orthonormal basis) and `∂ₜv ≥ 0` (`= 0` if `t₀ < T'`, `≥ 0` at the right endpoint), a
+contradiction; then let `ε → 0` and `T' → T` using the continuity of `u` on the compact
+`closure Ω ×ˢ Icc 0 T` (`Bornology.IsBounded Ω` makes it compact).
+
+With Theorem 10.6, `AtkinsonHan.Chapter06.example_6_2_4` (the bound `max_x |u(x,t)| ≤ max |u₀|` for
+the classical solution of `u_t = ν u_xx` on `(0,π)` with zero boundary values) is no longer
+blocked: apply `IsClassicalSubsolution.le_of_le_on_parabolicBoundary` to `u` and `-u` on
+`Ω = Ioo 0 π ⊆ ℝ`; the remaining two ingredients of that node (density of sine polynomials, the
+finite-sum verification) were already judged ordinary in its description. `example_6_2_8` and
+`example_6_2_13` follow. `example_6_3_3`/`_4` ask for `u_tt`, `u_xxxx` continuous on the closed
+cylinder, which Theorem 10.2 (c) provides only under the compatibility conditions (8) on `u₀`;
+they remain as stated (their hypothesis on the solution is their own).
+'''
+
+[[node]]
+id = "parabolicBoundary"
+kind = "definition"
+desc = '''`Heat.parabolicBoundary (Ω : Set E) (T : ℝ) : Set (E × ℝ) := (closure Ω ×ˢ {0}) ∪ (frontier Ω ×ˢ Icc 0 T)`,
+the parabolic boundary `P` of the cylinder `Ω × (0,T)` of Theorem 10.6. Closed; a subset of
+`closure Ω ×ˢ Icc 0 T`; compact for bounded `Ω`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6, the parabolic boundary `P`"
+
+[[node]]
+id = "IsClassicalSubsolution"
+kind = "definition"
+desc = '''`Heat.IsClassicalSubsolution (ν : ℝ) (Ω : Set E) (T : ℝ) (u : E × ℝ → ℝ) : Prop`: the
+hypotheses (20)–(22) of Theorem 10.6 — `ContinuousOn u (closure Ω ×ˢ Icc 0 T)`; for every
+`(x, t) ∈ Ω ×ˢ Ioo 0 T`, `DifferentiableAt ℝ (fun s ↦ u (x, s)) t` and
+`ContDiffAt ℝ 2 (fun y ↦ u (y, t)) x`; and
+`deriv (fun s ↦ u (x, s)) t - ν * Δ (fun y ↦ u (y, t)) x ≤ 0` there (Mathlib's
+`InnerProductSpace.laplacian`). `IsClassicalSolution ν Ω T u` is the version with `= 0`, so that
+`u` and `-u` are both subsolutions. The book's (21) "of class `C¹` in `t` and `C²` in `x`" asks a
+little more continuity than the proof uses; differentiability in `t` and `C²` in `x` at each point
+suffice and are what is asked. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, (20)–(22)"
+
+[[node]]
+id = "IsLocalMax.laplacian_nonpos"
+kind = "theorem"
+desc = '''For `f : E → ℝ` on a finite-dimensional real inner product space with `ContDiffAt ℝ 2 f x₀`
+and `IsLocalMax f x₀`: `Δ f x₀ ≤ 0`. By `laplacian_eq_iteratedFDeriv_orthonormalBasis`,
+`Δ f x₀ = ∑ᵢ iteratedFDeriv ℝ 2 f x₀ ![bᵢ, bᵢ]`, each term being the second derivative at `0` of
+`s ↦ f (x₀ + s • bᵢ)`, which has a local max at `0` (`IsLocalMax.deriv_deriv_nonpos`, the
+one-variable restriction being `C²` near `0`; `iteratedFDeriv_two_apply` / `ContDiffAt.deriv_deriv_comp_line`-type
+identification). ★★'''
+deps = ["_root_.IsLocalMax.deriv_deriv_nonpos"]
+
+[[node]]
+id = "IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary"
+kind = "theorem"
+desc = '''**Theorem 10.6**: for `0 < ν`, `0 < T`, `Ω` open and bounded, and
+`IsClassicalSubsolution ν Ω T u`, the maximum of `u` over `closure Ω ×ˢ Icc 0 T` is attained on the
+parabolic boundary: `∃ p ∈ parabolicBoundary Ω T, IsMaxOn u (closure Ω ×ˢ Icc 0 T) p`. Equivalent
+forms: `sSup (u '' (closure Ω ×ˢ Icc 0 T)) = sSup (u '' parabolicBoundary Ω T)` (both images
+compact, `IsCompact.exists_isMaxOn`), and
+`IsClassicalSubsolution.le_of_le_on_parabolicBoundary : (∀ p ∈ P, u p ≤ M) → ∀ q ∈ closure Ω ×ˢ Icc 0 T, u q ≤ M`.
+Proof as in the module description (the book's, lines 12500–12530, with footnote 8's `T' < T`
+made explicit): for `ε > 0` and `T' ∈ (0, T)`, `v(x,t) = u(x,t) + ε‖x‖²` (`Δ‖x‖² = 2N`, from
+`laplacian_eq_iteratedFDeriv_orthonormalBasis`) attains its maximum over the compact
+`closure Ω ×ˢ Icc 0 T'` at some `(x₀,t₀)`; if `x₀ ∈ Ω` and `0 < t₀ ≤ T'` then
+`IsLocalMax.laplacian_nonpos` in `x` and the one-sided sign of the `t`-derivative at a maximum
+(`IsLocalMax.deriv_eq_zero` for `t₀ < T'`; for `t₀ = T'` the left difference quotients are `≥ 0`
+and `deriv` exists) give `∂ₜv - νΔv ≥ 0` at `(x₀,t₀)`, against `∂ₜv - νΔv ≤ -2εNν < 0`; so the
+maximum of `v` is on `P ∩ (closure Ω ×ˢ Icc 0 T')`, whence `u ≤ max_P u + ε sup_Ω ‖x‖²` on
+`closure Ω ×ˢ Icc 0 T'`; let `ε → 0`, then `T' → T` by continuity of `u`. ★★★, 300–400 lines
+(the bookkeeping of maxima on products and the endpoint case).'''
+deps = ["IsClassicalSubsolution", "parabolicBoundary", "IsLocalMax.laplacian_nonpos", "_root_.IsLocalMax.deriv_deriv_nonpos"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6"
+
+[[node]]
+id = "IsClassicalSolution.abs_le_of_eq_zero_frontier"
+kind = "theorem"
+desc = '''The form the numerical books use: for `IsClassicalSolution ν Ω T u` on a bounded `Ω` with
+`u = 0` on `frontier Ω ×ˢ Icc 0 T`, `|u (x, t)| ≤ sup_{y ∈ closure Ω} |u (y, 0)|` for all
+`(x,t) ∈ closure Ω ×ˢ Icc 0 T` — Theorem 10.6 applied to `u` and `-u`. This is exactly the bound
+`max_x |u(x,t)| ≤ max_x |u₀(x)|` that `AtkinsonHan.Chapter06.example_6_2_4` is blocked on
+(`Ω = Ioo 0 π`, `E = ℝ`). ★'''
+deps = ["IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6 (applied to `u` and `-u`)"
+
+[[node]]
+id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
+kind = "theorem"
+desc = '''**Remark 4: the compatibility conditions (8) are necessary**. Let `u : E × ℝ → ℝ` be
+`C^∞` up to the boundary of the half cylinder in the sense of
+`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)` (with the extensions of its derivatives continuous
+on `closure Ω ×ˢ Ici 0`), satisfy `∂ₜu = Δ_x u` on `Ω ×ˢ Ioi 0`, and vanish on
+`frontier Ω ×ˢ Ioi 0`. Then for every `j`, the continuous extension to `closure Ω` of
+`Δ^j (u(·, 0))` vanishes on `frontier Ω`. Proof, lines 12395–12420: by induction
+`∂ₜ^j u = Δ^j u` on `Ω × (0,∞)` (commute `∂ₜ` with `Δ_x`, symmetry of the mixed derivatives of a
+`C^∞` function — `ContDiffAt.isSymmSndFDerivAt` for order two, `ContDiff.iteratedFDeriv_congr_perm`
+of `Numlib/Analysis/Calculus/IteratedFDeriv` in general); `∂ₜ^j u = 0` on `Γ × (0,∞)` since `u`
+vanishes there (differentiate in `t` along the boundary); both sides extend continuously to
+`closure Ω × [0,∞)`, and comparing the extensions on `Γ × {0}` gives (8). The same argument gives
+Remark 10 for the wave equation (`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`).
+★★★ (~300 lines: the iterated commutation is the cost).'''
+deps = ["ContDiffOnClosure", "ContDiff.iteratedFDeriv_congr_perm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 4"

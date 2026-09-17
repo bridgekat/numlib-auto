@@ -1,0 +1,178 @@
+desc = '''
+Spectral theory of bounded operators on complex Banach and Hilbert spaces beyond Mathlib
+(natural homes: `Mathlib.Analysis.Normed.Algebra.Spectrum`, `Mathlib.LinearAlgebra.Eigenspace`,
+`Mathlib.Analysis.InnerProductSpace.Spectrum`). This is the operator-theoretic part of
+[brezis2011functional] §11.4 (Propositions 11.29–11.37 and Remarks 1–2), a companion to
+`Numlib/Analysis/Normed/Algebra/SpectralRadius` (Gelfand's formula and its consequences, which
+Proposition 11.31 delegates to).
+
+Mathlib already has, and the surface delegates to: `spectrum.nonempty` and `spectrum.isCompact`,
+`spectrum.subset_closedBall_norm` (11.30); Gelfand's formula
+`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` with the attained maximum
+`spectrum.exists_nnnorm_eq_spectralRadius` (11.31); the polynomial spectral mapping theorem
+`spectrum.map_polynomial_aeval` (the `σ` half of 11.32); `ContinuousLinearMap.isUnit_iff_bijective`
+(the book's definition of `ρ(T)`); `IsStarNormal.spectralRadius_eq_nnnorm` in the C⋆-algebra
+`H →L[ℂ] H` (`Mathlib/Analysis/CStarAlgebra/ContinuousLinearMap.lean`; 11.35);
+`ContinuousLinearMap.isStarNormal_iff_norm_eq_adjoint`, `IsStarNormal.ker_adjoint_eq_ker`
+(Problem 43); `spectrum.subset_circle_of_unitary` (the unitary clause of 11.37);
+`IsSelfAdjoint.mem_spectrum_eq_re` (self-adjoint ⇒ real spectrum); the compact-operator facts
+`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`, `hasEigenvalue_iff_mem_spectrum`. The
+Toeplitz–Hausdorff theorem is the backbone's `LinearMap.convex_numericalRange`
+(`Numlib/Eigen/NumericalRange`).
+
+Added here, in three groups:
+
+* **Eigenvalues under polynomials** — the `EV` half of Proposition 11.32,
+  `Module.End.hasEigenvalue_aeval_iff`, purely algebraic over an algebraically closed field
+  (Mathlib has the inclusion `Q(EV(T)) ⊆ EV(Q(T))` as `Module.End.aeval_apply_of_hasEigenvector`
+  and the `σ` statement, but not this). The book's statement fails for constant `Q` when `T` has
+  no eigenvalues, so the node asks `0 < degree Q`.
+* **The numerical range** on a complex Hilbert space: the resolvent bound and
+  `σ(T) ⊆ closure W(T)` (Proposition 11.33), the rotation of Remark 1 (`|⟪Tu, u⟫| ≥ α‖u‖²` can be
+  rotated to `Re ⟪ξTu, u⟫ ≥ α‖u‖²`, from the convexity of `W(T)`), and the isometry clauses of
+  Proposition 11.37. Proposition 11.29 itself is the backbone's
+  `ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot` (`Numlib/Variational/LaxMilgram`).
+* **Compact normal operators** (Proposition 11.36, Remark 2) are *not* here: they are
+  `Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal` (moved at review from this file,
+  where chapter 11 had planned them, so that the compact spectral theory sits in one directory
+  and this module needs no inner product beyond the numerical-range section), on the template of
+  Mathlib's compact self-adjoint proof; the assembly of a Hilbert basis from orthogonal
+  eigenspaces is `ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily` in
+  `CompactSpectral/Basis`, shared with chapter 6's Theorem 6.11.
+
+Order of attack: `Module.End.hasEigenvalue_aeval_iff` (≈80 lines) → numerical range nodes (≈150)
+→ isometry nodes (≈120). About 350 lines (the normal-operator half, ≈400 more, is
+`CompactSpectral/Normal`). Imports: Mathlib, `Numlib/Eigen/NumericalRange`; the one use of
+`Numlib/Variational/LaxMilgram` (`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot`,
+Proposition 11.29) is a ten-line Hilbert-space fact that a formalizer may re-prove locally rather
+than import the variational layer into `Analysis/`.
+Prototyped statements: `notes/brezis/ch11/proto/Shapes.lean` (section `Spectrum`).
+'''
+
+[[node]]
+id = "Module.End.hasEigenvalue_aeval_iff"
+kind = "theorem"
+desc = '''**The eigenvalue half of [brezis2011functional] Proposition 11.32** (display (20) with
+equality): for a vector space `V` over an algebraically closed field `K`, `f : Module.End K V`,
+a polynomial `Q : K[X]` with `0 < Q.degree`, and `μ : K`,
+`(aeval f Q).HasEigenvalue μ ↔ ∃ ν, f.HasEigenvalue ν ∧ Q.eval ν = μ`. `←` is Mathlib's
+`Module.End.aeval_apply_of_hasEigenvector` (the inclusion that holds over any field and is the
+book's Exercise 6.22). `→` is the book's factorization argument: over an algebraically closed
+field `Q − C μ = C a * ∏ (X − C tᵢ)` (`Polynomial.eq_prod_roots_of_splits`/`IsAlgClosed.splits`),
+so `aeval f Q − μ • 1 = a • ∏ (f − tᵢ • 1)` (`Polynomial.aeval_prod`, `aeval_X_sub_C`); if no `tᵢ`
+is an eigenvalue every factor is injective, hence so is the product, so `μ` is not an eigenvalue
+of `aeval f Q` (`Module.End.hasEigenvalue_iff_mem_spectrum` is *not* available outside finite
+dimension — argue with `Module.End.HasEigenvalue` as `eigenspace ≠ ⊥`, i.e. non-injectivity of
+`aeval f Q - μ • 1`, via `LinearMap.ker_eq_bot`). The degree hypothesis is needed: for `Q = C c`
+and `T` without eigenvalues (the right shift) the left side is `c = μ ∧ Nontrivial V` while the
+right side is empty. Purely algebraic; no topology. ★★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.32"
+
+[[node]]
+id = "ContinuousLinearMap.infDist_numericalRange_mul_norm_le_norm_sub_smul"
+kind = "theorem"
+desc = '''The estimate inside [brezis2011functional] Proposition 11.33: for a complex inner product
+space `H` (no completeness), `T : H →L[ℂ] H`, `λ : ℂ` and every `u : H`,
+`Metric.infDist λ (T : H →ₗ[ℂ] H).numericalRange * ‖u‖ ≤ ‖T u - λ • u‖`. For `u ≠ 0`,
+`⟪u, T u⟫ / ⟪u, u⟫ ∈ W(T)` (`LinearMap.mem_numericalRange`), so
+`infDist λ W ≤ ‖⟪u, T u⟫/‖u‖² − λ‖ = ‖⟪u, T u − λ u⟫‖ / ‖u‖² ≤ ‖T u − λ u‖ / ‖u‖`
+(Cauchy–Schwarz `norm_inner_le_norm`). The numerical range is the backbone's
+`LinearMap.numericalRange` (`Numlib/Eigen/NumericalRange`), whose Rayleigh-quotient form
+coincides with the book's `{(Tu, u) : |u| = 1}`; the book's `(Tu, u)`, linear in the first slot,
+is Mathlib's `⟪u, T u⟫`. ★'''
+deps = ["LinearMap.numericalRange", "LinearMap.mem_numericalRange"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.33"
+
+[[node]]
+id = "ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.33, first two clauses**: for a complex Hilbert
+space `H` and `T : H →L[ℂ] H`, if `λ ∉ closure (T : H →ₗ[ℂ] H).numericalRange` then
+`λ ∈ resolventSet ℂ T`, and the inverse satisfies
+`‖(T - λ • 1)⁻¹‖ ≤ 1 / Metric.infDist λ W(T)` — state the second clause as the bound on the
+resolvent `‖resolvent T λ‖ ≤ (infDist λ W(T))⁻¹`, or, more usefully for consumers, as
+`infDist λ W(T) * ‖(T − λ • 1)⁻¹ v‖ ≤ ‖v‖`. Proof (book): with `α := infDist λ W(T) > 0`
+(`Metric.infDist_pos_iff_notMem_closure`, `W(T)` nonempty when `H` is nontrivial; if `H` is
+trivial everything is invertible), `‖⟪u, (T − λ)u⟫‖ ≥ α ‖u‖²` for all `u`, so `T − λ • 1` is
+bijective by Proposition 11.29 — `ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot`
+with the lower bound from the previous node and `(range)ᗮ = ⊥` because `v ⊥ range (T − λ)` gives
+`0 = ⟪(T − λ) v, v⟫` hence `α ‖v‖² ≤ 0` — and `IsUnit` follows from
+`ContinuousLinearMap.isUnit_iff_bijective` (`spectrum.mem_resolventSet_iff`); the norm bound is
+`ContinuousLinearMap.antilipschitzWith_of_le_norm`. ★★'''
+deps = ["ContinuousLinearMap.infDist_numericalRange_mul_norm_le_norm_sub_smul", "ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.33"
+
+[[node]]
+id = "ContinuousLinearMap.spectrum_subset_closure_numericalRange"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.33, display (23)**: `σ(T) ⊆ closure W(T)` for
+`T : H →L[ℂ] H` on a complex Hilbert space:
+`spectrum ℂ T ⊆ closure (T : H →ₗ[ℂ] H).numericalRange`. The contrapositive of the previous node
+(`spectrum.mem_iff`, `resolventSet`). The convexity clause of 11.33 is
+`LinearMap.convex_numericalRange` and needs no node. ★'''
+deps = ["ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.33"
+
+[[node]]
+id = "ContinuousLinearMap.exists_re_inner_smul_ge_of_norm_inner_ge"
+kind = "theorem"
+desc = '''**[brezis2011functional] §11.4, Remark 1**: if `T : H →L[ℂ] H` on a complex Hilbert space
+satisfies `|⟪T u, u⟫| ≥ α ‖u‖²` for all `u` (display (18)) with `α > 0`, then there is `ξ : ℂ`,
+`‖ξ‖ = 1`, with `Re ⟪ξ • T u, u⟫ ≥ α ‖u‖²` for all `u` (display (19)) — so the "more general"
+Lax–Milgram hypothesis (18) reduces to the coercivity (17) after a rotation. Statement:
+`(∀ u, α * ‖u‖ ^ 2 ≤ ‖⟪u, T u⟫‖) → ∃ ξ : ℂ, ‖ξ‖ = 1 ∧ ∀ u, α * ‖u‖ ^ 2 ≤ re ⟪u, (ξ • T) u⟫`.
+Proof (book): `W(T)` is convex (`LinearMap.convex_numericalRange`, Toeplitz–Hausdorff) and
+`infDist 0 W(T) ≥ α` by hypothesis (each `⟪u, Tu⟫/‖u‖²` has modulus `≥ α`), so `0 ∉ closure W(T)`;
+separate `0` from the closed convex set `closure W(T)` in `ℂ ≅ ℝ²`
+(`geometric_hahn_banach_point_closed` over `ℝ`, or the projection of `0` onto it,
+`exists_norm_eq_iInf_of_complete_convex`): there is a real functional `φ` on `ℂ` with
+`φ(0) < c ≤ φ(w)` for `w ∈ closure W(T)`; `φ = Re (ξ̄ ·)` for a unit `ξ` after normalizing
+(every real functional on `ℂ` is `z ↦ Re (conj a * z)`), and `Re (ξ ⟪u, Tu⟫) ≥ c' ‖u‖²`; to get
+the constant `α` itself rather than some `c' > 0`, project `0` onto `closure W(T)` (point `p`,
+`‖p‖ = dist(0, W) ≥ α`) and take `ξ := conj p / ‖p‖`, for which the variational inequality of the
+projection gives `Re (ξ w) ≥ ‖p‖ ≥ α` on `W(T)`, as the book's "rotation bringing `p` to
+`(0, |p|)`" says. ★★'''
+deps = ["LinearMap.convex_numericalRange", "LinearMap.mem_numericalRange"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 11, Remark 1"
+
+[[node]]
+id = "ContinuousLinearMap.norm_eq_one_of_hasEigenvalue_of_isometry"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.37, first clause**: an isometry `T : H →L[𝕜] H`
+(`Isometry T`, equivalently `∀ u, ‖T u‖ = ‖u‖`, `AddMonoidHomClass.isometry_iff_norm`) on a
+normed space over any normed field has `EV(T) ⊆ S¹`:
+`(T : Module.End 𝕜 H).HasEigenvalue μ → ‖μ‖ = 1`. From an eigenvector `u ≠ 0`,
+`‖u‖ = ‖T u‖ = ‖μ‖ ‖u‖`. No inner product needed. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "ContinuousLinearMap.mem_unitary_of_isometry_of_surjective"
+kind = "theorem"
+desc = '''A surjective isometry of a Hilbert space is unitary: for `T : H →L[𝕜] H` (`RCLike 𝕜`,
+`H` complete) with `Isometry T` and `Function.Surjective T`, `T ∈ unitary (H →L[𝕜] H)`.
+`T† ∘L T = 1` is Mathlib's `ContinuousLinearMap.isometry_iff_adjoint_comp_self` (Problem 44,
+question 2), and `T ∘L T† = 1` follows from surjectivity (`T (T† (T x)) = T x` for all `x`, and
+every `y` is some `T x`; Problem 44, question 3, (a) ⇒ (c)). With it,
+**[brezis2011functional] Proposition 11.37, second clause**, `σ(T) ⊆ S¹` for unitary `T`, is
+Mathlib's `spectrum.subset_circle_of_unitary` in the C⋆-algebra `H →L[ℂ] H`; the surface states
+that clause directly from these two. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "ContinuousLinearMap.spectrum_eq_closedBall_of_isometry_of_not_surjective"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.37, third clause**: a non-unitary isometry of a
+complex Hilbert space has the whole closed unit disc as spectrum: for `T : H →L[ℂ] H` with
+`Isometry T` and `¬ Function.Surjective T`, `spectrum ℂ T = Metric.closedBall 0 1`.
+Proof (the solution of Problem 44, question 6, adapted to `ℂ`): `‖T‖ = 1` (`H` nontrivial, as
+`T` is not onto), so `σ(T) ⊆ closedBall 0 1` (`spectrum.subset_closedBall_norm`). For `‖λ‖ < 1`,
+`T − λ • 1 = (1 − λ • T†) ∘L T` (from `T† ∘L T = 1`, `isometry_iff_adjoint_comp_self`), and
+`1 − λ • T†` is a unit because `‖λ • T†‖ < 1` (`NormedRing.inverse_one_sub`/`Units.oneSub`,
+`ContinuousLinearMap.adjoint.norm_map`); if `T − λ • 1` were a unit, `T` would be onto — so
+`Metric.ball 0 1 ⊆ σ(T)`; `σ(T)` is closed (`spectrum.isClosed`), and
+`closure (ball 0 1) = closedBall 0 1` (`closure_ball`). ★★'''
+deps = ["ContinuousLinearMap.mem_unitary_of_isometry_of_surjective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"

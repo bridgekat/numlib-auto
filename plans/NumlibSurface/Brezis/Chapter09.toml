@@ -1,0 +1,196 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, Chapter 9: Sobolev spaces and the variational formulation of elliptic boundary value
+problems in `N` dimensions (main text lines 9850–11724, Comments 11725–12114). Sections 9.1–9.4
+are the Sobolev-space theory — `Section01` to `Section04`, namespace `Brezis.Chapter09`, 55
+nodes; sections 9.5–9.8 are the elliptic problems — `Section05` to `Section08`, 55 nodes.
+
+**What the chapter is, in this library (§9.1–9.4).** The book's `W^{1,p}(Ω)` on an open
+`Ω ⊆ ℝ^N` is `SobolevEuclidean N 1 p Ω`, the `abbrev` for
+`SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume`
+(`Numlib/Analysis/Sobolev/MultiIndex`, decision D8); `W^{m,p}(Ω)` is the same at order `m`;
+`W_0^{1,p}(Ω)` is `SobolevEuclideanZero N 1 p Ω` (`SobolevMultiIndexZero`, the closure of the test
+functions); `H^1`, `H_0^1`, `H^m` are the cases `p = 2`, Hilbert spaces on the nose
+(`SobolevMultiIndex.inner_eq`). The type's norm is the `ℓ^p` sum of the `L^p` norms of the
+`∂^α u`; the book's `‖u‖_p + ∑ ‖∂_i u‖_p` is the surface's `bookNorm`, equivalent
+(`bookNorm_equiv`). Test functions are `𝓓(Ω, ℝ)` (D6); the book's `C_c^1(Ω)` is equivalent by
+Remark 1, which is a node. The backbone theorems are stated over a general finite-dimensional
+real `E` with a Haar measure wherever the proof allows (§9.1's calculus, the reflection lemma),
+on `EuclideanSpace ℝ (Fin N)` where coordinates enter (charts, the half space, Fubini in the last
+coordinate, Morrey's cubes), and the surface instantiates `E = ℝ^N`, `μ = volume`.
+
+"`Ω` of class `C^1`" (§9.2) is `IsContDiffChartDomain 1 Ω` (`Numlib/Analysis/Sobolev/Chart`,
+decision D9), the book's local-chart definition, *not* Atkinson–Han's local-graph
+`IsContDiffDomain 1 Ω` of `Domain.lean`; the bridge graph ⇒ chart
+(`IsContDiffDomain.isContDiffChartDomain`) is elementary and is how every Atkinson–Han node
+stated under `IsContDiffDomain 1 Ω` reaches this chapter's theorems, and chart ⇒ graph
+(`IsContDiffChartDomain.isContDiffDomain`, the implicit function theorem) is a node with no
+consumer. Lipschitz domains (`IsLipschitzDomain`) do not reach the extension theorem and the
+Atkinson–Han nodes that assume them stay open with the `C^1` restatement noted (Decision B of
+`notes/fem-roadmap.md`).
+
+**Correspondence.** §9.1 (`Section01`): the definitions, Proposition 9.1, Remarks 1, 2, 4, 5,
+6, 7, `ω ⊂⊂ Ω`, Theorem 9.2, Lemma 9.1, Propositions 9.3–9.6, `W^{m,p}` — backbone
+`Numlib/Analysis/Sobolev/{Cutoff,Friedrichs,Calculus}` and appends to `MultiIndex`, `Density`;
+`Density.lean`'s proved Meyers–Serrin (Remark 5) and whole-space density (Theorem 9.2, second
+clause) and `Mollification.lean`'s product and chain rules (Propositions 9.4 for `p ≥ 2`, 9.5) are
+restated, everything else in §9.1 is new (Theorem 9.2's single-sequence local clause, Lemma 9.1,
+Proposition 9.3, the endpoint `L^p × L^∞` product rule, Proposition 9.6). §9.2 (`Section02`):
+the class-`C^1` definition, Theorem 9.7, Lemmas 9.2–9.3, Remark 9, Corollary 9.8 — backbone
+`Chart`, `Reflection`, `Extension`. §9.3 (`Section03`): Theorem 9.9 (Mathlib's
+`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq` plus density and Fatou), Remark 10, Lemma 9.4,
+Corollaries 9.10–9.11, Theorem 9.12 (Morrey) with Remarks 11–13, Corollaries 9.13–9.15, Theorem
+9.16 (Rellich–Kondrachov, through chapter 4's Kolmogorov–M. Riesz–Fréchet theorem), Remarks 14
+(i), 15, 16 — backbone `Embedding`, `EmbeddingDomain`, `Compactness`. §9.4 (`Section04`):
+`W_0^{1,p}`, Remarks 17–18, Lemma 9.5, Theorem 9.17, Proposition 9.18, Remark 20, Corollary 9.19
+(Poincaré), Remark 21, Remark 22, the dual `W^{−1,p'}` with its inclusions, Proposition 9.20 —
+backbone `Cutoff`, `Poincare`, `Zero`, `Compactness`. Comment 7's Lemma 9.9 (the trace
+inequality on the half space for `C_c^1` functions) is a backbone node in `Reflection` (a bounded
+task, the first move of `notes/frontier.md` blocker 2) without a surface node, the Comments not
+being surface material.
+
+**Exercises and Problems.** The main text of §9.1–9.4 cites no exercise and no problem, and none
+is a dependency of a planned node; none is included. (Problem 47, Poincaré–Wirtinger on an
+interval, is chapter 8's.)
+
+**Not planned (§9.1–9.4 and Comments 1–8).** Remark 3 (distributions; discussion). Remark 8 (the
+interpolation inequality `‖D^α u‖_p ≤ ε ∑_{|β|=m} ‖D^β u‖_p + C ‖u‖_p` on a "smooth enough" domain:
+quoted from Adams, the hypothesis is vague, and it needs the `W^{m,p}` extension operator of
+Comment 2). Remark 5's second claim (a domain on which `C_c^1(ℝ^N)|_Ω` is not dense: a
+counterexample). Remark 6's implication (ii) ⇒ (iii) at `p = 1` (functions of bounded variation).
+Remark 7's geodesic-distance form on a non-convex connected `Ω` (no intrinsic metric in Mathlib;
+the convex form and the local form are nodes). Footnote 9's explicit constant
+`C(p, N) = (N − 1)p/(N − p)` in Theorem 9.9 (would re-prove Mathlib's inequality; Mathlib's
+constant is carried). Remark 13's negative clause and Remark 14 (ii) (counterexamples:
+`W^{m,p} ⊄ L^∞` at `m = N/p`, `p > 1`; the injection into `L^{p*}` is never compact). Remark
+16's Trudinger inequality. Remark 19 beyond the punctured-space example (which is Remark 17's
+node). Remark 22's claim `W_0^{m,p} ≠ W^{m,p} ∩ W_0^{1,p}` (an example). Comment 2 (the
+`W^{m,p}` extension operator for `C^m` domains: quoted without proof; needs the higher-order
+reflection). Comment 3 A–C (Poincaré–Wirtinger on a connected `C^1` domain — provable from
+Theorem 9.16 and Remark 7 by the standard compactness argument, ~250 lines, and would close
+Atkinson–Han's `theorem_7_3_12`–`theorem_7_3_13` at `k = 1` and `lemma_8_4_1`; not planned
+this round but recorded — Hardy's inequality, and the Gagliardo–Nirenberg interpolation
+inequalities: quoted without proof). Comment 4 (`∇u = 0` a.e. on level sets: unnumbered, not
+needed — Theorem 9.17's proof is arranged to avoid it — ~300 lines if wanted). Comment 5 (a.e.
+differentiability for `p > N`: quoted, cites Stein). Comment 6 (fractional spaces: the
+backbone's `Slobodeckij.lean` already has them; no node). Comment 7's trace theory (i)–(iv) on a
+curved boundary (surface measure: blocker 2). Comment 8 (order `2m`, systems: discussion).
+
+**Doubts.** (1) Proposition 9.20's norm identity `‖F‖ = max_i ‖f_i‖_{p'}` holds for the book's
+norm `∑ ‖h_i‖_p` on `(L^p)^{N+1}`; for the type's `ℓ^p`-sum norm the exact identity is
+`‖F‖ = (∑ ‖f_i‖_{p'}^{p'})^{1/p'}` and the plan states the one-sided bound `‖f_i‖_{p'} ≤ ‖F‖`.
+(2) Remark 21's "finite measure" clause is false for `N = 1` and unbounded `Ω` of finite
+measure (`Ω = ⋃ (n, n + 2^{−n})`, the functions equal to `1` on one interval); the node is stated
+for `N ≥ 2`, where the Sobolev-inequality proof works. (3) Corollary 9.19 is printed without a
+proof in the source; the plan proves it directly (fundamental theorem of calculus and Fubini),
+with `C = 2R` for `Ω ⊆ B(0, R)`. (4) Theorem 9.17 (i) ⇒ (ii): the book's "easy to verify (using
+dominated convergence)" needs `∇u = 0` a.e. on `{u = 0}` (Comment 4) as written; the plan
+replaces it by a Cauchy-sequence argument that does not. (5) Theorem 9.2 is stated for "all
+`ω ⊂⊂ Ω`" with one sequence; the backbone theorem is stated exactly so, since Propositions
+9.3–9.6 use it that way; `Density.lean`'s local approximation (one `ω`) is not enough.
+
+**Backbone size and order of attack (§9.1–9.4).** In dependency order, with estimated lines:
+appends to `MultiIndex` (`SobolevEuclidean`, `SobolevEuclideanZero`, `comp_perm`, the inductive
+characterization `memSobolevMultiIndex_succ_iff`, `PiLp` reflexivity, the reflexive and separable
+instances; ~500), to `Density` (`L^p` closedness; ~80) and to `Normed/Operator/Embedding`
+(composition of embeddings, the closed-ball criterion; ~90); `Cutoff` (~1000); `Chart` (~900, plus
+~500 for the unconsumed converse chart ⇒ graph); `Friedrichs` (~2300); `Calculus` (~1400);
+`Reflection` (~1100); `Poincare` (~500, attackable right after `Cutoff` and `Chart`);
+`Extension` (~1500); `Embedding` (~3200); `EmbeddingDomain` (~1600); `Zero` (~2600);
+`Compactness` (~1400). About 18 000 lines; the critical path to the finite-element consumers is
+`Cutoff → Chart → Friedrichs → Calculus → Reflection → Extension → Embedding → EmbeddingDomain → Compactness`,
+and the cheap first move is `Poincare`.
+
+**Blockers and Atkinson–Han/QSS nodes this half closes** (by id; "under `C^1`" means the node
+must be restated with `IsContDiffDomain 1 Ω` in place of `IsLipschitzDomain Ω`, reaching the
+chart hypothesis through `IsContDiffDomain.isContDiffChartDomain`):
+* `notes/frontier.md` blocker 1's `C^1` route (Decision B) in full, and its "cheap first move"
+  (Poincaré on `W_0^{1,p}`, no regularity): `AtkinsonHan.Chapter08.lemma_8_8_1`, `lemma_8_8_2`,
+  `lemma_8_8_3`, `lemma_8_8_4`, `theorem_8_8_5` (for `1 < p < ∞`, with `SobolevMultiIndexZero.instIsReflexive`
+  over chapter 4's `MeasureTheory.Lp.instIsReflexive`; no restatement), `AtkinsonHan.Chapter08.example_8_2_6`
+  and `AtkinsonHan.Chapter08.example_8_3_5` (the Poincaré dependency `example_7_3_15`
+  replaced by `Brezis.Chapter09.corollary_9_19`), `AtkinsonHan.Chapter07.example_7_3_15`'s
+  `H_0^1` clause (its `H^1` clause with `∫_Γ |v|` still needs the trace), and the variational
+  clauses of `AtkinsonHan.Chapter11.example_11_1_1`, `example_11_2_3`, `example_11_3_10` (their
+  pointwise complementarity forms still need integration by parts on `Ω`).
+* Under `C^1`: `AtkinsonHan.Chapter07.theorem_7_3_2` at `k = 1` (Corollary 9.8),
+  `theorem_7_3_5` at `k = 1` with bounded boundary (Theorem 9.7; the universal all-`k` clause
+  is Comment 2, not planned), `theorem_7_3_7` in all three clauses at every `k` (Corollaries
+  9.14–9.15; clause (c) in the form "`C^{k−[d/p]−1}` representative with Hölder top derivatives"),
+  `theorem_7_3_8` clauses (a) and (b) at every `k` and (c) in the `C(Ω̄)` form (Theorem 9.16 and
+  Corollary 9.15), `theorem_7_3_9` (`SobolevEuclidean.isCompactEmbedding_toLower_of_lt`),
+  `example_7_4_2` (Corollary 9.15 plus, when `k − d/2` is an integer, case (b) and Morrey),
+  and — with the ~250-line Poincaré–Wirtinger compactness argument of Comment 3 A, not planned
+  here — `theorem_7_3_12`, `theorem_7_3_13` at `k = 1` and `AtkinsonHan.Chapter08.lemma_8_4_1`.
+* `AtkinsonHan.Chapter10.theorem_10_3_4`'s novel piece (2), the affine change of variables at
+  every order: `HasWeakIteratedFDerivOn.comp_affineEquiv` (`Calculus`).
+* Not closed: everything of blocker 2 (the trace, surface measure), Bramble–Hilbert
+  (`theorem_7_3_17`, chapter 10's interpolation spine — Decision A), the triangulation-gated QSS
+  nodes `property_12_2`, `equation_12_94`, `property_9_4`, and `example_7_4_3` beyond its
+  extension step (its whole-space Fourier clause is a separate 150–250-line task).
+
+**§9.5–9.8 — elliptic boundary value problems.** The second half of the chapter is planned over
+the backbone directory `Numlib/Analysis/PDE/Elliptic/` (group `plans/Numlib/Analysis/PDE/Elliptic.toml`):
+`Dirichlet` (the forms `∫ ∇u·∇v`, `∫ ∇u·∇v + ∫ uv`, the general form (41), the ellipticity
+condition (36), the load, weak problems as `IsGalerkinSolution` on `H^1_0(Ω)` or `H^1(Ω)`,
+Theorem 9.21, Prop 9.22, Example 3, Theorem 9.23, Remark 23, Prop 9.24, Steps A and D of
+Example 1, the solution operator on `L²(Ω)` and its compactness), `Regularity` (Theorem 9.25 in
+the book's four cases, Lemmas 9.6–9.8, Remark 25 first and separately since §9.8 and chapter 10
+need only it, Theorem 9.26 and Remark 24 with a route), `MaximumPrinciple` (Theorem 9.27 in both
+cases, Cor 9.28, Remark 27, Prop 9.29 — the drift-free case the book proves and the general case
+by Gilbarg–Trudinger 8.1 — Prop 9.30, and the `H^1_0` variants of footnotes 35/37/38), `Spectral`
+(Theorem 9.31 for a general symmetric coercive form with the basis as data,
+`dirichletEigenbasis`, Remarks 28–30). The surface sections `Section05`–`Section08` restate
+every numbered result with the book's integrals over `H^1(Ω) = SobolevEuclidean N 1 2 Ω` and
+`H^1_0(Ω) = SobolevEuclideanZero N 1 2 Ω`, the book's `C^k(Ω̄)` as `ContDiffOn ℝ k · (closure Ω)`,
+the Laplacian of a classical solution as Mathlib's `Δ`, and "`u ∈ C(Ω̄)`" as a representative
+continuous on `closure Ω`; the definitions (classical/weak solutions of (31), (33), (37), (39),
+(44), the set `K`, the ellipticity condition, the class `C^m`) are `Is…`/lowerCamel nodes bridged
+to the backbone by `_iff` lemmas.
+
+**Blocked (§9.5–9.8, 2 nodes):** `example_9_4_stepA` and `example_9_4_stepD` — Green's formula
+with a boundary term and the surface measure on `Γ`, `notes/frontier.md` blocker 2. Everything
+else in §9.5–9.8 is provable with today's Mathlib on top of the §9.1–9.4 backbone; Theorem 9.26,
+Remark 24 and the general-drift Prop 9.29 have routes but no proof in the book and are the last
+items of the order of attack.
+
+**Not planned (Comments 9–16):** Theorem 9.32 (Agmon–Douglis–Nirenberg: quoted without proof;
+needs Calderón–Zygmund); Theorem 9.33 (Schauder: quoted without proof; Hölder singular
+integrals); Theorem 9.34 (De Giorgi–Nash–Stampacchia: quoted without proof); Theorem 9.35 (proved
+in the book, but on the very-weak clause of Remark 25 = Weyl's lemma, which the book defers to
+Agmon); Remark 31 (Perron: discussion); Theorem 9.36 (Hopf) and Corollary 9.37 (quoted without
+proof; ~800 lines of barrier argument, no consumer); Comments 10 (a) (duality method, needs
+9.32), 12–16 (discussion). Main-text clauses not planned: the very-weak clause of Remark 25,
+Remark 29's `e_n ∈ L^∞` clause, Remark 26. No exercise or problem is cited by §9.5–9.8, so none
+is included.
+
+**Doubts (§9.5–9.8).** (1) §9.7, proof of Theorem 9.27: "proceed as in the proof of Theorem
+8.18" — the one-dimensional maximum principle is Theorem 8.19. (2) §9.8, proof of Theorem 9.31:
+"repeat the proof of Theorem 8.21" — Sturm–Liouville is Theorem 8.22. (3) Remark 30 omits the
+symmetry `a_ij = a_ji`, without which `T` is not self-adjoint; added to the node (and `λ_n` need
+not be positive there). (4) Example 1, Step D: "`−Δu + u = f` everywhere on `Ω` since `u ∈ C²`"
+presumes `f` continuous; stated a.e. and, for continuous `f`, everywhere. (5) Theorem 9.31 needs
+`Ω ≠ ∅`. (6) Theorem 9.27 (b): "`f ≤ K` a.e. and `f ∈ L²` imply `K ≥ 0`" uses `|Ω| = ∞`.
+(7) Lemma 9.6's constant `1` needs Corollary 9.8's density on the half space (the reflection
+alone gives `√2`). (8) Remark 25 is stated with global `u ∈ H^1(Ω)`, `f ∈ H^m(Ω)`; the local
+hypotheses suffice and are what the induction needs. (9) Prop 9.29 is stated for arbitrary
+`a_i` and proved only for `a_i ≡ 0`.
+
+**Closes / does not close (§9.5–9.8).** With Corollary 9.19: AH `Chapter08.example_8_3_5`
+(after restating AH's `H^1_0` as `SobolevEuclideanZero`), `example_8_2_6` (same, plus the
+gradient-norm reading), and the variational-inequality halves of AH `Chapter11.example_11_1_1`,
+`example_11_2_3`, `example_11_3_10` (plus `max(0, ψ) ∈ H^1_0`, the positive-part lemma
+`SobolevEuclideanZero.posPart_mem` of `Sobolev/Zero`). Does **not** close AH `theorem_11_3_12`
+(`W^{2,p}`, `C^{1,1}`), QSS `property_12_2 (c)` (convex polygon), AH `theorem_8_5_1` (Korn), or
+anything needing a trace; what changes for `notes/frontier.md` blocker 18 is that "nobody in the
+corpus proves elliptic regularity" becomes false for `p = 2` on `C²` domains.
+
+**Order of attack (§9.5–9.8):** `Elliptic/Dirichlet` (≈ 2 200) → `Elliptic/MaximumPrinciple`
+(≈ 2 200) → `Elliptic/Regularity` cases A and C₁ (≈ 1 850) → `Elliptic/Spectral` (≈ 1 500) →
+`Elliptic/Regularity` cases B and C₂ (≈ 3 900; Theorem 9.26 and Remark 24 a further 1 200).
+Chapter 10 consumes `Dirichlet`, `Regularity` (Remark 25 and `regularity_dirichlet`) and
+`Spectral.dirichletEigenbasis`.
+'''

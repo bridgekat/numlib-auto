@@ -1,4 +1,8 @@
 desc = '''
-Coercivity, the energy inner product, compressions and
-oblique projections: the inner-product-space vocabulary the Krylov and variational layers share.
+Coercivity, the energy inner product, compressions and oblique projections: the
+inner-product-space vocabulary the Krylov and variational layers share; the spectral theory of
+compact self-adjoint operators (`CompactSpectral`, `CompactSpectral/Basis`); projections onto
+closed convex sets and Hilbert sums (`ConvexProjection`, `HilbertSum`); and maximal monotone
+unbounded operators with their resolvents and Yosida approximations (`MaximalMonotone`), the
+input of the Hille–Yosida theorem of `Numlib/Analysis/ODE/HilleYosida`.
 '''

@@ -1,0 +1,505 @@
+desc = '''
+The weak derivative on an open subset of `ℝ` and the Sobolev space `W^{m,p}(I)` for an arbitrary
+open `I ⊆ ℝ` and every `p ∈ [1, ∞]`, with the one-dimensional facts that hold on any open
+interval: du Bois-Reymond's lemma, the primitive of a locally integrable function as a weak
+antiderivative, and the absolutely continuous representative. This is the general layer under
+`Numlib/Analysis/Sobolev/Interval.lean`, which keeps the bounded `p = 2` theory `H^m(a, b)` under
+its existing names; it follows [brezis2011functional] §8.2 (the definition of `W^{1,p}(I)`,
+Remarks 2, 4, 5, 6, 7, Lemmas 8.1 and 8.2, Theorem 8.2, Propositions 8.1 and 8.4, and the
+`W^{m,p}` paragraph) for `I` "an open interval, possibly unbounded".
+
+### Design (brief D7)
+
+* `SobolevIntervalLp (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Type :=
+  SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m p I volume`, an `abbrev`. It is a
+  Banach space for every `p` with `[Fact (1 ≤ p)]` (instances of `MultiIndex.lean`; `Fact (1 ≤ ⊤)`
+  is Mathlib's `fact_one_le_top_ennreal`), and a Hilbert space at `p = 2`. Its norm is the `ℓ^p`
+  sum `(∑_{j ≤ m} ‖u^{(j)}‖_p^p)^{1/p}` (`max_j ‖u^{(j)}‖_∞` at `p = ∞`), which is the book's
+  "equivalent norm"; the book's primary norm `‖u‖_p + ‖u'‖_p` is a surface definition with the
+  comparison `norm_le_sum_norm_deriv`/`sum_norm_deriv_le_mul_norm` below. At `p = 1` the two agree.
+* `SobolevInterval m a b` of `Interval.lean` becomes `abbrev SobolevInterval m a b :=
+  SobolevIntervalLp m 2 (Opens.Ioo a b)`; this is what it unfolds to today
+  (`notes/brezis/ch08/proto/Basic.lean` checks the `rfl`), so no consumer of
+  `Numlib/Variational/*` or of the QSS/AH surfaces changes. `MemSobolevInterval f m a b` likewise
+  becomes the abbrev of `MemSobolevIntervalLp f m 2 (Opens.Ioo a b)`.
+* The hypothesis "`I` is an interval" is `(hI : (I : Set ℝ).OrdConnected)`, written explicitly on
+  every theorem that needs it (du Bois-Reymond, the representative, everything downstream);
+  `Set.ordConnected_Ioo` and `Set.ordConnected_univ` discharge it for `Opens.Ioo a b` and `⊤`.
+  `I = ℝ` is `(⊤ : Opens ℝ)`; `volume.restrict (⊤ : Set ℝ) = volume` is
+  `MeasureTheory.Measure.restrict_coe_top` of `Density.lean`.
+* **Refactor item (D7), to be done in the same task that writes this module.** `HasWeakDerivOn`
+  and `HasWeakIteratedDerivOn` are generalized *in place*: they take `(I : Opens ℝ)` instead of
+  `(a b : ℝ)` and mean `HasWeakIteratedLineDerivOn (fun _ ↦ 1) f w I volume`. Their declarations,
+  and the general lemmas about them that `Interval.lean` currently holds, move down into this
+  module; the following nodes of `Numlib/Analysis/Sobolev/Interval.toml` are *relocated* here
+  (their `[[node]]` blocks move to this file when the declarations move — an orchestrator step,
+  since this plan does not edit `Interval.toml`): `TopologicalSpace.Opens.Ioo`,
+  `TopologicalSpace.Opens.coe_Ioo`, `HasWeakIteratedDerivOn`, `HasWeakDerivOn`,
+  `hasWeakIteratedDerivOn_one`, `hasWeakIteratedDerivOn_iff`, `hasWeakDerivOn_iff`,
+  `HasWeakIteratedDerivOn.integral_iteratedDeriv_mul`, `HasWeakDerivOn.integral_deriv_mul`,
+  `TestFunction.iteratedDerivApply_coe`, `TestFunction.derivApply_coe`,
+  `HasWeakDerivOn.hasWeakIteratedDerivOn_succ`, `HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ`,
+  `HasWeakIteratedDerivOn.hasWeakDerivOn_of_succ`,
+  `hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn`, `multiIndexTuple_singleton`,
+  `hasWeakIteratedDerivOn_of_contDiffOn`, `hasWeakDerivOn_of_contDiffOn`,
+  `eq_add_integral_deriv_of_piecewise` (the `p`-free piecewise-primitive identity that
+  `memSobolevIntervalLp_of_piecewise` below consumes; `MeasureTheory.Lp.coeFn_sum` stays in
+  `Interval.lean`, nothing here needs it). Every statement in `Interval.lean` mentioning
+  `HasWeakDerivOn f w a b` is rewritten as `HasWeakDerivOn f w (Opens.Ioo a b)`; the proofs are
+  unchanged because the abbrev unfolds to the same term. The six uses outside `Interval.lean` and
+  their migration: `Numlib/Variational/EllipticInterval.lean` lines 729 (`deriv_ae_eq_of_fn_ae_eq`),
+  740 (`hasWeakDerivOn_mulL_deriv`), 855, 857, 859 (`exists_sobolevInterval_two`) and
+  `Numlib/Variational/FiniteElementInterval.lean` line 628 (`hasWeakDerivOn_hatFun`): in each,
+  `HasWeakDerivOn f w a b ↦ HasWeakDerivOn f w (Opens.Ioo a b)` and
+  `HasWeakIteratedDerivOn j f w a b ↦ HasWeakIteratedDerivOn j f w (Opens.Ioo a b)`; nothing else
+  changes (the proofs go through `Iff.rfl`, checked in the prototype).
+* The `p = 2`, bounded API of `Interval.lean` keeps its names and its meaning. Every general
+  definition or theorem below that specializes one of them says so ("specializes to X at
+  `p = 2`, `I = Opens.Ioo a b`; once proved, re-prove X from this"). For the *definitions*
+  (`fn`, `derivIndex`, `derivIndexEquiv`, `deriv`, `mk`, `derivₗ`, `derivCLM`, `inclusionₗ`,
+  `inclusionCLM`, `derivL`, `seminorm`) the general one has literally the body of the existing one
+  with `2` and `Opens.Ioo a b` abstracted (the prototype checks
+  `SobolevInterval.deriv u j = SobolevIntervalLp.deriv u j` by `rfl`), so the existing one becomes
+  either an `abbrev` of the general one or keeps its body and gets a `rfl` bridge lemma —
+  whichever leaves the consumers' `simp`/`rw` calls compiling; the formalizer decides.
+* Base point of the representative. On an unbounded `I` the antiderivative `∫_{-∞}^x u'` need
+  not converge, so the canonical representative is built from an interior base point:
+  `SobolevIntervalLp.basePoint I : ℝ` is some point of `I` (`Classical.choice` on
+  `(I : Set ℝ).Nonempty`, `0` if empty), and `rep u x := repConst u + ∫ t in basePoint I..x, u' t`
+  with `repConst u` the constant making it agree with `u` a.e. (the mean of
+  `u − ∫_{y₀}^· u'` over `I ∩ Ioo (y₀ − 1) (y₀ + 1)`, or `∫ ψ₀ (u − ∫_{y₀}^· u')` for a fixed test
+  function of integral one). The function `rep u` does not depend on the choice (it is *the*
+  continuous representative on `closure I`, `rep_eq_of_continuousOn`), and only the API is fixed
+  here: `continuousOn_rep` on `closure I`, `fn_ae_eq_rep`, `rep_sub_rep` between any two points of
+  `closure I`, linearity. On `Opens.Ioo a b` it agrees with `SobolevInterval.rep` on `Icc a b`
+  (by uniqueness, not by `rfl`).
+* Separability and reflexivity (Proposition 8.1) are the general `SobolevMultiIndex.instSecondCountableTopology`
+  and `SobolevMultiIndex.instIsReflexive` of `MultiIndex.toml` (chapter 9a) read on `E = ℝ`; no
+  interval-specific node. If instance search on the abbrev is too slow (the prototype
+  `notes/brezis/ch08/proto/Basic.lean` needed `synthInstance.maxHeartbeats 200000` for the general
+  instance), the formalizer registers a Lean-side shortcut `instance` for `SobolevIntervalLp m p I`
+  in this module — an implementation detail without a plan node, as the review round decided.
+'''
+
+[[node]]
+id = "TopologicalSpace.Opens.eq_intervals_of_ordConnected"
+kind = "theorem"
+desc = '''An open `OrdConnected` subset of `ℝ` is an open interval: for `I : Opens ℝ` with
+`(hI : (I : Set ℝ).OrdConnected)`, `(I : Set ℝ) = ∅ ∨ (I : Set ℝ) = univ ∨ (∃ a, (I : Set ℝ) = Ioi a) ∨ (∃ b, (I : Set ℝ) = Iio b) ∨ ∃ a b, a < b ∧ (I : Set ℝ) = Ioo a b`.
+Mathlib: `Set.isPreconnected_iff_ordConnected` and `IsPreconnected.mem_intervals` list the ten
+interval shapes of a preconnected set; openness rules out `Icc`, `Ico`, `Ioc`, `Ici`, `Iic`
+(a nonempty open set does not contain its finite endpoints). Also the companion `frontier_eq`: the
+frontier of `Ioo a b` is `{a, b}`, of `Ioi a` is `{a}`, of `Iio b` is `{b}`, of `univ` is `∅`
+(`frontier_Ioo`, `frontier_Ioi`, `frontier_Iio`, `frontier_univ`), which is what "`u = 0` on `∂I`"
+unfolds to. The case split every unbounded-interval argument of the chapter starts with (the
+extension operator, Theorem 8.12). ★'''
+deps = ["HasWeakDerivOn"]
+
+[[node]]
+id = "SobolevIntervalLp"
+kind = "definition"
+desc = '''`abbrev SobolevIntervalLp (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Type :=
+SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m p I volume` — the Sobolev space `W^{m,p}(I)`
+of [brezis2011functional] §8.2 (`m = 1`) and the `W^{m,p}` paragraph, on an arbitrary open
+`I ⊆ ℝ` and `1 ≤ p ≤ ∞`, with the derivatives `u, u', …, u^{(m)}` as its `L^p(I)` components.
+Being an abbrev it inherits `NormedAddCommGroup`, `NormedSpace ℝ` (under `[Fact (1 ≤ p)]`),
+`CompleteSpace` and, at `p = 2`, `InnerProductSpace ℝ` from `MultiIndex.lean`. Specializes to
+`SobolevInterval m a b` at `p = 2`, `I = Opens.Ioo a b`, which becomes an abbrev of this
+(definitionally equal today; `notes/brezis/ch08/proto/Basic.lean`). ★'''
+deps = ["SobolevMultiIndex", "HasWeakIteratedDerivOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Definition"
+
+[[node]]
+id = "MemSobolevIntervalLp"
+kind = "definition"
+desc = '''`MemSobolevIntervalLp (f : ℝ → ℝ) (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Prop :=
+MemSobolevMultiIndex (Module.Basis.singleton Unit ℝ) f m p I volume`: `f ∈ L^p(I)` and its weak
+derivatives of orders `1, …, m` on `I` exist and lie in `L^p(I)`. `MemSobolevInterval f m a b`
+becomes its abbrev at `p = 2`, `I = Opens.Ioo a b`. ★'''
+deps = ["MemSobolevMultiIndex", "SobolevIntervalLp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Definition"
+
+[[node]]
+id = "memSobolevIntervalLp_iff"
+kind = "theorem"
+desc = '''`MemSobolevIntervalLp f m p I ↔ MemLp f p (volume.restrict I) ∧ ∀ j ≤ m, ∃ w, HasWeakIteratedDerivOn j f w I ∧ MemLp w p (volume.restrict I)`.
+The proof of `memSobolevInterval_iff` verbatim (`multiIndexTuple_singleton`,
+`hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn`). Specializes to `memSobolevInterval_iff`;
+once proved, re-prove that one from this. ★'''
+deps = ["MemSobolevIntervalLp", "hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn", "multiIndexTuple_singleton"]
+
+[[node]]
+id = "memSobolevIntervalLp_zero_iff"
+kind = "theorem"
+desc = '''`MemSobolevIntervalLp f 0 p I ↔ MemLp f p (volume.restrict I)`: `W^{0,p}(I) = L^p(I)`.
+Specializes to `memSobolevInterval_zero_iff`. ★'''
+deps = ["memSobolevIntervalLp_iff"]
+
+[[node]]
+id = "memSobolevIntervalLp_succ_iff"
+kind = "theorem"
+desc = '''The book's inductive definition of `W^{m,p}`: `MemSobolevIntervalLp f (m + 1) p I ↔
+MemLp f p (volume.restrict I) ∧ ∃ w, HasWeakDerivOn f w I ∧ MemSobolevIntervalLp w m p I`, i.e.
+`W^{m+1,p}(I) = {u ∈ L^p : u' ∈ W^{m,p}(I)}`; with `memSobolevIntervalLp_iff` this is the book's
+"easily shown" equivalence of the inductive definition with the `m` integration-by-parts
+identities. The proof of `memSobolevInterval_succ_iff` verbatim. Specializes to it. ★'''
+deps = ["memSobolevIntervalLp_iff", "HasWeakDerivOn.hasWeakIteratedDerivOn_succ", "HasWeakDerivOn.hasWeakIteratedDerivOn_of_succ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}, Definition"
+
+[[node]]
+id = "memSobolevIntervalLp_one_iff"
+kind = "theorem"
+desc = '''`MemSobolevIntervalLp f 1 p I ↔ MemLp f p (volume.restrict I) ∧ ∃ w, HasWeakDerivOn f w I ∧ MemLp w p (volume.restrict I)`
+— [brezis2011functional] §8.2, the definition of `W^{1,p}(I)` read with `𝓓(I, ℝ)` as the test
+class (`hasWeakDerivOn_iff` unfolds the integration by parts formula). Specializes to
+`memSobolevInterval_one_iff`. ★'''
+deps = ["memSobolevIntervalLp_succ_iff", "memSobolevIntervalLp_zero_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Definition"
+
+[[node]]
+id = "MemSobolevIntervalLp.congr_ae"
+kind = "theorem"
+desc = '''Membership only sees the function up to a null set of `I` (Remark 5's first sentence):
+`MemSobolevIntervalLp f m p I → f =ᵐ[volume.restrict I] g → MemSobolevIntervalLp g m p I`. This is
+`MemSobolevMultiIndex.congr_ae`. ★'''
+deps = ["MemSobolevIntervalLp", "MemSobolevMultiIndex.congr_ae"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 5"
+
+[[node]]
+id = "SobolevIntervalLp.fn"
+kind = "definition"
+desc = '''`abbrev fn (u : SobolevIntervalLp m p I) : ℝ → ℝ := SobolevMultiIndex.fn u`, the function of an
+element. Specializes to `SobolevInterval.fn`. ★'''
+deps = ["SobolevIntervalLp"]
+
+[[node]]
+id = "SobolevIntervalLp.derivIndex"
+kind = "definition"
+desc = '''`derivIndex (m : ℕ) (j : Fin (m + 1)) : MultiIndexLE Unit m`, the multi-index of the `j`-th
+derivative in one variable, with `derivIndexEquiv m : Fin (m + 1) ≃ MultiIndexLE Unit m`. The same
+bodies as `SobolevInterval.derivIndex`/`derivIndexEquiv`, which they replace (those are independent
+of `p` and `I` already; move them here). ★'''
+deps = ["SobolevIntervalLp"]
+
+[[node]]
+id = "SobolevIntervalLp.deriv"
+kind = "definition"
+desc = '''`deriv (u : SobolevIntervalLp m p I) (j : Fin (m + 1)) : Lp ℝ p (volume.restrict (I : Set ℝ)) :=
+SobolevMultiIndex.weakDeriv u (derivIndex m j)`, the `j`-th weak derivative `u^{(j)}` as an
+`L^p(I)` element, `j = 0` being the function. The prototype checks
+`SobolevInterval.deriv u j = SobolevIntervalLp.deriv u j` by `rfl`. With it the whole
+`SobolevInterval.deriv` API generalizes verbatim: `deriv_zero` (`⇑(deriv u 0) = fn u`), `deriv_add`,
+`deriv_smul`, `deriv_sub`, `deriv_zero_elem`, `ext` (an element is determined by its derivatives),
+`hasWeakIteratedDerivOn_deriv` (`HasWeakIteratedDerivOn j (fn u) (deriv u j) I`),
+`hasWeakDerivOn_deriv_succ` (the chain `u^{(j+1)} = (u^{(j)})'`), `hasWeakDerivOn_fn`,
+`memSobolevIntervalLp_fn`, `locallyIntegrableOn_deriv`, `mk` (an element from `L^p` functions
+forming a derivative chain), `deriv_mk`, `fn_mk`, `derivL j : SobolevIntervalLp m p I →L[ℝ] Lp ℝ p _`
+of norm `≤ 1`, `derivₗ`/`derivCLM : SobolevIntervalLp (m+1) p I →L[ℝ] SobolevIntervalLp m p I`
+(weak differentiation, norm `≤ 1`), `inclusionₗ`/`inclusionCLM` (forgetting the top derivative,
+norm `≤ 1`), `seminorm m p I` (`‖u^{(m)}‖_p` as a `Seminorm`). Each specializes to the
+`SobolevInterval.*` node of the same name at `p = 2`, `I = Opens.Ioo a b`; they are planned as
+this one node with the list, and the formalizer tracks them individually if it wants to. ★'''
+deps = ["SobolevIntervalLp", "SobolevIntervalLp.derivIndex", "SobolevMultiIndex.weakDeriv", "hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn"]
+
+[[node]]
+id = "SobolevIntervalLp.norm_eq_sum"
+kind = "theorem"
+desc = '''The norm of `W^{m,p}(I)` for `p ≠ ∞`: `‖u‖ = (∑ j : Fin (m + 1), ‖deriv u j‖ ^ p.toReal) ^ (1 / p.toReal)`,
+the book's "equivalent norm `(‖u‖_p^p + ‖u'‖_p^p)^{1/p}`" at `m = 1`; and `norm_eq_ciSup` at
+`p = ∞`: `‖u‖ = ⨆ j, ‖deriv u j‖`. Reindexing of `SobolevMultiIndex.norm_eq_sum`/`norm_eq_ciSup`
+along `derivIndexEquiv`. Specializes to `SobolevInterval.norm_sq_eq` at `p = 2`. ★'''
+deps = ["SobolevIntervalLp.deriv", "SobolevMultiIndex.norm_eq_sum", "SobolevMultiIndex.norm_eq_ciSup"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Notation"
+
+[[node]]
+id = "SobolevIntervalLp.norm_deriv_le"
+kind = "theorem"
+desc = '''`‖deriv u j‖ ≤ ‖u‖` for every `j`, and the two-sided comparison with the book's norm
+`∑_j ‖u^{(j)}‖_p`: `norm_le_sum_norm_deriv : ‖u‖ ≤ ∑ j, ‖deriv u j‖` (the `ℓ^p` norm is at most
+the `ℓ^1` norm) and `sum_norm_deriv_le_mul_norm : ∑ j, ‖deriv u j‖ ≤ (m + 1) * ‖u‖`. This is what
+makes the book's `‖u‖_{W^{m,p}} = ∑_{α ≤ m} ‖D^α u‖_p` equivalent to the norm of the type, for
+every `1 ≤ p ≤ ∞`. Specializes to `SobolevInterval.norm_deriv_le`, `norm_le_add_norm_deriv`. ★'''
+deps = ["SobolevIntervalLp.norm_eq_sum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Notation"
+
+[[node]]
+id = "SobolevIntervalLp.inner_eq"
+kind = "theorem"
+desc = '''At `p = 2`: `⟪u, v⟫_ℝ = ∑ j : Fin (m + 1), ⟪deriv u j, deriv v j⟫_ℝ`, the inner product
+`(u, v)_{H^m} = ∑_{α ≤ m} (D^α u, D^α v)_{L²}` of the book; and `inner_eq_integral` at `m = 1`:
+`⟪u, v⟫ = ∫ x in I, (fn u x * fn v x + deriv u 1 x * deriv v 1 x)`. From
+`SobolevMultiIndex.inner_eq`. Specializes to `SobolevInterval.inner_eq`,
+`inner_eq_intervalIntegral`. ★'''
+deps = ["SobolevIntervalLp.deriv", "SobolevMultiIndex.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Notation"
+
+[[node]]
+id = "hasWeakDerivOn_of_tendsto_eLpNorm"
+kind = "theorem"
+desc = '''**Remark 4, first clause (closedness of the weak derivative under `L^p` limits)**: if
+`HasWeakDerivOn (u n) (w n) I` for all `n`, `u n → u` and `w n → w` in `L^p(I)` (as
+`Tendsto (fun n ↦ eLpNorm (u n - u) p (volume.restrict I)) atTop (𝓝 0)`, same for `w`), with
+`MemLp u p (volume.restrict I)` and `MemLp w p (volume.restrict I)`, `1 ≤ p ≤ ∞`, then
+`HasWeakDerivOn u w I`. Proof: pair each side of `∫ u_n φ' = −∫ w_n φ` against the fixed test
+function with Hölder (`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm` of
+`Numlib/Analysis/Convolution/Lp`, proved), which covers `p = ∞` too, and pass to the limit. (The
+`L¹` form `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one` of `Density.lean` would also do for
+`p < ∞` after `L^p → L^1` on the support of `φ`, but is not used, so that this foundation module
+does not import `Density`/`Mollification`.) Companion `SobolevIntervalLp.tendsto_of_tendsto_deriv`: if moreover
+`u n, u ∈ W^{1,p}` then `u n → u` in `W^{1,p}(I)` (the norm is the `ℓ^p` sum). Chapter 9a plans
+the general-`E` statement `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm` (`Density.toml`); this is
+its `E = ℝ` reading through `hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn`, and should
+be derived from it once that lands (not a listed dependency, so that this foundation module does
+not wait on chapter 9a). ★'''
+deps = ["HasWeakDerivOn", "MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 4"
+
+[[node]]
+id = "memSobolevIntervalLp_of_contDiffOn"
+kind = "theorem"
+desc = '''**Remark 2**: if `ContDiffOn ℝ 1 u I`, `MemLp u p (volume.restrict I)` and
+`MemLp (deriv u) p (volume.restrict I)`, then `MemSobolevIntervalLp u 1 p I` and
+`HasWeakDerivOn u (deriv u) I` (the weak derivative is the classical one, "so that notation is
+consistent"). From `hasWeakDerivOn_of_contDiffOn` (relocated here, generalized to `I`; itself
+`ContDiffOn.hasWeakIteratedFDerivOn`). Corollary `memSobolevIntervalLp_of_contDiffOn_Icc`: for
+`I = Opens.Ioo a b` bounded and `ContDiffOn ℝ 1 u (Icc a b)`, `u ∈ W^{1,p}(a, b)` for every
+`1 ≤ p ≤ ∞` (`C¹(Ī) ⊆ W^{1,p}(I)`) — a continuous function on `Icc a b` is in every `L^p`
+(`ContinuousOn.memLp_top_restrict_Ioo`-style, then `MemLp.mono_exponent` on the finite measure);
+`ContDiffMapIcc.toSobolevInterval` is the `p = 2` bundled form. ★'''
+deps = ["MemSobolevIntervalLp", "hasWeakDerivOn_of_contDiffOn", "memSobolevIntervalLp_one_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 2"
+
+[[node]]
+id = "memSobolevIntervalLp_of_piecewise_contDiffOn"
+kind = "theorem"
+desc = '''**§8.2 Examples, "more generally"**: a function continuous on `Icc a b` and piecewise `C¹` on a
+partition `x 0 = a < ⋯ < x (N+1) = b` with bounded panel derivatives lies in `W^{1,p}(a, b)` for
+every `1 ≤ p ≤ ∞`, with weak derivative `deriv g`. The statement of
+`memSobolevInterval_of_piecewise_contDiffOn` with `2` replaced by `p`; the proof is the same
+(`eq_add_integral_deriv_of_piecewise` is `p`-free; `MemLp.of_bound` gives every `p` from the
+bound). Specializes to `memSobolevInterval_of_piecewise_contDiffOn`; once proved, re-prove that
+one from this. ★'''
+deps = ["memSobolevIntervalLp_one_iff", "eq_add_integral_deriv_of_piecewise", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples"
+
+[[node]]
+id = "memSobolevIntervalLp_abs"
+kind = "theorem"
+desc = '''**§8.2 Example (i)**: `x ↦ |x|` lies in `W^{1,p}(Opens.Ioo (-1) 1)` for every `1 ≤ p ≤ ∞` with
+weak derivative `SignType.sign`-valued `g x = if 0 < x then 1 else -1` (`Real.sign`, or the
+`Ioo 0 1`/`Ioo (-1) 0` indicator difference), `HasWeakDerivOn (fun x ↦ |x|) g (Opens.Ioo (-1) 1)`.
+Instance of `memSobolevIntervalLp_of_piecewise_contDiffOn` with the partition `-1 < 0 < 1`
+(`hasDerivAt_abs_pos`/`hasDerivAt_abs_neg`, `Mathlib/Analysis/Calculus/Deriv/Abs.lean`; `deriv |·|`
+equals the sign off `0`). ★'''
+deps = ["memSobolevIntervalLp_of_piecewise_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (i)"
+
+[[node]]
+id = "not_memSobolevIntervalLp_sign"
+kind = "theorem"
+desc = '''**§8.2 Example (ii)**: the function `g` of Example (i) (`1` on `(0, 1)`, `-1` on `(-1, 0)`) does
+not belong to `W^{1,p}(Opens.Ioo (-1) 1)` for any `1 ≤ p ≤ ∞`. If it did, it would agree a.e. with
+a function continuous on `[-1, 1]` (`SobolevIntervalLp.exists_continuousOn_closure_ae_eq`), which is
+impossible: a continuous `h` with `h = 1` a.e. on `(0, 1)` and `h = -1` a.e. on `(-1, 0)` has
+`h 0 = 1` and `h 0 = -1` (`eqOn_Icc_of_ae_eq`-type argument, `Interval.lean` has the tool). ★★'''
+deps = ["memSobolevIntervalLp_abs", "SobolevIntervalLp.exists_continuousOn_closure_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (ii)"
+
+[[node]]
+id = "TopologicalSpace.Opens.exists_testFunction_integral_eq_one"
+kind = "theorem"
+desc = '''For a nonempty open `I : Opens ℝ`, `∃ ψ : 𝓓(I, ℝ), ∫ x, ψ x = 1` (a normalized bump around a
+point of `I`, radius from `Metric.isOpen_iff`). Specializes to `exists_testFunction_integral_eq_one`
+(bounded, `hab : a < b`); once proved, re-prove that one from this. ★'''
+deps = ["HasWeakDerivOn"]
+
+[[node]]
+id = "TestFunction.primitiveIic"
+kind = "definition"
+desc = '''**The antiderivative of a test function with zero mean is a test function, on any open
+interval**: for `I : Opens ℝ` with `(hI : (I : Set ℝ).OrdConnected)`, `ψ : 𝓓(I, ℝ)` and
+`hψ : ∫ x, ψ x = 0`, `primitiveIic hI ψ hψ : 𝓓(I, ℝ)` is `x ↦ ∫ t in Iic x, ψ t`: smooth with
+derivative `ψ` (`primitiveIic_coe`, `deriv_primitiveIic`), vanishing left of `tsupport ψ` and, by
+`hψ`, right of it, so its support is inside the convex hull of `tsupport ψ`, a compact subset of
+`I` because `I` is an interval (this is where `OrdConnected` enters: on a disconnected open set the
+primitive is not compactly supported). Specializes to `TestFunction.primitive hab ψ hψ`, which is
+`x ↦ ∫ t in a..x, ψ t`, the same function since `ψ = 0` left of `a` — a propositional, not
+definitional, equality; `TestFunction.primitive` keeps its body. ★★'''
+deps = ["HasWeakDerivOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.1, proof"
+
+[[node]]
+id = "HasWeakDerivOn.exists_ae_eq_const"
+kind = "theorem"
+desc = '''**Lemma 8.1 (du Bois-Reymond on an open interval)**: `(hI : (I : Set ℝ).OrdConnected)`,
+`HasWeakDerivOn f 0 I` (so `f ∈ L¹_loc(I)` and `∫_I f φ' = 0` for all test functions) implies
+`∃ c, f =ᵐ[volume.restrict I] fun _ ↦ c`, with `c = ∫ ψ₀ f` for a test function `ψ₀` of integral
+one. The proof of `ae_eq_const_of_hasWeakDerivOn_zero` verbatim with `TestFunction.primitiveIic`
+in place of `primitive` and `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` on `I`.
+Specializes to `ae_eq_const_of_hasWeakDerivOn_zero` (bounded); once proved, re-prove that one
+from this. The empty `I` is fine (any `c`). ★★'''
+deps = ["HasWeakDerivOn", "TestFunction.primitiveIic", "TopologicalSpace.Opens.exists_testFunction_integral_eq_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.1"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"
+kind = "theorem"
+desc = '''**Lemma 8.2 (the primitive of a locally integrable function is weakly differentiable)**: for
+`(hI : (I : Set ℝ).OrdConnected)`, `hw : LocallyIntegrableOn w I`, `y₀ ∈ I` and `c : ℝ`,
+`HasWeakDerivOn (fun x ↦ c + ∫ t in y₀..x, w t) w I`. Also `continuousOn_integral`: the primitive
+is continuous on `I` (`v ∈ C(I)` in the book), `absolutelyContinuousOnInterval_integral`: it is
+absolutely continuous on every `[x, y] ⊆ I` (`IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`),
+and `ae_deriv_integral_eq`: its classical derivative is `w` a.e. on `I`
+(`IntervalIntegrable.ae_hasDerivAt_integral`). The proof of `hasWeakDerivOn_integral` verbatim:
+integrate by parts against a test function on the compact subinterval carrying its support
+(`AbsolutelyContinuousOnInterval.integral_mul_deriv_eq_deriv_mul`) — the book's Fubini argument is
+not needed. Specializes to `hasWeakDerivOn_integral`, `absolutelyContinuousOnInterval_integral`,
+`ae_deriv_integral_eq` (bounded, `IntegrableOn w (Ioo a b)`, base point `a`); once proved, re-prove
+those from these (their base point is the endpoint `a`, reachable because `w` is integrable up to
+it). ★★'''
+deps = ["HasWeakDerivOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.2"
+
+[[node]]
+id = "memSobolevIntervalLp_integral"
+kind = "theorem"
+desc = '''**Remark 7**: if `w ∈ L^p(I)` and the primitive `v = c + ∫_{y₀}^x w` lies in `L^p(I)` (automatic
+when `I` is bounded, `memSobolevIntervalLp_integral_of_bounded`: `v` is continuous on the compact
+`closure I`), then `MemSobolevIntervalLp v 1 p I` with `HasWeakDerivOn v w I`. From Lemma 8.2 and
+`memSobolevIntervalLp_one_iff`. ★'''
+deps = ["MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral", "memSobolevIntervalLp_one_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 7"
+
+[[node]]
+id = "HasWeakDerivOn.exists_ae_eq_integral_of_mem"
+kind = "theorem"
+desc = '''**Theorem 8.2, the core**: for `(hI : (I : Set ℝ).OrdConnected)`, `h : HasWeakDerivOn f w I` and
+`y₀ ∈ I`, `∃ c, f =ᵐ[volume.restrict I] fun x ↦ c + ∫ t in y₀..x, w t`. Lemma 8.2 gives the weak
+derivative of the primitive, the difference has weak derivative `0` and Lemma 8.1 makes it
+a.e. constant; `w ∈ L¹_loc(I)` comes with `h`. Chapter 9a's
+`HasWeakFDerivOn.ae_eq_const_of_isPreconnected` (`Friedrichs.toml`, Remark 9.7) is the `ℝ^N`
+version of Lemma 8.1; the one-dimensional lemma here is proved independently (it is the foundation
+of Theorem 8.2 and needs none of the mollification machinery) and is not derived from it.
+Specializes to `HasWeakDerivOn.exists_ae_eq_integral`
+(bounded, `IntegrableOn w (Ioo a b)`, base point `a`); once proved, re-prove that one from this
+(shift the base point). ★'''
+deps = ["HasWeakDerivOn.exists_ae_eq_const", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.2"
+
+[[node]]
+id = "SobolevIntervalLp.exists_continuousOn_closure_ae_eq"
+kind = "theorem"
+desc = '''**Theorem 8.2 (the continuous representative)**: for `[Fact (1 ≤ p)]`,
+`(hI : (I : Set ℝ).OrdConnected)` and `u : SobolevIntervalLp 1 p I`,
+`∃ g : ℝ → ℝ, ContinuousOn g (closure (I : Set ℝ)) ∧ fn u =ᵐ[volume.restrict I] g ∧
+∀ x ∈ closure I, ∀ y ∈ closure I, g y - g x = ∫ t in x..y, deriv u 1 t`. From
+`HasWeakDerivOn.exists_ae_eq_integral_of_mem`; continuity up to a *finite* endpoint uses that
+`u' ∈ L^p(I)` is integrable on every bounded piece of `I` (`MemLp.integrableOn` on a set of finite
+measure — `L^p ⊆ L^1` there; at `p = ∞`, bounded times finite measure), so the primitive extends
+continuously to the endpoint (`intervalIntegral.continuousOn_integral_of_integrableOn_Ioo`-type).
+This is the `∃` form; the canonical linear choice is `SobolevIntervalLp.rep`. Specializes to
+`HasWeakDerivOn.exists_continuousOn_ae_eq`. ★★'''
+deps = ["HasWeakDerivOn.exists_ae_eq_integral_of_mem", "SobolevIntervalLp.deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.2"
+
+[[node]]
+id = "SobolevIntervalLp.rep"
+kind = "definition"
+desc = '''**The canonical continuous representative** of `u ∈ W^{1,p}(I)`, as a function on `ℝ`:
+`rep u x := repConst u + ∫ t in basePoint I..x, deriv u 1 t`, where `basePoint I : ℝ` is a chosen
+point of `I` (`Classical`, `0` if `I` is empty) and `repConst u : ℝ` is the constant that makes
+`rep u` agree with `fn u` a.e. on `I`, chosen *linearly* in `u` (the average of
+`fn u − ∫_{y₀}^· u'` over `I ∩ Ioo (y₀ - 1) (y₀ + 1)`, or `∫ ψ₀ (fn u − ∫_{y₀}^· u')` for a fixed
+test function of integral one; the group `desc` discusses the choice). API, all under
+`[Fact (1 ≤ p)] (hI : (I : Set ℝ).OrdConnected)`: `rep_apply`, `continuousOn_rep :
+ContinuousOn (rep u) (closure I)`, `absolutelyContinuousOnInterval_rep` on every `[x, y] ⊆ closure I`,
+`hasWeakDerivOn_rep : HasWeakDerivOn (rep u) (deriv u 1) I`, `ae_deriv_rep_eq` (classical
+derivative `= u'` a.e. on `I`), `rep_sub_rep : x, y ∈ closure I → rep u y - rep u x = ∫ t in x..y, deriv u 1 t`
+(the FTC in `W^{1,p}`, the identity of Theorem 8.2), `fn_ae_eq_rep`, `rep_add`, `rep_smul`,
+`rep_finset_sum` (`EqOn` on `closure I`), `rep_eq_of_continuousOn` (Remark 5: any function
+continuous on `closure I` agreeing a.e. with `u` on `I` *is* `rep u` on `closure I` — the
+representative is unique). Specializes to `SobolevInterval.rep`, `repConst`, `rep_apply`,
+`continuousOn_rep`, `absolutelyContinuousOnInterval_rep`, `hasWeakDerivOn_rep`, `ae_deriv_rep_eq`,
+`rep_sub_rep`, `fn_ae_eq_rep`, `rep_eq_of_continuousOn`, `rep_add`, `rep_smul`, `rep_finset_sum`
+at `p = 2`, `I = Opens.Ioo a b` — there `EqOn (SobolevInterval.rep u) (SobolevIntervalLp.rep u) (Icc a b)`
+by `rep_eq_of_continuousOn` (the bodies differ in the base point and the constant), and the
+`SobolevInterval` API can be re-derived through that `EqOn`. ★★'''
+deps = ["SobolevIntervalLp.exists_continuousOn_closure_ae_eq", "HasWeakDerivOn.exists_ae_eq_integral_of_mem", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.2 and Remark 5"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_translate_sub_le"
+kind = "theorem"
+desc = '''**Proposition 8.5, (i)⇒(ii), all `1 ≤ p ≤ ∞`**: for `u : SobolevIntervalLp 1 p ⊤` (the whole
+line) and `h : ℝ`, `eLpNorm (fun x ↦ rep u (x + h) - rep u x) p volume ≤ ENNReal.ofReal |h| * eLpNorm (deriv u 1) p volume`
+(`‖τ_h u − u‖_p ≤ |h| ‖u'‖_p`). Proof: `rep u (x + h) − rep u x = ∫_x^{x+h} u' = h ∫_0^1 u'(x + s h) ds`
+(`rep_sub_rep` and `intervalIntegral.integral_comp_mul_add`-type substitution), so pointwise
+`|…|^p ≤ |h|^p ∫_0^1 |u'(x + sh)|^p ds` by Hölder/Jensen on `[0, 1]`
+(`ENNReal.rpow_lintegral_mul_le` of `Convolution/Lp.lean` with weight `1`, or
+`MeasureTheory.integral_rpow_le`-type convexity), then Tonelli (`MeasureTheory.lintegral_lintegral_swap`)
+and translation invariance (`MeasureTheory.lintegral_add_right_eq_self`) give the bound with
+`|h|^p ‖u'‖_p^p`; `p = ∞` is the Lipschitz bound of Proposition 8.4. Alternatively, Minkowski's
+integral inequality `ENNReal.lintegral_rpow_lintegral_le`. This clause alone is what Theorem 8.8
+(7) consumes, at `p = 1`; the converse (ii)⇒(i) is in `Interval/DifferenceQuotient`. Chapter 9a's
+`HasWeakFDerivOn.eLpNorm_sub_translate_le` (`Friedrichs.toml`, Proposition 9.3 (i)⇒(iii)) is the
+`ℝ^N` statement, proved by density; at `E = ℝ`, `Ω = ⊤` it gives this node too, and whichever
+lands first the other should be derived from it (not a listed dependency, for the same reason).
+★★ (~200 lines)'''
+deps = ["SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.5"
+
+[[node]]
+id = "SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv"
+kind = "theorem"
+desc = '''**Remark 6**: if `u ∈ W^{1,p}(I)` and `u'` has a representative `g` continuous on `closure I`
+(`deriv u 1 =ᵐ[volume.restrict I] g`, `ContinuousOn g (closure I)`), then `rep u` is `C¹` on
+`closure I`: `ContDiffOn ℝ 1 (rep u) (closure I)` with derivative `g` there (`HasDerivWithinAt`
+from `rep_sub_rep` and the FTC for a continuous integrand, `intervalIntegral.integral_hasDerivAt_right`
+/ `Continuous.deriv_integral`). For `I = Opens.Ioo a b` this produces an element of
+`ContDiffMapIcc hab.le 1` (`ContDiffMapIcc.ofContDiffOn`). The tool behind the "`C²` when `f` is
+continuous" clauses of §8.4. ★★'''
+deps = ["SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 6"
+
+[[node]]
+id = "SobolevIntervalLp.exists_contDiff_ae_eq"
+kind = "theorem"
+desc = '''**The `C^k` representative of an element of `W^{k+1,p}(I)`**: `∃ f, ContDiff ℝ k f ∧
+(∀ j : Fin (k + 1), deriv u j.castSucc =ᵐ[volume.restrict I] iteratedDeriv j f) ∧ ∀ s ∈ closure I,
+∀ t ∈ closure I, iteratedDeriv k f t - iteratedDeriv k f s = ∫ r in s..t, deriv u (Fin.last (k+1)) r`.
+Induction on `k` integrating the representative of `u' ∈ W^{k,p}`, as `SobolevInterval.exists_contDiff_ae_eq`
+(which this specializes to at `p = 2`; once proved, re-prove that one from this). ★★'''
+deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
+
+[[node]]
+id = "memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval"
+kind = "theorem"
+desc = '''**Remark 8, the absolutely continuous half**: for a bounded interval `I = Opens.Ioo a b`,
+`a < b`, `MemSobolevIntervalLp u 1 1 (Opens.Ioo a b) ↔ ∃ g, AbsolutelyContinuousOnInterval g a b ∧ u =ᵐ[volume.restrict (Ioo a b)] g`
+— "the functions of `W^{1,1}(I)` are the absolutely continuous functions". `→`: the
+representative is AC (`absolutelyContinuousOnInterval_rep`). `←`: an AC `g` is differentiable
+a.e. with integrable derivative and `g x = g a + ∫_a^x g'`
+(`AbsolutelyContinuousOnInterval.ae_differentiableAt`, `.intervalIntegrable_deriv`,
+`.integral_deriv_eq_sub`, Mathlib), so Lemma 8.2 gives the weak derivative `deriv g ∈ L¹`. The
+bounded-variation clauses (a)–(c) of Remark 8 are not planned. ★★'''
+deps = ["memSobolevIntervalLp_one_iff", "SobolevIntervalLp.rep", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 8"
+
+[[node]]
+id = "memSobolevIntervalLp_top_iff_lipschitz"
+kind = "theorem"
+desc = '''**Proposition 8.4**: for `(hI : (I : Set ℝ).OrdConnected)` and `u ∈ L^∞(I)`,
+`MemSobolevIntervalLp u 1 ⊤ I ↔ ∃ C, ∀ᵐ x ∂(volume.restrict I), ∀ᵐ y ∂(volume.restrict I), |u x - u y| ≤ C * |x - y|`,
+and `→` holds with `C = ‖u'‖_∞`. `→`: `|rep u x − rep u y| = |∫_y^x u'| ≤ ‖u'‖_∞ |x − y|` from
+`rep_sub_rep`. `←`: the book goes through Proposition 8.3 (the Riesz representation of `(L¹)^*`,
+chapter 4); the one-dimensional route needs nothing of the sort: the a.e. Lipschitz bound gives a
+Lipschitz representative `g` on `I` (define `g` on a full-measure set and extend by density and
+uniform continuity — or take the pointwise `liminf`-type representative; ★★, the one delicate
+step), `g` is absolutely continuous on compacts (`LipschitzOnWith.absolutelyContinuousOnInterval`),
+differentiable a.e. with `|g'| ≤ C` (`.ae_differentiableAt`, the Lipschitz bound on difference
+quotients), and `g x = g y₀ + ∫_{y₀}^x g'` (`.integral_deriv_eq_sub`), so Lemma 8.2 gives
+`HasWeakDerivOn g (deriv g) I` with `deriv g ∈ L^∞`. Corollary `LipschitzOnWith.memSobolevIntervalLp_top`:
+a function Lipschitz on `I` and in `L^∞(I)` is in `W^{1,∞}(I)`. ★★'''
+deps = ["memSobolevIntervalLp_one_iff", "SobolevIntervalLp.rep", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.4"

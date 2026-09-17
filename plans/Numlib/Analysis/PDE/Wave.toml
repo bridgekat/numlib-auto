@@ -1,0 +1,324 @@
+namespace = "Wave"
+desc = '''
+The wave equation `∂ₜₜu - Δu = 0` on `Ω × (0,∞)`, `u = 0` on `∂Ω × (0,∞)`, `u(·,0) = u₀`,
+`∂ₜu(·,0) = v₀`, as [brezis2011functional] §10.3 solves it: the first-order system
+`U' + A U = 0` for `U = (u, ∂ₜu)` in the phase space `H = H¹₀(Ω) × L²(Ω)` with the inner product
+`⟪(u₁,v₁),(u₂,v₂)⟫ = ∫ ∇u₁·∇u₂ + ∫ u₁u₂ + ∫ v₁v₂` (the book's (34)) and
+`A (u, v) = (-v, -Δu)` with `D(A) = D(-Δ) × H¹₀(Ω)`, where `-Δ` is the Dirichlet Laplacian of
+`Numlib/Analysis/PDE/DirichletLaplacian` — so `D(A) = (H² ∩ H¹₀) × H¹₀` on a `C²` domain with
+bounded boundary and the weak domain in general. `A + I` is maximal monotone (not `A` itself for
+this inner product, and `A` is not symmetric), so Theorem 7.4 (Hille–Yosida,
+`LinearPMap.IsMaximalMonotone.exists_isSolutionOn`) together with the shift of chapter 7's
+Remark 6 (`LinearPMap.isSolutionOn_smul_id_vadd_iff`: `V = e^{-t} U` solves `V' + (A + I) V = 0`)
+gives Theorem 10.7, and Theorem 7.5 with the description of `D(A^k)` gives Theorem 10.8.
+Everything except the `H^{k+1} × H^k` reading of `D(A^k)` and the space-time smoothness holds on
+an arbitrary open set, for the same reason as in `Numlib/Analysis/PDE/Heat`.
+`Ω : Opens (EuclideanSpace ℝ (Fin N))`.
+
+Types. The phase space is Mathlib's `WithLp 2 (H¹₀(Ω) × L²(Ω))` (`WithLp.instProdInnerProductSpace`),
+complete since both factors are; `H¹₀(Ω) = SobolevEuclideanZero N 1 2 Ω` with its `H¹` inner
+product, which is (34) by `Elliptic.laplaceForm_eq_innerSL`. The operator is a `LinearPMap` on it
+whose domain asks the first component to lie in `D(-Δ)` after the embedding
+`SobolevMultiIndexZero.fnL` and the second to be in the range of that embedding (checked in
+`notes/brezis/ch10/proto/wave.lean`). A solution is a curve `u : ℝ → L²(Ω)` — the book's `u`, not
+`U` — in the class (31): `C²([0,∞); L²)`, `C¹([0,∞); H¹₀)` through the embedding
+(`Bochner.ContDiffOnThrough`), `u(t) ∈ D(-Δ)` with `-Δu` continuous, `u'' = Δu`, `u 0 = u₀`,
+`u' 0 = v₀`; the translation between `U` and `u` is the bulk of `existsUnique_isSolution`.
+
+Remark 7 needs the *other* inner product on `H¹₀(Ω)`, `∫ ∇u₁·∇u₂` alone, which is an inner product
+equivalent to the `H¹` one exactly when Poincaré's inequality holds (bounded `Ω`, Corollary 9.19,
+`SobolevEuclideanZero.norm_le_gradNorm`); for it `⟪AU,U⟫ = 0`, `A` and `-A` are maximal monotone
+and `A* = -A`. That is a second phase-space type, `dirichletPhaseSpace`, with the same operator;
+it is planned last, the two-sided solvability and `‖U(t)‖ = ‖U₀‖` for all `t ∈ ℝ` being obtainable
+without it by time reversal (`t ↦ -t`, `v₀ ↦ -v₀`). Remark 8 (d'Alembert's formula on `Ω = ℝ`)
+is the one place where a concrete solution is exhibited, and its cost is that translation
+`t ↦ u₀(· + t)` is a `C^k` curve in `L²(ℝ)` iff `u₀ ∈ H^k(ℝ)`; Remark 9 (the Fourier method) is
+as for the heat equation; Remark 10's necessity is Remark 4's argument.
+'''
+
+[[node]]
+id = "phaseSpace"
+kind = "definition"
+desc = '''`Wave.phaseSpace (Ω) := WithLp 2 (SobolevEuclideanZero N 1 2 Ω × Lp ℝ 2 (volume.restrict Ω))`,
+the book's `H = H¹₀(Ω) × L²(Ω)` with the inner product (34); an `abbrev`, so Mathlib's
+`InnerProductSpace ℝ (WithLp 2 (E × F))` applies. `instCompleteSpace` from
+`SobolevMultiIndexZero.instCompleteSpace` and `Lp`'s completeness. `inner_def`: (34) via
+`Elliptic.laplaceForm_eq_innerSL`. Shape checked in `notes/brezis/ch10/proto/wave.lean`. ★'''
+deps = ["SobolevEuclideanZero", "SobolevMultiIndexZero.instCompleteSpace", "Elliptic.laplaceForm_eq_innerSL"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (34)"
+
+[[node]]
+id = "operator"
+kind = "definition"
+desc = '''**The wave operator** `Wave.operator (Ω) : phaseSpace Ω →ₗ.[ℝ] phaseSpace Ω`, `A (u, v) = (-v, -Δu)`,
+with domain `{(u, v) : fnL u ∈ D(dirichletLaplacian Ω) ∧ v ∈ range (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω))}`
+and value `(-ṽ, dirichletLaplacian Ω (fnL u))`, `ṽ` the (unique) `H¹₀`-preimage of `v`. The
+book's (35) with `D(A) = (H² ∩ H¹₀) × H¹₀` read on the weak domain
+(`dirichletLaplacianDomain_eq_of_isContDiffChartDomain` identifies them on a regular domain).
+`mem_operator_domain_iff`, `operator_apply_fst`, `operator_apply_snd`. ★'''
+deps = ["phaseSpace", "dirichletLaplacian", "SobolevMultiIndexZero.fnL"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (35)"
+
+[[node]]
+id = "operator_add_id_inner_self_nonneg"
+kind = "theorem"
+desc = '''**(i) `A + I` is monotone**: `0 ≤ ⟪A U, U⟫ + ‖U‖²` for `U = (u, v) ∈ D(A)`, i.e.
+`LinearPMap.IsMonotone (LinearMap.id +ᵥ operator Ω)`. The book's computation, lines 12622–12628,
+with `⟪-Δu, v⟫ = ∫ ∇u·∇ṽ` (`dirichletLaplacian_inner_eq_dirichletForm`, `ṽ ∈ H¹₀` as test element)
+cancelling the `-∫ ∇ṽ·∇u` of `⟪-ṽ, u⟫_{H¹}`:
+`⟪AU,U⟫ + ‖U‖² = -∫ u v + ∫ u² + ∫ v² + ∫ |∇u|² ≥ 0` (`‖u‖² + ‖v‖² - ⟪u,v⟫ ≥ ½(‖u‖² + ‖v‖²)`). ★★'''
+deps = ["operator", "dirichletLaplacian_inner_eq_dirichletForm", "Elliptic.laplaceForm_eq_innerSL", "LinearPMap.IsMonotone"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.7 (i)"
+
+[[node]]
+id = "operator_add_id_isMaximalMonotone"
+kind = "theorem"
+desc = '''**(ii) `R(A + 2I) = H`, hence `A + I` is maximal monotone**:
+`LinearPMap.IsMaximalMonotone (LinearMap.id +ᵥ operator Ω)` (its `exists_add_apply_eq` field is
+`∀ F, ∃ U : D(A), U + (A U + U) = F`, the book's `A + 2I` onto). The book's (36)–(37), lines
+12630–12648: given `(f, g)`, solve `-Δu + 4u = 2f + g` in `D(-Δ)`
+(`dirichletLaplacian_exists_smul_add_apply_eq` at `λ = 4`, on any open set; the book cites
+Theorem 9.25 because its domain is `H² ∩ H¹₀`), then `v := 2u - f ∈ H¹₀` since
+`u ∈ D(-Δ) ⊆ H¹₀`. With `operator_add_id_inner_self_nonneg`. ★★'''
+deps = ["operator", "dirichletLaplacian_exists_smul_add_apply_eq", "operator_add_id_inner_self_nonneg", "LinearPMap.IsMaximalMonotone"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.7 (ii)"
+
+[[node]]
+id = "IsSolution"
+kind = "definition"
+desc = '''`Wave.IsSolution (Ω) (u₀ : H¹₀(Ω)) (v₀ : L²(Ω)) (u : ℝ → L²(Ω)) : Prop`, the problem
+(27)–(30) in the class (31) of Theorem 10.7, with `D(-Δ)` for `H² ∩ H¹₀`: fields
+`contDiffOn : ContDiffOn ℝ 2 u (Ici 0)` (`u ∈ C²([0,∞); L²)`),
+`contDiffOnThrough : Bochner.ContDiffOnThrough (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω)) 1 u (Ici 0)`
+(`u ∈ C¹([0,∞); H¹₀)`), `contDiffOnPowDomain : (dirichletLaplacian Ω).ContDiffOnPowDomain 0 1 u (Ici 0)`
+(`u ∈ C([0,∞); D(-Δ))`, the book's `H² ∩ H¹₀` with `dirichletLaplacianDomain_eq_of_isContDiffChartDomain`),
+`eqn : ∀ t ≥ 0, iteratedDerivWithin 2 u (Ici 0) t = -(dirichletLaplacian Ω ⟨u t, _⟩)` ((27):
+`∂ₜₜu = Δu` in `L²`), `apply_zero : u 0 = fnL u₀`, `derivWithin_zero : derivWithin u (Ici 0) 0 = v₀`
+((29), (30)); (28) is `u(t) ∈ D(-Δ) ⊆ H¹₀`. Shape checked in `notes/brezis/ch10/proto/wave.lean`. ★'''
+deps = ["dirichletLaplacian", "Bochner.ContDiffOnThrough", "SobolevMultiIndexZero.fnL", "LinearPMap.ContDiffOnPowDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (27)–(31)"
+
+[[node]]
+id = "existsUnique_isSolution"
+kind = "theorem"
+desc = '''**Theorem 10.7, existence and uniqueness**, on any open `Ω`: for `u₀ ∈ H¹₀(Ω)` with
+`fnL u₀ ∈ D(-Δ)` (the book's `u₀ ∈ H² ∩ H¹₀`) and `v₀ ∈ range (fnL Ω)` (`v₀ ∈ H¹₀`),
+`∃! u, IsSolution Ω u₀ v₀ u` (uniqueness on `Ici 0`). Proof, lines 12650–12660:
+`U₀ = (u₀, ṽ₀) ∈ D(A)`; `A + I` is maximal monotone (`operator_add_id_isMaximalMonotone`), so
+Theorem 7.4 (`LinearPMap.IsMaximalMonotone.exists_isSolutionOn`) gives `V` with
+`(LinearMap.id +ᵥ A).IsSolutionOn U₀ (Ici 0) V`, `C¹`, and `U := e^t V` solves `A.IsSolutionOn U₀ (Ici 0) U`
+(`LinearPMap.isSolutionOn_smul_id_vadd_iff` at `c = 1`) with `U ∈ C¹([0,∞); H) ∩ C([0,∞); D(A))`
+(39). Translation to `u := fnL ∘ U.1`: the first component of `U' + AU = 0` is `U.1' = U.2` in
+`H¹₀`, so `u ∈ C¹([0,∞); H¹₀)` with `u' = fnL ∘ U.2` (`Bochner.ContDiffOnThrough.derivWithin_eq`),
+and the second is `U.2' = Δ U.1` in `L²`, so `u ∈ C²([0,∞); L²)` with `u'' = -(-Δ)(u)`;
+`U ∈ C([0,∞); D(A))` gives `u(t) ∈ D(-Δ)` continuously. Conversely a solution `u` yields
+`U := (ũ, u')` with `ũ` the `H¹₀` lift, in the class (39), so uniqueness
+(`LinearPMap.IsMonotone.eqOn_of_isSolutionOn` for `A + I`, after the shift) transfers. ★★★,
+~500 lines of translation.'''
+deps = ["IsSolution", "operator", "operator_add_id_isMaximalMonotone", "Bochner.ContDiffOnThrough.derivWithin_eq", "SobolevMultiIndexZero.fnL", "LinearPMap.IsMaximalMonotone.exists_isSolutionOn", "LinearPMap.isSolutionOn_smul_id_vadd_iff", "LinearPMap.IsMonotone.eqOn_of_isSolutionOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (existence and uniqueness)"
+
+[[node]]
+id = "solution"
+kind = "definition"
+desc = '''`Wave.solution (Ω) (u₀ : H¹₀(Ω)) (v₀ : L²(Ω)) : ℝ → L²(Ω)`, the first component of
+`t ↦ exp t • (LinearMap.id +ᵥ operator Ω).semigroup t (u₀, ṽ₀)` (chapter 7's `LinearPMap.semigroup`
+of `A + I`, shifted), read in `L²`; `isSolution_solution` (from `existsUnique_isSolution`'s
+construction), `IsSolution.eqOn_solution`, and linearity in `(u₀, v₀)` (`solution_add`,
+`solution_smul`; each `semigroup t` is a `ContinuousLinearMap`). ★'''
+deps = ["existsUnique_isSolution", "LinearPMap.semigroup"]
+
+[[node]]
+id = "IsSolution.energy"
+kind = "theorem"
+desc = '''**(32), conservation of energy**: for every `t ≥ 0`,
+`‖derivWithin u (Ici 0) t‖² + ⟪-Δ (u t), u t⟫ = ‖v₀‖² + ⟪-Δ (fnL u₀), fnL u₀⟫`, i.e. with
+`dirichletLaplacian_inner_self_eq_dirichletForm`, `‖∂ₜu(t)‖² + ∫|∇u(t)|² = ‖v₀‖² + ∫|∇u₀|²`
+(`IsSolution.energy_dirichletForm`, in terms of the `H¹₀` lift `ũ`). The book's proof, lines
+12662–12670: `E(t) = ‖u'‖² + dirichletForm Ω ũ ũ` is `C¹` on `[0,∞)` with
+`E' = 2⟪u', u''⟫ + 2 dirichletForm Ω ũ ũ' = 2⟪u', Δu⟫ + 2⟪-Δu, u'⟫ = 0`, using `ũ' = lift of u'`
+(`Bochner.ContDiffOnThrough.derivWithin_eq`) and `⟪-Δu, w⟫ = ∫ ∇u·∇w` for `w = u'(t) ∈ H¹₀`.
+Remark 6 is this statement. ★★'''
+deps = ["IsSolution", "dirichletLaplacian_inner_eq_dirichletForm", "Bochner.ContDiffOnThrough.derivWithin_eq", "Elliptic.dirichletForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (32) and Remark 6"
+
+[[node]]
+id = "mem_operator_powGraph_iff"
+kind = "theorem"
+desc = '''`D(A^k)` on any open set, in terms of the Dirichlet Laplacian: with `A² (u, v) = (Δu, Δv)`
+(`operator_apply_operator`), `(u, v) ∈ D(A^k)` (i.e. `∃ x : (operator Ω).PowDomain k, applyL _ k 0 x = (u,v)`,
+`LinearPMap.powGraph`) iff `fnL u ∈ D((-Δ)^{⌈k/2⌉})` with `(-Δ)^j (fnL u) ∈ range fnL` for
+`j ≤ ⌊k/2⌋`, and `v ∈ D((-Δ)^{⌊k/2⌋})` with `(-Δ)^j v ∈ range fnL` for `j ≤ ⌈k/2⌉ - 1` (the
+`D((-Δ)^m)` memberships through `(dirichletLaplacian Ω).PowDomain m`). Induction on `k` from
+`mem_operator_domain_iff`, `A(u,v) = (-v, -Δu)`. This is the book's display at line 12736 before
+the Sobolev spaces are read in: the conditions "`Δ^j u = 0` on `Γ`" are the `range fnL`
+memberships. ★★'''
+deps = ["operator", "LinearPMap.powGraph", "LinearPMap.PowDomain", "LinearPMap.PowDomain.applyL"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8, `D(A^k)`"
+
+[[node]]
+id = "operator.powDomainToSobolevL"
+kind = "definition"
+desc = '''**`D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)` with continuous injection**, on a `C^{k+1}` domain with
+bounded boundary: `Wave.operator.powDomainToSobolevL (hΩ) (k) : (operator Ω).PowDomain k →L[ℝ]
+SobolevEuclidean N (k+1) 2 Ω × SobolevEuclidean N k 2 Ω`, `x ↦ (w, z)` with
+`SobolevMultiIndex.fnL w = SobolevMultiIndexZero.fnL u`, `SobolevMultiIndex.fnL z = v`, and
+`‖w‖_{H^{k+1}} + ‖z‖_{H^k} ≤ C ∑_{j ≤ k} ‖A^j (u,v)‖ ≤ C' ‖x‖`. The book's line 12738 ("in
+particular"), from `mem_operator_powGraph_iff` and `dirichletLaplacian_mem_powDomain_iff` (with
+the odd-order clause of Theorem 9.25, `Elliptic.regularity_dirichlet_higher`: `u ∈ H¹₀`,
+`u - Δu ∈ H^{m}` ⇒ `u ∈ H^{m+2}`, at `m = k - 1`). ★★★ bookkeeping on top of Theorem 9.25.'''
+deps = ["mem_operator_powGraph_iff", "dirichletLaplacian_mem_powDomain_iff", "dirichletLaplacian.powDomainToSobolevL", "Elliptic.regularity_dirichlet_higher", "IsContDiffChartDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8"
+
+[[node]]
+id = "IsSolution.contDiffOnThrough_of_powDomain"
+kind = "theorem"
+desc = '''**Theorem 10.8, Bochner form**: if `U₀ = (u₀, ṽ₀) ∈ D(A^k)` then
+`(operator Ω).ContDiffOnPowDomain (k - j) j U (Ici 0)` for `j ≤ k` (Theorem 7.5,
+`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup` for `A + I`; the shift `e^t` preserves
+the classes) and hence, on a `C^k` domain with bounded boundary,
+`Bochner.ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N (j+1) 2 Ω →L[ℝ] L²(Ω)) (k - j) u (Ici 0)` for `j ≤ k` —
+`u ∈ C^{k-j}([0,∞); H^{j+1}(Ω))`, lines 12740–12750, via `operator.powDomainToSobolevL`. ★★'''
+deps = ["IsSolution", "existsUnique_isSolution", "operator.powDomainToSobolevL", "LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup", "Bochner.ContDiffOnThrough.comp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8"
+
+[[node]]
+id = "IsSolution.contDiffOnClosure_spaceTime"
+kind = "theorem"
+desc = '''**Theorem 10.8**: on a `C^∞` domain with bounded boundary, if `(u₀, ṽ₀) ∈ D(A^k)` for every
+`k` (the book's `u₀, v₀ ∈ H^k(Ω)` for all `k` with the compatibility conditions `Δ^j u₀ = Δ^j v₀ = 0`
+on `Γ`, read through `mem_operator_powGraph_iff` and `dirichletLaplacian_mem_powDomain_iff`),
+then `u ∈ C^∞(Ω̄ × [0,∞))`: `∃ U, (∀ t ≥ 0, U(·,t) =ᵐ u t) ∧ ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi 0)`
+with the derivatives extending continuously to `closure Ω ×ˢ Ici 0`. From
+`contDiffOnThrough_of_powDomain` for all `k` and the space-time bridge
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough` (Corollary 9.15), as for the heat
+equation. ★★★ through the bridge.'''
+deps = ["IsSolution.contDiffOnThrough_of_powDomain", "Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough", "IsContDiffChartDomain", "IsSobolevExtensionDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8"
+
+[[node]]
+id = "existsUnique_isSolution_backward"
+kind = "theorem"
+desc = '''**Remark 7, the two-sided solution, without the Dirichlet inner product**: the wave
+equation is solvable backward in time — for the data of `existsUnique_isSolution` there is a
+unique `u : ℝ → L²(Ω)` which is a solution on `Ici 0` and whose reflection `t ↦ u (-t)` is a
+solution with data `(u₀, -v₀)` on `Ici 0`, i.e. `u ∈ C²(ℝ; L²) ∩ C¹(ℝ; H¹₀)` with `u'' = Δu` on
+all of `ℝ`. The map `t ↦ -t` preserves (27) (second order in time) and (28), and swaps the sign
+of (30). With `IsSolution.energy` on both halves: `‖u'(t)‖² + ∫|∇u(t)|² = ‖v₀‖² + ∫|∇u₀|²` for every
+`t ∈ ℝ` (`IsSolution.energy_two_sided`) — the book's "`|U(t)|_H = |U₀|_H ∀ t ∈ ℝ`" in the energy
+norm. ★★'''
+deps = ["existsUnique_isSolution", "IsSolution.energy"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7 (the group of isometries)"
+
+[[node]]
+id = "dirichletPhaseSpace"
+kind = "definition"
+desc = '''**Remark 7's phase space**: for bounded `Ω`, the type `H¹₀(Ω) × L²(Ω)` with the inner product
+`⟪(u₁,v₁),(u₂,v₂)⟫ = ∫ ∇u₁·∇u₂ + ∫ v₁v₂`. Not a fresh instance: it is the *abbreviation*
+`WithLp 2 (WithEnergy (dirichletOperator Ω) hΩ × L²(Ω))`, where
+`dirichletOperator Ω : H¹₀(Ω) →L[ℝ] H¹₀(Ω)` is the bounded operator of the restricted form
+`Elliptic.dirichletForm Ω` on `H¹₀(Ω)` (`SesqForm.toOperator`, the operator chapter 9b's
+`Elliptic.hilbertBasis_sobolevZero` already builds for Remark 28 (b)), `hΩ` its
+`LinearMap.IsSymmetricCoercive` (symmetry of the form; coercivity is Poincaré,
+`SobolevEuclideanZero.norm_le_gradNorm` at `p = 2`: `‖u‖²_{H¹} ≤ (1 + 4R²) dirichletForm Ω u u`),
+`WithEnergy` the energy space of `Numlib/Analysis/InnerProductSpace/Energy` (inner product
+`a(u, v)`, `WithEnergy.inner_def`; the norms are equivalent, `WithEnergy.continuous_equiv`) and
+`WithLp 2 (_ × _)` Mathlib's `ℓ²` product of inner product spaces (`WithLp.instProdInnerProductSpace`).
+Completeness is `WithEnergy.instCompleteSpace_of_continuousLinearMap` (chapter 9b,
+`Elliptic/Spectral`; a ~20-line transfer along the continuous linear equivalence) for the first
+factor and Mathlib for the product. What remains here: `dirichletOperator`, its
+`IsSymmetricCoercive` proof, and the two unfolding lemmas `dirichletPhaseSpace.inner_def`,
+`dirichletPhaseSpace.norm_equiv` (`‖(u, v)‖² = dirichletForm Ω u u + ‖v‖²`, with the two-sided
+comparison to `phaseSpace Ω`). ★ (~60 lines instead of the ~250 of a hand-built instance).'''
+deps = ["phaseSpace", "Elliptic.dirichletForm", "SobolevEuclideanZero.norm_le_gradNorm", "Elliptic.hilbertBasis_sobolevZero", "WithEnergy", "LinearMap.IsSymmetricCoercive", "_root_.WithEnergy.instCompleteSpace_of_continuousLinearMap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7"
+
+[[node]]
+id = "operator'"
+kind = "definition"
+desc = '''`Wave.operator' (Ω) : dirichletPhaseSpace Ω →ₗ.[ℝ] dirichletPhaseSpace Ω`, the same map as
+`operator Ω` on the same domain, read in the Dirichlet inner product. `operator'_inner_self_eq_zero :
+⟪A U, U⟫ = 0` for `U ∈ D(A)` (line 12684: `-∫ ∇v·∇u + ∫ (-Δu) v = 0` by
+`dirichletLaplacian_inner_eq_dirichletForm`). ★'''
+deps = ["dirichletPhaseSpace", "operator", "dirichletLaplacian_inner_eq_dirichletForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7"
+
+[[node]]
+id = "operator'_isMaximalMonotone"
+kind = "theorem"
+desc = '''**Remark 7 (i), (ii)**: `A` and `-A` are maximal monotone on `dirichletPhaseSpace Ω`
+(`LinearPMap.IsMaximalMonotone (operator' Ω)`, `neg_operator'_isMaximalMonotone`), and
+`A† = -A` (`operator'_adjoint_eq_neg`, Mathlib's `LinearPMap.adjoint`). Monotone: `⟪AU,U⟫ = 0`.
+`R(I ± A) = H`: as in `operator_add_id_isMaximalMonotone` with `-Δu + u = ±f + g`
+(`dirichletLaplacian_exists_smul_add_apply_eq` at `λ = 1`). Adjoint: `⟪AU, V⟫ = -⟪U, AV⟫` on
+`D(A)` (`dirichletLaplacian_inner_eq_dirichletForm` twice) gives `-A ≤ A†`
+(`LinearPMap.IsFormalAdjoint.le_adjoint`); equality of domains as in Proposition 7.6's proof
+(`(I + A)⁻¹` bounded, `A + I` maximal monotone; chapter 7's `isMaximalMonotone_iff_adjoint` /
+Remark 8 gives `A†` maximal monotone with `-A ≤ A†`, both maximal, hence equal). ★★'''
+deps = ["operator'", "dirichletLaplacian_exists_smul_add_apply_eq", "LinearPMap.IsMaximalMonotone", "LinearPMap.isMaximalMonotone_iff_adjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7 (i), (ii)"
+
+[[node]]
+id = "dAlembert"
+kind = "definition"
+desc = '''**Remark 8, d'Alembert's formula**: for `u₀ v₀ : ℝ → ℝ`,
+`Wave.dAlembert u₀ v₀ (t : ℝ) : ℝ → ℝ := fun x ↦ ½ (u₀ (x + t) + u₀ (x - t)) + ½ ∫ s in (x - t)..(x + t), v₀ s`,
+the book's (40), as a function of `t` with values in functions of `x` (and, for `u₀ ∈ L²`,
+`v₀ ∈ L²` with `H¹`/`H²` regularity, in `L²(ℝ)`). `dAlembert_apply`; for `v₀ = 0` it is (41). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8, (40)"
+
+[[node]]
+id = "isSolution_dAlembert"
+kind = "theorem"
+desc = '''For `Ω = ℝ` (`N = 1`, `Ω = ⊤`), `u₀ ∈ H²(ℝ)` and `v₀ ∈ H¹(ℝ)` (`= H¹₀(ℝ)`: the whole-space
+density of `C_c^∞` in `H^k(ℝ^N)`, `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`,
+gives `SobolevEuclideanZero N 1 2 ⊤ = ⊤`), the curve `t ↦ [dAlembert u₀ v₀ t]` in `L²(ℝ)` is
+`IsSolution` with data `(u₀, v₀)`, so by uniqueness the solution of Theorem 10.7 is d'Alembert's
+formula (`IsSolution.eq_dAlembert`). Proof: translation `τ_t f = f(· + t)` is a `C^k` curve in
+`L²(ℝ)` for `f ∈ H^k(ℝ)` with `d/dt τ_t f = τ_t f'` (difference quotients converge in `L²` for
+`f ∈ H¹`: the estimate `‖τ_h f - f‖_{L²} ≤ |h| ‖f'‖_{L²}` of Proposition 9.3, chapter 9a's
+`HasWeakFDerivOn.eLpNorm_sub_translate_le_top` in `Friedrichs.lean`, and the density of smooth
+functions), and `x ↦ ∫_{x-t}^{x+t} v₀` is `v₀(x+t) - v₀(x-t)`-differentiable in `t` with
+`v₀ ∈ H¹`; the computation `∂ₜₜ = ∂ₓₓ` termwise, weak derivatives read through the `H²` element.
+★★★, ~400 lines, most of it the translation calculus in `L²`.'''
+deps = ["dAlembert", "IsSolution", "existsUnique_isSolution", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "HasWeakFDerivOn.eLpNorm_sub_translate_le_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
+
+[[node]]
+id = "dAlembert_contDiffOn_off_characteristics"
+kind = "theorem"
+desc = '''**Remark 8, propagation of singularities**: if `u₀` is `C^∞` on `ℝ ∖ {x₀}` and `v₀ = 0`,
+then `(x,t) ↦ dAlembert u₀ 0 t x` is `C^∞` on `ℝ × ℝ` off the two characteristics
+`{x + t = x₀} ∪ {x - t = x₀}`: `ContDiffOn ℝ ⊤ (fun p ↦ dAlembert u₀ 0 p.2 p.1) {p | p.1 + p.2 ≠ x₀ ∧ p.1 - p.2 ≠ x₀}`,
+by the chain rule (`ContDiffOn.comp` with the affine maps `p ↦ p.1 ± p.2`). The general-`v₀`
+version with `v₀ ∈ C^∞(ℝ ∖ {x₀})` is the same plus the integral term. ★★'''
+deps = ["dAlembert"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8 (characteristics)"
+
+[[node]]
+id = "IsSolution.inner_eigenfunction"
+kind = "theorem"
+desc = '''**Remark 9, the coefficients**: for bounded nonempty `Ω` and the Dirichlet eigenbasis `e`,
+`lam` of `Elliptic.dirichletEigenbasis`, `a n t := ⟪u t, e n⟫` satisfies
+`a n t = ⟪fnL u₀, e n⟫ * cos (√(lam n) * t) + ⟪v₀, e n⟫ / √(lam n) * sin (√(lam n) * t)` for
+`t ≥ 0`: `a n` is `C²` with `a'' = ⟪u'', e_n⟫ = ⟪Δu, e_n⟫ = -lam_n a` (symmetry of `-Δ`,
+`e n ∈ D(-Δ)`), `a(0)`, `a'(0)` given, and the harmonic oscillator has that unique solution
+(the energy `a'² + lam a²` of the difference is constant and zero at `0`).
+`hasSum_eigenfunction`: `HasSum (fun n ↦ a n t • e n) (u t)`, the series at line 12725. ★★'''
+deps = ["IsSolution", "dirichletLaplacian_isFormalAdjoint", "Elliptic.dirichletEigenbasis"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 9"
+
+[[node]]
+id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
+kind = "theorem"
+desc = '''**Remark 10, necessity of the compatibility conditions**: if `u : ℝ^N × ℝ → ℝ` is `C^∞` up
+to the boundary (`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)`, extensions continuous on
+`closure Ω ×ˢ Ici 0`), satisfies `∂ₜₜu = Δ_x u` on `Ω × (0,∞)` and vanishes on `frontier Ω × (0,∞)`,
+then the continuous extensions of `Δ^j (u(·,0))` and of `Δ^j (∂ₜu(·,0))` vanish on `frontier Ω`
+for every `j`. As `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`: by induction
+`∂ₜ^{2j} u = Δ^j u` and `∂ₜ^{2j+1} u = Δ^j ∂ₜ u` on `Ω × (0,∞)`, all `t`-derivatives vanish on
+`Γ × (0,∞)`, and continuity to `t = 0` gives the conditions. ★★★ (shares the iterated
+commutation with the heat version; factor it as a lemma there).'''
+deps = ["ContDiffOnClosure", "Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 10"

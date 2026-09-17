@@ -1,0 +1,224 @@
+namespace = "Brezis.Chapter02"
+desc = '''
+★ §2.4, complementary subspaces and right/left invertibility, for real Banach spaces. Theorem
+2.10 and Corollary 2.11 (with Remark 7's converse, Exercise 2.16) are the backbone
+`Numlib/Analysis/Normed/Module/Complemented`; the book's two "Definition." paragraphs are the
+surface definitions `IsComplement` and `IsRightInverse`/`IsLeftInverse`, each with the lemma
+identifying it with Mathlib's notion (`Submodule.IsTopCompl` / `Submodule.ClosedComplemented`,
+`ContinuousLinearMap.HasRightInverse` / `HasLeftInverse`), so that the three Examples and
+Theorems 2.12–2.13 are restatements of Mathlib (`Mathlib/Topology/Algebra/Module/Complement.lean`,
+`Mathlib/Analysis/Normed/Module/Complemented.lean`, `…/ContinuousInverse.lean`) plus the one
+direction the backbone adds (Theorem 2.12 (ii) ⇒ (i)). Remark 8 (Lindenstrauss–Tzafriri) is not
+planned; Remark 9 is stated conditionally on an uncomplemented closed subspace.
+'''
+
+[[node]]
+id = "theorem_2_10"
+kind = "theorem"
+desc = '''★ Theorem 2.10: for a Banach space `E` and closed subspaces `G L : Submodule ℝ E` with
+`IsClosed ((G ⊔ L : Submodule ℝ E) : Set E)`, there is `C ≥ 0` such that every `z ∈ G ⊔ L` is
+`z = x + y` with `x ∈ G`, `y ∈ L`, `‖x‖ ≤ C * ‖z‖` and `‖y‖ ≤ C * ‖z‖` (the book's (13)). The
+backbone `Submodule.exists_add_eq_norm_le_of_isClosed_sup` over `ℝ`. ★'''
+deps = ["Submodule.exists_add_eq_norm_le_of_isClosed_sup"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.10"
+
+[[node]]
+id = "corollary_2_11"
+kind = "theorem"
+desc = '''★ Corollary 2.11: under the assumptions of Theorem 2.10 there is `C` with
+`∀ x : E, Metric.infDist x (G ⊓ L : Set E) ≤ C * (Metric.infDist x G + Metric.infDist x L)` (the
+book's (14), with `dist (x, M) = Metric.infDist x M`). The backbone
+`Submodule.exists_infDist_inf_le_of_isClosed_sup`. ★'''
+deps = ["Submodule.exists_infDist_inf_le_of_isClosed_sup"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.11"
+
+[[node]]
+id = "remark_2_7"
+kind = "theorem"
+desc = '''Remark 7, the converse of Corollary 2.11: for closed subspaces `G L` of a Banach space, if (14)
+holds for some `C` — `∀ x, Metric.infDist x (G ⊓ L : Set E) ≤ C * (Metric.infDist x G + Metric.infDist x L)` —
+then `G ⊔ L` is closed. From `exercise_2_16`, restricting (14) to `x ∈ G`, where
+`infDist x G = 0`. ★'''
+deps = ["Submodule.isClosed_sup_of_forall_infDist_inf_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 7"
+
+[[node]]
+id = "IsComplement"
+kind = "definition"
+desc = '''The Definition of §2.4: for a Banach space `E` and a closed subspace `G : Submodule ℝ E`, a
+subspace `L : Submodule ℝ E` is a (topological) complement of `G` when (i) `L` is closed and (ii)
+`G ⊓ L = ⊥` and `G ⊔ L = ⊤`:
+`def IsComplement (G L : Submodule ℝ E) : Prop := IsClosed (L : Set E) ∧ IsCompl G L`
+(`IsCompl` is (ii); the closedness of `G` is the standing hypothesis of the paragraph, not part
+of the predicate). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "isComplement_iff_isTopCompl"
+kind = "theorem"
+desc = '''The book's complements are Mathlib's topological complements: for a Banach space `E` and a
+closed `G`, `IsComplement G L ↔ Submodule.IsTopCompl G L`. This is
+`Submodule.isTopCompl_iff_isCompl_isClosed` (`Mathlib/Analysis/Normed/Module/Complemented.lean`,
+which is where the open mapping theorem enters). ★'''
+deps = ["IsComplement"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "exists_isComplement_iff_closedComplemented"
+kind = "theorem"
+desc = '''"`G` admits a complement" is Mathlib's `Submodule.ClosedComplemented`: for a Banach space `E`
+and `G` closed, `(∃ L, IsComplement G L) ↔ G.ClosedComplemented`, from
+`Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`. ★'''
+deps = ["IsComplement"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "IsComplement.existsUnique_add"
+kind = "theorem"
+desc = '''The sentence after the Definition: if `G` and `L` are complementary, every `z : E` is uniquely
+`z = x + y` with `x ∈ G`, `y ∈ L`: `∀ z, ∃! p : G × L, (p.1 : E) + p.2 = z`. From `IsCompl`
+alone (`Submodule.prodEquivOfIsCompl`, or `Submodule.existsUnique_add_of_isCompl`). ★'''
+deps = ["IsComplement"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "IsComplement.continuous_projection"
+kind = "theorem"
+desc = '''The consequence of Theorem 2.10 recorded after the Definition: for complementary `G L` in a
+Banach space (with `G` closed), the projections `z ↦ x` and `z ↦ y` are continuous:
+`Continuous (G.projectionOnto L h.2)` and `Continuous (L.projectionOnto G h.2.symm)`
+(`Submodule.projectionOnto` is Mathlib's algebraic projection along a complement). From
+`isComplement_iff_isTopCompl` and `Submodule.IsTopCompl.continuous_projectionOnto` (and
+`Submodule.IsTopCompl.symm`). The book adds that this property "could also serve as a
+definition", which is Mathlib's `Submodule.IsTopCompl` itself. ★'''
+deps = ["isComplement_iff_isTopCompl"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "example_2_1"
+kind = "theorem"
+desc = '''Example 1 of §2.4: every finite-dimensional subspace `G` of a Banach space `E` admits a
+complement, `[FiniteDimensional ℝ G] → ∃ L, IsComplement G L`. Mathlib's
+`Submodule.ClosedComplemented.of_finiteDimensional` (`Mathlib/Analysis/LocallyConvex/HahnBanach.lean`,
+proved by extending the coordinate functionals by Hahn–Banach, as the book does) and
+`exists_isComplement_iff_closedComplemented`; `G` is closed by
+`Submodule.closed_of_finiteDimensional`. ★'''
+deps = ["exists_isComplement_iff_closedComplemented"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Example 1"
+
+[[node]]
+id = "example_2_2"
+kind = "theorem"
+desc = '''Example 2 of §2.4: every closed subspace `G` of finite codimension admits a complement,
+`IsClosed (G : Set E) → [FiniteDimensional ℝ (E ⧸ G)] → ∃ L, IsComplement G L`. Mathlib's
+`Submodule.ClosedComplemented.of_finiteDimensional_quotient`
+(`Mathlib/Topology/Algebra/Module/FiniteDimension.lean`) and
+`exists_isComplement_iff_closedComplemented`. ★'''
+deps = ["exists_isComplement_iff_closedComplemented"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Example 2"
+
+[[node]]
+id = "example_2_2_strongDualCoannihilator"
+kind = "theorem"
+desc = '''The "typical example" of Example 2 (lines 1562–1583): for a Banach space `E` and a subspace
+`N : Submodule ℝ (StrongDual ℝ E)` of finite dimension `p`, the subspace
+`G := N.strongDualCoannihilator = {x | ∀ f ∈ N, f x = 0}` (chapter 1's `N^⊥`) is closed and of
+codimension `p`: `IsClosed (G : Set E)` (`Submodule.isClosed_strongDualCoannihilator`),
+`Module.finrank ℝ (E ⧸ G) = Module.finrank ℝ N` (chapter 11's
+`Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`, the book's "another proof … in Chapter 11"),
+and `G` admits a complement (`example_2_2`, `FiniteDimensional ℝ (E ⧸ G)` from the finrank
+identity). The book's own argument — a basis `f₁, …, f_p` of `N`, the map `Φ x = (fᵢ x)` onto
+`ℝ^p` (surjective, else a nonzero `α` with `∑ αᵢ fᵢ = 0`), and the dual vectors `eⱼ` with
+`fᵢ eⱼ = δᵢⱼ` spanning a complement — is recorded here as the alternative if chapter 11's node
+is not yet available (★★, about 80 lines, `LinearMap.quotKerEquivRange` for `ker Φ = G`). ★'''
+deps = ["example_2_2", "Submodule.strongDualCoannihilator", "Submodule.isClosed_strongDualCoannihilator", "Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator"]  # cross-ref: chapter 1 (`strongDualCoannihilator`), chapter 11 (Proposition 11.14 in `Numlib/Analysis/Normed/Module/Quotient`)
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Example 2"
+
+[[node]]
+id = "example_2_3"
+kind = "theorem"
+desc = '''Example 3 of §2.4: in a Hilbert space `H` (`[InnerProductSpace ℝ H] [CompleteSpace H]`) every
+closed subspace `K` admits a complement, namely `Kᗮ`: `IsClosed (K : Set H) → IsComplement K Kᗮ`.
+Mathlib's `Submodule.isTopCompl_orthogonal` (`Mathlib/Analysis/InnerProductSpace/Projection/Basic.lean`,
+under `[K.HasOrthogonalProjection]`, which `Submodule.HasOrthogonalProjection.ofCompleteSpace`
+supplies for closed `K` in a complete space) and `isComplement_iff_isTopCompl`; §5.2 of the book
+(chapter 5) proves it. ★'''
+deps = ["isComplement_iff_isTopCompl"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Example 3"
+
+[[node]]
+id = "IsRightInverse"
+kind = "definition"
+desc = '''The Definition of right and left inverses: for `T : E →L[ℝ] F`, `S : F →L[ℝ] E` is a right
+inverse when `T ∘L S = ContinuousLinearMap.id ℝ F`, and a left inverse when
+`S ∘L T = ContinuousLinearMap.id ℝ E`:
+`def IsRightInverse (T : E →L[ℝ] F) (S : F →L[ℝ] E) : Prop := T.comp S = ContinuousLinearMap.id ℝ F`,
+and `IsLeftInverse T S := S.comp T = ContinuousLinearMap.id ℝ E` (a second definition node,
+`IsLeftInverse`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "IsLeftInverse"
+kind = "definition"
+desc = '''`def IsLeftInverse (T : E →L[ℝ] F) (S : F →L[ℝ] E) : Prop := S.comp T = ContinuousLinearMap.id ℝ E`;
+see `IsRightInverse`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "exists_isRightInverse_iff_hasRightInverse"
+kind = "theorem"
+desc = '''"`T` admits a right inverse" is Mathlib's `ContinuousLinearMap.HasRightInverse`
+(`Mathlib/Analysis/Normed/Module/ContinuousInverse.lean`, `∃ S, Function.RightInverse S T`):
+`(∃ S, IsRightInverse T S) ↔ T.HasRightInverse`, by `ContinuousLinearMap.ext_iff`. ★'''
+deps = ["IsRightInverse"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "exists_isLeftInverse_iff_hasLeftInverse"
+kind = "theorem"
+desc = '''"`T` admits a left inverse" is Mathlib's `ContinuousLinearMap.HasLeftInverse`:
+`(∃ S, IsLeftInverse T S) ↔ T.HasLeftInverse`, by `ContinuousLinearMap.ext_iff`. ★'''
+deps = ["IsLeftInverse"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.4, Definition"
+
+[[node]]
+id = "theorem_2_12"
+kind = "theorem"
+desc = '''★ Theorem 2.12: for Banach spaces `E F` and a surjective `T : E →L[ℝ] F`,
+`(∃ S, IsRightInverse T S) ↔ ∃ L, IsComplement T.ker L` — `T` admits a right inverse iff
+`N(T)` admits a complement. Through `exists_isRightInverse_iff_hasRightInverse` and
+`exists_isComplement_iff_closedComplemented` this is the backbone
+`ContinuousLinearMap.hasRightInverse_iff_closedComplemented_ker` (whose (i) ⇒ (ii) is Mathlib's
+`closedComplemented_ker_of_rightInverse`, `R(S)` being the complement, and whose (ii) ⇒ (i) is
+new). ★'''
+deps = ["exists_isRightInverse_iff_hasRightInverse", "exists_isComplement_iff_closedComplemented", "ContinuousLinearMap.hasRightInverse_iff_closedComplemented_ker"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.12"
+
+[[node]]
+id = "remark_2_9"
+kind = "theorem"
+desc = '''Remark 9, a surjection without a right inverse: for a Banach space `E` and a closed subspace
+`G` without complement (`¬ ∃ L, IsComplement G L`), the quotient map `G.mkQL : E →L[ℝ] E ⧸ G`
+(Mathlib's `Submodule.mkQL`; `E ⧸ G` is a Banach space by `Submodule.Quotient.normedAddCommGroup`
+and `Submodule.Quotient.completeSpace`, §11.2) is surjective and admits no right inverse. From
+`theorem_2_12` with `ker mkQL = G` (`Submodule.ker_mkQ`). The existence of such `G` is Remark 8
+(not planned), so this node is conditional. ★'''
+deps = ["theorem_2_12"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 9"
+
+[[node]]
+id = "theorem_2_13"
+kind = "theorem"
+desc = '''★ Theorem 2.13: for Banach spaces `E F` and an injective `T : E →L[ℝ] F`,
+`(∃ S, IsLeftInverse T S) ↔ IsClosed (Set.range T) ∧ ∃ L, IsComplement T.range L` — `T` admits
+a left inverse iff `R(T)` is closed and admits a complement. Through
+`exists_isLeftInverse_iff_hasLeftInverse` and `exists_isComplement_iff_closedComplemented` this is
+the backbone `ContinuousLinearMap.hasLeftInverse_iff_isClosed_range_and_closedComplemented_range`,
+i.e. Mathlib's `HasLeftInverse.isClosed_range`, `HasLeftInverse.closedComplemented_range` (`N(S)`
+is the complement, as the book says) and
+`HasLeftInverse.of_injective_of_isClosed_range_of_closedComplement_range`. ★'''
+deps = ["exists_isLeftInverse_iff_hasLeftInverse", "exists_isComplement_iff_closedComplemented", "ContinuousLinearMap.hasLeftInverse_iff_isClosed_range_and_closedComplemented_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.13"

@@ -1,0 +1,17 @@
+desc = '''
+Function spaces of measure theory that this project needs and Mathlib lacks, in Mathlib's own
+layout (natural homes: `Mathlib.MeasureTheory.Function.*`). Directory-only group; the modules are
+
+* `LpSpace/` -- the `L^p` spaces as Banach spaces: uniform convexity (Clarkson's inequalities), the
+  `L^p`-`L^{p'}` duality with the Riesz representation theorem and reflexivity, the
+  Kolmogorov-M. Riesz-Frechet compactness criterion, and the dominated a.e.-convergent
+  subsequence of an `L^p`-convergent sequence;
+* `EssSupport` -- the essential support of a measurable function, the notion of support that makes
+  sense for an `L^p` class;
+* `LpInterpolation` -- the `k`-fold Hoelder inequality and the interpolation inequality
+  `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` between two exponents.
+
+All of it is general measure theory over a `MeasurableSpace`, with the finite-dimensional
+Lebesgue setting entering only in `KolmogorovRiesz` and in the negative results about `L^∞`. The
+source that drives the selection is [brezis2011functional], chapter 4; every node cites it.
+'''

@@ -1,0 +1,145 @@
+desc = '''
+The extension operator `P : W^{1,p}(I) → W^{1,p}(ℝ)` of [brezis2011functional] Theorem 8.6, with
+Lemma 8.3 (a cut-off times a zero extension stays in `W^{1,p}` of the larger interval), for every
+`1 ≤ p ≤ ∞` and every open interval `I`.
+
+### Construction
+
+The book reflects across `0` for `I = (0, ∞)` and, for a bounded `I`, splits `u = ηu + (1 − η)u`
+with a `C¹` cut-off `η` and reflects each piece once. The construction planned here is the same
+in substance but uniform over the four kinds of interval and cheaper to state:
+
+* `I = ℝ`: `P = id`.
+* `I = (a, ∞)`: even reflection across `a`, `(Pu)(x) = ũ(a + |x − a|)` where `ũ = rep u`; on
+  `(−∞, a)` the derivative is `−u'(2a − x)`. `I = (−∞, b)`: the mirror image.
+* `I = (a, b)` bounded: reflect evenly across `a` and across `b` to `(2a − b, 2b − a)`, then
+  multiply by the Lipschitz cut-off `ζ` equal to `1` on `[a, b]`, affine on `[2a − b, a]` and on
+  `[b, 2b − a]`, `0` outside; `‖ζ'‖_∞ = 1/|I|`. The product rule for a Lipschitz factor is the
+  absolutely continuous calculus (`AbsolutelyContinuousOnInterval.mul` with
+  `LipschitzOnWith.absolutelyContinuousOnInterval`), which is why the cut-off may be merely
+  Lipschitz rather than `C¹`; that is what makes the book's footnote constants attainable (with a
+  `C¹` cut-off supported in `(1/4, 3/4)` as the book draws it, `‖η'‖_∞ > 2/|I|` and the constant
+  `4(1 + 1/|I|)` of footnote 6 is *not* reached by the proof as written — see the chapter report,
+  Doubts).
+
+Each case produces a function on `ℝ` that is continuous, absolutely continuous on compacts, with
+a.e. derivative in `L^p(ℝ)`, so Lemma 8.2 (`MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral`)
+puts it in `W^{1,p}(ℝ)` at once; no test-function computation is repeated. Linearity and the
+bounds come from the formulas.
+
+### Constants (brief D10)
+
+Stated separately for the two `L^p` norms, which is norm-independent:
+`‖(Pu)‖_{L^p(ℝ)} ≤ 4 ‖u‖_{L^p(I)}` and `‖(Pu)'‖_{L^p(ℝ)} ≤ 4 (‖u'‖_{L^p(I)} + |I|⁻¹ ‖u‖_{L^p(I)})`
+with `|I|⁻¹ := (volume (I : Set ℝ)).toReal⁻¹`, which is `0` when `|I| = ∞` — so "`C` depends
+only on `|I| ≤ ∞`" becomes a literal function of `|I|`. (The construction gives `3^{1/p}` and
+`2^{1/p}` in place of `4`; the bound is stated as `4` to match the book.) The operator bound in
+the norm of the type follows: `‖P‖ ≤ 8 (1 + |I|⁻¹)`.
+'''
+
+[[node]]
+id = "HasWeakDerivOn.indicator_mul_of_tsupport_inter_subset"
+kind = "theorem"
+desc = '''**Lemma 8.3, general form**: let `I ≤ J : Opens ℝ`, `h : HasWeakDerivOn f w I`, and `η : ℝ → ℝ`
+smooth (`ContDiff ℝ ∞ η`) with `tsupport η ∩ (J : Set ℝ) ⊆ I`. Then
+`HasWeakDerivOn ((I : Set ℝ).indicator (η * f)) ((I : Set ℝ).indicator (deriv η * f + η * w)) J`.
+Proof: for `φ : 𝓓(J, ℝ)` the product `η φ` is a test function on `I` (`tsupport (η φ) ⊆ tsupport η ∩ tsupport φ`,
+compact and inside `I` by the hypothesis; `TestFunction.mulContDiff`), and
+`∫_J 1_I η f φ' = ∫_I f ((ηφ)' − η' φ) = −∫_I (w η + f η') φ` by the weak derivative of `f`
+tested against `ηφ` — the book's computation. The book's Lemma 8.3 is `I = (0, 1)`, `J = (0, ∞)`,
+`η` the cut-off vanishing on `(3/4, ∞)`. The `C¹`/Lipschitz cut-off of the extension operator
+below does not go through this lemma but through the absolutely continuous calculus. Chapter 9a
+plans the `ℝ^N` version with target `⊤`, `HasWeakIteratedLineDerivOn.indicator_mul`
+(`Cutoff.toml`, hypothesis `IsSobolevCutoff Ω α`, `α` smooth with bounded derivative and
+`tsupport α ∩ ∂Ω = ∅`); the book's `J = (0, ∞)` follows from that by restriction
+(`HasWeakIteratedLineDerivOn.mono`), so this node is its `E = ℝ` corollary once it lands — keep
+the statement with a general target `J` for the surface's Lemma 8.3, derive it from the `⊤` form.
+(not a listed dependency, so that this module does not wait on chapter 9a). ★ given chapter 9a's
+lemma (★★ standalone)'''
+deps = ["HasWeakDerivOn", "hasWeakDerivOn_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.3"
+
+[[node]]
+id = "SobolevIntervalLp.reflectFun"
+kind = "definition"
+desc = '''The even reflection of a function across a point `c`: `reflectFun c g x := g (c + |x - c|)`, and
+its odd companion for the derivative `reflectDerivFun c w x := if c ≤ x then w x else -w (2 * c - x)`.
+With `reflectFun_absolutelyContinuousOnInterval` (from the AC of `g`), `ae_deriv_reflectFun`
+(`deriv (reflectFun c g) = reflectDerivFun c (deriv g)` a.e.), and the `L^p` identities
+`eLpNorm (reflectFun c g) p volume ^ p = 2 ‖g‖_{L^p(Ioi c)}^p` (change of variables
+`x ↦ 2c − x`, `MeasureTheory.Measure.map` of the reflection is `volume`:
+`Measure.map_neg_eq_self`/`measurePreserving_sub_left`-type), so
+`‖reflectFun c g‖_{L^p(ℝ)} ≤ 2 ‖g‖_{L^p(Ioi c)}` for every `1 ≤ p ≤ ∞`. ★★'''
+deps = ["SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6, proof"
+
+[[node]]
+id = "SobolevIntervalLp.memSobolevIntervalLp_reflectFun"
+kind = "theorem"
+desc = '''**Theorem 8.6, the half-line case**: for `u : SobolevIntervalLp 1 p (Opens.Ioi c)`,
+`MemSobolevIntervalLp (reflectFun c (rep u)) 1 p ⊤` with weak derivative
+`reflectDerivFun c (deriv u 1)`, `‖reflectFun c (rep u)‖_{L^p(ℝ)} ≤ 2 ‖u‖_{L^p(I)}`,
+`‖reflectDerivFun c (deriv u 1)‖_{L^p(ℝ)} ≤ 2 ‖u'‖_{L^p(I)}`. The reflected function is
+`u*(0) + ∫_0^x v` for the odd reflection `v` of `u'` (`rep_sub_rep` on each side), so Lemma 8.2
+(`hasWeakDerivOn_integral` on `⊤`) applies; the mirror statement for `Opens.Iio c`. ★★'''
+deps = ["SobolevIntervalLp.reflectFun", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral", "memSobolevIntervalLp_one_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6, proof"
+
+[[node]]
+id = "SobolevIntervalLp.cutoffFun"
+kind = "definition"
+desc = '''The Lipschitz cut-off of a bounded interval: `cutoffFun a b x` is `1` on `[a, b]`, affine from
+`0` at `2a − b` to `1` at `a`, affine from `1` at `b` to `0` at `2b − a`, and `0` outside
+`(2a − b, 2b − a)`; `LipschitzWith (1/(b − a))`, `0 ≤ · ≤ 1`, differentiable off the four break
+points with `|deriv| ≤ 1/(b − a)`. Built from `max`/`min` of affine functions
+(`LipschitzWith.max`, `LipschitzWith.min`). ★'''
+deps = ["SobolevIntervalLp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6, proof"
+
+[[node]]
+id = "SobolevIntervalLp.memSobolevIntervalLp_cutoff_reflect"
+kind = "theorem"
+desc = '''**Theorem 8.6, the bounded case**: for `a < b` and `u : SobolevIntervalLp 1 p (Opens.Ioo a b)`, the
+function `Pu := cutoffFun a b * (reflectFun b (reflectFun a (rep u)))` — `rep u` reflected across
+`a` and across `b` (it is defined and continuous on `[2a − b, 2b − a]` and periodic-symmetric; take
+the explicit piecewise formula `x ↦ rep u (a + |x − a|)` on `x ≤ b` and `rep u (b − |x − b|)`
+on `x ≥ a`, which agree on `[a, b]`) then cut off — lies in `W^{1,p}(ℝ)`, agrees with `rep u` on
+`(a, b)`, and satisfies `‖Pu‖_{L^p(ℝ)} ≤ 3 ‖u‖_{L^p(a,b)} ≤ 4 ‖u‖_{L^p(a,b)}` and
+`‖(Pu)'‖_{L^p(ℝ)} ≤ 3 (‖u'‖_{L^p(a,b)} + (b − a)⁻¹ ‖u‖_{L^p(a,b)})`. The product of the Lipschitz
+`cutoffFun` with the absolutely continuous reflected function is absolutely continuous on compacts
+(`AbsolutelyContinuousOnInterval.mul`, `LipschitzOnWith.absolutelyContinuousOnInterval`), its a.e.
+derivative is `ζ' ũ + ζ ũ'` with `|ζ'| ≤ 1/(b − a)`, and Lemma 8.2 puts it in `W^{1,p}(ℝ)`; the
+`L^p` bounds count the three copies of `(a, b)` that carry the function. ★★★ (~350 lines; the
+bookkeeping of the piecewise formulas is the bulk)'''
+deps = ["SobolevIntervalLp.reflectFun", "SobolevIntervalLp.cutoffFun", "MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral", "memSobolevIntervalLp_one_iff", "SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6, proof"
+
+[[node]]
+id = "SobolevIntervalLp.extensionCLM"
+kind = "definition"
+desc = '''**Theorem 8.6 (the extension operator)**: for `[Fact (1 ≤ p)]`, `(hI : (I : Set ℝ).OrdConnected)`,
+`(hne : (I : Set ℝ).Nonempty)`, a continuous linear map
+`extensionCLM hI hne : SobolevIntervalLp 1 p I →L[ℝ] SobolevIntervalLp 1 p ⊤` with
+(i) `fn_extensionCLM : fn (extensionCLM u) =ᵐ[volume.restrict I] fn u` (`P u|_I = u`),
+(ii) `eLpNorm_fn_extensionCLM_le : ‖deriv (extensionCLM u) 0‖ ≤ 4 * ‖deriv u 0‖`,
+(iii) `eLpNorm_deriv_extensionCLM_le : ‖deriv (extensionCLM u) 1‖ ≤ 4 * (‖deriv u 1‖ + (volume (I : Set ℝ)).toReal⁻¹ * ‖deriv u 0‖)`
+(so `4 ‖u'‖_p` when `|I| = ∞`), and `norm_extensionCLM_le : ‖extensionCLM hI hne‖ ≤ 8 * (1 + (volume (I : Set ℝ)).toReal⁻¹)`.
+An open interval of `ℝ` is `ℝ`, `Ioi a`, `Iio b` or `Ioo a b` (`(I : Set ℝ)` is open and
+`OrdConnected`, so it is `Ioo (sInf I) (sSup I)` in `EReal` terms — case on `BddBelow`/`BddAbove`;
+`TopologicalSpace.Opens.eq_intervals_of_ordConnected` of `Interval/Basic`), and each case is one of the two
+constructions above; the map is assembled with `SobolevIntervalLp.mk` from the function and the
+derivative formula, linear because reflection and cut-off are, and continuous by (ii)–(iii). The
+book's statement has the sum norm `‖u‖_p + ‖u'‖_p` on both sides with `C = 4(1 + 1/|I|)`, which
+(ii) and (iii) give verbatim in that norm. ★★★ (~250 lines of assembly on top of the two cases)'''
+deps = ["SobolevIntervalLp.memSobolevIntervalLp_reflectFun", "SobolevIntervalLp.memSobolevIntervalLp_cutoff_reflect", "SobolevIntervalLp.deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6"
+
+[[node]]
+id = "SobolevIntervalLp.rep_extensionCLM"
+kind = "theorem"
+desc = '''The representative of the extension is the representative on `closure I`:
+`EqOn (rep (extensionCLM hI hne u)) (rep u) (closure I)` — by uniqueness
+(`rep_eq_of_continuousOn`), since `rep (Pu)` is continuous on `ℝ` and agrees a.e. with `u` on `I`.
+What Theorem 8.8's proof by extension uses. ★'''
+deps = ["SobolevIntervalLp.extensionCLM", "SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6"

@@ -1,4 +1,7 @@
 desc = '''
 Ordinary differential equations: what Mathlib's `Mathlib.Analysis.ODE` lacks for the textbook
-statements of the Picard–Lindelöf theorem.
+statements of the Picard–Lindelöf theorem, Gronwall's inequality, linear systems, and the abstract
+Cauchy problem `u' + A u = 0` in a Hilbert space solved by the Hille–Yosida theorem
+(`HilleYosida`; Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
+chapter 7).
 '''

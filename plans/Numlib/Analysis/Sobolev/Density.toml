@@ -107,3 +107,23 @@ id = "MemSobolev.exists_contDiffOn_sobolevNorm_sub_le"
 [[node]]
 id = "MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm"
 source = 'Meyers and Serrin, H = W, Proc. Nat. Acad. Sci. 51 (1964), 1055-1056; Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.1'
+
+# ---- Appended by the Brezis chapter-9a plan (2026-09-17). Nothing above this line was edited.
+
+[[node]]
+id = "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm"
+kind = "theorem"
+desc = '''**The weak derivative is closed under `L^p(Ω)` limits**, for any `1 ≤ p ≤ ∞`
+([brezis2011functional] Chapter 9, Remark 4 (i), first sentence, and the closedness step of
+Proposition 8.1): if `u i` is a weak derivative of order `n` of `g i` on `Ω`, `g i → f` and
+`u i → w` in `L^p(Ω)`, and `f`, `w` are locally integrable on `Ω`, then `w` is a weak derivative of
+`f`. Generalizes `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one` from `p = 1`; the proof is the
+same — the pairing against a fixed test function is continuous on `L^p(Ω)` by Hölder
+(`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm` of `Numlib/Analysis/Convolution/Lp.lean`)
+— or, more cheaply, restrict to a relatively compact open `Ω' ⊇ tsupport φ` where `L^p` convergence
+implies `L^1` convergence (`MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm`) and apply the
+`p = 1` theorem there through `HasWeakIteratedFDerivOn.mono`. Membership form: with
+`MemLp f p` and `MemLp w p` the conclusion is `MemSobolev f 1 p Ω μ`, which is Remark 4 (i) as
+the book states it. ★, ~80 lines.'''
+deps = ["hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one", "HasWeakIteratedFDerivOn.mono", "MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"

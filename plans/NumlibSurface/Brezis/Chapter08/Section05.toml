@@ -1,0 +1,81 @@
+namespace = "Brezis.Chapter08"
+desc = '''
+§8.5, The maximum principle: Theorem 8.19 (Dirichlet, Stampacchia's truncation), Remark 26 (the
+classical proof), Corollary 8.20, Proposition 8.21 (Neumann), Remarks 27–28. All over
+`Numlib/Variational/EllipticInterval/MaximumPrinciple`, on `H¹(0, 1)`; "`u ∈ H²(I)` is the solution
+of the Dirichlet problem with `u(0) = α`, `u(1) = β`" is read as `Φ : SobolevInterval 2 0 1` with
+`−Φ'' + Φ = f` a.e. and `rep Φ 0 = α`, `rep Φ 1 = β` (Proposition 8.16's object), whose inclusion
+satisfies the weak equation on `H_0^1` (Green's formula), which is what the backbone theorem
+takes as hypothesis. `ess sup f` and `ess inf f` (footnote 16) enter through "`f ≤ K` a.e." with
+`K = max(α, β, ess sup f)` — the node is stated for any such upper bound `K`, which is the book's
+statement when `sup f < ∞` and vacuous otherwise; `ess sup` itself is Mathlib's `essSup`.
+'''
+
+[[node]]
+id = "theorem_8_19"
+kind = "theorem"
+desc = '''Theorem 8.19: for `f ∈ L²(0, 1)` and `Φ ∈ H²(0, 1)` the solution of `−Φ'' + Φ = f`, `Φ(0) = α`,
+`Φ(1) = β` (32), `∀ x ∈ Icc 0 1, min (min α β) (ess inf f) ≤ rep Φ x ∧ rep Φ x ≤ max (max α β) (ess sup f)`
+(33), stated as: for every `K` with `α ≤ K`, `β ≤ K` and `f ≤ K` a.e., `rep Φ x ≤ K`
+(`theorem_8_19_le`), and the symmetric lower bound (`theorem_8_19_ge`); the `essSup` form follows
+when it is finite. The backbone's `EllipticInterval.rep_le_of_le_of_isWeakSolution` with
+`α = γ = 1`, after Green's formula turns the strong form into the weak equation on `H_0^1`
+(`EllipticInterval.natural_boundary_eq_of_forall`'s converse direction, i.e.
+`SobolevInterval.integral_deriv_mul_add_mul_deriv`). ★'''
+deps = ["EllipticInterval.rep_le_of_le_of_isWeakSolution", "proposition_8_16", "SobolevInterval.integral_deriv_mul_add_mul_deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.19"
+
+[[node]]
+id = "remark_8_26"
+kind = "theorem"
+desc = '''Remark 26: when `f ∈ C(Ī)`, `u ∈ C²(Ī)` and (33) follows classically: for
+`v : ContDiffMapIcc zero_le_one 2` with `−v'' + v = f` pointwise, `v 0 ≤ K`, `v 1 ≤ K`, `f ≤ K` on
+`[0, 1]`, `∀ x ∈ Icc 0 1, v x ≤ K` — at an interior maximum `x₀`, `v'(x₀) = 0`, `v''(x₀) ≤ 0`, so
+`v(x₀) = f(x₀) + v''(x₀) ≤ K`. The backbone's `EllipticInterval.le_of_contDiffMapIcc_classical`
+over the second-derivative test `IsLocalMax.deriv_deriv_nonpos`. ★'''
+deps = ["theorem_8_19", "EllipticInterval.le_of_contDiffMapIcc_classical", "_root_.IsLocalMax.deriv_deriv_nonpos"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 26"
+
+[[node]]
+id = "corollary_8_20"
+kind = "theorem"
+desc = '''Corollary 8.20, for the solution `u` of (34) (the Dirichlet problem with boundary values
+`α, β`): (i) `0 ≤ α → 0 ≤ β → 0 ≤ f a.e. → ∀ x ∈ Icc 0 1, 0 ≤ rep u x` (`corollary_8_20_i`);
+(ii) `α = 0 → β = 0 → f ∈ L^∞ → ‖rep u‖_∞ ≤ ‖f‖_∞` (`corollary_8_20_ii`); (iii) `f = 0 → ‖rep u‖_∞ ≤ max |α| |β|`
+(`corollary_8_20_iii`). The backbone's `EllipticInterval.abs_rep_le_of_isWeakSolution`. ★'''
+deps = ["theorem_8_19", "EllipticInterval.abs_rep_le_of_isWeakSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.20"
+
+[[node]]
+id = "proposition_8_21"
+kind = "theorem"
+desc = '''Proposition 8.21: for `f ∈ L²(0, 1)` and `Φ ∈ H²(0, 1)` the solution of the Neumann problem
+`−Φ'' + Φ = f`, `Φ'(0) = Φ'(1) = 0` (Proposition 8.17), `∀ x ∈ Icc 0 1, ess inf f ≤ rep Φ x ≤ ess sup f`
+(35), stated through upper and lower bounds `K` as in Theorem 8.19. The backbone's
+`EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann` (the weak form (36) on `H¹`, from
+Proposition 8.17's characterization). ★'''
+deps = ["proposition_8_17", "EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.21"
+
+[[node]]
+id = "remark_8_27"
+kind = "theorem"
+desc = '''Remark 27: the classical proof of (35) when `f ∈ C(Ī)`: for `v ∈ C²[0, 1]` with `−v'' + v = f`
+pointwise, `v'(0) = v'(1) = 0` and `f ≤ K`, `v ≤ K` — if the maximum is attained at an endpoint,
+say `0`, then `v''(0) ≤ 0` (extend by reflection to the left of `0`, using `v'(0) = 0`; the
+backbone's one-sided second-derivative test `IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero`),
+and the interior case is Remark 26. The backbone's `EllipticInterval.le_of_contDiffMapIcc_classical_neumann`
+(planned in `le_of_contDiffMapIcc_classical`). ★'''
+deps = ["remark_8_26", "EllipticInterval.le_of_contDiffMapIcc_classical"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 27"
+
+[[node]]
+id = "remark_8_28"
+kind = "theorem"
+desc = '''Remark 28: for `f ∈ L²(ℝ)` and `u ∈ H²(ℝ)` the solution of `−u'' + u = f`, `u → 0` at
+infinity (Example 8), `∀ x, ess inf f ≤ rep u x ≤ ess sup f`: for every `K ≥ 0` with `f ≤ K` a.e.,
+`rep u x ≤ K`, and symmetrically (`K ≥ 0` is no restriction — a function of `L²(ℝ)` has
+`ess sup f ≥ 0 ≥ ess inf f`; the truncation `G(u − K)` is in `H¹(ℝ)` only for `K ≥ 0`, which the
+book does not remark on). The backbone's `EllipticInterval.Line.rep_le_of_le`. ★'''
+deps = ["example_8_8", "EllipticInterval.Line.rep_le_of_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 28"

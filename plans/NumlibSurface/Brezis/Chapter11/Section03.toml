@@ -1,0 +1,225 @@
+namespace = "Brezis.Chapter11"
+desc = '''
+Brezis §11.3, the sequence spaces `ℓ^p` (`1 ≤ p ≤ ∞`), `c` and `c₀`, over `ℝ`. `ℓ^p` is Mathlib's
+`lp (fun _ : ℕ ↦ ℝ) p` (indices from `0`; the book's from `1`, a relabelling that changes
+nothing), with its norm `lp.norm_eq_tsum_rpow`/`lp.norm_eq_ciSup`, completeness
+`lp.completeSpace`, Hölder `lp.tsum_mul_le_mul_norm` and the Hilbert structure of `ℓ²`
+`lp.instInnerProductSpace`. `c` and `c₀` are the backbone's `lp.convergent ℝ ℝ` and
+`lp.zeroAtInfty ℝ ℝ`, closed subspaces of `ℓ^∞` (`Numlib/Analysis/Normed/Lp/Sequence`), and the
+propositions 11.15–11.21 are that module's theorems read at `𝕜 = ℝ`, `α = ℕ`. The book offers
+two routes for 11.15, "Theorem 4.10 and Exercise 4.12 with `Ω = ℕ`" or direct proofs; the
+backbone takes the direct route for reflexivity (from the duality of 11.18, which it proves
+directly as the book does) and the counting-measure route for uniform convexity (chapter 4's
+`MeasureTheory.Lp.instUniformConvexSpace` transported along `lp.lpLIELpCount`) — see the module
+description. The closing table is the content of 11.15–11.21 and gets no node of its own; its
+last row's "strictly bigger than `ℓ¹`" for `(ℓ^∞)*` is not a numbered claim and is not
+formalized.
+'''
+
+[[node]]
+id = "lpNorm_eq"
+kind = "theorem"
+desc = '''The definition paragraph: for `x : lp (fun _ : ℕ ↦ ℝ) p`,
+`‖x‖ = (∑' k, |x k| ^ p.toReal) ^ (1 / p.toReal)` when `1 ≤ p < ∞` (`lp.norm_eq_tsum_rpow`) and
+`‖x‖ = ⨆ k, |x k|` when `p = ∞` (`lp.norm_eq_ciSup`); membership `Memℓp x p` is
+`Summable (fun k => |x k| ^ p.toReal)` resp. `BddAbove (range (|x ·|))` (`memℓp_gen_iff`,
+`memℓp_infty_iff`). Records that the book's `ℓ^p`, `ℓ^∞` are Mathlib's `lp`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3, Definition"
+
+[[node]]
+id = "lp_completeSpace"
+kind = "theorem"
+desc = '''"which are Banach spaces for the `ℓ^p` (resp. `ℓ^∞`) norms":
+`CompleteSpace (lp (fun _ : ℕ ↦ ℝ) p)` for `1 ≤ p ≤ ∞` — Mathlib's `lp.completeSpace` (the
+"direct and quite easy" proof; the alternative through Theorem 4.8 on the counting measure is
+the backbone's `lp.lpLIELpCount`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "mem_c_iff"
+kind = "theorem"
+desc = '''The spaces `c` and `c₀`: `x ∈ lp.convergent ℝ ℝ ↔ ∃ l, Tendsto (fun k => x k) atTop (𝓝 l)`
+and `x ∈ lp.zeroAtInfty ℝ ℝ ↔ Tendsto (fun k => x k) atTop (𝓝 0)`, for `x : lp (fun _ : ℕ ↦ ℝ) ∞`
+— the book's `c = {x ; lim x_k exists}`, `c₀ = {x ; lim x_k = 0}`, "both equipped with the `ℓ^∞`
+norm" (they are subtypes of `ℓ^∞`). Backbone `lp.mem_convergent`, `lp.mem_zeroAtInfty`. ★'''
+deps = ["lp.convergent", "lp.zeroAtInfty"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3, Definition"
+
+[[node]]
+id = "c₀_le_c_isClosed"
+kind = "theorem"
+desc = '''"Clearly `c₀ ⊂ c ⊂ ℓ^∞` with `c₀` closed in `c`, and `c` closed in `ℓ^∞`":
+`lp.zeroAtInfty ℝ ℝ ≤ lp.convergent ℝ ℝ`, `IsClosed (lp.convergent ℝ ℝ : Set (lp _ ∞))`, and
+`IsClosed (lp.zeroAtInfty ℝ ℝ : Set (lp _ ∞))` (closed in `ℓ^∞`, hence in `c`). Backbone
+`lp.zeroAtInfty_le_convergent`, `lp.isClosed_convergent`, `lp.isClosed_zeroAtInfty`. ★'''
+deps = ["lp.zeroAtInfty_le_convergent", "lp.isClosed_convergent", "lp.isClosed_zeroAtInfty"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "holder_lp"
+kind = "theorem"
+desc = '''Hölder's inequality in `ℓ^p`: for conjugate exponents `p, p'` (`p.HolderConjugate p'`,
+`1 ≤ p ≤ ∞`), `x ∈ ℓ^p`, `y ∈ ℓ^{p'}`: `|∑' k, x k * y k| ≤ ‖x‖ * ‖y‖`, and the series is
+absolutely summable. Mathlib's `lp.tsum_mul_le_mul_norm` (`∑' ‖x k * y k‖ ≤ ‖x‖ ‖y‖`) with
+`norm_tsum_le_tsum_norm`, or `lp.dualPairing` with `lp.norm_dualPairing`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "l2_inner"
+kind = "theorem"
+desc = '''"The space `ℓ²` is a Hilbert space equipped with the scalar product `(x, y) = ∑ x_k y_k`":
+`lp (fun _ : ℕ ↦ ℝ) 2` is an `InnerProductSpace ℝ` (Mathlib's `lp.instInnerProductSpace`),
+complete (`lp.completeSpace`), with `⟪x, y⟫ = ∑' k, x k * y k` (`lp.inner_eq_tsum`, real case:
+`inner_apply` is `conj (x k) * y k`, and `conj` is the identity on `ℝ`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "lp_subset_c₀"
+kind = "theorem"
+desc = '''"It is clear that `ℓ^p ⊂ c₀` with `‖x‖_∞ ≤ ‖x‖_p` for `1 ≤ p < ∞`": for
+`x : lp (fun _ : ℕ ↦ ℝ) p` with `p ≠ ∞`, the inclusion `lp.linearMapOfLE ℝ _ le_top x` lies in
+`lp.zeroAtInfty ℝ ℝ` and `‖lp.linearMapOfLE ℝ _ le_top x‖ ≤ ‖x‖` (equivalently `|x k| ≤ ‖x‖`
+for all `k`). Backbone `lp.tendsto_cofinite_zero` (with `Nat.cofinite_eq_atTop`) and Mathlib's
+`lp.norm_apply_le_norm`. ★'''
+deps = ["lp.tendsto_cofinite_zero", "lp.zeroAtInfty"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "lp_subset_lq"
+kind = "theorem"
+desc = '''"`ℓ^p ⊂ ℓ^q` when `1 ≤ p ≤ q ≤ ∞`, with `‖x‖_q ≤ ‖x‖_p`": for `h : p ≤ q` and
+`x : lp (fun _ : ℕ ↦ ℝ) p`, `‖lp.linearMapOfLE ℝ _ h x‖ ≤ ‖x‖`. Backbone
+`lp.norm_linearMapOfLE_le`; the membership is Mathlib's `Memℓp.of_exponent_ge`. ★'''
+deps = ["lp.norm_linearMapOfLE_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
+
+[[node]]
+id = "proposition_11_15_reflexive"
+kind = "theorem"
+desc = '''Proposition 11.15, first clause: `ℓ^p` is reflexive for `1 < p < ∞` —
+`NormedSpace.IsReflexive ℝ (lp (fun _ : ℕ ↦ ℝ) p)` for `1 < p`, `p < ∞`. Backbone
+`lp.isReflexive`, proved directly from the duality of Proposition 11.18 (the book applies
+Theorem 4.10, `L^p` reflexive, with `Ω = ℕ`; the counting-measure identification is available
+as `lp.lpLIELpCount` if that route is ever wanted). ★'''
+deps = ["lp.isReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
+
+[[node]]
+id = "proposition_11_15_uniformConvex"
+kind = "theorem"
+desc = '''Proposition 11.15, second clause ("and even uniformly convex"):
+`UniformConvexSpace (lp (fun _ : ℕ ↦ ℝ) p)` for `1 < p < ∞`. Backbone `lp.uniformConvexSpace`,
+which is the book's route — Exercise 4.12 (uniform convexity of `L^p`, chapter 4's
+`MeasureTheory.Lp.instUniformConvexSpace`) on the counting measure of `ℕ`, transported along
+`lp.lpLIELpCount`. ★'''
+deps = ["lp.uniformConvexSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
+
+[[node]]
+id = "proposition_11_15"
+kind = "theorem"
+desc = '''Proposition 11.15: for `1 < p < ∞`, `ℓ^p` is reflexive and uniformly convex — the
+conjunction of the two clauses. ★'''
+deps = ["proposition_11_15_reflexive", "proposition_11_15_uniformConvex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
+
+[[node]]
+id = "proposition_11_16"
+kind = "theorem"
+desc = '''Proposition 11.16: `c`, `c₀` and `ℓ^p` for `1 ≤ p < ∞` are separable —
+`SeparableSpace (lp.convergent ℝ ℝ)`, `SeparableSpace (lp.zeroAtInfty ℝ ℝ)`, and
+`SeparableSpace (lp (fun _ : ℕ ↦ ℝ) p)` for `p ≠ ∞`. Backbone `lp.convergent.instSeparableSpace`,
+`lp.zeroAtInfty.instSeparableSpace`, `lp.separableSpace` (the countable dense set `D` of rational
+finitely supported sequences, and `D + λ(1, 1, …)` for `c`). ★'''
+deps = ["lp.separableSpace", "lp.zeroAtInfty.instSeparableSpace", "lp.convergent.instSeparableSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.16"
+
+[[node]]
+id = "proposition_11_17"
+kind = "theorem"
+desc = '''Proposition 11.17: `ℓ^∞` is not separable — `¬ SeparableSpace (lp (fun _ : ℕ ↦ ℝ) ∞)`.
+Backbone `lp.not_separableSpace_top` (an uncountable `1`-separated family of `{0,1}`-sequences,
+in place of the book's diagonal sequence `b`). ★'''
+deps = ["lp.not_separableSpace_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.17"
+
+[[node]]
+id = "proposition_11_18"
+kind = "theorem"
+desc = '''Proposition 11.18: for `1 ≤ p < ∞` with conjugate `p'`, every `φ ∈ (ℓ^p)*` is
+`x ↦ ∑' k, u k * x k` for a unique `u ∈ ℓ^{p'}`, and `‖u‖_{p'} = ‖φ‖`. Stated as
+`∀ φ, ∃! u : lp (fun _ : ℕ ↦ ℝ) p', (∀ x, φ x = ∑' k, u k * x k) ∧ ‖u‖ = ‖φ‖`, from the backbone's
+isometric isomorphism `lp.dualEquiv ℝ ℕ p p' hp` with `lp.toDual_apply`
+(existence and the norm identity from surjectivity and `norm_map`, uniqueness from injectivity).
+The book's proof — test on `x_k = |u_k|^{p'-2} u_k` for `k ≤ N` — is the backbone's. ★'''
+deps = ["lp.dualEquiv", "lp.toDual_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
+
+[[node]]
+id = "proposition_11_19"
+kind = "theorem"
+desc = '''Proposition 11.19: every `φ ∈ (c₀)*` is `x ↦ ∑' k, u k * x k` for a unique `u ∈ ℓ¹`,
+with `‖u‖₁ = ‖φ‖`. From the backbone's `lp.zeroAtInfty.dualEquiv ℝ : ℓ¹ ≃ₗᵢ[ℝ] (c₀)*`
+("an easy adaptation of the proof of Proposition 11.18 with `p = ∞`, `p' = 1`, using that `D` is
+dense in `c₀`"). ★'''
+deps = ["lp.zeroAtInfty.dualEquiv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
+
+[[node]]
+id = "proposition_11_20"
+kind = "theorem"
+desc = '''Proposition 11.20: every `φ ∈ c*` is `x ↦ ∑' k, u k * x k + λ * lim x` for a unique
+pair `(u, λ) ∈ ℓ¹ × ℝ`, with `‖u‖₁ + |λ| = ‖φ‖`. From the backbone's
+`lp.convergent.dualEquiv ℝ : WithLp 1 (ℓ¹ × ℝ) ≃ₗᵢ[ℝ] c*` and the limit functional
+`lp.convergent.limCLM` (the norm of `WithLp 1 (_ × ℝ)` is `‖u‖ + |λ|`,
+`WithLp.prod_norm_eq_add`). ★'''
+deps = ["lp.convergent.dualEquiv", "lp.convergent.limCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
+
+[[node]]
+id = "proposition_11_21_c₀"
+kind = "theorem"
+desc = '''Proposition 11.21, `c₀`: `¬ NormedSpace.IsReflexive ℝ (lp.zeroAtInfty ℝ ℝ)`. Backbone
+`lp.zeroAtInfty.not_isReflexive` — the book's argument: under `(c₀)* = ℓ¹`, `(ℓ¹)* = ℓ^∞` the
+canonical injection is the inclusion `c₀ → ℓ^∞`, which misses `(1, 1, 1, …)`. ★'''
+deps = ["lp.zeroAtInfty.not_isReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
+
+[[node]]
+id = "proposition_11_21_one"
+kind = "theorem"
+desc = '''Proposition 11.21, `ℓ¹`: `¬ NormedSpace.IsReflexive ℝ (lp (fun _ : ℕ ↦ ℝ) 1)`. Backbone
+`lp.not_isReflexive_one`, through Corollary 3.21 as in the book (`ℓ¹` reflexive would make its
+dual `ℓ^∞` reflexive). ★'''
+deps = ["lp.not_isReflexive_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
+
+[[node]]
+id = "proposition_11_21_top"
+kind = "theorem"
+desc = '''Proposition 11.21, `ℓ^∞`: `¬ NormedSpace.IsReflexive ℝ (lp (fun _ : ℕ ↦ ℝ) ∞)`. Backbone
+`lp.not_isReflexive_top` (`c₀` is a closed subspace, Proposition 3.20 — the book goes through
+`ℓ¹` and Corollary 3.21 instead; both routes are the book's own theorems). ★'''
+deps = ["lp.not_isReflexive_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
+
+[[node]]
+id = "proposition_11_21_c"
+kind = "theorem"
+desc = '''Proposition 11.21, `c`: `¬ NormedSpace.IsReflexive ℝ (lp.convergent ℝ ℝ)`. Backbone
+`lp.convergent.not_isReflexive` — the book's "otherwise `c₀`, a closed subspace of `c`, would be
+reflexive by Proposition 3.20" (`NormedSpace.isReflexive_of_isClosed`). ★'''
+deps = ["lp.convergent.not_isReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
+
+[[node]]
+id = "proposition_11_21"
+kind = "theorem"
+desc = '''Proposition 11.21: the spaces `ℓ¹`, `ℓ^∞`, `c` and `c₀` are not reflexive — the
+conjunction of the four clauses. ★'''
+deps = ["proposition_11_21_one", "proposition_11_21_top", "proposition_11_21_c", "proposition_11_21_c₀"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"

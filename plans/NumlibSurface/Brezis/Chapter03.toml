@@ -1,0 +1,119 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 3: weak
+topologies, reflexive spaces, separable spaces, uniform convexity. Every numbered result of the
+main text — Lemma 3.1, Propositions 3.1–3.6, Theorem 3.7, Corollaries 3.8–3.9, Theorem 3.10,
+Propositions 3.11–3.14, Lemma 3.2, Corollary 3.15, Theorem 3.16, Theorem 3.17, Lemmas 3.3–3.4,
+Theorems 3.18–3.19, Proposition 3.20, Corollaries 3.21–3.23, Theorem 3.24, Proposition 3.25,
+Theorem 3.26, Corollary 3.27, Theorems 3.28–3.29, Corollary 3.30, Theorem 3.31, Proposition
+3.32 — is a node in the section group beside this file, together with the Remarks and Examples
+that assert something (Remarks 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 15, 17, 20, 21; Examples 1–2 of
+§3.2 and of §3.7), the unnumbered Definitions (the coarsest topology, `σ(E, E⋆)`, `σ(E⋆, E)`,
+reflexive, separable, uniformly convex, the notations `⇀` and `⇀*`), Problem 10
+(Eberlein–Šmulian) and the three exercises the main text cites as proof steps (3.8, 3.22, 3.24).
+**Nothing is blocked**: every node has a route through Mathlib or the chapter's backbone, and the
+backbone modules below are all elementary functional analysis, the largest being Problem 10.
+
+* **Correspondence.** The book is real; the surface is over a real normed space `E` with
+  `[CompleteSpace E]` wherever the book says "Banach", `E⋆ = StrongDual ℝ E`, `⟨f, x⟩ = f x`,
+  `J = NormedSpace.inclusionInDoubleDual ℝ E` (chapter 1's `canonicalInjection_apply`). The
+  weak topology `σ(E, E⋆)` is Mathlib's `WeakSpace ℝ E` and the weak-* topology `σ(E⋆, E)` is
+  `WeakDual ℝ E` (planning brief D5); the book's definitions are restated as
+  `weakTopology`/`weakStarTopology` (the `⨅` of induced topologies of §3.1) with the bridges
+  `weakTopology_eq`/`weakStarTopology_eq`, one `rw [induced_to_pi]` each
+  (`notes/brezis/ch03/proto/Shapes.lean` (a)), and all later nodes are stated on the Mathlib
+  synonyms. "Closed in the weak topology" is `IsClosed (toWeakSpace ℝ E '' s)`, never a defeq
+  abuse. The book's `xₙ ⇀ x` is `WeakTendsto x u := Tendsto (fun n => toWeakSpace ℝ E (x n)) atTop (𝓝 (toWeakSpace ℝ E u))`
+  with scoped notation `⇀`, and Proposition 3.5 (i) is the backbone's `tendsto_toWeakSpace_iff`;
+  likewise `WeakStarTendsto`, `⇀*`, and `tendsto_iff_forall_eval_tendsto_topDualPairing`.
+  Reflexivity is the backbone's `NormedSpace.IsReflexive ℝ E` (`Numlib/Analysis/Normed/Module/Reflexive`),
+  restated as `IsReflexive` with `isReflexive_iff`, exactly as `AtkinsonHan.Chapter02.definition_2_7_4`;
+  separability is Mathlib's `TopologicalSpace.SeparableSpace`; uniform convexity is Mathlib's
+  `UniformConvexSpace`, the book's strict-inequality form being `IsUniformlyConvex` with
+  `uniformlyConvex_iff`. Functions `φ : E → (−∞, +∞]` (Corollaries 3.9, 3.23) follow chapter 1:
+  `E → EReal` with `∀ x, φ x ≠ ⊥`, convex as `ConvexAnalysis.ConvexFn`, l.s.c. as
+  `LowerSemicontinuous`.
+
+* **What Mathlib has.** §3.1 entirely (`⨅ i, induced (φ i) _`, `isTopologicalBasis_of_subbasis`,
+  `nhds_iInf`, `tendsto_iInf`, `continuous_iInf_rng`); Propositions 3.3, 3.11 (`T2Space`
+  instances), 3.4, 3.12 (`LinearMap.hasBasis_weakBilin`), 3.14 (`LinearMap.dualEmbedding_surjective`,
+  the weak representation theorem) and Lemma 3.2 (`LinearMap.mem_span_iff_continuous_of_finite`);
+  Theorem 3.7 in closure form (`Convex.toWeakSpace_closure`); Remark 5 (`iInter_halfSpaces_eq'`);
+  Theorem 3.16, Banach–Alaoglu (`WeakDual.isCompact_closedBall`); Corollary 3.30
+  (`WeakDual.isSeqCompact_closedBall`); the forward halves of Theorems 3.28 and 3.29 in
+  substance (`WeakDual.metrizable_of_isCompact`, `isEmbedding_inclusionInDoubleDualWeak`);
+  Proposition 3.25; Remark 17 (i) (`UniformSpace.isCompact_iff_isSeqCompact`); Corollary 3.15's
+  key (`LinearMap.continuous_iff_isClosed_ker`); and the Banach–Alaoglu-in-the-bidual mechanics
+  Kakutani's forward direction needs (`NormedSpace.isCompact_closure_of_isBounded`).
+
+* **What the backbone had** (`Numlib/Analysis/Normed/Module/{WeakDual,Reflexive,DualSeparable}`,
+  `Numlib/Analysis/Convex/Uniform`, `Numlib/Variational/WeakMinimization`): Proposition 3.5
+  (i)–(iii), Theorem 3.18 (`exists_subseq_forall_dual_tendsto`), Proposition 3.20
+  (`isReflexive_of_isClosed`), Theorem 3.26 (`separableSpace_of_separableSpace_strongDual`),
+  the reflexive half of Corollary 3.27 (`separableSpace_strongDual_of_isReflexive`), Corollary
+  3.8 over `ℝ` (`exists_seq_convexCombination_tendsto`), Proposition 3.32 in the form
+  `‖xₙ‖ → ‖x‖` (`tendsto_of_forall_dual_tendsto_of_tendsto_norm`), the Hilbert instance of
+  reflexivity (Remark 13).
+
+* **New backbone**, in dependency order (the "Order of attack" below): appends to `WeakDual.toml`
+  (Propositions 3.5 (iv), 3.13 (ii)–(iv)), `Reflexive.toml` (finite-dimensional reflexivity,
+  invariance under `≃L`), `DualSeparable.toml` (a countable norming family), `Convex/Uniform.toml`
+  (Proposition 3.32 with `limsup`); the new modules `WeakClosed` (Theorem 3.7 as an `iff`,
+  Corollary 3.9, Remark 6, Theorem 3.10 with Remark 7, Proposition 3.6, Remark 10, Examples 1–2
+  of §3.2, the weak-* bipolar for subspaces that chapter 1's `Annihilator.toml` delegates here),
+  `Reflexive/Kakutani` (Remark 15, Helly, Goldstine by separation, Kakutani both ways, Corollaries
+  3.21–3.22, reflexivity of a product, Theorem 3.24 over chapter 2's `LinearPMap.strongDualAdjoint`),
+  `WeakStarMetrizable` (Theorems 3.28–3.29 both ways, Exercise 3.8's Baire lemma, Remarks 3 and
+  20), `MilmanPettis` (Theorem 3.31), `Reflexive/EberleinSmulian` (Problem 10 and Theorem 3.19).
+
+* **Naming of the Examples.** Chapter 3 numbers its Examples per section, so `example_3_1`,
+  `example_3_2` are §3.2's (the sphere and the open ball, sources "§3.2, Example 1/2") and the
+  §3.7 examples are `example_3_7_1_euclidean`, `example_3_7_1_l1`, `example_3_7_1_linf`,
+  `example_3_7_2` (sources "§3.7, Example 1/2"). Remarks are numbered once per chapter,
+  `remark_3_N`. A node lives in the section whose material proves it: `remark_3_4` and
+  `exercise_3_22` (unit sequences weakly null when `E⋆` is separable or `E` reflexive), stated
+  in §3.2, sit in `Section06` because their proof is Theorem 3.29 plus Corollary 3.27.
+
+* **Exercises and problems.** Included: Problem 10 (Eberlein–Šmulian; on the brief's allowlist,
+  and it closes `AtkinsonHan.Chapter02.theorem_2_7_5_mpr`), Exercise 3.24 (the proof of the
+  converse of Theorem 3.29, which the book delegates to it), Exercise 3.8 (the proof of Remarks
+  3 and 20) and Exercise 3.22 (the proof of Remark 4). Everything else in the exercises and
+  problems (3.1–3.7, 3.9–3.21, 3.23, 3.25–3.32, Problems 8, 9, 11) is out of scope for this round;
+  Problem 9 B1 is nonetheless in the backbone as `Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual`
+  because chapter 1's plan delegated it, and Problem 9 B4 is the *proof* of Goldstine's lemma.
+
+* **Not planned.** Theorem 3.33 (Banach–Dieudonné–Krein–Šmulian): quoted without proof in the
+  Comments; needs weak-* Hahn–Banach (Problem 9 A) and the `c₀`-separation argument of Problem 11,
+  ~400 lines, and no consumer in the corpus. Remark 4's second claim (the Schur property of `ℓ¹`,
+  Problem 8), Remark 13's `L^p`/`ℓ^p`/`L¹`/`L^∞` clauses and Remark 19 (`L¹` separable, `L^∞`
+  not) belong to chapters 4 and 11; Remark 13's `C(K)` (Exercise 3.25), Remark 7's second clause
+  (weak–strong continuous iff finite rank, Exercise 6.7) and Remark 17 (ii) (Exercise 3.18) are
+  uncited exercises. §3.7 Example 2's `L^p` clause is Theorem 4.10. Remarks 1, 8, 12, 14, 16, 18,
+  19 and Comments 1, 3, 4 are discussion.
+
+* **Unblocked elsewhere.** `AtkinsonHan.Chapter02.theorem_2_7_5_mpr` and `theorem_2_7_5` become
+  provable from `NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto` and
+  `isReflexive_iff_forall_exists_subseq_forall_dual_tendsto` (no restatement needed).
+  `AtkinsonHan.Chapter08.theorem_8_6_3` (saddle points) gets the weak compactness its `Blocked`
+  note asks for, `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed`, plus Corollary
+  3.9 for the semicontinuity; its proof (Ekeland–Temam's minimax) is still to be written.
+  `WeaklySeqCompactSpace V → NormedSpace.IsReflexive ℝ V` becomes provable in
+  `Numlib/Variational/WeakMinimization.lean` (a follow-up, not planned here). `notes/frontier.md`
+  blocker 4 closes.
+
+**Order of attack** (backbone, dependency order, estimated Lean lines): `WeakDual.toml` appends
+(~80) → `Reflexive.toml` appends (~60) → `DualSeparable.toml` append (~40) → `WeakClosed`
+(~450: Theorem 3.7 and Corollary 3.9 ~60, Theorem 3.10 ~60, finite dimension ~40, Examples 1–2
+~150, the weak-* bipolar ~80) → `Convex/Uniform.toml` append (~30) → `Reflexive/Kakutani`
+(~650: Remark 15 ~30, Helly ~100, Goldstine ~100, Kakutani ~110, Corollaries 3.21–3.22 ~90,
+product ~80, Theorem 3.24 (a) ~80, (b) 200–300; (b) last) → `WeakStarMetrizable` (~550:
+forward halves ~40, converses ~270, Baire lemma ~40, non-metrizability ~240) → `MilmanPettis`
+(~130) → `Reflexive/EberleinSmulian` (~750: norming lemma ~80, part A ~250, part C 300–400,
+part D ~80, corollaries ~40). Total about 2 750 lines; the surface (seven sections, 96 nodes)
+is delegation throughout, the only proofs of substance being Propositions 3.4/3.12 (basis
+bookkeeping), Corollary 3.15, Remark 9, Remark 11, Corollary 3.23, Exercise 3.22 and
+`uniformlyConvex_iff`.
+'''

@@ -60,14 +60,28 @@ recovers the derivative tensor from its multi-index components, waits on the sym
 `iteratedFDeriv` under permutations of its arguments for a `C^∞` function, which Mathlib has only
 for order two and for analytic functions.
 
-What is still missing is the structure theory on a domain, which is what makes the spaces worth
-having. Of §7.3 only Theorems 7.3.1, 7.3.3 and 7.3.4 are here, the density of smooth functions on
-the whole space and on an arbitrary open set. Density up to the boundary on a Lipschitz domain
-(7.3.2), the extension operator (7.3.5), the Sobolev embeddings (7.3.7), Rellich-Kondrachov
-(7.3.8-7.3.9), the trace (7.3.10-7.3.11), Deny-Lions (7.3.12-7.3.14),
-Poincaré-Friedrichs (7.3.15-7.3.16) and Bramble-Hilbert (7.3.17) are all open, and with them §7.4,
-§7.6 and the downstream sections that need them (§8.1, §8.4, §8.5, §8.8, chapter 10 beyond the
-Aubin-Nitsche lemma, chapter 13). Two facts the source itself states without proof are unproved in
+**Planned (Brezis round, 2026-09-17): the structure theory on a domain**, following Brezis,
+*Functional Analysis, Sobolev Spaces and Partial Differential Equations*, chapters 8 and 9, under
+the `C^1`-chart hypothesis (`notes/fem-roadmap.md` Decision B):
+
+* `Interval/` (chapter 8): `W^{m,p}(I)` for every `1 ≤ p ≤ ∞` on an arbitrary open interval,
+  `SobolevIntervalLp m p I`, of which `SobolevInterval m a b` becomes the `p = 2` bounded
+  instance — `Basic` (the absolutely continuous representative, `HasWeakDerivOn` generalized to
+  `I : Opens ℝ`), `DifferenceQuotient`, `Extension`, `Density`, `Embedding` (`W^{1,p} ↪ L^∞`,
+  compactness), `Higher`, `Zero` (`W_0^{1,p}`, Poincaré for every `p`), `Dual` (`W^{−1,p'}`);
+* `Cutoff`, `Friedrichs`, `Calculus` (§9.1: zero extensions, Theorem 9.2, difference quotients,
+  product and chain rules, change of variables), `Reflection`, `Chart`, `Extension` (§9.2:
+  `IsContDiffChartDomain`, the reflection lemma, the extension operator, density up to the
+  boundary), `Embedding`, `EmbeddingDomain` (§9.3: Gagliardo–Nirenberg–Sobolev on `W^{1,p}`,
+  Morrey, the `W^{m,p}` embeddings, on the whole space and on a `C^1` domain), `Compactness`
+  (Rellich–Kondrachov, `W^{k,p} ↪↪ W^{k−1,p}`), `Poincare` and `Zero` (§9.4: `W_0^{1,p}`,
+  Poincaré, the characterizations by continuity and by zero extension, `W^{−1,p'}`).
+
+The plans of those groups say which Atkinson–Han nodes each closes (`theorem_7_3_2`, `7_3_5` at
+`k = 1`, `7_3_7`, `7_3_8`, `7_3_9` restated under `IsContDiffDomain 1`, all of §8.8 with no
+restatement) and what stays open: the trace and the surface measure on the boundary (7.3.10,
+7.3.11, §7.6, `notes/frontier.md` blocker 2), Bramble–Hilbert on a simplex (7.3.17, Decision A),
+and Lipschitz domains. Two facts the source itself states without proof are unproved in
 `Slobodeckij` as well: that `W^{s,p}(Ω)` is complete, and that `C_0^∞(Ω) ⊆ W^{s,p}(Ω)`, so nothing
 yet produces a nonzero element of `SobolevSlobodeckijZero`.
 '''

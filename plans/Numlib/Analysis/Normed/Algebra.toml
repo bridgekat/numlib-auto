@@ -1,1 +1,6 @@
-desc = 'Spectral radius in a normed algebra.'
+desc = '''
+Spectral radius in a normed algebra (`SpectralRadius`), and the spectrum of a bounded operator on
+a complex Banach or Hilbert space beyond Mathlib — spectral mapping for eigenvalues, the
+numerical range, isometries, and the spectral decomposition of compact normal operators
+(`Spectrum`; Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, §11.4).
+'''

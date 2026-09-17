@@ -1,0 +1,103 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 7: the
+Hille–Yosida theorem. Every numbered result of the main text (Propositions 7.1, 7.2, 7.6,
+Theorems 7.3, 7.4, 7.5, 7.7, Lemmas 7.1, 7.2) is a node in the section groups beside this file,
+together with the Remarks that assert something (Remarks 1, 4, 5, 6, 7, 8) and the unnumbered
+Definitions (monotone, maximal monotone, resolvent, Yosida approximation, `D(A^k)`, symmetric,
+self-adjoint). The chapter is entirely new to the project — Mathlib has `LinearPMap` with its
+closedness and Hilbert adjoint and nothing about monotone operators, resolvents of unbounded
+operators, or semigroups (grep: `accretive`, `dissipative`, `Hille`, `Yosida`, `graph norm`
+have zero occurrences; `LinearPMap` appears in eight files) — so almost everything rests on two
+new backbone modules, and **nothing in this chapter is blocked**.
+
+* **Backbone, and the vocabulary chapter 10 consumes.**
+  `Numlib/Analysis/InnerProductSpace/MaximalMonotone` (over `RCLike 𝕜`, `A : H →ₗ.[𝕜] H`):
+  `LinearPMap.IsMonotone` (`0 ≤ re ⟪A v, v⟫`), `LinearPMap.IsMaximalMonotone` (a structure:
+  monotone and `∀ f, ∃ u : A.domain, ↑u + A u = f`; `I + λA` is `LinearMap.id +ᵥ ((λ : 𝕜) • A)`),
+  the total junk-valued `LinearPMap.resolvent A λ` and `LinearPMap.yosida A λ : H →L[𝕜] H`,
+  Propositions 7.1, 7.2, 7.6, and the Hilbert spaces `LinearPMap.PowDomain A k` — the book's
+  `D(A^k)` with exactly its norm `(∑_{j≤k} ‖A^j u‖²)^{1/2}`, built as the closed submodule of
+  `PiLp 2 (Fin (k+1) → H)` of tuples `(u, Au, …, A^k u)` (the `ContDiffMapIcc` pattern), with
+  `PowDomain.applyL A k j` for `A^j`, `castL`/`shiftL`/`snoc`, completeness from closedness, and
+  `LinearPMap.powPart A k` for the part of `A` in `D(A^k)`. `Numlib/Analysis/ODE/HilleYosida`
+  (over `ℝ`): the solution predicate `LinearPMap.IsSolutionOn A u₀ s u`, the class predicate
+  `LinearPMap.ContDiffOnPowDomain A n j u s` ("`u ∈ C^n(s; D(A^j))`": `u` lifts to a `C^n` map
+  into `A.PowDomain j`; `contDiffOnPowDomain_iff` reads it componentwise), the approximate
+  solutions `expYosida A λ t = exp(−t A_λ)` via `NormedSpace.exp`, the contraction semigroup
+  `LinearPMap.semigroup A t : H →L[ℝ] H` (Remark 5), Theorem 7.4 as
+  `IsMaximalMonotone.exists_isSolutionOn`, Theorem 7.5 as `contDiffOnPowDomain_semigroup`,
+  Theorem 7.7 as `exists_isSolutionOn_Ioi_of_isSelfAdjoint`. Theorem 7.3 is appended to
+  `Numlib/Analysis/ODE/Cauchy` (`ODE.existsUnique_isSolutionOn_Ici_of_lipschitz`).
+
+* **Scalars.** `MaximalMonotone` is over `RCLike 𝕜` at no cost (no time derivative enters, and
+  Mathlib's `LinearPMap.adjoint`/`IsSelfAdjoint` are `RCLike`). `HilleYosida` is over `ℝ`: the
+  time calculus of `u : ℝ → H` needs `NormedSpace ℝ H`, and Mathlib's `HasDerivWithinAt.inner`
+  carries `[NormedSpace ℝ H] [IsScalarTower ℝ 𝕜 H]` over `RCLike` while `HasDerivWithinAt.norm_sq`
+  is real-only; every graph space `D(A^k)` would need those instances as well; the book and both
+  consumers (chapter 10) are real; nothing in chapter 11 restates this over `ℂ`. The surface is
+  over `ℝ` throughout, matching the book.
+
+* **Correspondence, and where the formalization departs from the book's proof.** The
+  approximate problem `u_λ' + A_λ u_λ = 0` is solved in closed form, `u_λ(t) = exp(−t A_λ) u₀`,
+  not by Theorem 7.3. Because `u_λ'(t) = −exp(−t A_λ) A_λ u₀`, the derivatives converge as soon
+  as `exp(−tA_λ) w → S(t) w` for every `w` and `A_λ u₀ → A u₀`: the book's Step 4 (which assumes
+  `u₀ ∈ D(A²)` and silently uses `A_λ u₀ → A u₀`), Step 6 and the use of Lemma 7.2 in the
+  existence proof disappear, and Theorem 7.4 is proved for every `u₀ ∈ D(A)` at once — which is
+  the book's Remark 4 (a). The limit `S(t) u₀ = lim exp(−tA_λ) u₀` exists for every `u₀ ∈ H`
+  (Remark 4 (b), footnote 4), so the semigroup is defined first and Theorem 7.4's solution is
+  `t ↦ S(t) u₀`. Theorem 7.7's estimate (33) is proved as the monotonicity of the Lyapunov
+  function `½‖u‖² + t⟪A_λ u, u⟫ + t²‖A_λ u‖²` (no integration by parts), and its Step 2 needs no
+  `D(A²)` either (`S(t) u₀ = S(t−δ)(S(δ) u₀)` with `S(δ) u₀ ∈ D(A)`). Theorems 7.5 and 7.7's (26)
+  are one induction over the level `j`, applying the theory to `A.powPart j` on `A.PowDomain j`
+  — the book's `A₁` on `H₁ = D(A)` and `Ã` on `H̃ = D(A^{k−1})` — so every semigroup node is
+  stated for an arbitrary real Hilbert space. Lemma 7.2 survives as
+  `IsMaximalMonotone.dense_range_castL` (`D(A^{k+1})` dense in `D(A^k)`, all `k`).
+
+* **Exercises and Problems.** Chapter 7 has no exercise section and its main text cites none;
+  Problem 16 (the Banach-space characterization of maximal monotone operators, referred to by
+  Remark 8) is not on the allowlist and nothing depends on it. Nothing else is in scope this
+  round.
+
+* **Not planned.** Comments §1, Theorem 7.8 (Hille–Yosida for m-accretive operators on a
+  Banach space) — quoted without proof; the Hilbert proof here uses the inner product in
+  Steps 1–3, and the Banach proof (Yosida approximants with `e^{−tA_λ} = e^{−t/λ} e^{(t/λ) J_λ}`
+  and an operator-valued integral for the Cauchy property) is a different argument, several
+  hundred lines with no shared step. Comments §2, Theorem 7.9 (the exponential formula
+  `u(t) = lim (I + (t/n) A)^{−n} u₀`) — quoted without proof; needs Chernoff's product estimate
+  `‖J^n u − e^{n(J−I)} u‖ ≤ √n ‖(J − I) u‖`, about 400 lines once `semigroup` exists. Comments
+  §4, Theorem 7.10 (the inhomogeneous problem and Duhamel's formula
+  `u(t) = S_A(t) u₀ + ∫₀ᵗ S_A(t−s) f(s) ds`) — quoted without proof; needs the Bochner integral
+  of the semigroup and differentiation under it, about 400 lines once `semigroup` exists, and
+  chapter 10 does not use it. Comment §3 (analytic semigroups) is a pointer. Remark 5's converse
+  (every continuous semigroup of contractions is `S_A` for a unique maximal monotone `A`, the
+  generation theorem) — quoted from the literature. Remarks 2 and 3 and footnote 5 are
+  discussion; the counterexample sentences of Remarks 1 (`A + B`), 4 (b) (nowhere
+  differentiable generalized solutions), 7 (`D(A) ≠ D(A*)`) and 8 (`A*` not monotone) are not
+  nodes.
+
+* **Frontier.** `notes/frontier.md` blocker 9 ("Bochner-space" half): this chapter introduces
+  the vocabulary `ℝ → H` with `ContDiffOn` on `Ici 0`/`Ioi 0` and `ContDiffOnPowDomain`, and
+  proves the parabolic smoothing `‖u'(t)‖ ≤ ‖u₀‖/t` abstractly (Theorem 7.7); the heat-equation
+  instances are chapter 10's, and QSS's `thetaMethod_convergence`, `equation_13_25`,
+  `cG_convergence`, `dG_convergence` still need `L²(0,T;V)` and Lions' theorem (Comments 10.9),
+  which nothing here provides. No Atkinson–Han or QSS node is closed by this chapter's backbone
+  alone.
+
+* **Order of attack** (backbone modules in dependency order, estimated size):
+  1. `Numlib/Analysis/InnerProductSpace/MaximalMonotone` — 900–1100 lines: definitions and
+     Proposition 7.1 (the contraction-mapping induction ★★), `resolvent`/`yosida` and
+     Proposition 7.2 (★–★★), `powGraph`/`PowDomain`/`powPart` (★★), `dense_range_castL` (★★),
+     Proposition 7.6 (★★); the Remark 8 section (★★★, ~350 lines) last and optional.
+  2. `Numlib/Analysis/ODE/Cauchy`, three appended nodes — 120–180 lines: Theorem 7.3 by gluing.
+  3. `Numlib/Analysis/ODE/HilleYosida` — 1500–1900 lines: Step 1 (★), the `exp(−tB)` lemmas and
+     Lemma 7.1 (★), Steps 2–3 (★★), `semigroup` and its spec (★★), the closed-interval
+     uniform-limit lemma (★★) and Step 5 (★★★, ~250 lines), Remark 5 (★★), `ContDiffOnPowDomain`
+     and its componentwise form (★★), `applyL_semigroup_powPart` (★★) and the ladder (★★★, ~250),
+     Theorem 7.5 (★★), the self-adjoint estimate (★★), Theorem 7.7's Step 2 (★★) and (26)
+     (★★★, ~200).
+  4. The surface, `Chapter07/Section01`–`Section04` — 400–600 lines, all delegation.
+'''

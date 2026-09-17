@@ -1,0 +1,224 @@
+namespace = "Elliptic"
+desc = '''
+Eigenfunctions and spectral decomposition of `-Δ` with Dirichlet boundary condition on a bounded
+open set `Ω ⊆ ℝ^N`: [brezis2011functional] §9.8, Theorem 9.31 with Remarks 28–30. The theorem
+reads: there are a Hilbert basis `(e_n)` of `L²(Ω)` and reals `λ_n > 0` with `λ_n → +∞` such that
+`e_n ∈ H^1_0(Ω) ∩ C^∞(Ω)` and `-Δ e_n = λ_n e_n` in `Ω`.
+
+## Design: a general symmetric coercive form, and the basis as data
+
+The proof uses nothing about the Laplacian beyond three properties of its Dirichlet form
+`a(u, v) = ∫ ∇u·∇v` on `H^1_0(Ω)`: bounded, symmetric, coercive (Poincaré). So the construction is
+carried out for an arbitrary `a : SesqForm ℝ (H^1(Ω))` that is Hermitian and coercive on
+`H^1_0(Ω)`: the solution operator `T = solutionOperator Ω a _ : L²(Ω) → L²(Ω)` of
+`Elliptic/Dirichlet` is compact (Rellich–Kondrachov, bounded `Ω`), self-adjoint
+(`⟪T f, g⟫ = a(T f, T g) = ⟪f, T g⟫`), positive (`⟪T f, f⟫ = a(T f, T f) ≥ 0`) and injective
+(`T f = 0` forces `∫ f φ = 0` for every test function `φ`, so `f = 0`), and `L²(Ω)` is
+infinite-dimensional (`MeasureTheory.Lp.not_finiteDimensional_of_isOpen`, the general lemma
+first proved for chapter 8's Sturm–Liouville theorem in
+`Numlib/Variational/EllipticInterval/SturmLiouville` and to be relocated to `Numlib/MeasureTheory`;
+this module imports it from wherever it lives); `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` of
+`Numlib/Analysis/InnerProductSpace/CompactSpectral` — which needs exactly injectivity and infinite
+dimension, as its module doc explains — produces the basis, with eigenvalues `μ_n → 0`, `μ_n > 0`,
+listed in decreasing order; `λ_n = 1/μ_n` is then increasing to `+∞`.
+
+The basis and the eigenvalues are **data**, not an existential: `eigenbasis a ha : HilbertBasis ℕ ℝ L²(Ω)`
+and `eigenvalue a ha : ℕ → ℝ`, because chapter 10's heat and wave equations expand solutions in
+this basis (`Numlib/Analysis/PDE/Heat`, `Wave`, which consume `Elliptic.dirichletEigenbasis` and
+`Elliptic.dirichletEigenvalue`, the Laplacian instances). Remark 30 (a general elliptic operator
+with symmetric `L^∞` coefficients) is the instance `a = generalForm Ω A 0 a₀ + λ₀ ⟨·,·⟩_{L²}` with
+`λ₀` from Gårding's inequality, its eigenvalues shifted back by `λ₀`.
+
+## Smoothness
+
+`e_n ∈ C^∞(Ω)` is interior regularity alone: `e_n ∈ H^1_0(Ω)` solves `∫ ∇e_n·∇φ = λ_n ∫ e_n φ`, so
+Remark 25 (`regularity_interior_higher` of `Elliptic/Regularity`, on an arbitrary open set)
+bootstraps `e_n ∈ H^1_loc ⇒ H^3_loc ⇒ H^5_loc ⇒ …`, and `MemSobolevMultiIndexLoc.exists_contDiffOn`
+gives a `C^∞` representative on `Ω`. The classical equation `-Δ ẽ_n = λ_n ẽ_n` pointwise on `Ω`,
+with Mathlib's `Δ`, follows from the weak one against test functions by the variational lemma.
+Remark 29's second clause, `e_n ∈ C^∞(Ω̄)` on a `C^∞` domain, is Theorem 9.25's `C^∞` clause
+applied to the equation `-Δ e_n + e_n = (λ_n + 1) e_n` iteratively. Its first clause,
+`e_n ∈ L^∞(Ω)` for a general bounded `Ω`, is quoted without proof in the book and is not planned.
+
+## The basis of `H^1_0`
+
+Remark 28 states that `(e_n / √λ_n)` is a Hilbert basis of `H^1_0(Ω)` for the inner product
+`∫ ∇u·∇v` and `(e_n / √(λ_n + 1))` for the `H^1` inner product. The second is a
+`HilbertBasis ℕ ℝ (SobolevEuclideanZero N 1 2 Ω)` on the nose, since `laplaceForm = innerSL`; the
+first lives on the energy space `WithEnergy` of `Numlib/Analysis/InnerProductSpace/Energy` for the
+operator of the Dirichlet form restricted to `H^1_0(Ω)`, which is symmetric and coercive there.
+'''
+
+[[node]]
+id = "solutionOperator_isSymmetric"
+kind = "theorem"
+desc = '''For `a : SesqForm ℝ (H^1(Ω))` Hermitian and coercive on `H^1_0(Ω)`, the solution operator
+`T = solutionOperator Ω a ha` is a symmetric operator on `L²(Ω)`:
+`(T : L²(Ω) →ₗ[ℝ] L²(Ω)).IsSymmetric`, i.e. `⟪T f, g⟫ = ⟪f, T g⟫`. Proof: with `u = T f`,
+`v = T g` in `H^1_0(Ω)`, `⟪T f, g⟫ = ⟪g, fn u⟫ = a(v, u) = a(u, v) = ⟪f, fn v⟫ = ⟪f, T g⟫` by
+`solutionOperator_spec` twice and the symmetry of `a`. Companions: `inner_solutionOperator_nonneg`
+(`0 ≤ ⟪T f, f⟫ = a(u, u)`, coercivity), and `inner_solutionOperator_self_eq`
+(`⟪T f, f⟫ = a (T f) (T f)` read on `H^1_0`), which gives the positivity of the eigenvalues. This
+is "repeat the proof of Theorem 8.21" in the proof of [brezis2011functional] Theorem 9.31 (the
+one-dimensional Sturm–Liouville theorem is its Theorem 8.22). ★★ (~100 lines).'''
+deps = ["solutionOperator"]
+
+[[node]]
+id = "solutionOperator_ker_eq_bot"
+kind = "theorem"
+desc = '''The solution operator is injective: `LinearMap.ker (solutionOperator Ω a ha : L²(Ω) →ₗ[ℝ] L²(Ω)) = ⊥`.
+Proof: if `T f = 0` then the solution `u ∈ H^1_0(Ω)` is `0`, so `⟪f, fn φ⟫ = a(0, φ) = 0` for every
+`φ ∈ H^1_0(Ω)`, in particular for the image of every test function
+(`TestFunction.exists_mem_sobolevMultiIndex_testFunctions`, `SobolevMultiIndexZero.testFunctions_le`),
+so `∫ f φ = 0` for all `φ ∈ 𝓓(Ω)` and `f = 0` a.e. by the variational lemma
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (Corollary 4.24). This is "`N(T) = {0}`" of
+the proof of [brezis2011functional] Theorem 9.31 and the hypothesis `hinj` of
+`eigenvectorHilbertBasis`. ★★ (~80 lines).'''
+deps = ["solutionOperator", "TestFunction.exists_mem_sobolevMultiIndex_testFunctions", "SobolevMultiIndexZero.testFunctions_le"]
+
+[[node]]
+id = "eigenbasis"
+kind = "definition"
+desc = '''`eigenbasis (Ω) (hΩ : Bornology.IsBounded Ω) (hne : (Ω : Set _).Nonempty) (a : SesqForm ℝ (H^1(Ω))) (hsymm : a.IsHermitian) (ha : IsCoercive (a.restrict H^1_0(Ω))) : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict Ω))`,
+the orthonormal basis of `L²(Ω)` of eigenfunctions of the solution operator of `a` on `H^1_0(Ω)`:
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` applied to `T = solutionOperator Ω a ha`,
+with the four hypotheses `solutionOperator_isSymmetric`, `solutionOperator_isCompactOperator`
+(`Ω` bounded), `solutionOperator_ker_eq_bot` and `MeasureTheory.Lp.not_finiteDimensional_of_isOpen`
+(`Ω` nonempty). With `eigenvalue Ω hΩ hne a hsymm ha : ℕ → ℝ`, `n ↦ (eigenvalueSeq … n)⁻¹`, the
+reciprocals of the eigenvalues `μ_n` of `T`. This is the abstract core of [brezis2011functional]
+Theorem 9.31 (p. 11700–11708), for a general symmetric coercive form; `dirichletEigenbasis` is the
+Laplacian instance and `exists_hilbertBasis_eigen_general` (Remark 30) the general-operator one. ★★
+(~80 lines of assembly).'''
+deps = ["solutionOperator", "solutionOperator_isCompactOperator", "solutionOperator_isSymmetric", "solutionOperator_ker_eq_bot", "MeasureTheory.Lp.not_finiteDimensional_of_isOpen", "ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis", "ContinuousLinearMap.IsSymmetric.eigenvalueSeq"]
+
+[[node]]
+id = "eigenvalue_pos"
+kind = "theorem"
+desc = '''The eigenvalues are positive and tend to `+∞`: `0 < eigenvalue Ω hΩ hne a hsymm ha n` for
+every `n`, `Monotone (eigenvalue …)`, and `Tendsto (eigenvalue …) atTop atTop`
+(`tendsto_eigenvalue_atTop`). From `apply_eigenvectorHilbertBasis` (`T (e n) = μ n • e n`),
+`μ n ≠ 0` by injectivity, `μ n = ⟪T (e n), e n⟫ ≥ 0` by `inner_solutionOperator_nonneg`, so
+`μ n > 0`; `|μ n|` antitone (`eigenvalueSeq_antitone`) and `μ n → 0`
+(`tendsto_eigenvalueSeq_zero`) give the monotonicity and the divergence of the reciprocals. ★★
+(~100 lines).'''
+deps = ["eigenbasis", "ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis", "ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero", "ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone"]
+
+[[node]]
+id = "eigenbasis_mem_sobolevZero"
+kind = "theorem"
+desc = '''Each basis function is in `H^1_0(Ω)` and solves the weak eigenvalue problem: for every `n`
+there is `u ∈ SobolevEuclideanZero N 1 2 Ω` with `fn u = eigenbasis … n` in `L²(Ω)` and
+`a u φ = eigenvalue … n * ⟪eigenbasis … n, fn φ⟫` for every `φ ∈ H^1_0(Ω)` — the book's (83) for
+the form `a`. Proof: `e n = (μ n)⁻¹ • T (e n)` is the function of `u := (μ n)⁻¹ • (the H^1_0 solution for e n)`
+and `a u φ = (μ n)⁻¹ ⟪e n, fn φ⟫` by `solutionOperator_spec`. The element `u` is chosen once, as
+`eigenfunction Ω hΩ hne a hsymm ha n : SobolevEuclideanZero N 1 2 Ω` (a definition beside this
+theorem, `eigenfunction_fn` and `form_eigenfunction` its two clauses), so that Remark 28 can
+speak of the family in `H^1_0(Ω)`. ★★ (~120 lines).'''
+deps = ["eigenbasis", "eigenvalue_pos", "solutionOperator"]
+
+[[node]]
+id = "dirichletEigenbasis"
+kind = "definition"
+desc = '''**[brezis2011functional] Theorem 9.31, the basis of Dirichlet eigenfunctions of `-Δ`.**
+`dirichletEigenbasis (Ω) (hΩ : Bornology.IsBounded Ω) (hne : Ω.Nonempty) : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict Ω))`
+and `dirichletEigenvalue Ω hΩ hne : ℕ → ℝ`, the instances of `eigenbasis` and `eigenvalue` for
+`a = dirichletForm Ω`, Hermitian by `dirichletForm_isHermitian` and coercive on `H^1_0(Ω)` by
+Poincaré's inequality (chapter 9a's `SobolevEuclideanZero.norm_le_gradNorm` at `p = 2`, through
+`dirichletForm_self_eq`). Its properties, each an instance of the general one:
+`dirichletEigenvalue_pos` (`0 < λ_n`), `monotone_dirichletEigenvalue`,
+`tendsto_dirichletEigenvalue_atTop` (`λ_n → +∞`), `dirichletEigenfunction` (the element
+`u_n ∈ H^1_0(Ω)` with function `e_n`), and `dirichletForm_dirichletEigenfunction`
+(`∫ ∇e_n·∇φ = λ_n ∫ e_n φ` for all `φ ∈ H^1_0(Ω)`, (83)). Chapter 10's `Heat` and `Wave` consume
+these names. ★ (~60 lines).'''
+deps = ["eigenbasis", "eigenvalue_pos", "eigenbasis_mem_sobolevZero", "dirichletForm", "dirichletForm_isHermitian", "dirichletForm_self_eq", "SobolevEuclideanZero.norm_le_gradNorm"]
+
+[[node]]
+id = "eigenfunction_memSobolevMultiIndexLoc"
+kind = "theorem"
+desc = '''A weak Dirichlet eigenfunction of `-Δ` is in `H^m_loc(Ω)` for every `m`: if
+`u ∈ H^1(Ω)` satisfies `dirichletForm Ω u φ = lam * ⟪fn u, fn φ⟫` for all test functions `φ`
+(hence for `φ ∈ H^1_0(Ω)`), then `MemSobolevMultiIndexLoc b (fn u) m 2 Ω volume` for every `m`.
+Proof (p. 11709): the datum `f = lam • u` is in `H^1_loc(Ω)`, so `regularity_interior_higher`
+gives `u ∈ H^3_loc`, whence `f ∈ H^3_loc` and `u ∈ H^5_loc`, and so on: induction on `m` with the
+datum's regularity one step behind the solution's. Consequently (`eigenfunction_exists_contDiffOn`)
+`u` agrees a.e. on `Ω` with a `ũ` with `ContDiffOn ℝ ⊤ ũ Ω`, by
+`MemSobolevMultiIndexLoc.exists_contDiffOn`. ★★ (~120 lines).'''
+deps = ["dirichletForm", "regularity_interior_higher", "_root_.MemSobolevMultiIndexLoc.exists_contDiffOn"]
+
+[[node]]
+id = "laplacian_eq_of_eigenfunction"
+kind = "theorem"
+desc = '''The classical eigenvalue equation: if `ũ` is `C²` on `Ω` and its class `u ∈ H^1(Ω)`
+satisfies `dirichletForm Ω u φ = lam * ⟪fn u, fn φ⟫` for all test functions `φ`, then
+`-Δ ũ x = lam * ũ x` for every `x ∈ Ω`, with Mathlib's `Δ` (`InnerProductSpace.instLaplacian`).
+Proof: the integration by parts of `isGalerkinSolution_laplace_of_classical` (the weak derivative
+of the `C¹` function `∂ᵢũ` is its classical derivative) turns the weak identity into
+`∫ (-Δũ - lam ũ) φ = 0` for all `φ ∈ 𝓓(Ω)`, the variational lemma
+`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` gives `-Δũ = lam ũ` a.e. on `Ω`, and both
+sides are continuous on the open `Ω`, so everywhere. `laplacian_eq_iteratedFDeriv_stdOrthonormalBasis`
+identifies `Δ` with `∑ᵢ ∂ᵢ∂ᵢ`. ★★ (~120 lines).'''
+deps = ["dirichletForm", "ContDiffOn.hasWeakIteratedFDerivOn", "laplacian_ae_eq_of_isGalerkinSolution"]
+
+[[node]]
+id = "dirichletEigenbasis_exists_contDiffOn"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.31, the smoothness clauses**: for every `n` there is
+`ẽ : ℝ^N → ℝ` with `ContDiffOn ℝ ⊤ ẽ Ω` (`e_n ∈ C^∞(Ω)`), `dirichletEigenbasis Ω hΩ hne n =ᵐ[volume.restrict Ω] ẽ`,
+and `-Δ ẽ x = dirichletEigenvalue Ω hΩ hne n * ẽ x` for all `x ∈ Ω` (`-Δe_n = λ_n e_n` in `Ω`).
+From `dirichletForm_dirichletEigenfunction`, `eigenfunction_memSobolevMultiIndexLoc`,
+`eigenfunction_exists_contDiffOn` and `laplacian_eq_of_eigenfunction`. With
+`dirichletEigenbasis`, `dirichletEigenvalue_pos`, `tendsto_dirichletEigenvalue_atTop` and
+`dirichletEigenfunction` this is the whole of Theorem 9.31, which the surface's `theorem_9_31`
+packages as one existential. The book's proof cites its Theorem 6.11 and Remark 25. ★★ (~100
+lines of assembly).'''
+deps = ["dirichletEigenbasis", "eigenfunction_memSobolevMultiIndexLoc", "laplacian_eq_of_eigenfunction"]
+
+[[node]]
+id = "hilbertBasis_sobolevZero"
+kind = "theorem"
+desc = '''**[brezis2011functional] Chapter 9, Remark 28.** With `e = dirichletEigenbasis`,
+`lam = dirichletEigenvalue` and `u n = dirichletEigenfunction … n ∈ H^1_0(Ω)`: (a) the family
+`n ↦ (√(lam n + 1))⁻¹ • u n` is a `HilbertBasis ℕ ℝ (SobolevEuclideanZero N 1 2 Ω)` for the `H^1`
+inner product `∫ (∇u·∇v + uv)`; (b) the family `n ↦ (√(lam n))⁻¹ • u n` is a Hilbert basis of
+`H^1_0(Ω)` for the inner product `∫ ∇u·∇v`, stated on the energy space
+`WithEnergy (SesqForm.toOperator (dirichletForm.restrict H^1_0)) _` of
+`Numlib/Analysis/InnerProductSpace/Energy`, whose inner product is `a(u, v)`
+(`LinearMap.IsSymmetricCoercive` holds by symmetry and Poincaré).
+
+Proof (p. 11712): orthonormality from (83): `⟪u_n, u_m⟫_{H^1} = a(u_n, u_m) + ⟪e_n, e_m⟫ = (λ_n + 1) δ_nm`;
+completeness: if `w ∈ H^1_0(Ω)` is orthogonal to every `u_n` then, by (83) again,
+`(λ_n + 1) ⟪e_n, fn w⟫ = 0` for all `n`, so `fn w = 0` in `L²(Ω)` because `(e_n)` is a Hilbert
+basis of `L²(Ω)` (`HilbertBasis.dense_span` / `HilbertBasis.repr` injective), hence `w = 0`
+(`SobolevMultiIndex.ext_of_fn_ae_eq`); `HilbertBasis.mkOfOrthogonalEqBot`. ★★ (~200 lines for
+both).'''
+deps = ["dirichletEigenbasis", "laplaceForm_eq_innerSL", "SobolevMultiIndex.ext_of_fn_ae_eq", "WithEnergy", "LinearMap.IsSymmetricCoercive", "_root_.WithEnergy.instCompleteSpace_of_continuousLinearMap"]
+
+[[node]]
+id = "exists_contDiffOn_closure_eigenfunction"
+kind = "theorem"
+desc = '''**[brezis2011functional] Chapter 9, Remark 29, second clause**: if in addition `Ω` is of
+class `C^∞` (`IsContDiffChartDomain ⊤ Ω`, bounded), then every `e_n` of `dirichletEigenbasis`
+agrees a.e. with a function `ContDiffOn ℝ ⊤ ẽ (closure Ω)`, `e_n ∈ C^∞(Ω̄)`. Proof:
+`u_n ∈ H^1_0(Ω)` satisfies `laplaceForm Ω u_n φ = (λ_n + 1) ⟪e_n, fn φ⟫` for `φ ∈ H^1_0(Ω)`, so
+Theorem 9.25 (`regularity_dirichlet_higher`) with datum `(λ_n + 1) e_n ∈ H^m(Ω)` gives
+`u_n ∈ H^{m+2}(Ω)`, and induction on `m` gives `u_n ∈ H^m(Ω)` for every `m`, whence the `C^∞(Ω̄)`
+representative as in `regularity_dirichlet_smooth`. The remark's first clause, `e_n ∈ L^∞(Ω)` for
+an arbitrary bounded `Ω`, is quoted without proof and not planned. ★★ (~120 lines).'''
+deps = ["dirichletEigenbasis", "regularity_dirichlet_higher", "regularity_dirichlet_smooth", "laplaceForm_eq_innerSL"]
+
+[[node]]
+id = "exists_hilbertBasis_eigen_general"
+kind = "theorem"
+desc = '''**[brezis2011functional] Chapter 9, Remark 30**: for `Ω` bounded and nonempty, `A` with
+`IsUniformlyElliptic Ω A α` and *symmetric* (`A i j = A j i`), and `a₀ ∈ L^∞(Ω)`, there are a
+Hilbert basis `e` of `L²(Ω)` and `lam : ℕ → ℝ` with `Tendsto lam atTop atTop` such that each
+`e n` is the function of some `u n ∈ H^1_0(Ω)` with
+`generalForm Ω A 0 a₀ (u n) φ = lam n * ⟪e n, fn φ⟫` for all `φ ∈ H^1_0(Ω)`, i.e. (84). Proof:
+`eigenbasis` for `a = generalForm Ω A 0 a₀ + λ₀ • pairing Ω (id) 0 0`, Hermitian
+(`generalForm_isHermitian_of_symm`) and coercive on `H^1(Ω)`, a fortiori on `H^1_0(Ω)`, for the
+`λ₀` of `generalForm_garding`; its eigenvalues `lam' n → ∞` give `lam n = lam' n - λ₀`, which
+still tends to `+∞` (the book's `λ_n` need not be positive here, and it does not say so). The
+book omits the symmetry of `a_ij`, without which `T` is not self-adjoint and there is no
+orthonormal basis of eigenfunctions; the hypothesis is added. Stated as an existential since no
+consumer needs the data. ★★ (~200 lines).'''
+deps = ["eigenbasis", "eigenvalue_pos", "eigenbasis_mem_sobolevZero", "generalForm", "generalForm_garding", "IsUniformlyElliptic"]

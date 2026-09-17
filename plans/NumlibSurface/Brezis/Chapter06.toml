@@ -1,0 +1,133 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 6:
+compact operators and the spectral decomposition of self-adjoint compact operators. Four surface
+modules, `Section01`–`Section04`, one per section of the book, in the namespace `Brezis.Chapter06`,
+over `ℝ` throughout as the book is; every Theorem, Proposition, Lemma, Corollary and every
+Remark that asserts a mathematical statement is a node, together with the unnumbered
+definitions (named by content) and the two exercises the main text cites as supplying a proof
+(6.7 for Remark 2, 6.18 for Remark 6).
+
+## What is formalized, and where it comes from
+
+Mathlib carries the definitions and most of §6.1 and §6.3: `IsCompactOperator` with its closure
+properties (Theorem 6.1, Proposition 6.3), the Fredholm alternative
+`IsCompactOperator.hasEigenvalue_or_mem_resolventSet` and `hasEigenvalue_iff_mem_spectrum`
+(Theorem 6.6 (c) forward, Theorem 6.8 (b)), Riesz's lemma `riesz_lemma`, Riesz's theorem
+`FiniteDimensional.of_isCompact_closedBall₀` (Theorem 6.5), `spectrum.isCompact` and
+`spectrum.subset_closedBall_norm` (Proposition 6.7), the spectral theorem for compact self-adjoint
+operators as `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` (step (ii) of
+Theorem 6.11), and the Fredholm-operator theory of `Mathlib/Analysis/Normed/Operator/Fredholm/`
+(`IsFredholm`, `index`, the openness and local constancy of the index, composition) that the
+Comments describe.
+
+The existing backbone (`Numlib/Analysis/Normed/Operator/Compact.lean`, `Riesz.lean`,
+`Numlib/Analysis/InnerProductSpace/CompactSpectral.lean`, written for Atkinson–Han §2.8) supplies
+finite rank ⇒ compact and limits (Corollary 6.2), `finite_setOf_hasEigenvalue_norm_le`
+(Lemma 6.2), `isClosed_range_smul_sub` and `finiteDimensional_ker_pow` (Theorem 6.6 (a), (b)),
+the Riesz index `exists_riesz_index` (Comments 3), and the Hilbert-space forms of Schauder, the
+solvability criterion and the index-zero statement.
+
+New backbone, three groups:
+
+* `plans/Numlib/Analysis/Normed/Operator/Compact/Banach.toml` (module
+  `Numlib/Analysis/Normed/Operator/Compact/Banach.lean`, 16 nodes): Schauder's theorem for the
+  Banach adjoint `ContinuousLinearMap.strongDualMap` and its converse (Theorem 6.4), the
+  weak-to-norm continuity of compact operators and its converse on a reflexive space (Remark 2),
+  the Banach forms of Theorem 6.6 (b) and (d) through Mathlib's Fredholm theory
+  (`isFredholm_smul_one_sub`, `index_smul_one_sub`, the compact-perturbation invariance of the
+  index — the Comments' property (c) — and `finrank_ker_strongDualMap_eq_finrank_quotient_range`),
+  and the
+  spectrum bookkeeping of Theorem 6.8 (a), (c).
+* Appended to `Compact.toml`: `IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt`
+  (Remark 1, the approximation property of Hilbert spaces). Appended to `Riesz.toml`:
+  `injective_of_surjective_smul_one_sub`, `injective_iff_surjective_smul_one_sub`
+  (Theorem 6.6 (c), the converse half from the Riesz index rather than through the adjoint).
+* `plans/Numlib/Analysis/InnerProductSpace/CompactSpectral/Basis.toml` (module
+  `…/CompactSpectral/Basis.lean`, 8 nodes): Proposition 6.9 (`σ(T) ⊆ [m, M]`, `m, M ∈ σ(T)`,
+  `‖T‖ = max (|m|, |M|)`, with the Cauchy–Schwarz inequality for a positive operator), Corollary
+  6.10, and Theorem 6.11 as a Hilbert basis of eigenvectors indexed by a set of vectors
+  (`ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`) and by an arbitrary type
+  in the universe of `H` (`exists_type_hilbertBasis_eigenvectors`), without injectivity,
+  separability or infinite dimension. Statement shapes prototyped in
+  `notes/brezis/ch06/proto/Theorem611.lean`.
+
+Cross-chapter inputs (names as in those chapters' plan files, which already exist in the tree):
+chapter 2's `ContinuousLinearMap.strongDualMap`, `strongDualMap_apply`, `strongDualMap_comp`
+(carrying `strongDualMap_id`/`_add`/`_smul`) and `ker_strongDualMap_eq_annihilator_range`
+(`plans/Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.toml`); chapter 1's
+`Submodule.strongDualAnnihilator` (the brief's `Submodule.annihilator`, renamed because Mathlib's
+`Submodule.annihilator` is an ideal), `Submodule.strongDualCoannihilator` and
+`Submodule.strongDualCoannihilator_strongDualAnnihilator_of_isClosed`
+(`plans/Numlib/Analysis/Normed/Module/Annihilator.toml`); chapter 11's
+`Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator` (Proposition 11.13,
+`plans/Numlib/Analysis/Normed/Module/Quotient.toml`), which turns the cokernel comparison of
+Theorem 6.6 (d) into a two-line lemma. A finding for chapter 2: Mathlib already has the Banach
+adjoint as a continuous linear map, `ContinuousLinearMap.precomp 𝕜 T : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E`
+with `precomp 𝕜 T v u = v (T u)` by `rfl` (`Mathlib/Topology/Algebra/Module/Spaces/ContinuousLinearMap.lean`),
+but no norm identity for it.
+
+Surface-only definitions: `IsFiniteRank` (§6.1), `rightShift` and `multiplicationOperator` on
+`lp (fun _ : ℕ => ℝ) 2` for the examples of Remarks 6 and 7 (Mathlib has neither; if chapter 11's
+§11.3 wants them they belong in a backbone `Numlib/Analysis/Normed/Lp/Sequence.lean`).
+
+## Not planned
+
+* Theorem 6.12 (Hilbert–Schmidt operators on `L²(Ω)`): quoted without proof in the Comments;
+  needs a Hilbert–Schmidt class (basis independence of `∑ ‖T eₙ‖²`, compactness) and, for the
+  converse, the product Hilbert basis `eᵢ(x) eⱼ(y)` of `L²(Ω × Ω)`, which Mathlib lacks
+  (`HilbertSchmidt`: zero occurrences, 2026-09-17); well over 300 lines.
+* Theorem 6.13 (Krein–Rutman): quoted without proof in the Comments; its proof (Problem 41)
+  needs Schauder's fixed point theorem, hence Brouwer's, which Mathlib lacks
+  (`notes/frontier.md` blocker 5).
+* Comments 1, property (b) converse (invertibility modulo compact operators implies Fredholm):
+  unnumbered, not needed; (a), (b) forward and (d) are Mathlib's `isOpen_setOfPred_isFredholm`,
+  `IsFredholm.index_continuousAt`, `IsFredholm.exists_isQuasiInverse`, `IsFredholm.comp`,
+  `IsFredholm.index_comp`; (c) is the backbone's `IsFredholm.add_isCompactOperator` and
+  `index_add_isCompactOperator`.
+* Comments 4 (spectral families, functional calculus) and 5 (Courant–Fischer min–max, Problem
+  37): discussion and a problem outside the allowlist.
+* Remark 1's bibliographical parts (Enflo, Schauder bases, Lomonosov); Exercise 6.26 (Schauder's
+  fixed point theorem from Brouwer's): Brouwer is absent from Mathlib.
+* Remark 6's left shift and the `ℓ²` pair-swap example: the same constructions as `rightShift`
+  and `remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one`, adding nothing.
+* Exercises: only 6.7 (questions 2 and 4, as `remark_6_2`, `remark_6_2_mpr`) and 6.18 (questions
+  2 and 3, as `exercise_6_18_2`, `exercise_6_18_3`) are included, because Remarks 2 and 6 cite
+  them for their assertions; Exercises 6.1 and 6.17 are mentioned by `remark_6_7_*` but not
+  planned; everything else in the exercises is out of scope for this round. No problem of the
+  allowlist (10, 20, 47) belongs to this chapter.
+
+## Consumers, and open nodes elsewhere
+
+Nothing in `notes/frontier.md` and no open node of the Atkinson–Han or Quarteroni surfaces is
+closed by this chapter's backbone: the one open node of `AtkinsonHan.Chapter02.Section08`
+(`example_2_8_16`) needs spherical harmonics (blocker 3). Chapter 9's Theorem 9.23 (the Fredholm
+alternative for `-Δu + λu = f`) and Theorem 9.31 (the Dirichlet eigenfunctions) consume the
+Hilbert-space nodes that already exist (`range_smul_sub_eq_orthogonal_ker_adjoint`,
+`eigenvectorHilbertBasis`); chapter 8's Theorem 8.22 likewise. Chapter 11 (§11.4, Theorems
+11.26–11.34) restates Proposition 6.9, Corollary 6.10 and Theorem 6.11 over `ℂ` from the
+`RCLike` backbone nodes here.
+
+## Order of attack
+
+1. `Numlib/Analysis/InnerProductSpace/CompactSpectral/Basis.lean` — no cross-chapter inputs;
+   ~550 lines (positive-operator Cauchy–Schwarz 60, spectral bounds 260, Corollary 6.10 20,
+   Hilbert basis 190). Unblocks all of `Section04` but `remark_6_8`'s finiteness clause, which
+   also needs nothing new.
+2. The appended nodes of `Compact.toml` (~80 lines) and `Riesz.toml` (~45 lines) — no inputs.
+3. `Numlib/Analysis/Normed/Operator/Compact/Banach.lean` — ~800 lines; its spectrum section
+   (`zero_mem_spectrum`, `countable_setOf_hasEigenvalue`, `tendsto_zero_of_…`,
+   `finite_or_exists_enumeration_spectrum`, ~135 lines), weak-to-norm section (~130) and the
+   Fredholm-perturbation nodes (`isFredholm_smul_one_sub`, `IsFredholm.add_isCompactOperator`,
+   `index_add_isCompactOperator`, `index_smul_one_sub`, ~230) need no inputs and can go first;
+   the Schauder section (~255) waits for chapter 2's `strongDualMap`, and the three adjoint
+   identities of Theorem 6.6 (b), (d) (~65) wait for chapter 2's `ker_strongDualMap_eq_annihilator_range`,
+   chapter 1's annihilators and chapter 11's `finrank_quotient_eq_finrank_strongDualAnnihilator`.
+4. The surface: `Section01`, `Section03`, `Section04` are restatements plus the two `lp` examples
+   (`rightShift` ~80, `exercise_6_18_3` ~100, `multiplicationOperator` and Remark 7 ~310,
+   `remark_6_1_nonlinear` ~120, `remark_6_8` ~120); `Section02` waits for the Banach Fredholm
+   nodes.
+'''

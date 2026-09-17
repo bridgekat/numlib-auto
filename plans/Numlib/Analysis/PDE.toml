@@ -1,9 +1,17 @@
 desc = '''
-Classical (pointwise) theory of the model partial differential equations that the numerical
-chapters approximate, at the level of differentiable functions of two real variables: no Sobolev
-space, no weak solution, no existence theory beyond explicit formulas. `Transport` is the linear
+Partial differential equations. `Transport` is the classical (pointwise) theory of the linear
 first-order scalar equation and constant-coefficient hyperbolic systems, solved along
-characteristics. The heat equation's classical theory (maximum principle, smoothing) is a known
-blocker (`notes/frontier.md` §9) and is not planned; its energy estimate for a classical solution
-is stated in the surface directly.
+characteristics, at the level of differentiable functions of two real variables — no function
+space and no existence theory beyond explicit formulas. `Elliptic/` is the weak theory of
+second-order elliptic boundary value problems on an open `Ω ⊆ ℝ^N` in the Sobolev spaces of
+`Numlib/Analysis/Sobolev` (Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+Equations*, §9.5–9.8): variational formulation and existence by Lax–Milgram and Stampacchia, the
+Fredholm alternative, `H²`/`H^{m+2}` regularity by the method of translations, the weak maximum
+principle by truncation, and the Dirichlet eigenfunctions of `−Δ`. `DirichletLaplacian`, `Heat`
+(with `Heat/MaximumPrinciple`, `Heat/Classical`) and `Wave` (Brezis, chapter 10) build on it the
+operator `−Δ` with its weak Dirichlet domain and the evolution problems through the Hille–Yosida
+theorem of `Numlib/Analysis/ODE/HilleYosida`; `Bochner` is the vocabulary of vector-valued
+functions of time they share, and `Bochner/SpaceTime` the passage from a curve `t ↦ u(t) ∈ H^m(Ω)`
+to a classically smooth `u(x, t)` on `Ω̄ × (0, ∞)`. The classical maximum principle for the heat
+equation (`notes/frontier.md` §9) is `Heat/Classical`.
 '''

@@ -1,0 +1,119 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, Chapter 4: `L^p` spaces (main text lines 3251-4247, Comments 4248-4349, Exercises
+4350-4906; Problem 20 at 17217-17280). Five section groups beside this file, namespace
+`Brezis.Chapter04`, one node per numbered result of the main text, per numbered Remark that
+states a theorem, per "Definition." paragraph (named by content), plus Problem 20 (allowlist),
+the exercises the main text cites as proofs (4.4, 4.11, 4.33, 4.34) and the two Comments theorems
+that Mathlib or the backbone prove (4.29 Egorov, 4.33 Young). 66 nodes.
+
+**What the chapter is, in this library.** `L^p(Ω)` is Mathlib's `MeasureTheory.Lp ℝ p μ` (design
+decision D6); on `Ω ⊆ ℝ^N` the measure is `volume.restrict Ω` on `EuclideanSpace ℝ (Fin N)`;
+σ-finiteness, the book's standing assumption (iii), is `[SigmaFinite μ]` on the nodes whose proof
+uses it (the duality and Remark 6). Exponents follow Mathlib: `[Fact (1 ≤ p)]`, `p ≠ ∞`,
+`[ENNReal.HolderConjugate p q]` for `p'`, and `1 < p < ∞` as `[Fact (1 < p)] [Fact (p ≠ ∞)]` on
+instances. §4.1 and §4.2 are Mathlib's (Beppo Levi, Lebesgue, Fatou, Tonelli-Fubini, density of
+`C_c`, Hoelder, Minkowski, Fischer-Riesz, the a.e. subsequence), restated; §4.4's pointwise
+convolution theory is Mathlib's and its `L^p` theory is the existing backbone
+`Numlib/Analysis/Convolution/Lp` and `Numlib/Analysis/Normed/Lp/SmoothApprox`; §4.5's
+Ascoli-Arzela is the backbone's `Numlib/Topology/ContinuousMap/ArzelaAscoli`.
+
+**New backbone**, all under `Numlib/MeasureTheory/Function/` (new directory group, with
+`Function/LpSpace/` below it) and by appending to `Numlib/Analysis/Convolution/Lp`:
+
+* `LpSpace/Clarkson` — Clarkson's two inequalities, pointwise and on `Lp ℝ p μ`, and
+  `MeasureTheory.Lp.instUniformConvexSpace` for `1 < p < ∞` (Theorem 4.10 Steps 1-2, Remark 3,
+  Problem 20, Exercise 4.11). The instance is proved from Clarkson's first inequality for `2 ≤ p`
+  and from the second for `1 < p ≤ 2`, the second being obtained by the book's method (ii) of
+  Problem 20 C (the pointwise inequality (1) at the conjugate exponent and the reverse Minkowski
+  inequality of Exercise 4.11); Morawetz's method (Exercise 4.12) is the recorded fallback.
+* `LpSpace/Duality` — `MeasureTheory.Lp.toDual 𝕜 p q μ : Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`
+  (the isometry `T` of Theorem 4.10 Step 3), `MeasureTheory.Lp.toDual_surjective` for `1 ≤ p < ∞`
+  on a σ-finite measure (Theorems 4.11 and 4.14), `MeasureTheory.Lp.dualEquiv` (Remarks 4-5),
+  `MeasureTheory.Lp.instIsReflexive` for `1 < p < ∞` (Theorem 4.10) and
+  `MeasureTheory.Lp.not_surjective_toDual_top` (`(L^∞)^* ⊋ L^1`). The surjectivity is proved by
+  the Radon-Nikodym route (Mathlib's `SignedMeasure.withDensityᵥ_rnDeriv_eq`) rather than by the
+  book's reflexivity argument, so that neither it nor the reflexivity instance waits on chapter
+  3's Milman-Pettis theorem, and `p = 1` comes with the same proof; the surface's `theorem_4_10`
+  records the book's route in its step nodes.
+* `LpSpace/KolmogorovRiesz` — `MeasureTheory.Lp.restrictCLM` (the restriction `F|_Ω`) and the
+  Kolmogorov-M. Riesz-Frechet theorem `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`
+  with Corollaries 4.27-4.28, over any finite-dimensional real normed space with a Haar measure
+  and finite-dimensional values, so that chapters 8 (`ℝ`) and 9 (`ℝ^N`) instantiate it directly.
+* `LpSpace/Convergence` — the dominated a.e.-convergent subsequence of Theorem 4.9,
+  `MeasureTheory.Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto`.
+* `EssSupport` — `MeasureTheory.essSupport μ f := (μ.restrict (Function.support f)).support`,
+  Proposition 4.17, Remark 9 and Proposition 4.18 over Mathlib's `Measure.support`.
+* `LpInterpolation` — the `k`-fold Hoelder inequality and the interpolation inequality
+  `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` of Remark 2 / Exercise 4.4, which chapter 9's Corollary 9.10 needs.
+* Appended to `Analysis/Convolution/Lp`: the a.e.-existence clause of Young's inequality
+  (`MemLp.ae_convolutionExistsAt`, Theorem 4.15), the adjoint identity `∫ (f ⋆ g) h = ∫ g (f̌ ⋆ h)`
+  (`integral_convolution_mul`, Proposition 4.16), `L^p` convergence of mollification for the
+  book's mollifier sequences (`tendsto_eLpNorm_convolution_sub`, Theorem 4.22), and convolution
+  with a fixed `L^1` kernel as a bounded operator on `Lp` (`Lp.convolutionCLM`, Corollary 4.28).
+
+Nothing is added to `Analysis/Normed/Lp/SmoothApprox`: Corollary 4.23 is its
+`MeasureTheory.Lp.dense_contDiff_tsupport_subset` as it stands. No `Separable` module: Theorem
+4.13 is Mathlib's `MeasureTheory.Lp.SecondCountableTopology` (`Measure/SeparableMeasure.lean`) and
+the book's "separable measure space" is `MeasurableSpace.CountablyGenerated`.
+
+**Correspondence, section by section.** §4.1 (`Section01`): 4.1-4.5, Lemma 4.1, 4.29. §4.2
+(`Section02`): the two definitions, Remark 1, 4.6, Remark 2 with Exercise 4.4, 4.7-4.9. §4.3
+(`Section03`): 4.10 with its three steps, Remark 3, 4.11, Remark 4, 4.12, the separable-measure
+definition and example, 4.13 and its remark, 4.14, Remarks 5-6, the three facts about `L^∞`,
+Lemma 4.2, Remark 8, Problem 20 (four nodes) and Exercise 4.11. §4.4 (`Section04`): 4.15-4.18,
+Remarks 9-10, `L^p_loc`, 4.19-4.21, mollifiers, 4.22-4.24, 4.33. §4.5 (`Section05`): 4.25-4.28,
+Lemma 4.3, Remarks 12-13 with Exercises 4.33-4.34.
+
+**Not planned** (Comments, quoted without proof, or general-measure-space generality):
+* Theorem 4.30 (Dunford-Pettis): weak compactness in `L^1` iff equi-integrability; needs the
+  weak topology `σ(L^1, L^∞)` through the duality plus Eberlein-Šmulian and a Vitali-type
+  argument; Mathlib has `UnifIntegrable`/`UnifTight` and the Vitali convergence theorem only.
+* Theorem 4.31 (Riesz representation for `C(Ω̄)^*` by signed Borel measures): Mathlib's
+  Riesz-Markov-Kakutani (`rieszMeasure`, `integral_rieszMeasure`) is for positive functionals on
+  `C_c(X, ℝ)`; the signed case needs the Riesz-Kantorovich decomposition of a bounded functional
+  on `C(K)` into positive parts, absent, plus the uniqueness of the measure; well over 300 lines.
+  The isometry `L^1(Ω) → M(Ω̄)` of Comment 3 (Exercise 4.26) is not planned with it.
+* Theorem 4.32 (Riesz-Thorin): Mathlib has Hadamard's three-lines theorem
+  (`Analysis/Complex/Hadamard.lean`) but no interpolation of operators between `L^p` spaces;
+  ≥ 500 lines.
+* Comment 4 (`L^p(Ω; E)` reflexive for reflexive `E`): Mathlib's `Lp E p μ` is vector-valued
+  already; the vector-valued duality is a separate Radon-Nikodym theory (the Radon-Nikodym
+  property of `E`), unnumbered and quoted without proof.
+* Remark 7 (Gelfand: `L^∞ ≅ C(K)`) and Comment 7 (fundamental solutions): discussion.
+* The general-measure-space clauses of Remarks 6 and 8 ("unless `Ω` consists of finitely many
+  atoms"): the atomic/diffuse decomposition of a measure and the intermediate-value property of a
+  diffuse measure are not in Mathlib; the surface states the `Ω ⊆ ℝ^N` case the book proves.
+* Exercises other than 4.4, 4.11, 4.33, 4.34 and Problems other than 20 are out of scope for this
+  round (scope rule 4); 4.12 (Morawetz) is mentioned as a fallback route, 4.30 is subsumed by
+  `theorem_4_33`, 4.26 by Corollary 4.24's proof, 4.32 (3) by `Lp.convolutionCLM`.
+
+**Order of attack** (backbone modules in dependency order, estimated lines):
+1. `Numlib/MeasureTheory/Function/LpInterpolation` — ~150 (independent).
+2. `Numlib/MeasureTheory/Function/LpSpace/Convergence` — ~150 (independent).
+3. `Numlib/MeasureTheory/Function/EssSupport` — ~200 (independent; imports `Mathlib.Analysis.Convolution`).
+4. `Numlib/Analysis/Convolution/Lp`, appended nodes — ~350 (independent of 1-3).
+5. `Numlib/MeasureTheory/Function/LpSpace/Clarkson` — ~900 (independent; Problem 20 A is the
+   ★★★ one-variable calculus, ~300; the reverse Minkowski ~60; the instance ~120).
+6. `Numlib/MeasureTheory/Function/LpSpace/Duality` — ~1100 (independent of 5; the finite-measure
+   Riesz representation ~350, the σ-finite reduction ~150, the `RCLike` plumbing ~100, the
+   isometry ~250, reflexivity ~60, `p = ∞` ~150).
+7. `Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz` — ~800 (after 4, for
+   `Lp.convolutionCLM`; Step 4 is ★★★, ~350).
+Total ≈ 3650 lines of new backbone; the surface (66 nodes, mostly one-line delegations, with
+Remarks 6 and 8, the `L^∞` facts, Exercises 4.33-4.34 and Proposition 4.21 at ★★) ≈ 900.
+
+**Unblocked elsewhere.** `notes/frontier.md` blocker 7 (`L^p`-`L^{p'}` duality) closes:
+`AtkinsonHan.Chapter02.example_2_5_1` (both clauses, from `Lp.toDual_surjective` on
+`volume.restrict Ω` and `Lp.not_surjective_toDual_top`), `AtkinsonHan.Chapter02.example_2_5_3`
+(its only blocker is 2.5.1), and the reflexivity half of `AtkinsonHan.Chapter08.theorem_8_8_5`
+(`Lp.instIsReflexive` with `NormedSpace.isReflexive_of_isClosed`; the step from `L^p` to the
+`ℓ^p`-product `PiLp p (fun _ => Lp ℝ p μ)` still needs "a finite product of reflexive spaces is
+reflexive", which no chapter owns — see the report — and the Poincare half is chapter 9a's
+Corollary 9.19). Within this book: chapter 8 (Propositions 8.1, 8.3, 8.14, Remark 8.4, Theorem
+8.8 (7)), chapter 9 (Proposition 9.3, Corollary 9.10, Theorem 9.16), chapter 11 (§11.3, `ℓ^p` on
+`Measure.count`), chapter 3 (Theorem 3.31's canonical example) consume this chapter's backbone.
+'''

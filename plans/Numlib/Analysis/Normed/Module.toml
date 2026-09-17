@@ -1,4 +1,9 @@
 desc = '''
 Facts about normed modules and their duals that Mathlib lacks (natural home:
-`Mathlib.Analysis.Normed.Module`).
+`Mathlib.Analysis.Normed.Module`): best approximation, norm equivalence, the weak topologies
+(`WeakDual`, `WeakClosed`, `WeakStarMetrizable`), reflexivity (`Reflexive/` — Kakutani, Goldstine,
+Eberlein–Šmulian — and `MilmanPettis`), separability of duals (`DualSeparable`), annihilators of
+subspaces in the dual (`Annihilator`), complemented subspaces (`Complemented`), quotients and
+finite codimension (`Quotient`, `FiniteCodim`). The functional-analysis backbone of Brezis,
+*Functional Analysis, Sobolev Spaces and Partial Differential Equations*, chapters 1–3 and 11.
 '''

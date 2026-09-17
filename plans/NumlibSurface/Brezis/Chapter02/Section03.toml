@@ -1,0 +1,84 @@
+namespace = "Brezis.Chapter02"
+desc = '''
+§2.3, the open mapping theorem and the closed graph theorem, for real Banach spaces. All of it is
+Mathlib (`Mathlib/Analysis/Normed/Operator/Banach.lean`): `ContinuousLinearMap.exists_preimage_norm_le`
+is Theorem 2.6 in the form "every `y` has a preimage of norm `≤ C ‖y‖`", `ContinuousLinearMap.isOpenMap`
+is Remark 5, `ContinuousLinearEquiv.ofBijective` / `LinearEquiv.continuous_symm` is Corollary 2.7,
+`LinearMap.continuous_of_isClosed_graph` is Theorem 2.9. Corollary 2.8 is stated, as in the
+book, for one vector space with two complete norms. The two steps of the proof of Theorem 2.6
+are not nodes here; Step 1 is Mathlib's `ContinuousLinearMap.exists_approx_preimage_norm_le` and
+Step 2, which the proofs of Theorems 2.16 and 2.20 reuse, is the backbone
+`LinearPMap.IsClosed.exists_preimage_norm_le_of_approx` of `Numlib/Analysis/Normed/Operator/Unbounded/Basic`.
+'''
+
+[[node]]
+id = "theorem_2_6"
+kind = "theorem"
+desc = '''Theorem 2.6 (open mapping theorem): for Banach spaces `E F` and a surjective `T : E →L[ℝ] F`,
+`∃ c > 0, Metric.ball (0 : F) c ⊆ T '' Metric.ball 0 1` (the book's (7)). From
+`ContinuousLinearMap.exists_preimage_norm_le`: with its `C > 0` take `c = 1 / C`; for `‖y‖ < c`
+the preimage `x` with `‖x‖ ≤ C ‖y‖ < 1` lies in the unit ball. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.6"
+
+[[node]]
+id = "remark_2_5"
+kind = "theorem"
+desc = '''Remark 5: a surjective bounded operator between Banach spaces is an open map,
+`IsOpenMap T`; Mathlib's `ContinuousLinearMap.isOpenMap`. The book derives it from (7) by
+translation and scaling, which is Mathlib's proof as well. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 5"
+
+[[node]]
+id = "corollary_2_7"
+kind = "theorem"
+desc = '''Corollary 2.7: for Banach spaces `E F` and a bijective `T : E →L[ℝ] F`, the inverse is
+continuous: `∃ S : F →L[ℝ] E, Function.LeftInverse S T ∧ Function.RightInverse S T`, together
+with the book's quantitative form `∃ c > 0, ∀ x, ‖x‖ ≤ (1 / c) * ‖T x‖`. Mathlib:
+`ContinuousLinearEquiv.ofBijective T (ker_eq_bot) (range_eq_top)` gives `S := e.symm`
+(`LinearEquiv.continuous_symm` is the underlying theorem); the estimate is
+`ContinuousLinearMap.antilipschitz_of_injective_of_isClosed_range` or `S.le_opNorm`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.7"
+
+[[node]]
+id = "corollary_2_8"
+kind = "theorem"
+desc = '''Corollary 2.8 (two complete norms): for a real vector space `E` (`[AddCommGroup E] [Module ℝ E]`)
+with two normed-group structures `n₁ n₂ : NormedAddCommGroup E`, both compatible with the module
+structure (`@NormedSpace ℝ E _ n₁`, `@NormedSpace ℝ E _ n₂`) and both complete
+(`@CompleteSpace E n₁.toUniformSpace`, `@CompleteSpace E n₂.toUniformSpace`), if
+`∃ C, ∀ x, @norm E n₂.toNorm x ≤ C * @norm E n₁.toNorm x` then
+`∃ c > 0, ∀ x, @norm E n₁.toNorm x ≤ c * @norm E n₂.toNorm x`. Proof: the book's — Corollary
+2.7 for the identity `(E, n₁) → (E, n₂)`, which is continuous by the hypothesis
+(`LinearMap.continuous_of_bound`) and bijective; in Lean, introduce two type synonyms
+(`def E₁ := E`, `def E₂ := E` with the two structures as instances) so that
+`ContinuousLinearEquiv.ofBijective` applies to `LinearEquiv.refl` transported between them. ★★,
+about 60 lines of instance management; the pattern is `Mathlib/Analysis/Normed/Module/FiniteDimension.lean`'s
+remark that Mathlib does not state "two norms on one type" results, and
+`Numlib/Analysis/Normed/Module/NormEquivalence.lean`, which states its second norm as a
+`Seminorm ℝ E` for the same reason — but a seminorm does not carry completeness, so here the
+two-instance form is the faithful one.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.8"
+
+[[node]]
+id = "theorem_2_9"
+kind = "theorem"
+desc = '''Theorem 2.9 (closed graph theorem): for Banach spaces `E F` and a linear `T : E →ₗ[ℝ] F` with
+`IsClosed (T.graph : Set (E × F))`, `Continuous T`. Mathlib's `LinearMap.continuous_of_isClosed_graph`
+verbatim (whose proof is the book's: the graph norm is complete, and `LinearEquiv.continuous_symm`
+compares it with the norm of `E`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.9"
+
+[[node]]
+id = "remark_2_6"
+kind = "theorem"
+desc = '''Remark 6, the converse: for normed spaces and a linear `T : E →ₗ[ℝ] F`, `Continuous T → IsClosed (T.graph : Set (E × F))`.
+From Mathlib's `Continuous.isClosed_graph` (`Function.graph`) after identifying
+`(T.graph : Set (E × F))` with `Function.graph T` (`LinearMap.mem_graph_iff`), or directly as the
+preimage of the diagonal under the continuous `(x, y) ↦ (T x, y)`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 6"

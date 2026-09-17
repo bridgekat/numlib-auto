@@ -1,0 +1,104 @@
+desc = '''
+Poincaré's inequality on `W_0^{1,p}(Ω)`: Brezis, *Functional Analysis, Sobolev Spaces and
+Partial Differential Equations*, Corollary 9.19 and the second clause of Remark 21 — for
+`1 ≤ p < ∞` and `Ω` bounded (or merely with a bounded projection on some axis),
+`‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}` for all `u ∈ W_0^{1,p}(Ω)`, so that `‖∇u‖_p` is a norm on
+`W_0^{1,p}(Ω)` equivalent to `‖u‖_{W^{1,p}}`, and on `H_0^1(Ω)` the form `∑ ∫ ∂_i u ∂_i v` is an
+inner product inducing an equivalent norm. Imports `Cutoff.lean` and `Chart.lean` (for the
+last-coordinate Fubini splitting) only; the gradient norm `SobolevMultiIndex.gradNorm` it is
+stated with is `MultiIndex.lean`'s.
+
+Mathlib's `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_le` (`Analysis/FunctionalSpaces/SobolevInequality.lean`)
+is a Poincaré-type inequality `‖u‖_q ≤ C(s, p, q) ‖∇u‖_p` for compactly supported `C^1` functions
+with support in a bounded `s`, valid for `1 ≤ p < N` and `q ≤ p*`; with `q = p` and the density
+of the test functions it gives Corollary 9.19 for `p < N` at once, with Mathlib's constant. It
+does not cover `p ≥ N` — in particular not `H_0^1(Ω)` in dimension `N = 2`, the finite-element
+case — which is why the elementary slab argument below is the primary route; the `p < N` case
+may be proved either way.
+
+This module is deliberately separate from `Zero.lean` and placed *before* the extension
+theorem: the book states no proof of Corollary 9.19 (in the printed text it follows Remark 20,
+which routes it through the Sobolev embedding of `W_0^{1,p}`), but the inequality needs neither
+the extension operator nor compactness — `notes/frontier.md`, blocker 1, calls it "the cheap
+first move". The proof: for a test function `u` and `Ω ⊆ {a < x_N < b}`,
+`u(x', x_N) = ∫_a^{x_N} ∂_N u(x', t) dt`, so `|u(x)| ≤ ∫_a^b |∂_N u(x', t)| dt`, Hölder gives
+`|u(x)|^p ≤ (b − a)^{p−1} ∫_a^b |∂_N u(x', t)|^p dt`, and integrating over `x` (Fubini,
+`EuclideanSpace.measurePreserving_lastInit`) `‖u‖_p^p ≤ (b − a)^p ‖∂_N u‖_p^p`; then density, the
+test functions being dense in `W_0^{1,p}(Ω)` by definition and both sides of the inequality
+being continuous on `W^{1,p}(Ω)`. The constant is `b − a`, the width of the slab, hence
+`2R` for `Ω ⊆ ball 0 R`; the book says only "`C` depending on `Ω` and `p`". A finite measure of
+`Ω` also suffices (Remark 21, first clause), but that needs the Sobolev embedding on `W_0^{1,p}`
+and is in `Zero.lean`.
+
+Consumers: `Zero.lean` (the bounded-`Ω` clause `f_0 = 0` of Proposition 9.20, the dual
+inclusions), chapter 9b (Theorem 9.21 and every coercivity argument of §9.5), and — at `p = 2` —
+the five nodes of `AtkinsonHan.Chapter08.Section08` and the Poincaré–Friedrichs inequality of
+`AtkinsonHan.Chapter07.example_7_3_15` in its `H_0^1` clause. About 500 lines.
+'''
+
+[[node]]
+id = "eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab"
+kind = "theorem"
+desc = '''**Poincaré's inequality for a compactly supported `C^1` function in a slab**: for
+`1 ≤ p < ∞`, `u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ` of class `C^1` with
+`tsupport u ⊆ {x | a < x (Fin.last d) ∧ x (Fin.last d) < b}`,
+`eLpNorm u p volume ≤ ENNReal.ofReal (b − a) * eLpNorm (fun x ↦ fderiv ℝ u x (EuclideanSpace.single (Fin.last d) 1)) p volume`.
+The fundamental theorem of calculus along the last coordinate from `a` (where `u = 0`), Hölder on
+`[a, b]`, and the Fubini splitting `EuclideanSpace.measurePreserving_lastInit`; the case `p = 1` is
+the same without Hölder. The argument of `notes/frontier.md` blocker 1 ("`|u(x)| ≤ ∫ |∂_1 u|`
+along a line gives it by Fubini") and of `AtkinsonHan.Chapter08.lemma_8_8_1`'s note. ★★,
+~200 lines. Corollary: the same with `fderiv ℝ u x` in place of the directional derivative
+(`‖A e‖ ≤ ‖A‖` for the unit vector `e`).'''
+deps = ["EuclideanSpace.measurePreserving_lastInit"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19 and Remark 21"
+
+[[node]]
+id = "SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab"
+kind = "theorem"
+desc = '''**Corollary 9.19 / Remark 21 (bounded projection), typed**: for `1 ≤ p < ∞`,
+`Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))` with `(Ω : Set _) ⊆ {x | a < x (Fin.last d) ∧ x (Fin.last d) < b}`,
+and `u ∈ SobolevEuclideanZero (d + 1) 1 p Ω`:
+`eLpNorm (fn u) p (volume.restrict Ω) ≤ ENNReal.ofReal (b − a) * eLpNorm (weakDeriv u e_N) p (volume.restrict Ω)`,
+where `e_N` is the multi-index `Pi.single (Fin.last d) 1`. Density: `u` is a limit of test
+functions (`SobolevMultiIndexZero` is the closure of `SobolevMultiIndex.testFunctions`), for
+which `eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab` applies (extend by zero outside `Ω`:
+a test function on `Ω` is a `C^1` function on `ℝ^N` supported in the slab), and both sides are
+continuous in the `W^{1,p}` norm (`fn` and `weakDeriv · α` are the coordinates of the
+`PiLp` product, each `1`-Lipschitz). ★★, ~120 lines. Hence "Poincaré's inequality remains
+true … if `Ω` has a bounded projection on some axis" ([brezis2011functional] Remark 21) for
+the last axis; any other axis by relabelling coordinates (a `LinearIsometryEquiv` permuting the
+basis, under which `SobolevEuclidean` is invariant — see `HasWeakIteratedFDerivOn.comp_affineEquiv`
+in `Calculus.lean` — or simply restate for `Fin.last d` replaced by an arbitrary `i : Fin (d+1)`,
+which the proof supports at no cost: do that).'''
+deps = ["eLpNorm_le_eLpNorm_fderiv_apply_of_subset_slab", "SobolevEuclideanZero", "SobolevMultiIndexZero", "SobolevMultiIndex.mem_testFunctions"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19 and Remark 21"
+
+[[node]]
+id = "SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded"
+kind = "theorem"
+desc = '''**Corollary 9.19 (Poincaré's inequality)**: for `1 ≤ p < ∞` and a bounded open `Ω`
+(`Bornology.IsBounded (Ω : Set _)`, `Ω ⊆ ball 0 R`), every `u ∈ SobolevEuclideanZero N 1 p Ω`
+satisfies `eLpNorm (fn u) p (volume.restrict Ω) ≤ ENNReal.ofReal (2 * R) * eLpNorm (weakDeriv u e_N) p (volume.restrict Ω)`,
+in particular `≤ C ‖∇u‖_{L^p(Ω)}` for any reading of the gradient norm dominating one partial
+derivative; the book's `‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}` with `C = 2R`. From the slab version
+with `a = −R`, `b = R`. Stated for `N = d + 1 ≥ 1`; for `N = 0` the statement is vacuous. ★,
+~30 lines.'''
+deps = ["SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "SobolevEuclideanZero.norm_le_gradNorm"
+kind = "theorem"
+desc = '''**The gradient norm is an equivalent norm on `W_0^{1,p}(Ω)`, `Ω` bounded**
+([brezis2011functional] Corollary 9.19, "In particular, the expression `‖∇u‖_{L^p(Ω)}` is a norm
+on `W_0^{1,p}(Ω)`, and it is equivalent to the norm `‖u‖_{W^{1,p}}`"): for `1 ≤ p < ∞`,
+`Ω ⊆ ball 0 R` and `u ∈ SobolevEuclideanZero N 1 p Ω`,
+`‖u‖ ≤ (1 + (2 R) ^ p) ^ (1/p) * SobolevMultiIndex.gradNorm u` (the gradient norm of
+`MultiIndex.lean`, read on the abbrev), from
+`SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded` and `SobolevMultiIndex.norm_eq_gradNorm`;
+with `gradNorm_le_norm` this is the two-sided equivalence, and `gradNorm u = 0 → u = 0` on
+`W_0^{1,p}(Ω)`. At `p = 2` it is the coercivity `‖u‖_{H^1}^2 ≤ (1 + 4R^2) gradInner u u` of
+the Dirichlet form on `H_0^1(Ω)`, which chapter 9b's Theorem 9.21 consumes, and it closes, at
+`p = 2`, the missing norm of `AtkinsonHan.Chapter08.lemma_8_8_1`–`theorem_8_8_5`. ★, ~40 lines.'''
+deps = ["SobolevMultiIndex.gradNorm", "SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"

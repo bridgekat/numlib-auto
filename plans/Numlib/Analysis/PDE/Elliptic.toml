@@ -1,0 +1,95 @@
+desc = '''
+Second-order linear elliptic boundary value problems in weak form on an open set `Ω ⊆ ℝ^N`: the
+variational formulation of the Dirichlet and Neumann problems for `-Δu + u = f` and for the
+general operator `-∑ ∂_j (a_ij ∂_i u) + ∑ a_i ∂_i u + a_0 u`, existence and uniqueness by
+Lax–Milgram and Stampacchia, the Fredholm alternative, `H²` and `H^{m+2}` regularity by
+Nirenberg's method of translations, the weak maximum principle by Stampacchia's truncation, and
+the spectral decomposition of `-Δ` with Dirichlet condition. This is Chapter 9, §9.5–9.8, of
+Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Springer,
+2011 ([brezis2011functional]); the one-dimensional theory of its Chapter 8 is
+`Numlib/Variational/EllipticInterval` and its children, whose shapes are followed here.
+
+## The setting
+
+Everything is on `E = EuclideanSpace ℝ (Fin N)` with Lebesgue measure and the standard basis
+`(EuclideanSpace.basisFun (Fin N) ℝ).toBasis`, in the multi-index Sobolev spaces of
+`Numlib/Analysis/Sobolev/MultiIndex`:
+
+* `H^k(Ω)` is `SobolevEuclidean N k 2 Ω := SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume`,
+  a Hilbert space on the nose (`SobolevMultiIndex.inner_eq`), and `H^1_0(Ω)` is
+  `SobolevEuclideanZero N 1 2 Ω := SobolevMultiIndexZero …`, a closed subspace; both are the
+  `abbrev`s planned by chapter 9a in `plans/Numlib/Analysis/Sobolev/MultiIndex.toml`, and every
+  chapter-9a theorem is stated on them. The two are the types the Brezis surface calls `H^1(Ω)` and
+  `H^1_0(Ω)` (planning brief D8), and they are the types on which the Atkinson–Han nodes
+  `example_8_3_5`, `example_8_2_6` and `example_11_*` become provable once restated.
+* A bilinear form is a `SesqForm ℝ (H^1(Ω))` assembled from `L²(Ω)`-pairings of weak derivatives
+  through multiplication operators, exactly as `EllipticInterval.form` is assembled on
+  `H^1(a, b)`; a weak problem is `IsGalerkinSolution a ℓ K u` of `Numlib/Variational/Galerkin`
+  with `K = H^1_0(Ω)` (Dirichlet) or `K = ⊤` (Neumann). Nothing distinguishes the continuous
+  problem from a Galerkin discretization, so Céa's lemma and the stability estimates of
+  `Numlib/Variational` apply to both.
+* The theory is not generalized to an arbitrary finite-dimensional `E` with an arbitrary basis
+  `b`. The forms and the existence theory would generalize for free, but the regularity theory
+  uses translations, reflections and charts in coordinates, and `Numlib/Analysis/Sobolev/Domain`
+  already fixes `EuclideanSpace ℝ (Fin (d + 1))` for the boundary regularity of a domain. A later
+  pass may generalize `Dirichlet`, `MaximumPrinciple` and `Spectral` to `(E, b, μ)` if a consumer
+  needs it; `Regularity` stays in coordinates.
+
+## The modules
+
+* `Dirichlet` — the forms (`dirichletForm = ∫ ∇u·∇v`, `laplaceForm = ∫ ∇u·∇v + ∫ uv`, the general
+  `generalForm A a₁ a₀`), the ellipticity condition `IsUniformlyElliptic`, the load `∫ f v`,
+  Gårding's inequality, the solution operator `solutionOperator : L²(Ω) → L²(Ω)` and its
+  compactness on a bounded `Ω`, Theorem 9.21 (Dirichlet's principle), Proposition 9.22
+  (inhomogeneous Dirichlet data), Example 3 (general operator, coercive case), Theorem 9.23 (the
+  Fredholm alternative), Proposition 9.24 (Neumann), and the two bridges of Chapter 8's programme:
+  a classical solution is a weak solution (Step A) and a `C²` weak solution is classical (Step D).
+* `Regularity` — Theorem 9.25 (`H²` and `H^{m+2}` regularity of the weak Dirichlet solution on a
+  `C²`/`C^{m+2}` chart domain with bounded boundary, and on the half space) by the method of
+  translations, in the book's four cases: `ℝ^N` (case A), the half space with Lemmas 9.6–9.7
+  (case B), interior estimates (case C₁, which is Remark 25's `H^{m+2}_loc` regularity on an
+  arbitrary open set, stated first because `Spectral` needs only it), and boundary estimates
+  through a `C²` chart with Lemma 9.8 (case C₂). Theorem 9.26 (Neumann) and Remark 24 (general
+  operator) are planned with a route through the same estimates, parametrized by the test space.
+* `MaximumPrinciple` — Theorem 9.27 (Stampacchia's truncation, `|Ω| < ∞` and `|Ω| = ∞`),
+  Corollary 9.28, Remark 27 (the classical-solution proof, which extends to general operators),
+  Proposition 9.29 (the drift-free case the book proves, and the general case by the route of
+  Gilbarg–Trudinger, Theorem 8.1), Proposition 9.30 (Neumann).
+* `Spectral` — Theorem 9.31 (the Dirichlet eigenfunctions of `-Δ` on a bounded open set form a
+  Hilbert basis of `L²(Ω)`, with `λ_n → ∞` and `e_n ∈ H^1_0(Ω) ∩ C^∞(Ω)`), built for a general
+  symmetric coercive form on `H^1_0(Ω)` so that Remark 30 (general elliptic operator) is the
+  same theorem; Remark 28 (the basis of `H^1_0`), Remark 29 (smooth up to the boundary on a
+  `C^∞` domain).
+
+## What is consumed, and what is not proved
+
+The Sobolev structure theory of §9.1–9.4 is the backbone of `Numlib/Analysis/Sobolev/`, planned by
+the chapter-9a agent: the chain rule and the product rule (`Mollification`), the cut-off and the
+zero extension (`Cutoff`), the difference-quotient characterization (`Friedrichs`), the change of
+variables under a diffeomorphism (`Calculus`), the extension operator and the density up to the
+boundary (`Extension`), the embeddings (`Embedding`), Rellich–Kondrachov (`Compactness`), the
+boundary characterization of `W^{1,p}_0` and Poincaré's inequality (`Zero`), and the chart
+domains with their partitions of unity (`Chart`). The dependencies on those modules are named
+in the nodes below by their planned identifiers.
+
+No trace, no surface measure, no Green's formula with a boundary term: everything that reads a
+function on `∂Ω` is stated for a function continuous up to the boundary, as the book does. The
+Neumann boundary condition is therefore never recovered from the weak formulation (the book's
+Step D of Example 4 needs Green's formula), and the classical-to-weak direction for the Neumann
+problem is not stated; `notes/frontier.md` blocker 2 records the gap.
+
+## Order of attack
+
+`Dirichlet` (≈ 2000 lines: forms and load 400, existence 300, Step A/D 400, solution operator and
+compactness 250, Gårding and general forms 350, Fredholm 500) → `MaximumPrinciple` (≈ 2000:
+truncation engine 300, Theorem 9.27 and Corollary 9.28 500, footnote 39 and the `H^1_0`
+variants 350, Proposition 9.29 drift-free 550, Proposition 9.30 150, Remark 27 250; the
+general-drift Proposition 9.29 is a further 600) → `Regularity` cases A and C₁ (≈ 1300: difference
+quotients 300, case A 350, higher order 200, local spaces and interior regularity 450) →
+`Spectral` (≈ 1500: infinite dimension 100, operator properties 350, the basis 350, smoothness
+and the pointwise equation 400, Remarks 28–30 450) → `Regularity` cases B and C₂ (≈ 3500:
+half space 900, Lemma 9.8 450, the cylinder estimate 850, transfer and assembly 900, higher
+order and the `C²`/`C^∞` clauses 400; Theorem 9.26 and Remark 24 a further 1200). Cases A and
+C₁ are what `Spectral` and Chapter 10 (the heat and wave equations, which need Remark 25 and
+Theorem 9.25) consume first; cases B and C₂ are the long tail.
+'''

@@ -1,4 +1,8 @@
 desc = '''
 Mathlib-shaped facts about bounded operators between normed spaces that the project needed
-(natural home: `Mathlib.Analysis.Normed.Operator`).
+(natural home: `Mathlib.Analysis.Normed.Operator`): Banach–Steinhaus corollaries, compact
+operators and the Riesz theory (`Compact`, `Compact/Banach`, `Riesz`), embeddings, scaling,
+multilinear maps, and unbounded operators between Banach spaces with their adjoints and the
+closed range theorem (`Unbounded/`; Brezis, *Functional Analysis, Sobolev Spaces and Partial
+Differential Equations*, §2.6–2.7).
 '''

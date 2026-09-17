@@ -1,0 +1,56 @@
+desc = '''
+Unbounded (partially defined) linear operators between Banach spaces, `A : D(A) ⊆ E → F`, as
+Mathlib's `LinearPMap` (`E →ₗ.[𝕜] F`), and their Banach-space adjoints (natural home:
+`Mathlib.Analysis.Normed.Operator.Unbounded`, beside Mathlib's Hilbert-space theory in
+`Mathlib/Analysis/InnerProductSpace/LinearPMap.lean`).
+
+Mathlib has the topological vocabulary (`LinearPMap.IsClosed`, `IsClosable`, `closure`, `graph`,
+`HasCore`, in `Mathlib/Topology/Algebra/Module/LinearPMap.lean`) and the adjoint `T†` of an
+operator on a Hilbert space. It has no Banach-space adjoint `A* : D(A*) ⊆ F* → E*`, no closed
+range theorem, and no open-mapping argument for closed (rather than bounded) operators. The three
+modules here fill that, in dependency order:
+
+* `Basic` — closed operators between normed spaces without any dual: the sequential criterion for
+  closedness, the closedness of the kernel, the graph as a Banach space, the second step of the
+  open mapping theorem for a *closed* operator (an approximate right inverse with norm control
+  gives an exact one), and the closed-range criterion `R(A)` closed iff
+  `dist(u, N(A)) ≤ C ‖A u‖` on `D(A)`, first for bounded operators through the normed quotient
+  `E ⧸ ker T` and then for closed ones through the graph. Imports only Mathlib.
+* `Adjoint` — the bounded Banach adjoint `ContinuousLinearMap.strongDualMap` (`T* v = v ∘ T`) and
+  the unbounded one `LinearPMap.strongDualAdjoint` with its domain
+  `{v ∈ F* | ∃ c, ∀ u ∈ D(A), ‖⟨v, A u⟩‖ ≤ c ‖u‖}`, the fundamental relation
+  `⟨A* v, u⟩ = ⟨v, A u⟩`, closedness of `A*`, the graph relation `I[G(A*)] = G(A)^⊥`, the kernel–
+  range orthogonality relations `N(A) = R(A*)^⊥`, `N(A*) = R(A)^⊥`, `N(A*)^⊥ = closure R(A)`, and
+  the weak-∗ statements (`D(A*)` is weak-∗ dense, `N(A)^⊥` is the weak-∗ closure of `R(A*)`).
+  Imports the annihilators of `Numlib/Analysis/Normed/Module/Annihilator` (chapter 1 of
+  [brezis2011functional]).
+* `ClosedRange` — Banach's closed range theorem for a densely defined closed operator (`R(A)`
+  closed iff `R(A*)` closed iff `R(A) = N(A*)^⊥` iff `R(A*) = N(A)^⊥`), the surjectivity criteria
+  by a priori estimates (`R(A) = F` iff `‖v‖ ≤ C ‖A* v‖` on `D(A*)`, and the dual statement), and
+  their bounded-operator specializations for `strongDualMap`.
+* `Reflexive` — the adjoint between reflexive spaces ([brezis2011functional] Theorem 3.24):
+  `D(A*)` is dense and `A** = A`; imports `Adjoint` and the reflexivity module.
+
+The scalar field is `RCLike 𝕜` wherever Hahn–Banach enters (everything in `Adjoint` and
+`ClosedRange`; `strongDualMap` itself and its norm bound are over any `NontriviallyNormedField`)
+and `NontriviallyNormedField 𝕜` in `Basic`.
+
+Conventions. The range of `A : E →ₗ.[𝕜] F` is `LinearMap.range A.toFun : Submodule 𝕜 F` (Mathlib
+has no `LinearPMap.range`), the kernel is `A.ker : Submodule 𝕜 E`, closedness is `A.IsClosed`
+(closedness of `A.graph` in `E × F`), density of the domain is `Dense (A.domain : Set E)`. The
+adjoint is total, with the junk value `0` on its domain when `D(A)` is not dense, exactly as
+Mathlib's `LinearPMap.adjoint`; every statement about its values carries the hypothesis
+`Dense (A.domain : Set E)`. The domain of `A` with its graph norm is never a new type: where the
+graph norm is needed the Banach space `↥A.graph` (a closed subspace of `E × F` with the sup norm,
+equivalent to `‖u‖ + ‖A u‖`) is used, and `A` becomes the bounded operator
+`(ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL`. That spelling is internal to the proofs
+here (the closed range criterion). The Hilbert-space theory of chapter 7
+(`Numlib/Analysis/InnerProductSpace/MaximalMonotone`) spells `D(A)` with the *Hilbert* graph norm
+`(‖u‖² + ‖A u‖²)^{1/2}` as `LinearPMap.PowDomain A 1`, a closed submodule of `PiLp 2 (Fin 2 → H)`
+that also gives `D(A^k)`; the two are linearly homeomorphic, not equal, and no consumer needs
+both. If a Banach-space semigroup theory ever wants `D(A^k)` with the `ℓ¹`-graph norm, the
+`PowDomain` construction with `PiLp 1` in place of `PiLp 2` is the one to generalize.
+
+Source: [brezis2011functional], §2.6–§2.7, with the closed-range criterion of Exercise 2.14 and the
+open-mapping step of the proof of Theorem 2.6.
+'''

@@ -1,0 +1,84 @@
+namespace = "Bochner"
+desc = '''
+The space-time bridge: from a curve `t ↦ u(t)` that is smooth into the Sobolev spaces `H^m(Ω)` to
+a function `U(x, t)` that is smooth on `Ω × s` with every derivative extending continuously to
+`closure Ω × s` — the sense of `C^∞(Ω̄ × [ε, ∞))` in [brezis2011functional] Theorems 10.1 (5),
+10.2 (c) and 10.8, fixed by footnote 16 of chapter 9. The vocabulary (`ContDiffOnThrough`,
+`MemLpThrough`, `ContDiffOnClosure`) is the parent module `Numlib/Analysis/PDE/Bochner`; this
+child adds the two theorems that need chapter 9a's embedding corollaries on a domain
+(`Numlib/Analysis/Sobolev/EmbeddingDomain`: the `p > N` case of Corollary 9.14 with its sup bound
+`‖ũ‖_∞ ≤ C ‖u‖`, and the integer-exponent `C^k(Ω̄)` form of Corollary 9.15,
+`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt`, stated for `IsSobolevExtensionDomain`
+domains — `C¹` chart domains with bounded boundary, and the half space).
+
+Imports: the parent `Bochner`, `Numlib/Analysis/Sobolev/EmbeddingDomain` (hence `Embedding`,
+`Extension`, `Chart`, `Cutoff`, …). Consumers: `Numlib/Analysis/PDE/Heat` (Theorem 10.1 (5),
+Corollary 10.5, Theorem 10.2 (c)) and `Numlib/Analysis/PDE/Wave` (Theorem 10.8); nothing else, and
+no surface node of chapter 10 other than those, so a delay here blocks only the classical-smoothness
+clauses. Nothing in `Heat/Classical` or `Heat/MaximumPrinciple` needs this module.
+
+The genuinely hard node is `contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough` (★★★): joint
+continuity of `(x,t) ↦ ∂ₓ^α u^{(j)}(t)(x)` comes from continuity of `t ↦ u^{(j)}(t)` into `H^m`
+composed with the bounded embedding into `C^k(Ω̄)`, and joint differentiability of all orders from
+the existence and joint continuity of all partial derivatives — a general calculus fact
+("`C^k` on a product from jointly continuous partials of order `≤ k`") that is the bulk of the
+work and belongs in `Numlib/Analysis/Calculus` in its own right. Its `k = 0` case,
+`continuousOn_spaceTime_of_contDiffOnThrough`, is what Corollary 10.5 (`u ∈ C(Q̄)`) needs and is
+much cheaper (★★).
+'''
+
+[[node]]
+id = "continuousOn_spaceTime_of_contDiffOnThrough"
+kind = "theorem"
+desc = '''**Joint continuity from continuity into `H^m(Ω)`** (the `k = 0` bridge). Let
+`Ω : Opens (EuclideanSpace ℝ (Fin N))` with `IsSobolevExtensionDomain N q Ω` for every `q`
+(chapter 9a's hypothesis for Corollaries 9.14–9.15: a `C¹` chart domain with bounded boundary, or
+the half space), `s ⊆ ℝ` open, and `u : ℝ → L²(Ω)` with
+`ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N m 2 Ω →L[ℝ] L²(Ω)) 0 u s` for some `m` with `N/2 < m`. Then there is
+`U : EuclideanSpace ℝ (Fin N) × ℝ → ℝ`, continuous on `closure Ω ×ˢ s`, with
+`(fun x ↦ U (x, t)) =ᵐ[volume.restrict Ω] u t` for every `t ∈ s`.
+
+Proof: Corollary 9.14's `p > N` case applied to `∂^β w`, `|β| ≤ m - 1` (or directly
+`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt` at `k = 0`) gives the continuous representative on `closure Ω` with the bound
+`sup |ũ| ≤ C ‖w‖_{H^m}`; the representatives are linear in `w` (continuous representatives on an
+open set are unique), so `t ↦ ũ(t)` is a continuous curve of bounded continuous functions on
+`closure Ω`, and such a curve is jointly continuous (`BoundedContinuousFunction`, or
+`SobolevEuclidean.toContinuousMapL` into `C(closure Ω, ℝ)` for bounded `Ω`, plus
+`ContinuousMap.continuous_eval`-type lemmas). Consumer: `Heat.IsSolution.continuousOn_spaceTime`
+(Corollary 10.5). ★★, ~150 lines once the corollary exists.'''
+deps = ["ContDiffOnThrough", "SobolevMultiIndex.weakDerivL", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt", "IsSobolevExtensionDomain"]
+
+[[node]]
+id = "contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough"
+kind = "theorem"
+desc = '''**Joint smoothness from smoothness into every `H^m(Ω)`** (the space-time bridge). Same
+setting as `continuousOn_spaceTime_of_contDiffOnThrough`; assume
+`∀ m, ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N m 2 Ω →L[ℝ] L²(Ω)) ⊤ u s` (`u ∈ C^∞(s; H^m(Ω))` for every `m`).
+Then there is `U` with `(fun x ↦ U (x, t)) =ᵐ[volume.restrict Ω] u t` for `t ∈ s` and
+`ContDiffOnClosure ⊤ U (Ω ×ˢ s)`: `C^∞` on `Ω × s`, every derivative extending continuously to
+`closure Ω × s` — the book's `u ∈ C^∞(Ω̄ × [ε, ∞))` once `s = (0,∞)` and `ContDiffOnClosure.mono`
+is applied to `Ω ×ˢ Ioi ε`.
+
+Proof sketch (the book's, lines 12205–12215, made explicit). Fix `m₀` and choose `m > m₀ + N/2`.
+Corollary 9.15 gives, linearly and boundedly, `C^{m₀}(Ω̄)` representatives of `H^m` functions with
+`sup_{|α| ≤ m₀} ‖D^α v‖_∞ ≤ C ‖v‖_{H^m}` (the bound from the `p > N` case of 9.14 applied to the
+`∂^β w`; this is the integer-exponent form of 9.15 with its sup clause,
+`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt` of `EmbeddingDomain`). Let
+`v : ℝ → H^m(Ω)` be the lift; its time derivatives `v^{(j)}` are again lifts of `u^{(j)}`
+(`ContDiffOnThrough.derivWithin_eq`; the lifts through the injective `fnL` are unique).
+Define `U (x, t) := (rep (v t)) x`. For `j + |α| ≤ m₀` the candidate partial derivative
+`∂ₜ^j ∂ₓ^α U (x,t) = (D^α rep (v^{(j)} t)) x` is jointly continuous by the argument of
+`continuousOn_spaceTime_of_contDiffOnThrough`; a function on `E × ℝ` all of whose partial
+derivatives up to order `m₀` exist and are jointly continuous is `C^{m₀}` (build the
+`HasFTaylorSeriesUpToOn` from the partials; the `x`-derivatives come from `rep (v t) ∈ C^{m₀}(Ω)`
+and the `t`-derivatives from `HasDerivAt` of `t ↦ rep (v t) x` — evaluation at `x` is a bounded
+functional on bounded continuous functions, so it commutes with `d/dt`). The continuous extension
+to the closure of each derivative is the continuous extension of `D^α rep (v^{(j)} t)` to `Ω̄`,
+jointly continuous by the same argument. Since `m₀` is arbitrary, `C^∞`.
+
+Consumers: `Heat.IsSolution.contDiffOnClosure_spaceTime` (Theorem 10.1 (5)),
+`Heat.IsSolution.contDiffOnClosure_spaceTime_Ici` (Theorem 10.2 (c)),
+`Wave.IsSolution.contDiffOnClosure_spaceTime` (Theorem 10.8). ★★★, 600–900 lines; the
+construction of a `C^k` function from jointly continuous partials on a product is the bulk and is
+a candidate for `Numlib/Analysis/Calculus/` in its own right.'''
+deps = ["ContDiffOnThrough", "ContDiffOnThrough.derivWithin_eq", "_root_.ContDiffOnClosure", "continuousOn_spaceTime_of_contDiffOnThrough", "SobolevMultiIndex.weakDerivL", "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "IsSobolevExtensionDomain"]

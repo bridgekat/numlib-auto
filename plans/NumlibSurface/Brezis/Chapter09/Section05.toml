@@ -1,0 +1,336 @@
+namespace = "Brezis.Chapter09"
+desc = '''
+Brezis §9.5, variational formulation of some boundary value problems: the homogeneous Dirichlet
+problem for `-Δu + u = f` (Example 1, Theorem 9.21), the inhomogeneous Dirichlet condition
+(Example 2, Proposition 9.22), general second-order elliptic equations (Example 3, Theorem 9.23,
+Remark 23), the homogeneous Neumann problem (Example 4, Proposition 9.24) and unbounded domains
+(Example 5). Every statement is over `H^1(Ω) = SobolevEuclidean N 1 2 Ω` and
+`H^1_0(Ω) = SobolevEuclideanZero N 1 2 Ω` of `Numlib/Analysis/PDE/Elliptic/Dirichlet`, the
+book's integrals are the forms `Elliptic.laplaceForm`, `Elliptic.generalForm` and the load
+`Elliptic.load` unfolded by their `_apply` lemmas, and the weak problems are `IsGalerkinSolution`;
+the book's definitions are restated here with their integrals and bridged by `_iff` lemmas.
+
+The four "Steps" of Example 1 are: A, a classical solution is a weak one
+(`example_9_1_stepA`); B, Theorem 9.21; C, regularity, which is §9.6; D, a `C²` weak solution is
+classical (`example_9_1_stepD`). Example 4's Step A (Green's formula) and the boundary half of
+its Step D need the surface measure on `Γ` and are blocked (`notes/frontier.md` blocker 2);
+its interior half is `example_9_4_stepD_interior`.
+
+Not included as nodes: the discussion opening Example 5 (the condition at infinity "translates"
+into `u ∈ H^1`), and footnote 22 (traces); Comment 10 (a), the duality method for `f ∈ L¹`, is a
+Comment and is listed in the chapter description.
+'''
+
+[[node]]
+id = "IsClassicalSolutionDirichlet"
+kind = "definition"
+desc = '''Definition (§9.5, Example 1): a classical solution of (31), `-Δu + u = f` in `Ω`, `u = 0`
+on `Γ = ∂Ω`, for `Ω ⊆ ℝ^N` open and bounded: a function `u : EuclideanSpace ℝ (Fin N) → ℝ` with
+`ContDiffOnClosure 2 u Ω` (the book's `u ∈ C²(Ω̄)`, chapter 9's footnote 16: `C²` on `Ω` with
+the derivatives of order `≤ 2` extending continuously to `closure Ω` —
+`Numlib/Analysis/Calculus/ContDiffOnClosure`; Mathlib's `ContDiffOn ℝ 2 u (closure Ω)` is a
+stronger hypothesis on an irregular `Ω` and would weaken the "classical ⇒ weak" theorems that
+consume this definition), `-Δ u x + u x = f x` for every `x ∈ Ω` with Mathlib's Laplacian `Δ`
+(`InnerProductSpace.instLaplacian`), and `u x = 0` for every `x ∈ frontier Ω`. The datum `f` is a
+function on `ℝ^N`, read on `Ω`. The same reading of `C^k(Ω̄)` applies to every classical-solution
+definition of this section (Examples 2–4).'''
+deps = ["ContDiffOnClosure"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "IsWeakSolutionDirichlet"
+kind = "definition"
+desc = '''Definition (§9.5, Example 1): a weak solution of (31): `u ∈ H^1_0(Ω)` with
+`∫_Ω ∑ᵢ ∂ᵢu ∂ᵢv + ∫_Ω u v = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` (32), for `f ∈ L²(Ω)`; stated with the
+integrals of the weak derivatives `SobolevMultiIndex.weakDeriv`. The bridge
+`isWeakSolutionDirichlet_iff : IsWeakSolutionDirichlet Ω f u ↔ IsGalerkinSolution (Elliptic.laplaceForm Ω) (Elliptic.load Ω f) (SobolevEuclideanZero N 1 2 Ω) u`
+is `Elliptic.laplaceForm_apply` and `Elliptic.load_apply`.'''
+deps = ["Elliptic.laplaceForm", "Elliptic.load", "IsGalerkinSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "example_9_1_stepA"
+kind = "theorem"
+desc = '''Example 1, Step A: every classical solution of (31) is a weak solution — for
+`IsClassicalSolutionDirichlet Ω f u` with `f ∈ L²(Ω)` there is `U ∈ H^1_0(Ω)` whose function is
+`u` a.e. on `Ω` with `IsWeakSolutionDirichlet Ω f U`. This is
+`Elliptic.isGalerkinSolution_laplace_of_classical`; the book's proof uses Theorem 9.17 (i) ⇒ (ii)
+(and Remark 19, that this direction needs no regularity of `Ω`) to place `u` in `H^1_0`, and the
+density of `C_c^1(Ω)` in `H^1_0(Ω)`. ★'''
+deps = ["IsClassicalSolutionDirichlet", "IsWeakSolutionDirichlet", "Elliptic.isGalerkinSolution_laplace_of_classical", "theorem_9_17"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 1"
+
+[[node]]
+id = "theorem_9_21"
+kind = "theorem"
+desc = '''Theorem 9.21 (Dirichlet, Riemann, Poincaré, Hilbert): for `Ω ⊆ ℝ^N` open (bounded in the
+book; not needed) and `f ∈ L²(Ω)` there is a unique weak solution `u ∈ H^1_0(Ω)` of (31):
+`∃! u, IsWeakSolutionDirichlet Ω f u`. Through `isWeakSolutionDirichlet_iff` this is
+`Elliptic.existsUnique_isGalerkinSolution_laplace`, i.e. Lax–Milgram (Corollary 5.8) for the
+form `a(u, v) = ∫ (∇u·∇v + uv)`, which is the `H^1` inner product
+(`Elliptic.laplaceForm_eq_innerSL`), on the Hilbert space `H^1_0(Ω)`. ★'''
+deps = ["IsWeakSolutionDirichlet", "Elliptic.existsUnique_isGalerkinSolution_laplace", "Brezis.Chapter05.corollary_5_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.21"
+
+[[node]]
+id = "theorem_9_21_isMinOn"
+kind = "theorem"
+desc = '''Theorem 9.21, Dirichlet's principle: the weak solution `u` of (31) is the minimizer over
+`H^1_0(Ω)` of `v ↦ ½ ∫_Ω (∑ᵢ (∂ᵢv)² + v²) - ∫_Ω f v`, and conversely a minimizer is the weak
+solution: `IsMinOn E (H^1_0(Ω)) u ↔ IsWeakSolutionDirichlet Ω f u` for `u ∈ H^1_0(Ω)`.
+`Elliptic.isMinOn_energy_iff_isGalerkinSolution_laplace`, with the energy unfolded to the book's
+integral. ★'''
+deps = ["theorem_9_21", "Elliptic.isMinOn_energy_iff_isGalerkinSolution_laplace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.21"
+
+[[node]]
+id = "example_9_1_stepD"
+kind = "theorem"
+desc = '''Example 1, Step D, recovery of a classical solution: if `Ω` is bounded and of class `C¹`
+and the weak solution `U ∈ H^1_0(Ω)` of (31) has a representative `u` with
+`ContDiffOn ℝ 2 u (closure Ω)`, then `u = 0` on `frontier Ω` (Theorem 9.17 (ii) ⇒ (i)) and
+`-Δu + u = f` a.e. on `Ω` (Corollary 4.24 through
+`Elliptic.laplacian_ae_eq_of_isGalerkinSolution`); if `f` is continuous on `Ω` the equation holds
+at every point of `Ω`, so `u` is a classical solution (`example_9_1_stepD_of_continuous`, with
+`IsClassicalSolutionDirichlet`). The book's "in fact everywhere, since `u ∈ C²(Ω)`" presumes a
+continuous `f`; `f ∈ L²` is a class and "everywhere" has no meaning for it. ★'''
+deps = ["IsWeakSolutionDirichlet", "IsClassicalSolutionDirichlet", "Elliptic.laplacian_ae_eq_of_isGalerkinSolution", "theorem_9_17", "Brezis.Chapter04.corollary_4_24"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 1"
+
+[[node]]
+id = "admissibleSetInhomogeneous"
+kind = "definition"
+desc = '''Definition (§9.5, Example 2): for `g̃ ∈ H^1(Ω)` (the book: `g̃ ∈ H^1(Ω) ∩ C(Ω̄)` with
+`g̃ = g` on `Γ`), the set `K = {v ∈ H^1(Ω) : v - g̃ ∈ H^1_0(Ω)}`, which is
+`Elliptic.admissibleSet Ω g̃`.'''
+deps = ["Elliptic.admissibleSet"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "example_9_2"
+kind = "theorem"
+desc = '''Example 2: `K` is a nonempty closed convex subset of `H^1(Ω)`, and it depends only on
+`g`, not on the extension `g̃`: if `g̃₁, g̃₂ ∈ H^1(Ω)` have representatives continuous on
+`closure Ω` that agree on `frontier Ω`, then `admissibleSetInhomogeneous Ω g̃₁ = admissibleSetInhomogeneous Ω g̃₂`.
+The first three are `Elliptic.admissibleSet_nonempty`, `isClosed_admissibleSet`,
+`convex_admissibleSet`; the last is `Elliptic.admissibleSet_eq_of_sub_mem` with
+`g̃₁ - g̃₂ ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which needs no regularity of `Ω`. ★'''
+deps = ["admissibleSetInhomogeneous", "Elliptic.admissibleSet", "theorem_9_17"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 2"
+
+[[node]]
+id = "IsWeakSolutionInhomogeneous"
+kind = "definition"
+desc = '''Definition (§9.5, Example 2): a classical solution of (33) (`IsClassicalSolutionInhomogeneous`:
+`u ∈ C²(Ω̄)`, `-Δu + u = f` in `Ω`, `u = g` on `Γ`) and a weak solution of (33): `u ∈ K` with
+`∫ (∇u·∇v + uv) = ∫ f v` for all `v ∈ H^1_0(Ω)` (34). With `example_9_2_stepA`, "as above, any
+classical solution is a weak solution": for `g̃` continuous on `closure Ω` with `g̃ = g` on `Γ`,
+a classical solution `u` has `u - g̃ ∈ H^1 ∩ C(Ω̄)` vanishing on `Γ`, hence in `H^1_0` by Theorem
+9.17, and the identity (34) as in `example_9_1_stepA`.'''
+deps = ["admissibleSetInhomogeneous", "Elliptic.laplaceForm", "Elliptic.load", "example_9_1_stepA"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "proposition_9_22"
+kind = "theorem"
+desc = '''Proposition 9.22: for every `f ∈ L²(Ω)` there is a unique weak solution `u ∈ K` of (33),
+and `u` minimizes `½ ∫ (|∇v|² + v²) - ∫ f v` over `K`. This is
+`Elliptic.existsUnique_isWeakSolution_inhomogeneous`. The book's proof (p. 11017): `u ∈ K` solves
+(34) iff it solves the variational inequality (35) `∫ ∇u·∇(v - u) + ∫ u(v - u) ≥ ∫ f(v - u)` for
+all `v ∈ K` (`proposition_9_22_iff`, the backbone's
+`Elliptic.isWeakSolution_inhomogeneous_iff_forall_le`), and Stampacchia's theorem (Theorem 5.6)
+on the nonempty closed convex `K` of `example_9_2` concludes. ★'''
+deps = ["IsWeakSolutionInhomogeneous", "example_9_2", "Elliptic.existsUnique_isWeakSolution_inhomogeneous", "Brezis.Chapter05.theorem_5_6"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.22"
+
+[[node]]
+id = "ellipticityCondition"
+kind = "definition"
+desc = '''Definition (§9.5, Example 3): the ellipticity condition (36) on coefficients
+`a_ij : ℝ^N → ℝ`, `1 ≤ i, j ≤ N`: `∑ᵢⱼ a_ij x ξ_i ξ_j ≥ α |ξ|²` for all `x ∈ Ω`, all
+`ξ ∈ ℝ^N`, with `α > 0`. Stated pointwise on `Ω` for functions; `ellipticityCondition_iff` relates
+it to the backbone's almost-everywhere `Elliptic.IsUniformlyElliptic` on the `L^∞` classes of
+bounded coefficients.'''
+deps = ["Elliptic.IsUniformlyElliptic"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "IsWeakSolutionElliptic"
+kind = "definition"
+desc = '''Definition (§9.5, Example 3): a classical solution of (37) (`IsClassicalSolutionElliptic`:
+`u ∈ C²(Ω̄)` with `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + a₀ u = f` in `Ω` and `u = 0` on `Γ`, for
+`a_ij ∈ C¹(Ω̄)`, `a₀ ∈ C(Ω̄)`) and a weak solution of (37): `u ∈ H^1_0(Ω)` with
+`∫ ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫ a₀ u v = ∫ f v` for all `v ∈ H^1_0(Ω)` (38); the form (38) is
+`Elliptic.generalForm Ω A 0 a₀` with the coefficients read as `L^∞(Ω)` classes
+(`isWeakSolutionElliptic_iff`).'''
+deps = ["Elliptic.generalForm", "Elliptic.load", "IsGalerkinSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "example_9_3_stepA"
+kind = "theorem"
+desc = '''Example 3, "as above, any classical solution is a weak solution": for `Ω` bounded,
+`a_ij ∈ C¹(Ω̄)`, `a₀ ∈ C(Ω̄)`, a classical solution of (37) is a weak solution. The integration by
+parts `∫ ∂ⱼ(a_ij ∂ᵢu) v = -∫ a_ij ∂ᵢu ∂ⱼv` for `v ∈ 𝓓(Ω)` is the weak-derivative identity of the
+`C¹` function `a_ij ∂ᵢu` (`ContDiffOn.hasWeakIteratedFDerivOn`), the rest is as in
+`example_9_1_stepA`; there is no backbone node for it because Step A for the general operator
+is only asserted, and it is the same 200 lines as the Laplacian case with the coefficients
+carried along. ★★'''
+deps = ["IsWeakSolutionElliptic", "ContDiffOn.hasWeakIteratedFDerivOn", "example_9_1_stepA", "theorem_9_17"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 3"
+
+[[node]]
+id = "example_9_3"
+kind = "theorem"
+desc = '''Example 3, existence: for `Ω` bounded, `a_ij` satisfying `ellipticityCondition` and
+`a₀ ≥ 0` on `Ω`, every `f ∈ L²(Ω)` has a unique weak solution `u ∈ H^1_0(Ω)` of (37) — Lax–Milgram
+for the form (38), coercive by ellipticity, `a₀ ≥ 0` and Poincaré's inequality (Corollary 9.19):
+`Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg`. With `example_9_3_isMinOn`: if the
+matrix `(a_ij)` is symmetric, `u` minimizes `½ ∫ (∑ᵢⱼ a_ij ∂ᵢv ∂ⱼv + a₀ v²) - ∫ f v` over
+`H^1_0(Ω)`. ★'''
+deps = ["IsWeakSolutionElliptic", "ellipticityCondition", "Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg", "corollary_9_19", "Brezis.Chapter05.corollary_5_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 3"
+
+[[node]]
+id = "IsWeakSolutionGeneralElliptic"
+kind = "definition"
+desc = '''Definition (§9.5, Example 3): a weak solution of (39), the general problem with
+`a_ij, a_i, a₀ ∈ L^∞(Ω)` and `(a_ij)` elliptic: `u ∈ H^1_0(Ω)` with
+`∫ ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫ ∑ᵢ a_i ∂ᵢu v + ∫ a₀ u v = ∫ f v` for all `v ∈ H^1_0(Ω)` (40), i.e.
+`IsGalerkinSolution (Elliptic.generalForm Ω A a₁ a₀) (Elliptic.load Ω f) (H^1_0(Ω)) u`
+(`isWeakSolutionGeneralElliptic_iff`). The form (41) is in general not symmetric (footnote 23).'''
+deps = ["Elliptic.generalForm", "Elliptic.load", "IsGalerkinSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "theorem_9_23"
+kind = "theorem"
+desc = '''Theorem 9.23 (the Fredholm alternative for (40)): for `Ω` bounded and `L^∞` coefficients
+with `(a_ij)` elliptic, the set of weak solutions of (40) with `f = 0` is a finite-dimensional
+subspace of `H^1_0(Ω)`, of dimension `d` say, and there is a subspace `F ⊆ L²(Ω)` of dimension `d`
+such that (40) has a solution iff `∫ f v = 0` for all `v ∈ F`: `Elliptic.finiteDimensional_ker_general`
+and `Elliptic.exists_orthogonality_iff_exists_solution`. The book's proof: Gårding's inequality
+gives `λ` with `a + λ ∫ uv` coercive; the solution operator `T : L² → L²` is compact (Theorem
+9.16 and Remark 20, the compactness of `H^1_0 ⊂ L²` on a bounded `Ω`); (40) is `v - λ T v = f`
+with `v = f + λ u`; and the Fredholm alternative (Theorem 6.6) concludes. ★'''
+deps = ["IsWeakSolutionGeneralElliptic", "Elliptic.finiteDimensional_ker_general", "Elliptic.exists_orthogonality_iff_exists_solution", "theorem_9_16", "remark_9_20", "Brezis.Chapter06.theorem_6_6_a", "Brezis.Chapter06.theorem_6_6_b", "Brezis.Chapter06.theorem_6_6_d"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.23"
+
+[[node]]
+id = "remark_9_23"
+kind = "theorem"
+desc = '''Remark 23, first clause: if the homogeneous problem (40) has only the solution `u = 0`,
+then for every `f ∈ L²(Ω)` there is a unique weak solution of (40) —
+`Elliptic.existsUnique_of_ker_eq_bot`. The second clause, that `a₀ ≥ 0` alone (with no
+assumption on the `a_i`) forces the trivial kernel by "a maximum-principle-type method", is taken
+by the book from Gilbarg–Trudinger and is the general case of Proposition 9.29; its drift-free
+instance is `remark_9_23_zero_drift`. ★'''
+deps = ["theorem_9_23", "Elliptic.existsUnique_of_ker_eq_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 23"
+
+[[node]]
+id = "remark_9_23_zero_drift"
+kind = "theorem"
+desc = '''Remark 23, second clause, in the case `a_i = 0` the book proves in §9.7: if `a_i = 0` and
+`a₀ ≥ 0` on `Ω`, then for every `f ∈ L²(Ω)` there is a unique weak solution of (40). The kernel
+is trivial because a weak solution `u ∈ H^1_0(Ω)` with `f = 0` satisfies `u ≥ 0` and `-u ≥ 0` by
+the maximum principle in its `H^1_0` form (footnote 38),
+`Elliptic.nonneg_of_mem_zero_general_zero_drift` of `Elliptic/MaximumPrinciple`; then
+`remark_9_23`. The case of arbitrary `a_i` follows in the same way from the general Proposition
+9.29 once that is proved. ★'''
+deps = ["remark_9_23", "Elliptic.nonneg_of_nonneg_frontier_general_zero_drift"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 23"
+
+[[node]]
+id = "IsWeakSolutionNeumann"
+kind = "definition"
+desc = '''Definition (§9.5, Example 4): a classical solution of (44) (`IsClassicalSolutionNeumann`:
+`u ∈ C²(Ω̄)` with `-Δu + u = f` in `Ω` and `∂u/∂n = 0` on `Γ` — the normal derivative is stated
+as `fderiv ℝ u x (n x) = 0` for a given outward unit normal field `n : ℝ^N → ℝ^N` on
+`frontier Ω`, since no normal field is derived from `IsContDiffChartDomain` here) and a weak
+solution of (44): `u ∈ H^1(Ω)` with `∫ ∇u·∇v + ∫ uv = ∫ f v` for all `v ∈ H^1(Ω)` (45), i.e.
+`IsGalerkinSolution (Elliptic.laplaceForm Ω) (Elliptic.load Ω f) ⊤ u`
+(`isWeakSolutionNeumann_iff`).'''
+deps = ["Elliptic.laplaceForm", "Elliptic.load", "IsGalerkinSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition"
+
+[[node]]
+id = "example_9_4_stepA"
+kind = "theorem"
+desc = '''Example 4, Step A: for `Ω` bounded of class `C¹`, every classical solution of the Neumann
+problem (44) is a weak solution. The proof is Green's formula
+`∫_Ω (Δu) v = ∫_Γ (∂u/∂n) v dσ - ∫_Ω ∇u·∇v` for `u ∈ C²(Ω̄)`, `v ∈ C¹(Ω̄)`, followed by the
+density of `C¹(Ω̄)` in `H^1(Ω)` (Corollary 9.8).
+
+Blocked: Green's formula with a boundary term needs the surface measure `dσ` on `Γ` and the
+divergence theorem on a `C¹` domain, neither of which Mathlib has
+(`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable` is for boxes; `notes/frontier.md`
+blocker 2, `notes/fem-roadmap.md` Decision C). The statement itself is meaningful, since the
+classical solution's normal derivative is a pointwise object; only the proof is missing.
+Estimate: the whole boundary-measure programme.'''
+deps = ["IsWeakSolutionNeumann", "corollary_9_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
+
+[[node]]
+id = "proposition_9_24"
+kind = "theorem"
+desc = '''Proposition 9.24: for every `f ∈ L²(Ω)` there is a unique weak solution `u ∈ H^1(Ω)` of
+the Neumann problem (44), and it minimizes `½ ∫ (|∇v|² + v²) - ∫ f v` over `H^1(Ω)`
+(`proposition_9_24_isMinOn`): Lax–Milgram in `H = H^1(Ω)`,
+`Elliptic.existsUnique_isGalerkinSolution_neumann`. The book assumes `Ω` bounded of class `C¹`,
+which this proposition does not use. ★'''
+deps = ["IsWeakSolutionNeumann", "Elliptic.existsUnique_isGalerkinSolution_neumann", "Brezis.Chapter05.corollary_5_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.24"
+
+[[node]]
+id = "example_9_4_stepD_interior"
+kind = "theorem"
+desc = '''Example 4, Step D, interior clause: if a weak solution `U ∈ H^1(Ω)` of (44) has a
+representative `u ∈ C²(Ω)`, then `-Δu + u = f` a.e. in `Ω` (and everywhere if `f` is continuous):
+the weak identity (46) with `v ∈ C_c^1(Ω)` and Corollary 4.24, which is
+`Elliptic.laplacian_ae_eq_of_isGalerkinSolution` — a Neumann weak solution is in particular a
+solution against `H^1_0(Ω)`. ★'''
+deps = ["IsWeakSolutionNeumann", "Elliptic.laplacian_ae_eq_of_isGalerkinSolution", "Brezis.Chapter04.corollary_4_24"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
+
+[[node]]
+id = "example_9_4_stepD"
+kind = "theorem"
+desc = '''Example 4, Step D, boundary clause: if a weak solution of (44) is `C²(Ω̄)` on a bounded
+`C¹` domain then, beyond `-Δu + u = f`, `∂u/∂n = 0` on `Γ`, so `u` is a classical solution. The
+proof returns to (47) with `v ∈ C¹(Ω̄)` and reads `∫_Γ (∂u/∂n) v dσ = 0` for all such `v`.
+
+Blocked: as `example_9_4_stepA`, Green's formula with its boundary term and the surface measure
+on `Γ` are not available (`notes/frontier.md` blocker 2); the interior clause is
+`example_9_4_stepD_interior` and is not blocked.'''
+deps = ["example_9_4_stepD_interior", "example_9_4_stepA"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 4"
+
+[[node]]
+id = "example_9_5_a"
+kind = "theorem"
+desc = '''Example 5 (a), `Ω = ℝ^N`: for `f ∈ L²(ℝ^N)` the equation `-Δu + u = f` has a unique weak
+solution `u ∈ H^1(ℝ^N)` with `∫ ∇u·∇v + ∫ uv = ∫ f v` for all `v ∈ H^1(ℝ^N)`:
+`Elliptic.existsUnique_isGalerkinSolution_neumann` on `Ω = ⊤` (equivalently `theorem_9_21` on
+`⊤`, since `H^1_0(ℝ^N) = H^1(ℝ^N)`, Remark 17). ★'''
+deps = ["Elliptic.existsUnique_isGalerkinSolution_neumann", "IsWeakSolutionNeumann"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 5"
+
+[[node]]
+id = "example_9_5_b"
+kind = "theorem"
+desc = '''Example 5 (b), `Ω = ℝ^N_+` with the Dirichlet condition `u(x', 0) = 0`: for
+`f ∈ L²(ℝ^N_+)` there is a unique `u ∈ H^1_0(ℝ^N_+)` with `∫ ∇u·∇v + ∫ uv = ∫ f v` for all
+`v ∈ H^1_0(ℝ^N_+)`: `theorem_9_21` on the half space (chapter 9a's `upperHalfSpace`), which
+needs no boundedness. ★'''
+deps = ["theorem_9_21"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 5"
+
+[[node]]
+id = "example_9_5_c"
+kind = "theorem"
+desc = '''Example 5 (c), `Ω = ℝ^N_+` with the Neumann condition `∂u/∂x_N (x', 0) = 0`: for
+`f ∈ L²(ℝ^N_+)` there is a unique `u ∈ H^1(ℝ^N_+)` with `∫ ∇u·∇v + ∫ uv = ∫ f v` for all
+`v ∈ H^1(ℝ^N_+)`: `proposition_9_24` on the half space. ★'''
+deps = ["proposition_9_24"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 5"

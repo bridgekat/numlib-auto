@@ -1,0 +1,145 @@
+namespace = "Brezis.Chapter06"
+desc = '''
+Brezis §6.2, the Riesz–Fredholm theory: Riesz's lemma, Riesz's theorem (a normed space with
+compact unit ball is finite dimensional), and the Fredholm alternative for `I - T`, `T` compact
+on a Banach space `E` over `ℝ`, in its four clauses, with Remarks 3–5. The book's `I - T` is
+`(1 : E →L[ℝ] E) - T`; the backbone states its results for `μ • 1 - T` with `μ ≠ 0`, and every
+node here is the instance `μ = 1` (rewrite `one_smul`). The adjoint `T*` is
+`ContinuousLinearMap.strongDualMap T` and `N(I - T*)^⊥ ⊆ E` is `Submodule.strongDualCoannihilator` of the
+kernel (chapters 2 and 1). The unnumbered claim of the Comments that `I - T` is a Fredholm operator
+of index zero is stated here as well, since it is Theorem 6.6 read in Mathlib's vocabulary.
+'''
+
+[[node]]
+id = "lemma_6_1"
+kind = "theorem"
+desc = '''Lemma 6.1 (Riesz's lemma): for a real normed space `E` and a closed subspace
+`M : Submodule ℝ E` with `M ≠ ⊤`, for every `ε > 0` there is `u : E` with `‖u‖ = 1` and
+`1 - ε ≤ Metric.infDist u M`. Mathlib's `riesz_lemma` (`Mathlib/Analysis/Normed/Module/RieszLemma.lean`)
+gives, for `r < 1`, an `x₀ ∉ M` with `r * ‖x₀‖ ≤ ‖x₀ - y‖` for all `y ∈ M`; normalize `x₀` (real
+scalars, `norm_smul_inv_norm`), use `M.smul_mem`, and pass to `infDist` by `Metric.le_infDist`.
+The case `ε ≥ 1` is trivial. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 6.1"
+
+[[node]]
+id = "remark_6_3"
+kind = "theorem"
+desc = '''Remark 3, finite-dimensional case: if `M : Submodule ℝ E` is finite dimensional and `M ≠ ⊤`,
+one can take `ε = 0` in Lemma 6.1: there is `u` with `‖u‖ = 1` and `Metric.infDist u M = 1`.
+Proof: `M` is a proper space (`FiniteDimensional.proper_real`), so for `v ∉ M` the distance
+`d = infDist v M > 0` (`M` closed, `Submodule.closed_of_finiteDimensional`) is attained at some
+`m₀ ∈ M` (`IsClosed.exists_infDist_eq_dist` in a proper space, or `IsCompact.exists_infDist_eq_dist`
+on a large ball); then `u := ‖v - m₀‖⁻¹ • (v - m₀)` has `infDist u M = d / ‖v - m₀‖ = 1` by the
+book's computation for Lemma 6.1 (`m₀ + ‖v - m₀‖ • m ∈ M`). ★, ~40 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 3"
+
+[[node]]
+id = "remark_6_3_reflexive"
+kind = "theorem"
+desc = '''Remark 3, reflexive case: if `E` is a Banach space with `[NormedSpace.IsReflexive ℝ E]` and
+`M : Submodule ℝ E` is closed with `M ≠ ⊤`, there is `u` with `‖u‖ = 1` and
+`Metric.infDist u M = 1`. Proof (★★, ~80 lines): for `v ∉ M` take a minimizing sequence
+`mₙ ∈ M` with `‖v - mₙ‖ → d := infDist v M`; it is bounded, and `M` is reflexive
+(`NormedSpace.isReflexive_of_isClosed`), so `NormedSpace.exists_subseq_forall_dual_tendsto`
+(applied in `M`) gives a subsequence converging weakly to some `m ∈ M`; then
+`‖v - m‖ ≤ liminf ‖v - mₙₖ‖ = d` by `norm_le_liminf_norm_of_weak_tendsto`
+(`Numlib/Analysis/Normed/Module/WeakDual.lean`, weak convergence of `v - mₙₖ` to `v - m` in `E`
+by restriction of functionals to `M`), so the distance is attained, and the normalization of
+`remark_6_3` finishes. Chapter 3's Kakutani theorem is not needed — sequential weak compactness
+of bounded sets in a reflexive space is already in the backbone.'''
+deps = ["remark_6_3", "NormedSpace.IsReflexive", "NormedSpace.isReflexive_of_isClosed", "NormedSpace.exists_subseq_forall_dual_tendsto", "norm_le_liminf_norm_of_weak_tendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 3"
+
+[[node]]
+id = "theorem_6_5"
+kind = "theorem"
+desc = '''Theorem 6.5 (Riesz): a real normed space whose closed unit ball is compact,
+`IsCompact (Metric.closedBall (0 : E) 1)`, is finite dimensional, `FiniteDimensional ℝ E`.
+Mathlib's `FiniteDimensional.of_isCompact_closedBall₀ ℝ one_pos`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.5"
+
+[[node]]
+id = "theorem_6_6_a"
+kind = "theorem"
+desc = '''Theorem 6.6 (a): for `T : E →L[ℝ] E` compact on a Banach space,
+`FiniteDimensional ℝ (LinearMap.ker ((1 : E →L[ℝ] E) - T))`. The backbone's
+`IsCompactOperator.finiteDimensional_ker_pow` at `μ = 1`, `n = 1` (`one_smul`, `pow_one`). ★'''
+deps = ["IsCompactOperator.finiteDimensional_ker_pow"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
+
+[[node]]
+id = "theorem_6_6_b_isClosed"
+kind = "theorem"
+desc = '''Theorem 6.6 (b), first clause: `IsClosed (LinearMap.range ((1 : E →L[ℝ] E) - T) : Set E)`
+for `T` compact. The backbone's `IsCompactOperator.isClosed_range_smul_sub` at `μ = 1`. ★'''
+deps = ["IsCompactOperator.isClosed_range_smul_sub"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
+
+[[node]]
+id = "theorem_6_6_b"
+kind = "theorem"
+desc = '''Theorem 6.6 (b), "more precisely `R(I - T) = N(I - T*)^⊥`":
+`LinearMap.range ((1 : E →L[ℝ] E) - T) = Submodule.strongDualCoannihilator (LinearMap.ker ((1 : StrongDual ℝ E →L[ℝ] StrongDual ℝ E) - ContinuousLinearMap.strongDualMap T))`
+for `T` compact on a Banach space. The backbone's
+`IsCompactOperator.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap` at `μ = 1`. ★'''
+deps = ["IsCompactOperator.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap", "Submodule.strongDualCoannihilator", "ContinuousLinearMap.strongDualMap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
+
+[[node]]
+id = "theorem_6_6_c"
+kind = "theorem"
+desc = '''Theorem 6.6 (c): for `T` compact on a Banach space,
+`LinearMap.ker ((1 : E →L[ℝ] E) - T) = ⊥ ↔ LinearMap.range ((1 : E →L[ℝ] E) - T) = ⊤`. The
+backbone's `IsCompactOperator.injective_iff_surjective_smul_one_sub` at `μ = 1`, with
+`LinearMap.ker_eq_bot` and `LinearMap.range_eq_top`. ★'''
+deps = ["IsCompactOperator.injective_iff_surjective_smul_one_sub"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
+
+[[node]]
+id = "theorem_6_6_d"
+kind = "theorem"
+desc = '''Theorem 6.6 (d): for `T` compact on a Banach space,
+`Module.finrank ℝ (LinearMap.ker ((1 : E →L[ℝ] E) - T)) = Module.finrank ℝ (LinearMap.ker ((1 : StrongDual ℝ E →L[ℝ] StrongDual ℝ E) - ContinuousLinearMap.strongDualMap T))`.
+The backbone's `IsCompactOperator.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap` at
+`μ = 1`. ★'''
+deps = ["IsCompactOperator.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap", "ContinuousLinearMap.strongDualMap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
+
+[[node]]
+id = "remark_6_4"
+kind = "theorem"
+desc = '''Remark 4, the Fredholm alternative as a dichotomy: for `T` compact on a Banach space,
+either `∀ f, ∃! u, u - T u = f`, or `0 < Module.finrank ℝ (ker (1 - T)) ∧ ∀ f, (∃ u, u - T u = f) ↔ f ∈ Submodule.strongDualCoannihilator (ker (1 - strongDualMap T))`
+(the kernel is finite dimensional by (a), so "`n` linearly independent solutions" is
+`finrank = n > 0`, and the "`n` orthogonality conditions" are membership in the strongDualCoannihilator,
+whose codimension is `n` by (d)). From `theorem_6_6_a`, `theorem_6_6_b` and `theorem_6_6_c`:
+if the kernel is `⊥` then `1 - T` is bijective; otherwise (b) is the solvability criterion. ★'''
+deps = ["theorem_6_6_a", "theorem_6_6_b", "theorem_6_6_c"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 4"
+
+[[node]]
+id = "remark_6_5"
+kind = "theorem"
+desc = '''Remark 5, the finite-dimensional fact behind (c): for `FiniteDimensional ℝ E` and
+`A : E →L[ℝ] E`, `Function.Injective A ↔ Function.Surjective A`. Mathlib's
+`LinearMap.injective_iff_surjective`. The infinite-dimensional counterexamples (the shifts on
+`ℓ²`) are `remark_6_6_rightShift` in §6.3. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 5"
+
+[[node]]
+id = "oneSubCompact_isFredholm_index_zero"
+kind = "theorem"
+desc = '''Comments on Chapter 6, 1: "`A = I - T` with `T ∈ K(E)` is a Fredholm operator of index
+zero; this follows from Theorem 6.6": for `T` compact on a Banach space,
+`((1 : E →L[ℝ] E) - T).IsFredholm ∧ ((1 : E →L[ℝ] E) - T).index = 0` in Mathlib's
+`ContinuousLinearMap.IsFredholm` and `ContinuousLinearMap.index` (the Comments' definition —
+finite-dimensional kernel, closed range of finite codimension, `ind = dim N(A) - codim R(A)` —
+is Mathlib's, which adds the automatically satisfied strictness and complemented-kernel
+fields). The backbone's `IsCompactOperator.isFredholm_smul_one_sub` and
+`IsCompactOperator.index_smul_one_sub` at `μ = 1`. ★'''
+deps = ["IsCompactOperator.isFredholm_smul_one_sub", "IsCompactOperator.index_smul_one_sub"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 1"

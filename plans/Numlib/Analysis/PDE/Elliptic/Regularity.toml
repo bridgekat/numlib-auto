@@ -1,0 +1,517 @@
+namespace = "Elliptic"
+desc = '''
+Regularity of weak solutions of the Dirichlet problem: [brezis2011functional] §9.6, Theorem 9.25
+(and Theorem 9.26, Remark 24, Remark 25), by L. Nirenberg's method of translations (difference
+quotients). The statement to be reached: for `Ω ⊆ ℝ^N` of class `C²` with bounded boundary (or
+the half space), `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` with `∫ ∇u·∇φ + ∫ uφ = ∫ fφ` for all
+`φ ∈ H^1_0(Ω)`, one has `u ∈ H²(Ω)` with `‖u‖_{H²} ≤ C ‖f‖_{L²}`; for `Ω` of class `C^{m+2}` and
+`f ∈ H^m(Ω)`, `u ∈ H^{m+2}(Ω)` with `‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`; hence `u ∈ C²(Ω̄)` when
+`m > N/2`, and `u ∈ C^∞(Ω̄)` when `Ω` and `f` are `C^∞`.
+
+## The four cases, and what is stated for each
+
+The book proves the theorem in four cases and the plan gives each its own node, in the order a
+formalizer should take them:
+
+* **A, `Ω = ℝ^N`** (`regularity_top`): for `u ∈ H^1(ℝ^N)`, `g ∈ L²(ℝ^N)` and
+  `∫ ∇u·∇φ = ∫ gφ` for all `φ ∈ H^1(ℝ^N)`, `u ∈ H²(ℝ^N)` and `‖∂_j∂_k u‖₂ ≤ ‖g‖₂`. Stated for the
+  Dirichlet form alone; the book's form `-Δu + u = f` is the case `g = f - u`. The tool is the
+  difference quotient `D_h u = (τ_h u - u)/|h|`, its adjointness `∫ (D_h u) v = ∫ u (D_{-h} v)`,
+  and Proposition 9.3 in both directions (chapter 9a).
+* **C₁, interior** (`regularity_interior`, `regularity_interior_higher`): this is Remark 25 —
+  on an *arbitrary* open `Ω`, `u ∈ H^1_loc(Ω)`, `f ∈ H^m_loc(Ω)` and `∫ ∇u·∇φ = ∫ fφ` for all
+  `φ ∈ C_c^∞(Ω)` give `u ∈ H^{m+2}_loc(Ω)`. It is planned *before* the boundary cases and
+  independently of them, because Theorem 9.31 (`Elliptic/Spectral`) and the heat equation of
+  Chapter 10 need only it. The local Sobolev space is chapter 9a's `MemSobolevMultiIndexLoc`
+  (`Numlib/Analysis/Sobolev/Cutoff`), "in `W^{k,p}(ω)` for every `ω ⋐ Ω`"; the book's
+  `θ u ∈ H^{m+2}(Ω)` for every `θ ∈ C_c^∞(Ω)` is the equivalent
+  `MemSobolevMultiIndexLoc.smul_testFunction` there, and the `C^∞` representative of a function in
+  every `H^m_loc` is `MemSobolevMultiIndexLoc.exists_contDiffOn` (`Sobolev/Embedding`). No Leibniz
+  rule of order `m` is needed:
+  the induction on `m` differentiates the *equation* (`∂_j u` solves it with datum `∂_j f`) and
+  the multi-index bookkeeping is `HasWeakIteratedLineDerivOn.cons` and the permutation symmetry
+  `HasWeakIteratedLineDerivOn.comp_perm`.
+* **B, the half space** (`regularity_upperHalfSpace`, Lemmas 9.6 and 9.7, higher order): the
+  translations are tangential, `H^1_0(ℝ^N_+)` is invariant under them, the estimate
+  `‖D_h u‖_{H^1} ≤ ‖g‖₂` gives all second derivatives but `∂_N∂_N u`, which the equation
+  supplies; the higher-order induction needs the tangential derivative of `u` to stay in
+  `H^1_0`, which is Lemma 9.7 and costs a weak-compactness argument.
+* **C₂, near the boundary** (Lemma 9.8, `tangential_estimate_cylinder`,
+  `regularity_unitChartCubePos`, `regularity_dirichlet`): a `C²` chart `H : Q → U` transfers
+  `θᵢ u` to `w ∈ H^1_0(Q₊)`, which solves a *variable-coefficient* elliptic equation with
+  `C¹(Q̄₊)` coefficients (Lemma 9.8, Mathlib's change of variables
+  `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` and chapter 9a's Proposition 9.6);
+  the tangential estimate is case B again with the coefficients carried along ((63)–(69)); `w`
+  is transferred back and the pieces are summed over the partition of unity of Lemma 9.3
+  (chapter 9a's `Chart`).
+
+The estimate of case C₂ is stated for a general elliptic form with `C¹` coefficients and for a
+*test space* `V` with `𝓓(Q₊) ⊆ V ⊆ H^1(Q₊)` invariant under small tangential translations, and
+the Dirichlet theorem takes `V = H^1_0(Q₊)`. That is what makes Theorem 9.26 (Neumann: `V` the
+functions of `H^1(Q₊)` vanishing near the lateral and top boundary) and Remark 24 (general
+operator) the same estimates with different inputs; both are planned with that route and marked
+as the long tail.
+
+## Hypotheses on the domain
+
+"Of class `C^m`" is chapter 9a's `IsContDiffChartDomain m Ω` (planning brief D9; the surface's
+§9.6 definition). The theorem is stated for `Bornology.IsBounded (frontier Ω)`, as the book does,
+and the half space separately; the unbounded-`Ω` case needs only the second form of Remark 4 (ii)
+for the interior piece `θ₀ u` (a `C¹ ∩ L^∞` cut-off with bounded gradient supported off `Γ`), which
+chapter 9a's `Cutoff` supplies. `Ω = ℝ^N_+`, `Q` and `Q₊` are chapter 9a's `EuclideanSpace.upperHalfSpace`, `unitChartCube`
+and `unitChartCubePos` (`Chart.toml`) on `EuclideanSpace ℝ (Fin (d + 1))`, the coordinates of
+`Numlib/Analysis/Sobolev/Domain`.
+
+## Constants
+
+Case A gives explicit constants (`‖∂_j∂_k u‖₂ ≤ ‖g‖₂`, `‖u‖_{H²} ≤ √(1 + N(N+1)/2) ‖g‖₂` for the
+multi-index norm together with `‖u‖_{H¹} ≤ ‖g‖₂`); case B gives `‖∂_N∂_N u‖₂ ≤ N ‖g‖₂`; the
+chart cases give a constant depending on `Ω` only through the charts and the partition of unity,
+and the theorems state `∃ C, ∀ f u, …` with `C` quantified before `f`, which is what "depending
+only on `Ω`" means.
+'''
+
+[[node]]
+id = "diffQuot"
+kind = "definition"
+desc = '''`diffQuot (h : E) (u : E → F) : E → F`, the difference quotient
+`D_h u x = ‖h‖⁻¹ • (u (x + h) - u x)` of [brezis2011functional] §9.6, case A. Companion lemmas
+for `E = EuclideanSpace ℝ (Fin N)` and Lebesgue measure: `diffQuot_memLp` (`u ∈ L^p ⇒ D_h u ∈ L^p`,
+with `‖D_h u‖_p ≤ 2 ‖h‖⁻¹ ‖u‖_p`, from the translation invariance
+`MeasureTheory.Lp.compMeasurePreserving (· + h) (measurePreserving_add_right volume h)`),
+`integral_diffQuot_mul` (adjointness, `∫ (D_h u) v = ∫ u (D_{-h} v)` for `u, v ∈ L²`, the change of
+variables `x ↦ x - h`), and `diffQuot_hasWeakIteratedLineDerivOn` (`D_h` commutes with the weak
+derivative along any tuple: `∂^y (D_h u) = D_h (∂^y u)` on `ℝ^N`, because `φ ↦ φ(· - h)` maps
+test functions to test functions). On an open `Ω` with `Ω + t h = Ω` for all `t` (the half space
+and a tangential `h`) the same three lemmas hold for `volume.restrict Ω`
+(`diffQuot_memLp_restrict_of_add_eq`, …), which is what case B uses. ★★ (~200 lines for the
+family).'''
+deps = []
+
+[[node]]
+id = "diffQuotH1"
+kind = "definition"
+desc = '''`diffQuotH1 (h : EuclideanSpace ℝ (Fin N)) : SobolevEuclidean N 1 2 ⊤ →L[ℝ] SobolevEuclidean N 1 2 ⊤`,
+the difference quotient as a bounded operator on `H^1(ℝ^N)`: the family of `D_h (∂^α u)` for
+`|α| ≤ 1`, which is in `H^1` by `diffQuot_hasWeakIteratedLineDerivOn`. With `fn_diffQuotH1`
+(`fn (D_h u) = D_h (fn u)` a.e.) and `weakDeriv_diffQuotH1` (`∂ᵢ (D_h u) = D_h (∂ᵢ u)`). The
+proof of case A tests the equation with `φ = D_{-h} (D_h u)`, so `D_h u` must be an element of
+the space `H^1(ℝ^N)`, not merely a function. ★ (~80 lines).'''
+deps = ["diffQuot", "SobolevEuclidean"]
+
+[[node]]
+id = "regularity_top"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case A (`Ω = ℝ^N`), `H²` regularity.** Let
+`u ∈ H^1(ℝ^N) = SobolevEuclidean N 1 2 ⊤`, `g ∈ L²(ℝ^N)`, and `dirichletForm ⊤ u φ = ⟪g, fn φ⟫`
+for every `φ ∈ H^1(ℝ^N)`. Then `MemSobolevMultiIndex b (fn u) 2 2 ⊤ volume` — `u ∈ H²(ℝ^N)` —
+and, for the element `U ∈ SobolevEuclidean N 2 2 ⊤` it determines, `‖∂_j∂_k U‖₂ ≤ ‖g‖₂` for all
+`j, k`, hence `‖U‖_{H²}² ≤ ‖u‖_{H¹}² + (N(N+1)/2) ‖g‖₂²`. The book's equation `-Δu + u = f`
+is the case `g = f - u`, with `‖u‖_{H¹} ≤ ‖f‖₂`, which gives its `‖u‖_{H²} ≤ C ‖f‖₂`.
+
+Proof (p. 11256–11290, followed line by line): test with `φ = D_{-h}(D_h u)` (`diffQuotH1`);
+`∫ |∇ D_h u|² = ∫ g D_{-h}(D_h u)` by `weakDeriv_diffQuotH1` and the adjointness
+`integral_diffQuot_mul`; `‖D_{-h}(D_h u)‖₂ ≤ ‖∇ D_h u‖₂` is Proposition 9.3 (i) ⇒ (iii) on `ℝ^N`
+(chapter 9a); so `‖∇ D_h u‖₂ ≤ ‖g‖₂`, i.e. `‖D_h (∂_j u)‖₂ ≤ ‖g‖₂` for all `h ≠ 0`; and
+Proposition 9.3 (iii) ⇒ (i) at `p = 2` (chapter 9a) applied to `∂_j u ∈ L²(ℝ^N)` gives
+`∂_j u ∈ H^1(ℝ^N)` with `‖∂_k ∂_j u‖₂ ≤ ‖g‖₂`. The multi-index bookkeeping — `∂^α u` for
+`|α| = 2` is `∂_k (∂_j u)` for the two entries of `α` — is `HasWeakIteratedLineDerivOn.cons`
+with `multiIndexTuple` of an order-two multi-index, packaged as chapter 9a's `memSobolevMultiIndex_succ_iff` (`u ∈ W^{m+1,p} ↔ u ∈ W^{m,p} ∧ ∀ i, ∂ᵢu ∈ W^{m,p}`). ★★★ (~350 lines).'''
+deps = [
+  "diffQuotH1", "dirichletForm",
+  "HasWeakFDerivOn.eLpNorm_sub_translate_le",  # ch9a, Friedrichs.toml: Proposition 9.3 (i) ⇒ (iii)
+  "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le",  # ch9a, Friedrichs.toml: Proposition 9.3 (iii) ⇒ (ii)
+  "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le",  # ch9a, Friedrichs.toml: Proposition 9.3 (ii) ⇒ (i)
+  "HasWeakIteratedLineDerivOn.cons", "memSobolevMultiIndex_succ_iff",
+  "MemSobolevMultiIndex.exists_sobolevMultiIndex",
+]
+
+[[node]]
+id = "regularity_top_higher"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case A, higher order.** Under the hypotheses of
+`regularity_top`, if moreover `g ∈ H^m(ℝ^N)` then `u ∈ H^{m+2}(ℝ^N)`, with
+`‖u‖_{H^{m+2}} ≤ C_{N,m} (‖u‖_{H¹} + ‖g‖_{H^m})`.
+
+Proof (p. 11292–11308): by induction on `m`. For `m + 1`: each `∂_j u ∈ H^1(ℝ^N)` (by the
+previous step) satisfies `∫ ∇(∂_j u)·∇φ = ∫ (∂_j g) φ` for all `φ ∈ H^1(ℝ^N)` — for
+`φ ∈ C_c^∞(ℝ^N)` this is the equation tested with `∂_j φ`, moving one derivative across
+(`HasWeakIteratedLineDerivOn.cons`/`of_cons` and the permutation symmetry
+`HasWeakIteratedLineDerivOn.comp_perm` for `∂_i ∂_j φ = ∂_j ∂_i φ`), and it extends to `H^1(ℝ^N)` by
+the density of `C_c^∞(ℝ^N)` in `H^1(ℝ^N)`, which is Remark 17 / Theorem 9.2 of chapter 9a in the
+form `SobolevMultiIndexZero … ⊤ = ⊤`. The inductive hypothesis applied to `∂_j u` and `∂_j g`
+gives `∂_j u ∈ H^{m+2}`, hence `u ∈ H^{m+3}` (`cons` once more). ★★ (~200 lines).'''
+deps = [
+  "regularity_top", "HasWeakIteratedLineDerivOn.cons", "HasWeakIteratedLineDerivOn.of_cons",
+  "HasWeakIteratedLineDerivOn.comp_perm",
+  "SobolevEuclideanZero.eq_top",  # ch9a, Zero.toml: Remark 17, W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)
+]
+
+[[node]]
+id = "regularity_interior"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case C₁ = Remark 25 at `m = 0`: interior `H²`
+regularity on an arbitrary open set.** Let `Ω ⊆ ℝ^N` be open, `u ∈ H^1_loc(Ω)`
+(`MemSobolevMultiIndexLoc b u 1 2 Ω volume`), `f ∈ L²_loc(Ω)` (`LocallyMemLpOn f 2 Ω`), and
+`∫_Ω ∑ᵢ ∂ᵢu ∂ᵢφ = ∫_Ω f φ` for every `φ ∈ 𝓓(Ω, ℝ)`. Then `u ∈ H²_loc(Ω)`; and for every
+`ω ⋐ Ω` there is `C` (depending on `ω`, `Ω`) with `‖u‖_{H²(ω)} ≤ C (‖u‖_{H¹(ω')} + ‖f‖_{L²(ω')})`
+for some `ω ⋐ ω' ⋐ Ω`.
+
+Proof (p. 11374–11384): given `ω ⋐ Ω`, take `θ ∈ 𝓓(Ω)` equal to `1` on a neighbourhood of
+`closure ω` (`IsCompact.exists_contDiff_eqOn_one`); `θu` extended by zero is in `H^1(ℝ^N)`
+(Remark 4 (ii), chapter 9a's `Cutoff`); for `φ ∈ 𝓓(ℝ^N)` the equation tested with `θφ ∈ 𝓓(Ω)`
+and the product rule `HasWeakIteratedLineDerivOn.mul_contDiff` give
+`∫ ∇(θu)·∇φ = ∫ g φ` with `g = θ f - 2 ∇θ·∇u - (Δθ) u`, which is in `L²(ℝ^N)` (a compactly
+supported combination of `L²_loc` functions); the identity extends to `φ ∈ H^1(ℝ^N)` by density
+(`SobolevMultiIndexZero.eq_top`, chapter 9a); `regularity_top` gives `θu ∈ H²(ℝ^N)`, and
+`θu = u` on `ω` gives `u ∈ H²(ω)` (`HasWeakIteratedLineDerivOn.mono` and `congr_ae`). ★★★
+(~300 lines; the computation of `g` and its membership are the bulk).'''
+deps = [
+  "regularity_top", "MemSobolevMultiIndexLoc", "dirichletForm",
+  "IsCompact.exists_contDiff_eqOn_one",
+  "MemSobolevMultiIndex.indicator_mul",  # ch9a, Cutoff.toml: Remark 4 (ii)
+  "SobolevMultiIndex.extendZeroMulL",  # ch9a, Cutoff.toml: the same as a bounded map on the typed spaces
+  "SobolevEuclideanZero.eq_top",  # ch9a, Zero.toml: Remark 17
+]
+
+[[node]]
+id = "regularity_interior_higher"
+kind = "theorem"
+desc = '''**[brezis2011functional] Chapter 9, Remark 25: interior `H^{m+2}` regularity.** Under the
+hypotheses of `regularity_interior`, if `f ∈ H^m_loc(Ω)` then `u ∈ H^{m+2}_loc(Ω)`. In
+particular (`regularity_interior_smooth`), if `f` is `C^∞` on `Ω` then `u ∈ H^m_loc(Ω)` for every
+`m`, hence, by `MemSobolevMultiIndexLoc.exists_contDiffOn`, `u` agrees almost everywhere on `Ω`
+with a `C^∞` function on `Ω`.
+
+Proof (p. 11448): induction on `m`. For `m + 1`, `regularity_interior` gives `u ∈ H²_loc`; for each
+`j`, `∂_j u ∈ H^1_loc(Ω)` and satisfies the equation with datum `∂_j f ∈ H^m_loc(Ω)`: test the
+equation with `∂_j φ`, `φ ∈ 𝓓(Ω)`, and move the derivative across with
+`HasWeakIteratedLineDerivOn.of_cons` and `HasWeakIteratedLineDerivOn.comp_perm`; the inductive
+hypothesis applied on every `ω ⋐ Ω` gives `∂_j u ∈ H^{m+2}_loc`, and `cons` assembles
+`u ∈ H^{m+3}_loc`. The local nature of the conclusion is what the last paragraph of Remark 25
+(hypoellipticity: the regularity of `u|_ω` depends only on that of `f|_ω`) states, and the
+surface's `remark_9_25_local` is this theorem applied on `ω`. ★★ (~250 lines).'''
+deps = ["regularity_interior", "HasWeakIteratedLineDerivOn.cons", "HasWeakIteratedLineDerivOn.of_cons", "HasWeakIteratedLineDerivOn.comp_perm"]
+
+[[node]]
+id = "translate_mem_sobolevZero_of_tangential"
+kind = "theorem"
+desc = '''`H^1_0(ℝ^N_+)` is invariant under tangential translations, [brezis2011functional] (54): for
+`h` with `h (Fin.last d) = 0` and `u ∈ SobolevEuclideanZero (d+1) 1 2 (EuclideanSpace.upperHalfSpace d)`, the
+translate `τ_h u = u(· + h)` is again in `H^1_0(ℝ^N_+)`; more generally for any open `Ω` with
+`Ω + h = Ω`. Proof: `τ_h` maps `𝓓(Ω)` to `𝓓(Ω)` (the support moves by `-h`, which stays in `Ω`),
+it is an isometry of `H^1(Ω)` (translation invariance of Lebesgue measure and
+`diffQuot_hasWeakIteratedLineDerivOn`-style commutation with the weak derivative), and an
+isometry that preserves a set preserves its closure. Consequently `D_h u ∈ H^1_0(Ω)` for such
+`h`, which is what lets case B test the equation with `D_{-h}(D_h u)`. ★★ (~120 lines).'''
+deps = ["SobolevEuclideanZero", "diffQuot", "SobolevMultiIndex.testFunctions"]
+
+[[node]]
+id = "eLpNorm_diffQuot_le_of_tangential"
+kind = "theorem"
+desc = '''**[brezis2011functional] Lemma 9.6**: for `v ∈ H^1(ℝ^N_+)` and `h ≠ 0` parallel to the
+boundary (`h (Fin.last d) = 0`), `‖D_h v‖_{L²(ℝ^N_+)} ≤ ‖∇v‖_{L²(ℝ^N_+)}`, i.e.
+`eLpNorm (diffQuot h (fn v)) 2 (volume.restrict Ω) ≤ (∑ᵢ ‖∂ᵢv‖₂²)^{1/2}`.
+
+Proof (p. 11320): for `v` the restriction of a `C¹_c(ℝ^N)` function the computation of the proof
+of Proposition 9.3 applies verbatim, because `Ω + t h = Ω` for all `t ∈ [0, 1]` keeps the segment
+`x + [0,1] h` inside `Ω` (`|τ_h v(x) - v(x)|² ≤ |h|² ∫₀¹ |∇v(x + th)|² dt`, then Fubini and the
+translation invariance of `volume.restrict Ω`); a general `v ∈ H^1(ℝ^N_+)` is a limit in `H^1(Ω)`
+of such restrictions by the density of `C_c^∞(ℝ^N)|_Ω` in `W^{1,p}(ℝ^N_+)` — chapter 9a's
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace` (`Reflection.lean`:
+the reflection extension of Lemma 9.2 followed by the whole-space density of `Density.lean`; it
+does **not** need the extension theorem 9.7 or Corollary 9.8 on a general `C¹` domain, so this
+module's half-space case is independent of `Extension.lean`), and both sides are continuous in
+`v`. ★★ (~150 lines). The constant is `1` exactly as in the book: the density transfers the
+`C_c^1` computation verbatim, while estimating through the reflected function directly would
+only give `√2`.'''
+deps = [
+  "diffQuot", "SobolevEuclidean",
+  "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace",  # ch9a, Reflection.toml: density on the half space from Lemma 9.2 and Density.lean
+]
+
+[[node]]
+id = "regularity_upperHalfSpace"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case B (`Ω = ℝ^N_+`), `H²` regularity.** Let
+`Ω = EuclideanSpace.upperHalfSpace d`, `u ∈ H^1_0(Ω)`, `g ∈ L²(Ω)`, and `dirichletForm Ω u φ = ⟪g, fn φ⟫` for every
+`φ ∈ H^1_0(Ω)`. Then `u ∈ H²(Ω)` (`MemSobolevMultiIndex b (fn u) 2 2 Ω volume`) with
+`‖∂_j∂_k u‖₂ ≤ ‖g‖₂` for `(j, k) ≠ (N, N)` and `‖∂_N∂_N u‖₂ ≤ N ‖g‖₂`, hence
+`‖u‖_{H²} ≤ C_N (‖u‖_{H¹} + ‖g‖₂)`.
+
+Proof (p. 11313–11352): for tangential `h`, `φ = D_{-h}(D_h u) ∈ H^1_0(Ω)`
+(`translate_mem_sobolevZero_of_tangential`) tests the equation; with Lemma 9.6
+(`eLpNorm_diffQuot_le_of_tangential`) this gives `‖∇ D_h u‖₂ ≤ ‖g‖₂` (55). For `φ ∈ 𝓓(Ω)`,
+`1 ≤ j ≤ N`, `1 ≤ k ≤ N - 1` and `h = |h| e_k`, `∫ D_h(∂_j u) φ = -∫ u D_{-h}(∂_j φ)` (adjointness
+and the weak-derivative identity), so `|∫ u D_{-h}(∂_j φ)| ≤ ‖g‖₂ ‖φ‖₂`; letting `h → 0`
+(`D_{-h}(∂_j φ) → -∂_k ∂_j φ` uniformly with supports in a fixed compact, dominated convergence)
+gives `|∫ u ∂_k ∂_j φ| ≤ ‖g‖₂ ‖φ‖₂` (56). For `(N, N)`, the equation tested with `φ` itself,
+after moving each `∂_i` onto `φ`, reads `∫ u ∂_N∂_N φ = -∑_{i<N} ∫ u ∂_i∂_i φ - ∫ g φ` — the
+book's (57) with `f - u` replaced by `g` — hence `|∫ u ∂_N ∂_N φ| ≤ N ‖g‖₂ ‖φ‖₂`. The bounds `|∫ u ∂_j∂_k φ| ≤ C ‖φ‖₂`
+for all `j, k` say that `∂_j u` satisfies Proposition 9.3 (ii) at `p = 2`, so `∂_j u ∈ H^1(Ω)`
+by (ii) ⇒ (i) of chapter 9a ("as in the proof of Proposition 8.3"), and `u ∈ H²(Ω)` by `cons`.
+★★★ (~450 lines).'''
+deps = [
+  "translate_mem_sobolevZero_of_tangential", "eLpNorm_diffQuot_le_of_tangential", "dirichletForm",
+  "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le",  # ch9a, Friedrichs.toml: Proposition 9.3 (ii) ⇒ (i)
+  "HasWeakIteratedLineDerivOn.cons", "memSobolevMultiIndex_succ_iff",
+]
+
+[[node]]
+id = "tangentialDeriv_mem_zero_of_isGalerkinSolution"
+kind = "theorem"
+desc = '''**[brezis2011functional] Lemma 9.7**: on `Ω = ℝ^N_+`, if `u ∈ H²(Ω) ∩ H^1_0(Ω)` satisfies
+`dirichletForm Ω u φ = ⟪g, fn φ⟫` for all `φ ∈ H^1_0(Ω)` and `1 ≤ j ≤ N - 1`, then the tangential
+derivative `∂_j u` lies in `H^1_0(Ω)` and satisfies `dirichletForm Ω (∂_j u) φ = ⟪∂_j g, fn φ⟫`
+for all `φ ∈ H^1_0(Ω)` whenever `g ∈ H^1(Ω)` (equation (58)).
+
+Proof (p. 11356–11370): (58) for `φ ∈ 𝓓(Ω)` is the equation tested with `∂_j φ` and moved across
+(`of_cons`, `perm`), and extends to `H^1_0(Ω)` by density. The delicate point is
+`∂_j u ∈ H^1_0(Ω)`: `D_h u ∈ H^1_0(Ω)` for `h = |h| e_j` (`translate_mem_sobolevZero_of_tangential`)
+with `‖D_h u‖_{H¹} ≤ ‖u‖_{H²}` (Lemma 9.6 applied to `u` and to each `∂_i u`), so a sequence
+`h_n → 0` has `D_{h_n} u` weakly convergent in the Hilbert space `H^1_0(Ω)` to some `w`
+(`NormedSpace.exists_subseq_forall_dual_tendsto` with `instIsReflexiveOfInnerProductSpace`, or
+`WeakDual.isSeqCompact_closedBall` through the Riesz map); testing against `φ ∈ 𝓓(Ω)` in `L²`,
+`∫ (D_h u) φ = ∫ u (D_{-h} φ) → -∫ u ∂_j φ`, so `w = ∂_j u` almost everywhere
+(`HasWeakIteratedLineDerivOn.ae_eq`), and `∂_j u ∈ H^1_0(Ω)`. ★★ (~200 lines).'''
+deps = ["regularity_upperHalfSpace", "eLpNorm_diffQuot_le_of_tangential", "translate_mem_sobolevZero_of_tangential", "NormedSpace.exists_subseq_forall_dual_tendsto", "HasWeakIteratedLineDerivOn.ae_eq", "HasWeakIteratedLineDerivOn.of_cons", "HasWeakIteratedLineDerivOn.comp_perm"]
+
+[[node]]
+id = "regularity_upperHalfSpace_higher"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case B, higher order**: under the hypotheses of
+`regularity_upperHalfSpace`, if `g ∈ H^m(ℝ^N_+)` then `u ∈ H^{m+2}(ℝ^N_+)` with
+`‖u‖_{H^{m+2}} ≤ C_{N,m} (‖u‖_{H¹} + ‖g‖_{H^m})`. Proof (p. 11371): induction on `m`; for `m + 1`
+apply the inductive hypothesis to the tangential derivatives `∂_j u ∈ H^1_0(Ω)` (Lemma 9.7,
+`tangentialDeriv_mem_zero_of_isGalerkinSolution`) with data `∂_j g ∈ H^m(Ω)`, which gives every
+`∂^α u` with `α_N ≤ 1`… more precisely every derivative of order `m + 3` containing a tangential
+factor; the remaining one, `∂_N^{m+3} u`, is read off the equation
+`∂_N∂_N u = -∑_{i<N} ∂_i∂_i u - g ∈ H^{m+1}(Ω)` (the weak identity of `regularity_upperHalfSpace`
+lifted to `H^{m+1}` by the inductive hypothesis). ★★ (~250 lines).'''
+deps = ["regularity_upperHalfSpace", "tangentialDeriv_mem_zero_of_isGalerkinSolution", "HasWeakIteratedLineDerivOn.cons"]
+
+[[node]]
+id = "transfer_chart"
+kind = "theorem"
+desc = '''**[brezis2011functional] Lemma 9.8: a `C²` chart turns the Dirichlet form into a
+variable-coefficient elliptic form.** Let `H : Q → U` be a chart of class `C²` up to the boundary
+with inverse `J`, `H(Q₊) = U ∩ Ω` (chapter 9a's `IsContDiffChartDomain 2` data), let
+`v ∈ H^1_0(Ω ⊓ U)` satisfy `dirichletForm (Ω ⊓ U) v φ = ⟪g, fn φ⟫` for all `φ ∈ H^1_0(Ω ⊓ U)`, and
+set `w = v ∘ H` on `Q₊`. Then `w ∈ H^1_0(Q₊)` and
+`∑_{k,ℓ} ∫_{Q₊} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Q₊} g̃ ψ` for all `ψ ∈ H^1_0(Q₊)`, where
+`a_{kℓ} = (∑_j ∂_j J_k ∂_j J_ℓ) ∘ H · |det Jac H|` is `C¹` on `Q̄₊` and satisfies
+`IsUniformlyElliptic Q₊ a α` for some `α > 0`, and `g̃ = (g ∘ H) |det Jac H| ∈ L²(Q₊)`; that is,
+`generalForm Q₊ a 0 0 w ψ = ⟪g̃, fn ψ⟫`.
+
+Proof (p. 11419–11437): `w ∈ H^1(Q₊)` with `∂_j (v ∘ H) = ∑_k (∂_k w ∘ J) ∂_j J_k` — read the
+other way, `∂_j v = ∑_k (∂_k w ∘ J)(∂_j J_k)` — is Proposition 9.6 of chapter 9a (change of
+variables under a `C¹` diffeomorphism with bounded Jacobians); `w ∈ H^1_0(Q₊)` because a test
+function `ψ ∈ 𝓓(Q₊)` pulls back to `ψ ∘ J`, a `C²` function with compact support in `Ω ⊓ U`, which
+is in `H^1_0(Ω ⊓ U)` by Lemma 9.5 (chapter 9a's `Cutoff`), and `ψ ↦ ψ ∘ J` is bounded on `H^1`, so
+it preserves closures; the integrals transform by Mathlib's
+`MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` on the measurable set `Q₊` with
+the injective `C¹` map `H`; ellipticity is
+`∑_{kℓ} a_{kℓ} ξ_k ξ_ℓ = |det Jac H| ∑_j (∑_k ∂_j J_k ξ_k)² = |det Jac H| ‖(Jac J)ᵀ ξ‖²`, bounded
+below by `α ‖ξ‖²` because `Jac J` and `det Jac H` are continuous and nonsingular on the compact
+`Q̄₊` (`|det Jac H| ≥ c > 0`, `‖(Jac J)ᵀ ξ‖ ≥ ‖ξ‖ / ‖Jac H‖`). The continuity of `a_{kℓ}` up to the
+boundary uses `H ∈ C²(Q̄)`, i.e. `ContDiffOn ℝ 2 H (closure Q)`. ★★★ (~450 lines). Footnote 28's
+generalization — the ellipticity condition is preserved under change of variables for any
+elliptic form — is the same computation with `a_{kℓ}` replaced by `∑_{ij} (a_{ij} ∘ H) ∂_i J_k ∂_j J_ℓ |det Jac H|`
+and is stated as `transfer_chart_general` beside it, for Remark 24.'''
+deps = [
+  "dirichletForm", "generalForm", "IsUniformlyElliptic", "SobolevEuclideanZero",
+  "HasWeakFDerivOn.comp_diffeoOn", "SobolevEuclidean.compDiffeoL", "IsDiffeoOnWithBoundedJacobian",  # ch9a, Calculus.toml: Proposition 9.6
+  "ContDiffChart.isDiffeoOnWithBoundedJacobian_pos",  # ch9a, Extension.toml: a chart restricted to Q₊ satisfies the hypotheses of Proposition 9.6
+  "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport",  # ch9a, Cutoff.toml and Zero.toml: Lemma 9.5 and its C¹-compact-support form (Remark 18)
+  "ContDiffChart", "unitChartCubePos",  # ch9a, Chart.toml: the chart structure and Q₊
+]
+
+[[node]]
+id = "tangential_estimate_cylinder"
+kind = "theorem"
+desc = '''**The tangential difference-quotient estimate on `Q₊` for a variable-coefficient elliptic
+form**, [brezis2011functional] (63)–(66). Let `a_{kℓ}` be `C¹` on `Q̄₊` with
+`IsUniformlyElliptic Q₊ a α`, let `V` be a closed subspace of `H^1(Q₊)` with `𝓓(Q₊) ⊆ V` such that
+`D_h ψ ∈ V` for every `ψ ∈ V` supported in `{|x'| < 1 - δ, 0 ≤ x_N < 1 - δ}` and every tangential
+`h` with `|h| < δ` (`V = H^1_0(Q₊)` qualifies, by `translate_mem_sobolevZero_of_tangential`
+localized), and let `w ∈ V` with support in that set satisfy `generalForm Q₊ a 0 0 w ψ = ⟪g̃, fn ψ⟫`
+for all `ψ ∈ V`. Then for tangential `h` with `|h| < δ`,
+`‖∇ D_h w‖_{L²(Q₊)} ≤ C (‖w‖_{H¹(Q₊)} + ‖g̃‖₂)` with `C` depending only on `α`, `N` and the
+`C¹` norms of the `a_{kℓ}`.
+
+Proof (p. 11448–11470): test with `ψ = D_{-h}(D_h w) ∈ V`; the left side is
+`∑ ∫ D_h(a_{kℓ} ∂_k w) ∂_ℓ(D_h w)` (adjointness), and the product formula
+`D_h(a_{kℓ} ∂_k w)(y) = a_{kℓ}(y + h) ∂_k D_h w(y) + (D_h a_{kℓ})(y) ∂_k w(y)` splits it into
+`≥ α ‖∇ D_h w‖² - C ‖w‖_{H¹} ‖∇ D_h w‖` (ellipticity at the translated point, and
+`|D_h a_{kℓ}| ≤ ‖∇ a_{kℓ}‖_∞` by the mean value theorem — `abs_sub_le_mul_of_abs_deriv_le`
+along the segment); the right side is `≤ ‖g̃‖₂ ‖∇ D_h w‖₂` by Lemma 9.6 on `Q₊` (whose proof is
+the same as on the half space for functions supported away from the lateral boundary, or
+follows from the half-space lemma applied to the zero extension); divide by `‖∇ D_h w‖`. ★★★
+(~450 lines). The test space `V` is a parameter so that Theorem 9.26 and Remark 24 reuse the
+estimate.'''
+deps = ["generalForm", "IsUniformlyElliptic", "diffQuot", "eLpNorm_diffQuot_le_of_tangential", "translate_mem_sobolevZero_of_tangential", "abs_sub_le_mul_of_abs_deriv_le"]
+
+[[node]]
+id = "regularity_unitChartCubePos"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, case C₂ on the model cylinder: `w ∈ H²(Q₊)` with
+`‖w‖_{H²(Q₊)} ≤ C ‖g̃‖₂`**, (67)–(69). Under the hypotheses of `tangential_estimate_cylinder`
+with `V = H^1_0(Q₊)`, `w ∈ H²(Q₊)` and `‖w‖_{H²} ≤ C (‖w‖_{H¹} + ‖g̃‖₂)`; and since
+`‖w‖_{H¹} ≤ C' ‖g̃‖₂` by the coercivity of the form on `H^1_0(Q₊)` (ellipticity and Poincaré,
+`generalForm_isCoerciveWith_of_nonneg` on the bounded `Q₊`), `‖w‖_{H²} ≤ C ‖g̃‖₂`.
+
+Proof (p. 11470–11500): from the tangential estimate, as in case B,
+`|∫ ∂_k w ∂_ℓ ψ| ≤ C ‖g̃‖₂ ‖ψ‖₂` for all `ψ ∈ C_c^1(Q₊)` and `(k, ℓ) ≠ (N, N)` (67) — the limit
+`h → 0` in `∫ D_h(∂_k w) ψ`. For `(N, N)`, replace `ψ` by `ψ / a_{NN}` in the equation (possible
+since `a_{NN} ≥ α > 0` and `a_{NN} ∈ C¹(Q̄₊)`, so `ψ / a_{NN} ∈ C_c^1(Q₊)`), expand
+`∂_N (ψ / a_{NN}) = (∂_N ψ)/a_{NN} - ψ ∂_N a_{NN} / a_{NN}²`, and use (67) with `a_{kℓ} ψ / a_{NN}`
+in place of `ψ` (footnote 32) to bound every other term: this is (69), giving
+`|∫ ∂_N w ∂_N ψ| ≤ C (‖w‖_{H¹} + ‖g̃‖₂) ‖ψ‖₂` (68). Then Proposition 9.3 (ii) ⇒ (i) at `p = 2`
+(chapter 9a) for each `∂_k w`, and `cons`. The passage from `C_c^1` to `𝓓` test functions is
+Remark 1 of §9.1 (mollify), or state (67)–(68) for `𝓓(Q₊)` directly, which the argument allows.
+★★★ (~400 lines).'''
+deps = [
+  "tangential_estimate_cylinder", "generalForm_isCoerciveWith_of_nonneg",
+  "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le",  # ch9a, Friedrichs.toml: Proposition 9.3 (ii) ⇒ (i)
+  "HasWeakIteratedLineDerivOn.cons", "memSobolevMultiIndex_succ_iff",
+]
+
+[[node]]
+id = "memSobolevMultiIndex_two_comp_chart"
+kind = "theorem"
+desc = '''Transfer back: `H²` is preserved by the inverse chart. For a chart `H : Q → U` of class
+`C²` with inverse `J` and `w ∈ H²(Q₊)`, the function `w ∘ J ∈ H²(Ω ⊓ U)` with
+`‖w ∘ J‖_{H²(Ω ⊓ U)} ≤ C ‖w‖_{H²(Q₊)}`, `C` from the `C²` norms of `H` and `J`. Proof: Proposition
+9.6 (chapter 9a) gives `w ∘ J ∈ H^1` with `∂_j (w ∘ J) = ∑_k (∂_k w ∘ J) ∂_j J_k`; each factor
+`∂_k w ∘ J` is in `H^1(Ω ⊓ U)` by Proposition 9.6 again (since `∂_k w ∈ H^1(Q₊)`), each `∂_j J_k` is
+`C¹` on the bounded `Ω ⊓ U` hence in `H^1` with bounded derivative, and the product of two `H^1`
+functions on a bounded set with one of them `C¹` is in `H^1` by the product rule
+`HasWeakIteratedLineDerivOn.mul` at `p = q = 2` (both factors and their derivatives are in
+`L²_loc`); so `∂_j (w ∘ J) ∈ H^1` for every `j`, and `cons` gives `H²`. This is the sentence "by
+returning to `Ω ∩ U_i`, `θ_i u` belongs to `H²(Ω ∩ U_i)`" (p. 11445). ★★ (~250 lines).'''
+deps = [
+  "HasWeakIteratedLineDerivOn.mul", "HasWeakIteratedLineDerivOn.cons", "memSobolevMultiIndex_succ_iff",
+  "HasWeakFDerivOn.comp_diffeoOn", "SobolevEuclidean.compDiffeoL",  # ch9a, Calculus.toml: Proposition 9.6
+]
+
+[[node]]
+id = "regularity_dirichlet"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25 (regularity for the Dirichlet problem), the `H²`
+clause.** Let `Ω ⊆ ℝ^N` (`N = d + 1`) be open of class `C²` (`IsContDiffChartDomain 2 Ω`) with
+`Bornology.IsBounded (frontier Ω)`. There is `C` such that for every `f ∈ L²(Ω)` and every
+`u ∈ H^1_0(Ω)` with `laplaceForm Ω u φ = ⟪f, fn φ⟫` for all `φ ∈ H^1_0(Ω)`, `u ∈ H²(Ω)`
+(`MemSobolevMultiIndex b (fn u) 2 2 Ω volume`) and `‖u‖_{H²(Ω)} ≤ C ‖f‖₂`. The half space is
+`regularity_upperHalfSpace` with `g = f - u`.
+
+Proof (p. 11372–11445): a finite family of charts `H_i : Q → U_i` covering the compact `Γ` and a
+partition of unity `θ₀, …, θ_k` subordinate to it, with `θ₀|_Ω ∈ C_c^∞(Ω)` when `Ω` is bounded
+and, in general, `θ₀` smooth, bounded with bounded derivatives and supported off `Γ` (Lemma 9.3
+and the finite atlas, chapter 9a's `Chart`). Write `u = ∑ θ_i u`. Interior piece: `θ₀ u`
+extended by zero is in `H^1(ℝ^N)` (Remark 4 (ii), second form) and solves
+`-Δ(θ₀u) = θ₀ f - θ₀ u - 2 ∇θ₀·∇u - (Δθ₀) u ∈ L²(ℝ^N)`, so `regularity_top` gives
+`θ₀ u ∈ H²(ℝ^N)` with `‖θ₀ u‖_{H²} ≤ C (‖f‖₂ + ‖u‖_{H¹}) ≤ C' ‖f‖₂`. Boundary pieces:
+`v = θ_i u ∈ H^1_0(Ω ⊓ U_i)` solves `-Δv = g` with `g = θ_i f - θ_i u - 2 ∇θ_i·∇u - (Δθ_i) u`
+on `Ω ⊓ U_i` against `H^1_0(Ω ⊓ U_i)`; `transfer_chart` moves it to `w ∈ H^1_0(Q₊)`, supported
+in `{|x'| < 1 - δ, 0 ≤ x_N < 1 - δ}` (footnote 31: the support of `θ_i` is a compact subset of
+`U_i`); `regularity_unitChartCubePos` gives `w ∈ H²(Q₊)` with `‖w‖ ≤ C ‖g̃‖₂ ≤ C ‖f‖₂`;
+`memSobolevMultiIndex_two_comp_chart` brings it back to `H²(Ω ⊓ U_i)`, and
+`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` (with a cut-off equal to `1` on
+`tsupport θ_i`) places `θ_i u` in `H²(Ω)`. Sum. ★★★ (~350 lines of assembly on top of the
+pieces). Membership of `v` in `H^1_0(Ω ⊓ U_i)` and the computation of `g` are the same
+product-rule facts as in `regularity_interior`.'''
+deps = [
+  "regularity_top", "transfer_chart", "regularity_unitChartCubePos",
+  "memSobolevMultiIndex_two_comp_chart", "MemSobolevMultiIndex.indicator_smul_of_tsupport_subset",
+  "laplaceForm", "existsUnique_isGalerkinSolution_laplace",
+  "IsContDiffChartDomain", "IsContDiffChartDomain.exists_finite_atlas", "IsCompact.exists_contDiff_partitionOfUnity",  # ch9a, Chart.toml: the chart predicate, the finite atlas, Lemma 9.3
+  "MemSobolevMultiIndex.indicator_mul", "IsSobolevCutoff", "SobolevMultiIndex.restrictL",  # ch9a, Cutoff.toml: Remark 4 (ii) in both forms, and the restriction to Ω ⊓ Uᵢ
+]
+
+[[node]]
+id = "regularity_dirichlet_higher"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, the `H^{m+2}` clause.** For `Ω` of class `C^{m+2}`
+(`IsContDiffChartDomain (m + 2) Ω`) with bounded boundary there is `C` such that, under the
+hypotheses of `regularity_dirichlet`, `f ∈ H^m(Ω)` implies `u ∈ H^{m+2}(Ω)` with
+`‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`. Proof (p. 11374, "the implication `f ∈ H^m ⇒ u ∈ H^{m+2}` is done
+by induction on `m` as in cases A and B"): the interior piece is `regularity_top_higher`; on the
+cylinder the induction of `regularity_upperHalfSpace_higher` is repeated for the
+variable-coefficient form, which needs (i) Lemma 9.7 for the general form on `Q₊` — the
+tangential derivative `∂_j w ∈ H^1_0(Q₊)` solves the equation with datum
+`∂_j g̃ - ∑ ∂_ℓ((∂_j a_{kℓ}) ∂_k w)` (a `C^m` coefficient hypothesis, which is where the class
+`C^{m+2}` of the chart enters through Lemma 9.8) — and (ii) the normal derivatives from the
+equation divided by `a_{NN}`. ★★★ (~500 lines beyond `regularity_dirichlet`). Lower priority than
+the `m = 0` clause: no consumer in this corpus needs `m ≥ 1` on a domain except the `C²` and
+`C^∞` clauses below and Remark 29.'''
+deps = ["regularity_dirichlet", "regularity_top_higher", "regularity_upperHalfSpace_higher", "transfer_chart"]
+
+[[node]]
+id = "regularity_dirichlet_contDiffOn"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, the `C²(Ω̄)` clause**: for `Ω` of class `C^{m+2}`
+with bounded boundary, `f ∈ H^m(Ω)` and `m > N/2`, the weak solution `u` agrees almost
+everywhere with a function `ũ` with `ContDiffOn ℝ 2 ũ (closure Ω)` (the book's `C²(Ω̄)`: the
+derivatives up to order `2` extend continuously to `Ω̄`). From `regularity_dirichlet_higher` and
+Corollary 9.15 of chapter 9a, `W^{m+2,2}(Ω) ⊆ C^k(Ω̄)` for `k = ⌊m + 2 - N/2⌋ ≥ 2` when
+`m > N/2` (with the footnote-16 caveat for integer `m - N/2` handled by the `p = N` case of the
+embedding chain). ★★ (~100 lines). Consumes chapter 9a's embedding on a domain.'''
+deps = [
+  "regularity_dirichlet_higher",
+  "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order",  # ch9a, EmbeddingDomain.toml: Corollary 9.15, the C^k(Ω̄) clause
+]
+
+[[node]]
+id = "regularity_dirichlet_smooth"
+kind = "theorem"
+desc = '''**[brezis2011functional] Theorem 9.25, the `C^∞(Ω̄)` clause**: for `Ω` of class `C^∞`
+(`IsContDiffChartDomain ⊤ Ω`) with bounded boundary and `f` agreeing almost everywhere with a
+function in `C^∞(Ω̄)` all of whose derivatives are bounded on `Ω` (on a bounded `Ω`, any function
+`ContDiffOn ℝ ⊤ f (closure Ω)`), the weak solution `u` agrees almost everywhere with a function
+`ContDiffOn ℝ ⊤ ũ (closure Ω)`. Proof: such an `f` is in `H^m(Ω)` for every `m` (a bounded
+`C^m(Ω̄)` function on a set of finite measure is in `W^{m,2}`; for unbounded `Ω` with bounded
+`Γ` the hypothesis `f ∈ H^m(Ω)` for all `m` is taken instead), so `u ∈ H^{m+2}(Ω)` for every `m`
+by `regularity_dirichlet_higher`, hence `u ∈ C^k(Ω̄)` for every `k` by the argument of
+`regularity_dirichlet_contDiffOn`, and the representatives glue as in
+`MemSobolevMultiIndexLoc.exists_contDiffOn`. ★★ (~120 lines).'''
+deps = ["regularity_dirichlet_higher", "regularity_dirichlet_contDiffOn"]
+
+[[node]]
+id = "regularity_neumann"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **[brezis2011functional] Theorem 9.26 (regularity for the Neumann problem)**: the
+conclusions of Theorem 9.25 for `u ∈ H^1(Ω)` with `laplaceForm Ω u φ = ⟪f, fn φ⟫` for all
+`φ ∈ H^1(Ω)`; stated for the `H²` clause with `‖u‖_{H²} ≤ C ‖f‖₂`, and for the `H^{m+2}` clause
+as `regularity_neumann_higher`. The book proves nothing ("entirely analogous"), and the route is:
+case A is `regularity_top` unchanged; case B goes through with `φ = D_{-h}(D_h u) ∈ H^1(ℝ^N_+)`
+(no boundary condition is needed for a tangential translate to be admissible, so Lemma 9.7's
+delicate point disappears); in case C₂ the localized `v = θ_i u` satisfies the equation against
+the test space `V_i = {φ ∈ H^1(Ω ⊓ U_i) : φ = 0 near ∂U_i ∩ Ω̄}`, which transfers under the chart
+to the space `V` of functions of `H^1(Q₊)` vanishing near the lateral and top boundary of `Q₊`, a
+closed subspace containing `𝓓(Q₊)` and invariant under small tangential translations of functions
+supported in `{|x'| < 1 - δ, x_N < 1 - δ}`; `tangential_estimate_cylinder` applies with this `V`,
+(67) follows as before, and (68) uses the equation tested against `ψ / a_{NN}` for `ψ ∈ 𝓓(Q₊)`,
+which is in `V`. What is *not* recovered is the boundary condition `∂u/∂n = 0`, which has no
+meaning without a trace. ★★★ (~600 lines given the Dirichlet case, most of it the two variants of
+`transfer_chart` and of the assembly with the new test space). Not needed by any consumer in this
+round; planned so that the estimate's parametrization by `V` is fixed now.'''
+deps = ["regularity_top", "regularity_upperHalfSpace", "tangential_estimate_cylinder", "transfer_chart", "regularity_dirichlet"]
+
+[[node]]
+id = "regularity_dirichlet_general"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **[brezis2011functional] Chapter 9, Remark 24: regularity for a general second-order
+elliptic operator.** For `Ω` of class `C²` with bounded boundary, coefficients `a_ij` in
+`C¹(Ω̄)` (with bounded derivatives if `Ω` is unbounded, footnote 26) satisfying the ellipticity
+condition, `a_i ∈ C(Ω̄)`, `a₀ ∈ L^∞(Ω)`, `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` with
+`generalForm Ω A a₁ a₀ u φ = ⟪f, fn φ⟫` for all `φ ∈ H^1_0(Ω)`: `u ∈ H²(Ω)`; and for `m ≥ 1`,
+`a_ij ∈ C^{m+1}(Ω̄)`, `a_i ∈ C^m(Ω̄)`, `Ω` of class `C^{m+2}`, `f ∈ H^m(Ω)`: `u ∈ H^{m+2}(Ω)`.
+The book gives no proof; the route is the one already taken for the Laplacian, since case C₂ is
+*already* the variable-coefficient estimate: move the lower-order terms `∑ a_i ∂_i u + a₀ u` to
+the right-hand side (they are in `L²`), so that only the principal part `∑ a_ij ∂_i ∂_j` remains;
+case A and C₁ become `tangential_estimate_cylinder`'s argument with translations in all
+directions on `ℝ^N` (the product formula for `D_h(a_ij ∂_i u)` is the only change from
+`regularity_top`); case C₂ is `transfer_chart_general` (footnote 28) followed by
+`regularity_unitChartCubePos` unchanged. ★★★ (~600 lines beyond Theorem 9.25). Lowest priority
+of this file: no consumer, and the book itself does not prove it.'''
+deps = ["regularity_dirichlet", "transfer_chart", "regularity_unitChartCubePos", "generalForm"]

@@ -1,0 +1,168 @@
+namespace = "Brezis.Chapter01"
+desc = '''
+Brezis §1.2, the geometric forms of the Hahn–Banach theorem, over a real normed space `E`. The
+book's vocabulary is defined here in its own generality — an affine hyperplane `[f = α]` is the
+level set of a nonzero linear functional that is *not* assumed continuous (footnote 3), and a
+hyperplane separates or strictly separates two sets — and bridged to the backbone's
+`ConvexAnalysis.Separates` / `SeparatesStrongly` (`Numlib/Analysis/Convex/Separation`) for
+continuous `f`, `separatesStrongly_iff_exists_gap` being the book's `ε`-definition verbatim.
+The theorems are Mathlib's: Proposition 1.5 is `LinearMap.continuous_iff_isClosed_ker`, Theorem
+1.6 is `geometric_hahn_banach_open`, Lemma 1.2 is the API of `gauge`
+(`Mathlib/Analysis/Convex/Gauge.lean`), Lemma 1.3 is `geometric_hahn_banach_open_point`, Theorem
+1.7 is `geometric_hahn_banach_closed_compact`, and Corollary 1.8 is the backbone's
+`Submodule.exists_dual_eq_zero_of_notMem`. Remark 4's finite-dimensional clause is a node,
+through Exercise 1.9 and the backbone's proper-separation theorem
+`exists_separatesProperly_iff_disjoint_relint`; its counterexample in `ℓ¹` (Exercise 1.14) is
+not. Remark 5 is stated as the density criterion it is. The Comments' Theorem 1.13
+(Krein–Milman) is a node here, since Mathlib proves it (`closure_convexHull_extremePoints`).
+'''
+
+[[node]]
+id = "IsHyperplane"
+kind = "definition"
+desc = '''The book's Definition of an affine hyperplane: `IsHyperplane (H : Set E) : Prop :=
+∃ (f : E →ₗ[ℝ] ℝ) (α : ℝ), f ≠ 0 ∧ H = {x | f x = α}`, with `f` linear and *not* assumed
+continuous (footnote 3: infinite-dimensional normed spaces have discontinuous linear
+functionals, Exercise 1.5). `[f = α]` is written `{x | f x = α}` throughout; a *closed*
+hyperplane is one with `IsClosed H`, which by Proposition 1.5 is one whose `f` is continuous.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.2, Definition"
+
+[[node]]
+id = "proposition_1_5"
+kind = "theorem"
+desc = '''Proposition 1.5. For `f : E →ₗ[ℝ] ℝ` with `f ≠ 0` and `α : ℝ`,
+`IsClosed {x | f x = α} ↔ Continuous f`. `←` is `isClosed_singleton.preimage`; `→`: the level set
+is a translate `x₁ + ker f` of the kernel for any `x₁` with `f x₁ = α` (exists since `f ≠ 0` maps
+onto `ℝ`), so `ker f` is closed and `LinearMap.continuous_iff_isClosed_ker`
+(`Mathlib/Topology/Algebra/Module/FiniteDimension.lean`, over any nontrivially normed field)
+applies. The book's direct proof (the segment argument and the bound `‖f‖ ≤ (α - f x₀)/r`)
+is not needed. ★'''
+deps = ["IsHyperplane"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.5"
+
+[[node]]
+id = "Separates"
+kind = "definition"
+desc = '''The book's Definition: the hyperplane `[f = α]` separates `A` and `B` when `f x ≤ α` on
+`A` and `f x ≥ α` on `B`. `Separates (f : E →ₗ[ℝ] ℝ) (α : ℝ) (A B : Set E) : Prop`, for a linear
+`f` as in `IsHyperplane`. For continuous `f` this is the backbone's
+`ConvexAnalysis.Separates (f : E →L[ℝ] ℝ) α A B` (`Numlib/Analysis/Convex/Separation`), by
+`separates_iff` (folded into this node): `Separates (f : E →ₗ[ℝ] ℝ) α A B ↔ ConvexAnalysis.Separates f α A B`
+for `f : StrongDual ℝ E`.'''
+deps = ["ConvexAnalysis.Separates"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.2, Definition"
+
+[[node]]
+id = "StrictlySeparates"
+kind = "definition"
+desc = '''The book's Definition: `[f = α]` strictly separates `A` and `B` when for some `ε > 0`,
+`f x ≤ α - ε` on `A` and `f x ≥ α + ε` on `B`. `StrictlySeparates (f : E →ₗ[ℝ] ℝ) (α : ℝ) (A B : Set E) : Prop`.
+For continuous `f` it is the backbone's `ConvexAnalysis.SeparatesStrongly f α A B` by
+`ConvexAnalysis.separatesStrongly_iff_exists_gap`, which is this definition word for word
+(`strictlySeparates_iff`, folded into this node).'''
+deps = ["ConvexAnalysis.SeparatesStrongly", "ConvexAnalysis.separatesStrongly_iff_exists_gap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.2, Definition"
+
+[[node]]
+id = "theorem_1_6"
+kind = "theorem"
+desc = '''Theorem 1.6 (Hahn–Banach, first geometric form). For nonempty convex `A B : Set E` with
+`Disjoint A B`, one of which is open (`IsOpen A ∨ IsOpen B`), there is a closed hyperplane
+separating them: `∃ (f : StrongDual ℝ E) (α : ℝ), f ≠ 0 ∧ Separates f α A B` (with `f` coerced
+to `E →ₗ[ℝ] ℝ`; closedness of `[f = α]` is `proposition_1_5`). Mathlib's
+`geometric_hahn_banach_open hA hAopen hB disj : ∃ f u, (∀ a ∈ A, f a < u) ∧ ∀ b ∈ B, u ≤ f b`
+when `A` is open; when `B` is open apply it to `(B, A)` and negate `f`, `u`. `f ≠ 0` because
+`f a < u ≤ f b` for some `a ∈ A`, `b ∈ B` (nonemptiness). ★'''
+deps = ["Separates", "proposition_1_5"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.6"
+
+[[node]]
+id = "lemma_1_2"
+kind = "theorem"
+desc = '''Lemma 1.2 (the gauge). For an open convex `C : Set E` with `0 ∈ C`, the Minkowski
+functional `p x = inf {α > 0 | α⁻¹ • x ∈ C}` — Mathlib's `gauge C x` — satisfies (1)
+`gauge C (λ • x) = λ * gauge C x` for `λ > 0`, (2) `gauge C (x + y) ≤ gauge C x + gauge C y`,
+(9) `0 ≤ gauge C x ≤ M * ‖x‖` for some `M` (namely `M = 1/r` for a ball `ball 0 r ⊆ C`), and (10)
+`C = {x | gauge C x < 1}`. Stated as one conjunction (or as `lemma_1_2_homog`, `_subadd`,
+`_bound`, `_eq`; keep the plain id on the conjunction). Mathlib: `gauge_smul_of_nonneg`,
+`gauge_add_le hC (absorbent_nhds_zero (hC_open.mem_nhds h0))`, `gauge_nonneg` and
+`mul_gauge_le_norm (Metric.ball_subset ...)`, `setOfPred_gauge_lt_one_eq_self_of_isOpen`
+(`Mathlib/Analysis/Convex/Gauge.lean`). The book's definition of `p` uses `inf {α > 0 | α⁻¹ x ∈ C}`,
+which is `gauge` (`gauge_def'`: `sInf {r ∈ Ioi 0 | x ∈ r • C}`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 1.2"
+
+[[node]]
+id = "lemma_1_3"
+kind = "theorem"
+desc = '''Lemma 1.3. For a nonempty open convex `C : Set E` and `x₀ ∉ C` there is
+`f : StrongDual ℝ E` with `f x < f x₀` for all `x ∈ C`; in particular `[f = f x₀]` separates
+`{x₀}` and `C` (`Separates f (f x₀) C {x₀}` and `f ≠ 0`). Mathlib's
+`geometric_hahn_banach_open_point hC hCopen hx₀ : ∃ f, ∀ a ∈ C, f a < f x₀`. ★'''
+deps = ["Separates"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 1.3"
+
+[[node]]
+id = "theorem_1_7"
+kind = "theorem"
+desc = '''Theorem 1.7 (Hahn–Banach, second geometric form). For nonempty convex `A B : Set E`
+with `Disjoint A B`, `IsClosed A` and `IsCompact B`, there is a closed hyperplane strictly
+separating them: `∃ (f : StrongDual ℝ E) (α : ℝ), f ≠ 0 ∧ StrictlySeparates f α A B`. Mathlib's
+`geometric_hahn_banach_closed_compact hA hAcl hB hBcpt disj : ∃ f u v, (∀ a ∈ A, f a < u) ∧ u < v ∧ ∀ b ∈ B, v < f b`;
+take `α = (u + v)/2`, `ε = (v - u)/2` (or go through `ConvexAnalysis.separatesStrongly_of_disjoint_isClosed_isCompact`
+and `strictlySeparates_iff`). `f ≠ 0` by `ConvexAnalysis.SeparatesStrongly.ne_zero` or directly. ★'''
+deps = ["StrictlySeparates"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.7"
+
+[[node]]
+id = "remark_1_4"
+kind = "theorem"
+desc = '''Remark 4, the finite-dimensional clause: if `E` is finite-dimensional, any two nonempty
+disjoint convex sets can be separated by a closed hyperplane, with no openness, closedness or
+compactness assumption. This is `exercise_1_9` restated with `IsClosed {x | f x = α}` added
+(`proposition_1_5` and continuity of `f`). The first clause — that in general two disjoint
+closed convex sets cannot be separated (Exercise 1.14 in `ℓ¹`) — is not formalized. ★'''
+deps = ["Separates", "ConvexAnalysis.exists_separatesProperly_iff_disjoint_relint", "proposition_1_5"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 4"
+
+[[node]]
+id = "corollary_1_8"
+kind = "theorem"
+desc = '''Corollary 1.8. For a subspace `F : Submodule ℝ E` with `F.topologicalClosure ≠ ⊤`
+(the book's `closure F ≠ E`) there is `f : StrongDual ℝ E`, `f ≠ 0`, with `f x = 0` for all
+`x ∈ F`. Pick `x₀ ∉ F.topologicalClosure` and apply the backbone's
+`Submodule.exists_dual_eq_zero_of_notMem F.topologicalClosure F.isClosed_topologicalClosure hx₀`
+(`Numlib/Analysis/Normed/Module/DualSeparable`): it gives `‖f‖ = 1`, `f = 0` on the closure and
+`f x₀ ≠ 0`. The book's proof is Theorem 1.7 applied to `closure F` and `{x₀}` plus the
+homogeneity argument; the backbone lemma is the same statement proved through the quotient
+norm. ★'''
+deps = ["Submodule.exists_dual_eq_zero_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 1.8"
+
+[[node]]
+id = "remark_1_5"
+kind = "theorem"
+desc = '''Remark 5, the density criterion: a subspace `F : Submodule ℝ E` is dense
+(`Dense (F : Set E)`) iff every `f : StrongDual ℝ E` vanishing on `F` vanishes identically:
+`Dense (F : Set E) ↔ ∀ f : StrongDual ℝ E, (∀ x ∈ F, f x = 0) → f = 0`. `→` is continuity of `f`;
+`←` is the contrapositive of `corollary_1_8`. Equivalently the backbone's
+`Submodule.strongDualAnnihilator_eq_bot_iff` (`Numlib/Analysis/Normed/Module/Annihilator`) read
+through `Submodule.mem_strongDualAnnihilator` and `Submodule.eq_bot_iff`. ★'''
+deps = ["corollary_1_8", "Submodule.strongDualAnnihilator_eq_bot_iff", "Submodule.mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 5"
+
+[[node]]
+id = "theorem_1_13"
+kind = "theorem"
+desc = '''Theorem 1.13 (Krein–Milman), from the Comments on Chapter 1, §2(a): a compact convex
+`K : Set E` coincides with the closed convex hull of its extremal points,
+`closure (convexHull ℝ (K.extremePoints ℝ)) = K`. Mathlib's `closure_convexHull_extremePoints hK hKconv`
+(`Mathlib/Analysis/Convex/KreinMilman.lean`, in any locally convex Hausdorff space). The book's
+"extremal point" — `x` is not `(1 - t) x₀ + t x₁` with `t ∈ (0,1)`, `x₀ ≠ x₁` in `K` — is
+`Set.extremePoints ℝ K` (`mem_extremePoints_iff_forall_segment` /
+`mem_extremePoints`: `x ∈ openSegment ℝ x₁ x₂ → x₁ = x ∧ x₂ = x`); the book's `conv A` is
+`convexHull ℝ A` (`convexHull_eq` for the finite-combination description). The book only
+states the theorem and refers to Problem 1 for a proof; Problem 1 itself is not planned. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.13"

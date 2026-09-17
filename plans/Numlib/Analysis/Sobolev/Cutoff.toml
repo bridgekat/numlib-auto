@@ -1,0 +1,326 @@
+desc = '''
+Cut-off functions and extension by zero for `W^{1,p}(Ω)` on an arbitrary open set — the
+elementary tools that Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+Equations*, chapter 9, uses in every proof of §9.2–§9.4: Remark 4 (ii) (the zero extension of
+`αu` for a cut-off `α`), the cut-off sequence `ζ_n(x) = ζ(x/n)` of footnote 5 with `ζ_n u → u`,
+Lemma 9.5 (a `W^{k,p}` function with compact support in `Ω` lies in `W_0^{k,p}(Ω)`), and the
+locality of the weak derivative. Imports `Numlib/Analysis/Sobolev/MultiIndex.lean` and
+`…/Density.lean`; it is the root of the chapter-9 stack (`Friedrichs`, `Calculus`, `Reflection`,
+`Poincare`, `Extension`, `Embedding`, `EmbeddingDomain`, `Zero`, `Compactness` all sit above it) and
+the first module to attack.
+
+Design. Predicate-level statements are over a finite-dimensional real normed `E` with an additive
+Haar measure `μ`, in the `HasWeakIteratedLineDerivOn ![y] f w Ω μ` (single direction) or
+`HasWeakFDerivOn f w Ω μ` (tensor) reading, exactly as `Mollification.lean` and `Density.lean` do;
+typed statements are on `SobolevMultiIndex F b k p Ω μ` and its abbreviation
+`SobolevEuclidean N k p Ω` (appended to `MultiIndex.toml`). A cut-off is bundled as the predicate
+`IsSobolevCutoff Ω α` — smooth, bounded with bounded gradient, and `tsupport α` disjoint from
+`frontier Ω` — which is the second, weaker form of Remark 4 (ii) ("`α ∈ C^1(ℝ^N) ∩ L^∞` with
+`∇α ∈ L^∞` and `supp α ⊂ ℝ^N ∖ ∂Ω`") and covers the first (`α ∈ C_c^1(Ω)`) through
+`IsSobolevCutoff.of_hasCompactSupport`; it is the hypothesis the extension theorem's `θ_0`
+satisfies. Smoothness `C^∞` is asked instead of the book's `C^1` because the test functions are
+`C_c^∞` and `α φ` must again be a test function; the `C^1` form follows from Remark 1
+(`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` in `Friedrichs.lean`) and is not
+needed anywhere, since Lemma 9.3 produces smooth partitions of unity.
+
+The typed operators of this module (`SobolevMultiIndex.restrictL`, `extendZeroMulL`,
+`toLpₗ`) are the linear-algebraic glue of the later modules: every operator of chapter 9 —
+the extension operator `P`, the embeddings `W^{1,p} ↪ L^q` — is assembled from them, and the
+pattern "define on functions, prove the membership and the bound at the predicate level, bundle
+by `MemSobolevMultiIndex.exists_sobolevMultiIndex` and `SobolevMultiIndex.ext_of_fn_ae_eq`" is
+fixed here once.
+
+Three more things live here because they are used both below and above the extension theorem
+and must not force an import of `Extension.lean`: the local Sobolev space `MemSobolevMultiIndexLoc`
+(`W^{k,p}_loc(Ω)`) with the cut-off lemma that puts `θ u` in `W^{k,p}(ℝ^N)` for `θ ∈ 𝓓(Ω)` (the
+θ-reading of `H^m_loc` of Remark 25, consumed by `PDE/Elliptic/Regularity` and `Spectral`); the
+abstract predicate `IsSobolevExtensionDomain p Ω` / `HasSobolevExtensionOn S` ("a bounded linear
+extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on `S`"), whose instances are the half
+space (`Reflection.lean`), `C^1` chart domains with bounded boundary (`Extension.lean`, Theorem
+9.7) and `W_0^{1,p}(Ω)` on any open set (`Zero.lean`, extension by zero), and on which
+`EmbeddingDomain.lean` and `Compactness.lean` state Corollaries 9.14–9.15 and Theorem 9.16 once;
+and the density of `C_c^∞(ℝ^N)|_Ω` in `S` that any such operator gives (the abstract form of
+Corollary 9.8).
+
+Order of attack within the module: locality → `IsSobolevCutoff` and the zero extension → the
+typed operators → the cut-off sequence → Lemma 9.5 → the local space and the extension
+predicate. About 1300 lines.
+'''
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset"
+kind = "theorem"
+desc = '''**Locality of the weak derivative**: if `f` and `w` are locally integrable on `Ω` and
+`HasWeakIteratedLineDerivOn y f w Ω' μ` holds for every open `Ω'` with `closure Ω'` compact and
+contained in `Ω`, then `HasWeakIteratedLineDerivOn y f w Ω μ`. A test function on `Ω` has compact
+support, so `IsCompact.exists_pos_forall_closedBall_subset` (`Mollification.lean`) provides such
+an `Ω'` containing it, and the defining identity on `Ω'` is the identity on `Ω`. This is the
+step "fix an open set `Ω'` with `supp φ ⊂ Ω' ⊂⊂ Ω`" by which Brezis handles `p = ∞` in
+Propositions 9.5 and 9.6 ([brezis2011functional] §9.1, end of the proof of Proposition 9.5),
+reducing a `W^{1,∞}` statement to `W^{1,q}` on relatively compact subsets, where
+`MemSobolev.mono_exponent` applies. ★, ~50 lines.'''
+deps = ["HasWeakIteratedLineDerivOn", "IsCompact.exists_pos_forall_closedBall_subset"]
+
+[[node]]
+id = "IsSobolevCutoff"
+kind = "definition"
+desc = '''`IsSobolevCutoff Ω α`, for an open `Ω : Opens E` and `α : E → ℝ`: `α` is `C^∞`, bounded
+with bounded derivative (`∃ M, ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M`), and `tsupport α` is
+disjoint from `frontier Ω`. This is the hypothesis of the second sentence of
+[brezis2011functional] Chapter 9, Remark 4 (ii) — "`α ∈ C^1(ℝ^N) ∩ L^∞(ℝ^N)` with
+`∇α ∈ L^∞` and `supp α ⊂ ℝ^N ∖ ∂Ω`" — with `C^∞` in place of `C^1` (see the group description).
+It is exactly what the function `θ_0` of the partition of unity satisfies in the proof of
+Theorem 9.7. A structure or a conjunction; the fields are `contDiff`, `exists_bound`,
+`disjoint_frontier`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "IsSobolevCutoff.of_hasCompactSupport"
+kind = "theorem"
+desc = '''A smooth function with compact support inside `Ω` (`HasCompactSupport α`,
+`tsupport α ⊆ Ω`) is a Sobolev cut-off for `Ω`: a smooth compactly supported function and its
+derivative are bounded, and a compact subset of the open `Ω` misses `frontier Ω`. This is the
+first form of [brezis2011functional] Chapter 9, Remark 4 (ii) (`α ∈ C_c^1(Ω)`), and the form used
+for the `θ_i`, `i ≥ 1`, in the proof of Theorem 9.7. ★'''
+deps = ["IsSobolevCutoff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "IsSobolevCutoff.exists_testFunction_mul_eqOn"
+kind = "theorem"
+desc = '''For a cut-off `α` of `Ω` and a test function `φ : 𝓓(⊤, ℝ)` on the whole space, there is
+a test function `ψ : 𝓓(Ω, ℝ)` on `Ω` with `ψ = α * φ` on `Ω`. Proof: `K := tsupport (α * φ) ∩
+closure Ω` is compact and disjoint from `frontier Ω`, hence a compact subset of `Ω`; take a smooth
+`χ` equal to `1` on `K` with `tsupport χ ⊆ Ω` (`IsCompact.exists_contDiff_eqOn_one`,
+`Mollification.lean`) and `ψ := χ * α * φ`. On `Ω`, either `χ = 1` or the point is outside
+`tsupport (α φ)` where both sides vanish. This is the one technical point of the zero-extension
+argument of [brezis2011functional] Chapter 9, Remark 4 (ii), when `α` is merely supported off
+`∂Ω`; when `tsupport α ⊆ Ω` one can take `ψ = α φ` directly. ★★, ~80 lines.'''
+deps = ["IsSobolevCutoff", "IsCompact.exists_contDiff_eqOn_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.indicator_mul"
+kind = "theorem"
+desc = '''**Extension by zero of `αu`** ([brezis2011functional] Chapter 9, Remark 4 (ii), both
+forms): if `HasWeakIteratedLineDerivOn ![y] u w Ω μ`, `u` and `w` are integrable on `Ω`
+(or merely `LocallyIntegrableOn` with `α` compactly supported), and `IsSobolevCutoff Ω α`, then
+`HasWeakIteratedLineDerivOn ![y] (Ω.indicator (α * u)) (Ω.indicator (α * w + (fun x ↦ fderiv ℝ α x y) * u)) ⊤ μ`
+on the whole space. Proof as in the book: for `φ` a test function on `ℝ^N`,
+`∫ \overline{αu} ∂_y φ = ∫_Ω u ∂_y(αφ) − ∫_Ω u (∂_y α) φ`, and `αφ` is (on `Ω`) the test function
+`ψ` of `IsSobolevCutoff.exists_testFunction_mul_eqOn`, so the defining identity of `w` applies.
+Footnote 3 ("in general `ū ∉ W^{1,p}(ℝ^N)`") is why the cut-off is needed. ★★, ~120 lines.'''
+deps = ["HasWeakIteratedLineDerivOn", "IsSobolevCutoff", "IsSobolevCutoff.exists_testFunction_mul_eqOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "MemSobolevMultiIndex.indicator_mul"
+kind = "theorem"
+desc = '''Membership form of Remark 4 (ii): for `MemSobolevMultiIndex b u 1 p Ω μ`, `1 ≤ p ≤ ∞`, and
+`IsSobolevCutoff Ω α` with bound `M`, `MemSobolevMultiIndex b (Ω.indicator (α * u)) 1 p ⊤ μ`, and
+the `L^p` estimates `eLpNorm (Ω.indicator (α * u)) p μ ≤ ofReal M * eLpNorm u p (μ.restrict Ω)`
+and `eLpNorm (∂_i \overline{αu}) p μ ≤ ofReal M * (eLpNorm (∂_i u) p (μ.restrict Ω) + eLpNorm u p (μ.restrict Ω))`
+for every basis direction. From `HasWeakIteratedLineDerivOn.indicator_mul` applied to each
+`multiIndexTuple b (Pi.single i 1)` (a tuple of length one) and `MemLp` of indicators and
+bounded multiples. This is the estimate `‖ū_0‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(Ω)}` of
+[brezis2011functional] §9.2, proof of Theorem 9.7, step (a). ★★, ~120 lines.'''
+deps = ["HasWeakIteratedLineDerivOn.indicator_mul", "MemSobolevMultiIndex", "IsSobolevCutoff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "SobolevMultiIndex.restrictL"
+kind = "definition"
+desc = '''Restriction to an open subset as a bounded linear map:
+`SobolevMultiIndex.restrictL (h : Ω' ≤ Ω) : SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω' μ`,
+with `fn (restrictL h u) =ᵐ[μ.restrict Ω'] fn u`, `weakDeriv (restrictL h u) α =ᵐ[μ.restrict Ω'] weakDeriv u α`
+and `‖restrictL h u‖ ≤ ‖u‖`. Built from `MemSobolevMultiIndex.congr_ae`/`.mono_set`
+(`MemSobolev.mono_set` transported) and `MemSobolevMultiIndex.exists_sobolevMultiIndex`; linear
+by `SobolevMultiIndex.ext_of_fn_ae_eq`. Every "consider the restriction of `u` to `U_i ∩ Ω`"
+of [brezis2011functional] §9.2 is this map; for `1 ≤ p`. ★, ~80 lines together with its three
+lemmas `restrictL_fn`, `restrictL_weakDeriv`, `norm_restrictL_le`.'''
+deps = ["SobolevMultiIndex", "MemSobolev.mono_set", "MemSobolevMultiIndex.exists_sobolevMultiIndex", "SobolevMultiIndex.ext_of_fn_ae_eq", "memSobolev_iff_memSobolevMultiIndex"]
+
+[[node]]
+id = "SobolevMultiIndex.extendZeroMulL"
+kind = "definition"
+desc = '''The bounded linear map `u ↦ \overline{αu}` of Remark 4 (ii) on the typed spaces:
+`SobolevMultiIndex.extendZeroMulL (hα : IsSobolevCutoff Ω α) : SobolevMultiIndex ℝ b 1 p Ω μ →L[ℝ] SobolevMultiIndex ℝ b 1 p ⊤ μ`,
+for `1 ≤ p`, with `extendZeroMulL_fn : fn (extendZeroMulL hα u) =ᵐ[μ] Ω.indicator (α * fn u)`,
+`extendZeroMulL_fn_ae_eq_on : fn (extendZeroMulL hα u) =ᵐ[μ.restrict Ω] α * fn u`, the `L^p`
+bound `eLpNorm (fn (extendZeroMulL hα u)) p μ ≤ ofReal M * eLpNorm (fn u) p (μ.restrict Ω)` and
+`‖extendZeroMulL hα u‖ ≤ C(M, N, p) * ‖u‖`. Values by `MemSobolevMultiIndex.indicator_mul` and
+`exists_sobolevMultiIndex`; linearity because the construction is linear a.e. and
+`ext_of_fn_ae_eq`; continuity by `LinearMap.mkContinuous`. Steps (a) and (b)-end of the proof of
+[brezis2011functional] Theorem 9.7 are this operator (with `θ_0`, respectively `θ_i` on `U_i`).
+★★, ~150 lines.'''
+deps = ["MemSobolevMultiIndex.indicator_mul", "MemSobolevMultiIndex.exists_sobolevMultiIndex", "SobolevMultiIndex.ext_of_fn_ae_eq", "IsSobolevCutoff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "SobolevMultiIndex.toLpₗ"
+kind = "definition"
+desc = '''The inclusion of `W^{k,p}(Ω)` into `L^q(Ω)` as a linear map, given the membership:
+`SobolevMultiIndex.toLpₗ (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict Ω)) : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] Lp F q (μ.restrict Ω)`,
+`u ↦ (h u).toLp (fn u)`, with `toLpₗ_coeFn : toLpₗ h u =ᵐ[μ.restrict Ω] fn u`, injective
+(`toLpₗ_injective`, by `SobolevMultiIndex.ext_of_fn_ae_eq`), and
+`isContinuousEmbedding_toLpₗ (hC : ∀ u, ‖toLpₗ h u‖ ≤ C * ‖u‖) : IsContinuousEmbedding (toLpₗ h)`.
+Every "`W^{1,p}(Ω) ⊂ L^q(Ω)` with continuous injection" of [brezis2011functional] §9.3
+(Theorem 9.9, Corollaries 9.10, 9.11, 9.13, 9.14) is `IsContinuousEmbedding (toLpₗ h)` for the
+relevant `h`, and every compact injection of Theorem 9.16 is `IsCompactEmbedding (toLpₗ h)`,
+in the vocabulary of `Numlib/Analysis/Normed/Operator/Embedding.lean`. For `q = p` the
+membership is `SobolevMultiIndex.memLp`, the map is the underlying linear map of
+`SobolevMultiIndex.fnL` (`MultiIndex.lean`; `toLpₗ_self : toLpₗ (fun u ↦ memLp u) = (fnL : _ →ₗ[ℝ] _)`)
+and the bound is `‖·‖ ≤ ‖u‖`: `isContinuousEmbedding_fnL`. ★, ~100 lines.'''
+deps = ["SobolevMultiIndex", "SobolevMultiIndex.ext_of_fn_ae_eq", "SobolevMultiIndex.memLp", "SobolevMultiIndex.weakDerivL", "IsContinuousEmbedding"]
+
+[[node]]
+id = "MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub"
+kind = "theorem"
+desc = '''**The cut-off sequence approximates in `W^{1,p}(Ω)`**, any open `Ω`, `1 ≤ p < ∞`: for
+`ζ : E → ℝ` smooth with `0 ≤ ζ ≤ 1`, `ζ = 1` on `closedBall 0 1` and `tsupport ζ ⊆ closedBall 0 2`
+(such a `ζ` exists: `exists_contDiff_eqOn_one_closedBall_one` in `Density.lean`), put
+`ζ_n x = ζ (n⁻¹ • x)`. Then for `MemSobolev f 1 p Ω μ`: `MemSobolev (ζ_n * f) 1 p Ω μ` with weak
+gradient `ζ_n ∇f + f ∇ζ_n` (`HasWeakIteratedLineDerivOn.mul_contDiff`), and
+`Tendsto (fun n ↦ sobolevNorm (ζ_n * f − f) 1 p Ω μ) atTop (𝓝 0)`. Proof: `(ζ_n − 1) f` and
+`(ζ_n − 1) ∇f` are bounded by the `L^p` mass outside `ball 0 n`
+(`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball`), and `‖∇ζ_n‖_∞ ≤ ‖∇ζ‖_∞ / n`
+(`iteratedFDeriv_comp_const_smul`). This is footnote 5 of [brezis2011functional] §9.1 and the
+sequence `ζ_n u` used in Corollary 9.8, Theorem 9.17 and Proposition 9.18. ★★, ~150 lines.'''
+deps = ["MemSobolev", "MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball", "exists_contDiff_eqOn_one_closedBall_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
+
+[[node]]
+id = "SobolevMultiIndex.tendsto_cutoff_smul"
+kind = "theorem"
+desc = '''Typed form of the cut-off approximation: for `u : SobolevMultiIndex ℝ b 1 p Ω μ`,
+`1 ≤ p < ∞`, and `ζ` as in `MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub`, there is a sequence
+`v : ℕ → SobolevMultiIndex ℝ b 1 p Ω μ` with `fn (v n) =ᵐ[μ.restrict Ω] ζ_n * fn u`,
+`∀ n, ∀ᵐ x ∂μ.restrict Ω, ‖x‖ > 2 n → fn (v n) x = 0` (bounded support), and
+`Tendsto v atTop (𝓝 u)`. The multi-index norm at order `1` is controlled by the tensor
+`sobolevNorm` at order `1` and conversely (each `∂_i` is the tensor evaluated at `b i`), which is
+the only conversion. ★, ~80 lines.'''
+deps = ["MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub", "SobolevMultiIndex", "memSobolev_iff_memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
+
+[[node]]
+id = "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact"
+kind = "theorem"
+desc = '''**Lemma 9.5, at every order**: if `u : SobolevMultiIndex F b k p Ω μ`, `1 ≤ p < ∞`, vanishes
+a.e. outside a compact `K ⊆ Ω` (`∀ᵐ x ∂μ.restrict Ω, x ∉ K → fn u x = 0`), then
+`u ∈ SobolevMultiIndexZero F b k p Ω μ`. Proof ([brezis2011functional] §9.4, Lemma 9.5, with the
+local approximation in place of Theorem 9.2): choose an open `V` with `K ⊆ V`, `closure V` compact
+in `Ω` (`IsCompact.exists_pos_forall_closedBall_subset`) and a smooth `α` equal to `1` on `K` with
+`tsupport α ⊆ V` (`IsCompact.exists_contDiff_eqOn_one`); `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`
+gives smooth `g i` with `∂^m g i → ∂^m u` in `L^p(V)` for all `m ≤ k`; then `α g i` are test
+functions on `Ω` and `α g i − u = α (g i − u)` on `Ω` (since `α u = u`), whose derivatives are
+bounded in `L^p(Ω) = L^p(V)` by the Leibniz estimate `eLpNorm_iteratedFDeriv_smul_sub_le` — the
+`a − b` there being `g i − G` for smooth `G`; compare instead against `u` through the triangle
+inequality with a second smooth approximant, as `Density.lean` does. Conversion between the
+tensor derivatives of the estimate and the multi-index components of the type by
+`MemSobolev.memSobolevMultiIndex`. The book states `k = 1`; the general order costs nothing
+extra and is what Remark 22 (`W_0^{m,p}` as the closure of `C_c^m`) needs. ★★, ~200 lines.'''
+deps = ["SobolevMultiIndexZero", "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm", "IsCompact.exists_contDiff_eqOn_one", "IsCompact.exists_pos_forall_closedBall_subset", "eLpNorm_iteratedFDeriv_smul_sub_le", "MemSobolev.memSobolevMultiIndex", "MemSobolevMultiIndex.memSobolev", "TestFunction.exists_mem_sobolevMultiIndex_testFunctions"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.5"
+
+[[node]]
+id = "MemSobolevMultiIndexLoc"
+kind = "definition"
+desc = '''`MemSobolevMultiIndexLoc (b : Basis ι ℝ E) (f : E → F) (k : ℕ) (p : ℝ≥0∞) (Ω : Opens E) (μ : Measure E) : Prop`,
+the local Sobolev space `W^{k,p}_loc(Ω)`: `MemSobolevMultiIndex b f k p ω μ` for every open `ω`
+with `closure ω` compact and contained in `Ω` (`ω ⋐ Ω`). This is the reading "`u` is in `H^{m+2}(ω)`
+for every `ω ⊂⊂ Ω`" of [brezis2011functional] Remark 25 and of the proof of Theorem 9.31; the
+book's other reading, `θ u ∈ H^{m+2}(Ω)` for every `θ ∈ C_c^∞(Ω)`, is
+`MemSobolevMultiIndexLoc.smul_testFunction`. Companion lemmas: `MemSobolevMultiIndex.memSobolevMultiIndexLoc`
+(global implies local, by `HasWeakIteratedLineDerivOn.mono`), `MemSobolevMultiIndexLoc.mono_order`,
+`MemSobolevMultiIndexLoc.mono_set`, `memSobolevMultiIndexLoc_iff_forall_ball` (it suffices to test
+closed balls inside `Ω`), and `MemSobolevMultiIndexLoc.locallyMemLpOn` (each weak derivative is in
+`L^p_loc(Ω)`, `MeasureTheory.LocallyMemLpOn`) with its converse
+`memSobolevMultiIndexLoc_of_locallyMemLpOn`. Formerly planned in `PDE/Elliptic/Regularity.toml`
+(chapter 9b), which flagged it for relocation here. ★ (~120 lines).'''
+deps = ["MemSobolevMultiIndex", "MeasureTheory.LocallyMemLpOn"]
+
+[[node]]
+id = "MemSobolevMultiIndexLoc.smul_testFunction"
+kind = "theorem"
+desc = '''The cut-off of a locally Sobolev function is globally Sobolev, at every order: for
+`u ∈ W^{k,p}_loc(Ω)` and `θ ∈ 𝓓(Ω, ℝ)`, the function `θ u` extended by zero outside `Ω` lies in
+`W^{k,p}(ℝ^N)` (`MemSobolevMultiIndex b (indicator Ω (θ • u)) k p ⊤ μ`), and a fortiori
+`θ u ∈ W^{k,p}(Ω)`. This is the θ-reading of `H^{m+2}_loc(Ω)` in [brezis2011functional] Remark 25,
+and it is what `PDE/Elliptic/Spectral` uses to see `e_n ∈ C^∞(Ω)` from `e_n ∈ H^m_loc(Ω)` for all
+`m` through the whole-space embeddings.
+
+Proof: by induction on the length of the tuple of directions, with the first-order product
+rule against a smooth factor (`HasWeakIteratedLineDerivOn.mul_contDiff` of
+`Numlib/Analysis/Sobolev/WeakDeriv`) and `HasWeakIteratedLineDerivOn.cons`: the class of
+functions having weak derivatives along all tuples of length `≤ k` in `L^p_loc(Ω)` is closed
+under multiplication by a smooth function, because `∂_y (θ v) = θ ∂_y v + (∂_y θ) v` and both
+terms are again of that class one order down. The zero extension across `∂Ω` is Remark 4 (ii)
+(`MemSobolevMultiIndex.indicator_mul` above), applied to each of the finitely many products. No
+explicit Leibniz formula of order `k` is written down — the lesson of
+`Numlib/Analysis/Sobolev/Density` — only the existence and local integrability of the
+derivatives. ★★ (~180 lines).'''
+deps = ["MemSobolevMultiIndexLoc", "HasWeakIteratedLineDerivOn.cons", "MemSobolevMultiIndex.indicator_mul"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
+
+[[node]]
+id = "MemSobolevMultiIndex.indicator_smul_of_tsupport_subset"
+kind = "theorem"
+desc = '''Zero extension across the edge of a chart, at order two: for opens `U` and `Ω`,
+`α : E → ℝ` smooth with `tsupport α ⊆ U`, and `v ∈ H²(Ω ⊓ U)`, the function `α v` extended by
+zero to `Ω` lies in `H²(Ω)` (`MemSobolevMultiIndex b (indicator (Ω ⊓ U) (α • v)) 2 2 Ω volume`),
+with `‖α v‖_{H²(Ω)} ≤ C_α ‖v‖_{H²(Ω ⊓ U)}`; likewise at order one and, by the same induction, at
+every order. Proof: for `φ ∈ 𝓓(Ω)`, `α φ` is a test function on `Ω ⊓ U`
+(`tsupport (α φ) ⊆ tsupport α ∩ tsupport φ`, compact and inside `U ∩ Ω`), so
+`∫_Ω ext(α v) ∂_y φ = ∫_{Ω ⊓ U} v ∂_y (α φ) - ∫_{Ω ⊓ U} v (∂_y α) φ`, and the weak-derivative
+identity on `Ω ⊓ U` moves the derivative onto `v`; iterate with `cons`. Remark 4 (ii)
+(`MemSobolevMultiIndex.indicator_mul`) is the case `Ω = ℝ^N`, `U` the book's `Ω`, at order one;
+this generalization is what "and thus, in fact, to `H²(Ω)`" ([brezis2011functional] p. 11445, the
+assembly of Theorem 9.25) needs. Formerly planned in `PDE/Elliptic/Regularity.toml`. ★★ (~150
+lines).'''
+deps = ["MemSobolevMultiIndex", "HasWeakIteratedLineDerivOn.cons", "MemSobolevMultiIndex.indicator_mul"]
+
+[[node]]
+id = "IsSobolevExtensionDomain"
+kind = "definition"
+desc = '''Two predicates, the abstract hypothesis under which the embeddings on a domain
+(`EmbeddingDomain.lean`, Corollaries 9.14–9.15) and Rellich–Kondrachov (`Compactness.lean`,
+Theorem 9.16) are stated once and for all.
+`HasSobolevExtensionOn (S : Submodule ℝ (SobolevEuclidean N 1 p Ω)) : Prop` says there is a
+bounded linear `P : S →L[ℝ] SobolevEuclidean N 1 p ⊤` with `fn (P u) =ᵐ[volume.restrict Ω] fn u`
+for all `u ∈ S` (the `L^p` bound of Theorem 9.7 is not part of the predicate; the corollaries only
+need the `W^{1,p}` bound). `IsSobolevExtensionDomain N p Ω : Prop := HasSobolevExtensionOn (⊤ : Submodule ℝ (SobolevEuclidean N 1 p Ω))`
+— "`Ω` is a `W^{1,p}`-extension domain", the standard name of the literature (Jones; Hajłasz,
+Koskela, Tuominen) for the book's standing hypothesis of §9.3.B. Instances, each in the module
+that proves it: `IsSobolevExtensionDomain.upperHalfSpace` (`Reflection.lean`, Lemma 9.2 with
+`V = ⊤`), `IsSobolevExtensionDomain.of_isContDiffChartDomain` for `C^1` chart domains with bounded
+boundary (`Extension.lean`, Theorem 9.7) and `.of_isContDiffDomain` for Atkinson–Han's graph
+domains through the bridge, and `SobolevEuclideanZero.hasSobolevExtensionOn` on the subspace
+`S = W_0^{1,p}(Ω)` of every open `Ω` by extension by zero (`Zero.lean`, Remark 20) — which is
+why the relative predicate is the primary one. A Lipschitz domain would enter the whole
+downstream theory (Corollaries 9.14–9.15, Theorem 9.16, and the Atkinson–Han nodes restated
+on them) through one more instance, `IsSobolevExtensionDomain.of_isLipschitzDomain`, once
+Stein's extension is available (`notes/fem-roadmap.md` Decision B); nothing downstream would be
+restated. Placed here, below `Extension.lean`, so that `Zero.lean` and `EmbeddingDomain.lean` do
+not import the extension theorem. Formerly `HasSobolevExtension` in `EmbeddingDomain.toml`. ★'''
+deps = ["SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.3.B, the standing hypothesis"
+
+[[node]]
+id = "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn"
+kind = "theorem"
+desc = '''**Density of `C_c^∞(ℝ^N)|_Ω` from an extension operator** (the abstract form of Corollary
+9.8): for `HasSobolevExtensionOn S` and `1 ≤ p < ∞`, every `u ∈ S` is the limit in
+`SobolevEuclidean N 1 p Ω` of restrictions of `C_c^∞(ℝ^N)` functions: there is
+`v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ` with `ContDiff ℝ ∞ (v n)`, `HasCompactSupport (v n)`, and
+`Tendsto (fun n ↦ ‖(v n).restrict − u‖) atTop (𝓝 0)`, the restriction of `v n` being its class in
+`SobolevEuclidean N 1 p Ω` (a `C_c^∞(ℝ^N)` function lies in `W^{1,p}(Ω)` by
+`ContDiffOn.hasWeakIteratedFDerivOn` and `MemSobolevMultiIndex.exists_sobolevMultiIndex`).
+Proof: `P u ∈ W^{1,p}(ℝ^N)` is approximated by `ζ_n (ρ_n ⋆ P u)` in `W^{1,p}(ℝ^N)`
+(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`, `Density.lean`, proved), and
+restriction to `Ω` is `1`-Lipschitz (`SobolevMultiIndex.restrictL`). Also the `Dense` form.
+Instances: the half space (`Reflection.lean`, what Lemma 9.6 of the regularity theory uses),
+`C^1` chart domains with bounded boundary (`Extension.lean`, [brezis2011functional] Corollary
+9.8, first paragraph). ★★, ~150 lines.'''
+deps = ["IsSobolevExtensionDomain", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "SobolevMultiIndex.restrictL", "ContDiffOn.hasWeakIteratedFDerivOn", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"

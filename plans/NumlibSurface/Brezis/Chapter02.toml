@@ -1,0 +1,84 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 2: the
+uniform boundedness principle and the closed graph theorem — Baire (§2.1), Banach–Steinhaus
+(§2.2), open mapping and closed graph (§2.3), complemented subspaces and one-sided inverses
+(§2.4), orthogonality of sums and intersections (§2.5), unbounded operators and the Banach
+adjoint (§2.6), the closed range theorem and the surjectivity criteria (§2.7). Every numbered
+Theorem, Proposition, Corollary and Remark of the main text that asserts a mathematical statement
+has a node in the section groups beside this file; everything is stated over `ℝ`, as the book
+does, on top of a backbone stated over `RCLike 𝕜` (D1).
+
+**Design and correspondence.**
+
+* §2.1–§2.3 are Mathlib: Baire is `dense_iInter_of_isOpen_nat` /
+  `nonempty_interior_of_iUnion_of_closed`; Theorem 2.2 is `banach_steinhaus`; the open mapping
+  theorem is `ContinuousLinearMap.exists_preimage_norm_le` and `ContinuousLinearMap.isOpenMap`,
+  its Corollary 2.7 `ContinuousLinearEquiv.ofBijective`, and the closed graph theorem
+  `LinearMap.continuous_of_isClosed_graph`. The three corollaries of Banach–Steinhaus that Mathlib
+  does not state — `‖T‖ ≤ liminf ‖Tₙ‖` (2.3 (c)), weakly bounded sets are bounded (2.4),
+  weak-∗ bounded sets of functionals are bounded (2.5) — are appended to the backbone group
+  `Numlib/Analysis/Normed/Operator/BanachSteinhaus`. Corollary 2.8 (two complete norms, one
+  dominating the other, are equivalent) is stated with two `NormedAddCommGroup` structures on one
+  type, as the book has it. The "Step 2" of the proof of Theorem 2.6, which the proof of Theorem
+  2.16 and the surjectivity criteria reuse, is a backbone node of
+  `Numlib/Analysis/Normed/Operator/Unbounded/Basic`, for closed operators.
+* §2.4: the book's "complement" is Mathlib's `Submodule.IsTopCompl` / `ClosedComplemented`
+  (`Mathlib/Analysis/Normed/Module/Complemented.lean` has the equivalence with "closed and an
+  algebraic complement" in Banach spaces, and `Mathlib/Analysis/Normed/Module/ContinuousInverse.lean`
+  has `HasRightInverse`, `HasLeftInverse` and all of Theorem 2.13); Examples 1–3 are Mathlib
+  instances. Theorem 2.10, Corollary 2.11 with its converse (Remark 7 = Exercise 2.16) and the
+  missing direction of Theorem 2.12 are the new backbone module
+  `Numlib/Analysis/Normed/Module/Complemented`.
+* §2.5 is chapter 1's backbone `Numlib/Analysis/Normed/Module/Annihilator` (`Submodule.strongDualAnnihilator`,
+  `Submodule.strongDualCoannihilator`, Propositions 1.9 and 2.14, Corollary 2.15, and Theorem 2.16, whose
+  node the chapter-1 agent writes; its proof consumes Theorem 2.10, Corollary 2.11 and the Step-2
+  lemma of this chapter's backbone). The surface here only restates.
+* §2.6–§2.7 are the new backbone `Numlib/Analysis/Normed/Operator/Unbounded/{Basic,Adjoint,ClosedRange}`:
+  unbounded operators are Mathlib's `LinearPMap` (D2), the Banach adjoint is
+  `LinearPMap.strongDualAdjoint` with `ContinuousLinearMap.strongDualMap` for bounded operators
+  (D3), and Theorems 2.19–2.21 are proved directly (a separation argument plus the closed-operator
+  Step 2 for the a priori estimate criterion; a codomain restriction to `closure R(A)` for
+  "`R(A*)` closed ⇒ `R(A)` closed") rather than through the product-space transport of Theorem
+  2.16 that the book uses — see the `desc` of `Unbounded/ClosedRange`. The weak-∗ clauses of
+  Remarks 15 and 17 are backbone nodes too (a weak-∗ separation lemma in `WeakDual`).
+
+**Not planned.** Remark 8 (Lindenstrauss–Tzafriri: every Banach space not isomorphic to a Hilbert
+space has an uncomplemented closed subspace) — quoted without proof, research-level. The first
+clauses of Remarks 15 and 17 ("`D(A*)` may fail to be norm-dense", "`N(A)^⊥ ≠ closure R(A*)` can
+happen") are existence statements whose witnesses are Exercises 2.22–2.23 on `ℓ¹`; they need the
+identification `(ℓ¹)* = ℓ^∞` of §11.3 (chapter 11) and are left to that chapter's exercise scope.
+Remarks 2, 4, 10, 13, 14 and 19 are discussion (Remark 14, "extension by continuity instead of
+Hahn–Banach", is the design of the backbone definition; Remark 19, the method of a priori
+estimates, is Theorem 2.20 (b) ⇒ (a) itself). The Comments on Chapter 2 contain no numbered
+results. Exercises are out of scope for this round except those the main text cites as supplying
+a proof: Exercise 2.14 (both parts; it is Remark 18) and Exercise 2.16 (it is Remark 7); Exercise
+2.18 is cited only as an alternative proof of Corollary 2.18 — its route is the one the backbone
+takes — and Exercises 2.22, 2.23 and Problem 9 are cited for the counterexamples and the weak-∗
+statements of Remarks 15 and 17, treated as said above.
+
+**Unblocked elsewhere.** `AtkinsonHan.Chapter08.theorem_8_2_7_hilbert` records only the Hilbert,
+bounded case of Atkinson–Han's Theorem 8.2.7, whose Banach statement is Brezis's Theorem 2.19
+verbatim; with `LinearPMap.IsClosed.isClosed_range_tfae` a faithful `theorem_8_2_7` becomes a
+restatement (that surface's module doc says the Banach case is "out of scope (Mathlib has no
+continuous Banach dual of an unbounded densely defined operator)", which this backbone retires).
+`AtkinsonHan.Chapter08.isClosed_iff_seq` and `LinearPMap.isClosed_range_of_isClosed_of_le_norm`
+(`Numlib/Variational/LaxMilgram`) are special cases of `LinearPMap.isClosed_iff_seq` and
+`LinearPMap.IsClosed.isClosed_range_of_norm_le`. `notes/backbone.md` §1.7 lists "the Banach closed
+range theorem (unbounded Banach adjoints)" as out of scope; it no longer is. No node of
+`notes/frontier.md` is closed by this chapter alone (its blocker 4, Goldstine, shares the weak-∗
+separation lemma `Submodule.exists_weakDual_eval_eq_zero_of_notMem` of `Unbounded/Adjoint`).
+
+**Order of attack.** `Numlib/Analysis/Normed/Operator/BanachSteinhaus` (4 appended nodes, ~120
+lines) and `Numlib/Analysis/Normed/Operator/Unbounded/Basic` (~350 lines: the closed range
+criterion through the quotient and the graph, Step 2) first, in either order; then
+`Numlib/Analysis/Normed/Module/Complemented` (~300 lines, needs `Basic`); then chapter 1's
+`Annihilator` (not this chapter's); then `Unbounded/Adjoint` (~500 lines: the two definitions
+are prototyped, Corollary 2.18 and the weak-∗ lemma are the work) and `Unbounded/ClosedRange`
+(~600 lines: the separation lemma, Theorem 2.20, the codomain-restriction proof of Theorem 2.19).
+Surface: §2.1–§2.3 need only Mathlib and the Banach–Steinhaus nodes; §2.4 needs `Complemented`;
+§2.5 needs `Annihilator`; §2.6–§2.7 need `Adjoint` and `ClosedRange`.
+'''

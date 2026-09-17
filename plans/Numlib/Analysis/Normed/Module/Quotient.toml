@@ -1,0 +1,299 @@
+namespace = "Submodule"
+desc = '''
+The normed quotient `E ⧸ M` of a normed space by a closed subspace, beyond what Mathlib has
+(natural home: `Mathlib.Analysis.Normed.Group.Quotient` and `Mathlib.Analysis.Normed.Module.Dual`).
+This is [brezis2011functional] §11.2.
+
+Mathlib already carries the space itself, and the surface delegates the definition paragraph and
+Proposition 11.8 to it: `Submodule.Quotient.normedAddCommGroup` (under the instance argument
+`[IsClosed (M : Set E)]`), `Submodule.Quotient.normedSpace`, `Submodule.Quotient.completeSpace`,
+the projection `Submodule.mkQL : E →L[𝕜] E ⧸ M` with `Submodule.Quotient.norm_mk_le` and
+`QuotientAddGroup.norm_mk` (`‖mk x‖ = Metric.infDist x M`, the book's `inf_{m ∈ M} ‖x − m‖`),
+`AddSubgroup.norm_normedMk_le` (`‖π‖ ≤ 1`), `QuotientAddGroup.exists_norm_mk_lt` (near-attained
+representatives), and the lift `Submodule.liftQL (f : E →L[𝕜] F) (h : M ≤ f.ker) : E ⧸ M →L[𝕜] F`.
+
+What is added, in four layers:
+
+1. **The factorization `T = T̃ ∘ π`** of the paragraph after Proposition 11.9: the lift through
+   `E ⧸ ker T` has the same operator norm, `opNorm_liftQL`, and is injective, `injective_liftQL_ker`.
+2. **The duals of a quotient and of a subspace**, Propositions 11.9 and 11.10, as
+   `LinearIsometryEquiv`s: `strongDualQuotLIEAnnihilator : StrongDual 𝕜 (E ⧸ M) ≃ₗᵢ[𝕜] M.strongDualAnnihilator`
+   (`ξ ↦ ξ ∘ π`) and `quotAnnihilatorLIEStrongDual : StrongDual 𝕜 E ⧸ M.strongDualAnnihilator ≃ₗᵢ[𝕜] StrongDual 𝕜 M`
+   (restriction to `M`, descended). The annihilator `M^⊥` is chapter 1's
+   `Submodule.strongDualAnnihilator` (`Numlib/Analysis/Normed/Module/Annihilator`; the brief's
+   `Submodule.annihilator` clashed with Mathlib's ideal of that name), and the distance formula
+   `Submodule.infDist_strongDualAnnihilator` (`infDist f M^⊥ = ‖f|_M‖`) planned there is exactly the
+   isometry clause of 11.10. The algebraic templates are Mathlib's
+   `Submodule.dualQuotEquivDualAnnihilator` and `Subspace.quotAnnihilatorEquiv`; the names follow
+   `Submodule.quotientQuotientLIEQuotient` in the same Mathlib file.
+3. **Inherited properties**, Propositions 11.11 and 11.12: `E ⧸ M` is reflexive when `E` is
+   (`NormedSpace.IsReflexive` of `Numlib/Analysis/Normed/Module/Reflexive`) and uniformly convex
+   when `E` is (Mathlib's `UniformConvexSpace`). Both are instances. The book proves 11.11 through
+   Corollary 3.21 (`E` reflexive iff `E*` reflexive) and 11.12 through Corollary 3.23 (distances to
+   `M` are attained in a reflexive space, hence Milman–Pettis for a uniformly convex `E`); both
+   detours are avoided here: 11.11 is proved directly by extending a functional on `M^⊥` to `E*`
+   by Hahn–Banach and representing it in `E`, and 11.12 by near-attained representatives, so that
+   neither node depends on chapter 3's backbone.
+4. **Dimension and codimension**, Propositions 11.13 and 11.14: `dim M = codim M^⊥`,
+   `codim M = dim M^⊥` for a closed `M ⊆ E`, and `dim N = codim N^⊥`, `dim N^⊥ ≤ codim N` for a
+   closed `N ⊆ E*`. Finite codimension is Mathlib's `Submodule.CoFG` and `codim` is
+   `Module.finrank 𝕜 (E ⧸ M)`; the proofs are the isometries of layer 2 plus Proposition 11.3
+   (`Numlib/Analysis/Normed/Module/FiniteCodim`) and `LinearEquiv.finrank_eq`.
+
+Scalars are `RCLike 𝕜` throughout (Hahn–Banach enters in 11.10, 11.11, 11.13, 11.14; layer 1 and
+11.12 hold over any nontrivially normed field and are stated so). Every statement about `E ⧸ M`
+takes `[IsClosed (M : Set E)]` as Mathlib does. Prototyped statements:
+`notes/brezis/ch11/proto/Shapes.lean` (section `Quotient`).
+
+Order of attack: layer 1 (≈60 lines) → 11.9 (≈120) → 11.10 (≈120, with chapter 1's distance
+formula) → 11.11 (≈60) → 11.12 (≈120) → 11.13, 11.14 (≈200). About 700 lines.
+'''
+
+[[node]]
+id = "opNorm_liftQL"
+kind = "theorem"
+desc = '''The lift through a quotient keeps the operator norm: for normed spaces `E, F` over a
+nontrivially normed field, `M : Submodule 𝕜 E` (closed or not — the quotient is seminormed),
+`f : E →L[𝕜] F` and `h : M ≤ f.ker`, `‖M.liftQL f h‖ = ‖f‖`. This is "`‖T̃‖ = ‖T‖`" of
+[brezis2011functional] §11.2, paragraph after Proposition 11.9 (the book has a typo, `‖T‖ = ‖T‖`).
+`≤`: `‖f x‖ = ‖f (x - m)‖ ≤ ‖f‖ ‖x - m‖` for every `m ∈ M`, so `‖f x‖ ≤ ‖f‖ ‖mk x‖` by
+`QuotientAddGroup.le_norm_iff`/`norm_mk`, and `ContinuousLinearMap.opNorm_le_bound` on the
+surjective `mkQ`; `≥`: `f = (liftQL f h) ∘L mkQL` and `‖mkQL‖ ≤ 1`
+(`ContinuousLinearMap.opNorm_comp_le`, `AddSubgroup.norm_normedMk_le`). Mathlib has the
+`NormedAddGroupHom` analogue `AddSubgroup.lift_norm_le` only as an inequality. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
+
+[[node]]
+id = "injective_liftQL_ker"
+kind = "theorem"
+desc = '''The lift of `f : E →L[𝕜] F` through `E ⧸ f.ker` is injective:
+`Function.Injective (f.ker.liftQL f le_rfl)`, i.e. `T̃` is a bijection of `F ⧸ N(T)` onto `R(T)`
+([brezis2011functional] §11.2, the factorization paragraph). From `Submodule.liftQL_apply` and
+`Submodule.Quotient.mk_eq_zero`/`Submodule.ker_liftQ_eq_bot`-style reasoning; also record the
+range, `LinearMap.range (f.ker.liftQL f le_rfl) = LinearMap.range f`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
+
+[[node]]
+id = "strongDualQuotLIEAnnihilator"
+kind = "definition"
+desc = '''**[brezis2011functional] Proposition 11.9**: for a normed space `E` over `RCLike 𝕜` and a
+closed subspace `M` (`[IsClosed (M : Set E)]`), the adjoint of the projection is a bijective
+isometry of `(E ⧸ M)*` onto `M^⊥`:
+`Submodule.strongDualQuotLIEAnnihilator (M) : StrongDual 𝕜 (E ⧸ M) ≃ₗᵢ[𝕜] M.strongDualAnnihilator`,
+sending `ξ` to `ξ ∘L M.mkQL` (which vanishes on `M`) — see `strongDualQuotLIEAnnihilator_apply`.
+`M.strongDualAnnihilator` is chapter 1's annihilator (`Numlib/Analysis/Normed/Module/Annihilator`),
+`Submodule.mem_strongDualAnnihilator` its membership.
+
+Proof (book): the map lands in `M^⊥` since `π` kills `M`; it is injective and onto because a
+functional `f ∈ M^⊥` descends through the quotient, `ξ := M.liftQL f (by simpa using mem)`, with
+`ξ ∘ π = f`; the norm is preserved by `opNorm_liftQL` in one direction (`‖ξ‖ = ‖liftQL f‖ = ‖f‖`)
+and `‖ξ ∘ π‖ ≤ ‖ξ‖ ‖π‖ ≤ ‖ξ‖` in the other. Build the `LinearEquiv` first (`toFun`, `invFun`
+by `liftQL`, the two inverse identities by `ContinuousLinearMap.ext` and
+`Submodule.Quotient.mk_surjective`), then `LinearIsometryEquiv.mk` with `norm_map'`. This is the
+normed version of Mathlib's `Submodule.dualQuotEquivDualAnnihilator`. ★★'''
+deps = ["opNorm_liftQL", "Submodule.strongDualAnnihilator", "Submodule.mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.9"
+
+[[node]]
+id = "strongDualQuotLIEAnnihilator_apply"
+kind = "theorem"
+desc = '''`(M.strongDualQuotLIEAnnihilator ξ : StrongDual 𝕜 E) = ξ.comp M.mkQL`, i.e.
+`⟨π* ξ, x⟩ = ⟨ξ, π x⟩` for every `x` — the defining relation of the adjoint in
+[brezis2011functional] Proposition 11.9. `rfl` after unfolding. (The chapter-2 backbone's
+`ContinuousLinearMap.strongDualMap M.mkQL ξ` is the same functional by `strongDualMap_apply`; the
+surface records that identification, so that this module does not import the adjoint module.) ★'''
+deps = ["strongDualQuotLIEAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.9"
+
+[[node]]
+id = "ker_comp_subtypeL_eq_strongDualAnnihilator"
+kind = "theorem"
+desc = '''The kernel of restriction to `M` is the annihilator: for the bounded linear
+restriction map `r : StrongDual 𝕜 E →L[𝕜] StrongDual 𝕜 M := (ContinuousLinearMap.compL 𝕜 M E 𝕜).flip M.subtypeL`
+(the form used in `NormedSpace.isReflexive_of_isClosed`), `r.ker = M.strongDualAnnihilator`
+("`N(T) = M^⊥`" in [brezis2011functional] §11.2, paragraph before Proposition 11.10). By
+`Submodule.mem_strongDualAnnihilator` and extensionality on `M`. ★'''
+deps = ["Submodule.mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
+
+[[node]]
+id = "surjective_comp_subtypeL"
+kind = "theorem"
+desc = '''Restriction of functionals to a subspace is onto, "`R(T) = M*` by Hahn–Banach"
+([brezis2011functional] §11.2): for a normed space `E` over `RCLike 𝕜` and any `M : Submodule 𝕜 E`,
+`Function.Surjective fun f : StrongDual 𝕜 E => f.comp M.subtypeL`. It is
+`exists_extension_norm_eq M g` (Mathlib, Corollary 1.2 of the book) with the norm clause
+dropped. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
+
+[[node]]
+id = "quotAnnihilatorLIEStrongDual"
+kind = "definition"
+desc = '''**[brezis2011functional] Proposition 11.10**: for a normed space `E` over `RCLike 𝕜` and a
+closed subspace `M`, restriction of functionals descends to a bijective isometry of `E* ⧸ M^⊥`
+onto `M*`:
+`Submodule.quotAnnihilatorLIEStrongDual (M) : (StrongDual 𝕜 E ⧸ M.strongDualAnnihilator) ≃ₗᵢ[𝕜] StrongDual 𝕜 M`,
+with `quotAnnihilatorLIEStrongDual M (Submodule.Quotient.mk f) = f.comp M.subtypeL`
+(state this as the companion lemma `quotAnnihilatorLIEStrongDual_apply_mk`). The quotient is a
+normed space because `M^⊥` is closed, `Submodule.isClosed_strongDualAnnihilator` (chapter 1),
+supplied as the instance the quotient needs. The book states it for a Banach `E`; completeness
+is not used. Closedness of `M` is not used either (the book assumes it); state it without.
+
+Proof: `T̃ := M.strongDualAnnihilator.liftQL r h` where `r` is the restriction map of
+`ker_comp_subtypeL_eq_strongDualAnnihilator` and `h : M^⊥ ≤ r.ker` is that lemma; injective by
+`injective_liftQL_ker`, surjective by `surjective_comp_subtypeL`; the isometry is the book's two
+inequalities, which are together the identity `‖mk f‖ = infDist f M^⊥ = ‖f.comp M.subtypeL‖` —
+`QuotientAddGroup.norm_mk` and chapter 1's `Submodule.infDist_strongDualAnnihilator`. Normed
+version of Mathlib's algebraic `Subspace.quotAnnihilatorEquiv`. ★★'''
+deps = ["ker_comp_subtypeL_eq_strongDualAnnihilator", "surjective_comp_subtypeL", "injective_liftQL_ker", "Submodule.isClosed_strongDualAnnihilator", "Submodule.infDist_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.10"
+
+[[node]]
+id = "Quotient.instIsReflexive"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.11**: the quotient of a reflexive space by a closed
+subspace is reflexive — `instance [NormedSpace.IsReflexive 𝕜 E] [IsClosed (M : Set E)] : NormedSpace.IsReflexive 𝕜 (E ⧸ M)`
+over `RCLike 𝕜`.
+
+Proof, direct (the book's goes through Corollary 3.21 and `M^⊥` reflexive; this avoids both):
+given `Φ : StrongDual 𝕜 (StrongDual 𝕜 (E ⧸ M))`, transport it to `M^⊥` along
+`e := M.strongDualQuotLIEAnnihilator`, `Φ' := Φ.comp e.symm.toContinuousLinearEquiv…` (a
+functional on the subspace `M^⊥` of `E*`), extend it to `Ψ : StrongDual 𝕜 (StrongDual 𝕜 E)` by
+Hahn–Banach (`exists_extension_norm_eq`), and represent `Ψ = inclusionInDoubleDual 𝕜 E x` by
+reflexivity of `E` (`NormedSpace.surjective_inclusionInDoubleDual`). Then `Φ = J (mk x)`: for
+`ξ : StrongDual 𝕜 (E ⧸ M)`, `Φ ξ = Φ' (e ξ) = Ψ (e ξ) = (e ξ) x = ξ (mk x)` by
+`strongDualQuotLIEAnnihilator_apply` and `NormedSpace.dual_def`. About 60 lines. ★★'''
+deps = ["strongDualQuotLIEAnnihilator", "strongDualQuotLIEAnnihilator_apply", "NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.11"
+
+[[node]]
+id = "Quotient.instUniformConvexSpace"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.12**: the quotient of a uniformly convex space by a
+closed subspace is uniformly convex —
+`instance [UniformConvexSpace E] [IsClosed (M : Set E)] : UniformConvexSpace (E ⧸ M)`, for a
+normed space `E` over any nontrivially normed field (Mathlib's `UniformConvexSpace` is a property
+of the seminormed group alone).
+
+Proof, direct, with near-attained representatives instead of the book's reflexivity argument
+(the book picks `m₁, m₂` with `‖x − m₁‖ ≤ 1`, `‖y − m₂‖ ≤ 1` exactly, through Corollary 3.23 and
+hence Milman–Pettis; the slack version needs neither). Fix `ε > 0`; let `δ` be the modulus of
+`exists_forall_closed_ball_dist_add_le_two_sub` (Mathlib, the closed-ball form) for `ε / 2`.
+Given `‖mk x‖ ≤ 1`, `‖mk y‖ ≤ 1`, `ε ≤ ‖mk x − mk y‖`, choose representatives with
+`‖x'‖ ≤ 1 + η`, `‖y'‖ ≤ 1 + η` (`QuotientAddGroup.exists_norm_mk_lt`), where `η > 0` is chosen
+so small that `ε / (1 + η) ≥ ε / 2` and `(1 + η)(2 − δ) ≤ 2 − δ / 2`. Then
+`‖x' − y'‖ ≥ ‖mk x − mk y‖ ≥ ε` (`Submodule.Quotient.norm_mk_le`), so
+`‖x'/(1+η) − y'/(1+η)‖ ≥ ε / 2`, uniform convexity in `E` gives `‖x' + y'‖ ≤ (1 + η)(2 − δ)`, and
+`‖mk x + mk y‖ ≤ ‖x' + y'‖ ≤ 2 − δ / 2`. So `δ / 2` is a modulus for `ε` in the quotient
+(`UniformConvexSpace.mk` wants the sphere form; pass through
+`exists_forall_sphere_dist_add_le_two_sub`'s converse, i.e. prove the `‖·‖ ≤ 1` form and
+specialize). About 120 lines. ★★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.12"
+
+[[node]]
+id = "finiteDimensional_iff_coFG_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.13 (a), first clause**: for a normed space `E` over
+`RCLike 𝕜` and a closed subspace `M`, `FiniteDimensional 𝕜 M ↔ M.strongDualAnnihilator.CoFG`
+("`dim M < ∞ ⟺ codim M^⊥ < ∞`"; `CoFG` is `Module.Finite 𝕜 (StrongDual 𝕜 E ⧸ M^⊥)`). By
+`quotAnnihilatorLIEStrongDual` (`E* ⧸ M^⊥ ≃ M*`, so one side is finite-dimensional iff
+`StrongDual 𝕜 M` is: `LinearEquiv.finiteDimensional` both ways) and Proposition 11.3
+(`NormedSpace.finiteDimensional_of_finiteDimensional_strongDual`) with
+`ContinuousLinearMap.instModuleFinite` for the converse. ★'''
+deps = ["quotAnnihilatorLIEStrongDual", "NormedSpace.finiteDimensional_of_finiteDimensional_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
+
+[[node]]
+id = "finrank_eq_finrank_quotient_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.13 (a), second clause**: `dim M = codim M^⊥`, that
+is `Module.finrank 𝕜 M = Module.finrank 𝕜 (StrongDual 𝕜 E ⧸ M.strongDualAnnihilator)` for a closed
+`M` (over `RCLike 𝕜`; both sides are `0` by convention when infinite, and the equality holds then
+too by the previous node, so no finiteness hypothesis is needed). Chain
+`finrank M = finrank M*` (`NormedSpace.finrank_strongDual`, after
+`finiteDimensional_iff_coFG_strongDualAnnihilator` settles finiteness) and
+`finrank M* = finrank (E* ⧸ M^⊥)` (`LinearEquiv.finrank_eq` along `quotAnnihilatorLIEStrongDual`). ★'''
+deps = ["quotAnnihilatorLIEStrongDual", "finiteDimensional_iff_coFG_strongDualAnnihilator", "NormedSpace.finrank_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
+
+[[node]]
+id = "coFG_iff_finiteDimensional_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.13 (b), first clause**: for a closed subspace `M`
+of a normed space over `RCLike 𝕜`, `M.CoFG ↔ FiniteDimensional 𝕜 M.strongDualAnnihilator`
+("`codim M < ∞ ⟺ dim M^⊥ < ∞`"). By `strongDualQuotLIEAnnihilator` (`(E ⧸ M)* ≃ M^⊥`) and
+Proposition 11.3 applied to the normed space `E ⧸ M` (closedness of `M` makes it one). ★'''
+deps = ["strongDualQuotLIEAnnihilator", "NormedSpace.finiteDimensional_of_finiteDimensional_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
+
+[[node]]
+id = "finrank_quotient_eq_finrank_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.13 (b), second clause**: `codim M = dim M^⊥`, that
+is `Module.finrank 𝕜 (E ⧸ M) = Module.finrank 𝕜 M.strongDualAnnihilator` for a closed `M` over
+`RCLike 𝕜`. `finrank (E ⧸ M) = finrank (E ⧸ M)*` (`NormedSpace.finrank_strongDual`) and
+`finrank (E ⧸ M)* = finrank M^⊥` (`LinearEquiv.finrank_eq` along
+`strongDualQuotLIEAnnihilator`); the infinite case as in the previous pair. ★'''
+deps = ["strongDualQuotLIEAnnihilator", "coFG_iff_finiteDimensional_strongDualAnnihilator", "NormedSpace.finrank_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
+
+[[node]]
+id = "strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional"
+kind = "theorem"
+desc = '''For a **finite-dimensional** subspace `N` of `StrongDual 𝕜 E` (any normed space `E` over
+`RCLike 𝕜`), `N.strongDualCoannihilator.strongDualAnnihilator = N` — "`N^⊥⊥ = N`", the claim inside the
+proof of [brezis2011functional] Proposition 11.14, which in general only holds with the
+weak-* closure. `⊇` is chapter 1's `Submodule.le_strongDualAnnihilator_strongDualCoannihilator`; for `⊆`,
+take a basis `f₁, …, fₚ` of `N` (`Module.finBasis`); `f ∈ N^⊥⊥` vanishes on
+`⋂ᵢ ker fᵢ = N.strongDualCoannihilator`, so `f ∈ span {fᵢ}` by Mathlib's `mem_span_of_iInf_ker_le_ker`
+(the book's Lemma 3.2, stated for the underlying linear maps: coerce with
+`ContinuousLinearMap.coe_injective`/`LinearMap.ker` and pull the span back). ★'''
+deps = ["Submodule.strongDualCoannihilator", "Submodule.strongDualAnnihilator", "Submodule.mem_strongDualCoannihilator", "Submodule.mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"
+
+[[node]]
+id = "finiteDimensional_iff_coFG_strongDualCoannihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.14, first clause**: for a closed subspace `N` of
+`StrongDual 𝕜 E` (`E` a normed space over `RCLike 𝕜`; the book says Banach),
+`FiniteDimensional 𝕜 N ↔ N.strongDualCoannihilator.CoFG` ("`dim N < ∞ ⟺ codim N^⊥ < ∞`").
+`→`: with `M := N.strongDualCoannihilator` (closed, `Submodule.isClosed_strongDualCoannihilator`), `M^⊥ = N` by
+`strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional`, so `M^⊥` is finite-dimensional and
+`coFG_iff_finiteDimensional_strongDualAnnihilator` gives `M.CoFG`. `←`: `M.CoFG` gives
+`FiniteDimensional M^⊥ = N^⊥⊥` by the same node, and `N ≤ N^⊥⊥`
+(`Submodule.le_strongDualAnnihilator_strongDualCoannihilator`) makes `N` finite-dimensional
+(`FiniteDimensional.of_le`... via `Submodule.finiteDimensional_of_le`). ★'''
+deps = ["strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional", "coFG_iff_finiteDimensional_strongDualAnnihilator", "Submodule.isClosed_strongDualCoannihilator", "Submodule.le_strongDualAnnihilator_strongDualCoannihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"
+
+[[node]]
+id = "finrank_eq_finrank_quotient_strongDualCoannihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.14, second clause**: `dim N = codim N^⊥` for a
+closed subspace `N` of `StrongDual 𝕜 E` over `RCLike 𝕜`:
+`Module.finrank 𝕜 N = Module.finrank 𝕜 (E ⧸ N.strongDualCoannihilator)`. When `N` is finite-dimensional,
+`finrank (E ⧸ N^⊥) = finrank (N^⊥)^⊥` (`finrank_quotient_eq_finrank_strongDualAnnihilator` at
+`M = N^⊥`) and `(N^⊥)^⊥ = N`; otherwise both sides are `0` by
+`finiteDimensional_iff_coFG_strongDualCoannihilator`. ★'''
+deps = ["finrank_quotient_eq_finrank_strongDualAnnihilator", "strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional", "finiteDimensional_iff_coFG_strongDualCoannihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"
+
+[[node]]
+id = "finrank_strongDualCoannihilator_le_finrank_quotient"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.14, third clause**: "`dim N^⊥ ≤ codim N`" — for a
+subspace `N` of `StrongDual 𝕜 E` of finite codimension (`[N.CoFG]`), `N.strongDualCoannihilator` is
+finite-dimensional and `Module.finrank 𝕜 N.strongDualCoannihilator ≤ Module.finrank 𝕜 (StrongDual 𝕜 E ⧸ N)`.
+(The book adds that the inequality can be strict when `E` is not reflexive, with
+`N = ker ξ` for `ξ ∈ E** ∖ J(E)`; that example is not a node.) Proof (book): with
+`M := N.strongDualCoannihilator`, `N ≤ N^⊥⊥ = M^⊥` gives `codim M^⊥ ≤ codim N` (a quotient of a
+finite-dimensional quotient: `Submodule.CoFG.of_le`, `Submodule.finrank_quotient_le`-type
+monotonicity through `Submodule.quotientQuotientEquivQuotient`), and
+`codim M^⊥ = dim M` is `finrank_eq_finrank_quotient_strongDualAnnihilator` together with
+`finiteDimensional_iff_coFG_strongDualAnnihilator` for the finiteness. ★★'''
+deps = ["finrank_eq_finrank_quotient_strongDualAnnihilator", "finiteDimensional_iff_coFG_strongDualAnnihilator", "Submodule.le_strongDualAnnihilator_strongDualCoannihilator", "Submodule.isClosed_strongDualCoannihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"

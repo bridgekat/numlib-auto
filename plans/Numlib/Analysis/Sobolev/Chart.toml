@@ -1,0 +1,271 @@
+desc = '''
+Open sets of class `C^n` by local charts — the definition of Brezis, *Functional Analysis,
+Sobolev Spaces and Partial Differential Equations*, §9.2 — with the half space, the cube `Q`
+and its halves `Q_+`, `Q_0`, the bridge from the graph definition `IsContDiffDomain` of
+`Numlib/Analysis/Sobolev/Domain.lean`, the finite atlas of a bounded boundary, and the partition
+of unity of Lemma 9.3. Pure geometry: no Sobolev space appears. Imports `Domain.lean`,
+`Mathlib/Geometry/Manifold/PartitionOfUnity.lean` and `Mathlib/Analysis/Calculus/ImplicitContDiff.lean`.
+
+The book's definition: `Ω ⊆ ℝ^N` is of class `C^1` if every `x ∈ ∂Ω` has an open neighbourhood
+`U` and a bijection `H : Q → U` with `H ∈ C^1(Q̄)`, `H⁻¹ ∈ C^1(Ū)`, `H(Q_+) = U ∩ Ω`,
+`H(Q_0) = U ∩ ∂Ω`, where `Q = {|x'| < 1, |x_N| < 1}`. Here that is the structure
+`ContDiffChart n Ω` (the data `U`, `H`, `H⁻¹` and the six conditions, on
+`EuclideanSpace ℝ (Fin (d + 1))`, with `ContDiffOn ℝ n` on the closures for the regularity and
+`Set.BijOn`/`Set.InvOn` for the bijection) and the predicate
+`IsContDiffChartDomain n Ω := IsOpen Ω ∧ ∀ x₀ ∈ frontier Ω, ∃ c : ContDiffChart n Ω, x₀ ∈ c.U`,
+the same `n : WithTop ℕ∞` as `IsContDiffDomain`. The prototype
+`notes/brezis/ch09a/proto/Chart.lean` (2026-09-17) checked that this shape and the statement of
+Theorem 9.7 over it elaborate.
+
+Why two definitions of a `C^1` domain coexist (the brief's decision D9). Atkinson–Han's
+`IsContDiffDomain` is by local graphs after a rigid motion; Brezis's is by charts. They are
+equivalent, but only graph ⇒ chart is elementary (`H(y', y_N) = T⁻¹(x₀' + εy', g(x₀' + εy') + εy_N)`),
+while chart ⇒ graph is the implicit function theorem. The extension theorem (`Extension.lean`)
+is proved under the chart hypothesis because that is what its proof uses — transfer to `Q_+` by
+`H`, reflect, transfer back — and Atkinson–Han's consumers reach it through the bridge
+`IsContDiffDomain.isContDiffChartDomain`. The converse is stated for completeness and is the
+one ★★★ node of the module; nothing downstream needs it.
+
+The half space `ℝ^N_+ = {x_N > 0}`, the cube and the last-coordinate Fubini splitting are
+placed here because `Reflection.lean`, `Poincare.lean` and `Zero.lean` all need them and none of
+them should import another. Also here, because it is geometry and every Sobolev module above
+needs it: the hypothesis bundle `IsDiffeoOnWithBoundedJacobian` of Proposition 9.6 (a `C^1`
+diffeomorphism between open sets with bounded Jacobians on both sides) and the fact that a chart
+restricted to `Q_+` is one — so that `Calculus.lean` (Proposition 9.6), `Extension.lean` and
+`Zero.lean` (the chart transfers of Theorem 9.17 and Proposition 9.18) read it from here and
+`Zero.lean` does not import `Extension.lean`. About 950 lines.
+'''
+
+[[node]]
+id = "EuclideanSpace.upperHalfSpace"
+kind = "definition"
+desc = '''`EuclideanSpace.upperHalfSpace d : Set (EuclideanSpace ℝ (Fin (d + 1))) := {x | 0 < x (Fin.last d)}`,
+the half space `ℝ^N_+ = {x = (x', x_N) : x_N > 0}` of [brezis2011functional] §9.2, Notation, in
+the coordinate convention of `Domain.lean` (`isBoundaryOfClass_upperHalfSpace` uses the same set
+literal). Namespaced under `EuclideanSpace` (rather than at the root, as first planned) so that it
+cannot collide with a later Mathlib `upperHalfSpace` and is found beside `EuclideanSpace.init`.
+With `isOpen_upperHalfSpace`, and `upperHalfSpace_opens : Opens _` for the Sobolev spaces on it. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Notation"
+
+[[node]]
+id = "unitChartCube"
+kind = "definition"
+desc = '''`unitChartCube d := {x | ‖EuclideanSpace.init x‖ < 1 ∧ |x (Fin.last d)| < 1}`, the cube
+`Q = {(x', x_N) : |x'| < 1, |x_N| < 1}` of [brezis2011functional] §9.2, Notation, with
+`isOpen_unitChartCube` (prototyped), `isBounded_unitChartCube`, `zero_mem_unitChartCube`, and
+`closure_unitChartCube` (the closed cylinder `‖x'‖ ≤ 1 ∧ |x_N| ≤ 1`, compact). ★'''
+deps = ["EuclideanSpace.init"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Notation"
+
+[[node]]
+id = "unitChartCubePos"
+kind = "definition"
+desc = '''`unitChartCubePos d := {x ∈ unitChartCube d | 0 < x (Fin.last d)}`, the half cube
+`Q_+ = Q ∩ ℝ^N_+` of [brezis2011functional] §9.2, Notation; open (`isOpen_unitChartCubePos`),
+equal to `unitChartCube d ∩ upperHalfSpace d`, and symmetric-ready: `unitChartCube d` is invariant
+under the reflection `x_N ↦ −x_N` (`reflectLast_image_unitChartCube` in `Reflection.lean`). ★'''
+deps = ["unitChartCube", "EuclideanSpace.upperHalfSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Notation"
+
+[[node]]
+id = "unitChartCubeZero"
+kind = "definition"
+desc = '''`unitChartCubeZero d := {x ∈ unitChartCube d | x (Fin.last d) = 0}`, the flat part
+`Q_0 = {(x', 0) : |x'| < 1}` of [brezis2011functional] §9.2, Notation, with
+`unitChartCubeZero_subset_frontier_unitChartCubePos : unitChartCubeZero d ⊆ frontier (unitChartCubePos d)`
+(the boundary points of `Q_+` inside `Q`), used to read "`u = 0` on `Q_0`" in the proof of
+Theorem 9.17. ★'''
+deps = ["unitChartCube", "unitChartCubePos"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Notation"
+
+[[node]]
+id = "EuclideanSpace.measurePreserving_lastInit"
+kind = "theorem"
+desc = '''The last-coordinate splitting of Lebesgue measure: the map
+`x ↦ (x (Fin.last d), EuclideanSpace.init x) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ × EuclideanSpace ℝ (Fin d)`
+is measure preserving for `volume` and `volume.prod volume`. Composition of
+`PiLp.volume_preserving_ofLp`, Mathlib's `MeasureTheory.volume_preserving_piFinSuccAbove (fun _ ↦ ℝ) (Fin.last d)`
+and `PiLp.volume_preserving_toLp` on the `Fin d` factor. It is the Fubini step of every
+"integrate in `x_N` first" argument of the chapter: Poincaré (`Poincare.lean`), the boundary
+computation of Theorem 9.17 and the trace inequality of Comment 7 (`Reflection.lean`,
+`Zero.lean`). ★, ~40 lines, plus `EuclideanSpace.integral_lastInit` /
+`lintegral_lastInit` (the Fubini identities `∫ f = ∫ ∫ f (t, x') dt dx'`) as corollaries.'''
+deps = ["EuclideanSpace.init"]
+
+[[node]]
+id = "ContDiffChart"
+kind = "definition"
+desc = '''**A local chart of class `C^n`** of `Ω ⊆ ℝ^{d+1}` ([brezis2011functional] §9.2,
+Definition): a structure with fields `U : Set E`, `toFun invFun : E → E`, `isOpen_U`,
+`contDiffOn : ContDiffOn ℝ n toFun (closure (unitChartCube d))` (`H ∈ C^n(Q̄)`),
+`contDiffOn_invFun : ContDiffOn ℝ n invFun (closure U)` (`H⁻¹ ∈ C^n(Ū)`),
+`bijOn : BijOn toFun (unitChartCube d) U`, `invOn : InvOn invFun toFun (unitChartCube d) U`,
+`image_pos : toFun '' unitChartCubePos d = U ∩ Ω` and
+`image_zero : toFun '' unitChartCubeZero d = U ∩ frontier Ω`. Shape settled by the prototype
+`notes/brezis/ch09a/proto/Chart.lean`. Mathlib's `OpenPartialHomeomorph` was considered and
+rejected: its `source` would have to be forced to be `Q` by an extra equation and the regularity
+up to the closures is not part of it; `ContDiffChart.toOpenPartialHomeomorph` can be provided
+later if wanted. Derived API worth having at once: `ContDiffChart.continuousOn`,
+`.continuousOn_invFun`, `.image_unitChartCube` (`= U`), `.invFun_image_inter` (`H⁻¹(U ∩ Ω) = Q_+`),
+`.exists_bound_fderiv` (the derivatives of `H` on `Q_+` and of `H⁻¹` on `U ∩ Ω` are bounded —
+continuity on the compact closures; this is "`Jac H ∈ L^∞`" of Proposition 9.6), and
+`.restrictToPos` (the data as a `C^n` diffeomorphism `Q_+ → U ∩ Ω` in the shape Proposition 9.6
+takes). ★'''
+deps = ["unitChartCube", "unitChartCubePos", "unitChartCubeZero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition"
+
+[[node]]
+id = "IsContDiffChartDomain"
+kind = "definition"
+desc = '''**An open set of class `C^n` by local charts** (decision D9):
+`IsContDiffChartDomain (n : WithTop ℕ∞) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) : Prop :=
+IsOpen Ω ∧ ∀ x₀ ∈ frontier Ω, ∃ c : ContDiffChart n Ω, x₀ ∈ c.U`. This is
+[brezis2011functional] §9.2, Definition ("We say that an open set `Ω` is of class `C^1` if for
+every `x ∈ ∂Ω` there exist a neighbourhood `U` of `x` and a bijective map `H : Q → U` such
+that …"), with `IsContDiffChartDomain.isOpen`. Boundedness of `Ω` or of `∂Ω` is not part of it,
+as for `IsContDiffDomain`; "`Γ` bounded" is the separate hypothesis `Bornology.IsBounded (frontier Ω)`
+that Theorem 9.7 carries. Prototyped in `notes/brezis/ch09a/proto/Chart.lean`. ★'''
+deps = ["ContDiffChart"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition"
+
+[[node]]
+id = "IsContDiffChartDomain.exists_finite_atlas"
+kind = "theorem"
+desc = '''**A bounded boundary is covered by finitely many charts**: if `IsContDiffChartDomain n Ω`
+and `Bornology.IsBounded (frontier Ω)`, there are `k : ℕ` and `c : Fin k → ContDiffChart n Ω`
+with `frontier Ω ⊆ ⋃ i, (c i).U`. The frontier is closed and bounded, hence compact
+(`Metric.isCompact_of_isClosed_isBounded`), and `IsCompact.elim_finite_subcover` applies to the
+open cover by the `U`'s. This is the first sentence of the proof of [brezis2011functional]
+Theorem 9.7 ("since `Γ` is compact and of class `C^1`, there exist open sets `(U_i)_{1≤i≤k}` …
+and bijective maps `H_i`"), the chart analogue of `IsBoundaryOfClass.exists_finite_cover`. ★,
+~40 lines. Generalization used by the unbounded-boundary case of Corollary 9.8: the same
+statement for any compact `K ⊆ frontier Ω` in place of `frontier Ω`
+(`IsContDiffChartDomain.exists_finite_atlas_of_isCompact`).'''
+deps = ["IsContDiffChartDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, proof of Theorem 9.7"
+
+[[node]]
+id = "IsBoundaryGraphAt.last_eq_of_mem_frontier"
+kind = "theorem"
+desc = '''A boundary point of a set that is locally a graph lies on the graph: if
+`IsBoundaryGraphAt V Ω x₀ r` with the rigid motion `T` and graph function `g`, and `x₀ ∈ frontier Ω`
+with `Ω` open, then `T x₀ (Fin.last d) = g (EuclideanSpace.init (T x₀))`. If the point were
+strictly above the graph it would be an interior point of `Ω` by continuity of `g` (assuming `g`
+continuous, as every class considered is); strictly below, it would have a neighbourhood
+disjoint from `Ω`. Needed to centre the chart of `IsContDiffDomain.isContDiffChartDomain` at
+`x₀`. Hypothesis: `∀ g ∈ V, Continuous g` (true for `IsContDiffDomain` with any `n`, and for
+`IsLipschitzDomain`). ★, ~60 lines.'''
+deps = ["IsBoundaryGraphAt"]
+
+[[node]]
+id = "IsContDiffDomain.isContDiffChartDomain"
+kind = "theorem"
+desc = '''**Graph ⇒ chart** (decision D9, the elementary direction): `IsContDiffDomain n Ω →
+IsContDiffChartDomain n Ω`, for every `n : WithTop ℕ∞`. Given `x₀ ∈ ∂Ω` with
+`IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r` through the rigid motion `T` and the graph
+function `g`, write `x₀' := EuclideanSpace.init (T x₀)` (so `T x₀ (last) = g x₀'` by
+`IsBoundaryGraphAt.last_eq_of_mem_frontier`) and put, for `ε > 0`,
+`H(y', y_N) := T⁻¹ (x₀' + ε y', g (x₀' + ε y') + ε y_N)` and
+`H⁻¹(x) := ((T x)' − x₀') / ε, ((T x)_N − g ((T x)')) / ε)`. Both are `C^n` on all of `ℝ^N`
+(so on the closures), inverse to each other everywhere, `H` maps `{y_N > 0}` to the region above
+the graph and `{y_N = 0}` onto the graph. Choose `ε` so small that `H(closure Q) ⊆ ball x₀ r`
+(`H` continuous, `H 0 = x₀`, `closure Q` compact); then with `U := H '' Q` (open, `H` being a
+homeomorphism of `ℝ^N`) the conditions `H(Q_+) = U ∩ Ω`, `H(Q_0) = U ∩ ∂Ω` are the graph
+description of `Ω ∩ ball x₀ r` read inside `U`: points of `U` strictly above the graph are in
+`Ω`, hence, `Ω` being open, not in `∂Ω`; points strictly below have a neighbourhood off `Ω`
+and are not in `closure Ω`; points on the graph are limits of both kinds. ★★, 250–350 lines
+(the set-theoretic bookkeeping dominates). This is the bridge through which every Atkinson–Han
+node stated under `IsContDiffDomain 1 Ω` reaches the extension theorem.'''
+deps = ["IsContDiffDomain", "IsContDiffChartDomain", "IsBoundaryGraphAt.last_eq_of_mem_frontier", "ContDiffChart"]
+
+[[node]]
+id = "IsContDiffChartDomain.isContDiffDomain"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). **Chart ⇒ graph** (decision D9, the implicit-function-theorem direction): for `1 ≤ n`,
+`IsContDiffChartDomain n Ω → IsContDiffDomain n Ω`. Given a chart `H` at `x₀ = H 0`, the boundary
+near `x₀` is the zero set of `Φ := (H⁻¹ ·) (Fin.last d)`, which is `C^n` near `x₀` with
+`dΦ(x₀) ≠ 0` (the differential of `H⁻¹` at `x₀` is invertible, its inverse being `dH(0)`), and
+`Ω ∩ U = {Φ > 0}`. Choose a rotation `T` with `T (∇Φ(x₀)) ∈ ℝ_{>0} e_N` (a rigid motion of the
+coordinates); Mathlib's implicit function theorem for `C^n` maps,
+`ContDiffAt.implicitFunction` with `ContDiffAt.contDiffAt_implicitFunction`
+(`Mathlib/Analysis/Calculus/ImplicitContDiff.lean`), applied to `Φ ∘ T⁻¹` split as
+`(x', x_N) ↦ …` with `∂_N (Φ ∘ T⁻¹) > 0`, gives `g` of class `C^n` near `x₀'` with
+`Φ ∘ T⁻¹ (x', x_N) = 0 ↔ x_N = g x'` locally, and the sign of `∂_N` makes `{Φ > 0}` the region
+above the graph in a small ball, which is `IsBoundaryGraphAt {g | ContDiff ℝ n g} Ω x₀ r` after
+extending `g` from a neighbourhood to a global `C^n` function (multiply by a bump and add a
+constant, or use `ContDiffOn.exists_contDiff_extension`-type lemmas — check
+`Mathlib/Analysis/Calculus/ContDiff/…` for an extension lemma; if none, restrict the class to
+`ContDiffOn` on a ball, which `IsBoundaryOfClass` does not allow, so a global extension is
+required; a bump-function patch does it in ~60 lines). ★★★, 400–600 lines: the implicit
+function theorem in Mathlib is stated on `E₁ × E₂`, and `EuclideanSpace ℝ (Fin (d + 1))` must be
+split as `EuclideanSpace ℝ (Fin d) × ℝ` through the rotation, plus the orientation and
+locality bookkeeping. No consumer in this project; recorded so that the two definitions of a
+`C^1` domain are provably the same, as decision D9 asks.'''
+deps = ["IsContDiffChartDomain", "IsContDiffDomain", "ContDiffChart"]
+
+[[node]]
+id = "isContDiffChartDomain_upperHalfSpace"
+kind = "theorem"
+desc = '''The half space is a chart domain: `IsContDiffChartDomain n (upperHalfSpace d)` for every
+`n`, from `isBoundaryOfClass_upperHalfSpace` (`Domain.lean`, graph of `g = 0`) through the bridge
+`IsContDiffDomain.isContDiffChartDomain`. This is the "or else `Ω = ℝ^N_+`" of
+[brezis2011functional] Theorem 9.7 read as an instance of the definition — although the
+half space's boundary is unbounded, so the extension theorem for it is proved directly from
+Lemma 9.2 (`Reflection.lean`) and not through the finite atlas. ★, ~20 lines.'''
+deps = ["IsContDiffChartDomain", "IsContDiffDomain.isContDiffChartDomain", "isBoundaryOfClass_upperHalfSpace", "EuclideanSpace.upperHalfSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7 (the case Ω = ℝ^N_+)"
+
+[[node]]
+id = "IsCompact.exists_contDiff_partitionOfUnity"
+kind = "theorem"
+desc = '''**Lemma 9.3 (partition of unity)**: for a compact `Γ ⊆ E` (`E` finite-dimensional real
+normed) and open sets `U : Fin k → Set E` with `Γ ⊆ ⋃ i, U i`, there are smooth
+`θ₀ : E → ℝ` and `θ : Fin k → E → ℝ` with `0 ≤ θ₀ ≤ 1`, `0 ≤ θ i ≤ 1`, `θ₀ + ∑ i, θ i = 1` on
+all of `E`, `HasCompactSupport (θ i)` and `tsupport (θ i) ⊆ U i` for each `i`, and
+`Disjoint (tsupport θ₀) Γ` ([brezis2011functional] §9.2, Lemma 9.3, stated there without proof:
+"This lemma is classical"). Route: Mathlib's `SmoothPartitionOfUnity.exists_isSubordinate`
+(`Mathlib/Geometry/Manifold/PartitionOfUnity.lean`, model `𝓘(ℝ, E)`, `s = univ`) applied to the
+open cover of `E` by `Γᶜ` and the `U i ∩ ball 0 R` for a ball containing `Γ` — the intersection
+with the ball is what makes the `θ i` compactly supported, `tsupport` being closed in a bounded
+set; the smooth partition's `tsupport (f j) ⊆ cover j` (`IsSubordinate`), `sum_eq_one`, `nonneg`,
+`le_one` give the rest, `contMDiff_iff_contDiff` translating `ContMDiff` on the trivial model.
+★★, ~150 lines. Corollary for the extension theorem: `IsCompact.exists_contDiff_partitionOfUnity_isCompact_inter_closure`
+— if moreover `Ω` is open and bounded with `Γ = frontier Ω`, then `tsupport θ₀ ∩ closure Ω` is a
+compact subset of `Ω` (the book's "`θ_{0|Ω} ∈ C_c^∞(Ω)`"), because it is closed, bounded and
+misses `frontier Ω = closure Ω ∖ Ω`. ★, ~40 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.3"
+
+[[node]]
+id = "IsDiffeoOnWithBoundedJacobian"
+kind = "definition"
+desc = '''The hypothesis bundle of Proposition 9.6: `IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`
+says `BijOn H Ω' Ω`, `InvOn Hinv H Ω' Ω`, `ContDiffOn ℝ 1 H Ω'`, `ContDiffOn ℝ 1 Hinv Ω`,
+`∀ y ∈ Ω', ‖fderiv ℝ H y‖ ≤ M` and `∀ x ∈ Ω, ‖fderiv ℝ Hinv x‖ ≤ M` — "`H : Ω' → Ω` bijective,
+`H ∈ C^1(Ω')`, `H⁻¹ ∈ C^1(Ω)`, `Jac H ∈ L^∞(Ω')`, `Jac H⁻¹ ∈ L^∞(Ω)`" of [brezis2011functional]
+Proposition 9.6, footnote 6. `Ω'`, `Ω` open in finite-dimensional real normed spaces `E'`, `E`
+(`H : E' → E`); pure calculus, no Sobolev space. Derived: the Jacobian determinants are bounded,
+`|det (fderiv H y)| ≤ C(M, dim)` (`Matrix.det_le` on the matrix of the derivative, or Hadamard),
+which is what the change of variables of `Calculus.lean` needs. Its instances are the charts
+(`ContDiffChart.isDiffeoOnWithBoundedJacobian_pos` below), which is how Theorem 9.7 uses
+Proposition 9.6. Formerly planned in `Calculus.toml`; moved here so that `Zero.lean` can take
+the chart transfers without importing `Extension.lean`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6"
+
+[[node]]
+id = "ContDiffChart.isDiffeoOnWithBoundedJacobian_pos"
+kind = "theorem"
+desc = '''A chart restricted to the half cube is a diffeomorphism with bounded Jacobians in the
+sense of Proposition 9.6: for `c : ContDiffChart 1 Ω`, there is `M` with
+`IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubePos d) (c.U ∩ Ω) M`, and
+symmetrically `IsDiffeoOnWithBoundedJacobian c.invFun c.toFun c.U (unitChartCube d) M`. The
+derivatives of `c.toFun` are continuous on the compact `closure (unitChartCube d)`
+(`ContDiffOn.continuousOn_fderivWithin`, and `fderivWithin = fderiv` on the open cube), hence
+bounded there; those of `c.invFun` on `closure c.U` — bounded because `c.U = c.toFun '' Q` is
+the continuous image of the bounded cube, so `closure c.U` is compact. `BijOn`/`InvOn` restrict
+from `c.bijOn`, `c.invOn` using `c.image_pos`. Formerly planned in `Extension.toml`; here for the
+same layering reason as `IsDiffeoOnWithBoundedJacobian`. ★, ~80 lines.'''
+deps = ["ContDiffChart", "IsDiffeoOnWithBoundedJacobian", "unitChartCubePos"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, proof of Theorem 9.7, step (b)"

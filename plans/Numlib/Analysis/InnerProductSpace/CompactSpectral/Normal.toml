@@ -1,0 +1,153 @@
+desc = '''
+The spectral theorem for compact *normal* operators on a complex Hilbert space, on the template of
+the compact self-adjoint one — [brezis2011functional] Proposition 11.36 and Remark 2 of §11.4
+(natural home: `Mathlib.Analysis.InnerProductSpace.Spectrum`, beside
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`).
+
+Neither Mathlib nor `Numlib/Eigen/Normal` (finite-dimensional, built on `LinearMap.adjoint`) has
+it — but Mathlib has the **self-adjoint** case in exactly the shape needed,
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` (compact and symmetric, in
+`Mathlib/Analysis/InnerProductSpace/Spectrum.lean`, fifteen lines from
+`ContinuousLinearMap.spectralRadius_eq_nnnorm`, `LinearMap.IsSymmetric.restrict_invariant` and
+`orthogonalComplement_iSup_eigenspaces_invariant`). The normal case is the same proof with the
+normal analogues of the three ingredients — eigenspaces pairwise orthogonal, the orthogonal
+complement of their sum invariant under `T` and `T†`, the restriction normal (all over
+`RCLike`) — and `IsStarNormal.spectralRadius_eq_nnnorm` (the C⋆-algebra `H →L[ℂ] H`,
+`Mathlib/Analysis/CStarAlgebra/ContinuousLinearMap.lean`) in place of the self-adjoint spectral
+radius formula: the one step that needs `ℂ` (in a real Hilbert space a rotation of the plane is
+a counterexample, as the book notes). The Hilbert basis is then assembled by the sibling module's
+`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`
+(`CompactSpectral/Basis.lean`), shared with the self-adjoint Theorem 6.11. Remark 2
+(`closure W(T) = conv σ(T)` for compact normal `T`) closes the module.
+
+Placement: chapter 11 planned these nodes in `Numlib/Analysis/Normed/Algebra/Spectrum` (the module
+the brief fixed for its spectral additions) and proposed this location; moved at review so that
+the compact spectral theory is in one directory and `Algebra/Spectrum` needs no inner product.
+Imports: `CompactSpectral/Basis`, `Numlib/Eigen/NumericalRange` (for Remark 2 only) and Mathlib.
+
+Order of attack: `eigenspace_adjoint` → `orthogonalFamily_eigenspaces` →
+`orthogonalComplement_iSup_eigenspaces_invariant` → `restrict` (≈150 lines together) →
+`orthogonalComplement_iSup_eigenspaces_eq_bot` (≈80) → `exists_hilbertBasis_eigenvector` (≈30)
+→ Remark 2 (≈150). About 400 lines. Prototyped statements:
+`notes/brezis/ch11/proto/Shapes.lean` (section `Spectrum`).
+'''
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.eigenspace_adjoint"
+kind = "theorem"
+desc = '''For a normal operator `T : H →L[𝕜] H` on a Hilbert space over `RCLike 𝕜`
+(`hT : IsStarNormal T`), the adjoint has the conjugate eigenvalues with the same eigenvectors:
+`Module.End.eigenspace (T† : H →ₗ[𝕜] H) (conj μ) = Module.End.eigenspace (T : H →ₗ[𝕜] H) μ` for
+every `μ` — "`N(T − λI) = N((T − λI)*) = N(T* − λ̄I)`" in the proof of [brezis2011functional]
+Proposition 11.36. `T − μ • 1` is normal (`IsStarNormal` is stable under subtracting a scalar:
+`star (T − μ • 1) = T† − conj μ • 1` by `star_sub`, `star_smul`, `star_one`, and the commutation
+is `Commute.sub_left`/`Commute.smul_left` bookkeeping — cf. `LinearMap.IsStarNormal.sub_smul_one`
+in `Numlib/Eigen/Normal`, whose proof transfers verbatim), so Mathlib's
+`ContinuousLinearMap.IsStarNormal.ker_adjoint_eq_ker` applied to it gives the claim
+(`Module.End.eigenspace_def`: the eigenspace is the kernel of `T − μ • 1`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.orthogonalFamily_eigenspaces"
+kind = "theorem"
+desc = '''The eigenspaces of a normal operator on a Hilbert space over `RCLike 𝕜` are pairwise
+orthogonal: `OrthogonalFamily 𝕜 (fun μ => Module.End.eigenspace (T : H →ₗ[𝕜] H) μ) (fun μ => (…).subtypeₗᵢ)`
+(the shape of Mathlib's `LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`). For `T x = μ x`,
+`T y = ν y`: `ν ⟪x, y⟫ = ⟪x, T y⟫ = ⟪T† x, y⟫ = ⟪conj μ • x, y⟫ = μ ⟪x, y⟫`
+(`ContinuousLinearMap.adjoint_inner_left`, `eigenspace_adjoint` for `T† x = conj μ • x`,
+`inner_smul_left`), so `(ν − μ) ⟪x, y⟫ = 0`. The finite-dimensional version is
+`LinearMap.IsStarNormal.inner_eq_zero_of_ne` in `Numlib/Eigen/Normal` (a different object,
+`LinearMap.adjoint`); the proof is the same. ★'''
+deps = ["ContinuousLinearMap.IsStarNormal.eigenspace_adjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant"
+kind = "theorem"
+desc = '''For a normal `T : H →L[𝕜] H` (`RCLike 𝕜`, Hilbert), the orthogonal complement `Fᗮ` of
+`F := ⨆ μ, eigenspace T μ` is invariant under `T` and under `T†`:
+`∀ v ∈ (⨆ μ, eigenspace T μ)ᗮ, T v ∈ (…)ᗮ` and the same for `T†`. For `x` in an eigenspace,
+`⟪x, T v⟫ = ⟪T† x, v⟫ = ⟪conj μ • x, v⟫ = μ ⟪x, v⟫ = 0` (`eigenspace_adjoint`), and symmetrically
+for `T†`; `Submodule.mem_orthogonal` over an `iSup` reduces to the generators
+(`Submodule.iSup_orthogonal`/`Submodule.orthogonal_iSup`-style lemmas, or
+`Submodule.mem_orthogonal'` with `Submodule.iSup_induction`). Mathlib's
+`LinearMap.IsSymmetric.orthogonalComplement_iSup_eigenspaces_invariant` is the self-adjoint
+case. ★'''
+deps = ["ContinuousLinearMap.IsStarNormal.eigenspace_adjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.restrict"
+kind = "theorem"
+desc = '''The restriction of a normal operator to a closed subspace invariant under `T` and `T†`
+is normal: for `W : Submodule 𝕜 H` closed with `hW : ∀ x ∈ W, T x ∈ W` and
+`hW' : ∀ x ∈ W, T† x ∈ W`, `IsStarNormal (T.restrict hW : W →L[𝕜] W)` (`ContinuousLinearMap.restrict`,
+`W` complete by `IsClosed.completeSpace_coe`). The adjoint of the restriction is the restriction
+of the adjoint — `(T.restrict hW)† = T†.restrict hW'`, by `ContinuousLinearMap.eq_adjoint_iff`
+and `adjoint_inner_left` on `W` — so `‖(T.restrict hW)† x‖ = ‖T† x‖ = ‖T x‖ = ‖(T.restrict hW) x‖`
+and `ContinuousLinearMap.isStarNormal_iff_norm_eq_adjoint` applies. State the adjoint identity as
+its own lemma `ContinuousLinearMap.adjoint_restrict` (★, useful on its own). ★★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot"
+kind = "theorem"
+desc = '''**The core of [brezis2011functional] Proposition 11.36**: for a compact normal operator
+`T : H →L[ℂ] H` on a complex Hilbert space (`hT : IsStarNormal T`, `hK : IsCompactOperator T`),
+the eigenvectors span densely: `(⨆ μ : ℂ, Module.End.eigenspace (T : H →ₗ[ℂ] H) μ)ᗮ = ⊥`.
+
+Proof (book, "proceed exactly as in the proof of Theorem 6.11"), which is **Mathlib's proof of
+the self-adjoint case** `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`
+(`Mathlib/Analysis/InnerProductSpace/Spectrum.lean`, `section ContinuousLinearMap`) with the
+normal ingredients substituted — copy its fifteen lines: let `W := Fᗮ` with
+`F := ⨆ μ, eigenspace T μ`; `W` is closed, invariant under `T` and `T†`
+(`orthogonalComplement_iSup_eigenspaces_invariant`), so `T₀ := T.restrict hW : W →L[ℂ] W` is
+normal (`IsStarNormal.restrict`) and compact (`IsCompactOperator.restrict'`, Mathlib). `T₀` has
+no eigenvalue: an eigenvector `w ∈ W` of `T₀` is an eigenvector of `T`, so `w ∈ F ⊓ Fᗮ = ⊥`
+(`Submodule.inf_orthogonal_eq_bot`). Hence `spectrum ℂ T₀ ⊆ {0}` by
+`IsCompactOperator.hasEigenvalue_iff_mem_spectrum`, so `spectralRadius ℂ T₀ = 0`
+(`spectralRadius_eq_of_unital`, `ENNReal.iSup_eq_zero`), and
+`IsStarNormal.spectralRadius_eq_nnnorm T₀` (Mathlib, the C⋆-algebra `W →L[ℂ] W` — the only use
+of `ℂ`; Mathlib's self-adjoint proof uses `ContinuousLinearMap.spectralRadius_eq_nnnorm` at the
+same spot, packaged as `eq_zero_of_forall_hasEigenvalue_eq_zero`) gives `‖T₀‖ = 0`, `T₀ = 0`.
+Thus `T w = 0` for `w ∈ W`, i.e. `W ≤ eigenspace T 0 ≤ F`, and `W = F ⊓ Fᗮ = ⊥`. State the
+normal analogue of `eq_zero_of_forall_hasEigenvalue_eq_zero` on the way
+(`IsStarNormal.eq_zero_of_forall_hasEigenvalue_eq_zero`, ℂ, compact). About 80 lines. ★★'''
+deps = ["ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_invariant", "ContinuousLinearMap.IsStarNormal.restrict"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.exists_hilbertBasis_eigenvector"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 11.36**: a compact normal operator on a complex
+Hilbert space has a Hilbert basis of eigenvectors — for `T : H →L[ℂ] H` with `IsStarNormal T`
+and `IsCompactOperator T`, `∃ (w : Set H) (b : HilbertBasis w ℂ H), ⇑b = ((↑) : w → H) ∧ ∀ i : w, ∃ μ : ℂ, T i = μ • (i : H)`
+(the eigenvalues need not be real, unlike Proposition 11.34's; a `Type u`-indexed corollary
+reads as chapter 6's `exists_type_hilbertBasis_eigenvectors`). The assembly lemma
+`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily` (`CompactSpectral/Basis`)
+with the orthogonality of the eigenspaces and the density of their span. The book's separability
+hypothesis is dropped, as explained in the assembly lemma. ★'''
+deps = ["ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily", "ContinuousLinearMap.IsStarNormal.orthogonalFamily_eigenspaces", "ContinuousLinearMap.IsStarNormal.orthogonalComplement_iSup_eigenspaces_eq_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "ContinuousLinearMap.IsStarNormal.closure_numericalRange_eq_convexHull_spectrum"
+kind = "theorem"
+desc = '''**[brezis2011functional] §11.4, Remark 2**: for a compact normal operator `T` on a
+nontrivial complex Hilbert space, `closure (T : H →ₗ[ℂ] H).numericalRange = closure (convexHull ℝ (spectrum ℂ T))`
+(the book writes `conv σ(T)` for the closed convex hull; in `ℂ` the convex hull of a compact set
+is compact, `Set.Finite.isCompact_convexHull`/`IsCompact.convexHull` in finite dimension, so the
+right-hand closure is redundant and may be dropped in the statement). `⊆`: with a Hilbert basis
+of eigenvectors `b i`, eigenvalues `λ i` (Proposition 11.36), `u = ∑ ⟪b i, u⟫ b i`,
+`⟪u, T u⟫ = ∑ λ i ‖⟪b i, u⟫‖²` (`HilbertBasis.hasSum_inner_mul_inner`), a convex combination
+of eigenvalues (summing to `‖u‖² = 1`) — an infinite one, hence in the *closure* of the convex
+hull: truncate and renormalize. `⊇`: eigenvalues lie in `W(T)` (test on a unit eigenvector), `0`
+lies in `σ(T)` and in `closure W(T)` when `H` is infinite-dimensional (`0 = lim λ i`), so
+`σ(T) ⊆ closure W(T)` (`spectrum_subset_closure_numericalRange` says this directly), and
+`closure W(T)` is convex (`LinearMap.convex_numericalRange`, `Convex.closure`), so it contains
+the convex hull of `σ(T)`. The general (non-compact) normal case the remark also mentions is
+not planned. About 150 lines. ★★'''
+deps = ["ContinuousLinearMap.IsStarNormal.exists_hilbertBasis_eigenvector", "ContinuousLinearMap.spectrum_subset_closure_numericalRange", "LinearMap.convex_numericalRange"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 11, Remark 2"

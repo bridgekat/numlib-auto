@@ -1,0 +1,95 @@
+namespace = "Brezis.Chapter04"
+desc = '''
+Brezis §4.5, "Criterion for strong compactness in `L^p`" (lines 4098-4247): Ascoli-Arzela
+(Theorem 4.25, the backbone's `ContinuousMap.isCompact_closure_of_forall_norm_le`), the
+Kolmogorov-M. Riesz-Frechet theorem (4.26) with Corollaries 4.27-4.28 and Lemma 4.3 (the
+backbone's `Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz.lean` and
+`Numlib/Analysis/Convolution/Lp.lean`), and Remarks 12-13 with the exercises they cite (4.33, the
+family `φ(x + n)` showing that the hypotheses of 4.26 do not give compactness in `L^p(ℝ^N)`; 4.34,
+the converse of 4.27). Remark 11 is advice and has no node.
+
+The surface states everything on `EuclideanSpace ℝ (Fin N)` with Lebesgue measure and real
+values, as the book does; the backbone theorems are over any finite-dimensional real `G` with a
+Haar measure and finite-dimensional values, and the surface nodes are their instances. The
+translation `τ_h f (x) = f (x + h)` is written on the coerced function, `fun x => f (x + h)`; on
+`Lp` it is the `DomAddAct` action `DomAddAct.mk h +ᵥ f` (`Lp.instContinuousVAddDomAddAct`), and the
+two agree a.e. (`DomAddAct.mk_vadd_toLp`). The restriction `F|_Ω` is the backbone's
+`Lp.restrictCLM ℝ ℝ p volume Ω`.
+'''
+
+[[node]]
+id = "theorem_4_25"
+kind = "theorem"
+desc = '''Theorem 4.25 (Ascoli-Arzela): for a compact metric space `K` and `H ⊆ C(K, ℝ)` bounded
+(`∃ M, ∀ f ∈ H, ∀ x, |f x| ≤ M`) and uniformly equicontinuous
+(`∀ ε > 0, ∃ δ > 0, ∀ x₁ x₂, dist x₁ x₂ < δ → ∀ f ∈ H, |f x₁ - f x₂| < ε`), `closure H` is compact
+in `C(K, ℝ)`. The backbone's `ContinuousMap.isCompact_closure_of_forall_norm_le` with
+`Equicontinuous` obtained from the uniform version (`UniformEquicontinuous.equicontinuous` after
+`Metric.uniformEquicontinuous_iff`). ★'''
+deps = ["ContinuousMap.isCompact_closure_of_forall_norm_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.25"
+
+[[node]]
+id = "theorem_4_26"
+kind = "theorem"
+desc = '''Theorem 4.26 (Kolmogorov-M. Riesz-Frechet): for `1 ≤ p < ∞`, a bounded
+`F : Set (Lp ℝ p (volume : Measure (EuclideanSpace ℝ (Fin N))))` with
+`∀ ε > 0, ∃ δ > 0, ∀ f ∈ F, ∀ h, ‖h‖ < δ → ‖τ_h f - f‖_p < ε` (22), and any measurable `Ω` with
+`volume Ω < ∞`, the closure of `F|_Ω` in `L^p(Ω)` is compact:
+`IsCompact (closure (Lp.restrictCLM ℝ ℝ p volume Ω '' F))`. The backbone's
+`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` at
+`G = EuclideanSpace ℝ (Fin N)`, `E = ℝ`; the surface translates the book's real `ε` in (22) into
+the backbone's `ℝ≥0∞` form (`ENNReal.ofReal`, `Lp.norm_def`). ★'''
+deps = ["MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate", "MeasureTheory.Lp.restrictCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26"
+
+[[node]]
+id = "remark_4_12"
+kind = "theorem"
+desc = '''Remark 12: the hypotheses of Theorem 4.26 do not imply that `F` itself has compact
+closure in `L^p(ℝ^N)`: there is a bounded `F ⊆ Lp ℝ p (volume : Measure ℝ)` satisfying (22) with
+`¬ IsCompact (closure F)` — the family of `exercise_4_33`. ★'''
+deps = ["MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 12"
+
+[[node]]
+id = "corollary_4_27"
+kind = "theorem"
+desc = '''Corollary 4.27: under the hypotheses of Theorem 4.26 and the tightness (27),
+`∀ ε > 0, ∃ Ω bounded measurable, ∀ f ∈ F, ‖f‖_{L^p(ℝ^N \ Ω)} < ε`, `IsCompact (closure F)` in
+`Lp ℝ p volume`. The backbone's `MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight`
+(where `‖f‖_{L^p(ℝ^N \ Ω)}` is `eLpNorm (Ωᶜ.indicator f) p volume`). ★'''
+deps = ["MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight", "theorem_4_26"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.27"
+
+[[node]]
+id = "remark_4_13"
+kind = "theorem"
+desc = '''Remark 13: the converse of Corollary 4.27 holds, so a set `F ⊆ L^p(ℝ^N)`, `1 ≤ p < ∞`,
+has compact closure iff it is bounded, satisfies (22) and satisfies (27) — the conjunction of
+`corollary_4_27` and `exercise_4_34` applied to `closure F` (the three properties pass from
+`closure F` to `F` trivially, and from `F` to `closure F` by continuity, so the `iff` may be stated
+with `IsCompact (closure F)` on one side and the three conditions on `F` on the other). ★'''
+deps = ["corollary_4_27", "MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate", "MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 13"
+
+[[node]]
+id = "corollary_4_28"
+kind = "theorem"
+desc = '''Corollary 4.28: for `G ∈ L¹(ℝ^N)` and a bounded `B ⊆ Lp ℝ p volume`, `1 ≤ p < ∞`, the
+family `F := G ⋆ B` has compact closure in `L^p(Ω)` after restriction to any measurable `Ω` of
+finite measure. With `F := Lp.convolutionCLM hG '' B` (`MeasureTheory.Lp.convolutionCLM`, whose
+elements are a.e. the convolutions `G ⋆ u`, `Lp.coeFn_convolutionCLM`), the backbone's
+`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM`. ★'''
+deps = ["MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM", "MeasureTheory.Lp.convolutionCLM", "theorem_4_26"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28"
+
+[[node]]
+id = "lemma_4_3"
+kind = "theorem"
+desc = '''Lemma 4.3: for `G ∈ L^q(ℝ^N)`, `1 ≤ q < ∞`, `‖τ_h G - G‖_q → 0` as `h → 0`:
+`Tendsto (fun h => eLpNorm (fun x => G (x + h) - G x) q volume) (𝓝 0) (𝓝 0)`. The backbone's
+`MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate` (stated with `G (x - t)`; compose with
+`t ↦ -t`, `tendsto_neg`, `neg_zero`). ★'''
+deps = ["MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 4.3"

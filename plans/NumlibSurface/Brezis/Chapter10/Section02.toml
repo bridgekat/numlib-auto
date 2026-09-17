@@ -1,0 +1,107 @@
+namespace = "Brezis.Chapter10"
+desc = '''
+Brezis §10.2, the maximum principle for the heat equation: Theorem 10.3 by Stampacchia's
+truncation method in time, its Corollaries 10.4 (positivity, the `L^∞` contraction) and 10.5
+(`u ∈ C(Q̄)` for continuous data vanishing on `Γ`), and the classical maximum principle Theorem
+10.6 for a function `u(x,t)` of class `C¹` in `t`, `C²` in `x`, with `∂ₜu - Δu ≤ 0` on a bounded
+cylinder, whose maximum is attained on the parabolic boundary `P = (Ω̄ × {0}) ∪ (Γ × [0,T])`.
+The first three are stated for the solution of Theorem 10.1 (backbone `Heat/MaximumPrinciple`,
+which proves them on any open set for the weak solution); the last is classical (backbone
+`Heat/Classical`, on `E × ℝ → ℝ` with Mathlib's `Δ`), and it is the result that closes the
+Atkinson–Han heat-equation examples of `notes/frontier.md` blocker 9. The book's `sup`/`inf` are
+essential ones (`essSup`, `essInf` of `MeasureTheory`); "for all `(x,t) ∈ Q`" is read almost
+everywhere for each `t > 0` and, for the continuous representative given by Theorem 10.1 (5),
+everywhere.
+'''
+
+[[node]]
+id = "theorem_10_3"
+kind = "theorem"
+desc = '''Theorem 10.3 (maximum principle): for `Ω` of class `C^∞` with `Γ` bounded, `u₀ ∈ L²(Ω)` and
+the solution `u` of (1), (2), (3), for every `t > 0`,
+`min {0, essInf u₀} ≤ u(t) ≤ max {0, essSup u₀}` a.e. on `Ω`, stated as: for every `K ≥ 0` with
+`u₀ ≤ K` a.e., `u t ≤ K` a.e., and for every `K ≥ 0` with `-K ≤ u₀` a.e., `-K ≤ u t` a.e. (the
+book's bounds are the least such `K`, `K = +∞` when there is none). Backbone
+`Heat.IsSolution.le_of_le` / `ge_of_ge` (Stampacchia's truncation: `φ(t) = ∫_Ω H(u(x,t) - K) dx`,
+`φ ≥ 0`, `φ(0) = 0`, `φ' = -∫ G'(u-K)|∇u|² ≤ 0`), valid on any open set. ★'''
+deps = ["theorem_10_1", "Heat.IsSolution.le_of_le", "IsHeatSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.3"
+
+[[node]]
+id = "theorem_10_3_pointwise"
+kind = "theorem"
+desc = '''Theorem 10.3 as printed, "for all `(x,t) ∈ Q`": for the continuous representative `U` of
+Theorem 10.1 (5) (`theorem_10_1_smooth`), `min {0, essInf u₀} ≤ U (x,t) ≤ max {0, essSup u₀}`
+for every `x ∈ Ω` and `t > 0` — an a.e. bound on an open set for a continuous function holds
+everywhere (`Measure.eqOn_of_ae_eq`-type argument with `IsOpen.measure_pos`). ★'''
+deps = ["theorem_10_3", "theorem_10_1_smooth"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.3"
+
+[[node]]
+id = "corollary_10_4_i"
+kind = "theorem"
+desc = '''Corollary 10.4 (i): if `u₀ ≥ 0` a.e. on `Ω` then `u ≥ 0` in `Q`: `0 ≤ u t` a.e. on `Ω` for
+every `t ≥ 0`. `Heat.IsSolution.nonneg` (Theorem 10.3 with `K = 0` for the lower bound). ★'''
+deps = ["theorem_10_3", "Heat.IsSolution.nonneg"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (i)"
+
+[[node]]
+id = "corollary_10_4_ii"
+kind = "theorem"
+desc = '''Corollary 10.4 (ii): if `u₀ ∈ L^∞(Ω)` then `u ∈ L^∞(Q)` with `‖u‖_{L^∞(Q)} ≤ ‖u₀‖_{L^∞(Ω)}`,
+stated as `∀ t ≥ 0, eLpNorm (u t) ∞ (volume.restrict Ω) ≤ eLpNorm u₀ ∞ (volume.restrict Ω)`
+(`Heat.IsSolution.eLpNorm_top_le`; both bounds of Theorem 10.3 with `K = ‖u₀‖_∞`). The joint
+`L^∞(Q)` reading is this bound for every `t`; a jointly measurable representative of the curve is
+not built (chapter group description, erratum (iii)). ★'''
+deps = ["theorem_10_3", "Heat.IsSolution.eLpNorm_top_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (ii)"
+
+[[node]]
+id = "corollary_10_5"
+kind = "theorem"
+desc = '''Corollary 10.5: for `Ω` of class `C^∞` with `Γ` bounded, `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0`
+on `Γ` (and, footnote 6, `u₀(x) → 0` as `|x| → ∞` if `Ω` is unbounded), the solution `u` of (1),
+(2), (3) belongs to `C(Q̄)`: there is `U : ℝ^N × ℝ → ℝ` continuous on `closure Ω ×ˢ Ici 0` with
+`U(·,t) =ᵐ u t` for every `t ≥ 0`. The book's proof — `u_{0n} ∈ C_c^∞(Ω)` with `u_{0n} → u₀` in
+`L^∞` and `L²`, `uₙ ∈ C^∞(Q̄)` by Theorem 10.2 (c), `|uₙ(t) - u(t)|_{L²} ≤ |u_{0n} - u₀|_{L²}`
+(Theorem 7.7), `‖uₙ - uₘ‖_{L^∞(Q)} ≤ ‖u_{0n} - u_{0m}‖_∞` by (19), uniform convergence — is
+`Heat.IsSolution.continuousOn_spaceTime`, with `Heat.exists_testFunction_tendsto_of_continuousOn`
+for the "easily established" approximation. ★★★ (through Theorem 10.2 (c)'s Bochner clause and
+the joint-continuity bridge).'''
+deps = ["theorem_10_1", "theorem_10_2_c", "corollary_10_4_ii", "Heat.IsSolution.continuousOn_spaceTime", "Heat.exists_testFunction_tendsto_of_continuousOn", "Brezis.Chapter07.theorem_7_7"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
+
+[[node]]
+id = "parabolicBoundary"
+kind = "definition"
+desc = '''The parabolic boundary `P = (Ω̄ × {0}) ∪ (Γ × [0,T])` of the cylinder `Ω × (0,T)` of
+Theorem 10.6: `parabolicBoundary Ω T := Heat.parabolicBoundary Ω T`, a subset of
+`EuclideanSpace ℝ (Fin N) × ℝ`. ★'''
+deps = ["Heat.parabolicBoundary"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6, the parabolic boundary"
+
+[[node]]
+id = "IsHeatSubsolution"
+kind = "definition"
+desc = '''The hypotheses (20), (21), (22) of Theorem 10.6 on a function `u : ℝ^N × ℝ → ℝ`, for a
+bounded open `Ω` and `T > 0`: `u ∈ C(Ω̄ × [0,T])` (`ContinuousOn u (closure Ω ×ˢ Icc 0 T)`), `u`
+of class `C¹` in `t` and `C²` in `x` in `Ω × (0,T)`, and `∂ₜu - Δu ≤ 0` in `Ω × (0,T)`
+(Mathlib's `InnerProductSpace.laplacian` in `x`): `IsHeatSubsolution Ω T u := Heat.IsClassicalSubsolution 1 Ω T u`.
+Footnote 7: no boundary condition and no initial datum are prescribed. ★'''
+deps = ["Heat.IsClassicalSubsolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, (20)–(22)"
+
+[[node]]
+id = "theorem_10_6"
+kind = "theorem"
+desc = '''Theorem 10.6: for bounded `Ω`, `T > 0` and `u` satisfying (20), (21), (22),
+`max_{Ω̄ × [0,T]} u = max_P u`: `∃ p ∈ parabolicBoundary Ω T, IsMaxOn u (closure Ω ×ˢ Icc 0 T) p`
+(both sets compact, so `sSup (u '' (closure Ω ×ˢ Icc 0 T)) = sSup (u '' parabolicBoundary Ω T)`).
+The book's proof with `v = u + ε|x|²`, the interior maximum contradiction `Δv ≤ 0`, `∂ₜv ≥ 0`
+against `∂ₜv - Δv ≤ -2εN < 0`, and `ε → 0` (with footnote 8's `T' < T` then `T' → T`) is
+`Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary`, whose one non-Mathlib ingredient,
+"the second derivative is `≤ 0` at an interior maximum", is `IsLocalMax.deriv_deriv_nonpos`.
+This is the classical parabolic maximum principle that `AtkinsonHan.Chapter06.example_6_2_4` is
+blocked on (`Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`). ★'''
+deps = ["IsHeatSubsolution", "parabolicBoundary", "Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary", "Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6"

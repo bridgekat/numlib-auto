@@ -1,0 +1,182 @@
+desc = '''
+The extension operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)` for an open set of class `C^1` with
+bounded boundary: Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+Equations*, Theorem 9.7, with Corollary 9.8 (the restrictions of `C_c^∞(ℝ^N)` are dense in
+`W^{1,p}(Ω)`) and Remark 9 (the square). Imports `Reflection.lean`, `Calculus.lean` and
+`Chart.lean`. This is the critical path of `notes/fem-roadmap.md` (Part IV, step 2; Decision
+B) and the theorem that `notes/frontier.md` blocker 1 hangs on.
+
+The proof is the book's, assembled from the typed operators of the modules below it, each of
+which is a `ContinuousLinearMap` with an a.e. formula for `fn` and an `L^p` bound:
+
+* the finite atlas `(U_i, H_i)_{i < k}` of the compact `Γ = ∂Ω`
+  (`IsContDiffChartDomain.exists_finite_atlas`) and the partition of unity `θ₀, θ_i` of Lemma 9.3
+  (`IsCompact.exists_contDiff_partitionOfUnity`);
+* step (a): `ū₀ = \overline{θ₀ u}` is `SobolevMultiIndex.extendZeroMulL` with the cut-off `θ₀`
+  (`IsSobolevCutoff`: smooth, bounded with bounded gradient since `∇θ₀ = −∑ ∇θ_i` is compactly
+  supported, and supported off `Γ`);
+* step (b): for each chart, restrict to `U_i ∩ Ω` (`restrictL`), transfer to `Q_+` along `H_i`
+  (`compDiffeoL`, Proposition 9.6 — `H_i` is `C^1` on the compact `Q̄` so its Jacobian is
+  bounded on `Q_+`, and `H_i⁻¹` on `Ū_i`), reflect to `Q` (`evenReflectionL`, Lemma 9.2),
+  transfer back to `U_i` along `H_i⁻¹` (`compDiffeoL` again), multiply by `θ_i` and extend by
+  zero (`extendZeroMulL`, now with `tsupport θ_i ⊆ U_i` compact); this is `chartExtendL`;
+* step (c): `P u = ū₀ + ∑ û_i`, whose restriction to `Ω` is `∑ θ_i u = u` and whose norms are
+  bounded by the product of the step constants, which depend on the atlas and the partition only.
+
+The theorem is stated existentially (`∃ P C, …`), as the book states it, because its
+consumers (Corollaries 9.8, 9.14, 9.15, Theorem 9.16) only ever `obtain` an operator, and a
+`def` would have to `Classical.choose` an atlas. The core assembly is factored through a lemma
+that takes an explicit finite atlas covering a compact piece `K` of `Γ` and produces `P` for the
+functions vanishing away from `K`; Theorem 9.7 is `K = Γ`, and the unbounded-`Γ` case of
+Corollary 9.8 is `K = Γ ∩ closedBall 0 (2R)` applied to `ζ_R u`.
+
+The hypothesis is `IsContDiffChartDomain 1 Ω` (decision D9), reached from Atkinson–Han's
+`IsContDiffDomain 1 Ω` through `IsContDiffDomain.isContDiffChartDomain`; a Lipschitz domain
+(`IsLipschitzDomain`) does not reach it — Stein's Lipschitz extension is research-scale and
+stays out of scope (`notes/fem-roadmap.md` Decision B). The theorem is bundled at the end as the
+instance `IsSobolevExtensionDomain.of_isContDiffChartDomain` of the abstract predicate of
+`Cutoff.lean`, on which `EmbeddingDomain.lean` and `Compactness.lean` are stated, so that those
+modules do not import this one and a Lipschitz instance can be added later without touching
+them. The chart-restricted Jacobian bounds (`ContDiffChart.isDiffeoOnWithBoundedJacobian_pos`)
+are in `Chart.lean`. About 1450 lines.
+'''
+
+[[node]]
+id = "SobolevEuclidean.chartExtendL"
+kind = "definition"
+desc = '''The chart-local extension of step (b) of the proof of Theorem 9.7, as a bounded linear
+map: for `c : ContDiffChart 1 Ω`, `Ω : Opens _`, `1 ≤ p`,
+`SobolevEuclidean.chartExtendL c : SobolevEuclidean (d+1) 1 p Ω →L[ℝ] SobolevEuclidean (d+1) 1 p ⟨c.U, c.isOpen_U⟩`,
+the composite `restrictL (U ∩ Ω ≤ Ω)` → `compDiffeoL` (along `H_i : Q_+ → U ∩ Ω`) →
+`evenReflectionL e_N` (`Q_+ → Q`, `σ '' Q = Q`) → `compDiffeoL` (along `H_i⁻¹ : U → Q`), with
+`chartExtendL_fn_ae_eq : fn (chartExtendL c u) =ᵐ[volume.restrict (c.U ∩ Ω)] fn u`
+(the reflection restricted to `Q_+` is the identity, `evenReflectionL_fn_ae_eq_on`, and the two
+transfers cancel there), `eLpNorm (fn (chartExtendL c u)) p (volume.restrict c.U) ≤ C * eLpNorm (fn u) p (volume.restrict (c.U ∩ Ω))`
+and `‖chartExtendL c u‖ ≤ C * ‖u‖` — the book's `w_i ∈ W^{1,p}(U_i)`, `w_i = u` on `U_i ∩ Ω`,
+`‖w_i‖_{W^{1,p}(U_i)} ≤ C ‖u‖_{W^{1,p}(U_i ∩ Ω)}`. ★★, ~200 lines.'''
+deps = ["ContDiffChart.isDiffeoOnWithBoundedJacobian_pos", "SobolevMultiIndex.restrictL", "SobolevEuclidean.compDiffeoL", "SobolevEuclidean.evenReflectionL", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, proof of Theorem 9.7, step (b)"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_atlas"
+kind = "theorem"
+desc = '''**The assembly of Theorem 9.7 over an explicit atlas**: let `Ω : Opens _` with
+`IsContDiffChartDomain 1 Ω`, `1 ≤ p ≤ ∞`, `K ⊆ frontier Ω` compact, and `c : Fin k → ContDiffChart 1 Ω`
+with `K ⊆ ⋃ i, (c i).U`, and a smooth `χ : E → ℝ` bounded with bounded derivative (`∃ M, ∀ x,
+|χ x| ≤ M ∧ ‖fderiv ℝ χ x‖ ≤ M`) with `tsupport χ ∩ frontier Ω ⊆ K`. Then there are
+`P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤` and `C` such that for every `u`
+with `fn u =ᵐ[volume.restrict Ω] χ * fn u` (`χ = 1` where `u` lives):
+`fn (P u) =ᵐ[volume.restrict Ω] fn u`,
+`eLpNorm (fn (P u)) p volume ≤ C * eLpNorm (fn u) p (volume.restrict Ω)` and
+`‖P u‖ ≤ C * ‖u‖`. Construction: Lemma 9.3 on the compact `K` with the cover `(c i).U` gives
+`θ₀, θ_i`; `P u := extendZeroMulL (θ₀ χ) u + ∑ i, extendZeroMulL (θ_i χ) (chartExtendL (c i) u)`.
+The factor `χ` is what makes `θ₀ χ` a genuine `IsSobolevCutoff Ω`: `tsupport (θ₀ χ) ∩ frontier Ω ⊆
+tsupport θ₀ ∩ K = ∅` (Lemma 9.3 gives `Disjoint (tsupport θ₀) K`), and it is smooth, bounded with
+bounded derivative because `θ₀ = 1 − ∑ θ_i` has compactly supported derivative and `χ` is bounded
+with bounded derivative; `θ_i χ` is compactly supported in `(c i).U`
+(`IsSobolevCutoff.of_hasCompactSupport`). On `Ω`, `(θ₀ + ∑ θ_i) χ u = χ u = u` for the `u` in
+question. Linearity is by construction, the bounds multiply out. Theorem 9.7 is the case
+`K = frontier Ω`, `χ = 1` (every `u` qualifies, `tsupport 1 ∩ frontier Ω = frontier Ω = K`;
+`Bornology.IsBounded (frontier Ω)` makes `K` compact and the atlas finite — note that `Ω` itself
+may be unbounded, e.g. an exterior domain, which is why the hypothesis is on `χ` and not on a
+bounded set `B ⊇ Ω`); the unbounded-`Γ` case of Corollary 9.8 is `K = frontier Ω ∩ closedBall 0 (3R)`
+with `χ = ζ_{3R/2}` a cut-off equal to `1` on `ball 0 (2R)`, applied to `ζ_R u`. ★★★, 500–700
+lines: the sum of finitely many operators, the a.e. identities on `Ω` piece by piece
+(`extendZeroMulL_fn_ae_eq_on`, `chartExtendL_fn_ae_eq`, `θ_i = 0` off `U_i`), and the constant
+bookkeeping.'''
+deps = ["IsContDiffChartDomain", "ContDiffChart", "IsCompact.exists_contDiff_partitionOfUnity", "SobolevMultiIndex.extendZeroMulL", "SobolevEuclidean.chartExtendL", "IsSobolevCutoff", "IsSobolevCutoff.of_hasCompactSupport", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL"
+kind = "theorem"
+desc = '''**Theorem 9.7 (the extension operator)**: for `Ω : Opens (EuclideanSpace ℝ (Fin N))` with
+`IsContDiffChartDomain 1 Ω` and `Bornology.IsBounded (frontier Ω)`, and `1 ≤ p ≤ ∞`, there are
+`P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤` and `C : ℝ` such that for all `u`:
+`fn (P u) =ᵐ[volume.restrict Ω] fn u` (`P u|_Ω = u`),
+`eLpNorm (fn (P u)) p volume ≤ ENNReal.ofReal C * eLpNorm (fn u) p (volume.restrict Ω)`
+(`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}`) and `‖P u‖ ≤ C * ‖u‖`
+(`‖P u‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(Ω)}`), `C` depending on `Ω` (its atlas and partition of
+unity) and `p` only. Statement shape checked in `notes/brezis/ch09a/proto/Chart.lean`. From
+`SobolevEuclidean.exists_extensionL_of_atlas` with `K = frontier Ω` and
+`IsContDiffChartDomain.exists_finite_atlas`; the half-space case of the theorem is
+`SobolevEuclidean.exists_extensionL_upperHalfSpace` (`Reflection.lean`). [brezis2011functional]
+Theorem 9.7. ★★, ~100 lines on top of the assembly. Consumers: Corollary 9.8, Corollary 9.14
+(`EmbeddingDomain.lean`), Theorem 9.16 (`Compactness.lean`), chapter 9b (Theorem 9.25's boundary
+estimates, and every place §9.5–9.8 says "by Theorem 9.7"), and — under the restatement
+`IsLipschitzDomain Ω ↦ IsContDiffDomain 1 Ω` — `AtkinsonHan.Chapter07.theorem_7_3_5` at `k = 1`.'''
+deps = ["SobolevEuclidean.exists_extensionL_of_atlas", "IsContDiffChartDomain.exists_finite_atlas"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_isContDiffChartDomain"
+kind = "theorem"
+desc = '''Theorem 9.7 as an instance of the abstract predicate of `Cutoff.lean`: for
+`IsContDiffChartDomain 1 Ω`, `Bornology.IsBounded (frontier Ω)` and `1 ≤ p ≤ ∞`,
+`IsSobolevExtensionDomain N p Ω` — from `SobolevEuclidean.exists_extensionL`. With
+`IsSobolevExtensionDomain.of_isContDiffDomain` for Atkinson–Han's graph domains
+(`IsContDiffDomain 1 Ω` with bounded frontier, through the bridge
+`IsContDiffDomain.isContDiffChartDomain`), which is the form the restated Atkinson–Han nodes
+(`theorem_7_3_5`, `theorem_7_3_7`, `theorem_7_3_8` under `C^1`) will use. Everything in
+`EmbeddingDomain.lean` and `Compactness.lean` is stated on the predicate and reached through
+these two instances. ★, ~20 lines.'''
+deps = ["SobolevEuclidean.exists_extensionL", "IsSobolevExtensionDomain", "IsContDiffDomain.isContDiffChartDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7"
+
+[[node]]
+id = "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isBounded_frontier"
+kind = "theorem"
+desc = '''**Corollary 9.8 (density), bounded boundary**: for `IsContDiffChartDomain 1 Ω`,
+`Bornology.IsBounded (frontier Ω)` and `1 ≤ p < ∞`, every `u : SobolevEuclidean N 1 p Ω` is the
+limit of restrictions of `C_c^∞(ℝ^N)` functions: there is `v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ`
+with `ContDiff ℝ ∞ (v n)`, `HasCompactSupport (v n)`, and `Tendsto (fun n ↦ ‖(v n).restrict − u‖) atTop (𝓝 0)`,
+the restriction of `v n` being its class in `SobolevEuclidean N 1 p Ω`
+(`TestFunction`-like membership: a `C_c^∞(ℝ^N)` function lies in `W^{1,p}(Ω)` by
+`ContDiffOn.hasWeakIteratedFDerivOn` and `MemSobolevMultiIndex.exists_sobolevMultiIndex`). Proof:
+the abstract density `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`
+(`Cutoff.lean`: `P u ∈ W^{1,p}(ℝ^N)` is approximated by `ζ_n (ρ_n ⋆ P u)` and restriction to `Ω`
+is `1`-Lipschitz) applied to the instance `IsSobolevExtensionDomain.of_isContDiffChartDomain`
+(Theorem 9.7). [brezis2011functional] Corollary 9.8, first paragraph of the proof. Equivalently:
+the subspace of restrictions of `C_c^∞(ℝ^N)` functions is dense in `SobolevEuclidean N 1 p Ω`
+(`Dense` form, `…_dense`). This is Atkinson–Han's Theorem 7.3.2 at `k = 1` under `C^1` in place
+of Lipschitz: `AtkinsonHan.Chapter07.theorem_7_3_2` restated with `IsContDiffDomain 1 Ω` (and
+`IsContDiffDomain.isContDiffChartDomain`) becomes provable at `k = 1`; its higher `k` needs the
+`C^m` extension of Comment 2, not planned. ★, ~20 lines.'''
+deps = ["IsSobolevExtensionDomain.of_isContDiffChartDomain", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"
+
+[[node]]
+id = "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto"
+kind = "theorem"
+desc = '''**Corollary 9.8 (density), general `C^1` domain**: the conclusion of
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isBounded_frontier` without the
+boundedness of `frontier Ω`. Proof ([brezis2011functional] Corollary 9.8, second paragraph):
+given `ε`, `‖ζ_R u − u‖ < ε` for `R` large (`SobolevMultiIndex.tendsto_cutoff_smul`); `ζ_R u`
+vanishes off `ball 0 (2R)`, so `SobolevEuclidean.exists_extensionL_of_atlas` with the compact
+`K = frontier Ω ∩ closedBall 0 (3R)`, a finite atlas covering it
+(`IsContDiffChartDomain.exists_finite_atlas_of_isCompact`) and the cut-off `χ = ζ_{3R/2}` (equal
+to `1` on `ball 0 (2R)`, so `ζ_R u = χ ζ_R u` and `tsupport χ ∩ frontier Ω ⊆ K`) extends `ζ_R u`
+to `v ∈ W^{1,p}(ℝ^N)`, and `w ∈ C_c^∞(ℝ^N)` with `‖w − v‖ < ε` restricts to within `2ε` of `u`.
+★★★, ~250 lines. Consumed by Corollary 9.14's continuity clause on unbounded domains only through
+Theorem 9.7 itself; kept because the book states it and it is Atkinson–Han 7.3.2's shape for
+unbounded `C^1` domains.'''
+deps = ["SobolevEuclidean.exists_extensionL_of_atlas", "SobolevMultiIndex.tendsto_cutoff_smul", "IsContDiffChartDomain.exists_finite_atlas", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_unitSquare"
+kind = "theorem"
+desc = '''**Remark 9 (the square by four reflections)**: for `Ω = (0,1) × (0,1) ⊆ ℝ^2`
+(`{x | 0 < x 0 ∧ x 0 < 1 ∧ 0 < x 1 ∧ x 1 < 1}` as an `Opens (EuclideanSpace ℝ (Fin 2))`) and
+`1 ≤ p ≤ ∞`, there are `P` and `C` as in `SobolevEuclidean.exists_extensionL` although `Ω` is
+not of class `C^1`. Proof ([brezis2011functional] §9.2, Remark 9, Figure 6): reflect across
+`x_2 = 0` (Lemma 9.2 with `v = e_2`, `V = (0,1) × (−1,1)`), then across `x_2 = 1` after
+translating (the translation `x ↦ x − e_2` acts on `W^{1,p}` by
+`HasWeakIteratedFDerivOn.comp_affineEquiv`), then across `x_1 = 0` and `x_1 = 1` with `v = e_1`,
+reaching `ũ ∈ W^{1,p}((−1,3)^2)`; multiply by `ψ ∈ C_c^∞((−1,3)^2)` with `ψ = 1` on `Ω` and
+extend by zero (`extendZeroMulL`). All linear, all bounded. ★★, ~250 lines; low priority — no
+consumer, the general reflection lemma of `Reflection.lean` makes it cheap and the remark
+explicitly displays it. Not extended to general rectangles or boxes, though the same proof
+would.'''
+deps = ["SobolevEuclidean.evenReflectionL", "HasWeakIteratedFDerivOn.comp_affineEquiv", "SobolevMultiIndex.extendZeroMulL", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"

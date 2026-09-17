@@ -1,0 +1,229 @@
+namespace = "Brezis.Chapter06"
+desc = '''
+Brezis §6.3, the spectrum of a compact operator: the resolvent set, spectrum and eigenvalues of
+`T : E →L[ℝ] E` on a real Banach space, the compactness of `σ(T) ⊆ [-‖T‖, ‖T‖]`, and Theorem 6.8
+with Lemma 6.2. The book's `ρ(T) = {λ ∈ ℝ : T - λ I bijective}` is Mathlib's
+`resolventSet ℝ T` (`λ ∈ ρ(T) ↔ IsUnit (algebraMap ℝ _ λ - T)`, and units of `E →L[ℝ] E` are the
+bijective operators, `ContinuousLinearMap.isUnit_iff_bijective`, which needs `E` complete —
+Corollary 2.7), `σ(T)` is `spectrum ℝ T`, and `EV(T)` is `{λ | Module.End.HasEigenvalue (T : Module.End ℝ E) λ}`.
+The examples of Remarks 6 and 7 live on `ℓ² = lp (fun _ : ℕ => ℝ) 2`; Mathlib has neither the
+shifts nor the multiplication operators on `lp` (grep 2026-09-17: no `shift` in
+`Mathlib/Analysis/Normed/Lp/`, no action of `lp _ ∞` on `lp _ p`), so they are defined here, by
+content, with `memℓp_gen` and a summability comparison; if chapter 11's surface (§11.3) needs
+them too they should move to a backbone `Numlib/Analysis/Normed/Lp/Sequence.lean`. The
+unnumbered claim of the Comments (3) that the null spaces of the powers of `T - λ I` stabilize
+is stated here as `ascent_stabilizes`.
+'''
+
+[[node]]
+id = "mem_resolventSet_iff_bijective"
+kind = "theorem"
+desc = '''The definition of §6.3: for `T : E →L[ℝ] E` on a Banach space and `μ : ℝ`,
+`μ ∈ resolventSet ℝ T ↔ Function.Bijective (T - μ • (1 : E →L[ℝ] E))`. Mathlib's
+`spectrum.mem_resolventSet_iff` with `Algebra.algebraMap_eq_smul_one`, `IsUnit.neg_iff`
+(`algebraMap μ - T = -(T - μ • 1)`) and `ContinuousLinearMap.isUnit_iff_bijective`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.3, Definition"
+
+[[node]]
+id = "mem_spectrum_iff_not_bijective"
+kind = "theorem"
+desc = '''The definition of §6.3, `σ(T) = ℝ ∖ ρ(T)`: `μ ∈ spectrum ℝ T ↔ ¬ Function.Bijective (T - μ • 1)`
+for `T : E →L[ℝ] E` on a Banach space. From `mem_resolventSet_iff_bijective`
+(`spectrum.mem_iff`/`Set.mem_compl_iff`). ★'''
+deps = ["mem_resolventSet_iff_bijective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.3, Definition"
+
+[[node]]
+id = "hasEigenvalue_iff_ker_ne_bot"
+kind = "theorem"
+desc = '''The definition of §6.3, eigenvalues: `μ` is an eigenvalue of `T` iff `N(T - μ I) ≠ {0}`,
+`Module.End.HasEigenvalue (T : Module.End ℝ E) μ ↔ LinearMap.ker ((T : E →ₗ[ℝ] E) - μ • 1) ≠ ⊥`,
+the eigenspace `N(T - μ I)` being `Module.End.eigenspace T μ`
+(`Module.End.hasEigenvalue_iff`, `Module.End.eigenspace_def`/`mem_eigenspace_iff`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.3, Definition"
+
+[[node]]
+id = "exists_equiv_of_mem_resolventSet"
+kind = "theorem"
+desc = '''"If `λ ∈ ρ(T)` then `(T - λ I)⁻¹ ∈ L(E)` (see Corollary 2.7)": for `T : E →L[ℝ] E` on a
+Banach space and `μ ∈ resolventSet ℝ T`, `∃ e : E ≃L[ℝ] E, (e : E →L[ℝ] E) = T - μ • 1`, the
+inverse being the bounded operator `e.symm`. From the unit given by `spectrum.mem_resolventSet_iff`
+(`ContinuousLinearEquiv.ofUnit`… or `ContinuousLinearEquiv.ofBijective` with
+`mem_resolventSet_iff_bijective`; the open mapping theorem is inside `isUnit_iff_bijective`). ★'''
+deps = ["mem_resolventSet_iff_bijective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.3, Definition"
+
+[[node]]
+id = "remark_6_6"
+kind = "theorem"
+desc = '''Remark 6, first sentence, `EV(T) ⊆ σ(T)`: `Module.End.HasEigenvalue (T : Module.End ℝ E) μ → μ ∈ spectrum ℝ T`
+for `T : E →L[ℝ] E`. Mathlib's `Module.End.HasEigenvalue.mem_spectrum` with
+`ContinuousLinearMap.spectrum_eq` (the spectrum of `T` as an operator equals that of its
+underlying endomorphism). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6"
+
+[[node]]
+id = "rightShift"
+kind = "definition"
+desc = '''The right shift `S_r` of Remark 6 and Exercise 6.18 on `ℓ² = lp (fun _ : ℕ => ℝ) 2`:
+`rightShift : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2`, `(rightShift x) 0 = 0`,
+`(rightShift x) (n + 1) = x n`. Membership in `ℓ²` by `memℓp_gen` and `summable_nat_add_iff`;
+linear by `lp.ext`; bounded (an isometry, `‖rightShift x‖ = ‖x‖`, from `lp.norm_eq_tsum_rpow`
+and `tsum_eq_zero_add`), built with `LinearMap.mkContinuous`. Also record `rightShift_apply_zero`,
+`rightShift_apply_succ` and `norm_rightShift_apply`. ★★, ~80 lines with the API. The left shift
+`S_ℓ` is not defined (the remark's left-shift clause is not planned).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6"
+
+[[node]]
+id = "remark_6_6_rightShift"
+kind = "theorem"
+desc = '''Remark 6, the right shift: `(0 : ℝ) ∈ spectrum ℝ rightShift ∧ ¬ Module.End.HasEigenvalue (rightShift : Module.End ℝ _) 0`,
+so `EV(T) ⊊ σ(T)` can be strict; equivalently (Remark 5) `rightShift` is injective and not
+surjective. Injective because it is an isometry (`norm_rightShift_apply`); not surjective
+because `lp.single 2 0 1` is not in its range (`rightShift_apply_zero`); then
+`mem_spectrum_iff_not_bijective` and `hasEigenvalue_iff_ker_ne_bot`. ★, ~40 lines.'''
+deps = ["rightShift", "mem_spectrum_iff_not_bijective", "hasEigenvalue_iff_ker_ne_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6"
+
+[[node]]
+id = "remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one"
+kind = "theorem"
+desc = '''Remark 6, "it may happen that `EV(T) = σ(T) = ∅`": the general fact behind both of the
+book's examples — for `T : E →L[ℝ] E` on a Banach space with `T * T = -1`,
+`spectrum ℝ T = ∅`. For every `μ : ℝ`, `(T - μ • 1) * (-(T + μ • 1)) = -(T * T - μ ^ 2 • 1) = (1 + μ ^ 2) • 1`,
+a unit (`1 + μ ^ 2 ≠ 0`), and the two factors commute, so `T - μ • 1` is a unit
+(`IsUnit.of_mul_isUnit_left`/`Commute.isUnit_mul_iff`). ★, ~30 lines. Also the content of
+Exercise 6.16, question 1 (`T² = I` is the same computation with `1 - μ²`, not planned).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6"
+
+[[node]]
+id = "remark_6_6_rotation"
+kind = "theorem"
+desc = '''Remark 6, the example: the rotation by `π/2` of `ℝ²`, `R : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin 2)`
+with `R (x₀, x₁) = (-x₁, x₀)` (`Matrix.toEuclideanLin !![0, -1; 1, 0]`, or
+`LinearMap.toContinuousLinearMap` of the linear map given by `![-x 1, x 0]`), has
+`spectrum ℝ R = ∅` (and hence no eigenvalue, by `remark_6_6`). `R * R = -1` by `ext` and
+`remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one`. ★, ~30 lines. The book's second example, the
+pairwise swap `(u₁, u₂, u₃, u₄, …) ↦ (-u₂, u₁, -u₄, u₃, …)` on `ℓ²`, is the same lemma applied to
+an operator that needs the `lp` bookkeeping of `rightShift`; it is not planned.'''
+deps = ["remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one", "remark_6_6"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6"
+
+[[node]]
+id = "proposition_6_7"
+kind = "theorem"
+desc = '''Proposition 6.7, compactness: `IsCompact (spectrum ℝ T)` for `T : E →L[ℝ] E` on a Banach
+space. Mathlib's `spectrum.isCompact` (`ℝ` is a proper field). The book's proof (the resolvent set
+is open by the contraction mapping principle) is Mathlib's `spectrum.isOpen_resolventSet`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.7"
+
+[[node]]
+id = "proposition_6_7_subset"
+kind = "theorem"
+desc = '''Proposition 6.7, the bound: `spectrum ℝ T ⊆ Set.Icc (-‖T‖) ‖T‖` for `T : E →L[ℝ] E` on a
+Banach space. Mathlib's `spectrum.subset_closedBall_norm` (`E →L[ℝ] E` is a `NormOneClass` when
+`E` is nontrivial; for the trivial space the spectrum is empty and the claim is vacuous — handle
+by `nontriviality`), with `Real.closedBall_eq_Icc`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.7"
+
+[[node]]
+id = "theorem_6_8_a"
+kind = "theorem"
+desc = '''Theorem 6.8 (a): for `T : E →L[ℝ] E` compact on a Banach space with `¬ FiniteDimensional ℝ E`,
+`(0 : ℝ) ∈ spectrum ℝ T`. The backbone's `IsCompactOperator.zero_mem_spectrum`. ★'''
+deps = ["IsCompactOperator.zero_mem_spectrum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
+
+[[node]]
+id = "theorem_6_8_b"
+kind = "theorem"
+desc = '''Theorem 6.8 (b), `σ(T) ∖ {0} = EV(T) ∖ {0}`: for `T` compact on a Banach space,
+`spectrum ℝ T \ {0} = {μ | Module.End.HasEigenvalue (T : Module.End ℝ E) μ} \ {0}`. Mathlib's
+`IsCompactOperator.hasEigenvalue_iff_mem_spectrum` (the Fredholm alternative, which the book
+invokes as Theorem 6.6 (c)); `Set.ext` over `μ ≠ 0`. The hypothesis `dim E = ∞` of the theorem's
+header is not needed for this clause. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
+
+[[node]]
+id = "theorem_6_8_c"
+kind = "theorem"
+desc = '''Theorem 6.8 (c): for `T` compact on a Banach space,
+`(spectrum ℝ T \ {0}).Finite ∨ ∃ f : ℕ → ℝ, Function.Injective f ∧ Set.range f = spectrum ℝ T \ {0} ∧ Tendsto f atTop (𝓝 0)`
+— `σ(T) ∖ {0}` is empty or finite (the book's first two cases together), or a sequence of
+distinct points converging to `0`. The backbone's
+`IsCompactOperator.finite_or_exists_enumeration_spectrum`. ★'''
+deps = ["IsCompactOperator.finite_or_exists_enumeration_spectrum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
+
+[[node]]
+id = "lemma_6_2"
+kind = "theorem"
+desc = '''Lemma 6.2: for `T` compact on a Banach space, `l : ℕ → ℝ` injective with
+`∀ n, l n ∈ spectrum ℝ T \ {0}` and `Tendsto l atTop (𝓝 μ)`, one has `μ = 0` — every point of
+`σ(T) ∖ {0}` is isolated. From `theorem_6_8_b` (each `l n` is an eigenvalue) and the backbone's
+`IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue` with `tendsto_nhds_unique`.
+The book's proof by Riesz's lemma along the chain of spans of eigenvectors is the proof of the
+backbone's `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`. ★'''
+deps = ["theorem_6_8_b", "IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue", "IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 6.2"
+
+[[node]]
+id = "multiplicationOperator"
+kind = "definition"
+desc = '''The multiplication operator of Remark 7 (and Exercises 6.1, 6.17): for a bounded
+`α : ℕ → ℝ` (`hα : ∃ C, ∀ n, |α n| ≤ C`, or `α : lp (fun _ : ℕ => ℝ) ∞`),
+`multiplicationOperator α hα : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2`,
+`(multiplicationOperator α hα x) n = α n * x n`. Membership by `memℓp_gen` and
+`Summable.of_nonneg_of_le` against `C ^ 2 * ‖x n‖ ^ 2`; linear by `lp.ext`; norm `≤ C` by
+`LinearMap.mkContinuous`. Record `multiplicationOperator_apply`. ★★, ~70 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7"
+
+[[node]]
+id = "remark_6_7_isCompactOperator"
+kind = "theorem"
+desc = '''Remark 7, compactness: if `α : ℕ → ℝ` tends to `0` (hence is bounded, `hα`) then
+`IsCompactOperator (multiplicationOperator α hα)`. The book's proof: the truncations
+`Tₙ := multiplicationOperator (fun k => if k < n then α k else 0)` have finite rank (range in the
+span of `lp.single 2 k 1`, `k < n`) and `‖Tₙ - T‖ ≤ ⨆ k ≥ n, |α k| → 0`; conclude with
+`corollary_6_2`. Exercise 6.1 (`T` compact iff `αₙ → 0`, on `ℓ^p`) is the two-sided statement
+and is not planned. ★★, ~120 lines.'''
+deps = ["multiplicationOperator", "corollary_6_2"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7"
+
+[[node]]
+id = "remark_6_7_spectrum"
+kind = "theorem"
+desc = '''Remark 7, the spectrum: for `α : ℕ → ℝ` with `Tendsto α atTop (𝓝 0)`,
+`spectrum ℝ (multiplicationOperator α hα) = Set.range α ∪ {0}`, and each `α n` is an eigenvalue
+(`lp.single 2 n 1` is an eigenvector), while `0` is an eigenvalue iff some `α n = 0`; so `0` may
+or may not be an eigenvalue, and its eigenspace may be finite or infinite dimensional (the
+`range α ∪ {0}` form is the closure `closure (Set.range α)`, since `α → 0`). Proof: `⊇` from
+the eigenvectors and `remark_6_6`, and `0 ∈ σ` by `theorem_6_8_a` applied to the compact
+operator (`remark_6_7_isCompactOperator`), `ℓ²` being infinite dimensional; `⊆`: for `μ ∉ range α ∪ {0}`, `|α n - μ| ≥ δ > 0` for all `n` (finitely many
+`α n` are outside `ball 0 (|μ|/2)`), so `multiplicationOperator (fun n => (α n - μ)⁻¹)` is a
+bounded two-sided inverse of `T - μ • 1`. This is Exercise 6.17 for `p = 2`. ★★, ~120 lines.'''
+deps = ["multiplicationOperator", "remark_6_6", "theorem_6_8_a", "remark_6_7_isCompactOperator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7"
+
+[[node]]
+id = "ascent_stabilizes"
+kind = "theorem"
+desc = '''Comments on Chapter 6, 3 (multiplicity of eigenvalues): for `T : E →L[ℝ] E` compact on a
+Banach space and `μ ∈ spectrum ℝ T \ {0}`, the sequence `N((T - μ I)^k)` is strictly increasing
+up to some finite `p ≥ 1` (the ascent) and constant from `p` on:
+`∃ p : ℕ, 1 ≤ p ∧ (∀ j < p, ker ((T - μ • 1) ^ j) < ker ((T - μ • 1) ^ (j + 1))) ∧ ∀ j ≥ p, ker ((T - μ • 1) ^ j) = ker ((T - μ • 1) ^ p)`,
+with every `ker ((T - μ • 1) ^ j)` finite dimensional. The backbone's
+`IsCompactOperator.exists_riesz_index` (for `μ • 1 - T`; `(T - μ • 1) ^ j = (-1) ^ j • (μ • 1 - T) ^ j`
+has the same kernel) with `IsCompactOperator.finiteDimensional_ker_pow`; `1 ≤ p` because `μ` is an
+eigenvalue (`theorem_6_8_b`), as in `AtkinsonHan.Chapter02.theorem_2_8_12_3`. ★'''
+deps = ["IsCompactOperator.exists_riesz_index", "IsCompactOperator.finiteDimensional_ker_pow", "theorem_6_8_b"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 3"

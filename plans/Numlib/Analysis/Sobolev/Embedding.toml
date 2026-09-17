@@ -1,0 +1,258 @@
+desc = '''
+The Sobolev inequalities on the whole space: Brezis, *Functional Analysis, Sobolev Spaces and
+Partial Differential Equations*, §9.3.A — Theorem 9.9 (Sobolev–Gagliardo–Nirenberg,
+`1 ≤ p < N`), Corollary 9.10, Corollary 9.11 (`p = N`), Theorem 9.12 (Morrey, `p > N`) with
+Remarks 11–12, Corollary 9.13 (`W^{m,p}(ℝ^N)`), Remark 13 (`W^{N,1} ⊆ L^∞`) and Lemma 9.4.
+Imports `Friedrichs.lean`, `Cutoff.lean`, Mathlib's `Analysis/FunctionalSpaces/SobolevInequality.lean`
+and chapter 4's `Numlib/MeasureTheory/Function/LpInterpolation.lean` (the `L^p` interpolation
+inequality `MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`, Remark 2 of chapter 4, which
+Corollary 9.10, Corollary 9.11 and Rellich–Kondrachov use).
+The domain case (Corollaries 9.14–9.15, Remarks 15–16) is `EmbeddingDomain.lean`.
+
+What Mathlib has. `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq` is Theorem 9.9 for compactly
+supported `C^1` functions, with the constant `SNormLESNormFDerivOfEqConst`; the whole of the
+book's proof of Theorem 9.9 up to "To complete the proof let `u ∈ W^{1,p}(ℝ^N)`" is there, in a
+different arrangement (the grid-lines induction), and `lintegral_prod_lintegral_pow_le` is
+Lemma 9.4 in the special case the proof needs — the `f_i` being the grid-line integrals of one
+function. The general Lemma 9.4, with independent `f_i ∈ L^{N−1}(ℝ^{N−1})`, is not in Mathlib
+and is planned as a stand-alone node with no consumer. Mathlib has *nothing* for `p ≥ N`:
+Corollary 9.11 and Morrey's theorem are new, and Rademacher's theorem
+(`Mathlib/Analysis/Calculus/Rademacher.lean`) mentions Morrey only as the author of its proof
+strategy.
+
+Design. Each inequality is stated first at the predicate level, for `HasWeakFDerivOn f w ⊤ μ`
+on a finite-dimensional real normed `E` with Haar measure `μ` (the setting of Mathlib's GNS),
+by density (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`) and Fatou
+(`MeasureTheory.Lp.eLpNorm_le_of_ae_tendsto`, with the a.e.-convergent subsequence of
+`TendstoInMeasure.exists_seq_tendsto_ae`); then on the typed `SobolevEuclidean N 1 p ⊤` as an
+`IsContinuousEmbedding (toLpₗ h)` (`Cutoff.lean`), the vocabulary Atkinson–Han's Definition
+7.3.6 uses. Constants are Mathlib's where Mathlib supplies the inequality and explicit where the
+proof is new; footnote 9's `C(p, N) = (N − 1)p/(N − p)` would require re-proving Mathlib's GNS and
+is not carried (it is a footnote, not the theorem's statement — decision D10 does not apply).
+
+Morrey's theorem is the expensive item: the cube-average argument of the book, then the
+uniform-Cauchy passage from `C_c^1` to `W^{1,p}`, which produces the continuous representative
+of Remark 11 and the decay of Remark 12 at once. Corollary 9.13's `C^k` clause rests on Remark
+2's converse (`Friedrichs.lean`): a function whose weak gradient has a continuous representative
+has a `C^1` representative. About 3200 lines, of which Morrey ~800 and Corollaries 9.11 and 9.13
+~500 each.
+'''
+
+[[node]]
+id = "MeasureTheory.lintegral_prod_comp_succAbove_le"
+kind = "theorem"
+desc = '''**Lemma 9.4 (Gagliardo's lemma), general form**: for `N ≥ 2` and measurable
+`f : Fin N → ((Fin (N−1) → ℝ) → ℝ≥0∞)` — written with `n + 2 = N`, `f i : (Fin (n+1) → ℝ) → ℝ≥0∞` —
+`∫⁻ x, ∏ i, f i (x ∘ i.succAbove) ≤ ∏ i, (∫⁻ y, f i y ^ (N − 1)) ^ (1 / (N − 1))`
+(`x ∘ Fin.succAbove i` is the book's `x̃_i`, `x` with the `i`-th coordinate omitted): the
+product of `N` functions each independent of one coordinate is in `L^1(ℝ^N)` with
+`‖f‖_1 ≤ ∏ ‖f_i‖_{L^{N−1}(ℝ^{N−1})}`. Mathlib's `MeasureTheory.lintegral_prod_lintegral_pow_le`
+(`SobolevInequality.lean`) is the special case `f i (x̃_i) = (∫⁻ t, F (update x i t))^{1/(N−1)}`
+for a single `F`, which is all Theorem 9.9 needs; the general statement follows the book's
+induction on `N` ([brezis2011functional] §9.3, proof of Lemma 9.4): fix `x_{N+1}`, Hölder with
+exponents `N` and `N' = N/(N−1)` against `f_{N+1}`, the induction hypothesis on the `|f_i|^{N'}`,
+then integrate in `x_{N+1}` using that `x_{N+1} ↦ ‖f_i(·, x_{N+1})‖_{L^N}` is in `L^N(ℝ)` and the
+generalized Hölder inequality for `N` factors (`ENNReal.lintegral_prod_norm_pow_le`). The
+`Fin.succAbove`/`Fin.insertNth` bookkeeping of the induction is the cost. ★★★, ~350 lines; no
+consumer, low priority — a faithful node for the book's Lemma 9.4 only.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
+
+[[node]]
+id = "HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq"
+kind = "theorem"
+desc = '''**Theorem 9.9 (Sobolev–Gagliardo–Nirenberg) on `W^{1,p}(ℝ^N)`**: `E` finite-dimensional
+real normed with `finrank ℝ E = N`, `μ` an additive Haar measure, `p p' : ℝ≥0` with `1 ≤ p < N`
+and `1/p' = 1/p − 1/N`; if `HasWeakFDerivOn f w ⊤ μ` with `MemLp f p μ` and `MemLp w p μ`, then
+`MemLp f p' μ` and `eLpNorm f p' μ ≤ SNormLESNormFDerivOfEqConst ℝ μ p * eLpNorm w p μ` —
+the book's `‖u‖_{p*} ≤ C ‖∇u‖_p` with Mathlib's constant. (Mathlib's `eLpNorm_le_eLpNorm_fderiv_of_le`
+is the same inequality for compactly supported `C^1` functions with `q ≤ p*` and a bounded
+support, i.e. a Poincaré-type bound; it is what `Poincare.lean` notes as the alternative route to
+Corollary 9.19 for `p < N`.) Proof
+([brezis2011functional] §9.3, end of the proof of Theorem 9.9): take `u_n ∈ C_c^∞(ℝ^N)` with
+`u_n → f`, `∇u_n → w` in `L^p` (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` at
+order `1`, the `sobolevNorm` there dominating both), apply Mathlib's
+`MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq` to each `u_n`, extract an a.e. convergent
+subsequence (`tendstoInMeasure_of_tendsto_eLpNorm`, `TendstoInMeasure.exists_seq_tendsto_ae`),
+and conclude by Fatou in the form `MeasureTheory.Lp.eLpNorm_le_of_ae_tendsto` with the bound
+`C (‖w‖_p + δ)` valid eventually, for every `δ > 0`. ★★, ~200 lines. Footnote 10's alternative
+(`u_n` Cauchy in `L^{p*}`) is not needed.'''
+deps = ["HasWeakFDerivOn", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "MemSobolev"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.9"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq"
+kind = "theorem"
+desc = '''Theorem 9.9, typed: for `1 ≤ p < N` and `1/p' = 1/p − 1/N`, every
+`u : SobolevEuclidean N 1 p ⊤` has `MemLp (fn u) p' volume` (`SobolevEuclidean.memLp_fn_of_eq`)
+with `eLpNorm (fn u) p' volume ≤ C * SobolevEuclidean.gradNorm u` (the operator norm of the
+tensor gradient is at most the `ℓ^1` sum of the partial derivatives, `≤ N^{1−1/p} gradNorm u`),
+and the inclusion `SobolevMultiIndex.toLpₗ (memLp_fn_of_eq)` is a continuous embedding
+`W^{1,p}(ℝ^N) ↪ L^{p*}(ℝ^N)` (`IsContinuousEmbedding`, `Numlib/Analysis/Normed/Operator/Embedding.lean`):
+"`W^{1,p}(ℝ^N) ⊂ L^{p*}(ℝ^N)`" of [brezis2011functional] Theorem 9.9. From
+`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq` via `MemSobolevMultiIndex.memSobolev`
+(the tensor gradient from the components). ★★, ~120 lines.'''
+deps = ["HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq", "SobolevEuclidean", "SobolevMultiIndex.gradNorm", "SobolevMultiIndex.toLpₗ", "MemSobolevMultiIndex.memSobolev"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.9"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le"
+kind = "theorem"
+desc = '''**Corollary 9.10**: for `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`, every
+`u : SobolevEuclidean N 1 p ⊤` has `MemLp (fn u) q volume` with
+`eLpNorm (fn u) q volume ≤ C * ‖u‖` (`C = 1 + C_{9.9} N^{1−1/p}`: `‖u‖_q ≤ ‖u‖_p + ‖u‖_{p*}` by
+`MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow` and Young's inequality), and
+`IsContinuousEmbedding (toLpₗ …)`: "`W^{1,p}(ℝ^N) ⊂ L^q(ℝ^N)` for all `q ∈ [p, p*]` with
+continuous injection" ([brezis2011functional] Corollary 9.10). ★★, ~120 lines.'''
+deps = ["SobolevEuclidean.isContinuousEmbedding_toLp_of_eq", "MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.10"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank"
+kind = "theorem"
+desc = '''**Corollary 9.11 (the limiting case `p = N`)**: for `N ≥ 2` and every `q ∈ [N, ∞)`, every
+`u : SobolevEuclidean N 1 N ⊤` has `MemLp (fn u) q volume` with
+`eLpNorm (fn u) q volume ≤ C(q, N) * ‖u‖`, and `IsContinuousEmbedding (toLpₗ …)`:
+"`W^{1,N}(ℝ^N) ⊂ L^q(ℝ^N)` for all `q ∈ [N, +∞)`" ([brezis2011functional] Corollary 9.11), the
+constant blowing up as `q → ∞` (footnote 11). Proof, the book's, for `u ∈ C_c^1(ℝ^N)` first:
+Mathlib's `p = 1` inequality `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_one`
+(`‖v‖_{N/(N−1)} ≤ C ‖∇v‖_1`) applied to `v = |u|^{m−1} u`, which is `C^1` with
+`∇v = m |u|^{m−1} ∇u` for real `m ≥ 1` (calculus of `t ↦ |t|^{m−1} t`;
+`Numlib/Analysis/InnerProductSpace/NormPow.lean` has the derivative of `‖x‖^s`), then Hölder
+`‖ |u|^{m−1} ∇u ‖_1 ≤ ‖u‖_{(m−1)N'}^{m−1} ‖∇u‖_N` gives (20)
+`‖u‖_{mN/(N−1)}^m ≤ C m ‖u‖_{(m−1)N/(N−1)}^{m−1} ‖∇u‖_N`, Young's inequality turns it into (21)
+`‖u‖_{mN/(N−1)} ≤ C (‖u‖_{(m−1)N/(N−1)} + ‖∇u‖_N)`, and the induction `m = N, N+1, …` together
+with the interpolation inequality between consecutive exponents covers every `q ≥ N`; finally
+density (Theorem 9.2, whole space) and Fatou as in Theorem 9.9. ★★★, ~500 lines. Not
+derivable from `eLpNorm_le_eLpNorm_fderiv_of_le`, which requires `p < N` strictly.'''
+deps = ["MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "SobolevMultiIndex.toLpₗ", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.11"
+
+[[node]]
+id = "abs_sub_le_mul_rpow_eLpNorm_fderiv_of_contDiff"
+kind = "theorem"
+desc = '''**Morrey's estimate for a `C^1` compactly supported function** (the analytic core of
+Theorem 9.12): for `N < p < ∞` (or `p = ∞`), `u : EuclideanSpace ℝ (Fin N) → ℝ` of class `C^1`
+with compact support, and all `x y`,
+`|u x − u y| ≤ C(p, N) * ‖x − y‖ ^ (1 − N/p) * (eLpNorm (fderiv ℝ u) p volume).toReal`, with
+`C(p, N) = 2 · 2^{1−N/p} / (1 − N/p)`, and `|u x| ≤ C'(p, N) * (‖u‖_{W^{1,p}})`. Proof
+([brezis2011functional] §9.3, proof of Theorem 9.12, lines 10561–10628 of the source): on a
+cube `Q` of side `r` with sides parallel to the axes, for `x ∈ Q` and the mean `ū`,
+`|ū − u(x)| ≤ r^{1−N/p}/(1−N/p) ‖∇u‖_{L^p(Q)}` — from `u(x) − u(x₀) = ∫_0^1 ∇u(x₀ + t(x − x₀))·(x − x₀) dt`,
+integrated over `Q`, the substitution `y = x₀ + t(x − x₀)` (`MeasureTheory.Measure.addHaar_smul`
+/ `integral_comp_smul` with the Jacobian `t^{−N}`), Hölder on the dilated cube `t Q ⊆ Q`
+(`|tQ| = t^N |Q|`) and `∫_0^1 t^{N/p' − N} dt = 1/(1 − N/p)`; two points `x, y` lie in a cube of
+side `2‖x − y‖` (centred at their midpoint), whence (25); and (24) from a unit cube containing `x`
+with `|ū| ≤ ‖u‖_{L^p(Q)}`. Cubes are `{z | ∀ i, |z i − c i| < r/2}`, product sets under
+`EuclideanSpace.volume_preserving_measurableEquiv`. ★★★, ~400 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.12, proof"
+
+[[node]]
+id = "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq"
+kind = "theorem"
+desc = '''**Theorem 9.12 (Morrey) with Remarks 11 and 12**: for `N < p ≤ ∞`, `HasWeakFDerivOn f w ⊤ volume`
+on `EuclideanSpace ℝ (Fin N)` with `MemLp f p`, `MemLp w p`, there is `ũ : E → ℝ` with
+`Continuous ũ`, `f =ᵐ[volume] ũ` (Remark 11: the continuous representative),
+`HolderWith (C(p,N) * ‖w‖_p) (1 − N/p) ũ` (the inequality (25),
+`|u(x) − u(y)| ≤ C |x − y|^α ‖∇u‖_p`, for the representative and hence for a.e. `x, y`),
+`‖ũ x‖ ≤ C'(p,N) * (‖f‖_p + ‖w‖_p)` for all `x` (the inequality (24), `W^{1,p} ⊂ L^∞` with
+continuous injection), and, for `p < ∞`, `Tendsto ũ (cocompact E) (𝓝 0)` (Remark 12). Proof:
+the `C_c^1` approximants `u_n` of Theorem 9.2 (whole space) satisfy (24) for their differences,
+so they are uniformly Cauchy; their uniform limit `ũ` is continuous, satisfies (25) and (24) in
+the limit, equals `f` a.e. (both are the `L^p` limit of `u_n`), and is the uniform limit of
+compactly supported functions, hence tends to `0` at infinity. This is the book's "standard
+density argument" made explicit. ★★★, ~400 lines on top of the `C^1` estimate. The typed
+version `SobolevEuclidean.toContinuousMapL : SobolevEuclidean N 1 p ⊤ →L[ℝ] (E →ᵇ ℝ)` with
+`‖toContinuousMapL u‖ ≤ C' ‖u‖` and `coe_toContinuousMapL_ae_eq` (★★, ~150 lines) is the form
+Corollary 9.14's `C(Ω̄)` clause and Theorem 9.16's Arzelà–Ascoli case consume (the pattern is
+`SobolevInterval.toContinuousMap` of `Interval.lean`).'''
+deps = ["abs_sub_le_mul_rpow_eLpNorm_fderiv_of_contDiff", "HasWeakFDerivOn", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.12, Remark 11, Remark 12"
+
+[[node]]
+id = "SobolevEuclidean.memLp_fn_of_order"
+kind = "theorem"
+desc = '''**Corollary 9.13, the `L^q` clauses**: for `m ≥ 1`, `1 ≤ p < ∞` and
+`u : SobolevEuclidean N m p ⊤`: if `1/p − m/N > 0` then `MemLp (fn u) q volume` for
+`1/q = 1/p − m/N` with `‖fn u‖_q ≤ C ‖u‖`; if `1/p − m/N = 0` then for every `q ∈ [p, ∞)`;
+if `1/p − m/N < 0` then `MemLp (fn u) ∞ volume` (`W^{m,p} ⊂ L^∞`); all with continuous
+injections (`IsContinuousEmbedding (toLpₗ …)`). Proof: "repeated applications of Theorem 9.9,
+Corollary 9.11 and Theorem 9.12" — induction on `m` using `memSobolevMultiIndex_succ_iff`
+(`u ∈ W^{m+1,p}` iff `u, ∂_i u ∈ W^{m,p}`): `u ∈ W^{m,p}` gives `u, ∂_i u ∈ W^{m−1,p}`, hence in
+`L^{q_1}` with `1/q_1 = 1/p − (m−1)/N` by induction, hence `u ∈ W^{1,q_1}(ℝ^N)`, and Theorem 9.9
+/ Corollary 9.11 / Theorem 9.12 finish according to the sign of `1/q_1 − 1/N`. The bookkeeping
+of exponents in `ℝ≥0∞` and of the derivative components across orders is the cost. ★★★, ~400
+lines for the three clauses.'''
+deps = ["SobolevEuclidean.isContinuousEmbedding_toLp_of_eq", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "memSobolevMultiIndex_succ_iff", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13"
+
+[[node]]
+id = "SobolevEuclidean.exists_contDiff_ae_eq_of_order"
+kind = "theorem"
+desc = '''**Corollary 9.13, the `C^k` clause**: for `m − N/p > 0` not an integer, `k = ⌊m − N/p⌋` and
+`θ = m − N/p − k ∈ (0,1)`, every `u : SobolevEuclidean N m p ⊤` has a representative `ũ` of class
+`C^k` (`ContDiff ℝ k ũ`, `fn u =ᵐ ũ`) whose derivatives of order `≤ k` are bounded by
+`C ‖u‖` and whose derivatives of order `k` are `θ`-Hölder with constant `C ‖u‖`; in particular
+`W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` modulo representatives (footnotes 13–14). Proof: by induction each
+`∂^α u`, `|α| ≤ k`, lies in `W^{1,r}(ℝ^N)` for some `r > N` (as in
+`SobolevEuclidean.memLp_fn_of_order`), so has the Hölder continuous representative of Morrey;
+that the representative of `u` is `C^1` with derivative the representatives of `∂_i u` is Remark
+2's converse `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn` (`Friedrichs.lean`),
+applied `k` times. ★★★, ~400 lines. Its domain version (Corollary 9.15) is what chapter 9b's
+Theorem 9.31 uses for `e_n ∈ C^∞(Ω)`.'''
+deps = ["SobolevEuclidean.memLp_fn_of_order", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn", "memSobolevMultiIndex_succ_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one"
+kind = "theorem"
+desc = '''**Remark 13 (`W^{N,1}(ℝ^N) ⊂ L^∞`)**: every `u : SobolevEuclidean N N 1 ⊤` has a bounded
+continuous representative with `‖ũ‖_∞ ≤ ‖u‖` — for `u ∈ C_c^∞`,
+`u(x) = ∫_{−∞}^{x_1} ⋯ ∫_{−∞}^{x_N} ∂_1 ⋯ ∂_N u`, so `‖u‖_∞ ≤ ‖∂_1⋯∂_N u‖_1 ≤ ‖u‖_{W^{N,1}}`
+(iterated fundamental theorem of calculus over the coordinates, by induction on `N` through
+`EuclideanSpace.measurePreserving_lastInit` or `MeasurableEquiv.piFinSuccAbove`), then density
+at order `N` (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`) and the uniform-Cauchy
+argument of Morrey's theorem. The book adds that `W^{m,p} ⊄ L^∞` for `p > 1`, `m = N/p` in
+general — a counterexample (Remark 16's function at higher order), not planned. ★★, ~300 lines.'''
+deps = ["EuclideanSpace.measurePreserving_lastInit", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "SobolevEuclidean"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 13"
+
+[[node]]
+id = "SobolevEuclidean.exists_contDiff_ae_eq_of_lt"
+kind = "theorem"
+desc = '''**Corollary 9.13's `C^k` clause without the non-integer restriction**: for `1 ≤ p < ∞` and
+integers `m, k` with `k + N/p < m` (a real inequality; the book's hypothesis "`m − N/p` not an
+integer, `k = ⌊m − N/p⌋`" is the sharp case of this one), every `u : SobolevEuclidean N m p ⊤`
+has a representative `ũ` with `ContDiff ℝ k ũ`, `fn u =ᵐ ũ`, every derivative of order `≤ k`
+bounded by `C ‖u‖`, and the derivatives of order `k` Hölder continuous for *some* exponent
+`θ ∈ (0, 1]` (not the sharp one). Proof: for `|α| ≤ k`, `∂^α u ∈ W^{m−k,p}` with
+`(m − k) − N/p > 0`; run the chain of `SobolevEuclidean.memLp_fn_of_order` (Theorem 9.9 while the
+exponent is `< N`, Corollary 9.11 with a finite `q > N` when it equals `N`) until the first
+derivatives of `∂^α u` lie in some `L^r`, `r > N`, and finish with Morrey's theorem and
+`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn` as in `exists_contDiff_ae_eq_of_order`.
+This is the form the heat equation needs (`H^{2ℓ}(ℝ^N) ⊆ C^k` for `k + N/2 < 2ℓ`, where
+`2ℓ − N/2` is an integer for every even `N`, so the book's Corollary 9.13 as stated never applies —
+an erratum of the proofs of Theorems 10.1 and 10.8, recorded in `notes/book-errata.md`). ★★,
+~150 lines on top of `exists_contDiff_ae_eq_of_order`'s machinery.'''
+deps = ["SobolevEuclidean.memLp_fn_of_order", "SobolevEuclidean.exists_contDiff_ae_eq_of_order", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13 (the integer case), and the proofs of Theorems 10.1 and 10.8"
+
+[[node]]
+id = "MemSobolevMultiIndexLoc.exists_contDiffOn"
+kind = "theorem"
+desc = '''A function in `H^m_loc(Ω)` for every `m` has a `C^∞` representative on `Ω`:
+`(∀ m, MemSobolevMultiIndexLoc b u m 2 Ω volume) → ∃ ũ, ContDiffOn ℝ ⊤ ũ Ω ∧ u =ᵐ[volume.restrict Ω] ũ`;
+and the finite-order form `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt`: for `m - N/2 > k`,
+`u ∈ H^m_loc(Ω)` has a `C^k` representative on `Ω`. Proof: on a ball `B` with `closure B ⊆ Ω`,
+`θ u ∈ H^m(ℝ^N)` for a cut-off `θ = 1` on `B` (`MemSobolevMultiIndexLoc.smul_testFunction`, `Cutoff.lean`), and
+`H^m(ℝ^N) ⊆ C^k` for `m - N/2 > k` by Corollary 9.13 of chapter 9a (`Embedding`); the local
+representatives agree on overlaps because two continuous functions equal almost everywhere on an
+open set are equal there, so they glue to one function, and `ContDiffOn` is local. This is the
+sentence "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`, as a consequence `e_n ∈ C^∞(Ω)`" of the proof of
+[brezis2011functional] Theorem 9.31 (p. 11710). Formerly planned in `PDE/Elliptic/Regularity.toml`; it is
+whole-space embedding theory and belongs here. ★★ (~150 lines).'''
+deps = [
+  "MemSobolevMultiIndexLoc.smul_testFunction",
+  "SobolevEuclidean.exists_contDiff_ae_eq_of_order",
+]

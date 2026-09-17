@@ -1,4 +1,5 @@
 desc = '''
-Sesquilinear forms, Lax–Milgram and the Galerkin method: the
-variational half of the library.
+Sesquilinear forms, Lax–Milgram and the Galerkin method: the variational half of the library,
+with the one-dimensional elliptic problems of `EllipticInterval/` (boundary conditions, the
+maximum principle, Sturm–Liouville eigenfunctions).
 '''

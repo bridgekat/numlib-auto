@@ -22,3 +22,64 @@ id = "separableSpace_strongDual_of_isReflexive"
 [[node]]
 id = "exists_subseq_forall_dual_tendsto"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
+
+[[node]]
+id = "instIsReflexiveOfFiniteDimensional"
+kind = "theorem"
+desc = '''**A finite-dimensional normed space is reflexive** ([brezis2011functional] chapter 3,
+Remark 13: "clearly, finite-dimensional spaces are reflexive, since `dim E = dim E⋆ = dim E⋆⋆`"):
+`instance [FiniteDimensional 𝕜 V] : IsReflexive 𝕜 V`. The embedding `inclusionInDoubleDual 𝕜 V` is
+injective (`inclusionInDoubleDualLi`), and `finrank 𝕜 (StrongDual 𝕜 (StrongDual 𝕜 V)) = finrank 𝕜 V`:
+in finite dimension every linear functional is continuous, so `StrongDual 𝕜 V ≃ₗ[𝕜] Module.Dual 𝕜 V`
+(`LinearMap.toContinuousLinearMap`, a `LinearEquiv` in `Topology/Algebra/Module/FiniteDimension.lean`)
+and `Subspace.dual_finrank_eq` (Mathlib) gives the equality twice; then
+`LinearMap.injective_iff_surjective_of_finrank_eq_finrank`. Distinct from Mathlib's
+`Module.IsReflexive`, which is about the algebraic dual (see the module doc). ★'''
+deps = ["IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 13"
+
+[[node]]
+id = "isReflexive_congr"
+kind = "theorem"
+desc = '''Reflexivity is a topological property: it is invariant under continuous linear
+equivalences ([brezis2011functional] chapter 3, footnote 3 of §3.5 for isometries, and Remark 21
+of §3.7: "a reflexive space remains reflexive for an equivalent norm"). For
+`(e : V ≃L[𝕜] W)`: `IsReflexive 𝕜 V ↔ IsReflexive 𝕜 W`. Proof: `J_W (e v) f = f (e v) = (J_V v) (f ∘L e)`,
+and `f ↦ f ∘L e` is a bijection of the duals (`ContinuousLinearEquiv.arrowCongr`), as is its
+double `ContinuousLinearEquiv.arrowCongr` on the biduals, so the square
+`J_W ∘ e = (e.arrowCongr … ).arrowCongr … ∘ J_V` commutes and surjectivity transfers. A
+`LinearIsometryEquiv` version is the special case `e.toContinuousLinearEquiv`. ★'''
+deps = ["IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 21"
+
+[[node]]
+id = "instIsReflexivePiLp"
+kind = "theorem"
+desc = '''A finite `ℓ^p` product of reflexive normed spaces is reflexive: for `1 ≤ p ≤ ∞` and
+`V : ι → Type*` with `[Fintype ι]` and `[∀ i, NormedSpace.IsReflexive 𝕜 (V i)]`,
+`NormedSpace.IsReflexive 𝕜 (PiLp p V)`. Route: `PiLp p V` is continuously linearly equivalent to
+the plain product `Π i, V i` (`PiLp.continuousLinearEquiv`), reflexivity transfers along
+continuous linear equivalences (chapter 3's `NormedSpace.isReflexive_congr`), and for the plain
+product a functional on the bidual is determined by its restrictions along the coordinate
+injections `ContinuousLinearMap.single` / projections `ContinuousLinearMap.proj`, each of which comes
+from `V i` by reflexivity — so the canonical map is onto. This is the ingredient
+`SobolevMultiIndex.instIsReflexive` (`Numlib/Analysis/Sobolev/MultiIndex`) needs, stated as an
+instance beside `NormedSpace.instIsReflexiveProd` (below; moved here from `Reflexive/Kakutani` at review), whose binary-product
+argument it generalizes. Mathlib has no reflexivity for products under any name
+(grep `IsReflexive` in `Mathlib/Analysis/Normed/Module/`: none). ★★, ~120 lines.'''
+deps = ["IsReflexive", "isReflexive_congr"]
+
+[[node]]
+id = "instIsReflexiveProd"
+kind = "theorem"
+desc = '''A product of two reflexive spaces is reflexive:
+`instance [NormedSpace.IsReflexive 𝕜 E] [NormedSpace.IsReflexive 𝕜 F] : NormedSpace.IsReflexive 𝕜 (E × F)`.
+Needed by the second clause of [brezis2011functional] Theorem 3.24 (`A⋆⋆ = A`), whose proof
+applies the bipolar identity `(G(A)^⊥)^⊥ = G(A)` in the reflexive space `E × F`. Proof: the
+dual of `E × F` is `E⋆ × F⋆` through `ContinuousLinearMap.prod`/`coprod` (Mathlib has
+`ContinuousLinearMap.prodEquiv`-type equivalences; a `ContinuousLinearEquiv (StrongDual 𝕜 (E × F)) (StrongDual 𝕜 E × StrongDual 𝕜 F)`
+is `f ↦ (f ∘L inl, f ∘L inr)` with inverse `(g, h) ↦ g ∘L fst + h ∘L snd`), so a functional on
+`(E × F)⋆` is a pair of functionals on `E⋆` and `F⋆`, each represented by a vector. ★★ (bookkeeping,
+~80 lines; the norm of the product is the sup norm and no isometry is claimed).'''
+deps = ["NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.24"

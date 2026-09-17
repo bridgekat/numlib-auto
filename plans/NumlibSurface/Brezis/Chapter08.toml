@@ -1,0 +1,131 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 8: Sobolev
+spaces and the variational formulation of boundary value problems in one dimension. Every numbered
+result of the main text — Proposition 8.1, Theorem 8.2, Lemmas 8.1–8.4, Propositions 8.3–8.5,
+Theorems 8.6–8.8, Corollaries 8.9–8.11, Theorem 8.12, Propositions 8.13–8.18, Theorem 8.19,
+Corollary 8.20, Proposition 8.21, Theorem 8.22 — is a node in the section group beside this file,
+together with the Remarks that assert something (2, 4, 5, 6, 7, 8 (the AC half), 9, 10, 11, 12,
+13, 14, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 30), the unnumbered Definitions
+(`W^{1,p}(I)`, `H¹`, the norms, `W^{m,p}`, `W_0^{1,p}`, `W^{-1,p'}`, classical and weak solutions
+of (1) and (14)), the §8.2 Examples (`|x|`, piecewise `C¹`, the sign function), Examples 1–8 of
+§8.4 (Propositions 8.16–8.18 are Examples 1, 3, 4), the Example of §8.6 (the sine basis), Problem
+47 (Poincaré–Wirtinger; Comments 1(i)) and the three exercises the main text cites as proof steps
+(8.2 part 1, 8.3, 8.6 part 4). **Nothing is blocked**: every node has a route, and the two
+cross-chapter inputs (chapter 4's `L^p` duality and Kolmogorov–Riesz, chapter 3's product
+reflexivity) are named.
+
+* **Correspondence.** `W^{1,p}(I)` is the backbone's `SobolevIntervalLp 1 p I` of
+  `Numlib/Analysis/Sobolev/Interval/Basic.lean` (planning brief D7), for `I : Opens ℝ` with the
+  hypothesis `(I : Set ℝ).OrdConnected` wherever the book says "interval" and `p : ℝ≥0∞` with
+  `[Fact (1 ≤ p)]`; `H¹(I)` is `p = 2`, and the book's `W^{1,p}(a, b)` at `p = 2` is
+  `SobolevInterval 1 a b` of `Interval.lean`, definitionally. The book's definition (the set of
+  `u ∈ L^p` with a weak derivative `g ∈ L^p` tested against `C_c^1(I)`) is restated verbatim with
+  `𝓓(I, ℝ)` as the test class (D6) as the predicate `MemSobolevSpace`, and
+  `memSobolevSpace_iff_memSobolevIntervalLp` identifies it with the backbone's; Remark 1 (the
+  `C_c^1` and `C_c^∞` test classes give the same space) is a node. The book's norm
+  `‖u‖_p + ‖u'‖_p` is the surface function `sobolevNorm`, equivalent to the norm of the type
+  (`SobolevIntervalLp.norm_le_sum_norm_deriv`); at `p = 2` the `H¹` norm of the type *is* the
+  book's. `u'` is `SobolevIntervalLp.deriv u 1`, `ũ` (the continuous representative) is
+  `SobolevIntervalLp.rep u`, and "`u(x)` for `x ∈ Ī`" is `rep u x`. `W_0^{1,p}(I)` is
+  `SobolevIntervalLpZero 1 p I` (the closure of `𝓓(I, ℝ)`; Remark 14 (i) is definitional),
+  `W^{-1,p'}(I)` is `SobolevIntervalLpDual p I = StrongDual ℝ (W_0^{1,p}(I))`. `W^{m,p}(I)` is
+  `SobolevIntervalLp m p I`, whose `m` weak derivatives are the book's second description, the
+  inductive one being `memSobolevIntervalLp_succ_iff`. §8.4–§8.6 work on `H¹(0, 1) = SobolevInterval 1 0 1`
+  with the form `EllipticInterval.form 0 1 1 0 1` (the operator `−u'' + u`), the weak problem
+  `IsGalerkinSolution (form …) (load … f) (SobolevIntervalZero 0 1) u`, and the boundary functionals
+  `SobolevInterval.evalCLM`; the Sturm–Liouville operator is `form 0 1 p 0 q`; Example 8 is on
+  `SobolevIntervalLp 1 2 ⊤ = H¹(ℝ)`. "`u ∈ C²(Ī)`" is `ContDiffMapIcc hab.le 2`.
+
+* **What Mathlib has.** The absolutely continuous calculus that carries the whole chapter
+  (`AbsolutelyContinuousOnInterval`, `IntervalIntegrable.ae_hasDerivAt_integral`, the product and
+  chain rules, the FTC for AC functions), the generalized variational lemma
+  `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (the book's Corollary 4.24, used in Step D
+  and Lemma 8.1), Hahn–Banach `exists_extension_norm_eq` (Proposition 8.14), `IsCompactOperator`
+  and its characterization by the image of the unit ball, `Lp.SecondCountableTopology`
+  (separability in Proposition 8.1), `InnerProductSpace.toDual` (Remark 22, Example 8),
+  `IsLocalMax.deriv_eq_zero` (Remark 26). Mathlib has no weak derivative on an interval, no
+  Sobolev space on a domain, no Helly selection theorem, no second-derivative test at a maximum.
+
+* **What the backbone had.** All of `H^m(a, b)` at `p = 2` on a bounded interval
+  (`Numlib/Analysis/Sobolev/Interval.lean`: the AC representative, `H¹ ↪ C[a, b]`, product rule,
+  Poincaré with `(b − a)/√2`, `H_0^1 = {u(a) = u(b) = 0}`, `C¹[a, b]` dense in `H¹`), the weak
+  derivative and `W^{k,p}(Ω)` on any open set of `ℝ^N` (`Sobolev/{WeakDeriv,Domain,Space,MultiIndex}`),
+  mollification with the product and chain rules (`Sobolev/Mollification`), the whole-space
+  density theorem (`Sobolev/Density`), Young's inequality and `L^p`-continuity of translation
+  (`Convolution/Lp`), Arzelà–Ascoli in `C(X, ℝ)` (`Topology/ContinuousMap/ArzelaAscoli`), the
+  elliptic form on `H¹(a, b)` with Lax–Milgram, `H²` regularity for the Dirichlet problem and the
+  classical-to-weak direction (`Variational/EllipticInterval`), Lax–Milgram with the energy
+  minimization and Stampacchia (`Variational/{LaxMilgram,Inequality/Basic}`), the compact
+  self-adjoint spectral theorem with a `HilbertBasis ℕ` (`InnerProductSpace/CompactSpectral`),
+  `C^k[a, b]` (`Calculus/ContDiffMapIcc`), reflexivity (`Normed/Module/Reflexive`).
+
+* **New backbone** (all planned in this round; brief D7): `Numlib/Analysis/Sobolev/Interval/Basic`
+  (`SobolevIntervalLp`, the weak derivative over `Opens ℝ`, Lemmas 8.1–8.2, Theorem 8.2, Remarks
+  2, 4–8, Propositions 8.1 (separability; reflexivity through chapters 3–4), 8.4, the (i)⇒(ii)
+  half of 8.5), `Interval/Extension` (Lemma 8.3, Theorem 8.6), `Interval/Density` (Lemma 8.4,
+  Theorem 8.7), `Interval/Embedding` (Theorem 8.8, Remarks 10–12, Corollaries 8.9–8.11),
+  `Interval/Higher` (`W^{m,p} ↪ C^{m−1}`, the interpolation inequality, `C^k[a, b]` dense in
+  `W^{k,p}`), `Interval/Zero` (Theorem 8.12, Remarks 13, 14, 16 (i), 18, Proposition 8.13, Problem
+  47), `Interval/DifferenceQuotient` (Propositions 8.3, 8.5, Exercise 8.2, Remark 16 (ii)),
+  `Interval/Dual` (Proposition 8.14, Remarks 19, 21); and under `Numlib/Variational/EllipticInterval/`:
+  `BoundaryConditions` (Steps C–D in general, Remark 23, Propositions 8.16–8.18, Examples 1–8),
+  `MaximumPrinciple` (Theorem 8.19, Corollary 8.20, Proposition 8.21, Remarks 26–28 and the
+  second-derivative test), `SturmLiouville` (Theorem 8.22, the sine basis). The refactor of
+  `HasWeakDerivOn` to `I : Opens ℝ` and the re-rooting of `SobolevInterval` are recorded in
+  `Interval/Basic.toml`'s `desc` with the migration of the six external uses.
+
+* **Design choices that depart from the book's proofs** (each recorded in the backbone `desc`s):
+  Theorem 8.8 (5), Corollaries 8.9–8.11 and Theorem 8.12's converse are proved from the absolutely
+  continuous representative, not from density (Theorem 8.7) — so Theorem 8.7 is a leaf; Theorem
+  8.7 itself is the whole-space density theorem of `Sobolev/Density` after the extension operator,
+  not a re-run of mollify-and-cut-off; Proposition 8.4's converse avoids the `(L¹)^*`
+  representation; Theorem 8.12 on unbounded intervals reduces to the bounded case by cut-off
+  instead of the truncation `G(nu)/n`; Remark 18 uses moment-corrected primitives instead of
+  Exercise 8.9's Hardy inequalities; the sine basis of §8.6 comes out of the abstract theorem
+  through the one-dimensionality of the eigenspaces. Constants (D10): the extension operator's
+  `C = 4` and the derivative bound `4 (‖u'‖_p + |I|⁻¹ ‖u‖_p)`, Poincaré's `|I| / p^{1/p}`, the
+  embedding's `|I|^{-1/p} + |I|^{1/p'}` (bounded) and `p^{1/p} ≤ 2` (unbounded), the
+  Poincaré–Wirtinger `1` and `1/2`.
+
+* **Not planned.** Remark 3 (distributions; Mathlib's `𝓓'` has no derivative at this pin) and
+  Remark 20 (the identification of `F` with `f₀ − f₁'`, same reason); Remark 8's
+  bounded-variation clauses (a)–(c) (only the AC clause is a node); Remark 15 (discussion);
+  Remark 29 (an exercise); Remark 12's negative half and Exercise 8.1; footnote 15's negative `k`
+  and Exercise 8.21; the second halves of Problem 47 A.6, B, C.3–C.4 (best constants and their
+  attainment, the Neumann spectrum). Comments on Chapter 8: 1(ii) Hardy's inequality (Exercise
+  8.8) and 1(iii) Gagliardo–Nirenberg (Exercise 8.15) — quoted without proof, not cited from the
+  main text; 2 Hilbert–Schmidt (Exercise 8.37) — needs the Hilbert–Schmidt class; 3(i)–(iii)
+  (simplicity of the eigenvalues, oscillation, `λₙ/n² → c`) — quoted without proof; 3(i) alone is
+  a bounded Gronwall task should anyone want it (`SturmLiouville.eq_smul_sin_of_dirichlet` is its
+  `p = 1, q = 0` case, there obtained without Gronwall by expanding in the sine basis). Exercises not cited by the main text as proof steps are out of scope for
+  this round; those included: 8.2 part 1 (Remarks 4 and 10 cite it), 8.3 (Helly, Remark 10), 8.6
+  part 4 (the `W^{m,p}` paragraph cites it for the interpolation inequality); 8.4, 8.5, 8.8, 8.9,
+  8.15, 8.21, 8.33, 8.37, 8.38, 8.42 are mentioned only in remarks, comments or footnotes and are
+  not nodes.
+
+* **Closes.** `notes/frontier.md` blocker 8's residue, `AtkinsonHan.Chapter01.example_1_2_28_b`
+  (`W^{m,p}(a, b)` for `p ≠ 2` is `SobolevIntervalLp m p (Opens.Ioo a b)`; `C^m[a, b]` dense in it
+  for `p < ∞`: `ContDiffMapIcc.denseRange_toSobolevIntervalLp`; not complete:
+  `ContDiffMapIcc.exists_not_mem_range_toSobolevIntervalLp` — a restatement with the `‖·‖_{m,p}`
+  norm on `C^m[a, b]` defined through `toSobolevIntervalLp` is needed). Supplies the
+  second-derivative test `IsLocalMax.deriv_deriv_nonpos` that blocker 9's classical heat
+  maximum principle (AH 6.2.4, 6.2.8, 6.2.13, 6.3.3, 6.3.4) names as missing — the
+  one-dimensional-in-`x` lemma, not the parabolic argument itself. The compactness of
+  `H¹(a, b) ↪ C[a, b]` (Theorem 8.8 (6)) is new at `p = 2` too.
+
+* **Order of attack** (backbone modules in dependency order, estimated lines):
+  `Sobolev/Interval/Basic` (~900, including the `HasWeakDerivOn` refactor and the relocation of
+  19 `Interval.toml` nodes) → `Sobolev/Interval/Extension` (~700) → `Sobolev/Interval/Density`
+  (~500) → `Sobolev/Interval/Embedding` (~1500, of which Helly ~400 and Theorem 8.8 (7) ~400 are
+  last) → `Sobolev/Interval/Higher` (~1000) → `Sobolev/Interval/Zero` (~1300) →
+  `Sobolev/Interval/DifferenceQuotient` (~800, after chapter 4's `Duality`) →
+  `Sobolev/Interval/Dual` (~600, after chapter 4's `Duality`); `Variational/EllipticInterval/BoundaryConditions`
+  (~1400, after `Interval/Basic` and `Interval/Embedding`) → `EllipticInterval/MaximumPrinciple`
+  (~700) → `EllipticInterval/SturmLiouville` (~900). The surface sections follow their sections'
+  backbone; §8.1 and the `p = 2` parts of §8.4–8.5 are writable today over `Interval.lean` and
+  `EllipticInterval.lean`.
+'''

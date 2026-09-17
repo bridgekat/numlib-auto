@@ -1,0 +1,142 @@
+desc = '''
+The characterizations of `W^{1,p}(I)` by duality and by difference quotients, for `1 < p ≤ ∞`:
+[brezis2011functional] Proposition 8.3 (`u ∈ W^{1,p}` iff `|∫ u φ'| ≤ C ‖φ‖_{p'}` on the test
+functions), Proposition 8.5 (on `ℝ`, `u ∈ W^{1,p}` iff `‖τ_h u − u‖_p ≤ C |h|`), the second clause
+of Remark 4 and Exercise 8.2 part 1 (a bounded sequence in `W^{1,p}`, `1 < p ≤ ∞`, has a
+subsequence converging in `L^∞` on bounded pieces, with the limit in `W^{1,p}`), Remark 16 (ii),
+and Theorem 8.8 (7) (`W^{1,1}(I) ↪ L^q(I)` compact on a bounded `I`), which consumes chapter 4's
+Kolmogorov–Riesz theorem and is placed here rather than in `Interval/Embedding` so that the
+embedding module does not wait on chapter 4.
+
+These are the statements of the chapter that genuinely need the duality of `L^p`, which is
+chapter 4's: the Riesz representation `(L^{p'}(I))^* = L^p(I)` for `1 < p ≤ ∞` (Theorems 4.11 and
+4.14 of the book, the latter for `p = ∞` on the σ-finite `volume.restrict I`) and the
+reflexivity of `L^p` for `1 < p < ∞`: chapter 4's `MeasureTheory.Lp.exists_forall_eq_integral`,
+`Lp.dualEquiv` and `Lp.instIsReflexive` (`plans/Numlib/MeasureTheory/Function/LpSpace/Duality.toml`),
+and, for Theorem 8.8 (7), `Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`
+(`KolmogorovRiesz.toml`); the module is the last of the `Interval/*` children in the order of
+attack because of them. Its nodes also have general-`E` counterparts in chapter 9a's
+`Friedrichs.toml` (Proposition 9.3), of which they are the `E = ℝ` instances.
+Nothing else in the chapter depends on this module: Proposition 8.4 is proved by the absolutely
+continuous calculus in `Interval/Basic`, and the easy direction (i)⇒(ii) of Proposition 8.5, the
+only clause Theorem 8.8 (7) uses, is in `Interval/Basic` (`SobolevIntervalLp.eLpNorm_translate_sub_le`)
+because it needs only the representative.
+'''
+
+[[node]]
+id = "SobolevIntervalLp.abs_integral_mul_deriv_le"
+kind = "theorem"
+desc = '''**Proposition 8.3, (i)⇒(ii) with the constant**: for `u : SobolevIntervalLp 1 p I`, `1 ≤ p ≤ ∞`,
+`q` the conjugate exponent (`[ENNReal.HolderConjugate p q]`), and every `φ : 𝓓(I, ℝ)`,
+`|∫ x in I, fn u x * deriv φ x| ≤ ‖deriv u 1‖ * (eLpNorm φ q (volume.restrict I)).toReal`. The
+integration by parts formula `HasWeakDerivOn.integral_deriv_mul` and Hölder
+(`MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg` on `|·|`, or the `eLpNorm` form
+`MeasureTheory.eLpNorm_smul_le_mul_eLpNorm`). Valid for `p = 1` as well (Remark 8's first
+sentence). The `E = ℝ` case of chapter 9a's `HasWeakFDerivOn.abs_integral_smul_fderiv_le`
+(`Friedrichs.toml`, Proposition 9.3 (i)⇒(ii)); derive from it. ★'''
+deps = ["SobolevIntervalLp.deriv", "HasWeakDerivOn.integral_deriv_mul", "HasWeakFDerivOn.abs_integral_smul_fderiv_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.3"
+
+[[node]]
+id = "memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le"
+kind = "theorem"
+desc = '''**Proposition 8.3, (ii)⇒(i)**: for `1 < p ≤ ∞`, `q` conjugate, `u ∈ L^p(I)` (any open `I`) and
+`C` with `∀ φ : 𝓓(I, ℝ), |∫ x in I, u x * deriv φ x| ≤ C * (eLpNorm φ q (volume.restrict I)).toReal`,
+`MemSobolevIntervalLp u 1 p I`, and the weak derivative satisfies `‖u'‖_p ≤ C`. Proof (the book's):
+`φ ↦ ∫ u φ'` is a linear functional on the image of `𝓓(I, ℝ)` in `L^q(I)`, bounded by `C`; the
+test functions are dense in `L^q(I)` because `q < ∞`
+(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`, `Numlib/Analysis/Normed/Lp/SmoothApprox`), so it
+extends by continuity to `L^q(I)` (`LinearMap.mkContinuousOfExistsBound` on the submodule, then
+`ContinuousLinearMap.extend` / `DenseInducing.extend` along the dense range) with the same norm;
+the Riesz representation of `(L^q(I))^*` by `L^p(I)` — chapter 4's surjectivity of the pairing
+isometry `Lp ℝ p μ →ₗᵢ StrongDual ℝ (Lp ℝ q μ)` for `1 ≤ q < ∞` on a σ-finite `μ` (Theorem 4.11
+for `1 < q < ∞`, Theorem 4.14 for `q = 1`, i.e. `p = ∞`) — gives `g ∈ L^p(I)` with
+`∫ u φ' = ∫ g φ` for all test functions, so `HasWeakDerivOn u (−g) I` (`hasWeakDerivOn_iff`) and
+`‖g‖_p = ‖F‖ ≤ C`. Together with the previous node this is the `↔` `memSobolevIntervalLp_iff_forall_abs_integral_le`.
+Chapter 9a plans the same argument in `ℝ^N` as `HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le`
+(`Friedrichs.toml`, Proposition 9.3 (ii)⇒(i)); this is its `E = ℝ` instance and should be derived
+from it, the constant clause `‖u'‖_p ≤ C` being exact in one dimension. ★ given chapter 9a's node
+(★★ standalone).'''
+deps = ["memSobolevIntervalLp_one_iff", "MeasureTheory.Lp.dense_contDiff_tsupport_subset", "MeasureTheory.Lp.exists_forall_eq_integral", "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le"] # cross-ref chapter 4: the Riesz representation on a σ-finite measure, `plans/Numlib/MeasureTheory/Function/LpSpace/Duality.toml`
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.3"
+
+[[node]]
+id = "memSobolevIntervalLp_of_eLpNorm_translate_sub_le"
+kind = "theorem"
+desc = '''**Proposition 8.5, (ii)⇒(i)**: for `1 < p < ∞`, `u ∈ L^p(ℝ)` and `C` with
+`∀ h, eLpNorm (fun x ↦ u (x + h) - u x) p volume ≤ ENNReal.ofReal (C * |h|)`, then
+`MemSobolevIntervalLp u 1 p ⊤` with `‖u'‖_p ≤ C`. For a test function `φ`,
+`∫ (u(x+h) − u(x)) φ(x) = ∫ u(x) (φ(x−h) − φ(x))` (translation invariance), bounded by
+`C |h| ‖φ‖_{p'}` (Hölder); divide by `h` and let `h → 0`: `(φ(x − h) − φ(x))/(−h) → φ'(x)`
+uniformly with supports in a fixed compact (`φ` is `C¹` with compact support), so dominated
+convergence (`MeasureTheory.tendsto_integral_of_dominated_convergence`) gives
+`|∫ u φ'| ≤ C ‖φ‖_{p'}`, and Proposition 8.3 concludes. Chapter 9a's
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le` (`Friedrichs.toml`, Proposition 9.3
+(iii)⇒(ii)) is this argument in `ℝ^N`; derive the `E = ℝ`, `Ω = ⊤` case from it. ★ given
+chapter 9a's node (★★ standalone)'''
+deps = ["memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le", "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.5"
+
+[[node]]
+id = "SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded"
+kind = "theorem"
+desc = '''**Exercise 8.2 part 1 / Remark 4, second clause / Remark 10 (d)**: for `1 < p ≤ ∞` and
+`(hI : (I : Set ℝ).OrdConnected)`, a bounded sequence `u n : SobolevIntervalLp 1 p I`
+(`‖u n‖ ≤ M`) has a subsequence `u (φ n)` and a limit `v : SobolevIntervalLp 1 p I` with
+`rep (u (φ n)) → rep v` uniformly on every bounded subset of `closure I`
+(`TendstoUniformlyOn (fun n ↦ rep (u (φ n))) (rep v) atTop (closure I ∩ Icc (-R) R)` for every
+`R`), and `deriv (u (φ n)) 1 ⇀ deriv v 1` weakly in `L^p(I)` (weak-∗ when `p = ∞`). Proof: the
+representatives are uniformly bounded (Theorem 8.8 (5)) and uniformly Hölder
+(`|rep u x − rep u y| ≤ ‖u'‖_p |x − y|^{1/p'}`), so Arzelà–Ascoli on each `closure I ∩ Icc (−R) R`
+(`ContinuousMap.isCompact_closure_of_forall_norm_le`) and a diagonal argument give a subsequence
+converging locally uniformly to some continuous `g`; the derivatives are bounded in `L^p(I)`, so —
+`1 < p < ∞`: reflexivity of `L^p(I)` (`MeasureTheory.Lp.instIsReflexive`, chapter 4) and
+`NormedSpace.exists_subseq_forall_dual_tendsto` give a further subsequence with `u_n' ⇀ w`;
+`p = ∞`: sequential Banach–Alaoglu `WeakDual.isSeqCompact_closedBall` on `(L¹(I))^* ≅ L^∞(I)`
+(chapter 4, Theorem 4.14) — and in either case testing against a fixed test function (the pairing
+`MeasureTheory.MemLp.integralSmulCLM` is a continuous functional on `L^p`) identifies `w` as the
+weak derivative of `g` (`hasWeakDerivOn_iff`: `∫ u_n φ' → ∫ g φ'` by uniform convergence on
+`tsupport φ`, `∫ u_n' φ → ∫ w φ` by weak convergence); `g ∈ L^p(I)` by Fatou
+(`MeasureTheory.eLpNorm_le_liminf`-type) with `‖g‖_p ≤ liminf ‖u_n‖_p`; so `g ∈ W^{1,p}(I)` and
+`v` is its element. Exercise 8.2 part 1 is the case `I = (0, 1)` (the local uniform convergence is
+uniform). The first clause of Remark 4 (`u_n → u` in `L^p`, `‖u_n'‖_p ≤ M` ⇒ `u ∈ W^{1,p}`) is the
+corollary `memSobolevIntervalLp_of_tendsto_of_bounded_deriv` (the limit of the subsequence must be
+`u`) — which chapter 9a proves in `ℝ^N` without extracting a subsequence, through Proposition 9.3
+(ii)⇒(i) (`MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`, `Friedrichs.toml`); that route gives the
+corollary at `E = ℝ` directly and is preferred for it. ★★★ (~400 lines; the `p = ∞` branch and
+the diagonal argument are the bulk)'''
+deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded", "ContinuousMap.isCompact_closure_of_forall_norm_le", "NormedSpace.exists_subseq_forall_dual_tendsto", "MeasureTheory.MemLp.integralSmulCLM", "hasWeakDerivOn_of_tendsto_eLpNorm", "MeasureTheory.Lp.instIsReflexive", "MeasureTheory.Lp.dualEquiv"] # cross-ref chapter 4: `Lp.instIsReflexive` and `Lp.dualEquiv` (`(L¹)^* ≅ L^∞` at `p = 1`, `q = ∞`), `plans/Numlib/MeasureTheory/Function/LpSpace/Duality.toml`
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 8.2 and Chapter 8, Remark 4"
+
+[[node]]
+id = "mem_sobolevIntervalLpZero_iff_forall_abs_integral_le"
+kind = "theorem"
+desc = '''**Remark 16 (ii)**: for `1 < p < ∞`, `q` conjugate, `(hI : OrdConnected)` and `u ∈ L^p(I)`:
+`(∃ v ∈ SobolevIntervalLpZero 1 p I, fn v =ᵐ[volume.restrict I] u) ↔ ∃ C, ∀ φ : 𝓓(⊤, ℝ), |∫ x in I, u x * deriv φ x| ≤ C * ‖φ‖_{L^q(I)}`
+— test functions on all of `ℝ`, not only on `I`. `∫_I u φ' = ∫_ℝ ū φ'` for the zero extension
+`ū`, so the right-hand side is Proposition 8.3 (ii) for `ū` on `ℝ`, equivalent to `ū ∈ W^{1,p}(ℝ)`
+(`memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le` at `I = ⊤` and its converse), which is
+Remark 16 (i) (`mem_sobolevIntervalLpZero_iff_indicator_mem`, in `Interval/Zero`). ★'''
+deps = ["memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le", "SobolevIntervalLp.abs_integral_mul_deriv_le", "mem_sobolevIntervalLpZero_iff_indicator_mem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 16"
+
+[[node]]
+id = "SobolevIntervalLp.isCompactOperator_toLp_one"
+kind = "theorem"
+desc = '''**Theorem 8.8 (7)**: for `a < b` and `1 ≤ q < ∞`, `IsCompactOperator (toLp_of_bounded : SobolevIntervalLp 1 1 (Opens.Ioo a b) →L[ℝ] Lp ℝ q (volume.restrict (Ioo a b)))`.
+The book's proof: `F = P(unit ball)` is bounded in `W^{1,1}(ℝ)` (`extensionCLM`), hence in
+`L^1 ∩ L^∞(ℝ)` and in `L^q(ℝ)`; `‖τ_h f − f‖_1 ≤ |h| ‖f'‖_1 ≤ C |h|` (Proposition 8.5 (i)⇒(ii)
+at `p = 1`, `SobolevIntervalLp.eLpNorm_translate_sub_le`) and `‖τ_h f − f‖_q^q ≤ (2 ‖f‖_∞)^{q−1} ‖τ_h f − f‖_1`,
+so translation is uniformly continuous on `F` in `L^q`; Kolmogorov–M. Riesz–Fréchet (chapter 4,
+`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`, stated for a
+finite-dimensional real normed `G` with a Haar measure — `G = ℝ`, `μ = volume` here, so no
+`EuclideanSpace` transfer: bounded `F ⊆ L^q(ℝ)` plus uniformly continuous translation ⇒ the
+restrictions `Lp.restrictCLM … (Ioo a b) '' F` relatively compact in `L^q(a, b)`) gives the
+relative compactness of `F|_{(a,b)}`; the image of the unit ball of `W^{1,1}(a, b)` under the
+inclusion is `restrictCLM '' F` up to the identification `Pu|_I = u`. A self-contained one-dimensional fallback if the chapter-4 shape proves
+awkward: mollify, `‖ρ_ε ⋆ f − f‖_q ≤ sup_{|h| ≤ ε} ‖τ_h f − f‖_q` (`eLpNorm_convolution_sub_rpow_le`
+in `Convolution/Lp.lean`), the mollified family is equicontinuous and bounded in `C[a, b]` for
+fixed `ε` (Arzelà–Ascoli), and a total-boundedness argument — the standard proof of
+Kolmogorov–Riesz itself, ~400 lines. ★★★ (300–500 lines)'''
+deps = ["SobolevIntervalLp.toLp", "SobolevIntervalLp.extensionCLM", "SobolevIntervalLp.eLpNorm_translate_sub_le", "SobolevIntervalLp.abs_rep_pow_le", "MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate"] # cross-ref chapter 4: Kolmogorov–Riesz, `plans/Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz.toml`, stated for any finite-dimensional `G`, so `G = ℝ` needs no transfer
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"

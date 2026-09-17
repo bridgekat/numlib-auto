@@ -1,0 +1,327 @@
+desc = '''
+Banach's closed range theorem and the surjectivity criteria by a priori estimates, for a densely
+defined closed operator `A : D(A) ⊆ E → F` between Banach spaces over `RCLike 𝕜` and for its
+adjoint `A* : D(A*) ⊆ F* → E*` (natural home: `Mathlib.Analysis.Normed.Operator.Unbounded.ClosedRange`).
+Source: [brezis2011functional], §2.7 (Theorems 2.19–2.21, Remarks 18 and 20), and Atkinson–Han,
+*Theoretical Numerical Analysis*, Theorem 8.2.7, which is Theorem 2.19 verbatim.
+
+Mathlib has nothing here (re-verified 2026-09-17: `closed range theorem`, `closedRange`,
+`a priori estimate` — zero relevant occurrences; the bounded injective case
+`ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective` is the whole of it). The
+project had marked "the Banach closed range theorem (unbounded Banach adjoints)" out of scope in
+`notes/backbone.md` §1.7; this module retires that entry.
+
+**Route.** The book proves Theorem 2.19 by transporting Theorem 2.16 (the four equivalent
+characterizations of "`G + L` closed" through annihilators, chapter 1's `Annihilator` module) to
+`X = E × F` with `G = G(A)`, `L = E × {0}`, and derives Theorems 2.20–2.21 from 2.19. That
+transport needs `(E × F)* ≅ E* × F*` carried through annihilators, closures and sums, and is
+avoided here: every implication is proved directly, and the two hard ones are
+
+* Theorem 2.20 (b) ⇒ (a), "`‖v‖ ≤ C ‖A* v‖` on `D(A*)` implies `R(A) = F`", in two steps: a
+  separation argument shows `closure (A(B_{D(A)})) ⊇ B_F(0, 1/C)` (if `y₀` with `‖y₀‖ < 1/C` were
+  outside the closed absolutely convex set `closure (A(B))`, the modulus form of the geometric
+  Hahn–Banach theorem, `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem` of
+  `Numlib/Analysis/Normed/Module/DualSeparable`, would give `v ∈ F*` with `|v (A u)| ≤ ‖u‖` on
+  `D(A)` and `1 < |v y₀|`; then `v ∈ D(A*)`, `‖A* v‖ ≤ 1`, `‖v‖ ≤ C`, and
+  `|v y₀| ≤ ‖v‖ ‖y₀‖ < 1` — a contradiction), and the second
+  step of the open mapping theorem for the *closed* operator `A`
+  (`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` of `Basic`) turns the
+  closure inclusion into `A(B) ⊇ B_F(0, 1/2C)`; this is Rudin's *Functional Analysis* 4.13–4.15
+  transposed to closed operators, and it is exactly the book's argument for Theorem 2.16 (b) ⇒ (a)
+  with `T` replaced by `A`;
+* Theorem 2.19 (ii) ⇒ (i), "`R(A*)` closed implies `R(A)` closed": let `Z := closure R(A)` and
+  `A₁ : D(A) ⊆ E → Z` be `A` with its codomain restricted (`LinearPMap.codRestrict`); `A₁` is
+  closed, densely defined, with dense range, so `A₁*` is injective (Corollary 2.18 (ii)); every
+  `ζ ∈ D(A₁*)` extends by Hahn–Banach (`exists_extension_norm_eq`) to a `v ∈ D(A*)` with
+  `A* v = A₁* ζ`, and every `v ∈ D(A*)` restricts, so `R(A₁*) = R(A*)` is closed; the closed range
+  criterion of `Basic` applied to the closed injective operator `A₁*` (Proposition 2.17) yields
+  `‖ζ‖ ≤ C ‖A₁* ζ‖`, and Theorem 2.20 (b) ⇒ (a) for `A₁` gives `R(A) = R(A₁) = Z`.
+
+Everything else is short: 2.19 (i) ⇒ (iv) is the closed range criterion of `Basic`
+(`dist (u, N(A)) ≤ C ‖A u‖`) followed by a Hahn–Banach extension of the functional
+`A u ↦ f u` from `R(A)`; 2.19 (i) ⇒ (iii) is Corollary 2.18 (iv); (iii) ⇒ (i) and (iv) ⇒ (ii)
+are the closedness of (pre)annihilators; 2.20 (a) ⇒ (b) is the uniform boundedness principle
+(Corollary 2.5) on the family `{v ∈ D(A*) | ‖A* v‖ ≤ 1}`; 2.20 (b) ⇔ (c) is the closed range
+criterion for `A*`; 2.21 follows from 2.19 and Corollary 2.18. Remark 20 (the finite-dimensional
+equivalences) closes the unbounded part, and the module ends with the specializations to a
+bounded `T` and `strongDualMap` that chapters 3 and 6 consume (`R(T)` closed ⇒ `R(T) = N(T*)^⊥`,
+the Fredholm alternative's shape).
+
+Every theorem carries `[CompleteSpace E] [CompleteSpace F]`, `hA : A.IsClosed` and
+`hd : Dense (A.domain : Set E)`; the names put the direction in the suffix
+(`…_of_isClosed_range`, `…_of_range_eq_top`) and the `iff`/`TFAE` forms are separate nodes.
+'''
+
+[[node]]
+id = "LinearPMap.ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint"
+kind = "theorem"
+desc = '''The separation step of [brezis2011functional] Theorem 2.20 (b) ⇒ (a) (the book proves it
+inside Theorem 2.16 (b) ⇒ (a), (24) ⇒ (25), lines 1673–1687): for `RCLike 𝕜`, normed spaces
+`E F`, `A : E →ₗ.[𝕜] F` with `hd : Dense (A.domain : Set E)`, `0 < C` and
+`∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖`,
+one has `Metric.ball (0 : F) (1 / C) ⊆ closure ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1})`.
+
+Proof: the set `K := closure (A '' B)` is closed and absolutely convex (`AbsConvex.closure`;
+the image of the balanced convex unit ball under a linear map is balanced and convex). If
+`y₀ ∉ K` with `‖y₀‖ < 1/C`, `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem`
+(`Numlib/Analysis/Normed/Module/DualSeparable.lean`, the modulus form of
+`RCLike.geometric_hahn_banach_closed_point`) gives `v : StrongDual 𝕜 F` with `‖v y‖ ≤ 1` on `K`
+and `1 < ‖v y₀‖`; hence `‖v (A u)‖ ≤ ‖u‖` on `D(A)` by homogeneity, so `v ∈ D(A*)`
+(`mem_strongDualAdjoint_domain_iff`) and `‖A* v‖ ≤ 1` (`opNorm_le_bound` with
+`strongDualAdjoint_apply` on the dense `D(A)`); then `‖v‖ ≤ C ‖A* v‖ ≤ C` and
+`1 < ‖v y₀‖ ≤ ‖v‖ ‖y₀‖ < C · (1/C) = 1`, a contradiction. Neither completeness nor closedness
+of `A` enters this step. ★★, about 70 lines; the `opNorm` bound over a dense subspace is the
+one place that takes care (the `RCLike` rotation is inside the separation lemma).'''
+deps = ["LinearPMap.mem_strongDualAdjoint_domain_iff", "LinearPMap.strongDualAdjoint_apply", "AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_eq_top_of_norm_le_norm_strongDualAdjoint"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.20 (b) ⇒ (a), the method of a priori estimates (Remark 19):
+for Banach spaces `E F`, `A` closed, `hd : Dense (A.domain : Set E)`, `0 < C` and
+`∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖`,
+`LinearMap.range A.toFun = ⊤`. Proof: `ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint`
+gives `ball 0 (1/C) ⊆ closure (A '' B)`, and
+`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` (Step 2 for closed operators,
+`Basic`) gives `ball 0 (1/2C) ⊆ A '' B`; every `y` is a multiple of an element of that ball
+(`LinearMap.range` is a submodule). ★'''
+deps = ["LinearPMap.ball_subset_closure_image_of_norm_le_norm_strongDualAdjoint", "LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "LinearPMap.IsClosed.exists_norm_le_norm_strongDualAdjoint_of_range_eq_top"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.20 (a) ⇒ (b): for Banach spaces `E F`, `A` closed (closedness is
+not used, but kept for uniformity), `hd : Dense (A.domain : Set E)` and
+`LinearMap.range A.toFun = ⊤`, there is `C : ℝ` with
+`∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖`.
+Proof (lines 1897–1902): the family `B* := {v ∈ D(A*) | ‖A* v‖ ≤ 1} ⊆ F*` is pointwise bounded on
+`F` — for `f₀ = A u₀`, `|v f₀| = |(A* v) u₀| ≤ ‖u₀‖` — hence bounded in norm by Corollary 2.5
+(`StrongDual.isBounded_of_forall_eval_isBounded`, `Numlib/Analysis/Normed/Operator/BanachSteinhaus`;
+this is where completeness of `F` enters), say by `C`; homogeneity (`v / ‖A* v‖ ∈ B*` when
+`A* v ≠ 0`, and `A* v = 0` forces `v = 0` by the same bound applied to `t • v` for all `t`) gives
+`‖v‖ ≤ C ‖A* v‖`. ★, about 50 lines.'''
+deps = ["LinearPMap.strongDualAdjoint_apply", "StrongDual.isBounded_of_forall_eval_isBounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.20 (a) ⇔ (b): for Banach spaces, `A` closed and densely defined,
+`LinearMap.range A.toFun = ⊤ ↔ ∃ C : ℝ, ∀ v : A.strongDualAdjoint.domain, ‖(v : StrongDual 𝕜 F)‖ ≤ C * ‖A.strongDualAdjoint v‖`.
+From the two directions above (`C ≤ 0` in the backward direction forces `D(A*) = 0`, handle it
+by replacing `C` with `max C 1`). ★'''
+deps = ["LinearPMap.IsClosed.range_eq_top_of_norm_le_norm_strongDualAdjoint", "LinearPMap.IsClosed.exists_norm_le_norm_strongDualAdjoint_of_range_eq_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.20 (a) ⇔ (c): for Banach spaces, `A` closed and densely defined,
+`LinearMap.range A.toFun = ⊤ ↔ A.strongDualAdjoint.ker = ⊥ ∧ IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E))`.
+Proof through (b): (b) ⇒ (c) is `LinearPMap.ker_eq_bot_of_norm_le` and
+`LinearPMap.IsClosed.isClosed_range_of_norm_le` (`Basic`) applied to the closed operator `A*`
+(`strongDualAdjoint_isClosed`; `F*` is complete); (c) ⇒ (b) is the closed range criterion
+`LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le` for `A*`, in which
+`infDist v (ker A*) = infDist v {0} = ‖v‖`. The book's (c) ⇒ (a) goes through Theorem 2.19;
+this route does not. ★'''
+deps = ["LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint", "LinearPMap.strongDualAdjoint_isClosed", "LinearPMap.IsClosed.isClosed_range_of_norm_le", "LinearPMap.ker_eq_bot_of_norm_le", "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.19 (i) ⇒ (iv), `R(A)` closed ⇒ `R(A*) = N(A)^⊥`: for Banach
+spaces, `A` closed, `hd : Dense (A.domain : Set E)` and `IsClosed (LinearMap.range A.toFun : Set F)`,
+`LinearMap.range A.strongDualAdjoint.toFun = Submodule.strongDualAnnihilator A.ker`.
+
+Proof: `⊆` is `closure_range_strongDualAdjoint_le_annihilator_ker`. For `⊇` let `f ∈ N(A)^⊥`.
+By the closed range criterion (`LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le`,
+`Basic`) there is `C` with `infDist u (ker A) ≤ C ‖A u‖` on `D(A)`. Define `φ` on the closed
+subspace `R(A)` by `φ (A u) := f u`: well defined since `f` vanishes on `N(A)`, and bounded since
+`|f u| = |f (u − z)| ≤ ‖f‖ ‖u − z‖` for every `z ∈ N(A)`, so `|φ (A u)| ≤ ‖f‖ infDist u (ker A) ≤ C ‖f‖ ‖A u‖`
+(build `φ` as `LinearMap.mkContinuousOfExistsBound` on the quotient-free description: choose
+preimages with `Classical.choose`, or use `LinearMap.range` together with `LinearMap.ker_le`... the
+cleanest is `(LinearMap.range A.toFun).liftQ`-style well-definedness through `A.toFun` and
+`f.comp A.domain.subtypeL` vanishing on `ker A.toFun`). Extend `φ` to `v : StrongDual 𝕜 F` by
+`exists_extension_norm_eq`; then `v (A u) = f u` for all `u ∈ D(A)`, so `v ∈ D(A*)` and
+`A* v = f` (`mem_strongDualAdjoint_domain_of_exists`, `strongDualAdjoint_apply_eq`). ★★, about
+120 lines. This is the book's (a) ⇒ (d) of Theorem 2.16 specialized, with Theorem 2.10's bounded
+decomposition replaced by the distance estimate.'''
+deps = ["LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker", "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le", "LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists", "Submodule.strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.19 (ii) ⇒ (i), `R(A*)` closed ⇒ `R(A)` closed — the
+substance of the closed range theorem: for Banach spaces, `A` closed, `hd : Dense (A.domain : Set E)`
+and `IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E))`,
+`IsClosed (LinearMap.range A.toFun : Set F)`.
+
+Proof (see the group `desc`): let `Z := (LinearMap.range A.toFun).topologicalClosure`, a Banach
+space, and `A₁ := A.codRestrict Z (fun u => subset_closure ⟨u, rfl⟩) : E →ₗ.[𝕜] Z`
+(`LinearPMap.codRestrict`). (1) `A₁` is closed: its graph is the preimage of `A.graph` under the
+closed embedding `E × Z → E × F`. (2) `R(A₁)` is dense in `Z`, so `A₁*` is injective by
+`ker_strongDualAdjoint_eq_annihilator_range` (a functional on `Z` vanishing on a dense subspace
+is `0`). (3) `R(A₁*) = R(A*)` as submodules of `E*`: for `ζ ∈ D(A₁*)`, `exists_extension_norm_eq`
+extends `ζ` to `v ∈ F*` with `v (A u) = ζ (A₁ u)`, so `v ∈ D(A*)` and `A* v = A₁* ζ`; conversely
+`v ∈ D(A*)` restricts to `ζ := v.comp Z.subtypeL ∈ D(A₁*)` with `A₁* ζ = A* v`
+(`mem_strongDualAdjoint_domain_of_exists`, `strongDualAdjoint_apply_eq` twice). (4) `A₁*` is
+closed (`strongDualAdjoint_isClosed`), injective, with closed range, so
+`LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le` (`Basic`) gives
+`‖ζ‖ ≤ C ‖A₁* ζ‖` on `D(A₁*)`. (5) `range_eq_top_of_norm_le_norm_strongDualAdjoint` for `A₁`
+gives `R(A₁) = Z`, i.e. `R(A) = Z` is closed. ★★★, about 200 lines: steps (1) and (3) are
+bookkeeping between `F` and the subtype `Z`, and the whole module's difficulty is concentrated
+here and in the separation lemma.'''
+deps = ["LinearPMap.ker_strongDualAdjoint_eq_annihilator_range", "LinearPMap.strongDualAdjoint_isClosed", "LinearPMap.strongDualAdjoint_apply_eq", "LinearPMap.mem_strongDualAdjoint_domain_of_exists", "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le", "LinearPMap.IsClosed.range_eq_top_of_norm_le_norm_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.19 (i) ⇒ (iii), the abstract Fredholm alternative: for Banach
+spaces, `A` closed, densely defined, with `IsClosed (LinearMap.range A.toFun : Set F)`,
+`LinearMap.range A.toFun = Submodule.strongDualCoannihilator A.strongDualAdjoint.ker` — `A u = f` is
+solvable iff `v f = 0` for every `v ∈ D(A*)` with `A* v = 0`. Immediate from Corollary 2.18 (iv),
+`strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range`, and `IsClosed.submodule_topologicalClosure_eq`.
+This is Atkinson–Han Theorem 8.2.7 (a) ⇒ (b), stated there as the consequence that matters. ★'''
+deps = ["LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_range_strongDualAdjoint_iff"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.19 (i) ⇔ (ii): for Banach spaces, `A` closed and densely defined,
+`IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E)) ↔ IsClosed (LinearMap.range A.toFun : Set F)`.
+Backward: `range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range` and the closedness of
+an annihilator; forward: `isClosed_range_of_isClosed_range_strongDualAdjoint`. ★'''
+deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range", "LinearPMap.IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_range_tfae"
+kind = "theorem"
+desc = '''**The closed range theorem**, [brezis2011functional] Theorem 2.19 in full: for Banach spaces `E F`
+over `RCLike 𝕜`, `A : E →ₗ.[𝕜] F` closed with `hd : Dense (A.domain : Set E)`,
+`[IsClosed (LinearMap.range A.toFun : Set F),
+  IsClosed (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual 𝕜 E)),
+  LinearMap.range A.toFun = Submodule.strongDualCoannihilator A.strongDualAdjoint.ker,
+  LinearMap.range A.strongDualAdjoint.toFun = Submodule.strongDualAnnihilator A.ker].TFAE`.
+Assembled with `tfae_have` from the named directions: (i) ⇒ (iv)
+`range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range`, (iv) ⇒ (ii) closedness of the
+annihilator, (ii) ⇒ (i) `isClosed_range_of_isClosed_range_strongDualAdjoint`, (i) ⇒ (iii)
+`range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range`, (iii) ⇒ (i) closedness of the
+strongDualCoannihilator. Atkinson–Han Theorem 8.2.7 is this statement with the clauses in the order
+(i), (iii), (ii), (iv). ★'''
+deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range", "LinearPMap.IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint", "LinearPMap.IsClosed.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.21 (a) ⇔ (c): for Banach spaces, `A` closed and densely defined,
+`LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔ A.ker = ⊥ ∧ IsClosed (LinearMap.range A.toFun : Set F)`.
+Forward: `A.ker = ⊥` by `ker_eq_bot_of_range_strongDualAdjoint_eq_top` (Corollary 2.18 (i)) and
+`R(A)` closed by Theorem 2.19 (ii) ⇒ (i) since `⊤` is closed. Backward: Theorem 2.19 (i) ⇒ (iv)
+gives `R(A*) = N(A)^⊥ = (⊥)^⊥ = ⊤`. ★'''
+deps = ["LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top", "LinearPMap.IsClosed.isClosed_range_of_isClosed_range_strongDualAdjoint", "LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 2.21 (a) ⇔ (b): for Banach spaces, `A` closed and densely defined,
+`LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔ ∃ C : ℝ, ∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖`.
+Through (c): (b) ⇒ (c) is `LinearPMap.ker_eq_bot_of_norm_le` with
+`LinearPMap.IsClosed.isClosed_range_of_norm_le` (`Basic`); (c) ⇒ (b) is the closed range
+criterion `LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le` with
+`infDist u {0} = ‖u‖`. "Proof: similar to Theorem 2.20, left as an exercise" in the book. ★★'''
+deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range", "LinearPMap.IsClosed.isClosed_range_of_norm_le", "LinearPMap.ker_eq_bot_of_norm_le", "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_of_finiteDimensional"
+kind = "theorem"
+desc = '''[brezis2011functional] Remark 2.20, the finite-dimensional case: for Banach spaces, `A` closed
+and densely defined, and `h : FiniteDimensional 𝕜 E ∨ FiniteDimensional 𝕜 F`,
+`LinearMap.range A.toFun = ⊤ ↔ A.strongDualAdjoint.ker = ⊥`. Forward is
+`ker_strongDualAdjoint_eq_bot_of_range_eq_top` (no finiteness needed). Backward: `R(A*)` is
+finite-dimensional — if `E` is, `E*` is (`FiniteDimensional` of `E →L[𝕜] 𝕜`,
+`ContinuousLinearMap.finiteDimensional`... check the instance for `StrongDual`), and if `F` is,
+`F*` is and `R(A*) = A*(D(A*))` is its image under a linear map
+(`LinearMap.finiteDimensional_range`) — hence closed (`Submodule.closed_of_finiteDimensional`),
+so Theorem 2.20 (c) ⇒ (a). ★★, mostly instance plumbing.'''
+deps = ["LinearPMap.ker_strongDualAdjoint_eq_bot_of_range_eq_top", "LinearPMap.IsClosed.range_eq_top_iff_ker_strongDualAdjoint_eq_bot_and_isClosed_range_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_of_finiteDimensional"
+kind = "theorem"
+desc = '''[brezis2011functional] Remark 2.20, the dual finite-dimensional equivalence: under the same
+hypotheses, `LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔ A.ker = ⊥`. Forward is
+`ker_eq_bot_of_range_strongDualAdjoint_eq_top`; backward: `R(A) ⊆ F` is finite-dimensional in
+either case (as the image of `D(A) ⊆ E` or as a subspace of `F`), hence closed, so Theorem 2.21
+(c) ⇒ (a). ★★'''
+deps = ["LinearPMap.IsClosed.ker_eq_bot_of_range_strongDualAdjoint_eq_top", "LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_ker_eq_bot_and_isClosed_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 20"
+
+[[node]]
+id = "ContinuousLinearMap.isClosed_range_strongDualMap_iff"
+kind = "theorem"
+desc = '''The closed range theorem for a bounded operator, Theorem 2.19 (i) ⇔ (ii) specialized: for
+Banach spaces `E F` and `T : E →L[𝕜] F`,
+`IsClosed (Set.range T.strongDualMap) ↔ IsClosed (Set.range T)`. From
+`LinearPMap.IsClosed.isClosed_range_strongDualAdjoint_iff` for `T.toPMap ⊤` (closed, dense
+domain `⊤`), rewriting the adjoint by `ContinuousLinearMap.toPMap_strongDualAdjoint` and the
+ranges by `LinearMap.toPMap` unfolding (`LinearMap.range_comp`, `Submodule.range_subtype`). ★'''
+deps = ["LinearPMap.IsClosed.isClosed_range_strongDualAdjoint_iff", "ContinuousLinearMap.toPMap_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "ContinuousLinearMap.range_eq_strongDualCoannihilator_ker_strongDualMap"
+kind = "theorem"
+desc = '''Theorem 2.19 (i) ⇒ (iii) for a bounded operator, the shape of the Fredholm alternative
+([brezis2011functional] Theorem 6.6 (b), `R(I − T) = N(I − T*)^⊥`, chapter 6): for Banach spaces
+and `T : E →L[𝕜] F` with `IsClosed (Set.range T)`,
+`T.range = Submodule.strongDualCoannihilator T.strongDualMap.ker`. From
+`LinearPMap.IsClosed.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range` for
+`T.toPMap ⊤` and `ContinuousLinearMap.toPMap_strongDualAdjoint`, or directly from
+`ker_strongDualMap_eq_annihilator_range` and chapter 1's `Submodule.strongDualCoannihilator_strongDualAnnihilator`.
+★'''
+deps = ["LinearPMap.IsClosed.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range", "ContinuousLinearMap.toPMap_strongDualAdjoint", "ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "ContinuousLinearMap.range_strongDualMap_eq_annihilator_ker"
+kind = "theorem"
+desc = '''Theorem 2.19 (i) ⇒ (iv) for a bounded operator: for Banach spaces and `T : E →L[𝕜] F` with
+`IsClosed (Set.range T)`, `T.strongDualMap.range = Submodule.strongDualAnnihilator T.ker`. From
+`LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range` for
+`T.toPMap ⊤` and `ContinuousLinearMap.toPMap_strongDualAdjoint`. ★'''
+deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_annihilator_ker_of_isClosed_range", "ContinuousLinearMap.toPMap_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.19"
+
+[[node]]
+id = "ContinuousLinearMap.range_eq_top_iff_exists_norm_le_norm_strongDualMap"
+kind = "theorem"
+desc = '''Theorem 2.20 (a) ⇔ (b) for a bounded operator: for Banach spaces and `T : E →L[𝕜] F`,
+`Function.Surjective T ↔ ∃ C : ℝ, ∀ v : StrongDual 𝕜 F, ‖v‖ ≤ C * ‖T.strongDualMap v‖`. From
+`LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint` for `T.toPMap ⊤`
+and `ContinuousLinearMap.toPMap_strongDualAdjoint` (`D(T*) = ⊤`, so the quantifier over the
+domain becomes a quantifier over `F*`); `LinearMap.range_eq_top` converts to surjectivity. ★'''
+deps = ["LinearPMap.IsClosed.range_eq_top_iff_exists_norm_le_norm_strongDualAdjoint", "ContinuousLinearMap.toPMap_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.20"
+
+[[node]]
+id = "ContinuousLinearMap.range_strongDualMap_eq_top_iff_exists_norm_le_norm"
+kind = "theorem"
+desc = '''Theorem 2.21 (a) ⇔ (b) for a bounded operator: for Banach spaces and `T : E →L[𝕜] F`,
+`Function.Surjective T.strongDualMap ↔ ∃ C : ℝ, ∀ u, ‖u‖ ≤ C * ‖T u‖`. From
+`LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm` for `T.toPMap ⊤`
+and `ContinuousLinearMap.toPMap_strongDualAdjoint`. The estimate `‖u‖ ≤ C ‖T u‖` is Mathlib's
+`AntilipschitzWith`, and the right side is also `isClosed_range_iff_antilipschitz_of_injective`
+plus injectivity, which is a second proof. ★'''
+deps = ["LinearPMap.IsClosed.range_strongDualAdjoint_eq_top_iff_exists_norm_le_norm", "ContinuousLinearMap.toPMap_strongDualAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"

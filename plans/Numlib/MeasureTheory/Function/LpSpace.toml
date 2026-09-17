@@ -1,0 +1,31 @@
+desc = '''
+The `L^p` spaces `MeasureTheory.Lp E p μ` as Banach spaces, beyond what Mathlib proves about them
+(natural home: `Mathlib.MeasureTheory.Function.LpSpace.*`). Directory-only group with four modules,
+in dependency order:
+
+* `Convergence` -- an `L^p`-convergent sequence has a subsequence converging almost everywhere
+  *and dominated by a single `L^p` function*; Mathlib has the first clause
+  (`TendstoInMeasure.exists_seq_tendsto_ae`) and not the second, which is what makes dominated
+  convergence usable after passing to a subsequence ([brezis2011functional] Theorem 4.9).
+* `Clarkson` -- Clarkson's two inequalities, pointwise on `ℝ` and integrated on `Lp ℝ p μ`, and the
+  instance `UniformConvexSpace (Lp ℝ p μ)` for `1 < p < ∞` ([brezis2011functional] Theorem 4.10,
+  Remark 3 of chapter 4 and Problem 20). Mathlib has the class and no instance beyond inner product
+  spaces.
+* `Duality` -- the pairing `u ↦ (f ↦ ∫ u f)` as a linear isometry
+  `Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` for conjugate exponents, its surjectivity for
+  `1 ≤ p < ∞` on a σ-finite measure (the Riesz representation theorems, [brezis2011functional]
+  Theorems 4.11 and 4.14) by the Radon-Nikodym route, the reflexivity instance
+  `NormedSpace.IsReflexive 𝕜 (Lp 𝕜 p μ)` for `1 < p < ∞`, and the failure of surjectivity at
+  `p = ∞`. Mathlib has the map (`ContinuousLinearMap.lpPairing`) and nothing about its norm or range.
+* `KolmogorovRiesz` -- the restriction map `Lp E p μ → Lp E p (μ.restrict s)`, the
+  Kolmogorov-M. Riesz-Frechet criterion for relative compactness in `L^p` on a finite-dimensional
+  space with a Haar measure, and its corollaries ([brezis2011functional] Theorem 4.26,
+  Corollaries 4.27 and 4.28). Rellich-Kondrachov and the one-dimensional compact embeddings rest
+  on it.
+
+Exponent conventions follow Mathlib: `[Fact (1 ≤ p)]` for the normed structure; `1 < p < ∞` is
+written `[Fact (1 < p)] [Fact (p ≠ ∞)]`, with the instance `MeasureTheory.fact_one_le_of_one_lt`
+(in `Clarkson`) supplying `Fact (1 ≤ p)` from `Fact (1 < p)`; conjugate exponents are
+`[ENNReal.HolderConjugate p q]`. Scalars are `RCLike 𝕜` wherever the proof allows (`Duality`) and
+`ℝ` where the argument is real (`Clarkson`).
+'''

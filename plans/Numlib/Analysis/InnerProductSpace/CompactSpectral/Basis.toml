@@ -1,0 +1,251 @@
+desc = '''
+The spectral decomposition of a compact self-adjoint operator in its classical form — a Hilbert
+basis of eigenvectors indexed by an arbitrary set, with no injectivity or separability
+hypothesis — and the numerical-range description of the spectrum of a bounded self-adjoint
+operator that the book proves it from: `σ(T) ⊆ [m, M]` with `m = inf ⟪T u, u⟫`,
+`M = sup ⟪T u, u⟫` over the unit sphere, `m, M ∈ σ(T)`, `‖T‖ = max (|m|, |M|)`, and the
+corollary that a self-adjoint operator with spectrum `{0}` is zero. Natural home:
+`Mathlib.Analysis.InnerProductSpace.Spectrum` for the basis, `…InnerProductSpace.Rayleigh` for the
+numerical range.
+
+This is [brezis2011functional] §6.4 (Proposition 6.9, Corollary 6.10, Theorem 6.11). The parent
+module `Numlib/Analysis/InnerProductSpace/CompactSpectral.lean` builds the *enumerated* form
+(`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, `eigenvectorHilbertBasis : HilbertBasis ℕ 𝕜 E`)
+and needs `T` injective and `E` infinite dimensional for the reasons its module doc explains; the
+statement here has neither hypothesis, because the index set is free to be a set of vectors of
+`E`, as in Mathlib's `exists_hilbertBasis`. The two are complementary: the parent's enumeration
+is what the convergence theory of iterative methods consumes, this one is the book's theorem.
+
+Design.
+
+* Statements are over `RCLike 𝕜`; the book is real. The spectral bounds are stated for real
+  points of the spectrum, `(t : 𝕜) ∈ spectrum 𝕜 T → t ∈ Icc m M`, which over `ℝ` is the book's
+  `σ(T) ⊆ [m, M]` on the nose and over `ℂ` is the statement about the real spectrum; that the
+  spectrum of a self-adjoint operator is real over `ℂ` is Mathlib's C*-algebra theory
+  (`IsSelfAdjoint.mem_spectrum_eq_re`, `Mathlib/Analysis/CStarAlgebra/Spectrum.lean`) and belongs
+  to chapter 11 (§11.4), not here.
+* `m` and `M` are written with Mathlib's `ContinuousLinearMap.rayleighQuotient`
+  (`re ⟪T x, x⟫ / ‖x‖ ^ 2`) as `⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x` and the matching
+  `⨆`, the indexing of `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional`
+  (`Mathlib/Analysis/InnerProductSpace/Rayleigh.lean`); the book's sphere form is
+  `ContinuousLinearMap.iSup_rayleigh_eq_iSup_rayleigh_sphere`. Prototyped in
+  `notes/brezis/ch06/proto/Theorem611.lean` (statements only).
+* What Mathlib has at v4.35.0-rc2 (re-checked 2026-09-17): `norm_eq_iSup_rayleighQuotient`
+  (`‖T‖ = ⨆ |R x|` for symmetric `T`), `ContinuousLinearMap.spectralRadius_eq_nnnorm` (self-adjoint,
+  `RCLike`), the compact spectral theorem in the form
+  `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` and
+  `eq_zero_of_forall_hasEigenvalue_eq_zero` (compact `T`), the finite-dimensional
+  `hasEigenvalue_iSup_of_finiteDimensional`, and the Rayleigh TODO in that file asking for the
+  compact-operator version. It has no `m, M ∈ σ(T)` for a bounded self-adjoint operator, no
+  `σ(T) ⊆ [m, M]` (the backbone's `ContinuousLinearMap.mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy`
+  in `Numlib/Analysis/InnerProductSpace/Coercive.lean` is the `ℂ`-only form of it), and no
+  Hilbert basis of eigenvectors for a compact self-adjoint operator (only the finite-dimensional
+  `LinearMap.IsSymmetric.eigenvectorBasis` and this project's enumerated one).
+* The Cauchy–Schwarz inequality for a positive operator, `‖S x‖ ^ 2 ≤ ‖S‖ * re ⟪S x, x⟫`, is what
+  the proof of `M ∈ σ(T)` rests on; Mathlib's `Mathlib/Analysis/InnerProductSpace/Positive.lean`
+  has no such bound over `RCLike` (the C*-algebra square root gives it over `ℂ` only), so it is a
+  node here.
+
+The assembly step — from pairwise orthogonal eigenspaces with dense span to a Hilbert basis of
+eigenvectors indexed by a set of vectors — is stated once, for any operator, as
+`ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`, and consumed both by
+Theorem 6.11 here and by the compact *normal* theorem of the sibling module
+`CompactSpectral/Normal` ([brezis2011functional] Proposition 11.36).
+
+Order of attack: the positive-operator inequality, the three spectral-bound nodes, Corollary 6.10,
+the assembly lemma, then the Hilbert basis. Estimated 550 lines.
+'''
+
+[[node]]
+id = "ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner"
+kind = "theorem"
+desc = '''**Cauchy–Schwarz for a positive operator**: for `S : E →L[𝕜] E` with `S.IsPositive`
+(`ContinuousLinearMap.IsPositive`: symmetric with `0 ≤ re ⟪S x, x⟫`) on an inner product space
+over `RCLike 𝕜`, `‖S x‖ ^ 2 ≤ ‖S‖ * RCLike.re ⟪S x, x⟫_𝕜` for every `x`. This is inequality (7)
+of the proof of [brezis2011functional] Proposition 6.9 (lines 6209–6215), `|Mu - Tu| ≤ C (Mu - Tu, u)^{1/2}`,
+with the constant made explicit.
+
+Proof route (★★, ~60 lines): the form `a (u, v) := re ⟪S u, v⟫` is symmetric
+(`re ⟪S u, v⟫ = re ⟪u, S v⟫ = re ⟪S v, u⟫`, from `IsPositive.isSymmetric` and `inner_re_symm`) and
+`a (u, u) ≥ 0`, so for real `t`, `0 ≤ a (u + t v, u + t v) = a (u,u) + 2 t a (u,v) + t² a (v,v)`
+and the discriminant is nonpositive (`discrim_le_zero` in `Mathlib/Algebra/QuadraticDiscriminant.lean`):
+`a (u,v) ^ 2 ≤ a (u,u) * a (v,v)`. With `v = S u`: `‖S u‖ ^ 4 = (re ⟪S u, S u⟫) ^ 2 ≤ re ⟪S u, u⟫ * re ⟪S (S u), S u⟫ ≤ re ⟪S u, u⟫ * (‖S‖ * ‖S u‖ ^ 2)`
+(`re_inner_le_norm`, `ContinuousLinearMap.le_opNorm`); divide by `‖S u‖ ^ 2` when it is nonzero,
+and the claim is trivial when it is zero.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
+
+[[node]]
+id = "IsSelfAdjoint.mem_Icc_of_ofReal_mem_spectrum"
+kind = "theorem"
+desc = '''**The real spectrum of a self-adjoint operator lies between the bounds of its Rayleigh
+quotient**: for `T : E →L[𝕜] E` with `IsSelfAdjoint T` on a Hilbert space `E` over `RCLike 𝕜`
+and `t : ℝ` with `(t : 𝕜) ∈ spectrum 𝕜 T`,
+`t ∈ Set.Icc (⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x) (⨆ x : { x : E // x ≠ 0 }, T.rayleighQuotient x)`.
+Over `ℝ` this is `σ(T) ⊆ [m, M]`, the first clause of [brezis2011functional] Proposition 6.9
+(lines 6192–6199).
+
+Proof route (★, ~60 lines), the book's, by Lax–Milgram: if `t < m` then
+`re ⟪(T - t • 1) x, x⟫ = re ⟪T x, x⟫ - t ‖x‖ ^ 2 ≥ (m - t) ‖x‖ ^ 2` for all `x` (for `x ≠ 0` from
+`ciInf_le` with the lower bound `BddBelow` from `ContinuousLinearMap.rayleighQuotient_le_norm`;
+trivial for `x = 0`), i.e. `(T - t • 1 : E →ₗ[𝕜] E).IsCoerciveWith (m - t)`
+(`LinearMap.IsCoerciveWith`, `Numlib/Analysis/InnerProductSpace/Coercive.lean`), so
+`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` makes `T - t • 1` a continuous linear
+equivalence, hence a unit, hence `(t : 𝕜) ∈ resolventSet 𝕜 T`
+(`spectrum.mem_resolventSet_iff`, `Algebra.algebraMap_eq_smul_one`, `IsUnit.neg`): contradiction.
+For `t > M` apply the same to `-T` (self-adjoint, `ContinuousLinearMap.rayleighQuotient_neg_apply`,
+`spectrum.neg_eq`, and `⨅ (-f) = -⨆ f` for a bounded real family — the additive form of
+`csInf_inv`/`csSup_inv` in `Mathlib/Algebra/Order/Group/Pointwise/CompleteLattice.lean`, applied to
+the range). The backbone's `ContinuousLinearMap.mem_Icc_of_mem_spectrum_real_of_isSymmetricBoundedBy`
+is this argument over `ℂ` with the bounds as a hypothesis bundle; once this node exists that one
+can be re-proved from it.'''
+deps = ["ContinuousLinearMap.exists_equiv_of_isCoerciveWith", "LinearMap.IsCoerciveWith"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
+
+[[node]]
+id = "IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum"
+kind = "theorem"
+desc = '''**The supremum of the Rayleigh quotient of a self-adjoint operator is in its spectrum**: for
+`T : E →L[𝕜] E` with `IsSelfAdjoint T` on a nontrivial Hilbert space `E` over `RCLike 𝕜`,
+`((⨆ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) : 𝕜) ∈ spectrum 𝕜 T`. This is
+`M ∈ σ(T)` of [brezis2011functional] Proposition 6.9 (lines 6201–6217). Compare Mathlib's
+`ContinuousLinearMap.spectralRadius_eq_nnnorm`, whose proof shows `‖T‖ ∈ σ(T) ∨ -‖T‖ ∈ σ(T)` but
+exports only the spectral radius; the finite-dimensional `hasEigenvalue_iSup_of_finiteDimensional`
+is the eigenvalue form.
+
+Proof route (★★, ~120 lines), the book's: let `M` be the supremum and `S := M • 1 - T`; `S` is
+self-adjoint and positive (`re ⟪S x, x⟫ = M ‖x‖ ^ 2 - re ⟪T x, x⟫ ≥ 0` by `le_ciSup` with the
+bound `bddAbove` from `rayleighQuotient_le_norm`), so
+`ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner` gives
+`‖S x‖ ^ 2 ≤ ‖S‖ * (M ‖x‖ ^ 2 - re ⟪T x, x⟫)`. Choose unit vectors `xₙ` with
+`T.rayleighQuotient xₙ > M - 1 / (n + 1)` (`exists_lt_of_lt_ciSup`, then rescale to the unit
+sphere by `ContinuousLinearMap.rayleigh_smul`; `Nontrivial E` supplies a nonzero vector); then
+`‖S xₙ‖ ^ 2 ≤ ‖S‖ / (n + 1) → 0`. If `(M : 𝕜) ∈ resolventSet 𝕜 T`, i.e. `S` is a unit with
+inverse `S⁻¹`, then `1 = ‖xₙ‖ = ‖S⁻¹ (S xₙ)‖ ≤ ‖S⁻¹‖ ‖S xₙ‖ → 0`, a contradiction; so
+`(M : 𝕜) ∈ spectrum 𝕜 T`.'''
+deps = ["ContinuousLinearMap.IsPositive.norm_apply_sq_le_norm_mul_re_inner"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
+
+[[node]]
+id = "IsSelfAdjoint.ofReal_iInf_rayleighQuotient_mem_spectrum"
+kind = "theorem"
+desc = '''**The infimum of the Rayleigh quotient of a self-adjoint operator is in its spectrum**: for
+`T : E →L[𝕜] E` with `IsSelfAdjoint T` on a nontrivial Hilbert space `E` over `RCLike 𝕜`,
+`((⨅ x : { x : E // x ≠ 0 }, T.rayleighQuotient x : ℝ) : 𝕜) ∈ spectrum 𝕜 T`; `m ∈ σ(T)` of
+[brezis2011functional] Proposition 6.9 ("the proof that `m ∈ σ(T)` is similar", line 6201).
+★, ~30 lines: `IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum` for `-T`
+(`IsSelfAdjoint.neg`), with `ContinuousLinearMap.rayleighQuotient_neg_apply`, `⨆ (-f) = -⨅ f`
+(the additive `csSup_inv`/`csInf_inv` of `Mathlib/Algebra/Order/Group/Pointwise/CompleteLattice.lean`
+on the range; the family is bounded by `rayleighQuotient_le_norm`)
+and `spectrum.neg_eq`.'''
+deps = ["IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
+
+[[node]]
+id = "IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup"
+kind = "theorem"
+desc = '''**`‖T‖ = max (|m|, |M|)`** for a self-adjoint `T : E →L[𝕜] E` on a nontrivial Hilbert space
+over `RCLike 𝕜`, with `m`, `M` the infimum and supremum of `T.rayleighQuotient` over
+`{ x : E // x ≠ 0 }`. The last clause of [brezis2011functional] Proposition 6.9 (lines 6218–6240).
+
+Proof route (★, ~50 lines): Mathlib's `ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`
+(`‖T‖ = ⨆ x : E, |T.rayleighQuotient x|`, for `T.IsSymmetric`, i.e.
+`ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric`) reduces it to the real-analysis identity
+`⨆ x, |f x| = max |⨅ f| |⨆ f|` for a bounded family indexed by a nonempty type, extended by
+`f 0 = 0` (`rayleighQuotient_apply_zero`), which is `≤` by `abs_le_max_abs_abs` from
+`⨅ f ≤ f x ≤ ⨆ f`, and `≥` by `le_ciSup` at points approaching either bound
+(`exists_lt_of_lt_ciSup` and its `to_dual` `exists_lt_of_ciInf_lt`). The book's parallelogram argument is what
+`norm_eq_iSup_rayleighQuotient` already contains.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
+
+[[node]]
+id = "IsSelfAdjoint.eq_zero_of_spectrum_subset_zero"
+kind = "theorem"
+desc = '''**A self-adjoint operator whose spectrum is contained in `{0}` is zero**: for `T : E →L[𝕜] E`
+with `IsSelfAdjoint T` on a Hilbert space over `RCLike 𝕜`, `spectrum 𝕜 T ⊆ {0} → T = 0`.
+[brezis2011functional] Corollary 6.10 (stated there with `σ(T) = {0}`; `⊆` is the hypothesis the
+proof uses and covers the trivial space, where the spectrum is empty).
+
+Proof (★, ~20 lines): `ContinuousLinearMap.spectralRadius_eq_nnnorm hT : spectralRadius 𝕜 T = ‖T‖₊`,
+and `spectralRadius 𝕜 T = ⨆ k ∈ spectrum 𝕜 T, ‖k‖₊ ≤ 0` when the spectrum is inside `{0}`
+(`spectrum.spectralRadius_le_of_forall_lt_of_nonempty`… or directly `iSup₂_le`), so `‖T‖ = 0`.
+The book derives it from Proposition 6.9 (`m = M = 0`), which is
+`IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup` together with the two membership nodes; the
+spectral-radius route is shorter. Mathlib's `ContinuousLinearMap.eq_zero_of_forall_hasEigenvalue_eq_zero`
+is the same statement for *compact* `T` in terms of eigenvalues.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 6.10"
+
+[[node]]
+id = "ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors"
+kind = "theorem"
+desc = '''**The spectral theorem for compact self-adjoint operators, Hilbert-basis form**: for
+`T : E →L[𝕜] E` on a Hilbert space `E` over `RCLike 𝕜` with `hT : T.IsSymmetric` (that is,
+`(T : E →ₗ[𝕜] E).IsSymmetric`, as the parent module writes it) and `hK : IsCompactOperator T`,
+`∃ (w : Set E) (b : HilbertBasis w 𝕜 E) (μ : w → ℝ), ⇑b = ((↑) : w → E) ∧ ∀ i, T (b i) = (μ i : 𝕜) • b i`:
+a Hilbert basis of `E` consisting of eigenvectors of `T`, the eigenvalue of `b i` being the real
+number `μ i`. No injectivity, separability or infinite-dimensionality hypothesis; the index set is
+a set of vectors, as in Mathlib's `exists_hilbertBasis`. [brezis2011functional] Theorem 6.11
+(lines 6247–6285). Statement prototyped in `notes/brezis/ch06/proto/Theorem611.lean`.
+
+Proof route (★, ~40 lines on top of the assembly lemma), the book's: the eigenspaces are
+pairwise orthogonal (`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`, clause (i)) and their
+sum is dense, `(⨆ μ : 𝕜, eigenspace T μ)ᗮ = ⊥`, by Mathlib's
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot hK hT` (clause (ii) of the
+book's proof, `F` dense); so `ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily`
+(below, shared with the compact normal theorem of `CompactSpectral/Normal`) gives `w` and `b`
+with `T i = μ • i` for some `μ : 𝕜`, and `μ` is real because the eigenvalues of a symmetric
+operator are (`LinearMap.IsSymmetric.conj_eigenvalue_eq_self`, `RCLike.conj_eq_iff_real`), which
+is what makes `μ : w → ℝ` well defined.
+
+Relation to the parent module: `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` is the
+`ℕ`-indexed enumeration under injectivity and infinite dimension; it is not derivable from this
+node (an enumeration needs the extra hypotheses), and this node is not derivable from it (the
+kernel may be nontrivial or the space finite dimensional), which is why both exist.'''
+deps = ["ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11"
+
+[[node]]
+id = "ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors"
+kind = "theorem"
+desc = '''**The spectral theorem with an arbitrary index type**, the shape the planning brief fixes:
+for `T : E →L[𝕜] E` on a Hilbert space `E : Type u` over `RCLike 𝕜` with `T.IsSymmetric` and
+`IsCompactOperator T`, `∃ (ι : Type u) (b : HilbertBasis ι 𝕜 E), ∀ i, ∃ μ : ℝ, T (b i) = (μ : 𝕜) • b i`.
+★, ~10 lines: take `ι := w` from `ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors`.
+The index type lives in the universe of `E` (a `Type 0` index would not do for a large
+non-separable `E`); with `E` separable it can be taken countable, but that refinement is not
+needed by any consumer and is not stated. [brezis2011functional] Theorem 6.11.'''
+deps = ["ContinuousLinearMap.IsSymmetric.exists_hilbertBasis_eigenvectors"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11"
+
+[[node]]
+id = "ContinuousLinearMap.exists_hilbertBasis_eigenvectors_of_orthogonalFamily"
+kind = "theorem"
+desc = '''**Assembling a Hilbert basis of eigenvectors** — the last step of the proof of
+[brezis2011functional] Theorem 6.11 and of Proposition 11.36, stated once for both (planned by
+chapter 11 in `Normed/Algebra/Spectrum`, moved here at review): for a Hilbert space `E` over
+`RCLike 𝕜` and `T : E →L[𝕜] E` whose eigenspaces are pairwise orthogonal
+(`hV : OrthogonalFamily 𝕜 (fun μ : 𝕜 => Module.End.eigenspace (T : Module.End 𝕜 E) μ) fun μ => (eigenspace T μ).subtypeₗᵢ`)
+and span densely (`hd : (⨆ μ, Module.End.eigenspace (T : Module.End 𝕜 E) μ)ᗮ = ⊥`, equivalently
+the closure is `⊤` by `Submodule.orthogonal_eq_bot_iff`), there is a Hilbert basis of
+eigenvectors indexed by a *set of vectors*, the shape of Mathlib's `exists_hilbertBasis`:
+`∃ (w : Set E) (b : HilbertBasis w 𝕜 E), ⇑b = ((↑) : w → E) ∧ ∀ i : w, ∃ μ : 𝕜, T i = μ • (i : E)`.
+(No separability: the book's Theorems 6.11 and 11.36 assume `H` separable to get a *sequence*;
+with a set-indexed basis the hypothesis is unnecessary, and separability of `E` is then
+equivalent to countability of `w`, `Orthonormal.countable_of_separableSpace` in `HilbertSum`.)
+
+Proof: for each `μ`, `V μ := eigenspace T μ` is closed (the kernel of `T - μ • 1`,
+`ContinuousLinearMap.isClosed_ker`), hence a Hilbert space with a Hilbert basis
+`exists_hilbertBasis 𝕜 (V μ) : ∃ (w_μ : Set (V μ)) (b_μ : HilbertBasis w_μ 𝕜 (V μ)), ⇑b_μ = (↑)`;
+put `w := ⋃ μ, ((↑) '' w_μ) : Set E`. Orthonormality of `(↑) : w → E`: two of its vectors either
+lie in the same `w_μ` (orthonormal there) or in orthogonal eigenspaces (`hV.isOrtho`). Dense
+span: a vector orthogonal to `w` is orthogonal to every `w_μ`, hence to `V μ` (the orthogonal of
+a dense subspace of `V μ` inside `V μ` is `⊥`, `Submodule.orthogonal_orthogonal_eq_closure`),
+hence lies in `(⨆ μ, V μ)ᗮ = ⊥`; so `HilbertBasis.mkOfOrthogonalEqBot` with
+`HilbertBasis.coe_mkOfOrthogonalEqBot`, and the eigenvalue of `i ∈ w` is the `μ` with `i ∈ w_μ`
+(choose), by `Module.End.mem_eigenspace_iff`. Universe-safe as stated (`w : Set E` lives where
+`E` does); the `Σ μ : 𝕜, w_μ` index of the first plan lives in `max (universe 𝕜) (universe E)`
+and was the reason for the set form. About 150 lines. ★★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11 and Proposition 11.36"

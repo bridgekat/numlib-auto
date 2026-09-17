@@ -1,0 +1,661 @@
+namespace = "LinearPMap"
+desc = '''
+The Hille–Yosida theorem on a real Hilbert space: the evolution problem `u' + A u = 0` on
+`[0, ∞)`, `u(0) = u₀`, for a maximal monotone `A`, its contraction semigroup `S_A(t)`, the
+regularity `u ∈ C^{k−j}([0, ∞); D(A^j))`, and the self-adjoint case in which every `u₀ ∈ H`
+gives a solution smooth for `t > 0` ([brezis2011functional] §7.2–§7.4: Theorems 7.4, 7.5, 7.7,
+Lemmas 7.1, 7.2, Remarks 4, 5, 6). Builds on `Numlib/Analysis/InnerProductSpace/MaximalMonotone`
+(`IsMaximalMonotone`, `resolvent`, `yosida`, `PowDomain`, `powPart`).
+
+**Scalars: `ℝ`.** Time derivatives of `u : ℝ → H` need `NormedSpace ℝ H`; over `RCLike 𝕜`
+Mathlib's own inner-product calculus (`HasDerivWithinAt.inner`, `isBoundedBilinearMap_inner`)
+carries the extra hypotheses `[NormedSpace ℝ H] [IsScalarTower ℝ 𝕜 H]`, and `HasDerivWithinAt.norm_sq`
+— the energy identity `d/dt ‖u‖² = 2 ⟪u', u⟫` used in every step — is stated over a *real* inner
+product space only. Each of the graph spaces `D(A^k)` would then need those instances too. The
+book and both consumers (chapter 10's heat and wave equations) are real, and nothing in
+chapter 11 restates this material over `ℂ`; so this module takes `H` real and `A : H →ₗ.[ℝ] H`.
+The proofs are `re`-generic; a complex version is a restatement with the two extra instance
+arguments, not a new proof.
+
+**The solution concept.** `LinearPMap.IsSolutionOn A u₀ s u` says `u 0 = u₀`, `u t ∈ D(A)` for
+`t ∈ s`, and `HasDerivWithinAt u (−A (u t)) s t` for `t ∈ s`. It is the pattern of
+`ODE.IsSolutionOn` (`Numlib/Analysis/ODE/Cauchy`) with the field replaced by the partial map
+`A` (a total field cannot express `u t ∈ D(A)`), and with the sign convention `u' + A u = 0` of
+monotone-operator theory. The set `s` is `Ici 0` for Theorems 7.4–7.5 and `Ioi 0` for Theorem
+7.7. The book's classes are read as: `u ∈ C¹([0, ∞); H)` is `ContDiffOn ℝ 1 u (Ici 0)`
+(`contDiffOn_one_iff_derivWithin`, `uniqueDiffOn_Ici`); `u ∈ C^n(s; D(A^j))` is
+`LinearPMap.ContDiffOnPowDomain A n j u s`: `u` lifts on `s` to a `ContDiffOn ℝ n` map into the
+Hilbert space `A.PowDomain j`; `contDiffOnPowDomain_iff` reads it componentwise ("`t ↦ A^i u(t)`
+is `C^n` for every `i ≤ j`"), which is the form chapter 10 will unpack. For a solution,
+`C([0,∞); D(A))` is implied by `C¹([0,∞); H)` — the book's own remark "from (6) we deduce that
+`u ∈ C([0,+∞); D(A))`" — and both are recorded.
+
+**The proof route, and how it differs from the book's six steps.** The approximate problem
+`u_λ' + A_λ u_λ = 0` has the closed-form solution `u_λ(t) = exp(−t A_λ) u₀` with Mathlib's
+`NormedSpace.exp` on `H →L[ℝ] H` (`hasDerivAt_exp_smul_const'`, `Commute.exp_right`), so
+Theorem 7.3 is *not* used inside Theorem 7.4 (it is a node of its own in `ODE/Cauchy`). Two
+consequences shorten the book's argument:
+
+1. `u_λ'(t) = −exp(−t A_λ) A_λ u₀`, so the derivatives converge as soon as `u_λ(t) w → S(t) w`
+   for every `w ∈ H` (with `w = A u₀`) and `A_λ u₀ → A u₀`. The book's Step 4 (a second Cauchy
+   estimate under `u₀ ∈ D(A²)`), Step 6 (density of `D(A²)`, Lemma 7.2) and its silent use of
+   `A_λ u₀ → A u₀` in Step 4 all disappear; existence is proved for every `u₀ ∈ D(A)` at once,
+   which is Remark 4 (a). Lemma 7.2 remains as `IsMaximalMonotone.dense_range_castL`.
+2. The limit `S_A(t) u₀ = lim_{λ→0⁺} exp(−t A_λ) u₀` exists for **every** `u₀ ∈ H` (Remark 4 (b),
+   footnote 4), so the contraction semigroup `LinearPMap.semigroup A t : H →L[ℝ] H` of Remark 5
+   is *defined first* (junk-valued total definition, as `resolvent`), Theorem 7.4's solution is
+   `t ↦ A.semigroup t u₀`, and the semigroup law, `‖S(t)‖ ≤ 1` and strong continuity are nodes.
+   Theorem 7.7's Step 2 then needs no `D(A²)` either: for `u₀ ∈ H` and `t > 0`,
+   `S(t) u₀ = S(t − δ) (S(δ) u₀)` with `S(δ) u₀ ∈ D(A)`.
+
+The steps that survive, each a node with its estimate: Step 1 (uniqueness and the contraction
+`‖u(t) − v(t)‖ ≤ ‖u₀ − v₀‖`, `IsMonotone.norm_sub_le_of_isSolutionOn`); Step 2 / Lemma 7.1
+(`t ↦ ‖exp(−tB) w‖` antitone for a bounded monotone `B`, `antitoneOn_norm_exp_neg_smul_apply`);
+Step 3 (the Cauchy estimate `‖u_λ(t) − u_μ(t)‖² ≤ ‖w₀ − w₁‖² + 4(λ+μ) t M²`,
+`norm_expYosida_sub_expYosida_le`, and the limit `tendsto_expYosida_semigroup`); Step 4 in its
+collapsed form (`tendstoUniformlyOn_deriv_expYosida`); Step 5 (the uniform-limit lemma
+`hasDerivWithinAt_Icc_of_tendstoUniformlyOn` and the closed-graph identification
+`hasDerivWithinAt_semigroup_apply`). Theorem 7.7's estimate `‖u'(t)‖ ≤ ‖u₀‖/t` comes from the
+book's (33) read as a Lyapunov function: `Φ(t) = ½‖u‖² + t ⟪Bu, u⟫ + t² ‖Bu‖²` is nonincreasing
+along `u = exp(−tB) w` for bounded self-adjoint monotone `B` (`Φ' = t² d/dt ‖Bu‖² ≤ 0`) — no
+integration by parts is needed (`norm_exp_neg_smul_apply_le_div`).
+
+**Universe polymorphism matters.** Theorems 7.5 and 7.7 apply Theorem 7.4 and Theorem 7.7 to
+`A.powPart j` on the Hilbert space `A.PowDomain j` (complete by `IsClosed.completeSpace_powDomain`),
+so every node about `semigroup` must be stated for an arbitrary real Hilbert space, never for
+a fixed one; the induction over `j` changes the space.
+
+**Order of attack:** `IsSolutionOn` and Step 1 → the `exp(−tB)` lemmas → `expYosida` and
+Steps 2–3 → `semigroup` and its spec → Step 5 and Theorem 7.4 → Remark 5 → `ContDiffOnPowDomain`
+and `contDiffOnPowDomain_iff` → `applyL_semigroup_powPart` and the ladder → Theorem 7.5 → the
+self-adjoint section → Theorem 7.7. Estimated 1500–1900 lines.
+'''
+
+[[node]]
+id = "IsSolutionOn"
+kind = "definition"
+desc = '''`structure A.IsSolutionOn (u₀ : H) (s : Set ℝ) (u : ℝ → H) : Prop` for `A : H →ₗ.[ℝ] H`:
+`apply_zero : u 0 = u₀`, `mem_domain : ∀ t ∈ s, u t ∈ A.domain`, and
+`hasDerivWithinAt : ∀ t (ht : t ∈ s), HasDerivWithinAt u (−A ⟨u t, mem_domain t ht⟩) s t` —
+`u` solves `du/dt + A u = 0` on `s` with `u(0) = u₀` ([brezis2011functional] (6) of §7.2 with
+`s = Ici 0`, and (26) of §7.4 with `s = Ioi 0`). The `C¹` requirement is a separate conjunct
+`ContDiffOn ℝ 1 u s` in the theorems. Shape settled in
+`notes/brezis/ch07/proto/MaximalMonotone.lean`. ★'''
+deps = []
+source = "[brezis2011functional] §7.2, problem (6)"
+
+[[node]]
+id = "IsSolutionOn.continuousOn"
+kind = "theorem"
+desc = '''A solution is continuous on `s` (`HasDerivWithinAt.continuousOn`). ★'''
+deps = ["IsSolutionOn"]
+source = "[brezis2011functional] §7.2, problem (6)"
+
+[[node]]
+id = "IsSolutionOn.mono"
+kind = "theorem"
+desc = '''`A.IsSolutionOn u₀ s u → t ⊆ s → A.IsSolutionOn u₀ t u` (`HasDerivWithinAt.mono`). ★'''
+deps = ["IsSolutionOn"]
+source = "[brezis2011functional] §7.2, problem (6)"
+
+[[node]]
+id = "IsSolutionOn.comp_add"
+kind = "theorem"
+desc = '''Time shift: if `A.IsSolutionOn u₀ (Ici 0) u` and `0 ≤ a` then
+`A.IsSolutionOn (u a) (Ici 0) (fun t => u (t + a))`. From `HasDerivWithinAt.comp` with the
+affine map `t ↦ t + a` (`HasDerivWithinAt.comp_add_const` or `hasDerivWithinAt_id.add_const`),
+noting `(· + a) '' Ici 0 ⊆ Ici 0`. Used for the semigroup law and for Theorem 7.7's
+regularity away from `t = 0`. ★'''
+deps = ["IsSolutionOn"]
+source = "[brezis2011functional] Chapter 7, Remark 5"
+
+[[node]]
+id = "isSolutionOn_smul_id_vadd_iff"
+kind = "theorem"
+desc = '''Remark 6 ([brezis2011functional] Chapter 7, Remark 6): for `c : ℝ`, `u` solves
+`u' + A u + c u = 0` iff `v(t) = e^{ct} u(t)` solves `v' + A v = 0`:
+`((c • LinearMap.id) +ᵥ A).IsSolutionOn u₀ s u ↔ A.IsSolutionOn u₀ s (fun t => Real.exp (c * t) • u t)`.
+Both domains are `A.domain` (`vadd_domain`); the derivative of the product is
+`HasDerivWithinAt.smul` with `Real.hasDerivAt_exp`. ★'''
+deps = ["IsSolutionOn"]
+source = "[brezis2011functional] Chapter 7, Remark 6"
+
+[[node]]
+id = "IsMonotone.norm_sub_le_of_isSolutionOn"
+kind = "theorem"
+desc = '''Step 1 of the proof of Theorem 7.4, in its quantitative form: for a monotone `A`
+(`hA : A.IsMonotone`) and two solutions `A.IsSolutionOn u₀ (Ici 0) u`, `A.IsSolutionOn v₀ (Ici 0) v`,
+the function `t ↦ ‖u t − v t‖` is antitone on `Ici 0`; hence `‖u t − v t‖ ≤ ‖u₀ − v₀‖` for
+`t ≥ 0`. Proof ([brezis2011functional] lines 6968–6987 and footnote 3): `φ(t) = ‖u t − v t‖²`
+has `HasDerivWithinAt φ (2 ⟪(u − v)' , u − v⟫) (Ici 0) t` (`HasDerivWithinAt.norm_sq` over the
+real inner product space `H`), and `(u − v)' = −A (u − v)`, so the derivative is
+`−2 ⟪A (u−v), u−v⟫ ≤ 0`; `antitoneOn_of_hasDerivWithinAt_nonpos` on the convex set `Ici 0`
+(interior `Ioi 0`; continuity from `IsSolutionOn.continuousOn`). The same argument with
+`D = Ici 0` and derivatives only on the interior `Ioi 0` gives the variant for solutions on
+`Ioi 0` that are continuous on `Ici 0`, used by Theorem 7.7 — state both, or state the
+`Ioi 0` version and derive the other. ★'''
+deps = ["IsSolutionOn.continuousOn", "IsMonotone"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 1"
+
+[[node]]
+id = "IsMonotone.eqOn_of_isSolutionOn"
+kind = "theorem"
+desc = '''Uniqueness in Theorem 7.4: for a monotone `A`, two solutions of `A.IsSolutionOn u₀ (Ici 0)`
+with the same datum agree on `Ici 0` (`EqOn u v (Ici 0)`); `norm_sub_le_of_isSolutionOn` with
+`u₀ = v₀`. Monotonicity alone suffices — maximality is only needed for existence. ★'''
+deps = ["IsMonotone.norm_sub_le_of_isSolutionOn"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 1"
+
+[[node]]
+id = "IsMonotone.eqOn_of_isSolutionOn_Ioi"
+kind = "theorem"
+desc = '''Uniqueness in Theorem 7.7 ([brezis2011functional] proof of Theorem 7.7, "Uniqueness"):
+for a monotone `A`, if `A.IsSolutionOn u₀ (Ioi 0) u`, `A.IsSolutionOn u₀ (Ioi 0) v`,
+`ContinuousOn u (Ici 0)` and `ContinuousOn v (Ici 0)`, then `EqOn u v (Ici 0)`: `φ = ‖u − v‖²`
+is continuous on `Ici 0`, nonincreasing there because its derivative on the interior `Ioi 0`
+is `≤ 0` (`antitoneOn_of_hasDerivWithinAt_nonpos` asks for derivatives on `interior D` only),
+and `φ 0 = 0`. ★'''
+deps = ["IsSolutionOn", "IsMonotone"]
+source = "[brezis2011functional] Theorem 7.7, proof, Uniqueness"
+
+[[node]]
+id = "_root_.hasDerivAt_exp_neg_smul_apply"
+kind = "theorem"
+desc = '''For `B : H →L[ℝ] H` and `w : H`, `HasDerivAt (fun t : ℝ => NormedSpace.exp ((−t) • B) w)
+(−(B (NormedSpace.exp ((−t) • B) w))) t`, together with the commuted form
+`exp_neg_smul_apply_comm : B (exp ((−t) • B) w) = exp ((−t) • B) (B w)` (`Commute.exp_right`
+of `(Commute.refl B).neg_left.smul_left`). From `hasDerivAt_exp_smul_const'` with `x = −B` and
+`ContinuousLinearMap.apply` (evaluation at `w` is a bounded linear map, so
+`HasDerivAt.clm_apply`/`HasDerivAt.comp`). Also `exp_neg_smul_zero_apply : exp ((−0) • B) w = w`
+(`NormedSpace.exp_zero`) and `contDiff_exp_neg_smul_apply : ContDiff ℝ n (fun t => exp ((−t) • B) w)`
+for every `n` (induction with `contDiff_succ_iff_deriv`, or analyticity of `exp`). ★'''
+deps = []
+source = "[brezis2011functional] Theorem 7.4, proof, Step 2"
+
+[[node]]
+id = "_root_.antitoneOn_norm_exp_neg_smul_apply"
+kind = "theorem"
+desc = '''Lemma 7.1 ([brezis2011functional] Lemma 7.1) for a bounded monotone operator: if
+`B : H →L[ℝ] H` satisfies `∀ v, 0 ≤ ⟪B v, v⟫`, then for every `w`, `t ↦ ‖exp ((−t) • B) w‖` is
+antitone on `Ici 0`, and consequently `norm_exp_neg_smul_apply_le : ‖exp ((−t) • B) w‖ ≤ ‖w‖`
+for `0 ≤ t` and `norm_exp_neg_smul_le_one : ‖exp ((−t) • B)‖ ≤ 1`. Proof: `d/dt ½‖u‖² =
+⟪u', u⟫ = −⟪B u, u⟫ ≤ 0` (`HasDerivAt.norm_sq`, `antitoneOn_of_hasDerivWithinAt_nonpos`). The
+book's second clause, that `‖w'(t)‖` is nonincreasing too, is this lemma applied to
+`w' = exp(−tB)(−B w)` (`exp_neg_smul_apply_comm`), and likewise at every order. The book states
+the lemma for any `C¹` solution `w` of `w' + A_λ w = 0`; every such `w` is `exp(−tA_λ) w(0)` by
+uniqueness (Gronwall, or `IsMonotone.eqOn_of_isSolutionOn` for the total operator
+`A_λ.toLinearMap.toPMap ⊤`), which is how the surface node `lemma_7_1` reads it back. ★'''
+deps = ["hasDerivAt_exp_neg_smul_apply"]
+source = "[brezis2011functional] Lemma 7.1"
+
+[[node]]
+id = "expYosida"
+kind = "definition"
+desc = '''`A.expYosida c t : H →L[ℝ] H := NormedSpace.exp ((−t) • A.yosida c)`, so that
+`u_λ(t) = A.expYosida λ t u₀` is the solution of the approximate problem (7),
+`u_λ' + A_λ u_λ = 0`, `u_λ(0) = u₀` ([brezis2011functional] §7.2, (7)). Lemmas
+`hasDerivAt_expYosida_apply : HasDerivAt (fun t => A.expYosida c t w) (−(A.yosida c (A.expYosida c t w))) t`,
+`expYosida_zero`, `yosida_expYosida_comm` (instances of the `exp_neg_smul` lemmas). ★'''
+deps = ["hasDerivAt_exp_neg_smul_apply"]
+source = "[brezis2011functional] §7.2, problem (7)"
+
+[[node]]
+id = "IsMaximalMonotone.norm_expYosida_apply_le"
+kind = "theorem"
+desc = '''Estimate (8) of Step 2: for `hA : A.IsMaximalMonotone`, `0 < c`, `0 ≤ t`,
+`‖A.expYosida c t w‖ ≤ ‖w‖`, and `t ↦ ‖A.expYosida c t w‖` antitone on `Ici 0`. Lemma 7.1
+(`antitoneOn_norm_exp_neg_smul_apply`) with `B = A.yosida c`, monotone by Proposition 7.2 (e)
+(`re_inner_yosida_nonneg`, `re` being the identity over `ℝ`). ★'''
+deps = ["antitoneOn_norm_exp_neg_smul_apply", "expYosida", "IsMaximalMonotone.re_inner_yosida_nonneg"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 2, (8)"
+
+[[node]]
+id = "IsMaximalMonotone.norm_yosida_expYosida_apply_le"
+kind = "theorem"
+desc = '''Estimate (9) of Step 2: for `hA`, `0 < c`, `0 ≤ t` and `w : H`,
+`‖A.yosida c (A.expYosida c t w)‖ ≤ ‖A.yosida c w‖` (so `‖u_λ'(t)‖ = ‖A_λ u_λ(t)‖ ≤ ‖A_λ u₀‖`),
+and for `u₀ : A.domain`, `‖A.yosida c (A.expYosida c t u₀)‖ ≤ ‖A u₀‖` by Proposition 7.2 (b).
+From `yosida_expYosida_comm` and `norm_expYosida_apply_le` applied to `A_c w`. ★'''
+deps = ["IsMaximalMonotone.norm_expYosida_apply_le", "IsMaximalMonotone.norm_yosida_apply_le_norm_apply"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 2, (9)"
+
+[[node]]
+id = "IsMaximalMonotone.norm_expYosida_sub_expYosida_le"
+kind = "theorem"
+desc = '''Step 3's Cauchy estimate, (13) of [brezis2011functional] (lines 7030–7060), for two data
+so that it also serves the derivatives: for `hA`, `0 < c`, `0 < d`, `0 ≤ t`, `w₀ w₁ : H` and
+`M` with `‖A.yosida c w₀‖ ≤ M` and `‖A.yosida d w₁‖ ≤ M`,
+`‖A.expYosida c t w₀ − A.expYosida d t w₁‖ ^ 2 ≤ ‖w₀ − w₁‖ ^ 2 + 4 * (c + d) * t * M ^ 2`.
+Proof: `φ = ‖u_c − u_d‖²` has derivative `−2 ⟪A_c u_c − A_d u_d, u_c − u_d⟫`
+(`HasDerivAt.norm_sq`, `hasDerivAt_expYosida_apply`), which by (12)
+(`re_inner_yosida_sub_yosida_ge`) is `≤ −2 ⟪A_c u_c − A_d u_d, c A_c u_c − d A_d u_d⟫ ≤
+2 (‖A_c u_c‖ + ‖A_d u_d‖)(c ‖A_c u_c‖ + d ‖A_d u_d‖) ≤ 4 (c + d) M²` by (9); then
+`Convex.image_sub_le_mul_sub_of_deriv_le` (or `image_le_of_deriv_right_le_deriv_boundary`) on
+`Icc 0 t` gives `φ t ≤ φ 0 + 4(c+d)M² t`. With `w₀ = w₁ = u₀ ∈ D(A)` and `M = ‖A u₀‖` this is
+the book's `|u_λ(t) − u_μ(t)| ≤ 2 √((λ+μ) t) |A u₀|`. ★★'''
+deps = ["expYosida", "IsMaximalMonotone.re_inner_yosida_sub_yosida_ge", "IsMaximalMonotone.norm_yosida_expYosida_apply_le"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 3, (13)"
+
+[[node]]
+id = "semigroup"
+kind = "definition"
+desc = '''`A.semigroup t : H →L[ℝ] H`, the contraction semigroup `S_A(t)` of Remark 5, defined as in
+footnote 4 of [brezis2011functional] §7.2 (Remark 4 (b)): the limit `lim_{λ→0⁺} exp(−t A_λ) u₀`.
+Total in `(A, t)` by the junk-value pattern of `resolvent`: by classical choice, a bounded
+`S` with `∀ u₀, Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 (S u₀))` if one exists
+(unique, limits being unique), else `0`. The definition takes no `CompleteSpace H` hypothesis
+(only the lemmas do), so that `(A.powPart j).semigroup` on `A.PowDomain j` is well-formed before
+completeness is supplied by `haveI`. Its properties are stated under `hA : A.IsMaximalMonotone`
+and `0 ≤ t`. ★'''
+deps = ["expYosida"]
+source = "[brezis2011functional] Chapter 7, Remark 4 (b), Remark 5"
+
+[[node]]
+id = "IsMaximalMonotone.tendsto_expYosida_semigroup"
+kind = "theorem"
+desc = '''The specification of `semigroup` (Remark 4 (b)): for `hA`, `0 ≤ t` and **every** `u₀ : H`,
+`Tendsto (fun c : ℝ => A.expYosida c t u₀) (𝓝[>] 0) (𝓝 (A.semigroup t u₀))`. Proof: (i) for
+`u₀ ∈ D(A)` the family is Cauchy along `𝓝[>] 0` by `norm_expYosida_sub_expYosida_le` with
+`M = ‖A u₀‖` (`4 (c + d) t ‖A u₀‖² → 0`), so it converges in the complete `H`
+(`cauchy_map_iff'`-style: exhibit, for each `ε`, a `δ` with `dist (u_c t) (u_d t) < ε` for
+`c, d ∈ Ioo 0 δ`; then `CompleteSpace.complete`/`Cauchy.tendsto_lim`); (ii) for general `u₀`,
+approximate by `v₀ ∈ D(A)` (`dense_domain`) using `‖u_c(t) u₀ − u_c(t) v₀‖ ≤ ‖u₀ − v₀‖`
+(`norm_expYosida_apply_le`), which makes the family Cauchy again; (iii) the pointwise limit
+`u₀ ↦ lim` is linear (limits of linear maps) and bounded by `1`, so it is a `ContinuousLinearMap`
+(`LinearMap.mkContinuous`), which witnesses the `∃` in the definition. ★★'''
+deps = ["semigroup", "IsMaximalMonotone.norm_expYosida_sub_expYosida_le", "IsMaximalMonotone.norm_expYosida_apply_le", "IsMaximalMonotone.dense_domain"]
+source = "[brezis2011functional] Chapter 7, Remark 4 (b)"
+
+[[node]]
+id = "IsMaximalMonotone.norm_expYosida_sub_semigroup_le"
+kind = "theorem"
+desc = '''(13') of Step 3: for `hA`, `0 < c`, `0 ≤ t` and `u₀ : A.domain`,
+`‖A.expYosida c t u₀ − A.semigroup t u₀‖ ≤ 2 * Real.sqrt (c * t) * ‖A u₀‖`. Let `d → 0⁺` in
+`norm_expYosida_sub_expYosida_le` (`le_of_tendsto`, `tendsto_expYosida_semigroup`). ★'''
+deps = ["IsMaximalMonotone.tendsto_expYosida_semigroup", "IsMaximalMonotone.norm_expYosida_sub_expYosida_le"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 3, (13')"
+
+[[node]]
+id = "IsMaximalMonotone.norm_semigroup_le_one"
+kind = "theorem"
+desc = '''Remark 5 (a): for `hA` and `0 ≤ t`, `‖A.semigroup t‖ ≤ 1` (and
+`norm_semigroup_apply_le : ‖A.semigroup t u₀‖ ≤ ‖u₀‖`), from `norm_expYosida_apply_le` and
+`le_of_tendsto`. This is the estimate `|u(t)| ≤ |u₀|` of Theorem 7.4. ★'''
+deps = ["IsMaximalMonotone.tendsto_expYosida_semigroup", "IsMaximalMonotone.norm_expYosida_apply_le"]
+source = "[brezis2011functional] Chapter 7, Remark 5 (a)"
+
+[[node]]
+id = "IsMaximalMonotone.semigroup_zero"
+kind = "theorem"
+desc = '''Remark 5 (b), second clause: `A.semigroup 0 = 1` (`expYosida_zero` and uniqueness of
+limits). ★'''
+deps = ["IsMaximalMonotone.tendsto_expYosida_semigroup"]
+source = "[brezis2011functional] Chapter 7, Remark 5 (b)"
+
+[[node]]
+id = "IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup"
+kind = "theorem"
+desc = '''Uniform convergence on bounded intervals, for every datum: for `hA`, `w : H` and `0 ≤ T`,
+`TendstoUniformlyOn (fun (c : ℝ) t => A.expYosida c t w) (fun t => A.semigroup t w) (𝓝[>] 0) (Icc 0 T)`.
+For `w ∈ D(A)` from (13') (`2 √(cT) ‖A w‖ → 0`); for general `w` pick `w₁ ∈ D(A)` with
+`‖w − w₁‖ < ε` and use `‖u_c(t) w − S(t) w‖ ≤ 2 ‖w − w₁‖ + ‖u_c(t) w₁ − S(t) w₁‖`
+(`norm_expYosida_apply_le`, `norm_semigroup_le_one`). `Metric.tendstoUniformlyOn_iff`. Step 3's
+"the convergence is uniform on every bounded interval". ★★'''
+deps = ["IsMaximalMonotone.norm_expYosida_sub_semigroup_le", "IsMaximalMonotone.norm_semigroup_le_one", "IsMaximalMonotone.dense_domain"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 3"
+
+[[node]]
+id = "IsMaximalMonotone.continuousOn_semigroup_apply"
+kind = "theorem"
+desc = '''For `hA` and every `w : H`, `ContinuousOn (fun t => A.semigroup t w) (Ici 0)`: on each
+`Icc 0 T` a uniform limit of the continuous `t ↦ exp(−tA_c) w` (`TendstoUniformlyOn.continuousOn`),
+and `Icc 0 T ∈ 𝓝[Ici 0] t` for `t < T`. Consequently Remark 5 (c),
+`tendsto_semigroup_apply_zero : Tendsto (fun t => A.semigroup t w) (𝓝[>] 0) (𝓝 w)`, with
+`semigroup_zero`. Step 3's "`u ∈ C([0,+∞); H)`". ★'''
+deps = ["IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup", "IsMaximalMonotone.semigroup_zero"]
+source = "[brezis2011functional] Chapter 7, Remark 5 (c)"
+
+[[node]]
+id = "IsMaximalMonotone.tendstoUniformlyOn_deriv_expYosida"
+kind = "theorem"
+desc = '''Step 4, collapsed: for `hA`, `u₀ : A.domain` and `0 ≤ T`,
+`TendstoUniformlyOn (fun (c : ℝ) t => A.expYosida c t (A.yosida c u₀)) (fun t => A.semigroup t (A u₀)) (𝓝[>] 0) (Icc 0 T)`
+— the derivatives `u_λ'(t) = −exp(−tA_λ) A_λ u₀` converge uniformly on `[0, T]`, for every
+`u₀ ∈ D(A)` (the book proves this under `u₀ ∈ D(A²)`, [brezis2011functional] lines 7066–7092,
+and needs Step 6 to remove the assumption). Proof:
+`‖exp(−tA_c) A_c u₀ − S(t) A u₀‖ ≤ ‖A_c u₀ − A u₀‖ + ‖exp(−tA_c) (A u₀) − S(t) (A u₀)‖`, the
+first term `→ 0` by Proposition 7.2 (d) (`tendsto_yosida_apply`), the second uniformly by
+`tendstoUniformlyOn_expYosida_semigroup` with `w = A u₀`. ★'''
+deps = ["IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup", "IsMaximalMonotone.tendsto_yosida_apply", "IsMaximalMonotone.norm_expYosida_apply_le"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 4"
+
+[[node]]
+id = "_root_.hasDerivWithinAt_Icc_of_tendstoUniformlyOn"
+kind = "theorem"
+desc = '''A closed-interval version of Mathlib's `hasDerivAt_of_tendstoUniformlyOn`, which needs an
+open set and so misses the endpoint `t = 0` (`notes/lessons.md` §"`PiLp 1` of a tuple": no
+`HasDerivWithinAt` variant exists in `Mathlib/Analysis/Calculus/UniformLimitsDeriv.lean`). For
+`E` a real Banach space, a filter `l` with `[NeBot l]`, `a ≤ b`, `F F' : ι → ℝ → E`, `f g : ℝ → E`:
+if `∀ᶠ i in l, ∀ t ∈ Icc a b, HasDerivWithinAt (F i) (F' i t) (Icc a b) t`,
+`∀ᶠ i in l, ContinuousOn (F' i) (Icc a b)`, `TendstoUniformlyOn F' g l (Icc a b)`, and
+`∀ t ∈ Icc a b, Tendsto (fun i => F i t) l (𝓝 (f t))`, then
+`∀ t ∈ Icc a b, HasDerivWithinAt f (g t) (Icc a b) t`. Proof by the fundamental theorem of
+calculus, not by difference quotients: `F i t = F i a + ∫_a^t F' i`
+(`intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` in its `HasDerivWithinAt` form), the
+integrals converge by `intervalIntegral.norm_integral_le_of_norm_le_const` under uniform
+convergence, `g` is continuous on `Icc a b` (`TendstoUniformlyOn.continuousOn`), so
+`f t = f a + ∫_a^t g` and `intervalIntegral.integral_hasDerivWithinAt_right` (with
+`ContinuousOn.stronglyMeasurableAtFilter`/`ContinuousWithinAt`) differentiates it. Natural home
+`Mathlib.Analysis.Calculus.UniformLimitsDeriv`; upstreaming candidate. ★★'''
+deps = []
+source = "[brezis2011functional] Theorem 7.4, proof, Step 5"
+
+[[node]]
+id = "IsMaximalMonotone.hasDerivWithinAt_semigroup_apply"
+kind = "theorem"
+desc = '''Step 5 — the heart of Theorem 7.4 ([brezis2011functional] lines 7093–7121, for every
+`u₀ ∈ D(A)` on the semigroup route): for `hA`, `u₀ : A.domain` and `0 ≤ t`,
+(i) `semigroup_apply_mem_domain : A.semigroup t u₀ ∈ A.domain`,
+(ii) `semigroup_apply_apply : A ⟨A.semigroup t u₀, _⟩ = A.semigroup t (A u₀)` (`S(t)` commutes
+with `A` on `D(A)`), and
+(iii) `HasDerivWithinAt (fun t => A.semigroup t u₀) (−(A.semigroup t (A u₀))) (Ici 0) t`.
+Proof: (iii) on `Icc 0 T` for every `T > t` from `hasDerivWithinAt_Icc_of_tendstoUniformlyOn`
+with `F c = u_c(·) u₀`, `F' c t = −exp(−tA_c) A_c u₀`, `g = −S(·)(A u₀)`
+(`hasDerivAt_expYosida_apply`, `tendstoUniformlyOn_deriv_expYosida`,
+`tendstoUniformlyOn_expYosida_semigroup`), then `HasDerivWithinAt.mono_of_mem_nhdsWithin`
+(`Icc 0 T ∈ 𝓝[Ici 0] t`). (i)–(ii) by the closed graph (`IsMaximalMonotone.isClosed`,
+`IsClosed.mem_of_tendsto`): along `c → 0⁺`, `J_c (u_c(t) u₀) → S(t) u₀` because
+`‖J_c u_c − S u₀‖ ≤ ‖u_c u₀ − S u₀‖ + ‖J_c (S u₀) − S u₀‖` (Proposition 7.2 (c),
+`norm_resolvent_le_one`), and `A (J_c (u_c(t) u₀)) = A_c (u_c(t) u₀) = exp(−tA_c) A_c u₀ → S(t)(A u₀)`
+(Proposition 7.2 (a₁), `yosida_expYosida_comm`), so `(S(t) u₀, S(t) (A u₀)) ∈ graph A`. ★★★
+(about 250 lines including the filter bookkeeping).
+
+Alternative for (iii), suggested at review and possibly cheaper than the uniform-limit lemma:
+the integral form. For each `c`, `u_c(t) u₀ = u₀ − ∫₀ᵗ exp(−sA_c) A_c u₀ ds`
+(`intervalIntegral.integral_eq_sub_of_hasDerivAt` with `hasDerivAt_expYosida_apply`); the
+integrands converge uniformly on `[0, t]` to `S(s) (A u₀)` (`tendstoUniformlyOn_deriv_expYosida`),
+so the integrals converge (`intervalIntegral.tendsto_integral_of_tendstoUniformlyOn`-type, or
+dominated convergence with the bound `‖A u₀‖`), giving `S(t) u₀ = u₀ − ∫₀ᵗ S(s) (A u₀) ds`; the
+integrand is continuous (`continuousOn_semigroup_apply`), so
+`intervalIntegral.integral_hasDerivWithinAt_right` differentiates it on `Ici 0`, one-sided at
+`0` included, with no separate treatment of the endpoint. Either route; the second needs no new
+calculus lemma.'''
+deps = ["hasDerivWithinAt_Icc_of_tendstoUniformlyOn", "IsMaximalMonotone.tendstoUniformlyOn_deriv_expYosida", "IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup", "IsMaximalMonotone.tendsto_resolvent_apply", "IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "IsMaximalMonotone.isClosed", "IsMaximalMonotone.norm_resolvent_le_one"]
+source = "[brezis2011functional] Theorem 7.4, proof, Step 5"
+
+[[node]]
+id = "IsMaximalMonotone.isSolutionOn_semigroup"
+kind = "theorem"
+desc = '''Theorem 7.4, existence: for `hA` and `u₀ : A.domain`,
+`A.IsSolutionOn u₀ (Ici 0) (fun t => A.semigroup t u₀)`. Packaging of
+`hasDerivWithinAt_semigroup_apply` (i)–(iii) and `semigroup_zero`. Also the identification
+`IsSolutionOn.eq_semigroup : A.IsSolutionOn u₀ (Ici 0) u → EqOn u (fun t => A.semigroup t u₀) (Ici 0)`
+(`eqOn_of_isSolutionOn`), which is how every later statement about "the solution `u` of (6)" is
+transported to the semigroup. ★'''
+deps = ["IsMaximalMonotone.hasDerivWithinAt_semigroup_apply", "IsMaximalMonotone.semigroup_zero", "IsMonotone.eqOn_of_isSolutionOn"]
+source = "[brezis2011functional] Theorem 7.4"
+
+[[node]]
+id = "IsMaximalMonotone.contDiffOn_semigroup_apply"
+kind = "theorem"
+desc = '''Theorem 7.4, the class `u ∈ C¹([0,+∞); H)`: for `hA` and `u₀ : A.domain`,
+`ContDiffOn ℝ 1 (fun t => A.semigroup t u₀) (Ici 0)`; by `contDiffOn_one_iff_derivWithin`
+(`uniqueDiffOn_Ici`), the derivative `−S(t) (A u₀)` being continuous on `Ici 0`
+(`continuousOn_semigroup_apply`). Together with `semigroup_apply_apply` this is also
+`u ∈ C([0,+∞); D(A))`: `A.ContDiffOnPowDomain 0 1 (fun t => A.semigroup t u₀) (Ici 0)`
+(`contDiffOnPowDomain_iff` with the components `S(·) u₀`, `S(·) (A u₀)`). ★'''
+deps = ["IsMaximalMonotone.hasDerivWithinAt_semigroup_apply", "IsMaximalMonotone.continuousOn_semigroup_apply"]
+source = "[brezis2011functional] Theorem 7.4"
+
+[[node]]
+id = "IsMaximalMonotone.norm_apply_semigroup_apply_le"
+kind = "theorem"
+desc = '''Theorem 7.4, the estimate `|du/dt (t)| = |A u(t)| ≤ |A u₀|`: for `hA`, `u₀ : A.domain`,
+`0 ≤ t`, `‖A.semigroup t (A u₀)‖ ≤ ‖A u₀‖` (`norm_semigroup_apply_le`), and the antitonicity of
+`t ↦ ‖A.semigroup t (A u₀)‖` on `Ici 0` (pointwise limit of the antitone
+`t ↦ ‖exp(−tA_c) A_c u₀‖`; `norm_sub_le_of_isSolutionOn` does not apply, `A u₀` being outside
+`D(A)` in general). Also `norm_semigroup_apply_sub_le : ‖A.semigroup t u₀ − u₀‖ ≤ t * ‖A u₀‖`
+(mean value inequality `norm_image_sub_le_of_norm_hasDerivWithin_le` on `Icc 0 t`). ★'''
+deps = ["IsMaximalMonotone.hasDerivWithinAt_semigroup_apply", "IsMaximalMonotone.norm_semigroup_le_one"]
+source = "[brezis2011functional] Theorem 7.4"
+
+[[node]]
+id = "IsMaximalMonotone.exists_isSolutionOn"
+kind = "theorem"
+desc = '''Theorem 7.4 (Hille–Yosida), packaged: for `hA : A.IsMaximalMonotone` and `u₀ : A.domain`,
+`∃ u : ℝ → H, A.IsSolutionOn u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧
+(∀ t, 0 ≤ t → ‖u t‖ ≤ ‖(u₀ : H)‖) ∧ (∀ t (ht : 0 ≤ t), ‖A ⟨u t, _⟩‖ ≤ ‖A u₀‖)`,
+with `u = fun t => A.semigroup t u₀`; uniqueness is `IsMonotone.eqOn_of_isSolutionOn`. The
+statement shape is the prototype's `IsMaximalMonotone.exists_isSolutionOn`. ★'''
+deps = ["IsMaximalMonotone.isSolutionOn_semigroup", "IsMaximalMonotone.contDiffOn_semigroup_apply", "IsMaximalMonotone.norm_semigroup_le_one", "IsMaximalMonotone.norm_apply_semigroup_apply_le"]
+source = "[brezis2011functional] Theorem 7.4"
+
+[[node]]
+id = "IsMaximalMonotone.semigroup_add"
+kind = "theorem"
+desc = '''Remark 5 (b), the semigroup law: for `hA`, `0 ≤ s`, `0 ≤ t`,
+`A.semigroup (s + t) = (A.semigroup s).comp (A.semigroup t)`. For `u₀ ∈ D(A)`,
+`τ ↦ S(τ + t) u₀` solves the problem with datum `S(t) u₀ ∈ D(A)` (`IsSolutionOn.comp_add`,
+`semigroup_apply_mem_domain`), as does `τ ↦ S(τ) (S(t) u₀)`, so they agree
+(`eqOn_of_isSolutionOn`); both sides are bounded operators agreeing on the dense `D(A)`
+(`Continuous.ext_on`, `dense_domain`). ★★'''
+deps = ["IsMaximalMonotone.isSolutionOn_semigroup", "IsSolutionOn.comp_add", "IsMonotone.eqOn_of_isSolutionOn", "IsMaximalMonotone.dense_domain"]
+source = "[brezis2011functional] Chapter 7, Remark 5 (b)"
+
+[[node]]
+id = "ContDiffOnPowDomain"
+kind = "definition"
+desc = '''`A.ContDiffOnPowDomain (n : WithTop ℕ∞) (j : ℕ) (u : ℝ → H) (s : Set ℝ) : Prop :=
+∃ v : ℝ → A.PowDomain j, (∀ t ∈ s, PowDomain.applyL A j 0 (v t) = u t) ∧ ContDiffOn ℝ n v s` —
+the book's `u ∈ C^n(s; D(A^j))` ([brezis2011functional] Theorem 7.5, Theorem 7.7): `u` lifts on
+`s` to a `C^n` map into the Hilbert space `D(A^j)`. The lift is unique on `s` (its components
+are `A^i u`). Consumers compose the lift with a bounded operator out of `A.PowDomain j`
+(chapter 10: `D(A^ℓ) → H^{2ℓ}(Ω)`), `ContinuousLinearMap.contDiff.comp_contDiffOn`. Shape in
+the prototype. ★'''
+deps = ["PowDomain.applyL"]
+source = "[brezis2011functional] Theorem 7.5"
+
+[[node]]
+id = "contDiffOnPowDomain_iff"
+kind = "theorem"
+desc = '''The componentwise reading, for a closed `A` (`hA : A.IsClosed`):
+`A.ContDiffOnPowDomain n j u s ↔ ∃ w : Fin (j + 1) → ℝ → H, (∀ t ∈ s, w 0 t = u t) ∧
+(∀ i, ContDiffOn ℝ n (w i) s) ∧ ∀ t ∈ s, ∀ i : Fin j, ∃ h : w i.castSucc t ∈ A.domain, A ⟨w i.castSucc t, h⟩ = w i.succ t`
+("`t ↦ A^i u(t)` is `C^n` on `s` for every `i ≤ j`"). `→`: `w i = applyL A j i ∘ v`
+(`ContinuousLinearMap.contDiff.comp_contDiffOn`). `←`: put `v t := ⟨toLp 2 (fun i => w i t), _⟩`
+for `t ∈ s` (and `0` off `s`; `ContDiffOn` only sees `s`); `(↑) ∘ v = toLp ∘ (fun t i => w i t)`
+is `C^n` on `s` by `contDiffOn_piLp` and `PiLp.contDiff_toLp`; to conclude that `v` itself is
+`C^n` into the subtype — Mathlib has no `ContDiffOn.codRestrict` — write
+`v = P ∘ ((↑) ∘ v)` with `P` the orthogonal projection onto the closed submodule `A.powGraph j`
+(`Submodule.starProjection`/`orthogonalProjection`, available because
+`hA.completeSpace_powDomain j` gives `HasOrthogonalProjection`), a bounded linear map with
+`P ∘ (↑) = id`. Also the trivial cases `contDiffOnPowDomain_zero_iff : A.ContDiffOnPowDomain n 0 u s ↔ ContDiffOn ℝ n u s`
+(`PowDomain.zeroEquiv`), `ContDiffOnPowDomain.mono` (in `s`), `.of_le` (in `n`), and
+`.castSucc : A.ContDiffOnPowDomain n (j + 1) u s → A.ContDiffOnPowDomain n j u s` (`castL`). ★★'''
+deps = ["ContDiffOnPowDomain", "IsClosed.completeSpace_powDomain", "PowDomain.castL"]
+source = "[brezis2011functional] Theorem 7.5"
+
+[[node]]
+id = "IsMaximalMonotone.applyL_semigroup_powPart"
+kind = "theorem"
+desc = '''The semigroup of the part is the restriction of the semigroup: for `hA`, `j : ℕ`,
+`0 ≤ t`, `x : A.PowDomain j` and `i : Fin (j + 1)`,
+`PowDomain.applyL A j i ((A.powPart j).semigroup t x) = A.semigroup t (PowDomain.applyL A j i x)`,
+where `(A.powPart j).semigroup` is `semigroup` on the Hilbert space `A.PowDomain j`
+(`haveI := hA.isClosed.completeSpace_powDomain j`, `IsMaximalMonotone.powPart`). Proof: for
+`x ∈ D(A.powPart j)`, both sides as functions of `t` are solutions in `H` with datum
+`applyL i x ∈ D(A)` — the left because `applyL A j i` is a bounded operator commuting with
+`HasDerivWithinAt` and `applyL i (powPart j y) = A (applyL i y)` (`applyL_powPart_apply`,
+`applyL_shiftL`), the right by `isSolutionOn_semigroup` — so `eqOn_of_isSolutionOn`; then
+`D(A.powPart j)` is dense in `A.PowDomain j` (`dense_range_castL`) and both sides are
+continuous in `x` (`Continuous.ext_on`). ★★'''
+deps = ["IsMaximalMonotone.isSolutionOn_semigroup", "IsMaximalMonotone.powPart", "IsMonotone.eqOn_of_isSolutionOn", "IsMaximalMonotone.dense_range_castL", "IsClosed.completeSpace_powDomain", "IsMaximalMonotone.isClosed"]
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "IsMaximalMonotone.contDiffOn_semigroup_powPart"
+kind = "theorem"
+desc = '''The regularity ladder behind Theorem 7.5: for `hA`, all `n j : ℕ` and
+`x : A.PowDomain (j + n)`,
+`ContDiffOn ℝ n (fun t => (A.powPart j).semigroup t (PowDomain.castLE A (by omega) x)) (Ici 0)`
+— the solution in `D(A^j)` with datum in `D(A^{j+n})` is `C^n([0,∞); D(A^j))`. Induction on `n`,
+for all `j` at once (the space changes: the statement is about `semigroup` on `A.PowDomain j`).
+`n = 0`: `continuousOn_semigroup_apply` in `A.PowDomain j`. `n + 1`: the datum
+`y = castLE x ∈ A.PowDomain j` lies in `D(A.powPart j)` (its last component is
+`applyL (j+1) … x ∈ D(A)`), so `t ↦ S_j(t) y` has, within `Ici 0`, the derivative
+`−S_j(t) (powPart j y)` (`hasDerivWithinAt_semigroup_apply` in `A.PowDomain j`), and
+`S_j(t) (powPart j y) = shiftL (S_{j+1}(t) (castLE x))` componentwise by
+`applyL_semigroup_powPart` at levels `j` and `j + 1` (`PowDomain.ext` on the `applyL`
+components; `powPart j y = shiftL (castLE x)` at level `j + 1`); the right-hand side is `C^n`
+by the induction hypothesis at `j + 1` composed with the bounded `shiftL`; conclude with `contDiffOn_succ_iff_derivWithin` (`uniqueDiffOn_Ici`, and the
+`n = ω` clause is vacuous for `n : ℕ`). This is the book's "it remains only to check that
+`u ∈ C^2([0,+∞); H)` … `d/dt (A u) = A (du/dt)`" ([brezis2011functional] lines 7243–7255), done
+once for all levels. ★★★ (about 250 lines.)'''
+deps = ["IsMaximalMonotone.applyL_semigroup_powPart", "IsMaximalMonotone.hasDerivWithinAt_semigroup_apply", "IsMaximalMonotone.continuousOn_semigroup_apply", "PowDomain.castLE", "IsMaximalMonotone.powPart", "IsClosed.completeSpace_powDomain"]
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "IsMaximalMonotone.contDiffOnPowDomain_semigroup"
+kind = "theorem"
+desc = '''Theorem 7.5 ([brezis2011functional] Theorem 7.5): for `hA`, `k : ℕ`, `x : A.PowDomain k`
+(the datum `u₀ ∈ D(A^k)`, `u₀ = applyL A k 0 x`) and every `j ≤ k`,
+`A.ContDiffOnPowDomain (k − j : ℕ) j (fun t => A.semigroup t (PowDomain.applyL A k 0 x)) (Ici 0)`,
+i.e. `u ∈ C^{k−j}([0,+∞); D(A^j))`. The lift is `t ↦ (A.powPart j).semigroup t (castLE x)`, `C^{k−j}`
+by `contDiffOn_semigroup_powPart` with `n = k − j` (rewrite `k = j + (k − j)`), and its
+`0`-component is `S(t) u₀` by `applyL_semigroup_powPart`. The book states it for `k ≥ 2`; the
+cases `k = 0, 1` are Theorem 7.4 and are included. The surface transports it to "the solution `u`
+of (6)" by `IsSolutionOn.eq_semigroup`. ★★'''
+deps = ["IsMaximalMonotone.contDiffOn_semigroup_powPart", "IsMaximalMonotone.applyL_semigroup_powPart", "ContDiffOnPowDomain"]
+source = "[brezis2011functional] Theorem 7.5"
+
+[[node]]
+id = "_root_.norm_exp_neg_smul_apply_le_div"
+kind = "theorem"
+desc = '''The self-adjoint smoothing estimate for a bounded operator — (33) of the proof of Theorem
+7.7 as a Lyapunov function: for `B : H →L[ℝ] H` with `IsSelfAdjoint B` and `∀ v, 0 ≤ ⟪B v, v⟫`,
+every `w : H` and `0 < T`, `‖B (NormedSpace.exp ((−T) • B) w)‖ ≤ ‖w‖ / T`. Proof: with
+`u(t) = exp(−tB) w`, `E = ½‖u‖²`, `F = ⟪B u, u⟫`, `G = ‖B u‖²`, one has `E' = −F`, `F' = −2 G`
+(self-adjointness: `⟪B u', u⟫ = ⟪u', B u⟫`, the book's (31)), `G' = −2 ⟪B (B u), B u⟫ ≤ 0`
+(monotonicity, the book's (32) in differential form), so `Φ = E + t F + t² G` has
+`Φ' = t² G' ≤ 0` (`HasDerivAt.norm_sq`, `HasDerivAt.inner`, `HasDerivAt.mul`) and is antitone
+on `Ici 0` (`antitoneOn_of_hasDerivWithinAt_nonpos`); `T² G(T) ≤ Φ(T) ≤ Φ(0) = ½‖w‖²` since
+`E, F ≥ 0`. This is exactly the book's chain (29)–(33) ([brezis2011functional] lines 7357–7401)
+with the integrations by parts replaced by one derivative, and gives the sharper
+`‖B u(T)‖ ≤ ‖w‖ / (√2 T)`; state the book's `‖w‖ / T`. ★★'''
+deps = ["hasDerivAt_exp_neg_smul_apply"]
+source = "[brezis2011functional] Theorem 7.7, proof, Step 1, (33)"
+
+[[node]]
+id = "norm_yosida_expYosida_apply_le_div"
+kind = "theorem"
+desc = '''Step 1 of the proof of Theorem 7.7 for the approximations: for `hA : A.IsMaximalMonotone`,
+`hs : A.IsFormalAdjoint A`, `0 < c`, `0 < T` and every `u₀ : H`,
+`‖A.yosida c (A.expYosida c T u₀)‖ ≤ ‖u₀‖ / T` — the book's (33)/(34)
+`|u_λ'(T)| ≤ |u₀|/T`. `norm_exp_neg_smul_apply_le_div` with `B = A.yosida c`, self-adjoint by
+`IsMaximalMonotone.isSelfAdjoint_resolvent` (`isSelfAdjoint_yosida`) and monotone by
+Proposition 7.2 (e). ★'''
+deps = ["norm_exp_neg_smul_apply_le_div", "expYosida", "IsMaximalMonotone.isSelfAdjoint_resolvent", "IsMaximalMonotone.re_inner_yosida_nonneg"]
+source = "[brezis2011functional] Theorem 7.7, proof, Step 1"
+
+[[node]]
+id = "norm_semigroup_apply_apply_le_div"
+kind = "theorem"
+desc = '''(27) of Theorem 7.7 on the domain: for `hA`, `hs : A.IsFormalAdjoint A`, `u₀ : A.domain`
+and `0 < T`, `‖A.semigroup T (A u₀)‖ ≤ ‖(u₀ : H)‖ / T`, i.e. `‖A (S(T) u₀)‖ = ‖u'(T)‖ ≤ ‖u₀‖/T`
+(`semigroup_apply_apply`). Limit of `norm_yosida_expYosida_apply_le_div` along `c → 0⁺`:
+`A_c (u_c(T) u₀) = exp(−TA_c) A_c u₀ → S(T) (A u₀)` by `tendstoUniformlyOn_deriv_expYosida`
+(pointwise suffices), `le_of_tendsto`. ★'''
+deps = ["norm_yosida_expYosida_apply_le_div", "IsMaximalMonotone.tendstoUniformlyOn_deriv_expYosida", "IsMaximalMonotone.hasDerivWithinAt_semigroup_apply"]
+source = "[brezis2011functional] Theorem 7.7, proof, Step 1, (27)"
+
+[[node]]
+id = "semigroup_apply_mem_domain_of_isFormalAdjoint"
+kind = "theorem"
+desc = '''Step 2 of the proof of Theorem 7.7, the smoothing: for `hA`, `hs : A.IsFormalAdjoint A`,
+**every** `u₀ : H` and `0 < t`, `A.semigroup t u₀ ∈ A.domain` and
+`‖A ⟨A.semigroup t u₀, _⟩‖ ≤ ‖u₀‖ / t`. Proof ([brezis2011functional] lines 7403–7420, with
+`D(A)` in place of `D(A²)`): take `v_n ∈ D(A)`, `v_n → u₀` (`dense_domain`); then
+`S(t) v_n → S(t) u₀` and `A (S(t) v_n) = S(t) (A v_n)` is Cauchy since
+`‖S(t) (A v_n) − S(t) (A v_m)‖ = ‖A (S(t) (v_n − v_m))‖ ≤ ‖v_n − v_m‖ / t`
+(`norm_semigroup_apply_apply_le_div`), so it converges to some `f`; the closed graph
+(`IsMaximalMonotone.isClosed`) gives `S(t) u₀ ∈ D(A)` with `A (S(t) u₀) = f`, and the bound
+passes to the limit. ★★'''
+deps = ["norm_semigroup_apply_apply_le_div", "IsMaximalMonotone.dense_domain", "IsMaximalMonotone.isClosed", "IsMaximalMonotone.norm_semigroup_le_one", "IsMaximalMonotone.hasDerivWithinAt_semigroup_apply"]
+source = "[brezis2011functional] Theorem 7.7, proof, Step 2"
+
+[[node]]
+id = "hasDerivAt_semigroup_apply_of_isFormalAdjoint"
+kind = "theorem"
+desc = '''Theorem 7.7, the equation for `t > 0` and every datum: for `hA`, `hs : A.IsFormalAdjoint A`,
+`u₀ : H` and `0 < t`, `HasDerivAt (fun t => A.semigroup t u₀) (−(A ⟨A.semigroup t u₀, _⟩)) t`
+(membership by `semigroup_apply_mem_domain_of_isFormalAdjoint`). Proof: for `0 < δ < t`,
+`S(τ) u₀ = S(τ − δ) (S(δ) u₀)` for `τ ≥ δ` (`semigroup_add`), and `S(δ) u₀ ∈ D(A)`, so
+`τ ↦ S(τ) u₀` has on `Ici δ` the derivative `−S(τ − δ) (A (S(δ) u₀)) = −A (S(τ) u₀)`
+(`hasDerivWithinAt_semigroup_apply`, `semigroup_apply_apply`, `semigroup_add` again); at
+`τ = t > δ`, `Ici δ ∈ 𝓝 t` turns it into `HasDerivAt`. No approximation argument is needed. ★★'''
+deps = ["semigroup_apply_mem_domain_of_isFormalAdjoint", "IsMaximalMonotone.semigroup_add", "IsMaximalMonotone.hasDerivWithinAt_semigroup_apply"]
+source = "[brezis2011functional] Theorem 7.7, proof, Step 2"
+
+[[node]]
+id = "isSolutionOn_semigroup_Ioi"
+kind = "theorem"
+desc = '''Theorem 7.7, existence and the classes `C([0,+∞); H) ∩ C¹((0,+∞); H) ∩ C((0,+∞); D(A))`:
+for `hA`, `hs : A.IsFormalAdjoint A` and every `u₀ : H`, with `u = fun t => A.semigroup t u₀`:
+`A.IsSolutionOn u₀ (Ioi 0) u`, `ContinuousOn u (Ici 0)`, `ContDiffOn ℝ 1 u (Ioi 0)`,
+`∀ t ≥ 0, ‖u t‖ ≤ ‖u₀‖`, and `∀ t > 0, ‖A (u t)‖ ≤ ‖u₀‖ / t`; also
+`A.ContDiffOnPowDomain 0 1 u (Ioi 0)`. From `hasDerivAt_semigroup_apply_of_isFormalAdjoint`,
+`continuousOn_semigroup_apply`, `semigroup_zero`, `norm_semigroup_le_one`,
+`semigroup_apply_mem_domain_of_isFormalAdjoint`; the derivative `t ↦ −A (S(t) u₀) =
+−S(t − δ) (A (S(δ) u₀))` is continuous on `Ioi δ` for each `δ`, hence on `Ioi 0`
+(`contDiffOn_succ_iff_deriv_of_isOpen`). ★'''
+deps = ["hasDerivAt_semigroup_apply_of_isFormalAdjoint", "semigroup_apply_mem_domain_of_isFormalAdjoint", "IsMaximalMonotone.continuousOn_semigroup_apply", "IsMaximalMonotone.norm_semigroup_le_one", "IsMaximalMonotone.semigroup_zero"]
+source = "[brezis2011functional] Theorem 7.7"
+
+[[node]]
+id = "exists_powDomain_semigroup_apply_of_isFormalAdjoint"
+kind = "theorem"
+desc = '''The smoothing at every order: for `hA`, `hs : A.IsFormalAdjoint A`, `u₀ : H`, `l : ℕ` and
+`0 < ε`, `∃ x : A.PowDomain l, PowDomain.applyL A l 0 x = A.semigroup ε u₀` — `S(ε) u₀ ∈ D(A^l)`.
+Induction on `l` ([brezis2011functional] proof of (26), lines 7422–7446, with `H̃ = D(A^{l−1})`
+and `Ã = A.powPart (l−1)`): `S(ε) u₀ = S(ε/2) (S(ε/2) u₀)` (`semigroup_add`); by the induction
+hypothesis `S(ε/2) u₀ = applyL 0 y` for some `y : A.PowDomain (l−1)`; the part
+`A.powPart (l−1)` is maximal monotone and symmetric on the Hilbert space `A.PowDomain (l−1)`
+(`IsMaximalMonotone.powPart`, `IsFormalAdjoint.powPart`, `IsClosed.completeSpace_powDomain`),
+so `semigroup_apply_mem_domain_of_isFormalAdjoint` in that space puts
+`(A.powPart (l−1)).semigroup (ε/2) y` into `D(A.powPart (l−1))`, whose elements are the
+`castL` images of `A.PowDomain l` (`PowDomain.snoc`), and its `0`-component is
+`S(ε/2) (applyL 0 y)` by `applyL_semigroup_powPart`. ★★'''
+deps = ["semigroup_apply_mem_domain_of_isFormalAdjoint", "IsMaximalMonotone.semigroup_add", "IsMaximalMonotone.applyL_semigroup_powPart", "IsMaximalMonotone.powPart", "IsFormalAdjoint.powPart", "PowDomain.snoc", "IsClosed.completeSpace_powDomain"]
+source = "[brezis2011functional] Theorem 7.7, proof of (26)"
+
+[[node]]
+id = "contDiffOnPowDomain_semigroup_Ioi"
+kind = "theorem"
+desc = '''Theorem 7.7, (26): for `hA`, `hs : A.IsFormalAdjoint A`, every `u₀ : H` and all `k l : ℕ`,
+`A.ContDiffOnPowDomain k l (fun t => A.semigroup t u₀) (Ioi 0)` — `u ∈ C^k((0,+∞); D(A^l))`.
+Proof: work componentwise (`contDiffOnPowDomain_iff`, the components being
+`t ↦ A^i (S(t) u₀)`, which are the same functions whatever `ε` below): for `0 < ε`, pick
+`x : A.PowDomain (l + k)` with `applyL 0 x = S(ε) u₀`
+(`exists_powDomain_semigroup_apply_of_isFormalAdjoint`); Theorem 7.5
+(`contDiffOnPowDomain_semigroup` with `j = l`) gives `C^k([0,∞); D(A^l))` for
+`t ↦ S(t) (S(ε) u₀) = S(t + ε) u₀`, i.e. `C^k` on `Ici ε` for `t ↦ S(t) u₀`
+(`ContDiffOn.comp` with the translation); since `Ici ε ∈ 𝓝[Ioi 0] t` whenever `ε < t`, the
+components are `C^k` on `Ioi 0` (`contDiffOn_of_locally_contDiffOn`, or
+`ContDiffWithinAt.mono_of_mem_nhdsWithin` pointwise). ★★★ (with the bookkeeping of lifts,
+about 200 lines.)'''
+deps = ["exists_powDomain_semigroup_apply_of_isFormalAdjoint", "IsMaximalMonotone.contDiffOnPowDomain_semigroup", "contDiffOnPowDomain_iff", "IsMaximalMonotone.semigroup_add", "IsMaximalMonotone.isClosed"]
+source = "[brezis2011functional] Theorem 7.7, (26)"
+
+[[node]]
+id = "exists_isSolutionOn_Ioi_of_isSelfAdjoint"
+kind = "theorem"
+desc = '''Theorem 7.7 ([brezis2011functional] Theorem 7.7), packaged with the book's hypothesis:
+for `hA : A.IsMaximalMonotone`, `hsa : IsSelfAdjoint A` and every `u₀ : H`,
+`∃ u : ℝ → H, A.IsSolutionOn u₀ (Ioi 0) u ∧ ContinuousOn u (Ici 0) ∧ ContDiffOn ℝ 1 u (Ioi 0) ∧
+(∀ t, 0 ≤ t → ‖u t‖ ≤ ‖u₀‖) ∧ (∀ t (ht : 0 < t), ‖A ⟨u t, _⟩‖ ≤ ‖u₀‖ / t) ∧
+∀ k l : ℕ, A.ContDiffOnPowDomain k l u (Ioi 0)`, with `u = fun t => A.semigroup t u₀`;
+`IsSelfAdjoint.isFormalAdjoint_self` supplies `hs`, and uniqueness among solutions on `Ioi 0`
+continuous on `Ici 0` is `IsMonotone.eqOn_of_isSolutionOn_Ioi`. The prototype's
+`IsMaximalMonotone.exists_isSolutionOn_Ioi` is this statement. ★'''
+deps = ["isSolutionOn_semigroup_Ioi", "contDiffOnPowDomain_semigroup_Ioi", "IsSelfAdjoint.isFormalAdjoint_self", "IsMonotone.eqOn_of_isSolutionOn_Ioi"]
+source = "[brezis2011functional] Theorem 7.7"

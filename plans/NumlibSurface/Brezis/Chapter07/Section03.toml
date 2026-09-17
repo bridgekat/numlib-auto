@@ -1,0 +1,56 @@
+namespace = "Brezis.Chapter07"
+desc = '''
+Brezis §7.3, regularity: the spaces `D(A^k)` defined by induction with the scalar product
+`(u, v)_{D(A^k)} = ∑_{j ≤ k} (A^j u, A^j v)`, and Theorem 7.5, `u ∈ C^{k−j}([0,+∞); D(A^j))` for
+`u₀ ∈ D(A^k)`. The book's recursive set `D(A^k) = {v ∈ D(A^{k−1}) ; A v ∈ D(A^{k−1})}` is
+defined here as a `Submodule ℝ H` (`domainPow`); the Hilbert space is the backbone's
+`A.PowDomain k` (`Numlib/Analysis/InnerProductSpace/MaximalMonotone`), the tuples
+`(u, A u, …, A^k u)` in `PiLp 2 (Fin (k+1) → H)`, which carries the book's inner product on the
+nose; `mem_domainPow_iff` identifies the two. "`u ∈ C^n([0,+∞); D(A^j))`" is the backbone's
+`LinearPMap.ContDiffOnPowDomain A n j u (Ici 0)`, and Theorem 7.5 delegates to
+`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup` of `Numlib/Analysis/ODE/HilleYosida`
+through the identification of the solution with the semigroup.
+'''
+
+[[node]]
+id = "domainPow"
+kind = "definition"
+desc = '''Definition (§7.3): `domainPow A : ℕ → Submodule ℝ H` with `domainPow A 0 = ⊤`,
+`domainPow A 1 = A.domain` and, for `k ≥ 2`,
+`domainPow A k = {v ∈ domainPow A (k−1) | ∃ h : v ∈ A.domain, A ⟨v, h⟩ ∈ domainPow A (k−1)}`
+(the book's induction; as a submodule via `Submodule.comap`/`map` along `A.toFun` and
+`A.domain.subtype`). Lemma `mem_domainPow_iff : v ∈ domainPow A k ↔ ∃ x : A.PowDomain k,
+LinearPMap.PowDomain.applyL A k 0 x = v` — `D(A^k)` is the set of first components of the
+backbone's `powGraph` (induction on `k`, `PowDomain.snoc`/`castL`). ★'''
+deps = ["LinearPMap.PowDomain", "LinearPMap.PowDomain.applyL", "LinearPMap.PowDomain.snoc", "LinearPMap.PowDomain.castL"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.3, Definition"
+
+[[node]]
+id = "domainPow_hilbert"
+kind = "theorem"
+desc = '''The claim after the definition in §7.3: `D(A^k)` is a Hilbert space for the scalar
+product `(u, v)_{D(A^k)} = ∑_{j=0}^k (A^j u, A^j v)`, with norm `|u|_{D(A^k)} = (∑ |A^j u|²)^{1/2}`.
+Stated for the backbone's type: for a maximal monotone (indeed any closed) `A`,
+`CompleteSpace (A.PowDomain k)` (`LinearPMap.IsClosed.completeSpace_powDomain` with
+`proposition_7_1_b`), and the inner product / norm of `A.PowDomain k` are the displayed sums
+(`PowDomain.inner_def`, `PowDomain.norm_sq_eq`, i.e. `PiLp.inner_apply`, `PiLp.norm_sq_eq_of_L2`
+restricted to the submodule). ★'''
+deps = ["domainPow", "proposition_7_1_b", "LinearPMap.IsClosed.completeSpace_powDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.3, Definition"
+
+[[node]]
+id = "theorem_7_5"
+kind = "theorem"
+desc = '''Theorem 7.5: for `hA : IsMaximalMonotone A`, `k ≥ 2` (the statement is proved for every
+`k`) and `u₀ ∈ D(A^k)` — `u₀ ∈ domainPow A k`, i.e. `u₀ = applyL A k 0 x` for some
+`x : A.PowDomain k` — the solution `u` of problem (6) obtained in Theorem 7.4 satisfies
+`u ∈ C^{k−j}([0,+∞); D(A^j))` for every `j = 0, 1, …, k`:
+`∀ u, IsSolution A u₀ u → ∀ j ≤ k, A.ContDiffOnPowDomain (k − j) j u (Ici 0)`. Backbone
+`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup` for `t ↦ A.semigroup t u₀`,
+transported to `u` by `LinearPMap.IsSolutionOn.eq_semigroup` (uniqueness) and
+`ContDiffOnPowDomain`'s congruence on `Ici 0`. The book's proof — Theorem 7.4 applied to
+`A₁ = A|_{D(A²)}` in the Hilbert space `H₁ = D(A)`, then induction with `v = du/dt` — is the
+backbone's `IsMaximalMonotone.powPart`, `applyL_semigroup_powPart` and the ladder
+`contDiffOn_semigroup_powPart`. ★'''
+deps = ["theorem_7_4", "domainPow", "LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup", "LinearPMap.IsMaximalMonotone.isSolutionOn_semigroup", "LinearPMap.IsMaximalMonotone.powPart"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.5"

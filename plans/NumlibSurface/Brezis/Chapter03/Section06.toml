@@ -1,0 +1,153 @@
+namespace = "Brezis.Chapter03"
+desc = '''
+Brezis §3.6, separable spaces and the metrizability of the weak topologies on bounded sets, over
+a real Banach space `E`. The book's Definition of separability is Mathlib's
+`TopologicalSpace.SeparableSpace` (restated as `IsSeparable` with `separable_iff`); Proposition
+3.25 is Mathlib; Theorem 3.26 and the reflexive half of Corollary 3.27 are the backbone's
+`Numlib/Analysis/Normed/Module/{DualSeparable,Reflexive}`; Theorems 3.28–3.29 and Remark 20 are
+the backbone's `Numlib/Analysis/Normed/Module/WeakStarMetrizable`, together with the two
+exercises the text cites for them, 3.24 (the converse of 3.29) and 3.8 (Remarks 3 and 20);
+Corollary 3.30 is Mathlib's `WeakDual.isSeqCompact_closedBall`. Remark 4 of §3.2 and its
+Exercise 3.22 are here too, their proof being Theorem 3.29 with Corollary 3.27 and Example 1
+of §3.2. Remark 19 (`L¹` separable, `L^∞` not) is chapter 4's. "Metrizable" is
+`TopologicalSpace.MetrizableSpace` of the subtype.
+'''
+
+[[node]]
+id = "IsSeparable"
+kind = "definition"
+desc = '''The book's Definition: a metric space `E` is separable if it has a countable dense
+subset, `Separable (E) [TopologicalSpace E] : Prop := ∃ D : Set E, D.Countable ∧ Dense D`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.6, Definition"
+
+[[node]]
+id = "separable_iff"
+kind = "theorem"
+desc = '''`Separable E ↔ TopologicalSpace.SeparableSpace E` — Mathlib's `TopologicalSpace.separableSpace_iff`.
+Every later node uses the Mathlib class. ★'''
+deps = ["IsSeparable"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.6, Definition"
+
+[[node]]
+id = "proposition_3_25"
+kind = "theorem"
+desc = '''Proposition 3.25: a subset of a separable metric space is separable — for a metric space
+`E` with `[SeparableSpace E]` and `F : Set E`, `SeparableSpace F`. Mathlib: `TopologicalSpace.IsSeparable.mono`
+(`isSeparable_univ_iff`) with `TopologicalSpace.IsSeparable.separableSpace` (metric spaces), or
+`UniformSpace.secondCountable_of_separable`, `Subtype.secondCountableTopology` and
+`SecondCountableTopology.to_separableSpace`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.25"
+
+[[node]]
+id = "theorem_3_26"
+kind = "theorem"
+desc = '''Theorem 3.26: if `E⋆` is separable then `E` is separable,
+`[SeparableSpace (StrongDual ℝ E)] → SeparableSpace E`. The backbone's
+`separableSpace_of_separableSpace_strongDual` (`Numlib/Analysis/Normed/Module/DualSeparable`),
+proved by the book's argument (norming vectors `xₙ`, the closed span is everything). ★'''
+deps = ["separableSpace_of_separableSpace_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.26"
+
+[[node]]
+id = "corollary_3_27"
+kind = "theorem"
+desc = '''Corollary 3.27: `E` is reflexive and separable iff `E⋆` is reflexive and separable,
+`(IsReflexive E ∧ SeparableSpace E) ↔ (IsReflexive (StrongDual ℝ E) ∧ SeparableSpace (StrongDual ℝ E))`.
+`←`: `corollary_3_21` and `theorem_3_26`; `→`: `corollary_3_21` and the backbone's
+`NormedSpace.separableSpace_strongDual_of_isReflexive` (`E⋆⋆ = J(E)` is separable, then Theorem
+3.26 for `E⋆`, which is the backbone's proof). ★'''
+deps = ["isReflexive_iff", "corollary_3_21", "theorem_3_26", "NormedSpace.separableSpace_strongDual_of_isReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.27"
+
+[[node]]
+id = "theorem_3_28_mp"
+kind = "theorem"
+desc = '''Theorem 3.28, forward: if `E` is separable then `B_{E⋆}` is metrizable in `σ(E⋆, E)`,
+`[SeparableSpace E] → TopologicalSpace.MetrizableSpace (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual ℝ E) 1)`.
+The backbone's `WeakDual.metrizableSpace_closedBall` (`WeakStarMetrizable`), i.e. Mathlib's
+`WeakDual.metrizable_of_isCompact` on the Banach–Alaoglu ball. ★'''
+deps = ["WeakDual.metrizableSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.28"
+
+[[node]]
+id = "theorem_3_28_mpr"
+kind = "theorem"
+desc = '''Theorem 3.28, converse (★): if `B_{E⋆}` is metrizable in `σ(E⋆, E)` then `E` is
+separable, `TopologicalSpace.MetrizableSpace (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual ℝ E) 1) → SeparableSpace E`.
+The backbone's `separableSpace_of_metrizableSpace_weakDual_closedBall`, the book's proof
+(countable neighbourhood basis, `D = ⋃ Φₙ`, Corollary 1.8). ★'''
+deps = ["separableSpace_of_metrizableSpace_weakDual_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.28"
+
+[[node]]
+id = "theorem_3_28"
+kind = "theorem"
+desc = '''Theorem 3.28 as an equivalence: `SeparableSpace E ↔ TopologicalSpace.MetrizableSpace (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual ℝ E) 1)`.
+The two halves. ★'''
+deps = ["theorem_3_28_mp", "theorem_3_28_mpr"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.28"
+
+[[node]]
+id = "theorem_3_29_mp"
+kind = "theorem"
+desc = '''Theorem 3.29, forward: if `E⋆` is separable then `B_E` is metrizable in `σ(E, E⋆)`,
+`[SeparableSpace (StrongDual ℝ E)] → TopologicalSpace.MetrizableSpace (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1)`.
+The backbone's `WeakSpace.metrizableSpace_image_closedBall` (`WeakStarMetrizable`, through the
+embedding of the weak space into the weak-* bidual). This is the "however" of Remark 3. ★'''
+deps = ["WeakSpace.metrizableSpace_image_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.29"
+
+[[node]]
+id = "theorem_3_29_mpr"
+kind = "theorem"
+desc = '''Theorem 3.29, converse: if `B_E` is metrizable in `σ(E, E⋆)` then `E⋆` is separable,
+`TopologicalSpace.MetrizableSpace (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1) → SeparableSpace (StrongDual ℝ E)`.
+The book refers to Dunford–Schwartz or Exercise 3.24; the backbone's
+`separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall` follows the exercise, and
+`exercise_3_24` below is the same statement. ★'''
+deps = ["separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.29"
+
+[[node]]
+id = "theorem_3_29"
+kind = "theorem"
+desc = '''Theorem 3.29 as an equivalence: `SeparableSpace (StrongDual ℝ E) ↔ TopologicalSpace.MetrizableSpace (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1)`.
+The two halves. ★'''
+deps = ["theorem_3_29_mp", "theorem_3_29_mpr"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.29"
+
+[[node]]
+id = "remark_3_20"
+kind = "theorem"
+desc = '''Remark 20: in an infinite-dimensional Banach space neither `σ(E, E⋆)` on all of `E` nor
+`σ(E⋆, E)` on all of `E⋆` is metrizable:
+`¬ FiniteDimensional ℝ E → ¬ TopologicalSpace.MetrizableSpace (WeakSpace ℝ E) ∧ ¬ TopologicalSpace.MetrizableSpace (WeakDual ℝ E)`.
+The backbone's `not_metrizableSpace_weakSpace` (Remark 3, `remark_3_3`) and
+`not_metrizableSpace_weakDual` (`WeakStarMetrizable`); both are Exercise 3.8. In particular the
+norm `[·]` of Theorem 3.28's proof does not induce the weak-* topology on `E⋆`. ★'''
+deps = ["remark_3_3", "not_metrizableSpace_weakDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 20"
+
+[[node]]
+id = "corollary_3_30"
+kind = "theorem"
+desc = '''Corollary 3.30 (sequential Banach–Alaoglu): if `E` is separable, every bounded sequence
+in `E⋆` has a weak-* convergent subsequence —
+`[SeparableSpace E] → (∀ n, ‖f n‖ ≤ C) → ∃ (g : StrongDual ℝ E) (φ : ℕ → ℕ), StrictMono φ ∧ (f ∘ φ) ⇀* g`.
+Mathlib's `WeakDual.isSeqCompact_closedBall ℝ E 0 C` (`Analysis/Normed/Module/WeakDual.lean`),
+whose proof is the book's: the ball is compact (Theorem 3.16) and metrizable (Theorem 3.28). ★'''
+deps = ["WeakStarTendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.30"
+
+[[node]]
+id = "remark_3_4"
+kind = "theorem"
+desc = '''Remark 4 (★), first claim: if `E⋆` is separable or `E` is reflexive (and `E` is
+infinite-dimensional) there is a sequence `xₙ` with `‖xₙ‖ = 1` and `xₙ ⇀ 0` — weak convergence
+does not imply strong convergence. The statement of `exercise_3_22`, which the remark cites. The
+second claim, that in `ℓ¹` every weakly convergent sequence converges strongly (Problem 8), is
+chapter 11's material and not planned. ★'''
+deps = ["WeakTendsto", "example_3_1", "theorem_3_29_mp", "proposition_3_20", "corollary_3_27", "isReflexive_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 4"

@@ -1,0 +1,120 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 10:
+evolution problems — the heat equation (§10.1 existence, uniqueness, regularity; §10.2 the
+maximum principle) and the wave equation (§10.3). Every numbered result of the main text
+(Theorems 10.1–10.3, 10.6–10.8, Corollaries 10.4–10.5) is a node in the section groups beside
+this file, together with the Remarks that assert something (1, 3, 4, 6, 7, 8, 9, 10), the
+unnumbered definitions the statements need (the operator `A`, the solution classes, the parabolic
+boundary and the hypotheses (20)–(22) of Theorem 10.6, the wave operator) and the display (7)
+for `D(A^ℓ)`. **Nothing here is blocked** by missing mathematics: every node has a route, and
+the backbone below is what the book's proofs use — the Hille–Yosida theory of chapter 7 and the
+elliptic regularity of chapter 9. The chapter has no exercises, and no Problem cites it.
+
+* **Correspondence.** The book is real and works in `Ω ⊆ ℝ^N` "of class `C^∞` with `Γ`
+  bounded"; the surface takes `Ω : Opens (EuclideanSpace ℝ (Fin N))` with chapter 9's
+  `Brezis.Chapter09.IsOfClassC ⊤ Ω` (`IsContDiffChartDomain ⊤ Ω`) and
+  `Bornology.IsBounded (frontier Ω)`, `L²(Ω) = Lp ℝ 2 (volume.restrict Ω)`,
+  `H^k(Ω) = SobolevEuclidean N k 2 Ω`, `H¹₀(Ω) = SobolevEuclideanZero N 1 2 Ω` (chapter 9b's
+  abbreviations), and reads a function `u(x, t)` as the book itself says to (line 12150): a curve
+  `u : ℝ → L²(Ω)`, `u(t)` being `x ↦ u(x,t)`. The regularity classes `C^k(I; V)` for `V` a
+  Sobolev space are the backbone's `Bochner.ContDiffOnThrough J k u I` (a `C^k` lift through the
+  embedding `J : V ↪ L²(Ω)`), `L²(I; V)` is `Bochner.MemLpThrough`, and the book's
+  `C^∞(Ω̄ × [ε,∞))` is `ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi ε)` for a genuine function `U` of
+  `(x, t)` representing the curve — footnote 16 of chapter 9's sense of `C^k(Ω̄)`. The backbone
+  proves everything in Bochner form; the surface adds the book's operator
+  `A = -Δ`, `D(A) = H² ∩ H¹₀` (`heatOperator`, the Dirichlet Laplacian `dirichletLaplacian` of the
+  backbone restricted to `H²`, equal to it under Theorem 9.25) and states the theorems in the
+  book's classes.
+
+* **The backbone (five modules, all new, under `Numlib/Analysis/PDE/`).** `Bochner`: the
+  time-dependent vocabulary and the space-time bridge from `C^∞((0,∞); H^m(Ω))` for all `m` to
+  `C^∞(Ω̄ × [ε,∞))`. `DirichletLaplacian`: `A = -Δ` on `L²(Ω)` as a `LinearPMap` with the weak
+  domain `{u ∈ H¹₀ : Δu ∈ L²}`, monotone, symmetric, `R(I + A) = L²` and hence self-adjoint
+  maximal monotone **on every open set** (Riesz on `H¹₀`; no regularity), then `D(A) = H² ∩ H¹₀`
+  and (7) `D(A^ℓ) ⊆ H^{2ℓ}` from Theorem 9.25 on regular domains, and the book's `A₁` on `H¹₀`.
+  `Heat`: Theorems 10.1–10.2 and Remarks 1, 3 (Theorem 7.7 applied; the energy identities; the
+  regularity clauses through (7)). `Heat/MaximumPrinciple`: Theorems 10.3–10.5 by Stampacchia's
+  truncation in time, on any open set. `Heat/Classical`: Theorem 10.6 (classical) and Remark 4.
+  `Wave`: the first-order system on `H¹₀ × L²`, Theorems 10.7–10.8, Remarks 6–10. The design
+  decision that shapes all of it: the Hille–Yosida half needs only chapter 7 and holds on an
+  arbitrary open `Ω`, and Theorem 9.25 enters in exactly one place (`dirichletLaplacian_mem_powDomain_iff`),
+  so that the ★★★ regularity theorem gates only the `H^{2ℓ}`- and `C^∞(Ω̄)`-clauses and nothing
+  else.
+
+* **Book statements weakened, with reasons (errata items).** (i) `u ∈ L²(0,∞; H¹₀(Ω))` in
+  Theorem 10.1 and `u ∈ L²(0,∞; H²)`, `L²(0,∞; H³)` in Theorem 10.2 are false for unbounded `Ω`
+  (`Ω = ℝ`, Gaussian datum: `‖u(t)‖²_{L²} ~ (1+2t)^{-1/2}` is not integrable in `t`); the proofs
+  show `∫₀^∞ ‖∇u‖² ≤ ½‖u₀‖²`, `∫₀^∞ ‖∂ₜu‖² ≤ ½‖∇u₀‖²`, `∫₀^∞ ‖∇Δu‖² ≤ ½‖Δu₀‖²`, which are the
+  nodes, with the Bochner memberships as separate nodes under `Bornology.IsBounded Ω` (Poincaré).
+  (ii) Theorem 10.1's `C^∞(Ω̄ × [ε,∞))` is derived from Corollary 9.15 with the hypothesis
+  "`m - N/p` not an integer", which at `p = 2` never holds for even `N`; the embedding
+  `H^{2ℓ}(Ω) ⊆ C^k(Ω̄)` holds for `k + N/2 < 2ℓ` without it, and that is what the plan asks of
+  chapter 9a (report item). (iii) Corollary 10.4 (ii)'s `‖u‖_{L^∞(Q)}` is stated as
+  `∀ t, ‖u(t)‖_{L^∞(Ω)} ≤ ‖u₀‖_{L^∞(Ω)}` (no jointly measurable representative is built).
+  (iv) The proof of Theorem 10.7 cites "Remark 7.7", which does not exist; it means chapter 7's
+  Remark 6 (the shift `v = e^{λt} u`). (v) Theorem 10.3's `∀ (x,t) ∈ Q` is read almost everywhere
+  in `x` for each `t > 0` (`theorem_10_3`), and everywhere for the continuous representative
+  (`theorem_10_3_pointwise`).
+
+* **Not planned.** Remark 2 (Neumann, "with slight modifications"), Remark 5 (intermediate
+  regularity) and Remark 11 (Klein–Gordon "may also be solved") assert nothing precise. Remark 1's
+  claim that the backward problem (9)–(11) "need not have a solution" gives no counterexample and
+  is not a theorem; its two precise halves (the reversed problem (9') is well posed; the
+  necessary condition (12)) are nodes. The Comments' numbered results: Theorem 10.9 (J.-L. Lions'
+  existence theorem for weak solutions in `L²(0,T;V) ∩ C([0,T];H)` with `u' ∈ L²(0,T;V*)`) —
+  quoted from Lions–Magenes without proof; needs the Bochner spaces `L²(0,T;V)`, `H¹(0,T;V*)` and
+  a Galerkin/compactness proof, the "Bochner half" of `notes/frontier.md` blocker 9 proper, which
+  this chapter's vocabulary does not attempt. Theorem 10.10 (`C^∞` regularity for variable
+  coefficients) — quoted without proof; Kato–Tanabe theory. Theorem 10.11 (`L²` regularity of the
+  inhomogeneous problem) — "the proof is easy" but needs the inhomogeneous Hille–Yosida theory
+  (Comments on chapter 7, Theorem 7.10, not planned there). Theorems 10.12 (`L^p`) and 10.13
+  (Hölder) — singular integrals, quoted without proof. Theorem 10.14 (Lions for the wave equation)
+  — quoted without proof. Comment 5 (`u > 0` for `u₀ ≥ 0`, `u₀ ≢ 0`; the strong maximum
+  principle) and Comment 8's positivity statements for the wave equation are unnumbered and
+  quoted; Comment 8 (i) would follow cheaply from `remark_10_8` once it exists. Comment 9 (domain
+  of dependence, Huygens) is discussion; its one-dimensional content for systems is
+  `Transport.domainOfDependence`.
+
+* **Frontier.** `notes/frontier.md` blocker 9, classical half: Theorem 10.6
+  (`Heat.IsClassicalSubsolution.exists_isMaxOn_parabolicBoundary`, with the second-derivative test
+  `IsLocalMax.deriv_deriv_nonpos` that the frontier note calls absent from Mathlib — it is a
+  fifteen-line corollary of `isLocalMin_of_deriv_deriv_pos`) supplies the missing bound
+  `max_x |u(x,t)| ≤ max_x |u₀|` of `AtkinsonHan.Chapter06.example_6_2_4`, hence unblocks
+  `example_6_2_8` and `example_6_2_13`; `example_6_3_3`/`example_6_3_4` need `u_tt`, `u_xxxx`
+  continuous on the closed cylinder, which Theorem 10.2 (c) gives only under the compatibility
+  conditions (8) on `u₀`, so they stay as stated. Bochner half: the vocabulary exists now
+  (`Bochner.ContDiffOnThrough`, `MemLpThrough`), the parabolic smoothing `‖∂ₜu(t)‖ ≤ ‖u₀‖/t` and
+  its iterates `‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖` (`Heat.IsSolution.norm_iteratedDeriv_le`) and the
+  time regularity `u ∈ C^∞((0,∞); L²)`, `C^k([0,∞); L²)` for compatible data are theorems in
+  Bochner form — the ingredients (ii) and (iii) that `QuarteroniSaccoSaleri.Chapter13.thetaMethod_convergence`
+  names — but that node, `equation_13_25`, `cG_convergence` and `dG_convergence` stay open: (13.25)
+  and the general-`f` statements need Lions' theorem (not planned), the transport nodes need a
+  time-dependent projection commuting with `∂ₜ` for the *transport* equation, and none of the
+  numerical-analysis proofs is written. `AtkinsonHan.Chapter08.example_8_2_3` (the Laplacian as a
+  closed operator on `L²(Ω)`) has the maximal domain `{v : Δv ∈ L²}`; the Dirichlet restriction
+  is closed by `dirichletLaplacian_isMaximalMonotone` (Proposition 7.1 (b)), the node as stated is
+  not closed.
+
+Order of attack (backbone modules in dependency order, estimated lines): (1) `Bochner`, the
+vocabulary nodes only (★, ~150; the two bridges come last); (2) `DirichletLaplacian` without
+the regularity nodes — `fnL`, the domain, the operator, (i)–(iii), maximal monotone, self-adjoint,
+`H² ∩ H¹₀ ⊆ D(A)`, test functions, `A₁` (★★, ~700; needs chapter 7's `MaximalMonotone` and
+chapter 9b's `Elliptic/Dirichlet`); (3) `Heat` minus the `H^{2ℓ}`/space-time nodes —
+existence, uniqueness, the estimates, `contDiffOn_top`, the three energy identities, Theorem
+10.2 (a)–(b) in Bochner form, Remark 1, Remark 3 (★★, ~900; needs `HilleYosida`, and
+`Elliptic/Spectral` for Remark 3); (4) `Heat/Classical` (★★★ for Theorem 10.6, ~700; independent
+of everything else — can be done first, and it is what closes the Atkinson–Han nodes);
+(5) `Heat/MaximumPrinciple` — Theorems 10.3, 10.4 (★★★, ~600; needs chapter 9's chain rule on
+`H¹₀`), Corollary 10.5 after (7); (6) `Wave` minus the regularity — the operator, Theorem 10.7,
+the energy, time reversal, Remark 9 (★★★ for the translation, ~900); (7) the regularity layer:
+`dirichletLaplacianDomain_eq_of_isContDiffChartDomain`, `dirichletLaplacian_mem_powDomain_iff`,
+`powDomainToSobolevL` (★★★, ~400 on top of Theorem 9.25), then the `H^{2ℓ}` clauses of `Heat`
+and `Wave` (★★, ~300), then the `Bochner` bridges (★★★, ~900) and the `C^∞(Ω̄ × I)` nodes,
+Corollary 10.5 and Theorem 10.2 (c) (★, ~200); (8) the leaves: Remark 7's Dirichlet phase space
+(★★★, ~400), Remark 8's d'Alembert formula (★★★, ~500), Remarks 4 and 10 (★★★, ~400). Total
+about 6000–7000 lines, of which roughly 3000 depend on no open chapter-9 regularity node.
+'''

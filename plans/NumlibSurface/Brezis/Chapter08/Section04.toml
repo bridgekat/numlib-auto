@@ -1,0 +1,237 @@
+namespace = "Brezis.Chapter08"
+desc = '''
+§8.4, Some examples of boundary value problems: the Dirichlet problem (14) for `−u'' + u = f` on
+`I = (0, 1)` (Proposition 8.15, Remark 22, Steps C–D, Remark 23) and Examples 1–8 (inhomogeneous
+Dirichlet, Proposition 8.16; Sturm–Liouville; homogeneous and inhomogeneous Neumann,
+Propositions 8.17–8.18; mixed, Robin, periodic conditions; the problem on `ℝ`), with Remarks
+24–25. Everything is on `H¹(0, 1) = SobolevInterval 1 0 1` with the form `EllipticInterval.form 0 1 1 0 1`
+(`a(u, v) = ∫ u' v' + ∫ u v = (u, v)_{H¹}`) and the load `EllipticInterval.load 0 1 f`; the weak
+solution of (14) is `IsGalerkinSolution (form 0 1 1 0 1) (load 0 1 f) (SobolevIntervalZero 0 1) u`
+(the parent module `Numlib/Variational/EllipticInterval`), the other problems are in its child
+`EllipticInterval/BoundaryConditions`. Constants `1` enter as `EllipticInterval.constLinf 0 1 1`.
+The `H²` and `C²` conclusions are elements of `SobolevInterval 2 0 1` and `ContDiffMapIcc zero_le_one 2`.
+'''
+
+[[node]]
+id = "IsClassicalSolutionDirichlet"
+kind = "definition"
+desc = '''A classical solution of (14): `u : ContDiffMapIcc (zero_le_one : (0:ℝ) ≤ 1) 2` with
+`−u'' + u = f` on `[0, 1]` and `u 0 = 0`, `u 1 = 0` — `IsClassicalSolution zero_lt_one f u` of §8.1
+at `a = 0`, `b = 1` (abbrev). ★'''
+deps = ["IsClassicalSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Definition"
+
+[[node]]
+id = "IsWeakSolutionDirichlet"
+kind = "definition"
+desc = '''A weak solution of (14): `u ∈ H_0^1(0, 1)` with `∫ u' v' + ∫ u v = ∫ f v` for all `v ∈ H_0^1(0, 1)`
+(15) — `IsWeakSolutionDirichlet f u := IsGalerkinSolution (form 0 1 1 0 1) (load 0 1 f) (SobolevIntervalZero 0 1) u`
+for `f ∈ L²(0, 1)`, with `isWeakSolutionDirichlet_iff` unfolding it through `form_apply` and
+`load_apply` to the book's integrals. ★'''
+deps = ["IsGalerkinSolution", "EllipticInterval.form", "EllipticInterval.load", "EllipticInterval.form_apply", "EllipticInterval.load_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Definition"
+
+[[node]]
+id = "dirichlet_stepA"
+kind = "theorem"
+desc = '''Step A: every classical solution is a weak solution — for `u` with `IsClassicalSolutionDirichlet f u`
+and `f` continuous, the `H¹` element `EllipticInterval.ofContDiffMapIcc zero_lt_one u` satisfies
+`IsWeakSolutionDirichlet f`. The parent's `EllipticInterval.isWeakSolution_of_classical`
+("obvious by integration by parts, as justified in Corollary 8.10"). ★'''
+deps = ["IsClassicalSolutionDirichlet", "IsWeakSolutionDirichlet", "EllipticInterval.isWeakSolution_of_classical", "EllipticInterval.ofContDiffMapIcc"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Step A"
+
+[[node]]
+id = "proposition_8_15"
+kind = "theorem"
+desc = '''Proposition 8.15: for every `f ∈ L²(0, 1)` there is a unique weak solution
+`∃! u, IsWeakSolutionDirichlet f u` (the parent's `EllipticInterval.existsUnique_isWeakSolution`
+with `α = γ = 1`), and `proposition_8_15_dirichletPrinciple`: `u` is the minimizer of
+`½ ∫ (v'² + v²) − ∫ f v` over `H_0^1(0, 1)` — `IsMinOn ((form 0 1 1 0 1).energy (load 0 1 f)) (SobolevIntervalZero 0 1) u`
+(`SesqForm.isMinOn_energy_iff` on the subspace, the form being `⟪·,·⟫_{H¹}`, coercive with
+constant `1`; `SesqForm.energy` is `½ a(v, v) − ℓ(v)`). ★'''
+deps = ["IsWeakSolutionDirichlet", "EllipticInterval.existsUnique_isWeakSolution", "SesqForm.isMinOn_energy_iff", "SesqForm.energy"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.15"
+
+[[node]]
+id = "remark_8_22"
+kind = "theorem"
+desc = '''Remark 22: for `F ∈ H^{-1}(0, 1)` there is a unique `u ∈ H_0^1` with `(u, v)_{H¹} = ⟨F, v⟩` for
+all `v ∈ H_0^1`, and `F ↦ u` is the Riesz–Fréchet isomorphism `H^{-1} ≅ H_0^1`
+(`(InnerProductSpace.toDual ℝ (SobolevIntervalZero 0 1)).symm`, Mathlib); for `F = ofL2 f` it is
+the weak solution of (14) (`remark_8_22_eq_weakSolution`, from the uniqueness in Proposition 8.15).
+★'''
+deps = ["proposition_8_15", "sobolevSpaceDual", "SobolevIntervalLpDual.ofL2"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 22"
+
+[[node]]
+id = "dirichlet_stepC"
+kind = "theorem"
+desc = '''Steps C and D. `stepC_H2`: the weak solution `u` of (14) with `f ∈ L²` lies in `H²(0, 1)`:
+`∃ Φ : SobolevInterval 2 0 1, inclusionCLM 1 0 1 Φ = u` with `Φ'' = u − f` a.e. (the parent's
+`EllipticInterval.isWeakSolution_mem_sobolevInterval_two`/`exists_sobolevInterval_two_of_isWeakSolution`,
+or the child's general `mem_sobolevInterval_two_of_forall_testFunction`). `stepC_C2`: if `f` is
+continuous on `[0, 1]` then `u ∈ C²(Ī)`: `∃ v : ContDiffMapIcc zero_le_one 2, ∀ x ∈ Icc 0 1, rep u x = v x`
+(`EllipticInterval.exists_contDiffMapIcc_of_continuous`). `dirichlet_stepD`: then `v` is a classical
+solution, `IsClassicalSolutionDirichlet f v` (`EllipticInterval.isClassicalSolution_of_contDiffMapIcc`,
+§8.1's `dirichlet_stepD`). ★'''
+deps = ["proposition_8_15", "EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction", "EllipticInterval.exists_contDiffMapIcc_of_continuous", "EllipticInterval.isClassicalSolution_of_contDiffMapIcc", "IsClassicalSolutionDirichlet"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Steps C and D"
+
+[[node]]
+id = "remark_8_23"
+kind = "theorem"
+desc = '''Remark 23: if `f ∈ H^k(0, 1)`, `k ≥ 1`, the weak solution `u` of (14) lies in `H^{k+2}(0, 1)`:
+`MemSobolevInterval (fn u) (k + 2) 0 1`. The backbone's
+`EllipticInterval.memSobolevInterval_add_two_of_isWeakSolution`. ★'''
+deps = ["dirichlet_stepC", "EllipticInterval.memSobolevInterval_add_two_of_isWeakSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 23"
+
+[[node]]
+id = "proposition_8_16"
+kind = "theorem"
+desc = '''Proposition 8.16 (Example 1, inhomogeneous Dirichlet): for `α β : ℝ` and `f ∈ L²(0, 1)`
+there is a unique `Φ : SobolevInterval 2 0 1` with `−Φ'' + Φ = f` a.e., `rep Φ 0 = α`, `rep Φ 1 = β`
+(16); `proposition_8_16_min`: its inclusion `u` minimizes `½ ∫ (v'² + v²) − ∫ f v` over
+`{v ∈ H¹ : v(0) = α, v(1) = β}` (`IsMinOn (energy …) (EllipticInterval.dirichletSet zero_lt_one α β) u`);
+`proposition_8_16_C2`: `u ∈ C²(Ī)` when `f` is continuous. Two proofs, both recorded:
+`proposition_8_16_method1` — `ũ = u − u₀` with `u₀ = EllipticInterval.affineLift zero_lt_one 1 α β`
+solves the homogeneous problem with data `f + u₀'' − u₀ = f − u₀`
+(`EllipticInterval.form_sub_eq_of_forall` and Proposition 8.15); `proposition_8_16_method2` —
+Stampacchia on the closed convex `dirichletSet`, the inequality (17) becoming the equation for
+`v = u ± w`, `w ∈ H_0^1` (`EllipticInterval.existsUnique_dirichletSet_of_variationalInequality`).
+★'''
+deps = ["proposition_8_15", "EllipticInterval.existsUnique_dirichletSet_of_variationalInequality", "EllipticInterval.affineLift", "EllipticInterval.dirichletSet", "EllipticInterval.form_sub_eq_of_forall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.16"
+
+[[node]]
+id = "example_8_2"
+kind = "theorem"
+desc = '''Example 2 (Sturm–Liouville): for `p ∈ C¹(Ī)` with `p ≥ α > 0`, `q ∈ C(Ī)` with `q ≥ 0`, and
+`f ∈ L²(0, 1)`: `example_8_2_existsUnique`: exactly one `u ∈ H_0^1(0, 1)` with
+`∫ p u' v' + ∫ q u v = ∫ f v` for all `v ∈ H_0^1` (`IsGalerkinSolution (form 0 1 pL 0 qL) (load 0 1 f) (SobolevIntervalZero 0 1) u`,
+the parent's `existsUnique_isWeakSolution`, coercive by Poincaré); `example_8_2_min`: `u` minimizes
+`½ ∫ (p v'² + q v²) − ∫ f v` over `H_0^1` (`SesqForm.isMinOn_energy_iff`, the form is symmetric,
+`form_comm`); `example_8_2_H2`: `u ∈ H²` — `p u' ∈ H¹` from (19), so `u' = (p u')/p ∈ H¹` by
+Corollary 8.10 (the parent's `isWeakSolution_mem_sobolevInterval_two`); `example_8_2_C2`: `u ∈ C²(Ī)`
+and is a classical solution of (18) when `f` is continuous (`exists_contDiffMapIcc_of_continuous`,
+the Sturm–Liouville case, and Step D). ★'''
+deps = ["IsWeakSolutionDirichlet", "EllipticInterval.existsUnique_isWeakSolution", "EllipticInterval.form_comm", "SesqForm.isMinOn_energy_iff", "EllipticInterval.isWeakSolution_mem_sobolevInterval_two", "EllipticInterval.exists_contDiffMapIcc_of_continuous"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 2"
+
+[[node]]
+id = "example_8_2_general"
+kind = "theorem"
+desc = '''Example 2, the problem (20) with a first-order term: for `p, q, f` as above and `r ∈ C(Ī)`, the
+form `a(u, v) = ∫ p u' v' + ∫ r u' v + ∫ q u v` (`form 0 1 pL rL qL`) is bounded, not symmetric,
+and coercive on `H_0^1` (i) if `q ≥ 1` and `‖r‖_∞² < 4α` (`a(v, v) ≥ α ‖v'‖² − ‖r‖_∞ ‖v'‖ ‖v‖ + ‖v‖²`,
+a positive definite quadratic form in `(‖v'‖, ‖v‖)`), or (ii) if `q ≥ 1`, `r ∈ C¹(Ī)` and `r' ≤ 2`
+(`∫ r v' v = −½ ∫ r' v²` for `v ∈ H_0^1`, the parent's `integral_mul_deriv_mul_rep_eq` and
+`form_isCoerciveWith_seminorm_of_le`), so Lax–Milgram gives a unique weak solution in each case
+(`example_8_2_general_i`, `example_8_2_general_ii`); and `example_8_2_symmetrization`: with
+`R` a primitive of `r/p` and `ζ = exp (−R)`, `u` solves (20) iff it solves the symmetric problem
+`−(ζ p u')' + ζ q u = ζ f`, whose form `∫ ζ p u' v' + ∫ ζ q u v` is symmetric and coercive for
+`q ≥ 0`, with the minimization `½ ∫ (ζ p v'² + ζ q v²) − ∫ ζ f v` and the same regularity
+(`ζ p ∈ C¹`, `ζ q ∈ C`, `ζ f ∈ L²`; the identity `ζ' p + ζ r = 0` is `Real.exp` calculus). ★★
+(~250 lines, surface-level over the parent's form API)'''
+deps = ["example_8_2", "EllipticInterval.form_isCoerciveWith_seminorm_of_le", "EllipticInterval.integral_mul_deriv_mul_rep_eq", "SesqForm.laxMilgram"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 2"
+
+[[node]]
+id = "proposition_8_17"
+kind = "theorem"
+desc = '''Proposition 8.17 (Example 3, homogeneous Neumann): for `f ∈ L²(0, 1)` there is a unique
+`Φ ∈ H²(0, 1)` with `−Φ'' + Φ = f` a.e. and `Φ'(0) = Φ'(1) = 0` (21), obtained as the minimizer of
+`½ ∫ (v'² + v²) − ∫ f v` over all of `H¹(0, 1)` (`proposition_8_17_min`), and `C²(Ī)` when `f` is
+continuous (`proposition_8_17_C2`). The backbone's `EllipticInterval.existsUnique_neumann`; the
+weak formulation (22) on `H¹(0, 1)`, the recovery of the boundary condition from (23)
+(`EllipticInterval.natural_boundary_eq_of_forall`) and footnote 13 (`u ∈ H² ⇒ u ∈ C¹(Ī)`, so
+`u'(0)` makes sense: `rep (derivCLM Φ)`) are in the backbone `desc`s. ★'''
+deps = ["EllipticInterval.existsUnique_neumann", "EllipticInterval.natural_boundary_eq_of_forall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.17"
+
+[[node]]
+id = "proposition_8_18"
+kind = "theorem"
+desc = '''Proposition 8.18 (Example 4, inhomogeneous Neumann): for `f ∈ L²(0, 1)` and `α β : ℝ` there is
+a unique `Φ ∈ H²(0, 1)` with `−Φ'' + Φ = f` a.e., `Φ'(0) = α`, `Φ'(1) = β` (24), the minimizer of
+`½ ∫ (v'² + v²) − ∫ f v + α v(0) − β v(1)` over `H¹(0, 1)`, `C²(Ī)` when `f` is continuous. The
+backbone's `EllipticInterval.existsUnique_neumann_inhomogeneous` with the load
+`EllipticInterval.neumannLoad`. ★'''
+deps = ["proposition_8_17", "EllipticInterval.existsUnique_neumann_inhomogeneous", "EllipticInterval.neumannLoad"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.18"
+
+[[node]]
+id = "example_8_5"
+kind = "theorem"
+desc = '''Example 5 (mixed boundary condition): for `f ∈ L²(0, 1)` there is a unique `Φ ∈ H²(0, 1)` with
+`−Φ'' + Φ = f` a.e., `Φ(0) = 0`, `Φ'(1) = 0` (25), the weak solution being found in
+`H = {v ∈ H¹ : v(0) = 0}` (`EllipticInterval.mixedSpace zero_lt_one`) with the weak form (26);
+`C²(Ī)` when `f` is continuous. The backbone's `EllipticInterval.existsUnique_mixed`. ★'''
+deps = ["EllipticInterval.existsUnique_mixed", "EllipticInterval.mixedSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 5"
+
+[[node]]
+id = "example_8_6"
+kind = "theorem"
+desc = '''Example 6 (Robin boundary condition): for `k ≥ 0` and `f ∈ L²(0, 1)` there is a unique
+`Φ ∈ H²(0, 1)` with `−Φ'' + Φ = f` a.e., `Φ'(0) = k Φ(0)`, `Φ(1) = 0` (27), found in
+`H = {v ∈ H¹ : v(1) = 0}` (`EllipticInterval.robinSpace`) with the symmetric continuous form
+`a(u, v) = ∫ u' v' + ∫ u v + k u(0) v(0)` (`EllipticInterval.robinForm`), coercive for `k ≥ 0`
+(`example_8_6_coercive`); `C²(Ī)` when `f` is continuous. The backbone's
+`EllipticInterval.existsUnique_robin` (planned in `existsUnique_mixed`). Footnotes 14–15 are not
+planned. ★'''
+deps = ["EllipticInterval.existsUnique_mixed", "EllipticInterval.robinForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 6"
+
+[[node]]
+id = "example_8_7"
+kind = "theorem"
+desc = '''Example 7 (periodic boundary conditions): for `f ∈ L²(0, 1)` there is a unique `Φ ∈ H²(0, 1)`
+with `−Φ'' + Φ = f` a.e., `Φ(0) = Φ(1)`, `Φ'(0) = Φ'(1)` (28), found in
+`H = {v ∈ H¹ : v(0) = v(1)}` (`EllipticInterval.periodicSpace`) with the form (29); classical when
+`f` is continuous. The backbone's `EllipticInterval.existsUnique_periodic` (planned in
+`existsUnique_mixed`). ★'''
+deps = ["EllipticInterval.existsUnique_mixed", "EllipticInterval.mixedSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 7"
+
+[[node]]
+id = "example_8_8"
+kind = "theorem"
+desc = '''Example 8 (a boundary value problem on `ℝ`), for `f ∈ L²(ℝ)`: `example_8_8_classical_weak`: a
+classical solution of (30) (`u ∈ C²(ℝ)`, `−u'' + u = f`, `u(x) → 0` as `|x| → ∞`) lies in `H¹(ℝ)`
+and is a weak solution — `∫ u' v' + ∫ u v = ∫ f v` for all `v ∈ H¹(ℝ)` (31)
+(`EllipticInterval.Line.memSobolevIntervalLp_of_classical`, `Line.isWeakSolution_of_classical`);
+`example_8_8_existsUnique`: there is exactly one weak solution `u ∈ H¹(ℝ)` (Lax–Milgram in
+`H¹(ℝ)`, `EllipticInterval.Line.form`, `Line.solution`); `example_8_8_regularity`: it lies in
+`H²(ℝ)`, is `C²` when `f ∈ C(ℝ)`, and `u(x) → 0` (Corollary 8.9), so for `f ∈ L²(ℝ) ∩ C(ℝ)`
+problem (30) has a unique classical solution, in `H²(ℝ)` (`Line.exists_classical_solution`). ★'''
+deps = ["EllipticInterval.Line.form", "EllipticInterval.Line.memSobolevIntervalLp_of_classical", "EllipticInterval.Line.exists_classical_solution", "corollary_8_9"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 8"
+
+[[node]]
+id = "remark_8_24"
+kind = "theorem"
+desc = '''Remark 24: the form `∫ u' v'` is not coercive on `H¹(ℝ)` (`remark_8_24_not_coercive`: there is
+no `c > 0` with `c ‖v‖² ≤ ∫ v'²` — dilations `v(x/n)` have `∫ v'² → 0` with `‖v‖_{L²} → ∞`), and
+the problem `−u'' = f` on `ℝ` with `u → 0` at infinity has no solution for some smooth compactly
+supported `f` (`remark_8_24_exists_not_solvable`: take `f ∈ C_c^∞`, `f ≥ 0`, `f ≠ 0`; a `C²` solution
+with `u → 0` is concave (`u'' = −f ≤ 0`) and tends to `0` at `±∞`, so `u ≡ 0`
+(a concave function on `ℝ` bounded above tending to `0` at both ends is `0`: `ConcaveOn`
+and `Tendsto` — or `u'` is nonincreasing with limits `0` at `±∞`, hence `u' ≡ 0`), contradicting
+`f ≠ 0`). The book asks "why?"; the argument is elementary. ★★ (~150 lines, surface-only)'''
+deps = ["example_8_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 24"
+
+[[node]]
+id = "remark_8_25"
+kind = "theorem"
+desc = '''Remark 25: the problem `−u'' + u = f` on `(0, ∞)`, `u(0) = 0`, `u(x) → 0` as `x → ∞`, with
+`f ∈ L²(0, ∞)`, has a unique weak solution in `H_0^1(0, ∞) = {u ∈ H¹(0, ∞) : u(0) = 0}`
+(Theorem 8.12 on `Opens.Ioi 0`, `frontier = {0}`), by Lax–Milgram for the `H¹` inner product on the
+closed subspace `SobolevIntervalLpZero 1 2 (Opens.Ioi 0)`; it lies in `H²(0, ∞)`, tends to `0` at
+`+∞` (Corollary 8.9), and is classical when `f` is continuous — "the same method applies".
+Stated with the `H²` and decay clauses; the regularity argument of Example 8 on the half line.
+★★ (~200 lines, surface-level over `Interval/Zero` and `Interval/Embedding`)'''
+deps = ["example_8_8", "theorem_8_12", "corollary_8_9", "SesqForm.laxMilgram"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 25"

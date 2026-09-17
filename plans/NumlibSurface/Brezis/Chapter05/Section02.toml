@@ -1,0 +1,93 @@
+namespace = "Brezis.Chapter05"
+desc = '''
+Brezis §5.2: the dual space of a Hilbert space. Book lines 5067–5171. The Riesz–Fréchet theorem
+is Mathlib's `InnerProductSpace.toDual`; Remark 3 (the pivot-space triple `V ⊂ H ⊂ V*`) is the
+one substantive statement of the section and is stated over chapter 2's Banach adjoint
+`ContinuousLinearMap.strongDualMap` (brief D3); Remark 5 identifies the book's two readings of
+`M^⊥` — as a subspace of `H*` (chapter 1's `Submodule.strongDualAnnihilator`) and of `H` (Mathlib's
+`Submodule.orthogonal`) — through `toDual`. The weighted-`ℓ²` example inside Remark 3 is not
+planned (see the chapter group).
+'''
+
+[[node]]
+id = "theorem_5_5"
+kind = "theorem"
+desc = '''Theorem 5.5 (Riesz–Fréchet representation theorem): for every `φ : StrongDual ℝ H` there is
+a unique `f : H` with `∀ u, φ u = ⟪f, u⟫`, and `‖f‖ = ‖φ‖`:
+`∃! f : H, (∀ u, φ u = ⟪f, u⟫) ∧ ‖f‖ = ‖φ‖`. Mathlib's `InnerProductSpace.toDual ℝ H : H ≃ₗᵢ⋆[ℝ] StrongDual ℝ H`
+with `toDual_symm_apply`, `toDual_apply_apply` and the isometry's `norm_map`; proved in
+`notes/brezis/ch05/proto/Shapes.lean` in eight lines. The book's two proofs — through reflexivity
+(Theorem 4.11's argument) and through the projection onto `ker φ` — are both bypassed by
+Mathlib's, which is the second one. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.5"
+
+[[node]]
+id = "remark_5_3"
+kind = "theorem"
+desc = '''Remark 3, the triplet `V ⊂ H ⊂ V*` with `H` as pivot space. Data: a real Banach space `V`
+(`[NormedSpace ℝ V] [CompleteSpace V]`) and the injection `i : V →L[ℝ] H` with
+`Function.Injective i` and `DenseRange i` (the book's "`V ⊂ H` dense, `|v| ≤ C ‖v‖`" with
+`C = ‖i‖`). The canonical map `T : StrongDual ℝ H →L[ℝ] StrongDual ℝ V`, `⟨T φ, v⟩ = ⟨φ, i v⟩`,
+is chapter 2's `ContinuousLinearMap.strongDualMap i` (brief D3, `strongDualMap_apply`). The three
+clauses: (i) `∀ φ, ‖T φ‖ ≤ ‖i‖ * ‖φ‖` (`opNorm_strongDualMap` gives `‖T‖ = ‖i‖`, or
+`ContinuousLinearMap.opNorm_comp_le`); (ii) `Function.Injective T` — `T φ = 0` means `φ ∘ i = 0`,
+and `φ` vanishes on the dense range, so `φ = 0` (`DenseRange.equalizer`); (iii)
+`NormedSpace.IsReflexive ℝ V → DenseRange T`: if the range were not dense, its closure `N` would
+miss some `ψ`, and `Submodule.exists_dual_eq_zero_of_notMem` (`Numlib/Analysis/Normed/Module/DualSeparable`)
+gives `ξ : StrongDual ℝ (StrongDual ℝ V)` vanishing on `N` with `ξ ψ ≠ 0`; reflexivity writes
+`ξ = J v` with `v ≠ 0`, and then `φ (i v) = ξ (T φ) = 0` for every `φ`, so `i v = 0`
+(`SeparatingDual.eq_zero_of_forall_dual_eq_zero`) and `v = 0` — contradiction. Also the book's
+footnote: `T` is not surjective in general (no node). The identity
+`⟨f, v⟩_{V*,V} = (f, v)` for `f ∈ H`, `v ∈ V` is the definition of `T ∘ toDual`, recorded as
+`(T (toDual ℝ H f)) v = ⟪f, i v⟫`. ★★, ~80 lines; the statement type-checks in the prototype with
+`T := (ContinuousLinearMap.compL ℝ V H ℝ).flip i`, which is what `strongDualMap i` unfolds to.
+Clause (ii) is Corollary 2.18's `N(A*) = R(A)^⊥` — chapter 2's
+`ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range` at `A = i`, with `R(i)` dense — and
+clause (iii) its reflexive companion (§3.5); the plan depends only on the definition, and the
+elementary proofs above stand on their own.'''
+deps = ["ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.strongDualMap_apply",
+  "ContinuousLinearMap.opNorm_strongDualMap",  # fixed names, brief D3 (chapter 2)
+  "NormedSpace.IsReflexive", "Submodule.exists_dual_eq_zero_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 3"
+
+[[node]]
+id = "remark_5_4"
+kind = "theorem"
+desc = '''Remark 4: Hilbert spaces are reflexive without the theory of uniformly convex spaces, by
+the Riesz–Fréchet isomorphism used twice. `NormedSpace.IsReflexive ℝ H`, proved by the backbone
+instance `NormedSpace.instIsReflexiveOfInnerProductSpace` (`Numlib/Analysis/Normed/Module/Reflexive`),
+whose proof is exactly this argument: a functional on `H*` composed with `toDual` is a functional
+on `H`, represented by `toDual` again. Same statement as `proposition_5_1_reflexive`, different
+suggested proof; the two nodes record the book's two routes. ★'''
+deps = ["NormedSpace.instIsReflexiveOfInnerProductSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 4"
+
+[[node]]
+id = "remark_5_5"
+kind = "theorem"
+desc = '''Remark 5, the orthogonal complement in `H`: for `M : Submodule ℝ H` with
+`hM : IsClosed (M : Set H)` and `f : H`, the conjunction `M ⊓ Mᗮ = ⊥` (`Submodule.inf_orthogonal_eq_bot`,
+no closedness needed), `M ⊔ Mᗮ = ⊤` (`Submodule.sup_orthogonal_of_hasOrthogonalProjection`),
+`f - M.starProjection f = Mᗮ.starProjection f` (`Submodule.starProjection_orthogonal_val`), and
+"every closed subspace has a complement in the sense of §2.4": `M.ClosedComplemented`
+(`Submodule.isTopCompl_orthogonal` with `IsTopCompl.closedComplemented`). Proved in
+`notes/brezis/ch05/proto/Surface.lean` in four lines; the `HasOrthogonalProjection` instance
+comes from `hM.completeSpace_coe`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 5"
+
+[[node]]
+id = "remark_5_5_annihilator"
+kind = "theorem"
+desc = '''Remark 5, first sentence: the `M^⊥ ⊆ H*` of §1.3 "may now be considered as a subspace of
+`H`". With chapter 1's annihilator `M.strongDualAnnihilator : Submodule ℝ (StrongDual ℝ H)`
+(brief D4 fixed the name `Submodule.annihilator`; chapter 1's plan,
+`plans/Numlib/Analysis/Normed/Module/Annihilator.toml`, names it `Submodule.strongDualAnnihilator`
+to avoid Mathlib's ideal-valued `Submodule.annihilator`, and that is the name used here):
+`∀ φ : StrongDual ℝ H, φ ∈ M.strongDualAnnihilator ↔ (InnerProductSpace.toDual ℝ H).symm φ ∈ Mᗮ`,
+i.e. the Riesz isometry carries `Mᗮ` onto the annihilator; unfold both memberships
+(`Submodule.mem_strongDualAnnihilator`, `Submodule.mem_orthogonal`, `toDual_symm_apply`). ★, once
+the annihilator exists.'''
+deps = ["Submodule.strongDualAnnihilator", "Submodule.mem_strongDualAnnihilator"]  # chapter 1's name for brief D4's `Submodule.annihilator`
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 5"

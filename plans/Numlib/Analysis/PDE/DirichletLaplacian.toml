@@ -1,0 +1,295 @@
+desc = '''
+The Dirichlet Laplacian `A = -Δ` as an unbounded operator on `L²(Ω)`: [brezis2011functional],
+proof of Theorem 10.1 (`D(A) = H²(Ω) ∩ H¹₀(Ω)`, `Au = -Δu`), the operator on which both the heat
+equation (`Numlib/Analysis/PDE/Heat`) and the wave equation (`Numlib/Analysis/PDE/Wave`) rest —
+which is why it has a module of its own beside them rather than living in `Heat` (the planning
+brief placed it there; `Wave` importing `Heat` would be the alternative). It imports
+`Numlib/Analysis/PDE/Elliptic/Dirichlet` for its vocabulary and
+`Numlib/Analysis/InnerProductSpace/MaximalMonotone` for the chapter-7 predicates.
+
+Setting, taken from the chapter-9b plan: `Ω : Opens (EuclideanSpace ℝ (Fin N))`, `L²(Ω) =
+Lp ℝ 2 (volume.restrict Ω)`, `H¹(Ω) = SobolevEuclidean N 1 2 Ω`, `H¹₀(Ω) = SobolevEuclideanZero N 1 2 Ω`
+(a closed submodule of `H¹(Ω)`, a Hilbert space), the weak derivatives as the continuous linear
+maps `SobolevMultiIndex.weakDerivL α : H^k(Ω) →L[ℝ] L²(Ω)` of `Numlib/Analysis/Sobolev/MultiIndex`
+— `weakDerivL 0 = SobolevMultiIndex.fnL` is the function itself — the embedding
+`SobolevMultiIndexZero.fnL : H¹₀(Ω) →L[ℝ] L²(Ω)` from the same module (an `L²` function "lies in
+`H¹₀`" when it is in its range, and that is how every boundary condition `u = 0` on `Γ` of
+chapter 10 is read), and the Dirichlet form `Elliptic.dirichletForm Ω : SesqForm ℝ (H¹(Ω))`,
+`a₀(u, v) = ∫ ∇u·∇v`, with `laplaceForm_eq_innerSL : ∫ ∇u·∇v + ∫ uv = ⟪u, v⟫_{H¹}`.
+
+Design. The operator is Mathlib's `LinearPMap`, `L²(Ω) →ₗ.[ℝ] L²(Ω)`. Its domain is **not**
+`H² ∩ H¹₀` by definition but the weak one,
+
+  `D(A) = {u ∈ H¹₀(Ω) : Δu ∈ L²(Ω)} = {u ∈ H¹₀(Ω) : ∃ g ∈ L²(Ω), ∫ ∇u·∇φ = ∫ g φ ∀ φ ∈ H¹₀(Ω)}`,
+
+with `Au = g`. Three reasons. (1) Everything the book proves about `A` in the proof of Theorem
+10.1 — monotone, symmetric, `R(I + A) = L²` — holds for this domain on an **arbitrary** open set:
+maximality is the Riesz representation on `H¹₀(Ω)` (given `f ∈ L²`, `φ ↦ ∫ f φ` is represented
+by some `u ∈ H¹₀`, `⟪u, φ⟫_{H¹} = ∫ f φ`, so `g := f - u` is the weak `-Δu`), i.e. chapter 9b's
+Theorem 9.21 read on the operator, and no regularity theory enters, so the Hille–Yosida theory of
+chapter 7 applies at once (the operator is the Friedrichs extension of `-Δ` on `C_c^∞(Ω)`; the
+book notes at line 12153 that its `C^∞` assumption "may be considerably weakened if we are
+interested only in weak solutions"). (2) Theorem 9.25 (`Elliptic.regularity_dirichlet`) enters
+exactly once, as the identification `D(A) = H² ∩ H¹₀` with the graph-norm estimate
+`‖u‖_{H²} ≤ C (‖u‖ + ‖Au‖)` on a `C²` domain with bounded boundary
+(`dirichletLaplacianDomain_eq_of_isContDiffChartDomain`), and iterated as the book's (7),
+`D(A^ℓ) = {u ∈ H^{2ℓ} : u = Δu = ⋯ = Δ^{ℓ-1}u = 0 on Γ}` on a `C^{2ℓ}` domain
+(`dirichletLaplacian_mem_powDomain_iff`), where "`= 0` on `Γ`" is read as membership of `H¹₀`.
+Everything downstream that needs `H^{2ℓ}`-regularity of a solution depends on that ★★★ theorem
+and nothing else does. (3) `H² ∩ H¹₀ ⊆ D(A)` holds on any `Ω`
+(`mem_dirichletLaplacianDomain_of_sobolev_two`), so uniqueness statements in the book's class
+follow from uniqueness in `D(A)`.
+
+`D(A^ℓ)` is chapter 7's Hilbert space `A.PowDomain ℓ` (the tuples `(u, Au, …, A^ℓ u)` in an `ℓ²`
+product, with `PowDomain.applyL A ℓ j` the component `A^j u`); "`u ∈ D(A^ℓ)`" is
+`∃ x : A.PowDomain ℓ, applyL A ℓ 0 x = u`, and the continuous injection `D(A^ℓ) ↪ H^{2ℓ}(Ω)` of
+line 12200 is the bounded linear map `dirichletLaplacian.powDomainToSobolevL` built from the
+estimate — the map the chapter-7 plan says its `ContDiffOnPowDomain` lifts are meant to be composed
+with.
+
+Also here: the same operator considered in the Hilbert space `H¹₀(Ω)` (the book's `A₁` in the
+proof of Theorem 10.2 (a), `D(A₁) = {u ∈ D(A) : Au ∈ H¹₀}`), maximal monotone and symmetric there
+by the same three computations; it is what gives `u ∈ C([0,∞); H¹₀)` for `u₀ ∈ H¹₀`. The book's
+`A₂` on `H² ∩ H¹₀` (Theorem 10.2 (b)) is not needed: the clause it delivers is Theorem 7.4's
+`u ∈ C([0,∞); D(A))` for `u₀ ∈ D(A)`.
+
+Prototype (statements only, in the general-basis form later replaced by chapter 9b's
+`SobolevEuclidean`): `notes/brezis/ch10/proto/heat.lean`.
+'''
+
+[[node]]
+id = "SobolevEuclideanZero.ext_on_testFunctions"
+kind = "theorem"
+desc = '''Two continuous linear functionals on `H¹(Ω)` (`H¹(Ω) →L[ℝ] ℝ`) that agree on
+`SobolevMultiIndex.testFunctions` agree on `H¹₀(Ω)`: `SobolevEuclideanZero` is the closure of the
+test functions, `LinearMap.eqLocus` of two continuous maps is closed
+(`Submodule.topologicalClosure_minimal`). Stated as the tool used below: if
+`∀ φ ∈ testFunctions, dirichletForm Ω v φ = ⟪g, fnL φ⟫` then the identity holds for all
+`φ ∈ SobolevEuclideanZero N 1 2 Ω`, both sides being continuous linear in `φ`
+(`Elliptic.dirichletForm_isBoundedWith`, `fnL` bounded). ★'''
+deps = ["Elliptic.dirichletForm", "SobolevMultiIndex.weakDerivL", "SobolevEuclideanZero", "SobolevMultiIndexZero.testFunctions_le", "SobolevMultiIndex.testFunctions"]
+
+[[node]]
+id = "dirichletLaplacianDomain"
+kind = "definition"
+desc = '''`dirichletLaplacianDomain (Ω) : Submodule ℝ (Lp ℝ 2 (volume.restrict Ω))`, the domain
+`{f ∈ L²(Ω) : ∃ v ∈ H¹₀(Ω), fnL v = f ∧ ∃ g ∈ L²(Ω), ∀ φ ∈ H¹₀(Ω), dirichletForm Ω v φ = ⟪g, fnL φ⟫}`
+— `f ∈ H¹₀` with weak Laplacian `-g ∈ L²`. A submodule: the witnesses add and scale.
+`mem_dirichletLaplacianDomain_iff` unfolds it. ★'''
+deps = ["SobolevMultiIndexZero.fnL", "Elliptic.dirichletForm", "SobolevMultiIndex.weakDerivL"]
+
+[[node]]
+id = "dirichletLaplacian"
+kind = "definition"
+desc = '''**The Dirichlet Laplacian** `dirichletLaplacian (Ω) : L²(Ω) →ₗ.[ℝ] L²(Ω)` with domain
+`dirichletLaplacianDomain Ω` and `A f = g`, the `g` of the domain's definition, unique because the
+`fnL φ`, `φ ∈ H¹₀`, contain the test functions, which are dense in `L²(Ω)`
+(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`); `Classical.choose` on the membership proof,
+linear by uniqueness. [brezis2011functional], proof of Theorem 10.1: `Au = -Δu` — on a `C²`
+domain with bounded boundary the domain is `H²(Ω) ∩ H¹₀(Ω)`
+(`dirichletLaplacianDomain_eq_of_isContDiffChartDomain`); on an arbitrary open set it is the
+Friedrichs extension, the domain on which the book's three claims (i)–(iii) below hold without
+any regularity of `Ω`. `dirichletLaplacian_domain` (rfl), `dirichletLaplacian_apply_unique`
+(`A f` is the only `g` with the identity). ★★'''
+deps = ["dirichletLaplacianDomain", "MeasureTheory.Lp.dense_contDiff_tsupport_subset", "SobolevEuclideanZero.ext_on_testFunctions"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1"
+
+[[node]]
+id = "dirichletLaplacian_inner_eq_dirichletForm"
+kind = "theorem"
+desc = '''The defining identity in usable form: for `u ∈ D(A)` with `H¹₀`-lift `v` (`fnL v = u`) and
+every `φ ∈ H¹₀(Ω)`, `⟪A u, fnL φ⟫ = dirichletForm Ω v φ`. In particular
+`dirichletLaplacian_inner_self_eq_dirichletForm : ⟪A u, u⟫ = dirichletForm Ω v v = ∫ |∇u|²`
+(`Elliptic.dirichletForm_self_eq`) — the book's `(Au, u) = ∫ |∇u|²`. ★'''
+deps = ["dirichletLaplacian", "Elliptic.dirichletForm"]
+
+[[node]]
+id = "dirichletLaplacian_inner_self_nonneg"
+kind = "theorem"
+desc = '''(i) **`A` is monotone**: `LinearPMap.IsMonotone (dirichletLaplacian Ω)`, i.e.
+`0 ≤ ⟪A u, u⟫` for every `u ∈ D(A)`, from `dirichletLaplacian_inner_self_eq_dirichletForm` and
+`Elliptic.dirichletForm_self_nonneg`. ★'''
+deps = ["dirichletLaplacian_inner_eq_dirichletForm", "LinearPMap.IsMonotone"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (i)"
+
+[[node]]
+id = "dirichletLaplacian_isFormalAdjoint"
+kind = "theorem"
+desc = '''(iii) **`A` is symmetric**: `(dirichletLaplacian Ω).IsFormalAdjoint (dirichletLaplacian Ω)`
+(Mathlib's `LinearPMap.IsFormalAdjoint`: `⟪A u, v⟫ = ⟪u, A v⟫` for `u, v ∈ D(A)`): both sides are
+`dirichletForm Ω ũ ṽ` by `dirichletLaplacian_inner_eq_dirichletForm` and
+`Elliptic.dirichletForm_isHermitian`. ★'''
+deps = ["dirichletLaplacian_inner_eq_dirichletForm", "Elliptic.dirichletForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (iii)"
+
+[[node]]
+id = "dirichletLaplacian_exists_smul_add_apply_eq"
+kind = "theorem"
+desc = '''(ii) **`R(λ I + A) = L²(Ω)` for every `λ > 0`**: `∀ f, ∃ u : D(A), λ • (u : L²) + A u = f`
+(the shape of chapter 7's `IsMaximalMonotone.exists_add_apply_eq`, with the scalar), and its
+spelling `((λ • LinearMap.id) +ᵥ dirichletLaplacian Ω).toFun.range = ⊤`
+(`dirichletLaplacian_range_smul_id_vadd_eq_top`, Mathlib's `LinearPMap.instVAdd`). The book's
+(ii) is `λ = 1`; `λ = 4` is used by the wave operator (chapter 7's Proposition 7.1 (c),
+`IsMaximalMonotone.exists_add_smul_eq`, would give the general `λ` from `λ = 1` too). Proof, for
+any open `Ω`: the functional `φ ↦ ⟪f, fnL φ⟫` is bounded on the Hilbert space `H¹₀(Ω)`
+(`Elliptic.load` restricted; `SobolevMultiIndexZero.instCompleteSpace`), so
+`InnerProductSpace.toDual` gives `v ∈ H¹₀` with `⟪v, φ⟫_{H¹} = ⟪f, fnL φ⟫`
+(this is `Elliptic.existsUnique_isGalerkinSolution_laplace`, Theorem 9.21); with
+`Elliptic.laplaceForm_eq_innerSL` this reads `dirichletForm Ω v φ = ⟪f - fnL v, fnL φ⟫`,
+so `u := fnL v ∈ D(A)` with `A u = f - u`. For general `λ` use the equivalent inner product
+`λ ∫ uφ + ∫ ∇u·∇φ`, or apply Proposition 7.1 (c). The book cites Theorem 9.25 here only because
+its domain is `H² ∩ H¹₀`; on the weak domain the Riesz representation is all that is needed. ★★'''
+deps = ["dirichletLaplacian", "Elliptic.laplaceForm_eq_innerSL", "Elliptic.existsUnique_isGalerkinSolution_laplace", "SobolevMultiIndexZero.instCompleteSpace", "SobolevMultiIndexZero.fnL", "LinearPMap.IsMaximalMonotone.exists_add_smul_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (ii)"
+
+[[node]]
+id = "dirichletLaplacian_isMaximalMonotone"
+kind = "theorem"
+desc = '''`LinearPMap.IsMaximalMonotone (dirichletLaplacian Ω)`: chapter 7's structure (`isMonotone` and
+`exists_add_apply_eq`) from `dirichletLaplacian_inner_self_nonneg` and
+`dirichletLaplacian_exists_smul_add_apply_eq` at `λ = 1`. Consequences by chapter 7's
+Proposition 7.1: `dirichletLaplacian_isClosed` (`LinearPMap.IsClosed`, from
+`IsMaximalMonotone.isClosed`) and `dirichletLaplacian_dense_domain` (`Dense (D(A) : Set L²)`,
+`IsMaximalMonotone.dense_domain` — also directly, the test functions lying in `D(A)`). ★'''
+deps = ["dirichletLaplacian_inner_self_nonneg", "dirichletLaplacian_exists_smul_add_apply_eq", "LinearPMap.IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.isClosed", "LinearPMap.IsMaximalMonotone.dense_domain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1"
+
+[[node]]
+id = "dirichletLaplacian_isSelfAdjoint"
+kind = "theorem"
+desc = '''`IsSelfAdjoint (dirichletLaplacian Ω)` in Mathlib's sense (`A† = A` for
+`LinearPMap.adjoint`): Proposition 7.6, `LinearPMap.IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint`,
+applied to `dirichletLaplacian_isMaximalMonotone` and `dirichletLaplacian_isFormalAdjoint`. This
+is the hypothesis of Theorem 7.7 (`LinearPMap.exists_isSolutionOn_Ioi_of_isSelfAdjoint`) that
+makes every `u₀ ∈ L²(Ω)` an admissible datum for the heat equation. ★'''
+deps = ["dirichletLaplacian_isFormalAdjoint", "dirichletLaplacian_isMaximalMonotone", "LinearPMap.IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (iii)"
+
+[[node]]
+id = "mem_dirichletLaplacianDomain_of_sobolev_two"
+kind = "theorem"
+desc = '''**`H²(Ω) ∩ H¹₀(Ω) ⊆ D(A)` on any open set, with `A u = -∑ᵢ ∂ᵢᵢ u`**: if `w : SobolevEuclidean N 2 2 Ω`
+and `v ∈ SobolevEuclideanZero N 1 2 Ω` have the same function `f` (`fnL w = fnL v`),
+then `f ∈ dirichletLaplacianDomain Ω` and `A f = -∑ i, weakDerivL (2 • MultiIndexLE.single i) w`
+(`dirichletLaplacian_apply_of_sobolev_two`; `MultiIndexLE.single i` is `e_i`, `2 • single i` the
+multi-index `2 e_i` of `∂ᵢᵢ`). Proof: for a test function `φ`, `∫ ∂ᵢf ∂ᵢφ = -∫ ∂ᵢᵢf φ` is the
+weak-derivative identity of the `H²` element (`SobolevMultiIndex.hasWeakIteratedLineDerivOn` at
+`2 e_i` tested against `∂ᵢφ`, the first-order derivatives of `w` and `v` agreeing a.e. by the
+uniqueness of weak derivatives); sum over `i` (`Elliptic.dirichletForm_apply`) and extend from
+the test functions to `H¹₀` by `SobolevEuclideanZero.ext_on_testFunctions`. This is the inclusion
+that makes the book's uniqueness class (`C((0,∞); H² ∩ H¹₀)`) a subclass of the weak one. ★★'''
+deps = ["dirichletLaplacian", "SobolevMultiIndex.hasWeakIteratedLineDerivOn", "SobolevEuclideanZero.ext_on_testFunctions", "MultiIndexLE.single", "SobolevMultiIndex.weakDerivL"]
+
+[[node]]
+id = "testFunction_mem_dirichletLaplacianDomain"
+kind = "theorem"
+desc = '''Every test function lies in `D(A)`, with `A φ = -Δ φ` classically
+(`InnerProductSpace.laplacian`, through `laplacian_eq_iteratedFDeriv_stdOrthonormalBasis`), and
+hence in `D(A^ℓ)` for every `ℓ`: `∃ x : (dirichletLaplacian Ω).PowDomain ℓ, applyL _ ℓ 0 x = φ`
+with `applyL _ ℓ j x = (-Δ)^j φ` (`testFunction_exists_powDomain`). The `H²`-element of `φ`
+(`TestFunction.exists_mem_sobolevMultiIndex_testFunctions` at `k = 2`, whose weak second
+derivatives are the classical ones) with `mem_dirichletLaplacianDomain_of_sobolev_two`, and
+`-Δφ` is again a test function, so induction on `ℓ` (`LinearPMap.powGraph` membership is the
+chain condition). This is what puts `C_c^∞(Ω)` data in every `D(A^k)`, used by Corollary 10.5
+and Theorem 10.2 (c). ★★'''
+deps = ["mem_dirichletLaplacianDomain_of_sobolev_two", "TestFunction.exists_mem_sobolevMultiIndex_testFunctions", "LinearPMap.PowDomain", "LinearPMap.PowDomain.applyL", "LinearPMap.powGraph"]
+
+[[node]]
+id = "dirichletLaplacianDomain_eq_of_isContDiffChartDomain"
+kind = "theorem"
+desc = '''**`D(A) = H²(Ω) ∩ H¹₀(Ω)` with the graph-norm estimate, on a `C²` domain with bounded
+boundary** — [brezis2011functional] Theorem 9.25 read on the operator. Hypotheses:
+`IsContDiffChartDomain 2 Ω` and `Bornology.IsBounded (frontier Ω)`. Conclusions: (a)
+`f ∈ dirichletLaplacianDomain Ω ↔ (∃ w : SobolevEuclidean N 2 2 Ω, fnL w = f) ∧ f ∈ range (SobolevMultiIndexZero.fnL)`
+(`⊇` is `mem_dirichletLaplacianDomain_of_sobolev_two`; `⊆` is `Elliptic.regularity_dirichlet`
+applied to the `H¹₀`-lift `v` of `f` and `g := f + A f ∈ L²`, which satisfy
+`laplaceForm Ω v φ = ⟪g, fn φ⟫ ∀ φ ∈ H¹₀` by `dirichletLaplacian_inner_eq_dirichletForm` and
+`laplaceForm_eq_innerSL` — the book's (48)); (b) a constant `C` with `‖w‖_{H²} ≤ C (‖f‖ + ‖A f‖)`
+for the `H²`-lift `w` of every `f ∈ D(A)` (`dirichletLaplacian_norm_sobolev_le`, the estimate
+`‖u‖_{H²} ≤ C ‖f‖_{L²}` of Theorem 9.25 with `f := u - Δu`). (b) is the continuous injection
+`D(A) ↪ H²(Ω)` of line 12200, the graph norm being `‖f‖ + ‖Af‖`. ★★ given Theorem 9.25 (★★★,
+chapter 9b's).'''
+deps = ["dirichletLaplacian_inner_eq_dirichletForm", "mem_dirichletLaplacianDomain_of_sobolev_two", "Elliptic.regularity_dirichlet", "Elliptic.laplaceForm_eq_innerSL", "IsContDiffChartDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1, and Theorem 9.25"
+
+[[node]]
+id = "dirichletLaplacian_mem_powDomain_iff"
+kind = "theorem"
+desc = '''**The identification (7)**: on a `C^{2ℓ}` domain with bounded boundary
+(`IsContDiffChartDomain (2ℓ) Ω`, `Bornology.IsBounded (frontier Ω)`), for `ℓ ≥ 1`,
+`(∃ x : (dirichletLaplacian Ω).PowDomain ℓ, applyL _ ℓ 0 x = f) ↔ ∃ w : SobolevEuclidean N (2ℓ) 2 Ω, fnL w = f ∧ ∀ j < ℓ, (Δ^j f read from w) ∈ range (SobolevMultiIndexZero.fnL)`,
+the book's `D(A^ℓ) = {u ∈ H^{2ℓ}(Ω) : u = Δu = ⋯ = Δ^{ℓ-1}u = 0 on Γ}` with "`= 0` on `Γ`" read
+as membership of `H¹₀(Ω)` (the trace-free reading of Theorem 9.17; the two agree for continuous
+functions). Here `Δ^j f` is `(-1)^j applyL _ ℓ j x`, equivalently the sum of the weak derivatives
+`weakDerivL α w` over the multi-indices `α` of `Δ^j`. With it the continuous injection
+`dirichletLaplacian_norm_sobolev_le_sum : ‖w‖_{H^{2ℓ}} ≤ C ∑_{j ≤ ℓ} ‖applyL _ ℓ j x‖ ≤ C' ‖x‖`
+(line 12200, "`D(A^ℓ) ⊂ H^{2ℓ}(Ω)` with continuous injection"; `‖x‖` is the `PowDomain` norm
+`(∑_j ‖A^j f‖²)^{1/2}`).
+
+Proof by induction on `ℓ` with the higher-order clause of Theorem 9.25
+(`Elliptic.regularity_dirichlet_higher`: `Ω` of class `C^{m+2}`, `f ∈ H^m` ⇒ `u ∈ H^{m+2}`,
+`‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`): `f ∈ D(A^{ℓ+1})` iff `f ∈ D(A)` and `A f ∈ D(A^ℓ)`
+(`LinearPMap.powGraph`'s chain condition); by induction `A f ∈ H^{2ℓ}` with the boundary
+conditions, so `f ∈ H¹₀` solves `u - Δu = f + Af ∈ H^{2ℓ}` and Theorem 9.25 gives `f ∈ H^{2ℓ+2}`
+with the estimate; conversely an `H^{2ℓ+2}` function with `Δ^j f ∈ H¹₀`, `j ≤ ℓ`, has
+`Af = -Δf ∈ H^{2ℓ}` satisfying the conditions of order `ℓ`, so it is in `D(A^ℓ)` by induction and
+`f ∈ D(A^{ℓ+1})`. ★★★, ~300 lines of Sobolev bookkeeping on top of Theorem 9.25.'''
+deps = ["dirichletLaplacianDomain_eq_of_isContDiffChartDomain", "mem_dirichletLaplacianDomain_of_sobolev_two", "Elliptic.regularity_dirichlet_higher", "LinearPMap.PowDomain", "LinearPMap.PowDomain.applyL", "LinearPMap.powGraph", "IsContDiffChartDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, equation (7)"
+
+[[node]]
+id = "dirichletLaplacian.powDomainToSobolevL"
+kind = "definition"
+desc = '''`dirichletLaplacian.powDomainToSobolevL (Ω) (hΩ : IsContDiffChartDomain (2ℓ) Ω) (hΓ) (ℓ) :
+(dirichletLaplacian Ω).PowDomain ℓ →L[ℝ] SobolevEuclidean N (2ℓ) 2 Ω`, the continuous injection
+`D(A^ℓ) ↪ H^{2ℓ}(Ω)` as a bounded linear map: `x ↦ w` (the lift of `dirichletLaplacian_mem_powDomain_iff`,
+unique by `SobolevMultiIndex.ext_of_fn_ae_eq`, linear by uniqueness), continuous by
+`dirichletLaplacian_norm_sobolev_le_sum` and `LinearMap.mkContinuous`;
+`fnL_powDomainToSobolevL : fnL (powDomainToSobolevL x) = applyL _ ℓ 0 x`. This is
+the map that turns chapter 7's `ContDiffOnPowDomain` lifts into `Bochner.ContDiffOnThrough` lifts
+(`ContinuousLinearMap.contDiff.comp_contDiffOn`), as the chapter-7 plan anticipates. ★'''
+deps = ["dirichletLaplacian_mem_powDomain_iff", "SobolevMultiIndex.ext_of_fn_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, line 12200"
+
+[[node]]
+id = "Bochner.ContDiffOnThrough.of_contDiffOnPowDomain"
+kind = "theorem"
+desc = '''A chapter-7 lift is a Bochner lift: for a closed `A : H →ₗ.[ℝ] H` with the graph spaces
+`D(A^j)` (`LinearPMap.PowDomain`), a bounded `J : A.PowDomain j →L[ℝ] W`, and
+`A.ContDiffOnPowDomain n j u s` (`u ∈ C^n(s; D(A^j))`, `Numlib/Analysis/ODE/HilleYosida`),
+`Bochner.ContDiffOnThrough (J' ) n (J ∘ lift) s`-type: precisely, if `u : ℝ → H` has a `C^n` lift
+`v : ℝ → A.PowDomain j` with `applyL A j 0 (v t) = u t` on `s`, then for any bounded
+`J : A.PowDomain j →L[ℝ] V` and `K : V →L[ℝ] H` with `K ∘ J = applyL A j 0`,
+`Bochner.ContDiffOnThrough K n u s` with lift `J ∘ v` (`ContinuousLinearMap.contDiff.comp_contDiffOn`).
+Used with `J = dirichletLaplacian.powDomainToSobolevL`, `K = SobolevMultiIndex.fnL` and
+`fnL_powDomainToSobolevL` to turn `Heat.IsSolution.contDiffOnPowDomain` into
+`Heat.IsSolution.contDiffOnThrough_sobolev`. Lives here, the first module that imports both
+chapter 7's graph spaces and the Bochner vocabulary, so that `Bochner` itself imports neither. ★'''
+deps = ["Bochner.ContDiffOnThrough", "Bochner.ContDiffOnThrough.comp", "LinearPMap.ContDiffOnPowDomain", "dirichletLaplacian.powDomainToSobolevL"]
+
+[[node]]
+id = "dirichletLaplacianH10"
+kind = "definition"
+desc = '''**The Dirichlet Laplacian in `H¹₀(Ω)`**, the book's `A₁` (proof of Theorem 10.2 (a)):
+`dirichletLaplacianH10 (Ω) : H¹₀(Ω) →ₗ.[ℝ] H¹₀(Ω)` on the Hilbert space
+`SobolevEuclideanZero N 1 2 Ω` with its `H¹` inner product (`∫ ∇u·∇v + ∫ uv`, the book's
+`(u,v)_{H₁}`, `laplaceForm_eq_innerSL`), with domain `{v : fnL v ∈ D(A) ∧ A (fnL v) ∈ range fnL}` —
+the book's `{u ∈ H³ ∩ H¹₀ : Δu ∈ H¹₀}` once the regularity theorem identifies the domains — and
+value the unique `H¹₀`-preimage of `A (fnL v)`. `dirichletLaplacianH10_apply : fnL (A₁ v) = A (fnL v)`.
+Only for Theorem 10.2 (a); everything else uses `dirichletLaplacian`. ★★'''
+deps = ["dirichletLaplacian", "SobolevMultiIndexZero.fnL", "SobolevMultiIndexZero.instCompleteSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.2 (a)"
+
+[[node]]
+id = "dirichletLaplacianH10_isMaximalMonotone"
+kind = "theorem"
+desc = '''`A₁` is maximal monotone and symmetric in `H¹₀(Ω)`, on any open set, hence self-adjoint
+(`dirichletLaplacianH10_isSelfAdjoint`, Proposition 7.6). The book's three computations, lines
+12253–12275, with the weak identity `⟪A u, fn φ⟫ = dirichletForm Ω ũ φ` in place of integration
+by parts: (i) `⟪A₁ u, u⟫_{H¹} = dirichletForm Ω (A₁u) u + ⟪A u, u⟫ = ‖A u‖² + dirichletForm Ω u u ≥ 0`,
+using `A u ∈ H¹₀` as the test element; (ii) for `f ∈ H¹₀`, the solution `u ∈ D(A)` of
+`u + A u = fnL f` (`dirichletLaplacian_exists_smul_add_apply_eq`) has `A u = f - u ∈ range fnL`, so
+`u ∈ D(A₁)` and `R(I + A₁) = H¹₀`; (iii) `⟪A₁ u, v⟫_{H¹} = ⟪A u, A v⟫ + dirichletForm Ω u v`,
+symmetric. ★★'''
+deps = ["dirichletLaplacianH10", "dirichletLaplacian_inner_eq_dirichletForm", "dirichletLaplacian_exists_smul_add_apply_eq", "Elliptic.laplaceForm_eq_innerSL", "LinearPMap.IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.2 (a), (i)–(iii)"

@@ -53,3 +53,46 @@ id = "dist_iterate_picardMap_le"
 
 [[node]]
 id = "exists_contractingWith_iterate_picardMap"
+
+[[node]]
+id = "exists_isSolutionOn_Ici_of_lipschitz"
+kind = "theorem"
+desc = '''Global existence on the half-line `[t₀, ∞)` ([brezis2011functional] Theorem 7.3,
+Cauchy–Lipschitz–Picard, existence): for `E` a real Banach space, `f : ℝ → E → E` continuous on
+`Ici t₀ ×ˢ univ` and `K`-Lipschitz in the state for every `t ≥ t₀` (`∀ t ∈ Ici t₀, LipschitzWith K (f t)`),
+and every `y₀`, `∃ y : ℝ → E, IsSolutionOn f t₀ y₀ (Ici t₀) y`. The book's field is autonomous,
+`F : E → E` Lipschitz; that is `f t v := F v`, continuous because Lipschitz. Proof: glue the
+solutions on the compact intervals `Icc t₀ (t₀ + n)` of `exists_isSolutionOn_of_lipschitz`,
+which agree on overlaps by `isSolutionOn_unique_of_lipschitz`: define `y t` as the value at `t`
+of the solution on `Icc t₀ (t₀ + ⌈t − t₀⌉₊ + 1)` (or of the solution on `Icc t₀ (max t (t₀+1))`);
+at any `t ≥ t₀` the solution on `Icc t₀ (t + 1)` agrees with `y` on that interval, which is a
+neighbourhood of `t` within `Ici t₀`, so `HasDerivWithinAt.mono_of_mem_nhdsWithin` transfers the
+derivative. The book instead runs the contraction in the weighted space
+`X = {u : sup e^{−kt} ‖u(t)‖ < ∞}` with `k > L`; the gluing is shorter given what `Cauchy.lean`
+has. ★★'''
+deps = ["exists_isSolutionOn_of_lipschitz", "isSolutionOn_unique_of_lipschitz", "IsSolutionOn.mono", "IsSolutionOn.congr"]
+source = "[brezis2011functional] Theorem 7.3"
+
+[[node]]
+id = "isSolutionOn_unique_of_lipschitz_Ici"
+kind = "theorem"
+desc = '''Uniqueness on the half-line ([brezis2011functional] Theorem 7.3, uniqueness): under the
+Lipschitz hypothesis of `exists_isSolutionOn_Ici_of_lipschitz`, two solutions
+`IsSolutionOn f t₀ y₀ (Ici t₀) y`, `IsSolutionOn f t₀ y₀ (Ici t₀) z` satisfy `EqOn y z (Ici t₀)`:
+restrict to `Icc t₀ t` (`IsSolutionOn.mono`) and apply `isSolutionOn_unique_of_lipschitz`. The
+book proves it by the integral Gronwall inequality `φ(t) ≤ L ∫₀ᵗ φ`; the differential form in
+`norm_sub_le_of_lipschitz` is what the existing uniqueness lemma uses. ★'''
+deps = ["isSolutionOn_unique_of_lipschitz", "IsSolutionOn.mono"]
+source = "[brezis2011functional] Theorem 7.3"
+
+[[node]]
+id = "existsUnique_isSolutionOn_Ici_of_lipschitz"
+kind = "theorem"
+desc = '''Theorem 7.3 packaged ([brezis2011functional] Theorem 7.3): under the hypotheses of
+`exists_isSolutionOn_Ici_of_lipschitz`,
+`∃! y : ℝ → E, IsSolutionOn f t₀ y₀ (Ici t₀) y ∧ ∀ t < t₀, y t = y₀` (values before `t₀` pinned
+so that uniqueness of a function on `ℝ` makes sense, as in `existsUnique_isSolutionOn_of_lipschitz`).
+The book's `u ∈ C¹([0,+∞); E)` is `IsSolutionOn.continuousOn_deriv` (continuity of
+`t ↦ f t (y t)` on `Ici t₀`), i.e. `ContDiffOn ℝ 1 y (Ici t₀)` by `contDiffOn_one_iff_derivWithin`. ★'''
+deps = ["exists_isSolutionOn_Ici_of_lipschitz", "isSolutionOn_unique_of_lipschitz_Ici", "IsSolutionOn.continuousOn_deriv"]
+source = "[brezis2011functional] Theorem 7.3"

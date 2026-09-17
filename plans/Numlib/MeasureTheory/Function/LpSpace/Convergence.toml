@@ -1,0 +1,94 @@
+namespace = "MeasureTheory"
+desc = '''
+An `L^p`-convergent sequence has a subsequence that converges almost everywhere *and is dominated
+by a single `L^p` function* (natural home: `Mathlib.MeasureTheory.Function.LpSpace.Complete` or
+`…/ConvergenceInMeasure`). Source: [brezis2011functional] Theorem 4.9 (lines 3473-3487).
+
+Mathlib has the first clause — convergence in `L^p` gives convergence in measure
+(`tendstoInMeasure_of_tendsto_Lp`, `tendstoInMeasure_of_tendsto_eLpNorm`) and convergence in
+measure gives an a.e.-convergent subsequence (`TendstoInMeasure.exists_seq_tendsto_ae`) — and not
+the domination clause (b), `‖f (nₖ) x‖ ≤ h x` for all `k` a.e., with `h ∈ L^p`. The domination is
+what makes the dominated convergence theorem available after passing to a subsequence, and the
+book uses it in that role throughout: Corollary 4.24, the chain rules of Propositions 8.11 (Cor
+8.11) and 9.5, Stampacchia's truncation (Theorems 8.19, 9.27), the trace of `W_0^{1,p}`
+(Theorem 9.17). The book proves (b) by re-running the proof of Theorem 4.8 (Fischer-Riesz) with
+the telescoping bound `g = ∑ |f_{k+1} - f_k|`; here the same telescoping series is read off
+Mathlib's `Lp.hasSum_coeFn_tsum` (a norm-convergent series in `L^p` converges pointwise a.e.),
+which makes the proof short. Two forms: `MemLp`/`eLpNorm` on functions, and `Lp`.
+
+Also here, as the first module of `LpSpace/` in dependency order: the exponent glue instance
+`MeasureTheory.fact_one_le_of_one_lt` (`Fact (1 < p) → Fact (1 ≤ p)`), which `Clarkson` and
+`Duality` both need and neither should import from the other (moved here at review).
+'''
+
+[[node]]
+id = "exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 4.9, function form: for `[Fact (1 ≤ p)]`, `f : ℕ → α → E`
+with `hf : ∀ n, MemLp (f n) p μ`, `g : α → E` with `hg : MemLp g p μ`, and
+`hfg : Tendsto (fun n => eLpNorm (f n - g) p μ) atTop (𝓝 0)`:
+`∃ ns : ℕ → ℕ, StrictMono ns ∧ ∃ h : α → ℝ, MemLp h p μ ∧ (∀ᵐ x ∂μ, Tendsto (fun k => f (ns k) x) atTop (𝓝 (g x))) ∧ ∀ k, ∀ᵐ x ∂μ, ‖f (ns k) x‖ ≤ h x`.
+Proof: choose `ns` strictly increasing with `eLpNorm (f (ns k) - g) p μ ≤ 2⁻¹ ^ k` (from `hfg` by
+`Filter.Tendsto` on `Iic`-neighbourhoods and `Nat.exists_strictMono`-style extraction, or
+`tendsto_atTop_atTop`-free: `exists_seq_strictMono_tendsto`-type lemmas); set
+`dₖ := (hf (ns k)).sub hg |>.toLp` and `h := ‖g‖ + ∑' k, ‖dₖ‖` where the series is taken in
+`Lp ℝ p μ` (norms of `Lp` elements as `Lp ℝ p μ` classes: `Lp.norm`-type map, or work with
+`fun x => ‖dₖ x‖` and `MemLp.norm`); it converges since `∑ ‖dₖ‖_p ≤ ∑ 2⁻ᵏ < ∞`, and by
+`Lp.hasSum_coeFn_tsum` (`InfiniteSum.lean`) the pointwise sum converges a.e. to the class of the
+sum, so `‖f (ns k) x‖ ≤ ‖g x‖ + ‖f (ns k) x - g x‖ ≤ h x` a.e. for each `k`. The a.e. convergence
+clause is Mathlib's: `(tendstoInMeasure_of_tendsto_eLpNorm (by positivity) hfg).exists_seq_tendsto_ae`
+— but note the subsequence must be the *same* for both clauses: take the a.e.-convergent
+subsequence first and thin it further for the summability, or directly prove a.e. convergence
+from the summability (`summable_norm_of_tsum_eLpNorm_ne_top` applied to the differences gives
+`‖f (ns k) x - g x‖ → 0` a.e., which is cleaner). For `p = ∞` both clauses hold with
+`h := ‖g‖ + sup_k ‖f (ns k) - g‖_∞` constant; the proof above covers it if the series is taken in
+`Lp ℝ ∞ μ` (`Fact (1 ≤ ∞)` holds), so no case split is needed. ★★, ~120 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.9"
+
+[[node]]
+id = "Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 4.9, `Lp` form: for `[Fact (1 ≤ p)]`, `f : ℕ → Lp E p μ`,
+`g : Lp E p μ` and `hfg : Tendsto f atTop (𝓝 g)`:
+`∃ ns : ℕ → ℕ, StrictMono ns ∧ ∃ h : Lp ℝ p μ, (∀ᵐ x ∂μ, Tendsto (fun k => f (ns k) x) atTop (𝓝 (g x))) ∧ ∀ k, ∀ᵐ x ∂μ, ‖f (ns k) x‖ ≤ h x`.
+From the function form with `Lp.memLp` and `Lp.tendsto_Lp_iff_tendsto_eLpNorm'`. ★'''
+deps = ["exists_subseq_tendsto_ae_ae_le_of_tendsto_eLpNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.9"
+
+[[node]]
+id = "fact_one_le_of_one_lt"
+kind = "theorem"
+desc = '''`instance (priority := 100) [Fact (1 < p)] : Fact (1 ≤ p)` for `p : ℝ≥0∞`. Lets an instance
+stated under `[Fact (1 < p)] [Fact (p ≠ ∞)]` (uniform convexity, reflexivity of `Lp`) elaborate the
+normed structure of `Lp E p μ`, which asks for `Fact (1 ≤ p)`. Settled by
+`notes/brezis/ch04/proto/Shapes.lean`, where `UniformConvexSpace (Lp ℝ p μ)` elaborates with it. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10 (exponent conventions)"
+
+[[node]]
+id = "Lp.not_finiteDimensional_of_isOpen"
+kind = "theorem"
+desc = '''`L^p` of a nonempty open set is infinite-dimensional: for a finite-dimensional real normed
+space `E` with an additive Haar measure `μ` (`[μ.IsAddHaarMeasure]`), `U ⊆ E` open and nonempty,
+`1 ≤ p < ∞`, `¬ FiniteDimensional ℝ (Lp ℝ p (μ.restrict U))`. Chapter 8 uses it for
+`E = ℝ`, `μ = volume`, `U = Ioo a b`, `p = 2` (the "infinite dimension" hypothesis of
+`eigenvectorHilbertBasis` in `exists_eigenbasis`); chapter 9b's Theorem 9.31
+(`Elliptic/Spectral`, `Elliptic.eigenbasis`) uses it for `E = ℝ^N`, so the general statement is
+proved here once and the `Spectral` module imports it (it is a `_root_` lemma with no dependence
+on this module's content; its final home is `Numlib/MeasureTheory`, to be relocated when the
+orchestrator next clears the relocation backlog).
+
+Proof: pick `x₀ ∈ U` and `r > 0` with `ball x₀ r ⊆ U`; the annuli
+`A n = ball x₀ (r/(n+1)) \ closedBall x₀ (r/(n+2))` are pairwise disjoint, measurable, of positive
+finite measure (`Measure.addHaar_ball_pos`/`Measure.addHaar_ball_lt_top`, difference of two balls of
+distinct radii; on `ℝ` these are the subintervals `(a + (b − a)/(n + 2), a + (b − a)/(n + 1))`).
+Their indicators `indicatorConstLp p _ _ (1 : ℝ)` are nonzero (`eLpNorm_indicator_const`) and
+linearly independent because a finite linear combination vanishing in `L^p` vanishes a.e. on each
+`A n`, where it equals the corresponding coefficient (`indicatorConstLp_coeFn`, `ae_restrict` on
+`A n`); for `p = 2` one may instead normalize and use `Orthonormal.linearIndependent` with
+`L2.inner_indicatorConstLp_indicatorConstLp`. An infinite linearly independent family
+contradicts `FiniteDimensional` (`LinearIndependent.finite` /
+`Module.Finite.not_linearIndependent_of_infinite`). ★ (~80 lines).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"

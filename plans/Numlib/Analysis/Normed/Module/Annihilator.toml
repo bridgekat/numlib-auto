@@ -1,0 +1,431 @@
+namespace = "Submodule"
+desc = '''
+Annihilators of subspaces of a normed space and of its strong dual (natural home:
+`Mathlib.Analysis.Normed.Module.Dual`), and the orthogonality relations between them: for a
+subspace `M` of a normed space `E` over `𝕜`, `M^⊥ = {f ∈ E* | f = 0 on M}`, a closed subspace of
+`E* = StrongDual 𝕜 E`; for a subspace `N` of `E*`, `N^⊥ = {x ∈ E | f x = 0 for all f ∈ N}`, a
+closed subspace of `E` (and not of `E**`). This is [brezis2011functional] §1.3 and §2.5, and the
+vocabulary chapters 2, 3, 6 and 11 of that book consume: the kernel/range relations of the Banach
+adjoint (`N(A*) = R(A)^⊥`), the closed range theorem, the Fredholm alternative, and the duals of
+quotients and subspaces.
+
+Mathlib already has the first object, unnamed as such: `StrongDual.polarSubmodule 𝕜 M` is
+`LinearMap.polarSubmodule` of `(topDualPairing 𝕜 E).flip`, and `LinearMap.polar_subMulAction`
+says its carrier is exactly `{f | ∀ x ∈ M, f x = 0}` (the polar of a set closed under scalars is
+its annihilator). The second object is `(topDualPairing 𝕜 E).polarSubmodule N`, the same
+construction on the other side of the pairing. Both are therefore *thin definitions* here —
+`Submodule.strongDualAnnihilator` and `Submodule.strongDualCoannihilator`, each with an `_eq_polarSubmodule`
+bridge — kept because (i) the book's statements read off them by dot notation, (ii) Mathlib's API
+for `polarSubmodule` stops at membership, and (iii) the theory below (closure, bipolar identities,
+sums and intersections, distances) is what the consumers need and Mathlib does not have. The
+algebraic analogue `Submodule.dualAnnihilator` / `Submodule.dualCoannihilator`
+(`Mathlib/LinearAlgebra/Dual/Defs.lean`) is the template for the names: `mem_`, `_anti`, the Galois
+connection `le_strongDualAnnihilator_iff_le_strongDualCoannihilator`, `_sup`, `_bot`, `_top`; it is *not*
+the same object (it lives in the algebraic dual `Module.Dual`).
+
+**On the name.** The planning brief fixed `Submodule.annihilator 𝕜 M`; that declaration already
+exists in Mathlib as the *ideal* `Module.annihilator R N` of a submodule
+(`Mathlib/RingTheory/Ideal/Maps.lean`, `abbrev Submodule.annihilator (N : Submodule R M) : Ideal R`),
+so the name is unusable — checked by `#check @Submodule.annihilator` in
+`notes/brezis/ch01/proto/annihilator.lean`. `strongDualAnnihilator` says where the object lives
+(`StrongDual 𝕜 E`) and pairs with Mathlib's `dualAnnihilator`; `strongDualCoannihilator` for
+`N^⊥ ⊆ E` pairs with Mathlib's `dualCoannihilator` the same way (the brief's `preannihilator`, a
+name no Mathlib reader would guess, was replaced by it at review, across every plan file). The
+lemma names follow the Mathlib pair too: `mem_`, `_anti`, `_sup`, `_bot`, `_top`,
+`le_strongDualAnnihilator_iff_le_strongDualCoannihilator`
+(`Submodule.le_dualAnnihilator_iff_le_dualCoannihilator`), and the bipolar identities
+`strongDualCoannihilator_strongDualAnnihilator` (`(M^⊥)^⊥`, function-application order) and
+`strongDualAnnihilator_strongDualCoannihilator` (`(N^⊥)^⊥`).
+
+Scalars: everything is over `RCLike 𝕜` (D1) — the definitions make sense over any nontrivially
+normed field and a topological vector space, and are stated at that generality; every theorem
+from `strongDualCoannihilator_strongDualAnnihilator` on uses Hahn–Banach through
+`Submodule.exists_dual_eq_zero_of_notMem` (`Numlib/Analysis/Normed/Module/DualSeparable`), which
+is where `RCLike` enters. The surface of Brezis states everything over `ℝ`.
+
+The module has four layers:
+
+1. the definitions and their order-theoretic API (`mem_`, `isClosed_`, the antitone Galois
+   connection, `_sup`, `_bot`, `_top`, invariance under `topologicalClosure`);
+2. the orthogonality relations of [brezis2011functional] Proposition 1.9 —
+   `(M^⊥)^⊥ = closure M` for every `M ⊆ E`, `(N^⊥)^⊥ ⊇ closure N` for every `N ⊆ E*`, with
+   equality when `E` is reflexive (Remark 6; `NormedSpace.IsReflexive` of
+   `Numlib/Analysis/Normed/Module/Reflexive`) — and the density criterion
+   `M^⊥ = ⊥ ↔ Dense M` (Corollary 1.8 with Remark 5);
+3. sums and intersections, [brezis2011functional] Proposition 2.14 and Corollary 2.15:
+   `(G + L)^⊥ = G^⊥ ∩ L^⊥`, `(G^⊥ + L^⊥)^⊥ = G ∩ L` for closed `G, L`, and
+   `(G^⊥ ∩ L^⊥)^⊥ = closure (G + L)`;
+4. two distance formulas, useful on their own and consumed by chapter 11's quotient duals:
+   `dist(f, M^⊥) = ‖f|_M‖` for `f ∈ E*` (the book's (21), by norm-preserving extension) and
+   `dist(x, M) = max {|f x| : f ∈ M^⊥, ‖f‖ ≤ 1}` for `x ∈ E` (the book's Example 3 of §1.4 in its
+   subspace case, by Hahn–Banach in `E ⧸ closure M`).
+
+[brezis2011functional] Theorem 2.16 — in a Banach space, for closed `G, L`, the four statements
+"`G + L` closed", "`G^⊥ + L^⊥` closed", "`G + L = (G^⊥ ∩ L^⊥)^⊥`", "`G^⊥ + L^⊥ = (G ∩ L)^⊥`" are
+equivalent — is the **child module `Annihilator/ClosedSum`** (moved there at review, ids
+unchanged). Its proof consumes chapter 2's Theorem 2.10 and Corollary 2.11
+(`Numlib/Analysis/Normed/Module/Complemented`) and the open-mapping step
+`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image`
+(`Numlib/Analysis/Normed/Operator/Unbounded/Basic`); keeping it here would have made every
+consumer of the annihilators (the weak topologies, the adjoint, the quotients, the compact
+operators) import those two modules for a theorem none of them uses — chapter 2's closed range
+theorem is proved directly. This module therefore imports only Mathlib,
+`Numlib/Analysis/Normed/Module/DualSeparable` and `…/Reflexive`.
+
+Not here: the weak-* description `(N^⊥)^⊥ = weak-* closure of N` (Remark 6's last sentence) is
+chapter 3's, over `WeakDual`; the annihilator form of the kernel/range relations of an adjoint is
+chapter 2's (`Unbounded/Adjoint`); `(E ⧸ M)* ≅ M^⊥` and `M* ≅ E* ⧸ M^⊥` are chapter 11's
+(`Quotient`).
+
+Order of attack: layers 1–3 are one sitting (★, ~250 lines, no dependency outside Mathlib,
+`DualSeparable` and `Reflexive`); layer 4's two distance formulas are ★ (~80 lines). Estimated
+total 330 lines here, plus ~350 in `Annihilator/ClosedSum` for Theorem 2.16.
+'''
+
+[[node]]
+id = "strongDualAnnihilator"
+kind = "definition"
+desc = '''`M^⊥` for a subspace `M` of a topological vector space `E` over a nontrivially normed
+field `𝕜`: the closed subspace `{f : StrongDual 𝕜 E | ∀ x ∈ M, f x = 0}` of the strong dual.
+Signature: `Submodule.strongDualAnnihilator (M : Submodule 𝕜 E) : Submodule 𝕜 (StrongDual 𝕜 E)`
+over `[NontriviallyNormedField 𝕜] [AddCommGroup E] [Module 𝕜 E] [TopologicalSpace E]`; `𝕜` is
+implicit, being determined by `M`. Defined as `StrongDual.polarSubmodule 𝕜 M` (Mathlib,
+`Mathlib/Analysis/LocallyConvex/Polar.lean`), which is what makes `mem_strongDualAnnihilator`
+`StrongDual.mem_polarSubmodule` — prototyped in `notes/brezis/ch01/proto/annihilator.lean`.
+The name avoids Mathlib's ideal-valued `Submodule.annihilator`; see the group description.
+Source: [brezis2011functional] §1.3, Notation. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.3, Notation"
+
+[[node]]
+id = "mem_strongDualAnnihilator"
+kind = "theorem"
+desc = '''`f ∈ M.strongDualAnnihilator ↔ ∀ x ∈ M, f x = 0`. `@[simp]`. It is
+`StrongDual.mem_polarSubmodule 𝕜 M f`. ★'''
+deps = ["strongDualAnnihilator"]
+
+[[node]]
+id = "strongDualAnnihilator_eq_polarSubmodule"
+kind = "theorem"
+desc = '''The bridge to Mathlib: `M.strongDualAnnihilator = StrongDual.polarSubmodule 𝕜 M` (by
+`rfl` with the definition above), so that Mathlib's polar API (`StrongDual.polar_closure`,
+`isClosed_polar`, `LinearMap.polar_gc`) can be used on it. ★'''
+deps = ["strongDualAnnihilator"]
+
+[[node]]
+id = "strongDualCoannihilator"
+kind = "definition"
+desc = '''`N^⊥` for a subspace `N` of the strong dual: the closed subspace
+`{x : E | ∀ f ∈ N, f x = 0}` of `E` itself (not of `E**` — [brezis2011functional] insists on this
+in §1.3). Signature: `Submodule.strongDualCoannihilator (N : Submodule 𝕜 (StrongDual 𝕜 E)) : Submodule 𝕜 E`,
+same generality as `strongDualAnnihilator`. Defined as `(topDualPairing 𝕜 E).polarSubmodule N`
+(`LinearMap.polarSubmodule` on the other side of the pairing; `LinearMap.polar_subMulAction`
+identifies its carrier). Prototyped in `notes/brezis/ch01/proto/annihilator.lean`, where the
+membership lemma is
+`simp [LinearMap.polarSubmodule, Submodule.copy_eq, Submodule.mem_iInf]`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.3, Notation"
+
+[[node]]
+id = "mem_strongDualCoannihilator"
+kind = "theorem"
+desc = '''`x ∈ N.strongDualCoannihilator ↔ ∀ f ∈ N, f x = 0`. `@[simp]`. ★'''
+deps = ["strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualCoannihilator_eq_iInf_ker"
+kind = "theorem"
+desc = '''`N.strongDualCoannihilator = ⨅ f ∈ N, LinearMap.ker (f : E →ₗ[𝕜] 𝕜)` — the form in which
+closedness and the Galois connection are read off. Also the bridge
+`N.strongDualCoannihilator = (topDualPairing 𝕜 E).polarSubmodule N` (`rfl`). ★'''
+deps = ["strongDualCoannihilator", "mem_strongDualCoannihilator"]
+
+[[node]]
+id = "isClosed_strongDualAnnihilator"
+kind = "theorem"
+desc = '''`IsClosed (M.strongDualAnnihilator : Set (StrongDual 𝕜 E))` in the norm (strong)
+topology of the dual, for a normed space `E`: it is the intersection over `x ∈ M` of the closed
+sets `{f | f x = 0}`, evaluation at `x` being continuous on `StrongDual 𝕜 E`
+(`ContinuousLinearMap.apply`). Also true in the weak-* topology, which chapter 3 may want; only
+the norm version is stated here. Cf. Mathlib's `isClosed_polar`. ★'''
+deps = ["mem_strongDualAnnihilator"]
+
+[[node]]
+id = "isClosed_strongDualCoannihilator"
+kind = "theorem"
+desc = '''`IsClosed (N.strongDualCoannihilator : Set E)`: the intersection of the closed kernels
+`ker f`, `f ∈ N` (`strongDualCoannihilator_eq_iInf_ker`, `ContinuousLinearMap.isClosed_ker`). ★'''
+deps = ["strongDualCoannihilator_eq_iInf_ker"]
+
+[[node]]
+id = "le_strongDualAnnihilator_iff_le_strongDualCoannihilator"
+kind = "theorem"
+desc = '''The antitone Galois connection: for `M : Submodule 𝕜 E` and
+`N : Submodule 𝕜 (StrongDual 𝕜 E)`, `N ≤ M.strongDualAnnihilator ↔ M ≤ N.strongDualCoannihilator` (both
+say `∀ f ∈ N, ∀ x ∈ M, f x = 0`). Mirrors Mathlib's
+`Submodule.le_dualAnnihilator_iff_le_dualCoannihilator`. The next four nodes are its formal
+consequences (`GaloisConnection` on `Submodule 𝕜 E` and `(Submodule 𝕜 (StrongDual 𝕜 E))ᵒᵈ`,
+if the formalizer wants to package it as `strongDualAnnihilator_gc`). ★'''
+deps = ["mem_strongDualAnnihilator", "mem_strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualAnnihilator_anti"
+kind = "theorem"
+desc = '''`M₁ ≤ M₂ → M₂.strongDualAnnihilator ≤ M₁.strongDualAnnihilator` (the book's "if
+`N₁ ⊂ N₂` then `N₂^⊥ ⊂ N₁^⊥`", used in the proof of Proposition 2.14). ★'''
+deps = ["le_strongDualAnnihilator_iff_le_strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualCoannihilator_anti"
+kind = "theorem"
+desc = '''`N₁ ≤ N₂ → N₂.strongDualCoannihilator ≤ N₁.strongDualCoannihilator`. ★'''
+deps = ["le_strongDualAnnihilator_iff_le_strongDualCoannihilator"]
+
+[[node]]
+id = "le_strongDualAnnihilator_strongDualCoannihilator"
+kind = "theorem"
+desc = '''`M ≤ M.strongDualAnnihilator.strongDualCoannihilator`: every `x ∈ M` is killed by every
+`f ∈ M^⊥`. The unit of the Galois connection; the book's "it is clear that
+`M ⊂ (M^⊥)^⊥`" in the proof of Proposition 1.9. ★'''
+deps = ["le_strongDualAnnihilator_iff_le_strongDualCoannihilator"]
+
+[[node]]
+id = "le_strongDualCoannihilator_strongDualAnnihilator"
+kind = "theorem"
+desc = '''`N ≤ N.strongDualCoannihilator.strongDualAnnihilator`. The counit. ★'''
+deps = ["le_strongDualAnnihilator_iff_le_strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualAnnihilator_sup"
+kind = "theorem"
+desc = '''`(M₁ ⊔ M₂).strongDualAnnihilator = M₁.strongDualAnnihilator ⊓ M₂.strongDualAnnihilator`
+for arbitrary subspaces `M₁ M₂ : Submodule 𝕜 E` — [brezis2011functional] Proposition 2.14, formula
+(17) `G^⊥ ∩ L^⊥ = (G + L)^⊥`, which needs no closedness. A Galois connection turns suprema into
+infima (`GaloisConnection.l_sup` on the dual order), or directly: `f` kills `x + y` for all
+`x ∈ M₁`, `y ∈ M₂` iff it kills both. Mirrors `Submodule.dualAnnihilator_sup_eq`. ★'''
+deps = ["mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.14"
+
+[[node]]
+id = "strongDualCoannihilator_sup"
+kind = "theorem"
+desc = '''`(N₁ ⊔ N₂).strongDualCoannihilator = N₁.strongDualCoannihilator ⊓ N₂.strongDualCoannihilator` for arbitrary
+subspaces of the dual. With `strongDualCoannihilator_strongDualAnnihilator` this is
+[brezis2011functional] Proposition 2.14, formula (16): see
+`strongDualCoannihilator_sup_strongDualAnnihilator_of_isClosed`. Mirrors
+`Submodule.dualCoannihilator_sup_eq`. ★'''
+deps = ["mem_strongDualCoannihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.14"
+
+[[node]]
+id = "strongDualAnnihilator_bot"
+kind = "theorem"
+desc = '''`(⊥ : Submodule 𝕜 E).strongDualAnnihilator = ⊤`. ★'''
+deps = ["mem_strongDualAnnihilator"]
+
+[[node]]
+id = "strongDualAnnihilator_top"
+kind = "theorem"
+desc = '''`(⊤ : Submodule 𝕜 E).strongDualAnnihilator = ⊥`: a functional vanishing everywhere is
+zero (`ContinuousLinearMap.ext`). ★'''
+deps = ["mem_strongDualAnnihilator"]
+
+[[node]]
+id = "strongDualCoannihilator_bot"
+kind = "theorem"
+desc = '''`(⊥ : Submodule 𝕜 (StrongDual 𝕜 E)).strongDualCoannihilator = ⊤`. ★'''
+deps = ["mem_strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualCoannihilator_top"
+kind = "theorem"
+desc = '''`(⊤ : Submodule 𝕜 (StrongDual 𝕜 E)).strongDualCoannihilator = ⊥` for a normed space over
+`RCLike 𝕜`: a vector killed by every functional is zero, which is Hahn–Banach —
+`NormedSpace.eq_zero_of_forall_dual_eq_zero` (`Mathlib/Analysis/Normed/Module/Dual.lean`).
+This is the first node that needs `RCLike`. ★'''
+deps = ["mem_strongDualCoannihilator"]
+
+[[node]]
+id = "strongDualAnnihilator_topologicalClosure"
+kind = "theorem"
+desc = '''`M.topologicalClosure.strongDualAnnihilator = M.strongDualAnnihilator` for a normed
+space `E` (or any TVS with `Submodule.topologicalClosure`): a continuous functional vanishing on
+`M` vanishes on its closure (`ContinuousLinearMap.eqOn_closure_span`-type argument, or Mathlib's
+`StrongDual.polar_closure` through `strongDualAnnihilator_eq_polarSubmodule`). ★'''
+deps = ["mem_strongDualAnnihilator", "strongDualAnnihilator_anti"]
+
+[[node]]
+id = "strongDualCoannihilator_topologicalClosure"
+kind = "theorem"
+desc = '''`N.topologicalClosure.strongDualCoannihilator = N.strongDualCoannihilator` for a normed space `E`: if
+`f x = 0` for all `f ∈ N` then also for `f` in the norm closure of `N`, evaluation at `x` being
+continuous on the dual. ★'''
+deps = ["mem_strongDualCoannihilator", "strongDualCoannihilator_anti"]
+
+[[node]]
+id = "strongDualCoannihilator_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 1.9, first clause: `(M^⊥)^⊥ = closure M`.** For a
+normed space `E` over `RCLike 𝕜` and any `M : Submodule 𝕜 E`,
+`M.strongDualAnnihilator.strongDualCoannihilator = M.topologicalClosure`.
+
+Proof (the book's, p. 9, lines 461–466, with the separation step replaced by a Numlib lemma):
+`≥` is `le_strongDualAnnihilator_strongDualCoannihilator` plus `isClosed_strongDualCoannihilator`
+(`Submodule.topologicalClosure_minimal`). For `≤`, let `x₀ ∈ (M^⊥)^⊥` and suppose
+`x₀ ∉ closure M`; `Submodule.exists_dual_eq_zero_of_notMem M.topologicalClosure` (closed) gives
+`f ∈ E*` with `f = 0` on `closure M` and `f x₀ ≠ 0`; then `f ∈ M^⊥`
+(`strongDualAnnihilator_topologicalClosure`) and `x₀ ∈ (M^⊥)^⊥` force `f x₀ = 0`,
+a contradiction. Over `ℝ` this is also the bipolar theorem `ConvexAnalysis.polarCone_polarCone`
+of `Numlib/Analysis/Convex/Duality/Polar` at `B = (topDualPairing ℝ E).flip` and `K = M`
+(`polarCone_coe_submodule`), but the direct proof keeps the module over `RCLike` and free of
+the convex library. ★'''
+deps = ["le_strongDualAnnihilator_strongDualCoannihilator", "isClosed_strongDualCoannihilator", "strongDualAnnihilator_topologicalClosure", "Submodule.exists_dual_eq_zero_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.9"
+
+[[node]]
+id = "strongDualCoannihilator_strongDualAnnihilator_of_isClosed"
+kind = "theorem"
+desc = '''`(M^⊥)^⊥ = M` for a *closed* subspace `M` (`IsClosed (M : Set E)`): the previous node
+with `Submodule.topologicalClosure_eq`-style rewriting (`IsClosed.closure_eq`). The form the
+book's Example 2 of §1.4 and Proposition 2.14 use. ★'''
+deps = ["strongDualCoannihilator_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.9"
+
+[[node]]
+id = "topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 1.9, second clause: `(N^⊥)^⊥ ⊇ closure N`.** For any
+`N : Submodule 𝕜 (StrongDual 𝕜 E)`, `N.topologicalClosure ≤ N.strongDualCoannihilator.strongDualAnnihilator`:
+the counit `le_strongDualCoannihilator_strongDualAnnihilator` and the closedness of the right-hand side.
+The inclusion can be strict (the book's Exercise 1.16, `E = ℓ¹`, `N = c₀`; not formalized) and
+is an equality when `E` is reflexive (`strongDualAnnihilator_strongDualCoannihilator`). ★'''
+deps = ["le_strongDualCoannihilator_strongDualAnnihilator", "isClosed_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.9"
+
+[[node]]
+id = "strongDualAnnihilator_strongDualCoannihilator"
+kind = "theorem"
+desc = '''**The reflexive case of [brezis2011functional] Remark 6 (Chapter 1): `(N^⊥)^⊥ = closure N`
+when `E` is reflexive.** Under `[NormedSpace.IsReflexive 𝕜 E]` (`Numlib/Analysis/Normed/Module/Reflexive`),
+for every `N : Submodule 𝕜 (StrongDual 𝕜 E)`,
+`N.strongDualCoannihilator.strongDualAnnihilator = N.topologicalClosure`.
+
+Proof: `≥` is the previous node. For `≤`, let `f₀ ∈ (N^⊥)^⊥` with `f₀ ∉ closure N`. Apply
+`Submodule.exists_dual_eq_zero_of_notMem` in the Banach space `E*` to the closed subspace
+`N.topologicalClosure`: there is `ξ ∈ E**` with `ξ = 0` on `closure N` and `ξ f₀ ≠ 0`. By
+reflexivity `ξ = inclusionInDoubleDual 𝕜 E x₀` for some `x₀`
+(`NormedSpace.surjective_inclusionInDoubleDual`), so `f x₀ = ξ f = 0` for all `f ∈ N`, i.e.
+`x₀ ∈ N^⊥`; then `f₀ x₀ = 0` because `f₀ ∈ (N^⊥)^⊥`, contradicting `ξ f₀ = f₀ x₀ ≠ 0`
+(`NormedSpace.dual_def`). This is exactly where the book's Remark 6 says the general argument
+"breaks down unless `ξ = J x₀`". Chapter 3 (`Reflexive/Kakutani`) should consume this node rather
+than restate it; the weak-* form `(N^⊥)^⊥ = weak-* closure of N` for arbitrary `E` is chapter
+3's and is not here. ★'''
+deps = ["topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator", "mem_strongDualCoannihilator", "mem_strongDualAnnihilator", "Submodule.exists_dual_eq_zero_of_notMem", "NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 6"
+
+[[node]]
+id = "strongDualAnnihilator_eq_bot_iff"
+kind = "theorem"
+desc = '''**[brezis2011functional] Corollary 1.8 with Remark 5, as a density criterion:**
+`M.strongDualAnnihilator = ⊥ ↔ Dense (M : Set E)`, for a normed space over `RCLike 𝕜`.
+Equivalently (`Submodule.dense_iff_topologicalClosure_eq_top`): `M` is dense iff every bounded
+linear functional vanishing on `M` vanishes identically. `←` is
+`strongDualAnnihilator_topologicalClosure` and `strongDualAnnihilator_top`; `→` is the
+contrapositive through `Submodule.exists_dual_eq_zero_of_notMem` applied to `closure M` (or
+`strongDualCoannihilator_strongDualAnnihilator` with `strongDualCoannihilator_bot`). This is the form chapter 2
+wants for "`A*` injective iff `R(A)` dense" (Theorem 2.20's surroundings and Corollary 2.18). ★'''
+deps = ["strongDualAnnihilator_topologicalClosure", "strongDualAnnihilator_top", "strongDualCoannihilator_strongDualAnnihilator", "strongDualCoannihilator_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 1.8"
+
+[[node]]
+id = "strongDualAnnihilator_le_strongDualAnnihilator_iff"
+kind = "theorem"
+desc = '''`M₂.strongDualAnnihilator ≤ M₁.strongDualAnnihilator ↔ M₁.topologicalClosure ≤ M₂.topologicalClosure`,
+hence `M₁.strongDualAnnihilator = M₂.strongDualAnnihilator ↔ M₁.topologicalClosure = M₂.topologicalClosure`
+(`strongDualAnnihilator_inj_of_isClosed` for closed subspaces, if wanted): the annihilator
+determines a subspace up to closure, by `strongDualCoannihilator_strongDualAnnihilator` and the Galois
+connection. Mirrors `Submodule.dualAnnihilator_le_dualAnnihilator_iff`. ★'''
+deps = ["strongDualCoannihilator_strongDualAnnihilator", "le_strongDualAnnihilator_iff_le_strongDualCoannihilator", "strongDualAnnihilator_anti"]
+
+[[node]]
+id = "strongDualCoannihilator_sup_strongDualAnnihilator_of_isClosed"
+kind = "theorem"
+desc = '''**[brezis2011functional] Proposition 2.14, formula (16): `G ∩ L = (G^⊥ + L^⊥)^⊥`** for
+closed subspaces `G L : Submodule 𝕜 E` of a normed space:
+`(G.strongDualAnnihilator ⊔ L.strongDualAnnihilator).strongDualCoannihilator = G ⊓ L`. By
+`strongDualCoannihilator_sup` and `strongDualCoannihilator_strongDualAnnihilator_of_isClosed` twice. (Formula (17)
+is `strongDualAnnihilator_sup`, with no closedness needed.) ★'''
+deps = ["strongDualCoannihilator_sup", "strongDualCoannihilator_strongDualAnnihilator_of_isClosed"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 2.14"
+
+[[node]]
+id = "topologicalClosure_sup_strongDualAnnihilator_le"
+kind = "theorem"
+desc = '''**[brezis2011functional] Corollary 2.15, formula (18): `(G ∩ L)^⊥ ⊇ closure (G^⊥ + L^⊥)`**
+for closed `G, L` (in fact for arbitrary `G, L`):
+`(G.strongDualAnnihilator ⊔ L.strongDualAnnihilator).topologicalClosure ≤ (G ⊓ L).strongDualAnnihilator`.
+Antitonicity gives `G^⊥ ⊔ L^⊥ ≤ (G ⊓ L)^⊥`, and the right-hand side is closed. The inclusion is
+an equality exactly when `G + L` is closed (Theorem 2.16, `tfae_isClosed_sup`). ★'''
+deps = ["strongDualAnnihilator_anti", "isClosed_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.15"
+
+[[node]]
+id = "strongDualCoannihilator_inf_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**[brezis2011functional] Corollary 2.15, formula (19): `(G^⊥ ∩ L^⊥)^⊥ = closure (G + L)`**
+for arbitrary `G L : Submodule 𝕜 E` (the book assumes closed; it is not needed):
+`(G.strongDualAnnihilator ⊓ L.strongDualAnnihilator).strongDualCoannihilator = (G ⊔ L).topologicalClosure`.
+By `strongDualAnnihilator_sup` (read right to left) and `strongDualCoannihilator_strongDualAnnihilator`
+at `M = G ⊔ L`. This is what makes (a) ⟺ (c) of Theorem 2.16 a triviality. ★'''
+deps = ["strongDualAnnihilator_sup", "strongDualCoannihilator_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.15"
+
+[[node]]
+id = "infDist_strongDualAnnihilator"
+kind = "theorem"
+desc = '''**The distance from a functional to an annihilator is the norm of its restriction** —
+[brezis2011functional] formula (21) in the proof of Theorem 2.16, p. 46: for a normed space `E`
+over `RCLike 𝕜`, `M : Submodule 𝕜 E` and `f : StrongDual 𝕜 E`,
+`Metric.infDist f (M.strongDualAnnihilator : Set (StrongDual 𝕜 E)) = ‖f.comp M.subtypeL‖`.
+(The book writes the right-hand side as `sup {⟨f, x⟩ : x ∈ M, ‖x‖ ≤ 1}`, which over `ℝ` equals
+`‖f|_M‖` by `ContinuousLinearMap.sSup_unitClosedBall_eq_norm` and the symmetry of `M`; the
+surface may restate it so.)
+
+The book derives (21) from Theorem 1.12 (Fenchel–Rockafellar); it is quicker from Corollary 1.2
+alone. `≥`: for `g ∈ M^⊥`, `‖f - g‖ ≥ ‖(f - g)|_M‖ = ‖f|_M‖`. `≤`: `exists_extension_norm_eq M
+(f.comp M.subtypeL)` gives `h ∈ E*` extending `f|_M` with `‖h‖ = ‖f|_M‖`; then `f - h ∈ M^⊥` and
+`dist (f, f - h) = ‖h‖`. Use `Metric.infDist_le_dist_of_mem` and `Metric.le_infDist` (or
+`Metric.infDist_eq_iInf`). ★'''
+deps = ["mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.16, formula (21)"
+
+[[node]]
+id = "norm_apply_le_infDist_of_mem_strongDualAnnihilator"
+kind = "theorem"
+desc = '''The easy half of the dual distance formula: for `x : E`, `f ∈ M.strongDualAnnihilator`
+with `‖f‖ ≤ 1`, `‖f x‖ ≤ Metric.infDist x (M : Set E)`. Indeed `f x = f (x - y)` for every
+`y ∈ M`, so `‖f x‖ ≤ ‖x - y‖`; take the infimum (`Metric.le_infDist`; `M` is nonempty). ★'''
+deps = ["mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"
+
+[[node]]
+id = "exists_mem_strongDualAnnihilator_norm_le_one_apply_eq_infDist"
+kind = "theorem"
+desc = '''**The distance from a point to a subspace is attained by a functional in the
+annihilator** — [brezis2011functional] §1.4, Example 3, the subspace case, formula
+`dist(x₀, M) = max {⟨f, x₀⟩ : f ∈ M^⊥, ‖f‖ ≤ 1}`: for a normed space `E` over `RCLike 𝕜`,
+`M : Submodule 𝕜 E` and `x : E`,
+`∃ f ∈ M.strongDualAnnihilator, ‖f‖ ≤ 1 ∧ f x = (Metric.infDist x (M : Set E) : 𝕜)`.
+With the previous node this says `infDist x M = ⨆ f ∈ {f ∈ M^⊥ | ‖f‖ ≤ 1}, ‖f x‖`, the
+supremum being a maximum.
+
+Proof: Hahn–Banach in the quotient. Let `M̄ = M.topologicalClosure`, so `E ⧸ M̄` is a normed
+space (`Submodule.Quotient.normedAddCommGroup`, `IsClosed`) and
+`‖mk x‖ = infDist x M̄ = infDist x M` (`QuotientAddGroup.norm_mk`, `Metric.infDist_closure`).
+`exists_dual_vector'' 𝕜 (mk x)` gives `g` on the quotient with `‖g‖ ≤ 1` and `g (mk x) = ‖mk x‖`;
+`f := g.comp (M̄.mkQ as a `ContinuousLinearMap`, norm `≤ 1`, cf. the construction inside
+`Submodule.exists_dual_eq_zero_of_notMem`)` vanishes on `M` and has the required value and norm.
+The book instead applies Theorem 1.12 to `‖· - x₀‖` and `I_M`; the surface's `example_1_3`
+follows the book for a general convex `K` and delegates the subspace case here. ★'''
+deps = ["mem_strongDualAnnihilator", "norm_apply_le_infDist_of_mem_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"

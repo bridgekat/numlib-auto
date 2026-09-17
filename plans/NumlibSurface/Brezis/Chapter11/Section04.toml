@@ -1,0 +1,571 @@
+namespace = "Brezis.Chapter11"
+desc = '''
+Brezis §11.4, "Banach spaces over `ℂ`: what is similar and what is different". Here and only here
+the surface works over `ℂ`: `E` is a complex Banach space (`[NormedSpace ℂ E]`), `H` a complex
+Hilbert space (`[InnerProductSpace ℂ H] [CompleteSpace H]`), and the book's `E_ℝ` is the same
+type read through Mathlib's instance `NormedSpace.complexToReal` (for inner product spaces the
+real structure `Re (u, v)` is the *definition* `InnerProductSpace.complexToReal`, brought in
+locally with `letI`, and `real_inner_eq_re_inner`). The book's sesquilinear conventions are the
+transpose of Mathlib's: its `(u, v)` is linear in `u`, Mathlib's `⟪u, v⟫` in `v`, so the book's
+`(u, v)` is `⟪v, u⟫ = conj ⟪u, v⟫`; nodes state Mathlib's form and say so.
+
+The section is uneven, and so is its plan. Propositions 11.22–11.29 are the real results of
+chapters 1 and 5 applied to `E_ℝ` and transported by the isometry `f ↦ Re f` — each is a short
+surface proof over Mathlib's `RCLike` versions (`ContinuousLinearMap.extendRCLikeₗᵢ`,
+`exists_extension_norm_eq`, `geometric_hahn_banach_open`, `InnerProductSpace.toDual`) or over the
+real surface nodes of chapters 1 and 5 through `complexToReal`. Propositions 11.30–11.37 are the
+spectral theory that genuinely needs `ℂ`; there Mathlib is strong (`spectrum.nonempty`, Gelfand's
+formula, the polynomial spectral mapping theorem, the C⋆-algebra `H →L[ℂ] H` with
+`IsStarNormal.spectralRadius_eq_nnnorm`, `spectrum.subset_circle_of_unitary`) and the backbone
+`Numlib/Analysis/Normed/Algebra/Spectrum` supplies what is missing: the eigenvalue half of the
+spectral mapping theorem, the numerical-range bounds of 11.33 and Remark 1 (on the
+Toeplitz–Hausdorff theorem of `Numlib/Eigen/NumericalRange`), the non-unitary isometry clause of
+11.37; the spectral decomposition of compact normal operators (11.36, Remark 2) is
+`Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal`. Proposition
+11.34 (compact self-adjoint over `ℂ`) is chapter 6's `RCLike` Theorem 6.11 at `𝕜 = ℂ`.
+
+Not formalized: the prose comparisons ("Chapter 2. All the statements are unchanged…",
+"Chapter 4. Totally unchanged", the Agmon reference for chapters 8–9), the finite-dimensional
+motivation, the computation `W(T) = {|λ| ≤ 1/2}` for `T(u₁, u₂) = (u₂, 0)` (an unnumbered
+example; the same operator's spectrum and norm after 11.30 *is* a node, `example_shift_two`),
+and the non-compact half of Remark 2 (`closure W(T) = conv σ(T)` for every normal `T`, quoted
+from Halmos). The two examples that are nodes, the right shift without eigenvalues and
+`example_shift_two`, are cheap and illustrate the definitions.
+'''
+
+[[node]]
+id = "proposition_11_22"
+kind = "theorem"
+desc = '''Proposition 11.22: `I : f ↦ Re f` is a bijective isometry of `E*` (the complex dual)
+onto `E_ℝ*` (the real dual of `E` as a real space). Stated as: there is
+`I : StrongDual ℂ E ≃ₗᵢ[ℝ] StrongDual ℝ E` with `I f x = re (f x)` for all `f, x`, whose inverse is
+`φ ↦ (x ↦ φ x − I * φ (I • x))` (display (12)). It is Mathlib's
+`(ContinuousLinearMap.extendRCLikeₗᵢ (𝕜 := ℂ) (F := E)).symm`
+(`Mathlib/Analysis/Normed/Module/RCLike/Extend.lean`): `re_extendRCLike_apply` is the formula
+for `I`, `extendRCLike_apply` the formula (12) for the inverse, `norm_extendRCLike` the isometry.
+The book's estimate `|f x| ≤ √2 ‖φ‖ ‖x‖` before the sharp one is `norm_extendRCLike_bound`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.22"
+
+[[node]]
+id = "proposition_11_23"
+kind = "theorem"
+desc = '''Proposition 11.23, Hahn–Banach over `ℂ`: for a subspace `G` of `E` and a continuous
+linear `g : G →L[ℂ] ℂ` there is `f : StrongDual ℂ E` extending `g` with `‖f‖ = ‖g‖`. Mathlib's
+`exists_extension_norm_eq G g`, which is stated over `RCLike 𝕜` and is proved exactly as the
+book proves this proposition (the real theorem plus `extendRCLike`). Chapter 1's
+`Brezis.Chapter01.corollary_1_2` is the same lemma at `ℝ`. ★'''
+deps = ["Brezis.Chapter01.corollary_1_2"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.23"
+
+[[node]]
+id = "IsClosedRealHyperplane"
+kind = "definition"
+desc = '''"A closed real hyperplane `H` in `E` is a set of the form `H = {x ∈ E ; Re ⟨f, x⟩ = α}`
+for some `f ∈ E*`, `f ≠ 0`, and some `α ∈ ℝ`":
+`IsClosedRealHyperplane (H : Set E) : Prop := ∃ (f : StrongDual ℂ E) (α : ℝ), f ≠ 0 ∧ H = {x | re (f x) = α}`.
+(By `proposition_11_22` this is the same as chapter 1's closed hyperplane `[φ = α]` of `E_ℝ`,
+`Brezis.Chapter01.IsHyperplane` with a continuous `φ`; record that as `isClosedRealHyperplane_iff`.)
+The warning that for `α = 0` it is a real but not a complex subspace is not a node. ★'''
+deps = ["Brezis.Chapter01.IsHyperplane"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "SeparatesRe"
+kind = "definition"
+desc = '''"`H` separates `A, B ⊆ E` if `Re ⟨f, x⟩ ≤ α` for `x ∈ A` and `Re ⟨f, x⟩ ≥ α` for `x ∈ B`":
+`SeparatesRe (f : StrongDual ℂ E) (α : ℝ) (A B : Set E) : Prop := (∀ x ∈ A, re (f x) ≤ α) ∧ ∀ x ∈ B, α ≤ re (f x)`,
+the hyperplane being carried by `(f, α)` as in chapter 1's `Brezis.Chapter01.Separates`. ★'''
+deps = ["Brezis.Chapter01.Separates"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "proposition_11_24"
+kind = "theorem"
+desc = '''Proposition 11.24, the geometric Hahn–Banach theorem over `ℂ`: for nonempty disjoint
+convex `A, B ⊆ E` (`Convex ℝ A`, `Convex ℝ B` — convexity is a real notion) one of which is open,
+there is a closed real hyperplane separating them: `∃ (f : StrongDual ℂ E) (α : ℝ), f ≠ 0 ∧ SeparatesRe f α A B`.
+Proof as the book's: Theorem 1.6 on `E_ℝ` — Mathlib's `geometric_hahn_banach_open` (real, with
+`NormedSpace.complexToReal`; or chapter 1's `Brezis.Chapter01.theorem_1_6`) gives
+`φ : StrongDual ℝ E` and `α` with `φ < α` on the open set and `α ≤ φ` on the other; then
+`f := extendRCLike φ` has `re (f x) = φ x` (`re_extendRCLike_apply`), and `f ≠ 0` since `φ ≠ 0`
+(both sets nonempty and the strict inequality). ★'''
+deps = ["SeparatesRe", "IsClosedRealHyperplane", "Brezis.Chapter01.theorem_1_6"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.24"
+
+[[node]]
+id = "orthogonal_complex"
+kind = "theorem"
+desc = '''"The definition of the orthogonal `M^⊥` of a linear subspace `M` of `E` is unchanged":
+for `M : Submodule ℂ E`, `f ∈ M.strongDualAnnihilator ↔ ∀ x ∈ M, f x = 0`
+(`Submodule.mem_strongDualAnnihilator` at `ℂ`), "and clearly `M^⊥ = {f ; Re ⟨f, x⟩ = 0 ∀ x ∈ M}`"
+(replace `x` by `I • x`: `re (f (I • x)) = re (I * f x) = − im (f x)`), and "`M^⊥⊥ = M̄`"
+(`Submodule.strongDualCoannihilator_strongDualAnnihilator` at `ℂ`, chapter 1's Proposition 1.9 over
+`RCLike`). Three clauses. ★'''
+deps = ["Submodule.mem_strongDualAnnihilator", "Submodule.strongDualCoannihilator_strongDualAnnihilator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "conjugateC"
+kind = "definition"
+desc = '''The conjugate of `φ : E → EReal` over `ℂ`, "`φ*(f) = sup_{x ∈ E} {Re ⟨f, x⟩ − φ(x)}`" on
+`f : StrongDual ℂ E`: `conjugateC φ : StrongDual ℂ E → EReal := conj B φ` for the real pairing
+`B : E →ₗ[ℝ] StrongDual ℂ E →ₗ[ℝ] ℝ`, `B x f := re (f x)`, with the backbone's `conj`
+(`Numlib/Analysis/Convex/Duality/Conjugate`, `conj_apply`). Companion `conjugateC_eq`:
+"`φ*(f) = φ_ℝ*(I f)`", i.e. `conjugateC φ f = conj (topDualPairing ℝ E).flip φ (I f)` with `I` of
+`proposition_11_22` — the two pairings agree, `re (f x) = (I f) x`. (The book's `φ` takes values
+in `(−∞, +∞]`; chapter 1's convention for such functions, `EReal`-valued with `φ ≠ ⊥`, is used.)
+★'''
+deps = ["proposition_11_22"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "proposition_11_25"
+kind = "theorem"
+desc = '''Proposition 11.25, Fenchel–Moreau over `ℂ`: for `φ : E → EReal` convex, lower
+semicontinuous and `≢ +∞` (and never `−∞`), `φ** = φ`: `conj B.flip (conjugateC φ) = φ` with
+the pairing `B` of `conjugateC` (the biconjugate back on `E`, `x ↦ sup_f (re (f x) − φ*(f))`).
+Proof, the book's first method: chapter 1's Theorem 1.11 on `E_ℝ` (`Brezis.Chapter01.theorem_1_11`,
+or the backbone's `biconj_eq_clFn_topDual` — `clFn φ = φ` for a closed proper convex `φ`) and
+`proposition_11_22`, which identifies the real dual pairing with `B` (`conjugateC_eq`), so that
+the two biconjugates coincide (`conj` composed with the isometry `I`, a reindexing of the
+supremum). ★★'''
+deps = ["conjugateC", "proposition_11_22", "Brezis.Chapter01.theorem_1_11"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.25"
+
+[[node]]
+id = "conjugateC_indicator"
+kind = "theorem"
+desc = '''"If `M` is a linear subspace of `E` and `φ = I_M`, then `φ*(f) = sup_{x ∈ M} Re ⟨f, x⟩ = I_{M^⊥}`":
+`conjugateC (indicator M) = indicator (M.strongDualAnnihilator : Set (StrongDual ℂ E))` in the
+`EReal` indicator convention of chapter 1 (`0` on the set, `⊤` off it —
+`Numlib/Analysis/Convex/Indicator`). The book's argument: on `M^⊥` the supremum is `0`; off it
+some `x₀ ∈ M` has `re (f x₀) > 0` after replacing `x₀` by `I • x₀` or `−x₀`, and `λ x₀`,
+`λ → ∞`, makes the supremum `+∞`. ★'''
+deps = ["conjugateC", "orthogonal_complex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "inner_identities"
+kind = "theorem"
+desc = '''The displayed identities of the "Chapter 5" paragraph, for a complex inner product space:
+`(λu, μv) = λ μ̄ (u, v)` — in Mathlib's convention `⟪λ • u, μ • v⟫ = conj λ * μ * ⟪u, v⟫`
+(`inner_smul_left`, `inner_smul_right`); `‖u + v‖² = ‖u‖² + 2 re ⟪u, v⟫ + ‖v‖²` (`norm_add_sq`;
+the book's display has a typo, `|v|²` for `|u|²`); Cauchy–Schwarz `‖⟪u, v⟫‖ ≤ ‖u‖ ‖v‖`
+(`norm_inner_le_norm`); and `L²(Ω; ℂ)` with `(u, v) = ∫ u v̄` as the example
+(`MeasureTheory.L2.innerProductSpace`, `MeasureTheory.L2.inner_def`). Also that `H_ℝ` with
+`re ⟪u, v⟫` is a real Hilbert space: `InnerProductSpace.complexToReal` and
+`real_inner_eq_re_inner`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "proposition_11_26"
+kind = "theorem"
+desc = '''Proposition 11.26, projection onto a closed convex set of a complex Hilbert space: for
+`K ⊆ H` nonempty closed convex (`Convex ℝ K`) and `f : H`, there is a unique `u ∈ K` with
+`‖f − u‖ = ⨅ v : K, ‖f − v‖` (`= Metric.infDist f K`), characterized by
+`u ∈ K ∧ ∀ v ∈ K, re ⟪f − u, v − u⟫ ≤ 0`. The book's Theorem 5.2 on `H_ℝ`: with
+`letI := InnerProductSpace.complexToReal`, chapter 5's `Brezis.Chapter05.theorem_5_2` (or
+Mathlib's `exists_norm_eq_iInf_of_complete_convex` and `norm_eq_iInf_iff_real_inner_le_zero`
+directly), and `real_inner_eq_re_inner` to read `⟪·, ·⟫_ℝ` as `re ⟪·, ·⟫`. Note the two
+inner-product conventions give the same real part. ★★ (instance bookkeeping only)'''
+deps = ["Brezis.Chapter05.theorem_5_2", "inner_identities"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.26"
+
+[[node]]
+id = "proposition_11_27"
+kind = "theorem"
+desc = '''Proposition 11.27, the Riesz–Fréchet theorem over `ℂ`: for every `φ : StrongDual ℂ H`
+there is a unique `f : H` with `φ u = ⟪f, u⟫` for all `u` (the book's `(u, f)`, linear in `u`),
+and `‖f‖ = ‖φ‖`. Mathlib's `InnerProductSpace.toDual ℂ H : H ≃ₗᵢ⋆[ℂ] StrongDual ℂ H`
+(`InnerProductSpace.toDual_apply`, `LinearIsometryEquiv.norm_map`, injectivity for uniqueness),
+stated over `RCLike`; the book's proof through `Re φ` on `H_ℝ` is not needed. Chapter 5's
+`Brezis.Chapter05.theorem_5_5` is the real instance. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.27"
+
+[[node]]
+id = "proposition_11_28"
+kind = "theorem"
+desc = '''Proposition 11.28, Stampacchia over `ℂ`: for a form `a` satisfying (13) — linear in the
+first and conjugate-linear in the second argument, here `a : SesqForm ℂ H` with the book's
+`a(u, v)` read as `a v u` (Mathlib's `SesqForm 𝕜 V = V →L⋆[𝕜] V →L[𝕜] 𝕜` is conjugate-linear in
+the first slot) — (14) bounded (built into `SesqForm`) and (15) coercive
+(`a.IsCoerciveWith α`, `α * ‖u‖ ^ 2 ≤ re (a u u)`, `α > 0`), a nonempty closed convex `K` and
+`φ : StrongDual ℂ H`, there is a unique `u ∈ K` with `re (a (v − u) u) ≥ re (φ (v − u))` for all
+`v ∈ K` (display (16), in the transposed convention). Proof as the book's: the real bilinear
+form `(u, v) ↦ re (a v u)` on `H_ℝ` is bounded and coercive and `re ∘ φ` is a real functional
+(`proposition_11_22`), so chapter 5's Theorem 5.6 applies — `Brezis.Chapter05.theorem_5_6`, or the
+backbone's `stampacchia` / `existsUnique_isVariationalInequalitySolution_of_isCoercive`
+(`Numlib/Variational/Inequality/Basic`) with `letI := InnerProductSpace.complexToReal`. ★★'''
+deps = ["Brezis.Chapter05.theorem_5_6", "proposition_11_22", "inner_identities"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.28"
+
+[[node]]
+id = "proposition_11_28_symm"
+kind = "theorem"
+desc = '''Proposition 11.28, "Moreover": if `a` is Hermitian (`a.IsHermitian`, the book's
+`a(v, w) = conj a(w, v)`) then the solution `u` of `proposition_11_28` is characterized by
+`u ∈ K` and `½ re (a u u) − re (φ u) = min_{v ∈ K} (½ re (a v v) − re (φ v))` (`a v v` is real
+for Hermitian `a`, `SesqForm.IsHermitian`). The real energy characterization on `H_ℝ`:
+chapter 5's Theorem 5.6 second clause, or the backbone's `isMinOn_energy_add_iff` with `j = 0`
+(`Numlib/Variational/Inequality/Basic`). ★★'''
+deps = ["proposition_11_28", "Brezis.Chapter05.theorem_5_6"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.28"
+
+[[node]]
+id = "laxMilgram_complex"
+kind = "theorem"
+desc = '''"When `K = H`, (16) becomes `a(u, v) = conj ⟨φ, v⟩` for all `v`. In particular any
+`T ∈ L(H)` with `Re (Tu, u) ≥ α |u|²` is bijective": two clauses. (i) For `a : SesqForm ℂ H`
+coercive and `φ : StrongDual ℂ H`, `∃! u, ∀ v, a v u = conj (φ v)` — the backbone's
+`SesqForm.laxMilgram` (over `RCLike`; the conjugate appears because of the transposed
+convention, `a v u = conj (a' u v)`). (ii) For `T : H →L[ℂ] H` with
+`∀ u, α * ‖u‖ ^ 2 ≤ re ⟪T u, u⟫` (`α > 0`), `Function.Bijective T` — apply (i) to the form
+`a v u := ⟪v, T u⟫` (`ContinuousLinearMap.toSesqForm`-style), or the backbone's
+`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot` with `α ‖u‖ ≤ ‖T u‖` from
+Cauchy–Schwarz. Chapter 5's `Brezis.Chapter05.corollary_5_8` is the real Lax–Milgram. ★'''
+deps = ["SesqForm.laxMilgram", "ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "proposition_11_29"
+kind = "theorem"
+desc = '''Proposition 11.29 (Lax–Milgram, modulus form): if `T : H →L[ℂ] H` satisfies
+`|(Tu, u)| ≥ α |u|²` for all `u` with `α > 0` (display (18); `‖⟪T u, u⟫‖`, the same as
+`‖⟪u, T u⟫‖`), then `T` is bijective. The book's proof is Remark 8 of chapter 5 — injective,
+closed range (`α ‖u‖ ≤ ‖T u‖` by Cauchy–Schwarz), dense range (if `v ⊥ range T` then
+`α ‖v‖² ≤ ‖⟪T v, v⟫‖ = 0`) — which is exactly the backbone's
+`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot`. ★'''
+deps = ["ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.29"
+
+[[node]]
+id = "remark_11_1"
+kind = "theorem"
+desc = '''Remark 1: (17) implies (18) trivially (`re z ≤ ‖z‖`); conversely, if (18) holds,
+`∀ u, α * ‖u‖ ^ 2 ≤ ‖⟪T u, u⟫‖`, then there is `ξ : ℂ` with `‖ξ‖ = 1` and
+`∀ u, α * ‖u‖ ^ 2 ≤ re ⟪(ξ • T) u, u⟫` (display (19)). Two clauses; the second is the backbone's
+`ContinuousLinearMap.exists_re_inner_smul_ge_of_norm_inner_ge`, whose proof is the book's — the
+convexity of the numerical range (Proposition 11.33, `LinearMap.convex_numericalRange`), the
+projection `p` of `0` onto `closure W(T)`, and the rotation taking `p` to the positive real
+axis. (`⟪(ξ • T) u, u⟫ = conj ξ * ⟪T u, u⟫` in Mathlib's convention; the statement is
+insensitive to which unit `ξ` is named.) ★'''
+deps = ["ContinuousLinearMap.exists_re_inner_smul_ge_of_norm_inner_ge"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 11, Remark 1"
+
+[[node]]
+id = "spectrum_eq_setOf_not_bijective"
+kind = "theorem"
+desc = '''The definitions for `T : E →L[ℂ] E` on a complex Banach space: the resolvent set
+"`ρ(T) = {λ ; T − λI is bijective}`" is Mathlib's `resolventSet ℂ T`
+(`resolventSet ℂ T = {λ | Function.Bijective (T - λ • 1)}`, by `spectrum.mem_resolventSet_iff`
+and `ContinuousLinearMap.isUnit_iff_bijective` — the open mapping theorem makes "bijective" and
+"invertible in `L(E)`" agree, which is why completeness of `E` is assumed), the spectrum
+`σ(T) = ℂ ∖ ρ(T)` is `spectrum ℂ T` (`spectrum.mem_iff`), and the eigenvalues
+`EV(T) = {λ | N(T − λI) ≠ {0}}` are `{λ | Module.End.HasEigenvalue (T : Module.End ℂ E) λ}`
+(`Module.End.hasEigenvalue_iff`), with "clearly `EV(T) ⊆ σ(T)`": an eigenvalue makes `T − λ • 1`
+non-injective, hence not a unit. Four clauses. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "example_rightShift"
+kind = "theorem"
+desc = '''"It may happen that `EV(T) = ∅` (e.g. the right shift `T u = (0, u₁, u₂, …)`)": on
+`ℓ²(ℕ, ℂ) = lp (fun _ : ℕ ↦ ℂ) 2`, the right shift `S : ℓ² →L[ℂ] ℓ²`, `(S u) 0 = 0`,
+`(S u) (n + 1) = u n` (an isometry; build it with `LinearMap.mkContinuous` from the
+`Memℓp` of the shifted sequence, or as `lp.mapCLM`-free explicit construction), has no
+eigenvalue: `∀ λ, ¬ Module.End.HasEigenvalue (S : Module.End ℂ _) λ`. If `S u = λ u` then
+`0 = λ u 0`, and `u n = λ u (n + 1)`, so either `λ = 0` (then `u n = (S u) (n + 1) = 0`) or
+`u 0 = 0` and inductively `u = 0`. About 60 lines. ★'''
+deps = ["spectrum_eq_setOf_not_bijective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "proposition_11_30"
+kind = "theorem"
+desc = '''Proposition 11.30: for `T : E →L[ℂ] E` on a nontrivial complex Banach space, `σ(T)` is a
+nonempty compact set with `σ(T) ⊆ {λ ; |λ| ≤ ‖T‖}`. Mathlib: `spectrum.nonempty` (the Liouville
+argument the book omits; needs `[Nontrivial E]` for `NormOneClass (E →L[ℂ] E)`),
+`spectrum.isCompact`, `spectrum.subset_closedBall_norm`. Three clauses. ★'''
+deps = ["spectrum_eq_setOf_not_bijective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.30"
+
+[[node]]
+id = "example_shift_two"
+kind = "theorem"
+desc = '''"In `ℂ²` the operator `T(u₁, u₂) = (u₂, 0)` satisfies `σ(T) = {0}` and `‖T‖ = 1`": on
+`EuclideanSpace ℂ (Fin 2)`, for `T := (Matrix.toEuclideanCLM …) !![0, 1; 0, 0]` (or the explicit
+map), `spectrum ℂ T = {0}` and `‖T‖ = 1`. `T ^ 2 = 0` gives `σ(T) ⊆ {0}` by
+`spectrum.map_pow`/`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` at `n = 2`
+(or `spectrum.subset_polynomial_aeval`), nonempty by `spectrum.nonempty`; `‖T‖ = 1` from
+`‖T u‖ = |u₂| ≤ ‖u‖` with equality at `u = (0, 1)` (`ContinuousLinearMap.opNorm_le_bound`,
+`ContinuousLinearMap.le_opNorm`). About 60 lines. ★'''
+deps = ["proposition_11_30"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "spectralRadius_eq_lim"
+kind = "theorem"
+desc = '''"`r(T) = lim ‖Tⁿ‖^{1/n}` exists (Exercise 6.23), and clearly `r(T) ≤ ‖T‖`": for
+`T : E →L[ℂ] E`, `Tendsto (fun n => ‖T ^ n‖ ^ (1 / n : ℝ)) atTop (𝓝 (spectralRadius ℂ T).toReal)`
+and `(spectralRadius ℂ T).toReal ≤ ‖T‖`. The backbone's
+`spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius` (Gelfand's formula, real
+form) with `spectrum.spectralRadius_ne_top`, and Mathlib's `spectrum.spectralRadius_le_nnnorm`.
+The book *defines* `r(T)` as the limit; Mathlib defines `spectralRadius` as the supremum of the
+spectrum's moduli and proves the limit formula, which is Proposition 11.31 — so this node and
+the next together say the two definitions agree. ★'''
+deps = ["spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius", "spectrum.spectralRadius_ne_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "proposition_11_31"
+kind = "theorem"
+desc = '''Proposition 11.31: `r(T) = max {|λ| ; λ ∈ σ(T)}` for `T : E →L[ℂ] E` on a nontrivial
+complex Banach space: `IsGreatest ((‖·‖) '' spectrum ℂ T) (spectralRadius ℂ T).toReal` — the
+maximum is attained (`spectrum.exists_nnnorm_eq_spectralRadius`, from compactness and
+nonemptiness) and bounds the spectrum (`spectrum.nnnorm_le_spectralRadius`… i.e.
+`spectrum.le_spectralRadius`-type: `‖λ‖₊ ≤ spectralRadius ℂ T` for `λ ∈ σ(T)`,
+`le_iSup₂`). With `spectralRadius_eq_lim` this is the book's statement. The real-space remark
+(only `max |σ(T)| ≤ r(T)`, Exercise 6.23) is not a node. ★'''
+deps = ["spectralRadius_eq_lim"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.31"
+
+[[node]]
+id = "proposition_11_32_spectrum"
+kind = "theorem"
+desc = '''Proposition 11.32, display (21) for the spectrum: for a polynomial `Q : ℂ[X]` and
+`T : E →L[ℂ] E`, `spectrum ℂ (aeval T Q) = (fun λ => Q.eval λ) '' spectrum ℂ T`. Mathlib's
+`spectrum.map_polynomial_aeval` (`Mathlib/Analysis/Normed/Algebra/GelfandFormula.lean`; needs
+`[Nontrivial E]`, as it uses `spectrum.nonempty`). The book's argument — factor `Q − μ` into
+linear factors — is Mathlib's too. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.32"
+
+[[node]]
+id = "proposition_11_32_eigenvalue"
+kind = "theorem"
+desc = '''Proposition 11.32, display (20) for the eigenvalues, `Q(EV(T)) = EV(Q(T))`, stated for
+`0 < Q.degree`: `Module.End.HasEigenvalue (aeval T Q) μ ↔ ∃ ν, Module.End.HasEigenvalue T ν ∧ Q.eval ν = μ`.
+The backbone's `Module.End.hasEigenvalue_aeval_iff` (purely algebraic, over any algebraically
+closed field). The degree hypothesis is not in the book but is needed: for a constant `Q = c`
+and the right shift (`example_rightShift`, `EV(T) = ∅`), `EV(Q(T)) = EV(c I) = {c}` while
+`Q(EV(T)) = ∅` — recorded as a book erratum in the report. ★'''
+deps = ["Module.End.hasEigenvalue_aeval_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.32"
+
+[[node]]
+id = "proposition_11_32"
+kind = "theorem"
+desc = '''Proposition 11.32: both displays (20) and (21), the conjunction of the two clauses
+(the eigenvalue clause under `0 < Q.degree`). ★'''
+deps = ["proposition_11_32_spectrum", "proposition_11_32_eigenvalue"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.32"
+
+[[node]]
+id = "numericalRange_eq"
+kind = "theorem"
+desc = '''The numerical range "`W(T) = {(Tu, u) ; u ∈ H, |u| = 1}`" of `T : H →L[ℂ] H` is the
+backbone's `LinearMap.numericalRange (T : H →ₗ[ℂ] H)` (`Numlib/Eigen/NumericalRange`, defined by
+Rayleigh quotients `⟪x, T x⟫ / ⟪x, x⟫` at `x ≠ 0`):
+`(T : H →ₗ[ℂ] H).numericalRange = {z | ∃ u : H, ‖u‖ = 1 ∧ ⟪u, T u⟫ = z}` (normalize `x`;
+`inner_smul_left/right`, `inner_self_eq_norm_sq`). In Mathlib's convention the book's `(Tu, u)`
+is `⟪u, T u⟫`. ★'''
+deps = ["LinearMap.numericalRange", "LinearMap.mem_numericalRange"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "proposition_11_33"
+kind = "theorem"
+desc = '''Proposition 11.33: for `T : H →L[ℂ] H` on a complex Hilbert space, (i)
+`spectrum ℂ T ⊆ closure W(T)`; (ii) more precisely, if `λ ∉ closure W(T)` then
+`λ ∈ resolventSet ℂ T` and `‖(T − λ • 1)⁻¹‖ ≤ 1 / Metric.infDist λ W(T)` (as
+`Metric.infDist λ W(T) * ‖(T − λ • 1)⁻¹ v‖ ≤ ‖v‖` for all `v`, or the bound on
+`resolvent T λ`); (iii) `Convex ℝ W(T)` (Toeplitz–Hausdorff). Backbone:
+`ContinuousLinearMap.spectrum_subset_closure_numericalRange`,
+`ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange`,
+`LinearMap.convex_numericalRange`; `W(T)` through `numericalRange_eq`. The book quotes (iii) from
+Halmos; the backbone proves it. ★'''
+deps = ["ContinuousLinearMap.spectrum_subset_closure_numericalRange", "ContinuousLinearMap.mem_resolventSet_of_notMem_closure_numericalRange", "LinearMap.convex_numericalRange", "numericalRange_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.33"
+
+[[node]]
+id = "adjoint_smul_conj"
+kind = "theorem"
+desc = '''The "word of caution" about the adjoint: with `H*` identified with `H` (Proposition
+11.27), `T* : H →L[ℂ] H` is defined by `(Tu, v) = (u, T*v)` — Mathlib's
+`ContinuousLinearMap.adjoint T` with `ContinuousLinearMap.adjoint_inner_left/right` — and then
+`(λ T)* = λ̄ T*` (display (24)): `adjoint (λ • T) = conj λ • adjoint T`, by
+`LinearIsometryEquiv.map_smulₛₗ` (`adjoint` is a `≃ₗᵢ⋆[ℂ]`). The dual-space adjoint
+`T* ∈ L(H*)` with `(λT)* = λT*` is chapter 2's `ContinuousLinearMap.strongDualMap`; the two are
+conjugate along `toDual`, which is the content of the caution and is recorded here as a
+comment, not a clause. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "selfAdjoint_spectrum_subset_real"
+kind = "theorem"
+desc = '''"If `T` is self-adjoint then `(Tu, u) ∈ ℝ` for all `u`, so `W(T) ⊆ ℝ` and `σ(T) ⊆ ℝ`":
+for `T : H →L[ℂ] H` with `IsSelfAdjoint T` (`adjoint T = T`, `ContinuousLinearMap.isSelfAdjoint_iff'`),
+`∀ u, (⟪u, T u⟫).im = 0` (from `IsSelfAdjoint.isSymmetric` and
+`LinearMap.IsSymmetric.conj_inner_sym`: `conj ⟪u, T u⟫ = ⟪u, T u⟫`), hence `W(T) ⊆ ℝ`, and
+`∀ λ ∈ spectrum ℂ T, λ.im = 0` — Mathlib's `IsSelfAdjoint.im_eq_zero_of_mem_spectrum` in the
+C⋆-algebra `H →L[ℂ] H`, or `proposition_11_33` (i) with `W(T) ⊆ ℝ` closed. Three clauses. ★'''
+deps = ["proposition_11_33", "numericalRange_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "proposition_11_34"
+kind = "theorem"
+desc = '''Proposition 11.34: for a compact self-adjoint `T : H →L[ℂ] H` on a (separable) complex
+Hilbert space there is a Hilbert basis of eigenvectors with real eigenvalues:
+`∃ (ι : Type u) (b : HilbertBasis ι ℂ H), ∀ i, ∃ μ : ℝ, T (b i) = (μ : ℂ) • b i`. Chapter 6's
+Theorem 6.11 in Hilbert-basis form, the backbone's
+`ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors`
+(`Numlib/Analysis/InnerProductSpace/CompactSpectral/Basis`, over `RCLike 𝕜`, `T.IsSymmetric` being
+`IsSelfAdjoint T` by `ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric`), read at `𝕜 = ℂ`;
+separability of `H` is not needed and is dropped.
+"The spectral decomposition of compact self-adjoint operators is exactly the same as in
+Chapter 6." ★'''
+deps = ["ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.34"
+
+[[node]]
+id = "isStarNormal_iff"
+kind = "theorem"
+desc = '''"We say `T ∈ L(H)` is normal if `T* ∘ T = T ∘ T*`": Mathlib's `IsStarNormal T`
+(`Commute (star T) T`, `star_eq_adjoint`) unfolds to `adjoint T ∘L T = T ∘L adjoint T`
+(`isStarNormal_iff`, `Commute.eq`); and the characterization of Problem 43, question 1, which
+the book says "still remains valid over `ℂ`": `IsStarNormal T ↔ ∀ u, ‖T u‖ = ‖adjoint T u‖`,
+Mathlib's `ContinuousLinearMap.isStarNormal_iff_norm_eq_adjoint`. Two clauses. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "proposition_11_35"
+kind = "theorem"
+desc = '''Proposition 11.35: for a normal `T : H →L[ℂ] H` on a nontrivial complex Hilbert space,
+`max {|λ| ; λ ∈ σ(T)} = ‖T‖` — `IsGreatest ((‖·‖) '' spectrum ℂ T) ‖T‖`. Mathlib's
+`IsStarNormal.spectralRadius_eq_nnnorm` in the C⋆-algebra `H →L[ℂ] H`
+(`Mathlib/Analysis/CStarAlgebra/ContinuousLinearMap.lean` supplies the instance) together with
+`proposition_11_31` (the maximum is `r(T)`). The book's intermediate `‖Tᵖ‖ = ‖T‖ᵖ` (Problem 43,
+questions 7–8) is not a separate node; Mathlib's proof goes through `‖T* T‖ = ‖T‖²` instead
+(`CStarRing.nnnorm_star_mul_self`). ★'''
+deps = ["proposition_11_31", "isStarNormal_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.35"
+
+[[node]]
+id = "proposition_11_36"
+kind = "theorem"
+desc = '''Proposition 11.36: a compact normal `T : H →L[ℂ] H` on a (separable) complex Hilbert
+space has a Hilbert basis of eigenvectors, the eigenvalues not necessarily real:
+`∃ (w : Set H) (b : HilbertBasis w ℂ H), ⇑b = ((↑) : w → H) ∧ ∀ i : w, ∃ μ : ℂ, T i = μ • (i : H)`
+(the set-indexed shape of Mathlib's `exists_hilbertBasis` and of chapter 6's Theorem 6.11; a
+`Type`-indexed reading needs `ι` in the universe of `H`). The backbone's
+`ContinuousLinearMap.IsStarNormal.exists_hilbertBasis_eigenvector`
+(`Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal`), which follows the book's proof — "exactly as in the
+proof of Theorem 6.11", with Proposition 11.35 in place of Corollary 6.10 to conclude that the
+restriction to the orthogonal complement of the eigenvectors vanishes. Separability is dropped
+as in `proposition_11_34`. ★'''
+deps = ["ContinuousLinearMap.IsStarNormal.exists_hilbertBasis_eigenvector", "isStarNormal_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.36"
+
+[[node]]
+id = "remark_11_2"
+kind = "theorem"
+desc = '''Remark 2: for a compact normal `T` on a nontrivial complex Hilbert space,
+`closure W(T) = conv σ(T)` — `closure (T : H →ₗ[ℂ] H).numericalRange = convexHull ℝ (spectrum ℂ T)`
+(the convex hull of a compact subset of `ℂ` is compact, hence closed, so the book's `conv` is
+the plain convex hull). The backbone's
+`ContinuousLinearMap.IsStarNormal.closure_numericalRange_eq_convexHull_spectrum`, the book's
+computation `(Tu, u) = ∑ λᵢ |uᵢ|²` in an eigenbasis. The remark's second sentence (every normal
+`T`, Halmos) is not formalized. ★'''
+deps = ["ContinuousLinearMap.IsStarNormal.closure_numericalRange_eq_convexHull_spectrum", "numericalRange_eq", "proposition_11_36"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 11, Remark 2"
+
+[[node]]
+id = "unitary_iff_isometry_surjective"
+kind = "theorem"
+desc = '''The definitions: "`T` is an isometry if `|Tu| = |u|` for all `u`" is `Isometry T`
+(`AddMonoidHomClass.isometry_iff_norm`), "unitary if an isometry that is also surjective" is
+membership in Mathlib's `unitary (H →L[ℂ] H)`:
+`T ∈ unitary (H →L[ℂ] H) ↔ Isometry T ∧ Function.Surjective T`. `→`: `unitary.star_mul_self`
+gives `‖T u‖ = ‖u‖` (`ContinuousLinearMap.isometry_iff_adjoint_comp_self`) and `T ∘L T† = 1`
+gives surjectivity; `←`: the backbone's `ContinuousLinearMap.mem_unitary_of_isometry_of_surjective`. ★'''
+deps = ["ContinuousLinearMap.mem_unitary_of_isometry_of_surjective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definition"
+
+[[node]]
+id = "proposition_11_37_eigenvalue"
+kind = "theorem"
+desc = '''Proposition 11.37, first clause: for an isometry `T : H →L[ℂ] H`, `EV(T) ⊆ S¹`:
+`Module.End.HasEigenvalue T λ → ‖λ‖ = 1`. Backbone
+`ContinuousLinearMap.norm_eq_one_of_hasEigenvalue_of_isometry`. ★'''
+deps = ["ContinuousLinearMap.norm_eq_one_of_hasEigenvalue_of_isometry", "unitary_iff_isometry_surjective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "proposition_11_37_unitary"
+kind = "theorem"
+desc = '''Proposition 11.37, second clause: for a unitary `T` (a surjective isometry),
+`spectrum ℂ T ⊆ Metric.sphere 0 1`. Mathlib's `spectrum.subset_circle_of_unitary` in the
+C⋆-algebra `H →L[ℂ] H`, after `unitary_iff_isometry_surjective`. ★'''
+deps = ["unitary_iff_isometry_surjective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "proposition_11_37_not_unitary"
+kind = "theorem"
+desc = '''Proposition 11.37, third clause: for an isometry `T` that is not unitary (not
+surjective), `spectrum ℂ T = Metric.closedBall 0 1`. Backbone
+`ContinuousLinearMap.spectrum_eq_closedBall_of_isometry_of_not_surjective` — the solution of
+Problem 44, question 6, with `T − λ I = (I − λ T*) ∘ T`. ★'''
+deps = ["ContinuousLinearMap.spectrum_eq_closedBall_of_isometry_of_not_surjective", "unitary_iff_isometry_surjective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "proposition_11_37"
+kind = "theorem"
+desc = '''Proposition 11.37: the three clauses together — for an isometry `T`, `EV(T) ⊆ S¹`, and
+`σ(T) ⊆ S¹` if `T` is unitary, `σ(T) = {|λ| ≤ 1}` if not. ★'''
+deps = ["proposition_11_37_eigenvalue", "proposition_11_37_unitary", "proposition_11_37_not_unitary"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.37"
+
+[[node]]
+id = "skewAdjoint_iff"
+kind = "theorem"
+desc = '''"`T` is skew-adjoint (`T* = −T`) iff `iT` is self-adjoint (this follows from (24))":
+for `T : H →L[ℂ] H`, `adjoint T = -T ↔ IsSelfAdjoint ((Complex.I : ℂ) • T)` — by
+`adjoint_smul_conj` (`adjoint (I • T) = conj I • adjoint T = −I • adjoint T`) and
+`ContinuousLinearMap.isSelfAdjoint_iff'`; Mathlib's `IsSelfAdjoint.smul`-type lemmas and
+`skewAdjoint` (`star T = −T`) cover the vocabulary. ★'''
+deps = ["adjoint_smul_conj"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "skewAdjoint_spectrum_subset_imaginary"
+kind = "theorem"
+desc = '''"For any skew-adjoint operator `EV(T) ⊆ σ(T) ⊆ closure W(T) ⊆ iℝ`": for `T` with
+`adjoint T = -T`, `∀ u, (⟪u, T u⟫).re = 0` (so `W(T) ⊆ iℝ`), hence `closure W(T) ⊆ iℝ` (closed),
+hence `∀ λ ∈ spectrum ℂ T, λ.re = 0` by `proposition_11_33` (i), and eigenvalues are in the
+spectrum (`spectrum_eq_setOf_not_bijective`). Alternatively `selfAdjoint_spectrum_subset_real`
+for `I • T` and `spectrum.unit_smul_eq_smul`. ★'''
+deps = ["skewAdjoint_iff", "proposition_11_33", "selfAdjoint_spectrum_subset_real", "spectrum_eq_setOf_not_bijective"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
+
+[[node]]
+id = "hasDerivAt_norm_sq"
+kind = "theorem"
+desc = '''The "Chapter 7" paragraph's identity: if `φ : ℝ → H` is differentiable at `t` with
+derivative `φ'` (`HasDerivAt φ φ' t`), then `t ↦ ‖φ t‖ ^ 2` is differentiable at `t` with
+derivative `2 * re ⟪φ', φ t⟫` — `d/dt |φ|² = 2 Re (dφ/dt, φ)`, the computation
+`(φ', φ) + (φ, φ') = 2 Re (φ', φ)`. Mathlib's `HasDerivAt.norm_sq` (real inner product) with
+`real_inner_eq_re_inner`, or `HasDerivAt.inner` directly; `C¹([0, ∞); H)` becomes `C¹` on
+`Set.Ici 0` in chapter 7's vocabulary and this pointwise identity is what its computations use.
+The monotonicity condition `Re (Av, v) ≥ 0` for `ℂ` is chapter 7's `LinearPMap.IsMonotone`
+already stated with `re` (planning brief §5, chapter 7) and needs no node here. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"

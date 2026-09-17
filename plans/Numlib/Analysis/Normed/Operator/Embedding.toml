@@ -15,3 +15,40 @@ id = "isCompactEmbedding_iff_isCompactOperator"
 
 [[node]]
 id = "IsCompactEmbedding.isCompactOperator"
+
+# ---- Appended by the Brezis chapter-9a plan (2026-09-17). Nothing above this line was edited.
+
+[[node]]
+id = "IsCompactEmbedding.comp_isContinuousEmbedding"
+kind = "theorem"
+desc = '''A compact embedding followed by a continuous embedding is a compact embedding: for
+`ι : V →ₗ[𝕜] W` with `IsCompactEmbedding ι` and `κ : W →ₗ[𝕜] X` with `IsContinuousEmbedding κ`,
+`IsCompactEmbedding (κ ∘ₗ ι)`. Injectivity composes; the bound composes; a convergent subsequence
+of `ι (u n)` is mapped to a convergent one by the continuous `κ`. This is how
+`W^{1,p}(Ω) ↪↪ C(closure Ω) ↪ L^p(Ω)` gives `W^{1,p}(Ω) ↪↪ L^p(Ω)` for `p > N`
+([brezis2011functional] Theorem 9.16, last sentence). ★, ~30 lines.'''
+deps = ["IsCompactEmbedding", "IsContinuousEmbedding"]
+
+[[node]]
+id = "IsContinuousEmbedding.comp_isCompactEmbedding"
+kind = "theorem"
+desc = '''A continuous embedding followed by a compact embedding is a compact embedding: for
+`IsContinuousEmbedding ι` and `IsCompactEmbedding κ`, `IsCompactEmbedding (κ ∘ₗ ι)`; a bounded
+sequence is mapped by `ι` to a bounded sequence, to which `κ` applies. This is how
+`W^{1,N}(Ω) ↪ W^{1,q}(Ω) ↪↪ L^r(Ω)` reduces the case `p = N` of Rellich–Kondrachov to the case
+`p < N` ([brezis2011functional] Theorem 9.16, proof, "The case `p = N` reduces to the case
+`p < N`"). ★, ~30 lines.'''
+deps = ["IsCompactEmbedding", "IsContinuousEmbedding"]
+
+[[node]]
+id = "isCompactEmbedding_of_isCompact_closure_image_closedBall"
+kind = "theorem"
+desc = '''The set-theoretic criterion for a compact embedding: an injective bounded linear map
+`ι : V →L[𝕜] W` whose image of the closed unit ball has compact closure is a compact embedding
+of the underlying linear map. It is `isCompactEmbedding_iff_isCompactOperator` together with
+`isCompactOperator_iff_exists_mem_nhds_image_subset_compact` (Mathlib,
+`Mathlib/Analysis/Normed/Operator/Compact/Basic.lean`), and it is the form in which
+Rellich–Kondrachov is proved: the book shows that the image of the unit ball of `W^{1,p}(Ω)` has
+compact closure in `L^q(Ω)` ([brezis2011functional] Theorem 9.16, proof, "Let `ℋ` be the unit
+ball"). ★, ~30 lines.'''
+deps = ["isCompactEmbedding_iff_isCompactOperator"]

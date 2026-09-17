@@ -1,0 +1,154 @@
+namespace = "Brezis.Chapter09"
+desc = '''
+Brezis §9.6, regularity of weak solutions: the definition of an open set of class `C^m`
+(`IsOfClassC m Ω`, defined once in `Section02.toml` with its `C^1` case `IsClassC1`; the review
+round merged the two copies), Theorem 9.25 (Dirichlet), Theorem 9.26 (Neumann), Remark 24 (general operators), the three
+lemmas 9.6–9.8 of the proof, and Remark 25 (interior regularity, hypoellipticity). Everything
+delegates to `Numlib/Analysis/PDE/Elliptic/Regularity`, whose nodes follow the book's proof case
+by case (A: `ℝ^N`; B: `ℝ^N_+`; C₁: interior; C₂: near the boundary); the surface states the
+theorem in the book's shape, with `‖u‖_{H²} ≤ C ‖f‖_{L²}` as `∃ C, ∀ f u, …`. The book's
+`C^m(Ω̄)` (footnote 16) is `ContDiffOnClosure m · Ω` of `Numlib/Analysis/Calculus/ContDiffOnClosure`;
+where it is the *conclusion* of a regularity statement the stronger Mathlib predicate
+`ContDiffOn ℝ m · (closure Ω)` may be proved instead, and `ContDiffOn.contDiffOnClosure` reads it
+back.
+
+The very-weak clause of Remark 25 (`u ∈ L²(Ω)` with `-∫ u Δφ = ∫ f φ`, "the proof is a little
+more delicate; see S. Agmon") is not planned — it is Weyl's lemma, which the book itself does not
+prove — and Remark 26 is discussion. Footnote 33 (no regularity up to the boundary without a
+boundary condition) and footnote 34 (the strong maximum principle) are remarks on remarks.
+'''
+
+[[node]]
+id = "theorem_9_25"
+kind = "theorem"
+desc = '''Theorem 9.25 (regularity for the Dirichlet problem), the `H²` clause: for `Ω` of class
+`C²` with `Γ` bounded, there is `C` such that for every `f ∈ L²(Ω)` and every `u ∈ H^1_0(Ω)` with
+`∫ ∇u·∇φ + ∫ uφ = ∫ fφ` for all `φ ∈ H^1_0(Ω)` (48), `u ∈ H²(Ω)` and `‖u‖_{H²} ≤ C ‖f‖_{L²}`.
+`Elliptic.regularity_dirichlet`; the half-space alternative "or else `Ω = ℝ^N_+`" is
+`theorem_9_25_upperHalfSpace`, from `Elliptic.regularity_upperHalfSpace` with `g = f - u`. ★'''
+deps = ["IsOfClassC", "IsWeakSolutionDirichlet", "Elliptic.regularity_dirichlet", "Elliptic.regularity_upperHalfSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.25"
+
+[[node]]
+id = "theorem_9_25_higher"
+kind = "theorem"
+desc = '''Theorem 9.25, the `H^{m+2}` clause: for `Ω` of class `C^{m+2}` with `Γ` bounded there is
+`C` such that `f ∈ H^m(Ω)` implies `u ∈ H^{m+2}(Ω)` and `‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`.
+`Elliptic.regularity_dirichlet_higher`, and on the half space
+`Elliptic.regularity_upperHalfSpace_higher`. ★'''
+deps = ["theorem_9_25", "Elliptic.regularity_dirichlet_higher", "Elliptic.regularity_upperHalfSpace_higher"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.25"
+
+[[node]]
+id = "theorem_9_25_contDiffOn"
+kind = "theorem"
+desc = '''Theorem 9.25, "in particular, if `f ∈ H^m(Ω)` with `m > N/2`, then `u ∈ C²(Ω̄)`": the weak
+solution has a representative `ContDiffOn ℝ 2 ũ (closure Ω)`.
+`Elliptic.regularity_dirichlet_contDiffOn`, which is the `H^{m+2}` clause and Corollary 9.15. ★'''
+deps = ["theorem_9_25_higher", "Elliptic.regularity_dirichlet_contDiffOn", "corollary_9_15"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.25"
+
+[[node]]
+id = "theorem_9_25_smooth"
+kind = "theorem"
+desc = '''Theorem 9.25, "finally, if `Ω` is of class `C^∞` and `f ∈ C^∞(Ω̄)`, then `u ∈ C^∞(Ω̄)`":
+for `Ω` bounded of class `C^∞` and `f` with a representative `ContDiffOn ℝ ⊤ f (closure Ω)`, the
+weak solution has a representative `ContDiffOn ℝ ⊤ ũ (closure Ω)`.
+`Elliptic.regularity_dirichlet_smooth`. ★'''
+deps = ["theorem_9_25_higher", "Elliptic.regularity_dirichlet_smooth"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.25"
+
+[[node]]
+id = "theorem_9_26"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Theorem 9.26 (regularity for the Neumann problem): under the assumptions of Theorem 9.25,
+the same conclusions for `u ∈ H^1(Ω)` with `∫ ∇u·∇φ + ∫ uφ = ∫ fφ` for all `φ ∈ H^1(Ω)` (49):
+`u ∈ H²(Ω)` with `‖u‖_{H²} ≤ C ‖f‖_{L²}` (`Elliptic.regularity_neumann`), and `u ∈ H^{m+2}(Ω)`
+for `f ∈ H^m(Ω)` on a `C^{m+2}` domain (`Elliptic.regularity_neumann_higher`). The book says
+"the proof of Theorem 9.26 is entirely analogous" and gives none; the backbone node records the
+route (the same translation estimates with the test space of functions vanishing near the
+lateral boundary of the chart cylinder) and its cost, and it is the long tail of the plan. ★'''
+deps = ["IsOfClassC", "IsWeakSolutionNeumann", "Elliptic.regularity_neumann"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.26"
+
+[[node]]
+id = "remark_9_24"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 24: the conclusions of Theorem 9.25 for the Dirichlet problem of a general
+second-order elliptic operator — if `u ∈ H^1_0(Ω)` solves (50) with `f ∈ L²`, `a_ij ∈ C¹(Ω̄)`
+elliptic and `a_i ∈ C(Ω̄)` then `u ∈ H²(Ω)`, and for `m ≥ 1`, `f ∈ H^m`, `a_ij ∈ C^{m+1}(Ω̄)`,
+`a_i ∈ C^m(Ω̄)` give `u ∈ H^{m+2}(Ω)` (with bounded derivatives of the coefficients when `Ω` is
+unbounded, footnote 26). `Elliptic.regularity_dirichlet_general`, planned with a route and no
+proof in the book; the Neumann half of the remark ("or Neumann") is not stated separately, being
+`theorem_9_26` with the same replacement. ★'''
+deps = ["IsWeakSolutionGeneralElliptic", "Elliptic.regularity_dirichlet_general"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 24"
+
+[[node]]
+id = "lemma_9_6"
+kind = "theorem"
+desc = '''Lemma 9.6: on `Ω = ℝ^N_+`, `‖D_h v‖_{L²(Ω)} ≤ ‖∇v‖_{L²(Ω)}` for all `v ∈ H^1(Ω)` and all
+`h ∥ Γ` (`h_N = 0`), where `D_h v = (v(· + h) - v)/|h|`.
+`Elliptic.eLpNorm_diffQuot_le_of_tangential`; the proof starts from `v ∈ C_c^1(ℝ^N)` as in
+Proposition 9.3 and uses the density of Corollary 9.8. ★'''
+deps = ["Elliptic.eLpNorm_diffQuot_le_of_tangential", "Elliptic.diffQuot", "proposition_9_3", "corollary_9_8"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.6"
+
+[[node]]
+id = "lemma_9_7"
+kind = "theorem"
+desc = '''Lemma 9.7: on `Ω = ℝ^N_+`, if `u ∈ H²(Ω) ∩ H^1_0(Ω)` satisfies (48), then every tangential
+derivative `Du = ∂u/∂x_j`, `1 ≤ j ≤ N - 1`, lies in `H^1_0(Ω)` and satisfies
+`∫ ∇(Du)·∇φ + ∫ (Du) φ = ∫ (Df) φ` for all `φ ∈ H^1_0(Ω)` (58), for `f ∈ H^1(Ω)`.
+`Elliptic.tangentialDeriv_mem_zero_of_isGalerkinSolution` with `g = f - u` (whose tangential
+derivative is `Df - Du`). ★'''
+deps = ["Elliptic.tangentialDeriv_mem_zero_of_isGalerkinSolution", "IsWeakSolutionDirichlet"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.7"
+
+[[node]]
+id = "lemma_9_8"
+kind = "theorem"
+desc = '''Lemma 9.8: with a `C²` chart `H : Q → U_i`, `J = H⁻¹`, and `v = θ_i u ∈ H^1_0(Ω ∩ U_i)`
+a weak solution of `-Δv = g` on `Ω ∩ U_i` (59), the function `w = v ∘ H` belongs to `H^1_0(Q₊)`
+and satisfies `∑_{k,ℓ} ∫_{Q₊} a_{kℓ} ∂_k w ∂_ℓ ψ = ∫_{Q₊} g̃ ψ` for all `ψ ∈ H^1_0(Q₊)` (60), with
+`g̃ = (g ∘ H) |det Jac H| ∈ L²(Q₊)` and `a_{kℓ} = ∑_j ∂_j J_k ∂_j J_ℓ |det Jac H| ∈ C¹(Q̄₊)`
+satisfying the ellipticity condition (36). `Elliptic.transfer_chart`, which uses Proposition 9.6
+and Mathlib's change of variables `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul`.
+★'''
+deps = ["Elliptic.transfer_chart", "ellipticityCondition", "proposition_9_6"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.8"
+
+[[node]]
+id = "remark_9_25"
+kind = "theorem"
+desc = '''Remark 25, interior regularity: for `Ω` an arbitrary open set, `u ∈ H^1(Ω)` with
+`∫ ∇u·∇φ = ∫ fφ` for all `φ ∈ C_c^∞(Ω)` and `f ∈ H^m(Ω)`, one has `θu ∈ H^{m+2}(Ω)` for every
+`θ ∈ C_c^∞(Ω)`, i.e. `u ∈ H^{m+2}_loc(Ω)`. `Elliptic.regularity_interior_higher` (which assumes
+only `u ∈ H^1_loc`, `f ∈ H^m_loc`) together with `MemSobolevMultiIndexLoc.smul_testFunction` for
+the book's `θ`-reading of `H^{m+2}_loc`. ★'''
+deps = ["Elliptic.regularity_interior_higher", "MemSobolevMultiIndexLoc.smul_testFunction", "MemSobolevMultiIndexLoc"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
+
+[[node]]
+id = "remark_9_25_smooth"
+kind = "theorem"
+desc = '''Remark 25, "in particular, `f ∈ C^∞(Ω) ⇒ u ∈ C^∞(Ω)`": under the hypotheses of
+`remark_9_25` with `f` agreeing a.e. on `Ω` with a `C^∞` function on `Ω`, `u` agrees a.e. on `Ω`
+with a `C^∞` function on `Ω`. `Elliptic.regularity_interior_smooth`, through
+`MemSobolevMultiIndexLoc.exists_contDiffOn`. Footnote 33 — nothing can be said about `u` up to
+the boundary — is a remark and not a node. ★'''
+deps = ["remark_9_25", "Elliptic.regularity_interior_higher", "MemSobolevMultiIndexLoc.exists_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
+
+[[node]]
+id = "remark_9_25_local"
+kind = "theorem"
+desc = '''Remark 25, hypoellipticity: for `f ∈ L²(Ω)` and `u ∈ H^1_0(Ω)` the weak solution of
+`∫ ∇u·∇φ + ∫ uφ = ∫ fφ` on `H^1_0(Ω)`, and `ω ⋐ Ω`, the regularity of `u|_ω` depends only on that
+of `f|_ω`: if `f ∈ H^m(ω)` then `u ∈ H^{m+2}_loc(ω)`, and if `f` is `C^∞` on `ω` then so is `u`
+(a.e. on `ω`). `Elliptic.regularity_interior_higher` applied on the open set `ω` with datum
+`f - u`, whose regularity on `ω` is that of `f` one step behind, bootstrapped. The sentence
+before it, that `u|_ω` depends on the values of `f` on all of `Ω`, is footnote 34's pointer to
+the strong maximum principle and is not a node. ★'''
+deps = ["remark_9_25", "Elliptic.regularity_interior_higher", "theorem_9_21"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"

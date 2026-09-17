@@ -1,0 +1,465 @@
+namespace = "Brezis.Chapter08"
+desc = '''
+§8.2, The Sobolev space `W^{1,p}(I)`, with the `W^{m,p}` paragraph. `I` is an open interval,
+possibly unbounded (`I : Opens ℝ` with `(hI : (I : Set ℝ).OrdConnected)`), `1 ≤ p ≤ ∞`
+(`[Fact (1 ≤ p)]`). The space is `SobolevIntervalLp 1 p I` of `Numlib/Analysis/Sobolev/Interval/Basic`,
+the book's set-theoretic definition is restated as `MemSobolevSpace` and identified with the
+backbone's predicate; `u'` is `SobolevIntervalLp.deriv u 1`, the continuous representative `ũ`
+is `SobolevIntervalLp.rep u`. Every numbered item of the section is a node (Proposition 8.1,
+Theorem 8.2, Lemmas 8.1–8.4, Propositions 8.3–8.5, Theorems 8.6–8.8, Corollaries 8.9–8.11),
+with Remarks 1, 2, 4–12 and the Examples; Remark 3 is not planned. The cited Exercises 8.2 (part
+1), 8.3 and 8.6 (part 4) are nodes. Everything delegates to `Interval/{Basic,Extension,Density,
+Embedding,Higher,DifferenceQuotient}`.
+'''
+
+[[node]]
+id = "sobolevSpace"
+kind = "definition"
+desc = '''`abbrev sobolevSpace (p : ℝ≥0∞) (I : Opens ℝ) := SobolevIntervalLp 1 p I` — the book's
+`W^{1,p}(I)`, and `abbrev H1 (I) := sobolevSpace 2 I` for `H¹(I)`. Notation-level; the surface
+states its theorems on `SobolevIntervalLp 1 p I` directly. ★'''
+deps = ["SobolevIntervalLp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Definition"
+
+[[node]]
+id = "MemSobolevSpace"
+kind = "definition"
+desc = '''The book's definition as a predicate on functions: `MemSobolevSpace p I u :=
+MemLp u p (volume.restrict I) ∧ ∃ g, MemLp g p (volume.restrict I) ∧ ∀ φ : 𝓓(I, ℝ), ∫ x in I, u x * deriv φ x = -∫ x in I, g x * φ x`
+— `u ∈ L^p(I)` with `g ∈ L^p(I)` such that `∫ u φ' = −∫ g φ` for every test function, the test
+class being `𝓓(I, ℝ) = C_c^∞(I)` (brief D6; Remark 1). `memSobolevSpace_iff_memSobolevIntervalLp :
+MemSobolevSpace p I u ↔ MemSobolevIntervalLp u 1 p I` by `memSobolevIntervalLp_one_iff` and
+`hasWeakDerivOn_iff` (an `L^p` function is locally integrable, `MemLp.locallyIntegrableOn`). The
+derivative `u' = g` is well defined a.e. (the book's footnote 2, Corollary 4.24):
+`memSobolevSpace_deriv_unique`, from `HasWeakIteratedLineDerivOn.ae_eq`. ★'''
+deps = ["sobolevSpace", "memSobolevIntervalLp_one_iff", "hasWeakDerivOn_iff", "HasWeakIteratedLineDerivOn.ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Definition"
+
+[[node]]
+id = "remark_8_1"
+kind = "theorem"
+desc = '''Remark 1: `C_c^1(I)` and `C_c^∞(I)` give the same space: for `u, g ∈ L^p(I)`,
+`(∀ φ : 𝓓(I, ℝ), ∫ u φ' = −∫ g φ) ↔ ∀ φ : ℝ → ℝ, ContDiff ℝ 1 φ → HasCompactSupport φ → tsupport φ ⊆ I → ∫ u φ' = −∫ g φ`.
+`←` is trivial. `→`: for `φ ∈ C_c^1(I)` the mollifications `ρ_n ⋆ φ` are test functions on `I`
+for `n` large (support in `tsupport φ + closedBall 0 (1/n) ⊆ I`) and converge to `φ` in `C¹`:
+`ρ_n ⋆ φ → φ` and `(ρ_n ⋆ φ)' = ρ_n ⋆ φ' → φ'` uniformly — the derivative identity is
+`HasCompactSupport.hasDerivAt_convolution_right`, and the uniform convergence of the mollification
+of a uniformly continuous compactly supported function is elementary (`|ρ_n ⋆ g − g| ≤ sup_{|t| ≤ 1/n} |g(· − t) − g|`
+by `∫ ρ_n = 1`; the `TendstoUniformly` form is not in Mathlib, which has the pointwise
+`ContDiffBump.convolution_tendsto_right`) — so both integrals pass to the limit (dominated
+convergence on the compact support). ★★ (~200 lines). The uniform convergence on compacts of
+`ρ_n ⋆ g` for continuous `g` is `Brezis.Chapter04.proposition_4_21` (Mathlib's
+`MeasureTheory.convolution_tendsto_right`); apply it to `φ` and to `φ'` with the derivative
+identity, and the compact support makes local uniform convergence uniform.'''
+deps = ["MemSobolevSpace", "ContDiffBump.tendsto_eLpNorm_convolution_sub", "Brezis.Chapter04.proposition_4_21"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 1"
+
+[[node]]
+id = "remark_8_2"
+kind = "theorem"
+desc = '''Remark 2: `ContDiffOn ℝ 1 u I → MemLp u p (volume.restrict I) → MemLp (deriv u) p (volume.restrict I) → MemSobolevSpace p I u`,
+with the weak derivative equal to `deriv u` (`remark_8_2_deriv`); and for a bounded `I = Opens.Ioo a b`,
+`ContDiffOn ℝ 1 u (Icc a b) → MemSobolevSpace p (Opens.Ioo a b) u` for all `1 ≤ p ≤ ∞`
+(`remark_8_2_Icc`). The backbone's `memSobolevIntervalLp_of_contDiffOn`. ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_of_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 2"
+
+[[node]]
+id = "example_abs"
+kind = "theorem"
+desc = '''§8.2, Examples (i): `MemSobolevSpace p (Opens.Ioo (-1) 1) (fun x ↦ |x|)` for every `1 ≤ p ≤ ∞`,
+with weak derivative `g x = if 0 < x then 1 else -1` (`example_abs_deriv`). The backbone's
+`memSobolevIntervalLp_abs`. ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_abs"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (i)"
+
+[[node]]
+id = "example_piecewise_contDiff"
+kind = "theorem"
+desc = '''§8.2, Examples, "more generally": a function continuous on `[a, b]` and piecewise `C¹` (on a
+partition `a = x₀ < ⋯ < x_{N+1} = b`, with bounded panel derivatives) belongs to
+`W^{1,p}(a, b)` for all `1 ≤ p ≤ ∞`. The backbone's `memSobolevIntervalLp_of_piecewise_contDiffOn`
+(whose `p = 2` case, `memSobolevInterval_of_piecewise_contDiffOn`, already carries the finite
+element spaces of `Numlib/Variational/FiniteElementInterval`). ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_of_piecewise_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (i)"
+
+[[node]]
+id = "example_sign_not_mem"
+kind = "theorem"
+desc = '''§8.2, Examples (ii): the function `g` of (i) is in no `W^{1,p}(−1, 1)`:
+`∀ p, [Fact (1 ≤ p)] → ¬ MemSobolevSpace p (Opens.Ioo (-1) 1) (fun x ↦ if 0 < x then 1 else -1)`.
+The backbone's `not_memSobolevIntervalLp_sign`. ★'''
+deps = ["MemSobolevSpace", "not_memSobolevIntervalLp_sign"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Examples (ii)"
+
+[[node]]
+id = "sobolevNorm"
+kind = "definition"
+desc = '''The book's norm: `sobolevNorm (u : SobolevIntervalLp 1 p I) : ℝ := ‖deriv u 0‖ + ‖deriv u 1‖`
+(`‖u‖_{W^{1,p}} = ‖u‖_{L^p} + ‖u'‖_{L^p}`), and its equivalence with the norm of the type
+`(‖u‖_p^p + ‖u'‖_p^p)^{1/p}` — the book's "sometimes, if `1 < p < ∞`, the equivalent norm" —
+`sobolevNorm_equiv : ‖u‖ ≤ sobolevNorm u ∧ sobolevNorm u ≤ 2 * ‖u‖`
+(`SobolevIntervalLp.norm_deriv_le`'s two comparisons). `sobolevNorm_eq_norm_of_one : sobolevNorm u = ‖u‖` at `p = 1`. ★'''
+deps = ["sobolevSpace", "SobolevIntervalLp.norm_deriv_le", "SobolevIntervalLp.norm_eq_sum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Notation"
+
+[[node]]
+id = "inner_H1"
+kind = "theorem"
+desc = '''The scalar product of `H¹`: `⟪u, v⟫_ℝ = ∫ x in I, (fn u x * fn v x + deriv u 1 x * deriv v 1 x)`
+for `u v : SobolevIntervalLp 1 2 I` (`(u, v)_{H¹} = (u, v)_{L²} + (u', v')_{L²}`), and
+`norm_H1_sq : ‖u‖ ^ 2 = ‖deriv u 0‖ ^ 2 + ‖deriv u 1‖ ^ 2`. The backbone's
+`SobolevIntervalLp.inner_eq`/`inner_eq_integral`. ★'''
+deps = ["sobolevSpace", "SobolevIntervalLp.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, Notation"
+
+[[node]]
+id = "proposition_8_1"
+kind = "theorem"
+desc = '''Proposition 8.1, four clauses: `proposition_8_1_banach : CompleteSpace (SobolevIntervalLp 1 p I)`
+for all `1 ≤ p ≤ ∞` (the instance `SobolevMultiIndex.instCompleteSpace`; the book's proof (a) is
+Remark 4's closedness); `proposition_8_1_reflexive : 1 < p → p ≠ ∞ → NormedSpace.IsReflexive ℝ (SobolevIntervalLp 1 p I)`
+(`SobolevMultiIndex.instIsReflexive` read on `E = ℝ`, chapter 3's `NormedSpace.IsReflexive`, chapter 4's `L^p`
+reflexivity and the product lemma — the surface node waits for those);
+`proposition_8_1_separable : p ≠ ∞ → TopologicalSpace.SeparableSpace (SobolevIntervalLp 1 p I)`
+(`SobolevMultiIndex.instSecondCountableTopology`); `proposition_8_1_hilbert : InnerProductSpace ℝ (SobolevIntervalLp 1 2 I)`
+with separability (instances). The plain id is the conjunction of the four, stated as one
+theorem with the exponent hypotheses in each clause. ★'''
+deps = ["sobolevSpace", "SobolevMultiIndex.instCompleteSpace", "SobolevMultiIndex.instIsReflexive", "SobolevMultiIndex.instSecondCountableTopology"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.1"
+
+[[node]]
+id = "remark_8_4"
+kind = "theorem"
+desc = '''Remark 4, two clauses. `remark_8_4_a`: if `u n : SobolevIntervalLp 1 p I`, `fn (u n) → v` in
+`L^p(I)` and `deriv (u n) 1 → w` in `L^p(I)`, then `MemSobolevIntervalLp v 1 p I` with weak
+derivative `w` and the elements `u n` converge in `W^{1,p}` to the element of `v`
+(`hasWeakDerivOn_of_tendsto_eLpNorm`, `SobolevIntervalLp.tendsto_of_tendsto_deriv`).
+`remark_8_4_b`: for `1 < p ≤ ∞`, if `fn (u n) → v` in `L^p(I)` and `‖deriv (u n) 1‖ ≤ M` then
+`MemSobolevIntervalLp v 1 p I` ("see Exercise 8.2"; the backbone's
+`SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded`'s corollary
+`memSobolevIntervalLp_of_tendsto_of_bounded_deriv`). ★'''
+deps = ["sobolevSpace", "hasWeakDerivOn_of_tendsto_eLpNorm", "SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 4"
+
+[[node]]
+id = "theorem_8_2"
+kind = "theorem"
+desc = '''Theorem 8.2: for `u : SobolevIntervalLp 1 p I`, `1 ≤ p ≤ ∞`, `I` an open interval (bounded or
+not), `∃ ũ : ℝ → ℝ, ContinuousOn ũ (closure I) ∧ fn u =ᵐ[volume.restrict I] ũ ∧ ∀ x ∈ closure I, ∀ y ∈ closure I, ũ x - ũ y = ∫ t in y..x, deriv u 1 t`.
+The backbone's `SobolevIntervalLp.exists_continuousOn_closure_ae_eq`; the canonical choice is
+`SobolevIntervalLp.rep u`, used by every later node as "`u(x)`". ★'''
+deps = ["sobolevSpace", "SobolevIntervalLp.exists_continuousOn_closure_ae_eq", "SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.2"
+
+[[node]]
+id = "remark_8_5"
+kind = "theorem"
+desc = '''Remark 5: (a) if `MemSobolevSpace p I u` and `v =ᵐ[volume.restrict I] u` then
+`MemSobolevSpace p I v` (`MemSobolevIntervalLp.congr_ae`); (b) the continuous representative is
+unique: two functions continuous on `closure I` both a.e. equal to `u` on `I` agree on `closure I`
+(`SobolevIntervalLp.rep_eq_of_continuousOn` twice, or `eqOn_Icc_of_ae_eq`-type directly). The
+last sentence ("has a continuous representative ≠ continuous a.e.") is discussion. ★'''
+deps = ["MemSobolevSpace", "MemSobolevIntervalLp.congr_ae", "SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 5"
+
+[[node]]
+id = "remark_8_6"
+kind = "theorem"
+desc = '''Remark 6: if `u : SobolevIntervalLp 1 p I` and `u'` has a representative continuous on
+`closure I`, then `rep u` is `C¹` on `closure I` with derivative that representative:
+`ContDiffOn ℝ 1 (rep u) (closure I)`. The backbone's
+`SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`. ★'''
+deps = ["theorem_8_2", "SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 6"
+
+[[node]]
+id = "lemma_8_1"
+kind = "theorem"
+desc = '''Lemma 8.1: for `f ∈ L¹_loc(I)` (`LocallyIntegrableOn f I`) with `∫ x in I, f x * deriv φ x = 0`
+for all `φ : 𝓓(I, ℝ)`, `∃ C, f =ᵐ[volume.restrict I] fun _ ↦ C`. The backbone's
+`HasWeakDerivOn.exists_ae_eq_const` (the hypothesis is `HasWeakDerivOn f 0 I` unfolded). ★'''
+deps = ["HasWeakDerivOn.exists_ae_eq_const", "hasWeakDerivOn_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.1"
+
+[[node]]
+id = "lemma_8_2"
+kind = "theorem"
+desc = '''Lemma 8.2: for `g ∈ L¹_loc(I)`, `y₀ ∈ I` and `v x := ∫ t in y₀..x, g t`, `ContinuousOn v I`
+and `∫ x in I, v x * deriv φ x = -∫ x in I, g x * φ x` for all `φ : 𝓓(I, ℝ)`. The backbone's
+`MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral` (`c = 0`) with its `continuousOn_integral`.
+★'''
+deps = ["MeasureTheory.LocallyIntegrableOn.hasWeakDerivOn_integral", "hasWeakDerivOn_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.2"
+
+[[node]]
+id = "remark_8_7"
+kind = "theorem"
+desc = '''Remark 7: for `g ∈ L^p(I)`, the primitive `v = ∫_{y₀}^x g` lies in `W^{1,p}(I)` provided
+`v ∈ L^p(I)`, which is automatic for bounded `I`. The backbone's `memSobolevIntervalLp_integral`
+and `memSobolevIntervalLp_integral_of_bounded`. ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 7"
+
+[[node]]
+id = "proposition_8_3"
+kind = "theorem"
+desc = '''Proposition 8.3: for `u ∈ L^p(I)`, `1 < p ≤ ∞`, `q` conjugate,
+`MemSobolevSpace p I u ↔ ∃ C, ∀ φ : 𝓓(I, ℝ), |∫ x in I, u x * deriv φ x| ≤ C * ‖φ‖_{L^q(I)}`,
+and `→` holds with `C = ‖u'‖_p` (`proposition_8_3_const`). The backbone's
+`memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le` and
+`SobolevIntervalLp.abs_integral_mul_deriv_le` (`Interval/DifferenceQuotient`, which waits for
+chapter 4's Riesz representation). ★'''
+deps = ["MemSobolevSpace", "SobolevIntervalLp.abs_integral_mul_deriv_le", "memSobolevIntervalLp_of_forall_abs_integral_mul_deriv_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.3"
+
+[[node]]
+id = "remark_8_8"
+kind = "theorem"
+desc = '''Remark 8, the clauses that are formalized: (a) the implication (i)⇒(ii) of Proposition 8.3
+holds at `p = 1` (`SobolevIntervalLp.abs_integral_mul_deriv_le` at `p = 1`, `q = ∞`); (b) on a
+bounded `I = (a, b)`, `W^{1,1}(I)` is the space of absolutely continuous functions:
+`MemSobolevSpace 1 (Opens.Ioo a b) u ↔ ∃ g, AbsolutelyContinuousOnInterval g a b ∧ u =ᵐ[volume.restrict (Ioo a b)] g`
+(`memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval`; Mathlib's
+`AbsolutelyContinuousOnInterval` is the book's (AC)). The converse failing at `p = 1` and the
+three characterizations (a)–(c) of bounded variation are not planned. ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_one_one_iff_absolutelyContinuousOnInterval", "SobolevIntervalLp.abs_integral_mul_deriv_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 8"
+
+[[node]]
+id = "proposition_8_4"
+kind = "theorem"
+desc = '''Proposition 8.4: for `u ∈ L^∞(I)`, `MemSobolevSpace ⊤ I u ↔ ∃ C, ∀ᵐ x ∂(volume.restrict I), ∀ᵐ y ∂(volume.restrict I), |u x - u y| ≤ C * |x - y|`.
+The backbone's `memSobolevIntervalLp_top_iff_lipschitz` (proved through the absolutely continuous
+calculus rather than the book's Proposition 8.3). ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_top_iff_lipschitz"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.4"
+
+[[node]]
+id = "proposition_8_5"
+kind = "theorem"
+desc = '''Proposition 8.5: for `u ∈ L^p(ℝ)`, `1 < p < ∞`,
+`MemSobolevSpace p ⊤ u ↔ ∃ C, ∀ h : ℝ, eLpNorm (fun x ↦ u (x + h) - u x) p volume ≤ ENNReal.ofReal (C * |h|)`,
+with `C = ‖u'‖_p` in `→` (`proposition_8_5_const`, valid for `p = 1` too). The backbone's
+`SobolevIntervalLp.eLpNorm_translate_sub_le` and `memSobolevIntervalLp_of_eLpNorm_translate_sub_le`.
+`τ_h u = u(· + h)`. ★'''
+deps = ["MemSobolevSpace", "SobolevIntervalLp.eLpNorm_translate_sub_le", "memSobolevIntervalLp_of_eLpNorm_translate_sub_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.5"
+
+[[node]]
+id = "theorem_8_6"
+kind = "theorem"
+desc = '''Theorem 8.6: for `1 ≤ p ≤ ∞` and an open interval `I`, there is a bounded linear
+`P : SobolevIntervalLp 1 p I →L[ℝ] SobolevIntervalLp 1 p ⊤` with (i) `fn (P u) =ᵐ[volume.restrict I] fn u`,
+(ii) `‖deriv (P u) 0‖ ≤ C * ‖deriv u 0‖`, (iii) `sobolevNorm (P u) ≤ C * sobolevNorm u`, where
+`C` depends only on `|I|`: the book's footnote values `C = 4` in (ii) and `C = 4 (1 + 1/|I|)` in
+(iii) (`1/|I| = 0` for `|I| = ∞`), stated as `theorem_8_6_const`. The backbone's
+`SobolevIntervalLp.extensionCLM` with `fn_extensionCLM`, `eLpNorm_fn_extensionCLM_le`,
+`eLpNorm_deriv_extensionCLM_le` (whose sum is (iii) in the book's norm). ★'''
+deps = ["sobolevNorm", "SobolevIntervalLp.extensionCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.6"
+
+[[node]]
+id = "lemma_8_3"
+kind = "theorem"
+desc = '''Lemma 8.3: for `u ∈ W^{1,p}(0, 1)` and `η ∈ C¹(ℝ)` (here smooth) with `η = 1` on `(−∞, 1/4)`,
+`η = 0` on `(3/4, ∞)`, the zero extension `ũ` of `u` to `(0, ∞)` satisfies
+`MemSobolevSpace p (Opens.Ioi 0) (η * ũ)` with `(η ũ)' = η' ũ + η ũ'`. The backbone's
+`HasWeakDerivOn.indicator_mul_of_tsupport_inter_subset` with `I = Opens.Ioo 0 1`, `J = Opens.Ioi 0`
+(`tsupport η ∩ (0, ∞) ⊆ (0, 3/4] ⊆ (0, 1)`), plus the `L^p` membership of the products. ★'''
+deps = ["MemSobolevSpace", "HasWeakDerivOn.indicator_mul_of_tsupport_inter_subset"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.3"
+
+[[node]]
+id = "theorem_8_7"
+kind = "theorem"
+desc = '''Theorem 8.7 (density): for `u : SobolevIntervalLp 1 p I`, `1 ≤ p < ∞`, there is a sequence
+`u n : ℝ → ℝ` of `C_c^∞(ℝ)` functions whose restrictions (as elements of `W^{1,p}(I)`) converge to
+`u` in `W^{1,p}(I)`. The backbone's `SobolevIntervalLp.exists_seq_contDiff_hasCompactSupport_tendsto`.
+★'''
+deps = ["sobolevSpace", "SobolevIntervalLp.exists_seq_contDiff_hasCompactSupport_tendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7"
+
+[[node]]
+id = "remark_8_9"
+kind = "theorem"
+desc = '''Remark 9: on a bounded `I` there is `u ∈ W^{1,p}(I)` that is the limit of no sequence of
+`C_c^∞(I)` functions in `W^{1,p}(I)` — i.e. `u ∉ SobolevIntervalLpZero 1 p I` (§8.3), the constant
+`1`. The backbone's `SobolevIntervalLp.exists_not_mem_closure_testFunctions`. ★'''
+deps = ["theorem_8_7", "SobolevIntervalLp.exists_not_mem_closure_testFunctions"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 9"
+
+[[node]]
+id = "lemma_8_4"
+kind = "theorem"
+desc = '''Lemma 8.4: for `ρ ∈ L¹(ℝ)` and `v ∈ W^{1,p}(ℝ)`, `1 ≤ p ≤ ∞`, `ρ ⋆ v ∈ W^{1,p}(ℝ)` and
+`(ρ ⋆ v)' = ρ ⋆ v'`. The backbone's `SobolevIntervalLp.hasWeakDerivOn_convolution`. ★'''
+deps = ["MemSobolevSpace", "SobolevIntervalLp.hasWeakDerivOn_convolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.4"
+
+[[node]]
+id = "theorem_8_8"
+kind = "theorem"
+desc = '''Theorem 8.8, three clauses. `theorem_8_8_a` (5): there is `C` depending only on `|I| ≤ ∞` with
+`eLpNorm (fn u) ⊤ (volume.restrict I) ≤ ENNReal.ofReal (C * sobolevNorm u)` for all
+`u : SobolevIntervalLp 1 p I` and all `1 ≤ p ≤ ∞` — "`W^{1,p}(I) ⊂ L^∞(I)` with continuous
+injection" (`SobolevIntervalLp.eLpNorm_top_le`, with the explicit constants
+`abs_rep_le_of_bounded`/`abs_rep_pow_le`, uniform in `p` as the book's footnote 7 says).
+`theorem_8_8_b` (6): for bounded `I = (a, b)` and `1 < p ≤ ∞`, the injection `W^{1,p}(I) → C(Ī)`
+is compact: `IsCompactOperator (SobolevIntervalLp.toContinuousMap hab)`
+(`isCompactOperator_toContinuousMap`). `theorem_8_8_c` (7): for bounded `I` and `1 ≤ q < ∞`, the
+injection `W^{1,1}(I) → L^q(I)` is compact: `IsCompactOperator (SobolevIntervalLp.toLp_of_bounded)`
+at `p = 1` (`isCompactOperator_toLp_one`, through chapter 4's Kolmogorov–Riesz). ★'''
+deps = ["sobolevNorm", "SobolevIntervalLp.abs_rep_pow_le", "SobolevIntervalLp.isCompactOperator_toContinuousMap", "SobolevIntervalLp.isCompactOperator_toLp_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.8"
+
+[[node]]
+id = "remark_8_10_a"
+kind = "theorem"
+desc = '''Remark 10 (a): the injection `W^{1,1}(0, 1) → C([0, 1])` is continuous but not compact:
+`¬ IsCompactOperator (SobolevIntervalLp.toContinuousMap (p := 1) zero_lt_one)`. Exercise 8.2 part 2's
+sequence: `u n` equal to `0` on `[0, 1/2]`, `n (x − 1/2)` on `(1/2, 1/2 + 1/n)`, `1` after, is
+bounded in `W^{1,1}` (`‖u n‖_1 ≤ 1`, `‖u n'‖_1 = 1`; `memSobolevIntervalLp_of_piecewise_contDiffOn`)
+and converges pointwise to the step `1_{(1/2, 1]}`, so no subsequence converges uniformly (a
+uniform limit would be continuous and equal to the step). ★★ (~150 lines; surface-only, a
+counterexample)'''
+deps = ["theorem_8_8", "memSobolevIntervalLp_of_piecewise_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10"
+
+[[node]]
+id = "remark_8_10_b"
+kind = "theorem"
+desc = '''Remark 10 (b), Helly's selection theorem: a bounded sequence in `W^{1,1}(I)` has a
+subsequence converging at every point of `Ī`. Stated for bounded `I` (the book: "bounded or
+unbounded"; the unbounded case follows from the bounded one on `I ∩ [−R, R]` by a diagonal
+argument, `remark_8_10_b_unbounded`, optional). The backbone's
+`SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one`. ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10"
+
+[[node]]
+id = "remark_8_10_c"
+kind = "theorem"
+desc = '''Remark 10 (c): for an unbounded `I` and `1 < p ≤ ∞`, the injection `W^{1,p}(I) → L^∞(I)` is
+continuous but never compact: `¬ IsCompactOperator (SobolevIntervalLp.inclusionLinfty …)`. Exercise
+8.4's sequence: for a fixed `φ ∈ C_c^∞(ℝ)`, `φ ≠ 0`, the translates `u n = φ(· + n)` (or `− n`,
+towards the unbounded end) are bounded in `W^{1,p}(I)` and pairwise at `L^∞` distance `‖φ‖_∞`
+once their supports are disjoint, so no subsequence is Cauchy in `L^∞`. ★★ (~150 lines;
+surface-only)'''
+deps = ["theorem_8_8", "SobolevIntervalLp.toLp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10"
+
+[[node]]
+id = "remark_8_10_d"
+kind = "theorem"
+desc = '''Remark 10 (d): a bounded sequence in `W^{1,p}(I)`, `1 < p ≤ ∞`, has a subsequence
+converging in `L^∞(J)` for every bounded `J ⊆ I` to some `u ∈ W^{1,p}(I)`. The backbone's
+`SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded` (the uniform convergence of the
+representatives on `closure I ∩ [−R, R]`, read as `L^∞(J)` convergence). ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10"
+
+[[node]]
+id = "remark_8_11"
+kind = "theorem"
+desc = '''Remark 11: for bounded `I` and `1 ≤ p, q ≤ ∞`, the norm `‖u'‖_p + ‖u‖_q` is equivalent to the
+`W^{1,p}(I)` norm: `∃ C₁ C₂ > 0, ∀ u, ‖u‖ ≤ C₁ (‖deriv u 1‖ + ‖fn u‖_{L^q}) ∧ ‖deriv u 1‖ + ‖fn u‖_{L^q} ≤ C₂ ‖u‖`.
+The backbone's `SobolevIntervalLp.norm_equiv_of_bounded`. ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.norm_equiv_of_bounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 11"
+
+[[node]]
+id = "remark_8_12"
+kind = "theorem"
+desc = '''Remark 12: for an unbounded `I`, `u ∈ W^{1,p}(I)` and `p ≤ q ≤ ∞`, `MemLp (fn u) q (volume.restrict I)`,
+with `∫_I |u|^q ≤ ‖u‖_∞^{q−p} ‖u‖_p^p`. The backbone's `SobolevIntervalLp.toLp`'s
+`memLp_of_le`. The "in general `u ∉ L^q` for `q < p`" (Exercise 8.1) is not planned. ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.toLp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 12"
+
+[[node]]
+id = "corollary_8_9"
+kind = "theorem"
+desc = '''Corollary 8.9: for an unbounded `I` and `u : SobolevIntervalLp 1 p I`, `1 ≤ p < ∞`,
+`Tendsto (rep u) (Filter.cocompact ℝ ⊓ 𝓟 (I : Set ℝ)) (𝓝 0)` — `u(x) → 0` as `|x| → ∞`, `x ∈ I`.
+The backbone's `SobolevIntervalLp.tendsto_rep_cocompact`. ★'''
+deps = ["theorem_8_2", "SobolevIntervalLp.tendsto_rep_cocompact"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.9"
+
+[[node]]
+id = "corollary_8_10"
+kind = "theorem"
+desc = '''Corollary 8.10: for `u v : SobolevIntervalLp 1 p I`, `1 ≤ p ≤ ∞`: `MemSobolevSpace p I (rep u * rep v)`
+with `(uv)' = u' v + u v'` (`corollary_8_10_deriv`), and integration by parts
+`∫ t in y..x, deriv u 1 t * rep v t = rep u x * rep v x - rep u y * rep v y - ∫ t in y..x, rep u t * deriv v 1 t`
+for all `x, y ∈ closure I` (`corollary_8_10_parts`). The backbone's
+`SobolevIntervalLp.memSobolevIntervalLp_mul`, `hasWeakDerivOn_rep_mul`,
+`integral_deriv_mul_add_mul_deriv`; footnote 8 ("`W^{1,p}` is a Banach algebra") is
+`SobolevIntervalLp.mul`'s `norm_mul_le`. ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.memSobolevIntervalLp_mul", "SobolevIntervalLp.hasWeakDerivOn_rep_mul", "SobolevIntervalLp.integral_deriv_mul_add_mul_deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.10"
+
+[[node]]
+id = "corollary_8_11"
+kind = "theorem"
+desc = '''Corollary 8.11: for `G : ℝ → ℝ` with `ContDiff ℝ 1 G`, `G 0 = 0`, and `u : SobolevIntervalLp 1 p I`,
+`1 ≤ p ≤ ∞`: `MemSobolevSpace p I (G ∘ rep u)` with `(G ∘ u)' = (G' ∘ u) u'`; footnote 9: without
+`G 0 = 0` when `I` is bounded (`corollary_8_11_of_bounded`). The backbone's
+`SobolevIntervalLp.memSobolevIntervalLp_comp`. ★'''
+deps = ["theorem_8_8", "SobolevIntervalLp.memSobolevIntervalLp_comp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.11"
+
+[[node]]
+id = "sobolevSpaceHigher"
+kind = "definition"
+desc = '''The book's inductive `W^{m,p}(I) = {u ∈ W^{m−1,p} : u' ∈ W^{m−1,p}}`, `m ≥ 2`, as a predicate
+`MemSobolevSpaceHigher p I : ℕ → (ℝ → ℝ) → Prop` defined by recursion (`m = 1` being
+`MemSobolevSpace`), and `abbrev sobolevSpaceHigher (m p) (I) := SobolevIntervalLp m p I` with
+`Hm (m) (I) := sobolevSpaceHigher m 2 I`; `memSobolevSpaceHigher_iff : MemSobolevSpaceHigher p I m u ↔ MemSobolevIntervalLp u m p I`
+by `memSobolevIntervalLp_succ_iff` (induction on `m`). ★'''
+deps = ["MemSobolevSpace", "memSobolevIntervalLp_succ_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}, Definition"
+
+[[node]]
+id = "memSobolevSpaceHigher_iff_forall_integral"
+kind = "theorem"
+desc = '''The "easily shown" characterization: `u ∈ W^{m,p}(I)` iff `u ∈ L^p(I)` and there are
+`g_1, …, g_m ∈ L^p(I)` with `∫ u D^j φ = (−1)^j ∫ g_j φ` for all `φ : 𝓓(I, ℝ)`, `j = 1, …, m`;
+the successive derivatives `D^j u = g_j` are `SobolevIntervalLp.deriv u j`. The backbone's
+`SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral`. ★'''
+deps = ["sobolevSpaceHigher", "SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
+
+[[node]]
+id = "sobolevNormHigher"
+kind = "theorem"
+desc = '''The norm `‖u‖_{W^{m,p}} = ‖u‖_p + ∑_{α=1}^m ‖D^α u‖_p` as a function on `SobolevIntervalLp m p I`
+(`sobolevNormHigher`), equivalent to the norm of the type (`sobolevNormHigher_equiv`, from
+`SobolevIntervalLp.norm_deriv_le`'s comparisons), and the `H^m` scalar product
+`(u, v)_{H^m} = (u, v)_{L²} + ∑_{α=1}^m (D^α u, D^α v)_{L²}` (`inner_Hm`, `SobolevIntervalLp.inner_eq`).
+★'''
+deps = ["sobolevSpaceHigher", "SobolevIntervalLp.norm_deriv_le", "SobolevIntervalLp.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
+
+[[node]]
+id = "interpolationInequality"
+kind = "theorem"
+desc = '''The unnumbered interpolation inequality of the `W^{m,p}` paragraph: for `1 ≤ j ≤ m − 1` and
+every `ε > 0` there is `C` (depending on `ε` and `|I| ≤ ∞`) with
+`‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` for all `u ∈ W^{m,p}(I)`; hence `‖u‖_p + ‖D^m u‖_p` is a norm
+equivalent to `‖u‖_{W^{m,p}}` (`interpolationInequality_norm_equiv`). The backbone's
+`SobolevIntervalLp.eLpNorm_deriv_le_mul_add` (direct mean-value route) and its corollary
+`norm_equiv_top`; the book cites Adams and, for `|I| < ∞`, Exercise 8.6. ★'''
+deps = ["sobolevNormHigher", "SobolevIntervalLp.eLpNorm_deriv_le_mul_add"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"
+
+[[node]]
+id = "sobolevSpaceHigher_subset_contDiff"
+kind = "theorem"
+desc = '''The closing sentence of the `W^{m,p}` paragraph: for bounded `I = (a, b)`, `W^{m,p}(I) ⊂ C^{m−1}(Ī)`
+with continuous injection — `SobolevIntervalLp.toContDiffMapIcc hab : SobolevIntervalLp (k+1) p (Opens.Ioo a b) →L[ℝ] ContDiffMapIcc hab.le k`
+with its bound — and compact injection for `1 < p ≤ ∞` (`sobolevSpaceHigher_subset_contDiff_compact`,
+`SobolevIntervalLp.isCompactOperator_toContDiffMapIcc`). ★'''
+deps = ["sobolevSpaceHigher", "SobolevIntervalLp.toContDiffMapIcc", "SobolevIntervalLp.isCompactOperator_toContDiffMapIcc"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.2, The Sobolev spaces W^{m,p}"

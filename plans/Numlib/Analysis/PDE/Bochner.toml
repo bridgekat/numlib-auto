@@ -1,0 +1,118 @@
+namespace = "Bochner"
+desc = '''
+Vocabulary for vector-valued functions of time, and the space-time reading of a curve of Sobolev
+functions. This is the "Bochner-space half" of `notes/frontier.md` blocker 9, at the level the
+evolution chapters of [brezis2011functional] (chapter 10) and the parabolic chapter of
+[quarteroni2000numerical] (chapter 13) actually consume; it deliberately does *not* build Lions'
+theorem or the spaces `L²(0,T;V) ∩ H¹(0,T;V*)` as types.
+
+Why a module of its own. The classes `C([0,∞); H)`, `C^k((0,∞); H)` and `L²(0,∞; H)` of a curve
+`u : ℝ → H` in a Hilbert space are Mathlib's `ContinuousOn u (Ici 0)`, `ContDiffOn ℝ k u (Ioi 0)`
+and `MemLp u 2 (volume.restrict (Ioi 0))`, and need nothing. What the books write beside them is
+membership of a *smaller* space: `u ∈ C((0,∞); H²(Ω) ∩ H¹₀(Ω))`, `u ∈ C¹([0,∞); H¹₀(Ω))`,
+`u ∈ L²(0,∞; H¹₀(Ω))`, for a curve `u` whose values live in `L²(Ω)`. In this project the Sobolev
+spaces are separate types (`SobolevEuclidean`, `SobolevEuclideanZero`) mapped into `L²(Ω)` by a
+continuous linear injection (`SobolevMultiIndex.fnL`, `SobolevMultiIndexZero.fnL` of
+`Numlib/Analysis/Sobolev/MultiIndex`), so each such clause is "`u` factors through the embedding by a curve of the required regularity":
+`ContDiffOnThrough J k u s` and `MemLpThrough J p u s` below, for any continuous linear
+`J : V →L[ℝ] W`. Chapter 7's `LinearPMap.ContDiffOnPowDomain A n j u s` (`u ∈ C^n(s; D(A^j))`) is
+the same pattern for the graph spaces `D(A^j)`, and the two compose: a `ContDiffOnPowDomain` lift
+followed by the bounded map `D(A^ℓ) → H^{2ℓ}(Ω)` of `Numlib/Analysis/PDE/DirichletLaplacian` is a
+`ContDiffOnThrough` lift. Both the heat and the wave modules state their regularity clauses with
+these.
+
+The second half of the vocabulary is the sense of `C^k(Ω̄)`: `C^k` inside, each `D^α u` with a
+continuous extension to `Ω̄` ([brezis2011functional] footnote 16 of chapter 9). That is
+`ContDiffOnClosure` below, a predicate on a function on any normed space and any set, so that it
+serves both for `C^k(Ω̄)` in space (the conclusion of chapter 9a's Corollary 9.15,
+`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`, which states exactly this) and for
+space-time `C^∞(Ω̄ × [ε, ∞))`. Its natural home is `Numlib/Analysis/Calculus`; it is here only
+because this plan does not edit that group, and chapter 9a's `EmbeddingDomain` states its
+Corollary 9.15 conclusion by hand (`ContDiffOn` plus the extension clause) rather than through it.
+
+**Imports.** This module needs only Mathlib — its predicates are stated for an arbitrary
+continuous linear `J : V →L[ℝ] W`; the Sobolev types and chapter 7's
+`LinearPMap.ContDiffOnPowDomain` appear only in this description — and it must stay light
+because `Heat/Classical` and the surface files of chapter 10 import it for the vocabulary alone.
+The passage from the Bochner reading `t ↦ u(t) ∈ H^m(Ω)` to the books' `u(x, t)` — the
+space-time bridge, which rests on chapter 9a's Corollaries 9.14–9.15 (`EmbeddingDomain`) and is
+the one genuinely hard piece — is the child module `Numlib/Analysis/PDE/Bochner/SpaceTime`
+(`Bochner/SpaceTime.toml`), so that the heavy Sobolev embedding imports are paid only by the nodes
+that state the classical-smoothness clauses of Theorems 10.1, 10.2 and 10.8.
+
+Not here: a jointly measurable representative of a continuous `u : ℝ → L²(Ω)` — no consumer of
+this round needs it; Corollary 10.4 (ii)'s `‖u‖_{L^∞(Q)} ≤ ‖u₀‖_{L^∞(Ω)}` is stated as
+`∀ t, ‖u t‖_∞ ≤ ‖u₀‖_∞`. Lions' theorem ([brezis2011functional] Theorem 10.9) is not planned;
+see the chapter-10 group description in `plans/NumlibSurface/Brezis/Chapter10.toml`.
+'''
+
+[[node]]
+id = "ContDiffOnThrough"
+kind = "definition"
+desc = '''`ContDiffOnThrough (J : V →L[ℝ] W) (k : WithTop ℕ∞) (u : ℝ → W) (s : Set ℝ) : Prop`:
+`∃ v : ℝ → V, ContDiffOn ℝ k v s ∧ ∀ t ∈ s, u t = J (v t)`. The class `C^k(s; V)` of a curve
+whose values are read in `W ⊇ V`; `k = 0` is `C(s; V)`. Used with `J = Elliptic.derivL Ω m 2 0`
+(`H^m(Ω) ↪ L²(Ω)`) and `J = SobolevEuclideanZero.fnL Ω` (`H¹₀(Ω) ↪ L²(Ω)`). The same shape as
+chapter 7's `LinearPMap.ContDiffOnPowDomain` with `J = PowDomain.applyL A j 0`. Prototype:
+`notes/brezis/ch10/proto/wave.lean`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, the notation `C([0,∞); H)`"
+
+[[node]]
+id = "ContDiffOnThrough.contDiffOn"
+kind = "theorem"
+desc = '''`ContDiffOnThrough J k u s → ContDiffOn ℝ k u s`: the curve itself is `C^k` in `W`, as
+`J ∘ v` on `s` (`ContDiffOn.congr` with `J.contDiff.comp_contDiffOn`). ★'''
+deps = ["ContDiffOnThrough"]
+
+[[node]]
+id = "ContDiffOnThrough.mono"
+kind = "theorem"
+desc = '''Monotonicity in the order and in the set: `ContDiffOnThrough J k u s`, `k' ≤ k`, `s' ⊆ s`
+give `ContDiffOnThrough J k' u s'`. ★'''
+deps = ["ContDiffOnThrough"]
+
+[[node]]
+id = "ContDiffOnThrough.comp"
+kind = "theorem"
+desc = '''Composition with a further bounded map: `ContDiffOnThrough J k u s → ContDiffOnThrough (J'.comp J) k (J' ∘ u) s`
+for `J' : W →L[ℝ] X`; and the restriction of the lift, `ContDiffOnThrough (J₂.comp J₁) k u s → ContDiffOnThrough J₂ k u s`
+(lift `J₁ ∘ v`) — how `C^k(s; H²(Ω))` implies `C^k(s; H¹(Ω))`. (The passage from a chapter-7
+`LinearPMap.ContDiffOnPowDomain` lift to a `ContDiffOnThrough` lift,
+`ContDiffOnThrough.of_contDiffOnPowDomain`, is stated in `Numlib/Analysis/PDE/DirichletLaplacian`
+beside `powDomainToSobolevL`, so that this module imports nothing from chapter 7.) ★'''
+deps = ["ContDiffOnThrough"]
+
+[[node]]
+id = "ContDiffOnThrough.derivWithin_eq"
+kind = "theorem"
+desc = '''The derivative commutes with the embedding: if `ContDiffOnThrough J k u s` with lift `v`,
+`1 ≤ k`, `UniqueDiffOn ℝ s` (`Ici 0`, `Ioi 0`) and `t ∈ s`, then
+`derivWithin u s t = J (derivWithin v s t)`, and `ContDiffOnThrough J (k - 1) (derivWithin u s) s`
+with lift `derivWithin v s`. This is chapter 7's step "`A ∈ L(H₁, H)` and `u ∈ C([0,∞); H₁)`
+give `d/dt (A u) = A (du/dt)`" (proof of Theorem 7.5), and it is what turns `u ∈ C¹([0,∞); H¹₀)`
+into `∇(∂ₜu) = ∂ₜ(∇u)` in the wave energy identity. `HasFDerivWithinAt.comp` with
+`J.hasFDerivAt`, then `contDiffOn_succ_iff_derivWithin`. ★'''
+deps = ["ContDiffOnThrough"]
+
+[[node]]
+id = "MemLpThrough"
+kind = "definition"
+desc = '''`MemLpThrough (J : V →L[ℝ] W) (p : ℝ≥0∞) (u : ℝ → W) (s : Set ℝ) : Prop`:
+`∃ v : ℝ → V, MemLp v p (volume.restrict s) ∧ ∀ t ∈ s, u t = J (v t)`. The class
+`L^p(s; V)` of a curve read in `W`; Mathlib's `MemLp` of a `V`-valued function of a real variable
+is the Bochner `L^p` space. Pointwise agreement on `s` is asked (not a.e.), since every consumer's
+curve is continuous. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, the notation `L²(0,∞; H¹₀(Ω))`"
+
+[[node]]
+id = "MemLpThrough.of_contDiffOnThrough_of_integrable"
+kind = "theorem"
+desc = '''If `ContDiffOnThrough J 0 u s` with lift `v`, `s` is measurable, and `t ↦ ‖v t‖ ^ p.toReal`
+is integrable on `s` (`p ≠ ∞`), then `MemLpThrough J p u s`: continuity gives the strong
+measurability of the lift (`ContinuousOn.aestronglyMeasurable`), and the integrability is the
+`MemLp` condition (`MeasureTheory.memLp_iff_integrable_norm_rpow`-type lemma). The form in which
+the heat energy identities deliver `u ∈ L²(0,∞; H¹₀(Ω))`: continuity into `H¹₀` on `(0,∞)` plus
+`∫₀^∞ ‖u(t)‖²_{H¹} dt < ∞`. ★'''
+deps = ["ContDiffOnThrough", "MemLpThrough"]

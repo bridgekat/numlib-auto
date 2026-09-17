@@ -1,0 +1,121 @@
+namespace = "EllipticInterval"
+desc = '''
+The maximum principle for the two-point boundary value problem, [brezis2011functional] §8.5:
+Theorem 8.19 (Dirichlet, by Stampacchia's truncation), Corollary 8.20, Proposition 8.21 (Neumann),
+and the classical route of Remarks 26–27 through the second-derivative test at an interior or
+endpoint maximum, which Mathlib lacks and which is the lemma `notes/frontier.md` blocker 9
+(the heat equation's maximum principle, AH 6.2.4 and its relatives) names as the missing
+"`u'' ≤ 0` at an interior maximum".
+
+### Design
+
+* The truncation is `G(t) = max t 0 ^ 2` (or any `C¹` `G` vanishing on `(−∞, 0]` and strictly
+  increasing on `(0, ∞)`, as the book allows): `C¹` with `G' = 2 max t 0`, `G(0) = 0`, `t G(t) ≥ 0`,
+  so `G(u − K)` is in `H¹` by the chain rule (`SobolevIntervalLp.memSobolevIntervalLp_comp`, with
+  `p = 2`, `I = Opens.Ioo a b`) and in `H_0^1` when `u ≤ K` at the endpoints (Theorem 8.12,
+  `mem_sobolevIntervalZero_iff`).
+* The theorem is stated for the general form `−(αu')' + γu = f` of the parent module with
+  `α ≥ α₀ > 0`, `γ ≥ 0` in `L^∞` and `f ∈ L²`, the bound reading "if `f ≤ K γ` a.e. and `u ≤ K` on
+  `∂I` then `u ≤ K`" — the book's `−u'' + u = f` is `α = γ = 1`, where the hypothesis is
+  `f ≤ K` a.e. (`K = max(α, β, ess sup f)` when that is finite; the book's `sup f = +∞` case is
+  vacuous). The lower bound is the upper bound for `−u`. The proof is the same for the general
+  form, which is what the chapter-9 Theorem 9.27 restates in `ℝ^N`.
+* "For every `x ∈ I`" is a statement about the continuous representative `rep u`; the
+  conclusion holds on `[a, b]`.
+'''
+
+[[node]]
+id = "truncation"
+kind = "definition"
+desc = '''**Stampacchia's truncation function**: `truncation : ℝ → ℝ := fun t ↦ max t 0 ^ 2`, with
+`contDiff_truncation : ContDiff ℝ 1 truncation`, `deriv_truncation : deriv truncation t = 2 * max t 0`,
+`truncation_eq_zero_of_nonpos`, `truncation_nonneg`, `mul_truncation_nonneg : 0 ≤ t * truncation t`,
+`truncation_eq_zero_iff : truncation t = 0 ↔ t ≤ 0`, `strictMonoOn_truncation` on `Ici 0`,
+`truncation_zero`. The `C¹`-ness at `0`: prove `HasDerivAt truncation (2 * max t 0) t` by cases
+on the sign of `t`, the case `t = 0` by the squeeze `|truncation h| ≤ h²`; then
+`contDiff_one_iff_deriv` with the continuity of `2 * max · 0`. ★'''
+deps = ["form"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.19, proof"
+
+[[node]]
+id = "rep_le_of_le_of_isWeakSolution"
+kind = "theorem"
+desc = '''**Theorem 8.19 (the maximum principle, Dirichlet)**: for `a < b`, `αL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))`
+with `α₀ ≤ αL` a.e. (`0 < α₀`) and `0 ≤ γL` a.e., `f ∈ L²(a, b)`, `K : ℝ`, and
+`u : SobolevInterval 1 a b` with `∀ v ∈ SobolevIntervalZero a b, form a b αL 0 γL u v = load a b f v`
+(the weak equation, tested against `H_0^1` only, so `u ∈ H²` is not even needed as a hypothesis —
+the book's `u ∈ H²(I)` solution of the Dirichlet problem with `u(0) = α`, `u(1) = β` satisfies it
+by Green's formula, `natural_boundary_eq_of_forall`'s converse), if `rep u a ≤ K`, `rep u b ≤ K`
+and `f ≤ K * γL` a.e. on `(a, b)`, then `∀ x ∈ Icc a b, rep u x ≤ K`. Stampacchia's method:
+`v := G(u − K)` with `G = truncation` lies in `H¹` (chain rule, `SobolevIntervalLp.memSobolevIntervalLp_comp`
+at `p = 2`) and in `H_0^1` (its representative vanishes at `a`, `b`; `mem_sobolevIntervalZero_iff`),
+so, subtracting `K ∫ γ G(u − K)` from both sides of the weak equation tested with `v`
+(`form_apply`, `load_apply`), `∫ α u'² G'(u − K) + ∫ γ (u − K) G(u − K) = ∫ (f − Kγ) G(u − K) ≤ 0`.
+Both terms on the left are `≥ 0` (`G' ≥ 0`, `t G(t) ≥ 0`, `α, γ ≥ 0`), so each vanishes. When
+`γ ≥ γ₀ > 0` (the book's `γ = 1`) the second gives `(u − K) G(u − K) = 0` a.e., i.e. `u ≤ K` a.e.
+For `γ ≥ 0` only, use the first: `α u'² G'(u − K) = 0` a.e. with `α ≥ α₀ > 0` gives
+`u' G'(u − K) = 0` a.e., so `G(u − K) ∈ H_0^1` has weak derivative `G'(u − K) u' = 0` and is a.e.
+constant (du Bois-Reymond, `HasWeakDerivOn.exists_ae_eq_const`), hence `0` since it vanishes at
+`a`; so `u ≤ K` a.e., hence on `[a, b]` by continuity of `rep u`. Record both arguments; the
+first is the book's. The lower
+bound `rep_ge_of_ge_of_isWeakSolution` is this applied to `−u`, `−f`, `−K`. ★★★ (~350 lines)'''
+deps = ["truncation", "SobolevIntervalLp.memSobolevIntervalLp_comp", "mem_sobolevIntervalZero_iff", "form_apply", "load_apply", "HasWeakDerivOn.exists_ae_eq_const", "SobolevInterval.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.19"
+
+[[node]]
+id = "abs_rep_le_of_isWeakSolution"
+kind = "theorem"
+desc = '''**Corollary 8.20**, for the model problem `−u'' + u = f` (`α = γ = 1`) and `u` as in
+`rep_le_of_le_of_isWeakSolution` with boundary values `rep u a = α`, `rep u b = β`:
+(i) `0 ≤ α → 0 ≤ β → (0 ≤ f a.e.) → ∀ x ∈ Icc a b, 0 ≤ rep u x` (`rep_nonneg_of_nonneg`);
+(ii) `α = 0 → β = 0 → f ∈ L^∞ → ∀ x ∈ Icc a b, |rep u x| ≤ ‖f‖_∞` (`abs_rep_le_norm_of_boundary_eq_zero`,
+`K = ‖f‖_{L^∞}` with `f ≤ K` a.e. from `MeasureTheory.ae_le_essSup`-type bounds on `Lp ℝ ⊤`);
+(iii) `f = 0 → ∀ x ∈ Icc a b, |rep u x| ≤ max |α| |β|` (`abs_rep_le_max_of_eq_zero`). Each is
+the theorem with the obvious `K`. ★'''
+deps = ["rep_le_of_le_of_isWeakSolution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 8.20"
+
+[[node]]
+id = "rep_le_of_le_of_isWeakSolution_neumann"
+kind = "theorem"
+desc = '''**Proposition 8.21 (the maximum principle, Neumann)**: for `a < b`, `f ∈ L²(a, b)`, `K : ℝ`
+and `u : SobolevInterval 1 a b` with `∀ v, form a b 1 0 1 u v = load a b f v` (the Neumann weak
+form, tested against all of `H¹` — the solution of Proposition 8.17), if `f ≤ K` a.e. then
+`∀ x ∈ Icc a b, rep u x ≤ K`, and symmetrically `ess inf f ≤ u`. The same truncation
+`v = G(u − K) ∈ H¹(a, b)` (no boundary condition is needed since the test space is `H¹`), and the
+book's argument: `∫ u'² G'(u − K) + ∫ (u − K) G(u − K) = ∫ (f − K) G(u − K) ≤ 0` forces
+`(u − K) G(u − K) = 0` a.e. (`γ = 1` here, so the second term is available), i.e. `u ≤ K` a.e.
+★★ (~150 lines given the Dirichlet proof's pieces)'''
+deps = ["truncation", "SobolevIntervalLp.memSobolevIntervalLp_comp", "form_apply", "load_apply", "SobolevInterval.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.21"
+
+[[node]]
+id = "le_of_contDiffMapIcc_classical"
+kind = "theorem"
+desc = '''**Remark 26 (the classical maximum principle)**: for `v : ContDiffMapIcc hab.le 2`, `f` continuous
+on `[a, b]`, with `-v'' + v = f` pointwise on `[a, b]`, `v a ≤ K`, `v b ≤ K` and `f ≤ K` on
+`[a, b]`, `∀ x ∈ Icc a b, v x ≤ K`. Let `x₀` maximize `v` on the compact `[a, b]`
+(`IsCompact.exists_isMaxOn`); if `x₀` is an endpoint the bound is the boundary hypothesis;
+otherwise `v'(x₀) = 0` and `v''(x₀) ≤ 0` (`IsLocalMax.deriv_deriv_nonpos`), so
+`v(x₀) = f(x₀) + v''(x₀) ≤ f(x₀) ≤ K`. Remark 27 (`le_of_contDiffMapIcc_classical_neumann`): the
+Neumann version, `v'(a) = v'(b) = 0` and `f ≤ K` ⇒ `v ≤ K`, using the one-sided test when the
+maximum is attained at an endpoint. ★★'''
+deps = ["_root_.IsLocalMax.deriv_deriv_nonpos", "_root_.IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero", "ContDiffMapIcc"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 26 and Remark 27"
+
+[[node]]
+id = "Line.rep_le_of_le"
+kind = "theorem"
+desc = '''**Remark 28 (the maximum principle on `ℝ`)**: for `f ∈ L²(ℝ)`, `K : ℝ` with `f ≤ K` a.e., and
+`u = Line.solution f` (`Numlib/Variational/EllipticInterval/BoundaryConditions`, the weak solution
+in `H¹(ℝ)` of `−u'' + u = f`), `∀ x, rep u x ≤ K`; symmetrically `ess inf f ≤ u`. The truncation
+`G(u − K)` with `G = truncation` lies in `H¹(ℝ)` only when `K ≥ 0`: `G(0) = 0` is what Corollary
+8.11 asks on an unbounded interval, and `u − K → −K` at infinity, so for `K < 0` the function
+`G(u − K)` tends to `K² ≠ 0` and is not in `L²(ℝ)`. This is no loss: `f ∈ L²(ℝ)` with `f ≤ K < 0`
+a.e. is impossible (a function bounded away from `0` on `ℝ` is not square integrable), so in
+`ess inf f ≤ u ≤ ess sup f` the upper bound has `K ≥ 0` and the lower bound `K ≤ 0` automatically;
+state the node with the hypothesis `0 ≤ K` and derive the book's form. The book's Remark 28 does
+not mention this (report, Doubts). Then the Neumann argument on `H¹(ℝ)`: `v = G(u − K)`,
+`⟪u, v⟫ = ∫ f v`, `∫ u'² G'(u − K) + ∫ (u − K) G(u − K) = ∫ (f − K) G(u − K) ≤ 0`. ★★ (~200 lines)'''
+deps = ["Line.form", "truncation", "SobolevIntervalLp.memSobolevIntervalLp_comp", "SobolevIntervalLp.rep"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 28"

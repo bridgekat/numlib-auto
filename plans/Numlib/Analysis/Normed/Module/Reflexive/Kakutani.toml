@@ -1,0 +1,235 @@
+desc = '''
+Kakutani's theorem and the lemmas of Helly and Goldstine (natural home:
+`Mathlib.Analysis.Normed.Module.Reflexive`, beside the parent `Reflexive.lean`).
+
+A normed space `E` is reflexive (`NormedSpace.IsReflexive 𝕜 E`, the parent module) iff its closed
+unit ball is compact in the weak topology — [brezis2011functional] Theorem 3.17 (Kakutani). The
+forward direction is the Banach–Alaoglu theorem in the bidual transported along the canonical
+embedding, and Mathlib has all of it: `NormedSpace.inclusionInDoubleDualWeak`,
+`NormedSpace.isEmbedding_inclusionInDoubleDualWeak` and `NormedSpace.isCompact_closure_of_isBounded`
+(`Analysis/Normed/Module/DoubleDual.lean`), whose range hypothesis is trivial when the embedding is
+onto. The converse is **Goldstine's lemma** (Lemma 3.4): the image of the unit ball is weak-*
+dense in the unit ball of the bidual, so if it is also weak-* compact — hence closed — it is the
+whole bidual ball.
+
+Goldstine is proved here by the separation route rather than through Helly's lemma (the book's
+Remark 16 and Problem 9 B4): a point `ξ` of the bidual ball outside the weak-* closure `K` of
+`J(B_E)` — a closed convex set of the locally convex space `WeakDual 𝕜 (StrongDual 𝕜 E)` — is
+strictly separated from `K` by an evaluation at some `f ∈ E⋆`
+(`WeakDual.geometric_hahn_banach_closed_point` of `Numlib/Analysis/Normed/Module/WeakClosed.lean`,
+which packages `RCLike.geometric_hahn_banach_closed_point` in `WeakDual` with the weak
+representation theorem `LinearMap.dualEmbedding_surjective`); then `re (f x) < α` on the ball
+gives `‖f‖ ≤ α < re (ξ f) ≤ ‖ξ‖ ‖f‖ ≤ ‖f‖`.
+Helly's lemma (Lemma 3.3) is a numbered result of the book and is a node of its own, proved by
+the same separation argument in `Fin k → 𝕜`; nothing depends on it.
+
+Also here: Corollary 3.21 (`E` reflexive iff `E⋆` reflexive; the backward direction is where
+completeness of `E` is used, through `isClosed_range_inclusionInDoubleDual`, Remark 15) and
+Corollary 3.22 (bounded closed convex sets of a reflexive space are weakly compact). Not here
+(moved at review): the reflexivity of a product is `NormedSpace.instIsReflexiveProd` in the
+parent `Reflexive.lean`, beside `instIsReflexivePiLp`, since it needs neither Goldstine nor
+Kakutani; and Theorem 3.24 on the Banach adjoint of a densely defined closed operator between
+reflexive spaces is `Numlib/Analysis/Normed/Operator/Unbounded/Reflexive.lean`, so that this
+module imports nothing of the operator theory of `Unbounded/`. Imports:
+`Numlib/Analysis/Normed/Module/{Reflexive,DualSeparable,WeakClosed}` and Mathlib.
+
+Conventions: `RCLike 𝕜` throughout; "weakly compact" is `IsCompact (toWeakSpace 𝕜 E '' s)`, and
+the bidual with its weak-* topology is `WeakDual 𝕜 (StrongDual 𝕜 E)`, the image of `E` in it
+being `(StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E) '' s`; real convexity
+carries `[NormedSpace ℝ E] [IsScalarTower ℝ 𝕜 E]` as in Mathlib's `Convex.toWeakSpace_closure`.
+The statement shapes were checked in `notes/brezis/ch03/proto/Shapes.lean` (c). The "missing half
+of Proposition 1.9 for reflexive spaces", `(N^⊥)^⊥ = closure N` for `N ⊆ E⋆`, is **not** here: its
+proof needs only `NormedSpace.IsReflexive` and `Submodule.exists_dual_eq_zero_of_notMem`, and the
+chapter-1 plan has it as `Submodule.strongDualAnnihilator_strongDualCoannihilator` in
+`Numlib/Analysis/Normed/Module/Annihilator.lean`. Its weak-* companion for arbitrary `E`,
+`(N^⊥)^⊥ = weak-* closure of N`, which that plan delegates to chapter 3, is
+`Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual` in
+`Numlib/Analysis/Normed/Module/WeakClosed.lean`.
+
+Grep record (2026-09-17): `Goldstine`, `Kakutani` (outside Riesz–Markov–Kakutani), `Helly` (outside
+the combinatorial Helly theorem of `Numlib/Analysis/Convex/Helly.lean`) have no occurrence in
+Mathlib; LeanSearch "reflexive normed space closed unit ball is weakly compact" returns only
+finite-dimensional compactness lemmas.
+
+Serves [brezis2011functional] §3.5 (`NumlibSurface/Brezis/Chapter03/Section05`) and closes
+`AtkinsonHan.Chapter08.theorem_8_6_3`'s compactness input (its `Blocked` note asks for exactly
+Corollary 3.22).
+'''
+
+[[node]]
+id = "NormedSpace.isClosed_range_inclusionInDoubleDual"
+kind = "theorem"
+desc = '''The image of a Banach space in its bidual is norm closed ([brezis2011functional]
+chapter 3, Remark 15): for `[CompleteSpace E]`,
+`IsClosed (Set.range (NormedSpace.inclusionInDoubleDual 𝕜 E))`. The embedding is an isometry
+(`inclusionInDoubleDualLi`) from a complete space, so `Isometry.isClosedEmbedding` gives a closed
+embedding and `IsClosedEmbedding.isClosed_range` the claim. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 15"
+
+[[node]]
+id = "NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall"
+kind = "theorem"
+desc = '''`J(B_E)` is norm closed in `E⋆⋆` ([brezis2011functional] chapter 3, Remark 15, the form
+Milman–Pettis uses): for `[CompleteSpace E]` and `r : ℝ`,
+`IsClosed (NormedSpace.inclusionInDoubleDual 𝕜 E '' Metric.closedBall 0 r)`. The image of the
+closed set `closedBall 0 r` under the closed embedding of
+`NormedSpace.isClosed_range_inclusionInDoubleDual` (`IsClosedEmbedding.isClosed_iff_image_isClosed`).
+The remark's second sentence — `J(B_E)` is therefore not norm dense in `B_{E⋆⋆}` unless `E` is
+reflexive — is a surface remark. ★'''
+deps = ["NormedSpace.isClosed_range_inclusionInDoubleDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 15"
+
+[[node]]
+id = "NormedSpace.helly_iff"
+kind = "theorem"
+desc = '''**Helly's lemma**, [brezis2011functional] Lemma 3.3. For `f : Fin k → StrongDual 𝕜 E` and
+`γ : Fin k → 𝕜`:
+`(∀ ε > 0, ∃ x : E, ‖x‖ ≤ 1 ∧ ∀ i, ‖f i x - γ i‖ < ε) ↔ ∀ β : Fin k → 𝕜, ‖∑ i, β i * γ i‖ ≤ ‖∑ i, β i • f i‖`.
+The book takes `E` Banach and real; nothing uses completeness, and the complex case reads the
+same with moduli.
+
+Proof (lines 2577–2604). `→`: with `S = ∑ ‖β i‖`, `‖∑ β i * γ i‖ ≤ ‖∑ β i • f i‖ ‖x_ε‖ + ε S` for
+every `ε`. `←`: (i) says `γ ∈ closure (φ '' closedBall 0 1)` for `φ x = (f i x)ᵢ : E → (Fin k → 𝕜)`
+(the sup-norm balls of `Fin k → 𝕜` are `Metric.ball`s of the product norm, `mem_closure_iff`). If
+not, separate `γ` from the closed absolutely convex set `closure (φ '' closedBall 0 1)` in the
+finite-dimensional space `Fin k → 𝕜` by `AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem`
+(`DualSeparable.lean`, the modulus form of `RCLike.geometric_hahn_banach_closed_point`), giving
+a functional which, by `LinearMap.pi`/`Basis.constr` (or the Riesz representation in
+`Fin k → 𝕜`), is `z ↦ ∑ β i * z i` for some `β`: `‖∑ β i * f i x‖ ≤ 1` for `‖x‖ ≤ 1` and
+`1 < ‖∑ β i * γ i‖`, so `‖∑ β i • f i‖ ≤ 1 < ‖∑ β i * γ i‖`
+(`ContinuousLinearMap.opNorm_le_bound`), contradicting the hypothesis. ★★ (about 80 lines; the
+identification of the functionals on `Fin k → 𝕜` is the piece of care.)'''
+deps = ["AbsConvex.exists_norm_apply_le_one_of_isClosed_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.3"
+
+[[node]]
+id = "NormedSpace.goldstine"
+kind = "theorem"
+desc = '''**Goldstine's lemma**, [brezis2011functional] Lemma 3.4: `J(B_E)` is weak-* dense in
+`B_{E⋆⋆}`. Precisely,
+`closure ((StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E) '' Metric.closedBall (0 : E) 1) = WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual 𝕜 (StrongDual 𝕜 E)) 1`
+in `WeakDual 𝕜 (StrongDual 𝕜 E)`. No completeness is needed. (Shape checked in
+`notes/brezis/ch03/proto/Shapes.lean` (c).)
+
+Proof. `⊆`: the bidual ball is weak-* closed (`WeakDual.isClosed_closedBall`) and contains
+`J(B_E)` since `J` is an isometry (`inclusionInDoubleDualLi`); `closure_minimal`. `⊇`, by the
+separation route of Problem 9 B4 rather than Helly: let `‖ξ‖ ≤ 1` with `ξ ∉ K := closure (…)`.
+`K` is closed and convex (`Convex.closure` of the image of `convex_closedBall` under a linear map,
+`Convex.linear_image`) in `WeakDual 𝕜 (StrongDual 𝕜 E)`, so
+`WeakDual.geometric_hahn_banach_closed_point` (`Numlib/Analysis/Normed/Module/WeakClosed.lean`:
+separation in `WeakDual` by an *evaluation*, i.e. `RCLike.geometric_hahn_banach_closed_point` in
+the locally convex `WeakDual 𝕜 (StrongDual 𝕜 E)` followed by the weak representation theorem
+`LinearMap.dualEmbedding_surjective (topDualPairing 𝕜 (StrongDual 𝕜 E))`) yields
+`f : StrongDual 𝕜 E` and `α` with `re (η f) < α` on `K` and `α < re (ξ f)`. Then `re (f x) < α`
+for all `‖x‖ ≤ 1`; rotating `x` by a unimodular scalar, `‖f x‖ < α` on the ball, so `‖f‖ ≤ α`
+(`ContinuousLinearMap.opNorm_le_bound`, `α ≥ 0` from `x = 0`); but
+`α < re (ξ f) ≤ ‖ξ f‖ ≤ ‖ξ‖ ‖f‖ ≤ ‖f‖`, a contradiction. ★★ (about 60 lines once the
+separation lemma exists; the 100-line estimate of `notes/lessons.md` §"reflexivity" included
+it.)'''
+deps = ["WeakDual.geometric_hahn_banach_closed_point"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.4"
+
+[[node]]
+id = "NormedSpace.denseRange_toWeakDual_inclusionInDoubleDual"
+kind = "theorem"
+desc = '''The second clause of Goldstine's lemma ([brezis2011functional] Lemma 3.4): `J(E)` is
+weak-* dense in `E⋆⋆`, `DenseRange (StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E)`.
+Every `ξ` is `‖ξ‖ • η` with `‖η‖ ≤ 1`, and scaling is a homeomorphism of `WeakDual` commuting with
+the range (`WeakDual.instContinuousSMul`), so `NormedSpace.goldstine` scales up. ★'''
+deps = ["NormedSpace.goldstine"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.4"
+
+[[node]]
+id = "NormedSpace.isCompact_image_toWeakSpace_closedBall"
+kind = "theorem"
+desc = '''**Kakutani, forward direction**: the closed unit ball of a reflexive space is weakly compact
+([brezis2011functional] Theorem 3.17, "if"). For `[NormedSpace.IsReflexive 𝕜 E]` and `r : ℝ`,
+`IsCompact (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) r)`.
+
+Proof: Mathlib's `NormedSpace.isCompact_closure_of_isBounded` gives compactness of the *closure* of
+a bounded set `S ⊆ WeakSpace 𝕜 E` as soon as the weak-* closure of `inclusionInDoubleDualWeak '' S`
+lies in the range of the embedding — automatic here, the range being everything by
+`NormedSpace.surjective_inclusionInDoubleDual`. Apply it to `S = toWeakSpace 𝕜 E '' closedBall 0 r`,
+which is bounded and weakly closed (`isClosed_image_toWeakSpace_closedBall` of
+`Numlib/Analysis/Normed/Module/WeakClosed.lean`, or directly the intersection of the weakly closed
+sets `{x | ‖f x‖ ≤ r}` over `‖f‖ ≤ 1`, avoiding the real-scalar hypotheses), so `closure S = S`.
+This is the book's argument (line 2564): `J(B_E) = B_{E⋆⋆}` is weak-* compact by Banach–Alaoglu
+and `J⁻¹` is weak-*–to-weak continuous. ★★ (mostly Mathlib plumbing, ~40 lines).'''
+deps = ["NormedSpace.IsReflexive", "isClosed_image_toWeakSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
+
+[[node]]
+id = "NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall"
+kind = "theorem"
+desc = '''**Kakutani, converse direction**: a normed space whose closed unit ball is weakly compact
+is reflexive ([brezis2011functional] Theorem 3.17, "only if"). For
+`(h : IsCompact (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) 1))`: `NormedSpace.IsReflexive 𝕜 E`.
+No completeness hypothesis (a reflexive space is complete anyway).
+
+Proof (line 2627): `inclusionInDoubleDualWeak 𝕜 E` is continuous, so `J(B_E)` is weak-* compact
+(`IsCompact.image`), hence weak-* closed (`IsCompact.isClosed`, `WeakDual.instT2Space`); by
+`NormedSpace.goldstine` its closure is the bidual ball, so `J(B_E) = B_{E⋆⋆}`; every `ξ` is
+`‖ξ‖ • (‖ξ‖⁻¹ • ξ)` with the second factor in the ball, hence in the range of `J`, and the range is
+a submodule. Conclude `Surjective (inclusionInDoubleDual 𝕜 E)`. ★★ (about 60 lines).'''
+deps = ["NormedSpace.IsReflexive", "NormedSpace.goldstine"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
+
+[[node]]
+id = "NormedSpace.isReflexive_iff_isCompact_image_toWeakSpace_closedBall"
+kind = "theorem"
+desc = '''**Kakutani's theorem**, [brezis2011functional] Theorem 3.17:
+`NormedSpace.IsReflexive 𝕜 E ↔ IsCompact (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) 1)`. The
+two directions above. The book states it for Banach spaces; both directions hold for any normed
+space. ★'''
+deps = ["NormedSpace.isCompact_image_toWeakSpace_closedBall", "NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
+
+[[node]]
+id = "Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed"
+kind = "theorem"
+desc = '''A bounded closed convex subset of a reflexive space is weakly compact
+([brezis2011functional] Corollary 3.22). For `[NormedSpace ℝ E] [IsScalarTower ℝ 𝕜 E]
+[NormedSpace.IsReflexive 𝕜 E]`, `{K : Set E}` with `hK : Convex ℝ K`, `hb : Bornology.IsBounded K`,
+`hc : IsClosed K`: `IsCompact (toWeakSpace 𝕜 E '' K)`. `K ⊆ closedBall 0 m` for some `m`
+(`Bornology.IsBounded.subset_closedBall`), the ball is weakly compact
+(`NormedSpace.isCompact_image_toWeakSpace_closedBall`), and `K` is weakly closed
+(`Convex.isClosed_image_toWeakSpace_iff`), so `IsCompact.of_isClosed_subset`. This is the
+topological compactness `AtkinsonHan.Chapter08.theorem_8_6_3` asks for. ★'''
+deps = ["NormedSpace.isCompact_image_toWeakSpace_closedBall", "Convex.isClosed_image_toWeakSpace_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.22"
+
+[[node]]
+id = "NormedSpace.instIsReflexiveStrongDual"
+kind = "theorem"
+desc = '''The dual of a reflexive space is reflexive ([brezis2011functional] Corollary 3.21, first
+half): `instance [NormedSpace.IsReflexive 𝕜 E] : NormedSpace.IsReflexive 𝕜 (StrongDual 𝕜 E)`.
+Given `φ : StrongDual 𝕜 (StrongDual 𝕜 (StrongDual 𝕜 E))`, the functional `f := φ ∘L inclusionInDoubleDual 𝕜 E : StrongDual 𝕜 E`
+satisfies `φ (J x) = f x = (J x) f` for every `x`, and since `J` is onto, `φ ξ = ξ f` for every
+`ξ`, i.e. `φ = inclusionInDoubleDual 𝕜 (StrongDual 𝕜 E) f`. Line 2660. Registered as an instance
+because `𝕜`-linear functionals on `E⋆` are how the surface reaches `E⋆⋆`; harmless as a `Prop`. ★'''
+deps = ["NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.21"
+
+[[node]]
+id = "NormedSpace.isReflexive_of_isReflexive_strongDual"
+kind = "theorem"
+desc = '''A Banach space whose dual is reflexive is reflexive ([brezis2011functional] Corollary
+3.21, second half): for `[CompleteSpace E]` and `[NormedSpace.IsReflexive 𝕜 (StrongDual 𝕜 E)]`,
+`NormedSpace.IsReflexive 𝕜 E`. Proof (line 2668): `E⋆⋆` is reflexive by
+`NormedSpace.instIsReflexiveStrongDual`; the range of `J` is a closed subspace of `E⋆⋆`
+(`NormedSpace.isClosed_range_inclusionInDoubleDual`, the one use of completeness), hence reflexive
+by `NormedSpace.isReflexive_of_isClosed`; and `E` is isometrically isomorphic to that range
+(`LinearIsometryEquiv.ofInjective`-style: `(inclusionInDoubleDualLi 𝕜).equivRange` or
+`LinearIsometry.equivRange`), so `NormedSpace.isReflexive_congr` transfers. ★★'''
+deps = ["NormedSpace.IsReflexive", "NormedSpace.instIsReflexiveStrongDual", "NormedSpace.isClosed_range_inclusionInDoubleDual", "NormedSpace.isReflexive_of_isClosed", "NormedSpace.isReflexive_congr"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.21"
+
+[[node]]
+id = "NormedSpace.isReflexive_strongDual_iff"
+kind = "theorem"
+desc = '''[brezis2011functional] Corollary 3.21: for a Banach space `E`,
+`NormedSpace.IsReflexive 𝕜 (StrongDual 𝕜 E) ↔ NormedSpace.IsReflexive 𝕜 E` (`[CompleteSpace E]`).
+The two halves above. ★'''
+deps = ["NormedSpace.instIsReflexiveStrongDual", "NormedSpace.isReflexive_of_isReflexive_strongDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.21"

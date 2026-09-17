@@ -1,0 +1,180 @@
+desc = '''
+The calculus rules of `W^{1,p}(Ω)`: Brezis, *Functional Analysis, Sobolev Spaces and Partial
+Differential Equations*, Propositions 9.4 (product), 9.5 (composition with a `C^1` function),
+9.6 (change of variables under a `C^1` diffeomorphism with bounded Jacobians), the positive
+part `u⁺` (Gilbarg–Trudinger's Lemma 7.6, for the obstacle problems), and the affine change of
+variables at every order that Atkinson–Han's Theorem 10.3.4 wants. Imports `Friedrichs.lean`
+(Remark 1) and `Chart.lean` (the hypothesis bundle `IsDiffeoOnWithBoundedJacobian` of
+Proposition 9.6, which lives there because it is pure geometry and `Zero.lean` needs it without
+importing `Extension.lean`). None of the three propositions needs Theorem 9.2 (Friedrichs, one
+sequence for all `ω ⊂⊂ Ω`): each identity is tested against one test function at a time, so the
+*proved* local approximation of `Mollification.lean`/`Density.lean` (with its `L^∞`-preserving
+variant, `Friedrichs.lean`) suffices, and this module is attackable before the ★★★ Theorem 9.2.
+
+What `Mollification.lean` already proves, and what is genuinely new here. The product rule
+`HasWeakIteratedLineDerivOn.mul` is for two factors in `L^p_loc × L^q_loc` with *conjugate*
+exponents `p, q < ∞`; Proposition 9.4 has both factors in `W^{1,p} ∩ L^∞`, which is the
+conjugate case only when `p ≥ 2` (then `∂v ∈ L^p_loc ⊆ L^{p'}_loc` locally) and is the
+endpoint `L^p × L^∞` — excluded by `mul`'s `q ≠ ∞` — for `1 ≤ p < 2`. So Proposition 9.4 is a
+new node, proved the book's way: approximate both factors by `L^∞`-bounded smooth sequences
+(the local approximation with the bound preserved) and pass to the limit by dominated
+convergence. The chain rule
+`HasWeakIteratedLineDerivOn.contDiff_comp` is Proposition 9.5's identity for `p < ∞`; what is
+added is the membership `G ∘ u ∈ L^p` from `G(0) = 0`, and the case `p = ∞` by locality
+(`Cutoff.lean`). Proposition 9.6 is new: Mathlib's change of variables
+`MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` (`Mathlib/MeasureTheory/Function/Jacobian.lean`,
+needing only `HasFDerivWithinAt` and injectivity) transports the `L^p` norms, Remark 1
+(`Friedrichs.lean`) supplies the `C^1` test function `ψ ∘ H⁻¹`, and Theorem 9.2 the density.
+
+The affine case at every order, `HasWeakIteratedFDerivOn.comp_affineEquiv`, is the "one novel
+lemma" that the note on `AtkinsonHan.Chapter10.theorem_10_3_4` isolates (piece (2) of its route);
+it is cheaper than Proposition 9.6 because the test function `φ ∘ F⁻¹` is smooth and the
+Jacobian is a constant. About 1400 lines.
+'''
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.mul_of_ae_norm_le"
+kind = "theorem"
+desc = '''**The product rule at the endpoint `L^p × L^∞`** (the case of Proposition 9.4 that
+`HasWeakIteratedLineDerivOn.mul` does not cover): for `1 ≤ p < ∞`, if
+`HasWeakIteratedLineDerivOn ![y] u wu Ω μ` and `HasWeakIteratedLineDerivOn ![y] v wv Ω μ` with
+`u, wu, v, wv ∈ L^p(Ω)` and `u, v` a.e. bounded on `Ω` (by `M`), then
+`HasWeakIteratedLineDerivOn ![y] (fun x ↦ u x * v x) (fun x ↦ wu x * v x + u x * wv x) Ω μ`.
+Proof ([brezis2011functional] Proposition 9.4, with the local approximation in place of Theorem
+9.2): for a test function `φ` fix an open `ω ⊇ tsupport φ` with compact closure in `Ω`;
+`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le` (`Friedrichs.lean`)
+gives smooth `u_n, v_n` with `‖u_n‖_∞, ‖v_n‖_∞ ≤ M`, converging in `L^p(ω)` and (along a
+subsequence) a.e. on `ω`, with derivatives converging in `L^p(ω)`; the classical
+identity `∫ u_n v_n ∂φ = −∫ (∂u_n v_n + u_n ∂v_n) φ` passes to the limit by dominated
+convergence: `u_n v_n → u v` a.e. dominated by `M^2`, and `∂u_n v_n → wu v` in `L^1(ω)` since
+`‖∂u_n v_n − wu v‖_1 ≤ M ‖∂u_n − wu‖_{L^p(ω)} |ω|^{1/p'} + ‖wu (v_n − v)‖_1` with the last term
+`→ 0` by dominated convergence (`v_n → v` a.e., bound `2M |wu|`, `wu ∈ L^1(ω)`). ★★★, ~300 lines.'''
+deps = ["HasWeakIteratedLineDerivOn", "HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le", "HasWeakIteratedLineDerivOn.mul"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.4"
+
+[[node]]
+id = "MemSobolevMultiIndex.mul_of_ae_norm_le"
+kind = "theorem"
+desc = '''**Proposition 9.4**: for `u, v ∈ W^{1,p}(Ω) ∩ L^∞(Ω)`, `1 ≤ p ≤ ∞`,
+`u v ∈ W^{1,p}(Ω) ∩ L^∞(Ω)` with `∂_i (u v) = (∂_i u) v + u (∂_i v)`: from
+`MemSobolevMultiIndex b u 1 p Ω μ`, `MemSobolevMultiIndex b v 1 p Ω μ` and a.e. bounds `M`,
+`MemSobolevMultiIndex b (u * v) 1 p Ω μ`, the product a.e. bounded by `M^2`, and the identity of
+the weak derivatives along each `b i`. For `p < ∞` this is `HasWeakIteratedLineDerivOn.mul_of_ae_norm_le`
+direction by direction; for `p = ∞` — "As in the proof of Corollary 8.10, it suffices to
+consider the case `1 ≤ p < ∞`" — restrict to a relatively compact `Ω'` where `L^∞ ⊆ L^q` for
+finite `q` (`MemSobolev.mono_exponent`), apply the finite case, and recover `Ω` by
+`HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset`. ★★, ~150 lines.'''
+deps = ["HasWeakIteratedLineDerivOn.mul_of_ae_norm_le", "MemSobolevMultiIndex", "MemSobolev.mono_exponent", "HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.4"
+
+[[node]]
+id = "MemSobolevMultiIndex.contDiff_comp"
+kind = "theorem"
+desc = '''**Proposition 9.5**: for `G : ℝ → ℝ` of class `C^1` with `G 0 = 0` and `|G'| ≤ M`, and
+`u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`: `G ∘ u ∈ W^{1,p}(Ω)` with `∂_i (G ∘ u) = (G' ∘ u) ∂_i u`, i.e.
+`MemSobolevMultiIndex b (G ∘ u) 1 p Ω μ` and the identity of the weak derivatives along each
+`b i`. Membership in `L^p`: `|G s| ≤ M |s|` (`abs_sub_le_mul_of_abs_deriv_le` of
+`Mollification.lean` with `G 0 = 0`) gives `G ∘ u ∈ L^p` and `|(G' ∘ u) ∂_i u| ≤ M |∂_i u|`. The
+identity for `p < ∞` is `HasWeakIteratedLineDerivOn.contDiff_comp` (Atkinson–Han's Proposition
+7.1.12, proved); for `p = ∞`, as the book says, fix `Ω' ⊂⊂ Ω` containing the support of the test
+function, where `u ∈ W^{1,q}(Ω')` for every finite `q`, and use locality. [brezis2011functional]
+Proposition 9.5, whose proof is the one described. ★★, ~120 lines. Consumed by Theorem 9.17
+(the truncation `G(n u)/n`) and by chapter 9b's Stampacchia truncation (Theorem 9.27).'''
+deps = ["HasWeakIteratedLineDerivOn.contDiff_comp", "abs_sub_le_mul_of_abs_deriv_le", "MemSobolevMultiIndex", "MemSobolev.mono_exponent", "HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.5"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_comp_le_of_isDiffeoOnWithBoundedJacobian"
+kind = "theorem"
+desc = '''Transport of `L^p` norms under a diffeomorphism with bounded Jacobians:
+`IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`, `f : E → F` ⇒
+`eLpNorm (f ∘ H) p (μ'.restrict Ω') ≤ C * eLpNorm f p (μ.restrict Ω)` with `C = C(M, dim, p)`
+(`C = (sup |det Jac H⁻¹|)^{1/p}`), for additive Haar measures `μ'`, `μ` — and the symmetric
+statement for `Hinv`. Proof: `∫_{Ω'} |f (H y)|^p dy = ∫_{Hinv '' Ω} … = ∫_Ω |f x|^p |det fderiv Hinv x| dx`
+by Mathlib's `MeasureTheory.lintegral_image_eq_lintegral_abs_det_fderiv_mul` applied to `Hinv` on
+`Ω` (`HasFDerivWithinAt` from `ContDiffOn`, injectivity from `BijOn`). Measures on `E'` and `E`
+are both Lebesgue after identifying with `ℝ^N`; state for `μ = volume` on `EuclideanSpace` if
+the general Haar bookkeeping (`Measure.map` under a linear equivalence) is in the way. ★★,
+~150 lines. Also `MemLp.comp_of_isDiffeoOnWithBoundedJacobian`.'''
+deps = ["IsDiffeoOnWithBoundedJacobian"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6"
+
+[[node]]
+id = "HasWeakFDerivOn.comp_diffeoOn"
+kind = "theorem"
+desc = '''**Proposition 9.6 (change of variables), the identity**: for
+`IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`, `HasWeakFDerivOn u w Ω μ` and `u, w ∈ L^p(Ω)`,
+`1 ≤ p ≤ ∞`: `HasWeakFDerivOn (u ∘ H) (fun y ↦ (w (H y)).comp (fderiv ℝ H y)) Ω' μ'` — the
+book's `∂_j (u ∘ H)(y) = ∑_i ∂_i u (H y) ∂_j H_i (y)` in tensor form. Proof
+([brezis2011functional] Proposition 9.6, with the local approximation in place of Theorem 9.2):
+for `p < ∞` and a test function `ψ` on `Ω'`, fix `ω' ⊇ tsupport ψ` open with compact closure in
+`Ω'`; `H '' closure ω'` is compact in `Ω`, so `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`
+(`Density.lean`, proved) on an open `V ⊇ H '' closure ω'` with compact closure in `Ω` gives
+smooth `u_n` with `u_n → u`, `∇u_n → w` in `L^p(V)`; then `u_n ∘ H → u ∘ H` in `L^p(ω')` and
+`(∂u_n ∘ H) ∘ fderiv H → (w ∘ H) ∘ fderiv H` in `L^p(ω')` (the norm transport
+`MeasureTheory.eLpNorm_comp_le_of_isDiffeoOnWithBoundedJacobian`, the bound `M` on `fderiv H`);
+for the `C^1` function `u_n ∘ H` and the test function `ψ`, integration by
+parts is classical (`integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`, as in
+`RemovableSingularity.lean`, or pull `ψ` back to the `C^1` test function `ψ ∘ Hinv` on `Ω` and
+use Remark 1 `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` plus the change of
+variables `integral_image_eq_integral_abs_det_fderiv_smul` — the route the book takes); pass to
+the limit. For `p = ∞`, locality as in Proposition 9.5. ★★★, ~500 lines. Membership form
+`MemSobolev.comp_diffeoOn : MemSobolev u 1 p Ω μ → MemSobolev (u ∘ H) 1 p Ω' μ'` with
+`sobolevNorm (u ∘ H) 1 p Ω' μ' ≤ C * sobolevNorm u 1 p Ω μ`, `C = C(M, dim, p)` (★★, ~100
+lines), and the typed bounded linear map below.'''
+deps = ["HasWeakFDerivOn", "IsDiffeoOnWithBoundedJacobian", "MeasureTheory.eLpNorm_comp_le_of_isDiffeoOnWithBoundedJacobian", "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm", "HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one", "HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset", "MemSobolev"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6"
+
+[[node]]
+id = "SobolevEuclidean.compDiffeoL"
+kind = "definition"
+desc = '''Proposition 9.6 as a bounded linear map between the typed spaces:
+`SobolevEuclidean.compDiffeoL (h : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω'`,
+`u ↦ u ∘ H`, with `compDiffeoL_fn : fn (compDiffeoL h u) =ᵐ[volume.restrict Ω'] fn u ∘ H`,
+the `L^p` bound `eLpNorm (fn (compDiffeoL h u)) p (volume.restrict Ω') ≤ C * eLpNorm (fn u) p (volume.restrict Ω)`
+and `‖compDiffeoL h u‖ ≤ C' * ‖u‖`, constants depending on `M`, `N`, `p` only. Built from
+`MemSobolev.comp_diffeoOn` through `memSobolev_iff_memSobolevMultiIndex`,
+`MemSobolevMultiIndex.exists_sobolevMultiIndex`, linearity by `SobolevMultiIndex.ext_of_fn_ae_eq`.
+These are the "transfer" and "retransfer" maps `v_i = u ∘ H_i`, `w_i = v_i^⋆ ∘ H_i⁻¹` of the
+proof of [brezis2011functional] Theorem 9.7, step (b). ★★, ~200 lines.'''
+deps = ["HasWeakFDerivOn.comp_diffeoOn", "SobolevEuclidean", "memSobolev_iff_memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex", "SobolevMultiIndex.ext_of_fn_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.comp_affineEquiv"
+kind = "theorem"
+desc = '''**The affine change of variables at every order**: for an affine equivalence
+`F : E ≃ᵃ[ℝ] E` with linear part `T`, `HasWeakIteratedFDerivOn n v w Ω μ` implies
+`HasWeakIteratedFDerivOn n (v ∘ F) (fun x ↦ (w (F x)).compContinuousLinearMap fun _ ↦ T) (Ω.comap F) μ`
+(the preimage `F ⁻¹' Ω` as an `Opens`), for an additive Haar measure `μ`. Proof: the test
+function `φ ∘ F⁻¹` is a test function on `Ω`, `iteratedFDeriv ℝ n (φ ∘ F) x z = iteratedFDeriv ℝ n φ (F x) (T ∘ z)`
+by `ContinuousLinearMap.iteratedFDeriv_comp_right` and `iteratedFDeriv_comp_add_left` (the pair
+`Mollification.lean` already uses), and the substitution `x ↦ F x` in the integral is
+`MeasureTheory.Measure.map_linearMap_addHaar_eq_smul_addHaar` / `integral_map`, whose constant
+`|det T|⁻¹` cancels between the two sides. This is piece (2), "the missing backbone lemma", of
+the route recorded on `AtkinsonHan.Chapter10.theorem_10_3_4` (`plans/NumlibSurface/AtkinsonHan/Chapter10/Section03.toml`),
+the affine and higher-order sibling of Proposition 9.6; `MemSobolev.comp_affineEquiv` and the
+seminorm bound with the explicit constant are that node's pieces (3)–(4) and stay there. ★★,
+~200 lines.'''
+deps = ["HasWeakIteratedFDerivOn", "TestFunction.compConstSub"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6 (affine case, all orders); Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4"
+
+[[node]]
+id = "MemSobolevMultiIndex.posPart"
+kind = "theorem"
+desc = '''**The positive part of a `W^{1,p}` function**: for `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, the function
+`u⁺ = max u 0` lies in `W^{1,p}(Ω)`, with `∂_i u⁺ = {u > 0}.indicator (∂_i u)` a.e.; likewise
+`u⁻ = max (-u) 0` and `|u| = u⁺ + u⁻` with `∂_i |u| = sign(u) ∂_i u`. This is the Lipschitz case
+of Proposition 9.5 that the book does not state (Gilbarg–Trudinger, *Elliptic Partial Differential
+Equations of Second Order*, Lemma 7.6, and Kinderlehrer–Stampacchia Theorem A.1); it is what makes
+the obstacle set `{v ∈ H_0^1(Ω) : v ≥ ψ}` nonempty (`ψ⁺ ∈ H^1`) in Atkinson–Han's chapter-11
+examples. Proof: apply `MemSobolevMultiIndex.contDiff_comp` to `G_ε s = √(s² + ε²) - ε` for
+`s > 0`, `0` otherwise (`C^1`, `G_ε 0 = 0`, `|G_ε'| ≤ 1`), so
+`∫ G_ε(u) ∂_i φ = -∫ (u/√(u²+ε²)) {u > 0}.indicator (∂_i u) φ`; let `ε → 0` by dominated
+convergence on both sides (`G_ε(u) → u⁺` pointwise with `|G_ε(u)| ≤ |u|`, the integrand on the
+right tends to `{u > 0}.indicator (∂_i u) φ` and is bounded by `|∂_i u φ|`). A by-product is
+`∇u = 0` a.e. on `{u = 0}` (Comment 4 of [brezis2011functional] chapter 9), from
+`u = u⁺ - u⁻` and the two indicator identities. ★★★ (~300 lines; the `p = ∞` case by locality
+as in `contDiff_comp`).'''
+deps = ["MemSobolevMultiIndex.contDiff_comp", "HasWeakIteratedLineDerivOn.contDiff_comp", "MemSobolevMultiIndex"]
+source = "Gilbarg and Trudinger, Elliptic Partial Differential Equations of Second Order, Lemma 7.6; Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Comment 4"

@@ -1,0 +1,155 @@
+namespace = "Brezis.Chapter06"
+desc = '''
+Brezis §6.1: compact operators, finite-rank operators, the closedness of `K(E, F)`, composition,
+Schauder's theorem for the Banach adjoint, and the two remarks on the approximation problem and on
+weak-to-norm continuity. Everything is stated over `ℝ` with `E F : Type*` Banach spaces
+(`[NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]`, the completeness only where the
+book uses it), the book's `K(E, F)` being Mathlib's predicate `IsCompactOperator` on
+`T : E →L[ℝ] F` and its submodule `compactOperator (RingHom.id ℝ) E F`. The Banach adjoint `T*`
+is `ContinuousLinearMap.strongDualMap T` (chapter 2's backbone module
+`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean`); the surface writes `T*` for it in
+docstrings only. Weak convergence `uₙ ⇀ u` is `Tendsto (toWeakSpace ℝ E ∘ u) atTop (𝓝 (toWeakSpace ℝ E x))`
+as in §3.2's restatement (D5 of the planning brief); once chapter 3's surface defines the
+book's `⇀`, Remark 2 should be stated with it.
+'''
+
+[[node]]
+id = "compactOperator_iff"
+kind = "theorem"
+desc = '''The definition of §6.1: `T : E →L[ℝ] F` is compact iff `T (B_E)` has compact closure in `F`,
+`IsCompactOperator T ↔ IsCompact (closure (T '' Metric.closedBall 0 1))`. This is Mathlib's
+`isCompactOperator_iff_isCompact_closure_image_closedBall` at radius `1` (Mathlib's primitive
+definition is the neighbourhood form). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.1, Definition"
+
+[[node]]
+id = "theorem_6_1"
+kind = "theorem"
+desc = '''Theorem 6.1, closedness: `IsClosed {T : E →L[ℝ] F | IsCompactOperator T}` for `F` a Banach
+space (`E` need only be normed). Mathlib's `isClosed_setOfPred_isCompactOperator`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.1"
+
+[[node]]
+id = "theorem_6_1_submodule"
+kind = "theorem"
+desc = '''Theorem 6.1, the linear-subspace clause: the compact operators form a submodule of
+`E →L[ℝ] F`, stated as `((compactOperator (RingHom.id ℝ) E F : Submodule ℝ (E →L[ℝ] F)) : Set _) = {T | IsCompactOperator T}`
+(Mathlib's `compactOperator`, definitionally) together with its closedness under the operator
+norm, `(compactOperator (RingHom.id ℝ) E F).topologicalClosure = compactOperator (RingHom.id ℝ) E F`
+(`compactOperator_topologicalClosure`). ★'''
+deps = ["theorem_6_1"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.1"
+
+[[node]]
+id = "IsFiniteRank"
+kind = "definition"
+desc = '''The definition of §6.1: `T : E →L[ℝ] F` is of finite rank if its range is finite
+dimensional, `IsFiniteRank T : Prop := FiniteDimensional ℝ (LinearMap.range (T : E →ₗ[ℝ] F))`.
+An abbreviation for the hypothesis the backbone's `IsCompactOperator.of_finiteDimensional_range`
+takes (compare `AtkinsonHan.Chapter02.definition_2_8_3`). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.1, Definition"
+
+[[node]]
+id = "IsFiniteRank.isCompactOperator"
+kind = "theorem"
+desc = '''"Clearly, any finite-rank operator is compact" (the sentence before Corollary 6.2):
+`IsFiniteRank T → IsCompactOperator T`. The backbone's
+`IsCompactOperator.of_finiteDimensional_range`. ★'''
+deps = ["IsFiniteRank", "IsCompactOperator.of_finiteDimensional_range"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.1, Definition"
+
+[[node]]
+id = "corollary_6_2"
+kind = "theorem"
+desc = '''Corollary 6.2: if `Tₙ : ℕ → (E →L[ℝ] F)` are of finite rank (`∀ n, IsFiniteRank (Tₙ n)`),
+`F` is complete and `‖Tₙ n - T‖ → 0`, then `IsCompactOperator T`. The backbone's
+`IsCompactOperator.of_tendsto` applied to `IsFiniteRank.isCompactOperator`. ★'''
+deps = ["IsFiniteRank.isCompactOperator", "IsCompactOperator.of_tendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 6.2"
+
+[[node]]
+id = "remark_6_1"
+kind = "theorem"
+desc = '''Remark 1, the positive answer to the approximation problem in a Hilbert space: for `E` a
+normed space, `F` a Hilbert space over `ℝ`, `T : E →L[ℝ] F` compact and `ε > 0`, there is
+`S : E →L[ℝ] F` with `IsFiniteRank S` and `‖S - T‖ < ε` (the book's `2ε` with `ε` halved). The
+backbone's `IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt`. The rest of Remark 1
+(Enflo's counterexample, Schauder bases) is bibliographical. ★'''
+deps = ["IsFiniteRank", "IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 1"
+
+[[node]]
+id = "remark_6_1_nonlinear"
+kind = "theorem"
+desc = '''Remark 1, the nonlinear finite-rank approximation (3): for `X` a topological space, `F` a
+real normed space, `T : X → F` continuous with `IsCompact (closure (Set.range T))`, and
+`ε > 0`, there is a continuous `Tε : X → F` whose range lies in a finite-dimensional subspace,
+`∃ G : Submodule ℝ F, FiniteDimensional ℝ G ∧ ∀ x, Tε x ∈ G`, with `‖Tε x - T x‖ < ε` for all `x`.
+The book's construction (lines 5942–5947): cover `K = closure (T '' univ)` by finitely many balls
+`ball fᵢ (ε/2)`, put `qᵢ x := max (ε - ‖T x - fᵢ‖) 0` (continuous, nonnegative, and `∑ qᵢ x > 0`
+since some `fᵢ` is within `ε/2` of `T x`) and `Tε x := (∑ qᵢ x • fᵢ) / ∑ qᵢ x`; then
+`Tε x - T x = (∑ qᵢ x • (fᵢ - T x)) / ∑ qᵢ x` is a convex combination of vectors of norm `< ε`
+(only the `i` with `qᵢ x > 0`, i.e. `‖T x - fᵢ‖ < ε`, contribute). ★★, ~120 lines; it is the
+step from Brouwer to Schauder's fixed point theorem (Exercise 6.26, out of scope: Mathlib has
+no Brouwer fixed point theorem, `notes/frontier.md` blocker 5).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 1"
+
+[[node]]
+id = "proposition_6_3_left"
+kind = "theorem"
+desc = '''Proposition 6.3, first case: `T : E →L[ℝ] F` bounded and `S : F →L[ℝ] G` compact give
+`IsCompactOperator (S ∘L T)`. Mathlib's `IsCompactOperator.comp_clm`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.3"
+
+[[node]]
+id = "proposition_6_3_right"
+kind = "theorem"
+desc = '''Proposition 6.3, second case: `T : E →L[ℝ] F` compact and `S : F →L[ℝ] G` bounded give
+`IsCompactOperator (S ∘L T)`. Mathlib's `IsCompactOperator.clm_comp`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.3"
+
+[[node]]
+id = "theorem_6_4"
+kind = "theorem"
+desc = '''Theorem 6.4 (Schauder): for `T : E →L[ℝ] F` compact between Banach spaces,
+`IsCompactOperator (ContinuousLinearMap.strongDualMap T)`, the Banach adjoint
+`T* : F* → E*` being compact. The backbone's `IsCompactOperator.strongDualMap`
+(`Numlib/Analysis/Normed/Operator/Compact/Banach.lean`). ★'''
+deps = ["IsCompactOperator.strongDualMap", "ContinuousLinearMap.strongDualMap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.4"
+
+[[node]]
+id = "theorem_6_4_mpr"
+kind = "theorem"
+desc = '''Theorem 6.4, "and conversely": for `T : E →L[ℝ] F` between Banach spaces, if
+`IsCompactOperator (ContinuousLinearMap.strongDualMap T)` then `IsCompactOperator T`. The
+backbone's `IsCompactOperator.of_strongDualMap`. ★'''
+deps = ["IsCompactOperator.of_strongDualMap", "ContinuousLinearMap.strongDualMap"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.4"
+
+[[node]]
+id = "remark_6_2"
+kind = "theorem"
+desc = '''Remark 2, first sentence: for `T : E →L[ℝ] F` compact between Banach spaces, if
+`uₙ ⇀ u` weakly in `E` — `Tendsto (fun n => toWeakSpace ℝ E (u n)) atTop (𝓝 (toWeakSpace ℝ E x))`
+— then `T (u n) → T x` strongly in `F`. The backbone's
+`IsCompactOperator.tendsto_of_tendsto_toWeakSpace`; also Exercise 6.7, question 2. ★'''
+deps = ["IsCompactOperator.tendsto_of_tendsto_toWeakSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 2"
+
+[[node]]
+id = "remark_6_2_mpr"
+kind = "theorem"
+desc = '''Remark 2, second sentence, "the converse is also true if `E` is reflexive (see Exercise 6.7)":
+for `E` with `[NormedSpace.IsReflexive ℝ E]`, `F` a Banach space and `T : E →L[ℝ] F`, if `T`
+maps every weakly convergent sequence to a strongly convergent one (with the same limit `T x`),
+then `IsCompactOperator T`. The backbone's `IsCompactOperator.of_forall_tendsto_of_tendsto_toWeakSpace`;
+this is Exercise 6.7, question 4, which is why it is a node. ★'''
+deps = ["IsCompactOperator.of_forall_tendsto_of_tendsto_toWeakSpace", "NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 2"

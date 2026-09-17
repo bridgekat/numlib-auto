@@ -1,0 +1,376 @@
+desc = '''
+Closed sets, semicontinuous functions and linear maps for the weak topology of a normed space
+(natural home: `Mathlib.Analysis.LocallyConvex.WeakSpace` and `Mathlib.Analysis.Normed.Module.WeakDual`).
+
+The weak topology `σ(E, E⋆)` is Mathlib's `WeakSpace 𝕜 E`, the weak-* topology `σ(E⋆, E)` is
+`WeakDual 𝕜 E`, and a set of `E` "closed in the weak topology" is written as Mathlib's
+`Analysis/LocallyConvex/WeakSpace.lean` writes it, `IsClosed (toWeakSpace 𝕜 E '' s)` — never by
+abusing the definitional equality `WeakSpace 𝕜 E = E`. Everything is over `RCLike 𝕜`; wherever
+real convexity enters, the hypotheses `[NormedSpace ℝ E] [IsScalarTower ℝ 𝕜 E]` are carried as in
+Mathlib's `Convex.toWeakSpace_closure` (they are found automatically when `𝕜 = ℝ`).
+
+What Mathlib already has, and what this module adds on top of it:
+
+* `Convex.toWeakSpace_closure` is Mazur's theorem in closure form; the module states it as the
+  `iff` a convex set is weakly closed iff it is norm closed (`Convex.isClosed_image_toWeakSpace_iff`,
+  [brezis2011functional] Theorem 3.7), and its two corollaries: a function with closed convex
+  sublevel sets is weakly lower semicontinuous (Corollary 3.9, `LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le`),
+  in particular the norm is (Remark 6). The sequential Mazur lemma (Corollary 3.8, convex
+  combinations of a weakly convergent sequence converge in norm) already exists over `ℝ` as
+  `exists_seq_convexCombination_tendsto` in `Numlib/Variational/WeakMinimization.lean` and is
+  deliberately not duplicated here.
+* `WeakSpace.map` says a bounded linear map is weak–weak continuous; the module proves the
+  converse through the closed graph theorem (`LinearMap.continuous_of_isClosed_graph`), in the
+  stronger form that strong–weak continuity already forces strong–strong continuity (Remark 7),
+  and packages the equivalence (Theorem 3.10).
+* In finite dimension the weak topology is the norm topology (Proposition 3.6) and, on the dual,
+  strong = weak = weak-* (Remark 10): both are `LinearMap.continuous_of_finiteDimensional` applied
+  to the identity of the type synonym, which is a Hausdorff topological vector space. Mathlib's
+  `Analysis/Normed/Module/WeakDual.lean` lists the weak-* statement as a TODO. The shape was
+  settled by `notes/brezis/ch03/proto/Shapes.lean` (b), (b'): one needs
+  `have : FiniteDimensional 𝕜 (WeakSpace 𝕜 E) := ‹FiniteDimensional 𝕜 E›`, since `WeakSpace` is a
+  `def` and instance search does not see through it.
+* In infinite dimension the weak topology is strictly coarser: the weak closure of the unit
+  sphere is the closed unit ball (Example 1 of §3.2) and the open unit ball is not weakly open
+  (Example 2). Metrizability of the weak topologies is a separate module,
+  `Numlib/Analysis/Normed/Module/WeakStarMetrizable`.
+* On the dual, the weak-* closed subspaces are the annihilators: `(N^⊥)^⊥` is the weak-* closure
+  of `N ⊆ E⋆` (Problem 9 B1, the last sentence of Remark 6 of chapter 1), over the annihilators
+  `Submodule.strongDualAnnihilator` / `Submodule.strongDualCoannihilator` of chapter 1's
+  `Numlib/Analysis/Normed/Module/Annihilator.lean`, whose plan delegates this statement here. It
+  is the weak-* bipolar theorem for subspaces, and the same separation-plus-representation
+  argument proves Goldstine's lemma in `Reflexive/Kakutani.lean`.
+
+* The weak-∗ separation theorem `WeakDual.geometric_hahn_banach_closed_point` — a point outside
+  a closed convex subset of `WeakDual 𝕜 E` is separated from it by an *evaluation at a point of
+  `E`* (Mathlib's `RCLike.geometric_hahn_banach_closed_point` in the locally convex `WeakDual`,
+  followed by the weak representation theorem `LinearMap.dualEmbedding_surjective`) — with its
+  subspace form `Submodule.exists_weakDual_eval_eq_zero_of_notMem`. It is the one lemma behind
+  the weak-∗ bipolar theorem here, chapter 2's Remarks 15 and 17 (`Operator/Unbounded/Adjoint`
+  imports this module for it) and Goldstine's lemma (`Reflexive/Kakutani`).
+
+Imports: Mathlib and `Numlib/Analysis/Normed/Module/Annihilator` (for the bipolar node only);
+nothing from `Operator/`.
+
+Grep record (2026-09-17, Mathlib v4.35.0-rc2): `WeakSpace` occurs in Mathlib only in
+`Topology/Algebra/Module/Spaces/WeakDual.lean`, `Analysis/LocallyConvex/WeakSpace.lean` and
+`Analysis/Normed/Module/DoubleDual.lean`; `Mazur` only in `MazurUlam`; LeanSearch for "finite
+dimensional weak topology equals norm topology" and "unit sphere weak closure equals closed unit
+ball" returns nothing relevant.
+
+Serves [brezis2011functional] §3.2–§3.3 (`NumlibSurface/Brezis/Chapter03/Section02`, `Section03`).
+'''
+
+[[node]]
+id = "WeakSpace.isClosed_of_isClosed"
+kind = "theorem"
+desc = '''A set of `E` that is closed in the weak topology is closed: for `s : Set E`,
+`IsClosed (toWeakSpace 𝕜 E '' s) → IsClosed s`. Same variables as Mathlib's
+`WeakSpace.isOpen_of_isOpen` (a topological module over a topological semiring), of which this
+is the closed-set companion: the image is the preimage under the continuous `toWeakSpaceCLM 𝕜 E`
+because `toWeakSpace` is a bijection (`Set.image_eq_preimage_of_inverse`). Remark 2 of
+[brezis2011functional] chapter 3. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 2"
+
+[[node]]
+id = "Convex.isClosed_image_toWeakSpace_iff"
+kind = "theorem"
+desc = '''**Mazur's theorem**, [brezis2011functional] Theorem 3.7: a convex subset of a normed space is
+weakly closed iff it is closed. For `[RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+[NormedSpace ℝ E] [IsScalarTower ℝ 𝕜 E]` and `s : Set E` with `hs : Convex ℝ s`:
+`IsClosed (toWeakSpace 𝕜 E '' s) ↔ IsClosed s`.
+
+Proof: `←` is `Convex.toWeakSpace_closure` (Mathlib, `Analysis/LocallyConvex/WeakSpace.lean`),
+which says `toWeakSpace 𝕜 E '' closure s = closure (toWeakSpace 𝕜 E '' s)`, together with
+`isClosed_iff_closure_eq`; `→` is `WeakSpace.isClosed_of_isClosed`. The book's proof (line 2327,
+separation of a point from `C` by `geometric_hahn_banach_closed_point`) is the one inside
+`Convex.toWeakSpace_closure` and need not be repeated. A formalizer may state it in the locally
+convex generality of that lemma instead; the normed statement is what the consumers need. ★'''
+deps = ["WeakSpace.isClosed_of_isClosed"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.7"
+
+[[node]]
+id = "isClosed_image_toWeakSpace_closedBall"
+kind = "theorem"
+desc = '''The closed ball `closedBall x r` of a normed space is weakly closed:
+`IsClosed (toWeakSpace 𝕜 E '' Metric.closedBall x r)`. The case of `Convex.isClosed_image_toWeakSpace_iff`
+for `convex_closedBall` and `Metric.isClosed_closedBall`; it is what Example 1 of §3.2 and
+Kakutani's theorem (`Numlib/Analysis/Normed/Module/Reflexive/Kakutani`) use. The book proves it
+directly as the intersection over `‖f‖ ≤ 1` of the weakly closed sets `{x | ‖f x‖ ≤ 1}`
+(line 2312), which is an alternative proof without the scalar-tower hypotheses. ★'''
+deps = ["Convex.isClosed_image_toWeakSpace_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 1"
+
+[[node]]
+id = "LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le"
+kind = "theorem"
+desc = '''[brezis2011functional] Corollary 3.9 in its general form: a lower semicontinuous function
+whose sublevel sets are convex is lower semicontinuous for the weak topology. For `β` a
+`LinearOrder` (the surface uses `EReal`, matching the book's `φ : E → (−∞, +∞]`), `f : E → β`,
+`hf : LowerSemicontinuous f` and `hconv : ∀ b, Convex ℝ {x | f x ≤ b}`:
+`LowerSemicontinuous (f ∘ (toWeakSpace 𝕜 E).symm)`, i.e. `f` read on `WeakSpace 𝕜 E`.
+
+Proof: `lowerSemicontinuous_iff_isClosed_preimage` (Mathlib) reduces both sides to closedness of
+the sublevel sets `f ⁻¹' Set.Iic b`; each is convex and norm closed, hence weakly closed by
+`Convex.isClosed_image_toWeakSpace_iff`, and `(f ∘ (toWeakSpace 𝕜 E).symm) ⁻¹' Iic b = toWeakSpace 𝕜 E '' (f ⁻¹' Iic b)`.
+The convexity hypothesis is exactly what Brezis' proof (line 2340) uses, so convex functions are
+not singled out in the statement: the surface instantiates it with `ConvexAnalysis.ConvexFn.convex_le`
+for `E → EReal` and `ConvexOn.convex_le` for real-valued functions. ★'''
+deps = ["Convex.isClosed_image_toWeakSpace_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.9"
+
+[[node]]
+id = "ConvexOn.lowerSemicontinuous_comp_toWeakSpace_symm"
+kind = "theorem"
+desc = '''Corollary 3.9 for a real-valued convex function on the whole space: `f : E → ℝ`,
+`hf : ConvexOn ℝ Set.univ f`, `hlsc : LowerSemicontinuous f` give
+`LowerSemicontinuous (f ∘ (toWeakSpace 𝕜 E).symm)`. Immediate from
+`LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le` and `ConvexOn.convex_le`. The form the
+direct method of `Numlib/Variational/WeakMinimization.lean` (`ConvexOn.weakSeqLowerSemicontinuousOn`)
+states sequentially. ★'''
+deps = ["LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.9"
+
+[[node]]
+id = "lowerSemicontinuous_norm_comp_toWeakSpace_symm"
+kind = "theorem"
+desc = '''**The norm is weakly lower semicontinuous**, [brezis2011functional] chapter 3, Remark 6:
+`LowerSemicontinuous (fun x : WeakSpace 𝕜 E => ‖(toWeakSpace 𝕜 E).symm x‖)`. The norm is convex
+(`convexOn_norm`) and continuous, so this is `ConvexOn.lowerSemicontinuous_comp_toWeakSpace_symm`.
+It is the topological form of `norm_le_liminf_norm_of_weak_tendsto`
+(`Numlib/Analysis/Normed/Module/WeakDual.lean`), which the surface recovers from it through
+`LowerSemicontinuous.le_liminf`-type lemmas or keeps as is. ★'''
+deps = ["ConvexOn.lowerSemicontinuous_comp_toWeakSpace_symm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 6"
+
+[[node]]
+id = "LinearMap.continuous_of_continuous_toWeakSpace_comp"
+kind = "theorem"
+desc = '''A linear map between Banach spaces that is continuous from the norm topology of `E` to
+the weak topology of `F` is continuous ([brezis2011functional] chapter 3, Remark 7). For
+`[CompleteSpace E] [CompleteSpace F]`, `T : E →ₗ[𝕜] F` and
+`hT : Continuous (fun x => toWeakSpace 𝕜 F (T x))`: `Continuous T`.
+
+Proof: the graph `T.graph` is closed in `E × F`. Indeed it is the preimage of the diagonal of
+`WeakSpace 𝕜 F × WeakSpace 𝕜 F` — closed because `WeakSpace 𝕜 F` is `T2Space` (instance in
+`Analysis/LocallyConvex/WeakSpace.lean`, via `SeparatingDual`) — under the continuous map
+`(x, y) ↦ (toWeakSpace 𝕜 F (T x), toWeakSpace 𝕜 F y)`, whose second component is continuous by
+`toWeakSpaceCLM`. Then `LinearMap.continuous_of_isClosed_graph` (Mathlib's closed graph theorem,
+`Analysis/Normed/Operator/Banach.lean`). This is Brezis' argument at line 2358 without the detour
+through `σ(E × F, (E × F)⋆)`. Completeness of both spaces is genuinely used. ★★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 7"
+
+[[node]]
+id = "LinearMap.continuous_of_continuous_weakSpace_map"
+kind = "theorem"
+desc = '''The converse half of [brezis2011functional] Theorem 3.10: a linear map between Banach
+spaces that is continuous from `WeakSpace 𝕜 E` to `WeakSpace 𝕜 F` is continuous for the norms.
+For `[CompleteSpace E] [CompleteSpace F]`, `T : E →ₗ[𝕜] F` and
+`hT : Continuous (fun x : WeakSpace 𝕜 E => toWeakSpace 𝕜 F (T ((toWeakSpace 𝕜 E).symm x)))`:
+`Continuous T`. Compose `hT` with the continuous `toWeakSpaceCLM 𝕜 E` and apply
+`LinearMap.continuous_of_continuous_toWeakSpace_comp`. ★'''
+deps = ["LinearMap.continuous_of_continuous_toWeakSpace_comp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.10"
+
+[[node]]
+id = "LinearMap.continuous_iff_continuous_weakSpace"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.10 as an equivalence: for Banach spaces `E`, `F` and
+`T : E →ₗ[𝕜] F`, `Continuous T ↔ Continuous (fun x : WeakSpace 𝕜 E => toWeakSpace 𝕜 F (T ((toWeakSpace 𝕜 E).symm x)))`.
+`→` is Mathlib's `WeakSpace.map` applied to `T.mkContinuous`/`⟨T, h⟩` (the weak–weak continuity of a
+bounded map, which needs no completeness); `←` is `LinearMap.continuous_of_continuous_weakSpace_map`.
+Also record the three-way equivalence of Remark 7 (strong–strong, weak–weak, strong–weak) as the
+docstring, since the middle statement is `LinearMap.continuous_of_continuous_toWeakSpace_comp`. ★'''
+deps = ["LinearMap.continuous_of_continuous_weakSpace_map", "LinearMap.continuous_of_continuous_toWeakSpace_comp"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.10"
+
+[[node]]
+id = "WeakSpace.continuous_toWeakSpace_symm_of_finiteDimensional"
+kind = "theorem"
+desc = '''In a finite-dimensional normed space the weak topology is the norm topology
+([brezis2011functional] Proposition 3.6): for `[FiniteDimensional 𝕜 E]`,
+`Continuous (toWeakSpace 𝕜 E).symm`, so that together with the always-continuous `toWeakSpaceCLM`
+the identity is a homeomorphism.
+
+Proof (settled by `notes/brezis/ch03/proto/Shapes.lean` (b), four lines): `WeakSpace 𝕜 E` is a
+Hausdorff topological vector space (`T2Space` instance of `Analysis/LocallyConvex/WeakSpace.lean`,
+`WeakSpace.instIsTopologicalAddGroup`, `WeakSpace.instContinuousSMul`), finite-dimensional after
+`have : FiniteDimensional 𝕜 (WeakSpace 𝕜 E) := ‹FiniteDimensional 𝕜 E›`, so every linear map out
+of it is continuous: `LinearMap.continuous_of_finiteDimensional ((toWeakSpace 𝕜 E).symm : WeakSpace 𝕜 E →ₗ[𝕜] E)`.
+Brezis' proof (line 2270) is the coordinate-functional estimate `‖x - x₀‖ ≤ ∑ |⟨fᵢ, x - x₀⟩|`,
+which is what Mathlib's lemma encapsulates. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.6"
+
+[[node]]
+id = "toWeakSpaceContinuousLinearEquiv"
+kind = "definition"
+desc = '''The identity `E ≃L[𝕜] WeakSpace 𝕜 E` of a finite-dimensional normed space, as a continuous
+linear equivalence: `toWeakSpace 𝕜 E` with `continuous_toFun := (toWeakSpaceCLM 𝕜 E).continuous`
+and `continuous_invFun := WeakSpace.continuous_toWeakSpace_symm_of_finiteDimensional`. Takes
+`(𝕜 E)` explicit, `[FiniteDimensional 𝕜 E]`. With a `@[simp]` `toWeakSpaceContinuousLinearEquiv_apply`.
+Proposition 3.6 of [brezis2011functional] in the form consumers use. ★'''
+deps = ["WeakSpace.continuous_toWeakSpace_symm_of_finiteDimensional"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.6"
+
+[[node]]
+id = "tendsto_toWeakSpace_iff_of_finiteDimensional"
+kind = "theorem"
+desc = '''The "in particular" of [brezis2011functional] Proposition 3.6: in a finite-dimensional
+normed space a sequence (a net) converges weakly iff it converges in norm. For
+`[FiniteDimensional 𝕜 E]`, `{l : Filter ι} {x : ι → E} {u : E}`:
+`Tendsto (fun i => toWeakSpace 𝕜 E (x i)) l (𝓝 (toWeakSpace 𝕜 E u)) ↔ Tendsto x l (𝓝 u)`.
+`←` is continuity of `toWeakSpaceCLM`, `→` is `WeakSpace.continuous_toWeakSpace_symm_of_finiteDimensional`
+composed (`Continuous.tendsto` + `Tendsto.comp`). ★'''
+deps = ["WeakSpace.continuous_toWeakSpace_symm_of_finiteDimensional"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.6"
+
+[[node]]
+id = "WeakDual.continuous_toStrongDual_of_finiteDimensional"
+kind = "theorem"
+desc = '''On the dual of a finite-dimensional normed space the weak-* topology is the norm topology
+([brezis2011functional] chapter 3, Remark 10, first half; the TODO of Mathlib's
+`Analysis/Normed/Module/WeakDual.lean`): for `[FiniteDimensional 𝕜 E]`,
+`Continuous (WeakDual.toStrongDual : WeakDual 𝕜 E → StrongDual 𝕜 E)`.
+
+Proof (settled by `notes/brezis/ch03/proto/Shapes.lean` (b')): `StrongDual 𝕜 E` is
+finite-dimensional (`ContinuousLinearMap.finiteDimensional`, found by instance search), hence so
+is the synonym after `have : FiniteDimensional 𝕜 (WeakDual 𝕜 E) := ‹FiniteDimensional 𝕜 (StrongDual 𝕜 E)›`;
+`WeakDual 𝕜 E` is a Hausdorff (`WeakDual.instT2Space`) topological vector space, so
+`LinearMap.continuous_of_finiteDimensional (WeakDual.toStrongDual (𝕜 := 𝕜) (E := E)).toLinearMap`.
+Since weak-* ≤ weak ≤ norm always (`NormedSpace.Dual.dual_norm_topology_le_weak_dual_topology`,
+`WeakDual.continuous_weakSpace_toWeakDual`), the three topologies of Remark 10 coincide. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 10"
+
+[[node]]
+id = "toWeakDualContinuousLinearEquiv"
+kind = "definition"
+desc = '''The identity `StrongDual 𝕜 E ≃L[𝕜] WeakDual 𝕜 E` of the dual of a finite-dimensional
+normed space, as a continuous linear equivalence: `StrongDual.toWeakDual` with
+`continuous_toFun := NormedSpace.Dual.toWeakDual_continuous` and
+`continuous_invFun := WeakDual.continuous_toStrongDual_of_finiteDimensional`. Takes `(𝕜 E)`
+explicit, `[FiniteDimensional 𝕜 E]`; `@[simp]` apply lemma. Remark 10 of [brezis2011functional]
+chapter 3. ★'''
+deps = ["WeakDual.continuous_toStrongDual_of_finiteDimensional"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 10"
+
+[[node]]
+id = "exists_ne_zero_forall_apply_eq_zero_of_not_finiteDimensional"
+kind = "theorem"
+desc = '''In an infinite-dimensional space finitely many functionals have a common nonzero zero:
+for `(h : ¬ FiniteDimensional 𝕜 E) (f : Fin k → StrongDual 𝕜 E)` (or `(s : Finset (StrongDual 𝕜 E))`),
+`∃ y : E, y ≠ 0 ∧ ∀ i, f i y = 0`. The bracketed argument of [brezis2011functional] §3.2, Example 1
+(line 2296): if `⋂ ker (f i) = ⊥` then `x ↦ (f i x)ᵢ : E →ₗ[𝕜] (Fin k → 𝕜)` is injective, so
+`Module.Finite.of_injective` makes `E` finite-dimensional. Purely algebraic, stated for
+`E →ₗ[𝕜] 𝕜` if that is more convenient. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 1"
+
+[[node]]
+id = "closure_image_toWeakSpace_sphere"
+kind = "theorem"
+desc = '''**The weak closure of the unit sphere of an infinite-dimensional normed space is the closed
+unit ball** ([brezis2011functional] §3.2, Example 1, display (1)): for `(h : ¬ FiniteDimensional 𝕜 E)`,
+`closure (toWeakSpace 𝕜 E '' Metric.sphere (0 : E) 1) = toWeakSpace 𝕜 E '' Metric.closedBall 0 1`.
+In particular the sphere is not weakly closed.
+
+Proof, following lines 2286–2312. `⊆`: the ball is weakly closed (`isClosed_image_toWeakSpace_closedBall`)
+and contains the sphere, so `closure_minimal`. `⊇`: let `‖x₀‖ ≤ 1`; if `‖x₀‖ = 1` it is in the
+sphere; otherwise show every weak neighbourhood of `x₀` meets the sphere. By
+`LinearMap.hasBasis_weakBilin` (Mathlib, `Analysis/LocallyConvex/WeakDual.lean`) applied through
+`nhds_translation`/`IsTopologicalAddGroup`, a basic neighbourhood is
+`{x | ∀ f ∈ s, ‖f (x - x₀)‖ < ε}` for a finite `s ⊆ StrongDual 𝕜 E` and `ε > 0`. Take
+`y₀ ≠ 0` with `f y₀ = 0` for all `f ∈ s` (`exists_ne_zero_forall_apply_eq_zero_of_not_finiteDimensional`);
+`g t = ‖x₀ + t • y₀‖` is continuous on `[0, ∞)` with `g 0 < 1` and `g t → ∞`
+(`‖x₀ + t • y₀‖ ≥ t ‖y₀‖ - ‖x₀‖`), so the intermediate value theorem
+(`intermediate_value_Icc` on `Set.Icc 0 T` for `T` large) gives `t₀` with `‖x₀ + t₀ • y₀‖ = 1`; and
+`x₀ + t₀ • y₀` lies in the basic neighbourhood since `f (t₀ • y₀) = 0`. Use
+`mem_closure_iff_nhds_basis` with the translated basis. ★★ (about 120 lines; the neighbourhood-basis
+bookkeeping is the cost).'''
+deps = ["isClosed_image_toWeakSpace_closedBall", "exists_ne_zero_forall_apply_eq_zero_of_not_finiteDimensional"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 1"
+
+[[node]]
+id = "not_isOpen_image_toWeakSpace_ball"
+kind = "theorem"
+desc = '''**The open unit ball of an infinite-dimensional normed space is not weakly open**
+([brezis2011functional] §3.2, Example 2): for `(h : ¬ FiniteDimensional 𝕜 E)`,
+`¬ IsOpen (toWeakSpace 𝕜 E '' Metric.ball (0 : E) 1)`. If it were, its complement
+`{‖x‖ ≥ 1}` would be weakly closed, hence so would be `sphere 0 1 = closedBall 0 1 ∩ {‖x‖ ≥ 1}`
+(`isClosed_image_toWeakSpace_closedBall`, `IsClosed.inter`, images commute with intersections for
+the injective `toWeakSpace`), contradicting `closure_image_toWeakSpace_sphere` — the closure of the
+sphere would be the sphere, not the ball, and the ball contains `0`. ★'''
+deps = ["closure_image_toWeakSpace_sphere", "isClosed_image_toWeakSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 2"
+
+[[node]]
+id = "Submodule.strongDualAnnihilator_strongDualCoannihilator_eq_closure_toWeakDual"
+kind = "theorem"
+desc = '''**The weak-* bipolar theorem for subspaces**: for `N : Submodule 𝕜 (StrongDual 𝕜 E)`,
+`(N^⊥)^⊥` is the weak-* closure of `N`,
+`StrongDual.toWeakDual '' (N.strongDualCoannihilator.strongDualAnnihilator : Set (StrongDual 𝕜 E)) = closure (StrongDual.toWeakDual '' (N : Set (StrongDual 𝕜 E)))`
+in `WeakDual 𝕜 E`. This is [brezis2011functional] Problem 9 B1 and the last sentence of chapter 1,
+Remark 6; the annihilators are chapter 1's `Submodule.strongDualAnnihilator` (`M^⊥ ⊆ E⋆`) and
+`Submodule.strongDualCoannihilator` (`N^⊥ ⊆ E`), and chapter 1's `Submodule.strongDualAnnihilator_strongDualCoannihilator`
+is the reflexive case, where weak-* and norm closures of a convex set agree.
+
+Proof: `⊇`: `(N^⊥)^⊥` contains `N` and is weak-* closed — the intersection over `x ∈ N^⊥` of the
+kernels of the weak-* continuous evaluations `f ↦ f x` (`WeakDual.eval_continuous`). `⊆`: let
+`f₀ ∈ (N^⊥)^⊥` with `f₀ ∉ K := closure (toWeakDual '' N)`; `K` is a closed subspace of the locally
+convex `WeakDual 𝕜 E` (`Submodule.topologicalClosure` of the image), so
+`RCLike.geometric_hahn_banach_closed_point` separates: `re (Φ g) < α < re (Φ f₀)` for `g ∈ K`; since
+`K` is a subspace, `Φ = 0` on `K` (a linear functional bounded above on a subspace vanishes there)
+and `Φ f₀ ≠ 0`. By `LinearMap.dualEmbedding_surjective (topDualPairing 𝕜 E)` (the weak
+representation theorem: every weak-* continuous functional on `E⋆` is evaluation at a point),
+`Φ g = g x₀` for some `x₀ : E`; then `x₀ ∈ N^⊥` and `f₀ x₀ ≠ 0`, contradicting `f₀ ∈ (N^⊥)^⊥`.
+This is the argument of Brezis' Proposition 3.14 (Mathlib's `dualEmbedding_surjective`) plus
+separation — and it is packaged, for a closed subspace `K` of `WeakDual 𝕜 E`, as
+`Submodule.exists_weakDual_eval_eq_zero_of_notMem` below (first planned by chapter 2 in
+`Operator/Unbounded/Adjoint`, moved here at review), which reduces this node to twenty lines.
+★ once that lemma exists (★★ standalone).'''
+deps = ["Submodule.strongDualAnnihilator", "Submodule.strongDualCoannihilator", "Submodule.mem_strongDualAnnihilator", "Submodule.mem_strongDualCoannihilator", "Submodule.exists_weakDual_eval_eq_zero_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 9"
+
+[[node]]
+id = "WeakDual.geometric_hahn_banach_closed_point"
+kind = "theorem"
+desc = '''**Separation in the weak-∗ topology by a point of `E`** — the weak-∗ Hahn–Banach theorem of
+[brezis2011functional] Problem 9 (question A3) in the form every weak-∗ argument of the book uses:
+for `RCLike 𝕜`, a normed space `E`, `s : Set (WeakDual 𝕜 E)` with `hs₁ : Convex ℝ s`,
+`hs₂ : IsClosed s` and `f ∉ s`, there are `x : E` and `u : ℝ` with
+`(∀ g ∈ s, re (g x) < u) ∧ u < re (f x)` — Mathlib's `RCLike.geometric_hahn_banach_closed_point`
+with the separating functional *an evaluation at a point of `E`*.
+
+Proof: `WeakDual 𝕜 E` is a locally convex space over `ℝ` (`WeakBilin.locallyConvexSpace`, the
+`ℝ`-module structure `WeakDual.instModule'`), so `RCLike.geometric_hahn_banach_closed_point`
+(`Mathlib/Analysis/LocallyConvex/Separation.lean`) gives `φ : StrongDual 𝕜 (WeakDual 𝕜 E)` and
+`u` with `re (φ g) < u` on `s` and `u < re (φ f)`; by the weak representation theorem
+`LinearMap.dualEmbedding_surjective` (`Mathlib/Analysis/LocallyConvex/WeakDual.lean`, for the
+pairing `(topDualPairing 𝕜 E).flip`, whose `WeakBilin` is `WeakDual 𝕜 E`) `φ = WeakBilin.eval _ x`
+for some `x : E`, i.e. `φ g = g x`. ★★, about 50 lines; the instance path for
+`LocallyConvexSpace ℝ (WeakDual 𝕜 E)` is the one place to watch (`WeakDual` is `WeakBilin` by
+`rfl`, but instances may need `inferInstanceAs`). Consumers: the subspace form below (chapter 2's
+Remarks 15 and 17, the weak-∗ bipolar theorem), Goldstine's lemma (`NormedSpace.goldstine` in
+`Reflexive/Kakutani.lean`, applied in `WeakDual 𝕜 (StrongDual 𝕜 E)` to the closed convex set
+`closure (J(B_E))`), and the converse of Theorem 3.29. Placed in this module (not in
+`Operator/Unbounded/Adjoint`, where chapter 2 first planned it) so that no weak-topology module
+imports the operator theory.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 9"
+
+[[node]]
+id = "Submodule.exists_weakDual_eval_eq_zero_of_notMem"
+kind = "theorem"
+desc = '''Separation from a weak-∗ closed *subspace* by a point of `E`, the form
+[brezis2011functional] Remarks 2.15 and 2.17 (chapter 2, `Operator/Unbounded/Adjoint`) and the
+weak-∗ bipolar theorem above need: for `RCLike 𝕜`, a normed space `E`,
+`K : Submodule 𝕜 (WeakDual 𝕜 E)` with `IsClosed (K : Set (WeakDual 𝕜 E))` and `f ∉ K`, there is
+`x : E` with `(∀ g ∈ K, g x = 0) ∧ f x ≠ 0`. From `WeakDual.geometric_hahn_banach_closed_point`
+(`K` is convex): the evaluation `g ↦ g x` is a linear functional bounded above on the subspace
+`K`, hence zero on it (scale by `t → ∞` and by a unimodular constant), and `re (f x) > u ≥ re (0 x) = 0`
+gives `f x ≠ 0`. ★, about 20 lines.'''
+deps = ["WeakDual.geometric_hahn_banach_closed_point"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 9"

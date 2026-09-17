@@ -1,0 +1,197 @@
+desc = '''
+Metrizability of the weak and weak-* topologies on bounded sets, and their non-metrizability on
+the whole space (natural home: `Mathlib.Analysis.Normed.Module.WeakDual`).
+
+[brezis2011functional] Theorems 3.28 and 3.29 are the two "dual" statements: the closed unit
+ball of `E⋆` is weak-* metrizable iff `E` is separable, and the closed unit ball of `E` is weakly
+metrizable iff `E⋆` is separable (the latter's converse being the book's Exercise 3.24). Their
+forward directions are essentially in Mathlib: `WeakDual.metrizable_of_isCompact` (a compact
+subset of `WeakDual 𝕜 E` is metrizable when `E` is separable) applied to the Banach–Alaoglu ball
+gives 3.28, and the topological embedding `NormedSpace.inclusionInDoubleDualWeak` of the weak
+space into the weak-* bidual gives 3.29 from 3.28 applied to `E⋆`. The converses are proved as
+the book does: a countable neighbourhood basis at `0` of the ball yields countably many
+functionals (or vectors) whose span is dense — the density argument being Hahn–Banach in the
+form `Submodule.exists_dual_eq_zero_of_notMem` (`DualSeparable.lean`), and, for 3.29, Goldstine's
+lemma (`Reflexive/Kakutani.lean`).
+
+Also here, Remarks 3 and 20 with their Exercise 3.8: in infinite dimension neither `WeakSpace 𝕜 E`
+nor `WeakDual 𝕜 E` is metrizable — not even first countable. A countable neighbourhood basis at
+`0` would make every functional a finite linear combination of countably many `fₙ`
+(`LinearMap.mem_span_iff_continuous`, the topological form of the book's Lemma 3.2), so `E⋆`
+(resp. `E`) would be a countable union of finite-dimensional, hence closed, subspaces, which
+Baire (`nonempty_interior_of_iUnion_of_closed`, `Submodule.eq_top_of_nonempty_interior'`) forbids in
+a Banach space unless it is finite-dimensional. That Baire lemma, `FiniteDimensional.of_iUnion_eq_univ`,
+is stated on its own; it is an upstreaming candidate for `Mathlib.Analysis.Normed.Module.FiniteDimension`.
+
+Corollary 3.30, the sequential Banach–Alaoglu theorem, is Mathlib's `WeakDual.isSeqCompact_closedBall`
+and has no node here.
+
+Conventions: `RCLike 𝕜`; the balls are the subtypes
+`WeakDual.toStrongDual ⁻¹' Metric.closedBall 0 r : Set (WeakDual 𝕜 E)` (Mathlib's spelling in
+`WeakDual.isCompact_closedBall`) and `toWeakSpace 𝕜 E '' Metric.closedBall 0 r : Set (WeakSpace 𝕜 E)`;
+"metrizable" is `TopologicalSpace.MetrizableSpace` of the subtype, as `WeakDual.metrizable_of_isCompact`
+returns it. Completeness of `E` is assumed only where Baire is used in `E` (Remark 20).
+
+Grep record (2026-09-17): Mathlib's `WeakDual.metrizable_of_isCompact` and
+`isSeqCompact_closedBall` are the only metrizability results about weak topologies; nothing
+about the converses, and `Analysis/Normed/Module/WeakDual.lean` lists "in infinite dimensions the
+weak-* topology is strictly coarser than the dual norm topology" as a TODO.
+
+Serves [brezis2011functional] §3.6 and Remarks 3, 20 (`NumlibSurface/Brezis/Chapter03/Section02`,
+`Section06`).
+'''
+
+[[node]]
+id = "WeakDual.metrizableSpace_closedBall"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.28, forward: if `E` is separable then the closed ball
+of `E⋆` is metrizable for the weak-* topology. For `[SeparableSpace E]` and `r : ℝ`,
+`TopologicalSpace.MetrizableSpace (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual 𝕜 E) r)`.
+One line: `WeakDual.metrizable_of_isCompact 𝕜 E _ (WeakDual.isCompact_closedBall 0 r)`. The book's
+metric `[f] = ∑ 2⁻ⁿ |⟨f, xₙ⟩|` over a dense sequence of the ball (line 2775) is what Mathlib's
+`Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating` builds under the hood. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.28"
+
+[[node]]
+id = "separableSpace_of_metrizableSpace_weakDual_closedBall"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.28, converse (★ in the book): if the closed unit ball
+of `E⋆` is weak-* metrizable then `E` is separable. For
+`(h : TopologicalSpace.MetrizableSpace (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual 𝕜 E) 1))`:
+`TopologicalSpace.SeparableSpace E`. No completeness needed.
+
+Proof (lines 2821–2837). Metrizable ⇒ first countable: `(𝓝 (0 : ball)).HasCountableBasis`, so a
+sequence `Uₙ` of neighbourhoods of `0` in the ball with `⋂ Uₙ = {0}` (T1). Each `Uₙ` contains a
+basic weak-* neighbourhood of `0` intersected with the ball: by `LinearMap.hasBasis_weakBilin`
+(the seminorm basis of `WeakDual 𝕜 E`, `WeakDual.withSeminorms`) and `nhds_subtype`, there are a
+finite `Φₙ : Finset E` and `εₙ > 0` with `{f ∈ ball | ∀ x ∈ Φₙ, ‖f x‖ < εₙ} ⊆ Uₙ`. Let
+`D := ⋃ₙ (Φₙ : Set E)`, countable. Claim `closure (span 𝕜 D) = ⊤`: otherwise
+`Submodule.exists_dual_eq_zero_of_notMem` (`DualSeparable.lean`) gives `f` with `‖f‖ = 1` vanishing
+on `D`; then `f` is in the ball and in every basic neighbourhood, hence in every `Uₙ`, hence
+`f = 0`, contradiction. Finally `E` is separable because the closure of the span of a countable
+set is (`Set.Countable.isSeparable`, `IsSeparable.span`, `.closure`, `isSeparable_univ_iff`), as in
+the last lines of `separableSpace_of_separableSpace_strongDual`. ★★ (about 120 lines; the
+neighbourhood-basis extraction within the subtype is the fiddly part).'''
+deps = ["Submodule.exists_dual_eq_zero_of_notMem"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.28"
+
+[[node]]
+id = "WeakSpace.metrizableSpace_image_closedBall"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.29, forward: if `E⋆` is separable then the closed ball
+of `E` is metrizable for the weak topology. For `[SeparableSpace (StrongDual 𝕜 E)]` and `r : ℝ`,
+`TopologicalSpace.MetrizableSpace (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) r)`.
+
+Proof: `NormedSpace.inclusionInDoubleDualWeak 𝕜 E` is a topological embedding of `WeakSpace 𝕜 E`
+into `WeakDual 𝕜 (StrongDual 𝕜 E)` (`NormedSpace.isEmbedding_inclusionInDoubleDualWeak`), mapping
+the ball of `E` into the ball of `E⋆⋆` (`inclusionInDoubleDualLi`), which is metrizable by
+`WeakDual.metrizableSpace_closedBall` applied to the separable `StrongDual 𝕜 E`; restrict the
+embedding to the ball (`IsEmbedding.restrict`/`Set.MapsTo.restrict`) and use
+`Topology.IsEmbedding.metrizableSpace`. The book proves it by repeating the metric construction
+"with the roles of `E` and `E⋆` exchanged" (line 2842); the embedding route reuses 3.28 instead. ★'''
+deps = ["WeakDual.metrizableSpace_closedBall"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.29"
+
+[[node]]
+id = "separableSpace_strongDual_of_metrizableSpace_weakSpace_closedBall"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.29, converse — the book's Exercise 3.24: if the closed
+unit ball of `E` is weakly metrizable then `E⋆` is separable. For
+`(h : TopologicalSpace.MetrizableSpace (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) 1))`:
+`TopologicalSpace.SeparableSpace (StrongDual 𝕜 E)`. The book assumes `E` Banach; the proof does
+not use it.
+
+Proof (Exercise 3.24, lines 3121–3160, and the book's remark that the proof of 3.28 "breaks down"
+here: the functional produced by Hahn–Banach lives in `E⋆⋆`, not in `E`, and Goldstine brings it
+back). As in `separableSpace_of_metrizableSpace_weakDual_closedBall` get `Uₙ`, finite
+`Φₙ : Finset (StrongDual 𝕜 E)` and `εₙ > 0` with `Vₙ := {x ∈ B_E | ∀ f ∈ Φₙ, ‖f x‖ < εₙ} ⊆ Uₙ`, and
+`⋂ Uₙ = {0}`. Let `F := span 𝕜 (⋃ₙ Φₙ) ⊆ E⋆`; if `closure F ≠ ⊤`, `Submodule.exists_dual_eq_zero_of_notMem`
+in `E⋆` gives `ξ : StrongDual 𝕜 (StrongDual 𝕜 E)` with `‖ξ‖ = 1`, `ξ = 0` on `F`, and some `f₀`
+with `ξ f₀ ≠ 0`; rescale `f₀` so that `re (ξ f₀) > 1` (question 1). `W := {x ∈ B_E | ‖f₀ x‖ < 1/2}`
+is a weak neighbourhood of `0` in the ball, so `Vₙ₀ ⊆ Uₙ₀ ⊆ W` for some `n₀` (question 2: the
+`Uₙ` are a basis). By Goldstine (`NormedSpace.goldstine`, `Reflexive/Kakutani.lean`) there is
+`x₁ ∈ B_E` with `‖f x₁ - ξ f‖ < εₙ₀` for `f ∈ Φₙ₀` and `‖f₀ x₁ - ξ f₀‖ < 1/2` (question 3: the
+weak-* neighbourhood of `ξ` determined by `Φₙ₀ ∪ {f₀}` meets `J(B_E)`). Since `ξ = 0` on
+`Φₙ₀ ⊆ F`, `x₁ ∈ Vₙ₀ ⊆ W`, so `‖f₀ x₁‖ < 1/2`; but `re (f₀ x₁) > re (ξ f₀) - 1/2 > 1/2`
+(question 4), contradiction (question 5). Hence `closure F = ⊤` and `E⋆` is separable as the
+closure of the span of a countable set. ★★ (about 150 lines).'''
+deps = ["Submodule.exists_dual_eq_zero_of_notMem", "NormedSpace.goldstine"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 3.24"
+
+[[node]]
+id = "FiniteDimensional.of_iUnion_eq_univ"
+kind = "theorem"
+desc = '''**A Banach space that is a countable union of finite-dimensional subspaces is
+finite-dimensional** (the Baire step of [brezis2011functional] Exercise 3.8, question 2, and of
+its Exercise 1.5). For `[CompleteSpace E]`, `(p : ℕ → Submodule 𝕜 E)` with
+`(hp : ∀ n, FiniteDimensional 𝕜 (p n))` and `(h : ⋃ n, (p n : Set E) = Set.univ)`:
+`FiniteDimensional 𝕜 E`. Proof: each `p n` is closed (`Submodule.closed_of_finiteDimensional`),
+so Baire (`nonempty_interior_of_iUnion_of_closed`, `BaireSpace` from `CompleteSpace`) gives `n` with
+`(interior (p n)).Nonempty`, so `p n = ⊤` (`Submodule.eq_top_of_nonempty_interior'`), so `E ≃ p n`
+is finite-dimensional. Upstreaming candidate (`Mathlib.Analysis.Normed.Module.FiniteDimension`);
+a `(p : ι → …)` with `[Countable ι]` version costs nothing more. ★★ (about 40 lines).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 3.8"
+
+[[node]]
+id = "not_firstCountableTopology_weakSpace"
+kind = "theorem"
+desc = '''In an infinite-dimensional normed space the weak topology is not first countable, a
+fortiori not metrizable ([brezis2011functional] chapter 3, Remark 3 and Exercise 3.8, questions
+1–3). For `(h : ¬ FiniteDimensional 𝕜 E)`: `¬ FirstCountableTopology (WeakSpace 𝕜 E)`. No
+completeness of `E` is needed: Baire is applied in `E⋆`, which is complete.
+
+Proof. Suppose `𝓝 (0 : WeakSpace 𝕜 E)` has a countable basis `Vₖ`. Each `Vₖ` contains a basic
+neighbourhood `{x | ∀ f ∈ Φₖ, ‖f x‖ < εₖ}` with `Φₖ : Finset (StrongDual 𝕜 E)`
+(`LinearMap.hasBasis_weakBilin`). Let `f : ℕ → StrongDual 𝕜 E` enumerate `⋃ₖ Φₖ`. Every
+`g : StrongDual 𝕜 E` is continuous for the weak topology, hence for the coarser topology
+`⨅ n, induced (f n) _` (the weak topology is `⨅` over *all* functionals, `induced_to_pi`, and the
+`Vₖ` are a basis of it), so `g ∈ span 𝕜 (range f)` by `LinearMap.mem_span_iff_continuous`
+(Mathlib, `Analysis/LocallyConvex/WeakDual.lean`; the book's Lemma 3.2). Hence
+`StrongDual 𝕜 E = ⋃ₙ span 𝕜 (f '' Iic n)`, a countable union of finite-dimensional subspaces, and
+`FiniteDimensional.of_iUnion_eq_univ` (in the complete `StrongDual 𝕜 E`) makes `E⋆`
+finite-dimensional; then `E` is, since `inclusionInDoubleDualLi` embeds it in the
+finite-dimensional `E⋆⋆` (`Module.Finite.of_injective`). ★★ (about 120 lines; the step "weakly
+continuous ⇒ continuous for the countable sub-family" needs the basis `Vₖ` to be compared with the
+`⨅`-topology through `TopologicalSpace.le_def`/`nhds_iInf`.)'''
+deps = ["FiniteDimensional.of_iUnion_eq_univ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 3.8"
+
+[[node]]
+id = "not_metrizableSpace_weakSpace"
+kind = "theorem"
+desc = '''[brezis2011functional] chapter 3, Remark 3: `¬ FiniteDimensional 𝕜 E → ¬ TopologicalSpace.MetrizableSpace (WeakSpace 𝕜 E)`.
+A metrizable space is first countable (`TopologicalSpace.MetrizableSpace` gives a `PseudoMetricSpace`
+structure inducing the topology, `UniformSpace.firstCountableTopology`), so this is
+`not_firstCountableTopology_weakSpace`. ★'''
+deps = ["not_firstCountableTopology_weakSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 3"
+
+[[node]]
+id = "not_firstCountableTopology_weakDual"
+kind = "theorem"
+desc = '''In the dual of an infinite-dimensional Banach space the weak-* topology is not first
+countable ([brezis2011functional] chapter 3, Remark 20 and Exercise 3.8, question 4). For
+`[CompleteSpace E] (h : ¬ FiniteDimensional 𝕜 E)`: `¬ FirstCountableTopology (WeakDual 𝕜 E)`.
+Same proof as `not_firstCountableTopology_weakSpace` with the roles exchanged: a countable basis
+at `0` gives a sequence `x : ℕ → E` such that every `f : StrongDual 𝕜 E` — indeed every weak-*
+continuous functional on `E⋆`, which by `LinearMap.dualEmbedding_surjective` is evaluation at a
+point of `E` — is continuous for `⨅ n, induced (fun f => f (x n)) _`, so that
+`E = ⋃ₙ span 𝕜 (x '' Iic n)` (`LinearMap.mem_span_iff_continuous` applied to the evaluations, which
+are injective in `x` by `SeparatingDual`); Baire in the complete `E`
+(`FiniteDimensional.of_iUnion_eq_univ`) finishes. Completeness of `E` is used here and not in the
+weak case. ★★ (about 120 lines).'''
+deps = ["FiniteDimensional.of_iUnion_eq_univ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 3.8"
+
+[[node]]
+id = "not_metrizableSpace_weakDual"
+kind = "theorem"
+desc = '''[brezis2011functional] chapter 3, Remark 20: for a Banach space,
+`¬ FiniteDimensional 𝕜 E → ¬ TopologicalSpace.MetrizableSpace (WeakDual 𝕜 E)`. From
+`not_firstCountableTopology_weakDual` as `not_metrizableSpace_weakSpace` is from its
+first-countable form. In particular the norm `[·]` of Theorem 3.28's proof does not induce the
+weak-* topology on all of `E⋆`, which is the remark's last sentence. ★'''
+deps = ["not_firstCountableTopology_weakDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 20"

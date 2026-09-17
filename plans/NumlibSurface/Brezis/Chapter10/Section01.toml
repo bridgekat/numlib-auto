@@ -1,0 +1,258 @@
+namespace = "Brezis.Chapter10"
+desc = '''
+Brezis §10.1, the heat equation: existence, uniqueness and regularity. The problem (1)–(3) is
+read, as the book instructs at line 12150, for a curve `u : ℝ → L²(Ω)`; the operator `A`,
+`D(A) = H²(Ω) ∩ H¹₀(Ω)`, `Au = -Δu`, is `heatOperator Ω`, the backbone's Dirichlet Laplacian
+`dirichletLaplacian Ω` (weak domain `{u ∈ H¹₀ : Δu ∈ L²}`) restricted to `H²(Ω)`, and
+`heatOperator_eq_dirichletLaplacian` says the two coincide on a `C²` domain with bounded boundary
+(Theorem 9.25). The standing hypothesis of the chapter, "`Ω` of class `C^∞` with `Γ` bounded",
+is `Brezis.Chapter09.IsOfClassC ⊤ Ω ∧ Bornology.IsBounded (frontier Ω)` and is carried by the
+theorems as the book states them; the backbone proves the existence, uniqueness and energy
+clauses on every open set, and the surface records that as a remark in each `desc`. The classes
+`C^k(I; V)` are `Bochner.ContDiffOnThrough`, `L²(I; V)` is `Bochner.MemLpThrough`, and
+`C^∞(Ω̄ × [ε,∞))` is `ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi ε)` for a function `U` of `(x,t)`
+representing the curve. Nodes: the operator and its three properties (i)–(iii) of the proof of
+Theorem 10.1, the solution class, Theorem 10.1 in four clauses (existence and uniqueness; (5);
+(6); `L²(0,∞; H¹₀)`), the display (7), Theorem 10.2 (a)–(c), Remarks 1, 3, 4. Remarks 2 and 5
+are discussion.
+'''
+
+[[node]]
+id = "heatOperator"
+kind = "definition"
+desc = '''The unbounded operator of the proof of Theorem 10.1: `heatOperator (Ω) : L²(Ω) →ₗ.[ℝ] L²(Ω)`
+with `D(A) = H²(Ω) ∩ H¹₀(Ω)` and `Au = -Δu`, built as `(dirichletLaplacian Ω).domRestrict S` for
+`S` the submodule of `L²(Ω)` functions of `H²(Ω)` elements (`range (SobolevMultiIndex.fnL : SobolevEuclidean N 2 2 Ω →L[ℝ] L²(Ω))`):
+`heatOperator_mem_domain_iff : f ∈ (heatOperator Ω).domain ↔ (∃ w : H²(Ω), SobolevMultiIndex.fnL w = f) ∧ f ∈ range (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω))`
+(the weak domain contains `H² ∩ H¹₀`, `mem_dirichletLaplacianDomain_of_sobolev_two`, so
+`S ⊓ D(A_weak) = S ⊓ H¹₀`) and `heatOperator_apply : heatOperator Ω f = -∑ i, SobolevMultiIndex.weakDerivL (2 • MultiIndexLE.single i) w`
+(`dirichletLaplacian_apply_of_sobolev_two`). The domain restriction rather than a fresh
+`LinearPMap` keeps every backbone fact about `dirichletLaplacian` available by `domRestrict_le`. ★'''
+deps = ["dirichletLaplacian", "mem_dirichletLaplacianDomain_of_sobolev_two", "SobolevMultiIndexZero.fnL", "SobolevMultiIndex.weakDerivL", "MultiIndexLE.single"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1, the operator `A`"
+
+[[node]]
+id = "heatOperator_eq_dirichletLaplacian"
+kind = "theorem"
+desc = '''On a domain of class `C²` with `Γ` bounded (`Brezis.Chapter09.IsOfClassC 2 Ω`,
+`Bornology.IsBounded (frontier Ω)`), `heatOperator Ω = dirichletLaplacian Ω`: the weak domain
+`{u ∈ H¹₀ : Δu ∈ L²}` is `H² ∩ H¹₀` — Theorem 9.25 applied to `u - Δu ∈ L²`, the book's step
+(ii). Backbone `dirichletLaplacianDomain_eq_of_isContDiffChartDomain`; `LinearPMap.ext` on the
+domains. Under the chapter's standing `C^∞` hypothesis this is what lets every backbone statement
+about `dirichletLaplacian` be read for the book's `A`. ★'''
+deps = ["heatOperator", "dirichletLaplacianDomain_eq_of_isContDiffChartDomain", "Brezis.Chapter09.IsOfClassC", "Brezis.Chapter09.theorem_9_25"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (ii)"
+
+[[node]]
+id = "heatOperator_isMaximalMonotone"
+kind = "theorem"
+desc = '''Steps (i)–(ii) of the proof of Theorem 10.1: on a `C²` domain with `Γ` bounded,
+`Brezis.Chapter07.IsMaximalMonotone (heatOperator Ω)` — `(Au, u) = ∫ |∇u|² ≥ 0` for `u ∈ D(A)`
+and `R(I + A) = L²(Ω)` (Theorem 9.25). By `heatOperator_eq_dirichletLaplacian` and the backbone's
+`dirichletLaplacian_isMaximalMonotone`; the monotonicity clause alone holds for the restriction on
+any open set (`dirichletLaplacian_inner_self_nonneg`, `domRestrict_le`). ★'''
+deps = ["heatOperator_eq_dirichletLaplacian", "dirichletLaplacian_isMaximalMonotone", "dirichletLaplacian_inner_self_nonneg", "Brezis.Chapter07.IsMaximalMonotone"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (i)–(ii)"
+
+[[node]]
+id = "heatOperator_isSelfAdjoint"
+kind = "theorem"
+desc = '''Step (iii) of the proof of Theorem 10.1: on a `C²` domain with `Γ` bounded, `A` is symmetric
+(`Brezis.Chapter07.IsSymmetricOperator (heatOperator Ω)`: `(Au, v) = ∫ ∇u·∇v = (u, Av)`) and
+hence, by Proposition 7.6, self-adjoint (`Brezis.Chapter07.IsSelfAdjointOperator (heatOperator Ω)`).
+Backbone `dirichletLaplacian_isFormalAdjoint`, `dirichletLaplacian_isSelfAdjoint` through
+`heatOperator_eq_dirichletLaplacian`; the surface goes through `proposition_7_6` as the book does. ★'''
+deps = ["heatOperator_isMaximalMonotone", "heatOperator_eq_dirichletLaplacian", "dirichletLaplacian_isFormalAdjoint", "dirichletLaplacian_isSelfAdjoint", "Brezis.Chapter07.proposition_7_6", "Brezis.Chapter07.IsSymmetricOperator", "Brezis.Chapter07.IsSelfAdjointOperator"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1 (iii)"
+
+[[node]]
+id = "IsHeatSolution"
+kind = "definition"
+desc = '''The problem (1), (2), (3) in the class (4) of Theorem 10.1: `IsHeatSolution (Ω) (u₀ : L²(Ω)) (u : ℝ → L²(Ω)) : Prop`,
+a structure with `continuousOn : ContinuousOn u (Ici 0)` (`u ∈ C([0,∞); L²(Ω))`),
+`contDiffOnThrough : Bochner.ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N 2 2 Ω →L[ℝ] L²(Ω)) 0 u (Ioi 0)` together with
+`mem_domain : ∀ t > 0, u t ∈ (heatOperator Ω).domain` (`u ∈ C((0,∞); H²(Ω) ∩ H¹₀(Ω))`, the
+boundary condition (2) being the `H¹₀` half), `contDiffOn : ContDiffOn ℝ 1 u (Ioi 0)`
+(`u ∈ C¹((0,∞); L²(Ω))`), `hasDerivAt : ∀ t (ht : 0 < t), HasDerivAt u (-(heatOperator Ω ⟨u t, _⟩)) t`
+((1): `∂ₜu = Δu` in `L²(Ω)`), and `apply_zero : u 0 = u₀` ((3)). `isHeatSolution_iff`: on a `C²`
+domain with `Γ` bounded, `IsHeatSolution Ω u₀ u ↔ Heat.IsSolution Ω u₀ u` (`→` by
+`domRestrict_le`; `←` by `Heat.IsSolution.contDiffOnThrough_two` and
+`heatOperator_eq_dirichletLaplacian`). The book's `u(x,t)` is the curve, line 12150. ★'''
+deps = ["heatOperator", "heatOperator_eq_dirichletLaplacian", "Bochner.ContDiffOnThrough", "SobolevMultiIndex.weakDerivL", "Heat.IsSolution", "Heat.IsSolution.contDiffOnThrough_two"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, (1)–(4)"
+
+[[node]]
+id = "theorem_10_1"
+kind = "theorem"
+desc = '''Theorem 10.1, existence and uniqueness: for `Ω` of class `C^∞` with `Γ` bounded and
+`u₀ ∈ L²(Ω)` there is a unique `u` with `IsHeatSolution Ω u₀ u` (unique on `Ici 0`:
+`∃ u, IsHeatSolution Ω u₀ u ∧ ∀ v, IsHeatSolution Ω u₀ v → EqOn v u (Ici 0)`). The book's proof:
+`A` is self-adjoint maximal monotone (`heatOperator_isSelfAdjoint`) and Theorem 7.7
+(`Brezis.Chapter07.theorem_7_7`) applies; in the backbone, `Heat.isSolution_solution` and
+`Heat.IsSolution.unique` through `isHeatSolution_iff`. The backbone proves it on every open set
+for the weak class; the `C^∞` hypothesis only identifies the class with the book's. ★'''
+deps = ["IsHeatSolution", "heatOperator_isSelfAdjoint", "Heat.isSolution_solution", "Heat.IsSolution.unique", "Brezis.Chapter07.theorem_7_7", "Brezis.Chapter09.IsOfClassC"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1"
+
+[[node]]
+id = "theorem_10_1_smooth"
+kind = "theorem"
+desc = '''Theorem 10.1, (5): under the same hypotheses the solution satisfies `u ∈ C^∞(Ω̄ × [ε,∞))`
+for every `ε > 0` — there is `U : ℝ^N × ℝ → ℝ` with `(fun x ↦ U (x,t)) =ᵐ[volume.restrict Ω] u t`
+for `t > 0` and `ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi ε)` for every `ε > 0` (`C^∞` on
+`Ω × (ε,∞)`, every derivative extending continuously to `Ω̄ × [ε,∞)`, chapter 9's footnote-16
+sense). The book's lines 12198–12215: `u ∈ C^k((0,∞); D(A^ℓ))` (Theorem 7.7),
+`D(A^ℓ) ⊆ H^{2ℓ}(Ω)` with continuous injection ((7), `equation_10_7`), and Corollary 9.15
+(`Brezis.Chapter09.corollary_9_15`, for `k + N/2 < 2ℓ`). Backbone
+`Heat.IsSolution.contDiffOnClosure_spaceTime`. ★★★ (the space-time bridge).'''
+deps = ["theorem_10_1", "equation_10_7", "Heat.IsSolution.contDiffOnClosure_spaceTime", "ContDiffOnClosure", "Brezis.Chapter09.corollary_9_15"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1 (5)"
+
+[[node]]
+id = "theorem_10_1_energy"
+kind = "theorem"
+desc = '''Theorem 10.1, (6): for every `T > 0`,
+`½ ‖u T‖² + ∫ t in (0:ℝ)..T, ‖∇u(t)‖² = ½ ‖u₀‖²`, where `‖∇u(t)‖² = ∑ᵢ ∫_Ω |∂ᵢu(x,t)|² dx`
+(footnote 3) is `Elliptic.dirichletForm Ω ũ(t) ũ(t)` for the `H¹₀`-lift, equal to
+`⟪A (u t), u t⟫`; the integrand is integrable on `(0, T]`. The book's argument with
+`φ(t) = ½|u(t)|²` (lines 12217–12230) is `Heat.IsSolution.energy`. Holds on every open set. ★'''
+deps = ["theorem_10_1", "Heat.IsSolution.energy", "dirichletLaplacian_inner_eq_dirichletForm", "Elliptic.dirichletForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1 (6)"
+
+[[node]]
+id = "theorem_10_1_memLp"
+kind = "theorem"
+desc = '''Theorem 10.1, "`u ∈ L²(0,∞; H¹₀(Ω))`": in the form the book's proof establishes,
+`∫₀^∞ ‖∇u(t)‖² dt ≤ ½ ‖u₀‖²` with integrability on `(0,∞)` (`Heat.IsSolution.integral_inner_apply_le`),
+on every open set; and, for **bounded** `Ω`, the Bochner membership
+`Bochner.MemLpThrough (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω)) 2 u (Ioi 0)`
+(`Heat.IsSolution.memLpThrough_sobolevZero_of_isBounded`, Poincaré's inequality, Corollary 9.19).
+The book's claim as written is false for unbounded `Ω` (chapter group description, erratum (i)):
+`∫₀^∞ ‖u(t)‖²_{L²} dt` need not be finite. ★'''
+deps = ["theorem_10_1_energy", "Heat.IsSolution.integral_inner_apply_le", "Heat.IsSolution.memLpThrough_sobolevZero_of_isBounded", "Bochner.MemLpThrough", "Brezis.Chapter09.corollary_9_19"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1, `u ∈ L²(0,∞; H¹₀(Ω))`"
+
+[[node]]
+id = "equation_10_7"
+kind = "theorem"
+desc = '''The display (7) in the proof of Theorem 10.1: for `Ω` of class `C^∞` with `Γ` bounded and
+every `ℓ ≥ 1`, `D(A^ℓ) = {u ∈ H^{2ℓ}(Ω) : u = Δu = ⋯ = Δ^{ℓ-1}u = 0 on Γ}` with continuous
+injection `D(A^ℓ) ⊆ H^{2ℓ}(Ω)`: `u ∈ Brezis.Chapter07.domainPow (heatOperator Ω) ℓ ↔
+∃ w : H^{2ℓ}(Ω), SobolevMultiIndex.fnL w = u ∧ ∀ j < ℓ, Δ^j u ∈ range (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω))`
+("`= 0` on `Γ`" read as membership of `H¹₀(Ω)`, the trace-free reading of Theorem 9.17), and
+`‖w‖_{H^{2ℓ}} ≤ C ‖u‖_{D(A^ℓ)}`. Backbone `dirichletLaplacian_mem_powDomain_iff` and
+`dirichletLaplacian.powDomainToSobolevL`, induction with the higher-order clause of Theorem 9.25
+(`Brezis.Chapter09.theorem_9_25_higher`). ★'''
+deps = ["heatOperator_eq_dirichletLaplacian", "dirichletLaplacian_mem_powDomain_iff", "dirichletLaplacian.powDomainToSobolevL", "Brezis.Chapter07.domainPow", "Brezis.Chapter09.theorem_9_25_higher"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, equation (7)"
+
+[[node]]
+id = "theorem_10_2_a"
+kind = "theorem"
+desc = '''Theorem 10.2 (a): if `u₀ ∈ H¹₀(Ω)` (`u₀ = fnL v₀`), the solution `u` of (1), (2), (3)
+satisfies `u ∈ C([0,∞); H¹₀(Ω))` (`Bochner.ContDiffOnThrough (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω)) 0 u (Ici 0)`),
+`∂ₜu ∈ L²(0,∞; L²(Ω))` (`MemLp (deriv u) 2 (volume.restrict (Ioi 0))`), and (11):
+`∫ t in (0:ℝ)..T, ‖∂ₜu(t)‖² + ½ ‖∇u(T)‖² = ½ ‖∇u₀‖²` for every `T > 0`. The book's proof (the
+operator `A₁` in `H₁ = H¹₀(Ω)`, Theorem 7.7 there, then `φ(t) = ½|∇u(t)|²`) is the backbone's
+`dirichletLaplacianH10_isMaximalMonotone`, `Heat.IsSolution.contDiffOnThrough_sobolevZero_of_mem`
+and `Heat.IsSolution.energy_sobolevZero`. Holds on every open set. ★'''
+deps = ["theorem_10_1", "Heat.IsSolution.contDiffOnThrough_sobolevZero_of_mem", "Heat.IsSolution.energy_sobolevZero", "dirichletLaplacianH10_isMaximalMonotone", "Brezis.Chapter07.theorem_7_7"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (a)"
+
+[[node]]
+id = "theorem_10_2_a_memLp"
+kind = "theorem"
+desc = '''Theorem 10.2 (a), "`u ∈ L²(0,∞; H²(Ω))`": for **bounded** `Ω` (of class `C²`, so that
+`D(A) = H² ∩ H¹₀` with the graph-norm estimate), `Bochner.MemLpThrough (SobolevMultiIndex.fnL : SobolevEuclidean N 2 2 Ω →L[ℝ] L²(Ω)) 2 u (Ioi 0)`
+(`Heat.IsSolution.memLpThrough_two_of_isBounded`); on an unbounded domain only
+`∫₀^∞ ‖Δu(t)‖² dt = ∫₀^∞ ‖∂ₜu(t)‖² dt < ∞` holds (erratum (i) of the chapter description). ★'''
+deps = ["theorem_10_2_a", "Heat.IsSolution.memLpThrough_two_of_isBounded", "Bochner.MemLpThrough"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (a), `u ∈ L²(0,∞; H²(Ω))`"
+
+[[node]]
+id = "theorem_10_2_b"
+kind = "theorem"
+desc = '''Theorem 10.2 (b): if `u₀ ∈ H²(Ω) ∩ H¹₀(Ω)` (`u₀ ∈ (heatOperator Ω).domain`), then
+`u ∈ C([0,∞); H²(Ω))` (`Bochner.ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N 2 2 Ω →L[ℝ] L²(Ω)) 0 u (Ici 0)`) and the
+identity of lines 12305–12312: `½ ‖Δu(T)‖² + ∫₀ᵀ ‖∇Δu(t)‖² = ½ ‖Δu₀‖²` for every `T > 0`
+(`‖∇Δu(t)‖² = ⟪A (A u(t)), A u(t)⟫`), whence `∂ₜu ∈ L²(0,∞; H¹₀(Ω))` in its gradient form
+`∫₀^∞ ‖∇∂ₜu‖² ≤ ½ ‖Δu₀‖²`. The book's route is Theorem 7.7 for `A₂` in `H₂ = H² ∩ H¹₀`; the
+backbone's is Theorem 7.4 for `u₀ ∈ D(A)` (`Heat.IsSolution.contDiffOn_Ici_of_mem_domain`,
+`contDiffOnThrough_two_Ici_of_mem_domain`) and `Heat.IsSolution.energy_domain`. Holds on every
+open set except the `H²` reading of `D(A)`. ★'''
+deps = ["theorem_10_1", "Heat.IsSolution.contDiffOnThrough_two_Ici_of_mem_domain", "Heat.IsSolution.energy_domain", "heatOperator_eq_dirichletLaplacian", "Brezis.Chapter07.theorem_7_4"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (b)"
+
+[[node]]
+id = "theorem_10_2_b_memLp"
+kind = "theorem"
+desc = '''Theorem 10.2 (b), "`u ∈ L²(0,∞; H³(Ω))` and `∂ₜu ∈ L²(0,∞; H¹₀(Ω))`": for **bounded** `Ω`
+of class `C³`, `Bochner.MemLpThrough (SobolevMultiIndex.fnL : SobolevEuclidean N 3 2 Ω →L[ℝ] L²(Ω)) 2 u (Ioi 0)` and
+`Bochner.MemLpThrough (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω)) 2 (deriv u) (Ioi 0)`
+(`Heat.IsSolution.memLpThrough_three_of_isBounded`); the book's "(why?)" at line 12313 is the
+`H³` estimate of Theorem 9.25 plus Poincaré. Unbounded `Ω`: erratum (i). ★'''
+deps = ["theorem_10_2_b", "Heat.IsSolution.memLpThrough_three_of_isBounded", "Bochner.MemLpThrough", "Brezis.Chapter09.theorem_9_25_higher"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (b), `u ∈ L²(0,∞; H³(Ω))`"
+
+[[node]]
+id = "theorem_10_2_c"
+kind = "theorem"
+desc = '''Theorem 10.2 (c): if `u₀ ∈ H^k(Ω)` for every `k` and satisfies the compatibility
+conditions (8), `u₀ = Δu₀ = ⋯ = Δ^j u₀ = 0` on `Γ` for every `j` (read through (7): `Δ^j u₀ ∈ H¹₀(Ω)`
+for all `j`, i.e. `u₀ ∈ Brezis.Chapter07.domainPow (heatOperator Ω) k` for every `k`), then
+`u ∈ C^∞(Ω̄ × [0,∞))`: a `U` with `U(·,t) =ᵐ u t` for `t ≥ 0` and `ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi 0)`
+whose derivatives extend continuously to `closure Ω ×ˢ Ici 0`. The book's proof: Theorem 7.5
+(`Brezis.Chapter07.theorem_7_5`) gives `u ∈ C^{k-j}([0,∞); D(A^j))`, then (7) and Corollary 9.15
+as in Theorem 10.1. Backbone `Heat.IsSolution.contDiffOnPowDomain_Ici_of_powDomain` and
+`Heat.IsSolution.contDiffOnClosure_spaceTime_Ici`. ★★★ (the bridge).'''
+deps = ["theorem_10_1", "equation_10_7", "Heat.IsSolution.contDiffOnPowDomain_Ici_of_powDomain", "Heat.IsSolution.contDiffOnClosure_spaceTime_Ici", "Brezis.Chapter07.theorem_7_5", "Brezis.Chapter07.domainPow", "Brezis.Chapter09.corollary_9_15"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (c)"
+
+[[node]]
+id = "remark_10_1"
+kind = "theorem"
+desc = '''Remark 1, the well-posed half: the problem (9'), (10), (11) — `-∂ₜu - Δu = 0` on
+`Ω × (0,T)`, `u = 0` on `Γ × (0,T)`, `u(T) = u_T` — has a unique solution for every
+`u_T ∈ L²(Ω)`, in the class `C([0,T]; L²) ∩ C¹([0,T); L²)` with `u(t) ∈ D(A)` for `t < T`:
+"change `t` into `T - t` and apply Theorem 10.1". Backbone `Heat.existsUnique_isSolution_backward`. ★'''
+deps = ["theorem_10_1", "Heat.existsUnique_isSolution_backward"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 1"
+
+[[node]]
+id = "remark_10_1_necessary"
+kind = "theorem"
+desc = '''Remark 1, the necessary condition (12): if the backward problem (9), (10), (11) has a
+solution `u` on `[0,T]` in the class of Theorem 10.1 (continuous on `[0,T]` into `L²`, `C¹` on
+`(0,T]` with `∂ₜu = Δu`, `u(t) ∈ D(A)` for `t > 0`, `u(T) = u_T`), then `u_T ∈ D(A^ℓ)` for every
+`ℓ` — hence, by (7), `u_T ∈ H^{2ℓ}(Ω)` for all `ℓ` with `Δ^j u_T = 0` on `Γ` for all `j`, and
+`u_T ∈ C^∞(Ω̄)` by Corollary 9.15: such a `u` is the forward solution with datum `u(0)`, so
+`u_T = u(T)` is smooth by Theorem 10.1 (`Heat.IsSolution.contDiffOn_top`'s `exists_powDomain`
+at `t = T`). The book's further claim that even then a solution need not exist is not planned
+(no counterexample is given). ★'''
+deps = ["theorem_10_1", "equation_10_7", "Heat.IsSolution.contDiffOn_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 1, (12)"
+
+[[node]]
+id = "remark_10_3"
+kind = "theorem"
+desc = '''Remark 3, the Fourier method: for bounded (nonempty) `Ω` and the Dirichlet eigenbasis
+`(eₙ)`, `(λₙ)` of Theorem 9.31 (`Brezis.Chapter09.theorem_9_31`), the solution of (1), (2), (3)
+is `u(x,t) = ∑ₙ aₙ(0) e^{-λₙ t} eₙ(x)` with `aₙ(0) = ∫_Ω u₀ eₙ` (14): for every `t ≥ 0`,
+`HasSum (fun n ↦ (exp (-λ n * t) * ⟪u₀, e n⟫) • e n) (u t)` in `L²(Ω)`, and the coefficients
+`aₙ(t) = ⟪u t, e n⟫` solve `aₙ' + λₙ aₙ = 0` (13). Backbone `Heat.IsSolution.inner_eigenfunction`,
+`Heat.IsSolution.hasSum_eigenfunction`; the convergence question the book refers to Weinberger
+for is settled by uniqueness. ★'''
+deps = ["theorem_10_1", "Heat.IsSolution.inner_eigenfunction", "Heat.IsSolution.hasSum_eigenfunction", "Brezis.Chapter09.theorem_9_31"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 3"
+
+[[node]]
+id = "remark_10_4"
+kind = "theorem"
+desc = '''Remark 4: the compatibility conditions (8) are necessary for a solution smooth up to
+`t = 0`. If `u : ℝ^N × ℝ → ℝ` is `C^∞` on `Ω̄ × [0,∞)` (`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)`
+with extensions continuous on `closure Ω ×ˢ Ici 0`), satisfies `∂ₜu = Δu` in `Q` and `u = 0` on
+`Γ × (0,∞)`, then the continuous extension of `Δ^j (u(·,0))` to `Ω̄` vanishes on `Γ` for every
+`j`: `∂ₜ^j u = Δ^j u` in `Q` by induction (16), `∂ₜ^j u = 0` on `Γ × [0,∞)` (15), compare on
+`Γ × {0}`. Backbone `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`. ★★★'''
+deps = ["Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier", "ContDiffOnClosure"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 4"

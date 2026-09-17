@@ -1,0 +1,88 @@
+desc = '''
+**Policy (2026-09-17):** exercises and problems are not nodes — those the text cites as proof steps
+become helper lemmas in the Lean files; results the book states without proof are deferred unless
+a planned node depends on them (skip them in the order of attack).
+
+Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*, Chapter 1: the
+Hahn–Banach theorems and an introduction to conjugate convex functions. Every numbered result of
+the main text (Theorem 1.1, Lemma 1.1, Corollaries 1.2–1.4, Proposition 1.5, Theorem 1.6, Lemmas
+1.2–1.3, Theorem 1.7, Corollary 1.8, Proposition 1.9, Proposition 1.10, Theorem 1.11, Theorem
+1.12, Lemma 1.4) is a node in the section group beside this file, together with the Remarks
+and Examples that assert something (Remarks 2, 3, 4, 5, 6, 7; Examples 1–4 of §1.4), the
+unnumbered Definitions (hyperplane, separation, l.s.c., convex, conjugate, biconjugate) and the
+Comments' Theorem 1.13. Nothing in this chapter is blocked: **every node is provable today**,
+almost all by delegation.
+
+* **Correspondence.** The book is real; the surface is over a real normed space `E`, with
+  `E* = StrongDual ℝ E`, `⟨f, x⟩ = f x`, `E** = StrongDual ℝ (StrongDual ℝ E)` and
+  `J = NormedSpace.inclusionInDoubleDual ℝ E`. §1.1 is Mathlib's analytic Hahn–Banach
+  (`exists_extension_of_le_sublinear`, `exists_extension_norm_eq`, `exists_dual_vector''`,
+  `inclusionInDoubleDualLi`). §1.2 is Mathlib's geometric Hahn–Banach
+  (`geometric_hahn_banach_open`, `_open_point`, `_closed_compact`, the `gauge` API,
+  `LinearMap.continuous_iff_isClosed_ker`), with the book's separation vocabulary defined for a
+  not-necessarily-continuous linear `f` and bridged to the backbone's `ConvexAnalysis.Separates`
+  / `SeparatesStrongly`; Corollary 1.8 is the backbone's `Submodule.exists_dual_eq_zero_of_notMem`.
+  §1.3's orthogonals are the new backbone module `Numlib/Analysis/Normed/Module/Annihilator`
+  (`Submodule.strongDualAnnihilator`, `Submodule.strongDualCoannihilator`, Proposition 1.9, Remark 6's
+  reflexive clause, the density criterion of Corollary 1.8/Remark 5, and — placed there by the
+  planning brief — chapter 2's Proposition 2.14, Corollary 2.15 and Theorem 2.16). §1.4 is the
+  backbone's convex library over the pairing `dualPairing E := (topDualPairing ℝ E).flip`:
+  `ConvexAnalysis.conj`, `biconj`, `biconj_eq_clFn_topDual` (Theorem 1.11), `proper_conj_iff`
+  and `exists_affine_le_of_closed_proper` (Proposition 1.10), and — the point that makes this
+  chapter cheap — `IsExactSum.of_continuousAt` of `Numlib/Analysis/Convex/Duality/Continuity`,
+  which *is* Theorem 1.12's constraint qualification "`φ` continuous at a point where `ψ` is
+  finite", so that Theorem 1.12 and Examples 3–4 are instances of `IsExactSum.conj_add`,
+  `IsExactSum.exists_conj_add_eq` and `iInf_mem_submodule_eq_neg_iInf_mem_polarCone`. The
+  planning brief's proposed module `Numlib/Analysis/Convex/Extremum/FenchelRockafellar.lean` is
+  therefore **not needed**: its three intended contents exist (`IsExactSum.of_continuousAt`;
+  Lemma 1.4 is Mathlib's `Convex.closure_interior_eq_closure_of_nonempty_interior`; Proposition
+  1.10 is `exists_affine_le_of_closed_proper` / `proper_conj_iff`).
+
+* **A name the brief fixed that cannot be used.** `Submodule.annihilator` is already Mathlib's
+  ideal-valued annihilator (`abbrev Submodule.annihilator (N : Submodule R M) : Ideal R`,
+  `Mathlib/RingTheory/Ideal/Maps.lean`; checked in `notes/brezis/ch01/proto/annihilator.lean`).
+  The backbone module therefore names `M^⊥ ⊆ E*` `Submodule.strongDualAnnihilator M` (Mathlib's
+  `StrongDual.polarSubmodule 𝕜 M` under a name that says what it is, paired with Mathlib's
+  algebraic `Submodule.dualAnnihilator`) and keeps the brief's `Submodule.strongDualCoannihilator N` for
+  `N^⊥ ⊆ E`. Chapters 2, 3, 6 and 11 consume these two names.
+
+* **Scalars.** The surface is over `ℝ`; the annihilator module is over `RCLike 𝕜` (D1), the
+  only real ingredient being Hahn–Banach through `Submodule.exists_dual_eq_zero_of_notMem`.
+
+* **Exercises and Problems.** Two exercises are nodes: 1.7 (the book says "for the proof of
+  Lemma 1.4, see Exercise 1.7") and 1.9 (Remark 4's finite-dimensional separation is "see
+  Exercise 1.9"). Every other exercise of the chapter, and Problem 1 (the proof of
+  Krein–Milman), is out of scope for this round.
+
+* **Not planned.** Remark 1 (on Zorn's lemma), Remark 8 (minimal surfaces) and the Comments
+  §§1, 2(b), 3, 4 are discussion. Remark 3's converse (R. C. James: if every functional attains
+  its norm then `E` is reflexive) — quoted without proof; needs James' theorem, a deep result
+  with no Mathlib support. Remark 4's counterexample (two disjoint closed convex subsets of `ℓ¹`
+  that no closed hyperplane separates, Exercise 1.14) and Remark 6's `ℓ¹`/`c₀` example of a
+  strict inclusion `(N^⊥)^⊥ ⊋ closure N` (Exercise 1.16) — explicit sequence-space
+  constructions; the `ℓ^p` vocabulary is chapter 11's. Remark 6's last sentence, that
+  `(N^⊥)^⊥` is the weak-* closure of `N`, belongs to chapter 3 (the brief's §3.4 owner).
+  Comments §4(a)–(b) (extension of bounded operators when `dim F < ∞` or when `G` is
+  complemented) are unnumbered and are chapter 2's complemented-subspace material. The
+  numbered lists of elementary facts on l.s.c. and convex functions in §1.4 are not numbered
+  results; the group description of `Chapter01/Section04` names their Mathlib/backbone
+  counterparts. Remark 7's identification of the classical Young inequality with (11) for
+  `φ(t) = |t|^p / p` (Exercise 1.18(h)) is not formalized, the classical inequality itself
+  being Mathlib's `Real.young_inequality_of_nonneg`.
+
+* **Frontier.** No open Atkinson–Han or Quarteroni–Sacco–Saleri node cites this chapter's
+  material as its blocker (`notes/frontier.md` blockers 4 and 7 are chapters 3 and 4); the
+  annihilator module is new vocabulary for chapters 2, 3, 6 and 11 rather than a closer.
+
+Order of attack: (1) `Numlib/Analysis/Normed/Module/Annihilator` layers 1–3 and the two
+distance formulas (★, ~330 lines, depends only on Mathlib, `DualSeparable` and `Reflexive`) —
+this unblocks every §1.3 surface node, chapter 2's adjoint module and chapters 3, 6, 11; (2) the
+four surface sections (★ throughout except `remark_1_3`, `theorem_1_12`, `example_1_1_conj`,
+`example_1_3` at ★★; ~700 lines in all), `Section04` needing nothing beyond the existing convex
+library; (3) Theorem 2.16 in `Annihilator` (★★ + ★★★, ~330 lines) once chapter 2's Theorem 2.10
+(`Submodule.exists_add_eq_norm_le_of_isClosed_sup`), Corollary 2.11
+(`Submodule.exists_infDist_inf_le_of_isClosed_sup`) and the open-mapping step
+`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` exist — it is consumed by
+chapter 2's surface (its `theorem_2_16`; chapter 2's backbone proves the closed range theorem
+directly), not by anything in this chapter.
+'''

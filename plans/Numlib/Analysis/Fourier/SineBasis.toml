@@ -1,0 +1,53 @@
+desc = '''
+The sine system `√(2/π) sin(n x)`, `n ≥ 1`, as a Hilbert basis of `L²(0, π)`, and its rescaling
+`√2 sin(n π x)` on `(0, 1)`: the Dirichlet eigenfunctions of `−d²/dx²` in Brezis, *Functional
+Analysis, Sobolev Spaces and Partial Differential Equations*, §8.6 (the Example after Theorem
+8.22), obtained from the cosine basis of `Numlib/Analysis/Fourier/CosineBasis` by the
+multiply-by-`sin` / product-to-sum trick rather than by a separate completeness argument.
+Consumer: `Numlib/Variational/EllipticInterval/SturmLiouville`.
+'''
+
+[[node]]
+id = "sinBasis"
+kind = "definition"
+desc = '''**The half-range sine system is a Hilbert basis of `L²(0, π)`**:
+`sinBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 halfRangeMeasure)` with `coe_sinBasis n = sinLp n`, where
+`sinLp n : Lp ℝ 2 halfRangeMeasure` is the class of `x ↦ √(2/π) sin ((n + 1) x)` (`sinMap`,
+`sinFun`, `sinLp`, named as `cosMap`, `cosFun`, `cosLp` of `Numlib/Analysis/Fourier/CosineBasis.lean`,
+on the same measure `halfRangeMeasure` on the subtype `Icc 0 π`). Orthonormality
+(`orthonormal_sinLp`) is `integral_sin_nat_mul_sin_nat_mul` of `CosineBasis.lean`; completeness
+(`orthogonal_span_sinLp_eq_bot`) by the trick of the module description: for `f ⊥ sinLp n` for all
+`n`, the function `g = f · sin` (in `L²` since `sin` is bounded, `MemLp.mul` / `Lp.mem_Lp_of_ae_bound`-type)
+satisfies `⟪g, cosLp m⟫ = ½ (⟪f, sin((m+1)·)⟫ − ⟪f, sin((m−1)·)⟫) = 0` for every `m` (product-to-sum
+`2 sin x cos (m x) = sin ((m+1) x) − sin ((m−1) x)`, `Real.sin_add`, `Real.sin_sub`; the `m = 0`
+and `m = 1` cases read `⟪f, sin⟫ = 0` and `½ ⟪f, sin 2·⟫ = 0`), so `g ∈ (span (range cosLp))ᗮ = ⊥`
+(`orthogonal_span_cosLp_eq_bot`), i.e. `f · sin = 0` a.e. on `[0, π]`, and `sin x ≠ 0` for
+`x ∈ (0, π)` (`Real.sin_pos_of_pos_of_lt_pi`; the endpoints are a null set) gives `f = 0` a.e.
+Assembled by `HilbertBasis.mkOfOrthogonalEqBot` as `cosBasis` is. A `_root_` definition with
+no dependence on this module: its home is a new `Numlib/Analysis/Fourier/SineBasis.lean` beside
+`CosineBasis.lean` (the orchestrator creates it at the next relocation pass); recorded here as its
+first consumer. ★★ (~150 lines)'''
+deps = ["cosBasis", "orthogonal_span_cosLp_eq_bot", "integral_sin_nat_mul_sin_nat_mul", "halfRangeMeasure"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+
+[[node]]
+id = "sinBasisUnit"
+kind = "definition"
+desc = '''**The normalized sines on `(0, 1)`**: `sinBasisUnit : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo 0 1)))`
+with `coe_sinBasisUnit n =ᵐ fun x ↦ √2 * sin ((n + 1) * π * x)`. Two routes, the formalizer's
+choice: (a) transport `sinBasis` along the homothety `x ↦ π x`: the map
+`(Ioo 0 1, volume) → (Icc 0 π, halfRangeMeasure)` is measure preserving up to the constant `π`
+(`Measure.map_smul`-type / `Real.map_volume_mul_left`, and `Subtype.val`'s comap), giving a
+`LinearIsometryEquiv` `Lp ℝ 2 halfRangeMeasure ≃ₗᵢ[ℝ] Lp ℝ 2 (volume.restrict (Ioo 0 1))` from
+`MeasureTheory.Lp.compMeasurePreservingₗᵢ` and the scalar rescaling `Lp ℝ 2 (c • μ) ≃ₗᵢ Lp ℝ 2 μ`
+(`u ↦ √c • u`), and a `HilbertBasis` transports along a `LinearIsometryEquiv` `L` as
+`⟨L.symm.trans e.repr⟩` (`HilbertBasis.map`, if absent a three-line definition); or (b) repeat the
+argument of `sinBasis` on `(0, 1)` directly with the cosines `cos (m π x)`, whose completeness on
+`(0, 1)` is the ~100-line Stone–Weierstrass argument of `CosineBasis.lean` (`cosSubalgebra`,
+`dense_span_cosMap`) with `cos ∘ (π ·)` in place of `cos` (`Real.injOn_cos` on `[0, π]`
+composed with the bijection `[0, 1] → [0, π]`). Either way a `_root_` definition for
+`Numlib/Analysis/Fourier/SineBasis.lean`, recorded here as its first consumer. Orthogonality on
+`(0, 1)`, `∫_0^1 sin (mπx) sin (nπx) = ½ δ_mn`, is `integral_sin_nat_mul_sin_nat_mul` after
+`intervalIntegral.integral_comp_mul_left`. ★★ (~150–200 lines)'''
+deps = ["sinBasis", "integral_sin_nat_mul_sin_nat_mul"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"

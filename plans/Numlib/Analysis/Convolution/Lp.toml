@@ -67,3 +67,104 @@ id = "MeasureTheory.LocallyIntegrableOn.convolutionExistsAt"
 
 [[node]]
 id = "MeasureTheory.sq_eLpNorm_two"
+
+# --- Appended by the Brezis chapter-4 plan (agent `ch4`, 2026-09-17): the clauses of
+# [brezis2011functional] §4.4 that the module does not yet carry. ---
+
+[[node]]
+id = "MeasureTheory.MemLp.ae_convolutionExistsAt"
+kind = "theorem"
+desc = '''The existence clause of Young's inequality ([brezis2011functional] Theorem 4.15, first
+sentence): in the setting of `MeasureTheory.eLpNorm_convolution_le` (`G` a measurable additive
+group with `MeasurableAdd₂`, `MeasurableNeg`, an S-finite right-invariant `μ`, a bilinear `L`),
+for `1 ≤ p`, `hf : MemLp f 1 μ` and `hg : MemLp g p μ`: `∀ᵐ x ∂μ, ConvolutionExistsAt f g x L μ`,
+i.e. `t ↦ L (f t) (g (x - t))` is integrable for a.e. `x`. Mathlib has only the case `p = 1`
+(`Integrable.ae_convolution_exists`), and `eLpNorm_convolution_le` deliberately proves the norm
+bound without existence (a divergent Bochner integral is `0`). Proof: measurability of the
+integrand for every `x` is `AEStronglyMeasurable.convolution_integrand_snd'`-type; for the
+finiteness, the intermediate estimate of the proof of `eLpNorm_convolution_le_of_ne_top`,
+`∫⁻ x, (∫⁻ t, ‖L‖ₑ * ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ) ^ p.toReal ∂μ ≤ (‖L‖ₑ * eLpNorm f 1 μ) ^ p.toReal * eLpNorm g p μ ^ p.toReal < ∞`
+(`ENNReal.lintegral_rpow_lintegral_mul_le` with weight `‖L‖ₑ * ‖f ·‖ₑ`, then translation
+invariance), so the inner `lintegral` is finite for a.e. `x` (`ae_lt_top` on the a.e.-measurable
+function `x ↦ (∫⁻ …) ^ p`), which is `HasFiniteIntegral`; for `p = ∞`, the inner integral is bounded
+by `‖L‖ₑ * eLpNorm f 1 μ * eLpNormEssSup g μ` for every `x` (as in `eLpNormEssSup_convolution_le`).
+Factor that intermediate estimate out of `eLpNorm_convolution_le_of_ne_top` as a private lemma
+shared by both. ★★, ~70 lines.'''
+deps = ["MeasureTheory.eLpNorm_convolution_le", "ENNReal.lintegral_rpow_lintegral_mul_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.15"
+
+[[node]]
+id = "MeasureTheory.integral_convolution_mul"
+kind = "theorem"
+desc = '''The adjoint identity for the convolution ([brezis2011functional] Proposition 4.16): for
+`G` an additive commutative group with a measure `μ` invariant under translations and negation
+(`[μ.IsAddLeftInvariant] [μ.IsNegInvariant]`, S-finite, `MeasurableAdd₂`, `MeasurableNeg`),
+scalar functions `f g h : G → ℝ` with `MemLp f 1 μ`, `MemLp g p μ`, `MemLp h q μ` and
+`[p.HolderConjugate q]`:
+`∫ x, (f ⋆[mul ℝ ℝ, μ] g) x * h x ∂μ = ∫ y, g y * ((f ∘ Neg.neg) ⋆[mul ℝ ℝ, μ] h) y ∂μ`
+(the book's `∫ (f ⋆ g) h = ∫ g (f̌ ⋆ h)` with `f̌ x = f (-x)`). Proof (lines 3863-3877): the
+function `F (x, y) := f (x - y) g y h x` is integrable on `μ.prod μ` — `∫ ‖h x‖ ∫ ‖f (x - y)‖ ‖g y‖`
+is finite by Young's inequality for `‖f‖ ⋆ ‖g‖` and Hoelder (`MemLp.ae_convolutionExistsAt` gives
+the a.e. existence and `eLpNorm_convolution_le` the `L^p` bound; `integrable_prod_iff'`) — so
+Fubini (`integral_integral_swap`) exchanges the order, and the inner integral in `x` is
+`∫ f (x - y) h x dx = ((f ∘ Neg.neg) ⋆ h) y` after the substitution `x ↦ x + y`
+(`integral_add_right_eq_self`, `convolution_def`). Over `ℝ` because the book is; a bilinear `L`
+version is a free generalization if wanted. ★★, ~100 lines.'''
+deps = ["MeasureTheory.MemLp.ae_convolutionExistsAt", "MeasureTheory.eLpNorm_convolution_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.16"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_convolution_sub"
+kind = "theorem"
+desc = '''`L^p` convergence of mollification by an arbitrary approximate identity
+([brezis2011functional] Theorem 4.22, for the book's mollifier sequences rather than for
+`ContDiffBump`): in the setting of `ContDiffBump.tendsto_eLpNorm_convolution_sub` (`G` a
+finite-dimensional real normed space, `[BorelSpace G]`, `[μ.IsAddHaarMeasure]`, `[NormedSpace ℝ F]`,
+`[CompleteSpace F]`), for `φ : ι → G → ℝ` and a filter `l` with `hφ₀ : ∀ᶠ i in l, ∀ t, 0 ≤ φ i t`,
+`hφ : ∀ᶠ i in l, Integrable (φ i) μ`, `hφ₁ : ∀ᶠ i in l, ∫ t, φ i t ∂μ = 1`,
+`hsupp : Tendsto (fun i => Function.support (φ i)) l (𝓝 0).smallSets` (the hypothesis form of
+Mathlib's `MeasureTheory.convolution_tendsto_right`), `hex : ∀ᶠ i in l, ConvolutionExists (φ i) f (lsmul ℝ ℝ) μ`,
+`1 ≤ p`, `p ≠ ∞` and `hf : MemLp f p μ`:
+`Tendsto (fun i => eLpNorm (φ i ⋆[lsmul ℝ ℝ, μ] f - f) p μ) l (𝓝 0)`. The proof of
+`ContDiffBump.tendsto_eLpNorm_convolution_sub` verbatim with `support (φ i) ⊆ ball 0 δ` (from
+`hsupp`) in place of `(φ i).support_normed_eq`: `MeasureTheory.eLpNorm_convolution_sub_rpow_le`
+bounds the error by the `φ i`-average of `eLpNorm (fun x => f (x - t) - f x) p μ ^ p` over the
+support, and `MemLp.tendsto_eLpNorm_sub_translate` makes that small. The existing `ContDiffBump`
+theorem becomes a corollary (not to be re-proved: leave it). The `ConvolutionExists` hypothesis is
+discharged for the book's `ρₙ ∈ C_c^∞` by `HasCompactSupport.convolutionExists_left` and for a
+general `ρ ∈ L^1` only a.e. (`MemLp.ae_convolutionExistsAt`), which is why it is a hypothesis.
+★★, ~60 lines.'''
+deps = ["MeasureTheory.eLpNorm_convolution_sub_rpow_le", "MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.22"
+
+[[node]]
+id = "MeasureTheory.Lp.convolutionCLM"
+kind = "definition"
+desc = '''Convolution with a fixed integrable kernel as a bounded operator on `L^p`
+([brezis2011functional] Corollary 4.28 and Exercise 4.32 (3)): in the setting of
+`MeasureTheory.eLpNorm_convolution_lsmul_le` (`G` a measurable additive group with an S-finite
+right-invariant `μ`, `[NormedSpace ℝ F] [CompleteSpace F]`), for `K : G → ℝ` with
+`hK : Integrable K μ` and `[Fact (1 ≤ p)]`,
+`Lp.convolutionCLM hK : Lp F p μ →L[ℝ] Lp F p μ`, `f ↦ (hK.memLp_one.convolution (Lp.memLp f)).toLp (K ⋆[lsmul ℝ ℝ, μ] f)`
+(`MemLp.convolution` gives membership; linearity because the convolution is linear in `g` wherever
+it is defined as a Bochner integral and a.e. equal functions have a.e. equal convolutions, by the
+translation invariance of null sets; bounded by `‖K‖_1` through `eLpNorm_convolution_lsmul_le`;
+`LinearMap.mkContinuous`). ★★, ~80 lines, the a.e.-well-definedness being the only subtlety.'''
+deps = ["MeasureTheory.MemLp.convolution", "MeasureTheory.eLpNorm_convolution_lsmul_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_convolutionCLM"
+kind = "theorem"
+desc = '''`⇑(Lp.convolutionCLM hK f) =ᵐ[μ] K ⋆[lsmul ℝ ℝ, μ] f` (`MemLp.coeFn_toLp`). ★'''
+deps = ["MeasureTheory.Lp.convolutionCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28"
+
+[[node]]
+id = "MeasureTheory.Lp.norm_convolutionCLM_le"
+kind = "theorem"
+desc = '''`‖Lp.convolutionCLM hK‖ ≤ ‖K‖_1`, i.e. `≤ (eLpNorm K 1 μ).toReal`, and the pointwise form
+`‖Lp.convolutionCLM hK f‖ ≤ ‖K‖_1 * ‖f‖` — Young's inequality `eLpNorm_convolution_lsmul_le` read
+on `Lp` (the book's `‖T_a‖ ≤ ‖a‖_1`, Exercise 4.32 (3)). ★'''
+deps = ["MeasureTheory.Lp.convolutionCLM", "MeasureTheory.eLpNorm_convolution_lsmul_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28 and Exercise 4.32"

@@ -1,0 +1,241 @@
+desc = '''
+The Eberlein–Šmulian theorem (natural home: `Mathlib.Analysis.Normed.Module.Reflexive`).
+
+For a subset `A` of a normed space `E`, with `B` its closure in the weak topology `σ(E, E⋆)`,
+the following are equivalent — [brezis2011functional] Problem 10 — and either implies the third:
+
+* (P) `B` is weakly compact;
+* (Q) every sequence in `A` has a weakly convergent subsequence;
+* (R) every point of `B` is the weak limit of a sequence in `A`.
+
+The consequence the book states in the main text is Theorem 3.19: a Banach space in which every
+bounded sequence has a weakly convergent subsequence is reflexive — the converse of Theorem 3.18
+(`NormedSpace.exists_subseq_forall_dual_tendsto` in the parent `Reflexive.lean`), so that
+reflexivity is characterized by weak sequential compactness of the closed unit ball. That is what
+`AtkinsonHan.Chapter02.theorem_2_7_5_mpr` asks for, and what would make
+`WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization.lean` equivalent to
+`NormedSpace.IsReflexive ℝ` on a Banach space.
+
+The proof follows Problem 10 and its solution (lines 16674–16782 and 19959–19978 of the book's
+Markdown), split into four nodes:
+
+* **Part A, (P) ⇒ (Q)**: a weakly compact set is weakly sequentially compact. A sequence lives
+  in the closed span `M` of its terms, which is separable; `M` has a countable norming family of
+  functionals (`exists_seq_strongDual_norming_of_separableSpace`, `DualSeparable.lean`), and a
+  compact set with a countable separating family of continuous functions is metrizable — this is
+  Mathlib's `Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating` (namespaced so, in `Topology/MetricSpace/PiNat.lean`), the lemma behind
+  `WeakDual.metrizable_of_isCompact`, which replaces the book's explicit metric
+  `d(x, y) = ∑ 2⁻ᵏ |⟨bₖ, x - y⟩|` — so the compact set is metrizable, hence sequentially compact
+  (`IsCompact.isSeqCompact`, first countable). The weak topology of `M` is the one induced from `E`
+  (Hahn–Banach, as in the proof of `exists_subseq_forall_dual_tendsto`).
+* **Part B**, the finite-dimensional norming lemma: a finite-dimensional subspace of a dual has
+  finitely many unit vectors on which every element attains at least half its norm — compactness
+  of its unit sphere and `exists_dual_vector`.
+* **Part C**, the heart: under (Q), every point `ξ` of the weak-* closure of `J(A)` in `E⋆⋆` lies
+  in `J(B)` and is the weak limit of a sequence in `A`. The interleaved construction of
+  `x₁, x₂, … ∈ A` and `f₁, f₂, … ∈ B_{E⋆}` with `max_i |⟨η, fᵢ⟩| ≥ ½ ‖η‖` on the growing spans
+  `[ξ, J x₁, …, J xₖ]` and `|⟨ξ, fᵢ⟩ - fᵢ(x_{k+1})| < 1/(k+1)`; a weak limit `x` of a subsequence
+  of the `xₖ` lies in the norm closure of `[x₁, x₂, …]` by Mazur (`Convex.isClosed_image_toWeakSpace_iff`
+  of `WeakClosed.lean`), the norming inequality passes to the norm closure of `⋃ₖ Mₖ` because
+  `η ↦ sup_i |⟨η, fᵢ⟩|` is 1-Lipschitz, and `⟨ξ - J x, fᵢ⟩ = 0` for all `i` forces `ξ = J x`.
+* **Part D, (Q) ⇒ (P) and (Q) ⇒ (R)**: (Q) makes `A` bounded (a weakly convergent sequence is
+  bounded, `exists_norm_le_of_tendsto_toWeakSpace`), so the weak-* closure of `J(A)` is compact
+  by Banach–Alaoglu (`WeakDual.isCompact_of_bounded_of_closed`); part C says it is `J(B)`, and
+  `inclusionInDoubleDualWeak` is an embedding (`NormedSpace.isEmbedding_inclusionInDoubleDualWeak`),
+  so `B` is compact. (R) is part C read on `J(B)`.
+
+Theorem 3.19 is then Kakutani's converse (`Reflexive/Kakutani.lean`): (Q) for `A = B_E` gives
+that the weak-* closure of `J(B_E)` — the bidual ball, by Goldstine — is `J(B_E)`, so `J` is
+onto. Neither direction needs completeness of `E` as a hypothesis.
+
+Conventions as in `Reflexive/Kakutani.lean`: weak sequential compactness of `A` is
+`IsSeqCompact (toWeakSpace 𝕜 E '' A)` in the topological statements and the explicit
+`∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ u φ, StrictMono φ ∧ ∀ ℓ : StrongDual 𝕜 E, Tendsto (ℓ ∘ x ∘ φ) atTop (𝓝 (ℓ u))`
+in the sequence-form corollaries, which match the shape of `exists_subseq_forall_dual_tendsto`
+(and `IsSeqCompact`'s definition through `tendsto_toWeakSpace_iff`). Scalars `RCLike 𝕜`.
+
+Grep record (2026-09-17): `Eberlein`, `Smulian`, `Šmulian` have no occurrence in Mathlib;
+LeanSearch "Banach space in which every bounded sequence has a weakly convergent subsequence is
+reflexive" returns only `Module.instFiniteDimensionalOfIsReflexive` (the algebraic notion) and the
+sequential Banach–Alaoglu lemmas.
+
+Serves [brezis2011functional] Theorem 3.19 and Problem 10 (`NumlibSurface/Brezis/Chapter03/Section05`),
+and closes `AtkinsonHan.Chapter02.theorem_2_7_5_mpr` and `theorem_2_7_5`.
+'''
+
+[[node]]
+id = "NormedSpace.exists_finset_norm_le_two_mul_sup_of_finiteDimensional"
+kind = "theorem"
+desc = '''The lemma of [brezis2011functional] Problem 10, part B: a finite-dimensional subspace of
+a dual space is normed, up to a factor `2`, by finitely many unit vectors. For a normed space `F`
+and `M : Submodule 𝕜 (StrongDual 𝕜 F)` with `[FiniteDimensional 𝕜 M]`:
+`∃ s : Finset F, (∀ a ∈ s, ‖a‖ ≤ 1) ∧ ∀ g ∈ M, ‖g‖ ≤ 2 * s.sup' … (fun a => ‖g a‖)` — or, avoiding
+`sup'` and the nonemptiness side condition, `∀ g ∈ M, ∃ a ∈ s, ‖g‖ ≤ 2 * ‖g a‖`. The book states it
+with `max ⟨g, aᵢ⟩ ≥ ½ ‖g‖` over real scalars; moduli make it scalar-independent.
+
+Proof (line 16700 and the solution, line 19970): the unit sphere `S_M` of `M` is compact
+(`FiniteDimensional.proper`, `isCompact_sphere`), so finitely many balls `ball gᵢ (1/4)` cover it
+(`IsCompact.elim_finite_subcover` or `IsCompact.finite_cover_balls`); for each `gᵢ` pick `aᵢ` with
+`‖aᵢ‖ ≤ 1` and `‖gᵢ aᵢ‖ ≥ 3/4` (`ContinuousLinearMap.exists_lt_apply_of_lt_opNorm`). For `g ∈ S_M`
+with `‖g - gᵢ‖ < 1/4`, `‖g aᵢ‖ ≥ ‖gᵢ aᵢ‖ - ‖g - gᵢ‖ > 1/2`; scale to all of `M`. ★★ (about 80
+lines).'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "IsCompact.isSeqCompact_weakSpace"
+kind = "theorem"
+desc = '''**A weakly compact subset of a normed space is weakly sequentially compact** —
+[brezis2011functional] Problem 10, part A, (P) ⇒ (Q). For `{K : Set (WeakSpace 𝕜 E)}`
+`(hK : IsCompact K)`: `IsSeqCompact K`. Nothing about `E` is assumed (no completeness, no
+separability).
+
+Proof, in two steps as the book's A1 and A2 (lines 16684–16691, solution 19961–19967).
+
+*Separable case, as a lemma.* Suppose `[SeparableSpace E]`. Take the countable norming family
+`f : ℕ → StrongDual 𝕜 E` of `exists_seq_strongDual_norming_of_separableSpace`
+(`Numlib/Analysis/Normed/Module/DualSeparable.lean`); the maps `x ↦ f n x` are continuous on
+`WeakSpace 𝕜 E` (`WeakBilin.eval_continuous`) and separate its points, so the compact subtype `K`
+is metrizable by Mathlib's `Metric.PiNatEmbed.TopologicalSpace.MetrizableSpace.of_countable_separating` (the book's
+metric `d(x, y) = ∑ 2⁻ᵏ |⟨bₖ, x - y⟩|` is what that lemma builds internally), hence first
+countable, hence `IsCompact.isSeqCompact` applies to `K`. Here the point of the book's A1 — that
+the injection `(B, σ) → (B, d)` is a continuous bijection from a compact space onto a Hausdorff
+one, hence a homeomorphism — is inside Mathlib's lemma.
+
+*General case.* Given `x : ℕ → E` with values in `K`, let `M` be the closed span of its range
+(`(Submodule.span 𝕜 (Set.range x)).topologicalClosure`): separable (`Set.countable_range`,
+`IsSeparable.span`, `.closure`), and weakly closed (`Convex.isClosed_image_toWeakSpace_iff` of
+`WeakClosed.lean`, or directly as the intersection of kernels of functionals vanishing on `M` via
+`Submodule.exists_dual_eq_zero_of_notMem`). The weak topology of the normed space `M` is the
+subspace topology from `WeakSpace 𝕜 E`: functionals on `M` extend to `E` (`exists_extension_norm_eq`)
+and restrict from `E` (`ContinuousLinearMap.comp M.subtypeL`), so the two `WeakBilin` topologies
+coincide on `M` — the same identification `exists_subseq_forall_dual_tendsto` makes. `K ∩ M` is
+weakly compact in `M`, so the separable case gives a subsequence converging weakly in `M`, hence
+in `E`. ★★★ (about 250 lines, the weak-topology-of-a-subspace identification being the
+expensive part; state that identification as its own lemma,
+`WeakSpace.isInducing_subtypeL` or similar, since Kakutani's Proposition 3.20 and Theorem 3.18
+use it too.)'''
+deps = ["exists_seq_strongDual_norming_of_separableSpace", "Convex.isClosed_image_toWeakSpace_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact"
+kind = "theorem"
+desc = '''**The heart of Eberlein–Šmulian**, [brezis2011functional] Problem 10, part C: under (Q),
+every point of the weak-* closure of `J(A)` in the bidual comes from `E` and is a weak limit of a
+sequence in `A`. For `{A : Set E}`
+`(hA : ∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧ Tendsto (fun k => toWeakSpace 𝕜 E (x (φ k))) atTop (𝓝 (toWeakSpace 𝕜 E u)))`
+and `{ξ : WeakDual 𝕜 (StrongDual 𝕜 E)}`
+`(hξ : ξ ∈ closure ((StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual 𝕜 E) '' A))`:
+`∃ x : E, ξ = StrongDual.toWeakDual (NormedSpace.inclusionInDoubleDual 𝕜 E x) ∧ ∃ y : ℕ → E, (∀ n, y n ∈ A) ∧ Tendsto (fun n => toWeakSpace 𝕜 E (y n)) atTop (𝓝 (toWeakSpace 𝕜 E x))`.
+
+Proof (lines 16705–16745; solution 19970–19976). Build by recursion `x : ℕ → E` in `A`, a
+sequence `f : ℕ → StrongDual 𝕜 E` in the unit ball, and `n : ℕ → ℕ` strictly increasing with
+`n 0 = 0`, such that for every `k`:
+(a) for every `η` in `Mₖ := span {ξ, J x₀, …, J x_{k-1}}` (a finite-dimensional subspace of
+`StrongDual 𝕜 (StrongDual 𝕜 E)`), some `i ∈ Ico (n k) (n (k+1))` has `‖η‖ ≤ 2 ‖η (f i)‖` — from
+`NormedSpace.exists_finset_norm_le_two_mul_sup_of_finiteDimensional` applied to `Mₖ`, the finset
+being enumerated as `f (n k), …, f (n (k+1) - 1)`;
+(b) `‖ξ (f i) - f i (x k)‖ < 1 / (k + 1)` for every `i < n (k+1)` — possible because `ξ` is in the
+weak-* closure of `J(A)` and `{η | ∀ i < n (k+1), ‖(η - ξ) (f i)‖ < 1/(k+1)}` is a weak-*
+neighbourhood of `ξ` (`WeakDual.eval_continuous`, finite intersection), `mem_closure_iff_nhds`.
+The recursion carries the finite data `(x_0..x_{k-1}, f_0..f_{n k - 1}, n k)` and is best built
+with `Nat.rec` on a `Σ`-type or with Mathlib's `exists_seq_of_forall_finset_exists'`-style
+lemmas; this bookkeeping is most of the cost.
+
+Then: (a) gives `‖η‖ ≤ 2 * ⨆ i, ‖η (f i)‖` on `M := ⋃ₖ Mₖ` (a subspace, the `Mₖ` being a chain)
+and, since `η ↦ ⨆ i, ‖η (f i)‖` is `1`-Lipschitz (`‖f i‖ ≤ 1`, `ciSup` of a bounded family), on the
+norm closure `closure M`. By `hA` a subsequence `x ∘ φ` converges weakly to some `u`; `u` lies in
+the weak closure of `span (range x)`, which is its norm closure by Mazur
+(`Convex.isClosed_image_toWeakSpace_iff`), so `J u ∈ closure M` (`J` is continuous and maps
+`span (range x)` into `M`) and `ξ - J u ∈ closure M`. From (b) and the weak convergence,
+`ξ (f i) = f i u` for every `i` (for `i < n (k+1)` and `k` in the subsequence,
+`‖ξ (f i) - f i (x (φ k))‖ < 1/(k+1) → 0` while `f i (x (φ k)) → f i u`). Hence
+`‖ξ - J u‖ ≤ 2 * ⨆ i, ‖(ξ - J u) (f i)‖ = 0`, `ξ = J u`, and `y := x ∘ φ`. ★★★ (300–400 lines).'''
+deps = ["NormedSpace.exists_finset_norm_le_two_mul_sup_of_finiteDimensional", "Convex.isClosed_image_toWeakSpace_iff", "tendsto_toWeakSpace_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact"
+kind = "theorem"
+desc = '''[brezis2011functional] Problem 10, part D1, (Q) ⇒ (P): if every sequence in `A` has a
+weakly convergent subsequence then the weak closure of `A` is weakly compact. With `hA` as in
+`NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact`:
+`IsCompact (closure (toWeakSpace 𝕜 E '' A))`.
+
+Proof (solution, line 19977): `A` is bounded — otherwise a sequence with `‖x n‖ ≥ n` has no weakly
+convergent subsequence, by `exists_norm_le_of_tendsto_toWeakSpace` (Brezis' Corollary 2.4; note
+that lemma needs no completeness since it works in the bidual). So the weak-* closure `K` of
+`J(A)` is compact (`WeakDual.isBounded_closure`, `WeakDual.isCompact_of_bounded_of_closed`), and
+part C says `K ⊆ range (inclusionInDoubleDualWeak 𝕜 E)`; Mathlib's
+`NormedSpace.isCompact_closure_of_isBounded` is exactly this conclusion from exactly these two
+facts. ★★ (about 60 lines).'''
+deps = ["NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact", "exists_norm_le_of_tendsto_toWeakSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_toWeakSpace"
+kind = "theorem"
+desc = '''[brezis2011functional] Problem 10, part D2, (Q) ⇒ (R): under `hA` as above, every point
+of the weak closure of `A` is the weak limit of a sequence in `A`. For
+`{u : E} (hu : toWeakSpace 𝕜 E u ∈ closure (toWeakSpace 𝕜 E '' A))`:
+`∃ y : ℕ → E, (∀ n, y n ∈ A) ∧ Tendsto (fun n => toWeakSpace 𝕜 E (y n)) atTop (𝓝 (toWeakSpace 𝕜 E u))`.
+`J u` lies in the weak-* closure of `J(A)` because `inclusionInDoubleDualWeak` is continuous
+(`map_mem_closure`), so part C applies and its `x` is `u` by injectivity of `J`. ★'''
+deps = ["NormedSpace.exists_seq_tendsto_toWeakSpace_of_mem_closure_image_of_isSeqCompact"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "NormedSpace.isCompact_closure_image_toWeakSpace_iff_isSeqCompact"
+kind = "theorem"
+desc = '''**Eberlein–Šmulian**, the (P) ⇔ (Q) of [brezis2011functional] Problem 10, in one
+statement: for `A : Set E`,
+`IsCompact (closure (toWeakSpace 𝕜 E '' A)) ↔ IsSeqCompact (closure (toWeakSpace 𝕜 E '' A))`,
+and the variant with (Q) stated on `A` itself, `… ↔ ∀ x : ℕ → E, (∀ n, x n ∈ A) → ∃ u φ, StrictMono φ ∧ Tendsto …`.
+`→` is `IsCompact.isSeqCompact_weakSpace` (and a sequence in `A` is a sequence in the closure);
+`←` is `NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact`. ★'''
+deps = ["IsCompact.isSeqCompact_weakSpace", "NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 10"
+
+[[node]]
+id = "NormedSpace.isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall"
+kind = "theorem"
+desc = '''**Eberlein–Šmulian for reflexivity**, [brezis2011functional] Theorem 3.19: a normed space
+whose closed unit ball is weakly sequentially compact is reflexive. For
+`(h : IsSeqCompact (toWeakSpace 𝕜 E '' Metric.closedBall (0 : E) 1))`: `NormedSpace.IsReflexive 𝕜 E`.
+The book assumes `E` Banach; a space satisfying the hypothesis is reflexive, hence complete, so
+the assumption is not needed.
+
+Proof: the unit ball is weakly closed (`isClosed_image_toWeakSpace_closedBall`), so
+`NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact` makes it weakly compact, and
+Kakutani's converse `NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`
+(`Reflexive/Kakutani.lean`) concludes. Equivalently (the solution's D1 read with Goldstine): the
+weak-* closure of `J(B_E)` is the bidual ball, part C puts it inside `J(B_E)`, so `J` is onto. ★'''
+deps = ["NormedSpace.isCompact_closure_image_toWeakSpace_of_isSeqCompact", "isClosed_image_toWeakSpace_closedBall", "NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall", "NormedSpace.IsReflexive"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.19"
+
+[[node]]
+id = "NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto"
+kind = "theorem"
+desc = '''[brezis2011functional] Theorem 3.19 in the sequence form of Theorem 3.18's converse,
+matching `NormedSpace.exists_subseq_forall_dual_tendsto`: if
+`h : ∀ (v : ℕ → E) (C : ℝ), (∀ n, ‖v n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧ ∀ ℓ : StrongDual 𝕜 E, Tendsto (fun k => ℓ (v (φ k))) atTop (𝓝 (ℓ u))`
+then `NormedSpace.IsReflexive 𝕜 E`. From `NormedSpace.isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall`
+through `tendsto_toWeakSpace_iff` and `norm_le_liminf_norm_of_weak_tendsto` (the limit of a
+sequence of the ball stays in the ball, which `IsSeqCompact` requires). This is the statement of
+`AtkinsonHan.Chapter02.theorem_2_7_5_mpr` (whose `[CompleteSpace]` is harmless), and it makes
+`WeaklySeqCompactSpace V → NormedSpace.IsReflexive ℝ V` provable in
+`Numlib/Variational/WeakMinimization.lean` (a follow-up owed there, not planned here). ★'''
+deps = ["NormedSpace.isReflexive_of_isSeqCompact_image_toWeakSpace_closedBall", "tendsto_toWeakSpace_iff", "norm_le_liminf_norm_of_weak_tendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.19"
+
+[[node]]
+id = "NormedSpace.isReflexive_iff_forall_exists_subseq_forall_dual_tendsto"
+kind = "theorem"
+desc = '''Theorems 3.18 and 3.19 of [brezis2011functional] together: a normed space is reflexive
+iff every bounded sequence has a weakly convergent subsequence,
+`NormedSpace.IsReflexive 𝕜 E ↔ ∀ (v : ℕ → E) (C : ℝ), (∀ n, ‖v n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧ ∀ ℓ : StrongDual 𝕜 E, Tendsto (fun k => ℓ (v (φ k))) atTop (𝓝 (ℓ u))`.
+`→` is `NormedSpace.exists_subseq_forall_dual_tendsto` (parent module), `←` is the previous node.
+Closes `AtkinsonHan.Chapter02.theorem_2_7_5`. ★'''
+deps = ["NormedSpace.exists_subseq_forall_dual_tendsto", "NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.19"

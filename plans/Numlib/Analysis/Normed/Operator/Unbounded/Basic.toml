@@ -1,0 +1,192 @@
+desc = '''
+Closed operators between normed spaces, without duals (natural home:
+`Mathlib.Analysis.Normed.Operator.Unbounded.Basic`). Imports only Mathlib, so that
+`Numlib/Analysis/Normed/Module/Complemented` and chapter 1's `Annihilator/ClosedSum` module (Theorem 2.16) can use it.
+
+Throughout `𝕜` is a `NontriviallyNormedField`, `E F` normed spaces over it, and `A : E →ₗ.[𝕜] F`.
+Completeness is assumed exactly where the open-mapping/Baire arguments need it.
+
+Contents, in order:
+
+* the sequential criterion for `A.IsClosed` ([brezis2011functional] Remark 2.11) and the closedness
+  of the kernel of a closed operator (Remark 2.12); the graph of a closed operator between Banach
+  spaces is a Banach space — this `↥A.graph` is what stands for "`D(A)` with the graph norm"
+  throughout the project;
+* **Step 2 of the open mapping theorem for a closed operator**: if every `y` has an approximate
+  preimage `u ∈ D(A)` with `‖A u − y‖ ≤ ½ ‖y‖` and `‖u‖ ≤ C ‖y‖`, then every `y` has an exact
+  preimage with `‖u‖ ≤ 2C ‖y‖`. Mathlib proves this inside `ContinuousLinearMap.exists_preimage_norm_le`
+  (`Mathlib/Analysis/Normed/Operator/Banach.lean`, the iteration `u = ∑ zₙ`) for a *bounded* `T`
+  and does not expose it; here it is stated on its own and for a closed `A`, whose closedness
+  replaces the continuity of `T` in the last line (`A (∑ zₙ) = lim A (∑_{k ≤ n} zₖ) = y`). The
+  bounded case follows, and it is what the proof of Theorem 2.16 (chapter 1's `Annihilator/ClosedSum`
+  module) and of Theorem 2.20 consume, in the book's form "`closure (T(B_X)) ⊇ c B_Y` implies
+  `T(B_X) ⊇ (c/2) B_Y`";
+* **the closed range criterion** (Exercise 2.14, quoted as Remark 2.18): for a bounded
+  `T : E →L[𝕜] F` between Banach spaces, `R(T)` is closed iff `infDist x (ker T) ≤ C ‖T x‖` for
+  all `x` (through the normed quotient `E ⧸ ker T`, on which `T` descends to an injective bounded
+  operator with the same range, and Mathlib's
+  `ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective`); and for a closed
+  `A : D(A) ⊆ E → F`, `R(A)` is closed iff `infDist u (ker A) ≤ C ‖A u‖` on `D(A)` (the bounded
+  case applied to `(u, A u) ↦ A u` on the Banach space `↥A.graph`, whose kernel is
+  `{(u, 0) | u ∈ ker A}` and whose quotient distance is `infDist u (ker A) + ‖A u‖` up to the
+  equivalence of the sup and sum norms on `E × F`). The a priori estimate `‖u‖ ≤ C ‖A u‖` is the
+  case `ker A = ⊥`, and gives closed range directly by a Cauchy-sequence argument; this generalizes
+  `LinearPMap.isClosed_range_of_isClosed_of_le_norm` of `Numlib/Variational/LaxMilgram.lean` from
+  inner product spaces to Banach spaces, and that one should be re-proved from it.
+
+Source: [brezis2011functional], §2.3 (proof of Theorem 2.6, Step 2), §2.6 (Remarks 11–12),
+§2.7 (Remark 18) and Exercise 2.14.
+'''
+
+[[node]]
+id = "LinearPMap.isClosed_iff_seq"
+kind = "theorem"
+desc = '''The sequential criterion for closedness ([brezis2011functional] Remark 2.11): for normed spaces
+`E F` and `A : E →ₗ.[𝕜] F`, `A.IsClosed ↔ ∀ (u : ℕ → A.domain) (x : E) (y : F),
+Tendsto (fun n => (u n : E)) atTop (𝓝 x) → Tendsto (fun n => A (u n)) atTop (𝓝 y) →
+∃ hx : x ∈ A.domain, A ⟨x, hx⟩ = y`. Proof: `LinearPMap.IsClosed` is closedness of the graph in
+the metrizable space `E × F`, so `isSeqClosed_iff_isClosed` and `LinearPMap.mem_graph_iff`.
+`AtkinsonHan.Chapter08.isClosed_iff_seq` (NumlibSurface, over `ℝ`) is this statement and should be
+re-proved from it once it exists. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 11"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_ker"
+kind = "theorem"
+desc = '''[brezis2011functional] Remark 2.12: the kernel of a closed operator is closed,
+`A.IsClosed → IsClosed (A.ker : Set E)`. Proof: `x ∈ A.ker ↔ (x, 0) ∈ A.graph`
+(`LinearPMap.mem_ker_iff`, `mem_graph_iff`), so `A.ker` is the preimage of the closed graph under
+the continuous map `x ↦ (x, 0)`. The range need not be closed (the diagonal operator of Remark 2.20
+on `ℓ²`, in the surface). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 12"
+
+[[node]]
+id = "LinearPMap.IsClosed.completeSpace_graph"
+kind = "theorem"
+desc = '''The graph of a closed operator between Banach spaces is a Banach space:
+`[CompleteSpace E] [CompleteSpace F] (hA : A.IsClosed) : CompleteSpace ↥A.graph`, by
+`IsClosed.completeSpace_coe`. This is the project's reading of "`D(A)` with the graph norm
+`‖u‖ + ‖A u‖`" ([brezis2011functional], proof of Theorem 2.9 and Exercise 2.14): the subtype
+`↥A.graph ⊆ E × F` carries the sup norm `max ‖u‖ ‖A u‖`, equivalent to the graph norm, and the
+operator becomes the bounded map `(ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL`, which
+is how `isClosed_range_iff_exists_infDist_ker_le` below reduces to the bounded case. (Chapter 7's
+`C([0, ∞); D(A))` does *not* use this type: on a Hilbert space it uses
+`LinearPMap.PowDomain A 1 ⊆ PiLp 2 (Fin 2 → H)`, whose norm is the book's Hilbert graph norm on
+the nose — see `Numlib/Analysis/InnerProductSpace/MaximalMonotone`; a bridge
+`A.PowDomain 1 ≃L[𝕜] ↥A.graph` is cheap if ever wanted.) ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.9"
+
+[[node]]
+id = "LinearPMap.IsClosed.exists_preimage_norm_le_of_approx"
+kind = "theorem"
+desc = '''**Step 2 of the open mapping theorem, for a closed operator** ([brezis2011functional], proof of
+Theorem 2.6, lines 1468–1485): for `[CompleteSpace E]`, `A : E →ₗ.[𝕜] F` closed, and `C : ℝ` with
+`∀ y : F, ∃ u : A.domain, dist (A u) y ≤ 1 / 2 * ‖y‖ ∧ ‖(u : E)‖ ≤ C * ‖y‖`, there is `C' > 0`
+(one may take `C' = 2 * max C 0 + 1`) with `∀ y : F, ∃ u : A.domain, A u = y ∧ ‖(u : E)‖ ≤ C' * ‖y‖`.
+Completeness of `F` is not needed.
+
+Proof: transcribe the second half of Mathlib's `ContinuousLinearMap.exists_preimage_norm_le`
+(`Mathlib/Analysis/Normed/Operator/Banach.lean`): choose the approximate preimage `g y` and set
+`h y = y − A (g y)`, so `‖h y‖ ≤ ½ ‖y‖`; the series `u = ∑ₙ g (h^[n] y)` converges absolutely in
+`E` (`‖g (h^[n] y)‖ ≤ C 2⁻ⁿ ‖y‖`), the partial sums `uₙ ∈ D(A)` satisfy `A uₙ = y − h^[n+1] y → y`,
+and — this is the only change — since `(uₙ, A uₙ) ∈ A.graph` converges to `(u, y)` and the graph
+is closed, `u ∈ D(A)` and `A u = y`. The bound `‖u‖ ≤ 2C ‖y‖` is the geometric series. ★★, about
+80 lines; the sequence `uₙ` lives in `A.domain` (a submodule), so use `tsum` in `E` and
+`Submodule.sum_mem`/`isClosed` for membership, or work with the graph's own `tsum`.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.6"
+
+[[node]]
+id = "LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image"
+kind = "theorem"
+desc = '''Step 2 in the book's form ([brezis2011functional] (8) ⇒ (11), and as used in the proof of
+Theorem 2.16: "from `closure (T(B_X)) ⊇ (1/C) B_Y` conclude `T(B_X) ⊇ (1/2C) B_Y`"): for
+`[CompleteSpace E]`, `A` closed, `0 < c` and
+`Metric.ball (0 : F) c ⊆ closure ((fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1})`, one has
+`Metric.ball (0 : F) (c / 2) ⊆ (fun u : A.domain => A u) '' {u | ‖(u : E)‖ < 1}`.
+Proof: the hypothesis gives, by scaling, an approximate preimage with `‖u‖ ≤ (2/c) ‖y‖` and
+`dist (A u) y ≤ ½ ‖y‖` for every `y` (for `‖y‖ < c/2`... scale `y` into the ball, pick a point of
+the image within `½ ‖y‖`, scale back), then `exists_preimage_norm_le_of_approx`; the arithmetic of
+the constants is the only work (the book's `2c` vs `c` normalization). ★'''
+deps = ["LinearPMap.IsClosed.exists_preimage_norm_le_of_approx"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.6"
+
+[[node]]
+id = "ContinuousLinearMap.ball_subset_image_of_ball_subset_closure_image"
+kind = "theorem"
+desc = '''The bounded case of Step 2, in the shape the proof of Theorem 2.16 (chapter 1's `Annihilator/ClosedSum`
+module, (25) ⇒ (26)) applies it: for `[CompleteSpace E]`, `T : E →L[𝕜] F`, `0 < c` and
+`Metric.ball (0 : F) c ⊆ closure (T '' Metric.ball 0 1)`, one has
+`Metric.ball (0 : F) (c / 2) ⊆ T '' Metric.ball 0 1`. Proof: apply
+`LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image` to `T.toPMap ⊤`, closed
+because `T` is continuous (`Continuous.isClosed_graph` transported to `LinearPMap.graph`, or
+directly `LinearMap.toPMap` + `LinearPMap.mem_graph_iff`), and rewrite the image over `⊤`. Note
+Mathlib's product space `E × F` and the domain `G × L` of Theorem 2.10 / 2.16 carry the sup norm,
+which is the book's `‖[x, y]‖ = max {‖x‖, ‖y‖}` of the proof of Theorem 2.16 exactly. ★'''
+deps = ["LinearPMap.IsClosed.ball_subset_image_of_ball_subset_closure_image"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.6"
+
+[[node]]
+id = "ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le"
+kind = "theorem"
+desc = '''[brezis2011functional] Exercise 2.14, part 1 (the closed range criterion for a bounded operator):
+for Banach spaces `E F` and `T : E →L[𝕜] F`,
+`IsClosed (Set.range T) ↔ ∃ C : ℝ, ∀ x, Metric.infDist x (T.ker : Set E) ≤ C * ‖T x‖`.
+
+Proof (the book's hint, the quotient by the kernel): `T.ker` is closed, so `E ⧸ T.ker` is a Banach
+space (`Submodule.Quotient.normedAddCommGroup`, `Submodule.Quotient.completeSpace`) with
+`‖Submodule.Quotient.mk x‖ = infDist x T.ker` (`AddSubgroup.norm_mk`, via
+`Submodule.Quotient.norm_mk_le` and the quotient norm as `infDist`); `T` descends to
+`T.liftQL (le_refl _) : E ⧸ T.ker →L[𝕜] F` (`Submodule.liftQL`), injective with the same range.
+Then `ContinuousLinearMap.isClosed_range_iff_antilipschitz_of_injective` says the range is closed
+iff the descended map is anti-Lipschitz, `‖mk x‖ ≤ K ‖T x‖`, which is the displayed inequality.
+★★, about 80 lines; the quotient-norm API is `Mathlib/Analysis/Normed/Group/Quotient.lean`.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Exercise 2.14"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_range_iff_exists_infDist_ker_le"
+kind = "theorem"
+desc = '''[brezis2011functional] Remark 2.18 = Exercise 2.14, part 2 (the closed range criterion for a closed
+operator): for Banach spaces `E F` and `A : E →ₗ.[𝕜] F` closed,
+`IsClosed (LinearMap.range A.toFun : Set F) ↔ ∃ C : ℝ, ∀ u : A.domain, Metric.infDist (u : E) (A.ker : Set E) ≤ C * ‖A u‖`.
+
+Proof (the book's hint, "`T : E₀ → F` with `E₀ = D(A)` with the graph norm and `T = A`"): let
+`G := ↥A.graph`, a Banach space by `completeSpace_graph`, and
+`T := (ContinuousLinearMap.snd 𝕜 E F).comp A.graph.subtypeL : G →L[𝕜] F`, so `Set.range T = range A.toFun`
+and `T.ker = {p ∈ G | p.2 = 0} = {(u, 0) | u ∈ A.ker}`. Apply
+`ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le` to `T` and compare the two
+distances: for `p = (u, A u) ∈ G` and `(z, 0) ∈ T.ker`, `dist p (z, 0) = max ‖u − z‖ ‖A u‖`, so
+`max (infDist u A.ker) ‖A u‖ ≤ infDist p T.ker ≤ infDist u A.ker + ‖A u‖`, and the two
+inequalities `infDist p T.ker ≤ C ‖T p‖` and `infDist u A.ker ≤ C' ‖A u‖` imply each other with
+`C' = C` and `C = C' + 1`. ★★, about 120 lines, mostly the identification of `T.ker` and the
+`infDist` comparison (`Metric.infDist_le_dist_of_mem`, `Metric.le_infDist`).'''
+deps = ["LinearPMap.IsClosed.completeSpace_graph", "ContinuousLinearMap.isClosed_range_iff_exists_infDist_ker_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 18"
+
+[[node]]
+id = "LinearPMap.IsClosed.isClosed_range_of_norm_le"
+kind = "theorem"
+desc = '''An a priori estimate gives closed range ([brezis2011functional], Theorem 2.21 (b) ⇒ (c), the
+range clause; also Theorem 2.20 (b) ⇒ (c) applied to `A*`): for `[CompleteSpace E]`, `A` closed,
+`C : ℝ` and `∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖`, the range `LinearMap.range A.toFun` is
+closed in `F`. Proof: a convergent sequence `A uₙ → y` has `(uₙ)` Cauchy by the estimate, `uₙ → u`
+by completeness of `E`, and the closed graph gives `u ∈ D(A)`, `A u = y`; this is
+`LinearPMap.isClosed_range_of_isClosed_of_le_norm` of `Numlib/Variational/LaxMilgram.lean`
+verbatim with the inner-product hypotheses dropped — re-prove that one from this. It is also the
+case `A.ker = ⊥` of `isClosed_range_iff_exists_infDist_ker_le`, but the direct proof is shorter
+and needs no completeness of `F`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"
+
+[[node]]
+id = "LinearPMap.ker_eq_bot_of_norm_le"
+kind = "theorem"
+desc = '''The kernel clause of Theorem 2.21 (b) ⇒ (c): `(∀ u : A.domain, ‖(u : E)‖ ≤ C * ‖A u‖) → A.ker = ⊥`,
+by `LinearPMap.ker_eq_bot'`. Needs no closedness; stated beside `isClosed_range_of_norm_le` for
+symmetry. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.21"

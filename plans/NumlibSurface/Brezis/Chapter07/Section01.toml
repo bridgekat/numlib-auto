@@ -1,0 +1,175 @@
+namespace = "Brezis.Chapter07"
+desc = '''
+Brezis §7.1, maximal monotone operators on a real Hilbert space `H`: the definitions of monotone
+and maximal monotone, Proposition 7.1 (dense domain, closedness, `(I + λA)⁻¹` is a contraction
+for every `λ > 0`), Remark 1, the resolvent `J_λ` and the Yosida approximation `A_λ`, and
+Proposition 7.2's six properties. The unbounded operator `A : D(A) ⊂ H → H` is Mathlib's
+`LinearPMap`, `A : H →ₗ.[ℝ] H`, with `D(A) = A.domain`. Everything delegates to the backbone
+module `Numlib/Analysis/InnerProductSpace/MaximalMonotone` (`LinearPMap.IsMonotone`,
+`IsMaximalMonotone`, `resolvent`, `yosida`, stated there over `RCLike 𝕜` with `re`): the surface
+restates the definitions in the book's real words (`(Av, v) ≥ 0`, `R(I + A) = H`) with the `iff`
+to the backbone predicate, defines `J_λ` as the inverse of the bijection `I + λA : D(A) → H` of
+Proposition 7.1 (c) and proves it is `A.resolvent λ`, and reads Proposition 7.2 clause by
+clause. Remark 2 is discussion and is not a node; Remark 1's second sentence (`A + B` need not
+be maximal monotone) is a counterexample and is not a node.
+'''
+
+[[node]]
+id = "IsMonotone"
+kind = "definition"
+desc = '''Definition (§7.1): `A : H →ₗ.[ℝ] H` is *monotone* if `(A v, v) ≥ 0` for all `v ∈ D(A)`:
+`∀ v : A.domain, 0 ≤ ⟪A v, (v : H)⟫_ℝ`. With `isMonotone_iff : IsMonotone A ↔ A.IsMonotone`
+(the backbone's `LinearPMap.IsMonotone` uses `re ⟪A v, v⟫`, and `re` is the identity over `ℝ`,
+`RCLike.re_to_real`). The book's footnote: other authors say accretive, or that `−A` is
+dissipative. ★'''
+deps = ["LinearPMap.IsMonotone"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.1, Definition"
+
+[[node]]
+id = "IsMaximalMonotone"
+kind = "definition"
+desc = '''Definition (§7.1): `A` is *maximal monotone* if it is monotone and `R(I + A) = H`, i.e.
+`∀ f : H, ∃ u : A.domain, (u : H) + A u = f`. With
+`isMaximalMonotone_iff : IsMaximalMonotone A ↔ A.IsMaximalMonotone` (the backbone structure has
+exactly these two fields, `IsMaximalMonotone.mk`/`.isMonotone`/`.exists_add_apply_eq`) and the
+range form `LinearMap.range (LinearMap.id +ᵥ A).toFun = ⊤`
+(`LinearPMap.IsMaximalMonotone.range_id_vadd_eq_top`). ★'''
+deps = ["IsMonotone", "LinearPMap.IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.range_id_vadd_eq_top"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.1, Definition"
+
+[[node]]
+id = "proposition_7_1_a"
+kind = "theorem"
+desc = '''Proposition 7.1 (a): if `A` is maximal monotone then `D(A)` is dense in `H`,
+`Dense (A.domain : Set H)`. Backbone `LinearPMap.IsMaximalMonotone.dense_domain`. ★'''
+deps = ["IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.dense_domain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.1"
+
+[[node]]
+id = "proposition_7_1_b"
+kind = "theorem"
+desc = '''Proposition 7.1 (b): a maximal monotone `A` is a closed operator, `A.IsClosed` (Mathlib's
+closed graph in `H × H`; the book's sequential reading is `AtkinsonHan.Chapter08.isClosed_iff_seq`).
+Backbone `LinearPMap.IsMaximalMonotone.isClosed`. ★'''
+deps = ["IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.isClosed"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.1"
+
+[[node]]
+id = "proposition_7_1_c"
+kind = "theorem"
+desc = '''Proposition 7.1 (c): for a maximal monotone `A` and every `λ > 0`, `I + λA` is bijective
+from `D(A)` onto `H` — `Function.Bijective (fun u : A.domain => (u : H) + λ • A u)` — and its
+inverse is a bounded operator of norm `≤ 1`: `‖A.resolvent λ‖ ≤ 1` together with
+`∀ f, A.resolvent λ f + λ • A ⟨A.resolvent λ f, _⟩ = f`. Backbone:
+`LinearPMap.IsMonotone.injective_add_smul`, `IsMaximalMonotone.exists_add_smul_eq`
+(the contraction-mapping induction of the book, lines 6811–6832),
+`IsMaximalMonotone.resolvent_add_smul_apply`, `IsMaximalMonotone.norm_resolvent_le_one`. ★'''
+deps = ["IsMaximalMonotone", "LinearPMap.IsMonotone.injective_add_smul", "LinearPMap.IsMaximalMonotone.exists_add_smul_eq", "LinearPMap.IsMaximalMonotone.resolvent_add_smul_apply", "LinearPMap.IsMaximalMonotone.norm_resolvent_le_one"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.1"
+
+[[node]]
+id = "proposition_7_1"
+kind = "theorem"
+desc = '''Proposition 7.1, the conjunction of (a), (b), (c). ★'''
+deps = ["proposition_7_1_a", "proposition_7_1_b", "proposition_7_1_c"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.1"
+
+[[node]]
+id = "remark_7_1"
+kind = "theorem"
+desc = '''Remark 1, first sentence: if `A` is maximal monotone and `λ > 0` then `λ • A` is maximal
+monotone (`IsMaximalMonotone (λ • A)`, Mathlib's `LinearPMap.instSMul`). Backbone
+`LinearPMap.IsMaximalMonotone.smul`. The second sentence — `A + B` on `D(A) ∩ D(B)` need not be
+maximal monotone — is a counterexample claim and is not formalized. ★'''
+deps = ["IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.smul"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 1"
+
+[[node]]
+id = "resolvent"
+kind = "definition"
+desc = '''Definition (§7.1): for `hA : IsMaximalMonotone A` and `hλ : 0 < λ`, the *resolvent*
+`J_λ = (I + λA)⁻¹ : H → H`, defined as the book does — the inverse of the bijection of
+`proposition_7_1_c` (`Equiv.ofBijective … |>.symm`, composed with the coercion `A.domain → H`),
+so `resolvent hA hλ : H → H`. The lemma `resolvent_eq : resolvent hA hλ = A.resolvent λ`
+(pointwise) identifies it with the backbone's total definition
+(`LinearPMap.IsMaximalMonotone.resolvent_eq_iff`), and `norm_resolvent_le : ‖resolvent hA hλ f‖ ≤ ‖f‖`
+is the book's "keep in mind that `‖J_λ‖ ≤ 1`". ★'''
+deps = ["proposition_7_1_c", "LinearPMap.resolvent", "LinearPMap.IsMaximalMonotone.resolvent_eq_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.1, Definition"
+
+[[node]]
+id = "yosidaApprox"
+kind = "definition"
+desc = '''Definition (§7.1): the *Yosida approximation* `A_λ = λ⁻¹ (I − J_λ) : H → H`,
+`yosidaApprox hA hλ v := λ⁻¹ • (v − resolvent hA hλ v)`, with
+`yosidaApprox_eq : yosidaApprox hA hλ = A.yosida λ` (pointwise; backbone `LinearPMap.yosida`). ★'''
+deps = ["resolvent", "LinearPMap.yosida"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.1, Definition"
+
+[[node]]
+id = "proposition_7_2_a1"
+kind = "theorem"
+desc = '''Proposition 7.2 (a₁): `A_λ v = A (J_λ v)` for all `v ∈ H`, `λ > 0` — with `J_λ v ∈ D(A)`
+(`LinearPMap.IsMaximalMonotone.resolvent_apply_mem_domain`). Backbone
+`LinearPMap.IsMaximalMonotone.yosida_apply_eq_apply_resolvent`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "LinearPMap.IsMaximalMonotone.resolvent_apply_mem_domain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_a2"
+kind = "theorem"
+desc = '''Proposition 7.2 (a₂): `A_λ v = J_λ (A v)` for all `v ∈ D(A)`, `λ > 0`. Backbone
+`LinearPMap.IsMaximalMonotone.yosida_apply_eq_resolvent_apply`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.yosida_apply_eq_resolvent_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_b"
+kind = "theorem"
+desc = '''Proposition 7.2 (b): `|A_λ v| ≤ |A v|` for all `v ∈ D(A)`, `λ > 0`. Backbone
+`LinearPMap.IsMaximalMonotone.norm_yosida_apply_le_norm_apply`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.norm_yosida_apply_le_norm_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_c"
+kind = "theorem"
+desc = '''Proposition 7.2 (c): `lim_{λ→0} J_λ v = v` for all `v ∈ H`:
+`Tendsto (fun λ => A.resolvent λ v) (𝓝[>] 0) (𝓝 v)` (the surface's `resolvent hA hλ` carries the
+proof `hλ`, so the limit is stated through `A.resolvent`, with `resolvent_eq` bridging).
+Backbone `LinearPMap.IsMaximalMonotone.tendsto_resolvent_apply`. ★'''
+deps = ["resolvent", "LinearPMap.IsMaximalMonotone.tendsto_resolvent_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_d"
+kind = "theorem"
+desc = '''Proposition 7.2 (d): `lim_{λ→0} A_λ v = A v` for all `v ∈ D(A)`:
+`Tendsto (fun λ => A.yosida λ v) (𝓝[>] 0) (𝓝 (A v))`. Backbone
+`LinearPMap.IsMaximalMonotone.tendsto_yosida_apply`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.tendsto_yosida_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_e"
+kind = "theorem"
+desc = '''Proposition 7.2 (e): `(A_λ v, v) ≥ 0` for all `v ∈ H`, `λ > 0`, and the sharper (3)
+`(A_λ v, v) ≥ λ |A_λ v|²`. Backbone `LinearPMap.IsMaximalMonotone.re_inner_yosida_nonneg`,
+`smul_norm_sq_yosida_le_re_inner`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.re_inner_yosida_nonneg", "LinearPMap.IsMaximalMonotone.smul_norm_sq_yosida_le_re_inner"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2_f"
+kind = "theorem"
+desc = '''Proposition 7.2 (f): `|A_λ v| ≤ λ⁻¹ |v|` for all `v ∈ H`, `λ > 0`. Backbone
+`LinearPMap.IsMaximalMonotone.norm_yosida_apply_le`. ★'''
+deps = ["yosidaApprox", "LinearPMap.IsMaximalMonotone.norm_yosida_apply_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"
+
+[[node]]
+id = "proposition_7_2"
+kind = "theorem"
+desc = '''Proposition 7.2, the conjunction of (a₁), (a₂), (b)–(f). ★'''
+deps = ["proposition_7_2_a1", "proposition_7_2_a2", "proposition_7_2_b", "proposition_7_2_c", "proposition_7_2_d", "proposition_7_2_e", "proposition_7_2_f"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.2"

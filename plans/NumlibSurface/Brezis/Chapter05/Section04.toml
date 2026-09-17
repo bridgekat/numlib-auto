@@ -1,0 +1,185 @@
+namespace = "Brezis.Chapter05"
+desc = '''
+Brezis §5.4: Hilbert sums and orthonormal bases. Book lines 5297–5427. The two Definition
+paragraphs are surface predicates on `ℕ`-indexed families, as the book has them, each with an
+`iff` to the Mathlib object it is (`IsHilbertSum`, `HilbertBasis ℕ ℝ H`); Theorem 5.9 and Lemma
+5.1 delegate to the new backbone `Numlib/Analysis/InnerProductSpace/HilbertSum`, Corollary 5.10 to
+Mathlib's `HilbertBasis` API and the backbone's `Numlib/Analysis/InnerProductSpace/OrthonormalSeries`,
+Theorem 5.11 and Remarks 10–11 to `exists_hilbertBasis_countable`, `exists_hilbertBasis_nat` and
+Mathlib's `exists_hilbertBasis`.
+
+Two conventions. The book's series `∑_{k=1}^∞` are limits of partial sums; Mathlib's `HasSum`
+is unconditional, which for orthogonal series is the same thing, and the nodes state the book's
+sequential form (`Tendsto (fun n => ∑ k ∈ Finset.range n, …) atTop (𝓝 …)`, from
+`HasSum.tendsto_sum_nat`) where the book displays it and `HasSum` for the Parseval identities.
+The book's closed subspaces `Eₙ` are `E : ℕ → ClosedSubmodule ℝ H` — the coercion to
+`Submodule ℝ H` carries `HasOrthogonalProjection` in a complete space, so `P_{Eₙ} u` is
+`(E n : Submodule ℝ H).starProjection u` without a `haveI` (checked in
+`notes/brezis/ch05/proto/Surface.lean`).
+'''
+
+[[node]]
+id = "IsHilbertSumOf"
+kind = "definition"
+desc = '''Definition: `H` is the Hilbert sum of the subspaces `E n`, `H = ⊕ₙ Eₙ`. For
+`E : ℕ → Submodule ℝ H`, `IsHilbertSumOf E : Prop := (∀ m n, m ≠ n → ∀ u ∈ E m, ∀ v ∈ E n, ⟪u, v⟫ = 0) ∧
+Dense ((⨆ n, E n : Submodule ℝ H) : Set H)` — (a) mutual orthogonality, (b) the linear span of
+`⋃ Eₙ` (which is `⨆ n, E n`, footnote 3) is dense. Closedness of the `Eₙ` is the standing
+assumption of the paragraph and is a hypothesis of the theorems, not part of the predicate. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.4, Definition (Hilbert sum)"
+
+[[node]]
+id = "isHilbertSumOf_iff"
+kind = "theorem"
+desc = '''For closed subspaces `E : ℕ → ClosedSubmodule ℝ H`, the book's predicate is Mathlib's:
+`IsHilbertSumOf (fun n => (E n : Submodule ℝ H)) ↔ IsHilbertSum ℝ (fun n => E n) fun n => (E n : Submodule ℝ H).subtypeₗᵢ`.
+Forward: `IsHilbertSum.mkInternal` with `Submodule.orthogonalFamily_iff_pairwise` and
+`Submodule.dense_iff_topologicalClosure_eq_top`; backward: surjectivity of the isometry and
+`OrthogonalFamily.range_linearIsometry` give the density, `IsHilbertSum.OrthogonalFamily` the
+orthogonality. ★'''
+deps = ["IsHilbertSumOf"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.4, Definition (Hilbert sum)"
+
+[[node]]
+id = "lemma_5_1"
+kind = "theorem"
+desc = '''Lemma 5.1: for `v : ℕ → H` with `Pairwise (fun m n => ⟪v m, v n⟫ = 0)` and
+`Summable (fun k => ‖v k‖ ^ 2)`, the partial sums `Sₙ = ∑_{k<n} v k` converge to some `S` and
+`‖S‖ ^ 2 = ∑' k, ‖v k‖ ^ 2`: `∃ S, Tendsto (fun n => ∑ k ∈ Finset.range n, v k) atTop (𝓝 S) ∧ ‖S‖ ^ 2 = ∑' k, ‖v k‖ ^ 2`.
+The backbone's `summable_iff_summable_norm_sq_of_pairwise_inner_eq_zero` (gives `HasSum v S`,
+whence the partial sums by `HasSum.tendsto_sum_nat`) and `hasSum_norm_sq_of_pairwise_inner_eq_zero`
+(`HasSum.tsum_eq`). ★'''
+deps = ["summable_iff_summable_norm_sq_of_pairwise_inner_eq_zero",
+  "hasSum_norm_sq_of_pairwise_inner_eq_zero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 5.1"
+
+[[node]]
+id = "theorem_5_9"
+kind = "theorem"
+desc = '''Theorem 5.9: if `H` is the Hilbert sum of the closed subspaces `E : ℕ → ClosedSubmodule ℝ H`
+then for every `u`, with `uₙ = P_{Eₙ} u = (E n : Submodule ℝ H).starProjection u`,
+`Tendsto (fun n => ∑ k ∈ Finset.range n, (E k : Submodule ℝ H).starProjection u) atTop (𝓝 u)`
+(display (19)) and `HasSum (fun k => ‖(E k : Submodule ℝ H).starProjection u‖ ^ 2) (‖u‖ ^ 2)`
+(Bessel–Parseval, (20)). The backbone's `OrthogonalFamily.hasSum_starProjection_of_dense` and
+`OrthogonalFamily.hasSum_norm_sq_starProjection_of_dense` at the orthogonal family of
+`isHilbertSumOf_iff`, the density hypothesis being clause (b) (`Submodule.dense_iff_topologicalClosure_eq_top`),
+plus `HasSum.tendsto_sum_nat`. ★'''
+deps = ["IsHilbertSumOf", "isHilbertSumOf_iff", "OrthogonalFamily.hasSum_starProjection_of_dense",
+  "OrthogonalFamily.hasSum_norm_sq_starProjection_of_dense"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "theorem_5_9_closure"
+kind = "theorem"
+desc = '''Theorem 5.9, the clause its proof establishes "even without assumption (b)" (display (26)):
+for mutually orthogonal closed subspaces `E : ℕ → ClosedSubmodule ℝ H` and `F̄` the closure of
+their span, `Tendsto (fun n => ∑ k ∈ Finset.range n, (E k : Submodule ℝ H).starProjection u) atTop
+(𝓝 ((⨆ n, (E n : Submodule ℝ H)).topologicalClosure.starProjection u))` and
+`∑' k, ‖(E k : Submodule ℝ H).starProjection u‖ ^ 2 ≤ ‖u‖ ^ 2` (Bessel's inequality, the book's
+`∑ |u_k|² ≤ |u|²`). The backbone's `OrthogonalFamily.hasSum_starProjection` and
+`OrthogonalFamily.tsum_norm_sq_starProjection_le`. ★'''
+deps = ["OrthogonalFamily.hasSum_starProjection", "OrthogonalFamily.tsum_norm_sq_starProjection_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "IsOrthonormalBasis"
+kind = "definition"
+desc = '''Definition: a sequence `e : ℕ → H` is an orthonormal basis (Hilbert basis) of `H`:
+`IsOrthonormalBasis e : Prop := Orthonormal ℝ e ∧ Dense ((Submodule.span ℝ (Set.range e) : Submodule ℝ H) : Set H)`
+— (i) `‖e n‖ = 1` and `⟪e m, e n⟫ = 0` for `m ≠ n` (Mathlib's `Orthonormal`, `orthonormal_iff_ite`),
+(ii) the span is dense. Not Mathlib's `OrthonormalBasis`, which is the finite structure; the
+bundled object is `HilbertBasis ℕ ℝ H`, see `isOrthonormalBasis_iff`. Footnote 4's "not a Hamel
+basis" is not a node. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.4, Definition (orthonormal basis)"
+
+[[node]]
+id = "isOrthonormalBasis_iff"
+kind = "theorem"
+desc = '''`IsOrthonormalBasis e ↔ ∃ b : HilbertBasis ℕ ℝ H, ⇑b = e`. Forward: `HilbertBasis.mk` with
+`HilbertBasis.coe_mk`; backward: `HilbertBasis.orthonormal` and `HilbertBasis.dense_span`
+(`Submodule.dense_iff_topologicalClosure_eq_top`). ★'''
+deps = ["IsOrthonormalBasis"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.4, Definition (orthonormal basis)"
+
+[[node]]
+id = "corollary_5_10"
+kind = "theorem"
+desc = '''Corollary 5.10, expansion and Parseval: for `IsOrthonormalBasis e` and every `u`,
+`Tendsto (fun n => ∑ k ∈ Finset.range n, ⟪u, e k⟫ • e k) atTop (𝓝 u)` and
+`HasSum (fun k => ⟪u, e k⟫ ^ 2) (‖u‖ ^ 2)`. From the `HilbertBasis` of `isOrthonormalBasis_iff`:
+`HilbertBasis.hasSum_repr` with `HilbertBasis.repr_apply_apply` (`b.repr u k = ⟪e k, u⟫`,
+symmetric over `ℝ`) and `HasSum.tendsto_sum_nat`; Parseval from `b.repr.norm_map` and
+`lp.norm_rpow_eq_tsum` at `p = 2`, or from the backbone's `Orthonormal.hasSum_mul_of_hasSum`
+(`Numlib/Analysis/InnerProductSpace/OrthonormalSeries`) with `x = y = u`. The book's proof —
+`H` is the Hilbert sum of the lines `ℝ eₙ` and `P_{ℝ eₙ} u = ⟪u, eₙ⟫ eₙ`
+(`Submodule.starProjection_unit_singleton`) — is `theorem_5_9` and is an acceptable alternative. ★'''
+deps = ["IsOrthonormalBasis", "isOrthonormalBasis_iff", "Orthonormal.hasSum_mul_of_hasSum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.10"
+
+[[node]]
+id = "corollary_5_10_converse"
+kind = "theorem"
+desc = '''Corollary 5.10, converse: for `IsOrthonormalBasis e` and `α : ℕ → ℝ` with
+`Summable (fun k => α k ^ 2)` (i.e. `α ∈ ℓ²`), the series `∑ αₖ eₖ` converges to some `u` with
+`∀ k, ⟪u, e k⟫ = α k` and `‖u‖ ^ 2 = ∑' k, α k ^ 2`:
+`∃ u, Tendsto (fun n => ∑ k ∈ Finset.range n, α k • e k) atTop (𝓝 u) ∧ (∀ k, ⟪u, e k⟫ = α k) ∧ ‖u‖ ^ 2 = ∑' k, α k ^ 2`.
+The backbone's `Orthonormal.summable_smul_iff` (convergence), `Orthonormal.inner_eq_of_hasSum`
+(coefficients) and `Orthonormal.hasSum_mul_of_hasSum` (norm), none of which needs density; or
+`HilbertBasis.hasSum_repr_symm` at `f := ⟨α, memℓp⟩`. ★'''
+deps = ["IsOrthonormalBasis", "Orthonormal.summable_smul_iff", "Orthonormal.inner_eq_of_hasSum",
+  "Orthonormal.hasSum_mul_of_hasSum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.10"
+
+[[node]]
+id = "remark_5_9"
+kind = "theorem"
+desc = '''Remark 9: the series of Corollary 5.10 need not converge absolutely. For every
+`IsOrthonormalBasis e`, `∃ u, ¬ Summable fun k => |⟪u, e k⟫|`: take `u` given by
+`corollary_5_10_converse` at `α k = 1 / (k + 1)` (square-summable, `Real.summable_one_div_nat_pow`
+at `p = 2`; not summable, `Real.not_summable_one_div_natCast`). The Hilbert-sum form of the remark
+(the `∑ uₖ` of Theorem 5.9) is this one at `Eₖ = ℝ eₖ` and is not stated separately. ★'''
+deps = ["corollary_5_10_converse"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 9"
+
+[[node]]
+id = "theorem_5_11"
+kind = "theorem"
+desc = '''Theorem 5.11: every separable Hilbert space has an orthonormal basis. In the countable-set
+form that is true in every dimension: `[TopologicalSpace.SeparableSpace H] →
+∃ (w : Set H) (b : HilbertBasis w ℝ H), w.Countable ∧ ⇑b = ((↑) : w → H)`, the backbone's
+`exists_hilbertBasis_countable`. (The book's basis is a sequence `(eₙ)_{n ≥ 1}`, which does not
+exist when `dim H < ∞`; that form is `theorem_5_11_nat`.) The book proves it by Gram–Schmidt on a
+dense sequence; the backbone proves it from Mathlib's `exists_hilbertBasis` and the countability
+of orthonormal families in a separable space. ★'''
+deps = ["exists_hilbertBasis_countable"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.11"
+
+[[node]]
+id = "theorem_5_11_nat"
+kind = "theorem"
+desc = '''Theorem 5.11 in the book's form: for `H` separable and infinite-dimensional
+(`¬ FiniteDimensional ℝ H`), `∃ e : ℕ → H, IsOrthonormalBasis e`. The backbone's
+`exists_hilbertBasis_nat` read through `isOrthonormalBasis_iff`. ★'''
+deps = ["exists_hilbertBasis_nat", "isOrthonormalBasis_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.11"
+
+[[node]]
+id = "remark_5_10"
+kind = "theorem"
+desc = '''Remark 10: all separable (infinite-dimensional) Hilbert spaces are isometrically isomorphic
+to `ℓ²`: `[TopologicalSpace.SeparableSpace H] → ¬ FiniteDimensional ℝ H → Nonempty (H ≃ₗᵢ[ℝ] lp (fun _ : ℕ => ℝ) 2)`,
+the `HilbertBasis.repr` of the basis of `exists_hilbertBasis_nat`. The remark's "despite this it is
+important to consider `L²(Ω)`, `H¹(Ω)`" is discussion. ★'''
+deps = ["exists_hilbertBasis_nat"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 10"
+
+[[node]]
+id = "remark_5_11"
+kind = "theorem"
+desc = '''Remark 11: a nonseparable Hilbert space still has an (uncountable) orthonormal basis
+`(eᵢ)_{i ∈ I}`, by Zorn's lemma: `∃ (w : Set H) (b : HilbertBasis w ℝ H), ⇑b = ((↑) : w → H)`,
+Mathlib's `exists_hilbertBasis` verbatim (which is by `exists_maximal_orthonormal`, i.e. Zorn). ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 11"

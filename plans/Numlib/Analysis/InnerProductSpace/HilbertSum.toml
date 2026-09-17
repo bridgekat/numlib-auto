@@ -1,0 +1,200 @@
+desc = '''
+Hilbert sums of closed subspaces and countable Hilbert bases: the projection expansion
+`u = ∑ P_{Eₙ} u` with Bessel–Parseval, the summability of a pairwise orthogonal family, and the
+existence of a countable (or `ℕ`-indexed) Hilbert basis of a separable Hilbert space. Upstreaming
+candidate; natural home `Mathlib.Analysis.InnerProductSpace.l2Space`. Over `RCLike 𝕜`
+throughout, since nothing in the arguments is real.
+
+What Mathlib has (`Mathlib/Analysis/InnerProductSpace/l2Space.lean`, `Subspace.lean`,
+`Projection/Submodule.lean`, checked 2026-09-17): the external Hilbert sum `lp G 2`; the
+predicate `IsHilbertSum 𝕜 G V` with `IsHilbertSum.mkInternal` (mutually orthogonal complete
+subspaces whose supremum is dense) and the isometry `IsHilbertSum.linearIsometryEquiv : E ≃ₗᵢ lp G 2`;
+`OrthogonalFamily.linearIsometry : lp G 2 →ₗᵢ E` with `hasSum_linearIsometry` and
+`range_linearIsometry` (its range is the closure of the span of the family, no density assumed);
+`OrthogonalFamily.summable_iff_norm_sq_summable` and `norm_sq_sdiff_sum`; the monotone limit
+`Submodule.starProjection_tendsto_closure_iSup`; `HilbertBasis` with `mk`, `hasSum_repr`,
+`repr_apply_apply`, `dense_span`, and `exists_hilbertBasis` (a basis indexed by a subset `w ⊆ E`,
+by Zorn). What it lacks, and what this module adds:
+
+* the **projection expansion** of [brezis2011functional] Theorem 5.9. Mathlib expands a vector in
+  the coordinates of `lp G 2` but never identifies the `i`-th coordinate of `u` with the
+  orthogonal projection `(V i).starProjection u`; `OrthogonalFamily.hasSum_starProjection` does,
+  and in the book's sharper form: without any density hypothesis the projections sum to the
+  projection onto the closed span (the "even without assumption (b)" clause of the book's proof,
+  its display (26)), and Bessel–Parseval follows. Density then gives `∑ P_{Eᵢ} u = u` and
+  `∑ ‖P_{Eᵢ} u‖² = ‖u‖²`.
+* **Lemma 5.1** for a pairwise orthogonal *family of vectors* rather than a family of subspaces:
+  `summable_iff_summable_norm_sq_of_pairwise_inner_eq_zero` and the norm identity of the sum.
+  Mathlib's `OrthogonalFamily.summable_iff_norm_sq_summable` is the statement for
+  `V : ∀ i, G i →ₗᵢ E`; the vector form is what Corollary 5.10's converse and the surface's
+  Lemma 5.1 consume, and it is obtained from Mathlib's by taking `G i := 𝕜 ∙ v i`.
+* **countable Hilbert bases** ([brezis2011functional] Theorem 5.11, Remarks 10 and 11): an
+  orthonormal family in a separable space is countable (`Orthonormal.countable_of_separableSpace`,
+  from `Pairwise.countable_of_isOpen_disjoint` on the balls of radius `1/2`, since orthonormal
+  vectors are at distance `√2`), so `exists_hilbertBasis` yields a countable basis, and an
+  infinite-dimensional separable space has a basis indexed by `ℕ` (`exists_hilbertBasis_nat`),
+  through `HilbertBasis.reindex`, which Mathlib does not have either (`OrthonormalBasis.reindex`
+  exists only for the finite structure). The converse, that a countable basis makes the space
+  separable, is `HilbertBasis.separableSpace`. The book proves Theorem 5.11 by Gram–Schmidt on a
+  dense sequence; the Zorn-plus-counting route above is shorter given `exists_hilbertBasis`, and
+  `Numlib/Analysis/InnerProductSpace/GramSchmidt` is not needed. The `ℕ`-indexed form is what
+  chapter 6 (Theorem 6.11's separable case) and chapter 8 (Theorem 8.22) consume; the backbone's
+  `CompactSpectral` builds a `HilbertBasis ℕ` of eigenvectors under injectivity and this module
+  supplies the general existence statement it could not.
+
+Consumers: `NumlibSurface/Brezis/Chapter05/Section04`; chapter 6's Theorem 6.11 and chapter 8's
+Theorem 8.22 through `exists_hilbertBasis_nat`. Prototype: `notes/brezis/ch05/proto/Shapes.lean`
+type-checks every statement below (and proves `HilbertBasis.reindex`).
+
+Estimate: ~300 lines; `OrthogonalFamily.hasSum_starProjection` (★★, ~80 lines) and
+`exists_hilbertBasis_nat` (★★, ~50 lines) are the two nontrivial ones, the rest ★.
+'''
+
+[[node]]
+id = "summable_iff_summable_norm_sq_of_pairwise_inner_eq_zero"
+kind = "theorem"
+desc = '''`[CompleteSpace E] {v : ι → E} (hv : Pairwise fun i j => ⟪v i, v j⟫ = 0) :
+Summable v ↔ Summable fun i => ‖v i‖ ^ 2` — [brezis2011functional] Lemma 5.1 (existence of the
+limit), for an arbitrary index type and unconditional summation. Apply Mathlib's
+`OrthogonalFamily.summable_iff_norm_sq_summable` to the family of subspaces `𝕜 ∙ v i` with the
+inclusions `(𝕜 ∙ v i).subtypeₗᵢ` (orthogonal by `Submodule.orthogonalFamily_iff_pairwise` and
+`Submodule.isOrtho_span`) at `f i := ⟨v i, Submodule.mem_span_singleton_self _⟩`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 5.1"
+
+[[node]]
+id = "hasSum_norm_sq_of_pairwise_inner_eq_zero"
+kind = "theorem"
+desc = '''`{v : ι → E} {S : E} (hv : Pairwise fun i j => ⟪v i, v j⟫ = 0) (hS : HasSum v S) :
+HasSum (fun i => ‖v i‖ ^ 2) (‖S‖ ^ 2)` — the identity `|S|² = ∑ |vₖ|²` of Lemma 5.1, display
+(23). Finite Pythagoras `‖∑ i ∈ s, v i‖² = ∑ i ∈ s, ‖v i‖²` (Mathlib's
+`OrthogonalFamily.norm_sum` in the same subspace family, or `norm_sum_sq_of_pairwise`-style
+induction) and continuity of `‖·‖²` along `hS`. No completeness needed. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 5.1"
+
+[[node]]
+id = "OrthogonalFamily.hasSum_starProjection"
+kind = "theorem"
+desc = '''**The projection expansion.** `[CompleteSpace E] {V : ι → Submodule 𝕜 E}
+[∀ i, (V i).HasOrthogonalProjection] (hV : OrthogonalFamily 𝕜 (fun i => V i) fun i => (V i).subtypeₗᵢ)
+(u : E) : HasSum (fun i => (V i).starProjection u) ((⨆ i, V i).topologicalClosure.starProjection u)`
+(the closure carries `HasOrthogonalProjection` through `Submodule.topologicalClosure.completeSpace`;
+the signature type-checks in the prototype). This is [brezis2011functional] Theorem 5.9 without
+its density hypothesis, the book's display (26) `S = P_F̄ u`.
+
+Proof (book lines 5357–5386, or the following): let `w := P_F̄ u` with `F̄` the closed span.
+By `OrthogonalFamily.range_linearIsometry`, `w = hV.linearIsometry f` for some `f : lp (fun i => V i) 2`,
+and `OrthogonalFamily.hasSum_linearIsometry` gives `HasSum (fun i => (f i : E)) w`. Apply the
+continuous linear map `(V i).starProjection` to that sum (`HasSum.mapL`): the terms with `j ≠ i`
+vanish (`Submodule.orthogonalProjectionOnto_apply_of_mem_orthogonal`, since `V j ⟂ V i` by
+`hV.isOrtho`) and the `i`-th is `f i` (`starProjection_eq_self_iff`), so
+`(V i).starProjection w = f i` (`tsum_eq_single`). Finally `(V i).starProjection u = (V i).starProjection w`
+because `V i ≤ F̄` (`Submodule.orthogonalProjectionOnto_starProjection_of_le`). ★★, ~80 lines.'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "OrthogonalFamily.hasSum_norm_sq_starProjection"
+kind = "theorem"
+desc = '''Same hypotheses: `HasSum (fun i => ‖(V i).starProjection u‖ ^ 2)
+(‖(⨆ i, V i).topologicalClosure.starProjection u‖ ^ 2)`. The projections are pairwise orthogonal,
+so `hasSum_norm_sq_of_pairwise_inner_eq_zero` applied to `OrthogonalFamily.hasSum_starProjection`. ★'''
+deps = ["OrthogonalFamily.hasSum_starProjection", "hasSum_norm_sq_of_pairwise_inner_eq_zero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "OrthogonalFamily.tsum_norm_sq_starProjection_le"
+kind = "theorem"
+desc = '''**Bessel's inequality** for an orthogonal family of subspaces: `∑' i, ‖(V i).starProjection u‖ ^ 2 ≤ ‖u‖ ^ 2`,
+from `hasSum_norm_sq_starProjection` and `Submodule.norm_starProjection_apply_le`. The book's
+intermediate inequality `∑_{k ≤ n} |u_k|² ≤ |u|²` (line 5372). ★'''
+deps = ["OrthogonalFamily.hasSum_norm_sq_starProjection"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "OrthogonalFamily.hasSum_starProjection_of_dense"
+kind = "theorem"
+desc = '''**Theorem 5.9, expansion clause.** Same hypotheses plus `(hdense : (⨆ i, V i).topologicalClosure = ⊤)`:
+`HasSum (fun i => (V i).starProjection u) u`. Rewrite the closure to `⊤` in
+`OrthogonalFamily.hasSum_starProjection` and use `Submodule.starProjection_top`. The sequential
+form `∑_{k=1}^n u_k → u` the book states is `HasSum.tendsto_sum_nat` (surface). ★'''
+deps = ["OrthogonalFamily.hasSum_starProjection"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "OrthogonalFamily.hasSum_norm_sq_starProjection_of_dense"
+kind = "theorem"
+desc = '''**Theorem 5.9, Bessel–Parseval identity.** Same hypotheses plus density:
+`HasSum (fun i => ‖(V i).starProjection u‖ ^ 2) (‖u‖ ^ 2)`, display (20) of the book. ★'''
+deps = ["OrthogonalFamily.hasSum_norm_sq_starProjection"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.9"
+
+[[node]]
+id = "Orthonormal.countable_of_separableSpace"
+kind = "theorem"
+desc = '''`[TopologicalSpace.SeparableSpace E] {v : ι → E} (hv : Orthonormal 𝕜 v) : Countable ι`.
+The balls `Metric.ball (v i) (1/2)` are pairwise disjoint because `‖v i - v j‖ = √2` for `i ≠ j`
+(`hv.dist_eq`-type computation from `orthonormal_iff_ite`), nonempty and open, so
+`Pairwise.countable_of_isOpen_disjoint` (in `Mathlib/Topology/Bases.lean`) applies. No
+completeness needed. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.11"
+
+[[node]]
+id = "HilbertBasis.reindex"
+kind = "definition"
+desc = '''`(b : HilbertBasis ι 𝕜 E) (e : ι ≃ ι') : HilbertBasis ι' 𝕜 E`, the basis `b ∘ e.symm`:
+`HilbertBasis.mk (b.orthonormal.comp e.symm e.symm.injective)` with the dense-span hypothesis from
+`b.dense_span` and `Set.range_comp`/`Equiv.range_eq_univ` (proved in the prototype). Requires
+`[CompleteSpace E]` because `HilbertBasis.mk` does. Companion `HilbertBasis.coe_reindex`. Mathlib
+has `OrthonormalBasis.reindex` but nothing for `HilbertBasis`. ★'''
+deps = []
+
+[[node]]
+id = "HilbertBasis.coe_reindex"
+kind = "theorem"
+desc = '''`⇑(b.reindex e) = ⇑b ∘ e.symm`, by `HilbertBasis.coe_mk`. ★'''
+deps = ["HilbertBasis.reindex"]
+
+[[node]]
+id = "exists_hilbertBasis_countable"
+kind = "theorem"
+desc = '''**Every separable Hilbert space has a countable orthonormal basis**, [brezis2011functional]
+Theorem 5.11: `[CompleteSpace E] [TopologicalSpace.SeparableSpace E] :
+∃ (w : Set E) (b : HilbertBasis w 𝕜 E), w.Countable ∧ ⇑b = ((↑) : w → E)`. Mathlib's
+`exists_hilbertBasis` gives `w` and `b`; `b.orthonormal` is `Orthonormal 𝕜 ((↑) : w → E)`, so
+`Orthonormal.countable_of_separableSpace` gives `Countable w`, i.e. `w.Countable`
+(`Set.countable_coe_iff`). The book's construction (Gram–Schmidt on a dense sequence) is not
+needed. Note the book's basis is a *sequence* `(eₙ)_{n ≥ 1}`, which a finite-dimensional space
+cannot have; the countable-set form is the faithful reading, and `exists_hilbertBasis_nat` is
+the sequence form under infinite dimension. ★'''
+deps = ["Orthonormal.countable_of_separableSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.11"
+
+[[node]]
+id = "exists_hilbertBasis_nat"
+kind = "theorem"
+desc = '''`[CompleteSpace E] [TopologicalSpace.SeparableSpace E] (h : ¬ FiniteDimensional 𝕜 E) :
+Nonempty (HilbertBasis ℕ 𝕜 E)` — Theorem 5.11 in the book's own form, a basis indexed by
+`n ≥ 1`. From `exists_hilbertBasis_countable` get a countable `w`; `w` is infinite, for if it were
+finite then `Submodule.span 𝕜 w` would be finite-dimensional hence closed
+(`Submodule.closed_of_finiteDimensional`), so equal to its closure, which is `⊤` by
+`HilbertBasis.dense_span`, making `E` finite-dimensional; then `nonempty_denumerable_iff`
+(`Countable w ∧ Infinite w`) gives `e : w ≃ ℕ` (`Denumerable.eqv`) and `HilbertBasis.reindex b e`
+is the basis. ★★, ~50 lines. This is the form chapter 6 (Theorem 6.11 in a separable space) and
+chapter 8 (Theorem 8.22) want.'''
+deps = ["exists_hilbertBasis_countable", "HilbertBasis.reindex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.11"
+
+[[node]]
+id = "HilbertBasis.separableSpace"
+kind = "theorem"
+desc = '''The converse of Theorem 5.11: `[Countable ι] (b : HilbertBasis ι 𝕜 E) : TopologicalSpace.SeparableSpace E`.
+`Set.range b` is countable hence `IsSeparable`; `TopologicalSpace.IsSeparable.span` (needs
+`SeparableSpace 𝕜`, which `RCLike 𝕜` has) makes the span separable, `IsSeparable.closure` its
+closure, and `b.dense_span` says that closure is everything (`TopologicalSpace.isSeparable_univ_iff`).
+Together with `exists_hilbertBasis_countable` this is [brezis2011functional] Remark 10's
+"separable Hilbert spaces are exactly those isometric to `ℓ²`" in the countable-basis form. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 10"

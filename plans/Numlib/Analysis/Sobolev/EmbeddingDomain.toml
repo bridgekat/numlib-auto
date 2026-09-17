@@ -1,0 +1,182 @@
+desc = '''
+The Sobolev embeddings on an open set of class `C^1` with bounded boundary (or the half space),
+through the extension operator: Brezis, *Functional Analysis, Sobolev Spaces and Partial
+Differential Equations*, §9.3.B — Corollary 9.14 (the three cases `p < N`, `p = N`, `p > N`, the
+Hölder estimate and `W^{1,p}(Ω) ⊂ C(Ω̄)`), Corollary 9.15 (`W^{m,p}(Ω)`, by iterating 9.14 —
+footnote 17: no higher-order extension operator is needed), Remark 15 (the equivalent norm
+`‖∇u‖_p + ‖u‖_q`) and Remark 16 (`(log 1/|x|)^α ∈ W^{1,N}` is unbounded). Imports `Embedding.lean`, `Zero.lean` and
+`RemovableSingularity.lean` — **not** `Extension.lean`: the hypothesis of every node is the
+abstract predicate `IsSobolevExtensionDomain p Ω` / `HasSobolevExtensionOn S` of `Cutoff.lean`
+("a bounded extension operator `S → W^{1,p}(ℝ^N)` exists"), of which Theorem 9.7
+(`IsSobolevExtensionDomain.of_isContDiffChartDomain`, `Extension.lean`), the half space
+(`IsSobolevExtensionDomain.upperHalfSpace`, `Reflection.lean`) and the extension by zero on
+`W_0^{1,p}(Ω)` of an arbitrary open set (`SobolevEuclideanZero.hasSobolevExtensionOn`,
+`Zero.lean`, Remark 20) are the instances. Placed beside `Embedding.lean` rather than inside it so
+that the whole-space theory carries no domain hypothesis at all.
+
+Every statement is "obtain `P` from the predicate, apply the whole-space theorem to `P u`,
+restrict": for `u ∈ S`, `fn (P u) =ᵐ[Ω] fn u`, so `MemLp (fn u) q (volume.restrict Ω)` with
+`‖fn u‖_{L^q(Ω)} ≤ ‖fn (P u)‖_{L^q(ℝ^N)} ≤ C ‖P u‖ ≤ C ‖P‖ ‖u‖`. The book's standing assumption
+for §9.3.B, "`Ω` of class `C^1` with `Γ` bounded, or `Ω = ℝ^N_+`", is the two instances; the
+surface states the corollaries under it and Atkinson–Han's `IsContDiffDomain 1 Ω` reaches them
+through the bridge; a Lipschitz instance, if Stein's extension is ever formalized, would reach
+them with no restatement. This is Atkinson–Han's Theorem 7.3.7 under `C^1`
+(`AtkinsonHan.Chapter07.theorem_7_3_7` restated with `IsContDiffDomain 1 Ω`, all three clauses at
+`k = 1`, and at every `k` through Corollary 9.15 — the Hölder exponent clause (c) in the book's
+`C^{k−[d/p]−1,β}` reading). About 1600 lines.
+'''
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt"
+kind = "theorem"
+desc = '''**Corollary 9.14, case `p < N`**: for `IsSobolevExtensionDomain N p Ω`, `1 ≤ p < N`,
+`1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`, every `u : SobolevEuclidean N 1 p Ω` has
+`MemLp (fn u) q (volume.restrict Ω)` with `eLpNorm (fn u) q (volume.restrict Ω) ≤ C * ‖u‖`, and
+`IsContinuousEmbedding (toLpₗ …)`: "`W^{1,p}(Ω) ⊂ L^{p*}(Ω)` … with continuous injection"
+([brezis2011functional] Corollary 9.14, first line, with Corollary 9.10's range of `q`). From
+`SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le` applied to `P u`. ★★, ~100 lines.'''
+deps = ["IsSobolevExtensionDomain", "SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.14"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq"
+kind = "theorem"
+desc = '''**Corollary 9.14, case `p = N`**: for `IsSobolevExtensionDomain N N Ω` and every `q ∈ [N, ∞)`,
+`W^{1,N}(Ω) ↪ L^q(Ω)` continuously (`MemLp (fn u) q`, the bound, `IsContinuousEmbedding`). From
+Corollary 9.11 applied to `P u`. ★★, ~80 lines.'''
+deps = ["IsSobolevExtensionDomain", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank", "SobolevMultiIndex.toLpₗ"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.14"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq"
+kind = "theorem"
+desc = '''**Corollary 9.14, case `p > N`**: for `IsSobolevExtensionDomain N p Ω` and `N < p ≤ ∞`, every
+`u : SobolevEuclidean N 1 p Ω` has a representative `ũ : E → ℝ` with `fn u =ᵐ[volume.restrict Ω] ũ`,
+`ContinuousOn ũ (closure Ω)` (the book's `W^{1,p}(Ω) ⊂ C(Ω̄)`, footnote 15),
+`HolderOnWith (C ‖u‖) (1 − N/p) ũ (closure Ω)` (the inequality
+`|u(x) − u(y)| ≤ C ‖u‖_{W^{1,p}} |x − y|^α` a.e. `x, y ∈ Ω`, extended to the closure by
+continuity) and `∀ x, |ũ x| ≤ C ‖u‖` (`W^{1,p}(Ω) ⊂ L^∞(Ω)` with continuous injection, so also
+`MemLp (fn u) ∞` and `IsContinuousEmbedding (toLpₗ …)` into `L^∞(Ω)`). The representative is
+that of Morrey's theorem for `P u` (`HasWeakFDerivOn.exists_continuous_holderWith_ae_eq`),
+continuous on all of `ℝ^N`. ★★, ~150 lines. Typed: `SobolevEuclidean.toContinuousMapL (hΩ : Bornology.IsBounded Ω) : SobolevEuclidean N 1 p Ω →L[ℝ] C(closure Ω, ℝ)`
+for bounded `Ω` (state it, like the rest, for a subspace `S` with `HasSobolevExtensionOn S`, so that `W_0^{1,p}` of an arbitrary bounded open set gets it too) (`closure Ω` compact, so `C(closure Ω, ℝ)` is the Banach space of Arzelà–Ascoli),
+with `‖toContinuousMapL u‖ ≤ C ‖u‖` and the a.e. identification; the map Theorem 9.16's third
+case is about. ★★, ~150 lines.'''
+deps = ["IsSobolevExtensionDomain", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "SobolevMultiIndex.toLpₗ", "SobolevMultiIndex.ext_of_fn_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.14"
+
+[[node]]
+id = "SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension"
+kind = "theorem"
+desc = '''**Corollary 9.15, the `L^q` clauses**: the conclusions of `SobolevEuclidean.memLp_fn_of_order`
+(Corollary 9.13) for `u : SobolevEuclidean N m p Ω` with `IsSobolevExtensionDomain N q Ω` for the
+exponents `q` that arise — in the book: `Ω` of class `C^1` with `Γ` bounded, for which
+Theorem 9.7 holds for every `p`. Proof (footnote 17): repeated application of Corollary 9.14 —
+no `W^{m,p}` extension operator is needed: `u ∈ W^{m,p}(Ω)` gives `∂^β u ∈ W^{1,p}(Ω)` for
+`|β| ≤ m − 1` (`memSobolevMultiIndex_succ_iff`), each in `L^{p_1}(Ω)` by 9.14, so
+`u ∈ W^{m−1,p_1}(Ω)`, and so on. The hypothesis is therefore `∀ q, IsSobolevExtensionDomain N q Ω`
+(bundle as `IsSobolevExtensionDomainAll Ω`, supplied by Theorem 9.7). ★★★, ~300 lines.'''
+deps = ["IsSobolevExtensionDomain", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "memSobolevMultiIndex_succ_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15"
+
+[[node]]
+id = "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order"
+kind = "theorem"
+desc = '''**Corollary 9.15, the `C^k(Ω̄)` clause** (footnote 16): for `m − N/p > 0` not an integer,
+`k = ⌊m − N/p⌋`, `Ω` of class `C^1` with bounded boundary (`∀ q, IsSobolevExtensionDomain N q Ω`), every
+`u : SobolevEuclidean N m p Ω` has a representative `ũ` with `ContDiffOn ℝ k ũ Ω` such that every
+derivative of order `≤ k` extends continuously to `closure Ω` (the book's
+`C^k(Ω̄) = {u ∈ C^k(Ω) : D^α u has a continuous extension to Ω̄, |α| ≤ k}`), with the top
+derivatives `θ`-Hölder on `Ω`. As for Corollary 9.13, by induction from Corollary 9.14's `p > N`
+case and Remark 2's converse; the continuous extension to the closure comes from the Hölder
+continuity on `Ω`. ★★★, ~300 lines. Consumer: chapter 9b's Theorem 9.31 (`e_n ∈ C^∞(Ω)`), which
+applies it on balls `B ⊂⊂ Ω` (balls are `C^1` domains with bounded boundary: a ball is
+`IsContDiffDomain` — graph of `√(r² − |x'|²)` after rotation — and hence a chart domain; a
+node `isContDiffChartDomain_ball` (★★, ~150 lines) is owed for that and is listed here).'''
+deps = ["SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15"
+
+[[node]]
+id = "isContDiffChartDomain_ball"
+kind = "theorem"
+desc = '''An open ball of `EuclideanSpace ℝ (Fin (d + 1))`, `d ≥ 1`, is a domain of class `C^∞`
+(hence `C^1`) with bounded boundary: `IsContDiffChartDomain ⊤ (Metric.ball c r)` for `r > 0`, via
+`IsContDiffDomain.isContDiffChartDomain` and the graph description — near a boundary point,
+after a rotation taking the point to the south pole, the sphere is the graph of
+`x' ↦ c_N − √(r² − ‖x' − c'‖²)`, smooth for `‖x' − c'‖ < r`, extended smoothly beyond. Needed so
+that the interior regularity of chapter 9b (Remark 25 iterated with Corollary 9.15 on balls)
+has a `C^1` domain to stand on; also the standard example of a `C^1` domain for the surface.
+★★, ~150 lines (the global smooth extension of the graph function past the equator is the
+fiddly part: use a bump to interpolate to a constant).'''
+deps = ["IsContDiffDomain.isContDiffChartDomain", "IsContDiffChartDomain", "IsContDiffDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition (example)"
+
+[[node]]
+id = "SobolevEuclidean.norm_le_gradNorm_add_eLpNorm_of_isBounded"
+kind = "theorem"
+desc = '''**Remark 15 (an equivalent norm)**: for `Ω` bounded with `IsSobolevExtensionDomain N p Ω`, `1 ≤ p`,
+and `q` with `1 ≤ q ≤ p*` if `p < N`, `1 ≤ q < ∞` if `p = N`, `1 ≤ q ≤ ∞` if `p > N`, the
+quantity `SobolevMultiIndex.gradNorm u + (eLpNorm (fn u) q (volume.restrict Ω)).toReal` is a norm on
+`SobolevEuclidean N 1 p Ω` equivalent to `‖u‖`: `‖u‖ ≤ C (gradNorm u + ‖fn u‖_q)` and
+`gradNorm u + ‖fn u‖_q ≤ C' ‖u‖`. The second is Corollary 9.14 plus `gradNorm_le_norm`. The
+first: for `q ≥ p`, `‖fn u‖_p ≤ |Ω|^{1/p − 1/q} ‖fn u‖_q` (`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`);
+for `q < p`, interpolate `‖fn u‖_p ≤ ‖fn u‖_q^θ ‖fn u‖_{r}^{1−θ}` with `r` the exponent of
+Corollary 9.14 (`r = p*`, or any `r > p` for `p = N`, or `∞`), bound `‖fn u‖_r ≤ C ‖u‖ ≤ C (‖fn u‖_p + gradNorm u)`
+and absorb `‖fn u‖_p` by Young's inequality with a small parameter (an Ehrling-type step).
+[brezis2011functional] Chapter 9, Remark 15. ★★, ~250 lines.'''
+deps = ["SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow", "SobolevMultiIndex.gradNorm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 15"
+
+[[node]]
+id = "memSobolevMultiIndex_logRpow"
+kind = "theorem"
+desc = '''**Remark 16 (the limiting case `p = N`)**: on `Ω = ball 0 (1/2) ⊆ ℝ^N`, `N ≥ 2`, and
+`0 < α < 1 − 1/N`, the function `u x = (log (1/‖x‖))^α` (set `0` at `x = 0`) lies in
+`W^{1,N}(Ω)` — `MemSobolevMultiIndex b u 1 N Ω volume` — and is not essentially bounded:
+`eLpNorm u ∞ (volume.restrict Ω) = ∞`. Proof: `u` is `C^1` on `Ω ∖ {0}` with
+`∇u = −α (log 1/‖x‖)^{α−1} x/‖x‖²`, so `|∇u|^N = α^N (log 1/‖x‖)^{N(α−1)} ‖x‖^{−N}`, integrable near
+`0` exactly when `N(1 − α) > 1` (polar coordinates: `∫_0^{1/2} (log 1/r)^{−β} dr/r < ∞` iff `β > 1`),
+and `u ∈ L^N` since the log grows slower than any power; the classical derivative is the weak
+one on all of `Ω` by the removable-singularity lemma
+`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton` (`RemovableSingularity.lean`, the
+smallness `∫_{B(0,δ)} |u| = o(δ)` from `tendsto_inv_mul_setIntegral_norm_ball_zero` with any
+`s > 1 − N`, a logarithm being milder than any power). The pattern is Atkinson–Han's Example
+7.2.6 (`hasWeakIteratedLineDerivOn_logLogNorm`, proved, 578 lines for the whole example).
+Trudinger's inequality, the remark's second half, is not planned. ★★★, ~400 lines; low
+priority (no consumer).'''
+deps = ["hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton", "tendsto_inv_mul_setIntegral_norm_ball_zero", "MemSobolevMultiIndex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"
+
+[[node]]
+id = "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt"
+kind = "theorem"
+desc = '''**Corollary 9.15's `C^k(Ω̄)` clause without the non-integer restriction**: for `1 ≤ p < ∞`,
+integers `m, k` with `k + N/p < m`, and `Ω` of class `C^1` with bounded boundary
+(`∀ q, IsSobolevExtensionDomain N q Ω`), every `u : SobolevEuclidean N m p Ω` has a representative `ũ`
+with `ContDiffOn ℝ k ũ Ω` whose derivatives of order `≤ k` extend continuously to `closure Ω`
+and are bounded by `C ‖u‖` there (the sup bound is a clause, not only the continuity: it is what
+makes `D(A^ℓ) → C^k(Ω̄)` a bounded linear map for the heat equation, on unbounded `Ω` with
+bounded boundary as well). Proof: as `exists_contDiffOn_closure_ae_eq_of_order`, over
+`SobolevEuclidean.exists_contDiff_ae_eq_of_lt` in place of `exists_contDiff_ae_eq_of_order`.
+Consumers: `Numlib/Analysis/PDE/Heat` (`H^{2ℓ}(Ω) ⊆ C^k(Ω̄)` for `k + N/2 < 2ℓ`) and
+`Numlib/Analysis/PDE/Wave` (Theorem 10.8). ★★, ~120 lines.'''
+deps = ["SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order", "SobolevEuclidean.exists_contDiff_ae_eq_of_lt", "SobolevEuclidean.memLp_fn_of_order_of_hasSobolevExtension", "IsSobolevExtensionDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 (the integer case), and the proofs of Theorems 10.1 and 10.8"
+
+[[node]]
+id = "SobolevEuclideanZero.isContinuousEmbedding_toLp"
+kind = "theorem"
+desc = '''**Remark 20, the embedding clauses on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**: the three
+cases of Corollary 9.14 on the subspace `SobolevEuclideanZero N 1 p Ω` with no regularity of `Ω` —
+`W_0^{1,p}(Ω) ↪ L^q(Ω)` for `q ∈ [p, p*]` if `p < N` (`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`),
+for `q ∈ [p, ∞)` if `p = N` (`…_of_eq`), and into `L^∞(Ω)` with a representative continuous on
+`closure Ω` and the Hölder estimate if `p > N` (`SobolevEuclideanZero.exists_continuousOn_closure_holderWith_ae_eq`)
+— each the corresponding `HasSobolevExtensionOn`-node above instantiated with
+`SobolevEuclideanZero.hasSobolevExtensionOn` (`Zero.lean`, the extension by zero). "It follows,
+in particular, that the conclusion of Corollary 9.14 is true for `W_0^{1,p}(Ω)` with an arbitrary
+open set `Ω`" ([brezis2011functional] Remark 20). ★, ~60 lines for the three; the Sobolev
+inequality `‖u‖_{p*} ≤ C(p,N) ‖∇u‖_p` of the same remark is `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`
+(`Zero.lean`), and its compactness clause `SobolevEuclideanZero.isCompactEmbedding_toLp`
+(`Compactness.lean`).'''
+deps = ["SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"

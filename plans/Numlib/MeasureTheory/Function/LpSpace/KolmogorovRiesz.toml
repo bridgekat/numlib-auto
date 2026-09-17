@@ -1,0 +1,200 @@
+namespace = "MeasureTheory"
+desc = '''
+The Kolmogorov-M. Riesz-Frechet compactness criterion in `L^p` (natural home:
+`Mathlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz`). Source: [brezis2011functional] §4.5,
+Theorem 4.26 with its four-step proof (lines 4108-4181), Corollary 4.27 (4194-4211), Corollary
+4.28 and Lemma 4.3 (4216-4247). Nothing of it is in Mathlib at v4.35.0-rc2 (grep `Kolmogorov`,
+`Riesz`, `totallyBounded` under `MeasureTheory/Function`; Mathlib's Arzela-Ascoli is
+`BoundedContinuousFunction.arzela_ascoli`, transported to `C(K, E)` in
+`Numlib/Topology/ContinuousMap/ArzelaAscoli.lean`).
+
+**Statement shape** (fixed for the consumers: Rellich-Kondrachov, [brezis2011functional] Theorem
+9.16, and the one-dimensional compact embedding `W^{1,1}(I) ↪↪ L^q(I)`, Theorem 8.8 (7)):
+`G` is a finite-dimensional real normed space with a Haar measure `μ` — the setting of
+`Numlib/Analysis/Convolution/Lp.lean`'s mollification section, so that chapter 8's `G = ℝ` and
+chapter 9's `G = EuclideanSpace ℝ (Fin N)`, both with `volume`, are instances without transport;
+`E` is a finite-dimensional real normed space of values (the theorem is false for
+infinite-dimensional `E`: an orthonormal sequence times one indicator); `1 ≤ p < ∞` as
+`[Fact (1 ≤ p)] (hp : p ≠ ∞)`; the family is a set `F : Set (Lp E p μ)`, bounded in the sense of
+`Bornology.IsBounded`; the uniform continuity of translations is
+`∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ → eLpNorm (fun x => f (x + h) - f x) p μ < ε`
+(the book's `τ_h f (x) = f (x + h)`; stated on the coerced functions rather than through the
+`DomAddAct` action, because that is the form in which chapters 8 and 9 produce it,
+`‖τ_h u - u‖_p ≤ |h| ‖u'‖_p`); the conclusion is `IsCompact (closure (Lp.restrictCLM ℝ E p μ Ω '' F))`
+in `Lp E p (μ.restrict Ω)` for every `Ω` with `μ Ω ≠ ∞`, where `Lp.restrictCLM` is the restriction
+map defined here (Mathlib has `MemLp.restrict` but no bundled map on `Lp`). The theorem itself
+needs no measurability of `Ω` (`μ.restrict` handles it), and `Ω` bounded is not required — only
+finite measure, as in the book.
+
+**Proof structure**, following the book's four steps, one node each:
+
+1. Mollification is uniformly close on `F`: with `ρ := φ.normed μ` for a `ContDiffBump (0 : G)`
+   of outer radius `< δ`, `‖ρ ⋆ f - f‖_p ≤ ε` for all `f ∈ F` — this is
+   `MeasureTheory.eLpNorm_convolution_sub_rpow_le` of `Convolution/Lp.lean` (the weighted Minkowski
+   inequality; the book's Step 1 is the same Hoelder computation), so the node is a two-line
+   specialization.
+2. For fixed `ρ`, the family `ρ ⋆ f`, `f ∈ F`, is uniformly bounded and uniformly Lipschitz:
+   `‖(ρ ⋆ f) x‖ ≤ ‖ρ‖_{p'} ‖f‖_p` is Mathlib's `enorm_convolution_le` (Hoelder conjugates), and
+   `‖∇(ρ ⋆ f)‖ ≤ ‖∇ρ‖_{p'} ‖f‖_p` from `LocallyIntegrable.fderiv_convolution_left_apply` and the
+   same Hoelder bound, whence `LipschitzWith` by `lipschitzWith_of_nnnorm_fderiv_le`.
+3. The mass of `F` outside a bounded set is uniformly small on `Ω`: for the finite-measure `Ω` and
+   `ε`, a bounded `ω ⊆ Ω` with `‖1_{Ω \ ω} f‖_p < ε` for all `f ∈ F`, from Steps 1-2 and the
+   continuity from above of `μ` on `Ω \ closedBall 0 R`.
+4. Total boundedness: on the compact `closure ω` the family `{(ρ ⋆ f)|_{closure ω}}` is precompact
+   in `C(closure ω, E)` by Arzela-Ascoli (`ContinuousMap.isCompact_closure_of_forall_norm_le`),
+   hence totally bounded there, hence (`‖g‖_{L^p(ω)} ≤ μ(ω)^(1/p) ‖g‖_∞`) totally bounded in
+   `Lp E p (μ.restrict ω)`; extend the finite ε-net by zero to `Ω` and combine with Steps 1 and 3
+   (the book's `3ε` estimate). Completeness of `Lp` turns total boundedness into compact closure.
+
+Corollary 4.27 adds the tightness hypothesis and concludes in `Lp E p μ` itself (extend an ε-net of
+the restrictions by zero); Corollary 4.28 applies the theorem to `G ⋆ B` for `G ∈ L^1` and a
+bounded `B`, the translation hypothesis coming from `‖τ_h (G ⋆ u) - G ⋆ u‖_p ≤ ‖τ_h G - G‖_1 ‖u‖_p`
+(Young) and Lemma 4.3, which is `MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate` of
+`Convolution/Lp.lean` already; the operator `u ↦ G ⋆ u` on `Lp` is `Lp.convolutionCLM`, appended
+to `Convolution/Lp`. Remarks 12-13 (the hypotheses of 4.26 do not give compactness in `L^p(ℝ^N)`;
+the converse of 4.27) are surface nodes over Exercises 4.33 and 4.34.
+
+Estimated size: ~800 lines, the largest item of this chapter.
+'''
+
+[[node]]
+id = "Lp.restrictCLM"
+kind = "definition"
+desc = '''`Lp.restrictCLM (𝕜) [RCLike 𝕜] (E) [NormedAddCommGroup E] [NormedSpace 𝕜 E] (p) (μ) [Fact (1 ≤ p)] (s : Set α) : Lp E p μ →L[𝕜] Lp E p (μ.restrict s)`,
+`f ↦ ((Lp.memLp f).restrict s).toLp f`, the restriction of an `L^p` class to `s` (the book's
+`F_{|Ω}`, [brezis2011functional] Theorem 4.26). Linear because `toLp` is, and bounded with
+constant `1` (`eLpNorm_restrict_le`? — `Measure.restrict_le_self` and `eLpNorm_mono_measure`),
+built with `LinearMap.mkContinuous`. No measurability of `s` is needed. Mathlib has
+`MemLp.restrict` and `Lp.compMeasurePreserving` but no restriction map (grep `restrict` in
+`LpSpace/`). Prototype: `notes/brezis/ch04/proto/Shapes.lean`. ★'''
+deps = []
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26 (the restriction F|_Ω)"
+
+[[node]]
+id = "Lp.coeFn_restrictCLM"
+kind = "theorem"
+desc = '''`⇑(Lp.restrictCLM 𝕜 E p μ s f) =ᵐ[μ.restrict s] f` (`MemLp.coeFn_toLp`), and
+`Lp.norm_restrictCLM_apply_le : ‖Lp.restrictCLM 𝕜 E p μ s f‖ ≤ ‖f‖`. ★'''
+deps = ["Lp.restrictCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26 (the restriction F|_Ω)"
+
+[[node]]
+id = "exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate"
+kind = "theorem"
+desc = '''Step 1 of [brezis2011functional] Theorem 4.26 (lines 4117-4137): on a finite-dimensional
+real normed `G` with `[MeasurableSpace G] [BorelSpace G]` and `μ` a Haar measure, `[Fact (1 ≤ p)]`,
+`p ≠ ∞`, for `F : Set (Lp E p μ)` satisfying the uniform translation hypothesis of the module
+description and `ε ≠ 0`, there is `δ > 0` such that for every `φ : ContDiffBump (0 : G)` with
+`φ.rOut < δ` and every `f ∈ F`, `eLpNorm (φ.normed μ ⋆[lsmul ℝ ℝ, μ] f - f) p μ ≤ ε`. From
+`MeasureTheory.eLpNorm_convolution_sub_rpow_le` exactly as in the proof of
+`ContDiffBump.tendsto_eLpNorm_convolution_sub`: the `φ`-average of
+`eLpNorm (fun x => f (x - t) - f x) p μ ^ p` over `‖t‖ < rOut < δ` is at most `ε ^ p`. Here
+`[NormedSpace ℝ E] [CompleteSpace E]`; `E` finite-dimensional is not yet needed. ★'''
+deps = ["MeasureTheory.eLpNorm_convolution_sub_rpow_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26, Step 1"
+
+[[node]]
+id = "lipschitzWith_convolution_of_contDiff"
+kind = "theorem"
+desc = '''Step 2 of [brezis2011functional] Theorem 4.26 (lines 4138-4152), the Lipschitz bound: for
+`ρ : G → ℝ` smooth with compact support (`ContDiff ℝ 1 ρ`, `HasCompactSupport ρ`), `MemLp f p μ`
+and `[p.HolderConjugate q]`, `LipschitzWith (‖fderiv ℝ ρ‖_{L^q}.toNNReal * ‖f‖_p.toNNReal) (ρ ⋆[lsmul ℝ ℝ, μ] f)`
+— more precisely, with `C := eLpNorm (fderiv ℝ ρ) q μ * eLpNorm f p μ` (finite): for all `x y`,
+`‖(ρ ⋆ f) x - (ρ ⋆ f) y‖ₑ ≤ C * ‖x - y‖ₑ`. Proof: `ρ ⋆ f` is `C^1`
+(`HasCompactSupport.contDiff_convolution_left`) with
+`fderiv ℝ (ρ ⋆ f) x v = ((fun y => fderiv ℝ ρ y v) ⋆ f) x`
+(`MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply`), bounded by
+`eLpNorm (fderiv ℝ ρ · v) q μ * eLpNorm f p μ` by Mathlib's `enorm_convolution_le` (Hoelder
+conjugates); then `lipschitzWith_of_nnnorm_fderiv_le`. The companion sup bound
+`‖(ρ ⋆ f) x‖ₑ ≤ eLpNorm ρ q μ * eLpNorm f p μ` (the book's (24)) is Mathlib's `enorm_convolution_le`
+directly and needs no node. ★★'''
+deps = ["MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26, Step 2"
+
+[[node]]
+id = "Lp.exists_isBounded_forall_eLpNorm_indicator_compl_le"
+kind = "theorem"
+desc = '''Step 3 of [brezis2011functional] Theorem 4.26 (lines 4153-4160): under the hypotheses of
+the theorem (bounded `F`, uniform translation continuity, `μ Ω ≠ ∞`) and `ε ≠ 0`, there is a
+bounded measurable `ω ⊆ Ω` with `eLpNorm ((Ω \ ω).indicator f) p μ ≤ ε` for all `f ∈ F`. Proof:
+fix `ρ` from Step 1 with `‖ρ ⋆ f - f‖_p ≤ ε/2` on `F`; by `enorm_convolution_le` the functions
+`ρ ⋆ f` are uniformly bounded by `M := ‖ρ‖_q sup_F ‖f‖_p` (`Bornology.IsBounded` gives the sup);
+with `ω := Ω ∩ closedBall 0 R`, `‖1_{Ω \ ω} (ρ ⋆ f)‖_p ≤ M μ(Ω \ ω)^(1/p)` and
+`μ (Ω \ closedBall 0 R) → 0` as `R → ∞` (`tendsto_measure_iInter_atTop` on the antitone family, using
+`μ Ω ≠ ∞`; or `measure_iInter_eq_iInf`); choose `R` with `M μ(Ω \ ω)^(1/p) ≤ ε/2` and add. ★★'''
+deps = ["exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26, Step 3"
+
+[[node]]
+id = "Lp.totallyBounded_image_restrictCLM_of_uniform_translate"
+kind = "theorem"
+desc = '''Step 4 of [brezis2011functional] Theorem 4.26 (lines 4161-4181): under the hypotheses of
+the theorem, `TotallyBounded (Lp.restrictCLM ℝ E p μ Ω '' F)`. Proof: given `ε`, take `ω` from
+Step 3 and `ρ` from Step 1 (both at `ε`). The family `H := {(ρ ⋆ f)|_{closure ω} | f ∈ F}` in
+`C(closure ω, E)` (`closure ω` compact since `ω` is bounded and `G` proper) is uniformly bounded
+(`enorm_convolution_le`) and equicontinuous (uniformly Lipschitz by
+`lipschitzWith_convolution_of_contDiff`; `LipschitzWith.equicontinuous`-type bridge), so
+`ContinuousMap.isCompact_closure_of_forall_norm_le` (`E` finite-dimensional hence proper) makes it
+precompact, hence totally bounded (`IsCompact.totallyBounded`): finitely many `gᵢ ∈ C(closure ω, E)`
+with `H ⊆ ⋃ ball gᵢ ε'`. Their classes `ContinuousMap.toLp` in `Lp E p (μ.restrict (closure ω))`
+(`BoundedContinuousFunction.Lp_norm_le`: `‖g‖_{L^p(ω)} ≤ μ(closure ω)^(1/p) ‖g‖_∞`, so take
+`ε' := ε / μ(closure ω)^(1/p)`), extended by zero to `Ω` (`indicatorConstLp`-style, or
+`MemLp.indicator`), form an ε-net of `restrictCLM Ω '' F` for radius `3ε`: for `f ∈ F` pick `i` with
+`‖ρ ⋆ f - gᵢ‖_{L^p(ω)} < ε`; then `‖f - ḡᵢ‖_{L^p(Ω)}^p = ‖1_{Ω\ω} f‖_p^p + ‖f - gᵢ‖_{L^p(ω)}^p` and
+`‖f - gᵢ‖_{L^p(ω)} ≤ ‖f - ρ ⋆ f‖_p + ‖ρ ⋆ f - gᵢ‖_{L^p(ω)} < 2ε`. `Metric.totallyBounded_iff`. ★★★,
+~350 lines: the transport between `C(closure ω, E)`, `Lp E p (μ.restrict ω)` and
+`Lp E p (μ.restrict Ω)` is the bulk.'''
+deps = ["Lp.restrictCLM", "Lp.coeFn_restrictCLM", "exists_forall_eLpNorm_convolution_sub_le_of_uniform_translate", "lipschitzWith_convolution_of_contDiff", "Lp.exists_isBounded_forall_eLpNorm_indicator_compl_le", "ContinuousMap.isCompact_closure_of_forall_norm_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26, Step 4"
+
+[[node]]
+id = "Lp.isCompact_closure_image_restrictCLM_of_uniform_translate"
+kind = "theorem"
+desc = '''**Kolmogorov-M. Riesz-Frechet** ([brezis2011functional] Theorem 4.26): for `G` a
+finite-dimensional real normed space with `[MeasurableSpace G] [BorelSpace G]` and a measure
+`μ` with `[μ.IsAddHaarMeasure]`, `E` a finite-dimensional real normed space, `[Fact (1 ≤ p)]`,
+`hp : p ≠ ∞`, `F : Set (Lp E p μ)` with `hF : Bornology.IsBounded F` and
+`hτ : ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ → eLpNorm (fun x => f (x + h) - f x) p μ < ε`,
+and any `Ω : Set G` with `hΩ : μ Ω ≠ ∞`:
+`IsCompact (closure (Lp.restrictCLM ℝ E p μ Ω '' F))`. From
+`Lp.totallyBounded_image_restrictCLM_of_uniform_translate` and the completeness of
+`Lp E p (μ.restrict Ω)`: `TotallyBounded.closure` and `isCompact_iff_totallyBounded_isComplete`
+(`isComplete_of_complete`? — `IsClosed.isComplete (isClosed_closure)`). Statement prototyped in
+`notes/brezis/ch04/proto/Shapes.lean`. Consumers: [brezis2011functional] Theorem 9.16
+(Rellich-Kondrachov, chapter 9a's `Numlib/Analysis/Sobolev/Compactness.lean`) and Theorem 8.8 (7)
+(chapter 8's `Numlib/Analysis/Sobolev/Interval/Embedding.lean`, with `G = ℝ`). ★'''
+deps = ["Lp.totallyBounded_image_restrictCLM_of_uniform_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.26"
+
+[[node]]
+id = "Lp.isCompact_closure_of_uniform_translate_of_tight"
+kind = "theorem"
+desc = '''[brezis2011functional] Corollary 4.27: under the hypotheses of
+`Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` and the tightness
+`htight : ∀ ε : ℝ≥0∞, 0 < ε → ∃ Ω : Set G, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧ ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p μ < ε`
+(the book's (27)), `IsCompact (closure F)` in `Lp E p μ`. Proof (lines 4200-4211): given `ε`, take
+`Ω` from `htight`; `μ Ω < ∞` since `Ω` is bounded and `μ` is finite on compacts; the theorem gives
+a finite `ε`-net `gᵢ` of `restrictCLM Ω '' F` in `Lp E p (μ.restrict Ω)`; their extensions by zero
+`ḡᵢ ∈ Lp E p μ` (`MemLp.indicator` of `Ω`, `eLpNorm_indicator_eq_eLpNorm_restrict`) form a
+`2ε`-net of `F`: `‖f - ḡᵢ‖_p ≤ ‖1_{Ωᶜ} f‖_p + ‖f - gᵢ‖_{L^p(Ω)}`. Then total boundedness plus
+completeness as before. ★★'''
+deps = ["Lp.isCompact_closure_image_restrictCLM_of_uniform_translate", "Lp.restrictCLM", "Lp.coeFn_restrictCLM"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.27"
+
+[[node]]
+id = "Lp.isCompact_closure_image_restrictCLM_convolutionCLM"
+kind = "theorem"
+desc = '''[brezis2011functional] Corollary 4.28: for `K : G → ℝ` with `hK : Integrable K μ`,
+`B : Set (Lp E p μ)` bounded, `[Fact (1 ≤ p)]`, `hp : p ≠ ∞`, `E` finite-dimensional, and `Ω` with
+`μ Ω ≠ ∞`: `IsCompact (closure (Lp.restrictCLM ℝ E p μ Ω '' (Lp.convolutionCLM hK '' B)))`. Proof
+(lines 4220-4229): `F := convolutionCLM hK '' B` is bounded by `‖K‖_1 sup_B ‖u‖`
+(`MeasureTheory.Lp.norm_convolutionCLM_le`); for the translation hypothesis,
+`τ_h (K ⋆ u) - K ⋆ u = (τ_h K - K) ⋆ u` (translation commutes with convolution:
+`MeasureTheory.convolution` is `∫ K t • u (x - t)`, so `(K ⋆ u) (x + h) = ((K (· + h)) ⋆ u) x` after
+the substitution `t ↦ t + h`, `integral_add_right_eq_self`), whence by Young
+(`MeasureTheory.eLpNorm_convolution_le`) `‖τ_h (K ⋆ u) - K ⋆ u‖_p ≤ ‖τ_h K - K‖_1 ‖u‖_p`, and
+`‖τ_h K - K‖_1 → 0` is `MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate` (Lemma 4.3, with
+`K (x - t)`; substitute `t := -h`). Conclude by
+`Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`. ★★'''
+deps = ["Lp.isCompact_closure_image_restrictCLM_of_uniform_translate", "MeasureTheory.Lp.convolutionCLM", "MeasureTheory.Lp.norm_convolutionCLM_le", "MeasureTheory.Lp.coeFn_convolutionCLM", "MeasureTheory.eLpNorm_convolution_le", "MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28"

@@ -1,1 +1,6 @@
-desc = 'Density theorems for the Lebesgue spaces.'
+desc = '''
+`ℓ^p`-type spaces beyond Mathlib: `PiLp` facts, density theorems for the Lebesgue spaces
+(`SmoothApprox`), and the classical sequence spaces `ℓ^p`, `c`, `c₀` with their duals,
+reflexivity and uniform convexity (`Sequence`; Brezis, *Functional Analysis, Sobolev Spaces and
+Partial Differential Equations*, §11.3).
+'''

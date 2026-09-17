@@ -1,4 +1,7 @@
 desc = '''
-Measure theory: Mathlib-shaped glue about integrals and `Lp` spaces over an interval, kept apart
-from the numerical analysis that uses it.
+Measure theory: Mathlib-shaped glue about integrals and `Lp` spaces, kept apart from the
+numerical analysis that uses it — interval integrals (`Integral/`), and the `L^p` theory Brezis's
+chapter 4 needs beyond Mathlib (`Function/`): Clarkson's inequalities and uniform convexity, the
+duality `(L^p)^* = L^{p'}`, the Kolmogorov–M. Riesz–Fréchet compactness criterion, a.e.
+convergence with domination, essential supports and the interpolation inequality.
 '''

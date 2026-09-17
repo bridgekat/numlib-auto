@@ -45,3 +45,34 @@ id = "SesqForm₂.infSupWith_of_forall_exists"
 
 [[node]]
 id = "SesqForm₂.norm_le_of_infSupWith"
+
+[[node]]
+id = "SesqForm.convexOn_energy"
+kind = "theorem"
+desc = '''**A positive semidefinite form has a convex energy, without symmetry.** For a real Hilbert
+space `V`, `a : SesqForm ℝ V` with `hpos : ∀ v, 0 ≤ a v v` and any `ℓ : V →L[ℝ] ℝ`:
+`ConvexOn ℝ Set.univ (a.energy ℓ)`. [brezis2011functional] Chapter 5, Remark 6: "if
+`a(v, v) ≥ 0` for all `v` then `v ↦ a(v, v)` is convex" — no symmetry is assumed there, and none
+is needed: for `s + t = 1`, `a(su + tv, su + tv) = s·a(u,u) + t·a(v,v) - s t·a(u - v, u - v)`
+(expand both sides; the cross terms `a u v + a v u` match without commuting them), so the
+quadratic part is convex, and the linear part is affine. The existing `convexOn_energy` of
+`Numlib/Variational/Inequality/Basic` is private and assumes `a.IsHermitian`; once this node is
+proved, that one can be dropped in favour of it. ★, ~25 lines.'''
+deps = ["SesqForm.energy"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 6"
+
+[[node]]
+id = "SesqForm.hasFDerivAt_energy"
+kind = "theorem"
+desc = '''**The Fréchet derivative of the energy of a symmetric form**: for a real Hilbert space `V`,
+`a : SesqForm ℝ V` Hermitian (real: symmetric), `ℓ : V →L[ℝ] ℝ` and `u : V`,
+`HasFDerivAt (a.energy ℓ) (a u - ℓ) u`. From `SesqForm.energy_add_sub_energy`,
+`E(u + w) - E(u) - (a u w - ℓ w) = ½ a w w = O(‖w‖²)` (`le_opNorm₂`), which is the
+`HasFDerivAt` little-o condition; or from `IsBoundedBilinearMap.hasFDerivAt` for `v ↦ a v v`
+(derivative `h ↦ a u h + a h u`, which symmetry halves). This is the precise content of
+[brezis2011functional] Chapter 5, Remark 7 — the variational equation `a(u, ·) = φ` is the Euler
+equation `F'(u) = 0` of `F(v) = ½ a(v,v) - φ(v)` — and of Exercise 5.14's `C¹` claim; the
+Gâteaux version is the private `hasLineDerivAt_energy` of `Numlib/Variational/Inequality/Basic`.
+★, ~30 lines.'''
+deps = ["SesqForm.energy", "SesqForm.IsHermitian"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 7"

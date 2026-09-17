@@ -1,0 +1,126 @@
+namespace = "Brezis.Chapter09"
+desc = '''
+Brezis §9.2, "Extension operators" (lines 10182–10396): the notation `ℝ^N_+`, `Q`, `Q_+`, `Q_0`;
+the definition of an open set of class `C^1` by local charts; Theorem 9.7 (the extension
+operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)` for `Ω` of class `C^1` with bounded boundary, or the half
+space); Lemma 9.2 (extension by reflection); Remark 9 (the square); Lemma 9.3 (partition of
+unity); Corollary 9.8 (density of the restrictions of `C_c^∞(ℝ^N)`). Footnote 7 (the transfer
+technique) is method, not a statement.
+
+The book's class `C^1` is the backbone's `IsContDiffChartDomain 1 Ω`
+(`Numlib/Analysis/Sobolev/Chart`, decision D9) — by local charts, exactly the book's definition
+— and not Atkinson–Han's graph definition `IsContDiffDomain 1 Ω` of `Domain.lean`; the bridge
+`IsContDiffDomain.isContDiffChartDomain` (graph ⇒ chart) is elementary and the converse
+(chart ⇒ graph) is the implicit function theorem, both in `Chart.lean`. The notation sets are
+`EuclideanSpace.upperHalfSpace`, `unitChartCube`, `unitChartCubePos`, `unitChartCubeZero`. Theorem 9.7 is stated,
+as in the book, existentially; its two hypotheses ("`Ω` of class `C^1` with `Γ` bounded, or
+`Ω = ℝ^N_+`") are two nodes. This section is the critical path of `notes/fem-roadmap.md`
+(Decision B) and closes, under `C^1`, the Atkinson–Han nodes `theorem_7_3_5` and `theorem_7_3_2`
+(`k = 1`) listed in `Chapter09.toml`.
+'''
+
+[[node]]
+id = "IsOfClassC"
+kind = "definition"
+desc = '''`IsOfClassC m Ω := IsContDiffChartDomain m Ω`, for `Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))`
+and `m : ℕ∞` — the book's "of class `C^m`" (§9.2 for `m = 1`, §9.6 for general `m`): "for every
+`x ∈ ∂Ω = Γ` there exist a neighbourhood `U` of `x` in `ℝ^N` and a bijective map `H : Q → U` such
+that `H ∈ C^m(Q̄)`, `H⁻¹ ∈ C^m(Ū)`, `H(Q_+) = U ∩ Ω`, `H(Q_0) = U ∩ Γ`"; of class `C^∞` if of class
+`C^m` for every `m`, which is `IsOfClassC ⊤ Ω` (`isOfClassC_top_iff : IsOfClassC ⊤ Ω ↔ ∀ m : ℕ, IsOfClassC m Ω`,
+from `IsContDiffChartDomain.of_forall_nat`-type monotonicity of `Chart.lean`). `isOfClassC_iff`
+unfolds it to that wording, the chart data being a `ContDiffChart m Ω` (`Chart.lean`).
+The `C^1` case is the abbreviation `IsClassC1 Ω := IsOfClassC 1 Ω` (one definition for the two
+places the book defines it; `Section06.toml` states its `C^m` nodes on this one). The notation
+`ℝ^N_+ = EuclideanSpace.upperHalfSpace d`, `Q = unitChartCube d`, `Q_+ = unitChartCubePos d`,
+`Q_0 = unitChartCubeZero d` is recorded as `notation_halfSpace` etc. only in this description. ★'''
+deps = ["IsContDiffChartDomain", "ContDiffChart", "EuclideanSpace.upperHalfSpace", "unitChartCube", "unitChartCubePos", "unitChartCubeZero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition, and §9.6, Definition"
+
+[[node]]
+id = "IsClassC1"
+kind = "definition"
+desc = '''`abbrev IsClassC1 (Ω) := IsOfClassC 1 Ω`, the §9.2 wording "`Ω` is of class `C^1`"; the
+hypothesis of Theorems 9.7, 9.16, Corollaries 9.8, 9.14, 9.15 and Remark 21. ★'''
+deps = ["IsOfClassC"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition"
+
+[[node]]
+id = "isContDiffDomain_of_isClassC1"
+kind = "theorem"
+desc = '''The two readings of "`C^1` domain" agree: `isClassC1_of_isContDiffDomain`, Atkinson–Han's
+`C^1` domains (`IsContDiffDomain 1 Ω`, Definition 7.2.1, the graph definition of
+`Numlib/Analysis/Sobolev/Domain`) are of class `C^1` in Brezis's sense
+(`IsContDiffDomain.isContDiffChartDomain`, `Chart.lean`: a graph gives a chart by straightening),
+and `isContDiffDomain_of_isClassC1` conversely (`IsContDiffChartDomain.isContDiffDomain`, the
+implicit-function-theorem direction, the lowest-priority node of `Chart.toml`). Only the first
+direction is consumed (by the Atkinson–Han restatements of Corollary 9.14, `Chapter09.toml`); the
+node states both so that the surface records the equivalence the two books' definitions enjoy. ★'''
+deps = ["IsClassC1", "IsContDiffDomain.isContDiffChartDomain", "IsContDiffChartDomain.isContDiffDomain"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.2, Definition; Atkinson–Han, Definition 7.2.1"
+
+[[node]]
+id = "theorem_9_7"
+kind = "theorem"
+desc = '''Theorem 9.7: if `Ω` is of class `C^1` with `Γ = ∂Ω` bounded, then for `1 ≤ p ≤ ∞` there is a
+linear extension operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)` with `P u|_Ω = u`,
+`‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(Ω)}`, `C` depending
+only on `Ω` (and `p`): `∃ (P : sobolevSpace N p Ω →L[ℝ] sobolevSpace N p ⊤) (C : ℝ), ∀ u,
+fn (P u) =ᵐ[volume.restrict Ω] fn u ∧ eLpNorm (fn (P u)) p volume ≤ ofReal C * eLpNorm (fn u) p (volume.restrict Ω) ∧ ‖P u‖ ≤ C * ‖u‖`
+(with `bookNorm` in place of `‖·‖` if wanted, by `bookNorm_equiv`). The backbone's
+`SobolevEuclidean.exists_extensionL` (`Numlib/Analysis/Sobolev/Extension`), whose statement was
+prototyped in `notes/brezis/ch09a/proto/Chart.lean`. `theorem_9_7_halfSpace`: the same for
+`Ω = ℝ^N_+` — `SobolevEuclidean.exists_extensionL_upperHalfSpace` (`Reflection`), with `C = 2`. ★'''
+deps = ["IsClassC1", "sobolevSpace", "SobolevEuclidean.exists_extensionL", "SobolevEuclidean.exists_extensionL_upperHalfSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7"
+
+[[node]]
+id = "lemma_9_2"
+kind = "theorem"
+desc = '''Lemma 9.2: for `u ∈ W^{1,p}(Q_+)`, `1 ≤ p ≤ ∞`, the extension by reflection
+`u^⋆(x', x_N) = u(x', x_N)` for `x_N > 0`, `u(x', −x_N)` for `x_N < 0`, lies in `W^{1,p}(Q)` with
+`‖u^⋆‖_{L^p(Q)} ≤ 2 ‖u‖_{L^p(Q_+)}` and `‖u^⋆‖_{W^{1,p}(Q)} ≤ 2 ‖u‖_{W^{1,p}(Q_+)}`; moreover (7)
+`∂_i u^⋆ = (∂_i u)^⋆` for `i < N` and (8) `∂_N u^⋆ = (∂_N u)^□`. The backbone's
+`MemSobolev.evenReflection` and `HasWeakFDerivOn.evenReflection` (`Numlib/Analysis/Sobolev/Reflection`)
+with `v = e_N`, `V = unitChartCube d`, whose `reflectFDeriv` evaluated at `e_i` is
+`evenReflection (∂_i u)` and at `e_N` is `oddReflection (∂_N u)`; the norm bounds through
+`SobolevEuclidean.evenReflectionL` (`‖·‖ ≤ 2 ‖·‖`, and `bookNorm_equiv` for the book's norm).
+`lemma_9_2_halfSpace`: "the conclusion remains valid if `Q_+` is replaced by `ℝ^N_+`" — the
+same backbone node with `V = ⊤`. ★'''
+deps = ["sobolevSpace", "evenReflection", "HasWeakFDerivOn.evenReflection", "MemSobolev.evenReflection", "SobolevEuclidean.evenReflectionL", "unitChartCubePos", "EuclideanSpace.upperHalfSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
+
+[[node]]
+id = "remark_9_9"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 9: for the square `Ω = (0,1) × (0,1) ⊆ ℝ^2`, which is not of class `C^1`, there is
+nevertheless an extension operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^2)` with the three properties of
+Theorem 9.7, obtained by four reflections and a cut-off. The backbone's
+`SobolevEuclidean.exists_extensionL_unitSquare` (`Extension`). ★ (backbone ★★, low priority).'''
+deps = ["sobolevSpace", "SobolevEuclidean.exists_extensionL_unitSquare"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "lemma_9_3"
+kind = "theorem"
+desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Lemma 9.3 (partition of unity): for a compact `Γ ⊆ ℝ^N` and an open cover `U_1, …, U_k`
+of `Γ`, there are `θ_0, θ_1, …, θ_k ∈ C^∞(ℝ^N)` with `0 ≤ θ_i ≤ 1`, `∑_{i=0}^k θ_i = 1` on `ℝ^N`,
+`supp θ_i` compact with `supp θ_i ⊆ U_i` for `i ≥ 1`, and `supp θ_0 ⊆ ℝ^N ∖ Γ`; and if `Ω` is open
+and bounded with `Γ = ∂Ω`, then `θ_0|_Ω ∈ C_c^∞(Ω)` (`tsupport θ_0 ∩ closure Ω` is a compact
+subset of `Ω`). The backbone's `IsCompact.exists_contDiff_partitionOfUnity` (`Chart`), from
+Mathlib's `SmoothPartitionOfUnity.exists_isSubordinate`; the book gives no proof ("this lemma is
+classical"). ★'''
+deps = ["IsCompact.exists_contDiff_partitionOfUnity"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.3"
+
+[[node]]
+id = "corollary_9_8"
+kind = "theorem"
+desc = '''Corollary 9.8 (density): if `Ω` is of class `C^1` and `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, there
+is a sequence `u_n ∈ C_c^∞(ℝ^N)` with `u_n|_Ω → u` in `W^{1,p}(Ω)`; "in other words, the
+restrictions to `Ω` of `C_c^∞(ℝ^N)` functions form a dense subspace of `W^{1,p}(Ω)`". The
+backbone's `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto` (`Extension`);
+`corollary_9_8_bounded`, the bounded-`Γ` case proved through Theorem 9.7 directly,
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isBounded_frontier`. This is
+Atkinson–Han's Theorem 7.3.2 at `k = 1` under `C^1`, see `Chapter09.toml`. ★'''
+deps = ["IsClassC1", "sobolevSpace", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_isBounded_frontier"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"
