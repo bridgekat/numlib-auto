@@ -1,348 +1,121 @@
 namespace = "Brezis.Chapter01"
-desc = '''
-Brezis §1.4, conjugate convex functions on a real normed space `E`, over the backbone's convex
-library (`Numlib/Analysis/Convex/…`, the Rockafellar development). The book's
-`φ : E → (-∞, +∞]` is a function `E → EReal` with `∀ x, φ x ≠ ⊥`; `φ ≢ +∞` is
-`(ConvexAnalysis.dom φ).Nonempty`, and the two together are `ConvexAnalysis.Proper φ`. `D(φ)`
-and `epi φ` are `ConvexAnalysis.dom` and `ConvexAnalysis.epi`; "convex" is
-`ConvexAnalysis.ConvexFn` (convex epigraph, `convexFn_iff_le` for the book's inequality);
-"l.s.c." is Mathlib's `LowerSemicontinuous`, which for `φ ≠ ⊥` is the library's `ClosedFn φ`
-(`closedFn_iff_lowerSemicontinuous`). The conjugate `φ* : E* → (-∞, +∞]` is
-`ConvexAnalysis.conj` against the pairing of `E` with `StrongDual ℝ E`, here named
-`dualPairing E := (topDualPairing ℝ E).flip` after the pattern of `Rockafellar.pairing`; the
-biconjugate *restricted to `E`* is `ConvexAnalysis.biconj (dualPairing E) φ`, which is why the
-backbone's `biconj` uses `B.flip` rather than a second copy of `B`. The instance
-`instIsCompatiblePairingTopDual` is what makes `E` compatibly paired with its dual in its own
-norm topology, so Fenchel–Moreau (Theorem 1.11, `biconj_eq_clFn_topDual`) applies with no
-reflexivity assumption, and Theorem 1.12's constraint qualification is exactly the backbone's
-`IsExactSum.of_continuousAt` (`Numlib/Analysis/Convex/Duality/Continuity`), so no new backbone
-module is needed for this section. Lemma 1.4 and Exercise 1.7 are Mathlib
-(`Convex.closure_interior_eq_closure_of_nonempty_interior` and its companions). The section's
-elementary facts on l.s.c. and convex functions (the two numbered lists, unnumbered as results)
-are Mathlib's `lowerSemicontinuous_iff_isClosed_epigraph`, `lowerSemicontinuous_iff_le_liminf`,
-`LowerSemicontinuous.add`, `lowerSemicontinuous_iSup`, `LowerSemicontinuousOn.exists_isMinOn`,
-and the backbone's `ConvexFn.convex_le`, `convexFn_add_coe`; they are not nodes. Examples 1–4
-are nodes; Remark 8 is discussion.
-'''
 
 [[node]]
 id = "dualPairing"
-kind = "definition"
-desc = '''`abbrev dualPairing (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] :
-E →ₗ[ℝ] StrongDual ℝ E →ₗ[ℝ] ℝ := (topDualPairing ℝ E).flip`, the pairing `⟨f, x⟩ = f x` of
-the book's "scalar product for the duality `E*, E`", written with `E` on the left as the
-backbone's `conj` wants. `dualPairing_apply : dualPairing E x f = f x` (folded in). An `abbrev`
-so that the backbone's instances `instIsCompatiblePairingTopDual : IsCompatiblePairing (topDualPairing ℝ E).flip`
-and `instIsContinuousPairingTopDualNorm` are found on it, exactly as `Rockafellar.pairing` is an
-`abbrev` of `innerₗ`. `(dualPairing E).flip = topDualPairing ℝ E` by `rfl`.'''
-deps = ["ConvexAnalysis.instIsCompatiblePairingTopDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.1, Notation"
 
 [[node]]
+id = "mem_domain_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Notation"
+
+[[node]]
+id = "mem_epigraph_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Notation"
+
+[[node]]
 id = "lowerSemicontinuous_iff"
-kind = "theorem"
-desc = '''The book's Definition of l.s.c.: for `φ : E → EReal` (`E` any topological space),
-`LowerSemicontinuous φ ↔ ∀ λ : ℝ, IsClosed {x | φ x ≤ (λ : EReal)}`. The backbone's
-`ConvexAnalysis.lowerSemicontinuous_iff_isClosed_le` (`Numlib/Analysis/Convex/Closure`); it
-identifies the book's notion with Mathlib's `LowerSemicontinuous`, which is the section's
-fact 2 (`φ y ≥ φ x - ε` near `x`). ★'''
-deps = ["ConvexAnalysis.lowerSemicontinuous_iff_isClosed_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "convexFn_iff"
-kind = "theorem"
-desc = '''The book's Definition of a convex function `φ : E → (-∞, +∞]`: for `φ : E → EReal` with
-`∀ x, φ x ≠ ⊥`, `ConvexAnalysis.ConvexFn φ ↔ ∀ x y (t : ℝ), 0 < t → t < 1 →
-φ (t • x + (1 - t) • y) ≤ (t : EReal) * φ x + ((1 - t : ℝ) : EReal) * φ y`. The backbone's
-`convexFn_iff_le hφ` with `a = t`, `b = 1 - t` (`Numlib/Analysis/Convex/Epigraph`); it
-identifies the book's notion with the library's convex-epigraph definition, which is the
-section's fact 1 on convex functions. ★'''
-deps = ["ConvexAnalysis.ConvexFn", "ConvexAnalysis.convexFn_iff_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "conjugate"
-kind = "definition"
-desc = '''The book's Definition of the conjugate function: for `φ : E → EReal`,
-`conjugate φ : StrongDual ℝ E → EReal := ConvexAnalysis.conj (dualPairing E) φ`, so that
-`conjugate_apply : conjugate φ f = ⨆ x, ((f x : ℝ) : EReal) - φ x` (folded in; `conj_apply`
-by `rfl`). The book assumes `φ ≢ +∞` for the definition; the backbone defines `conj` for every
-`φ` (`conj_eq_bot_iff`: `φ* ≡ -∞` exactly when `φ ≡ +∞`), and the hypothesis reappears where
-it matters (`remark_1_7`, `proposition_1_10`).'''
-deps = ["dualPairing", "ConvexAnalysis.conj"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "conjugate_convexFn"
-kind = "theorem"
-desc = '''"Note that `φ*` is convex and l.s.c. on `E*`", first half: `ConvexFn (conjugate φ)` for
-every `φ`. The backbone's `convexFn_conj`. ★'''
-deps = ["conjugate", "ConvexAnalysis.convexFn_conj"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "conjugate_lowerSemicontinuous"
-kind = "theorem"
-desc = '''Second half: `LowerSemicontinuous (conjugate φ)` in the norm topology of `E*`. The
-backbone's `closedFn_conj` (which needs only `IsContinuousPairing (dualPairing E)`, the instance
-`instIsContinuousPairingTopDualNorm`) through `ClosedFn.lowerSemicontinuous`. This is the
-section's fact 4 (a supremum of the continuous affine functions `f ↦ f x - φ x`). ★'''
-deps = ["conjugate", "ConvexAnalysis.closedFn_conj"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "remark_1_7"
-kind = "theorem"
-desc = '''Remark 7, Young's inequality (11): `((f x : ℝ) : EReal) ≤ φ x + conjugate φ f` for all
-`x`, `f`, when `φ x ≠ ⊥` and `(dom φ).Nonempty`. The backbone's `le_add_conj`; its docstring
-explains why the two hypotheses are not decorative in `EReal`. ★'''
-deps = ["conjugate", "ConvexAnalysis.le_add_conj"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 7"
 
 [[node]]
 id = "remark_1_7_classical"
-kind = "theorem"
-desc = '''Remark 7, the classical Young inequality (12): for `a b ≥ 0`, `1 < p < ∞` and
-`1/p + 1/p' = 1`, `a * b ≤ a ^ p / p + b ^ p' / p'`. Mathlib's `Real.young_inequality_of_nonneg ha hb hpq`
-with `hpq : p.HolderConjugate p'` (`Real.HolderConjugate`, which packages `1 < p` and
-`1/p + 1/p' = 1`). That it is (11) for `φ t = |t|^p / p` on `E = ℝ` is Exercise 1.18(h) and
-is not formalized. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 1, Remark 7"
 
 [[node]]
 id = "proposition_1_10"
-kind = "theorem"
-desc = '''Proposition 1.10, first clause: if `φ` is convex l.s.c. with `∀ x, φ x ≠ ⊥` and
-`(dom φ).Nonempty`, then `φ* ≢ +∞`: `(dom (conjugate φ)).Nonempty`. The backbone's
-`proper_conj_iff hφ hcl : Proper (conj B φ) ↔ Proper φ` (`Numlib/Analysis/Convex/Duality/Conjugate`,
-the properness half of Fenchel–Moreau), with `ClosedFn φ` from `closedFn_iff_lowerSemicontinuous`.
-The book's proof is Theorem 1.7 in `E × ℝ` applied to `epi φ` and `(x₀, λ₀)`; the backbone's
-`exists_affineFn_le_of_lt` is that argument. ★'''
-deps = ["conjugate", "ConvexAnalysis.proper_conj_iff", "ConvexAnalysis.closedFn_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.10"
 
 [[node]]
 id = "proposition_1_10_affine"
-kind = "theorem"
-desc = '''Proposition 1.10, "in particular": under the same hypotheses `φ` is bounded below by a
-continuous affine function, `∃ (f : StrongDual ℝ E) (c : ℝ), ∀ x, ((f x - c : ℝ) : EReal) ≤ φ x`.
-The backbone's `exists_affine_le_of_closed_proper` (`Numlib/Analysis/Convex/Closure`) applied to
-`⟨hφ, closedFn, ⟨hdom, hbot⟩⟩ : ClosedProperConvexFn φ`. ★'''
-deps = ["ConvexAnalysis.exists_affine_le_of_closed_proper", "ConvexAnalysis.ClosedProperConvexFn", "ConvexAnalysis.closedFn_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 1.10"
 
 [[node]]
 id = "biconjugate"
-kind = "definition"
-desc = '''The biconjugate restricted to `E`, as the book defines it before Theorem 1.11:
-`biconjugate φ : E → EReal := ConvexAnalysis.biconj (dualPairing E) φ`, which unfolds to
-`conj (topDualPairing ℝ E) (conjugate φ)` and satisfies
-`biconjugate_apply : biconjugate φ x = ⨆ f : StrongDual ℝ E, ((f x : ℝ) : EReal) - conjugate φ f`
-(folded in). The book's remark that one could instead iterate `*` to get a function on `E**`
-is why the backbone's `biconj` is `conj B.flip ∘ conj B` and not `conj ∘ conj`.'''
-deps = ["conjugate", "ConvexAnalysis.biconj"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Definition"
 
 [[node]]
 id = "theorem_1_11"
-kind = "theorem"
-desc = '''Theorem 1.11 (Fenchel–Moreau). If `φ : E → EReal` is convex (`ConvexFn φ`), l.s.c.
-(`LowerSemicontinuous φ`), never `⊥` and not identically `⊤`, then `biconjugate φ = φ`. The
-backbone's `biconj_eq_clFn_topDual hφ : biconj (topDualPairing ℝ E).flip φ = clFn φ` together
-with `clFn φ = φ` (`ClosedFn φ`, from `closedFn_iff_lowerSemicontinuous hbot`); the
-compatibility instance is `instIsCompatiblePairingTopDual`, so no reflexivity is needed, exactly
-as in the book. The backbone's statement does not need `φ ≢ +∞` (then `φ* ≡ -∞` and
-`φ** ≡ +∞`); the surface keeps the book's hypothesis. The book's two-step proof (reduction to
-`φ ≥ 0` by an affine shift, then separation) is the backbone's `exists_affineFn_le_of_lt`
-argument, `conj_comp_sub`/`conj_add_const` being the shift. ★'''
-deps = ["biconjugate", "ConvexAnalysis.biconj_eq_clFn_topDual", "ConvexAnalysis.closedFn_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.11"
 
 [[node]]
 id = "example_1_1_conj"
-kind = "theorem"
-desc = '''Example 1, the conjugate of the norm: for `φ x = (‖x‖ : EReal)`,
-`conjugate φ f = indicatorFn (Metric.closedBall (0 : StrongDual ℝ E) 1) f`, i.e. `0` if
-`‖f‖ ≤ 1` and `+∞` otherwise. If `‖f‖ ≤ 1` then `f x - ‖x‖ ≤ 0` for every `x` with equality at
-`0`; if `‖f‖ > 1` there is `x` with `‖x‖ < f x` (`ContinuousLinearMap.exists_lt_apply_of_lt_opNorm`,
-choosing the sign), and `t • x`, `t → ∞`, sends `f (t • x) - ‖t • x‖ = t (f x - ‖x‖)` to `+∞`.
-★, ~40 lines of `EReal` bookkeeping (`ConvexAnalysis.restrictFn_of_mem`/`_of_notMem` for the
-indicator).'''
-deps = ["conjugate"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 1"
 
 [[node]]
 id = "example_1_1_biconj"
-kind = "theorem"
-desc = '''Example 1, continued: `biconjugate (fun x => (‖x‖ : EReal)) x = ⨆ f ∈ Metric.closedBall (0 : StrongDual ℝ E) 1, ((f x : ℝ) : EReal)`
-(from `example_1_1_conj` and `biconjugate_apply`, the terms with `‖f‖ > 1` being `⊥`), and
-hence, by `theorem_1_11` (the norm is convex and continuous), `(‖x‖ : EReal) = ⨆ f ∈ closedBall 0 1, (f x : EReal)`
-— "we obtain again part of Corollary 1.4" (`corollary_1_4` states the same with `|f x|`; over
-the symmetric ball the two suprema agree). Two clauses. ★'''
-deps = ["example_1_1_conj", "biconjugate", "theorem_1_11", "corollary_1_4"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 1"
 
 [[node]]
 id = "example_1_2_convexFn_iff"
-kind = "theorem"
-desc = '''Example 2, the indicator function `I_K` — the backbone's `ConvexAnalysis.indicatorFn K`
-(`0` on `K`, `+∞` off `K`; `restrictFn K 0`), not to be confused with the characteristic
-function `Set.indicator K 1`: `ConvexFn (indicatorFn K) ↔ Convex ℝ K`. `←` is the backbone's
-`convexFn_indicatorFn`; `→`: `epi (indicatorFn K) = K ×ˢ Ici 0` (`epi_indicatorFn`), whose
-convexity projects to `K`. ★'''
-deps = ["ConvexAnalysis.convexFn_indicatorFn", "ConvexAnalysis.epi_indicatorFn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "example_1_2_lowerSemicontinuous_iff"
-kind = "theorem"
-desc = '''Example 2: `LowerSemicontinuous (indicatorFn K) ↔ IsClosed K`. `←` is the backbone's
-`closedFn_indicatorFn hK` (through `ClosedFn.lowerSemicontinuous`); `→`: the sublevel set
-`{x | indicatorFn K x ≤ 0} = K` is closed by `lowerSemicontinuous_iff`. ★'''
-deps = ["lowerSemicontinuous_iff", "ConvexAnalysis.epi_indicatorFn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "polarCone_dualPairing_eq"
-kind = "theorem"
-desc = '''The bridge between the convex library's polar cones and the annihilators of §1.3: for
-`M : Submodule ℝ E`, `ConvexAnalysis.polarCone (dualPairing E) (M : Set E) = (M.strongDualAnnihilator : Set (StrongDual ℝ E))`,
-and for `N : Submodule ℝ (StrongDual ℝ E)`,
-`ConvexAnalysis.polarCone (topDualPairing ℝ E) (N : Set (StrongDual ℝ E)) = (N.strongDualCoannihilator : Set E)`.
-Both from the backbone's `polarCone_coe_submodule'` (`polarCone B M = {y | ∀ x ∈ M, B x y = 0}`,
-`Numlib/Analysis/Convex/Duality/Polar`) and `Submodule.mem_strongDualAnnihilator` /
-`mem_strongDualCoannihilator`. Two clauses; what Examples 2 and 4 rest on. ★'''
-deps = ["dualPairing", "ConvexAnalysis.polarCone_coe_submodule", "Submodule.mem_strongDualAnnihilator", "Submodule.mem_strongDualCoannihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "example_1_2_conj"
-kind = "theorem"
-desc = '''Example 2: for a subspace `M : Submodule ℝ E`, `(I_M)* = I_{M^⊥}`:
-`conjugate (indicatorFn (M : Set E)) = indicatorFn (M.strongDualAnnihilator : Set (StrongDual ℝ E))`.
-The backbone's `conj_indicatorFn_eq_indicatorFn_polarCone` (a subspace is a nonempty cone,
-`smul_coe_submodule`) and `polarCone_dualPairing_eq`. ★'''
-deps = ["conjugate", "polarCone_dualPairing_eq", "ConvexAnalysis.conj_indicatorFn_eq_indicatorFn_polarCone"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "example_1_2_biconj"
-kind = "theorem"
-desc = '''Example 2: `(I_M)** = I_{(M^⊥)^⊥}`:
-`biconjugate (indicatorFn (M : Set E)) = indicatorFn (M.strongDualAnnihilator.strongDualCoannihilator : Set E)`.
-`example_1_2_conj` and `conj_indicatorFn_eq_indicatorFn_polarCone` once more, on the other side
-of the pairing (`B = topDualPairing ℝ E`, `K = M^⊥`, a subspace), with the second clause of
-`polarCone_dualPairing_eq`. ★'''
-deps = ["example_1_2_conj", "biconjugate", "polarCone_dualPairing_eq", "ConvexAnalysis.conj_indicatorFn_eq_indicatorFn_polarCone"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "example_1_2_orthogonal"
-kind = "theorem"
-desc = '''Example 2's conclusion: for a *closed* subspace `M`, writing `(I_M)** = I_M`
-(`theorem_1_11`: `I_M` is convex, l.s.c. by `example_1_2_lowerSemicontinuous_iff`, proper) and
-reading it through `example_1_2_biconj` gives `M.strongDualAnnihilator.strongDualCoannihilator = M` —
-"Theorem 1.11 can be viewed as a counterpart of Proposition 1.9". The node proves it this way
-(indicators agree iff the sets do, `indicatorFn` being injective on sets) and notes that it is
-also `proposition_1_9` with `M` closed. ★'''
-deps = ["example_1_2_biconj", "example_1_2_lowerSemicontinuous_iff", "example_1_2_convexFn_iff", "theorem_1_11", "proposition_1_9"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 2"
 
 [[node]]
 id = "theorem_1_12"
-kind = "theorem"
-desc = '''Theorem 1.12 (Fenchel–Rockafellar). Let `φ ψ : E → EReal` be convex (`ConvexFn`) with
-values in `(-∞, +∞]` (`∀ x, φ x ≠ ⊥`, `∀ x, ψ x ≠ ⊥`), and let `x₀ ∈ dom φ ∩ dom ψ` with
-`ContinuousAt φ x₀`. Then
-`(⨅ x, φ x + ψ x) = ⨆ f : StrongDual ℝ E, -(conjugate φ (-f)) - conjugate ψ f`.
-
-Proof from the backbone: `IsExactSum.of_continuousAt hφ ⟨⟨x₀, hx₀φ⟩, hφb⟩ hψ ⟨⟨x₀, hx₀ψ⟩, hψb⟩ hx₀φ hx₀ψ hcont : IsExactSum (dualPairing E) φ ψ`
-(`Numlib/Analysis/Convex/Duality/Continuity` — the constraint qualification is the theorem's
-hypothesis verbatim, and its proof is the book's: separate the interior of `epi φ` from the
-hypograph `B`, with `Convex.closure_interior_eq_closure_of_nonempty_interior` for Lemma 1.4's
-role, lines 693–751). Then `iInf_eq_neg_conj_zero (dualPairing E) (φ + ψ)` (`Extremum/Minimum`)
-gives `inf (φ + ψ) = -(φ + ψ)*(0)`, `IsExactSum.conj_add_apply 0` gives
-`(φ + ψ)*(0) = ⨅ f, φ*(0 - f) + ψ*(f)`, and `EReal.neg_iInf` with `-(a + b) = -a - b` for
-`a, b ≠ ⊥` (`conj_ne_bot`, since both domains are nonempty) finishes. The case `a = -∞` the
-book treats separately is absorbed: then `(φ + ψ)*(0) = ⊤` and both sides are `⊥`. ★★ for
-the `EReal` arithmetic, ~50 lines.'''
-deps = ["conjugate", "ConvexAnalysis.IsExactSum.of_continuousAt", "ConvexAnalysis.IsExactSum.conj_add"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.12"
 
 [[node]]
 id = "theorem_1_12_max"
-kind = "theorem"
-desc = '''Theorem 1.12, the attainment: under the same hypotheses the supremum is a maximum,
-`∃ f : StrongDual ℝ E, -(conjugate φ (-f)) - conjugate ψ f = ⨅ x, φ x + ψ x`, equivalently
-(the book's third expression) `∃ f, conjugate φ (-f) + conjugate ψ f = -(⨅ x, φ x + ψ x)`
-(`theorem_1_12_min`, folded in). From `IsExactSum.exists_conj_add_eq 0`: `y₁ + y₂ = 0` and
-`φ*(y₁) + ψ*(y₂) = (φ + ψ)*(0)`; take `f = y₂`, so `y₁ = -f`. ★'''
-deps = ["theorem_1_12", "ConvexAnalysis.IsExactSum.of_continuousAt", "ConvexAnalysis.IsExactSum.exists_conj_add_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 1.12"
 
 [[node]]
 id = "lemma_1_4"
-kind = "theorem"
-desc = '''Lemma 1.4, main clause: for a convex `C : Set E` with `(interior C).Nonempty`,
-`closure C = closure (interior C)`. Mathlib's
-`Convex.closure_interior_eq_closure_of_nonempty_interior hC hne` (`Mathlib/Analysis/Convex/Topology.lean`,
-in any real topological vector space). The book refers to Exercise 1.7 for the proof; see
-`exercise_1_7`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 1.4"
 
 [[node]]
 id = "lemma_1_4_convex"
-kind = "theorem"
-desc = '''Lemma 1.4, first clause: `Convex ℝ C → Convex ℝ (interior C)`. Mathlib's
-`Convex.interior`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 1.4"
 
 [[node]]
 id = "example_1_3"
-kind = "theorem"
-desc = '''Example 3, formula (19): for a nonempty convex `K : Set E` and `x₀ : E`,
-`(Metric.infDist x₀ K : EReal) = ⨆ f ∈ {f : StrongDual ℝ E | ‖f‖ ≤ 1}, ((f x₀ : ℝ) : EReal) - conjugate (indicatorFn K) f`,
-and the supremum is attained (`example_1_3_max`, folded in: `∃ f, ‖f‖ ≤ 1 ∧ … = infDist x₀ K`).
-Here `infDist x₀ K = ⨅ x ∈ K, ‖x - x₀‖` (`Metric.infDist_eq_iInf`), which is
-`⨅ x, φ x + ψ x` for `φ x = ‖x - x₀‖`, `ψ = indicatorFn K`. Apply `theorem_1_12` /
-`theorem_1_12_max` (`φ` is finite, convex and continuous everywhere; `ψ` is proper convex since
-`K ≠ ∅`; `x₀`-independent point of `K` for the qualification) and compute
-`conjugate φ (-f) = indicatorFn (closedBall 0 1) (-f) - f x₀` by `example_1_1_conj` and the
-backbone's `conj_comp_sub` (translation row of the conjugacy table); the terms with `‖f‖ > 1`
-are `⊥` and drop out of the supremum, and the ball is symmetric. ★★, ~60 lines of `EReal`.'''
-deps = ["theorem_1_12", "theorem_1_12_max", "example_1_1_conj", "ConvexAnalysis.conj_comp_sub"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"
 
 [[node]]
 id = "example_1_3_submodule"
-kind = "theorem"
-desc = '''Example 3, the subspace case: for `M : Submodule ℝ E` and `x₀ : E`,
-`Metric.infDist x₀ M = ⨆ f ∈ {f ∈ M.strongDualAnnihilator | ‖f‖ ≤ 1}, f x₀` (in `ℝ`, the set
-of values being bounded by `‖x₀‖`), and the supremum is a maximum. The backbone's
-`Submodule.exists_mem_strongDualAnnihilator_norm_le_one_apply_eq_infDist` and
-`Submodule.norm_apply_le_infDist_of_mem_strongDualAnnihilator`
-(`Numlib/Analysis/Normed/Module/Annihilator`), proved there by Hahn–Banach in `E ⧸ closure M`;
-the book derives it from (19) with `example_1_2_conj` (`I_M* = I_{M^⊥}`), which the node may
-also record as `example_1_3_submodule_of_example_1_3`. ★'''
-deps = ["Submodule.exists_mem_strongDualAnnihilator_norm_le_one_apply_eq_infDist", "Submodule.norm_apply_le_infDist_of_mem_strongDualAnnihilator", "example_1_3", "example_1_2_conj"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"
+
+[[node]]
+id = "example_1_3_submodule_of_example_1_3"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"
 
 [[node]]
 id = "example_1_4"
-kind = "theorem"
-desc = '''Example 4: for `φ : E → ℝ` convex and continuous (`ConvexOn ℝ univ φ`, `Continuous φ`,
-read as the `EReal`-valued `ConvexFn (fun x => (φ x : EReal))` through `ConvexOn.convexFn_coe`)
-and a subspace `M : Submodule ℝ E`,
-`(⨅ x ∈ M, (φ x : EReal)) = -(⨅ f ∈ M.strongDualAnnihilator, conjugate (fun x => (φ x : EReal)) f)`,
-and the infimum on the right is attained (`example_1_4_min`, folded in). The backbone's
-`iInf_mem_submodule_eq_neg_iInf_mem_polarCone hex` and `exists_mem_neg_polarCone_conj_eq_iInf`
-(`Numlib/Analysis/Convex/Extremum/Fenchel`), with `hex : IsExactSum (dualPairing E) φ (indicatorFn M)`
-from `IsExactSum.of_continuousAt` at `x₀ = 0 ∈ M`, and `polarCone_dualPairing_eq` (for a
-subspace `-(M^⊥) = M^⊥`, `neg_polarCone_coe_submodule`). This is the book's "apply Theorem
-1.12 with `ψ = I_M`". ★'''
-deps = ["conjugate", "polarCone_dualPairing_eq", "ConvexAnalysis.iInf_mem_submodule_eq_neg_iInf_mem_polarCone", "ConvexAnalysis.exists_mem_neg_polarCone_conj_eq_iInf", "ConvexAnalysis.IsExactSum.of_continuousAt", "ConvexAnalysis.proper_indicatorFn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 4"
