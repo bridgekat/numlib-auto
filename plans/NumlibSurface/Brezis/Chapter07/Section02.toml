@@ -1,153 +1,45 @@
 namespace = "Brezis.Chapter07"
-desc = '''
-Brezis §7.2, the evolution problem `du/dt + A u = 0` on `[0, +∞)`, `u(0) = u₀`: Theorem 7.3
-(Cauchy–Lipschitz–Picard on the half-line), the Hille–Yosida Theorem 7.4 with its Lemmas 7.1
-and 7.2, Remarks 4–6. Functions of time are `u : ℝ → H`; the book's classes are read as
-`ContDiffOn ℝ 1 u (Ici 0)` for `C¹([0,+∞); H)` and the backbone's
-`LinearPMap.ContDiffOnPowDomain A 0 1 u (Ici 0)` for `C([0,+∞); D(A))` — `u` lifts continuously
-into the Hilbert space `A.PowDomain 1`, which is `D(A)` with the Hilbert graph norm of
-footnote 2 (`Numlib/Analysis/InnerProductSpace/MaximalMonotone`); the equation is the backbone's
-`LinearPMap.IsSolutionOn A u₀ (Ici 0) u` (`Numlib/Analysis/ODE/HilleYosida`). Theorem 7.3 is the
-half-line gluing of `Numlib/Analysis/ODE/Cauchy`. Theorem 7.4 delegates to the backbone's
-semigroup route: the solution is `t ↦ A.semigroup t u₀`, the limit as `λ → 0⁺` of
-`exp(−t A_λ) u₀` (Remark 4), and the book's Steps 1–5 are the nodes of `HilleYosida`; Step 6
-is not needed there, and Lemma 7.2 is a node of its own. Remark 3 is discussion. Remark 5's
-converse (the Hille–Yosida generation theorem: every contraction semigroup comes from a
-maximal monotone operator) is quoted without proof and is not planned.
-'''
 
 [[node]]
 id = "theorem_7_3"
-kind = "theorem"
-desc = '''Theorem 7.3 (Cauchy, Lipschitz, Picard). `E` a real Banach space, `F : E → E` with
-`‖F u − F v‖ ≤ L ‖u − v‖` (`LipschitzWith L F`). For every `u₀ : E` there is a unique
-`u ∈ C¹([0,+∞); E)` with `du/dt = F u` on `[0,+∞)` and `u 0 = u₀`:
-`∃ u : ℝ → E, ODE.IsSolutionOn (fun _ v => F v) 0 u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧
-∀ v, ODE.IsSolutionOn (fun _ v => F v) 0 u₀ (Ici 0) v → EqOn v u (Ici 0)`
-(the book's `du/dt (t) = F u(t)` is `HasDerivWithinAt u (F (u t)) (Ici 0) t`, one-sided at `0`).
-Backbone `ODE.existsUnique_isSolutionOn_Ici_of_lipschitz` (`Numlib/Analysis/ODE/Cauchy`), with
-`ODE.IsSolutionOn.continuousOn_deriv` and `contDiffOn_one_iff_derivWithin` for the `C¹` clause.
-The book's proof by a contraction in the weighted space `X` is replaced by gluing the
-compact-interval solutions of `ODE.existsUnique_isSolutionOn_of_lipschitz`. ★'''
-deps = ["ODE.existsUnique_isSolutionOn_Ici_of_lipschitz", "ODE.IsSolutionOn.continuousOn_deriv"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.3"
 
 [[node]]
 id = "IsSolution"
-kind = "definition"
-desc = '''The solution class of Theorem 7.4, problem (6): `IsSolution A u₀ u` for `A : H →ₗ.[ℝ] H`,
-`u₀ : H`, `u : ℝ → H` means `u ∈ C¹([0,+∞); H) ∩ C([0,+∞); D(A))` and `du/dt + A u = 0` on
-`[0,+∞)` with `u(0) = u₀`: `A.IsSolutionOn u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧
-A.ContDiffOnPowDomain 0 1 u (Ici 0)`. The third conjunct is redundant given the first two
-(`LinearPMap.IsMaximalMonotone.contDiffOn_semigroup_apply` records it), but the book lists it
-and the surface keeps it. `D(A)` carries the graph norm `|v| + |A v|` or the equivalent Hilbert
-norm `(|v|² + |A v|²)^{1/2}` (footnote 2); the backbone uses the latter, `A.PowDomain 1`. ★'''
-deps = ["LinearPMap.IsSolutionOn", "LinearPMap.ContDiffOnPowDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.2, problem (6)"
 
 [[node]]
 id = "theorem_7_4"
-kind = "theorem"
-desc = '''Theorem 7.4 (Hille–Yosida). For `hA : IsMaximalMonotone A` and `u₀ : A.domain` there is
-`u` with `IsSolution A u₀ u`, unique (`∀ v, IsSolution A u₀ v → EqOn v u (Ici 0)`), and
-`|u(t)| ≤ |u₀|`, `|du/dt (t)| = |A u(t)| ≤ |A u₀|` for all `t ≥ 0` (stated as
-`‖A ⟨u t, _⟩‖ ≤ ‖A u₀‖`, the derivative being `−A u(t)` by the equation). Backbone:
-`LinearPMap.IsMaximalMonotone.exists_isSolutionOn` (existence with the two estimates; the
-solution is `t ↦ A.semigroup t u₀`), `LinearPMap.IsMaximalMonotone.contDiffOn_semigroup_apply`
-(the `C([0,+∞); D(A))` clause), `LinearPMap.IsMonotone.eqOn_of_isSolutionOn` (Step 1). The
-book's six steps are the backbone nodes `IsMonotone.norm_sub_le_of_isSolutionOn` (Step 1),
-`antitoneOn_norm_exp_neg_smul_apply` and `IsMaximalMonotone.norm_yosida_expYosida_apply_le`
-(Step 2), `IsMaximalMonotone.norm_expYosida_sub_expYosida_le` and `tendsto_expYosida_semigroup`
-(Step 3), `tendstoUniformlyOn_deriv_expYosida` (Step 4, which on that route needs no
-`u₀ ∈ D(A²)`), `hasDerivWithinAt_semigroup_apply` (Step 5); Step 6 is not needed. ★'''
-deps = ["IsSolution", "IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.exists_isSolutionOn", "LinearPMap.IsMaximalMonotone.contDiffOn_semigroup_apply", "LinearPMap.IsMonotone.eqOn_of_isSolutionOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.4"
 
 [[node]]
 id = "lemma_7_1"
-kind = "theorem"
-desc = '''Lemma 7.1: for `hA`, `hλ : 0 < λ` and `w ∈ C¹([0,+∞); H)` with `dw/dt + A_λ w = 0` on
-`[0,+∞)` (`∀ t ≥ 0, HasDerivWithinAt w (−(yosidaApprox hA hλ (w t))) (Ici 0) t`), the functions
-`t ↦ |w(t)|` and `t ↦ |dw/dt (t)| = |A_λ w(t)|` are nonincreasing on `[0,+∞)`
-(`AntitoneOn (fun t => ‖w t‖) (Ici 0)`, `AntitoneOn (fun t => ‖yosidaApprox hA hλ (w t)‖) (Ici 0)`).
-Proof: `w t = exp(−t A_λ) (w 0)` by uniqueness for the bounded field `v ↦ −A_λ v`
-(`ODE.isSolutionOn_unique_of_lipschitz` on each `Icc 0 T`, the field being
-`‖A_λ‖`-Lipschitz, against the solution `hasDerivAt_expYosida_apply`), so both claims are the
-backbone's `antitoneOn_norm_exp_neg_smul_apply` for `B = A_λ` (monotone by Proposition 7.2 (e)),
-the second applied to `−A_λ (w 0)` via `exp_neg_smul_apply_comm`. The book's remark that
-`w ∈ C^∞` and every `|d^k w/dt^k|` is nonincreasing follows the same way
-(`contDiff_exp_neg_smul_apply`). ★'''
-deps = ["yosidaApprox", "proposition_7_2_e", "antitoneOn_norm_exp_neg_smul_apply", "hasDerivAt_exp_neg_smul_apply", "ODE.isSolutionOn_unique_of_lipschitz"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 7.1"
 
 [[node]]
 id = "lemma_7_2"
-kind = "theorem"
-desc = '''Lemma 7.2: for `hA` and `u₀ ∈ D(A)`, for every `ε > 0` there is `ū₀ ∈ D(A²)` — i.e.
-`ū₀ ∈ D(A)` with `A ū₀ ∈ D(A)` — such that `|u₀ − ū₀| < ε` and `|A u₀ − A ū₀| < ε`: `D(A²)` is
-dense in `D(A)` for the graph norm. Stated with the book's membership (`∃ v : A.domain,
-A v ∈ A.domain ∧ ‖(u₀ : H) − v‖ < ε ∧ ‖A u₀ − A v‖ < ε`), it is the backbone's
-`LinearPMap.IsMaximalMonotone.dense_range_castL` at `k = 1` read through `PowDomain.applyL`
-(`Metric.dense_iff`/`Dense.exists_dist_lt` in `A.PowDomain 1`, whose norm dominates both
-components by `norm_applyL_apply_le`). The witness is `ū₀ = J_λ u₀` for small `λ`, exactly as
-in the book. ★'''
-deps = ["IsMaximalMonotone", "LinearPMap.IsMaximalMonotone.dense_range_castL", "LinearPMap.PowDomain.applyL"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 7.2"
 
 [[node]]
 id = "remark_7_4_a"
-kind = "theorem"
-desc = '''Remark 4 (a): for `u₀ ∈ D(A)` the solutions `u_λ` of the approximate problem (7) — here
-`u_λ(t) = exp(−t A_λ) u₀`, `A.expYosida λ t u₀`, which solves (7) by
-`hasDerivAt_expYosida_apply` — converge as `λ → 0⁺` for every `t ≥ 0`, uniformly on bounded
-intervals, and the limit is the solution `u` of Theorem 7.4: `∀ T ≥ 0,
-TendstoUniformlyOn (fun λ t => A.expYosida λ t u₀) u (𝓝[>] 0) (Icc 0 T)` where `u` is the
-solution of `theorem_7_4` (which is `t ↦ A.semigroup t u₀`). Backbone
-`LinearPMap.IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup`,
-`IsMaximalMonotone.isSolutionOn_semigroup`, `IsSolutionOn.eq_semigroup`. This is the route the
-backbone takes for Theorem 7.4 itself ("one can prove directly that `u ∈ C¹ ∩ C` and satisfies
-(6)"). ★'''
-deps = ["theorem_7_4", "LinearPMap.expYosida", "LinearPMap.IsMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup", "LinearPMap.IsMaximalMonotone.isSolutionOn_semigroup"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 4"
 
 [[node]]
 id = "remark_7_4_b"
-kind = "theorem"
-desc = '''Remark 4 (b), the convergence clause: for every `u₀ ∈ H` (not only `D(A)`) and `t ≥ 0`,
-`u_λ(t) = exp(−t A_λ) u₀` converges as `λ → 0⁺`: `∃ w, Tendsto (fun λ => A.expYosida λ t u₀) (𝓝[>] 0) (𝓝 w)`
-— the limit is the backbone's `A.semigroup t u₀`
-(`LinearPMap.IsMaximalMonotone.tendsto_expYosida_semigroup`), and `t ↦ A.semigroup t u₀` is
-continuous on `Ici 0` (`continuousOn_semigroup_apply`). The remark's second half — that this
-generalized solution may lie outside `D(A)` for every `t > 0` and be nowhere differentiable — is
-a counterexample claim and is not formalized; the self-adjoint case where it cannot happen is
-Theorem 7.7. ★'''
-deps = ["IsMaximalMonotone", "LinearPMap.expYosida", "LinearPMap.IsMaximalMonotone.tendsto_expYosida_semigroup", "LinearPMap.IsMaximalMonotone.continuousOn_semigroup_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 4"
 
 [[node]]
 id = "remark_7_5"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). ★ Remark 5 (contraction semigroups): the bounded operators `S_A(t) := A.semigroup t`
-(`t ≥ 0`) are the extension by continuity of `u₀ ∈ D(A) ↦ u(t) ∈ D(A)` from Theorem 7.4 —
-`S_A(t) u₀ = u(t)` for `u₀ ∈ D(A)` (`IsMaximalMonotone.isSolutionOn_semigroup`), and `D(A)` is
-dense — and satisfy (a) `‖S_A(t)‖ ≤ 1` for `t ≥ 0` (`IsMaximalMonotone.norm_semigroup_le_one`);
-(b) `S_A(t₁ + t₂) = S_A(t₁) ∘ S_A(t₂)` for `t₁, t₂ ≥ 0` and `S_A(0) = I`
-(`IsMaximalMonotone.semigroup_add`, `semigroup_zero`); (c) `lim_{t→0⁺} |S_A(t) u₀ − u₀| = 0` for
-all `u₀ ∈ H` (`IsMaximalMonotone.continuousOn_semigroup_apply`, `tendsto_semigroup_apply_zero`).
-Split as `remark_7_5_a`, `remark_7_5_b`, `remark_7_5_c` if convenient. The converse (a
-continuous semigroup of contractions is `S_A` for a unique maximal monotone `A`) is quoted from
-the literature and is not planned. ★'''
-deps = ["theorem_7_4", "LinearPMap.semigroup", "LinearPMap.IsMaximalMonotone.isSolutionOn_semigroup", "LinearPMap.IsMaximalMonotone.norm_semigroup_le_one", "LinearPMap.IsMaximalMonotone.semigroup_add", "LinearPMap.IsMaximalMonotone.semigroup_zero", "LinearPMap.IsMaximalMonotone.continuousOn_semigroup_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 5"
 
 [[node]]
 id = "remark_7_6"
-kind = "theorem"
-desc = '''Remark 6: for a maximal monotone `A` and `λ : ℝ`, `u` solves `du/dt + A u + λ u = 0` on
-`[0,+∞)`, `u(0) = u₀`, iff `v(t) = e^{λt} u(t)` solves `dv/dt + A v = 0`, `v(0) = u₀`:
-`((λ • LinearMap.id) +ᵥ A).IsSolutionOn u₀ (Ici 0) u ↔ A.IsSolutionOn u₀ (Ici 0) (fun t => Real.exp (λ * t) • u t)`;
-hence the perturbed problem has a unique solution `u(t) = e^{−λt} S_A(t) u₀` for `u₀ ∈ D(A)`.
-Backbone `LinearPMap.isSolutionOn_smul_id_vadd_iff` (the equivalence needs no hypothesis on
-`A`), then `theorem_7_4`. ★'''
-deps = ["theorem_7_4", "LinearPMap.isSolutionOn_smul_id_vadd_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 6"
+
+[[node]]
+id = "isSolution_semigroup"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.4"
+
+[[node]]
+id = "contDiffOnPowDomain_congr"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.5"

@@ -1,101 +1,41 @@
 namespace = "Brezis.Chapter07"
-desc = '''
-Brezis §7.4, the self-adjoint case: symmetric and self-adjoint unbounded operators on a real
-Hilbert space, Remark 7 (symmetric ⟺ `A ⊆ A*`), Proposition 7.6 (a symmetric maximal
-monotone operator is self-adjoint), Remark 8 (maximal monotonicity of `A` and of `A*`), and
-Theorem 7.7 (for a self-adjoint maximal monotone `A`, every `u₀ ∈ H` gives a solution, smooth
-for `t > 0`, with `|du/dt (t)| ≤ |u₀|/t`). The book identifies `H* = H` and takes `A*` as an
-operator in `H`; this is Mathlib's Hilbert-space adjoint `LinearPMap.adjoint`, `A†`
-(`Mathlib/Analysis/InnerProductSpace/LinearPMap.lean`, D2 of the planning brief), so *symmetric*
-is Mathlib's `A.IsFormalAdjoint A` and *self-adjoint* is Mathlib's `IsSelfAdjoint A` (`A† = A`).
-The surface defines both in the book's words (`IsSymmetricOperator`, `IsSelfAdjointOperator` —
-the names avoid shadowing the root `IsSelfAdjoint` inside the namespace) and proves the
-`iff`s. Proposition 7.6 and Remark 8 delegate to `Numlib/Analysis/InnerProductSpace/MaximalMonotone`,
-Theorem 7.7 to `Numlib/Analysis/ODE/HilleYosida`. Footnote 5 is discussion.
-'''
 
 [[node]]
 id = "IsSymmetricOperator"
-kind = "definition"
-desc = '''Definition (§7.4): `A : H →ₗ.[ℝ] H` (with `closure D(A) = H`) is *symmetric* if
-`(A u, v) = (u, A v)` for all `u, v ∈ D(A)`: `∀ u v : A.domain, ⟪A u, (v : H)⟫_ℝ = ⟪(u : H), A v⟫_ℝ`.
-`isSymmetricOperator_iff : IsSymmetricOperator A ↔ A.IsFormalAdjoint A` is `Iff.rfl`
-(Mathlib's `LinearPMap.IsFormalAdjoint`, prototype). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.4, Definition"
 
 [[node]]
 id = "IsSelfAdjointOperator"
-kind = "definition"
-desc = '''Definition (§7.4): `A` is *self-adjoint* if `D(A*) = D(A)` and `A* = A`:
-`A†.domain = A.domain ∧ ∀ u : A.domain, ∀ v : A†.domain, (u : H) = v → A† v = A u`.
-`isSelfAdjointOperator_iff : IsSelfAdjointOperator A ↔ IsSelfAdjoint A` — Mathlib's
-`IsSelfAdjoint A` is `A† = A` (`LinearPMap.isSelfAdjoint_def`), and `LinearPMap.ext`/`ext_iff`
-unpack it into exactly these two clauses. Requires `[CompleteSpace H]` (Mathlib's
-`LinearPMap.instStar`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.4, Definition"
 
 [[node]]
 id = "remark_7_7"
-kind = "theorem"
-desc = '''Remark 7: a self-adjoint operator is symmetric
-(`IsSelfAdjointOperator A → IsSymmetricOperator A`, backbone
-`IsSelfAdjoint.isFormalAdjoint_self`), and for a densely defined `A`,
-`A` is symmetric iff `A ⊆ A*`, i.e. `D(A) ⊆ D(A*)` and `A* = A` on `D(A)`:
-`IsSymmetricOperator A ↔ A ≤ A†` (Mathlib's `LinearPMap.le`; backbone
-`LinearPMap.IsFormalAdjoint.le_adjoint_iff`, whose forward direction is Mathlib's
-`IsFormalAdjoint.le_adjoint`). The remark's "it may happen that `A` is symmetric and
-`D(A) ≠ D(A*)`" is a counterexample claim and is not formalized. ★'''
-deps = ["IsSymmetricOperator", "IsSelfAdjointOperator", "IsSelfAdjoint.isFormalAdjoint_self", "LinearPMap.IsFormalAdjoint.le_adjoint_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 7"
 
 [[node]]
 id = "proposition_7_6"
-kind = "theorem"
-desc = '''Proposition 7.6: a maximal monotone symmetric operator is self-adjoint —
-`IsMaximalMonotone A → IsSymmetricOperator A → IsSelfAdjointOperator A`. Backbone
-`LinearPMap.IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint` (the book's proof: `J_1` is
-self-adjoint, `IsMaximalMonotone.isSelfAdjoint_resolvent`, then `u ∈ D(A*)` forces
-`u = J_1 (u + A* u) ∈ D(A)`). ★'''
-deps = ["IsMaximalMonotone", "IsSymmetricOperator", "IsSelfAdjointOperator", "LinearPMap.IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 7.6"
 
 [[node]]
 id = "remark_7_8"
-kind = "theorem"
-desc = '''Remark 8: for a densely defined closed `A` with `D(A*)` dense (the standing assumptions
-under which `A*` is an operator in `H` and `A** = A`), the following are equivalent:
-`A` is maximal monotone ⟺ `A*` is maximal monotone ⟺ `A` is closed, `D(A)` is dense, and
-`A`, `A*` are monotone. The first clause of the remark — that `A*` need not be monotone when
-`A` is merely (symmetric) monotone — is a counterexample claim and is not formalized. Backbone:
-`LinearPMap.isMaximalMonotone_iff_adjoint`, `LinearPMap.isMaximalMonotone_iff_isClosed_dense_isMonotone`
-(with `IsMaximalMonotone.adjoint`, `adjoint_id_vadd`, `adjoint_adjoint`, `isMonotone_adjoint`),
-which the book leaves to the reader ("one can prove") and to Problem 16 in the Banach
-setting; the Hilbert proof is written in those nodes' descriptions (Yosida-limit
-monotonicity of `A*`, `J_1*` as the inverse of `I + A*`, closed range with trivial orthogonal
-via `LinearPMap.isClosed_range_of_isClosed_of_le_norm`). ★★★ on the backbone side, about
-350 lines; last in the order of attack, nothing downstream needs it.'''
-deps = ["IsMaximalMonotone", "LinearPMap.isMaximalMonotone_iff_adjoint", "LinearPMap.isMaximalMonotone_iff_isClosed_dense_isMonotone"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 8"
 
 [[node]]
 id = "theorem_7_7"
-kind = "theorem"
-desc = '''Theorem 7.7: for `hA : IsMaximalMonotone A`, `hs : IsSelfAdjointOperator A` and every
-`u₀ ∈ H`, there is a unique `u ∈ C([0,+∞); H) ∩ C¹((0,+∞); H) ∩ C((0,+∞); D(A))` with
-`du/dt + A u = 0` on `(0,+∞)` and `u(0) = u₀`, and moreover `|u(t)| ≤ |u₀|`,
-`|du/dt (t)| = |A u(t)| ≤ |u₀| / t` for `t > 0`, and `u ∈ C^k((0,+∞); D(A^ℓ))` for all integers
-`k, ℓ` (26). Statement: `∃ u : ℝ → H, A.IsSolutionOn u₀ (Ioi 0) u ∧ ContinuousOn u (Ici 0) ∧
-ContDiffOn ℝ 1 u (Ioi 0) ∧ A.ContDiffOnPowDomain 0 1 u (Ioi 0) ∧ (∀ t ≥ 0, ‖u t‖ ≤ ‖u₀‖) ∧
-(∀ t > 0, ‖A ⟨u t, _⟩‖ ≤ ‖u₀‖ / t) ∧ (∀ k ℓ : ℕ, A.ContDiffOnPowDomain k ℓ u (Ioi 0)) ∧
-∀ v, A.IsSolutionOn u₀ (Ioi 0) v → ContinuousOn v (Ici 0) → EqOn v u (Ici 0)`. Backbone
-`LinearPMap.exists_isSolutionOn_Ioi_of_isSelfAdjoint` (the solution is `t ↦ A.semigroup t u₀`;
-Step 1's estimate is `norm_exp_neg_smul_apply_le_div`, a Lyapunov-function form of the book's
-(29)–(33); Step 2 is `semigroup_apply_mem_domain_of_isFormalAdjoint` and
-`hasDerivAt_semigroup_apply_of_isFormalAdjoint`, both for every `u₀ ∈ H` directly; (26) is
-`contDiffOnPowDomain_semigroup_Ioi`, the book's induction in `H̃ = D(A^{k−1})` with
-`Ã = A.powPart (k−1)`), uniqueness `LinearPMap.IsMonotone.eqOn_of_isSolutionOn_Ioi`. The
-`C((0,+∞); D(A))` clause is `ContDiffOnPowDomain 0 1` on `Ioi 0`, an instance of (26). ★'''
-deps = ["IsMaximalMonotone", "IsSelfAdjointOperator", "IsSolution", "LinearPMap.exists_isSolutionOn_Ioi_of_isSelfAdjoint", "LinearPMap.IsMonotone.eqOn_of_isSolutionOn_Ioi"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 7.7"
+
+[[node]]
+id = "isSymmetricOperator_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.4, Definition"
+
+[[node]]
+id = "isSelfAdjointOperator_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §7.4, Definition"
+
+[[node]]
+id = "remark_7_8_adjoint"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 8"
+
+[[node]]
+id = "remark_7_8_closed"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 7, Remark 8"
