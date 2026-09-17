@@ -21,9 +21,14 @@ import NumlibSurface.Brezis.Chapter04.Section02
 import NumlibSurface.Brezis.Chapter04.Section03
 import NumlibSurface.Brezis.Chapter04.Section04
 import NumlibSurface.Brezis.Chapter04.Section05
+import NumlibSurface.Brezis.Chapter05.Section01
 import NumlibSurface.Brezis.Chapter05.Section02
 import NumlibSurface.Brezis.Chapter05.Section03
 import NumlibSurface.Brezis.Chapter05.Section04
+import NumlibSurface.Brezis.Chapter06.Section01
+import NumlibSurface.Brezis.Chapter06.Section02
+import NumlibSurface.Brezis.Chapter06.Section03
+import NumlibSurface.Brezis.Chapter06.Section04
 import NumlibSurface.Brezis.Chapter07.Section01
 import NumlibSurface.Brezis.Chapter07.Section02
 import NumlibSurface.Brezis.Chapter07.Section03

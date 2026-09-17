@@ -4,6 +4,7 @@ import Mathlib.Analysis.Normed.Group.Quotient
 import Mathlib.Topology.Algebra.Module.ContinuousLinearMap.Quotient
 import Numlib.Analysis.Normed.Module.Annihilator
 import Numlib.Analysis.Normed.Module.Complemented
+import Numlib.Analysis.Normed.Module.Quotient
 import NumlibSurface.Brezis.Chapter02.Section03
 
 /-!
@@ -25,16 +26,17 @@ Mathlib's notion (`Submodule.IsTopCompl` / `Submodule.ClosedComplemented`,
 * `IsComplement`, `isComplement_iff_isTopCompl`, `exists_isComplement_iff_closedComplemented`,
   `IsComplement.existsUnique_add`, `IsComplement.continuous_projection` — the Definition of a
   topological complement and the sentences following it.
-* `example_2_1`, `example_2_2`, `example_2_3` — finite-dimensional subspaces, closed subspaces of
-  finite codimension, and closed subspaces of a Hilbert space admit complements.
+* `example_2_1`, `example_2_2`, `example_2_2_strongDualCoannihilator`, `example_2_3` —
+  finite-dimensional subspaces, closed subspaces of finite codimension (typically `N^⊥` for a
+  finite-dimensional `N ⊆ E*`), and closed subspaces of a Hilbert space admit complements.
 * `IsRightInverse`, `IsLeftInverse`, `theorem_2_12`, `theorem_2_13`, `remark_2_9` — right and
   left inverses, their characterizations, and the quotient map by an uncomplemented subspace.
 
 Remark 8 (Lindenstrauss–Tzafriri) is not formalized; Remark 9 is stated conditionally on a
 closed subspace without complement. Example 2's "typical example" (`N^⊥` for a
-finite-dimensional `N ⊆ E*` is closed of codimension `dim N`) is the planned
-`example_2_2_strongDualCoannihilator`, which waits for chapter 11's
-`Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`.
+finite-dimensional `N ⊆ E*` is closed of codimension `dim N`) is
+`example_2_2_strongDualCoannihilator`, whose codimension identity is chapter 11's
+`Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator` (Proposition 11.14).
 -/
 
 open Metric
@@ -122,6 +124,22 @@ theorem example_2_2 [CompleteSpace E] {G : Submodule ℝ E} (hG : IsClosed (G : 
     [FiniteDimensional ℝ (E ⧸ G)] : ∃ L, IsComplement G L :=
   (exists_isComplement_iff_closedComplemented hG).2
     (Submodule.ClosedComplemented.of_finiteDimensional_quotient hG)
+
+/-- **Example 2, the "typical example".** For a subspace `N ⊆ E*` of finite dimension `p`, the
+subspace `G = N^⊥ = {x ∈ E | ⟨f, x⟩ = 0 ∀ f ∈ N}` (chapter 1's `N.strongDualCoannihilator`) is
+closed and of codimension `p`, hence admits a complement. The codimension identity
+`dim (E ⧸ N^⊥) = dim N` is Proposition 11.14 ("another proof … in Chapter 11"); the book's own
+argument, through the map `x ↦ (⟨fᵢ, x⟩)ᵢ` onto `ℝ^p` for a basis `(fᵢ)` of `N`, is not
+repeated here. -/
+theorem example_2_2_strongDualCoannihilator [CompleteSpace E] (N : Submodule ℝ (StrongDual ℝ E))
+    [FiniteDimensional ℝ N] :
+    IsClosed (N.strongDualCoannihilator : Set E) ∧
+      Module.finrank ℝ (E ⧸ N.strongDualCoannihilator) = Module.finrank ℝ N ∧
+      ∃ L, IsComplement N.strongDualCoannihilator L := by
+  have hcl : IsClosed (N.strongDualCoannihilator : Set E) := N.isClosed_strongDualCoannihilator
+  have : FiniteDimensional ℝ (E ⧸ N.strongDualCoannihilator) :=
+    (N.finiteDimensional_iff_coFG_strongDualCoannihilator).1 ‹_›
+  exact ⟨hcl, (N.finrank_eq_finrank_quotient_strongDualCoannihilator).symm, example_2_2 hcl⟩
 
 /-- **Example 3.** In a Hilbert space every closed subspace `K` admits a complement, namely its
 orthogonal `K^⊥` (§5.2). -/

@@ -42,28 +42,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Exampl
 
 [[node]]
 id = "example_2_2_strongDualCoannihilator"
-kind = "theorem"
-desc = '''The "typical example" of Example 2 (lines 1562–1583): for a Banach space `E` and a subspace
-`N : Submodule ℝ (StrongDual ℝ E)` of finite dimension `p`, the subspace
-`G := N.strongDualCoannihilator = {x | ∀ f ∈ N, f x = 0}` (chapter 1's `N^⊥`) is closed and of
-codimension `p`: `IsClosed (G : Set E)` (`Submodule.isClosed_strongDualCoannihilator`),
-`Module.finrank ℝ (E ⧸ G) = Module.finrank ℝ N` (chapter 11's
-`Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`, the book's "another proof … in Chapter 11"),
-and `G` admits a complement (`example_2_2`, `FiniteDimensional ℝ (E ⧸ G)` from the finrank
-identity). The book's own argument — a basis `f₁, …, f_p` of `N`, the map `Φ x = (fᵢ x)` onto
-`ℝ^p` (surjective, else a nonzero `α` with `∑ αᵢ fᵢ = 0`), and the dual vectors `eⱼ` with
-`fᵢ eⱼ = δᵢⱼ` spanning a complement — is recorded here as the alternative if chapter 11's node
-is not yet available (★★, about 80 lines, `LinearMap.quotKerEquivRange` for `ker Φ = G`). ★
-
-Blocked (2026-09-18, surf1): the dependency `Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`
-(chapter 11, `Numlib/Analysis/Normed/Module/Quotient`, Proposition 11.14) is open; left open per the
-wave-2 policy rather than re-proving the codimension identity in the surface. Note for whoever
-proves that backbone node: Mathlib's `Subspace.quotDualCoannihilatorToDual_bijective`
-(`Mathlib/LinearAlgebra/Dual/Lemmas.lean`) gives `finrank (V ⧸ W.dualCoannihilator) = finrank W`
-for a finite-dimensional `W` of the *algebraic* dual, so the node is a transport along the
-injection `StrongDual 𝕜 E → Module.Dual 𝕜 E` (`N.map (ContinuousLinearMap.coeLM 𝕜)` has the same
-finrank as `N` and its `dualCoannihilator` is `N.strongDualCoannihilator`), about 30 lines.'''
-deps = ["example_2_2", "Submodule.strongDualCoannihilator", "Submodule.isClosed_strongDualCoannihilator", "Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator"]  # cross-ref: chapter 1 (`strongDualCoannihilator`), chapter 11 (Proposition 11.14 in `Numlib/Analysis/Normed/Module/Quotient`)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Example 2"
 
 [[node]]

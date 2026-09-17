@@ -1,232 +1,77 @@
 namespace = "Brezis.Chapter05"
-desc = '''
-Brezis §5.1: definitions and elementary properties; projection onto a closed convex set. Book
-lines 4909–5066. Every node is over a real Hilbert space `[NormedAddCommGroup H]
-[InnerProductSpace ℝ H] [CompleteSpace H]` unless it says otherwise; the book's scalar product
-`(u, v)` is Mathlib's `inner ℝ u v`, symmetric over `ℝ`, so no slot convention is needed.
-
-Everything here is Mathlib or the backbone: the two Definition paragraphs are read-back theorems
-in the pattern of `AtkinsonHan.Chapter01.definition_1_3_1`, Theorem 5.2 is Mathlib's projection
-theorem in the backbone's `IsBestApprox` vocabulary, and the projection map `P_K` is the
-backbone's `bestApprox` (`Numlib/Analysis/InnerProductSpace/ConvexProjection`, new). Theorem
-5.12 of the Comments is placed here because it is the converse of the parallelogram law.
-'''
 
 [[node]]
 id = "scalarProduct"
-kind = "theorem"
-desc = '''Definition (scalar product), read back: for `[InnerProductSpace ℝ H]` the map `inner ℝ`
-is bilinear (`innerₗ H`), symmetric (`∀ u v, ⟪u, v⟫ = ⟪v, u⟫`, `real_inner_comm`), positive
-(`∀ u, 0 ≤ ⟪u, u⟫`, `real_inner_self_nonneg`) and definite (`∀ u, u ≠ 0 → ⟪u, u⟫ ≠ 0`,
-`inner_self_eq_zero`). The converse — a vector space with a scalar product is an inner product
-space — is Mathlib's `InnerProductSpace.ofCore`, recorded in the doc string, not as a node. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Definition (scalar product)"
 
 [[node]]
 id = "cauchySchwarz"
-kind = "theorem"
-desc = '''The Cauchy–Schwarz inequality the book recalls: `|⟪u, v⟫| ≤ √⟪u, u⟫ * √⟪v, v⟫`, i.e.
-`|⟪u, v⟫| ≤ ‖u‖ * ‖v‖` (`abs_real_inner_le_norm`, `norm_eq_sqrt_real_inner`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Cauchy–Schwarz inequality"
 
 [[node]]
 id = "cauchySchwarz_of_nonneg"
-kind = "theorem"
-desc = '''The book's bracketed remark: Cauchy–Schwarz does not need definiteness. For a real vector
-space `V` and a bilinear `b : V →ₗ[ℝ] V →ₗ[ℝ] ℝ` that is symmetric and positive
-(`∀ v, 0 ≤ b v v`), `(b u v) ^ 2 ≤ b u u * b v v`. Build the `PreInnerProductSpace.Core ℝ V` of
-`b` (no definiteness field) and apply Mathlib's `inner_mul_inner_self_le`; or the classical
-discriminant argument on `t ↦ b (u + t v) (u + t v) ≥ 0`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Cauchy–Schwarz inequality"
 
 [[node]]
 id = "hilbertSpace"
-kind = "theorem"
-desc = '''Definition (Hilbert space), read back, pattern `AtkinsonHan.Chapter01.definition_1_3_5`:
-the norm `|u| = (u, u)^{1/2}` is `‖u‖ = √⟪u, u⟫` (`norm_eq_sqrt_real_inner`), it satisfies the
-triangle inequality the book derives (`norm_add_le`), and a Hilbert space is one complete for it:
-`CompleteSpace H ↔ ∀ u : ℕ → H, CauchySeq u → ∃ v, Tendsto u atTop (𝓝 v)`
-(`Metric.complete_of_cauchySeq_tendsto`, `cauchySeq_tendsto_of_complete`). Mathlib bundles no
-`HilbertSpace`; the hypothesis pair `[InnerProductSpace ℝ H] [CompleteSpace H]` is what this
-surface carries. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Definition (Hilbert space)"
 
 [[node]]
 id = "parallelogram_law"
-kind = "theorem"
-desc = '''The parallelogram law (1) in the book's halved form:
-`‖(a + b) / 2‖ ^ 2 + ‖(a - b) / 2‖ ^ 2 = (‖a‖ ^ 2 + ‖b‖ ^ 2) / 2`, from Mathlib's
-`parallelogram_law_with_norm` (`‖x + y‖² + ‖x - y‖² = 2 (‖x‖² + ‖y‖²)`) and `norm_smul`. Stated in
-any real inner product space, completeness not needed. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, parallelogram law (1)"
 
 [[node]]
 id = "basicExample_L2"
-kind = "theorem"
-desc = '''Basic example: `L²(Ω)` is a Hilbert space with `(u, v) = ∫ u v dμ`. For a measure space
-`(α, μ)`: `(∀ u v : Lp ℝ 2 μ, ⟪u, v⟫ = ∫ x, u x * v x ∂μ) ∧ CompleteSpace (Lp ℝ 2 μ)`, from
-`MeasureTheory.L2.inner_def` (`⟪f, g⟫ = ∫ a, ⟪f a, g a⟫ ∂μ`, real inner product of scalars being
-the product) and the instance `MeasureTheory.Lp.instCompleteSpace`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Basic example"
 
 [[node]]
 id = "basicExample_l2"
-kind = "theorem"
-desc = '''Basic example, second half: `ℓ²` is a Hilbert space, `(u, v) = ∑ uₙ vₙ`. For
-`lp (fun _ : ℕ => ℝ) 2`: `(∀ u v, ⟪u, v⟫ = ∑' n, u n * v n) ∧ CompleteSpace (lp (fun _ : ℕ => ℝ) 2)`,
-from `lp.inner_eq_tsum` and `lp.completeSpace`. (The book indexes from `n ≥ 1`; `ℕ` is the same
-space.) ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Basic example"
 
 [[node]]
 id = "proposition_5_1"
-kind = "theorem"
-desc = '''Proposition 5.1, first clause: a Hilbert space is uniformly convex, `UniformConvexSpace H`
-(Mathlib's class; the book's Definition of §3.7 is chapter 3's node). Mathlib's instance
-`InnerProductSpace.toUniformConvexSpace` (`Mathlib/Analysis/InnerProductSpace/Convex.lean`) is
-the book's proof, the parallelogram law with `δ = 1 - (1 - ε²/4)^{1/2}`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.1"
 
 [[node]]
 id = "proposition_5_1_reflexive"
-kind = "theorem"
-desc = '''Proposition 5.1, second clause: "and thus it is reflexive", `NormedSpace.IsReflexive ℝ H`.
-The book's "thus" is the Milman–Pettis theorem (Theorem 3.31), chapter 3's backbone node
-`NormedSpace.isReflexive_of_uniformConvexSpace` applied to `proposition_5_1`; that is the
-suggested proof. The statement is provable today by the Riesz route of Remark 4, the backbone
-instance `NormedSpace.instIsReflexiveOfInnerProductSpace` (see `remark_5_4`), and a formalizer
-who reaches this node before Milman–Pettis lands may use it and say so. ★'''
-deps = ["proposition_5_1", "NormedSpace.isReflexive_of_uniformConvexSpace"]  # fixed name, brief §5 (chapter 3)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.1"
 
 [[node]]
 id = "theorem_5_2"
-kind = "theorem"
-desc = '''Theorem 5.2 (projection onto a closed convex set), existence and uniqueness: for
-`K : Set H` nonempty, closed and convex and every `f : H`, `∃! u, IsBestApprox K f u`, where
-`IsBestApprox K f u` is the backbone's "`u ∈ K` and `‖f - u‖ ≤ ‖f - v‖` for all `v ∈ K`"
-(`Numlib/Analysis/Normed/Module/BestApprox`). Delegates to `existsUnique_isBestApprox`, which is
-Mathlib's `exists_norm_eq_iInf_of_complete_convex` — the book's second, direct proof (a minimizing
-sequence is Cauchy by the parallelogram law) — plus uniqueness in a strictly convex space. The
-book's first proof, through Corollary 3.23 and reflexivity, is the backbone's
-`exists_isBestApprox_of_convex` of `Numlib/Variational/WeakMinimization` in a
-`WeaklySeqCompactSpace`; either may be cited. ★'''
-deps = ["existsUnique_isBestApprox", "IsBestApprox"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "theorem_5_2_infDist"
-kind = "theorem"
-desc = '''Theorem 5.2, the display (2): the best approximation attains the distance,
-`IsBestApprox K f u → ‖f - u‖ = Metric.infDist f K` (`IsBestApprox.norm_sub_eq_infDist`), and
-conversely for `u ∈ K` (`isBestApprox_iff_norm_sub_eq_infDist`); stated as the `iff` for `u ∈ K`. ★'''
-deps = ["IsBestApprox.norm_sub_eq_infDist", "isBestApprox_iff_norm_sub_eq_infDist"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "theorem_5_2_iff"
-kind = "theorem"
-desc = '''Theorem 5.2, the characterization (3): for `K` convex and `u ∈ K`,
-`IsBestApprox K f u ↔ ∀ v ∈ K, ⟪f - u, v - u⟫ ≤ 0`. The backbone's `isBestApprox_iff_inner_le_zero`
-(Mathlib's `norm_eq_iInf_iff_real_inner_le_zero`); needs neither closedness nor completeness. ★'''
-deps = ["isBestApprox_iff_inner_le_zero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "theorem_5_2_bestApprox"
-kind = "theorem"
-desc = '''The Notation after Theorem 5.2: the element `u` of the theorem is called the projection of
-`f` onto `K`, `u = P_K f`. In this surface `P_K f` is the backbone's `bestApprox K f`, and this
-node records that it is the element of Theorem 5.2: for `K` nonempty closed convex,
-`IsBestApprox K f (bestApprox K f)` and `bestApprox K f = w ↔ w ∈ K ∧ ∀ v ∈ K, ⟪f - w, v - w⟫ ≤ 0`
-(`isBestApprox_bestApprox_of_isClosed`, `bestApprox_eq_iff`). ★'''
-deps = ["bestApprox", "isBestApprox_bestApprox_of_isClosed", "bestApprox_eq_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Notation after Theorem 5.2"
 
 [[node]]
 id = "remark_5_1"
-kind = "theorem"
-desc = '''Remark 1, the one-dimensional prototype of (3): if `F : ℝ → ℝ` is differentiable and
-`u ∈ [0, 1]` minimizes `F` on `[0, 1]`, then `∀ v ∈ Set.Icc 0 1, 0 ≤ deriv F u * (v - u)`, which
-summarizes the three cases `u ∈ (0, 1) ∧ F'(u) = 0`, `u = 0 ∧ F'(0) ≥ 0`, `u = 1 ∧ F'(1) ≤ 0`
-(state the summary; the three cases are its instances at `v = u ± t`). Mathlib:
-`IsLocalMinOn.hasFDerivWithinAt_nonneg` with `mem_posTangentConeAt_of_segment_subset` for the
-segment `[u, v] ⊆ [0, 1]`; the interior case alone is `IsLocalMin.hasDerivAt_eq_zero`. The Markdown
-conversion of the book garbles the signs here (it prints `F'(u) ≤ 0` at `u = 0`, `F'(u) = 1` at
-`u = 1`, and `F'(u)(v - u) ≤ 0`); the printed book has `≥ 0`, `≤ 0` and `≥ 0`, which is what
-minimality gives and what is stated. The general convex form the remark points to ("see also
-Exercise 5.10") is the backbone's `isMinOn_add_iff_forall_le` / `isMinOn_iff_forall_lineDeriv_nonneg`
-(`Numlib/Analysis/Convex/Gateaux`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 1"
 
 [[node]]
 id = "remark_5_2"
-kind = "theorem"
-desc = '''Remark 2: in a uniformly convex Banach space `E` (`[NormedSpace ℝ E] [UniformConvexSpace E]
-[CompleteSpace E]`), every nonempty closed convex `K` and every `f` have a unique best
-approximation, `∃! u, IsBestApprox K f u`. Uniqueness is `IsBestApprox.unique`
-(`UniformConvexSpace.toStrictConvexSpace`). Existence: the book cites Exercise 3.32, a direct
-minimizing-sequence argument by uniform convexity; the route planned here is instead reflexivity
-by Milman–Pettis (chapter 3's `NormedSpace.isReflexive_of_uniformConvexSpace`), then
-`WeaklySeqCompactSpace.of_isReflexive` and the direct method `exists_isBestApprox_of_convex`
-(`Numlib/Variational/WeakMinimization`) — every piece but Milman–Pettis exists. If chapter 3
-formalizes Exercise 3.32 the elementary route becomes available too. ★ once Milman–Pettis lands.'''
-deps = ["IsBestApprox.unique", "exists_isBestApprox_of_convex", "WeaklySeqCompactSpace.of_isReflexive",
-  "NormedSpace.isReflexive_of_uniformConvexSpace"]  # fixed name, brief §5 (chapter 3)
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 2"
 
 [[node]]
 id = "proposition_5_3"
-kind = "theorem"
-desc = '''Proposition 5.3: `P_K` does not increase distance,
-`‖bestApprox K f₁ - bestApprox K f₂‖ ≤ ‖f₁ - f₂‖` for `K` nonempty closed convex. The backbone's
-`norm_bestApprox_sub_bestApprox_le`; the book's intermediate inequality
-`|u₁ - u₂|² ≤ (f₁ - f₂, u₁ - u₂)` is the monotonicity clause `inner_bestApprox_sub_nonneg` /
-`IsBestApprox.dist_le_dist`. ★'''
-deps = ["norm_bestApprox_sub_bestApprox_le", "inner_bestApprox_sub_nonneg"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.3"
 
 [[node]]
 id = "corollary_5_4"
-kind = "theorem"
-desc = '''Corollary 5.4, characterization: for a closed subspace `M : Submodule ℝ H`
-(`IsClosed (M : Set H)`) and `f : H`, `bestApprox (M : Set H) f = u ↔ u ∈ M ∧ ∀ v ∈ M, ⟪f - u, v⟫ = 0`
-(display (8)). From `bestApprox_eq_starProjection` and Mathlib's
-`Submodule.eq_starProjection_of_mem_orthogonal` / `Submodule.sub_starProjection_mem_orthogonal`,
-or directly from `isBestApprox_iff_mem_orthogonal`; the instance `M.HasOrthogonalProjection`
-comes from closedness (`IsClosed.completeSpace_coe`). ★'''
-deps = ["bestApprox_eq_starProjection", "isBestApprox_iff_mem_orthogonal"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.4"
 
 [[node]]
 id = "corollary_5_4_linear"
-kind = "theorem"
-desc = '''Corollary 5.4, "moreover `P_M` is a linear operator, the orthogonal projection": for a
-closed subspace `M`, `bestApprox (M : Set H) = ⇑M.starProjection`, a continuous linear map
-`H →L[ℝ] H` (`Submodule.starProjection`), of norm at most one (`Submodule.starProjection_norm_le`).
-`funext` of `bestApprox_eq_starProjection`. ★'''
-deps = ["bestApprox_eq_starProjection"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.4"
 
 [[node]]
 id = "theorem_5_12"
-kind = "theorem"
-desc = '''Theorem 5.12 (Fréchet–von Neumann–Jordan), from the Comments: a normed space `E` over `ℝ`
-whose norm satisfies the parallelogram law, `∀ x y, ‖x + y‖ ^ 2 + ‖x - y‖ ^ 2 = 2 * (‖x‖ ^ 2 + ‖y‖ ^ 2)`,
-carries an inner product inducing its norm: `Nonempty (InnerProductSpace ℝ E)` (the class
-`InnerProductSpace` includes `‖x‖² = ⟪x, x⟫`, so this is exactly "‖·‖ is a Hilbert norm"). Mathlib's
-`InnerProductSpace.ofNorm` / `nonempty_innerProductSpace` in
-`Mathlib/Analysis/InnerProductSpace/OfNorm.lean` (`InnerProductSpaceable`), whose construction is
-the polarization identity of the book's Exercise 5.1 — that exercise is therefore subsumed and
-not a separate node. Proved in `notes/brezis/ch05/proto/Shapes.lean`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.12"

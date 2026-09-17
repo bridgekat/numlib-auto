@@ -1,152 +1,45 @@
 namespace = "Brezis.Chapter06"
-desc = '''
-Brezis §6.4, the spectral decomposition of self-adjoint compact operators, on a real Hilbert space
-`H` (`[NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]`): the definition of a
-self-adjoint bounded operator (Mathlib's `IsSelfAdjoint T`, the book's `T* = T` after the
-identification `H* = H`), the numerical-range bounds `m = inf_{|u|=1} (Tu, u)`,
-`M = sup_{|u|=1} (Tu, u)` of Proposition 6.9 — written with Mathlib's
-`ContinuousLinearMap.rayleighQuotient` over the unit sphere, `⨅ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x`
-(which is `re ⟪T x, x⟫` there since `‖x‖ = 1`), and converted to the backbone's
-`{ x // x ≠ 0 }` indexing by `ContinuousLinearMap.iInf_rayleigh_eq_iInf_rayleigh_sphere` — and
-Theorem 6.11 in the form "there is a Hilbert basis of `H` consisting of eigenvectors of `T`",
-with an index type in the universe of `H`. The book assumes `H` separable; the surface carries
-`[TopologicalSpace.SeparableSpace H]` for faithfulness although the backbone theorem needs
-nothing of it. The backbone is `Numlib/Analysis/InnerProductSpace/CompactSpectral/Basis.lean`;
-the parent `CompactSpectral.lean` holds the `ℕ`-enumerated form the numerical-analysis surfaces
-use, which is not the book's statement.
-'''
 
 [[node]]
 id = "isSelfAdjoint_iff"
-kind = "theorem"
-desc = '''The definition of §6.4: `T : H →L[ℝ] H` is self-adjoint iff `⟪T u, v⟫ = ⟪u, T v⟫` for all
-`u v`, `IsSelfAdjoint T ↔ ∀ u v : H, ⟪T u, v⟫_ℝ = ⟪u, T v⟫_ℝ`. Mathlib's
-`ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric` and `LinearMap.IsSymmetric` unfolded. The
-book's `T* = T` is `ContinuousLinearMap.adjoint T = T` after identifying `H*` with `H`
-(`InnerProductSpace.toDual`), which is `ContinuousLinearMap.isSelfAdjoint_iff'`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §6.4, Definition"
 
 [[node]]
 id = "proposition_6_9_subset"
-kind = "theorem"
-desc = '''Proposition 6.9, `σ(T) ⊆ [m, M]`: for `T : H →L[ℝ] H` self-adjoint on a nontrivial real
-Hilbert space, `spectrum ℝ T ⊆ Set.Icc (⨅ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x) (⨆ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x)`.
-The backbone's `IsSelfAdjoint.mem_Icc_of_ofReal_mem_spectrum` (over `ℝ` the coercion
-`(t : ℝ) → ℝ` is the identity, `RCLike.ofReal_real_eq_id`) after
-`ContinuousLinearMap.iInf_rayleigh_eq_iInf_rayleigh_sphere`/`iSup_rayleigh_eq_iSup_rayleigh_sphere`.
-★'''
-deps = ["ContinuousLinearMap.mem_Icc_of_ofReal_mem_spectrum"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
 
 [[node]]
 id = "proposition_6_9_inf_mem"
-kind = "theorem"
-desc = '''Proposition 6.9, `m ∈ σ(T)`: for `T` self-adjoint on a nontrivial real Hilbert space,
-`(⨅ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x) ∈ spectrum ℝ T`. The backbone's
-`IsSelfAdjoint.ofReal_iInf_rayleighQuotient_mem_spectrum` with the sphere conversion. ★'''
-deps = ["IsSelfAdjoint.ofReal_iInf_rayleighQuotient_mem_spectrum"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
 
 [[node]]
 id = "proposition_6_9_sup_mem"
-kind = "theorem"
-desc = '''Proposition 6.9, `M ∈ σ(T)`: for `T` self-adjoint on a nontrivial real Hilbert space,
-`(⨆ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x) ∈ spectrum ℝ T`. The backbone's
-`IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum` with the sphere conversion. ★'''
-deps = ["IsSelfAdjoint.ofReal_iSup_rayleighQuotient_mem_spectrum"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
 
 [[node]]
 id = "proposition_6_9_norm"
-kind = "theorem"
-desc = '''Proposition 6.9, `‖T‖ = max (|m|, |M|)`: for `T` self-adjoint on a nontrivial real Hilbert
-space, `‖T‖ = max |⨅ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x| |⨆ x : Metric.sphere (0 : H) 1, T.rayleighQuotient x|`.
-The backbone's `IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup` with the sphere conversion. ★'''
-deps = ["IsSelfAdjoint.norm_eq_max_abs_iInf_abs_iSup"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
 
 [[node]]
 id = "corollary_6_10"
-kind = "theorem"
-desc = '''Corollary 6.10: for `T : H →L[ℝ] H` self-adjoint with `spectrum ℝ T = {0}`, `T = 0`. The
-backbone's `IsSelfAdjoint.eq_zero_of_spectrum_subset_zero` (hypothesis `⊆ {0}`, weaker). ★'''
-deps = ["IsSelfAdjoint.eq_zero_of_spectrum_subset_zero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 6.10"
 
 [[node]]
 id = "theorem_6_11"
-kind = "theorem"
-desc = '''Theorem 6.11: for `H : Type u` a separable real Hilbert space and `T : H →L[ℝ] H` compact
-and self-adjoint, there is a Hilbert basis of `H` composed of eigenvectors of `T`:
-`∃ (ι : Type u) (b : HilbertBasis ι ℝ H), ∀ i, ∃ μ : ℝ, T (b i) = μ • b i`. The backbone's
-`ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors` with
-`ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric`; the coercion `((μ : ℝ) : ℝ)` disappears by
-`simp`. The separability hypothesis `[TopologicalSpace.SeparableSpace H]` is carried as the book
-states it and is not used (the theorem holds for every Hilbert space). Prototyped in
-`notes/brezis/ch06/proto/Theorem611.lean` as `theorem_6_11`. ★'''
-deps = ["ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11"
 
 [[node]]
 id = "theorem_6_11_orthogonal"
-kind = "theorem"
-desc = '''Theorem 6.11, step (i) of the proof: the eigenspaces `E_n = N(T - λ_n I)` (including
-`E_0 = N(T)`) of a self-adjoint `T : H →L[ℝ] H` are mutually orthogonal,
-`OrthogonalFamily ℝ (fun μ : ℝ => Module.End.eigenspace (T : Module.End ℝ H) μ) (fun μ => (Module.End.eigenspace (T : Module.End ℝ H) μ).subtypeₗᵢ)`.
-Mathlib's `LinearMap.IsSymmetric.orthogonalFamily_eigenspaces`. Compactness is not needed. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11"
 
 [[node]]
 id = "theorem_6_11_dense"
-kind = "theorem"
-desc = '''Theorem 6.11, step (ii) of the proof: the space `F` spanned by the eigenspaces of a compact
-self-adjoint `T : H →L[ℝ] H` is dense in `H`,
-`(⨆ μ : ℝ, Module.End.eigenspace (T : Module.End ℝ H) μ)ᗮ = ⊥` (equivalently
-`(⨆ μ, eigenspace T μ).topologicalClosure = ⊤`, by `Submodule.orthogonal_eq_bot_iff`). Mathlib's
-`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`. The book's argument — `T`
-restricted to `F^⊥` is compact self-adjoint with spectrum `{0}`, hence zero by Corollary 6.10 —
-is the proof Mathlib gives, with `eq_zero_of_forall_hasEigenvalue_eq_zero` in place of
-Corollary 6.10. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.11"
 
 [[node]]
 id = "remark_6_8"
-kind = "theorem"
-desc = '''Remark 8: a compact self-adjoint operator is the norm limit of the finite-rank truncations
-of its eigen-expansion. In the index-set form of Theorem 6.11: for `T : H →L[ℝ] H` compact
-self-adjoint, `b : HilbertBasis ι ℝ H` and `μ : ι → ℝ` with `∀ i, T (b i) = μ i • b i`, and
-`ε > 0`, the set `s := {i | ε < |μ i|}` is finite, and the finite-rank operator
-`Tₛ := ∑ i ∈ s.toFinset, μ i • rankOne ℝ (b i) (b i)` (Mathlib's `rankOne`,
-`Mathlib/Analysis/InnerProductSpace/LinearMap.lean`; `Tₛ u = ∑ᵢ μ i ⟪b i, u⟫ b i`) satisfies
-`‖Tₛ - T‖ ≤ ε` — the book's `‖T_k - T‖ ≤ sup_{n ≥ k+1} |λ_n| → 0` with the truncation at
-`|λ| > ε` instead of at the `k`-th distinct eigenvalue, since the index set is not ordered.
-
-Proof route (★★, ~120 lines): `s` is finite because the values `{μ i | i ∈ s}` are eigenvalues of
-modulus `> ε`, finitely many by `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`, and for
-each such value `t ≠ 0` the `b i` with `μ i = t` are an orthonormal family inside the
-finite-dimensional eigenspace (`ContinuousLinearMap.finite_dimensional_eigenspace`, Mathlib), so
-finitely many (`Orthonormal.linearIndependent`, `LinearIndependent.finite`… or
-`Module.Finite.finite_of_linearIndependent`). For the bound expand `u = ∑ᵢ ⟪b i, u⟫ b i`
-(`HilbertBasis.hasSum_repr`), apply the continuous `T` termwise, and use Parseval
-(`HilbertBasis.tsum_inner_mul_inner`/`hasSum_inner_mul_inner`): `(T - Tₛ) u = ∑_{i ∉ s} μ i ⟪b i, u⟫ b i`
-has `‖(T - Tₛ) u‖ ^ 2 = ∑_{i ∉ s} |μ i|² |⟪b i, u⟫|² ≤ ε² ‖u‖²`. The unconditional statement
-"every compact operator into a Hilbert space is a norm limit of finite-rank operators", which
-the remark recalls at the end, is `remark_6_1`.'''
-deps = ["theorem_6_11", "IsCompactOperator.finite_setOf_hasEigenvalue_norm_le", "remark_6_1"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 8"
 
 [[node]]
 id = "multiplicity_eq_of_isSelfAdjoint"
-kind = "theorem"
-desc = '''Comments on Chapter 6, 3, last sentence: for a self-adjoint `T : H →L[ℝ] H` (compact or
-not) and `λ : ℝ`, the geometric and algebraic multiplicities coincide because the ascent is `1`:
-`LinearMap.ker (((T - λ • 1) ^ 2 : H →L[ℝ] H) : H →ₗ[ℝ] H) = LinearMap.ker ((T - λ • 1 : H →L[ℝ] H) : H →ₗ[ℝ] H)`,
-hence `ker ((T - λ • 1) ^ k) = ker (T - λ • 1)` for all `k ≥ 1`. As
-`AtkinsonHan.Chapter02.theorem_2_8_15_index`: `T - λ • 1` is self-adjoint, so `(T - λ)² v = 0`
-gives `‖(T - λ) v‖² = ⟪(T - λ)² v, v⟫ = 0`. ★, ~40 lines (the book refers to Problem 36, not
-planned).'''
-deps = ["isSelfAdjoint_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 3"
