@@ -433,6 +433,85 @@ theorem exists_isSolutionOn_of_lipschitzOnWith {rJ rS r₀ M : ℝ}
     (x := y₀) (by simp) ⟨by linarith, by linarith⟩
   exact ⟨α, ⟨hα₀, hα⟩, hmem, fun z hz hzmem => huniq z hz.1 hzmem hz.2⟩
 
+/-! ### The half-line: Cauchy–Lipschitz–Picard
+
+[brezis2011functional] Theorem 7.3: for a field Lipschitz in the state on all of `[t₀, ∞)`, the
+Cauchy problem has exactly one solution on the whole half-line. The book runs the contraction in
+the weighted space `{u ∈ C([0, ∞); E) : sup e^{-kt} ‖u(t)‖ < ∞}` with `k > L`; here the solutions
+on the compact intervals `[t₀, t₀ + n]` of `exists_isSolutionOn_of_lipschitz` are glued instead,
+since they agree on overlaps by `isSolutionOn_unique_of_lipschitz`. -/
+
+/-- **Global existence on the half-line** ([brezis2011functional] Theorem 7.3, Cauchy–Lipschitz–
+Picard, existence): for a field continuous on `[t₀, ∞) × E` and `K`-Lipschitz in the state at
+every time `t ≥ t₀`, and every datum `y₀`, the Cauchy problem has a solution on `Ici t₀`. The
+book's autonomous field `F : E → E` is `f t v := F v`. The solution is glued from the solutions on
+the intervals `[t₀, t₀ + n]`: at `t` it is the value of the solution on `[t₀, t₀ + ⌈t - t₀⌉₊ + 1]`,
+with which it agrees on that whole interval, a neighbourhood of `t` within `Ici t₀`. -/
+theorem exists_isSolutionOn_Ici_of_lipschitz (hf : ContinuousOn (uncurry f) (Ici t₀ ×ˢ univ))
+    (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t)) (y₀ : E) :
+    ∃ y : ℝ → E, IsSolutionOn f t₀ y₀ (Ici t₀) y := by
+  -- the solutions on the compact intervals `[t₀, t₀ + n]`
+  have hsol : ∀ n : ℕ, ∃ y : ℝ → E, IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + n)) y := fun n =>
+    exists_isSolutionOn_of_lipschitz ⟨le_rfl, by linarith [n.cast_nonneg (α := ℝ)]⟩
+      (hf.mono (prod_mono Icc_subset_Ici_self subset_rfl)) (fun t ht => hlip t ht.1) y₀
+  choose Y hY using hsol
+  -- they agree on their common interval
+  have hagree : ∀ m n : ℕ, EqOn (Y m) (Y n) (Icc t₀ (t₀ + (min m n : ℕ))) := fun m n =>
+    isSolutionOn_unique_of_lipschitz (T := (min m n : ℕ)) (fun t ht => hlip t ht.1)
+      ((hY m).mono (Icc_subset_Icc_right (by gcongr; exact min_le_left m n)))
+      ((hY n).mono (Icc_subset_Icc_right (by gcongr; exact min_le_right m n)))
+  -- the index of the interval used at time `t`, and the glued function
+  set N : ℝ → ℕ := fun t => ⌈t - t₀⌉₊ + 1 with hN
+  have hlt : ∀ t, t < t₀ + (N t : ℕ) := fun t => by
+    simp only [hN, Nat.cast_add, Nat.cast_one]
+    linarith [Nat.le_ceil (t - t₀)]
+  refine ⟨fun t => Y (N t) t, ?_, fun t ht => ?_⟩
+  · exact (hY (N t₀)).1
+  -- on `[t₀, t₀ + N t]` the glued function is the solution `Y (N t)`
+  have hcongr : ∀ s ∈ Icc t₀ (t₀ + (N t : ℕ)), Y (N s) s = Y (N t) s := fun s hs =>
+    hagree (N s) (N t) ⟨hs.1, by
+      rcases min_choice (N s) (N t) with h | h <;> rw [h]
+      · exact (hlt s).le
+      · exact hs.2⟩
+  have hmem : Icc t₀ (t₀ + (N t : ℕ)) ∈ 𝓝[Ici t₀] t := by
+    rw [← Ici_inter_Iic]
+    exact inter_mem self_mem_nhdsWithin (mem_nhdsWithin_of_mem_nhds (Iic_mem_nhds (hlt t)))
+  have ht' : t ∈ Icc t₀ (t₀ + (N t : ℕ)) := ⟨ht, (hlt t).le⟩
+  refine HasDerivWithinAt.mono_of_mem_nhdsWithin ?_ hmem
+  exact ((hY (N t)).2 t ht').congr hcongr (hcongr t ht')
+
+omit [CompleteSpace E] in
+/-- **Uniqueness on the half-line** ([brezis2011functional] Theorem 7.3, uniqueness): two solutions
+of the Cauchy problem on `Ici t₀` for a field `K`-Lipschitz in the state at every `t ≥ t₀` agree
+on `Ici t₀`: restrict both to `[t₀, t]` and apply `isSolutionOn_unique_of_lipschitz`. -/
+theorem isSolutionOn_unique_of_lipschitz_Ici (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t))
+    (hy : IsSolutionOn f t₀ y₀ (Ici t₀) y) (hz : IsSolutionOn f t₀ y₀ (Ici t₀) z) :
+    EqOn y z (Ici t₀) := fun t ht =>
+  isSolutionOn_unique_of_lipschitz (T := t - t₀) (fun s hs => hlip s hs.1)
+    (hy.mono Icc_subset_Ici_self) (hz.mono Icc_subset_Ici_self) ⟨ht, by linarith⟩
+
+/-- **Cauchy–Lipschitz–Picard** ([brezis2011functional] Theorem 7.3): for a field continuous on
+`[t₀, ∞) × E` and `K`-Lipschitz in the state at every `t ≥ t₀`, and every datum `y₀`, there is
+exactly one `y : ℝ → E` solving the Cauchy problem on `Ici t₀` and equal to `y₀` before `t₀`
+(the values before `t₀` are pinned so that uniqueness of a function on `ℝ` makes sense, as in
+`existsUnique_isSolutionOn_of_lipschitz`). The book's `u ∈ C¹([0, ∞); E)` is
+`IsSolutionOn.continuousOn_deriv`. -/
+theorem existsUnique_isSolutionOn_Ici_of_lipschitz
+    (hf : ContinuousOn (uncurry f) (Ici t₀ ×ˢ univ))
+    (hlip : ∀ t ∈ Ici t₀, LipschitzWith K (f t)) (y₀ : E) :
+    ∃! y : ℝ → E, IsSolutionOn f t₀ y₀ (Ici t₀) y ∧ ∀ t < t₀, y t = y₀ := by
+  classical
+  obtain ⟨y, hy⟩ := exists_isSolutionOn_Ici_of_lipschitz hf hlip y₀
+  refine ⟨fun t => if t ∈ Ici t₀ then y t else y₀,
+    ⟨hy.congr (fun t ht => ite_eq_left ht) (by simp [hy.1]),
+      fun t ht => ite_eq_right (not_le.2 ht)⟩, ?_⟩
+  rintro z ⟨hz, hz'⟩
+  funext t
+  by_cases ht : t ∈ Ici t₀
+  · rw [ite_eq_left ht]
+    exact isSolutionOn_unique_of_lipschitz_Ici hlip hz hy ht
+  · rw [ite_eq_right ht, hz' t (not_le.1 ht)]
+
 end Existence
 
 end ODE

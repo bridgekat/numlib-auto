@@ -36,7 +36,7 @@ The backbone's `IsSelfAdjoint.mem_Icc_of_ofReal_mem_spectrum` (over `ℝ` the co
 `(t : ℝ) → ℝ` is the identity, `RCLike.ofReal_real_eq_id`) after
 `ContinuousLinearMap.iInf_rayleigh_eq_iInf_rayleigh_sphere`/`iSup_rayleigh_eq_iSup_rayleigh_sphere`.
 ★'''
-deps = ["IsSelfAdjoint.mem_Icc_of_ofReal_mem_spectrum"]
+deps = ["ContinuousLinearMap.mem_Icc_of_ofReal_mem_spectrum"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 6.9"
 
 [[node]]

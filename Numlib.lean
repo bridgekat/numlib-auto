@@ -150,10 +150,12 @@ import Numlib.Analysis.Fourier.Uncertainty
 import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
+import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.HilbertSum
 import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
@@ -164,6 +166,7 @@ import Numlib.Analysis.Matrix.OperatorNorm
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Lp.PiLp
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Normed.Module.Annihilator

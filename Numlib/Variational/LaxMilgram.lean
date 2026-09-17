@@ -222,6 +222,54 @@ theorem energy_parallelogram {V : Type*} [NormedAddCommGroup V] [InnerProductSpa
   rw [hsym]
   ring
 
+/-- **A positive semidefinite form has a convex energy, without symmetry**
+([brezis2011functional] Chapter 5, Remark 6): if `a v v ≥ 0` for every `v` then
+`E(v) = ½ a v v - ℓ v` is convex on the whole space. No symmetry is needed, since for `s + t = 1`
+`a (s u + t v) (s u + t v) = s a u u + t a v v - s t a (u - v) (u - v)` with the cross terms
+`a u v + a v u` matched without commuting them. -/
+theorem convexOn_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+    (a : SesqForm ℝ V) (ℓ : V →L[ℝ] ℝ) (hpos : ∀ v, 0 ≤ a v v) :
+    ConvexOn ℝ Set.univ (a.energy ℓ) := by
+  refine ⟨convex_univ, fun x _ y _ s t hs ht hst => ?_⟩
+  have hsub : a (x - y) (x - y) = a x x - (a x y + a y x) + a y y := by
+    simp only [map_sub, sub_apply]
+    ring
+  have h := hpos (x - y)
+  rw [hsub] at h
+  simp only [energy, RCLike.re_to_real, map_smulₛₗ, map_add, add_apply, smul_apply, smul_eq_mul,
+    RingHom.id_apply, starRingEnd_apply, star_trivial]
+  obtain rfl : t = 1 - s := by linarith
+  nlinarith [mul_nonneg (mul_nonneg hs ht) h]
+
+/-- **The Fréchet derivative of the energy of a symmetric form** ([brezis2011functional]
+Chapter 5, Remark 7): for a Hermitian (real: symmetric) form `a` and a functional `ℓ`, the energy
+`E(v) = ½ a v v - ℓ v` is differentiable at every `u` with derivative `a u - ℓ`, so the
+variational equation `a u v = ℓ v` for all `v` is the Euler equation `E'(u) = 0`. The Gâteaux
+form is the expansion `energy_add_sub_energy`. -/
+theorem hasFDerivAt_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+    {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) (u : V) :
+    HasFDerivAt (a.energy ℓ) (a u - ℓ) u := by
+  have hE : a.energy ℓ = fun v => (1 / 2 : ℝ) * a v v - ℓ v := by
+    funext v
+    simp [energy]
+  set A : V →L[ℝ] V →L[ℝ] ℝ := a with hA
+  have h1 : HasFDerivAt (fun v : V => (A v, v)) (A.prod (ContinuousLinearMap.id ℝ V)) u :=
+    A.hasFDerivAt.prodMk (hasFDerivAt_id u)
+  have h2 : HasFDerivAt (fun v : V => A v v) (2 • A u) u := by
+    have h3 := (isBoundedBilinearMap_apply (𝕜 := ℝ) (E := V) (F := ℝ)).hasFDerivAt (A u, u)
+    refine (h3.comp (f := fun v : V => (A v, v)) u h1).congr_fderiv ?_
+    ext w
+    have hsym : A w u = A u w := by simpa using ha w u
+    simp only [ContinuousLinearMap.coe_comp, Function.comp_apply, ContinuousLinearMap.prod_apply,
+      ContinuousLinearMap.coe_id', id_eq, IsBoundedBilinearMap.deriv_apply, smul_apply,
+      nsmul_eq_mul, hsym]
+    ring
+  rw [hE]
+  refine ((h2.const_mul (1 / 2 : ℝ)).sub ℓ.hasFDerivAt).congr_fderiv ?_
+  ext w
+  simp only [smul_apply, nsmul_eq_mul, smul_eq_mul, sub_apply]
+  ring
+
 section Energy
 
 variable {a} (ha : a.IsHermitian)

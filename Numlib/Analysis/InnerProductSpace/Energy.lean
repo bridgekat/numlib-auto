@@ -305,6 +305,19 @@ theorem continuous_equiv {A : E →L[𝕜] E} (hA : (A : E →ₗ[𝕜] E).IsSym
     rw [inv_mul_eq_div, le_div_iff₀ hsc, mul_comm]
     exact h
 
+/-- The energy space of a *bounded* symmetric coercive operator on a complete space is complete:
+the identity `E ≃ₗ WithEnergy A hA` is a continuous linear equivalence (`continuous_equiv`), hence
+a uniform embedding, and completeness transfers along it. The finite-dimensional case is
+`instCompleteSpace`; this is the form the Hilbert-basis theory of the energy space (a
+`HilbertBasis ℕ 𝕜 (WithEnergy A hA)`) and the phase spaces of evolution problems need. It cannot
+be an instance, since `hA` is not found by instance search. -/
+theorem instCompleteSpace_of_continuousLinearMap [CompleteSpace E] {A : E →L[𝕜] E}
+    (hA : (A : E →ₗ[𝕜] E).IsSymmetricCoercive) :
+    CompleteSpace (WithEnergy (A : E →ₗ[𝕜] E) hA) :=
+  (completeSpace_congr (e := (equiv (A : E →ₗ[𝕜] E) hA).toEquiv)
+    ((equiv (A : E →ₗ[𝕜] E) hA).isUniformEmbedding (continuous_equiv hA).1
+      (continuous_equiv hA).2)).1 inferInstance
+
 end WithEnergy
 
 /-! ### The gradient of the energy functional
