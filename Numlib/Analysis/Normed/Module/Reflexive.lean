@@ -5,7 +5,9 @@ Natural home: `Mathlib.Analysis.Normed.Module.Reflexive`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.InnerProductSpace.Dual
+import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.Analysis.Normed.Module.DoubleDual
+import Mathlib.Topology.Algebra.Module.FiniteDimension
 import Numlib.Analysis.Normed.Module.DualSeparable
 
 /-!
@@ -43,6 +45,15 @@ for essentially no infinite-dimensional normed space. The two must not be confus
 * `NormedSpace.isReflexive_of_isClosed` — a closed subspace of a reflexive space is reflexive.
 * `NormedSpace.separableSpace_strongDual_of_isReflexive` — the dual of a separable reflexive space
   is separable.
+* `NormedSpace.instIsReflexiveOfFiniteDimensional` — a finite-dimensional space is reflexive.
+* `NormedSpace.isReflexive_congr` — reflexivity is invariant under continuous linear
+  equivalences, so it is a property of the topology and not of the norm.
+* `NormedSpace.instIsReflexiveProd`, `instIsReflexivePi`, `instIsReflexivePiLp` — finite
+  products of reflexive spaces are reflexive.
+
+Kakutani's theorem (reflexive iff the closed unit ball is weakly compact) and the Milman–Pettis
+theorem are in the child modules `Numlib.Analysis.Normed.Module.Reflexive.Kakutani` and
+`Numlib.Analysis.Normed.Module.MilmanPettis`.
 
 ## References
 
@@ -233,5 +244,144 @@ theorem exists_subseq_forall_dual_tendsto [IsReflexive 𝕜 V] {v : ℕ → V} {
   simpa [Function.comp_def, hΦapply, hψ, hw] using this
 
 end WeakCompactness
+
+section FiniteDimensional
+
+variable {𝕜 V}
+
+/-- The strong dual of a finite-dimensional normed space has the same dimension: every linear
+functional is continuous, so `StrongDual 𝕜 V` is linearly equivalent to the algebraic dual.
+(Private: the public statement, over any complete nontrivially normed field, is planned as
+`NormedSpace.finrank_strongDual` in `Numlib.Analysis.Normed.Module.FiniteCodim`.) -/
+private theorem finrank_strongDual (V : Type*) [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    [FiniteDimensional 𝕜 V] :
+    Module.finrank 𝕜 (StrongDual 𝕜 V) = Module.finrank 𝕜 V := by
+  rw [← Subspace.dual_finrank_eq (K := 𝕜) (V := V)]
+  exact (LinearMap.toContinuousLinearMap (𝕜 := 𝕜) (E := V) (F' := 𝕜)).symm.finrank_eq
+
+/-- **A finite-dimensional normed space is reflexive**: the canonical embedding into the bidual is
+injective, and the bidual has the same finite dimension (`finrank_strongDual` twice), so the
+embedding is onto. Not to be confused with Mathlib's `Module.IsReflexive`, which concerns the
+algebraic dual (see the module doc). -/
+instance instIsReflexiveOfFiniteDimensional [FiniteDimensional 𝕜 V] : IsReflexive 𝕜 V := by
+  refine ⟨?_⟩
+  have h : Module.finrank 𝕜 V = Module.finrank 𝕜 (StrongDual 𝕜 (StrongDual 𝕜 V)) := by
+    rw [finrank_strongDual, finrank_strongDual]
+  exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank h).1
+    (inclusionInDoubleDualLi 𝕜 (E := V)).injective
+
+end FiniteDimensional
+
+section Congr
+
+variable {𝕜 V} {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
+
+/-- **Reflexivity transfers along continuous linear equivalences.** Through
+`e : V ≃L[𝕜] W`, precomposition `D : f ↦ f ∘ e.symm` identifies the duals, and a functional `ψ` on
+`W'` is represented by `e v`, where `v` represents `ψ ∘ D` on `V'`: `ψ g = (ψ ∘ D) (D⁻¹ g) =
+(D⁻¹ g) v = g (e v)`. -/
+theorem isReflexive_of_continuousLinearEquiv [IsReflexive 𝕜 V] (e : V ≃L[𝕜] W) :
+    IsReflexive 𝕜 W := by
+  refine ⟨fun ψ => ?_⟩
+  set D : StrongDual 𝕜 V ≃L[𝕜] StrongDual 𝕜 W := e.arrowCongr (ContinuousLinearEquiv.refl 𝕜 𝕜)
+  obtain ⟨v, hv⟩ := surjective_inclusionInDoubleDual (𝕜 := 𝕜) (V := V)
+    (ψ.comp (D : StrongDual 𝕜 V →L[𝕜] StrongDual 𝕜 W))
+  refine ⟨e v, ?_⟩
+  ext g
+  have := DFunLike.congr_fun hv (D.symm g)
+  rw [ContinuousLinearMap.comp_apply, ContinuousLinearEquiv.coe_coe,
+    ContinuousLinearEquiv.apply_symm_apply] at this
+  rw [dual_def, ← this]
+  simp [D]
+
+/-- **Reflexivity is a topological property**: it is invariant under continuous linear
+equivalences, in particular under passing to an equivalent norm or along an isometric
+isomorphism (`e.toContinuousLinearEquiv` for `e : V ≃ₗᵢ[𝕜] W`). -/
+theorem isReflexive_congr (e : V ≃L[𝕜] W) : IsReflexive 𝕜 V ↔ IsReflexive 𝕜 W :=
+  ⟨fun _ => isReflexive_of_continuousLinearEquiv e,
+    fun _ => isReflexive_of_continuousLinearEquiv e.symm⟩
+
+end Congr
+
+section Prod
+
+variable {𝕜 V} {E F : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F]
+  [NormedSpace 𝕜 F]
+
+/-- **A product of two reflexive spaces is reflexive.** A functional `ψ` on `(E × F)'` restricts
+along the two projections to functionals on `E'` and `F'`, represented by `x` and `y`; since every
+`g : (E × F)'` is `(g ∘ inl) ∘ fst + (g ∘ inr) ∘ snd`, `ψ g = g (x, 0) + g (0, y) = g (x, y)`. -/
+instance instIsReflexiveProd [IsReflexive 𝕜 E] [IsReflexive 𝕜 F] : IsReflexive 𝕜 (E × F) := by
+  refine ⟨fun ψ => ?_⟩
+  obtain ⟨x, hx⟩ := surjective_inclusionInDoubleDual (𝕜 := 𝕜) (V := E)
+    (ψ.comp ((ContinuousLinearMap.compL 𝕜 (E × F) E 𝕜).flip (ContinuousLinearMap.fst 𝕜 E F)))
+  obtain ⟨y, hy⟩ := surjective_inclusionInDoubleDual (𝕜 := 𝕜) (V := F)
+    (ψ.comp ((ContinuousLinearMap.compL 𝕜 (E × F) F 𝕜).flip (ContinuousLinearMap.snd 𝕜 E F)))
+  refine ⟨(x, y), ?_⟩
+  ext g
+  have hg : g = (g.comp (ContinuousLinearMap.inl 𝕜 E F)).comp (ContinuousLinearMap.fst 𝕜 E F) +
+      (g.comp (ContinuousLinearMap.inr 𝕜 E F)).comp (ContinuousLinearMap.snd 𝕜 E F) := by
+    refine ContinuousLinearMap.ext fun p => ?_
+    obtain ⟨a, b⟩ := p
+    simp only [add_apply, ContinuousLinearMap.comp_apply,
+      ContinuousLinearMap.coe_fst', ContinuousLinearMap.coe_snd', ContinuousLinearMap.inl_apply,
+      ContinuousLinearMap.inr_apply]
+    rw [← map_add]
+    simp
+  have h1 := DFunLike.congr_fun hx (g.comp (ContinuousLinearMap.inl 𝕜 E F))
+  have h2 := DFunLike.congr_fun hy (g.comp (ContinuousLinearMap.inr 𝕜 E F))
+  simp only [dual_def, ContinuousLinearMap.comp_apply, ContinuousLinearMap.flip_apply,
+    ContinuousLinearMap.compL_apply] at h1 h2
+  rw [dual_def]
+  conv_rhs => rw [hg]
+  rw [map_add, ← h1, ← h2]
+  simp only [ContinuousLinearMap.inl_apply, ContinuousLinearMap.inr_apply]
+  rw [← map_add]
+  simp
+
+end Prod
+
+section Pi
+
+variable {𝕜 V} {ι : Type*} [Fintype ι] {V : ι → Type*} [∀ i, NormedAddCommGroup (V i)]
+  [∀ i, NormedSpace 𝕜 (V i)]
+
+/-- **A finite product of reflexive spaces is reflexive** (sup norm). A functional `ψ` on the dual
+of the product restricts along each projection to a functional on `(V i)'`, represented by `x i`;
+since `g = ∑ i, (g ∘ single i) ∘ proj i` for every `g` (`ContinuousLinearMap.sum_comp_single`),
+`ψ g = ∑ i, g (single i (x i)) = g x`. -/
+instance instIsReflexivePi [∀ i, IsReflexive 𝕜 (V i)] : IsReflexive 𝕜 (∀ i, V i) := by
+  classical
+  refine ⟨fun ψ => ?_⟩
+  have h : ∀ i, ∃ x : V i, inclusionInDoubleDual 𝕜 (V i) x = ψ.comp
+      ((ContinuousLinearMap.compL 𝕜 (∀ i, V i) (V i) 𝕜).flip (ContinuousLinearMap.proj i)) :=
+    fun i => surjective_inclusionInDoubleDual (𝕜 := 𝕜) (V := V i) _
+  choose x hx using h
+  refine ⟨x, ?_⟩
+  ext g
+  have hg : g = ∑ i, (g.comp (ContinuousLinearMap.single 𝕜 V i)).comp
+      (ContinuousLinearMap.proj i) := by
+    ext p
+    simp only [FunLike.coe_sum, Finset.sum_apply, ContinuousLinearMap.comp_apply,
+      ContinuousLinearMap.proj_apply]
+    exact (ContinuousLinearMap.sum_comp_single 𝕜 V g p).symm
+  rw [dual_def]
+  conv_rhs => rw [hg]
+  rw [map_sum]
+  have : ∀ i, ψ ((g.comp (ContinuousLinearMap.single 𝕜 V i)).comp (ContinuousLinearMap.proj i)) =
+      g (ContinuousLinearMap.single 𝕜 V i (x i)) := fun i => by
+    have := DFunLike.congr_fun (hx i) (g.comp (ContinuousLinearMap.single 𝕜 V i))
+    simpa using this.symm
+  simp_rw [this]
+  exact (ContinuousLinearMap.sum_comp_single 𝕜 V g x).symm
+
+/-- **A finite `ℓ^p` product of reflexive spaces is reflexive**, `1 ≤ p ≤ ∞`: `PiLp p V` is
+continuously linearly equivalent to the plain product, which is reflexive by
+`instIsReflexivePi`. -/
+instance instIsReflexivePiLp (p : ENNReal) [Fact (1 ≤ p)] [∀ i, IsReflexive 𝕜 (V i)] :
+    IsReflexive 𝕜 (PiLp p V) :=
+  isReflexive_of_continuousLinearEquiv (PiLp.continuousLinearEquiv p 𝕜 V).symm
+
+end Pi
 
 end NormedSpace

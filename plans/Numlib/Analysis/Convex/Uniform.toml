@@ -6,31 +6,8 @@ id = "tendsto_of_forall_inner_tendsto_of_tendsto_norm"
 
 [[node]]
 id = "tendsto_of_forall_dual_tendsto_of_limsup_norm_le"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 3.32 as the book states it: in a uniformly convex
-space, if `xₙ ⇀ x` weakly and `limsup ‖xₙ‖ ≤ ‖x‖` then `xₙ → x` in norm. For `[NormedSpace ℝ E]
-[UniformConvexSpace E]`, `(hweak : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u)))`
-and `(hlim : limsup (fun n => ‖v n‖) atTop ≤ ‖u‖)`: `Tendsto v atTop (𝓝 u)`. Weak convergence
-gives `‖u‖ ≤ liminf ‖v n‖` (`norm_le_liminf_norm_of_weak_tendsto` in
-`Numlib/Analysis/Normed/Module/WeakDual.lean`, through `tendsto_toWeakSpace_iff`) and boundedness
-of `‖v n‖` (`exists_norm_le_of_tendsto_toWeakSpace`), so `liminf = limsup = ‖u‖` and
-`tendsto_of_le_liminf_of_limsup_le` turns the two inequalities into `‖v n‖ → ‖u‖`; then
-`tendsto_of_forall_dual_tendsto_of_tendsto_norm` above. Brezis' own proof (line 2925)
-renormalizes by `max ‖xₙ‖ ‖x‖` exactly as that theorem does. ★'''
-deps = ["tendsto_of_forall_dual_tendsto_of_tendsto_norm", "norm_le_liminf_norm_of_weak_tendsto", "exists_norm_le_of_tendsto_toWeakSpace", "tendsto_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.32"
 
 [[node]]
 id = "uniformConvexSpace_of_linearIsometryEquiv"
-kind = "theorem"
-desc = '''Uniform convexity is invariant under isometric isomorphism: for a `LinearIsometryEquiv`
-`e : E ≃ₗᵢ[𝕜] F` (any `σ`-semilinear one, or even an additive `IsometryEquiv`) with
-`[UniformConvexSpace F]`, `UniformConvexSpace E`. Push `x, y` forward; the modulus is the same.
-Mathlib's `Analysis/Convex/Uniform.lean` has no transport lemma (grep `UniformConvexSpace`
-there). Planned by chapter 11 of [brezis2011functional] for `ℓ^p` (`lp.uniformConvexSpace` in
-`Numlib/Analysis/Normed/Lp/Sequence`, transported from `MeasureTheory.Lp.instUniformConvexSpace`
-along `lp.lpLIELpCount`) and relocated here at review, this being the module about uniform
-convexity; chapter 11's `Submodule.Quotient.instUniformConvexSpace` is a second consumer in
-spirit. Root namespace. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"

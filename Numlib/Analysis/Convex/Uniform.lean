@@ -8,6 +8,7 @@ import Mathlib.Analysis.Convex.Uniform
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.Continuous
 import Mathlib.Analysis.Normed.Module.HahnBanach
+import Numlib.Analysis.Normed.Module.WeakDual
 
 /-!
 # The Radon–Riesz property
@@ -21,7 +22,12 @@ expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform conve
 ## Main statements
 
 * `tendsto_of_forall_dual_tendsto_of_tendsto_norm` — the uniformly convex case.
+* `tendsto_of_forall_dual_tendsto_of_limsup_norm_le` — the same with the one-sided hypothesis
+  `limsup ‖vₙ‖ ≤ ‖u‖`, which weak convergence upgrades to `‖vₙ‖ → ‖u‖`
+  ([brezis2011functional], Proposition 3.32).
 * `tendsto_of_forall_inner_tendsto_of_tendsto_norm` — the inner product case, as an `iff`.
+* `uniformConvexSpace_of_linearIsometryEquiv` — uniform convexity is transported along a linear
+  isometric isomorphism.
 
 ## Implementation notes
 
@@ -102,7 +108,41 @@ theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
     _ ≤ (‖u‖ + 1) * (ε / (‖u‖ + 1)) := mul_le_mul_of_nonneg_right hbd.le (by positivity)
     _ = ε := by field_simp
 
+/-- **The Radon–Riesz property with a one-sided norm hypothesis**: in a uniformly convex space, if
+`vₙ ⇀ u` weakly and `limsup ‖vₙ‖ ≤ ‖u‖`, then `vₙ → u` in norm. Weak convergence already gives
+`‖u‖ ≤ liminf ‖vₙ‖` (`norm_le_liminf_norm_of_weak_tendsto`) and a bound on `‖vₙ‖`, so the two
+inequalities force `‖vₙ‖ → ‖u‖` and `tendsto_of_forall_dual_tendsto_of_tendsto_norm` applies. -/
+theorem tendsto_of_forall_dual_tendsto_of_limsup_norm_le {v : ℕ → E} {u : E}
+    (hweak : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u)))
+    (hlim : limsup (fun n => ‖v n‖) atTop ≤ ‖u‖) :
+    Tendsto v atTop (𝓝 u) := by
+  have hw : Tendsto (fun n => toWeakSpace ℝ E (v n)) atTop (𝓝 (toWeakSpace ℝ E u)) :=
+    tendsto_toWeakSpace_iff.2 hweak
+  obtain ⟨C, hC⟩ := exists_norm_le_of_tendsto_toWeakSpace hw
+  have hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖) :=
+    tendsto_of_le_liminf_of_limsup_le (norm_le_liminf_norm_of_weak_tendsto hw) hlim
+      (isBoundedUnder_of ⟨C, hC⟩) (isBoundedUnder_of ⟨0, fun n => norm_nonneg _⟩)
+  exact tendsto_of_forall_dual_tendsto_of_tendsto_norm hweak hnorm
+
 end UniformConvex
+
+section Transport
+
+variable {R E F : Type*} [Semiring R] [SeminormedAddCommGroup E] [SeminormedAddCommGroup F]
+  [Module R E] [Module R F]
+
+/-- **Uniform convexity is transported along a linear isometric isomorphism**: the modulus of
+convexity only involves `‖x‖`, `‖x - y‖` and `‖x + y‖`, which `e` preserves. -/
+theorem uniformConvexSpace_of_linearIsometryEquiv [UniformConvexSpace F] (e : E ≃ₗᵢ[R] F) :
+    UniformConvexSpace E := by
+  refine ⟨fun ε hε => ?_⟩
+  obtain ⟨δ, hδ, h⟩ := exists_forall_sphere_dist_add_le_two_sub F hε
+  refine ⟨δ, hδ, fun x hx y hy hxy => ?_⟩
+  have := h (x := e x) (by rw [e.norm_map, hx]) (y := e y) (by rw [e.norm_map, hy])
+    (by rw [← map_sub, e.norm_map]; exact hxy)
+  rwa [← map_add, e.norm_map] at this
+
+end Transport
 
 section Inner
 

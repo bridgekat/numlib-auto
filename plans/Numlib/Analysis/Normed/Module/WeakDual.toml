@@ -10,75 +10,24 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.3.5"
 
 [[node]]
 id = "tendsto_apply_of_tendsto_toWeakSpace_of_tendsto"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 3.5 (iv): if `xₙ ⇀ x` weakly and `fₙ → f` in the dual
-norm then `⟨fₙ, xₙ⟩ → ⟨f, x⟩`. For `{x : ℕ → V} {u : V} {f : ℕ → StrongDual 𝕜 V} {g : StrongDual 𝕜 V}`,
-`(hx : Tendsto (fun n => toWeakSpace 𝕜 V (x n)) atTop (𝓝 (toWeakSpace 𝕜 V u)))`,
-`(hf : Tendsto f atTop (𝓝 g))`: `Tendsto (fun n => f n (x n)) atTop (𝓝 (g u))`.
-Proof: `‖f n (x n) - g u‖ ≤ ‖f n - g‖ * ‖x n‖ + ‖g (x n) - g u‖`; the first term tends to `0`
-because `‖x n‖ ≤ C` by `exists_norm_le_of_tendsto_toWeakSpace`, the second by
-`tendsto_toWeakSpace_iff`. Stated for a sequence; a filter version costs nothing more if wanted. ★'''
-deps = ["tendsto_toWeakSpace_iff", "exists_norm_le_of_tendsto_toWeakSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "WeakDual.continuous_weakSpace_toWeakDual"
-kind = "theorem"
-desc = '''The weak-* topology on the dual is coarser than the weak topology of the dual
-([brezis2011functional] §3.4, the sentence after the definition, and Proposition 3.13 (ii)):
-`Continuous (fun f : WeakSpace 𝕜 (StrongDual 𝕜 V) => StrongDual.toWeakDual ((toWeakSpace 𝕜 (StrongDual 𝕜 V)).symm f))`.
-By `WeakDual.continuous_of_continuous_eval`: evaluation at `x : V` is the bounded functional
-`inclusionInDoubleDual 𝕜 V x` on `StrongDual 𝕜 V`, which is continuous on the weak space by
-`WeakBilin.eval_continuous`. Together with `NormedSpace.Dual.toWeakDual_continuous` and
-`toWeakSpaceCLM` this is the chain norm ≥ weak ≥ weak-* on `E⋆`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "tendsto_toWeakDual_of_tendsto_toWeakSpace"
-kind = "theorem"
-desc = '''Proposition 3.13 (ii), second sentence: a sequence in `E⋆` converging weakly converges
-weak-*. For `{f : ℕ → StrongDual 𝕜 V} {g : StrongDual 𝕜 V}`,
-`Tendsto (fun n => toWeakSpace 𝕜 _ (f n)) atTop (𝓝 (toWeakSpace 𝕜 _ g)) → Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g))`.
-Compose with `WeakDual.continuous_weakSpace_toWeakDual`. ★'''
-deps = ["WeakDual.continuous_weakSpace_toWeakDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "exists_norm_le_of_tendsto_toWeakDual"
-kind = "theorem"
-desc = '''A weak-* convergent sequence in the dual of a Banach space is bounded
-([brezis2011functional] Proposition 3.13 (iii), first half). For `[CompleteSpace V]`,
-`{f : ℕ → StrongDual 𝕜 V} {g : StrongDual 𝕜 V}`
-`(h : Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g)))`:
-`∃ C, ∀ n, ‖f n‖ ≤ C`. Pointwise boundedness of `f n x` for each `x` follows from
-`tendsto_iff_forall_eval_tendsto_topDualPairing` (Mathlib) and `Metric.isBounded_range_of_tendsto`;
-`banach_steinhaus` (which is why `V` must be complete — Brezis' Corollary 2.4) gives the uniform
-bound. This is `exists_norm_le_of_tendsto_toWeakSpace` with the bidual detour removed. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "norm_le_liminf_norm_of_weakStar_tendsto"
-kind = "theorem"
-desc = '''The dual norm is weak-* sequentially lower semicontinuous ([brezis2011functional]
-Proposition 3.13 (iii), second half): for `[CompleteSpace V]` and `fₙ ⇀* g` as in
-`exists_norm_le_of_tendsto_toWeakDual`, `‖g‖ ≤ liminf (fun n => ‖f n‖) atTop`. For each `x`,
-`‖g x‖ = lim ‖f n x‖ ≤ liminf ‖f n‖ * ‖x‖` (the `liminf` is a genuine limit inferior because the
-sequence is bounded, `exists_norm_le_of_tendsto_toWeakDual`), and `ContinuousLinearMap.opNorm_le_bound`.
-Mirror the proof of `norm_le_liminf_norm_of_weak_tendsto` above. ★'''
-deps = ["exists_norm_le_of_tendsto_toWeakDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "tendsto_apply_of_tendsto_toWeakDual_of_tendsto"
-kind = "theorem"
-desc = '''[brezis2011functional] Proposition 3.13 (iv): if `fₙ ⇀* g` in the dual of a Banach space
-and `xₙ → u` in norm then `fₙ xₙ → g u`. For `[CompleteSpace V]`,
-`(hf : Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g)))`
-`(hx : Tendsto x atTop (𝓝 u))`: `Tendsto (fun n => f n (x n)) atTop (𝓝 (g u))`. As
-`tendsto_apply_of_tendsto_toWeakSpace_of_tendsto` with the roles exchanged:
-`‖f n (x n) - g u‖ ≤ ‖f n‖ * ‖x n - u‖ + ‖f n u - g u‖`, bounded `‖f n‖` by
-`exists_norm_le_of_tendsto_toWeakDual`, and pointwise convergence at `u`. ★'''
-deps = ["exists_norm_le_of_tendsto_toWeakDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"

@@ -1,74 +1,7 @@
-desc = '''
-The Milman–Pettis theorem: a uniformly convex Banach space is reflexive (natural home:
-`Mathlib.Analysis.Convex.Uniform`, where it is listed as a TODO).
-
-[brezis2011functional] Theorem 3.31. Uniform convexity is Mathlib's `UniformConvexSpace E` (a
-real normed space in which `‖x‖, ‖y‖ ≤ 1` and `ε ≤ ‖x - y‖` force `‖x + y‖ ≤ 2 - δ`;
-`exists_forall_closed_ball_dist_add_le_two_sub` is the closed-ball form the proof uses, and the
-book's strict-inequality definition is equivalent, a surface fact). Reflexivity is
-`NormedSpace.IsReflexive ℝ E` of `Reflexive.lean`; the theorem is real-scalar because uniform
-convexity is, and a complex uniformly convex space is reflexive over `ℂ` too, but the bridge
-`IsReflexive ℝ E ↔ IsReflexive ℂ E` (restriction of scalars of the bidual) is not planned here.
-
-The proof is the book's (lines 2887–2911) and needs two facts of `Reflexive/Kakutani.lean`:
-Goldstine's lemma, in the neighbourhood form that every weak-* neighbourhood of a point of the
-bidual ball meets `J(B_E)`, and the norm closedness of `J(B_E)` (Remark 15,
-`isClosed_image_inclusionInDoubleDual_closedBall`, which is where completeness enters). Given
-`ξ` of norm `1` and `ε > 0`, with `δ` the modulus for `ε` in Mathlib's normalization
-(`‖x + y‖ ≤ 2 - δ` whenever `‖x‖, ‖y‖ ≤ 1` and `ε ≤ ‖x - y‖`; the book's `δ` is for
-`‖(x + y)/2‖ ≤ 1 - δ`, so every `δ/2` below is the book's `δ`), pick `f` of norm `1` with
-`re (ξ f) > 1 - δ/4`; the weak-* neighbourhood `V = {η | ‖(η - ξ) f‖ < δ/4}` meets `J(B_E)` in some
-`J x`; if `‖ξ - J x‖ > ε`, the complement `W` of the norm ball `J x + ε B_{E⋆⋆}` is a weak-*
-neighbourhood of `ξ` too (`WeakDual.isClosed_closedBall`), so `V ∩ W` meets `J(B_E)` in some
-`J y` with `‖x - y‖ > ε`; then `2 re (ξ f) < re (f (x + y)) + δ/2 ≤ ‖x + y‖ + δ/2` gives
-`‖x + y‖ > 2 - δ`, contradicting uniform convexity. So `ξ` is within `ε` of `J(B_E)` for every
-`ε`, hence in it. Estimated 100–150 lines.
-
-This module sits above `Reflexive/Kakutani.lean` and `Mathlib.Analysis.Convex.Uniform`. Its
-consumers: [brezis2011functional] Theorem 4.10 (`L^p` reflexive for `1 < p < ∞`, chapter 4's
-`MeasureTheory.Lp.instIsReflexive`, derivable from `Lp.instUniformConvexSpace` and this theorem)
-and §11.3 (`ℓ^p`).
-
-Grep record (2026-09-17): `Milman`/`Pettis` occur in Mathlib only in `Analysis/Convex/Uniform.lean`'s
-TODO list and in `KreinMilman`; LeanSearch "uniformly convex Banach space is reflexive" returns
-only the definition of `UniformConvexSpace`.
-'''
-
 [[node]]
 id = "NormedSpace.isReflexive_of_uniformConvexSpace"
-kind = "theorem"
-desc = '''**Milman–Pettis**, [brezis2011functional] Theorem 3.31: every uniformly convex Banach space
-is reflexive. For `[NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E] [UniformConvexSpace E]`:
-`NormedSpace.IsReflexive ℝ E`.
-
-Proof (lines 2887–2911). Let `ξ : StrongDual ℝ (StrongDual ℝ E)`; by homogeneity assume
-`‖ξ‖ = 1` (`ξ = 0` is trivial, otherwise scale). Since `J(B_E)` is norm closed
-(`NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall`), it suffices to show
-`∀ ε > 0, ∃ x, ‖x‖ ≤ 1 ∧ ‖ξ - J x‖ ≤ ε` (`Metric.mem_closure_iff`, `closure_eq_iff_isClosed`). Fix `ε`
-and `δ > 0` from `exists_forall_closed_ball_dist_add_le_two_sub E hε` (Mathlib,
-`Analysis/Convex/Uniform.lean`): `‖x‖ ≤ 1 → ‖y‖ ≤ 1 → ε ≤ ‖x - y‖ → ‖x + y‖ ≤ 2 - δ`. Choose
-`f : StrongDual ℝ E` with `‖f‖ = 1` and `ξ f > 1 - δ/4` (`ContinuousLinearMap.exists_lt_apply_of_lt_opNorm`
-gives `‖f‖ < 1` and `1 - δ/4 < ‖ξ f‖`; rescale to `‖f‖ = 1` and change the sign if needed — real
-scalars). The set `V := {η : WeakDual ℝ (StrongDual ℝ E) | |(η - ξ) f| < δ/4}` is a weak-*
-neighbourhood of `ξ` (`WeakDual.eval_continuous`), so by Goldstine (`NormedSpace.goldstine`,
-`mem_closure_iff_nhds`) there is `x` with `‖x‖ ≤ 1` and `|f x - ξ f| < δ/4`. Claim `‖ξ - J x‖ ≤ ε`.
-Otherwise `ξ ∈ W := (J x + ε • closedBall 0 1)ᶜ`, the complement of a norm-closed ball of the
-bidual, which is weak-* closed (`WeakDual.isClosed_closedBall` translated), so `W` is a weak-*
-open neighbourhood of `ξ`; Goldstine again gives `y` with `‖y‖ ≤ 1`, `J y ∈ V ∩ W`, i.e.
-`|f y - ξ f| < δ/4` and `‖x - y‖ = ‖J x - J y‖ > ε`. Adding, `2 ξ f < f (x + y) + δ/2 ≤ ‖x + y‖ + δ/2`,
-and `2 ξ f > 2 - δ/2`, so `‖x + y‖ > 2 - δ`, contradicting uniform convexity for the pair `x, y`.
-(With the book's `δ/2` in place of `δ/4` one only gets `‖x + y‖ > 2 - 2δ`, which is the book's
-normalization `‖(x + y)/2‖ > 1 - δ`; the constants were corrected at review.) ★★ (100–150 lines).'''
-deps = ["NormedSpace.IsReflexive", "NormedSpace.goldstine", "NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.31"
 
 [[node]]
 id = "NormedSpace.instIsReflexiveOfUniformConvexSpace"
-kind = "theorem"
-desc = '''`NormedSpace.isReflexive_of_uniformConvexSpace` registered as an instance,
-`instance (priority := 100) [NormedSpace ℝ E] [CompleteSpace E] [UniformConvexSpace E] : NormedSpace.IsReflexive ℝ E`,
-so that `L^p` and `ℓ^p` for `1 < p < ∞` become reflexive by instance search once their uniform
-convexity is (chapter 4's `MeasureTheory.Lp.instUniformConvexSpace`). Overlaps harmlessly with
-`NormedSpace.instIsReflexiveOfInnerProductSpace` on Hilbert spaces, `IsReflexive` being a `Prop`. ★'''
-deps = ["NormedSpace.isReflexive_of_uniformConvexSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.31"

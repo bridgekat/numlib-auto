@@ -177,9 +177,14 @@ import Numlib.Analysis.Normed.Module.Annihilator.ClosedSum
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Module.Complemented
 import Numlib.Analysis.Normed.Module.DualSeparable
+import Numlib.Analysis.Normed.Module.MilmanPettis
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.Reflexive
+import Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian
+import Numlib.Analysis.Normed.Module.Reflexive.Kakutani
+import Numlib.Analysis.Normed.Module.WeakClosed
 import Numlib.Analysis.Normed.Module.WeakDual
+import Numlib.Analysis.Normed.Module.WeakStarMetrizable
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
