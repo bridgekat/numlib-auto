@@ -1,48 +1,18 @@
-desc = '''
-The class `C^n(s̄)` of Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, chapter 9, footnote 16: functions `C^n` on an open set `s` whose derivatives of every
-order `≤ n` extend continuously to `closure s`. `ContDiffOnClosure n f s` is that predicate. It is
-weaker than Mathlib's `ContDiffOn 𝕜 n f (closure s)` (which asks for derivatives *within* the
-closure at boundary points and fails on irregular domains where the two notions differ), and it
-is the one to use wherever the book writes `u ∈ C^k(Ω̄)` as a *hypothesis* (classical solutions
-of the elliptic problems of §9.5, the eigenfunctions of §9.8); as a *conclusion* of a regularity
-theorem the stronger Mathlib predicate may be proved instead. `ContDiffOn.contDiffOnClosure`
-records the implication. Also the reader `s = Ω ×ˢ I` for the space–time classes `C^∞(Ω̄ × I)` of
-chapter 10 (`Numlib/Analysis/PDE/Bochner`). Natural home: `Mathlib.Analysis.Calculus.ContDiff`.
-'''
-
 [[node]]
 id = "ContDiffOnClosure"
-kind = "definition"
-desc = '''`ContDiffOnClosure (n : WithTop ℕ∞) (f : X → F) (s : Set X) : Prop` for a normed space `X`:
-`ContDiffOn ℝ n f s ∧ ∀ m : ℕ, (m : WithTop ℕ∞) ≤ n → ∃ g, ContinuousOn g (closure s) ∧
-EqOn g (iteratedFDeriv ℝ m f) s`. The class `C^n(s̄)` of [brezis2011functional], chapter 9,
-footnote 16 (`C^k(Ω̄) = {u ∈ C^k(Ω) : D^α u` has a continuous extension to `Ω̄` for `|α| ≤ k}`),
-meant for an open `s`. Two readers: `s = Ω` a spatial domain — the conclusion of chapter 9a's
-`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt` (Corollary 9.15 in its integer-safe
-form `k + N/p < m`; the book's non-integer hypothesis never holds at `p = 2` for even `N`) is this
-predicate spelled out, so that node's statement can be packaged with it — and `s = Ω ×ˢ I` for a time
-interval, the books' `C^∞(Ω̄ × [ε, ∞))` and `C^∞(Ω̄ × [0, ∞))` (Theorems 10.1, 10.2 (c), 10.8,
-Remarks 4 and 10). Mathlib's `ContDiffOn ℝ n f (closure s)`, which chapter 9b uses for its
-`C²(Ω̄)` clauses of Theorem 9.25, is a stronger notion (a Taylor series on a neighbourhood within
-the closure); `ContDiffOn.contDiffOnClosure : ContDiffOn ℝ n f (closure s) → ContDiffOnClosure n f s`
-for open `s` records the implication (the derivatives within the closure restrict to the
-derivatives on `s` and are continuous). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, footnote 16"
 
 [[node]]
+id = "ContDiffOnClosure.exists_continuousOn_closure_iteratedFDeriv"
+
+[[node]]
+id = "ContDiffOnClosure.of_le"
+
+[[node]]
 id = "ContDiffOnClosure.mono"
-kind = "theorem"
-desc = '''`ContDiffOnClosure n f s → n' ≤ n → ContDiffOnClosure n' f s`, and for an open `s' ⊆ s`,
-`ContDiffOnClosure n f s'` (restrict the extensions to `closure s' ⊆ closure s`). The second
-clause is how `C^∞(Ω̄ × (0,∞))` yields `C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`. ★'''
-deps = ["ContDiffOnClosure"]
 
 [[node]]
 id = "ContDiffOnClosure.continuousOn_closure"
-kind = "theorem"
-desc = '''The `m = 0` extension: `ContDiffOnClosure n f s` gives `g` continuous on `closure s` with
-`g = f` on `s`; and for open `s` each extension `g` of `iteratedFDeriv ℝ m f` is unique on
-`closure s` (`s` is dense in its closure). ★'''
-deps = ["ContDiffOnClosure"]
+
+[[node]]
+id = "ContDiffOn.contDiffOnClosure"

@@ -1,50 +1,10 @@
-desc = '''
-The second-derivative test at an interior local maximum, and its one-sided endpoint form — the
-"`u'' ≤ 0` at an interior maximum" that the classical maximum principles of Brezis, *Functional
-Analysis, Sobolev Spaces and Partial Differential Equations*, Remark 8.26, Remark 9.27 and
-Theorem 10.6 use, and that `notes/frontier.md` blocker 9 named as missing. Mathlib has the
-contrapositive direction only (`isLocalMin_of_deriv_deriv_pos`); these are its consequences,
-stated on Mathlib's `IsLocalMax`/`IsLocalMaxOn` in the root namespace so that dot notation works.
-Natural home: `Mathlib.Analysis.Calculus.LocalExtr`. Consumers: `Numlib/Variational/EllipticInterval/MaximumPrinciple`
-and `Numlib/Analysis/PDE/Heat/Classical`.
-'''
-
 [[node]]
 id = "IsLocalMax.deriv_deriv_nonpos"
-kind = "theorem"
-desc = '''**The second-derivative test at an interior maximum** (the tool of Remarks 26–27 and of
-`notes/frontier.md` blocker 9): for `f : ℝ → ℝ` with `IsLocalMax f x₀` and `ContinuousAt f x₀`,
-`deriv (deriv f) x₀ ≤ 0` — no differentiability hypothesis, Mathlib's junk-value convention
-covering the rest (for `HasDerivAt (deriv f) c x₀` it reads `c ≤ 0`, and `iteratedDeriv 2 f x₀ ≤ 0`).
-The continuity cannot be dropped: `f x = x²/2` for `x ≠ 0`, `f 0 = 1` has a local maximum at `0`
-with `deriv f = id` and `deriv (deriv f) 0 = 1`. Proof, a fifteen-line contrapositive of
-Mathlib's sufficient test `isLocalMin_of_deriv_deriv_pos` (`Mathlib/Analysis/Calculus/DerivativeTest.lean`,
-hypotheses `0 < deriv (deriv f) x₀`, `deriv f x₀ = 0`, `ContinuousAt f x₀`): if
-`0 < deriv (deriv f) x₀` then, with `deriv f x₀ = 0` (`IsLocalMax.deriv_eq_zero`) and the
-continuity, `x₀` is also a local minimum; a point that is both is a point near which `f` is
-constant, so `deriv f =ᶠ[𝓝 x₀] 0`
-(`Filter.EventuallyEq.deriv_eq` at each nearby point) and `deriv (deriv f) x₀ = 0`
-(`Filter.EventuallyEq.deriv_eq` again), contradiction. Stated in `_root_`; its home is a new
-`Numlib/Analysis/Calculus/DerivativeTest.lean` (an upstreaming candidate beside Mathlib's
-sufficient test) and it is recorded here, its first consumer, until the orchestrator creates that
-module; chapter 10's `Heat.IsLocalMax.laplacian_nonpos` (`Numlib/Analysis/PDE/Heat/Classical`)
-imports it from wherever it lives. ★ (~20 lines)'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 26"
 
 [[node]]
+id = "IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici"
+
+[[node]]
 id = "IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero"
-kind = "theorem"
-desc = '''**The one-sided second-derivative test at an endpoint** (Remark 27): for `u : ℝ → ℝ` that is
-`C²` on `[x₀, x₀ + δ)` in the sense `ContDiffOn ℝ 2 u (Ico x₀ (x₀ + δ))` with the one-sided
-derivatives read as `derivWithin … (Ici x₀)`, `derivWithin u (Ici x₀) x₀ = 0` and
-`IsLocalMaxOn u (Ici x₀) x₀`, one has `derivWithin (derivWithin u (Ici x₀)) (Ici x₀) x₀ ≤ 0`.
-(When `u` is `C²` on a two-sided neighbourhood the `derivWithin`s are `deriv`s,
-`derivWithin_of_mem_nhds`, which is how `le_of_contDiffMapIcc_classical_neumann` uses it for a
-`ContDiffMapIcc`.) Proof: the book's Remark 27 argues by even reflection; directly, the one-sided
-Taylor expansion of order two at `x₀` (`taylor_mean_remainder_lagrange` on `[x₀, x₀ + h]`, or
-`hasDerivWithinAt_iff_isLittleO` applied to `derivWithin u (Ici x₀)`) gives
-`u(x₀ + h) − u(x₀) = c h²/2 + o(h²) ≤ 0` for small `h > 0`, so `c ≤ 0`. Stated in `_root_`,
-Mathlib-shaped, same relocation note as `IsLocalMax.deriv_deriv_nonpos`. ★★ (~100 lines)'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 27"

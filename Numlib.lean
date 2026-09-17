@@ -1,7 +1,9 @@
 import Numlib.Algebra.LinearRecurrence
 import Numlib.Analysis.Calculus.ContDiffMapIcc
+import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
+import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
@@ -143,6 +145,7 @@ import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.FourierIntegral
 import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Analysis.Fourier.Periodisation
+import Numlib.Analysis.Fourier.SineBasis
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
@@ -191,7 +194,9 @@ import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
+import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.PDE.Transport
+import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Interval

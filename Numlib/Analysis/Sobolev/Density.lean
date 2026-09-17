@@ -48,8 +48,8 @@ Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 200
   `L^p`.
 * `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`: **`C_0^∞(ℝ^d)` is dense in
   `W^{k,p}(ℝ^d)`**.
-* `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`: **the weak derivative is closed under `L^1`
-  limits**.
+* `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one` and `hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`:
+  **the weak derivative is closed under `L^1` limits**, and under `L^p` limits for any `p`.
 * `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`: **local approximation in `W^{k,p}(Ω)`**, at
   all orders at once, on a relatively compact open subset of `Ω`.
 * `TopologicalSpace.Opens.exists_partitionOfUnity`: **a smooth partition of unity subordinate to
@@ -701,25 +701,30 @@ section Closed
 variable [OpensMeasurableSpace E]
 
 omit [OpensMeasurableSpace E] in
+/-- Composing with a continuous linear map multiplies the `L^p` norm by at most its operator
+norm, for every exponent. -/
+theorem MeasureTheory.eLpNorm_comp_continuousLinearMap_le {X G G' : Type*}
+    [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    [NormedAddCommGroup G'] [NormedSpace ℝ G'] (Λ : G →L[ℝ] G') (h : X → G) (p : ℝ≥0∞) :
+    eLpNorm (fun x ↦ Λ (h x)) p ν ≤ ‖Λ‖ₑ * eLpNorm h p ν := by
+  by_cases hh : AEStronglyMeasurable h ν
+  · exact eLpNorm_le_mul_eLpNorm_of_ae_le_mul'' p (Λ.continuous.comp_aestronglyMeasurable hh)
+      (Eventually.of_forall fun x ↦ Λ.le_opENorm (h x))
+  · rw [eLpNorm_of_not_aestronglyMeasurable hh]
+    by_cases hΛ : ‖Λ‖ₑ = 0
+    · rw [enorm_eq_zero] at hΛ
+      simp [hΛ]
+    · rw [ENNReal.mul_top hΛ]
+      exact le_top
+
+omit [OpensMeasurableSpace E] in
 /-- Composing with a continuous linear map multiplies the `L^1` norm by at most its operator
 norm. -/
 theorem MeasureTheory.eLpNorm_one_comp_continuousLinearMap_le {X G G' : Type*}
     [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [NormedAddCommGroup G'] [NormedSpace ℝ G'] (Λ : G →L[ℝ] G') (h : X → G) :
-    eLpNorm (fun x ↦ Λ (h x)) 1 ν ≤ ‖Λ‖ₑ * eLpNorm h 1 ν := by
-  by_cases hΛh : AEStronglyMeasurable (fun x ↦ Λ (h x)) ν
-  · rw [eLpNorm_one_eq_lintegral_enorm hΛh]
-    calc ∫⁻ x, ‖Λ (h x)‖ₑ ∂ν ≤ ∫⁻ x, ‖Λ‖ₑ * ‖h x‖ₑ ∂ν := lintegral_mono fun x ↦ Λ.le_opENorm (h x)
-      _ = ‖Λ‖ₑ * ∫⁻ x, ‖h x‖ₑ ∂ν := lintegral_const_mul' _ _ (enorm_ne_top (x := Λ))
-      _ ≤ ‖Λ‖ₑ * eLpNorm h 1 ν := by gcongr; exact lintegral_enorm_le_eLpNorm_one
-  · have hh : ¬ AEStronglyMeasurable h ν := fun hh ↦
-      hΛh (Λ.continuous.comp_aestronglyMeasurable hh)
-    have hΛ : ‖Λ‖ₑ ≠ 0 := by
-      rintro hΛ
-      rw [enorm_eq_zero] at hΛ
-      exact hΛh (by simpa [hΛ] using aestronglyMeasurable_const)
-    rw [eLpNorm_of_not_aestronglyMeasurable hh, ENNReal.mul_top hΛ]
-    exact le_top
+    eLpNorm (fun x ↦ Λ (h x)) 1 ν ≤ ‖Λ‖ₑ * eLpNorm h 1 ν :=
+  eLpNorm_comp_continuousLinearMap_le Λ h 1
 
 /-- **The weak derivative is closed under `L^1` limits**: if `u i` is a weak derivative of order
 `n` of `g i` on `Ω` for every `i`, and `g i → f` and `u i → w` in `L^1(Ω)`, then `w` is a weak
@@ -788,6 +793,117 @@ theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one {g : ℕ → E → F}
         refine (enorm_integral_smul_le_of_bound (μ := μ.restrict (Ω : Set E)) hCφ').trans ?_
         gcongr
         exact eLpNorm_one_comp_continuousLinearMap_le Λ _
+    have hAB : ∀ i, (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • g i x ∂μ)
+        = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • Λ (u i x) ∂μ := fun i ↦
+      (hg i).integral_smul_eq φ y
+    have hax : ∀ x, a x = iteratedFDeriv ℝ n (φ : E → ℝ) x y := fun _ ↦ rfl
+    have hA' : Tendsto (fun i ↦ (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • Λ (u i x) ∂μ) atTop
+        (𝓝 (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x ∂μ)) := by
+      simpa only [hax, hAB] using hA
+    exact tendsto_nhds_unique hA' (hB.const_smul ((-1 : ℝ) ^ n))
+
+/-- A test function on `Ω` lies in every `L^q(Ω, μ)` as soon as `μ` is finite on the compact
+subsets of `Ω` — expressed, as Mathlib's `TestFunction.integrable` does, by the local
+integrability of the constant `1` on `Ω`. -/
+theorem TestFunction.memLp_restrict_of_locallyIntegrableOn_one
+    (hμ : LocallyIntegrableOn (fun _ : E ↦ (1 : ℝ)) Ω μ) (φ : 𝓓(Ω, ℝ)) (q : ℝ≥0∞) :
+    MemLp φ q (μ.restrict (Ω : Set E)) := by
+  have hfin : μ (tsupport φ) ≠ ⊤ := by
+    have h := hμ.integrableOn_compact_subset φ.tsupport_subset φ.hasCompactSupport
+    rw [integrableOn_const_iff] at h
+    simpa using h.resolve_left (by simp) |>.ne
+  exact (φ.memLp_top.mono_exponent_of_measure_support_ne_top
+    (fun x hx ↦ image_eq_zero_of_notMem_tsupport hx) hfin le_top).restrict _
+
+omit [OpensMeasurableSpace E] in
+/-- **Hölder's inequality for a pairing**: the integral of `a • h` is bounded by
+`‖a‖_{L^p} ‖h‖_{L^q}` for conjugate exponents, with no measurability hypothesis (the right-hand
+side is `∞` when one is missing, unless the other factor vanishes). -/
+theorem MeasureTheory.enorm_integral_smul_le_eLpNorm_mul_eLpNorm {X G : Type*} [MeasurableSpace X]
+    {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G] {a : X → ℝ} {h : X → G}
+    {p q : ℝ≥0∞} [ENNReal.HolderConjugate p q] :
+    ‖∫ x, a x • h x ∂ν‖ₑ ≤ eLpNorm a p ν * eLpNorm h q ν :=
+  (enorm_integral_le_lintegral_enorm _).trans <|
+    (lintegral_enorm_le_eLpNorm_one (f := fun x ↦ a x • h x)).trans <|
+      eLpNorm_smul_le_mul_eLpNorm_of_pos (φ := a) (f := h) one_pos
+
+/-- **The weak derivative is closed under `L^p(Ω)` limits**, for any `1 ≤ p ≤ ∞`: if `u i` is a
+weak derivative of order `n` of `g i` on `Ω` for every `i`, `g i → f` and `u i → w` in `L^p(Ω)`,
+and `f`, `w` are locally integrable on `Ω`, then `w` is a weak derivative of order `n` of `f`.
+This is the closedness clause of [brezis2011functional] Chapter 9, Remark 4 (i) (and of the proof
+of its Proposition 8.1).
+
+The pairing against a fixed test function is continuous on `L^p(Ω)` by Hölder's inequality, which
+needs the test function to lie in `L^{p'}(Ω)`: hence the hypothesis that `μ` be finite on the
+compact subsets of `Ω`, in the form `LocallyIntegrableOn 1 Ω μ` that Mathlib's
+`TestFunction.integrable` uses. It cannot be dropped for `p > 1`: on a set of infinite measure
+inside `Ω`, functions spread ever thinner converge to `0` in `L^p` while their integrals against a
+bounded test function stay put. The case `p = 1` needs no such hypothesis,
+`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one`. -/
+theorem hasWeakIteratedFDerivOn_of_tendsto_eLpNorm
+    (hμ : LocallyIntegrableOn (fun _ : E ↦ (1 : ℝ)) Ω μ) (hp : 1 ≤ p) {g : ℕ → E → F}
+    {u : ℕ → E → E [×n]→L[ℝ] F} {w : E → E [×n]→L[ℝ] F}
+    (hg : ∀ i, HasWeakIteratedFDerivOn n (g i) (u i) Ω μ)
+    (hfl : LocallyIntegrableOn f Ω μ) (hwl : LocallyIntegrableOn w Ω μ)
+    (h1 : Tendsto (fun i ↦ eLpNorm (g i - f) p (μ.restrict (Ω : Set E))) atTop (𝓝 0))
+    (h2 : Tendsto (fun i ↦ eLpNorm (u i - w) p (μ.restrict (Ω : Set E))) atTop (𝓝 0)) :
+    HasWeakIteratedFDerivOn n f w Ω μ where
+  locallyIntegrableOn := hfl
+  locallyIntegrableOn_weakDeriv := hwl
+  integral_smul_eq φ y := by
+    have : ENNReal.HolderConjugate p (ENNReal.conjExponent p) :=
+      ENNReal.HolderConjugate.conjExponent hp
+    set q := ENNReal.conjExponent p with hq
+    set a : 𝓓(Ω, ℝ) := φ.iteratedFDerivApply n y with hadef
+    set Λ : (E [×n]→L[ℝ] F) →L[ℝ] F :=
+      ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ E) F y with hΛdef
+    have haq : eLpNorm a q (μ.restrict (Ω : Set E)) ≠ ⊤ :=
+      (a.memLp_restrict_of_locallyIntegrableOn_one hμ q).eLpNorm_ne_top
+    have hφq : eLpNorm φ q (μ.restrict (Ω : Set E)) ≠ ⊤ :=
+      (φ.memLp_restrict_of_locallyIntegrableOn_one hμ q).eLpNorm_ne_top
+    -- the left-hand sides converge
+    have hIg : ∀ i, IntegrableOn (fun x ↦ a x • g i x) (Ω : Set E) μ := fun i ↦
+      ((hg i).integrable_smul a).integrableOn
+    have hIf : IntegrableOn (fun x ↦ a x • f x) (Ω : Set E) μ :=
+      (LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset hfl a.contDiff.continuous
+        a.hasCompactSupport a.tsupport_subset).integrableOn
+    have hA : Tendsto (fun i ↦ ∫ x in (Ω : Set E), a x • g i x ∂μ) atTop
+        (𝓝 (∫ x in (Ω : Set E), a x • f x ∂μ)) := by
+      rw [← tendsto_sub_nhds_zero_iff, tendsto_zero_iff_enorm_tendsto_zero]
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+        (?_ : Tendsto (fun i ↦ eLpNorm a q (μ.restrict (Ω : Set E)) *
+          eLpNorm (g i - f) p (μ.restrict (Ω : Set E))) atTop (𝓝 0))
+        (fun _ ↦ zero_le) (fun i ↦ ?_)
+      · simpa using ENNReal.Tendsto.const_mul h1 (Or.inr haq)
+      · rw [← integral_sub (hIg i) hIf]
+        have heq : (fun x ↦ a x • g i x - a x • f x) = fun x ↦ a x • (g i - f) x :=
+          funext fun x ↦ by simp [smul_sub]
+        rw [heq]
+        exact enorm_integral_smul_le_eLpNorm_mul_eLpNorm (p := q) (q := p)
+    -- the right-hand sides converge
+    have hIu : ∀ i, IntegrableOn (fun x ↦ φ x • Λ (u i x)) (Ω : Set E) μ := fun i ↦
+      ((hg i).integrable_smul_weakDeriv_apply φ y).integrableOn
+    have hIw : IntegrableOn (fun x ↦ φ x • Λ (w x)) (Ω : Set E) μ :=
+      (LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset
+        (hwl.comp_continuousLinearMap Λ) φ.contDiff.continuous φ.hasCompactSupport
+        φ.tsupport_subset).integrableOn
+    have hB : Tendsto (fun i ↦ ∫ x in (Ω : Set E), φ x • Λ (u i x) ∂μ) atTop
+        (𝓝 (∫ x in (Ω : Set E), φ x • Λ (w x) ∂μ)) := by
+      rw [← tendsto_sub_nhds_zero_iff, tendsto_zero_iff_enorm_tendsto_zero]
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+        (?_ : Tendsto (fun i ↦ (eLpNorm φ q (μ.restrict (Ω : Set E)) * ‖Λ‖ₑ) *
+          eLpNorm (u i - w) p (μ.restrict (Ω : Set E))) atTop (𝓝 0))
+        (fun _ ↦ zero_le) (fun i ↦ ?_)
+      · simpa using ENNReal.Tendsto.const_mul h2
+          (Or.inr (ENNReal.mul_ne_top hφq (enorm_ne_top (x := Λ))))
+      · rw [← integral_sub (hIu i) hIw]
+        have heq : (fun x ↦ φ x • Λ (u i x) - φ x • Λ (w x))
+            = fun x ↦ φ x • Λ ((u i - w) x) :=
+          funext fun x ↦ by simp only [Pi.sub_apply, map_sub, smul_sub]
+        rw [heq, mul_assoc]
+        refine (enorm_integral_smul_le_eLpNorm_mul_eLpNorm (p := q) (q := p)).trans ?_
+        gcongr
+        exact eLpNorm_comp_continuousLinearMap_le Λ _ p
     have hAB : ∀ i, (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • g i x ∂μ)
         = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • Λ (u i x) ∂μ := fun i ↦
       (hg i).integral_smul_eq φ y
