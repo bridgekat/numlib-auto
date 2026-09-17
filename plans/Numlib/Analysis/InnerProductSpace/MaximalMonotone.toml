@@ -1,616 +1,289 @@
 namespace = "LinearPMap"
-desc = '''
-Maximal monotone operators on a Hilbert space: the resolvent, the Yosida approximation, the
-domains `D(A^k)` as Hilbert spaces, and the self-adjointness of symmetric maximal monotone
-operators ([brezis2011functional] §7.1, §7.3, §7.4). Upstreaming candidate; natural home
-`Mathlib.Analysis.InnerProductSpace.LinearPMap`, which this module extends and imports.
-
-**Setting.** `H` is a Hilbert space over `RCLike 𝕜` and `A : H →ₗ.[𝕜] H` is Mathlib's partially
-defined linear map (D2 of the planning brief). Nothing here differentiates in time, so the whole
-module is over `RCLike 𝕜` with `re ⟪A v, v⟫` at no cost: the proofs of Propositions 7.1, 7.2 and
-7.6 are verbatim with `re`, Mathlib's `LinearPMap.adjoint` / `IsSelfAdjoint` are over `RCLike`,
-and the skew-adjoint case (`re ⟪A v, v⟫ = 0`, Schrödinger) is covered for free. The evolution
-equation itself (`Numlib/Analysis/ODE/HilleYosida`) is over `ℝ`, for the reason given there.
-
-**Vocabulary fixed here** (chapter 10 of the Brezis surface consumes it):
-
-* `LinearPMap.IsMonotone A` — `0 ≤ re ⟪A v, v⟫` for all `v : A.domain`.
-* `LinearPMap.IsMaximalMonotone A` — a `structure`: `isMonotone` and `exists_add_apply_eq :
-  ∀ f, ∃ u : A.domain, (u : H) + A u = f` (the book's `R(I + A) = H`). `I + λA` as a `LinearPMap`
-  is `LinearMap.id +ᵥ ((λ : 𝕜) • A)` (Mathlib's `LinearPMap.instVAdd`, `instSMul`); its domain
-  is `A.domain` by `rfl`, and `IsMaximalMonotone.range_id_vadd_eq_top` records the book's
-  spelling `LinearMap.range (LinearMap.id +ᵥ A).toFun = ⊤`. Prototype:
-  `notes/brezis/ch07/proto/MaximalMonotone.lean` (elaborates at v4.35.0-rc2).
-* `LinearPMap.resolvent A λ : H →L[𝕜] H` — `J_λ = (I + λA)⁻¹`, a *total* function of `(A, λ)`
-  by the junk-value pattern of Mathlib's `LinearPMap.adjoint`: the bounded `J` with
-  `J f ∈ D(A)` and `J f + λ A (J f) = f` for all `f` when one exists (it is then unique), `0`
-  otherwise. Its properties are stated under `hA : A.IsMaximalMonotone` and `0 < λ`. Taking the
-  proofs as arguments (`resolvent hA hλ`) was rejected: the Yosida machinery quantifies over
-  `λ → 0⁺` and `μ` simultaneously, and proof arguments in the term make every `Tendsto` statement
-  unreadable.
-* `LinearPMap.yosida A λ : H →L[𝕜] H` — `A_λ = λ⁻¹ (I − J_λ)`.
-* `LinearPMap.powGraph A k : Submodule 𝕜 (PiLp 2 (fun _ : Fin (k+1) => H))` and the abbrev
-  `LinearPMap.PowDomain A k := ↥(A.powGraph k)` — the book's `D(A^k)` **as a Hilbert space with
-  exactly the book's norm** `(∑_{j ≤ k} ‖A^j u‖²)^{1/2}` (§7.3): the tuples
-  `(u, A u, …, A^k u)`, cut out of the `ℓ²`-product by "consecutive entries are related by `A`".
-  This is the jet-tuple construction of `Numlib/Analysis/Calculus/ContDiffMapIcc` (see
-  `notes/lessons.md` §"`PiLp 1` of a tuple is how to build a `Cᵏ` space"): the
-  `NormedAddCommGroup` / `InnerProductSpace 𝕜` instances come from `PiLp.innerProductSpace` and
-  `Submodule.innerProductSpace` with no `ofCore`, completeness is *closedness* of the submodule
-  (`isClosed_powGraph` for a closed `A`) plus `IsClosed.completeSpace_coe`, and `A^j` on `D(A^k)`
-  is the projection `PowDomain.applyL A k j`, a contraction. `A.PowDomain 1` is `D(A)` with the
-  Hilbert graph norm of the book's footnote 2, and `A.PowDomain 0 ≃ₗᵢ H`. No `A ^ k : H →ₗ.[𝕜] H`
-  is defined: Mathlib's `LinearPMap.comp g f H` demands `f x ∈ g.domain` for every `x`, so the
-  general composition (and a `Monoid` instance) would have to be built first, and nothing in
-  chapters 7 or 10 needs the operator `A^k` itself, only its domain with the book's norm. The
-  surface defines the book's recursive set `D(A^k)` and identifies it with `range (applyL A k 0)`.
-* `LinearPMap.powPart A k : A.PowDomain k →ₗ.[𝕜] A.PowDomain k` — the part of `A` in `D(A^k)`,
-  the operator `A₁ : D(A²) ⊂ D(A) → D(A)` (proof of Theorem 7.5) and `Ã : D(A^k) ⊂ D(A^{k-1}) →
-  D(A^{k-1})` (proof of Theorem 7.7) of the book, in one definition. `IsMaximalMonotone.powPart`
-  and `IsFormalAdjoint.powPart` are what make Theorems 7.5 and 7.7 inductions over one theorem.
-* Symmetric is Mathlib's `A.IsFormalAdjoint A`; self-adjoint is Mathlib's `IsSelfAdjoint A`
-  (`A† = A`, `LinearPMap.instStar`, which needs `CompleteSpace H`).
-
-**Not here.** The Banach-space adjoint of chapter 2 (`LinearPMap.strongDualAdjoint`, owner ch2)
-is not used: the Hilbert material of chapter 7 is stated with Mathlib's `LinearPMap.adjoint`.
-The semigroup `S_A(t)` and everything involving a time derivative are in `Numlib/Analysis/ODE/HilleYosida`.
-
-**Order of attack** inside the module: `IsMonotone` estimates → `IsMaximalMonotone.exists_add_smul_eq`
-(the contraction-mapping induction of Proposition 7.1 (c)) → `resolvent` and its API →
-`isClosed`, `dense_domain` → `yosida` and Proposition 7.2 → `powGraph`/`PowDomain`/`powPart` →
-`dense_range_castL` (Lemma 7.2) → the self-adjoint section (Proposition 7.6) → last, and
-optional, the Remark 8 section. Estimated 900–1100 lines in total.
-'''
 
 [[node]]
 id = "IsMonotone"
-kind = "definition"
-desc = '''`A.IsMonotone` for `A : H →ₗ.[𝕜] H`: `∀ v : A.domain, 0 ≤ re ⟪A v, (v : H)⟫`
-([brezis2011functional] §7.1, Definition; "accretive" in other authors' words). Over `𝕜 = ℝ`
-the `re` is the identity. ★'''
-deps = []
 source = "[brezis2011functional] §7.1, Definition"
 
 [[node]]
 id = "IsMaximalMonotone"
-kind = "definition"
-desc = '''`structure A.IsMaximalMonotone : Prop` with fields `isMonotone : A.IsMonotone` and
-`exists_add_apply_eq : ∀ f : H, ∃ u : A.domain, (u : H) + A u = f` (the book's `R(I + A) = H`,
-[brezis2011functional] §7.1, Definition). Shape settled in
-`notes/brezis/ch07/proto/MaximalMonotone.lean`. ★'''
-deps = ["IsMonotone"]
 source = "[brezis2011functional] §7.1, Definition"
 
 [[node]]
 id = "IsMaximalMonotone.range_id_vadd_eq_top"
-kind = "theorem"
-desc = '''The book's spelling of the second field: for `hA : A.IsMaximalMonotone`,
-`LinearMap.range ((LinearMap.id : H →ₗ[𝕜] H) +ᵥ A).toFun = ⊤`, where `LinearMap.id +ᵥ A` is
-Mathlib's `I + A` on `A.domain` (`LinearPMap.instVAdd`, `vadd_apply`). Proved in the prototype
-in four lines; also state the converse `of_range_id_vadd_eq_top`. ★'''
-deps = ["IsMaximalMonotone"]
 source = "[brezis2011functional] §7.1, Definition"
 
 [[node]]
 id = "IsMonotone.norm_le_norm_add_smul"
-kind = "theorem"
-desc = '''For a monotone `A`, `0 ≤ c` and `u : A.domain`, `‖(u : H)‖ ≤ ‖(u : H) + (c : 𝕜) • A u‖`.
-The one estimate behind Proposition 7.1: `‖u‖² ≤ ‖u‖² + c re ⟪A u, u⟫ = re ⟪u + c A u, u⟫ ≤
-‖u + c A u‖ ‖u‖` ([brezis2011functional] proof of Proposition 7.1 (b), `|u| ≤ |f|`). ★'''
-deps = ["IsMonotone"]
 source = "[brezis2011functional] Proposition 7.1"
 
 [[node]]
 id = "IsMonotone.injective_add_smul"
-kind = "theorem"
-desc = '''For a monotone `A` and `0 ≤ c`, `u ↦ (u : H) + (c : 𝕜) • A u` is injective on
-`A.domain` (the uniqueness clause of Proposition 7.1 (b), (c)): apply
-`norm_le_norm_add_smul` to `u - v`. ★'''
-deps = ["IsMonotone.norm_le_norm_add_smul"]
 source = "[brezis2011functional] Proposition 7.1"
 
 [[node]]
 id = "IsMaximalMonotone.dense_domain"
-kind = "theorem"
-desc = '''Proposition 7.1 (a): `Dense (A.domain : Set H)`. Via `Submodule.dense_iff_orthogonal`-type
-reasoning or directly `Dense` from "`⟪f, v⟫ = 0` on `D(A)` implies `f = 0`": solve
-`v₀ + A v₀ = f`, then `0 = re ⟪f, v₀⟫ = ‖v₀‖² + re ⟪A v₀, v₀⟫ ≥ ‖v₀‖²`, so `v₀ = 0` and `f = 0`
-([brezis2011functional] proof of Proposition 7.1 (a)). Use
-`Submodule.orthogonal_eq_bot_iff` / `Submodule.topologicalClosure_eq_top_iff` to turn the
-orthogonality statement into density. ★'''
-deps = ["IsMaximalMonotone", "IsMonotone.norm_le_norm_add_smul"]
 source = "[brezis2011functional] Proposition 7.1 (a)"
 
 [[node]]
 id = "IsMaximalMonotone.exists_add_smul_eq"
-kind = "theorem"
-desc = '''Proposition 7.1 (c), the surjectivity clause: for `hA : A.IsMaximalMonotone` and every
-`0 < c`, `∀ f : H, ∃ u : A.domain, (u : H) + (c : 𝕜) • A u = f`. Proof ([brezis2011functional]
-proof of Proposition 7.1 (c), lines 6811–6832): the auxiliary statement "if `I + c₀ A` is onto
-for some `c₀ > 0` then `I + c A` is onto for every `c > c₀ / 2`" — writing `u + c A u = f` as
-`u = J_{c₀} ((c₀/c) f + (1 − c₀/c) u)`, the right-hand side is a contraction of `H` with constant
-`|1 − c₀/c| < 1` because `‖J_{c₀}‖ ≤ 1` (`norm_le_norm_add_smul` gives the bound for the
-inverse of `I + c₀ A`, which exists on all of `H` by hypothesis and `injective_add_smul`);
-Mathlib's `ContractingWith.fixedPoint` (Theorem 5.7) gives the fixed point. Then induction on
-`n` from `c₀ = 1`: `I + cA` is onto for every `c > 2⁻ⁿ`. The formalizer should state the
-auxiliary step as its own lemma (`exists_add_smul_eq_of_exists_add_smul_eq`, taking the
-surjectivity at `c₀` as a hypothesis) so that the contraction argument is written once. ★★'''
-deps = ["IsMaximalMonotone", "IsMonotone.norm_le_norm_add_smul", "IsMonotone.injective_add_smul"]
 source = "[brezis2011functional] Proposition 7.1 (c)"
 
 [[node]]
 id = "resolvent"
-kind = "definition"
-desc = '''`A.resolvent c : H →L[𝕜] H` for `c : ℝ`, the resolvent `J_c = (I + cA)⁻¹`
-([brezis2011functional] §7.1, Definition after Remark 1), total in `(A, c)`: by classical
-choice, some bounded `J` with `∀ f, ∃ hf : J f ∈ A.domain, J f + (c : 𝕜) • A ⟨J f, hf⟩ = f`
-if one exists, else `0` (Mathlib's junk-value pattern for `LinearPMap.adjoint`). Such a `J` is
-unique when `I + cA` is injective, which every lemma below assumes through `IsMaximalMonotone`
-and `0 < c`. Prototype: `notes/brezis/ch07/proto/MaximalMonotone.lean`. ★'''
-deps = []
 source = "[brezis2011functional] §7.1, Definition of the resolvent"
 
 [[node]]
 id = "IsMaximalMonotone.resolvent_apply_mem_domain"
-kind = "theorem"
-desc = '''For `hA : A.IsMaximalMonotone` and `0 < c`, `A.resolvent c f ∈ A.domain` for every
-`f`. Together with `resolvent_add_smul_apply` this is the specification of `resolvent`; both
-follow from `exists_add_smul_eq` (which produces the required `J` as a linear map by
-`injective_add_smul` and makes it continuous by `LinearMap.mkContinuous` with the bound
-`norm_le_norm_add_smul`), so that the `if` in the definition takes its first branch. ★'''
-deps = ["resolvent", "IsMaximalMonotone.exists_add_smul_eq", "IsMonotone.injective_add_smul", "IsMonotone.norm_le_norm_add_smul"]
 source = "[brezis2011functional] §7.1, Definition of the resolvent"
 
 [[node]]
 id = "IsMaximalMonotone.resolvent_add_smul_apply"
-kind = "theorem"
-desc = '''For `hA : A.IsMaximalMonotone` and `0 < c`:
-`A.resolvent c f + (c : 𝕜) • A ⟨A.resolvent c f, hA.resolvent_apply_mem_domain hc f⟩ = f`. ★'''
-deps = ["IsMaximalMonotone.resolvent_apply_mem_domain"]
 source = "[brezis2011functional] §7.1, Definition of the resolvent"
 
 [[node]]
 id = "IsMaximalMonotone.resolvent_eq_iff"
-kind = "theorem"
-desc = '''Uniqueness: for `hA`, `0 < c`, `u : A.domain` and `f : H`,
-`A.resolvent c f = u ↔ (u : H) + (c : 𝕜) • A u = f`; and the corollary
-`resolvent_apply_add_smul : A.resolvent c ((u : H) + (c : 𝕜) • A u) = u`, i.e. `J_c (I + cA) = I`
-on `D(A)`. From `injective_add_smul`. ★'''
-deps = ["IsMaximalMonotone.resolvent_add_smul_apply", "IsMonotone.injective_add_smul"]
 source = "[brezis2011functional] Proposition 7.1 (c)"
 
 [[node]]
 id = "IsMaximalMonotone.norm_resolvent_le_one"
-kind = "theorem"
-desc = '''Proposition 7.1 (c), the bound: for `hA` and `0 < c`, `‖A.resolvent c‖ ≤ 1`, with the
-pointwise form `norm_resolvent_apply_le : ‖A.resolvent c f‖ ≤ ‖f‖`. From `norm_le_norm_add_smul`
-applied to `J_c f`, then `ContinuousLinearMap.opNorm_le_bound`. ★'''
-deps = ["IsMaximalMonotone.resolvent_add_smul_apply", "IsMonotone.norm_le_norm_add_smul"]
 source = "[brezis2011functional] Proposition 7.1 (c)"
 
 [[node]]
 id = "IsMaximalMonotone.isClosed"
-kind = "theorem"
-desc = '''Proposition 7.1 (b): a maximal monotone operator is closed, `A.IsClosed` (Mathlib's
-closed graph). Proof ([brezis2011functional] lines 6805–6810): if `u_n ∈ D(A)`, `u_n → u`,
-`A u_n → f`, then `u_n = J_1 (u_n + A u_n) → J_1 (u + f)`, so `u = J_1 (u + f) ∈ D(A)` and
-`u + A u = u + f`. Work with the graph directly: `IsClosed` of the graph via
-`isSeqClosed_iff_isClosed` (as `AtkinsonHan.Chapter08.isClosed_iff_seq` does in the surface;
-that lemma is a surface node, so reprove the two-line reduction here or use
-`IsClosed.mem_of_tendsto` on the closed set `{p | p.1 = J_1 (p.1 + p.2)}`, which is the
-preimage of the diagonal under a continuous map — no sequences at all). ★★'''
-deps = ["IsMaximalMonotone.resolvent_eq_iff", "IsMaximalMonotone.resolvent_apply_mem_domain"]
 source = "[brezis2011functional] Proposition 7.1 (b)"
 
 [[node]]
 id = "IsMaximalMonotone.smul"
-kind = "theorem"
-desc = '''Remark 1 ([brezis2011functional] Chapter 7, Remark 1): if `A` is maximal monotone and
-`0 < c` then `((c : 𝕜) • A).IsMaximalMonotone`. Monotonicity is `re ⟪c A v, v⟫ = c re ⟪A v, v⟫`;
-`R(I + cA) = H` is `exists_add_smul_eq`. (The remark's second sentence, that `A + B` need not
-be maximal monotone, is a counterexample and is not a node.) ★'''
-deps = ["IsMaximalMonotone", "IsMaximalMonotone.exists_add_smul_eq"]
 source = "[brezis2011functional] Chapter 7, Remark 1"
 
 [[node]]
 id = "yosida"
-kind = "definition"
-desc = '''`A.yosida c : H →L[𝕜] H := ((c⁻¹ : ℝ) : 𝕜) • (ContinuousLinearMap.id 𝕜 H - A.resolvent c)`,
-the Yosida approximation `A_c = c⁻¹ (I − J_c)` ([brezis2011functional] §7.1, Definition after
-Remark 1). Total in `(A, c)` like `resolvent`. ★'''
-deps = ["resolvent"]
 source = "[brezis2011functional] §7.1, Definition of the Yosida approximation"
 
 [[node]]
 id = "IsMaximalMonotone.yosida_apply_eq_apply_resolvent"
-kind = "theorem"
-desc = '''Proposition 7.2 (a₁): for `hA`, `0 < c` and every `v : H`,
-`A.yosida c v = A ⟨A.resolvent c v, hA.resolvent_apply_mem_domain hc v⟩`. Rearrangement of
-`resolvent_add_smul_apply`: `v = J_c v + c A (J_c v)`. ★'''
-deps = ["yosida", "IsMaximalMonotone.resolvent_add_smul_apply"]
 source = "[brezis2011functional] Proposition 7.2 (a₁)"
 
 [[node]]
 id = "IsMaximalMonotone.resolvent_apply_comm"
-kind = "theorem"
-desc = '''`J_c` commutes with `A` on `D(A)`: for `hA`, `0 < c` and `u : A.domain`,
-`A.resolvent c (A u) = A ⟨A.resolvent c u, _⟩`. Proof: both sides are the unique solution `w` of
-`w + c A w = A u` (`resolvent_eq_iff`): for the right-hand side, apply `A` to
-`J_c u + c A (J_c u) = u`, i.e. `A(J_c u) + c A(A (J_c u)) = A u` — which needs `A (J_c u) ∈ D(A)`;
-that is where the book's (a₂) argument `A_c v + c A (A_c v) = A v` comes from
-([brezis2011functional] proof of Proposition 7.2 (a₂)). Derive it as: `A_c u = c⁻¹(u − J_c u)`
-is in `D(A)` because both `u` and `J_c u` are, and `A (A_c u) = c⁻¹ (A u − A J_c u)`. ★'''
-deps = ["IsMaximalMonotone.resolvent_eq_iff", "IsMaximalMonotone.yosida_apply_eq_apply_resolvent"]
 source = "[brezis2011functional] Proposition 7.2 (a₂)"
 
 [[node]]
 id = "IsMaximalMonotone.yosida_apply_eq_resolvent_apply"
-kind = "theorem"
-desc = '''Proposition 7.2 (a₂): for `hA`, `0 < c` and `v : A.domain`,
-`A.yosida c v = A.resolvent c (A v)`. From (a₁) and `resolvent_apply_comm`. ★'''
-deps = ["IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "IsMaximalMonotone.resolvent_apply_comm"]
 source = "[brezis2011functional] Proposition 7.2 (a₂)"
 
 [[node]]
 id = "IsMaximalMonotone.norm_yosida_apply_le_norm_apply"
-kind = "theorem"
-desc = '''Proposition 7.2 (b): for `hA`, `0 < c`, `v : A.domain`, `‖A.yosida c v‖ ≤ ‖A v‖`. From
-(a₂) and `norm_resolvent_apply_le`. ★'''
-deps = ["IsMaximalMonotone.yosida_apply_eq_resolvent_apply", "IsMaximalMonotone.norm_resolvent_le_one"]
 source = "[brezis2011functional] Proposition 7.2 (b)"
 
 [[node]]
 id = "IsMaximalMonotone.norm_sub_resolvent_apply_le"
-kind = "theorem"
-desc = '''The rate behind Proposition 7.2 (c) on the domain: for `hA`, `0 < c` and `v : A.domain`,
-`‖(v : H) − A.resolvent c v‖ ≤ c * ‖A v‖`, since `v − J_c v = c A_c v` and (b). ★'''
-deps = ["IsMaximalMonotone.norm_yosida_apply_le_norm_apply", "yosida"]
 source = "[brezis2011functional] Proposition 7.2 (c)"
 
 [[node]]
 id = "IsMaximalMonotone.tendsto_resolvent_apply"
-kind = "theorem"
-desc = '''Proposition 7.2 (c): for `hA` and every `v : H`,
-`Tendsto (fun c : ℝ => A.resolvent c v) (𝓝[>] 0) (𝓝 v)`. Proof ([brezis2011functional] lines
-6879–6892): on `D(A)` by `norm_sub_resolvent_apply_le`; for general `v`, given `ε` pick
-`v₁ ∈ D(A)` with `‖v − v₁‖ ≤ ε` (`dense_domain`), then
-`‖J_c v − v‖ ≤ 2 ‖v − v₁‖ + ‖J_c v₁ − v₁‖` by `‖J_c‖ ≤ 1`, so `limsup ≤ 2ε`. Use
-`Metric.tendsto_nhdsWithin_nhds` and an `ε/3` argument rather than `limsup`. ★★'''
-deps = ["IsMaximalMonotone.norm_sub_resolvent_apply_le", "IsMaximalMonotone.dense_domain", "IsMaximalMonotone.norm_resolvent_le_one"]
 source = "[brezis2011functional] Proposition 7.2 (c)"
 
 [[node]]
 id = "IsMaximalMonotone.tendsto_yosida_apply"
-kind = "theorem"
-desc = '''Proposition 7.2 (d): for `hA` and `v : A.domain`,
-`Tendsto (fun c : ℝ => A.yosida c v) (𝓝[>] 0) (𝓝 (A v))`. From (a₂) and (c) applied to `A v`. ★'''
-deps = ["IsMaximalMonotone.yosida_apply_eq_resolvent_apply", "IsMaximalMonotone.tendsto_resolvent_apply"]
 source = "[brezis2011functional] Proposition 7.2 (d)"
 
 [[node]]
 id = "IsMaximalMonotone.smul_norm_sq_yosida_le_re_inner"
-kind = "theorem"
-desc = '''Inequality (3) of the proof of Proposition 7.2 (e): for `hA`, `0 < c` and `v : H`,
-`c * ‖A.yosida c v‖ ^ 2 ≤ re ⟪A.yosida c v, v⟫`. Proof: `re ⟪A_c v, v⟫ = re ⟪A_c v, v − J_c v⟫ +
-re ⟪A_c v, J_c v⟫ = c ‖A_c v‖² + re ⟪A (J_c v), J_c v⟫` by (a₁), and the last term is `≥ 0` by
-monotonicity ([brezis2011functional] lines 6894–6899). ★'''
-deps = ["IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "IsMonotone"]
 source = "[brezis2011functional] Proposition 7.2 (e)"
 
 [[node]]
 id = "IsMaximalMonotone.re_inner_yosida_nonneg"
-kind = "theorem"
-desc = '''Proposition 7.2 (e): for `hA`, `0 < c` and `v : H`, `0 ≤ re ⟪A.yosida c v, v⟫`; i.e. the
-bounded operator `A_c` is monotone. From `smul_norm_sq_yosida_le_re_inner`. ★'''
-deps = ["IsMaximalMonotone.smul_norm_sq_yosida_le_re_inner"]
 source = "[brezis2011functional] Proposition 7.2 (e)"
 
 [[node]]
 id = "IsMaximalMonotone.norm_yosida_apply_le"
-kind = "theorem"
-desc = '''Proposition 7.2 (f): for `hA`, `0 < c` and `v : H`, `‖A.yosida c v‖ ≤ c⁻¹ * ‖v‖`, and the
-operator form `norm_yosida_le : ‖A.yosida c‖ ≤ c⁻¹`. From (3) and Cauchy–Schwarz:
-`c ‖A_c v‖² ≤ ‖A_c v‖ ‖v‖`. ★'''
-deps = ["IsMaximalMonotone.smul_norm_sq_yosida_le_re_inner"]
 source = "[brezis2011functional] Proposition 7.2 (f)"
 
 [[node]]
 id = "IsMaximalMonotone.re_inner_yosida_sub_yosida_ge"
-kind = "theorem"
-desc = '''The algebraic inequality (12) of Step 3 of the proof of Theorem 7.4
-([brezis2011functional] lines 7037–7049), stated for arbitrary vectors: for `hA`, `0 < c`,
-`0 < d` and `x y : H`,
-`re ⟪A.yosida c x − A.yosida d y, c • A.yosida c x − d • A.yosida d y⟫ ≤
-  re ⟪A.yosida c x − A.yosida d y, x − y⟫`.
-Proof: write `x − y = (x − J_c x) + (J_c x − J_d y) + (J_d y − y) = c A_c x − d A_d y +
-(J_c x − J_d y)`, and `re ⟪A_c x − A_d y, J_c x − J_d y⟫ = re ⟪A (J_c x − J_d y), J_c x − J_d y⟫
-≥ 0` by (a₁) and monotonicity. Pure algebra; it is the only place in Steps 3–4 where the
-unbounded `A` enters. ★'''
-deps = ["IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "IsMonotone"]
 source = "[brezis2011functional] Theorem 7.4, proof, Step 3"
 
 [[node]]
 id = "powGraph"
-kind = "definition"
-desc = '''`A.powGraph k : Submodule 𝕜 (PiLp 2 (fun _ : Fin (k + 1) => H))`, the tuples `x` with
-`∀ i : Fin k, ∃ h : x i.castSucc ∈ A.domain, A ⟨x i.castSucc, h⟩ = x i.succ`, i.e.
-`(u, A u, A² u, …, A^k u)` for `u ∈ D(A^k)` ([brezis2011functional] §7.3, Definition of
-`D(A^k)`). Submodule proofs are in the prototype. Lemma `mem_powGraph_iff`. ★'''
-deps = []
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain"
-kind = "definition"
-desc = '''`abbrev A.PowDomain k := ↥(A.powGraph k)`, the book's Hilbert space `D(A^k)` with the
-scalar product `(u, v)_{D(A^k)} = ∑_{j ≤ k} ⟪A^j u, A^j v⟫` and norm `(∑_{j ≤ k} ‖A^j u‖²)^{1/2}`
-([brezis2011functional] §7.3, the display after the Definition), which are the `PiLp 2`
-inner product and norm restricted to the submodule — nothing to construct. Record
-`PowDomain.inner_def` (`PiLp.inner_apply`) and `PowDomain.norm_sq_eq` (`PiLp.norm_sq_eq_of_L2`).
-`A.PowDomain 1` is `D(A)` with the Hilbert graph norm of footnote 2 of §7.2; `A.PowDomain 0`
-is `H` up to `PowDomain.zeroEquiv : A.PowDomain 0 ≃ₗᵢ[𝕜] H` (`powGraph_zero : A.powGraph 0 = ⊤`
-and `PiLp` over `Fin 1`). ★'''
-deps = ["powGraph"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain.applyL"
-kind = "definition"
-desc = '''`PowDomain.applyL A k j : A.PowDomain k →L[𝕜] H` for `j : Fin (k + 1)`, the `j`-th
-component `x ↦ x j`, i.e. `A^j` as a bounded operator on `D(A^k)`:
-`(PiLp.proj (𝕜 := 𝕜) (p := 2) _ j).comp (A.powGraph k).subtypeL`, with `applyL_apply` (`rfl`)
-and `norm_applyL_apply_le : ‖applyL A k j x‖ ≤ ‖x‖` (`PiLp.norm_apply_le`; both in the
-prototype). `applyL A k 0` is the inclusion `D(A^k) → H` and `applyL A 1 1` is `A` on `D(A)`.
-Also `applyL_mem_domain : applyL A k i.castSucc x ∈ A.domain` and
-`apply_applyL : A ⟨applyL A k i.castSucc x, _⟩ = applyL A k i.succ x` for `i : Fin k`. ★'''
-deps = ["PowDomain"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain.castL"
-kind = "definition"
-desc = '''`PowDomain.castL A k : A.PowDomain (k + 1) →L[𝕜] A.PowDomain k`, the inclusion
-`D(A^{k+1}) ⊆ D(A^k)`: drop the last component (`x ↦ fun j => x j.castSucc`), norm `≤ 1`;
-`applyL_castL : applyL A k j (castL A k x) = applyL A (k+1) j.castSucc x`. ★'''
-deps = ["PowDomain.applyL"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain.shiftL"
-kind = "definition"
-desc = '''`PowDomain.shiftL A k : A.PowDomain (k + 1) →L[𝕜] A.PowDomain k`, the operator `A` from
-`D(A^{k+1})` to `D(A^k)`: `x ↦ fun j => x j.succ`, norm `≤ 1`;
-`applyL_shiftL : applyL A k j (shiftL A k x) = applyL A (k+1) j.succ x`, and
-`applyL_zero_shiftL : applyL A k 0 (shiftL A k x) = A ⟨applyL A (k+1) 0 x, _⟩`. ★'''
-deps = ["PowDomain.applyL"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain.snoc"
-kind = "definition"
-desc = '''The assembly constructor: for `x : A.PowDomain k` with `h : applyL A k (Fin.last k) x ∈ A.domain`,
-`PowDomain.snoc x h : A.PowDomain (k + 1)` is the tuple `Fin.snoc x (A ⟨x (last k), h⟩)`, with
-`castL_snoc : castL A k (snoc x h) = x` and `applyL_snoc_last`. Membership in `powGraph (k+1)` is
-a `Fin.snoc` case split (`Fin.lastCases`). Used to build lifts into `D(A^{k+1})` from lifts into
-`D(A^k)` (Theorems 7.5, 7.7). ★'''
-deps = ["PowDomain.castL", "PowDomain.applyL"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "PowDomain.castLE"
-kind = "definition"
-desc = '''`PowDomain.castLE A (h : j ≤ k) : A.PowDomain k →L[𝕜] A.PowDomain j`, the inclusion
-`D(A^k) ⊆ D(A^j)` (keep the first `j + 1` components; `Fin.castLE`), norm `≤ 1`;
-`castLE_rfl`, `castLE_castLE`, `applyL_castLE`, `castLE_succ_eq_castL`. The iterated `castL`
-that Theorem 7.5's induction (`HilleYosida`) needs. ★'''
-deps = ["PowDomain.castL"]
 source = "[brezis2011functional] Theorem 7.5, proof"
 
 [[node]]
 id = "isClosed_powGraph"
-kind = "theorem"
-desc = '''For `hA : A.IsClosed`, `IsClosed (A.powGraph k : Set (PiLp 2 fun _ : Fin (k + 1) => H))`.
-The carrier is `⋂ i : Fin k, {x | (x i.castSucc, x i.succ) ∈ A.graph}`, an intersection of
-preimages of the closed graph under the continuous maps `x ↦ (x i.castSucc, x i.succ)`
-(`IsClosed.preimage`, `isClosed_iInter`). ★★'''
-deps = ["powGraph"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "IsClosed.completeSpace_powDomain"
-kind = "theorem"
-desc = '''For `hA : A.IsClosed` and `[CompleteSpace H]`, `CompleteSpace (A.PowDomain k)` — the
-book's "it is easily seen that `D(A^k)` is a Hilbert space" ([brezis2011functional] §7.3).
-`isClosed_powGraph` and `IsClosed.completeSpace_coe` (`PiLp.completeSpace`). Not an instance
-(the hypothesis is a proof); consumers write `haveI := hA.completeSpace_powDomain k`. Also
-`HasOrthogonalProjection (A.powGraph k)` follows (`Submodule.HasOrthogonalProjection.ofCompleteSpace`),
-which is what makes "a map into `D(A^k)` is `C^n` iff its coercion is" provable in
-`HilleYosida` (`contDiffOnPowDomain_iff`). ★'''
-deps = ["isClosed_powGraph", "PowDomain"]
 source = "[brezis2011functional] §7.3, Definition of D(A^k)"
 
 [[node]]
 id = "powPart"
-kind = "definition"
-desc = '''`A.powPart k : A.PowDomain k →ₗ.[𝕜] A.PowDomain k`, the part of `A` in `D(A^k)`: domain
-`{x | applyL A k (Fin.last k) x ∈ A.domain}` (the image of `castL A k`, i.e. `D(A^{k+1})` seen
-inside `D(A^k)`), value `shiftL A k (snoc x h)` (the tuple `(A u, A² u, …, A^{k+1} u)`). This is
-the book's `A₁ : D(A²) ⊂ D(A) → D(A)`, `A₁ u = A u` (proof of Theorem 7.5, `k = 1`) and
-`Ã : D(A^k) ⊂ D(A^{k−1}) → D(A^{k−1})` (proof of Theorem 7.7), in one definition. Lemmas
-`mem_powPart_domain_iff`, `applyL_powPart_apply : applyL A k j (A.powPart k x) = applyL A (k+1) j.succ (snoc x _)`,
-and `applyL_zero_powPart_apply : applyL A k 0 (A.powPart k x) = A ⟨applyL A k 0 x, _⟩`. ★'''
-deps = ["PowDomain.shiftL", "PowDomain.snoc"]
 source = "[brezis2011functional] Theorem 7.5, proof"
 
 [[node]]
 id = "IsMonotone.powPart"
-kind = "theorem"
-desc = '''If `A.IsMonotone` then `(A.powPart k).IsMonotone`: `re ⟪A x, x⟫_{D(A^k)} =
-∑_{j ≤ k} re ⟪A^{j+1} u, A^j u⟫ ≥ 0` termwise (`PowDomain.inner_def`, `applyL_powPart_apply`). ★'''
-deps = ["powPart", "IsMonotone"]
 source = "[brezis2011functional] Theorem 7.5, proof"
 
 [[node]]
 id = "IsMaximalMonotone.powPart"
-kind = "theorem"
-desc = '''If `A.IsMaximalMonotone` then `(A.powPart k).IsMaximalMonotone` — "it is easy to check
-that `A₁` is maximal monotone in `H₁`" ([brezis2011functional] proof of Theorem 7.5, and "it is
-easily seen that `Ã` is maximal monotone" in the proof of Theorem 7.7). Monotone by
-`IsMonotone.powPart`. Onto: given `f : A.PowDomain k` with components `f_j = A^j f₀`, the
-solution of `x + A x = f` is the tuple `x_j = J_1 f_j`: `J_1 f_j ∈ D(A)`,
-`A (J_1 f_j) = J_1 (A f_j) = J_1 f_{j+1}` by `resolvent_apply_comm`, so `x ∈ powGraph k`,
-`x_k ∈ D(A)`, and `x_j + A x_j = J_1 f_j + A J_1 f_j = f_j`. ★★'''
-deps = ["IsMonotone.powPart", "IsMaximalMonotone.resolvent_apply_comm", "IsMaximalMonotone.resolvent_add_smul_apply", "IsMaximalMonotone.resolvent_apply_mem_domain"]
 source = "[brezis2011functional] Theorem 7.5, proof"
 
 [[node]]
 id = "IsFormalAdjoint.powPart"
-kind = "theorem"
-desc = '''If `A` is symmetric (`A.IsFormalAdjoint A`) then so is its part:
-`(A.powPart k).IsFormalAdjoint (A.powPart k)`, since `⟪A x, y⟫_{D(A^k)} = ∑_j ⟪A^{j+1} u, A^j v⟫
-= ∑_j ⟪A^j u, A^{j+1} v⟫` termwise ("`Ã` is symmetric in `H̃`", [brezis2011functional] proof of
-Theorem 7.7). ★'''
-deps = ["powPart"]
 source = "[brezis2011functional] Theorem 7.7, proof"
 
 [[node]]
 id = "IsMaximalMonotone.dense_range_castL"
-kind = "theorem"
-desc = '''Lemma 7.2, generalized to every level: for `hA : A.IsMaximalMonotone`,
-`Dense (Set.range (PowDomain.castL A k))`, i.e. `D(A^{k+1})` is dense in `D(A^k)` for the norm
-of `D(A^k)`; at `k = 1` this is the book's Lemma 7.2 (`D(A²)` dense in `D(A)` for the graph
-norm). Proof ([brezis2011functional] proof of Lemma 7.2): for `x ∈ D(A^k)` the tuple
-`(J_c x_j)_j` lies in `D(A^{k+1})` (it is `snoc` of a tuple in `powGraph k`, its last entry
-`J_c x_k ∈ D(A)`), and `J_c x_j → x_j` for every `j` as `c → 0⁺` (`tendsto_resolvent_apply`),
-which is convergence in the `PiLp 2` norm (`PiLp.norm_sq_eq_of_L2`, or continuity of `toLp`). ★★'''
-deps = ["PowDomain.castL", "PowDomain.snoc", "IsMaximalMonotone.tendsto_resolvent_apply", "IsMaximalMonotone.resolvent_apply_comm", "IsMaximalMonotone.resolvent_apply_mem_domain"]
 source = "[brezis2011functional] Lemma 7.2"
 
 [[node]]
 id = "_root_.IsSelfAdjoint.isFormalAdjoint_self"
-kind = "theorem"
-desc = '''A self-adjoint `A : H →ₗ.[𝕜] H` (Mathlib's `IsSelfAdjoint A`, i.e. `A† = A`) is symmetric,
-`A.IsFormalAdjoint A`: `adjoint_isFormalAdjoint hA.dense_domain` rewritten along `A† = A`
-(`isSelfAdjoint_def`, `IsSelfAdjoint.dense_domain`). The direction the book calls "clearly, any
-self-adjoint operator is symmetric" (Remark 7). ★'''
-deps = []
 source = "[brezis2011functional] Chapter 7, Remark 7"
 
 [[node]]
 id = "IsFormalAdjoint.le_adjoint_iff"
-kind = "theorem"
-desc = '''Remark 7 ([brezis2011functional] Chapter 7, Remark 7): for a densely defined `A`,
-`A.IsFormalAdjoint A ↔ A ≤ A†` (Mathlib's `LinearPMap.le`: `D(A) ⊆ D(A†)` and `A† = A` on
-`D(A)`). `→` is Mathlib's `IsFormalAdjoint.le_adjoint`; `←` from `adjoint_isFormalAdjoint` and
-`LinearPMap.apply_comp_inclusion`. ★'''
-deps = []
 source = "[brezis2011functional] Chapter 7, Remark 7"
 
 [[node]]
 id = "IsMaximalMonotone.isSelfAdjoint_resolvent"
-kind = "theorem"
-desc = '''For `hA : A.IsMaximalMonotone`, `hs : A.IsFormalAdjoint A` and `0 < c`,
-`IsSelfAdjoint (A.resolvent c)` as a bounded operator (Mathlib's
-`ContinuousLinearMap.isSelfAdjoint_iff'` / `IsSelfAdjoint` on `H →L[𝕜] H`), and hence
-`isSelfAdjoint_yosida : IsSelfAdjoint (A.yosida c)`. The first paragraph of the proof of
-Proposition 7.6 ([brezis2011functional] lines 7307–7317) at `c = 1`, and the identity
-`J_λ* = J_λ`, `A_λ* = A_λ` of the proof of Theorem 7.7: with `u₁ = J_c u`, `v₁ = J_c v`,
-`⟪u₁, v⟫ = ⟪u₁, v₁ + c A v₁⟫ = ⟪u₁ + c A u₁, v₁⟫ = ⟪u, v₁⟫` by symmetry. ★'''
-deps = ["IsMaximalMonotone.resolvent_add_smul_apply", "IsMaximalMonotone.resolvent_apply_mem_domain", "yosida"]
 source = "[brezis2011functional] Proposition 7.6"
 
 [[node]]
 id = "IsMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint"
-kind = "theorem"
-desc = '''Proposition 7.6: a symmetric maximal monotone operator is self-adjoint — for
-`hA : A.IsMaximalMonotone` and `hs : A.IsFormalAdjoint A`, `IsSelfAdjoint A` (`A† = A`).
-Proof ([brezis2011functional] lines 7318–7326): `A ≤ A†` by `IsFormalAdjoint.le_adjoint`
-(`dense_domain`); conversely for `u ∈ D(A†)` set `f = u + A† u`, then `⟪f, v⟫ = ⟪u, v + A v⟫`
-for all `v ∈ D(A)` (`adjoint_isFormalAdjoint`), i.e. `⟪f, J_1 w⟫ = ⟪u, w⟫` for all `w ∈ H`
-(`resolvent_add_smul_apply`, every `w` is `v + A v` for `v = J_1 w`), so `u = J_1* f = J_1 f ∈ D(A)`
-by `isSelfAdjoint_resolvent`. Then `LinearPMap.eq_of_le_of_domain_eq`. ★★'''
-deps = ["IsMaximalMonotone.isSelfAdjoint_resolvent", "IsMaximalMonotone.dense_domain", "IsFormalAdjoint.le_adjoint_iff", "IsMaximalMonotone.resolvent_add_smul_apply"]
 source = "[brezis2011functional] Proposition 7.6"
 
 [[node]]
 id = "IsMaximalMonotone.isMonotone_adjoint"
-kind = "theorem"
-desc = '''Remark 8, first ingredient ([brezis2011functional] Chapter 7, Remark 8): the adjoint of a
-maximal monotone operator is monotone, `A†.IsMonotone`. Not in the book (which says "one can
-prove"); route: for `v ∈ D(A†)`, `re ⟪A† v, v⟫ = lim_{c → 0⁺} re ⟪A† v, J_c v⟫`
-(`tendsto_resolvent_apply`, continuity of the inner product) and
-`⟪A† v, J_c v⟫ = ⟪v, A (J_c v)⟫ = ⟪v, A_c v⟫` (`adjoint_isFormalAdjoint`, (a₁)), whose real
-part is `re ⟪A_c v, v⟫ ≥ 0` by Proposition 7.2 (e); closed sets are preserved by limits
-(`ge_of_tendsto`). ★★'''
-deps = ["IsMaximalMonotone.tendsto_resolvent_apply", "IsMaximalMonotone.yosida_apply_eq_apply_resolvent", "IsMaximalMonotone.re_inner_yosida_nonneg", "IsMaximalMonotone.dense_domain"]
 source = "[brezis2011functional] Chapter 7, Remark 8"
 
 [[node]]
 id = "adjoint_id_vadd"
-kind = "theorem"
-desc = '''For a densely defined `A : H →ₗ.[𝕜] H` (`[CompleteSpace H]`),
-`(LinearMap.id +ᵥ A)† = LinearMap.id +ᵥ A†`: the adjoint of a bounded perturbation. Not in
-Mathlib (grep `adjoint` in `Mathlib/Analysis/InnerProductSpace/LinearPMap.lean`: only the
-definition, `adjoint_isFormalAdjoint`, `le_adjoint`, `adjoint_isClosed`, the graph
-characterization). Both domains are `{y | x ↦ ⟪y, T x⟫ continuous}` with `T = A + id` and
-`T = A`, equal because `x ↦ ⟪y, x⟫` is continuous; values by `adjoint_apply_eq`. Upstreaming
-candidate. ★★'''
-deps = []
 source = "[brezis2011functional] Chapter 7, Remark 8"
 
 [[node]]
 id = "IsMaximalMonotone.adjoint"
-kind = "theorem"
-desc = '''Remark 8, `⇒`: if `A` is maximal monotone then so is `A†` ([brezis2011functional]
-Chapter 7, Remark 8, "one can prove"). Monotone by `isMonotone_adjoint`. Onto: for `f : H` put
-`u = (A.resolvent 1)† f` (`ContinuousLinearMap.adjoint`); then for every `v ∈ D(A)`,
-`⟪u, v + A v⟫ = ⟪f, J_1 (v + A v)⟫ = ⟪f, v⟫` (`resolvent_eq_iff`), so
-`u ∈ D((id +ᵥ A)†) = D(A†)` with `(id +ᵥ A)† u = f`, i.e. `u + A† u = f`
-(`adjoint_id_vadd`, `mem_adjoint_domain_of_exists`, `adjoint_apply_eq`). ★★'''
-deps = ["IsMaximalMonotone.isMonotone_adjoint", "adjoint_id_vadd", "IsMaximalMonotone.resolvent_eq_iff", "IsMaximalMonotone.dense_domain"]
 source = "[brezis2011functional] Chapter 7, Remark 8"
 
 [[node]]
 id = "adjoint_adjoint"
-kind = "theorem"
-desc = '''For a closed densely defined `A : H →ₗ.[𝕜] H` with `D(A†)` dense, `A†† = A`. Not in
-Mathlib (the file stops at `adjoint_isClosed`). Route through graphs: Mathlib's
-`adjoint_graph_eq_graph_adjoint` writes `graph A†` as `(swap-and-negate of graph A)ᗮ` inside
-`WithLp 2 (H × H)` (`Submodule.adjoint`), so `graph A††` is the double orthogonal of the
-closed `graph A` transported twice, and `Submodule.orthogonal_orthogonal` (closed, complete)
-gives `graph A`; then `LinearPMap.eq_of_eq_graph`. (For a maximal monotone `A`, `D(A†)` is
-dense by `IsMaximalMonotone.adjoint` + `dense_domain`, which is how Remark 8 uses it.)
-Upstreaming candidate. ★★'''
-deps = []
 source = "[brezis2011functional] Chapter 7, Remark 8"
 
 [[node]]
 id = "isMaximalMonotone_iff_adjoint"
-kind = "theorem"
-desc = '''Remark 8, first equivalence: for a closed densely defined `A` with dense `D(A†)`,
-`A.IsMaximalMonotone ↔ A†.IsMaximalMonotone`. `→` is `IsMaximalMonotone.adjoint`; `←` applies
-it to `A†` and rewrites along `adjoint_adjoint`. (Without the density of `D(A†)` the statement
-is `A.IsMaximalMonotone → A†.IsMaximalMonotone` only; the book's Remark 8 tacitly assumes what
-it needs for `A*` to make sense as an operator in `H`, i.e. `D(A)` dense.) ★★'''
-deps = ["IsMaximalMonotone.adjoint", "adjoint_adjoint"]
 source = "[brezis2011functional] Chapter 7, Remark 8"
 
 [[node]]
 id = "isMaximalMonotone_iff_isClosed_dense_isMonotone"
-kind = "theorem"
-desc = '''Remark 8, second equivalence: `A.IsMaximalMonotone ↔ A.IsClosed ∧ Dense (A.domain : Set H)
-∧ A.IsMonotone ∧ A†.IsMonotone`. `→` is Proposition 7.1 (a), (b) and `isMonotone_adjoint`.
-`←` ([brezis2011functional] Chapter 7, Remark 8, "one can prove"; the Hilbert case of Problem
-16): `R(I + A)` is closed because `A` is closed and `‖u‖ ≤ ‖u + A u‖` — this is exactly
-`LinearPMap.IsClosed.isClosed_range_of_norm_le` (chapter 2's
-`Numlib/Analysis/Normed/Operator/Unbounded/Basic`, Mathlib-only; the older
-`LinearPMap.isClosed_range_of_isClosed_of_le_norm` of `Numlib/Variational/LaxMilgram` is its
-inner-product special case and is to be re-proved from it — do not import the variational layer
-into `Analysis/InnerProductSpace/` for it) applied to `LinearMap.id +ᵥ A`, whose graph is closed
-when `A`'s is; and `R(I + A)ᗮ = 0`:
-if `⟪w, v + A v⟫ = 0` for all `v ∈ D(A)` then `w ∈ D(A†)` with `A† w = −w`
-(`mem_adjoint_domain_of_exists`, `adjoint_apply_eq`), so `0 ≤ re ⟪A† w, w⟫ = −‖w‖²` and `w = 0`.
-A closed subspace with trivial orthogonal is everything
-(`Submodule.orthogonal_eq_bot_iff`). ★★★ (about 150 lines on top of the adjoint lemmas).'''
-deps = ["IsMaximalMonotone.isClosed", "IsMaximalMonotone.dense_domain", "IsMaximalMonotone.isMonotone_adjoint", "IsMonotone.norm_le_norm_add_smul", "_root_.LinearPMap.IsClosed.isClosed_range_of_norm_le"]
 source = "[brezis2011functional] Chapter 7, Remark 8"
+
+[[node]]
+id = "IsMaximalMonotone.of_range_id_vadd_eq_top"
+source = "[brezis2011functional] §7.1, Definition"
+
+[[node]]
+id = "IsMonotone.exists_add_smul_eq_of_exists_add_smul_eq"
+source = "[brezis2011functional] Proposition 7.1 (c)"
+
+[[node]]
+id = "IsMaximalMonotone.resolvent_apply_add_smul"
+source = "[brezis2011functional] Proposition 7.1 (c)"
+
+[[node]]
+id = "IsMaximalMonotone.norm_resolvent_apply_le"
+source = "[brezis2011functional] Proposition 7.1 (c)"
+
+[[node]]
+id = "smul_yosida_apply"
+source = "[brezis2011functional] §7.1, Definition of the Yosida approximation"
+
+[[node]]
+id = "IsMaximalMonotone.norm_yosida_le"
+source = "[brezis2011functional] Proposition 7.2 (f)"
+
+[[node]]
+id = "PowDomain.mk"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.ext"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.inner_def"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.norm_sq_eq"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.norm_applyL_apply_le"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.applyL_mem_domain"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.apply_applyL"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.applyL_zero_injective"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "PowDomain.castL_snoc"
+source = "[brezis2011functional] §7.3, Definition of D(A^k)"
+
+[[node]]
+id = "powPartDomain"
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "applyL_mem_domain_of_mem_powPartDomain"
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "applyL_powPart_apply"
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "applyL_zero_powPart_apply"
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "powPart_apply_eq_shiftL_snoc"
+source = "[brezis2011functional] Theorem 7.5, proof"
+
+[[node]]
+id = "range_castL"
+source = "[brezis2011functional] Lemma 7.2"
+
+[[node]]
+id = "IsMaximalMonotone.isSelfAdjoint_yosida"
+source = "[brezis2011functional] Theorem 7.7, proof, Step 1"

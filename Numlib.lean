@@ -159,6 +159,7 @@ import Numlib.Analysis.InnerProductSpace.EuclideanProd
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.HilbertSum
+import Numlib.Analysis.InnerProductSpace.MaximalMonotone
 import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
@@ -200,6 +201,7 @@ import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
+import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.PDE.Bochner
