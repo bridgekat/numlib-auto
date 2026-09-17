@@ -723,7 +723,7 @@ theorem integral_stepFun_sq (hx : StrictMono x) (v : BrokenPolynomial x r) :
   have hpart := isPartition_extendFin hx
   have hle : x 0 ≤ x (Fin.last n) := hx.monotone (Fin.zero_le _)
   have hint : IntegrableOn (fun t => stepFun v t ^ 2) (Ioo (x 0) (x (Fin.last n))) :=
-    (memLp_two_iff_integrable_sq (memLp_stepFun v).1).1 (memLp_stepFun v)
+    (memLp_two_iff_integrable_sq (memLp_stepFun v).aestronglyMeasurable).1 (memLp_stepFun v)
   have hE : ∀ (m : ℕ) (hm : m < n + 1), extendFin x m = x ⟨m, hm⟩ := fun m hm =>
     extendFin_of_lt x hm
   have hmem : ∀ m ≤ n, extendFin x m ∈ Icc (x 0) (x (Fin.last n)) := fun m hm => by

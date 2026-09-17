@@ -463,21 +463,22 @@ omit [LinearOrder n] in
 private theorem spectralRadius_lt_one_of_forall_norm_le {M : Matrix n n ℂ} {r : ℝ} (hr0 : 0 ≤ r)
     (hr1 : r < 1) (h : ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ r) : spectralRadius ℂ M < 1 := by
   have hrn : (r.toNNReal : ℝ) = r := Real.coe_toNNReal r hr0
-  have hle : spectralRadius ℂ M ≤ (r.toNNReal : ENNReal) :=
-    iSup₂_le fun μ hμ => ENNReal.coe_le_coe.mpr (by
+  have hle : spectralRadius ℂ M ≤ (r.toNNReal : ENNReal) := by
+    rw [spectralRadius_eq_of_unital]
+    exact iSup₂_le fun μ hμ => ENNReal.coe_le_coe.mpr (by
       rw [← NNReal.coe_le_coe, coe_nnnorm, hrn]
       exact h μ hμ)
   refine hle.trans_lt ?_
   rw [← ENNReal.coe_one, ENNReal.coe_lt_coe, ← NNReal.coe_lt_coe, hrn, NNReal.coe_one]
   exact hr1
 
-omit [LinearOrder n] in
+omit [LinearOrder n] [DecidableEq n] in
 /-- Over an empty index type every matrix is a unit, so the spectrum is empty and the spectral
 radius is `0`. -/
 private theorem spectralRadius_lt_one_of_isEmpty [IsEmpty n] (M : Matrix n n ℂ) :
     spectralRadius ℂ M < 1 := by
   have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
-  exact (iSup₂_le fun _ hk => absurd (isUnit_of_subsingleton _) hk).trans_lt zero_lt_one
+  simp
 
 /-- [saad2003iterative], Thm 4.9 (Jacobi): the spectral radius satisfies `ρ(G_J) < 1` for strictly
 diagonally dominant `A`. -/
@@ -589,7 +590,7 @@ theorem jacobi_spectralRadius_lt_one_of_col (A : Matrix n n ℂ) (hA : A.IsStric
       = spectralRadius ℂ ((jacobiSplitting A h).iterationOperator)ᵀ :=
         (spectralRadius_transpose _).symm
     _ = spectralRadius ℂ (jacobiSplitting Aᵀ hT).iterationOperator := by
-        simp only [spectralRadius, hspec]
+        simp only [spectralRadius_eq_of_unital, hspec]
     _ < 1 := jacobi_spectralRadius_lt_one Aᵀ hAT hT
 
 omit [LinearOrder n] in
@@ -600,7 +601,8 @@ private theorem spectralRadius_lt_one_of_forall_lt {M : Matrix n n ℂ}
   classical
   have hfin := M.finite_spectrum
   rcases (spectrum ℂ M).eq_empty_or_nonempty with he | hne
-  · refine lt_of_le_of_lt (iSup₂_le fun k hk => ?_) zero_lt_one
+  · rw [spectralRadius_eq_of_unital]
+    refine lt_of_le_of_lt (iSup₂_le fun k hk => ?_) zero_lt_one
     exact absurd (he ▸ hk) (Set.notMem_empty k)
   · obtain ⟨μ₁, hμ₁⟩ := hne
     have hmem : μ₁ ∈ hfin.toFinset := hfin.mem_toFinset.mpr hμ₁

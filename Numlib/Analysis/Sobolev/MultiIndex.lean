@@ -539,7 +539,7 @@ A Functional Analysis Framework*, 3rd edition, Definition 7.2.2, for `p < ∞`: 
 the multi-indices `α` with `|α| ≤ k`, of the `L^p(Ω)` norms of the `∂^α`. -/
 theorem norm_eq_sum (hp : p ≠ ⊤) (u : SobolevMultiIndex F b k p Ω μ) :
     ‖u‖ = (∑ α : MultiIndexLE ι k, ‖weakDeriv u α‖ ^ p.toReal) ^ (1 / p.toReal) := by
-  rw [Submodule.coe_norm, PiLp.norm_eq_sum
+  rw [← Submodule.norm_coe, PiLp.norm_eq_sum
     (ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp)]
   rfl
 
@@ -549,7 +549,7 @@ A Functional Analysis Framework*, 3rd edition, Definition 7.2.2, for `p = ∞`: 
 multi-indices `α` with `|α| ≤ k`, of the `L^∞(Ω)` norms of the `∂^α`. -/
 theorem norm_eq_ciSup (u : SobolevMultiIndex F b k ⊤ Ω μ) :
     ‖u‖ = ⨆ α : MultiIndexLE ι k, ‖weakDeriv u α‖ := by
-  rw [Submodule.coe_norm, PiLp.norm_eq_ciSup]
+  rw [← Submodule.norm_coe, PiLp.norm_eq_ciSup]
   rfl
 
 end SobolevMultiIndex

@@ -432,7 +432,7 @@ theorem spectralRadius_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCo
     spectralRadius 𝕜 (peacemanRachford H V r) < 1 := by
   rcases subsingleton_or_nontrivial E with _ | _
   · have : Subsingleton (E →L[𝕜] E) := ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
-    simp [spectralRadius]
+    simp
   · obtain ⟨c₂, hc₂, hV'⟩ := hV
     obtain ⟨u, hu⟩ := isUnit_add_smul_one hc₂ hV' hr
     have hQ : ‖(u : E →L[𝕜] E) * peacemanRachford H V r * (↑u⁻¹ : E →L[𝕜] E)‖ < 1 := by
@@ -440,9 +440,10 @@ theorem spectralRadius_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCo
       rwa [← hu, Ring.inverse_unit] at h
     have hle : spectralRadius 𝕜 (peacemanRachford H V r)
         ≤ ‖(u : E →L[𝕜] E) * peacemanRachford H V r * (↑u⁻¹ : E →L[𝕜] E)‖₊ := by
-      rw [spectralRadius, ← spectrum.units_conjugate (a := peacemanRachford H V r) (u := u),
-        ← spectralRadius]
-      exact spectrum.spectralRadius_le_nnnorm _
+      rw [spectralRadius_eq_of_unital,
+        ← spectrum.units_conjugate (a := peacemanRachford H V r) (u := u),
+        ← spectralRadius_eq_of_unital]
+      exact spectralRadius_le_nnnorm _
     refine lt_of_le_of_lt hle ?_
     rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm]
 

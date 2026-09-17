@@ -361,7 +361,7 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
       rw [Finset.abs_prod]
       calc ∏ i, |(t : ℝ) - ((node N k i : ℝ))|
           ≤ ∏ _i : Fin (m + 1), ((x N (k + 1) : ℝ) - (x N k : ℝ)) := by
-            refine Finset.prod_le_prod (fun i _ => abs_nonneg _) fun i _ => ?_
+            refine Finset.prod_le_prod₀ (fun i _ => abs_nonneg _) fun i _ => ?_
             have hmi := hnodes.mem k hk i
             rw [abs_sub_le_iff]
             exact ⟨by linarith [hmi.1], by linarith [hmi.2]⟩
@@ -616,7 +616,7 @@ private theorem abs_sub_panel_le {a b : ℝ} {n m : ℕ} {x : ℕ → Set.Icc a 
     rw [Finset.abs_prod]
     calc ∏ i, |(t : ℝ) - ((node k i : ℝ))|
         ≤ ∏ _i : Fin (m + 1), ((x (k + 1) : ℝ) - (x k : ℝ)) := by
-          refine Finset.prod_le_prod (fun i _ => abs_nonneg _) fun i _ => ?_
+          refine Finset.prod_le_prod₀ (fun i _ => abs_nonneg _) fun i _ => ?_
           have hmi := h.mem k hk i
           rw [abs_sub_le_iff]
           exact ⟨by linarith [hmi.1], by linarith [hmi.2]⟩

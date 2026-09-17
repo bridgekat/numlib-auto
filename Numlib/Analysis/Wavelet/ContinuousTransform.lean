@@ -90,7 +90,8 @@ theorem memLp_dilateTranslate {h : ℝ → ℂ} (hh : MemLp h 2) {s : ℝ} (hs :
   have h1 : MemLp h 2 (Measure.map (fun t : ℝ => (t - τ) / s) volume) := by
     rw [map_volume_sub_div hs]
     exact hh.smul_measure ENNReal.ofReal_ne_top
-  exact ((memLp_map_measure_iff h1.1 (aemeasurable_sub_div s τ)).mp h1).const_mul _
+  exact ((memLp_map_measure_iff h1.aestronglyMeasurable (aemeasurable_sub_div s τ)).mp
+    h1).const_mul _
 
 /-- **The normalization of the wavelets**: `h_{s,τ}` has the `L²` norm of `h`, which is what the
 factor `s^{-1/2}` is for. -/
@@ -102,7 +103,7 @@ theorem eLpNorm_dilateTranslate {h : ℝ → ℂ} (hh : AEStronglyMeasurable h v
     rw [hmap]
     exact hh.mono_ac Measure.smul_absolutelyContinuous
   have h1 := eLpNorm_map_measure (p := 2) hh' (aemeasurable_sub_div s τ)
-  rw [hmap, eLpNorm_smul_measure_of_ne_top (by norm_num)] at h1
+  rw [hmap, eLpNorm_smul_measure_of_ne_top (by norm_num) _ _ hh] at h1
   have h2 : dilateTranslate h s τ = ((Real.sqrt s : ℂ)⁻¹) • (h ∘ fun t => (t - τ) / s) := by
     funext t
     simp [dilateTranslate_apply]

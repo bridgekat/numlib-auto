@@ -375,6 +375,7 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
+omit [DecidableEq n] in
 /-- **The strict Collatz–Wielandt bound**: an entrywise nonnegative matrix `B` that strictly
 decreases some entrywise positive vector, `B w < w` entrywise, has spectral radius less than one.
 The diagonal similarity `W⁻¹ B W` with `W = diag(w)` is nonnegative with row sums `(B w)_i / w_i <
@@ -382,6 +383,7 @@ The diagonal similarity `W⁻¹ B W` with `W = diag(w)` is nonnegative with row 
 theorem EntrywiseNonneg.complexSpectralRadius_lt_one_of_mulVec_lt {B : Matrix n n ℝ}
     (hB : B.EntrywiseNonneg) {w : n → ℝ} (hw : ∀ i, 0 < w i) (hBw : ∀ i, (B *ᵥ w) i < w i) :
     complexSpectralRadius B < 1 := by
+  classical
   have hne : ∀ i, w i ≠ 0 := fun i => (hw i).ne'
   set W : Matrix n n ℝ := diagonal w with hW
   set W' : Matrix n n ℝ := diagonal fun i => (w i)⁻¹ with hW'

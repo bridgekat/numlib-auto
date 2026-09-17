@@ -752,6 +752,7 @@ section SpectralRadius
 
 variable [DecidableEq n] {p : Seminorm 𝕜 (n → 𝕜)}
 
+omit [DecidableEq n] in
 /-- **A consistent norm bounds the spectral radius** ([quarteroni2000numerical] Theorem 1.4):
 if `N` is consistent with a definite vector norm `p`, then `ρ(A) ≤ N A`, the spectral radius
 being that of `spectrum 𝕜 A`. The book's one-line proof: for an eigenpair `A v = λ v`,
@@ -762,6 +763,8 @@ about the *real* spectrum; the complex spectral radius of a real matrix is
 theorem spectralRadius_le_of_isConsistent {N : Matrix n n 𝕜 → ℝ} (hp : ∀ x, p x = 0 → x = 0)
     (hN : IsConsistent N p p) (A : Matrix n n 𝕜) :
     spectralRadius 𝕜 A ≤ ENNReal.ofReal (N A) := by
+  classical
+  rw [spectralRadius_eq_of_unital]
   refine iSup₂_le fun μ hμ => ?_
   obtain ⟨x, hx, hx0⟩ := ((hasEigenvalue_toEuclideanLin_iff A μ).mpr hμ).exists_hasEigenvector
   rw [Module.End.mem_eigenspace_iff, toEuclideanLin_apply] at hx
@@ -776,20 +779,27 @@ theorem spectralRadius_le_of_isConsistent {N : Matrix n n 𝕜 → ℝ} (hp : �
   calc (‖μ‖₊ : ℝ≥0∞) = ENNReal.ofReal ‖μ‖ := (ofReal_norm μ).symm
     _ ≤ ENNReal.ofReal (N A) := ENNReal.ofReal_le_ofReal hle
 
+omit [DecidableEq n] in
 /-- **Theorem 1.4 for the induced norms**: `ρ(A) ≤ ‖A‖_p` for every definite vector norm `p`
 on `n → 𝕜`, the spectral radius being that of `spectrum 𝕜 A`. -/
 theorem spectralRadius_le_inducedNorm (hp : ∀ x, p x = 0 → x = 0) (A : Matrix n n 𝕜) :
-    spectralRadius 𝕜 A ≤ ENNReal.ofReal (inducedNorm p p A) :=
-  spectralRadius_le_of_isConsistent hp (isConsistent_inducedNorm hp) A
+    spectralRadius 𝕜 A ≤ ENNReal.ofReal (inducedNorm p p A) := by
+  classical
+  exact
+    spectralRadius_le_of_isConsistent hp (isConsistent_inducedNorm hp) A
 
+omit [DecidableEq n] in
 /-- **Theorem 1.4 for the induced norms of a real matrix**: `ρ(A) ≤ ‖A‖_p` for every definite
 vector norm `p` on `n → ℝ`, the spectral radius being the complex one
 (`Matrix.complexSpectralRadius`). Through `Matrix.inducedAlgebraNorm` and
 `Matrix.complexSpectralRadius_le_algebraNorm`. -/
 theorem complexSpectralRadius_le_inducedNorm {p : Seminorm ℝ (n → ℝ)} (hp : ∀ x, p x = 0 → x = 0)
-    (A : Matrix n n ℝ) : complexSpectralRadius A ≤ ENNReal.ofReal (inducedNorm p p A) :=
-  complexSpectralRadius_le_algebraNorm (inducedAlgebraNorm p hp) A
+    (A : Matrix n n ℝ) : complexSpectralRadius A ≤ ENNReal.ofReal (inducedNorm p p A) := by
+  classical
+  exact
+    complexSpectralRadius_le_algebraNorm (inducedAlgebraNorm p hp) A
 
+omit [DecidableEq n] in
 /-- **Theorem 1.4 for a real matrix and a real consistent norm**: if `N` is consistent with a
 definite vector norm `p` on `n → ℝ`, then `ρ(A) ≤ N A` with the complex spectral radius. The
 book's eigenvector proof does not apply (the eigenvector may be complex); instead `N` dominates
@@ -797,9 +807,10 @@ the induced norm `‖·‖_p`, which is an algebra norm. -/
 theorem complexSpectralRadius_le_of_isConsistent {N : Matrix n n ℝ → ℝ} {p : Seminorm ℝ (n → ℝ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix n n ℝ) :
     complexSpectralRadius A ≤ ENNReal.ofReal (N A) := by
+  classical
   rcases isEmpty_or_nonempty n with hn | hn
   · have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
-    simp [complexSpectralRadius, spectralRadius, spectrum.of_subsingleton]
+    simp [complexSpectralRadius]
   have hNA : 0 ≤ N A := by
     have h0 : (Pi.single (Classical.arbitrary n) (1 : ℝ) : n → ℝ) ≠ 0 := by
       intro h
@@ -812,30 +823,35 @@ theorem complexSpectralRadius_le_of_isConsistent {N : Matrix n n ℝ → ℝ} {p
   exact (complexSpectralRadius_le_inducedNorm hp A).trans
     (ENNReal.ofReal_le_ofReal (inducedNorm_le_of_isConsistent hN A hNA))
 
+omit [DecidableEq n] in
 /-- **Property 1.13 in the induced-norm vocabulary, real case** ([quarteroni2000numerical]):
 for every `ε > 0` there is a definite vector norm `p` on `n → ℝ` with `‖A‖_p ≤ ρ(A) + ε`. The
 norm is the one of `Matrix.exists_seminorm_forall_mulVec_le`. -/
 theorem exists_inducedNorm_le_complexSpectralRadius_add (A : Matrix n n ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℝ (n → ℝ), (∀ x, p x = 0 → x = 0) ∧
       inducedNorm p p A ≤ (complexSpectralRadius A).toReal + ε := by
+  classical
   obtain ⟨p, hle, -, hA⟩ := exists_seminorm_forall_mulVec_le A hε
   have hp : ∀ x, p x = 0 → x = 0 := fun x hx =>
     norm_le_zero_iff.1 ((hle x).trans hx.le)
   refine ⟨p, hp, inducedNorm_le A (by positivity) fun x hx => (hA x).trans ?_⟩
   simpa using mul_le_mul_of_nonneg_left hx (by positivity)
 
+omit [DecidableEq n] in
 /-- **Property 1.13 as the book states it, for a complex matrix** ([quarteroni2000numerical]):
 for every `ε > 0` there is a definite vector norm `p` on `n → ℂ` with `‖A‖_p ≤ ρ(A) + ε`. The
 norm is the one of `Matrix.exists_seminorm_forall_mulVec_le_complex`. -/
 theorem exists_inducedNorm_le_spectralRadius_add (A : Matrix n n ℂ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℂ (n → ℂ), (∀ x, p x = 0 → x = 0) ∧
       inducedNorm p p A ≤ (spectralRadius ℂ A).toReal + ε := by
+  classical
   obtain ⟨p, hle, -, hA⟩ := exists_seminorm_forall_mulVec_le_complex A hε
   have hp : ∀ x, p x = 0 → x = 0 := fun x hx =>
     norm_le_zero_iff.1 ((hle x).trans hx.le)
   refine ⟨p, hp, inducedNorm_le A (by positivity) fun x hx => (hA x).trans ?_⟩
   simpa using mul_le_mul_of_nonneg_left hx (by positivity)
 
+omit [DecidableEq n] in
 /-- **`ρ(A) = inf ‖A‖`** over the norms induced by the definite vector norms on `n → ℝ`,
 [quarteroni2000numerical] (1.23). The book takes the infimum over all consistent norms; every
 consistent norm is at least `ρ(A)` (`Matrix.complexSpectralRadius_le_of_isConsistent`) and the
@@ -843,6 +859,7 @@ induced norms are among them, so the value is the same. -/
 theorem complexSpectralRadius_eq_iInf_inducedNorm (A : Matrix n n ℝ) :
     (complexSpectralRadius A).toReal =
       ⨅ p : {p : Seminorm ℝ (n → ℝ) // ∀ x, p x = 0 → x = 0}, inducedNorm p.1 p.1 A := by
+  classical
   have hne : Nonempty {p : Seminorm ℝ (n → ℝ) // ∀ x, p x = 0 → x = 0} :=
     ⟨⟨normSeminorm ℝ (n → ℝ), fun x hx => norm_eq_zero.1 hx⟩⟩
   have hlow : ∀ p : {p : Seminorm ℝ (n → ℝ) // ∀ x, p x = 0 → x = 0},
@@ -1042,8 +1059,9 @@ theorem l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self (A : Matrix m n �
 
 /-- **Theorem 1.2, (1.21), second equality** ([quarteroni2000numerical]): `‖A‖₂² = ρ(A Aᴴ)` for
 `A : Matrix m n ℂ`. -/
-theorem l2_opNorm_sq_eq_spectralRadius_self_mul_conjTranspose [DecidableEq m]
+theorem l2_opNorm_sq_eq_spectralRadius_self_mul_conjTranspose
     (A : Matrix m n ℂ) : (‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (A * Aᴴ) := by
+  classical
   have h := l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self Aᴴ
   rwa [conjTranspose_conjTranspose, l2_opNNNorm_conjTranspose] at h
 

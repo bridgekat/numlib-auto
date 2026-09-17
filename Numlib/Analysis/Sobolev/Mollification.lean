@@ -402,7 +402,7 @@ theorem LocallyMemLpOn.locallyIntegrableOn_mul {q : ℝ≥0∞} [ENNReal.HolderC
     hua.mono_measure (Measure.restrict_mono Set.inter_subset_left le_rfl)
   have hv' : MemLp v q (μ.restrict (a ∩ b)) :=
     hvb.mono_measure (Measure.restrict_mono Set.inter_subset_right le_rfl)
-  have huv : MemLp (fun x ↦ u x * v x) 1 (μ.restrict (a ∩ b)) := MemLp.mul' hv' hu'
+  have huv : MemLp (fun x ↦ u x * v x) 1 (μ.restrict (a ∩ b)) := hu'.fun_mul hv'
   exact memLp_one_iff_integrable.1 huv
 
 end MeasureTheory
@@ -561,9 +561,9 @@ theorem HasWeakIteratedLineDerivOn.mul {m : ℕ} {y : Fin m → E} {u wu v wv : 
     memLp_top_of_bound (φ.iteratedFDerivApply 1 y).contDiff.continuous.aestronglyMeasurable Cd
       (.of_forall hCd)
   have hb1 : MemLp (fun x ↦ iteratedFDeriv ℝ 1 (φ : E → ℝ) x y * v x) q (μ.restrict V) :=
-    MemLp.mul' hvν hdtop
-  have hb2 : MemLp (fun x ↦ (φ : E → ℝ) x * wv x) q (μ.restrict V) := MemLp.mul' hwvν hφtop
-  have hb3 : MemLp (fun x ↦ (φ : E → ℝ) x * v x) q (μ.restrict V) := MemLp.mul' hvν hφtop
+    hdtop.fun_mul hvν
+  have hb2 : MemLp (fun x ↦ (φ : E → ℝ) x * wv x) q (μ.restrict V) := hφtop.fun_mul hwvν
+  have hb3 : MemLp (fun x ↦ (φ : E → ℝ) x * v x) q (μ.restrict V) := hφtop.fun_mul hvν
   -- the mollifications of `u`
   obtain ⟨g, hgsm, hgLp, hgdLp, hgt, hgdt⟩ :=
     hu.exists_seq_contDiff_tendsto_eLpNorm hup hwup hp hp' hVo hVc hVΩ
@@ -575,10 +575,10 @@ theorem HasWeakIteratedLineDerivOn.mul {m : ℕ} {y : Fin m → E} {u wu v wv : 
     have hj := ((hv.mono hΩ'Ω).mul_contDiff rfl (hgsm j)).integral_smul_eq ψ
     rw [hcoe, hψcoe] at hj
     have i2 : Integrable (fun x ↦ ((φ : E → ℝ) x * wv x) * g j x) (μ.restrict V) :=
-      memLp_one_iff_integrable.1 (MemLp.mul' (hgLp j) hb2)
+      memLp_one_iff_integrable.1 (hb2.fun_mul (hgLp j))
     have i3 : Integrable
         (fun x ↦ ((φ : E → ℝ) x * v x) * iteratedFDeriv ℝ 1 (g j) x y) (μ.restrict V) :=
-      memLp_one_iff_integrable.1 (MemLp.mul' (hgdLp j) hb3)
+      memLp_one_iff_integrable.1 (hb3.fun_mul (hgdLp j))
     have e1 : (∫ x in V, iteratedFDeriv ℝ 1 (φ : E → ℝ) x y • (v x * g j x) ∂μ)
         = ∫ x in V, (iteratedFDeriv ℝ 1 (φ : E → ℝ) x y * v x) * g j x ∂μ :=
       integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [smul_eq_mul]; ring)
@@ -615,9 +615,9 @@ theorem HasWeakIteratedLineDerivOn.mul {m : ℕ} {y : Fin m → E} {u wu v wv : 
         (s := V) (fun x hx ↦ by rw [hzeroD x hx, zero_smul])]
     exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [smul_eq_mul]; ring)
   have i4 : Integrable (fun x ↦ ((φ : E → ℝ) x * wv x) * u x) (μ.restrict V) :=
-    memLp_one_iff_integrable.1 (MemLp.mul' huν hb2)
+    memLp_one_iff_integrable.1 (hb2.fun_mul huν)
   have i5 : Integrable (fun x ↦ ((φ : E → ℝ) x * v x) * wu x) (μ.restrict V) :=
-    memLp_one_iff_integrable.1 (MemLp.mul' hwuν hb3)
+    memLp_one_iff_integrable.1 (hb3.fun_mul hwuν)
   have hR : (∫ x in (Ω : Set E), (φ : E → ℝ) x • (wu x * v x + u x * wv x) ∂μ)
       = (∫ x in V, ((φ : E → ℝ) x * wv x) * u x ∂μ)
         + ∫ x in V, ((φ : E → ℝ) x * v x) * wu x ∂μ := by
@@ -749,7 +749,7 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
     h.exists_seq_contDiff_tendsto_eLpNorm hv hw hp hp' hVo hVc hVΩ
   obtain ⟨ns, hns, hae⟩ :=
     (tendstoInMeasure_of_tendsto_eLpNorm (p := p) (μ := μ.restrict V)
-      (lt_of_lt_of_le zero_lt_one hp).ne' (fun j ↦ (hg₀Lp j).1) hvν.1 hg₀t).exists_seq_tendsto_ae
+      (lt_of_lt_of_le zero_lt_one hp).ne' hg₀t).exists_seq_tendsto_ae
   set g : ℕ → E → ℝ := fun k ↦ g₀ (ns k) with hgdef
   have hgsm : ∀ k, ContDiff ℝ ∞ (g k) := fun k ↦ hg₀sm (ns k)
   have hgLp : ∀ k, MemLp (g k) p (μ.restrict V) := fun k ↦ hg₀Lp (ns k)
@@ -767,17 +767,20 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
   have hgdL1 : ∀ k, MemLp (fun x ↦ iteratedFDeriv ℝ 1 (g k) x y) 1 (μ.restrict V) := fun k ↦
     (hgdLp k).mono_exponent hp
   have hgt1 : Tendsto (fun k ↦ eLpNorm (fun x ↦ g k x - v x) 1 (μ.restrict V)) atTop (𝓝 0) :=
-    tendsto_eLpNorm_one_of_tendsto_eLpNorm hp (fun k ↦ ((hgLp k).sub hvν).1) hgt
+    tendsto_eLpNorm_one_of_tendsto_eLpNorm hp
+      (fun k ↦ ((hgLp k).sub hvν).aestronglyMeasurable) hgt
   have hgdt1 : Tendsto
       (fun k ↦ eLpNorm (fun x ↦ iteratedFDeriv ℝ 1 (g k) x y - w x) 1 (μ.restrict V))
-      atTop (𝓝 0) := tendsto_eLpNorm_one_of_tendsto_eLpNorm hp (fun k ↦ ((hgdLp k).sub hwν).1) hgdt
+      atTop (𝓝 0) :=
+    tendsto_eLpNorm_one_of_tendsto_eLpNorm hp
+      (fun k ↦ ((hgdLp k).sub hwν).aestronglyMeasurable) hgdt
   -- `f` composed with an `L^1` function is `L^1`
   have hcompL1 : ∀ c : E → ℝ, MemLp c 1 (μ.restrict V) →
       MemLp (fun x ↦ f (c x)) 1 (μ.restrict V) := by
     intro c hc
     have hdom : MemLp (fun x ↦ |f 0| + M * |c x|) 1 (μ.restrict V) :=
       (memLp_const (|f 0|)).add (hc.abs.const_mul M)
-    refine MemLp.of_le hdom (hfc.comp_aestronglyMeasurable hc.1)
+    refine MemLp.of_le hdom (hfc.comp_aestronglyMeasurable hc.aestronglyMeasurable)
       (Eventually.of_forall fun z ↦ ?_)
     rw [Real.norm_eq_abs, Real.norm_eq_abs,
       abs_of_nonneg (add_nonneg (abs_nonneg _) (mul_nonneg hM0 (abs_nonneg _)))]
@@ -797,7 +800,7 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
       MemLp (fun x ↦ b x * d x) 1 (μ.restrict V) := by
     intro b d C hC0 hCb hbm hd
     have hdom : MemLp (fun x ↦ C * |d x|) 1 (μ.restrict V) := hd.abs.const_mul C
-    refine MemLp.of_le hdom (hbm.mul hd.1) (Eventually.of_forall fun z ↦ ?_)
+    refine MemLp.of_le hdom (hbm.mul hd.aestronglyMeasurable) (Eventually.of_forall fun z ↦ ?_)
     rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul, abs_of_nonneg (mul_nonneg hC0 (abs_nonneg _))]
     exact mul_le_mul_of_nonneg_right (hCb z) (abs_nonneg _)
   have hφdm : ∀ c : E → ℝ, AEStronglyMeasurable c (μ.restrict V) →
@@ -807,10 +810,11 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
     rw [abs_mul]
     exact mul_le_mul (hCφ' z) (hM _) (abs_nonneg _) hCφ0
   have hIinf : MemLp (fun x ↦ ((φ : E → ℝ) x * deriv f (v x)) * w x) 1 (μ.restrict V) :=
-    hbdmul _ _ (Cφ * M) (mul_nonneg hCφ0 hM0) (hφdb v) (hφdm v hvL1.1) hwL1
+    hbdmul _ _ (Cφ * M) (mul_nonneg hCφ0 hM0) (hφdb v) (hφdm v hvL1.aestronglyMeasurable) hwL1
   have hIk : ∀ k, MemLp (fun x ↦ ((φ : E → ℝ) x * deriv f (g k x)) *
       iteratedFDeriv ℝ 1 (g k) x y) 1 (μ.restrict V) := fun k ↦
-    hbdmul _ _ (Cφ * M) (mul_nonneg hCφ0 hM0) (hφdb (g k)) (hφdm (g k) (hgL1 k).1) (hgdL1 k)
+    hbdmul _ _ (Cφ * M) (mul_nonneg hCφ0 hM0) (hφdb (g k))
+      (hφdm (g k) (hgL1 k).aestronglyMeasurable) (hgdL1 k)
   -- the identity for each mollification, from the classical chain rule
   have key : ∀ k, (∫ x in V, iteratedFDeriv ℝ 1 (φ : E → ℝ) x y * f (g k x) ∂μ)
       = -∫ x in V, ((φ : E → ℝ) x * deriv f (g k x)) * iteratedFDeriv ℝ 1 (g k) x y ∂μ := by
@@ -830,7 +834,9 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
         ≤ ‖M‖ₑ * eLpNorm (fun x ↦ g k x - v x) 1 (μ.restrict V) := by
       intro k
       rw [← eLpNorm_const_smul M (fun x ↦ g k x - v x) 1 (μ.restrict V)]
-      refine eLpNorm_mono fun x ↦ ?_
+      refine eLpNorm_mono ((hfc.comp_aestronglyMeasurable
+        (hgsm k).continuous.aestronglyMeasurable).sub
+        (hfc.comp_aestronglyMeasurable hvν.aestronglyMeasurable)) fun x ↦ ?_
       rw [Real.norm_eq_abs, Pi.smul_apply, smul_eq_mul, Real.norm_eq_abs, abs_mul,
         abs_of_nonneg hM0]
       exact abs_sub_le_mul_of_abs_deriv_le hf hM _ _
@@ -852,7 +858,7 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
       intro k
       have hfin : ENNReal.ofReal (Cφ * M) *
           eLpNorm (fun x ↦ iteratedFDeriv ℝ 1 (g k) x y - w x) 1 (μ.restrict V) ≠ ⊤ :=
-        ENNReal.mul_ne_top ENNReal.ofReal_ne_top ((hgdL1 k).sub hwL1).2.ne
+        ENNReal.mul_ne_top ENNReal.ofReal_ne_top ((hgdL1 k).sub hwL1).eLpNorm_lt_top.ne
       calc ‖∫ x in V, ((φ : E → ℝ) x * deriv f (g k x)) *
               (iteratedFDeriv ℝ 1 (g k) x y - w x) ∂μ‖
           = ‖∫ x in V, ((φ : E → ℝ) x * deriv f (g k x)) *
@@ -872,8 +878,9 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
       (fun k ↦ ?_) (memLp_one_iff_integrable.1 (hwL1.abs.const_mul (Cφ * (2 * M))))
       (fun k ↦ Eventually.of_forall fun z ↦ ?_) ?_
     · exact (φ.contDiff.continuous.aestronglyMeasurable.mul
-        ((hdfc.comp_aestronglyMeasurable (hgL1 k).1).sub
-          (hdfc.comp_aestronglyMeasurable hvL1.1))).mul hwL1.1
+        ((hdfc.comp_aestronglyMeasurable (hgL1 k).aestronglyMeasurable).sub
+          (hdfc.comp_aestronglyMeasurable hvL1.aestronglyMeasurable))).mul
+        hwL1.aestronglyMeasurable
     · have h2 : |deriv f (g k z) - deriv f (v z)| ≤ 2 * M := by
         have := abs_sub (deriv f (g k z)) (deriv f (v z))
         linarith [hM (g k z), hM (v z), abs_sub_abs_le_abs_sub (deriv f (g k z)) (deriv f (v z))]
@@ -900,7 +907,7 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
       have i1 : Integrable (fun x ↦ ((φ : E → ℝ) x * deriv f (g k x)) *
           (iteratedFDeriv ℝ 1 (g k) x y - w x)) (μ.restrict V) :=
         memLp_one_iff_integrable.1 (hbdmul _ _ (Cφ * M) (mul_nonneg hCφ0 hM0) (hφdb (g k))
-          (hφdm (g k) (hgL1 k).1) ((hgdL1 k).sub hwL1))
+          (hφdm (g k) (hgL1 k).aestronglyMeasurable) ((hgdL1 k).sub hwL1))
       have i2 : Integrable (fun x ↦ ((φ : E → ℝ) x * (deriv f (g k x) - deriv f (v x))) * w x)
           (μ.restrict V) := by
         refine memLp_one_iff_integrable.1 (hbdmul _ _ (Cφ * (2 * M))
@@ -911,8 +918,8 @@ theorem HasWeakIteratedLineDerivOn.contDiff_comp {m : ℕ} {y : Fin m → E} {v 
             simpa [Real.norm_eq_abs] using norm_sub_le (deriv f (g k z)) (deriv f (v z))
           linarith [hM (g k z), hM (v z)]
         · exact φ.contDiff.continuous.aestronglyMeasurable.mul
-            ((hdfc.comp_aestronglyMeasurable (hgL1 k).1).sub
-              (hdfc.comp_aestronglyMeasurable hvL1.1))
+            ((hdfc.comp_aestronglyMeasurable (hgL1 k).aestronglyMeasurable).sub
+              (hdfc.comp_aestronglyMeasurable hvL1.aestronglyMeasurable))
       have i12 : Integrable (fun x ↦ ((φ : E → ℝ) x * deriv f (g k x)) *
           (iteratedFDeriv ℝ 1 (g k) x y - w x)
           + ((φ : E → ℝ) x * (deriv f (g k x) - deriv f (v x))) * w x) (μ.restrict V) := i1.add i2

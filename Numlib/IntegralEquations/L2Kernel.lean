@@ -225,7 +225,6 @@ theorem memLp_swapKernel (hk : MemLp k 2 (μ.prod μ)) :
     MemLp (fun p : X × X => k (p.2, p.1)) 2 (μ.prod μ) :=
   hk.comp_measurePreserving Measure.measurePreserving_swap
 
-omit [SFinite μ] in
 /-- The function `(x, y) ↦ k (x, y) v y w x` is integrable on the product, which is what makes
 the Fubini step of the adjoint identity legitimate. -/
 theorem integrable_kernel_mul_prod (hk : MemLp k 2 (μ.prod μ)) {v w : X → ℝ}

@@ -633,12 +633,12 @@ theorem LDL.lowerInv_apply_self (i : n) : LDL.lowerInv hS i i = 1 := by
     Pi.basisFun_apply, Pi.single_eq_same] at h
   · exact h.symm
   · rw [Pi.smul_apply]
-    exact smul_eq_zero_of_right _ (LDL.lowerInv_triangular hS (Finset.mem_Iio.1 hk))
+    exact smul_eq_zero_of_right _
+      (LDL.isLowerTriangular_lowerInv hS (OrderDual.toDual_lt_toDual.2 (Finset.mem_Iio.1 hk)))
 
 /-- The Gram–Schmidt matrix `LDL.lowerInv` is unit lower triangular. -/
 theorem LDL.lowerInv_isUnitLowerTriangular : (LDL.lowerInv hS).IsUnitLowerTriangular :=
-  ⟨fun _ _ hij => LDL.lowerInv_triangular hS (OrderDual.toDual_lt_toDual.1 hij),
-    LDL.lowerInv_apply_self hS⟩
+  ⟨LDL.isLowerTriangular_lowerInv hS, LDL.lowerInv_apply_self hS⟩
 
 /-- The `L` of Mathlib's `LDL` factorization is unit lower triangular (the TODO of
 `Mathlib/Analysis/Matrix/LDL.lean`): it is the inverse of the unit lower triangular

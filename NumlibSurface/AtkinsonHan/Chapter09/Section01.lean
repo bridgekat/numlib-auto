@@ -604,7 +604,7 @@ theorem existsUnique_dirichletGalerkin {K : Submodule ℝ (SobolevInterval 1 0 1
       one_le_oneLinf zero_le_zeroLinf zero_le_one ⟨(v : SobolevInterval 1 0 1), hK v.2⟩
     rw [SesqForm.restrict_apply] at h
     rw [SesqForm.restrict_apply]
-    simpa [Submodule.coe_norm, dirichletForm] using h
+    simpa [dirichletForm] using h
   obtain ⟨w, hw, hwu⟩ := SesqForm.laxMilgram (dirichletForm.restrict K)
     ((EllipticInterval.load 0 1 f).comp K.subtypeL) hc hcoer
   refine ⟨(w : SobolevInterval 1 0 1), ⟨w.2, fun v hv => hw ⟨v, hv⟩⟩, ?_⟩

@@ -211,7 +211,7 @@ theorem spectralRadius_lt_one_of_isSymmetricCoercive {A : E →L[ℂ] E} (s : Sp
     spectralRadius ℂ s.iterationOperator < 1 := by
   rcases subsingleton_or_nontrivial E with hE | hE
   · have : Subsingleton (E →L[ℂ] E) := ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
-    simp [spectralRadius]
+    simp
   · suffices h : ∀ μ ∈ spectrum ℂ s.iterationOperator, ‖μ‖₊ < (1 : ℝ≥0) by
       simpa using spectrum.spectralRadius_lt_of_forall_lt _ h
     intro μ hμ
@@ -430,7 +430,7 @@ theorem spectrum_energyIterationOperator :
 /-- Transport does not change the spectral radius. -/
 theorem spectralRadius_energyIterationOperator :
     spectralRadius ℂ (energyIterationOperator s hB) = spectralRadius ℂ s.iterationOperator := by
-  simp only [spectralRadius, spectrum_energyIterationOperator]
+  simp only [spectralRadius_eq_of_unital, spectrum_energyIterationOperator]
 
 /-- The transported operator is self-adjoint on the energy space as soon as `G` is symmetric in the
 `B`-inner product. -/
@@ -586,9 +586,8 @@ theorem euclidean_iterationOperator :
 spectral radius of the real iteration matrix. -/
 theorem spectralRadius_euclidean_iterationOperator :
     spectralRadius ℂ s.euclidean.iterationOperator = complexSpectralRadius s.iterationOperator := by
-  rw [euclidean_iterationOperator, complexSpectralRadius]
-  simp only [spectralRadius]
-  rw [AlgEquiv.spectrum_eq (Matrix.toEuclideanCLM (n := n) (𝕜 := ℂ))]
+  rw [euclidean_iterationOperator, complexSpectralRadius_eq_iSup, spectralRadius_eq_of_unital,
+    AlgEquiv.spectrum_eq (Matrix.toEuclideanCLM (n := n) (𝕜 := ℂ))]
 
 /-- The Householder–John operator `M + Mᴴ - A` of the induced Euclidean splitting is the operator
 of the real matrix `M + Mᵀ - A`. -/
@@ -646,12 +645,12 @@ private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : 
     (hmem : ∃ μ ∈ spectrum ℂ (complexify X), ‖μ‖ = K) :
     complexSpectralRadius X = ENNReal.ofReal K := by
   obtain ⟨μ₀, hμ₀, hμ₀K⟩ := hmem
-  rw [complexSpectralRadius, spectralRadius]
+  rw [complexSpectralRadius_eq_iSup]
   refine le_antisymm (iSup₂_le fun μ hμ => ?_) ?_
   · calc (‖μ‖₊ : ℝ≥0∞) = ENNReal.ofReal ‖μ‖ := by rw [ofReal_norm]; rfl
       _ ≤ ENNReal.ofReal K := ENNReal.ofReal_le_ofReal (hle μ hμ)
   · calc ENNReal.ofReal K = (‖μ₀‖₊ : ℝ≥0∞) := by rw [← hμ₀K, ofReal_norm]; rfl
-      _ ≤ _ := le_iSup₂ (α := ℝ≥0∞) μ₀ hμ₀
+      _ ≤ _ := le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ₀ hμ₀
 
 /-- A nonzero scalar multiple is a unit exactly when the matrix is. -/
 private theorem isUnit_smul_iff {c : ℂ} (hc : c ≠ 0) (M : Matrix n n ℂ) :
@@ -804,9 +803,7 @@ theorem complexSpectralRadius_one_sub_smul_lt_one_iff {M : Matrix n n ℝ} {lmin
       rw [Matrix.complexify_one, Complex.ofReal_one, spectrum.mem_iff, map_one, sub_self]
       exact not_isUnit_zero
     calc (1 : ℝ≥0∞) = (‖((1 : ℝ) : ℂ)‖₊ : ℝ≥0∞) := by simp
-      _ ≤ complexSpectralRadius (1 : Matrix n n ℝ) :=
-          le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (Matrix.complexify (1 : Matrix n n ℝ))) =>
-            (‖k‖₊ : ℝ≥0∞)) _ h1
+      _ ≤ complexSpectralRadius (1 : Matrix n n ℝ) := Matrix.nnnorm_le_complexSpectralRadius h1
   rw [complexSpectralRadius_one_sub_smul_eq hsub hmin hmax hα, ENNReal.ofReal_lt_one, max_lt_iff,
     abs_lt, abs_lt, lt_div_iff₀ hmaxpos]
   constructor
@@ -1147,8 +1144,7 @@ theorem abs_one_sub_le_sorSplitting_complexSpectralRadius [Nonempty n] {A : Matr
     intro μ hμ
     have hmem : μ ∈ spectrum ℂ (complexify G) :=
       mem_spectrum_iff_isRoot_charpoly.mpr ((Polynomial.mem_roots (charpoly_monic _).ne_zero).mp hμ)
-    have : (‖μ‖₊ : ℝ≥0∞) ≤ ρ :=
-      le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify G)) => (‖k‖₊ : ℝ≥0∞)) μ hmem
+    have : (‖μ‖₊ : ℝ≥0∞) ≤ ρ := Matrix.nnnorm_le_complexSpectralRadius hmem
     rwa [← ENNReal.coe_toNNReal hρtop, ENNReal.coe_le_coe] at this
   have hprod : ‖(complexify G).det‖₊ ≤ ρ.toNNReal ^ Fintype.card n := by
     rw [hdet, ← nnnormHom_apply, map_multiset_prod]
@@ -1257,7 +1253,7 @@ theorem exists_complexSpectralRadius_le_and_energyNorm_mulVec_le (hA : A.PosDef)
     · refine le_trans ?_ hTle
       refine ENNReal.toReal_le_of_le_ofReal (norm_nonneg _) ?_
       rw [ofReal_norm, enorm_eq_nnnorm]
-      exact spectrum.spectralRadius_le_nnnorm T
+      exact spectralRadius_le_nnnorm T
   refine ⟨max q 0, max_lt hq1 zero_lt_one, hρ, fun e => ?_⟩
   have h := hq (toEuclideanComplex e)
   rw [euclidean_iterationOperator, toEuclideanCLM_complexify_toEuclideanComplex] at h
@@ -1444,7 +1440,7 @@ theorem jorSplitting_complexSpectralRadius_lt_one_iff_of_posDef [Nonempty n] {A 
   have hle : ∀ t : ℝ, (t : ℂ) ∈ spectrum ℂ (complexify M) →
       t ≤ (complexSpectralRadius M).toReal := fun t ht => by
     have h1 : (‖(t : ℂ)‖₊ : ℝ≥0∞) ≤ complexSpectralRadius M :=
-      le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify M)) => (‖k‖₊ : ℝ≥0∞)) _ ht
+      Matrix.nnnorm_le_complexSpectralRadius ht
     have h2 := ENNReal.toReal_mono (complexSpectralRadius_ne_top M) h1
     rw [ENNReal.coe_toReal, coe_nnnorm, Complex.norm_real, Real.norm_eq_abs] at h2
     exact (le_abs_self t).trans h2

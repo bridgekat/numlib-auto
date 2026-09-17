@@ -200,7 +200,7 @@ theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fi
   have key := transportForm_apply_self ha ha₀ hd hd' hn t v.2.1
   have hlow := BrokenPolynomial.mul_norm_sq_le_sum_integral
     (intervalIntegrable_reaction ha₀ hd' hle t) hc (v : BrokenPolynomial x r)
-  rw [SesqForm.restrict_apply, key, h0, Submodule.coe_norm]
+  rw [SesqForm.restrict_apply, key, h0, ← Submodule.norm_coe]
   simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
     sub_zero]
   linarith
@@ -219,7 +219,7 @@ private theorem continuousOn_outflow {hn : 0 < n} {T : ℝ} {uh : ℝ → inflow
 private theorem norm_source_le {hn : 0 < n} (g : BrokenPolynomial x r) :
     ‖(innerSL ℝ g).comp (inflowSpace x r hn).subtypeL‖ ≤ ‖g‖ :=
   ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v => by
-    simpa [Submodule.coe_norm] using abs_real_inner_le_norm g (v : BrokenPolynomial x r)
+    simpa using abs_real_inner_le_norm g (v : BrokenPolynomial x r)
 
 /-- **(13.66)** ([quarteroni2000numerical] (13.66)): under `0 < μ₀ ≤ a₀(x, t) - a'(x)/2` on
 `[α, β] × [0, T]`, the solution of (13.65) with `φ = 0` satisfies, for `t ∈ [0, T]`,

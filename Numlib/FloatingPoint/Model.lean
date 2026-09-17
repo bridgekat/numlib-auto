@@ -154,10 +154,10 @@ theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu 
   have hlow : (1 - u) ^ n ≤ ∏ i, (1 + δ i) ^ (ρ i) := by
     calc (1 - u) ^ n = ∏ _i : Fin n, (1 - u) := by simp
       _ ≤ ∏ i, (1 + δ i) ^ (ρ i) :=
-          Finset.prod_le_prod (fun _ _ => hpos.le) fun i _ => (hfac i).1
+          Finset.prod_le_prod₀ (fun _ _ => hpos.le) fun i _ => (hfac i).1
   have hhigh : (∏ i, (1 + δ i) ^ (ρ i)) ≤ ((1 - u) ^ n)⁻¹ := by
     calc (∏ i, (1 + δ i) ^ (ρ i)) ≤ ∏ _i : Fin n, (1 - u)⁻¹ :=
-          Finset.prod_le_prod (fun i _ => hnn i) fun i _ => (hfac i).2
+          Finset.prod_le_prod₀ (fun i _ => hnn i) fun i _ => (hfac i).2
       _ = ((1 - u) ^ n)⁻¹ := by simp
   -- Bernoulli's inequality turns `((1 - u)^n)⁻¹ - 1` into `γ_n`
   have hbern : 1 - (n : K) * u ≤ (1 - u) ^ n := by

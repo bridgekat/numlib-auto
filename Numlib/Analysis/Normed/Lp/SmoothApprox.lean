@@ -101,8 +101,7 @@ theorem MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le
       · simp [hxK, hxs, hxΩ]
       · simp [hxK, hxs]
   rw [eLpNorm_congr_ae hcongr]
-  refine le_trans (eLpNorm_add_le (hf.1.indicator hsm.compl)
-    (hf.1.indicator (hA.diff hKc.measurableSet)) hp1) ?_
+  refine le_trans (eLpNorm_add_le hp1) ?_
   have h2 : eLpNorm (((s ∩ Ω) \ K).indicator f) p (μ.restrict Ω) ≤ ε / 2 :=
     hδ _ (hA.diff hKc.measurableSet) (le_trans (Measure.restrict_apply_le _ _) hKlt.le)
   exact le_trans (add_le_add hs.le h2) (by rw [ENNReal.add_halves])
@@ -143,14 +142,15 @@ theorem MeasureTheory.MemLp.exists_contDiff_tsupport_subset
     funext x
     by_cases hxK : x ∈ K <;> simp [hxK]
   have hmeas2 : AEStronglyMeasurable (fun x => η x • (K.indicator f x - g x)) (μ.restrict Ω) :=
-    hη1.continuous.aestronglyMeasurable.smul (hf₁mem.1.sub hg2.continuous.aestronglyMeasurable)
+    hη1.continuous.aestronglyMeasurable.smul
+      (hf₁mem.aestronglyMeasurable.sub hg2.continuous.aestronglyMeasurable)
   have hsmul : eLpNorm (fun x => η x • (K.indicator f x - g x)) p (μ.restrict Ω)
       ≤ eLpNorm (K.indicator f - g) p (μ.restrict Ω) := by
-    refine eLpNorm_mono fun x => ?_
+    refine eLpNorm_mono hmeas2 fun x => ?_
     rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (hη5 x).1]
     exact mul_le_of_le_one_left (norm_nonneg _) (hη5 x).2
   rw [hdecomp]
-  refine le_trans (eLpNorm_add_le (hf.1.sub hf₁mem.1) hmeas2 hp1) ?_
+  refine le_trans (eLpNorm_add_le hp1) ?_
   rw [hcompl]
   refine le_trans (add_le_add hK (hsmul.trans hg3)) ?_
   rw [← ENNReal.ofReal_add hε2.le hε2.le, add_halves]

@@ -295,6 +295,7 @@ theorem BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one {A : Matri
   (s.forall_tendsto_iff hx).trans
     (Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one s.iterMatrix)
 
+omit [DecidableEq ι] in
 /-- §5.2.2, relation 1, in the form the book uses it: an operator norm of the iteration matrix
 below `1` forces `r_σ < 1`, hence convergence.  The inequality itself is
 `complexSpectralRadius_le_opNorm` below; the proof here goes through
@@ -302,6 +303,7 @@ below `1` forces `r_σ < 1`, hence convergence.  The inequality itself is
 all. -/
 theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
     (hG : ‖mulVecCLM G‖ < 1) : Matrix.complexSpectralRadius G < 1 := by
+  classical
   rw [← Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one, tendsto_pow_zero_iff_mulVec]
   intro v
   have hb : ∀ k : ℕ, ‖G ^ k *ᵥ v‖ ≤ ‖mulVecCLM G‖ ^ k * ‖v‖ := fun k =>
@@ -314,6 +316,7 @@ theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
   exact squeeze_zero_norm hb hlim
 
 open scoped Matrix.Norms.Operator in
+omit [DecidableEq ι] in
 /-- **§5.2.2, relation 1**: `r_σ(A) ≤ ‖A‖` for a matrix operator norm — here the one induced by
 the maximum norm on `ℝ^d`, which is the maximum absolute row sum and is `‖mulVecCLM A‖` by
 Mathlib's `Matrix.linfty_opNorm_eq_opNorm`.  The backbone proves the inequality for an arbitrary
@@ -324,13 +327,16 @@ submultiplicative, absolutely homogeneous, positive definite matrix norm
 The spectral radius is `ENNReal`-valued, and finite for a matrix over a finite index type
 (`Matrix.complexSpectralRadius_ne_top`), so `toReal` loses nothing. -/
 theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
-    (Matrix.complexSpectralRadius G).toReal ≤ ‖mulVecCLM G‖ :=
-  calc (Matrix.complexSpectralRadius G).toReal
-      ≤ ((‖G‖₊ : ENNReal)).toReal :=
-        ENNReal.toReal_mono ENNReal.coe_ne_top (Matrix.complexSpectralRadius_le_linfty_opNNNorm G)
-    _ = ‖G‖ := by simp
-    _ = ‖mulVecCLM G‖ := Matrix.linfty_opNorm_eq_opNorm G
+    (Matrix.complexSpectralRadius G).toReal ≤ ‖mulVecCLM G‖ := by
+  classical
+  exact
+    calc (Matrix.complexSpectralRadius G).toReal
+        ≤ ((‖G‖₊ : ENNReal)).toReal :=
+          ENNReal.toReal_mono ENNReal.coe_ne_top (Matrix.complexSpectralRadius_le_linfty_opNNNorm G)
+      _ = ‖G‖ := by simp
+      _ = ‖mulVecCLM G‖ := Matrix.linfty_opNorm_eq_opNorm G
 
+omit [DecidableEq ι] in
 /-- **§5.2.2, relation 2** (the ε-norm theorem): for every `ε > 0` there is a vector norm
 `‖·‖_{A,ε}` on `ℝ^d`, equivalent to the maximum norm, whose induced operator norm of `A` satisfies
 `r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`; hence `r_σ(A)` is the infimum of `‖A‖` over the operator matrix
@@ -351,6 +357,7 @@ theorem exists_opNorm_le_complexSpectralRadius_add (A : Matrix ι ι ℝ) {ε : 
       (∀ x, p (A *ᵥ x) ≤ ((Matrix.complexSpectralRadius A).toReal + ε) * p x) ∧
       ∀ c : ℝ, 0 ≤ c → (∀ x, p (A *ᵥ x) ≤ c * p x) →
         (Matrix.complexSpectralRadius A).toReal ≤ c := by
+  classical
   obtain ⟨p, hlow, ⟨C, hup⟩, hA⟩ := Matrix.exists_seminorm_forall_mulVec_le A hε
   exact ⟨p, hlow, ⟨C, hup⟩, hA, fun c hc hcA =>
     Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le A p one_pos

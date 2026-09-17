@@ -2377,7 +2377,7 @@ theorem one_le_wilkinsonProd (n : ℕ) :
     (1 : ℝ) ≤ ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ := by
   have h1 : (∏ _t ∈ Finset.range n, (1 : ℝ)) ≤
       ∏ t ∈ Finset.range n, ((t : ℝ) + 2) ^ ((t : ℝ) + 1)⁻¹ :=
-    Finset.prod_le_prod (fun _ _ => zero_le_one) fun t _ => one_le_wilkinsonFactor t
+    Finset.prod_le_prod₀ (fun _ _ => zero_le_one) fun t _ => one_le_wilkinsonFactor t
   simpa using h1
 
 /-- Wilkinson's product is positive. -/

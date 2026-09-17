@@ -294,7 +294,11 @@ theorem equation_3_27 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
   have hUk := isUpperTriangular_leadingPrincipalSubmatrix hU k
   have hdk : ∀ i : {j : Fin n // j ≤ k}, U.leadingPrincipalSubmatrix k i i ≠ 0 := fun i => hd i
   refine ⟨mulVec_backSubst _ hUk hdk, fun j => ?_⟩
-  have h1 := congrFun (inv_col_eq_backSubst hUk hdk ⟨k, le_rfl⟩) j
+  -- the backbone statements carry the `DecidableEq {j // j ≤ k}` instance of the linear order,
+  -- this goal the one of the subtype; `convert` identifies the two
+  have h1 : (U.leadingPrincipalSubmatrix k)⁻¹ j ⟨k, le_rfl⟩
+      = backSubst (U.leadingPrincipalSubmatrix k) (Pi.single ⟨k, le_rfl⟩ 1) j := by
+    convert congrFun (inv_col_eq_backSubst hUk hdk ⟨k, le_rfl⟩) j
   have h2 := congrFun (congrFun (inv_toBlock_le_of_isUpperTriangular hU hd k) j) ⟨k, le_rfl⟩
   exact h1.symm.trans h2
 

@@ -255,20 +255,18 @@ through `ESeminormedAddMonoid`. Mathlib's `MeasureTheory.eLpNorm_add_le` is stat
 is a variable costs more than the default heartbeat budget; specializing once, with the group
 abstract, makes every later use cheap. -/
 theorem MeasureTheory.eLpNorm_add_le_of_norm {X G : Type*} [MeasurableSpace X] {ν : Measure X}
-    [NormedAddCommGroup G] {a b : X → G} (ha : AEStronglyMeasurable a ν)
-    (hb : AEStronglyMeasurable b ν) (hp : 1 ≤ p) :
+    [NormedAddCommGroup G] {a b : X → G} (hp : 1 ≤ p) :
     eLpNorm (a + b) p ν ≤ eLpNorm a p ν + eLpNorm b p ν :=
-  eLpNorm_add_le ha hb hp
+  eLpNorm_add_le hp
 
 omit [MeasurableSpace E] [NormedSpace ℝ E] [NormedSpace ℝ F] in
 /-- Minkowski's inequality for a finite sum in a normed group, stated so that the instance search
 does not go through `ESeminormedAddCommMonoid`; see
 `MeasureTheory.eLpNorm_add_le_of_norm`. -/
 theorem MeasureTheory.eLpNorm_sum_le_of_norm {X G ι : Type*} [MeasurableSpace X] {ν : Measure X}
-    [NormedAddCommGroup G] {a : ι → X → G} {s : Finset ι}
-    (ha : ∀ i ∈ s, AEStronglyMeasurable (a i) ν) (hp : 1 ≤ p) :
+    [NormedAddCommGroup G] {a : ι → X → G} {s : Finset ι} (hp : 1 ≤ p) :
     eLpNorm (∑ i ∈ s, a i) p ν ≤ ∑ i ∈ s, eLpNorm (a i) p ν :=
-  eLpNorm_sum_le ha hp
+  eLpNorm_sum_le hp
 
 omit [MeasurableSpace E] [NormedSpace ℝ E] [NormedSpace ℝ F] in
 /-- `L^p` membership is closed under addition, stated for a normed group so that the instance
@@ -428,7 +426,7 @@ theorem MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball [μ.IsAddHaarMe
     · simp [Set.indicator_of_mem hx, hzero x hx]
     · simp [Set.indicator_of_notMem hx]
   rw [heq]
-  exact (eLpNorm_indicator_le _).trans hule
+  exact (eLpNorm_indicator_le _ measurableSet_ball.compl).trans hule
 
 /-- A smooth cut-off on a finite-dimensional real normed space: a function equal to `1` on the
 closed unit ball, supported in the ball of radius `2`, with values in `[0, 1]`. -/
@@ -545,7 +543,8 @@ theorem exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub (hp : 1 �
       (ContDiffOn.hasWeakIteratedFDerivOn (hvs j).contDiffOn (by simp)).sub
         (ContDiffOn.hasWeakIteratedFDerivOn hg.contDiffOn (by simp))
     rw [hsub.eLpNorm_weakIteratedFDeriv, Measure.restrict_coe_top]
-    exact eLpNorm_mono fun x ↦ hkey j m hm x
+    exact eLpNorm_mono (((hvs j).continuous_iteratedFDeriv (by simp)).aestronglyMeasurable.sub
+      (hg.continuous_iteratedFDeriv (by simp)).aestronglyMeasurable) fun x ↦ hkey j m hm x
 
 end Truncate
 
@@ -654,21 +653,12 @@ theorem MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_le (hp : 1 
       funext x
       simp only [Pi.sub_apply, Pi.add_apply]
       abel
-    have hm1 : AEStronglyMeasurable
-        (iteratedFDeriv ℝ m (v i) - iteratedFDeriv ℝ m g) μ :=
-      ((hv1 i).continuous_iteratedFDeriv (by simp)).aestronglyMeasurable.sub
-        (hgs.continuous_iteratedFDeriv (by simp)).aestronglyMeasurable
-    have hm2 : AEStronglyMeasurable
-        (iteratedFDeriv ℝ m g - weakIteratedFDeriv m f ⊤ μ) μ := by
-      refine (hgs.continuous_iteratedFDeriv (by simp)).aestronglyMeasurable.sub ?_
-      simpa [Measure.restrict_coe_top] using
-        (hf.memLp_weakIteratedFDeriv hm).aestronglyMeasurable
     have hle1 : eLpNorm (iteratedFDeriv ℝ m (v i) - iteratedFDeriv ℝ m g) p μ ≤ δ :=
       (hA.eLpNorm_le_sobolevNorm_top hp hp' hm).trans hi
     have hle2 : eLpNorm (iteratedFDeriv ℝ m g - weakIteratedFDeriv m f ⊤ μ) p μ ≤ δ :=
       (hB.eLpNorm_le_sobolevNorm_top hp hp' hm).trans hj
     rw [hsplit]
-    exact (eLpNorm_add_le hm1 hm2 hp).trans (add_le_add hle1 hle2)
+    exact (eLpNorm_add_le hp).trans (add_le_add hle1 hle2)
   · calc ((k : ℝ≥0∞) + 1) * (δ + δ) = (2 * ((k : ℝ≥0∞) + 1)) * δ := by
           rw [← two_mul]; ring
       _ = ε := ENNReal.mul_div_cancel' (fun h ↦ absurd h hne0) (fun h ↦ absurd h hnetop)
@@ -717,9 +707,19 @@ theorem MeasureTheory.eLpNorm_one_comp_continuousLinearMap_le {X G G' : Type*}
     [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G] [NormedSpace ℝ G]
     [NormedAddCommGroup G'] [NormedSpace ℝ G'] (Λ : G →L[ℝ] G') (h : X → G) :
     eLpNorm (fun x ↦ Λ (h x)) 1 ν ≤ ‖Λ‖ₑ * eLpNorm h 1 ν := by
-  rw [eLpNorm_one_eq_lintegral_enorm, eLpNorm_one_eq_lintegral_enorm,
-    ← lintegral_const_mul' _ _ (enorm_ne_top (x := Λ))]
-  exact lintegral_mono fun x ↦ Λ.le_opENorm (h x)
+  by_cases hΛh : AEStronglyMeasurable (fun x ↦ Λ (h x)) ν
+  · rw [eLpNorm_one_eq_lintegral_enorm hΛh]
+    calc ∫⁻ x, ‖Λ (h x)‖ₑ ∂ν ≤ ∫⁻ x, ‖Λ‖ₑ * ‖h x‖ₑ ∂ν := lintegral_mono fun x ↦ Λ.le_opENorm (h x)
+      _ = ‖Λ‖ₑ * ∫⁻ x, ‖h x‖ₑ ∂ν := lintegral_const_mul' _ _ (enorm_ne_top (x := Λ))
+      _ ≤ ‖Λ‖ₑ * eLpNorm h 1 ν := by gcongr; exact lintegral_enorm_le_eLpNorm_one
+  · have hh : ¬ AEStronglyMeasurable h ν := fun hh ↦
+      hΛh (Λ.continuous.comp_aestronglyMeasurable hh)
+    have hΛ : ‖Λ‖ₑ ≠ 0 := by
+      rintro hΛ
+      rw [enorm_eq_zero] at hΛ
+      exact hΛh (by simpa [hΛ] using aestronglyMeasurable_const)
+    rw [eLpNorm_of_not_aestronglyMeasurable hh, ENNReal.mul_top hΛ]
+    exact le_top
 
 /-- **The weak derivative is closed under `L^1` limits**: if `u i` is a weak derivative of order
 `n` of `g i` on `Ω` for every `i`, and `g i → f` and `u i → w` in `L^1(Ω)`, then `w` is a weak
@@ -983,7 +983,6 @@ section Piece
 
 variable [FiniteDimensional ℝ E] [BorelSpace E]
 
-omit [FiniteDimensional ℝ E] in
 /-- **The `L^p` Leibniz estimate.** For `ψ` smooth, supported in an open set `V`, with every
 derivative of order at most `k` bounded by `M`, and `a`, `b` smooth, the `L^p` norm of the
 derivative of order `n ≤ k` of `ψ (a - b)` is at most `(k+1) 2^k M` times the sum, over the orders
@@ -1034,7 +1033,8 @@ theorem eLpNorm_iteratedFDeriv_smul_sub_le {V W : Set E} (hV : IsOpen V) {ψ : E
         eLpNorm_mono_measure _ Measure.restrict_le_self
     _ ≤ eLpNorm (V.indicator fun y ↦ (((k : ℝ) + 1) * 2 ^ k * M) *
           ∑ s ∈ Finset.range (k + 1), ‖iteratedFDeriv ℝ s a y - iteratedFDeriv ℝ s b y‖) p μ :=
-        eLpNorm_mono_enorm hpt
+        eLpNorm_mono_enorm
+          ((hψ.smul (ha.sub hb)).continuous_iteratedFDeriv (by simp)).aestronglyMeasurable hpt
     _ = eLpNorm (fun y ↦ (((k : ℝ) + 1) * 2 ^ k * M) *
           ∑ s ∈ Finset.range (k + 1), ‖iteratedFDeriv ℝ s a y - iteratedFDeriv ℝ s b y‖) p
           (μ.restrict V) := eLpNorm_indicator_eq_eLpNorm_restrict hV.measurableSet
@@ -1058,11 +1058,10 @@ theorem eLpNorm_iteratedFDeriv_smul_sub_le {V W : Set E} (hV : IsOpen V) {ψ : E
           funext y
           simp
         rw [hSsum]
-        refine le_trans (eLpNorm_sum_le ?_ hp) (le_of_eq ?_)
-        · intro s _
-          exact (((ha.continuous_iteratedFDeriv (m := s) (by simp)).sub
-            (hb.continuous_iteratedFDeriv (m := s) (by simp))).norm).aestronglyMeasurable
-        · exact Finset.sum_congr rfl fun s _ ↦ eLpNorm_norm _
+        refine le_trans (eLpNorm_sum_le hp) (le_of_eq ?_)
+        exact Finset.sum_congr rfl fun s _ ↦ eLpNorm_norm _
+          ((ha.continuous_iteratedFDeriv (m := s) (by simp)).sub
+            (hb.continuous_iteratedFDeriv (m := s) (by simp))).aestronglyMeasurable
 
 end Piece
 
@@ -1080,7 +1079,7 @@ open ContinuousLinearMap
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [μ.IsAddHaarMeasure]
 
-omit [μ.IsAddHaarMeasure] in
+omit [CompleteSpace F] [μ.IsAddHaarMeasure] in
 /-- **The patching estimate of the Meyers–Serrin argument.** With `ψ` a partition of unity
 subordinate to an exhaustion `U`, `g j` a smooth function attached to the piece `ψ j`, `v` the
 patched function `∑ j, ψ j (g j)` and `G` any smooth function, the `L^p(U N)` distance between
@@ -1090,13 +1089,12 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
     {g : ℕ → E → F} {G v : E → F} {δ : ℕ → ℝ≥0∞} {N n : ℕ}
     (hp : 1 ≤ p) (hn : n ≤ k)
     (hUmono : Monotone fun j ↦ (U j : Set E))
-    (hUsubΩ : ∀ j, (U j : Set E) ⊆ (Ω : Set E))
     (hψs : ∀ j, ContDiff ℝ ∞ (ψ j))
     (hψsupp : ∀ j, tsupport (ψ j) ⊆ (U (j + 1) : Set E))
     (hψsum : ∀ x ∈ (U N : Set E), ∑ j ∈ Finset.range (N + 1), ψ j x = 1)
     (hMb : ∀ j, ∀ r ≤ k, ∀ x, ‖iteratedFDeriv ℝ r (ψ j) x‖ ≤ M j)
     (hDdef : ∀ j, D j = ((k : ℝ) + 1) * 2 ^ k * M j)
-    (hgs : ∀ j, ContDiff ℝ ∞ (g j)) (hGs : ContDiff ℝ ∞ G) (hf : MemSobolev f k p Ω μ)
+    (hgs : ∀ j, ContDiff ℝ ∞ (g j)) (hGs : ContDiff ℝ ∞ G)
     (hgA : ∀ j, (∑ s ∈ Finset.range (k + 1),
       eLpNorm (iteratedFDeriv ℝ s (g j) - weakIteratedFDeriv s f Ω μ) p
         (μ.restrict (U (j + 1) : Set E))) ≤ δ j)
@@ -1128,10 +1126,6 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
     exact (iteratedFDeriv_sub_apply (f := fun y ↦ ψ j y • g j y) (g := fun y ↦ ψ j y • G y)
       (((hψs j).smul (hgs j)).contDiffAt.of_le (by simp))
       (((hψs j).smul hGs).contDiffAt.of_le (by simp))).symm
-  have hAE : ∀ j, AEStronglyMeasurable (iteratedFDeriv ℝ n fun y ↦ ψ j y • (g j y - G y))
-      (μ.restrict (U N : Set E)) := fun j ↦
-    ((((hψs j).smul ((hgs j).sub hGs)).continuous_iteratedFDeriv (m := n)
-      (by simp))).aestronglyMeasurable
   have hpiece : ∀ j ∈ Finset.range (N + 1),
       eLpNorm (iteratedFDeriv ℝ n fun y ↦ ψ j y • (g j y - G y)) p
         (μ.restrict (U N : Set E)) ≤ ENNReal.ofReal (D j) * (δ j +
@@ -1148,20 +1142,7 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
           (μ.restrict (U (j + 1) : Set E))
         + eLpNorm (weakIteratedFDeriv s f Ω μ - iteratedFDeriv ℝ s G) p
           (μ.restrict (U (j + 1) : Set E))) fun s hs ↦ ?_) ?_
-    · have hs' : s ≤ k := Nat.lt_succ_iff.1 (Finset.mem_range.1 hs)
-      have hmw : AEStronglyMeasurable (weakIteratedFDeriv s f Ω μ)
-          (μ.restrict (U (j + 1) : Set E)) :=
-        ((hf.memLp_weakIteratedFDeriv hs').aestronglyMeasurable).mono_measure
-          (Measure.restrict_mono (hUsubΩ (j + 1)) le_rfl)
-      have h1 : AEStronglyMeasurable
-          (iteratedFDeriv ℝ s (g j) - weakIteratedFDeriv s f Ω μ)
-          (μ.restrict (U (j + 1) : Set E)) :=
-        ((hgs j).continuous_iteratedFDeriv (m := s) (by simp)).aestronglyMeasurable.sub hmw
-      have h2 : AEStronglyMeasurable
-          (weakIteratedFDeriv s f Ω μ - iteratedFDeriv ℝ s G)
-          (μ.restrict (U (j + 1) : Set E)) :=
-        hmw.sub (hGs.continuous_iteratedFDeriv (m := s) (by simp)).aestronglyMeasurable
-      have hpteq : eLpNorm (iteratedFDeriv ℝ s (g j) - iteratedFDeriv ℝ s G) p
+    · have hpteq : eLpNorm (iteratedFDeriv ℝ s (g j) - iteratedFDeriv ℝ s G) p
             (μ.restrict (U (j + 1) : Set E))
           = eLpNorm ((iteratedFDeriv ℝ s (g j) - weakIteratedFDeriv s f Ω μ)
               + (weakIteratedFDeriv s f Ω μ - iteratedFDeriv ℝ s G)) p
@@ -1170,7 +1151,7 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
         simp only [Pi.sub_apply, Pi.add_apply]
         abel
       rw [hpteq]
-      exact eLpNorm_add_le_of_norm h1 h2 hp
+      exact eLpNorm_add_le_of_norm hp
     · rw [Finset.sum_add_distrib]
       refine add_le_add (hgA j) (Finset.sum_le_sum fun s _ ↦ ?_)
       refine le_trans (le_of_eq (eLpNorm_sub_comm _ _ _ _)) ?_
@@ -1184,7 +1165,7 @@ theorem eLpNorm_iteratedFDeriv_sub_patch_le {U : ℕ → Opens E} {ψ : ℕ → 
         rw [Pi.sub_apply, hid x hx, Finset.sum_apply]
     _ ≤ ∑ j ∈ Finset.range (N + 1),
         eLpNorm (iteratedFDeriv ℝ n fun y ↦ ψ j y • (g j y - G y)) p
-          (μ.restrict (U N : Set E)) := eLpNorm_sum_le_of_norm (fun j _ ↦ hAE j) hp
+          (μ.restrict (U N : Set E)) := eLpNorm_sum_le_of_norm hp
     _ ≤ _ := Finset.sum_le_sum hpiece
 
 end Patch
@@ -1205,12 +1186,20 @@ theorem MeasureTheory.eLpNorm_restrict_iUnion_le {G : Type*} [NormedAddCommGroup
     {s : ℕ → Set E} (hd : Directed (· ⊆ ·) s) (hp₀ : p ≠ 0) (hp' : p ≠ ⊤) {c : ℝ≥0∞}
     (h : ∀ N, eLpNorm F' p (μ.restrict (s N)) ≤ c) :
     eLpNorm F' p (μ.restrict (⋃ N, s N)) ≤ c := by
-  have hP : 0 < p.toReal := ENNReal.toReal_pos hp₀ hp'
-  refine (ENNReal.rpow_le_rpow_iff hP).1 ?_
-  rw [← lintegral_rpow_enorm_eq_rpow_eLpNorm hp₀ hp', setLIntegral_iUnion_of_directed _ hd]
-  refine iSup_le fun N ↦ ?_
-  rw [lintegral_rpow_enorm_eq_rpow_eLpNorm hp₀ hp']
-  exact ENNReal.rpow_le_rpow (h N) hP.le
+  by_cases hF : AEStronglyMeasurable F' (μ.restrict (⋃ N, s N))
+  · have hP : 0 < p.toReal := ENNReal.toReal_pos hp₀ hp'
+    refine (ENNReal.rpow_le_rpow_iff hP).1 ?_
+    rw [← lintegral_rpow_enorm_eq_rpow_eLpNorm hp₀ hp' hF, setLIntegral_iUnion_of_directed _ hd]
+    refine iSup_le fun N ↦ ?_
+    rw [lintegral_rpow_enorm_eq_rpow_eLpNorm hp₀ hp'
+      (hF.mono_measure (Measure.restrict_mono (Set.subset_iUnion s N) le_rfl))]
+    exact ENNReal.rpow_le_rpow (h N) hP.le
+  · -- off measurability every `eLpNorm` is `∞`, and one of the bounds `h N` already says `c = ∞`
+    obtain ⟨N, hN⟩ : ∃ N, ¬ AEStronglyMeasurable F' (μ.restrict (s N)) := by
+      simpa [aestronglyMeasurable_iUnion_iff] using hF
+    calc eLpNorm F' p (μ.restrict (⋃ N, s N)) ≤ eLpNorm F' p (μ.restrict (s N)) := by
+          rw [eLpNorm_of_not_aestronglyMeasurable hN]; exact le_top
+      _ ≤ c := h N
 
 /-- **The Meyers–Serrin theorem, with an explicit tolerance.** For `f ∈ W^{k,p}(Ω)` with
 `1 ≤ p < ∞` and `0 ≠ ε ≠ ∞` there is a `v ∈ C^∞(Ω) ∩ W^{k,p}(Ω)` with `‖v - f‖_{k,p,Ω} ≤ ε`.
@@ -1335,19 +1324,6 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
     have hstep : ∀ i, eLpNorm (iteratedFDeriv ℝ n v - weakIteratedFDeriv n f Ω μ) p
         (μ.restrict (U N : Set E)) ≤ ε₁ + C * B i + B i := by
       intro i
-      have hmeas1 : AEStronglyMeasurable
-          (iteratedFDeriv ℝ n v - iteratedFDeriv ℝ n (G i)) (μ.restrict (U N : Set E)) := by
-        refine AEStronglyMeasurable.sub ?_
-          ((hGs i).continuous_iteratedFDeriv (m := n) (by simp)).aestronglyMeasurable
-        exact ((hvsmooth.continuousOn_iteratedFDeriv (m := n) (by simp)).mono
-          (hUsubΩ N)).aestronglyMeasurable (U N).isOpen.measurableSet
-      have hmeas2 : AEStronglyMeasurable
-          (iteratedFDeriv ℝ n (G i) - weakIteratedFDeriv n f Ω μ)
-          (μ.restrict (U N : Set E)) := by
-        refine AEStronglyMeasurable.sub
-          ((hGs i).continuous_iteratedFDeriv (m := n) (by simp)).aestronglyMeasurable ?_
-        exact ((hf.memLp_weakIteratedFDeriv hn).aestronglyMeasurable).mono_measure
-          (Measure.restrict_mono (hUsubΩ N) le_rfl)
       have hsplit : (iteratedFDeriv ℝ n v - weakIteratedFDeriv n f Ω μ)
           = (iteratedFDeriv ℝ n v - iteratedFDeriv ℝ n (G i))
             + (iteratedFDeriv ℝ n (G i) - weakIteratedFDeriv n f Ω μ) := by
@@ -1355,9 +1331,9 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
         simp only [Pi.sub_apply, Pi.add_apply]
         abel
       rw [hsplit]
-      refine (eLpNorm_add_le_of_norm hmeas1 hmeas2 hp).trans (add_le_add ?_ ?_)
-      · refine le_trans (eLpNorm_iteratedFDeriv_sub_patch_le hp hn hUmono hUsubΩ hψs hψsupp
-          (hψsum N) hMb hDdef hgs (hGs i) hf hgA (hviter N)) ?_
+      refine (eLpNorm_add_le_of_norm hp).trans (add_le_add ?_ ?_)
+      · refine le_trans (eLpNorm_iteratedFDeriv_sub_patch_le hp hn hUmono hψs hψsupp
+          (hψsum N) hMb hDdef hgs (hGs i) hgA (hviter N)) ?_
         rw [← hBdef i]
         calc ∑ j ∈ Finset.range (N + 1), ENNReal.ofReal (D j) * (δ j + B i)
             = (∑ j ∈ Finset.range (N + 1), ENNReal.ofReal (D j) * δ j) + C * B i := by
@@ -1394,8 +1370,7 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
       Ω.isOpen.measurableSet
   have hdiffLp : ∀ n ≤ k, MemLp (iteratedFDeriv ℝ n v - weakIteratedFDeriv n f Ω μ) p
       (μ.restrict (Ω : Set E)) := fun n hn ↦
-    ⟨(hvmeas n).sub (hf.memLp_weakIteratedFDeriv hn).aestronglyMeasurable,
-      lt_of_le_of_lt (hΩ n hn) (lt_top_iff_ne_top.2 hε₁top)⟩
+    lt_of_le_of_lt (hΩ n hn) (lt_top_iff_ne_top.2 hε₁top)
   have hviterLp : ∀ n ≤ k, MemLp (iteratedFDeriv ℝ n v) p (μ.restrict (Ω : Set E)) :=
     fun n hn ↦ by
       have h := (hdiffLp n hn).add_of_norm (hf.memLp_weakIteratedFDeriv hn)
@@ -1406,8 +1381,13 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
         abel
       rwa [he] at h
   -- the order-zero case, read on the functions themselves
+  have hvfmeas : AEStronglyMeasurable (v - f) (μ.restrict (Ω : Set E)) :=
+    (hvsmooth.continuousOn.aestronglyMeasurable Ω.isOpen.measurableSet).sub
+      hf.memLp.aestronglyMeasurable
   have hzeroNorm : eLpNorm (v - f) p (μ.restrict (Ω : Set E)) ≤ ε₁ := by
-    refine le_trans (le_of_eq (eLpNorm_congr_norm_ae ?_)) (hΩ 0 (Nat.zero_le k))
+    refine le_trans (le_of_eq (eLpNorm_congr_norm_ae hvfmeas
+      ((hvmeas 0).sub (hf.memLp_weakIteratedFDeriv (Nat.zero_le k)).aestronglyMeasurable) ?_))
+      (hΩ 0 (Nat.zero_le k))
     filter_upwards [(ae_restrict_iff' Ω.isOpen.measurableSet).2
       ((hasWeakIteratedFDerivOn_zero (hf.memLp.locallyIntegrableOn hp)).weakIteratedFDeriv_ae_eq
         (μ := μ))] with x hx
@@ -1416,8 +1396,7 @@ theorem MemSobolev.exists_contDiffOn_sobolevNorm_sub_le (hp : 1 ≤ p) (hp' : p 
     rw [← map_sub]
     exact (LinearIsometryEquiv.norm_map _ _).symm
   have hvfLp : MemLp (v - f) p (μ.restrict (Ω : Set E)) :=
-    ⟨(hvsmooth.continuousOn.aestronglyMeasurable Ω.isOpen.measurableSet).sub
-      hf.memLp.aestronglyMeasurable, lt_of_le_of_lt hzeroNorm (lt_top_iff_ne_top.2 hε₁top)⟩
+    lt_of_le_of_lt hzeroNorm (lt_top_iff_ne_top.2 hε₁top)
   have hvLp : MemLp v p (μ.restrict (Ω : Set E)) := by
     have h := hvfLp.add hf.memLp
     have he : (v - f) + f = v := by

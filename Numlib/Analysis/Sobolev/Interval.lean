@@ -629,7 +629,7 @@ theorem integrableOn_deriv (u : SobolevInterval m a b) (j : Fin (m + 1)) :
 [quarteroni2000numerical]. -/
 theorem norm_sq_eq (u : SobolevInterval m a b) :
     ‖u‖ ^ 2 = ∑ j : Fin (m + 1), ‖deriv u j‖ ^ 2 := by
-  rw [Submodule.coe_norm, PiLp.norm_sq_eq_of_L2, ← (derivIndexEquiv m).sum_comp]
+  rw [← Submodule.norm_coe, PiLp.norm_sq_eq_of_L2, ← (derivIndexEquiv m).sum_comp]
   rfl
 
 /-- `‖u‖_{H^1} ≤ ‖u‖_{L²} + ‖u'‖_{L²}`, from `‖u‖² = ‖u‖_{L²}² + ‖u'‖_{L²}²`. -/
@@ -1369,9 +1369,9 @@ theorem memLp_leibniz (hab : a < b) (u v : SobolevInterval 1 a b) :
     MemLp (fun t ↦ deriv u 1 t * rep v t + rep u t * deriv v 1 t) 2
       (volume.restrict (Ioo a b)) := by
   have h1 : MemLp (fun t ↦ deriv u 1 t * rep v t) 2 (volume.restrict (Ioo a b)) :=
-    MemLp.mul' (continuousOn_rep hab.le v).memLp_top_restrict_Ioo (Lp.memLp (deriv u 1))
+    (Lp.memLp (deriv u 1)).fun_mul (continuousOn_rep hab.le v).memLp_top_restrict_Ioo
   have h2 : MemLp (fun t ↦ rep u t * deriv v 1 t) 2 (volume.restrict (Ioo a b)) :=
-    MemLp.mul' (Lp.memLp (deriv v 1)) (continuousOn_rep hab.le u).memLp_top_restrict_Ioo
+    (continuousOn_rep hab.le u).memLp_top_restrict_Ioo.fun_mul (Lp.memLp (deriv v 1))
   exact h1.add h2
 
 /-- **The product rule in `H^1(a, b)`**: the product of the continuous representatives of two
@@ -1606,9 +1606,11 @@ theorem exists_testFunction_eLpNorm_sub_le_of_contDiff (hab : a < b) {g : ℝ �
     rw [Real.volume_Ioo, Real.volume_Ioo, ← ENNReal.ofReal_add (by linarith) (by linarith)]
     exact ENNReal.ofReal_le_ofReal (by linarith)
   calc eLpNorm (g - fun x ↦ g x * χ x) 2 (volume.restrict (Ioo a b))
-      ≤ eLpNorm (S.indicator fun _ ↦ C) 2 (volume.restrict (Ioo a b)) := eLpNorm_mono_ae hpt
+      ≤ eLpNorm (S.indicator fun _ ↦ C) 2 (volume.restrict (Ioo a b)) :=
+        eLpNorm_mono_ae (hg.continuous.aestronglyMeasurable.sub
+          (hg.continuous.mul χ.continuous).aestronglyMeasurable) hpt
     _ ≤ ‖C‖ₑ * (volume.restrict (Ioo a b)) S ^ (1 / (2 : ℝ≥0∞).toReal) :=
-        eLpNorm_indicator_const_le C 2
+        eLpNorm_indicator_const_le C 2 (measurableSet_closedBall.compl.nullMeasurableSet)
     _ ≤ ENNReal.ofReal (C + 1) * ENNReal.ofReal (4 * δ) ^ (1 / (2 : ℝ)) := by
         rw [ENNReal.toReal_ofNat, Real.enorm_eq_ofReal hC0]
         gcongr
@@ -1642,8 +1644,7 @@ theorem exists_testFunction_eLpNorm_sub_le (hab : a < b) {w : ℝ → ℝ}
       ≤ eLpNorm (w - g) 2 (volume.restrict (Ioo a b))
         + eLpNorm (g - ⇑ψ) 2 (volume.restrict (Ioo a b)) := by
         rw [e]
-        exact eLpNorm_add_le (hw.aestronglyMeasurable.sub hg.continuous.aestronglyMeasurable)
-          (hg.continuous.aestronglyMeasurable.sub ψ.continuous.aestronglyMeasurable) one_le_two
+        exact eLpNorm_add_le one_le_two
     _ ≤ ENNReal.ofReal (ε / 2) + ENNReal.ofReal (ε / 2) := add_le_add hwg hψ
     _ = ENNReal.ofReal ε := by rw [← ENNReal.ofReal_add (by positivity) (by positivity)]; ring_nf
 

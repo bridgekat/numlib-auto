@@ -310,7 +310,7 @@ private theorem tendsto_prod_one_sub {b : ℕ → ℝ} (hb1 : ∀ i, b i ≤ 1)
   refine squeeze_zero (fun n ↦ Finset.prod_nonneg fun i _ ↦ by linarith [hb1 i])
     (g := fun n ↦ Real.exp (-∑ i ∈ Finset.range n, b i)) (fun n ↦ ?_) ?_
   · calc ∏ i ∈ Finset.range n, (1 - b i) ≤ ∏ i ∈ Finset.range n, Real.exp (-b i) :=
-          Finset.prod_le_prod (fun i _ ↦ by linarith [hb1 i])
+          Finset.prod_le_prod₀ (fun i _ ↦ by linarith [hb1 i])
             (fun i _ ↦ by linarith [Real.add_one_le_exp (-b i)])
       _ = Real.exp (-∑ i ∈ Finset.range n, b i) := by
           rw [← Real.exp_sum, Finset.sum_neg_distrib]

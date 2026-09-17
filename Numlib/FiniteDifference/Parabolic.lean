@@ -606,7 +606,7 @@ theorem complexSpectralRadius_thetaAmplification_lt_one_iff (hM : M.PosDef) (hA 
     ext μ
     rw [mem_spectrum_complexify_thetaAmplification_iff hW hWM hWA fun i => (hden' i).ne']
     simp [eq_comm]
-  rw [complexSpectralRadius, spectralRadius, hspecC, iSup_range, ← Finset.sup_univ_eq_iSup,
+  rw [complexSpectralRadius_eq_iSup, hspecC, iSup_range, ← Finset.sup_univ_eq_iSup,
     Finset.sup_lt_iff (by simp), hspec]
   simp only [Finset.mem_univ, true_implies, Set.forall_mem_range]
   refine forall_congr' fun i => ?_

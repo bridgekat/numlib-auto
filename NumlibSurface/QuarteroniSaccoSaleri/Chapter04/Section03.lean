@@ -1699,9 +1699,9 @@ private theorem complexSpectralRadius_adiMatrix (hA₁ : A₁.PosDef) (hA₂ : A
     complexSpectralRadius (adiMatrix A₁ A₂ α₁ α₂) =
       spectralRadius ℂ (peacemanRachfordTwo (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₁))
         (toEuclideanCLM (n := Fin n) (𝕜 := ℂ) (complexify A₂)) (1 / α₁) (1 / α₂)) := by
-  rw [← toEuclideanCLM_complexify_adiMatrix A₁ A₂ α₁ α₂ hA₁ hA₂ hα₁ hα₂, complexSpectralRadius]
-  simp only [spectralRadius]
-  rw [AlgEquiv.spectrum_eq (toEuclideanCLM (n := Fin n) (𝕜 := ℂ))]
+  rw [← toEuclideanCLM_complexify_adiMatrix A₁ A₂ α₁ α₂ hA₁ hA₂ hα₁ hα₂,
+    Matrix.complexSpectralRadius_eq_iSup, spectralRadius_eq_of_unital,
+    AlgEquiv.spectrum_eq (toEuclideanCLM (n := Fin n) (𝕜 := ℂ))]
 
 /-- The scalar identity behind the book's form of the ADI bound: for `t, α₁, α₂ > 0`,
 `|t - 1/α₂| / (t + 1/α₁) = (α₁/α₂) |1 - α₂ t| / (1 + α₁ t)`. -/

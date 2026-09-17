@@ -383,8 +383,10 @@ theorem IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq {A : Matrix n n �
   have hgs : gaussSeidelSplitting A h = sorSplitting A h (one_ne_zero (α := ℂ)) :=
     (sorSplitting_one A h).symm
   have hB2 : spectralRadius ℂ (jacobiSplitting A h).iterationOperator ^ 2 =
-      ⨆ μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator, ((‖μ‖₊ : ℝ≥0∞) ^ 2) :=
-    ENNReal.iSup₂_pow_of_ne_zero _ two_ne_zero
+      ⨆ μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator, ((‖μ‖₊ : ℝ≥0∞) ^ 2) := by
+    rw [spectralRadius_eq_of_unital]
+    exact ENNReal.iSup₂_pow_of_ne_zero _ two_ne_zero
+  rw [spectralRadius_eq_of_unital, hB2]
   refine le_antisymm ?_ ?_
   · refine iSup₂_le fun l hl => ?_
     rcases eq_or_ne l 0 with rfl | hl0
@@ -393,12 +395,10 @@ theorem IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq {A : Matrix n n �
       have hmem : μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator := by
         rw [hA.mem_spectrum_jacobi_iff_sor h one_ne_zero hl0 (by rw [hμ]; ring), ← hgs]
         exact hl
-      rw [hB2]
       refine le_iSup₂_of_le μ hmem ?_
       rw [← hμ]
       simp
-  · rw [hB2]
-    refine iSup₂_le fun μ hμ => ?_
+  · refine iSup₂_le fun μ hμ => ?_
     rcases eq_or_ne μ 0 with rfl | hμ0
     · simp
     · have hl0 : μ ^ 2 ≠ 0 := pow_ne_zero _ hμ0
@@ -634,6 +634,7 @@ private theorem exists_norm_eq_spectralRadius (M : Matrix n n ℂ) (hne : (spect
   have hmax : ∀ μ ∈ spectrum ℂ M, ‖μ‖ ≤ ‖μ₀‖ := fun μ hμ => by
     rw [← hsup]
     exact Finset.le_sup' (fun μ => ‖μ‖) (hfin.mem_toFinset.mpr hμ)
+  rw [spectralRadius_eq_of_unital]
   refine ⟨μ₀, hmem₀', le_antisymm (iSup₂_le fun μ hμ => ?_)
     (le_iSup₂_of_le μ₀ hmem₀' ?_), hmax⟩
   · rw [coe_nnnorm_eq_ofReal]
@@ -679,7 +680,7 @@ theorem IsConsistentlyOrdered.spectralRadius_sor_eq {A : Matrix n n ℂ} [Nonemp
     exists_norm_eq_spectralRadius _ (spectrum_nonempty (jacobiSplitting A h).iterationOperator)
   have htoReal : (spectralRadius ℂ (jacobiSplitting A h).iterationOperator).toReal = ‖μ₀‖ := by
     rw [hρ, ENNReal.toReal_ofReal (norm_nonneg _)]
-  rw [htoReal]
+  rw [htoReal, spectralRadius_eq_of_unital]
   refine le_antisymm (iSup₂_le fun l hl => ?_) ?_
   · rcases eq_or_ne l 0 with rfl | hl0
     · simp
@@ -827,7 +828,7 @@ section Matrices
 
 variable {A : Matrix n n ℂ} [Nonempty n]
 
-omit [LinearOrder n] [Nonempty n] in
+omit [LinearOrder n] [Nonempty n] [DecidableEq n] in
 /-- A spectral radius below `1` is finite, so its real value is below `1` too. -/
 private theorem toReal_spectralRadius_lt_one {M : Matrix n n ℂ}
     (hlt : spectralRadius ℂ M < 1) : (spectralRadius ℂ M).toReal < 1 := by

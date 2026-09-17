@@ -111,7 +111,7 @@ variable {X G : Type*} [MeasurableSpace X] {μ : Measure X}
 theorem MemLp.integrable_smul_of_conjExponent [Fact (1 ≤ p)]
     (hg : MemLp g (ENNReal.conjExponent p) μ) {u : X → G} (hu : MemLp u p μ) :
     Integrable (fun x ↦ g x • u x) μ :=
-  memLp_one_iff_integrable.1 (hu.smul hg)
+  memLp_one_iff_integrable.1 (hg.smul hu)
 
 /-- Integration against a fixed function `g` of `L^q`, where `q` is the conjugate exponent of `p`,
 as a continuous linear map `u ↦ ∫ g • u` on `L^p`. Its continuity is Hölder's inequality. -/
@@ -387,8 +387,8 @@ theorem norm_eq (u : Sobolev F k p Ω μ) : ‖u‖ = (sobolevNorm (fn u) k p Ω
       eLpNorm (weakIteratedFDeriv (n : ℕ) (fn u) Ω μ) p (μ.restrict (Ω : Set E)) ≠ ⊤ := by
     intro n
     rw [eLpNorm_weakIteratedFDeriv]
-    exact (Lp.memLp (weakDeriv u n)).2.ne
-  rw [Submodule.coe_norm, sobolevNorm]
+    exact (Lp.memLp (weakDeriv u n)).eLpNorm_lt_top.ne
+  rw [← Submodule.norm_coe, sobolevNorm]
   rcases eq_or_ne p ⊤ with rfl | hp
   · rw [ite_eq_left rfl, PiLp.norm_eq_ciSup, ENNReal.toReal_iSup hfin]
     exact iSup_congr fun n ↦ by rw [Lp.norm_def, eLpNorm_weakIteratedFDeriv]; rfl

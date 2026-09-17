@@ -149,7 +149,7 @@ theorem equation_1_7 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fi
       (∃ μ ∈ spectrum ℂ A, (‖μ‖₊ : ℝ≥0∞) = spectralRadius ℂ A) ∧ spectralRadius ℂ A ≠ ⊤ ∧
       B.complexSpectralRadius = spectralRadius ℂ (complexify B) := by
   have _ : CompleteSpace (Matrix (Fin n) (Fin n) ℂ) := FiniteDimensional.complete ℂ _
-  exact ⟨rfl, spectrum.exists_nnnorm_eq_spectralRadius_of_nonempty
+  exact ⟨spectralRadius_eq_of_unital A, spectrum.exists_nnnorm_eq_spectralRadius_of_nonempty
     (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ A), spectrum.spectralRadius_ne_top A,
     rfl⟩
 
@@ -160,7 +160,8 @@ end SpectralRadius
 theorem spectralRadius_conjTranspose (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ Aᴴ = spectralRadius ℂ A ∧ spectralRadius ℂ Aᵀ = spectralRadius ℂ A :=
   ⟨by rw [← star_eq_conjTranspose, spectralRadius_star],
-    by rw [spectralRadius, spectralRadius, (Chapter01.spectrum_transpose A).1]⟩
+    by rw [spectralRadius_eq_of_unital, spectralRadius_eq_of_unital,
+      (Chapter01.spectrum_transpose A).1]⟩
 
 /-- **§1.7, `ρ(α A) = |α| ρ(A)`** for every `α ∈ ℂ` (backbone `spectralRadius_smul`), and for a
 real matrix and a real scalar with the complex spectral radius

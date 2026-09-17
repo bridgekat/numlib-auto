@@ -406,6 +406,7 @@ theorem spectralRadius_not_subadditive :
   -- a matrix whose only eigenvalue is `0` has spectral radius `0`
   have hnil : ∀ M : Matrix (Fin 2) (Fin 2) ℂ, M.trace = 0 → M.det = 0 → spectralRadius ℂ M = 0 := by
     intro M htr hdet
+    rw [spectralRadius_eq_of_unital]
     refine le_antisymm (iSup₂_le fun μ hμ => ?_) zero_le
     rw [mem_spectrum_fin_two, htr, hdet] at hμ
     have : μ = 0 := pow_eq_zero_iff two_ne_zero |>.1 (by linear_combination hμ)
@@ -414,6 +415,7 @@ theorem spectralRadius_not_subadditive :
   have hone : ∀ M : Matrix (Fin 2) (Fin 2) ℂ, (∀ μ, μ ∈ spectrum ℂ M → ‖μ‖₊ ≤ 1) →
       (1 : ℂ) ∈ spectrum ℂ M → spectralRadius ℂ M = 1 := by
     intro M hle h1
+    rw [spectralRadius_eq_of_unital]
     refine le_antisymm (iSup₂_le fun μ hμ => by exact_mod_cast hle μ hμ) ?_
     calc (1 : ℝ≥0∞) = ((‖(1 : ℂ)‖₊ : ℝ≥0) : ℝ≥0∞) := by simp
       _ ≤ _ := le_iSup₂ (f := fun μ (_ : μ ∈ spectrum ℂ M) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) (1 : ℂ) h1

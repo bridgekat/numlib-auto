@@ -154,7 +154,7 @@ theorem existsUnique_multipliers_of_isLocalMinOn [CompleteSpace E] {f : E → �
     simp only [feasibleEq, Set.mem_ofPred_eq]
     exact forall_congr' fun i => by rw [hx.1 i]
   have hextr : IsLocalExtrOn f {y | ∀ i, h i y = h i x} x := by
-    rw [← hset]; exact IsMinFilter.isExtr hmin
+    rw [← hset]; exact IsMinFilter.isExtrFilter hmin
   obtain ⟨Λ, Λ₀, hne, hsum⟩ := hextr.exists_multipliers_of_hasStrictFDerivAt hh hf
   have hΛ₀ : Λ₀ ≠ 0 := by
     rintro rfl

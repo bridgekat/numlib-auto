@@ -74,7 +74,7 @@ theorem theorem_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
         ‖(UniformSpace.Completion.toComplL : V →L[𝕜] UniformSpace.Completion V) x‖ := by
       intro x
       simp
-    simpa using L.opNorm_extend_le hdense hbound
+    simpa [hLhat] using L.opNorm_extend_le hdense hbound
   · refine L.opNorm_le_bound (norm_nonneg _) fun v => ?_
     rw [← heq v]
     simpa [UniformSpace.Completion.norm_coe] using Lhat.le_opNorm (↑v : UniformSpace.Completion V)

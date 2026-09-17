@@ -1523,7 +1523,7 @@ theorem norm_det_le_prod_sqrt_sum_norm_sq (X : Matrix n n 𝕜) :
   have hX : ‖X.det‖ = ‖(U * X).det‖ := by
     rw [det_mul, norm_mul, norm_det_of_mem_unitaryGroup hU, one_mul]
   rw [hX, det_of_isUpperTriangular hT, norm_prod]
-  refine Finset.prod_le_prod (fun j _ => norm_nonneg _) fun j _ => ?_
+  refine Finset.prod_le_prod₀ (fun j _ => norm_nonneg _) fun j _ => ?_
   rw [← hcol j]
   calc ‖(U * X) j j‖ = Real.sqrt (‖(U * X) j j‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
     _ ≤ Real.sqrt (∑ i, ‖(U * X) i j‖ ^ 2) :=
@@ -1538,7 +1538,7 @@ theorem norm_det_le_of_forall_norm_le {X : Matrix n n 𝕜} {c : ℝ} (hc : 0 �
   refine (norm_det_le_prod_sqrt_sum_norm_sq X).trans ?_
   calc ∏ j, Real.sqrt (∑ i, ‖X i j‖ ^ 2)
       ≤ ∏ _j : n, Real.sqrt (Fintype.card n * c ^ 2) := by
-        refine Finset.prod_le_prod (fun j _ => Real.sqrt_nonneg _) fun j _ => Real.sqrt_le_sqrt ?_
+        refine Finset.prod_le_prod₀ (fun j _ => Real.sqrt_nonneg _) fun j _ => Real.sqrt_le_sqrt ?_
         calc ∑ i, ‖X i j‖ ^ 2 ≤ ∑ _i : n, c ^ 2 :=
               Finset.sum_le_sum fun i _ => by nlinarith [h i j, norm_nonneg (X i j)]
           _ = Fintype.card n * c ^ 2 := by

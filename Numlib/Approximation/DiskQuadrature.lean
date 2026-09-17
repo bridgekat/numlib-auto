@@ -472,7 +472,7 @@ theorem exists_diskRule (n : ℕ) :
   -- the general case, by linearity over the monomials of `p`
   intro p hp
   have heval : ∀ z : Fin 2 → ℝ, MvPolynomial.eval z p
-      = ∑ v ∈ p.support, MvPolynomial.coeff v p * (z 0 ^ v 0 * z 1 ^ v 1) := by
+      = ∑ v ∈ p.support, p.coeff v * (z 0 ^ v 0 * z 1 ^ v 1) := by
     intro z
     conv_lhs => rw [p.as_sum]
     rw [map_sum]
@@ -486,7 +486,7 @@ theorem exists_diskRule (n : ℕ) :
       rw [Finsupp.sum_fintype _ _ fun _ => rfl, Fin.sum_univ_two]
     omega
   have hint : ∀ v : Fin 2 →₀ ℕ, IntegrableOn
-      (fun y : Fin 2 → ℝ => MvPolynomial.coeff v p * (y 0 ^ v 0 * y 1 ^ v 1))
+      (fun y : Fin 2 → ℝ => p.coeff v * (y 0 ^ v 0 * y 1 ^ v 1))
       unitDisk volume :=
     fun v => (Continuous.locallyIntegrable (by fun_prop)).integrableOn_isCompact isCompact_unitDisk
   calc ∑ k : Fin (n + 1) × Fin (2 * n + 1),
@@ -494,7 +494,7 @@ theorem exists_diskRule (n : ℕ) :
           * MvPolynomial.eval
               ![ρ k.1 * Real.cos (angleNode (2 * n + 1) k.2),
                 ρ k.1 * Real.sin (angleNode (2 * n + 1) k.2)] p
-      = ∑ k : Fin (n + 1) × Fin (2 * n + 1), ∑ v ∈ p.support, MvPolynomial.coeff v p
+      = ∑ k : Fin (n + 1) × Fin (2 * n + 1), ∑ v ∈ p.support, p.coeff v
           * ((2 * π / (2 * (n : ℝ) + 1) * (ω k.1 * ρ k.1))
             * ((ρ k.1 * Real.cos (angleNode (2 * n + 1) k.2)) ^ v 0
               * (ρ k.1 * Real.sin (angleNode (2 * n + 1) k.2)) ^ v 1)) := by
@@ -503,16 +503,16 @@ theorem exists_diskRule (n : ℕ) :
         refine Finset.sum_congr rfl fun v _ => ?_
         simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
         ring
-    _ = ∑ v ∈ p.support, ∑ k : Fin (n + 1) × Fin (2 * n + 1), MvPolynomial.coeff v p
+    _ = ∑ v ∈ p.support, ∑ k : Fin (n + 1) × Fin (2 * n + 1), p.coeff v
           * ((2 * π / (2 * (n : ℝ) + 1) * (ω k.1 * ρ k.1))
             * ((ρ k.1 * Real.cos (angleNode (2 * n + 1) k.2)) ^ v 0
               * (ρ k.1 * Real.sin (angleNode (2 * n + 1) k.2)) ^ v 1)) := Finset.sum_comm
-    _ = ∑ v ∈ p.support, MvPolynomial.coeff v p * ∑ k : Fin (n + 1) × Fin (2 * n + 1),
+    _ = ∑ v ∈ p.support, p.coeff v * ∑ k : Fin (n + 1) × Fin (2 * n + 1),
           (2 * π / (2 * (n : ℝ) + 1) * (ω k.1 * ρ k.1))
             * ((ρ k.1 * Real.cos (angleNode (2 * n + 1) k.2)) ^ v 0
               * (ρ k.1 * Real.sin (angleNode (2 * n + 1) k.2)) ^ v 1) :=
         Finset.sum_congr rfl fun v _ => (Finset.mul_sum _ _ _).symm
-    _ = ∑ v ∈ p.support, MvPolynomial.coeff v p * ∫ y in unitDisk, y 0 ^ v 0 * y 1 ^ v 1 :=
+    _ = ∑ v ∈ p.support, p.coeff v * ∫ y in unitDisk, y 0 ^ v 0 * y 1 ^ v 1 :=
         Finset.sum_congr rfl fun v hv => by rw [hmono _ _ (hdeg v hv)]
     _ = ∫ y in unitDisk, MvPolynomial.eval y p := by
         simp only [heval]

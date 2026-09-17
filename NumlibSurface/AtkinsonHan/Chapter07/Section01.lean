@@ -205,7 +205,8 @@ theorem proposition_7_1_12 {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ}
   have hdom : MemLp (fun x ↦ M * |w x|) p
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))) := hw.abs.const_mul M
   refine ⟨MemLp.of_le hdom
-    ((hf.continuous_deriv le_rfl).comp_aestronglyMeasurable hv.1 |>.mul hw.1)
+    ((hf.continuous_deriv le_rfl).comp_aestronglyMeasurable hv.aestronglyMeasurable |>.mul
+      hw.aestronglyMeasurable)
     (Filter.Eventually.of_forall fun z ↦ ?_), ?_⟩
   · rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul,
       abs_of_nonneg (mul_nonneg hM0 (abs_nonneg (w z)))]

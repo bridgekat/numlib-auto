@@ -268,7 +268,7 @@ theorem example_1_1 :
       have h2 : ‖μ‖ ^ 2 = 1 ^ 2 := by rw [← norm_pow, hμ, norm_one, one_pow]
       have h3 : ‖μ‖ = 1 := (pow_left_inj₀ (norm_nonneg μ) zero_le_one two_ne_zero).mp h2
       exact NNReal.eq (by rw [coe_nnnorm, NNReal.coe_one]; exact h3)
-    rw [hsum, Matrix.complexSpectralRadius, hc, spectralRadius]
+    rw [hsum, Matrix.complexSpectralRadius, hc, spectralRadius_eq_of_unital]
     refine le_antisymm (iSup₂_le fun μ hμ => ?_) ?_
     · rw [hnorm μ ((hroot μ).mp hμ)]
       simp

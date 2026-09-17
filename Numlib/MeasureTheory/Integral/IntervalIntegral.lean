@@ -125,16 +125,6 @@ theorem eqOn_Icc_of_ae_eq (hab : a < b) {g₁ g₂ : ℝ → ℝ} (h₁ : Contin
   Measure.eqOn_of_ae_eq (by rwa [← restrict_Ioo_eq_restrict_Icc (μ := volume)]) h₁ h₂
     (by rw [interior_Icc, closure_Ioo hab.ne])
 
-/-- Absolute continuity on `[a, b]` only sees the values on `[a, b]`. -/
-theorem AbsolutelyContinuousOnInterval.congr {f g : ℝ → ℝ}
-    (hf : AbsolutelyContinuousOnInterval f a b) (h : EqOn f g (uIcc a b)) :
-    AbsolutelyContinuousOnInterval g a b := by
-  unfold AbsolutelyContinuousOnInterval at hf ⊢
-  refine (tendsto_congr' ?_).1 hf
-  refine Filter.eventually_inf_principal.2 (Eventually.of_forall fun E hE ↦ ?_)
-  refine Finset.sum_congr rfl fun i hi ↦ ?_
-  rw [h (hE.1 i hi).1, h (hE.1 i hi).2]
-
 /-- A function continuous on `[a, b]` is essentially bounded on `(a, b)`. -/
 theorem ContinuousOn.memLp_top_restrict_Ioo {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b)) :
     MemLp g ⊤ (volume.restrict (Ioo a b)) := by

@@ -319,7 +319,7 @@ private theorem norm_iteratedFDeriv_bumpScaled_le (i N : ℕ) (x : E) :
   rw [heq, L.iteratedFDeriv_comp_right ((bump E).contDiff (n := (⊤ : ℕ∞))) x (by simp)]
   refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
   have hprod : ∏ _j : Fin i, ‖L‖ ≤ 1 :=
-    (Finset.prod_le_prod (fun _ _ ↦ norm_nonneg _) (fun _ _ ↦ hLnorm)).trans (by simp)
+    (Finset.prod_le_prod₀ (fun _ _ ↦ norm_nonneg _) (fun _ _ ↦ hLnorm)).trans (by simp)
   refine (mul_le_mul (SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ (bumpSchwartz E) i (L x))
     hprod (Finset.prod_nonneg fun _ _ ↦ norm_nonneg _) (apply_nonneg _ _)).trans_eq (mul_one _)
 
@@ -566,9 +566,10 @@ theorem HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz
   -- measurability of the truncated integrands
   have hmeasL : ∀ N, AEStronglyMeasurable (fun x ↦ iteratedFDeriv ℝ n (ψ N) x m • f x) μ :=
     fun N ↦ (((ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ E) ℂ m).continuous.comp
-      ((hsψ N).continuous_iteratedFDeriv (by simp))).aestronglyMeasurable).smul hf.1
+      ((hsψ N).continuous_iteratedFDeriv (by simp))).aestronglyMeasurable).smul
+        hf.aestronglyMeasurable
   have hmeasR : ∀ N, AEStronglyMeasurable (fun x ↦ ψ N x • w x) μ :=
-    fun N ↦ ((hsψ N).continuous.aestronglyMeasurable).smul hw.1
+    fun N ↦ ((hsψ N).continuous.aestronglyMeasurable).smul hw.aestronglyMeasurable
   -- pointwise convergence: the cut-offs are eventually `1` near each point
   have hone : ∀ x : E, ∀ᶠ N in atTop, ψ N x = (g : E → ℂ) x := by
     intro x

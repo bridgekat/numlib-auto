@@ -60,6 +60,25 @@ variable {ι : Type*} [Fintype ι] {E : Type*} [AddCommGroup E] [Module ℝ E]
 /-- The point with barycentric weights `w` relative to the family `v`. -/
 def weightPt (v : ι → E) (w : ι → ℝ) : E := ∑ i, w i • v i
 
+/-- The standard simplex `{w | 0 ≤ w ∧ ∑ i, w i = 1}` of weight vectors, as a set. Mathlib's set
+`stdSimplex` was deprecated (2026-08-29) in favour of the type `Convexity.StdSimplex`; the weight
+map `weightPt` acts on the set, which is the image of that type under `StdSimplex.weights`
+(`stdSimplexSet_eq_range_weights`). -/
+def stdSimplexSet (ι : Type*) [Fintype ι] : Set (ι → ℝ) :=
+  {w | (∀ i, 0 ≤ w i) ∧ ∑ i, w i = 1}
+
+/-- The set `stdSimplexSet ι` is the range of the weights of `Convexity.StdSimplex ℝ ι`. -/
+theorem stdSimplexSet_eq_range_weights (ι : Type*) [Fintype ι] :
+    stdSimplexSet ι = Set.range (fun t : Convexity.StdSimplex ℝ ι => (⇑t.weights : ι → ℝ)) := by
+  rw [Convexity.StdSimplex.range_toFun_comp_weights]
+  ext w
+  simp [stdSimplexSet]
+
+/-- The standard simplex of weight vectors is compact. -/
+theorem isCompact_stdSimplexSet (ι : Type*) [Fintype ι] : IsCompact (stdSimplexSet ι) := by
+  rw [stdSimplexSet_eq_range_weights]
+  exact isCompact_range (Convexity.StdSimplex.isEmbedding_toFun_comp_weights ℝ ι).continuous
+
 theorem weightPt_eq_affineCombination (v : ι → E) {w : ι → ℝ} (hw : ∑ i, w i = 1) :
     weightPt v w = Finset.univ.affineCombination ℝ v w :=
   (Finset.affineCombination_eq_linear_combination _ _ _ hw).symm
@@ -67,7 +86,7 @@ theorem weightPt_eq_affineCombination (v : ι → E) {w : ι → ℝ} (hw : ∑ 
 /-- A convex hull of finitely many points is the image of the standard simplex under the
 weight map. -/
 theorem convexHull_range_eq_image_stdSimplex (v : ι → E) :
-    convexHull ℝ (Set.range v) = weightPt v '' stdSimplex ℝ ι := by
+    convexHull ℝ (Set.range v) = weightPt v '' stdSimplexSet ι := by
   classical
   ext x
   rw [convexHull_range_eq_exists_affineCombination]
@@ -162,11 +181,11 @@ theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) 
       _ = γ - β := by field_simp
   -- the bad weights form a compact set whose image misses `x`
   set D : Set (ι → ℝ) :=
-    stdSimplex ℝ ι ∩ ⋃ i ∈ {i : ι | μ i ≠ 0}, {w : ι → ℝ | w i ≤ (1 - ε) * μ i} with hD
+    stdSimplexSet ι ∩ ⋃ i ∈ {i : ι | μ i ≠ 0}, {w : ι → ℝ | w i ≤ (1 - ε) * μ i} with hD
   have hDclosed : IsClosed (⋃ i ∈ {i : ι | μ i ≠ 0}, {w : ι → ℝ | w i ≤ (1 - ε) * μ i}) :=
     Set.Finite.isClosed_biUnion (Set.toFinite _) fun i _ =>
       isClosed_le (continuous_apply i) continuous_const
-  have hDcompact : IsCompact D := (isCompact_stdSimplex ℝ ι).inter_right hDclosed
+  have hDcompact : IsCompact D := (isCompact_stdSimplexSet ι).inter_right hDclosed
   have hwcont : Continuous (weightPt v) :=
     continuous_finsetSum _ fun i _ => (continuous_apply i).smul continuous_const
   have hImg : IsClosed (weightPt v '' D) := (hDcompact.image hwcont).isClosed
@@ -197,7 +216,7 @@ theorem ConvexFn.upperSemicontinuousWithinAt_convexHull_range (hf : ConvexFn f) 
       exact hz ⟨w, ⟨hwΔ, Set.mem_iUnion₂.2 ⟨i, hi, le_of_not_ge hcon⟩⟩, rfl⟩
   -- the rescaled weights
   set y : ι → ℝ := fun i => ε⁻¹ * (w i - (1 - ε) * μ i) with hy
-  have hyΔ : y ∈ stdSimplex ℝ ι := by
+  have hyΔ : y ∈ stdSimplexSet ι := by
     constructor
     · intro i
       exact mul_nonneg (inv_nonneg.2 hε0.le) (by linarith [hgood i])

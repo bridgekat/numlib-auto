@@ -86,7 +86,7 @@ private theorem eLpNorm_comp_const_mul (hc : c ≠ 0) {g : ℝ → ℝ}
   have hg' : AEStronglyMeasurable g (Measure.map (fun x : ℝ => c * x) volume) := by
     rw [hmap]; exact hg.mono_ac Measure.smul_absolutelyContinuous
   have h1 := eLpNorm_map_measure (p := 2) hg' (measurable_const_mul c).aemeasurable
-  rw [hmap, eLpNorm_smul_measure_of_ne_top (by norm_num : (2 : ℝ≥0∞) ≠ ∞)] at h1
+  rw [hmap, eLpNorm_smul_measure_of_ne_top (by norm_num : (2 : ℝ≥0∞) ≠ ∞) _ _ hg] at h1
   have h2 : ((1 : ℝ≥0∞) / 2).toReal = (1 / 2 : ℝ) := by simp
   rw [h2, smul_eq_mul, Function.comp_def] at h1
   exact h1.symm
@@ -622,12 +622,16 @@ private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs :
       ≤ ENNReal.ofReal (2 * (R₀ + 2)) := by
     rw [Real.volume_Ico]
     exact ENNReal.ofReal_le_ofReal (by linarith)
+  have hmeas : AEStronglyMeasurable (g - stepFun g j M) volume :=
+    hgc.aestronglyMeasurable.sub (Finset.measurable_sum _ fun k _ =>
+      measurable_const.indicator (measurableSet_dyadic j k)).aestronglyMeasurable
   calc eLpNorm (g - stepFun g j M) 2 volume
       ≤ eLpNorm ((Set.Ico (-((M : ℝ) * 2 ^ (-j))) ((M : ℝ) * 2 ^ (-j))).indicator
-          (fun _ => ε / √(2 * (R₀ + 2)))) 2 volume := eLpNorm_mono hkey
+          (fun _ => ε / √(2 * (R₀ + 2)))) 2 volume := eLpNorm_mono hmeas hkey
     _ ≤ ‖ε / √(2 * (R₀ + 2))‖ₑ
         * volume (Set.Ico (-((M : ℝ) * 2 ^ (-j))) ((M : ℝ) * 2 ^ (-j)))
-          ^ (1 / (2 : ℝ≥0∞).toReal) := eLpNorm_indicator_const_le _ _
+          ^ (1 / (2 : ℝ≥0∞).toReal) :=
+        eLpNorm_indicator_const_le _ _ measurableSet_Ico.nullMeasurableSet
     _ ≤ ENNReal.ofReal (ε / √(2 * (R₀ + 2)))
         * (ENNReal.ofReal (2 * (R₀ + 2))) ^ (1 / (2 : ℝ≥0∞).toReal) := by
         gcongr

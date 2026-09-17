@@ -264,7 +264,7 @@ theorem continuous_xiPow (α : Fin d → ℕ) :
 theorem sq_xiPow_le (α : Fin d → ℕ) (ξ : EuclideanSpace ℝ (Fin d)) :
     xiPow α ξ ^ 2 ≤ (1 + ‖ξ‖ ^ 2) ^ (∑ i, α i) := by
   rw [xiPow, ← Finset.prod_pow, ← Finset.prod_pow_eq_pow_sum]
-  refine Finset.prod_le_prod (fun i _ ↦ by positivity) fun i _ ↦ ?_
+  refine Finset.prod_le_prod₀ (fun i _ ↦ by positivity) fun i _ ↦ ?_
   rw [← pow_mul, mul_comm (α i) 2, pow_mul]
   refine pow_le_pow_left₀ (by positivity) ?_ _
   have := abs_apply_le_norm ξ i
@@ -496,7 +496,7 @@ theorem sq_eLpNorm_weakDeriv {v w : Lp ℂ 2 (volume : Measure (EuclideanSpace �
   have hae := fourier_weakDeriv_aeEq (multiIndexTuple (stdBasis d) α)
     (Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn hvw)
     (memLp_lineSymbol_mul_fourier hF hα)
-  rw [← eLpNorm_fourier_eq w, sq_eLpNorm_two]
+  rw [← eLpNorm_fourier_eq w, sq_eLpNorm_two (Lp.aestronglyMeasurable _)]
   refine lintegral_congr_ae ?_
   filter_upwards [hae] with ξ hξ
   rw [hξ, lineSymbol_multiIndexTuple, enorm_sq_mul_ofReal_mul]
@@ -562,7 +562,15 @@ theorem sq_eLpNorm_symbol_mul_fourier
     eLpNorm (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume ^ 2
       = ∫⁻ ξ, ENNReal.ofReal ((1 + ‖ξ‖ ^ 2) ^ k) * ‖(𝓕 v) ξ‖ₑ ^ 2
           ∂(volume : Measure (EuclideanSpace ℝ (Fin d))) := by
-  rw [sq_eLpNorm_two]
+  have hcont : Continuous fun ξ : EuclideanSpace ℝ (Fin d) ↦
+      (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) :=
+    Complex.continuous_ofReal.comp ((continuous_const.add (continuous_norm.pow 2)).rpow_const
+      fun _ ↦ Or.inr (by positivity))
+  have hmeas : AEStronglyMeasurable
+      (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ)
+      (volume : Measure (EuclideanSpace ℝ (Fin d))) :=
+    hcont.aestronglyMeasurable.mul (Lp.aestronglyMeasurable _)
+  rw [sq_eLpNorm_two hmeas]
   refine lintegral_congr fun ξ ↦ ?_
   rw [enorm_sq_ofReal_mul, sq_rpow_half_natCast (by positivity : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2) k]
 
@@ -690,7 +698,7 @@ theorem norm_ofRealCLM_compLp (f : Lp ℝ 2 (volume : Measure (EuclideanSpace �
     ‖Complex.ofRealCLM.compLp f‖ = ‖f‖ := by
   rw [Lp.norm_def, Lp.norm_def]
   congr 1
-  refine eLpNorm_congr_norm_ae ?_
+  refine eLpNorm_congr_norm_ae (Lp.aestronglyMeasurable _) (Lp.aestronglyMeasurable _) ?_
   filter_upwards [Complex.ofRealCLM.coeFn_compLp f] with x hx
   rw [hx]
   simp

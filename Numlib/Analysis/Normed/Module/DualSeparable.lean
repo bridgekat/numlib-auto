@@ -80,7 +80,7 @@ theorem separableSpace_of_separableSpace_strongDual [SeparableSpace (StrongDual 
     fun n => (Submodule.span 𝕜 (Set.range x)).le_topologicalClosure (Submodule.subset_span ⟨n, rfl⟩)
   have hMtop : M = ⊤ := by
     by_contra hne
-    obtain ⟨z, -, hz⟩ := SetLike.exists_of_lt (lt_top_iff_ne_top.2 hne)
+    obtain ⟨z, -, hz⟩ := IsConcreteLE.exists_of_lt (lt_top_iff_ne_top.2 hne)
     obtain ⟨g, hg1, hg0, -⟩ :=
       M.exists_dual_eq_zero_of_notMem (Submodule.isClosed_topologicalClosure _) hz
     obtain ⟨n, hn⟩ := Metric.denseRange_iff.1 hf g (1 / 4) (by norm_num)

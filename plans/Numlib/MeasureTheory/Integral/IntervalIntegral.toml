@@ -20,9 +20,6 @@ id = "intervalIntegral.integral_eq_setIntegral_Ioo"
 id = "eqOn_Icc_of_ae_eq"
 
 [[node]]
-id = "AbsolutelyContinuousOnInterval.congr"
-
-[[node]]
 id = "ContinuousOn.memLp_top_restrict_Ioo"
 
 [[node]]

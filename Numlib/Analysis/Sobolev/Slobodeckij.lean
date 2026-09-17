@@ -264,7 +264,7 @@ theorem norm_eq_add (hp : p ≠ ⊤) (U : SobolevSlobodeckij F b k σ p Ω μ) :
         + ∑ α : MultiIndexEq ι k,
           ‖(U : SobolevSlobodeckijTuple F ι k p Ω μ).snd α‖ ^ p.toReal) ^ (1 / p.toReal) := by
   have htp := toReal_pos (p := p) hp
-  rw [Submodule.coe_norm, WithLp.prod_norm_eq_add htp, PiLp.norm_eq_sum htp,
+  rw [← Submodule.norm_coe, WithLp.prod_norm_eq_add htp, PiLp.norm_eq_sum htp,
     PiLp.norm_eq_sum htp, one_div, Real.rpow_inv_rpow (by positivity) htp.ne',
     Real.rpow_inv_rpow (by positivity) htp.ne']
 

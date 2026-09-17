@@ -436,7 +436,7 @@ end Block
 
 section BlockId
 
-variable [LinearOrder n]
+variable [LinearOrder n] [DecidableEq n]
 
 /-- Along `b = id`, block unit lower triangular is unit lower triangular. -/
 theorem isBlockUnitLowerTriangular_id_iff [Zero R] [One R] {L : Matrix n n R} :
@@ -490,17 +490,20 @@ theorem IsLU.det_eq_prod_diag (h : IsLU A L U) : A.det = ∏ i, U i i := by
 of the leading pivots, `det A(≤ k) = ∏_{i ≤ k} u_ii`. -/
 theorem IsLU.det_leadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
     (A.leadingPrincipalSubmatrix k).det = ∏ i ∈ univ.filter (· ≤ k), U i i := by
-  refine (h.toBlock_le k).det_eq_prod_diag.trans ?_
-  rw [Finset.prod_subtype (p := (· ≤ k)) (univ.filter (· ≤ k)) (by simp) fun i => U i i]
-  rfl
+  -- the two `DecidableEq {i // i ≤ k}` instances in play are propositionally equal
+  have h1 : (A.leadingPrincipalSubmatrix k).det = ∏ i : {i // i ≤ k}, U i i := by
+    convert (h.toBlock_le k).det_eq_prod_diag using 2
+    rfl
+  rw [h1, Finset.prod_subtype (p := (· ≤ k)) (univ.filter (· ≤ k)) (by simp) fun i => U i i]
 
 /-- The strict leading principal minors of `A = L U` are the products of the strict leading
 pivots, `det A(< k) = ∏_{i < k} u_ii`. -/
 theorem IsLU.det_strictLeadingPrincipalSubmatrix (h : IsLU A L U) (k : n) :
     (A.strictLeadingPrincipalSubmatrix k).det = ∏ i ∈ univ.filter (· < k), U i i := by
-  refine (h.toBlock_lt k).det_eq_prod_diag.trans ?_
-  rw [Finset.prod_subtype (p := (· < k)) (univ.filter (· < k)) (by simp) fun i => U i i]
-  rfl
+  have h1 : (A.strictLeadingPrincipalSubmatrix k).det = ∏ i : {i // i < k}, U i i := by
+    convert (h.toBlock_lt k).det_eq_prod_diag using 2
+    rfl
+  rw [h1, Finset.prod_subtype (p := (· < k)) (univ.filter (· < k)) (by simp) fun i => U i i]
 
 variable {K : Type*} [Field K] {A L U : Matrix n n K}
 
@@ -1222,8 +1225,10 @@ theorem exists_isLU_of_isDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N : 
   have hpp : A p p ≠ 0 := hA.diag_ne_zero_of_isUnit hu p
   have hcard : Fintype.card {i // i ≠ p} < N :=
     hN ▸ Fintype.card_subtype_lt (x := p) (not_not.2 rfl)
+  -- `convert` reconciles the two `DecidableEq {i // i ≠ p}` instances behind `IsUnit`
   obtain ⟨L', U', h⟩ := ih _ hcard (A.schurComplementSingle p) rfl
-    (isUnit_schurComplementSingle_of_isUnit hpp hu) (hA.schurComplementSingle hpp)
+    (by convert isUnit_schurComplementSingle_of_isUnit hpp hu)
+    (by convert hA.schurComplementSingle hpp)
   exact ⟨_, _, isLU_luLowerOfSchur_luUpperOfSchur hp hpp h⟩
 
 /-- **[quarteroni2000numerical] Property 3.2** (rows), [higham2002accuracy] Theorem 9.9: a
@@ -1252,7 +1257,8 @@ theorem exists_isLU_of_isColDiagDominant_of_card {𝕜 : Type*} [RCLike 𝕜] (N
   have hcard : Fintype.card {i // i ≠ p} < N :=
     hN ▸ Fintype.card_subtype_lt (x := p) (not_not.2 rfl)
   obtain ⟨L', U', h, hL'⟩ := ih _ hcard (A.schurComplementSingle p) rfl
-    (isUnit_schurComplementSingle_of_isUnit hpp hu) (hA.schurComplementSingle hpp)
+    (by convert isUnit_schurComplementSingle_of_isUnit hpp hu)
+    (by convert hA.schurComplementSingle hpp)
   refine ⟨_, _, isLU_luLowerOfSchur_luUpperOfSchur hp hpp h, fun i j => ?_⟩
   simp only [luLowerOfSchur, of_apply]
   split_ifs with hi hj hj

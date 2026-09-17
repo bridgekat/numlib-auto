@@ -2,7 +2,7 @@ import Mathlib.Algebra.Order.Archimedean.Basic
 import Mathlib.Algebra.Order.Round
 import Mathlib.Data.Int.Interval
 import Mathlib.Data.Int.Log
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 import Mathlib.Order.Interval.Finset.Nat
 import Numlib.FloatingPoint.Model
 

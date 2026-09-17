@@ -222,7 +222,7 @@ theorem equation_8_23_of_forall_le (hx : Spline.IsPartition a b K fun j => (x j 
   have hprod : |∏ i, ((t : ℝ) - (equispacedPanelNodes x k j i : ℝ))| ≤ h ^ (k + 1) := by
     rw [Finset.abs_prod]
     calc ∏ i, |(t : ℝ) - (equispacedPanelNodes x k j i : ℝ)| ≤ ∏ _i : Fin (k + 1), h := by
-          refine Finset.prod_le_prod (fun i _ => abs_nonneg _) fun i _ => ?_
+          refine Finset.prod_le_prod₀ (fun i _ => abs_nonneg _) fun i _ => ?_
           rw [← Real.dist_eq]
           exact (Real.dist_le_of_mem_Icc ⟨h1, h2⟩ (hnode.mem j hj i)).trans (hmesh j (by omega))
       _ = h ^ (k + 1) := by simp

@@ -1709,7 +1709,7 @@ theorem infDist_le_of_holder_poly {k n : ℕ} {M α d : ℝ} {D : ℕ → ℝ �
       rwa [hcast i hin] at h
     calc ∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2))
         ≤ ∏ i ∈ Finset.range k, (π ^ 2 / 2 / ((n : ℝ) - i)) :=
-          Finset.prod_le_prod (fun i _ => (mul_pos hpi (sin_half_angle_pos _)).le) hterm
+          Finset.prod_le_prod₀ (fun i _ => (mul_pos hpi (sin_half_angle_pos _)).le) hterm
       _ = (π ^ 2 / 2) ^ k / P := by
           rw [Finset.prod_div_distrib, Finset.prod_const, Finset.card_range, hPdef]
   -- the last, Hölder, step

@@ -61,9 +61,10 @@ theorem equation_5_1 {N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)} {p : Semino
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℂ) :
     ∀ μ ∈ spectrum ℂ A, ‖μ‖ ≤ N A := by
   intro μ hμ
-  have h : (‖μ‖₊ : ENNReal) ≤ ENNReal.ofReal (N A) :=
-    (le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ A) => (‖k‖₊ : ENNReal)) μ hμ).trans
-      (Chapter01.theorem_1_4 hp hN A)
+  have h : (‖μ‖₊ : ENNReal) ≤ ENNReal.ofReal (N A) := by
+    refine le_trans ?_ (Chapter01.theorem_1_4 hp hN A)
+    rw [spectralRadius_eq_of_unital]
+    exact le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ A) => (‖k‖₊ : ENNReal)) μ hμ
   rwa [← enorm_eq_nnnorm, ← ofReal_norm, ENNReal.ofReal_le_ofReal_iff (apply_nonneg N A)] at h
 
 /-- **Theorem 5.1 (Hirsch), real part, (5.2).** Let `H = (A + Aᴴ)/2` be the Hermitian part of

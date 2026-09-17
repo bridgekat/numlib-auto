@@ -243,7 +243,7 @@ theorem abs_eval_wintherPoly_le {lam : ℕ → ℝ} (hpos : ∀ j, 0 < 1 - lam j
     rw [hz, abs_zero]
     exact Finset.prod_nonneg fun j _ => hnn j
   · rw [wintherPoly_eval, Finset.abs_prod]
-    refine Finset.prod_le_prod (fun j _ => abs_nonneg _) fun j hj => ?_
+    refine Finset.prod_le_prod₀ (fun j _ => abs_nonneg _) fun j hj => ?_
     have hjk : j < k := Finset.mem_range.1 hj
     have habs : |lam i| ≤ |lam j| := hanti (hjk.le.trans hik)
     have hstep : |lam i - lam j| ≤ 2 * |lam j| := by

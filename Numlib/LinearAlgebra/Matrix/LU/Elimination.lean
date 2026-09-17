@@ -438,7 +438,8 @@ theorem gemStage_pivots_ne_zero_iff :
       exact (isUnit_toBlock_congr A fun i => by simp [Fin.lt_def, Fin.le_def]).1 this
     have hdet : (∏ i, (gemStage A m).leadingPrincipalSubmatrix ⟨m, hm⟩ i i) ≠ 0 := by
       rw [← hLU.det_eq_prod_diag]
-      exact isUnit_iff_ne_zero.1 ((isUnit_iff_isUnit_det _).1 hunit)
+      -- `convert` reconciles the two `DecidableEq` instances on the index subtype
+      convert isUnit_iff_ne_zero.1 ((isUnit_iff_isUnit_det _).1 hunit)
     rw [Finset.prod_ne_zero_iff] at hdet
     exact hdet ⟨⟨m, hm⟩, le_rfl⟩ (mem_univ _)
 

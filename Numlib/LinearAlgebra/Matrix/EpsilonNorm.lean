@@ -46,6 +46,7 @@ namespace Matrix
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
+omit [DecidableEq n] in
 /-- A constant `c ≥ 0` for which `A` is `c`-Lipschitz in a norm `p` equivalent to the supremum norm
 is at least the spectral radius of `A`. Applied to the operator norm induced by `p`, this is the
 statement that the spectral radius is a lower bound for every operator norm.
@@ -57,6 +58,7 @@ theorem complexSpectralRadius_toReal_le_of_forall_mulVec_le (A : Matrix n n ℝ)
     (p : Seminorm ℝ (n → ℝ)) {m M c : ℝ} (hm : 0 < m) (hlow : ∀ x, m * ‖x‖ ≤ p x)
     (hup : ∀ x, p x ≤ M * ‖x‖) (hc : 0 ≤ c) (hA : ∀ x, p (A *ᵥ x) ≤ c * p x) :
     (complexSpectralRadius A).toReal ≤ c := by
+  classical
   -- `A` is `cʲ`-Lipschitz for `p` in the `j`-th power.
   have hpow : ∀ (j : ℕ) (x : n → ℝ), p ((A ^ j) *ᵥ x) ≤ c ^ j * p x := by
     intro j
@@ -232,6 +234,7 @@ theorem exists_seminorm_forall_mulVec_le_of_tendsto {𝕜 : Type*} [RCLike 𝕜]
            neg' := fun x => by simp [hf, mulVec_neg]
            smul' := hsmul }, hnorm_le, ⟨_, hle_norm⟩, hkey⟩
 
+omit [DecidableEq n] in
 /-- **The `ε`-norm theorem.** For every `ε > 0` there is a norm `p` on `ℝⁿ`, equivalent to the
 supremum norm, in which `A` is `(ρ(A) + ε)`-Lipschitz: the operator norm of `A` induced by `p` is at
 most `ρ(A) + ε`. With `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le` for the reverse
@@ -241,9 +244,12 @@ This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at the Gelfand limi
 `Matrix.tendsto_pow_rpow_linfty_opNorm`. -/
 theorem exists_seminorm_forall_mulVec_le (A : Matrix n n ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℝ (n → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
-      ∀ x, p (A *ᵥ x) ≤ ((complexSpectralRadius A).toReal + ε) * p x :=
-  exists_seminorm_forall_mulVec_le_of_tendsto A (tendsto_pow_rpow_linfty_opNorm A) hε
+      ∀ x, p (A *ᵥ x) ≤ ((complexSpectralRadius A).toReal + ε) * p x := by
+  classical
+  exact
+    exists_seminorm_forall_mulVec_le_of_tendsto A (tendsto_pow_rpow_linfty_opNorm A) hε
 
+omit [DecidableEq n] in
 /-- **The `ε`-norm theorem for a complex matrix**, [quarteroni2000numerical] Property 1.13: for
 every `ε > 0` there is a norm `p` on `ℂⁿ`, equivalent to the supremum norm, in which `A` is
 `(ρ(A) + ε)`-Lipschitz. This is `Matrix.exists_seminorm_forall_mulVec_le_of_tendsto` at Gelfand's
@@ -251,10 +257,12 @@ formula `spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius` for t
 `Matrix n n ℂ` with the maximum-absolute-row-sum norm. -/
 theorem exists_seminorm_forall_mulVec_le_complex (A : Matrix n n ℂ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℂ (n → ℂ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
-      ∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x :=
-  have : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
-  exists_seminorm_forall_mulVec_le_of_tendsto A
-    (spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius A) hε
+      ∀ x, p (A *ᵥ x) ≤ ((spectralRadius ℂ A).toReal + ε) * p x := by
+  classical
+  exact
+    have : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
+    exists_seminorm_forall_mulVec_le_of_tendsto A
+      (spectrum.pow_norm_pow_one_div_tendsto_nhds_toReal_spectralRadius A) hε
 
 end Operator
 

@@ -458,7 +458,8 @@ theorem cosSubOne_absCondNumberWithin :
       field_simp
     refine le_of_tendsto hlim ?_
     filter_upwards [Ioo_mem_nhdsLT (by positivity : (0 : ℝ) < π / 2)] with x hx
-    exact le_absCondNumberOn ⟨by rw [Real.norm_eq_abs, abs_of_pos hx.1]; exact hx.2, mem_univ _⟩
-      hx.1.ne'
+    refine le_absCondNumberOn (G := fun d : ℝ => Real.cos d - 1)
+      (N := perturbations univ 0 (π / 2)) (d := 0) ?_ hx.1.ne'
+    exact ⟨by rw [Real.norm_eq_abs, abs_of_pos hx.1]; exact hx.2, mem_univ _⟩
 
 end QuarteroniSaccoSaleri.Chapter02

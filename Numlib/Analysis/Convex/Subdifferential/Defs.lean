@@ -1,5 +1,5 @@
 import Mathlib.Data.EReal.Inv
-import Mathlib.Data.Rel
+import Mathlib.Basic.Rel
 import Numlib.Analysis.Convex.Duality.Support
 
 /-!

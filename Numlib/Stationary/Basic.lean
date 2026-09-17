@@ -312,7 +312,7 @@ theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F
   have : CompleteSpace F := FiniteDimensional.complete ℂ F
   rcases subsingleton_or_nontrivial F with _ | _
   · have := subsingleton_clm (F := F)
-    simp [spectralRadius]
+    simp
   · refine (spectralRadius_lt_one_iff_tendsto_pow G).mpr ?_
     -- In finite dimension, evaluation at a basis is a closed embedding, so pointwise
     -- convergence of `G ^ k` upgrades to convergence in the operator norm.
@@ -408,8 +408,8 @@ theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F �
   have hρtop : spectralRadius ℂ G ≠ ⊤ := by
     rcases subsingleton_or_nontrivial F with hF | hF
     · have := subsingleton_clm (F := F)
-      simp [spectralRadius]
-    · exact ((spectrum.spectralRadius_le_nnnorm G).trans_lt ENNReal.coe_lt_top).ne
+      simp
+    · exact ((spectralRadius_le_nnnorm G).trans_lt ENNReal.coe_lt_top).ne
   refine le_of_forall_gt_imp_ge_of_dense fun c hc => ?_
   have hc0 : (0 : ℝ) < c := lt_of_le_of_lt ENNReal.toReal_nonneg hc
   obtain ⟨r, hρr, hrc⟩ : ∃ r : NNReal, spectralRadius ℂ G < r ∧ (r : ENNReal) < ENNReal.ofReal c :=

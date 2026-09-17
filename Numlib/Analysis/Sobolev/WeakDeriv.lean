@@ -134,21 +134,23 @@ excluded only because the proof compares `p`-th powers of the `L^p` norms; the s
 there too. -/
 theorem MemLp.union_of_ne_top (hp : p ≠ ⊤) (hs : MemLp f p (μ.restrict s))
     (ht : MemLp f p (μ.restrict t)) : MemLp f p (μ.restrict (s ∪ t)) := by
-  refine ⟨aestronglyMeasurable_union_iff.2 ⟨hs.1, ht.1⟩, ?_⟩
+  have hmeas : AEStronglyMeasurable f (μ.restrict (s ∪ t)) :=
+    aestronglyMeasurable_union_iff.2 ⟨hs.aestronglyMeasurable, ht.aestronglyMeasurable⟩
   rcases eq_or_ne p 0 with rfl | hp0
-  · simp
+  · exact memLp_zero_iff_aestronglyMeasurable.2 hmeas
   have hr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
-  have hrw : ∀ ν : Measure X, eLpNorm f p ν ^ p.toReal = ∫⁻ x, ‖f x‖ₑ ^ p.toReal ∂ν := fun ν ↦ by
-    rw [eLpNorm_eq_eLpNorm' hp0 hp, lintegral_rpow_enorm_eq_rpow_eLpNorm' hr]
+  have hrw : ∀ ν : Measure X, AEStronglyMeasurable f ν →
+      eLpNorm f p ν ^ p.toReal = ∫⁻ x, ‖f x‖ₑ ^ p.toReal ∂ν := fun ν hν ↦ by
+    rw [eLpNorm_eq_eLpNorm' hp0 hp hν, lintegral_rpow_enorm_eq_rpow_eLpNorm' hr]
   have key : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal
       ≤ eLpNorm f p (μ.restrict s) ^ p.toReal + eLpNorm f p (μ.restrict t) ^ p.toReal := by
-    rw [hrw, hrw, hrw]
+    rw [hrw _ hmeas, hrw _ hs.aestronglyMeasurable, hrw _ ht.aestronglyMeasurable]
     exact lintegral_union_le _ _ _
   have hfin : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal ≠ ⊤ :=
     (key.trans_lt (ENNReal.add_lt_top.2
-      ⟨ENNReal.rpow_lt_top_of_nonneg hr.le hs.2.ne,
-        ENNReal.rpow_lt_top_of_nonneg hr.le ht.2.ne⟩)).ne
-  rw [lt_top_iff_ne_top]
+      ⟨ENNReal.rpow_lt_top_of_nonneg hr.le hs.eLpNorm_lt_top.ne,
+        ENNReal.rpow_lt_top_of_nonneg hr.le ht.eLpNorm_lt_top.ne⟩)).ne
+  rw [memLp_iff, lt_top_iff_ne_top]
   intro hcon
   rw [hcon, ENNReal.top_rpow_of_pos hr] at hfin
   exact hfin rfl

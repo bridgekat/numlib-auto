@@ -275,7 +275,7 @@ theorem abs_deflator_eval_le (h : ∀ j ∈ s, c < r j) {lo hi t : ℝ} (hhi : h
   have hfac : ∀ j ∈ s, 0 ≤ (r j - t) / (r j - c) := fun j hj =>
     div_nonneg (by linarith [h j hj]) (by linarith [h j hj])
   rw [deflator_eval, abs_of_nonneg (Finset.prod_nonneg hfac)]
-  refine Finset.prod_le_prod hfac fun j hj => ?_
+  refine Finset.prod_le_prod₀ hfac fun j hj => ?_
   exact div_le_div_of_nonneg_right (by linarith) (by linarith [h j hj])
 
 /-- **The competitor polynomial of the Krylov eigenvalue bounds.**  For an interval `[lo, hi]` lying

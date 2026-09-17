@@ -289,6 +289,7 @@ theorem proposition_1_18 (A : Matrix (Fin n) (Fin n) ℂ) :
 /-- **Saad §1.9.1**: `ρ(A) ≤ ν(A)`, the first half of the chain `ρ(A) ≤ ν(A) ≤ ‖A‖₂`. -/
 theorem spectralRadius_le_numericalRadius (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ A ≤ ENNReal.ofReal (numericalRadius A) := by
+  rw [spectralRadius_eq_of_unital]
   refine iSup₂_le fun μ hμ => ?_
   obtain ⟨x, _, hx⟩ := spectrum_subset_fieldOfValues A hμ
   rw [← enorm_eq_nnnorm, ← ofReal_norm, ← hx]

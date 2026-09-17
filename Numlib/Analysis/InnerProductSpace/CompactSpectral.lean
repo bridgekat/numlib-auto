@@ -108,7 +108,7 @@ theorem IsSymmetric.exists_isTopEigenpair [CompleteSpace E] (hT : (T : E →ₗ[
     have hne : (spectrum 𝕜 S).Nonempty := by
       rcases Set.eq_empty_or_nonempty (spectrum 𝕜 S) with h | h
       · refine absurd ?_ hSpos.ne'
-        have h0 : spectralRadius 𝕜 S = 0 := by rw [spectralRadius, h]; simp
+        have h0 : spectralRadius 𝕜 S = 0 := by rw [spectralRadius_eq_of_unital, h]; simp
         rw [h0] at hsr
         have h1 : ‖S‖₊ = 0 := by exact_mod_cast hsr.symm
         simpa using congrArg NNReal.toReal h1

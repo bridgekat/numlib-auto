@@ -343,7 +343,7 @@ private theorem exists_bound {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ
     have h := hvbig n
     rw [hn, norm_zero] at h
     nlinarith [(by positivity : (0:ℝ) ≤ (n:ℝ))]
-  choose d hd0 hdlt hdge hdinv using fun n => rescale_to_shell (F := X) hc one_pos (hvne n)
+  choose d hd0 hdlt hdge hdinv using fun n => rescale_to_shell (E := X) hc one_pos (hvne n)
   have hdnorm : ∀ n : ℕ, ‖d n‖ * ‖v n‖ < 1 := by
     intro n; simpa [norm_smul] using hdlt n
   have hdsmall : ∀ n : ℕ, ‖d n‖ < 1 / ((n : ℝ) + 1) := by

@@ -520,7 +520,7 @@ theorem abs_eval_basis_le {ι : Type*} [DecidableEq ι] [Fintype ι] (v : ι →
   rw [eval_basis_eq_prod, Finset.abs_prod]
   calc ∏ j ∈ (Finset.univ : Finset ι).erase i, |(t - v j) / (v i - v j)|
       ≤ ∏ _j ∈ (Finset.univ : Finset ι).erase i, D / d :=
-        Finset.prod_le_prod (fun j _ => abs_nonneg _) hstep
+        Finset.prod_le_prod₀ (fun j _ => abs_nonneg _) hstep
     _ = (D / d) ^ ((Finset.univ : Finset ι).erase i).card := Finset.prod_const _
 
 

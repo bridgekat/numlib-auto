@@ -8,7 +8,7 @@ id = "ENNReal.rpow_lintegral_mul_le"
 id = "ENNReal.lintegral_rpow_lintegral_mul_le"
 
 [[node]]
-id = "MeasureTheory.enorm_convolution_le"
+id = "MeasureTheory.enorm_convolution_le_lintegral_enorm"
 
 [[node]]
 id = "MeasureTheory.eLpNorm_convolution_le"

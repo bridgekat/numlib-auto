@@ -185,29 +185,39 @@ theorem mem_convexHull_iff_exists_fin_finrank_succ {S : Set E} {x : E} :
       Finset.sum_coe_sort t fun y => w y • y]
     exact hwx
 
-/-- **The convex hull of a compact set is compact**: it is the image of `stdSimplex × Sⁿ⁺¹` under
-`(w, z) ↦ ∑ wᵢ zᵢ`. Mathlib has this only for *finite*
+/-- **The convex hull of a compact set is compact**: it is the image of `Δⁿ × Sⁿ⁺¹` under
+`(w, z) ↦ ∑ wᵢ zᵢ`, where `Δⁿ` is the standard simplex of weight vectors, the range of
+`Convexity.StdSimplex.weights`. Mathlib has this only for *finite*
 sets (`Set.Finite.isCompact_convexHull`). -/
 theorem _root_.IsCompact.convexHull {S : Set E} (hS : IsCompact S) :
     IsCompact (convexHull ℝ S) := by
   classical
-  have hT : IsCompact (stdSimplex ℝ (Fin (Module.finrank ℝ E + 1)) ×ˢ
-      (Set.univ.pi fun _ : Fin (Module.finrank ℝ E + 1) => S)) :=
-    IsCompact.prod (isCompact_stdSimplex (𝕜 := ℝ) _) (isCompact_univ_pi fun _ => hS)
+  set Δ : Set (Fin (Module.finrank ℝ E + 1) → ℝ) :=
+    Set.range (fun t : Convexity.StdSimplex ℝ (Fin (Module.finrank ℝ E + 1)) =>
+      (⇑t.weights : Fin (Module.finrank ℝ E + 1) → ℝ)) with hΔ
+  have hΔmem : ∀ w : Fin (Module.finrank ℝ E + 1) → ℝ,
+      w ∈ Δ ↔ (∀ i, 0 ≤ w i) ∧ ∑ i, w i = 1 := by
+    intro w
+    rw [hΔ, Convexity.StdSimplex.range_toFun_comp_weights]
+    simp
+  have hT : IsCompact (Δ ×ˢ (Set.univ.pi fun _ : Fin (Module.finrank ℝ E + 1) => S)) :=
+    IsCompact.prod (isCompact_range
+      (Convexity.StdSimplex.isEmbedding_toFun_comp_weights ℝ _).continuous)
+      (isCompact_univ_pi fun _ => hS)
   have hcont : Continuous fun p : (Fin (Module.finrank ℝ E + 1) → ℝ) ×
       (Fin (Module.finrank ℝ E + 1) → E) => ∑ i, p.1 i • p.2 i :=
     continuous_finsetSum _ fun i _ =>
       ((continuous_apply i).comp continuous_fst).smul ((continuous_apply i).comp continuous_snd)
   have himg : _root_.convexHull ℝ S = (fun p : (Fin (Module.finrank ℝ E + 1) → ℝ) ×
       (Fin (Module.finrank ℝ E + 1) → E) => ∑ i, p.1 i • p.2 i) ''
-      (stdSimplex ℝ (Fin (Module.finrank ℝ E + 1)) ×ˢ
-        (Set.univ.pi fun _ : Fin (Module.finrank ℝ E + 1) => S)) := by
+      (Δ ×ˢ (Set.univ.pi fun _ : Fin (Module.finrank ℝ E + 1) => S)) := by
     ext x
     constructor
     · intro hx
       obtain ⟨w, z, hw₀, hw₁, hz, hwz⟩ := mem_convexHull_iff_exists_fin_finrank_succ.1 hx
-      exact ⟨(w, z), ⟨⟨fun i => hw₀ i, hw₁⟩, fun i _ => hz i⟩, hwz⟩
+      exact ⟨(w, z), ⟨(hΔmem w).2 ⟨fun i => hw₀ i, hw₁⟩, fun i _ => hz i⟩, hwz⟩
     · rintro ⟨⟨w, z⟩, ⟨hw, hz⟩, rfl⟩
+      rw [hΔmem] at hw
       exact mem_convexHull_of_exists_fintype w z hw.1 hw.2 (fun i => hz i (Set.mem_univ i)) rfl
   rw [himg]
   exact IsCompact.image hT hcont

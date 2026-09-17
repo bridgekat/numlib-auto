@@ -63,13 +63,14 @@ theorem spectralRadius_smul (c : 𝕜) (a : B) :
   · simp
   · have hset : spectrum 𝕜 (c • a) = c • spectrum 𝕜 a := by
       simpa [Units.smul_def] using spectrum.unit_smul_eq_smul a (Units.mk0 c hc)
-    simp only [spectralRadius, hset, ← Set.image_smul, iSup_image, smul_eq_mul, nnnorm_mul,
-      ENNReal.coe_mul, ENNReal.mul_iSup]
+    simp only [spectralRadius_eq_of_unital, hset, ← Set.image_smul, iSup_image, smul_eq_mul,
+      nnnorm_mul, ENNReal.coe_mul, ENNReal.mul_iSup]
 
 /-- The spectral radius does not see the eigenvalue `0`: `ρ(a)` is the supremum of `‖λ‖₊` over
 `σ(a) ∖ {0}`, since `‖0‖₊ = 0` contributes nothing to a supremum in `ℝ≥0∞`. -/
 theorem spectralRadius_eq_iSup_diff_singleton_zero (a : B) :
     spectralRadius 𝕜 a = ⨆ μ ∈ spectrum 𝕜 a \ {0}, (‖μ‖₊ : ℝ≥0∞) := by
+  rw [spectralRadius_eq_of_unital]
   refine le_antisymm (iSup₂_le fun μ hμ => ?_) (iSup₂_le fun μ hμ =>
     le_iSup₂ (f := fun μ (_ : μ ∈ spectrum 𝕜 a) => ((‖μ‖₊ : ℝ≥0) : ℝ≥0∞)) μ hμ.1)
   rcases eq_or_ne μ 0 with rfl | h0
@@ -80,12 +81,13 @@ theorem spectralRadius_eq_iSup_diff_singleton_zero (a : B) :
 `σ(star a) = star σ(a)` (`spectrum.map_star`) and the norm is star-invariant. -/
 theorem spectralRadius_star [StarRing 𝕜] [NormedStarGroup 𝕜] [StarRing B] [StarModule 𝕜 B]
     (a : B) : spectralRadius 𝕜 (star a) = spectralRadius 𝕜 a := by
-  have key : ∀ b : B, spectralRadius 𝕜 (star b) ≤ spectralRadius 𝕜 b := fun b =>
-    iSup₂_le fun k hk => by
-      rw [spectrum.map_star, Set.mem_star] at hk
-      calc ((‖k‖₊ : ℝ≥0) : ℝ≥0∞) = ‖star k‖₊ := by rw [nnnorm_star]
-        _ ≤ spectralRadius 𝕜 b :=
-          le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 b) => ((‖k‖₊ : ℝ≥0) : ℝ≥0∞)) (star k) hk
+  have key : ∀ b : B, spectralRadius 𝕜 (star b) ≤ spectralRadius 𝕜 b := fun b => by
+    rw [spectralRadius_eq_of_unital, spectralRadius_eq_of_unital]
+    refine iSup₂_le fun k hk => ?_
+    rw [spectrum.map_star, Set.mem_star] at hk
+    calc ((‖k‖₊ : ℝ≥0) : ℝ≥0∞) = ‖star k‖₊ := by rw [nnnorm_star]
+      _ ≤ ⨆ k ∈ spectrum 𝕜 b, ((‖k‖₊ : ℝ≥0) : ℝ≥0∞) :=
+        le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 b) => ((‖k‖₊ : ℝ≥0) : ℝ≥0∞)) (star k) hk
   exact le_antisymm (key a) (by simpa using key (star a))
 
 /-- The power rule `ρ(aⁿ) = ρ(a)ⁿ` for an element with nonempty spectrum of an algebra over an
@@ -102,11 +104,11 @@ theorem spectralRadius_pow_of_nonempty [IsAlgClosed 𝕜] {a : B} (ha : (spectru
       exact spectrum.mem_iff.mp hz (isUnit_of_subsingleton _)
     simp
   refine le_antisymm ?_ (spectrum.spectralRadius_pow_le a n hn.ne')
-  rw [spectralRadius, spectrum.map_pow_of_nonempty ha n]
+  rw [spectralRadius_eq_of_unital, spectralRadius_eq_of_unital, spectrum.map_pow_of_nonempty ha n]
   refine iSup₂_le fun z hz => ?_
   obtain ⟨w, hw, rfl⟩ := hz
   calc (‖w ^ n‖₊ : ℝ≥0∞) = (‖w‖₊ : ℝ≥0∞) ^ n := by rw [nnnorm_pow, ENNReal.coe_pow]
-    _ ≤ spectralRadius 𝕜 a ^ n :=
+    _ ≤ (⨆ k ∈ spectrum 𝕜 a, (‖k‖₊ : ℝ≥0∞)) ^ n :=
         pow_le_pow_left' (le_iSup₂ (f := fun k (_ : k ∈ spectrum 𝕜 a) => (‖k‖₊ : ℝ≥0∞)) w hw) n
 
 end Homogeneous
@@ -140,8 +142,8 @@ theorem spectralRadius_le_nnnorm_conj {v : E →L[𝕜] E} (hv : IsUnit v) (P : 
   rcases subsingleton_or_nontrivial E with _ | _
   · have : Subsingleton (E →L[𝕜] E) := ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
     simp [spectralRadius]
-  · rw [spectralRadius, ← spectrum.units_conjugate (a := P) (u := u), ← spectralRadius]
-    exact spectrum.spectralRadius_le_nnnorm _
+  · rw [spectralRadius_eq_of_unital, ← spectrum.units_conjugate (a := P) (u := u)]
+    exact iSup₂_le fun k hk => mod_cast spectrum.norm_le_norm_of_mem hk
 
 end Conjugate
 
@@ -204,7 +206,7 @@ private theorem spectralRadius_lt_one_of_norm_pow_lt_one {a : A} {n : ℕ} (h : 
   · exact h'
   have h1 : (1 : ℝ≥0∞) ≤ spectralRadius ℂ (a ^ n) :=
     (one_le_pow₀ hc).trans (spectrum.spectralRadius_pow_le a n hn)
-  have h2 : spectralRadius ℂ (a ^ n) ≤ (‖a ^ n‖₊ : ℝ≥0∞) := spectrum.spectralRadius_le_nnnorm _
+  have h2 : spectralRadius ℂ (a ^ n) ≤ (‖a ^ n‖₊ : ℝ≥0∞) := spectralRadius_le_nnnorm _
   have h3 : (‖a ^ n‖₊ : ℝ≥0∞) < 1 := by
     rw [ENNReal.coe_lt_one_iff]
     exact_mod_cast h
@@ -324,6 +326,7 @@ needed.  Positive definiteness of `N` is used and cannot be dropped — on two-b
 vanishes on a rank-one matrix of spectral radius `1`. -/
 theorem spectralRadius_le_algebraNorm [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B) (a : B) :
     spectralRadius 𝕜 a ≤ ENNReal.ofReal (N a) := by
+  rw [spectralRadius_eq_of_unital]
   refine iSup₂_le fun μ hμ => ?_
   have hle : ‖μ‖ ≤ N a := by
     by_contra hcon

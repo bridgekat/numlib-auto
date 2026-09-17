@@ -316,8 +316,20 @@ theorem spectrum_complexify_affine (X : Matrix n n ℝ) {c d : ℝ} (hd : d ≠ 
 noncomputable def complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
   spectralRadius ℂ (complexify A)
 
+omit [DecidableEq n] in
 @[simp] theorem complexSpectralRadius_zero : complexSpectralRadius (0 : Matrix n n ℝ) = 0 := by
   rw [complexSpectralRadius, complexify_zero, spectrum.spectralRadius_zero]
+
+/-- The complex spectral radius is the supremum of the moduli of the complex eigenvalues. -/
+theorem complexSpectralRadius_eq_iSup (A : Matrix n n ℝ) :
+    complexSpectralRadius A = ⨆ μ ∈ spectrum ℂ (complexify A), (‖μ‖₊ : ℝ≥0∞) :=
+  spectralRadius_eq_of_unital _
+
+/-- Every complex eigenvalue of `A` is bounded in modulus by the complex spectral radius. -/
+theorem nnnorm_le_complexSpectralRadius {A : Matrix n n ℝ} {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ (complexify A)) : (‖μ‖₊ : ℝ≥0∞) ≤ complexSpectralRadius A := by
+  rw [complexSpectralRadius_eq_iSup]
+  exact le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify A)) => (‖k‖₊ : ℝ≥0∞)) μ hμ
 
 /-- The spectral radius of the identity matrix is `1`: it is `spectrum.spectralRadius_one` for
 the complexification. -/
@@ -330,7 +342,7 @@ theorem complexSpectralRadius_eq_of_forall_mem_spectrum_iff {B : Matrix n n ℝ}
     complexSpectralRadius B = ENNReal.ofReal |r| := by
   have hr : ENNReal.ofReal |r| = ((‖(r : ℂ)‖₊ : ℝ≥0) : ℝ≥0∞) := by
     rw [← enorm_eq_nnnorm, ← ofReal_norm, Complex.norm_real, Real.norm_eq_abs]
-  rw [complexSpectralRadius, spectralRadius, hr]
+  rw [complexSpectralRadius_eq_iSup, hr]
   refine le_antisymm (iSup₂_le fun μ hμ => ?_) ?_
   · rw [h] at hμ
     subst hμ
@@ -343,20 +355,24 @@ theorem complexSpectralRadius_eq_of_forall_mem_spectrum_iff {B : Matrix n n ℝ}
 theorem complexSpectralRadius_conj {C : Matrix n n ℝ} (hC : IsUnit C) (B : Matrix n n ℝ) :
     complexSpectralRadius (C⁻¹ * B * C) = complexSpectralRadius B := by
   have hC' : IsUnit (complexify C) := (isUnit_complexify_iff C).2 hC
-  simp only [complexSpectralRadius, spectralRadius, complexify_mul, complexify_inv]
+  simp only [complexSpectralRadius_eq_iSup, complexify_mul, complexify_inv]
   rw [← hC'.unit_spec, ← coe_units_inv, spectrum.units_conjugate']
 
+omit [DecidableEq n] in
 /-- A matrix and its transpose have the same spectral radius, their characteristic polynomials
 being equal (Mathlib: `Matrix.spectrum_transpose`).  This is what turns a Perron eigenvector of
 `Aᵀ` into a *left* Perron eigenvector of `A` at the same eigenvalue. -/
 @[simp] theorem complexSpectralRadius_transpose (A : Matrix n n ℝ) :
     complexSpectralRadius Aᵀ = complexSpectralRadius A := by
-  rw [complexSpectralRadius, complexSpectralRadius, complexify_transpose, spectralRadius,
-    spectralRadius, spectrum_transpose]
+  classical
+  rw [complexSpectralRadius_eq_iSup, complexSpectralRadius_eq_iSup, complexify_transpose,
+    spectrum_transpose]
 
+omit [DecidableEq n] in
 /-- The spectral radius is absolutely homogeneous. -/
 theorem complexSpectralRadius_smul (c : ℝ) (A : Matrix n n ℝ) :
     complexSpectralRadius (c • A) = ‖c‖₊ * complexSpectralRadius A := by
+  classical
   rw [complexSpectralRadius, complexify_smul, spectralRadius_smul, complexSpectralRadius]
   simp
 
@@ -375,7 +391,7 @@ theorem complexSpectralRadius_pow (A : Matrix n n ℝ) {k : ℕ} (hk : k ≠ 0) 
   rw [complexSpectralRadius, complexSpectralRadius, complexify_pow]
   rcases isEmpty_or_nonempty n with hn | hn
   · have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
-    simp [spectralRadius, spectrum.of_subsingleton, hk]
+    simp [hk]
   · exact spectralRadius_pow_of_nonempty
       (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ _) k
 
@@ -390,17 +406,16 @@ theorem complexSpectralRadius_affine_le (X : Matrix n n ℝ) {ω : ℝ} (hω0 : 
     rw [Complex.nnnorm_real, Real.nnnorm_of_nonneg h1ω, ENNReal.ofReal_eq_coe_nnreal h1ω]
   have e2 : ENNReal.ofReal ω = ‖(ω : ℂ)‖₊ := by
     rw [Complex.nnnorm_real, Real.nnnorm_of_nonneg hω0.le, ENNReal.ofReal_eq_coe_nnreal hω0.le]
-  rw [complexSpectralRadius, complexSpectralRadius, spectralRadius,
-    spectrum_complexify_affine X hω0.ne', e1, e2]
+  rw [complexSpectralRadius_eq_iSup, spectrum_complexify_affine X hω0.ne', e1, e2]
   refine iSup₂_le fun μ hμ => ?_
   obtain ⟨ν, hν, rfl⟩ := hμ
   calc (‖((1 - ω : ℝ) : ℂ) + (ω : ℂ) * ν‖₊ : ℝ≥0∞)
       ≤ ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ) * ν‖₊ := by
         rw [← ENNReal.coe_add]; exact ENNReal.coe_le_coe.2 (nnnorm_add_le _ _)
     _ = ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ)‖₊ * ‖ν‖₊ := by rw [nnnorm_mul, ENNReal.coe_mul]
-    _ ≤ ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ)‖₊ * spectralRadius ℂ (complexify X) := by
+    _ ≤ ‖((1 - ω : ℝ) : ℂ)‖₊ + ‖(ω : ℂ)‖₊ * complexSpectralRadius X := by
         gcongr
-        exact le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) ν hν
+        exact nnnorm_le_complexSpectralRadius hν
 
 /-- Relaxation with `0 < ω ≤ 1` preserves `ρ < 1`: the corollary of
 `Matrix.complexSpectralRadius_affine_le` that [quarteroni2000numerical] Theorem 4.6 uses. -/
@@ -416,15 +431,18 @@ theorem complexSpectralRadius_affine_lt_one (X : Matrix n n ℝ) {ω : ℝ} (hω
     _ = 1 := by
         rw [mul_one, ← ENNReal.ofReal_add (by linarith) hω0.le, sub_add_cancel, ENNReal.ofReal_one]
 
+omit [DecidableEq n] in
 /-- The real spectral radius is at most the complex one, and can be strictly smaller: a plane
 rotation has empty real spectrum. -/
 theorem spectralRadius_le_complexSpectralRadius (A : Matrix n n ℝ) :
     spectralRadius ℝ A ≤ complexSpectralRadius A := by
+  classical
+  rw [spectralRadius_eq_of_unital]
   refine iSup₂_le fun μ hμ => ?_
   have hμ' : (μ : ℂ) ∈ spectrum ℂ (complexify A) :=
     (ofReal_mem_spectrum_complexify_iff A μ).mpr hμ
   calc (‖μ‖₊ : ENNReal) = (‖(μ : ℂ)‖₊ : ENNReal) := by simp
-    _ ≤ complexSpectralRadius A := le_iSup₂ (α := ENNReal) (μ : ℂ) hμ'
+    _ ≤ complexSpectralRadius A := nnnorm_le_complexSpectralRadius hμ'
 
 /-- `Matrix.toEuclideanCLM` as a bare `ℂ`-linear map; used to compare the product topology on
 `Matrix n n ℂ` with the operator-norm topology of the Banach algebra it is isomorphic to. -/
@@ -481,8 +499,9 @@ theorem tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
   rcases isEmpty_or_nonempty n with hn | hn
   · have hsubR : Subsingleton (Matrix n n ℝ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
     have hsubC : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
-    have hle : complexSpectralRadius A ≤ 0 :=
-      iSup₂_le fun k hk => absurd (isUnit_of_subsingleton _) hk
+    have hle : complexSpectralRadius A ≤ 0 := by
+      rw [complexSpectralRadius_eq_iSup]
+      exact iSup₂_le fun k hk => absurd (isUnit_of_subsingleton _) hk
     have hconv : Tendsto (fun k => A ^ k) atTop (𝓝 0) := by
       have : (fun k => A ^ k) = fun _ : ℕ => (0 : Matrix n n ℝ) :=
         funext fun _ => Subsingleton.elim _ _
@@ -502,7 +521,7 @@ theorem tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
       AlgEquiv.spectrum_eq (Matrix.toEuclideanCLM (n := n) (𝕜 := ℂ)) (complexify A)
     have hsr : spectralRadius ℂ (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify A))
         = complexSpectralRadius A := by
-      simp only [spectralRadius, complexSpectralRadius, hspec]
+      simp only [spectralRadius_eq_of_unital, complexSpectralRadius_eq_iSup, hspec]
     rw [hR, tendsto_pow_iff_tendsto_pow_toEuclideanCLM,
       ← spectralRadius_lt_one_iff_tendsto_pow, hsr]
 
@@ -590,12 +609,14 @@ private theorem apply_pow_le (hmul : ∀ B C : Matrix n n ℝ, f (B * C) ≤ f B
       _ ≤ f B ^ (k + 1) * f B := by gcongr
       _ = f B ^ (k + 1 + 1) := (pow_succ _ _).symm
 
+omit [DecidableEq n] in
 /-- `f B < 1` forces `Bᵏ → 0` entrywise, hence `ρ(B) < 1` by
 `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. -/
 private theorem complexSpectralRadius_lt_one_of_lt_one
     (hmul : ∀ B C : Matrix n n ℝ, f (B * C) ≤ f B * f C) {c : ℝ≥0}
     (hc : ∀ (B : Matrix n n ℝ) (i j : n), ‖B i j‖₊ ≤ c * f B)
     {B : Matrix n n ℝ} (hB : f B < 1) : complexSpectralRadius B < 1 := by
+  classical
   rw [← tendsto_pow_iff_complexSpectralRadius_lt_one]
   have hg : Tendsto (fun k : ℕ => (c : ℝ) * (f B : ℝ) ^ k) atTop (𝓝 0) := by
     have h := tendsto_pow_atTop_nhds_zero_of_lt_one (r := (f B : ℝ)) (f B).coe_nonneg
@@ -610,6 +631,7 @@ private theorem complexSpectralRadius_lt_one_of_lt_one
     (hc _ i j).trans (by gcongr; exact apply_pow_le f hmul B m)
   exact_mod_cast h
 
+omit [DecidableEq n] in
 /-- **The spectral radius of a real matrix is at most any submultiplicative matrix norm of it.**
 
 `f` is assumed submultiplicative (`f (B * C) ≤ f B * f C`), absolutely homogeneous
@@ -630,6 +652,7 @@ theorem complexSpectralRadius_le_of_norm (A : Matrix n n ℝ)
     (hsmul : ∀ (r : ℝ) (B : Matrix n n ℝ), f (r • B) = ‖r‖₊ * f B)
     (hzero : ∀ B : Matrix n n ℝ, f B = 0 → B = 0) :
     complexSpectralRadius A ≤ f A := by
+  classical
   obtain ⟨c, hc⟩ := exists_nnnorm_apply_le f hmul hsmul hzero
   suffices h : ∀ t : ℝ≥0, f A < t → complexSpectralRadius A ≤ (t : ℝ≥0∞) by
     refine ENNReal.le_of_forall_pos_le_add fun ε hε _ => ?_
@@ -660,12 +683,14 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
+omit [DecidableEq n] in
 /-- `ρ(A)` is at most the maximum absolute row sum (Mathlib: `Matrix.linfty_opNNNorm_def`). -/
 theorem complexSpectralRadius_le_linfty_opNNNorm (A : Matrix n n ℝ) :
     complexSpectralRadius A ≤ ‖A‖₊ :=
   complexSpectralRadius_le_of_norm (‖·‖₊) A (fun _ _ => nnnorm_mul_le _ _)
     (fun _ _ => nnnorm_smul _ _) fun _ h => by simpa using h
 
+omit [DecidableEq n] in
 /-- The spectral radius of a matrix over a finite index type is finite. -/
 theorem complexSpectralRadius_ne_top (A : Matrix n n ℝ) : complexSpectralRadius A ≠ ⊤ :=
   ((complexSpectralRadius_le_linfty_opNNNorm A).trans_lt ENNReal.coe_lt_top).ne
@@ -701,10 +726,12 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
+omit [DecidableEq n] in
 /-- `ρ(A)` is at most the Frobenius (Hilbert–Schmidt) norm of `A`. -/
 theorem complexSpectralRadius_le_frobenius_nnnorm (A : Matrix n n ℝ) :
-    complexSpectralRadius A ≤ ‖A‖₊ :=
-  complexSpectralRadius_le_of_norm (‖·‖₊) A (fun _ _ => nnnorm_mul_le _ _)
+    complexSpectralRadius A ≤ ‖A‖₊ := by
+  classical
+  exact complexSpectralRadius_le_of_norm (‖·‖₊) A (fun _ _ => nnnorm_mul_le _ _)
     (fun _ _ => nnnorm_smul _ _) fun _ h => by simpa using h
 
 /-- The Frobenius norm is unchanged by complexification, being computed entrywise. -/
@@ -936,18 +963,21 @@ theorem limsup_norm_pow_mulVec_rpow_le (G : Matrix n n ℝ) (d₀ : n → ℝ) :
     _ = (complexSpectralRadius G).toReal :=
         (tendsto_pow_rpow_complexSpectralRadius G).limsup_eq
 
+omit [DecidableEq n] in
 /-- **The spectral radius of a real matrix is attained at a complex eigenvalue**, together with an
 eigenvector: the complex spectrum is compact and nonempty, so the modulus attains its maximum on
 it, and a matrix eigenvalue always has an eigenvector. -/
 theorem exists_eigenvector_norm_eq_complexSpectralRadius [Nonempty n] (G : Matrix n n ℝ) :
     ∃ (μ : ℂ) (v : n → ℂ), v ≠ 0 ∧ complexify G *ᵥ v = μ • v ∧
       ‖μ‖ = (complexSpectralRadius G).toReal := by
+  classical
   have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
   obtain ⟨μ, hμ, hmax⟩ := (spectrum.isCompact (complexify G)).exists_isMaxOn
     (spectrum.nonempty (complexify G)) continuous_norm.continuousOn
   have hsr : complexSpectralRadius G = (‖μ‖₊ : ℝ≥0∞) := by
-    refine le_antisymm (iSup₂_le fun ν hν => ?_) (le_iSup₂ (α := ENNReal) μ hμ)
-    exact_mod_cast hmax hν
+    refine le_antisymm ?_ (nnnorm_le_complexSpectralRadius hμ)
+    rw [complexSpectralRadius_eq_iSup]
+    exact iSup₂_le fun ν hν => mod_cast hmax hν
   have hdet : (algebraMap ℂ (Matrix n n ℂ) μ - complexify G).det = 0 := by
     have h := spectrum.mem_iff.mp hμ
     rw [Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero] at h
@@ -975,8 +1005,7 @@ theorem complexSpectralRadius_lt_one_iff_forall_norm_lt [Nonempty n] (X : Matrix
     complexSpectralRadius X < 1 ↔ ∀ μ ∈ spectrum ℂ (complexify X), ‖μ‖ < 1 := by
   constructor
   · intro h μ hμ
-    have : (‖μ‖₊ : ℝ≥0∞) ≤ complexSpectralRadius X :=
-      le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify X)) => (‖k‖₊ : ℝ≥0∞)) μ hμ
+    have : (‖μ‖₊ : ℝ≥0∞) ≤ complexSpectralRadius X := nnnorm_le_complexSpectralRadius hμ
     have h1 := this.trans_lt h
     rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm] at h1
   · intro h

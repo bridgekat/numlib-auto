@@ -93,13 +93,14 @@ a function in `Lᵖ` and a function in `L^q` is in `L¹`, with `‖u v‖_{L¹} 
 theorem lemma_1_5_3 {p q : ℝ≥0∞} [ENNReal.HolderConjugate p q] {u v : α → ℝ} (hu : MemLp u p μ)
     (hv : MemLp v q μ) :
     MemLp (u * v) 1 μ ∧ eLpNorm (u * v) 1 μ ≤ eLpNorm u p μ * eLpNorm v q μ :=
-  ⟨hv.mul hu, by simpa using eLpNorm_smul_le_mul_eLpNorm hv.1 hu.1⟩
+  ⟨hu.mul hv, by
+    simpa using eLpNorm_smul_le_mul_eLpNorm hu.aestronglyMeasurable hv.aestronglyMeasurable⟩
 
 /-- **Lemma 1.5.4**, Minkowski's inequality: `‖u + v‖_{Lᵖ} ≤ ‖u‖_{Lᵖ} + ‖v‖_{Lᵖ}` for
 `p ∈ [1, ∞]`. It is the triangle inequality for the `Lᵖ` norm. -/
-theorem lemma_1_5_4 {p : ℝ≥0∞} (hp : 1 ≤ p) {u v : α → ℝ} (hu : AEStronglyMeasurable u μ)
-    (hv : AEStronglyMeasurable v μ) : eLpNorm (u + v) p μ ≤ eLpNorm u p μ + eLpNorm v p μ :=
-  eLpNorm_add_le hu hv hp
+theorem lemma_1_5_4 {p : ℝ≥0∞} (hp : 1 ≤ p) {u v : α → ℝ} :
+    eLpNorm (u + v) p μ ≤ eLpNorm u p μ + eLpNorm v p μ :=
+  eLpNorm_add_le hp
 
 /-! ### Theorem 1.5.5 -/
 
@@ -115,8 +116,7 @@ theorem theorem_1_5_5_b {p : ℝ≥0∞} [Fact (1 ≤ p)] {f : ℕ → Lp ℝ p 
   obtain ⟨F, hF⟩ := cauchySeq_tendsto_of_complete hf
   have hp0 : p ≠ 0 := (lt_of_lt_of_le zero_lt_one (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne'
   have hmeas : TendstoInMeasure μ (fun n => ⇑(f n)) atTop ⇑F :=
-    tendstoInMeasure_of_tendsto_eLpNorm hp0 (fun n => (Lp.memLp (f n)).1) (Lp.memLp F).1
-      ((Lp.tendsto_Lp_iff_tendsto_eLpNorm' f F).mp hF)
+    tendstoInMeasure_of_tendsto_eLpNorm hp0 ((Lp.tendsto_Lp_iff_tendsto_eLpNorm' f F).mp hF)
   obtain ⟨φ, hφ, hae⟩ := hmeas.exists_seq_tendsto_ae
   exact ⟨⇑F, φ, hφ, hae⟩
 
@@ -128,7 +128,7 @@ theorem theorem_1_5_5_c [IsFiniteMeasure μ] {p q : ℝ≥0∞} (hpq : p ≤ q) 
     MemLp v p μ ∧ eLpNorm v p μ ≤ μ Set.univ ^ (1 / p.toReal - 1 / q.toReal) * eLpNorm v q μ :=
   ⟨hv.mono_exponent hpq, by
     rw [mul_comm]
-    exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpq hv.1⟩
+    exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpq hv.aestronglyMeasurable⟩
 
 end Lp
 

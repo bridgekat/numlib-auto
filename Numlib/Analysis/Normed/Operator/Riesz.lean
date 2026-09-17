@@ -255,7 +255,7 @@ theorem exists_le_of_chain {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ :
     have h₁ : IsClosed ((↑((S' n).comap (S n).subtype) : Set ↥(S n))) := by
       simpa using! (hclosed n).preimage_val
     have h₂ : ∃ z : ↥(S n), z ∉ (S' n).comap (S n).subtype := by
-      obtain ⟨x, hx1, hx2⟩ := SetLike.not_le_iff_exists.1 (hcon n)
+      obtain ⟨x, hx1, hx2⟩ := IsConcreteLE.not_le_iff_exists.1 (hcon n)
       exact ⟨⟨x, hx1⟩, by simpa using hx2⟩
     obtain ⟨w, hwnorm, hwsep⟩ := riesz_lemma_of_norm_lt hc hR h₁ h₂
     exact ⟨(w : X), w.2, hwnorm,

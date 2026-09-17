@@ -1,5 +1,5 @@
 import Mathlib.Algebra.MvPolynomial.CommRing
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 import Mathlib.RingTheory.MvPolynomial.EulerIdentity
 import Mathlib.RingTheory.MvPolynomial.Homogeneous
 import Mathlib.Tactic.LinearCombination
@@ -191,8 +191,8 @@ theorem eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero (hσ : Nonempty σ) {n : 
     (totalDegree_sub _ _).trans (by simp [totalDegree_sumSq_le])
   induction n generalizing p with
   | zero =>
-    have hpc : p = C (coeff 0 p) := totalDegree_eq_zero_iff_eq_C.1 (Nat.le_zero.1 hp)
-    have hlap : laplacian (C (coeff 0 p) : MvPolynomial σ ℝ) = 0 := by simp [laplacian_apply]
+    have hpc : p = C (p.coeff 0) := totalDegree_eq_zero_iff_eq_C.1 (Nat.le_zero.1 hp)
+    have hlap : laplacian (C (p.coeff 0) : MvPolynomial σ ℝ) = 0 := by simp [laplacian_apply]
     rw [hpc, sub_mul, one_mul, map_sub, hlap, laplacian_sumSq_mul' (isHomogeneous_C σ _),
       hlap] at h
     simp only [mul_zero, add_zero, zero_sub, neg_eq_zero] at h

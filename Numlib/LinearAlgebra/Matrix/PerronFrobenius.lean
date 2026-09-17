@@ -185,6 +185,7 @@ theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
 
 /-! ### Monotonicity of the spectral radius -/
 
+omit [DecidableEq n] in
 /-- **The spectral radius is monotone on nonnegative matrices** ([saad2003iterative], Theorem 1.28):
 if `0 ≤ₑ A` and `A ≤ₑ B` then `ρ(A) ≤ ρ(B)`.
 
@@ -192,6 +193,7 @@ Gelfand's formula turns the monotonicity of the powers and of the operator norm 
 the limit `‖X ^ k‖ ^ (1 / k) → ρ(X)`. -/
 theorem complexSpectralRadius_le_of_entrywiseLE {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : complexSpectralRadius A ≤ complexSpectralRadius B := by
+  classical
   have hreal : (complexSpectralRadius A).toReal ≤ (complexSpectralRadius B).toReal := by
     refine le_of_tendsto_of_tendsto (tendsto_pow_rpow_complexSpectralRadius A)
       (tendsto_pow_rpow_complexSpectralRadius B) (Filter.Eventually.of_forall fun k => ?_)
@@ -371,6 +373,7 @@ private theorem mulVec_one_add_pow_of_mulVec_eq {z : n → ℝ} {r : ℝ} (h : A
   | zero => simp
   | succ k ih => rw [pow_succ', ← mulVec_mulVec, ih, mulVec_smul, hstep, smul_smul, ← pow_succ]
 
+omit [DecidableEq n] in
 /-- **Subinvariance.** The entrywise modulus of a complex eigenvector for an eigenvalue of maximal
 modulus is a nonzero nonnegative real vector `z` with `ρ • z ≤ A *ᵥ z`, because the triangle
 inequality applied to `μ v = A v` reads `|μ| |v| ≤ A |v|` entrywise. -/
@@ -390,6 +393,7 @@ private theorem exists_subinvariant [Nonempty n] (hA : ∀ i j, 0 ≤ A i j) :
     refine (norm_sum_le _ _).trans (le_of_eq (Finset.sum_congr rfl fun j _ => ?_))
     rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (hA i j)]
 
+omit [DecidableEq n] in
 /-- **A positive subinvariant vector bounds the spectral radius from below**: if `u` is entrywise
 positive and `t • u ≤ A *ᵥ u` for a nonnegative `t`, then `t ≤ ρ(A)`.
 
@@ -398,6 +402,7 @@ it. -/
 private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 ≤ A i j) {t : ℝ}
     (ht : 0 ≤ t) {u : n → ℝ} (hu : ∀ i, 0 < u i) (hle : ∀ i, t * u i ≤ (A *ᵥ u) i) :
     t ≤ (complexSpectralRadius A).toReal := by
+  classical
   have hiter : ∀ k : ℕ, ∀ i, t ^ k * u i ≤ ((A ^ k) *ᵥ u) i := by
     intro k
     induction k with
@@ -440,6 +445,7 @@ private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 �
     _ ≤ ‖A ^ k‖ ^ (1 / k : ℝ) :=
         Real.rpow_le_rpow (pow_nonneg ht k) (hnorm k) (by positivity)
 
+omit [DecidableEq n] in
 /-- **The Perron–Frobenius theorem for an irreducible matrix** ([saad2003iterative], Theorem 1.25,
 which the book states without proof): an irreducible nonnegative real matrix on a nonempty index
 type has an entrywise *positive* eigenvector for its spectral radius.
@@ -451,6 +457,7 @@ nonnegativity to positivity. -/
 theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty n]
     (hA : A.IsIrreducible) :
     ∃ x : n → ℝ, (∀ i, 0 < x i) ∧ A *ᵥ x = (complexSpectralRadius A).toReal • x := by
+  classical
   set ρ := (complexSpectralRadius A).toReal with hρdef
   have hρ0 : 0 ≤ ρ := ENNReal.toReal_nonneg
   set P : Matrix n n ℝ := (1 + A) ^ (Fintype.card n - 1) with hPdef
@@ -498,6 +505,7 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
   · rw [← h, mul_zero] at h2
     exact absurd h2 (lt_irrefl 0)
 
+omit [DecidableEq n] in
 /-- **The Perron eigenvalue of an irreducible matrix is geometrically simple**: the eigenspace of
 `A` at its spectral radius, over the reals, has rank one ([saad2003iterative], Theorem 1.25; the
 book says "simple", meaning algebraically simple, which is a stronger statement not proved here).
@@ -508,6 +516,7 @@ theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty 
     (hA : A.IsIrreducible) :
     Module.finrank ℝ
         (Module.End.eigenspace A.mulVecLin (complexSpectralRadius A).toReal) = 1 := by
+  classical
   set ρ := (complexSpectralRadius A).toReal with hρdef
   obtain ⟨x, hxpos, hx⟩ := hA.exists_pos_hasEigenvector_complexSpectralRadius
   have hxmem : x ∈ Module.End.eigenspace A.mulVecLin ρ := Module.End.mem_eigenspace_iff.2 hx
@@ -548,20 +557,24 @@ theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty 
 
 /-! ### The Perron eigenvalue is positive, and algebraically simple -/
 
+omit [DecidableEq n] in
 /-- The **left** Perron eigenvector of an irreducible nonnegative matrix: an entrywise positive `y`
 with `yᵀ A = ρ(A) yᵀ`.  It is the Perron eigenvector of `Aᵀ`, which is irreducible with the same
 spectral radius. -/
 theorem IsIrreducible.exists_pos_vecMul_eq [Nonempty n] (hA : A.IsIrreducible) :
     ∃ y : n → ℝ, (∀ i, 0 < y i) ∧ y ᵥ* A = (complexSpectralRadius A).toReal • y := by
+  classical
   obtain ⟨y, hypos, hy⟩ := hA.transpose.exists_pos_hasEigenvector_complexSpectralRadius
   rw [complexSpectralRadius_transpose, mulVec_transpose] at hy
   exact ⟨y, hypos, hy⟩
 
+omit [DecidableEq n] in
 /-- **The Perron eigenvalue of an irreducible matrix is positive** as soon as there are two
 indices: `ρ(A) = 0` would make the positive Perron vector a null vector of `A`, forcing `A = 0`,
 and the zero matrix on two or more indices is not irreducible. -/
 theorem IsIrreducible.complexSpectralRadius_pos [Nontrivial n] (hA : A.IsIrreducible) :
     0 < (complexSpectralRadius A).toReal := by
+  classical
   obtain ⟨x, hxpos, hx⟩ := hA.exists_pos_hasEigenvector_complexSpectralRadius
   rcases ENNReal.toReal_nonneg.lt_or_eq with h | h
   · exact h
@@ -582,6 +595,7 @@ theorem IsIrreducible.complexSpectralRadius_pos [Nontrivial n] (hA : A.IsIrreduc
     rw [hzero, zero_pow hk.ne'] at hpos
     simp at hpos
 
+omit [DecidableEq n] in
 /-- **No Jordan chain of length two at the Perron eigenvalue.**  If `A v - ρ v` is itself an
 eigenvector of `A` at `ρ`, then it is zero.
 
@@ -592,6 +606,7 @@ private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA 
     {v : n → ℝ} (hv : A *ᵥ (A *ᵥ v - (complexSpectralRadius A).toReal • v)
       = (complexSpectralRadius A).toReal • (A *ᵥ v - (complexSpectralRadius A).toReal • v)) :
     A *ᵥ v = (complexSpectralRadius A).toReal • v := by
+  classical
   set ρ := (complexSpectralRadius A).toReal with hρ
   obtain ⟨x, hxpos, hx⟩ := hA.exists_pos_hasEigenvector_complexSpectralRadius
   obtain ⟨y, hypos, hy⟩ := hA.exists_pos_vecMul_eq
@@ -620,11 +635,13 @@ private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA 
   rw [hw, sub_eq_zero] at hw0
   exact hw0
 
+omit [DecidableEq n] in
 /-- **The generalized eigenspace at the Perron eigenvalue is the eigenspace**: an irreducible
 nonnegative matrix has no generalized eigenvector of rank two or more at `ρ(A)`. -/
 theorem IsIrreducible.maxGenEigenspace_complexSpectralRadius [Nonempty n] (hA : A.IsIrreducible) :
     Module.End.maxGenEigenspace A.mulVecLin (complexSpectralRadius A).toReal
       = Module.End.eigenspace A.mulVecLin (complexSpectralRadius A).toReal := by
+  classical
   set ρ := (complexSpectralRadius A).toReal with hρ
   set g : Module.End ℝ (n → ℝ) := A.mulVecLin - ρ • 1 with hg
   have hgapp : ∀ u : n → ℝ, g u = A *ᵥ u - ρ • u := fun u => by

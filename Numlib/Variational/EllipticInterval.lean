@@ -131,7 +131,8 @@ theorem norm_constLinf (hab : a < b) (c : ℝ) : ‖constLinf a b c‖ = |c| := 
   have hμ : volume.restrict (Ioo a b) ≠ 0 := by
     rw [Ne, Measure.restrict_eq_zero, Real.volume_Ioo, ENNReal.ofReal_eq_zero, not_le]
     linarith
-  rw [Lp.norm_def, eLpNorm_congr_ae (coeFn_constLinf a b c), eLpNorm_exponent_top,
+  rw [Lp.norm_def, eLpNorm_congr_ae (coeFn_constLinf a b c),
+    eLpNorm_exponent_top aestronglyMeasurable_const,
     eLpNormEssSup_const c hμ]
   simp [Real.norm_eq_abs]
 
@@ -347,7 +348,7 @@ theorem form_isCoerciveWith_restrict (hab : a < b) (α γ : Lp ℝ ⊤ (volume.r
     ((form a b α 0 γ).restrict (SobolevIntervalZero a b)).IsCoerciveWith
       (α₀ / (1 + (b - a) ^ 2 / 2)) := by
   intro v
-  rw [SesqForm.restrict_apply, RCLike.re_to_real, Submodule.coe_norm]
+  rw [SesqForm.restrict_apply, RCLike.re_to_real, ← Submodule.norm_coe]
   have h1 := form_isCoerciveWith_seminorm α γ hα hγ (v : SobolevInterval 1 a b)
   have h2 := norm_le_seminorm hab v.2
   have h3 : ‖(v : SobolevInterval 1 a b)‖ ^ 2 ≤ (1 + (b - a) ^ 2 / 2) * seminorm 1 a b v ^ 2 := by
