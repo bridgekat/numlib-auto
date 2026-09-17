@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.MeasureTheory.Function.L2Space
+import Mathlib.MeasureTheory.Measure.SeparableMeasure
 import Numlib.Analysis.Sobolev.Space
 
 /-!
@@ -48,7 +49,16 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
   `W^{k,p}(Ω)`, and `SobolevMultiIndexZero F b k p Ω μ`, its closure, the space `W_0^{k,p}(Ω)`
   of Atkinson–Han, Definition 7.2.9, in the multi-index formulation — a closed subspace, hence a
   Hilbert space at `p = 2`, which is what `Numlib/Analysis/Sobolev/Interval.lean` takes as
-  `H^1_0(a, b)`.
+  `H^1_0(a, b)`;
+* `MultiIndexLE.single i`, the multi-index `e_i` of the partial derivative `∂_i`;
+  `SobolevMultiIndex.weakDerivL α` and `SobolevMultiIndex.fnL`, the weak derivative `u ↦ ∂^α u`
+  and the inclusion `W^{k,p}(Ω) → L^p(Ω)` as bounded linear maps, with
+  `SobolevMultiIndexZero.fnL` the inclusion of `W_0^{k,p}(Ω)`; `SobolevMultiIndex.grad` and
+  `SobolevMultiIndex.gradNorm`, the gradient `(∂_i u)_i` of `u ∈ W^{1,p}(Ω)` and its `ℓ^p` norm
+  `‖∇u‖_{L^p(Ω)}`;
+* `SobolevEuclidean N k p Ω` and `SobolevEuclideanZero N k p Ω`, the spaces `W^{k,p}(Ω)` and
+  `W_0^{k,p}(Ω)` of Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+  Equations*, §9.1 and §9.4, on an open `Ω ⊆ ℝ^N` with the standard basis and Lebesgue measure.
 
 ## Main statements
 
@@ -73,7 +83,19 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
   other way the tensor is assembled from the `∂^α`, and the symmetry of the iterated derivative of
   a `C^∞` function, `ContDiff.iteratedFDeriv_congr_perm` of
   `Numlib/Analysis/Calculus/IteratedFDeriv.lean`, is what lets it be evaluated at an unsorted tuple
-  of basis vectors.
+  of basis vectors;
+* `HasWeakIteratedLineDerivOn.of_perm`, `.cons'` and `.of_cons'`: a weak derivative along a tuple
+  of directions is one along every rearrangement of the tuple, and the new direction of a longer
+  tuple may be differentiated first as well as last; hence `memSobolevMultiIndex_succ_iff`, **the
+  inductive definition `W^{m+1,p} = {u ∈ W^{m,p} : ∂_i u ∈ W^{m,p} ∀ i}` of Brezis agrees with
+  the multi-index one**;
+* `SobolevMultiIndex.norm_eq_gradNorm` and `SobolevMultiIndex.gradNorm_le_norm`: the norm of
+  `W^{1,p}(Ω)` is the `ℓ^p` sum of `‖u‖_p` and `‖∇u‖_p`, and the gradient norm is a seminorm
+  bounded by it;
+* `SobolevMultiIndex.instSecondCountableTopology`: **`W^{k,p}(Ω)` is separable for
+  `1 ≤ p < ∞`** on a second countable Borel space with a σ-finite measure, Brezis's
+  Proposition 9.1; reflexivity for `1 < p < ∞` waits on the reflexivity of a finite `ℓ^p` product
+  (`NormedSpace.instIsReflexivePiLp`).
 
 ## Implementation notes
 
@@ -168,6 +190,72 @@ theorem coe_zero : ((0 : MultiIndexLE ι k) : ι → ℕ) = 0 := rfl
 /-- The order of the multi-index `0` is `0`. Stated for the zero function rather than for
 `(0 : MultiIndexLE ι k)` because that is the form in which the order appears. -/
 theorem sum_zero : ∑ _i : ι, (0 : ι → ℕ) _i = 0 := by simp
+
+
+/-! #### The multi-indices of order one -/
+
+section Single
+
+variable [DecidableEq ι]
+
+/-- The multi-index `e_i = Pi.single i 1` of order one, naming the partial derivative `∂_i`:
+`SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)` is the book's `∂u/∂x_i`. -/
+def single (i : ι) : MultiIndexLE ι 1 := ⟨Pi.single i 1, by simp⟩
+
+/-- The multi-index `e_i` is the function `Pi.single i 1`. -/
+@[simp]
+theorem coe_single (i : ι) : ((single i : MultiIndexLE ι 1) : ι → ℕ) = Pi.single i 1 := rfl
+
+/-- The multi-index `e_i` determines `i`. -/
+theorem single_injective : Function.Injective (single : ι → MultiIndexLE ι 1) := fun i j h ↦ by
+  have := congrArg (fun α : MultiIndexLE ι 1 ↦ (α : ι → ℕ) i) h
+  by_contra hij
+  simp [Pi.single_eq_of_ne hij] at this
+
+/-- The multi-index `e_i` is not the multi-index `0`. -/
+theorem single_ne_zero (i : ι) : (single i : MultiIndexLE ι 1) ≠ 0 := fun h ↦ by
+  have := congrArg (fun α : MultiIndexLE ι 1 ↦ (α : ι → ℕ) i) h
+  simp at this
+
+/-- A multi-index of order at most one is `0` or some `e_i`: it has at most one nonzero entry, and
+that entry is `1`. -/
+theorem eq_zero_or_exists_eq_single (α : MultiIndexLE ι 1) : α = 0 ∨ ∃ i, α = single i := by
+  by_cases h : ∀ i, (α : ι → ℕ) i = 0
+  · exact Or.inl (Subtype.ext (funext h))
+  right
+  push Not at h
+  obtain ⟨i, hi⟩ := h
+  refine ⟨i, Subtype.ext (funext fun j ↦ ?_)⟩
+  have hle : ∑ j, (α : ι → ℕ) j ≤ 1 := α.2
+  have hsingle : (α : ι → ℕ) i ≤ ∑ j, (α : ι → ℕ) j :=
+    Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) (Finset.mem_univ i)
+  have hαi : (α : ι → ℕ) i = 1 := by omega
+  by_cases hj : j = i
+  · subst hj
+    simp [hαi]
+  · have hsum := Finset.add_sum_erase Finset.univ (α : ι → ℕ) (Finset.mem_univ i)
+    have hzero : ∑ j ∈ Finset.univ.erase i, (α : ι → ℕ) j = 0 := by omega
+    rw [Finset.sum_eq_zero_iff] at hzero
+    simp [Pi.single_eq_of_ne hj, hzero j (Finset.mem_erase.2 ⟨hj, Finset.mem_univ j⟩)]
+
+/-- A sum over the multi-indices of order at most one is the term at `0` plus the sum over the
+`e_i`: `∑_{|α| ≤ 1} f α = f 0 + ∑ i, f (e_i)`. This is what turns the norm of `W^{1,p}(Ω)`, a sum
+over the multi-indices `α` with `|α| ≤ 1`, into `‖u‖_p` plus the gradient terms. -/
+theorem sum_univ_one {M : Type*} [AddCommMonoid M] (f : MultiIndexLE ι 1 → M) :
+    ∑ α, f α = f 0 + ∑ i, f (single i) := by
+  classical
+  rw [Fintype.sum_eq_add_sum_compl 0 f]
+  congr 1
+  have h : ({0}ᶜ : Finset (MultiIndexLE ι 1)) = Finset.univ.image single := by
+    ext α
+    simp only [Finset.mem_compl, Finset.mem_singleton, Finset.mem_image, Finset.mem_univ, true_and]
+    refine ⟨fun hα ↦ ?_, fun ⟨i, hi⟩ ↦ hi ▸ single_ne_zero i⟩
+    rcases eq_zero_or_exists_eq_single α with h0 | ⟨i, rfl⟩
+    · exact absurd h0 hα
+    · exact ⟨i, rfl⟩
+  rw [h, Finset.sum_image single_injective.injOn]
+
+end Single
 
 end MultiIndexLE
 
@@ -352,6 +440,93 @@ theorem ContinuousMultilinearMap.apply_eq_sum_basis {G : Type*} [NormedAddCommGr
   exact Finset.sum_congr rfl fun m _ ↦ T.toMultilinearMap.map_smul_univ _ _
 
 end MultilinearBasis
+
+/-! ### Weak derivatives along a permuted tuple of directions
+
+The defining identity of a weak derivative along a tuple `y` tests against `∂^n φ x y`, and for a
+test function `φ` that is symmetric in the entries of `y` (`ContDiff.iteratedFDeriv_congr_perm`).
+So a weak derivative along `y` is a weak derivative along every rearrangement of `y`, and the
+new direction of a longer tuple may be differentiated first as well as last: this is what lets
+the multi-index `∂^{α + e_i}` be read as `∂^α ∂_i` although `multiIndexTuple` lists the directions
+in increasing order of the index. -/
+
+section Perm
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {μ : Measure E} {f w : E → F}
+
+namespace HasWeakIteratedLineDerivOn
+
+/-- **A weak derivative along a tuple is a weak derivative along every rearrangement of it**: if
+the lists of entries of `y₁` and `y₂` are permutations of each other, a weak derivative of `f`
+along `y₁` is one along `y₂`. The lengths are not assumed equal; they are, a permutation
+preserving the length. -/
+theorem of_perm {n₁ n₂ : ℕ} {y₁ : Fin n₁ → E} {y₂ : Fin n₂ → E}
+    (hy : (List.ofFn y₁).Perm (List.ofFn y₂)) (h : HasWeakIteratedLineDerivOn y₁ f w Ω μ) :
+    HasWeakIteratedLineDerivOn y₂ f w Ω μ := by
+  obtain rfl : n₁ = n₂ := by simpa using hy.length_eq
+  refine ⟨h.locallyIntegrableOn, h.locallyIntegrableOn_weakDeriv, fun φ ↦ ?_⟩
+  have key : ∀ x, iteratedFDeriv ℝ n₁ (φ : E → ℝ) x y₂ = iteratedFDeriv ℝ n₁ (φ : E → ℝ) x y₁ :=
+    fun x ↦ (φ.contDiff.iteratedFDeriv_congr_perm hy x).symm
+  simp_rw [key]
+  exact h.integral_smul_eq φ
+
+/-- A weak derivative along a tuple of directions is a weak derivative along every permutation
+of the tuple. -/
+theorem comp_perm {n : ℕ} {y : Fin n → E} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
+    (σ : Equiv.Perm (Fin n)) : HasWeakIteratedLineDerivOn (y ∘ σ) f w Ω μ :=
+  h.of_perm (σ.ofFn_comp_perm y).symm
+
+/-- **The composition rule with the new direction differentiated first**: if `g` is a weak
+derivative of `f` along the single direction `z` and `u` is a weak derivative of `g` along the
+tuple `y`, then `u` is a weak derivative of `f` along `z :: y`. Where
+`HasWeakIteratedLineDerivOn.cons` differentiates along `z` *after* `y`, this differentiates along
+`z` *first*; for a test function the two orders agree (`ContDiff.fderiv_iteratedFDeriv_apply`),
+which is all the proof uses. -/
+theorem cons' {n : ℕ} {y : Fin n → E} {z : E} {g u : E → F}
+    (h : HasWeakIteratedLineDerivOn ![z] f g Ω μ) (h' : HasWeakIteratedLineDerivOn y g u Ω μ) :
+    HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn
+  locallyIntegrableOn_weakDeriv := h'.locallyIntegrableOn_weakDeriv
+  integral_smul_eq φ := by
+    have e1 : ∀ x, iteratedFDeriv ℝ (n + 1) (φ : E → ℝ) x (Fin.cons z y)
+        = iteratedFDeriv ℝ 1 (φ.iteratedFDerivApply n y : E → ℝ) x ![z] := fun x ↦ by
+      rw [iteratedFDeriv_one_apply, TestFunction.iteratedFDerivApply_coe,
+        φ.contDiff.fderiv_iteratedFDeriv_apply, φ.contDiff.iteratedFDeriv_cons]
+      rfl
+    simp_rw [e1]
+    rw [h.integral_smul_eq]
+    simp only [TestFunction.iteratedFDerivApply_coe]
+    rw [h'.integral_smul_eq φ, smul_smul]
+    congr 1
+    ring
+
+/-- **The converse of `HasWeakIteratedLineDerivOn.cons'`**: if `g` is a weak derivative of `f`
+along the single direction `z` and `u` is a weak derivative of `f` along `z :: y`, then `u` is a
+weak derivative of `g` along `y`. This is what reads `∂^α (∂_i f)` off `∂^{α + e_i} f`. -/
+theorem of_cons' {n : ℕ} {y : Fin n → E} {z : E} {g u : E → F}
+    (h : HasWeakIteratedLineDerivOn ![z] f g Ω μ)
+    (h' : HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ) :
+    HasWeakIteratedLineDerivOn y g u Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn_weakDeriv
+  locallyIntegrableOn_weakDeriv := h'.locallyIntegrableOn_weakDeriv
+  integral_smul_eq φ := by
+    have e1 : ∀ x, iteratedFDeriv ℝ (n + 1) (φ : E → ℝ) x (Fin.cons z y)
+        = iteratedFDeriv ℝ 1 (φ.iteratedFDerivApply n y : E → ℝ) x ![z] := fun x ↦ by
+      rw [iteratedFDeriv_one_apply, TestFunction.iteratedFDerivApply_coe,
+        φ.contDiff.fderiv_iteratedFDeriv_apply, φ.contDiff.iteratedFDeriv_cons]
+      rfl
+    have k1 := h.integral_smul_eq (φ.iteratedFDerivApply n y)
+    have k2 := h'.integral_smul_eq φ
+    simp_rw [e1] at k2
+    rw [k2, pow_one, neg_one_smul] at k1
+    simp only [TestFunction.iteratedFDerivApply_coe] at k1
+    rw [← neg_neg (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • g x ∂μ), ← k1,
+      pow_succ, mul_neg_one, neg_smul, neg_neg]
+
+end HasWeakIteratedLineDerivOn
+
+end Perm
 
 /-! ### The ambient space -/
 
@@ -866,3 +1041,395 @@ instance instCompleteSpace [CompleteSpace F] [IsFiniteMeasureOnCompacts μ]
 end SobolevMultiIndexZero
 
 end Zero
+
+/-! ### The inductive description of `W^{m+1,p}(Ω)`
+
+Brezis defines `W^{m,p}(Ω)` by induction — `u ∈ W^{m,p}` when `u` and all its first partial
+derivatives lie in `W^{m-1,p}` — and remarks that the multi-index description is equivalent. The
+equivalence rests on reading `∂^{α + e_i}` as `∂^α ∂_i`, which is
+`HasWeakIteratedLineDerivOn.cons'` / `of_cons'` together with the permutation invariance of the
+weak derivative, since `multiIndexTuple` lists the directions in increasing order of the index. -/
+
+section Succ
+
+variable {E : Type*} {ι : Type*} [Fintype ι] [LinearOrder ι]
+
+/-- The directions naming `α + β` are, as a multiset, those naming `α` together with those
+naming `β`. -/
+theorem coe_multiIndexDirections_add (b : ι → E) (α β : ι → ℕ) :
+    ((multiIndexDirections b (α + β) : List E) : Multiset E)
+      = (multiIndexDirections b α : Multiset E) + (multiIndexDirections b β : Multiset E) := by
+  simp only [coe_multiIndexDirections, Pi.add_apply, Multiset.replicate_add,
+    Finset.sum_add_distrib]
+
+/-- The multi-index `e_i` names the single direction `b i`. -/
+theorem coe_multiIndexDirections_single (b : ι → E) (i : ι) :
+    ((multiIndexDirections b (Pi.single i 1) : List E) : Multiset E) = {b i} := by
+  rw [coe_multiIndexDirections, Finset.sum_eq_single i]
+  · simp
+  · intro j _ hj
+    simp [Pi.single_eq_of_ne hj]
+  · simp
+
+/-- The tuple naming `e_i` is a rearrangement of the one-entry tuple `![b i]`. -/
+theorem multiIndexTuple_single_perm (b : ι → E) (i : ι) :
+    (List.ofFn (multiIndexTuple b (Pi.single i 1))).Perm (List.ofFn ![b i]) := by
+  rw [← Multiset.coe_eq_coe, ← multiIndexDirections_eq_ofFn, coe_multiIndexDirections_single]
+  simp
+
+/-- The tuple naming `α + e_i` is a rearrangement of `b i` followed by the tuple naming `α`. -/
+theorem multiIndexTuple_add_single_perm (b : ι → E) (α : ι → ℕ) (i : ι) :
+    (List.ofFn (Fin.cons (b i) (multiIndexTuple b α))).Perm
+      (List.ofFn (multiIndexTuple b (α + Pi.single i 1))) := by
+  rw [← Multiset.coe_eq_coe, List.ofFn_cons, ← multiIndexDirections_eq_ofFn,
+    ← multiIndexDirections_eq_ofFn, ← Multiset.cons_coe, coe_multiIndexDirections_add,
+    coe_multiIndexDirections_single, add_comm, Multiset.singleton_add]
+
+variable [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] {F : Type*}
+  [NormedAddCommGroup F] [NormedSpace ℝ F] {b : Basis ι ℝ E} {f : E → F} {k : ℕ} {p : ℝ≥0∞}
+  {Ω : Opens E} {μ : Measure E}
+
+/-- `W^{k,p}(Ω)` decreases as the order `k` increases. -/
+theorem MemSobolevMultiIndex.mono_order {k' : ℕ} (h : MemSobolevMultiIndex b f k p Ω μ)
+    (hk : k' ≤ k) : MemSobolevMultiIndex b f k' p Ω μ :=
+  ⟨h.1, fun α hα ↦ h.2 α (hα.trans hk)⟩
+
+/-- **The inductive definition of `W^{m+1,p}(Ω)` agrees with the multi-index one**: `f` lies in
+`W^{m+1,p}(Ω)` exactly when `f` lies in `W^{m,p}(Ω)` and, for every basis direction `b i`, `f` has
+a weak derivative `∂_i f` along `b i` that lies in `W^{m,p}(Ω)`. This is the equivalence of the two
+displayed definitions of `W^{m,p}(Ω)` in [brezis2011functional] §9.1 (the paragraph "The spaces
+`W^{m,p}(Ω)`"): the weak derivative `∂^α (∂_i f)` is `∂^{α + e_i} f`, by
+`HasWeakIteratedLineDerivOn.cons'` and its converse after rearranging the tuple of directions. -/
+theorem memSobolevMultiIndex_succ_iff {m : ℕ} :
+    MemSobolevMultiIndex b f (m + 1) p Ω μ ↔ MemSobolevMultiIndex b f m p Ω μ ∧ ∀ i,
+      ∃ g : E → F, HasWeakIteratedLineDerivOn ![b i] f g Ω μ ∧
+        MemSobolevMultiIndex b g m p Ω μ := by
+  constructor
+  · intro h
+    refine ⟨h.mono_order (Nat.le_succ m), fun i ↦ ?_⟩
+    obtain ⟨g, hg, hgp⟩ := h.2 (Pi.single i 1) (by simp)
+    have hg' : HasWeakIteratedLineDerivOn ![b i] f g Ω μ :=
+      hg.of_perm (multiIndexTuple_single_perm (b : ι → E) i)
+    refine ⟨g, hg', hgp, fun β hβ ↦ ?_⟩
+    obtain ⟨u, hu, hup⟩ := h.2 (β + Pi.single i 1) (by simp [Finset.sum_add_distrib]; omega)
+    exact ⟨u, hg'.of_cons' (hu.of_perm (multiIndexTuple_add_single_perm (b : ι → E) β i).symm),
+      hup⟩
+  · rintro ⟨hf, hg⟩
+    refine ⟨hf.1, fun α hα ↦ ?_⟩
+    rcases Nat.lt_or_ge (∑ j, α j) (m + 1) with hlt | hge
+    · exact hf.2 α (Nat.lt_succ_iff.1 hlt)
+    obtain ⟨i, -, hi⟩ : ∃ i ∈ Finset.univ, α i ≠ 0 :=
+      Finset.exists_ne_zero_of_sum_ne_zero (s := Finset.univ) (f := α) (by omega)
+    obtain ⟨β, rfl⟩ : ∃ β : ι → ℕ, α = β + Pi.single i 1 := by
+      refine ⟨α - Pi.single i 1, funext fun j ↦ ?_⟩
+      by_cases hj : j = i
+      · subst hj
+        simp only [Pi.add_apply, Pi.sub_apply, Pi.single_eq_same]
+        omega
+      · simp [Pi.single_eq_of_ne hj]
+    have hβ : ∑ j, β j ≤ m := by
+      simp only [Pi.add_apply, Finset.sum_add_distrib, Finset.sum_pi_single', Finset.mem_univ,
+        ite_true] at hα
+      omega
+    obtain ⟨g, hg1, hg2⟩ := hg i
+    obtain ⟨u, hu, hup⟩ := hg2.2 β hβ
+    exact ⟨u, (hg1.cons' hu).of_perm (multiIndexTuple_add_single_perm (b : ι → E) β i), hup⟩
+
+end Succ
+
+/-! ### The weak derivatives and the function as bounded linear maps -/
+
+section Operators
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω : Opens E} {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+variable (F b k p Ω μ) in
+/-- **The weak derivative `u ↦ ∂^α u` as a bounded linear map `W^{k,p}(Ω) → L^p(Ω)`**, of norm at
+most one: the coordinate projection of the ambient `ℓ^p` product, restricted to the subspace. The
+one-dimensional twin is `SobolevIntervalLp.derivL`. -/
+noncomputable def weakDerivL (α : MultiIndexLE ι k) :
+    SobolevMultiIndex F b k p Ω μ →L[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
+  (PiLp.proj p (fun _ : MultiIndexLE ι k ↦ Lp F p (μ.restrict (Ω : Set E))) α) ∘L
+    (SobolevMultiIndex F b k p Ω μ).subtypeL
+
+/-- `SobolevMultiIndex.weakDerivL` is the weak derivative. -/
+@[simp]
+theorem weakDerivL_apply (α : MultiIndexLE ι k) (u : SobolevMultiIndex F b k p Ω μ) :
+    weakDerivL F b k p Ω μ α u = weakDeriv u α :=
+  rfl
+
+/-- Each weak derivative is bounded in `L^p(Ω)` by the norm of `W^{k,p}(Ω)`: the latter is the
+`ℓ^p` norm of the tuple of the former. -/
+theorem norm_weakDeriv_le (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
+    ‖weakDeriv u α‖ ≤ ‖u‖ := by
+  rw [← Submodule.norm_coe]
+  exact PiLp.norm_apply_le _ _
+
+/-- The operator norm of `SobolevMultiIndex.weakDerivL` is at most one. -/
+theorem norm_weakDerivL_le (α : MultiIndexLE ι k) : ‖weakDerivL F b k p Ω μ α‖ ≤ 1 :=
+  ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun u ↦ by
+    rw [one_mul]
+    exact norm_weakDeriv_le u α
+
+variable (F b k p Ω μ) in
+/-- **The inclusion `W^{k,p}(Ω) → L^p(Ω)`** as a bounded linear map: the weak derivative of order
+`0`, which is the function itself. It is injective (`SobolevMultiIndex.fnL_injective`) and of norm
+at most one; it is the map along which the embedding theorems of Sobolev spaces are stated. -/
+noncomputable def fnL : SobolevMultiIndex F b k p Ω μ →L[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
+  weakDerivL F b k p Ω μ 0
+
+/-- `SobolevMultiIndex.fnL u` is the function of `u`. -/
+@[simp]
+theorem fnL_apply (u : SobolevMultiIndex F b k p Ω μ) : (fnL F b k p Ω μ u : E → F) = fn u :=
+  rfl
+
+/-- `SobolevMultiIndex.fnL u` is the weak derivative of order `0`. -/
+theorem fnL_eq_weakDeriv_zero (u : SobolevMultiIndex F b k p Ω μ) :
+    fnL F b k p Ω μ u = weakDeriv u 0 :=
+  rfl
+
+/-- The `L^p(Ω)` norm of the function is at most the `W^{k,p}(Ω)` norm. -/
+theorem norm_fnL_apply_le (u : SobolevMultiIndex F b k p Ω μ) : ‖fnL F b k p Ω μ u‖ ≤ ‖u‖ :=
+  norm_weakDeriv_le u 0
+
+/-- The operator norm of the inclusion `W^{k,p}(Ω) → L^p(Ω)` is at most one. -/
+theorem norm_fnL_le : ‖fnL F b k p Ω μ‖ ≤ 1 :=
+  norm_weakDerivL_le 0
+
+/-- **The inclusion `W^{k,p}(Ω) → L^p(Ω)` is injective**: an element of `W^{k,p}(Ω)` is determined
+by its function, the weak derivatives being unique. -/
+theorem fnL_injective [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] :
+    Function.Injective (fnL F b k p Ω μ) := fun _ _ h ↦
+  ext_of_fn_ae_eq (Filter.EventuallyEq.of_eq (congrArg (fun w : Lp F p _ ↦ (w : E → F)) h))
+
+end SobolevMultiIndex
+
+namespace SobolevMultiIndexZero
+
+variable (F b k p Ω μ) in
+/-- **The inclusion `W_0^{k,p}(Ω) → L^p(Ω)`** as a bounded linear map, the restriction of
+`SobolevMultiIndex.fnL` to the closed subspace `W_0^{k,p}(Ω)`. An `L^p(Ω)` function "lies in
+`W_0^{k,p}(Ω)`" when it is in the range of this map, and the lift is then unique
+(`SobolevMultiIndexZero.fnL_injective`); this is how a homogeneous boundary condition `u = 0` on
+`∂Ω` is read. -/
+noncomputable def fnL : SobolevMultiIndexZero F b k p Ω μ →L[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
+  (SobolevMultiIndex.fnL F b k p Ω μ).comp (SobolevMultiIndexZero F b k p Ω μ).subtypeL
+
+/-- `SobolevMultiIndexZero.fnL v` is the function of `v`. -/
+@[simp]
+theorem fnL_apply (v : SobolevMultiIndexZero F b k p Ω μ) :
+    (fnL F b k p Ω μ v : E → F) = SobolevMultiIndex.fn (v : SobolevMultiIndex F b k p Ω μ) :=
+  rfl
+
+/-- `SobolevMultiIndexZero.fnL` is `SobolevMultiIndex.fnL` on the underlying element. -/
+theorem fnL_eq (v : SobolevMultiIndexZero F b k p Ω μ) :
+    fnL F b k p Ω μ v = SobolevMultiIndex.fnL F b k p Ω μ (v : SobolevMultiIndex F b k p Ω μ) :=
+  rfl
+
+/-- The `L^p(Ω)` norm of the function is at most the `W^{k,p}(Ω)` norm. -/
+theorem norm_fnL_apply_le (v : SobolevMultiIndexZero F b k p Ω μ) : ‖fnL F b k p Ω μ v‖ ≤ ‖v‖ :=
+  SobolevMultiIndex.norm_fnL_apply_le _
+
+/-- The operator norm of the inclusion `W_0^{k,p}(Ω) → L^p(Ω)` is at most one. -/
+theorem norm_fnL_le : ‖fnL F b k p Ω μ‖ ≤ 1 :=
+  ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v ↦ by
+    rw [one_mul]
+    exact norm_fnL_apply_le v
+
+/-- **The inclusion `W_0^{k,p}(Ω) → L^p(Ω)` is injective.** -/
+theorem fnL_injective [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] :
+    Function.Injective (fnL F b k p Ω μ) := fun _ _ h ↦
+  Subtype.ext (SobolevMultiIndex.fnL_injective h)
+
+end SobolevMultiIndexZero
+
+end Operators
+
+/-! ### The gradient norm on `W^{1,p}(Ω)`
+
+The book's `‖∇u‖_{L^p(Ω)}` in the `ℓ^p` reading: the `ℓ^p(ι)` norm of the tuple of partial
+derivatives `(∂_i u)_i`, each measured in `L^p(Ω)`. It is a seminorm on `W^{1,p}(Ω)`, and the norm
+of the type is the `ℓ^p` sum of `‖u‖_p` and of it. -/
+
+section Gradient
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω : Opens E} {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+/-- **The gradient of `u ∈ W^{1,p}(Ω)`**, the tuple `(∂_i u)_i` of its first partial derivatives
+in the basis `b`, as an element of the `ℓ^p` product of copies of `L^p(Ω)`. -/
+def grad (u : SobolevMultiIndex F b 1 p Ω μ) :
+    PiLp p fun _ : ι ↦ Lp F p (μ.restrict (Ω : Set E)) :=
+  WithLp.toLp p fun i ↦ weakDeriv u (MultiIndexLE.single i)
+
+omit [Fact (1 ≤ p)] in
+/-- The `i`-th entry of the gradient is the partial derivative `∂_i u`. -/
+@[simp]
+theorem grad_apply (u : SobolevMultiIndex F b 1 p Ω μ) (i : ι) :
+    grad u i = weakDeriv u (MultiIndexLE.single i) :=
+  rfl
+
+omit [Fact (1 ≤ p)] in
+/-- The gradient is additive. -/
+theorem grad_add (u v : SobolevMultiIndex F b 1 p Ω μ) : grad (u + v) = grad u + grad v := by
+  ext i
+  rfl
+
+omit [Fact (1 ≤ p)] in
+/-- The gradient commutes with scalar multiplication. -/
+theorem grad_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p Ω μ) : grad (c • u) = c • grad u := by
+  ext i
+  rfl
+
+/-- **The gradient norm `‖∇u‖_{L^p(Ω)}` on `W^{1,p}(Ω)`**, in the `ℓ^p` reading of
+[brezis2011functional] §9.1 and Corollary 9.19: `(∑ i, ‖∂_i u‖_p^p)^{1/p}`, and `⨆ i, ‖∂_i u‖_∞`
+at `p = ∞`. It is the norm of the gradient tuple `SobolevMultiIndex.grad u` in the `ℓ^p` product
+of copies of `L^p(Ω)`; a seminorm on `W^{1,p}(Ω)` bounded by the norm
+(`SobolevMultiIndex.gradNorm_le_norm`), and a norm on `W_0^{1,p}(Ω)` of a bounded open set by
+Poincaré's inequality. -/
+noncomputable def gradNorm (u : SobolevMultiIndex F b 1 p Ω μ) : ℝ := ‖grad u‖
+
+/-- The gradient norm is nonnegative. -/
+theorem gradNorm_nonneg (u : SobolevMultiIndex F b 1 p Ω μ) : 0 ≤ gradNorm u := norm_nonneg _
+
+/-- The gradient norm is subadditive. -/
+theorem gradNorm_add_le (u v : SobolevMultiIndex F b 1 p Ω μ) :
+    gradNorm (u + v) ≤ gradNorm u + gradNorm v := by
+  rw [gradNorm, grad_add]
+  exact norm_add_le _ _
+
+/-- The gradient norm is homogeneous. -/
+theorem gradNorm_smul (c : ℝ) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    gradNorm (c • u) = |c| * gradNorm u := by
+  rw [gradNorm, grad_smul, norm_smul, Real.norm_eq_abs]
+  rfl
+
+/-- **The gradient norm for `p < ∞`**: `‖∇u‖_p = (∑ i, ‖∂_i u‖_p^p)^{1/p}`. -/
+theorem gradNorm_eq_sum (hp : p ≠ ⊤) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    gradNorm u = (∑ i, ‖weakDeriv u (MultiIndexLE.single i)‖ ^ p.toReal) ^ (1 / p.toReal) := by
+  rw [gradNorm, PiLp.norm_eq_sum
+    (ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp)]
+  rfl
+
+/-- **The gradient norm at `p = ∞`**: `‖∇u‖_∞ = ⨆ i, ‖∂_i u‖_∞`. -/
+theorem gradNorm_eq_ciSup (u : SobolevMultiIndex F b 1 ⊤ Ω μ) :
+    gradNorm u = ⨆ i, ‖weakDeriv u (MultiIndexLE.single i)‖ := by
+  rw [gradNorm, PiLp.norm_eq_ciSup]
+  rfl
+
+/-- **The norm of `W^{1,p}(Ω)` for `p < ∞`** is the `ℓ^p` sum of the `L^p(Ω)` norm of the function
+and of the gradient norm: `‖u‖ = (‖u‖_p^p + ‖∇u‖_p^p)^{1/p}`. -/
+theorem norm_eq_gradNorm (hp : p ≠ ⊤) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    ‖u‖ = (‖weakDeriv u 0‖ ^ p.toReal + gradNorm u ^ p.toReal) ^ (1 / p.toReal) := by
+  have hP : 0 < p.toReal :=
+    ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+  rw [norm_eq_sum hp, gradNorm_eq_sum hp, MultiIndexLE.sum_univ_one, ← Real.rpow_mul
+    (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _), one_div_mul_cancel hP.ne',
+    Real.rpow_one]
+
+/-- **The norm of `W^{1,∞}(Ω)`** is the larger of the `L^∞(Ω)` norm of the function and the
+gradient norm: `‖u‖ = max ‖u‖_∞ ‖∇u‖_∞`. -/
+theorem norm_eq_max_gradNorm (u : SobolevMultiIndex F b 1 ⊤ Ω μ) :
+    ‖u‖ = max ‖weakDeriv u 0‖ (gradNorm u) := by
+  rw [norm_eq_ciSup, gradNorm_eq_ciSup]
+  have hbdd : BddAbove (Set.range fun α : MultiIndexLE ι 1 ↦ ‖weakDeriv u α‖) :=
+    Finite.bddAbove_range _
+  have hbdd' : BddAbove (Set.range fun i : ι ↦ ‖weakDeriv u (MultiIndexLE.single i)‖) :=
+    Finite.bddAbove_range _
+  apply le_antisymm
+  · refine ciSup_le fun α ↦ ?_
+    rcases MultiIndexLE.eq_zero_or_exists_eq_single α with rfl | ⟨i, rfl⟩
+    · exact le_max_left _ _
+    · exact le_trans (le_ciSup hbdd' i) (le_max_right _ _)
+  · refine max_le (le_ciSup hbdd 0) ?_
+    rcases isEmpty_or_nonempty ι with hι | hι
+    · rw [Real.iSup_of_isEmpty]
+      exact (norm_nonneg _).trans (le_ciSup hbdd 0)
+    · exact ciSup_le fun i ↦ le_ciSup hbdd (MultiIndexLE.single i)
+
+/-- **The gradient norm is bounded by the norm of `W^{1,p}(Ω)`**: dropping the term `‖u‖_p` from
+the `ℓ^p` sum does not increase it. -/
+theorem gradNorm_le_norm (u : SobolevMultiIndex F b 1 p Ω μ) : gradNorm u ≤ ‖u‖ := by
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · rw [norm_eq_max_gradNorm]
+    exact le_max_right _ _
+  · have hP : 0 < p.toReal :=
+      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+    rw [norm_eq_gradNorm hp]
+    calc gradNorm u = (gradNorm u ^ p.toReal) ^ (1 / p.toReal) := by
+          rw [← Real.rpow_mul (gradNorm_nonneg u), mul_one_div_cancel hP.ne', Real.rpow_one]
+      _ ≤ (‖weakDeriv u 0‖ ^ p.toReal + gradNorm u ^ p.toReal) ^ (1 / p.toReal) :=
+          Real.rpow_le_rpow (Real.rpow_nonneg (gradNorm_nonneg u) _)
+            (le_add_of_nonneg_left (Real.rpow_nonneg (norm_nonneg _) _)) (by positivity)
+
+/-- The `L^p(Ω)` norm of each partial derivative is at most the gradient norm. -/
+theorem norm_weakDeriv_single_le_gradNorm (u : SobolevMultiIndex F b 1 p Ω μ) (i : ι) :
+    ‖weakDeriv u (MultiIndexLE.single i)‖ ≤ gradNorm u :=
+  PiLp.norm_apply_le (grad u) i
+
+end SobolevMultiIndex
+
+end Gradient
+
+/-! ### Separability -/
+
+section Separable
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  [Fact (p ≠ ⊤)] {Ω : Opens E} {μ : Measure E}
+
+/-- **`W^{k,p}(Ω)` is separable for `1 ≤ p < ∞`** ([brezis2011functional] Proposition 9.1, and
+Proposition 8.1 for the argument): `L^p(Ω)` is second countable for a σ-finite measure on a second
+countable Borel space (`MeasureTheory.Lp.SecondCountableTopology`), a finite `ℓ^p` product of
+second countable spaces is second countable, and so is a subspace. -/
+instance SobolevMultiIndex.instSecondCountableTopology [SecondCountableTopology E] [BorelSpace E]
+    [SFinite μ] [SecondCountableTopology F] :
+    SecondCountableTopology (SobolevMultiIndex F b k p Ω μ) :=
+  inferInstance
+
+/-- **`W_0^{k,p}(Ω)` is separable for `1 ≤ p < ∞`** ([brezis2011functional] §9.4, the sentence
+after the definition): a subspace of the second countable `W^{k,p}(Ω)`. -/
+instance SobolevMultiIndexZero.instSecondCountableTopology [SecondCountableTopology E]
+    [BorelSpace E] [SFinite μ] [SecondCountableTopology F] :
+    SecondCountableTopology (SobolevMultiIndexZero F b k p Ω μ) :=
+  inferInstance
+
+end Separable
+
+/-! ### The spaces `W^{k,p}(Ω)` and `W_0^{k,p}(Ω)` on an open subset of `ℝ^N` -/
+
+section Euclidean
+
+/-- **The Sobolev space `W^{k,p}(Ω)` on an open set `Ω ⊆ ℝ^N`** of [brezis2011functional] §9.1
+(the Definition, and the paragraph "The spaces `W^{m,p}(Ω)`"): the multi-index formulation over
+the standard basis of `ℝ^N` and Lebesgue measure. Its norm is `(∑_{|α| ≤ k} ‖∂^α u‖_p^p)^{1/p}`
+(`SobolevMultiIndex.norm_eq_sum`), the book's second, equivalent norm, and at `p = 2` it is the
+Hilbert space `H^k(Ω)` with the book's inner product `∑_{|α| ≤ k} ∫_Ω ∂^α u ∂^α v`
+(`SobolevMultiIndex.inner_eq`). The whole space is `Ω = ⊤`. Being an abbreviation, every
+`SobolevMultiIndex` lemma applies to it unchanged. -/
+noncomputable abbrev SobolevEuclidean (N k : ℕ) (p : ℝ≥0∞)
+    (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type :=
+  SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k p Ω volume
+
+/-- **The Sobolev space `W_0^{k,p}(Ω)` on an open set `Ω ⊆ ℝ^N`** of [brezis2011functional] §9.4
+(the Definition, and Remark 22 for `k ≥ 2`): the closure of the test functions in
+`SobolevEuclidean N k p Ω`. The book closes `C_c^1(Ω)`, respectively `C_c^k(Ω)`, rather than
+`C_c^∞(Ω)`; the closures agree because every compactly supported `W^{k,p}(Ω)` function lies in
+this closure ([brezis2011functional] Lemma 9.5). -/
+noncomputable abbrev SobolevEuclideanZero (N k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (Ω : Opens (EuclideanSpace ℝ (Fin N))) :
+    Submodule ℝ (SobolevEuclidean N k p Ω) :=
+  SobolevMultiIndexZero ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k p Ω volume
+
+end Euclidean

@@ -195,62 +195,41 @@ id = "prod_multiIndexTuple"
 
 [[node]]
 id = "SobolevEuclidean"
-kind = "definition"
-desc = '''The book's `W^{k,p}(Ω)` on an open `Ω ⊆ ℝ^N`, as an `abbrev`:
-`SobolevEuclidean (N k : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin N))) :=
-SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k p Ω volume` — the multi-index
-formulation over the standard basis and Lebesgue measure, whose norm is
-`(∑_{|α| ≤ k} ‖∂^α u‖_p^p)^{1/p}` (`SobolevMultiIndex.norm_eq_sum`) and which at `p = 2` is a
-Hilbert space with the inner product `∑_{|α|≤k} ∫ ∂^α u ∂^α v` (`SobolevMultiIndex.inner_eq`).
-This is the type every Brezis chapter-9 statement is written over ([brezis2011functional] §9.1,
-Definition, and the paragraph "The spaces `W^{m,p}(Ω)`"); the new modules
-`Numlib/Analysis/Sobolev/{Cutoff,…,Compactness}` state their typed results on it. Being an
-`abbrev`, every `SobolevMultiIndex` lemma applies to it unchanged. The whole space is
-`Ω = ⊤`, and `volume.restrict (⊤ : Opens _)` is `volume` (`MeasureTheory.Measure.restrict_coe_top`
-in `Density.lean`). ★'''
-deps = ["SobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
 
 [[node]]
 id = "SobolevEuclideanZero"
-kind = "definition"
-desc = '''The book's `W_0^{k,p}(Ω)` on `Ω ⊆ ℝ^N`, as an `abbrev`:
-`SobolevEuclideanZero N k p Ω := SobolevMultiIndexZero ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k p Ω volume`,
-the closure of the test functions in `SobolevEuclidean N k p Ω` ([brezis2011functional] §9.4,
-Definition, and Remark 22 for `m ≥ 2`). The book closes `C_c^1(Ω)` (resp. `C_c^m(Ω)`) rather
-than `C_c^∞(Ω)`; the two closures agree by `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`
-(Lemma 9.5, `Numlib/Analysis/Sobolev/Cutoff.lean`), which places every compactly supported
-`W^{k,p}` function — a `C_c^m` function in particular — in this closure. ★'''
-deps = ["SobolevMultiIndexZero", "SobolevEuclidean"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
 
 [[node]]
+id = "HasWeakIteratedLineDerivOn.of_perm"
+
+[[node]]
 id = "HasWeakIteratedLineDerivOn.comp_perm"
-kind = "theorem"
-desc = '''A weak derivative along a tuple of directions is a weak derivative along every permutation
-of the tuple: for `σ : Equiv.Perm (Fin n)`, `HasWeakIteratedLineDerivOn y f w Ω μ →
-HasWeakIteratedLineDerivOn (y ∘ σ) f w Ω μ`. Proof: the defining identity tests
-`iteratedFDeriv ℝ n φ x (y ∘ σ)` against `f`, and for the smooth test function `φ` this equals
-`iteratedFDeriv ℝ n φ x y` by `ContDiff.iteratedFDeriv_congr_perm`
-(`Numlib/Analysis/Calculus/IteratedFDeriv.lean`), already the tool of
-`MemSobolevMultiIndex.memSobolev`. Needed by `memSobolevMultiIndex_succ_iff`, where
-`∂_i ∂^β` must be read as `∂^{β + e_i}` although `multiIndexTuple` lists the directions in
-increasing index order. ★, ~40 lines.'''
-deps = ["HasWeakIteratedLineDerivOn", "multiIndexDirections_multiIndexCount_perm"]
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.cons'"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.of_cons'"
+
+[[node]]
+id = "coe_multiIndexDirections_add"
+
+[[node]]
+id = "coe_multiIndexDirections_single"
+
+[[node]]
+id = "multiIndexTuple_single_perm"
+
+[[node]]
+id = "multiIndexTuple_add_single_perm"
+
+[[node]]
+id = "MemSobolevMultiIndex.mono_order"
 
 [[node]]
 id = "memSobolevMultiIndex_succ_iff"
-kind = "theorem"
-desc = '''The inductive definition of `W^{m,p}(Ω)` agrees with the multi-index one
-([brezis2011functional] §9.1, "The spaces `W^{m,p}(Ω)`", the two displayed definitions): for
-`1 ≤ p`, `MemSobolevMultiIndex b f (m + 1) p Ω μ ↔ MemSobolevMultiIndex b f m p Ω μ ∧ ∀ i,
-∃ g, HasWeakIteratedLineDerivOn ![b i] f g Ω μ ∧ MemSobolevMultiIndex b g m p Ω μ` — `f` and all
-its first weak partial derivatives lie in `W^{m,p}`. Both directions are
-`HasWeakIteratedLineDerivOn.cons` / `.of_cons` (`WeakDeriv.lean`) plus
-`HasWeakIteratedLineDerivOn.comp_perm` to move the direction `b i` to the front of the sorted
-tuple `multiIndexTuple b α`, and the uniqueness `HasWeakIteratedLineDerivOn.ae_eq` to identify the
-weak derivatives produced along the two routes. ★★, ~150 lines.'''
-deps = ["MemSobolevMultiIndex", "HasWeakIteratedLineDerivOn.cons", "HasWeakIteratedLineDerivOn.of_cons", "HasWeakIteratedLineDerivOn.comp_perm", "HasWeakIteratedLineDerivOn.ae_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, the spaces W^{m,p}"
 
 [[node]]
@@ -263,21 +242,15 @@ product of the spaces `L^p(Ω)`, reflexive by chapter 4's `MeasureTheory.Lp.inst
 (`SobolevMultiIndex.isClosed`), so `NormedSpace.isReflexive_of_isClosed` applies. Stated as an
 instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]` (or the `Fact (1 ≤ p)` the group already carries
 plus explicit hypotheses — choose what instance search accepts). At `p = 2` the instance
-`NormedSpace.instIsReflexiveOfInnerProductSpace` already applies. ★★, ~60 lines.'''
+`NormedSpace.instIsReflexiveOfInnerProductSpace` already applies. ★★, ~60 lines.
+
+Blocked: `NormedSpace.instIsReflexivePiLp` (`Reflexive.toml`, another agent's group) is not in
+the tree yet; the instance is a ten-line corollary of it once it lands (2026-09-18, sob3).'''
 deps = ["SobolevMultiIndex.isClosed", "NormedSpace.isReflexive_of_isClosed", "NormedSpace.instIsReflexivePiLp", "MeasureTheory.Lp.instIsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
 id = "SobolevMultiIndex.instSecondCountableTopology"
-kind = "theorem"
-desc = '''**`W^{k,p}(Ω)` is separable for `1 ≤ p < ∞`** ([brezis2011functional] Proposition 9.1):
-`L^p(Ω)` is second countable by Mathlib's `MeasureTheory.Lp.SecondCountableTopology`
-(`Mathlib/MeasureTheory/Measure/SeparableMeasure.lean`; needs `[IsSeparable (μ.restrict Ω)]`,
-automatic for a countably generated σ-algebra and an s-finite measure, and a separable `F`), a
-finite `PiLp p` product of second countable spaces is second countable, and a subtype of a second
-countable space is second countable. Instance under `[Fact (1 ≤ p)] [Fact (p ≠ ∞)]` and
-`[SecondCountableTopology F]`, `[IsSeparable μ]`. ★, ~40 lines of instance plumbing.'''
-deps = ["SobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
@@ -285,16 +258,15 @@ id = "SobolevMultiIndexZero.instIsReflexive"
 kind = "theorem"
 desc = '''`W_0^{k,p}(Ω)` is reflexive for `1 < p < ∞` ([brezis2011functional] §9.4, the sentence
 after the Definition): a closed subspace (`SobolevMultiIndexZero.isClosed`) of the reflexive
-`SobolevMultiIndex`, by `NormedSpace.isReflexive_of_isClosed`. ★'''
+`SobolevMultiIndex`, by `NormedSpace.isReflexive_of_isClosed`. ★
+
+Blocked: waits on `SobolevMultiIndex.instIsReflexive`, itself waiting on
+`NormedSpace.instIsReflexivePiLp` (2026-09-18, sob3).'''
 deps = ["SobolevMultiIndexZero.isClosed", "SobolevMultiIndex.instIsReflexive", "NormedSpace.isReflexive_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
 
 [[node]]
 id = "SobolevMultiIndexZero.instSecondCountableTopology"
-kind = "theorem"
-desc = '''`W_0^{k,p}(Ω)` is separable for `1 ≤ p < ∞` ([brezis2011functional] §9.4, the sentence
-after the Definition): a subtype of the second countable `SobolevMultiIndex`. ★'''
-deps = ["SobolevMultiIndexZero", "SobolevMultiIndex.instSecondCountableTopology"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
 
 # ---- Appended by the spine review (2026-09-17): the definitions that chapters 9a, 9b and 10 each
@@ -303,69 +275,109 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition
 
 [[node]]
 id = "MultiIndexLE.single"
-kind = "definition"
-desc = '''`MultiIndexLE.single (i : ι) : MultiIndexLE ι 1`, the multi-index `e_i = Pi.single i 1` of
-order one, naming the partial derivative `∂_i` (`weakDeriv u (MultiIndexLE.single i)` is the book's
-`∂u/∂x_i`). With `single_injective`, `coe_single : (single i : ι → ℕ) = Pi.single i 1`, and the
-enumeration `multiIndexLE_one_eq : (Finset.univ : Finset (MultiIndexLE ι 1)) = {0} ∪ image single univ`
-(for `Fintype ι`), which is what turns a sum over the multi-indices of order at most one into
-`u v + ∑ᵢ ∂ᵢu ∂ᵢv` (`Elliptic.laplaceForm_eq_innerSL`). Formerly planned as `Elliptic.single` in
-`PDE/Elliptic/Dirichlet.toml` and as `MultiIndexLE.single` in chapter 10's draft; one definition, here.
-★'''
-deps = ["MultiIndexLE"]
+
+[[node]]
+id = "MultiIndexLE.coe_single"
+
+[[node]]
+id = "MultiIndexLE.single_injective"
+
+[[node]]
+id = "MultiIndexLE.single_ne_zero"
+
+[[node]]
+id = "MultiIndexLE.eq_zero_or_exists_eq_single"
+
+[[node]]
+id = "MultiIndexLE.sum_univ_one"
 
 [[node]]
 id = "SobolevMultiIndex.weakDerivL"
-kind = "definition"
-desc = '''`SobolevMultiIndex.weakDerivL (α : MultiIndexLE ι k) : SobolevMultiIndex F b k p Ω μ →L[ℝ] Lp F p (μ.restrict Ω)`,
-the `α`-th weak derivative `u ↦ ∂^α u` as a continuous linear map of norm at most one: the
-coordinate projection `PiLp.proj p _ α` of the ambient `ℓ^p` product composed with the inclusion
-of the submodule (`(SobolevMultiIndex F b k p Ω μ).subtypeL`). Companion lemmas
-`weakDerivL_apply : weakDerivL α u = weakDeriv u α` (`rfl`) and
-`norm_weakDerivL_apply_le : ‖weakDeriv u α‖ ≤ ‖u‖` (from the `ℓ^p` product norm,
-`PiLp.norm_apply_le`). `SobolevMultiIndex.fnL := weakDerivL 0` is the function itself as a map into
-`L^p(Ω)` (`fnL_apply : ⇑(fnL u) = fn u`), injective by `SobolevMultiIndex.ext_of_fn_ae_eq`
-(`fnL_injective`); it is the `q = p` case of `Cutoff.lean`'s `SobolevMultiIndex.toLpₗ` (which
-takes the membership in `L^q` as a hypothesis) and the map `Numlib/Analysis/Normed/Operator/Embedding`'s
-`IsContinuousEmbedding`/`IsCompactEmbedding` are stated along. The one-dimensional twin is
-`SobolevInterval.derivL` / `SobolevIntervalLp.derivL`. Formerly `Elliptic.derivL Ω k p α`
-(chapter 9b, prototyped in `notes/brezis/ch09b/proto/EllipticForm.lean`, whose shape this keeps)
-and `SobolevEuclideanZero.fnL`'s underlying map (chapter 10); every chapter-9b/10 use is
-`weakDerivL` on the abbrev `SobolevEuclidean`. ★'''
-deps = ["SobolevMultiIndex", "SobolevMultiIndex.weakDeriv", "SobolevMultiIndex.ext_of_fn_ae_eq"]
+
+[[node]]
+id = "SobolevMultiIndex.weakDerivL_apply"
+
+[[node]]
+id = "SobolevMultiIndex.norm_weakDeriv_le"
+
+[[node]]
+id = "SobolevMultiIndex.norm_weakDerivL_le"
+
+[[node]]
+id = "SobolevMultiIndex.fnL"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_apply"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_eq_weakDeriv_zero"
+
+[[node]]
+id = "SobolevMultiIndex.norm_fnL_apply_le"
+
+[[node]]
+id = "SobolevMultiIndex.norm_fnL_le"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_injective"
 
 [[node]]
 id = "SobolevMultiIndexZero.fnL"
-kind = "definition"
-desc = '''`SobolevMultiIndexZero.fnL : SobolevMultiIndexZero F b k p Ω μ →L[ℝ] Lp F p (μ.restrict Ω)`,
-the embedding `W_0^{k,p}(Ω) ↪ L^p(Ω)`: `(SobolevMultiIndex.fnL).comp (SobolevMultiIndexZero F b k p Ω μ).subtypeL`
-(shape checked in `notes/brezis/ch10/proto/heat.lean` as `fnL₀`, there on `SobolevEuclideanZero N 1 2 Ω`).
-`fnL_apply : ⇑(fnL v) = fn v`, `norm_fnL_le : ‖fnL v‖ ≤ ‖v‖`, `fnL_injective`. An `L^p` function
-"lies in `W_0^{k,p}(Ω)`" when it is in `range fnL`, and the lift is unique — this is how every
-boundary condition `u = 0` on `Γ` of chapter 10 (`Numlib/Analysis/PDE/DirichletLaplacian`,
-`Heat`, `Wave`) is read, and how `Zero.lean`'s Gelfand triple `H_0^1 ⊂ L^2 ⊂ H^{-1}` starts.
-Formerly `SobolevEuclideanZero.fnL` (chapter 10). ★'''
-deps = ["SobolevMultiIndexZero", "SobolevMultiIndex.weakDerivL"]
+
+[[node]]
+id = "SobolevMultiIndexZero.fnL_apply"
+
+[[node]]
+id = "SobolevMultiIndexZero.fnL_eq"
+
+[[node]]
+id = "SobolevMultiIndexZero.norm_fnL_apply_le"
+
+[[node]]
+id = "SobolevMultiIndexZero.norm_fnL_le"
+
+[[node]]
+id = "SobolevMultiIndexZero.fnL_injective"
+
+[[node]]
+id = "SobolevMultiIndex.grad"
+
+[[node]]
+id = "SobolevMultiIndex.grad_apply"
+
+[[node]]
+id = "SobolevMultiIndex.grad_add"
+
+[[node]]
+id = "SobolevMultiIndex.grad_smul"
 
 [[node]]
 id = "SobolevMultiIndex.gradNorm"
-kind = "definition"
-desc = '''The gradient norm `‖∇u‖_{L^p(Ω)}` on `W^{1,p}(Ω)`, in the book's `ℓ^p` reading, for a basis
-`b : Basis ι ℝ E` with `Fintype ι`:
-`SobolevMultiIndex.gradNorm (u : SobolevMultiIndex F b 1 p Ω μ) : ℝ := (∑ i, ‖weakDeriv u (MultiIndexLE.single i)‖ ^ p.toReal) ^ (1 / p.toReal)`
-(`⨆ i, ‖weakDeriv u (single i)‖` at `p = ∞`), a seminorm on the type with
-`gradNorm_le_norm : gradNorm u ≤ ‖u‖` (the type's norm is the same sum with the `α = 0` term
-added, `SobolevMultiIndex.norm_eq_sum` and `multiIndexLE_one_eq`) and
-`norm_eq_gradNorm : ‖u‖ = (‖fn u‖_p ^ p + gradNorm u ^ p) ^ (1/p)` (an equality; `max` at
-`p = ∞`). At `p = 2`, `gradNorm u ^ 2 = ∑ i, ‖∂ᵢu‖²`, which is `Elliptic.dirichletForm Ω u u`
-(`Numlib/Analysis/PDE/Elliptic/Dirichlet`, `dirichletForm_self_eq_gradNorm_sq`); the bilinear
-form `∑ i, ∫ ∂ᵢu ∂ᵢv` of [brezis2011functional] Corollary 9.19's last sentence is that
-`SesqForm` and gets no separate function here (chapter 9a's `SobolevEuclidean.gradInner` and
-chapter 10's `SobolevMultiIndex.gradInner` are retired in its favour). A
-`NormedAddCommGroup`/`InnerProductSpace` instance on a type synonym is *not* introduced; the
-coercivity of the Dirichlet form on `W_0^{1,p}` is `SobolevEuclideanZero.norm_le_gradNorm`
-(`Poincare.lean`). Formerly `SobolevEuclidean.gradNorm` in `Poincare.toml`; moved here because
-`Friedrichs`, `Embedding`, `Zero` and the elliptic layer all use it and none should import
-`Poincare` for a definition. ★, ~100 lines with the lemmas.'''
-deps = ["SobolevMultiIndex", "MultiIndexLE.single", "SobolevMultiIndex.norm_eq_sum", "SobolevMultiIndex.norm_eq_ciSup", "SobolevMultiIndex.inner_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_nonneg"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_add_le"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_smul"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_eq_sum"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_eq_ciSup"
+
+[[node]]
+id = "SobolevMultiIndex.norm_eq_gradNorm"
+
+[[node]]
+id = "SobolevMultiIndex.norm_eq_max_gradNorm"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_le_norm"
+
+[[node]]
+id = "SobolevMultiIndex.norm_weakDeriv_single_le_gradNorm"

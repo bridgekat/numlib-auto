@@ -1,0 +1,1417 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
+`Numlib/Analysis/Sobolev/MultiIndex.lean` and `Numlib/Analysis/Sobolev/Density.lean`.
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
+import Numlib.Analysis.Normed.Operator.Embedding
+import Numlib.Analysis.Sobolev.Density
+import Numlib.Analysis.Sobolev.MultiIndex
+
+/-!
+# Cut-off functions and extension by zero in `W^{1,p}(Ω)`
+
+The elementary tools that Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+Equations*, chapter 9, uses in every proof of §9.2–§9.4, on an arbitrary open set `Ω` of a
+finite-dimensional real normed space with an additive Haar measure:
+
+* **locality of the weak derivative**: a weak derivative on every relatively compact open subset
+  of `Ω` is a weak derivative on `Ω`
+  (`HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset`), the device by which the book
+  reduces a `W^{1,∞}` statement to `W^{1,q}`, `q < ∞`, on relatively compact subsets;
+* **the zero extension of `α u`** for a cut-off `α` (Remark 4 (ii)): `IsSobolevCutoff Ω α` says
+  that `α` is smooth, bounded with bounded derivative, and supported away from `∂Ω`; for such `α`
+  and `u ∈ W^{1,p}(Ω)`, the extension of `α u` by zero lies in `W^{1,p}` of the whole space with
+  the derivative one expects (`HasWeakIteratedLineDerivOn.indicator_mul`,
+  `MemSobolevMultiIndex.indicator_mul`), with the `L^p` estimates of step (a) of the proof of
+  the extension theorem;
+* **the typed operators**: restriction to an open subset `SobolevMultiIndex.restrictL`, the zero
+  extension `u ↦ α u` as a bounded linear map `W^{1,p}(Ω) → W^{1,p}(E)`
+  (`SobolevMultiIndex.extendZeroMulL`), and the inclusion `W^{k,p}(Ω) → L^q(Ω)` given the
+  membership (`SobolevMultiIndex.toLpₗ`), in the vocabulary of `IsContinuousEmbedding`;
+* **the cut-off sequence** `ζ_n x = ζ (x / n)` of footnote 5
+  (`MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub`, `SobolevMultiIndex.tendsto_cutoff_smul`):
+  `ζ_n u → u` in `W^{1,p}(Ω)` for `1 ≤ p < ∞`;
+* **Lemma 9.5**: a `W^{k,p}(Ω)` function vanishing outside a compact subset of `Ω` lies in
+  `W_0^{k,p}(Ω)` (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), at every order;
+* **the local space** `W^{k,p}_loc(Ω)` (`MemSobolevMultiIndexLoc`), with the cut-off lemma that
+  places `θ u` in `W^{k,p}(E)` for a test function `θ` on `Ω`;
+* **the abstract extension predicate** `HasSobolevExtensionOn S` / `IsSobolevExtensionDomain N p Ω`
+  ("a bounded linear extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on `S`"), under which
+  the embedding and compactness theorems on a domain are stated once, and the density of the
+  restrictions of `C_c^∞(ℝ^N)` functions it gives (the abstract form of Corollary 9.8).
+
+## Design
+
+Predicate-level statements are over a finite-dimensional real normed `E` with an additive Haar
+measure `μ`, in the `HasWeakIteratedLineDerivOn ![y] f w Ω μ` (single direction) or
+`HasWeakFDerivOn` (tensor) reading, as in `Numlib/Analysis/Sobolev/Mollification.lean` and
+`Numlib/Analysis/Sobolev/Density.lean`; typed statements are on `SobolevMultiIndex F b k p Ω μ`
+and its abbreviation `SobolevEuclidean N k p Ω` of `Numlib/Analysis/Sobolev/MultiIndex.lean`.
+
+A cut-off asks for smoothness `C^∞` rather than the book's `C^1` because the test functions are
+`C_c^∞` and `α φ` has to be a test function again; the `C^1` form is not needed anywhere, the
+partitions of unity of the extension theorem being smooth.
+
+The typed operators are assembled by one fixed pattern: define the function, prove the
+membership and the bound at the predicate level, bundle by
+`MemSobolevMultiIndex.exists_sobolevMultiIndex` and `SobolevMultiIndex.ext_of_fn_ae_eq`, and
+bound the `ℓ^p` norm of the tuple of derivatives coordinatewise
+(`PiLp.norm_le_norm_of_forall_norm_le`).
+
+## References
+
+[brezis2011functional], §9.1 (Remark 4 (ii), footnote 5), §9.2 (proof of Theorem 9.7, step (a)),
+§9.3.B (the standing hypothesis), §9.4 (Lemma 9.5, Remark 25).
+-/
+
+open Filter MeasureTheory Metric Module Set TopologicalSpace
+open scoped ContDiff Distributions ENNReal Topology
+
+noncomputable section
+
+/-! ### Locality of the weak derivative -/
+
+section Locality
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {μ : Measure E}
+  {n : ℕ} {y : Fin n → E} {f w : E → F}
+
+/-- **Locality of the weak derivative**: if `f` and `w` are locally integrable on `Ω`, and `w` is a
+weak derivative of `f` along `y` on every open `Ω'` with compact closure contained in `Ω`, then it
+is one on `Ω`. A test function on `Ω` has compact support, hence lives in such an `Ω'`, and the
+defining identity on `Ω'` is the identity on `Ω`. This is the step "fix an open set `Ω'` with
+`supp φ ⊂ Ω' ⊂⊂ Ω`" by which [brezis2011functional] handles `p = ∞` in Propositions 9.5 and 9.6,
+reducing a `W^{1,∞}` statement to `W^{1,q}`, `q < ∞`, on relatively compact subsets. -/
+theorem HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset
+    (hf : LocallyIntegrableOn f Ω μ) (hw : LocallyIntegrableOn w Ω μ)
+    (h : ∀ Ω' : Opens E, IsCompact (closure (Ω' : Set E)) → closure (Ω' : Set E) ⊆ Ω →
+      HasWeakIteratedLineDerivOn y f w Ω' μ) :
+    HasWeakIteratedLineDerivOn y f w Ω μ where
+  locallyIntegrableOn := hf
+  locallyIntegrableOn_weakDeriv := hw
+  integral_smul_eq φ := by
+    obtain ⟨V, -, hVo, hφV, -, hVc, hVΩ, -⟩ :=
+      φ.hasCompactSupport.exists_pos_forall_closedBall_subset Ω.isOpen φ.tsupport_subset
+    have key := (h ⟨V, hVo⟩ hVc hVΩ).integral_smul_eq'
+      ⟨φ, φ.contDiff, φ.hasCompactSupport, hφV⟩
+    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
+        = ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [show iteratedFDeriv ℝ n (φ : E → ℝ) x y = 0 from
+          (φ.iteratedFDerivApply n y).eq_zero_of_notMem hx, zero_smul]
+    have e2 : ∫ x in (Ω : Set E), φ x • w x ∂μ = ∫ x, φ x • w x ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [φ.eq_zero_of_notMem hx, zero_smul]
+    rw [e1, e2]
+    exact key
+
+end Locality
+
+/-! ### Cut-off functions and the zero extension of `α u` -/
+
+section Cutoff
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {Ω : Opens E} {α : E → ℝ}
+
+/-- **A Sobolev cut-off for the open set `Ω`**: a smooth function `α : E → ℝ`, bounded together
+with its derivative, whose support is disjoint from the frontier of `Ω`. This is the hypothesis of
+the last sentence of [brezis2011functional] Chapter 9, Remark 4 (ii) — "`α ∈ C^1(ℝ^N) ∩ L^∞(ℝ^N)`
+with `∇α ∈ L^∞` and `supp α ⊂ ℝ^N ∖ ∂Ω`" — with `C^∞` in place of `C^1`, and it is what the
+function `θ_0` of the partition of unity satisfies in the proof of the extension theorem. It covers
+the first form of that remark, `α ∈ C_c^1(Ω)`, through `IsSobolevCutoff.of_hasCompactSupport`. -/
+structure IsSobolevCutoff (Ω : Opens E) (α : E → ℝ) : Prop where
+  /-- A cut-off is smooth. -/
+  contDiff : ContDiff ℝ ∞ α
+  /-- A cut-off is bounded, together with its derivative. -/
+  exists_bound : ∃ M : ℝ, ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M
+  /-- The support of a cut-off misses the frontier of `Ω`. -/
+  disjoint_frontier : Disjoint (tsupport α) (frontier (Ω : Set E))
+
+namespace IsSobolevCutoff
+
+/-- A cut-off is continuous. -/
+theorem continuous (hα : IsSobolevCutoff Ω α) : Continuous α := hα.contDiff.continuous
+
+/-- The derivative of a cut-off in a fixed direction is smooth. -/
+theorem contDiff_fderiv_apply (hα : IsSobolevCutoff Ω α) (y : E) :
+    ContDiff ℝ ∞ fun x ↦ fderiv ℝ α x y :=
+  (hα.contDiff.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
+
+/-- The bound of a cut-off may be taken nonnegative. -/
+theorem exists_nonneg_bound (hα : IsSobolevCutoff Ω α) :
+    ∃ M : ℝ, 0 ≤ M ∧ ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M :=
+  let ⟨M, hM⟩ := hα.exists_bound
+  ⟨M, (abs_nonneg _).trans (hM 0).1, hM⟩
+
+/-- The support of a cut-off meets the closure of `Ω` inside `Ω`. -/
+theorem tsupport_inter_closure_subset (hα : IsSobolevCutoff Ω α) :
+    tsupport α ∩ closure (Ω : Set E) ⊆ Ω := by
+  rintro x ⟨hxα, hxc⟩
+  by_contra hxΩ
+  exact hα.disjoint_frontier.notMem_of_mem_left hxα ⟨hxc, fun h ↦ hxΩ (Ω.isOpen.interior_eq ▸ h)⟩
+
+/-- A smooth function with compact support inside `Ω` is a cut-off for `Ω`: the first form of
+[brezis2011functional] Chapter 9, Remark 4 (ii), `α ∈ C_c^1(Ω)`, used for the functions `θ_i`,
+`i ≥ 1`, in the proof of the extension theorem. -/
+theorem of_hasCompactSupport (hα : ContDiff ℝ ∞ α) (hαc : HasCompactSupport α)
+    (hαΩ : tsupport α ⊆ Ω) : IsSobolevCutoff Ω α where
+  contDiff := hα
+  exists_bound := by
+    obtain ⟨M₁, hM₁⟩ := hαc.exists_bound_of_continuous hα.continuous
+    obtain ⟨M₂, hM₂⟩ := (hαc.fderiv ℝ).exists_bound_of_continuous (hα.continuous_fderiv (by simp))
+    exact ⟨max M₁ M₂, fun x ↦ ⟨((Real.norm_eq_abs (α x)).symm.trans_le (hM₁ x)).trans
+      (le_max_left _ _), (hM₂ x).trans (le_max_right _ _)⟩⟩
+  disjoint_frontier := Set.disjoint_left.2 fun x hx hxf ↦
+    hxf.2 (Ω.isOpen.interior_eq.symm ▸ hαΩ hx)
+
+end IsSobolevCutoff
+
+end Cutoff
+
+section ZeroExtension
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {Ω : Opens E} {μ : Measure E} {α : E → ℝ}
+
+/-- **The zero extension of `g u` is locally integrable on the whole space**, for `u` locally
+integrable on `Ω` and a continuous `g` supported inside the support of a cut-off `α` of `Ω`: near
+a point of `Ω` the function `g` is bounded and `u` integrable, near a frontier point of `Ω` the
+function `g` vanishes, and outside the closure of `Ω` so does the indicator. -/
+theorem IsSobolevCutoff.locallyIntegrable_indicator_smul (hα : IsSobolevCutoff Ω α) {g : E → ℝ}
+    (hg : Continuous g) (hgα : tsupport g ⊆ tsupport α) {u : E → F}
+    (hu : LocallyIntegrableOn u Ω μ) :
+    LocallyIntegrable ((Ω : Set E).indicator fun x ↦ g x • u x) μ := by
+  intro x
+  by_cases hx : x ∈ (Ω : Set E)
+  · obtain ⟨ε, hε, hεΩ⟩ := Metric.isOpen_iff.1 Ω.isOpen x hx
+    have hball : closedBall x (ε / 2) ⊆ Ω :=
+      (closedBall_subset_ball (half_lt_self hε)).trans hεΩ
+    refine ⟨closedBall x (ε / 2), closedBall_mem_nhds x (half_pos hε), ?_⟩
+    obtain ⟨C, hC⟩ := (isCompact_closedBall x (ε / 2)).exists_bound_of_continuousOn
+      hg.continuousOn
+    have hint : IntegrableOn (fun z ↦ g z • u z) (closedBall x (ε / 2)) μ :=
+      (hu.integrableOn_compact_subset hball (isCompact_closedBall _ _)).bdd_smul C
+        hg.aestronglyMeasurable
+        ((ae_restrict_mem measurableSet_closedBall).mono fun z hz ↦ hC z hz)
+    exact hint.congr_fun (fun z hz ↦ (Set.indicator_of_mem (hball hz) fun x ↦ g x • u x).symm)
+      measurableSet_closedBall
+  · set V : Set E := (tsupport g)ᶜ ∪ (closure (Ω : Set E))ᶜ with hVdef
+    have hVo : IsOpen V :=
+      (isOpen_compl_iff.2 (isClosed_tsupport g)).union isClosed_closure.isOpen_compl
+    refine ⟨V, hVo.mem_nhds ?_, ?_⟩
+    · by_cases hxc : x ∈ closure (Ω : Set E)
+      · exact Or.inl fun hxg ↦ hx (hα.tsupport_inter_closure_subset ⟨hgα hxg, hxc⟩)
+      · exact Or.inr hxc
+    · refine (integrable_zero _ _ _).congr ?_
+      filter_upwards [self_mem_ae_restrict hVo.measurableSet] with z hzV
+      by_cases hz : z ∈ (Ω : Set E)
+      · rw [Set.indicator_of_mem hz]
+        rcases hzV with hzg | hzc
+        · rw [image_eq_zero_of_notMem_tsupport hzg, zero_smul]
+          rfl
+        · exact absurd (subset_closure hz) hzc
+      · rw [Set.indicator_of_notMem hz]
+        rfl
+
+/-- **The zero extension of `α u` is locally integrable on the whole space** for a locally
+integrable `u` on `Ω` and a cut-off `α`. -/
+theorem IsSobolevCutoff.locallyIntegrable_indicator_mul (hα : IsSobolevCutoff Ω α) {u : E → F}
+    (hu : LocallyIntegrableOn u Ω μ) :
+    LocallyIntegrable ((Ω : Set E).indicator fun x ↦ α x • u x) μ :=
+  hα.locallyIntegrable_indicator_smul hα.continuous le_rfl hu
+
+omit [MeasurableSpace E] [BorelSpace E] in
+/-- **A cut-off times a compactly supported smooth function is a test function on `Ω`**, after a
+correction off `Ω`: for a cut-off `α` of `Ω` and a smooth compactly supported `φ` there is a test
+function `ψ` on `Ω` with `ψ = α φ` on `Ω`. The set `tsupport (α φ) ∩ closure Ω` is a compact subset
+of `Ω`, the support of `α` missing the frontier; a smooth function `χ` equal to `1` there and
+supported in `Ω` gives `ψ = χ α φ`. This is the one technical point of the zero-extension argument
+of [brezis2011functional] Chapter 9, Remark 4 (ii), when `α` is merely supported off `∂Ω`. -/
+theorem IsSobolevCutoff.exists_testFunction_mul_eqOn (hα : IsSobolevCutoff Ω α) {φ : E → ℝ}
+    (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) :
+    ∃ ψ : 𝓓(Ω, ℝ), ∀ x ∈ (Ω : Set E), ψ x = α x * φ x := by
+  set K : Set E := tsupport (fun x ↦ α x * φ x) ∩ closure (Ω : Set E) with hKdef
+  have hK : IsCompact K :=
+    (hφc.mul_left.of_isClosed_subset isClosed_closure le_rfl).inter_right isClosed_closure
+  have hKΩ : K ⊆ Ω := fun x hx ↦
+    hα.tsupport_inter_closure_subset ⟨tsupport_mul_subset_left hx.1, hx.2⟩
+  obtain ⟨χ, hχ, hχ1, hχΩ, -⟩ := hK.exists_contDiff_eqOn_one Ω.isOpen hKΩ
+  refine ⟨⟨fun x ↦ χ x * (α x * φ x), hχ.mul (hα.contDiff.mul hφ), ?_, ?_⟩, fun x hx ↦ ?_⟩
+  · exact hφc.mul_left.mul_left
+  · exact tsupport_mul_subset_left.trans hχΩ
+  · change χ x * (α x * φ x) = α x * φ x
+    by_cases hxK : x ∈ K
+    · rw [hχ1 hxK, Pi.one_apply, one_mul]
+    · have : α x * φ x = 0 :=
+        image_eq_zero_of_notMem_tsupport (f := fun x ↦ α x * φ x)
+          fun h ↦ hxK ⟨h, subset_closure hx⟩
+      rw [this, mul_zero]
+
+omit [FiniteDimensional ℝ E] in
+/-- A continuous compactly supported function `g` supported inside the support of a cut-off of
+`Ω`, times a locally integrable function on `Ω`, is integrable on `Ω`: the product vanishes on `Ω`
+outside the compact set `tsupport g ∩ closure Ω ⊆ Ω`. -/
+theorem IsSobolevCutoff.integrableOn_mul_of_locallyIntegrableOn (hα : IsSobolevCutoff Ω α)
+    {u : E → F} (hu : LocallyIntegrableOn u Ω μ) {g : E → ℝ} (hg : Continuous g)
+    (hgc : HasCompactSupport g) (hgα : tsupport g ⊆ tsupport α) :
+    IntegrableOn (fun x ↦ g x • u x) Ω μ := by
+  set K : Set E := tsupport g ∩ closure (Ω : Set E) with hKdef
+  have hK : IsCompact K := hgc.inter_right isClosed_closure
+  have hKΩ : K ⊆ Ω := fun x hx ↦ hα.tsupport_inter_closure_subset ⟨hgα hx.1, hx.2⟩
+  obtain ⟨C, hC⟩ := hgc.exists_bound_of_continuous hg
+  have hint : IntegrableOn (fun x ↦ g x • u x) K μ :=
+    (hu.integrableOn_compact_subset hKΩ hK).bdd_smul C hg.aestronglyMeasurable
+      (Eventually.of_forall hC)
+  refine hint.of_forall_sdiff_eq_zero Ω.isOpen.measurableSet fun x hx ↦ ?_
+  have : g x = 0 := image_eq_zero_of_notMem_tsupport fun h ↦ hx.2 ⟨h, subset_closure hx.1⟩
+  rw [this, zero_smul]
+
+/-- **Extension by zero of `α u`** ([brezis2011functional] Chapter 9, Remark 4 (ii)): if `w` is
+the weak derivative of `u` along `y` on `Ω`, both locally integrable on `Ω`, and `α` is a cut-off
+for `Ω`, then the extension of `α u` by zero has, on the whole space, the weak derivative
+`α w + (∂_y α) u` extended by zero. The proof is the book's: for a test function `φ` on the whole
+space, `α φ` agrees on `Ω` with a test function `ψ` on `Ω`
+(`IsSobolevCutoff.exists_testFunction_mul_eqOn`), and
+`∫_Ω α u ∂_y φ = ∫_Ω u ∂_y ψ − ∫_Ω u (∂_y α) φ = −∫_Ω (α w + (∂_y α) u) φ`. Footnote 3 of the
+book ("in general `ū ∉ W^{1,p}(ℝ^N)`") is why the cut-off is needed. -/
+theorem HasWeakIteratedLineDerivOn.indicator_mul {y : E} {u w : E → F}
+    (hu : HasWeakIteratedLineDerivOn ![y] u w Ω μ) (hα : IsSobolevCutoff Ω α) :
+    HasWeakIteratedLineDerivOn ![y] ((Ω : Set E).indicator fun x ↦ α x • u x)
+      ((Ω : Set E).indicator fun x ↦ α x • w x + fderiv ℝ α x y • u x) ⊤ μ where
+  locallyIntegrableOn :=
+    (hα.locallyIntegrable_indicator_mul hu.locallyIntegrableOn).locallyIntegrableOn _
+  locallyIntegrableOn_weakDeriv := by
+    have h1 := hα.locallyIntegrable_indicator_mul hu.locallyIntegrableOn_weakDeriv
+    have h2 := hα.locallyIntegrable_indicator_smul (hα.contDiff_fderiv_apply y).continuous
+      (tsupport_fderiv_apply_subset ℝ y) hu.locallyIntegrableOn
+    refine ((h1.add h2).congr (Eventually.of_forall fun x ↦ ?_)).locallyIntegrableOn _
+    by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
+  integral_smul_eq φ := by
+    obtain ⟨ψ, hψ⟩ := hα.exists_testFunction_mul_eqOn φ.contDiff φ.hasCompactSupport
+    have hψd : ∀ x ∈ (Ω : Set E),
+        fderiv ℝ ψ x y = fderiv ℝ α x y * φ x + α x * fderiv ℝ φ x y := by
+      intro x hx
+      have heq : (ψ : E → ℝ) =ᶠ[𝓝 x] fun z ↦ α z * φ z :=
+        Filter.eventually_of_mem (Ω.isOpen.mem_nhds hx) fun z hz ↦ hψ z hz
+      rw [heq.fderiv_eq, fderiv_fun_mul (hα.contDiff.differentiable (by simp) x)
+        (φ.contDiff.differentiable (by simp) x)]
+      simp only [add_apply, smul_apply, smul_eq_mul]
+      ring
+    have hmeas := Ω.isOpen.measurableSet
+    have I1 : IntegrableOn (fun x ↦ fderiv ℝ ψ x y • u x) Ω μ := by
+      have := (hu.integrable_smul (ψ.fderivApply y)).integrableOn (s := (Ω : Set E))
+      simpa only [TestFunction.fderivApply_apply] using this
+    have I2 : IntegrableOn (fun x ↦ (fderiv ℝ α x y * φ x) • u x) Ω μ :=
+      hα.integrableOn_mul_of_locallyIntegrableOn hu.locallyIntegrableOn
+        ((hα.contDiff_fderiv_apply y).continuous.mul φ.contDiff.continuous)
+        φ.hasCompactSupport.mul_left
+        (tsupport_mul_subset_left.trans (tsupport_fderiv_apply_subset ℝ y))
+    have I3 : IntegrableOn (fun x ↦ ψ x • w x) Ω μ :=
+      (hu.integrable_smul_weakDeriv ψ).integrableOn
+    have hL : ∫ x in ((⊤ : Opens E) : Set E), iteratedFDeriv ℝ 1 (φ : E → ℝ) x ![y] •
+        ((Ω : Set E).indicator fun x ↦ α x • u x) x ∂μ
+        = ∫ x in (Ω : Set E), fderiv ℝ ψ x y • u x ∂μ
+          - ∫ x in (Ω : Set E), (fderiv ℝ α x y * φ x) • u x ∂μ := by
+      rw [Measure.restrict_coe_top, ← integral_sub I1 I2, ← integral_indicator hmeas]
+      refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+      dsimp only
+      by_cases hx : x ∈ (Ω : Set E)
+      · rw [Set.indicator_of_mem hx, Set.indicator_of_mem hx, iteratedFDeriv_one_apply,
+          Matrix.cons_val_zero, hψd x hx, add_smul, add_sub_cancel_left, smul_smul, mul_comm]
+      · simp [Set.indicator_of_notMem hx]
+    have hR : ∫ x in ((⊤ : Opens E) : Set E), φ x •
+        ((Ω : Set E).indicator fun x ↦ α x • w x + fderiv ℝ α x y • u x) x ∂μ
+        = ∫ x in (Ω : Set E), ψ x • w x ∂μ
+          + ∫ x in (Ω : Set E), (fderiv ℝ α x y * φ x) • u x ∂μ := by
+      rw [Measure.restrict_coe_top, ← integral_add I3 I2, ← integral_indicator hmeas]
+      refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+      dsimp only
+      by_cases hx : x ∈ (Ω : Set E)
+      · rw [Set.indicator_of_mem hx, Set.indicator_of_mem hx, hψ x hx, smul_add, smul_smul,
+          smul_smul, mul_comm (φ x) (α x), mul_comm (φ x)]
+      · simp [Set.indicator_of_notMem hx]
+    rw [hL, hR, pow_one, neg_one_smul, neg_add, sub_eq_add_neg]
+    congr 1
+    have := hu.integral_smul_eq ψ
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, pow_one, neg_one_smul] at this
+    exact this
+
+end ZeroExtension
+
+section MemIndicator
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {Ω : Opens E} {μ : Measure E} {α : E → ℝ} {p : ℝ≥0∞}
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] in
+/-- The `L^p` norm of the zero extension of `g • u` off a measurable set `s`, for `g` bounded by
+`M` on `s`, is at most `M` times the `L^p(s)` norm of `u`. -/
+theorem eLpNorm_indicator_smul_le_of_forall_norm_le {s : Set E} (hs : MeasurableSet s)
+    {g : E → ℝ} {M : ℝ} (hM : ∀ x ∈ s, ‖g x‖ ≤ M) (hg : AEStronglyMeasurable g (μ.restrict s))
+    {u : E → F} (hu : AEStronglyMeasurable u (μ.restrict s)) :
+    eLpNorm (s.indicator fun x ↦ g x • u x) p μ
+      ≤ ENNReal.ofReal M * eLpNorm u p (μ.restrict s) := by
+  rw [eLpNorm_indicator_eq_eLpNorm_restrict hs]
+  refine eLpNorm_le_mul_eLpNorm_of_ae_le_mul (f := fun x ↦ g x • u x) (hg.smul hu) ?_ p
+  filter_upwards [self_mem_ae_restrict hs] with x hx
+  simp only [norm_smul]
+  exact mul_le_mul_of_nonneg_right (hM x hx) (norm_nonneg _)
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] in
+/-- The zero extension of `g • u` off a measurable set `s` lies in `L^p` when `g` is bounded and
+measurable on `s` and `u ∈ L^p(s)`. -/
+theorem memLp_indicator_smul_of_forall_norm_le {s : Set E} (hs : MeasurableSet s) {g : E → ℝ}
+    {M : ℝ} (hM : ∀ x ∈ s, ‖g x‖ ≤ M) (hg : AEStronglyMeasurable g (μ.restrict s)) {u : E → F}
+    (hu : MemLp u p (μ.restrict s)) : MemLp (s.indicator fun x ↦ g x • u x) p μ := by
+  rw [memLp_indicator_iff_restrict hs]
+  have hgtop : MemLp g ⊤ (μ.restrict s) :=
+    memLp_top_of_bound hg M ((ae_restrict_mem hs).mono hM)
+  exact hgtop.smul hu
+
+/-- **Membership form of Remark 4 (ii)** ([brezis2011functional] Chapter 9): for
+`u ∈ W^{1,p}(Ω)` and a cut-off `α` for `Ω`, the extension of `α u` by zero lies in
+`W^{1,p}(E)`, the whole space. Direction by direction this is
+`HasWeakIteratedLineDerivOn.indicator_mul`, after reading the multi-index `e_i` as the single
+direction `b i`; the `L^p` memberships come from the bounds on `α` and `∇α`. -/
+theorem MemSobolevMultiIndex.indicator_mul [IsLocallyFiniteMeasure μ] {ι : Type*} [Fintype ι]
+    [LinearOrder ι] {b : Basis ι ℝ E} {u : E → F} (hp : 1 ≤ p)
+    (hu : MemSobolevMultiIndex b u 1 p Ω μ) (hα : IsSobolevCutoff Ω α) :
+    MemSobolevMultiIndex b ((Ω : Set E).indicator fun x ↦ α x • u x) 1 p ⊤ μ := by
+  obtain ⟨M, hM0, hM⟩ := hα.exists_nonneg_bound
+  have hmeas := Ω.isOpen.measurableSet
+  have hαm : AEStronglyMeasurable α (μ.restrict Ω) := hα.continuous.aestronglyMeasurable
+  have hαM : ∀ x ∈ (Ω : Set E), ‖α x‖ ≤ M := fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x).1
+  have hmem : MemLp ((Ω : Set E).indicator fun x ↦ α x • u x) p μ :=
+    memLp_indicator_smul_of_forall_norm_le hmeas hαM hαm hu.memLp
+  refine ⟨by simpa [Measure.restrict_coe_top] using hmem, fun β hβ ↦ ?_⟩
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0 | ⟨i, hi⟩
+  · obtain rfl : β = 0 := congrArg Subtype.val h0
+    refine ⟨_, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
+      ((hmem.locallyIntegrable hp).locallyIntegrableOn _), ?_⟩
+    simpa [Measure.restrict_coe_top] using hmem
+  · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
+    obtain ⟨w, hw, hwp⟩ := hu.2 (Pi.single i 1) (by simp)
+    have hw' : HasWeakIteratedLineDerivOn ![b i] u w Ω μ :=
+      hw.of_perm (multiIndexTuple_single_perm (b : ι → E) i)
+    refine ⟨_, (hw'.indicator_mul hα).of_perm (multiIndexTuple_single_perm (b : ι → E) i).symm,
+      ?_⟩
+    have h1 : MemLp ((Ω : Set E).indicator fun x ↦ α x • w x) p μ :=
+      memLp_indicator_smul_of_forall_norm_le hmeas hαM hαm hwp
+    have h2 : MemLp ((Ω : Set E).indicator fun x ↦ fderiv ℝ α x (b i) • u x) p μ :=
+      memLp_indicator_smul_of_forall_norm_le hmeas (M := M * ‖b i‖)
+        (fun x _ ↦ ((fderiv ℝ α x).le_opNorm (b i)).trans
+          (mul_le_mul_of_nonneg_right (hM x).2 (norm_nonneg _)))
+        (hα.contDiff_fderiv_apply (b i)).continuous.aestronglyMeasurable hu.memLp
+    rw [Measure.restrict_coe_top]
+    refine MemLp.ae_eq ?_ (h1.add h2)
+    refine Eventually.of_forall fun x ↦ ?_
+    by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
+
+end MemIndicator
+
+section PiLpNorm
+
+variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {ι : Type*} [Fintype ι]
+
+/-- **The `ℓ^p` norm is monotone in each coordinate**: if `‖x i‖ ≤ ‖y i‖` for every `i`, then
+`‖x‖ ≤ ‖y‖`, the two tuples possibly living in different families of spaces. -/
+theorem PiLp.norm_le_norm_of_forall_norm_le {β β' : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
+    [∀ i, SeminormedAddCommGroup (β' i)] {x : PiLp p β} {y : PiLp p β'}
+    (h : ∀ i, ‖x i‖ ≤ ‖y i‖) : ‖x‖ ≤ ‖y‖ := by
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
+    exact ciSup_mono (Finite.bddAbove_range _) h
+  · have hP : 0 < p.toReal :=
+      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
+      (Finset.sum_le_sum fun i _ ↦ Real.rpow_le_rpow (norm_nonneg _) (h i) hP.le) (by positivity)
+
+/-- **The `ℓ^p` norm is at most the `ℓ^1` norm**: `‖x‖ ≤ ∑ i, ‖x i‖`, by writing `x` as the sum of
+its coordinates and the triangle inequality. -/
+theorem PiLp.norm_le_sum_norm {β : ι → Type*} [∀ i, SeminormedAddCommGroup (β i)]
+    (x : PiLp p β) : ‖x‖ ≤ ∑ i, ‖x i‖ := by
+  classical
+  have e : x = ∑ i, PiLp.single p i (x i) := by
+    refine PiLp.ext fun j ↦ ?_
+    simp only [WithLp.ofLp_sum, Finset.sum_apply, PiLp.ofLp_single]
+    rw [Finset.sum_eq_single j (fun i _ hij ↦ Pi.single_eq_of_ne hij.symm _) (by simp),
+      Pi.single_eq_same]
+  calc ‖x‖ = ‖∑ i, PiLp.single p i (x i)‖ := by rw [← e]
+    _ ≤ ∑ i, ‖PiLp.single p i (x i)‖ := norm_sum_le _ _
+    _ = ∑ i, ‖x i‖ := by simp only [PiLp.norm_single]
+
+end PiLpNorm
+
+/-! ### `L^p` of a smaller measure -/
+
+namespace MeasureTheory.Lp
+
+variable {X G : Type*} [MeasurableSpace X] [NormedAddCommGroup G] [NormedSpace ℝ G]
+  {μ ν : Measure X} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+/-- **The identity `L^p(μ) → L^p(ν)` for a measure `ν ≤ μ`**, a bounded linear map of norm at most
+one: an `L^p(μ)` function is in `L^p(ν)`, its `L^p(ν)` norm is at most its `L^p(μ)` norm, and
+`μ`-almost everywhere equal functions are `ν`-almost everywhere equal. For `ν = μ.restrict s` this
+is restriction to the set `s`; for `ν = μ.restrict Ω'` with `Ω' ⊆ Ω` and `μ = μ.restrict Ω` it is
+the restriction `L^p(Ω) → L^p(Ω')` that `SobolevMultiIndex.restrictL` is built from. -/
+def monoMeasureL (hνμ : ν ≤ μ) : Lp G p μ →L[ℝ] Lp G p ν :=
+  LinearMap.mkContinuous
+    { toFun := fun f ↦ ((Lp.memLp f).mono_measure hνμ).toLp f
+      map_add' := fun f g ↦ by
+        rw [← MemLp.toLp_add]
+        exact MemLp.toLp_congr _ _ ((Lp.coeFn_add f g).filter_mono (ae_mono hνμ))
+      map_smul' := fun c f ↦ by
+        rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+        exact MemLp.toLp_congr _ _ ((Lp.coeFn_smul c f).filter_mono (ae_mono hνμ)) }
+    1 fun f ↦ by
+      change ‖((Lp.memLp f).mono_measure hνμ).toLp f‖ ≤ 1 * ‖f‖
+      rw [one_mul, Lp.norm_toLp, Lp.norm_def]
+      exact ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_measure _ hνμ)
+
+/-- `MeasureTheory.Lp.monoMeasureL` is the class of the same function. -/
+theorem monoMeasureL_apply (hνμ : ν ≤ μ) (f : Lp G p μ) :
+    monoMeasureL hνμ f = ((Lp.memLp f).mono_measure hνμ).toLp f :=
+  rfl
+
+/-- `MeasureTheory.Lp.monoMeasureL` does not change the function, `ν`-almost everywhere. -/
+theorem coeFn_monoMeasureL (hνμ : ν ≤ μ) (f : Lp G p μ) : monoMeasureL hνμ f =ᵐ[ν] f := by
+  rw [monoMeasureL_apply]
+  exact MemLp.coeFn_toLp _
+
+/-- `MeasureTheory.Lp.monoMeasureL` does not increase the norm. -/
+theorem norm_monoMeasureL_apply_le (hνμ : ν ≤ μ) (f : Lp G p μ) : ‖monoMeasureL hνμ f‖ ≤ ‖f‖ := by
+  rw [monoMeasureL_apply, Lp.norm_toLp, Lp.norm_def]
+  exact ENNReal.toReal_mono (Lp.eLpNorm_ne_top f) (eLpNorm_mono_measure _ hνμ)
+
+/-- The operator norm of `MeasureTheory.Lp.monoMeasureL` is at most one. -/
+theorem norm_monoMeasureL_le (hνμ : ν ≤ μ) : ‖(monoMeasureL hνμ : Lp G p μ →L[ℝ] Lp G p ν)‖ ≤ 1 :=
+  LinearMap.mkContinuous_norm_le _ zero_le_one _
+
+end MeasureTheory.Lp
+
+/-! ### The typed operators: restriction, zero extension, inclusion -/
+
+section Operators
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω Ω' : Opens E} {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+omit [Fact (1 ≤ p)] in
+/-- The weak derivatives of a sum are the sums of the weak derivatives. -/
+theorem weakDeriv_add (u v : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
+    weakDeriv (u + v) α = weakDeriv u α + weakDeriv v α :=
+  rfl
+
+omit [Fact (1 ≤ p)] in
+/-- The weak derivatives of a scalar multiple are the multiples of the weak derivatives. -/
+theorem weakDeriv_smul (c : ℝ) (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
+    weakDeriv (c • u) α = c • weakDeriv u α :=
+  rfl
+
+omit [NormedSpace ℝ E] [OpensMeasurableSpace E] in
+/-- The restriction of `μ.restrict Ω` to a smaller open set is smaller. -/
+theorem restrict_le_restrict_of_le (h : Ω' ≤ Ω) :
+    μ.restrict (Ω' : Set E) ≤ μ.restrict (Ω : Set E) :=
+  Measure.restrict_mono h le_rfl
+
+variable (F b k p μ) in
+/-- The family of the restrictions to `Ω' ⊆ Ω` of the weak derivatives of `u ∈ W^{k,p}(Ω)`, as an
+element of the ambient `ℓ^p` product over `Ω'`. -/
+def restrictTuple (h : Ω' ≤ Ω) (u : SobolevMultiIndex F b k p Ω μ) :
+    SobolevMultiIndexTuple F ι k p Ω' μ :=
+  WithLp.toLp p fun α ↦ Lp.monoMeasureL (restrict_le_restrict_of_le h) (weakDeriv u α)
+
+/-- The restricted family lies in `W^{k,p}(Ω')`: a weak derivative on `Ω` is one on `Ω'`. -/
+theorem restrictTuple_mem (h : Ω' ≤ Ω) (u : SobolevMultiIndex F b k p Ω μ) :
+    restrictTuple F b k p μ h u ∈ SobolevMultiIndex F b k p Ω' μ := fun α ↦
+  ((SobolevMultiIndex.hasWeakIteratedLineDerivOn u α).mono h).congr_ae
+    (Lp.coeFn_monoMeasureL (restrict_le_restrict_of_le h) (weakDeriv u 0)).symm
+    (Lp.coeFn_monoMeasureL (restrict_le_restrict_of_le h) (weakDeriv u α)).symm
+
+variable (F b k p μ) in
+/-- **Restriction to an open subset `Ω' ⊆ Ω` as a bounded linear map `W^{k,p}(Ω) → W^{k,p}(Ω')`**,
+of norm at most one: every weak derivative is restricted, and the `ℓ^p` norm of the family does
+not increase. Every "consider the restriction of `u` to `U ∩ Ω`" of [brezis2011functional] §9.2 is
+this map. -/
+def restrictL (h : Ω' ≤ Ω) : SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω' μ :=
+  LinearMap.mkContinuous
+    { toFun := fun u ↦ ⟨restrictTuple F b k p μ h u, restrictTuple_mem h u⟩
+      map_add' := fun u v ↦ Subtype.ext (PiLp.ext fun α ↦ by
+        change Lp.monoMeasureL _ (weakDeriv (u + v) α)
+          = Lp.monoMeasureL _ (weakDeriv u α) + Lp.monoMeasureL _ (weakDeriv v α)
+        rw [weakDeriv_add, map_add])
+      map_smul' := fun c u ↦ Subtype.ext (PiLp.ext fun α ↦ by
+        change Lp.monoMeasureL _ (weakDeriv (c • u) α) = c • Lp.monoMeasureL _ (weakDeriv u α)
+        rw [weakDeriv_smul, map_smul]) }
+    1 fun u ↦ by
+      rw [one_mul, ← Submodule.norm_coe, ← Submodule.norm_coe]
+      exact PiLp.norm_le_norm_of_forall_norm_le fun α ↦ Lp.norm_monoMeasureL_apply_le _ _
+
+/-- The weak derivatives of the restriction are the restrictions of the weak derivatives. -/
+theorem weakDeriv_restrictL (h : Ω' ≤ Ω) (u : SobolevMultiIndex F b k p Ω μ)
+    (α : MultiIndexLE ι k) :
+    weakDeriv (restrictL F b k p μ h u) α =ᵐ[μ.restrict (Ω' : Set E)] weakDeriv u α :=
+  Lp.coeFn_monoMeasureL _ _
+
+/-- The function of the restriction is the function, almost everywhere on `Ω'`. -/
+theorem fn_restrictL (h : Ω' ≤ Ω) (u : SobolevMultiIndex F b k p Ω μ) :
+    fn (restrictL F b k p μ h u) =ᵐ[μ.restrict (Ω' : Set E)] fn u :=
+  Lp.coeFn_monoMeasureL _ _
+
+/-- Restriction does not increase the norm. -/
+theorem norm_restrictL_apply_le (h : Ω' ≤ Ω) (u : SobolevMultiIndex F b k p Ω μ) :
+    ‖restrictL F b k p μ h u‖ ≤ ‖u‖ := by
+  rw [restrictL, LinearMap.mkContinuous_apply, ← Submodule.norm_coe, ← Submodule.norm_coe]
+  exact PiLp.norm_le_norm_of_forall_norm_le fun α ↦ Lp.norm_monoMeasureL_apply_le _ _
+
+/-- The operator norm of the restriction is at most one. -/
+theorem norm_restrictL_le (h : Ω' ≤ Ω) : ‖restrictL F b k p μ h‖ ≤ 1 :=
+  LinearMap.mkContinuous_norm_le _ zero_le_one _
+
+/-! #### The inclusion `W^{k,p}(Ω) → L^q(Ω)` -/
+
+variable {q : ℝ≥0∞} [Fact (1 ≤ q)]
+
+variable (F b k p Ω μ) in
+/-- **The inclusion of `W^{k,p}(Ω)` into `L^q(Ω)`**, as a linear map, given the membership: for
+`h : ∀ u, MemLp (fn u) q (μ.restrict Ω)`, the map `u ↦ fn u`. Every "`W^{1,p}(Ω) ⊂ L^q(Ω)` with
+continuous injection" of [brezis2011functional] §9.3 is `IsContinuousEmbedding (toLpₗ h)` for the
+relevant `h`, and every compact injection of Theorem 9.16 is `IsCompactEmbedding (toLpₗ h)`, in
+the vocabulary of `Numlib/Analysis/Normed/Operator/Embedding.lean`. For `q = p` it is the
+underlying linear map of `SobolevMultiIndex.fnL` (`SobolevMultiIndex.toLpₗ_self`). -/
+def toLpₗ (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E))) :
+    SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] Lp F q (μ.restrict (Ω : Set E)) where
+  toFun u := (h u).toLp (fn u)
+  map_add' u v := by
+    rw [← MemLp.toLp_add]
+    exact MemLp.toLp_congr _ _ (fn_add u v)
+  map_smul' c u := by
+    rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+    exact MemLp.toLp_congr _ _ (fn_smul c u)
+
+omit [Fact (1 ≤ p)] [Fact (1 ≤ q)] in
+/-- `SobolevMultiIndex.toLpₗ h u` is the function of `u`, almost everywhere on `Ω`. -/
+theorem toLpₗ_coeFn
+    (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E)))
+    (u : SobolevMultiIndex F b k p Ω μ) : toLpₗ F b k p Ω μ h u =ᵐ[μ.restrict (Ω : Set E)] fn u :=
+  MemLp.coeFn_toLp (h u)
+
+omit [Fact (1 ≤ p)] [Fact (1 ≤ q)] in
+/-- The inclusion `W^{k,p}(Ω) → L^q(Ω)` is injective: an element of `W^{k,p}(Ω)` is determined by
+its function. -/
+theorem toLpₗ_injective [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+    (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E))) :
+    Function.Injective (toLpₗ F b k p Ω μ h) := fun u v huv ↦
+  ext_of_fn_ae_eq <| (toLpₗ_coeFn h u).symm.trans <|
+    (Lp.ext_iff.1 huv).trans (toLpₗ_coeFn h v)
+
+/-- **A bound `‖u‖_{L^q(Ω)} ≤ C ‖u‖_{W^{k,p}(Ω)}` makes the inclusion a continuous embedding**
+`W^{k,p}(Ω) ↪ L^q(Ω)`, in the sense of `IsContinuousEmbedding`. -/
+theorem isContinuousEmbedding_toLpₗ [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+    (h : ∀ u : SobolevMultiIndex F b k p Ω μ, MemLp (fn u) q (μ.restrict (Ω : Set E))) {C : ℝ}
+    (hC : ∀ u, ‖toLpₗ F b k p Ω μ h u‖ ≤ C * ‖u‖) : IsContinuousEmbedding (toLpₗ F b k p Ω μ h) :=
+  ⟨toLpₗ_injective h, C, hC⟩
+
+/-- For `q = p` the inclusion is the underlying linear map of `SobolevMultiIndex.fnL`. -/
+theorem toLpₗ_self : toLpₗ F b k p Ω μ (fun u ↦ memLp u) = (fnL F b k p Ω μ).toLinearMap :=
+  LinearMap.ext fun u ↦ Lp.ext ((toLpₗ_coeFn _ u).trans (Eventually.of_forall fun _ ↦ rfl))
+
+/-- **`W^{k,p}(Ω) ↪ L^p(Ω)` is a continuous embedding**, along `SobolevMultiIndex.fnL`. -/
+theorem isContinuousEmbedding_fnL [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] :
+    IsContinuousEmbedding (fnL F b k p Ω μ).toLinearMap := by
+  rw [← toLpₗ_self]
+  exact isContinuousEmbedding_toLpₗ _ (C := 1) fun u ↦ by
+    rw [toLpₗ_self, one_mul]
+    exact norm_fnL_apply_le u
+
+end SobolevMultiIndex
+
+end Operators
+
+section ExtendZero
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
+  [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [IsLocallyFiniteMeasure μ] {α : E → ℝ}
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [IsLocallyFiniteMeasure μ] in
+/-- Almost everywhere for `μ.restrict ⊤` is almost everywhere for `μ`. -/
+theorem MeasureTheory.eventuallyEq_restrict_coe_top_iff {G : Type*} {f g : E → G} :
+    f =ᵐ[μ.restrict ((⊤ : Opens E) : Set E)] g ↔ f =ᵐ[μ] g := by
+  unfold Filter.EventuallyEq
+  rw [Measure.restrict_coe_top]
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [IsLocallyFiniteMeasure μ] in
+/-- The `L^p` norm for `μ.restrict ⊤` is the `L^p` norm for `μ`. -/
+theorem MeasureTheory.eLpNorm_restrict_coe_top {G : Type*} [NormedAddCommGroup G] (f : E → G)
+    (p : ℝ≥0∞) : eLpNorm f p (μ.restrict ((⊤ : Opens E) : Set E)) = eLpNorm f p μ := by
+  rw [Measure.restrict_coe_top]
+
+namespace SobolevMultiIndex
+
+/-- **The zero extension `u ↦ α u` of Remark 4 (ii) on the typed spaces**, as a function: the
+element of `W^{1,p}(E)` whose function is `α u` extended by zero outside `Ω`
+(`MemSobolevMultiIndex.indicator_mul` and `MemSobolevMultiIndex.exists_sobolevMultiIndex`). It is
+linear (`SobolevMultiIndex.extendZeroMul_add`, `extendZeroMul_smul`) and bounded
+(`SobolevMultiIndex.norm_extendZeroMul_le`); `SobolevMultiIndex.extendZeroMulL` is its bundled
+form. -/
+def extendZeroMul (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    SobolevMultiIndex F b 1 p ⊤ μ :=
+  ((memSobolevMultiIndex u).indicator_mul Fact.out hα).exists_sobolevMultiIndex.choose
+
+/-- The function of `SobolevMultiIndex.extendZeroMul hα u` is `α u` extended by zero. -/
+theorem fn_extendZeroMul (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    fn (extendZeroMul hα u) =ᵐ[μ] (Ω : Set E).indicator fun x ↦ α x • fn u x :=
+  eventuallyEq_restrict_coe_top_iff.1
+    ((memSobolevMultiIndex u).indicator_mul Fact.out hα).exists_sobolevMultiIndex.choose_spec
+
+/-- On `Ω`, the function of `SobolevMultiIndex.extendZeroMul hα u` is `α u`. -/
+theorem fn_extendZeroMul_restrict (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    fn (extendZeroMul hα u) =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ α x • fn u x :=
+  Filter.EventuallyEq.trans (ae_restrict_of_ae (fn_extendZeroMul hα u))
+    (indicator_ae_eq_restrict Ω.isOpen.measurableSet)
+
+/-- The partial derivative `∂_i` of the zero extension of `α u` is `α ∂_i u + (∂_i α) u` extended
+by zero: the weak derivatives of `SobolevMultiIndex.extendZeroMul hα u` are the ones
+`HasWeakIteratedLineDerivOn.indicator_mul` provides, by uniqueness. -/
+theorem weakDeriv_extendZeroMul_single (hα : IsSobolevCutoff Ω α)
+    (u : SobolevMultiIndex F b 1 p Ω μ) (i : ι) :
+    weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i) =ᵐ[μ] (Ω : Set E).indicator fun x ↦
+      α x • weakDeriv u (MultiIndexLE.single i) x + fderiv ℝ α x (b i) • fn u x := by
+  have h1 : HasWeakIteratedLineDerivOn ![b i] (fn (extendZeroMul hα u))
+      (weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i)) ⊤ μ :=
+    (hasWeakIteratedLineDerivOn (extendZeroMul hα u) (MultiIndexLE.single i)).of_perm
+      (multiIndexTuple_single_perm (b : ι → E) i)
+  have h2 : HasWeakIteratedLineDerivOn ![b i] (fn (extendZeroMul hα u))
+      ((Ω : Set E).indicator fun x ↦
+        α x • weakDeriv u (MultiIndexLE.single i) x + fderiv ℝ α x (b i) • fn u x) ⊤ μ := by
+    exact (((hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
+      (multiIndexTuple_single_perm (b : ι → E) i)).indicator_mul hα).congr_ae
+      (eventuallyEq_restrict_coe_top_iff.2 (fn_extendZeroMul hα u).symm)
+      (Filter.EventuallyEq.refl _ _)
+  filter_upwards [h1.ae_eq h2] with x hx using hx trivial
+
+/-- The zero extension is additive. -/
+theorem extendZeroMul_add (hα : IsSobolevCutoff Ω α) (u v : SobolevMultiIndex F b 1 p Ω μ) :
+    extendZeroMul hα (u + v) = extendZeroMul hα u + extendZeroMul hα v := by
+  refine ext_of_fn_ae_eq (eventuallyEq_restrict_coe_top_iff.2 ?_)
+  have h1 : (fun x ↦ α x • fn (u + v) x) =ᵐ[μ.restrict (Ω : Set E)]
+      fun x ↦ α x • fn u x + α x • fn v x := by
+    filter_upwards [fn_add u v] with x hx
+    rw [hx, Pi.add_apply, smul_add]
+  refine (fn_extendZeroMul hα (u + v)).trans
+    (((ae_eq_restrict_iff_indicator_ae_eq Ω.isOpen.measurableSet).1 h1).trans ?_)
+  have h2 := eventuallyEq_restrict_coe_top_iff.1 (fn_add (extendZeroMul hα u) (extendZeroMul hα v))
+  refine Filter.EventuallyEq.trans ?_ h2.symm
+  filter_upwards [fn_extendZeroMul hα u, fn_extendZeroMul hα v] with x hxu hxv
+  rw [Pi.add_apply, hxu, hxv]
+  by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
+
+/-- The zero extension commutes with scalar multiplication. -/
+theorem extendZeroMul_smul (hα : IsSobolevCutoff Ω α) (c : ℝ) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    extendZeroMul hα (c • u) = c • extendZeroMul hα u := by
+  refine ext_of_fn_ae_eq (eventuallyEq_restrict_coe_top_iff.2 ?_)
+  have h1 : (fun x ↦ α x • fn (c • u) x) =ᵐ[μ.restrict (Ω : Set E)]
+      fun x ↦ c • (α x • fn u x) := by
+    filter_upwards [fn_smul c u] with x hx
+    rw [hx, Pi.smul_apply, smul_comm]
+  refine (fn_extendZeroMul hα (c • u)).trans
+    (((ae_eq_restrict_iff_indicator_ae_eq Ω.isOpen.measurableSet).1 h1).trans ?_)
+  have h2 := eventuallyEq_restrict_coe_top_iff.1 (fn_smul c (extendZeroMul hα u))
+  refine Filter.EventuallyEq.trans ?_ h2.symm
+  filter_upwards [fn_extendZeroMul hα u] with x hxu
+  rw [Pi.smul_apply, hxu]
+  by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
+
+/-- **The `L^p` bound on the zero extension**: `‖α u‖_{L^p(E)} ≤ M ‖u‖_{L^p(Ω)}` for `|α| ≤ M`. -/
+theorem eLpNorm_fn_extendZeroMul_le (hα : IsSobolevCutoff Ω α) {M : ℝ} (hM : ∀ x, |α x| ≤ M)
+    (u : SobolevMultiIndex F b 1 p Ω μ) :
+    eLpNorm (fn (extendZeroMul hα u)) p μ
+      ≤ ENNReal.ofReal M * eLpNorm (fn u) p (μ.restrict (Ω : Set E)) := by
+  rw [eLpNorm_congr_ae (fn_extendZeroMul hα u)]
+  exact eLpNorm_indicator_smul_le_of_forall_norm_le Ω.isOpen.measurableSet
+    (fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x)) hα.continuous.aestronglyMeasurable
+    (memLp u).aestronglyMeasurable
+
+/-- **The `W^{1,p}` bound on the zero extension**: for a cut-off `α` with `|α| ≤ M` and
+`‖∇α‖ ≤ M`, `‖α u‖_{W^{1,p}(E)} ≤ (M + ∑ i, M (1 + ‖b i‖)) ‖u‖_{W^{1,p}(Ω)}`. This is the estimate
+`‖ū_0‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(Ω)}` of [brezis2011functional] §9.2, proof of Theorem 9.7,
+step (a). -/
+theorem norm_extendZeroMul_le (hα : IsSobolevCutoff Ω α) {M : ℝ}
+    (hM : ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    ‖extendZeroMul hα u‖ ≤ (M + ∑ i, M * (1 + ‖b i‖)) * ‖u‖ := by
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0).1
+  have hmeas := Ω.isOpen.measurableSet
+  have hαm : AEStronglyMeasurable α (μ.restrict Ω) := hα.continuous.aestronglyMeasurable
+  have hne : ∀ (c : ℝ) (v : Lp F p (μ.restrict (Ω : Set E))),
+      ENNReal.ofReal c * eLpNorm v p (μ.restrict (Ω : Set E)) ≠ ⊤ := fun c v ↦
+    ENNReal.mul_ne_top ENNReal.ofReal_ne_top (Lp.eLpNorm_ne_top v)
+  have h0 : ‖weakDeriv (extendZeroMul hα u) 0‖ ≤ M * ‖u‖ := by
+    have h := ENNReal.toReal_mono (hne M (weakDeriv u 0))
+      (eLpNorm_fn_extendZeroMul_le hα (fun x ↦ (hM x).1) u)
+    rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal hM0] at h
+    rw [Lp.norm_def, eLpNorm_restrict_coe_top]
+    exact h.trans (mul_le_mul_of_nonneg_left
+      ((Lp.norm_def (weakDeriv u 0)).symm.le.trans (norm_weakDeriv_le u 0)) hM0)
+  have hi : ∀ i, ‖weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i)‖
+      ≤ M * (1 + ‖b i‖) * ‖u‖ := by
+    intro i
+    have hb : 0 ≤ M * ‖b i‖ := mul_nonneg hM0 (norm_nonneg _)
+    have e1 : eLpNorm ((Ω : Set E).indicator fun x ↦ α x • weakDeriv u (MultiIndexLE.single i) x)
+        p μ ≤ ENNReal.ofReal M * eLpNorm (weakDeriv u (MultiIndexLE.single i)) p (μ.restrict Ω) :=
+      eLpNorm_indicator_smul_le_of_forall_norm_le hmeas
+        (fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x).1) hαm (Lp.memLp _).aestronglyMeasurable
+    have e2 : eLpNorm ((Ω : Set E).indicator fun x ↦ fderiv ℝ α x (b i) • fn u x) p μ
+        ≤ ENNReal.ofReal (M * ‖b i‖) * eLpNorm (weakDeriv u 0) p (μ.restrict Ω) :=
+      eLpNorm_indicator_smul_le_of_forall_norm_le hmeas
+        (fun x _ ↦ ((fderiv ℝ α x).le_opNorm (b i)).trans
+          (mul_le_mul_of_nonneg_right (hM x).2 (norm_nonneg _)))
+        (hα.contDiff_fderiv_apply (b i)).continuous.aestronglyMeasurable
+        (memLp u).aestronglyMeasurable
+    have hsplit : ((Ω : Set E).indicator fun x ↦
+          α x • weakDeriv u (MultiIndexLE.single i) x + fderiv ℝ α x (b i) • fn u x)
+        = ((Ω : Set E).indicator fun x ↦ α x • weakDeriv u (MultiIndexLE.single i) x)
+          + (Ω : Set E).indicator fun x ↦ fderiv ℝ α x (b i) • fn u x := by
+      funext x
+      by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
+    have key : eLpNorm (weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i)) p μ
+        ≤ ENNReal.ofReal M * eLpNorm (weakDeriv u (MultiIndexLE.single i)) p (μ.restrict Ω)
+          + ENNReal.ofReal (M * ‖b i‖) * eLpNorm (weakDeriv u 0) p (μ.restrict Ω) := by
+      rw [eLpNorm_congr_ae (weakDeriv_extendZeroMul_single hα u i), hsplit]
+      exact (eLpNorm_add_le Fact.out).trans (add_le_add e1 e2)
+    have h := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hne _ _, hne _ _⟩) key
+    rw [ENNReal.toReal_add (hne _ _) (hne _ _), ENNReal.toReal_mul, ENNReal.toReal_mul,
+      ENNReal.toReal_ofReal hM0, ENNReal.toReal_ofReal hb, ← Lp.norm_def, ← Lp.norm_def] at h
+    rw [Lp.norm_def, eLpNorm_restrict_coe_top]
+    calc (eLpNorm (weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i)) p μ).toReal
+        ≤ M * ‖weakDeriv u (MultiIndexLE.single i)‖ + M * ‖b i‖ * ‖weakDeriv u 0‖ := h
+      _ ≤ M * ‖u‖ + M * ‖b i‖ * ‖u‖ := by
+          gcongr
+          · exact norm_weakDeriv_le u _
+          · exact norm_weakDeriv_le u 0
+      _ = M * (1 + ‖b i‖) * ‖u‖ := by ring
+  calc ‖extendZeroMul hα u‖
+      = ‖(extendZeroMul hα u : SobolevMultiIndexTuple F ι 1 p ⊤ μ)‖ := (Submodule.norm_coe _).symm
+    _ ≤ ∑ β, ‖weakDeriv (extendZeroMul hα u) β‖ := PiLp.norm_le_sum_norm _
+    _ = ‖weakDeriv (extendZeroMul hα u) 0‖
+          + ∑ i, ‖weakDeriv (extendZeroMul hα u) (MultiIndexLE.single i)‖ :=
+        MultiIndexLE.sum_univ_one _
+    _ ≤ M * ‖u‖ + ∑ i, M * (1 + ‖b i‖) * ‖u‖ := add_le_add h0 (Finset.sum_le_sum fun i _ ↦ hi i)
+    _ = (M + ∑ i, M * (1 + ‖b i‖)) * ‖u‖ := by rw [add_mul, Finset.sum_mul]
+
+variable (F b p μ) in
+/-- The zero extension `u ↦ α u` of Remark 4 (ii) as a linear map `W^{1,p}(Ω) → W^{1,p}(E)`. -/
+def extendZeroMulₗ (hα : IsSobolevCutoff Ω α) :
+    SobolevMultiIndex F b 1 p Ω μ →ₗ[ℝ] SobolevMultiIndex F b 1 p ⊤ μ where
+  toFun := extendZeroMul hα
+  map_add' := extendZeroMul_add hα
+  map_smul' := extendZeroMul_smul hα
+
+variable (F b p μ) in
+/-- **The zero extension `u ↦ \overline{α u}` of [brezis2011functional] Chapter 9, Remark 4 (ii),
+as a bounded linear map `W^{1,p}(Ω) → W^{1,p}(E)`**, for a cut-off `α` of `Ω`: its function is
+`α u` extended by zero (`SobolevMultiIndex.fn_extendZeroMulL`), its partial derivatives are
+`α ∂_i u + (∂_i α) u` extended by zero (`SobolevMultiIndex.weakDeriv_extendZeroMulL_single`), and
+its norm is at most `M + ∑ i, M (1 + ‖b i‖)` for a bound `M` on `α` and `∇α`
+(`SobolevMultiIndex.norm_extendZeroMulL_apply_le`). Steps (a) and (b) of the proof of the
+extension theorem are this operator, with `θ_0` and with the `θ_i` on `U_i`. -/
+def extendZeroMulL (hα : IsSobolevCutoff Ω α) :
+    SobolevMultiIndex F b 1 p Ω μ →L[ℝ] SobolevMultiIndex F b 1 p ⊤ μ :=
+  (extendZeroMulₗ F b p μ hα).mkContinuousOfExistsBound <| by
+    obtain ⟨M, hM⟩ := hα.exists_bound
+    exact ⟨M + ∑ i, M * (1 + ‖b i‖), norm_extendZeroMul_le hα hM⟩
+
+/-- `SobolevMultiIndex.extendZeroMulL` is `SobolevMultiIndex.extendZeroMul`. -/
+@[simp]
+theorem extendZeroMulL_apply (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    extendZeroMulL F b p μ hα u = extendZeroMul hα u :=
+  rfl
+
+/-- The function of the zero extension is `α u` extended by zero outside `Ω`. -/
+theorem fn_extendZeroMulL (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    fn (extendZeroMulL F b p μ hα u) =ᵐ[μ] (Ω : Set E).indicator fun x ↦ α x • fn u x :=
+  fn_extendZeroMul hα u
+
+/-- On `Ω`, the function of the zero extension is `α u`. -/
+theorem fn_extendZeroMulL_restrict (hα : IsSobolevCutoff Ω α) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    fn (extendZeroMulL F b p μ hα u) =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ α x • fn u x :=
+  fn_extendZeroMul_restrict hα u
+
+/-- The partial derivatives of the zero extension are `α ∂_i u + (∂_i α) u` extended by zero. -/
+theorem weakDeriv_extendZeroMulL_single (hα : IsSobolevCutoff Ω α)
+    (u : SobolevMultiIndex F b 1 p Ω μ) (i : ι) :
+    weakDeriv (extendZeroMulL F b p μ hα u) (MultiIndexLE.single i) =ᵐ[μ]
+      (Ω : Set E).indicator fun x ↦
+        α x • weakDeriv u (MultiIndexLE.single i) x + fderiv ℝ α x (b i) • fn u x :=
+  weakDeriv_extendZeroMul_single hα u i
+
+/-- The `L^p` bound on the zero extension: `‖α u‖_{L^p(E)} ≤ M ‖u‖_{L^p(Ω)}` for `|α| ≤ M`. -/
+theorem eLpNorm_fn_extendZeroMulL_le (hα : IsSobolevCutoff Ω α) {M : ℝ} (hM : ∀ x, |α x| ≤ M)
+    (u : SobolevMultiIndex F b 1 p Ω μ) :
+    eLpNorm (fn (extendZeroMulL F b p μ hα u)) p μ
+      ≤ ENNReal.ofReal M * eLpNorm (fn u) p (μ.restrict (Ω : Set E)) :=
+  eLpNorm_fn_extendZeroMul_le hα hM u
+
+/-- The `W^{1,p}` bound on the zero extension, with the explicit constant. -/
+theorem norm_extendZeroMulL_apply_le (hα : IsSobolevCutoff Ω α) {M : ℝ}
+    (hM : ∀ x, |α x| ≤ M ∧ ‖fderiv ℝ α x‖ ≤ M) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    ‖extendZeroMulL F b p μ hα u‖ ≤ (M + ∑ i, M * (1 + ‖b i‖)) * ‖u‖ :=
+  norm_extendZeroMul_le hα hM u
+
+end SobolevMultiIndex
+
+end ExtendZero
+
+section CompactSupport
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
+  {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E}
+
+omit [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] [Fact (1 ≤ p)] in
+/-- A continuous function lies in `L^p` of an open set with compact closure, for a measure finite
+on compact sets: it is bounded there. -/
+theorem _root_.Continuous.memLp_restrict_of_isCompact_closure [IsFiniteMeasureOnCompacts μ]
+    {V : Set E} (hVc : IsCompact (closure V)) {G : Type*} [NormedAddCommGroup G] {h : E → G}
+    (hh : Continuous h) : MemLp h p (μ.restrict V) := by
+  have : IsFiniteMeasure (μ.restrict V) := by
+    constructor
+    rw [Measure.restrict_apply_univ]
+    exact (measure_mono subset_closure).trans_lt hVc.measure_lt_top
+  obtain ⟨C, hC⟩ := hVc.exists_bound_of_continuousOn hh.continuousOn
+  exact ((memLp_top_of_bound hh.aestronglyMeasurable C
+    ((ae_restrict_mem isClosed_closure.measurableSet).mono hC)).mono_measure
+    (Measure.restrict_mono subset_closure le_rfl)).mono_exponent le_top
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedSpace ℝ F]
+  [CompleteSpace F] [Fact (1 ≤ p)] in
+/-- Minkowski's inequality for a difference in a normed group, stated so that the instance search
+does not go through `ESeminormedAddCommMonoid`; see `MeasureTheory.eLpNorm_add_le_of_norm`. -/
+theorem _root_.MeasureTheory.eLpNorm_sub_le_of_norm {X G : Type*} [MeasurableSpace X]
+    {ν : Measure X} [NormedAddCommGroup G] {a b : X → G} (hp : 1 ≤ p) :
+    eLpNorm (a - b) p ν ≤ eLpNorm a p ν + eLpNorm b p ν := by
+  rw [sub_eq_add_neg]
+  exact (eLpNorm_add_le_of_norm hp).trans (by rw [eLpNorm_neg])
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E] [NormedSpace ℝ F]
+  [CompleteSpace F] [Fact (1 ≤ p)] in
+/-- `L^p` membership is closed under subtraction, stated for a normed group so that the instance
+search does not go through the `ENorm` hierarchy; see `MeasureTheory.MemLp.add_of_norm`. -/
+theorem _root_.MeasureTheory.MemLp.sub_of_norm {X G : Type*} [MeasurableSpace X] {ν : Measure X}
+    [NormedAddCommGroup G] {a b : X → G} (ha : MemLp a p ν) (hb : MemLp b p ν) :
+    MemLp (a - b) p ν := by
+  rw [sub_eq_add_neg]
+  exact ha.add_of_norm hb.neg
+
+namespace SobolevMultiIndex
+
+omit [FiniteDimensional ℝ E] [CompleteSpace F] in
+/-- The norm of `W^{k,p}(Ω)` is at most the sum of the `L^p(Ω)` norms of the weak derivatives. -/
+theorem norm_le_sum_norm_weakDeriv (u : SobolevMultiIndex F b k p Ω μ) :
+    ‖u‖ ≤ ∑ α, ‖weakDeriv u α‖ := by
+  rw [← Submodule.norm_coe]
+  exact PiLp.norm_le_sum_norm _
+
+omit [Fact (1 ≤ p)] in
+/-- The weak derivatives of an element of `W^{k,p}(Ω)` whose function is smooth are the classical
+derivatives, almost everywhere on `Ω`. -/
+theorem weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq [μ.IsAddHaarMeasure]
+    (u : SobolevMultiIndex F b k p Ω μ) {φ : E → F} (hφ : ContDiff ℝ ∞ φ)
+    (hu : fn u =ᵐ[μ.restrict (Ω : Set E)] φ) (α : MultiIndexLE ι k) :
+    weakDeriv u α =ᵐ[μ.restrict (Ω : Set E)]
+      fun x ↦ iteratedFDeriv ℝ (∑ i, α.1 i) φ x (multiIndexTuple (b : ι → E) α.1) := by
+  have h1 := (hasWeakIteratedLineDerivOn u α).congr_ae hu (Filter.EventuallyEq.refl _ _)
+  have h2 := (ContDiffOn.hasWeakIteratedFDerivOn (Ω := Ω) (μ := μ) hφ.contDiffOn
+    (m := ∑ i, α.1 i) (by simp)).lineDeriv (multiIndexTuple (b : ι → E) α.1)
+  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h2)
+
+omit [Fact (1 ≤ p)] in
+/-- **The `L^p` distance between two elements of `W^{k,p}(Ω)` with smooth functions**, weak
+derivative by weak derivative, is bounded by the `L^p(Ω)` norm of the classical derivative of the
+difference of the functions, up to the norm of the evaluation at the tuple of directions. -/
+theorem eLpNorm_weakDeriv_sub_le_of_fn_ae_eq [μ.IsAddHaarMeasure]
+    (u v : SobolevMultiIndex F b k p Ω μ) {φ ψ : E → F} (hφ : ContDiff ℝ ∞ φ)
+    (hψ : ContDiff ℝ ∞ ψ) (hu : fn u =ᵐ[μ.restrict (Ω : Set E)] φ)
+    (hv : fn v =ᵐ[μ.restrict (Ω : Set E)] ψ) (α : MultiIndexLE ι k) :
+    eLpNorm (weakDeriv (u - v) α) p (μ.restrict (Ω : Set E))
+      ≤ ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin (∑ i, α.1 i) ↦ E) F
+          (multiIndexTuple (b : ι → E) α.1)‖ₑ
+        * eLpNorm (iteratedFDeriv ℝ (∑ i, α.1 i) (φ - ψ)) p (μ.restrict (Ω : Set E)) := by
+  have h : weakDeriv (u - v) α =ᵐ[μ.restrict (Ω : Set E)] fun x ↦
+      ContinuousMultilinearMap.apply ℝ (fun _ : Fin (∑ i, α.1 i) ↦ E) F
+        (multiIndexTuple (b : ι → E) α.1) (iteratedFDeriv ℝ (∑ i, α.1 i) (φ - ψ) x) := by
+    have e : weakDeriv (u - v) α = weakDeriv u α - weakDeriv v α := rfl
+    rw [e]
+    filter_upwards [Lp.coeFn_sub (weakDeriv u α) (weakDeriv v α),
+      weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq u hφ hu α,
+      weakDeriv_ae_eq_iteratedFDeriv_of_fn_ae_eq v hψ hv α] with x hx hxu hxv
+    rw [hx, Pi.sub_apply, hxu, hxv, ContinuousMultilinearMap.apply_apply,
+      iteratedFDeriv_sub_apply (hφ.contDiffAt.of_le (by simp)) (hψ.contDiffAt.of_le (by simp)),
+      sub_apply]
+  rw [eLpNorm_congr_ae h]
+  exact eLpNorm_comp_continuousLinearMap_le _ _ p
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] in
+/-- The function `α • f` restricted to `Ω` has `L^p(Ω)` norm at most the `L^p(V)` norm of `f` when
+`|α| ≤ 1` and `tsupport α ⊆ V`. -/
+theorem _root_.MeasureTheory.eLpNorm_smul_restrict_le_of_tsupport_subset {V : Set E}
+    (hV : MeasurableSet V) {α : E → ℝ} (hα : Continuous α) (hα1 : ∀ x, ‖α x‖ ≤ 1)
+    (hαV : tsupport α ⊆ V) {f : E → F} (hf : AEStronglyMeasurable f (μ.restrict V)) :
+    eLpNorm (fun x ↦ α x • f x) p (μ.restrict (Ω : Set E)) ≤ eLpNorm f p (μ.restrict V) := by
+  have heq : (fun x ↦ α x • f x) = V.indicator fun x ↦ α x • f x := by
+    funext x
+    by_cases hx : x ∈ V
+    · rw [Set.indicator_of_mem hx]
+    · rw [Set.indicator_of_notMem hx,
+        image_eq_zero_of_notMem_tsupport fun h ↦ hx (hαV h), zero_smul]
+  calc eLpNorm (fun x ↦ α x • f x) p (μ.restrict (Ω : Set E))
+      ≤ eLpNorm (fun x ↦ α x • f x) p μ := eLpNorm_mono_measure _ Measure.restrict_le_self
+    _ = eLpNorm (V.indicator fun x ↦ α x • f x) p μ := by rw [← heq]
+    _ ≤ ENNReal.ofReal 1 * eLpNorm f p (μ.restrict V) :=
+        eLpNorm_indicator_smul_le_of_forall_norm_le hV (fun x _ ↦ hα1 x)
+          hα.aestronglyMeasurable hf
+    _ = eLpNorm f p (μ.restrict V) := by rw [ENNReal.ofReal_one, one_mul]
+
+variable [μ.IsAddHaarMeasure]
+
+/-- **Lemma 9.5, at every order**: an element of `W^{k,p}(Ω)`, `1 ≤ p < ∞`, whose function
+vanishes almost everywhere outside a compact subset `K` of `Ω` lies in `W_0^{k,p}(Ω)`
+([brezis2011functional] Lemma 9.5, stated there for `k = 1`).
+
+Proof: choose an open `V ⊇ K` with compact closure in `Ω` and a smooth `α` equal to `1` on `K`
+and supported in `V`; the local approximation `MemSobolev.exists_seq_contDiff_tendsto_eLpNorm`
+gives smooth `g i` with `∂^m g i → ∂^m u` in `L^p(V)` for every `m ≤ k`. The test functions
+`α g i` form a Cauchy sequence in `W^{k,p}(Ω)`, because `∂^m (α (g i − g j))` is bounded by the
+Leibniz estimate `eLpNorm_iteratedFDeriv_smul_sub_le` in terms of the `L^p(V)` distances of the
+derivatives of `g i` and `g j` — no weak Leibniz rule is used; their limit lies in the closed
+subspace `W_0^{k,p}(Ω)`, and it is `u` because `α g i → α u = u` in `L^p(Ω)`. -/
+theorem mem_zero_of_ae_eq_zero_compl_isCompact (hp' : p ≠ ⊤) (u : SobolevMultiIndex F b k p Ω μ)
+    {K : Set E} (hK : IsCompact K) (hKΩ : K ⊆ Ω)
+    (hu : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → fn u x = 0) :
+    u ∈ SobolevMultiIndexZero F b k p Ω μ := by
+  classical
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  -- the open set `V` and the cut-off `α`
+  obtain ⟨V, -, hVo, hKV, -, hVc, hVΩ, -⟩ := hK.exists_pos_forall_closedBall_subset Ω.isOpen hKΩ
+  have hVΩ' : V ⊆ Ω := subset_closure.trans hVΩ
+  obtain ⟨α, hαs, hα1, hαV, hα01⟩ := hK.exists_contDiff_eqOn_one hVo hKV
+  have hαc : HasCompactSupport α :=
+    hVc.of_isClosed_subset isClosed_closure (hαV.trans subset_closure)
+  have hαb : ∀ x, ‖α x‖ ≤ 1 := fun x ↦ by
+    rw [Real.norm_eq_abs, abs_of_nonneg (hα01 x).1]
+    exact (hα01 x).2
+  have hαΩ : tsupport α ⊆ Ω := hαV.trans hVΩ'
+  obtain ⟨M, -, hM⟩ := exists_bound_norm_iteratedFDeriv hαs hαc k
+  -- `u = α u` almost everywhere on `Ω`
+  have hαu : fn u =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ α x • fn u x := by
+    filter_upwards [hu] with x hx
+    by_cases hxK : x ∈ K
+    · rw [hα1 hxK, Pi.one_apply, one_smul]
+    · rw [hx hxK, smul_zero]
+  -- the smooth approximants
+  have hf : MemSobolev (fn u) k p Ω μ := (memSobolevMultiIndex u).memSobolev
+  obtain ⟨g, hgs, hgt, hgdt⟩ := hf.exists_seq_contDiff_tendsto_eLpNorm hp hp' hVo hVc hVΩ
+  -- the test functions `α g i`, as elements of `W^{k,p}(Ω)`
+  have hφ : ∀ i, ∃ w ∈ testFunctions F b k p Ω μ,
+      fn w =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ α x • g i x := fun i ↦
+    TestFunction.exists_mem_sobolevMultiIndex_testFunctions
+      ⟨fun x ↦ α x • g i x, hαs.smul (hgs i), hαc.smul_right (f' := g i),
+        (tsupport_smul_subset_left α (g i)).trans hαΩ⟩
+  choose w hwT hw using hφ
+  -- the Leibniz estimate for the differences
+  set e : ℕ → ℝ≥0∞ := fun i ↦ ∑ s ∈ Finset.range (k + 1),
+    eLpNorm (iteratedFDeriv ℝ s (g i) - weakIteratedFDeriv s (fn u) Ω μ) p (μ.restrict V)
+    with hedef
+  have hetop : ∀ i, e i ≠ ⊤ := fun i ↦ ENNReal.sum_ne_top.2 fun s hs ↦
+    (MemLp.sub_of_norm
+      (((hgs i).continuous_iteratedFDeriv (m := s) (by simp)).memLp_restrict_of_isCompact_closure
+        hVc)
+      ((hf.memLp_weakIteratedFDeriv (Nat.lt_succ_iff.1 (Finset.mem_range.1 hs))).mono_measure
+        (Measure.restrict_mono hVΩ' le_rfl))).eLpNorm_ne_top
+  have het : Tendsto e atTop (𝓝 0) := by
+    rw [hedef]
+    simpa using tendsto_finsetSum (Finset.range (k + 1)) fun s hs ↦
+      hgdt s (Nat.lt_succ_iff.1 (Finset.mem_range.1 hs))
+  set D : ℝ≥0∞ := ENNReal.ofReal (((k : ℝ) + 1) * 2 ^ k * M) with hDdef
+  set C : ℝ≥0∞ := ∑ α : MultiIndexLE ι k, ‖ContinuousMultilinearMap.apply ℝ
+    (fun _ : Fin (∑ i, α.1 i) ↦ E) F (multiIndexTuple (b : ι → E) α.1)‖ₑ with hCdef
+  have hCtop : C ≠ ⊤ := ENNReal.sum_ne_top.2 fun _ _ ↦ enorm_ne_top
+  have hDtop : D ≠ ⊤ := ENNReal.ofReal_ne_top
+  have hdist : ∀ i j, ‖w i - w j‖ ≤ (C * (D * (e i + e j))).toReal := by
+    intro i j
+    have hbound : ∀ β : MultiIndexLE ι k, eLpNorm (weakDeriv (w i - w j) β) p (μ.restrict Ω)
+        ≤ ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin (∑ l, β.1 l) ↦ E) F
+            (multiIndexTuple (b : ι → E) β.1)‖ₑ * (D * (e i + e j)) := by
+      intro β
+      refine (eLpNorm_weakDeriv_sub_le_of_fn_ae_eq (w i) (w j) (hαs.smul (hgs i))
+        (hαs.smul (hgs j)) (hw i) (hw j) β).trans ?_
+      gcongr
+      have hsub : (α • g i - α • g j : E → F) = fun y ↦ α y • (g i y - g j y) := by
+        funext y
+        simp [smul_sub]
+      rw [hsub]
+      refine (eLpNorm_iteratedFDeriv_smul_sub_le hVo hαs hαV hM (hgs i) (hgs j) hp
+        β.2).trans ?_
+      gcongr
+      rw [hedef]
+      simp only
+      rw [← Finset.sum_add_distrib]
+      refine Finset.sum_le_sum fun s _ ↦ ?_
+      have hsplit : iteratedFDeriv ℝ s (g i) - iteratedFDeriv ℝ s (g j)
+          = (iteratedFDeriv ℝ s (g i) - weakIteratedFDeriv s (fn u) Ω μ)
+            - (iteratedFDeriv ℝ s (g j) - weakIteratedFDeriv s (fn u) Ω μ) := by
+        abel
+      rw [hsplit]
+      exact eLpNorm_sub_le_of_norm hp
+    have hne : ∀ β : MultiIndexLE ι k, ‖ContinuousMultilinearMap.apply ℝ
+        (fun _ : Fin (∑ l, β.1 l) ↦ E) F (multiIndexTuple (b : ι → E) β.1)‖ₑ * (D * (e i + e j))
+          ≠ ⊤ := fun β ↦
+      ENNReal.mul_ne_top enorm_ne_top
+        (ENNReal.mul_ne_top hDtop (ENNReal.add_ne_top.2 ⟨hetop i, hetop j⟩))
+    calc ‖w i - w j‖ ≤ ∑ β, ‖weakDeriv (w i - w j) β‖ := norm_le_sum_norm_weakDeriv _
+      _ = ∑ β, (eLpNorm (weakDeriv (w i - w j) β) p (μ.restrict Ω)).toReal := by
+          simp only [Lp.norm_def]
+      _ ≤ ∑ β : MultiIndexLE ι k, (‖ContinuousMultilinearMap.apply ℝ
+            (fun _ : Fin (∑ l, β.1 l) ↦ E) F (multiIndexTuple (b : ι → E) β.1)‖ₑ
+              * (D * (e i + e j))).toReal :=
+          Finset.sum_le_sum fun β _ ↦ ENNReal.toReal_mono (hne β) (hbound β)
+      _ = (C * (D * (e i + e j))).toReal := by
+          rw [hCdef, Finset.sum_mul, ENNReal.toReal_sum fun β _ ↦ hne β]
+  -- the sequence is Cauchy
+  have hCD : C * D ≠ ⊤ := ENNReal.mul_ne_top hCtop hDtop
+  have hcauchy : CauchySeq w := by
+    refine Metric.cauchySeq_iff'.2 fun ε hε ↦ ?_
+    set c : ℝ := (C * D).toReal with hcdef
+    have hc0 : 0 ≤ c := ENNReal.toReal_nonneg
+    set δ : ℝ := ε / (2 * (c + 1)) with hδ
+    have hδpos : 0 < δ := by positivity
+    obtain ⟨N, hN⟩ := (ENNReal.tendsto_nhds_zero.1 het (ENNReal.ofReal δ)
+      (ENNReal.ofReal_pos.2 hδpos)).exists_forall_of_atTop
+    refine ⟨N, fun n hn ↦ ?_⟩
+    rw [dist_eq_norm]
+    refine (hdist n N).trans_lt ?_
+    calc (C * (D * (e n + e N))).toReal = c * ((e n).toReal + (e N).toReal) := by
+          rw [← mul_assoc, ENNReal.toReal_mul, ENNReal.toReal_add (hetop n) (hetop N)]
+      _ ≤ c * (δ + δ) := by
+          gcongr
+          · exact ENNReal.toReal_le_of_le_ofReal hδpos.le (hN n hn)
+          · exact ENNReal.toReal_le_of_le_ofReal hδpos.le (hN N le_rfl)
+      _ = c * ε / (c + 1) := by
+          rw [hδ]
+          field_simp
+          ring
+      _ < ε := by
+          rw [div_lt_iff₀ (by positivity)]
+          nlinarith
+  obtain ⟨v, hv⟩ := cauchySeq_tendsto_of_complete hcauchy
+  have hvZ : v ∈ SobolevMultiIndexZero F b k p Ω μ :=
+    SobolevMultiIndexZero.isClosed.mem_of_tendsto hv
+      (Eventually.of_forall fun i ↦ SobolevMultiIndexZero.testFunctions_le (hwT i))
+  -- the limit is `u`
+  suffices hvu : u = v by rw [hvu]; exact hvZ
+  refine fnL_injective (tendsto_nhds_unique ?_ ((fnL F b k p Ω μ).continuous.tendsto v |>.comp hv))
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  have hkey : ∀ i, ‖fnL F b k p Ω μ (w i) - fnL F b k p Ω μ u‖
+      ≤ (eLpNorm (g i - fn u) p (μ.restrict V)).toReal := by
+    intro i
+    have hae : (⇑(fnL F b k p Ω μ (w i) - fnL F b k p Ω μ u) : E → F) =ᵐ[μ.restrict (Ω : Set E)]
+        fun x ↦ α x • (g i x - fn u x) := by
+      filter_upwards [Lp.coeFn_sub (fnL F b k p Ω μ (w i)) (fnL F b k p Ω μ u), hw i, hαu]
+        with x hx hxw hxu
+      rw [hx, Pi.sub_apply, fnL_apply, fnL_apply, hxw, smul_sub]
+      congr 1
+    rw [Lp.norm_def, eLpNorm_congr_ae hae]
+    refine ENNReal.toReal_mono ?_ (eLpNorm_smul_restrict_le_of_tsupport_subset hVo.measurableSet
+      hαs.continuous hαb hαV ((hgs i).continuous.aestronglyMeasurable.sub
+        (hf.memLp.aestronglyMeasurable.mono_measure (Measure.restrict_mono hVΩ' le_rfl))))
+    exact (MemLp.sub_of_norm ((hgs i).continuous.memLp_restrict_of_isCompact_closure hVc)
+      (hf.memLp.mono_measure (Measure.restrict_mono hVΩ' le_rfl))).eLpNorm_ne_top
+  refine squeeze_zero (fun _ ↦ norm_nonneg _) hkey ?_
+  have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp hgt
+  simpa [Function.comp_def] using this
+
+end SobolevMultiIndex
+
+end CompactSupport
+
+section Loc
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {f : E → F} {k : ℕ} {p : ℝ≥0∞}
+  {Ω Ω' : Opens E} {μ : Measure E}
+
+omit [OpensMeasurableSpace E] in
+/-- Membership of `W^{k,p}` is inherited by open subsets. -/
+theorem MemSobolevMultiIndex.mono_set (h : MemSobolevMultiIndex b f k p Ω μ) (hΩ : Ω' ≤ Ω) :
+    MemSobolevMultiIndex b f k p Ω' μ :=
+  ⟨h.1.mono_measure (Measure.restrict_mono hΩ le_rfl), fun α hα ↦
+    let ⟨w, hw, hwp⟩ := h.2 α hα
+    ⟨w, hw.mono hΩ, hwp.mono_measure (Measure.restrict_mono hΩ le_rfl)⟩⟩
+
+variable (b f k p Ω μ) in
+/-- **The local Sobolev space `W^{k,p}_loc(Ω)`**: `f` lies in `W^{k,p}(ω)` for every open `ω`
+whose closure is a compact subset of `Ω` (`ω ⋐ Ω`). This is the reading "`u ∈ H^{m+2}(ω)` for
+every `ω ⊂⊂ Ω`" of [brezis2011functional] Chapter 9, Remark 25. -/
+def MemSobolevMultiIndexLoc : Prop :=
+  ∀ V : Opens E, IsCompact (closure (V : Set E)) → closure (V : Set E) ⊆ Ω →
+    MemSobolevMultiIndex b f k p V μ
+
+omit [OpensMeasurableSpace E] in
+/-- A function of `W^{k,p}(Ω)` lies in `W^{k,p}_loc(Ω)`. -/
+theorem MemSobolevMultiIndex.memSobolevMultiIndexLoc (h : MemSobolevMultiIndex b f k p Ω μ) :
+    MemSobolevMultiIndexLoc b f k p Ω μ := fun _ _ hV ↦
+  h.mono_set (subset_closure.trans hV)
+
+namespace MemSobolevMultiIndexLoc
+
+omit [OpensMeasurableSpace E] in
+/-- `W^{k,p}_loc(Ω)` decreases as the order increases. -/
+theorem mono_order {k' : ℕ} (h : MemSobolevMultiIndexLoc b f k p Ω μ) (hk : k' ≤ k) :
+    MemSobolevMultiIndexLoc b f k' p Ω μ := fun V hVc hVΩ ↦
+  (h V hVc hVΩ).mono_order hk
+
+omit [OpensMeasurableSpace E] in
+/-- `W^{k,p}_loc` is inherited by open subsets. -/
+theorem mono_set (h : MemSobolevMultiIndexLoc b f k p Ω μ) (hΩ : Ω' ≤ Ω) :
+    MemSobolevMultiIndexLoc b f k p Ω' μ := fun V hVc hVΩ ↦
+  h V hVc (hVΩ.trans hΩ)
+
+omit [OpensMeasurableSpace E] in
+/-- Membership of `W^{k,p}_loc(Ω)` only sees the function up to a null set of `Ω`. -/
+theorem congr_ae {f' : E → F} (h : MemSobolevMultiIndexLoc b f k p Ω μ)
+    (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') : MemSobolevMultiIndexLoc b f' k p Ω μ :=
+  fun V hVc hVΩ ↦ (h V hVc hVΩ).congr_ae
+    (ae_mono (Measure.restrict_mono (subset_closure.trans hVΩ) le_rfl) hf)
+
+end MemSobolevMultiIndexLoc
+
+end Loc
+
+/-! ### Extension domains
+
+The abstract hypothesis under which the embedding and compactness theorems on a domain are stated
+once: a bounded linear extension operator `W^{1,p}(Ω) → W^{1,p}(ℝ^N)` exists on the subspace `S`.
+Its instances are the half space, the `C^1` chart domains with bounded boundary (the extension
+theorem), and `W_0^{1,p}(Ω)` on any open set (extension by zero). -/
+
+section ExtensionDomain
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **A subspace `S` of `W^{1,p}(Ω)` has a Sobolev extension operator** when there is a bounded
+linear `P : S → W^{1,p}(ℝ^N)` with `P u = u` almost everywhere on `Ω`. This is the standing
+hypothesis of [brezis2011functional] §9.3.B in the form its consequences use: the `L^p` bound of
+Theorem 9.7 is not part of it, only the `W^{1,p}` bound. The subspace form is the primary one
+because `W_0^{1,p}(Ω)` has such an operator on every open set (extension by zero, Remark 20) while
+`W^{1,p}(Ω)` itself needs a regular boundary. -/
+def HasSobolevExtensionOn (S : Submodule ℝ (SobolevEuclidean N 1 p Ω)) : Prop :=
+  ∃ P : S →L[ℝ] SobolevEuclidean N 1 p ⊤, ∀ u : S,
+    SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      SobolevMultiIndex.fn (u : SobolevEuclidean N 1 p Ω)
+
+variable (N p Ω) in
+/-- **`Ω` is a `W^{1,p}`-extension domain**: all of `W^{1,p}(Ω)` has a Sobolev extension operator
+(`HasSobolevExtensionOn ⊤`), the standard name of the literature for the standing hypothesis of
+[brezis2011functional] §9.3.B. Its instances are the half space, and the `C^1` chart domains with
+bounded boundary of Theorem 9.7; a Lipschitz domain would enter through one more instance. -/
+def IsSobolevExtensionDomain : Prop :=
+  HasSobolevExtensionOn (⊤ : Submodule ℝ (SobolevEuclidean N 1 p Ω))
+
+end ExtensionDomain
+
+/-! ### Comparison with the tensor norm at order one -/
+
+section Compare
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
+  [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
+
+omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- The Sobolev norm only sees the function up to a null set of `Ω`: the chosen weak derivatives
+of two almost everywhere equal functions are almost everywhere equal, or both absent. -/
+theorem sobolevNorm_congr_ae {k : ℕ} {f g : E → F} (hfg : f =ᵐ[μ.restrict (Ω : Set E)] g) :
+    sobolevNorm f k p Ω μ = sobolevNorm g k p Ω μ := by
+  have key : ∀ n : ℕ, eLpNorm (weakIteratedFDeriv n f Ω μ) p (μ.restrict (Ω : Set E))
+      = eLpNorm (weakIteratedFDeriv n g Ω μ) p (μ.restrict (Ω : Set E)) := by
+    intro n
+    by_cases h : ∃ w, HasWeakIteratedFDerivOn n f w Ω μ
+    · obtain ⟨w, hw⟩ := h
+      rw [eLpNorm_congr_ae
+          ((ae_restrict_iff' Ω.isOpen.measurableSet).2 hw.weakIteratedFDeriv_ae_eq),
+        eLpNorm_congr_ae ((ae_restrict_iff' Ω.isOpen.measurableSet).2
+          (hw.congr_ae hfg (Filter.EventuallyEq.refl _ _)).weakIteratedFDeriv_ae_eq)]
+    · have h' : ¬ ∃ w, HasWeakIteratedFDerivOn n g w Ω μ := fun ⟨w, hw⟩ ↦
+        h ⟨w, hw.congr_ae hfg.symm (Filter.EventuallyEq.refl _ _)⟩
+      simp only [weakIteratedFDeriv, dite_eq_right h, dite_eq_right h']
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · simp only [sobolevNorm, key, ↓reduceIte]
+  · simp only [sobolevNorm, hp, key, ↓reduceIte]
+
+namespace SobolevMultiIndex
+
+omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- The function of a difference is the difference of the functions, almost everywhere on `Ω`. -/
+theorem fn_sub {k : ℕ} (u v : SobolevMultiIndex F b k p Ω μ) :
+    fn (u - v) =ᵐ[μ.restrict (Ω : Set E)] fn u - fn v :=
+  Lp.coeFn_sub (weakDeriv u 0) (weakDeriv v 0)
+
+/-- **The norm of `W^{1,p}(Ω)` in the multi-index formulation is bounded by the tensor Sobolev
+norm** of `Numlib/Analysis/Sobolev/Domain.lean`, up to the constant `1 + ∑ i, ‖ev_{b i}‖`: the
+function is the derivative of order `0`, and each partial derivative `∂_i u` is the weak
+derivative tensor of order one evaluated at `b i`. -/
+theorem ofReal_norm_le_sobolevNorm (hp' : p ≠ ⊤) (u : SobolevMultiIndex F b 1 p Ω μ) :
+    ENNReal.ofReal ‖u‖ ≤ (1 + ∑ i, ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin 1 ↦ E) F
+      ![b i]‖ₑ) * sobolevNorm (fn u) 1 p Ω μ := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hf : MemSobolev (fn u) 1 p Ω μ := (memSobolevMultiIndex u).memSobolev
+  have h0 : eLpNorm (fn u) p (μ.restrict (Ω : Set E)) ≤ sobolevNorm (fn u) 1 p Ω μ := by
+    have hW := hasWeakIteratedFDerivOn_zero (μ := μ) (hf.memLp.locallyIntegrableOn hp)
+    have hae : ∀ᵐ x ∂μ.restrict (Ω : Set E),
+        ‖weakIteratedFDeriv 0 (fn u) Ω μ x‖ = ‖fn u x‖ := by
+      filter_upwards [(ae_restrict_iff' Ω.isOpen.measurableSet).2 hW.weakIteratedFDeriv_ae_eq]
+        with x hx
+      rw [hx]
+      exact LinearIsometryEquiv.norm_map _ _
+    rw [← eLpNorm_congr_norm_ae (hf.memLp_weakIteratedFDeriv (Nat.zero_le 1)).aestronglyMeasurable
+      hf.memLp.aestronglyMeasurable hae]
+    exact eLpNorm_weakIteratedFDeriv_le_sobolevNorm hp hp' (Nat.zero_le 1)
+  have hi : ∀ i, eLpNorm (weakDeriv u (MultiIndexLE.single i)) p (μ.restrict (Ω : Set E))
+      ≤ ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin 1 ↦ E) F ![b i]‖ₑ
+        * sobolevNorm (fn u) 1 p Ω μ := by
+    intro i
+    have h1 := (hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
+      (multiIndexTuple_single_perm (b : ι → E) i)
+    have h2 := (hf.hasWeakIteratedFDerivOn (n := 1) le_rfl).lineDeriv ![b i]
+    have hae : (weakDeriv u (MultiIndexLE.single i) : E → F) =ᵐ[μ.restrict (Ω : Set E)]
+        fun x ↦ ContinuousMultilinearMap.apply ℝ (fun _ : Fin 1 ↦ E) F ![b i]
+          (weakIteratedFDeriv 1 (fn u) Ω μ x) :=
+      (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h2)
+    rw [eLpNorm_congr_ae hae]
+    refine (eLpNorm_comp_continuousLinearMap_le _ _ p).trans ?_
+    gcongr
+    exact eLpNorm_weakIteratedFDeriv_le_sobolevNorm hp hp' le_rfl
+  have hterm : ∀ β : MultiIndexLE ι 1, ENNReal.ofReal ‖weakDeriv u β‖
+      = eLpNorm (weakDeriv u β) p (μ.restrict (Ω : Set E)) := fun β ↦ by
+    rw [Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _)]
+  calc ENNReal.ofReal ‖u‖ ≤ ENNReal.ofReal (∑ β, ‖weakDeriv u β‖) :=
+        ENNReal.ofReal_le_ofReal (norm_le_sum_norm_weakDeriv u)
+    _ = ∑ β, eLpNorm (weakDeriv u β) p (μ.restrict (Ω : Set E)) := by
+        rw [ENNReal.ofReal_sum_of_nonneg fun _ _ ↦ norm_nonneg _]
+        exact Finset.sum_congr rfl fun β _ ↦ hterm β
+    _ = eLpNorm (fn u) p (μ.restrict (Ω : Set E))
+          + ∑ i, eLpNorm (weakDeriv u (MultiIndexLE.single i)) p (μ.restrict (Ω : Set E)) :=
+        MultiIndexLE.sum_univ_one _
+    _ ≤ sobolevNorm (fn u) 1 p Ω μ + ∑ i, ‖ContinuousMultilinearMap.apply ℝ (fun _ : Fin 1 ↦ E) F
+          ![b i]‖ₑ * sobolevNorm (fn u) 1 p Ω μ :=
+        add_le_add h0 (Finset.sum_le_sum fun i _ ↦ hi i)
+    _ = _ := by rw [add_mul, one_mul, Finset.sum_mul]
+
+/-- A smooth compactly supported function is the function of an element of `W^{k,p}(Ω)`. -/
+theorem _root_.ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport {k : ℕ} {v : E → F}
+    (hv : ContDiff ℝ ∞ v) (hvc : HasCompactSupport v) :
+    ∃ u : SobolevMultiIndex F b k p Ω μ, fn u =ᵐ[μ.restrict (Ω : Set E)] v := by
+  refine MemSobolevMultiIndex.exists_sobolevMultiIndex (MemSobolev.memSobolevMultiIndex ?_)
+  refine ⟨(hv.continuous.memLp_of_hasCompactSupport hvc).restrict _, fun n _ ↦ ⟨_,
+    ContDiffOn.hasWeakIteratedFDerivOn hv.contDiffOn (by simp), ?_⟩⟩
+  exact ((hv.continuous_iteratedFDeriv (m := n) (by simp)).memLp_of_hasCompactSupport
+    (hvc.iteratedFDeriv n)).restrict _
+
+end SobolevMultiIndex
+
+end Compare
+
+/-! ### Density of `C_c^∞(ℝ^N)` on an extension domain -/
+
+section DensityExtension
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **Density of the restrictions of `C_c^∞(ℝ^N)` functions on a subspace with an extension
+operator** — the abstract form of [brezis2011functional] Corollary 9.8: for `1 ≤ p < ∞` and
+`HasSobolevExtensionOn S`, every `u ∈ S` is the limit in `W^{1,p}(Ω)` of elements whose functions
+are (the restrictions to `Ω` of) smooth compactly supported functions on `ℝ^N`. The extension
+`P u ∈ W^{1,p}(ℝ^N)` is approximated by `C_c^∞(ℝ^N)` functions in `W^{1,p}(ℝ^N)`
+(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`), and restriction to `Ω` is
+`1`-Lipschitz (`SobolevMultiIndex.restrictL`). -/
+theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn
+    (hp' : p ≠ ⊤) {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)} (hS : HasSobolevExtensionOn S)
+    (u : S) :
+    ∃ v : ℕ → EuclideanSpace ℝ (Fin N) → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧
+      (∀ n, HasCompactSupport (v n)) ∧ ∃ w : ℕ → SobolevEuclidean N 1 p Ω,
+        (∀ n, SobolevMultiIndex.fn (w n)
+          =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] v n) ∧
+        Tendsto w atTop (𝓝 (u : SobolevEuclidean N 1 p Ω)) := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  obtain ⟨P, hP⟩ := hS
+  have hPu : MemSobolev (SobolevMultiIndex.fn (P u)) 1 p ⊤ volume :=
+    (SobolevMultiIndex.memSobolevMultiIndex (P u)).memSobolev
+  obtain ⟨v, hvs, hvc, hvt⟩ := hPu.exists_seq_hasCompactSupport_tendsto_sobolevNorm hp hp'
+  choose V hV using fun n ↦ (hvs n).exists_sobolevMultiIndex_of_hasCompactSupport
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := p)
+    (Ω := (⊤ : Opens (EuclideanSpace ℝ (Fin N)))) (μ := volume) (hvc n)
+  obtain ⟨R, hR⟩ : ∃ R : SobolevEuclidean N 1 p ⊤ →L[ℝ] SobolevEuclidean N 1 p Ω,
+      R = SobolevMultiIndex.restrictL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p volume
+        (le_top : Ω ≤ ⊤) := ⟨_, rfl⟩
+  have hRfn : ∀ w, SobolevMultiIndex.fn (R w)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevMultiIndex.fn w := by
+    intro w
+    rw [hR]
+    exact SobolevMultiIndex.fn_restrictL _ _
+  have hRle : ∀ w, ‖R w‖ ≤ ‖w‖ := by
+    intro w
+    rw [hR]
+    exact SobolevMultiIndex.norm_restrictL_apply_le _ _
+  refine ⟨v, hvs, hvc, fun n ↦ R (V n), fun n ↦ ?_, ?_⟩
+  · exact (hRfn _).trans (ae_mono (Measure.restrict_mono le_top le_rfl) (hV n))
+  · have hRPu : R (P u) = (u : SobolevEuclidean N 1 p Ω) :=
+      SobolevMultiIndex.ext_of_fn_ae_eq ((hRfn _).trans (hP u))
+    rw [← hRPu, tendsto_iff_norm_sub_tendsto_zero]
+    obtain ⟨C, hCdef⟩ : ∃ C : ℝ≥0∞, C = 1 + ∑ i, ‖ContinuousMultilinearMap.apply ℝ
+      (fun _ : Fin 1 ↦ EuclideanSpace ℝ (Fin N)) ℝ
+        ![(EuclideanSpace.basisFun (Fin N) ℝ).toBasis i]‖ₑ := ⟨_, rfl⟩
+    have hC : C ≠ ⊤ := by
+      rw [hCdef]
+      exact ENNReal.add_ne_top.2 ⟨ENNReal.one_ne_top, ENNReal.sum_ne_top.2 fun _ _ ↦ enorm_ne_top⟩
+    have hsub : ∀ n, sobolevNorm (SobolevMultiIndex.fn (V n - P u)) 1 p ⊤ volume
+        = sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume := fun n ↦
+      sobolevNorm_congr_ae ((SobolevMultiIndex.fn_sub _ _).trans
+        ((hV n).sub (Filter.EventuallyEq.refl _ _)))
+    have hfin : ∀ᶠ n in atTop,
+        sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume ≠ ⊤ := by
+      filter_upwards [ENNReal.tendsto_nhds_zero.1 hvt 1 one_pos] with n hn
+      exact (hn.trans_lt ENNReal.one_lt_top).ne
+    have hbound : ∀ n, sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume ≠ ⊤ →
+        ‖R (V n) - R (P u)‖
+          ≤ (C * sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume).toReal := by
+      intro n hn
+      rw [← map_sub]
+      refine (hRle _).trans ?_
+      have h := SobolevMultiIndex.ofReal_norm_le_sobolevNorm hp' (V n - P u)
+      rw [hsub n, ← hCdef] at h
+      exact (ENNReal.toReal_ofReal (norm_nonneg _)).symm.le.trans
+        (ENNReal.toReal_mono (ENNReal.mul_ne_top hC hn) h)
+    refine squeeze_zero' (g := fun n ↦
+      (C * sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume).toReal)
+      (Eventually.of_forall fun _ ↦ norm_nonneg _) (hfin.mono hbound) ?_
+    have h1 : Tendsto (fun n ↦ C * sobolevNorm (v n - SobolevMultiIndex.fn (P u)) 1 p ⊤ volume)
+        atTop (𝓝 0) := by
+      simpa using ENNReal.Tendsto.const_mul hvt (Or.inr hC)
+    have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp h1
+    simpa [Function.comp_def] using this
+
+end DensityExtension
