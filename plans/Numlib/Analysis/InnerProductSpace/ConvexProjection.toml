@@ -1,139 +1,36 @@
-desc = '''
-The metric projection onto a closed convex set of a Hilbert space, as a *function*
-`bestApprox K u`, with the projection theorem, its variational characterization, the
-nonexpansiveness of the projection and its agreement with `Submodule.starProjection` on closed
-subspaces. Upstreaming candidate; natural home `Mathlib.Analysis.InnerProductSpace.Projection.Minimal`.
-
-What exists and what does not. Mathlib proves the projection theorem as an existence statement,
-`exists_norm_eq_iInf_of_complete_convex`, and characterizes the minimizer,
-`norm_eq_iInf_iff_real_inner_le_zero`, but bundles the projection as a map only for subspaces
-(`Submodule.starProjection`, which needs `HasOrthogonalProjection`); a bundled projection onto a
-convex set is absent (grep of `Mathlib/Analysis/InnerProductSpace/Projection/` and of
-`nonexpansive`, `metricProjection`, `ClosedConvex` over the library, 2026-09-17: nothing). The
-backbone has the *predicate* `IsBestApprox K u v` (`Numlib/Analysis/Normed/Module/BestApprox`),
-with `isBestApprox_iff_inner_le_zero` (the variational characterization), `IsBestApprox.unique`
-(strictly convex spaces) and `IsBestApprox.dist_le_dist` (monotone and nonexpansive, in pairs
-form); the Atkinson–Han surface built a local map `AtkinsonHan.Chapter03.projConvex` from it by
-`choose`, with the hypotheses of the projection theorem as arguments. Brezis writes `P_K f`
-throughout chapter 5 (Proposition 5.3, Corollary 5.4, the proof of Theorem 5.6, Remark 5 and a
-dozen exercises), so the map is wanted a second time and belongs here.
-
-Design. `bestApprox K u` is defined in any seminormed space, by choice when a best approximation
-exists and as `u` otherwise, so that it needs no hypotheses to be *written*; the theorems carry
-the hypotheses. Uniqueness (`IsBestApprox.bestApprox_eq`) needs only strict convexity, existence
-in a Hilbert space needs `K` nonempty, closed and convex, and the two together make
-`bestApprox K` the projection `P_K` of [brezis2011functional] Theorem 5.2. Over `RCLike 𝕜` the
-map is still the metric projection, since it is defined from the norm alone; the variational
-characterization is real, as in Mathlib, and the subspace clause `bestApprox_eq_starProjection`
-is over `RCLike 𝕜` because `IsBestApprox.eq_starProjection` is. The name follows the predicate
-(`IsBestApprox` / `bestApprox`); `Metric.proj` and `metricProjection` were considered and
-rejected so that the two stay together under one search term.
-
-The definition and its generic lemmas (`bestApprox`, `isBestApprox_bestApprox`,
-`IsBestApprox.bestApprox_eq`, `bestApprox_eq_self_of_mem`) live in
-`Numlib/Analysis/Normed/Module/BestApprox` beside the predicate (moved there at review; this
-module imports it). Everything here is the Hilbert-space theory of that map.
-
-Prototype: `notes/brezis/ch05/proto/Shapes.lean` — the definition, `exists_isBestApprox_of_isClosed`,
-`existsUnique_isBestApprox`, `norm_bestApprox_sub_bestApprox_le` and `bestApprox_eq_starProjection`
-type-check with their proofs (the `dite` needs `open scoped Classical in`).
-
-Sources: [brezis2011functional] Theorem 5.2, Proposition 5.3, Corollary 5.4; [han2009theoretical]
-Theorem 3.4.3, Proposition 3.4.4, Theorem 3.4.6.
-
-Estimate: ~150 lines, all ★.
-'''
-
 [[node]]
 id = "exists_isBestApprox_of_isClosed"
-kind = "theorem"
-desc = '''**The projection theorem**, [brezis2011functional] Theorem 5.2, existence clause: in a real
-Hilbert space (`InnerProductSpace ℝ V`, `CompleteSpace V`), for `K` nonempty, closed and convex
-and every `u`, `∃ v, IsBestApprox K u v`. Mathlib's `exists_norm_eq_iInf_of_complete_convex`
-read through `isBestApprox_iff_norm_sub_eq_infDist` and `Metric.infDist_eq_iInf` (proved in the
-prototype, six lines). The backbone's `exists_isBestApprox_of_convex` in
-`Numlib/Variational/WeakMinimization` is the same statement by the direct method in a
-`WeaklySeqCompactSpace`, the book's first proof; this is its second, and needs no weak topology. ★'''
-deps = ["IsBestApprox", "isBestApprox_iff_norm_sub_eq_infDist"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "existsUnique_isBestApprox"
-kind = "theorem"
-desc = '''[brezis2011functional] Theorem 5.2 as a `∃!`: under the hypotheses of
-`exists_isBestApprox_of_isClosed`, `∃! v, IsBestApprox K u v`; uniqueness is `IsBestApprox.unique`
-(a Hilbert space is strictly convex). ★'''
-deps = ["exists_isBestApprox_of_isClosed", "IsBestApprox.unique"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "isBestApprox_bestApprox_of_isClosed"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex: `IsBestApprox K u (bestApprox K u)` for every
-`u` — the projection `P_K u` of the book, unconditionally. ★'''
-deps = ["isBestApprox_bestApprox", "exists_isBestApprox_of_isClosed"]
 
 [[node]]
 id = "bestApprox_mem"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex: `bestApprox K u ∈ K`. ★'''
-deps = ["isBestApprox_bestApprox_of_isClosed"]
 
 [[node]]
 id = "inner_sub_bestApprox_le_zero"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex: `∀ v ∈ K, ⟪u - bestApprox K u, v - bestApprox K u⟫ ≤ 0`,
-the variational inequality (3) of [brezis2011functional] Theorem 5.2, from
-`isBestApprox_iff_inner_le_zero`. ★'''
-deps = ["isBestApprox_bestApprox_of_isClosed", "isBestApprox_iff_inner_le_zero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "bestApprox_eq_iff"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex:
-`bestApprox K u = w ↔ w ∈ K ∧ ∀ v ∈ K, ⟪u - w, v - w⟫ ≤ 0` — the characterization clause of
-[brezis2011functional] Theorem 5.2 ("`u` is characterized by (3)"). Forward:
-`inner_sub_bestApprox_le_zero` and `bestApprox_mem`; backward: `isBestApprox_iff_inner_le_zero`
-then `IsBestApprox.bestApprox_eq`. ★'''
-deps = ["inner_sub_bestApprox_le_zero", "bestApprox_mem", "IsBestApprox.bestApprox_eq",
-  "isBestApprox_iff_inner_le_zero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.2"
 
 [[node]]
 id = "inner_bestApprox_sub_nonneg"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex: `0 ≤ ⟪bestApprox K u₁ - bestApprox K u₂, u₁ - u₂⟫`
-— the projection is monotone, the first clause of `IsBestApprox.dist_le_dist`. ★'''
-deps = ["isBestApprox_bestApprox_of_isClosed", "IsBestApprox.dist_le_dist"]
 
 [[node]]
 id = "norm_bestApprox_sub_bestApprox_le"
-kind = "theorem"
-desc = '''**The projection does not increase distance**, [brezis2011functional] Proposition 5.3: real
-Hilbert space, `K` nonempty closed convex, `‖bestApprox K u₁ - bestApprox K u₂‖ ≤ ‖u₁ - u₂‖`.
-The second clause of `IsBestApprox.dist_le_dist` applied to the two projections (proved in the
-prototype, three lines). ★'''
-deps = ["isBestApprox_bestApprox_of_isClosed", "IsBestApprox.dist_le_dist"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.3"
 
 [[node]]
 id = "lipschitzWith_bestApprox"
-kind = "theorem"
-desc = '''Real Hilbert space, `K` nonempty closed convex: `LipschitzWith 1 (bestApprox K)`, the
-`LipschitzWith` packaging of `norm_bestApprox_sub_bestApprox_le` (`LipschitzWith.of_dist_le_mul`). ★'''
-deps = ["norm_bestApprox_sub_bestApprox_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 5.3"
 
 [[node]]
 id = "bestApprox_eq_starProjection"
-kind = "theorem"
-desc = '''**On a subspace the metric projection is the orthogonal projection**, [brezis2011functional]
-Corollary 5.4: over `RCLike 𝕜`, for `K : Submodule 𝕜 V` with `[K.HasOrthogonalProjection]`,
-`bestApprox (K : Set V) u = K.starProjection u`. `isBestApprox_starProjection` supplies existence
-and `IsBestApprox.eq_starProjection` the identification (proved in the prototype, one line). With
-`Submodule.starProjection` a `V →L[𝕜] V`, this is the corollary's "`P_M` is a linear operator";
-its characterization "`u ∈ M` and `(f - u, v) = 0` for all `v ∈ M`" is Mathlib's
-`Submodule.norm_eq_iInf_iff_inner_eq_zero` / the backbone's `isBestApprox_iff_mem_orthogonal`. ★'''
-deps = ["isBestApprox_bestApprox", "isBestApprox_starProjection", "IsBestApprox.eq_starProjection"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.4"

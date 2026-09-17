@@ -51,34 +51,13 @@ id = "one_le_norm_of_isIdempotentElem"
 
 [[node]]
 id = "bestApprox"
-kind = "definition"
-desc = '''`bestApprox (K : Set V) (u : V) : V` for a seminormed group `V`: `if h : ∃ v, IsBestApprox K u v
-then h.choose else u`, with `open scoped Classical in`. The metric projection of `u` onto `K`,
-written `P_K u` in [brezis2011functional] §5.1 (the Notation after Theorem 5.2) and in
-[han2009theoretical] §3.4; the junk value `u` when no best approximation exists keeps the
-definition hypothesis-free. ★'''
-deps = ["IsBestApprox"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.1, Notation after Theorem 5.2"
 
 [[node]]
 id = "isBestApprox_bestApprox"
-kind = "theorem"
-desc = '''`(h : ∃ v, IsBestApprox K u v) : IsBestApprox K u (bestApprox K u)`: whenever a best
-approximation exists, `bestApprox K u` is one. `rw [bestApprox, dite_eq_left_of_eq_true (eq_true h)]`
-then `h.choose_spec`. ★'''
-deps = ["bestApprox", "IsBestApprox"]
 
 [[node]]
 id = "IsBestApprox.bestApprox_eq"
-kind = "theorem"
-desc = '''In a real normed space that is `StrictConvexSpace ℝ V`, for `K` convex:
-`(h : IsBestApprox K u v) : bestApprox K u = v`. Existence is witnessed by `v`, and
-`IsBestApprox.unique` identifies the two. ★'''
-deps = ["bestApprox", "isBestApprox_bestApprox", "IsBestApprox.unique"]
 
 [[node]]
 id = "bestApprox_eq_self_of_mem"
-kind = "theorem"
-desc = '''Strictly convex `V`, convex `K`: `(hu : u ∈ K) : bestApprox K u = u`, since `u` is its own
-best approximation. ★'''
-deps = ["IsBestApprox.bestApprox_eq"]

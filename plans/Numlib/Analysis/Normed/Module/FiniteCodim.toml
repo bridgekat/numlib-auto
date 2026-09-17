@@ -1,182 +1,31 @@
-desc = '''
-Finite-dimensional and finite-codimensional subspaces of a normed space: what
-[brezis2011functional] §11.1 states and Mathlib does not yet have (natural home:
-`Mathlib.Topology.Algebra.Module.FiniteDimension` and `Mathlib.Analysis.Normed.Module.Complemented`).
-
-Most of §11.1 *is* in Mathlib, and the surface delegates to it directly — recorded here so that
-nobody re-proves it: Proposition 11.1 is `Submodule.closed_of_finiteDimensional`, Proposition
-11.2 is `LinearMap.continuous_of_finiteDimensional`, the closedness clause of Proposition 11.4 is
-`Submodule.isClosed_sup_finiteDimensional`, Proposition 11.5 is
-`Submodule.isClosed_mono_of_finiteDimensional_quotient`, and "finite codimension" is
-`Submodule.CoFG` (`Mathlib/RingTheory/Finiteness/Cofinite.lean`: `M.CoFG := Module.Finite 𝕜 (E ⧸ M)`,
-with `Submodule.FG.cofg_of_codisjoint` and `Submodule.CoFG.fg_of_isCompl` relating it to the
-book's "`M + X = E` for a finite-dimensional `X`", and `Submodule.quotientEquivOfIsCompl` making
-`dim X = dim (E ⧸ M)` independent of the choice of `X`). Mathlib also has the one-directional
-complement facts `Submodule.ClosedComplemented.of_finiteDimensional` (a finite-dimensional subspace
-is complemented — Hahn–Banach, hence `RCLike` scalars), `…of_finiteDimensional_quotient` (a closed
-subspace of finite codimension is complemented), `Submodule.IsCompl.isTopCompl_of_finiteDimensional_quotient`
-and `Submodule.ClosedComplemented.of_isCompl_isClosed` (closed algebraic complements are
-topological complements in a Banach space).
-
-What this module adds, all of it "finite-dimensional linear algebra plus one closedness fact":
-
-* the dimension of the strong dual, `NormedSpace.finrank_strongDual`, and Proposition 11.3 —
-  a Banach space whose dual is finite-dimensional is finite-dimensional, of the same dimension
-  (the canonical embedding into the bidual is injective);
-* the second clause of Proposition 11.4: `M ⊔ X` is (topologically) complemented iff `M` is,
-  for `M` closed and `X` finite-dimensional, in each direction as its own node;
-* Proposition 11.6: a closed subspace of finite codimension has a complement inside any dense
-  subspace;
-* Proposition 11.7: two closed subspaces `G, L` with `G + L + X₁ = E` and `G ∩ L ⊆ X₂`, `X₁, X₂`
-  finite-dimensional, are complemented — the criterion behind the Fredholm alternative's
-  bookkeeping in the book's chapter 6 (its Theorem 6.6 (d) is proved with it in Remark 6 of
-  chapter 6, which the chapter-6 agent may consume).
-
-Generality: the field is `RCLike 𝕜` wherever Hahn–Banach enters (11.3, the finite-dimensional
-complement inside `N` in 11.4, Step 2 of 11.7) and a complete `NontriviallyNormedField` elsewhere,
-matching the Mathlib lemmas cited; completeness of `E` is assumed exactly where a closed algebraic
-complement must be shown topological (the `of_sup` direction of 11.4, Step 1 of 11.7). The
-statements are for a normed space `E` (the book's Banach space); `Submodule` is used throughout,
-`Submodule.ClosedComplemented` is "admits a complement" in the book's sense (a closed subspace `N`
-with `M ⊕ N = E`, equivalently a continuous projection — `Submodule.closedComplemented_iff_isClosed_exists_isClosed_isCompl`).
-
-Order of attack: `finrank_strongDual` → 11.3 → 11.4 (`sup` direction, then `of_sup`) → 11.6 →
-11.7 Step 1 → 11.7. About 350 lines in all. Prototyped statements:
-`notes/brezis/ch11/proto/Shapes.lean` (section `Compl`).
-'''
-
 [[node]]
 id = "NormedSpace.finrank_strongDual"
-kind = "theorem"
-desc = '''`Module.finrank 𝕜 (StrongDual 𝕜 E) = Module.finrank 𝕜 E` for a finite-dimensional normed
-space `E` over a complete nontrivially normed field `𝕜` ("the dual space `X*` of a
-finite-dimensional space `X` is also finite-dimensional, and `dim X* = dim X`",
-[brezis2011functional] §11.1, the paragraph before Proposition 11.3). In finite dimension every
-linear functional is continuous, so `LinearMap.toContinuousLinearMap : (E →ₗ[𝕜] 𝕜) ≃ₗ[𝕜] (E →L[𝕜] 𝕜)`
-(`Mathlib/Topology/Algebra/Module/FiniteDimension.lean`) is a linear equivalence
-`Module.Dual 𝕜 E ≃ₗ[𝕜] StrongDual 𝕜 E`, and `Subspace.dual_finrank_eq` gives the dimension of the
-algebraic dual; combine with `LinearEquiv.finrank_eq`. Finite-dimensionality of the dual itself is
-Mathlib's instance `ContinuousLinearMap.instModuleFinite`. The book's proof by the dual basis
-`fᵢ(x) = xᵢ` is the same fact (`Module.Basis.dualBasis`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.1"
 
 [[node]]
 id = "NormedSpace.finiteDimensional_of_finiteDimensional_strongDual"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.3**: for a normed space `E` over `RCLike 𝕜`
-(the book says Banach; completeness is not used), if `StrongDual 𝕜 E` is finite-dimensional then
-so is `E`: `[FiniteDimensional 𝕜 (StrongDual 𝕜 E)] → FiniteDimensional 𝕜 E`. Proof as the book's:
-`StrongDual 𝕜 (StrongDual 𝕜 E)` is finite-dimensional (`ContinuousLinearMap.instModuleFinite`),
-and `NormedSpace.inclusionInDoubleDualLi 𝕜 E` is an injective linear map of `E` into it
-(`LinearIsometry.injective` — this is where Hahn–Banach, hence `RCLike`, enters, through
-`NormedSpace.inclusionInDoubleDual_norm_eq`), so `FiniteDimensional.of_injective` applies. The
-equality `dim X = dim X*` that the proposition also asserts is then `finrank_strongDual`, which is
-why it is not a separate clause here. ★'''
-deps = ["NormedSpace.finrank_strongDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.3"
 
 [[node]]
 id = "Submodule.ClosedComplemented.sup_finiteDimensional"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.4, "if" half of the second clause**: for a normed
-space `E` over `RCLike 𝕜`, `M : Submodule 𝕜 E` with `M.ClosedComplemented`, and
-`X : Submodule 𝕜 E` with `[FiniteDimensional 𝕜 X]`, `(M ⊔ X).ClosedComplemented`. No closedness of
-`M` beyond what `ClosedComplemented` implies, and no completeness of `E`.
-
-Proof (book, p. 11.4 "Suppose now that `M` admits a complement"): let `N` be a topological
-complement of `M` (`ClosedComplemented.exists_isTopCompl`), `P_N` the continuous projection onto
-`N` along `M`. `X' := X.map P_N` is a finite-dimensional subspace of `N`, so it has a topological
-complement `Ñ` inside the normed space `N` (`Submodule.ClosedComplemented.of_finiteDimensional`
-applied in `N`, then `ClosedComplemented.exists_isTopCompl`); pulled back to `E` it is a closed
-subspace `Ñ ≤ N`. Then `M ⊔ X = M ⊔ X'` (write `x = P_M x + P_N x`), `(M ⊔ X') ⊓ Ñ = ⊥`
-(`ñ = m + x'` gives `ñ = P_N ñ = x' ∈ X' ⊓ Ñ = ⊥`), `(M ⊔ X') ⊔ Ñ = ⊤`, and the projection onto
-`M ⊔ X'` along `Ñ` is `P_M + Q ∘ P_N` with `Q` the (continuous) projection of `N` onto `X'` along
-`Ñ`, so `IsTopCompl (M ⊔ X') Ñ` and `IsTopCompl.closedComplemented` finishes. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.4"
 
 [[node]]
 id = "Submodule.ClosedComplemented.of_sup_finiteDimensional"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.4, "only if" half of the second clause**: for a
-Banach space `E` over `RCLike 𝕜`, `M : Submodule 𝕜 E` closed (`hM : IsClosed (M : Set E)`) and
-`X` finite-dimensional, `(M ⊔ X).ClosedComplemented → M.ClosedComplemented`.
-
-Proof (book, "Conversely, assume that `M + X` admits a complement `W`"): take a closed
-complement `W` of `M ⊔ X` (`ClosedComplemented.exists_isClosed_isCompl`), and an algebraic
-complement `X̃` of `M ⊓ X` inside `X` (`Submodule.exists_isCompl` in the finite-dimensional `X`,
-pulled back — `X̃` is finite-dimensional). Then `W ⊔ X̃` is closed
-(`Submodule.isClosed_sup_finiteDimensional`), `(W ⊔ X̃) ⊓ M = ⊥` (`m = w + x̃` forces
-`w ∈ (M ⊔ X) ⊓ W = ⊥`, then `m = x̃ ∈ (M ⊓ X) ⊓ X̃ = ⊥`), and `(W ⊔ X̃) ⊔ M = ⊤` because
-`M ⊔ X̃ = M ⊔ X`. So `IsCompl M (W ⊔ X̃)` with both closed, and
-`Submodule.ClosedComplemented.of_isCompl_isClosed` (Banach) concludes. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.4"
 
 [[node]]
 id = "Submodule.closedComplemented_sup_finiteDimensional_iff"
-kind = "theorem"
-desc = '''The second clause of [brezis2011functional] Proposition 11.4 as an `iff`: in a Banach
-space over `RCLike 𝕜`, for `M` closed and `X` finite-dimensional,
-`(M ⊔ X).ClosedComplemented ↔ M.ClosedComplemented`. The two halves above. ★'''
-deps = ["Submodule.ClosedComplemented.sup_finiteDimensional", "Submodule.ClosedComplemented.of_sup_finiteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.4"
 
 [[node]]
 id = "Submodule.exists_isCompl_le_of_dense"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.6**: in a normed space `E` over a complete
-nontrivially normed field (a Hausdorff topological vector space suffices, as for
-`Submodule.isClosed_sup_finiteDimensional`), for `M : Submodule 𝕜 E` closed and of finite
-codimension (`hM : IsClosed (M : Set E)`, `[M.CoFG]`) and `D : Submodule 𝕜 E` dense
-(`hD : Dense (D : Set E)`), there is a complement of `M` inside `D`:
-`∃ X : Submodule 𝕜 E, X ≤ D ∧ IsCompl M X`. Such an `X` is automatically finite-dimensional
-(`Submodule.CoFG.fg_of_isCompl`) and a topological complement
-(`Submodule.IsCompl.isTopCompl_of_finiteDimensional_quotient`); the statement leaves both to the
-consumer.
-
-Proof by induction on `d = finrank 𝕜 (E ⧸ M)`, as the book's: if `M = ⊤` take `X = ⊥`. Otherwise
-`D ⊄ M` (else `⊤ = closure D ≤ M` since `M` is closed), so pick `x₁ ∈ D`, `x₁ ∉ M`; then
-`M₁ := M ⊔ span {x₁}` is closed (`isClosed_sup_finiteDimensional`) and
-`finrank (E ⧸ M₁) = d - 1` (`Submodule.finrank_quotient_add_finrank`-type counting in the
-finite-dimensional quotient: `M₁ ⧸ M` is the line spanned by `mk x₁`), and the induction
-hypothesis gives `X₁ ≤ D` complementing `M₁`; `X := span {x₁} ⊔ X₁` complements `M`. Set the
-induction up as a statement over all closed `M` with `finrank (E ⧸ M) = d`. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.6"
 
 [[node]]
 id = "Submodule.closedComplemented_of_disjoint_of_sup_sup_eq_top"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.7, Step 1 (the case `X₂ = {0}`)**: in a Banach
-space `E` over a complete nontrivially normed field, for closed subspaces `G, L` with
-`Disjoint G L` and a finite-dimensional `X₁` with `G ⊔ L ⊔ X₁ = ⊤`, `G.ClosedComplemented`
-(and symmetrically `L`, by swapping the roles — state the one and derive the other with
-`sup_comm`, `disjoint_comm`).
-
-Proof (book): let `X̃₁` be an algebraic complement of `(G ⊔ L) ⊓ X₁` inside `X₁` (finite-dimensional
-linear algebra, `Submodule.exists_isCompl`). Then `L ⊔ X̃₁` is closed
-(`Submodule.isClosed_sup_finiteDimensional`), `G ⊔ (L ⊔ X̃₁) = ⊤` (decompose `h ∈ X₁` as
-`h₁ + h₂`), and `G ⊓ (L ⊔ X̃₁) = ⊥` (`g = ℓ + x̃₁` gives `x̃₁ ∈ (G ⊔ L) ⊓ X̃₁ = ⊥`, then
-`g = ℓ ∈ G ⊓ L = ⊥`). So `IsCompl G (L ⊔ X̃₁)` with both closed, and
-`Submodule.ClosedComplemented.of_isCompl_isClosed` concludes. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.7"
 
 [[node]]
 id = "Submodule.closedComplemented_of_sup_sup_eq_top_of_inf_le"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.7**: in a Banach space `E` over `RCLike 𝕜`, for
-closed subspaces `G, L` and finite-dimensional `X₁, X₂` with `G ⊔ L ⊔ X₁ = ⊤` and `G ⊓ L ≤ X₂`,
-`G.ClosedComplemented` (and `L.ClosedComplemented`, the statement being symmetric).
-
-Proof (book, Step 2): `G ⊓ L` is finite-dimensional (a subspace of `X₂`), so it has a closed
-complement `G̃` inside `G` (`Submodule.ClosedComplemented.of_finiteDimensional` in the normed
-space `G` — this is where `RCLike` enters — then `ClosedComplemented.exists_isClosed_isCompl`,
-pulled back to a closed subspace of `E`), and likewise `L̃` inside `L`. Then `Disjoint G̃ L̃`
-(`g ∈ G̃ ⊓ L̃ ⊆ (G ⊓ L) ⊓ L̃ = ⊥`) and `G̃ ⊔ L̃ ⊔ (X₁ ⊔ X₂) = ⊤` (write `g = g̃ + h₁`,
-`ℓ = ℓ̃ + h₂` with `h₁, h₂ ∈ G ⊓ L ≤ X₂`), so Step 1 gives `G̃.ClosedComplemented`, and
-`G = G̃ ⊔ (G ⊓ L)` is complemented by `Submodule.ClosedComplemented.sup_finiteDimensional`. ★★'''
-deps = ["Submodule.closedComplemented_of_disjoint_of_sup_sup_eq_top", "Submodule.ClosedComplemented.sup_finiteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.7"

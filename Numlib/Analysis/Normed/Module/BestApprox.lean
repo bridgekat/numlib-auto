@@ -24,6 +24,13 @@ orthogonal projection, and the Lebesgue lemma for projections ([han2009theoretic
 * `IsBestApprox K u v` says that `v ∈ K` minimizes the distance from `u` to `K`.
   `isBestApprox_iff_norm_sub_eq_infDist` identifies it with the metric description `‖u - v‖ =
   Metric.infDist u K`, so either may be used as the definition.
+* `bestApprox K u` is the metric projection of `u` onto `K` as a *function*: a best
+  approximation when one exists (`isBestApprox_bestApprox`), the junk value `u` otherwise, so
+  that it is hypothesis-free to write. In a strictly convex space it is the unique best
+  approximation (`IsBestApprox.bestApprox_eq`, `bestApprox_eq_self_of_mem`). This is the
+  projection `P_K` of [brezis2011functional] §5.1 and [han2009theoretical] §3.4; its Hilbert-space
+  theory (existence, the variational characterization, nonexpansiveness) is in
+  `Numlib.Analysis.InnerProductSpace.ConvexProjection`.
 
 ## Main results
 
@@ -64,6 +71,21 @@ theorem isBestApprox_iff_norm_sub_eq_infDist {K : Set V} {u v : V} (hv : v ∈ K
   refine ⟨IsBestApprox.norm_sub_eq_infDist, fun h => ⟨hv, fun w hw => ?_⟩⟩
   rw [h, ← dist_eq_norm]
   exact Metric.infDist_le_dist_of_mem hw
+
+open scoped Classical in
+/-- The **metric projection** of `u` onto `K`, written `P_K u` in [brezis2011functional] §5.1
+(the notation after Theorem 5.2) and [han2009theoretical] §3.4: a best approximation of `u` from
+`K` when one exists, and the junk value `u` otherwise. Defined in any seminormed space with no
+hypotheses, so that it can always be written; the theorems carry the hypotheses (existence in a
+Hilbert space for `K` nonempty closed convex, uniqueness in a strictly convex space). -/
+noncomputable def bestApprox (K : Set V) (u : V) : V :=
+  if h : ∃ v, IsBestApprox K u v then h.choose else u
+
+/-- Whenever a best approximation of `u` from `K` exists, `bestApprox K u` is one. -/
+theorem isBestApprox_bestApprox {K : Set V} {u : V} (h : ∃ v, IsBestApprox K u v) :
+    IsBestApprox K u (bestApprox K u) := by
+  rw [bestApprox, dite_eq_left_of_eq_true (eq_true h)]
+  exact h.choose_spec
 
 end Normed
 
@@ -154,6 +176,17 @@ theorem IsBestApprox.unique {K : Set V} (hK : Convex ℝ K) {u v₁ v₂ : V} (h
       (by norm_num) (by norm_num) hab
   rw [sub_combo hab] at hlt
   exact absurd (h₁.2 _ (hK h₁.1 h₂.1 (by norm_num) (by norm_num) hab)) (not_le.2 hlt)
+
+/-- In a strictly convex space, a best approximation from a convex set *is* `bestApprox K u`:
+it witnesses existence, and best approximations are unique. -/
+theorem IsBestApprox.bestApprox_eq {K : Set V} (hK : Convex ℝ K) {u v : V}
+    (h : IsBestApprox K u v) : bestApprox K u = v :=
+  (isBestApprox_bestApprox ⟨v, h⟩).unique hK h
+
+/-- A point of a convex set is its own metric projection, in a strictly convex space. -/
+theorem bestApprox_eq_self_of_mem {K : Set V} (hK : Convex ℝ K) {u : V} (hu : u ∈ K) :
+    bestApprox K u = u :=
+  IsBestApprox.bestApprox_eq hK ⟨hu, fun w _ => by rw [sub_self, norm_zero]; exact norm_nonneg _⟩
 
 end Uniqueness
 

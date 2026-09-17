@@ -1,388 +1,66 @@
-desc = '''
-Compact operators on Banach spaces: Schauder's theorem for the Banach adjoint, the Fredholm
-alternative in its Banach form (`R(I - T) = N(I - T*)^⊥`, `dim N(I - T) = dim N(I - T*)`, `I - T`
-Fredholm of index zero), weak-to-norm continuity, and the shape of the spectrum of a compact
-operator (`0 ∈ σ(T)` in infinite dimension; `σ(T) ∖ {0}` is finite or a sequence tending to `0`).
-Natural home: `Mathlib.Analysis.Normed.Operator.Compact`, beside `FredholmAlternative.lean` and
-`Mathlib/Analysis/Normed/Operator/Fredholm/`.
-
-This is the Banach-space half of [brezis2011functional] §6.1–§6.3. The parent module
-`Numlib/Analysis/Normed/Operator/Compact.lean` proves the closure properties, Schauder on Hilbert
-spaces, the accumulation of eigenvalues at `0`, the closed range of `μ • 1 - K`, and the Hilbert
-solvability criterion; `…/Riesz.lean` the ascent–descent theory and the Hilbert index-zero
-statement. Everything here is what those two leave open once the Banach adjoint exists.
-
-Design.
-
-* The Banach adjoint `T* : F* → E*` is `ContinuousLinearMap.strongDualMap` (planned by chapter 2 in
-  `Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean`, D3 of the planning brief), with
-  `strongDualMap_apply : strongDualMap T v u = v (T u)`. Note for that module: Mathlib already
-  has the map, as `ContinuousLinearMap.precomp 𝕜 T : StrongDual 𝕜 F →L[𝕜] StrongDual 𝕜 E`
-  (`Mathlib/Topology/Algebra/Module/Spaces/ContinuousLinearMap.lean`; `precomp 𝕜 T v u = v (T u)`
-  is `rfl`), but not its norm identity nor anything below. Annihilators are chapter 1's
-  `Submodule.strongDualAnnihilator M ⊆ E*` and `Submodule.strongDualCoannihilator N ⊆ E`
-  (`Numlib/Analysis/Normed/Module/Annihilator.lean`; the brief's name `Submodule.annihilator` is
-  Mathlib's ideal annihilator and was renamed by chapter 1). The kernel identity
-  `ker T* = (range T)^⊥` is chapter 2's `ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`,
-  and `(1 - T)* = 1 - T*` comes from the `strongDualMap_id`/`strongDualMap_add`/`strongDualMap_smul`
-  lemmas of chapter 2's `ContinuousLinearMap.strongDualMap_comp` node.
-* Scalars are `RCLike 𝕜` wherever the dual or Hahn–Banach enters (Schauder, the annihilator
-  identities, the Fredholm index by a real homotopy) and `NontriviallyNormedField 𝕜` with
-  `CompleteSpace 𝕜` for the spectrum statements, matching the parent modules.
-* The index-zero statement is obtained from Mathlib's Fredholm theory
-  (`ContinuousLinearMap.IsFredholm`, `ContinuousLinearMap.index`, `IsFredholm.index_continuousAt`
-  in `Mathlib/Analysis/Normed/Operator/Fredholm/Open.lean`) rather than from the book's
-  finite-rank perturbation argument: `1 - t • T`, `t ∈ [0, 1]`, is a continuous path of Fredholm
-  operators, and the index is locally constant. This also gives the Comments' property (c),
-  `A + T` Fredholm of the same index as `A` for compact `T`, which Mathlib does not have (it has
-  the finite-rank perturbation `IsFredholm.add_hasFiniteRange` and the composition rule
-  `IsFredholm.index_comp`). Mathlib has no `IsCompactOperator` in its Fredholm directory at all
-  (grep 2026-09-17, v4.35.0-rc2).
-* The book's `dim N(I - T*)` is compared with `dim N(I - T)` through the cokernel: the index gives
-  `finrank (ker A) = finrank (X ⧸ range A)`, and for any closed-range `A` the kernel of `A*` is
-  the annihilator of the range, whose dimension is that of the quotient — chapter 11's
-  Proposition 11.13, `Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator`
-  (`Numlib/Analysis/Normed/Module/Quotient.lean`, through `(E ⧸ M)* ≅ M^⊥`). This module therefore
-  imports chapter 11's `Quotient` module (which imports nothing about compact operators, so no
-  cycle); a self-contained fallback through Mathlib's `FredholmDecomposition` is recorded on the
-  node in case that layering is ever unwanted.
-
-Order inside the file: Schauder, weak-to-norm continuity, the Fredholm section, the spectrum
-section. Estimated 900 lines.
-'''
-
 [[node]]
 id = "IsCompactOperator.strongDualMap"
-kind = "theorem"
-desc = '''**Schauder's theorem**, Banach form: for `T : E →L[𝕜] F` between normed spaces over
-`RCLike 𝕜` with `IsCompactOperator T`, the Banach adjoint is compact:
-`IsCompactOperator (ContinuousLinearMap.strongDualMap T)` as a map
-`StrongDual 𝕜 F → StrongDual 𝕜 E`. No completeness of `E` or `F` is needed (`E*` is complete
-regardless). [brezis2011functional] Theorem 6.4, first half (lines 5964–5971 of the source).
-
-Proof route (★★, ~150 lines), a direct total-boundedness argument that avoids Arzelà–Ascoli: the
-unit ball `B_{F*}` is mapped into `E*`, which is complete, so it suffices (by
-`isCompactOperator_iff_isCompact_closure_image_closedBall` and
-`TotallyBounded.isCompact_of_isClosed`) to show `T* '' closedBall 0 1` is totally bounded. Fix
-`ε > 0`. By compactness, `T '' closedBall 0 1` is covered by finitely many balls `B (T uᵢ, ε)`,
-`i ∈ s`. The map `v ↦ (v (T uᵢ))ᵢ : StrongDual 𝕜 F → (s → 𝕜)` is bounded on the unit ball
-(`‖v (T uᵢ)‖ ≤ ‖T uᵢ‖`), and bounded sets of the finite-dimensional `s → 𝕜` are totally bounded
-(`ProperSpace`, `Metric.totallyBounded_of_isBounded`… or `IsCompact.totallyBounded`), so there is
-a finite set `Z ⊆ closedBall 0 1` such that every `v` in the ball has a `z ∈ Z` with
-`‖v (T uᵢ) - z (T uᵢ)‖ < ε` for all `i`. Then for every `u` in `B_E`, choosing `i` with
-`‖T u - T uᵢ‖ < ε`, `‖(T* v - T* z) u‖ = ‖(v - z) (T u)‖ ≤ ‖(v - z) (T uᵢ)‖ + 2 ‖T u - T uᵢ‖ < 3ε`,
-so `‖T* v - T* z‖ ≤ 3ε` (`ContinuousLinearMap.opNorm_le_bound`). The book's proof through
-Ascoli–Arzelà (`Numlib/Topology/ContinuousMap/ArzelaAscoli.lean`,
-`ContinuousMap.isCompact_closure_of_equicontinuous`) is an alternative of about the same length:
-the functions `x ↦ v x` on the compact `K = closure (T '' B_E)` are `1`-Lipschitz and bounded by
-`‖T‖`.
-
-Mathlib has the Hilbert-space version only (`IsCompactOperator.adjoint` in the parent module is
-this project's; Mathlib has nothing named `Schauder`, grep 2026-09-17). The map `T*` itself is
-`ContinuousLinearMap.precomp 𝕜 T` in Mathlib, see the group description. Generality (review):
-this direction uses no Hahn–Banach, only the local compactness of `s → 𝕜`, so it holds over any
-complete locally compact `NontriviallyNormedField` (`[LocallyCompactSpace 𝕜]`), as the parent
-module's `of_finiteDimensional_range` is stated; `RCLike` is what every consumer has, and the
-converse genuinely needs the isometric double-dual embedding.'''
-deps = ["ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.strongDualMap_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.4"
 
 [[node]]
 id = "IsCompactOperator.of_strongDualMap"
-kind = "theorem"
-desc = '''**Schauder's theorem, converse**: for `T : E →L[𝕜] F` between Banach spaces over `RCLike 𝕜`,
-if `IsCompactOperator (ContinuousLinearMap.strongDualMap T)` then `IsCompactOperator T`.
-[brezis2011functional] Theorem 6.4, second half (lines 5972–5973).
-
-Proof route (★★, ~100 lines), the book's: by `IsCompactOperator.strongDualMap` applied to `T*`,
-`T** : E** → F**` is compact. The double-dual embeddings `J_E = NormedSpace.inclusionInDoubleDual 𝕜 E`
-and `J_F` satisfy `T** ∘ J_E = J_F ∘ T` (both send `u` to `w ↦ w (T u)`; `strongDualMap_apply`
-twice), so `J_F '' (T '' B_E) ⊆ T** '' (J_E '' B_E) ⊆ T** '' B_{E**}` (`J_E` is an isometry,
-`NormedSpace.inclusionInDoubleDualLi`), which has compact closure in `F**`. Since `J_F` is an
-isometric embedding with closed range (`F` complete, `LinearIsometry.isClosed_range`… or
-`Isometry.isClosedEmbedding` plus `CompleteSpace`), a set whose image under `J_F` has compact
-closure has compact closure: `IsCompact.of_isClosed_subset` on `closure (T '' B_E) = J_F ⁻¹' closure (J_F '' (T '' B_E))`
-(`Topology.IsClosedEmbedding.closure_image_eq`). Then `isCompactOperator_iff_isCompact_closure_image_closedBall`.'''
-deps = ["IsCompactOperator.strongDualMap", "ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.strongDualMap_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.4"
 
 [[node]]
 id = "isCompactOperator_strongDualMap_iff"
-kind = "theorem"
-desc = '''For `T : E →L[𝕜] F` between Banach spaces over `RCLike 𝕜`,
-`IsCompactOperator (ContinuousLinearMap.strongDualMap T) ↔ IsCompactOperator T`. The two halves
-are `IsCompactOperator.strongDualMap` and `IsCompactOperator.of_strongDualMap`. ★.
-[brezis2011functional] Theorem 6.4.'''
-deps = ["IsCompactOperator.strongDualMap", "IsCompactOperator.of_strongDualMap"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.4"
 
 [[node]]
 id = "IsCompactOperator.tendsto_of_tendsto_toWeakSpace"
-kind = "theorem"
-desc = '''**A compact operator maps weakly convergent sequences to norm-convergent ones**: for
-`T : E →L[𝕜] F` compact between normed spaces over `RCLike 𝕜`, `u : ℕ → E` and `x : E` with
-`Tendsto (fun n => toWeakSpace 𝕜 E (u n)) atTop (𝓝 (toWeakSpace 𝕜 E x))`, one has
-`Tendsto (fun n => T (u n)) atTop (𝓝 (T x))`. [brezis2011functional] Chapter 6, Remark 2, first
-sentence (also Exercise 6.7, question 2).
-
-Proof route (★★, ~70 lines): the sequence is bounded (`exists_norm_le_of_tendsto_toWeakSpace`,
-`Numlib/Analysis/Normed/Module/WeakDual.lean`), so `T (u n)` lies in a compact set
-(`IsCompactOperator.image_closedBall_subset_compact`). Every subsequence has a further
-subsequence converging to some `w` (`IsCompact.tendsto_subseq`), and `w = T x`: for every
-`v : StrongDual 𝕜 F`, `v (T (u n)) = (v ∘L T) (u n) → (v ∘L T) x = v (T x)` by weak convergence
-(`tendsto_toWeakSpace_iff`), and functionals separate points (`SeparatingDual` for normed spaces
-over `RCLike`, e.g. `NormedSpace.eq_iff_forall_dual_eq`). Conclude with
-`tendsto_of_subseq_tendsto`.'''
-deps = ["exists_norm_le_of_tendsto_toWeakSpace", "tendsto_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 2"
 
 [[node]]
 id = "IsCompactOperator.of_forall_tendsto_of_tendsto_toWeakSpace"
-kind = "theorem"
-desc = '''**The converse of `IsCompactOperator.tendsto_of_tendsto_toWeakSpace` on a reflexive
-domain**: for `T : E →L[𝕜] F` with `[NormedSpace.IsReflexive 𝕜 E]` (`RCLike 𝕜`, `F` a normed
-space), if `T` sends every weakly convergent sequence `u n ⇀ x` to a norm-convergent one
-`T (u n) → T x`, then `IsCompactOperator T`. [brezis2011functional] Chapter 6, Remark 2, second
-sentence, which cites Exercise 6.7, question 4.
-
-Proof route (★★, ~60 lines): by the sequential criterion (every bounded sequence has a
-subsequence whose image converges — the equivalence with `IsCompactOperator` is in
-`NumlibSurface/AtkinsonHan/Chapter02/Section08.lean`, `definition_2_8_1`, and is reproved here
-in the one direction needed through `isCompactOperator_iff_isCompact_closure_image_closedBall`
-and `IsSeqCompact.isCompact`): a bounded sequence has a weakly convergent subsequence by
-`NormedSpace.exists_subseq_forall_dual_tendsto` (`Numlib/Analysis/Normed/Module/Reflexive.lean`),
-whose image converges by hypothesis (the hypothesis is stated with `toWeakSpace`; convert with
-`tendsto_toWeakSpace_iff`).'''
-deps = ["NormedSpace.IsReflexive", "NormedSpace.exists_subseq_forall_dual_tendsto", "tendsto_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 2"
 
 [[node]]
 id = "IsCompactOperator.isFredholm_smul_one_sub"
-kind = "theorem"
-desc = '''**`μ • 1 - T` is a Fredholm operator** for `T : X →L[𝕜] X` compact on a Banach space over
-`RCLike 𝕜` and `μ ≠ 0`: `(μ • (1 : X →L[𝕜] X) - T).IsFredholm` in the sense of Mathlib's
-`ContinuousLinearMap.IsFredholm` (`Mathlib/Analysis/Normed/Operator/Fredholm/Basic.lean`: strict,
-closed range of finite codimension, finite-dimensional complemented kernel).
-[brezis2011functional] Comments on Chapter 6, 1 ("`A = I - T` … is a Fredholm operator of index
-zero; this follows from Theorem 6.6"); the index is `IsCompactOperator.index_smul_one_sub`.
-
-Proof route (★★, ~90 lines), one field at a time with `A := μ • 1 - T`:
-`finite_ker` is `IsCompactOperator.finiteDimensional_ker_pow hT hμ 1` (`Numlib/…/Riesz.lean`);
-`closedComplemented_ker` is `Submodule.ClosedComplemented.of_finiteDimensional` (Hahn–Banach,
-`Mathlib/Analysis/LocallyConvex/HahnBanach.lean`); `isClosed_range` is
-`IsCompactOperator.isClosed_range_smul_sub`; `finite_coker` (`A.range.CoFG`): the Riesz index
-`IsCompactOperator.exists_riesz_index` gives `ν` with `IsCompl (ker (A ^ ν)) (range (A ^ ν))` and
-`ker (A ^ ν)` finite-dimensional, so `range (A ^ ν)` has finite codimension
-(`Submodule.CoFG` from a finite-dimensional complement, e.g. `Submodule.quotientEquivOfIsCompl`),
-and `range (A ^ ν) ≤ range A` (`ContinuousLinearMap.range_pow_anti`) gives `CoFG.of_le`;
-`isStrictMap`: a continuous linear map with closed range between Banach spaces is strict, because
-its corestriction to the (complete) range is a surjection, hence open by the open mapping theorem
-(`ContinuousLinearMap.isOpenMap`), and `isStrictMap_iff_isQuotientMap_rangeFactorization` with
-`IsOpenMap.isQuotientMap`. Mathlib's own note in `Fredholm/Basic.lean` says this "Banach space"
-criterion is not yet in Mathlib; check `IsFredholm.of_…` names again before writing it.
-
-Over a general complete `NontriviallyNormedField` the only field needing Hahn–Banach is the
-complemented kernel; it could instead be taken from the Riesz decomposition (an algebraic
-complement of `ker A` inside the finite-dimensional `ker (A ^ ν)`, summed with the closed
-`range (A ^ ν)`, is a closed complement). Not done: `RCLike` is what every consumer has.'''
-deps = ["IsCompactOperator.finiteDimensional_ker_pow", "IsCompactOperator.isClosed_range_smul_sub", "IsCompactOperator.exists_riesz_index"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 1"
 
 [[node]]
 id = "ContinuousLinearMap.IsFredholm.add_isCompactOperator"
-kind = "theorem"
-desc = '''**A compact perturbation of a Fredholm operator is Fredholm**: for `A T : X →L[𝕜] X` on a
-Banach space over `RCLike 𝕜` with `A.IsFredholm` and `IsCompactOperator T`, `(A + T).IsFredholm`.
-[brezis2011functional] Comments on Chapter 6, 1, property (c), first clause. Mathlib has only the
-finite-rank case `IsFredholm.add_hasFiniteRange` (grep 2026-09-17).
-
-Proof route (★★, ~50 lines): take a quasi-inverse `B` of `A`
-(`ContinuousLinearMap.IsFredholm.exists_isQuasiInverse`): `B ∘L A = 1 + R` with `R` of finite
-rank, hence compact (`IsCompactOperator.of_finiteDimensional_range`). Then
-`B ∘L (A + T) = 1 + (R + B ∘L T)` with `R + B ∘L T` compact (`IsCompactOperator.add`, `clm_comp`),
-so `B ∘L (A + T)` is Fredholm by `IsCompactOperator.isFredholm_smul_one_sub` (with `μ = 1` and the
-compact operator `-(R + B ∘L T)`; rewrite `1 • 1 - (-K) = 1 + K`). `B` is itself Fredholm
-(`IsFredholm.of_isQuasiInverse` applied to the symmetric quasi-inverse relation), and
-`IsFredholm.comp_iff_right` (`hf' : IsFredholm B` gives `IsFredholm (B ∘L f) ↔ IsFredholm f`)
-yields `IsFredholm (A + T)`.'''
-deps = ["IsCompactOperator.isFredholm_smul_one_sub", "IsCompactOperator.of_finiteDimensional_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 1"
 
 [[node]]
 id = "ContinuousLinearMap.IsFredholm.index_add_isCompactOperator"
-kind = "theorem"
-desc = '''**A compact perturbation does not change the Fredholm index**: for `A T : X →L[𝕜] X` on a
-Banach space over `RCLike 𝕜` with `A.IsFredholm` and `IsCompactOperator T`,
-`(A + T).index = A.index` (`ContinuousLinearMap.index`, `Mathlib/Algebra/Module/LinearMap/Index.lean`).
-[brezis2011functional] Comments on Chapter 6, 1, property (c), second clause.
-
-Proof route (★★, ~70 lines), the homotopy argument: `γ : ℝ → (X →L[𝕜] X)`,
-`γ t := A + (t : 𝕜) • T`, is continuous (`Continuous.smul` with `RCLike.ofReal` continuous), and
-`γ t` is Fredholm for every `t` by `IsFredholm.add_isCompactOperator` (`(t : 𝕜) • T` is compact,
-`IsCompactOperator.smul`). The index is continuous on the set of Fredholm operators
-(`ContinuousLinearMap.index_continuousOn_isFredholm`,
-`Mathlib/Analysis/Normed/Operator/Fredholm/Open.lean`), so `index ∘ γ : ℝ → ℤ` is continuous
-(`ContinuousOn.comp_continuous` with `MapsTo`), and a continuous map from the preconnected `ℝ`
-into the discrete `ℤ` is constant (`IsPreconnected.constant` on `Set.univ`, or
-`PreconnectedSpace.constant`). Evaluate at `t = 0` and `t = 1`.'''
-deps = ["ContinuousLinearMap.IsFredholm.add_isCompactOperator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 1"
 
 [[node]]
 id = "IsCompactOperator.index_smul_one_sub"
-kind = "theorem"
-desc = '''**`μ • 1 - T` has Fredholm index zero** for `T : X →L[𝕜] X` compact on a Banach space over
-`RCLike 𝕜` and `μ ≠ 0`: `(μ • (1 : X →L[𝕜] X) - T).index = 0`. ★, ~10 lines:
-`ContinuousLinearMap.IsFredholm.index_add_isCompactOperator` with `A = μ • 1` (Fredholm as an
-invertible map, `ContinuousLinearMap.IsInvertible.isFredholm` or `ContinuousLinearEquiv.isFredholm`)
-and the compact `-T`, together with `LinearMap.index_of_bijective` for `μ • 1`.
-[brezis2011functional] Comments on Chapter 6, 1: "`A = I - T` with `T ∈ K(E)` is a Fredholm
-operator of index zero; this follows from Theorem 6.6".'''
-deps = ["ContinuousLinearMap.IsFredholm.index_add_isCompactOperator", "IsCompactOperator.isFredholm_smul_one_sub"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 1"
 
 [[node]]
+id = "ContinuousLinearMap.strongDualMap_smul_one_sub"
+
+[[node]]
 id = "ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range"
-kind = "theorem"
-desc = '''**The kernel of the adjoint of a closed-range operator has the dimension of the cokernel**:
-for `A : X →L[𝕜] Y` between normed spaces over `RCLike 𝕜` with `IsClosed (A.range : Set Y)`,
-`Module.finrank 𝕜 (ContinuousLinearMap.ker (ContinuousLinearMap.strongDualMap A)) = Module.finrank 𝕜 (Y ⧸ ContinuousLinearMap.range A)`
-(both sides `0` when the codimension is infinite, as `finrank` is). This is the step
-"`R(I - T) = N(I - T*)^⊥` has finite codimension `d*`" of the proof of [brezis2011functional]
-Theorem 6.6 (d) (lines 6046–6049, which cite §2.4 Example 2), stated for any closed-range
-operator.
-
-Proof (★, ~20 lines): `ker A* = (range A).strongDualAnnihilator`
-(`ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`, chapter 2), and for the closed
-subspace `range A`, `finrank (Y ⧸ range A) = finrank (range A).strongDualAnnihilator` is
-chapter 11's Proposition 11.13 (b), `Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator`
-(`Numlib/Analysis/Normed/Module/Quotient.lean`).
-
-Fallback without chapter 11, for a Fredholm `A` (~120 lines): a Fredholm package
-`hA.nonempty_fredholmPackage.some` (`ContinuousLinearMap.FredholmPackage`) gives `Y = Y₁ ⊕ Y₀`
-topologically with `Y₁ = range A` and `Y₀` finite dimensional; restriction `v ↦ v ∘L Y₀.subtypeL`
-is a linear bijection `(range A).strongDualAnnihilator → StrongDual 𝕜 Y₀` (inverse
-`g ↦ g ∘L (projection onto Y₀ along Y₁)`, continuous as the decomposition is topological), and
-`finrank (StrongDual 𝕜 Y₀) = finrank Y₀ = finrank (Y ⧸ range A)` by
-`LinearMap.toContinuousLinearMap`, `Subspace.dual_finrank_eq` and
-`Submodule.quotientEquivOfIsCompl`.'''
-deps = ["ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range", "Submodule.strongDualAnnihilator", "Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
 
 [[node]]
 id = "IsCompactOperator.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap"
-kind = "theorem"
-desc = '''**The Fredholm alternative, clause (d), Banach form**: for `T : X →L[𝕜] X` compact on a
-Banach space over `RCLike 𝕜` and `μ ≠ 0`,
-`Module.finrank 𝕜 (ker (μ • (1 : X →L[𝕜] X) - T)) = Module.finrank 𝕜 (ker (μ • (1 : StrongDual 𝕜 X →L[𝕜] StrongDual 𝕜 X) - ContinuousLinearMap.strongDualMap T))`.
-[brezis2011functional] Theorem 6.6 (d), `dim N(I - T) = dim N(I - T*)`, at `μ = 1`. The Hilbert
-form with the Hilbert adjoint is `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`
-(`Numlib/Analysis/Normed/Operator/Riesz.lean`), which carries a `conj μ`; there is no conjugation
-here because `strongDualMap` is `𝕜`-linear.
-
-Proof (★, ~20 lines): `IsCompactOperator.index_smul_one_sub` unfolds
-(`ContinuousLinearMap.index`, `LinearMap.index_eq_finrank_sub`) to
-`finrank (ker A) = finrank (X ⧸ range A)` for `A = μ • 1 - T`, and
-`ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range` (the range is closed,
-`IsCompactOperator.isClosed_range_smul_sub`) identifies the right side with `finrank (ker A*)`;
-finally `strongDualMap (μ • 1 - T) = μ • 1 - strongDualMap T` by chapter 2's `strongDualMap_id`,
-`strongDualMap_smul` and `strongDualMap_add` (with `sub_eq_add_neg`, `neg_one_smul`), all under
-the node `ContinuousLinearMap.strongDualMap_comp`, or by `ext` from `strongDualMap_apply`.'''
-deps = ["IsCompactOperator.index_smul_one_sub", "ContinuousLinearMap.finrank_ker_strongDualMap_eq_finrank_quotient_range", "IsCompactOperator.isClosed_range_smul_sub", "ContinuousLinearMap.strongDualMap_apply", "ContinuousLinearMap.strongDualMap_comp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
 
 [[node]]
 id = "IsCompactOperator.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap"
-kind = "theorem"
-desc = '''**The Fredholm alternative, clause (b), Banach form**: for `T : X →L[𝕜] X` compact on a
-Banach space over `RCLike 𝕜` and `μ ≠ 0`,
-`ContinuousLinearMap.range (μ • (1 : X →L[𝕜] X) - T) = Submodule.strongDualCoannihilator (ContinuousLinearMap.ker (μ • 1 - ContinuousLinearMap.strongDualMap T))`,
-the solvability criterion `R(I - T) = N(I - T*)^⊥`: `(μ - T) u = f` is solvable exactly when
-`v f = 0` for every `v ∈ X*` with `T* v = μ v`. [brezis2011functional] Theorem 6.6 (b), second
-clause, at `μ = 1` (lines 6021–6023, which invoke Theorem 2.19). The Hilbert form is
-`IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` in the parent module.
-
-Proof (★, ~25 lines): with `A = μ • 1 - T`, `range A` is closed
-(`IsCompactOperator.isClosed_range_smul_sub`), so the bipolar identity of Proposition 1.9 for a
-closed subspace, `Submodule.strongDualCoannihilator_strongDualAnnihilator_of_isClosed : M.strongDualAnnihilator.strongDualCoannihilator = M`
-(chapter 1, `Numlib/Analysis/Normed/Module/Annihilator.lean`), gives
-`range A = (range A).strongDualAnnihilator.strongDualCoannihilator`, and
-`(range A).strongDualAnnihilator = ker (strongDualMap A)`
-(`ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range`, chapter 2), with
-`strongDualMap A = μ • 1 - strongDualMap T` from chapter 2's `strongDualMap_id`/`_smul`/`_add`
-(node `strongDualMap_comp`) or by `ext` from `strongDualMap_apply`.
-Only the closed range uses compactness; the identity holds for every closed-range operator, and
-chapter 2's `ClosedRange.lean` states that general form for unbounded operators.'''
-deps = ["IsCompactOperator.isClosed_range_smul_sub", "Submodule.strongDualCoannihilator", "Submodule.strongDualAnnihilator", "Submodule.strongDualCoannihilator_strongDualAnnihilator_of_isClosed", "ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.strongDualMap_apply", "ContinuousLinearMap.strongDualMap_comp", "ContinuousLinearMap.ker_strongDualMap_eq_annihilator_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.6"
 
 [[node]]
 id = "IsCompactOperator.zero_mem_spectrum"
-kind = "theorem"
-desc = '''**`0` is in the spectrum of a compact operator on an infinite-dimensional space**: for
-`T : X →L[𝕜] X` compact on a Banach space over a complete `NontriviallyNormedField 𝕜` (locally
-compact, e.g. `RCLike`) with `¬ FiniteDimensional 𝕜 X`, `(0 : 𝕜) ∈ spectrum 𝕜 T`.
-[brezis2011functional] Theorem 6.8 (a) (lines 6132–6133).
-
-Proof (★, ~15 lines): otherwise `T` is a unit of `X →L[𝕜] X`, and `1 = T⁻¹ ∘L T` is compact
-(`IsCompactOperator.clm_comp`), so `X` is finite dimensional by
-`isCompactOperator_id_iff_finiteDimensional` (`Mathlib/Analysis/Normed/Operator/Compact/FiniteDimension.lean`;
-note the identity there is `_root_.id`, so rewrite `⇑(1 : X →L[𝕜] X) = id`).'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
 
 [[node]]
 id = "IsCompactOperator.countable_setOf_hasEigenvalue"
-kind = "theorem"
-desc = '''**The nonzero eigenvalues of a compact operator are countable**: for `T : X →L[𝕜] X` compact on
-a normed space over a complete `NontriviallyNormedField 𝕜`,
-`{μ : 𝕜 | Module.End.HasEigenvalue (T : Module.End 𝕜 X) μ ∧ μ ≠ 0}.Countable`.
-Part of the bookkeeping of [brezis2011functional] Theorem 6.8 (c) (lines 6175–6177).
-
-Proof (★, ~20 lines): the set is `⋃ n : ℕ, {μ | HasEigenvalue T μ ∧ 1 / (n + 1) ≤ ‖μ‖}`
-(`NormedField` has no elements of norm strictly between `0` and every `1/(n+1)`), each of which
-is finite by `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`; `Set.countable_iUnion` and
-`Set.Finite.countable`.'''
-deps = ["IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
 
 [[node]]
 id = "IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue"
-kind = "theorem"
-desc = '''**Any sequence of distinct eigenvalues of a compact operator tends to `0`**: for
-`T : X →L[𝕜] X` compact on a normed space over a complete `NontriviallyNormedField 𝕜` and
-`f : ℕ → 𝕜` injective with `∀ n, Module.End.HasEigenvalue (T : Module.End 𝕜 X) (f n)`,
-`Tendsto f atTop (𝓝 0)`. This is [brezis2011functional] Lemma 6.2 (lines 6145–6150: a sequence
-of distinct points of `σ(T) ∖ {0}` converging to `λ` has `λ = 0`) in the stronger form that the
-sequence converges, and to `0`; Lemma 6.2 as stated follows by `tendsto_nhds_unique`, and the
-spectrum version by `IsCompactOperator.hasEigenvalue_iff_mem_spectrum`.
-
-Proof (★, ~30 lines): `Metric.tendsto_atTop`/`NormedAddCommGroup.tendsto_nhds_zero`: for
-`ε > 0`, the set `{μ | HasEigenvalue T μ ∧ ε ≤ ‖μ‖}` is finite
-(`IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`), so its preimage under the injective
-`f` is finite (`Set.Finite.preimage`), hence bounded in `ℕ`, and `‖f n‖ < ε` beyond its
-maximum (`Set.Finite.bddAbove`).'''
-deps = ["IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 6.2"
 
 [[node]]
 id = "IsCompactOperator.finite_or_exists_enumeration_spectrum"
-kind = "theorem"
-desc = '''**The nonzero spectrum of a compact operator is finite or a sequence tending to `0`**: for
-`T : X →L[𝕜] X` compact on a Banach space over a complete `NontriviallyNormedField 𝕜`,
-`(spectrum 𝕜 T \ {0}).Finite ∨ ∃ f : ℕ → 𝕜, Function.Injective f ∧ Set.range f = spectrum 𝕜 T \ {0} ∧ Tendsto f atTop (𝓝 0)`.
-[brezis2011functional] Theorem 6.8 (c) (lines 6136–6141 and 6175–6177). The book lists three
-cases, `σ(T) = {0}`, `σ(T) ∖ {0}` finite, and `σ(T) ∖ {0}` a sequence converging to `0`; the
-first is the empty instance of the second and is not separated here (on a finite-dimensional
-space `0` need not belong to `σ(T)`, which is why the statement is about `σ(T) ∖ {0}`; on an
-infinite-dimensional one `IsCompactOperator.zero_mem_spectrum` puts it back).
-
-Proof (★★, ~70 lines): `spectrum 𝕜 T \ {0} = {μ | HasEigenvalue T μ ∧ μ ≠ 0}` by
-`IsCompactOperator.hasEigenvalue_iff_mem_spectrum` (Mathlib,
-`Mathlib/Analysis/Normed/Operator/Compact/FredholmAlternative.lean`), a countable set
-(`IsCompactOperator.countable_setOf_hasEigenvalue`). If it is infinite it is countably infinite,
-so `Set.Countable.exists_eq_range`… or `Set.countable_infinite_iff_nonempty_denumerable` gives
-an injection `f : ℕ → 𝕜` with range the set (`Denumerable`/`Equiv` of `ℕ` with the subtype);
-then `IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue` gives the limit.'''
-deps = ["IsCompactOperator.countable_setOf_hasEigenvalue", "IsCompactOperator.tendsto_zero_of_injective_of_forall_hasEigenvalue"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 6.8"
