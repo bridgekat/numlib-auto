@@ -1,184 +1,61 @@
 namespace = "Brezis.Chapter05"
-desc = '''
-Brezis §5.3: the theorems of Stampacchia and Lax–Milgram. Book lines 5172–5296. The book's
-bilinear form `a : H × H → ℝ` is `LinearMap.BilinForm ℝ H` with continuity and coercivity as
-hypotheses, exactly as the book's Definition has them; the vocabulary is the pattern of
-`AtkinsonHan.BilinForm` (`NumlibSurface/AtkinsonHan/Chapter08/Section03`): an `abbrev` so that
-dot notation resolves (`a.IsCoerciveWith` on a bare `LinearMap.BilinForm` resolves to the
-backbone's operator predicate `LinearMap.IsCoerciveWith` and fails — checked in
-`notes/brezis/ch05/proto/Surface.lean`), the two predicates, and the bridge `toSesqForm` to the
-backbone's `SesqForm ℝ H` (`Numlib/Variational/Forms`), through which every theorem delegates:
-Stampacchia to `existsUnique_isVariationalInequalitySolution_of_isCoercive` and
-`SesqForm.isMinOn_energy_iff_forall_le` (`Numlib/Variational/Inequality/Basic`, `…/LaxMilgram`),
-Lax–Milgram to `SesqForm.laxMilgram` and `SesqForm.isMinOn_energy_iff`, the Banach fixed point
-theorem to Mathlib's `ContractingWith`. Remarks 6–8 are nodes; Remark 7's "roughly speaking
-`F'(u) = 0`" is stated as the Fréchet derivative of the energy. Theorem 5.16 (Minty–Browder,
-Comments) is not planned; see the chapter group.
-'''
 
 [[node]]
 id = "BilinForm"
-kind = "definition"
-desc = '''`abbrev BilinForm (H) [NormedAddCommGroup H] [InnerProductSpace ℝ H] := LinearMap.BilinForm ℝ H`:
-the book's bilinear forms `a : H × H → ℝ`, an abbreviation so that the predicates below are found
-by dot notation (the pattern of `AtkinsonHan.BilinForm`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.IsContinuousWith"
-kind = "definition"
-desc = '''Definition (i): `a` is continuous with constant `C`, `∀ u v, |a u v| ≤ C * ‖u‖ * ‖v‖`. The
-book's unquantified "continuous" is `∃ C, IsContinuousWith a C`; the theorems take the constant. ★'''
-deps = ["BilinForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.IsCoerciveWith"
-kind = "definition"
-desc = '''Definition (ii): `a` is coercive with constant `α`, `∀ v, α * ‖v‖ ^ 2 ≤ a v v`; the theorems
-add `0 < α`. Over `ℝ` this is the backbone's `SesqForm.IsCoerciveWith` on `toSesqForm a`
-(`SesqForm.isCoerciveWith_real_iff`), see `BilinForm.isCoerciveWith_toSesqForm`. ★'''
-deps = ["BilinForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.toSesqForm"
-kind = "definition"
-desc = '''`toSesqForm (a : BilinForm H) (hC : a.IsContinuousWith C) : SesqForm ℝ H`, the form bundled
-as `H →L[ℝ] H →L[ℝ] ℝ` by `LinearMap.mkContinuous₂ a C` (the bound is `hC` with
-`Real.norm_eq_abs`); over `ℝ` a `V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ`, the defeq the
-backbone relies on. Proved in the prototype. ★'''
-deps = ["BilinForm.IsContinuousWith", "SesqForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.toSesqForm_apply"
-kind = "theorem"
-desc = '''`toSesqForm a hC u v = a u v`, by `rfl`. ★'''
-deps = ["BilinForm.toSesqForm"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.isCoerciveWith_toSesqForm"
-kind = "theorem"
-desc = '''`a.IsCoerciveWith α → SesqForm.IsCoerciveWith (toSesqForm a hC) α`, by
-`SesqForm.isCoerciveWith_real_iff` (proved in the prototype). ★'''
-deps = ["BilinForm.toSesqForm", "BilinForm.IsCoerciveWith", "SesqForm.isCoerciveWith_real_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "BilinForm.isHermitian_toSesqForm_of_isSymm"
-kind = "theorem"
-desc = '''The book's "symmetric" (`∀ u v, a u v = a v u`, Mathlib's `LinearMap.BilinForm.IsSymm`) is the
-backbone's `SesqForm.IsHermitian` of `toSesqForm a hC`, by `SesqForm.isHermitian_real_iff`. ★'''
-deps = ["BilinForm.toSesqForm", "SesqForm.isHermitian_real_iff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §5.3, Definition"
 
 [[node]]
 id = "theorem_5_6"
-kind = "theorem"
-desc = '''Theorem 5.6 (Stampacchia), existence and uniqueness: for `a : BilinForm H` with
-`hC : a.IsContinuousWith C`, `0 < α`, `a.IsCoerciveWith α`, `K` nonempty closed convex and
-`φ : StrongDual ℝ H`, `∃! u, u ∈ K ∧ ∀ v ∈ K, φ (v - u) ≤ a u (v - u)` (display (10), with the
-book's `a(u, v - u) ≥ ⟨φ, v - u⟩` written as `≤`). The backbone's
-`existsUnique_isVariationalInequalitySolution_of_isCoercive` at `j = 0` (the `∃! u,
-IsVariationalInequalitySolution a.toOperator 0 (rieszRep φ) K u`, which unfolds by
-`SesqForm.inner_rieszRep`, `SesqForm.inner_toOperator` and `toSesqForm_apply` to the display);
-proved in `notes/brezis/ch05/proto/Surface.lean` by one `simpa`. The backbone's proof is the
-book's: the fixed point of `v ↦ P_K (ρ f - ρ A v + v)` for `0 < ρ < 2α/C²`, `P_K` nonexpansive
-(Proposition 5.3), Banach's theorem (Theorem 5.7) — `stampacchia` is the operator form. ★'''
-deps = ["BilinForm.isCoerciveWith_toSesqForm", "BilinForm.toSesqForm_apply",
-  "existsUnique_isVariationalInequalitySolution_of_isCoercive", "IsVariationalInequalitySolution",
-  "SesqForm.inner_rieszRep", "SesqForm.inner_toOperator", "stampacchia"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.6"
 
 [[node]]
 id = "theorem_5_6_symm"
-kind = "theorem"
-desc = '''Theorem 5.6, the symmetric clause: if moreover `a` is symmetric then, for `u ∈ K`, `u` solves
-(10) iff it minimizes `v ↦ ½ a v v - φ v` on `K` — `(∀ v ∈ K, φ (v - u) ≤ a u (v - u)) ↔
-IsMinOn (fun v => 1 / 2 * a v v - φ v) K u` — and the minimizer exists and is unique. The backbone's
-`SesqForm.isMinOn_energy_iff_forall_le` (`SesqForm.energy` unfolds to the displayed function over
-`ℝ`, cf. `AtkinsonHan.Chapter08.theorem_8_3_3_iff`) and `SesqForm.existsUnique_isMinOn_energy`
-through `BilinForm.isHermitian_toSesqForm_of_isSymm`. The book's proof — the projection onto `K`
-in the scalar product `a` — is `IsVariationalInequalitySolution.isBestApprox_energy`. ★'''
-deps = ["theorem_5_6", "BilinForm.isHermitian_toSesqForm_of_isSymm",
-  "SesqForm.isMinOn_energy_iff_forall_le", "SesqForm.existsUnique_isMinOn_energy",
-  "IsVariationalInequalitySolution.isBestApprox_energy"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.6"
 
 [[node]]
 id = "theorem_5_7"
-kind = "theorem"
-desc = '''Theorem 5.7 (Banach fixed-point theorem): for a nonempty complete metric space `X`
-(`[MetricSpace X] [Nonempty X] [CompleteSpace X]`), `S : X → X` and `k < 1` with
-`∀ v₁ v₂, dist (S v₁) (S v₂) ≤ k * dist v₁ v₂`, `∃! u, S u = u`. Mathlib's `ContractingWith`
-(`Mathlib/Topology/MetricSpace/Contracting.lean`: `ContractingWith.fixedPoint`,
-`fixedPoint_isFixedPt`, `fixedPoint_unique`), packaged as the backbone's
-`ContractingWith.existsUnique_eq_self`; the book's real `k` becomes `Real.toNNReal k`
-(if `k < 0` the hypothesis forces `S` constant, and `max k 0` handles it uniformly). Statement over
-`[MetricSpace X]` rather than a Banach space, as the book has it; cf.
-`AtkinsonHan.Chapter05.theorem_5_1_3`. ★'''
-deps = ["ContractingWith.existsUnique_eq_self"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 5.7"
 
 [[node]]
 id = "corollary_5_8"
-kind = "theorem"
-desc = '''Corollary 5.8 (Lax–Milgram): for `a` continuous (`hC`) and coercive (`0 < α`,
-`a.IsCoerciveWith α`) and `φ : StrongDual ℝ H`, `∃! u, ∀ v, a u v = φ v` (display (17)). The
-backbone's `SesqForm.laxMilgram (toSesqForm a hC) φ hα (isCoerciveWith_toSesqForm …)`, cf.
-`AtkinsonHan.Chapter08.theorem_8_3_4`. The book's proof (Theorem 5.6 with `K = H` and the argument
-of Corollary 5.4) is also available: `theorem_5_6` at `K = Set.univ` and testing at `u ± v`. ★'''
-deps = ["SesqForm.laxMilgram", "BilinForm.isCoerciveWith_toSesqForm", "BilinForm.toSesqForm_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.8"
 
 [[node]]
 id = "corollary_5_8_symm"
-kind = "theorem"
-desc = '''Corollary 5.8, the symmetric clause: for symmetric `a`, `(∀ v, a u v = φ v) ↔
-IsMinOn (fun v => 1 / 2 * a v v - φ v) Set.univ u` (display (18)). The backbone's
-`SesqForm.isMinOn_energy_iff` at `K = ⊤` (`Submodule.top_coe`), through
-`BilinForm.isHermitian_toSesqForm_of_isSymm`. ★'''
-deps = ["corollary_5_8", "SesqForm.isMinOn_energy_iff", "BilinForm.isHermitian_toSesqForm_of_isSymm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 5.8"
 
 [[node]]
 id = "remark_5_6"
-kind = "theorem"
-desc = '''Remark 6: if `∀ v, 0 ≤ a v v` for a continuous bilinear form `a` then `v ↦ a v v` is convex,
-`ConvexOn ℝ Set.univ fun v => a v v`. No symmetry is assumed. The backbone's
-`SesqForm.convexOn_energy` (new, `Numlib/Variational/LaxMilgram`) at `ℓ = 0`, scaled by `2`
-(`ConvexOn.smul`); or the identity `a(su + tv, su + tv) = s a(u,u) + t a(v,v) - s t a(u - v, u - v)`
-directly. ★'''
-deps = ["SesqForm.convexOn_energy", "BilinForm.toSesqForm_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 6"
 
 [[node]]
 id = "remark_5_7"
-kind = "theorem"
-desc = '''Remark 7, the precise content of "(17) says `F'(u) = 0` where `F(v) = ½ a(v,v) - ⟨φ, v⟩`":
-for symmetric continuous `a`, `HasFDerivAt (fun v => 1 / 2 * a v v - φ v) (a u - φ) u` (the
-derivative is the functional `v ↦ a u v - φ v`), and hence the Euler-equation reading
-`(∀ v, a u v = φ v) ↔ fderiv ℝ (fun v => 1 / 2 * a v v - φ v) u = 0`. The backbone's
-`SesqForm.hasFDerivAt_energy` (new, `Numlib/Variational/LaxMilgram`) plus `HasFDerivAt.fderiv`
-and `ContinuousLinearMap.ext_iff`. ★'''
-deps = ["SesqForm.hasFDerivAt_energy", "BilinForm.isHermitian_toSesqForm_of_isSymm",
-  "BilinForm.toSesqForm_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 7"
 
 [[node]]
 id = "remark_5_8"
-kind = "theorem"
-desc = '''Remark 8, the direct proof of Lax–Milgram: with `A := SesqForm.toOperator (toSesqForm a hC)`
-(the operator of (13), `⟪A u, v⟫ = a u v`), `Function.Bijective A`, obtained from the three facts
-the book lists: (a) `A` is injective (`LinearMap.IsCoercive.injective` via
-`SesqForm.isCoerciveWith_iff_toOperator`), (b) `R(A)` is closed since `α ‖v‖ ≤ ‖A v‖`
-(`ContinuousLinearMap.isClosed_range_of_le_norm`), (c) `R(A)` is dense: `(range A)ᗮ = ⊥` because
-`⟪A u, v⟫ = 0` for all `u` gives `a v v = 0` hence `v = 0`. State the conjunction of (a), (b), (c)
-and the bijectivity; the assembly is the backbone's
-`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot`, cf.
-`AtkinsonHan.Chapter08.bijective_toOperator`. ★'''
-deps = ["ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot",
-  "ContinuousLinearMap.isClosed_range_of_le_norm", "SesqForm.isCoerciveWith_iff_toOperator",
-  "LinearMap.IsCoercive.injective", "SesqForm.toOperator", "SesqForm.inner_toOperator",
-  "BilinForm.isCoerciveWith_toSesqForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 5, Remark 8"

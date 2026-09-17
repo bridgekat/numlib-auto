@@ -22,6 +22,11 @@ theory of `μ - K` needs.
 * `IsCompactOperator.of_finiteDimensional_range` — a bounded operator of finite rank is compact.
 * `IsCompactOperator.of_tendsto` — an operator-norm limit of compact operators is compact, in the
   sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form.
+* `IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt` — the converse when the codomain
+  is an inner product space: a compact operator is an operator-norm limit of finite-rank
+  operators (the orthogonal projections of `T` onto the spans of finite nets of `T(B_E)`). This is
+  the positive answer to the approximation problem for Hilbert codomains, [brezis2011functional]
+  Chapter 6, Remark 1.
 * `IsCompactOperator.adjoint` — **Schauder's theorem**: the adjoint of a compact operator between
   Hilbert spaces is compact. The proof needs no finite-rank approximation: `K` composed with `K†` is
   compact, and `‖K† z‖² ≤ ‖K (K† z)‖ ‖z‖` turns a finite net for `K ∘ K†` on the unit ball into a
@@ -492,5 +497,59 @@ theorem range_smul_sub_eq_orthogonal_ker_adjoint {K : X →L[𝕜] X} (hK : IsCo
   rw [← hadj, ← ContinuousLinearMap.orthogonal_range, Submodule.orthogonal_orthogonal]
 
 end Solvability
+
+/-! ### Finite-rank approximation in an inner product space -/
+
+section FiniteRankApprox
+
+variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+
+/-- **A compact operator into an inner product space is an operator-norm limit of finite-rank
+operators**: for `T : E →L[𝕜] F` compact and `ε > 0` there is `S : E →L[𝕜] F` with
+finite-dimensional range and `‖S - T‖ < ε`. This is the positive answer to the approximation
+problem (Banach, Grothendieck) when the codomain is a Hilbert space, [brezis2011functional]
+Chapter 6, Remark 1; the converse is `IsCompactOperator.of_tendsto` with
+`IsCompactOperator.of_finiteDimensional_range`.
+
+The proof is the book's: `T(B_E)` has compact closure, so it has a finite `ε/4`-net `s`; with
+`G` the span of `s` and `P_G` the orthogonal projection onto `G` (finite-dimensional, hence
+complete — no completeness of `F` is needed), `S := P_G ∘ T` has range in `G`, and for `‖x‖ = 1`
+and `f ∈ s` within `ε/4` of `T x`, `‖P_G (T x) - f‖ = ‖P_G (T x - f)‖ ≤ ‖T x - f‖`, so
+`‖S x - T x‖ < ε/2`. -/
+theorem exists_finiteDimensional_range_norm_sub_lt {T : E →L[𝕜] F} (hT : IsCompactOperator T)
+    {ε : ℝ} (hε : 0 < ε) :
+    ∃ S : E →L[𝕜] F, FiniteDimensional 𝕜 (LinearMap.range (S : E →ₗ[𝕜] F)) ∧ ‖S - T‖ < ε := by
+  classical
+  -- a finite `ε/4`-net of the compact closure of the image of the unit ball
+  obtain ⟨s, -, hsfin, hcover⟩ := finite_cover_balls_of_compact
+    (hT.isCompact_closure_image_closedBall 1) (by positivity : 0 < ε / 4)
+  set G : Submodule 𝕜 F := Submodule.span 𝕜 s with hG
+  have hGfd : FiniteDimensional 𝕜 G := FiniteDimensional.span_of_finite 𝕜 hsfin
+  have hGc : CompleteSpace G := FiniteDimensional.complete 𝕜 G
+  refine ⟨G.starProjection ∘L T, ?_, ?_⟩
+  · refine Submodule.finiteDimensional_of_le (S₂ := G) ?_
+    rintro _ ⟨x, rfl⟩
+    exact G.starProjection_apply_mem _
+  · refine lt_of_le_of_lt (ContinuousLinearMap.opNorm_le_of_unit_norm (C := ε / 2) (by positivity)
+      fun x hx => ?_) (by linarith)
+    obtain ⟨f, hfs, hxf⟩ : ∃ f ∈ s, T x ∈ ball f (ε / 4) := by
+      have := hcover (subset_closure ⟨x, mem_closedBall_zero_iff.2 hx.le, rfl⟩)
+      simpa only [mem_iUnion, exists_prop, ContinuousLinearMap.coe_coe] using this
+    have hfG : G.starProjection f = f :=
+      Submodule.starProjection_eq_self_iff.2 (Submodule.subset_span hfs)
+    have h1 : ‖G.starProjection (T x) - f‖ ≤ ‖T x - f‖ := by
+      rw [← hfG, ← map_sub, hfG]
+      exact G.norm_starProjection_apply_le _
+    have h2 : ‖T x - f‖ < ε / 4 := by rwa [mem_ball, dist_eq_norm] at hxf
+    calc ‖(G.starProjection ∘L T - T) x‖
+        = ‖(G.starProjection (T x) - f) - (T x - f)‖ := by
+          simp only [sub_apply, ContinuousLinearMap.comp_apply]
+          congr 1
+          abel
+      _ ≤ ‖G.starProjection (T x) - f‖ + ‖T x - f‖ := norm_sub_le _ _
+      _ ≤ ε / 2 := by linarith
+
+end FiniteRankApprox
 
 end IsCompactOperator

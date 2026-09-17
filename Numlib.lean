@@ -205,6 +205,7 @@ import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.PDE.Bochner
+import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Cutoff

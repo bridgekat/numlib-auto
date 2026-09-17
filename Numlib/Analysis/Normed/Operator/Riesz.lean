@@ -35,6 +35,11 @@ the direct sum of the two.
   `.hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow` — the Fredholm alternative when
   only *some power* `K ^ m` is compact, which is the Riesz decomposition of `μ ^ m • 1 - K ^ m`
   together with the factorisation `μ ^ m • 1 - K ^ m = (μ • 1 - K) * S`.
+* `IsCompactOperator.injective_of_surjective_smul_one_sub` and
+  `.injective_iff_surjective_smul_one_sub` — the converse half of the Fredholm alternative,
+  surjectivity of `μ • 1 - K` forces injectivity (from the Riesz index, no adjoint, no
+  completeness), and the equivalence `N(μ - K) = 0 ⟺ R(μ - K) = X` on a Banach space
+  ([brezis2011functional] Theorem 6.6 (c)).
 
 * `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` — on a Hilbert space,
   `dim (ker (μ • 1 - K)) = dim (ker (conj μ • 1 - K†))`: the operator has Fredholm index zero.
@@ -445,6 +450,40 @@ theorem exists_factor_pow_smul_sub (K : X →L[𝕜] X) (μ : 𝕜) (m : ℕ) :
     rw [hexpand, ← hS, smul_sub, smul_smul, ← pow_succ']
     abel
 
+/-- **Surjectivity of `μ • 1 - K` forces injectivity** for a compact `K` and `μ ≠ 0`, on any
+normed space over any nontrivially normed field: the converse half of the Fredholm alternative,
+`R(I - T) = E ⇒ N(I - T) = {0}` ([brezis2011functional] Theorem 6.6 (c)), which the book proves
+through the adjoint and the orthogonality relations of its Corollary 2.18. Here it comes from the
+Riesz index alone: if `A = μ • 1 - K` is onto then so is every power, so `range (A ^ ν) = ⊤`, and
+the complement `ker (A ^ ν)` of the Riesz decomposition is `⊥`; `ker A ≤ ker (A ^ ν)` finishes
+(for `ν = 0` the chain of null spaces is constant from the start). -/
+theorem injective_of_surjective_smul_one_sub {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜}
+    (hμ : μ ≠ 0) (hsurj : Function.Surjective (μ • (1 : X →L[𝕜] X) - K)) :
+    Function.Injective (μ • (1 : X →L[𝕜] X) - K) := by
+  obtain ⟨ν, -, hker, -, hcompl⟩ := hK.exists_riesz_index hμ
+  set A : X →L[𝕜] X := μ • (1 : X →L[𝕜] X) - K with hAdef
+  -- every power of a surjective operator is surjective
+  have hpow : ∀ n : ℕ, Function.Surjective ((A ^ n : X →L[𝕜] X) : X → X) := by
+    intro n
+    induction n with
+    | zero => exact fun x => ⟨x, rfl⟩
+    | succ n ih =>
+      intro y
+      obtain ⟨z, hz⟩ := hsurj y
+      obtain ⟨x, hx⟩ := ih z
+      exact ⟨x, by rw [A.pow_succ_apply', hx, hz]⟩
+  have hrange : (A ^ ν).range = ⊤ := LinearMap.range_eq_top.2 (hpow ν)
+  have hkerν : (A ^ ν).ker = ⊥ := by
+    have h := hcompl.disjoint
+    rw [hrange] at h
+    exact disjoint_top.1 h
+  have hker1 : (A ^ 1).ker = ⊥ := by
+    rcases Nat.eq_zero_or_pos ν with hν0 | hνpos
+    · rw [hker 1 (by omega), hkerν]
+    · exact le_bot_iff.1 (hkerν ▸ A.ker_pow_mono hνpos)
+  rw [pow_one] at hker1
+  exact LinearMap.ker_eq_bot.1 hker1
+
 variable [CompleteSpace 𝕜]
 
 /-- **The Fredholm alternative for an operator with a compact power.** If some power `K ^ m` of
@@ -534,6 +573,21 @@ theorem hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow [CompleteSpac
   exact hK.isUnit_smul_one_sub_of_isCompactOperator_pow hμ hinj
 
 /-! ### The Fredholm index of `μ • 1 - K` on a Hilbert space -/
+
+/-- **The Fredholm alternative as an equivalence**: for a compact `K` on a Banach space and
+`μ ≠ 0`, the operator `μ • 1 - K` is injective if and only if it is surjective
+([brezis2011functional] Theorem 6.6 (c), `N(I - T) = {0} ⟺ R(I - T) = E`). The forward
+direction is the Fredholm alternative (`isUnit_smul_one_sub_of_isCompactOperator_pow` at
+`m = 1`), the converse `injective_of_surjective_smul_one_sub`. -/
+theorem injective_iff_surjective_smul_one_sub [CompleteSpace X] {K : X →L[𝕜] X}
+    (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
+    Function.Injective (μ • (1 : X →L[𝕜] X) - K) ↔
+      Function.Surjective (μ • (1 : X →L[𝕜] X) - K) := by
+  refine ⟨fun hinj => ?_, hK.injective_of_surjective_smul_one_sub hμ⟩
+  have hK1 : IsCompactOperator ((K ^ 1 : X →L[𝕜] X) : X → X) := by rwa [pow_one]
+  have hunit := isUnit_smul_one_sub_of_isCompactOperator_pow hK1 hμ fun u hu =>
+    hinj (by rw [hu, map_zero])
+  exact (ContinuousLinearMap.isUnit_iff_bijective.1 hunit).2
 
 section Hilbert
 

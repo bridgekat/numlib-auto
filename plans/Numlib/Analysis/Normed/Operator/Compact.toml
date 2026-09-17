@@ -18,26 +18,4 @@ id = "IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint"
 
 [[node]]
 id = "IsCompactOperator.exists_finiteDimensional_range_norm_sub_lt"
-kind = "theorem"
-desc = '''**A compact operator into a Hilbert space is a norm limit of finite-rank operators**: for
-`T : E →L[𝕜] F` compact, `E` a normed space and `F` a Hilbert space over `RCLike 𝕜`, and `ε > 0`,
-there is `S : E →L[𝕜] F` with `FiniteDimensional 𝕜 (LinearMap.range (S : E →ₗ[𝕜] F))` and
-`‖S - T‖ < ε`. This is the positive answer to the approximation problem when the codomain is a
-Hilbert space, [brezis2011functional] Chapter 6, Remark 1 (lines 5921–5933); the converse, that
-a limit of finite-rank operators is compact, is `IsCompactOperator.of_tendsto` with
-`IsCompactOperator.of_finiteDimensional_range`. Appended here because the module already holds
-the Hilbert-space material (Schauder, the solvability criterion) and the two closure lemmas this
-one converses.
-
-Proof route (★★, ~80 lines), the book's: `K := closure (T '' closedBall 0 1)` is compact, so
-for `ε/2` there is a finite `s ⊆ F` with `K ⊆ ⋃ f ∈ s, ball f (ε/2)` (`finite_cover_balls_of_compact`
-in `Mathlib/Topology/MetricSpace/Pseudo/Basic.lean`, or `TotallyBounded` via `Metric.totallyBounded_iff`). Let `G := Submodule.span 𝕜 s`, finite
-dimensional hence complete, with orthogonal projection `P := G.starProjection`
-(`Submodule.starProjection`, `[G.HasOrthogonalProjection]` from `FiniteDimensional`). Put
-`S := P ∘L T`: its range lies in `G`. For `‖x‖ ≤ 1` pick `f ∈ s` with `‖T x - f‖ < ε/2`; then
-`‖P (T x) - f‖ = ‖P (T x - f)‖ < ε/2` since `P f = f` (`Submodule.starProjection_eq_self_iff`)
-and `‖P‖ ≤ 1` (`Submodule.starProjection_norm_le`… or `ContinuousLinearMap.norm_le_of…`), so
-`‖S x - T x‖ < ε`, and `ContinuousLinearMap.opNorm_le_of_ball`-type lemmas give `‖S - T‖ ≤ ε`
-(state the conclusion with `≤ ε` if `< ε` costs a second shrink).'''
-deps = ["IsCompactOperator.of_finiteDimensional_range"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 1"

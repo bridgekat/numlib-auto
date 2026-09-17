@@ -149,3 +149,39 @@ theorem isCompactEmbedding_iff_isCompactOperator {ι : V →ₗ[𝕜] W} :
 theorem IsCompactEmbedding.isCompactOperator {ι : V →ₗ[𝕜] W} (h : IsCompactEmbedding ι) :
     IsCompactOperator ι :=
   (isCompactEmbedding_iff_isCompactOperator.1 h).2
+
+/-! ### Composition, and the closed-ball criterion -/
+
+/-- **A compact embedding followed by a continuous embedding is a compact embedding**: for
+`ι : V →ₗ[𝕜] W` compact and `κ : W →ₗ[𝕜] X` continuous, `κ ∘ₗ ι` is compact. Injectivity
+composes, and a convergent subsequence of `ι (u n)` is carried to a convergent one by the
+continuous `κ`. This is how `W^{1,p}(Ω) ↪↪ C(closure Ω) ↪ L^p(Ω)` gives `W^{1,p}(Ω) ↪↪ L^p(Ω)`
+for `p > N` in the Rellich–Kondrachov theorem ([brezis2011functional] Theorem 9.16). -/
+theorem IsCompactEmbedding.comp_isContinuousEmbedding {X : Type*} [NormedAddCommGroup X]
+    [NormedSpace 𝕜 X] {ι : V →ₗ[𝕜] W} {κ : W →ₗ[𝕜] X} (hι : IsCompactEmbedding ι)
+    (hκ : IsContinuousEmbedding κ) : IsCompactEmbedding (κ ∘ₗ ι) := by
+  rw [isCompactEmbedding_iff_isCompactOperator] at hι ⊢
+  exact ⟨hκ.injective.comp hι.1, hι.2.clm_comp hκ.toContinuousLinearMap⟩
+
+/-- **A continuous embedding followed by a compact embedding is a compact embedding**: for
+`ι : V →ₗ[𝕜] W` continuous and `κ : W →ₗ[𝕜] X` compact, `κ ∘ₗ ι` is compact. A bounded sequence
+is carried by `ι` to a bounded sequence, to which `κ` applies. This is how
+`W^{1,N}(Ω) ↪ W^{1,q}(Ω) ↪↪ L^r(Ω)` reduces the case `p = N` of the Rellich–Kondrachov theorem to
+the case `p < N` ([brezis2011functional] Theorem 9.16, proof). -/
+theorem IsContinuousEmbedding.comp_isCompactEmbedding {X : Type*} [NormedAddCommGroup X]
+    [NormedSpace 𝕜 X] {ι : V →ₗ[𝕜] W} {κ : W →ₗ[𝕜] X} (hι : IsContinuousEmbedding ι)
+    (hκ : IsCompactEmbedding κ) : IsCompactEmbedding (κ ∘ₗ ι) := by
+  rw [isCompactEmbedding_iff_isCompactOperator] at hκ ⊢
+  exact ⟨hκ.1.comp hι.injective, hκ.2.comp_clm hι.toContinuousLinearMap⟩
+
+/-- **The closed-ball criterion for a compact embedding**: an injective bounded linear map
+`ι : V →L[𝕜] W` whose image of the closed unit ball has compact closure is a compact embedding.
+This is the form in which the Rellich–Kondrachov theorem is proved — the image of the unit ball of
+`W^{1,p}(Ω)` is shown to have compact closure in `L^q(Ω)` ([brezis2011functional] Theorem 9.16,
+proof) — and it is `isCompactEmbedding_iff_isCompactOperator` together with Mathlib's
+`isCompactOperator_iff_isCompact_closure_image_closedBall`. -/
+theorem isCompactEmbedding_of_isCompact_closure_image_closedBall {ι : V →L[𝕜] W}
+    (hinj : Function.Injective ι) (hK : IsCompact (closure (ι '' closedBall 0 1))) :
+    IsCompactEmbedding (ι : V →ₗ[𝕜] W) :=
+  isCompactEmbedding_iff_isCompactOperator.2
+    ⟨hinj, (isCompactOperator_iff_isCompact_closure_image_closedBall (ι : V →ₗ[𝕜] W) one_pos).2 hK⟩
