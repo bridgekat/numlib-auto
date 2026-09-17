@@ -1,101 +1,29 @@
 namespace = "Brezis.Chapter04"
-desc = '''
-Brezis §4.1, "Some results about integration that everyone must know" (lines 3280-3336): the
-monotone and dominated convergence theorems, Fatou's lemma, the density of `C_c(ℝ^N)` in `L¹`,
-Tonelli and Fubini. All six are Mathlib's; the nodes restate them in the book's Bochner-integral
-form over a general measure space `(α, μ)` (the book's `(Ω, M, μ)`; σ-finiteness is not used in
-this section except in Tonelli-Fubini, where Mathlib asks `SFinite`). The book's `C_c(ℝ^N)` is
-stated as `Continuous g ∧ HasCompactSupport g`, the form of Mathlib's density theorems, on
-`EuclideanSpace ℝ (Fin N)` with `volume`. Mathlib's names: `lintegral_iSup'`,
-`tendsto_integral_of_dominated_convergence`, `lintegral_liminf_le'`,
-`Integrable.exists_hasCompactSupport_integral_sub_le`, `integrable_prod_iff'`, `integral_prod`,
-`Integrable.prod_right_ae`, `Integrable.integral_prod_left`, `integral_integral_swap`.
-'''
 
 [[node]]
 id = "theorem_4_1"
-kind = "theorem"
-desc = '''Theorem 4.1 (monotone convergence, Beppo Levi): for `f : ℕ → α → ℝ` with each `f n`
-integrable, `∀ᵐ x, Monotone (fun n => f n x)` and `BddAbove (Set.range fun n => ∫ f n)`, there is
-an integrable `g` with `∀ᵐ x, Tendsto (fun n => f n x) atTop (𝓝 (g x))` and
-`Tendsto (fun n => ∫ |f n - g|) atTop (𝓝 0)`. Not verbatim in Mathlib. Proof: apply
-`lintegral_iSup'` to the nonnegative `f n - f 0` (a.e. monotone, a.e.-measurable) to get
-`∫⁻ ⨆ n, (f n - f 0)⁺ = ⨆ n, ∫⁻ … ≤ sup ∫ f n - ∫ f 0 < ∞`, so the supremum is finite a.e.
-(`ae_lt_top`) and the sequence converges a.e. to `g := f 0 + ⨆ n, (f n - f 0)`; `g` is integrable
-(`integrable_of_tendsto`-style, or `Integrable.of_finite_lintegral`); the `L¹` convergence is
-`theorem_4_2` with the bound `|g - f 0| + |f 0|`. ★★'''
-deps = ["theorem_4_2"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.1"
 
 [[node]]
 id = "theorem_4_2"
-kind = "theorem"
-desc = '''Theorem 4.2 (dominated convergence, Lebesgue): for `f : ℕ → α → ℝ` integrable, `g : α → ℝ`,
-`hlim : ∀ᵐ x, Tendsto (fun n => f n x) atTop (𝓝 (g x))` and an integrable `bound` with
-`∀ n, ∀ᵐ x, |f n x| ≤ bound x`: `Integrable g` and `Tendsto (fun n => ∫ |f n - g|) atTop (𝓝 0)`.
-Mathlib: `Integrable` of the limit by `integrable_of_dominated_convergence`-free reasoning
-(`Integrable.mono'` with `|g| ≤ bound` a.e.), and the `L¹` convergence is
-`tendsto_integral_of_dominated_convergence` applied to `fun n x => |f n x - g x|` with bound
-`2 * bound` and limit `0`. Vector-valued functions work the same way; the surface keeps the
-book's real scalars. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.2"
 
 [[node]]
 id = "lemma_4_1"
-kind = "theorem"
-desc = '''Lemma 4.1 (Fatou): for `f : ℕ → α → ℝ` integrable, `∀ n, ∀ᵐ x, 0 ≤ f n x` and
-`BddAbove (Set.range fun n => ∫ f n)`, the a.e.-defined `liminf` is integrable and
-`∫ (fun x => liminf (fun n => f n x) atTop) ≤ liminf (fun n => ∫ f n) atTop` — stated with the
-`liminf` in `ℝ` under the hypothesis, or more faithfully in `ℝ≥0∞` with `ENNReal.ofReal`:
-`lintegral_liminf_le'` gives `∫⁻ liminf ‖f n‖ₑ ≤ liminf ∫⁻ ‖f n‖ₑ ≤ sup ∫ f n < ∞`, whence the
-`liminf` is finite a.e. (`ae_lt_top`) and integrable, and the inequality follows by `toReal`.
-★★ (the bookkeeping between `ℝ` and `ℝ≥0∞` liminfs).'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 4.1"
 
 [[node]]
 id = "theorem_4_3"
-kind = "theorem"
-desc = '''Theorem 4.3 (density): for `f : EuclideanSpace ℝ (Fin N) → ℝ` integrable and `ε > 0` there
-is `g` continuous with compact support and `∫ |f - g| ≤ ε` — Mathlib's
-`Integrable.exists_hasCompactSupport_integral_sub_le` (the regularity `volume.Regular` is the
-instance `Regular.of_sigmaCompactSpace_of_isLocallyFiniteMeasure`; `WeaklyLocallyCompactSpace` and
-`R1Space` are automatic). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.3"
 
 [[node]]
 id = "theorem_4_4"
-kind = "theorem"
-desc = '''Theorem 4.4 (Tonelli): for σ-finite `μ₁`, `μ₂` and `F : α₁ × α₂ → ℝ` a.e.-strongly
-measurable for `μ₁.prod μ₂` with `∫⁻ x, ∫⁻ y, ‖F (x, y)‖ₑ ∂μ₂ ∂μ₁ < ∞` (which contains the book's
-(a), a.e. finiteness of the inner integral, and (b)), `Integrable F (μ₁.prod μ₂)`. Mathlib:
-`integrable_prod_iff'`/`integrable_prod_iff` with `lintegral_prod` (`hasFiniteIntegral_iff_enorm`);
-or directly `HasFiniteIntegral` from `lintegral_prod`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.4"
 
 [[node]]
 id = "theorem_4_5"
-kind = "theorem"
-desc = '''Theorem 4.5 (Fubini): for σ-finite `μ₁`, `μ₂` and `F : α₁ × α₂ → ℝ` integrable for
-`μ₁.prod μ₂`: (i) `∀ᵐ x ∂μ₁, Integrable (fun y => F (x, y)) μ₂` (`Integrable.prod_right_ae`) and
-`Integrable (fun x => ∫ y, F (x, y) ∂μ₂) μ₁` (`Integrable.integral_prod_left`); (ii) the symmetric
-statements (`Integrable.prod_left_ae`, `Integrable.integral_prod_right`); (iii)
-`∫ x, ∫ y, F (x, y) ∂μ₂ ∂μ₁ = ∫ y, ∫ x, F (x, y) ∂μ₁ ∂μ₂ = ∫ z, F z ∂(μ₁.prod μ₂)`
-(`integral_prod`, `integral_prod_symm`, `integral_integral_swap`). One node for the conjunction. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.5"
 
 [[node]]
 id = "theorem_4_29"
-kind = "theorem"
-desc = '''Theorem 4.29 (Egorov; Comments on chapter 4, item 1, placed here because the comment
-attaches it to §4.1): for `[IsFiniteMeasure μ]`, `f : ℕ → α → ℝ` strongly measurable, `g`
-strongly measurable, and `∀ᵐ x, Tendsto (fun n => f n x) atTop (𝓝 (g x))`, for every `ε > 0` there
-is a measurable `A` with `μ Aᶜ ≤ ε` and `TendstoUniformlyOn f g atTop A`. Mathlib's
-`MeasureTheory.tendstoUniformlyOn_of_ae_tendsto'` (with `A := tᶜ`). Included under scope rule 3
-since Mathlib proves it. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.29"

@@ -1,298 +1,148 @@
 namespace = "MeasureTheory"
-desc = '''
-The `L^p`-`L^q` duality for conjugate exponents (natural home:
-`Mathlib.MeasureTheory.Function.LpSpace.Duality`, beside `Mathlib/MeasureTheory/Function/Holder.lean`
-which defines the pairing). Source: [brezis2011functional] §4.3, Theorems 4.10 (reflexivity), 4.11
-(Riesz representation, `1 < p < ∞`), 4.14 (Riesz representation, `p = 1`), Remarks 4-6 of chapter 4
-and the discussion of `L^∞` (lines 3489-3760).
-
-What Mathlib has at v4.35.0-rc2: the pairing `ContinuousLinearMap.lpPairing`, which for
-`B = ContinuousLinearMap.mul 𝕜 𝕜` is the map `u ↦ (f ↦ ∫ u f)`,
-`Lp 𝕜 q μ →L[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`, with no statement about its norm or its range (grep
-`lpPairing`: its only consumer is `TemperedDistribution.lean`; grep `Lp.dual`, `toDual` under
-`MeasureTheory`: nothing); the Radon-Nikodym theorem for a finite signed measure against a σ-finite
-measure (`SignedMeasure.withDensityᵥ_rnDeriv_eq`); the density of simple functions
-(`Lp.simpleFunc.denseRange`, `Lp.simpleFunc.induction`); and, at `p = 2`, the Riesz representation
-`InnerProductSpace.toDual`. `Numlib/Analysis/Normed/Module/Reflexive.lean` has the class
-`NormedSpace.IsReflexive`.
-
-Three layers:
-
-1. **The isometry.** `Lp.toDualCLM 𝕜 p q μ` is the pairing; `Lp.norm_toDualCLM_apply_le` is
-   Hoelder; `Lp.norm_toDualCLM_apply` is the equality `‖f ↦ ∫ u f‖ = ‖u‖_q`, by the extremal test
-   function `|u|^(q-2) conj u` when `q < ∞` (Theorem 4.10 Step 3, lines 3541-3560) and by the sets
-   `{|u| > C}` when `q = ∞`, where σ-finiteness is needed (on a measure that is infinite on every
-   nonempty set `L^1 = 0` and the equality fails). `Lp.toDual` bundles it as
-   `Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` under `[SigmaFinite μ]`, the book's standing assumption.
-
-2. **Surjectivity (the Riesz representation theorems), for `1 ≤ p < ∞` and σ-finite `μ`,** by
-   the Radon-Nikodym route rather than the book's: the book proves Theorem 4.11 from the
-   reflexivity of `L^p` (Theorem 4.10, itself from uniform convexity and Milman-Pettis, Theorem
-   3.31) and Corollary 1.8, and Theorem 4.14 from the `p = 2` case by a weight. The Radon-Nikodym
-   route was chosen because (i) it is self-contained: it needs neither Milman-Pettis (chapter 3's
-   `NormedSpace.isReflexive_of_uniformConvexSpace`, a ★★★ module over Goldstine's lemma, on which
-   every consumer of `L^p` reflexivity in chapters 8-9 would otherwise wait) nor Clarkson's
-   inequalities; (ii) it proves `p = 1` and `1 < p < ∞` by one argument, the exponent entering only
-   in the bound `‖u‖_q ≤ ‖φ‖` (test functions `|u|^(q-2) u 1_{|u| ≤ n}` when `q < ∞`, `1_A sign u`
-   with `A = {|u| > C}` when `q = ∞`, exactly the book's argument for Theorem 4.14, lines
-   3628-3676); (iii) Mathlib already has the signed Radon-Nikodym theorem and the simple-function
-   density it consumes; (iv) the book assumes σ-finiteness throughout, so nothing is lost. The
-   steps: a functional `φ` on `L^p` of a finite measure defines a finite signed measure
-   `E ↦ φ(1_E)` (`Lp.dualToSignedMeasure`, countably additive because `1_{⋃ E_i} = ∑ 1_{E_i}` in
-   `L^p` for `p < ∞`), absolutely continuous with respect to `μ`; its Radon-Nikodym derivative `u`
-   represents `φ` on indicators, hence on simple functions, hence on bounded functions, and the
-   bound `‖u‖_q ≤ ‖φ‖` plus density finish (`Lp.exists_forall_eq_integral_of_isFiniteMeasure`);
-   the σ-finite case reduces to it by a positive weight `θ ∈ L^p(μ)`, `0 < θ ≤ 1`, through the
-   isometry `g ↦ θ g` from `L^p(θ^p μ)` onto `L^p(μ)` (`Lp.exists_forall_eq_integral`); the
-   complex case follows from the real one applied to `Re φ` and `Im φ` on real-valued functions
-   (`Lp.toDual_surjective`). Reflexivity (`Lp.instIsReflexive`, `1 < p < ∞`) is then a formal
-   consequence of the two surjectivities `L^q → (L^p)^*` and `L^p → (L^q)^*`, with no appeal to
-   uniform convexity; `Clarkson` is not imported here.
-
-3. **`p = ∞`.** `Lp.not_surjective_toDual_top`: on an open subset of a finite-dimensional space
-   with a Haar measure, `L^1 → (L^∞)^*` is not onto (the book's concrete functional, lines
-   3703-3729: extend `f ↦ f(x₀)` from the continuous compactly supported functions by Hahn-Banach
-   and apply Corollary 4.24). The non-reflexivity of `L^1` and `L^∞` and the non-separability of
-   `L^∞` are surface nodes of `NumlibSurface/Brezis/Chapter04/Section03` over this module.
-
-Scalars are `RCLike 𝕜` throughout: the pairing is bilinear, `∫ u f`, not sesquilinear, because
-`StrongDual 𝕜 E` consists of `𝕜`-linear functionals; at `𝕜 = ℂ` the extremal function carries a
-conjugate. Exponents: `[Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]`; `p ≠ ∞` as an explicit
-hypothesis on the surjectivity; the reflexivity instance under `[Fact (1 < p)] [Fact (p ≠ ∞)]`
-through `MeasureTheory.fact_one_le_of_one_lt` (in `LpSpace/Convergence`, the directory's first
-module, so that neither `Clarkson` nor this module imports the other). Shapes settled by
-`notes/brezis/ch04/proto/Shapes.lean`.
-
-Closes `notes/frontier.md` blocker 7: `AtkinsonHan.Chapter02.example_2_5_1` (both clauses, on
-`volume.restrict Ω`), `AtkinsonHan.Chapter02.example_2_5_3` (blocked by 2.5.1 alone), and the
-reflexivity half of `AtkinsonHan.Chapter08.theorem_8_8_5` (`W^{1,p}_0(Ω)` is a closed subspace of
-an `ℓ^p`-product of `L^p` spaces; the product step, `NormedSpace.IsReflexive` for a finite `PiLp`,
-is not here). Chapter 8's Propositions 8.1, 8.3, 8.14 and chapter 9's Proposition 9.3 consume
-`Lp.toDual_surjective` and `Lp.instIsReflexive`.
-'''
 
 [[node]]
 id = "Lp.toDualCLM"
-kind = "definition"
-desc = '''`Lp.toDualCLM (𝕜) [RCLike 𝕜] (p q : ℝ≥0∞) (μ : Measure α) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] : Lp 𝕜 q μ →L[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`,
-the map `u ↦ (f ↦ ∫ u f)` of [brezis2011functional] Theorem 4.10 Step 3 (there `T`), defined as
-Mathlib's `(ContinuousLinearMap.mul 𝕜 𝕜).lpPairing μ q p`. The instance arguments of `lpPairing`
-(`NormedSpace ℝ 𝕜`, `SMulCommClass ℝ 𝕜 𝕜`, `CompleteSpace 𝕜`) are all available for `RCLike 𝕜`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
 id = "Lp.toDualCLM_apply"
-kind = "theorem"
-desc = '''`Lp.toDualCLM 𝕜 p q μ u f = ∫ x, u x * f x ∂μ`. By `ContinuousLinearMap.lpPairing_eq_integral`
-and `rfl` (checked in the prototype). ★'''
-deps = ["Lp.toDualCLM"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
 id = "Lp.norm_toDualCLM_apply_le"
-kind = "theorem"
-desc = '''Hoelder's inequality for the pairing: `‖Lp.toDualCLM 𝕜 p q μ u‖ ≤ ‖u‖` for every
-`u : Lp 𝕜 q μ` ([brezis2011functional] Theorem 4.10, Step 3, "by Hoelder's inequality").
-`ContinuousLinearMap.opNorm_le_bound` with `|∫ u f| ≤ ∫ |u f| ≤ ‖u‖_q ‖f‖_p`, the last step being
-`ContinuousLinearMap.norm_holder_apply_apply_le` at `r = 1` or `eLpNorm_smul_le_mul_eLpNorm` with
-`eLpNorm_one_eq_lintegral_enorm`. Consequently `‖Lp.toDualCLM 𝕜 p q μ‖ ≤ 1`. ★'''
-deps = ["Lp.toDualCLM", "Lp.toDualCLM_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
 id = "Lp.norm_toDualCLM_apply_of_ne_top"
-kind = "theorem"
-desc = '''For `q ≠ ∞` (equivalently `1 < p`), `‖Lp.toDualCLM 𝕜 p q μ u‖ = ‖u‖` with no assumption on
-`μ` ([brezis2011functional] Theorem 4.10 Step 3, lines 3546-3560). The reverse inequality is
-witnessed by `f₀ x := ‖u x‖ ^ (q.toReal - 2) * starRingEnd 𝕜 (u x)` (which is `0` where `u x = 0`,
-`Real.zero_rpow` handling `q < 2`): `‖f₀ x‖ = ‖u x‖ ^ (q.toReal - 1)`, so `MemLp f₀ p μ` with
-`‖f₀‖_p = ‖u‖_q ^ (q.toReal - 1)` (as `(q - 1) p = q`), and `∫ u f₀ = ∫ ‖u‖ ^ q = ‖u‖_q ^ q`; hence
-`‖toDualCLM u‖ ≥ ‖u‖_q ^ q / ‖u‖_q ^ (q - 1) = ‖u‖_q` when `u ≠ 0`. Over `𝕜 = ℝ` the conjugate is
-the identity and `f₀ = |u|^(q-2) u` as in the book. The `rpow` bookkeeping
-(`Real.rpow_natCast`, `Real.rpow_sub_one`, `Real.HolderConjugate.sub_one_mul_conj`) is the cost. ★★'''
-deps = ["Lp.toDualCLM_apply", "Lp.norm_toDualCLM_apply_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
 id = "Lp.norm_toDualCLM_apply"
-kind = "theorem"
-desc = '''For `[SigmaFinite μ]` and all conjugate `p q`, `‖Lp.toDualCLM 𝕜 p q μ u‖ = ‖u‖`. The case
-`q ≠ ∞` is `Lp.norm_toDualCLM_apply_of_ne_top`. Case `q = ∞`, `p = 1` ([brezis2011functional]
-Theorem 4.14, the inequality (14) read backwards): for `0 ≤ C < ‖u‖_∞` the set `A := {x | C < ‖u x‖}`
-has positive measure (`ae_le_eLpNormEssSup`, `eLpNormEssSup` as an `essSup`); σ-finiteness gives a
-measurable `A' ⊆ A` with `0 < μ A' < ∞` (`A ∩ spanningSets μ n` for `n` large,
-`tendsto_measure_iUnion_atTop`); the test function
-`f₀ := (μ A').toReal⁻¹ • A'.indicator (fun x => starRingEnd 𝕜 (u x) / ‖u x‖)` has `‖f₀‖_1 = 1` and
-`∫ u f₀ = (μ A')⁻¹ ∫_{A'} ‖u‖ ≥ C`, so `‖toDualCLM u‖ ≥ C`; let `C ↑ ‖u‖_∞`. ★★'''
-deps = ["Lp.norm_toDualCLM_apply_of_ne_top"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14"
 
 [[node]]
 id = "Lp.toDual"
-kind = "definition"
-desc = '''`Lp.toDual (𝕜) (p q) (μ) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] [SigmaFinite μ] : Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`,
-the pairing bundled as a linear isometry: `toLinearMap := Lp.toDualCLM 𝕜 p q μ`,
-`norm_map' := Lp.norm_toDualCLM_apply`. This is the shape the brief fixes for the chapter-4
-duality; consumers (chapters 8, 9, 11, Atkinson-Han 2.5.1) use it through `Lp.toDual_apply` and
-`Lp.toDual_surjective`. ★'''
-deps = ["Lp.toDualCLM", "Lp.norm_toDualCLM_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 and Theorem 4.14"
 
 [[node]]
 id = "Lp.toDual_apply"
-kind = "theorem"
-desc = '''`Lp.toDual 𝕜 p q μ u f = ∫ x, u x * f x ∂μ`, and `Lp.coe_toDual : (Lp.toDual 𝕜 p q μ u : StrongDual 𝕜 (Lp 𝕜 p μ)) = Lp.toDualCLM 𝕜 p q μ u`
-(`rfl`), so that everything proved about `toDualCLM` transfers. ★'''
-deps = ["Lp.toDual", "Lp.toDualCLM_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11"
 
 [[node]]
 id = "Lp.dualToSignedMeasure"
-kind = "definition"
-desc = '''For `[IsFiniteMeasure μ]`, `[Fact (1 ≤ p)]`, `(hp : p ≠ ∞)` and `φ : StrongDual ℝ (Lp ℝ p μ)`,
-the finite signed measure `E ↦ φ (indicatorConstLp p hE (measure_ne_top μ E) (1 : ℝ))` on measurable
-`E` (and `0` on non-measurable sets), `Lp.dualToSignedMeasure hp φ : SignedMeasure α`. The
-countable additivity (`VectorMeasure.m_iUnion'`) is the convergence
-`indicatorConstLp p (⋃ i, E i) 1 = ∑' i, indicatorConstLp p (E i) 1` in `Lp` for pairwise disjoint
-measurable `E i`: the partial sums are the indicators of the finite unions
-(`indicatorConstLp_disjoint_union`), and the remainder has norm
-`μ (⋃ i ≥ n, E i) ^ (1/p) → 0` (`norm_indicatorConstLp`, `measure_iUnion_le`,
-`ENNReal.tendsto_sum_nat_add`, `p ≠ ∞`); then `φ` is continuous. The first step of the
-Radon-Nikodym route to [brezis2011functional] Theorems 4.11 and 4.14. ★★, ~120 lines.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
 
 [[node]]
 id = "Lp.dualToSignedMeasure_apply"
-kind = "theorem"
-desc = '''`Lp.dualToSignedMeasure hp φ E = φ (indicatorConstLp p hE (measure_ne_top μ E) 1)` for
-measurable `E`, and `Lp.dualToSignedMeasure_absolutelyContinuous : Lp.dualToSignedMeasure hp φ ≪ᵥ μ.toENNRealVectorMeasure`
-(a `μ`-null set has `indicatorConstLp = 0`: `indicatorConstLp_eq_zero_iff` or
-`norm_indicatorConstLp` with `μ E = 0`), plus linearity in `φ` if convenient. ★'''
-deps = ["Lp.dualToSignedMeasure"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
 
 [[node]]
 id = "Lp.exists_forall_eq_integral_of_isFiniteMeasure"
-kind = "theorem"
-desc = '''The Riesz representation theorem on a finite measure, real scalars: for
-`[IsFiniteMeasure μ]`, `[Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]`, `hp : p ≠ ∞` and
-`φ : StrongDual ℝ (Lp ℝ p μ)`, `∃ u : Lp ℝ q μ, ∀ f : Lp ℝ p μ, φ f = ∫ x, u x * f x ∂μ`
-([brezis2011functional] Theorems 4.11 and 4.14, by Radon-Nikodym; the book's proof of 4.14,
-lines 3628-3676, is the model for step (d)). Proof: (a) `u₀ := (Lp.dualToSignedMeasure hp φ).rnDeriv μ`
-is integrable (`SignedMeasure.integrable_rnDeriv`) and `∫ x in E, u₀ x ∂μ = φ (1_E)` for measurable
-`E`, by `SignedMeasure.withDensityᵥ_rnDeriv_eq` (σ-finiteness is automatic) and
-`withDensityᵥ_apply`. (b) `φ g = ∫ u₀ g` for `g` in `Lp.simpleFunc ℝ p μ`, by
-`Lp.simpleFunc.induction` (indicators of finite-measure sets, closed under addition and scalar
-multiplication) — both sides are linear in `g`. (c) The same for every bounded measurable `g`
-(`MemLp g ∞ μ`, hence `MemLp g p μ` on a finite measure): approximate `g` by simple functions
-`gₙ` bounded by `‖g‖_∞` converging pointwise (`StronglyMeasurable.approxBounded`,
-`tendsto_approxBounded_ae`); `gₙ → g` in `L^p` by dominated convergence
-(`tendsto_lintegral_of_dominated_convergence` on `‖gₙ - g‖^p` with the constant bound, `μ` finite)
-and `∫ u₀ gₙ → ∫ u₀ g` by `tendsto_integral_of_dominated_convergence` with bound `‖g‖_∞ ‖u₀‖`.
-(d) `MemLp u₀ q μ` with `‖u₀‖_q ≤ ‖φ‖`. If `q ≠ ∞`: for `n : ℕ` put `uₙ := {‖u₀‖ ≤ n}.indicator u₀`
-and `gₙ := |uₙ|^(q-2) uₙ` (bounded); by (c) `∫ |uₙ|^q = φ gₙ ≤ ‖φ‖ ‖gₙ‖_p = ‖φ‖ (∫ |uₙ|^q)^(1/p)`,
-so `(∫ |uₙ|^q)^(1/q) ≤ ‖φ‖`, and `lintegral_iSup` (monotone in `n`) gives `∫⁻ ‖u₀‖^q ≤ ‖φ‖^q`. If
-`q = ∞`: for `C > ‖φ‖` and `A := {C < ‖u₀‖}`, the bounded `g := A.indicator (sign u₀)` gives
-`∫_A ‖u₀‖ = φ g ≤ ‖φ‖ μ A`, while `∫_A ‖u₀‖ ≥ C μ A`, so `μ A = 0`; hence `‖u₀‖_∞ ≤ ‖φ‖`
-(the book's argument for (14)). (e) Let `u := (MemLp u₀ q).toLp`; then `φ f = ∫ u f` for all
-`f : Lp ℝ p μ` because both sides are continuous in `f` (`Lp.norm_toDualCLM_apply_le`) and agree on
-the dense `Lp.simpleFunc` (`Lp.simpleFunc.denseRange hp`, `DenseRange.equalizer`). ★★★,
-~350 lines; (c) and (d) carry most of it.'''
-deps = ["Lp.dualToSignedMeasure_apply", "Lp.norm_toDualCLM_apply_le", "Lp.toDualCLM_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 and Theorem 4.14"
 
 [[node]]
 id = "Lp.exists_forall_eq_integral"
-kind = "theorem"
-desc = '''The Riesz representation theorem on a σ-finite measure, real scalars: for `[SigmaFinite μ]`,
-`[Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]`, `hp : p ≠ ∞` and
-`φ : StrongDual ℝ (Lp ℝ p μ)`, `∃ u : Lp ℝ q μ, ∀ f : Lp ℝ p μ, φ f = ∫ x, u x * f x ∂μ`
-([brezis2011functional] Theorems 4.11 and 4.14). Reduction to
-`Lp.exists_forall_eq_integral_of_isFiniteMeasure` by a weight, the device of the book's proof of
-Theorem 4.14 (its `θ`, lines 3640-3648): `exists_pos_lintegral_lt_of_sigmaFinite` gives a
-measurable `w : α → ℝ≥0∞` with `0 < w` and `∫⁻ w < ∞`; put `θ x := (min (w x) 1).toReal ^ (1/p.toReal)`,
-so `0 < θ ≤ 1` and `θ^p ≤ w` is integrable. Let `ν := μ.withDensity (fun x => ENNReal.ofReal (θ x ^ p.toReal))`,
-a finite measure equivalent to `μ`. Multiplication by `θ` is an isometry `Lp ℝ p ν → Lp ℝ p μ`
-(`∫ |θ g|^p dμ = ∫ |g|^p dν`, `lintegral_withDensity_eq_lintegral_mul`), so `ψ g := φ (θ g)` is a
-functional on `Lp ℝ p ν` and the finite case gives `v ∈ Lp ℝ q ν` with `ψ g = ∫ v g dν = ∫ v g θ^p dμ`.
-Set `u := v θ^(p-1)`: then `φ (θ g) = ∫ u (θ g) dμ`, the functions `θ g` with `g ∈ Lp ℝ p ν` are all
-of `Lp ℝ p μ` (`g := f/θ`), and `u ∈ Lp ℝ q μ` because `(p - 1) q = p` gives
-`∫ |u|^q dμ = ∫ |v|^q θ^p dμ = ∫ |v|^q dν` when `q < ∞`, and `‖v‖_{L^∞(μ)} = ‖v‖_{L^∞(ν)}` (`μ ~ ν`)
-when `q = ∞`, where `u = v`. Alternative if the `withDensity` plumbing is worse than expected:
-exhaust by `spanningSets μ n`, apply the finite case to `f ↦ φ (1_{Ωₙ} f)` on `μ.restrict Ωₙ`,
-glue the representatives by uniqueness and pass to the limit by monotone convergence. ★★,
-~150 lines either way.'''
-deps = ["Lp.exists_forall_eq_integral_of_isFiniteMeasure"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 and Theorem 4.14"
 
 [[node]]
 id = "Lp.toDual_surjective"
-kind = "theorem"
-desc = '''**Riesz representation theorem** ([brezis2011functional] Theorem 4.11 for `1 < p < ∞`,
-Theorem 4.14 for `p = 1`): for `[RCLike 𝕜]`, `[SigmaFinite μ]`, conjugate `p q` with
-`[Fact (1 ≤ p)] [Fact (1 ≤ q)]` and `hp : p ≠ ∞`, `Function.Surjective (Lp.toDual 𝕜 p q μ)`: every
-`φ : StrongDual 𝕜 (Lp 𝕜 p μ)` is `f ↦ ∫ u f` for a (unique, the map being an isometry) `u ∈ Lp 𝕜 q μ`
-with `‖u‖_q = ‖φ‖`. Over `ℝ` this is `Lp.exists_forall_eq_integral` with `Lp.toDual_apply`. Over a
-general `𝕜`: with `ofReal := (RCLike.ofRealCLM : ℝ →L[ℝ] 𝕜).compLpL p μ : Lp ℝ p μ →L[ℝ] Lp 𝕜 p μ`
-and `re := RCLike.reCLM.compLpL`, `im := RCLike.imCLM.compLpL`, the real functionals
-`φᵣ g := re (φ (ofReal g))` and `φᵢ g := im (φ (ofReal g))` have representatives `uᵣ uᵢ ∈ Lp ℝ q μ`;
-`u := ofReal uᵣ + I • ofReal uᵢ ∈ Lp 𝕜 q μ` represents `φ` on real-valued `f = ofReal g` (compare
-real and imaginary parts, `integral_re`, `integral_im`) and hence on every
-`f = ofReal (re f) + I • ofReal (im f)` by linearity. ★★ on top of the real case (~100 lines of
-`RCLike` plumbing; at `𝕜 = ℝ` it collapses).'''
-deps = ["Lp.toDual", "Lp.toDual_apply", "Lp.exists_forall_eq_integral"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 and Theorem 4.14"
 
 [[node]]
 id = "Lp.dualEquiv"
-kind = "definition"
-desc = '''`Lp.dualEquiv (𝕜) (p q) (μ) [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] [SigmaFinite μ] (hp : p ≠ ∞) : Lp 𝕜 q μ ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)`,
-`LinearIsometryEquiv.ofSurjective (Lp.toDual 𝕜 p q μ) (Lp.toDual_surjective hp)`; with
-`Lp.dualEquiv_apply : dualEquiv 𝕜 p q μ hp u f = ∫ u f` and `Lp.coe_dualEquiv`. The
-identifications `(L^p)^* = L^{p'}` and `(L^1)^* = L^∞` of [brezis2011functional] Remarks 4 and 5
-of chapter 4. ★'''
-deps = ["Lp.toDual_surjective"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 4 and Remark 5"
 
 [[node]]
 id = "Lp.instIsReflexive"
-kind = "theorem"
-desc = '''`instance [RCLike 𝕜] [Fact (1 < p)] [Fact (p ≠ ∞)] [SigmaFinite μ] : NormedSpace.IsReflexive 𝕜 (Lp 𝕜 p μ)`
-([brezis2011functional] Theorem 4.10), the class of `Numlib/Analysis/Normed/Module/Reflexive.lean`;
-`Fact (1 ≤ p)` from `MeasureTheory.fact_one_le_of_one_lt`. Proof from the two surjectivities: let
-`q := (1 - p⁻¹)⁻¹` (`ENNReal.HolderTriple.of`-style construction, `1 < q < ∞`). Given
-`ξ : StrongDual 𝕜 (StrongDual 𝕜 (Lp 𝕜 p μ))`, the functional `ξ ∘ Lp.toDual 𝕜 p q μ` on `Lp 𝕜 q μ`
-is `Lp.toDual 𝕜 q p μ h` for some `h : Lp 𝕜 p μ` (`Lp.toDual_surjective` with the exponents
-swapped, `q ≠ ∞`), i.e. `ξ (toDual u) = ∫ h u = (toDual u) h = inclusionInDoubleDual h (toDual u)`
-for all `u`; since `Lp.toDual 𝕜 p q μ` is onto (`Lp.toDual_surjective`), `ξ = inclusionInDoubleDual h`.
-This does not use uniform convexity or Milman-Pettis; the book's route (Theorem 4.10 Steps 1-3 +
-Theorem 3.31) is recorded in the surface node `Brezis.Chapter04.theorem_4_10`. State the
-theorem form `Lp.isReflexive_of_one_lt_of_ne_top (hp : 1 < p) (hp' : p ≠ ∞)` first and derive the
-instance from it, so that a consumer with explicit hypotheses need not manufacture `Fact`s
-(`haveI`). ★★, ~60 lines.
-Consumers: chapter 8 (Proposition 8.1: `W^{1,p}(I)` reflexive through `isReflexive_of_isClosed`),
-chapter 9, chapter 11 (`ℓ^p` on `Measure.count`), `AtkinsonHan.Chapter08.theorem_8_8_5`.'''
-deps = ["MeasureTheory.fact_one_le_of_one_lt", "Lp.toDual_surjective", "Lp.toDual_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10"
 
 [[node]]
 id = "Lp.not_surjective_toDual_top"
-kind = "theorem"
-desc = '''`(L^∞)^*` is strictly larger than `L^1` ([brezis2011functional] §4.3 C, lines 3703-3729):
-for a finite-dimensional real normed space `G` with a Haar measure `ν` (`[ν.IsAddHaarMeasure]`,
-`[BorelSpace G]`) and a nonempty open `Ω ⊆ G`,
-`¬ Function.Surjective (Lp.toDual ℝ ∞ 1 (ν.restrict Ω))`. Proof: pick `x₀ ∈ Ω`. On the subspace
-`M := {g ∈ Lp ℝ ∞ (ν.restrict Ω) | ∃ f, Continuous f ∧ HasCompactSupport f ∧ tsupport f ⊆ Ω ∧ g =ᵐ f}`
-the functional `g ↦ f x₀` is well defined and bounded by `‖g‖` (`ν.restrict Ω` is positive on open
-subsets of `Ω`, so the essential supremum of a continuous function on `Ω` is its supremum:
-`IsOpenPosMeasure`, `Continuous.ae_eq_iff_eq`); `exists_extension_norm_eq` extends it to
-`φ : StrongDual ℝ (Lp ℝ ∞ (ν.restrict Ω))` with `φ g = f x₀` on `M`. If `φ = Lp.toDual ℝ ∞ 1 _ u` then
-`∫ u f = f x₀ = 0` for every smooth compactly supported `f` with `tsupport f ⊆ Ω \ {x₀}`, so
-`u = 0` a.e. on `Ω \ {x₀}` (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`, Corollary 4.24),
-hence `u = 0` a.e. (`NoAtoms` for a Haar measure), hence `φ = 0`; but `φ g = 1` for a smooth bump at
-`x₀` supported in `Ω` (`ContDiffBump`). ★★, ~150 lines. Closes the second clause of
-`AtkinsonHan.Chapter02.example_2_5_1` with `Ω` bounded open in `ℝ^d`.'''
-deps = ["Lp.toDual", "Lp.toDual_apply"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞"
+
+[[node]]
+id = "extremal"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
+
+[[node]]
+id = "mul_extremal"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
+
+[[node]]
+id = "norm_extremal_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
+
+[[node]]
+id = "norm_extremal_one_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14"
+
+[[node]]
+id = "aestronglyMeasurable_extremal"
+
+[[node]]
+id = "eLpNorm_extremal_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
+
+[[node]]
+id = "hasSum_indicatorConstLp_iUnion"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
+
+[[node]]
+id = "Lp.dualToSignedMeasure_absolutelyContinuous"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
+
+[[node]]
+id = "Lp.setIntegral_rnDeriv_dualToSignedMeasure"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
+
+[[node]]
+id = "Lp.toLp_indicator_const_eq_smul"
+
+[[node]]
+id = "Lp.apply_toLp_simpleFunc_eq_integral_rnDeriv_mul"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11 (Radon-Nikodym route)"
+
+[[node]]
+id = "Lp.apply_eq_integral_rnDeriv_mul_of_ae_bound"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14, (13)"
+
+[[node]]
+id = "ae_norm_le_of_forall_setIntegral_norm_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14, (14)"
+
+[[node]]
+id = "Lp.eLpNorm_rnDeriv_dualToSignedMeasure_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14, (14)"
+
+[[node]]
+id = "absolutelyContinuous_withDensity_of_pos"
+
+[[node]]
+id = "eLpNorm_mul_withDensity"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14, the weight θ"
+
+[[node]]
+id = "eLpNormEssSup_congr_ae_measure"
+
+[[node]]
+id = "Lp.ae_norm_le_norm_top"
+
+[[node]]
+id = "Lp.coe_toDual"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11"
+
+[[node]]
+id = "Lp.coe_dualEquiv"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 4 and Remark 5"
+
+[[node]]
+id = "Lp.dualEquiv_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 4 and Remark 5"
+
+[[node]]
+id = "Lp.isReflexive_of_one_lt_of_ne_top"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10"
+
+[[node]]
+id = "forall_of_ae_restrict_of_isOpen"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞"
