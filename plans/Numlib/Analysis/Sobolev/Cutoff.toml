@@ -45,23 +45,12 @@ gradient `ζ_n ∇f + f ∇ζ_n` (`HasWeakIteratedLineDerivOn.mul_contDiff`), an
 (`iteratedFDeriv_comp_const_smul`). This is footnote 5 of [brezis2011functional] §9.1 and the
 sequence `ζ_n u` used in Corollary 9.8, Theorem 9.17 and Proposition 9.18. ★★, ~150 lines.
 
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the typed form `SobolevMultiIndex.tendsto_cutoff_smul` is the one `Zero`/`Extension` consume and is the cheaper one to prove first (per-direction product rule `HasWeakIteratedLineDerivOn.mul_contDiff` plus uniqueness, then `norm_le_sum_norm_weakDeriv`), the tensor form needing the tensor-to-multi-index norm comparison on top.'''
+Blocked: not attempted (sob6, 2026-09-18); the typed form `SobolevMultiIndex.tendsto_cutoff_smul` that `Zero`, `Interval/Zero`, `Extension` and `BoundaryConditions` consume is proved (with the cut-offs `ζ_n x = ζ ((n+1)⁻¹ • x)` and the bound `‖∇ζ_n‖_∞ ≤ ‖∇ζ‖_∞/(n+1)`), so no consumer needs this tensor form; it remains ~100 lines on top of the typed one (tensor-to-multi-index norm comparison at order one; `SobolevMultiIndex.exists_hasWeakFDerivOn_fn` in `Calculus.lean` supplies one direction).'''
 deps = ["MemSobolev", "MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball", "exists_contDiff_eqOn_one_closedBall_one"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
 
 [[node]]
 id = "SobolevMultiIndex.tendsto_cutoff_smul"
-kind = "theorem"
-desc = '''Typed form of the cut-off approximation: for `u : SobolevMultiIndex ℝ b 1 p Ω μ`,
-`1 ≤ p < ∞`, and `ζ` as in `MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub`, there is a sequence
-`v : ℕ → SobolevMultiIndex ℝ b 1 p Ω μ` with `fn (v n) =ᵐ[μ.restrict Ω] ζ_n * fn u`,
-`∀ n, ∀ᵐ x ∂μ.restrict Ω, ‖x‖ > 2 n → fn (v n) x = 0` (bounded support), and
-`Tendsto v atTop (𝓝 u)`. The multi-index norm at order `1` is controlled by the tensor
-`sobolevNorm` at order `1` and conversely (each `∂_i` is the tensor evaluated at `b i`), which is
-the only conversion. ★, ~80 lines.
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); ~250 lines by the route in the desc, with `ζ_n x = ζ ((n+1)⁻¹ • x)` to keep the supports bounded at `n = 0`, `MemSobolevMultiIndex.exists_sobolevMultiIndex` for the elements and `SobolevMultiIndex.norm_le_sum_norm_weakDeriv` for the convergence.'''
-deps = ["MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub", "SobolevMultiIndex", "memSobolev_iff_memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, footnote 5 (the cut-off sequence)"
 
 [[node]]
@@ -73,47 +62,10 @@ id = "MemSobolevMultiIndexLoc"
 
 [[node]]
 id = "MemSobolevMultiIndexLoc.smul_testFunction"
-kind = "theorem"
-desc = '''The cut-off of a locally Sobolev function is globally Sobolev, at every order: for
-`u ∈ W^{k,p}_loc(Ω)` and `θ ∈ 𝓓(Ω, ℝ)`, the function `θ u` extended by zero outside `Ω` lies in
-`W^{k,p}(ℝ^N)` (`MemSobolevMultiIndex b (indicator Ω (θ • u)) k p ⊤ μ`), and a fortiori
-`θ u ∈ W^{k,p}(Ω)`. This is the θ-reading of `H^{m+2}_loc(Ω)` in [brezis2011functional] Remark 25,
-and it is what `PDE/Elliptic/Spectral` uses to see `e_n ∈ C^∞(Ω)` from `e_n ∈ H^m_loc(Ω)` for all
-`m` through the whole-space embeddings.
-
-Proof: by induction on the length of the tuple of directions, with the first-order product
-rule against a smooth factor (`HasWeakIteratedLineDerivOn.mul_contDiff` of
-`Numlib/Analysis/Sobolev/WeakDeriv`) and `HasWeakIteratedLineDerivOn.cons`: the class of
-functions having weak derivatives along all tuples of length `≤ k` in `L^p_loc(Ω)` is closed
-under multiplication by a smooth function, because `∂_y (θ v) = θ ∂_y v + (∂_y θ) v` and both
-terms are again of that class one order down. The zero extension across `∂Ω` is Remark 4 (ii)
-(`MemSobolevMultiIndex.indicator_mul` above), applied to each of the finitely many products. No
-explicit Leibniz formula of order `k` is written down — the lesson of
-`Numlib/Analysis/Sobolev/Density` — only the existence and local integrability of the
-derivatives. ★★ (~180 lines).
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the definition and its basic lemmas are in place, the induction on the tuple of directions is as in the desc.'''
-deps = ["MemSobolevMultiIndexLoc", "HasWeakIteratedLineDerivOn.cons", "MemSobolevMultiIndex.indicator_mul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
 
 [[node]]
 id = "MemSobolevMultiIndex.indicator_smul_of_tsupport_subset"
-kind = "theorem"
-desc = '''Zero extension across the edge of a chart, at order two: for opens `U` and `Ω`,
-`α : E → ℝ` smooth with `tsupport α ⊆ U`, and `v ∈ H²(Ω ⊓ U)`, the function `α v` extended by
-zero to `Ω` lies in `H²(Ω)` (`MemSobolevMultiIndex b (indicator (Ω ⊓ U) (α • v)) 2 2 Ω volume`),
-with `‖α v‖_{H²(Ω)} ≤ C_α ‖v‖_{H²(Ω ⊓ U)}`; likewise at order one and, by the same induction, at
-every order. Proof: for `φ ∈ 𝓓(Ω)`, `α φ` is a test function on `Ω ⊓ U`
-(`tsupport (α φ) ⊆ tsupport α ∩ tsupport φ`, compact and inside `U ∩ Ω`), so
-`∫_Ω ext(α v) ∂_y φ = ∫_{Ω ⊓ U} v ∂_y (α φ) - ∫_{Ω ⊓ U} v (∂_y α) φ`, and the weak-derivative
-identity on `Ω ⊓ U` moves the derivative onto `v`; iterate with `cons`. Remark 4 (ii)
-(`MemSobolevMultiIndex.indicator_mul`) is the case `Ω = ℝ^N`, `U` the book's `Ω`, at order one;
-this generalization is what "and thus, in fact, to `H²(Ω)`" ([brezis2011functional] p. 11445, the
-assembly of Theorem 9.25) needs. Formerly planned in `PDE/Elliptic/Regularity.toml`. ★★ (~150
-lines).
-
-Blocked: not attempted for lack of time (sob3, 2026-09-18); `HasWeakIteratedLineDerivOn.indicator_mul` (the order-one case with `Ω = ⊤`) is proved and the same proof with `Ω ⊓ U` in place of `Ω` and `Ω` in place of `⊤` gives the order-one clause.'''
-deps = ["MemSobolevMultiIndex", "HasWeakIteratedLineDerivOn.cons", "MemSobolevMultiIndex.indicator_mul"]
 
 [[node]]
 id = "IsSobolevExtensionDomain"
@@ -330,8 +282,30 @@ dominated convergence. [brezis2011functional] §9.1, Remark 1 ("to show this, us
 mollifiers"); with it, every `C_c^1(Ω)` test function of the book's proofs (Lemma 9.2, Proposition
 9.6, Proposition 9.18) is available. ★★, ~150 lines.
 
-Blocked: not attempted for lack of time (sob3, 2026-09-18); the route in the desc stands. Moved from
-`Friedrichs.toml` to this group by the orchestrator (2026-09-18): its inputs are all available here and
-`Calculus`'s Proposition 9.6 needs it before Friedrichs lands; prove it in `Cutoff.lean`.'''
+Blocked: not attempted (sob6, 2026-09-18). Proposition 9.6 (`HasWeakFDerivOn.comp_diffeoOn`, `Calculus.lean`) was proved without it: its test function `ψ ∘ H⁻¹` is only `C^1`, but the identity is checked on a relatively compact open subset by the local `L^1` approximation of `Mollification.lean`, where the approximants are smooth and the classical chain rule applies, so nothing in `Calculus` consumes this node any more. The route in the desc (mollify `φ`, dominated convergence) stands, ~150 lines.'''
 deps = ["HasWeakIteratedLineDerivOn", "ContDiffBump.tendsto_eLpNorm_convolution_sub"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 1"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.contDiff_mul"
+
+[[node]]
+id = "MemSobolevMultiIndex.contDiff_mul"
+
+[[node]]
+id = "MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict"
+
+[[node]]
+id = "eLpNorm_sub_one_mul_le_of_eqOn_ball"
+
+[[node]]
+id = "LocallyIntegrableOn.indicator_smul_of_tsupport_inter_subset"
+
+[[node]]
+id = "MeasureTheory.MemLp.indicator_smul_of_le"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple"

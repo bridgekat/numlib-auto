@@ -1,137 +1,29 @@
-desc = '''
-Extension by reflection: Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Lemma 9.2 — the even reflection `u^⋆` of `u ∈ W^{1,p}(Q_+)` across `x_N = 0` lies in
-`W^{1,p}(Q)` with `‖u^⋆‖ ≤ 2 ‖u‖`, its tangential derivatives are the even reflections of those
-of `u` and its normal derivative is the odd reflection — and with it the extension operator for
-the half space, the case "`Ω = ℝ^N_+`" of Theorem 9.7. Also here: Lemma 9.9 of the Comments
-(the trace inequality on the half space for `C_c^1` functions), which is the same
-integrate-in-`x_N` computation and the first move towards a trace operator. Imports
-`Cutoff.lean` and `Chart.lean`.
-
-Generality. The book proves the lemma on `Q_+`, remarks that "the conclusion remains valid if
-`Q_+` is replaced by `ℝ^N_+` (the proof is unchanged)", and in Remark 9 reflects a square across
-each of its sides. All of these are one statement: `E` a finite-dimensional real inner product
-space, `v` a unit vector, `σ = Submodule.reflection (ℝ ∙ v)ᗮ` the reflection across the
-hyperplane `v^⊥` (Mathlib, `Mathlib/Analysis/InnerProductSpace/Projection/Reflection.lean`, with
-`reflection_orthogonalComplement_singleton_eq_neg` and `LinearIsometryEquiv.measurePreserving`),
-`V` an open set with `σ '' V = V`, and `V_+ = V ∩ {0 < ⟪x, v⟫}`. The proof in the book uses no
-coordinates but `x_N = ⟪x, v⟫`, and `η_k(⟪x, v⟫) ψ` is a test function on `V_+` for every test
-function `ψ` on `V`. The tensor form `HasWeakFDerivOn` is used so that the tangential and normal
-cases are one formula, `(w ∘ σ) ∘ σ` — the chain rule for the linear isometry `σ` — on the
-reflected half, which the book writes as `(∂_i u)^⋆` for `i < N` and `(∂_N u)^□`.
-
-Consumers: `Extension.lean` (the `Q_+ → Q` step with `v = e_N`, and the half-space case),
-Remark 9 (the square). About 1100 lines.
-'''
-
 [[node]]
 id = "evenReflection"
-kind = "definition"
-desc = '''`evenReflection v u : E → F`, the extension by even reflection across the hyperplane
-`v^⊥`: `evenReflection v u x = u x` if `0 ≤ ⟪x, v⟫` and `u (σ x)` otherwise, where
-`σ = Submodule.reflection (ℝ ∙ v)ᗮ`. This is `u^⋆` of [brezis2011functional] §9.2, Lemma 9.2
-(with `v = e_N`); the value on the hyperplane itself is irrelevant (a null set). Companion
-`oddReflection v w x = w x` if `0 ≤ ⟪x, v⟫` and `−w (σ x)` otherwise, the book's `f^□`; and
-`reflectFDeriv v w x = w x` if `0 ≤ ⟪x, v⟫` and `(w (σ x)).comp σ` otherwise, the tensor
-gradient of `u^⋆`, which evaluates to `evenReflection v (w · y)` for `y ⊥ v` and to
-`oddReflection v (w · v)` along `v`. With the elementary facts: `σ` is an involutive linear
-isometry, measure preserving, mapping `{0 < ⟪·, v⟫}` onto `{⟪·, v⟫ < 0}`
-(`Submodule.reflection_apply`, `reflection_orthogonalComplement_singleton_eq_neg`), and
-`eLpNorm (evenReflection v u) p (μ.restrict V) ^ p = 2 * eLpNorm u p (μ.restrict V_+) ^ p` when
-`σ '' V = V` and the hyperplane is null (`measure_preimage_of_isometry`). ★, ~120 lines for the
-three definitions and their norm identities.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
 
 [[node]]
 id = "HasWeakFDerivOn.evenReflection"
-kind = "theorem"
-desc = '''**Lemma 9.2 (extension by reflection), the identity**: let `‖v‖ = 1`, `V` open with
-`σ '' V = V`, `V_+ := V ∩ {x | 0 < ⟪x, v⟫}` (an `Opens`). If `HasWeakFDerivOn u w V_+ μ` with
-`u, w ∈ L^p(V_+)`, `1 ≤ p ≤ ∞`, then `HasWeakFDerivOn (evenReflection v u) (reflectFDeriv v w) V μ`.
-Proof, the book's ([brezis2011functional] §9.2, proof of Lemma 9.2, lines 10241–10330 of the
-source): fix `η ∈ C^∞(ℝ)` with `η = 0` on `(−∞, 1/2]`, `η = 1` on `[1, ∞)`, and `η_k(t) = η(k t)`.
-For a test function `φ` on `V` and a direction `y`, split `∫_V u^⋆ ∂_y φ = ∫_{V_+} u ∂_y ψ` with
-`ψ = φ + φ ∘ σ` when `y ⊥ v` (case (7)) and `= ∫_{V_+} u ∂_v χ` with `χ = φ − φ ∘ σ` when `y = v`
-(case (8)); general `y` is the sum of its two components, weak differentiation being linear in
-the direction. `η_k(⟪·, v⟫) ψ` is a test function on `V_+`, so the defining identity holds for
-it; `∂_y (η_k ψ) = η_k ∂_y ψ` for `y ⊥ v` and dominated convergence gives (11); for `y = v`,
-`∂_v (η_k χ) = η_k ∂_v χ + k η'(k ⟪x,v⟫) χ`, and the extra term tends to `0` because
-`χ = 0` on the hyperplane gives `|χ(x)| ≤ M |⟪x, v⟫|` (mean value theorem on the smooth `χ`),
-so `|∫ u k η'(k⟪x,v⟫) χ| ≤ M C ∫_{0 < ⟪x,v⟫ < 1/k} |u| → 0` (`u ∈ L^1_loc`, the strips shrink to a
-null set: `tendsto_measure_iInter` or dominated convergence). Finally `∫_{V_+} (∂_y u) ψ` and
-`∫_{V_+} (∂_v u) χ` fold back to integrals over `V` of `reflectFDeriv v w` against `φ` by the
-measure-preserving `σ`. ★★★, 450–550 lines.'''
-deps = ["evenReflection", "HasWeakFDerivOn", "HasWeakFDerivOn.integral_smul_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
 
 [[node]]
 id = "MemSobolev.evenReflection"
-kind = "theorem"
-desc = '''**Lemma 9.2, membership and norms**: under the hypotheses of `HasWeakFDerivOn.evenReflection`,
-`MemSobolev (evenReflection v u) 1 p V μ`, with `eLpNorm (evenReflection v u) p (μ.restrict V) ≤ 2 * eLpNorm u p (μ.restrict V_+)`
-(in fact `= 2^{1/p} ·`) and `eLpNorm (reflectFDeriv v w) p (μ.restrict V) ≤ 2 * eLpNorm w p (μ.restrict V_+)`
-(`σ` an isometry, so `‖(w (σ x)).comp σ‖ = ‖w (σ x)‖`), hence
-`sobolevNorm (evenReflection v u) 1 p V μ ≤ 2 * sobolevNorm u 1 p V_+ μ`: the book's
-`‖u^⋆‖_{L^p(Q)} ≤ 2 ‖u‖_{L^p(Q_+)}`, `‖u^⋆‖_{W^{1,p}(Q)} ≤ 2 ‖u‖_{W^{1,p}(Q_+)}`. ★★, ~120 lines.'''
-deps = ["HasWeakFDerivOn.evenReflection", "MemSobolev", "evenReflection"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
 
 [[node]]
 id = "SobolevEuclidean.evenReflectionL"
-kind = "definition"
-desc = '''Lemma 9.2 as a bounded linear map on the typed spaces, for `E = EuclideanSpace ℝ (Fin N)`,
-`‖v‖ = 1`, `V : Opens E` with `σ '' V = V`, `1 ≤ p`:
-`SobolevEuclidean.evenReflectionL v hV : SobolevEuclidean N 1 p V_+ →L[ℝ] SobolevEuclidean N 1 p V`,
-with `evenReflectionL_fn : fn (evenReflectionL v hV u) =ᵐ[volume.restrict V] evenReflection v (fn u)`,
-`evenReflectionL_fn_ae_eq_on : fn (evenReflectionL v hV u) =ᵐ[volume.restrict V_+] fn u`,
-`eLpNorm (fn (evenReflectionL v hV u)) p (volume.restrict V) ≤ 2 * eLpNorm (fn u) p (volume.restrict V_+)`
-and `‖evenReflectionL v hV u‖ ≤ 2 * ‖u‖` (the exact factor is `2^{1/p}`; each multi-index
-component's `p`-th power doubles). Built from `MemSobolev.evenReflection` through
-`memSobolev_iff_memSobolevMultiIndex`, `MemSobolevMultiIndex.exists_sobolevMultiIndex`; linear a.e.,
-hence linear by `SobolevMultiIndex.ext_of_fn_ae_eq`. Instances: `V = unitChartCube d` with
-`v = e_N` (`reflectLast_image_unitChartCube : σ '' Q = Q`, `unitChartCubePos = Q ∩ {0 < x_N}`)
-— the step `v_i ↦ v_i^⋆` of the proof of Theorem 9.7 — and `V = ⊤` below. ★★, ~150 lines.'''
-deps = ["MemSobolev.evenReflection", "SobolevEuclidean", "memSobolev_iff_memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex", "SobolevMultiIndex.ext_of_fn_ae_eq", "unitChartCubePos"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
 
 [[node]]
 id = "SobolevEuclidean.exists_extensionL_upperHalfSpace"
-kind = "theorem"
-desc = '''**Theorem 9.7 for the half space** ([brezis2011functional] §9.2, "This establishes Theorem
-9.7 for `Ω = ℝ^N_+`"): for `1 ≤ p ≤ ∞` there is `P : SobolevEuclidean (d+1) 1 p (upperHalfSpace d) →L[ℝ] SobolevEuclidean (d+1) 1 p ⊤`
-with `fn (P u) =ᵐ[volume.restrict (upperHalfSpace d)] fn u`,
-`eLpNorm (fn (P u)) p volume ≤ 2 * eLpNorm (fn u) p (volume.restrict (upperHalfSpace d))` and
-`‖P u‖ ≤ 2 * ‖u‖` — namely `SobolevEuclidean.evenReflectionL e_N` with `V = ⊤`. Same
-existential shape as `SobolevEuclidean.exists_extensionL` (`Extension.lean`), so that the two
-cases of Theorem 9.7 are consumed uniformly; bundled as the predicate instance
-`IsSobolevExtensionDomain.upperHalfSpace` below. ★, ~30 lines.'''
-deps = ["SobolevEuclidean.evenReflectionL", "EuclideanSpace.upperHalfSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7 (the case Ω = ℝ^N_+)"
 
 [[node]]
 id = "IsSobolevExtensionDomain.upperHalfSpace"
-kind = "theorem"
-desc = '''The half space is a `W^{1,p}`-extension domain: `IsSobolevExtensionDomain (d+1) p (upperHalfSpace_opens d)`
-for every `1 ≤ p ≤ ∞` — the predicate of `Cutoff.lean` instantiated by
-`SobolevEuclidean.exists_extensionL_upperHalfSpace`. It is what lets `EmbeddingDomain.lean` and
-`Compactness.lean` read their corollaries on `ℝ^N_+` without importing `Extension.lean`. ★, ~10
-lines.'''
-deps = ["SobolevEuclidean.exists_extensionL_upperHalfSpace", "IsSobolevExtensionDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7 (the case Ω = ℝ^N_+)"
 
 [[node]]
 id = "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace"
-kind = "theorem"
-desc = '''**Corollary 9.8 on the half space**: for `1 ≤ p < ∞`, every `u : SobolevEuclidean (d+1) 1 p (upperHalfSpace_opens d)`
-is the limit in `W^{1,p}(ℝ^N_+)` of restrictions of `C_c^∞(ℝ^N)` functions —
-`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`
-(`Cutoff.lean`) applied to the reflection extension `IsSobolevExtensionDomain.upperHalfSpace`.
-This is the density that Lemma 9.6 of the regularity theory (`PDE/Elliptic/Regularity`,
-`eLpNorm_diffQuot_le_of_tangential`) uses to pass from `C_c^1(ℝ^N)` to `H^1(ℝ^N_+)` with the
-constant `1`; stated here so that the half-space case of Theorem 9.25 needs neither Theorem 9.7
-nor the general Corollary 9.8. ★, ~20 lines.'''
-deps = ["IsSobolevExtensionDomain.upperHalfSpace", "SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8 (the case Ω = ℝ^N_+)"
 
 
@@ -153,6 +45,257 @@ The `C^1` regularity of `t ↦ |t|^{p−1} t` is `Real.rpow` calculus (`NormPow.
 `Numlib/Analysis/InnerProductSpace/` has `‖x‖^s`). A bounded task (≤ 300 lines, ★★) and the first
 move of `notes/frontier.md` blocker 2: extending it by density to `W^{1,p}(ℝ^N_+)` defines the
 trace on the flat boundary. The trace theory proper — (i)–(iv) of Comment 7, surface measure on a
-curved boundary — is not planned.'''
+curved boundary — is not planned.
+
+Blocked: not attempted for lack of time (sob6, 2026-09-18); no consumer in the current plans; the route in the desc stands, ~300 lines (`G(t) = |t|^{p-1} t` calculus, fundamental theorem of calculus along the half-line, Young, Fubini through `EuclideanSpace.measurePreserving_lastInit`).'''
 deps = ["EuclideanSpace.measurePreserving_lastInit", "EuclideanSpace.upperHalfSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 9, Lemma 9.9"
+
+[[node]]
+id = "hyperplaneReflection"
+
+[[node]]
+id = "hyperplaneReflection_apply_self"
+
+[[node]]
+id = "hyperplaneReflection_hyperplaneReflection"
+
+[[node]]
+id = "inner_hyperplaneReflection"
+
+[[node]]
+id = "hyperplaneReflection_apply_of_inner_eq_zero"
+
+[[node]]
+id = "hyperplaneReflection_image_image"
+
+[[node]]
+id = "preimage_hyperplaneReflection"
+
+[[node]]
+id = "measurePreserving_hyperplaneReflection"
+
+[[node]]
+id = "measurableEmbedding_hyperplaneReflection"
+
+[[node]]
+id = "volume_inner_eq_zero"
+
+[[node]]
+id = "ae_inner_ne_zero"
+
+[[node]]
+id = "reflectionCutoff"
+
+[[node]]
+id = "contDiff_reflectionCutoff"
+
+[[node]]
+id = "reflectionCutoff_of_le_half"
+
+[[node]]
+id = "reflectionCutoff_of_one_le"
+
+[[node]]
+id = "reflectionCutoff_nonneg"
+
+[[node]]
+id = "reflectionCutoff_le_one"
+
+[[node]]
+id = "abs_reflectionCutoff_le_one"
+
+[[node]]
+id = "deriv_reflectionCutoff_eq_zero"
+
+[[node]]
+id = "exists_abs_deriv_reflectionCutoff_le"
+
+[[node]]
+id = "oddReflection"
+
+[[node]]
+id = "reflectFDeriv"
+
+[[node]]
+id = "evenReflection_of_nonneg"
+
+[[node]]
+id = "evenReflection_of_neg"
+
+[[node]]
+id = "reflectFDeriv_of_nonneg"
+
+[[node]]
+id = "reflectFDeriv_of_neg"
+
+[[node]]
+id = "reflectFDeriv_apply_of_inner_eq_zero"
+
+[[node]]
+id = "reflectFDeriv_apply_self"
+
+[[node]]
+id = "norm_reflectFDeriv"
+
+[[node]]
+id = "posHalf"
+
+[[node]]
+id = "coe_posHalf"
+
+[[node]]
+id = "posHalf_le"
+
+[[node]]
+id = "isOpen_negHalf"
+
+[[node]]
+id = "disjoint_posHalf_negHalf"
+
+[[node]]
+id = "mem_of_image_eq"
+
+[[node]]
+id = "preimage_posHalf"
+
+[[node]]
+id = "ae_eq_posHalf_union_negHalf"
+
+[[node]]
+id = "aestronglyMeasurable_of_reflected"
+
+[[node]]
+id = "eLpNorm_le_of_reflected"
+
+[[node]]
+id = "setIntegral_of_reflected"
+
+[[node]]
+id = "integrableOn_smul_of_memLp"
+
+[[node]]
+id = "hasFDerivAt_inner_right"
+
+[[node]]
+id = "hasFDerivAt_reflectionCutoff_inner"
+
+[[node]]
+id = "fderiv_reflectionCutoff_mul_apply"
+
+[[node]]
+id = "tendsto_reflectionCutoff_mul"
+
+[[node]]
+id = "eventually_deriv_reflectionCutoff_mul_eq_zero"
+
+[[node]]
+id = "cutoffTestFunction"
+
+[[node]]
+id = "cutoffTestFunction_apply"
+
+[[node]]
+id = "fderiv_cutoffTestFunction_apply"
+
+[[node]]
+id = "TestFunction.compHyperplaneReflection"
+
+[[node]]
+id = "TestFunction.compHyperplaneReflection_apply"
+
+[[node]]
+id = "fderiv_comp_hyperplaneReflection_apply"
+
+[[node]]
+id = "evenReflection_add"
+
+[[node]]
+id = "evenReflection_smul"
+
+[[node]]
+id = "evenReflection_congr_ae"
+
+[[node]]
+id = "eLpNorm_evenReflection_le"
+
+[[node]]
+id = "aestronglyMeasurable_evenReflection"
+
+[[node]]
+id = "MeasureTheory.MemLp.evenReflection"
+
+[[node]]
+id = "eLpNorm_reflectFDeriv_le"
+
+[[node]]
+id = "MemSobolevMultiIndex.evenReflection"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflection"
+
+[[node]]
+id = "SobolevMultiIndex.fn_evenReflection"
+
+[[node]]
+id = "SobolevMultiIndex.fn_evenReflection_restrict"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflection_add"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflection_smul"
+
+[[node]]
+id = "SobolevMultiIndex.eLpNorm_fn_evenReflection_le"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_evenReflection_single"
+
+[[node]]
+id = "SobolevMultiIndex.exists_norm_evenReflection_le"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflectionₗ"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflectionL"
+
+[[node]]
+id = "SobolevMultiIndex.evenReflectionL_apply"
+
+[[node]]
+id = "SobolevMultiIndex.fn_evenReflectionL"
+
+[[node]]
+id = "SobolevMultiIndex.fn_evenReflectionL_restrict"
+
+[[node]]
+id = "SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le"
+
+[[node]]
+id = "EuclideanSpace.norm_single_last_one"
+
+[[node]]
+id = "EuclideanSpace.inner_single_last_one"
+
+[[node]]
+id = "hyperplaneReflection_image_top"
+
+[[node]]
+id = "coe_posHalf_top_eq_upperHalfSpace"
+
+[[node]]
+id = "posHalf_top_eq_upperHalfSpaceOpens"
+
+[[node]]
+id = "Filter.EventuallyEq.of_restrict_eq"
+
+[[node]]
+id = "eLpNorm_restrict_congr_set_eq"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_upperHalfSpace_of_ops"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_posHalf_top_eq"

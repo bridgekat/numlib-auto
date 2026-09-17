@@ -213,10 +213,12 @@ import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Transport
+import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Cutoff
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
+import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Basic
@@ -228,6 +230,7 @@ import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.Sobolev.Poincare
+import Numlib.Analysis.Sobolev.Reflection
 import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
