@@ -1,414 +1,278 @@
 namespace = "lp"
-desc = '''
-The classical sequence spaces `ℓ^p`, `c` and `c₀` beyond what Mathlib has (natural home:
-`Mathlib.Analysis.Normed.Lp.lpSpace` and `lpHolder`). This is [brezis2011functional] §11.3.
-
-Mathlib's `lp (fun _ : α ↦ E) p` (`Memℓp`, `lp.completeSpace`, `lp.instNormedSpace`,
-`lp.instInnerProductSpace` at `p = 2`, Hölder as `lp.tsum_mul_le_mul_norm`, the dual pairing
-`lp.dualPairing`, `lp.norm_apply_le_norm`, `lp.hasSum_single`) is the space; the surface delegates
-the definitions, completeness, Hölder and the Hilbert structure of `ℓ²` to it. Missing, and
-supplied here:
-
-* **The subspaces `c` and `c₀`** of `ℓ^∞(ℕ, E)`: `lp.convergent 𝕜 E` (sequences with a limit) and
-  `lp.zeroAtInfty 𝕜 E` (null sequences), as `Submodule 𝕜 (lp (fun _ : ℕ ↦ E) ∞)`, both closed,
-  `c₀ ≤ c`, with the limit functional `lp.convergent.limCLM` and the bridge
-  `lp.zeroAtInftyLIE : lp.zeroAtInfty 𝕜 E ≃ₗᵢ[𝕜] C₀(ℕ, E)` to Mathlib's
-  `ZeroAtInftyContinuousMap` (which is not a subspace of `lp`, and which is why a separate
-  definition is needed at all: the book's statements compare `c₀`, `c` and `ℓ^p` inside `ℓ^∞`).
-  Index type `ℕ` and limits along `atTop`, as in the book; `c₀(α)` over another index type is
-  Mathlib's `C₀(α, E)` with the discrete topology.
-* **Elementary inclusions**: `ℓ^p ⊆ c₀` (`tendsto_cofinite_zero`) and `‖x‖_q ≤ ‖x‖_p` for
-  `p ≤ q` (`norm_linearMapOfLE_le`; Mathlib has only the membership `Memℓp.of_exponent_ge`).
-* **Duality**, Propositions 11.18–11.20, as isometric isomorphisms: `(ℓ^p)* = ℓ^{p'}` for
-  `1 ≤ p < ∞` (`toDual`, `dualEquiv`), `(c₀)* = ℓ¹` (`zeroAtInfty.dualEquiv`), and
-  `c* = ℓ¹ × 𝕜` with the norm `‖u‖₁ + ‖λ‖` (`convergent.dualEquiv`, the product carrying the
-  `ℓ¹` norm as `WithLp 1 (_ × 𝕜)`). Scalar sequences over `RCLike 𝕜`, arbitrary index type `α`
-  for `ℓ^p`; the vector-valued `(ℓ^p(E))* = ℓ^{p'}(E*)`, which Mathlib's `lp.dualPairing`
-  docstring anticipates, is deliberately not attempted (an ε-argument replaces the book's exact
-  choice `x_k = |u_k|^{p'-2} u_k` and is not needed by any consumer).
-* **Reflexivity and uniform convexity**, Proposition 11.15, and **non-reflexivity**, Proposition
-  11.21. The route was a decision: the book proves 11.15 by Theorem 4.10 and Exercise 4.12 "with
-  `Ω = ℕ`", i.e. through `L^p` of the counting measure. Here reflexivity of `ℓ^p`, `1 < p < ∞`,
-  is proved **directly** from the two duality isometries (`(ℓ^p)** ≅ (ℓ^{p'})* ≅ ℓ^p`, and the
-  composite is the canonical embedding) — elementary, no Clarkson, no Milman–Pettis, no
-  dependence on chapter 4. Uniform convexity, on the other hand, *is* transported from chapter 4's
-  `MeasureTheory.Lp.instUniformConvexSpace` along the isometry `lpLIELpCount` with
-  `Lp E p (Measure.count)`, because a direct proof would repeat Clarkson's inequalities for sums
-  (including the reverse-Minkowski step of the case `1 < p < 2`) verbatim. The bridge is stated
-  for a countable index type and any normed `E`, and can serve the other direction too. `c₀` is
-  not reflexive by the book's argument (the bidual functional corresponding to `(1, 1, 1, …)`);
-  `ℓ^∞` and `c` are not, as they contain `c₀` as a closed subspace
-  (`NormedSpace.isReflexive_of_isClosed`); `ℓ¹` is not, since its dual `ℓ^∞` would be
-  (chapter 3's Corollary 3.21, easy direction, with `NormedSpace.isReflexive_congr`).
-* **Separability**, Propositions 11.16 and 11.17: `ℓ^p` for `p < ∞`, `c₀` and `c` are separable
-  (finitely supported sequences are dense, `lp.hasSum_single`; the scalar field is separable),
-  and `ℓ^∞` is not (an uncountable family of points at mutual distance `1`).
-
-Prototyped statements: `notes/brezis/ch11/proto/Shapes.lean` (namespace `lp`).
-
-Order of attack: `convergent`/`zeroAtInfty` and their closedness (≈120 lines) → inclusions (≈60)
-→ `toDual`, `dualEquiv` (≈250) → `zeroAtInfty.dualEquiv`, `convergent.dualEquiv`
-(≈250) → reflexivity and non-reflexivity (≈200) → separability (≈150) → `lpLIELpCount` and uniform
-convexity (≈250, waits on chapter 4). About 1300 lines.
-'''
 
 [[node]]
 id = "convergent"
-kind = "definition"
-desc = '''The space `c` of [brezis2011functional] §11.3: the sequences in `E` that have a limit,
-as a subspace of `ℓ^∞`:
-`lp.convergent (𝕜 E : Type*) [NormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E] : Submodule 𝕜 (lp (fun _ : ℕ ↦ E) ∞)`
-with carrier `{x | ∃ l : E, Tendsto (⇑x) atTop (𝓝 l)}`; `Tendsto.add`, `Tendsto.const_smul` for
-the closure properties. Membership lemma `mem_convergent` (`@[simp]`). A convergent sequence is
-bounded (`Filter.Tendsto.bddAbove_range`-type), so the carrier really lives in `ℓ^∞`, which is
-why the subtype and not a standalone type is used. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "zeroAtInfty"
-kind = "definition"
-desc = '''The space `c₀` of [brezis2011functional] §11.3: the null sequences in `E`, as a subspace
-of `ℓ^∞`: `lp.zeroAtInfty (𝕜 E) : Submodule 𝕜 (lp (fun _ : ℕ ↦ E) ∞)` with carrier
-`{x | Tendsto (⇑x) atTop (𝓝 0)}`; membership lemma `mem_zeroAtInfty` (`@[simp]`). Named after
-Mathlib's `ZeroAtInftyContinuousMap` (`C₀(ℕ, E)`), which it is isometric to (`zeroAtInftyLIE`);
-the classical name `c₀` goes in the docstring. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "zeroAtInfty_le_convergent"
-kind = "theorem"
-desc = '''`lp.zeroAtInfty 𝕜 E ≤ lp.convergent 𝕜 E` — "`c₀ ⊂ c ⊂ ℓ^∞`". Immediate. ★'''
-deps = ["convergent", "zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "isClosed_convergent"
-kind = "theorem"
-desc = '''`c` is closed in `ℓ^∞`: `IsClosed (lp.convergent 𝕜 E : Set (lp (fun _ : ℕ ↦ E) ∞))`, for
-`E` complete. If `xₙ → x` in `ℓ^∞` (uniformly, `lp.norm_apply_le_norm`) and each `xₙ` has a limit
-`aₙ`, then `‖aₙ − aₘ‖ ≤ ‖xₙ − xₘ‖_∞` makes `(aₙ)` Cauchy, with limit `a`, and the `ε/3` argument
-gives `x k → a`. Hence `CompleteSpace (lp.convergent 𝕜 E)` by `IsClosed.completeSpace_coe`. ★'''
-deps = ["convergent"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "isClosed_zeroAtInfty"
-kind = "theorem"
-desc = '''`c₀` is closed in `ℓ^∞` (and in `c`): `IsClosed (lp.zeroAtInfty 𝕜 E : Set (lp (fun _ : ℕ ↦ E) ∞))`,
-no completeness of `E` needed (the limit `0` is given). A uniform limit of null sequences is
-null. Hence `CompleteSpace (lp.zeroAtInfty 𝕜 E)` when `E` is complete. ★'''
-deps = ["zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "convergent.limCLM"
-kind = "definition"
-desc = '''The limit, as a bounded linear functional on `c`:
-`lp.convergent.limCLM (𝕜 E) [CompleteSpace E] : lp.convergent 𝕜 E →L[𝕜] E`, `x ↦ lim x`,
-with `limCLM_apply : Tendsto (⇑x) atTop (𝓝 (limCLM 𝕜 E x))` and `‖limCLM x‖ ≤ ‖x‖`
-(`le_of_tendsto` with `lp.norm_apply_le_norm`), so `‖limCLM‖ ≤ 1`. Built with `limUnder`
-(`Filter.Tendsto.limUnder_eq`) and `LinearMap.mkContinuous`. Used by `convergent.dualEquiv`
-(the `λ lim x_k` term of Proposition 11.20). ★'''
-deps = ["convergent"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
 
 [[node]]
 id = "zeroAtInftyLIE"
-kind = "definition"
-desc = '''The bridge to Mathlib: `lp.zeroAtInftyLIE (𝕜 E) : lp.zeroAtInfty 𝕜 E ≃ₗᵢ[𝕜] C₀(ℕ, E)`
-(`ZeroAtInftyContinuousMap`, `Mathlib/Topology/ContinuousMap/ZeroAtInfty.lean`), the identity on
-the underlying functions: on the discrete space `ℕ` every function is continuous
-(`continuous_of_discreteTopology`) and `cocompact ℕ = atTop` (`Nat.cocompact_eq`), and both norms
-are the supremum norm (`lp.norm_eq_ciSup`, `ZeroAtInftyContinuousMap.norm_toBCF_eq_norm`,
-`BoundedContinuousFunction.norm_eq_iSup_norm`). Lets Mathlib's algebra on `C₀` be used on
-`c₀` when wanted; nothing below depends on it. ★★'''
-deps = ["zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "tendsto_cofinite_zero"
-kind = "theorem"
-desc = '''"`ℓ^p ⊆ c₀`": for `f : lp E p` with `p ≠ ∞` (any index type, `E i` normed groups),
-`Tendsto (fun i => f i) cofinite (𝓝 0)`; on `ℕ`, `cofinite = atTop` (`Nat.cofinite_eq_atTop`),
-so `lp.linearMapOfLE 𝕜 E le_top f ∈ lp.zeroAtInfty 𝕜 E` — state that corollary too
-(`linearMapOfLE_mem_zeroAtInfty`). Summability of `‖f i‖ ^ p.toReal` (`lp.memℓp`, `Memℓp.summable`)
-gives `‖f i‖ ^ p.toReal → 0` along `cofinite` (`Summable.tendsto_cofinite_zero`), hence
-`‖f i‖ → 0` (`Real.rpow` continuity, `p.toReal > 0`). The bound `‖x‖_∞ ≤ ‖x‖_p` of the same
-sentence is Mathlib's `lp.norm_apply_le_norm`. ★'''
-deps = ["zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "norm_linearMapOfLE_le"
-kind = "theorem"
-desc = '''"`ℓ^p ⊆ ℓ^q` for `1 ≤ p ≤ q ≤ ∞` with `‖x‖_q ≤ ‖x‖_p`": for `h : p ≤ q`, `1 ≤ p`, and
-`f : lp E p`, `‖lp.linearMapOfLE 𝕜 E h f‖ ≤ ‖f‖` (`lp.linearMapOfLE` is Mathlib's inclusion;
-Mathlib has the membership, `Memℓp.of_exponent_ge`, but not the norm bound). Case `q = ∞`:
-`lp.norm_apply_le_norm` and `lp.norm_le_of_forall_le`. Case `q < ∞`: with `t := ‖f‖`, if
-`t = 0` trivial, else `∑ (‖f i‖/t) ^ q ≤ ∑ (‖f i‖/t) ^ p = 1` since each `‖f i‖/t ≤ 1` and
-`q ≥ p` (`Real.rpow_le_rpow_of_exponent_ge`), so `‖f‖_q ≤ t`. Then record the bundled
-`lp.inclusionCLM 𝕜 E h : lp E p →L[𝕜] lp E q` of norm `≤ 1` (`LinearMap.mkContinuous`). ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "toDual"
-kind = "definition"
-desc = '''**[brezis2011functional] Proposition 11.18, the isometry**: for `RCLike 𝕜`, an index type
-`α`, and Hölder conjugate exponents `p q : ℝ≥0∞` (`[Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]`,
-which includes `(1, ∞)`), the map `u ↦ (x ↦ ∑' k, u k * x k)` is a linear isometry
-`lp.toDual 𝕜 α p q : lp (fun _ : α ↦ 𝕜) q →ₗᵢ[𝕜] StrongDual 𝕜 (lp (fun _ : α ↦ 𝕜) p)`,
-with `toDual_apply : toDual 𝕜 α p q u x = ∑' k, u k * x k`.
-
-The underlying continuous linear map with `‖·‖ ≤ 1` is Mathlib's
-`lp.dualPairing q p (fun _ => ContinuousLinearMap.mul 𝕜 𝕜) (K := 1) _` (Hölder,
-`lp.tsum_mul_le_mul_norm`); the new content is the reverse inequality `‖u‖_q ≤ ‖φ_u‖`, the book's
-display (6). For `q = ∞` (`p = 1`): `‖u k‖ = ‖φ_u (single k 1)‖ ≤ ‖φ_u‖` (`lp.norm_single`). For
-`q < ∞`: for each finite `s : Finset α` test against `x := ∑_{k ∈ s} single k (‖u k‖ ^ (q − 2) * conj (u k))`
-(so that `u k * x k = ‖u k‖ ^ q`), get `∑_{k ∈ s} ‖u k‖ ^ q ≤ ‖φ_u‖ (∑_{k ∈ s} ‖u k‖ ^ q) ^ (1/p)`,
-i.e. `(∑_{k ∈ s} ‖u k‖ ^ q) ^ (1/q) ≤ ‖φ_u‖` (`1 − 1/p = 1/q`), and let `s` grow
-(`lp.norm_le_of_forall_sum_le`). About 150 lines; `RCLike` is used for `conj` and
-`‖conj z * z‖ = ‖z‖ ^ 2`. ★★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
 
 [[node]]
 id = "toDual_surjective"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.18, existence**: for `p ≠ ∞` (and `q` its
-conjugate), `Function.Surjective (lp.toDual 𝕜 α p q)`: every `φ : StrongDual 𝕜 (lp (fun _ : α ↦ 𝕜) p)`
-is `x ↦ ∑' k, u k * x k` for the sequence `u k := φ (lp.single p k 1)`. That `u ∈ ℓ^q` with
-`‖u‖_q ≤ ‖φ‖` is the finite-section estimate of the previous node run in reverse (the same
-computation, phrased for `φ` instead of `φ_u`; factor it as a private lemma
-`sum_norm_rpow_le_of_forall_le` used by both); that `φ = φ_u` on all of `ℓ^p` is
-`lp.hasSum_single hp x` mapped through the continuous `φ` (`HasSum.mapL`), which is
-`lp.ext_continuousLinearMap`'s argument. Uniqueness of `u` is injectivity of the isometry. ★★'''
-deps = ["toDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
 
 [[node]]
 id = "dualEquiv"
-kind = "definition"
-desc = '''Proposition 11.18 packaged: for `p ≠ ∞` with conjugate `q`,
-`lp.dualEquiv 𝕜 α p q (hp : p ≠ ∞) : lp (fun _ : α ↦ 𝕜) q ≃ₗᵢ[𝕜] StrongDual 𝕜 (lp (fun _ : α ↦ 𝕜) p)`
-— `LinearIsometryEquiv.ofSurjective (toDual 𝕜 α p q) (toDual_surjective …)`, with
-`dualEquiv_apply` the formula. "`(ℓ^p)* = ℓ^{p'}`" of the book's table; at `p = 1` it is
-`(ℓ¹)* = ℓ^∞`. ★'''
-deps = ["toDual", "toDual_surjective"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
 
 [[node]]
 id = "zeroAtInfty.toDual"
-kind = "definition"
-desc = '''**[brezis2011functional] Proposition 11.19, the isometry**: for `RCLike 𝕜`,
-`lp.zeroAtInfty.toDual 𝕜 : lp (fun _ : ℕ ↦ 𝕜) 1 →ₗᵢ[𝕜] StrongDual 𝕜 (lp.zeroAtInfty 𝕜 𝕜)`,
-`u ↦ (x ↦ ∑' k, u k * x k)`. The map is the `(1, ∞)` case of `toDual` composed with the
-inclusion `c₀ ⊆ ℓ^∞` (`Submodule.subtypeL`, `ContinuousLinearMap.comp`); the norm identity
-`‖u‖₁ ≤ ‖φ_u|_{c₀}‖` is tested on the finitely supported `x := ∑_{k ∈ s} single k (conj (u k) / ‖u k‖)`
-(`sign`), which lie in `c₀`: `∑_{k ∈ s} ‖u k‖ = φ_u x ≤ ‖φ_u|_{c₀}‖`. ★★'''
-deps = ["zeroAtInfty", "toDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
 
 [[node]]
 id = "zeroAtInfty.dualEquiv"
-kind = "definition"
-desc = '''**[brezis2011functional] Proposition 11.19**: `(c₀)* = ℓ¹` —
-`lp.zeroAtInfty.dualEquiv 𝕜 : lp (fun _ : ℕ ↦ 𝕜) 1 ≃ₗᵢ[𝕜] StrongDual 𝕜 (lp.zeroAtInfty 𝕜 𝕜)`,
-`LinearIsometryEquiv.ofSurjective` of the previous node. Surjectivity: given `φ` on `c₀`, set
-`u k := φ (single k 1)` (the `single`s are null sequences); `u ∈ ℓ¹` by the finite-section
-estimate; `φ = φ_u` on the finitely supported sequences, which are dense in `c₀` (a null sequence
-is the `ℓ^∞`-limit of its truncations `x · 1_{k ≤ N}` — this is `lp.hasSum_single` at `p = ∞`
-restricted to `c₀`, which needs its own proof since `hasSum_single` excludes `p = ∞`; state it as
-`zeroAtInfty.hasSum_single`), so `φ = φ_u` by continuity (`ContinuousLinearMap.ext_on` a dense
-set). ★★'''
-deps = ["zeroAtInfty.toDual", "isClosed_zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
 
 [[node]]
 id = "convergent.dualEquiv"
-kind = "definition"
-desc = '''**[brezis2011functional] Proposition 11.20**: `c* = ℓ¹ × ℝ` with the norm `‖u‖₁ + |λ|` —
-`lp.convergent.dualEquiv 𝕜 : WithLp 1 (lp (fun _ : ℕ ↦ 𝕜) 1 × 𝕜) ≃ₗᵢ[𝕜] StrongDual 𝕜 (lp.convergent 𝕜 𝕜)`,
-`(u, λ) ↦ (x ↦ ∑' k, u k * x k + λ * lim x)` (`convergent.limCLM`), with
-`convergent.dualEquiv_apply`. The domain is `WithLp 1` of the product so that its norm is
-`‖u‖ + ‖λ‖` on the nose (`WithLp.prod_norm_eq_add`, prototyped).
-
-Proof (book): existence — restrict `φ` to `c₀` and apply `zeroAtInfty.dualEquiv` to get `u`;
-write `x = y + a • e` with `e = (1, 1, …)` (`lp.const`? — `1 : lp (fun _ : ℕ ↦ 𝕜) ∞`, Mathlib's
-`lp.inftyRing`), `a = lim x`, `y ∈ c₀`, and set `λ := φ e − ∑' u k`. Isometry — `≤` is the
-triangle inequality; `≥` by testing on `x_k = sign (u k)` for `k ≤ N` and `sign λ` beyond
-(a convergent sequence), which gives `∑_{k ≤ N} ‖u k‖ + sign λ ∑_{k > N} u k + ‖λ‖ ≤ ‖φ‖`, then
-`N → ∞` (the tail `∑_{k > N} u k → 0` by summability). Uniqueness of `(u, λ)` is injectivity.
-About 200 lines. ★★'''
-deps = ["convergent", "convergent.limCLM", "zeroAtInfty.dualEquiv", "zeroAtInfty_le_convergent"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
 
 [[node]]
 id = "isReflexive"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.15, reflexivity**: for `RCLike 𝕜`, any index type
-`α`, and `1 < p < ∞` (`[Fact (1 ≤ p)] (hp1 : p ≠ 1) (hp : p ≠ ∞)`),
-`NormedSpace.IsReflexive 𝕜 (lp (fun _ : α ↦ 𝕜) p)`. A theorem rather than an instance because of
-the side conditions; also register the instance form `lp.instIsReflexive` under
-`[Fact (1 < p)] [Fact (p ≠ ∞)]` (chapter 4's spelling for `MeasureTheory.Lp.instIsReflexive`,
-through `MeasureTheory.fact_one_le_of_one_lt` of `LpSpace/Convergence`), so that `ℓ^p` and `L^p`
-are found and used the same way; the surface's `ℓ²` case is also
-`NormedSpace.instIsReflexiveOfInnerProductSpace`.
-
-Proof, direct from the duality (not the book's Theorem 4.10 route): let `q` be the conjugate,
-also `≠ 1, ∞` (`ENNReal.HolderConjugate` API: `conjExponent`), `e_p := dualEquiv 𝕜 α p q hp`
-and `e_q := dualEquiv 𝕜 α q p hq`. Given `Φ : StrongDual 𝕜 (StrongDual 𝕜 (ℓ^p))`,
-`Φ ∘ e_p` is a functional on `ℓ^q`, so `Φ ∘ e_p = e_q x` for some `x ∈ ℓ^p`; then for every
-`u ∈ ℓ^q`, `Φ (e_p u) = e_q x u = ∑' u k * x k = e_p u x = J x (e_p u)`
-(`toDual_apply` twice, `mul_comm`, `NormedSpace.dual_def`), and `e_p` is onto, so
-`Φ = J x`. About 50 lines. ★★'''
-deps = ["dualEquiv", "toDual_apply", "NormedSpace.IsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
 
 [[node]]
 id = "toDual_apply"
-kind = "theorem"
-desc = '''`lp.toDual 𝕜 α p q u x = ∑' k, u k * x k`, the display of Proposition 11.18
-(`rfl` up to `lp.dualPairing_apply`). Listed separately because the reflexivity and
-non-reflexivity proofs rewrite with it. ★'''
-deps = ["toDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
 
 [[node]]
 id = "lpLIELpCount"
-kind = "definition"
-desc = '''**`ℓ^p` is `L^p` of the counting measure** — the identification [brezis2011functional]
-§11.3 uses to import chapter 4 ("Theorem 4.8 applied to `Ω = ℕ` equipped with the counting
-measure"): for a countable index type with measurable singletons
-(`[MeasurableSpace α] [MeasurableSingletonClass α] [Countable α]`), a normed space `E` over `𝕜`,
-and `[Fact (1 ≤ p)]`,
-`lp.lpLIELpCount 𝕜 α E p : lp (fun _ : α ↦ E) p ≃ₗᵢ[𝕜] MeasureTheory.Lp E p (MeasureTheory.Measure.count : MeasureTheory.Measure α)`.
-Forward: `f ↦ MemLp.toLp f` — every function on a countable discrete measurable space is strongly
-measurable (`Measurable.stronglyMeasurable` with `measurable_of_countable`; the range is countable
-hence separable), and `eLpNorm f p count = (∑' i, ‖f i‖ₑ ^ p.toReal) ^ (1 / p.toReal)` by
-`MeasureTheory.lintegral_count` (`p < ∞`) or `eLpNormEssSup_count` (`p = ∞`), which is
-`lp.norm_eq_tsum_rpow`/`norm_eq_ciSup` after `ENNReal.toReal`; so `Memℓp f p ↔ MemLp f p count`
-(state as `memℓp_iff_memLp_count`) and the norms agree. Backward: `g ↦ (a representative)` — on
-`count` a.e.-equality is equality (`MeasureTheory.Measure.count` has no nonempty null sets:
-`Measure.count_eq_zero_iff`), so `Lp E p count` is a subtype of functions on the nose. Grep of
-Mathlib for `Measure.count` in `Analysis/Normed/Lp` and `MeasureTheory/Function/LpSpace`: nothing
-(only the `LpSeminorm/Count.lean` lemmas cited). ★★, about 200 lines.'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.3"
 
 [[node]]
 id = "uniformConvexSpace"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.15, uniform convexity**: for `1 < p < ∞`
-(`[Fact (1 < p)] [Fact (p ≠ ∞)]`, chapter 4's spelling), `UniformConvexSpace (lp (fun _ : α ↦ ℝ) p)`
-for a countable index type `α` — real scalars, because chapter 4's
-`MeasureTheory.Lp.instUniformConvexSpace` is stated for `Lp ℝ p μ` (the book is real; the
-complex case would follow from a complex Clarkson inequality the same way). Transported along
-`lpLIELpCount` (at `𝕜 = E = ℝ`, `μ = Measure.count`) through the transport lemma
-`uniformConvexSpace_of_linearIsometryEquiv` (`Numlib/Analysis/Convex/Uniform`, relocated there at review). This is the book's own route ("Theorem 4.10
-and Exercise 4.12 with `Ω = ℕ`"). ★'''
-deps = ["lpLIELpCount", "uniformConvexSpace_of_linearIsometryEquiv", "MeasureTheory.Lp.instUniformConvexSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
 
 [[node]]
 id = "zeroAtInfty.not_isReflexive"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.21, `c₀`**: `¬ NormedSpace.IsReflexive 𝕜 (lp.zeroAtInfty 𝕜 𝕜)`
-over `RCLike 𝕜`. The book's argument made explicit: let `e := zeroAtInfty.dualEquiv 𝕜`
-(`ℓ¹ ≅ (c₀)*`) and `Σ : StrongDual 𝕜 (ℓ¹)` the summation functional `u ↦ ∑' k, u k`
-(`lp.tsumCLM`, or `toDual 𝕜 ℕ 1 ∞ 1` at the constant sequence `1`). Then
-`Φ := Σ ∘ e.symm` is in `(c₀)**`; if `Φ = J x` for some `x ∈ c₀`, testing on `e (single k 1)`
-gives `x k = 1` for every `k` (`toDual_apply`, `lp.single_apply`), contradicting
-`x k → 0`. About 80 lines. ★★'''
-deps = ["zeroAtInfty.dualEquiv", "toDual_apply", "NormedSpace.IsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
 
 [[node]]
 id = "not_isReflexive_top"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.21, `ℓ^∞`**: `¬ NormedSpace.IsReflexive 𝕜 (lp (fun _ : ℕ ↦ 𝕜) ∞)`.
-`c₀` is a closed subspace (`isClosed_zeroAtInfty`), and a closed subspace of a reflexive space
-is reflexive (`NormedSpace.isReflexive_of_isClosed`), contradicting `zeroAtInfty.not_isReflexive`.
-(The book deduces it from `ℓ¹` through Corollary 3.21; this is shorter.) ★'''
-deps = ["zeroAtInfty.not_isReflexive", "isClosed_zeroAtInfty", "NormedSpace.isReflexive_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
 
 [[node]]
 id = "convergent.not_isReflexive"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.21, `c`**: `¬ NormedSpace.IsReflexive 𝕜 (lp.convergent 𝕜 𝕜)`.
-As the book: `c₀` is a closed subspace of `c` (`zeroAtInfty_le_convergent`,
-`isClosed_zeroAtInfty` pulled back to the subtype `c` — closedness of `Submodule.comap c.subtype …`,
-or directly `IsClosed.preimage` along the continuous inclusion), so `NormedSpace.isReflexive_of_isClosed`
-would make `c₀` reflexive. Needs the isometry between "`c₀` as a subspace of `ℓ^∞`" and "`c₀` as a
-subspace of `c`" (`Submodule.comapSubtypeEquivOfLe`, an isometry). ★'''
-deps = ["zeroAtInfty.not_isReflexive", "zeroAtInfty_le_convergent", "isClosed_zeroAtInfty", "NormedSpace.isReflexive_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
 
 [[node]]
 id = "not_isReflexive_one"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.21, `ℓ¹`**: `¬ NormedSpace.IsReflexive 𝕜 (lp (fun _ : ℕ ↦ 𝕜) 1)`.
-If `ℓ¹` were reflexive its dual would be (Corollary 3.21, the easy direction: `E` reflexive ⇒
-`E*` reflexive — `Φ ∈ E***` is represented by `Φ ∘ J ∈ E*`), and `(ℓ¹)* ≅ ℓ^∞` isometrically
-(`dualEquiv 𝕜 ℕ 1 ∞`), so `ℓ^∞` would be reflexive by `NormedSpace.isReflexive_congr`
-(`Numlib/Analysis/Normed/Module/Reflexive`, along `e.toContinuousLinearEquiv`), contradicting
-`not_isReflexive_top`. ★'''
-deps = ["not_isReflexive_top", "dualEquiv", "NormedSpace.isReflexive_congr", "NormedSpace.isReflexive_strongDual_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.21"
 
 [[node]]
 id = "separableSpace"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.16, `ℓ^p`**: for a countable index type `α`, a
-separable normed space `E` (the book's `𝕜 = ℝ`; `RCLike 𝕜` is separable once
-`Mathlib.Analysis.Normed.Module.Dual` is imported, see `notes/lessons.md`), `1 ≤ p`, `p ≠ ∞`:
-`TopologicalSpace.SeparableSpace (lp (fun _ : α ↦ E) p)` (a theorem, because of `p ≠ ∞`; the
-instance form for a fixed `p` is `Fact`-free only at `p = 2`, `lp.instInnerProductSpace` +
-`HilbertBasis`). The finitely supported sequences are dense — `lp.hasSum_single hp f` says every
-`f` is the limit of its finite partial sums of `lp.single p i (f i)` — and they are the span of
-the countable set `⋃ i, range (lp.single p i)`, separable by `TopologicalSpace.IsSeparable.span`
-(`Mathlib/Topology/Algebra/Module/Basic.lean`) with `IsSeparable.of_separableSpace` on each
-`E`-image; `TopologicalSpace.IsSeparable.closure`/`Dense.separableSpace` finish. The book's
-countable set `D` of rational finitely supported sequences is what `IsSeparable.span` produces. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.16"
 
 [[node]]
 id = "zeroAtInfty.instSeparableSpace"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.16, `c₀`**: for a separable `E`,
-`instance : TopologicalSpace.SeparableSpace (lp.zeroAtInfty 𝕜 E)`. The finitely supported
-sequences are dense in `c₀` (`zeroAtInfty.hasSum_single`, the truncation argument in
-`zeroAtInfty.dualEquiv`'s description), and the span argument of `separableSpace`. ★'''
-deps = ["zeroAtInfty", "isClosed_zeroAtInfty"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.16"
 
 [[node]]
 id = "convergent.instSeparableSpace"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.16, `c`**: for a separable `E`,
-`instance : TopologicalSpace.SeparableSpace (lp.convergent 𝕜 E)`. `c = c₀ ⊔ (constant sequences)`
-— every `x ∈ c` is `(x − lim x • e) + lim x • e` with `x − lim x • e ∈ c₀` (`convergent.limCLM`)
-and `e` the constant sequence `1` — so `c` is the span of a separable set (`c₀` and
-`{(a, a, …) | a ∈ E}`, the image of `E` under the isometric constant map), and
-`TopologicalSpace.IsSeparable.span` applies again. The book's "`D + λ(1, 1, 1, …)`". ★'''
-deps = ["convergent", "convergent.limCLM", "zeroAtInfty.instSeparableSpace", "zeroAtInfty_le_convergent"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.16"
 
 [[node]]
 id = "not_separableSpace_top"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 11.17**: `¬ TopologicalSpace.SeparableSpace (lp (fun _ : ℕ ↦ 𝕜) ∞)`
-(for a nontrivial normed field `𝕜`; over `RCLike` in the surface). Not the book's diagonal
-argument but an equivalent one that Mathlib supports directly: the indicator sequences
-`1_A : ℓ^∞`, `A : Set ℕ`, are pairwise at distance `1`, so the open balls of radius `1/2` around
-them are pairwise disjoint and nonempty; in a separable space such a family is countable
-(`Pairwise.countable_of_isOpen_disjoint`, `Mathlib/Topology/Bases.lean`), but `Set ℕ` is
-uncountable (`Function.cantor_injective` against a hypothetical `Set ℕ ↪ ℕ`, or
-`Cardinal.mk_set_nat : #(Set ℕ) = 𝔠` with `Cardinal.aleph0_lt_mk_iff`); the map `A ↦ 1_A` is
-injective. About 60 lines. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.17"
+
+[[node]]
+id = "mem_convergent"
+
+[[node]]
+id = "mem_zeroAtInfty"
+
+[[node]]
+id = "convergent.instCompleteSpace"
+
+[[node]]
+id = "zeroAtInfty.instCompleteSpace"
+
+[[node]]
+id = "single_mem_zeroAtInfty"
+
+[[node]]
+id = "constL"
+
+[[node]]
+id = "constL_mem_convergent"
+
+[[node]]
+id = "convergent.tendsto_limCLM"
+
+[[node]]
+id = "convergent.norm_limCLM_apply_le"
+
+[[node]]
+id = "convergent.norm_limCLM_le"
+
+[[node]]
+id = "convergent.sub_constL_limCLM_mem_zeroAtInfty"
+
+[[node]]
+id = "tendsto_norm_cofinite_zero"
+
+[[node]]
+id = "linearMapOfLE_mem_zeroAtInfty"
+
+[[node]]
+id = "inclusionCLM"
+
+[[node]]
+id = "norm_inclusionCLM_le"
+
+[[node]]
+id = "zeroAtInfty.hasSum_single"
+
+[[node]]
+id = "zeroAtInfty.hasSum_single'"
+
+[[node]]
+id = "sum_norm_rpow_apply_single_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18, display (6)"
+
+[[node]]
+id = "toDualCLM"
+
+[[node]]
+id = "toDualCLM_apply"
+
+[[node]]
+id = "norm_toDualCLM_le"
+
+[[node]]
+id = "toDualCLM_single"
+
+[[node]]
+id = "norm_toDualCLM_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.18"
+
+[[node]]
+id = "toDual_single"
+
+[[node]]
+id = "dualEquiv_apply"
+
+[[node]]
+id = "instIsReflexive"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"
+
+[[node]]
+id = "zeroAtInfty.toDualCLM"
+
+[[node]]
+id = "zeroAtInfty.sum_norm_apply_single_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
+
+[[node]]
+id = "zeroAtInfty.norm_toDualCLM_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
+
+[[node]]
+id = "zeroAtInfty.toDual_surjective"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.19"
+
+[[node]]
+id = "zeroAtInfty.dualEquiv_apply"
+
+[[node]]
+id = "zeroAtInfty.dualEquiv_single_apply"
+
+[[node]]
+id = "convergent.toDualCLM"
+
+[[node]]
+id = "convergent.toDualCLM_apply"
+
+[[node]]
+id = "norm_toLp_one_prod"
+
+[[node]]
+id = "summable_mul_apply_of_one_of_top"
+
+[[node]]
+id = "convergent.norm_toDualCLM_apply_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20, display (10)"
+
+[[node]]
+id = "convergent.norm_add_norm_le_norm_toDualCLM_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20, display (9)"
+
+[[node]]
+id = "convergent.norm_toDualCLM_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
+
+[[node]]
+id = "convergent.toDual"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
+
+[[node]]
+id = "convergent.toDual_surjective"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.20"
+
+[[node]]
+id = "convergent.dualEquiv_apply"
+
+[[node]]
+id = "_root_.TopologicalSpace.separableSpace_of_isSeparable_of_dense_span"
+
+[[node]]
+id = "eLpNorm_count_eq_tsum"
+
+[[node]]
+id = "memℓp_iff_memLp_count"
+
+[[node]]
+id = "toReal_eLpNorm_count"
+
+[[node]]
+id = "lpToLpCount"
+
+[[node]]
+id = "coeFn_lpLIELpCount"
+
+[[node]]
+id = "coeFn_lpLIELpCount_symm"
+
+[[node]]
+id = "instUniformConvexSpace"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.15"

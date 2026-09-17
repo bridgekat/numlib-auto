@@ -1,280 +1,87 @@
 namespace = "Brezis.Chapter04"
-desc = '''
-Brezis §4.3, "Reflexivity. Separability. Dual of `L^p`" (lines 3489-3809), and Problem 20
-(Clarkson's inequalities, 17217-17280). The three cases of the section: (A) `1 < p < ∞` —
-Theorem 4.10 (reflexive), Remark 3 (uniformly convex, via Clarkson's second inequality), Theorem
-4.11 (`(L^p)^* = L^{p'}`), Theorem 4.12 (`C_c` dense), Theorem 4.13 (separable); (B) `p = 1` —
-Theorem 4.14 (`(L^1)^* = L^∞`), Remark 6 (`L^1` not reflexive); (C) `p = ∞` — the three facts of
-the discussion (weak-* compactness of the ball, weak-* sequential compactness on `Ω ⊆ ℝ^N`, the
-concrete functional in `(L^∞)^* \ L^1`), Lemma 4.2 and Remark 8 (`L^∞` not separable).
-
-The backbone behind it is `Numlib/MeasureTheory/Function/LpSpace/{Clarkson, Duality}`:
-`Lp.instUniformConvexSpace`, `Lp.toDual` (the isometry `T` of Theorem 4.10 Step 3),
-`Lp.toDual_surjective` (Theorems 4.11 and 4.14 at once, proved by Radon-Nikodym rather than by the
-book's reflexivity argument), `Lp.dualEquiv` (Remarks 4 and 5), `Lp.instIsReflexive` (Theorem
-4.10, proved from the two surjectivities rather than from Milman-Pettis) and
-`Lp.not_surjective_toDual_top`. The surface nodes state the book's real, σ-finite versions:
-`Lp ℝ p μ` with `[SigmaFinite μ]`, the standing assumption (iii) of the chapter. Theorem 4.10 is
-split into the main node and its three steps, so that the book's route (Clarkson → uniformly
-convex → reflexive by Theorem 3.31 for `2 ≤ p`; the isometry and Corollary 3.21 for `p ≤ 2`) is
-visible; the main node's proof delegates to the backbone instance and the step nodes to their
-backbone lemmas — the step "uniformly convex hence reflexive" is chapter 3's Milman-Pettis
-(`NormedSpace.isReflexive_of_uniformConvexSpace`, `Numlib/Analysis/Normed/Module/MilmanPettis`),
-which is not a dependency here.
-
-The negative results of the section are stated for `Ω` a nonempty open subset of `ℝ^N` with
-Lebesgue measure, the case the book proves; the general "unless `Ω` consists of finitely many
-atoms" versions of Remarks 6 and 8 need the atomic/diffuse decomposition of a σ-finite measure
-and Lyapunov-type intermediate values, and are not planned. Remark 7 (Gelfand's description of
-`(L^∞)^*`) is discussion and has no node.
-
-Problem 20 is included under scope rule 4 (allowlist): its parts are the surface images of the
-`Clarkson` module. Exercise 4.11 (question 1, the reverse Minkowski inequality) is a node because
-Problem 20 C's method (ii) cites it; Exercise 4.12 (Morawetz's method) is not planned as a node —
-it is the recorded fallback route in the `Clarkson` module description.
-'''
 
 [[node]]
 id = "theorem_4_10"
-kind = "theorem"
-desc = '''Theorem 4.10: `NormedSpace.IsReflexive ℝ (Lp ℝ p μ)` for `1 < p < ∞` (stated with
-`(hp : 1 < p) (hp' : p ≠ ∞)` and `[SigmaFinite μ]`, discharging `Fact`s locally). The backbone
-instance `MeasureTheory.Lp.instIsReflexive`. The book's proof — Steps 1-3 below with Theorem 3.31
-and Corollary 3.21 — is recorded in the step nodes; the backbone proves the instance from the
-duality instead. ★'''
-deps = ["MeasureTheory.Lp.instIsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10"
 
 [[node]]
 id = "theorem_4_10_clarkson"
-kind = "theorem"
-desc = '''Theorem 4.10, Step 1 (Clarkson's first inequality, (8)): for `2 ≤ p < ∞` and
-`f g : Lp ℝ p μ`, `‖(f+g)/2‖^p + ‖(f-g)/2‖^p ≤ (‖f‖^p + ‖g‖^p)/2` (with `p.toReal` exponents), and
-its pointwise form (9). The backbone's `MeasureTheory.Lp.clarkson_of_two_le` and
-`Real.clarkson_pointwise_of_two_le`. ★'''
-deps = ["MeasureTheory.Lp.clarkson_of_two_le", "Real.clarkson_pointwise_of_two_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 1"
 
 [[node]]
 id = "theorem_4_10_uniformConvex"
-kind = "theorem"
-desc = '''Theorem 4.10, Step 2: `UniformConvexSpace (Lp ℝ p μ)` for `2 ≤ p < ∞`, with the book's
-modulus `δ = 1 - (1 - (ε/2)^p)^(1/p)`. The backbone's `MeasureTheory.Lp.instUniformConvexSpace`
-(which also covers `1 < p ≤ 2`, Remark 3); the node states the `2 ≤ p` case with the explicit
-`δ`, which is what the backbone proof produces in that case. The book's next sentence, "and thus
-reflexive by Theorem 3.31", is chapter 3's Milman-Pettis theorem applied to this instance. ★'''
-deps = ["MeasureTheory.Lp.instUniformConvexSpace", "theorem_4_10_clarkson"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 2"
 
 [[node]]
 id = "theorem_4_10_isometry"
-kind = "theorem"
-desc = '''Theorem 4.10, Step 3: for `1 < p < ∞` with conjugate `p'`, the map
-`T : L^p → (L^{p'})^*`, `⟨T u, f⟩ = ∫ u f`, satisfies `‖T u‖ = ‖u‖_p` (11), so `T` is an isometry
-onto a closed subspace. The backbone's `MeasureTheory.Lp.toDual ℝ p' p μ` (a
-`LinearIsometry`), `Lp.toDual_apply`, and the closedness of the range of an isometry from a
-complete space, `(Lp.toDual …).isometry.isUniformInducing.isComplete_range.isClosed` (the pattern
-of `Mathlib/Analysis/InnerProductSpace/l2Space.lean`). The remaining
-sentence of Step 3 — `L^p` reflexive for `1 < p ≤ 2` via Corollary 3.21 and Proposition 3.20 on the
-closed subspace `T(L^p)` of the reflexive `(L^{p'})^*` — is the book's route; the surface's
-`theorem_4_10` takes the backbone instance instead, and `NormedSpace.isReflexive_of_isClosed`
-(Proposition 3.20) is available should a formalizer want to follow the book. ★'''
-deps = ["MeasureTheory.Lp.toDual", "MeasureTheory.Lp.toDual_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
 id = "remark_4_3"
-kind = "theorem"
-desc = '''Remark 3: for `1 < p ≤ 2` with conjugate `p'`, Clarkson's second inequality
-`‖(f+g)/2‖^{p'} + ‖(f-g)/2‖^{p'} ≤ ((‖f‖^p + ‖g‖^p)/2)^(1/(p-1))` holds on `Lp ℝ p μ` (the book's
-displayed form; it is Problem 20 (6) divided by `2^{p'}`, since `p'/p = 1/(p-1)` and
-`2 · 2^{-p'} (…)^{p'/p} = 2^{-p'/p} (…)^{p'/p}`), and consequently `UniformConvexSpace (Lp ℝ p μ)`.
-The backbone's `MeasureTheory.Lp.clarkson_of_le_two` (rescaled) and
-`MeasureTheory.Lp.instUniformConvexSpace`. ★'''
-deps = ["MeasureTheory.Lp.clarkson_of_le_two", "MeasureTheory.Lp.instUniformConvexSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 3"
 
 [[node]]
 id = "theorem_4_11"
-kind = "theorem"
-desc = '''Theorem 4.11 (Riesz representation, `1 < p < ∞`): for `[SigmaFinite μ]`, conjugate
-`p p'` with `1 < p < ∞`, and `φ : StrongDual ℝ (Lp ℝ p μ)`, there is a unique `u : Lp ℝ p' μ` with
-`∀ f, φ f = ∫ u x * f x ∂μ`, and `‖u‖ = ‖φ‖`. Existence is
-`MeasureTheory.Lp.toDual_surjective` with `Lp.toDual_apply`; uniqueness and the norm equality are
-the injectivity and the isometry of `Lp.toDual` (`LinearIsometry.norm_map`, `LinearIsometry.injective`).
-The book proves it from `theorem_4_10` and Corollary 1.8; the backbone proves it by Radon-Nikodym
-and derives `theorem_4_10` from it. ★'''
-deps = ["MeasureTheory.Lp.toDual_surjective", "MeasureTheory.Lp.toDual_apply", "MeasureTheory.Lp.toDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.11"
 
 [[node]]
 id = "remark_4_4"
-kind = "theorem"
-desc = '''Remark 4: the identification `(L^p)^* = L^{p'}` for `1 < p < ∞` — the linear isometric
-equivalence `Lp ℝ p' μ ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ p μ)`, `u ↦ (f ↦ ∫ u f)`, which is the
-backbone's `MeasureTheory.Lp.dualEquiv ℝ p p' μ`; the node exhibits it with its defining
-equation. ★'''
-deps = ["MeasureTheory.Lp.dualEquiv", "theorem_4_11"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 4"
 
 [[node]]
 id = "theorem_4_12"
-kind = "theorem"
-desc = '''Theorem 4.12: for `1 ≤ p < ∞`, `f : EuclideanSpace ℝ (Fin N) → ℝ` with `MemLp f p volume`
-and `ε > 0`, there is `g` continuous with compact support and `eLpNorm (f - g) p volume ≤ ε` —
-Mathlib's `MemLp.exists_hasCompactSupport_eLpNorm_sub_le` (regularity of `volume` as in
-`theorem_4_3`); equivalently `Dense` of the compactly supported continuous classes in
-`Lp ℝ p volume`. The book's proof by truncation `T_n` and Theorem 4.3 is not followed. ★'''
-deps = ["theorem_4_3"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.12"
 
 [[node]]
 id = "separableMeasureSpace_of_secondCountable"
-kind = "theorem"
-desc = '''The "Definition." of a separable measure space (a countable family generating the
-σ-algebra) is Mathlib's `MeasurableSpace.CountablyGenerated`; the "Example." following it — `ℝ^N`,
-and more generally a separable metric space with its Borel σ-algebra, is separable — is the
-instance `CountablyGenerated` for a second-countable `BorelSpace`
-(`Mathlib/MeasureTheory/Constructions/BorelSpace/Basic.lean`, line 210). The node states the
-example for `EuclideanSpace ℝ (Fin N)` and for a `[SecondCountableTopology X] [BorelSpace X]`. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, Definition and Example (separable measure space)"
 
 [[node]]
 id = "theorem_4_13"
-kind = "theorem"
-desc = '''Theorem 4.13: if `[MeasurableSpace.CountablyGenerated α]` (the book's separable measure
-space) and `[SigmaFinite μ]` then `TopologicalSpace.SeparableSpace (Lp ℝ p μ)` for `1 ≤ p < ∞`.
-Mathlib: `MeasureTheory.Lp.SecondCountableTopology` (`Measure/SeparableMeasure.lean`; it needs
-`IsSeparable μ`, an instance for countably generated `α` and s-finite `μ`, and `[Fact (p ≠ ∞)]`)
-followed by `SecondCountableTopology.to_separableSpace`. The book proves only `Ω = ℝ^N`; Mathlib
-has the general case. ★'''
-deps = ["separableMeasureSpace_of_secondCountable"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.13"
 
 [[node]]
 id = "theorem_4_13_subset"
-kind = "theorem"
-desc = '''The remark after Theorem 4.13: for any measurable `Ω ⊆ ℝ^N`, `L^p(Ω)` is separable,
-`1 ≤ p < ∞`. In this library `L^p(Ω)` is `Lp ℝ p (volume.restrict Ω)`, and `theorem_4_13` applies
-directly (the restricted measure is σ-finite, the space is countably generated), so the book's
-detour through the extension-by-zero isometry `L^p(Ω) → L^p(ℝ^N)` and Proposition 3.25 is not
-needed. ★'''
-deps = ["theorem_4_13"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.13 (the remark on measurable Ω ⊆ ℝ^N)"
 
 [[node]]
 id = "theorem_4_14"
-kind = "theorem"
-desc = '''Theorem 4.14 (Riesz representation, `p = 1`): for `[SigmaFinite μ]` and
-`φ : StrongDual ℝ (Lp ℝ 1 μ)` there is a unique `u : Lp ℝ ∞ μ` with `∀ f, φ f = ∫ u x * f x ∂μ`,
-and `‖u‖ = ‖φ‖`. `MeasureTheory.Lp.toDual_surjective` at `(p, q) = (1, ∞)` (the instance
-`HolderConjugate 1 ∞`), with `Lp.toDual_apply` and the isometry. The book's proof by the weight
-`θ ∈ L²` and the `p = 2` case is the model for the backbone's σ-finite reduction. ★'''
-deps = ["MeasureTheory.Lp.toDual_surjective", "MeasureTheory.Lp.toDual_apply", "MeasureTheory.Lp.toDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.14"
 
 [[node]]
 id = "remark_4_5"
-kind = "theorem"
-desc = '''Remark 5: the identification `(L^1)^* = L^∞`, the linear isometric equivalence
-`Lp ℝ ∞ μ ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ 1 μ)` given by `u ↦ (f ↦ ∫ u f)`:
-`MeasureTheory.Lp.dualEquiv ℝ 1 ∞ μ`. ★'''
-deps = ["MeasureTheory.Lp.dualEquiv", "theorem_4_14"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 5"
 
 [[node]]
 id = "remark_4_6"
-kind = "theorem"
-desc = '''Remark 6, in the case the book proves in full (Case (i)): for a nonempty open
-`Ω ⊆ EuclideanSpace ℝ (Fin N)`, `¬ NormedSpace.IsReflexive ℝ (Lp ℝ 1 (volume.restrict Ω))`. Proof
-(lines 3679-3693): choose a decreasing sequence of balls `ωₙ ⊆ Ω` with `0 < |ωₙ| → 0` and
-`uₙ := 1_{ωₙ} / |ωₙ|`, of `L^1` norm `1`; if the space were reflexive, Theorem 3.18
-(`NormedSpace.exists_subseq_forall_dual_tendsto`) would give a subsequence and `u ∈ L^1` with
-`ℓ (u_{nₖ}) → ℓ u` for every `ℓ ∈ (L^1)^*`; testing with `ℓ := Lp.toDualCLM ℝ 1 ∞ _ (1_{ω_j})`
-(`Lp.toDualCLM_apply`) gives `∫ u 1_{ω_j} = 1` for every `j` (as `∫ u_{nₖ} 1_{ω_j} = 1` for
-`nₖ > j`), while `∫ u 1_{ω_j} → 0` by dominated convergence (`tendsto_setIntegral_of_antitone`, or
-`theorem_4_2` with bound `|u|`). Case (ii), `Ω` purely atomic and `L^1 ≅ ℓ^1`, is not planned in
-this generality (the atomic decomposition of a measure is not in Mathlib); the `ℓ^1` statement
-itself belongs to chapter 11 (§11.3). ★★'''
-deps = ["NormedSpace.exists_subseq_forall_dual_tendsto", "MeasureTheory.Lp.toDualCLM", "MeasureTheory.Lp.toDualCLM_apply", "theorem_4_2"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 6"
 
 [[node]]
 id = "lInfty_weakStar_isCompact_closedBall"
-kind = "theorem"
-desc = '''§4.3 C (i): the closed unit ball of `L^∞` is compact in the weak-* topology
-`σ(L^∞, L^1)`. Stated through the identification of Remark 5: for `[SigmaFinite μ]`, the image of
-`Metric.closedBall (0 : Lp ℝ ∞ μ) 1` under `toWeakDual ∘ Lp.dualEquiv ℝ 1 ∞ μ` is compact in
-`WeakDual ℝ (Lp ℝ 1 μ)`. The book's proof: Theorem 3.16 (Banach-Alaoglu), which is Mathlib's
-`WeakDual.isCompact_closedBall`, since the isometric equivalence carries the unit ball of `L^∞`
-onto the unit ball of the dual. ★'''
-deps = ["MeasureTheory.Lp.dualEquiv", "remark_4_5"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞, (i)"
 
 [[node]]
 id = "lInfty_exists_subseq_weakStar_tendsto"
-kind = "theorem"
-desc = '''§4.3 C (ii): for a measurable `Ω ⊆ EuclideanSpace ℝ (Fin N)` (with `μ := volume.restrict Ω`)
-and a bounded sequence `fₙ` in `Lp ℝ ∞ μ`, there are a subsequence `f_{nₖ}` and `f ∈ Lp ℝ ∞ μ`
-with `∫ f_{nₖ} g → ∫ f g` for every `g ∈ Lp ℝ 1 μ`. The book's proof: Corollary 3.30 (sequential
-Banach-Alaoglu for the dual of a separable space, Mathlib's `WeakDual.isSeqCompact_closedBall`)
-applied to `(L^1)^* ≅ L^∞` (`Lp.dualEquiv`, Remark 5), `L^1(Ω)` being separable by
-`theorem_4_13_subset`; then `Lp.dualEquiv_apply` turns the weak-* limit into the integral
-statement. ★★ (the transport along the equivalence and the `WeakDual` coercions).'''
-deps = ["MeasureTheory.Lp.dualEquiv", "remark_4_5", "theorem_4_13_subset"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞, (ii)"
 
 [[node]]
 id = "lInfty_not_isReflexive"
-kind = "theorem"
-desc = '''§4.3 C: for a nonempty open `Ω ⊆ EuclideanSpace ℝ (Fin N)`,
-`¬ NormedSpace.IsReflexive ℝ (Lp ℝ ∞ (volume.restrict Ω))`. The book's proof: `L^∞ = (L^1)^*`
-(Remark 5), so if `L^∞` were reflexive then `L^1` would be, by Corollary 3.21 (`E` reflexive iff
-`E^*` reflexive), contradicting Remark 6. Corollary 3.21's second half is chapter 3's
-`NormedSpace.isReflexive_of_isReflexive_strongDual` (`Numlib/Analysis/Normed/Module/Reflexive/Kakutani`,
-`E^*` reflexive and `E` complete ⇒ `E` reflexive), and `NormedSpace.isReflexive_congr`
-(reflexivity transfers along `≃L`, in `Reflexive.toml`) carries the identification
-`L^∞ ≃ₗᵢ (L^1)^*`. ★'''
-deps = ["remark_4_5", "remark_4_6", "NormedSpace.isReflexive_congr", "NormedSpace.isReflexive_of_isReflexive_strongDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞ (non-reflexivity)"
 
 [[node]]
 id = "exists_strongDual_lInfty_not_integral"
-kind = "theorem"
-desc = '''§4.3 C, the concrete functional (lines 3703-3729): for `Ω := Set.univ` in
-`EuclideanSpace ℝ (Fin N)` (the book's `ℝ^N`; the backbone node allows any nonempty open `Ω`),
-there is `φ : StrongDual ℝ (Lp ℝ ∞ volume)` with `φ g = f 0` whenever `g` is the class of a
-continuous compactly supported `f`, and no `u ∈ Lp ℝ 1 volume` satisfies `∀ g, φ g = ∫ u g`; in
-particular `(L^∞)^*` is strictly larger than `L^1`. The second clause is the backbone's
-`MeasureTheory.Lp.not_surjective_toDual_top` with `Lp.toDual_apply`; the first (the existence of
-the extension `φ` of `f ↦ f 0`) is the first half of its proof, `exists_extension_norm_eq` on the
-subspace of continuous classes — the node re-exposes it so that the surface statement matches the
-book's (17). ★★'''
-deps = ["MeasureTheory.Lp.not_surjective_toDual_top", "MeasureTheory.Lp.toDual_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞ (the functional φ₀)"
 
 [[node]]
 id = "lemma_4_2"
-kind = "theorem"
-desc = '''Lemma 4.2: a Banach space (any topological space) with an uncountable family of pairwise
-disjoint nonempty open sets is not separable. Mathlib's `Pairwise.countable_of_isOpen_disjoint`
-(`Mathlib/Topology/Bases.lean`) contrapositively: `[SeparableSpace E]` and a pairwise disjoint
-family `O : ι → Set E` of nonempty open sets force `Countable ι`. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 4.2"
 
 [[node]]
 id = "remark_4_8"
-kind = "theorem"
-desc = '''Remark 8, in the case the book proves in full (`Ω` open in `ℝ^N`): for a nonempty open
-`Ω ⊆ EuclideanSpace ℝ (Fin N)`, `¬ TopologicalSpace.SeparableSpace (Lp ℝ ∞ (volume.restrict Ω))`.
-Proof (lines 3760-3781): fix `x₀ ∈ Ω` and `r₀ > 0` with `ball x₀ r₀ ⊆ Ω`; for `r ∈ Ioo 0 r₀` the
-classes `χ_r` of `1_{ball x₀ r}` are pairwise at distance `1` in `L^∞` (the annulus
-`ball x₀ r' \ ball x₀ r` has positive Lebesgue measure for `r < r'`, `Measure.addHaar_ball`), so
-the balls `O_r := ball χ_r (1/2)` are pairwise disjoint nonempty open sets indexed by the
-uncountable `Ioo 0 r₀` (`Cardinal.not_countable_real`-type: `Set.Ioo` of reals is uncountable), and
-`lemma_4_2` applies. The general measure-space case (atomic/diffuse decomposition, and for a
-diffuse part the existence of sets of every intermediate measure) is not planned. ★★'''
-deps = ["lemma_4_2"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 8"
+
+[[node]]
+id = "exists_strongDual_top_apply_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞ (the functional φ₀), general form"

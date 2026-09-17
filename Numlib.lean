@@ -174,6 +174,7 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Lp.PiLp
+import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Normed.Module.Annihilator
 import Numlib.Analysis.Normed.Module.Annihilator.ClosedSum

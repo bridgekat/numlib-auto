@@ -1,209 +1,89 @@
 namespace = "Brezis.Chapter04"
-desc = '''
-Brezis §4.4, "Convolution and regularization" (lines 3810-4097), over `EuclideanSpace ℝ (Fin N)`
-with Lebesgue measure. Mathlib's `MeasureTheory.convolution` (`f ⋆[L, μ] g`, here with
-`L = ContinuousLinearMap.mul ℝ ℝ` or `lsmul ℝ ℝ`, the book's `∫ f(x-y) g(y) dy` after the
-substitution `y ↦ x - y`, which is `MeasureTheory.convolution_eq_swap`) carries the pointwise
-theory: Propositions 4.19-4.20 (continuity and smoothness against `L¹_loc`), Remark 10, Corollary
-4.24 (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). The `L^p` theory is the backbone's
-`Numlib/Analysis/Convolution/Lp.lean`: Theorem 4.15 (Young, `eLpNorm_convolution_le`, with the
-a.e. existence clause `MemLp.ae_convolutionExistsAt` appended for this chapter), Proposition 4.16
-(`integral_convolution_mul`, appended), Theorem 4.22 (`tendsto_eLpNorm_convolution_sub`, appended
-for the book's mollifier sequences; `ContDiffBump.tendsto_eLpNorm_convolution_sub` was there);
-Corollary 4.23 is `Numlib/Analysis/Normed/Lp/SmoothApprox.lean`'s
-`MeasureTheory.Lp.dense_contDiff_tsupport_subset`. The essential support of Proposition 4.17 and
-Remark 9, and Proposition 4.18, are the backbone's `Numlib/MeasureTheory/Function/EssSupport.lean`.
-
-Book-specific definitions, as nodes named by content: `MemLpLoc` (the space `L^p_loc(Ω)`, with its
-equivalence at `p = 1` to Mathlib's `LocallyIntegrableOn`), `IsMollifierSeq` (a sequence of
-mollifiers `ρₙ`, with the standard example from `ContDiffBump`). The book's `C(Ω)`, `C^k(Ω)`,
-`C_c(Ω)`, `C_c^k(Ω)`, `∇`, `D^α` are Mathlib's `Continuous`, `ContDiff ℝ k`, `HasCompactSupport`
-with `tsupport ⊆ Ω`, `fderiv`, `iteratedFDeriv` along basis directions, and get no nodes; the
-notation `f̌ x = f (-x)` is `f ∘ Neg.neg`.
-'''
 
 [[node]]
 id = "theorem_4_15"
-kind = "theorem"
-desc = '''Theorem 4.15 (Young): for `f ∈ L¹(ℝ^N)` and `g ∈ L^p(ℝ^N)`, `1 ≤ p ≤ ∞`: (i) for a.e. `x`
-the function `y ↦ f (x - y) * g y` is integrable (the backbone's
-`MeasureTheory.MemLp.ae_convolutionExistsAt`, in the form `ConvolutionExistsAt f g x (mul ℝ ℝ) volume`,
-which is the integrability of `t ↦ f t * g (x - t)`; the book's integrand is its image under
-`y ↦ x - y`, `MeasureTheory.convolutionExistsAt_flip`); (ii) `f ⋆ g ∈ L^p` with
-`‖f ⋆ g‖_p ≤ ‖f‖_1 ‖g‖_p` (`MeasureTheory.MemLp.convolution`, `MeasureTheory.eLpNorm_convolution_le`
-with `‖mul ℝ ℝ‖ = 1`). ★'''
-deps = ["MeasureTheory.MemLp.ae_convolutionExistsAt", "MeasureTheory.MemLp.convolution", "MeasureTheory.eLpNorm_convolution_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.15"
 
 [[node]]
 id = "proposition_4_16"
-kind = "theorem"
-desc = '''Proposition 4.16: for `f ∈ L¹`, `g ∈ L^p`, `h ∈ L^{p'}` on `ℝ^N`,
-`∫ (f ⋆ g) x * h x = ∫ g y * ((f ∘ Neg.neg) ⋆ h) y`. The backbone's
-`MeasureTheory.integral_convolution_mul`. ★'''
-deps = ["MeasureTheory.integral_convolution_mul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.16"
 
 [[node]]
 id = "proposition_4_17"
-kind = "theorem"
-desc = '''Proposition 4.17 (and the definition of the support): for `f : ℝ^N → ℝ`, with `ω` the
-union of all open sets on which `f = 0` a.e., `f = 0` a.e. on `ω`; `supp f := ωᶜ`. The backbone's
-`MeasureTheory.essSupport volume f` is `ωᶜ` (`Measure.compl_support_eq_sUnion`), and the statement
-is `MeasureTheory.ae_eq_zero_of_notMem_essSupport`. The node states both: `essSupport`'s complement
-is the union of the open a.e.-null sets, and `f = 0` a.e. off `essSupport`. ★'''
-deps = ["MeasureTheory.essSupport", "MeasureTheory.ae_eq_zero_of_notMem_essSupport", "MeasureTheory.mem_essSupport_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.17"
 
 [[node]]
 id = "remark_4_9"
-kind = "theorem"
-desc = '''Remark 9: (a) `f₁ =ᵐ f₂ → essSupport volume f₁ = essSupport volume f₂`, so the support
-of an `L^p` class is well defined (`MeasureTheory.essSupport_congr_ae`); (b) for continuous `f`,
-`essSupport volume f = tsupport f` (`MeasureTheory.essSupport_eq_tsupport`, Lebesgue measure being
-`IsOpenPosMeasure`). ★'''
-deps = ["MeasureTheory.essSupport_congr_ae", "MeasureTheory.essSupport_eq_tsupport"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 9"
 
 [[node]]
 id = "proposition_4_18"
-kind = "theorem"
-desc = '''Proposition 4.18: for `f ∈ L¹(ℝ^N)`, `g ∈ L^p(ℝ^N)`,
-`essSupport volume (f ⋆ g) ⊆ closure (essSupport volume f + essSupport volume g)`. The backbone's
-`MeasureTheory.essSupport_convolution_subset`. ★'''
-deps = ["MeasureTheory.essSupport_convolution_subset"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.18"
 
 [[node]]
 id = "remark_4_10"
-kind = "theorem"
-desc = '''Remark 10: if `essSupport volume f` and `essSupport volume g` are compact then so is
-`essSupport volume (f ⋆ g)`: from `proposition_4_18`, `IsCompact.add` and the closedness of the
-essential support (`isClosed_essSupport`: a closed subset of the compact `closure (K₁ + K₂)`). The
-second sentence ("need not have compact support if only one of them has") is a negative remark
-without a specified example and is not a clause of the node. ★'''
-deps = ["proposition_4_18", "MeasureTheory.mem_essSupport_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 10"
 
 [[node]]
 id = "MemLpLoc"
-kind = "definition"
-desc = '''The definition of `L^p_loc(Ω)`: for `Ω ⊆ ℝ^N` open and `1 ≤ p ≤ ∞`,
-`MemLpLoc f p Ω := ∀ K ⊆ Ω, IsCompact K → MemLp (K.indicator f) p (volume.restrict Ω)`, the
-book's "`f χ_K ∈ L^p(Ω)` for every compact `K ⊆ Ω`". Companion nodes:
-`memLpLoc_one_iff_locallyIntegrableOn : MemLpLoc f 1 Ω ↔ LocallyIntegrableOn f Ω volume` (Mathlib's
-`locallyIntegrableOn_iff` for open `Ω` in a locally compact space, with
-`integrableOn_iff_integrable_indicator`), and `MemLpLoc.memLpLoc_one : MemLpLoc f p Ω → MemLpLoc f 1 Ω`
-(the book's "note that `L^p_loc ⊆ L^1_loc`": `MemLp.mono_exponent` on the finite measure
-`volume.restrict K`, or `MemLp.integrable` after restricting). ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (L^p_loc)"
 
 [[node]]
 id = "memLpLoc_one_iff_locallyIntegrableOn"
-kind = "theorem"
-desc = '''`MemLpLoc f 1 Ω ↔ MeasureTheory.LocallyIntegrableOn f Ω volume` for open `Ω`: Mathlib's
-`locallyIntegrableOn_iff (Or.inr hΩ)` reads `LocallyIntegrableOn` as integrability on every compact
-`K ⊆ Ω`, and `MemLp (K.indicator f) 1 (volume.restrict Ω)` is `IntegrableOn f K` for `K ⊆ Ω`
-(`integrable_indicator_iff`, `memLp_one_iff_integrable`, `Measure.restrict_restrict`). ★'''
-deps = ["MemLpLoc"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (L^p_loc)"
 
 [[node]]
 id = "proposition_4_19"
-kind = "theorem"
-desc = '''Proposition 4.19: for `f` continuous with compact support and `g ∈ L¹_loc(ℝ^N)`
-(`LocallyIntegrable g volume`, i.e. `MemLpLoc g 1 univ`), `(f ⋆ g) x` is defined for every `x`
-(`ConvolutionExists f g (mul ℝ ℝ) volume`) and `f ⋆ g` is continuous. Mathlib's
-`HasCompactSupport.convolutionExists_left` and `HasCompactSupport.continuous_convolution_left`. ★'''
-deps = ["memLpLoc_one_iff_locallyIntegrableOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.19"
 
 [[node]]
 id = "proposition_4_20"
-kind = "theorem"
-desc = '''Proposition 4.20: for `f ∈ C_c^k(ℝ^N)` (`ContDiff ℝ k f`, `HasCompactSupport f`, `k ≥ 1`,
-`k = ∞` allowed) and `g ∈ L¹_loc`, `f ⋆ g ∈ C^k` and `D^α (f ⋆ g) = (D^α f) ⋆ g` for `|α| ≤ k`.
-Smoothness is Mathlib's `HasCompactSupport.contDiff_convolution_left`; the derivative formula, in
-the form "the iterated derivative of `f ⋆ g` along any tuple of directions `v : Fin n → ℝ^N`,
-`n ≤ k`, is the convolution of the corresponding iterated derivative of `f` with `g`", is the
-backbone's `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`; the book's
-`D^α` along the coordinate basis is the tuple that repeats `eᵢ` `αᵢ` times (the surface may state
-the formula for `fderiv` first, `LocallyIntegrable.fderiv_convolution_left_apply`, which is the
-book's proof `∇(f ⋆ g) = (∇f) ⋆ g`, and the `D^α` form as its iteration). ★★'''
-deps = ["MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply", "MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply", "memLpLoc_one_iff_locallyIntegrableOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.20"
 
 [[node]]
 id = "IsMollifierSeq"
-kind = "definition"
-desc = '''The definition of a sequence of mollifiers: `IsMollifierSeq (ρ : ℕ → EuclideanSpace ℝ (Fin N) → ℝ)`
-holds when for every `n ≥ 1`, `ContDiff ℝ ∞ (ρ n)`, `HasCompactSupport (ρ n)`,
-`tsupport (ρ n) ⊆ closedBall 0 (1 / n)`, `∫ ρ n = 1` and `0 ≤ ρ n`. Companion node
-`isMollifierSeq_contDiffBump`: for `φ : ℕ → ContDiffBump (0 : EuclideanSpace ℝ (Fin N))` with
-`(φ n).rOut ≤ 1 / n`, `fun n => (φ n).normed volume` is a mollifier sequence
-(`ContDiffBump.contDiff_normed`, `hasCompactSupport_normed`, `support_normed_eq`,
-`integral_normed`, `nonneg_normed`), which is the book's "it is easy to generate a sequence of
-mollifiers" — the explicit `ρ x = e^{1/(|x|²-1)}` is the `ContDiffBumpBase` Mathlib builds for
-inner product spaces. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (mollifiers)"
 
 [[node]]
 id = "proposition_4_21"
-kind = "theorem"
-desc = '''Proposition 4.21: for a mollifier sequence `ρ` and `f` continuous on `ℝ^N`, `ρₙ ⋆ f → f`
-uniformly on compact sets: `TendstoLocallyUniformly (fun n => ρ n ⋆[lsmul ℝ ℝ, volume] f) f atTop`
-(equivalently `TendstoUniformlyOn` on every compact, `tendstoLocallyUniformly_iff_forall_isCompact`
-on the locally compact `ℝ^N`). Proof: `tendstoLocallyUniformly_iff_forall_tendsto` reduces it to
-`(ρ n ⋆ f) (xₙ) → f x` whenever `xₙ → x`, which is Mathlib's `MeasureTheory.convolution_tendsto_right`
-with `g n := f`, `k := (xₙ)`, `hcg` from the continuity of `f`, and the support hypothesis
-`Tendsto (fun n => support (ρ n)) atTop (𝓝 0).smallSets` from `tsupport (ρ n) ⊆ closedBall 0 (1/n)`.
-★★'''
-deps = ["IsMollifierSeq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.21"
 
 [[node]]
 id = "theorem_4_22"
-kind = "theorem"
-desc = '''Theorem 4.22: for a mollifier sequence `ρ`, `1 ≤ p < ∞` and `f ∈ L^p(ℝ^N)`,
-`ρₙ ⋆ f → f` in `L^p`: `Tendsto (fun n => eLpNorm (ρ n ⋆[lsmul ℝ ℝ, volume] f - f) p volume) atTop (𝓝 0)`.
-The backbone's `MeasureTheory.tendsto_eLpNorm_convolution_sub`, with the existence hypothesis from
-`HasCompactSupport.convolutionExists_left` (`f` is locally integrable, `MemLp.locallyIntegrable`)
-and the support hypothesis from `IsMollifierSeq`. The book's proof by density of `C_c` and
-Proposition 4.21 is not the backbone's (which uses the continuity of translation directly). ★'''
-deps = ["MeasureTheory.tendsto_eLpNorm_convolution_sub", "IsMollifierSeq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.22"
 
 [[node]]
 id = "corollary_4_23"
-kind = "theorem"
-desc = '''Corollary 4.23: for `Ω ⊆ ℝ^N` open and `1 ≤ p < ∞`, `C_c^∞(Ω)` is dense in `L^p(Ω)`:
-`Dense {g : Lp ℝ p (volume.restrict Ω) | ∃ φ, g =ᵐ φ ∧ HasCompactSupport φ ∧ ContDiff ℝ ∞ φ ∧ tsupport φ ⊆ Ω}`.
-The backbone's `MeasureTheory.Lp.dense_contDiff_tsupport_subset` verbatim (Lebesgue measure is
-`InnerRegularCompactLTTop` and finite on compacts). ★'''
-deps = ["MeasureTheory.Lp.dense_contDiff_tsupport_subset"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.23"
 
 [[node]]
 id = "corollary_4_24"
-kind = "theorem"
-desc = '''Corollary 4.24: for `Ω ⊆ ℝ^N` open and `u ∈ L¹_loc(Ω)` with `∫ u f = 0` for every
-`f ∈ C_c^∞(Ω)`, `u = 0` a.e. on `Ω`. Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`
-(with `LocallyIntegrableOn u Ω volume` from `memLpLoc_one_iff_locallyIntegrableOn`). ★'''
-deps = ["memLpLoc_one_iff_locallyIntegrableOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.24"
 
 [[node]]
 id = "theorem_4_33"
-kind = "theorem"
-desc = '''Theorem 4.33 (Young, general form; Comments on chapter 4, item 6, placed here as the
-extension of Theorem 4.15): for `f ∈ L^p(ℝ^N)`, `g ∈ L^q(ℝ^N)`, `1 ≤ p, q ≤ ∞` and
-`1/r = 1/p + 1/q - 1 ≥ 0`, `f ⋆ g ∈ L^r` and `‖f ⋆ g‖_r ≤ ‖f‖_p ‖g‖_q`. The backbone's
-`MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv` (stated as `p⁻¹ + q⁻¹ = 1 + r⁻¹` in
-`ℝ≥0∞`, over a measure invariant under translation and negation; Lebesgue measure is) with
-`‖mul ℝ ℝ‖ = 1`, and `MemLp` membership from finiteness of the bound. Included under scope rule 3
-since the backbone proves it; the book refers to Exercise 4.30, which is therefore not a separate
-node. ★'''
-deps = ["MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv", "theorem_4_15"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.33"
+
+[[node]]
+id = "lsmul_eq_mul_real"
+
+[[node]]
+id = "enorm_mul_real_le_one"
+
+[[node]]
+id = "MemLpLoc.memLpLoc_one"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (L^p_loc)"
+
+[[node]]
+id = "fderiv_convolution_left_apply_of_contDiff_one"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.20, the case k = 1"
+
+[[node]]
+id = "isMollifierSeq_contDiffBump"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (mollifiers)"
+
+[[node]]
+id = "IsMollifierSeq.tendsto_support"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (mollifiers)"

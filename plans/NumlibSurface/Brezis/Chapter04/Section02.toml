@@ -1,98 +1,38 @@
 namespace = "Brezis.Chapter04"
-desc = '''
-Brezis §4.2, "Definition and elementary properties of `L^p` spaces" (lines 3337-3488). The space
-`L^p(Ω)` is Mathlib's `MeasureTheory.Lp ℝ p μ` (D6), over a general measure space `(α, μ)`; the two
-"Definition." paragraphs become the nodes `lpNorm_eq_integral_rpow` and `lInftyNorm_eq_sInf`,
-which read Mathlib's norm back as the book's formulas, and the conjugate exponent `p'` is Mathlib's
-`[ENNReal.HolderConjugate p q]`. Hoelder (4.6), Minkowski (4.7), Fischer-Riesz (4.8) and the
-a.e.-subsequence clause of Theorem 4.9 are Mathlib's; Remark 2 (the `k`-fold Hoelder and the
-interpolation inequality, with Exercise 4.4 which the remark cites for its proof) and the
-domination clause of Theorem 4.9 are the backbone's `Numlib/MeasureTheory/Function/LpInterpolation`
-and `…/LpSpace/Convergence`. Remark 1 is a node; footnote 1 (`ab ≤ ε a^p + C_ε b^{p'}`) is folded
-into `theorem_4_6`'s description and is `Real.young_inequality` with a rescaling.
-'''
 
 [[node]]
 id = "lpNorm_eq_integral_rpow"
-kind = "theorem"
-desc = '''The definition of `L^p` and `‖·‖_p` for `1 ≤ p < ∞` (§4.2, first "Definition."): a
-measurable `f : α → ℝ` is in `L^p` iff `|f|^p` is integrable, and then
-`‖f‖ = (∫ |f x| ^ p.toReal ∂μ) ^ (1 / p.toReal)` for `f : Lp ℝ p μ`. Mathlib:
-`memLp_norm_rpow_iff` at `q = p` with `memLp_one_iff_integrable` (and `MemLp.integrable_norm_rpow`
-for the forward direction), and `Lp.norm_def` with `eLpNorm_eq_lintegral_rpow_enorm` /
-`eLpNorm_eq_integral_rpow_norm`-type rewriting of the `lintegral` as a Bochner integral
-(`integral_eq_lintegral_of_nonneg_ae`). The
-`Lp` type identifies a.e.-equal functions, as the book does ("we identify two functions that
-coincide a.e."). ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.2, Definition"
 
 [[node]]
 id = "lInftyNorm_eq_sInf"
-kind = "theorem"
-desc = '''The definition of `L^∞` and `‖·‖_∞` (§4.2, second "Definition."): `f ∈ L^∞` iff there is
-`C` with `|f| ≤ C` a.e., and then `‖f‖ = sInf {C : ℝ | ∀ᵐ x ∂μ, |f x| ≤ C}` for `f : Lp ℝ ∞ μ`.
-Mathlib: `memLp_top_of_bound` and `ae_le_eLpNormEssSup` for the membership, `Lp.norm_def`,
-`eLpNorm_exponent_top`, `eLpNormEssSup` and `essSup_eq_sInf` for the norm formula. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.2, Definition"
 
 [[node]]
 id = "remark_4_1"
-kind = "theorem"
-desc = '''Remark 1: for `f : Lp ℝ ∞ μ`, `∀ᵐ x ∂μ, |f x| ≤ ‖f‖`. Mathlib: `ae_le_eLpNormEssSup` with
-`Lp.norm_def` and `eLpNorm_exponent_top` (`Lp.ae_le_norm_top`-type). ★'''
-deps = ["lInftyNorm_eq_sInf"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 1"
 
 [[node]]
 id = "theorem_4_6"
-kind = "theorem"
-desc = '''Theorem 4.6 (Hoelder): for `[p.HolderConjugate q]`, `MemLp f p μ` and `MemLp g q μ`
-(`1 ≤ p ≤ ∞`), `Integrable (f * g) μ` and `∫ |f x * g x| ∂μ ≤ ‖f‖_p * ‖g‖_q` (norms as
-`(eLpNorm f p μ).toReal`). Mathlib: `MemLp.mul` (with `HolderTriple p q 1`) and
-`eLpNorm_smul_le_mul_eLpNorm` read at exponent `1` through `eLpNorm_one_eq_lintegral_enorm` and
-`integral_norm_eq_lintegral_enorm`; or `MemLp.integrable_mul` + `integral_mul_le_Lp_mul_Lq_of_nonneg`.
-Young's inequality (2), `ab ≤ a^p/p + b^{p'}/p'`, is `Real.young_inequality`; footnote 1's
-`ab ≤ ε a^p + C_ε b^{p'}` follows by scaling. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.6"
 
 [[node]]
 id = "remark_4_2"
-kind = "theorem"
-desc = '''Remark 2, both parts: (i) if `f i ∈ L^{p i}` for `i ∈ s` with `∑ (p i)⁻¹ = p⁻¹ ≤ 1` then
-`∏ f i ∈ L^p` and `‖∏ f i‖_p ≤ ∏ ‖f i‖_{p i}`; (ii) if `f ∈ L^p ∩ L^q`, `1 ≤ p ≤ q ≤ ∞`, then
-`f ∈ L^r` for `p ≤ r ≤ q` and `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` with `1/r = α/p + (1-α)/q`. The
-backbone's `MeasureTheory.eLpNorm_finset_prod_le`, `MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`
-and `MeasureTheory.MemLp.interpolate`, restated with the book's `p ≤ r ≤ q` and `α ∈ [0, 1]`. ★'''
-deps = ["MeasureTheory.eLpNorm_finset_prod_le", "MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow", "MeasureTheory.MemLp.interpolate"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 2"
 
 [[node]]
 id = "theorem_4_7"
-kind = "theorem"
-desc = '''Theorem 4.7: `L^p` is a vector space and `‖·‖_p` is a norm, `1 ≤ p ≤ ∞` — the instances
-`Lp.instNormedAddCommGroup`, `Lp.instNormedSpace` (under `[Fact (1 ≤ p)]`); the content is
-Minkowski's inequality, `‖f + g‖ ≤ ‖f‖ + ‖g‖` (`norm_add_le` on `Lp`, i.e. `eLpNorm_add_le`),
-which the node states, together with `MemLp.add`. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.7"
 
 [[node]]
 id = "theorem_4_8"
-kind = "theorem"
-desc = '''Theorem 4.8 (Fischer-Riesz): `CompleteSpace (Lp ℝ p μ)` for `1 ≤ p ≤ ∞` — Mathlib's
-instance `Lp.instCompleteSpace`. ★'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.8"
 
 [[node]]
 id = "theorem_4_9"
-kind = "theorem"
-desc = '''Theorem 4.9: if `f n → f` in `Lp ℝ p μ` (`1 ≤ p ≤ ∞`) there are a strictly increasing
-`ns` and `h : Lp ℝ p μ` with (a) `∀ᵐ x, f (ns k) x → f x` and (b) `∀ k, ∀ᵐ x, |f (ns k) x| ≤ h x`.
-The backbone's `MeasureTheory.Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto` verbatim; clause (a)
-alone is Mathlib's `(tendstoInMeasure_of_tendsto_Lp hfg).exists_seq_tendsto_ae`. ★'''
-deps = ["MeasureTheory.Lp.exists_subseq_tendsto_ae_ae_le_of_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.9"

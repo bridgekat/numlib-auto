@@ -17,6 +17,10 @@ import NumlibSurface.Brezis.Chapter03.Section05
 import NumlibSurface.Brezis.Chapter03.Section06
 import NumlibSurface.Brezis.Chapter03.Section07
 import NumlibSurface.Brezis.Chapter04.Section01
+import NumlibSurface.Brezis.Chapter04.Section02
+import NumlibSurface.Brezis.Chapter04.Section03
+import NumlibSurface.Brezis.Chapter04.Section04
+import NumlibSurface.Brezis.Chapter04.Section05
 import NumlibSurface.Brezis.Chapter05.Section02
 import NumlibSurface.Brezis.Chapter05.Section03
 import NumlibSurface.Brezis.Chapter05.Section04
@@ -24,6 +28,7 @@ import NumlibSurface.Brezis.Chapter07.Section01
 import NumlibSurface.Brezis.Chapter07.Section02
 import NumlibSurface.Brezis.Chapter07.Section03
 import NumlibSurface.Brezis.Chapter07.Section04
+import NumlibSurface.Brezis.Chapter11.Section03
 
 /-!
 # Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*
