@@ -14,15 +14,11 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.34.0-rc2"
+rev = "v4.35.0-rc2"
 
 [[require]]
 name = "tracker"
 path = "tools/tracker"
-
-[[require]]
-name = "audit"
-path = "tools/audit"
 
 [[lean_lib]]
 name = "Numlib"
