@@ -1,82 +1,29 @@
 namespace = "Brezis.Chapter02"
-desc = '''
-§2.2, the uniform boundedness principle, for real Banach spaces `E F` and bounded operators
-`E →L[ℝ] F` (`ContinuousLinearMap`; the book's `𝓛(E, F)` with the norm
-`sup_{‖x‖ ≤ 1} ‖T x‖`, which is Mathlib's operator norm by
-`ContinuousLinearMap.sSup_unitClosedBall_eq_norm`). Theorem 2.2 is Mathlib's `banach_steinhaus`;
-the corollaries rest on the nodes appended to `Numlib/Analysis/Normed/Operator/BanachSteinhaus`.
-The book assumes `F` complete throughout; the surface keeps that hypothesis for faithfulness
-although only the completeness of `E` (and of `F` in Corollary 2.3 (b), to have a limit) is
-used.
-'''
 
 [[node]]
 id = "opNorm_eq_sSup"
-kind = "theorem"
-desc = '''The notation of §2.2: for `T : E →L[ℝ] F`, `‖T‖ = sSup ((fun x => ‖T x‖) '' Metric.closedBall 0 1)`,
-the book's `‖T‖_{𝓛(E,F)} = sup_{‖x‖ ≤ 1} ‖T x‖`. This is Mathlib's
-`ContinuousLinearMap.sSup_unitClosedBall_eq_norm` (`Mathlib/Analysis/Normed/Operator/NNNorm.lean`)
-read right to left; it pins down that the surface's `‖·‖` on operators is the book's. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §2.2, Notation"
 
 [[node]]
 id = "theorem_2_2"
-kind = "theorem"
-desc = '''Theorem 2.2 (Banach–Steinhaus, the uniform boundedness principle): for Banach spaces `E F`, an
-index type `ι` and `T : ι → E →L[ℝ] F` with `∀ x, ∃ C, ∀ i, ‖T i x‖ ≤ C` (the book's
-`sup_i ‖T_i x‖ < ∞`), there is `c` with `∀ i, ‖T i‖ ≤ c`, hence `∀ x i, ‖T i x‖ ≤ c * ‖x‖` (the
-book's (2), by `ContinuousLinearMap.le_of_opNorm_le`). Mathlib's `banach_steinhaus` verbatim (it
-needs only `CompleteSpace E`). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.2"
 
 [[node]]
 id = "remark_2_3"
-kind = "theorem"
-desc = '''Remark 3, the negative statement: in the setting of Theorem 2.2 pointwise convergence
-`Tₙ x → T x` does not give `‖Tₙ − T‖ → 0`. Formalized as the existence of a counterexample:
-`∃ (E F : Type) (_ : NormedAddCommGroup E) (_ : NormedSpace ℝ E) (_ : CompleteSpace E) (…F…) (T : ℕ → E →L[ℝ] F) (L : E →L[ℝ] F), (∀ x, Tendsto (fun n => T n x) atTop (𝓝 (L x))) ∧ ¬ Tendsto (fun n => ‖T n − L‖) atTop (𝓝 0)`,
-witnessed by `E = lp (fun _ : ℕ => ℝ) 2` (`ℓ²`), `F = ℝ`, `T n = lp.evalCLM ℝ n` (the `n`-th
-coordinate) and `L = 0`: `x ∈ ℓ²` has `x n → 0` (`lp.hasSum_norm`/`Summable.tendsto_atTop_zero`
-on `‖x n‖ ^ 2`), while `‖T n‖ = 1` by evaluating at `lp.single 2 n 1` (`lp.norm_single`). ★★,
-about 40 lines; the universe-polymorphic `∃ (E : Type)` should be stated at `Type` to avoid
-universe metavariables. Alternatively state the concrete claim about `lp.evalCLM` only.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 3"
 
 [[node]]
 id = "corollary_2_3"
-kind = "theorem"
-desc = '''Corollary 2.3: for Banach spaces `E F` and `T : ℕ → E →L[ℝ] F` such that `∀ x, ∃ y, Tendsto (fun n => T n x) atTop (𝓝 y)`,
-there is `L : E →L[ℝ] F` with (a) `∃ C, ∀ n, ‖T n‖ ≤ C`, (b) `∀ x, Tendsto (fun n => T n x) atTop (𝓝 (L x))`,
-(c) `‖L‖ ≤ Filter.liminf (fun n => ‖T n‖) atTop`. Proof: (a) is `banach_steinhaus` (a convergent
-sequence is bounded); (b) the pointwise limit is linear (`linearMapOfTendsto`) and satisfies
-`‖L x‖ ≤ C ‖x‖` by passing to the limit in `‖T n x‖ ≤ C ‖x‖`, so `LinearMap.mkContinuousOfExistsBound`
-(or Mathlib's `continuousLinearMapOfTendsto`, which packages exactly this through the barrelled
-space `E`); (c) is the backbone `ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto` with the
-bound of (a). Split as `corollary_2_3_a`, `corollary_2_3_b` (the existence of `L`, the main
-clause, keeps the plain id) and `corollary_2_3_c` if convenient; this node is the conjunction. ★'''
-deps = ["ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.3"
 
 [[node]]
 id = "corollary_2_4"
-kind = "theorem"
-desc = '''Corollary 2.4: for a Banach space `G` and `B : Set G` such that
-`∀ f : StrongDual ℝ G, Bornology.IsBounded (f '' B)` (each `f(B) = {⟨f, x⟩ | x ∈ B}` is bounded
-in `ℝ`), `Bornology.IsBounded B`. The backbone `isBounded_of_forall_dual_image_isBounded`
-(`Numlib/Analysis/Normed/Operator/BanachSteinhaus`) over `𝕜 = ℝ`; the completeness of `G` is
-the book's hypothesis and is not used. Remark 4's reading, "weakly bounded ⟺ strongly bounded",
-is the `iff` `isBounded_iff_forall_dual_image_isBounded`. ★'''
-deps = ["isBounded_of_forall_dual_image_isBounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.4"
 
 [[node]]
 id = "corollary_2_5"
-kind = "theorem"
-desc = '''Corollary 2.5: for a Banach space `G` and `B : Set (StrongDual ℝ G)` such that
-`∀ x : G, Bornology.IsBounded ((fun f : StrongDual ℝ G => f x) '' B)`, `Bornology.IsBounded B`.
-The backbone `StrongDual.isBounded_of_forall_eval_isBounded` over `ℝ`. ★'''
-deps = ["StrongDual.isBounded_of_forall_eval_isBounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 2.5"
+
+[[node]]
+id = "tendsto_coord_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 3"

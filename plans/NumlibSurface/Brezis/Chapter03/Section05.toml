@@ -1,241 +1,81 @@
 namespace = "Brezis.Chapter03"
-desc = '''
-Brezis §3.5, reflexive spaces, over a real Banach space `E`, with Problem 10 (Eberlein–Šmulian)
-whose Theorem 3.19 is stated here. Reflexivity is the backbone's `NormedSpace.IsReflexive ℝ E`
-(`Numlib/Analysis/Normed/Module/Reflexive`: `J = inclusionInDoubleDual ℝ E` onto), restated as
-the book's Definition `IsReflexive` with `isReflexive_iff`, exactly as
-`AtkinsonHan.Chapter02.definition_2_7_4`; "compact in `σ(E, E⋆)`" is
-`IsCompact (toWeakSpace ℝ E '' s)`. Theorem 3.17 (Kakutani), Lemmas 3.3–3.4, Remark 15,
-Corollaries 3.21–3.22 are the backbone's `Reflexive/Kakutani` and Theorem 3.24 is `Operator/Unbounded/Reflexive`; Theorem 3.18 and
-Proposition 3.20 were already there (`exists_subseq_forall_dual_tendsto`,
-`isReflexive_of_isClosed`); Theorem 3.19 and Problem 10 are `Reflexive/EberleinSmulian`;
-Corollary 3.23 is proved here from Corollaries 3.22 and 3.9 by the book's argument, with
-`φ : E → EReal` as in chapter 1. Remark 13's finite-dimensional and Hilbert clauses are nodes
-(`Reflexive.toml`'s `instIsReflexiveOfFiniteDimensional`, `instIsReflexiveOfInnerProductSpace`);
-its `L^p`/`ℓ^p`/`L¹`/`L^∞` clauses are chapters 4 and 11 and its `C(K)` clause is Exercise 3.25,
-not planned. Remarks 14, 16, 18 are discussion; Remark 17 (i) is a node, (ii)–(iii) are not.
-Theorem 3.24 consumes chapter 2's Banach adjoint `LinearPMap.strongDualAdjoint`
-(`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint`) and chapter 2's `Section06` restatement of
-`D(A⋆)` if there is one.
-'''
 
 [[node]]
 id = "IsReflexive"
-kind = "definition"
-desc = '''The book's Definition: a Banach space `E` is reflexive if the canonical injection
-`J : E → E⋆⋆` of §1.3 is surjective, `IsReflexive (E) : Prop := Function.Surjective (NormedSpace.inclusionInDoubleDual ℝ E)`
-(`[NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]`). Same shape as
-`AtkinsonHan.Chapter02.definition_2_7_4`; chapter 1's `canonicalInjection_apply` is the `J`. ★'''
-deps = ["Brezis.Chapter01.canonicalInjection_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.5, Definition"
 
 [[node]]
 id = "isReflexive_iff"
-kind = "theorem"
-desc = '''`IsReflexive E ↔ NormedSpace.IsReflexive ℝ E` — the book's definition is the backbone's
-class (`⟨fun h => ⟨h⟩, fun h => h.surjective_inclusionInDoubleDual⟩`). Every later node is stated
-with the backbone class as hypothesis and this bridge, as `AtkinsonHan.Chapter02.definition_2_7_4_iff_isReflexive`. ★'''
-deps = ["IsReflexive", "NormedSpace.IsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.5, Definition"
 
 [[node]]
 id = "remark_3_13_finiteDimensional"
-kind = "theorem"
-desc = '''Remark 13, first claim: finite-dimensional spaces are reflexive,
-`[FiniteDimensional ℝ E] → IsReflexive E`. The backbone's `NormedSpace.instIsReflexiveOfFiniteDimensional`
-(`Reflexive.toml`, planned by this chapter) through `isReflexive_iff`; the book's reason
-`dim E = dim E⋆ = dim E⋆⋆` is its proof. ★'''
-deps = ["isReflexive_iff", "NormedSpace.instIsReflexiveOfFiniteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 13"
 
 [[node]]
 id = "remark_3_13_hilbert"
-kind = "theorem"
-desc = '''Remark 13, "in Chapter 5 we shall see that Hilbert spaces are reflexive": for a real
-Hilbert space `H` (`[InnerProductSpace ℝ H] [CompleteSpace H]`), `IsReflexive H`. The backbone's
-`NormedSpace.instIsReflexiveOfInnerProductSpace` through `isReflexive_iff`. Chapter 5 restates it
-in its own section, using this node. ★'''
-deps = ["isReflexive_iff", "NormedSpace.instIsReflexiveOfInnerProductSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 13"
 
 [[node]]
 id = "theorem_3_17_mp"
-kind = "theorem"
-desc = '''Theorem 3.17 (Kakutani), "if": a reflexive Banach space has weakly compact closed unit
-ball, `IsReflexive E → IsCompact (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1)`. The
-backbone's `NormedSpace.isCompact_image_toWeakSpace_closedBall` (`Reflexive/Kakutani`) through
-`isReflexive_iff`. ★'''
-deps = ["isReflexive_iff", "NormedSpace.isCompact_image_toWeakSpace_closedBall"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
 
 [[node]]
 id = "theorem_3_17_mpr"
-kind = "theorem"
-desc = '''Theorem 3.17 (Kakutani), "only if": a Banach space whose closed unit ball is weakly
-compact is reflexive, `IsCompact (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1) → IsReflexive E`.
-The backbone's `NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`
-(Goldstine plus weak-* closedness of `J(B_E)`, the book's proof). ★'''
-deps = ["isReflexive_iff", "NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
 
 [[node]]
 id = "theorem_3_17"
-kind = "theorem"
-desc = '''Theorem 3.17 (Kakutani): `IsReflexive E ↔ IsCompact (toWeakSpace ℝ E '' Metric.closedBall (0 : E) 1)`.
-The two halves; also the backbone's `NormedSpace.isReflexive_iff_isCompact_image_toWeakSpace_closedBall`. ★'''
-deps = ["theorem_3_17_mp", "theorem_3_17_mpr"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.17"
 
 [[node]]
 id = "lemma_3_3"
-kind = "theorem"
-desc = '''Lemma 3.3 (Helly): for `f : Fin k → StrongDual ℝ E` and `γ : Fin k → ℝ`, the following
-are equivalent — (i) `∀ ε > 0, ∃ x, ‖x‖ ≤ 1 ∧ ∀ i, |f i x - γ i| < ε`; (ii)
-`∀ β : Fin k → ℝ, |∑ i, β i * γ i| ≤ ‖∑ i, β i • f i‖`. The backbone's `NormedSpace.helly_iff`
-(`Reflexive/Kakutani`) at `𝕜 = ℝ`. ★'''
-deps = ["NormedSpace.helly_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.3"
 
 [[node]]
 id = "lemma_3_4"
-kind = "theorem"
-desc = '''Lemma 3.4 (Goldstine), first clause: `J(B_E)` is dense in `B_{E⋆⋆}` for `σ(E⋆⋆, E⋆)`,
-`closure ((StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual ℝ E) '' Metric.closedBall 0 1) = WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual ℝ (StrongDual ℝ E)) 1`.
-The backbone's `NormedSpace.goldstine` (`Reflexive/Kakutani`), proved by separation (Problem 9
-B4, the book's Remark 16) rather than through Helly. ★'''
-deps = ["NormedSpace.goldstine"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.4"
 
 [[node]]
 id = "lemma_3_4_dense"
-kind = "theorem"
-desc = '''Lemma 3.4 (Goldstine), "consequently": `J(E)` is dense in `E⋆⋆` for `σ(E⋆⋆, E⋆)`,
-`DenseRange (StrongDual.toWeakDual ∘ NormedSpace.inclusionInDoubleDual ℝ E)`. The backbone's
-`NormedSpace.denseRange_toWeakDual_inclusionInDoubleDual`. ★'''
-deps = ["NormedSpace.denseRange_toWeakDual_inclusionInDoubleDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.4"
 
 [[node]]
 id = "remark_3_15"
-kind = "theorem"
-desc = '''Remark 15: `J(B_E)` is closed in `E⋆⋆` for the strong topology,
-`IsClosed (NormedSpace.inclusionInDoubleDual ℝ E '' Metric.closedBall 0 1)`, and consequently
-it is not norm dense in `B_{E⋆⋆}` unless `E` is reflexive:
-`Dense[in the subtype B_{E⋆⋆}] … → IsReflexive E`, stated as
-`closure (J '' closedBall 0 1) = closedBall 0 1 → IsReflexive E`. The backbone's
-`NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall` (`Reflexive/Kakutani`); the
-consequence is `closure_eq_iff_isClosed` and the scaling argument of
-`NormedSpace.isReflexive_of_isCompact_image_toWeakSpace_closedBall`. ★'''
-deps = ["NormedSpace.isClosed_image_inclusionInDoubleDual_closedBall", "isReflexive_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 15"
 
 [[node]]
 id = "theorem_3_18"
-kind = "theorem"
-desc = '''Theorem 3.18: in a reflexive Banach space every bounded sequence has a weakly convergent
-subsequence — `IsReflexive E → (∀ n, ‖x n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧ (x ∘ φ) ⇀ u`.
-The backbone's `NormedSpace.exists_subseq_forall_dual_tendsto` (`Reflexive.lean`, proved by the
-book's own route through the separable closed span, Corollary 3.27 and Theorem 3.29) with
-`proposition_3_5`. Same as `AtkinsonHan.Chapter02.theorem_2_7_5_mp`. ★'''
-deps = ["isReflexive_iff", "WeakTendsto", "proposition_3_5", "NormedSpace.exists_subseq_forall_dual_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.18"
 
 [[node]]
 id = "theorem_3_19"
-kind = "theorem"
-desc = '''Theorem 3.19 (★, Eberlein–Šmulian): a Banach space in which every bounded sequence
-admits a weakly convergent subsequence is reflexive —
-`(∀ (x : ℕ → E) (C : ℝ), (∀ n, ‖x n‖ ≤ C) → ∃ (u : E) (φ : ℕ → ℕ), StrictMono φ ∧ (x ∘ φ) ⇀ u) → IsReflexive E`.
-The backbone's `NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`
-(`Reflexive/EberleinSmulian`, the proof being Problem 10, `problem_10` below) through
-`proposition_3_5` and `isReflexive_iff`. This is `AtkinsonHan.Chapter02.theorem_2_7_5_mpr`. ★'''
-deps = ["isReflexive_iff", "WeakTendsto", "proposition_3_5", "NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.19"
 
 [[node]]
 id = "remark_3_17"
-kind = "theorem"
-desc = '''Remark 17 (i): in a metric space, a set is compact iff every sequence in it has a
-convergent subsequence: for `X` a metric space and `s : Set X`, `IsCompact s ↔ IsSeqCompact s`.
-Mathlib's `UniformSpace.isCompact_iff_isSeqCompact` (`Topology/Sequences.lean`; needs
-`IsCountablyGenerated (𝓤 X)`, automatic for a metric space). (ii) — `B_{E⋆}` for `E = ℓ^∞`,
-Exercise 3.18 — and (iii) are not nodes. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 17"
 
 [[node]]
 id = "proposition_3_20"
-kind = "theorem"
-desc = '''Proposition 3.20: a closed subspace `M` of a reflexive Banach space is reflexive,
-`IsReflexive E → IsClosed (M : Set E) → IsReflexive M`. The backbone's
-`NormedSpace.isReflexive_of_isClosed` (proved by Hahn–Banach extension rather than the book's
-route through Theorem 3.17). ★'''
-deps = ["isReflexive_iff", "NormedSpace.isReflexive_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.20"
 
 [[node]]
 id = "corollary_3_21"
-kind = "theorem"
-desc = '''Corollary 3.21: a Banach space `E` is reflexive iff `E⋆` is reflexive,
-`IsReflexive E ↔ IsReflexive (StrongDual ℝ E)`. The backbone's `NormedSpace.isReflexive_strongDual_iff`
-(`Reflexive/Kakutani`). Footnote 3 — reflexivity transfers along a surjective isometry — is the
-backbone's `NormedSpace.isReflexive_congr` and is `remark_3_21` in `Section07`. ★'''
-deps = ["isReflexive_iff", "NormedSpace.isReflexive_strongDual_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.21"
 
 [[node]]
 id = "corollary_3_22"
-kind = "theorem"
-desc = '''Corollary 3.22: a bounded closed convex subset `K` of a reflexive Banach space is compact
-in `σ(E, E⋆)`: `IsReflexive E → Bornology.IsBounded K → IsClosed K → Convex ℝ K → IsCompact (toWeakSpace ℝ E '' K)`.
-The backbone's `Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed` (`Reflexive/Kakutani`).
-This is the compactness `AtkinsonHan.Chapter08.theorem_8_6_3` needs. ★'''
-deps = ["isReflexive_iff", "Convex.isCompact_image_toWeakSpace_of_isBounded_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.22"
 
 [[node]]
 id = "corollary_3_23"
-kind = "theorem"
-desc = '''Corollary 3.23: in a reflexive Banach space, a convex l.s.c. function `φ : A → (−∞, +∞]`,
-`φ ≢ +∞`, on a nonempty closed convex `A`, which is coercive (`φ x → +∞` as `‖x‖ → ∞` in `A`; no
-assumption if `A` is bounded), attains its minimum on `A`. Formalized with `φ : E → EReal`,
-`hA : Convex ℝ A`, `hAc : IsClosed A`, the hypotheses on the restriction
-`ψ := ConvexAnalysis.restrictFn A φ` (which is `φ` on `A` and `⊤` off it, chapter 1's device):
-`ConvexAnalysis.ConvexFn ψ`, `LowerSemicontinuous ψ`, `∀ x, ψ x ≠ ⊥`, `∃ a ∈ A, φ a < ⊤`, and
-`hcoer : Bornology.IsBounded A ∨ ∀ M : ℝ, ∃ R, ∀ x ∈ A, R < ‖x‖ → (M : EReal) < φ x`; conclusion
-`∃ x₀ ∈ A, ∀ x ∈ A, φ x₀ ≤ φ x` (`IsMinOn φ A x₀`).
-
-Proof (lines 2680–2697): fix `a ∈ A` with `φ a < ⊤`; `Ã := {x ∈ A | φ x ≤ φ a}` is convex
-(`ConvexFn.convex_le` of `ψ` intersected with `A`), closed (`ψ` l.s.c., `lowerSemicontinuous_iff_isClosed_preimage`)
-and bounded (by `hcoer`, taking `M > φ a` real — `φ a < ⊤` and `φ a ≠ ⊥`), hence weakly compact by
-`corollary_3_22`; `ψ` is weakly l.s.c. by `corollary_3_9`, so `LowerSemicontinuousOn.exists_isMinOn`
-(Mathlib) on the weakly compact `toWeakSpace ℝ E '' Ã` gives `x₀ ∈ Ã` minimizing `ψ` there, and
-`φ x₀ ≤ φ a < φ x` for `x ∈ A ∖ Ã`. ★★ (about 100 lines; the `EReal` order bookkeeping is the
-cost). The real-valued, sequential form is the backbone's `exists_isMinOn_of_convexOn`
-(`Numlib/Variational/WeakMinimization`, applicable since a reflexive space is
-`WeaklySeqCompactSpace` by `WeaklySeqCompactSpace.of_isReflexive`); it is not the book's
-statement and is not used.'''
-deps = ["isReflexive_iff", "corollary_3_22", "corollary_3_9", "ConvexAnalysis.ConvexFn", "ConvexAnalysis.restrictFn", "ConvexAnalysis.ConvexFn.convex_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.23"
 
 [[node]]
 id = "theorem_3_24_a"
-kind = "theorem"
-desc = '''Theorem 3.24, first clause: for reflexive Banach spaces `E`, `F` and `A : E →ₗ.[ℝ] F`
-densely defined and closed, `D(A⋆)` is dense in `F⋆`:
-`IsReflexive E → IsReflexive F → Dense (A.domain : Set E) → A.IsClosed → Dense (A.strongDualAdjoint.domain : Set (StrongDual ℝ F))`.
-The backbone's `LinearPMap.dense_domain_strongDualAdjoint` (`Operator/Unbounded/Reflexive`, which needs
-only `F` reflexive) over chapter 2's `LinearPMap.strongDualAdjoint`. ★'''
-deps = ["isReflexive_iff", "LinearPMap.dense_domain_strongDualAdjoint", "LinearPMap.strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.24"
 
 [[node]]
 id = "theorem_3_24_b"
-kind = "theorem"
-desc = '''Theorem 3.24, second clause, `A⋆⋆ = A`: under the same hypotheses, the double adjoint,
-viewed as an operator from `E` into `F` through `J_E`, `J_F`, is `A`:
-`A.strongDualAdjoint.strongDualAdjoint.graph = A.graph.map ((NormedSpace.inclusionInDoubleDual ℝ E).prodMap (NormedSpace.inclusionInDoubleDual ℝ F)).toLinearMap`.
-The backbone's `LinearPMap.graph_strongDualAdjoint_strongDualAdjoint` (`Operator/Unbounded/Reflexive`,
-★★★ there). ★'''
-deps = ["isReflexive_iff", "theorem_3_24_a", "LinearPMap.graph_strongDualAdjoint_strongDualAdjoint"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.24"

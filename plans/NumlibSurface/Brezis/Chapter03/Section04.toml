@@ -1,225 +1,73 @@
 namespace = "Brezis.Chapter03"
-desc = '''
-Brezis §3.4, the weak-* topology `σ(E⋆, E)` on the dual of a real Banach space `E`. The book's
-definition is `weakStarTopology E := weakestTopology (fun x : E => fun f : StrongDual ℝ E => f x)`
-and `weakStarTopology_eq` identifies it with Mathlib's `WeakDual ℝ E`, on which every later node
-is stated: `StrongDual.toWeakDual f : WeakDual ℝ E` is "`f` with the weak-* topology",
-`fₙ ⇀* f` is `WeakStarTendsto f g` with scoped notation `⇀*`. Propositions 3.11–3.13 are Mathlib
-and the backbone's `Numlib/Analysis/Normed/Module/WeakDual`; Proposition 3.14 is Mathlib's weak
-representation theorem `LinearMap.dualEmbedding_surjective` and Lemma 3.2 its finite-family
-core `LinearMap.mem_span_iff_continuous_of_finite`; Corollary 3.15 and Remark 11 are proved here
-from them; Theorem 3.16 is `WeakDual.isCompact_closedBall`; Remark 10 is the backbone's
-`toWeakDualContinuousLinearEquiv` (`WeakClosed`). Remarks 8 and 12 are discussion. `[CompleteSpace E]`
-is carried on every node; it is used in Proposition 3.13 (iii)–(iv) (uniform boundedness in `E`).
-'''
 
 [[node]]
 id = "weakStarTopology"
-kind = "definition"
-desc = '''The weak-* topology `σ(E⋆, E)` as the book defines it: the coarsest topology on `E⋆`
-making every `φ_x = ⟨·, x⟩`, `x ∈ E`, continuous,
-`weakStarTopology (E) : TopologicalSpace (StrongDual ℝ E) := weakestTopology (fun x : E => fun f : StrongDual ℝ E => f x)`
-(§3.1 with `X = E⋆`, `Y_i = ℝ`, `I = E`). ★'''
-deps = ["weakestTopology"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.4, Definition"
 
 [[node]]
 id = "weakStarTopology_eq"
-kind = "theorem"
-desc = '''The book's weak-* topology is Mathlib's:
-`weakStarTopology E = TopologicalSpace.induced (StrongDual.toWeakDual : StrongDual ℝ E → WeakDual ℝ E) inferInstance`.
-As `weakTopology_eq`: `WeakDual ℝ E = WeakBilin (topDualPairing ℝ E)` carries
-`induced (fun f x => f x) Pi.topologicalSpace`, and `induced_to_pi`. The sentence "σ(E⋆, E) is
-coarser than σ(E⋆, E⋆⋆), which is coarser than the strong topology" is
-`WeakDual.continuous_weakSpace_toWeakDual` (backbone, `Numlib/Analysis/Normed/Module/WeakDual`)
-and `NormedSpace.Dual.toWeakDual_continuous`; record both as a second conclusion
-`weakStarTopology E ≤ weakTopology (StrongDual ℝ E)`, `weakTopology (StrongDual ℝ E) ≤ inferInstance`. ★'''
-deps = ["weakStarTopology", "weakTopology", "WeakDual.continuous_weakSpace_toWeakDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.4, Definition"
 
 [[node]]
 id = "proposition_3_11"
-kind = "theorem"
-desc = '''Proposition 3.11: the weak-* topology is Hausdorff, `T2Space (WeakDual ℝ E)`. Mathlib's
-`WeakDual.instT2Space` (no Hahn–Banach, as the book notes: two different functionals differ at a
-point). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.11"
 
 [[node]]
 id = "proposition_3_12"
-kind = "theorem"
-desc = '''Proposition 3.12: the sets `V(x₁, …, x_k; ε) = {f | ∀ i, |⟨f - f₀, xᵢ⟩| < ε}` form a
-neighbourhood basis of `f₀` for `σ(E⋆, E)`. For `f₀ : StrongDual ℝ E`,
-`(𝓝 (StrongDual.toWeakDual f₀)).HasBasis (fun p : Finset E × ℝ => 0 < p.2) (fun p => StrongDual.toWeakDual '' {f | ∀ x ∈ p.1, |(f - f₀) x| < p.2})`.
-Mathlib: `WeakDual.withSeminorms`/`LinearMap.hasBasis_weakBilin` for the basis at `0`
-(`Seminorm.ball_finset_sup`), translated by `WeakDual.instIsTopologicalAddGroup`; "same as the
-proof of Proposition 3.4", and the same ~60 lines of bookkeeping — share a lemma with
-`proposition_3_4` if the two are written together. ★★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.12"
 
 [[node]]
 id = "WeakStarTendsto"
-kind = "definition"
-desc = '''The book's notation `fₙ ⇀* f`: a sequence of `E⋆` converges in the weak-* topology,
-`WeakStarTendsto (f : ℕ → StrongDual ℝ E) (g : StrongDual ℝ E) : Prop := Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g))`,
-with `scoped notation:50 f " ⇀* " g => WeakStarTendsto f g`. The book's "`fₙ ⇀ f` in
-`σ(E⋆, E⋆⋆)`" is `WeakTendsto f g` on the Banach space `E⋆`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.4, Notation"
 
 [[node]]
 id = "proposition_3_13"
-kind = "theorem"
-desc = '''Proposition 3.13 (i): `f ⇀* g ↔ ∀ x : E, Tendsto (fun n => f n x) atTop (𝓝 (g x))`.
-Mathlib's `tendsto_iff_forall_eval_tendsto_topDualPairing` (`Topology/Algebra/Module/Spaces/WeakDual.lean`).
-This node carries the plain id; (ii)–(iv) follow. ★'''
-deps = ["WeakStarTendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "proposition_3_13_ii_weak"
-kind = "theorem"
-desc = '''Proposition 3.13 (ii), first sentence: strong convergence in `E⋆` implies weak
-convergence in `σ(E⋆, E⋆⋆)`, `Tendsto f atTop (𝓝 g) → WeakTendsto f g` (on the Banach space
-`StrongDual ℝ E`). `proposition_3_5_ii` applied to `E⋆`. ★'''
-deps = ["WeakTendsto", "proposition_3_5_ii"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "proposition_3_13_ii_weakStar"
-kind = "theorem"
-desc = '''Proposition 3.13 (ii), second sentence: weak convergence in `E⋆` implies weak-*
-convergence, `WeakTendsto f g → f ⇀* g`. The backbone's `tendsto_toWeakDual_of_tendsto_toWeakSpace`
-(`Numlib/Analysis/Normed/Module/WeakDual`, planned by this chapter). ★'''
-deps = ["WeakTendsto", "WeakStarTendsto", "tendsto_toWeakDual_of_tendsto_toWeakSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "proposition_3_13_iii_bounded"
-kind = "theorem"
-desc = '''Proposition 3.13 (iii), first half: a weak-* convergent sequence in the dual of a Banach
-space is bounded, `f ⇀* g → ∃ C, ∀ n, ‖f n‖ ≤ C`. The backbone's
-`exists_norm_le_of_tendsto_toWeakDual` (uniform boundedness, `[CompleteSpace E]` used). ★'''
-deps = ["WeakStarTendsto", "exists_norm_le_of_tendsto_toWeakDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "proposition_3_13_iii_liminf"
-kind = "theorem"
-desc = '''Proposition 3.13 (iii), second half: `f ⇀* g → ‖g‖ ≤ liminf (fun n => ‖f n‖) atTop`. The
-backbone's `norm_le_liminf_norm_of_weakStar_tendsto`. ★'''
-deps = ["WeakStarTendsto", "norm_le_liminf_norm_of_weakStar_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "proposition_3_13_iv"
-kind = "theorem"
-desc = '''Proposition 3.13 (iv): if `f ⇀* g` and `x n → u` strongly in `E` then `⟨f n, x n⟩ → ⟨g, u⟩`,
-`f ⇀* g → Tendsto x atTop (𝓝 u) → Tendsto (fun n => f n (x n)) atTop (𝓝 (g u))`. The backbone's
-`tendsto_apply_of_tendsto_toWeakDual_of_tendsto`. ★'''
-deps = ["WeakStarTendsto", "tendsto_apply_of_tendsto_toWeakDual_of_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.13"
 
 [[node]]
 id = "remark_3_9"
-kind = "theorem"
-desc = '''Remark 9: from `fₙ ⇀* f` and `xₙ ⇀ x` one cannot conclude `⟨fₙ, xₙ⟩ → ⟨f, x⟩`, "an example
-being very easy to construct in Hilbert spaces". The example, in `ℓ² = lp (fun _ : ℕ => ℝ) 2`:
-with `e n := lp.single 2 n 1` and `f n := InnerProductSpace.toDual ℝ _ (e n)`, one has
-`WeakTendsto e 0`, `f ⇀* 0` and `f n (e n) = 1` for all `n`, so `¬ Tendsto (fun n => f n (e n)) atTop (𝓝 ((0 : StrongDual ℝ _) 0))`.
-Weak nullity: every functional is `⟪y, ·⟫` by Riesz (`InnerProductSpace.toDual`), and
-`⟪y, e n⟫ = y n → 0` because `∑ |y n|² < ∞` (`lp.summable_of_mem`/`Summable.tendsto_atTop_zero`);
-weak-* nullity is the same computation through `proposition_3_13`. ★★ (about 60 lines of `lp`
-bookkeeping; `Numlib/Analysis/InnerProductSpace/OrthonormalSeries.lean` may already have "an
-orthonormal sequence is weakly null" — grep `Orthonormal` and `tendsto` there first.)'''
-deps = ["WeakTendsto", "WeakStarTendsto", "proposition_3_5", "proposition_3_13"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 9"
 
 [[node]]
 id = "remark_3_10"
-kind = "theorem"
-desc = '''Remark 10: when `E` is finite-dimensional the strong, weak and weak-* topologies on
-`E⋆` coincide — `[FiniteDimensional ℝ E]` gives `weakStarTopology E = weakTopology (StrongDual ℝ E)`
-and `weakTopology (StrongDual ℝ E) = (inferInstance : TopologicalSpace (StrongDual ℝ E))`. The
-second is `proposition_3_6` for `E⋆` (finite-dimensional by `ContinuousLinearMap.finiteDimensional`);
-the first is the backbone's `toWeakDualContinuousLinearEquiv ℝ E`
-(`Numlib/Analysis/Normed/Module/WeakClosed`), or the book's argument that `J` is onto
-(`NormedSpace.instIsReflexiveOfFiniteDimensional`, `Reflexive.toml`) so that the two families of
-functionals defining the topologies coincide. ★'''
-deps = ["weakStarTopology_eq", "proposition_3_6", "toWeakDualContinuousLinearEquiv", "NormedSpace.instIsReflexiveOfFiniteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 10"
 
 [[node]]
 id = "proposition_3_14"
-kind = "theorem"
-desc = '''Proposition 3.14 (★): a linear functional `φ : E⋆ → ℝ` continuous for the weak-*
-topology is evaluation at a point, `∃ x₀ : E, ∀ f, φ f = f x₀`. For `φ : StrongDual ℝ (WeakDual ℝ E)`
-(a weak-* continuous functional), `∃ x₀ : E, ∀ f : StrongDual ℝ E, φ (StrongDual.toWeakDual f) = f x₀`.
-Mathlib's weak representation theorem `LinearMap.dualEmbedding_surjective (topDualPairing ℝ E)`
-(`Analysis/LocallyConvex/WeakDual.lean`): `WeakDual ℝ E` is `WeakBilin (topDualPairing ℝ E)` and
-`WeakBilin.eval _ x₀` is `f ↦ f x₀`. Also state the version with `φ : StrongDual ℝ E →ₗ[ℝ] ℝ` and
-`Continuous[weakStarTopology E] φ`, via `weakStarTopology_eq`. ★'''
-deps = ["weakStarTopology_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.14"
 
 [[node]]
 id = "lemma_3_2"
-kind = "theorem"
-desc = '''Lemma 3.2: if linear functionals `φ, φ₁, …, φ_k` on a vector space `X` satisfy
-`(∀ i, φᵢ v = 0) → φ v = 0` then `φ = ∑ λᵢ φᵢ`. For `X` a real vector space (any field),
-`φ : X →ₗ[ℝ] ℝ`, `φ' : Fin k → (X →ₗ[ℝ] ℝ)`, `h : ∀ v, (∀ i, φ' i v = 0) → φ v = 0`:
-`∃ lam : Fin k → ℝ, φ = ∑ i, lam i • φ' i`. Mathlib: `mem_span_of_iInf_ker_le_ker` (the algebraic
-statement, `LinearAlgebra/Dual/Lemmas.lean`) or `LinearMap.mem_span_iff_continuous_of_finite`
-(its topological reading, which is how Proposition 3.14 uses it), plus `Submodule.mem_span_range_iff_exists_fun`.
-The book's proof by separation in `ℝ^{k+1}` need not be followed. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 3.2"
 
 [[node]]
 id = "corollary_3_15"
-kind = "theorem"
-desc = '''Corollary 3.15 (★): a hyperplane `H = {f | φ f = α}` of `E⋆` (with `φ : StrongDual ℝ E →ₗ[ℝ] ℝ`,
-`φ ≠ 0`) that is closed in `σ(E⋆, E)` has the form `{f | f x₀ = α}` for some `x₀ ≠ 0`. For
-`φ`, `α`, `hφ : φ ≠ 0`, `hH : IsClosed (StrongDual.toWeakDual '' {f | φ f = α})`:
-`∃ (x₀ : E) (β : ℝ), x₀ ≠ 0 ∧ {f | φ f = α} = {f | f x₀ = β}`. (Chapter 1's `IsHyperplane`, if
-its shape fits, can replace `φ`, `α`.)
-
-Proof: `H` is nonempty (`φ` surjective onto `ℝ`), and `ker φ = H - f₁` for any `f₁ ∈ H`, so
-`ker φ` is weak-* closed (translation is a homeomorphism of `WeakDual`); hence `φ` is weak-*
-continuous by Mathlib's `LinearMap.continuous_iff_isClosed_ker` (on the topological vector space
-`WeakDual ℝ E`) — this replaces the book's convexity argument (lines 2453–2470) — and
-`proposition_3_14` represents it: `φ f = f x₀`, with `x₀ ≠ 0` because `φ ≠ 0`; then `β = α`. ★★
-(about 50 lines).'''
-deps = ["proposition_3_14"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.15"
 
 [[node]]
 id = "remark_3_11"
-kind = "theorem"
-desc = '''Remark 11: if `J : E → E⋆⋆` is not surjective, `σ(E⋆, E)` is strictly coarser than
-`σ(E⋆, E⋆⋆)`: for `ξ : StrongDual ℝ (StrongDual ℝ E)` with `ξ ∉ Set.range (NormedSpace.inclusionInDoubleDual ℝ E)`,
-the hyperplane `H = {f | ξ f = 0}` is weakly closed in `E⋆` but not weak-* closed:
-`IsClosed (toWeakSpace ℝ _ '' {f | ξ f = 0}) ∧ ¬ IsClosed (StrongDual.toWeakDual '' {f | ξ f = 0})`.
-Weakly closed: `ξ` is a continuous functional on `E⋆`, hence weakly continuous
-(`WeakBilin.eval_continuous`), and `{0}` is closed. Not weak-* closed: else `corollary_3_15`
-gives `x₀` with `ker ξ = ker (f ↦ f x₀)`, so `ξ = c • J x₀` for a scalar `c`
-(`LinearMap.ker_eq_ker_iff`-type: two functionals with the same kernel are proportional,
-`LinearMap.eqOn_span'`/`Submodule.span_singleton_eq_span_singleton`; or `lemma_3_2` with `k = 1`),
-contradicting `ξ ∉ range J` (the range is a submodule). The remark's consequence — convex sets
-strongly closed need not be weak-* closed, so there are two kinds of closed convex sets in `E⋆`
-— is this example. ★★ (about 60 lines).'''
-deps = ["corollary_3_15", "lemma_3_2"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 11"
 
 [[node]]
 id = "theorem_3_16"
-kind = "theorem"
-desc = '''Theorem 3.16 (Banach–Alaoglu–Bourbaki): the closed unit ball `B_{E⋆}` is compact in the
-weak-* topology, `IsCompact (WeakDual.toStrongDual ⁻¹' Metric.closedBall (0 : StrongDual ℝ E) 1)`
-in `WeakDual ℝ E`. Mathlib's `WeakDual.isCompact_closedBall ℝ E 0 1`
-(`Analysis/Normed/Module/WeakDual.lean`), proved as the book does (embedding into `ℝ^E`,
-Tychonoff). No completeness of `E` is needed. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.16"

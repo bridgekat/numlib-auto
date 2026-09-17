@@ -1,111 +1,37 @@
 namespace = "Brezis.Chapter03"
-desc = '''
-Brezis §3.7, uniformly convex spaces, over a real Banach space `E`. The book's Definition is
-`UniformlyConvex E` (strict inequalities, closed unit ball) and `uniformlyConvex_iff` identifies
-it with Mathlib's `UniformConvexSpace E` (non-strict, unit sphere, `Analysis/Convex/Uniform.lean`);
-every later node uses the Mathlib class. Example 1 is `EuclideanSpace ℝ (Fin 2)` against
-`WithLp 1 (ℝ × ℝ)` and `ℝ × ℝ` (sup norm); Example 2's Hilbert clause is Mathlib's
-`InnerProductSpace.toUniformConvexSpace` and its `L^p` clause is chapter 4's Theorem 4.10.
-Theorem 3.31 (Milman–Pettis) is the backbone's `Numlib/Analysis/Normed/Module/MilmanPettis`;
-Proposition 3.32 is `Numlib/Analysis/Convex/Uniform` (the `limsup` form planned by this chapter);
-Remark 21's invariance clause is `Reflexive.toml`'s `isReflexive_congr`.
-'''
 
 [[node]]
 id = "IsUniformlyConvex"
-kind = "definition"
-desc = '''The book's Definition: a Banach space is uniformly convex if
-`∀ ε > 0, ∃ δ > 0, ∀ x y : E, ‖x‖ ≤ 1 → ‖y‖ ≤ 1 → ε < ‖x - y‖ → ‖(1/2 : ℝ) • (x + y)‖ < 1 - δ`,
-`UniformlyConvex (E) : Prop`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Definition"
 
 [[node]]
 id = "uniformlyConvex_iff"
-kind = "theorem"
-desc = '''`UniformlyConvex E ↔ UniformConvexSpace E`. Mathlib's class asks, for `‖x‖ = ‖y‖ = 1` and
-`ε ≤ ‖x - y‖`, `‖x + y‖ ≤ 2 - δ`. `←`: `exists_forall_closed_ball_dist_add_le_two_sub` gives the
-closed-ball form with `ε ≤`, `≤ 2 - δ`; halve `δ` to make the conclusion strict and use
-`ε < ‖x - y‖ → ε ≤ ‖x - y‖`. `→`: given Mathlib's `ε`, apply the book's condition at `ε / 2`
-(so that `ε ≤ ‖x - y‖` gives `ε / 2 < ‖x - y‖`) to unit vectors, and `‖x + y‖ = 2 ‖(1/2) • (x + y)‖ < 2 - 2δ`.
-★★ (about 40 lines of `δ`-juggling).'''
-deps = ["IsUniformlyConvex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Definition"
 
 [[node]]
 id = "example_3_7_1_euclidean"
-kind = "theorem"
-desc = '''§3.7, Example 1, first clause: the Euclidean norm `‖x‖₂` on `ℝ²` is uniformly convex,
-`UniformConvexSpace (EuclideanSpace ℝ (Fin 2))`. Mathlib's `InnerProductSpace.toUniformConvexSpace`
-(the parallelogram law). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Example 1"
 
 [[node]]
 id = "example_3_7_1_l1"
-kind = "theorem"
-desc = '''§3.7, Example 1, second clause: the norm `‖x‖₁ = |x₁| + |x₂|` on `ℝ²` is not uniformly
-convex, `¬ UniformConvexSpace (WithLp 1 (ℝ × ℝ))`. Witness: `x = (1, 0)`, `y = (0, 1)` have
-`‖x‖₁ = ‖y‖₁ = 1`, `‖x - y‖₁ = 2` and `‖x + y‖₁ = 2`, so no `δ > 0` works for `ε = 2`
-(`WithLp.prod_norm_eq_add`/`WithLp.prod_norm_eq_of_L1`-type simp lemmas). "Staring at the unit
-balls", as the book says. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Example 1"
 
 [[node]]
 id = "example_3_7_1_linf"
-kind = "theorem"
-desc = '''§3.7, Example 1, third clause: the norm `‖x‖_∞ = max (|x₁|, |x₂|)` on `ℝ²` is not
-uniformly convex, `¬ UniformConvexSpace (ℝ × ℝ)` (Mathlib's product norm is the sup norm,
-`Prod.norm_def`). Witness: `x = (1, 1)`, `y = (1, -1)` have `‖x‖ = ‖y‖ = 1`, `‖x - y‖ = 2` and
-`‖x + y‖ = 2`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Example 1"
 
 [[node]]
 id = "example_3_7_2"
-kind = "theorem"
-desc = '''§3.7, Example 2, Hilbert clause: a Hilbert space is uniformly convex — for
-`[InnerProductSpace ℝ H]`, `UniformConvexSpace H`; Mathlib's `InnerProductSpace.toUniformConvexSpace`
-(completeness is not needed). The `L^p` clause, `1 < p < ∞`, is Theorem 4.10 and is stated in
-chapter 4 over `MeasureTheory.Lp.instUniformConvexSpace`; the forward reference is not a node
-here. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.7, Example 2"
 
 [[node]]
 id = "theorem_3_31"
-kind = "theorem"
-desc = '''Theorem 3.31 (Milman–Pettis): every uniformly convex Banach space is reflexive,
-`UniformlyConvex E → IsReflexive E` (with `[CompleteSpace E]`). The backbone's
-`NormedSpace.isReflexive_of_uniformConvexSpace` (`Numlib/Analysis/Normed/Module/MilmanPettis`,
-the book's proof) through `uniformlyConvex_iff` and `isReflexive_iff`. ★'''
-deps = ["IsUniformlyConvex", "uniformlyConvex_iff", "isReflexive_iff", "NormedSpace.isReflexive_of_uniformConvexSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.31"
 
 [[node]]
 id = "remark_3_21"
-kind = "theorem"
-desc = '''Remark 21: reflexivity is a topological property — a reflexive space remains reflexive
-for an equivalent norm — while uniform convexity is geometric. Formalized as: for Banach spaces
-`E`, `F` and `e : E ≃L[ℝ] F` (an equivalent norm is the identity as a continuous linear
-equivalence between the two normed structures), `IsReflexive E ↔ IsReflexive F`; the backbone's
-`NormedSpace.isReflexive_congr` (`Reflexive.toml`). The geometric clause is witnessed by
-Example 1: `EuclideanSpace ℝ (Fin 2)` and `WithLp 1 (ℝ × ℝ)` are `ContinuousLinearEquiv`-alent
-(finite dimension) and only the first is uniformly convex — `example_3_7_1_euclidean`,
-`example_3_7_1_l1`; record that pairing as a second conclusion or leave it to the docstring. ★'''
-deps = ["isReflexive_iff", "NormedSpace.isReflexive_congr", "example_3_7_1_euclidean", "example_3_7_1_l1"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 21"
 
 [[node]]
 id = "proposition_3_32"
-kind = "theorem"
-desc = '''Proposition 3.32: in a uniformly convex Banach space, if `xₙ ⇀ x` and
-`limsup ‖xₙ‖ ≤ ‖x‖` then `xₙ → x` strongly:
-`UniformlyConvex E → x ⇀ u → limsup (fun n => ‖x n‖) atTop ≤ ‖u‖ → Tendsto x atTop (𝓝 u)`.
-The backbone's `tendsto_of_forall_dual_tendsto_of_limsup_norm_le` (`Numlib/Analysis/Convex/Uniform`,
-planned by this chapter; its `‖xₙ‖ → ‖x‖` form `tendsto_of_forall_dual_tendsto_of_tendsto_norm`
-is the Radon–Riesz property of `AtkinsonHan.Chapter02.exercise_2_7_4`) through
-`uniformlyConvex_iff` and `proposition_3_5`. ★'''
-deps = ["IsUniformlyConvex", "uniformlyConvex_iff", "WeakTendsto", "proposition_3_5", "tendsto_of_forall_dual_tendsto_of_limsup_norm_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.32"

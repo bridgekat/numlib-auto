@@ -1,197 +1,77 @@
 namespace = "Brezis.Chapter03"
-desc = '''
-Brezis §3.2, the weak topology `σ(E, E⋆)` on a real Banach space `E`. The book's definition is
-`weakTopology E := weakestTopology (fun f : StrongDual ℝ E => (f : E → ℝ))` (§3.1) and
-`weakTopology_eq` identifies it with Mathlib's `WeakSpace ℝ E`, on which every later node is
-stated: the book's "`x ∈ E` with the weak topology" is `toWeakSpace ℝ E x : WeakSpace ℝ E`, a
-weakly closed/open set is `IsClosed (toWeakSpace ℝ E '' s)`/`IsOpen (…)`, and `xₙ ⇀ x` is
-`WeakTendsto x u` with the scoped notation `⇀`. Propositions 3.3–3.5 are Mathlib and the
-backbone's `Numlib/Analysis/Normed/Module/WeakDual`; Proposition 3.6, Remark 2 and Examples 1–2
-are the backbone's `Numlib/Analysis/Normed/Module/WeakClosed`; Remark 3 is
-`Numlib/Analysis/Normed/Module/WeakStarMetrizable`. Remark 4 is stated here but its nodes
-(`remark_3_4`, `exercise_3_22`) are in `Section06`, where Theorem 3.29 is. The book assumes `E`
-Banach throughout; `[CompleteSpace E]` is carried on every node for fidelity although nothing in
-this section uses it.
-'''
 
 [[node]]
 id = "weakTopology"
-kind = "definition"
-desc = '''The weak topology `σ(E, E⋆)` as the book defines it: the coarsest topology on `E` making
-every `φ_f = ⟨f, ·⟩`, `f ∈ E⋆`, continuous,
-`weakTopology (E) : TopologicalSpace E := weakestTopology (fun f : StrongDual ℝ E => (f : E → ℝ))`
-(§3.1 with `X = E`, `Y_i = ℝ`, `I = E⋆`). ★'''
-deps = ["weakestTopology"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Definition"
 
 [[node]]
 id = "weakTopology_eq"
-kind = "theorem"
-desc = '''The book's weak topology is Mathlib's: `weakTopology E = TopologicalSpace.induced (toWeakSpace ℝ E) inferInstance`,
-i.e. the topology of `WeakSpace ℝ E` transported back to `E` along the identity — equivalently
-`(instTopologicalSpaceWeakSpace ℝ E : TopologicalSpace (WeakSpace ℝ E)) = ⨅ f : StrongDual ℝ E, induced (fun x => f ((toWeakSpace ℝ E).symm x)) inferInstance`.
-Proof: `WeakSpace ℝ E = WeakBilin (topDualPairing ℝ E).flip` carries
-`induced (fun x f => f x) Pi.topologicalSpace`, and `induced_to_pi` turns the product topology
-into the `⨅` of the coordinate-induced topologies; then `rfl`
-(`notes/brezis/ch03/proto/Shapes.lean` (a), three lines). With it, "weaker than the usual
-topology" (line 2214) is `toWeakSpaceCLM ℝ E` being continuous. ★'''
-deps = ["weakTopology"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Definition"
 
 [[node]]
 id = "proposition_3_3"
-kind = "theorem"
-desc = '''Proposition 3.3: the weak topology is Hausdorff, `T2Space (WeakSpace ℝ E)`. Mathlib's
-instance in `Analysis/LocallyConvex/WeakSpace.lean` (through `SeparatingDual ℝ E`, which is
-Hahn–Banach `geometric_hahn_banach_point_point` — the book's proof). State it as a theorem
-producing the instance. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.3"
 
 [[node]]
 id = "proposition_3_4"
-kind = "theorem"
-desc = '''Proposition 3.4: the sets `V(f₁, …, f_k; ε) = {x | ∀ i, |⟨fᵢ, x - x₀⟩| < ε}` form a
-neighbourhood basis of `x₀` for `σ(E, E⋆)`. For `x₀ : E`,
-`(𝓝 (toWeakSpace ℝ E x₀)).HasBasis (fun p : Finset (StrongDual ℝ E) × ℝ => 0 < p.2) (fun p => toWeakSpace ℝ E '' {x | ∀ f ∈ p.1, |f (x - x₀)| < p.2})`.
-Mathlib: `LinearMap.hasBasis_weakBilin` gives the basis at `0` as the `SeminormFamily.basisSets`
-of the family `f ↦ ‖f ·‖` (a basic set is `Seminorm.ball (s.sup p) 0 r = {x | ∀ f ∈ s, ‖f x‖ < r}`,
-`Seminorm.ball_finset_sup`), and `WeakSpace.instIsTopologicalAddGroup` translates it to `x₀`
-(`Filter.HasBasis.map` along `x ↦ x₀ + x`, `nhds_translation_add`-type lemmas or
-`IsTopologicalAddGroup.nhds_eq_map_add`). Also record the first sentence, that each `V` is a
-neighbourhood: `V ∈ 𝓝 (toWeakSpace ℝ E x₀)`. ★★ (bookkeeping, ~60 lines).'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.4"
 
 [[node]]
 id = "WeakTendsto"
-kind = "definition"
-desc = '''The book's notation `xₙ ⇀ x`: a sequence converges in the weak topology,
-`WeakTendsto (x : ℕ → E) (u : E) : Prop := Tendsto (fun n => toWeakSpace ℝ E (x n)) atTop (𝓝 (toWeakSpace ℝ E u))`,
-with `scoped notation:50 x " ⇀ " u => WeakTendsto x u`. This is the form of the backbone
-(`tendsto_toWeakSpace_iff` in `Numlib/Analysis/Normed/Module/WeakDual`); the pointwise form of
-Proposition 3.5 (i) is the theorem, not the definition, matching the book, where the book's
-`AtkinsonHan.Chapter02.WeakSeqTendsto` took the pointwise form as its definition. "Strong
-convergence `xₙ → x`" is Mathlib's `Tendsto x atTop (𝓝 u)`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Notation"
 
 [[node]]
 id = "proposition_3_5"
-kind = "theorem"
-desc = '''Proposition 3.5 (i): `x ⇀ u ↔ ∀ f : StrongDual ℝ E, Tendsto (fun n => f (x n)) atTop (𝓝 (f u))`.
-The backbone's `tendsto_toWeakSpace_iff` (`Numlib/Analysis/Normed/Module/WeakDual`), itself
-Proposition 3.1 for the weak topology. This node carries the plain id; (ii)–(iv) follow. ★'''
-deps = ["WeakTendsto", "tendsto_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "proposition_3_5_ii"
-kind = "theorem"
-desc = '''Proposition 3.5 (ii): strong convergence implies weak convergence,
-`Tendsto x atTop (𝓝 u) → x ⇀ u`. Continuity of `toWeakSpaceCLM ℝ E` (`Continuous.tendsto`,
-`Tendsto.comp`), or (i) with `|f (x n) - f u| ≤ ‖f‖ ‖x n - u‖` as the book says. ★'''
-deps = ["WeakTendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "proposition_3_5_iii_bounded"
-kind = "theorem"
-desc = '''Proposition 3.5 (iii), first half: a weakly convergent sequence is bounded,
-`x ⇀ u → ∃ C, ∀ n, ‖x n‖ ≤ C`. The backbone's `exists_norm_le_of_tendsto_toWeakSpace`
-(`Numlib/Analysis/Normed/Module/WeakDual`), which is the uniform boundedness principle applied in
-the bidual — the book's Corollary 2.4. ★'''
-deps = ["WeakTendsto", "exists_norm_le_of_tendsto_toWeakSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "proposition_3_5_iii_liminf"
-kind = "theorem"
-desc = '''Proposition 3.5 (iii), second half: `x ⇀ u → ‖u‖ ≤ liminf (fun n => ‖x n‖) atTop`. The
-backbone's `norm_le_liminf_norm_of_weak_tendsto`, whose proof is the book's (a norming functional
-and Corollary 1.4). ★'''
-deps = ["WeakTendsto", "norm_le_liminf_norm_of_weak_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "proposition_3_5_iv"
-kind = "theorem"
-desc = '''Proposition 3.5 (iv): if `x ⇀ u` and `f n → g` in `E⋆` then `⟨f n, x n⟩ → ⟨g, u⟩`,
-`x ⇀ u → Tendsto f atTop (𝓝 g) → Tendsto (fun n => f n (x n)) atTop (𝓝 (g u))`. The backbone's
-`tendsto_apply_of_tendsto_toWeakSpace_of_tendsto` (`Numlib/Analysis/Normed/Module/WeakDual`,
-planned by this chapter). ★'''
-deps = ["WeakTendsto", "tendsto_apply_of_tendsto_toWeakSpace_of_tendsto"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.5"
 
 [[node]]
 id = "proposition_3_6"
-kind = "theorem"
-desc = '''Proposition 3.6: when `E` is finite-dimensional the weak topology and the usual topology
-coincide — `[FiniteDimensional ℝ E]` gives `weakTopology E = (inferInstance : TopologicalSpace E)`,
-equivalently that `toWeakSpace ℝ E` is a homeomorphism. The backbone's
-`toWeakSpaceContinuousLinearEquiv ℝ E` (`Numlib/Analysis/Normed/Module/WeakClosed`) with
-`weakTopology_eq` and `ContinuousLinearEquiv.toHomeomorph.isInducing`-type lemmas
-(`Homeomorph.induced_eq`). ★'''
-deps = ["weakTopology_eq", "toWeakSpaceContinuousLinearEquiv"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.6"
 
 [[node]]
 id = "proposition_3_6_tendsto"
-kind = "theorem"
-desc = '''Proposition 3.6, "in particular": in finite dimension a sequence converges weakly iff it
-converges strongly, `[FiniteDimensional ℝ E] → (x ⇀ u ↔ Tendsto x atTop (𝓝 u))`. The backbone's
-`tendsto_toWeakSpace_iff_of_finiteDimensional`. ★'''
-deps = ["WeakTendsto", "tendsto_toWeakSpace_iff_of_finiteDimensional"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 3.6"
 
 [[node]]
 id = "remark_3_2_isOpen"
-kind = "theorem"
-desc = '''Remark 2, first sentence, open sets: a weakly open set is strongly open,
-`IsOpen (toWeakSpace ℝ E '' s) → IsOpen s`. Mathlib's `WeakSpace.isOpen_of_isOpen`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 2"
 
 [[node]]
 id = "remark_3_2_isClosed"
-kind = "theorem"
-desc = '''Remark 2, first sentence, closed sets: a weakly closed set is strongly closed,
-`IsClosed (toWeakSpace ℝ E '' s) → IsClosed s`. The backbone's `WeakSpace.isClosed_of_isClosed`
-(`Numlib/Analysis/Normed/Module/WeakClosed`). The remark's second sentence — in infinite
-dimension the weak topology is strictly coarser — is Examples 1 and 2 below. ★'''
-deps = ["WeakSpace.isClosed_of_isClosed"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 2"
 
 [[node]]
 id = "example_3_1"
-kind = "theorem"
-desc = '''§3.2, Example 1: in an infinite-dimensional Banach space the unit sphere is never weakly
-closed; more precisely its weak closure is the closed unit ball, display (1):
-`¬ FiniteDimensional ℝ E → closure (toWeakSpace ℝ E '' Metric.sphere (0 : E) 1) = toWeakSpace ℝ E '' Metric.closedBall 0 1`,
-together with `¬ IsClosed (toWeakSpace ℝ E '' Metric.sphere (0 : E) 1)`. The backbone's
-`closure_image_toWeakSpace_sphere` (`Numlib/Analysis/Normed/Module/WeakClosed`), whose proof is
-the book's (lines 2286–2312), and `isClosed_image_toWeakSpace_closedBall` for "`B_E` is weakly
-closed". ★'''
-deps = ["closure_image_toWeakSpace_sphere", "isClosed_image_toWeakSpace_closedBall"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 1"
 
 [[node]]
 id = "example_3_2"
-kind = "theorem"
-desc = '''§3.2, Example 2: in an infinite-dimensional Banach space the open unit ball is never
-weakly open, `¬ FiniteDimensional ℝ E → ¬ IsOpen (toWeakSpace ℝ E '' Metric.ball (0 : E) 1)`. The
-backbone's `not_isOpen_image_toWeakSpace_ball`. ★'''
-deps = ["not_isOpen_image_toWeakSpace_ball"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Example 2"
 
 [[node]]
 id = "remark_3_3"
-kind = "theorem"
-desc = '''Remark 3 (★): in an infinite-dimensional Banach space the weak topology is not
-metrizable, `¬ FiniteDimensional ℝ E → ¬ TopologicalSpace.MetrizableSpace (WeakSpace ℝ E)` (and
-`weakTopology E` is not induced by any metric, through `weakTopology_eq`). The backbone's
-`not_metrizableSpace_weakSpace` (`Numlib/Analysis/Normed/Module/WeakStarMetrizable`), which is
-Exercise 3.8 (`exercise_3_8` in `Section06`). The remark's "however" — Theorem 3.29 — is
-`theorem_3_29_mp`. ★'''
-deps = ["not_metrizableSpace_weakSpace", "weakTopology_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 3"
+
+[[node]]
+id = "WeakBilin.hasBasis_nhds"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Propositions 3.4 and 3.12"
+
+[[node]]
+id = "weakTopology_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §3.2, Definition"

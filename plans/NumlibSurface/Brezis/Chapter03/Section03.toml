@@ -1,95 +1,29 @@
 namespace = "Brezis.Chapter03"
-desc = '''
-Brezis §3.3, the weak topology against convex sets and linear operators, over a real Banach
-space `E` (and `F`). Theorem 3.7 (Mazur), Corollary 3.9, Remark 6 and Theorem 3.10 with Remark 7
-are the backbone's `Numlib/Analysis/Normed/Module/WeakClosed`; Corollary 3.8 (Mazur's lemma) is
-the backbone's real-scalar `exists_seq_convexCombination_tendsto` of
-`Numlib/Variational/WeakMinimization`, reached through `weakSeqTendsto_iff_tendsto_toWeakSpace`;
-Remark 5 is Mathlib's `iInter_halfSpaces_eq'`. Functions `φ : E → (−∞, +∞]` are `E → EReal` with
-`∀ x, φ x ≠ ⊥`, convex as `ConvexAnalysis.ConvexFn` and l.s.c. as `LowerSemicontinuous`, as in
-chapter 1's `Section04`. Remark 7's second clause (weak–strong continuity iff finite rank,
-Exercise 6.7) and its last paragraph (nonlinear maps, Exercise 4.20) are not nodes.
-'''
 
 [[node]]
 id = "theorem_3_7"
-kind = "theorem"
-desc = '''Theorem 3.7 (Mazur): a convex `C ⊆ E` is closed in `σ(E, E⋆)` iff it is closed in the
-strong topology: `Convex ℝ C → (IsClosed (toWeakSpace ℝ E '' C) ↔ IsClosed C)`. The backbone's
-`Convex.isClosed_image_toWeakSpace_iff` (`Numlib/Analysis/Normed/Module/WeakClosed`), whose
-content is Mathlib's `Convex.toWeakSpace_closure`. ★'''
-deps = ["Convex.isClosed_image_toWeakSpace_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.7"
 
 [[node]]
 id = "corollary_3_8"
-kind = "theorem"
-desc = '''Corollary 3.8 (Mazur's lemma): if `x ⇀ u` there is a sequence `y` of convex combinations
-of the `x n` with `y → u` strongly. Stated as the backbone does, with the combinations taken from
-the tails so that they converge:
-`x ⇀ u → ∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧ (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧ Tendsto (fun n => ∑ i ∈ Finset.Icc n (N n), lam n i • x i) atTop (𝓝 u)`
-— which implies the book's weaker "`y n ∈ convexHull ℝ (Set.range x)`" form, recorded as a
-second conclusion. The backbone's `exists_seq_convexCombination_tendsto`
-(`Numlib/Variational/WeakMinimization`, over `WeakSeqTendsto`, i.e. Proposition 3.5 (i)), through
-`weakSeqTendsto_iff_tendsto_toWeakSpace`. The book's proof — `u` is in the weak closure of the
-convex hull, hence in its strong closure by Theorem 3.7 — is the one there. ★'''
-deps = ["WeakTendsto", "exists_seq_convexCombination_tendsto", "weakSeqTendsto_iff_tendsto_toWeakSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.8"
 
 [[node]]
 id = "remark_3_5"
-kind = "theorem"
-desc = '''Remark 5, second sentence: every closed convex set is the intersection of the closed
-half-spaces containing it. For `Convex ℝ C` and `IsClosed C`,
-`⋂ (f : StrongDual ℝ E) (c : ℝ) (_ : ∀ y ∈ C, f y ≤ c), {x | f x ≤ c} = C`. Mathlib's
-`iInter_halfSpaces_eq'` (`Analysis/LocallyConvex/Separation.lean`, real form). The first sentence
-(variants of Corollary 3.8, Exercises 3.4 and 5.24) is not a node. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 5"
 
 [[node]]
 id = "corollary_3_9"
-kind = "theorem"
-desc = '''Corollary 3.9: a convex function `φ : E → (−∞, +∞]` that is l.s.c. in the strong
-topology is l.s.c. in the weak topology. For `φ : E → EReal` with `ConvexAnalysis.ConvexFn φ` and
-`LowerSemicontinuous φ`: `LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm)` (equivalently
-`LowerSemicontinuous[weakTopology E] φ`, through `weakTopology_eq`). The backbone's
-`LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le` (`Numlib/Analysis/Normed/Module/WeakClosed`)
-with the convexity of the sublevel sets `ConvexAnalysis.ConvexFn.convex_le`; the book's
-`∀ x, φ x ≠ ⊥` is not even needed. ★'''
-deps = ["LowerSemicontinuous.comp_toWeakSpace_symm_of_convex_le", "ConvexAnalysis.ConvexFn", "ConvexAnalysis.ConvexFn.convex_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 3.9"
 
 [[node]]
 id = "remark_3_6"
-kind = "theorem"
-desc = '''Remark 6: a convex strongly continuous function is weakly l.s.c. — in particular the
-norm is, `LowerSemicontinuous (fun x : WeakSpace ℝ E => ‖(toWeakSpace ℝ E).symm x‖)` — and hence
-`x ⇀ u → ‖u‖ ≤ liminf (fun n => ‖x n‖) atTop` again. The backbone's
-`lowerSemicontinuous_norm_comp_toWeakSpace_symm` (`Numlib/Analysis/Normed/Module/WeakClosed`);
-the sequential consequence is `proposition_3_5_iii_liminf`. Two conclusions in one node. ★'''
-deps = ["lowerSemicontinuous_norm_comp_toWeakSpace_symm", "proposition_3_5_iii_liminf"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 6"
 
 [[node]]
 id = "theorem_3_10"
-kind = "theorem"
-desc = '''Theorem 3.10: a linear operator `T : E → F` between Banach spaces is continuous for the
-strong topologies iff it is continuous from `σ(E, E⋆)` to `σ(F, F⋆)`. For `T : E →ₗ[ℝ] F`,
-`Continuous T ↔ Continuous (fun x : WeakSpace ℝ E => toWeakSpace ℝ F (T ((toWeakSpace ℝ E).symm x)))`.
-The backbone's `LinearMap.continuous_iff_continuous_weakSpace`
-(`Numlib/Analysis/Normed/Module/WeakClosed`): `→` is Mathlib's `WeakSpace.map`, `←` the closed
-graph theorem as in the book. ★'''
-deps = ["LinearMap.continuous_iff_continuous_weakSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 3.10"
 
 [[node]]
 id = "remark_3_7"
-kind = "theorem"
-desc = '''Remark 7, first claim: a linear operator continuous from `E` strong into `F` weak is
-continuous from `E` strong into `F` strong — for `T : E →ₗ[ℝ] F` between Banach spaces,
-`Continuous (fun x => toWeakSpace ℝ F (T x)) → Continuous T`. The backbone's
-`LinearMap.continuous_of_continuous_toWeakSpace_comp`. With Theorem 3.10 this is the remark's
-"S → S, W → W, S → W are all the same". The claim about `W → S` (Exercise 6.7) is not a node. ★'''
-deps = ["LinearMap.continuous_of_continuous_toWeakSpace_comp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 3, Remark 7"

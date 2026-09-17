@@ -1,26 +1,9 @@
 namespace = "Brezis.Chapter02"
-desc = '''
-§2.1, the Baire category theorem, over a complete metric space `X` (`[MetricSpace X] [CompleteSpace X]`,
-a `BaireSpace` by `BaireSpace.of_completelyPseudoMetrizable`). Both statements are Mathlib's
-(`Mathlib/Topology/Baire/Lemmas.lean`), restated in the book's two forms.
-'''
 
 [[node]]
 id = "theorem_2_1"
-kind = "theorem"
-desc = '''Theorem 2.1 (Baire): for a complete metric space `X` and closed sets `X n : ℕ → Set X` with
-`∀ n, interior (X n) = ∅`, `interior (⋃ n, X n) = ∅`. Proof: `interior_eq_empty_iff_dense_compl`
-turns each hypothesis into the density of the open set `(X n)ᶜ`, `dense_iInter_of_isOpen_nat`
-gives the density of `⋂ n, (X n)ᶜ = (⋃ n, X n)ᶜ` (`Set.compl_iUnion`), and the same lemma
-backwards gives the conclusion. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 2.1"
 
 [[node]]
 id = "remark_2_1"
-kind = "theorem"
-desc = '''Remark 1, the form in which Baire is used: for a nonempty complete metric space `X` and closed
-sets `X n : ℕ → Set X` with `⋃ n, X n = Set.univ`, `∃ n, (interior (X n)).Nonempty`. This is
-Mathlib's `nonempty_interior_of_iUnion_of_closed` verbatim. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 2, Remark 1"
