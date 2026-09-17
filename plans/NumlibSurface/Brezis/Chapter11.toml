@@ -61,17 +61,20 @@ transported along `f ↦ Re f` (Proposition 11.22, Mathlib's `ContinuousLinearMa
   `Numlib/Analysis/InnerProductSpace/CompactSpectral/Normal` (moved there at review, beside
   chapter 6's `CompactSpectral/Basis`, whose assembly lemma it shares).
 
-**Correspondence.** Section01: 11.1–11.7, `finrank_dual`, `IsFiniteCodim`, `codim`,
+**Correspondence.** Section01: 11.1–11.7, `finrank_dual`, `coord_basis_strongDual`,
+`IsFiniteCodim`, `isFiniteCodim_iff_coFG`, `codim`, `codim_eq_finrank_of_isCompl`,
 `admitsComplement_iff`. Section02: 11.8–11.14 (11.13 and 11.14 split by clause),
 `quotientNorm_eq_iInf`, `quotKerFactorization`. Section03: 11.15–11.21 (11.15, 11.16, 11.21 with
 clause nodes), `lpNorm_eq`, `lp_completeSpace`, `mem_c_iff`, `c₀_le_c_isClosed`, `holder_lp`,
 `l2_inner`, `lp_subset_c₀`, `lp_subset_lq`. Section04: 11.22–11.37 (11.28, 11.32, 11.37 split),
-Remarks 1 and 2, the definition nodes `IsClosedRealHyperplane`, `SeparatesRe`, `conjugateC`,
+Remarks 1 and 2, the map `reDual` (Proposition 11.22's `I`) and the pairing `rePairing`, the
+definition nodes `IsClosedRealHyperplane`, `SeparatesRe`, `conjugateC`, `biconjugateC`,
 `spectrum_eq_setOf_not_bijective`, `numericalRange_eq`, `isStarNormal_iff`,
 `unitary_iff_isometry_surjective`, the displayed claims `orthogonal_complex`,
-`conjugateC_indicator`, `inner_identities`, `laxMilgram_complex`, `adjoint_smul_conj`,
-`selfAdjoint_spectrum_subset_real`, `skewAdjoint_iff`, `skewAdjoint_spectrum_subset_imaginary`,
-`hasDerivAt_norm_sq`, and the two examples `example_rightShift`, `example_shift_two`.
+`conjugateC_indicator`, `inner_identities`, `inner_L2_complex`, `laxMilgram_complex`,
+`laxMilgram_complex_bijective`, `adjoint_smul_conj`, `selfAdjoint_spectrum_subset_real`,
+`skewAdjoint_iff`, `skewAdjoint_spectrum_subset_imaginary`, `hasDerivAt_norm_sq`, the right
+shift `rightShift` with its API, and the two examples `example_rightShift`, `example_shift_two`.
 
 **Not planned.** (i) The bracketed warning of §11.1 that a subspace of finite codimension need
 not be closed (the kernel of a discontinuous functional, Exercise 1.5 — the existence of such a

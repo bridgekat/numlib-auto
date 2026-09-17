@@ -1,152 +1,45 @@
 namespace = "Brezis.Chapter11"
-desc = '''
-Brezis §11.2, the quotient `E/M` of a real Banach space by a closed subspace. The space, its
-norm `‖[x]‖ = inf_{m ∈ M} ‖x − m‖`, `‖π‖ ≤ 1` and Proposition 11.8 are Mathlib's
-`Submodule.Quotient.normedAddCommGroup` (instance under `[IsClosed (M : Set E)]`),
-`Submodule.Quotient.normedSpace`, `Submodule.mkQL`, `QuotientAddGroup.norm_mk`,
-`AddSubgroup.norm_normedMk_le`, `Submodule.Quotient.completeSpace`. Everything else —
-the factorization `T = T̃ ∘ π`, Propositions 11.9–11.14 — is the backbone
-`Numlib/Analysis/Normed/Module/Quotient` (over `RCLike 𝕜`, here at `ℝ`), with the annihilators
-`M^⊥`, `N^⊥` of §1.3 read as chapter 1 reads them: `Submodule.strongDualAnnihilator`,
-`Submodule.strongDualCoannihilator` (`Brezis.Chapter01.mem_orthogonal_iff`). The adjoint `π*` of
-Proposition 11.9 is chapter 2's `ContinuousLinearMap.strongDualMap M.mkQL`, and `proposition_11_9`
-identifies the backbone's isometry with it. The book's example in the proof of 11.14 of a strict
-inequality `dim N^⊥ < codim N` (a hyperplane `N = ker ξ`, `ξ ∈ E** ∖ J(E)`) is not formalized.
-'''
 
 [[node]]
 id = "quotientNorm_eq_iInf"
-kind = "theorem"
-desc = '''The definition paragraph: for `x : E`, `‖(Submodule.Quotient.mk x : E ⧸ M)‖ = ⨅ m : M, ‖x - m‖`
-(the book's `‖[x]‖_{E/M} = inf_{m ∈ M} ‖x − m‖`; Mathlib's `QuotientAddGroup.norm_mk` gives it
-as `Metric.infDist x M`, and `Metric.infDist_eq_iInf` turns it into the infimum), together
-with `‖π x‖ ≤ ‖x‖` (`Submodule.Quotient.norm_mk_le`) and `‖π‖ ≤ 1` for `π = M.mkQL`
-(`AddSubgroup.norm_normedMk_le`). The remark that `‖[x]‖ = 0` forces `[x] = 0` because `M` is
-closed is `QuotientAddGroup.norm_mk_eq_zero`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2, Definition"
 
 [[node]]
 id = "proposition_11_8"
-kind = "theorem"
-desc = '''Proposition 11.8: `E/M` with the quotient norm is a Banach space —
-`CompleteSpace (E ⧸ M)` for a closed subspace `M` of the Banach space `E`. Mathlib's
-`Submodule.Quotient.completeSpace` (the book's `∑ 2^{-k}` subsequence argument is Mathlib's
-proof too). ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.8"
 
 [[node]]
 id = "quotKerFactorization"
-kind = "theorem"
-desc = '''The unnumbered factorization after Proposition 11.9: for Banach spaces `F, G` and
-`T : F →L[ℝ] G`, the operator `T̃ := T.ker.liftQL T le_rfl : F ⧸ T.ker →L[ℝ] G` satisfies
-`T̃ (π x) = T x` (`Submodule.liftQL_apply`), is injective with range `R(T)`, and `‖T̃‖ = ‖T‖`.
-Backbone: `Submodule.injective_liftQL_ker`, `Submodule.opNorm_liftQL`; the kernel `N(T)` is
-closed by `ContinuousLinearMap.isClosed_ker`. ★'''
-deps = ["Submodule.injective_liftQL_ker", "Submodule.opNorm_liftQL"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
 
 [[node]]
 id = "proposition_11_9"
-kind = "theorem"
-desc = '''Proposition 11.9: for a closed subspace `M` of `E` and the adjoint
-`π* : (E/M)* → E*` of `π : E → E/M` — here `ContinuousLinearMap.strongDualMap M.mkQL`
-(chapter 2, D3), `⟨π* ξ, x⟩ = ⟨ξ, π x⟩` — `R(π*) = M^⊥`, `π*` is injective, and
-`‖π* ξ‖ = ‖ξ‖`; "in particular `(E/M)*` is isomorphic and isometric to `M^⊥`". Stated as: the
-backbone isometry `Submodule.strongDualQuotLIEAnnihilator M : StrongDual ℝ (E ⧸ M) ≃ₗᵢ[ℝ] M.strongDualAnnihilator`
-has `(… ξ : StrongDual ℝ E) = ContinuousLinearMap.strongDualMap M.mkQL ξ` for every `ξ`
-(`Submodule.strongDualQuotLIEAnnihilator_apply` and `ContinuousLinearMap.strongDualMap_apply`,
-both `rfl`-level), so `π*` is a bijective isometry onto `M^⊥`. ★'''
-deps = ["Submodule.strongDualQuotLIEAnnihilator", "Submodule.strongDualQuotLIEAnnihilator_apply", "ContinuousLinearMap.strongDualMap", "ContinuousLinearMap.strongDualMap_apply"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.9"
 
 [[node]]
 id = "proposition_11_10"
-kind = "theorem"
-desc = '''Proposition 11.10: for a closed subspace `M` of a Banach space `E`, the restriction
-`T : E* → M*`, `T f = f|_M` (here `f.comp M.subtypeL`), has `N(T) = M^⊥` and `R(T) = M*`, and
-the induced `T̃ : E*/M^⊥ → M*` is a bijective isometry. Stated as: `Submodule.quotAnnihilatorLIEStrongDual M : (StrongDual ℝ E ⧸ M.strongDualAnnihilator) ≃ₗᵢ[ℝ] StrongDual ℝ M`
-with `quotAnnihilatorLIEStrongDual M (mk f) = f.comp M.subtypeL`, plus the two clauses
-`Submodule.ker_comp_subtypeL_eq_strongDualAnnihilator` and `Submodule.surjective_comp_subtypeL`
-(Hahn–Banach, Corollary 1.2, `Brezis.Chapter01.corollary_1_2`). ★'''
-deps = ["Submodule.quotAnnihilatorLIEStrongDual", "Submodule.ker_comp_subtypeL_eq_strongDualAnnihilator", "Submodule.surjective_comp_subtypeL", "Brezis.Chapter01.corollary_1_2"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.10"
 
 [[node]]
 id = "proposition_11_11"
-kind = "theorem"
-desc = '''Proposition 11.11: the quotient of a reflexive Banach space by a closed subspace is
-reflexive — `NormedSpace.IsReflexive ℝ (E ⧸ M)` from `[NormedSpace.IsReflexive ℝ E]` and
-`[IsClosed (M : Set E)]`. The backbone instance `Submodule.Quotient.instIsReflexive`, proved
-directly through Proposition 11.9 and Hahn–Banach rather than through Corollary 3.21 and
-Proposition 3.20 as the book does (the `desc` there explains). Reflexivity is chapter 3's reading
-of the book's definition, `NormedSpace.IsReflexive` (`Brezis.Chapter03` states Definition of §3.5
-over it). ★'''
-deps = ["Submodule.Quotient.instIsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.11"
 
 [[node]]
 id = "proposition_11_12"
-kind = "theorem"
-desc = '''Proposition 11.12: the quotient of a uniformly convex Banach space by a closed subspace
-is uniformly convex — `UniformConvexSpace (E ⧸ M)` from `[UniformConvexSpace E]`. The backbone
-instance `Submodule.Quotient.instUniformConvexSpace`. The book's proof picks representatives
-`x − m₁`, `y − m₂` in the closed unit ball, which exist because a uniformly convex space is
-reflexive (Corollary 3.23 with Milman–Pettis, Theorem 3.31); the backbone uses representatives
-in the ball of radius `1 + η` instead and needs neither, so this node does not depend on
-chapter 3. Uniform convexity is the book's Definition of §3.7 read as Mathlib's
-`UniformConvexSpace` (chapter 3's `Brezis.Chapter03` fixes that reading). ★'''
-deps = ["Submodule.Quotient.instUniformConvexSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.12"
 
 [[node]]
 id = "proposition_11_13_a"
-kind = "theorem"
-desc = '''Proposition 11.13 (a): for a closed subspace `M` of a Banach space `E`,
-`dim M < ∞ ↔ codim M^⊥ < ∞`, and then `dim M = codim M^⊥`:
-`FiniteDimensional ℝ M ↔ M.strongDualAnnihilator.CoFG` and
-`Module.finrank ℝ M = codim M.strongDualAnnihilator` (`codim` of §11.1, i.e.
-`Module.finrank ℝ (StrongDual ℝ E ⧸ M.strongDualAnnihilator)`). Backbone:
-`Submodule.finiteDimensional_iff_coFG_strongDualAnnihilator`,
-`Submodule.finrank_eq_finrank_quotient_strongDualAnnihilator`. ★'''
-deps = ["Submodule.finiteDimensional_iff_coFG_strongDualAnnihilator", "Submodule.finrank_eq_finrank_quotient_strongDualAnnihilator", "codim"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
 
 [[node]]
 id = "proposition_11_13_b"
-kind = "theorem"
-desc = '''Proposition 11.13 (b): for a closed subspace `M` of a Banach space `E`,
-`codim M < ∞ ↔ dim M^⊥ < ∞`, and then `codim M = dim M^⊥`:
-`FiniteCodim M ↔ FiniteDimensional ℝ M.strongDualAnnihilator` and
-`codim M = Module.finrank ℝ M.strongDualAnnihilator`. Backbone:
-`Submodule.coFG_iff_finiteDimensional_strongDualAnnihilator`,
-`Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator`, through `finiteCodim_iff_coFG`. ★'''
-deps = ["Submodule.coFG_iff_finiteDimensional_strongDualAnnihilator", "Submodule.finrank_quotient_eq_finrank_strongDualAnnihilator", "finiteCodim_iff_coFG", "codim"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.13"
 
 [[node]]
 id = "proposition_11_14"
-kind = "theorem"
-desc = '''Proposition 11.14, first sentence: for a closed subspace `N ⊆ E*`,
-`dim N < ∞ ↔ codim N^⊥ < ∞`, and then `dim N = codim N^⊥`:
-`FiniteDimensional ℝ N ↔ FiniteCodim N.strongDualCoannihilator` and
-`Module.finrank ℝ N = codim N.strongDualCoannihilator`. Backbone:
-`Submodule.finiteDimensional_iff_coFG_strongDualCoannihilator`,
-`Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`. The claim `N^⊥⊥ = N` for
-finite-dimensional `N` inside the book's proof, which uses Lemma 3.2, is the backbone's
-`Submodule.strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional`. ★'''
-deps = ["Submodule.finiteDimensional_iff_coFG_strongDualCoannihilator", "Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator", "finiteCodim_iff_coFG", "codim"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"
 
 [[node]]
 id = "proposition_11_14_le"
-kind = "theorem"
-desc = '''Proposition 11.14, second sentence: "it is also true that `dim N^⊥ ≤ codim N`" — for a
-closed subspace `N ⊆ E*` of finite codimension, `N^⊥` is finite-dimensional and
-`Module.finrank ℝ N.strongDualCoannihilator ≤ codim N`. Backbone:
-`Submodule.finrank_strongDualCoannihilator_le_finrank_quotient`. The book's example showing the
-inequality may be strict (`N = ker ξ` for `ξ ∈ E** ∖ J(E)`, so `N^⊥ = 0` while `codim N = 1`)
-is not a node. ★'''
-deps = ["Submodule.finrank_strongDualCoannihilator_le_finrank_quotient", "finiteCodim_iff_coFG", "codim"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.14"
