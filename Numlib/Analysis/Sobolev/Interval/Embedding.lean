@@ -41,6 +41,10 @@ open interval `I ⊆ ℝ`.
   `W^{1,p}(I)` and integration by parts.
 * `SobolevIntervalLp.hasWeakDerivOn_comp`, `memSobolevIntervalLp_comp` (Corollary 8.11): the
   chain rule `(G ∘ u)' = (G' ∘ u) u'` for `G ∈ C¹` with `G(0) = 0`.
+* `SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one` (Remark 10, Exercise 8.3): **Helly's
+  selection theorem**, a bounded sequence of `W^{1,1}(a, b)` has a subsequence whose
+  representatives converge at every point of `[a, b]`, from the selection theorem for monotone
+  functions `exists_subseq_forall_tendsto_of_forall_monotoneOn`.
 
 ## Route: the representative, not density
 
@@ -1626,6 +1630,193 @@ theorem abs_rep_pow_le (hI : (I : Set ℝ).OrdConnected) (hunb : ¬ Bornology.Is
     ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) (by linarith),
     ← ENNReal.ofReal_mul (by linarith), ← ENNReal.ofReal_mul (by positivity)] at h
   exact (ENNReal.ofReal_le_ofReal_iff (by positivity)).1 h
+
+end SobolevIntervalLp
+
+/-! ### Helly's selection theorem -/
+
+section Helly
+
+/-- **Pointwise extraction on a countable set**: a sequence of real functions uniformly bounded on
+a countable set `s` has a subsequence converging at every point of `s` — the diagonal argument,
+here as the sequential compactness of the countable product `s → [-M, M]`. -/
+theorem exists_subseq_forall_tendsto_of_countable {s : Set ℝ} (hs : s.Countable)
+    {f : ℕ → ℝ → ℝ} {M : ℝ} (hbdd : ∀ n, ∀ x ∈ s, |f n x| ≤ M) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ s, ∃ l, Tendsto (fun n ↦ f (φ n) x) atTop (𝓝 l) := by
+  have : Countable s := hs.to_subtype
+  obtain ⟨L, φ, hφ, hL⟩ := SeqCompactSpace.tendsto_subseq
+    (fun n (x : s) ↦ (⟨f n x, abs_le.1 (hbdd n x x.2)⟩ : Icc (-M) M))
+  refine ⟨φ, hφ, fun x hx ↦ ⟨(L ⟨x, hx⟩ : ℝ), ?_⟩⟩
+  exact (continuous_subtype_val.tendsto _).comp (tendsto_pi_nhds.1 hL ⟨x, hx⟩)
+
+/-- **Helly's selection theorem for monotone functions**: a sequence of functions nondecreasing
+and uniformly bounded on `[a, b]` has a subsequence converging at every point of `[a, b]`.
+Extract (`exists_subseq_forall_tendsto_of_countable`) a subsequence converging on the rationals of
+`[a, b]` and at the endpoints, with limit `l`; the envelope `g x = inf {l r : r rational, x < r}`
+is nondecreasing, so has countably many discontinuities (`Monotone.countable_not_continuousAt`);
+extract again on these; at every other `x ∈ (a, b)` the subsequence converges to `g x`, squeezed
+between its values at rationals `q < x < r`. -/
+theorem exists_subseq_forall_tendsto_of_forall_monotoneOn {f : ℕ → ℝ → ℝ} {a b M : ℝ}
+    (hmono : ∀ n, MonotoneOn (f n) (Icc a b)) (hbdd : ∀ n, ∀ x ∈ Icc a b, |f n x| ≤ M) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ x ∈ Icc a b, ∃ l, Tendsto (fun n ↦ f (φ n) x) atTop (𝓝 l) := by
+  rcases lt_or_ge b a with hba | hab
+  · exact ⟨id, strictMono_id, fun x hx ↦
+      absurd hx (by rw [Icc_eq_empty_of_lt hba]; exact notMem_empty x)⟩
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hbdd 0 a (left_mem_Icc.2 hab))
+  -- the rationals of `[a, b]` and the endpoints
+  obtain ⟨D₀, hD₀⟩ : ∃ D : Set ℝ, D = Icc a b ∩ (range ((↑) : ℚ → ℝ) ∪ {a, b}) := ⟨_, rfl⟩
+  have hD₀c : D₀.Countable := hD₀ ▸
+    ((countable_range _).union ((countable_singleton b).insert a)).mono inter_subset_right
+  have hD₀I : D₀ ⊆ Icc a b := hD₀ ▸ inter_subset_left
+  obtain ⟨φ₁, hφ₁, h₁⟩ := exists_subseq_forall_tendsto_of_countable hD₀c (f := f)
+    fun n x hx ↦ hbdd n x (hD₀I hx)
+  choose! l hl using h₁
+  have hlM : ∀ x ∈ D₀, |l x| ≤ M := fun x hx ↦ abs_le.2
+    ⟨le_of_tendsto_of_tendsto' tendsto_const_nhds (hl x hx) fun n ↦
+      (abs_le.1 (hbdd _ x (hD₀I hx))).1,
+      le_of_tendsto_of_tendsto' (hl x hx) tendsto_const_nhds fun n ↦
+      (abs_le.1 (hbdd _ x (hD₀I hx))).2⟩
+  -- the nondecreasing envelope `g`
+  obtain ⟨g, hg⟩ : ∃ g : ℝ → ℝ, g = fun x ↦ sInf (l '' {r ∈ D₀ | x < r} ∪ {M}) := ⟨_, rfl⟩
+  have hbelow : ∀ x, BddBelow (l '' {r ∈ D₀ | x < r} ∪ {M}) := fun x ↦ ⟨-M, by
+    rintro y (⟨r, hr, rfl⟩ | rfl)
+    · exact (abs_le.1 (hlM r hr.1)).1
+    · linarith⟩
+  have hg_mono : Monotone g := by
+    intro x y hxy
+    simp only [hg]
+    refine csInf_le_csInf (hbelow x) ⟨M, Or.inr rfl⟩ ?_
+    rintro z (⟨r, hr, rfl⟩ | rfl)
+    · exact Or.inl ⟨r, ⟨hr.1, hxy.trans_lt hr.2⟩, rfl⟩
+    · exact Or.inr rfl
+  -- the second extraction, on the rationals and the discontinuities of `g`
+  obtain ⟨D, hD⟩ : ∃ D : Set ℝ, D = (D₀ ∪ {x | ¬ContinuousAt g x}) ∩ Icc a b := ⟨_, rfl⟩
+  have hDc : D.Countable := hD ▸
+    (hD₀c.union hg_mono.countable_not_continuousAt).mono inter_subset_left
+  obtain ⟨φ₂, hφ₂, h₂⟩ := exists_subseq_forall_tendsto_of_countable hDc
+    (f := fun n ↦ f (φ₁ n)) (M := M) fun n x hx ↦ hbdd _ x (by rw [hD] at hx; exact hx.2)
+  refine ⟨φ₁ ∘ φ₂, hφ₁.comp hφ₂, fun x hx ↦ ?_⟩
+  by_cases hxD : x ∈ D
+  · exact h₂ x hxD
+  -- `x` is an interior point of continuity of `g`, and the subsequence converges to `g x` there
+  have hxD₀ : x ∉ D₀ := fun h ↦ hxD (hD ▸ ⟨Or.inl h, hx⟩)
+  have hcont : ContinuousAt g x := by_contra fun h ↦ hxD (hD ▸ ⟨Or.inr h, hx⟩)
+  have hxa : a < x := lt_of_le_of_ne hx.1 fun h ↦
+    hxD₀ (hD₀ ▸ ⟨hx, Or.inr (by rw [← h]; exact mem_insert a {b})⟩)
+  have hxb : x < b := lt_of_le_of_ne hx.2 fun h ↦
+    hxD₀ (hD₀ ▸ ⟨hx, Or.inr (by rw [h]; exact mem_insert_of_mem a (mem_singleton b))⟩)
+  refine ⟨g x, tendsto_order.2 ⟨fun c hc ↦ ?_, fun c hc ↦ ?_⟩⟩
+  · -- from below: two rationals `q < q' < x` close to `x`, `c < g q ≤ l q'`
+    obtain ⟨δ, hδ, hδg⟩ := Metric.continuousAt_iff.1 hcont (g x - c) (by linarith)
+    obtain ⟨q, hq1, hq2⟩ := exists_rat_btwn (show max (x - δ) a < x from max_lt (by linarith) hxa)
+    obtain ⟨q', hq'1, hq'2⟩ := exists_rat_btwn hq2
+    have hq'D : (q' : ℝ) ∈ D₀ := hD₀ ▸
+      ⟨⟨(le_max_right _ _).trans (hq1.trans hq'1).le, hq'2.le.trans hxb.le⟩, Or.inl ⟨q', rfl⟩⟩
+    have hgq : c < g q := by
+      have := hδg (show dist (q : ℝ) x < δ by
+        rw [Real.dist_eq, abs_sub_lt_iff]; constructor <;> linarith [le_max_left (x - δ) a])
+      rw [Real.dist_eq, abs_sub_lt_iff] at this
+      linarith [this.2]
+    have hgl : g q ≤ l q' := by
+      simp only [hg]
+      exact csInf_le (hbelow q) (Or.inl ⟨q', ⟨hq'D, hq'1⟩, rfl⟩)
+    have hev : ∀ᶠ n in atTop, c < f (φ₁ n) q' :=
+      (hl q' hq'D).eventually (lt_mem_nhds (hgq.trans_le hgl))
+    filter_upwards [hφ₂.tendsto_atTop.eventually hev] with n hn
+    exact hn.trans_le (hmono _ (hD₀I hq'D) hx hq'2.le)
+  · -- from above: some element of the defining set of `g x` is below `c`
+    have : ∃ z ∈ l '' {r ∈ D₀ | x < r} ∪ {M}, z < c := by
+      by_contra! h
+      have := le_csInf ⟨M, Or.inr rfl⟩ h
+      simp only [hg] at hc
+      exact absurd (hc.trans_le this) (lt_irrefl _)
+    obtain ⟨z, (⟨r, ⟨hrD, hxr⟩, rfl⟩ | rfl), hz⟩ := this
+    · have hev : ∀ᶠ n in atTop, f (φ₁ n) r < c := (hl r hrD).eventually (gt_mem_nhds hz)
+      filter_upwards [hφ₂.tendsto_atTop.eventually hev] with n hn
+      exact (hmono _ hx (hD₀I hrD) hxr.le).trans_lt hn
+    · exact Eventually.of_forall fun n ↦ (le_abs_self _).trans_lt ((hbdd _ x hx).trans_lt hz)
+
+end Helly
+
+namespace SobolevIntervalLp
+
+variable {a b : ℝ}
+
+/-- **Helly's selection theorem** ([brezis2011functional] Chapter 8, Remark 10 and Exercise 8.3):
+a bounded sequence of `W^{1,1}(a, b)` has a subsequence whose continuous representatives converge
+at every point of `[a, b]`. The representative is the difference of the two nondecreasing
+functions `v_n(x) = ∫_a^x |u_n'|` and `w_n = v_n - ũ_n` (as `w_n(y) - w_n(x) = ∫_x^y (|u_n'| -
+u_n') ≥ 0`), both bounded by a multiple of `‖u_n‖`; two applications of Helly's theorem for
+monotone functions (`exists_subseq_forall_tendsto_of_forall_monotoneOn`) give the subsequence. -/
+theorem exists_subseq_tendsto_of_bounded_one (hab : a < b)
+    {u : ℕ → SobolevIntervalLp 1 1 (Opens.Ioo a b)} {M : ℝ} (hM : ∀ n, ‖u n‖ ≤ M) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧
+      ∀ x ∈ Icc a b, ∃ l, Tendsto (fun n ↦ rep (u (φ n)) x) atTop (𝓝 l) := by
+  have hI := ordConnected_coe_Ioo a b
+  have hcl : Icc a b ⊆ closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) := by rw [closure_coe_Ioo hab]
+  have ha : a ∈ Icc a b := left_mem_Icc.2 hab.le
+  have hb : b ∈ Icc a b := right_mem_Icc.2 hab.le
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
+  -- the nondecreasing parts `v_n(x) = ∫_a^x |u_n'|` and `w_n = v_n - ũ_n`
+  obtain ⟨v, hv⟩ : ∃ v : ℕ → ℝ → ℝ, v = fun n x ↦ ∫ t in a..x, |deriv (u n) 1 t| := ⟨_, rfl⟩
+  obtain ⟨w, hw⟩ : ∃ w : ℕ → ℝ → ℝ, w = fun n x ↦ v n x - rep (u n) x := ⟨_, rfl⟩
+  have hint : ∀ n, ∀ x ∈ Icc a b, ∀ y ∈ Icc a b,
+      IntervalIntegrable (fun t ↦ |deriv (u n) 1 t|) volume x y :=
+    fun n x hx y hy ↦ (intervalIntegrable_deriv hI (u n) 1 (hcl hx) (hcl hy)).abs
+  have hvsub : ∀ n, ∀ x ∈ Icc a b, ∀ y ∈ Icc a b,
+      v n y - v n x = ∫ t in x..y, |deriv (u n) 1 t| := by
+    intro n x hx y hy
+    rw [hv]
+    exact intervalIntegral.integral_interval_sub_left (hint n a ha y hy) (hint n a ha x hx)
+  have hvmono : ∀ n, MonotoneOn (v n) (Icc a b) := fun n x hx y hy hxy ↦ by
+    rw [← sub_nonneg, hvsub n x hx y hy]
+    exact intervalIntegral.integral_nonneg hxy fun t _ ↦ abs_nonneg _
+  have hwmono : ∀ n, MonotoneOn (w n) (Icc a b) := fun n x hx y hy hxy ↦ by
+    rw [← sub_nonneg, hw]
+    simp only
+    rw [show v n y - rep (u n) y - (v n x - rep (u n) x)
+        = (v n y - v n x) - (rep (u n) y - rep (u n) x) by ring, hvsub n x hx y hy,
+      rep_sub_rep hI (u n) (hcl hx) (hcl hy), ← intervalIntegral.integral_sub (hint n x hx y hy)
+        (intervalIntegrable_deriv hI (u n) 1 (hcl hx) (hcl hy))]
+    exact intervalIntegral.integral_nonneg hxy fun t _ ↦ sub_nonneg.2 (le_abs_self _)
+  -- the bounds
+  have hnorm : ∀ n, ∫ t in a..b, |deriv (u n) 1 t| = ‖deriv (u n) 1‖ := by
+    intro n
+    rw [Lp.norm_def, eLpNorm_one_eq_lintegral_enorm (Lp.aestronglyMeasurable _),
+      ← integral_norm_eq_lintegral_enorm (Lp.aestronglyMeasurable _),
+      intervalIntegral.integral_of_le hab.le, integral_Ioc_eq_integral_Ioo]
+    simp only [Real.norm_eq_abs]
+    rfl
+  have hvbdd : ∀ n, ∀ x ∈ Icc a b, |v n x| ≤ M := by
+    intro n x hx
+    rw [hv]
+    simp only
+    rw [abs_of_nonneg (intervalIntegral.integral_nonneg hx.1 fun t _ ↦ abs_nonneg _)]
+    calc ∫ t in a..x, |deriv (u n) 1 t| ≤ ∫ t in a..b, |deriv (u n) 1 t| :=
+          intervalIntegral.integral_mono_interval le_rfl hx.1 hx.2
+            (Eventually.of_forall fun t ↦ abs_nonneg _) (hint n a ha b hb)
+      _ = ‖deriv (u n) 1‖ := hnorm n
+      _ ≤ M := (norm_deriv_le _ 1).trans (hM n)
+  have hwbdd : ∀ n, ∀ x ∈ Icc a b, |w n x| ≤ M + embeddingConst 1 (Opens.Ioo a b) * M := by
+    intro n x hx
+    rw [hw]
+    simp only
+    refine (abs_sub _ _).trans (add_le_add (hvbdd n x hx) ?_)
+    exact (abs_rep_le hI (u n) (hcl hx)).trans
+      (mul_le_mul_of_nonneg_left (hM n) (embeddingConst_pos 1 _).le)
+  -- two extractions
+  obtain ⟨φ₁, hφ₁, h₁⟩ := exists_subseq_forall_tendsto_of_forall_monotoneOn hvmono hvbdd
+  obtain ⟨φ₂, hφ₂, h₂⟩ := exists_subseq_forall_tendsto_of_forall_monotoneOn
+    (f := fun n ↦ w (φ₁ n)) (fun n ↦ hwmono (φ₁ n)) (fun n ↦ hwbdd (φ₁ n))
+  refine ⟨φ₁ ∘ φ₂, hφ₁.comp hφ₂, fun x hx ↦ ?_⟩
+  obtain ⟨l₁, hl₁⟩ := h₁ x hx
+  obtain ⟨l₂, hl₂⟩ := h₂ x hx
+  refine ⟨l₁ - l₂, ?_⟩
+  have : (fun n ↦ rep (u (φ₁ (φ₂ n))) x) = fun n ↦ v (φ₁ (φ₂ n)) x - w (φ₁ (φ₂ n)) x := by
+    funext n; rw [hw]; simp only; ring
+  change Tendsto (fun n ↦ rep (u (φ₁ (φ₂ n))) x) atTop (𝓝 (l₁ - l₂))
+  rw [this]
+  exact (hl₁.comp hφ₂.tendsto_atTop).sub hl₂
 
 end SobolevIntervalLp
 

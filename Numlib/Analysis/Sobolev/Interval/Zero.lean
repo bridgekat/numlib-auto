@@ -38,7 +38,14 @@ interval `I`. The space `SobolevIntervalLpZero m p I` itself is defined in
   the bounded one.
 * `SobolevIntervalLp.abs_rep_sub_average_le`, `SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv`,
   `SobolevIntervalLp.eLpNorm_sub_average_le` (Problem 47 A.1, A.4, A.6): the Poincaré–Wirtinger
-  inequalities `‖u - ū‖_∞ ≤ ‖u'‖_1` and `‖u‖_∞ ≤ ½ ‖u'‖_1` on `W_0^{1,1}`.
+  inequalities `‖u - ū‖_∞ ≤ ‖u'‖_1` and `‖u‖_∞ ≤ ½ ‖u'‖_1` on `W_0^{1,1}`;
+  `SobolevIntervalLp.integral_abs_sub_average_le` and `integral_abs_sub_average_le_half`
+  (Problem 47 C.1, C.2): `‖u - ū‖_{L¹(0,1)} ≤ 2 ∫_0^1 |u'(t)| t (1 - t) dt ≤ ½ ‖u'‖_{L¹(0,1)}`,
+  by Tonelli's theorem on the square `(0, 1)²`.
+* `mem_sobolevIntervalLpZero_higher_iff_of_bounded` (Remark 18, bounded interval):
+  `u ∈ W_0^{m+1,p}(a, b) ↔ u = Du = ⋯ = D^m u = 0 on {a, b}`, `1 ≤ p < ∞`, by induction on `m`
+  from Theorem 8.12 (`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero` is the induction
+  step); `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero` is the easy direction on every `I`.
 
 ## Design
 
@@ -1416,5 +1423,502 @@ theorem _root_.mem_sobolevIntervalLpZero_iff_indicator_mem (hI : (I : Set ℝ).O
     · exact key (Ioi x) isOpen_Ioi (by rw [closure_Ioi]; exact self_mem_Ici) fun y hy ↦ h y hy
 
 end SobolevIntervalLpZero
+
+/-! ### Problem 47 C: the weighted Poincaré–Wirtinger inequality in `L¹(0, 1)` -/
+
+namespace SobolevIntervalLp
+
+/-- The set of pairs `(x, y)` with `t` strictly between them, `t ∈ Ι y x`, is measurable. -/
+theorem measurableSet_setOf_mem_uIoc (t : ℝ) : MeasurableSet {q : ℝ × ℝ | t ∈ Ι q.2 q.1} := by
+  simp only [mem_uIoc, Set.ofPred_or, Set.ofPred_and]
+  exact ((measurableSet_lt measurable_snd measurable_const).inter
+    (measurableSet_le measurable_const measurable_fst)).union
+    ((measurableSet_lt measurable_fst measurable_const).inter
+      (measurableSet_le measurable_const measurable_snd))
+
+/-- **The weight of Problem 47 C.1**: for `t ∈ (0, 1)`, the pairs `(x, y) ∈ (0, 1)²` with `t`
+between `y` and `x` form two rectangles, of total measure `2 t (1 - t)`. -/
+theorem volume_prod_setOf_mem_uIoc {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (volume.prod volume) (Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 ∩ {q : ℝ × ℝ | t ∈ Ι q.2 q.1})
+      = ENNReal.ofReal (2 * (t * (1 - t))) := by
+  have e : Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 ∩ {q : ℝ × ℝ | t ∈ Ι q.2 q.1}
+      = Ico t 1 ×ˢ Ioo 0 t ∪ Ioo 0 t ×ˢ Ico t 1 := by
+    ext ⟨x, y⟩
+    simp only [mem_inter_iff, mem_prod, mem_Ioo, Set.mem_ofPred_eq, mem_uIoc, mem_union, mem_Ico]
+    constructor
+    · rintro ⟨⟨⟨hx0, hx1⟩, ⟨hy0, hy1⟩⟩, ⟨hyt, htx⟩ | ⟨hxt, hty⟩⟩
+      · exact Or.inl ⟨⟨htx, hx1⟩, hy0, hyt⟩
+      · exact Or.inr ⟨⟨hx0, hxt⟩, hty, hy1⟩
+    · rintro (⟨⟨htx, hx1⟩, hy0, hyt⟩ | ⟨⟨hx0, hxt⟩, hty, hy1⟩)
+      · exact ⟨⟨⟨ht.1.trans_le htx, hx1⟩, ⟨hy0, hyt.trans ht.2⟩⟩, Or.inl ⟨hyt, htx⟩⟩
+      · exact ⟨⟨⟨hx0, hxt.trans ht.2⟩, ⟨ht.1.trans_le hty, hy1⟩⟩, Or.inr ⟨hxt, hty⟩⟩
+  have hdisj : Disjoint (Ico t 1 ×ˢ Ioo 0 t) (Ioo 0 t ×ˢ Ico t 1) :=
+    Set.disjoint_left.2 fun q hq1 hq2 ↦ (hq1.1.1.trans_lt hq2.1.2).false
+  rw [e, measure_union hdisj (measurableSet_Ioo.prod measurableSet_Ico), Measure.prod_prod,
+    Measure.prod_prod, Real.volume_Ico, Real.volume_Ioo, sub_zero,
+    ← ENNReal.ofReal_mul (sub_nonneg.2 ht.2.le), ← ENNReal.ofReal_mul ht.1.le,
+    ← ENNReal.ofReal_add (by nlinarith [ht.1, ht.2]) (by nlinarith [ht.1, ht.2])]
+  congr 1
+  ring
+
+/-- For `t ∉ (0, 1)`, no pair `(x, y) ∈ (0, 1)²` has `t` between `y` and `x`. -/
+theorem prod_Ioo_inter_setOf_mem_uIoc_eq_empty {t : ℝ} (ht : t ∉ Ioo (0 : ℝ) 1) :
+    Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 ∩ {q : ℝ × ℝ | t ∈ Ι q.2 q.1} = ∅ := by
+  ext ⟨x, y⟩
+  simp only [mem_inter_iff, mem_prod, mem_Ioo, Set.mem_ofPred_eq, mem_uIoc, mem_empty_iff_false,
+    iff_false, not_and, not_or]
+  rintro ⟨⟨hx0, hx1⟩, ⟨hy0, hy1⟩⟩
+  refine ⟨fun hyt htx ↦ ht ⟨hy0.trans hyt, htx.trans_lt hx1⟩,
+    fun hxt hty ↦ ht ⟨hx0.trans hxt, hty.trans_lt hy1⟩⟩
+
+/-- **Problem 47 C.1 of [brezis2011functional], in `ℝ≥0∞`**: for `u ∈ W^{1,1}(0, 1)` and `ū` its
+mean, `∫_0^1 |ũ(x) - ū| dx ≤ ∫_0^1 |u'(t)| 2 t (1 - t) dt`. Since `ũ(x) - ū` is the mean over
+`y` of `ũ(x) - ũ(y) = ∫_y^x u'`, the left side is at most
+`∫∫_{(0,1)²} ∫ |u'(t)| 1_{t ∈ Ι y x} dt dx dy`, and Tonelli's theorem turns this into
+`∫ |u'(t)| · |{(x, y) : t ∈ Ι y x}| dt`, the measure of the two rectangles being
+`2 t (1 - t)` (`SobolevIntervalLp.volume_prod_setOf_mem_uIoc`). -/
+theorem lintegral_enorm_rep_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
+    ∫⁻ x in Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ
+      ≤ ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (2 * (t * (1 - t))) := by
+  have hI := ordConnected_coe_Ioo (0 : ℝ) 1
+  have hcl : Icc (0 : ℝ) 1 ⊆ closure ((Opens.Ioo 0 1 : Opens ℝ) : Set ℝ) := by
+    rw [closure_coe_Ioo zero_lt_one]
+  obtain ⟨w, hw⟩ : ∃ w : ℝ → ℝ, w = deriv u 1 := ⟨_, rfl⟩
+  have hwm : Measurable w := by rw [hw]; exact (Lp.stronglyMeasurable _).measurable
+  have hvol : volume (Ioo (0 : ℝ) 1) ≠ ⊤ := by rw [Real.volume_Ioo]; exact ENNReal.ofReal_ne_top
+  obtain ⟨A, hA⟩ : ∃ A : ℝ → Set (ℝ × ℝ), A = fun t ↦ {q : ℝ × ℝ | t ∈ Ι q.2 q.1} := ⟨_, rfl⟩
+  have hAm : ∀ t, MeasurableSet (A t) := fun t ↦ by rw [hA]; exact measurableSet_setOf_mem_uIoc t
+  obtain ⟨S, hS⟩ : ∃ S : Set (ℝ × ℝ), S = Ioo (0 : ℝ) 1 ×ˢ Ioo (0 : ℝ) 1 := ⟨_, rfl⟩
+  have hSm : MeasurableSet S := by rw [hS]; exact measurableSet_Ioo.prod measurableSet_Ioo
+  -- the kernel `K (q, t) = ‖w t‖ₑ 1_{t ∈ Ι q.2 q.1}` and its measurability
+  obtain ⟨K, hK⟩ : ∃ K : ℝ × ℝ → ℝ → ℝ≥0∞,
+      K = fun q t ↦ (Ι q.2 q.1).indicator (fun t ↦ ‖w t‖ₑ) t := ⟨_, rfl⟩
+  have hKeq : ∀ q t, K q t = ‖w t‖ₑ * (A t).indicator (fun _ ↦ (1 : ℝ≥0∞)) q := by
+    intro q t
+    rw [hK, hA]
+    change (Ι q.2 q.1).indicator (fun t ↦ ‖w t‖ₑ) t
+      = ‖w t‖ₑ * {q : ℝ × ℝ | t ∈ Ι q.2 q.1}.indicator (fun _ ↦ (1 : ℝ≥0∞)) q
+    by_cases hq : t ∈ Ι q.2 q.1
+    · rw [indicator_of_mem hq, indicator_of_mem (show q ∈ {q : ℝ × ℝ | t ∈ Ι q.2 q.1} from hq),
+        mul_one]
+    · rw [indicator_of_notMem hq,
+        indicator_of_notMem (show q ∉ {q : ℝ × ℝ | t ∈ Ι q.2 q.1} from hq), mul_zero]
+  have hKm : Measurable (Function.uncurry K) := by
+    have : Function.uncurry K = fun z : (ℝ × ℝ) × ℝ ↦
+        {z : (ℝ × ℝ) × ℝ | z.2 ∈ Ι z.1.2 z.1.1}.indicator (fun z ↦ ‖w z.2‖ₑ) z := by
+      ext ⟨q, t⟩
+      rw [Function.uncurry_apply_pair, hK]
+      change (Ι q.2 q.1).indicator (fun t ↦ ‖w t‖ₑ) t
+        = {z : (ℝ × ℝ) × ℝ | z.2 ∈ Ι z.1.2 z.1.1}.indicator (fun z ↦ ‖w z.2‖ₑ) (q, t)
+      by_cases hq : t ∈ Ι q.2 q.1
+      · rw [indicator_of_mem hq,
+          indicator_of_mem (show (q, t) ∈ {z : (ℝ × ℝ) × ℝ | z.2 ∈ Ι z.1.2 z.1.1} from hq)]
+      · rw [indicator_of_notMem hq,
+          indicator_of_notMem (show (q, t) ∉ {z : (ℝ × ℝ) × ℝ | z.2 ∈ Ι z.1.2 z.1.1} from hq)]
+    rw [this]
+    refine Measurable.indicator (hwm.enorm.comp measurable_snd) ?_
+    simp only [mem_uIoc, Set.ofPred_or, Set.ofPred_and]
+    exact ((measurableSet_lt (measurable_snd.comp measurable_fst) measurable_snd).inter
+      (measurableSet_le measurable_snd (measurable_fst.comp measurable_fst))).union
+      ((measurableSet_lt (measurable_fst.comp measurable_fst) measurable_snd).inter
+        (measurableSet_le measurable_snd (measurable_snd.comp measurable_fst)))
+  -- the pointwise bound: `‖ũ(x) - ū‖ ≤ ∫ ∫ K (x, y) t dt dy`
+  have hint : IntegrableOn (rep u) (Ioo 0 1) := integrableOn_rep_Ioo zero_lt_one u
+  have hfn : fn u =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] rep u := fn_ae_eq_rep hI u
+  have havg : ⨍ y in Ioo (0 : ℝ) 1, fn u y = ∫ y in Ioo (0 : ℝ) 1, rep u y := by
+    rw [average_congr hfn, setAverage_eq, Real.volume_real_Ioo_of_le zero_le_one,
+      sub_zero, inv_one, one_smul]
+  have hpt : ∀ x ∈ Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ
+      ≤ ∫⁻ y in Ioo (0 : ℝ) 1, ∫⁻ t, K (x, y) t := by
+    intro x hx
+    have e : rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y
+        = ∫ y in Ioo (0 : ℝ) 1, (rep u x - rep u y) := by
+      rw [havg, integral_sub (integrableOn_const (C := rep u x) hvol) hint, setIntegral_const,
+        Real.volume_real_Ioo_of_le zero_le_one, sub_zero, one_smul]
+    rw [e]
+    refine (enorm_integral_le_lintegral_enorm _).trans (lintegral_mono_ae
+      ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun y hy ↦ ?_)))
+    rw [rep_sub_rep hI u (hcl (Ioo_subset_Icc_self hy)) (hcl (Ioo_subset_Icc_self hx)), ← hw,
+      ← ofReal_norm, intervalIntegral.norm_integral_eq_norm_integral_uIoc, ofReal_norm, hK]
+    simp only
+    rw [lintegral_indicator measurableSet_uIoc]
+    exact enorm_integral_le_lintegral_enorm _
+  -- Tonelli
+  have hswap : ∫⁻ x in Ioo (0 : ℝ) 1, ∫⁻ y in Ioo (0 : ℝ) 1, ∫⁻ t, K (x, y) t
+      = ∫⁻ t, ‖w t‖ₑ * (volume.prod volume) (S ∩ A t) := by
+    have hK' : Measurable fun q : ℝ × ℝ ↦ ∫⁻ t, K q t :=
+      Measurable.lintegral_prod_right' (f := Function.uncurry K) hKm
+    rw [← lintegral_prod _ hK'.aemeasurable, Measure.prod_restrict, ← hS,
+      lintegral_lintegral_swap (hKm.aemeasurable)]
+    refine lintegral_congr fun t ↦ ?_
+    simp only [hKeq]
+    rw [lintegral_const_mul' _ _ enorm_ne_top, lintegral_indicator_const (hAm t),
+      Measure.restrict_apply (hAm t), inter_comm, one_mul]
+  calc ∫⁻ x in Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ
+      ≤ ∫⁻ x in Ioo (0 : ℝ) 1, ∫⁻ y in Ioo (0 : ℝ) 1, ∫⁻ t, K (x, y) t :=
+        lintegral_mono_ae ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall hpt))
+    _ = ∫⁻ t, ‖w t‖ₑ * (volume.prod volume) (S ∩ A t) := hswap
+    _ = ∫⁻ t in Ioo (0 : ℝ) 1, ‖w t‖ₑ * (volume.prod volume) (S ∩ A t) := by
+        refine (setLIntegral_eq_of_support_subset fun t ht ↦ ?_).symm
+        by_contra ht'
+        refine ht ?_
+        have h0 : S ∩ A t = ∅ := by
+          rw [hS, hA]; exact prod_Ioo_inter_setOf_mem_uIoc_eq_empty ht'
+        simp only [h0, measure_empty, mul_zero]
+    _ = ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (2 * (t * (1 - t))) := by
+        refine setLIntegral_congr_fun measurableSet_Ioo fun t ht ↦ ?_
+        have h1 : (volume.prod volume) (S ∩ A t) = ENNReal.ofReal (2 * (t * (1 - t))) := by
+          rw [hS, hA]; exact volume_prod_setOf_mem_uIoc ht
+        rw [h1, hw]
+
+/-- **Problem 47 C.1 of [brezis2011functional]**: for `u ∈ W^{1,1}(0, 1)` and `ū` its mean,
+`∫_0^1 |ũ(x) - ū| dx ≤ 2 ∫_0^1 |u'(t)| t (1 - t) dt` — the Fubini computation of
+`SobolevIntervalLp.lintegral_enorm_rep_sub_average_le`, read in `ℝ`. -/
+theorem integral_abs_sub_average_le (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
+    ∫ x in Ioo (0 : ℝ) 1, |rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y|
+      ≤ 2 * ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| * (t * (1 - t)) := by
+  have hI := ordConnected_coe_Ioo (0 : ℝ) 1
+  have hcl : Icc (0 : ℝ) 1 ⊆ closure ((Opens.Ioo 0 1 : Opens ℝ) : Set ℝ) := by
+    rw [closure_coe_Ioo zero_lt_one]
+  have hLm : AEStronglyMeasurable (fun x ↦ rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y)
+      (volume.restrict (Ioo (0 : ℝ) 1)) :=
+    ((((continuousOn_rep hI u).mono hcl).sub continuousOn_const).mono
+      Ioo_subset_Icc_self).aestronglyMeasurable measurableSet_Ioo
+  have hRm : AEStronglyMeasurable (fun t ↦ |deriv u 1 t| * (t * (1 - t)))
+      (volume.restrict (Ioo (0 : ℝ) 1)) :=
+    (Lp.aestronglyMeasurable (deriv u 1)).norm.mul
+      ((by fun_prop : Continuous fun t : ℝ ↦ t * (1 - t)).aestronglyMeasurable)
+  have hwgt : ∀ t ∈ Ioo (0 : ℝ) 1, 0 ≤ t * (1 - t) := fun t ht ↦ by nlinarith [ht.1, ht.2]
+  have hRint : Integrable (fun t ↦ |deriv u 1 t| * (t * (1 - t)))
+      (volume.restrict (Ioo (0 : ℝ) 1)) := by
+    refine Integrable.mul_bdd (c := 1) (memLp_one_iff_integrable.1 (Lp.memLp (deriv u 1))).norm
+      ((by fun_prop : Continuous fun t : ℝ ↦ t * (1 - t)).aestronglyMeasurable)
+      ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun t ht ↦ ?_))
+    rw [Real.norm_eq_abs, abs_of_nonneg (hwgt t ht)]
+    nlinarith [ht.1, ht.2]
+  have hL : ∫ x in Ioo (0 : ℝ) 1, |rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y|
+      = (∫⁻ x in Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ).toReal := by
+    rw [← integral_norm_eq_lintegral_enorm hLm]
+    simp only [Real.norm_eq_abs]
+  have hR : ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| * (t * (1 - t))
+      = (∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t))).toReal := by
+    rw [integral_eq_lintegral_of_nonneg_ae ((ae_restrict_iff' measurableSet_Ioo).2
+      (Eventually.of_forall fun t ht ↦ mul_nonneg (abs_nonneg _) (hwgt t ht))) hRm]
+    congr 1
+    refine setLIntegral_congr_fun measurableSet_Ioo fun t ht ↦ ?_
+    rw [ENNReal.ofReal_mul (abs_nonneg _), Real.enorm_eq_ofReal_abs]
+  have hfin : ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t)) ≠ ⊤ := by
+    refine ne_top_of_le_ne_top (hasFiniteIntegral_iff_enorm.1 hRint.hasFiniteIntegral).ne
+      (lintegral_mono_ae ((ae_restrict_iff' measurableSet_Ioo).2
+        (Eventually.of_forall fun t ht ↦ le_of_eq ?_)))
+    rw [Real.enorm_eq_ofReal_abs (|deriv u 1 t| * (t * (1 - t))),
+      abs_of_nonneg (mul_nonneg (abs_nonneg _) (hwgt t ht)), ENNReal.ofReal_mul (abs_nonneg _),
+      Real.enorm_eq_ofReal_abs]
+  have e2 : ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (2 * (t * (1 - t)))
+      = 2 * ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t)) := by
+    rw [← lintegral_const_mul' _ _ ENNReal.ofNat_ne_top]
+    refine lintegral_congr fun t ↦ ?_
+    rw [ENNReal.ofReal_mul zero_le_two, ENNReal.ofReal_ofNat]
+    ring
+  have key := lintegral_enorm_rep_sub_average_le u
+  rw [e2] at key
+  rw [hL, hR]
+  calc (∫⁻ x in Ioo (0 : ℝ) 1, ‖rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y‖ₑ).toReal
+      ≤ (2 * ∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t))).toReal :=
+        ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofNat_ne_top hfin) key
+    _ = 2 * (∫⁻ t in Ioo (0 : ℝ) 1, ‖deriv u 1 t‖ₑ * ENNReal.ofReal (t * (1 - t))).toReal := by
+        rw [ENNReal.toReal_mul, ENNReal.toReal_ofNat]
+
+/-- **Problem 47 C.2 of [brezis2011functional]**: for `u ∈ W^{1,1}(0, 1)` and `ū` its mean,
+`‖u - ū‖_{L¹(0, 1)} ≤ ½ ‖u'‖_{L¹(0, 1)}`, since `2 t (1 - t) ≤ ½` on `(0, 1)`. -/
+theorem integral_abs_sub_average_le_half (u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)) :
+    ∫ x in Ioo (0 : ℝ) 1, |rep u x - ⨍ y in Ioo (0 : ℝ) 1, fn u y| ≤ 1 / 2 * ‖deriv u 1‖ := by
+  refine (integral_abs_sub_average_le u).trans ?_
+  have hnorm : ‖deriv u 1‖ = ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| := by
+    rw [Lp.norm_def, eLpNorm_one_eq_lintegral_enorm (Lp.aestronglyMeasurable _),
+      ← integral_norm_eq_lintegral_enorm (Lp.aestronglyMeasurable _)]
+    simp only [Real.norm_eq_abs]
+    rfl
+  have hint : Integrable (fun t ↦ |deriv u 1 t|) (volume.restrict (Ioo (0 : ℝ) 1)) :=
+    (memLp_one_iff_integrable.1 (Lp.memLp (deriv u 1))).norm
+  have hwgt : ∀ t ∈ Ioo (0 : ℝ) 1, 0 ≤ t * (1 - t) := fun t ht ↦ by nlinarith [ht.1, ht.2]
+  have hRint : Integrable (fun t ↦ |deriv u 1 t| * (t * (1 - t)))
+      (volume.restrict (Ioo (0 : ℝ) 1)) := by
+    refine Integrable.mul_bdd (c := 1) hint
+      ((by fun_prop : Continuous fun t : ℝ ↦ t * (1 - t)).aestronglyMeasurable)
+      ((ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun t ht ↦ ?_))
+    rw [Real.norm_eq_abs, abs_of_nonneg (hwgt t ht)]
+    nlinarith [ht.1, ht.2]
+  have h1 : ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| * (t * (1 - t))
+      ≤ ∫ t in Ioo (0 : ℝ) 1, |deriv u 1 t| * (1 / 4) := by
+    refine setIntegral_mono_on hRint (hint.mul_const _) measurableSet_Ioo fun t ht ↦ ?_
+    exact mul_le_mul_of_nonneg_left (by nlinarith [sq_nonneg (t - 1 / 2)]) (abs_nonneg _)
+  rw [integral_mul_const] at h1
+  rw [hnorm]
+  linarith
+
+end SobolevIntervalLp
+
+/-! ### Remark 18: `W_0^{m,p}(I)` by the boundary values of the derivatives -/
+
+namespace SobolevIntervalLp
+
+variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+omit [Fact (1 ≤ p)] in
+/-- An element of `W^{1,p}(I)` is its own pair `(u, u')`. -/
+theorem derivOne_zero_eq (u : SobolevIntervalLp 1 p I) : derivOne u 0 = u :=
+  ext fun i ↦ by fin_cases i <;> rfl
+
+omit [Fact (1 ≤ p)] in
+/-- The pairs of the shift `Du` are the pairs of `u` one order up. -/
+theorem derivOne_shift (u : SobolevIntervalLp (m + 2) p I) (j : Fin (m + 1)) :
+    derivOne (shift u) j = derivOne u j.succ :=
+  ext fun i ↦ by fin_cases i <;> rfl
+
+omit [Fact (1 ≤ p)] in
+/-- The weak derivatives of an element of `W^{m,p}(I)` carried by a test function are the
+classical derivatives of the test function, almost everywhere on `I`. -/
+theorem deriv_ae_eq_iteratedDeriv_of_fn_ae_eq {u : SobolevIntervalLp m p I} {φ : 𝓓(I, ℝ)}
+    (hu : fn u =ᵐ[volume.restrict I] φ) (j : Fin (m + 1)) :
+    ⇑(deriv u j) =ᵐ[volume.restrict I] iteratedDeriv j φ :=
+  (ae_restrict_iff' I.isOpen.measurableSet).2
+    (((hasWeakIteratedDerivOn_deriv u j).congr_ae hu EventuallyEq.rfl).ae_eq
+      (hasWeakIteratedDerivOn_of_contDiffOn φ.contDiff.contDiffOn (by simp)))
+
+/-- **Remark 18 of [brezis2011functional], Chapter 8, the easy direction**: the derivatives of
+orders `0, …, m` of an element of `W_0^{m+1,p}(I)` vanish on the boundary of `I` — the
+evaluation of `D^j u` at a point of `∂I` is a continuous linear functional on `W^{m+1,p}(I)`
+(`SobolevIntervalLp.evalCLM'` after `SobolevIntervalLp.derivOneCLM`) vanishing on the test
+functions, hence on their closure. -/
+theorem _root_.SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero (hI : (I : Set ℝ).OrdConnected)
+    {u : SobolevIntervalLp (m + 1) p I} (hu : u ∈ SobolevIntervalLpZero (m + 1) p I)
+    (j : Fin (m + 1)) {x : ℝ} (hx : x ∈ frontier (I : Set ℝ)) : rep (derivOne u j) x = 0 := by
+  have hxc : x ∈ closure (I : Set ℝ) := I.mem_closure_of_mem_frontier hx
+  have hker : SobolevMultiIndex.testFunctions ℝ (Module.Basis.singleton Unit ℝ) (m + 1) p I volume
+      ≤ LinearMap.ker ((evalCLM' p I hI hxc).comp (derivOneCLM m p I j) :
+        SobolevIntervalLp (m + 1) p I →ₗ[ℝ] ℝ) := by
+    rintro v ⟨φ, hφ⟩
+    change rep (derivOne v j) x = 0
+    have hd : fn (derivOne v j) =ᵐ[volume.restrict I] iteratedDeriv j φ :=
+      deriv_ae_eq_iteratedDeriv_of_fn_ae_eq hφ j.castSucc
+    rw [rep_eq_of_continuousOn hI (derivOne v j)
+      (φ.iteratedFDerivApply j fun _ ↦ 1).continuous.continuousOn hd hxc]
+    exact (φ.iteratedFDerivApply j fun _ ↦ 1).eq_zero_of_notMem (I.notMem_of_mem_frontier hx)
+  exact Submodule.topologicalClosure_minimal _ hker
+    ((evalCLM' p I hI hxc).comp (derivOneCLM m p I j)).isClosed_ker hu
+
+variable {a b : ℝ}
+
+/-- **The induction step of Remark 18 on a bounded interval**: for `u ∈ W^{m+2,p}(a, b)` whose
+shift `Du` lies in `W_0^{m+1,p}(a, b)` and whose representative vanishes at `a` and `b`,
+`u ∈ W_0^{m+2,p}(a, b)`. Approximate `Du` by test-function elements `v`, correct the mean of their
+functions by a multiple of a fixed test function of integral one (the mean of `Du` is
+`ũ(b) - ũ(a) = 0`), and take the primitive from `a`, which is again a test function
+(`TestFunction.primitiveIic`) whose element approximates `u` in `W^{m+2,p}(a, b)`: its
+derivatives of orders `≥ 1` are those of `v`, and its function is controlled by Poincaré's
+inequality (`SobolevIntervalLp.eLpNorm_integral_le`). -/
+theorem _root_.SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero (hab : a < b)
+    (u : SobolevIntervalLp (m + 2) p (Opens.Ioo a b))
+    (hshift : shift u ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b))
+    (ha : rep (derivOne u 0) a = 0) (hb : rep (derivOne u 0) b = 0) :
+    u ∈ SobolevIntervalLpZero (m + 2) p (Opens.Ioo a b) := by
+  have hI := ordConnected_coe_Ioo a b
+  have hcl : Icc a b ⊆ closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) := by rw [closure_coe_Ioo hab]
+  have hp1 : (1 : ℝ≥0∞) ≤ p := Fact.out
+  -- `u'` has zero mean on `(a, b)`
+  have hwint : ∫ x in Ioo a b, deriv u 1 x = 0 := by
+    have := rep_sub_rep hI (derivOne u 0) (hcl (left_mem_Icc.2 hab.le))
+      (hcl (right_mem_Icc.2 hab.le))
+    rw [ha, hb, sub_zero, intervalIntegral.integral_of_le hab.le, integral_Ioc_eq_integral_Ioo]
+      at this
+    exact this.symm
+  -- a test function of integral one, as an element of `W^{m+1,p}(a, b)`
+  obtain ⟨ψ₀, hψ₀⟩ := (Opens.Ioo a b).exists_testFunction_integral_eq_one (nonempty_Ioo.2 hab)
+  obtain ⟨V₀, -, hV₀⟩ := TestFunction.exists_mem_sobolevMultiIndex_testFunctions
+    (b := Module.Basis.singleton Unit ℝ) (k := m + 1) (p := p) (μ := volume) ψ₀
+  replace hV₀ : fn V₀ =ᵐ[volume.restrict (Ioo a b)] ψ₀ := hV₀
+  -- the constants
+  obtain ⟨E, hE⟩ : ∃ E, E = (b - a) ^ (1 - p.toReal⁻¹) := ⟨_, rfl⟩
+  have hE0 : 0 ≤ E := hE ▸ Real.rpow_nonneg (sub_pos.2 hab).le _
+  obtain ⟨CP, hCP⟩ : ∃ CP, CP = (b - a) / p.toReal ^ p.toReal⁻¹ := ⟨_, rfl⟩
+  have hCP0 : 0 ≤ CP := hCP ▸ poincareConst_nonneg hab.le
+  obtain ⟨M, hM⟩ : ∃ M, M = (CP + (m + 2)) * (1 + E * ‖V₀‖) := ⟨_, rfl⟩
+  have hM0 : 0 < M := hM ▸ by positivity
+  rw [← SetLike.mem_coe, SobolevIntervalLpZero, SobolevMultiIndexZero,
+    Submodule.topologicalClosure_coe, Metric.mem_closure_iff]
+  intro ε hε
+  obtain ⟨η, hη⟩ : ∃ η, η = ε / (2 * M) := ⟨_, rfl⟩
+  have hη0 : 0 < η := hη ▸ by positivity
+  -- approximate `Du` in `W^{m+1,p}(a, b)` by a test-function element `v`
+  have hshift' : shift u ∈ closure (SobolevMultiIndex.testFunctions ℝ
+      (Module.Basis.singleton Unit ℝ) (m + 1) p (Opens.Ioo a b) volume :
+        Set (SobolevIntervalLp (m + 1) p (Opens.Ioo a b))) := by
+    rw [← Submodule.topologicalClosure_coe]; exact hshift
+  obtain ⟨v, ⟨ψ, hψ⟩, hvη⟩ := Metric.mem_closure_iff.1 hshift' η hη0
+  rw [dist_eq_norm, norm_sub_rev] at hvη
+  replace hψ : fn v =ᵐ[volume.restrict (Ioo a b)] ψ := hψ
+  -- the mean of `ψ` is small: `∫ ψ = ∫ (ψ - Du)`, and `ψ - Du` is the function of `v - Du`
+  obtain ⟨c, hc⟩ : ∃ c, c = ∫ x, ψ x := ⟨_, rfl⟩
+  have hfnsub : fn (v - shift u) =ᵐ[volume.restrict (Ioo a b)] fun x ↦ ψ x - deriv u 1 x := by
+    have h1 : fn (v - shift u) = ⇑(deriv v 0 - deriv (shift u) 0) := by
+      rw [← deriv_zero, deriv_sub]
+    rw [h1]
+    filter_upwards [Lp.coeFn_sub (deriv v 0) (deriv (shift u) 0), hψ] with x hx1 hx2
+    rw [hx1, Pi.sub_apply, deriv_zero, hx2, deriv_shift, Fin.succ_zero_eq_one]
+  have hc' : ‖c‖ₑ ≤ ENNReal.ofReal (E * η) := by
+    have e1 : c = ∫ x in Ioo a b, (ψ x - deriv u 1 x) := by
+      rw [integral_sub ψ.integrable_volume.integrableOn (integrableOn_deriv_Ioo u 1), hwint,
+        sub_zero, hc]
+      exact (setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦
+        ψ.eq_zero_of_notMem hx).symm
+    rw [e1, ← integral_congr_ae hfnsub]
+    refine (enorm_setIntegral_Ioo_le_rpow_mul_eLpNorm (p := p) _).trans ?_
+    rw [ENNReal.ofReal_rpow_of_nonneg (sub_pos.2 hab).le (one_sub_toReal_inv_nonneg hp1), ← hE,
+      ENNReal.ofReal_mul hE0]
+    refine mul_le_mul' le_rfl ?_
+    have : eLpNorm (fn (v - shift u)) p (volume.restrict (Ioo a b)) = ‖deriv (v - shift u) 0‖ₑ := by
+      rw [Lp.enorm_def]; rfl
+    rw [this, ← ofReal_norm]
+    exact ENNReal.ofReal_le_ofReal ((norm_deriv_le _ 0).trans hvη.le)
+  have hcr : ‖c‖ ≤ E * η := by
+    have := ENNReal.toReal_mono ENNReal.ofReal_ne_top hc'
+    rwa [toReal_enorm, ENNReal.toReal_ofReal (by positivity)] at this
+  -- the corrected test function `ψ' = ψ - c ψ₀`, of zero mean, and its element `v'`
+  obtain ⟨ψ', hψ'c, hmean⟩ : ∃ ψ' : 𝓓(Opens.Ioo a b, ℝ),
+      ((ψ' : ℝ → ℝ) = fun x ↦ ψ x - c * ψ₀ x) ∧ ∫ x, ψ' x = 0 := by
+    refine ⟨ψ - c • ψ₀, ?_, ?_⟩
+    · funext x; simp [smul_eq_mul]
+    · simp only [FunLike.coe_sub, FunLike.coe_smul, Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
+      rw [integral_sub ψ.integrable_volume (ψ₀.integrable_volume.const_mul c), integral_const_mul,
+        hψ₀, mul_one, hc, sub_self]
+  obtain ⟨v', hv'⟩ : ∃ v' : SobolevIntervalLp (m + 1) p (Opens.Ioo a b), v' = v - c • V₀ :=
+    ⟨_, rfl⟩
+  have hv'fn : fn v' =ᵐ[volume.restrict (Ioo a b)] ψ' := by
+    have h1 : fn v' = ⇑(deriv v 0 - c • deriv V₀ 0) := by
+      rw [hv', ← deriv_zero, deriv_sub, deriv_smul]
+    rw [h1, hψ'c]
+    filter_upwards [Lp.coeFn_sub (deriv v 0) (c • deriv V₀ 0), Lp.coeFn_smul c (deriv V₀ 0), hψ,
+      hV₀] with x hx1 hx2 hx3 hx4
+    rw [hx1, Pi.sub_apply, hx2, Pi.smul_apply, smul_eq_mul, deriv_zero, deriv_zero, hx3]
+    change ψ x - c * fn V₀ x = ψ x - c * ψ₀ x
+    rw [hx4]
+  have hv'dist : ‖v' - shift u‖ ≤ η * (1 + E * ‖V₀‖) := by
+    have e : v' - shift u = (v - shift u) - c • V₀ := by rw [hv']; abel
+    rw [e]
+    refine (norm_sub_le _ _).trans ?_
+    rw [norm_smul]
+    calc ‖v - shift u‖ + ‖c‖ * ‖V₀‖ ≤ η + E * η * ‖V₀‖ := by
+          gcongr
+      _ = η * (1 + E * ‖V₀‖) := by ring
+  -- the primitive of `ψ'` is a test function, and its element `U` approximates `u`
+  obtain ⟨φ, hφc, hφ'⟩ : ∃ φ : 𝓓(Opens.Ioo a b, ℝ),
+      (∀ x ∈ Icc a b, (φ : ℝ → ℝ) x = ∫ t in a..x, ψ' t) ∧ _root_.deriv (φ : ℝ → ℝ) = ψ' := by
+    refine ⟨TestFunction.primitiveIic hI ψ' hmean, fun x hx ↦ ?_,
+      TestFunction.deriv_primitiveIic hI ψ' hmean⟩
+    rw [TestFunction.primitiveIic_coe, ← intervalIntegral.integral_Iic_sub_Iic
+      ψ'.integrable_volume.integrableOn ψ'.integrable_volume.integrableOn,
+      setIntegral_eq_zero_of_forall_eq_zero fun t (ht : t ∈ Iic a) ↦ ψ'.eq_zero_of_notMem
+        fun h ↦ ((show t ∈ Ioo a b from h).1.trans_le ht).false, sub_zero]
+  obtain ⟨U, hUmem, hU⟩ := TestFunction.exists_mem_sobolevMultiIndex_testFunctions
+    (b := Module.Basis.singleton Unit ℝ) (k := m + 2) (p := p) (μ := volume) φ
+  replace hU : fn U =ᵐ[volume.restrict (Ioo a b)] φ := hU
+  refine ⟨U, hUmem, ?_⟩
+  -- the derivatives of `U` of orders `≥ 1` are those of `v'`
+  have hUd : ∀ j : Fin (m + 2), deriv U j.succ = deriv v' j := by
+    intro j
+    have h1 := deriv_ae_eq_iteratedDeriv_of_fn_ae_eq hU j.succ
+    have h2 := deriv_ae_eq_iteratedDeriv_of_fn_ae_eq hv'fn j
+    have h3 : iteratedDeriv (j.succ : ℕ) φ = iteratedDeriv (j : ℕ) ψ' := by
+      rw [Fin.val_succ, iteratedDeriv_succ', hφ']
+    rw [← h3] at h2
+    exact Lp.ext (h1.trans h2.symm)
+  have hsub1 : ∀ j : Fin (m + 2), deriv (U - u) j.succ = deriv (v' - shift u) j := by
+    intro j
+    rw [deriv_sub, deriv_sub, hUd, deriv_shift]
+  -- the function of `U - u` is the primitive of `ψ' - u'`
+  have hderiv0 : ⇑(deriv (U - u) 0) =ᵐ[volume.restrict (Ioo a b)]
+      fun x ↦ ∫ t in a..x, (ψ' t - deriv u 1 t) := by
+    rw [deriv_sub]
+    have hfnu : fn u =ᵐ[volume.restrict (Ioo a b)] rep (derivOne u 0) :=
+      fn_ae_eq_rep hI (derivOne u 0)
+    filter_upwards [Lp.coeFn_sub (deriv U 0) (deriv u 0), hfnu, hU,
+      ae_restrict_mem measurableSet_Ioo] with x hx1 hx2 hx3 hx4
+    rw [hx1, Pi.sub_apply, deriv_zero, hx3, deriv_zero, hx2,
+      rep_eq_integral_of_rep_left_eq_zero hab (derivOne u 0) ha (Ioo_subset_Icc_self hx4),
+      hφc x (Ioo_subset_Icc_self hx4), deriv_derivOne_one, Fin.succ_zero_eq_one,
+      ← intervalIntegral.integral_sub (ψ'.continuous.intervalIntegrable _ _)
+        (intervalIntegrable_deriv hI u 1 (hcl (left_mem_Icc.2 hab.le))
+          (hcl (Ioo_subset_Icc_self hx4)))]
+  have hψ'sub : (fun t ↦ ψ' t - deriv u 1 t) =ᵐ[volume.restrict (Ioo a b)] fn (v' - shift u) := by
+    have h1 : fn (v' - shift u) = ⇑(deriv v' 0 - deriv (shift u) 0) := by
+      rw [← deriv_zero, deriv_sub]
+    rw [h1]
+    filter_upwards [Lp.coeFn_sub (deriv v' 0) (deriv (shift u) 0), hv'fn] with x hx1 hx2
+    rw [hx1, Pi.sub_apply, deriv_zero, hx2, deriv_shift, Fin.succ_zero_eq_one]
+  have h0 : ‖deriv (U - u) 0‖ ≤ CP * ‖deriv (v' - shift u) 0‖ := by
+    rw [Lp.norm_def, Lp.norm_def, ← ENNReal.toReal_ofReal hCP0, ← ENNReal.toReal_mul]
+    refine ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top (Lp.eLpNorm_ne_top _)) ?_
+    refine (eLpNorm_congr_ae hderiv0).trans_le ?_
+    have hint : IntegrableOn (fun t ↦ ψ' t - deriv u 1 t) (Ioo a b) :=
+      ψ'.integrable_volume.integrableOn.sub (integrableOn_deriv_Ioo u 1)
+    refine (eLpNorm_integral_le hab.le hint).trans ?_
+    rw [← hCP, eLpNorm_congr_ae hψ'sub]
+    rfl
+  -- assembling
+  rw [dist_eq_norm, norm_sub_rev]
+  calc ‖U - u‖ ≤ ∑ k : Fin (m + 3), ‖deriv (U - u) k‖ := norm_le_sum_norm_deriv _
+    _ = ‖deriv (U - u) 0‖ + ∑ j : Fin (m + 2), ‖deriv (v' - shift u) j‖ := by
+        rw [Fin.sum_univ_succ]
+        congr 1
+        exact Finset.sum_congr rfl fun j _ ↦ by rw [hsub1]
+    _ ≤ CP * ‖v' - shift u‖ + ∑ j : Fin (m + 2), ‖v' - shift u‖ := by
+        gcongr with j
+        · exact h0.trans (mul_le_mul_of_nonneg_left (norm_deriv_le _ 0) hCP0)
+        · exact norm_deriv_le _ j
+    _ = (CP + (m + 2)) * ‖v' - shift u‖ := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        push_cast
+        ring
+    _ ≤ (CP + (m + 2)) * (η * (1 + E * ‖V₀‖)) := by gcongr
+    _ = M * η := by rw [hM]; ring
+    _ = ε / 2 := by
+        rw [hη, ← mul_div_assoc, mul_comm M ε, mul_div_mul_right _ _ hM0.ne']
+    _ < ε := half_lt_self hε
+
+/-- **Remark 18 of [brezis2011functional], Chapter 8, on a bounded interval**: for `a < b`,
+`1 ≤ p < ∞` and `u ∈ W^{m+1,p}(a, b)`, `u ∈ W_0^{m+1,p}(a, b)` if and only if
+`u = Du = ⋯ = D^m u = 0` on `∂(a, b) = {a, b}`, each `D^j u` (`j ≤ m`) read as the element
+`SobolevIntervalLp.derivOne u j` of `W^{1,p}(a, b)` through its continuous representative. The
+forward direction is `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`; the converse is by
+induction on `m` from Theorem 8.12 (`mem_sobolevIntervalLpZero_iff`), the induction step being
+`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero` — no moment conditions on `D^{m+1} u` and
+no `m`-fold primitives are needed, since `Du ∈ W_0^{m,p}(a, b)` is the induction hypothesis. The
+book's route (Exercise 8.9, Hardy-type inequalities) is not followed. -/
+theorem _root_.mem_sobolevIntervalLpZero_higher_iff_of_bounded (hab : a < b) (hp : p ≠ ⊤)
+    (u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b)) :
+    u ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b)
+      ↔ ∀ j : Fin (m + 1), ∀ x ∈ frontier ((Opens.Ioo a b : Opens ℝ) : Set ℝ),
+        rep (derivOne u j) x = 0 := by
+  have hI := ordConnected_coe_Ioo a b
+  refine ⟨fun hu j x hx ↦ SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero hI hu j hx,
+    fun h ↦ ?_⟩
+  have hfr : frontier ((Opens.Ioo a b : Opens ℝ) : Set ℝ) = {a, b} := by
+    rw [Opens.coe_Ioo, frontier_Ioo hab]
+  induction m with
+  | zero =>
+    rw [mem_sobolevIntervalLpZero_iff hI hp]
+    intro x hx
+    rw [← derivOne_zero_eq u]
+    exact h 0 x hx
+  | succ m ih =>
+    refine SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero hab u (ih (shift u) ?_) ?_ ?_
+    · intro j x hx
+      rw [derivOne_shift]
+      exact h j.succ x hx
+    · exact h 0 a (by rw [hfr]; exact Or.inl rfl)
+    · exact h 0 b (by rw [hfr]; exact Or.inr rfl)
+
+end SobolevIntervalLp
 
 end

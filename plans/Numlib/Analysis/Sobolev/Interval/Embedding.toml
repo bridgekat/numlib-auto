@@ -24,26 +24,14 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark
 
 [[node]]
 id = "SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one"
-kind = "theorem"
-desc = '''**Helly's selection theorem (Remark 10, Exercise 8.3)**: a bounded sequence
-`u n : SobolevIntervalLp 1 1 (Opens.Ioo a b)` has a subsequence `u (φ n)` such that
-`rep (u (φ n)) x` converges for every `x ∈ Icc a b`. Route (the exercise's): write
-`rep u_n = v_n − w_n` with `v_n(x) = ∫_a^x |u_n'|` and `w_n = v_n − rep u_n`, both nondecreasing and
-uniformly bounded; for a uniformly bounded sequence of nondecreasing functions, a diagonal argument
-gives convergence on the rationals of `[a, b]`, the limit `ū` is nondecreasing there, extends to a
-nondecreasing function whose set `D` of discontinuities is countable, convergence holds off `D`
-by monotonicity, and a second diagonal argument handles `D`. Mathlib has no Helly selection
-theorem (`Helly` occurs only in `Convex/Radon.lean`); this is a Mathlib-shaped upstreaming
-candidate, best stated for `Monotone` functions first (`exists_subseq_tendsto_of_forall_monotone`,
-~250 lines) and then for `W^{1,1}`. The `L^q` convergence of the subsequence (dominated
-convergence, `I` bounded) is an alternative proof of (7) at `q < ∞` that avoids Kolmogorov–Riesz.
-Low priority: nothing downstream consumes it. ★★★ (~400 lines)
-
-Blocked: not attempted in wave 2 (low priority by the plan's own account, nothing downstream consumes
-it). The route above stands; the monotone-function selection theorem is the natural first
-lemma, as a separate Mathlib-shaped node.'''
-deps = ["SobolevIntervalLp.rep", "SobolevIntervalLp.abs_rep_le_of_bounded"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 10 and Exercise 8.3"
+
+[[node]]
+id = "exists_subseq_forall_tendsto_of_countable"
+
+[[node]]
+id = "exists_subseq_forall_tendsto_of_forall_monotoneOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Exercise 8.3"
 
 [[node]]
 id = "SobolevIntervalLp.norm_equiv_of_bounded"

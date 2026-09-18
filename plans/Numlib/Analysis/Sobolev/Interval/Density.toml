@@ -1,89 +1,46 @@
-desc = '''
-Density of smooth compactly supported functions in `W^{1,p}(I)`, `1 ≤ p < ∞`: [brezis2011functional]
-Theorem 8.7 (restrictions to `I` of functions of `C_c^∞(ℝ)` are dense) and Lemma 8.4 (convolution
-with an `L¹` kernel commutes with the weak derivative on `ℝ`). Remark 9 (nothing better in
-general: `C_c^∞(I)` is not dense) and Remarks 13–14 of §8.3 need `W_0^{1,p}` and are stated in
-`Interval/Zero`; only Theorem 8.7, Lemma 8.4 and the bridge to the whole-space theory are here.
+[[node]]
+id = "HasWeakFDerivOn.hasWeakDerivOn"
 
-### Route
+[[node]]
+id = "HasWeakDerivOn.hasWeakFDerivOn"
 
-Theorem 8.7 is not re-proved by the book's mollify-and-cut-off argument: the whole-space density
-theorem is already in the backbone in the tensor formulation,
-`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` (`Numlib/Analysis/Sobolev/Density.lean`,
-`E = ℝ`, `k = 1`), whose proof is exactly the book's (a). So Theorem 8.7 is: extend `u` to
-`W^{1,p}(ℝ)` (`Interval/Extension`), pass to the tensor formulation on `ℝ`
-(`memSobolev_iff_memSobolevMultiIndex` at `E = ℝ`, plus the identification of `sobolevNorm f 1 p ⊤`
-with the `W^{1,p}` norm in dimension one — the derivative tensor `E →L[ℝ] ℝ` at `E = ℝ` has
-operator norm `|f'(x)|`), apply the whole-space theorem, restrict. The bridge is the one piece of
-work.
+[[node]]
+id = "memSobolevIntervalLp_iff_memSobolev"
 
-Lemma 8.4 is *not* needed for Theorem 8.7 on this route (the backbone mollifies with bumps, for
-which `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` already is Lemma 8.4). It is a
-numbered lemma of the main text, so it is a node, at the book's generality `ρ ∈ L¹(ℝ)`; it is the
-`E = ℝ` case of the book's Lemma 9.1, which chapter 9a plans in `ℝ^N` as
-`HasWeakIteratedLineDerivOn.convolution_of_integrable` (`Numlib/Analysis/Sobolev/Friedrichs.lean`),
-so the node here is a one-line specialization of that one.
+[[node]]
+id = "SobolevIntervalLp.memSobolev_fn"
 
-Every statement here needs `p < ∞` (Theorem 8.7 fails at `p = ∞`: uniform limits of continuous
-functions are continuous but `W^{1,∞}` functions need not be `C¹`).
-'''
+[[node]]
+id = "SobolevIntervalLp.weakIteratedFDeriv_zero_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.weakIteratedFDeriv_one_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLp.eLpNorm_weakIteratedFDeriv_eq"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_eq_sum"
+
+[[node]]
+id = "SobolevIntervalLp.enorm_eq_iSup"
 
 [[node]]
 id = "SobolevIntervalLp.sobolevNorm_eq"
-kind = "theorem"
-desc = '''**The bridge to the tensor formulation in dimension one**: for `u : SobolevIntervalLp 1 p ⊤`,
-`MemSobolev (fn u) 1 p ⊤ volume` (`MemSobolevMultiIndex.memSobolev` at `E = ℝ`, `b` the singleton
-basis), and its `sobolevNorm (fn u) 1 p ⊤ volume` equals the norm of `u` up to the exponent
-bookkeeping of `Domain.lean` (`sobolevNorm` sums `‖f‖_p` and `‖Df‖_p` over the orders with the
-operator norm of `Df x : ℝ →L[ℝ] ℝ`, which is `|f'(x)|` — `ContinuousLinearMap.norm_...` for maps
-from `ℝ`, `‖L‖ = ‖L 1‖`); precisely, `sobolevNorm (fn u) 1 p ⊤ volume ≤ 2 ‖u‖` and
-`‖u‖ ≤ sobolevNorm (fn u) 1 p ⊤ volume` (or the exact identity in the `ℓ^p` form, whichever
-`Domain.lean` states). Conversely `memSobolevIntervalLp_of_memSobolev`: `MemSobolev f 1 p ⊤ volume`
-gives `MemSobolevIntervalLp f 1 p ⊤` (`MemSobolev.memSobolevMultiIndex`) and the derivative tensor
-evaluated at `1` is the weak derivative. Stated on `⊤` because that is where the whole-space
-theorems live; the same holds on any `I`. ★★ (~150 lines)'''
-deps = ["SobolevIntervalLp", "memSobolev_iff_memSobolevMultiIndex", "sobolevNorm", "SobolevIntervalLp.norm_eq_sum"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7, proof"
 
 [[node]]
 id = "SobolevIntervalLp.exists_seq_contDiff_hasCompactSupport_tendsto"
-kind = "theorem"
-desc = '''**Theorem 8.7 (density)**: for `1 ≤ p < ∞` (`[Fact (1 ≤ p)] (hp : p ≠ ⊤)`), an open interval
-`I` (`hI`, `hne`) and `u : SobolevIntervalLp 1 p I`, there is a sequence `g : ℕ → ℝ → ℝ` with
-`ContDiff ℝ ∞ (g n)`, `HasCompactSupport (g n)`, and elements `v n : SobolevIntervalLp 1 p I` with
-`fn (v n) =ᵐ[volume.restrict I] g n` (the restrictions, `memSobolevIntervalLp_of_contDiffOn` puts
-them in) such that `v n → u` in `W^{1,p}(I)`. Route: `P u ∈ W^{1,p}(ℝ)` by `extensionCLM`; the
-whole-space density theorem `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` through
-`sobolevNorm_eq`; the restriction to `I` of a function converging in `W^{1,p}(ℝ)` converges in
-`W^{1,p}(I)` (restriction of `L^p(ℝ)` to `L^p(I)` is norm-nonincreasing:
-`eLpNorm_restrict_le`-type, and `Pu|_I = u`). Also the `Dense` form
-`denseRange_ofContDiffCompactSupport`: the set of elements carried by restrictions of `C_c^∞(ℝ)`
-functions is dense in `SobolevIntervalLp 1 p I`. Consumers: Theorem 8.8 (5) has a direct proof
-and does not need this; `ContDiffMapIcc.denseRange_toSobolevIntervalLp` (`Interval/Higher`) is its
-bounded-interval corollary, and `AtkinsonHan.Chapter01.example_1_2_28_b`'s density half is that.
-★★ (~200 lines on top of the bridge)'''
-deps = ["SobolevIntervalLp.extensionCLM", "SobolevIntervalLp.sobolevNorm_eq", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "memSobolevIntervalLp_of_contDiffOn"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7"
+
+[[node]]
+id = "SobolevIntervalLp.dense_contDiff_hasCompactSupport"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7"
 
 [[node]]
 id = "SobolevIntervalLp.hasWeakDerivOn_convolution"
-kind = "theorem"
-desc = '''**Lemma 8.4**: for `ρ ∈ L¹(ℝ)` (`Integrable ρ`) and `v : SobolevIntervalLp 1 p ⊤`, `1 ≤ p ≤ ∞`,
-`MemSobolevIntervalLp (ρ ⋆[lsmul ℝ ℝ] fn v) 1 p ⊤` with
-`HasWeakDerivOn (ρ ⋆ fn v) (ρ ⋆ deriv v 1) ⊤`. `ρ ⋆ v ∈ L^p` and `ρ ⋆ v' ∈ L^p` are Young's
-inequality `MeasureTheory.MemLp.convolution` (`Numlib/Analysis/Convolution/Lp.lean`). The
-identity: first for `ρ` continuous with compact support — for a test function `φ`,
-`∫ (ρ ⋆ v) φ' = ∫ v (ρ̌ ⋆ φ')` (Fubini, `MeasureTheory.integral_convolution`-type swap, with
-`ρ̌ x = ρ (−x)`), `ρ̌ ⋆ φ'` is the derivative of the test function `ρ̌ ⋆ φ`
-(`HasCompactSupport.hasDerivAt_convolution_right`, `HasCompactSupport.contDiff_convolution_right`,
-support in `tsupport ρ̌ + tsupport φ` compact), so the weak derivative of `v` gives
-`= −∫ v' (ρ̌ ⋆ φ) = −∫ (ρ ⋆ v') φ`; then for general `ρ ∈ L¹` approximate by `ρ_n ∈ C_c`
-(`MeasureTheory.Integrable.exists_hasCompactSupport_eLpNorm_sub_le`-type density of `C_c` in `L¹`)
-and pass to the limit with `hasWeakDerivOn_of_tendsto_eLpNorm` (Remark 4), Young giving
-`ρ_n ⋆ v → ρ ⋆ v` and `ρ_n ⋆ v' → ρ ⋆ v'` in `L^p`. This is Brezis's Lemma 9.1 at `N = 1`, which
-chapter 9a plans as `HasWeakIteratedLineDerivOn.convolution_of_integrable` and
-`MemSobolev.convolution_of_integrable` (`Friedrichs.toml`, by Fubini rather than by approximation):
-this node is their `E = ℝ` instance (`HasWeakIteratedLineDerivOn ![1] …` on `⊤`), one line once
-they land, and should not be proved twice. ★ given chapter 9a's lemma (★★ standalone)'''
-deps = ["SobolevIntervalLp", "MeasureTheory.MemLp.convolution", "HasWeakIteratedLineDerivOn.convolution_of_integrable", "MemSobolev.convolution_of_integrable"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.4"
+
+[[node]]
+id = "SobolevIntervalLp.memSobolevIntervalLp_convolution"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 8.4"

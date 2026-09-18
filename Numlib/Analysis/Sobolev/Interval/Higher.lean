@@ -43,6 +43,13 @@ The spaces `W^{m,p}(I)` of [brezis2011functional] §8.2, paragraph "The Sobolev 
   `‖∫_a^x w‖_{L^p(a, b)} ≤ (b - a)/p^{1/p} ‖w‖_{L^p(a, b)}` for every `1 ≤ p ≤ ∞`, controlling
   the function component (its `W_0^{1,p}` consequences, Proposition 8.13, are in
   `Numlib/Analysis/Sobolev/Interval/Zero.lean`).
+* `SobolevIntervalLp.eLpNorm_deriv_le_mul_add`, **the interpolation inequality**
+  `‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` (`0 < j < m`, every `ε > 0`, `C = C(ε, m, p, |I|)`) on every
+  open interval and for every `1 ≤ p ≤ ∞`, from the order-two window estimate
+  `SobolevIntervalLp.norm_deriv_zero_le_of_deriv_eq` (a Taylor expansion over windows of length
+  `h` and Young's inequality, no covering argument) and an induction on the order; its corollary
+  `SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`: `‖u‖_p + ‖D^m u‖_p` is a norm equivalent
+  to the `W^{m,p}` norm.
 
 The `p = 2` bounded theory of `Numlib/Analysis/Sobolev/Interval.lean` (`ContDiffMapIcc.derivLp`,
 `toSobolevInterval`, …) is the case `p = 2` of the definitions here; the two are kept separate
@@ -865,5 +872,428 @@ theorem denseRange_toSobolevIntervalLp (hab : a ≤ b) (hlt : a < b) (hp : p ≠
       _ = ε := by rw [hδ]; field_simp
 
 end ContDiffMapIcc
+
+/-! ### The interpolation inequality `‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` -/
+
+namespace SobolevIntervalLp
+
+open scoped Convolution
+
+variable {m : ℕ} {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)]
+
+/-- **The Taylor estimate behind the interpolation inequality**: for `v, w ∈ W^{1,p}(I)` with
+`v' = w` (so `v ∈ W^{2,p}(I)`, `w = v'`), `x ≤ y` in `I` and `z ∈ [x, y]`,
+`(y - x) |w̃(z)| ≤ |ṽ(y)| + |ṽ(x)| + (y - x) ∫_x^y |w'|`, from
+`ṽ(y) - ṽ(x) = ∫_x^y w̃ = (y - x) w̃(z) + ∫_x^y (w̃(t) - w̃(z)) dt` and
+`|w̃(t) - w̃(z)| ≤ ∫_x^y |w'|` for `t ∈ [x, y]`. -/
+theorem mul_norm_rep_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
+    {v w : SobolevIntervalLp 1 p I} (hvw : deriv v 1 = deriv w 0) {x y z : ℝ}
+    (hx : x ∈ (I : Set ℝ)) (hy : y ∈ (I : Set ℝ)) (hxy : x ≤ y) (hz : z ∈ Icc x y) :
+    (y - x) * ‖rep w z‖ ≤ ‖rep v y‖ + ‖rep v x‖ + (y - x) * ∫ t in x..y, ‖deriv w 1 t‖ := by
+  have hIcc : Icc x y ⊆ (I : Set ℝ) := hI.out hx hy
+  have hcl : Icc x y ⊆ closure (I : Set ℝ) := hIcc.trans subset_closure
+  have hx' : x ∈ closure (I : Set ℝ) := subset_closure hx
+  have hy' : y ∈ closure (I : Set ℝ) := subset_closure hy
+  have hz' : z ∈ closure (I : Set ℝ) := hcl hz
+  obtain ⟨J, hJ⟩ : ∃ J, J = ∫ t in x..y, ‖deriv w 1 t‖ := ⟨_, rfl⟩
+  have hJint : IntervalIntegrable (fun t ↦ ‖deriv w 1 t‖) volume x y :=
+    (intervalIntegrable_deriv hI w 1 hx' hy').norm
+  have hJ0 : 0 ≤ᵐ[volume.restrict (Ioc x y)] fun t ↦ ‖deriv w 1 t‖ :=
+    Eventually.of_forall fun t ↦ norm_nonneg _
+  -- `|w̃(t) - w̃(z)| ≤ J` for `t ∈ [x, y]`
+  have hosc : ∀ t ∈ Icc x y, ‖rep w t - rep w z‖ ≤ J := by
+    intro t ht
+    rw [rep_sub_rep hI w hz' (hcl ht), hJ]
+    rcases le_total z t with hzt | htz
+    · refine (intervalIntegral.norm_integral_le_integral_norm hzt).trans ?_
+      exact intervalIntegral.integral_mono_interval hz.1 hzt ht.2 hJ0 hJint
+    · rw [intervalIntegral.integral_symm, norm_neg]
+      refine (intervalIntegral.norm_integral_le_integral_norm htz).trans ?_
+      exact intervalIntegral.integral_mono_interval ht.1 htz hz.2 hJ0 hJint
+  -- `ṽ(y) - ṽ(x) = (y - x) w̃(z) + ∫_x^y (w̃(t) - w̃(z))`
+  have hrep : IntervalIntegrable (rep w) volume x y := by
+    refine ((continuousOn_rep hI w).mono ?_).intervalIntegrable
+    rw [uIcc_of_le hxy]; exact hcl
+  have e1 : rep v y - rep v x = (y - x) * rep w z + ∫ t in x..y, (rep w t - rep w z) := by
+    rw [intervalIntegral.integral_sub hrep intervalIntegrable_const,
+      intervalIntegral.integral_const, smul_eq_mul, rep_sub_rep hI v hx' hy', hvw]
+    have : ∫ t in x..y, deriv w 0 t = ∫ t in x..y, rep w t := by
+      refine intervalIntegral.integral_congr_ae ?_
+      have := (ae_restrict_iff' I.isOpen.measurableSet).1 (fn_ae_eq_rep hI w)
+      filter_upwards [this] with t ht htI
+      refine ht (hIcc ?_)
+      rw [uIoc_of_le hxy] at htI
+      exact Ioc_subset_Icc_self htI
+    rw [this]; ring
+  have e2 : ‖∫ t in x..y, (rep w t - rep w z)‖ ≤ J * (y - x) := by
+    have := intervalIntegral.norm_integral_le_of_norm_le_const (a := x) (b := y)
+      (f := fun t ↦ rep w t - rep w z) (C := J) fun t ht ↦ by
+        rw [uIoc_of_le hxy] at ht
+        exact hosc t (Ioc_subset_Icc_self ht)
+    rwa [abs_of_nonneg (sub_nonneg.2 hxy)] at this
+  have e3 : (y - x) * rep w z = (rep v y - rep v x) - ∫ t in x..y, (rep w t - rep w z) := by
+    rw [e1]; ring
+  calc (y - x) * ‖rep w z‖ = ‖(y - x) * rep w z‖ := by
+        rw [norm_mul, Real.norm_of_nonneg (sub_nonneg.2 hxy)]
+    _ ≤ ‖rep v y - rep v x‖ + ‖∫ t in x..y, (rep w t - rep w z)‖ := by
+        rw [e3]; exact norm_sub_le _ _
+    _ ≤ (‖rep v y‖ + ‖rep v x‖) + J * (y - x) := add_le_add (norm_sub_le _ _) e2
+    _ = ‖rep v y‖ + ‖rep v x‖ + (y - x) * ∫ t in x..y, ‖deriv w 1 t‖ := by rw [hJ]; ring
+
+/-- **The interpolation inequality at order two**, `‖v'‖_p ≤ 2h ‖v''‖_p + (3/h) ‖v‖_p` for
+`v ∈ W^{2,p}(I)` and every `h > 0` with `2h < |I|`, written for the pair `v, w ∈ W^{1,p}(I)`
+with `v' = w` (so `w = v'` and `w' = v''`), on any open interval `I` and for every `1 ≤ p ≤ ∞`.
+For `x ∈ I` one of `x + h`, `x - h` lies in `I`, and the Taylor estimate
+`SobolevIntervalLp.mul_norm_rep_le_of_deriv_eq` on `[x, x + h]` or `[x - h, x]` gives
+`h |w̃(x)| ≤ |ṽ(x)| + |ṽ(x ± h)| + h ∫_{x-h}^{x+h} |w'|`. The last term is the convolution of
+`|w'|` (extended by zero) with the indicator of `(-h, h)`, whose `L^p` norm is at most
+`2h ‖w'‖_p` by Young's inequality (`MeasureTheory.eLpNorm_convolution_lsmul_le`), and the
+translates of `ṽ` have the `L^p` norm of `ṽ`. No covering of `I` by small intervals is needed. -/
+theorem norm_deriv_zero_le_of_deriv_eq (hI : (I : Set ℝ).OrdConnected)
+    {v w : SobolevIntervalLp 1 p I} (hvw : deriv v 1 = deriv w 0) {h : ℝ} (hh : 0 < h)
+    (hvol : ENNReal.ofReal (2 * h) < volume (I : Set ℝ)) :
+    ‖deriv w 0‖ ≤ 2 * h * ‖deriv w 1‖ + 3 / h * ‖deriv v 0‖ := by
+  have hp1 : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hIm : MeasurableSet (I : Set ℝ) := I.isOpen.measurableSet
+  -- the extension by zero of `|w'|` and the window kernel
+  obtain ⟨F, hF⟩ : ∃ F : ℝ → ℝ, F = fun t ↦ ‖(I : Set ℝ).indicator (deriv w 1) t‖ := ⟨_, rfl⟩
+  obtain ⟨κ, hκ⟩ : ∃ κ : ℝ → ℝ, κ = (Ioo (-h) h).indicator fun _ ↦ (1 : ℝ) := ⟨_, rfl⟩
+  have hindm : AEStronglyMeasurable ((I : Set ℝ).indicator (deriv w 1)) volume :=
+    (aestronglyMeasurable_indicator_iff hIm).2 (Lp.aestronglyMeasurable _)
+  have hFp : MemLp F p volume := by
+    rw [hF]; exact ((memLp_indicator_iff_restrict hIm).2 (Lp.memLp (deriv w 1))).norm
+  have hFm : AEStronglyMeasurable F volume := hFp.aestronglyMeasurable
+  have hF0 : ∀ t, 0 ≤ F t := fun t ↦ by rw [hF]; exact norm_nonneg _
+  have hκm : AEStronglyMeasurable κ volume := by
+    rw [hκ]; exact aestronglyMeasurable_const.indicator measurableSet_Ioo
+  have hFnorm : eLpNorm F p volume = ‖deriv w 1‖ₑ := by
+    rw [hF, eLpNorm_norm _ hindm, eLpNorm_indicator_eq_eLpNorm_restrict hIm, Lp.enorm_def]
+  have hκnorm : eLpNorm κ 1 volume = ENNReal.ofReal (2 * h) := by
+    rw [hκ, eLpNorm_indicator_const measurableSet_Ioo.nullMeasurableSet one_ne_zero
+      ENNReal.one_ne_top, Real.volume_Ioo, ENNReal.toReal_one, div_one, ENNReal.rpow_one,
+      enorm_one, one_mul, sub_neg_eq_add, two_mul]
+  -- the window integral `K x = ∫_{x-h}^{x+h} F` is the convolution `κ ⋆ F`
+  obtain ⟨K, hK⟩ : ∃ K : ℝ → ℝ, K = κ ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] F := ⟨_, rfl⟩
+  have hKeq : ∀ x, K x = ∫ t in Ioo (x - h) (x + h), F t := by
+    intro x
+    rw [hK, convolution_lsmul_swap]
+    have hind : ∀ t, κ (x - t) • F t = (Ioo (x - h) (x + h)).indicator F t := by
+      intro t
+      by_cases ht : t ∈ Ioo (x - h) (x + h)
+      · have : x - t ∈ Ioo (-h) h := by
+          rw [mem_Ioo] at ht ⊢; constructor <;> linarith [ht.1, ht.2]
+        simp only [hκ, indicator_of_mem this, indicator_of_mem ht, one_smul]
+      · have : x - t ∉ Ioo (-h) h := by
+          rw [mem_Ioo] at ht ⊢; intro h'; exact ht ⟨by linarith [h'.2], by linarith [h'.1]⟩
+        simp only [hκ, indicator_of_notMem this, indicator_of_notMem ht, zero_smul]
+    simp only [hind]
+    exact integral_indicator measurableSet_Ioo
+  have hKm : AEStronglyMeasurable K volume := by rw [hK]; exact hκm.convolution _ hFm
+  have hKnorm : eLpNorm K p volume ≤ ENNReal.ofReal (2 * h) * ‖deriv w 1‖ₑ := by
+    rw [hK, ← hκnorm, ← hFnorm]
+    exact eLpNorm_convolution_lsmul_le hp1 hκm hFm
+  have hKint : ∀ x, IntegrableOn F (Ioo (x - h) (x + h)) := fun x ↦
+    (hFp.restrict _).integrable hp1
+  -- the interval integrals of `|w'|` over windows of `I` are bounded by `K`
+  have hwin : ∀ a b x, a ∈ (I : Set ℝ) → b ∈ (I : Set ℝ) → a ≤ b →
+      Ioo a b ⊆ Ioo (x - h) (x + h) → ∫ t in a..b, ‖deriv w 1 t‖ ≤ K x := by
+    intro a b x ha hb hab hsub
+    rw [intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo, hKeq]
+    have e : ∫ t in Ioo a b, ‖deriv w 1 t‖ = ∫ t in Ioo a b, F t := by
+      refine setIntegral_congr_fun measurableSet_Ioo fun t ht ↦ ?_
+      simp only [hF]
+      rw [indicator_of_mem (hI.out ha hb (Ioo_subset_Icc_self ht))]
+    rw [e]
+    exact setIntegral_mono_set (hKint x) (Eventually.of_forall hF0) hsub.eventuallySubset
+  -- the pointwise bound on `I`
+  have hpt : ∀ x ∈ (I : Set ℝ), h * ‖rep w x‖ ≤ ‖rep v x‖
+      + ‖(I : Set ℝ).indicator (rep v) (x + h)‖ + ‖(I : Set ℝ).indicator (rep v) (x - h)‖
+      + h * K x := by
+    intro x hx
+    by_cases hxh : x + h ∈ (I : Set ℝ)
+    · have h1 := mul_norm_rep_le_of_deriv_eq hI hvw hx hxh (by linarith)
+        (left_mem_Icc.2 (by linarith))
+      rw [add_sub_cancel_left] at h1
+      have h2 := hwin x (x + h) x hx hxh (by linarith) fun t ht ↦ ⟨by linarith [ht.1], ht.2⟩
+      have h3 := mul_le_mul_of_nonneg_left h2 hh.le
+      have h4 := norm_nonneg ((I : Set ℝ).indicator (rep v) (x - h))
+      rw [indicator_of_mem hxh]
+      linarith
+    by_cases hxh' : x - h ∈ (I : Set ℝ)
+    · have h1 := mul_norm_rep_le_of_deriv_eq hI hvw hxh' hx (by linarith)
+        (right_mem_Icc.2 (by linarith))
+      rw [sub_sub_cancel] at h1
+      have h2 := hwin (x - h) x x hxh' hx (by linarith) fun t ht ↦ ⟨ht.1, by linarith [ht.2]⟩
+      have h3 := mul_le_mul_of_nonneg_left h2 hh.le
+      have h4 := norm_nonneg ((I : Set ℝ).indicator (rep v) (x + h))
+      rw [indicator_of_mem hxh']
+      linarith
+    exfalso
+    have hsub : (I : Set ℝ) ⊆ Ioo (x - h) (x + h) := by
+      intro y hy
+      rw [mem_Ioo]
+      constructor
+      · by_contra hxy
+        exact hxh' (hI.out hy hx ⟨not_lt.1 hxy, by linarith⟩)
+      · by_contra hxy
+        exact hxh (hI.out hx hy ⟨by linarith, not_lt.1 hxy⟩)
+    have := measure_mono (μ := volume) hsub
+    rw [Real.volume_Ioo, show x + h - (x - h) = 2 * h by ring] at this
+    exact absurd (hvol.trans_le this) (lt_irrefl _)
+  -- the `L^p` norms of the four terms
+  have hrepv : AEStronglyMeasurable (rep v) (volume.restrict I) :=
+    (memLp_rep hI v).aestronglyMeasurable
+  have hind : AEStronglyMeasurable ((I : Set ℝ).indicator (rep v)) volume :=
+    (aestronglyMeasurable_indicator_iff hIm).2 hrepv
+  have hindnorm : eLpNorm ((I : Set ℝ).indicator (rep v)) p volume = ‖deriv v 0‖ₑ := by
+    rw [eLpNorm_indicator_eq_eLpNorm_restrict hIm, Lp.enorm_def, deriv_zero]
+    exact eLpNorm_congr_ae (fn_ae_eq_rep hI v).symm
+  obtain ⟨fA, hfA⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ ‖rep v x‖ := ⟨_, rfl⟩
+  obtain ⟨fB, hfB⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ ‖(I : Set ℝ).indicator (rep v) (x + h)‖ :=
+    ⟨_, rfl⟩
+  obtain ⟨fC, hfC⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ ‖(I : Set ℝ).indicator (rep v) (x - h)‖ :=
+    ⟨_, rfl⟩
+  obtain ⟨fD, hfD⟩ : ∃ f : ℝ → ℝ, f = fun x ↦ h * K x := ⟨_, rfl⟩
+  have nA : eLpNorm fA p (volume.restrict I) = ‖deriv v 0‖ₑ := by
+    rw [hfA, eLpNorm_norm _ hrepv, Lp.enorm_def, deriv_zero]
+    exact eLpNorm_congr_ae (fn_ae_eq_rep hI v).symm
+  have nB : eLpNorm fB p (volume.restrict I) ≤ ‖deriv v 0‖ₑ := by
+    rw [hfB]
+    refine (eLpNorm_restrict_le _ _ _ _).trans (le_of_eq ?_)
+    rw [← hindnorm, ← eLpNorm_norm _ hind]
+    exact eLpNorm_comp_measurePreserving hind.norm (measurePreserving_add_right volume h)
+  have nC : eLpNorm fC p (volume.restrict I) ≤ ‖deriv v 0‖ₑ := by
+    rw [hfC]
+    refine (eLpNorm_restrict_le _ _ _ _).trans (le_of_eq ?_)
+    rw [← hindnorm, ← eLpNorm_norm _ hind]
+    exact eLpNorm_comp_measurePreserving hind.norm (measurePreserving_sub_right volume h)
+  have nD : eLpNorm fD p (volume.restrict I)
+      ≤ ENNReal.ofReal h * (ENNReal.ofReal (2 * h) * ‖deriv w 1‖ₑ) := by
+    rw [hfD]
+    refine (eLpNorm_restrict_le _ _ _ _).trans ?_
+    change eLpNorm (h • K) p volume ≤ _
+    rw [eLpNorm_const_smul, Real.enorm_of_nonneg hh.le]
+    gcongr
+  have e0 : eLpNorm (fun x ↦ h * rep w x) p (volume.restrict I)
+      = ENNReal.ofReal h * ‖deriv w 0‖ₑ := by
+    change eLpNorm (h • rep w) p (volume.restrict I) = _
+    rw [eLpNorm_const_smul, Real.enorm_of_nonneg hh.le, Lp.enorm_def, deriv_zero]
+    congr 1
+    exact eLpNorm_congr_ae (fn_ae_eq_rep hI w).symm
+  have hpt' : ∀ᵐ x ∂(volume.restrict I), ‖h * rep w x‖ ≤ (fA + fB + fC + fD) x := by
+    filter_upwards [ae_restrict_mem hIm] with x hx
+    simp only [Pi.add_apply, hfA, hfB, hfC, hfD]
+    rw [norm_mul, Real.norm_of_nonneg hh.le]
+    exact hpt x hx
+  have hmain : ENNReal.ofReal h * ‖deriv w 0‖ₑ
+      ≤ 3 * ‖deriv v 0‖ₑ + ENNReal.ofReal h * (ENNReal.ofReal (2 * h) * ‖deriv w 1‖ₑ) := by
+    have s1 : eLpNorm (fun x ↦ h * rep w x) p (volume.restrict I)
+        ≤ eLpNorm (fA + fB + fC + fD) p (volume.restrict I) :=
+      eLpNorm_mono_ae_real ((memLp_rep hI w).aestronglyMeasurable.const_mul h) hpt'
+    have s2 : eLpNorm (fA + fB + fC + fD) p (volume.restrict I)
+        ≤ eLpNorm (fA + fB + fC) p (volume.restrict I) + eLpNorm fD p (volume.restrict I) :=
+      eLpNorm_add_le hp1
+    have s3 : eLpNorm (fA + fB + fC) p (volume.restrict I)
+        ≤ eLpNorm (fA + fB) p (volume.restrict I) + eLpNorm fC p (volume.restrict I) :=
+      eLpNorm_add_le hp1
+    have s4 : eLpNorm (fA + fB) p (volume.restrict I)
+        ≤ eLpNorm fA p (volume.restrict I) + eLpNorm fB p (volume.restrict I) :=
+      eLpNorm_add_le hp1
+    have e3 : (3 : ℝ≥0∞) * ‖deriv v 0‖ₑ = (‖deriv v 0‖ₑ + ‖deriv v 0‖ₑ) + ‖deriv v 0‖ₑ := by
+      ring
+    rw [← e0, e3]
+    refine s1.trans (s2.trans ?_)
+    refine add_le_add (s3.trans ?_) nD
+    refine add_le_add (s4.trans ?_) nC
+    exact add_le_add nA.le nB
+  -- back to real numbers
+  have hfin : h * ‖deriv w 0‖ ≤ 3 * ‖deriv v 0‖ + h * (2 * h * ‖deriv w 1‖) := by
+    have := ENNReal.toReal_mono (by finiteness) hmain
+    rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal hh.le, toReal_enorm,
+      ENNReal.toReal_add (by finiteness) (by finiteness), ENNReal.toReal_mul, ENNReal.toReal_mul,
+      ENNReal.toReal_mul, ENNReal.toReal_ofReal hh.le, ENNReal.toReal_ofReal (by positivity),
+      toReal_enorm, toReal_enorm, ENNReal.toReal_ofNat] at this
+    linarith
+  have hh' : h ≠ 0 := hh.ne'
+  calc ‖deriv w 0‖ = h * ‖deriv w 0‖ / h := by field_simp
+    _ ≤ (3 * ‖deriv v 0‖ + h * (2 * h * ‖deriv w 1‖)) / h :=
+        div_le_div_of_nonneg_right hfin hh.le
+    _ = 2 * h * ‖deriv w 1‖ + 3 / h * ‖deriv v 0‖ := by field_simp; ring
+
+/-- **The combinatorial core of the interpolation inequality**: a family of nonnegative
+sequences `N i : ℕ → ℝ` (the norms `‖D^k u‖_p`, `u` ranging over `W^{M,p}(I)`) satisfying, for
+every window `0 < h ≤ h₀` and `k + 2 ≤ M`, `N i (k + 1) ≤ h * N i (k + 2) + A / h * N i k`,
+satisfies `N i j ≤ ε * N i m + C * N i 0` for `1 ≤ j < m ≤ M` and every `ε > 0`, with a constant
+`C` uniform in `i`. By induction on `m`, absorbing the `N i (m - 1)` of the window estimate at
+`k = m - 1` through the induction hypothesis (with `ε = h / (2 (A + 1))`, so that the `N i m` on
+the right is at most half of the one on the left). -/
+theorem exists_forall_le_mul_add_of_forall_le_mul_add_div {ι : Type*} (N : ι → ℕ → ℝ)
+    (hN : ∀ i k, 0 ≤ N i k) {h₀ A : ℝ} (hh₀ : 0 < h₀) (hA : 0 ≤ A) {M : ℕ}
+    (hB : ∀ h, 0 < h → h ≤ h₀ → ∀ k, k + 2 ≤ M → ∀ i,
+      N i (k + 1) ≤ h * N i (k + 2) + A / h * N i k) :
+    ∀ m ≤ M, ∀ j, 1 ≤ j → j < m → ∀ ε > 0, ∃ C, 0 ≤ C ∧ ∀ i, N i j ≤ ε * N i m + C * N i 0 := by
+  intro m
+  induction m with
+  | zero => intro _ j _ hj; exact absurd hj (Nat.not_lt_zero j)
+  | succ m ih =>
+    intro hmM j hj1 hjm ε hε
+    have hm1 : 1 ≤ m := by omega
+    -- the top step: `N m ≤ ε N (m + 1) + C N 0`
+    have htop : ∀ ε > 0, ∃ C, 0 ≤ C ∧ ∀ i, N i m ≤ ε * N i (m + 1) + C * N i 0 := by
+      intro ε hε
+      rcases Nat.lt_or_ge m 2 with hm2 | hm2
+      · obtain rfl : m = 1 := by omega
+        obtain ⟨h, hh⟩ : ∃ h, h = min ε h₀ := ⟨_, rfl⟩
+        have hh0 : 0 < h := hh ▸ lt_min hε hh₀
+        refine ⟨A / h, by positivity, fun i ↦ ?_⟩
+        have h1 := hB h hh0 (hh ▸ min_le_right _ _) 0 (by omega) i
+        have h2 : h * N i 2 ≤ ε * N i 2 :=
+          mul_le_mul_of_nonneg_right (hh ▸ min_le_left _ _) (hN i 2)
+        linarith
+      · obtain ⟨h, hh⟩ : ∃ h, h = min (ε / 2) h₀ := ⟨_, rfl⟩
+        have hh0 : 0 < h := hh ▸ lt_min (half_pos hε) hh₀
+        have hh' : h ≤ ε / 2 := hh ▸ min_le_left _ _
+        obtain ⟨C'', hC''0, hC''⟩ := ih (by omega) (m - 1) (by omega) (by omega)
+          (h / (2 * (A + 1))) (by positivity)
+        refine ⟨2 * A * C'' / h, by positivity, fun i ↦ ?_⟩
+        have h1 := hB h hh0 (hh ▸ min_le_right _ _) (m - 1) (by omega) i
+        have h2 := hC'' i
+        rw [show m - 1 + 1 = m by omega, show m - 1 + 2 = m + 1 by omega] at h1
+        have hAh : A / h * (h / (2 * (A + 1))) ≤ 1 / 2 := by
+          rw [div_mul_div_comm, mul_comm A h, ← div_mul_div_comm, div_self hh0.ne', one_mul,
+            div_le_div_iff₀ (by positivity) (by positivity)]
+          linarith
+        have hNm := hN i m
+        have hN0 := hN i 0
+        have hN1 := hN i (m + 1)
+        have key : N i m ≤ h * N i (m + 1)
+            + (A / h * (h / (2 * (A + 1))) * N i m + A / h * C'' * N i 0) := by
+          refine h1.trans ?_
+          have : A / h * N i (m - 1) ≤ A / h * (h / (2 * (A + 1)) * N i m + C'' * N i 0) :=
+            mul_le_mul_of_nonneg_left h2 (by positivity)
+          linarith
+        have h3 : A / h * (h / (2 * (A + 1))) * N i m ≤ 1 / 2 * N i m :=
+          mul_le_mul_of_nonneg_right hAh hNm
+        have h4 : 2 * h * N i (m + 1) ≤ ε * N i (m + 1) :=
+          mul_le_mul_of_nonneg_right (by linarith) hN1
+        have e2 : 2 * A * C'' / h * N i 0 = 2 * (A / h * C'' * N i 0) := by ring
+        rw [e2]
+        linarith
+    rcases eq_or_lt_of_le (Nat.lt_succ_iff.1 hjm) with rfl | hjm'
+    · exact htop ε hε
+    · obtain ⟨C, hC0, hC⟩ := htop ε hε
+      obtain ⟨C', hC'0, hC'⟩ := ih (by omega) j hj1 hjm' 1 one_pos
+      refine ⟨C + C', by positivity, fun i ↦ ?_⟩
+      have h1 := hC i
+      have h2 := hC' i
+      have h3 := hN i 0
+      nlinarith
+
+/-- **The interpolation inequality** of [brezis2011functional] §8.2, paragraph "The Sobolev
+spaces `W^{m,p}`" (stated there for a bounded interval with a reference to Adams, and as
+Exercise 8.6 via the compact embedding): on every open interval `I` and for every `1 ≤ p ≤ ∞`,
+`0 < j < m` and `ε > 0` there is a constant `C = C(ε, m, p, |I|)` with
+`‖D^j u‖_p ≤ ε ‖D^m u‖_p + C ‖u‖_p` for all `u ∈ W^{m,p}(I)`. The order-two window estimate
+`SobolevIntervalLp.norm_deriv_zero_le_of_deriv_eq` gives
+`‖D^{k+1} u‖_p ≤ h ‖D^{k+2} u‖_p + (6 / h) ‖D^k u‖_p` for every `0 < h < |I|` (applied to the
+pairs `SobolevIntervalLp.derivOne u k`, `derivOne u (k + 1)`), and the induction
+`SobolevIntervalLp.exists_forall_le_mul_add_of_forall_le_mul_add_div` on `m` propagates it to
+all intermediate orders. Consequently the norm `‖u‖_p + ‖D^m u‖_p` is equivalent to the
+`W^{m,p}` norm (`SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`). -/
+theorem eLpNorm_deriv_le_mul_add (hI : (I : Set ℝ).OrdConnected) (j : Fin (m + 1)) (hj0 : j ≠ 0)
+    (hjm : j ≠ Fin.last m) {ε : ℝ} (hε : 0 < ε) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevIntervalLp m p I,
+      ‖deriv u j‖ ≤ ε * ‖deriv u (Fin.last m)‖ + C * ‖deriv u 0‖ := by
+  have hIm : MeasurableSet (I : Set ℝ) := I.isOpen.measurableSet
+  rcases (I : Set ℝ).eq_empty_or_nonempty with hI0 | hne
+  · -- on the empty set every norm vanishes
+    refine ⟨0, le_rfl, fun u ↦ ?_⟩
+    have hz : ∀ k, ‖deriv u k‖ = 0 := fun k ↦ by
+      rw [Lp.norm_def, eLpNorm_congr_ae (g := 0) ((ae_restrict_iff' hIm).2
+        (Eventually.of_forall fun x hx ↦ by rw [hI0] at hx; exact hx.elim)), eLpNorm_zero,
+        ENNReal.toReal_zero]
+    rw [hz, hz, hz]; simp
+  -- the admissible window lengths
+  obtain ⟨h₀, hh₀, hvol⟩ : ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h, 0 < h → h ≤ h₀ →
+      ENNReal.ofReal (2 * h) < volume (I : Set ℝ) := by
+    have hpos : 0 < volume (I : Set ℝ) := I.isOpen.measure_pos volume hne
+    rcases eq_or_ne (volume (I : Set ℝ)) ⊤ with htop | hfin
+    · exact ⟨1, one_pos, fun h _ _ ↦ htop ▸ ENNReal.ofReal_lt_top⟩
+    · have hpos' : 0 < (volume (I : Set ℝ)).toReal := ENNReal.toReal_pos hpos.ne' hfin
+      refine ⟨(volume (I : Set ℝ)).toReal / 4, by positivity, fun h hh hh₀ ↦ ?_⟩
+      calc ENNReal.ofReal (2 * h) ≤ ENNReal.ofReal ((volume (I : Set ℝ)).toReal / 2) :=
+            ENNReal.ofReal_le_ofReal (by linarith)
+        _ < ENNReal.ofReal (volume (I : Set ℝ)).toReal :=
+            (ENNReal.ofReal_lt_ofReal_iff hpos').2 (by linarith)
+        _ = volume (I : Set ℝ) := ENNReal.ofReal_toReal hfin
+  -- the order is at least two
+  have hj1 : 1 ≤ (j : ℕ) := Nat.one_le_iff_ne_zero.2 fun h ↦ hj0 (Fin.ext h)
+  have hjm' : (j : ℕ) < m := Fin.val_lt_last hjm
+  obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+  -- the family of norms
+  obtain ⟨N, hN⟩ : ∃ N : SobolevIntervalLp (m' + 1) p I → ℕ → ℝ,
+      N = fun u k ↦ if hk : k ≤ m' + 1 then ‖deriv u ⟨k, Nat.lt_succ_of_le hk⟩‖ else 0 :=
+    ⟨_, rfl⟩
+  have hNk : ∀ u k (hk : k ≤ m' + 1), N u k = ‖deriv u ⟨k, Nat.lt_succ_of_le hk⟩‖ :=
+    fun u k hk ↦ by subst hN; exact dite_eq_left hk
+  have hN0 : ∀ u k, 0 ≤ N u k := fun u k ↦ by
+    subst hN
+    dsimp only
+    split_ifs
+    · exact norm_nonneg _
+    · exact le_rfl
+  -- the window estimate, for the pairs `(D^k u, D^{k+1} u)` and `(D^{k+1} u, D^{k+2} u)`
+  have hB : ∀ h, 0 < h → h ≤ h₀ → ∀ k, k + 2 ≤ m' + 1 → ∀ u,
+      N u (k + 1) ≤ h * N u (k + 2) + 6 / h * N u k := by
+    intro h hh hhh₀ k hk u
+    have hvol' : ENNReal.ofReal (2 * (h / 2)) < volume (I : Set ℝ) :=
+      (ENNReal.ofReal_le_ofReal (by linarith)).trans_lt (hvol h hh hhh₀)
+    have key := norm_deriv_zero_le_of_deriv_eq hI (v := derivOne u ⟨k, by omega⟩)
+      (w := derivOne u ⟨k + 1, by omega⟩) rfl (half_pos hh) hvol'
+    simp only [deriv_derivOne_zero, deriv_derivOne_one, Fin.castSucc_mk, Fin.succ_mk] at key
+    rw [hNk u (k + 1) (by omega), hNk u (k + 2) (by omega), hNk u k (by omega)]
+    have e1 : (2 : ℝ) * (h / 2) = h := by ring
+    have e2 : (3 : ℝ) / (h / 2) = 6 / h := by
+      have := hh.ne'
+      field_simp
+      norm_num
+    rw [e1, e2] at key
+    exact key
+  obtain ⟨C, hC0, hC⟩ := exists_forall_le_mul_add_of_forall_le_mul_add_div N hN0 hh₀
+    (by norm_num : (0 : ℝ) ≤ 6) hB (m' + 1) le_rfl j hj1 hjm' ε hε
+  refine ⟨C, hC0, fun u ↦ ?_⟩
+  have := hC u
+  rwa [hNk u j hjm'.le, hNk u (m' + 1) le_rfl, hNk u 0 (Nat.zero_le _)] at this
+
+/-- **The norm `‖u‖_p + ‖D^m u‖_p` is equivalent to the `W^{m,p}` norm** (the corollary of the
+interpolation inequality in [brezis2011functional] §8.2, "The Sobolev spaces `W^{m,p}`"): on
+every open interval `I` and for every `1 ≤ p ≤ ∞` there is `C = C(m, p, |I|)` with
+`‖u‖ ≤ C (‖u‖_p + ‖D^m u‖_p)` for all `u ∈ W^{m,p}(I)`; the reverse comparison is
+`SobolevIntervalLp.norm_deriv_le`. Each intermediate `‖D^j u‖_p` is bounded through
+`SobolevIntervalLp.eLpNorm_deriv_le_mul_add` with `ε = 1`. -/
+theorem exists_norm_le_mul_norm_deriv_add (hI : (I : Set ℝ).OrdConnected) (m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevIntervalLp m p I,
+      ‖u‖ ≤ C * (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖) := by
+  have key : ∀ j : Fin (m + 1), ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevIntervalLp m p I,
+      ‖deriv u j‖ ≤ ‖deriv u (Fin.last m)‖ + C * ‖deriv u 0‖ := by
+    intro j
+    by_cases hj0 : j = 0
+    · exact ⟨1, zero_le_one, fun u ↦ by
+        rw [hj0, one_mul]; exact le_add_of_nonneg_left (norm_nonneg _)⟩
+    by_cases hjm : j = Fin.last m
+    · exact ⟨0, le_rfl, fun u ↦ by simp [hjm]⟩
+    obtain ⟨C, hC0, hC⟩ := eLpNorm_deriv_le_mul_add (p := p) hI j hj0 hjm one_pos
+    exact ⟨C, hC0, fun u ↦ by simpa using hC u⟩
+  choose C hC0 hC using key
+  refine ⟨∑ j, (1 + C j), Finset.sum_nonneg fun j _ ↦ by linarith [hC0 j], fun u ↦ ?_⟩
+  calc ‖u‖ ≤ ∑ j, ‖deriv u j‖ := norm_le_sum_norm_deriv u
+    _ ≤ ∑ j, (1 + C j) * (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖) := by
+        refine Finset.sum_le_sum fun j _ ↦ (hC j u).trans ?_
+        have h1 := norm_nonneg (deriv u 0)
+        have h2 := mul_nonneg (hC0 j) (norm_nonneg (deriv u (Fin.last m)))
+        nlinarith
+    _ = (∑ j, (1 + C j)) * (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖) := by rw [Finset.sum_mul]
+
+end SobolevIntervalLp
 
 end

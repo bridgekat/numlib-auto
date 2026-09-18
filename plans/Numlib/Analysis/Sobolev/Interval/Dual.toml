@@ -1,115 +1,119 @@
-desc = '''
-The dual space `W^{-1,p'}(I)` of `W_0^{1,p}(I)`, [brezis2011functional] §8.3, "The dual space of
-`W_0^{1,p}(I)`": the notation, the inclusions `H_0^1 ⊆ L² ⊆ H^{-1}` (continuous, with dense ranges)
-and their `W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}` versions, the representation of Proposition 8.14 and of
-Remark 21 (`⟨F, u⟩ = ∫ f₀ u + ∫ f₁ u'` with `f₀, f₁ ∈ L^{p'}`), and Remark 19.
-
-### Design
-
-* `SobolevIntervalLpDual p I := StrongDual ℝ (SobolevIntervalLpZero 1 p I)`, an `abbrev`
-  (`H^{-1}(I)` at `p = 2`). The norm identity of Proposition 8.14 is stated in the norm dual to
-  the norm the type carries: `W_0^{1,p}` sits isometrically in `PiLp p (Fin 2 → L^p(I))`, so the
-  dual norm of a pair `(f₀, f₁)` is the `ℓ^{p'}` norm `(‖f₀‖_{p'}^{p'} + ‖f₁‖_{p'}^{p'})^{1/p'}`
-  (`max` at `p = 1`), which is the norm of `PiLp p' (Fin 2 → L^{p'}(I))`; the book's
-  `max(‖f₀‖, ‖f₁‖)` is the dual of its sum norm. The representation clause is norm-free.
-* The representation needs two outside ingredients: the Riesz representation `(L^p(I))^* ≅ L^{p'}(I)`
-  for `1 ≤ p < ∞` (chapter 4's `MeasureTheory.Lp.exists_forall_eq_integral`), and Mathlib's Hahn–Banach
-  `exists_extension_norm_eq`. The primary statement is Remark 21's (a functional on all of
-  `W^{1,p}(I)`), Proposition 8.14 being its corollary by extension from the closed subspace.
-* The reflexivity instances of `W^{1,p}(I)` and `W_0^{1,p}(I)` for `1 < p < ∞` (Proposition 8.1
-  and §8.3's paragraph) are here rather than in `Interval/Basic`/`Interval/Zero`, because they rest
-  on chapter 4's `MeasureTheory.Lp.instIsReflexive` and chapter 9a's `SobolevMultiIndex.instIsReflexive`
-  and would otherwise hold those foundation modules back.
-* "`L² ⊆ H^{-1}` is dense" is the injectivity of `H_0^1 → L²` read through reflexivity
-  (`Submodule.exists_dual_eq_zero_of_notMem` separates a point from a closed subspace of the dual,
-  and a functional on `H^{-1} = (H_0^1)^*` is an element of `H_0^1` because `H_0^1` is reflexive);
-  for `1 < p < ∞` the same argument with the reflexivity of `W_0^{1,p}(I)`
-  (`SobolevMultiIndexZero.instIsReflexive` of `MultiIndex.toml`, read on `E = ℝ`; chapter 8 has no
-  interval-specific reflexivity node).
-'''
-
 [[node]]
 id = "SobolevIntervalLpDual"
-kind = "definition"
-desc = '''`abbrev SobolevIntervalLpDual (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) : Type :=
-StrongDual ℝ (SobolevIntervalLpZero 1 p I)` — `W^{-1,p'}(I)`, the dual of `W_0^{1,p}(I)`, `H^{-1}(I)`
-at `p = 2`. A Banach space (instance). ★'''
-deps = ["SobolevIntervalLpZero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I), Notation"
 
 [[node]]
 id = "SobolevIntervalLpZero.toL2"
-kind = "definition"
-desc = '''**`W_0^{1,p}(I) ⊆ L²(I)` with continuous injection**: `toL2 : SobolevIntervalLpZero 1 p I →L[ℝ] Lp ℝ 2 (volume.restrict I)`,
-`u ↦ fn u`, under `(hI : OrdConnected)` and either `I` bounded (any `1 ≤ p < ∞`: `W^{1,p} ⊆ L^∞ ⊆ L²`,
-`SobolevIntervalLp.toLp_of_bounded`) or `I` unbounded and `p ≤ 2` (Remark 12,
-`SobolevIntervalLp.toLp`); injective (`toL2_injective`, `SobolevMultiIndex.ext_of_fn_ae_eq`);
-at `p = 2` it is `derivL 0` restricted, of norm `≤ 1`. `denseRange_toL2`: the range is dense
-in `L²(I)` — it contains the test functions, dense in `L²(I)`
-(`MeasureTheory.Lp.dense_contDiff_tsupport_subset`). ★'''
-deps = ["SobolevIntervalLpZero", "SobolevIntervalLp.toLp", "MeasureTheory.Lp.dense_contDiff_tsupport_subset", "SobolevMultiIndex.ext_of_fn_ae_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
+
+[[node]]
+id = "SobolevIntervalLpZero.coeFn_toL2"
+
+[[node]]
+id = "SobolevIntervalLpZero.toL2OfBounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
+
+[[node]]
+id = "SobolevIntervalLpZero.coeFn_toL2OfBounded"
+
+[[node]]
+id = "SobolevIntervalLpZero.injective_of_coeFn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLpZero.toL2_injective"
+
+[[node]]
+id = "SobolevIntervalLpZero.toL2OfBounded_injective"
+
+[[node]]
+id = "SobolevIntervalLpZero.denseRange_of_coeFn_ae_eq"
+
+[[node]]
+id = "SobolevIntervalLpZero.denseRange_toL2"
+
+[[node]]
+id = "SobolevIntervalLpZero.denseRange_toL2OfBounded"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2Of"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2Of_apply"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2Of_apply_eq_integral_mul_fn"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2Of_injective"
+
+[[node]]
+id = "SobolevIntervalLpDual.denseRange_ofL2Of"
 
 [[node]]
 id = "SobolevIntervalLpDual.ofL2"
-kind = "definition"
-desc = '''**`L²(I) ⊆ W^{-1,p'}(I)` with continuous injection**: `ofL2 : Lp ℝ 2 (volume.restrict I) →L[ℝ] SobolevIntervalLpDual p I`,
-`f ↦ (u ↦ ∫ x in I, f x * fn u x)` — the adjoint of `toL2` composed with the `L²`
-self-duality (`InnerProductSpace.toDual`), `ofL2 f u = ⟪f, toL2 u⟫`; under the same
-hypotheses on `(p, I)`. Injective: `∫ f φ = 0` for all test functions forces `f = 0` a.e.
-(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). `denseRange_ofL2`: for `1 < p < ∞` (and
-`p = 2`) the range is dense in `W^{-1,p'}(I)`: a functional `Λ` on `W^{-1,p'}` vanishing on the
-range is, by reflexivity of `W_0^{1,p}` (`SobolevMultiIndexZero.instIsReflexive`), evaluation at
-some `v ∈ W_0^{1,p}`, so `∫ f v = 0` for all `f ∈ L²`, so `v = 0`; a closed proper subspace would
-be separated from a point by a functional (`Submodule.exists_dual_eq_zero_of_notMem`). At `p = 2`
-these are the book's `H_0^1 ⊆ L² ⊆ H^{-1}` with the identification of `L²` and its dual "but not
-`H_0^1` and its dual" (Remark 3 of Chapter 5). ★★ (~200 lines)'''
-deps = ["SobolevIntervalLpDual", "SobolevIntervalLpZero.toL2", "SobolevMultiIndexZero.instIsReflexive", "Submodule.exists_dual_eq_zero_of_notMem"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
 
 [[node]]
+id = "SobolevIntervalLpDual.ofL2_apply"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2_injective"
+
+[[node]]
+id = "SobolevIntervalLpDual.denseRange_ofL2"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2OfBounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2OfBounded_apply"
+
+[[node]]
+id = "SobolevIntervalLpDual.ofL2OfBounded_injective"
+
+[[node]]
+id = "SobolevIntervalLpDual.denseRange_ofL2OfBounded"
+
+[[node]]
+id = "PiLp.singleL"
+
+[[node]]
+id = "PiLp.singleL_apply"
+
+[[node]]
+id = "PiLp.norm_singleL_apply"
+
+[[node]]
+id = "PiLp.norm_singleL_le"
+
+[[node]]
+id = "PiLp.sum_singleL_apply"
+
+[[node]]
+id = "PiLp.strongDual_apply_eq_sum"
+
+[[node]]
+id = "PiLp.norm_strongDual_comp_singleL_le"
+
+[[node]]
+id = "PiLp.norm_strongDual_eq"
+
+[[node]]
+id = "PiLp.norm_eq_norm_toLp_norm"
+
+[[node]]
 id = "SobolevIntervalLp.exists_repr_strongDual"
-kind = "theorem"
-desc = '''**Remark 21 (representation of functionals on `W^{1,p}(I)`)**: for `1 ≤ p < ∞`, `q` conjugate
-(`[ENNReal.HolderConjugate p q]`) and `F : StrongDual ℝ (SobolevIntervalLp 1 p I)`, there is
-`f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict I))` with
-`∀ u, F u = ∫ x in I, f 0 x * fn u x + ∫ x in I, f 1 x * deriv u 1 x` and `‖F‖ = ‖f‖` (the
-`ℓ^q` norm of the pair; the book's `max` is for its sum norm). Proof: `W^{1,p}(I)` is the closed
-subspace `SobolevMultiIndex` of `E = PiLp p (Fin 2 → L^p(I))` (isometrically, by definition of the
-type), so `F` extends by Hahn–Banach (`exists_extension_norm_eq`) to `Φ : E →L[ℝ] ℝ` with
-`‖Φ‖ = ‖F‖`; `Φ (h₀, h₁) = Φ (h₀, 0) + Φ (0, h₁)` and each piece is a functional on `L^p(I)`,
-represented by `f₀, f₁ ∈ L^q(I)` through the Riesz representation of `(L^p(I))^*` (chapter 4,
-Theorems 4.11 and 4.14 — `1 ≤ p < ∞`, σ-finite); the norm identity is the computation
-`‖Φ‖ = ‖(f₀, f₁)‖_{ℓ^q}` (Hölder for `≤`, the extremal functions of the `L^p`–`L^q` pairing
-for `≥`; the dual of a finite `PiLp p` product is the `PiLp q` product of the duals
-isometrically — a ~150-line lemma `PiLp.norm_strongDual_eq` worth stating on its own, and
-shared with `SobolevMultiIndex.instIsReflexive`'s product lemma `NormedSpace.instIsReflexivePiLp`). ★★ (~250 lines given the
-representation)'''
-deps = ["SobolevIntervalLp", "SobolevIntervalLp.deriv", "MeasureTheory.Lp.exists_forall_eq_integral"] # cross-ref chapter 4: the Riesz representation on a σ-finite measure, `plans/Numlib/MeasureTheory/Function/LpSpace/Duality.toml`
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 21"
 
 [[node]]
 id = "SobolevIntervalLpDual.exists_repr"
-kind = "theorem"
-desc = '''**Proposition 8.14**: for `1 ≤ p < ∞`, `q` conjugate, `F : SobolevIntervalLpDual p I`, there is
-`f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict I))` with
-`∀ u : SobolevIntervalLpZero 1 p I, F u = ∫ x in I, f 0 x * fn u x + ∫ x in I, f 1 x * deriv u 1 x`
-and `‖F‖ = ‖f‖`. Extend `F` from the closed subspace `W_0^{1,p}(I)` to `W^{1,p}(I)` with the same
-norm (`exists_extension_norm_eq`) and apply Remark 21. **Bounded `I`, `f₀ = 0`**
-(`exists_repr_of_bounded`): `∀ u, F u = ∫ x in I, f₁ x * deriv u 1 x` for some `f₁ ∈ L^q(I)` —
-`u ↦ u'` is injective on `W_0^{1,p}(a, b)` with `‖u‖ ≤ C ‖u'‖_p` (Poincaré, Proposition 8.13),
-so `F ∘ (u ↦ u')⁻¹` is a bounded functional on the closed range in `L^p(I)`; extend and represent.
-The shape was checked in `notes/brezis/ch08/proto/Basic.lean`. ★★'''
-deps = ["SobolevIntervalLpDual", "SobolevIntervalLp.exists_repr_strongDual", "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.14"
+
+[[node]]
+id = "SobolevIntervalLpDual.exists_repr_of_bounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.14"
 
 [[node]]
 id = "SobolevIntervalLpDual.repr_not_unique"
-kind = "theorem"
-desc = '''**Remark 19**: the pair `(f₀, f₁)` representing `F` is not unique: for every test function
-`g : 𝓓(I, ℝ)`, the pairs `(f₀, f₁)` and `(f₀ + g', f₁ − g)` represent the same functional on
-`W_0^{1,p}(I)` — `∫ g' u − ∫ g u' = 0` for `u ∈ W_0^{1,p}(I)` (the weak derivative tested against
-`g`, `HasWeakDerivOn.integral_deriv_mul`). Stated as: for `g ≠ 0` the two pairs differ and define
-the same element of `SobolevIntervalLpDual p I`. ★'''
-deps = ["SobolevIntervalLpDual", "HasWeakDerivOn.integral_deriv_mul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 19"

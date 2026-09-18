@@ -222,6 +222,9 @@ import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Basic
+import Numlib.Analysis.Sobolev.Interval.Density
+import Numlib.Analysis.Sobolev.Interval.DifferenceQuotient
+import Numlib.Analysis.Sobolev.Interval.Dual
 import Numlib.Analysis.Sobolev.Interval.Embedding
 import Numlib.Analysis.Sobolev.Interval.Extension
 import Numlib.Analysis.Sobolev.Interval.Higher

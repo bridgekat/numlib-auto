@@ -37,34 +37,49 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark
 [[node]]
 id = "mem_sobolevIntervalLpZero_higher_iff"
 kind = "theorem"
-desc = '''**Remark 18**: for `(hI : OrdConnected)`, `1 ≤ p < ∞`, `u : SobolevIntervalLp m p I`,
-`u ∈ SobolevIntervalLpZero m p I ↔ ∀ j : Fin m, ∀ x ∈ frontier (I : Set ℝ), rep (of (deriv u j.castSucc)) x = 0`
-— `u = Du = ⋯ = D^{m−1}u = 0` on `∂I`, each `D^j u` (`j < m`) read as an element of `W^{1,p}(I)`
-through its representative. `→` as in Theorem 8.12 (evaluation of each `D^j u` is continuous on
-`W^{m,p}`). `←`, bounded `I` first: `D^m u` has vanishing moments `∫_I D^m u · x^j = 0` for
-`j < m` (integrate by parts `j` times using the boundary conditions, `integral_deriv_mul_add_mul_deriv`
-iterated); approximate `D^m u` in `L^p` by a test function `ψ`, correct it to `ψ − ∑_{i<m} c_i ψ_i`
-with `m` fixed test functions `ψ_i` whose moment matrix `(∫ ψ_i x^j)_{i,j}` is invertible (exists:
-polynomials of degree `< m` are linearly independent on `I`, so the moment map from the test
-functions onto `ℝ^m` is surjective — pick preimages of a basis), so that all `m` moments vanish;
-its `m`-fold primitive from `a` is then a test function (each primitive of a zero-moment test
-function is again compactly supported: `TestFunction.primitiveIic` iterated, the moments dropping
-by one each time), and it approximates `u` in `W^{m,p}` by Poincaré applied `m` times. Unbounded
-`I`: the cut-off `ζ_n u` reduces to the bounded case as in Theorem 8.12 (the cut-off preserves the
-vanishing of the `D^j u` at finite endpoints — Leibniz). The book's route (Exercise 8.9, via
-Hardy-type inequalities `u/x^m ∈ L^p`) is not followed. The distinction
-`W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is the surface's `remark_8_18_ne`. ★★★ (~400 lines)
+desc = '''**Remark 18**, general `I`: for `(hI : OrdConnected)`, `1 ≤ p < ∞` and
+`u : SobolevIntervalLp (m + 1) p I`, `u ∈ SobolevIntervalLpZero (m + 1) p I ↔ ∀ j : Fin (m + 1),
+∀ x ∈ frontier (I : Set ℝ), rep (derivOne u j) x = 0` — `u = Du = ⋯ = D^m u = 0` on `∂I`, each
+`D^j u` (`j ≤ m`) read as the element `SobolevIntervalLp.derivOne u j` of `W^{1,p}(I)` through its
+representative. `→` is `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero` (proved, any `I`);
+`←` on a bounded interval is `mem_sobolevIntervalLpZero_higher_iff_of_bounded` (proved). What is
+left is the reduction of `←` on an unbounded `I` to the bounded case: the cut-offs `ζ_n u` of
+`SobolevIntervalLp.tendsto_cutoff_smul` (order one only) have to be lifted to `W^{m+1,p}(I)` — a
+Leibniz rule at order `m + 1` for the product of an element of `W^{m+1,p}` by a smooth bounded
+function with bounded derivatives (`HasWeakIteratedLineDerivOn.mul` of
+`Numlib/Analysis/Sobolev/Mollification.lean` is order one), the convergence `ζ_n u → u` in
+`W^{m+1,p}`, and `ζ_n u ∈ W_0^{m+1,p}(I)` through the bounded case on `I ∩ (-2(n+1), 2(n+1))`
+(restriction/extension by zero as in `SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo`, at order
+`m + 1`). The book's route (Exercise 8.9, via Hardy-type inequalities) is not followed. The
+distinction `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is the surface's `remark_8_18_ne`. ★★★ (~300 lines)
 
-Blocked: not attempted in wave 2 for budget reasons (★★★). The forward direction is cheap with
-`SobolevIntervalLp.derivOneCLM` composed with `SobolevIntervalLp.evalCLM'` (evaluation of `D^j u`
-is continuous on `W^{m,p}`) and `TestFunction.toSobolevIntervalLp`-style uniqueness of the weak
-derivatives; the converse needs the moment-corrected approximation described above. Now
-available: `SobolevIntervalLp.eLpNorm_integral_le` (Poincaré, elementary form, in
-`Interval/Higher`), `SobolevIntervalLp.shift`, `SobolevIntervalLp.cutoff` with
-`tendsto_cutoff_smul`, and `SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo` (the restriction
-argument) for the unbounded case.'''
-deps = ["SobolevIntervalLpZero", "mem_sobolevIntervalLpZero_iff", "TestFunction.primitiveIic", "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv", "SobolevIntervalLp.integral_deriv_mul_add_mul_deriv"]
+Blocked: wave 2 (sob7) proved both directions on a bounded interval
+(`mem_sobolevIntervalLpZero_higher_iff_of_bounded`) and the forward direction on every `I`; the
+converse on an unbounded `I` needs the higher-order cut-off machinery listed above, which does not
+exist in the interval formulation (the product rule `SobolevIntervalLp.mul` is order one).'''
+deps = ["SobolevIntervalLpZero", "mem_sobolevIntervalLpZero_higher_iff_of_bounded", "SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero", "SobolevIntervalLp.tendsto_cutoff_smul", "SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
+
+[[node]]
+id = "mem_sobolevIntervalLpZero_higher_iff_of_bounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
+
+[[node]]
+id = "SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
+
+[[node]]
+id = "SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
+
+[[node]]
+id = "SobolevIntervalLp.derivOne_zero_eq"
+
+[[node]]
+id = "SobolevIntervalLp.derivOne_shift"
+
+[[node]]
+id = "SobolevIntervalLp.deriv_ae_eq_iteratedDeriv_of_fn_ae_eq"
 
 [[node]]
 id = "SobolevIntervalLp.abs_rep_sub_average_le"
@@ -80,20 +95,23 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
 [[node]]
 id = "SobolevIntervalLp.integral_abs_sub_average_le"
-kind = "theorem"
-desc = '''**Problem 47 C.1–C.2**: for `u : SobolevIntervalLp 1 1 (Opens.Ioo 0 1)`,
-`∫ x in Ioo 0 1, |rep u x - ū| ≤ 2 * ∫ t in Ioo 0 1, |deriv u 1 t| * (t * (1 - t))` (C.1) and
-hence `≤ (1/2) * ‖deriv u 1‖` (C.2, since `2 t (1 − t) ≤ 1/2`): `∫∫ |ũ(x) − ũ(y)| dx dy ≤ ∫∫ ∫_{[y,x]} |u'|`
-and Fubini (`MeasureTheory.integral_integral_swap`) gives the weight `2 t (1 − t)` (the measure of
-`{(x, y) : t ∈ [y, x] or [x, y]}`). Stated on `(0, 1)`; on `(a, b)` the weight is
-`2 (t − a)(b − t)/(b − a)` and the constant `(b − a)/2`. ★★ (~150 lines)
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
-Blocked: not attempted in wave 2 (the Fubini computation of the weight is the whole content; A.1
-and A.4 are proved for every `p` in `SobolevIntervalLp.abs_rep_sub_average_le` and
-`SobolevIntervalLpZero.abs_rep_le_half_eLpNorm_deriv`, and `SobolevIntervalLp.integrableOn_rep_Ioo`
-gives the integrability of `ũ` on `(a, b)`). In `ℝ≥0∞`: `‖ũ x − ū‖ₑ ≤ ∫⁻ y, ‖ũ x − ũ y‖ₑ ≤
-∫⁻ y, ∫⁻ t in Ι y x, ‖u' t‖ₑ` and `lintegral_lintegral_swap` twice.'''
-deps = ["SobolevIntervalLp.rep"]
+[[node]]
+id = "SobolevIntervalLp.integral_abs_sub_average_le_half"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
+
+[[node]]
+id = "SobolevIntervalLp.measurableSet_setOf_mem_uIoc"
+
+[[node]]
+id = "SobolevIntervalLp.volume_prod_setOf_mem_uIoc"
+
+[[node]]
+id = "SobolevIntervalLp.prod_Ioo_inter_setOf_mem_uIoc_eq_empty"
+
+[[node]]
+id = "SobolevIntervalLp.lintegral_enorm_rep_sub_average_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 47"
 
 [[node]]
