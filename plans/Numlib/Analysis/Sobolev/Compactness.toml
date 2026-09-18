@@ -1,111 +1,23 @@
-desc = '''
-The Rellich–Kondrachov theorem: Brezis, *Functional Analysis, Sobolev Spaces and Partial
-Differential Equations*, Theorem 9.16 — for a bounded open `Ω` of class `C^1`, the injections
-`W^{1,p}(Ω) ⊂ L^q(Ω)` for `q ∈ [1, p*)` (`p < N`), for `q ∈ [p, ∞)` (`p = N`) and
-`W^{1,p}(Ω) ⊂ C(Ω̄)` (`p > N`) are compact; in particular `W^{1,p}(Ω) ⊂ L^p(Ω)` is compact for
-every `p`. With the `W_0^{1,p}(Ω)` version for an arbitrary bounded open set (Remark 20) and the
-higher-order corollary `W^{k,p}(Ω) ↪↪ W^{k−1,p}(Ω)` (Atkinson–Han's Theorem 7.3.9). Imports
-`EmbeddingDomain.lean`, `Zero.lean`, `Extension.lean` (for the `C^1` instance of the extension
-predicate only), chapter 4's `Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz.lean`
-and `Numlib/Topology/ContinuousMap/ArzelaAscoli.lean`. Compact embeddings are
-`IsCompactEmbedding` of `Numlib/Analysis/Normed/Operator/Embedding.lean`, the vocabulary
-Atkinson–Han's Definition 7.3.6 uses, along the inclusions `SobolevMultiIndex.toLpₗ` /
-`SobolevEuclidean.toContinuousMapL`.
-
-The proof is factored through an abstract lemma: any subspace `S` of `W^{1,p}(Ω)`, `Ω` of finite
-measure, that carries a bounded extension operator into `W^{1,p}(ℝ^N)` (`HasSobolevExtensionOn S`,
-`Cutoff.lean`) embeds compactly into `L^q(Ω)` for `q < p*`. The book's argument is
-exactly that: the image `ℱ = P(ℋ)` of the unit ball is bounded in `W^{1,p}(ℝ^N)`, hence in
-`L^q(ℝ^N)` (Corollary 9.10) and uniformly continuous under translation in `L^p`
-(Proposition 9.3, `‖τ_h f − f‖_p ≤ |h| ‖∇f‖_p`), hence in `L^q` by interpolation; the
-Kolmogorov–M. Riesz–Fréchet theorem (chapter 4,
-`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`) makes the
-restrictions to `Ω` relatively compact in `L^q(Ω)`, and `ℋ = ℱ|_Ω`. The two instances are
-`S = ⊤` with Theorem 9.7's `P` (Theorem 9.16) and `S = W_0^{1,p}(Ω)` with the extension by zero
-(Remark 20, the version chapter 9b's Theorem 9.31 needs). The case `p = N` reduces to `p < N`,
-and the case `p > N` is Arzelà–Ascoli on the compact `closure Ω`
-(`ContinuousMap.isCompact_closure_of_forall_norm_le`) applied to the uniformly Hölder image of
-the unit ball. About 1400 lines.
-'''
+# Numlib/Analysis/Sobolev/Compactness.lean has the module doc comment; the plan desc is superseded.
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn"
-kind = "theorem"
-desc = '''**The abstract Rellich–Kondrachov lemma**: for `S : Submodule ℝ (SobolevEuclidean N 1 p Ω)`
-with `HasSobolevExtensionOn S` (a bounded `P : S →L W^{1,p}(ℝ^N)` with `P u = u` on `Ω`),
-`volume Ω ≠ ∞`, `1 ≤ p < N` and `1 ≤ q < p*`, the inclusion `S → L^q(Ω)`
-(`SobolevMultiIndex.toLpₗ` restricted to `S`, membership from Corollary 9.14 through `P`) is a
-compact embedding: `IsCompactEmbedding`. Proof ([brezis2011functional] Theorem 9.16, the case
-`p < N`, lines 10736–10770 of the source): by `isCompactEmbedding_of_isCompact_closure_image_closedBall`
-it suffices that the image of the unit ball of `S` has compact closure in `L^q(Ω)`; the family
-`ℱ := P '' closedBall 0 1 ⊆ W^{1,p}(ℝ^N)` is bounded, so its `L^q(ℝ^N)` classes (`q ≥ p`
-without loss of generality — for `q < p` use `L^p ⊆ L^q` on the finite-measure `Ω`,
-`eLpNorm_le_eLpNorm_mul_rpow_measure_univ`) form a bounded set (Corollary 9.10) satisfying the
-uniform translation condition: `‖τ_h f − f‖_p ≤ |h| ‖∇f‖_p ≤ |h| C`
-(`SobolevEuclidean.eLpNorm_fn_sub_translate_le`, `Friedrichs.lean`) and
-`‖τ_h f − f‖_q ≤ ‖τ_h f − f‖_p^θ (2 ‖f‖_{p*})^{1−θ} ≤ C |h|^θ` with `1/q = θ/p + (1−θ)/p*`,
-`θ ∈ (0, 1]` (`MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow`); Kolmogorov–Riesz–Fréchet
-(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`, with
-`Lp.restrictCLM` to `Ω`) gives the compact closure of the restrictions, which are the classes of
-the `u ∈ closedBall 0 1` themselves since `P u = u` on `Ω`. ★★★, ~400 lines.'''
-deps = ["IsSobolevExtensionDomain", "SobolevEuclidean.isContinuousEmbedding_toLp_of_le_of_le", "SobolevEuclidean.eLpNorm_fn_sub_translate_le", "MeasureTheory.eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow", "MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate", "MeasureTheory.Lp.restrictCLM", "isCompactEmbedding_of_isCompact_closure_image_closedBall", "SobolevMultiIndex.toLpₗ"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16, proof"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toLp_of_lt"
-kind = "theorem"
-desc = '''**Theorem 9.16 (Rellich–Kondrachov), case `p < N`**: for `Ω` bounded with
-`IsContDiffChartDomain 1 Ω`, `1 ≤ p < N` and `1 ≤ q < p*`, `W^{1,p}(Ω) ↪↪ L^q(Ω)`:
-`IsCompactEmbedding (SobolevMultiIndex.toLpₗ …)` on `SobolevEuclidean N 1 p Ω`. The abstract
-lemma with `S = ⊤` and Theorem 9.7's operator (`IsSobolevExtensionDomain.of_isContDiffChartDomain`,
-`Extension.lean`; a bounded `Ω` has bounded frontier). ★, ~40 lines. Restated under `IsContDiffDomain 1 Ω` through
-the bridge, this is `AtkinsonHan.Chapter07.theorem_7_3_8` (a) at `k = 1` with `C^1` in place of
-Lipschitz.'''
-deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn", "IsSobolevExtensionDomain.of_isContDiffChartDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toLp_of_eq"
-kind = "theorem"
-desc = '''**Theorem 9.16, case `p = N`**: for `Ω` bounded of class `C^1` and `N ≤ q < ∞`,
-`W^{1,N}(Ω) ↪↪ L^q(Ω)`. "The case `p = N` reduces to the case `p < N`": on the finite-measure
-`Ω`, `W^{1,N}(Ω) ↪ W^{1,r}(Ω)` continuously for `r < N` (`MemSobolev.mono_exponent`, an
-`IsContinuousEmbedding` between the typed spaces, `SobolevEuclidean.toLowerExponentL`, ★ ~80
-lines, to be stated here), and for `r < N` close to `N` one has `r* > q`, so the case `p < N`
-applies and `IsContinuousEmbedding.comp_isCompactEmbedding` composes. For `N = 1` the
-hypothesis `p = N = 1` needs the one-dimensional case (`W^{1,1}(a,b) ↪↪ L^q`, chapter 8's
-Theorem 8.8 (7)); state for `N ≥ 2`. ★★, ~150 lines.'''
-deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_lt", "IsContinuousEmbedding.comp_isCompactEmbedding", "MemSobolev.mono_exponent", "SobolevMultiIndex.toLpₗ"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt"
-kind = "theorem"
-desc = '''**Theorem 9.16, case `p > N`**: for `Ω` bounded of class `C^1` and `N < p ≤ ∞`,
-`W^{1,p}(Ω) ↪↪ C(Ω̄)`: `IsCompactEmbedding (SobolevEuclidean.toContinuousMapL hΩ)` into
-`C(closure Ω, ℝ)` (`EmbeddingDomain.lean`). "The case `p > N` follows from Corollary 9.14 and
-Ascoli–Arzelà's theorem": the image of the unit ball is bounded in sup norm and uniformly
-`(1 − N/p)`-Hölder (`SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq` with constant
-`C ‖u‖ ≤ C`), hence equicontinuous, and `closure Ω` is compact, so
-`ContinuousMap.isCompact_closure_of_forall_norm_le` (`Numlib/Topology/ContinuousMap/ArzelaAscoli.lean`)
-gives the compact closure; conclude by `isCompactEmbedding_of_isCompact_closure_image_closedBall`.
-★★, ~250 lines.'''
-deps = ["SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "ContinuousMap.isCompact_closure_of_forall_norm_le", "isCompactEmbedding_of_isCompact_closure_image_closedBall", "IsSobolevExtensionDomain"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toLp_self"
-kind = "theorem"
-desc = '''**Theorem 9.16, "in particular `W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection for all `p`
-(and all `N`)"**: for `Ω` bounded of class `C^1` and `1 ≤ p ≤ ∞`,
-`IsCompactEmbedding (SobolevMultiIndex.toLpₗ_self)` on `SobolevEuclidean N 1 p Ω`. Cases: `p < N`
-gives `q = p < p*`; `p = N` gives `q = p`; `p > N` composes `W^{1,p} ↪↪ C(Ω̄)` with the
-continuous `C(Ω̄) ↪ L^p(Ω)` on the bounded `Ω` (`IsCompactEmbedding.comp_isContinuousEmbedding`;
-`p = ∞` included, since `W^{1,∞}(Ω) ⊆ W^{1,p}(Ω)` for finite `p` on bounded `Ω` — or directly
-through `C(Ω̄) ↪ L^∞`). ★★, ~120 lines. This is the compactness the `p = 2`, `k = 1`
-instances of `AtkinsonHan.Chapter07.theorem_7_3_8`–`theorem_7_3_9` and chapter 9b's Theorem 9.23
-(the Fredholm alternative for `−Δu + λu = f`) need.'''
-deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_lt", "SobolevEuclidean.isCompactEmbedding_toLp_of_eq", "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt", "IsCompactEmbedding.comp_isContinuousEmbedding", "SobolevMultiIndex.toLpₗ"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
 
 [[node]]
@@ -120,7 +32,9 @@ open set `Ω`" — the abstract lemma with `S = W_0^{1,p}(Ω)` and the extension
 lines. This is what chapter 9b's Theorem 9.31 (the Dirichlet eigenfunctions of `−Δ` on a
 bounded open `Ω`, no regularity) consumes, through `H_0^1(Ω) ↪↪ L^2(Ω)`, and what
 `AtkinsonHan.Chapter08.Section08` and the obstacle problems of Atkinson–Han chapter 11 would
-consume for coercivity-by-compactness arguments.'''
+consume for coercivity-by-compactness arguments.
+
+Blocked: `Numlib/Analysis/Sobolev/Zero.lean` (`SobolevEuclideanZero.hasSobolevExtensionOn`, `extendZeroL`, agent sob9) was not in the tree when this module was written (sob8, 2026-09-18). Once it is: the case `p < N` is `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn` with `S = SobolevEuclideanZero N 1 p Ω` (the abstract lemma is stated on a subspace for this purpose), the case `p > N` is `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`; the case `p = N` needs the exponent-lowering map on `W_0` (`SobolevMultiIndex.toLowerExponentL` should map `W_0^{1,p}` into `W_0^{1,r}`, to be checked), ~80 lines.'''
 deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn", "SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclideanZero.extendZeroL", "IsCompactEmbedding.comp_isContinuousEmbedding"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
@@ -138,6 +52,89 @@ and a diagonal extraction over the finitely many `α` there is a subsequence alo
 `∂^α u_n`, `|α| ≤ k−1`, converges in `L^p(Ω)`; the limits are the weak derivatives of the limit
 of `u_n` by the closedness of the weak derivative under `L^p` limits
 (`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`, `Density.toml`), so the subsequence converges in
-`W^{k−1,p}(Ω)`. ★★★, ~300 lines.'''
+`W^{k−1,p}(Ω)`. ★★★, ~300 lines.
+
+Blocked: not attempted (sob8, 2026-09-18) for lack of time; `SobolevEuclidean.isCompactEmbedding_fnL` is the `k = 1` input and the route is as in the desc (~300 lines).'''
 deps = ["SobolevEuclidean.isCompactEmbedding_toLp_self", "memSobolevMultiIndex_succ_iff", "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm", "MemSobolev.mono_order", "IsCompactEmbedding"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (Brezis, Theorem 9.16 iterated)"
+
+[[node]]
+id = "MeasureTheory.Lp.monoExponentL"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_monoExponentL"
+
+[[node]]
+id = "MeasureTheory.Lp.monoExponentL_injective"
+
+[[node]]
+id = "MeasureTheory.Lp.isContinuousEmbedding_monoExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.memSobolevMultiIndex_of_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.norm_weakDeriv_toLowerExponent_le"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerExponent_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponentL_injective"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLowerExponentL"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le"
+
+[[node]]
+id = "EuclideanSpace.exists_pos_forall_enorm_rpow_mul_lt"
+
+[[node]]
+id = "HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM"
+
+[[node]]
+id = "HasSobolevExtensionOn.isBounded_image_closedBall"
+
+[[node]]
+id = "HasSobolevExtensionOn.uniform_translate_image_closedBall"
+
+[[node]]
+id = "HasSobolevExtensionOn.isCompactEmbedding_toLpOn_of_le_of_lt"
+
+[[node]]
+id = "HasSobolevExtensionOn.memLp_fn_of_le_sobolevConj"
+
+[[node]]
+id = "NNReal.lt_sobolevConj"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top"
+
+[[node]]
+id = "HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL"
+
+[[node]]
+id = "NNReal.exists_lowerExponent"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_of_le"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_fnL"
