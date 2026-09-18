@@ -1,177 +1,261 @@
 namespace = "EllipticInterval.SturmLiouville"
-desc = '''
-The spectral decomposition of the Sturm–Liouville operator `A u = −(p u')' + q u` with Dirichlet
-boundary conditions on a bounded interval, [brezis2011functional] §8.6: Theorem 8.22 (a sequence
-of eigenvalues `λₙ → +∞` and a Hilbert basis `(eₙ)` of `L²(I)` of `C²` eigenfunctions), its Example
-(`p = 1`, `q = 0`: `eₙ = √2 sin(nπx)`, `λₙ = n²π²`). Remark 30 (the operator on `L²(ℝ)` is bounded,
-self-adjoint and not compact) is a surface node over `EllipticInterval/BoundaryConditions`'s
-Example 8.
-
-### Route
-
-The book's proof is followed exactly, over the existing backbone. For `p ∈ C¹(Ī)`, `p ≥ α > 0`,
-`q ∈ C(Ī)`, `q ≥ 0` (Theorem 8.22's reduction to `q ≥ 0` by adding a constant is the surface's job):
-
-* the solution operator `T : L²(I) → L²(I)`, `f ↦ u`, with `u ∈ H_0^1(I)` the weak solution of
-  `a(u, v) = ∫ f v`, is `toL2 ∘ S` for the Lax–Milgram solution map
-  `S : L²(I) → H_0^1(I)` (`SesqForm.exists_solutionEquiv` composed with `load`), continuous
-  linear;
-* compact: `S` is bounded and the inclusion `H_0^1(I) → L²(I)` is compact — Theorem 8.8 (6),
-  `SobolevIntervalLp.isCompactOperator_toContinuousMap` at `p = 2`, composed with the continuous
-  `C[a, b] → L²(a, b)` (`IsCompactOperator.clm_comp`, `.comp_clm`);
-* self-adjoint: `⟪T f, g⟫ = a(T f, T g) = ⟪f, T g⟫` (`LinearMap.IsSymmetric`);
-* positive and injective: `⟪T f, f⟫ = a(u, u) ≥ 0`, and `T f = 0 ⇒ u = 0 ⇒ ∫ f v = 0` for all
-  `v ∈ H_0^1 ⊇ 𝓓(I)` ⇒ `f = 0`;
-* `L²(a, b)` is infinite-dimensional (an orthogonal family of indicators of disjoint subintervals);
-* `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` (`Numlib/Analysis/InnerProductSpace/CompactSpectral.lean`,
-  which needs exactly injectivity and infinite dimension) gives the `HilbertBasis ℕ ℝ (L²(I))` of
-  eigenvectors `eₙ` with eigenvalues `μₙ → 0`, `μₙ > 0` (positive, injective), and `λₙ := 1/μₙ`;
-* regularity: `eₙ = T (λₙ eₙ)` is the weak solution with datum `λₙ eₙ ∈ L² ∩ C(Ī)` (as
-  `eₙ ∈ H_0^1 ⊆ C(Ī)`), so `eₙ ∈ H²` and `eₙ ∈ C²(Ī)` by the Sturm–Liouville regularity of
-  `EllipticInterval/BoundaryConditions` (`exists_contDiffMapIcc_of_continuous`), and
-  `−(p eₙ')' + q eₙ = λₙ eₙ` classically with `eₙ(a) = eₙ(b) = 0`.
-
-The Example needs the completeness of the sine system `√2 sin(nπx)` in `L²(0, 1)`, which Mathlib
-and the backbone lack (`Numlib/Analysis/Fourier/CosineBasis.lean` has the cosines `cosBasis` on
-`(0, π)`, with the sine orthogonality relations `integral_sin_nat_mul_sin_nat_mul` beside them).
-It is *not* obtained from the abstract theorem (which would need the one-dimensionality of every
-Dirichlet eigenspace by an ODE-uniqueness argument, and the eigenspace-completeness of
-`eigenvectorHilbertBasis` — two ★★★ nodes in the first draft of this plan) but from the cosines by
-a two-line trick: if `f ∈ L²(0, π)` is orthogonal to every `sin(kx)`, `k ≥ 1`, then `f · sin x` is
-orthogonal to every `cos(mx)`, `m ≥ 0`, because `2 sin x cos(mx) = sin((m+1)x) − sin((m−1)x)`
-(`Real.sin_add`/`Real.sin_sub`, product-to-sum), so `f · sin x = 0` a.e. by `cosBasis`'s
-completeness (`orthogonal_span_cosLp_eq_bot`) and `f = 0` a.e. since `sin ≠ 0` on `(0, π)`. That
-is `sinBasis` on `(0, π)` (`_root_`, ~150 lines, to be relocated to a new
-`Numlib/Analysis/Fourier/SineBasis.lean` beside `CosineBasis.lean`); the Example's basis on
-`(0, 1)` is its transport along `x ↦ πx` (`sinBasisUnit`). The eigenvalue statement of the
-Example — the eigenvalues of Theorem 8.22 for `p = 1`, `q = 0` are exactly the `n²π²`, each
-simple — then follows by *expanding* in the sine basis: `T sₙ = (n²π²)⁻¹ sₙ` by a direct
-computation, and an eigenvector `e = ∑ cₙ sₙ` of `T` with eigenvalue `μ` has
-`cₙ ((n²π²)⁻¹ − μ) = 0` for all `n`, so it lies in the one-dimensional `span {sₙ}` of the unique
-`n` with `μ = (n²π²)⁻¹`. The classical statement "every `C²` Dirichlet eigenfunction of `−u''` on
-`(0, 1)` is a multiple of a sine" (`eq_smul_sin_of_dirichlet`, Comments on Chapter 8, 3(i) at
-`p = 1`, `q = 0`) is a corollary of that, no ODE uniqueness needed.
-'''
 
 [[node]]
 id = "Hypotheses"
-kind = "definition"
-desc = '''The coefficient hypotheses of Theorem 8.22, bundled: `structure Hypotheses (a b : ℝ) (p q : ℝ → ℝ) (α : ℝ) : Prop`
-with `contDiffOn_p : ContDiffOn ℝ 1 p (Icc a b)`, `pos : 0 < α`, `le_p : ∀ x ∈ Icc a b, α ≤ p x`,
-`continuousOn_q : ContinuousOn q (Icc a b)`, `nonneg_q : ∀ x ∈ Icc a b, 0 ≤ q x`. The `L^∞`
-classes `pL`, `qL` (`ContinuousOn.memLp_top_restrict_Ioo` as in the parent module) feed
-`form a b pL 0 qL`; `form_isCoerciveWith_restrict` gives coercivity on `H_0^1` (the parent's
-`α₀ = α`, `γ = q ≥ 0`). ★'''
-deps = ["EllipticInterval.form", "EllipticInterval.form_isCoerciveWith_restrict"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22'
+
+[[node]]
+id = "Hypotheses.pL"
+
+[[node]]
+id = "Hypotheses.qL"
+
+[[node]]
+id = "Hypotheses.coeFn_pL"
+
+[[node]]
+id = "Hypotheses.coeFn_qL"
+
+[[node]]
+id = "Hypotheses.ae_le_pL"
+
+[[node]]
+id = "Hypotheses.ae_nonneg_qL"
+
+[[node]]
+id = "Hypotheses.p_ne_zero"
+
+[[node]]
+id = "Hypotheses.form"
+
+[[node]]
+id = "Hypotheses.form_comm"
+
+[[node]]
+id = "Hypotheses.form_isCoerciveWith_restrict"
+
+[[node]]
+id = "Hypotheses.form_self_nonneg"
+
+[[node]]
+id = "solution"
+
+[[node]]
+id = "isGalerkinSolution_solution"
+
+[[node]]
+id = "solution_mem"
+
+[[node]]
+id = "form_solution"
+
+[[node]]
+id = "eq_solution_of_isGalerkinSolution"
+
+[[node]]
+id = "_root_.EllipticInterval.load_add"
+
+[[node]]
+id = "_root_.EllipticInterval.load_smul"
+
+[[node]]
+id = "solution_add"
+
+[[node]]
+id = "solution_smul"
+
+[[node]]
+id = "solutionBound"
+
+[[node]]
+id = "solutionBound_nonneg"
+
+[[node]]
+id = "norm_solution_le"
+
+[[node]]
+id = "solutionₗ"
+
+[[node]]
+id = "solutionCLM"
+
+[[node]]
+id = "solutionCLM_apply"
 
 [[node]]
 id = "solutionOperator"
-kind = "definition"
-desc = '''**The solution operator `T : L²(I) → L²(I)`**: for `h : Hypotheses a b p q α` (with `a < b`),
-`solutionOperator h : Lp ℝ 2 (volume.restrict (Ioo a b)) →L[ℝ] Lp ℝ 2 (volume.restrict (Ioo a b))`,
-`f ↦ fn u` where `u ∈ SobolevIntervalZero a b` is the unique weak solution of
-`form a b pL 0 qL u v = load a b f v` on `H_0^1` (`existsUnique_isWeakSolution`; as a bounded
-linear map through `SesqForm.exists_solutionEquiv` for the restricted form on the Hilbert space
-`SobolevIntervalZero a b` and `load a b`'s continuity in `f`), composed with the inclusion
-`H_0^1 → L²` (`SobolevInterval.derivL 1 a b 0` on the subtype). With
-`isGalerkinSolution_solutionOperator : IsGalerkinSolution (form …) (load a b f) (SobolevIntervalZero a b) (solution h f)`
-where `solution h f : SobolevInterval 1 a b` is the `H¹` element, `solutionOperator_apply`, and
-the bound `norm_solution_le : ‖solution h f‖ ≤ C ‖f‖` (the book's (39): `α ‖u'‖² ≤ ‖f‖ ‖u‖` and
-Poincaré, `seminorm_le_of_isGalerkinSolution`). ★★'''
-deps = ["Hypotheses", "EllipticInterval.existsUnique_isWeakSolution", "SesqForm.exists_solutionEquiv", "EllipticInterval.load", "EllipticInterval.seminorm_le_of_isGalerkinSolution", "SobolevInterval.derivL"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof'
+
+[[node]]
+id = "solutionOperator_apply"
+
+[[node]]
+id = "coeFn_solutionOperator"
+
+[[node]]
+id = "load_solution"
+
+[[node]]
+id = "iccToLpFun"
+
+[[node]]
+id = "coeFn_iccToLpFun"
+
+[[node]]
+id = "iccToLpₗ"
+
+[[node]]
+id = "coeFn_iccToLpₗ"
+
+[[node]]
+id = "norm_iccToLpₗ_le"
+
+[[node]]
+id = "iccToLp"
+
+[[node]]
+id = "coeFn_iccToLp"
+
+[[node]]
+id = "derivL_zero_eq_iccToLp_comp"
+
+[[node]]
+id = "isCompactOperator_derivL_zero"
 
 [[node]]
 id = "isCompactOperator_solutionOperator"
-kind = "theorem"
-desc = '''`IsCompactOperator (solutionOperator h)`: `T = ι ∘ S` with `S : L² → H_0^1` bounded and
-`ι : H_0^1 → L²` compact — `ι` factors as `H_0^1 ⊆ H¹ → C[a, b] → L²(a, b)`, the middle map
-compact by Theorem 8.8 (6) (`SobolevIntervalLp.isCompactOperator_toContinuousMap` at `p = 2`,
-`I = Opens.Ioo a b`) and the last continuous (`ContinuousMap.toLp`-type,
-`BoundedContinuousFunction.Lp_norm_le`); `IsCompactOperator.clm_comp` and `.comp_clm`. "Since the
-injection of `H¹(I)` into `L²(I)` is compact (because `I` is bounded)". ★★'''
-deps = ["solutionOperator", "SobolevIntervalLp.isCompactOperator_toContinuousMap"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof'
+
+[[node]]
+id = "inner_solutionOperator_eq_form"
 
 [[node]]
 id = "isSymmetric_solutionOperator"
-kind = "theorem"
-desc = '''`(solutionOperator h : L² →ₗ[ℝ] L²).IsSymmetric`: `⟪T f, g⟫ = ∫ (T f) g = a(T g, T f) = a(T f, T g) = ∫ f (T g) = ⟪f, T g⟫`
-— the weak equations of `u = T f` and `v = T g` tested against each other and the symmetry
-`form_comm` of the form (no first-order term). Also `inner_solutionOperator_nonneg :
-0 ≤ ⟪solutionOperator h f, f⟫` (`= a(u, u) ≥ 0`, coercivity) and `ker_solutionOperator :
-LinearMap.ker (solutionOperator h : L² →ₗ[ℝ] L²) = ⊥` (`T f = 0` ⇒ `u = 0` in `H¹` (the function
-determines the element) ⇒ `∫ f v = 0` for all `v ∈ H_0^1` ⇒ `f = 0` a.e. through the test
-functions, `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`). ★★'''
-deps = ["solutionOperator", "EllipticInterval.form_comm", "EllipticInterval.form_isCoerciveWith_restrict"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof'
+
+[[node]]
+id = "inner_solutionOperator_nonneg"
+
+[[node]]
+id = "eq_zero_of_forall_integral_mul_testFunction_eq_zero"
+
+[[node]]
+id = "ker_solutionOperator"
+
+[[node]]
+id = "not_finiteDimensional"
 
 [[node]]
 id = "eigenfunction"
-kind = "definition"
-desc = '''**Theorem 8.22, the eigenpairs**: `eigenfunction h : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo a b)))`
-is `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis (isSymmetric_solutionOperator h) (isCompactOperator_solutionOperator h) (ker_solutionOperator h) (MeasureTheory.Lp.not_finiteDimensional_of_isOpen …)`,
-and `eigenvalue h n : ℝ := (ContinuousLinearMap.IsSymmetric.eigenvalueSeq … n)⁻¹` (`λₙ = 1/μₙ`),
-with `solutionOperator_eigenfunction : T (eₙ) = μₙ • eₙ` (`apply_eigenvectorHilbertBasis`),
-`eigenvalueSeq_pos : 0 < μₙ` (`μₙ ≥ 0` from `inner_solutionOperator_nonneg` on the eigenvector,
-`μₙ ≠ 0` from injectivity), `tendsto_eigenvalue_atTop : Tendsto (eigenvalue h) atTop atTop`
-(`tendsto_eigenvalueSeq_zero` and positivity), and `eigenvalue_pos`. ★★'''
-deps = ["isCompactOperator_solutionOperator", "isSymmetric_solutionOperator", "MeasureTheory.Lp.not_finiteDimensional_of_isOpen", "ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis", "ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero", "ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22'
+
+[[node]]
+id = "eigenvalueSeq"
+
+[[node]]
+id = "eigenvalue"
+
+[[node]]
+id = "solutionOperator_eigenfunction"
+
+[[node]]
+id = "tendsto_eigenvalueSeq_zero"
+
+[[node]]
+id = "eigenfunction_ne_zero"
+
+[[node]]
+id = "eigenvalueSeq_pos"
+
+[[node]]
+id = "eigenvalue_pos"
+
+[[node]]
+id = "tendsto_eigenvalue_atTop"
+
+[[node]]
+id = "solutionOperator_smul_eigenfunction"
 
 [[node]]
 id = "exists_contDiffMapIcc_eigenfunction"
-kind = "theorem"
-desc = '''**Theorem 8.22, regularity of the eigenfunctions**: for each `n`, there is
-`e : ContDiffMapIcc hab.le 2` with `(eigenfunction h n : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] e`,
-`e a = 0`, `e b = 0`, and `∀ x ∈ Icc a b, -(deriv (p * e') x) + q x * e x = eigenvalue h n * e x`
-(as the pointwise identity `−(p e')' + q e = λₙ e`, with `p e' ∈ C¹[a, b]`). From
-`T (λₙ eₙ) = eₙ`: `eₙ`'s `H¹` element `u` is the weak solution with datum `λₙ eₙ`, which is
-(the class of) a function continuous on `[a, b]` since `u ∈ H¹ ⊆ C[a, b]`; the Sturm–Liouville
-regularity `exists_contDiffMapIcc_of_continuous` (`EllipticInterval/BoundaryConditions`, the
-`α = p ∈ C¹` case) gives `e ∈ C²`, the boundary values from `u ∈ H_0^1`
-(`mem_sobolevIntervalZero_iff`), and the equation from Step D. Also the book's parenthetical
-`eₙ ∈ C^∞(Ī)` when `p, q ∈ C^∞(Ī)` (bootstrapping Remark 23) — optional. ★★ (~200 lines)'''
-deps = ["eigenfunction", "EllipticInterval.exists_contDiffMapIcc_of_continuous", "mem_sobolevIntervalZero_iff", "EllipticInterval.isClassicalSolution_of_contDiffMapIcc"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22'
+
+[[node]]
+id = "hypotheses_one_zero"
+
+[[node]]
+id = "contDiff_sinUnitFun"
+
+[[node]]
+id = "hasDerivAt_sinUnitFun"
+
+[[node]]
+id = "deriv_sinUnitFun"
+
+[[node]]
+id = "deriv_deriv_sinUnitFun"
+
+[[node]]
+id = "continuous_deriv_sinUnitFun"
+
+[[node]]
+id = "sinElem"
+
+[[node]]
+id = "fn_sinElem_ae_eq"
+
+[[node]]
+id = "coeFn_deriv_sinElem_one"
+
+[[node]]
+id = "deriv_sinElem_zero"
+
+[[node]]
+id = "rep_sinElem"
+
+[[node]]
+id = "sinUnitFun_zero"
+
+[[node]]
+id = "sinUnitFun_one"
+
+[[node]]
+id = "sinElem_mem"
+
+[[node]]
+id = "form_sinElem"
+
+[[node]]
+id = "solutionOperator_sinUnitLp"
+
+[[node]]
+id = "solutionOperator_sinBasisUnit"
+
+[[node]]
+id = "inner_sinBasisUnit_eq_zero_of_eigen"
+
+[[node]]
+id = "exists_eq_inv_of_eigen"
+
+[[node]]
+id = "eq_smul_sinBasisUnit_of_eigen"
+
+[[node]]
+id = "orthonormal_ne_of_mem_span"
+
+[[node]]
+id = "eigenvalue_eq_sq_pi_sq"
 
 [[node]]
 id = "sineHilbertBasis"
-kind = "theorem"
-desc = '''**§8.6, Example (`p ≡ 1`, `q ≡ 0`)**: with `sₙ = sinBasisUnit n` (`√2 sin ((n+1) π x)`, a
-Hilbert basis of `L²(0, 1)`): `−sₙ'' = (n+1)²π² sₙ`, `sₙ(0) = sₙ(1) = 0` (a direct computation,
-`Real.hasDerivAt_sin`, `Real.sin_nat_mul_pi`; `sinBasisUnit_mem_sobolevIntervalZero`: the class
-of `sₙ` is an element of `H_0^1(0, 1)` by `mem_sobolevIntervalZero_iff` and
-`memSobolevIntervalLp_of_contDiffOn`), hence `solutionOperator_sinBasisUnit :
-solutionOperator h (sₙ) = ((n+1)²π²)⁻¹ • sₙ` for the `Hypotheses` of `p = 1`, `q = 0`
-(`∫ sₙ' v' = (n+1)²π² ∫ sₙ v` for `v ∈ H_0^1`, integrating by parts once,
-`SobolevIntervalLp.integral_deriv_mul_add_mul_deriv`; uniqueness of the weak solution). Then
-`eigenvalue_eq_sq_pi_sq`: the set of eigenvalues of Theorem 8.22 for this operator, i.e. the range
-of `eigenvalue h`, is exactly `{(n+1)²π² : n : ℕ}`, and `eigenvalue h` is injective (each eigenvalue
-simple): an eigenvector `e` of `T` with eigenvalue `μ` expands as `e = ∑ₙ ⟪sₙ, e⟫ sₙ`
-(`HilbertBasis.hasSum_repr`), `T e = ∑ₙ ((n+1)²π²)⁻¹ ⟪sₙ, e⟫ sₙ` (continuity of `T` and
-`solutionOperator_sinBasisUnit`), so `⟪sₙ, e⟫ (((n+1)²π²)⁻¹ − μ) = 0` for every `n`
-(`HilbertBasis.repr` injective), which forces `μ = ((n+1)²π²)⁻¹` for the unique `n` with
-`⟪sₙ, e⟫ ≠ 0` and `e ∈ span {sₙ}`; conversely each `sₙ` is an eigenvector. The abstract basis
-`eigenfunction h` is therefore `n ↦ ± s_{σ n}` for a bijection `σ` (not needed by the surface,
-which asks for the eigenvalue set and simplicity). ★★ (~200 lines)'''
-deps = ["sinBasisUnit", "eigenfunction", "solutionOperator", "Hypotheses", "mem_sobolevIntervalZero_iff", "memSobolevIntervalLp_of_contDiffOn", "SobolevIntervalLp.integral_deriv_mul_add_mul_deriv", "ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example'
+
+[[node]]
+id = "deriv_shift_extend_eq"
+
+[[node]]
+id = "contDiffMapIcc_eq_zero_of_ae_eq_zero"
 
 [[node]]
 id = "eq_smul_sin_of_dirichlet"
-kind = "theorem"
-desc = '''**The Dirichlet eigenfunctions of `−u''` on `(0, 1)` are sines** (Comments on Chapter 8, 3(i)
-at `p = 1`, `q = 0`): if `e : ContDiffMapIcc (zero_le_one) 2` on `[0, 1]` satisfies `−e'' = λ e` on
-`[0, 1]`, `e 0 = 0`, `e 1 = 0` and `e ≠ 0`, then `λ = (n+1)²π²` for some `n` and
-`e = c • sin ((n+1) π ·)` on `[0, 1]` for some `c ≠ 0`. A corollary of `sineHilbertBasis`, not
-an ODE-uniqueness argument: such an `e` is (the class of) an element of `H_0^1(0, 1)` with
-`∫ e' v' = λ ∫ e v` for all `v ∈ H_0^1`, so `T e = λ⁻¹ e` (`λ ≠ 0` since `λ ∫ e² = ∫ e'² > 0`), and
-the expansion argument of `sineHilbertBasis` puts `e` in `span {sₙ}` for the `n` with
-`λ⁻¹ = ((n+1)²π²)⁻¹`; the a.e. identity `e = c sₙ` is an identity on `[0, 1]` because both sides
-are continuous. Optional for the surface (`sineEigenfunctions_eigenvalue` uses
-`eigenvalue_eq_sq_pi_sq` directly); kept because it is the statement the book's Example asserts
-in words. ★ (~80 lines)'''
-deps = ["sineHilbertBasis", "exists_contDiffMapIcc_eigenfunction"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example'

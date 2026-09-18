@@ -451,6 +451,9 @@ import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Topology.Order.IntermediateValue
 import Numlib.Variational.AdvectionDiffusion
 import Numlib.Variational.EllipticInterval
+import Numlib.Variational.EllipticInterval.BoundaryConditions
+import Numlib.Variational.EllipticInterval.MaximumPrinciple
+import Numlib.Variational.EllipticInterval.SturmLiouville
 import Numlib.Variational.EnergyPairing
 import Numlib.Variational.Evolution
 import Numlib.Variational.FiniteElementInterval

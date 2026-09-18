@@ -1,53 +1,31 @@
 namespace = "Brezis.Chapter08"
-desc = '''
-§8.1, Motivation. The model problem (1): `−u'' + u = f` on `[a, b]`, `u(a) = u(b) = 0`, for
-`f ∈ C([a, b])`; a *classical solution* is a `C²` function satisfying it; the provisional *weak
-solution* is a `C¹` function with `∫ u' φ' + ∫ u φ = ∫ f φ` for all `φ ∈ C¹([a, b])` vanishing at
-the endpoints (2); the four steps A–D of the variational method, of which the section carries out
-Step D (a `C²` weak solution is classical), the others being §8.2–§8.4. The section has no numbered
-result; its content is two definitions and Step D, stated over `Numlib/Analysis/Calculus/ContDiffMapIcc.lean`
-(`C^k[a, b]`) and closed by Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (the
-book's Corollary 4.15/4.24). The definitive weak solution, in `H_0^1`, is §8.4's; Step A is
-`EllipticInterval.isWeakSolution_of_classical`, Step B is Proposition 8.15, Step C is
-`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` and
-`exists_contDiffMapIcc_of_continuous`, Step D in general is
-`EllipticInterval.isClassicalSolution_of_contDiffMapIcc` — all in `Numlib/Variational/EllipticInterval`
-and its child `BoundaryConditions`.
-'''
+
+[[node]]
+id = "_root_.ContDiffMapIcc.castLE"
+
+[[node]]
+id = "_root_.ContDiffMapIcc.deriv_castLE"
+
+[[node]]
+id = "_root_.ContDiffMapIcc.castLE_extend"
+
+[[node]]
+id = "_root_.ContDiffMapIcc.castLE_shift_extend"
 
 [[node]]
 id = "IsClassicalSolution"
-kind = "definition"
-desc = '''A classical (strong) solution of (1): `IsClassicalSolution hab f u`, for `u : ContDiffMapIcc hab.le 2`
-and `f : ℝ → ℝ`, says `∀ x ∈ Icc a b, -u.deriv 2 x + u x = f x` and `u a = 0`, `u b = 0`
-(`ContDiffMapIcc.deriv u 2` is `u''` on `[a, b]`). ★'''
-deps = ["ContDiffMapIcc"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Definition"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Definition'
 
 [[node]]
 id = "IsWeakSolution"
-kind = "definition"
-desc = '''The provisional weak solution of §8.1: `IsWeakSolution hab f u`, for `u : ContDiffMapIcc hab.le 1`,
-says `∀ φ : ContDiffMapIcc hab.le 1, φ a = 0 → φ b = 0 → ∫ x in a..b, u.deriv 1 x * φ.deriv 1 x + ∫ x in a..b, u x * φ x = ∫ x in a..b, f x * φ x`
-(equation (2)). The book notes (2) makes sense as soon as `u, u' ∈ L¹`, which is the §8.2
-definition; `isWeakSolution_iff_forall_sobolevIntervalZero` (after §8.4): for `u ∈ C¹[a, b]`
-this is equivalent to `form a b 1 0 1 U v = load a b f v` for all `v ∈ SobolevIntervalZero a b`,
-`U` the `H¹` element of `u`, by density of `C¹_0` in `H_0^1` (`ContDiffMapIcc.denseRange_toSobolevInterval_one`
-and `mem_sobolevIntervalZero_iff`) — optional bridge. ★'''
-deps = ["ContDiffMapIcc"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Definition"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Definition'
+
+[[node]]
+id = "deriv_shift_extend"
+
+[[node]]
+id = "integral_eq_of_isWeakSolution"
 
 [[node]]
 id = "dirichlet_stepD"
-kind = "theorem"
-desc = '''Step D: if `u : ContDiffMapIcc hab.le 2` with `u a = 0`, `u b = 0` satisfies (2) — `IsWeakSolution hab f (u.inclusion 1)`
-(the forgetful map `C² → C¹`, `ContDiffMapIcc.inclusionCLM`-type) — and `f` is continuous on
-`[a, b]`, then `IsClassicalSolution hab f u`. Integrating (2) by parts (`ContDiffMapIcc` has the
-FTC `ContinuousMap.hasDerivIcc_iff`; or `intervalIntegral.integral_mul_deriv_eq_deriv_mul`) gives
-`∫ (−u'' + u − f) φ = 0` for all `φ ∈ C¹` vanishing at the endpoints, in particular for
-`φ ∈ 𝓓(Opens.Ioo a b, ℝ)`, so `−u'' + u = f` a.e. on `(a, b)`
-(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`) and everywhere on `[a, b]` by continuity
-(`eqOn_Icc_of_ae_eq` of `Interval.lean`). The general form is
-`EllipticInterval.isClassicalSolution_of_contDiffMapIcc`. ★★'''
-deps = ["IsClassicalSolution", "IsWeakSolution", "EllipticInterval.isClassicalSolution_of_contDiffMapIcc"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Step D"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.1, Step D'
