@@ -34,6 +34,8 @@ import NumlibSurface.Brezis.Chapter07.Section02
 import NumlibSurface.Brezis.Chapter07.Section03
 import NumlibSurface.Brezis.Chapter07.Section04
 import NumlibSurface.Brezis.Chapter08.Section01
+import NumlibSurface.Brezis.Chapter09.Section01
+import NumlibSurface.Brezis.Chapter09.Section02
 import NumlibSurface.Brezis.Chapter11.Section01
 import NumlibSurface.Brezis.Chapter11.Section02
 import NumlibSurface.Brezis.Chapter11.Section03

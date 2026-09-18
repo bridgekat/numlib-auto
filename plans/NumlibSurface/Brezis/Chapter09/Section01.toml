@@ -1,84 +1,99 @@
 namespace = "Brezis.Chapter09"
-desc = '''
-Brezis §9.1, "Definition and elementary properties of the Sobolev spaces `W^{1,p}(Ω)`"
-(lines 9854–10181), together with the paragraph "The spaces `W^{m,p}(Ω)`" (10143–10181):
-the definition of `W^{1,p}(Ω)`, `H^1(Ω)`, the weak partial derivatives, the norm and the inner
-product; Proposition 9.1 (Banach, reflexive, separable, Hilbert); Remarks 1, 2, 4, 5, 7; the
-definition of `ω ⊂⊂ Ω`; Theorem 9.2 (Friedrichs) and Lemma 9.1; Proposition 9.3 (three
-characterizations) and Remark 6; Propositions 9.4–9.6 (product, composition, change of
-variables); `W^{m,p}(Ω)` by induction and by multi-indices, its norm, `H^m(Ω)`. Remark 3
-(distributions) is discussion and has no node; Remark 8 (the interpolation inequality on a
-"smooth enough" domain) is quoted without proof and is listed under "Not planned" in
-`Chapter09.toml`.
-
-The book's `W^{1,p}(Ω)`, `Ω ⊆ ℝ^N` open, is `SobolevEuclidean N 1 p Ω`
-(`SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume`, `Numlib/Analysis/Sobolev/MultiIndex`)
-— decision D8 — and `∂u/∂x_i` is `SobolevMultiIndex.weakDeriv u (Pi.single i 1)`, an element of
-`L^p(Ω)`; the test class is `𝓓(Ω, ℝ)` (`C_c^∞`, decision D6), the book's `C_c^1(Ω)` being
-equivalent by Remark 1. The norm the book displays, `‖u‖_p + ∑ ‖∂_i u‖_p`, is not the type's
-(which is the `ℓ^p` sum, `SobolevMultiIndex.norm_eq_sum`, the book's "sometimes equivalent
-norm"); `bookNorm` defines it as a function and `bookNorm_equiv` proves the equivalence. At
-`p = 2` the type's norm *is* the book's `‖u‖_{H^1}` and its inner product the book's `(u, v)_{H^1}`
-(`SobolevMultiIndex.inner_eq`). Every backbone theorem is stated over a general finite-dimensional
-`E` with a Haar measure, in the `HasWeakFDerivOn`/`MemSobolev` reading; the surface instantiates
-`E = EuclideanSpace ℝ (Fin N)`, `μ = volume`, and converts between the tensor gradient and the
-multi-index components by `MemSobolev.memSobolevMultiIndex` / `MemSobolevMultiIndex.memSobolev`.
-'''
 
 [[node]]
 id = "sobolevSpace"
-kind = "definition"
-desc = '''`sobolevSpace N p Ω := SobolevEuclidean N 1 p Ω`, the space `W^{1,p}(Ω)` of the Definition
-of §9.1, with the notation `W¹ᵖ(Ω)` if wanted; an `abbrev`, so that every backbone lemma
-applies. `sobolevSpace_iff`: a function `u : EuclideanSpace ℝ (Fin N) → ℝ` is (a.e.) the function
-of an element of `W^{1,p}(Ω)` iff `u ∈ L^p(Ω)` and there are `g_1, …, g_N ∈ L^p(Ω)` with
-`∫_Ω u ∂_i φ = −∫_Ω g_i φ` for all `φ ∈ 𝓓(Ω, ℝ)` and all `i` — the displayed definition — by
-`SobolevMultiIndex.memSobolevMultiIndex` and `MemSobolevMultiIndex.exists_sobolevMultiIndex`
-unfolded through `HasWeakIteratedLineDerivOn` along the tuple `![e_i]` (`multiIndexTuple` of
-`Pi.single i 1`). Footnote 2 (the `g_i` are unique a.e.) is `HasWeakIteratedLineDerivOn.ae_eq`.
-`partialDeriv u i := SobolevMultiIndex.weakDeriv u (Pi.single i 1)` is `∂u/∂x_i`, with
-`partialDeriv_spec` (the identity above), and `gradient u := fun i ↦ partialDeriv u i`. ★'''
-deps = ["SobolevEuclidean", "SobolevMultiIndex.memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex", "HasWeakIteratedLineDerivOn.ae_eq", "SobolevMultiIndex.weakDeriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "sobolevSpace_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "partialDeriv"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "partialDeriv_spec"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (footnote 2)"
+
+[[node]]
+id = "gradient"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_partialDeriv"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "exists_sobolevSpace_of_hasWeakIteratedLineDerivOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "exists_hasWeakFDerivOn_fn_gradient"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_of_forall"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "memLp_of_memSobolevMultiIndex_of_hasWeakIteratedLineDerivOn"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
 
 [[node]]
 id = "hSpace"
-kind = "definition"
-desc = '''`hSpace N Ω := sobolevSpace N 2 Ω`, the space `H^1(Ω) = W^{1,2}(Ω)`, with `hInner`: its inner
-product is `(u, v)_{H^1} = ∫_Ω u v + ∑_i ∫_Ω ∂_i u ∂_i v` (`SobolevMultiIndex.inner_eq`, the sum
-over the multi-indices of order `≤ 1` being `0` and the `Pi.single i 1`), and `hNorm`: its norm
-is `(‖u‖_2^2 + ∑ ‖∂_i u‖_2^2)^{1/2}` (`SobolevMultiIndex.norm_eq_sum` at `p = 2`), which is
-"equivalent to the `W^{1,2}` norm" by `bookNorm_equiv`. ★'''
-deps = ["sobolevSpace", "SobolevMultiIndex.inner_eq", "SobolevMultiIndex.norm_eq_sum"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "hInner"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
+
+[[node]]
+id = "hNorm"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition"
 
 [[node]]
 id = "bookNorm"
-kind = "definition"
-desc = '''`bookNorm u := ‖SobolevMultiIndex.weakDeriv u 0‖ + ∑ i, ‖partialDeriv u i‖`, the norm
-`‖u‖_{W^{1,p}} = ‖u‖_p + ∑_{i=1}^N ‖∂u/∂x_i‖_p` the book equips `W^{1,p}(Ω)` with (a norm on
-the type, `bookNorm_add_le`, `bookNorm_smul`, `bookNorm_eq_zero_iff`). `bookNorm_equiv`: for
-`1 ≤ p < ∞`, `‖u‖ ≤ bookNorm u ≤ (N + 1)^{1 − 1/p} ‖u‖` (the `ℓ^1`/`ℓ^p` comparison on
-`N + 1` terms), and `bookNorm u ≤ (N + 1) ‖u‖` at `p = ∞` — "or sometimes with the equivalent
-norm `(‖u‖_p^p + ∑ ‖∂_i u‖_p^p)^{1/p}`", which is the type's norm `SobolevMultiIndex.norm_eq_sum`.
-★'''
-deps = ["sobolevSpace", "SobolevMultiIndex.norm_eq_sum", "SobolevMultiIndex.norm_eq_ciSup"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (the norm)"
+
+[[node]]
+id = "bookNorm_add_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (the norm)"
+
+[[node]]
+id = "bookNorm_smul"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (the norm)"
+
+[[node]]
+id = "bookNorm_eq_zero_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (the norm)"
+
+[[node]]
+id = "bookNorm_equiv"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (the norm)"
 
 [[node]]
 id = "proposition_9_1"
-kind = "theorem"
-desc = '''Proposition 9.1: `W^{1,p}(Ω)` is a Banach space for `1 ≤ p ≤ ∞`
-(`proposition_9_1_banach`: `CompleteSpace (sobolevSpace N p Ω)`, the backbone's
-`SobolevMultiIndex.instCompleteSpace`), reflexive for `1 < p < ∞` (`proposition_9_1_reflexive`:
-`NormedSpace.IsReflexive ℝ (sobolevSpace N p Ω)`, `SobolevMultiIndex.instIsReflexive`), separable
-for `1 ≤ p < ∞` (`proposition_9_1_separable`: `SecondCountableTopology`/`SeparableSpace`,
-`SobolevMultiIndex.instSecondCountableTopology`), and `H^1(Ω)` is a separable Hilbert space
-(`proposition_9_1_hilbert`: `InnerProductSpace ℝ (hSpace N Ω)` with `CompleteSpace` and
-`SeparableSpace`). The node is the conjunction of the four; the proof "adapt the proof of
-Proposition 8.1 using `T u = [u, ∇u]`" is the backbone's, where the space *is* a closed subspace
-of `(L^p(Ω))^{N+1}`. ★'''
-deps = ["sobolevSpace", "hSpace", "SobolevMultiIndex.instCompleteSpace", "SobolevMultiIndex.instIsReflexive", "SobolevMultiIndex.instSecondCountableTopology", "SobolevMultiIndex.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
+
+[[node]]
+id = "proposition_9_1_banach"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
+
+[[node]]
+id = "proposition_9_1_reflexive"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
+
+[[node]]
+id = "proposition_9_1_separable"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
+
+[[node]]
+id = "proposition_9_1_hilbert"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
@@ -87,109 +102,108 @@ kind = "theorem"
 desc = '''Remark 1: `C_c^1(Ω)` test functions may be used in the definition — for `u ∈ W^{1,p}(Ω)`
 and `φ : EuclideanSpace ℝ (Fin N) → ℝ` of class `C^1` with compact support and `tsupport φ ⊆ Ω`,
 `∫_Ω u ∂_i φ = −∫_Ω (∂_i u) φ`. The backbone's
-`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` (`Numlib/Analysis/Sobolev/Friedrichs`).
+`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` (`Numlib/Analysis/Sobolev/Cutoff`).
 Together with `sobolevSpace_iff` this is the equivalence of the book's definition (with `C_c^1`)
-and the surface's (with `𝓓(Ω)`), the equivalence decision D6 asks to record. ★'''
+and the surface's (with `𝓓(Ω)`), the equivalence decision D6 asks to record. ★
+
+Blocked: the backbone dependency `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`
+(`Cutoff.toml`, Remark 1) is open; the surface node is its instance at `y = e_i` through
+`hasWeakIteratedLineDerivOn_partialDeriv` (five lines once it lands).'''
 deps = ["sobolevSpace", "HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 1"
 
 [[node]]
 id = "remark_9_2"
-kind = "theorem"
-desc = '''Remark 2, first part: if `u ∈ C^1(Ω) ∩ L^p(Ω)` (`ContDiffOn ℝ 1 u Ω`, `MemLp u p (volume.restrict Ω)`)
-and its classical partial derivatives `∂_i u` lie in `L^p(Ω)`, then `u` is the function of an
-element of `W^{1,p}(Ω)` whose weak partial derivatives are the classical ones — the backbone's
-`ContDiffOn.hasWeakIteratedFDerivOn` at order `1` with `MemSobolevMultiIndex.exists_sobolevMultiIndex`.
-`remark_9_2_closure`: in particular, for `Ω` bounded, every `u ∈ C^1(Ω̄)` (`ContDiffOn ℝ 1 u (closure Ω)`)
-lies in `W^{1,p}(Ω)` for all `1 ≤ p ≤ ∞` — the derivatives are continuous on the compact
-`closure Ω`, hence bounded, hence in every `L^p(Ω)`. ★'''
-deps = ["sobolevSpace", "ContDiffOn.hasWeakIteratedFDerivOn", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
+
+[[node]]
+id = "remark_9_2_closure"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
 
 [[node]]
 id = "remark_9_2_converse"
-kind = "theorem"
-desc = '''Remark 2, converse: if `u ∈ W^{1,p}(Ω)` and its weak partial derivatives `∂_i u` have
-representatives continuous on `Ω` (`∃ g_i, ContinuousOn g_i Ω ∧ partialDeriv u i =ᵐ g_i`), then
-there is `ũ ∈ C^1(Ω)` with `u = ũ` a.e. and `∂_i ũ = g_i` on `Ω`. The backbone's
-`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn` (`Friedrichs`), the tensor gradient
-assembled from the `g_i` by `MemSobolevMultiIndex.memSobolev`. ★'''
-deps = ["sobolevSpace", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn", "MemSobolevMultiIndex.memSobolev"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 2"
 
 [[node]]
+id = "tendsto_of_tendsto_sobolevNorm"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1 (convergence in W^{1,p})"
+
+[[node]]
 id = "remark_9_4_i"
-kind = "theorem"
-desc = '''Remark 4 (i): if `u_n ∈ W^{1,p}(Ω)`, `u_n → u` in `L^p(Ω)` and `∇u_n` converges in
-`(L^p(Ω))^N` (to some `g`), then `u ∈ W^{1,p}(Ω)` and `‖u_n − u‖_{W^{1,p}} → 0`. The backbone's
-`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm` (`Density.toml`) identifies `g` as the weak gradient;
-the convergence in `W^{1,p}` is then the convergence of all `N + 1` components.
-`remark_9_4_i_bounded`: when `1 < p ≤ ∞`, `u_n → u` in `L^p` and `‖∇u_n‖_p ≤ M` already give
-`u ∈ W^{1,p}(Ω)` — `MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le` (`Friedrichs`; the "why?" is
-Proposition 9.3 (ii) ⇒ (i)). ★'''
-deps = ["sobolevSpace", "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm", "MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"
+
+[[node]]
+id = "remark_9_4_i_bounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"
 
 [[node]]
 id = "remark_9_4_ii"
-kind = "theorem"
-desc = '''Remark 4 (ii): for `u ∈ W^{1,p}(Ω)` and `α` smooth with compact support in `Ω`
-(the book's `α ∈ C_c^1(Ω)`; see the group description for `C^∞`), the extension by zero
-`\overline{αu}` lies in `W^{1,p}(ℝ^N)` with `∂_i \overline{αu} = \overline{α ∂_i u + (∂_i α) u}`;
-`remark_9_4_ii'`: the same for `α ∈ C^∞(ℝ^N) ∩ L^∞` with `∇α ∈ L^∞` and `supp α ∩ ∂Ω = ∅`. The
-backbone's `MemSobolevMultiIndex.indicator_mul` under `IsSobolevCutoff.of_hasCompactSupport`,
-respectively `IsSobolevCutoff` (`Numlib/Analysis/Sobolev/Cutoff`), with the identity
-`HasWeakIteratedLineDerivOn.indicator_mul`. Footnote 3 (`ū ∉ W^{1,p}(ℝ^N)` in general) has no
-node. ★'''
-deps = ["sobolevSpace", "MemSobolevMultiIndex.indicator_mul", "HasWeakIteratedLineDerivOn.indicator_mul", "IsSobolevCutoff.of_hasCompactSupport", "IsSobolevCutoff"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
+
+[[node]]
+id = "remark_9_4_ii_cutoff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (ii)"
 
 [[node]]
 id = "IsStronglyIncluded"
-kind = "definition"
-desc = '''`StronglyIncluded ω Ω`, the relation `ω ⊂⊂ Ω` of the Definition after Remark 4: `ω` open,
-`closure ω ⊆ Ω` and `closure ω` compact (footnote 4: the closure in `ℝ^N`). Notation `ω ⊂⊂ Ω`
-scoped to `Brezis`. ★'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, Definition (strongly included)"
 
 [[node]]
 id = "theorem_9_2"
-kind = "theorem"
-desc = '''Theorem 9.2 (Friedrichs): for `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, there is a sequence
-`u_n ∈ C_c^∞(ℝ^N)` with `u_n|_Ω → u` in `L^p(Ω)` and `∇u_n|_ω → ∇u|_ω` in `(L^p(ω))^N` for every
-`ω ⊂⊂ Ω`: `∃ v : ℕ → E → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧
-Tendsto (fun n ↦ eLpNorm (v n − fn u) p (volume.restrict Ω)) atTop (𝓝 0) ∧ ∀ ω, StronglyIncluded ω Ω → ∀ i,
-Tendsto (fun n ↦ eLpNorm (fun x ↦ fderiv ℝ (v n) x (e_i) − partialDeriv u i x) p (volume.restrict ω)) atTop (𝓝 0)`.
-The backbone's `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` (`Friedrichs`), the
-tensor gradient's convergence implying that of each component. `theorem_9_2_univ`: for
-`Ω = ℝ^N` (`Ω = ⊤`), `u_n → u` in `L^p(ℝ^N)` and `∇u_n → ∇u` in `(L^p(ℝ^N))^N`: the
-backbone's `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm` (`Density`, proved),
-whose `sobolevNorm` convergence at order `1` gives both. ★'''
-deps = ["sobolevSpace", "IsStronglyIncluded", "MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "MemSobolevMultiIndex.memSobolev"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.2"
+
+[[node]]
+id = "theorem_9_2_univ"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.2"
 
 [[node]]
 id = "lemma_9_1"
-kind = "theorem"
-desc = '''Lemma 9.1: for `ρ ∈ L^1(ℝ^N)` and `v ∈ W^{1,p}(ℝ^N)`, `1 ≤ p ≤ ∞`, `ρ ⋆ v ∈ W^{1,p}(ℝ^N)`
-and `∂_i (ρ ⋆ v) = ρ ⋆ ∂_i v` for all `i`. The backbone's `MemSobolev.convolution_of_integrable`
-and `HasWeakIteratedLineDerivOn.convolution_of_integrable` (`Friedrichs`), with the convolution
-`ρ ⋆[lsmul ℝ ℝ, volume] v` of Mathlib. ★'''
-deps = ["sobolevSpace", "MemSobolev.convolution_of_integrable", "HasWeakIteratedLineDerivOn.convolution_of_integrable"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.1"
 
 [[node]]
 id = "remark_9_5"
-kind = "theorem"
-desc = '''Remark 5 (Meyers–Serrin): for `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, there is a sequence
-`u_n ∈ C^∞(Ω) ∩ W^{1,p}(Ω)` with `u_n → u` in `W^{1,p}(Ω)`. The backbone's Meyers–Serrin theorem
-`MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm` (`Density`, proved) at order `1`, the
-`sobolevNorm` convergence giving the convergence in the type's norm. The remark's second claim —
-that for a general `Ω` no sequence of `C_c^1(ℝ^N)` functions need converge to `u` in `W^{1,p}(Ω)`
-— is a counterexample (a slit domain) and is not planned. ★'''
-deps = ["sobolevSpace", "MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 5"
+
+[[node]]
+id = "edistFrontier"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii)"
+
+[[node]]
+id = "segment_subset_of_enorm_lt_edistFrontier"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii)"
+
+[[node]]
+id = "proposition_9_3_i_ii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
+
+[[node]]
+id = "proposition_9_3_ii_i"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
+
+[[node]]
+id = "proposition_9_3_i_iii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
+
+[[node]]
+id = "proposition_9_3_iii_ii"
+kind = "theorem"
+desc = '''Proposition 9.3, (iii) ⇒ (ii): for `u ∈ L^p(Ω)`, `1 < p ≤ ∞` (any `1 ≤ p ≤ ∞` in fact,
+Remark 6), if there is `C` with `‖τ_h u − u‖_{L^p(ω)} ≤ C ‖h‖` for every `ω ⊂⊂ Ω`
+(`IsStronglyIncluded ω Ω`) and every `h` with `‖h‖ₑ < edistFrontier ω Ω`, then
+`|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^{p'}(Ω)}` for every `φ ∈ 𝓓(Ω, ℝ)` and every `i` — stated as
+`proposition_9_3_i_ii` with `ENNReal.ofReal C` in place of `‖∇u‖_p`. ★
+
+Blocked: the backbone's `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le` assumes the
+translation estimate for every `a` whose segments `[x, x + a]`, `x ∈ V`, stay in `Ω` — a wider
+class of `a` than the book's `|h| < dist(ω, ∂Ω)` (a long `a` along a thin `Ω`), so the book's
+(iii) does not feed it. Its proof uses only `‖t • y‖ ≤ ε` for the `ε` of
+`exists_pos_forall_closedBall_subset`; weaken its hypothesis to
+`∀ V, IsOpen V → IsCompact (closure V) → closure V ⊆ Ω → ∃ δ > 0, ∀ a, ‖a‖ < δ → eLpNorm (…) p (μ.restrict V) ≤ C * ‖a‖ₑ`
+(replace `set δ : ℝ := ε / (‖y‖ + 1)` by `min ε δ₀ / (‖y‖ + 1)`; the current statement follows
+with `δ := ε`), after which this node is `segment_subset_of_enorm_lt_edistFrontier` plus the
+positivity of `edistFrontier V Ω` for `V ⊂⊂ Ω` (compactness of `closure V`, ~30 lines).'''
+deps = ["sobolevSpace", "IsStronglyIncluded", "edistFrontier", "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
 id = "proposition_9_3"
@@ -197,108 +211,85 @@ kind = "theorem"
 desc = '''Proposition 9.3: for `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, the following are equivalent: (i) `u` is
 (the function of) an element of `W^{1,p}(Ω)`; (ii) there is `C` with
 `|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ 𝓓(Ω, ℝ)` and all `i`; (iii) there is `C` such that
-for every `ω ⊂⊂ Ω` and every `h` with `‖h‖ < dist(ω, Ωᶜ)` (`Metric.infDist`/`EMetric.infEdist`
-of `ω` to `Ωᶜ`), `‖τ_h u − u‖_{L^p(ω)} ≤ C ‖h‖`; and in (ii), (iii) one can take
-`C = ‖∇u‖_{L^p(Ω)}` (the `L^p` norm of the Euclidean gradient, `eLpNorm` of the tensor gradient,
-or `bookNorm`-style sum — state with the tensor gradient's `eLpNorm`). Four backbone
-implications (`Friedrichs`): `HasWeakFDerivOn.abs_integral_smul_fderiv_le` ((i) ⇒ (ii)),
-`HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le` ((ii) ⇒ (i), chapter 4's Riesz
-representation), `HasWeakFDerivOn.eLpNorm_sub_translate_le` and `…_top` ((i) ⇒ (iii)),
-`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le` ((iii) ⇒ (ii)); the book's
-`|h| < dist(ω, ∂Ω)` is turned into the backbone's segment condition by
-`Metric.infDist` and convexity of balls. `proposition_9_3_univ`: for `Ω = ℝ^N`,
-`‖τ_h u − u‖_{L^p(ℝ^N)} ≤ ‖h‖ ‖∇u‖_{L^p(ℝ^N)}` for all `h` — `SobolevEuclidean.eLpNorm_fn_sub_translate_le`.
-★★ (the equivalence bookkeeping and the distance condition).'''
-deps = ["sobolevSpace", "IsStronglyIncluded", "HasWeakFDerivOn.abs_integral_smul_fderiv_le", "HasWeakFDerivOn.of_forall_abs_integral_smul_fderiv_le", "HasWeakFDerivOn.eLpNorm_sub_translate_le", "HasWeakFDerivOn.eLpNorm_sub_translate_le_top", "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le", "SobolevEuclidean.eLpNorm_fn_sub_translate_le"]
+for every `ω ⊂⊂ Ω` and every `h` with `‖h‖ₑ < edistFrontier ω Ω` (the book's
+`|h| < dist(ω, ∂Ω)`), `‖τ_h u − u‖_{L^p(ω)} ≤ C ‖h‖`; the `TFAE` of the three, the constants
+`C : ℝ` entering as `ENNReal.ofReal C`. The "furthermore, `C = ‖∇u‖_{L^p(Ω)}`" clauses are the
+proved clause nodes `proposition_9_3_i_ii` and `proposition_9_3_i_iii` (with
+`eLpNorm (gradient v) p (volume.restrict Ω)`), (ii) ⇒ (i) is `proposition_9_3_ii_i`, and the
+whole-space estimate is `proposition_9_3_univ`. ★★
+
+Blocked: on `proposition_9_3_iii_ii` (see its `Blocked:` line); the three other implications are
+proved and the `TFAE` is their assembly (~20 lines).'''
+deps = ["proposition_9_3_i_ii", "proposition_9_3_ii_i", "proposition_9_3_i_iii", "proposition_9_3_iii_ii"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
+
+[[node]]
+id = "proposition_9_3_univ"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
 id = "remark_9_6"
 kind = "theorem"
-desc = '''Remark 6: when `p = 1`, the implications (i) ⇒ (ii) ⇔ (iii) of Proposition 9.3 remain
-true — stated as (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii) at `p = 1`, the three backbone
-implications being valid for every `1 ≤ p ≤ ∞`. The implication (ii) ⇒ (iii) at `p = 1` — that a
-function of bounded variation has the translation estimate — is the theory of `BV` functions and
-is not planned; the remark's discussion of `BV` has no node. ★'''
-deps = ["proposition_9_3", "HasWeakFDerivOn.abs_integral_smul_fderiv_le", "HasWeakFDerivOn.eLpNorm_sub_translate_le", "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"]
+desc = '''Remark 6: when `p = 1` the implications (i) ⇒ (ii) ⇔ (iii) of Proposition 9.3 remain
+true — stated as (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii) at `p = 1` (`q = ∞`), the three
+backbone implications being valid for every `1 ≤ p ≤ ∞`: `proposition_9_3_i_ii` and
+`proposition_9_3_i_iii` are already stated for every `p`. The implication (ii) ⇒ (iii) at
+`p = 1` — that a function of bounded variation has the translation estimate — is the theory of
+`BV` functions and is not planned; the remark's discussion of `BV` has no node. ★
+
+Blocked: on `proposition_9_3_iii_ii` (its (iii) ⇒ (ii) clause); the other two clauses are the
+proved nodes at `p = 1`.'''
+deps = ["proposition_9_3_i_ii", "proposition_9_3_i_iii", "proposition_9_3_iii_ii"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 6"
 
 [[node]]
 id = "remark_9_7"
-kind = "theorem"
-desc = '''Remark 7: every `u ∈ W^{1,∞}(Ω)` has a continuous representative on `Ω`
-(`remark_9_7`: `∃ ũ, ContinuousOn ũ Ω ∧ fn u =ᵐ ũ`, the backbone's
-`HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le`); `remark_9_7_convex`: if `Ω` is
-convex, the representative satisfies `|ũ x − ũ y| ≤ ‖∇u‖_{L^∞(Ω)} ‖x − y‖` for all `x, y ∈ Ω`
-(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`; the book's geodesic-distance
-statement for a general connected `Ω` is not planned — no intrinsic metric in Mathlib);
-`remark_9_7_const`: if `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, and `∇u = 0` a.e. on `Ω`, then `u` is a.e.
-constant on each connected component of `Ω` — for connected `Ω`,
-`HasWeakFDerivOn.ae_eq_const_of_isPreconnected`, and in general on each component by
-restriction. ★'''
-deps = ["sobolevSpace", "HasWeakFDerivOn.exists_continuousOn_ae_eq_of_ae_norm_le", "HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex", "HasWeakFDerivOn.ae_eq_const_of_isPreconnected"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
+
+[[node]]
+id = "remark_9_7_convex"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
+
+[[node]]
+id = "remark_9_7_const"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 7"
 
 [[node]]
 id = "proposition_9_4"
-kind = "theorem"
-desc = '''Proposition 9.4 (differentiation of a product): for `u, v ∈ W^{1,p}(Ω) ∩ L^∞(Ω)`,
-`1 ≤ p ≤ ∞`, the product `u v` is (the function of) an element of `W^{1,p}(Ω) ∩ L^∞(Ω)` with
-`∂_i (u v) = (∂_i u) v + u (∂_i v)`. The backbone's `MemSobolevMultiIndex.mul_of_ae_norm_le`
-(`Numlib/Analysis/Sobolev/Calculus`) — new for `1 ≤ p < 2`, where the existing
-`HasWeakIteratedLineDerivOn.mul` (conjugate exponents) does not apply — with
-`MemSobolevMultiIndex.exists_sobolevMultiIndex`. ★'''
-deps = ["sobolevSpace", "MemSobolevMultiIndex.mul_of_ae_norm_le", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.4"
 
 [[node]]
 id = "proposition_9_5"
-kind = "theorem"
-desc = '''Proposition 9.5 (differentiation of a composition): for `G : ℝ → ℝ` of class `C^1` with
-`G 0 = 0` and `|G' s| ≤ M` for all `s`, and `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, `G ∘ u` is (the
-function of) an element of `W^{1,p}(Ω)` with `∂_i (G ∘ u) = (G' ∘ u) ∂_i u`. The backbone's
-`MemSobolevMultiIndex.contDiff_comp` (`Calculus`), over the proved chain rule
-`HasWeakIteratedLineDerivOn.contDiff_comp` (Atkinson–Han's Proposition 7.1.12). Consumed by
-Theorem 9.17 and by §9.7's Stampacchia truncation (chapter 9b). ★'''
-deps = ["sobolevSpace", "MemSobolevMultiIndex.contDiff_comp", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.5"
 
 [[node]]
 id = "proposition_9_6"
-kind = "theorem"
-desc = '''Proposition 9.6 (change of variables): for open `Ω, Ω' ⊆ ℝ^N` and a bijection
-`H : Ω' → Ω` with `H ∈ C^1(Ω')`, `H⁻¹ ∈ C^1(Ω)`, `Jac H ∈ L^∞(Ω')`, `Jac H⁻¹ ∈ L^∞(Ω)` (the
-backbone's `IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`, footnote 6), and `u ∈ W^{1,p}(Ω)`,
-`1 ≤ p ≤ ∞`: `u ∘ H` is (the function of) an element of `W^{1,p}(Ω')` and
-`∂_j (u ∘ H)(y) = ∑_i (∂_i u)(H y) ∂_j H_i (y)`. The backbone's `HasWeakFDerivOn.comp_diffeoOn`
-and `MemSobolev.comp_diffeoOn` (`Calculus`), the tensor identity `D(u ∘ H) = (Du ∘ H) ∘ DH` read
-in coordinates (`ContinuousLinearMap.comp_apply`, the entries of `fderiv ℝ H y`), and the
-bounded linear map `SobolevEuclidean.compDiffeoL`. ★'''
-deps = ["sobolevSpace", "IsDiffeoOnWithBoundedJacobian", "HasWeakFDerivOn.comp_diffeoOn", "SobolevEuclidean.compDiffeoL", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.6"
 
 [[node]]
 id = "sobolevSpaceHigher"
-kind = "definition"
-desc = '''`sobolevSpaceHigher N m p Ω := SobolevEuclidean N m p Ω`, the space `W^{m,p}(Ω)` of the
-paragraph "The spaces `W^{m,p}(Ω)`" in its multi-index form — `u ∈ L^p(Ω)` with `∂^α u ∈ L^p(Ω)`
-for all `|α| ≤ m` (`sobolevSpaceHigher_iff`, as `sobolevSpace_iff` with `D^α φ` the iterated
-derivative of the test function along `multiIndexTuple` and the sign `(−1)^{|α|}`);
-`sobolevSpaceHigher_iff_inductive`: for `m ≥ 1`, a function is in `W^{m+1,p}(Ω)` iff it and its
-first weak partial derivatives are in `W^{m,p}(Ω)` — the book's inductive definition, the
-backbone's `memSobolevMultiIndex_succ_iff` (`MultiIndex.toml`). `sobolevSpaceHigher_one`:
-`sobolevSpaceHigher N 1 p Ω = sobolevSpace N p Ω` (rfl). ★'''
-deps = ["SobolevEuclidean", "sobolevSpace", "memSobolevMultiIndex_succ_iff", "SobolevMultiIndex.memSobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
+
+[[node]]
+id = "sobolevSpaceHigher_one"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
+
+[[node]]
+id = "sobolevSpaceHigher_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
+
+[[node]]
+id = "sobolevSpaceHigher_iff_inductive"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
+
+[[node]]
+id = "bookNormHigher"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
 
 [[node]]
 id = "sobolevSpaceHigher_banach"
-kind = "theorem"
-desc = '''"The space `W^{m,p}(Ω)` equipped with the norm `‖u‖_{W^{m,p}} = ∑_{|α| ≤ m} ‖D^α u‖_p` is a
-Banach space": `CompleteSpace (sobolevSpaceHigher N m p Ω)` (`SobolevMultiIndex.instCompleteSpace`)
-and the book's norm `bookNormHigher u := ∑ α, ‖weakDeriv u α‖` is equivalent to the type's
-(`bookNormHigher_equiv`, as `bookNorm_equiv` with `#MultiIndexLE (Fin N) m` terms).
-`hSpaceHigher`: `H^m(Ω) = W^{m,2}(Ω)` with the scalar product `∑_{|α| ≤ m} (D^α u, D^α v)_{L^2}`
-is a Hilbert space — `SobolevMultiIndex.inner_eq` and completeness. ★'''
-deps = ["sobolevSpaceHigher", "SobolevMultiIndex.instCompleteSpace", "SobolevMultiIndex.norm_eq_sum", "SobolevMultiIndex.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
+
+[[node]]
+id = "hSpaceHigher"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, The spaces W^{m,p}(Ω)"
