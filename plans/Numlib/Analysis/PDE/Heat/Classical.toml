@@ -31,12 +31,6 @@ id = "IsClassicalSolution.isClassicalSubsolution"
 id = "IsClassicalSolution.neg"
 
 [[node]]
-id = "_root_.ContDiffAt.deriv_deriv_comp_add_smul"
-
-[[node]]
-id = "_root_.IsLocalMax.laplacian_nonpos"
-
-[[node]]
 id = "mem_parabolicBoundary_of_isMaxOn_of_lt"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6, proof (the claim for `v`)"
 

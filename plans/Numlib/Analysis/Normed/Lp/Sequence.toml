@@ -161,6 +161,19 @@ id = "inclusionCLM"
 id = "norm_inclusionCLM_le"
 
 [[node]]
+id = "shiftRightL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 6, and §11.4"
+
+[[node]]
+id = "shiftRightL_apply_zero"
+
+[[node]]
+id = "shiftRightL_apply_succ"
+
+[[node]]
+id = "norm_shiftRightL_apply"
+
+[[node]]
 id = "zeroAtInfty.hasSum_single"
 
 [[node]]

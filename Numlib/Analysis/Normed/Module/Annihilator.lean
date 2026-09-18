@@ -32,9 +32,12 @@ names follow Mathlib's algebraic pair `Submodule.dualAnnihilator` / `Submodule.d
 
 ## Main statements
 
-* `Submodule.strongDualAnnihilator`, `Submodule.strongDualCoannihilator` with `mem_`, `isClosed_`,
-  the antitone Galois connection `le_strongDualAnnihilator_iff_le_strongDualCoannihilator`, the
-  `_sup`, `_bot`, `_top` identities and the invariance under `topologicalClosure`.
+* `Submodule.strongDualAnnihilator`, `Submodule.strongDualCoannihilator` with `mem_`, `isClosed_`
+  (also registered as the instances `instIsClosedStrongDualAnnihilator`,
+  `instIsClosedStrongDualCoannihilator`, so that the quotients `E* ⧸ M^⊥` and `E ⧸ N^⊥` are
+  normed spaces by instance search), the antitone Galois connection
+  `le_strongDualAnnihilator_iff_le_strongDualCoannihilator`, the `_sup`, `_bot`, `_top`
+  identities and the invariance under `topologicalClosure`.
 * `Submodule.strongDualCoannihilator_strongDualAnnihilator` — **`(M^⊥)^⊥ = closure M`** for every
   subspace `M` of a normed space over `RCLike 𝕜`, and
   `topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator` — `(N^⊥)^⊥ ⊇ closure N`
@@ -217,6 +220,18 @@ theorem isClosed_strongDualCoannihilator (N : Submodule 𝕜 (StrongDual 𝕜 E)
     simp
   rw [this]
   exact isClosed_biInter fun f _ => isClosed_eq f.continuous continuous_const
+
+/-- The annihilator is closed, as an instance, so that `StrongDual 𝕜 E ⧸ M.strongDualAnnihilator`
+is a normed space by instance search. -/
+instance instIsClosedStrongDualAnnihilator (M : Submodule 𝕜 E) :
+    IsClosed (M.strongDualAnnihilator : Set (StrongDual 𝕜 E)) :=
+  isClosed_strongDualAnnihilator M
+
+/-- The coannihilator is closed, as an instance, so that `E ⧸ N.strongDualCoannihilator` is a
+normed space by instance search. -/
+instance instIsClosedStrongDualCoannihilator (N : Submodule 𝕜 (StrongDual 𝕜 E)) :
+    IsClosed (N.strongDualCoannihilator : Set E) :=
+  isClosed_strongDualCoannihilator N
 
 /-- The annihilator does not see the closure: `(closure M)^⊥ = M^⊥`, since a continuous functional
 vanishing on `M` vanishes on its closure. -/

@@ -116,3 +116,9 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §1.4, Example 3"
 
 [[node]]
 id = "strongDualCoannihilator_eq_polarSubmodule"
+
+[[node]]
+id = "instIsClosedStrongDualAnnihilator"
+
+[[node]]
+id = "instIsClosedStrongDualCoannihilator"

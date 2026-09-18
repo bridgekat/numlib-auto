@@ -35,12 +35,6 @@ id = "comp_mkQL_mem_strongDualAnnihilator"
 id = "strongDualQuotLIEAnnihilator_symm_apply"
 
 [[node]]
-id = "instIsClosedStrongDualAnnihilator"
-
-[[node]]
-id = "instIsClosedStrongDualCoannihilator"
-
-[[node]]
 id = "ker_comp_subtypeL_eq_strongDualAnnihilator"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.2"
 

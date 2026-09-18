@@ -1,6 +1,7 @@
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Mathlib.Analysis.Normed.Algebra.Spectrum
+import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Operator.Compact.Banach
 import NumlibSurface.Brezis.Chapter06.Section01
 
@@ -17,11 +18,11 @@ complete), `σ(T)` is `spectrum ℝ T` and `EV(T)` is
 `spectrum.isCompact` / `spectrum.subset_closedBall_norm`; Theorem 6.8 and Lemma 6.2 delegate to
 the backbone `Numlib/Analysis/Normed/Operator/Compact/Banach` (and Mathlib's Fredholm
 alternative `IsCompactOperator.hasEigenvalue_iff_mem_spectrum` for (b)). The examples of
-Remarks 6 and 7 live on `ℓ² = lp (fun _ : ℕ => ℝ) 2`: Mathlib has neither the shifts nor the
-multiplication operators on `lp`, so `rightShift` and `multiplicationOperator` are defined
-here, by content (they belong in a backbone `Numlib/Analysis/Normed/Lp/Sequence` once chapter
-11 wants them too). The unnumbered claim of the Comments (3) that the null spaces of the powers
-of `T - λI` stabilize is `ascent_stabilizes`.
+Remarks 6 and 7 live on `ℓ² = lp (fun _ : ℕ => ℝ) 2`: the right shift is the backbone's
+`lp.shiftRightL ℝ` (`Numlib/Analysis/Normed/Lp/Sequence`, shared with §11.4), restated here as
+`rightShift`; Mathlib has no multiplication operators on `lp`, so `multiplicationOperator` is
+defined here, by content (it belongs in the same backbone module). The unnumbered claim of the
+Comments (3) that the null spaces of the powers of `T - λI` stabilize is `ascent_stabilizes`.
 
 ## Main results
 
@@ -91,59 +92,24 @@ theorem remark_6_6 [CompleteSpace E] {T : E →L[ℝ] E} {μ : ℝ}
 
 /-! ### The right shift on `ℓ²` -/
 
-/-- The right-shifted sequence `(0, u₀, u₁, …)`. -/
-private def shiftFun (x : ℕ → ℝ) : ℕ → ℝ := fun n => Nat.rec 0 (fun k _ => x k) n
-
-private theorem memℓp_shiftFun (x : lp (fun _ : ℕ => ℝ) 2) : Memℓp (shiftFun x) 2 := by
-  rw [memℓp_gen_iff (by norm_num)]
-  exact (summable_nat_add_iff 1).1 ((memℓp_gen_iff (by norm_num)).1 (lp.memℓp x))
-
-/-- The squared `ℓ²`-sum of the shifted sequence is that of the sequence. -/
-private theorem tsum_shiftFun (x : lp (fun _ : ℕ => ℝ) 2) :
-    ∑' i, ‖shiftFun x i‖ ^ (2 : ℝ) = ∑' i, ‖(x : ℕ → ℝ) i‖ ^ (2 : ℝ) := by
-  have hs : Summable fun i => ‖shiftFun x i‖ ^ (2 : ℝ) := by
-    have := (memℓp_gen_iff (by norm_num)).1 (memℓp_shiftFun x)
-    simpa only [ENNReal.toReal_ofNat] using this
-  rw [hs.tsum_eq_zero_add]
-  simp [shiftFun, Real.zero_rpow two_ne_zero]
-
-/-- The right shift as a linear map. -/
-private def rightShiftₗ : lp (fun _ : ℕ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℕ => ℝ) 2 where
-  toFun x := ⟨shiftFun x, memℓp_shiftFun x⟩
-  map_add' x y := by
-    ext n
-    cases n with
-    | zero => change (0 : ℝ) = 0 + 0; simp
-    | succ k => change (x + y) k = x k + y k; rw [lp.coeFn_add, Pi.add_apply]
-  map_smul' c x := by
-    ext n
-    cases n with
-    | zero => change (0 : ℝ) = c * 0; simp
-    | succ k => change (c • x) k = c * x k; rw [lp.coeFn_smul, Pi.smul_apply, smul_eq_mul]
-
-private theorem norm_rightShiftₗ (x : lp (fun _ : ℕ => ℝ) 2) : ‖rightShiftₗ x‖ = ‖x‖ := by
-  rw [lp.norm_eq_tsum_rpow (by norm_num), lp.norm_eq_tsum_rpow (by norm_num)]
-  simp only [ENNReal.toReal_ofNat]
-  change (∑' i, ‖shiftFun x i‖ ^ (2 : ℝ)) ^ (1 / (2 : ℝ)) =
-    (∑' i, ‖(x : ℕ → ℝ) i‖ ^ (2 : ℝ)) ^ (1 / (2 : ℝ))
-  rw [tsum_shiftFun]
-
 /-- **The right shift of Remark 6** on `ℓ² = lp (fun _ : ℕ => ℝ) 2`:
 `S_r u = (0, u₁, u₂, …)`, i.e. `(S_r u) 0 = 0` and `(S_r u) (n + 1) = uₙ`; a bounded operator
-(an isometry). -/
+(an isometry). It is the backbone's `lp.shiftRightL ℝ` (`Numlib/Analysis/Normed/Lp/Sequence`). -/
 def rightShift : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2 :=
-  LinearMap.mkContinuous rightShiftₗ 1 fun x => by rw [one_mul, norm_rightShiftₗ]
+  lp.shiftRightL ℝ
 
 @[simp]
-theorem rightShift_apply_zero (x : lp (fun _ : ℕ => ℝ) 2) : rightShift x 0 = 0 := rfl
+theorem rightShift_apply_zero (x : lp (fun _ : ℕ => ℝ) 2) : rightShift x 0 = 0 :=
+  lp.shiftRightL_apply_zero ℝ x
 
 @[simp]
 theorem rightShift_apply_succ (x : lp (fun _ : ℕ => ℝ) 2) (n : ℕ) :
-    rightShift x (n + 1) = x n := rfl
+    rightShift x (n + 1) = x n :=
+  lp.shiftRightL_apply_succ ℝ x n
 
 /-- The right shift is an isometry. -/
 theorem norm_rightShift_apply (x : lp (fun _ : ℕ => ℝ) 2) : ‖rightShift x‖ = ‖x‖ :=
-  norm_rightShiftₗ x
+  lp.norm_shiftRightL_apply ℝ x
 
 /-- **Remark 6, the right shift.** For the right shift `S_r` on `ℓ²`, `0 ∈ σ(S_r)` while
 `0 ∉ EV(S_r)`: the inclusion `EV(T) ⊆ σ(T)` can be strict (`N(T - λI) = {0}` and

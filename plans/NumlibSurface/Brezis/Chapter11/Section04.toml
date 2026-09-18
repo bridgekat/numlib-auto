@@ -74,20 +74,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4, Definitio
 
 [[node]]
 id = "proposition_11_25"
-kind = "theorem"
-desc = '''Proposition 11.25, Fenchel–Moreau over `ℂ`: for `φ : E → EReal` convex
-(`ConvexAnalysis.ConvexFn φ`), lower semicontinuous, never `⊥` and not identically `⊤`,
-`φ** = φ`: `biconjugateC φ = φ`, the biconjugate being `ConvexAnalysis.biconj (rePairing E) φ`
-(back on `E`, `x ↦ sup_f (Re ⟨f, x⟩ − φ*(f))`). Proof, the book's first method: chapter 1's
-Theorem 1.11 on `E_ℝ` (`Brezis.Chapter01.theorem_1_11 : biconjugate φ = φ`) and Proposition
-11.22 — `conjugateC_eq` identifies `φ*(f)` with `φ_ℝ*(I f)`, so `biconjugateC φ x` is the real
-biconjugate's supremum reindexed along the bijection `I = reDual E`
-(`(reDual E).toEquiv.iSup_comp` or `Equiv.iSup_congr`), about ten lines. ★
-
-Blocked: the dependency `Brezis.Chapter01.theorem_1_11` (surface §1.4, written in parallel by
-agent `surf4`) does not exist yet; the statement, the pairing `rePairing E`, the conjugate
-`conjugateC` and the biconjugate `biconjugateC` are in place.'''
-deps = ["biconjugateC", "conjugateC_eq", "reDual", "Brezis.Chapter01.theorem_1_11"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.25"
 
 [[node]]
@@ -104,22 +90,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §11.4"
 
 [[node]]
 id = "proposition_11_26"
-kind = "theorem"
-desc = '''Proposition 11.26, projection onto a closed convex set of a complex Hilbert space:
-for `K ⊆ H` nonempty closed convex (`Convex ℝ K`) and `f : H`, there is a unique `u ∈ K` with
-`‖f − u‖ = ⨅ v : K, ‖f − v‖` (`= Metric.infDist f K`), and `u` is characterized by
-`u ∈ K ∧ ∀ v ∈ K, (⟪f − u, v − u⟫_ℂ).re ≤ 0` (the book's `Re (f − u, v − u) ≤ 0`; both
-inner-product conventions give the same real part). The book's Theorem 5.2 on `H_ℝ`: with
-`attribute [local instance] InnerProductSpace.complexToReal` (as the section `Hilbert` of the
-module does), chapter 5's `Brezis.Chapter05.theorem_5_2` applies verbatim and
-`real_inner_eq_re_inner` reads `⟪·, ·⟫_ℝ` as `re ⟪·, ·⟫_ℂ`; Mathlib's
-`exists_norm_eq_iInf_of_complete_convex` and `norm_eq_iInf_iff_real_inner_le_zero` would do
-the same directly. ★
-
-Blocked: the dependency `Brezis.Chapter05.theorem_5_2` (surface §5.1, written in parallel by
-agent `surf5`) does not exist yet; the module's section `Hilbert` already carries the local
-instance and the pattern (`proposition_11_28` reads Theorem 5.6 the same way).'''
-deps = ["Brezis.Chapter05.theorem_5_2", "inner_identities"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 11.26"
 
 [[node]]

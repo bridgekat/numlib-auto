@@ -34,6 +34,9 @@ this module adds:
 * **The elementary inclusions**: `ℓ^p ⊆ c₀` (`lp.tendsto_cofinite_zero`,
   `lp.linearMapOfLE_mem_zeroAtInfty`) and `‖x‖_q ≤ ‖x‖_p` for `p ≤ q`
   (`lp.norm_linearMapOfLE_le`, with the bundled inclusion `lp.inclusionCLM`).
+* **The right shift** `lp.shiftRightL 𝕜 : ℓ²(ℕ; 𝕜) →L[𝕜] ℓ²(ℕ; 𝕜)`, `u ↦ (0, u₀, u₁, …)`, an
+  isometry (`lp.norm_shiftRightL_apply`): the operator of [brezis2011functional] chapter 6,
+  Remark 6 and §11.4 (`0` in the spectrum but not an eigenvalue; over `ℂ`, no eigenvalue).
 * **Duality**, Propositions 11.18–11.20 of [brezis2011functional], as isometric isomorphisms for
   scalar sequences over `RCLike 𝕜`: `(ℓ^p)* = ℓ^{p'}` for `1 ≤ p < ∞` (`lp.toDual`,
   `lp.dualEquiv`, any index type), `(c₀)* = ℓ¹` (`lp.zeroAtInfty.dualEquiv`) and
@@ -380,6 +383,70 @@ theorem norm_inclusionCLM_le [Fact (1 ≤ p)] [Fact (1 ≤ q)] (h : p ≤ q) :
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
 end InclusionCLM
+
+/-! ### The right shift on `ℓ²` -/
+
+section Shift
+
+variable (𝕜 : Type*) [NormedField 𝕜]
+
+/-- The right-shifted sequence `(0, u₀, u₁, …)`. -/
+private def shiftFun (u : ℕ → 𝕜) : ℕ → 𝕜
+  | 0 => 0
+  | n + 1 => u n
+
+private theorem shiftFun_zero (u : ℕ → 𝕜) : shiftFun 𝕜 u 0 = 0 := rfl
+
+private theorem shiftFun_succ (u : ℕ → 𝕜) (n : ℕ) : shiftFun 𝕜 u (n + 1) = u n := rfl
+
+private theorem memℓp_shiftFun (u : lp (fun _ : ℕ => 𝕜) 2) : Memℓp (shiftFun 𝕜 u) 2 := by
+  rw [memℓp_gen_iff (by norm_num)]
+  exact (summable_nat_add_iff 1).1 ((memℓp_gen_iff (by norm_num)).1 u.2)
+
+private theorem norm_shiftFun (u : lp (fun _ : ℕ => 𝕜) 2) :
+    ‖(⟨shiftFun 𝕜 u, memℓp_shiftFun 𝕜 u⟩ : lp (fun _ : ℕ => 𝕜) 2)‖ = ‖u‖ := by
+  rw [lp.norm_eq_tsum_rpow (by norm_num), lp.norm_eq_tsum_rpow (by norm_num)]
+  congr 1
+  have hs := (memℓp_gen_iff (by norm_num)).1 (memℓp_shiftFun 𝕜 u)
+  change ∑' i, ‖shiftFun 𝕜 u i‖ ^ (2 : ℝ≥0∞).toReal = _
+  rw [hs.tsum_eq_zero_add]
+  simp [shiftFun_zero, shiftFun_succ]
+
+/-- **The right shift** `S_r u = (0, u₀, u₁, …)` on `ℓ²(ℕ; 𝕜)`: `(S_r u) 0 = 0` and
+`(S_r u) (n + 1) = u n` (`shiftRightL_apply_zero`, `shiftRightL_apply_succ`). It is an isometry
+(`norm_shiftRightL_apply`), hence injective, and not surjective — the standard example of an
+operator with `0` in the spectrum but not an eigenvalue ([brezis2011functional] chapter 6,
+Remark 6), and over `ℂ` of an operator without eigenvalues at all ([brezis2011functional]
+§11.4). -/
+def shiftRightL : lp (fun _ : ℕ => 𝕜) 2 →L[𝕜] lp (fun _ : ℕ => 𝕜) 2 :=
+  LinearMap.mkContinuous
+    { toFun := fun u => ⟨shiftFun 𝕜 u, memℓp_shiftFun 𝕜 u⟩
+      map_add' := fun u v => lp.ext (funext fun n => by
+        cases n with
+        | zero => change (0 : 𝕜) = 0 + 0; rw [add_zero]
+        | succ n => rfl)
+      map_smul' := fun c u => lp.ext (funext fun n => by
+        cases n with
+        | zero => change (0 : 𝕜) = c • 0; rw [smul_zero]
+        | succ n => rfl) }
+    1 fun u => by
+      rw [one_mul]
+      exact (norm_shiftFun 𝕜 u).le
+
+/-- `(S_r u) 0 = 0`. -/
+@[simp]
+theorem shiftRightL_apply_zero (u : lp (fun _ : ℕ => 𝕜) 2) : shiftRightL 𝕜 u 0 = 0 := rfl
+
+/-- `(S_r u) (n + 1) = u n`. -/
+@[simp]
+theorem shiftRightL_apply_succ (u : lp (fun _ : ℕ => 𝕜) 2) (n : ℕ) :
+    shiftRightL 𝕜 u (n + 1) = u n := rfl
+
+/-- The right shift is an isometry: `‖S_r u‖ = ‖u‖`. -/
+theorem norm_shiftRightL_apply (u : lp (fun _ : ℕ => 𝕜) 2) : ‖shiftRightL 𝕜 u‖ = ‖u‖ :=
+  norm_shiftFun 𝕜 u
+
+end Shift
 
 /-! ### Finitely supported sequences in `c₀`, and the bridge to `C₀(ℕ, E)` -/
 

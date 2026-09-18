@@ -99,12 +99,11 @@ graph norm `(|v|² + |A v|²)^{1/2}` of footnote 2, i.e. `t ↦ A u(t)` is conti
 def IsSolution (A : H →ₗ.[ℝ] H) (u₀ : H) (u : ℝ → H) : Prop :=
   A.IsSolutionOn u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧ A.ContDiffOnPowDomain 0 1 u (Ici 0)
 
-/-- The class `C^n(s; D(A^j))` only depends on the values of `u` on `s`. (Belongs beside
-`LinearPMap.ContDiffOnPowDomain.mono` in the backbone.) -/
+/-- The class `C^n(s; D(A^j))` only depends on the values of `u` on `s`: the backbone's
+`LinearPMap.ContDiffOnPowDomain.congr`. -/
 theorem contDiffOnPowDomain_congr {n : WithTop ℕ∞} {j : ℕ} {u v : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n j u s) (huv : EqOn u v s) : A.ContDiffOnPowDomain n j v s :=
-  let ⟨w, hw0, hw⟩ := h
-  ⟨w, fun t ht => (hw0 t ht).trans (huv ht), hw⟩
+  h.congr huv
 
 /-- The element `(u₀, A u₀)` of `D(A)` with the graph norm, for `u₀ ∈ D(A)`. -/
 private def toPowDomainOne (A : H →ₗ.[ℝ] H) (u₀ : A.domain) : A.PowDomain 1 :=

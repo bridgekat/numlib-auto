@@ -77,10 +77,6 @@ id = "MemLpLoc.memLpLoc_one"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (L^p_loc)"
 
 [[node]]
-id = "fderiv_convolution_left_apply_of_contDiff_one"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 4.20, the case k = 1"
-
-[[node]]
 id = "isMollifierSeq_contDiffBump"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.4, Definition (mollifiers)"
 

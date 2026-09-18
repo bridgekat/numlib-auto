@@ -253,5 +253,9 @@ id = "ContDiffOnPowDomain.castSucc"
 source = "[brezis2011functional] Theorem 7.5"
 
 [[node]]
+id = "ContDiffOnPowDomain.congr"
+source = "[brezis2011functional] Theorem 7.5"
+
+[[node]]
 id = "powPart_castLE"
 source = "[brezis2011functional] Theorem 7.5, proof"

@@ -65,8 +65,9 @@ Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, ch
   factor.
 * `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` and
   `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply`: differentiating a
-  convolution, once in a fixed direction or `n` times along a tuple of directions, moves the
-  derivatives onto the smooth, compactly supported factor; and
+  convolution, once in a fixed direction (a `C¹` factor suffices) or `n` times along a tuple of
+  directions, moves the derivatives onto the compactly supported factor (smooth for the iterated
+  form: the induction uses the symmetry of the second derivative); and
   `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt`: a convolution against a compactly
   supported continuous function exists as soon as the other factor is locally integrable on an open
   set containing the closed ball carrying the support.
@@ -1213,17 +1214,17 @@ variable {E E₁ E₂ V : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E]
   {μ : Measure E} [μ.IsAddHaarMeasure] {L : E₁ →L[ℝ] E₂ →L[ℝ] V} {g : E → E₂}
 
-open scoped ContDiff in
-/-- Differentiating a convolution in a fixed direction moves the derivative onto the smooth,
+/-- Differentiating a convolution in a fixed direction moves the derivative onto the `C¹`,
 compactly supported factor. This is `HasCompactSupport.hasFDerivAt_convolution_left` with the
 `ContinuousLinearMap.precompL` bookkeeping unwound by evaluating at a direction. -/
 theorem LocallyIntegrable.fderiv_convolution_left_apply
-    (hg : LocallyIntegrable g μ) {φ : E → E₁} (hcφ : HasCompactSupport φ) (hφ : ContDiff ℝ ∞ φ)
+    (hg : LocallyIntegrable g μ) {φ : E → E₁} (hcφ : HasCompactSupport φ) (hφ : ContDiff ℝ 1 φ)
     (x v : E) :
     fderiv ℝ (φ ⋆[L, μ] g) x v = ((fun t ↦ fderiv ℝ φ t v) ⋆[L, μ] g) x := by
-  rw [(hcφ.hasFDerivAt_convolution_left L (hφ.of_le (by simp)) hg x).fderiv]
+  rw [(hcφ.hasFDerivAt_convolution_left L hφ hg x).fderiv]
   have hex : ConvolutionExistsAt (fderiv ℝ φ) g x (L.precompL E) μ :=
-    HasCompactSupport.convolutionExists_left _ (hcφ.fderiv ℝ) (hφ.continuous_fderiv (by simp)) hg x
+    HasCompactSupport.convolutionExists_left _ (hcφ.fderiv ℝ) (hφ.continuous_fderiv one_ne_zero)
+      hg x
   rw [convolution_def, ContinuousLinearMap.integral_apply hex, convolution_def]
   rfl
 
@@ -1246,7 +1247,7 @@ theorem LocallyIntegrable.iteratedFDeriv_convolution_left_apply (hg : LocallyInt
     have hψc : ContDiff ℝ ∞ ψ := (hφ.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
     have hψs : HasCompactSupport ψ := hcφ.fderiv_apply ℝ (y 0)
     have hfun : (fun z ↦ fderiv ℝ (φ ⋆[L, μ] g) z (y 0)) = ψ ⋆[L, μ] g :=
-      funext fun z ↦ hg.fderiv_convolution_left_apply hcφ hφ z (y 0)
+      funext fun z ↦ hg.fderiv_convolution_left_apply hcφ (hφ.of_le (by simp)) z (y 0)
     rw [hconv.iteratedFDeriv_succ_apply_left' n y x, hfun, ih hψs hψc x (Fin.tail y)]
     exact congrArg (fun h ↦ (h ⋆[L, μ] g) x)
       (funext fun z ↦ (hφ.iteratedFDeriv_succ_apply_left' n y z).symm)

@@ -11,7 +11,10 @@ Kolmogorov–M. Riesz–Fréchet theorem (4.26) with its corollaries 4.27–4.28
 Remarks 12–13, on `ℝ^N = EuclideanSpace ℝ (Fin N)` with Lebesgue measure and real values. The
 backbone is `Numlib/Topology/ContinuousMap/ArzelaAscoli` and
 `Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz` (over any finite-dimensional real normed
-space with a Haar measure), of which the nodes here are instances. The translation
+space with a Haar measure, vector-valued, including the converse of Remark 13 —
+`Lp.uniform_translate_of_isCompact_closure`, `Lp.tight_of_isCompact_closure` — and the
+translation invariance `eLpNorm_comp_add_right`), of which the nodes here are instances. The
+translation
 `τ_h f (x) = f (x + h)` is written on the coerced function, `fun x => f (x + h)`, and the book's
 uniform continuity (22) is stated with a real `ε` as `‖τ_h f - f‖_p < ε` in `[0, ∞]`; the
 restriction `F|_Ω` is the backbone's `Lp.restrictCLM ℝ ℝ p volume Ω`.
@@ -120,10 +123,11 @@ theorem corollary_4_28 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {G : �
 
 /-! ### Remark 12: the hypotheses of Theorem 4.26 do not give compactness in `L^p(ℝ^N)` -/
 
-/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ`. -/
+/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ`: the backbone's
+`MeasureTheory.eLpNorm_comp_add_right`. -/
 theorem eLpNorm_comp_add_right_real {f : ℝ → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : ℝ) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
-  eLpNorm_comp_measurePreserving hf (measurePreserving_add_right volume h)
+  MeasureTheory.eLpNorm_comp_add_right hf h
 
 /-- **Remark 12 (and Exercise 4.33).** The hypotheses of Theorem 4.26 do not imply that `F`
 itself has compact closure in `L^p(ℝ^N)`: on `ℝ`, the translates `φ(· + n)`, `n ∈ ℕ`, of the
@@ -211,110 +215,28 @@ theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
 
 /-! ### Remark 13: the converse of Corollary 4.27 -/
 
-/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ^N`. -/
+/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ^N`: the backbone's
+`MeasureTheory.eLpNorm_comp_add_right`. -/
 theorem eLpNorm_comp_add_right {f : 𝔼 → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : 𝔼) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
-  eLpNorm_comp_measurePreserving hf (measurePreserving_add_right volume h)
+  MeasureTheory.eLpNorm_comp_add_right hf h
 
 /-- **Exercise 4.34, the uniform continuity of translation**: a relatively compact `F ⊆ L^p(ℝ^N)`,
-`1 ≤ p < ∞`, satisfies (22). Each of the finitely many centres of an `ε`-net satisfies
-Lemma 4.3, and translation is an isometry of `L^p`. -/
+`1 ≤ p < ∞`, satisfies (22) — the backbone's `Lp.uniform_translate_of_isCompact_closure`, with
+the book's real `ε`. -/
 theorem uniform_translate_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
-      eLpNorm (fun x => f (x + h) - f x) p volume < ENNReal.ofReal ε := by
-  intro ε hε
-  obtain ⟨t, ht, htF⟩ := Metric.totallyBounded_iff.1 hF.totallyBounded (ε / 4) (by positivity)
-  -- Lemma 4.3 for the finitely many centres
-  have hev : ∀ᶠ h : 𝔼 in 𝓝 0, ∀ g ∈ t,
-      eLpNorm (fun x => g (x + h) - g x) p volume ≤ ENNReal.ofReal (ε / 4) := by
-    rw [Filter.eventually_all_finite ht]
-    intro g _
-    exact ENNReal.tendsto_nhds_zero.1 (lemma_4_3 hp (Lp.memLp g)) _
-      (ENNReal.ofReal_pos.2 (by positivity))
-  obtain ⟨δ, hδ, hδε⟩ := Metric.eventually_nhds_iff.1 hev
-  refine ⟨δ, hδ, fun f hf h hh => ?_⟩
-  obtain ⟨g, hgt, hfg⟩ := Set.mem_iUnion₂.1 (htF (subset_closure hf))
-  rw [Metric.mem_ball, Lp.dist_def] at hfg
-  have hne : eLpNorm (⇑f - ⇑g) p volume ≠ ∞ := by
-    rw [← eLpNorm_congr_ae (Lp.coeFn_sub f g)]
-    exact (Lp.memLp (f - g)).eLpNorm_ne_top
-  have hfg' : eLpNorm (⇑f - ⇑g) p volume < ENNReal.ofReal (ε / 4) :=
-    (ENNReal.lt_ofReal_iff_toReal_lt hne).2 hfg
-  have hg := hδε (by simpa [dist_zero_right] using hh) g hgt
-  have hsplit : (fun x => f (x + h) - f x) =
-      (fun x => (⇑f - ⇑g) (x + h)) + (fun x => g (x + h) - g x) - (⇑f - ⇑g) := by
-    funext x
-    simp only [Pi.add_apply, Pi.sub_apply]
-    ring
-  calc eLpNorm (fun x => f (x + h) - f x) p volume
-      ≤ eLpNorm ((fun x => (⇑f - ⇑g) (x + h)) + fun x => g (x + h) - g x) p volume +
-          eLpNorm (⇑f - ⇑g) p volume := by
-        rw [hsplit]
-        exact eLpNorm_sub_le Fact.out
-    _ ≤ eLpNorm (fun x => (⇑f - ⇑g) (x + h)) p volume +
-          eLpNorm (fun x => g (x + h) - g x) p volume + eLpNorm (⇑f - ⇑g) p volume := by
-        gcongr
-        exact eLpNorm_add_le Fact.out
-    _ = eLpNorm (⇑f - ⇑g) p volume + eLpNorm (fun x => g (x + h) - g x) p volume +
-          eLpNorm (⇑f - ⇑g) p volume := by
-        rw [eLpNorm_comp_add_right ((Lp.aestronglyMeasurable f).sub (Lp.aestronglyMeasurable g))]
-    _ < ENNReal.ofReal (ε / 4) + ENNReal.ofReal (ε / 4) + ENNReal.ofReal (ε / 4) :=
-        ENNReal.add_lt_add (ENNReal.add_lt_add_of_lt_of_le
-          (hg.trans_lt ENNReal.ofReal_lt_top).ne hfg' hg) hfg'
-    _ < ENNReal.ofReal ε := by
-        rw [← ENNReal.ofReal_add (by positivity) (by positivity),
-          ← ENNReal.ofReal_add (by positivity) (by positivity)]
-        exact ENNReal.ofReal_lt_ofReal_iff'.2 ⟨by linarith, hε⟩
+      eLpNorm (fun x => f (x + h) - f x) p volume < ENNReal.ofReal ε := fun ε hε =>
+  Lp.uniform_translate_of_isCompact_closure hp hF (ENNReal.ofReal ε) (ENNReal.ofReal_pos.2 hε)
 
 /-- **Exercise 4.34, tightness**: a relatively compact `F ⊆ L^p(ℝ^N)`, `1 ≤ p < ∞`, satisfies
-(27): the finitely many centres of an `ε`-net are each concentrated on a compact set, and the
-union of these sets works for all of `F`. -/
+(27) — the backbone's `Lp.tight_of_isCompact_closure`, with the book's real `ε`. -/
 theorem tight_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ Ω : Set 𝔼, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧
-      ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p volume < ENNReal.ofReal ε := by
-  intro ε hε
-  obtain ⟨t, ht, htF⟩ := Metric.totallyBounded_iff.1 hF.totallyBounded (ε / 3) (by positivity)
-  -- each centre is concentrated on a compact set
-  have hK : ∀ g : Lp ℝ p (volume : Measure 𝔼), ∃ K : Set 𝔼, IsCompact K ∧
-      eLpNorm (Kᶜ.indicator g) p volume ≤ ENNReal.ofReal (ε / 3) := fun g => by
-    have hg : MemLp g p ((volume : Measure 𝔼).restrict Set.univ) := by
-      rw [Measure.restrict_univ]; exact Lp.memLp g
-    obtain ⟨K, hK, -, hKg⟩ := hg.exists_isCompact_eLpNorm_indicator_compl_le MeasurableSet.univ
-      Fact.out hp (ENNReal.ofReal_pos.2 (by positivity : (0 : ℝ) < ε / 3)).ne'
-    rw [Measure.restrict_univ] at hKg
-    exact ⟨K, hK, hKg⟩
-  choose K hKc hKg using hK
-  refine ⟨⋃ g ∈ t, K g, (Bornology.isBounded_biUnion ht).2 fun g _ => (hKc g).isBounded,
-    ht.measurableSet_biUnion fun g _ => (hKc g).measurableSet, fun f hf => ?_⟩
-  obtain ⟨g, hgt, hfg⟩ := Set.mem_iUnion₂.1 (htF (subset_closure hf))
-  rw [Metric.mem_ball, Lp.dist_def] at hfg
-  have hne : eLpNorm (⇑f - ⇑g) p volume ≠ ∞ := by
-    rw [← eLpNorm_congr_ae (Lp.coeFn_sub f g)]
-    exact (Lp.memLp (f - g)).eLpNorm_ne_top
-  have hfg' : eLpNorm (⇑f - ⇑g) p volume < ENNReal.ofReal (ε / 3) :=
-    (ENNReal.lt_ofReal_iff_toReal_lt hne).2 hfg
-  set Ω : Set 𝔼 := ⋃ g ∈ t, K g with hΩ
-  have hΩm : MeasurableSet Ω := ht.measurableSet_biUnion fun g _ => (hKc g).measurableSet
-  have hsplit : Ωᶜ.indicator ⇑f = Ωᶜ.indicator (⇑f - ⇑g) + Ωᶜ.indicator ⇑g := by
-    rw [← Set.indicator_add', sub_add_cancel]
-  have hsub : Ωᶜ ⊆ (K g)ᶜ := Set.compl_subset_compl.2 (Set.subset_biUnion_of_mem hgt)
-  calc eLpNorm (Ωᶜ.indicator ⇑f) p volume
-      ≤ eLpNorm (Ωᶜ.indicator (⇑f - ⇑g)) p volume + eLpNorm (Ωᶜ.indicator ⇑g) p volume := by
-        rw [hsplit]
-        exact eLpNorm_add_le Fact.out
-    _ ≤ eLpNorm (⇑f - ⇑g) p volume + eLpNorm ((K g)ᶜ.indicator ⇑g) p volume := by
-        gcongr
-        · exact eLpNorm_indicator_le _ hΩm.compl
-        · rw [show Ωᶜ.indicator ⇑g = Ωᶜ.indicator ((K g)ᶜ.indicator ⇑g) by
-            rw [Set.indicator_indicator, Set.inter_eq_left.2 hsub]]
-          exact eLpNorm_indicator_le _ hΩm.compl
-    _ < ENNReal.ofReal (ε / 3) + ENNReal.ofReal (ε / 3) :=
-        ENNReal.add_lt_add_of_lt_of_le ((hKg g).trans_lt ENNReal.ofReal_lt_top).ne hfg' (hKg g)
-    _ < ENNReal.ofReal ε := by
-        rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
-        exact ENNReal.ofReal_lt_ofReal_iff'.2 ⟨by linarith, hε⟩
+      ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p volume < ENNReal.ofReal ε := fun ε hε =>
+  Lp.tight_of_isCompact_closure hp hF (ENNReal.ofReal ε) (ENNReal.ofReal_pos.2 hε)
 
 /-- **Remark 13.** The converse of Corollary 4.27 holds (Exercise 4.34), so a set `F ⊆ L^p(ℝ^N)`,
 `1 ≤ p < ∞`, has compact closure if and only if it is bounded, satisfies (22) and satisfies

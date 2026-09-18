@@ -33,6 +33,21 @@ id = "Lp.isCompact_closure_of_uniform_translate_of_tight"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.27"
 
 [[node]]
+id = "eLpNorm_comp_add_right"
+
+[[node]]
+id = "Lp.uniform_translate_of_isCompact_closure"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 13 (Exercise 4.34)"
+
+[[node]]
+id = "Lp.tight_of_isCompact_closure"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 13 (Exercise 4.34)"
+
+[[node]]
+id = "Lp.isCompact_closure_iff_uniform_translate_and_tight"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 13"
+
+[[node]]
 id = "Lp.isCompact_closure_image_restrictCLM_convolutionCLM"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 4.28"
 

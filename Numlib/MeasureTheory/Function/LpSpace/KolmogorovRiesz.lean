@@ -8,6 +8,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Calculus.ContDiff.Convolution
 import Mathlib.MeasureTheory.Function.LpSpace.Indicator
 import Numlib.Analysis.Convolution.Lp
+import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
@@ -19,9 +20,16 @@ Haar measure `μ`, whose translates are uniformly continuous in `L^p`,
 set `Ω` of finite measure:
 `MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate`. If moreover the mass
 of the family outside bounded sets is uniformly small, the family itself has compact closure in
-`L^p(G)` (`MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight`). The convolution
-with a fixed integrable kernel maps bounded sets to families of the first kind
-(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM`).
+`L^p(G)` (`MeasureTheory.Lp.isCompact_closure_of_uniform_translate_of_tight`); conversely a
+relatively compact family has uniformly continuous translates and is tight
+(`MeasureTheory.Lp.uniform_translate_of_isCompact_closure`,
+`MeasureTheory.Lp.tight_of_isCompact_closure`), so that
+`MeasureTheory.Lp.isCompact_closure_iff_uniform_translate_and_tight` characterizes the
+relatively compact subsets of `L^p(G)`. The convolution with a fixed integrable kernel maps
+bounded sets to families of the first kind
+(`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_convolutionCLM`). The translation
+invariance of the `L^p` seminorm, `MeasureTheory.eLpNorm_comp_add_right`, is stated for any
+right-invariant measure.
 
 ## Main definitions
 
@@ -59,7 +67,7 @@ which is the form in which the Sobolev embedding theorems produce it.
 
 Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*,
 Universitext, Springer, 2011 [brezis2011functional], §4.5: Theorem 4.26, Corollaries 4.27 and
-4.28, Lemma 4.3.
+4.28, Lemma 4.3, Remark 13 (Exercise 4.34).
 -/
 
 open Filter Function MeasureTheory MeasureTheory.Measure Metric Set Topology
@@ -133,6 +141,21 @@ theorem Metric.totallyBounded_of_forall_exists_totallyBounded {X : Type*} [Pseud
   linarith [dist_triangle x y z]
 
 namespace MeasureTheory
+
+/-! ### Translation invariance of the `L^p` seminorm -/
+
+section Translation
+
+variable {G : Type*} [Add G] [MeasurableSpace G] [MeasurableAdd G] {μ : Measure G}
+  [μ.IsAddRightInvariant] {E : Type*} [NormedAddCommGroup E] {p : ℝ≥0∞}
+
+/-- **Translation preserves the `L^p` seminorm**: `‖f (· + h)‖ₚ = ‖f‖ₚ` for a right-invariant
+measure. -/
+theorem eLpNorm_comp_add_right {f : G → E} (hf : AEStronglyMeasurable f μ) (h : G) :
+    eLpNorm (fun x => f (x + h)) p μ = eLpNorm f p μ :=
+  eLpNorm_comp_measurePreserving hf (measurePreserving_add_right μ h)
+
+end Translation
 
 /-! ### The four steps -/
 
@@ -608,6 +631,148 @@ theorem Lp.isCompact_closure_image_restrictCLM_convolutionCLM [FiniteDimensional
           exact ENNReal.ofReal_le_ofReal (hC' u hu)
       _ < ε := hδK (by rwa [dist_zero_right, _root_.norm_neg])
 
+
+/-! ### The converse: a relatively compact family has uniformly continuous translates, is tight -/
+
+omit [NormedSpace ℝ E] in
+/-- **Uniform continuity of translation on a relatively compact family** ([brezis2011functional]
+Exercise 4.34): if `F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure, then its translates are
+uniformly continuous in `L^p`. Each of the finitely many centres of an `ε`-net satisfies the
+continuity of translation (`MemLp.tendsto_eLpNorm_sub_translate`), and translation is an
+isometry of `L^p` (`eLpNorm_comp_add_right`). -/
+theorem Lp.uniform_translate_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞)
+    {F : Set (Lp E p μ)} (hF : IsCompact (closure F)) :
+    ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
+      eLpNorm (fun x => f (x + h) - f x) p μ < ε := by
+  intro ε hε
+  -- `ε' = min ε 1`, finite and positive, so that `ε' / 4` is a real number
+  set ε' : ℝ := (min ε 1).toReal with hε'
+  have hε'pos : 0 < ε' :=
+    ENNReal.toReal_pos (lt_min hε one_pos).ne' ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne
+  have hε'le : ENNReal.ofReal ε' ≤ ε := by
+    rw [hε', ENNReal.ofReal_toReal ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne]
+    exact min_le_left _ _
+  obtain ⟨t, ht, htF⟩ := Metric.totallyBounded_iff.1 hF.totallyBounded (ε' / 4) (by positivity)
+  -- continuity of translation for the finitely many centres
+  have hev : ∀ᶠ h : G in 𝓝 0, ∀ g ∈ t,
+      eLpNorm (fun x => g (x + h) - g x) p μ ≤ ENNReal.ofReal (ε' / 4) := by
+    rw [Filter.eventually_all_finite ht]
+    intro g _
+    have hneg : Tendsto (fun h : G => -h) (𝓝 0) (𝓝 0) := by
+      simpa using (tendsto_id (x := 𝓝 (0 : G))).neg
+    have hcont : Tendsto (fun h : G => eLpNorm (fun x => g (x + h) - g x) p μ) (𝓝 0) (𝓝 0) :=
+      (((Lp.memLp g).tendsto_eLpNorm_sub_translate Fact.out hp).comp hneg).congr fun h => by
+        simp only [Function.comp_apply, sub_neg_eq_add]
+    exact ENNReal.tendsto_nhds_zero.1 hcont _ (ENNReal.ofReal_pos.2 (by positivity))
+  obtain ⟨δ, hδ, hδε⟩ := Metric.eventually_nhds_iff.1 hev
+  refine ⟨δ, hδ, fun f hf h hh => ?_⟩
+  obtain ⟨g, hgt, hfg⟩ := Set.mem_iUnion₂.1 (htF (subset_closure hf))
+  rw [Metric.mem_ball, Lp.dist_def] at hfg
+  have hne : eLpNorm (⇑f - ⇑g) p μ ≠ ∞ := by
+    rw [← eLpNorm_congr_ae (Lp.coeFn_sub f g)]
+    exact (Lp.memLp (f - g)).eLpNorm_ne_top
+  have hfg' : eLpNorm (⇑f - ⇑g) p μ < ENNReal.ofReal (ε' / 4) :=
+    (ENNReal.lt_ofReal_iff_toReal_lt hne).2 hfg
+  have hg := hδε (by simpa [dist_zero_right] using hh) g hgt
+  have hsplit : (fun x => f (x + h) - f x) =
+      (fun x => (⇑f - ⇑g) (x + h)) + (fun x => g (x + h) - g x) - (⇑f - ⇑g) := by
+    funext x
+    simp only [Pi.add_apply, Pi.sub_apply]
+    abel
+  calc eLpNorm (fun x => f (x + h) - f x) p μ
+      ≤ eLpNorm ((fun x => (⇑f - ⇑g) (x + h)) + fun x => g (x + h) - g x) p μ +
+          eLpNorm (⇑f - ⇑g) p μ := by
+        rw [hsplit]
+        exact eLpNorm_sub_le Fact.out
+    _ ≤ eLpNorm (fun x => (⇑f - ⇑g) (x + h)) p μ +
+          eLpNorm (fun x => g (x + h) - g x) p μ + eLpNorm (⇑f - ⇑g) p μ := by
+        gcongr
+        exact eLpNorm_add_le Fact.out
+    _ = eLpNorm (⇑f - ⇑g) p μ + eLpNorm (fun x => g (x + h) - g x) p μ +
+          eLpNorm (⇑f - ⇑g) p μ := by
+        rw [eLpNorm_comp_add_right ((Lp.aestronglyMeasurable f).sub (Lp.aestronglyMeasurable g))]
+    _ < ENNReal.ofReal (ε' / 4) + ENNReal.ofReal (ε' / 4) + ENNReal.ofReal (ε' / 4) :=
+        ENNReal.add_lt_add (ENNReal.add_lt_add_of_lt_of_le
+          (hg.trans_lt ENNReal.ofReal_lt_top).ne hfg' hg) hfg'
+    _ < ENNReal.ofReal ε' := by
+        rw [← ENNReal.ofReal_add (by positivity) (by positivity),
+          ← ENNReal.ofReal_add (by positivity) (by positivity)]
+        exact ENNReal.ofReal_lt_ofReal_iff'.2 ⟨by linarith, hε'pos⟩
+    _ ≤ ε := hε'le
+
+omit [NormedSpace ℝ E] in
+/-- **Tightness of a relatively compact family** ([brezis2011functional] Exercise 4.34): if
+`F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure, then for every `ε > 0` there is a bounded
+measurable `Ω` with `‖f‖_{L^p(Ωᶜ)} < ε` for all `f ∈ F`. The finitely many centres of an `ε`-net
+are each concentrated on a compact set (`MemLp.exists_isCompact_eLpNorm_indicator_compl_le`),
+and the union of these sets works for all of `F`. -/
+theorem Lp.tight_of_isCompact_closure [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp E p μ)}
+    (hF : IsCompact (closure F)) :
+    ∀ ε : ℝ≥0∞, 0 < ε → ∃ Ω : Set G, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧
+      ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p μ < ε := by
+  intro ε hε
+  set ε' : ℝ := (min ε 1).toReal with hε'
+  have hε'pos : 0 < ε' :=
+    ENNReal.toReal_pos (lt_min hε one_pos).ne' ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne
+  have hε'le : ENNReal.ofReal ε' ≤ ε := by
+    rw [hε', ENNReal.ofReal_toReal ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne]
+    exact min_le_left _ _
+  obtain ⟨t, ht, htF⟩ := Metric.totallyBounded_iff.1 hF.totallyBounded (ε' / 3) (by positivity)
+  -- each centre is concentrated on a compact set
+  have hK : ∀ g : Lp E p μ, ∃ K : Set G, IsCompact K ∧
+      eLpNorm (Kᶜ.indicator g) p μ ≤ ENNReal.ofReal (ε' / 3) := fun g => by
+    have hg : MemLp g p (μ.restrict Set.univ) := by
+      rw [Measure.restrict_univ]; exact Lp.memLp g
+    obtain ⟨K, hK, -, hKg⟩ := hg.exists_isCompact_eLpNorm_indicator_compl_le MeasurableSet.univ
+      Fact.out hp (ENNReal.ofReal_pos.2 (by positivity : (0 : ℝ) < ε' / 3)).ne'
+    rw [Measure.restrict_univ] at hKg
+    exact ⟨K, hK, hKg⟩
+  choose K hKc hKg using hK
+  refine ⟨⋃ g ∈ t, K g, (Bornology.isBounded_biUnion ht).2 fun g _ => (hKc g).isBounded,
+    ht.measurableSet_biUnion fun g _ => (hKc g).measurableSet, fun f hf => ?_⟩
+  obtain ⟨g, hgt, hfg⟩ := Set.mem_iUnion₂.1 (htF (subset_closure hf))
+  rw [Metric.mem_ball, Lp.dist_def] at hfg
+  have hne : eLpNorm (⇑f - ⇑g) p μ ≠ ∞ := by
+    rw [← eLpNorm_congr_ae (Lp.coeFn_sub f g)]
+    exact (Lp.memLp (f - g)).eLpNorm_ne_top
+  have hfg' : eLpNorm (⇑f - ⇑g) p μ < ENNReal.ofReal (ε' / 3) :=
+    (ENNReal.lt_ofReal_iff_toReal_lt hne).2 hfg
+  set Ω : Set G := ⋃ g ∈ t, K g with hΩ
+  have hΩm : MeasurableSet Ω := ht.measurableSet_biUnion fun g _ => (hKc g).measurableSet
+  have hsplit : Ωᶜ.indicator ⇑f = Ωᶜ.indicator (⇑f - ⇑g) + Ωᶜ.indicator ⇑g := by
+    rw [← Set.indicator_add', sub_add_cancel]
+  have hsub : Ωᶜ ⊆ (K g)ᶜ := Set.compl_subset_compl.2 (Set.subset_biUnion_of_mem hgt)
+  calc eLpNorm (Ωᶜ.indicator ⇑f) p μ
+      ≤ eLpNorm (Ωᶜ.indicator (⇑f - ⇑g)) p μ + eLpNorm (Ωᶜ.indicator ⇑g) p μ := by
+        rw [hsplit]
+        exact eLpNorm_add_le Fact.out
+    _ ≤ eLpNorm (⇑f - ⇑g) p μ + eLpNorm ((K g)ᶜ.indicator ⇑g) p μ := by
+        gcongr
+        · exact eLpNorm_indicator_le _ hΩm.compl
+        · rw [show Ωᶜ.indicator ⇑g = Ωᶜ.indicator ((K g)ᶜ.indicator ⇑g) by
+            rw [Set.indicator_indicator, Set.inter_eq_left.2 hsub]]
+          exact eLpNorm_indicator_le _ hΩm.compl
+    _ < ENNReal.ofReal (ε' / 3) + ENNReal.ofReal (ε' / 3) :=
+        ENNReal.add_lt_add_of_lt_of_le ((hKg g).trans_lt ENNReal.ofReal_lt_top).ne hfg' (hKg g)
+    _ < ENNReal.ofReal ε' := by
+        rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
+        exact ENNReal.ofReal_lt_ofReal_iff'.2 ⟨by linarith, hε'pos⟩
+    _ ≤ ε := hε'le
+
+/-- **The Kolmogorov–M. Riesz–Fréchet characterization** ([brezis2011functional] Corollary 4.27
+and its converse, Remark 13): a family `F ⊆ L^p(G)`, `1 ≤ p < ∞`, has compact closure if and
+only if it is bounded, its translates are uniformly continuous in `L^p`, and it is tight. -/
+theorem Lp.isCompact_closure_iff_uniform_translate_and_tight [FiniteDimensional ℝ E]
+    [Fact (1 ≤ p)] (hp : p ≠ ∞) (F : Set (Lp E p μ)) :
+    IsCompact (closure F) ↔
+      Bornology.IsBounded F ∧
+      (∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ F, ∀ h : G, ‖h‖ < δ →
+        eLpNorm (fun x => f (x + h) - f x) p μ < ε) ∧
+      ∀ ε : ℝ≥0∞, 0 < ε → ∃ Ω : Set G, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧
+        ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p μ < ε :=
+  ⟨fun hF => ⟨hF.isBounded.subset subset_closure, Lp.uniform_translate_of_isCompact_closure hp hF,
+    Lp.tight_of_isCompact_closure hp hF⟩,
+    fun ⟨hF, hτ, htight⟩ => Lp.isCompact_closure_of_uniform_translate_of_tight hp hF hτ htight⟩
 
 end Steps
 

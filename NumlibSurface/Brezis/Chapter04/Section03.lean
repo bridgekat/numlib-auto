@@ -39,8 +39,9 @@ weak-compactness argument.
 * `remark_4_6`, `lInfty_not_isReflexive` — `L^1(Ω)` and `L^∞(Ω)` are not reflexive.
 * `lInfty_weakStar_isCompact_closedBall`, `lInfty_exists_subseq_weakStar_tendsto` — the weak-∗
   compactness properties of `L^∞`.
-* `exists_strongDual_top_apply_eq`, `exists_strongDual_lInfty_not_integral` — a functional on
-  `L^∞` extending `f ↦ f 0` on `C_c`, which is not an integral against an `L^1` function.
+* `exists_strongDual_lInfty_not_integral` — a functional on `L^∞` extending `f ↦ f 0` on `C_c`,
+  which is not an integral against an `L^1` function (the backbone's
+  `MeasureTheory.Lp.exists_strongDual_top_apply_eq` at `x₀ = 0`).
 * `lemma_4_2`, `remark_4_8` — `L^∞(Ω)` is not separable.
 -/
 
@@ -341,106 +342,6 @@ theorem lInfty_not_isReflexive {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace �
       (Lp.dualEquiv ℝ 1 ∞ (volume.restrict Ω) ENNReal.one_ne_top).toContinuousLinearEquiv).1 h
   exact remark_4_6 hΩ hne NormedSpace.isReflexive_of_isReflexive_strongDual
 
-/-- **The functional `φ` of §4.3 C, general form.** Local helper — it belongs in
-`Numlib/MeasureTheory/Function/LpSpace/Duality.lean` as a refinement of
-`MeasureTheory.Lp.not_surjective_toDual_top`, whose proof it repeats: for a measure `μ` on a
-finite-dimensional real normed space, positive on open sets, without atoms and σ-finite, and a
-point `x₀`, there is a functional `φ` on `L^∞(μ)` with `φ f = f x₀` for every continuous
-compactly supported `f` (a Hahn–Banach extension of the point evaluation), and `φ` is not
-`f ↦ ∫ u f` for any `u ∈ L^1(μ)`: such a `u` would vanish a.e. off `x₀`, hence a.e., while
-`φ` is `1` on a bump at `x₀`. -/
-theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (μ : Measure G)
-    [μ.IsOpenPosMeasure] [NullSingletonClass μ] [SigmaFinite μ] (x₀ : G) :
-    ∃ φ : StrongDual ℝ (Lp ℝ ∞ μ),
-      (∀ (f : G → ℝ) (hf : MemLp f ∞ μ), Continuous f → HasCompactSupport f →
-        φ (hf.toLp f) = f x₀) ∧
-      ∀ u : Lp ℝ 1 μ, Lp.toDual ℝ ∞ 1 μ u ≠ φ := by
-  -- continuous compactly supported functions lie in `L^∞`
-  have hmem : ∀ f : G → ℝ, Continuous f → HasCompactSupport f → MemLp f ∞ μ := fun f hf hs => by
-    obtain ⟨C, hC⟩ := hf.bounded_above_of_compact_support hs
-    exact memLp_top_of_bound hf.aestronglyMeasurable C (ae_of_all _ hC)
-  -- an a.e. property with an open exceptional set holds everywhere
-  have hall : ∀ {P : G → Prop}, IsOpen {x | ¬ P x} → (∀ᵐ x ∂μ, P x) → ∀ x, P x := by
-    intro P hP h x
-    rw [ae_iff, hP.measure_eq_zero_iff μ] at h
-    by_contra hx
-    exact Set.eq_empty_iff_forall_notMem.1 h x hx
-  -- the subspace of `L^∞` of classes of continuous compactly supported functions
-  let M : Submodule ℝ (Lp ℝ ∞ μ) :=
-    { carrier := {g | ∃ f : G → ℝ, Continuous f ∧ HasCompactSupport f ∧ ⇑g =ᵐ[μ] f}
-      add_mem' := fun {g₁ g₂} ⟨f₁, hf₁, hs₁, h₁⟩ ⟨f₂, hf₂, hs₂, h₂⟩ =>
-        ⟨f₁ + f₂, hf₁.add hf₂, hs₁.add hs₂, (Lp.coeFn_add g₁ g₂).trans (h₁.add h₂)⟩
-      zero_mem' := ⟨0, continuous_zero, HasCompactSupport.zero, Lp.coeFn_zero ℝ ∞ μ⟩
-      smul_mem' := fun c {g} ⟨f, hf, hs, h⟩ =>
-        ⟨c • f, hf.const_smul c, hs.smul_left, (Lp.coeFn_smul c g).trans (h.const_smul c)⟩ }
-  choose F hFc hFs hF using fun g : M => g.2
-  have hFeq : ∀ (g : M) (f : G → ℝ), Continuous f → ⇑(g : Lp ℝ ∞ μ) =ᵐ[μ] f → F g x₀ = f x₀ :=
-    fun g f hf hgf => by
-      rw [(Continuous.ae_eq_iff_eq μ (hFc g) hf).1 ((hF g).symm.trans hgf)]
-  -- point evaluation at `x₀` on `M`, bounded by the `L^∞` norm
-  let δ : M →ₗ[ℝ] ℝ :=
-    { toFun := fun g => F g x₀
-      map_add' := fun g₁ g₂ => hFeq (g₁ + g₂) (F g₁ + F g₂) ((hFc g₁).add (hFc g₂)) (by
-        rw [Submodule.coe_add]
-        exact (Lp.coeFn_add _ _).trans ((hF g₁).add (hF g₂)))
-      map_smul' := fun c g => hFeq (c • g) (c • F g) ((hFc g).const_smul c) (by
-        rw [Submodule.coe_smul]
-        exact (Lp.coeFn_smul c _).trans ((hF g).const_smul c)) }
-  have hδ : ∀ g : M, ‖δ g‖ ≤ 1 * ‖g‖ := fun g => by
-    rw [one_mul]
-    refine hall (P := fun x => ‖F g x‖ ≤ ‖g‖)
-      (by simp only [not_le]; exact isOpen_lt continuous_const (hFc g).norm) ?_ x₀
-    filter_upwards [hF g, Lp.ae_norm_le_norm_top (g : Lp ℝ ∞ μ)] with x hx hx'
-    rw [← hx]
-    exact hx'
-  obtain ⟨φ, hφM, -⟩ := exists_extension_norm_eq M (δ.mkContinuous 1 hδ)
-  refine ⟨φ, fun f hf hfc hfs => ?_, fun u hu => ?_⟩
-  · have hfM : hf.toLp f ∈ M := ⟨f, hfc, hfs, hf.coeFn_toLp⟩
-    rw [hφM ⟨_, hfM⟩]
-    exact hFeq ⟨_, hfM⟩ f hfc hf.coeFn_toLp
-  -- a bump at `x₀`, on which `φ` is `1`
-  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
-  have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
-  let gψ : M := ⟨hψ.toLp ψ, ψ, ψ.continuous, ψ.hasCompactSupport, hψ.coeFn_toLp⟩
-  have hφψ : φ gψ = 1 := by
-    rw [hφM gψ]
-    change F gψ x₀ = 1
-    rw [hFeq gψ ψ ψ.continuous hψ.coeFn_toLp]
-    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
-  -- if `φ = ∫ u ·` then `u = 0` a.e. off `x₀`
-  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
-    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
-    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
-      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
-    have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
-    have hgM : hgL.toLp g ∈ M := ⟨g, hg.continuous, hgs, hgL.coeFn_toLp⟩
-    have h1 : φ (hgL.toLp g) = 0 := by
-      rw [hφM ⟨_, hgM⟩]
-      change F ⟨_, hgM⟩ x₀ = 0
-      rw [hFeq ⟨_, hgM⟩ g hg.continuous hgL.coeFn_toLp]
-      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
-    rw [← hu, Lp.toDual_apply] at h1
-    rw [← h1]
-    refine integral_congr_ae ?_
-    filter_upwards [hgL.coeFn_toLp] with x hx
-    rw [hx, smul_eq_mul, mul_comm]
-  -- hence `u = 0` and `φ = 0`, contradicting `φ gψ = 1`
-  have hu' : u = 0 := by
-    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
-      rw [ae_iff]
-      simp
-    have huμ : ∀ᵐ x ∂μ, u x = 0 := by
-      filter_upwards [hu0, hx₀'] with x hx hx'
-      exact hx hx'
-    apply Lp.ext
-    filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
-    rw [hx0, hx]
-    rfl
-  rw [hu', map_zero] at hu
-  rw [← hu] at hφψ
-  simp at hφψ
-
 /-- **§4.3 C, the concrete functional (17)–(18).** On `L^∞(ℝ^N)`, `N ≥ 1`, there is a
 continuous linear functional `φ` with `⟨φ, f⟩ = f 0` for every `f ∈ C_c(ℝ^N)` — a Hahn–Banach
 extension of `f ↦ f 0` — and there is no `u ∈ L^1(ℝ^N)` with `⟨φ, f⟩ = ∫ u f` for all
@@ -451,8 +352,9 @@ theorem exists_strongDual_lInfty_not_integral {N : ℕ} [NeZero N] :
         HasCompactSupport f → φ (hf.toLp f) = f 0) ∧
       ¬ ∃ u : Lp ℝ 1 (volume : Measure (EuclideanSpace ℝ (Fin N))),
         ∀ g : Lp ℝ ∞ (volume : Measure (EuclideanSpace ℝ (Fin N))), φ g = ∫ x, u x * g x := by
-  obtain ⟨φ, h1, h2⟩ := exists_strongDual_top_apply_eq
-    (volume : Measure (EuclideanSpace ℝ (Fin N))) 0
+  obtain ⟨φ, h1, h2⟩ := Lp.exists_strongDual_top_apply_eq
+    (volume : Measure (EuclideanSpace ℝ (Fin N))) (x₀ := 0) fun _ hU =>
+      Measure.measure_pos_of_mem_nhds volume hU
   refine ⟨φ, h1, fun ⟨u, hu⟩ => h2 u ?_⟩
   ext g
   rw [Lp.toDual_apply, hu g]

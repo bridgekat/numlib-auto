@@ -2,11 +2,13 @@
 Upstreaming candidate: general material with no numerical-analysis-specific content, written
 to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Calculus.DerivativeTest`, beside the sufficient second-derivative
-test `isLocalMin_of_deriv_deriv_pos`.
+test `isLocalMin_of_deriv_deriv_pos`; the Laplacian form beside
+`Mathlib.Analysis.InnerProductSpace.Laplacian`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Analysis.Calculus.ContDiff.Deriv
 import Mathlib.Analysis.Calculus.DerivativeTest
+import Mathlib.Analysis.InnerProductSpace.Laplacian
 
 /-!
 # The necessary second-derivative test at a maximum
@@ -24,10 +26,16 @@ and Partial Differential Equations* (Remarks 26–27 of chapter 8 and Theorem 10
   function that is `C²` on `[x₀, x₀ + δ)`, has vanishing one-sided derivative at `x₀` and a local
   maximum there among the points to the right — `u'' (x₀⁺) ≤ 0`. Its engine is
   `IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici`, stated with explicit derivative data.
+* `IsLocalMax.laplacian_nonpos`: the several-variable form, at a local maximum of a `C²`
+  function on a finite-dimensional real inner product space, `Δ f x₀ ≤ 0` — the test
+  `IsLocalMax.deriv_deriv_nonpos` applied along each direction of an orthonormal basis, through
+  `ContDiffAt.deriv_deriv_comp_add_smul`, which identifies the second derivative of the line
+  restriction `s ↦ f (x₀ + s • v)` at `0` with `iteratedFDeriv ℝ 2 f x₀ ![v, v]`. It is the
+  pointwise input of the parabolic maximum principle (`Numlib.Analysis.PDE.Heat.Classical`).
 
 ## References
 
-[brezis2011functional], chapter 8, Remarks 26 and 27.
+[brezis2011functional], chapter 8, Remarks 26 and 27, and Theorem 10.6.
 -/
 
 open Filter Set Topology
@@ -135,3 +143,63 @@ theorem IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero {u : ℝ → ℝ} {x₀
   rw [hc.derivWithin (uniqueDiffWithinAt_Ici x₀)]
   exact hmax.nonpos_of_hasDerivWithinAt_Ici
     (eventually_of_mem (hSmem x₀ hx₀S) hu1) hc h0
+
+/-! ### The second derivative along a line, and the Laplacian at a maximum -/
+
+section Laplacian
+
+open InnerProductSpace Laplacian
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- **The second derivative of a line restriction**: for `f` of class `C²` at `x₀`, the second
+derivative at `s = 0` of `s ↦ f (x₀ + s • v)` is `D²f (x₀) [v, v]`. The first derivative of the
+restriction is `s ↦ Df (x₀ + s • v) v` near `0` (chain rule, `f` being differentiable near `x₀`),
+and its derivative at `0` is `D²f (x₀) v v` (chain rule again, `Df` being differentiable at
+`x₀`, followed by the evaluation at `v`). -/
+theorem ContDiffAt.deriv_deriv_comp_add_smul {f : E → ℝ} {x₀ : E} (hf : ContDiffAt ℝ 2 f x₀)
+    (v : E) : deriv (deriv fun s : ℝ ↦ f (x₀ + s • v)) 0 = iteratedFDeriv ℝ 2 f x₀ ![v, v] := by
+  have hline : ∀ s : ℝ, HasDerivAt (fun s : ℝ ↦ x₀ + s • v) v s := fun s => by
+    simpa using ((hasDerivAt_id s).smul_const v).const_add x₀
+  have hcont : Continuous fun s : ℝ ↦ x₀ + s • v := by fun_prop
+  have h0 : x₀ + (0 : ℝ) • v = x₀ := by simp
+  -- `f` is differentiable along the line near `s = 0`
+  have hev : ∀ᶠ s in 𝓝 (0 : ℝ), DifferentiableAt ℝ f (x₀ + s • v) := by
+    have h1 : ∀ᶠ y in 𝓝 (x₀ + (0 : ℝ) • v), DifferentiableAt ℝ f y := by
+      rw [h0]
+      exact (hf.eventually (by simp)).mono fun y hy => hy.differentiableAt (by simp)
+    exact (hcont.tendsto 0).eventually h1
+  have h1 : (deriv fun s : ℝ ↦ f (x₀ + s • v)) =ᶠ[𝓝 0] fun s ↦ fderiv ℝ f (x₀ + s • v) v := by
+    filter_upwards [hev] with s hs
+    exact (hs.hasFDerivAt.comp_hasDerivAt s (hline s)).deriv
+  rw [h1.deriv_eq]
+  have h2 : DifferentiableAt ℝ (fderiv ℝ f) x₀ :=
+    (hf.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero
+  have h3 : HasDerivAt (fun s : ℝ ↦ fderiv ℝ f (x₀ + s • v)) (fderiv ℝ (fderiv ℝ f) x₀ v) 0 := by
+    have h2' : HasFDerivAt (fderiv ℝ f) (fderiv ℝ (fderiv ℝ f) x₀) (x₀ + (0 : ℝ) • v) := by
+      rw [h0]; exact h2.hasFDerivAt
+    exact h2'.comp_hasDerivAt (0 : ℝ) (hline 0)
+  have h4 := h3.clm_apply (hasDerivAt_const (0 : ℝ) v)
+  rw [h4.deriv, iteratedFDeriv_two_apply]
+  simp
+
+/-- **The Laplacian is nonpositive at a local maximum** of a `C²` function on a
+finite-dimensional real inner product space: by `laplacian_eq_iteratedFDeriv_orthonormalBasis`,
+`Δ f x₀ = ∑ᵢ D²f (x₀) [bᵢ, bᵢ]`, and each term is the second derivative at `0` of the line
+restriction `s ↦ f (x₀ + s • bᵢ)`, which has a local maximum at `0` and is continuous there, so
+`IsLocalMax.deriv_deriv_nonpos` applies. -/
+theorem IsLocalMax.laplacian_nonpos [FiniteDimensional ℝ E] {f : E → ℝ} {x₀ : E}
+    (hmax : IsLocalMax f x₀) (hf : ContDiffAt ℝ 2 f x₀) : Δ f x₀ ≤ 0 := by
+  rw [laplacian_eq_iteratedFDeriv_orthonormalBasis f (stdOrthonormalBasis ℝ E)]
+  refine Finset.sum_nonpos fun i _ => ?_
+  rw [← hf.deriv_deriv_comp_add_smul]
+  have hline : Continuous fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i := by fun_prop
+  have h0 : x₀ + (0 : ℝ) • (stdOrthonormalBasis ℝ E) i = x₀ := by simp
+  refine IsLocalMax.deriv_deriv_nonpos ?_ ?_
+  · have : IsLocalMax f ((fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i) 0) := by
+      simpa only [h0] using hmax
+    exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • (stdOrthonormalBasis ℝ E) i)
+      (b := 0) this hline.continuousAt
+  · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
+
+end Laplacian

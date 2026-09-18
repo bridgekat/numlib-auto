@@ -9,6 +9,7 @@ import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Topology.Algebra.Module.FiniteDimension
 import Numlib.Analysis.Normed.Module.DualSeparable
+import Numlib.Analysis.Normed.Module.FiniteCodim
 
 /-!
 # Reflexive normed spaces
@@ -249,20 +250,11 @@ section FiniteDimensional
 
 variable {𝕜 V}
 
-/-- The strong dual of a finite-dimensional normed space has the same dimension: every linear
-functional is continuous, so `StrongDual 𝕜 V` is linearly equivalent to the algebraic dual.
-(Private: the public statement, over any complete nontrivially normed field, is planned as
-`NormedSpace.finrank_strongDual` in `Numlib.Analysis.Normed.Module.FiniteCodim`.) -/
-private theorem finrank_strongDual (V : Type*) [NormedAddCommGroup V] [NormedSpace 𝕜 V]
-    [FiniteDimensional 𝕜 V] :
-    Module.finrank 𝕜 (StrongDual 𝕜 V) = Module.finrank 𝕜 V := by
-  rw [← Subspace.dual_finrank_eq (K := 𝕜) (V := V)]
-  exact (LinearMap.toContinuousLinearMap (𝕜 := 𝕜) (E := V) (F' := 𝕜)).symm.finrank_eq
-
 /-- **A finite-dimensional normed space is reflexive**: the canonical embedding into the bidual is
-injective, and the bidual has the same finite dimension (`finrank_strongDual` twice), so the
-embedding is onto. Not to be confused with Mathlib's `Module.IsReflexive`, which concerns the
-algebraic dual (see the module doc). -/
+injective, and the bidual has the same finite dimension (`NormedSpace.finrank_strongDual` of
+`Numlib.Analysis.Normed.Module.FiniteCodim`, twice), so the embedding is onto. Not to be
+confused with Mathlib's `Module.IsReflexive`, which concerns the algebraic dual (see the module
+doc). -/
 instance instIsReflexiveOfFiniteDimensional [FiniteDimensional 𝕜 V] : IsReflexive 𝕜 V := by
   refine ⟨?_⟩
   have h : Module.finrank 𝕜 V = Module.finrank 𝕜 (StrongDual 𝕜 (StrongDual 𝕜 V)) := by

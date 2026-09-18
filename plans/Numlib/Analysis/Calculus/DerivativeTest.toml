@@ -8,3 +8,9 @@ id = "IsLocalMaxOn.nonpos_of_hasDerivWithinAt_Ici"
 [[node]]
 id = "IsLocalMaxOn.deriv_deriv_nonpos_of_deriv_eq_zero"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 27"
+
+[[node]]
+id = "ContDiffAt.deriv_deriv_comp_add_smul"
+
+[[node]]
+id = "IsLocalMax.laplacian_nonpos"

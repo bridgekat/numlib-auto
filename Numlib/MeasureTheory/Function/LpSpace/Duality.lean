@@ -48,7 +48,11 @@ For conjugate exponents `1/p + 1/q = 1` the pairing `u ↦ (f ↦ ∫ u f)` is a
   **Riesz representation theorem**: for `1 ≤ p < ∞` and σ-finite `μ`, every
   `φ : StrongDual 𝕜 (Lp 𝕜 p μ)` is `f ↦ ∫ u f` for some `u : Lp 𝕜 q μ`.
 * `MeasureTheory.Lp.instIsReflexive` — `L^p` is reflexive for `1 < p < ∞` (σ-finite `μ`).
-* `MeasureTheory.Lp.not_surjective_toDual_top` — on a nonempty open subset of a nontrivial
+* `MeasureTheory.Lp.exists_strongDual_top_apply_eq` — for an atomless σ-finite measure on a
+  finite-dimensional real normed space and a point all of whose neighbourhoods have positive
+  measure, a functional on `L^∞` that is the point evaluation on the continuous compactly
+  supported functions and is not `f ↦ ∫ u f` for any `u ∈ L^1`; hence
+  `MeasureTheory.Lp.not_surjective_toDual_top` — on a nonempty open subset of a nontrivial
   finite-dimensional real normed space, with Lebesgue (or any atomless, open-positive, σ-finite)
   measure, `(L^∞)^*` is strictly larger than `L^1`.
 
@@ -989,6 +993,15 @@ section Top
 
 variable {G : Type*} [TopologicalSpace G] [MeasurableSpace G] [OpensMeasurableSpace G]
 
+omit [OpensMeasurableSpace G] in
+/-- At a point all of whose neighbourhoods have positive measure, a property with an open
+exceptional set that holds almost everywhere holds. -/
+theorem of_ae_of_isOpen_of_forall_mem_nhds_measure_pos {μ : Measure G} {x₀ : G}
+    (hx₀ : ∀ U ∈ 𝓝 x₀, 0 < μ U) {P : G → Prop} (hP : IsOpen {x | ¬ P x})
+    (h : ∀ᵐ x ∂μ, P x) : P x₀ := by
+  by_contra hx
+  exact (hx₀ _ (hP.mem_nhds hx)).ne' (ae_iff.1 h)
+
 /-- On an open set, for a measure positive on nonempty open sets, a property with an open
 exceptional set that holds almost everywhere holds everywhere. -/
 theorem forall_of_ae_restrict_of_isOpen {ν : Measure G} [ν.IsOpenPosMeasure] {Ω : Set G}
@@ -1007,27 +1020,28 @@ end Top
 
 namespace Lp
 
-/-- **`(L^∞)^*` is strictly larger than `L^1`** ([brezis2011functional] §4.3, the study of
-`L^∞`): on a nonempty open subset `Ω` of a finite-dimensional real normed space `G`, for a
-σ-finite measure `ν` without atoms and positive on nonempty open sets (Lebesgue measure, or any
-Haar measure on a nontrivial `G`), the pairing `L^1(Ω) → (L^∞(Ω))^*` is not onto. The functional
-that is not an integral is a Hahn–Banach extension of the point evaluation `f ↦ f x₀` from the
-continuous compactly supported functions; if it were `f ↦ ∫ u f`, then `u` would vanish a.e. on
-`Ω ∖ {x₀}`, hence a.e., contradicting its value `1` on a bump at `x₀`. -/
-theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
-    [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (ν : Measure G)
-    [ν.IsOpenPosMeasure] [NullSingletonClass ν] [SigmaFinite ν] {Ω : Set G} (hΩ : IsOpen Ω)
-    (hne : Ω.Nonempty) : ¬ Function.Surjective (toDual ℝ ∞ 1 (ν.restrict Ω)) := by
-  intro hsurj
-  obtain ⟨x₀, hx₀⟩ := hne
-  set μ := ν.restrict Ω with hμ_def
+/-- **The functional of [brezis2011functional] §4.3 (the study of `L^∞`), general form.** For a
+σ-finite measure `μ` without atoms on a finite-dimensional real normed space `G` and a point
+`x₀` all of whose neighbourhoods have positive measure, there is a functional `φ` on `L^∞(μ)`
+with `φ f = f x₀` for every continuous compactly supported `f` — a Hahn–Banach extension of the
+point evaluation at `x₀`, which is bounded by the `L^∞` norm on the classes of such functions —
+and `φ` is not `f ↦ ∫ u f` for any `u ∈ L^1(μ)`: such a `u` would vanish a.e. off `x₀`
+(`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence a.e., while `φ` is `1` on a bump
+at `x₀`. -/
+theorem exists_strongDual_top_apply_eq {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (μ : Measure G)
+    [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (hx₀ : ∀ U ∈ 𝓝 x₀, 0 < μ U) :
+    ∃ φ : StrongDual ℝ (Lp ℝ ∞ μ),
+      (∀ (f : G → ℝ) (hf : MemLp f ∞ μ), Continuous f → HasCompactSupport f →
+        φ (hf.toLp f) = f x₀) ∧
+      ∀ u : Lp ℝ 1 μ, toDual ℝ ∞ 1 μ u ≠ φ := by
   -- continuous compactly supported functions lie in `L^∞`
   have hmem : ∀ f : G → ℝ, Continuous f → HasCompactSupport f → MemLp f ∞ μ := fun f hf hs => by
     obtain ⟨C, hC⟩ := hf.bounded_above_of_compact_support hs
     exact memLp_top_of_bound hf.aestronglyMeasurable C (ae_of_all _ hC)
-  -- two continuous functions that agree a.e. on `Ω` agree on `Ω`
-  have heq : ∀ f g : G → ℝ, Continuous f → Continuous g → f =ᵐ[μ] g → ∀ x ∈ Ω, f x = g x :=
-    fun f g hf hg hfg => forall_of_ae_restrict_of_isOpen hΩ (isOpen_ne_fun hf hg) hfg
+  -- an a.e. property with an open exceptional set holds at `x₀`
+  have hall : ∀ {P : G → Prop}, IsOpen {x | ¬ P x} → (∀ᵐ x ∂μ, P x) → P x₀ :=
+    fun hP h => of_ae_of_isOpen_of_forall_mem_nhds_measure_pos hx₀ hP h
   -- the subspace of `L^∞` of classes of continuous compactly supported functions
   let M : Submodule ℝ (Lp ℝ ∞ μ) :=
     { carrier := {g | ∃ f : G → ℝ, Continuous f ∧ HasCompactSupport f ∧ ⇑g =ᵐ[μ] f}
@@ -1038,7 +1052,7 @@ theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpac
         ⟨c • f, hf.const_smul c, hs.smul_left, (Lp.coeFn_smul c g).trans (h.const_smul c)⟩ }
   choose F hFc hFs hF using fun g : M => g.2
   have hFeq : ∀ (g : M) (f : G → ℝ), Continuous f → ⇑(g : Lp ℝ ∞ μ) =ᵐ[μ] f → F g x₀ = f x₀ :=
-    fun g f hf hgf => heq _ _ (hFc g) hf ((hF g).symm.trans hgf) x₀ hx₀
+    fun g f hf hgf => hall (isOpen_ne_fun (hFc g) hf) ((hF g).symm.trans hgf)
   -- point evaluation at `x₀` on `M`, bounded by the `L^∞` norm
   let δ : M →ₗ[ℝ] ℝ :=
     { toFun := fun g => F g x₀
@@ -1050,55 +1064,50 @@ theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpac
         exact (Lp.coeFn_smul c _).trans ((hF g).const_smul c)) }
   have hδ : ∀ g : M, ‖δ g‖ ≤ 1 * ‖g‖ := fun g => by
     rw [one_mul]
-    refine forall_of_ae_restrict_of_isOpen (ν := ν) hΩ (P := fun x => ‖F g x‖ ≤ ‖g‖)
-      (by simp only [not_le]; exact isOpen_lt continuous_const (hFc g).norm) ?_ x₀ hx₀
+    refine hall (P := fun x => ‖F g x‖ ≤ ‖g‖)
+      (by simp only [not_le]; exact isOpen_lt continuous_const (hFc g).norm) ?_
     filter_upwards [hF g, ae_norm_le_norm_top (g : Lp ℝ ∞ μ)] with x hx hx'
     rw [← hx]
     exact hx'
   obtain ⟨φ, hφM, -⟩ := exists_extension_norm_eq M (δ.mkContinuous 1 hδ)
-  -- a bump at `x₀` supported in `Ω`, on which `φ` is `1`
-  obtain ⟨r, hr, hrΩ⟩ := Metric.isOpen_iff.1 hΩ x₀ hx₀
-  let ψ : ContDiffBump x₀ := ⟨r / 2, r, by positivity, by linarith⟩
+  refine ⟨φ, fun f hf hfc hfs => ?_, fun u hu => ?_⟩
+  · have hfM : hf.toLp f ∈ M := ⟨f, hfc, hfs, hf.coeFn_toLp⟩
+    rw [hφM ⟨_, hfM⟩]
+    exact hFeq ⟨_, hfM⟩ f hfc hf.coeFn_toLp
+  -- a bump at `x₀`, on which `φ` is `1`
+  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
   have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
   let gψ : M := ⟨hψ.toLp ψ, ψ, ψ.continuous, ψ.hasCompactSupport, hψ.coeFn_toLp⟩
   have hφψ : φ gψ = 1 := by
     rw [hφM gψ]
     change F gψ x₀ = 1
     rw [hFeq gψ ψ ψ.continuous hψ.coeFn_toLp]
-    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self (by positivity))
-  -- if `φ = ∫ u ·` then `u = 0` a.e. on `Ω ∖ {x₀}`
-  obtain ⟨u, hu⟩ := hsurj φ
-  have hu0 : ∀ᵐ x ∂ν, x ∈ Ω \ {x₀} → u x = 0 := by
-    have huint : IntegrableOn u Ω ν := memLp_one_iff_integrable.1 (Lp.memLp u)
-    refine (hΩ.sdiff isClosed_singleton).ae_eq_zero_of_integral_contDiff_smul_eq_zero
-      (huint.locallyIntegrableOn.mono_set sdiff_subset) fun g hg hgs hgΩ => ?_
-    have hg0 : ∀ x, x ∉ Ω → g x = 0 := fun x hx =>
-      image_eq_zero_of_notMem_tsupport fun h => hx (hgΩ h).1
+    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
+  -- if `φ = ∫ u ·` then `u = 0` a.e. off `x₀`
+  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
+    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
+    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
+      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
     have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
     have hgM : hgL.toLp g ∈ M := ⟨g, hg.continuous, hgs, hgL.coeFn_toLp⟩
     have h1 : φ (hgL.toLp g) = 0 := by
       rw [hφM ⟨_, hgM⟩]
       change F ⟨_, hgM⟩ x₀ = 0
       rw [hFeq ⟨_, hgM⟩ g hg.continuous hgL.coeFn_toLp]
-      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h).2 rfl
+      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
     rw [← hu, toDual_apply] at h1
     rw [← h1]
-    calc ∫ x, g x • u x ∂ν = ∫ x in Ω, g x • u x ∂ν :=
-          (setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx => by
-            rw [hg0 x hx, zero_smul]).symm
-      _ = ∫ x, u x * (hgL.toLp g) x ∂(ν.restrict Ω) := by
-          refine integral_congr_ae ?_
-          filter_upwards [hgL.coeFn_toLp] with x hx
-          rw [hx, smul_eq_mul, mul_comm]
+    refine integral_congr_ae ?_
+    filter_upwards [hgL.coeFn_toLp] with x hx
+    rw [hx, smul_eq_mul, mul_comm]
   -- hence `u = 0` and `φ = 0`, contradicting `φ gψ = 1`
   have hu' : u = 0 := by
-    have hx₀' : ∀ᵐ x ∂ν, x ≠ x₀ := by
+    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
       rw [ae_iff]
       simp
     have huμ : ∀ᵐ x ∂μ, u x = 0 := by
-      rw [hμ_def, ae_restrict_iff' hΩ.measurableSet]
-      filter_upwards [hu0, hx₀'] with x hx hx' hxΩ
-      exact hx ⟨hxΩ, hx'⟩
+      filter_upwards [hu0, hx₀'] with x hx hx'
+      exact hx hx'
     apply Lp.ext
     filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
     rw [hx0, hx]
@@ -1106,6 +1115,22 @@ theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpac
   rw [hu', map_zero] at hu
   rw [← hu] at hφψ
   simp at hφψ
+
+/-- **`(L^∞)^*` is strictly larger than `L^1`** ([brezis2011functional] §4.3, the study of
+`L^∞`): on a nonempty open subset `Ω` of a finite-dimensional real normed space `G`, for a
+σ-finite measure `ν` without atoms and positive on nonempty open sets (Lebesgue measure, or any
+Haar measure on a nontrivial `G`), the pairing `L^1(Ω) → (L^∞(Ω))^*` is not onto: the functional
+of `exists_strongDual_top_apply_eq` for the restricted measure `ν.restrict Ω` at a point
+`x₀ ∈ Ω`, every neighbourhood of which meets `Ω` in a nonempty open set. -/
+theorem not_surjective_toDual_top {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
+    [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] (ν : Measure G)
+    [ν.IsOpenPosMeasure] [NullSingletonClass ν] [SigmaFinite ν] {Ω : Set G} (hΩ : IsOpen Ω)
+    (hne : Ω.Nonempty) : ¬ Function.Surjective (toDual ℝ ∞ 1 (ν.restrict Ω)) := by
+  obtain ⟨x₀, hx₀⟩ := hne
+  obtain ⟨φ, -, hφ⟩ := exists_strongDual_top_apply_eq (ν.restrict Ω) (x₀ := x₀) fun U hU => by
+    rw [Measure.restrict_apply' hΩ.measurableSet]
+    exact Measure.measure_pos_of_mem_nhds ν (inter_mem hU (hΩ.mem_nhds hx₀))
+  exact fun hsurj => let ⟨u, hu⟩ := hsurj φ; hφ u hu
 
 end Lp
 

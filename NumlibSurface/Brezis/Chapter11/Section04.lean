@@ -13,10 +13,13 @@ import Numlib.Analysis.Convex.Indicator
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Normal
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Algebra.Spectrum
+import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Module.Annihilator
 import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 import Numlib.Variational.Forms
 import NumlibSurface.Brezis.Chapter01.Section03
+import NumlibSurface.Brezis.Chapter01.Section04
+import NumlibSurface.Brezis.Chapter05.Section01
 import NumlibSurface.Brezis.Chapter05.Section03
 import NumlibSurface.Brezis.Chapter11.Section02
 
@@ -50,11 +53,12 @@ normal operators, Remark 2).
   `E* ≃ E_ℝ*`; Hahn–Banach over `ℂ`.
 * `IsClosedRealHyperplane`, `SeparatesRe`, `proposition_11_24` — the geometric Hahn–Banach
   theorem with closed real hyperplanes; `orthogonal_complex` — `M^⊥` over `ℂ`.
-* `rePairing`, `conjugateC`, `conjugateC_eq`, `biconjugateC`, `conjugateC_indicator` — the
-  conjugate `φ*(f) = sup (Re ⟨f, x⟩ − φ(x))`, and the conjugate of an indicator.
-* `inner_identities`, `inner_L2_complex`, `proposition_11_27`, `proposition_11_28`,
-  `proposition_11_28_symm`, `laxMilgram_complex`, `laxMilgram_complex_bijective`,
-  `proposition_11_29`, `remark_11_1` — chapter 5 over `ℂ`.
+* `rePairing`, `conjugateC`, `conjugateC_eq`, `biconjugateC`, `proposition_11_25`,
+  `conjugateC_indicator` — the conjugate `φ*(f) = sup (Re ⟨f, x⟩ − φ(x))`, Fenchel–Moreau
+  over `ℂ`, and the conjugate of an indicator.
+* `inner_identities`, `inner_L2_complex`, `proposition_11_26`, `proposition_11_27`,
+  `proposition_11_28`, `proposition_11_28_symm`, `laxMilgram_complex`,
+  `laxMilgram_complex_bijective`, `proposition_11_29`, `remark_11_1` — chapter 5 over `ℂ`.
 * `spectrum_eq_setOf_not_bijective`, `rightShift`, `example_rightShift`, `proposition_11_30`,
   `example_shift_two`, `spectralRadius_eq_lim`, `proposition_11_31`, `proposition_11_32` —
   spectrum, eigenvalues, spectral radius and the spectral mapping theorem.
@@ -64,11 +68,9 @@ normal operators, Remark 2).
   `proposition_11_37`, `skewAdjoint_iff`, `skewAdjoint_spectrum_subset_imaginary`,
   `hasDerivAt_norm_sq` — the numerical range, adjoints, normal operators, isometries.
 
-Propositions 11.25 (Fenchel–Moreau over `ℂ`) and 11.26 (projection onto a closed convex set of
-a complex Hilbert space) are stated in the plan and wait for the chapter-1 and chapter-5
-restatements of Theorems 1.11 and 5.2 they are read from. Not formalized: the prose comparisons
-("Chapter 2. All the statements are unchanged…"), the finite-dimensional motivation, the
-computation `W(T) = {|λ| ≤ 1/2}` for `T(u₁, u₂) = (u₂, 0)`, and the non-compact half of Remark 2.
+Not formalized: the prose comparisons ("Chapter 2. All the statements are unchanged…"), the
+finite-dimensional motivation, the computation `W(T) = {|λ| ≤ 1/2}` for `T(u₁, u₂) = (u₂, 0)`,
+and the non-compact half of Remark 2.
 -/
 
 open Filter Metric Module.End Topology
@@ -267,6 +269,19 @@ theorem conjugateC_indicator (M : Submodule ℂ E) :
       linarith [le_abs_self r]
     | top => exact absurd hb (lt_irrefl _)
 
+/-- **Proposition 11.25 (Fenchel–Moreau over `ℂ`).** Assume that `φ : E → (−∞, +∞]` is convex,
+l.s.c. and `φ ≢ +∞`. Then `φ** = φ`. The book's first method: chapter 1's Theorem 1.11 on
+`E_ℝ` together with Proposition 11.22 — `φ*(f) = φ_ℝ*(I f)` (`conjugateC_eq`), so `φ**(x)` is
+the real biconjugate's supremum reindexed along the bijection `I = reDual E`. -/
+theorem proposition_11_25 {φ : E → EReal} (hφ : ConvexAnalysis.ConvexFn φ)
+    (hl : LowerSemicontinuous φ) (hbot : ∀ x, φ x ≠ ⊥)
+    (hdom : (ConvexAnalysis.dom φ).Nonempty) : biconjugateC φ = φ := by
+  funext x
+  refine Eq.trans ?_ (congrFun (Chapter01.theorem_1_11 hφ hl hbot hdom) x)
+  rw [biconjugateC_apply, Chapter01.biconjugate_apply]
+  exact (reDual E).toEquiv.iSup_comp
+    (g := fun g : StrongDual ℝ E => ((g x : ℝ) : EReal) - Chapter01.conjugate φ g)
+
 /-! ### Chapter 5 over `ℂ`: complex Hilbert spaces -/
 
 section Hilbert
@@ -294,6 +309,23 @@ theorem inner_L2_complex {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.M
     (u v : MeasureTheory.Lp ℂ 2 μ) : ⟪v, u⟫_ℂ = ∫ x, u x * conj (v x) ∂μ := by
   rw [MeasureTheory.L2.inner_def]
   simp only [RCLike.inner_apply]
+
+/-- **Proposition 11.26 (projection onto a closed convex set over `ℂ`).** Let `K ⊆ H` be a
+nonempty closed convex set. Then for every `f ∈ H` there exists a unique `u ∈ K` such that
+`|f − u| = min_{v ∈ K} |f − v| = dist (f, K)` (`IsBestApprox K f u`, chapter 5's vocabulary:
+`u ∈ K` and `|f − u| ≤ |f − v|` for all `v ∈ K`; it is `|f − u| = dist (f, K)` for `u ∈ K`).
+Moreover `u` is characterized by `u ∈ K` and `Re (f − u, v − u) ≤ 0` for all `v ∈ K`. Theorem
+5.2 on `H_ℝ`, where `⟪·, ·⟫_ℝ = Re ⟪·, ·⟫_ℂ`. -/
+theorem proposition_11_26 [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K)
+    (hK : Convex ℝ K) (f : H) :
+    (∃! u, IsBestApprox K f u) ∧
+      (∀ u, IsBestApprox K f u ↔ u ∈ K ∧ ‖f - u‖ = infDist f K) ∧
+      ∀ u, IsBestApprox K f u ↔ u ∈ K ∧ ∀ v ∈ K, (⟪f - u, v - u⟫_ℂ).re ≤ 0 :=
+  ⟨Chapter05.theorem_5_2 hne hcl hK f,
+    fun _ => ⟨fun h => ⟨h.1, (Chapter05.theorem_5_2_infDist h.1).1 h⟩,
+      fun h => (Chapter05.theorem_5_2_infDist h.1).2 h.2⟩,
+    fun _ => ⟨fun h => ⟨h.1, (Chapter05.theorem_5_2_iff hK h.1).1 h⟩,
+      fun h => (Chapter05.theorem_5_2_iff hK h.1).2 h.2⟩⟩
 
 /-- **Proposition 11.27 (Riesz–Fréchet over `ℂ`).** Given any `φ ∈ H*` there exists a unique
 `f ∈ H` such that `φ(u) = (u, f)` for all `u ∈ H` — in Mathlib's convention `φ u = ⟪f, u⟫` —
@@ -468,60 +500,25 @@ section RightShift
 
 variable (𝕜 : Type*) [RCLike 𝕜]
 
-/-- The shifted sequence `(0, u₀, u₁, …)`. -/
-private def shiftFun (u : ℕ → 𝕜) : ℕ → 𝕜
-  | 0 => 0
-  | n + 1 => u n
-
-private theorem memℓp_shiftFun (u : lp (fun _ : ℕ => 𝕜) 2) : Memℓp (shiftFun 𝕜 u) 2 := by
-  rw [memℓp_gen_iff (by norm_num)]
-  have hu := (memℓp_gen_iff (by norm_num)).1 u.2
-  exact (summable_nat_add_iff 1).1 hu
-
-private theorem shiftFun_zero (u : ℕ → 𝕜) : shiftFun 𝕜 u 0 = 0 := rfl
-
-private theorem shiftFun_succ (u : ℕ → 𝕜) (n : ℕ) : shiftFun 𝕜 u (n + 1) = u n := rfl
-
-private theorem norm_shift (u : lp (fun _ : ℕ => 𝕜) 2) :
-    ‖(⟨shiftFun 𝕜 u, memℓp_shiftFun 𝕜 u⟩ : lp (fun _ : ℕ => 𝕜) 2)‖ = ‖u‖ := by
-  rw [lp.norm_eq_tsum_rpow (by norm_num), lp.norm_eq_tsum_rpow (by norm_num)]
-  congr 1
-  have hs := (memℓp_gen_iff (by norm_num)).1 (memℓp_shiftFun 𝕜 u)
-  change ∑' i, ‖shiftFun 𝕜 u i‖ ^ (2 : ENNReal).toReal = _
-  rw [hs.tsum_eq_zero_add]
-  simp [shiftFun_zero, shiftFun_succ]
-
-/-- **The right shift** `T u = (0, u₁, u₂, …)` on `ℓ²(ℕ; 𝕜)`, an isometry
-(`norm_rightShift_apply`). This is general sequence-space material and belongs in a backbone
-`Numlib/Analysis/Normed/Lp/Sequence` module (planned; chapter 6's surface wants the same
-operator over `ℝ`); it is built here because that module does not exist yet. -/
+/-- **The right shift** `T u = (0, u₁, u₂, …)` on `ℓ²(ℕ; 𝕜)`: the backbone's `lp.shiftRightL 𝕜`
+(`Numlib/Analysis/Normed/Lp/Sequence`), an isometry (`norm_rightShift_apply`). -/
 def rightShift : lp (fun _ : ℕ => 𝕜) 2 →L[𝕜] lp (fun _ : ℕ => 𝕜) 2 :=
-  LinearMap.mkContinuous
-    { toFun := fun u => ⟨shiftFun 𝕜 u, memℓp_shiftFun 𝕜 u⟩
-      map_add' := fun u v => lp.ext (funext fun n => by
-        cases n with
-        | zero => change (0 : 𝕜) = 0 + 0; rw [add_zero]
-        | succ n => rfl)
-      map_smul' := fun c u => lp.ext (funext fun n => by
-        cases n with
-        | zero => change (0 : 𝕜) = c • 0; rw [smul_zero]
-        | succ n => rfl) }
-    1 fun u => by
-      rw [one_mul]
-      exact (norm_shift 𝕜 u).le
+  lp.shiftRightL 𝕜
 
 /-- `(T u)₀ = 0`. -/
 @[simp]
-theorem rightShift_apply_zero (u : lp (fun _ : ℕ => 𝕜) 2) : rightShift 𝕜 u 0 = 0 := rfl
+theorem rightShift_apply_zero (u : lp (fun _ : ℕ => 𝕜) 2) : rightShift 𝕜 u 0 = 0 :=
+  lp.shiftRightL_apply_zero 𝕜 u
 
 /-- `(T u)ₙ₊₁ = uₙ`. -/
 @[simp]
 theorem rightShift_apply_succ (u : lp (fun _ : ℕ => 𝕜) 2) (n : ℕ) :
-    rightShift 𝕜 u (n + 1) = u n := rfl
+    rightShift 𝕜 u (n + 1) = u n :=
+  lp.shiftRightL_apply_succ 𝕜 u n
 
 /-- The right shift is an isometry: `‖T u‖ = ‖u‖`. -/
 theorem norm_rightShift_apply (u : lp (fun _ : ℕ => 𝕜) 2) : ‖rightShift 𝕜 u‖ = ‖u‖ :=
-  norm_shift 𝕜 u
+  lp.norm_shiftRightL_apply 𝕜 u
 
 end RightShift
 

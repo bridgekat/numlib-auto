@@ -57,6 +57,10 @@ id = "Lp.instIsReflexive"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10"
 
 [[node]]
+id = "Lp.exists_strongDual_top_apply_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞ (the functional φ₀), general form"
+
+[[node]]
 id = "Lp.not_surjective_toDual_top"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞"
 

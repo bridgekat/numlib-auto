@@ -68,7 +68,9 @@ Scalars are `RCLike 𝕜` where Hahn–Banach enters (Propositions 11.10, 11.11,
 nontrivially normed field elsewhere (the factorization, Proposition 11.9). The quotient
 `E ⧸ M` is taken with `[IsClosed (M : Set E)]` wherever it must be a normed (not merely
 seminormed) space; the annihilator `M^⊥` is closed, and that closedness is registered as an
-instance here so that `E* ⧸ M^⊥` is a normed space by instance search.
+instance in `Numlib.Analysis.Normed.Module.Annihilator`
+(`Submodule.instIsClosedStrongDualAnnihilator`) so that `E* ⧸ M^⊥` is a normed space by
+instance search.
 -/
 
 open Metric Module
@@ -198,18 +200,6 @@ end DualQuotient
 section DualSubspace
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-
-/-- The annihilator is closed, as an instance, so that `StrongDual 𝕜 E ⧸ M.strongDualAnnihilator`
-is a normed space by instance search. -/
-instance instIsClosedStrongDualAnnihilator (M : Submodule 𝕜 E) :
-    IsClosed (M.strongDualAnnihilator : Set (StrongDual 𝕜 E)) :=
-  isClosed_strongDualAnnihilator M
-
-/-- The coannihilator is closed, as an instance, so that `E ⧸ N.strongDualCoannihilator` is a
-normed space by instance search. -/
-instance instIsClosedStrongDualCoannihilator (N : Submodule 𝕜 (StrongDual 𝕜 E)) :
-    IsClosed (N.strongDualCoannihilator : Set E) :=
-  isClosed_strongDualCoannihilator N
 
 /-- **The kernel of restriction to `M` is the annihilator**: for the restriction map
 `f ↦ f ∘ M.subtypeL` (Mathlib's `ContinuousLinearMap.precomp 𝕜 M.subtypeL`),

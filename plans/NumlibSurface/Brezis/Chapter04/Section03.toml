@@ -81,7 +81,3 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 4.2"
 [[node]]
 id = "remark_4_8"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 4, Remark 8"
-
-[[node]]
-id = "exists_strongDual_top_apply_eq"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §4.3, the study of L^∞ (the functional φ₀), general form"

@@ -169,22 +169,6 @@ theorem proposition_4_19 {f g : 𝔼 → ℝ} (hf : Continuous f) (hfs : HasComp
     locallyIntegrableOn_univ.1 ((memLpLoc_one_iff_locallyIntegrableOn isOpen_univ).1 hg)
   exact ⟨hfs.convolutionExists_left _ hf hg', hfs.continuous_convolution_left _ hf hg'⟩
 
-/-- Differentiating a convolution moves the derivative onto the `C^1` compactly supported
-factor: `∇ (f ⋆ g) = (∇ f) ⋆ g`. Local helper — the `C^1` form of the backbone's
-`MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply`, which asks for a smooth `f`;
-it belongs beside it in `Numlib/Analysis/Convolution/Lp.lean`. -/
-theorem fderiv_convolution_left_apply_of_contDiff_one {f g : 𝔼 → ℝ} (hg : LocallyIntegrable g)
-    (hfs : HasCompactSupport f) (hf : ContDiff ℝ 1 f) (x v : 𝔼) :
-    fderiv ℝ (f ⋆[ContinuousLinearMap.mul ℝ ℝ, volume] g) x v =
-      ((fun t => fderiv ℝ f t v) ⋆[ContinuousLinearMap.mul ℝ ℝ, volume] g) x := by
-  rw [(hfs.hasFDerivAt_convolution_left (ContinuousLinearMap.mul ℝ ℝ) hf hg x).fderiv]
-  have hex : ConvolutionExistsAt (fderiv ℝ f) g x ((ContinuousLinearMap.mul ℝ ℝ).precompL 𝔼)
-      volume :=
-    HasCompactSupport.convolutionExists_left _ (hfs.fderiv ℝ) (hf.continuous_fderiv one_ne_zero)
-      hg x
-  rw [convolution_def, ContinuousLinearMap.integral_apply hex, convolution_def]
-  rfl
-
 /-- **Proposition 4.20.** For `f ∈ C_c^k(ℝ^N)`, `k ≥ 1`, and `g ∈ L^1_loc(ℝ^N)`, `f ⋆ g ∈ C^k`
 and `∇ (f ⋆ g) = (∇ f) ⋆ g`; in particular for `f ∈ C_c^∞`, `f ⋆ g ∈ C^∞` and
 `D^α (f ⋆ g) = (D^α f) ⋆ g` for every `α` — stated for the iterated derivative of any order
@@ -203,7 +187,7 @@ theorem proposition_4_20 {k : ℕ∞} (hk : 1 ≤ k) {f g : 𝔼 → ℝ} (hf : 
   have hg' : LocallyIntegrable g volume :=
     locallyIntegrableOn_univ.1 ((memLpLoc_one_iff_locallyIntegrableOn isOpen_univ).1 hg)
   refine ⟨hfs.contDiff_convolution_left _ hf hg', fun x v =>
-    fderiv_convolution_left_apply_of_contDiff_one hg' hfs (hf.of_le (by exact_mod_cast hk)) x v,
+    hg'.fderiv_convolution_left_apply hfs (hf.of_le (by exact_mod_cast hk)) x v,
     fun hf' n x y => hg'.iteratedFDeriv_convolution_left_apply n hfs hf' x y⟩
 
 /-! ### Mollifiers -/

@@ -942,6 +942,14 @@ theorem ContDiffOnPowDomain.of_le {n m : WithTop ℕ∞} {j : ℕ} {u : ℝ → 
   ⟨v, hv0, hv.of_le hmn⟩
 
 omit [CompleteSpace H] in
+/-- The class only depends on the values of `u` on `s`. -/
+theorem ContDiffOnPowDomain.congr {n : WithTop ℕ∞} {j : ℕ} {u v : ℝ → H} {s : Set ℝ}
+    (h : A.ContDiffOnPowDomain n j u s) (huv : Set.EqOn u v s) :
+    A.ContDiffOnPowDomain n j v s :=
+  let ⟨w, hw0, hw⟩ := h
+  ⟨w, fun t ht => (hw0 t ht).trans (huv ht), hw⟩
+
+omit [CompleteSpace H] in
 /-- `C^n(s; D(A^{j+1})) ⊆ C^n(s; D(A^j))`, through the inclusion `castL`. -/
 theorem ContDiffOnPowDomain.castSucc {n : WithTop ℕ∞} {j : ℕ} {u : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n (j + 1) u s) : A.ContDiffOnPowDomain n j u s :=
