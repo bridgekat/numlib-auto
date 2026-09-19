@@ -215,6 +215,7 @@ import Numlib.Analysis.PDE.Bochner.SpaceTime
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
 import Numlib.Analysis.PDE.Elliptic.Regularity
+import Numlib.Analysis.PDE.Elliptic.Spectral
 import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.Sobolev.Calculus
