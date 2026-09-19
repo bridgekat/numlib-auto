@@ -18,7 +18,7 @@ generalized Hölder inequality for `N` factors (`ENNReal.lintegral_prod_norm_pow
 `Fin.succAbove`/`Fin.insertNth` bookkeeping of the induction is the cost. ★★★, ~350 lines; no
 consumer, low priority — a faithful node for the book's Lemma 9.4 only.
 
-Blocked: not attempted (sob8, 2026-09-18): no consumer, and Theorem 9.9 goes through Mathlib's `eLpNorm_le_eLpNorm_fderiv_of_eq`, which contains the special case it needs; the general lemma remains the book's induction over `Fin.succAbove` (~350 lines).'''
+Blocked: not attempted (sob8, 2026-09-18; sob11, 2026-09-19): no consumer, and Theorem 9.9 goes through Mathlib's `eLpNorm_le_eLpNorm_fderiv_of_eq`, which contains the special case it needs; the general lemma remains the book's induction over `Fin.succAbove` (~350 lines). The one-coordinate Fubini step it needs, `∫⁻_{ℝ^{j+1}} H = ∫⁻_{ℝ^j} ∫⁻_ℝ H (Fin.cons s t)`, is now `MeasureTheory.lintegral_fin_succ_eq` (Remark 13), and the `N`-factor Hölder inequality is Mathlib's `ENNReal.lintegral_prod_norm_pow_le`.'''
 deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
 
@@ -48,100 +48,22 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.12, Rem
 
 [[node]]
 id = "SobolevEuclidean.memLp_fn_of_order"
-kind = "theorem"
-desc = '''**Corollary 9.13, the `L^q` clauses**: for `m ≥ 1`, `1 ≤ p < ∞` and
-`u : SobolevEuclidean N m p ⊤`: if `1/p − m/N > 0` then `MemLp (fn u) q volume` for
-`1/q = 1/p − m/N` with `‖fn u‖_q ≤ C ‖u‖`; if `1/p − m/N = 0` then for every `q ∈ [p, ∞)`;
-if `1/p − m/N < 0` then `MemLp (fn u) ∞ volume` (`W^{m,p} ⊂ L^∞`); all with continuous
-injections (`IsContinuousEmbedding (toLpₗ …)`). Proof: "repeated applications of Theorem 9.9,
-Corollary 9.11 and Theorem 9.12" — induction on `m` using `memSobolevMultiIndex_succ_iff`
-(`u ∈ W^{m+1,p}` iff `u, ∂_i u ∈ W^{m,p}`): `u ∈ W^{m,p}` gives `u, ∂_i u ∈ W^{m−1,p}`, hence in
-`L^{q_1}` with `1/q_1 = 1/p − (m−1)/N` by induction, hence `u ∈ W^{1,q_1}(ℝ^N)`, and Theorem 9.9
-/ Corollary 9.11 / Theorem 9.12 finish according to the sign of `1/q_1 − 1/N`. The bookkeeping
-of exponents in `ℝ≥0∞` and of the derivative components across orders is the cost. ★★★, ~400
-lines for the three clauses.
-
-Blocked: not attempted (sob8, 2026-09-18) for lack of time; the three ingredients (Theorem 9.9 `SobolevEuclidean.eLpNorm_fn_le_of_eq`, Corollary 9.11 `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank`, Morrey `SobolevEuclidean.eLpNorm_fn_top_le_of_lt`) are proved on `W^{1,p}(ℝ^N)`; the induction on `m` through `memSobolevMultiIndex_succ_iff` with the exponent bookkeeping in `ℝ≥0` is what remains (~300 lines).'''
-deps = ["SobolevEuclidean.isContinuousEmbedding_toLp_of_eq", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "memSobolevMultiIndex_succ_iff", "SobolevMultiIndex.toLpₗ"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13"
 
 [[node]]
 id = "SobolevEuclidean.exists_contDiff_ae_eq_of_order"
-kind = "theorem"
-desc = '''**Corollary 9.13, the `C^k` clause**: for `m − N/p > 0` not an integer, `k = ⌊m − N/p⌋` and
-`θ = m − N/p − k ∈ (0,1)`, every `u : SobolevEuclidean N m p ⊤` has a representative `ũ` of class
-`C^k` (`ContDiff ℝ k ũ`, `fn u =ᵐ ũ`) whose derivatives of order `≤ k` are bounded by
-`C ‖u‖` and whose derivatives of order `k` are `θ`-Hölder with constant `C ‖u‖`; in particular
-`W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` modulo representatives (footnotes 13–14). Proof: by induction each
-`∂^α u`, `|α| ≤ k`, lies in `W^{1,r}(ℝ^N)` for some `r > N` (as in
-`SobolevEuclidean.memLp_fn_of_order`), so has the Hölder continuous representative of Morrey;
-that the representative of `u` is `C^1` with derivative the representatives of `∂_i u` is Remark
-2's converse `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn` (`Friedrichs.lean`),
-applied `k` times. ★★★, ~400 lines. Its domain version (Corollary 9.15) is what chapter 9b's
-Theorem 9.31 uses for `e_n ∈ C^∞(Ω)`.
-
-Blocked: not attempted (sob8, 2026-09-18) for lack of time; Morrey's representative is `SobolevEuclidean.contRep` and Remark 2's converse is proved, the induction over the multi-indices remains (~300 lines).'''
-deps = ["SobolevEuclidean.memLp_fn_of_order", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn", "memSobolevMultiIndex_succ_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13"
 
 [[node]]
 id = "SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one"
-kind = "theorem"
-desc = '''**Remark 13 (`W^{N,1}(ℝ^N) ⊂ L^∞`)**: every `u : SobolevEuclidean N N 1 ⊤` has a bounded
-continuous representative with `‖ũ‖_∞ ≤ ‖u‖` — for `u ∈ C_c^∞`,
-`u(x) = ∫_{−∞}^{x_1} ⋯ ∫_{−∞}^{x_N} ∂_1 ⋯ ∂_N u`, so `‖u‖_∞ ≤ ‖∂_1⋯∂_N u‖_1 ≤ ‖u‖_{W^{N,1}}`
-(iterated fundamental theorem of calculus over the coordinates, by induction on `N` through
-`EuclideanSpace.measurePreserving_lastInit` or `MeasurableEquiv.piFinSuccAbove`), then density
-at order `N` (`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`) and the uniform-Cauchy
-argument of Morrey's theorem. The book adds that `W^{m,p} ⊄ L^∞` for `p > 1`, `m = N/p` in
-general — a counterexample (Remark 16's function at higher order), not planned. ★★, ~300 lines.
-
-Blocked: not attempted (sob8, 2026-09-18) for lack of time; the uniform-Cauchy device of `HasWeakFDerivOn.exists_continuous_holderWith_ae_eq` (bounded continuous functions) is the route once the iterated FTC bound is in place.'''
-deps = ["EuclideanSpace.measurePreserving_lastInit", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "SobolevEuclidean"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 13"
 
 [[node]]
 id = "SobolevEuclidean.exists_contDiff_ae_eq_of_lt"
-kind = "theorem"
-desc = '''**Corollary 9.13's `C^k` clause without the non-integer restriction**: for `1 ≤ p < ∞` and
-integers `m, k` with `k + N/p < m` (a real inequality; the book's hypothesis "`m − N/p` not an
-integer, `k = ⌊m − N/p⌋`" is the sharp case of this one), every `u : SobolevEuclidean N m p ⊤`
-has a representative `ũ` with `ContDiff ℝ k ũ`, `fn u =ᵐ ũ`, every derivative of order `≤ k`
-bounded by `C ‖u‖`, and the derivatives of order `k` Hölder continuous for *some* exponent
-`θ ∈ (0, 1]` (not the sharp one). Proof: for `|α| ≤ k`, `∂^α u ∈ W^{m−k,p}` with
-`(m − k) − N/p > 0`; run the chain of `SobolevEuclidean.memLp_fn_of_order` (Theorem 9.9 while the
-exponent is `< N`, Corollary 9.11 with a finite `q > N` when it equals `N`) until the first
-derivatives of `∂^α u` lie in some `L^r`, `r > N`, and finish with Morrey's theorem and
-`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn` as in `exists_contDiff_ae_eq_of_order`.
-This is the form the heat equation needs (`H^{2ℓ}(ℝ^N) ⊆ C^k` for `k + N/2 < 2ℓ`, where
-`2ℓ − N/2` is an integer for every even `N`, so the book's Corollary 9.13 as stated never applies —
-an erratum of the proofs of Theorems 10.1 and 10.8, recorded in `notes/book-errata.md`). ★★,
-~150 lines on top of `exists_contDiff_ae_eq_of_order`'s machinery.
-
-Blocked: not attempted (sob8, 2026-09-18); waits on `SobolevEuclidean.memLp_fn_of_order` and `exists_contDiff_ae_eq_of_order` as the desc says.'''
-deps = ["SobolevEuclidean.memLp_fn_of_order", "SobolevEuclidean.exists_contDiff_ae_eq_of_order", "HasWeakFDerivOn.exists_continuous_holderWith_ae_eq", "HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.13 (the integer case), and the proofs of Theorems 10.1 and 10.8"
 
 [[node]]
 id = "MemSobolevMultiIndexLoc.exists_contDiffOn"
-kind = "theorem"
-desc = '''A function in `H^m_loc(Ω)` for every `m` has a `C^∞` representative on `Ω`:
-`(∀ m, MemSobolevMultiIndexLoc b u m 2 Ω volume) → ∃ ũ, ContDiffOn ℝ ⊤ ũ Ω ∧ u =ᵐ[volume.restrict Ω] ũ`;
-and the finite-order form `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt`: for `m - N/2 > k`,
-`u ∈ H^m_loc(Ω)` has a `C^k` representative on `Ω`. Proof: on a ball `B` with `closure B ⊆ Ω`,
-`θ u ∈ H^m(ℝ^N)` for a cut-off `θ = 1` on `B` (`MemSobolevMultiIndexLoc.smul_testFunction`, `Cutoff.lean`), and
-`H^m(ℝ^N) ⊆ C^k` for `m - N/2 > k` by Corollary 9.13 of chapter 9a (`Embedding`); the local
-representatives agree on overlaps because two continuous functions equal almost everywhere on an
-open set are equal there, so they glue to one function, and `ContDiffOn` is local. This is the
-sentence "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`, as a consequence `e_n ∈ C^∞(Ω)`" of the proof of
-[brezis2011functional] Theorem 9.31 (p. 11710). Formerly planned in `PDE/Elliptic/Regularity.toml`; it is
-whole-space embedding theory and belongs here. ★★ (~150 lines).
-
-Blocked: not attempted (sob8, 2026-09-18); waits on `SobolevEuclidean.exists_contDiff_ae_eq_of_order` (Corollary 9.13's `C^k` clause).'''
-deps = [
-  "MemSobolevMultiIndexLoc.smul_testFunction",
-  "SobolevEuclidean.exists_contDiff_ae_eq_of_order",
-]
 
 [[node]]
 id = "HasWeakFDerivOn.eLpNorm_le_sobolevNorm_one"
@@ -325,3 +247,186 @@ id = "SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank"
 
 [[node]]
 id = "SobolevEuclidean.memLp_fn_of_eq_finrank"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_card_mul_of_forall_norm_weakDeriv_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerOrder"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerOrder"
+
+[[node]]
+id = "MultiIndexLE.castLE_injective"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerOrder_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerOrderL_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL_injective"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_norm_of_injective"
+
+[[node]]
+id = "MultiIndexLE.addSingle"
+
+[[node]]
+id = "MultiIndexLE.addSingle_injective"
+
+[[node]]
+id = "MultiIndexLE.singleLE"
+
+[[node]]
+id = "MultiIndexLE.addSingle_zero"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_single"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_addSingle"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.fn_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_fn_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.norm_partialDeriv_le"
+
+[[node]]
+id = "SobolevMultiIndex.partialDerivL"
+
+[[node]]
+id = "SobolevMultiIndex.norm_partialDerivL_le"
+
+[[node]]
+id = "SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le"
+
+[[node]]
+id = "NNReal.exists_intermediate_sobolev_exponent"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order"
+
+[[node]]
+id = "SobolevEuclidean.norm_contRep_sub_le"
+
+[[node]]
+id = "NNReal.exists_morrey_exponent"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_continuous_ae_eq_of_order"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order"
+
+[[node]]
+id = "SobolevEuclidean.memLp_fn_top_of_order"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_toLp_of_order"
+
+[[node]]
+id = "ContinuousLinearMap.eq_sum_apply_single_smul_proj"
+
+[[node]]
+id = "ContinuousLinearMap.norm_compContinuousMultilinearMap_sub_le"
+
+[[node]]
+id = "iteratedFDeriv_fun_sum_smul_const"
+
+[[node]]
+id = "SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order"
+
+[[node]]
+id = "MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt"
+
+[[node]]
+id = "SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le"
+
+[[node]]
+id = "iteratedFDeriv_fun_sum_smul_const_of_contDiffAt"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder_add"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder_smul"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL_apply"
+
+[[node]]
+id = "MultiIndexLE.coe_addSingle"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv_add"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv_smul"
+
+[[node]]
+id = "SobolevMultiIndex.partialDerivL_apply"
+
+[[node]]
+id = "ContDiff.enorm_le_lintegral_fderiv_line"
+
+[[node]]
+id = "MeasureTheory.lintegral_fin_succ_eq"
+
+[[node]]
+id = "EuclideanSpace.stdVec"
+
+[[node]]
+id = "EuclideanSpace.stdVec_of_lt"
+
+[[node]]
+id = "EuclideanSpace.stdVec_ne_zero"
+
+[[node]]
+id = "EuclideanSpace.stdDirs"
+
+[[node]]
+id = "EuclideanSpace.stdDirs_succ"
+
+[[node]]
+id = "EuclideanSpace.stdDirs_self"
+
+[[node]]
+id = "ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs"
+
+[[node]]
+id = "EuclideanSpace.prod_norm_stdDirs_self"
+
+[[node]]
+id = "ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank"
+
+[[node]]
+id = "lintegral_enorm_apply_stdDirs_le_eLpNorm_one"

@@ -34,28 +34,12 @@ bounded open `Ω`, no regularity) consumes, through `H_0^1(Ω) ↪↪ L^2(Ω)`, 
 `AtkinsonHan.Chapter08.Section08` and the obstacle problems of Atkinson–Han chapter 11 would
 consume for coercivity-by-compactness arguments.
 
-Blocked: `Numlib/Analysis/Sobolev/Zero.lean` (`SobolevEuclideanZero.hasSobolevExtensionOn`, `extendZeroL`, agent sob9) was not in the tree when this module was written (sob8, 2026-09-18). Once it is: the case `p < N` is `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn` with `S = SobolevEuclideanZero N 1 p Ω` (the abstract lemma is stated on a subspace for this purpose), the case `p > N` is `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`; the case `p = N` needs the exponent-lowering map on `W_0` (`SobolevMultiIndex.toLowerExponentL` should map `W_0^{1,p}` into `W_0^{1,r}`, to be checked), ~80 lines.'''
+Blocked: `Numlib/Analysis/Sobolev/Zero.lean` (`SobolevEuclideanZero.hasSobolevExtensionOn`, `extendZeroL`, agent sob9) was not in the tree when this module was written (sob8, 2026-09-18). Once it is: the case `p < N` is `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn` with `S = SobolevEuclideanZero N 1 p Ω` (the abstract lemma is stated on a subspace for this purpose), the case `p > N` is `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`; the case `p = N` needs the exponent-lowering map on `W_0` (`SobolevMultiIndex.toLowerExponentL` should map `W_0^{1,p}` into `W_0^{1,r}`, to be checked), ~80 lines. Still absent (sob11, 2026-09-19); the `p > N` case can also land in `L^p(Ω)` directly through `ContinuousMap.extendZeroToLpL` as `SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt` does.'''
 deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn", "SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclideanZero.extendZeroL", "IsCompactEmbedding.comp_isContinuousEmbedding"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_toLower_of_lt"
-kind = "theorem"
-desc = '''**`W^{k,p}(Ω) ↪↪ W^{k−1,p}(Ω)`** for `Ω` bounded of class `C^1`, `k ≥ 1`, `1 ≤ p ≤ ∞`
-(Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9, under `C^1` in place of
-Lipschitz; not in Brezis, whose Theorem 9.16 is `k = 1`): the inclusion
-`SobolevEuclidean N k p Ω →ₗ[ℝ] SobolevEuclidean N (k−1) p Ω` (forget the top-order components;
-`SobolevMultiIndex.toLowerL`, ★ ~60 lines, `MemSobolev.mono_order` typed) is a compact
-embedding. Proof: a bounded sequence `u_n` in `W^{k,p}` has every `∂^α u_n`, `|α| ≤ k−1`, bounded
-in `W^{1,p}(Ω)` (`memSobolevMultiIndex_succ_iff`), so by `SobolevEuclidean.isCompactEmbedding_toLp_self`
-and a diagonal extraction over the finitely many `α` there is a subsequence along which every
-`∂^α u_n`, `|α| ≤ k−1`, converges in `L^p(Ω)`; the limits are the weak derivatives of the limit
-of `u_n` by the closedness of the weak derivative under `L^p` limits
-(`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm`, `Density.toml`), so the subsequence converges in
-`W^{k−1,p}(Ω)`. ★★★, ~300 lines.
-
-Blocked: not attempted (sob8, 2026-09-18) for lack of time; `SobolevEuclidean.isCompactEmbedding_fnL` is the `k = 1` input and the route is as in the desc (~300 lines).'''
-deps = ["SobolevEuclidean.isCompactEmbedding_toLp_self", "memSobolevMultiIndex_succ_iff", "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm", "MemSobolev.mono_order", "IsCompactEmbedding"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (Brezis, Theorem 9.16 iterated)"
 
 [[node]]
@@ -138,3 +122,81 @@ id = "SobolevEuclidean.isCompactEmbedding_toLp_of_le"
 
 [[node]]
 id = "SobolevEuclidean.isCompactEmbedding_fnL"
+
+[[node]]
+id = "ContinuousMap.extendZero"
+
+[[node]]
+id = "ContinuousMap.extendZero_of_mem"
+
+[[node]]
+id = "ContinuousMap.norm_extendZero_le"
+
+[[node]]
+id = "ContinuousMap.continuousOn_extendZero"
+
+[[node]]
+id = "ContinuousMap.memLp_extendZero"
+
+[[node]]
+id = "ContinuousMap.eLpNorm_extendZero_le"
+
+[[node]]
+id = "ContinuousMap.extendZeroToLpL"
+
+[[node]]
+id = "ContinuousMap.coeFn_extendZeroToLpL"
+
+[[node]]
+id = "ContinuousMap.extendZeroToLpL_injective"
+
+[[node]]
+id = "ContinuousMap.isContinuousEmbedding_extendZeroToLpL"
+
+[[node]]
+id = "IsSobolevExtensionDomainAll.of_isContDiffChartDomain"
+
+[[node]]
+id = "SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one"
+
+[[node]]
+id = "IsCompactEmbedding.exists_subseq_forall_tendsto"
+
+[[node]]
+id = "IsCompactEmbedding.of_forall_exists_subseq_tendsto"
+
+[[node]]
+id = "SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerOrderL"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerOrderL_zero"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_partialDerivL"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerOrderL_apply_le"
+
+[[node]]
+id = "SobolevMultiIndex.norm_partialDerivL_apply_le"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLowerOrderL"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq_fnL"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq"

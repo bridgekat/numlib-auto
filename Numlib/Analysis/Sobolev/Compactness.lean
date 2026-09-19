@@ -48,13 +48,27 @@ uniformly bounded and uniformly Hölder image of the unit ball
 (`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`,
 `SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`). The injection `W^{1,p}(Ω) ⊂ L^p(Ω)`
 (`SobolevEuclidean.isCompactEmbedding_toLp_self`, `SobolevEuclidean.isCompactEmbedding_fnL`) is
-covered for `1 ≤ p < ∞` whenever `p < N` or `N ≥ 2`; the case `N = 1 ≤ p` (an interval) and the
-case `p = ∞` are not proved here.
+covered for `1 ≤ p < ∞` whenever `p < N` or `N ≥ 2`; for `p > N` it also factors through `C(Ω̄)`
+and the continuous extension by zero `C(Ω̄, ℝ) → L^p(Ω)` (`ContinuousMap.extendZeroToLpL`,
+`SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt`), which covers `N = 1 < p`, so that
+`SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` / `isCompactEmbedding_fnL_of_ne_one`
+leave out only `N = 1 = p` (an interval, where the one-dimensional theory applies) and `p = ∞`.
+
+The compact embedding between successive orders, `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` along
+`SobolevMultiIndex.toLowerOrderL` (`SobolevEuclidean.isCompactEmbedding_toLower_of_lt`,
+Atkinson–Han's Theorem 7.3.9), is proved by induction on `k` from the case `k = 0` above: the
+inductive step (`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq`, stated with the
+operators as variables) extracts one subsequence along which `u_n` and all `∂_i u_n` converge in
+`W^{k,p}(Ω)` (`IsCompactEmbedding.exists_subseq_forall_tendsto`), so that every component
+`∂^β u_n` converges in `L^p(Ω)` and `u_n` converges in the closed subspace `W^{k+1,p}(Ω)`
+(`SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`).
+`IsSobolevExtensionDomainAll.of_isContDiffChartDomain` records that Theorem 9.7 makes a bounded
+`C¹` chart domain an extension domain for every exponent, the hypothesis of Corollary 9.15.
 
 ## References
 
 [brezis2011functional], Theorem 9.16 and its proof, Remark 20; Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorem 7.3.8.
+Numerical Analysis*, Theorems 7.3.8 and 7.3.9.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -736,3 +750,465 @@ theorem SobolevEuclidean.isCompactEmbedding_fnL {d : ℕ} {p : ℝ≥0}
   exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb hd
 
 end RellichGe
+
+/-! ### Extension by zero of a continuous function on a compact set, into `L^p(Ω)` -/
+
+section ExtendZero
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] {μ : Measure E} {K : Set E} [CompactSpace K] {Ω : Set E}
+  {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+namespace ContinuousMap
+
+open scoped Classical in
+variable (K) in
+/-- The extension by zero of a function on a subset `K` to the whole space. -/
+def extendZero (f : C(K, ℝ)) : E → ℝ := fun x ↦ if h : x ∈ K then f ⟨x, h⟩ else 0
+
+omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [CompactSpace K] in
+/-- The extension by zero agrees with `f` on `K`. -/
+theorem extendZero_of_mem (f : C(K, ℝ)) {x : E} (hx : x ∈ K) :
+    extendZero K f x = f ⟨x, hx⟩ := by
+  simp [extendZero, hx]
+
+omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] in
+/-- The extension by zero is bounded by the sup norm of `f`. -/
+theorem norm_extendZero_le (f : C(K, ℝ)) (x : E) : ‖extendZero K f x‖ ≤ ‖f‖ := by
+  by_cases hx : x ∈ K
+  · rw [extendZero_of_mem f hx]
+    exact f.norm_coe_le_norm _
+  · simp [extendZero, hx]
+
+omit [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [CompactSpace K] in
+/-- The extension by zero is continuous on `K`. -/
+theorem continuousOn_extendZero (f : C(K, ℝ)) : ContinuousOn (extendZero K f) K := by
+  rw [continuousOn_iff_continuous_domRestrict]
+  convert f.continuous using 1
+  funext x
+  exact extendZero_of_mem f x.2
+
+omit [NormedSpace ℝ E] [Fact (1 ≤ p)] in
+/-- The extension by zero of a continuous function on `K ⊇ Ω` lies in `L^p(Ω)` when `Ω` is
+measurable of finite measure. -/
+theorem memLp_extendZero (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) :
+    MemLp (extendZero K f) p (μ.restrict Ω) := by
+  have : IsFiniteMeasure (μ.restrict Ω) := ⟨by simpa [Measure.restrict_apply_univ] using hμ.lt_top⟩
+  exact MemLp.of_bound (((continuousOn_extendZero f).mono hΩK).aestronglyMeasurable (μ := μ) hΩ)
+    ‖f‖ (Eventually.of_forall (norm_extendZero_le f))
+
+omit [NormedSpace ℝ E] [Fact (1 ≤ p)] in
+/-- The `L^p(Ω)` norm of the extension by zero is at most `μ(Ω)^{1/p} ‖f‖`. -/
+theorem eLpNorm_extendZero_le (f : C(K, ℝ)) (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) :
+    eLpNorm (extendZero K f) p (μ.restrict Ω) ≤ μ Ω ^ p.toReal⁻¹ * ENNReal.ofReal ‖f‖ := by
+  refine (eLpNorm_le_of_ae_bound (C := ‖f‖) ?_ (Eventually.of_forall (norm_extendZero_le f))).trans
+    (le_of_eq ?_)
+  · exact ((continuousOn_extendZero f).mono hΩK).aestronglyMeasurable hΩ
+  · rw [Measure.restrict_apply_univ]
+
+variable (μ K Ω p) in
+/-- **Extension by zero, `C(K, ℝ) → L^p(Ω)`, as a bounded linear map** for a compact `K ⊇ Ω`
+and a measurable `Ω` of finite measure: `f ↦ (f extended by zero)|_Ω`, of norm at most
+`μ(Ω)^{1/p}`. Composed with the trace map `W^{1,p}(Ω) → C(Ω̄, ℝ)` of Morrey's theorem it gives
+the injection `W^{1,p}(Ω) ⊂ L^p(Ω)` through `C(Ω̄)`, the route by which
+[brezis2011functional] Theorem 9.16 reads "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection" for
+`p > N`. -/
+def extendZeroToLpL (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) :
+    C(K, ℝ) →L[ℝ] Lp ℝ p (μ.restrict Ω) :=
+  LinearMap.mkContinuous
+    { toFun := fun f ↦ (memLp_extendZero f hΩK hΩ hμ).toLp _
+      map_add' := fun f g ↦ by
+        rw [← MemLp.toLp_add]
+        refine MemLp.toLp_congr _ _ (Eventually.of_forall fun x ↦ ?_)
+        by_cases hx : x ∈ K <;> simp [extendZero, hx]
+      map_smul' := fun c f ↦ by
+        rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+        refine MemLp.toLp_congr _ _ (Eventually.of_forall fun x ↦ ?_)
+        by_cases hx : x ∈ K <;> simp [extendZero, hx] }
+    (μ Ω ^ p.toReal⁻¹).toReal fun f ↦ by
+      rw [LinearMap.coe_mk, AddHom.coe_mk, Lp.norm_toLp, ← ENNReal.toReal_ofReal (norm_nonneg f),
+        ← ENNReal.toReal_mul]
+      refine ENNReal.toReal_mono (ENNReal.mul_ne_top
+        (ENNReal.rpow_ne_top_of_nonneg (by positivity) hμ) ENNReal.ofReal_ne_top) ?_
+      exact eLpNorm_extendZero_le f hΩK hΩ
+
+omit [NormedSpace ℝ E] in
+/-- The extension by zero, as an `L^p(Ω)` element, is `f` almost everywhere on `Ω`. -/
+theorem coeFn_extendZeroToLpL (hΩK : Ω ⊆ K) (hΩ : MeasurableSet Ω) (hμ : μ Ω ≠ ⊤) (f : C(K, ℝ)) :
+    extendZeroToLpL μ K Ω p hΩK hΩ hμ f =ᵐ[μ.restrict Ω] extendZero K f :=
+  MemLp.coeFn_toLp (memLp_extendZero f hΩK hΩ hμ)
+
+omit [NormedSpace ℝ E] in
+/-- **Extension by zero is injective for `Ω ⊆ K ⊆ closure Ω`**, `Ω` open and `μ` positive on open
+sets: a continuous function on `K` vanishing almost everywhere on `Ω` vanishes on `Ω`, hence on
+its closure. -/
+theorem extendZeroToLpL_injective [TopologicalSpace.PseudoMetrizableSpace E] [BorelSpace E]
+    [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω) (hμ : μ Ω ≠ ⊤) :
+    Function.Injective (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ) := by
+  intro f g hfg
+  have h1 : extendZero K f =ᵐ[μ.restrict Ω] extendZero K g :=
+    (coeFn_extendZeroToLpL hΩK hΩo.measurableSet hμ f).symm.trans
+      ((Lp.ext_iff.1 hfg).trans (coeFn_extendZeroToLpL hΩK hΩo.measurableSet hμ g))
+  have h2 : EqOn (extendZero K f) (extendZero K g) Ω :=
+    Measure.eqOn_open_of_ae_eq h1 hΩo ((continuousOn_extendZero f).mono hΩK)
+      ((continuousOn_extendZero g).mono hΩK)
+  have h3 : EqOn (extendZero K f) (extendZero K g) K :=
+    h2.of_subset_closure (continuousOn_extendZero f) (continuousOn_extendZero g) hΩK hKΩ
+  ext ⟨x, hx⟩
+  have := h3 hx
+  rwa [extendZero_of_mem f hx, extendZero_of_mem g hx] at this
+
+omit [NormedSpace ℝ E] in
+/-- **Extension by zero is a continuous embedding `C(K, ℝ) ↪ L^p(Ω)`** for
+`Ω ⊆ K ⊆ closure Ω`, `Ω` open of finite positive measure. -/
+theorem isContinuousEmbedding_extendZeroToLpL [TopologicalSpace.PseudoMetrizableSpace E]
+    [BorelSpace E] [μ.IsOpenPosMeasure] (hΩK : Ω ⊆ K) (hKΩ : K ⊆ closure Ω) (hΩo : IsOpen Ω)
+    (hμ : μ Ω ≠ ⊤) :
+    IsContinuousEmbedding (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ).toLinearMap :=
+  ⟨extendZeroToLpL_injective hΩK hKΩ hΩo hμ, _,
+    (extendZeroToLpL μ K Ω p hΩK hΩo.measurableSet hμ).le_opNorm⟩
+
+end ContinuousMap
+
+end ExtendZero
+
+/-! ### Theorem 9.16 for `p > N`: `W^{1,p}(Ω) ⊂⊂ L^p(Ω)` through `C(Ω̄)` -/
+
+section RellichGtSelf
+
+open SobolevMultiIndex
+
+/-- **Corollary 9.15's standing hypothesis holds for a bounded `C¹` chart domain**: Theorem 9.7
+gives an extension operator at every exponent. -/
+theorem IsSobolevExtensionDomainAll.of_isContDiffChartDomain {d : ℕ}
+    {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    IsSobolevExtensionDomainAll (d + 1) Ω :=
+  fun _ _ ↦ IsSobolevExtensionDomain.of_isContDiffChartDomain hΩ hΓ
+
+/-- **The injection `W^{1,p}(Ω) ⊂ L^p(Ω)` factors through `C(Ω̄, ℝ)` for `p > N`**: on an
+extension domain of finite measure, the inclusion `SobolevMultiIndex.toLpₗ` is the extension by
+zero `C(closure Ω, ℝ) → L^p(Ω)` composed with the trace map `SobolevEuclidean.toContinuousMapL`
+of Morrey's representative. -/
+theorem SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL {N : ℕ}
+    {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+    (hΩ : IsSobolevExtensionDomain N p Ω) (hp : N < p)
+    [CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))]
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume (fun u ↦ memLp u)
+      = (ContinuousMap.extendZeroToLpL volume (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))
+          (Ω : Set (EuclideanSpace ℝ (Fin N))) p subset_closure Ω.isOpen.measurableSet
+          hμ).toLinearMap ∘ₗ
+        (SobolevEuclidean.toContinuousMapL hΩ hp
+          (closure (Ω : Set (EuclideanSpace ℝ (Fin N))))).toLinearMap := by
+  refine LinearMap.ext fun u ↦ Lp.ext ((toLpₗ_coeFn _ u).trans ?_)
+  refine Filter.EventuallyEq.trans ?_ (ContinuousMap.coeFn_extendZeroToLpL subset_closure
+    Ω.isOpen.measurableSet hμ (SobolevEuclidean.toContinuousMapL hΩ hp
+      (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) u)).symm
+  refine (SobolevEuclidean.fn_ae_eq_toContinuousMapL hΩ hp
+    (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) u).trans ?_
+  refine ae_restrict_of_forall_mem Ω.isOpen.measurableSet fun x hx ↦ ?_
+  rw [ContinuousMap.extendZero_of_mem _ (subset_closure hx)]
+  rfl
+
+/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", for `p > N`**: for a bounded
+open `Ω ⊆ ℝ^N` of class `C¹` (by charts) and `N < p < ∞`, the injection `W^{1,p}(Ω) ⊂ L^p(Ω)` is
+compact — it factors through the compact injection `W^{1,p}(Ω) ⊂ C(Ω̄)` and the continuous
+extension by zero `C(Ω̄) → L^p(Ω)`. This covers the case `N = 1 < p` of the last sentence of
+[brezis2011functional] Theorem 9.16, left out of `SobolevEuclidean.isCompactEmbedding_toLp_self`. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt {d : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hp : ((d + 1 : ℕ) : ℝ≥0) < p) :
+    IsCompactEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p Ω volume
+      fun u ↦ SobolevMultiIndex.memLp u) := by
+  have : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    isCompact_iff_compactSpace.1 hb.isCompact_closure
+  rw [SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL
+    (IsSobolevExtensionDomain.of_isContDiffChartDomain hΩ
+      (hb.closure.subset frontier_subset_closure)) hp hb.measure_lt_top.ne]
+  exact (SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt hΩ hb hp subset_closure)
+    |>.comp_isContinuousEmbedding
+      (ContinuousMap.isContinuousEmbedding_extendZeroToLpL subset_closure subset_rfl Ω.isOpen _)
+
+/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection"**, for a bounded open
+`Ω ⊆ ℝ^N` of class `C¹` (by charts) and `1 ≤ p < ∞`, provided `p ≠ 1` or `N ≥ 2`: the three
+routes `p < N` (Rellich–Kondrachov), `N ≤ p` with `N ≥ 2` (lowering the exponent) and `p > N`
+(through `C(Ω̄)`) together leave out only `N = 1 = p`. [brezis2011functional] Theorem 9.16, the
+last sentence. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one {d : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hd : p ≠ 1 ∨ 1 ≤ d) :
+    IsCompactEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p Ω volume
+      fun u ↦ SobolevMultiIndex.memLp u) := by
+  rcases lt_or_ge p ((d + 1 : ℕ) : ℝ≥0) with hpN | hpN
+  · exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb (Or.inl hpN)
+  rcases hd with hp | hd
+  · rcases Nat.eq_zero_or_pos d with rfl | hd
+    · have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+      exact SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt hΩ hb
+        (by simpa using lt_of_le_of_ne hp1 (Ne.symm hp))
+    · exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb (Or.inr hd)
+  · exact SobolevEuclidean.isCompactEmbedding_toLp_self hΩ hb (Or.inr hd)
+
+/-- **`W^{1,p}(Ω) ↪↪ L^p(Ω)` along `SobolevMultiIndex.fnL`**, for `1 ≤ p < ∞` with `p ≠ 1` or
+`N ≥ 2`: the form of `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` on the bundled
+inclusion. -/
+theorem SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one {d : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hd : p ≠ 1 ∨ 1 ≤ d) :
+    IsCompactEmbedding (fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p Ω
+      volume).toLinearMap := by
+  rw [← toLpₗ_self]
+  exact SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one hΩ hb hd
+
+end RellichGtSelf
+
+/-! ### `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`: the compact embedding between successive orders -/
+
+section LowerOrder
+
+/-- **A common convergent subsequence for finitely many sequences under a compact embedding**:
+given bounded sequences `u i`, `i` in a finite type, there is one subsequence along which every
+`κ (u i ·)` converges — the images lie in a finite product of compact sets. -/
+theorem IsCompactEmbedding.exists_subseq_forall_tendsto {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {V W : Type*} [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W]
+    [NormedSpace 𝕜 W] {κ : V →ₗ[𝕜] W} (h : IsCompactEmbedding κ) {ι : Type*} [Finite ι]
+    (u : ι → ℕ → V) (hu : ∀ i, ∃ M : ℝ, ∀ n, ‖u i n‖ ≤ M) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ i, ∃ w : W, Tendsto (fun n ↦ κ (u i (φ n))) atTop (𝓝 w) := by
+  choose M hM using hu
+  have hK : ∀ i, IsCompact (closure (κ '' closedBall 0 (M i))) := fun i ↦
+    h.isCompactOperator.isCompact_closure_image_closedBall (M i)
+  have hmem : ∀ n, (fun i ↦ κ (u i n)) ∈ Set.univ.pi fun i ↦ closure (κ '' closedBall 0 (M i)) :=
+    fun n i _ ↦ subset_closure ⟨u i n, by simpa using hM i n, rfl⟩
+  obtain ⟨a, -, φ, hφ, ha⟩ := (isCompact_univ_pi hK).tendsto_subseq hmem
+  exact ⟨φ, hφ, fun i ↦ ⟨a i, tendsto_pi_nhds.1 ha i⟩⟩
+
+/-- **The sequential criterion for a compact embedding**, on a bounded linear map that is a
+continuous embedding: every bounded sequence has a subsequence whose image converges. -/
+theorem IsCompactEmbedding.of_forall_exists_subseq_tendsto {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {V W : Type*} [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W]
+    [NormedSpace 𝕜 W] {ι : V →L[𝕜] W} (hι : IsContinuousEmbedding ι.toLinearMap)
+    (h : ∀ u : ℕ → V, (∃ M : ℝ, ∀ n, ‖u n‖ ≤ M) →
+      ∃ (φ : ℕ → ℕ) (w : W), StrictMono φ ∧ Tendsto (fun n ↦ ι (u (φ n))) atTop (𝓝 w)) :
+    IsCompactEmbedding ι.toLinearMap :=
+  { hι with exists_subseq_tendsto := h }
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω : Opens E} {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
+
+/-- **A sequence of `W^{k,p}(Ω)` all of whose weak derivatives converge in `L^p(Ω)` converges in
+`W^{k,p}(Ω)`**: the ambient space is an `ℓ^p` product of `L^p(Ω)` spaces, in which convergence is
+componentwise, and `W^{k,p}(Ω)` is closed in it (`SobolevMultiIndex.isClosed`). -/
+theorem SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv
+    {x : ℕ → SobolevMultiIndex F b k p Ω μ}
+    (h : ∀ α, ∃ L : Lp F p (μ.restrict (Ω : Set E)),
+      Tendsto (fun n ↦ weakDeriv (x n) α) atTop (𝓝 L)) :
+    ∃ y : SobolevMultiIndex F b k p Ω μ, Tendsto x atTop (𝓝 y) := by
+  choose L hL using h
+  have hconv : Tendsto (fun n ↦ (x n : SobolevMultiIndexTuple F ι k p Ω μ)) atTop
+      (𝓝 (WithLp.toLp p L)) := by
+    have h1 : Tendsto (fun n ↦ fun α ↦ weakDeriv (x n) α) atTop (𝓝 L) := tendsto_pi_nhds.2 hL
+    have h2 := ((PiLp.continuous_toLp p fun _ : MultiIndexLE ι k ↦ Lp F p (μ.restrict (Ω : Set E)))
+      |>.tendsto L).comp h1
+    convert h2 using 1
+    funext n
+    rfl
+  have hy : WithLp.toLp p L ∈ SobolevMultiIndex F b k p Ω μ :=
+    SobolevMultiIndex.isClosed.mem_of_tendsto hconv (Eventually.of_forall fun n ↦ (x n).2)
+  exact ⟨⟨WithLp.toLp p L, hy⟩, tendsto_subtype_rng.2 hconv⟩
+
+end LowerOrder
+
+section LowerOrderAbstract
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+  {Ω : Opens E} {μ : Measure E} [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ]
+
+namespace SobolevMultiIndex
+
+omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- The components of `SobolevMultiIndex.toLowerOrderL u` are those of `u`. -/
+theorem weakDeriv_toLowerOrderL {k' : ℕ} (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ)
+    (α : MultiIndexLE ι k') :
+    weakDeriv (toLowerOrderL F b p Ω μ hk u) α = weakDeriv u ⟨α.1, α.2.trans hk⟩ :=
+  rfl
+
+omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- The only component of `SobolevMultiIndex.toLowerOrderL u` in `W^{0,p}(Ω)` is the function. -/
+theorem weakDeriv_toLowerOrderL_zero (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι 0) :
+    weakDeriv (toLowerOrderL F b p Ω μ (Nat.zero_le k) u) α = fnL F b k p Ω μ u := by
+  obtain rfl : α = 0 := Subtype.ext (funext fun i ↦ Nat.le_zero.1
+    ((Finset.single_le_sum (f := α.1) (fun _ _ ↦ Nat.zero_le _) (Finset.mem_univ i)).trans α.2))
+  rfl
+
+omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- The components of `SobolevMultiIndex.partialDerivL i u` are those of `u` at `α + e_i`. -/
+theorem weakDeriv_partialDerivL (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ)
+    (α : MultiIndexLE ι k) :
+    weakDeriv (partialDerivL F b p Ω μ i u) α = weakDeriv u (MultiIndexLE.addSingle i α) :=
+  rfl
+
+omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- `‖toLowerOrderL u‖ ≤ ‖u‖`. -/
+theorem norm_toLowerOrderL_apply_le {k' : ℕ} (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    ‖toLowerOrderL F b p Ω μ hk u‖ ≤ ‖u‖ :=
+  norm_toLowerOrder_le hk u
+
+omit [CompleteSpace F] [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- `‖partialDerivL i u‖ ≤ ‖u‖`. -/
+theorem norm_partialDerivL_apply_le (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    ‖partialDerivL F b p Ω μ i u‖ ≤ ‖u‖ :=
+  norm_partialDeriv_le i u
+
+variable [FiniteDimensional ℝ E] [BorelSpace E]
+
+omit [IsFiniteMeasureOnCompacts μ] [IsLocallyFiniteMeasure μ] in
+/-- **`W^{k,p}(Ω) ↪ W^{k',p}(Ω)` is a continuous embedding** for `k' ≤ k`, along
+`SobolevMultiIndex.toLowerOrderL`. -/
+theorem isContinuousEmbedding_toLowerOrderL {k' : ℕ} (hk : k' ≤ k) :
+    IsContinuousEmbedding (toLowerOrderL F b p Ω μ hk).toLinearMap :=
+  ⟨toLowerOrderL_injective hk, 1, fun u ↦ by rw [one_mul]; exact norm_toLowerOrder_le hk u⟩
+
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
+/-- **`W^{1,p}(Ω) ⊂⊂ W^{0,p}(Ω)` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`, with the operator as a variable**:
+a continuous embedding `T : W^{1,p}(Ω) → W^{0,p}(Ω)` whose only component is the function is a
+compact embedding as soon as the inclusion `W^{1,p}(Ω) → L^p(Ω)` is one. -/
+theorem isCompactEmbedding_of_forall_weakDeriv_eq_fnL
+    {T : SobolevMultiIndex F b 1 p Ω μ →L[ℝ] SobolevMultiIndex F b 0 p Ω μ}
+    (hTc : ∀ (v : SobolevMultiIndex F b 1 p Ω μ) (α : MultiIndexLE ι 0),
+      weakDeriv (T v) α = fnL F b 1 p Ω μ v)
+    (hι : IsContinuousEmbedding T.toLinearMap)
+    (hc : IsCompactEmbedding (fnL F b 1 p Ω μ).toLinearMap) :
+    IsCompactEmbedding T.toLinearMap := by
+  refine IsCompactEmbedding.of_forall_exists_subseq_tendsto hι fun u hu ↦ ?_
+  obtain ⟨φ, w, hφ, hw⟩ := hc.exists_subseq_tendsto u hu
+  have hcomp : ∀ α : MultiIndexLE ι 0, ∃ L : Lp F p (μ.restrict (Ω : Set E)),
+      Tendsto (fun n ↦ weakDeriv (T (u (φ n))) α) atTop (𝓝 L) := fun α ↦
+    ⟨w, by simpa only [hTc, ContinuousLinearMap.coe_coe] using hw⟩
+  obtain ⟨y, hy⟩ := SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv hcomp
+  exact ⟨φ, y, hφ, hy⟩
+
+omit [FiniteDimensional ℝ E] [BorelSpace E] in
+/-- **The inductive step of `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`, with the operators as variables**:
+given `T : W^{k+2,p}(Ω) → W^{k+1,p}(Ω)` and `T' : W^{k+1,p}(Ω) → W^{k,p}(Ω)` forgetting the top
+components, and `D i : W^{k+2,p}(Ω) → W^{k+1,p}(Ω)` the partial derivatives, all bounded by one,
+if `T'` is a compact embedding then so is `T`. For a bounded sequence `u_n` in `W^{k+2,p}(Ω)`,
+the sequences `T u_n` and `D_i u_n` are bounded in `W^{k+1,p}(Ω)`, so along a common subsequence
+their images under `T'` converge in `W^{k,p}(Ω)`; every component `∂^β u_n`, `|β| ≤ k + 1`, is a
+component of one of them (`∂^β = ∂^{β'} ∂_i` for `|β| = k + 1`), hence converges in `L^p(Ω)`,
+and `T u_n` converges in `W^{k+1,p}(Ω)`
+(`SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`). -/
+theorem isCompactEmbedding_of_forall_weakDeriv_eq
+    {T : SobolevMultiIndex F b (k + 1 + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b (k + 1) p Ω μ}
+    {T' : SobolevMultiIndex F b (k + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω μ}
+    {D : ι → SobolevMultiIndex F b (k + 1 + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b (k + 1) p Ω μ}
+    (hTc : ∀ (v : SobolevMultiIndex F b (k + 1 + 1) p Ω μ) (β : MultiIndexLE ι (k + 1)),
+      weakDeriv (T v) β = weakDeriv v ⟨β.1, β.2.trans (Nat.le_succ _)⟩)
+    (hT'c : ∀ (v : SobolevMultiIndex F b (k + 1) p Ω μ) (γ : MultiIndexLE ι k),
+      weakDeriv (T' v) γ = weakDeriv v ⟨γ.1, γ.2.trans (Nat.le_succ _)⟩)
+    (hDc : ∀ (i : ι) (v : SobolevMultiIndex F b (k + 1 + 1) p Ω μ) (γ : MultiIndexLE ι (k + 1)),
+      weakDeriv (D i v) γ = weakDeriv v (MultiIndexLE.addSingle i γ))
+    (hTn : ∀ v, ‖T v‖ ≤ ‖v‖) (hDn : ∀ i v, ‖D i v‖ ≤ ‖v‖)
+    (hι : IsContinuousEmbedding T.toLinearMap) (ih : IsCompactEmbedding T'.toLinearMap) :
+    IsCompactEmbedding T.toLinearMap := by
+  refine IsCompactEmbedding.of_forall_exists_subseq_tendsto hι fun u hu ↦ ?_
+  obtain ⟨M, hM⟩ := hu
+  -- the sequences `u_n` and `∂_i u_n` in `W^{k+1,p}(Ω)`
+  obtain ⟨t, ht⟩ : ∃ t : Option ι → ℕ → SobolevMultiIndex F b (k + 1) p Ω μ,
+      t = fun i n ↦ Option.elim i (T (u n)) (fun i ↦ D i (u n)) := ⟨_, rfl⟩
+  have htb : ∀ i, ∃ M : ℝ, ∀ n, ‖t i n‖ ≤ M := fun i ↦ ⟨M, fun n ↦ by
+    rw [ht]
+    rcases i with _ | i
+    · exact (hTn _).trans (hM n)
+    · exact (hDn i _).trans (hM n)⟩
+  obtain ⟨φ, hφ, hlim⟩ := ih.exists_subseq_forall_tendsto t htb
+  choose w hw using hlim
+  have hw' : ∀ (i : Option ι) (γ : MultiIndexLE ι k),
+      Tendsto (fun n ↦ weakDeriv (T' (t i (φ n))) γ) atTop (𝓝 (weakDeriv (w i) γ)) := fun i γ ↦
+    ((weakDerivL F b k p Ω μ γ).continuous.tendsto (w i)).comp (hw i)
+  -- convergence of every component of `u (φ n)` in `W^{k+1,p}(Ω)`
+  have hcomp : ∀ β : MultiIndexLE ι (k + 1), ∃ L : Lp F p (μ.restrict (Ω : Set E)),
+      Tendsto (fun n ↦ weakDeriv (T (u (φ n))) β) atTop (𝓝 L) := by
+    intro β
+    rcases Nat.lt_or_ge (∑ j, β.1 j) (k + 1) with hlt | hge
+    · -- `|β| ≤ k`: a component of `u_n` in `W^{k,p}(Ω)`
+      have hβ : ∑ j, β.1 j ≤ k := Nat.lt_succ_iff.1 hlt
+      refine ⟨weakDeriv (w none) ⟨β.1, hβ⟩, ?_⟩
+      have := hw' none ⟨β.1, hβ⟩
+      simp only [ht, Option.elim, hT'c, hTc] at this ⊢
+      exact this
+    · -- `|β| = k + 1`: `β = β' + e_i`, a component of `∂_i u_n` in `W^{k,p}(Ω)`
+      obtain ⟨i, -, hi⟩ : ∃ i ∈ Finset.univ, β.1 i ≠ 0 :=
+        Finset.exists_ne_zero_of_sum_ne_zero (s := Finset.univ) (f := β.1) (by omega)
+      obtain ⟨β', hβ'⟩ : ∃ β' : ι → ℕ, β.1 = β' + Pi.single i 1 := by
+        refine ⟨β.1 - Pi.single i 1, funext fun j ↦ ?_⟩
+        by_cases hj : j = i
+        · subst hj
+          simp only [Pi.add_apply, Pi.sub_apply, Pi.single_eq_same]
+          omega
+        · simp [Pi.single_eq_of_ne hj]
+      have hβ'k : ∑ j, β' j ≤ k := by
+        have := β.2
+        rw [hβ'] at this
+        simp only [Pi.add_apply, Finset.sum_add_distrib, Finset.sum_pi_single', Finset.mem_univ,
+          ite_true] at this
+        omega
+      have hβeq : (⟨β.1, β.2.trans (Nat.le_succ _)⟩ : MultiIndexLE ι (k + 1 + 1))
+          = MultiIndexLE.addSingle i (⟨β', hβ'k.trans (Nat.le_succ k)⟩ : MultiIndexLE ι (k + 1)) :=
+        Subtype.ext hβ'
+      refine ⟨weakDeriv (w (some i)) ⟨β', hβ'k⟩, ?_⟩
+      have := hw' (some i) ⟨β', hβ'k⟩
+      simp only [ht, Option.elim, hT'c, hDc, hTc, hβeq] at this ⊢
+      exact this
+  obtain ⟨y, hy⟩ := SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv hcomp
+  exact ⟨φ, y, hφ, hy⟩
+
+end SobolevMultiIndex
+
+end LowerOrderAbstract
+
+section RellichLower
+
+open SobolevMultiIndex
+
+variable {d : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **`W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)`** for a bounded open `Ω ⊆ ℝ^N` of class `C¹` (by charts),
+`1 ≤ p < ∞` with `p ≠ 1` or `N ≥ 2`: the inclusion `SobolevMultiIndex.toLowerOrderL` is a
+compact embedding (Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 7.3.9, under `C¹`;
+[brezis2011functional] Theorem 9.16 iterated). Induction on `k` from `W^{1,p}(Ω) ⊂⊂ L^p(Ω)`
+(`SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one`), the step being
+`SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq` for the operators forgetting the
+top components and the partial derivatives. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hd : p ≠ 1 ∨ 1 ≤ d)
+    (k : ℕ) :
+    IsCompactEmbedding (toLowerOrderL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p Ω
+      volume (Nat.le_succ k)).toLinearMap := by
+  induction k with
+  | zero =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq_fnL (weakDeriv_toLowerOrderL_zero)
+      (isContinuousEmbedding_toLowerOrderL (Nat.zero_le 1))
+      (SobolevEuclidean.isCompactEmbedding_fnL_of_ne_one hΩ hb hd)
+  | succ k ih =>
+    exact isCompactEmbedding_of_forall_weakDeriv_eq (weakDeriv_toLowerOrderL (Nat.le_succ (k + 1)))
+      (weakDeriv_toLowerOrderL (Nat.le_succ k))
+      (weakDeriv_partialDerivL (F := ℝ) (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis)
+        (p := p) (Ω := Ω) (μ := volume))
+      (norm_toLowerOrderL_apply_le _) (norm_partialDerivL_apply_le)
+      (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
+
+end RellichLower

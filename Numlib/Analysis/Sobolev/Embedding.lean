@@ -17,7 +17,9 @@ Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*
 `W^{1,p}(ℝ^N)`: the Sobolev–Gagliardo–Nirenberg inequality (Theorem 9.9), its consequence for the
 intermediate exponents `p ≤ q ≤ p*` (Corollary 9.10), the limiting case `p = N` (Corollary 9.11),
 and Morrey's theorem for `p > N` (Theorem 9.12) with the continuous representative of Remark 11
-and the decay at infinity of Remark 12. The domain versions (Corollaries 9.14–9.15) are
+and the decay at infinity of Remark 12; then, on `W^{m,p}(ℝ^N)`, the higher-order embeddings of
+Corollary 9.13 (`L^q`, `L^∞` and `C^k` with Hölder top derivatives) and the local `C^k`
+representatives of `W^{m,p}_loc(Ω)`. The domain versions (Corollaries 9.14–9.15) are
 `Numlib/Analysis/Sobolev/EmbeddingDomain.lean`, the compactness (Theorem 9.16)
 `Numlib/Analysis/Sobolev/Compactness.lean`.
 
@@ -60,6 +62,37 @@ Mathlib's `MeasureTheory.eLpNorm_le_eLpNorm_fderiv_of_eq`), and then on the type
 * `SobolevEuclidean.contRep`, `SobolevEuclidean.toBoundedContinuousMapL`,
   `SobolevEuclidean.isContinuousEmbedding_toBoundedContinuousMapL`: the continuous representative
   on the typed space and **`W^{1,p}(ℝ^N) ↪ C_b(ℝ^N) ⊆ L^∞(ℝ^N)`** as a bounded linear map.
+* `SobolevMultiIndex.toLowerOrderL`, `SobolevMultiIndex.partialDerivL`: the inclusion
+  `W^{k,p}(Ω) → W^{k',p}(Ω)` for `k' ≤ k` and the partial derivative
+  `∂_i : W^{k+1,p}(Ω) → W^{k,p}(Ω)` as bounded linear maps of norm at most one, the typed form of
+  the inductive definition of `W^{m+1,p}`;
+  `SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le` lifts an `L^q` bound on
+  `W^{m,p}(ℝ^N)` to `W^{m+1,p}(ℝ^N) ⊆ W^{1,q}(ℝ^N)`, the inductive step of Corollary 9.13.
+* `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`, `SobolevEuclidean.memLp_fn_of_order`,
+  `SobolevEuclidean.isContinuousEmbedding_toLp_of_order`: **Corollary 9.13, the `L^q` clauses**
+  in one statement, `W^{m,p}(ℝ^N) ↪ L^q(ℝ^N)` for `p ≤ q < ∞` with `1/p − m/N ≤ 1/q` (so
+  `1/q = 1/p − m/N` when `1/p − m/N > 0`, every `q ∈ [p, ∞)` otherwise), by induction on `m` from
+  the first-order case `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`.
+* `SobolevEuclidean.exists_forall_continuous_ae_eq_of_order`,
+  `SobolevEuclidean.memLp_fn_top_of_order`,
+  `SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order`:
+  **Corollary 9.13, the `L^∞` clause**, `W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` for `1/p − m/N < 0`, with a
+  continuous Hölder representative.
+* `SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order`,
+  `SobolevEuclidean.exists_contDiff_ae_eq_of_order`, `SobolevEuclidean.exists_contDiff_ae_eq_of_lt`:
+  **Corollary 9.13, the `C^k` clause**, `W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` for `k + N/p < m`, with the
+  derivatives of order `≤ k` bounded by `C ‖u‖` and those of order `k` Hölder — of the sharp
+  exponent `m − N/p − k` when it is less than `1` — by induction on `k` through Remark 2's
+  converse `HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`.
+* `MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt`, `MemSobolevMultiIndexLoc.exists_contDiffOn`:
+  the local form, `W^{m,p}_loc(Ω) ⊂ C^k(Ω)` for `k + N/p < m` and `⋂_m H^m_loc(Ω) ⊂ C^∞(Ω)`,
+  by cut-offs and gluing.
+* `SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one`: **Remark 13**,
+  `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)` with a continuous representative bounded by `‖∂_1 ⋯ ∂_N u‖_1 ≤ ‖u‖`,
+  from the iterated fundamental theorem of calculus over the coordinates
+  (`ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank`, through the line bound
+  `ContDiff.enorm_le_lintegral_fderiv_line` and the Fubini step
+  `MeasureTheory.lintegral_fin_succ_eq`).
 
 ## Design
 
@@ -70,12 +103,20 @@ of Remark 7 (`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex`) and is no
 Balls replace the cubes of the book's proof of Theorem 9.12 because the homothety
 `z ↦ x + t(z − x)` maps any convex set containing `x` into itself and scales the Haar measure by
 `t^N` (`MeasureTheory.setLIntegral_comp_homothety`), so no coordinates enter; the constants
-differ from the book's cube constants accordingly. Lemma 9.4 (Gagliardo's product lemma) in its
-general form, Corollary 9.13 (the higher-order embeddings) and Remark 13 are not proved here.
+differ from the book's cube constants accordingly. The higher-order statements carry the
+hypothesis `2 ≤ N ∨ 1 < p`: the chain of first-order embeddings is stuck at `W^{1,1}(ℝ)`, where
+Corollary 9.11 needs `N ≥ 2` (that case is the one-dimensional theory of
+`Numlib/Analysis/Sobolev/Interval/Embedding.lean`). Remark 13 is the one case the chain misses
+that the book settles, `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)`; it is proved directly on the smooth
+approximants, and its tensor-to-multi-index step reads the mixed derivative `∂_1 ⋯ ∂_N` off the
+weak derivative of order `N` through `HasWeakIteratedFDerivOn.lineDeriv` and the permutation
+lemma `multiIndexDirections_multiIndexCount_perm`. Lemma 9.4 (Gagliardo's product lemma) in its
+general form is not proved here.
 
 ## References
 
-[brezis2011functional], §9.3.A: Theorem 9.9, Corollaries 9.10–9.11, Theorem 9.12, Remarks 11–12.
+[brezis2011functional], §9.3.A: Theorem 9.9, Corollaries 9.10–9.11, Theorem 9.12, Remarks 11–12,
+Corollary 9.13 (footnotes 12–14), Remark 13, and the proof of Theorem 9.31 (`e_n ∈ C^∞(Ω)`).
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -1554,3 +1595,1590 @@ theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_eq_finrank [Fact (1 ≤ (
   exact (eLpNorm_restrict_coe_top (fn u) (q : ℝ≥0∞)).trans_le (hKu u)
 
 end TypedLimitingCase
+
+/-! ### Forgetting orders, and the partial derivatives as maps between Sobolev spaces -/
+
+section LowerOrder
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k k' : ℕ} {p : ℝ≥0∞}
+  {Ω : Opens E} {μ : Measure E}
+
+namespace SobolevMultiIndex
+
+/-- The `ℓ^p` norm of an element of `W^{k,p}(Ω)` is at most the number of multi-indices of
+order at most `k` times a common bound on its components. -/
+theorem norm_le_card_mul_of_forall_norm_weakDeriv_le [Fact (1 ≤ p)]
+    (u : SobolevMultiIndex F b k p Ω μ) {M : ℝ} (h : ∀ α, ‖weakDeriv u α‖ ≤ M) :
+    ‖u‖ ≤ Fintype.card (MultiIndexLE ι k) * M := by
+  rw [← Submodule.norm_coe]
+  refine (PiLp.norm_le_sum_norm _).trans ?_
+  calc ∑ α : MultiIndexLE ι k, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) α‖
+      ≤ ∑ _α : MultiIndexLE ι k, M := Finset.sum_le_sum fun α _ ↦ h α
+    _ = Fintype.card (MultiIndexLE ι k) * M := by
+        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+
+variable (F b p Ω μ) in
+/-- **Forgetting the top-order components**: an element of `W^{k,p}(Ω)` read in `W^{k',p}(Ω)` for
+`k' ≤ k`, the typed form of `MemSobolevMultiIndex.mono_order`. -/
+def toLowerOrder (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    SobolevMultiIndex F b k' p Ω μ :=
+  ⟨WithLp.toLp p fun α : MultiIndexLE ι k' ↦ weakDeriv u ⟨α.1, α.2.trans hk⟩,
+    fun α ↦ hasWeakIteratedLineDerivOn u ⟨α.1, α.2.trans hk⟩⟩
+
+/-- The components of `toLowerOrder u` are those of `u`. -/
+@[simp]
+theorem weakDeriv_toLowerOrder (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ)
+    (α : MultiIndexLE ι k') :
+    weakDeriv (toLowerOrder F b p Ω μ hk u) α = weakDeriv u ⟨α.1, α.2.trans hk⟩ :=
+  rfl
+
+/-- The function of `toLowerOrder u` is the function of `u`. -/
+@[simp]
+theorem fn_toLowerOrder (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    fn (toLowerOrder F b p Ω μ hk u) = fn u :=
+  rfl
+
+/-- Forgetting orders is additive. -/
+theorem toLowerOrder_add (hk : k' ≤ k) (u v : SobolevMultiIndex F b k p Ω μ) :
+    toLowerOrder F b p Ω μ hk (u + v) = toLowerOrder F b p Ω μ hk u + toLowerOrder F b p Ω μ hk v :=
+  rfl
+
+/-- Forgetting orders commutes with scalar multiplication. -/
+theorem toLowerOrder_smul (hk : k' ≤ k) (c : ℝ) (u : SobolevMultiIndex F b k p Ω μ) :
+    toLowerOrder F b p Ω μ hk (c • u) = c • toLowerOrder F b p Ω μ hk u :=
+  rfl
+
+omit [LinearOrder ι] in
+/-- The multi-indices of order at most `k'` embed into those of order at most `k ≥ k'`. -/
+theorem _root_.MultiIndexLE.castLE_injective (hk : k' ≤ k) :
+    Function.Injective fun α : MultiIndexLE ι k' ↦ (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k) :=
+  fun _ _ h ↦ Subtype.ext (Subtype.mk.inj h)
+
+/-- Forgetting components does not increase the `ℓ^p` norm. -/
+theorem norm_toLowerOrder_le [Fact (1 ≤ p)] (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    ‖toLowerOrder F b p Ω μ hk u‖ ≤ ‖u‖ := by
+  classical
+  rw [← Submodule.norm_coe, ← Submodule.norm_coe]
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
+    refine ciSup_le fun α ↦ ?_
+    exact le_ciSup (Finite.bddAbove_range fun β : MultiIndexLE ι k ↦
+      ‖(u : SobolevMultiIndexTuple F ι k ⊤ Ω μ) β‖) (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k)
+  · have hP : 0 < p.toReal :=
+      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
+      ?_ (by positivity)
+    calc ∑ α : MultiIndexLE ι k',
+          ‖(toLowerOrder F b p Ω μ hk u : SobolevMultiIndexTuple F ι k' p Ω μ) α‖ ^ p.toReal
+        = ∑ β ∈ Finset.univ.image
+            (fun α : MultiIndexLE ι k' ↦ (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k)),
+            ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal := by
+          rw [Finset.sum_image (MultiIndexLE.castLE_injective hk).injOn]
+          rfl
+      _ ≤ ∑ β : MultiIndexLE ι k, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal :=
+          Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
+            fun _ _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
+
+variable (F b p Ω μ) in
+/-- **The inclusion `W^{k,p}(Ω) → W^{k',p}(Ω)`, `k' ≤ k`, as a bounded linear map** of norm at most
+one: forget the components of order above `k'`. -/
+def toLowerOrderL [Fact (1 ≤ p)] (hk : k' ≤ k) :
+    SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k' p Ω μ :=
+  LinearMap.mkContinuous
+    { toFun := toLowerOrder F b p Ω μ hk
+      map_add' := toLowerOrder_add hk
+      map_smul' := toLowerOrder_smul hk }
+    1 fun u ↦ by rw [one_mul]; exact norm_toLowerOrder_le hk u
+
+/-- `SobolevMultiIndex.toLowerOrderL` is `SobolevMultiIndex.toLowerOrder`. -/
+@[simp]
+theorem toLowerOrderL_apply [Fact (1 ≤ p)] (hk : k' ≤ k) (u : SobolevMultiIndex F b k p Ω μ) :
+    toLowerOrderL F b p Ω μ hk u = toLowerOrder F b p Ω μ hk u :=
+  rfl
+
+/-- The operator norm of `SobolevMultiIndex.toLowerOrderL` is at most one. -/
+theorem norm_toLowerOrderL_le [Fact (1 ≤ p)] (hk : k' ≤ k) : ‖toLowerOrderL F b p Ω μ hk‖ ≤ 1 :=
+  LinearMap.mkContinuous_norm_le _ zero_le_one _
+
+/-- `SobolevMultiIndex.toLowerOrderL` is injective: an element is determined by its function. -/
+theorem toLowerOrderL_injective [Fact (1 ≤ p)] [FiniteDimensional ℝ E] [BorelSpace E]
+    [CompleteSpace F] (hk : k' ≤ k) :
+    Function.Injective (toLowerOrderL F b p Ω μ hk) := fun u v huv ↦ by
+  have h1 : fn (toLowerOrderL F b p Ω μ hk u) = fn (toLowerOrderL F b p Ω μ hk v) :=
+    congrArg fn huv
+  exact ext_of_fn_ae_eq (by rw [show fn u = fn v from h1])
+
+/-- **The `ℓ^p` norm is monotone under an injective reindexing of the components**: if the
+components of `v ∈ W^{k',p}(Ω)` are components of `u ∈ W^{k,p}(Ω)` read along an injection of
+the multi-indices, then `‖v‖ ≤ ‖u‖`. -/
+theorem norm_le_norm_of_injective [Fact (1 ≤ p)] {u : SobolevMultiIndex F b k p Ω μ}
+    {v : SobolevMultiIndex F b k' p Ω μ} {e : MultiIndexLE ι k' → MultiIndexLE ι k}
+    (he : Function.Injective e) (h : ∀ α, weakDeriv v α = weakDeriv u (e α)) : ‖v‖ ≤ ‖u‖ := by
+  classical
+  rw [← Submodule.norm_coe, ← Submodule.norm_coe]
+  rcases eq_or_ne p ⊤ with rfl | hp
+  · rw [PiLp.norm_eq_ciSup, PiLp.norm_eq_ciSup]
+    refine ciSup_le fun α ↦ ?_
+    rw [show (v : SobolevMultiIndexTuple F ι k' ⊤ Ω μ) α = weakDeriv u (e α) from h α]
+    exact le_ciSup (Finite.bddAbove_range fun β : MultiIndexLE ι k ↦
+      ‖(u : SobolevMultiIndexTuple F ι k ⊤ Ω μ) β‖) (e α)
+  · have hP : 0 < p.toReal :=
+      ENNReal.toReal_pos (zero_lt_one.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ p)).ne' hp
+    rw [PiLp.norm_eq_sum hP, PiLp.norm_eq_sum hP]
+    refine Real.rpow_le_rpow (Finset.sum_nonneg fun _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _)
+      ?_ (by positivity)
+    calc ∑ α : MultiIndexLE ι k', ‖(v : SobolevMultiIndexTuple F ι k' p Ω μ) α‖ ^ p.toReal
+        = ∑ β ∈ Finset.univ.image e, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal := by
+          rw [Finset.sum_image he.injOn]
+          exact Finset.sum_congr rfl fun α _ ↦ by
+            rw [show (v : SobolevMultiIndexTuple F ι k' p Ω μ) α = weakDeriv u (e α) from h α]
+            rfl
+      _ ≤ ∑ β : MultiIndexLE ι k, ‖(u : SobolevMultiIndexTuple F ι k p Ω μ) β‖ ^ p.toReal :=
+          Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
+            fun _ _ _ ↦ Real.rpow_nonneg (norm_nonneg _) _
+
+section PartialDeriv
+
+/-- The multi-index `α + e_i` of order at most `k + 1`, for `α` of order at most `k`. -/
+def _root_.MultiIndexLE.addSingle (i : ι) (α : MultiIndexLE ι k) : MultiIndexLE ι (k + 1) :=
+  ⟨α.1 + Pi.single i 1, by
+    simp only [Pi.add_apply, Finset.sum_add_distrib, Finset.sum_pi_single', Finset.mem_univ,
+      ite_true]
+    omega⟩
+
+/-- The multi-index underlying `addSingle i α` is `α + e_i`. -/
+@[simp]
+theorem _root_.MultiIndexLE.coe_addSingle (i : ι) (α : MultiIndexLE ι k) :
+    ((MultiIndexLE.addSingle i α : MultiIndexLE ι (k + 1)) : ι → ℕ) = α.1 + Pi.single i 1 :=
+  rfl
+
+/-- `α ↦ α + e_i` is injective. -/
+theorem _root_.MultiIndexLE.addSingle_injective (i : ι) :
+    Function.Injective (MultiIndexLE.addSingle i : MultiIndexLE ι k → MultiIndexLE ι (k + 1)) :=
+  fun _ _ h ↦ Subtype.ext (add_right_cancel (Subtype.mk.inj h))
+
+/-- The multi-index `e_i` of order at most `k + 1`. -/
+def _root_.MultiIndexLE.singleLE (i : ι) : MultiIndexLE ι (k + 1) :=
+  ⟨Pi.single i 1, by simp⟩
+
+/-- `0 + e_i = e_i`. -/
+theorem _root_.MultiIndexLE.addSingle_zero (i : ι) :
+    MultiIndexLE.addSingle i (0 : MultiIndexLE ι k) = MultiIndexLE.singleLE i :=
+  Subtype.ext (zero_add _)
+
+/-- The weak derivative `∂_i u` of `u ∈ W^{k+1,p}(Ω)` along the basis direction `b i` is the
+component of `u` at `e_i`. -/
+theorem hasWeakIteratedLineDerivOn_single (u : SobolevMultiIndex F b (k + 1) p Ω μ) (i : ι) :
+    HasWeakIteratedLineDerivOn ![b i] (fn u) (weakDeriv u (MultiIndexLE.singleLE i)) Ω μ :=
+  (hasWeakIteratedLineDerivOn u (MultiIndexLE.singleLE i)).of_perm
+    (multiIndexTuple_single_perm (b : ι → E) i)
+
+/-- The component of `u` at `α + e_i` is the weak derivative `∂^α` of the component at `e_i`. -/
+theorem hasWeakIteratedLineDerivOn_addSingle (u : SobolevMultiIndex F b (k + 1) p Ω μ) (i : ι)
+    (α : MultiIndexLE ι k) :
+    HasWeakIteratedLineDerivOn (multiIndexTuple (b : ι → E) α.1)
+      (weakDeriv u (MultiIndexLE.singleLE i)) (weakDeriv u (MultiIndexLE.addSingle i α)) Ω μ :=
+  (hasWeakIteratedLineDerivOn_single u i).of_cons'
+    ((hasWeakIteratedLineDerivOn u (MultiIndexLE.addSingle i α)).of_perm
+      (multiIndexTuple_add_single_perm (b : ι → E) α.1 i).symm)
+
+variable (F b p Ω μ) in
+/-- **The partial derivative `∂_i` as a map `W^{k+1,p}(Ω) → W^{k,p}(Ω)`**: the element whose
+component at `α` is the component of `u` at `α + e_i`; its function is the weak derivative
+`∂_i u`. -/
+def partialDeriv (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    SobolevMultiIndex F b k p Ω μ :=
+  ⟨WithLp.toLp p fun α : MultiIndexLE ι k ↦ weakDeriv u (MultiIndexLE.addSingle i α), fun α ↦ by
+    have e : (weakDeriv u (MultiIndexLE.addSingle i (0 : MultiIndexLE ι k)) : E → F)
+        = weakDeriv u (MultiIndexLE.singleLE i) := by
+      rw [MultiIndexLE.addSingle_zero]
+    change HasWeakIteratedLineDerivOn (multiIndexTuple (b : ι → E) α.1)
+      (weakDeriv u (MultiIndexLE.addSingle i (0 : MultiIndexLE ι k)))
+      (weakDeriv u (MultiIndexLE.addSingle i α)) Ω μ
+    rw [e]
+    exact hasWeakIteratedLineDerivOn_addSingle u i α⟩
+
+/-- The components of `∂_i u` are the components of `u` at `α + e_i`. -/
+@[simp]
+theorem weakDeriv_partialDeriv (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ)
+    (α : MultiIndexLE ι k) :
+    weakDeriv (partialDeriv F b p Ω μ i u) α = weakDeriv u (MultiIndexLE.addSingle i α) :=
+  rfl
+
+/-- The function of `∂_i u` is the component of `u` at `e_i`. -/
+theorem fn_partialDeriv (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    fn (partialDeriv F b p Ω μ i u) = weakDeriv u (MultiIndexLE.singleLE i) := by
+  change (weakDeriv u (MultiIndexLE.addSingle i (0 : MultiIndexLE ι k)) : E → F) = _
+  rw [MultiIndexLE.addSingle_zero]
+
+/-- The function of `partialDeriv i u` is the weak derivative of `fn u` along `b i`. -/
+theorem hasWeakIteratedLineDerivOn_fn_partialDeriv (i : ι)
+    (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    HasWeakIteratedLineDerivOn ![b i] (fn u) (fn (partialDeriv F b p Ω μ i u)) Ω μ := by
+  rw [fn_partialDeriv]
+  exact hasWeakIteratedLineDerivOn_single u i
+
+/-- The partial derivative is additive. -/
+theorem partialDeriv_add (i : ι) (u v : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    partialDeriv F b p Ω μ i (u + v) = partialDeriv F b p Ω μ i u + partialDeriv F b p Ω μ i v :=
+  rfl
+
+/-- The partial derivative commutes with scalar multiplication. -/
+theorem partialDeriv_smul (i : ι) (c : ℝ) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    partialDeriv F b p Ω μ i (c • u) = c • partialDeriv F b p Ω μ i u :=
+  rfl
+
+/-- `‖∂_i u‖_{W^{k,p}} ≤ ‖u‖_{W^{k+1,p}}`. -/
+theorem norm_partialDeriv_le [Fact (1 ≤ p)] (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    ‖partialDeriv F b p Ω μ i u‖ ≤ ‖u‖ :=
+  norm_le_norm_of_injective (MultiIndexLE.addSingle_injective i) fun _ ↦ rfl
+
+variable (F b p Ω μ) in
+/-- **The partial derivative `∂_i : W^{k+1,p}(Ω) → W^{k,p}(Ω)` as a bounded linear map** of norm
+at most one. -/
+def partialDerivL [Fact (1 ≤ p)] (i : ι) :
+    SobolevMultiIndex F b (k + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω μ :=
+  LinearMap.mkContinuous
+    { toFun := partialDeriv F b p Ω μ i
+      map_add' := partialDeriv_add i
+      map_smul' := partialDeriv_smul i }
+    1 fun u ↦ by rw [one_mul]; exact norm_partialDeriv_le i u
+
+/-- `SobolevMultiIndex.partialDerivL` is `SobolevMultiIndex.partialDeriv`. -/
+@[simp]
+theorem partialDerivL_apply [Fact (1 ≤ p)] (i : ι) (u : SobolevMultiIndex F b (k + 1) p Ω μ) :
+    partialDerivL F b p Ω μ i u = partialDeriv F b p Ω μ i u :=
+  rfl
+
+/-- The operator norm of `SobolevMultiIndex.partialDerivL` is at most one. -/
+theorem norm_partialDerivL_le [Fact (1 ≤ p)] (i : ι) :
+    ‖(partialDerivL F b p Ω μ i :
+      SobolevMultiIndex F b (k + 1) p Ω μ →L[ℝ] SobolevMultiIndex F b k p Ω μ)‖ ≤ 1 :=
+  LinearMap.mkContinuous_norm_le _ zero_le_one _
+
+end PartialDeriv
+
+end SobolevMultiIndex
+
+end LowerOrder
+
+/-! ### Lifting an `L^q` bound at order `m` to `W^{1,q}` at order `m + 1` -/
+
+section Lift
+
+open SobolevMultiIndex
+
+variable {N m : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
+
+/-- **The inductive step of Corollary 9.13**: if `W^{m,p}(ℝ^N) ⊆ L^q(ℝ^N)` with the bound
+`‖fn v‖_q ≤ K ‖v‖`, then every `u ∈ W^{m+1,p}(ℝ^N)` is (almost everywhere) the function of an
+element `w ∈ W^{1,q}(ℝ^N)` with `‖w‖ ≤ (N + 1) K ‖u‖` — `u` and its partial derivatives `∂_i u`
+lie in `W^{m,p}(ℝ^N)`, hence in `L^q(ℝ^N)`, and `∂_i u` is the weak derivative of `u`.
+[brezis2011functional] Corollary 9.13, proof ("repeated applications"). -/
+theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le {K : ℝ≥0∞}
+    (hK : K ≠ ⊤)
+    (h : ∀ v : SobolevEuclidean N m p ⊤, eLpNorm (fn v) q volume ≤ K * ENNReal.ofReal ‖v‖)
+    (u : SobolevEuclidean N (m + 1) p ⊤) :
+    ∃ w : SobolevEuclidean N 1 q ⊤, fn w =ᵐ[volume] fn u ∧ ‖w‖ ≤ (N + 1) * K.toReal * ‖u‖ := by
+  classical
+  have hq1 : (1 : ℝ≥0∞) ≤ q := Fact.out
+  obtain ⟨v₀, hv₀⟩ : ∃ v₀ : SobolevEuclidean N m p ⊤,
+      v₀ = toLowerOrder ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p ⊤ volume
+        (Nat.le_succ m) u :=
+    ⟨_, rfl⟩
+  obtain ⟨v, hv⟩ : ∃ v : Fin N → SobolevEuclidean N m p ⊤,
+      v = fun i ↦ partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p ⊤ volume i u :=
+    ⟨_, rfl⟩
+  have hv₀fn : fn v₀ = fn u := by rw [hv₀]; rfl
+  have hv₀n : ‖v₀‖ ≤ ‖u‖ := by rw [hv₀]; exact norm_toLowerOrder_le _ u
+  have hvn : ∀ i, ‖v i‖ ≤ ‖u‖ := fun i ↦ by rw [hv]; exact norm_partialDeriv_le i u
+  have hvd : ∀ i, HasWeakIteratedLineDerivOn ![(EuclideanSpace.basisFun (Fin N) ℝ).toBasis i]
+      (fn u) (fn (v i)) ⊤ volume := fun i ↦ by
+    rw [hv]
+    exact hasWeakIteratedLineDerivOn_fn_partialDeriv i u
+  -- the `L^q` bounds
+  have hK' : ∀ v : SobolevEuclidean N m p ⊤,
+      eLpNorm (fn v) q volume ≤ ENNReal.ofReal (K.toReal * ‖v‖) := fun v ↦ by
+    rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
+    exact h v
+  have h0 : MemLp (fn u) q volume := by
+    rw [← hv₀fn]
+    exact memLp_iff.2 ((hK' v₀).trans_lt ENNReal.ofReal_lt_top)
+  have hi : ∀ i, MemLp (fn (v i)) q volume := fun i ↦
+    memLp_iff.2 ((hK' (v i)).trans_lt ENNReal.ofReal_lt_top)
+  -- `fn u ∈ W^{1,q}(ℝ^N)`
+  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn u) 1 q ⊤
+      volume := by
+    refine ⟨by simpa [Measure.restrict_coe_top] using h0, fun β hβ ↦ ?_⟩
+    rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with hz | ⟨i, hi'⟩
+    · obtain rfl : β = 0 := congrArg Subtype.val hz
+      refine ⟨_, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
+        ((h0.locallyIntegrable hq1).locallyIntegrableOn _), ?_⟩
+      simpa [Measure.restrict_coe_top] using h0
+    · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi'
+      refine ⟨fn (v i), (hvd i).of_perm (multiIndexTuple_single_perm _ i).symm, ?_⟩
+      simpa [Measure.restrict_coe_top] using hi i
+  obtain ⟨w, hw⟩ := hmem.exists_sobolevMultiIndex
+  rw [eventuallyEq_restrict_coe_top_iff] at hw
+  refine ⟨w, hw, ?_⟩
+  -- the bound on `‖w‖` through its components
+  have hw0 : ‖weakDeriv w 0‖ ≤ K.toReal * ‖u‖ := by
+    rw [Lp.norm_def, eLpNorm_restrict_coe_top, weakDeriv_zero]
+    calc (eLpNorm (fn w) q volume).toReal
+        = (eLpNorm (fn u) q volume).toReal := by rw [eLpNorm_congr_ae hw]
+      _ ≤ (ENNReal.ofReal (K.toReal * ‖v₀‖)).toReal := by
+          rw [← hv₀fn]
+          exact ENNReal.toReal_mono ENNReal.ofReal_ne_top (hK' v₀)
+      _ ≤ K.toReal * ‖u‖ := by
+          rw [ENNReal.toReal_ofReal (by positivity)]
+          exact mul_le_mul_of_nonneg_left hv₀n ENNReal.toReal_nonneg
+  have hwi : ∀ i, ‖weakDeriv w (MultiIndexLE.single i)‖ ≤ K.toReal * ‖u‖ := fun i ↦ by
+    have hwd : HasWeakIteratedLineDerivOn ![(EuclideanSpace.basisFun (Fin N) ℝ).toBasis i]
+        (fn u) (weakDeriv w (MultiIndexLE.single i)) ⊤ volume :=
+      ((hasWeakIteratedLineDerivOn w (MultiIndexLE.single i)).of_perm
+        (multiIndexTuple_single_perm _ i)).congr_ae (eventuallyEq_restrict_coe_top_iff.2 hw)
+        (Filter.EventuallyEq.refl _ _)
+    have hae : (weakDeriv w (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
+        =ᵐ[volume] fn (v i) := by
+      filter_upwards [hwd.ae_eq (hvd i)] with x hx
+      exact hx (by simp)
+    rw [Lp.norm_def, eLpNorm_restrict_coe_top, eLpNorm_congr_ae hae]
+    calc (eLpNorm (fn (v i)) q volume).toReal
+        ≤ (ENNReal.ofReal (K.toReal * ‖v i‖)).toReal :=
+          ENNReal.toReal_mono ENNReal.ofReal_ne_top (hK' (v i))
+      _ ≤ K.toReal * ‖u‖ := by
+          rw [ENNReal.toReal_ofReal (by positivity)]
+          exact mul_le_mul_of_nonneg_left (hvn i) ENNReal.toReal_nonneg
+  calc ‖w‖ ≤ ∑ α, ‖weakDeriv w α‖ := by
+        rw [← Submodule.norm_coe]
+        exact PiLp.norm_le_sum_norm _
+    _ = ‖weakDeriv w 0‖ + ∑ i, ‖weakDeriv w (MultiIndexLE.single i)‖ :=
+        MultiIndexLE.sum_univ_one _
+    _ ≤ K.toReal * ‖u‖ + ∑ _i : Fin N, K.toReal * ‖u‖ :=
+        add_le_add hw0 (Finset.sum_le_sum fun i _ ↦ hwi i)
+    _ = (N + 1) * K.toReal * ‖u‖ := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        ring
+
+/-- **The inductive step of Corollary 9.15**: if `W^{m,p}(Ω) ⊆ L^q(Ω)` with the bound
+`‖fn v‖_{L^q(Ω)} ≤ K ‖v‖`, then every `u ∈ W^{m+1,p}(Ω)` is (almost everywhere on `Ω`) the
+function of an element `w ∈ W^{1,q}(Ω)` with `‖w‖ ≤ (N + 1) K ‖u‖`, the domain form of
+`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le`.
+[brezis2011functional] Corollary 9.15, proof ("repeated application of Corollary 9.14"). -/
+theorem SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict_le
+    {Ω : Opens (EuclideanSpace ℝ (Fin N))} {K : ℝ≥0∞} (hK : K ≠ ⊤)
+    (h : ∀ v : SobolevEuclidean N m p Ω, eLpNorm (fn v) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≤ K * ENNReal.ofReal ‖v‖)
+    (u : SobolevEuclidean N (m + 1) p Ω) :
+    ∃ w : SobolevEuclidean N 1 q Ω,
+      fn w =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn u ∧
+      ‖w‖ ≤ (N + 1) * K.toReal * ‖u‖ := by
+  classical
+  have hq1 : (1 : ℝ≥0∞) ≤ q := Fact.out
+  obtain ⟨v₀, hv₀⟩ : ∃ v₀ : SobolevEuclidean N m p Ω,
+      v₀ = toLowerOrder ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume
+        (Nat.le_succ m) u :=
+    ⟨_, rfl⟩
+  obtain ⟨v, hv⟩ : ∃ v : Fin N → SobolevEuclidean N m p Ω,
+      v = fun i ↦ partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume i u :=
+    ⟨_, rfl⟩
+  have hv₀fn : fn v₀ = fn u := by rw [hv₀]; rfl
+  have hv₀n : ‖v₀‖ ≤ ‖u‖ := by rw [hv₀]; exact norm_toLowerOrder_le _ u
+  have hvn : ∀ i, ‖v i‖ ≤ ‖u‖ := fun i ↦ by rw [hv]; exact norm_partialDeriv_le i u
+  have hvd : ∀ i, HasWeakIteratedLineDerivOn ![(EuclideanSpace.basisFun (Fin N) ℝ).toBasis i]
+      (fn u) (fn (v i)) Ω volume := fun i ↦ by
+    rw [hv]
+    exact hasWeakIteratedLineDerivOn_fn_partialDeriv i u
+  -- the `L^q` bounds
+  have hK' : ∀ v : SobolevEuclidean N m p Ω,
+      eLpNorm (fn v) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
+        ≤ ENNReal.ofReal (K.toReal * ‖v‖) := fun v ↦ by
+    rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
+    exact h v
+  have h0 : MemLp (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+    rw [← hv₀fn]
+    exact memLp_iff.2 ((hK' v₀).trans_lt ENNReal.ofReal_lt_top)
+  have hi : ∀ i, MemLp (fn (v i)) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    fun i ↦ memLp_iff.2 ((hK' (v i)).trans_lt ENNReal.ofReal_lt_top)
+  -- `fn u ∈ W^{1,q}(Ω)`
+  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn u) 1 q Ω
+      volume := by
+    refine ⟨h0, fun β hβ ↦ ?_⟩
+    rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with hz | ⟨i, hi'⟩
+    · obtain rfl : β = 0 := congrArg Subtype.val hz
+      exact ⟨_, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
+        (h0.locallyIntegrableOn hq1), h0⟩
+    · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi'
+      exact ⟨fn (v i), (hvd i).of_perm (multiIndexTuple_single_perm _ i).symm, hi i⟩
+  obtain ⟨w, hw⟩ := hmem.exists_sobolevMultiIndex
+  refine ⟨w, hw, ?_⟩
+  -- the bound on `‖w‖` through its components
+  have hw0 : ‖weakDeriv w 0‖ ≤ K.toReal * ‖u‖ := by
+    rw [Lp.norm_def, weakDeriv_zero]
+    calc (eLpNorm (fn w) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal
+        = (eLpNorm (fn u) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal := by
+          rw [eLpNorm_congr_ae hw]
+      _ ≤ (ENNReal.ofReal (K.toReal * ‖v₀‖)).toReal := by
+          rw [← hv₀fn]
+          exact ENNReal.toReal_mono ENNReal.ofReal_ne_top (hK' v₀)
+      _ ≤ K.toReal * ‖u‖ := by
+          rw [ENNReal.toReal_ofReal (by positivity)]
+          exact mul_le_mul_of_nonneg_left hv₀n ENNReal.toReal_nonneg
+  have hwi : ∀ i, ‖weakDeriv w (MultiIndexLE.single i)‖ ≤ K.toReal * ‖u‖ := fun i ↦ by
+    have hwd : HasWeakIteratedLineDerivOn ![(EuclideanSpace.basisFun (Fin N) ℝ).toBasis i]
+        (fn u) (weakDeriv w (MultiIndexLE.single i)) Ω volume :=
+      ((hasWeakIteratedLineDerivOn w (MultiIndexLE.single i)).of_perm
+        (multiIndexTuple_single_perm _ i)).congr_ae hw (Filter.EventuallyEq.refl _ _)
+    have hae : (weakDeriv w (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn (v i) :=
+      (ae_restrict_iff' Ω.isOpen.measurableSet).2 (hwd.ae_eq (hvd i))
+    rw [Lp.norm_def, eLpNorm_congr_ae hae]
+    calc (eLpNorm (fn (v i)) q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toReal
+        ≤ (ENNReal.ofReal (K.toReal * ‖v i‖)).toReal :=
+          ENNReal.toReal_mono ENNReal.ofReal_ne_top (hK' (v i))
+      _ ≤ K.toReal * ‖u‖ := by
+          rw [ENNReal.toReal_ofReal (by positivity)]
+          exact mul_le_mul_of_nonneg_left (hvn i) ENNReal.toReal_nonneg
+  calc ‖w‖ ≤ ∑ α, ‖weakDeriv w α‖ := by
+        rw [← Submodule.norm_coe]
+        exact PiLp.norm_le_sum_norm _
+    _ = ‖weakDeriv w 0‖ + ∑ i, ‖weakDeriv w (MultiIndexLE.single i)‖ :=
+        MultiIndexLE.sum_univ_one _
+    _ ≤ K.toReal * ‖u‖ + ∑ _i : Fin N, K.toReal * ‖u‖ :=
+        add_le_add hw0 (Finset.sum_le_sum fun i _ ↦ hwi i)
+    _ = (N + 1) * K.toReal * ‖u‖ := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        ring
+
+end Lift
+
+/-! ### Corollary 9.13: the `L^q` clauses of the higher-order embeddings -/
+
+section HigherOrderLq
+
+open SobolevMultiIndex
+
+variable {N : ℕ}
+
+/-- **The first-order embeddings of §9.3.A in one statement**: for `1 ≤ p ≤ q < ∞` with
+`1/p − 1/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with `‖u‖_q ≤ K ‖u‖` for every
+`u ∈ W^{1,p}(ℝ^N)`: Corollary 9.10 when `p < N` (then `q ≤ p*`), Corollary 9.11 when `p = N`,
+and Morrey's theorem interpolated with `L^p` when `p > N`. The case `N = 1 = p`, where
+Corollary 9.11 does not apply, is excluded. [brezis2011functional] Corollary 9.13 at `m = 1`. -/
+theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le {p q : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
+    ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : SobolevEuclidean N 1 p ⊤,
+      eLpNorm (fn u) q volume ≤ K * ENNReal.ofReal ‖u‖ := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hq0 : (0 : ℝ) < q := hp0.trans_le (by exact_mod_cast hpq)
+  rcases lt_trichotomy p N with hpN | hpN | hpN
+  · -- `p < N`: Corollary 9.10
+    have hN0 : (0 : ℝ) < N := hp0.trans (by exact_mod_cast hpN)
+    obtain ⟨p', hp'⟩ : ∃ p' : ℝ≥0, (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹ :=
+      ⟨(p⁻¹ - (N : ℝ≥0)⁻¹)⁻¹, by
+        rw [NNReal.coe_inv, NNReal.coe_sub (by
+          exact_mod_cast (inv_strictAnti₀ (zero_lt_one.trans_le hp1) hpN).le), inv_inv]
+        simp⟩
+    have hp'0 : (0 : ℝ) < (p' : ℝ)⁻¹ := by
+      rw [hp', sub_pos]
+      exact inv_strictAnti₀ hp0 (by exact_mod_cast hpN)
+    have hqp' : q ≤ p' := by
+      rw [← NNReal.coe_le_coe, ← inv_le_inv₀ (inv_pos.1 hp'0) hq0, hp']
+      exact hq
+    exact ⟨ENNReal.ofReal (1 + SobolevEuclidean.gnsConst N p * N), ENNReal.ofReal_ne_top,
+      fun u ↦ by
+        rw [← ENNReal.ofReal_mul (by positivity)]
+        exact SobolevEuclidean.eLpNorm_fn_le_norm_of_le_of_le hpN hp' hpq hqp' u⟩
+  · -- `p = N`: Corollary 9.11
+    subst hpN
+    have hN2 : 2 ≤ N := by
+      rcases hN with hN | hN
+      · exact hN
+      · exact_mod_cast hN
+    have hfin : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
+    obtain ⟨K, hK, hKu⟩ := exists_forall_eLpNorm_le_of_eq_finrank
+      (μ := (volume : Measure (EuclideanSpace ℝ (Fin N)))) (F := ℝ) (by rw [hfin]; exact hN2)
+      (q := q) (by rw [hfin]; exact hpq)
+    rw [hfin] at hKu
+    refine ⟨K * (N + 1), ENNReal.mul_ne_top hK (by simp), fun u ↦ ?_⟩
+    obtain ⟨w, hw, hwp, hwle⟩ := SobolevEuclidean.exists_hasWeakFDerivOn u
+    refine (hKu _ w hw (SobolevEuclidean.memLp_fn u) hwp).trans ?_
+    rw [mul_assoc]
+    refine mul_le_mul' le_rfl ?_
+    calc eLpNorm (fn u) (N : ℝ≥0) volume + eLpNorm w (N : ℝ≥0) volume
+        ≤ ENNReal.ofReal ‖u‖ + N * ENNReal.ofReal ‖u‖ :=
+          add_le_add (SobolevEuclidean.eLpNorm_fn_le_ofReal_norm u)
+            (hwle.trans (SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le u))
+      _ = (N + 1) * ENNReal.ofReal ‖u‖ := by ring
+  · -- `p > N`: Morrey, interpolated with `L^p`
+    refine ⟨1 + morreySupConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p * (N + 1),
+      ENNReal.add_ne_top.2 ⟨ENNReal.one_ne_top,
+        ENNReal.mul_ne_top (morreySupConst_ne_top _ _) (by simp)⟩, fun u ↦ ?_⟩
+    calc eLpNorm (fn u) q volume
+        ≤ eLpNorm (fn u) p volume + eLpNorm (fn u) ⊤ volume :=
+          eLpNorm_le_eLpNorm_add_eLpNorm_of_le_of_le
+            (SobolevEuclidean.memLp_fn u).aestronglyMeasurable (by exact_mod_cast hp0.ne')
+            (by exact_mod_cast hpq) le_top
+      _ ≤ ENNReal.ofReal ‖u‖ + morreySupConst volume p * (N + 1) * ENNReal.ofReal ‖u‖ :=
+          add_le_add (SobolevEuclidean.eLpNorm_fn_le_ofReal_norm u)
+            (SobolevEuclidean.eLpNorm_fn_top_le_of_lt hpN u)
+      _ = (1 + morreySupConst volume p * (N + 1)) * ENNReal.ofReal ‖u‖ := by ring
+
+/-- The exponent `r` of the inductive step of Corollary 9.13: `1/r = max (1/p − m/N) (1/q)`,
+which lies between `1/q` and `1/p` and satisfies `1/r − 1/N ≤ 1/q` when
+`1/p − (m + 1)/N ≤ 1/q`. -/
+theorem NNReal.exists_intermediate_sobolev_exponent {p q : ℝ≥0} (m : ℕ) (hp0 : 0 < p)
+    (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (m + 1 : ℕ) / N ≤ (q : ℝ)⁻¹) :
+    ∃ r : ℝ≥0, p ≤ r ∧ r ≤ q ∧ (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹ ∧
+      (r : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹ := by
+  have hp0' : (0 : ℝ) < p := by exact_mod_cast hp0
+  have hq0 : (0 : ℝ) < q := hp0'.trans_le (by exact_mod_cast hpq)
+  have hqinv : (0 : ℝ) < (q : ℝ)⁻¹ := inv_pos.2 hq0
+  have hmax : (0 : ℝ) < max ((p : ℝ)⁻¹ - m / N) (q : ℝ)⁻¹ := lt_max_of_lt_right hqinv
+  obtain ⟨r, hr⟩ : ∃ r : ℝ≥0, (r : ℝ) = (max ((p : ℝ)⁻¹ - m / N) (q : ℝ)⁻¹)⁻¹ :=
+    ⟨(max ((p : ℝ)⁻¹ - m / N) (q : ℝ)⁻¹)⁻¹.toNNReal, Real.coe_toNNReal _ (by positivity)⟩
+  refine ⟨r, ?_, ?_, ?_, ?_⟩
+  · rw [← NNReal.coe_le_coe, hr, ← inv_le_inv₀ (inv_pos.2 hmax) hp0', inv_inv]
+    refine max_le (sub_le_self _ (by positivity)) ?_
+    exact inv_anti₀ hp0' (by exact_mod_cast hpq)
+  · rw [← NNReal.coe_le_coe, hr, ← inv_le_inv₀ hq0 (inv_pos.2 hmax), inv_inv]
+    exact le_max_right _ _
+  · rw [hr, inv_inv]
+    exact le_max_left _ _
+  · rw [hr, inv_inv]
+    rcases le_total ((p : ℝ)⁻¹ - m / N) (q : ℝ)⁻¹ with h | h
+    · rw [max_eq_right h]
+      exact sub_le_self _ (by positivity)
+    · rw [max_eq_left h]
+      refine le_trans (le_of_eq ?_) hq
+      push_cast
+      rw [add_div]
+      ring
+
+/-- **Corollary 9.13, the `L^q` bound at every order**: for `m ≥ 0`, `1 ≤ p ≤ q < ∞` with
+`1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, there is a finite `K` with `‖u‖_q ≤ K ‖u‖` for every
+`u ∈ W^{m,p}(ℝ^N)`. This contains the book's first two clauses — `W^{m,p} ⊂ L^q` for
+`1/q = 1/p − m/N` when `1/p − m/N > 0`, and for every `q ∈ [p, ∞)` when `1/p − m/N ≤ 0` — and is
+proved by induction on `m` through
+`SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le` and the first-order
+statement `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`, with the intermediate
+exponent `1/r = max (1/p − m/N) (1/q)`. [brezis2011functional] Corollary 9.13
+("repeated applications of Theorem 9.9, Corollary 9.11 and Theorem 9.12"). -/
+theorem SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order (m : ℕ) {p q : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) :
+    ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : SobolevEuclidean N m p ⊤,
+      eLpNorm (fn u) q volume ≤ K * ENNReal.ofReal ‖u‖ := by
+  induction m generalizing p q with
+  | zero =>
+    have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p))
+    have hq0 : (0 : ℝ) < q := hp0.trans_le (by exact_mod_cast hpq)
+    obtain rfl : q = p := by
+      refine le_antisymm ?_ hpq
+      rw [← NNReal.coe_le_coe, ← inv_le_inv₀ hp0 hq0]
+      simpa using hq
+    exact ⟨1, ENNReal.one_ne_top, fun u ↦ by
+      rw [one_mul]
+      exact SobolevEuclidean.eLpNorm_fn_le_ofReal_norm u⟩
+  | succ m ih =>
+    have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+    obtain ⟨r, hpr, hrq, hr₁, hr₂⟩ :=
+      NNReal.exists_intermediate_sobolev_exponent (N := N) m (zero_lt_one.trans_le hp1) hpq hq
+    have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hp1.trans hpr⟩
+    have hNr : 2 ≤ N ∨ 1 < r := hN.imp id fun h ↦ h.trans_le hpr
+    obtain ⟨K₁, hK₁, hK₁u⟩ := ih (q := r) hN hpr hr₁
+    obtain ⟨K₂, hK₂, hK₂u⟩ :=
+      SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le (N := N) hNr hrq hr₂
+    refine ⟨K₂ * ((N + 1) * K₁), ENNReal.mul_ne_top hK₂ (ENNReal.mul_ne_top (by simp) hK₁),
+      fun u ↦ ?_⟩
+    obtain ⟨w, hw, hwn⟩ :=
+      SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le hK₁ hK₁u u
+    rw [← eLpNorm_congr_ae hw]
+    refine (hK₂u w).trans ?_
+    rw [mul_assoc]
+    refine mul_le_mul' le_rfl ?_
+    calc ENNReal.ofReal ‖w‖ ≤ ENNReal.ofReal ((N + 1) * K₁.toReal * ‖u‖) :=
+          ENNReal.ofReal_le_ofReal hwn
+      _ = (N + 1) * K₁ * ENNReal.ofReal ‖u‖ := by
+          rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_mul (by positivity),
+            ENNReal.ofReal_toReal hK₁]
+          congr 2
+          rw [ENNReal.ofReal_add (by positivity) zero_le_one, ENNReal.ofReal_one,
+            ENNReal.ofReal_natCast]
+
+end HigherOrderLq
+
+/-! ### Corollary 9.13: the continuous representative at every order -/
+
+section HigherOrderContinuous
+
+open SobolevMultiIndex
+
+variable {N : ℕ}
+
+/-- The Hölder estimate (25) for the continuous representative of `u ∈ W^{1,p}(ℝ^N)`, `N < p`,
+in real form: `‖ũ x − ũ y‖ ≤ (C N).toReal ‖u‖ ‖x − y‖^{1 − N/p}`. -/
+theorem SobolevEuclidean.norm_contRep_sub_le {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] (hp : N < p)
+    (u : SobolevEuclidean N 1 p ⊤) (x y : EuclideanSpace ℝ (Fin N)) :
+    ‖SobolevEuclidean.contRep hp u x - SobolevEuclidean.contRep hp u y‖
+      ≤ (morreyConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p * N).toReal * ‖u‖
+        * ‖x - y‖ ^ (1 - N / (p : ℝ)) := by
+  obtain ⟨K₁, hK₁⟩ : ∃ K₁ : ℝ≥0∞,
+    K₁ = morreyConst (volume : Measure (EuclideanSpace ℝ (Fin N))) p * N := ⟨_, rfl⟩
+  have hK₁t : K₁ ≠ ⊤ := by
+    rw [hK₁]
+    exact ENNReal.mul_ne_top (morreyConst_ne_top _ _) (by simp)
+  have hp0 : (0 : ℝ) < p := lt_of_le_of_lt (Nat.cast_nonneg N) hp
+  have hα0 : (0 : ℝ) ≤ 1 - N / (p : ℝ) := sub_nonneg.2 ((div_le_one hp0).2 hp.le)
+  have h1 : ‖SobolevEuclidean.contRep hp u x - SobolevEuclidean.contRep hp u y‖ₑ
+      ≤ K₁ * ENNReal.ofReal ‖u‖ * ENNReal.ofReal (‖x - y‖ ^ (1 - N / (p : ℝ))) := by
+    rw [hK₁]
+    refine (SobolevEuclidean.enorm_contRep_sub_le hp u x y).trans ?_
+    calc morreyConst volume p * ENNReal.ofReal (‖x - y‖ ^ (1 - N / (p : ℝ)))
+          * ∑ i, ENNReal.ofReal ‖weakDeriv u (MultiIndexLE.single i)‖
+        ≤ morreyConst volume p * ENNReal.ofReal (‖x - y‖ ^ (1 - N / (p : ℝ)))
+            * (N * ENNReal.ofReal ‖u‖) :=
+          mul_le_mul' le_rfl (SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le u)
+      _ = _ := by ring
+  rw [← hK₁, ← toReal_enorm]
+  refine (ENNReal.toReal_mono
+    (ENNReal.mul_ne_top (ENNReal.mul_ne_top hK₁t ENNReal.ofReal_ne_top) ENNReal.ofReal_ne_top)
+    h1).trans (le_of_eq ?_)
+  rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_ofReal (norm_nonneg _),
+    ENNReal.toReal_ofReal (by positivity)]
+
+/-- The exponent `r` of the continuous-representative step of Corollary 9.13: for `N/p < m + 1`,
+an `r ≥ p` with `N < r` and `1/p − m/N ≤ 1/r` (so that `W^{m+1,p} ⊆ W^{1,r}` by
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`), whose Hölder exponent `1 − N/r` is the
+sharp `(m + 1) − N/p` when the latter is less than `1`. -/
+theorem NNReal.exists_morrey_exponent {p : ℝ≥0} (m : ℕ) (hp0 : 0 < p)
+    (hm : (N : ℝ) / p < (m + 1 : ℕ)) :
+    ∃ r : ℝ≥0, p ≤ r ∧ N < r ∧ (p : ℝ)⁻¹ - m / N ≤ (r : ℝ)⁻¹ ∧
+      ((m + 1 : ℕ) - N / (p : ℝ) < 1 → 1 - N / (r : ℝ) = (m + 1 : ℕ) - N / (p : ℝ)) := by
+  have hp0' : (0 : ℝ) < p := by exact_mod_cast hp0
+  push_cast at hm ⊢
+  rcases lt_or_ge (m : ℝ) (N / p) with h | h
+  · -- the sharp case `1/r = 1/p − m/N`
+    have hN0 : (0 : ℝ) < N := by
+      rcases Nat.eq_zero_or_pos N with hN | hN
+      · exact absurd h (not_lt.2 (by simp [hN]))
+      · exact_mod_cast hN
+    have hpos : 0 < (p : ℝ)⁻¹ - m / N := by
+      rw [sub_pos, div_lt_iff₀ hN0, inv_mul_eq_div, lt_div_iff₀ hp0']
+      rwa [lt_div_iff₀ hp0'] at h
+    obtain ⟨r, hr⟩ : ∃ r : ℝ≥0, (r : ℝ) = ((p : ℝ)⁻¹ - m / N)⁻¹ :=
+      ⟨((p : ℝ)⁻¹ - m / N)⁻¹.toNNReal, Real.coe_toNNReal _ (by positivity)⟩
+    have hrinv : (r : ℝ)⁻¹ = (p : ℝ)⁻¹ - m / N := by rw [hr, inv_inv]
+    have hr0 : (0 : ℝ) < r := by rw [hr]; exact inv_pos.2 hpos
+    refine ⟨r, ?_, ?_, hrinv.symm.le, fun _ ↦ ?_⟩
+    · rw [← NNReal.coe_le_coe, ← inv_le_inv₀ hr0 hp0', hrinv]
+      exact sub_le_self _ (by positivity)
+    · have : (N : ℝ) < r := by
+        refine (inv_lt_inv₀ hr0 hN0).1 ?_
+        rw [hrinv, sub_lt_iff_lt_add, inv_eq_one_div (N : ℝ), ← add_div, inv_eq_one_div,
+          div_lt_div_iff₀ hp0' hN0, one_mul, add_comm]
+        rwa [div_lt_iff₀ hp0'] at hm
+      exact_mod_cast this
+    · rw [div_eq_mul_inv (N : ℝ) (r : ℝ), hrinv]
+      field_simp
+      ring
+  · -- `1/p − m/N ≤ 0`: take `r = p + N`
+    refine ⟨p + N, le_self_add, ?_, ?_, fun h1 ↦ absurd h (not_le.2 (by linarith))⟩
+    · rw [← NNReal.coe_lt_coe]
+      push_cast
+      linarith
+    · push_cast
+      rcases Nat.eq_zero_or_pos N with hN | hN
+      · simp [hN]
+      · have hN0 : (0 : ℝ) < N := by exact_mod_cast hN
+        refine le_trans ?_ (inv_pos.2 (by positivity)).le
+        rw [sub_nonpos, le_div_iff₀ hN0, inv_mul_eq_div, div_le_iff₀ hp0']
+        rwa [div_le_iff₀ hp0'] at h
+
+/-- **Corollary 9.13, the continuous representative**: for `m > N/p` (`m ≥ 1`, `1 ≤ p < ∞`,
+and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a Hölder exponent `θ ∈ (0, 1]` — equal to the
+sharp `m − N/p` when `m − N/p < 1` — such that every `u ∈ W^{m,p}(ℝ^N)` has a continuous
+representative `ũ` with `‖ũ x‖ ≤ C ‖u‖` and `‖ũ x − ũ y‖ ≤ C ‖u‖ ‖x − y‖^θ`; in particular
+`W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` when `1/p − m/N < 0`. Proof: `W^{m,p} ⊆ W^{1,r}` for an `r > N` with
+`1/r = 1/p − (m − 1)/N` when that is positive (`NNReal.exists_morrey_exponent`,
+`SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order`), then Morrey's theorem.
+[brezis2011functional] Corollary 9.13, the third clause and the case `k = 0` of the `C^k` clause. -/
+theorem SobolevEuclidean.exists_forall_continuous_ae_eq_of_order {m : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
+    ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ((m : ℝ) - N / p < 1 → θ = m - N / p) ∧
+      ∀ u : SobolevEuclidean N m p ⊤, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧
+        fn u =ᵐ[volume] ũ ∧ (∀ x, ‖ũ x‖ ≤ C * ‖u‖) ∧
+        ∀ x y, ‖ũ x - ũ y‖ ≤ C * ‖u‖ * ‖x - y‖ ^ θ := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ≥0) < p := zero_lt_one.trans_le hp1
+  obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := by
+    refine ⟨m - 1, ?_⟩
+    have : 0 < m := by exact_mod_cast (lt_of_le_of_lt (by positivity : (0 : ℝ) ≤ N / p) hm)
+    omega
+  obtain ⟨r, hpr, hNr, hr₁, hθ⟩ := NNReal.exists_morrey_exponent (N := N) m' hp0 hm
+  have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hp1.trans hpr⟩
+  obtain ⟨K₁, hK₁, hK₁u⟩ :=
+    SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order (N := N) m' hN hpr hr₁
+  obtain ⟨C₁, hC₁⟩ : ∃ C₁ : ℝ,
+    C₁ = (morreySupConst (volume : Measure (EuclideanSpace ℝ (Fin N))) r * (N + 1)).toReal :=
+    ⟨_, rfl⟩
+  obtain ⟨C₂, hC₂⟩ : ∃ C₂ : ℝ,
+    C₂ = (morreyConst (volume : Measure (EuclideanSpace ℝ (Fin N))) r * N).toReal := ⟨_, rfl⟩
+  obtain ⟨D, hD⟩ : ∃ D : ℝ, D = (N + 1) * K₁.toReal := ⟨_, rfl⟩
+  have hC₁0 : 0 ≤ C₁ := hC₁ ▸ ENNReal.toReal_nonneg
+  have hC₂0 : 0 ≤ C₂ := hC₂ ▸ ENNReal.toReal_nonneg
+  have hD0 : 0 ≤ D := hD ▸ by positivity
+  have hr0 : (0 : ℝ) < r := lt_of_le_of_lt (Nat.cast_nonneg N) (by exact_mod_cast hNr)
+  refine ⟨max C₁ C₂ * D, 1 - N / r, by positivity, ?_, ?_, hθ, fun u ↦ ?_⟩
+  · exact sub_pos.2 ((div_lt_one hr0).2 (by exact_mod_cast hNr))
+  · exact sub_le_self _ (by positivity)
+  obtain ⟨w, hw, hwn⟩ :=
+    SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le hK₁ hK₁u u
+  rw [← hD] at hwn
+  refine ⟨SobolevEuclidean.contRep hNr w, (SobolevEuclidean.contRep hNr w).continuous,
+    hw.symm.trans (SobolevEuclidean.fn_ae_eq_contRep hNr w), fun x ↦ ?_, fun x y ↦ ?_⟩
+  · calc ‖SobolevEuclidean.contRep hNr w x‖ ≤ C₁ * ‖w‖ := by
+          rw [hC₁]
+          exact SobolevEuclidean.norm_contRep_apply_le hNr w x
+      _ ≤ C₁ * (D * ‖u‖) := mul_le_mul_of_nonneg_left hwn hC₁0
+      _ ≤ max C₁ C₂ * D * ‖u‖ := by
+          rw [← mul_assoc]
+          gcongr
+          exact le_max_left _ _
+  · calc ‖SobolevEuclidean.contRep hNr w x - SobolevEuclidean.contRep hNr w y‖
+        ≤ C₂ * ‖w‖ * ‖x - y‖ ^ (1 - N / (r : ℝ)) := by
+          rw [hC₂]
+          exact SobolevEuclidean.norm_contRep_sub_le hNr w x y
+      _ ≤ C₂ * (D * ‖u‖) * ‖x - y‖ ^ (1 - N / (r : ℝ)) := by gcongr
+      _ ≤ max C₁ C₂ * D * ‖u‖ * ‖x - y‖ ^ (1 - N / (r : ℝ)) := by
+          rw [← mul_assoc]
+          gcongr
+          exact le_max_right _ _
+
+/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ⊂ L^∞(ℝ^N)` for `1/p − m/N < 0`, the bound**: there is a
+finite `K` with `‖u‖_∞ ≤ K ‖u‖` for every `u ∈ W^{m,p}(ℝ^N)` (`N ≥ 2` or `p > 1`).
+[brezis2011functional] Corollary 9.13, the third clause. -/
+theorem SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order {m : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
+    ∃ K : ℝ≥0∞, K ≠ ⊤ ∧ ∀ u : SobolevEuclidean N m p ⊤,
+      eLpNorm (fn u) ⊤ volume ≤ K * ENNReal.ofReal ‖u‖ := by
+  obtain ⟨C, θ, hC0, -, -, -, hC⟩ := SobolevEuclidean.exists_forall_continuous_ae_eq_of_order hN hm
+  refine ⟨ENNReal.ofReal C, ENNReal.ofReal_ne_top, fun u ↦ ?_⟩
+  obtain ⟨ũ, hc, hae, hb, -⟩ := hC u
+  rw [eLpNorm_congr_ae hae, ← ENNReal.ofReal_mul hC0]
+  refine (eLpNorm_le_of_ae_enorm_bound (C := ENNReal.ofReal (C * ‖u‖))
+    hc.aestronglyMeasurable (Eventually.of_forall fun x ↦ ?_)).trans (by simp)
+  rw [← ofReal_norm]
+  exact ENNReal.ofReal_le_ofReal (hb x)
+
+/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ⊆ L^∞(ℝ^N)` for `1/p − m/N < 0`**, the membership. -/
+theorem SobolevEuclidean.memLp_fn_top_of_order {m : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) (u : SobolevEuclidean N m p ⊤) :
+    MemLp (fn u) ⊤ volume := by
+  obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order hN hm
+  exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
+
+/-- **Corollary 9.13, `W^{m,p}(ℝ^N) ↪ L^∞(ℝ^N)` with continuous injection** for
+`1/p − m/N < 0`, along `SobolevMultiIndex.toLpₗ`. [brezis2011functional] Corollary 9.13. -/
+theorem SobolevEuclidean.isContinuousEmbedding_toLp_top_of_order {m : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (N : ℝ) / p < m) :
+    IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis m p ⊤ volume
+      fun u ↦ by
+        simpa [Measure.restrict_coe_top] using SobolevEuclidean.memLp_fn_top_of_order hN hm u) := by
+  obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_top_le_of_order hN hm
+  refine isContinuousEmbedding_toLpₗ _ (C := K.toReal) fun u ↦ ?_
+  rw [toLpₗ, LinearMap.coe_mk, AddHom.coe_mk, Lp.norm_toLp, ← ENNReal.toReal_ofReal
+    (norm_nonneg u), ← ENNReal.toReal_mul]
+  refine ENNReal.toReal_mono (ENNReal.mul_ne_top hK ENNReal.ofReal_ne_top) ?_
+  exact (eLpNorm_restrict_coe_top (fn u) ⊤).trans_le (hKu u)
+
+/-- **Corollary 9.13, the `L^q` clauses, the membership**: for `1 ≤ p ≤ q < ∞` with
+`1/p − m/N ≤ 1/q`, and `N ≥ 2` or `p > 1`, `fn u ∈ L^q(ℝ^N)` for every `u ∈ W^{m,p}(ℝ^N)` —
+`W^{m,p} ⊂ L^q` for `1/q = 1/p − m/N` when `1/p − m/N > 0`, and for every `q ∈ [p, ∞)` when
+`1/p − m/N ≤ 0`. The `L^∞` clause is `SobolevEuclidean.memLp_fn_top_of_order`.
+[brezis2011functional] Corollary 9.13, the first two clauses. -/
+theorem SobolevEuclidean.memLp_fn_of_order {m : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹)
+    (u : SobolevEuclidean N m p ⊤) : MemLp (fn u) q volume := by
+  obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order m hN hpq hq
+  exact memLp_iff.2 ((hKu u).trans_lt (ENNReal.mul_lt_top hK.lt_top ENNReal.ofReal_lt_top))
+
+/-- **Corollary 9.13, the `L^q` clauses, as continuous embeddings**: `W^{m,p}(ℝ^N) ↪ L^q(ℝ^N)`
+along `SobolevMultiIndex.toLpₗ` for `1 ≤ p ≤ q < ∞` with `1/p − m/N ≤ 1/q` (`N ≥ 2` or `p > 1`).
+[brezis2011functional] Corollary 9.13, "all these injections are continuous". -/
+theorem SobolevEuclidean.isContinuousEmbedding_toLp_of_order {m : ℕ} {p q : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - m / N ≤ (q : ℝ)⁻¹) :
+    IsContinuousEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis m p ⊤ volume
+      fun u ↦ by
+        simpa [Measure.restrict_coe_top] using SobolevEuclidean.memLp_fn_of_order hN hpq hq u) := by
+  obtain ⟨K, hK, hKu⟩ := SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_order m hN hpq hq
+  refine isContinuousEmbedding_toLpₗ _ (C := K.toReal) fun u ↦ ?_
+  rw [toLpₗ, LinearMap.coe_mk, AddHom.coe_mk, Lp.norm_toLp, ← ENNReal.toReal_ofReal
+    (norm_nonneg u), ← ENNReal.toReal_mul]
+  refine ENNReal.toReal_mono (ENNReal.mul_ne_top hK ENNReal.ofReal_ne_top) ?_
+  exact (eLpNorm_restrict_coe_top (fn u) (q : ℝ≥0∞)).trans_le (hKu u)
+
+end HigherOrderContinuous
+
+/-! ### Corollary 9.13: the `C^k` representative -/
+
+section HigherOrderContDiff
+
+open SobolevMultiIndex
+
+variable {N : ℕ}
+
+/-- A continuous linear functional on `ℝ^N` is the sum of its values on the standard basis vectors
+times the coordinate projections. -/
+theorem ContinuousLinearMap.eq_sum_apply_single_smul_proj
+    (T : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ) :
+    T = ∑ i, T (EuclideanSpace.single i 1) • PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i := by
+  ext v
+  conv_lhs => rw [← (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr v]
+  simp [EuclideanSpace.basisFun_repr, mul_comm]
+
+/-- `‖g ∘ a − g ∘ b‖ ≤ ‖g‖ ‖a − b‖` for the composition of continuous multilinear maps with a
+continuous linear map. -/
+theorem ContinuousLinearMap.norm_compContinuousMultilinearMap_sub_le {ι G G' : Type*} [Fintype ι]
+    {E : ι → Type*} [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace ℝ (E i)]
+    [NormedAddCommGroup G] [NormedSpace ℝ G] [NormedAddCommGroup G'] [NormedSpace ℝ G']
+    (g : G →L[ℝ] G') (a b : ContinuousMultilinearMap ℝ E G) :
+    ‖g.compContinuousMultilinearMap a - g.compContinuousMultilinearMap b‖ ≤ ‖g‖ * ‖a - b‖ := by
+  refine ContinuousMultilinearMap.opNorm_le_bound (by positivity) fun m ↦ ?_
+  have e : (g.compContinuousMultilinearMap a - g.compContinuousMultilinearMap b) m
+      = g ((a - b) m) := by
+    simp
+  rw [e, mul_assoc]
+  exact g.le_opNorm_of_le ((a - b).le_opNorm m)
+
+/-- The iterated derivatives of `x ↦ ∑ i, g i x • P i` at a point where the scalar functions
+`g i` are `C^k`, `j ≤ k`: the pointwise form of `iteratedFDeriv_fun_sum_smul_const`. -/
+theorem iteratedFDeriv_fun_sum_smul_const_of_contDiffAt {E F : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι]
+    {g : ι → E → ℝ} {k : ℕ} {x : E} (hg : ∀ i, ContDiffAt ℝ k (g i) x) (P : ι → F) {j : ℕ}
+    (hj : j ≤ k) :
+    iteratedFDeriv ℝ j (fun x ↦ ∑ i, g i x • P i) x
+      = ∑ i, ((ContinuousLinearMap.id ℝ ℝ).smulRight (P i)).compContinuousMultilinearMap
+          (iteratedFDeriv ℝ j (g i) x) := by
+  have hjk : (j : ℕ∞ω) ≤ k := by exact_mod_cast hj
+  rw [iteratedFDeriv_fun_sum_apply (f := fun i x ↦ g i x • P i) (u := Finset.univ) fun i _ ↦
+    (((hg i).smul contDiffAt_const).of_le hjk)]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  have e : (fun x ↦ g i x • P i) = ((ContinuousLinearMap.id ℝ ℝ).smulRight (P i)) ∘ g i := by
+    funext y
+    simp
+  rw [e, ContinuousLinearMap.iteratedFDeriv_comp_left _ (hg i) hjk]
+
+/-- The iterated derivatives of `x ↦ ∑ i, g i x • P i` for `C^k` scalar functions `g i` and
+constant vectors `P i`: the composition of the iterated derivatives of the `g i` with the maps
+`c ↦ c • P i`. -/
+theorem iteratedFDeriv_fun_sum_smul_const {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι] {g : ι → E → ℝ} {k : ℕ}
+    (hg : ∀ i, ContDiff ℝ k (g i)) (P : ι → F) {j : ℕ} (hj : j ≤ k) (x : E) :
+    iteratedFDeriv ℝ j (fun x ↦ ∑ i, g i x • P i) x
+      = ∑ i, ((ContinuousLinearMap.id ℝ ℝ).smulRight (P i)).compContinuousMultilinearMap
+          (iteratedFDeriv ℝ j (g i) x) :=
+  iteratedFDeriv_fun_sum_smul_const_of_contDiffAt (fun i ↦ (hg i).contDiffAt) P hj
+
+/-- The tensor weak derivative of `u ∈ W^{m+1,p}(Ω)` assembled from (representatives of) its
+partial derivatives: if `g i = ∂_i u` almost everywhere on `Ω`, then `x ↦ ∑ i, g i x • proj i` is
+a weak derivative of `fn u` on `Ω`. -/
+theorem SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj {m : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+    {Ω : Opens (EuclideanSpace ℝ (Fin N))} (u : SobolevEuclidean N (m + 1) p Ω)
+    {g : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    (hg : ∀ i, fn (partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume i u)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] g i) :
+    HasWeakFDerivOn (fn u) (fun x ↦ ∑ i, g i x • PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i) Ω volume := by
+  obtain ⟨w', hw'⟩ := ((memSobolevMultiIndex (toLowerOrder ℝ
+    (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p Ω volume (by omega : 1 ≤ m + 1) u)).memSobolev)
+    |>.exists_hasWeakFDerivOn
+  have hw'' : HasWeakFDerivOn (fn u) w' Ω volume := hw'.1
+  have hcomp : ∀ i, (fun x ↦ w' x (EuclideanSpace.single i 1))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] g i := by
+    intro i
+    have h2 : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u)
+        (fun x ↦ w' x (EuclideanSpace.single i 1)) Ω volume := by
+      have := HasWeakIteratedFDerivOn.lineDeriv hw'' ![EuclideanSpace.single i 1]
+      simpa using this
+    have h3 : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (fn u) (g i) Ω volume := by
+      have := (hasWeakIteratedLineDerivOn_fn_partialDeriv i u).congr_ae
+        (Filter.EventuallyEq.refl _ _) (hg i)
+      simpa using this
+    exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h2.ae_eq h3)
+  have hae : w' =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      fun x ↦ ∑ i, g i x • PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i := by
+    have hall : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+        ∀ i, w' x (EuclideanSpace.single i 1) = g i x := ae_all_iff.2 hcomp
+    filter_upwards [hall] with x hx
+    rw [ContinuousLinearMap.eq_sum_apply_single_smul_proj (w' x)]
+    exact Finset.sum_congr rfl fun i _ ↦ by rw [hx i]
+  unfold HasWeakFDerivOn at hw'' ⊢
+  refine hw''.congr_ae (Filter.EventuallyEq.refl _ _) ?_
+  filter_upwards [hae] with x hx
+  simp only [hx]
+
+/-- **Corollary 9.13, the `C^k` representative, in the form of the induction**: for `k + N/p < m`
+(`1 ≤ p < ∞`, and `N ≥ 2` or `p > 1`), there are `C ≥ 0` and a Hölder exponent `θ ∈ (0, 1]` —
+equal to the sharp `m − N/p − k` when that is less than `1` — such that every
+`u ∈ W^{m,p}(ℝ^N)` has a `C^k` representative `ũ` with `‖D^j ũ x‖ ≤ C ‖u‖` for `j ≤ k` and
+`‖D^k ũ x − D^k ũ y‖ ≤ C ‖u‖ ‖x − y‖^θ`. Induction on `k`: `u` and `∂_i u` lie in
+`W^{m−1,p}(ℝ^N)` and have `C^{k−1}` representatives `ũ`, `g̃_i`; `x ↦ ∑ g̃_i x • proj i` is a
+continuous weak derivative of `ũ`, so `ũ` is `C¹` with that derivative
+(`HasWeakFDerivOn.exists_contDiffOn_ae_eq_of_continuousOn`, Remark 2), hence `C^k`, and its
+derivatives of order `j + 1` are assembled from those of order `j` of the `g̃_i`.
+[brezis2011functional] Corollary 9.13, the `C^k` clause. -/
+theorem SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order (k : ℕ) {m : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
+    ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ((m : ℝ) - N / p - k < 1 → θ = m - N / p - k) ∧
+      ∀ u : SobolevEuclidean N m p ⊤, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiff ℝ k ũ ∧
+        fn u =ᵐ[volume] ũ ∧ (∀ j ≤ k, ∀ x, ‖iteratedFDeriv ℝ j ũ x‖ ≤ C * ‖u‖) ∧
+        ∀ x y, ‖iteratedFDeriv ℝ k ũ x - iteratedFDeriv ℝ k ũ y‖ ≤ C * ‖u‖ * ‖x - y‖ ^ θ := by
+  induction k generalizing m with
+  | zero =>
+    rw [Nat.cast_zero, zero_add] at hm
+    obtain ⟨C, θ, hC0, hθ0, hθ1, hθ, hC⟩ :=
+      SobolevEuclidean.exists_forall_continuous_ae_eq_of_order hN hm
+    refine ⟨C, θ, hC0, hθ0, hθ1, fun h ↦ ?_, fun u ↦ ?_⟩
+    · rw [Nat.cast_zero, sub_zero] at h ⊢
+      exact hθ h
+    obtain ⟨ũ, hc, hae, hb, hh⟩ := hC u
+    refine ⟨ũ, contDiff_zero.2 hc, hae, fun j hj x ↦ ?_, fun x y ↦ ?_⟩
+    · obtain rfl : j = 0 := Nat.le_zero.1 hj
+      rw [norm_iteratedFDeriv_zero]
+      exact hb x
+    · rw [iteratedFDeriv_zero_eq_comp, Function.comp_apply, Function.comp_apply, ← map_sub,
+        LinearIsometryEquiv.norm_map]
+      exact hh x y
+  | succ k ih =>
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := by
+      refine ⟨m - 1, ?_⟩
+      have : 0 < m := by
+        have h0 : (0 : ℝ) < m := lt_of_le_of_lt (by positivity) hm
+        exact_mod_cast h0
+      omega
+    have hm' : (k : ℝ) + N / p < m' := by
+      push_cast at hm
+      linarith
+    obtain ⟨C₀, θ, hC₀, hθ0, hθ1, hθ, hC⟩ := ih hm'
+    have hθ' : ((m' + 1 : ℕ) : ℝ) - N / p - ((k + 1 : ℕ) : ℝ) < 1 →
+        θ = ((m' + 1 : ℕ) : ℝ) - N / p - ((k + 1 : ℕ) : ℝ) := by
+      intro h
+      push_cast at h ⊢
+      rw [hθ (by linarith)]
+      ring
+    obtain ⟨L, hL⟩ : ∃ L : Fin N → (ℝ →L[ℝ] (EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)),
+      L = fun i ↦ (ContinuousLinearMap.id ℝ ℝ).smulRight (PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i) :=
+      ⟨_, rfl⟩
+    have hL0 : 0 ≤ ∑ i, ‖L i‖ := Finset.sum_nonneg fun _ _ ↦ norm_nonneg _
+    refine ⟨C₀ * (1 + ∑ i, ‖L i‖), θ, by positivity, hθ0, hθ1, hθ', fun u ↦ ?_⟩
+    -- the lower-order elements
+    obtain ⟨v₀, hv₀⟩ : ∃ v₀ : SobolevEuclidean N m' p ⊤,
+        v₀ = toLowerOrder ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p ⊤ volume
+          (Nat.le_succ m') u :=
+      ⟨_, rfl⟩
+    obtain ⟨v, hv⟩ : ∃ v : Fin N → SobolevEuclidean N m' p ⊤,
+        v = fun i ↦ partialDeriv ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis p ⊤ volume i u :=
+      ⟨_, rfl⟩
+    have hv₀fn : fn v₀ = fn u := by rw [hv₀]; rfl
+    have hv₀n : ‖v₀‖ ≤ ‖u‖ := by rw [hv₀]; exact norm_toLowerOrder_le _ u
+    have hvn : ∀ i, ‖v i‖ ≤ ‖u‖ := fun i ↦ by rw [hv]; exact norm_partialDeriv_le i u
+    obtain ⟨ũ, hũc, hũae, hũb, hũh⟩ := hC v₀
+    rw [hv₀fn] at hũae
+    choose g hgc hgae hgb hgh using fun i ↦ hC (v i)
+    -- the tensor weak derivative of `fn u`, continuous
+    obtain ⟨w, hw⟩ : ∃ w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ,
+        w = fun x ↦ ∑ i, g i x • PiLp.proj 2 (fun _ : Fin N ↦ ℝ) i := ⟨_, rfl⟩
+    have hwc : ContDiff ℝ k w := by
+      rw [hw]
+      exact ContDiff.sum fun i _ ↦ (hgc i).smul contDiff_const
+    have hweak : HasWeakFDerivOn (fn u) w ⊤ volume := by
+      rw [hw]
+      exact SobolevEuclidean.hasWeakFDerivOn_sum_smul_proj u fun i ↦ by
+        have h := hgae i
+        rw [hv] at h
+        exact eventuallyEq_restrict_coe_top_iff.2 h
+    have hDw : ∀ j ≤ k, ∀ x, iteratedFDeriv ℝ j w x
+        = ∑ i, (L i).compContinuousMultilinearMap (iteratedFDeriv ℝ j (g i) x) := by
+      intro j hj x
+      rw [hw, hL]
+      exact iteratedFDeriv_fun_sum_smul_const hgc _ hj x
+    -- `ũ` is `C¹` with derivative `w`
+    obtain ⟨v', hv'c, hv'ae, hv'd⟩ :=
+      hweak.exists_contDiffOn_ae_eq_of_continuousOn hwc.continuous.continuousOn
+    have hv'ũ : v' = ũ :=
+      Measure.eq_of_ae_eq (μ := volume)
+        ((eventuallyEq_restrict_coe_top_iff.1 hv'ae).symm.trans hũae)
+        (by simpa using hv'c.continuousOn) hũc.continuous
+    have hd : ∀ x, HasFDerivAt ũ (w x) x := fun x ↦ hv'ũ ▸ hv'd x (by simp)
+    have hfd : fderiv ℝ ũ = w := funext fun x ↦ (hd x).fderiv
+    have hũc' : ContDiff ℝ (k + 1) ũ :=
+      contDiff_succ_iff_fderiv.2 ⟨fun x ↦ (hd x).differentiableAt, by simp, by rw [hfd]; exact hwc⟩
+    refine ⟨ũ, hũc', hũae, fun j hj x ↦ ?_, fun x y ↦ ?_⟩
+    · -- the bounds on the derivatives of order `≤ k + 1`
+      rcases j with _ | j
+      · calc ‖iteratedFDeriv ℝ 0 ũ x‖ ≤ C₀ * ‖v₀‖ := hũb 0 (Nat.zero_le _) x
+          _ ≤ C₀ * (1 + ∑ i, ‖L i‖) * ‖u‖ := by
+              calc C₀ * ‖v₀‖ ≤ C₀ * ‖u‖ := mul_le_mul_of_nonneg_left hv₀n hC₀
+                _ = C₀ * 1 * ‖u‖ := by ring
+                _ ≤ C₀ * (1 + ∑ i, ‖L i‖) * ‖u‖ := by gcongr; linarith
+      · have hjk : j ≤ k := Nat.succ_le_succ_iff.1 hj
+        rw [← norm_iteratedFDeriv_fderiv, hfd, hDw j hjk x]
+        calc ‖∑ i, (L i).compContinuousMultilinearMap (iteratedFDeriv ℝ j (g i) x)‖
+            ≤ ∑ i, ‖L i‖ * ‖iteratedFDeriv ℝ j (g i) x‖ :=
+              (norm_sum_le _ _).trans (Finset.sum_le_sum fun i _ ↦
+                ContinuousLinearMap.norm_compContinuousMultilinearMap_le _ _)
+          _ ≤ ∑ i, ‖L i‖ * (C₀ * ‖u‖) := Finset.sum_le_sum fun i _ ↦
+              mul_le_mul_of_nonneg_left ((hgb i j hjk x).trans
+                (mul_le_mul_of_nonneg_left (hvn i) hC₀)) (norm_nonneg _)
+          _ = C₀ * (∑ i, ‖L i‖) * ‖u‖ := by rw [← Finset.sum_mul]; ring
+          _ ≤ C₀ * (1 + ∑ i, ‖L i‖) * ‖u‖ := by gcongr; linarith
+    · -- the Hölder estimate on the top derivative
+      rw [iteratedFDeriv_succ_eq_comp_right, iteratedFDeriv_succ_eq_comp_right, Function.comp_apply,
+        Function.comp_apply, ← map_sub, LinearIsometryEquiv.norm_map, hfd, hDw k le_rfl x,
+        hDw k le_rfl y, ← Finset.sum_sub_distrib]
+      calc ‖∑ i, ((L i).compContinuousMultilinearMap (iteratedFDeriv ℝ k (g i) x)
+              - (L i).compContinuousMultilinearMap (iteratedFDeriv ℝ k (g i) y))‖
+          ≤ ∑ i, ‖L i‖ * ‖iteratedFDeriv ℝ k (g i) x - iteratedFDeriv ℝ k (g i) y‖ :=
+            (norm_sum_le _ _).trans (Finset.sum_le_sum fun i _ ↦
+              ContinuousLinearMap.norm_compContinuousMultilinearMap_sub_le _ _ _)
+        _ ≤ ∑ i, ‖L i‖ * (C₀ * ‖u‖ * ‖x - y‖ ^ θ) := Finset.sum_le_sum fun i _ ↦
+            mul_le_mul_of_nonneg_left ((hgh i x y).trans (by gcongr; exact hvn i)) (norm_nonneg _)
+        _ = C₀ * (∑ i, ‖L i‖) * ‖u‖ * ‖x - y‖ ^ θ := by rw [← Finset.sum_mul]; ring
+        _ ≤ C₀ * (1 + ∑ i, ‖L i‖) * ‖u‖ * ‖x - y‖ ^ θ := by gcongr; linarith
+
+end HigherOrderContDiff
+
+/-! ### Corollary 9.13, the `C^k` clause, and the local `C^k` representatives -/
+
+section HigherOrderCorollaries
+
+open SobolevMultiIndex
+
+variable {N : ℕ}
+
+/-- **Corollary 9.13, the `C^k` clause**: for `m − N/p > 0` not an integer, `k = ⌊m − N/p⌋` and
+`θ = m − N/p − k ∈ (0, 1)` — encoded as `0 < m − N/p − k < 1` — with `1 ≤ p < ∞` and `N ≥ 2` or
+`p > 1`, there is `C` such that every `u ∈ W^{m,p}(ℝ^N)` has a representative `ũ` of class
+`C^k` whose derivatives of order `≤ k` are bounded by `C ‖u‖` and whose derivatives of order `k`
+are `θ`-Hölder with constant `C ‖u‖`; in particular `W^{m,p}(ℝ^N) ⊂ C^k(ℝ^N)` modulo the choice
+of a representative. [brezis2011functional] Corollary 9.13 (footnotes 13–14). -/
+theorem SobolevEuclidean.exists_contDiff_ae_eq_of_order {m k : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hθ0 : 0 < (m : ℝ) - N / p - k)
+    (hθ1 : (m : ℝ) - N / p - k < 1) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ u : SobolevEuclidean N m p ⊤, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ,
+      ContDiff ℝ k ũ ∧ fn u =ᵐ[volume] ũ ∧
+      (∀ j ≤ k, ∀ x, ‖iteratedFDeriv ℝ j ũ x‖ ≤ C * ‖u‖) ∧
+      ∀ x y, ‖iteratedFDeriv ℝ k ũ x - iteratedFDeriv ℝ k ũ y‖
+        ≤ C * ‖u‖ * ‖x - y‖ ^ ((m : ℝ) - N / p - k) := by
+  obtain ⟨C, θ, hC0, -, -, hθ, hC⟩ :=
+    SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order (N := N) k (m := m) hN (by linarith)
+  obtain rfl := hθ hθ1
+  exact ⟨C, hC0, hC⟩
+
+/-- **Corollary 9.13's `C^k` clause without the non-integer restriction**: for `1 ≤ p < ∞`,
+integers `m, k` with `k + N/p < m`, and `N ≥ 2` or `p > 1`, there are `C` and a Hölder exponent
+`θ ∈ (0, 1]` such that every `u ∈ W^{m,p}(ℝ^N)` has a `C^k` representative `ũ` with every
+derivative of order `≤ k` bounded by `C ‖u‖` and the derivatives of order `k` `θ`-Hölder with
+constant `C ‖u‖`. This is the form the heat equation needs (`H^{2ℓ}(ℝ^N) ⊆ C^k` for
+`k + N/2 < 2ℓ`), where `2ℓ − N/2` is an integer for every even `N`.
+[brezis2011functional] Corollary 9.13, and the proofs of Theorems 10.1 and 10.8. -/
+theorem SobolevEuclidean.exists_contDiff_ae_eq_of_lt {m k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m) :
+    ∃ C θ : ℝ, 0 ≤ C ∧ 0 < θ ∧ θ ≤ 1 ∧ ∀ u : SobolevEuclidean N m p ⊤,
+      ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiff ℝ k ũ ∧ fn u =ᵐ[volume] ũ ∧
+      (∀ j ≤ k, ∀ x, ‖iteratedFDeriv ℝ j ũ x‖ ≤ C * ‖u‖) ∧
+      ∀ x y, ‖iteratedFDeriv ℝ k ũ x - iteratedFDeriv ℝ k ũ y‖ ≤ C * ‖u‖ * ‖x - y‖ ^ θ := by
+  obtain ⟨C, θ, hC0, hθ0, hθ1, -, hC⟩ :=
+    SobolevEuclidean.exists_forall_contDiff_ae_eq_of_order (N := N) k hN hm
+  exact ⟨C, θ, hC0, hθ0, hθ1, hC⟩
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **`W^{m,p}_loc(Ω) ⊆ C^k(Ω)` for `k + N/p < m`** (`1 ≤ p < ∞`, `N ≥ 2` or `p > 1`): a function
+of `W^{m,p}_loc(Ω)` has a representative of class `C^k` on `Ω`. On a ball `B` with
+`closure B ⊆ Ω`, `θ f ∈ W^{m,p}(ℝ^N)` for a bump `θ = 1` on `B`
+(`MemSobolevMultiIndexLoc.smul_testFunction`), which has a `C^k` representative by Corollary 9.13
+(`SobolevEuclidean.exists_contDiff_ae_eq_of_lt`); the local representatives glue
+(`MeasureTheory.exists_continuousOn_ae_eq_of_forall_exists_ball`) and `ContDiffOn` is local. -/
+theorem MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt {m k : ℕ} {p : ℝ≥0}
+    [Fact (1 ≤ (p : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hm : (k : ℝ) + N / p < m)
+    {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hf : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f m p Ω volume) :
+    ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiffOn ℝ k ũ Ω ∧
+      f =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ := by
+  obtain ⟨C, θ, -, -, -, hC⟩ := SobolevEuclidean.exists_contDiff_ae_eq_of_lt (N := N) hN hm
+  -- the local representatives
+  have hP : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∃ r > 0,
+      ball x r ⊆ (Ω : Set (EuclideanSpace ℝ (Fin N))) ∧ ∃ g : EuclideanSpace ℝ (Fin N) → ℝ,
+        ContDiffOn ℝ k g (ball x r) ∧ ContinuousOn g (ball x r) ∧
+        f =ᵐ[volume.restrict (ball x r)] g := by
+    intro x hx
+    obtain ⟨ε, hε, hεΩ⟩ := Metric.isOpen_iff.1 Ω.isOpen x hx
+    obtain ⟨φ, hφ⟩ : ∃ φ : ContDiffBump x, φ = ⟨ε / 4, ε / 2, by positivity, by linarith⟩ :=
+      ⟨_, rfl⟩
+    have hIn : φ.rIn = ε / 4 := by rw [hφ]
+    have hOut : φ.rOut = ε / 2 := by rw [hφ]
+    have hsupp : tsupport φ ⊆ Ω := by
+      rw [φ.tsupport_eq, hOut]
+      exact (closedBall_subset_ball (by linarith)).trans hεΩ
+    obtain ⟨ϑ, hϑ⟩ : ∃ ϑ : 𝓓(Ω, ℝ), ϑ = ⟨φ, φ.contDiff (n := ⊤), φ.hasCompactSupport, hsupp⟩ :=
+      ⟨_, rfl⟩
+    have hϑ1 : ∀ y ∈ ball x (ε / 4), ϑ y = 1 := fun y hy ↦ by
+      rw [hϑ, TestFunction.coe_mk]
+      exact φ.one_of_mem_closedBall (hIn ▸ ball_subset_closedBall hy)
+    have hmem := MemSobolevMultiIndexLoc.smul_testFunction (Fact.out) hf ϑ
+    obtain ⟨U, hU⟩ := hmem.exists_sobolevMultiIndex
+    rw [eventuallyEq_restrict_coe_top_iff] at hU
+    obtain ⟨ũ, hũc, hũae, -, -⟩ := hC U
+    refine ⟨ε / 4, by positivity, (ball_subset_ball (by linarith)).trans hεΩ, ũ, hũc.contDiffOn,
+      hũc.continuous.continuousOn, ?_⟩
+    have h1 : f =ᵐ[volume.restrict (ball x (ε / 4))]
+        (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator fun y ↦ ϑ y • f y := by
+      refine ae_restrict_of_forall_mem measurableSet_ball fun y hy ↦ ?_
+      rw [Set.indicator_of_mem (hεΩ (ball_subset_ball (by linarith) hy)), hϑ1 y hy, one_smul]
+    exact h1.trans (ae_restrict_of_ae (hU.symm.trans hũae))
+  obtain ⟨v, -, hfv, hloc⟩ := exists_continuousOn_ae_eq_of_forall_exists_ball (μ := volume) (Ω := Ω)
+    (u := f) (fun g s ↦ ContDiffOn ℝ k g s) hP
+  refine ⟨v, contDiffOn_of_locally_contDiffOn fun x hx ↦ ?_, hfv⟩
+  obtain ⟨r, hr, -, g, hg, hvg⟩ := hloc x hx
+  exact ⟨ball x r, isOpen_ball, mem_ball_self hr,
+    (hg.mono inter_subset_right).congr fun y hy ↦ hvg hy.2⟩
+
+/-- **A function of `H^m_loc(Ω)` for every `m` has a `C^∞` representative on `Ω`**: this is the
+sentence "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`, as a consequence `e_n ∈ C^∞(Ω)`" of the proof of
+[brezis2011functional] Theorem 9.31. The `C^k` representatives of
+`MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt` are continuous on `Ω` and almost everywhere
+equal, hence equal on `Ω`, so the `C^0` one is `C^k` for every `k`. -/
+theorem MemSobolevMultiIndexLoc.exists_contDiffOn {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hf : ∀ m, MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f m 2 Ω volume) :
+    ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiffOn ℝ ∞ ũ Ω ∧
+      f =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ := by
+  have : Fact (1 ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+  have hN : 2 ≤ N ∨ 1 < (2 : ℝ≥0) := Or.inr one_lt_two
+  have hrep : ∀ k : ℕ, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiffOn ℝ k ũ Ω ∧
+      f =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ := fun k ↦
+    MemSobolevMultiIndexLoc.exists_contDiffOn_of_lt (m := k + N + 1) hN
+      (by
+        have : (N : ℝ) / (2 : ℝ≥0) ≤ N := by
+          rw [NNReal.coe_ofNat]
+          exact half_le_self (Nat.cast_nonneg N)
+        push_cast
+        linarith)
+      (hf _)
+  choose v hvc hfv using hrep
+  refine ⟨v 0, contDiffOn_infty.2 fun k ↦ ?_, hfv 0⟩
+  refine (hvc k).congr fun x hx ↦ ?_
+  exact Measure.eqOn_open_of_ae_eq ((hfv 0).symm.trans (hfv k)) Ω.isOpen
+    (hvc 0).continuousOn (hvc k).continuousOn hx
+
+end HigherOrderCorollaries
+
+/-! ### Remark 13: `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)` -/
+
+section LineFTC
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+/-- **The fundamental theorem of calculus along a line, as a bound**: for a compactly supported
+`C¹` function `g` and a direction `v ≠ 0`, `|g x| ≤ ∫_ℝ |∂_v g (x + s v)| ds`, since `g` vanishes
+far out along the line. -/
+theorem ContDiff.enorm_le_lintegral_fderiv_line {g : E → ℝ} (hg : ContDiff ℝ 1 g)
+    (hgc : HasCompactSupport g) {v : E} (hv : v ≠ 0) (x : E) :
+    ‖g x‖ₑ ≤ ∫⁻ s : ℝ, ‖fderiv ℝ g (x + s • v) v‖ₑ := by
+  obtain ⟨h', hh'⟩ : ∃ h' : ℝ → ℝ, h' = fun s ↦ fderiv ℝ g (x + s • v) v := ⟨_, rfl⟩
+  have hd : ∀ s, HasDerivAt (fun s ↦ g (x + s • v)) (h' s) s := fun s ↦ by
+    have h1 : HasDerivAt (fun s : ℝ ↦ x + s • v) v s := by
+      simpa using ((hasDerivAt_id s).smul_const v).const_add x
+    have h2 := (hg.differentiable one_ne_zero (x + s • v)).hasFDerivAt.comp_hasDerivAt s h1
+    rw [hh']
+    simpa [Function.comp_def] using h2
+  have hc : Continuous h' := by
+    rw [hh']
+    exact ((hg.continuous_fderiv one_ne_zero).comp
+      (continuous_const.add (continuous_id.smul continuous_const))).clm_apply continuous_const
+  -- the function vanishes far out along the line
+  obtain ⟨R, hR0, hR⟩ : ∃ R : ℝ, 0 ≤ R ∧ tsupport g ⊆ closedBall 0 R := by
+    obtain ⟨R, hR⟩ := (isBounded_iff_subset_closedBall (0 : E)).1 hgc.isCompact.isBounded
+    exact ⟨max R 0, le_max_right _ _, hR.trans (closedBall_subset_closedBall (le_max_left _ _))⟩
+  have hv0 : 0 < ‖v‖ := norm_pos_iff.2 hv
+  obtain ⟨T, hT⟩ : ∃ T : ℝ, T = (R + ‖x‖) / ‖v‖ + 1 := ⟨_, rfl⟩
+  have hT0 : 0 < T := by
+    rw [hT]
+    positivity
+  have hzero : g (x + (-T) • v) = 0 := by
+    apply image_eq_zero_of_notMem_tsupport
+    intro hmem
+    have h1 := hR hmem
+    rw [mem_closedBall, dist_zero_right] at h1
+    have h2 : ‖(-T) • v‖ - ‖x‖ ≤ ‖x + (-T) • v‖ := by
+      have := norm_sub_norm_le ((-T) • v) (-x)
+      rwa [sub_neg_eq_add, norm_neg, add_comm] at this
+    rw [norm_smul, norm_neg, Real.norm_of_nonneg hT0.le] at h2
+    have h3 : T * ‖v‖ = R + ‖x‖ + ‖v‖ := by
+      rw [hT, add_mul, div_mul_cancel₀ _ hv0.ne', one_mul]
+    linarith
+  -- the fundamental theorem of calculus on `[-T, 0]`
+  have hint : IntervalIntegrable h' volume (-T) 0 := hc.intervalIntegrable _ _
+  have hftc : g x = ∫ s in (-T)..0, h' s := by
+    have := intervalIntegral.integral_eq_sub_of_hasDerivAt (fun s _ ↦ hd s) hint
+    rw [this, hzero, sub_zero]
+    simp
+  rw [hftc, intervalIntegral.integral_of_le (by linarith)]
+  calc ‖∫ s in Ioc (-T) 0, h' s‖ₑ ≤ ∫⁻ s in Ioc (-T) 0, ‖h' s‖ₑ :=
+        enorm_integral_le_lintegral_enorm _
+    _ ≤ ∫⁻ s, ‖h' s‖ₑ := setLIntegral_le_lintegral _ _
+    _ = ∫⁻ s, ‖fderiv ℝ g (x + s • v) v‖ₑ := by rw [hh']
+
+end LineFTC
+
+section FubiniStep
+
+/-- **Fubini for one more coordinate**: an integral over `ℝ^{j+1}` is the integral over the last
+`j` coordinates of the integral over the first, the coordinates being read as `Fin.cons s t`. -/
+theorem MeasureTheory.lintegral_fin_succ_eq {j : ℕ} {H : (Fin (j + 1) → ℝ) → ℝ≥0∞}
+    (hH : Measurable H) :
+    ∫⁻ y, H y = ∫⁻ t : Fin j → ℝ, ∫⁻ s : ℝ, H (Fin.cons s t) := by
+  have hmp := (volume_preserving_piFinSuccAbove (fun _ : Fin (j + 1) ↦ ℝ) 0).symm
+  rw [← hmp.lintegral_comp hH, Measure.volume_eq_prod,
+    lintegral_prod_symm (fun a : ℝ × (Fin j → ℝ) ↦
+      H ((MeasurableEquiv.piFinSuccAbove (fun _ : Fin (j + 1) ↦ ℝ) 0).symm a))
+      (hH.comp hmp.measurable).aemeasurable]
+  refine lintegral_congr fun t ↦ lintegral_congr fun s ↦ ?_
+  simp only [MeasurableEquiv.piFinSuccAbove_symm_apply, Fin.insertNthEquiv_zero]
+  rfl
+
+end FubiniStep
+
+section IteratedFTC
+
+variable {N : ℕ}
+
+/-- The standard basis vectors of `ℝ^N` indexed by `ℕ`, `0` beyond `N`. -/
+def EuclideanSpace.stdVec (N : ℕ) (n : ℕ) : EuclideanSpace ℝ (Fin N) :=
+  if h : n < N then EuclideanSpace.single ⟨n, h⟩ 1 else 0
+
+/-- `stdVec N n` for `n < N` is the basis vector `e_n`. -/
+theorem EuclideanSpace.stdVec_of_lt {n : ℕ} (h : n < N) :
+    EuclideanSpace.stdVec N n = EuclideanSpace.single ⟨n, h⟩ 1 := by
+  simp [EuclideanSpace.stdVec, h]
+
+/-- `stdVec N n ≠ 0` for `n < N`. -/
+theorem EuclideanSpace.stdVec_ne_zero {n : ℕ} (h : n < N) : EuclideanSpace.stdVec N n ≠ 0 := by
+  rw [EuclideanSpace.stdVec_of_lt h]
+  intro h0
+  have := congrArg (fun v : EuclideanSpace ℝ (Fin N) ↦ v ⟨n, h⟩) h0
+  simp at this
+
+/-- The tuple of directions `(e_{N−j}, …, e_{N−1})` of length `j`, the last `j` basis vectors of
+`ℝ^N`: `stdDirs N j i = e_{N − j + i}`. -/
+def EuclideanSpace.stdDirs (N j : ℕ) : Fin j → EuclideanSpace ℝ (Fin N) :=
+  fun i ↦ EuclideanSpace.stdVec N (N - j + i)
+
+/-- `stdDirs N (j + 1)` is `e_{N − 1 − j}` followed by `stdDirs N j`, for `j + 1 ≤ N`. -/
+theorem EuclideanSpace.stdDirs_succ {j : ℕ} (hj : j + 1 ≤ N) :
+    EuclideanSpace.stdDirs N (j + 1)
+      = Fin.cons (EuclideanSpace.stdVec N (N - 1 - j)) (EuclideanSpace.stdDirs N j) := by
+  funext i
+  refine Fin.cases ?_ (fun i ↦ ?_) i
+  · simp only [EuclideanSpace.stdDirs, Fin.cons_zero, Fin.val_zero, add_zero]
+    congr 1
+    omega
+  · simp only [EuclideanSpace.stdDirs, Fin.cons_succ, Fin.val_succ]
+    congr 1
+    omega
+
+/-- `stdDirs N N` is the standard basis in order. -/
+theorem EuclideanSpace.stdDirs_self (i : Fin N) :
+    EuclideanSpace.stdDirs N N i = EuclideanSpace.single i 1 := by
+  simp only [EuclideanSpace.stdDirs, Nat.sub_self, zero_add]
+  rw [EuclideanSpace.stdVec_of_lt i.2]
+
+/-- **The iterated fundamental theorem of calculus, one direction at a time**: for a smooth
+compactly supported `φ` on `ℝ^N` and `j ≤ N`,
+`|φ x| ≤ ∫_{ℝ^j} |D^j φ (x + ∑ t_i e_{N−j+i}) (e_{N−j}, …, e_{N−1})| dt`, by induction on `j`
+through the line bound `ContDiff.enorm_le_lintegral_fderiv_line` and the Fubini step
+`MeasureTheory.lintegral_fin_succ_eq`. -/
+theorem ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs {φ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) (x : EuclideanSpace ℝ (Fin N)) :
+    ∀ j ≤ N, ‖φ x‖ₑ ≤ ∫⁻ t : Fin j → ℝ, ‖iteratedFDeriv ℝ j φ
+      (x + ∑ i, t i • EuclideanSpace.stdDirs N j i) (EuclideanSpace.stdDirs N j)‖ₑ := by
+  intro j
+  induction j with
+  | zero =>
+    intro _
+    simp only [Finset.univ_eq_empty, Finset.sum_empty, add_zero, iteratedFDeriv_zero_apply]
+    rw [volume_pi, Measure.pi_of_empty _ (fun _ ↦ 0), lintegral_dirac]
+  | succ j ih =>
+    intro hj
+    refine (ih (by omega)).trans ?_
+    -- the pointwise line bound
+    have hlt : N - 1 - j < N := by omega
+    obtain ⟨v, hv⟩ : ∃ v, v = EuclideanSpace.stdVec N (N - 1 - j) := ⟨_, rfl⟩
+    have hv0 : v ≠ 0 := hv ▸ EuclideanSpace.stdVec_ne_zero hlt
+    have hg : ContDiff ℝ 1 fun z ↦ iteratedFDeriv ℝ j φ z (EuclideanSpace.stdDirs N j) :=
+      (ContinuousMultilinearMap.apply ℝ _ ℝ (EuclideanSpace.stdDirs N j)).contDiff.comp
+        (hφ.iteratedFDeriv_right (by simp))
+    have hgc : HasCompactSupport ((fun T : EuclideanSpace ℝ (Fin N) [×j]→L[ℝ] ℝ ↦
+        T (EuclideanSpace.stdDirs N j)) ∘ iteratedFDeriv ℝ j φ) :=
+      (hφc.iteratedFDeriv j).comp_left (by simp)
+    have hfd : ∀ z, fderiv ℝ (fun z ↦ iteratedFDeriv ℝ j φ z (EuclideanSpace.stdDirs N j)) z v
+        = iteratedFDeriv ℝ (j + 1) φ z (EuclideanSpace.stdDirs N (j + 1)) := fun z ↦ by
+      rw [EuclideanSpace.stdDirs_succ hj, iteratedFDeriv_succ_apply_left, Fin.cons_zero,
+        Fin.tail_cons, ← hv, fderiv_continuousMultilinear_apply_const_apply
+          ((hφ.iteratedFDeriv_right (m := 1) (i := j) (by simp)).differentiable one_ne_zero z)]
+    have hsum : ∀ (t : Fin j → ℝ) (s : ℝ), x + ∑ i, t i • EuclideanSpace.stdDirs N j i + s • v
+        = x + ∑ i, (Fin.cons s t : Fin (j + 1) → ℝ) i • EuclideanSpace.stdDirs N (j + 1) i := by
+      intro t s
+      rw [EuclideanSpace.stdDirs_succ hj, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_zero, ← hv,
+        add_assoc, add_comm (s • v)]
+      simp only [Fin.cons_succ]
+    have hpt : ∀ t : Fin j → ℝ, ‖iteratedFDeriv ℝ j φ (x + ∑ i, t i • EuclideanSpace.stdDirs N j i)
+        (EuclideanSpace.stdDirs N j)‖ₑ ≤ ∫⁻ s : ℝ, ‖iteratedFDeriv ℝ (j + 1) φ
+          (x + ∑ i, (Fin.cons s t : Fin (j + 1) → ℝ) i • EuclideanSpace.stdDirs N (j + 1) i)
+          (EuclideanSpace.stdDirs N (j + 1))‖ₑ := fun t ↦ by
+      refine (hg.enorm_le_lintegral_fderiv_line hgc hv0 _).trans (le_of_eq ?_)
+      refine lintegral_congr fun s ↦ ?_
+      rw [hfd, hsum]
+    -- integrate in the remaining variables and use Fubini
+    have hcont : Continuous fun y : Fin (j + 1) → ℝ ↦ iteratedFDeriv ℝ (j + 1) φ
+        (x + ∑ i, y i • EuclideanSpace.stdDirs N (j + 1) i) :=
+      (hφ.continuous_iteratedFDeriv (m := j + 1) (by simp)).comp
+        (continuous_const.add (continuous_finsetSum _ fun i _ ↦
+          (continuous_apply i).smul continuous_const))
+    have hcont2 : Continuous fun y : Fin (j + 1) → ℝ ↦ iteratedFDeriv ℝ (j + 1) φ
+        (x + ∑ i, y i • EuclideanSpace.stdDirs N (j + 1) i) (EuclideanSpace.stdDirs N (j + 1)) :=
+      (ContinuousMultilinearMap.apply ℝ _ ℝ (EuclideanSpace.stdDirs N (j + 1))).continuous.comp
+        hcont
+    have hmeas : Measurable fun y : Fin (j + 1) → ℝ ↦ ‖iteratedFDeriv ℝ (j + 1) φ
+        (x + ∑ i, y i • EuclideanSpace.stdDirs N (j + 1) i) (EuclideanSpace.stdDirs N (j + 1))‖ₑ :=
+      (continuous_enorm.comp hcont2).measurable
+    calc ∫⁻ t : Fin j → ℝ, ‖iteratedFDeriv ℝ j φ (x + ∑ i, t i • EuclideanSpace.stdDirs N j i)
+          (EuclideanSpace.stdDirs N j)‖ₑ
+        ≤ ∫⁻ t : Fin j → ℝ, ∫⁻ s : ℝ, ‖iteratedFDeriv ℝ (j + 1) φ
+            (x + ∑ i, (Fin.cons s t : Fin (j + 1) → ℝ) i • EuclideanSpace.stdDirs N (j + 1) i)
+            (EuclideanSpace.stdDirs N (j + 1))‖ₑ := lintegral_mono hpt
+      _ = _ := (MeasureTheory.lintegral_fin_succ_eq hmeas).symm
+
+end IteratedFTC
+
+section Remark13
+
+open SobolevMultiIndex
+open scoped BoundedContinuousFunction
+
+variable {N : ℕ}
+
+/-- The product of the norms of the standard basis vectors is one. -/
+theorem EuclideanSpace.prod_norm_stdDirs_self :
+    ∏ i : Fin N, ‖EuclideanSpace.stdDirs N N i‖ = 1 := by
+  simp [EuclideanSpace.stdDirs_self]
+
+/-- **Remark 13, the bound on smooth functions**: for `φ ∈ C_c^∞(ℝ^N)`,
+`|φ x| ≤ ∫_{ℝ^N} |∂_1 ⋯ ∂_N φ|`, the iterated fundamental theorem of calculus over the
+coordinates (`ContDiff.enorm_le_lintegral_iteratedFDeriv_stdDirs` at `j = N`, then the change
+of variables `t ↦ x + t` in `ℝ^N`). [brezis2011functional] Chapter 9, Remark 13. -/
+theorem ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank {φ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hφ : ContDiff ℝ ∞ φ) (hφc : HasCompactSupport φ) (x : EuclideanSpace ℝ (Fin N)) :
+    ‖φ x‖ₑ ≤ ∫⁻ y, ‖iteratedFDeriv ℝ N φ y (EuclideanSpace.stdDirs N N)‖ₑ := by
+  refine (hφ.enorm_le_lintegral_iteratedFDeriv_stdDirs hφc x N le_rfl).trans (le_of_eq ?_)
+  have hsum : ∀ t : Fin N → ℝ, ∑ i, t i • EuclideanSpace.stdDirs N N i = WithLp.toLp 2 t := by
+    intro t
+    conv_rhs => rw [← (EuclideanSpace.basisFun (Fin N) ℝ).sum_repr (WithLp.toLp 2 t)]
+    simp [EuclideanSpace.stdDirs_self]
+  have hcont : Continuous fun y : EuclideanSpace ℝ (Fin N) ↦
+      ‖iteratedFDeriv ℝ N φ (x + y) (EuclideanSpace.stdDirs N N)‖ₑ :=
+    continuous_enorm.comp ((ContinuousMultilinearMap.apply ℝ _ ℝ _).continuous.comp
+      ((hφ.continuous_iteratedFDeriv (m := N) (by simp)).comp (continuous_const.add continuous_id)))
+  calc ∫⁻ t : Fin N → ℝ, ‖iteratedFDeriv ℝ N φ (x + ∑ i, t i • EuclideanSpace.stdDirs N N i)
+        (EuclideanSpace.stdDirs N N)‖ₑ
+      = ∫⁻ t : Fin N → ℝ, ‖iteratedFDeriv ℝ N φ (x + WithLp.toLp 2 t)
+          (EuclideanSpace.stdDirs N N)‖ₑ := by simp_rw [hsum]
+    _ = ∫⁻ y, ‖iteratedFDeriv ℝ N φ (x + y) (EuclideanSpace.stdDirs N N)‖ₑ :=
+        (PiLp.volume_preserving_toLp (Fin N)).lintegral_comp hcont.measurable
+    _ = ∫⁻ y, ‖iteratedFDeriv ℝ N φ y (EuclideanSpace.stdDirs N N)‖ₑ :=
+        lintegral_add_left_eq_self (μ := volume)
+          (fun y ↦ ‖iteratedFDeriv ℝ N φ y (EuclideanSpace.stdDirs N N)‖ₑ) x
+
+/-- The `L¹` norm of the mixed component `∂_1 ⋯ ∂_N` of a tensor-valued function is at most the
+`L¹` norm of the tensor. -/
+theorem lintegral_enorm_apply_stdDirs_le_eLpNorm_one
+    (T : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) [×N]→L[ℝ] ℝ) :
+    ∫⁻ y, ‖T y (EuclideanSpace.stdDirs N N)‖ₑ ≤ eLpNorm T 1 volume := by
+  refine (lintegral_mono fun y ↦ ?_).trans lintegral_enorm_le_eLpNorm_one
+  rw [← ofReal_norm, ← ofReal_norm]
+  refine ENNReal.ofReal_le_ofReal ?_
+  simpa [EuclideanSpace.prod_norm_stdDirs_self] using (T y).le_opNorm (EuclideanSpace.stdDirs N N)
+
+/-- **Remark 13 (`W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)`)**: every `u ∈ W^{N,1}(ℝ^N)` has a bounded continuous
+representative `ũ` with `‖ũ x‖ ≤ ‖∂_1 ⋯ ∂_N u‖_1 ≤ ‖u‖`. For `φ ∈ C_c^∞`,
+`|φ x| ≤ ∫ |∂_1 ⋯ ∂_N φ|` (`ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank`), so the smooth
+approximants of `u` in `W^{N,1}(ℝ^N)`
+(`MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`) are uniformly Cauchy; their
+uniform limit is continuous, equals `u` almost everywhere, and inherits the bound.
+[brezis2011functional] Chapter 9, Remark 13. -/
+theorem SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one
+    (u : SobolevEuclidean N N 1 ⊤) :
+    ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous ũ ∧ fn u =ᵐ[volume] ũ ∧ ∀ x, ‖ũ x‖ ≤ ‖u‖ := by
+  -- the tensor weak derivative of order `N` and its mixed component `∂_1 ⋯ ∂_N u`
+  have hmem : MemSobolev (fn u) N 1 ⊤ volume := (memSobolevMultiIndex u).memSobolev
+  obtain ⟨w, hw, hwp⟩ := hmem.2 N le_rfl
+  rw [Measure.restrict_coe_top] at hwp
+  obtain ⟨α₁, hα₁⟩ : ∃ α₁ : MultiIndexLE (Fin N) N,
+      α₁ = ⟨multiIndexCount (id : Fin N → Fin N), (sum_multiIndexCount _).le⟩ := ⟨_, rfl⟩
+  have hperm : (List.ofFn (multiIndexTuple
+      ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) α₁.1)).Perm
+      (List.ofFn (EuclideanSpace.stdDirs N N)) := by
+    rw [hα₁, ← multiIndexDirections_eq_ofFn]
+    refine (multiIndexDirections_multiIndexCount_perm _ id).symm.trans (List.Perm.of_eq ?_)
+    congr 1
+    funext i
+    simp [EuclideanSpace.stdDirs_self]
+  have hmixed : (fun y ↦ w y (EuclideanSpace.stdDirs N N)) =ᵐ[volume] weakDeriv u α₁ := by
+    have h1 : HasWeakIteratedLineDerivOn (EuclideanSpace.stdDirs N N) (fn u)
+        (fun y ↦ w y (EuclideanSpace.stdDirs N N)) ⊤ volume :=
+      HasWeakIteratedFDerivOn.lineDeriv hw _
+    have h2 : HasWeakIteratedLineDerivOn (EuclideanSpace.stdDirs N N) (fn u)
+        (weakDeriv u α₁) ⊤ volume :=
+      (hasWeakIteratedLineDerivOn u α₁).of_perm hperm
+    filter_upwards [h1.ae_eq h2] with x hx
+    exact hx (by simp)
+  have hmixed_norm : ∫⁻ y, ‖w y (EuclideanSpace.stdDirs N N)‖ₑ ≤ ENNReal.ofReal ‖u‖ := by
+    calc ∫⁻ y, ‖w y (EuclideanSpace.stdDirs N N)‖ₑ
+        = ∫⁻ y, ‖weakDeriv u α₁ y‖ₑ := by
+          refine lintegral_congr_ae ?_
+          filter_upwards [hmixed] with y hy
+          rw [hy]
+      _ = ENNReal.ofReal ‖weakDeriv u α₁‖ := by
+          rw [Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _), eLpNorm_restrict_coe_top,
+            eLpNorm_one_eq_lintegral_enorm (by
+              simpa only [Measure.restrict_coe_top] using Lp.aestronglyMeasurable (weakDeriv u α₁))]
+      _ ≤ ENNReal.ofReal ‖u‖ := ENNReal.ofReal_le_ofReal (norm_weakDeriv_le u α₁)
+  have hwmeas : AEMeasurable (fun y ↦ ‖w y (EuclideanSpace.stdDirs N N)‖ₑ) volume :=
+    ((ContinuousMultilinearMap.apply ℝ _ ℝ (EuclideanSpace.stdDirs N N)).continuous
+      |>.comp_aestronglyMeasurable hwp.aestronglyMeasurable).enorm
+  -- the smooth approximants and the two quantities controlling them
+  obtain ⟨v, hvs, hvc, hvt⟩ := hmem.exists_seq_hasCompactSupport_tendsto_sobolevNorm le_rfl
+    ENNReal.one_ne_top
+  obtain ⟨D, hD⟩ : ∃ D : ℕ → ℝ≥0∞,
+      D = fun n ↦ eLpNorm (fun x ↦ iteratedFDeriv ℝ N (v n) x - w x) 1 volume := ⟨_, rfl⟩
+  have hvD : Tendsto D atTop (𝓝 0) := by
+    rw [hD]
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hvt (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    have hsub : HasWeakIteratedFDerivOn N (v n - fn u)
+        (iteratedFDeriv ℝ N (v n) - w) ⊤ volume :=
+      ((hvs n).contDiffOn.hasWeakIteratedFDerivOn (by simp)).sub hw
+    exact hsub.eLpNorm_le_sobolevNorm_top le_rfl ENNReal.one_ne_top le_rfl
+  have hv0 : Tendsto (fun n ↦ eLpNorm (v n - fn u) 1 volume) atTop (𝓝 0) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hvt (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    have hloc : LocallyIntegrable (v n - fn u) volume :=
+      ((hvs n).continuous.locallyIntegrable).sub
+        ((SobolevEuclidean.memLp_fn u).locallyIntegrable le_rfl)
+    have h0 := (hasWeakIteratedFDerivOn_zero (μ := volume) (Ω := ⊤)
+      (locallyIntegrableOn_univ.2 hloc)).eLpNorm_le_sobolevNorm_top le_rfl ENNReal.one_ne_top
+      (Nat.zero_le N)
+    refine le_trans ?_ h0
+    refine eLpNorm_mono_enorm_ae hloc.aestronglyMeasurable (Filter.Eventually.of_forall fun x ↦ ?_)
+    rw [enorm_eq_nnnorm, enorm_eq_nnnorm, LinearIsometryEquiv.nnnorm_map]
+  -- the sup bound for one approximant and for a difference of two
+  have hmixed_le : ∀ n, ∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ
+      ≤ D n := fun n ↦ by
+    rw [hD]
+    exact lintegral_enorm_apply_stdDirs_le_eLpNorm_one fun y ↦ iteratedFDeriv ℝ N (v n) y - w y
+  have hvmeas : ∀ n, AEMeasurable
+      (fun y ↦ ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ) volume := by
+    intro n
+    have h1 : AEStronglyMeasurable (fun y ↦ iteratedFDeriv ℝ N (v n) y - w y) volume :=
+      ((hvs n).continuous_iteratedFDeriv (m := N) (by simp)).aestronglyMeasurable.sub
+        hwp.aestronglyMeasurable
+    exact ((ContinuousMultilinearMap.apply ℝ _ ℝ (EuclideanSpace.stdDirs N N)).continuous
+      |>.comp_aestronglyMeasurable h1).enorm
+  have hbound : ∀ n x, ‖v n x‖ₑ ≤ D n + ENNReal.ofReal ‖u‖ := fun n x ↦ by
+    refine ((hvs n).enorm_le_lintegral_iteratedFDeriv_finrank (hvc n) x).trans ?_
+    calc ∫⁻ y, ‖iteratedFDeriv ℝ N (v n) y (EuclideanSpace.stdDirs N N)‖ₑ
+        ≤ ∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ
+          + ‖w y (EuclideanSpace.stdDirs N N)‖ₑ := by
+          refine lintegral_mono fun y ↦ ?_
+          rw [sub_apply]
+          calc ‖iteratedFDeriv ℝ N (v n) y (EuclideanSpace.stdDirs N N)‖ₑ
+              = ‖iteratedFDeriv ℝ N (v n) y (EuclideanSpace.stdDirs N N)
+                  - w y (EuclideanSpace.stdDirs N N) + w y (EuclideanSpace.stdDirs N N)‖ₑ := by
+                rw [sub_add_cancel]
+            _ ≤ _ := enorm_add_le _ _
+      _ = (∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ)
+          + ∫⁻ y, ‖w y (EuclideanSpace.stdDirs N N)‖ₑ := lintegral_add_right' _ hwmeas
+      _ ≤ D n + ENNReal.ofReal ‖u‖ := add_le_add (hmixed_le n) hmixed_norm
+  have hdiff : ∀ n m x, ‖v n x - v m x‖ₑ ≤ D n + D m := fun n m x ↦ by
+    have hs : ContDiff ℝ ∞ (v n - v m) := (hvs n).sub (hvs m)
+    have hc : HasCompactSupport (v n - v m) := (hvc n).sub (hvc m)
+    refine (hs.enorm_le_lintegral_iteratedFDeriv_finrank hc x).trans ?_
+    rw [iteratedFDeriv_sub ((hvs n).of_le (by simp)) ((hvs m).of_le (by simp))]
+    calc ∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) - iteratedFDeriv ℝ N (v m)) y
+          (EuclideanSpace.stdDirs N N)‖ₑ
+        ≤ ∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ
+          + ‖(iteratedFDeriv ℝ N (v m) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ := by
+          refine lintegral_mono fun y ↦ ?_
+          simp only [Pi.sub_apply, sub_apply]
+          calc ‖iteratedFDeriv ℝ N (v n) y (EuclideanSpace.stdDirs N N)
+                - iteratedFDeriv ℝ N (v m) y (EuclideanSpace.stdDirs N N)‖ₑ
+              = ‖(iteratedFDeriv ℝ N (v n) y (EuclideanSpace.stdDirs N N)
+                  - w y (EuclideanSpace.stdDirs N N))
+                - (iteratedFDeriv ℝ N (v m) y (EuclideanSpace.stdDirs N N)
+                  - w y (EuclideanSpace.stdDirs N N))‖ₑ := by rw [sub_sub_sub_cancel_right]
+            _ ≤ _ := enorm_sub_le
+      _ = (∫⁻ y, ‖(iteratedFDeriv ℝ N (v n) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ)
+          + ∫⁻ y, ‖(iteratedFDeriv ℝ N (v m) y - w y) (EuclideanSpace.stdDirs N N)‖ₑ :=
+          lintegral_add_left' (hvmeas n) _
+      _ ≤ D n + D m := add_le_add (hmixed_le n) (hmixed_le m)
+  -- the approximants as bounded continuous functions, Cauchy in the sup norm
+  choose M hM using fun n ↦ (hvc n).exists_bound_of_continuous (hvs n).continuous
+  obtain ⟨U, hU⟩ : ∃ U : ℕ → EuclideanSpace ℝ (Fin N) →ᵇ ℝ, ∀ n x, U n x = v n x :=
+    ⟨fun n ↦ BoundedContinuousFunction.ofNormedAddCommGroup (v n) (hvs n).continuous (M n) (hM n),
+      fun n x ↦ rfl⟩
+  have hcauchy : CauchySeq U := by
+    rw [Metric.cauchySeq_iff]
+    intro ε hε
+    obtain ⟨δ, hδ0, hδt, hδ⟩ : ∃ δ : ℝ≥0∞, 0 < δ ∧ δ ≠ ⊤ ∧ (δ + δ).toReal < ε := by
+      refine ⟨ENNReal.ofReal (ε / 4), ENNReal.ofReal_pos.2 (by positivity), ENNReal.ofReal_ne_top,
+        ?_⟩
+      rw [← ENNReal.ofReal_add (by positivity) (by positivity),
+        ENNReal.toReal_ofReal (by positivity)]
+      linarith
+    obtain ⟨N₀, hN₀⟩ := (ENNReal.tendsto_nhds_zero.1 hvD δ hδ0).exists_forall_of_atTop
+    refine ⟨N₀, fun m hm n hn ↦ ?_⟩
+    have hb : dist (U m) (U n) ≤ (δ + δ).toReal := by
+      refine (BoundedContinuousFunction.dist_le ENNReal.toReal_nonneg).2 fun x ↦ ?_
+      rw [hU, hU, dist_eq_norm, ← toReal_enorm]
+      exact ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hδt, hδt⟩)
+        ((hdiff m n x).trans (add_le_add (hN₀ m hm) (hN₀ n hn)))
+    exact hb.trans_lt hδ
+  -- the uniform limit
+  obtain ⟨Ũ, hŨ⟩ := cauchySeq_tendsto_of_complete hcauchy
+  have hpt : ∀ x, Tendsto (fun n ↦ v n x) atTop (𝓝 (Ũ x)) := fun x ↦ by
+    have := ((continuous_eval_const x).tendsto Ũ).comp hŨ
+    simpa only [Function.comp_def, hU] using this
+  refine ⟨Ũ, Ũ.continuous, ?_, fun x ↦ ?_⟩
+  -- it equals `u` almost everywhere
+  · have hmeas : TendstoInMeasure volume v atTop (fn u) :=
+      tendstoInMeasure_of_tendsto_eLpNorm one_ne_zero hv0
+    obtain ⟨ns, hns_mono, hns⟩ := hmeas.exists_seq_tendsto_ae
+    filter_upwards [hns] with x hx
+    exact tendsto_nhds_unique hx ((hpt x).comp hns_mono.tendsto_atTop)
+  -- the sup bound
+  · rw [← ENNReal.ofReal_le_ofReal_iff (norm_nonneg _), ofReal_norm]
+    refine ENNReal.le_of_forall_pos_le_add fun δ hδ _ ↦ ?_
+    have hlim : Tendsto (fun n ↦ ‖v n x‖ₑ) atTop (𝓝 ‖Ũ x‖ₑ) :=
+      (continuous_enorm.tendsto _).comp (hpt x)
+    refine le_of_tendsto hlim ?_
+    filter_upwards [ENNReal.tendsto_nhds_zero.1 hvD δ (by exact_mod_cast hδ)] with n hn
+    calc ‖v n x‖ₑ ≤ D n + ENNReal.ofReal ‖u‖ := hbound n x
+      _ ≤ ENNReal.ofReal ‖u‖ + δ := by rw [add_comm]; exact add_le_add le_rfl hn
+
+end Remark13
