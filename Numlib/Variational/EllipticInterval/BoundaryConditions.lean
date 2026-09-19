@@ -1,3 +1,4 @@
+import Numlib.Analysis.PDE.Elliptic.Regularity
 import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Inequality.Basic
@@ -58,7 +59,13 @@ bilinear form is the inner product and Lax–Milgram is the Riesz representation
 * `EllipticInterval.Line.solution` (Example 8): the weak solution of `−u'' + u = f` on `ℝ`;
   `Line.memSobolevIntervalLp_of_classical`: a classical solution tending to `0` at infinity lies in
   `H¹(ℝ)` and is the weak solution; `Line.exists_classical_solution`: for `f ∈ L²(ℝ) ∩ C(ℝ)` the
-  weak solution is the unique classical solution, and lies in `H²(ℝ)`.
+  weak solution is the unique classical solution, and lies in `H²(ℝ)`;
+  `Line.solution_translateLp`: the solution operator commutes with the translations
+  `Line.translateLp` of `L²(ℝ)` and `Line.translate` of `H¹(ℝ)` (the whole-line instances of
+  the isometries of `Numlib/Analysis/PDE/Elliptic/Regularity.lean`), `Line.solution_eq_zero_iff`:
+  it is injective, and `Line.not_tendsto_translateLp`: the translates of a nonzero `L²(ℝ)`
+  function have no limit — which makes the solution operator non-compact on `L²(ℝ)`
+  (Remark 30 of Chapter 8, stated in the surface).
 
 ## Design
 
@@ -1954,6 +1961,206 @@ theorem eq_rep_solution_of_classical (fL : Lp ℝ 2 (volume.restrict ((⊤ : Ope
   obtain ⟨U, hU, hUrep, -⟩ := isWeakSolution_of_classical hw fL hfL hode hlim
   funext x
   rw [← hUrep x, hU]
+
+end Line
+
+/-! #### Translations, and the non-compactness of the solution operator -/
+
+namespace Line
+
+open SobolevIntervalLp
+
+/-- The whole line is invariant under every translation. -/
+theorem isTranslationInvariant_top (h : ℝ) :
+    IsTranslationInvariant ((⊤ : Opens ℝ) : Set ℝ) h := fun _ ↦ Iff.rfl
+
+/-- **Translation by `h` on `L²(ℝ)`**, `f ↦ f(· + h)`, a linear isometry
+(`Elliptic.translateLp` on the whole line). -/
+abbrev translateLp (h : ℝ) : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →ₗᵢ[ℝ]
+    Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
+  Elliptic.translateLp ℝ 2 (isTranslationInvariant_top h)
+
+/-- **Translation by `h` on `H¹(ℝ)`**, `u ↦ u(· + h)`, a linear isometry
+(`Elliptic.translateL` on the whole line). -/
+abbrev translate (h : ℝ) : SobolevIntervalLp 1 2 ⊤ →ₗᵢ[ℝ] SobolevIntervalLp 1 2 ⊤ :=
+  Elliptic.translateL ℝ (Module.Basis.singleton Unit ℝ) 1 2 volume (isTranslationInvariant_top h)
+
+/-- `τ_h f = f(· + h)` almost everywhere. -/
+theorem coeFn_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    ⇑(translateLp h f) =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] fun x ↦ f (x + h) :=
+  Elliptic.coeFn_translateLp _ f
+
+/-- The weak derivatives of `τ_h u` are the translates of those of `u`. -/
+theorem deriv_translate (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) (j : Fin 2) :
+    deriv (translate h u) j = translateLp h (deriv u j) :=
+  rfl
+
+/-- Translating by `-h` and then by `h` is the identity on `L²(ℝ)`. -/
+theorem translateLp_translateLp_neg (h : ℝ)
+    (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    translateLp h (translateLp (-h) f) = f := by
+  have := Elliptic.translateLp_neg_translateLp (isTranslationInvariant_top (-h)) f
+  simpa using this
+
+/-- Translating by `-h` and then by `h` is the identity on `H¹(ℝ)`. -/
+theorem translate_translate_neg (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) :
+    translate h (translate (-h) u) = u :=
+  SobolevIntervalLp.ext fun j ↦ by
+    rw [deriv_translate, deriv_translate, translateLp_translateLp_neg]
+
+/-- **The translations are each other's adjoints on `L²(ℝ)`**: `⟪τ_h f, g⟫ = ⟪f, τ_{-h} g⟫`. -/
+theorem inner_translateLp_left (h : ℝ)
+    (f g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    ⟪translateLp h f, g⟫_ℝ = ⟪f, translateLp (-h) g⟫_ℝ := by
+  conv_lhs => rw [← translateLp_translateLp_neg h g]
+  exact (translateLp h).inner_map_map f (translateLp (-h) g)
+
+/-- **The translations are each other's adjoints on `H¹(ℝ)`**: `⟪τ_h u, v⟫ = ⟪u, τ_{-h} v⟫`. -/
+theorem inner_translate_left (h : ℝ) (u v : SobolevIntervalLp 1 2 ⊤) :
+    ⟪translate h u, v⟫_ℝ = ⟪u, translate (-h) v⟫_ℝ := by
+  conv_lhs => rw [← translate_translate_neg h v]
+  exact (translate h).inner_map_map u (translate (-h) v)
+
+/-- The load of a translate: `∫ (τ_h f) v = ∫ f (τ_{-h} v)`. -/
+theorem load_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
+    (v : SobolevIntervalLp 1 2 ⊤) : load (translateLp h f) v = load f (translate (-h) v) := by
+  rw [load_apply_inner, load_apply_inner, inner_translateLp_left, deriv_translate]
+
+/-- **The solution operator of `−u'' + u = f` on `ℝ` commutes with translations**:
+`u(τ_h f) = τ_h u(f)`, by the uniqueness of the weak solution and the translation invariance of
+the `H¹(ℝ)` inner product ([brezis2011functional] Chapter 8, Remark 30). -/
+theorem solution_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    solution (translateLp h f) = translate h (solution f) :=
+  (eq_solution_of_forall fun v ↦ by
+    rw [form_apply, inner_translate_left, ← form_apply, form_solution, load_translateLp]).symm
+
+/-- **The solution operator is injective**: `u(f) = 0` only for `f = 0`, since then `∫ f φ = 0`
+for every test function `φ`, so `f = 0` almost everywhere
+(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`). -/
+theorem solution_eq_zero_iff (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    solution f = 0 ↔ f = 0 := by
+  refine ⟨fun h0 ↦ ?_, fun h0 ↦ ?_⟩
+  · have hload : ∀ v, load f v = 0 := fun v ↦ by rw [← form_solution, h0, map_zero, zero_apply]
+    have hz : ∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), f x = 0 := by
+      refine ae_eq_zero_of_integral_contDiff_smul_eq_zero
+        ((Lp.memLp f).locallyIntegrable one_le_two) fun g hg hgc ↦ ?_
+      have := hload (TestFunction.toSobolevIntervalLp 2 ⟨g, hg, hgc, subset_univ _⟩)
+      rw [load_apply_inner, L2.inner_def] at this
+      rw [← this]
+      refine integral_congr_ae ?_
+      filter_upwards [TestFunction.fn_toSobolevIntervalLp_ae_eq (p := 2)
+        ⟨g, hg, hgc, subset_univ _⟩] with x hx
+      rw [deriv_zero, hx]
+      simp [RCLike.inner_apply]
+    exact Lp.ext (Filter.EventuallyEq.trans (hz : ⇑f =ᵐ[_] 0) (Lp.coeFn_zero ℝ 2 _).symm)
+  · rw [h0]
+    exact (eq_solution_of_forall fun v ↦ by
+      rw [map_zero, zero_apply, load_apply_inner, inner_zero_left]).symm
+
+/-- **The pairing of a compactly supported `ψ` with a translate `τ_h g` is controlled by the tail
+of `g`**: if `ψ = 0` for `|x| ≥ R`, then `|⟪ψ, τ_h g⟫| ≤ ‖ψ‖ ‖g‖_{L²(|x| > h − R − 1)}`, since
+`⟪ψ, τ_h g⟫ = ⟪g, τ_{-h} ψ⟫` and `τ_{-h} ψ` vanishes where `|x| ≤ h − R − 1`. -/
+theorem abs_inner_translateLp_le {ψ : ℝ → ℝ} {R : ℝ} (hR : ∀ x, R ≤ |x| → ψ x = 0)
+    (hψL : MemLp ψ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
+    (g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) (h : ℝ) :
+    |⟪hψL.toLp ψ, translateLp h g⟫_ℝ| ≤ ‖hψL.toLp ψ‖ * (eLpNorm g 2
+      ((volume.restrict ((⊤ : Opens ℝ) : Set ℝ)).restrict (Icc (-(h - R - 1)) (h - R - 1))ᶜ)).toReal
+      := by
+  obtain ⟨S, hSdef⟩ : ∃ S : Set ℝ, S = (Icc (-(h - R - 1)) (h - R - 1))ᶜ := ⟨_, rfl⟩
+  have hS : MeasurableSet S := by rw [hSdef]; exact measurableSet_Icc.compl
+  rw [← hSdef]
+  -- `τ_{-h} ψ` vanishes off `S`
+  have hτ0 : ∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), x ∉ S →
+      translateLp (-h) (hψL.toLp ψ) x = 0 := by
+    filter_upwards [coeFn_translateLp (-h) (hψL.toLp ψ),
+      (isTranslationInvariant_top (-h)).measurePreserving.quasiMeasurePreserving.ae_eq_comp
+        hψL.coeFn_toLp] with x hx1 hx2 hxS
+    rw [hx1]
+    simp only [Function.comp_apply] at hx2
+    rw [hx2]
+    refine hR _ ?_
+    rw [hSdef, mem_compl_iff, not_not, mem_Icc] at hxS
+    linarith [neg_le_abs (x + -h)]
+  -- `⟪g, τ_{-h} ψ⟫ = ⟪1_S g, τ_{-h} ψ⟫`
+  have hgS : MemLp (S.indicator g) 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
+    (Lp.memLp g).indicator hS
+  have e : ⟪g, translateLp (-h) (hψL.toLp ψ)⟫_ℝ
+      = ⟪hgS.toLp _, translateLp (-h) (hψL.toLp ψ)⟫_ℝ := by
+    rw [L2.inner_def, L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards [hτ0, hgS.coeFn_toLp] with x hx1 hx2
+    rw [hx2]
+    by_cases hxS : x ∈ S
+    · rw [indicator_of_mem hxS]
+    · rw [hx1 hxS, inner_zero_right, inner_zero_right]
+  rw [real_inner_comm, inner_translateLp_left, e]
+  calc |⟪hgS.toLp _, translateLp (-h) (hψL.toLp ψ)⟫_ℝ|
+      ≤ ‖hgS.toLp _‖ * ‖translateLp (-h) (hψL.toLp ψ)‖ := abs_real_inner_le_norm _ _
+    _ = _ := by
+      rw [LinearIsometry.norm_map, Lp.norm_toLp, eLpNorm_indicator_eq_eLpNorm_restrict hS,
+        mul_comm]
+
+/-- The pairing of a compactly supported `ψ ∈ L²(ℝ)` with the translates `τ_{r k} g`, `r k → ∞`,
+tends to `0`. -/
+theorem tendsto_inner_translateLp_atTop {ψ : ℝ → ℝ} (hψc : HasCompactSupport ψ)
+    (hψL : MemLp ψ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
+    (g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) {r : ℕ → ℝ}
+    (hr : Tendsto r atTop atTop) :
+    Tendsto (fun k ↦ ⟪hψL.toLp ψ, translateLp (r k) g⟫_ℝ) atTop (𝓝 0) := by
+  obtain ⟨R, -, hR⟩ := hψc.exists_pos_le_norm
+  simp only [Real.norm_eq_abs] at hR
+  have htail := (tendsto_eLpNorm_restrict_compl_Icc_atTop
+    (μ := volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) (p := 2) (by simp) (Lp.memLp g)).comp
+    (tendsto_atTop_add_const_right atTop (-R - 1) hr)
+  have htail' := ((ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp htail).const_mul
+    ‖hψL.toLp ψ‖
+  simp only [Function.comp_def, ENNReal.toReal_zero, mul_zero] at htail'
+  refine squeeze_zero_norm (fun k ↦ ?_) htail'
+  rw [Real.norm_eq_abs]
+  have := abs_inner_translateLp_le hR hψL g (r k)
+  simpa [sub_eq_add_neg, add_assoc] using this
+
+/-- **The translates of a nonzero `L²(ℝ)` function have no limit**: if `τ_{φ k} g → a` in
+`L²(ℝ)` along a strictly increasing `φ`, then `‖a‖ = ‖g‖` (the translations are isometries) while
+`⟪ψ, a⟫ = lim ⟪ψ, τ_{φ k} g⟫ = 0` for every smooth compactly supported `ψ`, so `a = 0`
+(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`) — the argument of [brezis2011functional]
+Chapter 8, Remark 10 (c) and Remark 30. -/
+theorem not_tendsto_translateLp {g : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))}
+    (hg : g ≠ 0) {φ : ℕ → ℕ} (hφ : StrictMono φ)
+    (a : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
+    ¬ Tendsto (fun k ↦ translateLp (φ k : ℝ) g) atTop (𝓝 a) := by
+  intro hlim
+  -- `‖a‖ = ‖g‖`
+  have hnorm : ‖a‖ = ‖g‖ := by
+    have h1 : Tendsto (fun k ↦ ‖translateLp (φ k : ℝ) g‖) atTop (𝓝 ‖a‖) := hlim.norm
+    simp only [LinearIsometry.norm_map] at h1
+    exact tendsto_nhds_unique h1 tendsto_const_nhds
+  -- `⟪ψ, a⟫ = 0` for every smooth compactly supported `ψ`
+  have hdecay : ∀ ψ : ℝ → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ →
+      ∫ x, ψ x • a x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) = 0 := by
+    intro ψ hψ hψc
+    have hψL : MemLp ψ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
+      (hψ.continuous.memLp_of_hasCompactSupport hψc).restrict _
+    have hpair : ⟪hψL.toLp ψ, a⟫_ℝ = ∫ x, ψ x • a x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) := by
+      rw [L2.inner_def]
+      refine integral_congr_ae ?_
+      filter_upwards [hψL.coeFn_toLp] with x hx
+      rw [hx]
+      simp [RCLike.inner_apply, mul_comm]
+    have h1 : Tendsto (fun k ↦ ⟪hψL.toLp ψ, translateLp (φ k : ℝ) g⟫_ℝ) atTop
+        (𝓝 ⟪hψL.toLp ψ, a⟫_ℝ) :=
+      ((continuous_const.inner continuous_id).tendsto a).comp hlim
+    have h2 := tendsto_inner_translateLp_atTop hψc hψL g
+      (tendsto_natCast_atTop_atTop.comp hφ.tendsto_atTop)
+    rw [← hpair]
+    exact tendsto_nhds_unique h1 h2
+  -- hence `a = 0`
+  have ha : a = 0 := by
+    have hz := ae_eq_zero_of_integral_contDiff_smul_eq_zero
+      ((Lp.memLp a).locallyIntegrable one_le_two) hdecay
+    exact Lp.ext (Filter.EventuallyEq.trans (hz : ⇑a =ᵐ[_] 0) (Lp.coeFn_zero ℝ 2 _).symm)
+  rw [ha, norm_zero] at hnorm
+  exact hg (norm_eq_zero.1 hnorm.symm)
 
 end Line
 

@@ -18,19 +18,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "remark_9_17_punctured"
-kind = "theorem"
-desc = '''Remark 17, the punctured space: for `Ω = ℝ^N ∖ {0}` and `N ≥ 2`, `H_0^1(Ω) = H^1(Ω)`
-(`hZeroSpace N ⟨{0}ᶜ, isOpen_compl_singleton⟩ = ⊤`) — the backbone's
-`SobolevEuclideanZero.eq_top_of_compl_singleton` (★★★ there, low priority, no consumer); the
-remark's "in general `W_0^{1,p}(Ω) ≠ W^{1,p}(Ω)`" is the content of Theorem 9.17, and this example
-is also Remark 19's counterexample to Theorem 9.17 (ii) ⇒ (i) without smoothness. Split off
-`remark_9_17` (surf10, 2026-09-20), whose first clause `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` is proved.
-★
-
-Blocked (2026-09-20, surf10; sob14): the dependency `SobolevEuclideanZero.eq_top_of_compl_singleton`
-(`Zero.toml`) is open (not attempted by sob9, sob12, sob14 — the refined route and the estimate,
-~500 lines, are in its `Blocked:` paragraph); the surface restatement is two lines once it lands.'''
-deps = ["sobolevZeroSpace", "hZeroSpace", "SobolevEuclideanZero.eq_top_of_compl_singleton"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
 
 [[node]]
@@ -224,3 +211,7 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.20"
 [[node]]
 id = "proposition_9_20_bounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.20"
+
+[[node]]
+id = "remark_9_17_punctured_of_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"

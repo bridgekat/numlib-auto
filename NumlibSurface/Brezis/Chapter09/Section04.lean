@@ -118,6 +118,22 @@ and its punctured space `H_0^1(ℝ^N ∖ {0}) = H^1(ℝ^N ∖ {0})`, `N ≥ 2`, 
 theorem remark_9_17 (hp' : p ≠ ⊤) : sobolevZeroSpace N p ⊤ = ⊤ :=
   SobolevEuclideanZero.eq_top hp'
 
+/-- **Remark 17, the punctured space.** "If `Ω = ℝ^N ∖ {0}` and `N ≥ 2` one can show that
+`H_0^1(Ω) = H^1(Ω)`": the backbone's `SobolevEuclideanZero.eq_top_of_compl_singleton`, a point
+having zero capacity in `H^1` for `N ≥ 2`. This is also the example of Remark 19: the converse
+of Theorem 9.17 fails without smoothness of `Ω`, a function of `H^1(Ω) ∩ C(Ω̄)` with `u(0) ≠ 0`
+lying in `H_0^1(Ω)`. -/
+theorem remark_9_17_punctured (hN : 2 ≤ N) :
+    hZeroSpace N ⟨{0}ᶜ, isOpen_compl_singleton⟩ = ⊤ :=
+  SobolevEuclideanZero.eq_top_of_compl_singleton hN (by exact_mod_cast hN) rfl
+
+/-- **Remark 17, the punctured space in `W^{1,p}`.** "If `ℝ^N ∖ Ω` is sufficiently thin and
+`p < N`, then `W_0^{1,p}(Ω) = W^{1,p}(Ω)`": for `Ω = ℝ^N ∖ {0}`, `N ≥ 2` and every `1 ≤ p ≤ N`
+(the endpoint `p = N` included), `W_0^{1,p}(Ω) = W^{1,p}(Ω)`. -/
+theorem remark_9_17_punctured_of_le (hN : 2 ≤ N) (hp : p ≤ N) :
+    sobolevZeroSpace N p ⟨{0}ᶜ, isOpen_compl_singleton⟩ = ⊤ :=
+  SobolevEuclideanZero.eq_top_of_compl_singleton hN hp rfl
+
 /-- **Remark 18, and the book's Definition through `C_c^1(Ω)`.** Every `C^1` function `v` with
 compact support in `Ω` lies in `W_0^{1,p}(Ω)`, `1 ≤ p < ∞` (as the function of an element of
 `sobolevZeroSpace N p Ω`): the backbone's

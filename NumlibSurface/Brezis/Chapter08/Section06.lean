@@ -34,8 +34,8 @@ self-adjoint spectral theorem of chapter 6
   self-adjoint, positive and injective.
 * `sineEigenfunctions`, `sineEigenfunctions_eigen`, `sineEigenfunctions_hilbertBasis`,
   `sineEigenfunctions_eigenvalue` — the Example.
-* `remark_8_30_bounded_selfAdjoint` — the operator `T` of Example 8 on `ℝ` is bounded and
-  self-adjoint. Its non-compactness (`remark_8_30_not_compact`) is left open (see the report).
+* `remark_8_30_bounded_selfAdjoint`, `remark_8_30_not_compact` — the operator `T` of Example 8
+  on `ℝ` is bounded and self-adjoint, and not compact.
 
 Remark 29 (the eigenvalues of `−u''` under the boundary conditions of Examples 3, 5, 6, 7, "as
 an exercise") is not formalized (chapter plan).
@@ -237,5 +237,50 @@ theorem remark_8_30_bounded_selfAdjoint :
   change ⟪SobolevIntervalLp.deriv (Line.solution f) 0, g⟫_ℝ
     = ⟪f, SobolevIntervalLp.deriv (Line.solution g) 0⟫_ℝ
   rw [e1, e2, real_inner_comm]
+
+/-- **Remark 30, the negative half.** The operator `T : L²(ℝ) → L²(ℝ)`, `f ↦ u` of
+`remark_8_30_bounded_selfAdjoint` (any bounded operator with `T f = u(f)`, the weak solution of
+problem (30) of Example 8), is *not* compact. `T` commutes with the translations `τ_n`
+(`Line.solution_translateLp`), so for `f ≠ 0` the translates `f_n = τ_n f`, bounded in `L²(ℝ)`
+by `‖f‖`, are mapped to the translates `τ_n (T f)` of the nonzero `T f` (`T` is injective,
+`Line.solution_eq_zero_iff`), which have no convergent subsequence
+(`Line.not_tendsto_translateLp`) — the argument of Remark 10 (c). The eigenvalues and the
+spectrum of `T` (Exercise 8.38) are not stated. -/
+theorem remark_8_30_not_compact
+    (T : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →L[ℝ]
+      Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))
+    (hT : ∀ f, T f = SobolevIntervalLp.deriv (Line.solution f) 0) : ¬ IsCompactOperator T := by
+  intro hc
+  -- a nonzero `f ∈ L²(ℝ)`: the indicator of `[0, 1]`
+  obtain ⟨f, hf⟩ : ∃ f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), f ≠ 0 := by
+    have hμs : volume.restrict ((⊤ : Opens ℝ) : Set ℝ) (Icc (0 : ℝ) 1) ≠ ⊤ := by
+      rw [Measure.restrict_apply measurableSet_Icc]
+      exact (measure_mono inter_subset_left).trans_lt measure_Icc_lt_top |>.ne
+    refine ⟨indicatorConstLp 2 measurableSet_Icc hμs (1 : ℝ), fun h0 ↦ ?_⟩
+    have := congrArg norm h0
+    rw [norm_zero, norm_indicatorConstLp two_ne_zero (by simp), norm_one, one_mul,
+      measureReal_def, Measure.restrict_apply measurableSet_Icc, Opens.coe_top, inter_univ,
+      Real.volume_Icc, sub_zero, ENNReal.toReal_ofReal zero_le_one, Real.one_rpow] at this
+    exact one_ne_zero this
+  -- `T f ≠ 0`
+  have hg : T f ≠ 0 := fun h0 ↦ by
+    rw [hT] at h0
+    refine hf ((Line.solution_eq_zero_iff f).1 (SobolevMultiIndex.ext_of_fn_ae_eq ?_))
+    change ⇑(SobolevIntervalLp.deriv (Line.solution f) 0) =ᵐ[_] _
+    rw [h0]
+    exact (Lp.coeFn_zero ℝ 2 _).trans SobolevMultiIndex.fn_zero.symm
+  -- `T` commutes with the translations
+  have hTn : ∀ n : ℕ, T (Line.translateLp n f) = Line.translateLp n (T f) := fun n ↦ by
+    rw [hT, hT, Line.solution_translateLp, Line.deriv_translate]
+  -- the translates `τ_n (T f)` lie in a compact set, so a subsequence converges
+  have hc' : IsCompactOperator (T : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →ₗ[ℝ]
+      Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) := by rwa [ContinuousLinearMap.coe_coe]
+  have hK := hc'.isCompact_closure_image_closedBall ‖f‖
+  have hmem : ∀ n : ℕ, Line.translateLp n (T f) ∈ closure ((T : Lp ℝ 2 (volume.restrict
+      ((⊤ : Opens ℝ) : Set ℝ)) →ₗ[ℝ] Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) ''
+        Metric.closedBall 0 ‖f‖) := fun n ↦
+    subset_closure ⟨Line.translateLp n f, by simp, hTn n⟩
+  obtain ⟨a, -, φ, hφ, hlim⟩ := hK.tendsto_subseq hmem
+  exact Line.not_tendsto_translateLp hg hφ a hlim
 
 end Brezis.Chapter08

@@ -122,17 +122,4 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark
 
 [[node]]
 id = "remark_8_18"
-kind = "theorem"
-desc = '''Remark 18 on a general open interval `I`: `W_0^{m,p}(I)`, the closure of `C_c^m(I)` (here
-`𝓓(I, ℝ)`) in `W^{m,p}(I)`, is `{u ∈ W^{m,p}(I) : u = Du = ⋯ = D^{m−1} u = 0 on ∂I}`:
-`u ∈ SobolevIntervalLpZero (m + 1) p I ↔ ∀ j : Fin (m + 1), ∀ x ∈ frontier I, (derivOne u j).rep x = 0`
-(`mem_sobolevIntervalLpZero_higher_iff`; the book cites Exercise 8.9). The bounded case is
-`remark_8_18_of_bounded` and the distinction `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is `remark_8_18_ne`,
-both proved.
-
-Blocked: the backbone node `mem_sobolevIntervalLpZero_higher_iff` (Remark 18 on an unbounded
-interval, `Numlib/Analysis/Sobolev/Interval/Zero`) is open — its converse needs the cut-offs
-`ζ_n u` at order `m + 1` (a Leibniz rule and the convergence `ζ_n u → u` in `W^{m+1,p}`, ~300 lines
-of backbone work per sob7's report). The surface node is a one-line restatement once it lands.'''
-deps = ["theorem_8_12", "mem_sobolevIntervalLpZero_higher_iff", "SobolevIntervalLpZero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"

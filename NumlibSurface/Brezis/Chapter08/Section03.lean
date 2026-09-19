@@ -33,10 +33,9 @@ Everything delegates to `Numlib/Analysis/Sobolev/Interval/{Zero,Dual}` and to §
   characterizations (zero extension, testing against `C_c^1(ℝ)`).
 * `proposition_8_13`, `remark_8_17` — Poincaré's inequality, and `∫ u' v'` as a scalar product
   on `H_0^1`.
-* `remark_8_18_of_bounded`, `remark_8_18_ne` — `W_0^{m,p}(a, b)` by the vanishing of
-  `u, Du, …, D^{m−1} u` at the endpoints, and `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}`. The general
-  interval (the planned `remark_8_18`) waits for the backbone's
-  `mem_sobolevIntervalLpZero_higher_iff`.
+* `remark_8_18`, `remark_8_18_of_bounded`, `remark_8_18_ne` — `W_0^{m,p}(I)` by the vanishing
+  of `u, Du, …, D^{m−1} u` on `∂I`, on every open interval and on `(a, b)`, and
+  `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}`.
 * `inclusions_H10_L2_Hneg1`, `proposition_8_14`, `remark_8_19`, `remark_8_21` — the dual
   space: the inclusions `H_0^1 ⊆ L² ⊆ H^{-1}` and their `L^p` versions, the representation of
   `F ∈ W^{-1,p'}` by two functions `f₀, f₁ ∈ L^{p'}`, its non-uniqueness, and the same
@@ -291,6 +290,19 @@ theorem remark_8_18_of_bounded {a b : ℝ} (hab : a < b) (hp : p ≠ ∞) {m : �
     u ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b) ↔
       ∀ j : Fin (m + 1), ∀ x ∈ frontier (Ioo a b), (SobolevIntervalLp.derivOne u j).rep x = 0 :=
   mem_sobolevIntervalLpZero_higher_iff_of_bounded hab hp u
+
+/-- **Remark 18.** Given `m ≥ 2` and `1 ≤ p < ∞`, `W_0^{m,p}(I)` is the closure of `C_c^m(I)`
+(here of the test functions) in `W^{m,p}(I)`; on every open interval `I`,
+`W_0^{m,p}(I) = {u ∈ W^{m,p}(I) : u = Du = ⋯ = D^{m−1} u = 0 on ∂I}`, each `D^j u` read through
+its continuous representative (the element `SobolevIntervalLp.derivOne u j` of `W^{1,p}(I)`).
+The backbone's `mem_sobolevIntervalLpZero_higher_iff`, which reduces the unbounded case to the
+bounded one by the cut-offs `ζ_n u` at every order rather than by the book's Exercise 8.9;
+stated for `m + 1 ≥ 1`. -/
+theorem remark_8_18 (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ∞) {m : ℕ}
+    (u : SobolevIntervalLp (m + 1) p I) :
+    u ∈ SobolevIntervalLpZero (m + 1) p I ↔
+      ∀ j : Fin (m + 1), ∀ x ∈ frontier (I : Set ℝ), (SobolevIntervalLp.derivOne u j).rep x = 0 :=
+  mem_sobolevIntervalLpZero_higher_iff hI hp u
 
 /-- **Remark 18, the distinction between `W_0^{2,p}(I)` and `W^{2,p}(I) ∩ W_0^{1,p}(I)`**: on
 `I = (0, 1)` the function `x(1 − x)` lies in `W^{2,p}(I)` and (as an element of `W^{1,p}(I)`) in

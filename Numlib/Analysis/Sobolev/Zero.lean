@@ -58,6 +58,12 @@ closure `W_0^{1,p}(Ω)` of the test functions in `W^{1,p}(Ω)` (`SobolevMultiInd
   of the chart reductions of Theorem 9.17 and Proposition 9.18;
 * `SobolevEuclideanZero.eq_top` (Remark 17) and
   `SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport` (Remark 18);
+  `SobolevEuclideanZero.eq_top_of_compl_singleton`: **Remark 17, the punctured space**,
+  `W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})` for `N ≥ 2` and `1 ≤ p ≤ N` — a point has zero
+  capacity, by the averaged cut-offs `pointCutoff` whose gradients tend to `0` in `L^p`
+  (`tendsto_eLpNorm_fderiv_pointCutoff`), after the density of bounded functions
+  (`SobolevMultiIndex.exists_seq_tendsto_ae_abs_le`) and Lemma 9.5 without compactness at
+  infinity (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset`);
 * `SobolevMultiIndexZero.contDiff_comp_mem` and `SobolevEuclideanZero.posPart_mem`: the chain
   rule and the positive part preserve `W_0^{1,p}(Ω)`;
 * `SobolevEuclideanZero.exists_dual_repr`: **Proposition 9.20**, every element of the dual
@@ -3741,3 +3747,668 @@ theorem gelfandTriple_of_forall_ae_eq (hp : 1 < p) (hp' : p ≠ ⊤)
 end SobolevEuclideanZero
 
 end GelfandTriple
+
+/-! ### Remark 17, the punctured space: the capacity of a point
+
+For `N ≥ 2` and `1 ≤ p ≤ N`, `W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})`. The cut-off near `0`
+is the average `η_n x = (n+1)⁻¹ ∑_{k ≤ n} η (3^k x)` of contractions of one cut-off `η`: the
+gradients of the summands live on disjoint shells, so `‖∇η_n‖_{L^N}^N ≤ C (n+1)^{1−N} → 0`, and
+Hölder's inequality gives `‖∇η_n‖_{L^p} → 0` for every `p ≤ N` — one construction for `p < N`
+and for the endpoint `p = N`, with no radial integration. -/
+
+section PointCutoff
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+/-- **The averaged cut-off at the origin**: for a cut-off `η` equal to `1` on `closedBall 0 1`
+and supported in `ball 0 2`, the average `η_n x = (n + 1)⁻¹ ∑_{k ≤ n} η (3^k x)` of its
+contractions. It is `1` on `closedBall 0 3^{-n}`, vanishes for `‖x‖ ≥ 2`, tends to `0` at every
+`x ≠ 0`, and — the point of the construction — the gradients `∇η (3^k x)` of the summands have
+disjoint supports (the shells `3^{-k} ≤ ‖x‖ < 2 · 3^{-k}`), so that `‖∇η_n‖_{L^d}^d ≤ C (n+1)^{1-d}`
+in dimension `d`: the capacity of a point is zero in `W^{1,p}` for `p ≤ d`. -/
+def pointCutoff (η : E → ℝ) (n : ℕ) (x : E) : ℝ :=
+  ((n : ℝ) + 1)⁻¹ * ∑ k ∈ Finset.range (n + 1), η ((3 : ℝ) ^ k • x)
+
+variable {η : E → ℝ}
+
+/-- The averaged cut-off is smooth. -/
+theorem contDiff_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) : ContDiff ℝ ∞ (pointCutoff η n) :=
+  contDiff_const.mul (ContDiff.sum fun _ _ ↦ hη.comp (contDiff_id.const_smul _))
+
+/-- The averaged cut-off takes its values in `[0, 1]`. -/
+theorem pointCutoff_mem_Icc (hη01 : ∀ x, η x ∈ Icc (0 : ℝ) 1) (n : ℕ) (x : E) :
+    pointCutoff η n x ∈ Icc (0 : ℝ) 1 := by
+  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  refine ⟨mul_nonneg (inv_pos.2 hpos).le (Finset.sum_nonneg fun k _ ↦ (hη01 _).1), ?_⟩
+  rw [pointCutoff, inv_mul_le_iff₀ hpos, mul_one]
+  calc ∑ k ∈ Finset.range (n + 1), η ((3 : ℝ) ^ k • x)
+      ≤ ∑ k ∈ Finset.range (n + 1), (1 : ℝ) := Finset.sum_le_sum fun k _ ↦ (hη01 _).2
+    _ = (n : ℝ) + 1 := by simp
+
+/-- The averaged cut-off `η_n` is `1` on `closedBall 0 3^{-n}`. -/
+theorem pointCutoff_eq_one (hη1 : EqOn η 1 (closedBall 0 1)) (n : ℕ) {x : E}
+    (hx : ‖x‖ ≤ ((3 : ℝ) ^ n)⁻¹) : pointCutoff η n x = 1 := by
+  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  rw [pointCutoff, Finset.sum_eq_card_nsmul (b := (1 : ℝ)) fun k hk ↦ ?_]
+  · simp [hpos.ne']
+  · refine hη1 (mem_closedBall_zero_iff.2 ?_)
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity)]
+    have hk' : k ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hk)
+    calc (3 : ℝ) ^ k * ‖x‖ ≤ 3 ^ k * (3 ^ n)⁻¹ := by gcongr
+      _ ≤ 1 := by
+        rw [mul_inv_le_iff₀ (by positivity), one_mul]
+        exact pow_le_pow_right₀ (by norm_num) hk'
+
+/-- The averaged cut-off vanishes for `‖x‖ ≥ 2`. -/
+theorem pointCutoff_eq_zero (hηs : tsupport η ⊆ ball 0 2) (n : ℕ) {x : E} (hx : 2 ≤ ‖x‖) :
+    pointCutoff η n x = 0 := by
+  rw [pointCutoff, Finset.sum_eq_zero fun k _ ↦ ?_, mul_zero]
+  refine image_eq_zero_of_notMem_tsupport fun h ↦ ?_
+  have h2 := mem_ball_zero_iff.1 (hηs h)
+  rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity)] at h2
+  have : (1 : ℝ) ≤ 3 ^ k := one_le_pow₀ (by norm_num)
+  nlinarith
+
+/-- The averaged cut-offs tend to `0` at every `x ≠ 0`: at most `log₃(2/‖x‖) + 1` of the
+`n + 1` summands are nonzero. -/
+theorem tendsto_pointCutoff (hηs : tsupport η ⊆ ball 0 2) (hη01 : ∀ x, η x ∈ Icc (0 : ℝ) 1)
+    {x : E} (hx : x ≠ 0) : Tendsto (fun n ↦ pointCutoff η n x) atTop (𝓝 0) := by
+  classical
+  have hxpos : 0 < ‖x‖ := norm_pos_iff.2 hx
+  obtain ⟨K, hK⟩ : ∃ K : ℕ, 2 / ‖x‖ < 3 ^ K := pow_unbounded_of_one_lt _ (by norm_num)
+  have hzero : ∀ k, K ≤ k → η ((3 : ℝ) ^ k • x) = 0 := fun k hk ↦ by
+    refine image_eq_zero_of_notMem_tsupport fun h ↦ ?_
+    have h2 := mem_ball_zero_iff.1 (hηs h)
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity)] at h2
+    have h3 : (3 : ℝ) ^ K ≤ 3 ^ k := pow_le_pow_right₀ (by norm_num) hk
+    rw [div_lt_iff₀ hxpos] at hK
+    nlinarith
+  have hle : ∀ n, pointCutoff η n x ≤ ((n : ℝ) + 1)⁻¹ * K := fun n ↦ by
+    have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+    rw [pointCutoff]
+    refine mul_le_mul_of_nonneg_left ?_ (inv_pos.2 hpos).le
+    rw [← Finset.sum_filter_of_ne (p := fun k ↦ k < K) fun k _ hk ↦ ?_]
+    · calc ∑ k ∈ (Finset.range (n + 1)).filter (fun k ↦ k < K), η ((3 : ℝ) ^ k • x)
+          ≤ ∑ k ∈ (Finset.range (n + 1)).filter (fun k ↦ k < K), (1 : ℝ) :=
+            Finset.sum_le_sum fun k _ ↦ (hη01 _).2
+        _ ≤ ∑ k ∈ Finset.range K, (1 : ℝ) := by
+            refine Finset.sum_le_sum_of_subset_of_nonneg ?_ fun _ _ _ ↦ zero_le_one
+            intro k hk
+            exact Finset.mem_range.2 (Finset.mem_filter.1 hk).2
+        _ = K := by simp
+    · by_contra h
+      exact hk (hzero k (not_lt.1 h))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_
+    (fun n ↦ (pointCutoff_mem_Icc hη01 n x).1) hle
+  simpa [one_div] using tendsto_one_div_add_atTop_nhds_zero_nat.mul_const (K : ℝ)
+
+/-- The derivative of the averaged cut-off: `∇η_n x = (n + 1)⁻¹ ∑_{k ≤ n} 3^k ∇η (3^k x)`. -/
+theorem hasFDerivAt_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) (x : E) :
+    HasFDerivAt (pointCutoff η n) (((n : ℝ) + 1)⁻¹ •
+      ∑ k ∈ Finset.range (n + 1), (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x)) x := by
+  refine HasFDerivAt.const_mul (HasFDerivAt.fun_sum fun k _ ↦ ?_) _
+  have h := ((hη.differentiable (by simp)) _).hasFDerivAt.comp x
+    ((hasFDerivAt_id x).const_smul ((3 : ℝ) ^ k))
+  rwa [ContinuousLinearMap.comp_smul, ContinuousLinearMap.comp_id] at h
+
+/-- The derivative of the averaged cut-off, as `fderiv`. -/
+theorem fderiv_pointCutoff (hη : ContDiff ℝ ∞ η) (n : ℕ) (x : E) :
+    fderiv ℝ (pointCutoff η n) x = ((n : ℝ) + 1)⁻¹ •
+      ∑ k ∈ Finset.range (n + 1), (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) :=
+  (hasFDerivAt_pointCutoff hη n x).fderiv
+
+/-- The gradient of `η` vanishes on the open unit ball, where `η = 1`. -/
+theorem fderiv_eq_zero_of_eqOn_one_closedBall_one (hη1 : EqOn η 1 (closedBall 0 1)) {y : E}
+    (hy : ‖y‖ < 1) : fderiv ℝ η y = 0 := by
+  have hev : η =ᶠ[𝓝 y] fun _ ↦ (1 : ℝ) :=
+    Filter.eventually_of_mem (isOpen_ball.mem_nhds (mem_ball_zero_iff.2 hy)) fun z hz ↦
+      hη1 (ball_subset_closedBall hz)
+  rw [hev.fderiv_eq, fderiv_fun_const, Pi.zero_apply]
+
+end PointCutoff
+
+section PointCutoffNorm
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {η : E → ℝ}
+
+/-- The summand `3^k ∇η (3^k x)` of `∇η_n` vanishes off the shell `3^{-k} ≤ ‖x‖ < 2 · 3^{-k}`. -/
+theorem norm_mem_Ico_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 1))
+    (hηs : tsupport η ⊆ ball 0 2) {k : ℕ} {x : E}
+    (h : (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) ≠ 0) :
+    ((3 : ℝ) ^ k)⁻¹ ≤ ‖x‖ ∧ ‖x‖ < 2 * ((3 : ℝ) ^ k)⁻¹ := by
+  have h3 : (0 : ℝ) < 3 ^ k := by positivity
+  have hne : fderiv ℝ η ((3 : ℝ) ^ k • x) ≠ 0 := fun h0 ↦ h (by rw [h0, smul_zero])
+  have h2 := mem_ball_zero_iff.1 (hηs (support_fderiv_subset (𝕜 := ℝ) (Function.mem_support.2 hne)))
+  have h1 : ¬ ‖(3 : ℝ) ^ k • x‖ < 1 := fun hlt ↦
+    hne (fderiv_eq_zero_of_eqOn_one_closedBall_one hη1 hlt)
+  rw [norm_smul, Real.norm_eq_abs, abs_of_pos h3] at h1 h2
+  rw [not_lt] at h1
+  constructor
+  · rw [inv_le_iff_one_le_mul₀ h3, mul_comm]
+    exact h1
+  · rwa [lt_mul_inv_iff₀ h3, mul_comm]
+
+/-- The shells of two distinct summands of `∇η_n` are disjoint. -/
+theorem eq_of_pow_smul_fderiv_ne_zero (hη1 : EqOn η 1 (closedBall 0 1))
+    (hηs : tsupport η ⊆ ball 0 2) {k k' : ℕ} {x : E}
+    (h : (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) ≠ 0)
+    (h' : (3 : ℝ) ^ k' • fderiv ℝ η ((3 : ℝ) ^ k' • x) ≠ 0) : k = k' := by
+  have key : ∀ {k k' : ℕ}, k < k' → ((3 : ℝ) ^ k)⁻¹ ≤ ‖x‖ → ‖x‖ < 2 * ((3 : ℝ) ^ k')⁻¹ → False :=
+    fun {k k'} hkk' h1 h2 ↦ by
+    have h3 : (3 : ℝ) ^ (k + 1) ≤ 3 ^ k' := pow_le_pow_right₀ (by norm_num) hkk'
+    have h4 : 2 * ((3 : ℝ) ^ k')⁻¹ ≤ 2 * ((3 : ℝ) ^ (k + 1))⁻¹ := by gcongr
+    have h5 : 2 * ((3 : ℝ) ^ (k + 1))⁻¹ < ((3 : ℝ) ^ k)⁻¹ := by
+      rw [pow_succ, mul_inv, ← mul_assoc, mul_comm 2, mul_assoc]
+      have : (0 : ℝ) < ((3 : ℝ) ^ k)⁻¹ := by positivity
+      nlinarith
+    linarith
+  by_contra hne
+  rcases Nat.lt_or_gt_of_ne hne with hlt | hlt
+  · exact key hlt (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h).1
+      (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h').2
+  · exact key hlt (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h').1
+      (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs h).2
+
+/-- For a finite family with at most one nonzero member, `‖∑ aᵢ‖ₑ^q ≤ ∑ ‖aᵢ‖ₑ^q`, `q > 0`. -/
+theorem enorm_sum_rpow_le_sum_of_forall_eq {ι G : Type*} [NormedAddCommGroup G] {s : Finset ι}
+    {a : ι → G} (h : ∀ i ∈ s, ∀ j ∈ s, a i ≠ 0 → a j ≠ 0 → i = j) {q : ℝ} (hq : 0 < q) :
+    ‖∑ i ∈ s, a i‖ₑ ^ q ≤ ∑ i ∈ s, ‖a i‖ₑ ^ q := by
+  classical
+  by_cases h0 : ∃ i ∈ s, a i ≠ 0
+  · obtain ⟨i, hi, hai⟩ := h0
+    rw [Finset.sum_eq_single i (fun j hj hji ↦ by_contra fun haj ↦ hji (h j hj i hi haj hai))
+      (fun hi' ↦ absurd hi hi')]
+    exact Finset.single_le_sum (f := fun j ↦ ‖a j‖ₑ ^ q) (fun _ _ ↦ zero_le) hi
+  · push Not at h0
+    rw [Finset.sum_eq_zero h0, enorm_zero, ENNReal.zero_rpow_of_pos hq]
+    exact zero_le
+
+variable [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] {μ : Measure E}
+  [μ.IsAddHaarMeasure]
+
+/-- **The `L^d` norm of the gradient of the averaged cut-off, `d = dim E`**:
+`∫ ‖∇η_n‖^d ≤ (n + 1) ((2 M)/(n + 1))^d |B(0, 1)|` when `‖∇η‖ ≤ M`, since the summands
+`3^k ∇η (3^k x)` of `(n + 1) ∇η_n` are bounded by `3^k M` and supported in the disjoint balls
+`B(0, 2 · 3^{-k})` of measure `(2 · 3^{-k})^d |B(0, 1)|`. -/
+theorem lintegral_enorm_fderiv_pointCutoff_pow_le [Nontrivial E] (hη : ContDiff ℝ ∞ η)
+    (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
+    (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (n : ℕ) :
+    ∫⁻ x, ‖fderiv ℝ (pointCutoff η n) x‖ₑ ^ (finrank ℝ E : ℝ) ∂μ
+      ≤ ((n : ℝ≥0∞) + 1) * ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (2 * M)) ^ finrank ℝ E)
+        * μ (ball 0 1) := by
+  classical
+  have hd : 0 < finrank ℝ E := finrank_pos
+  have hd' : (0 : ℝ) < finrank ℝ E := by exact_mod_cast hd
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
+  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  set d := finrank ℝ E with hddef
+  -- the pointwise bound
+  have hpt : ∀ x, ‖fderiv ℝ (pointCutoff η n) x‖ₑ ^ (d : ℝ) ≤ ∑ k ∈ Finset.range (n + 1),
+      (ball (0 : E) (2 * ((3 : ℝ) ^ k)⁻¹)).indicator
+        (fun _ ↦ ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (3 ^ k * M)) ^ d)) x := by
+    intro x
+    rw [fderiv_pointCutoff hη, enorm_smul, ENNReal.mul_rpow_of_nonneg _ _ hd'.le]
+    calc ‖((n : ℝ) + 1)⁻¹‖ₑ ^ (d : ℝ)
+          * ‖∑ k ∈ Finset.range (n + 1), (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x)‖ₑ ^ (d : ℝ)
+        ≤ ‖((n : ℝ) + 1)⁻¹‖ₑ ^ (d : ℝ) * ∑ k ∈ Finset.range (n + 1),
+            ‖(3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x)‖ₑ ^ (d : ℝ) := by
+          gcongr
+          exact enorm_sum_rpow_le_sum_of_forall_eq
+            (fun k _ k' _ hk hk' ↦ eq_of_pow_smul_fderiv_ne_zero hη1 hηs hk hk') hd'
+      _ = ∑ k ∈ Finset.range (n + 1), ‖((n : ℝ) + 1)⁻¹‖ₑ ^ (d : ℝ)
+          * ‖(3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x)‖ₑ ^ (d : ℝ) := Finset.mul_sum _ _ _
+      _ ≤ _ := Finset.sum_le_sum fun k _ ↦ ?_
+    have h3 : (0 : ℝ) < 3 ^ k := by positivity
+    by_cases hx : x ∈ ball (0 : E) (2 * ((3 : ℝ) ^ k)⁻¹)
+    · rw [Set.indicator_of_mem hx, Real.enorm_of_nonneg (inv_pos.2 hpos).le, mul_pow,
+        ENNReal.ofReal_mul (by positivity), ← Real.rpow_natCast (((n : ℝ) + 1)⁻¹),
+        ← Real.rpow_natCast ((3 : ℝ) ^ k * M),
+        ← ENNReal.ofReal_rpow_of_nonneg (inv_pos.2 hpos).le hd'.le,
+        ← ENNReal.ofReal_rpow_of_nonneg (by positivity) hd'.le]
+      gcongr
+      rw [← ofReal_norm]
+      refine ENNReal.ofReal_le_ofReal ?_
+      rw [norm_smul, Real.norm_eq_abs, abs_of_pos h3]
+      exact mul_le_mul_of_nonneg_left (hM _) h3.le
+    · have h0 : (3 : ℝ) ^ k • fderiv ℝ η ((3 : ℝ) ^ k • x) = 0 := by
+        by_contra hne
+        exact hx (mem_ball_zero_iff.2 (norm_mem_Ico_of_pow_smul_fderiv_ne_zero hη1 hηs hne).2)
+      rw [h0, enorm_zero, ENNReal.zero_rpow_of_pos hd', mul_zero]
+      exact zero_le
+  -- integration
+  calc ∫⁻ x, ‖fderiv ℝ (pointCutoff η n) x‖ₑ ^ (d : ℝ) ∂μ
+      ≤ ∫⁻ x, ∑ k ∈ Finset.range (n + 1), (ball (0 : E) (2 * ((3 : ℝ) ^ k)⁻¹)).indicator
+          (fun _ ↦ ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (3 ^ k * M)) ^ d)) x ∂μ :=
+        lintegral_mono hpt
+    _ = ∑ k ∈ Finset.range (n + 1), ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (3 ^ k * M)) ^ d)
+          * μ (ball (0 : E) (2 * ((3 : ℝ) ^ k)⁻¹)) := by
+        rw [lintegral_finsetSum _ fun k _ ↦ measurable_const.indicator measurableSet_ball]
+        exact Finset.sum_congr rfl fun k _ ↦ lintegral_indicator_const measurableSet_ball _
+    _ = ∑ k ∈ Finset.range (n + 1),
+          ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d) * μ (ball (0 : E) 1) := by
+        refine Finset.sum_congr rfl fun k _ ↦ ?_
+        have h3 : (0 : ℝ) < 3 ^ k := by positivity
+        rw [Measure.addHaar_ball μ _ (by positivity), ← mul_assoc, ← ENNReal.ofReal_mul
+          (by positivity), ← mul_pow]
+        congr 3
+        field_simp
+    _ = _ := by
+        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+        push_cast
+        ring
+
+/-- `‖∇η_n‖_{L^d} → 0` in dimension `d ≥ 2`. -/
+theorem tendsto_lintegral_enorm_fderiv_pointCutoff_pow (hη : ContDiff ℝ ∞ η)
+    (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
+    (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (hd : 2 ≤ finrank ℝ E) :
+    Tendsto (fun n ↦ ∫⁻ x, ‖fderiv ℝ (pointCutoff η n) x‖ₑ ^ (finrank ℝ E : ℝ) ∂μ) atTop
+      (𝓝 0) := by
+  have : Nontrivial E := Module.nontrivial_of_finrank_pos (R := ℝ) (M := E) (by omega)
+  set d := finrank ℝ E with hddef
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0)
+  -- the real bound `(n + 1) ((2M)/(n+1))^d = ((n+1)⁻¹)^(d-1) (2M)^d → 0`
+  have hreal : Tendsto (fun n : ℕ ↦ ((n : ℝ) + 1) * (((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d) atTop
+      (𝓝 0) := by
+    have he : ∀ n : ℕ, ((n : ℝ) + 1) * (((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d
+        = (1 / ((n : ℝ) + 1)) ^ (d - 1) * (2 * M) ^ d := fun n ↦ by
+      have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+      obtain ⟨e, he⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
+      rw [he, Nat.add_sub_cancel, mul_pow, pow_succ, one_div]
+      field_simp
+    simp_rw [he]
+    have h1 := (tendsto_one_div_add_atTop_nhds_zero_nat.pow (d - 1)).mul_const ((2 * M) ^ d)
+    rwa [zero_pow (by omega), zero_mul] at h1
+  have hB : Tendsto (fun n : ℕ ↦ ((n : ℝ≥0∞) + 1)
+      * ENNReal.ofReal ((((n : ℝ) + 1)⁻¹ * (2 * M)) ^ d) * μ (ball (0 : E) 1)) atTop (𝓝 0) := by
+    have h1 := ENNReal.Tendsto.mul_const (ENNReal.tendsto_ofReal hreal) (b := μ (ball (0 : E) 1))
+      (Or.inr measure_ball_lt_top.ne)
+    rw [ENNReal.ofReal_zero, zero_mul] at h1
+    refine h1.congr fun n ↦ ?_
+    rw [ENNReal.ofReal_mul (by positivity)]
+    congr 2
+    exact_mod_cast (ENNReal.ofReal_natCast (n + 1)).symm
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hB (fun _ ↦ zero_le)
+    fun n ↦ lintegral_enorm_fderiv_pointCutoff_pow_le hη hη1 hηs hM n
+
+omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
+/-- The gradient of the averaged cut-off is supported in `closedBall 0 2`. -/
+theorem support_fderiv_pointCutoff_subset (hηs : tsupport η ⊆ ball 0 2) (n : ℕ) :
+    Function.support (fderiv ℝ (pointCutoff η n)) ⊆ closedBall 0 2 := by
+  refine (support_fderiv_subset (𝕜 := ℝ)).trans ?_
+  refine (closure_mono fun x hx ↦ ?_).trans closure_ball_subset_closedBall
+  rw [mem_ball_zero_iff]
+  by_contra h
+  exact hx (pointCutoff_eq_zero hηs n (not_lt.1 h))
+
+/-- **The `L^p` norm of the gradient of the averaged cut-off tends to `0`** for `1 ≤ p ≤ d`,
+`d = dim E ≥ 2`: the case `p = d` from `lintegral_enorm_fderiv_pointCutoff_pow_le`, the others by
+Hölder's inequality on `closedBall 0 2`, which carries the gradients. The capacity of a point is
+zero in `W^{1,p}` for `p ≤ d`. -/
+theorem tendsto_eLpNorm_fderiv_pointCutoff (hη : ContDiff ℝ ∞ η)
+    (hη1 : EqOn η 1 (closedBall 0 1)) (hηs : tsupport η ⊆ ball 0 2) {M : ℝ}
+    (hM : ∀ x, ‖fderiv ℝ η x‖ ≤ M) (hd : 2 ≤ finrank ℝ E) {p : ℝ≥0∞} (hp : 1 ≤ p)
+    (hpd : p ≤ finrank ℝ E) :
+    Tendsto (fun n ↦ eLpNorm (fderiv ℝ (pointCutoff η n)) p μ) atTop (𝓝 0) := by
+  set d := finrank ℝ E with hddef
+  have hdpos : (0 : ℝ) < d := by norm_cast; omega
+  have hd0 : (d : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : d ≠ 0)
+  have hdt : (d : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top d
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have hpt : p ≠ ⊤ := ne_top_of_le_ne_top hdt hpd
+  have hm : ∀ n, AEStronglyMeasurable (fderiv ℝ (pointCutoff η n)) μ := fun n ↦
+    ((contDiff_pointCutoff hη n).continuous_fderiv (by simp)).aestronglyMeasurable
+  -- the case `p = d`
+  have hLd : Tendsto (fun n ↦ eLpNorm (fderiv ℝ (pointCutoff η n)) d μ) atTop (𝓝 0) := by
+    have h := ((ENNReal.continuous_rpow_const (y := 1 / (d : ℝ))).tendsto 0).comp
+      (tendsto_lintegral_enorm_fderiv_pointCutoff_pow (μ := μ) hη hη1 hηs hM hd)
+    simp only [Function.comp_def, ENNReal.zero_rpow_of_pos (one_div_pos.2 hdpos)] at h
+    refine h.congr fun n ↦ ?_
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hd0 hdt (hm n), ENNReal.toReal_natCast]
+  -- Hölder on `closedBall 0 2`
+  have hC : μ (closedBall (0 : E) 2) ^ (1 / p.toReal - 1 / (d : ℝ)) ≠ ⊤ := by
+    refine ENNReal.rpow_ne_top_of_nonneg ?_ measure_closedBall_lt_top.ne
+    rw [sub_nonneg]
+    refine one_div_le_one_div_of_le (ENNReal.toReal_pos hp0 hpt) ?_
+    have := ENNReal.toReal_mono hdt hpd
+    rwa [ENNReal.toReal_natCast] at this
+  have hle : ∀ n, eLpNorm (fderiv ℝ (pointCutoff η n)) p μ
+      ≤ eLpNorm (fderiv ℝ (pointCutoff η n)) d μ
+        * μ (closedBall (0 : E) 2) ^ (1 / p.toReal - 1 / (d : ℝ)) := fun n ↦ by
+    rw [← eLpNorm_restrict_eq_of_support_subset (hm n) (support_fderiv_pointCutoff_subset hηs n),
+      ← eLpNorm_restrict_eq_of_support_subset (p := d) (hm n)
+        (support_fderiv_pointCutoff_subset hηs n)]
+    have := eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpd
+      (μ := μ.restrict (closedBall (0 : E) 2)) ((hm n).restrict)
+    rwa [Measure.restrict_apply_univ, ENNReal.toReal_natCast] at this
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_ (fun _ ↦ zero_le) hle
+  simpa using ENNReal.Tendsto.mul_const hLd (Or.inr hC)
+
+end PointCutoffNorm
+
+section PointCapacity
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] {ι : Type*} [Fintype ι] [LinearOrder ι]
+  {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
+
+namespace SobolevMultiIndex
+
+omit [FiniteDimensional ℝ E] [μ.IsAddHaarMeasure] in
+/-- Convergence in `W^{1,p}(Ω)` from the `L^p(Ω)` convergence of the functions and of the
+first-order weak derivatives: `SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`
+with the multi-indices of order at most one enumerated as `0` and the `e_i`. -/
+theorem tendsto_of_tendsto_eLpNorm_fn_sub_of_forall_single {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] {w : ℕ → SobolevMultiIndex F b 1 p Ω μ} {u : SobolevMultiIndex F b 1 p Ω μ}
+    (h0 : Tendsto (fun n ↦ eLpNorm (fn (w n) - fn u) p (μ.restrict (Ω : Set E))) atTop (𝓝 0))
+    (hi : ∀ i, Tendsto (fun n ↦ eLpNorm ((weakDeriv (w n) (MultiIndexLE.single i) : E → F)
+      - (weakDeriv u (MultiIndexLE.single i) : E → F)) p (μ.restrict (Ω : Set E))) atTop (𝓝 0)) :
+    Tendsto w atTop (𝓝 u) := by
+  refine tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun α ↦ ?_
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single α with rfl | ⟨i, rfl⟩
+  · exact h0
+  · exact hi i
+
+/-- **Lemma 9.5 without compactness at infinity**: an element `u` of `W^{1,p}(Ω)`, `1 ≤ p < ∞`,
+whose function vanishes almost everywhere on an open neighbourhood `U` of `Ωᶜ` lies in
+`W_0^{1,p}(Ω)`. The cut-offs `ζ_n u → u` (`SobolevMultiIndex.tendsto_cutoff_smul`) vanish almost
+everywhere outside the compact set `closedBall 0 (2(n+1)) ∖ U ⊆ Ω`, so lie in `W_0^{1,p}(Ω)` by
+Lemma 9.5 (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and `W_0^{1,p}(Ω)` is
+closed ([brezis2011functional] Lemma 9.5 and footnote 5 of §9.1). -/
+theorem mem_zero_of_ae_eq_zero_of_compl_subset (hp' : p ≠ ⊤) (u : SobolevMultiIndex ℝ b 1 p Ω μ)
+    {U : Set E} (hU : IsOpen U) (hΩU : (Ω : Set E)ᶜ ⊆ U)
+    (hu : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∈ U → fn u x = 0) :
+    u ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ := by
+  obtain ⟨ζ, hζ, hζ1, hζs, hζ01⟩ := exists_contDiff_eqOn_one_closedBall_one E
+  obtain ⟨v, hv, hv0, hvt⟩ :=
+    tendsto_cutoff_smul hp' hζ hζ01 hζ1 (hζs.trans ball_subset_closedBall) u
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hvt (Eventually.of_forall fun n ↦ ?_)
+  refine mem_zero_of_ae_eq_zero_compl_isCompact hp' (v n)
+    (K := closedBall 0 (2 * ((n : ℝ) + 1)) ∩ Uᶜ)
+    ((isCompact_closedBall _ _).inter_right hU.isClosed_compl)
+    (fun x hx ↦ by_contra fun hxΩ ↦ hx.2 (hΩU hxΩ)) ?_
+  filter_upwards [hv n, hv0 n, hu] with x hx hx0 hxU hxK
+  by_cases hxb : 2 * ((n : ℝ) + 1) < ‖x‖
+  · exact hx0 hxb
+  · have hxU' : x ∈ U := by
+      by_contra h
+      exact hxK ⟨mem_closedBall_zero_iff.2 (not_lt.1 hxb), h⟩
+    rw [hx, hxU hxU', mul_zero]
+
+/-- **Bounded functions are dense in `W^{1,p}(Ω)`**, `1 ≤ p < ∞`: every `u ∈ W^{1,p}(Ω)` is the
+limit of elements with bounded functions. With the truncations
+`H_n(t) = t − (n+1) G(t/(n+1))` of `stepTruncation` — `C^1`, `H_n(t) = t` for `|t| ≤ n + 1`,
+`H_n(t) = 0` for `|t| ≥ 2(n+1)`, `|H_n'| ≤ 1 + M` — the composites `H_n ∘ u` lie in `W^{1,p}(Ω)`
+by Proposition 9.5 (`MemSobolevMultiIndex.contDiff_comp`), are bounded, and converge to `u` in
+`W^{1,p}(Ω)` by dominated convergence, their weak derivatives being `H_n'(u) ∂_i u`
+(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_comp`). -/
+theorem exists_seq_tendsto_ae_abs_le (hp' : p ≠ ⊤) (u : SobolevMultiIndex ℝ b 1 p Ω μ) :
+    ∃ v : ℕ → SobolevMultiIndex ℝ b 1 p Ω μ,
+      (∀ n, ∃ M : ℝ, ∀ᵐ x ∂μ.restrict (Ω : Set E), |fn (v n) x| ≤ M) ∧
+        Tendsto v atTop (𝓝 u) := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have hum : AEStronglyMeasurable (fn u) (μ.restrict (Ω : Set E)) := (memLp u).aestronglyMeasurable
+  obtain ⟨M, hM0, hM⟩ := exists_abs_deriv_stepTruncation_le
+  -- the truncations `H_n(t) = t − (n+1) G(t/(n+1))`
+  obtain ⟨c, hcdef⟩ : ∃ c : ℕ → ℝ, c = fun n : ℕ ↦ ((n : ℝ) + 1)⁻¹ := ⟨_, rfl⟩
+  have hcpos : ∀ n, 0 < c n := fun n ↦ by rw [hcdef]; positivity
+  obtain ⟨H, hHdef⟩ : ∃ H : ℕ → ℝ → ℝ,
+      H = fun (n : ℕ) (t : ℝ) ↦ t - (c n)⁻¹ * stepTruncation (t * c n) := ⟨_, rfl⟩
+  have hHd : ∀ n t, HasDerivAt (H n) (1 - deriv stepTruncation (t * c n)) t := fun n t ↦ by
+    rw [hHdef]
+    exact (hasDerivAt_id t).sub (hasDerivAt_scaled_stepTruncation (hcpos n).ne' t)
+  have hHc : ∀ n, ContDiff ℝ 1 (H n) := fun n ↦ by
+    rw [hHdef]
+    exact contDiff_id.sub (contDiff_const.mul
+      ((contDiff_stepTruncation.of_le (by simp)).comp (contDiff_id.mul contDiff_const)))
+  have hH0 : ∀ n, H n 0 = 0 := fun n ↦ by simp [hHdef, stepTruncation_zero]
+  have hHderiv : ∀ n t, deriv (H n) t = 1 - deriv stepTruncation (t * c n) :=
+    fun n t ↦ (hHd n t).deriv
+  have hHM : ∀ n t, |deriv (H n) t| ≤ 1 + M := fun n t ↦ by
+    rw [hHderiv]
+    exact (abs_sub _ _).trans (by rw [abs_one]; linarith [hM (t * c n)])
+  have hHle : ∀ n t, |H n t| ≤ (1 + M) * |t| := fun n t ↦ by
+    simpa [hH0 n] using abs_sub_le_mul_of_abs_deriv_le (hHc n) (hHM n) t 0
+  have hHzero : ∀ (n : ℕ) (t : ℝ), 2 ≤ |t| * c n → H n t = 0 := fun n t ht ↦ by
+    simp only [hHdef]
+    rw [stepTruncation_of_two_le (by rwa [abs_mul, abs_of_pos (hcpos n)]), mul_comm t,
+      inv_mul_cancel_left₀ (hcpos n).ne', sub_self]
+  have hHid : ∀ (n : ℕ) (t : ℝ), |t| * c n ≤ 1 → H n t = t := fun n t ht ↦ by
+    simp only [hHdef]
+    rw [stepTruncation_of_abs_le (by rwa [abs_mul, abs_of_pos (hcpos n)]), mul_zero, sub_zero]
+  have hHd1 : ∀ (n : ℕ) (t : ℝ), |t| * c n < 1 → deriv (H n) t = 1 := fun n t ht ↦ by
+    rw [hHderiv, deriv_stepTruncation_of_abs_lt (by rwa [abs_mul, abs_of_pos (hcpos n)]),
+      sub_zero]
+  have hHbdd : ∀ n t, |H n t| ≤ (1 + M) * (2 * (c n)⁻¹) := fun n t ↦ by
+    by_cases ht : 2 ≤ |t| * c n
+    · rw [hHzero n t ht, abs_zero]
+      exact mul_nonneg (by linarith) (mul_nonneg zero_le_two (inv_pos.2 (hcpos n)).le)
+    · refine (hHle n t).trans (mul_le_mul_of_nonneg_left ?_ (by linarith))
+      rw [not_le, ← lt_div_iff₀ (hcpos n), div_eq_mul_inv] at ht
+      exact ht.le
+  have hev : ∀ t : ℝ, ∀ n ≥ ⌈|t|⌉₊, |t| * c n < 1 := fun t n hn ↦ by
+    rw [hcdef, mul_inv_lt_iff₀ (by positivity), one_mul]
+    exact (Nat.le_ceil _).trans_lt (by exact_mod_cast Nat.lt_succ_of_le hn)
+  -- the truncated elements `H_n ∘ u`
+  choose U hU using fun n ↦
+    ((memSobolevMultiIndex u).contDiff_comp hp (hHc n) (hH0 n) (hHM n)).exists_sobolevMultiIndex
+  refine ⟨U, fun n ↦ ⟨(1 + M) * (2 * (c n)⁻¹), ?_⟩,
+    tendsto_of_tendsto_eLpNorm_fn_sub_of_forall_single ?_ fun i ↦ ?_⟩
+  · filter_upwards [hU n] with x hx
+    rw [hx]
+    exact hHbdd n _
+  -- `H_n ∘ u → u` in `L^p(Ω)`
+  · have hL0 : Tendsto (fun n ↦ eLpNorm ((fun x ↦ H n (fn u x)) - fn u) p
+        (μ.restrict (Ω : Set E))) atTop (𝓝 0) := by
+      refine tendsto_eLpNorm_sub_of_tendsto_ae hp0 hp' (bound := fun x ↦ (1 + M) * ‖fn u x‖)
+        (fun n ↦ (hHc n).continuous.comp_aestronglyMeasurable hum) hum
+        ((memLp u).norm.const_mul _) (fun n ↦ Eventually.of_forall fun x ↦ ?_)
+        (Eventually.of_forall fun x ↦ ?_)
+      · simpa [Real.norm_eq_abs] using hHle n (fn u x)
+      · exact tendsto_atTop_of_eventually_const (i₀ := ⌈|fn u x|⌉₊) fun n hn ↦
+          hHid n _ (hev _ n hn).le
+    exact hL0.congr fun n ↦
+      (eLpNorm_congr_ae ((hU n).sub (Filter.EventuallyEq.refl _ _))).symm
+  -- `H_n'(u) ∂_i u → ∂_i u` in `L^p(Ω)`
+  · have hdU : ∀ n, (weakDeriv (U n) (MultiIndexLE.single i) : E → ℝ)
+        =ᵐ[μ.restrict (Ω : Set E)]
+          fun x ↦ deriv (H n) (fn u x) * weakDeriv u (MultiIndexLE.single i) x := fun n ↦
+      weakDeriv_single_ae_eq_of_fn_ae_eq_comp (hHc n) (hHM n) (hU n) i
+    have hLi : Tendsto (fun n ↦ eLpNorm
+        ((fun x ↦ deriv (H n) (fn u x) * weakDeriv u (MultiIndexLE.single i) x)
+          - (weakDeriv u (MultiIndexLE.single i) : E → ℝ)) p (μ.restrict (Ω : Set E))) atTop
+        (𝓝 0) := by
+      refine tendsto_eLpNorm_sub_of_tendsto_ae hp0 hp'
+        (bound := fun x ↦ (1 + M) * ‖weakDeriv u (MultiIndexLE.single i) x‖)
+        (fun n ↦ (((hHc n).continuous_deriv le_rfl).comp_aestronglyMeasurable hum).mul
+          (Lp.aestronglyMeasurable _))
+        (Lp.aestronglyMeasurable _) ((Lp.memLp _).norm.const_mul _)
+        (fun n ↦ Eventually.of_forall fun x ↦ ?_) (Eventually.of_forall fun x ↦ ?_)
+      · rw [norm_mul, Real.norm_eq_abs]
+        exact mul_le_mul_of_nonneg_right (hHM n _) (norm_nonneg _)
+      · exact tendsto_atTop_of_eventually_const (i₀ := ⌈|fn u x|⌉₊) fun n hn ↦ by
+          rw [hHd1 n _ (hev _ n hn), one_mul]
+    exact hLi.congr fun n ↦
+      (eLpNorm_congr_ae ((hdU n).sub (Filter.EventuallyEq.refl _ _))).symm
+
+
+/-- **The capacity of a point is zero in `W^{1,p}`, `p ≤ dim E`**: a bounded element `u` of
+`W^{1,p}(Ω)`, `1 ≤ p ≤ d = dim E`, `d ≥ 2`, is the limit in `W^{1,p}(Ω)` of elements vanishing
+almost everywhere on a ball around `0`. The approximants are `(1 − η_n) u` with the averaged
+cut-offs `η_n = pointCutoff η n`, equal to `1` near `0`: `η_n u → 0` and `η_n ∂_i u → 0` in
+`L^p(Ω)` by dominated convergence (`η_n → 0` off `0`, a null set), and
+`‖u ∂_i η_n‖_p ≤ M ‖e_i‖ ‖∇η_n‖_p → 0` by `tendsto_eLpNorm_fderiv_pointCutoff` — this is where
+`p ≤ d` enters, through `‖∇η_n‖_{L^d}^d ≤ C (n+1)^{1-d}`. -/
+theorem exists_seq_tendsto_ae_eq_zero_ball (hp' : p ≠ ⊤) (hd : 2 ≤ finrank ℝ E)
+    (hpd : p ≤ finrank ℝ E) (u : SobolevMultiIndex ℝ b 1 p Ω μ) {M : ℝ}
+    (hM : ∀ᵐ x ∂μ.restrict (Ω : Set E), |fn u x| ≤ M) :
+    ∃ v : ℕ → SobolevMultiIndex ℝ b 1 p Ω μ,
+      (∀ n, ∃ r > 0, ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∈ ball 0 r → fn (v n) x = 0) ∧
+        Tendsto v atTop (𝓝 u) := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have : Nontrivial E := Module.nontrivial_of_finrank_pos (R := ℝ) (M := E) (by omega)
+  have hΩm : MeasurableSet (Ω : Set E) := Ω.isOpen.measurableSet
+  have hum : AEStronglyMeasurable (fn u) (μ.restrict (Ω : Set E)) := (memLp u).aestronglyMeasurable
+  obtain ⟨η, hη, hη1, hηs, hη01⟩ := exists_contDiff_eqOn_one_closedBall_one E
+  have hηc : HasCompactSupport η :=
+    IsCompact.of_isClosed_subset (isCompact_closedBall 0 2) (isClosed_tsupport η)
+      (hηs.trans ball_subset_closedBall)
+  obtain ⟨Mη, hMη⟩ := (hηc.fderiv ℝ).exists_bound_of_continuous (hη.continuous_fderiv (by simp))
+  -- the factors `c n = 1 − η_n`
+  obtain ⟨c, hcdef⟩ : ∃ c : ℕ → E → ℝ, c = fun n x ↦ 1 - pointCutoff η n x := ⟨_, rfl⟩
+  have hcs : ∀ n, ContDiff ℝ ∞ (c n) := fun n ↦ by
+    rw [hcdef]
+    exact contDiff_const.sub (contDiff_pointCutoff hη n)
+  have hcd : ∀ n x, fderiv ℝ (c n) x = -fderiv ℝ (pointCutoff η n) x := fun n x ↦ by
+    have h : HasFDerivAt (c n) (0 - fderiv ℝ (pointCutoff η n) x) x := by
+      rw [fderiv_pointCutoff hη, hcdef]
+      exact (hasFDerivAt_const (1 : ℝ) x).fun_sub (hasFDerivAt_pointCutoff hη n x)
+    rw [h.fderiv, zero_sub]
+  have hc01 : ∀ n x, c n x ∈ Icc (0 : ℝ) 1 := fun n x ↦ by
+    have := pointCutoff_mem_Icc hη01 n x
+    rw [hcdef]
+    exact ⟨by linarith [this.2], by linarith [this.1]⟩
+  have hcM : ∀ n, ∃ K : ℝ, ∀ x, |c n x| ≤ K ∧ ‖fderiv ℝ (c n) x‖ ≤ K := fun n ↦ by
+    have hsupp : HasCompactSupport (pointCutoff η n) := by
+      refine IsCompact.of_isClosed_subset (isCompact_closedBall 0 2) (isClosed_tsupport _) ?_
+      refine (closure_mono fun x hx ↦ ?_).trans closure_ball_subset_closedBall
+      rw [mem_ball_zero_iff]
+      by_contra h
+      exact hx (pointCutoff_eq_zero hηs n (not_lt.1 h))
+    obtain ⟨K, hK⟩ := (hsupp.fderiv ℝ).exists_bound_of_continuous
+      ((contDiff_pointCutoff hη n).continuous_fderiv (by simp))
+    refine ⟨max 1 K, fun x ↦ ⟨?_, ?_⟩⟩
+    · exact (abs_le.2 ⟨by linarith [(hc01 n x).1], (hc01 n x).2⟩).trans (le_max_left _ _)
+    · rw [hcd, norm_neg]
+      exact (hK x).trans (le_max_right _ _)
+  have hc1 : ∀ n, ∀ x ∈ ball (0 : E) ((3 : ℝ) ^ n)⁻¹, c n x = 0 := fun n x hx ↦ by
+    rw [hcdef]
+    dsimp only
+    rw [pointCutoff_eq_one hη1 n (mem_ball_zero_iff.1 hx).le, sub_self]
+  have hclim : ∀ x, x ≠ 0 → Tendsto (fun n ↦ c n x) atTop (𝓝 1) := fun x hx ↦ by
+    have := (tendsto_pointCutoff hηs hη01 hx).const_sub 1
+    rw [sub_zero] at this
+    rw [hcdef]
+    exact this
+  have hae : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ≠ 0 := by
+    refine ae_restrict_of_ae ?_
+    rw [ae_iff]
+    simp
+  -- the elements `v n`, with functions `c n * u`
+  have hmem : ∀ n, MemSobolevMultiIndex b (fun x ↦ c n x * fn u x) 1 p Ω μ := fun n ↦
+    (memSobolevMultiIndex u).contDiff_mul hp (hcs n) (hcM n).choose_spec
+  choose v hv using fun n ↦ (hmem n).exists_sobolevMultiIndex
+  refine ⟨v, fun n ↦ ⟨((3 : ℝ) ^ n)⁻¹, by positivity, ?_⟩, ?_⟩
+  · filter_upwards [hv n] with x hx hxr
+    rw [hx, hc1 n x hxr, zero_mul]
+  -- the weak derivatives of `v n`
+  have hperm := fun i ↦ multiIndexTuple_single_perm (b : ι → E) i
+  have hwu : ∀ i, HasWeakIteratedLineDerivOn ![b i] (fn u) (weakDeriv u (MultiIndexLE.single i))
+      Ω μ := fun i ↦ (hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm (hperm i)
+  have hwv : ∀ n i, (weakDeriv (v n) (MultiIndexLE.single i) : E → ℝ)
+      =ᵐ[μ.restrict (Ω : Set E)] fun x ↦
+        c n x * weakDeriv u (MultiIndexLE.single i) x + fderiv ℝ (c n) x (b i) * fn u x := by
+    intro n i
+    have h1 : HasWeakIteratedLineDerivOn ![b i] (fun x ↦ c n x * fn u x)
+        (weakDeriv (v n) (MultiIndexLE.single i)) Ω μ :=
+      ((hasWeakIteratedLineDerivOn (v n) (MultiIndexLE.single i)).of_perm (hperm i)).congr_ae
+        (hv n) (EventuallyEq.refl _ _)
+    exact (ae_restrict_iff' hΩm).2 (h1.ae_eq ((hwu i).contDiff_mul (hcs n)))
+  -- dominated convergence for a factor `c n` tending to `1`
+  have hdom : ∀ {f : E → ℝ}, MemLp f p (μ.restrict (Ω : Set E)) →
+      Tendsto (fun n ↦ eLpNorm ((fun x ↦ c n x * f x) - f) p (μ.restrict (Ω : Set E))) atTop
+        (𝓝 0) := fun {f} hf ↦ by
+    refine tendsto_eLpNorm_sub_of_tendsto_ae hp0 hp' (bound := fun x ↦ ‖f x‖)
+      (fun n ↦ (hcs n).continuous.aestronglyMeasurable.mul hf.aestronglyMeasurable)
+      hf.aestronglyMeasurable hf.norm (fun n ↦ Eventually.of_forall fun x ↦ ?_) ?_
+    · rw [norm_mul, Real.norm_eq_abs (c n x)]
+      exact mul_le_of_le_one_left (norm_nonneg _)
+        (abs_le.2 ⟨by linarith [(hc01 n x).1], (hc01 n x).2⟩)
+    · filter_upwards [hae] with x hx
+      have := (hclim x hx).mul_const (f x)
+      rw [one_mul] at this
+      exact this
+  -- the gradient term
+  have hgrad : ∀ i, Tendsto (fun n ↦ eLpNorm (fun x ↦ fderiv ℝ (c n) x (b i) * fn u x) p
+      (μ.restrict (Ω : Set E))) atTop (𝓝 0) := by
+    intro i
+    have hT := ENNReal.Tendsto.mul_const
+      (tendsto_eLpNorm_fderiv_pointCutoff (μ := μ) hη hη1 hηs hMη hd hp hpd)
+      (b := ENNReal.ofReal (M * ‖b i‖)) (Or.inr ENNReal.ofReal_ne_top)
+    rw [zero_mul] at hT
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hT (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    rw [mul_comm]
+    refine (eLpNorm_le_mul_eLpNorm_of_ae_le_mul
+      (f := fun x ↦ fderiv ℝ (c n) x (b i) * fn u x) (g := fderiv ℝ (pointCutoff η n))
+      (c := M * ‖b i‖) ?_ ?_ p).trans ?_
+    · exact (((hcs n).fderiv_right (m := ∞) le_rfl).clm_apply
+        contDiff_const).continuous.aestronglyMeasurable.mul hum
+    · filter_upwards [hM] with x hx
+      rw [norm_mul, hcd, neg_apply, norm_neg, Real.norm_eq_abs (fn u x)]
+      calc ‖fderiv ℝ (pointCutoff η n) x (b i)‖ * |fn u x|
+          ≤ ‖fderiv ℝ (pointCutoff η n) x‖ * ‖b i‖ * M :=
+            mul_le_mul ((fderiv ℝ (pointCutoff η n) x).le_opNorm (b i)) hx (abs_nonneg _)
+              (by positivity)
+        _ = M * ‖b i‖ * ‖fderiv ℝ (pointCutoff η n) x‖ := by ring
+    · gcongr
+      exact Measure.restrict_le_self
+  -- the convergence
+  refine tendsto_of_tendsto_eLpNorm_fn_sub_of_forall_single ?_ fun i ↦ ?_
+  · refine (hdom (memLp u)).congr fun n ↦ ?_
+    exact (eLpNorm_congr_ae ((hv n).sub (Filter.EventuallyEq.refl _ _))).symm
+  · have hsum := (hdom (Lp.memLp (weakDeriv u (MultiIndexLE.single i)))).add (hgrad i)
+    rw [add_zero] at hsum
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    have h : (weakDeriv (v n) (MultiIndexLE.single i) : E → ℝ)
+        - (weakDeriv u (MultiIndexLE.single i) : E → ℝ) =ᵐ[μ.restrict (Ω : Set E)]
+          ((fun x ↦ c n x * weakDeriv u (MultiIndexLE.single i) x)
+            - (weakDeriv u (MultiIndexLE.single i) : E → ℝ))
+          + fun x ↦ fderiv ℝ (c n) x (b i) * fn u x := by
+      filter_upwards [hwv n i] with x hx
+      simp only [Pi.sub_apply, Pi.add_apply, hx]
+      ring
+    rw [eLpNorm_congr_ae h]
+    exact eLpNorm_add_le hp
+
+end SobolevMultiIndex
+
+/-- **Remark 17, the punctured space, predicate form**: on a finite-dimensional space `E` of
+dimension `d ≥ 2`, for `1 ≤ p ≤ d` and an open set `Ω` whose complement is contained in `{0}`
+(`Ω = E` or `Ω = E ∖ {0}`), `W_0^{1,p}(Ω) = W^{1,p}(Ω)`: a point has zero capacity. Bounded
+elements are dense (`SobolevMultiIndex.exists_seq_tendsto_ae_abs_le`), a bounded element is the
+limit of elements vanishing near `0` (`SobolevMultiIndex.exists_seq_tendsto_ae_eq_zero_ball`),
+those lie in `W_0^{1,p}(Ω)` by Lemma 9.5 in the form
+`SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset`, and `W_0^{1,p}(Ω)` is closed
+([brezis2011functional] Chapter 9, Remark 17: "if `Ω = ℝ^N ∖ {0}` and `N ≥ 2` one can show that
+`H_0^1(Ω) = H^1(Ω)`"). -/
+theorem SobolevMultiIndexZero.eq_top_of_compl_subset_singleton (hd : 2 ≤ finrank ℝ E)
+    (hpd : p ≤ finrank ℝ E) (hΩ : (Ω : Set E)ᶜ ⊆ {0}) :
+    SobolevMultiIndexZero ℝ b 1 p Ω μ = ⊤ := by
+  have hp' : p ≠ ⊤ := ne_top_of_le_ne_top (ENNReal.natCast_ne_top _) hpd
+  refine top_unique fun u _ ↦ ?_
+  obtain ⟨v, hvb, hvt⟩ := SobolevMultiIndex.exists_seq_tendsto_ae_abs_le hp' u
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hvt (Eventually.of_forall fun n ↦ ?_)
+  obtain ⟨M, hM⟩ := hvb n
+  obtain ⟨w, hw0, hwt⟩ := SobolevMultiIndex.exists_seq_tendsto_ae_eq_zero_ball hp' hd hpd (v n) hM
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hwt (Eventually.of_forall fun m ↦ ?_)
+  obtain ⟨r, hr, hw⟩ := hw0 m
+  exact SobolevMultiIndex.mem_zero_of_ae_eq_zero_of_compl_subset hp' (w m) isOpen_ball
+    (hΩ.trans (singleton_subset_iff.2 (mem_ball_self hr))) hw
+
+/-- **Remark 17, the punctured space**: for `N ≥ 2` and `1 ≤ p ≤ N`,
+`W_0^{1,p}(ℝ^N ∖ {0}) = W^{1,p}(ℝ^N ∖ {0})` — in the book, `H_0^1(ℝ^N ∖ {0}) = H^1(ℝ^N ∖ {0})`
+for `N ≥ 2` ([brezis2011functional] Chapter 9, Remark 17: "if `ℝ^N ∖ Ω` is sufficiently thin and
+`p < N`… one can show"; the endpoint `p = N` is included). The instance of
+`SobolevMultiIndexZero.eq_top_of_compl_subset_singleton`: a point has zero `W^{1,p}`-capacity for
+`p ≤ N`, by the averaged cut-offs `pointCutoff`. -/
+theorem SobolevEuclideanZero.eq_top_of_compl_singleton {N : ℕ}
+    {Ω : Opens (EuclideanSpace ℝ (Fin N))} (hN : 2 ≤ N) (hp : p ≤ N)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin N))) = {0}ᶜ) : SobolevEuclideanZero N 1 p Ω = ⊤ :=
+  SobolevMultiIndexZero.eq_top_of_compl_subset_singleton
+    (by rw [finrank_euclideanSpace_fin]; exact hN) (by rw [finrank_euclideanSpace_fin]; exact hp)
+    (by rw [hΩ, compl_compl])
+
+end PointCapacity

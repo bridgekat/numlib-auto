@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Sobolev.Interval.Higher
+import Numlib.Analysis.Sobolev.Zero
 
 /-!
 # The space `W_0^{1,p}(I)`
@@ -45,7 +46,13 @@ interval `I`. The space `SobolevIntervalLpZero m p I` itself is defined in
 * `mem_sobolevIntervalLpZero_higher_iff_of_bounded` (Remark 18, bounded interval):
   `u ∈ W_0^{m+1,p}(a, b) ↔ u = Du = ⋯ = D^m u = 0 on {a, b}`, `1 ≤ p < ∞`, by induction on `m`
   from Theorem 8.12 (`SobolevIntervalLpZero.mem_of_shift_mem_of_rep_eq_zero` is the induction
-  step); `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero` is the easy direction on every `I`.
+  step); `SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero` is the easy direction on every `I`;
+  `mem_sobolevIntervalLpZero_higher_iff` (**Remark 18** on every open interval): the reduction
+  of the unbounded case to the bounded one through the cut-offs `ζ_n u` at every order
+  (`SobolevIntervalLp.exists_cutoff_tendsto`, from the Leibniz formula
+  `hasWeakIteratedDerivOn_sum_choose_mul` for the weak derivatives of a product by a smooth
+  function and its element form `SobolevIntervalLp.exists_contDiff_mul`) and the transfer
+  `SobolevIntervalLpZero.mem_of_restrictL_mem` of membership in `W_0^{m,p}` from a subinterval.
 
 ## Design
 
@@ -58,7 +65,11 @@ interval `I`. The space `SobolevIntervalLpZero m p I` itself is defined in
   at `p = 2`). On an unbounded interval the cut-offs `ζ_n u` vanish off the bounded interval
   `I ∩ (-2n, 2n)`, on which they lie in `W_0^{1,p}` by the bounded case
   (`SobolevIntervalLpZero.mem_of_forall_eq_zero_off_Ioo`, the restriction argument), and
-  `ζ_n u → u` in `W^{1,p}(I)`; Remark 14 (ii) then follows from Theorem 8.12.
+  `ζ_n u → u` in `W^{1,p}(I)`; Remark 14 (ii) then follows from Theorem 8.12. At order `m + 1`
+  the same reduction needs the weak derivatives of `ζ_n u`, given by the Leibniz formula
+  `D^j (ζ_n u) = ∑_{i ≤ j} C(j, i) ζ_n^{(j−i)} D^i u`; the module imports
+  `Numlib/Analysis/Sobolev/Zero.lean` for the every-order tools of the transfer (restriction,
+  the vanishing of the weak derivatives where the function vanishes).
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -1920,5 +1931,584 @@ theorem _root_.mem_sobolevIntervalLpZero_higher_iff_of_bounded (hab : a < b) (hp
     · exact h 0 b (by rw [hfr]; exact Or.inr rfl)
 
 end SobolevIntervalLp
+
+
+/-! ### The Leibniz formula for the weak derivatives of a product by a smooth function -/
+
+section Leibniz
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {Ω : Opens E} {μ : Measure E}
+
+/-- A finite sum of weakly differentiable functions is weakly differentiable, with the sum of
+the weak derivatives. -/
+theorem HasWeakIteratedLineDerivOn.finset_sum {n : ℕ} {y : Fin n → E} {ι : Type*} {s : Finset ι}
+    {f w : ι → E → F} (h : ∀ i ∈ s, HasWeakIteratedLineDerivOn y (f i) (w i) Ω μ) :
+    HasWeakIteratedLineDerivOn y (fun x ↦ ∑ i ∈ s, f i x) (fun x ↦ ∑ i ∈ s, w i x) Ω μ := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact HasWeakIteratedLineDerivOn.zero
+  | insert a s ha ih =>
+    simp only [Finset.sum_insert ha]
+    exact (h a (Finset.mem_insert_self a s)).add (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
+
+end Leibniz
+
+section LeibnizLine
+
+variable {I : Opens ℝ} {f v w : ℝ → ℝ} {k : ℕ}
+
+/-- Adding a weak derivative at the end of a chain: if `v` is the `k`-th weak derivative of `f`
+and `w` the weak derivative of `v`, then `w` is the `(k + 1)`-th weak derivative of `f`. -/
+theorem HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn (h : HasWeakIteratedDerivOn k f v I)
+    (h' : HasWeakDerivOn v w I) : HasWeakIteratedDerivOn (k + 1) f w I := by
+  have h'' : HasWeakIteratedLineDerivOn ![(1 : ℝ)] v w I volume :=
+    (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (fun j ↦ by fin_cases j; rfl) rfl).2 h'
+  exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (y := Fin.cons 1 fun _ ↦ 1)
+    (fun j ↦ by refine Fin.cases rfl (fun j ↦ rfl) j) rfl).1 (h.cons h'')
+
+/-- **The Leibniz rule for a smooth factor on the line**: for `w` the weak derivative of `u` on
+`I` and `g` smooth, `g' u + g w` is the weak derivative of `g u`; the one-dimensional reading of
+`HasWeakIteratedLineDerivOn.contDiff_mul`. -/
+theorem HasWeakDerivOn.contDiff_mul (h : HasWeakDerivOn f w I) {g : ℝ → ℝ}
+    (hg : ContDiff ℝ ∞ g) :
+    HasWeakDerivOn (fun x ↦ g x * f x) (fun x ↦ g x * w x + deriv g x * f x) I := by
+  have h1 : HasWeakIteratedLineDerivOn ![(1 : ℝ)] f w I volume :=
+    (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (fun j ↦ by fin_cases j; rfl) rfl).2 h
+  exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn
+    (fun j ↦ by fin_cases j; rfl) rfl).1 (h1.contDiff_mul hg)
+
+/-- **The Leibniz formula for the iterated weak derivatives of a product by a smooth function**:
+for a chain `D 0, D 1, …, D m` of functions on `I`, each the weak derivative of the one before,
+and the chain `G 0, G 1, …` of the successive derivatives of a smooth function `G 0`, the
+`j`-th weak derivative of `G 0 · D 0` is `∑_{i ≤ j} C(j, i) G (j − i) D i`, for every `j ≤ m`.
+By induction on `j` from the order-one rule `HasWeakDerivOn.contDiff_mul` and Pascal's rule
+(`Finset.sum_choose_succ_mul`). -/
+theorem hasWeakIteratedDerivOn_sum_choose_mul {D G : ℕ → ℝ → ℝ} {m : ℕ}
+    (hD : ∀ i < m, HasWeakDerivOn (D i) (D (i + 1)) I) (hD0 : LocallyIntegrableOn (D 0) I)
+    (hG : ∀ n, ContDiff ℝ ∞ (G n)) (hGd : ∀ n, deriv (G n) = G (n + 1)) {j : ℕ} (hj : j ≤ m) :
+    HasWeakIteratedDerivOn j (fun x ↦ G 0 x * D 0 x)
+      (fun x ↦ ∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * G (j - i) x * D i x) I := by
+  induction j with
+  | zero =>
+    refine (HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _ ?_).congr_ae
+      (EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ by simp)
+    exact hD0.continuousOn_smul I.isOpen.isLocallyClosed (hG 0).continuous.continuousOn
+  | succ j ih =>
+    refine (ih (Nat.le_of_succ_le hj)).succ_of_hasWeakDerivOn ?_
+    have hterm : ∀ i ∈ Finset.range (j + 1), HasWeakDerivOn
+        (fun x ↦ ((j.choose i : ℕ) : ℝ) * G (j - i) x * D i x)
+        (fun x ↦ ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x + G (j - i + 1) x * D i x))
+        I := fun i hi ↦ by
+      have hi' : i < m := by have := Finset.mem_range.1 hi; omega
+      have := ((hD i hi').contDiff_mul (hG (j - i))).const_smul ((j.choose i : ℕ) : ℝ)
+      refine this.congr_ae (Eventually.of_forall fun x ↦ ?_) (Eventually.of_forall fun x ↦ ?_)
+      · simp only [Pi.smul_apply, smul_eq_mul]; ring
+      · simp only [Pi.smul_apply, smul_eq_mul, hGd]
+    refine (HasWeakIteratedLineDerivOn.finset_sum hterm).congr_ae (EventuallyEq.refl _ _)
+      (Eventually.of_forall fun x ↦ ?_)
+    dsimp only
+    have key := Finset.sum_choose_succ_mul (fun i k ↦ G k x * D i x) j
+    calc ∑ i ∈ Finset.range (j + 1),
+          ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x + G (j - i + 1) x * D i x)
+        = (∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * (G (j + 1 - i) x * D i x))
+          + ∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x) := by
+          rw [← Finset.sum_add_distrib]
+          refine Finset.sum_congr rfl fun i hi ↦ ?_
+          have : j + 1 - i = j - i + 1 := by have := Finset.mem_range.1 hi; omega
+          rw [this]; ring
+      _ = ∑ i ∈ Finset.range (j + 2), (((j + 1).choose i : ℕ) : ℝ) * (G (j + 1 - i) x * D i x) :=
+          key.symm
+      _ = _ := Finset.sum_congr rfl fun i _ ↦ by ring
+
+end LeibnizLine
+
+section ContDiffMul
+
+namespace SobolevIntervalLp
+
+variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- Convergence in `W^{m,p}(I)` from the `L^p(I)` convergence of the weak derivatives of orders
+`0, …, m`: the one-dimensional reading of
+`SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`. -/
+theorem tendsto_of_forall_tendsto_eLpNorm_deriv_sub {w : ℕ → SobolevIntervalLp m p I}
+    {u : SobolevIntervalLp m p I}
+    (h : ∀ j : Fin (m + 1), Tendsto (fun n ↦ eLpNorm (⇑(deriv (w n) j) - ⇑(deriv u j)) p
+      (volume.restrict I)) atTop (𝓝 0)) :
+    Tendsto w atTop (𝓝 u) :=
+  SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun α ↦ by
+    have e : ∀ v : SobolevIntervalLp m p I,
+        deriv v ((derivIndexEquiv m).symm α) = SobolevMultiIndex.weakDeriv v α := fun v ↦
+      congrArg (SobolevMultiIndex.weakDeriv v) ((derivIndexEquiv m).apply_symm_apply α)
+    have := h ((derivIndexEquiv m).symm α)
+    simp only [e] at this
+    exact this
+
+/-- **Multiplication by a smooth function with bounded derivatives preserves `W^{m,p}(I)`**, with
+the Leibniz formula: for `g` smooth with `|g^{(k)}| ≤ B` for `k ≤ m` and `u ∈ W^{m,p}(I)`, there
+is `v ∈ W^{m,p}(I)` with `D^j v = ∑_{i ≤ j} C(j, i) g^{(j−i)} D^i u` for every `j ≤ m` (so
+`v = g u`); the element is built from `hasWeakIteratedDerivOn_sum_choose_mul` by
+`SobolevIntervalLp.mk`. -/
+theorem exists_contDiff_mul {g : ℝ → ℝ} (hg : ContDiff ℝ ∞ g) {B : ℝ}
+    (hB : ∀ k ≤ m, ∀ x, |iteratedDeriv k g x| ≤ B) (u : SobolevIntervalLp m p I) :
+    ∃ v : SobolevIntervalLp m p I, ∀ j : Fin (m + 1), ⇑(deriv v j) =ᵐ[volume.restrict I]
+      fun x ↦ ∑ i : Fin (j + 1), ((j : ℕ).choose i : ℝ) * iteratedDeriv (j - i) g x
+        * deriv u ⟨i, by omega⟩ x := by
+  classical
+  -- the chain of weak derivatives, indexed by `ℕ`
+  obtain ⟨D, hDdef⟩ : ∃ D : ℕ → ℝ → ℝ,
+      D = fun i ↦ if h : i < m + 1 then ⇑(deriv u ⟨i, h⟩) else 0 := ⟨_, rfl⟩
+  have hDi : ∀ i (h : i < m + 1), D i = ⇑(deriv u ⟨i, h⟩) := fun i h ↦ by
+    rw [hDdef]; exact dite_eq_left h
+  have hD : ∀ i < m, HasWeakDerivOn (D i) (D (i + 1)) I := fun i hi ↦ by
+    rw [hDi i (by omega), hDi (i + 1) (by omega)]
+    exact hasWeakDerivOn_deriv_succ u ⟨i, hi⟩
+  have hD0 : LocallyIntegrableOn (D 0) I := by
+    rw [hDi 0 (by omega)]; exact locallyIntegrableOn_deriv u _
+  have hDp : ∀ i (h : i < m + 1), MemLp (D i) p (volume.restrict I) := fun i h ↦ by
+    rw [hDi i h]; exact memLp_deriv u _
+  -- the chain of derivatives of `g`
+  obtain ⟨G, hGdef⟩ : ∃ G : ℕ → ℝ → ℝ, G = fun k ↦ iteratedDeriv k g := ⟨_, rfl⟩
+  have hG : ∀ k, ContDiff ℝ ∞ (G k) := fun k ↦ by
+    rw [hGdef]; dsimp only; rw [iteratedDeriv_eq_iterate]; exact hg.iterate_deriv k
+  have hGd : ∀ k, _root_.deriv (G k) = G (k + 1) := fun k ↦ by
+    rw [hGdef]; exact iteratedDeriv_succ.symm
+  have hGB : ∀ k ≤ m, ∀ x, |G k x| ≤ B := fun k hk x ↦ by rw [hGdef]; exact hB k hk x
+  -- the Leibniz sums lie in `L^p(I)`
+  have hL : ∀ j : Fin (m + 1), MemLp (fun x ↦ ∑ i ∈ Finset.range (j + 1),
+      (((j : ℕ).choose i : ℕ) : ℝ) * G (j - i) x * D i x) p (volume.restrict I) := fun j ↦ by
+    refine memLp_finsetSum _ fun i hi ↦ ?_
+    have hi' : i < m + 1 := by have := Finset.mem_range.1 hi; omega
+    refine (hDp i hi').of_ae_norm_le_mul
+      ((continuous_const.mul (hG (j - i)).continuous).aestronglyMeasurable.mul
+        (hDp i hi').aestronglyMeasurable) (c := (((j : ℕ).choose i : ℕ) : ℝ) * B)
+      (Eventually.of_forall fun x ↦ ?_)
+    rw [abs_mul, abs_mul, abs_of_nonneg (Nat.cast_nonneg (α := ℝ) _)]
+    have hB0 : 0 ≤ B := (abs_nonneg _).trans (hGB 0 (Nat.zero_le _) 0)
+    have := hGB (j - i) (by omega) x
+    gcongr
+  have hw : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn j ⇑((hL 0).toLp _) ⇑((hL j).toLp _) I :=
+    fun j ↦ by
+    refine (hasWeakIteratedDerivOn_sum_choose_mul hD hD0 hG hGd (j := j) (by omega)).congr_ae
+      ?_ (hL j).coeFn_toLp.symm
+    refine EventuallyEq.trans ?_ (hL 0).coeFn_toLp.symm
+    exact Eventually.of_forall fun x ↦ by simp
+  refine ⟨mk (fun j ↦ (hL j).toLp _) hw, fun j ↦ ?_⟩
+  rw [deriv_mk]
+  refine (hL j).coeFn_toLp.trans (Eventually.of_forall fun x ↦ ?_)
+  dsimp only
+  rw [Finset.sum_range (fun i ↦ (((j : ℕ).choose i : ℕ) : ℝ) * G (j - i) x * D i x)]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [hDi i (by omega), hGdef]
+
+end SobolevIntervalLp
+
+end ContDiffMul
+
+/-! ### The cut-offs at every order -/
+
+section CutoffHigher
+
+/-- The iterated derivatives of a compactly supported function have compact support. -/
+theorem HasCompactSupport.iteratedDeriv {f : ℝ → ℝ} (hf : HasCompactSupport f) (k : ℕ) :
+    HasCompactSupport (iteratedDeriv k f) := by
+  induction k with
+  | zero => simpa using hf
+  | succ k ih => rw [iteratedDeriv_succ]; exact ih.deriv
+
+namespace SobolevIntervalLp
+
+/-- The derivatives of every order of the cut-offs `ζ_n` are bounded uniformly in `n`:
+`ζ_n^{(k)}(x) = (n + 1)^{-k} ζ^{(k)}(x / (n + 1))`. -/
+theorem exists_forall_abs_iteratedDeriv_cutoffFn_le (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (n : ℕ) (x : ℝ), |iteratedDeriv k (cutoffFn n) x| ≤ C := by
+  obtain ⟨C, hC⟩ := (cutoffBump.hasCompactSupport.iteratedDeriv k).exists_bound_of_continuous
+    (ContDiff.continuous_iteratedDeriv' k (cutoffBump.contDiff (n := k)))
+  refine ⟨max C 0, le_max_right _ _, fun n x ↦ ?_⟩
+  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have he : cutoffFn n = fun x ↦ cutoffBump (((n : ℝ) + 1)⁻¹ * x) := by
+    funext x; simp [cutoffFn, div_eq_inv_mul]
+  rw [he, iteratedDeriv_comp_const_mul (cutoffBump.contDiff (n := k)) _, abs_mul, abs_pow,
+    abs_of_pos (inv_pos.2 hpos)]
+  calc (((n : ℝ) + 1)⁻¹) ^ k * |iteratedDeriv k (⇑cutoffBump) (((n : ℝ) + 1)⁻¹ * x)|
+      ≤ 1 ^ k * max C 0 := by
+        gcongr
+        · exact inv_le_one_of_one_le₀ (by linarith)
+        · exact (Real.norm_eq_abs _).symm.le.trans ((hC _).trans (le_max_left _ _))
+    _ = max C 0 := by rw [one_pow, one_mul]
+
+/-- The derivatives of positive order of `ζ_n` vanish on `(-(n + 1), n + 1)`, where `ζ_n = 1`. -/
+theorem iteratedDeriv_cutoffFn_eq_zero_of_abs_lt {n k : ℕ} (hk : k ≠ 0) {x : ℝ}
+    (hx : |x| < (n : ℝ) + 1) : iteratedDeriv k (cutoffFn n) x = 0 := by
+  have hev : cutoffFn n =ᶠ[𝓝 x] fun _ ↦ (1 : ℝ) :=
+    Filter.eventually_of_mem ((isOpen_lt continuous_abs continuous_const).mem_nhds hx)
+      fun y hy ↦ cutoffFn_of_abs_le (le_of_lt hy)
+  rw [hev.iteratedDeriv_eq, iteratedDeriv_const]
+  simp [hk]
+
+/-- The derivatives of every order of `ζ_n` vanish where `|x| > 2(n + 1)`. -/
+theorem iteratedDeriv_cutoffFn_eq_zero_of_lt_abs {n k : ℕ} {x : ℝ}
+    (hx : 2 * ((n : ℝ) + 1) < |x|) : iteratedDeriv k (cutoffFn n) x = 0 := by
+  have hev : cutoffFn n =ᶠ[𝓝 x] fun _ ↦ (0 : ℝ) :=
+    Filter.eventually_of_mem ((isOpen_lt continuous_const continuous_abs).mem_nhds hx)
+      fun y hy ↦ cutoffFn_of_le_abs (le_of_lt hy)
+  rw [hev.iteratedDeriv_eq, iteratedDeriv_const]
+  split_ifs <;> rfl
+
+variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- The `L^p(I)` mass of `f ∈ L^p(I)` off `(-(n + 1), n + 1)` tends to `0`. -/
+theorem tendsto_eLpNorm_restrict_compl_Ioo (hp : p ≠ ⊤) {f : ℝ → ℝ}
+    (hf : MemLp f p (volume.restrict I)) :
+    Tendsto (fun n : ℕ ↦ eLpNorm f p
+      ((volume.restrict I).restrict (Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ)) atTop (𝓝 0) := by
+  have h := (tendsto_eLpNorm_restrict_compl_Icc_atTop hp hf).comp
+    (tendsto_atTop_add_const_right atTop (1 : ℝ) tendsto_natCast_atTop_atTop)
+  refine h.congr fun n ↦ ?_
+  simp only [Function.comp_def]
+  rw [Measure.restrict_congr_set (ae_eq_set_compl_compl.2 Ioo_ae_eq_Icc)]
+
+/-- The pointwise bound `|ζ_n^{(k)} f| ≤ C |1_{(-(n+1), n+1)ᶜ} f|` for `k ≥ 1` and
+`|ζ_n^{(k)}| ≤ C`. -/
+theorem norm_iteratedDeriv_cutoffFn_mul_le {n k : ℕ} (hk : k ≠ 0) {C : ℝ}
+    (hC : ∀ x, |iteratedDeriv k (cutoffFn n) x| ≤ C) (f : ℝ → ℝ) (x : ℝ) :
+    ‖iteratedDeriv k (cutoffFn n) x * f x‖
+      ≤ C * ‖(Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ.indicator f x‖ := by
+  have hC0 : 0 ≤ C := (abs_nonneg _).trans (hC 0)
+  by_cases hx : x ∈ Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1)
+  · rw [iteratedDeriv_cutoffFn_eq_zero_of_abs_lt hk (abs_lt.2 hx), zero_mul, norm_zero]
+    positivity
+  · rw [indicator_of_mem (mem_compl hx), Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
+    exact mul_le_mul_of_nonneg_right (hC x) (abs_nonneg _)
+
+/-- The pointwise bound `|(ζ_n − 1) f| ≤ |1_{(-(n+1), n+1)ᶜ} f|`. -/
+theorem norm_cutoffFn_sub_one_mul_le (n : ℕ) (f : ℝ → ℝ) (x : ℝ) :
+    ‖(cutoffFn n x - 1) * f x‖ ≤ ‖(Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ.indicator f x‖ := by
+  by_cases hx : x ∈ Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1)
+  · rw [cutoffFn_of_abs_le (abs_lt.2 hx).le, sub_self, zero_mul, norm_zero]
+    exact norm_nonneg _
+  · rw [indicator_of_mem (mem_compl hx), Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
+    exact mul_le_of_le_one_left (abs_nonneg _)
+      (abs_le.2 ⟨by linarith [cutoffFn_nonneg n x], by linarith [cutoffFn_le_one n x]⟩)
+
+/-- **The cut-offs at every order** ([brezis2011functional], proof of Theorem 8.7 (b), for
+`W^{m,p}(I)`): for `u ∈ W^{m,p}(I)`, `1 ≤ p < ∞`, there are elements `v n ∈ W^{m,p}(I)`, the
+products `ζ_n u`, whose weak derivatives are given by the Leibniz formula
+`D^j (ζ_n u) = ∑_{i ≤ j} C(j, i) ζ_n^{(j−i)} D^i u` (`SobolevIntervalLp.exists_contDiff_mul`),
+and `v n → u` in `W^{m,p}(I)`: `D^j (ζ_n u) − D^j u = (ζ_n − 1) D^j u + ∑_{i < j} C(j, i)
+ζ_n^{(j−i)} D^i u`, where every term vanishes on `(-(n+1), n+1)` and is bounded by a constant
+times `|D^i u|`, so its `L^p` norm is at most a constant times the `L^p` mass of `D^i u` off
+`(-(n+1), n+1)`, which tends to `0`. -/
+theorem exists_cutoff_tendsto (hp : p ≠ ⊤) (u : SobolevIntervalLp m p I) :
+    ∃ v : ℕ → SobolevIntervalLp m p I,
+      (∀ (n : ℕ) (j : Fin (m + 1)), ⇑(deriv (v n) j) =ᵐ[volume.restrict I]
+        fun x ↦ ∑ i : Fin (j + 1), ((j : ℕ).choose i : ℝ) * iteratedDeriv (j - i) (cutoffFn n) x
+          * deriv u ⟨i, by omega⟩ x) ∧
+      Tendsto v atTop (𝓝 u) := by
+  classical
+  have hp1 : (1 : ℝ≥0∞) ≤ p := Fact.out
+  choose C hC0 hC using exists_forall_abs_iteratedDeriv_cutoffFn_le
+  obtain ⟨B, hB⟩ : ∃ B : ℝ, ∀ k ≤ m, ∀ (n : ℕ) (x : ℝ), |iteratedDeriv k (cutoffFn n) x| ≤ B :=
+    ⟨∑ k ∈ Finset.range (m + 1), C k, fun k hk n x ↦ (hC k n x).trans
+      (Finset.single_le_sum (fun i _ ↦ hC0 i) (Finset.mem_range.2 (by omega)))⟩
+  choose v hv using fun n ↦
+    exists_contDiff_mul (contDiff_cutoffFn n) (fun k hk x ↦ hB k hk n x) u
+  refine ⟨v, hv, tendsto_of_forall_tendsto_eLpNorm_deriv_sub fun j ↦ ?_⟩
+  -- the tail masses
+  obtain ⟨T, hTdef⟩ : ∃ T : ℕ → (ℝ → ℝ) → ℝ≥0∞, T = fun (n : ℕ) (f : ℝ → ℝ) ↦ eLpNorm f p
+      ((volume.restrict I).restrict (Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ) := ⟨_, rfl⟩
+  have hT : ∀ f, MemLp f p (volume.restrict I) → Tendsto (fun n ↦ T n f) atTop (𝓝 0) :=
+    fun f hf ↦ by rw [hTdef]; exact tendsto_eLpNorm_restrict_compl_Ioo hp hf
+  -- the decomposition of `D^j (ζ_n u) − D^j u`
+  have hdec : ∀ n, ⇑(deriv (v n) j) - ⇑(deriv u j) =ᵐ[volume.restrict I]
+      (∑ i : Fin j, fun x ↦ ((j : ℕ).choose i : ℝ) * iteratedDeriv (j - i) (cutoffFn n) x
+        * deriv u ⟨i, by omega⟩ x) + fun x ↦ (cutoffFn n x - 1) * deriv u j x := fun n ↦ by
+    filter_upwards [hv n j] with x hx
+    rw [Pi.sub_apply, hx, Pi.add_apply, Finset.sum_apply, Fin.sum_univ_castSucc]
+    simp only [Fin.val_castSucc, Fin.val_last, Nat.choose_self, Nat.cast_one, one_mul,
+      Nat.sub_self, iteratedDeriv_zero, Fin.eta]
+    ring
+  -- the bound
+  have hbound : ∀ n, eLpNorm (⇑(deriv (v n) j) - ⇑(deriv u j)) p (volume.restrict I)
+      ≤ (∑ i : Fin j, ENNReal.ofReal (((j : ℕ).choose i : ℝ) * C (j - i))
+          * T n (deriv u ⟨i, by omega⟩)) + T n (deriv u j) := fun n ↦ by
+    rw [eLpNorm_congr_ae (hdec n)]
+    refine (eLpNorm_add_le hp1).trans (add_le_add ((eLpNorm_sum_le hp1).trans
+      (Finset.sum_le_sum fun i _ ↦ ?_)) ?_)
+    · have hk : (j : ℕ) - i ≠ 0 := by have := i.isLt; omega
+      rw [hTdef]
+      dsimp only
+      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl]
+      have hm : AEStronglyMeasurable (fun x ↦ ((j : ℕ).choose i : ℝ)
+          * iteratedDeriv (j - i) (cutoffFn n) x * deriv u ⟨i, by omega⟩ x) (volume.restrict I) :=
+        (continuous_const.mul ((contDiff_cutoffFn n).continuous_iteratedDeriv _
+          (by simp))).aestronglyMeasurable.mul (Lp.aestronglyMeasurable _)
+      refine eLpNorm_le_mul_eLpNorm_of_ae_le_mul (f := fun x ↦ ((j : ℕ).choose i : ℝ)
+          * iteratedDeriv (j - i) (cutoffFn n) x * deriv u ⟨i, by omega⟩ x)
+        (g := (Ioo (-((n : ℝ) + 1)) ((n : ℝ) + 1))ᶜ.indicator (deriv u ⟨i, by omega⟩))
+        (c := ((j : ℕ).choose i : ℝ) * C (j - i)) hm (Eventually.of_forall fun x ↦ ?_) p
+      rw [mul_assoc, norm_mul (((j : ℕ).choose i : ℝ)), Real.norm_eq_abs (((j : ℕ).choose i : ℝ)),
+        abs_of_nonneg (Nat.cast_nonneg (α := ℝ) _), mul_assoc]
+      exact mul_le_mul_of_nonneg_left (norm_iteratedDeriv_cutoffFn_mul_le hk (hC _ n) _ x)
+        (Nat.cast_nonneg _)
+    · rw [hTdef]
+      dsimp only
+      rw [← eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_Ioo.compl]
+      exact eLpNorm_mono_ae (((contDiff_cutoffFn n).continuous.sub
+        continuous_const).aestronglyMeasurable.mul (Lp.aestronglyMeasurable _))
+        (Eventually.of_forall (norm_cutoffFn_sub_one_mul_le n _))
+  -- the limit
+  have hlim : Tendsto (fun n ↦ (∑ i : Fin j, ENNReal.ofReal (((j : ℕ).choose i : ℝ) * C (j - i))
+      * T n (deriv u ⟨i, by omega⟩)) + T n (deriv u j)) atTop (𝓝 0) := by
+    have h1 : ∀ i : Fin j, Tendsto (fun n ↦ ENNReal.ofReal (((j : ℕ).choose i : ℝ) * C (j - i))
+        * T n (deriv u ⟨i, by omega⟩)) atTop (𝓝 0) := fun i ↦ by
+      have := ENNReal.Tendsto.const_mul (hT _ (Lp.memLp (deriv u ⟨i, by omega⟩)))
+        (Or.inr (ENNReal.ofReal_ne_top (r := ((j : ℕ).choose i : ℝ) * C (j - i))))
+      rwa [mul_zero] at this
+    have h2 := (tendsto_finsetSum Finset.univ fun i _ ↦ h1 i).add (hT _ (Lp.memLp (deriv u j)))
+    rwa [Finset.sum_const_zero, add_zero] at h2
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hlim (fun _ ↦ zero_le) hbound
+
+end SobolevIntervalLp
+
+end CutoffHigher
+
+/-! ### Remark 18 on an unbounded interval -/
+
+section Remark18
+
+/-- An open interval meets a bounded open interval in the empty set or in a bounded open
+interval `(a, b)`, `a < b`. -/
+theorem TopologicalSpace.Opens.inf_Ioo_eq_empty_or_exists_eq_Ioo {I : Opens ℝ}
+    (hI : (I : Set ℝ).OrdConnected) (c d : ℝ) :
+    ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = ∅ ∨
+      ∃ a b, a < b ∧ ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = Set.Ioo a b := by
+  have hKI : ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = (I : Set ℝ) ∩ Set.Ioo c d := rfl
+  have hKord : ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ).OrdConnected := by
+    rw [hKI]; exact hI.inter ordConnected_Ioo
+  rcases Opens.eq_intervals_of_ordConnected hKord with h | h | ⟨a, h⟩ | ⟨b, h⟩ | ⟨a, b, hab, h⟩
+  · exact Or.inl h
+  · exfalso
+    rw [hKI] at h
+    have : max c d + 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by rw [h]; exact mem_univ _
+    linarith [this.2.2, le_max_right c d]
+  · exfalso
+    rw [hKI] at h
+    have : max a d + 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by
+      rw [h]; exact show a < max a d + 1 by linarith [le_max_left a d]
+    linarith [this.2.2, le_max_right a d]
+  · exfalso
+    rw [hKI] at h
+    have : min b c - 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by
+      rw [h]; exact show min b c - 1 < b by linarith [min_le_left b c]
+    linarith [this.2.1, min_le_right b c]
+  · exact Or.inr ⟨a, b, hab, h⟩
+
+namespace SobolevIntervalLpZero
+
+open SobolevIntervalLp
+
+variable {p : ℝ≥0∞} {I J : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- **Transfer of membership in `W_0^{m,p}` from a subinterval**: if `J ⊆ I`, the restriction of
+`u ∈ W^{m,p}(I)` to `J` lies in `W_0^{m,p}(J)`, and `u` vanishes almost everywhere on `I` outside a
+closed set `K` with `K ∩ I ⊆ J`, then `u ∈ W_0^{m,p}(I)`: the one-dimensional, every-order
+version of `SobolevMultiIndexZero.mem_of_mem_restrict`. Test functions on `J` converging to
+`u|_J` are test functions on `I` converging to `u` in `W^{m,p}(I)`, because every component of
+the difference vanishes almost everywhere on `I ∖ J`
+(`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`). -/
+theorem mem_of_restrictL_mem (h : J ≤ I) {u : SobolevIntervalLp m p I}
+    (hu : SobolevMultiIndex.restrictL ℝ (Module.Basis.singleton Unit ℝ) m p volume h u
+      ∈ SobolevIntervalLpZero m p J)
+    {K : Set ℝ} (hK : IsClosed K) (hKI : K ∩ I ⊆ J)
+    (hu0 : ∀ᵐ x ∂volume.restrict I, x ∉ K → fn u x = 0) :
+    u ∈ SobolevIntervalLpZero m p I := by
+  obtain ⟨w, φ, hφ, hw⟩ := SobolevMultiIndexZero.exists_seq_testFunction_tendsto hu
+  -- the test functions on `J`, read as test functions on `I`
+  obtain ⟨ψ, hψ⟩ : ∃ ψ : ℕ → 𝓓(I, ℝ), ∀ n, (ψ n : ℝ → ℝ) = φ n :=
+    ⟨fun n ↦ ⟨φ n, (φ n).contDiff, (φ n).hasCompactSupport, (φ n).tsupport_subset.trans h⟩,
+      fun _ ↦ rfl⟩
+  choose W hWT hW using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions
+    (b := Module.Basis.singleton Unit ℝ) (k := m) (p := p) (μ := volume)
+  -- `u` and its derivatives vanish almost everywhere on `I ∖ J`
+  have hu0' : ∀ j : Fin (m + 1), ∀ᵐ x ∂volume.restrict I, x ∉ (J : Set ℝ) → deriv u j x = 0 :=
+    fun j ↦ by
+    filter_upwards [SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl u hK hu0
+      (derivIndex m j), ae_restrict_mem I.isOpen.measurableSet] with x hx hxI hxJ
+    exact hx fun hxK ↦ hxJ (hKI ⟨hxK, hxI⟩)
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto (f := W) (b := atTop) ?_
+    (Eventually.of_forall fun n ↦ SobolevMultiIndexZero.testFunctions_le (hWT n))
+  refine tendsto_of_forall_tendsto_eLpNorm_deriv_sub fun j ↦ ?_
+  have key : ∀ n, eLpNorm (⇑(deriv (W n) j) - ⇑(deriv u j)) p (volume.restrict I)
+      = eLpNorm (⇑(deriv (w n) j) - ⇑(deriv (SobolevMultiIndex.restrictL ℝ
+        (Module.Basis.singleton Unit ℝ) m p volume h u) j)) p (volume.restrict J) := fun n ↦ by
+    have hc0 : ∀ x ∉ (J : Set ℝ), iteratedDeriv j (φ n) x = 0 := fun x hx ↦ by
+      rw [← TestFunction.iteratedDerivApply_coe]
+      exact ((φ n).iteratedFDerivApply j _).eq_zero_of_notMem hx
+    have hcW : ⇑(deriv (W n) j) =ᵐ[volume.restrict I] iteratedDeriv j (φ n) := by
+      have := deriv_ae_eq_iteratedDeriv_of_fn_ae_eq (hW n) j
+      rwa [hψ n] at this
+    have hcw : ⇑(deriv (w n) j) =ᵐ[volume.restrict J] iteratedDeriv j (φ n) :=
+      deriv_ae_eq_iteratedDeriv_of_fn_ae_eq (hφ n) j
+    rw [eLpNorm_congr_ae (hcW.sub (EventuallyEq.refl _ _)),
+      eLpNorm_sub_restrict_eq_of_eq_zero_compl h hc0 (hu0' j)]
+    exact eLpNorm_congr_ae (hcw.symm.sub
+      (SobolevMultiIndex.weakDeriv_restrictL h u (derivIndex m j)).symm)
+  simp_rw [key]
+  exact SobolevMultiIndex.tendsto_eLpNorm_weakDeriv_sub hw (derivIndex m j)
+
+end SobolevIntervalLpZero
+
+namespace SobolevIntervalLp
+
+variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- **Remark 18 of [brezis2011functional], Chapter 8, on any open interval**: for `1 ≤ p < ∞` and
+`u ∈ W^{m+1,p}(I)`, `u ∈ W_0^{m+1,p}(I)` if and only if `u = Du = ⋯ = D^m u = 0` on `∂I`, each
+`D^j u` (`j ≤ m`) read as the element `SobolevIntervalLp.derivOne u j` of `W^{1,p}(I)` through
+its continuous representative. The forward direction is
+`SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero`; the converse reduces to the bounded case
+`mem_sobolevIntervalLpZero_higher_iff_of_bounded` through the cut-offs `ζ_n u → u` in
+`W^{m+1,p}(I)` (`SobolevIntervalLp.exists_cutoff_tendsto`, with the Leibniz formula for their
+derivatives): on the bounded interval `J_n = I ∩ (−3(n+1), 3(n+1))` the derivatives of `ζ_n u` of
+orders `≤ m` vanish at the endpoints — at those of `I` because those of `u` do, at `±3(n+1)`
+because `ζ_n` vanishes near them — so `ζ_n u|_{J_n} ∈ W_0^{m+1,p}(J_n)`, hence
+`ζ_n u ∈ W_0^{m+1,p}(I)` (`SobolevIntervalLpZero.mem_of_restrictL_mem`), and `W_0^{m+1,p}(I)` is
+closed. The book's route (Exercise 8.9, Hardy-type inequalities) is not followed. -/
+theorem _root_.mem_sobolevIntervalLpZero_higher_iff (hI : (I : Set ℝ).OrdConnected) (hp : p ≠ ⊤)
+    (u : SobolevIntervalLp (m + 1) p I) :
+    u ∈ SobolevIntervalLpZero (m + 1) p I
+      ↔ ∀ j : Fin (m + 1), ∀ x ∈ frontier (I : Set ℝ), rep (derivOne u j) x = 0 := by
+  refine ⟨fun hu j x hx ↦ SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero hI hu j hx,
+    fun h ↦ ?_⟩
+  obtain ⟨v, hv, hvt⟩ := exists_cutoff_tendsto hp u
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hvt (Eventually.of_forall fun n ↦ ?_)
+  have hR : 2 * ((n : ℝ) + 1) < 3 * ((n : ℝ) + 1) := by linarith
+  -- the function of `ζ_n u`
+  have hfn : fn (v n) =ᵐ[volume.restrict I] fun x ↦ cutoffFn n x * fn u x := by
+    filter_upwards [hv n 0] with x hx
+    rw [← deriv_zero (v n), hx, Fin.sum_univ_castSucc,
+      Finset.sum_eq_zero fun i _ ↦ absurd i.isLt (by simp), zero_add]
+    simp only [Fin.val_last, Fin.val_zero, Nat.choose_self, Nat.cast_one, one_mul, Nat.sub_self,
+      iteratedDeriv_zero, Fin.mk_zero, deriv_zero]
+  -- `ζ_n u` vanishes almost everywhere off `[−2(n+1), 2(n+1)]`
+  have hu0 : ∀ᵐ x ∂volume.restrict I, x ∉ Icc (-(2 * ((n : ℝ) + 1))) (2 * ((n : ℝ) + 1)) →
+      fn (v n) x = 0 := by
+    filter_upwards [hfn] with x hx hxK
+    rw [hx, cutoffFn_of_le_abs, zero_mul]
+    rw [mem_Icc, not_and_or, not_le, not_le] at hxK
+    rcases hxK with h1 | h1
+    · rw [abs_of_neg (by linarith)]; linarith
+    · rw [abs_of_pos (by linarith)]; exact h1.le
+  -- the bounded interval `J = I ∩ (−3(n+1), 3(n+1))`
+  rcases Opens.inf_Ioo_eq_empty_or_exists_eq_Ioo hI (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1))
+    with hJ | ⟨a, b, hab, hJ⟩
+  · -- `J = ∅`: `ζ_n u = 0`
+    have hzero : v n = 0 := by
+      refine SobolevMultiIndex.ext_of_fn_ae_eq
+        (hfn.trans (EventuallyEq.trans ?_ SobolevMultiIndex.fn_zero.symm))
+      filter_upwards [ae_restrict_mem I.isOpen.measurableSet] with x hxI
+      have hx : x ∉ Ioo (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1)) := fun hx ↦ by
+        have : x ∈ ((I ⊓ Opens.Ioo (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1)) : Opens ℝ) : Set ℝ) :=
+          ⟨hxI, hx⟩
+        rw [hJ] at this
+        exact this
+      rw [mem_Ioo, not_and_or, not_lt, not_lt] at hx
+      have : cutoffFn n x = 0 := by
+        refine cutoffFn_of_le_abs ?_
+        rcases hx with h1 | h1
+        · rw [abs_of_neg (by linarith)]; linarith
+        · rw [abs_of_pos (by linarith)]; linarith
+      simp [this]
+    rw [hzero]
+    exact zero_mem _
+  -- `J = (a, b)`
+  have hJI : ((Opens.Ioo a b : Opens ℝ) : Set ℝ) ⊆ I := by
+    rw [Opens.coe_Ioo, ← hJ]; exact inter_subset_left
+  have hJI' : Opens.Ioo a b ≤ I := hJI
+  have hJ' := ordConnected_coe_Ioo a b
+  have hcl : closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) = Icc a b := by
+    rw [Opens.coe_Ioo, closure_Ioo hab.ne]
+  -- the endpoints of `(a, b)` are boundary points of `I` or lie beyond `2(n+1)`
+  have hend : ∀ x ∈ ({a, b} : Set ℝ),
+      x ∈ frontier (I : Set ℝ) ∨ 2 * ((n : ℝ) + 1) < |x| := by
+    intro x hx
+    have hxc : x ∈ closure (I : Set ℝ) := by
+      refine closure_mono hJI ?_
+      rw [hcl]
+      rcases hx with rfl | rfl
+      · exact left_mem_Icc.2 hab.le
+      · exact right_mem_Icc.2 hab.le
+    by_cases hxI : x ∈ (I : Set ℝ)
+    · right
+      have hxJ : x ∉ Ioo a b := by
+        rcases hx with rfl | rfl
+        · exact fun h ↦ lt_irrefl _ h.1
+        · exact fun h ↦ lt_irrefl _ h.2
+      have hx' : x ∉ Ioo (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1)) := fun h ↦ by
+        have : x ∈ ((I ⊓ Opens.Ioo (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1)) : Opens ℝ) : Set ℝ) :=
+          ⟨hxI, h⟩
+        rw [hJ] at this
+        exact hxJ this
+      rw [mem_Ioo, not_and_or, not_lt, not_lt] at hx'
+      rcases hx' with h1 | h1
+      · rw [abs_of_neg (by linarith)]; linarith
+      · rw [abs_of_pos (by linarith)]; linarith
+    · left
+      rw [I.isOpen.frontier_eq]
+      exact ⟨hxc, hxI⟩
+  -- the restriction of `ζ_n u` to `(a, b)` lies in `W_0^{m+1,p}(a, b)`
+  obtain ⟨w, hwdef⟩ : ∃ w, w = SobolevMultiIndex.restrictL ℝ (Module.Basis.singleton Unit ℝ)
+    (m + 1) p volume hJI' (v n) := ⟨_, rfl⟩
+  have hw : w ∈ SobolevIntervalLpZero (m + 1) p (Opens.Ioo a b) := by
+    refine (mem_sobolevIntervalLpZero_higher_iff_of_bounded hab hp w).2 fun j x hx ↦ ?_
+    rw [Opens.coe_Ioo, frontier_Ioo hab] at hx
+    -- the continuous representative of `D^j (ζ_n u)` on `[a, b]`
+    have hg : ContinuousOn (fun y ↦ ∑ i : Fin (j + 1), ((j : ℕ).choose i : ℝ)
+        * iteratedDeriv (j - i) (cutoffFn n) y * rep (derivOne u ⟨i, by omega⟩) y)
+        (closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ)) := by
+      refine continuousOn_finsetSum _ fun i _ ↦ ?_
+      exact ((continuous_const.mul ((contDiff_cutoffFn n).continuous_iteratedDeriv _
+        (by simp))).continuousOn).mul ((continuousOn_rep hI _).mono (closure_mono hJI))
+    have hfnw : fn (derivOne w j) =ᵐ[volume.restrict ((Opens.Ioo a b : Opens ℝ) : Set ℝ)]
+        fun y ↦ ∑ i : Fin (j + 1), ((j : ℕ).choose i : ℝ)
+          * iteratedDeriv (j - i) (cutoffFn n) y * rep (derivOne u ⟨i, by omega⟩) y := by
+      have h1 : fn (derivOne w j) =ᵐ[volume.restrict ((Opens.Ioo a b : Opens ℝ) : Set ℝ)]
+          ⇑(deriv (v n) j.castSucc) := by
+        rw [hwdef]
+        exact SobolevMultiIndex.weakDeriv_restrictL hJI' (v n) (derivIndex (m + 1) j.castSucc)
+      have h2 := ae_restrict_of_ae_restrict_of_subset hJI (hv n j.castSucc)
+      have h3 : ∀ i : Fin (j + 1), ⇑(deriv u ⟨i, by omega⟩)
+          =ᵐ[volume.restrict ((Opens.Ioo a b : Opens ℝ) : Set ℝ)]
+            rep (derivOne u ⟨i, by omega⟩) := fun i ↦
+        ae_restrict_of_ae_restrict_of_subset hJI (fn_ae_eq_rep hI (derivOne u ⟨i, by omega⟩))
+      filter_upwards [h1, h2, Filter.eventually_all.2 h3] with y hy1 hy2 hy3
+      rw [hy1, hy2]
+      exact Finset.sum_congr rfl fun i _ ↦ by simp only [Fin.val_castSucc, hy3 i]
+    have hxc : x ∈ closure ((Opens.Ioo a b : Opens ℝ) : Set ℝ) := by
+      rw [hcl]
+      rcases hx with rfl | rfl
+      · exact left_mem_Icc.2 hab.le
+      · exact right_mem_Icc.2 hab.le
+    rw [rep_eq_of_continuousOn hJ' (derivOne w j) hg hfnw hxc]
+    refine Finset.sum_eq_zero fun i _ ↦ ?_
+    rcases hend x hx with hxf | hxabs
+    · rw [h ⟨i, by omega⟩ x hxf, mul_zero]
+    · rw [iteratedDeriv_cutoffFn_eq_zero_of_lt_abs hxabs, mul_zero, zero_mul]
+  -- transfer back to `I`
+  rw [hwdef] at hw
+  refine SobolevIntervalLpZero.mem_of_restrictL_mem hJI' hw isClosed_Icc ?_ hu0
+  rintro x ⟨hxK, hxI⟩
+  have : x ∈ ((I ⊓ Opens.Ioo (-(3 * ((n : ℝ) + 1))) (3 * ((n : ℝ) + 1)) : Opens ℝ) : Set ℝ) :=
+    ⟨hxI, by rw [mem_Icc] at hxK; exact ⟨by linarith [hxK.1], by linarith [hxK.2]⟩⟩
+  rw [hJ] at this
+  exact this
+
+end SobolevIntervalLp
+
+end Remark18
 
 end

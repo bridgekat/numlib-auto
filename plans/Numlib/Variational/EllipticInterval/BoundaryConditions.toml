@@ -337,3 +337,51 @@ source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Example 8'
 
 [[node]]
 id = "Line.eq_rep_solution_of_classical"
+
+[[node]]
+id = "Line.isTranslationInvariant_top"
+
+[[node]]
+id = "Line.translateLp"
+
+[[node]]
+id = "Line.translate"
+
+[[node]]
+id = "Line.coeFn_translateLp"
+
+[[node]]
+id = "Line.deriv_translate"
+
+[[node]]
+id = "Line.translateLp_translateLp_neg"
+
+[[node]]
+id = "Line.translate_translate_neg"
+
+[[node]]
+id = "Line.inner_translateLp_left"
+
+[[node]]
+id = "Line.inner_translate_left"
+
+[[node]]
+id = "Line.load_translateLp"
+
+[[node]]
+id = "Line.solution_translateLp"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 30"
+
+[[node]]
+id = "Line.solution_eq_zero_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 30"
+
+[[node]]
+id = "Line.abs_inner_translateLp_le"
+
+[[node]]
+id = "Line.tendsto_inner_translateLp_atTop"
+
+[[node]]
+id = "Line.not_tendsto_translateLp"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 30"
