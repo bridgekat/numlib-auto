@@ -161,6 +161,12 @@ id = "abs_dirichletForm_le"
 id = "laplaceForm_apply_inner"
 
 [[node]]
+id = "laplaceForm_apply_eq_dirichletForm_add"
+
+[[node]]
+id = "laplaceForm_apply_eq_dirichletForm_add_weakDeriv"
+
+[[node]]
 id = "laplaceForm_apply"
 
 [[node]]

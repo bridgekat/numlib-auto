@@ -38,28 +38,45 @@ id = "tangentialDeriv_mem_zero_of_sobolev_two"
 
 [[node]]
 id = "regularity_upperHalfSpace_higher"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.25, case B, higher order**: under the hypotheses of
-`regularity_upperHalfSpace`, if `g ∈ H^m(ℝ^N_+)` then `u ∈ H^{m+2}(ℝ^N_+)` with
-`‖u‖_{H^{m+2}} ≤ C_{N,m} (‖u‖_{H¹} + ‖g‖_{H^m})`. Proof (p. 11371): induction on `m`; for `m + 1`
-apply the inductive hypothesis to the tangential derivatives `∂_j u ∈ H^1_0(Ω)` (Lemma 9.7,
-`tangentialDeriv_mem_zero_of_isGalerkinSolution`) with data `∂_j g ∈ H^m(Ω)`, which gives every
-`∂^α u` with `α_N ≤ 1`… more precisely every derivative of order `m + 3` containing a tangential
-factor; the remaining one, `∂_N^{m+3} u`, is read off the equation
-`∂_N∂_N u = -∑_{i<N} ∂_i∂_i u - g ∈ H^{m+1}(Ω)` (the weak identity of `regularity_upperHalfSpace`
-lifted to `H^{m+1}` by the inductive hypothesis). ★★ (~250 lines).
 
-Blocked: not attempted (effort spent on the `H²` clause and its constant). The pieces are in
-place: Lemma 9.7 is `tangentialDeriv_mem_zero_of_sobolev_two` (membership of `∂_j u` in
-`H^1_0`, without equation (58)), the `H²` case is `exists_sobolevEuclidean_two_of_tangential`
-(variable coefficients, any tangentially invariant `Ω`), and the normal second derivative from
-the equation is `exists_hasWeakIteratedLineDerivOn_last_of_forall`. Missing: (58) for the
-derivative `∂_j u` (test the equation with `∂_j φ` and move the derivative, as in
-`forall_testFunction_deriv` of case A), an order-lowering map `H^{m+1} → H^m` on
-`SobolevMultiIndex` (only the predicate-level `memSobolevMultiIndex_succ_iff` exists), and the
-induction assembling `∂^α u` for `α_N ≤ m + 2` from the tangential derivatives and the rest from
-the equation. Estimate ★★★ (~350 lines).'''
-deps = ["regularity_upperHalfSpace", "tangentialDeriv_mem_zero_of_isGalerkinSolution", "HasWeakIteratedLineDerivOn.cons"]
+[[node]]
+id = "IsContDiffConstOffCompact"
+
+[[node]]
+id = "_root_.MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact"
+
+[[node]]
+id = "_root_.MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub"
+
+[[node]]
+id = "memSobolevMultiIndex_comp_chart_of_order"
+
+[[node]]
+id = "forall_testFunction_deriv_general"
+
+[[node]]
+id = "memSobolevMultiIndex_of_tangential_of_order"
+
+[[node]]
+id = "memSobolevMultiIndex_of_tangential_of_compact_of_order"
+
+[[node]]
+id = "contDiffOn_chartCoeff_of_order"
+
+[[node]]
+id = "exists_boundary_piece_ae_eq"
+
+[[node]]
+id = "transfer_chart_ae_eq"
+
+[[node]]
+id = "memSobolevMultiIndex_boundary_piece_of_order"
+
+[[node]]
+id = "memSobolevMultiIndex_interior_piece_of_order"
+
+[[node]]
+id = "regularity_dirichlet_higher_mem"
 
 [[node]]
 id = "transfer_chart"
@@ -99,65 +116,21 @@ id = "exists_norm_le_of_forall_exists_sobolev_two"
 
 [[node]]
 id = "regularity_dirichlet_higher"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.25, the `H^{m+2}` clause.** For `Ω` of class `C^{m+2}`
-(`IsContDiffChartDomain (m + 2) Ω`) with bounded boundary there is `C` such that, under the
-hypotheses of `regularity_dirichlet`, `f ∈ H^m(Ω)` implies `u ∈ H^{m+2}(Ω)` with
-`‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`. Proof (p. 11374, "the implication `f ∈ H^m ⇒ u ∈ H^{m+2}` is done
-by induction on `m` as in cases A and B"): the interior piece is `regularity_top_higher`; on the
-cylinder the induction of `regularity_upperHalfSpace_higher` is repeated for the
-variable-coefficient form, which needs (i) Lemma 9.7 for the general form on `Q₊` — the
-tangential derivative `∂_j w ∈ H^1_0(Q₊)` solves the equation with datum
-`∂_j g̃ - ∑ ∂_ℓ((∂_j a_{kℓ}) ∂_k w)` (a `C^m` coefficient hypothesis, which is where the class
-`C^{m+2}` of the chart enters through Lemma 9.8) — and (ii) the normal derivatives from the
-equation divided by `a_{NN}`. ★★★ (~500 lines beyond `regularity_dirichlet`). Lower priority than
-the `m = 0` clause: no consumer in this corpus needs `m ≥ 1` on a domain except the `C²` and
-`C^∞` clauses below and Remark 29.
 
-Blocked: depends on `regularity_upperHalfSpace_higher` (open) and on a higher-order version of
-the chart transfer: `transfer_chart` only records the equation, `chartCoeff` is `C¹` for a `C²`
-chart (`contDiffOn_chartCoeff`), and `memSobolevMultiIndex_two_comp_chart` returns `H²` only; the
-higher clause needs the coefficients `C^{m+1}` (a `C^{m+2}` chart) and the retransfer at order
-`m + 2` (`HasWeakIteratedLineDerivOn.mul` iterated). The `H²` skeleton
-(`memSobolevMultiIndex_two_boundary_piece`, `memSobolevMultiIndex_two_interior_piece`,
-`regularity_dirichlet_mem`) is the template. Estimate ★★★ (~500 lines beyond the half space).'''
-deps = ["regularity_dirichlet", "regularity_top_higher", "regularity_upperHalfSpace_higher", "transfer_chart"]
+[[node]]
+id = "regularity_dirichlet_higher_mem_laplace"
+
+[[node]]
+id = "exists_norm_le_of_forall_exists_sobolev"
+
+[[node]]
+id = "exists_contDiffOn_of_memSobolevMultiIndex"
 
 [[node]]
 id = "regularity_dirichlet_contDiffOn"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.25, the `C²(Ω̄)` clause**: for `Ω` of class `C^{m+2}`
-with bounded boundary, `f ∈ H^m(Ω)` and `m > N/2`, the weak solution `u` agrees almost
-everywhere with a function `ũ` with `ContDiffOn ℝ 2 ũ (closure Ω)` (the book's `C²(Ω̄)`: the
-derivatives up to order `2` extend continuously to `Ω̄`). From `regularity_dirichlet_higher` and
-Corollary 9.15 of chapter 9a, `W^{m+2,2}(Ω) ⊆ C^k(Ω̄)` for `k = ⌊m + 2 - N/2⌋ ≥ 2` when
-`m > N/2` (with the footnote-16 caveat for integer `m - N/2` handled by the `p = N` case of the
-embedding chain). ★★ (~100 lines). Consumes chapter 9a's embedding on a domain.
-
-Blocked: depends on `regularity_dirichlet_higher` (open) and on
-`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order` (sob11), absent from this worktree.'''
-deps = [
-  "regularity_dirichlet_higher",
-  "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order",  # ch9a, EmbeddingDomain.toml: Corollary 9.15, the C^k(Ω̄) clause
-]
 
 [[node]]
 id = "regularity_dirichlet_smooth"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.25, the `C^∞(Ω̄)` clause**: for `Ω` of class `C^∞`
-(`IsContDiffChartDomain ⊤ Ω`) with bounded boundary and `f` agreeing almost everywhere with a
-function in `C^∞(Ω̄)` all of whose derivatives are bounded on `Ω` (on a bounded `Ω`, any function
-`ContDiffOn ℝ ⊤ f (closure Ω)`), the weak solution `u` agrees almost everywhere with a function
-`ContDiffOn ℝ ⊤ ũ (closure Ω)`. Proof: such an `f` is in `H^m(Ω)` for every `m` (a bounded
-`C^m(Ω̄)` function on a set of finite measure is in `W^{m,2}`; for unbounded `Ω` with bounded
-`Γ` the hypothesis `f ∈ H^m(Ω)` for all `m` is taken instead), so `u ∈ H^{m+2}(Ω)` for every `m`
-by `regularity_dirichlet_higher`, hence `u ∈ C^k(Ω̄)` for every `k` by the argument of
-`regularity_dirichlet_contDiffOn`, and the representatives glue as in
-`MemSobolevMultiIndexLoc.exists_contDiffOn`. ★★ (~120 lines).
-
-Blocked: depends on `regularity_dirichlet_higher` and `regularity_dirichlet_contDiffOn`, both
-open.'''
-deps = ["regularity_dirichlet_higher", "regularity_dirichlet_contDiffOn"]
 
 [[node]]
 id = "regularity_neumann"

@@ -295,6 +295,22 @@ theorem laplaceForm_apply_inner (u v : SobolevEuclidean N 1 2 Ω) :
   rw [laplaceForm, add_apply, add_apply,
     dirichletForm_apply_inner, pairing_apply, ContinuousLinearMap.id_apply]
 
+/-- The form of `-Δ + 1` is the Dirichlet form plus the `L²` inner product of the functions:
+`laplaceForm Ω U V = dirichletForm Ω U V + ⟪U, V⟫_{L²}`. -/
+theorem laplaceForm_apply_eq_dirichletForm_add (U V : SobolevEuclidean N 1 2 Ω) :
+    laplaceForm Ω U V = dirichletForm Ω U V
+      + ⟪SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
+        SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ := by
+  rw [laplaceForm, add_apply, add_apply, pairing_apply, ContinuousLinearMap.id_apply]
+  rfl
+
+/-- `laplaceForm_apply_eq_dirichletForm_add` with the `L²` functions written as the zeroth weak
+derivatives (the two spellings are definitionally equal). -/
+theorem laplaceForm_apply_eq_dirichletForm_add_weakDeriv (u v : SobolevEuclidean N 1 2 Ω) :
+    laplaceForm Ω u v = dirichletForm Ω u v
+      + ⟪SobolevMultiIndex.weakDeriv u 0, SobolevMultiIndex.weakDeriv v 0⟫_ℝ := by
+  rw [laplaceForm_apply_inner, dirichletForm_apply_inner]
+
 /-- **The form of `-Δ + 1` is the integral (32)**:
 `laplaceForm Ω u v = ∫_Ω (∇u · ∇v + u v)`. -/
 theorem laplaceForm_apply (u v : SobolevEuclidean N 1 2 Ω) :

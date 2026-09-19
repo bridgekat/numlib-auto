@@ -457,15 +457,6 @@ open Laplacian
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-- The form of `-Δ + 1` is the Dirichlet form plus the `L²` inner product of the functions:
-`laplaceForm Ω U V = dirichletForm Ω U V + ⟪U, V⟫_{L²}`. -/
-theorem laplaceForm_apply_eq_dirichletForm_add (U V : SobolevEuclidean N 1 2 Ω) :
-    laplaceForm Ω U V = dirichletForm Ω U V
-      + ⟪SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
-        SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ := by
-  rw [laplaceForm, add_apply, add_apply, pairing_apply, ContinuousLinearMap.id_apply]
-  rfl
-
 /-- **The classical eigenvalue equation**: if `U ∈ H^1(Ω)` satisfies the weak equation
 `∫_Ω ∇U·∇φ = λ ∫_Ω U φ` for every test function `φ` and its function is a `C²` function `u` on
 `Ω`, then `-Δ u = λ u` at every point of `Ω`, with Mathlib's Laplacian `Δ`. The weak equation
