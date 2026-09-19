@@ -1,162 +1,138 @@
 namespace = "Brezis.Chapter08"
-desc = '''
-§8.3, The space `W_0^{1,p}(I)`, with the paragraph on the dual space `W^{-1,p'}(I)` and, from the
-Comments on Chapter 8 (1(i)), Problem 47 (Poincaré–Wirtinger). `W_0^{1,p}(I)` is the backbone's
-`SobolevIntervalLpZero 1 p I` (`Numlib/Analysis/Sobolev/Interval/Zero`), the closure of `𝓓(I, ℝ)` in
-`W^{1,p}(I)` for `1 ≤ p < ∞` (the book does not define it for `p = ∞`; the type exists but the
-characterization Theorem 8.12 needs `p < ∞`); `H_0^1` is `p = 2`, and `SobolevIntervalZero a b`
-of `Interval.lean` is its bounded instance. "`u = 0` on `∂I`" is `∀ x ∈ frontier I, rep u x = 0`.
-The dual `W^{-1,p'}(I)` is `SobolevIntervalLpDual p I = StrongDual ℝ (SobolevIntervalLpZero 1 p I)`
-(`Interval/Dual`). Nodes: Theorem 8.12, Propositions 8.13–8.14, Remarks 13, 14, 16, 17, 18, 19,
-21, the inclusions `H_0^1 ⊆ L² ⊆ H^{-1}`, Problem 47 A.1, A.4, A.6, C.1, C.2; Remarks 15, 20 and
-the rest of Problem 47 are not planned (chapter group `desc`).
-'''
 
 [[node]]
 id = "sobolevSpaceZero"
-kind = "definition"
-desc = '''`abbrev sobolevSpaceZero (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) := SobolevIntervalLpZero 1 p I`
-— `W_0^{1,p}(I)`, the closure of `C_c^1(I)` (here `𝓓(I, ℝ)`, Remark 14 (i)) in `W^{1,p}(I)`, for
-`1 ≤ p < ∞`; `H10 I := sobolevSpaceZero 2 I`. `mem_sobolevSpaceZero_iff_mem_closure`: membership
-is membership of the topological closure of the image of the test functions
-(`SobolevMultiIndexZero` unfolded). ★'''
-deps = ["sobolevSpace", "SobolevIntervalLpZero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
+id = "H10"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
+id = "mem_sobolevSpaceZero_iff_mem_closure"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
 
 [[node]]
 id = "sobolevSpaceZero_banach"
-kind = "theorem"
-desc = '''§8.3's unnumbered paragraph: `W_0^{1,p}(I)` is a separable Banach space (`1 ≤ p < ∞`),
-reflexive for `p > 1`, and `H_0^1` a separable Hilbert space — four clauses
-(`sobolevSpaceZero_banach`, `_separable`, `_reflexive`, `_hilbert`) over the instances of
-`SobolevIntervalLpZero` and the general `SobolevMultiIndexZero.instIsReflexive`. ★'''
-deps = ["sobolevSpaceZero", "SobolevMultiIndexZero.instIsReflexive", "SobolevMultiIndexZero.instCompleteSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3"
 
 [[node]]
+id = "sobolevSpaceZero_separable"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
+id = "sobolevSpaceZero_reflexive"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
+id = "sobolevSpaceZero_hilbert"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
 id = "remark_8_13"
-kind = "theorem"
-desc = '''Remark 13: `sobolevSpaceZero p ⊤ = ⊤` — `W_0^{1,p}(ℝ) = W^{1,p}(ℝ)`, `1 ≤ p < ∞`. The
-backbone's `sobolevIntervalLpZero_top`. ★'''
-deps = ["sobolevSpaceZero", "sobolevIntervalLpZero_top"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 13"
 
 [[node]]
+id = "remark_8_14_i"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 14"
+
+[[node]]
+id = "remark_8_14_ii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 14"
+
+[[node]]
 id = "remark_8_14"
-kind = "theorem"
-desc = '''Remark 14: (i) `C_c^∞(I)` is dense in `W_0^{1,p}(I)` — here by definition
-(`SobolevMultiIndexZero` is the closure of the image of `𝓓(I, ℝ)`; stated as
-`Dense (SobolevMultiIndex.testFunctions … : Set (SobolevIntervalLpZero 1 p I))` through the subtype,
-`Submodule.dense_topologicalClosure`-type), with the book's `C_c^1` closure being `remark_8_1`'s
-content; (ii) `u ∈ W^{1,p}(I)` with `rep u` compactly supported in `I` lies in `W_0^{1,p}(I)`
-(`SobolevIntervalLpZero.mem_of_hasCompactSupport`). ★'''
-deps = ["sobolevSpaceZero", "SobolevIntervalLpZero.mem_of_hasCompactSupport", "remark_8_1"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 14"
 
 [[node]]
 id = "theorem_8_12"
-kind = "theorem"
-desc = '''Theorem 8.12: for `u : SobolevIntervalLp 1 p I`, `1 ≤ p < ∞`, `I` an open interval,
-`u ∈ sobolevSpaceZero p I ↔ ∀ x ∈ frontier (I : Set ℝ), rep u x = 0` — `u ∈ W_0^{1,p}(I)` iff
-`u = 0` on `∂I`. The backbone's `mem_sobolevIntervalLpZero_iff`; at `p = 2` on `(a, b)` this is
-`mem_sobolevIntervalZero_iff` of `Interval.lean` (QSS (12.42)). ★'''
-deps = ["sobolevSpaceZero", "mem_sobolevIntervalLpZero_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.12"
 
 [[node]]
-id = "remark_8_16"
-kind = "theorem"
-desc = '''Remark 16, two characterizations. (i) for `1 ≤ p < ∞` and `u ∈ L^p(I)`: `u` is (a.e.) an
-element of `W_0^{1,p}(I)` iff its zero extension `ū` lies in `W^{1,p}(ℝ)`
-(`mem_sobolevIntervalLpZero_iff_indicator_mem`); (ii) for `1 < p < ∞` and `u ∈ L^p(I)`: iff
-`∃ C, ∀ φ : 𝓓(⊤, ℝ), |∫ x in I, u x * deriv φ x| ≤ C * ‖φ‖_{L^{p'}(I)}` — test functions on all of
-`ℝ` (`mem_sobolevIntervalLpZero_iff_forall_abs_integral_le`). ★'''
-deps = ["theorem_8_12", "mem_sobolevIntervalLpZero_iff_indicator_mem", "mem_sobolevIntervalLpZero_iff_forall_abs_integral_le"]
+id = "remark_8_16_i"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 16"
 
 [[node]]
+id = "remark_8_16_ii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 16"
+
+[[node]]
+id = "remark_8_16"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 16"
+
+[[node]]
+id = "proposition_8_13_const"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.13"
+
+[[node]]
 id = "proposition_8_13"
-kind = "theorem"
-desc = '''Proposition 8.13 (Poincaré's inequality): for bounded `I = (a, b)` there is `C` (depending on
-`|I|`) with `sobolevNorm u ≤ C * ‖deriv u 1‖` for all `u ∈ sobolevSpaceZero p (Opens.Ioo a b)`,
-`1 ≤ p ≤ ∞`; hence `‖u'‖_p` is a norm on `W_0^{1,p}` equivalent to the `W^{1,p}` norm. With the
-backbone's constant: `‖deriv u 0‖ ≤ (b − a)/p^{1/p} * ‖deriv u 1‖`
-(`SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv`), so `C = 1 + (b − a)/p^{1/p}` in the book's
-norm; the book's own proof gives `C = 1 + (b − a)`. At `p = 2` the constant `(b − a)/√2` is
-`SobolevIntervalZero.norm_deriv_zero_le` (QSS (12.16)). ★'''
-deps = ["sobolevSpaceZero", "sobolevNorm", "SobolevIntervalLpZero.eLpNorm_le_mul_eLpNorm_deriv"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.13"
+
+[[node]]
+id = "proposition_8_13_equiv"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.13"
 
 [[node]]
 id = "remark_8_17"
-kind = "theorem"
-desc = '''Remark 17: for bounded `I = (a, b)`, `(u, v) ↦ ∫ u' v'` is an inner product on `H_0^1(a, b)`
-whose norm `‖u'‖_{L²}` is equivalent to the `H¹` norm: `SobolevIntervalZero.norm_le_seminorm`
-(`‖u‖ ≤ √(1 + (b − a)²/2) |u|_{H¹}`), `SobolevInterval.seminorm_le_norm`, and
-`SobolevIntervalZero.seminorm_eq_zero_iff` (definiteness); the inner product itself is
-`⟪deriv u 1, deriv v 1⟫_{L²}` restricted to the subspace (`InnerProductSpace.ofCore`-free: state
-the two inequalities and the definiteness). Existing backbone, `Interval.lean`. ★'''
-deps = ["proposition_8_13", "SobolevIntervalZero.norm_le_seminorm", "SobolevIntervalZero.seminorm_eq_zero_iff"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 17"
 
 [[node]]
-id = "remark_8_18"
-kind = "theorem"
-desc = '''Remark 18: `W_0^{m,p}(I)`, the closure of `C_c^m(I)` (here `𝓓(I, ℝ)`) in `W^{m,p}(I)`, is
-`{u ∈ W^{m,p}(I) : u = Du = ⋯ = D^{m−1} u = 0 on ∂I}`: `u ∈ SobolevIntervalLpZero m p I ↔ ∀ j < m, ∀ x ∈ frontier I, (D^j u)(x) = 0`
-(`mem_sobolevIntervalLpZero_higher_iff`; the book cites Exercise 8.9). `remark_8_18_ne`: the
-distinction `W_0^{2,p}(I) ≠ W^{2,p}(I) ∩ W_0^{1,p}(I)`: on `(0, 1)`, `x ↦ x(1 − x)` is in
-`W^{2,p} ∩ W_0^{1,p}` but not in `W_0^{2,p}` (its derivative at `0` is `1`). ★'''
-deps = ["theorem_8_12", "mem_sobolevIntervalLpZero_higher_iff", "SobolevIntervalLpZero"]
+id = "remark_8_18_of_bounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
+
+[[node]]
+id = "remark_8_18_ne"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
 
 [[node]]
 id = "sobolevSpaceDual"
-kind = "definition"
-desc = '''`abbrev sobolevSpaceDual (p) [Fact (1 ≤ p)] (I) := SobolevIntervalLpDual p I` — `W^{-1,p'}(I)`,
-the dual of `W_0^{1,p}(I)`, `1 ≤ p < ∞`; `Hneg1 I := sobolevSpaceDual 2 I` for `H^{-1}(I)`. ★'''
-deps = ["sobolevSpaceZero", "SobolevIntervalLpDual"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I), Notation"
+
+[[node]]
+id = "Hneg1"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I), Notation"
 
 [[node]]
 id = "inclusions_H10_L2_Hneg1"
-kind = "theorem"
-desc = '''The inclusions `H_0^1 ⊆ L² ⊆ H^{-1}`, continuous with dense ranges: `SobolevIntervalLpZero.toL2 : H_0^1(I) →L[ℝ] L²(I)`
-injective with dense range, and `SobolevIntervalLpDual.ofL2 : L²(I) →L[ℝ] H^{-1}(I)` injective with
-dense range (`denseRange_toL2`, `denseRange_ofL2` at `p = 2`), with `L²` identified with its
-dual but `H_0^1` not (chapter 5's Remark 3). And the `p`-versions: for bounded `I`,
-`W_0^{1,p} ⊆ L² ⊆ W^{-1,p'}` continuously for `1 ≤ p < ∞`, densely for `1 < p < ∞`
-(`inclusions_W1p_L2_of_bounded`); for unbounded `I`, continuously for `1 ≤ p ≤ 2`
-(`inclusions_W1p_L2_of_unbounded`, Remark 12). ★'''
-deps = ["sobolevSpaceDual", "SobolevIntervalLpZero.toL2", "SobolevIntervalLpDual.ofL2"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
+
+[[node]]
+id = "inclusions_W1p_L2_of_bounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
+
+[[node]]
+id = "inclusions_W1p_L2_of_unbounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, The dual space of W_0^{1,p}(I)"
 
 [[node]]
 id = "proposition_8_14"
-kind = "theorem"
-desc = '''Proposition 8.14: for `F : sobolevSpaceDual p I`, `1 ≤ p < ∞`, there are `f₀ f₁ ∈ L^{p'}(I)` with
-`∀ u ∈ W_0^{1,p}(I), F u = ∫ x in I, f₀ x * fn u x + ∫ x in I, f₁ x * deriv u 1 x` and
-`‖F‖ = ‖(f₀, f₁)‖` in the `ℓ^{p'}` norm of the pair (the book's `max(‖f₀‖, ‖f₁‖)` is the dual of
-its sum norm `‖u‖_p + ‖u'‖_p`; the type's norm is the `ℓ^p` sum, so the dual norm is the `ℓ^{p'}`
-one — recorded in the node); and `proposition_8_14_bounded`: for bounded `I`, `f₀ = 0` can be
-taken. The backbone's `SobolevIntervalLpDual.exists_repr` and `exists_repr_of_bounded`. ★'''
-deps = ["sobolevSpaceDual", "SobolevIntervalLpDual.exists_repr"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.14"
+
+[[node]]
+id = "proposition_8_14_bounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.14"
 
 [[node]]
 id = "remark_8_19"
-kind = "theorem"
-desc = '''Remark 19: the functions `f₀, f₁` of Proposition 8.14 are not unique: `(f₀ + g', f₁ − g)`
-represents the same `F` for every test function `g`. The backbone's
-`SobolevIntervalLpDual.repr_not_unique`. ★'''
-deps = ["proposition_8_14", "SobolevIntervalLpDual.repr_not_unique"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 19"
 
 [[node]]
 id = "remark_8_21"
-kind = "theorem"
-desc = '''Remark 21: every continuous linear functional `F` on `W^{1,p}(I)`, `1 ≤ p < ∞`, is
-`u ↦ ∫ f₀ u + ∫ f₁ u'` for some `f₀ f₁ ∈ L^{p'}(I)`. The backbone's
-`SobolevIntervalLp.exists_repr_strongDual`. ★'''
-deps = ["proposition_8_14", "SobolevIntervalLp.exists_repr_strongDual"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 21"
+
+[[node]]
+id = "remark_8_18"
+kind = "theorem"
+desc = '''Remark 18 on a general open interval `I`: `W_0^{m,p}(I)`, the closure of `C_c^m(I)` (here
+`𝓓(I, ℝ)`) in `W^{m,p}(I)`, is `{u ∈ W^{m,p}(I) : u = Du = ⋯ = D^{m−1} u = 0 on ∂I}`:
+`u ∈ SobolevIntervalLpZero (m + 1) p I ↔ ∀ j : Fin (m + 1), ∀ x ∈ frontier I, (derivOne u j).rep x = 0`
+(`mem_sobolevIntervalLpZero_higher_iff`; the book cites Exercise 8.9). The bounded case is
+`remark_8_18_of_bounded` and the distinction `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is `remark_8_18_ne`,
+both proved.
+
+Blocked: the backbone node `mem_sobolevIntervalLpZero_higher_iff` (Remark 18 on an unbounded
+interval, `Numlib/Analysis/Sobolev/Interval/Zero`) is open — its converse needs the cut-offs
+`ζ_n u` at order `m + 1` (a Leibniz rule and the convergence `ζ_n u → u` in `W^{m+1,p}`, ~300 lines
+of backbone work per sob7's report). The surface node is a one-line restatement once it lands.'''
+deps = ["theorem_8_12", "mem_sobolevIntervalLpZero_higher_iff", "SobolevIntervalLpZero"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"

@@ -1,69 +1,68 @@
 namespace = "Brezis.Chapter08"
-desc = '''
-§8.6, Eigenfunctions and spectral decomposition: Theorem 8.22 (the Sturm–Liouville operator
-`A u = −(p u')' + q u` with Dirichlet conditions on `(0, 1)` has a sequence of eigenvalues
-`λₙ → +∞` and a Hilbert basis of `L²(0, 1)` of `C²` eigenfunctions), its Example (`p = 1`, `q = 0`:
-`√2 sin(nπx)`, `n²π²`), and Remark 30. Over `Numlib/Variational/EllipticInterval/SturmLiouville`
-and the compact self-adjoint spectral theorem of `Numlib/Analysis/InnerProductSpace/CompactSpectral`
-(the book's Theorem 6.11, chapter 6). Remark 29 (the eigenvalues of `−u''` under the boundary
-conditions of Examples 3, 5, 6, 7 — "as an exercise") is not planned.
-'''
 
 [[node]]
 id = "theorem_8_22"
-kind = "theorem"
-desc = '''Theorem 8.22: for `p ∈ C¹(Ī)`, `p ≥ α > 0`, `q ∈ C(Ī)`, `I = (0, 1)`, there are a sequence
-`λ : ℕ → ℝ` and a Hilbert basis `e : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo 0 1)))` such that
-each `e n` has a `C²[0, 1]` representative `eₙ` with `−(p eₙ')' + q eₙ = λ n * eₙ` on `[0, 1]` and
-`eₙ(0) = eₙ(1) = 0` (37), and `Tendsto λ atTop atTop`. The book's reduction to `q ≥ 0`: replace `q`
-by `q + C` with `C = max(0, −min q)` (`SturmLiouville.Hypotheses` needs `q ≥ 0`), which shifts
-`λₙ` by `C`; the backbone's `SturmLiouville.eigenfunction`, `eigenvalue`,
-`exists_contDiffMapIcc_eigenfunction`, `tendsto_eigenvalue_atTop`. Clauses `theorem_8_22_basis`,
-`theorem_8_22_eigen`, `theorem_8_22_tendsto` for the three conclusions. ★'''
-deps = ["EllipticInterval.SturmLiouville.eigenfunction", "EllipticInterval.SturmLiouville.exists_contDiffMapIcc_eigenfunction", "EllipticInterval.SturmLiouville.Hypotheses"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+
+[[node]]
+id = "theorem_8_22_basis"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+
+[[node]]
+id = "theorem_8_22_eigen"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
+
+[[node]]
+id = "theorem_8_22_tendsto"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22"
 
 [[node]]
 id = "theorem_8_22_operator"
-kind = "theorem"
-desc = '''The properties of the solution operator `T : L²(I) → L²(I)`, `f ↦ u`, established in the proof
-of Theorem 8.22 (with `q ≥ 0`): `T` is a bounded operator with `‖T f‖_{H¹} ≤ C ‖f‖_{L²}`, compact
-(the injection `H¹ ⊆ L²` being compact since `I` is bounded), self-adjoint
-(`∫ (T f) g = ∫ f (T g)`), positive (`∫ (T f) f ≥ 0`) with `N(T) = {0}` — four clauses over
-`SturmLiouville.solutionOperator`, `isCompactOperator_solutionOperator`,
-`isSymmetric_solutionOperator` (with `inner_solutionOperator_nonneg`, `ker_solutionOperator`).
-Theorem 6.11 (chapter 6) then applies; here it is `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`
-with the two extra hypotheses (injectivity, infinite dimension) both satisfied. ★'''
-deps = ["EllipticInterval.SturmLiouville.solutionOperator", "EllipticInterval.SturmLiouville.isCompactOperator_solutionOperator", "EllipticInterval.SturmLiouville.isSymmetric_solutionOperator", "MeasureTheory.Lp.not_finiteDimensional_of_isOpen"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.22, proof"
 
 [[node]]
-id = "sineEigenfunctions"
-kind = "theorem"
-desc = '''§8.6, Example: for `p ≡ 1` and `q ≡ 0`, `eₙ(x) = √2 sin(nπx)` and `λₙ = n²π²`, `n = 1, 2, …`:
-the functions `√2 sin(nπ·)` are `C²` eigenfunctions with these eigenvalues and Dirichlet values
-(`sineEigenfunctions_eigen`, a computation), they form a Hilbert basis of `L²(0, 1)`
-(`sineEigenfunctions_hilbertBasis`, the backbone's `sinBasisUnit`, obtained from the cosine
-basis of `Numlib/Analysis/Fourier/CosineBasis` by the multiply-by-`sin` trick rather than from
-the abstract spectral theorem), and the eigenvalues of Theorem 8.22 for this operator are exactly
-`{n²π² : n ≥ 1}`, each simple (`sineEigenfunctions_eigenvalue`, the backbone's
-`SturmLiouville.sineHilbertBasis`, i.e. `eigenvalue_eq_sq_pi_sq`, by expanding an eigenvector in
-the sine basis; the classical form `SturmLiouville.eq_smul_sin_of_dirichlet` is its corollary). ★'''
-deps = ["theorem_8_22", "sinBasisUnit", "EllipticInterval.SturmLiouville.sineHilbertBasis", "EllipticInterval.SturmLiouville.eq_smul_sin_of_dirichlet"]
+id = "sineEigenfunctions_eigen"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
 
 [[node]]
-id = "remark_8_30"
+id = "sineEigenfunctions_hilbertBasis"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+
+[[node]]
+id = "sineEigenfunctions_eigenvalue"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+
+[[node]]
+id = "sineEigenfunctions_classical"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+
+[[node]]
+id = "sineEigenfunctions"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.6, Example"
+
+[[node]]
+id = "remark_8_30_bounded_selfAdjoint"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 30"
+
+[[node]]
+id = "remark_8_30_not_compact"
 kind = "theorem"
-desc = '''Remark 30: the operator `T : L²(ℝ) → L²(ℝ)`, `f ↦ u` the solution of Example 8's problem (30),
-is bounded and self-adjoint but not compact. `remark_8_30_bounded_selfAdjoint`: `T = (H¹(ℝ) ↪ L²) ∘ (toDual)⁻¹ ∘ (load)`
-is bounded and `⟪T f, g⟫ = ⟪T f, T g⟫_{H¹} = ⟪f, T g⟫` (`EllipticInterval.Line.form`,
-`Line.solution`; `LinearMap.IsSymmetric`). `remark_8_30_not_compact`: `T` commutes with
-translations (`T (f(· + h)) = (T f)(· + h)`, by uniqueness of the weak solution and translation
-invariance of the `H¹` inner product), so for `φ ∈ C_c^∞`, `φ ≠ 0`, the translates `f_n = φ(· + n)`
-are bounded in `L²(ℝ)` while `T f_n = (T φ)(· + n)` has no convergent subsequence in `L²(ℝ)`
+desc = '''Remark 30, the negative half: the bounded self-adjoint operator `T : L²(ℝ) → L²(ℝ)`,
+`f ↦ u` the solution of Example 8's problem (30) (`remark_8_30_bounded_selfAdjoint`), is not
+compact: `¬ IsCompactOperator T`. `T` commutes with translations (`T (f(· + h)) = (T f)(· + h)`,
+by uniqueness of the weak solution and translation invariance of the `H¹(ℝ)` inner product), so
+for `φ ∈ C_c^∞`, `φ ≠ 0`, the translates `f_n = φ(· + n)` are bounded in `L²(ℝ)` while
+`T f_n = (T φ)(· + n)` has no convergent subsequence in `L²(ℝ)`
 (`‖(Tφ)(· + n) − (Tφ)(· + m)‖_2 → √2 ‖Tφ‖_2` as `|n − m| → ∞`, `T φ ≠ 0`; the argument of
 Exercise 8.4 / Remark 10 (c)). The eigenvalues and the spectrum of `T` (Exercise 8.38) are not
-planned. ★★★ (~300 lines, surface-level: the translation invariance and the non-Cauchy estimate)'''
-deps = ["example_8_8", "EllipticInterval.Line.form", "EllipticInterval.Line.exists_classical_solution"]
+planned. ★★★ (~300 lines, surface-level: the translation invariance and the non-Cauchy estimate)
+
+Blocked: not attempted for budget reasons (★★★). The pieces needed: the translation
+`τ_h : H¹(ℝ) → H¹(ℝ)` as an isometry of `SobolevIntervalLp 1 2 ⊤` (the backbone has only the
+`L^p` estimate `SobolevIntervalLp.eLpNorm_translate_sub_le`), `Line.solution (τ_h f) = τ_h (Line.solution f)`
+from `Line.eq_solution_of_forall`, and the `L²` non-Cauchy estimate for translates of a nonzero
+`L²` function (`‖g(· + n) − g(· + m)‖² = 2 ‖g‖² − 2 ⟪g(· + n), g(· + m)⟫`, the cross term tending
+to `0` — chapter 4's `L^p` continuity of translation does not give this decay; a truncation to a
+compact set does).'''
+deps = ["remark_8_30_bounded_selfAdjoint", "EllipticInterval.Line.form", "EllipticInterval.Line.solution"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 30"
