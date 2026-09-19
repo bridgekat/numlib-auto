@@ -11,53 +11,51 @@ id = "continuousOn_spaceTime_of_contDiffOnThrough"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Corollary 10.5"
 
 [[node]]
+id = "eqOn_closure_rep_add"
+
+[[node]]
+id = "eqOn_closure_rep_smul"
+
+[[node]]
+id = "iteratedFDeriv_add_of_eqOn"
+
+[[node]]
+id = "iteratedFDeriv_smul_of_eqOn"
+
+[[node]]
+id = "eqOn_closure_deriv_rep_add"
+
+[[node]]
+id = "eqOn_closure_deriv_rep_smul"
+
+[[node]]
+id = "norm_sub_le_of_forall_add_smul_norm_le"
+
+[[node]]
+id = "hasDerivWithinAt_of_forall_add_smul_norm_le"
+
+[[node]]
+id = "_root_.SobolevMultiIndex.fnL_comp_toLowerOrderL"
+
+[[node]]
+id = "ContDiffOnThrough.sobolev_of_le"
+
+[[node]]
+id = "exists_contDiffOnExtendsTo_spaceTime_of_contDiffOnThrough"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1, lines 12205–12215"
+
+[[node]]
+id = "contDiffOnExtendsTo_spaceTime_of_forall_contDiffOnThrough"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1, lines 12205–12215"
+
+[[node]]
 id = "contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough"
-kind = "theorem"
-desc = '''**Joint smoothness from smoothness into every `H^m(Ω)`** (the space-time bridge). Same
-setting as `continuousOn_spaceTime_of_contDiffOnThrough`; assume
-`∀ m, ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N m 2 Ω →L[ℝ] L²(Ω)) ⊤ u s` (`u ∈ C^∞(s; H^m(Ω))` for every `m`).
-Then there is `U` with `(fun x ↦ U (x, t)) =ᵐ[volume.restrict Ω] u t` for `t ∈ s` and
-`ContDiffOnClosure ⊤ U (Ω ×ˢ s)`: `C^∞` on `Ω × s`, every derivative extending continuously to
-`closure Ω × s` — the book's `u ∈ C^∞(Ω̄ × [ε, ∞))` once `s = (0,∞)` and `ContDiffOnClosure.mono`
-is applied to `Ω ×ˢ Ioi ε`.
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1 (5), Theorem 10.2 (c), Theorem 10.8"
 
-Proof sketch (the book's, lines 12205–12215, made explicit). Fix `m₀` and choose `m > m₀ + N/2`.
-Corollary 9.15 gives, linearly and boundedly, `C^{m₀}(Ω̄)` representatives of `H^m` functions with
-`sup_{|α| ≤ m₀} ‖D^α v‖_∞ ≤ C ‖v‖_{H^m}` (the bound from the `p > N` case of 9.14 applied to the
-`∂^β w`; this is the integer-exponent form of 9.15 with its sup clause,
-`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt` of `EmbeddingDomain`). Let
-`v : ℝ → H^m(Ω)` be the lift; its time derivatives `v^{(j)}` are again lifts of `u^{(j)}`
-(`ContDiffOnThrough.derivWithin_eq`; the lifts through the injective `fnL` are unique).
-Define `U (x, t) := (rep (v t)) x`. For `j + |α| ≤ m₀` the candidate partial derivative
-`∂ₜ^j ∂ₓ^α U (x,t) = (D^α rep (v^{(j)} t)) x` is jointly continuous by the argument of
-`continuousOn_spaceTime_of_contDiffOnThrough`; a function on `E × ℝ` all of whose partial
-derivatives up to order `m₀` exist and are jointly continuous is `C^{m₀}` (build the
-`HasFTaylorSeriesUpToOn` from the partials; the `x`-derivatives come from `rep (v t) ∈ C^{m₀}(Ω)`
-and the `t`-derivatives from `HasDerivAt` of `t ↦ rep (v t) x` — evaluation at `x` is a bounded
-functional on bounded continuous functions, so it commutes with `d/dt`). The continuous extension
-to the closure of each derivative is the continuous extension of `D^α rep (v^{(j)} t)` to `Ω̄`,
-jointly continuous by the same argument. Since `m₀` is arbitrary, `C^∞`.
+[[node]]
+id = "contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.1 (5)"
 
-Consumers: `Heat.IsSolution.contDiffOnClosure_spaceTime` (Theorem 10.1 (5)),
-`Heat.IsSolution.contDiffOnClosure_spaceTime_Ici` (Theorem 10.2 (c)),
-`Wave.IsSolution.contDiffOnClosure_spaceTime` (Theorem 10.8). ★★★, 600–900 lines; the
-construction of a `C^k` function from jointly continuous partials on a product is the bulk and is
-a candidate for `Numlib/Analysis/Calculus/` in its own right.
-
-Blocked (2026-09-19, surf9): not attempted beyond its `k = 0` case. What exists: the `k = 0`
-bridge `continuousOn_spaceTime_of_contDiffOnThrough` (with the general joint-continuity lemma
-`continuousOn_prod_of_forall_norm_sub_le` and the uniqueness of continuous representatives on
-`closure Ω`, `eqOn_closure_of_ae_eq`, which makes the choice of the backbone's existential
-representatives canonical and additive on `Ω̄`), the `C^k(Ω̄)` representatives of Corollary 9.15 at
-every order (`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`, with the sup
-bounds `‖D^j ũ‖ ≤ C ‖u‖` on `Ω` for `j ≤ k`), `ContDiffOnThrough.derivWithin` for the time
-derivatives of the lift, and `ContDiffOnClosure` as the target vocabulary. What is missing is the
-calculus fact the desc names — a function on `E × ℝ` whose partial derivatives `∂ₜ^j D_x^i f`,
-`i + j ≤ k`, exist and are jointly continuous is `C^k`, with the joint derivative assembled from
-the partials — which is not in Mathlib (there is no "differentiable from continuous partials on
-a product" lemma), together with the identification of `∂ₜ` of `x ↦ D^i ũ(t)(x)` with
-`D^i (ũ')(t)(x)` (evaluation at `x` of the canonical `C^i(Ω̄)` representative is a bounded linear
-functional of `u ∈ H^m(Ω)`, so it commutes with `d/dt`). Estimate unchanged: 600–900 lines, the
-product-calculus lemma being ~400 of them and belonging in `Numlib/Analysis/Calculus/`. Note that
-the desc's `⊤` must be read as `∞ : ℕ∞` (`⊤ : WithTop ℕ∞` now means analytic).'''
-deps = ["ContDiffOnThrough", "ContDiffOnThrough.derivWithin_eq", "_root_.ContDiffOnClosure", "continuousOn_spaceTime_of_contDiffOnThrough", "SobolevMultiIndex.weakDerivL", "SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_lt", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq", "IsSobolevExtensionDomain"]
+[[node]]
+id = "contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (c), Theorem 10.8"

@@ -47,40 +47,75 @@ id = "IsClassicalSolution.abs_le_of_eq_zero_frontier"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.6 (applied to `u` and `-u`)"
 
 [[node]]
-id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
-kind = "theorem"
-desc = '''**Remark 4: the compatibility conditions (8) are necessary**. Let `u : E × ℝ → ℝ` be
-`C^∞` up to the boundary of the half cylinder in the sense of
-`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)` (with the extensions of its derivatives continuous
-on `closure Ω ×ˢ Ici 0`), satisfy `∂ₜu = Δ_x u` on `Ω ×ˢ Ioi 0`, and vanish on
-`frontier Ω ×ˢ Ioi 0`. Then for every `j`, the continuous extension to `closure Ω` of
-`Δ^j (u(·, 0))` vanishes on `frontier Ω`. Proof, lines 12395–12420: by induction
-`∂ₜ^j u = Δ^j u` on `Ω × (0,∞)` (commute `∂ₜ` with `Δ_x`, symmetry of the mixed derivatives of a
-`C^∞` function — `ContDiffAt.isSymmSndFDerivAt` for order two, `ContDiff.iteratedFDeriv_congr_perm`
-of `Numlib/Analysis/Calculus/IteratedFDeriv` in general); `∂ₜ^j u = 0` on `Γ × (0,∞)` since `u`
-vanishes there (differentiate in `t` along the boundary); both sides extend continuously to
-`closure Ω × [0,∞)`, and comparing the extensions on `Γ × {0}` gives (8). The same argument gives
-Remark 10 for the wave equation (`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`).
-★★★ (~300 lines: the iterated commutation is the cost).
+id = "timeDeriv"
 
-Blocked: (2026-09-18, agent surf2) not attempted beyond the statement design, which is the first
-obstacle. With `u` only `ContDiffOnClosure ⊤` on the open half cylinder, `u (·, 0)` is not known
-to be differentiable on `Ω` (the continuous extensions `g_m` of `D^m u` are separate objects and
-nothing says `u (·, 0)` has them as derivatives), so "`Δ^j (u (·, 0))`" is not defined by the
-hypotheses; and the vanishing hypothesis on `frontier Ω ×ˢ Ioi 0` concerns the values of `u`
-itself off the open set, which the `ContDiffOnClosure` data do not connect to the interior
-unless the extension of `u` is `u`. A provable reading assumes `u` smooth on an open set
-containing `closure Ω ×ˢ Ici 0` (`ContDiff ℝ ⊤ u` on `E × ℝ`, say) and concludes
-`∀ j, ∀ x ∈ frontier Ω, (Δ^[j] fun y ↦ u (y, 0)) x = 0` (with `Δ^[j]` the iterate of Mathlib's
-Laplacian); its proof needs (a) the `j`-fold commutation `∂ₜ^j u = Δ_x^j u` on `Ω × (0, ∞)`,
-which is `ContDiff.iteratedFDeriv_congr_perm` at order `2j + 1` after expressing both `∂ₜ` of
-a spatial slice and `Δ` of a time slice as the full `iteratedFDeriv` of `u` applied to the vectors
-`(0, 1)` and `(bᵢ, 0)` (chain rule along the affine embeddings `y ↦ (y, t)`, `s ↦ (x, s)`,
-iterated), (b) `∂ₜ^j u = 0` on `frontier Ω × (0, ∞)` (`EventuallyEq.deriv_eq`, iterated), and
-(c) continuity of both sides on `E × ℝ` to pass to `t = 0`. Estimate 400–500 lines, dominated by
-(a); it needs a Numlib lemma "iterated derivative of `u ∘ (affine map)`" which
-`IteratedFDeriv.lean` may partly have. Left for a dedicated task; nothing downstream in this
-round depends on it (the wave analogue `Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`
-should share the commutation lemma).'''
-deps = ["ContDiffOnClosure", "ContDiff.iteratedFDeriv_congr_perm"]
+[[node]]
+id = "spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_apply"
+
+[[node]]
+id = "spaceLaplacian_apply"
+
+[[node]]
+id = "iteratedFDeriv_slice_fst"
+
+[[node]]
+id = "spaceLaplacian_eq_sum_iteratedFDeriv"
+
+[[node]]
+id = "timeDeriv_eq_fderiv"
+
+[[node]]
+id = "contDiff_timeDeriv"
+
+[[node]]
+id = "contDiff_spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_eqOn"
+
+[[node]]
+id = "spaceLaplacian_eqOn"
+
+[[node]]
+id = "timeDeriv_const_smul"
+
+[[node]]
+id = "spaceLaplacian_const_smul"
+
+[[node]]
+id = "contDiff_spaceLaplacian_iterate"
+
+[[node]]
+id = "contDiff_timeDeriv_iterate"
+
+[[node]]
+id = "timeDeriv_spaceLaplacian_iterate"
+
+[[node]]
+id = "spaceLaplacian_iterate_eqOn"
+
+[[node]]
+id = "spaceLaplacian_iterate_const_smul"
+
+[[node]]
+id = "spaceLaplacian_iterate_slice"
+
+[[node]]
+id = "timeDeriv_iterate_slice"
+
+[[node]]
+id = "iterate_deriv_eq_zero_of_eqOn"
+
+[[node]]
+id = "IsClassicalSolution.timeDeriv_iterate_eqOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 4, (16)"
+
+[[node]]
+id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 4"

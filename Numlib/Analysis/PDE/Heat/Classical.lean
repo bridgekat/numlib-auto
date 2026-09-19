@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.IteratedFDeriv
 
 /-!
 # The classical maximum principle for the heat equation
@@ -37,6 +38,14 @@ is carried (`∂ₜ u - ν Δ u ≤ 0`), the book's case being `ν = 1`, because
 * `Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`: the form the numerical books use — a
   solution vanishing on the lateral boundary satisfies `|u (x, t)| ≤ M` whenever `|u (·, 0)| ≤ M`
   on `closure Ω`, Theorem 10.6 applied to `u` and `-u`.
+* `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`: **Remark 4 of chapter 10**, the
+  necessity of the compatibility conditions `Δ^j u₀ = 0` on `∂Ω` for a solution which is `C^∞` on
+  `E × ℝ` and vanishes on the lateral boundary — from the iterated heat equation
+  `∂ₜ^j u = ν^j Δ^j u` (`IsClassicalSolution.timeDeriv_iterate_eqOn`), which rests on the
+  commutation `∂ₜ Δ_x = Δ_x ∂ₜ` of the two partial operators `Heat.timeDeriv` and
+  `Heat.spaceLaplacian` on smooth functions of `(x, t)` (`timeDeriv_spaceLaplacian`, a
+  consequence of the symmetry of the iterated derivative,
+  `Numlib.Analysis.Calculus.IteratedFDeriv`).
 
 ## Implementation notes
 
@@ -299,5 +308,313 @@ theorem IsClassicalSolution.abs_le_of_eq_zero_frontier (hΩ : IsOpen Ω)
     simpa only [Pi.neg_apply, neg_le] using this
   · exact hu.isClassicalSubsolution.le_of_le_on_parabolicBoundary hΩ hb hν hT
       (fun p hp => (hP p hp).1) (x, t) ⟨hx, ht⟩
+
+
+/-! ### The time derivative and the spatial Laplacian of a function of `(x, t)` -/
+
+section SpaceTimeCalculus
+
+open scoped ContDiff
+
+variable {w w₁ w₂ : E × ℝ → ℝ}
+
+/-- **The time derivative** `∂ₜ w` of a function of `(x, t)`, as a function of `(x, t)`:
+`timeDeriv w (x, t) = d/dt w (x, t)`. -/
+noncomputable def timeDeriv (w : E × ℝ → ℝ) : E × ℝ → ℝ :=
+  fun p ↦ deriv (fun s ↦ w (p.1, s)) p.2
+
+/-- **The spatial Laplacian** `Δ_x w` of a function of `(x, t)`, as a function of `(x, t)`:
+`spaceLaplacian w (x, t) = Δ (w (·, t)) x`. -/
+noncomputable def spaceLaplacian (w : E × ℝ → ℝ) : E × ℝ → ℝ :=
+  fun p ↦ Δ (fun y ↦ w (y, p.2)) p.1
+
+omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- `timeDeriv w (x, t)` is the derivative of `s ↦ w (x, s)` at `t`. -/
+@[simp]
+theorem timeDeriv_apply (w : E × ℝ → ℝ) (x : E) (t : ℝ) :
+    timeDeriv w (x, t) = deriv (fun s ↦ w (x, s)) t := rfl
+
+/-- `spaceLaplacian w (x, t)` is the Laplacian of `y ↦ w (y, t)` at `x`. -/
+@[simp]
+theorem spaceLaplacian_apply (w : E × ℝ → ℝ) (x : E) (t : ℝ) :
+    spaceLaplacian w (x, t) = Δ (fun y ↦ w (y, t)) x := rfl
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The derivatives of a spatial slice `y ↦ w (y, t)` are the derivatives of `w` along the
+directions `(m k, 0)`: the slice is `w` composed with the affine map `y ↦ (y, 0) + (0, t)`. -/
+theorem iteratedFDeriv_slice_fst [NormedSpace ℝ E] {n : WithTop ℕ∞} (hw : ContDiff ℝ n w)
+    {i : ℕ} (hi : (i : WithTop ℕ∞) ≤ n) (t : ℝ) (x : E) (m : Fin i → E) :
+    iteratedFDeriv ℝ i (fun y ↦ w (y, t)) x m = iteratedFDeriv ℝ i w (x, t) fun k ↦ (m k, 0) := by
+  have h1 : (fun y ↦ w (y, t)) =
+      (fun q : E × ℝ ↦ w (q + (0, t))) ∘ (ContinuousLinearMap.inl ℝ E ℝ) :=
+    funext fun y ↦ by simp
+  have h2 : ContDiff ℝ n fun q : E × ℝ ↦ w (q + (0, t)) := hw.comp (contDiff_id.add contDiff_const)
+  rw [h1, (ContinuousLinearMap.inl ℝ E ℝ).iteratedFDeriv_comp_right h2 x hi,
+    ContinuousMultilinearMap.compContinuousLinearMap_apply, iteratedFDeriv_comp_add_right]
+  simp
+
+/-- The spatial Laplacian through the standard orthonormal basis `b` of `E`:
+`Δ_x w (x, t) = ∑ i, D² w (x, t) [(b i, 0), (b i, 0)]`. -/
+theorem spaceLaplacian_eq_sum_iteratedFDeriv (hw : ContDiff ℝ 2 w) (p : E × ℝ) :
+    spaceLaplacian w p = ∑ i, iteratedFDeriv ℝ 2 w p
+      ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] := by
+  obtain ⟨x, t⟩ := p
+  rw [spaceLaplacian_apply,
+    laplacian_eq_iteratedFDeriv_orthonormalBasis (fun y ↦ w (y, t)) (stdOrthonormalBasis ℝ E)]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [iteratedFDeriv_slice_fst hw le_rfl]
+  congr 1
+  funext k
+  fin_cases k <;> rfl
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The time derivative is the derivative of `w` in the direction `(0, 1)`. -/
+theorem timeDeriv_eq_fderiv [NormedSpace ℝ E] (hw : ContDiff ℝ 1 w) (p : E × ℝ) :
+    timeDeriv w p = fderiv ℝ w p (0, 1) := by
+  obtain ⟨x, t⟩ := p
+  have h : HasDerivAt (fun s : ℝ ↦ (x, s)) ((0 : E), (1 : ℝ)) t :=
+    (hasDerivAt_const t x).prodMk (hasDerivAt_id t)
+  exact ((hw.differentiable one_ne_zero (x, t)).hasFDerivAt.comp_hasDerivAt t h).deriv
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The time derivative of a smooth function is smooth. -/
+theorem contDiff_timeDeriv [NormedSpace ℝ E] (hw : ContDiff ℝ ∞ w) :
+    ContDiff ℝ ∞ (timeDeriv w) := by
+  have : timeDeriv w = fun p ↦ fderiv ℝ w p (0, 1) :=
+    funext fun p ↦ timeDeriv_eq_fderiv (hw.of_le (by simp)) p
+  rw [this]
+  exact hw.fderiv_apply_right (0, 1)
+
+/-- The spatial Laplacian of a smooth function is smooth. -/
+theorem contDiff_spaceLaplacian (hw : ContDiff ℝ ∞ w) : ContDiff ℝ ∞ (spaceLaplacian w) := by
+  have : spaceLaplacian w = fun p ↦ ∑ i, iteratedFDeriv ℝ 2 w p
+      ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] :=
+    funext fun p ↦ spaceLaplacian_eq_sum_iteratedFDeriv (hw.of_le (by simp)) p
+  rw [this]
+  refine ContDiff.sum fun i _ ↦ ?_
+  exact (ContinuousMultilinearMap.apply ℝ (fun _ : Fin 2 ↦ E × ℝ) ℝ _).contDiff.comp
+    (hw.iteratedFDeriv_right (m := ∞) (i := 2) (by simp))
+
+/-- **The time derivative commutes with the spatial Laplacian** on a smooth function:
+`∂ₜ (Δ_x w) = Δ_x (∂ₜ w)`. Both sides are `∑ i, D³ w [(0, 1), (b i, 0), (b i, 0)]`: the left
+side by differentiating the second derivative along `(0, 1)` outermost
+(`iteratedFDeriv_succ_apply_left_of_differentiableAt`), the right side by taking the derivative
+along `(0, 1)` innermost (`ContDiff.iteratedFDeriv_succ_apply_left'`, the symmetry of the
+iterated derivative). -/
+theorem timeDeriv_spaceLaplacian (hw : ContDiff ℝ ∞ w) :
+    timeDeriv (spaceLaplacian w) = spaceLaplacian (timeDeriv w) := by
+  funext p
+  have hL : spaceLaplacian w = fun q ↦ ∑ i, iteratedFDeriv ℝ 2 w q
+      ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] :=
+    funext fun q ↦ spaceLaplacian_eq_sum_iteratedFDeriv (hw.of_le (by simp)) q
+  have hd : ∀ m : Fin 2 → E × ℝ, ∀ q, DifferentiableAt ℝ (fun z ↦ iteratedFDeriv ℝ 2 w z m) q :=
+    fun m q ↦ ((ContinuousMultilinearMap.apply ℝ (fun _ : Fin 2 ↦ E × ℝ) ℝ m).contDiff.comp
+      (hw.iteratedFDeriv_right (m := ∞) (i := 2) (by simp))).differentiable (by simp) q
+  have hT : timeDeriv w = fun q ↦ fderiv ℝ w q (0, 1) :=
+    funext fun q ↦ timeDeriv_eq_fderiv (hw.of_le (by simp)) q
+  have hL' : spaceLaplacian w = ∑ i, fun q ↦ iteratedFDeriv ℝ 2 w q
+      ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)] := by
+    rw [hL]
+    funext q
+    simp only [Finset.sum_apply]
+  rw [timeDeriv_eq_fderiv ((contDiff_spaceLaplacian hw).of_le (by simp)),
+    spaceLaplacian_eq_sum_iteratedFDeriv ((contDiff_timeDeriv hw).of_le (by simp)), hL',
+    fderiv_sum fun i _ ↦ hd _ p, sum_apply]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  set m : Fin 2 → E × ℝ := ![(stdOrthonormalBasis ℝ E i, 0), (stdOrthonormalBasis ℝ E i, 0)]
+  have h3 := iteratedFDeriv_succ_apply_left_of_differentiableAt
+    ((hw.iteratedFDeriv_right (m := 1) (i := 2) (by simp)).differentiable one_ne_zero p)
+    (Fin.cons (0, 1) m)
+  rw [Fin.tail_cons, Fin.cons_zero] at h3
+  have h4 := hw.iteratedFDeriv_succ_apply_left' 2 (Fin.cons (0, 1) m) p
+  rw [Fin.tail_cons, Fin.cons_zero] at h4
+  rw [hT, ← h3, h4]
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The time derivative is local: functions agreeing on an open set have the same time
+derivative there. -/
+theorem timeDeriv_eqOn [NormedSpace ℝ E] {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
+    EqOn (timeDeriv w₁) (timeDeriv w₂) V := by
+  rintro ⟨x, t⟩ hp
+  have hmem : (fun s : ℝ ↦ (x, s)) ⁻¹' V ∈ 𝓝 t :=
+    (hV.preimage (continuous_const.prodMk continuous_id)).mem_nhds hp
+  exact Filter.EventuallyEq.deriv_eq (eventually_of_mem hmem fun s hs ↦ h hs)
+
+/-- The spatial Laplacian is local: functions agreeing on an open set have the same spatial
+Laplacian there. -/
+theorem spaceLaplacian_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V) :
+    EqOn (spaceLaplacian w₁) (spaceLaplacian w₂) V := by
+  rintro ⟨x, t⟩ hp
+  have hmem : (fun y : E ↦ (y, t)) ⁻¹' V ∈ 𝓝 x :=
+    (hV.preimage (continuous_id.prodMk continuous_const)).mem_nhds hp
+  exact (laplacian_congr_nhds (eventually_of_mem hmem fun y hy ↦ h hy)).eq_of_nhds
+
+omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The time derivative of a scalar multiple. -/
+theorem timeDeriv_const_smul (c : ℝ) (w : E × ℝ → ℝ) :
+    timeDeriv (c • w) = c • timeDeriv w := by
+  funext ⟨x, t⟩
+  simp only [timeDeriv_apply, Pi.smul_apply, smul_eq_mul]
+  exact congrFun (deriv_const_mul_field' c) t
+
+/-- The spatial Laplacian of a scalar multiple of a smooth function. -/
+theorem spaceLaplacian_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) :
+    spaceLaplacian (c • w) = c • spaceLaplacian w := by
+  funext ⟨x, t⟩
+  have : (fun y ↦ (c • w) (y, t)) = c • fun y ↦ w (y, t) := rfl
+  have hslice : ContDiffAt ℝ 2 (fun y ↦ w (y, t)) x :=
+    (hw.comp (contDiff_id.prodMk contDiff_const)).contDiffAt.of_le (by simp)
+  change Δ (fun y ↦ (c • w) (y, t)) x = c • Δ (fun y ↦ w (y, t)) x
+  rw [this, laplacian_smul c hslice]
+
+/-- Iterating the spatial Laplacian preserves smoothness. -/
+theorem contDiff_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
+    ContDiff ℝ ∞ (spaceLaplacian^[j] w) := by
+  induction j with
+  | zero => exact hw
+  | succ j ih => rw [Function.iterate_succ_apply']; exact contDiff_spaceLaplacian ih
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- Iterating the time derivative preserves smoothness. -/
+theorem contDiff_timeDeriv_iterate [NormedSpace ℝ E] (hw : ContDiff ℝ ∞ w) (j : ℕ) :
+    ContDiff ℝ ∞ (timeDeriv^[j] w) := by
+  induction j with
+  | zero => exact hw
+  | succ j ih => rw [Function.iterate_succ_apply']; exact contDiff_timeDeriv ih
+
+/-- The time derivative commutes with the iterated spatial Laplacian on a smooth function. -/
+theorem timeDeriv_spaceLaplacian_iterate (hw : ContDiff ℝ ∞ w) (j : ℕ) :
+    timeDeriv (spaceLaplacian^[j] w) = spaceLaplacian^[j] (timeDeriv w) := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [Function.iterate_succ_apply', Function.iterate_succ_apply',
+      timeDeriv_spaceLaplacian (contDiff_spaceLaplacian_iterate hw j), ih]
+
+/-- The iterated spatial Laplacian is local. -/
+theorem spaceLaplacian_iterate_eqOn {V : Set (E × ℝ)} (hV : IsOpen V) (h : EqOn w₁ w₂ V)
+    (j : ℕ) : EqOn (spaceLaplacian^[j] w₁) (spaceLaplacian^[j] w₂) V := by
+  induction j with
+  | zero => exact h
+  | succ j ih =>
+    rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
+    exact spaceLaplacian_eqOn hV ih
+
+/-- The iterated spatial Laplacian of a scalar multiple of a smooth function. -/
+theorem spaceLaplacian_iterate_const_smul (c : ℝ) (hw : ContDiff ℝ ∞ w) (j : ℕ) :
+    spaceLaplacian^[j] (c • w) = c • spaceLaplacian^[j] w := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ih,
+      spaceLaplacian_const_smul c (contDiff_spaceLaplacian_iterate hw j)]
+
+/-- The iterated spatial Laplacian, on a slice, is the iterated Laplacian of the slice. -/
+theorem spaceLaplacian_iterate_slice (w : E × ℝ → ℝ) (j : ℕ) (t : ℝ) :
+    (fun y ↦ spaceLaplacian^[j] w (y, t)) = Laplacian.laplacian^[j] fun y ↦ w (y, t) := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih]
+    rfl
+
+omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
+/-- The iterated time derivative, on a slice, is the iterated derivative of the slice. -/
+theorem timeDeriv_iterate_slice [NormedSpace ℝ E] (w : E × ℝ → ℝ) (j : ℕ) (x : E) :
+    (fun s ↦ timeDeriv^[j] w (x, s)) = deriv^[j] fun s ↦ w (x, s) := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih]
+    rfl
+
+end SpaceTimeCalculus
+
+/-- The iterated derivatives of a function vanishing on an open set vanish there. -/
+theorem iterate_deriv_eq_zero_of_eqOn {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s)
+    (h : EqOn f 0 s) (j : ℕ) : EqOn (deriv^[j] f) 0 s := by
+  induction j with
+  | zero => exact h
+  | succ j ih =>
+    intro t ht
+    rw [Function.iterate_succ_apply', Pi.zero_apply,
+      Filter.EventuallyEq.deriv_eq (eventually_of_mem (hs.mem_nhds ht) ih), deriv_zero,
+      Pi.zero_apply]
+
+/-! ### The compatibility conditions are necessary (Remark 4) -/
+
+variable {ν T : ℝ} {Ω : Set E} {u : E × ℝ → ℝ}
+
+open scoped ContDiff in
+/-- **The iterated heat equation**: a smooth classical solution of `∂ₜ u = ν Δ u` on
+`Ω × (0, T)` satisfies `∂ₜ^j u = ν^j Δ^j u` there, for every `j`: by induction, using the
+commutation `∂ₜ Δ_x^j = Δ_x^j ∂ₜ` of smooth functions (`timeDeriv_spaceLaplacian_iterate`) and
+the locality of both operators on the open cylinder. -/
+theorem IsClassicalSolution.timeDeriv_iterate_eqOn (hΩ : IsOpen Ω)
+    (hu : IsClassicalSolution ν Ω T u) (hsmooth : ContDiff ℝ ∞ u) (j : ℕ) :
+    EqOn (timeDeriv^[j] u) (ν ^ j • spaceLaplacian^[j] u) (Ω ×ˢ Ioo 0 T) := by
+  have hV : IsOpen (Ω ×ˢ Ioo 0 T) := hΩ.prod isOpen_Ioo
+  have heq : EqOn (timeDeriv u) (ν • spaceLaplacian u) (Ω ×ˢ Ioo 0 T) := by
+    rintro ⟨x, t⟩ ⟨hx, ht⟩
+    exact hu.deriv_eq_laplacian x hx t ht
+  induction j with
+  | zero => intro p _; simp
+  | succ j ih =>
+    intro p hp
+    rw [Function.iterate_succ_apply', timeDeriv_eqOn hV ih hp, timeDeriv_const_smul,
+      timeDeriv_spaceLaplacian_iterate hsmooth, Pi.smul_apply,
+      spaceLaplacian_iterate_eqOn hV heq j hp,
+      spaceLaplacian_iterate_const_smul ν (contDiff_spaceLaplacian hsmooth) j,
+      Function.iterate_succ_apply, pow_succ]
+    simp only [Pi.smul_apply, smul_eq_mul]
+    ring
+
+open scoped ContDiff in
+/-- **Remark 4: the compatibility conditions are necessary.** Let `u` be a classical solution of
+`∂ₜ u = ν Δ u` on the cylinder `Ω × (0, T)` (`ν ≠ 0`, `T > 0`, `Ω` open) which is `C^∞` on
+`E × ℝ` and vanishes on the lateral boundary `frontier Ω × (0, T)`. Then the initial datum
+`u (·, 0)` satisfies `Δ^j (u (·, 0)) = 0` on `frontier Ω` for every `j`, the compatibility
+conditions (8) of [brezis2011functional] Theorem 10.2 (c).
+
+Proof, [brezis2011functional] chapter 10 Remark 4: `∂ₜ^j u = ν^j Δ_x^j u` on `Ω × (0, T)`
+(`IsClassicalSolution.timeDeriv_iterate_eqOn`, the iterated commutation of `∂ₜ` with `Δ_x`);
+`∂ₜ^j u = 0` on `frontier Ω × (0, T)` since `u` vanishes there (`iterate_deriv_eq_zero_of_eqOn`);
+both sides are continuous on `E × ℝ`, so the identities pass to the closures
+`closure Ω × [0, T]` and `frontier Ω × [0, T]`, and comparing them at `(x, 0)` for
+`x ∈ frontier Ω` gives `ν^j Δ^j (u (·, 0)) x = 0`.
+
+The book states the remark for `u ∈ C^∞(Ω̄ × [0, ∞))` in the sense of its footnote 16, where
+`u (·, 0)` is only known to be continuous on `Ω̄` and `Δ^j (u (·, 0))` on the boundary refers to
+the continuous extension of `Δ^j u`; the smoothness of `u` on all of `E × ℝ` assumed here makes
+the statement meaningful as written, and is what Theorem 10.2 (c)'s solutions have on the
+interior of their domain of smoothness. -/
+theorem IsClassicalSolution.iteratedLaplacian_eq_zero_frontier (hΩ : IsOpen Ω) (hν : ν ≠ 0)
+    (hT : 0 < T) (hu : IsClassicalSolution ν Ω T u) (hsmooth : ContDiff ℝ ∞ u)
+    (hΓ : ∀ x ∈ frontier Ω, ∀ t ∈ Ioo 0 T, u (x, t) = 0) (j : ℕ) :
+    ∀ x ∈ frontier Ω, (Laplacian.laplacian^[j] fun y ↦ u (y, 0)) x = 0 := by
+  intro x hx
+  -- `∂ₜ^j u = ν^j Δ_x^j u` on the closed cylinder, by continuity
+  have hcl : EqOn (timeDeriv^[j] u) (ν ^ j • spaceLaplacian^[j] u) (closure Ω ×ˢ Icc 0 T) := by
+    have h := hu.timeDeriv_iterate_eqOn hΩ hsmooth j
+    refine h.of_subset_closure (contDiff_timeDeriv_iterate hsmooth j).continuous.continuousOn
+      ((contDiff_spaceLaplacian_iterate hsmooth j).continuous.const_smul _).continuousOn
+      (prod_mono subset_closure Ioo_subset_Icc_self) ?_
+    rw [closure_prod_eq, closure_Ioo hT.ne]
+  -- `∂ₜ^j u (x, 0) = 0`, by continuity from the lateral boundary
+  have hzero : timeDeriv^[j] u (x, 0) = 0 := by
+    have h1 : EqOn (fun s ↦ timeDeriv^[j] u (x, s)) 0 (Ioo 0 T) := by
+      rw [timeDeriv_iterate_slice]
+      exact iterate_deriv_eq_zero_of_eqOn isOpen_Ioo (fun t ht ↦ hΓ x hx t ht) j
+    have h2 : EqOn (fun s ↦ timeDeriv^[j] u (x, s)) 0 (Icc 0 T) := by
+      rw [← closure_Ioo hT.ne]
+      exact h1.of_subset_closure ((contDiff_timeDeriv_iterate hsmooth j).continuous.comp
+        (continuous_const.prodMk continuous_id)).continuousOn continuousOn_const subset_closure
+        subset_rfl
+    exact h2 (left_mem_Icc.2 hT.le)
+  have h3 := hcl (x := (x, 0)) ⟨frontier_subset_closure hx, left_mem_Icc.2 hT.le⟩
+  rw [hzero, Pi.smul_apply, smul_eq_mul, eq_comm, mul_eq_zero,
+    or_iff_right (pow_ne_zero j hν)] at h3
+  rw [← spaceLaplacian_iterate_slice]
+  exact h3
 
 end Heat

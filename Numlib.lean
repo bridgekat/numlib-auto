@@ -7,6 +7,7 @@ import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
+import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Complex.Harmonic

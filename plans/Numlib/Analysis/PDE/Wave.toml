@@ -312,13 +312,26 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remar
 [[node]]
 id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
 kind = "theorem"
-desc = '''**Remark 10, necessity of the compatibility conditions**: if `u : ℝ^N × ℝ → ℝ` is `C^∞` up
-to the boundary (`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)`, extensions continuous on
-`closure Ω ×ˢ Ici 0`), satisfies `∂ₜₜu = Δ_x u` on `Ω × (0,∞)` and vanishes on `frontier Ω × (0,∞)`,
-then the continuous extensions of `Δ^j (u(·,0))` and of `Δ^j (∂ₜu(·,0))` vanish on `frontier Ω`
-for every `j`. As `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`: by induction
-`∂ₜ^{2j} u = Δ^j u` and `∂ₜ^{2j+1} u = Δ^j ∂ₜ u` on `Ω × (0,∞)`, all `t`-derivatives vanish on
-`Γ × (0,∞)`, and continuity to `t = 0` gives the conditions. ★★★ (shares the iterated
-commutation with the heat version; factor it as a lemma there).'''
-deps = ["ContDiffOnClosure", "Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"]
+desc = '''**Remark 10, necessity of the compatibility conditions** (re-planned 2026-09-20, agent pde4,
+after the heat version). Let `Ω` be open, `T > 0`, and let `u : E × ℝ → ℝ` be `C^∞` on all of
+`E × ℝ` (`ContDiff ℝ ∞ u`; the book's `C^∞(Ω̄ × [0, ∞))` in the footnote-16 sense does not make
+`Δ^j (u(·, 0))` meaningful on `∂Ω`, see `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`),
+satisfy `∂ₜₜ u = Δ_x u` on `Ω ×ˢ Ioo 0 T` — as
+`∀ x ∈ Ω, ∀ t ∈ Ioo 0 T, deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x`, or with
+`Heat.timeDeriv`/`Heat.spaceLaplacian`, `EqOn (Heat.timeDeriv (Heat.timeDeriv u)) (Heat.spaceLaplacian u) (Ω ×ˢ Ioo 0 T)`
+— and vanish on `frontier Ω ×ˢ Ioo 0 T`. Then for every `j` and every `x ∈ frontier Ω`,
+`(Laplacian.laplacian^[j] fun y ↦ u (y, 0)) x = 0` and
+`(Laplacian.laplacian^[j] fun y ↦ Heat.timeDeriv u (y, 0)) x = 0` (the conditions
+`Δ^j u₀ = Δ^j v₀ = 0` on `Γ` of Theorem 10.8). Proof, as the heat version: by induction
+`EqOn (Heat.timeDeriv^[2 j] u) (Heat.spaceLaplacian^[j] u)` and
+`EqOn (Heat.timeDeriv^[2 j + 1] u) (Heat.spaceLaplacian^[j] (Heat.timeDeriv u))` on the open cylinder
+(`Heat.timeDeriv_spaceLaplacian_iterate` for the commutation `∂ₜ Δ_x^j = Δ_x^j ∂ₜ` of smooth
+functions, `Heat.timeDeriv_eqOn` and `Heat.spaceLaplacian_iterate_eqOn` for the locality of the
+operators on the open set); all `t`-derivatives vanish on `frontier Ω ×ˢ Ioo 0 T`
+(`Heat.timeDeriv_iterate_slice`, `Heat.iterate_deriv_eq_zero_of_eqOn`); both sides are continuous
+on `E × ℝ` (`Heat.contDiff_timeDeriv_iterate`, `Heat.contDiff_spaceLaplacian_iterate`), so the
+identities pass to `closure Ω ×ˢ Icc 0 T` and `frontier Ω ×ˢ Icc 0 T`, and comparing them at
+`(x, 0)` gives the conditions through `Heat.spaceLaplacian_iterate_slice`. ★★ (~120 lines on top of
+the heat module's lemmas).'''
+deps = ["Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier", "Heat.timeDeriv", "Heat.spaceLaplacian", "Heat.timeDeriv_spaceLaplacian_iterate", "Heat.timeDeriv_eqOn", "Heat.spaceLaplacian_iterate_eqOn", "Heat.timeDeriv_iterate_slice", "Heat.iterate_deriv_eq_zero_of_eqOn", "Heat.contDiff_timeDeriv_iterate", "Heat.contDiff_spaceLaplacian_iterate", "Heat.spaceLaplacian_iterate_slice"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 10"

@@ -1,0 +1,64 @@
+[[node]]
+id = "ContDiffOnExtendsTo"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, footnote 16, and Theorem 10.1 (5)"
+
+[[node]]
+id = "ContDiffOnExtendsTo.contDiffOn"
+
+[[node]]
+id = "ContDiffOnExtendsTo.continuousOn"
+
+[[node]]
+id = "ContDiffOnExtendsTo.exists_continuousOn_eqOn_iteratedFDerivWithin"
+
+[[node]]
+id = "ContDiffOnExtendsTo.of_le"
+
+[[node]]
+id = "ContDiffOnExtendsTo.mono_right"
+
+[[node]]
+id = "ContDiffOnExtendsTo.congr"
+
+[[node]]
+id = "ContDiffOnExtendsTo.exists_continuousOn_eqOn"
+
+[[node]]
+id = "ContDiffOnExtendsTo.continuousLinearMap_comp"
+
+[[node]]
+id = "ContDiffOnExtendsTo.add"
+
+[[node]]
+id = "ContDiffOnExtendsTo.prodMk"
+
+[[node]]
+id = "ContDiffOnExtendsTo.contDiffOnClosure"
+
+[[node]]
+id = "contDiffOnExtendsTo_zero_iff"
+
+[[node]]
+id = "contDiffOnExtendsTo_infty_iff"
+
+[[node]]
+id = "contDiffOnExtendsTo_closure_iff_contDiffOnClosure"
+
+[[node]]
+id = "prodFDerivL"
+
+[[node]]
+id = "prodFDerivL_apply"
+
+[[node]]
+id = "isLittleO_sub_sub_fst_of_partial"
+
+[[node]]
+id = "hasFDerivWithinAt_prod_of_partials"
+
+[[node]]
+id = "ContDiffOnExtendsTo.prod_succ"
+
+[[node]]
+id = "contDiffOnExtendsTo_prod_of_partials"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, proof of Theorem 10.1, the step from `C^k((0,∞); C^k(Ω̄))` to `C^∞(Ω̄ × [ε, ∞))`"
