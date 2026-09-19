@@ -22,7 +22,7 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 id = "SobolevEuclideanZero.eLpNorm_fn_le_sum_of_eq"
 
 [[node]]
-id = "SobolevEuclideanZero.memLp_fn_of_eq"
+id = "SobolevEuclideanZero.memLp_fn_sobolevConj"
 
 [[node]]
 id = "SobolevEuclideanZero.exists_hasWeakFDerivOn_indicator"

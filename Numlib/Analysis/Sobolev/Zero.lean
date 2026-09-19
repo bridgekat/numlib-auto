@@ -667,8 +667,10 @@ theorem eLpNorm_fn_le_gradNorm_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻
           ENNReal.ofReal_natCast, ENNReal.ofReal_coe_nnreal, mul_assoc]
 
 /-- **`W_0^{1,p}(Ω) ⊆ L^{p*}(Ω)`** for `1 ≤ p < N` and an arbitrary open `Ω`
-([brezis2011functional] Chapter 9, Remark 20). -/
-theorem memLp_fn_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
+([brezis2011functional] Chapter 9, Remark 20); the general `L^q` memberships are
+`SobolevEuclideanZero.memLp_fn_of_le` / `memLp_fn_of_lt` / `memLp_fn_of_eq` in
+`EmbeddingDomain.lean`. -/
+theorem memLp_fn_sobolevConj (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
     (u : SobolevEuclideanZero N 1 p Ω) :
     MemLp (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=

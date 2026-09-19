@@ -30,24 +30,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "memSobolevMultiIndex_logRpow"
-kind = "theorem"
-desc = '''**Remark 16 (the limiting case `p = N`)**: on `Ω = ball 0 (1/2) ⊆ ℝ^N`, `N ≥ 2`, and
-`0 < α < 1 − 1/N`, the function `u x = (log (1/‖x‖))^α` (set `0` at `x = 0`) lies in
-`W^{1,N}(Ω)` — `MemSobolevMultiIndex b u 1 N Ω volume` — and is not essentially bounded:
-`eLpNorm u ∞ (volume.restrict Ω) = ∞`. Proof: `u` is `C^1` on `Ω ∖ {0}` with
-`∇u = −α (log 1/‖x‖)^{α−1} x/‖x‖²`, so `|∇u|^N = α^N (log 1/‖x‖)^{N(α−1)} ‖x‖^{−N}`, integrable near
-`0` exactly when `N(1 − α) > 1` (polar coordinates: `∫_0^{1/2} (log 1/r)^{−β} dr/r < ∞` iff `β > 1`),
-and `u ∈ L^N` since the log grows slower than any power; the classical derivative is the weak
-one on all of `Ω` by the removable-singularity lemma
-`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton` (`RemovableSingularity.lean`, the
-smallness `∫_{B(0,δ)} |u| = o(δ)` from `tendsto_inv_mul_setIntegral_norm_ball_zero` with any
-`s > 1 − N`, a logarithm being milder than any power). The pattern is Atkinson–Han's Example
-7.2.6 (`hasWeakIteratedLineDerivOn_logLogNorm`, proved, 578 lines for the whole example).
-Trudinger's inequality, the remark's second half, is not planned. ★★★, ~400 lines; low
-priority (no consumer).
-
-Blocked: not attempted (sob8, 2026-09-18; sob11, 2026-09-19): low priority, no consumer. The ingredients are in place — the removable-singularity lemma `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton` with the smallness criterion `tendsto_inv_mul_setIntegral_norm_ball_zero` (`RemovableSingularity.lean`), `integrableOn_norm_rpow_ball_zero`, and Mathlib's radial formula `MeasureTheory.integral_fun_norm_addHaar` for the polar-coordinate integrals; the cost is the radial integrability `∫_0^{1/2} (log 1/r)^{−β} dr/r < ∞` for `β > 1` (substitute `t = log 1/r`) and the `C¹` calculus of `x ↦ (log 1/‖x‖)^α` off the origin, ~400 lines as estimated.'''
-deps = ["hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton", "tendsto_inv_mul_setIntegral_norm_ball_zero", "MemSobolevMultiIndex"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"
 
 [[node]]
@@ -56,22 +38,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 (t
 
 [[node]]
 id = "SobolevEuclideanZero.isContinuousEmbedding_toLp"
-kind = "theorem"
-desc = '''**Remark 20, the embedding clauses on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**: the three
-cases of Corollary 9.14 on the subspace `SobolevEuclideanZero N 1 p Ω` with no regularity of `Ω` —
-`W_0^{1,p}(Ω) ↪ L^q(Ω)` for `q ∈ [p, p*]` if `p < N` (`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`),
-for `q ∈ [p, ∞)` if `p = N` (`…_of_eq`), and into `L^∞(Ω)` with a representative continuous on
-`closure Ω` and the Hölder estimate if `p > N` (`SobolevEuclideanZero.exists_continuousOn_closure_holderWith_ae_eq`)
-— each the corresponding `HasSobolevExtensionOn`-node above instantiated with
-`SobolevEuclideanZero.hasSobolevExtensionOn` (`Zero.lean`, the extension by zero). "It follows,
-in particular, that the conclusion of Corollary 9.14 is true for `W_0^{1,p}(Ω)` with an arbitrary
-open set `Ω`" ([brezis2011functional] Remark 20). ★, ~60 lines for the three; the Sobolev
-inequality `‖u‖_{p*} ≤ C(p,N) ‖∇u‖_p` of the same remark is `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`
-(`Zero.lean`), and its compactness clause `SobolevEuclideanZero.isCompactEmbedding_toLp`
-(`Compactness.lean`).
-
-Blocked: `Numlib/Analysis/Sobolev/Zero.lean` (`SobolevEuclideanZero.hasSobolevExtensionOn`, agent sob9) was not in the tree when this module was written (sob8, 2026-09-18). Once it is, the three cases are `HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le`, `_of_eq_finrank` and `_top_of_lt` / `exists_forall_continuous_holderWith_ae_eq` applied to `S = SobolevEuclideanZero N 1 p Ω` (~20 lines). Still absent (sob11, 2026-09-19).'''
-deps = ["SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt", "SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_eq", "SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
 [[node]]
@@ -247,3 +213,101 @@ id = "SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_eq_finrank"
 
 [[node]]
 id = "SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt"
+
+[[node]]
+id = "HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le"
+
+[[node]]
+id = "HasSobolevExtensionOn.memLp_fn_of_le"
+
+[[node]]
+id = "HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_of_le"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_of_lt"
+
+[[node]]
+id = "SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_of_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.isContinuousEmbedding_toLp_of_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_top_of_lt"
+
+[[node]]
+id = "SobolevEuclideanZero.isContinuousEmbedding_toLp_top_of_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "Real.neg_log_le_four_mul_rpow"
+
+[[node]]
+id = "logRpow"
+
+[[node]]
+id = "logRpow_eq"
+
+[[node]]
+id = "logRpowGrad"
+
+[[node]]
+id = "hasFDerivAt_logRpow"
+
+[[node]]
+id = "norm_logRpowGrad"
+
+[[node]]
+id = "measurable_logRpow"
+
+[[node]]
+id = "aestronglyMeasurable_logRpowGrad"
+
+[[node]]
+id = "abs_logRpow_le"
+
+[[node]]
+id = "memLp_norm_rpow_ball"
+
+[[node]]
+id = "memLp_logRpow"
+
+[[node]]
+id = "hasDerivAt_neg_neg_log_rpow_div"
+
+[[node]]
+id = "continuousOn_neg_neg_log_rpow_div"
+
+[[node]]
+id = "integrableOn_neg_log_rpow_div"
+
+[[node]]
+id = "norm_logRpowGrad_rpow_eq"
+
+[[node]]
+id = "integrableOn_norm_logRpowGrad_rpow"
+
+[[node]]
+id = "memLp_logRpowGrad"
+
+[[node]]
+id = "isFiniteMeasure_volume_restrict_ball"
+
+[[node]]
+id = "hasWeakFDerivOn_logRpow"
+
+[[node]]
+id = "eLpNorm_logRpow_top"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"

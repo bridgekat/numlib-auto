@@ -22,20 +22,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16"
 
 [[node]]
 id = "SobolevEuclideanZero.isCompactEmbedding_toLp"
-kind = "theorem"
-desc = '''**Remark 20, the compactness clause**: for an arbitrary *bounded* open `Ω` (no regularity)
-and `1 ≤ p ≤ ∞`, `W_0^{1,p}(Ω) ↪↪ L^q(Ω)` for the same `q` as in Theorem 9.16, and in particular
-`W_0^{1,p}(Ω) ↪↪ L^p(Ω)`: `IsCompactEmbedding` of the inclusion `SobolevEuclideanZero N 1 p Ω → Lp ℝ p (volume.restrict Ω)`.
-"Similarly, the conclusion of Theorem 9.16 is true for `W_0^{1,p}(Ω)` with an arbitrary bounded
-open set `Ω`" — the abstract lemma with `S = W_0^{1,p}(Ω)` and the extension by zero
-(`SobolevEuclideanZero.hasSobolevExtensionOn`, `Zero.lean`), and the same three cases. ★★, ~150
-lines. This is what chapter 9b's Theorem 9.31 (the Dirichlet eigenfunctions of `−Δ` on a
-bounded open `Ω`, no regularity) consumes, through `H_0^1(Ω) ↪↪ L^2(Ω)`, and what
-`AtkinsonHan.Chapter08.Section08` and the obstacle problems of Atkinson–Han chapter 11 would
-consume for coercivity-by-compactness arguments.
-
-Blocked: `Numlib/Analysis/Sobolev/Zero.lean` (`SobolevEuclideanZero.hasSobolevExtensionOn`, `extendZeroL`, agent sob9) was not in the tree when this module was written (sob8, 2026-09-18). Once it is: the case `p < N` is `SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn` with `S = SobolevEuclideanZero N 1 p Ω` (the abstract lemma is stated on a subspace for this purpose), the case `p > N` is `HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL`; the case `p = N` needs the exponent-lowering map on `W_0` (`SobolevMultiIndex.toLowerExponentL` should map `W_0^{1,p}` into `W_0^{1,r}`, to be checked), ~80 lines. Still absent (sob11, 2026-09-19); the `p > N` case can also land in `L^p(Ω)` directly through `ContinuousMap.extendZeroToLpL` as `SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt` does.'''
-deps = ["SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn", "SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclideanZero.extendZeroL", "IsCompactEmbedding.comp_isContinuousEmbedding"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
 [[node]]
@@ -200,3 +186,73 @@ id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq_fnL"
 
 [[node]]
 id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq"
+
+[[node]]
+id = "SobolevMultiIndex.toLpₗOn_self"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLpₗOn_eq_fnL"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLowerExponentL_mem"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.coe_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.fn_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL"
+
+[[node]]
+id = "HasSobolevExtensionOn.isBounded_image_closedBall_self"
+
+[[node]]
+id = "HasSobolevExtensionOn.uniform_translate_image_closedBall_self"
+
+[[node]]
+id = "HasSobolevExtensionOn.fnL_comp_subtypeL_apply"
+
+[[node]]
+id = "HasSobolevExtensionOn.isCompact_closure_image_closedBall_self"
+
+[[node]]
+id = "HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (the last sentence, in the generality of its proof)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (the last sentence)"
+
+[[node]]
+id = "SobolevEuclideanZero.isCompactEmbedding_fnL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.isCompactOperator_fnL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_of_le_sobolevConj"
+
+[[node]]
+id = "SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"

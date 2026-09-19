@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Laplacian
 import Mathlib.Analysis.InnerProductSpace.LaxMilgram
 import Mathlib.MeasureTheory.Function.Holder
+import Numlib.Analysis.Sobolev.Compactness
 import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.Zero
 import Numlib.Analysis.Normed.Operator.Riesz
@@ -48,9 +49,14 @@ from a Galerkin discretization.
 * `Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg`: Example 3;
 * `Elliptic.existsUnique_isGalerkinSolution_neumann`: **Proposition 9.24** (Neumann);
 * `Elliptic.solutionOperator`, the solution operator `T : L²(Ω) → L²(Ω)` of a form coercive on
-  `H^1_0(Ω)`, and the Fredholm alternative of **Theorem 9.23** for a compact `T`
-  (`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`,
-  `Elliptic.exists_orthogonality_iff_exists_solution_of_isCompactOperator`).
+  `H^1_0(Ω)`, compact when `Ω` has finite measure (`Elliptic.solutionOperator_isCompactOperator`,
+  by the Rellich–Kondrachov theorem on `W_0^{1,p}(Ω)` of Remark 20,
+  `Numlib/Analysis/Sobolev/Compactness.lean`), and the Fredholm alternative of **Theorem 9.23**
+  first for a compact `T` (`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`,
+  `Elliptic.exists_orthogonality_iff_exists_solution_of_isCompactOperator`), then for the general
+  form (41) on an open set of finite measure (`Elliptic.finiteDimensional_ker_general`,
+  `Elliptic.exists_orthogonality_iff_exists_solution`), with **Remark 23**
+  (`Elliptic.existsUnique_of_ker_eq_bot`).
 
 ## Conventions
 
@@ -1782,5 +1788,104 @@ theorem solutionOperator_isCompactOperator_of_isCompactOperator_fnL
     IsCompactOperator (solutionOperator Ω a ha) := by
   rw [solutionOperator, ContinuousLinearMap.coe_comp]
   exact h.comp_clm _
+
+
+/-! ### Theorem 9.23 and Remark 23: the Fredholm alternative for the general Dirichlet problem -/
+
+section Fredholm23
+
+/-- The restriction of a coercive form to a subspace is coercive (with the same constant): the
+`SesqForm.IsCoercive` form of `SesqForm.IsCoerciveWith.restrict`
+(`Numlib/Variational/EllipticInterval/BoundaryConditions.lean`); both belong beside
+`SesqForm.restrict` in `Numlib/Variational/Forms.lean`. -/
+theorem _root_.SesqForm.IsCoercive.restrict {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
+    [InnerProductSpace 𝕜 V] {a : SesqForm 𝕜 V} (h : a.IsCoercive) (K : Submodule 𝕜 V) :
+    (a.restrict K).IsCoercive :=
+  let ⟨c, hc, h⟩ := h
+  ⟨c, hc, fun v ↦ by
+    rw [SesqForm.restrict_apply, ← Submodule.norm_coe]
+    exact h v⟩
+
+variable {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+  {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+  {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
+
+/-- **Gårding's inequality on `H^1_0(Ω)`**: under the ellipticity condition (36), the shifted form
+`a(u, v) + λ ∫_Ω u v` with the shift `λ` of `Elliptic.generalForm_garding` is coercive on
+`H^1_0(Ω)`, so that its solution operator `Elliptic.solutionOperator` exists — the `T` of the
+proof of [brezis2011functional] Theorem 9.23. -/
+theorem generalForm_garding_restrict_isCoercive (hA : IsUniformlyElliptic Ω A α) :
+    ((generalForm Ω A a₁ a₀ + ((∑ i, ‖a₁ i‖) ^ 2 / (2 * α) + ‖a₀‖ + α / 2)
+      • pairing Ω (ContinuousLinearMap.id ℝ _) 0 0).restrict
+        (SobolevEuclideanZero N 1 2 Ω)).IsCoercive :=
+  SesqForm.IsCoercive.restrict ⟨α / 2, half_pos hA.1, generalForm_garding Ω hA⟩ _
+
+/-- **The solution operator is compact** for an open set `Ω` of finite measure (in particular a
+bounded one), for every form `a` coercive on `H^1_0(Ω)`: `T = fnL ∘ solutionMap` factors through
+the inclusion `H^1_0(Ω) → L²(Ω)`, which is compact by the Rellich–Kondrachov theorem in the
+`W_0^{1,p}` form of [brezis2011functional] Remark 20
+(`SobolevEuclideanZero.isCompactOperator_fnL`, no regularity of `Ω`), and a compact operator
+composed with a bounded one is compact. This is the sentence "`T : L² → L²` is a compact linear
+operator (since `Ω` is bounded, the injection `H^1_0 ⊂ L²` is compact; see Theorem 9.16 and
+Remark 20)" of the proof of Theorem 9.23, and the compactness of `T` in the proof of
+Theorem 9.31. -/
+theorem solutionOperator_isCompactOperator
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
+    (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω))
+    (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive) :
+    IsCompactOperator (solutionOperator Ω a ha) :=
+  solutionOperator_isCompactOperator_of_isCompactOperator_fnL Ω a ha
+    (SobolevEuclideanZero.isCompactOperator_fnL ENNReal.ofNat_ne_top hΩ)
+
+/-- **[brezis2011functional] Theorem 9.23, first half.** Let `Ω` be an open set of finite
+measure (the book: bounded), `A`, `a₁`, `a₀` be `L^∞(Ω)` coefficients with the ellipticity
+condition (36), `IsUniformlyElliptic Ω A α`, and `a = generalForm Ω A a₁ a₀` the form (41). The
+space `N = {u ∈ H^1_0(Ω) | ∀ v ∈ H^1_0(Ω), a(u, v) = 0}` of weak solutions of the homogeneous
+problem (40) (`Elliptic.homogeneousKernel`) is finite-dimensional. Proof: with `λ` from Gårding's
+inequality (`Elliptic.generalForm_garding`), `T = solutionOperator` of the coercive shifted form
+is compact (`Elliptic.solutionOperator_isCompactOperator`), and `u ∈ N` iff `u = λ T u` in
+`L²(Ω)`, so `N ≅ ker (1 − λ T)` is finite-dimensional by the Riesz theory
+(`Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator`). -/
+theorem finiteDimensional_ker_general (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
+    (hA : IsUniformlyElliptic Ω A α) :
+    FiniteDimensional ℝ (homogeneousKernel Ω (generalForm Ω A a₁ a₀)) :=
+  finiteDimensional_homogeneousKernel_of_isCompactOperator Ω _
+    (generalForm_garding_restrict_isCoercive Ω hA) (solutionOperator_isCompactOperator Ω hΩ _ _)
+
+/-- **[brezis2011functional] Theorem 9.23, second half (the Fredholm alternative for (40)).**
+Under the hypotheses of `Elliptic.finiteDimensional_ker_general` there is a finite-dimensional
+subspace `F ⊆ L²(Ω)` with `dim F = dim N` (`N` the space of homogeneous solutions) such that,
+for every `f ∈ L²(Ω)`, the weak problem `a(u, v) = ∫_Ω f v` for all `v ∈ H^1_0(Ω)` has a solution
+`u ∈ H^1_0(Ω)` iff `f ⊥ F`: `F = ker (1 − λ T†)`, by the Hilbert-space Fredholm alternative
+(`IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint`,
+`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint`) for the compact solution operator `T`
+of the shifted form; the book routes through its Theorem 6.6. -/
+theorem exists_orthogonality_iff_exists_solution
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hA : IsUniformlyElliptic Ω A α) :
+    ∃ F : Submodule ℝ (Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))),
+      FiniteDimensional ℝ F ∧
+        finrank ℝ F = finrank ℝ (homogeneousKernel Ω (generalForm Ω A a₁ a₀)) ∧
+        ∀ f, (∃ u, IsGalerkinSolution (generalForm Ω A a₁ a₀) (load Ω f)
+          (SobolevEuclideanZero N 1 2 Ω) u) ↔ ∀ v ∈ F, ⟪f, v⟫_ℝ = 0 :=
+  exists_orthogonality_iff_exists_solution_of_isCompactOperator Ω _
+    (generalForm_garding_restrict_isCoercive Ω hA) (solutionOperator_isCompactOperator Ω hΩ _ _)
+
+/-- **[brezis2011functional] Chapter 9, Remark 23, first clause**: under the hypotheses of
+Theorem 9.23, if the homogeneous problem (40) has only the zero solution
+(`homogeneousKernel Ω a = ⊥`), then for every `f ∈ L²(Ω)` the weak problem (40) has exactly one
+solution `u ∈ H^1_0(Ω)`. Existence is the Fredholm alternative
+(`IsCompactOperator.injective_iff_surjective_smul_one_sub` for `1 − λ T`), uniqueness that the
+difference of two solutions is a homogeneous solution. The remark's second clause — that
+`a₀ ≥ 0` alone forces the trivial kernel — is the general case of Proposition 9.29, cited from
+Gilbarg–Trudinger, and is not proved here. -/
+theorem existsUnique_of_ker_eq_bot (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
+    (hA : IsUniformlyElliptic Ω A α) (h : homogeneousKernel Ω (generalForm Ω A a₁ a₀) = ⊥)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
+    ∃! u, IsGalerkinSolution (generalForm Ω A a₁ a₀) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u :=
+  existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator Ω _
+    (generalForm_garding_restrict_isCoercive Ω hA) (solutionOperator_isCompactOperator Ω hΩ _ _)
+    h f
+
+end Fredholm23
 
 end Elliptic

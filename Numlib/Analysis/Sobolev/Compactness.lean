@@ -36,8 +36,18 @@ theorem (`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_transl
 relatively compact, and `ℋ = ℱ|_Ω` (`HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM`). For `q < p`
 the case `q = p` is composed with the continuous inclusion `L^p(Ω) ⊆ L^q(Ω)`
 (`MeasureTheory.Lp.monoExponentL`). The instances are `S = ⊤` with Theorem 9.7's operator
-(`SobolevEuclidean.isCompactEmbedding_toLp_of_lt`) and, once `Zero.lean` provides it,
-`S = W_0^{1,p}(Ω)` with the extension by zero (Remark 20).
+(`SobolevEuclidean.isCompactEmbedding_toLp_of_lt`) and `S = W_0^{1,p}(Ω)` with the extension by
+zero of `Numlib/Analysis/Sobolev/Zero.lean` (Remark 20,
+`SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt`).
+At the exponent `q = p` itself no interpolation is needed — `ℱ` is bounded in `L^p(ℝ^N)` by `‖P‖`
+and Proposition 9.3 is its translation modulus — so `S ↪↪ L^p(Ω)` holds for *every* `1 ≤ p < ∞`
+in every dimension (`HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self`); hence
+`W_0^{1,p}(Ω) ↪↪ L^p(Ω)` on any open set of finite measure
+(`SobolevEuclideanZero.isCompactEmbedding_toLp`, `SobolevEuclideanZero.isCompactOperator_fnL`,
+the compactness of `H^1_0(Ω) ⊂ L²(Ω)` that Theorems 9.23 and 9.31 use) and
+`W^{1,p}(Ω) ↪↪ L^p(Ω)` on any extension domain of finite measure
+(`SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain`), including
+`N = 1 = p`.
 
 The cases `p ≥ N` for `N ≥ 2` reduce to `p < N`: `W^{1,p}(Ω) ↪ W^{1,r}(Ω)` continuously on the
 finite-measure `Ω` for an `r < N` with `r* > q` (`SobolevMultiIndex.toLowerExponentL`,
@@ -53,6 +63,14 @@ and the continuous extension by zero `C(Ω̄, ℝ) → L^p(Ω)` (`ContinuousMap.
 `SobolevEuclidean.isCompactEmbedding_toLp_self_of_gt`), which covers `N = 1 < p`, so that
 `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one` / `isCompactEmbedding_fnL_of_ne_one`
 leave out only `N = 1 = p` (an interval, where the one-dimensional theory applies) and `p = ∞`.
+
+On `W_0^{1,p}(Ω)` the other clauses of Theorem 9.16 hold with no regularity of `Ω` (Remark 20):
+`W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for `N ≤ q < ∞`, `N ≥ 2`, through the inclusion
+`W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)` (`SobolevMultiIndexZero.toLowerExponentL`, which exists because
+`SobolevMultiIndex.toLowerExponentL` maps test functions to test functions and closures to
+closures) and the pull-back lemma `SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp`
+(`SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq`), and `W_0^{1,p}(Ω) ↪↪ C(K)` for `p > N`
+and a compact `K ⊇ Ω` (`SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL`).
 
 The compact embedding between successive orders, `W^{k+1,p}(Ω) ⊂⊂ W^{k,p}(Ω)` along
 `SobolevMultiIndex.toLowerOrderL` (`SobolevEuclidean.isCompactEmbedding_toLower_of_lt`,
@@ -1212,3 +1230,348 @@ theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
       (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
 
 end RellichLower
+
+/-! ### The inclusion of a subspace into `L^p(Ω)` itself, and `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)` -/
+
+section ZeroInclusion
+
+open SobolevMultiIndex
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p q r : ℝ≥0∞} [Fact (1 ≤ p)]
+  [Fact (1 ≤ q)] [Fact (1 ≤ r)] {Ω : Opens E} {μ : Measure E}
+
+/-- The inclusion `SobolevMultiIndex.toLpₗOn` of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` itself
+is `SobolevMultiIndex.fnL` restricted to `S`. -/
+theorem SobolevMultiIndex.toLpₗOn_self (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
+    toLpₗOn F b k p Ω μ S (fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ))
+      = ((fnL F b k p Ω μ).comp S.subtypeL).toLinearMap :=
+  LinearMap.ext fun u ↦ Lp.ext ((toLpₗOn_coeFn _ u).trans (Eventually.of_forall fun _ ↦ rfl))
+
+/-- The inclusion `W_0^{k,p}(Ω) → L^p(Ω)` along `SobolevMultiIndex.toLpₗOn` is
+`SobolevMultiIndexZero.fnL`. -/
+theorem SobolevMultiIndexZero.toLpₗOn_eq_fnL :
+    toLpₗOn F b k p Ω μ (SobolevMultiIndexZero F b k p Ω μ)
+        (fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ))
+      = (SobolevMultiIndexZero.fnL F b k p Ω μ).toLinearMap :=
+  SobolevMultiIndex.toLpₗOn_self _
+
+/-- **A compact embedding of a subspace into `L^q(Ω)` pulls back along a continuous embedding
+that preserves the function**: for subspaces `S ⊆ W^{k,p}(Ω)`, `S' ⊆ W^{k,r}(Ω)` and a bounded
+injective `T : S → S'` with `fn (T u) = fn u` on `Ω`, the compactness of `S' → L^q(Ω)` gives that of
+`S → L^q(Ω)`, the latter being the composite. Stated with the operators as variables so that the
+typed instances (`W_0^{1,N}(Ω) → W_0^{1,r}(Ω)`) cost nothing. -/
+theorem SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp
+    {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
+    {S' : Submodule ℝ (SobolevMultiIndex F b k r Ω μ)} (T : S →L[ℝ] S')
+    (hT : IsContinuousEmbedding T.toLinearMap)
+    (hfn : ∀ u : S, fn ((T u : S') : SobolevMultiIndex F b k r Ω μ)
+      =ᵐ[μ.restrict (Ω : Set E)] fn (u : SobolevMultiIndex F b k p Ω μ))
+    {h' : ∀ v : S', MemLp (fn (v : SobolevMultiIndex F b k r Ω μ)) q (μ.restrict (Ω : Set E))}
+    (hc : IsCompactEmbedding (toLpₗOn F b k r Ω μ S' h'))
+    (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E))) :
+    IsCompactEmbedding (toLpₗOn F b k p Ω μ S h) := by
+  have := hT.comp_isCompactEmbedding hc
+  convert this using 1
+  refine LinearMap.ext fun u ↦ Lp.ext ((toLpₗOn_coeFn h u).trans ?_)
+  exact ((toLpₗOn_coeFn h' (T u)).trans (hfn u)).symm
+
+variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+
+/-- **The inclusion of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` is a continuous embedding**:
+injective, of norm at most one. -/
+theorem SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self
+    (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
+    IsContinuousEmbedding (toLpₗOn F b k p Ω μ S
+      fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ)) := by
+  rw [toLpₗOn_self]
+  exact ⟨fun _ _ huv ↦ Subtype.ext (fnL_injective huv), _,
+    ((fnL F b k p Ω μ).comp S.subtypeL).le_opNorm⟩
+
+/-- **`SobolevMultiIndex.toLowerExponentL` maps `W_0^{k,p}(Ω)` into `W_0^{k,r}(Ω)`**, `r ≤ p`, on
+a set of finite measure: it maps the test functions to the test functions (the function is
+unchanged) and is continuous, so it maps the closure into the closure. -/
+theorem SobolevMultiIndexZero.toLowerExponentL_mem (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
+    {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
+    toLowerExponentL F b k p r μ hΩ hrp u ∈ SobolevMultiIndexZero F b k r Ω μ := by
+  have h : SobolevMultiIndexZero F b k p Ω μ ≤ (SobolevMultiIndexZero F b k r Ω μ).comap
+      (toLowerExponentL F b k p r μ hΩ hrp : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] _) := by
+    refine Submodule.topologicalClosure_minimal _ ?_ ?_
+    · intro v hv
+      obtain ⟨φ, hφ⟩ := mem_testFunctions.1 hv
+      exact SobolevMultiIndexZero.testFunctions_le
+        (mem_testFunctions.2 ⟨φ, (fn_toLowerExponentL hΩ hrp v).trans hφ⟩)
+    · exact SobolevMultiIndexZero.isClosed.preimage (toLowerExponentL F b k p r μ hΩ hrp).continuous
+  exact h hu
+
+variable (F b k p r μ) in
+/-- **The inclusion `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)`, `r ≤ p`, on a set of finite measure**, as a
+bounded linear map: `SobolevMultiIndex.toLowerExponentL` restricted to the closures of the test
+functions. -/
+def SobolevMultiIndexZero.toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
+    SobolevMultiIndexZero F b k p Ω μ →L[ℝ] SobolevMultiIndexZero F b k r Ω μ :=
+  ((SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp).comp
+    (SobolevMultiIndexZero F b k p Ω μ).subtypeL).codRestrict _
+      fun u ↦ SobolevMultiIndexZero.toLowerExponentL_mem hΩ hrp u.2
+
+/-- `SobolevMultiIndexZero.toLowerExponentL` is `SobolevMultiIndex.toLowerExponentL` on the
+underlying element. -/
+@[simp]
+theorem SobolevMultiIndexZero.coe_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
+    (u : SobolevMultiIndexZero F b k p Ω μ) :
+    (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp u : SobolevMultiIndex F b k r Ω μ)
+      = SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp u :=
+  rfl
+
+/-- The function of `SobolevMultiIndexZero.toLowerExponentL u` is the function of `u`. -/
+theorem SobolevMultiIndexZero.fn_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
+    (u : SobolevMultiIndexZero F b k p Ω μ) :
+    fn ((SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp u : _) :
+        SobolevMultiIndex F b k r Ω μ)
+      =ᵐ[μ.restrict (Ω : Set E)] fn (u : SobolevMultiIndex F b k p Ω μ) := by
+  rw [SobolevMultiIndexZero.coe_toLowerExponentL]
+  exact SobolevMultiIndex.fn_toLowerExponentL hΩ hrp _
+
+/-- **`W_0^{k,p}(Ω) ↪ W_0^{k,r}(Ω)` is a continuous embedding** for `r ≤ p` on a set of finite
+measure. -/
+theorem SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
+    IsContinuousEmbedding (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp).toLinearMap :=
+  ⟨fun _ _ huv ↦ Subtype.ext (toLowerExponentL_injective hΩ hrp (congrArg Subtype.val huv)), _,
+    (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp).le_opNorm⟩
+
+end ZeroInclusion
+
+/-! ### The abstract Rellich–Kondrachov lemma at `q = p`: every `1 ≤ p < ∞`, every `N` -/
+
+section RellichSelf
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+  {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
+
+/-- The family `ℱ = P(unit ball)` is bounded in `L^p(ℝ^N)` (by `‖P‖`), for every `p`. -/
+theorem HasSobolevExtensionOn.isBounded_image_closedBall_self
+    (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) :
+    Bornology.IsBounded ((fun u : S ↦ (SobolevEuclidean.memLp_fn (P u)).toLp _) ''
+      closedBall (0 : S) 1) := by
+  refine (Metric.isBounded_iff_subset_closedBall 0).2 ⟨‖P‖, ?_⟩
+  rintro _ ⟨u, hu, rfl⟩
+  have hPu : ‖P u‖ ≤ ‖P‖ := by
+    calc ‖P u‖ ≤ ‖P‖ * ‖u‖ := P.le_opNorm u
+      _ ≤ ‖P‖ * 1 := mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.1 hu) (norm_nonneg _)
+      _ = ‖P‖ := mul_one _
+  have hb : eLpNorm (fn (P u)) p volume ≤ ENNReal.ofReal ‖P u‖ := by
+    rw [← eLpNorm_restrict_coe_top]
+    exact SobolevMultiIndex.eLpNorm_fn_le_ofReal_norm (P u)
+  rw [mem_closedBall_zero_iff, Lp.norm_toLp]
+  refine (ENNReal.toReal_mono ENNReal.ofReal_ne_top hb).trans ?_
+  rw [ENNReal.toReal_ofReal (norm_nonneg _)]
+  exact hPu
+
+/-- The family `ℱ = P(unit ball)` has a uniform translation modulus in `L^p(ℝ^N)`, for every
+`1 ≤ p < ∞`: Proposition 9.3, `‖τ_h v − v‖_p ≤ ‖h‖ ‖∇v‖_p ≤ ‖h‖ N ‖P‖` — the hypothesis of the
+Kolmogorov–M. Riesz–Fréchet theorem in [brezis2011functional] §9.3, proof of Theorem 9.16, at
+`q = p`, where no interpolation is needed. -/
+theorem HasSobolevExtensionOn.uniform_translate_image_closedBall_self
+    (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤) :
+    ∀ ε : ℝ≥0∞, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ f ∈ (fun u : S ↦
+      (SobolevEuclidean.memLp_fn (P u)).toLp _) '' closedBall (0 : S) 1,
+        ∀ h : EuclideanSpace ℝ (Fin N), ‖h‖ < δ →
+          eLpNorm (fun x ↦ f (x + h) - f x) p volume < ε := by
+  intro ε hε
+  obtain ⟨A, hA⟩ : ∃ A : ℝ≥0∞, A = N * ENNReal.ofReal ‖P‖ := ⟨_, rfl⟩
+  have hAt : A ≠ ⊤ := by
+    rw [hA]
+    exact ENNReal.mul_ne_top (by simp) ENNReal.ofReal_ne_top
+  obtain ⟨δ, hδ0, hδ⟩ := EuclideanSpace.exists_pos_forall_enorm_rpow_mul_lt (N := N) one_pos hAt hε
+  refine ⟨δ, hδ0, ?_⟩
+  rintro _ ⟨u, hu, rfl⟩ h hh
+  have hPu : ‖P u‖ ≤ ‖P‖ := by
+    calc ‖P u‖ ≤ ‖P‖ * ‖u‖ := P.le_opNorm u
+      _ ≤ ‖P‖ * 1 := mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.1 hu) (norm_nonneg _)
+      _ = ‖P‖ := mul_one _
+  have hGae := MemLp.coeFn_toLp (SobolevEuclidean.memLp_fn (P u))
+  have hae : (fun x ↦ ((SobolevEuclidean.memLp_fn (P u)).toLp _) (x + h)
+        - ((SobolevEuclidean.memLp_fn (P u)).toLp _) x)
+      =ᵐ[volume] fun x ↦ fn (P u) (x + h) - fn (P u) x := by
+    have h1 := (measurePreserving_add_right volume h).quasiMeasurePreserving.ae_eq_comp hGae
+    filter_upwards [h1, hGae] with x hx1 hx2
+    simp only [Function.comp_apply] at hx1
+    rw [hx1, hx2]
+  rw [eLpNorm_congr_ae hae]
+  refine lt_of_le_of_lt ?_ (hδ h hh)
+  rw [ENNReal.rpow_one, hA]
+  refine (SobolevEuclidean.eLpNorm_fn_sub_translate_le ENNReal.coe_ne_top (P u) h).trans ?_
+  refine mul_le_mul' le_rfl ((SobolevEuclidean.sum_ofReal_norm_weakDeriv_single_le (P u)).trans ?_)
+  exact mul_le_mul' le_rfl (ENNReal.ofReal_le_ofReal hPu)
+
+/-- The inclusion `S → L^p(Ω)` along `fnL` sends `u` to the restriction to `Ω` of `fn (P u)`,
+read in `L^p(ℝ^N)`: the image of the unit ball of `S` is `ℱ|_Ω`, `ℱ = P(unit ball)`. -/
+theorem HasSobolevExtensionOn.fnL_comp_subtypeL_apply (P : S →L[ℝ] SobolevEuclidean N 1 p ⊤)
+    (hP : ∀ u : S, fn (P u) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      fn (u : SobolevEuclidean N 1 p Ω)) (u : S) :
+    (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume ∘L S.subtypeL) u
+      = Lp.restrictCLM ℝ ℝ p volume (Ω : Set (EuclideanSpace ℝ (Fin N)))
+          ((SobolevEuclidean.memLp_fn (P u)).toLp _) := by
+  refine Lp.ext (Filter.EventuallyEq.trans ?_ (Lp.coeFn_restrictCLM _ _).symm)
+  refine Filter.EventuallyEq.trans (hP u).symm (Filter.EventuallyEq.symm ?_)
+  exact ae_restrict_of_ae (MemLp.coeFn_toLp (SobolevEuclidean.memLp_fn (P u)))
+
+/-- **The image of the unit ball of `S` in `L^p(Ω)` has compact closure**, for a subspace `S` of
+`W^{1,p}(Ω)` with an extension operator and `volume Ω < ∞`, every `1 ≤ p < ∞`: it is `ℱ|_Ω` where
+`ℱ = P(unit ball) ⊆ W^{1,p}(ℝ^N)` is bounded in `L^p(ℝ^N)` with a uniform translation modulus
+in `L^p` (Proposition 9.3), so the Kolmogorov–M. Riesz–Fréchet theorem
+`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_translate` applies. -/
+theorem HasSobolevExtensionOn.isCompact_closure_image_closedBall_self
+    (hS : HasSobolevExtensionOn S)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompact (closure (⇑(fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume ∘L
+      S.subtypeL) '' closedBall 0 1)) := by
+  obtain ⟨P, hP⟩ := id hS
+  have himg : ⇑(fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume ∘L S.subtypeL) ''
+      closedBall 0 1 = Lp.restrictCLM ℝ ℝ p volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ''
+        ((fun u : S ↦ (SobolevEuclidean.memLp_fn (P u)).toLp _) '' closedBall (0 : S) 1) := by
+    rw [Set.image_image]
+    exact Set.image_congr fun u _ ↦ HasSobolevExtensionOn.fnL_comp_subtypeL_apply P hP u
+  rw [himg]
+  exact Lp.isCompact_closure_image_restrictCLM_of_uniform_translate ENNReal.coe_ne_top
+    (HasSobolevExtensionOn.isBounded_image_closedBall_self P)
+    (HasSobolevExtensionOn.uniform_translate_image_closedBall_self P) hΩ
+
+/-- **The abstract Rellich–Kondrachov lemma at `q = p`**: for a subspace `S` of `W^{1,p}(Ω)` with
+an extension operator (`HasSobolevExtensionOn S`), `volume Ω < ∞` and *any* `1 ≤ p < ∞` in *any*
+dimension, the inclusion `S → L^p(Ω)` (along `SobolevMultiIndex.toLpₗOn`) is a compact embedding
+(`HasSobolevExtensionOn.isCompact_closure_image_closedBall_self`). This is the last sentence of
+[brezis2011functional] Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", in the
+generality of its proof, without the case distinction `p < N`, `p = N`, `p > N` (which the proof
+needs only for the exponents `q ≠ p`). -/
+theorem HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self (hS : HasSobolevExtensionOn S)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume S
+      fun u ↦ memLp (u : SobolevEuclidean N 1 p Ω)) := by
+  rw [toLpₗOn_self]
+  exact isCompactEmbedding_of_isCompact_closure_image_closedBall
+    (fun _ _ huv ↦ Subtype.ext (fnL_injective huv))
+    (hS.isCompact_closure_image_closedBall_self hΩ)
+
+/-- **Theorem 9.16, "`W^{1,p}(Ω) ⊂ L^p(Ω)` with compact injection", on any extension domain of
+finite measure and for every `1 ≤ p < ∞`** — in particular for `N = 1 = p`, the case left out
+of `SobolevEuclidean.isCompactEmbedding_toLp_self_of_ne_one`. [brezis2011functional]
+Theorem 9.16, the last sentence. -/
+theorem SobolevEuclidean.isCompactEmbedding_toLp_self_of_isSobolevExtensionDomain
+    (hΩ : IsSobolevExtensionDomain N p Ω)
+    (hμ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompactEmbedding (toLpₗ ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      fun u ↦ SobolevMultiIndex.memLp u) :=
+  SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_top _ (hΩ.isCompactEmbedding_toLpOn_self hμ)
+
+end RellichSelf
+
+/-! ### Remark 20: the compactness clauses on `W_0^{1,p}(Ω)` of an arbitrary open set -/
+
+section RellichZero
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+namespace SobolevEuclideanZero
+
+/-- **Remark 20, the compactness clause: `W_0^{1,p}(Ω) ↪↪ L^p(Ω)` for an arbitrary open set `Ω`
+of finite measure** (in particular a bounded one), with no regularity of `Ω`, for every
+`1 ≤ p < ∞` and every `N`: the abstract lemma `HasSobolevExtensionOn.isCompactEmbedding_toLpOn_self`
+with `S = W_0^{1,p}(Ω)` and the extension by zero `SobolevEuclideanZero.hasSobolevExtensionOn`.
+"Similarly, the conclusion of Theorem 9.16 is true for `W_0^{1,p}(Ω)` with an arbitrary bounded
+open set `Ω`" ([brezis2011functional] Chapter 9, Remark 20); the clauses for the other exponents
+`q` of Theorem 9.16 are `SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt` (`p < N`,
+`1 ≤ q < p*`), `SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq` (`p = N ≥ 2`, `N ≤ q < ∞`)
+and `SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL` (`p > N`, into `C(Ω̄)`). This
+is the compactness of the injection `H^1_0(Ω) ⊂ L²(Ω)` used by the proofs of Theorems 9.23 and
+9.31 (`SobolevEuclideanZero.isCompactOperator_fnL`). -/
+theorem isCompactEmbedding_toLp (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      (SobolevEuclideanZero N 1 p Ω) fun u ↦ memLp (u : SobolevEuclidean N 1 p Ω)) :=
+  hasSobolevExtensionOn.isCompactEmbedding_toLpOn_self hΩ
+
+omit [Fact (1 ≤ (p : ℝ≥0∞))] in
+/-- **`W_0^{1,p}(Ω) ↪↪ L^p(Ω)` along `SobolevMultiIndexZero.fnL`**, for an open set of finite
+measure and `1 ≤ p < ∞` (stated for `p : ℝ≥0∞`, `p ≠ ∞`, the form the elliptic theory at `p = 2`
+consumes). [brezis2011functional] Chapter 9, Remark 20. -/
+theorem isCompactEmbedding_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompactEmbedding (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+      1 p Ω volume).toLinearMap := by
+  lift p to ℝ≥0 using hp
+  have h := isCompactEmbedding_toLp (p := p) (Ω := Ω) hΩ
+  rwa [SobolevMultiIndexZero.toLpₗOn_eq_fnL (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (k := 1) (p := (p : ℝ≥0∞)) (Ω := Ω)
+    (μ := volume)] at h
+
+omit [Fact (1 ≤ (p : ℝ≥0∞))] in
+/-- **The inclusion `W_0^{1,p}(Ω) → L^p(Ω)` is a compact operator** for an open set of finite
+measure and `1 ≤ p < ∞`: the form of `SobolevEuclideanZero.isCompactEmbedding_toLp` that the
+Fredholm alternative for the elliptic Dirichlet problem consumes at `p = 2`
+([brezis2011functional] Theorem 9.23, proof: "`T : L² → L²` is a compact operator since `Ω` is
+bounded"). -/
+theorem isCompactOperator_fnL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    IsCompactOperator (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+      1 p Ω volume) :=
+  (isCompactEmbedding_fnL hp hΩ).isCompactOperator
+
+/-- **Remark 20, case `p < N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,p}(Ω)` and
+`1 ≤ q ≤ p*` on an open set of finite measure. -/
+theorem memLp_fn_of_le_sobolevConj (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤)
+    {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q ≤ p')
+    (u : SobolevEuclideanZero N 1 p Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hasSobolevExtensionOn.memLp_fn_of_le_sobolevConj hΩ hpN hp' hqp' u
+
+/-- **Remark 20, the compactness clause, case `p < N`**: `W_0^{1,p}(Ω) ↪↪ L^q(Ω)` for an
+arbitrary open set `Ω` of finite measure, `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `1 ≤ q < p*`
+([brezis2011functional] Remark 20; Theorem 9.16, the first line). -/
+theorem isCompactEmbedding_toLp_of_lt [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) {p' : ℝ≥0} (hpN : p < N)
+    (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hqp' : q < p') :
+    IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      (SobolevEuclideanZero N 1 p Ω) (memLp_fn_of_le_sobolevConj hΩ hpN hp' hqp'.le)) :=
+  SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn hasSobolevExtensionOn hΩ hpN
+    hp' hqp'
+
+/-- **Remark 20, the compactness clause, case `p = N`**: `W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for an
+arbitrary open set `Ω` of finite measure, `N ≥ 2` and `N ≤ q < ∞`: `W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)`
+continuously for an `r < N` with `r* > q` (`SobolevMultiIndexZero.toLowerExponentL`), and
+`W_0^{1,r}(Ω) ↪↪ L^q(Ω)` by the case `p < N` ([brezis2011functional] Remark 20; Theorem 9.16,
+the second line). -/
+theorem isCompactEmbedding_toLp_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
+    IsCompactEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 N Ω volume
+      (SobolevEuclideanZero N 1 N Ω) (memLp_fn_of_eq hN hq)) := by
+  obtain ⟨r, hr1, hrN, hr', hq2⟩ := NNReal.exists_lowerExponent hN hq
+  have : Fact (1 ≤ (r : ℝ≥0∞)) := ⟨by exact_mod_cast hr1⟩
+  have hrp : (r : ℝ≥0∞) ≤ (N : ℝ≥0∞) := by exact_mod_cast hrN.le
+  exact SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp
+    (SobolevMultiIndexZero.toLowerExponentL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1
+      (N : ℝ≥0∞) (r : ℝ≥0∞) volume hΩ hrp)
+    (SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL hΩ hrp)
+    (SobolevMultiIndexZero.fn_toLowerExponentL hΩ hrp)
+    (SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn
+      (S := SobolevEuclideanZero N 1 r Ω) hasSobolevExtensionOn hΩ hrN hr' hq2) _
+
+/-- **Remark 20, the compactness clause, case `p > N`**: for an arbitrary open set `Ω`,
+`N < p < ∞` and a compact `K ⊇ Ω` (such as `closure Ω` for a bounded `Ω`), the trace
+`W_0^{1,p}(Ω) → C(K)` of the continuous representative (`HasSobolevExtensionOn.toContinuousMapOnL`
+for the extension by zero) is a compact embedding: "`W_0^{1,p}(Ω) ⊂ C(Ω̄)` with compact
+injection" ([brezis2011functional] Remark 20; Theorem 9.16, the third line). -/
+theorem isCompactEmbedding_toContinuousMapOnL (hp : N < p) {K : Set (EuclideanSpace ℝ (Fin N))}
+    [CompactSpace K] (hK : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ K) :
+    IsCompactEmbedding
+      ((hasSobolevExtensionOn (N := N) (p := p) (Ω := Ω)).toContinuousMapOnL hp K).toLinearMap :=
+  hasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL hp hK
+
+end SobolevEuclideanZero
+
+end RellichZero

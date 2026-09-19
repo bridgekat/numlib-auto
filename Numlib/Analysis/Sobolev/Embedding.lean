@@ -111,7 +111,11 @@ that the book settles, `W^{N,1}(ℝ^N) ⊂ L^∞(ℝ^N)`; it is proved directly 
 approximants, and its tensor-to-multi-index step reads the mixed derivative `∂_1 ⋯ ∂_N` off the
 weak derivative of order `N` through `HasWeakIteratedFDerivOn.lineDeriv` and the permutation
 lemma `multiIndexDirections_multiIndexCount_perm`. Lemma 9.4 (Gagliardo's product lemma) in its
-general form is not proved here.
+general form, `∫_{ℝ^N} ∏ i, f i x̃_i ≤ ∏ i, ‖f i‖_{L^{N−1}(ℝ^{N−1})}`, is
+`MeasureTheory.lintegral_prod_comp_succAbove_le`, proved by the book's induction on `N` with the
+coordinates split as `Fin.cons s t` (Hölder against the factor independent of the new coordinate,
+the induction hypothesis, and the generalized Hölder inequality in the new coordinate); Theorem 9.9
+itself goes through Mathlib's special case `MeasureTheory.lintegral_prod_lintegral_pow_le`.
 
 ## References
 
@@ -3182,3 +3186,218 @@ theorem SobolevEuclidean.exists_continuous_ae_eq_of_order_finrank_one
       _ ≤ ENNReal.ofReal ‖u‖ + δ := by rw [add_comm]; exact add_le_add le_rfl hn
 
 end Remark13
+
+/-! ### Lemma 9.4: Gagliardo's product lemma in its general form -/
+
+section Gagliardo
+
+/-- Omitting the coordinate `succ j` from `x : Fin (n + 2) → α` keeps `x 0` in front:
+`x ∘ (succ j).succAbove = Fin.cons (x 0) ((x ∘ succ) ∘ j.succAbove)`. -/
+theorem Fin.comp_succ_succAbove {n : ℕ} {α : Type*} (x : Fin (n + 2) → α) (j : Fin (n + 1)) :
+    x ∘ (Fin.succ j).succAbove = Fin.cons (x 0) ((x ∘ Fin.succ) ∘ j.succAbove) := by
+  ext k
+  refine Fin.cases ?_ (fun k ↦ ?_) k
+  · simp
+  · simp [Fin.succ_succAbove_succ]
+
+/-- Omitting the coordinate `0` from `x : Fin (n + 1) → α` is `x ∘ succ`. -/
+theorem Fin.comp_zero_succAbove {n : ℕ} {α : Type*} (x : Fin (n + 1) → α) :
+    x ∘ (0 : Fin (n + 1)).succAbove = x ∘ Fin.succ := by
+  ext k
+  simp
+
+/-- `Fin.cons` is measurable in the pair `(head, tail)`. -/
+theorem measurable_fin_cons_prod {m : ℕ} :
+    Measurable fun p : ℝ × (Fin m → ℝ) ↦ (Fin.cons p.1 p.2 : Fin (m + 1) → ℝ) := by
+  refine Measurable.of_eval fun k ↦ ?_
+  refine Fin.cases ?_ (fun k ↦ ?_) k
+  · simp only [Fin.cons_zero]
+    exact measurable_fst
+  · simp only [Fin.cons_succ]
+    exact (measurable_pi_apply k).comp measurable_snd
+
+/-- `Fin.cons s` is measurable for a fixed head `s`. -/
+theorem measurable_fin_cons_const {m : ℕ} (s : ℝ) :
+    Measurable fun t : Fin m → ℝ ↦ (Fin.cons s t : Fin (m + 1) → ℝ) :=
+  measurable_fin_cons_prod.comp (measurable_const.prodMk measurable_id)
+
+/-- Omitting a coordinate is measurable. -/
+theorem measurable_comp_succAbove {m : ℕ} (i : Fin (m + 1)) :
+    Measurable fun x : Fin (m + 1) → ℝ ↦ x ∘ i.succAbove :=
+  Measurable.of_eval fun _ ↦ measurable_pi_apply _
+
+/-- **Fubini for one more coordinate, the first coordinate outermost**: an integral over
+`ℝ^{j+1}` is the integral over the first coordinate of the integral over the last `j`, the
+coordinates being read as `Fin.cons s t`. -/
+theorem MeasureTheory.lintegral_fin_succ_eq' {j : ℕ} {H : (Fin (j + 1) → ℝ) → ℝ≥0∞}
+    (hH : Measurable H) :
+    ∫⁻ y, H y = ∫⁻ s : ℝ, ∫⁻ t : Fin j → ℝ, H (Fin.cons s t) := by
+  have hmp := (volume_preserving_piFinSuccAbove (fun _ : Fin (j + 1) ↦ ℝ) 0).symm
+  rw [← hmp.lintegral_comp hH, Measure.volume_eq_prod,
+    lintegral_prod (fun a : ℝ × (Fin j → ℝ) ↦
+      H ((MeasurableEquiv.piFinSuccAbove (fun _ : Fin (j + 1) ↦ ℝ) 0).symm a))
+      (hH.comp hmp.measurable).aemeasurable]
+  refine lintegral_congr fun s ↦ lintegral_congr fun t ↦ ?_
+  simp only [MeasurableEquiv.piFinSuccAbove_symm_apply, Fin.insertNthEquiv_zero]
+  rfl
+
+/-- The integral over `ℝ^0` is evaluation at the unique point. -/
+theorem MeasureTheory.lintegral_fin_zero (H : (Fin 0 → ℝ) → ℝ≥0∞) :
+    ∫⁻ t : Fin 0 → ℝ, H t = H (Fin.elim0) := by
+  rw [volume_pi, Measure.pi_of_empty, lintegral_dirac]
+  exact congrArg H (funext fun k ↦ k.elim0)
+
+/-- **Lemma 9.4 (Gagliardo's lemma), the case `N = 2`**: `∫∫ f₀(x₁) f₁(x₀) = (∫ f₀) (∫ f₁)`. -/
+theorem MeasureTheory.lintegral_prod_comp_succAbove_two
+    (f : Fin 2 → (Fin 1 → ℝ) → ℝ≥0∞) (hf : ∀ i, Measurable (f i)) :
+    ∫⁻ x, ∏ i, f i (x ∘ i.succAbove) = ∏ i, ∫⁻ y, f i y := by
+  have hG : Measurable fun x : Fin 2 → ℝ ↦ ∏ i, f i (x ∘ i.succAbove) :=
+    Finset.measurable_prod _ fun i _ ↦ (hf i).comp (measurable_comp_succAbove i)
+  rw [lintegral_fin_succ_eq' hG, Fin.prod_univ_two]
+  have h1 : ∀ s : ℝ, ∫⁻ t : Fin 1 → ℝ, ∏ i, f i (Fin.cons s t ∘ i.succAbove)
+      = (∫⁻ t, f 0 t) * f 1 (Fin.cons s Fin.elim0) := by
+    intro s
+    rw [← lintegral_mul_const _ (hf 0)]
+    refine lintegral_congr fun t ↦ ?_
+    rw [Fin.prod_univ_two, Fin.comp_zero_succAbove]
+    have e0 : Fin.cons s t ∘ Fin.succ = t := by
+      ext k
+      simp
+    have e1 : Fin.cons s t ∘ (1 : Fin 2).succAbove = Fin.cons s Fin.elim0 := by
+      rw [show (1 : Fin 2) = Fin.succ 0 from rfl, Fin.comp_succ_succAbove, Fin.cons_zero]
+      congr
+      ext k
+      exact k.elim0
+    rw [e0, e1]
+  simp_rw [h1]
+  rw [lintegral_const_mul (f := fun s ↦ f 1 (Fin.cons s Fin.elim0)) _ ((hf 1).comp
+    (measurable_fin_cons_prod.comp (measurable_id.prodMk measurable_const)))]
+  congr 1
+  rw [lintegral_fin_succ_eq' (hf 1)]
+  refine lintegral_congr fun s ↦ ?_
+  rw [lintegral_fin_zero]
+
+/-- **Lemma 9.4 (Gagliardo's lemma), the inductive step**, from `N = n + 2` functions of `N − 1`
+variables to `N + 1` functions of `N` variables: fix the first coordinate `s` (Fubini,
+`MeasureTheory.lintegral_fin_succ_eq'`); for fixed `s` the factor `f 0` does not depend on `s`
+and Hölder's inequality with exponents `N` and `N' = N/(N − 1)` separates it from the product of
+the other `N` factors, to which the induction hypothesis applies with the functions
+`f_i(s, ·)^{N'}`; then integrate in `s`, where each `s ↦ ‖f_i(s, ·)‖_{L^N}` lies in `L^N(ℝ)`, by
+the generalized Hölder inequality for `N` factors (`ENNReal.lintegral_prod_norm_pow_le`) and
+Fubini again ([brezis2011functional] §9.3, proof of Lemma 9.4). -/
+theorem MeasureTheory.lintegral_prod_comp_succAbove_le_succ {n : ℕ}
+    (ih : ∀ f : Fin (n + 2) → (Fin (n + 1) → ℝ) → ℝ≥0∞, (∀ i, Measurable (f i)) →
+      ∫⁻ x, ∏ i, f i (x ∘ i.succAbove)
+        ≤ ∏ i, (∫⁻ y, f i y ^ ((n : ℝ) + 1)) ^ (1 / ((n : ℝ) + 1)))
+    (f : Fin (n + 3) → (Fin (n + 2) → ℝ) → ℝ≥0∞) (hf : ∀ i, Measurable (f i)) :
+    ∫⁻ x, ∏ i, f i (x ∘ i.succAbove)
+      ≤ ∏ i, (∫⁻ y, f i y ^ ((n : ℝ) + 2)) ^ (1 / ((n : ℝ) + 2)) := by
+  -- the exponents
+  obtain ⟨q, hq⟩ : ∃ q : ℝ, q = (n : ℝ) + 2 := ⟨_, rfl⟩
+  have hq1 : 1 < q := by rw [hq]; linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
+  have hq0 : 0 < q := zero_lt_one.trans hq1
+  obtain ⟨q', hq'⟩ : ∃ q' : ℝ, q' = Real.conjExponent q := ⟨_, rfl⟩
+  have hqq' : q.HolderConjugate q' := hq' ▸ Real.HolderConjugate.conjExponent hq1
+  have hq'0 : 0 < q' := hqq'.symm.pos
+  have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hq2 : q - 1 = (n : ℝ) + 1 := by rw [hq]; ring
+  have hq'n : q' * ((n : ℝ) + 1) = q := by
+    rw [hq', Real.conjExponent, hq2, div_mul_cancel₀ _ hn1.ne']
+  rw [← hq]
+  -- measurability
+  have hG : Measurable fun x : Fin (n + 3) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove) :=
+    Finset.measurable_prod _ fun i _ ↦ (hf i).comp (measurable_comp_succAbove i)
+  have hg : ∀ (s : ℝ) (j : Fin (n + 2)), Measurable fun y : Fin (n + 1) → ℝ ↦
+      f (Fin.succ j) (Fin.cons s y) := fun s j ↦ (hf _).comp (measurable_fin_cons_const s)
+  have hF : ∀ j : Fin (n + 2), Measurable fun s : ℝ ↦
+      ∫⁻ y : Fin (n + 1) → ℝ, f (Fin.succ j) (Fin.cons s y) ^ q := fun j ↦
+    Measurable.lintegral_prod_right (((hf _).comp measurable_fin_cons_prod).pow_const q)
+  -- Step A: Fubini, the first coordinate outermost, and the product split
+  rw [lintegral_fin_succ_eq' hG]
+  have hsplit : ∀ (s : ℝ) (t : Fin (n + 2) → ℝ), ∏ i, f i (Fin.cons s t ∘ i.succAbove)
+      = f 0 t * ∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove)) := by
+    intro s t
+    rw [Fin.prod_univ_succ, Fin.comp_zero_succAbove]
+    have e0 : Fin.cons s t ∘ Fin.succ = t := by
+      ext k
+      simp
+    rw [e0]
+    congr 1
+    refine Finset.prod_congr rfl fun j _ ↦ ?_
+    rw [Fin.comp_succ_succAbove, Fin.cons_zero, e0]
+  simp_rw [hsplit]
+  -- Step B: the inner integral, by Hölder and the induction hypothesis
+  obtain ⟨A₀, hA₀⟩ : ∃ A₀ : ℝ≥0∞, A₀ = (∫⁻ t, f 0 t ^ q) ^ (1 / q) := ⟨_, rfl⟩
+  have hinner : ∀ s : ℝ, ∫⁻ t : Fin (n + 2) → ℝ,
+      f 0 t * ∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove))
+      ≤ A₀ * ∏ j : Fin (n + 2),
+        (∫⁻ y : Fin (n + 1) → ℝ, f (Fin.succ j) (Fin.cons s y) ^ q) ^ (1 / q) := by
+    intro s
+    have hH := ENNReal.lintegral_mul_le_Lp_mul_Lq volume hqq' (f := f 0)
+      (g := fun t ↦ ∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove)))
+      (hf 0).aemeasurable
+      (Finset.measurable_prod (Finset.univ : Finset (Fin (n + 2))) fun j _ ↦
+        (hg s j).comp (measurable_comp_succAbove j)).aemeasurable
+    refine hH.trans ?_
+    rw [hA₀]
+    refine mul_le_mul' le_rfl ?_
+    -- the induction hypothesis on the functions `f (succ j) (cons s ·) ^ q'`
+    have hIH := ih (fun j y ↦ f (Fin.succ j) (Fin.cons s y) ^ q') fun j ↦ (hg s j).pow_const q'
+    have e1 : ∀ t : Fin (n + 2) → ℝ,
+        (∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove))) ^ q'
+          = ∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove)) ^ q' := fun t ↦
+      (ENNReal.prod_rpow_of_nonneg hq'0.le).symm
+    have e2 : ∫⁻ t : Fin (n + 2) → ℝ,
+        (∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove))) ^ q'
+          = ∫⁻ t : Fin (n + 2) → ℝ,
+            ∏ j : Fin (n + 2), f (Fin.succ j) (Fin.cons s (t ∘ j.succAbove)) ^ q' :=
+      lintegral_congr e1
+    rw [e2]
+    refine (ENNReal.rpow_le_rpow hIH (by positivity)).trans_eq ?_
+    rw [← ENNReal.prod_rpow_of_nonneg (by positivity)]
+    refine Finset.prod_congr rfl fun j _ ↦ ?_
+    rw [← ENNReal.rpow_mul]
+    congr 1
+    · refine lintegral_congr fun y ↦ ?_
+      rw [← ENNReal.rpow_mul, hq'n]
+    · rw [hq', Real.conjExponent, hq2, hq]
+      field_simp
+  -- Step C: the outer integral, by the generalized Hölder inequality
+  refine (lintegral_mono hinner).trans ?_
+  rw [lintegral_const_mul _ (Finset.measurable_prod _ fun j _ ↦ (hF j).pow_const _)]
+  rw [Fin.prod_univ_succ, ← hA₀]
+  refine mul_le_mul' le_rfl ?_
+  have hHolder := ENNReal.lintegral_prod_norm_pow_le (μ := volume) Finset.univ
+    (f := fun j s ↦ ∫⁻ y : Fin (n + 1) → ℝ, f (Fin.succ j) (Fin.cons s y) ^ q)
+    (fun j _ ↦ (hF j).aemeasurable) (p := fun _ ↦ 1 / q) ?_ fun _ _ ↦ by positivity
+  · refine hHolder.trans_eq ?_
+    refine Finset.prod_congr rfl fun j _ ↦ ?_
+    rw [lintegral_fin_succ_eq' ((hf _).pow_const q)]
+  · rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, hq]
+    push_cast
+    field_simp
+
+/-- **Lemma 9.4 (Gagliardo's lemma), general form**: for `N = n + 2 ≥ 2` and measurable
+`f i : ℝ^{N−1} → ℝ≥0∞`, `i < N`, the function `x ↦ ∏ i, f i x̃_i`, where `x̃_i = x ∘ i.succAbove` is
+`x ∈ ℝ^N` with its `i`-th coordinate omitted, satisfies
+`∫_{ℝ^N} ∏ i, f i x̃_i ≤ ∏ i, ‖f i‖_{L^{N−1}(ℝ^{N−1})}`; in particular it is integrable when every
+`f i ∈ L^{N−1}(ℝ^{N−1})`. The case `N = 2` is Fubini
+(`MeasureTheory.lintegral_prod_comp_succAbove_two`), the induction on `N` is
+`MeasureTheory.lintegral_prod_comp_succAbove_le_succ`. Mathlib's
+`MeasureTheory.lintegral_prod_lintegral_pow_le` is the special case
+`f i x̃_i = (∫ f (update x i t) dt)^{1/(N−1)}` for a single `f`, which is all Theorem 9.9 needs.
+[brezis2011functional] §9.3, Lemma 9.4. -/
+theorem MeasureTheory.lintegral_prod_comp_succAbove_le {n : ℕ}
+    (f : Fin (n + 2) → (Fin (n + 1) → ℝ) → ℝ≥0∞) (hf : ∀ i, Measurable (f i)) :
+    ∫⁻ x, ∏ i, f i (x ∘ i.succAbove)
+      ≤ ∏ i, (∫⁻ y, f i y ^ ((n : ℝ) + 1)) ^ (1 / ((n : ℝ) + 1)) := by
+  induction n with
+  | zero =>
+    rw [lintegral_prod_comp_succAbove_two f hf]
+    simp
+  | succ n ih =>
+    have e : ((n + 1 : ℕ) : ℝ) + 1 = (n : ℝ) + 2 := by push_cast; ring
+    rw [e]
+    exact lintegral_prod_comp_succAbove_le_succ ih f hf
+
+end Gagliardo

@@ -75,82 +75,15 @@ id = "solutionOperator"
 
 [[node]]
 id = "solutionOperator_isCompactOperator"
-kind = "theorem"
-desc = '''For `Ω` bounded, `IsCompactOperator (solutionOperator Ω a ha)`: the solution operator
-factors through the inclusion `H^1_0(Ω) → L²(Ω)`, which is compact by Rellich–Kondrachov in the
-`W_0^{1,p}` form of [brezis2011functional] Remark 20 (Theorem 9.16 for `W_0^{1,p}(Ω)` on an
-arbitrary bounded open set, no regularity of `Ω`), and a compact operator composed with bounded
-ones is compact (`IsCompactOperator.comp_clm`, `IsCompactOperator.clm_comp`). This is the
-sentence "`T : L² → L²` is a compact linear operator (since `Ω` is bounded, the injection
-`H^1_0 ⊂ L²` is compact; see Theorem 9.16 and Remark 20)" of the proof of Theorem 9.23, and the
-compactness of `T` in the proof of Theorem 9.31. ★★ (~100 lines). Consumes the chapter-9a node.
-
-Blocked: the dependency `SobolevEuclideanZero.isCompactEmbedding_toLp` (sob8, `Compactness.lean`) is absent from this branch (sob9, 2026-09-19). `Elliptic.solutionOperator_isCompactOperator_of_isCompactOperator_fnL` reduces the node to `IsCompactOperator (SobolevMultiIndexZero.fnL ℝ _ 1 2 Ω volume)`, which is that dependency read through `isCompactEmbedding_iff_isCompactOperator`; ~15 lines once it lands.'''
-deps = [
-  "solutionOperator",
-  "SobolevEuclideanZero.isCompactEmbedding_toLp",  # ch9a, Compactness.toml: Remark 20, W_0^{1,p}(Ω) ↪↪ L^p(Ω) on a bounded open Ω
-  "isCompactEmbedding_iff_isCompactOperator",
-]
 
 [[node]]
 id = "finiteDimensional_ker_general"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.23, first half.** Let `Ω` be bounded, `A`, `a₁`, `a₀`
-be `L^∞(Ω)` coefficients with `IsUniformlyElliptic Ω A α`, and `a = generalForm Ω A a₁ a₀`. The
-space of weak solutions of the homogeneous problem (40),
-`ker a := {u ∈ H^1_0(Ω) | ∀ v ∈ H^1_0(Ω), a u v = 0}` (a `Submodule ℝ (SobolevEuclidean N 1 2 Ω)`,
-`homogeneousKernel Ω a`), is finite-dimensional.
-
-Proof (p. 11265): fix `λ` from `generalForm_garding` so that `a_λ = a + λ ⟨·,·⟩_{L²}` is coercive
-on `H^1_0`, and let `T = solutionOperator Ω a_λ _`, compact by `solutionOperator_isCompactOperator`.
-`u` solves (40) with datum `f` iff `u = T (f + λ u)` as functions; with `f = 0`, `u ∈ ker a` iff
-the function `w = fn u` satisfies `w = λ T w`, so `fn` maps `ker a` injectively
-(`SobolevMultiIndex.ext_of_fn_ae_eq`) onto `ker (1 - λ T) ⊆ L²(Ω)`, which is finite-dimensional by
-`IsCompactOperator.finiteDimensional_ker_pow` (at the power `1`, with `μ = 1` and `K = λ T`).
-★★★ (~250 lines: the equivalence "(40) ⇔ `u = T(f + λu)`", which is `solutionOperator_spec` plus
-the algebra of forms, is the bulk).
-
-Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it: `Elliptic.homogeneousKernel Ω a` is the space of homogeneous solutions, and `Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator` gives its finite-dimensionality from `IsCompactOperator (solutionOperator Ω (a + μ • pairing Ω id 0 0) ha)` for any `μ` making the shifted form coercive on `H^1_0(Ω)` (`Elliptic.range_homogeneousKernelToLp` identifies the kernel with `ker (1 - μ T_μ)`). The planned statement is that lemma with `μ` from `generalForm_garding` and `Ω` bounded; ~30 lines.'''
-deps = ["generalForm_garding", "solutionOperator", "solutionOperator_isCompactOperator", "IsCompactOperator.finiteDimensional_ker_pow", "SobolevMultiIndex.ext_of_fn_ae_eq"]
 
 [[node]]
 id = "exists_orthogonality_iff_exists_solution"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.23, second half (the Fredholm alternative for (40)).**
-Under the hypotheses of `finiteDimensional_ker_general` there is a subspace `F ⊆ L²(Ω)` with
-`finrank ℝ F = finrank ℝ (homogeneousKernel Ω a)` such that, for every `f ∈ L²(Ω)`,
-`(∃ u, IsGalerkinSolution a (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u) ↔ ∀ v ∈ F, ⟪f, v⟫ = 0`.
-
-Proof (p. 11265–11275): with `T` and `λ` as in `finiteDimensional_ker_general`, (40) has a
-solution iff `v - λ T v = f` has a solution `v ∈ L²(Ω)` (then `u = T v`; conversely
-`v = f + λ u`), i.e. iff `f ∈ range (1 - λ T)`. On the Hilbert space `L²(Ω)` the solvability
-criterion `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` (with `μ = 1`, `K = λ T`)
-gives `range (1 - λT) = (ker (1 - λ T†))ᗮ`, so `F := ker (1 - λ T†)` works, and
-`IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` gives `finrank F = finrank (ker (1 - λT))`,
-which is the dimension of `homogeneousKernel Ω a` by the injection of the first half. The book
-routes through its Theorem 6.6 (the Banach-space Fredholm alternative); the Hilbert-space form
-of `Numlib/Analysis/Normed/Operator/{Compact,Riesz}` is what is available and is sufficient. ★★★
-(~250 lines beyond the first half).
-
-Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it as `Elliptic.exists_orthogonality_iff_exists_solution_of_isCompactOperator` (which also records `FiniteDimensional ℝ F`), through the abstract Fredholm alternative `Elliptic.exists_finiteDimensional_forall_iff_inner_eq_zero` and the reduction `Elliptic.exists_isGalerkinSolution_iff_mem_range`; ~30 lines once compactness lands.'''
-deps = ["finiteDimensional_ker_general", "IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint", "IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint", "load"]
 
 [[node]]
 id = "existsUnique_of_ker_eq_bot"
-kind = "theorem"
-desc = '''**[brezis2011functional] Chapter 9, Remark 23, first clause**: under the hypotheses of
-Theorem 9.23, if the homogeneous problem (40) has only the zero solution
-(`homogeneousKernel Ω a = ⊥`), then for every `f ∈ L²(Ω)` there is exactly one weak solution of
-(40). Existence: `F` has dimension `0`, so the orthogonality condition of
-`exists_orthogonality_iff_exists_solution` is vacuous; uniqueness: the difference of two solutions
-lies in the kernel. ★ (~60 lines). The remark's second clause — that `a₀ ≥ 0` alone forces the
-trivial kernel, for arbitrary `a_i` — is the general case of Proposition 9.29, which the book
-cites from Gilbarg–Trudinger; its drift-free instance is
-`Elliptic.nonneg_of_nonneg_frontier_general_zero_drift` of `Elliptic/MaximumPrinciple` in its
-`H^1_0` form.
-
-Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it as `Elliptic.existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator` (hypothesis `homogeneousKernel Ω a = ⊥`), through `Elliptic.surjective_smul_one_sub_of_ker_eq_bot`; ~20 lines once compactness lands.'''
-deps = ["exists_orthogonality_iff_exists_solution"]
 
 [[node]]
 id = "existsUnique_isGalerkinSolution_neumann"
@@ -427,3 +360,9 @@ id = "existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator"
 
 [[node]]
 id = "solutionOperator_isCompactOperator_of_isCompactOperator_fnL"
+
+[[node]]
+id = "_root_.SesqForm.IsCoercive.restrict"
+
+[[node]]
+id = "generalForm_garding_restrict_isCoercive"

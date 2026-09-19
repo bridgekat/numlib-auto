@@ -2,24 +2,6 @@
 
 [[node]]
 id = "MeasureTheory.lintegral_prod_comp_succAbove_le"
-kind = "theorem"
-desc = '''**Lemma 9.4 (Gagliardo's lemma), general form**: for `N ≥ 2` and measurable
-`f : Fin N → ((Fin (N−1) → ℝ) → ℝ≥0∞)` — written with `n + 2 = N`, `f i : (Fin (n+1) → ℝ) → ℝ≥0∞` —
-`∫⁻ x, ∏ i, f i (x ∘ i.succAbove) ≤ ∏ i, (∫⁻ y, f i y ^ (N − 1)) ^ (1 / (N − 1))`
-(`x ∘ Fin.succAbove i` is the book's `x̃_i`, `x` with the `i`-th coordinate omitted): the
-product of `N` functions each independent of one coordinate is in `L^1(ℝ^N)` with
-`‖f‖_1 ≤ ∏ ‖f_i‖_{L^{N−1}(ℝ^{N−1})}`. Mathlib's `MeasureTheory.lintegral_prod_lintegral_pow_le`
-(`SobolevInequality.lean`) is the special case `f i (x̃_i) = (∫⁻ t, F (update x i t))^{1/(N−1)}`
-for a single `F`, which is all Theorem 9.9 needs; the general statement follows the book's
-induction on `N` ([brezis2011functional] §9.3, proof of Lemma 9.4): fix `x_{N+1}`, Hölder with
-exponents `N` and `N' = N/(N−1)` against `f_{N+1}`, the induction hypothesis on the `|f_i|^{N'}`,
-then integrate in `x_{N+1}` using that `x_{N+1} ↦ ‖f_i(·, x_{N+1})‖_{L^N}` is in `L^N(ℝ)` and the
-generalized Hölder inequality for `N` factors (`ENNReal.lintegral_prod_norm_pow_le`). The
-`Fin.succAbove`/`Fin.insertNth` bookkeeping of the induction is the cost. ★★★, ~350 lines; no
-consumer, low priority — a faithful node for the book's Lemma 9.4 only.
-
-Blocked: not attempted (sob8, 2026-09-18; sob11, 2026-09-19): no consumer, and Theorem 9.9 goes through Mathlib's `eLpNorm_le_eLpNorm_fderiv_of_eq`, which contains the special case it needs; the general lemma remains the book's induction over `Fin.succAbove` (~350 lines). The one-coordinate Fubini step it needs, `∫⁻_{ℝ^{j+1}} H = ∫⁻_{ℝ^j} ∫⁻_ℝ H (Fin.cons s t)`, is now `MeasureTheory.lintegral_fin_succ_eq` (Remark 13), and the `N`-factor Hölder inequality is Mathlib's `ENNReal.lintegral_prod_norm_pow_le`.'''
-deps = []
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
 
 [[node]]
@@ -430,3 +412,32 @@ id = "ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank"
 
 [[node]]
 id = "lintegral_enorm_apply_stdDirs_le_eLpNorm_one"
+
+[[node]]
+id = "Fin.comp_succ_succAbove"
+
+[[node]]
+id = "Fin.comp_zero_succAbove"
+
+[[node]]
+id = "measurable_fin_cons_prod"
+
+[[node]]
+id = "measurable_fin_cons_const"
+
+[[node]]
+id = "measurable_comp_succAbove"
+
+[[node]]
+id = "MeasureTheory.lintegral_fin_succ_eq'"
+
+[[node]]
+id = "MeasureTheory.lintegral_fin_zero"
+
+[[node]]
+id = "MeasureTheory.lintegral_prod_comp_succAbove_two"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
+
+[[node]]
+id = "MeasureTheory.lintegral_prod_comp_succAbove_le_succ"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"

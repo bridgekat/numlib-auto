@@ -8,8 +8,10 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.InnerProductSpace.Projection.Reflection
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Topology.MetricSpace.Holder
+import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Embedding
+import Numlib.Analysis.Sobolev.Zero
 
 /-!
 # The Sobolev embeddings on a domain with an extension operator
@@ -30,8 +32,10 @@ and its instance `IsSobolevExtensionDomain N p Ω` (`S = ⊤`). Theorem 9.7
 (`IsSobolevExtensionDomain.of_isContDiffChartDomain`, `Numlib/Analysis/Sobolev/Extension.lean`),
 the half space (`IsSobolevExtensionDomain.upperHalfSpace`,
 `Numlib/Analysis/Sobolev/Reflection.lean`) and the extension by zero on `W_0^{1,p}(Ω)` of an
-arbitrary open set (Remark 20, `Zero.lean`) are the instances; this module does not import
-`Extension.lean`. Every statement is "obtain `P`, apply the whole-space theorem of
+arbitrary open set (Remark 20, `SobolevEuclideanZero.hasSobolevExtensionOn` of
+`Numlib/Analysis/Sobolev/Zero.lean`) are the instances; this module imports `Zero.lean` for the
+last one (and so `Extension.lean` through it) but uses nothing of Theorem 9.7 itself. Every
+statement is "obtain `P`, apply the whole-space theorem of
 `Numlib/Analysis/Sobolev/Embedding.lean` to `P u`, restrict"
 (`HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le`), with a constant `C` that depends on `P`
 and is therefore existential.
@@ -91,12 +95,25 @@ and is therefore existential.
   on a bounded extension domain for the `q` of Corollary 9.14, by interpolation and an
   Ehrling-type absorption (`ENNReal.le_max_mul_add_of_le_rpow_mul_rpow`).
 
-Remark 16 (the unbounded `W^{1,N}` function) is not proved here.
+* `HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le`,
+  `SobolevEuclideanZero.isContinuousEmbedding_toLp`, `_of_lt`, `_of_eq`, `_top_of_lt`,
+  `SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`: **Remark 20**, the
+  embeddings of Corollary 9.14 on `W_0^{1,p}(Ω)` of an *arbitrary* open set, with no regularity
+  of `Ω`, through the extension by zero; the `L^q` clauses also in one statement
+  (`p ≤ q < ∞`, `1/p − 1/N ≤ 1/q`, `N ≥ 2` or `p > 1`).
+
+* `memSobolevMultiIndex_logRpow`, `eLpNorm_logRpow_top`: **Remark 16**, the limiting case
+  `p = N`: on `B(0, 1/2) ⊆ ℝ^N`, `N ≥ 2`, the function `u(x) = (log(1/|x|))^α` with
+  `0 < α < 1 − 1/N` lies in `W^{1,N}` but not in `L^∞`. Its classical gradient off the origin is
+  its weak gradient on the whole ball by the removable-singularity lemma of
+  `Numlib/Analysis/Sobolev/RemovableSingularity.lean`, and `|∇u|^N` is integrable by the radial
+  computation `∫_0^{1/2} (log(1/r))^{−N(1−α)} dr/r < ∞`, with the antiderivative
+  `(log(1/r))^{1−N(1−α)}` continuous down to `r = 0` (no substitution).
 
 ## References
 
 [brezis2011functional], §9.3.B: Corollary 9.14, footnote 15, Corollary 9.15 (footnotes 16–17),
-Remark 15, Remark 20.
+Remark 15, Remark 16, Remark 20.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -1581,3 +1598,518 @@ theorem SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt
     ENNReal.coe_lt_top hK hKu
 
 end Remark15
+
+/-! ### Remark 20: the embeddings on `W_0^{1,p}(Ω)` of an arbitrary open set -/
+
+section Zero
+
+open SobolevMultiIndex
+
+variable {N : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+  {S : Submodule ℝ (SobolevEuclidean N 1 p Ω)}
+
+/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace with an extension
+operator, the bound**: for `HasSobolevExtensionOn S`, `1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`, and
+`N ≥ 2` or `p > 1`, there is `C` with `‖fn u‖_{L^q(Ω)} ≤ C ‖u‖` for all `u ∈ S` — the case `p < N`
+with `q ≤ p*`, the case `p = N` with any `q ≥ N`, and the case `p > N` with any `q ≥ p`, through
+the whole-space bound `SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le`.
+[brezis2011functional] Corollary 9.14, the `L^q` clauses, and Corollary 9.13 at `m = 1`. -/
+theorem HasSobolevExtensionOn.exists_forall_eLpNorm_fn_le_of_le (hS : HasSobolevExtensionOn S)
+    (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ u : S, eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ≤ ENNReal.ofReal (C * ‖u‖) := by
+  obtain ⟨K, hK, hKu⟩ :=
+    SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_le_of_le (N := N) hN hpq hq
+  refine hS.exists_forall_eLpNorm_fn_le (K := K.toReal) fun v ↦ ?_
+  rw [ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal hK]
+  exact hKu v
+
+/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace, the membership**:
+`fn u ∈ L^q(Ω)` for `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q` (`N ≥ 2` or `p > 1`). -/
+theorem HasSobolevExtensionOn.memLp_fn_of_le (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N ∨ 1 < p)
+    (hpq : p ≤ q) (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) (u : S) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+  obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_le hN hpq hq
+  exact memLp_iff.2 ((hC u).trans_lt ENNReal.ofReal_lt_top)
+
+/-- **The `L^q` clauses of Corollary 9.14 in one statement, on a subspace with an extension
+operator**: `S ↪ L^q(Ω)` with continuous injection for `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
+(`N ≥ 2` or `p > 1`), along `SobolevMultiIndex.toLpₗOn`. [brezis2011functional] Corollary 9.14
+and Remark 20. -/
+theorem HasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hS : HasSobolevExtensionOn S) (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
+    IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume S
+      (hS.memLp_fn_of_le hN hpq hq)) := by
+  obtain ⟨C, -, hC⟩ := hS.exists_forall_eLpNorm_fn_le_of_le hN hpq hq
+  exact isContinuousEmbedding_toLpₗOn _ hC
+
+namespace SobolevEuclideanZero
+
+/-- **Remark 20, the `L^q` membership on `W_0^{1,p}(Ω)` of an arbitrary open set**:
+`fn u ∈ L^q(Ω)` for every `u ∈ W_0^{1,p}(Ω)` and `p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
+(`N ≥ 2` or `p > 1`), by the extension by zero `SobolevEuclideanZero.hasSobolevExtensionOn`. -/
+theorem memLp_fn_of_le (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) (u : SobolevEuclideanZero N 1 p Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hasSobolevExtensionOn.memLp_fn_of_le hN hpq hq u
+
+/-- **Remark 20: the embeddings of Corollary 9.14 hold on `W_0^{1,p}(Ω)` for an arbitrary open
+set `Ω`, with no regularity of `Ω`** — the `L^q` clauses in one statement:
+`W_0^{1,p}(Ω) ↪ L^q(Ω)` with continuous injection for `1 ≤ p ≤ q < ∞` with `1/p − 1/N ≤ 1/q`
+(`q ≤ p*` when `p < N`; any `q ≥ N` when `p = N`, `N ≥ 2`; any `q ≥ p` when `p > N`), along the
+inclusion `SobolevMultiIndex.toLpₗOn` of the subspace `SobolevEuclideanZero N 1 p Ω`. The three
+cases separately are `SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`,
+`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_eq` and, into `L^∞(Ω)` with the continuous
+Hölder representative, `SobolevEuclideanZero.isContinuousEmbedding_toLp_top_of_lt` /
+`SobolevEuclideanZero.exists_forall_continuous_holderWith_ae_eq`; each is the corresponding
+`HasSobolevExtensionOn` statement instantiated with the extension by zero
+`SobolevEuclideanZero.hasSobolevExtensionOn`. "It follows, in particular, that the conclusion of
+Corollary 9.14 is true for `W_0^{1,p}(Ω)` with an arbitrary open set `Ω`"
+([brezis2011functional] Chapter 9, Remark 20). The case `N = 1 = p` is excluded, as in
+Corollary 9.13. -/
+theorem isContinuousEmbedding_toLp [Fact (1 ≤ (q : ℝ≥0∞))] (hN : 2 ≤ N ∨ 1 < p) (hpq : p ≤ q)
+    (hq : (p : ℝ)⁻¹ - (N : ℝ)⁻¹ ≤ (q : ℝ)⁻¹) :
+    IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      (SobolevEuclideanZero N 1 p Ω) (memLp_fn_of_le hN hpq hq)) :=
+  hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le hN hpq hq
+
+/-- **Remark 20, case `p < N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,p}(Ω)` and
+`p ≤ q ≤ p*`, on an arbitrary open set. -/
+theorem memLp_fn_of_lt {p' : ℝ≥0} (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
+    (hpq : p ≤ q) (hqp' : q ≤ p') (u : SobolevEuclideanZero N 1 p Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hasSobolevExtensionOn.memLp_fn_of_le_of_le hpN hp' hpq hqp' u
+
+/-- **Remark 20, case `p < N`**: `W_0^{1,p}(Ω) ↪ L^q(Ω)` with continuous injection for
+`1 ≤ p < N`, `1/p* = 1/p − 1/N` and `p ≤ q ≤ p*`, on an arbitrary open set `Ω`
+([brezis2011functional] Remark 20; Corollary 9.14, the first line). -/
+theorem isContinuousEmbedding_toLp_of_lt [Fact (1 ≤ (q : ℝ≥0∞))] {p' : ℝ≥0} (hpN : p < N)
+    (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
+    IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      (SobolevEuclideanZero N 1 p Ω) (memLp_fn_of_lt hpN hp' hpq hqp')) :=
+  hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_le_of_le hpN hp' hpq hqp'
+
+/-- **Remark 20, case `p = N`, the membership**: `fn u ∈ L^q(Ω)` for `u ∈ W_0^{1,N}(Ω)`, `N ≥ 2`
+and `N ≤ q < ∞`, on an arbitrary open set. -/
+theorem memLp_fn_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q)
+    (u : SobolevEuclideanZero N 1 N Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 N Ω)) q
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hasSobolevExtensionOn.memLp_fn_of_eq_finrank hN hq u
+
+/-- **Remark 20, case `p = N`**: `W_0^{1,N}(Ω) ↪ L^q(Ω)` with continuous injection for `N ≥ 2`
+and `N ≤ q < ∞`, on an arbitrary open set `Ω` ([brezis2011functional] Remark 20;
+Corollary 9.14, the second line). -/
+theorem isContinuousEmbedding_toLp_of_eq [Fact (1 ≤ (N : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hN : 2 ≤ N) (hq : (N : ℝ≥0) ≤ q) :
+    IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 N Ω volume
+      (SobolevEuclideanZero N 1 N Ω) (memLp_fn_of_eq hN hq)) :=
+  hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_of_eq_finrank hN hq
+
+/-- **Remark 20, case `p > N`: the continuous representative**. On an arbitrary open set `Ω` and
+for `N < p < ∞` there is `C = C(p, N)` such that every `u ∈ W_0^{1,p}(Ω)` has a representative
+`ũ` continuous on all of `ℝ^N` (so on `closure Ω`), equal to `fn u` almost everywhere on `Ω`,
+Hölder continuous of exponent `1 − N/p` with constant `C ‖u‖`, and bounded by `C ‖u‖`
+everywhere: `W_0^{1,p}(Ω) ⊂ C(Ω̄) ∩ L^∞(Ω)` ([brezis2011functional] Remark 20; Corollary 9.14,
+the case `p > N`). -/
+theorem exists_forall_continuous_holderWith_ae_eq (hp : N < p) :
+    ∃ C : ℝ≥0, ∀ u : SobolevEuclideanZero N 1 p Ω, ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ,
+      Continuous ũ ∧
+      fn (u : SobolevEuclidean N 1 p Ω) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ ∧
+      HolderWith (C * ‖u‖₊) (1 - (N : ℝ≥0) / p) ũ ∧ ∀ x, ‖ũ x‖ ≤ C * ‖u‖ :=
+  hasSobolevExtensionOn.exists_forall_continuous_holderWith_ae_eq hp
+
+/-- **Remark 20, case `p > N`, the `L^∞` membership**: `fn u ∈ L^∞(Ω)` for `u ∈ W_0^{1,p}(Ω)`
+and `N < p < ∞`, on an arbitrary open set. -/
+theorem memLp_fn_top_of_lt (hp : N < p) (u : SobolevEuclideanZero N 1 p Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) ⊤
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hasSobolevExtensionOn.memLp_fn_top_of_lt hp u
+
+/-- **Remark 20, case `p > N`**: `W_0^{1,p}(Ω) ↪ L^∞(Ω)` with continuous injection for
+`N < p < ∞`, on an arbitrary open set `Ω` ([brezis2011functional] Remark 20; Corollary 9.14,
+the third line). -/
+theorem isContinuousEmbedding_toLp_top_of_lt (hp : N < p) :
+    IsContinuousEmbedding (toLpₗOn ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p Ω volume
+      (SobolevEuclideanZero N 1 p Ω) (memLp_fn_top_of_lt hp)) :=
+  hasSobolevExtensionOn.isContinuousEmbedding_toLpOn_top_of_lt hp
+
+end SobolevEuclideanZero
+
+end Zero
+
+/-! ### Remark 16: an unbounded function of `W^{1,N}(B(0, 1/2))` -/
+
+section Remark16
+
+variable {N : ℕ}
+
+/-- `log(1/r) ≤ 4 r^{-1/4}` for every `r > 0`: the logarithm grows more slowly than any power. -/
+theorem Real.neg_log_le_four_mul_rpow {r : ℝ} (hr0 : 0 < r) :
+    -Real.log r ≤ 4 * r ^ (-1 / 4 : ℝ) := by
+  have hs : (0 : ℝ) < r ^ (-1 / 4 : ℝ) := Real.rpow_pos_of_pos hr0 _
+  have hlog : Real.log (r ^ (-1 / 4 : ℝ)) = (-1 / 4 : ℝ) * Real.log r := Real.log_rpow hr0 _
+  have h1 : Real.log (r ^ (-1 / 4 : ℝ)) ≤ r ^ (-1 / 4 : ℝ) - 1 := Real.log_le_sub_one_of_pos hs
+  rw [hlog] at h1
+  linarith
+
+/-- The function of [brezis2011functional] Chapter 9, Remark 16, `u(x) = (log(1/|x|))^α` on
+`ℝ^N`, written with `log(1/r) = -log r`; it is `0` at the origin under Lean's conventions
+(`Real.log 0 = 0`, `0 ^ α = 0` for `α ≠ 0`). -/
+def logRpow (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) : ℝ := (-Real.log ‖x‖) ^ α
+
+/-- `logRpow α` is the book's `(log(1/|x|))^α`. -/
+theorem logRpow_eq (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) :
+    logRpow α x = Real.log (1 / ‖x‖) ^ α := by
+  rw [logRpow, one_div, Real.log_inv]
+
+/-- The classical gradient of `u(x) = (log(1/|x|))^α` away from the origin, as a linear
+functional: `h ↦ -α (log(1/|x|))^{α−1} ⟪x, h⟫ / |x|²`. -/
+def logRpowGrad (α : ℝ) (x : EuclideanSpace ℝ (Fin N)) : EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ :=
+  (-(α * (-Real.log ‖x‖) ^ (α - 1)) * (‖x‖ ^ 2)⁻¹) • innerSL ℝ x
+
+/-- Away from the origin and inside the unit ball, `logRpowGrad α` is the classical derivative
+of `logRpow α`. -/
+theorem hasFDerivAt_logRpow {α : ℝ} {x : EuclideanSpace ℝ (Fin N)} (hx0 : x ≠ 0)
+    (hx1 : ‖x‖ < 1) : HasFDerivAt (logRpow α) (logRpowGrad α x) x := by
+  have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
+  have hlog : Real.log ‖x‖ < 0 := Real.log_neg hn hx1
+  have h1 : HasFDerivAt (fun y : EuclideanSpace ℝ (Fin N) ↦ ‖y‖) (‖x‖⁻¹ • innerSL ℝ x) x :=
+    hasFDerivAt_norm_of_ne_zero hx0
+  have hneg : HasDerivAt (fun t : ℝ ↦ -Real.log t) (-‖x‖⁻¹) ‖x‖ :=
+    (Real.hasDerivAt_log hn.ne').neg
+  have hpow : HasDerivAt (fun s : ℝ ↦ s ^ α) (α * (-Real.log ‖x‖) ^ (α - 1)) (-Real.log ‖x‖) :=
+    Real.hasDerivAt_rpow_const (Or.inl (by linarith))
+  have h3 := (hpow.comp ‖x‖ hneg).comp_hasFDerivAt x h1
+  have hcoef : (α * (-Real.log ‖x‖) ^ (α - 1) * -‖x‖⁻¹) • (‖x‖⁻¹ • innerSL ℝ x)
+      = logRpowGrad α x := by
+    rw [logRpowGrad, smul_smul]
+    congr 1
+    field_simp
+  rw [hcoef] at h3
+  exact h3
+
+/-- `|∇u| = α (log(1/|x|))^{α−1} / |x|` for `0 < |x| < 1`. -/
+theorem norm_logRpowGrad {α : ℝ} (hα : 0 < α) {x : EuclideanSpace ℝ (Fin N)} (hx0 : x ≠ 0)
+    (hx1 : ‖x‖ < 1) : ‖logRpowGrad α x‖ = α * (-Real.log ‖x‖) ^ (α - 1) / ‖x‖ := by
+  have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
+  have hlog : 0 < -Real.log ‖x‖ := by linarith [Real.log_neg hn hx1]
+  have hpos : 0 < α * (-Real.log ‖x‖) ^ (α - 1) := mul_pos hα (Real.rpow_pos_of_pos hlog _)
+  rw [logRpowGrad, norm_smul, Real.norm_eq_abs, innerSL_apply_norm, abs_mul, abs_neg,
+    abs_of_pos hpos, abs_inv, abs_of_pos (by positivity : (0 : ℝ) < ‖x‖ ^ 2)]
+  field_simp
+
+/-- `logRpow α` is measurable. -/
+theorem measurable_logRpow (α : ℝ) : Measurable (logRpow (N := N) α) :=
+  (Real.measurable_log.comp measurable_norm).neg.pow_const α
+
+/-- `logRpowGrad α` is measurable. -/
+theorem aestronglyMeasurable_logRpowGrad (α : ℝ) (μ : Measure (EuclideanSpace ℝ (Fin N))) :
+    AEStronglyMeasurable (logRpowGrad α) μ :=
+  AEStronglyMeasurable.smul
+    (((measurable_const.mul ((Real.measurable_log.comp measurable_norm).neg.pow_const _)).neg.mul
+      (measurable_norm.pow_const 2).inv).aestronglyMeasurable)
+    (innerSL ℝ).continuous.aestronglyMeasurable
+
+/-- On `B(0, 1/2)` the function `u(x) = (log(1/|x|))^α`, `α > 0`, is dominated by the power
+`4^α |x|^{-α/4}`. -/
+theorem abs_logRpow_le {α : ℝ} (hα : 0 < α) :
+    ∀ x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2),
+      |logRpow α x| ≤ 4 ^ α * ‖x‖ ^ (-(α / 4)) := by
+  intro x hx
+  have hxb : ‖x‖ < 1 / 2 := mem_ball_zero_iff.1 hx
+  rcases eq_or_ne x 0 with rfl | hx0
+  · have h0 : logRpow α (0 : EuclideanSpace ℝ (Fin N)) = 0 := by
+      rw [logRpow, norm_zero, Real.log_zero, neg_zero, Real.zero_rpow hα.ne']
+    rw [h0, abs_zero]
+    positivity
+  have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
+  have hlog : 0 < -Real.log ‖x‖ := by linarith [Real.log_neg hn (by linarith)]
+  rw [logRpow, abs_of_nonneg (Real.rpow_nonneg hlog.le _)]
+  calc (-Real.log ‖x‖) ^ α ≤ (4 * ‖x‖ ^ (-1 / 4 : ℝ)) ^ α :=
+        Real.rpow_le_rpow hlog.le (Real.neg_log_le_four_mul_rpow hn) hα.le
+    _ = 4 ^ α * ‖x‖ ^ (-(α / 4)) := by
+        rw [Real.mul_rpow (by norm_num) (Real.rpow_nonneg hn.le _), ← Real.rpow_mul hn.le]
+        ring_nf
+
+/-- `|x|^s ∈ L^N(B(0, t))` when `s N > -N`. -/
+theorem memLp_norm_rpow_ball (hN : 1 ≤ N) {s : ℝ} (hs : -(N : ℝ) < s * N) (t : ℝ) :
+    MemLp (fun x : EuclideanSpace ℝ (Fin N) ↦ ‖x‖ ^ s) N (volume.restrict (ball 0 t)) := by
+  have hfr : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
+  have hN0 : (N : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : N ≠ 0)
+  have hmeas : AEStronglyMeasurable (fun x : EuclideanSpace ℝ (Fin N) ↦ ‖x‖ ^ s)
+      (volume.restrict (ball 0 t)) := (measurable_norm.pow_const s).aestronglyMeasurable
+  refine (memLp_norm_rpow_iff hmeas hN0 (ENNReal.natCast_ne_top N)).1 ?_
+  rw [ENNReal.div_self hN0 (ENNReal.natCast_ne_top N), memLp_one_iff_integrable]
+  have h := integrableOn_norm_rpow_ball_zero (E := EuclideanSpace ℝ (Fin N)) (μ := volume)
+    (by rw [hfr]; exact hN) (s := s * N) (by rw [hfr]; exact hs) t
+  refine h.congr_fun (fun x _ ↦ ?_) measurableSet_ball
+  simp only [ENNReal.toReal_natCast, Real.norm_eq_abs,
+    abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _)]
+  rw [← Real.rpow_mul (norm_nonneg _)]
+
+/-- **`u ∈ L^N(B(0, 1/2))`** for `u(x) = (log(1/|x|))^α`, `0 < α`, `N ≥ 1`. -/
+theorem memLp_logRpow (hN : 1 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1) :
+    MemLp (logRpow α) N (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2))) := by
+  have hpow : MemLp (fun x : EuclideanSpace ℝ (Fin N) ↦ 4 ^ α * ‖x‖ ^ (-(α / 4))) N
+      (volume.restrict (ball 0 (1 / 2))) := by
+    refine (memLp_norm_rpow_ball hN (s := -(α / 4)) ?_ _).const_mul _
+    have hN' : (1 : ℝ) ≤ N := by exact_mod_cast hN
+    have : α / 4 * N < 1 * N := mul_lt_mul_of_pos_right (by linarith) (by linarith)
+    linarith
+  refine hpow.of_le (measurable_logRpow α).aestronglyMeasurable ?_
+  filter_upwards [ae_restrict_mem measurableSet_ball] with x hx
+  rw [Real.norm_eq_abs, Real.norm_eq_abs,
+    abs_of_nonneg (by positivity : (0 : ℝ) ≤ 4 ^ α * ‖x‖ ^ (-(α / 4)))]
+  exact abs_logRpow_le hα x hx
+
+/-- The antiderivative of the radial integrand `(log(1/r))^{c−1}/r` of Remark 16 is
+`-(log(1/r))^c / c`, for `c ≠ 0` and `0 < r < 1`. -/
+theorem hasDerivAt_neg_neg_log_rpow_div {c : ℝ} (hc : c ≠ 0) {y : ℝ} (hy0 : 0 < y) (hy1 : y < 1) :
+    HasDerivAt (fun t : ℝ ↦ -((-Real.log t) ^ c / c)) ((-Real.log y) ^ (c - 1) / y) y := by
+  have hlog : 0 < -Real.log y := by linarith [Real.log_neg hy0 hy1]
+  have hl : HasDerivAt (fun t : ℝ ↦ -Real.log t) (-y⁻¹) y := (Real.hasDerivAt_log hy0.ne').neg
+  have hp : HasDerivAt (fun s : ℝ ↦ s ^ c) (c * (-Real.log y) ^ (c - 1)) (-Real.log y) :=
+    Real.hasDerivAt_rpow_const (Or.inl hlog.ne')
+  have h := ((hp.comp y hl).div_const c).neg
+  refine h.congr_deriv ?_
+  field_simp
+
+/-- The antiderivative `-(log(1/r))^c / c`, `c < 0`, extends continuously to the origin by `0`,
+which is the value Lean's conventions already give it. -/
+theorem continuousOn_neg_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
+    ContinuousOn (fun t : ℝ ↦ -((-Real.log t) ^ c / c)) (Icc 0 (1 / 2)) := by
+  intro t ht
+  rcases eq_or_ne t 0 with rfl | ht0
+  · rw [← continuousWithinAt_sdiff_self]
+    have hzero : -((-Real.log (0 : ℝ)) ^ c / c) = 0 := by simp [Real.zero_rpow hc.ne]
+    rw [ContinuousWithinAt, hzero]
+    have hlim : Tendsto (fun t : ℝ ↦ -((-Real.log t) ^ c / c)) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
+      have h1 : Tendsto (fun t : ℝ ↦ -Real.log t) (𝓝[>] (0 : ℝ)) atTop :=
+        tendsto_neg_atBot_atTop.comp Real.tendsto_log_nhdsGT_zero
+      have h2 : Tendsto (fun t : ℝ ↦ (-Real.log t) ^ c) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
+        have := (tendsto_rpow_neg_atTop (neg_pos.2 hc)).comp h1
+        simpa [Function.comp_def] using this
+      simpa using (h2.div_const c).neg
+    have hsub : (Icc (0 : ℝ) (1 / 2) \ {0}) ⊆ Ioi 0 := fun s hs ↦
+      lt_of_le_of_ne hs.1.1 (Ne.symm hs.2)
+    exact hlim.mono_left (nhdsWithin_mono 0 hsub)
+  · refine ContinuousAt.continuousWithinAt ?_
+    have hpos : 0 < t := lt_of_le_of_ne ht.1 (Ne.symm ht0)
+    have hlog : 0 < -Real.log t := by linarith [Real.log_neg hpos (by linarith [ht.2])]
+    exact (((Real.continuousAt_log ht0).neg.rpow_const (Or.inl hlog.ne')).div_const c).neg
+
+/-- **The radial integrability of Remark 16**: `∫_0^{1/2} (log(1/r))^{c−1} dr/r < ∞` for `c < 0`
+(that is, `∫_0^{1/2} (log(1/r))^{−β} dr/r < ∞` for `β > 1`), the antiderivative
+`-(log(1/r))^c / c` being continuous and monotone on `[0, 1/2]`. -/
+theorem integrableOn_neg_log_rpow_div {c : ℝ} (hc : c < 0) :
+    IntegrableOn (fun y : ℝ ↦ (-Real.log y) ^ (c - 1) / y) (Ioo 0 (1 / 2)) := by
+  have hd : ∀ y ∈ Ioo (0 : ℝ) (1 / 2), HasDerivAt (fun t : ℝ ↦ -((-Real.log t) ^ c / c))
+      ((-Real.log y) ^ (c - 1) / y) y := fun y hy ↦
+    hasDerivAt_neg_neg_log_rpow_div hc.ne hy.1 (by linarith [hy.2])
+  have hpos : ∀ y ∈ Ioo (0 : ℝ) (1 / 2), 0 ≤ (-Real.log y) ^ (c - 1) / y := fun y hy ↦ by
+    have hlog : 0 < -Real.log y := by linarith [Real.log_neg hy.1 (by linarith [hy.2])]
+    exact div_nonneg (Real.rpow_nonneg hlog.le _) hy.1.le
+  exact (intervalIntegral.integrableOn_deriv_of_nonneg (continuousOn_neg_neg_log_rpow_div hc) hd
+    hpos).mono_set Ioo_subset_Ioc_self
+
+/-- `|∇u|^N` as a radial function: `|∇u(x)|^N = α^N (log(1/|x|))^{N(α−1)} |x|^{−N}` on
+`B(0, 1/2)`, the origin included (both sides vanish there). -/
+theorem norm_logRpowGrad_rpow_eq {α : ℝ} (hα : 0 < α) (hα1 : α < 1) (hN : 1 ≤ N) :
+    ∀ x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2), ‖logRpowGrad α x‖ ^ (N : ℝ)
+      = α ^ (N : ℝ) * ((-Real.log ‖x‖) ^ ((N : ℝ) * (α - 1)) * ‖x‖ ^ (-(N : ℝ))) := by
+  intro x hx
+  have hN0 : (N : ℝ) ≠ 0 := by exact_mod_cast (by omega : N ≠ 0)
+  rcases eq_or_ne x 0 with rfl | hx0
+  · have hne : (N : ℝ) * (α - 1) ≠ 0 := mul_ne_zero hN0 (by linarith)
+    simp [logRpowGrad, Real.zero_rpow hN0, Real.zero_rpow hne, Real.zero_rpow (neg_ne_zero.2 hN0)]
+  have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx0
+  have hlog : 0 < -Real.log ‖x‖ := by
+    linarith [Real.log_neg hn (by linarith [mem_ball_zero_iff.1 hx])]
+  rw [norm_logRpowGrad hα hx0 (by linarith [mem_ball_zero_iff.1 hx]),
+    Real.div_rpow (by positivity) hn.le, Real.mul_rpow hα.le (Real.rpow_nonneg hlog.le _),
+    ← Real.rpow_mul hlog.le, Real.rpow_neg hn.le]
+  rw [div_eq_mul_inv, mul_assoc]
+  congr 3
+  ring
+
+/-- **`|∇u|^N` is integrable on `B(0, 1/2)`** for `N ≥ 2` and `0 < α < 1 − 1/N`: in polar
+coordinates, `∫_0^{1/2} r^{N−1} α^N (log(1/r))^{N(α−1)} r^{−N} dr` is
+`α^N ∫_0^{1/2} (log(1/r))^{−β} dr/r` with `β = N(1 − α) > 1` (`integrableOn_neg_log_rpow_div`). -/
+theorem integrableOn_norm_logRpowGrad_rpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α)
+    (hα1 : α < 1 - 1 / N) :
+    IntegrableOn (fun x : EuclideanSpace ℝ (Fin N) ↦ ‖logRpowGrad α x‖ ^ (N : ℝ))
+      (ball 0 (1 / 2)) volume := by
+  have hfr : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
+  have hN' : (2 : ℝ) ≤ N := by exact_mod_cast hN
+  have hNpos : (0 : ℝ) < N := by linarith
+  have hα1' : α < 1 := by
+    have : (0 : ℝ) < 1 / N := by positivity
+    linarith
+  obtain ⟨c, hc⟩ : ∃ c : ℝ, c = N * (α - 1) + 1 := ⟨_, rfl⟩
+  have hc0 : c < 0 := by
+    have h1 : (N : ℝ) * (1 - 1 / N) = N - 1 := by field_simp
+    have h2 : (N : ℝ) * (α - 1) < N * (1 - 1 / N - 1) :=
+      mul_lt_mul_of_pos_left (by linarith) hNpos
+    rw [hc]
+    nlinarith
+  obtain ⟨g, hg⟩ : ∃ g : ℝ → ℝ, g = fun y ↦
+    α ^ (N : ℝ) * ((-Real.log y) ^ ((N : ℝ) * (α - 1)) * y ^ (-(N : ℝ))) := ⟨_, rfl⟩
+  have hcongr : EqOn (fun x : EuclideanSpace ℝ (Fin N) ↦ g ‖x‖)
+      (fun x ↦ ‖logRpowGrad α x‖ ^ (N : ℝ)) (ball 0 (1 / 2)) := fun x hx ↦ by
+    rw [hg]
+    exact (norm_logRpowGrad_rpow_eq hα hα1' (by omega) x hx).symm
+  have : Nontrivial (EuclideanSpace ℝ (Fin N)) :=
+    Module.nontrivial_of_finrank_pos (by rw [hfr]; omega)
+  refine IntegrableOn.congr_fun ?_ hcongr measurableSet_ball
+  refine (integrableOn_fun_norm_addHaar (μ := volume) (f := g)).2 ?_
+  rw [hfr]
+  refine IntegrableOn.congr_fun ((integrableOn_neg_log_rpow_div hc0).const_mul (α ^ (N : ℝ)))
+    (fun y hy ↦ ?_) measurableSet_Ioo
+  have hy0 : 0 < y := hy.1
+  have hpow : (y : ℝ) ^ (N - 1) * (y ^ N)⁻¹ = y⁻¹ := by
+    rw [pow_sub₀ y hy0.ne' (by omega : 1 ≤ N), pow_one]
+    field_simp
+  have key : ∀ a L : ℝ, a * (L / y) = y ^ (N - 1) * (a * (L * (y ^ N)⁻¹)) := by
+    intro a L
+    rw [div_eq_mul_inv, ← hpow]
+    ring
+  simp only [hg, smul_eq_mul]
+  rw [hc, show (N : ℝ) * (α - 1) + 1 - 1 = N * (α - 1) by ring, Real.rpow_neg hy0.le]
+  simp only [Real.rpow_natCast]
+  exact key _ _
+
+/-- **`∇u ∈ L^N(B(0, 1/2))`** for `u(x) = (log(1/|x|))^α`, `N ≥ 2`, `0 < α < 1 − 1/N`: the
+finiteness of the integral of `|∇u|^N`. -/
+theorem memLp_logRpowGrad (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
+    MemLp (logRpowGrad α) N (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2))) := by
+  have hN0 : (N : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : N ≠ 0)
+  refine (memLp_norm_rpow_iff (aestronglyMeasurable_logRpowGrad α _) hN0
+    (ENNReal.natCast_ne_top N)).1 ?_
+  rw [ENNReal.div_self hN0 (ENNReal.natCast_ne_top N), memLp_one_iff_integrable]
+  simp only [ENNReal.toReal_natCast]
+  exact integrableOn_norm_logRpowGrad_rpow hN hα hα1
+
+/-- The restriction of Lebesgue measure to a ball of `ℝ^N` is finite. -/
+theorem isFiniteMeasure_volume_restrict_ball (c : EuclideanSpace ℝ (Fin N)) (t : ℝ) :
+    IsFiniteMeasure (volume.restrict (ball c t)) :=
+  ⟨by rw [Measure.restrict_apply_univ]; exact measure_ball_lt_top⟩
+
+/-- **The classical gradient of `u(x) = (log(1/|x|))^α` on `B(0, 1/2) ∖ {0}` is its weak gradient
+on all of `B(0, 1/2)`**, the origin included: the removable-singularity lemma
+`hasWeakFDerivOn_of_hasFDerivAt_compl_singleton`, whose smallness hypothesis
+`∫_{B(0,δ)} |u| = o(δ)` holds because `|u| ≤ 4^α |x|^{-α/4}` and `-α/4 > 1 - N`. -/
+theorem hasWeakFDerivOn_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
+    HasWeakFDerivOn (logRpow α) (logRpowGrad α)
+      ⟨ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2), isOpen_ball⟩ volume := by
+  have hfr : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
+  have hN' : (2 : ℝ) ≤ N := by exact_mod_cast hN
+  have hα1' : α < 1 := by
+    have : (0 : ℝ) < 1 / N := by positivity
+    linarith
+  have hN1 : (1 : ℝ≥0∞) ≤ N := by exact_mod_cast (by omega : 1 ≤ N)
+  have := isFiniteMeasure_volume_restrict_ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2)
+  have : Nontrivial (EuclideanSpace ℝ (Fin N)) :=
+    Module.nontrivial_of_finrank_pos (by rw [hfr]; omega)
+  have hu : IntegrableOn (logRpow α) (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2)) volume :=
+    (memLp_logRpow (by omega) hα hα1').integrable hN1
+  have hw : IntegrableOn (logRpowGrad α) (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2)) volume :=
+    (memLp_logRpowGrad hN hα hα1).integrable hN1
+  refine hasWeakFDerivOn_of_hasFDerivAt_compl_singleton (a := 0) hu.locallyIntegrableOn
+    hw.locallyIntegrableOn (fun x hx hx0 ↦ hasFDerivAt_logRpow hx0
+      (by linarith [mem_ball_zero_iff.1 hx])) ?_
+  refine tendsto_inv_mul_setIntegral_norm_ball_zero (by rw [hfr]; omega) (C := 4 ^ α)
+    (s := -(α / 4)) (R := 1 / 2) (by norm_num) (by rw [hfr]; linarith)
+    (measurable_logRpow α).aestronglyMeasurable fun x hx ↦ ?_
+  rw [Real.norm_eq_abs]
+  exact abs_logRpow_le hα x hx
+
+/-- **[brezis2011functional] Chapter 9, Remark 16 (the limiting case `p = N`), the membership**:
+on `Ω = B(0, 1/2) ⊆ ℝ^N`, `N ≥ 2`, and for `0 < α < 1 − 1/N`, the function
+`u(x) = (log(1/|x|))^α` lies in `W^{1,N}(Ω)`, in the multi-index formulation over the standard
+basis. Its gradient `−α (log(1/|x|))^{α−1} x/|x|²` is its weak gradient on all of `Ω` by the
+removable-singularity lemma (`hasWeakFDerivOn_logRpow`), and
+`|∇u|^N = α^N (log(1/|x|))^{N(α−1)} |x|^{−N}` is integrable near the origin exactly because
+`N(1 − α) > 1` (`integrableOn_norm_logRpowGrad_rpow`); `u ∈ L^N` since the logarithm grows more
+slowly than any power (`memLp_logRpow`). The function is not essentially bounded:
+`eLpNorm_logRpow_top`. -/
+theorem memSobolevMultiIndex_logRpow (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+      (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) 1 N
+      ⟨ball 0 (1 / 2), isOpen_ball⟩ volume := by
+  have hα1' : α < 1 := by
+    have : (0 : ℝ) < 1 / N := by positivity
+    linarith
+  have e : (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) = logRpow α :=
+    funext fun x ↦ (logRpow_eq α x).symm
+  rw [e]
+  exact ((hasWeakFDerivOn_logRpow hN hα hα1).memSobolev (memLp_logRpow (by omega) hα hα1')
+    (memLp_logRpowGrad hN hα hα1)).memSobolevMultiIndex
+
+/-- **[brezis2011functional] Chapter 9, Remark 16, the unboundedness**: `u(x) = (log(1/|x|))^α`,
+`α > 0`, is not essentially bounded on `B(0, 1/2) ⊆ ℝ^N` (`N ≥ 1`): it exceeds every constant on a
+small ball away from the origin, and such a ball has positive measure. So `u ∉ L^∞(Ω)`, although
+`u ∈ W^{1,N}(Ω)` for `α < 1 − 1/N` (`memSobolevMultiIndex_logRpow`): the embedding
+`W^{1,p}(Ω) ⊂ L^∞(Ω)` of Corollary 9.14 fails at `p = N`. -/
+theorem eLpNorm_logRpow_top (hN : 1 ≤ N) {α : ℝ} (hα : 0 < α) :
+    eLpNorm (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) ⊤
+      (volume.restrict (ball 0 (1 / 2))) = ⊤ := by
+  have e : (fun x : EuclideanSpace ℝ (Fin N) ↦ Real.log (1 / ‖x‖) ^ α) = logRpow α :=
+    funext fun x ↦ (logRpow_eq α x).symm
+  rw [e]
+  refine top_unique (le_trans ?_ eLpNormEssSup_le_eLpNorm_top)
+  by_contra hlt
+  obtain ⟨K, hK⟩ : ∃ K : ℝ≥0∞,
+    K = eLpNormEssSup (logRpow α) (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2))) :=
+    ⟨_, rfl⟩
+  rw [← hK] at hlt
+  have hKt : K ≠ ⊤ := fun h ↦ hlt (h ▸ le_rfl)
+  have hae : ∀ᵐ x ∂(volume : Measure (EuclideanSpace ℝ (Fin N))),
+      x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2) → ‖logRpow α x‖ₑ ≤ K := by
+    rw [hK]
+    exact (ae_restrict_iff' measurableSet_ball).1 ae_le_eLpNormEssSup
+  obtain ⟨M, hM⟩ : ∃ M : ℝ, M = K.toReal := ⟨_, rfl⟩
+  have hM0 : 0 ≤ M := hM ▸ ENNReal.toReal_nonneg
+  obtain ⟨r, hr⟩ : ∃ r : ℝ, r = min (1 / 2) (Real.exp (-((M + 1) ^ α⁻¹))) := ⟨_, rfl⟩
+  have hr0 : 0 < r := hr ▸ lt_min (by norm_num) (Real.exp_pos _)
+  have hr2 : r ≤ 1 / 2 := hr ▸ min_le_left _ _
+  have hre : r ≤ Real.exp (-((M + 1) ^ α⁻¹)) := hr ▸ min_le_right _ _
+  obtain ⟨c, hc⟩ : ∃ c : EuclideanSpace ℝ (Fin N), ‖c‖ = r / 2 :=
+    ⟨(r / 2) • EuclideanSpace.single (⟨0, by omega⟩ : Fin N) (1 : ℝ), by
+      rw [norm_smul, Real.norm_eq_abs, abs_of_pos (by positivity)]
+      simp⟩
+  have hbig : ∀ x ∈ ball c (r / 4), x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2) ∧
+      M < logRpow α x := by
+    intro x hx
+    have hxc : ‖x - c‖ < r / 4 := by rwa [mem_ball, dist_eq_norm] at hx
+    have h1 := norm_sub_norm_le x c
+    have h2 := norm_sub_norm_le c x
+    rw [norm_sub_rev] at h2
+    have hxr : ‖x‖ < r := by linarith
+    have hx0 : 0 < ‖x‖ := by linarith
+    have hlogx : Real.log ‖x‖ < -((M + 1) ^ α⁻¹) := by
+      calc Real.log ‖x‖ < Real.log r := Real.log_lt_log hx0 hxr
+        _ ≤ Real.log (Real.exp (-((M + 1) ^ α⁻¹))) := Real.log_le_log hr0 hre
+        _ = -((M + 1) ^ α⁻¹) := Real.log_exp _
+    have hpos : 0 ≤ (M + 1) ^ α⁻¹ := Real.rpow_nonneg (by linarith) _
+    refine ⟨mem_ball_zero_iff.2 (by linarith), ?_⟩
+    rw [logRpow]
+    calc M < M + 1 := by linarith
+      _ = ((M + 1) ^ α⁻¹) ^ α := (Real.rpow_inv_rpow (by linarith) hα.ne').symm
+      _ < (-Real.log ‖x‖) ^ α := Real.rpow_lt_rpow hpos (by linarith) hα
+  have hsub : ball c (r / 4) ⊆ {x | ¬ (x ∈ ball (0 : EuclideanSpace ℝ (Fin N)) (1 / 2) →
+      ‖logRpow α x‖ₑ ≤ K)} := by
+    intro x hx
+    obtain ⟨hx1, hx2⟩ := hbig x hx
+    simp only [mem_ofPred_eq, not_imp, not_le]
+    refine ⟨hx1, ?_⟩
+    rw [Real.enorm_eq_ofReal (by linarith), ← ENNReal.ofReal_toReal hKt, ← hM]
+    exact (ENNReal.ofReal_lt_ofReal_iff (by linarith)).2 hx2
+  have h0 : volume (ball c (r / 4)) = 0 := measure_mono_null hsub hae
+  exact (measure_ball_pos volume c (by positivity)).ne' h0
+
+end Remark16
