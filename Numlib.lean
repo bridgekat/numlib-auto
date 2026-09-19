@@ -212,6 +212,7 @@ import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.Sobolev.Calculus

@@ -12,46 +12,23 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq"
-kind = "theorem"
-desc = '''**Remark 20, the Sobolev inequality on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**: for
-`1 ≤ p < N`, `1/p* = 1/p − 1/N`, and `u ∈ SobolevEuclideanZero N 1 p Ω`,
-`MemLp (fn u) p* (volume.restrict Ω)` and
-`eLpNorm (fn u) p* (volume.restrict Ω) ≤ C(p, N) * SobolevEuclidean.gradNorm u` — "it can also be
-deduced from Theorem 9.9 that … `‖u‖_{L^{p*}(Ω)} ≤ C(p,N) ‖∇u‖_{L^p(Ω)}` for all
-`u ∈ W_0^{1,p}(Ω)`" ([brezis2011functional] Remark 20). Theorem 9.9 (`SobolevEuclidean.isContinuousEmbedding_toLp_of_eq`)
-applied to `extendZeroL u`, whose gradient norm equals `gradNorm u`. The three cases of
-Corollary 9.14 on `W_0^{1,p}(Ω)` with no regularity of `Ω` are
-`SobolevEuclideanZero.isContinuousEmbedding_toLp` (`EmbeddingDomain.lean`, through
-`SobolevEuclideanZero.hasSobolevExtensionOn`). ★★, ~100 lines. Together with Poincaré this closes
-the `W_0^{1,p}`-side of `notes/frontier.md` blocker 1 for every `Ω`.
-
-Blocked: the dependency `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq` (sob8, `Embedding.lean`) is absent from this branch (sob9, 2026-09-19). With it the proof is `SobolevEuclideanZero.hasSobolevExtensionOn` (the extension by zero, isometric) and the embedding applied to `extendZeroL u`, whose gradient norm is that of `u` (`norm_weakDeriv_extendZero`); ~40 lines.'''
-deps = ["SobolevEuclideanZero.extendZeroL", "SobolevEuclidean.isContinuousEmbedding_toLp_of_eq", "SobolevMultiIndex.gradNorm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
 [[node]]
 id = "SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top"
-kind = "theorem"
-desc = '''**Remark 21, first clause (Poincaré for `Ω` of finite measure)**: for `1 ≤ p < ∞`,
-`volume Ω ≠ ∞` and `u ∈ SobolevEuclideanZero N 1 p Ω`,
-`eLpNorm (fn u) p (volume.restrict Ω) ≤ C(Ω, p, N) * SobolevEuclidean.gradNorm u`. For `p < N`:
-`‖u‖_p ≤ |Ω|^{1/p − 1/p*} ‖u‖_{p*} ≤ C |Ω|^{1/N} ‖∇u‖_p` by
-`eLpNorm_le_eLpNorm_mul_rpow_measure_univ` and `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`;
-for `p ≥ N` choose `q < N` with `q* > p` (possible since `q* → ∞` as `q → N`), note
-`W_0^{1,p}(Ω) ⊆ W_0^{1,q}(Ω)` on the finite-measure `Ω` (`MemSobolev.mono_exponent`, and test
-functions are dense in both), and interpolate `‖u‖_p ≤ |Ω|^{1/p − 1/q*} ‖u‖_{q*} ≤ C ‖∇u‖_q ≤ C |Ω|^{1/q − 1/p} ‖∇u‖_p`.
-[brezis2011functional] Chapter 9, Remark 21 ("Poincaré's inequality remains true if `Ω` has
-finite measure"); the bounded-projection clause is `Poincare.lean`. ★★, ~150 lines. For `N = 1`
-the case `p < N` is empty and the argument needs the bounded-projection form instead (a subset of
-`ℝ` of finite measure need not have a bounded projection — the statement then follows from
-Remark 21's own bounded-projection clause only for bounded sets; for `N = 1` and unbounded `Ω`
-of finite measure the inequality is *false*, `Ω = ⋃ (n, n + 2^{−n})` with the constant
-functions on each interval — so state the node for `N ≥ 2`, and record the `N = 1` restriction
-in the surface).
-
-Blocked: depends on `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`, itself blocked on sob8's embedding (sob9, 2026-09-19); ~60 lines once it lands (Hölder on the finite-measure `Ω`).'''
-deps = ["SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq", "MemSobolev.mono_exponent", "SobolevMultiIndex.gradNorm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 21"
+
+[[node]]
+id = "SobolevEuclideanZero.eLpNorm_fn_le_sum_of_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.memLp_fn_of_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.exists_hasWeakFDerivOn_indicator"
+
+[[node]]
+id = "SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top"
 
 [[node]]
 id = "SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le"
@@ -63,65 +40,71 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 
 
 [[node]]
 id = "SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos"
-kind = "theorem"
-desc = '''**Proposition 9.18, (iii) ⇒ (i), the `Q_+` computation**: let `u ∈ L^p(Q_+)`, `1 ≤ p < ∞`,
-be such that its extension by zero to `Q` lies in `W^{1,p}(Q)`; then `α u ∈ W_0^{1,p}(Q_+)` for
-every smooth `α` with compact support in `Q`. Proof ([brezis2011functional] §9.4, proof of
-Proposition 9.18, "(iii) ⇒ (i)", lines 10868–10906 of the source): `α ū` extended by zero
-outside `Q` is in `W^{1,p}(ℝ^N)` (`MemSobolevMultiIndex.indicator_mul`, `Cutoff.lean`); take
-one-sided mollifiers `ρ_n(x) = n^N ρ(n x)` with `ρ ≥ 0`, `∫ρ = 1`, `supp ρ ⊆ {1/2 < x_N < 1}`;
-then `ρ_n ⋆ (α ū) → α ū` in `W^{1,p}(ℝ^N)` — in `L^p` by
-`MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support` (`Friedrichs.lean`) and for the
-gradient by Lemma 9.1 `HasWeakIteratedLineDerivOn.convolution_of_integrable` plus the same
-convergence — while `supp (ρ_n ⋆ α ū) ⊆ supp ρ_n + supp (α ū) ⊆ Q_+` for `n` large
-(`support_convolution_subset`; the support of `α ū` lies in `closure Q_+ ∩ supp α`, and adding a
-vector with `x_N ∈ (1/(2n), 1/n)` pushes it into `{x_N > 0}` and, for `n` large, keeps it in
-`Q`); so `ρ_n ⋆ (α ū)` are smooth compactly supported in `Q_+` — test functions on `Q_+` — and
-`α u` is their `W^{1,p}(Q_+)` limit, hence in the closure `SobolevMultiIndexZero`. ★★★, ~350
-lines.
-
-Blocked: not attempted for lack of time (sob9, 2026-09-19); the route in the desc stands (one-sided mollifiers of `α ū`, `support_convolution_subset` to push the support into `Q_+`, the `W^{1,p}` convergence of `Friedrichs.lean`), ~350 lines; no consumer on this branch other than `SobolevEuclideanZero.mem_of_indicator_memSobolev`.'''
-deps = ["SobolevEuclideanZero", "unitChartCubePos", "MemSobolevMultiIndex.indicator_mul", "MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support", "HasWeakIteratedLineDerivOn.convolution_of_integrable", "MemSobolev.convolution_of_integrable", "IsSobolevCutoff.of_hasCompactSupport"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (iii) ⇒ (i)"
 
 [[node]]
-id = "SobolevEuclideanZero.mem_of_mem_restrict"
-kind = "theorem"
-desc = '''Three transfer lemmas for `W_0^{1,p}`, `1 ≤ p < ∞`, needed by the chart reductions of
-Theorem 9.17 and Proposition 9.18: (a) `mem_of_mem_restrict`: if `Ω' ≤ Ω` and `u ∈ W^{1,p}(Ω)`
-restricts to an element of `W_0^{1,p}(Ω')` and vanishes a.e. on `Ω ∖ Ω'`, then
-`u ∈ W_0^{1,p}(Ω)` (a test function on `Ω'` extended by zero is a test function on `Ω`, and the
-inclusion `W^{1,p}(Ω')`-of-functions-vanishing-outside → `W^{1,p}(Ω)` is isometric); (b)
-`smul_contDiff_mem`: for `α` smooth with compact support in `ℝ^N`, `u ∈ W_0^{1,p}(Ω) → αu ∈ W_0^{1,p}(Ω)`
-(`α φ_n` are test functions on `Ω` converging to `α u`, by `HasWeakIteratedLineDerivOn.mul_contDiff`
-and the Leibniz bound); (c) `compDiffeoL_mem`: for `IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`,
-`u ∈ W_0^{1,p}(Ω) → compDiffeoL h u ∈ W_0^{1,p}(Ω')` (`φ_n ∘ H` is `C^1` with compact support in
-`Ω'`, hence in `W_0^{1,p}(Ω')` by Lemma 9.5 `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`,
-and `compDiffeoL` is continuous). ★★, ~250 lines for the three.
-
-Blocked: not attempted for lack of time (sob9, 2026-09-19). One correction to (a): "`u` vanishes a.e. on `Ω ∖ Ω'`" does not by itself make the weak derivatives of `u` vanish a.e. off `Ω'` — that is Stampacchia's `∇u = 0` a.e. on `{u = 0}` (Comment 4, not available) — so state (a) with `fn u = 0` a.e. on `Ω ∖ K` for a closed `K ⊆ Ω'` (then `∂^α u = 0` a.e. on the open `Ω ∖ K` by uniqueness of the weak derivative there), which is what the chart reductions supply (`θ_i u` is supported in `U_i`). (b) is `SobolevMultiIndex.extendZeroMulL`/`tendsto_cutoff_smul` on the approximating test functions, (c) is `compDiffeoL` continuous plus `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` on `φ_n ∘ H`; ~250 lines for the three.'''
-deps = ["SobolevEuclideanZero", "SobolevMultiIndex.restrictL", "SobolevEuclidean.compDiffeoL", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "SobolevMultiIndexZero.isClosed"]
+id = "SobolevMultiIndexZero.mem_of_mem_restrict"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, the chart reductions of Theorem 9.17 and Proposition 9.18"
 
 [[node]]
-id = "SobolevEuclideanZero.mem_of_indicator_memSobolev"
-kind = "theorem"
-desc = '''**Proposition 9.18, (iii) ⇒ (i)** for a `C^1` chart domain, `1 ≤ p < ∞`: if
-`IsContDiffChartDomain 1 Ω` and `u ∈ L^p(Ω)` has its extension by zero in `W^{1,p}(ℝ^N)`
-(`MemSobolevMultiIndex b (Ω.indicator u) 1 p ⊤ volume`), then `u` is (the function of) an element
-of `SobolevEuclideanZero N 1 p Ω`. Proof ([brezis2011functional] Proposition 9.18, (iii) ⇒ (i)):
-reduce to bounded support by `ζ_n u` (`SobolevMultiIndex.tendsto_cutoff_smul`, `W_0` closed); cover
-the compact `frontier Ω ∩ closedBall 0 (2R)` by finitely many charts and take Lemma 9.3's
-partition `θ₀, θ_i`; `θ₀ u` has compact support in `Ω` so is in `W_0` (Lemma 9.5); for each
-`i`, transfer `θ_i ū` to `Q` along `H_i` (`compDiffeoL` on `U_i → Q`) — its restriction to
-`Q_+` is `(θ_i u) ∘ H_i` and it vanishes on `Q_-` — apply the `Q_+` computation
-`SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos` with `α = 1` on
-`H_i⁻¹(supp θ_i)`, transfer back along `H_i⁻¹` (`SobolevEuclideanZero.mem_of_mem_restrict` (c))
-to get `θ_i u ∈ W_0^{1,p}(U_i ∩ Ω)`, extend by zero to `Ω` ((a)), and sum. ★★★, ~350 lines.
+id = "SobolevMultiIndexZero.compDiffeoL_mem"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, the chart reductions of Theorem 9.17 and Proposition 9.18"
 
-Blocked: depends on `SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos` and `SobolevEuclideanZero.mem_of_mem_restrict`, both left open (sob9, 2026-09-19); ~350 lines on top of them.'''
-deps = ["SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos", "SobolevEuclideanZero.mem_of_mem_restrict", "IsContDiffChartDomain.exists_finite_atlas", "IsCompact.exists_contDiff_partitionOfUnity", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "SobolevMultiIndex.tendsto_cutoff_smul", "ContDiffChart.isDiffeoOnWithBoundedJacobian_pos", "IsContDiffChartDomain"]
+[[node]]
+id = "SobolevMultiIndexZero.mul_contDiff_mem"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, the chart reductions of Theorem 9.17 and Proposition 9.18"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_sub_restrict_eq_of_eq_zero_compl"
+
+[[node]]
+id = "unitChartCubePosOpens"
+
+[[node]]
+id = "coe_unitChartCubePosOpens"
+
+[[node]]
+id = "unitChartCubePosOpens_le"
+
+[[node]]
+id = "closure_unitChartCubePos_subset"
+
+[[node]]
+id = "exists_oneSided_mollifiers"
+
+[[node]]
+id = "SobolevEuclideanZero.mem_of_indicator_memSobolev"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (iii) ⇒ (i)"
+
+[[node]]
+id = "SobolevEuclideanZero.mem_of_indicator_memSobolev_of_forall_eq_zero"
+
+[[node]]
+id = "ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex"
+
+[[node]]
+id = "ContDiffChart.mem_zero_unitChartCubePos_of_indicator_memSobolev"
+
+[[node]]
+id = "ContDiffChart.exists_mem_zero_unitChartCubePos_of_indicator_memSobolev"
+
+[[node]]
+id = "SobolevMultiIndexZero.mem_of_fn_ae_eq_map"
+
+[[node]]
+id = "ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev_aux"
+
+[[node]]
+id = "ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev"
+
+[[node]]
+id = "ContDiffChart.mem_zero_of_indicator_memSobolev"
 
 [[node]]
 id = "SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier"
@@ -129,44 +112,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17 (i) 
 
 [[node]]
 id = "SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure"
-kind = "theorem"
-desc = '''**Theorem 9.17, (ii) ⇒ (i), the `Q_+` computation**: if `u ∈ SobolevEuclideanZero (d+1) 1 p Q_+`,
-`1 ≤ p < ∞`, has a representative `ũ` continuous on `closure Q_+`, then `ũ = 0` on `Q_0`. Proof
-([brezis2011functional] Theorem 9.17, (ii) ⇒ (i), lines 10826–10856 of the source): for test
-functions `u_n → u` in `W^{1,p}(Q_+)`, `|u_n(x', x_N)| ≤ ∫_0^{x_N} |∂_N u_n(x', t)| dt`
-(fundamental theorem of calculus from the flat boundary, where `u_n = 0`), so for `0 < ε < 1`,
-`ε⁻¹ ∫_{|x'| < 1} ∫_0^ε |u_n| ≤ ∫_{|x'| < 1} ∫_0^ε |∂_N u_n|` (Fubini
-`EuclideanSpace.measurePreserving_lastInit`); both sides are continuous in the `W^{1,p}(Q_+)`
-norm (the slab `{|x'| < 1, 0 < x_N < ε}` has finite measure, so `L^p ⊆ L^1` there), giving the
-same inequality for `u`, `∂_N u`; as `ε → 0`, the left side tends to `∫_{|x'| < 1} |ũ(x', 0)| dx'`
-(uniform continuity of `ũ` on the compact `{‖x'‖ ≤ 1 − δ, 0 ≤ x_N ≤ 1/2}`, or dominated
-convergence of the averages `ε⁻¹ ∫_0^ε ũ(x', t) dt → ũ(x', 0)`) and the right side to `0`
-(`∂_N u ∈ L^1(Q_+)`, `tendsto_measure_iInter`/dominated convergence on shrinking slabs). Hence
-`ũ(x', 0) = 0` for a.e. `|x'| < 1`, and by continuity for all. ★★★, ~400 lines.
-
-Blocked: not attempted for lack of time (sob9, 2026-09-19); the route in the desc stands, ~400 lines. The consumer of Theorem 9.17 on this branch (§9.5 Example 1, Step A, `Elliptic.isGalerkinSolution_laplace_of_classical`) needs only the direction (i) ⇒ (ii), which is proved (`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`).'''
-deps = ["SobolevEuclideanZero", "unitChartCubePos", "unitChartCubeZero", "EuclideanSpace.measurePreserving_lastInit", "SobolevMultiIndex.mem_testFunctions"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17 (ii) ⇒ (i)"
 
 [[node]]
 id = "SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure"
-kind = "theorem"
-desc = '''**Theorem 9.17, (ii) ⇒ (i)** for a `C^1` chart domain, `1 ≤ p < ∞`: if
-`IsContDiffChartDomain 1 Ω`, `u ∈ SobolevEuclideanZero N 1 p Ω` and `ũ` is a representative
-continuous on `closure Ω`, then `ũ = 0` on `frontier Ω`. Proof ("Using local charts this is
-reduced to" the `Q_+` computation): for `x₀ ∈ frontier Ω` with chart `c`, and `θ` smooth with
-compact support in `c.U` and `θ = 1` near `x₀`, `θ u ∈ W_0^{1,p}(Ω)` restricts to
-`W_0^{1,p}(c.U ∩ Ω)` (`SobolevEuclideanZero.mem_of_mem_restrict` (b) and the restriction of a
-`W_0` function supported in `U` — the test functions `θ φ_n` have support in `U ∩ Ω`), transfers
-along `c.toFun` to `W_0^{1,p}(Q_+)` ((c)), with the representative `(θ ũ) ∘ c.toFun` continuous
-on `closure Q_+` (`c.continuousOn` on `closure Q`, `c.toFun '' closure Q_+ ⊆ closure (U ∩ Ω)`);
-the `Q_+` computation gives `(θ ũ)(c.toFun y) = 0` for `y ∈ Q_0`, and `x₀ = c.toFun y₀` for some
-`y₀ ∈ Q_0` by `c.image_zero`, so `ũ x₀ = 0`. ★★, ~250 lines. Together with the previous nodes
-this is Theorem 9.17 in full; chapter 9b's Step A (classical ⇒ weak solutions of the Dirichlet
-problem) is the consumer.
-
-Blocked: depends on `SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure` and `SobolevEuclideanZero.mem_of_mem_restrict`, both left open (sob9, 2026-09-19); ~250 lines on top of them.'''
-deps = ["SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure", "SobolevEuclideanZero.mem_of_mem_restrict", "ContDiffChart.isDiffeoOnWithBoundedJacobian_pos", "IsContDiffChartDomain", "ContDiffChart"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17 (ii) ⇒ (i)"
 
 [[node]]
@@ -188,7 +137,7 @@ dense in `W^{1,p}` (truncation, Proposition 9.5). ★★★, ~400 lines; low pri
 also the counterexample of Remark 19 (the converse of Theorem 9.17 (i) ⇒ (ii) fails without
 smoothness: a `u ∈ H^1(ℝ^N ∖ {0}) ∩ C(Ω̄)` not vanishing at `0` is in `H_0^1`).
 
-Blocked: not attempted (sob9, 2026-09-19; low priority per the desc, no consumer); the route in the desc stands, ~400 lines.'''
+Blocked: not attempted (sob9 and sob12, 2026-09-19; low priority per the desc, no consumer); the route in the desc stands, ~400 lines. The ingredients now available: `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` (Lemma 9.5), `SobolevMultiIndexZero.mul_contDiff_mem` (a smooth compactly supported factor preserves `W_0^{1,p}`), `SobolevMultiIndexZero.contDiff_comp_mem` (truncation).'''
 deps = ["SobolevEuclideanZero", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "MemSobolevMultiIndex.contDiff_comp", "SobolevMultiIndex.tendsto_cutoff_smul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
 
@@ -409,3 +358,72 @@ id = "denseRange_of_forall_apply_eq_zero"
 
 [[node]]
 id = "SobolevEuclideanZero.denseRange_toDualL2"
+
+[[node]]
+id = "unitChartCubeStrip"
+
+[[node]]
+id = "unitChartCubeStrip_subset"
+
+[[node]]
+id = "isOpen_unitChartCubeStrip"
+
+[[node]]
+id = "measurableSet_unitChartCubeStrip"
+
+[[node]]
+id = "snocLast_mem_unitChartCubeStrip_iff"
+
+[[node]]
+id = "lintegral_unitChartCubeStrip"
+
+[[node]]
+id = "lintegral_unitChartCubeStrip_le_of_contDiff"
+
+[[node]]
+id = "MeasureTheory.lintegral_enorm_le_eLpNorm_mul_of_le"
+
+[[node]]
+id = "MeasureTheory.lintegral_enorm_le_lintegral_enorm_sub_add"
+
+[[node]]
+id = "MeasureTheory.lintegral_enorm_le_mul_of_tendsto"
+
+[[node]]
+id = "volume_unitChartCubeStrip_ne_top"
+
+[[node]]
+id = "SobolevEuclidean.lintegral_unitChartCubeStrip_le_of_fn_ae_eq_testFunction"
+
+[[node]]
+id = "SobolevEuclideanZero.lintegral_unitChartCubeStrip_le"
+
+[[node]]
+id = "volume_unitChartCubeStrip"
+
+[[node]]
+id = "tendsto_lintegral_unitChartCubeStrip"
+
+[[node]]
+id = "le_lintegral_unitChartCubeStrip"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_mul_of_tendsto"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_mul_add_mul_of_tendsto"
+
+[[node]]
+id = "SobolevMultiIndexZero.fn_sub_ae_eq_mul_aux"
+
+[[node]]
+id = "SobolevMultiIndexZero.weakDeriv_single_sub_ae_eq_mul_aux"
+
+[[node]]
+id = "ContDiffChart.mapsTo_closure_unitChartCubePos"
+
+[[node]]
+id = "ContDiffChart.eqOn_unitChartCubeZero_aux"

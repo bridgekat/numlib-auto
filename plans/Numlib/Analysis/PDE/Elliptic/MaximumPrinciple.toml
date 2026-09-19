@@ -1,155 +1,22 @@
 namespace = "Elliptic"
-desc = '''
-The weak maximum principle for second-order elliptic equations by Stampacchia's truncation
-method: [brezis2011functional] §9.7 — Theorem 9.27 (the Dirichlet problem for `-Δu + u = f` on an
-arbitrary open set, in both cases `|Ω| < ∞` and `|Ω| = ∞`), Corollary 9.28, Remark 27 (the
-classical-solution proof, valid for general operators), Proposition 9.29 (general elliptic
-operators with `a₀ ≥ 0`), Proposition 9.30 (the Neumann problem).
-
-## The shape of the statements
-
-A weak solution is an element `u` of `H^1(Ω) = SobolevEuclidean N 1 2 Ω` and "`u ∈ C(Ω̄)`" is a
-function `ũ : ℝ^N → ℝ`, continuous on `closure Ω`, with `SobolevMultiIndex.fn u =ᵐ[Ω] ũ`; the
-boundary values are the values of `ũ` on `frontier Ω`. The book's `sup_Γ u` and `sup_Ω f` are
-not formed: a bound `K : ℝ` with `∀ x ∈ frontier Ω, ũ x ≤ K` and `f ≤ K` a.e. on `Ω` is the
-hypothesis and `ũ x ≤ K` for every `x ∈ Ω` the conclusion (the book's `K < ∞`, "otherwise there
-is nothing to prove"); lower bounds are the same statement for `-u`, and the `iInf`/`iSup` forms
-of Corollary 9.28 and Proposition 9.29 (80)–(81) are corollaries. The almost-everywhere bound
-`ũ ≤ K` a.e. on `Ω` is upgraded to every point of `Ω` by continuity, `Ω` being open.
-
-## The engine
-
-Every proof in the section is the same three steps, and `le_of_forall_truncation_mem` states
-them once: (1) a truncation `G ∈ C¹(ℝ)` with `|G'| ≤ M`, `G` strictly increasing on `(0, ∞)`,
-`G = 0` on `(-∞, 0]` (`exists_truncation`, e.g. `G(s) = s - 1 + e^{-s}` for `s ≥ 0`);
-(2) `v = G(u - K') ∈ H^1(Ω)` by the chain rule, Proposition 9.5 (chapter 9a's
-`MemSobolevMultiIndex.contDiff_comp`), and `v` is an admissible test function — in `H^1_0(Ω)`
-for the Dirichlet problem (continuous, zero on `Γ`: Theorem 9.17 (i) ⇒ (ii), any `Ω`), in
-`H^1(Ω)` for the Neumann problem; (3) the equation tested with `v` gives
-`∫ |∇u|² G'(u - K') + ∫ (u - K') G(u - K') ≤ ∫ (f - K') G(u - K') ≤ 0`, whose integrands are
-nonnegative, so `(u - K') G(u - K') = 0` a.e., so `u ≤ K'` a.e. The case `|Ω| = ∞` needs
-`K' > K ≥ 0` to make `G(u - K') ∈ L¹(Ω)` (footnote 36 and the estimate
-`K' ∫_{[u ≥ K']} |u| ≤ ∫ u²`), which is why the engine takes every `K' > K` and concludes
-`u ≤ K`.
-
-Proposition 9.29 replaces `∫ |∇u|²` by `∫ ∑ a_ij ∂ᵢu ∂ⱼu G'(u) ≥ α ∫ |∇u|² G'(u)` and, since the
-form has no `∫ uv` term, must conclude from `∫ |∇u|² G'(u) = 0` by the auxiliary
-`H(t) = ∫₀ᵗ √G'(s) ds`: `H(u) ∈ H^1_0(Ω)` with `∇H(u) = 0`, hence `H(u) = 0` (footnote 39,
-`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`: the zero extension of a `W^{1,p}_0` function
-with vanishing gradient is a constant `L^p` function on `ℝ^N`, hence zero), hence `u ≤ 0`. The book
-proves Proposition 9.29 for `a_i = 0` only, citing Gilbarg–Trudinger, Theorem 8.1, for the drift
-term; both are planned, the general case with that route.
-
-The book's hypothesis `u ∈ C(Ω̄)` is used only to place `G(u - K')` in `H^1_0(Ω)` through Theorem
-9.17; footnotes 35, 37 and 38 say it can be dropped for `u ∈ H^1_0(Ω)`, and
-`SobolevMultiIndexZero.contDiff_comp_mem` of `Numlib/Analysis/Sobolev/Zero` (the chain rule
-preserves `W^{1,p}_0`) supplies exactly that, so the `H^1_0` variants are stated beside the continuous ones. They are what Remark 23's
-uniqueness and Chapter 10's heat-equation maximum principle consume.
-'''
 
 [[node]]
 id = "exists_truncation"
-kind = "theorem"
-desc = '''There is a `G : ℝ → ℝ` with `ContDiff ℝ 1 G`, `|deriv G s| ≤ 1` for all `s`,
-`StrictMonoOn G (Set.Ioi 0)`, `G s = 0` for `s ≤ 0`, and `0 ≤ G`: the truncation function of the
-proof of [brezis2011functional] Theorem 9.27 (p. 11553), with `M = 1`. Take
-`G s = s - 1 + exp (-s)` for `s ≥ 0` and `0` for `s ≤ 0`: `G' s = 1 - exp (-s)` on `s > 0`,
-continuous at `0` with value `0`, so `G ∈ C¹` (`ContDiff` by gluing along `0` with matching
-values and derivatives, `contDiff_of_…` piecewise), `0 ≤ G' < 1`, and `G' > 0` on `(0, ∞)`.
-Companion: `truncation_mul_nonneg` (`0 ≤ t * G t`, with equality iff `t ≤ 0`), and
-`exists_truncation_sqrt_deriv`, the function `H t = ∫₀ᵗ √(G' s) ds` of the proof of Proposition
-9.29: `C¹` with `|H'| ≤ 1`, `H 0 = 0`, `H t > 0` for `t > 0`, `H t = 0` for `t ≤ 0`
-(`intervalIntegral.integral_hasDerivAt_right` with the continuous integrand `√G'`). ★ (~100 lines).'''
-deps = []
 
 [[node]]
 id = "_root_.SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero"
-kind = "theorem"
-desc = '''**Footnote 39 of [brezis2011functional] §9.7**: for `1 ≤ p < ∞` and any open `Ω ⊆ ℝ^N`, a
-function `f ∈ W^{1,p}_0(Ω)` whose weak gradient vanishes almost everywhere on `Ω` is zero:
-`u ∈ SobolevEuclideanZero N 1 p Ω → (∀ i, weakDeriv u (MultiIndexLE.single i) = 0) → u = 0`. Proof: the zero
-extension `f̄` of `f` lies in `W^{1,p}(ℝ^N)` with `∇f̄ = ext(∇f) = 0` (Proposition 9.18 (i) ⇒ (iii),
-which holds for every open `Ω`, chapter 9a's `Zero`), so `f̄` is almost everywhere constant on
-the connected `ℝ^N` (Remark 7, chapter 9a's `Friedrichs`), and a constant in `L^p(ℝ^N)` with
-`p < ∞` is `0` (`MeasureTheory.memLp_const_iff` on an infinite measure). ★★ (~100 lines).'''
-deps = [
-  "SobolevEuclideanZero", "MultiIndexLE.single",
-  "SobolevEuclideanZero.extendZeroL",  # ch9a, Zero.toml: Proposition 9.18 (i) ⇒ (iii), the extension by zero as a bounded map
-  "HasWeakFDerivOn.ae_eq_const_of_isPreconnected",  # ch9a, Friedrichs.toml: Remark 7
-]
 
 [[node]]
 id = "le_of_forall_truncation_mem"
-kind = "theorem"
-desc = '''**The truncation engine of [brezis2011functional] §9.7.** Let `Ω ⊆ ℝ^N` be open,
-`V ≤ SobolevEuclidean N 1 2 Ω` a subspace, `u ∈ H^1(Ω)`, `f ∈ L²(Ω)` with
-`laplaceForm Ω u φ = ⟪f, fn φ⟫` for all `φ ∈ V`, `K : ℝ` with `f ≤ K` a.e. on `Ω`, and suppose
-that for every `K' > K` and every truncation `G` of `exists_truncation` the element of `H^1(Ω)`
-carrying `G (fn u - K')` lies in `V`. Then `fn u ≤ K` a.e. on `Ω`.
-
-Proof (p. 11560–11590, both cases at once): fix `K' > K`. Test with `v = G(u - K') ∈ V`:
-`∫ |∇u|² G'(u - K') + ∫ u G(u - K') = ∫ f G(u - K')`, the gradient of `v` being `G'(u - K') ∇u`
-(Proposition 9.5). The first term is `≥ 0`. `G(u - K') ∈ L¹(Ω)`: it is `≤ M |u - K'| ≤ M(|u| + K')`
-on the set `[u ≥ K']`, and `0` elsewhere; when `|Ω| < ∞` this is integrable outright, and when
-`|Ω| = ∞` the case `K < 0` is impossible (`f ≤ K < 0` a.e. and `f ∈ L²` force `|Ω| < ∞`), so
-`K' > 0` and `K' ∫_{[u ≥ K']} |u| ≤ ∫ u² < ∞` (footnote 36 and (72)). Subtracting
-`K' ∫ G(u - K')` from both sides, `∫ (u - K') G(u - K') ≤ ∫ (f - K') G(u - K') ≤ 0`; the left
-integrand is `≥ 0` (`truncation_mul_nonneg`), so it vanishes a.e., so `u ≤ K'` a.e.; `K' → K`.
-★★★ (~300 lines: the integrability bookkeeping of the infinite-measure case is the bulk).'''
-deps = [
-  "exists_truncation", "laplaceForm", "SobolevEuclidean",
-  "MemSobolevMultiIndex.contDiff_comp",  # ch9a, Calculus.toml: Proposition 9.5
-]
 
 [[node]]
 id = "le_of_le_frontier"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.27 (maximum principle for the Dirichlet problem), upper
-bound.** Let `Ω ⊆ ℝ^N` be open, `f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with
-`laplaceForm Ω u φ = ⟪f, fn φ⟫` for all `φ ∈ H^1_0(Ω)`, and `ũ` continuous on `closure Ω` with
-`fn u =ᵐ[Ω] ũ`. If `ũ x ≤ K` for all `x ∈ frontier Ω` and `f ≤ K` a.e. on `Ω`, then `ũ x ≤ K` for
-all `x ∈ Ω`. Together with `ge_of_ge_frontier` (apply it to `-u`, `-f`, `-K`) this is (70):
-`min {inf_Γ u, inf_Ω f} ≤ u ≤ max {sup_Γ u, sup_Ω f}` on `Ω`, for both `|Ω| < ∞` and `|Ω| = ∞`.
-
-Proof: `le_of_forall_truncation_mem` with `V = H^1_0(Ω)`; the admissibility of
-`v = G(ũ - K')`: it is continuous on `closure Ω`, vanishes on `frontier Ω` (`ũ ≤ K < K'` there and
-`G = 0` on `(-∞, 0]`), and its class is in `H^1(Ω)` by Proposition 9.5 — in the case `|Ω| < ∞`
-applied to `t ↦ G(t - K') - G(-K')`, the constant `G(-K')` being in `L²` of a finite measure;
-in the case `|Ω| = ∞`, `K' > 0` and `G(-K') = 0` — so it is in `H^1_0(Ω)` by Theorem 9.17
-(i) ⇒ (ii), which needs no regularity of `Ω` (Remark 19). The a.e. bound becomes a pointwise one
-on the open `Ω` by continuity. ★★★ (~250 lines beyond the engine). The book says "proceed as in
-the proof of Theorem 8.18"; the one-dimensional maximum principle is its Theorem 8.19.'''
-deps = [
-  "le_of_forall_truncation_mem", "SobolevEuclideanZero",
-  "SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier",  # ch9a, Zero.toml: Theorem 9.17 (i) ⇒ (ii), any open Ω
-]
 
 [[node]]
 id = "le_of_mem_zero"
-kind = "theorem"
-desc = '''**Theorem 9.27 without the continuity hypothesis, for `u ∈ H^1_0(Ω)`** (footnote 35 of
-[brezis2011functional] §9.7): if `u ∈ H^1_0(Ω)` satisfies `laplaceForm Ω u φ = ⟪f, fn φ⟫` for all
-`φ ∈ H^1_0(Ω)`, `f ≤ K` a.e. on `Ω` and `0 ≤ K`, then `fn u ≤ K` a.e. on `Ω`; and
-`ge_of_mem_zero` for the lower bound. The boundary value `0` replaces `sup_Γ u`, which is why
-`K ≥ 0` is assumed. Proof: `le_of_forall_truncation_mem` with `V = H^1_0(Ω)`; the truncation
-`G(u - K')` with `K' > K ≥ 0` satisfies `G(0 - K') = 0`, so `t ↦ G(t - K')` vanishes at `0` and
-`SobolevMultiIndexZero.contDiff_comp_mem` places `G(u - K')` in `H^1_0(Ω)`. ★★ (~120 lines).
-Chapter 10's maximum principle for the heat equation (Theorem 10.3) consumes this form.'''
-deps = ["le_of_forall_truncation_mem", "_root_.SobolevMultiIndexZero.contDiff_comp_mem"]
 
 [[node]]
 id = "nonneg_of_nonneg_frontier"
-kind = "theorem"
-desc = '''**[brezis2011functional] Corollary 9.28.** Under the hypotheses of `le_of_le_frontier`:
-(73) if `ũ ≥ 0` on `frontier Ω` and `f ≥ 0` a.e. on `Ω` then `ũ ≥ 0` on `Ω`
-(`nonneg_of_nonneg_frontier`, from `ge_of_ge_frontier` with `K = 0`); (74)
-`‖u‖_{L^∞(Ω)} ≤ max {sup_{frontier Ω} |ũ|, ‖f‖_{L^∞(Ω)}}` (`essSup_abs_le_max`, from both bounds
-with `K = max …`, stated with `‖f‖_{L^∞}` as the norm of `Lp ℝ ⊤` when `f` is bounded, and with
-`⨆ x ∈ frontier Ω, |ũ x|` when that is finite — a `BddAbove` hypothesis); and the two particular
-cases: `f = 0` gives `‖u‖_∞ ≤ ‖ũ‖_{L^∞(Γ)}` (`essSup_abs_le_of_load_eq_zero`), `ũ = 0` on `Γ`
-gives `‖u‖_∞ ≤ ‖f‖_∞` (`essSup_abs_le_of_eqOn_zero_frontier`). ★★ (~150 lines for the four
-statements).'''
-deps = ["le_of_le_frontier"]
 
 [[node]]
 id = "le_of_classical"
@@ -176,37 +43,13 @@ change of coordinates and the one-dimensional test along each eigen-direction), 
 first-order terms vanish at `x₀`, so `ũ(x₀) = f(x₀) + ∑ a_ij ∂_i∂_j ũ(x₀) + ∑ (∂_j a_ij) ∂_i ũ(x₀) ≤ f(x₀) ≤ K`.
 ★★ (~250 lines including the Hessian lemma). The remark's last sentence — that the conclusion
 holds for *weak* solutions of (77) — is Gilbarg–Trudinger's theorem and is
-`nonneg_of_nonneg_frontier_general`'s territory; not part of this node.'''
+`nonneg_of_nonneg_frontier_general`'s territory; not part of this node.
+
+Blocked: not attempted for lack of time (sob12, 2026-09-19); the Laplacian instance is proved as `Elliptic.le_of_classical_laplacian` from `IsLocalMax.laplacian_nonpos` (`Numlib/Analysis/Calculus/DerivativeTest.lean`, ~30 lines). The general operator needs the Hessian-trace step `∑ a_ij(x₀) ∂_i∂_j ũ(x₀) ≤ 0` for a symmetric positive semidefinite `a(x₀)` and a negative semidefinite Hessian: `tr(A H) = tr(√A H √A) = ∑_k D²ũ(x₀)[√A e_k, √A e_k] ≤ 0` with `Matrix.PosSemidef.sqrt` and the line restriction `ContDiffAt.deriv_deriv_comp_add_smul`; ~200 lines, no consumer.'''
 deps = []
 
 [[node]]
 id = "nonneg_of_nonneg_frontier_general_zero_drift"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 9.29, (79), in the case `a_i = 0` the book proves.**
-Let `Ω ⊆ ℝ^N` be open, `A` with `IsUniformlyElliptic Ω A α`, `a₀ ∈ L^∞(Ω)` with `a₀ ≥ 0` a.e.,
-`f ∈ L²(Ω)`, `u ∈ H^1(Ω)` with `generalForm Ω A 0 a₀ u φ = ⟪f, fn φ⟫` for all `φ ∈ H^1_0(Ω)`, and
-`ũ` continuous on `closure Ω` with `fn u =ᵐ ũ`. If `ũ ≥ 0` on `frontier Ω` and `f ≥ 0` a.e. then
-`ũ ≥ 0` on `Ω`. Also stated for `u ∈ H^1_0(Ω)` without `ũ`
-(`nonneg_of_mem_zero_general_zero_drift`, via `SobolevMultiIndexZero.contDiff_comp_mem`), which
-is the drift-free instance of Remark 23's second clause: with `f = 0` it gives `u ≥ 0` and
-`u ≤ 0`, so the homogeneous kernel of `generalForm Ω A 0 a₀` on `H^1_0` is trivial and
-`existsUnique_of_ker_eq_bot` applies.
-
-Proof (p. 11636–11650), for the equivalent (79'): test with `φ = G(u) ∈ H^1_0(Ω)` (`G` from
-`exists_truncation`; `G(u)` is continuous, vanishes on `Γ` where `u ≤ 0`, and is in `H^1` by
-Proposition 9.5, hence in `H^1_0` by Theorem 9.17): `∫ ∑ a_ij ∂_i u ∂_j u G'(u) + ∫ a₀ u G(u) = ∫ f G(u) ≤ 0`;
-the second term is `≥ 0` (`a₀ ≥ 0`, `u G(u) ≥ 0`), so by ellipticity
-`α ∫ |∇u|² G'(u) ≤ 0`. With `H t = ∫₀ᵗ √G'` (`exists_truncation_sqrt_deriv`), `H(u) ∈ H^1_0(Ω)`
-(same argument) and `|∇ H(u)|² = |∇u|² G'(u) = 0` a.e., so `∇ H(u) = 0` and
-`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero` gives `H(u) = 0` a.e.; `H > 0` on `(0, ∞)`
-forces `u ≤ 0` a.e., hence on `Ω` by continuity. ★★★ (~400 lines).'''
-deps = [
-  "generalForm", "IsUniformlyElliptic", "exists_truncation",
-  "_root_.SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero",
-  "_root_.SobolevMultiIndexZero.contDiff_comp_mem",
-  "MemSobolevMultiIndex.contDiff_comp",  # ch9a, Calculus.toml: Proposition 9.5
-  "SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier",  # ch9a, Zero.toml: Theorem 9.17 (i) ⇒ (ii)
-]
 
 [[node]]
 id = "nonneg_of_nonneg_frontier_general"
@@ -244,21 +87,121 @@ the form has no zeroth-order term and the constant `K` lies in `H^1(Ω)` when `�
 finite measure); apply (79) to `u - K` for the lower bound and to `K - u` for the upper one.
 Stated with the general-drift (79) as dependency, and separately for `a₁ = 0` on the drift-free
 one (`ge_iInf_frontier_of_nonneg_zero_drift`), so that the drift-free case is available when the
-general one is not. ★★ (~150 lines).'''
+general one is not. ★★ (~150 lines).
+
+Blocked: depends on the deferred general-drift `nonneg_of_nonneg_frontier_general` (sob12, 2026-09-19); the drift-free forms are proved as `Elliptic.ge_of_ge_frontier_general_zero_drift` ((80), with an explicit bound `K` in place of `inf_Γ u` and `volume Ω ≠ ⊤` in place of boundedness), `Elliptic.le_of_le_frontier_general_zero_drift` ((80')) and `Elliptic.mem_Icc_of_frontier_general_zero_drift` ((81)).'''
 deps = ["nonneg_of_nonneg_frontier_general", "nonneg_of_nonneg_frontier_general_zero_drift"]
 
 [[node]]
 id = "le_of_neumann"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 9.30 (maximum principle for the Neumann problem).**
-For `Ω ⊆ ℝ^N` open, `f ∈ L²(Ω)` and `u ∈ H^1(Ω)` with `laplaceForm Ω u φ = ⟪f, fn φ⟫` for all
-`φ ∈ H^1(Ω)`: if `f ≤ K` a.e. on `Ω` then `fn u ≤ K` a.e. on `Ω`, and if `K ≤ f` a.e. then
-`K ≤ fn u` a.e. (`ge_of_neumann`), which is (82), `inf_Ω f ≤ u ≤ sup_Ω f` a.e. Proof ("analogous
-to the proof of Theorem 9.27"): `le_of_forall_truncation_mem` with `V = ⊤`, where the
-admissibility of `G(u - K')` is just its membership in `H^1(Ω)` (Proposition 9.5, with the same
-two-case treatment of the constant `G(-K')` as in `le_of_le_frontier`). No boundary values enter,
-so no continuity of `u` is assumed. ★★ (~150 lines).'''
-deps = [
-  "le_of_forall_truncation_mem",
-  "MemSobolevMultiIndex.contDiff_comp",  # ch9a, Calculus.toml: Proposition 9.5
-]
+
+[[node]]
+id = "truncationDeriv"
+
+[[node]]
+id = "stampacchiaTruncation"
+
+[[node]]
+id = "contDiff_stampacchiaTruncation"
+
+[[node]]
+id = "deriv_stampacchiaTruncation"
+
+[[node]]
+id = "strictMonoOn_stampacchiaTruncation"
+
+[[node]]
+id = "IsStampacchiaTruncation"
+
+[[node]]
+id = "IsStampacchiaTruncation.mul_nonneg"
+
+[[node]]
+id = "IsStampacchiaTruncation.mul_eq_zero_iff"
+
+[[node]]
+id = "isStampacchiaTruncation_stampacchiaTruncation"
+
+[[node]]
+id = "stampacchiaTruncationSqrt"
+
+[[node]]
+id = "sq_deriv_stampacchiaTruncationSqrt"
+
+[[node]]
+id = "isStampacchiaTruncation_stampacchiaTruncationSqrt"
+
+[[node]]
+id = "forall_le_of_ae_le_of_continuousOn"
+
+[[node]]
+id = "_root_.SobolevMultiIndex.fn_neg"
+
+[[node]]
+id = "laplaceForm_neg_apply"
+
+[[node]]
+id = "load_neg_apply"
+
+[[node]]
+id = "exists_const_of_measure_ne_top"
+
+[[node]]
+id = "exists_truncation_elem"
+
+[[node]]
+id = "weakDeriv_single_ae_eq_of_fn_ae_eq_truncation"
+
+[[node]]
+id = "nonneg_of_ae_le_of_measure_eq_top"
+
+[[node]]
+id = "ge_of_ge_frontier"
+
+[[node]]
+id = "le_max_of_isWeakSolution"
+
+[[node]]
+id = "ge_of_mem_zero"
+
+[[node]]
+id = "abs_le_max_of_isWeakSolution"
+
+[[node]]
+id = "abs_le_of_load_eq_zero"
+
+[[node]]
+id = "abs_le_of_eqOn_zero_frontier"
+
+[[node]]
+id = "ge_of_neumann"
+
+[[node]]
+id = "nonpos_ae_of_general_zero_drift_of_forall_mem"
+
+[[node]]
+id = "generalForm_neg_apply"
+
+[[node]]
+id = "nonpos_of_nonpos_frontier_general_zero_drift"
+
+[[node]]
+id = "nonpos_of_mem_zero_general_zero_drift"
+
+[[node]]
+id = "nonneg_of_mem_zero_general_zero_drift"
+
+[[node]]
+id = "generalForm_zero_zero_sub_apply"
+
+[[node]]
+id = "ge_of_ge_frontier_general_zero_drift"
+
+[[node]]
+id = "le_of_le_frontier_general_zero_drift"
+
+[[node]]
+id = "mem_Icc_of_frontier_general_zero_drift"
+
+[[node]]
+id = "le_of_classical_laplacian"

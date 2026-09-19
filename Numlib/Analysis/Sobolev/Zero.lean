@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Sobolev.Calculus
+import Numlib.Analysis.Sobolev.Embedding
 import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.RemovableSingularity
@@ -30,16 +31,31 @@ closure `W_0^{1,p}(Ω)` of the test functions in `W^{1,p}(Ω)` (`SobolevMultiInd
 * `SobolevEuclideanZero.hasSobolevExtensionOn`: **Remark 20**, the extension by zero is a
   bounded (indeed isometric) extension operator on `W_0^{1,p}(Ω)`, so that the embedding and
   compactness theorems stated under `HasSobolevExtensionOn` hold on `W_0^{1,p}(Ω)` with no
-  regularity of `Ω`;
+  regularity of `Ω`; `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq` is the Sobolev
+  inequality `‖u‖_{p*} ≤ C ‖∇u‖_p` on `W_0^{1,p}(Ω)` of an arbitrary open set (Remark 20, last
+  sentence) and `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top` Poincaré's
+  inequality on an open set of finite measure (**Remark 21**, first clause, for `N ≥ 2`);
 * `SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`: **Theorem 9.17,
   (i) ⇒ (ii)**, on any open set: a `W^{1,p}(Ω)` function with a representative continuous on
   `closure Ω` and vanishing on `∂Ω` lies in `W_0^{1,p}(Ω)`. The book's "`u_n → u` by dominated
   convergence" silently needs `∇u = 0` a.e. on `{u = 0}`; here the truncations `G(nu)/n` are
   shown to be Cauchy in `W^{1,p}(Ω)` instead, their gradients converging to
   `{u ≠ 0}.indicator ∇u`, and the limit is identified through the function alone;
+  `SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure` is **Theorem 9.17, (ii) ⇒ (i)**
+  on a `C^1` chart domain: a `W_0^{1,p}(Ω)` function with a representative continuous on
+  `closure Ω` vanishes on `∂Ω`, by local charts from the `Q_+` computation
+  `SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure` (the strip inequality
+  `∫_{x_N < ε} |u| ≤ ε ∫_{x_N < ε} |∂_N u|` on `W_0^{1,p}(Q_+)`);
 * `SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le` and
   `SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le`: Proposition 9.18,
-  (i) ⇒ (ii) and (ii) ⇒ (iii);
+  (i) ⇒ (ii) and (ii) ⇒ (iii); `SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos`
+  is the `Q_+` computation of (iii) ⇒ (i), by one-sided mollifiers, and
+  `SobolevEuclideanZero.mem_of_indicator_memSobolev` is **Proposition 9.18, (iii) ⇒ (i)** on a
+  `C^1` chart domain, by local charts and a partition of unity;
+* `SobolevMultiIndexZero.mem_of_mem_restrict`, `SobolevMultiIndexZero.mul_contDiff_mem` and
+  `SobolevMultiIndexZero.compDiffeoL_mem`: the transfer of membership in `W_0^{1,p}` from an open
+  subset, under a smooth compactly supported factor, and along a change of variables — the steps
+  of the chart reductions of Theorem 9.17 and Proposition 9.18;
 * `SobolevEuclideanZero.eq_top` (Remark 17) and
   `SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport` (Remark 18);
 * `SobolevMultiIndexZero.contDiff_comp_mem` and `SobolevEuclideanZero.posPart_mem`: the chain
@@ -61,11 +77,11 @@ and `SobolevMultiIndex.ext_of_fn_ae_eq`.
 
 ## References
 
-[brezis2011functional], §9.4: Theorem 9.17, Proposition 9.18, Remarks 17–20, Proposition 9.20.
+[brezis2011functional], §9.4: Theorem 9.17, Proposition 9.18, Remarks 17–21, Proposition 9.20.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
-open scoped ContDiff Distributions ENNReal Topology
+open scoped ContDiff Convolution Distributions ENNReal NNReal Pointwise Topology
 
 noncomputable section
 
@@ -588,6 +604,298 @@ theorem hasSobolevExtensionOn : HasSobolevExtensionOn (SobolevEuclideanZero N 1 
 end SobolevEuclideanZero
 
 end Typed
+
+/-! ### Remarks 20 and 21: the Sobolev and Poincaré inequalities on `W_0^{1,p}(Ω)` -/
+
+section Remark20
+
+variable {N : ℕ} {p p' : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+open SobolevMultiIndex
+
+namespace SobolevEuclideanZero
+
+/-- **Remark 20, the Sobolev inequality on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**, in the
+form of Theorem 9.9: for `1 ≤ p < N`, `1/p* = 1/p − 1/N` and `u ∈ W_0^{1,p}(Ω)`,
+`‖u‖_{L^{p*}(Ω)} ≤ C(p, N) ∑_i ‖∂_i u‖_{L^p(Ω)}`, with Mathlib's constant
+`SobolevEuclidean.gnsConst`. Theorem 9.9 (`SobolevEuclidean.eLpNorm_fn_le_of_eq`) applied to the
+extension by zero `SobolevEuclideanZero.extendZeroL u ∈ W^{1,p}(ℝ^N)`, whose partial derivatives
+have the `L^p` norms of those of `u` ([brezis2011functional] Chapter 9, Remark 20, "it can also
+be deduced from Theorem 9.9 that …"). -/
+theorem eLpNorm_fn_le_sum_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
+    (u : SobolevEuclideanZero N 1 p Ω) :
+    eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
+      ≤ SobolevEuclidean.gnsConst N p
+        * ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
+          (MultiIndexLE.single i)‖ := by
+  have h := SobolevEuclidean.eLpNorm_fn_le_of_eq hpN hp' (extendZeroL N p Ω u)
+  rw [eLpNorm_congr_ae (fn_extendZeroL u),
+    eLpNorm_indicator_eq_eLpNorm_restrict Ω.isOpen.measurableSet] at h
+  simp only [extendZeroL_apply, norm_weakDeriv_extendZero] at h
+  exact h
+
+/-- **Remark 20, the Sobolev inequality on `W_0^{1,p}(Ω)` for an arbitrary open `Ω`**: for
+`1 ≤ p < N`, `1/p* = 1/p − 1/N` and `u ∈ W_0^{1,p}(Ω)`,
+`‖u‖_{L^{p*}(Ω)} ≤ C(p, N) ‖∇u‖_{L^p(Ω)}` with `C(p, N) = N · SobolevEuclidean.gnsConst N p`
+([brezis2011functional] Chapter 9, Remark 20): no regularity of `Ω` is needed, the extension by
+zero being an extension operator on `W_0^{1,p}(Ω)`. The sum form is
+`SobolevEuclideanZero.eLpNorm_fn_le_sum_of_eq`. -/
+theorem eLpNorm_fn_le_gradNorm_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
+    (u : SobolevEuclideanZero N 1 p Ω) :
+    eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))
+      ≤ ENNReal.ofReal (SobolevEuclidean.gnsConst N p * N
+          * gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+  refine (eLpNorm_fn_le_sum_of_eq hpN hp' u).trans ?_
+  have hsum : ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)‖
+      ≤ N * ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+    calc ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)‖
+        ≤ ∑ _i : Fin N, ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) :=
+          Finset.sum_le_sum fun i _ ↦
+            ENNReal.ofReal_le_ofReal (norm_weakDeriv_single_le_gradNorm _ i)
+      _ = N * ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+  calc SobolevEuclidean.gnsConst N p
+        * ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)‖
+      ≤ SobolevEuclidean.gnsConst N p
+          * (N * ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω))) :=
+        mul_le_mul' le_rfl hsum
+    _ = ENNReal.ofReal (SobolevEuclidean.gnsConst N p * N
+          * gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+        rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_mul (by positivity),
+          ENNReal.ofReal_natCast, ENNReal.ofReal_coe_nnreal, mul_assoc]
+
+/-- **`W_0^{1,p}(Ω) ⊆ L^{p*}(Ω)`** for `1 ≤ p < N` and an arbitrary open `Ω`
+([brezis2011functional] Chapter 9, Remark 20). -/
+theorem memLp_fn_of_eq (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹)
+    (u : SobolevEuclideanZero N 1 p Ω) :
+    MemLp (fn (u : SobolevEuclidean N 1 p Ω)) (p' : ℝ≥0∞)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  memLp_iff.2 ((eLpNorm_fn_le_gradNorm_of_eq hpN hp' u).trans_lt ENNReal.ofReal_lt_top)
+
+end SobolevEuclideanZero
+
+end Remark20
+
+section Remark21
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+open SobolevMultiIndex
+
+namespace SobolevEuclideanZero
+
+/-- The tensor weak gradient of the extension by zero of `u ∈ W_0^{1,p}(Ω)` may be taken to vanish
+outside `Ω`: it is `Ω.indicator w` for the tensor gradient `w` of `ū`, which vanishes almost
+everywhere off `Ω` because its values on the basis vectors are the zero extensions of the partial
+derivatives of `u`. -/
+theorem exists_hasWeakFDerivOn_indicator (u : SobolevEuclideanZero N 1 p Ω) :
+    ∃ w : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ,
+      HasWeakFDerivOn ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
+        (fn (u : SobolevEuclidean N 1 p Ω))) w ⊤ volume ∧
+      (∀ x, x ∉ (Ω : Set (EuclideanSpace ℝ (Fin N))) → w x = 0) ∧
+      MemLp w p volume ∧
+      eLpNorm w p volume ≤ ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
+        (MultiIndexLE.single i)‖ := by
+  classical
+  have hΩm := Ω.isOpen.measurableSet
+  obtain ⟨w, hw, hwp, hwi, -⟩ := exists_hasWeakFDerivOn_fn (extendZeroL N p Ω u)
+  simp only [Opens.coe_top, Measure.restrict_univ] at hwp hwi
+  -- `w` vanishes almost everywhere off `Ω`
+  have hzero : ∀ᵐ x ∂volume, x ∉ (Ω : Set (EuclideanSpace ℝ (Fin N))) → w x = 0 := by
+    have hall : ∀ᵐ x ∂volume, ∀ i, w x ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis i)
+        = (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
+          (weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)) x :=
+      ae_all_iff.2 fun i ↦ (hwi i).trans (weakDeriv_extendZeroL_single u i)
+    filter_upwards [hall] with x hx hxΩ
+    refine ContinuousLinearMap.ext fun ξ ↦ ?_
+    rw [← (EuclideanSpace.basisFun (Fin N) ℝ).toBasis.sum_repr ξ, map_sum]
+    simp only [map_smul, hx, Set.indicator_of_notMem hxΩ, smul_zero, Finset.sum_const_zero,
+      zero_apply]
+  have hae : w =ᵐ[volume] (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator w := by
+    filter_upwards [hzero] with x hx
+    by_cases hxΩ : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N)))
+    · rw [Set.indicator_of_mem hxΩ]
+    · rw [Set.indicator_of_notMem hxΩ, hx hxΩ]
+  refine ⟨(Ω : Set (EuclideanSpace ℝ (Fin N))).indicator w, ?_,
+    fun x hx ↦ Set.indicator_of_notMem hx _, hwp.ae_eq hae, ?_⟩
+  · unfold HasWeakFDerivOn
+    refine HasWeakIteratedFDerivOn.congr_ae hw ?_ ?_
+    · simpa only [Opens.coe_top, Measure.restrict_univ] using fn_extendZeroL u
+    · simp only [Opens.coe_top, Measure.restrict_univ]
+      filter_upwards [hae] with x hx
+      rw [hx]
+  · rw [← eLpNorm_congr_ae hae]
+    exact (SobolevEuclidean.eLpNorm_le_sum_of_hasWeakFDerivOn (extendZeroL N p Ω u) hw).trans
+      (le_of_eq (Finset.sum_congr rfl fun i _ ↦ by
+        rw [extendZeroL_apply, norm_weakDeriv_extendZero]))
+
+/-- The exponent bookkeeping of Remark 21: for `0 < a ≤ 1` and `0 < b < 1` there is `c` with
+`a ≤ c ≤ a + b` and `b < c ≤ 1`. -/
+theorem exists_exponent_aux {a b : ℝ} (ha : 0 < a) (ha1 : a ≤ 1) (hb : 0 < b) (hb1 : b < 1) :
+    ∃ c : ℝ, a ≤ c ∧ c ≤ a + b ∧ b < c ∧ c ≤ 1 :=
+  ⟨min 1 (max a (b + a / 2)), le_min ha1 (le_max_left _ _),
+    (min_le_right _ _).trans (max_le (by linarith) (by linarith)),
+    lt_min hb1 ((lt_max_of_lt_right (by linarith))), min_le_left _ _⟩
+
+/-- **Remark 21, first clause: Poincaré's inequality on an open set of finite measure**, sum
+form: for `N ≥ 2`, `1 ≤ p < ∞` and `Ω` of finite measure there is `C < ∞` with
+`‖u‖_{L^p(Ω)} ≤ C ∑_i ‖∂_i u‖_{L^p(Ω)}` for every `u ∈ W_0^{1,p}(Ω)`.
+
+Proof: choose an exponent `1 ≤ q ≤ p` with `q < N` and `p ≤ q*` (`1/q* = 1/q − 1/N`), which is
+possible for `N ≥ 2`. On the finite-measure `Ω`, `L^p(Ω) ⊆ L^q(Ω)`, so the extension by zero `ū`
+and its (tensor) weak gradient `w`, which vanishes off `Ω`, lie in `L^q(ℝ^N)`, and Theorem 9.9
+(`HasWeakFDerivOn.eLpNorm_le_eLpNorm_weakFDeriv_of_eq`) at the exponent `q` gives
+`‖u‖_{q*} ≤ C ‖w‖_q`; Hölder's inequality `‖u‖_p ≤ |Ω|^{1/p − 1/q*} ‖u‖_{q*}` and
+`‖w‖_q ≤ |Ω|^{1/q − 1/p} ‖w‖_p ≤ |Ω|^{1/q − 1/p} ∑_i ‖∂_i u‖_p` finish
+([brezis2011functional] Chapter 9, Remark 21, "Poincaré's inequality remains true if `Ω` has
+finite measure"). For `N = 1` the statement is false on unbounded sets of finite measure
+(`notes/book-errata.md`). -/
+theorem exists_eLpNorm_fn_le_sum_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤ N)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    ∃ C : ℝ≥0∞, C ≠ ⊤ ∧ ∀ u : SobolevEuclideanZero N 1 p Ω,
+      eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) p (volume.restrict (Ω : Set _))
+        ≤ C * ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
+          (MultiIndexLE.single i)‖ := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hΩm := Ω.isOpen.measurableSet
+  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    isFiniteMeasure_restrict.2 hΩ
+  have hP1 : 1 ≤ p.toReal := by
+    rw [← ENNReal.toReal_one]
+    exact ENNReal.toReal_mono hp' hp
+  have hP0 : 0 < p.toReal := zero_lt_one.trans_le hP1
+  have hN0 : (0 : ℝ) < N := by exact_mod_cast (zero_lt_two.trans_le hN)
+  have hN1 : (N : ℝ)⁻¹ < 1 := by
+    rw [inv_lt_one_iff₀]; right; exact_mod_cast (one_lt_two.trans_le hN)
+  obtain ⟨c, hac, hcab, hbc, hc1⟩ := exists_exponent_aux (inv_pos.2 hP0) (inv_le_one_of_one_le₀ hP1)
+    (inv_pos.2 hN0) hN1
+  have hc0 : 0 < c := (inv_pos.2 hN0).trans hbc
+  have hcb0 : 0 < c - (N : ℝ)⁻¹ := sub_pos.2 hbc
+  -- the exponents `q = 1/c` and `q* = 1/(c - 1/N)`
+  obtain ⟨q, hq⟩ : ∃ q : ℝ≥0, (q : ℝ) = c⁻¹ :=
+    ⟨Real.toNNReal c⁻¹, Real.coe_toNNReal _ (inv_pos.2 hc0).le⟩
+  obtain ⟨q', hq'⟩ : ∃ q' : ℝ≥0, (q' : ℝ) = (c - (N : ℝ)⁻¹)⁻¹ :=
+    ⟨Real.toNNReal _, Real.coe_toNNReal _ (inv_pos.2 hcb0).le⟩
+  have hq1 : 1 ≤ q := by
+    rw [← NNReal.coe_le_coe, hq, NNReal.coe_one]
+    exact one_le_inv₀ hc0 |>.2 hc1
+  have hqN : q < N := by
+    rw [← NNReal.coe_lt_coe, hq, NNReal.coe_natCast]
+    rw [inv_lt_comm₀ hc0 hN0]
+    exact hbc
+  have hqq' : (q' : ℝ)⁻¹ = q⁻¹ - (N : ℝ)⁻¹ := by
+    rw [hq', NNReal.coe_inv, hq, inv_inv, inv_inv]
+  have hqp : (q : ℝ≥0∞) ≤ p := by
+    rw [← ENNReal.ofReal_toReal hp', ← ENNReal.ofReal_coe_nnreal, hq]
+    refine ENNReal.ofReal_le_ofReal ?_
+    rw [inv_le_comm₀ hc0 hP0]
+    exact hac
+  have hpq' : p ≤ (q' : ℝ≥0∞) := by
+    rw [← ENNReal.ofReal_toReal hp', ← ENNReal.ofReal_coe_nnreal, hq']
+    refine ENNReal.ofReal_le_ofReal ?_
+    rw [le_inv_comm₀ hP0 hcb0]
+    linarith
+  have hqtop : (q : ℝ≥0∞) ≠ ⊤ := ENNReal.coe_ne_top
+  have hq'top : (q' : ℝ≥0∞) ≠ ⊤ := ENNReal.coe_ne_top
+  -- the two powers of the measure of `Ω`
+  obtain ⟨A, hA⟩ : ∃ A : ℝ≥0∞, A = volume (Ω : Set (EuclideanSpace ℝ (Fin N)))
+    ^ (1 / p.toReal - 1 / (q' : ℝ≥0∞).toReal) := ⟨_, rfl⟩
+  obtain ⟨B, hB⟩ : ∃ B : ℝ≥0∞, B = volume (Ω : Set (EuclideanSpace ℝ (Fin N)))
+    ^ (1 / (q : ℝ≥0∞).toReal - 1 / p.toReal) := ⟨_, rfl⟩
+  have hA' : A ≠ ⊤ := by
+    rw [hA]
+    refine ENNReal.rpow_ne_top_of_nonneg ?_ hΩ
+    rw [ENNReal.coe_toReal, hq', one_div, one_div, inv_inv, sub_nonneg]
+    linarith
+  have hB' : B ≠ ⊤ := by
+    rw [hB]
+    refine ENNReal.rpow_ne_top_of_nonneg ?_ hΩ
+    rw [ENNReal.coe_toReal, hq, one_div, one_div, inv_inv, sub_nonneg]
+    exact hac
+  refine ⟨SobolevEuclidean.gnsConst N q * B * A,
+    ENNReal.mul_ne_top (ENNReal.mul_ne_top ENNReal.coe_ne_top hB') hA', fun u ↦ ?_⟩
+  obtain ⟨w, hw, hw0, hwp, hwle⟩ := exists_hasWeakFDerivOn_indicator u
+  have hwae : w =ᵐ[volume] (Ω : Set (EuclideanSpace ℝ (Fin N))).indicator w :=
+    Eventually.of_forall fun x ↦ by
+      by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N)))
+      · rw [Set.indicator_of_mem hx]
+      · rw [Set.indicator_of_notMem hx, hw0 x hx]
+  have hum : AEStronglyMeasurable (fn (u : SobolevEuclidean N 1 p Ω))
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := (memLp _).aestronglyMeasurable
+  -- memberships at the exponent `q`
+  have hūq : MemLp ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator
+      (fn (u : SobolevEuclidean N 1 p Ω))) q volume :=
+    (memLp_indicator_iff_restrict hΩm).2 ((memLp _).mono_exponent hqp)
+  have hwq : MemLp w q volume := by
+    refine ((memLp_indicator_iff_restrict hΩm).2 ?_).ae_eq hwae.symm
+    exact (hwp.restrict _).mono_exponent hqp
+  -- Theorem 9.9 at the exponent `q`
+  have hN' : finrank ℝ (EuclideanSpace ℝ (Fin N)) = N := finrank_euclideanSpace_fin
+  have hGNS := hw.eLpNorm_le_eLpNorm_weakFDeriv_of_eq hq1 (by rw [hN']; exact_mod_cast hqN)
+    (by rw [hN']; exact hqq') hūq hwq
+  rw [eLpNorm_indicator_eq_eLpNorm_restrict hΩm] at hGNS
+  -- the two Hölder steps on the finite-measure set `Ω`
+  have hH1 : eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) p (volume.restrict (Ω : Set _))
+      ≤ eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (q' : ℝ≥0∞) (volume.restrict (Ω : Set _))
+        * A := by
+    rw [hA, ← Measure.restrict_apply_univ (μ := volume) (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+    exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpq' hum
+  have hH2 : eLpNorm w (q : ℝ≥0∞) volume
+      ≤ eLpNorm w p volume * B := by
+    have e1 : eLpNorm w (q : ℝ≥0∞) volume
+        = eLpNorm w q (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm]
+    have e2 : eLpNorm w p volume
+        = eLpNorm w p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+      rw [eLpNorm_congr_ae hwae, eLpNorm_indicator_eq_eLpNorm_restrict hΩm]
+    rw [e1, e2, hB,
+      ← Measure.restrict_apply_univ (μ := volume) (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+    exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hqp (hwp.restrict _).aestronglyMeasurable
+  calc eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) p (volume.restrict (Ω : Set _))
+      ≤ eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) (q' : ℝ≥0∞) (volume.restrict (Ω : Set _)) * A :=
+        hH1
+    _ ≤ (SNormLESNormFDerivOfEqConst ℝ volume q * eLpNorm w (q : ℝ≥0∞) volume) * A :=
+        mul_le_mul' hGNS le_rfl
+    _ ≤ (SNormLESNormFDerivOfEqConst ℝ volume q * (eLpNorm w p volume * B)) * A :=
+        mul_le_mul' (mul_le_mul' le_rfl hH2) le_rfl
+    _ ≤ (SNormLESNormFDerivOfEqConst ℝ volume q
+          * ((∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
+            (MultiIndexLE.single i)‖) * B)) * A :=
+        mul_le_mul' (mul_le_mul' le_rfl (mul_le_mul' hwle le_rfl)) le_rfl
+    _ = SobolevEuclidean.gnsConst N q * B * A
+          * ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω)
+            (MultiIndexLE.single i)‖ := by
+        rw [SobolevEuclidean.gnsConst]; ring
+
+/-- **Remark 21, first clause: Poincaré's inequality on an open set of finite measure**: for
+`N ≥ 2`, `1 ≤ p < ∞` and an open `Ω ⊆ ℝ^N` of finite measure there is `C < ∞` with
+`‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}` for every `u ∈ W_0^{1,p}(Ω)`
+([brezis2011functional] Chapter 9, Remark 21; the bounded-projection clause is
+`SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab` of `Numlib/Analysis/Sobolev/Poincare.lean`).
+The sum form is `SobolevEuclideanZero.exists_eLpNorm_fn_le_sum_of_measure_ne_top`; for `N = 1`
+the statement is false on unbounded sets of finite measure. -/
+theorem eLpNorm_fn_le_gradNorm_of_measure_ne_top (hp' : p ≠ ⊤) (hN : 2 ≤ N)
+    (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin N))) ≠ ⊤) :
+    ∃ C : ℝ≥0∞, C ≠ ⊤ ∧ ∀ u : SobolevEuclideanZero N 1 p Ω,
+      eLpNorm (fn (u : SobolevEuclidean N 1 p Ω)) p (volume.restrict (Ω : Set _))
+        ≤ C * ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+  obtain ⟨C, hC, h⟩ := exists_eLpNorm_fn_le_sum_of_measure_ne_top (Ω := Ω) hp' hN hΩ
+  refine ⟨C * N, ENNReal.mul_ne_top hC (ENNReal.natCast_ne_top N), fun u ↦ ?_⟩
+  refine (h u).trans ?_
+  rw [mul_assoc]
+  refine mul_le_mul' le_rfl ?_
+  calc ∑ i, ENNReal.ofReal ‖weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i)‖
+      ≤ ∑ _i : Fin N, ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) :=
+        Finset.sum_le_sum fun i _ ↦
+          ENNReal.ofReal_le_ofReal (norm_weakDeriv_single_le_gradNorm _ i)
+    _ = N * ENNReal.ofReal (gradNorm (u : SobolevEuclidean N 1 p Ω)) := by
+        simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+
+end SobolevEuclideanZero
+
+end Remark21
 
 /-! ### Remarks 17 and 18: `C_c^k(Ω) ⊆ W_0^{k,p}(Ω)`, and `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` -/
 
@@ -1456,6 +1764,1480 @@ end ContinuousBoundary
 
 
 
+
+/-! ### Transfer of membership in `W_0^{1,p}`: open subsets and changes of variables -/
+
+section Transfer
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
+  [Fact (1 ≤ p)] {Ω Ω' : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
+
+namespace SobolevMultiIndex
+
+omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [NormedSpace ℝ F] [CompleteSpace F] [Fact (1 ≤ p)]
+  [μ.IsAddHaarMeasure] in
+/-- The `L^p(Ω)` norm of `g − f` reduces to the `L^p(Ω')` norm, `Ω' ⊆ Ω`, when `g` vanishes off
+`Ω'` and `f` vanishes almost everywhere on `Ω ∖ Ω'`. -/
+theorem _root_.MeasureTheory.eLpNorm_sub_restrict_eq_of_eq_zero_compl {g f : E → F} (h : Ω' ≤ Ω)
+    (hg : ∀ x ∉ (Ω' : Set E), g x = 0)
+    (hf : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ (Ω' : Set E) → f x = 0) :
+    eLpNorm (g - f) p (μ.restrict (Ω : Set E)) = eLpNorm (g - f) p (μ.restrict (Ω' : Set E)) := by
+  have e : (g - f) =ᵐ[μ.restrict (Ω : Set E)] (Ω' : Set E).indicator (g - f) := by
+    filter_upwards [hf] with x hx
+    by_cases hxΩ' : x ∈ (Ω' : Set E)
+    · rw [Set.indicator_of_mem hxΩ']
+    · rw [Set.indicator_of_notMem hxΩ', Pi.sub_apply, hg x hxΩ', hx hxΩ', sub_zero]
+  rw [eLpNorm_congr_ae e, eLpNorm_indicator_eq_eLpNorm_restrict Ω'.isOpen.measurableSet,
+    Measure.restrict_restrict Ω'.isOpen.measurableSet, inter_eq_left.2 h]
+
+omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- **The weak derivatives of `u ∈ W^{k,p}(Ω)` vanish almost everywhere on an open subset of `Ω`
+where `u` does**: on such an open `V`, `0` is a weak derivative of `fn u =ᵐ 0`, and the weak
+derivative is unique. -/
+theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
+    {V : Opens E} (hV : V ≤ Ω) (hu : fn u =ᵐ[μ.restrict (V : Set E)] 0) (α : MultiIndexLE ι k) :
+    (weakDeriv u α : E → F) =ᵐ[μ.restrict (V : Set E)] 0 := by
+  have h1 := ((hasWeakIteratedLineDerivOn u α).mono hV).congr_ae hu (EventuallyEq.refl _ _)
+  have h2 : HasWeakIteratedLineDerivOn (multiIndexTuple (b : ι → E) α.1) (0 : E → F) 0 V μ :=
+    HasWeakIteratedLineDerivOn.zero
+  exact (ae_restrict_iff' V.isOpen.measurableSet).2 (h1.ae_eq h2)
+
+omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- The weak derivatives of `u ∈ W^{k,p}(Ω)` vanish almost everywhere off a closed set `K`
+outside of which `u` vanishes almost everywhere. -/
+theorem weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl {k : ℕ} (u : SobolevMultiIndex F b k p Ω μ)
+    {K : Set E} (hK : IsClosed K) (hu : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → fn u x = 0)
+    (α : MultiIndexLE ι k) :
+    ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → weakDeriv u α x = 0 := by
+  obtain ⟨V, hVdef⟩ : ∃ V : Opens E, V = ⟨(Ω : Set E) ∩ Kᶜ, Ω.isOpen.inter hK.isOpen_compl⟩ :=
+    ⟨_, rfl⟩
+  have hVs : (V : Set E) = (Ω : Set E) ∩ Kᶜ := by rw [hVdef]; rfl
+  have hVΩ : V ≤ Ω := by rw [← SetLike.coe_subset_coe, hVs]; exact inter_subset_left
+  have hu' : fn u =ᵐ[μ.restrict (V : Set E)] 0 := by
+    rw [hVs, inter_comm, ← Measure.restrict_restrict hK.isOpen_compl.measurableSet]
+    refine (ae_restrict_iff' hK.isOpen_compl.measurableSet).2 ?_
+    filter_upwards [hu] with x hx hxK
+    simpa using hx hxK
+  have h := weakDeriv_ae_eq_zero_of_fn_ae_eq_zero u hVΩ hu' α
+  rw [hVs, inter_comm, ← Measure.restrict_restrict hK.isOpen_compl.measurableSet] at h
+  filter_upwards [(ae_restrict_iff' hK.isOpen_compl.measurableSet).1 h] with x hx hxK
+  simpa using hx hxK
+
+end SobolevMultiIndex
+
+namespace SobolevMultiIndexZero
+
+open SobolevMultiIndex
+
+/-- **Transfer of membership in `W_0^{1,p}` from an open subset**: if `Ω' ⊆ Ω`, the restriction
+of `u ∈ W^{1,p}(Ω)` to `Ω'` lies in `W_0^{1,p}(Ω')`, and `u` vanishes almost everywhere on `Ω`
+outside a closed set `K` with `K ∩ Ω ⊆ Ω'`, then `u ∈ W_0^{1,p}(Ω)`. Test functions on `Ω'`
+converging to `u|_{Ω'}` are test functions on `Ω`, and they converge to `u` in `W^{1,p}(Ω)`
+because every component of the difference vanishes almost everywhere on `Ω ∖ Ω'` — the weak
+derivatives of `u` vanish there by uniqueness of the weak derivative on the open set `Ω ∖ K`
+(`SobolevMultiIndex.weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl`). This is the step "extend by
+zero to `Ω`" of the chart reductions of [brezis2011functional] Theorem 9.17 and Proposition
+9.18. -/
+theorem mem_of_mem_restrict (h : Ω' ≤ Ω) {u : SobolevMultiIndex F b 1 p Ω μ}
+    (hu : restrictL F b 1 p μ h u ∈ SobolevMultiIndexZero F b 1 p Ω' μ) {K : Set E}
+    (hK : IsClosed K) (hKΩ : K ∩ Ω ⊆ Ω')
+    (hu0 : ∀ᵐ x ∂μ.restrict (Ω : Set E), x ∉ K → fn u x = 0) :
+    u ∈ SobolevMultiIndexZero F b 1 p Ω μ := by
+  obtain ⟨w, φ, hφ, hw⟩ := exists_seq_testFunction_tendsto hu
+  -- the test functions on `Ω'`, read as test functions on `Ω`
+  obtain ⟨ψ, hψ⟩ : ∃ ψ : ℕ → 𝓓(Ω, F), ∀ n, (ψ n : E → F) = φ n :=
+    ⟨fun n ↦ ⟨φ n, (φ n).contDiff, (φ n).hasCompactSupport, (φ n).tsupport_subset.trans h⟩,
+      fun _ ↦ rfl⟩
+  choose W hWT hW using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions (b := b) (k := 1)
+    (p := p) (μ := μ)
+  -- `u` and its derivatives vanish almost everywhere on `Ω ∖ Ω'`
+  have hu0' : ∀ α : MultiIndexLE ι 1, ∀ᵐ x ∂μ.restrict (Ω : Set E),
+      x ∉ (Ω' : Set E) → weakDeriv u α x = 0 := fun α ↦ by
+    filter_upwards [weakDeriv_ae_eq_zero_of_fn_ae_eq_zero_compl u hK hu0 α, ae_restrict_mem
+      Ω.isOpen.measurableSet] with x hx hxΩ hxΩ'
+    exact hx fun hxK ↦ hxΩ' (hKΩ ⟨hxK, hxΩ⟩)
+  refine isClosed.mem_of_tendsto (f := W) (b := atTop) ?_
+    (Eventually.of_forall fun n ↦ testFunctions_le (hWT n))
+  refine tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun α ↦ ?_
+  -- the classical function `c n` carrying the component `α` of `W n` and of `w n`
+  have hc : ∀ n, ∃ c : E → F, (∀ x ∉ (Ω' : Set E), c x = 0) ∧
+      (weakDeriv (W n) α : E → F) =ᵐ[μ.restrict (Ω : Set E)] c ∧
+      (weakDeriv (w n) α : E → F) =ᵐ[μ.restrict (Ω' : Set E)] c := by
+    intro n
+    rcases MultiIndexLE.eq_zero_or_exists_eq_single α with rfl | ⟨i, rfl⟩
+    · refine ⟨φ n, fun x hx ↦ (φ n).eq_zero_of_notMem hx, ?_, hφ n⟩
+      rw [weakDeriv_zero, ← hψ n]
+      exact hW n
+    · refine ⟨fun x ↦ fderiv ℝ (φ n) x (b i), fun x hx ↦ ?_, ?_, ?_⟩
+      · dsimp only
+        rw [← (φ n).fderivApply_apply (b i) x]
+        exact ((φ n).fderivApply (b i)).eq_zero_of_notMem hx
+      · have := weakDeriv_single_ae_eq_testFunction (hW n) i
+        rwa [hψ n] at this
+      · exact weakDeriv_single_ae_eq_testFunction (hφ n) i
+  choose c hc0 hcW hcw using hc
+  have key : ∀ n, eLpNorm ((weakDeriv (W n) α : E → F) - (weakDeriv u α : E → F)) p
+        (μ.restrict (Ω : Set E))
+      = eLpNorm ((weakDeriv (w n) α : E → F) - (weakDeriv (restrictL F b 1 p μ h u) α : E → F)) p
+        (μ.restrict (Ω' : Set E)) := by
+    intro n
+    rw [eLpNorm_congr_ae ((hcW n).sub (EventuallyEq.refl _ _)),
+      eLpNorm_sub_restrict_eq_of_eq_zero_compl h (hc0 n) (hu0' α)]
+    exact eLpNorm_congr_ae ((hcw n).symm.sub (weakDeriv_restrictL h u α).symm)
+  simp_rw [key]
+  exact tendsto_eLpNorm_weakDeriv_sub hw α
+
+/-- **Change of variables preserves `W_0^{1,p}`**: for a `C^1` diffeomorphism `H : Ω' → Ω` with
+bounded Jacobians and `u ∈ W_0^{1,p}(Ω)`, `1 ≤ p < ∞`, the transfer `u ∘ H` lies in
+`W_0^{1,p}(Ω')`. The test functions `φ_n → u` transfer to `φ_n ∘ H`, which vanish on `Ω'` outside
+the compact `H⁻¹(supp φ_n)`, hence lie in `W_0^{1,p}(Ω')` by Lemma 9.5
+(`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and `compDiffeoL` is continuous.
+This is the "transfer along the chart" step of the chart reductions of [brezis2011functional]
+Theorem 9.17 and Proposition 9.18. -/
+theorem compDiffeoL_mem (hp' : p ≠ ⊤) {H Hinv : E → E} {M : ℝ}
+    (hH : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) {u : SobolevMultiIndex F b 1 p Ω μ}
+    (hu : u ∈ SobolevMultiIndexZero F b 1 p Ω μ) :
+    compDiffeoL F b p μ hH u ∈ SobolevMultiIndexZero F b 1 p Ω' μ := by
+  obtain ⟨w, φ, hφ, hw⟩ := exists_seq_testFunction_tendsto hu
+  have ht : Tendsto (fun n ↦ compDiffeoL F b p μ hH (w n)) atTop
+      (𝓝 (compDiffeoL F b p μ hH u)) :=
+    ((compDiffeoL F b p μ hH).continuous.tendsto u).comp hw
+  refine isClosed.mem_of_tendsto ht (Eventually.of_forall fun n ↦ ?_)
+  have hmaps : MapsTo Hinv Ω Ω' := hH.invOn.1.mapsTo hH.bijOn.surjOn
+  have hK : IsCompact (Hinv '' tsupport (φ n)) :=
+    (φ n).hasCompactSupport.image_of_continuousOn
+      (hH.contDiffOn_invFun.continuousOn.mono (φ n).tsupport_subset)
+  have hKΩ' : Hinv '' tsupport (φ n) ⊆ Ω' :=
+    (image_mono (φ n).tsupport_subset).trans hmaps.image_subset
+  refine mem_zero_of_ae_eq_zero_compl_isCompact hp' _ hK hKΩ' ?_
+  filter_upwards [fn_compDiffeoL hH (w n), ae_restrict_mem Ω'.isOpen.measurableSet,
+    hH.ae_comp_restrict (P := fun x ↦ fn (w n) x = φ n x) (hφ n)] with y hy hyΩ' hyφ hyK
+  rw [hy, hyφ]
+  by_contra hne
+  apply hyK
+  refine ⟨H y, subset_tsupport _ hne, hH.invOn.1 hyΩ'⟩
+
+end SobolevMultiIndexZero
+
+end Transfer
+
+/-! ### A smooth compactly supported factor preserves `W_0^{1,p}` -/
+
+section LpAux
+
+variable {X : Type*} [MeasurableSpace X] {ν : Measure X} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+omit [Fact (1 ≤ p)] in
+/-- `L^p` convergence to `0` is preserved by a bounded factor: `‖f_n a‖_p ≤ M ‖f_n‖_p`. -/
+theorem MeasureTheory.tendsto_eLpNorm_mul_of_tendsto {f : ℕ → X → ℝ} {a : X → ℝ}
+    (ha : AEStronglyMeasurable a ν) {M : ℝ} (hM : ∀ x, |a x| ≤ M)
+    (hfm : ∀ n, AEStronglyMeasurable (f n) ν)
+    (hf : Tendsto (fun n ↦ eLpNorm (f n) p ν) atTop (𝓝 0)) :
+    Tendsto (fun n ↦ eLpNorm (fun x ↦ f n x * a x) p ν) atTop (𝓝 0) := by
+  have hbd : ∀ n, eLpNorm (fun x ↦ f n x * a x) p ν ≤ ENNReal.ofReal M * eLpNorm (f n) p ν := by
+    intro n
+    refine eLpNorm_le_mul_eLpNorm_of_ae_le_mul (f := fun x ↦ f n x * a x) (g := f n) (c := M)
+      ((hfm n).mul ha) (Eventually.of_forall fun x ↦ ?_) p
+    change ‖f n x * a x‖ ≤ M * ‖f n x‖
+    rw [norm_mul, mul_comm, Real.norm_eq_abs (a x)]
+    exact mul_le_mul_of_nonneg_right (hM x) (norm_nonneg _)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_ (fun _ ↦ zero_le) hbd
+  simpa using ENNReal.Tendsto.const_mul hf (Or.inr ENNReal.ofReal_ne_top)
+
+/-- `L^p` convergence to `0` of `f_n a + g_n c` for bounded factors `a`, `c`. -/
+theorem MeasureTheory.tendsto_eLpNorm_mul_add_mul_of_tendsto {f g : ℕ → X → ℝ}
+    {a c : X → ℝ} (ha : AEStronglyMeasurable a ν) (hc : AEStronglyMeasurable c ν) {M : ℝ}
+    (hMa : ∀ x, |a x| ≤ M) (hMc : ∀ x, |c x| ≤ M) (hfm : ∀ n, AEStronglyMeasurable (f n) ν)
+    (hgm : ∀ n, AEStronglyMeasurable (g n) ν)
+    (hf : Tendsto (fun n ↦ eLpNorm (f n) p ν) atTop (𝓝 0))
+    (hg : Tendsto (fun n ↦ eLpNorm (g n) p ν) atTop (𝓝 0)) :
+    Tendsto (fun n ↦ eLpNorm (fun x ↦ f n x * a x + g n x * c x) p ν) atTop (𝓝 0) := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hbd : ∀ n, eLpNorm (fun x ↦ f n x * a x + g n x * c x) p ν
+      ≤ eLpNorm (fun x ↦ f n x * a x) p ν + eLpNorm (fun x ↦ g n x * c x) p ν := fun n ↦
+    eLpNorm_add_le (f := fun x ↦ f n x * a x) (g := fun x ↦ g n x * c x) hp
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_ (fun _ ↦ zero_le) hbd
+  simpa using (tendsto_eLpNorm_mul_of_tendsto ha hMa hfm hf).add
+    (tendsto_eLpNorm_mul_of_tendsto hc hMc hgm hg)
+
+end LpAux
+
+section SmulContDiff
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  [FiniteDimensional ℝ E] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
+  [Fact (1 ≤ p)] {Ω Ω' : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure]
+
+open SobolevMultiIndex
+
+omit [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- **The Leibniz rule for a smooth factor on `W^{1,p}(Ω)`**: if `v ∈ W^{1,p}(Ω)` has function
+`u α` for `u ∈ W^{1,p}(Ω)` and `α` smooth, then `∂_i v = (∂_i u) α + u ∂_i α` almost everywhere
+on `Ω` — the weak derivative `HasWeakIteratedLineDerivOn.mul_contDiff` provides, by uniqueness. -/
+theorem SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff {α : E → ℝ}
+    (hα : ContDiff ℝ ∞ α) {u v : SobolevMultiIndex ℝ b 1 p Ω μ}
+    (hv : fn v =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ fn u x * α x) (i : ι) :
+    (weakDeriv v (MultiIndexLE.single i) : E → ℝ) =ᵐ[μ.restrict (Ω : Set E)]
+      fun x ↦ weakDeriv u (MultiIndexLE.single i) x * α x + fn u x * fderiv ℝ α x (b i) := by
+  have h1 : HasWeakIteratedLineDerivOn ![b i] (fn v) (weakDeriv v (MultiIndexLE.single i)) Ω μ :=
+    (hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
+      (multiIndexTuple_single_perm (b : ι → E) i)
+  have h2 := ((hasWeakIteratedLineDerivOn u (MultiIndexLE.single i)).of_perm
+    (multiIndexTuple_single_perm (b : ι → E) i)).mul_contDiff rfl hα
+  have h3 : HasWeakIteratedLineDerivOn ![b i] (fn v)
+      (fun x ↦ weakDeriv u (MultiIndexLE.single i) x * α x + fn u x * fderiv ℝ α x (b i)) Ω μ := by
+    refine h2.congr_ae hv.symm (Eventually.of_forall fun x ↦ ?_)
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero]
+  exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h3)
+
+omit [FiniteDimensional ℝ E] [Fact (1 ≤ p)] [μ.IsAddHaarMeasure] in
+/-- The functions, in the proof of `SobolevMultiIndexZero.mul_contDiff_mem`:
+`z_n − v = (w_n − u) α` almost everywhere on `Ω'`. -/
+theorem SobolevMultiIndexZero.fn_sub_ae_eq_mul_aux (h : Ω' ≤ Ω) {α : E → ℝ}
+    {u w : SobolevMultiIndex ℝ b 1 p Ω μ} {v z : SobolevMultiIndex ℝ b 1 p Ω' μ} {φ : 𝓓(Ω, ℝ)}
+    {ψ : 𝓓(Ω', ℝ)} (hφ : fn w =ᵐ[μ.restrict (Ω : Set E)] φ)
+    (hψ : (ψ : E → ℝ) = fun x ↦ φ x * α x) (hz : fn z =ᵐ[μ.restrict (Ω' : Set E)] ψ)
+    (hv : fn v =ᵐ[μ.restrict (Ω' : Set E)] fun x ↦ fn u x * α x) :
+    (weakDeriv z 0 : E → ℝ) - (weakDeriv v 0 : E → ℝ) =ᵐ[μ.restrict (Ω' : Set E)]
+      fun x ↦ (fn w x - fn u x) * α x := by
+  have hle : μ.restrict (Ω' : Set E) ≤ μ.restrict (Ω : Set E) := Measure.restrict_mono h le_rfl
+  filter_upwards [hz, hv, hφ.filter_mono (ae_mono hle)] with x h1 h2 h3
+  rw [hψ] at h1
+  simp only [Pi.sub_apply, weakDeriv_zero, h1, h2, h3]
+  ring
+
+/-- The derivatives, in the proof of `SobolevMultiIndexZero.mul_contDiff_mem`:
+`∂_i z_n − ∂_i v = (∂_i w_n − ∂_i u) α + (w_n − u) ∂_i α` almost everywhere on `Ω'`. -/
+theorem SobolevMultiIndexZero.weakDeriv_single_sub_ae_eq_mul_aux (h : Ω' ≤ Ω) {α : E → ℝ}
+    (hα : ContDiff ℝ ∞ α) {u w : SobolevMultiIndex ℝ b 1 p Ω μ}
+    {v z : SobolevMultiIndex ℝ b 1 p Ω' μ} {φ : 𝓓(Ω, ℝ)} {ψ : 𝓓(Ω', ℝ)}
+    (hφ : fn w =ᵐ[μ.restrict (Ω : Set E)] φ) (hψ : (ψ : E → ℝ) = fun x ↦ φ x * α x)
+    (hz : fn z =ᵐ[μ.restrict (Ω' : Set E)] ψ)
+    (hv : fn v =ᵐ[μ.restrict (Ω' : Set E)] fun x ↦ fn u x * α x) (i : ι) :
+    (weakDeriv z (MultiIndexLE.single i) : E → ℝ) - (weakDeriv v (MultiIndexLE.single i) : E → ℝ)
+      =ᵐ[μ.restrict (Ω' : Set E)] fun x ↦
+        (weakDeriv w (MultiIndexLE.single i) x - weakDeriv u (MultiIndexLE.single i) x) * α x
+          + (fn w x - fn u x) * fderiv ℝ α x (b i) := by
+  have hle : μ.restrict (Ω' : Set E) ≤ μ.restrict (Ω : Set E) := Measure.restrict_mono h le_rfl
+  have hu' : fn v =ᵐ[μ.restrict (Ω' : Set E)]
+      fun x ↦ fn (restrictL ℝ b 1 p μ h u) x * α x := by
+    filter_upwards [hv, fn_restrictL h u] with x h1 h2
+    rw [h1, h2]
+  have hvD := weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff hα hu' i
+  have hzD := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hz i
+  have hwD := (SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hφ i).filter_mono
+    (ae_mono hle)
+  have hprod : ∀ x, fderiv ℝ (ψ : E → ℝ) x (b i)
+      = fderiv ℝ (φ : E → ℝ) x (b i) * α x + φ x * fderiv ℝ α x (b i) := fun x ↦ by
+    rw [hψ, fderiv_fun_mul (φ.contDiff.differentiable (by simp) x) (hα.differentiable (by simp) x)]
+    simp only [add_apply, smul_apply, smul_eq_mul]
+    ring
+  filter_upwards [hzD, hvD, hwD, hφ.filter_mono (ae_mono hle), weakDeriv_restrictL h u
+    (MultiIndexLE.single i), fn_restrictL h u] with x h1 h2 h3 h4 h5 h6
+  simp only [Pi.sub_apply, h1, h2, hprod x, h5, h6, ← h3, ← h4]
+  ring
+
+/-- **A smooth compactly supported factor preserves `W_0^{1,p}`, with restriction to an open
+subset**: for `Ω' ≤ Ω`, `α` smooth with compact support and `tsupport α ∩ Ω ⊆ Ω'`,
+`u ∈ W_0^{1,p}(Ω)` and `v ∈ W^{1,p}(Ω')` with `v = u α` almost everywhere on `Ω'`, one has
+`v ∈ W_0^{1,p}(Ω')`. The test functions `φ_n α`, supported in `Ω'`, converge to `v` in
+`W^{1,p}(Ω')`: `(φ_n − u) α` is bounded by `M |φ_n − u|`, and
+`∂_i(φ_n α) − ∂_i v = (∂_i φ_n − ∂_i u) α + (φ_n − u) ∂_i α` by the Leibniz rule
+(`SobolevMultiIndex.weakDeriv_single_ae_eq_of_fn_ae_eq_mul_contDiff`). This is the step
+"`θ u ∈ W_0^{1,p}(U ∩ Ω)`" of the chart reduction of Theorem 9.17 (ii) ⇒ (i). -/
+theorem SobolevMultiIndexZero.mul_contDiff_mem (h : Ω' ≤ Ω) {α : E → ℝ} (hα : ContDiff ℝ ∞ α)
+    (hαc : HasCompactSupport α) (hαΩ : tsupport α ∩ Ω ⊆ Ω') {u : SobolevMultiIndex ℝ b 1 p Ω μ}
+    (hu : u ∈ SobolevMultiIndexZero ℝ b 1 p Ω μ) {v : SobolevMultiIndex ℝ b 1 p Ω' μ}
+    (hv : fn v =ᵐ[μ.restrict (Ω' : Set E)] fun x ↦ fn u x * α x) :
+    v ∈ SobolevMultiIndexZero ℝ b 1 p Ω' μ := by
+  have hle : μ.restrict (Ω' : Set E) ≤ μ.restrict (Ω : Set E) := Measure.restrict_mono h le_rfl
+  -- the bounds on `α` and `∂_i α`
+  obtain ⟨M₀, hM₀⟩ := hαc.exists_bound_of_continuous hα.continuous
+  obtain ⟨M₁, hM₁⟩ := (hαc.fderiv ℝ).exists_bound_of_continuous (hα.continuous_fderiv (by simp))
+  have hMa : ∀ x, |α x| ≤ M₀ + M₁ * ∑ i, ‖b i‖ := fun x ↦ by
+    have := hM₀ x
+    rw [Real.norm_eq_abs] at this
+    have h2 : 0 ≤ M₁ := (norm_nonneg _).trans (hM₁ 0)
+    have h3 : 0 ≤ ∑ i, ‖b i‖ := Finset.sum_nonneg fun i _ ↦ norm_nonneg _
+    nlinarith
+  have hMd : ∀ i x, |fderiv ℝ α x (b i)| ≤ M₀ + M₁ * ∑ i, ‖b i‖ := fun i x ↦ by
+    have h1 : ‖fderiv ℝ α x (b i)‖ ≤ M₁ * ‖b i‖ :=
+      (ContinuousLinearMap.le_opNorm _ _).trans (mul_le_mul_of_nonneg_right (hM₁ x) (norm_nonneg _))
+    have h2 : ‖b i‖ ≤ ∑ j, ‖b j‖ :=
+      Finset.single_le_sum (f := fun j ↦ ‖b j‖) (fun j _ ↦ norm_nonneg _) (Finset.mem_univ i)
+    have h3 : 0 ≤ M₀ := (norm_nonneg _).trans (hM₀ 0)
+    have h4 : 0 ≤ M₁ := (norm_nonneg _).trans (hM₁ 0)
+    rw [← Real.norm_eq_abs]
+    nlinarith
+  -- the approximating test functions `φ_n α` on `Ω'`
+  obtain ⟨w, φ, hφ, hw⟩ := SobolevMultiIndexZero.exists_seq_testFunction_tendsto hu
+  have hψ : ∀ n, ∃ ψ : 𝓓(Ω', ℝ), (ψ : E → ℝ) = fun x ↦ φ n x * α x := fun n ↦
+    ⟨⟨fun x ↦ φ n x * α x, (φ n).contDiff.mul hα, (φ n).hasCompactSupport.mul_right,
+      fun x hx ↦ hαΩ ⟨tsupport_mul_subset_right hx, (φ n).tsupport_subset
+        (tsupport_mul_subset_left hx)⟩⟩, rfl⟩
+  choose ψ hψ using hψ
+  choose z hzT hz using fun n ↦ (ψ n).exists_mem_sobolevMultiIndex_testFunctions (b := b) (p := p)
+    (μ := μ)
+  -- `z_n → v` in `W^{1,p}(Ω')`
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto (f := z) (b := atTop) ?_
+    (Eventually.of_forall fun n ↦ SobolevMultiIndexZero.testFunctions_le (hzT n))
+  refine SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun β ↦ ?_
+  have hf : Tendsto (fun n ↦ eLpNorm (fun x ↦ fn (w n) x - fn u x) p (μ.restrict (Ω' : Set E)))
+      atTop (𝓝 0) :=
+    tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds (tendsto_eLpNorm_fn_sub hw)
+      (fun _ ↦ zero_le) fun n ↦ eLpNorm_mono_measure _ hle
+  have hfm : ∀ n, AEStronglyMeasurable (fun x ↦ fn (w n) x - fn u x) (μ.restrict (Ω' : Set E)) :=
+    fun n ↦ ((memLp (w n)).aestronglyMeasurable.sub (memLp u).aestronglyMeasurable).mono_measure
+      hle
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single β with rfl | ⟨i, rfl⟩
+  · refine (tendsto_eLpNorm_mul_of_tendsto hα.continuous.aestronglyMeasurable hMa hfm hf).congr
+      fun n ↦ ?_
+    exact (eLpNorm_congr_ae (SobolevMultiIndexZero.fn_sub_ae_eq_mul_aux h (hφ n) (hψ n) (hz n)
+      hv)).symm
+  · have hg : Tendsto (fun n ↦ eLpNorm (fun x ↦ weakDeriv (w n) (MultiIndexLE.single i) x
+        - weakDeriv u (MultiIndexLE.single i) x) p (μ.restrict (Ω' : Set E))) atTop (𝓝 0) :=
+      tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+        (tendsto_eLpNorm_weakDeriv_sub hw (MultiIndexLE.single i)) (fun _ ↦ zero_le)
+        fun n ↦ eLpNorm_mono_measure _ hle
+    have hgm : ∀ n, AEStronglyMeasurable (fun x ↦ weakDeriv (w n) (MultiIndexLE.single i) x
+        - weakDeriv u (MultiIndexLE.single i) x) (μ.restrict (Ω' : Set E)) := fun n ↦
+      ((Lp.aestronglyMeasurable _).sub (Lp.aestronglyMeasurable _)).mono_measure hle
+    refine (tendsto_eLpNorm_mul_add_mul_of_tendsto hα.continuous.aestronglyMeasurable
+      (((hα.continuous_fderiv (by simp)).clm_apply continuous_const).aestronglyMeasurable) hMa
+      (hMd i) hgm hfm hg hf).congr fun n ↦ ?_
+    exact (eLpNorm_congr_ae (SobolevMultiIndexZero.weakDeriv_single_sub_ae_eq_mul_aux h hα (hφ n)
+      (hψ n) (hz n) hv i)).symm
+
+end SmulContDiff
+
+/-! ### Proposition 9.18, (iii) ⇒ (i): the `Q_+` computation -/
+
+section CubePos
+
+variable {d : ℕ}
+
+/-- The upper half cylinder `Q₊` as an `Opens`, the shape the Sobolev spaces on it take. -/
+def unitChartCubePosOpens (d : ℕ) : Opens (EuclideanSpace ℝ (Fin (d + 1))) :=
+  ⟨unitChartCubePos d, isOpen_unitChartCubePos⟩
+
+/-- The underlying set of `unitChartCubePosOpens d` is `unitChartCubePos d`. -/
+@[simp]
+theorem coe_unitChartCubePosOpens : (unitChartCubePosOpens d : Set _) = unitChartCubePos d := rfl
+
+/-- `Q₊ ≤ Q`. -/
+theorem unitChartCubePosOpens_le : unitChartCubePosOpens d ≤ unitChartCubeOpens d :=
+  unitChartCubePos_subset
+
+/-- The closure of `Q₊` lies in `{x_N ≥ 0}`. -/
+theorem closure_unitChartCubePos_subset :
+    closure (unitChartCubePos d) ⊆ {x | 0 ≤ x (Fin.last d)} :=
+  closure_minimal (fun _ hx ↦ hx.2.le) (isClosed_le continuous_const continuous_apply_last)
+
+/-- **The one-sided mollifiers of the proof of Proposition 9.18**: normalized bumps `ρ_n`,
+nonnegative, smooth, of integral one, supported in the ball of radius `1/(4(n+1))` around
+`(3/(4(n+1))) e_N`, hence in `{1/(2(n+1)) ≤ x_N} ∩ closedBall 0 (1/(n+1))`
+([brezis2011functional] §9.4, proof of Proposition 9.18, (iii) ⇒ (i),
+"`supp ρ_n ⊂ {1/(2n) < x_N < 1/n}`"). -/
+theorem exists_oneSided_mollifiers :
+    ∃ ρ : ℕ → EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      (∀ n, ContDiff ℝ ∞ (ρ n)) ∧ (∀ n x, 0 ≤ ρ n x) ∧ (∀ n, HasCompactSupport (ρ n)) ∧
+      (∀ n, Integrable (ρ n) volume) ∧ (∀ n, ∫ x, ρ n x = 1) ∧
+      (∀ n, tsupport (ρ n) ⊆ closedBall 0 (1 / ((n : ℝ) + 1))) ∧
+      (∀ n x, x ∈ tsupport (ρ n) → 1 / (2 * ((n : ℝ) + 1)) ≤ x (Fin.last d)) := by
+  have hpos : ∀ n : ℕ, (0 : ℝ) < (n : ℝ) + 1 := fun n ↦ by positivity
+  obtain ⟨c, hc⟩ : ∃ c : ℕ → EuclideanSpace ℝ (Fin (d + 1)),
+      c = fun n : ℕ ↦ (3 / (4 * ((n : ℝ) + 1))) • EuclideanSpace.single (Fin.last d) (1 : ℝ) :=
+    ⟨_, rfl⟩
+  have hcnorm : ∀ n, ‖c n‖ = 3 / (4 * ((n : ℝ) + 1)) := fun n ↦ by
+    rw [hc]
+    simp only [norm_smul, PiLp.norm_single, norm_one, mul_one, Real.norm_eq_abs]
+    exact abs_of_pos (by positivity)
+  have hclast : ∀ n, c n (Fin.last d) = 3 / (4 * ((n : ℝ) + 1)) := fun n ↦ by
+    rw [hc]
+    simp
+  obtain ⟨φ, hφ⟩ : ∃ φ : (n : ℕ) → ContDiffBump (c n), ∀ n,
+      (φ n).rOut = 1 / (4 * ((n : ℝ) + 1)) :=
+    ⟨fun n ↦ ⟨1 / (8 * ((n : ℝ) + 1)), 1 / (4 * ((n : ℝ) + 1)), by positivity, by
+      rw [div_lt_div_iff_of_pos_left one_pos (by positivity) (by positivity)]
+      linarith [hpos n]⟩, fun n ↦ rfl⟩
+  have htsupp : ∀ n, tsupport ((φ n).normed volume) = closedBall (c n) (1 / (4 * ((n : ℝ) + 1))) :=
+    fun n ↦ by rw [(φ n).tsupport_normed_eq, hφ n]
+  refine ⟨fun n ↦ (φ n).normed volume, fun n ↦ (φ n).contDiff_normed,
+    fun n x ↦ (φ n).nonneg_normed x, fun n ↦ (φ n).hasCompactSupport_normed,
+    fun n ↦ (φ n).integrable_normed, fun n ↦ (φ n).integral_normed, fun n ↦ ?_, fun n x hx ↦ ?_⟩
+  · rw [htsupp n]
+    intro x hx
+    rw [mem_closedBall_zero_iff]
+    calc ‖x‖ = ‖c n + (x - c n)‖ := by rw [add_sub_cancel]
+      _ ≤ ‖c n‖ + ‖x - c n‖ := norm_add_le _ _
+      _ ≤ 3 / (4 * ((n : ℝ) + 1)) + 1 / (4 * ((n : ℝ) + 1)) := by
+          rw [hcnorm n]
+          exact add_le_add le_rfl (mem_closedBall_iff_norm.1 hx)
+      _ = 1 / ((n : ℝ) + 1) := by field_simp; ring
+  · rw [htsupp n] at hx
+    have h1 : |(x - c n) (Fin.last d)| ≤ 1 / (4 * ((n : ℝ) + 1)) :=
+      (EuclideanSpace.abs_apply_last_le _).trans (mem_closedBall_iff_norm.1 hx)
+    rw [PiLp.sub_apply, hclast n] at h1
+    have h2 := (abs_le.1 h1).1
+    have e : 1 / (2 * ((n : ℝ) + 1)) = 3 / (4 * ((n : ℝ) + 1)) - 1 / (4 * ((n : ℝ) + 1)) := by
+      field_simp; ring
+    rw [e]
+    linarith
+
+end CubePos
+
+section Prop918
+
+variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+open SobolevMultiIndex
+
+/-- **Proposition 9.18, (iii) ⇒ (i), the `Q_+` computation**: let `u ∈ L^p(Q_+)`, `1 ≤ p < ∞`,
+be such that its extension by zero to `Q` lies in `W^{1,p}(Q)`; then for every smooth `α` with
+compact support in `Q`, the element `v` of `W^{1,p}(Q_+)` with function `α u` lies in
+`W_0^{1,p}(Q_+)`.
+
+Proof ([brezis2011functional] §9.4, proof of Proposition 9.18, (iii) ⇒ (i)): `g = α ū` extended
+by zero outside `Q` is in `W^{1,p}(ℝ^N)` (`MemSobolevMultiIndex.indicator_mul`); with the
+one-sided mollifiers `ρ_n` of `exists_oneSided_mollifiers`, `ρ_n ⋆ g → g` in `L^p(ℝ^N)` and
+`∂_i (ρ_n ⋆ g) = ρ_n ⋆ ∂_i g → ∂_i g` (Lemma 9.1,
+`HasWeakIteratedLineDerivOn.convolution_of_integrable`, and
+`MeasureTheory.tendsto_eLpNorm_convolution_sub_of_tendsto_support`), while
+`supp (ρ_n ⋆ g) ⊆ supp ρ_n + supp g ⊆ Q_+` for `n` large: adding a vector with
+`x_N ≥ 1/(2(n+1))` and norm at most `1/(n+1)` pushes the support of `g`, which lies in
+`supp α ∩ closure Q_+`, into `{x_N > 0}` and keeps it in `Q`. So the `ρ_n ⋆ g` are smooth with
+compact support in `Q_+`, hence lie in `W_0^{1,p}(Q_+)` (Lemma 9.5), and `v` is their limit in
+`W^{1,p}(Q_+)`, in the closed subspace `W_0^{1,p}(Q_+)`. -/
+theorem SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos (hp' : p ≠ ⊤)
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((unitChartCubePos d).indicator u) 1 p (unitChartCubeOpens d) volume)
+    {α : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hα : ContDiff ℝ ∞ α) (hαc : HasCompactSupport α)
+    (hαQ : tsupport α ⊆ unitChartCube d)
+    {v : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    (hv : fn v =ᵐ[volume.restrict (unitChartCubePos d)] fun x ↦ α x * u x) :
+    v ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d) := by
+  classical
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hQm : MeasurableSet (unitChartCubePos d) := isOpen_unitChartCubePos.measurableSet
+  -- the function `g = α ū` on the whole space, in `W^{1,p}(ℝ^N)`
+  obtain ⟨g, hgdef⟩ : ∃ g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      g = fun x ↦ α x * (unitChartCubePos d).indicator u x := ⟨_, rfl⟩
+  have hcut : IsSobolevCutoff (unitChartCubeOpens d) α :=
+    IsSobolevCutoff.of_hasCompactSupport hα hαc hαQ
+  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis g 1 p ⊤
+      volume := by
+    refine (hu.indicator_mul hp hcut).congr_ae (Eventually.of_forall fun x ↦ ?_)
+    change (unitChartCube d).indicator (fun x ↦ α x • (unitChartCubePos d).indicator u x) x = g x
+    by_cases hx : x ∈ unitChartCube d
+    · simp only [hgdef, Set.indicator_of_mem hx, smul_eq_mul]
+    · have : α x = 0 := image_eq_zero_of_notMem_tsupport fun h ↦ hx (hαQ h)
+      simp [hgdef, Set.indicator_of_notMem hx, this]
+  have hgp : MemLp g p volume := by simpa [Measure.restrict_coe_top] using hg.memLp
+  have hgc : HasCompactSupport g := by rw [hgdef]; exact hαc.mul_right
+  have hgv : g =ᵐ[volume.restrict (unitChartCubePos d)] fn v := by
+    filter_upwards [hv, ae_restrict_mem hQm] with x hx hxQ
+    simp only [hgdef, hx, Set.indicator_of_mem hxQ]
+  have hgsupp : Function.support g ⊆ tsupport α ∩ closure (unitChartCubePos d) := by
+    intro x hx
+    rw [Function.mem_support, hgdef] at hx
+    refine ⟨subset_tsupport _ (left_ne_zero_of_mul hx), subset_closure ?_⟩
+    by_contra h
+    exact hx (by simp [Set.indicator_of_notMem h])
+  -- the weak partial derivatives of `g` on the whole space
+  have hw : ∀ i : Fin (d + 1), ∃ w : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] g w ⊤ volume ∧ MemLp w p volume := by
+    intro i
+    obtain ⟨w, hw, hwp⟩ := hg.2 (Pi.single i 1) (by simp)
+    refine ⟨w, ?_, by simpa [Measure.restrict_coe_top] using hwp⟩
+    have := hw.of_perm (multiIndexTuple_single_perm
+      ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis : Fin (d + 1) → _) i)
+    rwa [EuclideanSpace.basisFun_toBasis_apply] at this
+  choose w hw hwp using hw
+  -- the margin between the support of `α` and the boundary of `Q`
+  obtain ⟨V, ε, -, hαV, hε, -, -, hV⟩ :=
+    hαc.exists_pos_forall_closedBall_subset isOpen_unitChartCube hαQ
+  -- the one-sided mollifiers
+  obtain ⟨ρ, hρs, hρ0, hρc, hρi, hρ1, hρt, hρN⟩ := exists_oneSided_mollifiers (d := d)
+  have hr : Tendsto (fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) atTop (𝓝 0) :=
+    tendsto_one_div_add_atTop_nhds_zero_nat
+  have hρsupp : ∀ n, Function.support (ρ n) ⊆ closedBall 0 (1 / ((n : ℝ) + 1)) :=
+    fun n ↦ (subset_tsupport _).trans (hρt n)
+  -- the convolutions converge in `L^p(ℝ^N)`, together with their derivatives
+  have hL0 : Tendsto (fun n ↦ eLpNorm (ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] g - g) p volume)
+      atTop (𝓝 0) :=
+    tendsto_eLpNorm_convolution_sub_of_tendsto_support hρ0 hρi hρ1 hρsupp hr hp hp' hgp
+  have hLi : ∀ i, Tendsto (fun n ↦ eLpNorm (ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] w i - w i)
+      p volume) atTop (𝓝 0) := fun i ↦
+    tendsto_eLpNorm_convolution_sub_of_tendsto_support hρ0 hρi hρ1 hρsupp hr hp hp' (hwp i)
+  -- the convolutions are smooth with compact support, and supported in `Q₊` for `n` large
+  have hsm : ∀ n, ContDiff ℝ ∞ (ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] g) := fun n ↦
+    (hρc n).contDiff_convolution_left _ (hρs n) (hgp.locallyIntegrable hp)
+  have hcs : ∀ n, HasCompactSupport (ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] g) := fun n ↦
+    (hρc n).convolution _ hgc
+  obtain ⟨n₀, hn₀⟩ : ∃ n₀ : ℕ, 1 / ((n₀ : ℝ) + 1) ≤ ε := by
+    obtain ⟨n₀, hn₀⟩ := exists_nat_one_div_lt hε
+    exact ⟨n₀, hn₀.le⟩
+  have hsupp : ∀ n ≥ n₀, tsupport (ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] g)
+      ⊆ unitChartCubePos d := by
+    intro n hn
+    have hnε : 1 / ((n : ℝ) + 1) ≤ ε := by
+      refine le_trans ?_ hn₀
+      gcongr
+    have hS : IsCompact (tsupport (ρ n) + (tsupport α ∩ closure (unitChartCubePos d))) :=
+      IsCompact.add (hρc n) (hαc.inter_right isClosed_closure)
+    refine (closure_minimal ((support_convolution_subset _).trans
+      (add_subset_add (subset_tsupport _) hgsupp)) hS.isClosed).trans ?_
+    rintro z ⟨y, hy, x, ⟨hxα, hxQ⟩, rfl⟩
+    have hyN := hρN n y hy
+    have hxN := closure_unitChartCubePos_subset hxQ
+    have hyn : ‖y‖ ≤ 1 / ((n : ℝ) + 1) := mem_closedBall_zero_iff.1 (hρt n hy)
+    refine ⟨hV x (hαV hxα) ?_, ?_⟩
+    · rw [mem_closedBall_iff_norm, add_sub_cancel_right]
+      exact hyn.trans hnε
+    · rw [PiLp.add_apply]
+      have : (0 : ℝ) < 1 / (2 * ((n : ℝ) + 1)) := by positivity
+      exact add_pos_of_pos_of_nonneg (this.trans_le hyN) hxN
+  -- the elements of `W^{1,p}(Q₊)` with the convolutions as functions lie in `W_0^{1,p}(Q₊)`
+  choose T hT using fun n ↦ (hsm n).exists_sobolevMultiIndex_of_hasCompactSupport
+    (b := (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis) (p := p)
+    (Ω := unitChartCubePosOpens d) (μ := volume) (hcs n)
+  simp only [coe_unitChartCubePosOpens] at hT
+  have hTmem : ∀ n ≥ n₀, T n ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d) :=
+    fun n hn ↦ mem_zero_of_fn_ae_eq_of_tsupport_subset hp' (T n) (hcs n) (hsupp n hn) (hT n)
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto (f := T) (b := atTop) ?_
+    ((eventually_ge_atTop n₀).mono hTmem)
+  refine tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub fun β ↦ ?_
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single β with rfl | ⟨i, rfl⟩
+  · -- the functions
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hL0 (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    rw [weakDeriv_zero, weakDeriv_zero, coe_unitChartCubePosOpens,
+      eLpNorm_congr_ae ((hT n).sub hgv.symm)]
+    exact eLpNorm_mono_measure _ Measure.restrict_le_self
+  · -- the derivatives: `∂_i (T n) = ρ n ⋆ w i` and `∂_i v = w i` on `Q₊`
+    have hTi : ∀ n, (weakDeriv (T n) (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+        =ᵐ[volume.restrict (unitChartCubePos d)]
+          ρ n ⋆[ContinuousLinearMap.lsmul ℝ ℝ, volume] w i := by
+      intro n
+      have h1 := (hasWeakIteratedLineDerivOn (T n) (MultiIndexLE.single i)).of_perm
+        (multiIndexTuple_single_perm
+          ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis : Fin (d + 1) → _) i)
+      rw [EuclideanSpace.basisFun_toBasis_apply] at h1
+      have h2 := (((hw i).convolution_of_integrable (hρi n) hp hgp (hwp i)).mono
+        (le_top : unitChartCubePosOpens d ≤ ⊤)).congr_ae (hT n).symm (EventuallyEq.refl _ _)
+      exact (ae_restrict_iff' hQm).2 (h1.ae_eq h2)
+    have hvi : (weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+        =ᵐ[volume.restrict (unitChartCubePos d)] w i := by
+      have h1 := (hasWeakIteratedLineDerivOn v (MultiIndexLE.single i)).of_perm
+        (multiIndexTuple_single_perm
+          ((EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis : Fin (d + 1) → _) i)
+      rw [EuclideanSpace.basisFun_toBasis_apply] at h1
+      have h2 := ((hw i).mono (le_top : unitChartCubePosOpens d ≤ ⊤)).congr_ae hgv
+        (EventuallyEq.refl _ _)
+      exact (ae_restrict_iff' hQm).2 (h1.ae_eq h2)
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds (hLi i) (fun _ ↦ zero_le)
+      fun n ↦ ?_
+    exact (eLpNorm_congr_ae ((hTi n).sub hvi)).trans_le
+      (eLpNorm_mono_measure _ Measure.restrict_le_self)
+
+end Prop918
+
+/-! ### Proposition 9.18, (iii) ⇒ (i): the chart reduction -/
+
+section Prop918Chart
+
+variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex
+
+namespace ContDiffChart
+
+variable (c : ContDiffChart 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+
+/-- **The chart transfer of `θ ū`**: for a chart `c` of `Ω`, a smooth compactly supported `θ`
+with `tsupport θ ⊆ c.U`, and `u` whose extension by zero `ū` lies in `W^{1,p}(ℝ^N)`, the
+function `(θ u) ∘ H` on `Q_+`, extended by zero to `Q`, lies in `W^{1,p}(Q)`: it is
+`(θ ū) ∘ H`, the transfer along the chart (Proposition 9.6) of `θ ū ∈ W^{1,p}(U)`, because
+`H` sends `Q ∖ Q_+` outside `Ω`. -/
+theorem indicator_comp_toFun_memSobolevMultiIndex {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((unitChartCubePos d).indicator fun y ↦ θ (c.toFun y) * u (c.toFun y)) 1 p
+      (unitChartCubeOpens d) volume := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  obtain ⟨M, hM⟩ := (IsSobolevCutoff.of_hasCompactSupport (Ω := ⊤) hθ hθc
+    (subset_univ _)).exists_bound
+  have hw : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fun x ↦ θ x * (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u x) 1 p ⊤ volume :=
+    hu.contDiff_mul hp hθ hM
+  obtain ⟨M', hH⟩ := c.isDiffeoOnWithBoundedJacobian le_rfl
+  have hH' : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubeOpens d : Set _)
+    (c.opensU : Set _) M' := hH
+  have hwQ := (hw.mono_set (le_top : c.opensU ≤ ⊤)).comp_diffeoOn hH'
+  refine hwQ.congr_ae ?_
+  filter_upwards [ae_restrict_mem isOpen_unitChartCube.measurableSet] with y hy
+  by_cases hyQ : y ∈ unitChartCubePos d
+  · have hyΩ : c.toFun y ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := (c.toFun_mem_iff hy).2 hyQ
+    simp only [Set.indicator_of_mem hyΩ, Set.indicator_of_mem hyQ]
+  · have hyΩ : c.toFun y ∉ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) := fun h ↦
+      hyQ ((c.toFun_mem_iff hy).1 h)
+    simp only [Set.indicator_of_notMem hyΩ, Set.indicator_of_notMem hyQ, mul_zero]
+
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `Q_+`**: with `c`, `θ`, `u` as in
+`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `Z` of `W^{1,p}(Q_+)`
+with function `(θ u) ∘ H` lies in `W_0^{1,p}(Q_+)`: the `Q_+` computation
+`SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos` with a smooth `α` equal to
+`1` on the compact `H⁻¹(supp θ) ⊆ Q`, where `α (θ u) ∘ H = (θ u) ∘ H`. -/
+theorem mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ ⊤)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume)
+    {Z : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    (hZ : fn Z =ᵐ[volume.restrict (unitChartCubePos d)] fun y ↦ θ (c.toFun y) * u (c.toFun y)) :
+    Z ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d) := by
+  have hQm : MeasurableSet (unitChartCubePos d) := isOpen_unitChartCubePos.measurableSet
+  -- a smooth `α`, compactly supported in `Q`, equal to `1` on `H⁻¹(supp θ)`
+  have hK : IsCompact (c.invFun '' tsupport θ) :=
+    hθc.image_of_continuousOn (c.continuousOn_invFun.mono (hθU.trans subset_closure))
+  have hKQ : c.invFun '' tsupport θ ⊆ unitChartCube d :=
+    (image_mono hθU).trans c.mapsTo_invFun.image_subset
+  obtain ⟨V, -, hVo, hKV, -, hVc, hVQ, -⟩ :=
+    hK.exists_pos_forall_closedBall_subset isOpen_unitChartCube hKQ
+  obtain ⟨α, hαs, hα1, hαV, -⟩ := hK.exists_contDiff_eqOn_one hVo hKV
+  have hαc : HasCompactSupport α :=
+    hVc.of_isClosed_subset isClosed_closure (hαV.trans subset_closure)
+  have hαQ : tsupport α ⊆ unitChartCube d := hαV.trans (subset_closure.trans hVQ)
+  refine SobolevEuclidean.mem_zero_of_indicator_memSobolev_unitChartCubePos hp'
+    (c.indicator_comp_toFun_memSobolevMultiIndex hθ hθc hu) hαs hαc hαQ ?_
+  filter_upwards [hZ, ae_restrict_mem hQm] with y hy hyQ
+  rw [hy]
+  by_cases hθy : θ (c.toFun y) = 0
+  · simp [hθy]
+  · have hyK : y ∈ c.invFun '' tsupport θ :=
+      ⟨c.toFun y, subset_tsupport _ hθy, c.invFun_toFun (unitChartCubePos_subset hyQ)⟩
+    rw [hα1 hyK, Pi.one_apply, one_mul]
+
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `Q_+`, existence form**: with `c`,
+`θ`, `u` as in `ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, there is an element of
+`W_0^{1,p}(Q_+)` with function `(θ u) ∘ H`. -/
+theorem exists_mem_zero_unitChartCubePos_of_indicator_memSobolev (hp' : p ≠ ⊤)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume) :
+    ∃ Z ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d),
+      fn Z =ᵐ[volume.restrict (unitChartCubePos d)] fun y ↦ θ (c.toFun y) * u (c.toFun y) := by
+  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fun y ↦ θ (c.toFun y) * u (c.toFun y)) 1 p (unitChartCubePosOpens d) volume :=
+    ((c.indicator_comp_toFun_memSobolevMultiIndex hθ hθc hu).mono_set
+      unitChartCubePosOpens_le).congr_ae
+      (indicator_ae_eq_restrict isOpen_unitChartCubePos.measurableSet)
+  obtain ⟨Z, hZ⟩ := hmem.exists_sobolevMultiIndex
+  exact ⟨Z, c.mem_zero_unitChartCubePos_of_indicator_memSobolev hp' hθ hθc hθU hu hZ, hZ⟩
+
+/-- An element `V` of `W^{1,p}(Ω'')` whose function is that of the image under a map
+`T : W^{1,p}(Ω') → W^{1,p}(Ω'')` preserving `W_0^{1,p}` of an element of `W_0^{1,p}(Ω')` lies in
+`W_0^{1,p}(Ω'')`. -/
+theorem _root_.SobolevMultiIndexZero.mem_of_fn_ae_eq_map {E F : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F] {ι : Type*} [Fintype ι]
+    [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω' Ω'' : Opens E}
+    {μ : Measure E} (T : SobolevMultiIndex F b 1 p Ω' μ →L[ℝ] SobolevMultiIndex F b 1 p Ω'' μ)
+    (hT : ∀ z ∈ SobolevMultiIndexZero F b 1 p Ω' μ, T z ∈ SobolevMultiIndexZero F b 1 p Ω'' μ)
+    {Z : SobolevMultiIndex F b 1 p Ω' μ} (hZ : Z ∈ SobolevMultiIndexZero F b 1 p Ω' μ)
+    {V : SobolevMultiIndex F b 1 p Ω'' μ} (heq : fn (T Z) =ᵐ[μ.restrict (Ω'' : Set E)] fn V) :
+    V ∈ SobolevMultiIndexZero F b 1 p Ω'' μ :=
+  ext_of_fn_ae_eq heq ▸ hT Z hZ
+
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `U ∩ Ω`**: with `c`, `θ`, `u` as in
+`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
+function `θ u` restricts to an element of `W_0^{1,p}(U ∩ Ω)`: its restriction is the transfer
+back along `H⁻¹` (`SobolevMultiIndexZero.compDiffeoL_mem`) of an element `Z` of `W_0^{1,p}(Q_+)`
+with function `(θ u) ∘ H`
+(`ContDiffChart.exists_mem_zero_unitChartCubePos_of_indicator_memSobolev`). The chart's Jacobian
+bundle and `Z` are arguments, so that each of the three elaborations stays
+within its own heartbeat budget. -/
+theorem restrictL_mem_zero_of_indicator_memSobolev_aux (hp' : p ≠ ⊤) {M : ℝ}
+    (hH : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubePosOpens d : Set _)
+      (c.opensInter : Set _) M)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    {Z : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    (hZ0 : Z ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d))
+    (hZ : fn Z =ᵐ[volume.restrict (unitChartCubePos d)] fun y ↦ θ (c.toFun y) * u (c.toFun y))
+    {V : SobolevEuclidean (d + 1) 1 p Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      fun x ↦ θ x * u x) :
+    restrictL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p volume c.opensInter_le V
+      ∈ SobolevEuclideanZero (d + 1) 1 p c.opensInter := by
+  refine SobolevMultiIndexZero.mem_of_fn_ae_eq_map
+    (compDiffeoL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume hH.symm)
+    (fun z hz ↦ SobolevMultiIndexZero.compDiffeoL_mem hp' hH.symm hz) hZ0 ?_
+  have h1 := hH.symm.ae_comp_restrict (P := fun y ↦ fn Z y = θ (c.toFun y) * u (c.toFun y)) hZ
+  have h2 : fn V =ᵐ[volume.restrict (c.opensInter : Set _)] fun x ↦ θ x * u x :=
+    hV.filter_mono (ae_mono (Measure.restrict_mono c.opensInter_le le_rfl))
+  filter_upwards [fn_compDiffeoL hH.symm Z, h1, fn_restrictL c.opensInter_le V, h2,
+    ae_restrict_mem c.opensInter.isOpen.measurableSet] with x hx1 hx2 hx3 hx4 hx5
+  refine hx1.trans (hx2.trans ?_)
+  rw [c.toFun_invFun hx5.1]
+  exact (hx3.trans hx4).symm
+
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i), on `U ∩ Ω`**: with `c`, `θ`, `u` as in
+`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
+function `θ u` restricts to an element of `W_0^{1,p}(U ∩ Ω)`. -/
+theorem restrictL_mem_zero_of_indicator_memSobolev (hp' : p ≠ ⊤)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume)
+    {V : SobolevEuclidean (d + 1) 1 p Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      fun x ↦ θ x * u x) :
+    restrictL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p volume c.opensInter_le V
+      ∈ SobolevEuclideanZero (d + 1) 1 p c.opensInter := by
+  obtain ⟨M, hH⟩ := c.isDiffeoOnWithBoundedJacobian_pos le_rfl Ω.isOpen
+  obtain ⟨Z, hZ0, hZ⟩ :=
+    c.exists_mem_zero_unitChartCubePos_of_indicator_memSobolev hp' hθ hθc hθU hu
+  exact c.restrictL_mem_zero_of_indicator_memSobolev_aux hp' hH hZ0 hZ hV
+
+/-- **The chart piece of Proposition 9.18, (iii) ⇒ (i)**: with `c`, `θ`, `u` as in
+`ContDiffChart.indicator_comp_toFun_memSobolevMultiIndex`, an element `V` of `W^{1,p}(Ω)` with
+function `θ u` lies in `W_0^{1,p}(Ω)`: it restricts to an element of `W_0^{1,p}(U ∩ Ω)`
+(`ContDiffChart.restrictL_mem_zero_of_indicator_memSobolev`) and vanishes on `Ω` outside the
+closed `tsupport θ`, whose trace on `Ω` lies in `U ∩ Ω`
+(`SobolevMultiIndexZero.mem_of_mem_restrict`). -/
+theorem mem_zero_of_indicator_memSobolev (hp' : p ≠ ⊤)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume)
+    {V : SobolevEuclidean (d + 1) 1 p Ω}
+    (hV : fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      fun x ↦ θ x * u x) :
+    V ∈ SobolevEuclideanZero (d + 1) 1 p Ω := by
+  refine SobolevMultiIndexZero.mem_of_mem_restrict c.opensInter_le
+    (c.restrictL_mem_zero_of_indicator_memSobolev hp' hθ hθc hθU hu hV) (isClosed_tsupport θ)
+    (fun x hx ↦ ⟨hθU hx.1, hx.2⟩) ?_
+  filter_upwards [hV] with x hx hxθ
+  rw [hx, image_eq_zero_of_notMem_tsupport hxθ, zero_mul]
+
+end ContDiffChart
+
+namespace SobolevEuclideanZero
+
+/-- **Proposition 9.18, (iii) ⇒ (i), for `u` vanishing outside a ball**: on a `C^1` chart domain
+`Ω`, `1 ≤ p < ∞`, if `u` vanishes for `‖x‖ > R` and its extension by zero lies in
+`W^{1,p}(ℝ^N)`, then the element `v` of `W^{1,p}(Ω)` with function `u` lies in `W_0^{1,p}(Ω)`.
+
+Proof ([brezis2011functional] Proposition 9.18, (iii) ⇒ (i), "by local charts and partition of
+unity"): cover the compact `∂Ω ∩ closedBall 0 R` by finitely many charts `c_i` and take Lemma
+9.3's partition `θ₀ + ∑ θ_i = 1` (`IsCompact.exists_contDiff_partitionOfUnity`) with
+`tsupport θ_i ⊆ U_i` and `θ₀` vanishing near that piece of the boundary. Each `θ_i u` is the
+function of an element of `W_0^{1,p}(Ω)` by the chart piece
+`ContDiffChart.mem_zero_of_indicator_memSobolev`, and `θ₀ u = u − ∑ θ_i u` vanishes on `Ω`
+outside the compact `tsupport θ₀ ∩ closure Ω ∩ closedBall 0 R ⊆ Ω`, hence is in `W_0^{1,p}(Ω)` by
+Lemma 9.5; `v` is the sum. -/
+theorem mem_of_indicator_memSobolev_of_forall_eq_zero (hp' : p ≠ ⊤)
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume)
+    {R : ℝ} (huR : ∀ x, R < ‖x‖ → u x = 0) {v : SobolevEuclidean (d + 1) 1 p Ω}
+    (hv : fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u) :
+    v ∈ SobolevEuclideanZero (d + 1) 1 p Ω := by
+  classical
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hΩm := Ω.isOpen.measurableSet
+  -- the compact piece of the boundary inside the ball, its finite atlas and partition of unity
+  have hΓ : IsCompact (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ closedBall 0 R) :=
+    Metric.isCompact_of_isClosed_isBounded (isClosed_frontier.inter isClosed_closedBall)
+      (isBounded_closedBall.subset inter_subset_right)
+  obtain ⟨k, c, hc⟩ := hΩ.exists_finite_atlas_of_isCompact hΓ inter_subset_left
+  obtain ⟨θ₀, θ, -, hθs, -, -, hsum, hθc, hθU, hθ₀Γ⟩ :=
+    hΓ.exists_contDiff_partitionOfUnity (fun i ↦ (c i).isOpen_U) hc
+  -- `u ∈ W^{1,p}(Ω)`, and the elements `θ_i u`
+  have huΩ : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u 1 p Ω
+      volume :=
+    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm)
+  have hθu : ∀ i, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (fun x ↦ θ i x * u x) 1 p Ω volume := fun i ↦ by
+    obtain ⟨M, hM⟩ := (IsSobolevCutoff.of_hasCompactSupport (Ω := ⊤) (hθs i) (hθc i)
+      (subset_univ _)).exists_bound
+    exact huΩ.contDiff_mul hp (hθs i) hM
+  choose V hV using fun i ↦ (hθu i).exists_sobolevMultiIndex
+  have hVmem : ∀ i, V i ∈ SobolevEuclideanZero (d + 1) 1 p Ω := fun i ↦
+    (c i).mem_zero_of_indicator_memSobolev hp' (hθs i) (hθc i) (hθU i) hu (hV i)
+  -- the remaining piece `θ₀ u = u − ∑ θ_i u` has compact support in `Ω`
+  have hV₀ : fn (v - ∑ i, V i) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+      fun x ↦ θ₀ x * u x := by
+    filter_upwards [fn_sub v (∑ i, V i), fn_finset_sum Finset.univ V, ae_all_iff.2 hV, hv]
+      with x h1 h2 h3 h4
+    rw [h1, Pi.sub_apply, h2, Finset.sum_apply, h4]
+    simp only [h3]
+    have := hsum x
+    rw [← Finset.sum_mul]
+    have e : ∑ i, θ i x = 1 - θ₀ x := by linarith
+    rw [e]
+    ring
+  have hK : IsCompact (tsupport θ₀ ∩ closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
+      ∩ closedBall 0 R) :=
+    (isCompact_closedBall (0 : EuclideanSpace ℝ (Fin (d + 1))) R).inter_left
+      ((isClosed_tsupport θ₀).inter isClosed_closure)
+  have hKΩ : tsupport θ₀ ∩ closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ∩ closedBall 0 R
+      ⊆ Ω := by
+    rintro x ⟨⟨hxθ, hxc⟩, hxR⟩
+    rw [closure_eq_interior_union_frontier, Ω.isOpen.interior_eq] at hxc
+    rcases hxc with hxΩ | hxf
+    · exact hxΩ
+    · exact absurd ⟨hxf, hxR⟩ (disjoint_left.1 hθ₀Γ hxθ)
+  have hV₀mem : v - ∑ i, V i ∈ SobolevEuclideanZero (d + 1) 1 p Ω := by
+    refine mem_zero_of_ae_eq_zero_compl_isCompact hp' _ hK hKΩ ?_
+    filter_upwards [hV₀, ae_restrict_mem hΩm] with x hx hxΩ hxK
+    rw [hx]
+    by_cases hxθ : x ∈ tsupport θ₀
+    · by_cases hxR : x ∈ closedBall (0 : EuclideanSpace ℝ (Fin (d + 1))) R
+      · exact absurd ⟨⟨hxθ, subset_closure hxΩ⟩, hxR⟩ hxK
+      · rw [huR x (not_le.1 fun h ↦ hxR (mem_closedBall_zero_iff.2 h)), mul_zero]
+    · rw [image_eq_zero_of_notMem_tsupport hxθ, zero_mul]
+  have e : v = (v - ∑ i, V i) + ∑ i, V i := by abel
+  rw [e]
+  exact add_mem hV₀mem (Submodule.sum_mem _ fun i _ ↦ hVmem i)
+
+/-- **Proposition 9.18, (iii) ⇒ (i)**: on a `C^1` chart domain `Ω ⊆ ℝ^N`, `1 ≤ p < ∞`, a function
+`u` whose extension by zero `ū = Ω.indicator u` lies in `W^{1,p}(ℝ^N)` is the function of an
+element of `W_0^{1,p}(Ω)` ([brezis2011functional] Proposition 9.18, (iii) ⇒ (i); the converse
+(i) ⇒ (iii) is `SobolevMultiIndexZero.indicator_memSobolevMultiIndex`, valid on every open set).
+The case of `u` vanishing outside a ball is
+`SobolevEuclideanZero.mem_of_indicator_memSobolev_of_forall_eq_zero`; in general, with the
+cut-off sequence `ζ_n` (`SobolevMultiIndex.tendsto_cutoff_smul`), `ζ_n u` has bounded support and
+its extension by zero `ζ_n ū` lies in `W^{1,p}(ℝ^N)`, so the elements `ζ_n u` lie in
+`W_0^{1,p}(Ω)` and converge to `u` in `W^{1,p}(Ω)`, which is closed. -/
+theorem mem_of_indicator_memSobolev (hp' : p ≠ ⊤)
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator u) 1 p ⊤ volume) :
+    ∃ v ∈ SobolevEuclideanZero (d + 1) 1 p Ω,
+      fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] u := by
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hΩm := Ω.isOpen.measurableSet
+  have huΩ : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u 1 p Ω
+      volume :=
+    (hu.mono_set le_top).congr_ae (indicator_ae_eq_restrict hΩm)
+  obtain ⟨U, hU⟩ := huΩ.exists_sobolevMultiIndex
+  refine ⟨U, ?_, hU⟩
+  -- the cut-off sequence `ζ_n U → U`
+  obtain ⟨ζ, hζ, hζ1, hζs, hζ01⟩ := exists_contDiff_eqOn_one_closedBall_one
+    (EuclideanSpace ℝ (Fin (d + 1)))
+  obtain ⟨w, hw, -, hwt⟩ :=
+    tendsto_cutoff_smul hp' hζ hζ01 hζ1 (hζs.trans ball_subset_closedBall) U
+  refine SobolevMultiIndexZero.isClosed.mem_of_tendsto hwt (Eventually.of_forall fun n ↦ ?_)
+  have hcpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hζc : HasCompactSupport ζ :=
+    (isCompact_closedBall (0 : EuclideanSpace ℝ (Fin (d + 1))) 2).of_isClosed_subset
+      (isClosed_tsupport ζ) (hζs.trans ball_subset_closedBall)
+  -- the cut-off `ζ_n`: smooth, compactly supported, vanishing for `‖x‖ > 2 (n + 1)`
+  have hζn : ContDiff ℝ ∞ fun x : EuclideanSpace ℝ (Fin (d + 1)) ↦ ζ (((n : ℝ) + 1)⁻¹ • x) :=
+    hζ.comp (contDiff_id.const_smul _)
+  have hζnc : HasCompactSupport fun x : EuclideanSpace ℝ (Fin (d + 1)) ↦ ζ (((n : ℝ) + 1)⁻¹ • x) :=
+    hζc.comp_homeomorph (Homeomorph.smulOfNeZero (((n : ℝ) + 1)⁻¹) (inv_ne_zero hcpos.ne'))
+  have hζn0 : ∀ x : EuclideanSpace ℝ (Fin (d + 1)), 2 * ((n : ℝ) + 1) < ‖x‖ →
+      ζ (((n : ℝ) + 1)⁻¹ • x) = 0 := fun x hx ↦ by
+    refine image_eq_zero_of_notMem_tsupport fun h ↦ ?_
+    have h2 : ‖((n : ℝ) + 1)⁻¹ • x‖ < 2 := by simpa using hζs h
+    rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hcpos, inv_mul_lt_iff₀ hcpos] at h2
+    linarith
+  obtain ⟨M, hM⟩ := (IsSobolevCutoff.of_hasCompactSupport (Ω := ⊤) hζn hζnc
+    (subset_univ _)).exists_bound
+  have hun : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).indicator
+        fun x ↦ ζ (((n : ℝ) + 1)⁻¹ • x) * u x) 1 p ⊤ volume := by
+    refine (hu.contDiff_mul hp hζn hM).congr_ae (Eventually.of_forall fun x ↦ ?_)
+    by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))
+    · simp [Set.indicator_of_mem hx]
+    · simp [Set.indicator_of_notMem hx]
+  refine mem_of_indicator_memSobolev_of_forall_eq_zero hp' hΩ hun (R := 2 * ((n : ℝ) + 1))
+    (fun x hx ↦ by rw [hζn0 x hx, zero_mul]) ?_
+  filter_upwards [hw n, hU] with x hx1 hx2
+  rw [hx1, hx2]
+
+end SobolevEuclideanZero
+
+end Prop918Chart
+
+/-! ### Theorem 9.17, (ii) ⇒ (i): the `Q_+` computation -/
+
+section Strip
+
+variable {d : ℕ}
+
+/-- The strip `{x ∈ Q_+ : x_N < ε}` at the bottom of the upper half cylinder. -/
+def unitChartCubeStrip (d : ℕ) (ε : ℝ) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+  {x ∈ unitChartCubePos d | x (Fin.last d) < ε}
+
+/-- The strip lies in `Q_+`. -/
+theorem unitChartCubeStrip_subset {ε : ℝ} : unitChartCubeStrip d ε ⊆ unitChartCubePos d :=
+  fun _ hx ↦ hx.1
+
+/-- The strip is open. -/
+theorem isOpen_unitChartCubeStrip {ε : ℝ} : IsOpen (unitChartCubeStrip d ε) :=
+  isOpen_unitChartCubePos.inter (isOpen_lt continuous_apply_last continuous_const)
+
+/-- The strip is measurable. -/
+theorem measurableSet_unitChartCubeStrip {ε : ℝ} : MeasurableSet (unitChartCubeStrip d ε) :=
+  isOpen_unitChartCubeStrip.measurableSet
+
+/-- The strip, through the last-coordinate splitting: for `0 < ε ≤ 1`,
+`(x', t) ∈ {x ∈ Q_+ : x_N < ε}` iff `‖x'‖ < 1` and `0 < t < ε`. -/
+theorem snocLast_mem_unitChartCubeStrip_iff {ε : ℝ} (hε : ε ≤ 1) {x' : EuclideanSpace ℝ (Fin d)}
+    {t : ℝ} :
+    EuclideanSpace.snocLast x' t ∈ unitChartCubeStrip d ε ↔ ‖x'‖ < 1 ∧ 0 < t ∧ t < ε := by
+  simp only [unitChartCubeStrip, unitChartCubePos, unitChartCube, mem_ofPred_eq,
+    EuclideanSpace.init_snocLast, EuclideanSpace.snocLast_apply_last]
+  constructor
+  · rintro ⟨⟨⟨h1, -⟩, h2⟩, h3⟩
+    exact ⟨h1, h2, h3⟩
+  · rintro ⟨h1, h2, h3⟩
+    refine ⟨⟨⟨h1, ?_⟩, h2⟩, h3⟩
+    rw [abs_of_pos h2]
+    exact h3.trans_le hε
+
+/-- **Fubini on the strip**: for `0 < ε ≤ 1` and an almost everywhere measurable `F`,
+`∫⁻_{x ∈ Q_+, x_N < ε} F = ∫⁻_{‖x'‖ < 1} ∫⁻_{0 < t < ε} F (x', t)`. -/
+theorem lintegral_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1)
+    {F : EuclideanSpace ℝ (Fin (d + 1)) → ℝ≥0∞} (hF : AEMeasurable F) :
+    ∫⁻ x in unitChartCubeStrip d ε, F x
+      = ∫⁻ x' in ball (0 : EuclideanSpace ℝ (Fin d)) 1, ∫⁻ t in Ioo 0 ε,
+        F (EuclideanSpace.snocLast x' t) := by
+  rw [← lintegral_indicator measurableSet_unitChartCubeStrip,
+    EuclideanSpace.lintegral_lastInit _ (hF.indicator measurableSet_unitChartCubeStrip),
+    ← lintegral_indicator measurableSet_ball]
+  refine lintegral_congr fun x' ↦ ?_
+  by_cases hx' : x' ∈ ball (0 : EuclideanSpace ℝ (Fin d)) 1
+  · rw [Set.indicator_of_mem hx', ← lintegral_indicator measurableSet_Ioo]
+    refine lintegral_congr fun t ↦ ?_
+    by_cases ht : t ∈ Ioo 0 ε
+    · rw [Set.indicator_of_mem ht, Set.indicator_of_mem]
+      exact (snocLast_mem_unitChartCubeStrip_iff hε).2 ⟨mem_ball_zero_iff.1 hx', ht.1, ht.2⟩
+    · rw [Set.indicator_of_notMem ht, Set.indicator_of_notMem]
+      exact fun h ↦ ht ⟨((snocLast_mem_unitChartCubeStrip_iff hε).1 h).2.1,
+        ((snocLast_mem_unitChartCubeStrip_iff hε).1 h).2.2⟩
+  · rw [Set.indicator_of_notMem hx']
+    have h0 : ∀ t, (unitChartCubeStrip d ε).indicator F (EuclideanSpace.snocLast x' t) = 0 :=
+      fun t ↦ Set.indicator_of_notMem (fun h ↦
+        hx' (mem_ball_zero_iff.2 ((snocLast_mem_unitChartCubeStrip_iff hε).1 h).1)) F
+    simp [h0]
+
+/-- **The strip inequality for a `C¹` function supported in `Q_+`**: for `0 < ε ≤ 1`,
+`∫_{x ∈ Q_+, x_N < ε} |g| ≤ ε ∫_{x ∈ Q_+, x_N < ε} |∂_N g|`. The fundamental theorem of calculus
+along the last coordinate from `x_N = 0`, where `g` vanishes: `|g(x', t)| ≤ ∫₀^ε |∂_N g(x', s)| ds`
+for `0 < t < ε`, integrated over `t ∈ (0, ε)` and `‖x'‖ < 1` (`lintegral_unitChartCubeStrip`). -/
+theorem lintegral_unitChartCubeStrip_le_of_contDiff {ε : ℝ} (hε : ε ≤ 1)
+    {g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hg : ContDiff ℝ 1 g)
+    (hgs : tsupport g ⊆ unitChartCubePos d) :
+    ∫⁻ x in unitChartCubeStrip d ε, ‖g x‖ₑ
+      ≤ ENNReal.ofReal ε * ∫⁻ x in unitChartCubeStrip d ε,
+        ‖fderiv ℝ g x (EuclideanSpace.single (Fin.last d) 1)‖ₑ := by
+  obtain ⟨D, hDdef⟩ : ∃ D : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+    D = fun x ↦ fderiv ℝ g x (EuclideanSpace.single (Fin.last d) 1) := ⟨_, rfl⟩
+  have hgc : Continuous g := hg.continuous
+  have hDc : Continuous D := by
+    rw [hDdef]; exact (hg.continuous_fderiv one_ne_zero).clm_apply continuous_const
+  have hzero : ∀ x, x ∉ unitChartCubePos d → g x = 0 := fun x hx ↦
+    image_eq_zero_of_notMem_tsupport fun h ↦ hx (hgs h)
+  -- the derivative of `g` along the last coordinate
+  have hderiv : ∀ (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ),
+      HasDerivAt (fun s ↦ g (EuclideanSpace.snocLast x' s))
+        (D (EuclideanSpace.snocLast x' t)) t := by
+    intro x' t
+    have h1 : HasDerivAt (fun s : ℝ ↦ EuclideanSpace.snocLast x' s)
+        (EuclideanSpace.single (Fin.last d) 1) t := by
+      have heq : (fun s : ℝ ↦ EuclideanSpace.snocLast x' s)
+          = fun s ↦ EuclideanSpace.snocLast x' 0 + s • EuclideanSpace.single (Fin.last d) 1 := by
+        funext s
+        exact EuclideanSpace.snocLast_eq_add_smul_single x' s
+      rw [heq]
+      exact (((hasDerivAt_id' t).smul_const _).const_add (EuclideanSpace.snocLast x' 0)).congr_deriv
+        (one_smul ℝ _)
+    have h2 := (hg.differentiable one_ne_zero (EuclideanSpace.snocLast x' t)).hasFDerivAt
+    rw [hDdef]
+    exact h2.comp_hasDerivAt t h1
+  -- the pointwise bound on the strip
+  have hpt : ∀ (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ), 0 < t → t < ε →
+      ‖g (EuclideanSpace.snocLast x' t)‖ₑ
+        ≤ ∫⁻ s in Ioo 0 ε, ‖D (EuclideanSpace.snocLast x' s)‖ₑ := by
+    intro x' t ht0 htε
+    have hint : IntervalIntegrable (fun s ↦ D (EuclideanSpace.snocLast x' s)) volume 0 t :=
+      (hDc.comp (EuclideanSpace.continuous_snocLast.comp (Continuous.prodMk_right x')))
+        |>.intervalIntegrable _ _
+    have hfund := intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun s ↦ g (EuclideanSpace.snocLast x' s)) (fun s _ ↦ hderiv x' s) hint
+    have hg0 : g (EuclideanSpace.snocLast x' 0) = 0 :=
+      hzero _ (by simp [unitChartCubePos, EuclideanSpace.snocLast_apply_last])
+    rw [hg0, sub_zero] at hfund
+    rw [← hfund, intervalIntegral.integral_of_le ht0.le]
+    refine (enorm_integral_le_lintegral_enorm _).trans ?_
+    refine (lintegral_mono_set (Ioc_subset_Ioc_right htε.le)).trans ?_
+    rw [Measure.restrict_congr_set Ioo_ae_eq_Ioc.symm]
+  -- Fubini on both sides
+  have hgm : AEMeasurable fun x ↦ ‖g x‖ₑ := hgc.measurable.enorm.aemeasurable
+  have hDm : AEMeasurable fun x ↦ ‖D x‖ₑ := hDc.measurable.enorm.aemeasurable
+  have hD : ∀ x, fderiv ℝ g x (EuclideanSpace.single (Fin.last d) 1) = D x := fun x ↦ by
+    rw [hDdef]
+  simp only [hD]
+  rw [lintegral_unitChartCubeStrip hε hgm, lintegral_unitChartCubeStrip hε hDm,
+    ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+  refine lintegral_mono_ae ?_
+  filter_upwards [ae_restrict_mem measurableSet_ball] with x' _
+  calc ∫⁻ t in Ioo 0 ε, ‖g (EuclideanSpace.snocLast x' t)‖ₑ
+      ≤ ∫⁻ _ in Ioo 0 ε, ∫⁻ s in Ioo 0 ε, ‖D (EuclideanSpace.snocLast x' s)‖ₑ := by
+        refine lintegral_mono_ae ?_
+        filter_upwards [ae_restrict_mem measurableSet_Ioo] with t ht
+        exact hpt x' t ht.1 ht.2
+    _ = ENNReal.ofReal ε * ∫⁻ s in Ioo 0 ε, ‖D (EuclideanSpace.snocLast x' s)‖ₑ := by
+        rw [setLIntegral_const, Real.volume_Ioo, sub_zero, mul_comm]
+
+end Strip
+
+section Limit
+
+/-- `L^p(ν) ⊆ L^1(ν)` for a finite measure `ν ≤ μ`, quantitatively:
+`∫⁻ ‖h‖ₑ ∂ν ≤ ‖h‖_{L^p(μ)} ν(univ)^(1 − 1/p)`. -/
+theorem MeasureTheory.lintegral_enorm_le_eLpNorm_mul_of_le {X : Type*} [MeasurableSpace X]
+    {μ ν : Measure X} (hν : ν ≤ μ) {p : ℝ≥0∞} (hp : 1 ≤ p) {h : X → ℝ}
+    (hh : AEStronglyMeasurable h μ) :
+    ∫⁻ x, ‖h x‖ₑ ∂ν ≤ eLpNorm h p μ * ν univ ^ (1 - 1 / p.toReal) := by
+  have hh' := hh.mono_measure hν
+  have := eLpNorm_le_eLpNorm_mul_rpow_measure_univ (μ := ν) (p := 1) hp hh'
+  rw [eLpNorm_one_eq_lintegral_enorm hh', ENNReal.toReal_one, div_one] at this
+  exact this.trans (mul_le_mul' (eLpNorm_mono_measure _ hν) le_rfl)
+
+/-- The triangle inequality `∫⁻ ‖h₁‖ₑ ≤ ∫⁻ ‖h₁ − h₂‖ₑ + ∫⁻ ‖h₂‖ₑ`. -/
+theorem MeasureTheory.lintegral_enorm_le_lintegral_enorm_sub_add {X : Type*} [MeasurableSpace X]
+    {ν : Measure X} {h₁ h₂ : X → ℝ} (hm : AEStronglyMeasurable (h₁ - h₂) ν) :
+    ∫⁻ x, ‖h₁ x‖ₑ ∂ν ≤ ∫⁻ x, ‖(h₁ - h₂) x‖ₑ ∂ν + ∫⁻ x, ‖h₂ x‖ₑ ∂ν := by
+  rw [← lintegral_add_left' hm.enorm]
+  refine lintegral_mono fun x ↦ ?_
+  calc ‖h₁ x‖ₑ = ‖(h₁ x - h₂ x) + h₂ x‖ₑ := by rw [sub_add_cancel]
+    _ ≤ ‖h₁ x - h₂ x‖ₑ + ‖h₂ x‖ₑ := enorm_add_le _ _
+
+/-- **Passing an integral inequality to the limit**: if `∫ |fₙ| ∂ν ≤ c ∫ |gₙ| ∂ν` for every `n`,
+`ν ≤ μ` is finite, `1 ≤ p < ∞`, and `fₙ → f`, `gₙ → g` in `L^p(μ)`, then
+`∫ |f| ∂ν ≤ c ∫ |g| ∂ν`. -/
+theorem MeasureTheory.lintegral_enorm_le_mul_of_tendsto {X : Type*} [MeasurableSpace X]
+    {μ ν : Measure X} (hν : ν ≤ μ) [IsFiniteMeasure ν] {p : ℝ≥0∞} (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {f g : X → ℝ} {fs gs : ℕ → X → ℝ} {c : ℝ≥0∞} (hc : c ≠ ⊤)
+    (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ)
+    (hfs : ∀ n, AEStronglyMeasurable (fs n) μ) (hgs : ∀ n, AEStronglyMeasurable (gs n) μ)
+    (hn : ∀ n, ∫⁻ x, ‖fs n x‖ₑ ∂ν ≤ c * ∫⁻ x, ‖gs n x‖ₑ ∂ν)
+    (hft : Tendsto (fun n ↦ eLpNorm (fs n - f) p μ) atTop (𝓝 0))
+    (hgt : Tendsto (fun n ↦ eLpNorm (gs n - g) p μ) atTop (𝓝 0)) :
+    ∫⁻ x, ‖f x‖ₑ ∂ν ≤ c * ∫⁻ x, ‖g x‖ₑ ∂ν := by
+  have hV : ν univ ^ (1 - 1 / p.toReal) ≠ ⊤ :=
+    ENNReal.rpow_ne_top_of_nonneg (by
+      have : 1 / p.toReal ≤ 1 := by
+        rw [div_le_one (ENNReal.toReal_pos (zero_lt_one.trans_le hp).ne' hp'),
+          ← ENNReal.toReal_one]
+        exact ENNReal.toReal_mono hp' hp
+      linarith) (measure_ne_top ν _)
+  have hbound : ∀ n, ∫⁻ x, ‖f x‖ₑ ∂ν
+      ≤ eLpNorm (fs n - f) p μ * ν univ ^ (1 - 1 / p.toReal)
+        + c * (eLpNorm (gs n - g) p μ * ν univ ^ (1 - 1 / p.toReal) + ∫⁻ x, ‖g x‖ₑ ∂ν) := by
+    intro n
+    calc ∫⁻ x, ‖f x‖ₑ ∂ν
+        ≤ ∫⁻ x, ‖(f - fs n) x‖ₑ ∂ν + ∫⁻ x, ‖fs n x‖ₑ ∂ν :=
+          lintegral_enorm_le_lintegral_enorm_sub_add ((hf.sub (hfs n)).mono_measure hν)
+      _ ≤ ∫⁻ x, ‖(f - fs n) x‖ₑ ∂ν + c * ∫⁻ x, ‖gs n x‖ₑ ∂ν := add_le_add le_rfl (hn n)
+      _ ≤ ∫⁻ x, ‖(f - fs n) x‖ₑ ∂ν
+          + c * (∫⁻ x, ‖(gs n - g) x‖ₑ ∂ν + ∫⁻ x, ‖g x‖ₑ ∂ν) :=
+          add_le_add le_rfl (mul_le_mul' le_rfl (lintegral_enorm_le_lintegral_enorm_sub_add
+            (((hgs n).sub hg).mono_measure hν)))
+      _ ≤ eLpNorm (f - fs n) p μ * ν univ ^ (1 - 1 / p.toReal)
+          + c * (eLpNorm (gs n - g) p μ * ν univ ^ (1 - 1 / p.toReal) + ∫⁻ x, ‖g x‖ₑ ∂ν) :=
+          add_le_add (lintegral_enorm_le_eLpNorm_mul_of_le hν hp (hf.sub (hfs n)))
+            (mul_le_mul' le_rfl (add_le_add
+              (lintegral_enorm_le_eLpNorm_mul_of_le hν hp ((hgs n).sub hg)) le_rfl))
+      _ = _ := by rw [eLpNorm_sub_comm]
+  have h1 := ENNReal.Tendsto.mul_const hft (Or.inr hV)
+  have h2 := ENNReal.Tendsto.mul_const hgt (Or.inr hV)
+  have h3 := h1.add (ENNReal.Tendsto.const_mul (h2.add (tendsto_const_nhds
+    (x := ∫⁻ x, ‖g x‖ₑ ∂ν))) (Or.inr hc))
+  simp only [zero_mul, zero_add] at h3
+  exact ge_of_tendsto h3 (Eventually.of_forall hbound)
+
+end Limit
+
+section StripTyped
+
+variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+open SobolevMultiIndex
+
+/-- The strip has finite measure. -/
+theorem volume_unitChartCubeStrip_ne_top {ε : ℝ} :
+    volume (unitChartCubeStrip d ε) ≠ ⊤ :=
+  (measure_mono (unitChartCubeStrip_subset.trans (unitChartCubePos_subset.trans
+    unitChartCube_subset_ball))).trans_lt measure_ball_lt_top |>.ne
+
+omit [Fact (1 ≤ p)] in
+/-- The strip inequality for an element of `W^{1,p}(Q_+)` whose function is a test function. -/
+theorem SobolevEuclidean.lintegral_unitChartCubeStrip_le_of_fn_ae_eq_testFunction {ε : ℝ}
+    (hε : ε ≤ 1) {w : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    {φ : 𝓓(unitChartCubePosOpens d, ℝ)} (hφ : fn w =ᵐ[volume.restrict (unitChartCubePos d)] φ) :
+    ∫⁻ x in unitChartCubeStrip d ε, ‖fn w x‖ₑ
+      ≤ ENNReal.ofReal ε * ∫⁻ x in unitChartCubeStrip d ε,
+        ‖weakDeriv w (MultiIndexLE.single (Fin.last d)) x‖ₑ := by
+  have hSQ : volume.restrict (unitChartCubeStrip d ε)
+      ≤ volume.restrict (unitChartCubePos d) :=
+    Measure.restrict_mono unitChartCubeStrip_subset le_rfl
+  have h1 : ∫⁻ x in unitChartCubeStrip d ε, ‖fn w x‖ₑ = ∫⁻ x in unitChartCubeStrip d ε, ‖φ x‖ₑ :=
+    lintegral_congr_ae ((hφ.filter_mono (ae_mono hSQ)).mono fun x hx ↦ by simp only [hx])
+  have h2 : ∫⁻ x in unitChartCubeStrip d ε, ‖weakDeriv w (MultiIndexLE.single (Fin.last d)) x‖ₑ
+      = ∫⁻ x in unitChartCubeStrip d ε, ‖fderiv ℝ φ x (EuclideanSpace.single (Fin.last d) 1)‖ₑ := by
+    have := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hφ (Fin.last d)
+    rw [EuclideanSpace.basisFun_toBasis_last] at this
+    exact lintegral_congr_ae ((this.filter_mono (ae_mono hSQ)).mono fun x hx ↦ by simp only [hx])
+  rw [h1, h2]
+  exact lintegral_unitChartCubeStrip_le_of_contDiff hε (φ.contDiff.of_le (by simp))
+    φ.tsupport_subset
+
+/-- **The strip inequality on `W_0^{1,p}(Q_+)`**: for `u ∈ W_0^{1,p}(Q_+)`, `1 ≤ p < ∞`, and
+`ε ≤ 1`, `∫_{x ∈ Q_+, x_N < ε} |u| ≤ ε ∫_{x ∈ Q_+, x_N < ε} |∂_N u|`. The inequality for test
+functions (`lintegral_unitChartCubeStrip_le_of_contDiff`) passes to the limit in `W^{1,p}(Q_+)`,
+both sides being continuous for the `L^p` convergence on the strip, which has finite measure. -/
+theorem SobolevEuclideanZero.lintegral_unitChartCubeStrip_le (hp' : p ≠ ⊤) {ε : ℝ} (hε : ε ≤ 1)
+    {u : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d)) :
+    ∫⁻ x in unitChartCubeStrip d ε, ‖fn u x‖ₑ
+      ≤ ENNReal.ofReal ε * ∫⁻ x in unitChartCubeStrip d ε,
+        ‖weakDeriv u (MultiIndexLE.single (Fin.last d)) x‖ₑ := by
+  obtain ⟨w, φ, hφ, hw⟩ := SobolevMultiIndexZero.exists_seq_testFunction_tendsto hu
+  have hSQ : volume.restrict (unitChartCubeStrip d ε)
+      ≤ volume.restrict (unitChartCubePos d) :=
+    Measure.restrict_mono unitChartCubeStrip_subset le_rfl
+  have : IsFiniteMeasure (volume.restrict (unitChartCubeStrip d ε)) :=
+    isFiniteMeasure_restrict.2 volume_unitChartCubeStrip_ne_top
+  exact lintegral_enorm_le_mul_of_tendsto hSQ Fact.out hp' ENNReal.ofReal_ne_top
+    (memLp u).aestronglyMeasurable (Lp.aestronglyMeasurable _)
+    (fun n ↦ (memLp (w n)).aestronglyMeasurable) (fun n ↦ Lp.aestronglyMeasurable _)
+    (fun n ↦ SobolevEuclidean.lintegral_unitChartCubeStrip_le_of_fn_ae_eq_testFunction hε (hφ n))
+    (tendsto_eLpNorm_fn_sub hw) (tendsto_eLpNorm_weakDeriv_sub hw _)
+
+end StripTyped
+
+section StripLimit
+
+variable {d : ℕ}
+
+open EuclideanSpace
+
+/-- The measure of the strip: `|{x ∈ Q_+ : x_N < ε}| = |B'(0, 1)| ε` for `ε ≤ 1`. -/
+theorem volume_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1) :
+    volume (unitChartCubeStrip d ε)
+      = volume (ball (0 : EuclideanSpace ℝ (Fin d)) 1) * ENNReal.ofReal ε := by
+  rw [← setLIntegral_one, lintegral_unitChartCubeStrip hε aemeasurable_const]
+  simp only [setLIntegral_const, one_mul, Real.volume_Ioo, sub_zero]
+  rw [mul_comm]
+
+/-- **The strip integrals of an `L^1(Q_+)` function tend to `0`** along `ε_n → 0`. -/
+theorem tendsto_lintegral_unitChartCubeStrip {g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hg : ∫⁻ x in unitChartCubePos d, ‖g x‖ₑ ≠ ⊤) {ε : ℕ → ℝ} (hε : ∀ n, ε n ≤ 1)
+    (hε0 : Tendsto ε atTop (𝓝 0)) :
+    Tendsto (fun n ↦ ∫⁻ x in unitChartCubeStrip d (ε n), ‖g x‖ₑ) atTop (𝓝 0) := by
+  have heq : ∀ n, ∫⁻ x in unitChartCubeStrip d (ε n), ‖g x‖ₑ
+      = ∫⁻ x in unitChartCubeStrip d (ε n), ‖g x‖ₑ ∂(volume.restrict (unitChartCubePos d)) := by
+    intro n
+    rw [Measure.restrict_restrict measurableSet_unitChartCubeStrip,
+      inter_eq_self_of_subset_left unitChartCubeStrip_subset]
+  refine (tendsto_congr heq).2 (tendsto_setLIntegral_zero hg ?_)
+  have h : ∀ n, (volume.restrict (unitChartCubePos d) ∘ fun n ↦ unitChartCubeStrip d (ε n)) n
+      = volume (ball (0 : EuclideanSpace ℝ (Fin d)) 1) * ENNReal.ofReal (ε n) := fun n ↦ by
+    simp only [Function.comp_apply]
+    rw [Measure.restrict_apply measurableSet_unitChartCubeStrip,
+      inter_eq_self_of_subset_left unitChartCubeStrip_subset, volume_unitChartCubeStrip (hε n)]
+  refine (tendsto_congr h).2 ?_
+  have := ENNReal.Tendsto.const_mul (ENNReal.tendsto_ofReal hε0)
+    (a := volume (ball (0 : EuclideanSpace ℝ (Fin d)) 1)) (Or.inr measure_ball_lt_top.ne)
+  simpa using this
+
+/-- **A lower bound for the strip integral** near a point of the equator: if `c ≤ |v|` on the
+cylinder `B'(x₀', r) × (0, ε)`, contained in the strip when `r + ‖x₀'‖ ≤ 1` and `ε ≤ 1`, then
+`c ε |B'(x₀', r)| ≤ ∫_{x ∈ Q_+, x_N < ε} |v|`. -/
+theorem le_lintegral_unitChartCubeStrip {ε : ℝ} (hε : ε ≤ 1)
+    {v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hv : AEMeasurable v)
+    {x₀' : EuclideanSpace ℝ (Fin d)} {r c : ℝ} (hr1 : r + ‖x₀'‖ ≤ 1)
+    (hlow : ∀ x' ∈ ball x₀' r, ∀ t ∈ Ioo 0 ε, c ≤ |v (snocLast x' t)|) :
+    ENNReal.ofReal c * (ENNReal.ofReal ε * volume (ball x₀' r))
+      ≤ ∫⁻ x in unitChartCubeStrip d ε, ‖v x‖ₑ := by
+  rw [lintegral_unitChartCubeStrip hε hv.enorm]
+  calc ENNReal.ofReal c * (ENNReal.ofReal ε * volume (ball x₀' r))
+      = ∫⁻ _ in ball x₀' r, ENNReal.ofReal c * ENNReal.ofReal ε := by
+        rw [setLIntegral_const, mul_assoc]
+    _ ≤ ∫⁻ x' in ball x₀' r, ∫⁻ t in Ioo 0 ε, ‖v (snocLast x' t)‖ₑ := by
+        refine setLIntegral_mono' measurableSet_ball fun x' hx' ↦ ?_
+        calc ENNReal.ofReal c * ENNReal.ofReal ε
+            = ∫⁻ _ in Ioo 0 ε, ENNReal.ofReal c := by
+              rw [setLIntegral_const, Real.volume_Ioo, sub_zero]
+          _ ≤ ∫⁻ t in Ioo 0 ε, ‖v (snocLast x' t)‖ₑ := by
+              refine setLIntegral_mono' measurableSet_Ioo fun t ht ↦ ?_
+              rw [Real.enorm_eq_ofReal_abs]
+              exact ENNReal.ofReal_le_ofReal (hlow x' hx' t ht)
+    _ ≤ ∫⁻ x' in ball (0 : EuclideanSpace ℝ (Fin d)) 1, ∫⁻ t in Ioo 0 ε,
+          ‖v (snocLast x' t)‖ₑ :=
+        lintegral_mono_set (ball_subset_ball' (by rwa [dist_zero_right]))
+
+end StripLimit
+
+section Thm917
+
+variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+open EuclideanSpace SobolevMultiIndex
+
+/-- **Theorem 9.17, (ii) ⇒ (i), the `Q_+` computation**: if `u ∈ W_0^{1,p}(Q_+)`, `1 ≤ p < ∞`,
+has a representative `ũ` continuous on `closure Q_+`, then `ũ = 0` on the equator `Q_0`
+([brezis2011functional] Theorem 9.17, (ii) ⇒ (i)). The strip inequality
+`∫_{x_N < ε} |u| ≤ ε ∫_{x_N < ε} |∂_N u|` (`SobolevEuclideanZero.lintegral_unitChartCubeStrip_le`)
+is tested against a point `x₀ ∈ Q_0` with `ũ x₀ ≠ 0`: by continuity `|ũ| ≥ |ũ x₀| / 2` on a
+cylinder `B'(x₀', r) × (0, ε)`, so the left side is at least `(|ũ x₀| / 2) ε |B'(x₀', r)|`, while
+`∫_{x_N < ε} |∂_N u| → 0` as `ε → 0` (`∂_N u ∈ L^1(Q_+)`), a contradiction. -/
+theorem SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure (hp' : p ≠ ⊤)
+    {u : SobolevEuclidean (d + 1) 1 p (unitChartCubePosOpens d)}
+    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p (unitChartCubePosOpens d))
+    {ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hc : ContinuousOn ũ (closure (unitChartCubePos d)))
+    (hũ : fn u =ᵐ[volume.restrict (unitChartCubePos d)] ũ) :
+    EqOn ũ 0 (unitChartCubeZero d) := by
+  intro x₀ hx₀
+  by_contra hne
+  rw [Pi.zero_apply] at hne
+  -- the constant `c = |ũ x₀| / 2` and the radius `r`
+  have hc0 : 0 < |ũ x₀| / 2 := by positivity
+  have hx₀c : x₀ ∈ closure (unitChartCubePos d) :=
+    frontier_subset_closure (unitChartCubeZero_subset_frontier_unitChartCubePos hx₀)
+  have hx₀' : snocLast (init x₀) 0 = x₀ := by
+    conv_rhs => rw [← snocLast_init_last x₀]
+    rw [hx₀.2]
+  have hG : ContinuousWithinAt (fun q : EuclideanSpace ℝ (Fin d) × ℝ ↦ ũ (snocLast q.1 q.2))
+      ((fun q : EuclideanSpace ℝ (Fin d) × ℝ ↦ snocLast q.1 q.2) ⁻¹' closure (unitChartCubePos d))
+      (init x₀, 0) := by
+    refine ContinuousWithinAt.comp (f := fun q : EuclideanSpace ℝ (Fin d) × ℝ ↦ snocLast q.1 q.2)
+      ?_ continuous_snocLast.continuousWithinAt (mapsTo_preimage _ _)
+    simpa only [hx₀'] using hc x₀ hx₀c
+  obtain ⟨δ, hδ, hδ'⟩ := Metric.continuousWithinAt_iff.1 hG _ hc0
+  have hx₀1 : ‖init x₀‖ < 1 := hx₀.1.1
+  obtain ⟨r, hrδ, hr1, hr⟩ : ∃ r : ℝ, r ≤ δ / 2 ∧ r + ‖init x₀‖ ≤ 1 ∧ 0 < r :=
+    ⟨min (δ / 2) (1 - ‖init x₀‖), min_le_left _ _,
+      by linarith [min_le_right (δ / 2) (1 - ‖init x₀‖)], lt_min (by positivity) (by linarith)⟩
+  -- the lower bound on the cylinder
+  have hlow : ∀ x' ∈ ball (init x₀) r, ∀ t ∈ Ioo 0 r,
+      |ũ x₀| / 2 ≤ |ũ (snocLast x' t)| ∧ snocLast x' t ∈ unitChartCubePos d := by
+    intro x' hx' t ht
+    have hmem : snocLast x' t ∈ unitChartCubePos d := by
+      refine ⟨⟨?_, ?_⟩, ?_⟩
+      · rw [init_snocLast]
+        calc ‖x'‖ = ‖x' - init x₀ + init x₀‖ := by rw [sub_add_cancel]
+          _ ≤ ‖x' - init x₀‖ + ‖init x₀‖ := norm_add_le _ _
+          _ < r + ‖init x₀‖ := by
+              have := mem_ball_iff_norm.1 hx'
+              linarith
+          _ ≤ 1 := hr1
+      · rw [snocLast_apply_last, abs_of_pos ht.1]
+        linarith [ht.2, norm_nonneg (init x₀)]
+      · rw [snocLast_apply_last]; exact ht.1
+    refine ⟨?_, hmem⟩
+    have hdist : dist (x', t) (init x₀, 0) < δ := by
+      rw [Prod.dist_eq, max_lt_iff]
+      refine ⟨(mem_ball.1 hx').trans_le (by linarith), ?_⟩
+      rw [Real.dist_eq, sub_zero, abs_of_pos ht.1]
+      linarith [ht.2]
+    have := hδ' (x := (x', t)) (subset_closure hmem) hdist
+    rw [hx₀', Real.dist_eq] at this
+    have h2 := abs_sub_abs_le_abs_sub (ũ x₀) (ũ (snocLast x' t))
+    rw [abs_sub_comm] at h2
+    linarith
+  -- the measurable representative `v`
+  obtain ⟨v, hvdef⟩ : ∃ v : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      v = (closure (unitChartCubePos d)).indicator ũ := ⟨_, rfl⟩
+  have hvm : AEMeasurable v := by
+    rw [hvdef]
+    exact (aemeasurable_indicator_iff isClosed_closure.measurableSet).2
+      (hc.aemeasurable isClosed_closure.measurableSet)
+  have hveq : ∀ x ∈ unitChartCubePos d, v x = ũ x := fun x hx ↦ by
+    rw [hvdef, Set.indicator_of_mem (subset_closure hx)]
+  -- the strip inequality along `ε n = r / (n + 1)`
+  obtain ⟨ε, hεdef⟩ : ∃ ε : ℕ → ℝ, ε = fun n : ℕ ↦ r / ((n : ℝ) + 1) := ⟨_, rfl⟩
+  have hε1 : ∀ n, ε n ≤ 1 := fun n ↦ by
+    rw [hεdef]
+    exact (div_le_self hr.le (by linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)])).trans
+      (by linarith [norm_nonneg (init x₀)])
+  have hεr : ∀ n, ε n ≤ r := fun n ↦ by
+    rw [hεdef]
+    exact div_le_self hr.le (by linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)])
+  have hε0 : ∀ n, 0 < ε n := fun n ↦ by
+    rw [hεdef]
+    positivity
+  have hεt : Tendsto ε atTop (𝓝 0) := by
+    have := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_mul r
+    rw [mul_zero] at this
+    refine this.congr fun n ↦ ?_
+    simp only [hεdef]
+    ring
+  have hSQ : ∀ n, volume.restrict (unitChartCubeStrip d (ε n))
+      ≤ volume.restrict (unitChartCubePos d) := fun n ↦
+    Measure.restrict_mono unitChartCubeStrip_subset le_rfl
+  have hstrip : ∀ n, ENNReal.ofReal (|ũ x₀| / 2) * volume (ball (init x₀) r)
+      ≤ ∫⁻ x in unitChartCubeStrip d (ε n),
+        ‖weakDeriv u (MultiIndexLE.single (Fin.last d)) x‖ₑ := by
+    intro n
+    have h1 : ∫⁻ x in unitChartCubeStrip d (ε n), ‖fn u x‖ₑ
+        = ∫⁻ x in unitChartCubeStrip d (ε n), ‖v x‖ₑ := by
+      refine lintegral_congr_ae ?_
+      filter_upwards [hũ.filter_mono (ae_mono (hSQ n)),
+        ae_restrict_mem measurableSet_unitChartCubeStrip] with x hx hxS
+      rw [hx, hveq x (unitChartCubeStrip_subset hxS)]
+    have h2 := le_lintegral_unitChartCubeStrip (hε1 n) hvm hr1 (x₀' := init x₀) (c := |ũ x₀| / 2)
+      (fun x' hx' t ht ↦ by
+        have := hlow x' hx' t ⟨ht.1, ht.2.trans_le (hεr n)⟩
+        rw [hveq _ this.2]
+        exact this.1)
+    have h3 := SobolevEuclideanZero.lintegral_unitChartCubeStrip_le hp' (hε1 n) hu
+    rw [h1] at h3
+    have h4 := h2.trans h3
+    rw [mul_left_comm] at h4
+    exact (ENNReal.mul_le_mul_iff_right (ENNReal.ofReal_pos.2 (hε0 n)).ne'
+      ENNReal.ofReal_ne_top).1 h4
+  -- the right side tends to `0`
+  have hfin : IsFiniteMeasure (volume.restrict (unitChartCubePos d)) :=
+    isFiniteMeasure_restrict.2 ((measure_mono (unitChartCubePos_subset.trans
+      unitChartCube_subset_ball)).trans_lt measure_ball_lt_top).ne
+  have hL1 : ∫⁻ x in unitChartCubePos d, ‖weakDeriv u (MultiIndexLE.single (Fin.last d)) x‖ₑ
+      ≠ ⊤ :=
+    (hasFiniteIntegral_iff_enorm.1 (memLp_one_iff_integrable.1
+      ((Lp.memLp _).mono_exponent Fact.out)).hasFiniteIntegral).ne
+  have hlim := tendsto_lintegral_unitChartCubeStrip hL1 hε1 hεt
+  have h0 := ge_of_tendsto hlim (Eventually.of_forall hstrip)
+  rw [nonpos_iff_eq_zero, mul_eq_zero] at h0
+  rcases h0 with h0 | h0
+  · exact (ENNReal.ofReal_pos.2 hc0).ne' h0
+  · exact (Metric.measure_ball_pos volume (init x₀) hr).ne' h0
+
+end Thm917
+
+/-! ### Theorem 9.17, (ii) ⇒ (i): the chart reduction -/
+
+section Thm917Chart
+
+variable {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+open SobolevMultiIndex
+
+namespace ContDiffChart
+
+variable (c : ContDiffChart 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+
+/-- The chart sends `closure Q_+` into `closure Ω`. -/
+theorem mapsTo_closure_unitChartCubePos :
+    MapsTo c.toFun (closure (unitChartCubePos d)) (closure (Ω : Set _)) := by
+  have h1 : c.toFun '' closure (unitChartCubePos d) ⊆ closure (c.toFun '' unitChartCubePos d) :=
+    (c.continuousOn.mono (closure_mono unitChartCubePos_subset)).image_closure
+  rw [c.image_pos] at h1
+  exact fun y hy ↦ closure_mono inter_subset_right (h1 (mem_image_of_mem _ hy))
+
+/-- **The chart piece of Theorem 9.17, (ii) ⇒ (i)**: for a chart `c` of `Ω`, `θ` smooth with
+compact support in `c.U`, `u ∈ W_0^{1,p}(Ω)` with a representative `ũ` continuous on `closure Ω`,
+and `V ∈ W^{1,p}(U ∩ Ω)` with function `u θ`, the transfer `V ∘ H` lies in `W_0^{1,p}(Q_+)`
+(`SobolevMultiIndexZero.mul_contDiff_mem`, `SobolevMultiIndexZero.compDiffeoL_mem`) and has the
+representative `(ũ θ) ∘ H`, continuous on `closure Q_+`; the `Q_+` computation
+(`SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure`) gives `(ũ θ) ∘ H = 0` on
+the equator `Q_0`. -/
+theorem eqOn_unitChartCubeZero_aux (hp' : p ≠ ⊤) {M : ℝ}
+    (hH : IsDiffeoOnWithBoundedJacobian c.toFun c.invFun (unitChartCubePosOpens d : Set _)
+      (c.opensInter : Set _) M)
+    {θ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hθ : ContDiff ℝ ∞ θ) (hθc : HasCompactSupport θ)
+    (hθU : tsupport θ ⊆ c.U) {u : SobolevEuclidean (d + 1) 1 p Ω}
+    (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p Ω) {ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hũ : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ)
+    (hc : ContinuousOn ũ (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {V : SobolevEuclidean (d + 1) 1 p c.opensInter}
+    (hV : fn V =ᵐ[volume.restrict (c.opensInter : Set _)] fun x ↦ fn u x * θ x) :
+    EqOn (fun y ↦ ũ (c.toFun y) * θ (c.toFun y)) 0 (unitChartCubeZero d) := by
+  have hle : volume.restrict (c.opensInter : Set (EuclideanSpace ℝ (Fin (d + 1))))
+      ≤ volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+    Measure.restrict_mono c.opensInter_le le_rfl
+  -- `V ∈ W_0^{1,p}(U ∩ Ω)`
+  have hVZ : V ∈ SobolevEuclideanZero (d + 1) 1 p c.opensInter :=
+    SobolevMultiIndexZero.mul_contDiff_mem c.opensInter_le hθ hθc
+      (fun x hx ↦ ⟨hθU hx.1, hx.2⟩) hu hV
+  -- the transfer `V ∘ H ∈ W_0^{1,p}(Q_+)`
+  have hWZ := SobolevMultiIndexZero.compDiffeoL_mem hp' hH hVZ
+  -- its continuous representative `(ũ θ) ∘ H`
+  have hH1 : ContinuousOn c.toFun (closure (unitChartCubePos d)) :=
+    c.continuousOn.mono (closure_mono unitChartCubePos_subset)
+  have hcont : ContinuousOn (fun y ↦ ũ (c.toFun y) * θ (c.toFun y))
+      (closure (unitChartCubePos d)) :=
+    (hc.comp hH1 c.mapsTo_closure_unitChartCubePos).mul (hθ.continuous.comp_continuousOn hH1)
+  have hW : fn (compDiffeoL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis p volume hH V)
+      =ᵐ[volume.restrict (unitChartCubePos d)] fun y ↦ ũ (c.toFun y) * θ (c.toFun y) := by
+    have h1 := fn_compDiffeoL hH V
+    have h2 := hH.ae_comp_restrict (P := fun x ↦ fn V x = fn u x * θ x) hV
+    have h3 := hH.ae_comp_restrict (P := fun x ↦ fn u x = ũ x) (hũ.filter_mono (ae_mono hle))
+    filter_upwards [h1, h2, h3] with y hy1 hy2 hy3
+    rw [hy1, hy2, hy3]
+  exact SobolevEuclideanZero.eqOn_unitChartCubeZero_of_continuousOn_closure hp' hWZ hcont hW
+
+end ContDiffChart
+
+/-- **Theorem 9.17, (ii) ⇒ (i)** for a `C^1` chart domain, `1 ≤ p < ∞`: if
+`IsContDiffChartDomain 1 Ω`, `u ∈ W_0^{1,p}(Ω)` and `ũ` is a representative of `u` continuous on
+`closure Ω`, then `ũ = 0` on `frontier Ω` ([brezis2011functional] Theorem 9.17, (ii) ⇒ (i):
+"using local charts this is reduced to" the `Q_+` computation). For `x₀ ∈ frontier Ω` with chart
+`c` and `θ` smooth with compact support in `c.U`, `θ = 1` near `x₀`, the function `u θ` is in
+`W_0^{1,p}(U ∩ Ω)` and transfers along the chart to `W_0^{1,p}(Q_+)` with the continuous
+representative `(ũ θ) ∘ H` (`ContDiffChart.eqOn_unitChartCubeZero_aux`), which vanishes on the
+equator; `x₀ = H(y₀)` with `y₀ ∈ Q_0`, so `ũ x₀ = ũ x₀ θ x₀ = 0`. Together with
+`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`, this is Theorem 9.17. -/
+theorem SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure (hp' : p ≠ ⊤)
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    {u : SobolevEuclidean (d + 1) 1 p Ω} (hu : u ∈ SobolevEuclideanZero (d + 1) 1 p Ω)
+    {ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hũ : fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ)
+    (hc : ContinuousOn ũ (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    EqOn ũ 0 (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := by
+  intro x₀ hx₀
+  obtain ⟨c, hx₀U⟩ := hΩ.exists_chart hx₀
+  -- the cut-off `θ`, equal to `1` near `x₀`, with compact support in `c.U`
+  obtain ⟨r, hr, hrU⟩ := Metric.isOpen_iff.1 c.isOpen_U x₀ hx₀U
+  obtain ⟨θ, hθ, hθ1, hθU, -⟩ := (isCompact_closedBall x₀ (r / 2)).exists_contDiff_eqOn_one
+    c.isOpen_U ((closedBall_subset_ball (by linarith)).trans hrU)
+  have hθc : HasCompactSupport θ :=
+    c.isCompact_closure_U.of_isClosed_subset (isClosed_tsupport _) (hθU.trans subset_closure)
+  obtain ⟨M₀, hM₀⟩ := hθc.exists_bound_of_continuous hθ.continuous
+  obtain ⟨M₁, hM₁⟩ := (hθc.fderiv ℝ).exists_bound_of_continuous (hθ.continuous_fderiv (by simp))
+  have hM : ∀ x, |θ x| ≤ M₀ + M₁ ∧ ‖fderiv ℝ θ x‖ ≤ M₀ + M₁ := fun x ↦ by
+    have h0 : 0 ≤ M₀ := (norm_nonneg _).trans (hM₀ x)
+    have h1 : 0 ≤ M₁ := (norm_nonneg _).trans (hM₁ x)
+    exact ⟨(Real.norm_eq_abs _).symm.trans_le ((hM₀ x).trans (by linarith)),
+      (hM₁ x).trans (by linarith)⟩
+  -- `V ∈ W^{1,p}(U ∩ Ω)` with function `u θ`
+  obtain ⟨V, hV⟩ := ((memSobolevMultiIndex (restrictL ℝ
+    (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 p volume c.opensInter_le u)).contDiff_mul
+    Fact.out hθ hM).exists_sobolevMultiIndex
+  have hV' : fn V =ᵐ[volume.restrict (c.opensInter : Set _)] fun x ↦ fn u x * θ x := by
+    filter_upwards [hV, fn_restrictL c.opensInter_le u] with x h1 h2
+    rw [h1, h2, mul_comm]
+  -- the chart piece
+  obtain ⟨M, hH⟩ := c.isDiffeoOnWithBoundedJacobian_pos le_rfl Ω.isOpen
+  have h0 := c.eqOn_unitChartCubeZero_aux hp' hH hθ hθc hθU hu hũ hc hV'
+    ((c.invFun_mem_zero_iff hx₀U).2 hx₀)
+  simp only [Pi.zero_apply, c.toFun_invFun hx₀U] at h0 ⊢
+  rwa [hθ1 (mem_closedBall_self (by positivity)), Pi.one_apply, mul_one] at h0
+
+end Thm917Chart
 
 /-! ### Proposition 9.20: the dual `W^{-1,p'}(Ω)` -/
 
