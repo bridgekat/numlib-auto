@@ -1,55 +1,46 @@
 namespace = "Brezis.Chapter09"
-desc = '''
-Brezis §9.8, eigenfunctions and spectral decomposition: Theorem 9.31 (the Dirichlet
-eigenfunctions of `-Δ` on a bounded open set form a Hilbert basis of `L²(Ω)`, are in
-`H^1_0(Ω) ∩ C^∞(Ω)`, with eigenvalues `λ_n > 0` tending to `+∞`), Remark 28 (the bases of
-`H^1_0(Ω)`), Remark 29 (smoothness up to the boundary on a `C^∞` domain), Remark 30 (general
-symmetric elliptic operators). Everything delegates to `Numlib/Analysis/PDE/Elliptic/Spectral`,
-which proves the theorem for an arbitrary symmetric coercive form on `H^1_0(Ω)`.
-
-The book's `-Δe_n = λ_n e_n` "in `Ω`" is read pointwise on `Ω` for the `C^∞` representative
-with Mathlib's Laplacian `Δ`, and also in the weak form (83) on `H^1_0(Ω)`. The book's proof
-"repeat the proof of Theorem 8.21" refers to the one-dimensional Sturm–Liouville theorem, which
-is its Theorem 8.22. Remark 29's first clause, `e_n ∈ L^∞(Ω)` for a general bounded `Ω`, is
-quoted without proof and is not planned; Remark 30 needs the symmetry `a_ij = a_ji`, which the
-book omits.
-'''
 
 [[node]]
 id = "theorem_9_31"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31"
+
+[[node]]
+id = "theorem_9_31_laplacian"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31"
+
+[[node]]
+id = "theorem_9_31_smooth"
 kind = "theorem"
-desc = '''Theorem 9.31: for `Ω ⊆ ℝ^N` open, bounded and nonempty there are a Hilbert basis
-`(e_n)_{n ≥ 1}` of `L²(Ω)` (a `HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict Ω))`) and reals
-`λ_n > 0` with `λ_n → +∞` such that `e_n ∈ H^1_0(Ω) ∩ C^∞(Ω)` and `-Δe_n = λ_n e_n` in `Ω` (83):
-each `e_n` is the function of an element `u_n ∈ H^1_0(Ω)` with `∫ ∇u_n·∇φ = λ_n ∫ e_n φ` for all
-`φ ∈ H^1_0(Ω)`, and has a representative `ẽ_n` with `ContDiffOn ℝ ⊤ ẽ_n Ω` and
-`-Δ ẽ_n x = λ_n ẽ_n x` for every `x ∈ Ω`. Packaged from the data `Elliptic.dirichletEigenbasis`,
-`Elliptic.dirichletEigenvalue` and their properties (`Elliptic.dirichletEigenbasis_exists_contDiffOn`
-for the smoothness and the pointwise equation); the sequence produced is moreover monotone. The proof is the solution operator `T` of
-`∫ ∇u·∇φ = ∫ fφ` on `H^1_0(Ω)` — compact by Theorem 9.16 in the form of Remark 20, self-adjoint,
-positive and injective — and the spectral theorem for compact self-adjoint operators (Theorem
-6.11), followed by Remark 25 iterated for the smoothness. `Ω ≠ ∅` is needed for `L²(Ω)` to be
-infinite-dimensional, which the book leaves implicit. ★'''
-deps = ["Elliptic.dirichletEigenbasis", "Elliptic.dirichletEigenbasis_exists_contDiffOn", "theorem_9_16", "remark_9_20", "remark_9_25", "Brezis.Chapter06.theorem_6_11", "Brezis.Chapter08.theorem_8_22"]
+desc = '''Theorem 9.31, the smoothness clause "`e_n ∈ C^∞(Ω)` and `-Δe_n = λ_n e_n` in `Ω`", as
+the complete statement of the theorem: for `Ω ⊆ ℝ^N` open, bounded and nonempty (`N = d + 1`)
+there are a Hilbert basis `(e_n)` of `L²(Ω)` and reals `λ_n > 0` with `λ_n → +∞` such that for
+every `n`, `e_n` is the function of an element `u_n ∈ H^1_0(Ω)` with
+`∫ ∇u_n·∇φ = λ_n ∫ e_n φ` for all `φ ∈ H^1_0(Ω)` (83, the clauses of `theorem_9_31`), and `e_n`
+agrees a.e. on `Ω` with a function `ẽ_n` with `ContDiffOn ℝ ∞ ẽ_n Ω` and `-Δ ẽ_n x = λ_n ẽ_n x`
+for every `x ∈ Ω` (Mathlib's `Δ`). Split off `theorem_9_31` on 2026-09-20 (surf11): the
+Hilbert-space clauses are proved there with the witnesses `Elliptic.dirichletEigenbasis`,
+`Elliptic.dirichletEigenvalue`, `Elliptic.dirichletEigenfunction`; the classical equation for any
+`C²` representative is `theorem_9_31_laplacian`; what remains is the `C^∞` representative of
+`e_n` on `Ω`, "from the regularity results of Section 9.6 (Remark 25): `e_n ∈ H²(ω)`, hence
+`H⁴(ω)`, … for every `ω ⊂⊂ Ω`, so `e_n ∈ C^∞(Ω)`" — the backbone's
+`Elliptic.dirichletEigenbasis_exists_contDiffOn`, after which the node is a ten-line assembly of
+`theorem_9_31`'s proof and that lemma (`theorem_9_31_laplacian` is not even needed, the backbone
+lemma carrying the pointwise equation). ★
+
+Blocked: the dependency `Elliptic.dirichletEigenbasis_exists_contDiffOn` (`PDE/Elliptic/Spectral`)
+is open in this worktree (being closed by agent pde5 in parallel). The surface's
+`memSobolevMultiIndexLoc_of_forall_testFunction_add_mul` (Section06, the bootstrap of Remark 25
+with datum `f + c u`, here `f = 0`, `c = λ_n`) together with `MemSobolevMultiIndexLoc.exists_contDiffOn`
+would also close it in ~20 lines without the backbone lemma, if the orchestrator prefers.'''
+deps = ["theorem_9_31", "theorem_9_31_laplacian", "Elliptic.dirichletEigenbasis", "Elliptic.dirichletEigenbasis_exists_contDiffOn", "remark_9_25"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31"
 
 [[node]]
 id = "remark_9_28"
-kind = "theorem"
-desc = '''Remark 28, first clause: `(e_n / √λ_n)` is a Hilbert basis of `H^1_0(Ω)` equipped with the
-scalar product `∫ ∇u·∇v` — stated on the energy space `WithEnergy` of the operator of the
-Dirichlet form restricted to `H^1_0(Ω)`, as `Elliptic.hilbertBasis_sobolevZero` (b). ★'''
-deps = ["theorem_9_31", "Elliptic.hilbertBasis_sobolevZero", "WithEnergy"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 28"
 
 [[node]]
 id = "remark_9_28_h1"
-kind = "theorem"
-desc = '''Remark 28, second clause: `(e_n / √(λ_n + 1))` is a Hilbert basis of `H^1_0(Ω)` equipped
-with the scalar product `∫ (∇u·∇v + uv)`, i.e. a `HilbertBasis ℕ ℝ (SobolevEuclideanZero N 1 2 Ω)`
-for the inner product the type carries. `Elliptic.hilbertBasis_sobolevZero` (a); the proof is
-the orthonormality from (83) and the completeness from the basis property in `L²`. ★'''
-deps = ["theorem_9_31", "Elliptic.hilbertBasis_sobolevZero"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 28"
 
 [[node]]
@@ -64,12 +55,4 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "remark_9_30"
-kind = "theorem"
-desc = '''Remark 30: for `a_ij ∈ L^∞(Ω)` elliptic and symmetric (`a_ij = a_ji`, a hypothesis the
-book omits and without which there is no orthonormal basis of eigenfunctions) and
-`a₀ ∈ L^∞(Ω)`, on a bounded nonempty `Ω`, there are a Hilbert basis `(e_n)` of `L²(Ω)` and reals
-`λ_n → +∞` with `e_n ∈ H^1_0(Ω)` and `∫ ∑ a_ij ∂ᵢe_n ∂ⱼφ + ∫ a₀ e_n φ = λ_n ∫ e_n φ` for all
-`φ ∈ H^1_0(Ω)` (84). `Elliptic.exists_hilbertBasis_eigen_general`, the same construction after
-shifting the form by Gårding's constant. ★'''
-deps = ["theorem_9_31", "ellipticityCondition", "Elliptic.exists_hilbertBasis_eigen_general"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 30"
