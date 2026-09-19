@@ -51,20 +51,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "lemma_9_4"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Lemma 9.4: for `N ≥ 2` and `f_1, …, f_N ∈ L^{N−1}(ℝ^{N−1})`, the function
-`f(x) = ∏_i f_i(x̃_i)`, `x̃_i` being `x` with the `i`-th coordinate omitted, lies in `L^1(ℝ^N)` with
-`‖f‖_{L^1(ℝ^N)} ≤ ∏_i ‖f_i‖_{L^{N−1}(ℝ^{N−1})}`. The backbone's
-`MeasureTheory.lintegral_prod_comp_succAbove_le` (`Embedding`, ★★★ there and without consumer:
-Mathlib's `lintegral_prod_lintegral_pow_le` is the special case Theorem 9.9's proof uses, so this
-node is only the book's lemma for its own sake). Stated on `Fin N → ℝ` with `x ∘ Fin.succAbove i`
-for `x̃_i`. ★
-
-Blocked (2026-09-19, surf9): the dependency `MeasureTheory.lintegral_prod_comp_succAbove_le` is
-open (`Embedding.lean` proves only the one-function grid-line case inside Theorem 9.9's proof and
-says "Lemma 9.4 (Gagliardo's product lemma) in its general form is not proved here"); the surface
-restatement is the book's lemma verbatim on the backbone node, five lines once it lands.'''
-deps = ["MeasureTheory.lintegral_prod_comp_succAbove_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
 
 [[node]]
@@ -229,16 +215,4 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "remark_9_16"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 16 (the limiting case `p = N`): on `Ω = {x ∈ ℝ^N : |x| < 1/2}`, `N ≥ 2`, and for
-`0 < α < 1 − 1/N`, the function `u x = (log (1/|x|))^α` belongs to `W^{1,N}(Ω)` but not to
-`L^∞(Ω)`. The backbone's `memSobolevMultiIndex_logRpow` (`EmbeddingDomain`, via the
-removable-singularity lemma of `RemovableSingularity.lean`). Trudinger's inequality is quoted
-without proof and is not planned. ★
-
-Blocked (2026-09-19, surf9): the dependency `memSobolevMultiIndex_logRpow` is open (not
-attempted by sob8/sob11, ~400 lines of backbone work); the surface restatement is the book's
-sentence on the backbone node (an element of `sobolevSpace N N (ball 0 (1/2))` whose function is
-`(log (1/|x|))^α` a.e., together with `¬ MemLp … ⊤`), ten lines once it lands.'''
-deps = ["sobolevSpace", "memSobolevMultiIndex_logRpow"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"

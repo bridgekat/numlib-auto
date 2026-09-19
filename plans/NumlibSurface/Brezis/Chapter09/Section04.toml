@@ -1,197 +1,241 @@
 namespace = "Brezis.Chapter09"
-desc = '''
-Brezis §9.4, "The space `W_0^{1,p}(Ω)`" (lines 10780–10947): the definition of `W_0^{1,p}(Ω)` and
-`H_0^1(Ω)` with their Banach/reflexive/Hilbert properties; Remarks 17–18; Lemma 9.5; Theorem
-9.17 (`u ∈ W^{1,p} ∩ C(Ω̄)`: `u = 0` on `Γ` iff `u ∈ W_0^{1,p}`); Remark 19; Proposition 9.18
-(three characterizations, with the extension by zero); Remark 20 (the `W_0^{1,p}` versions of
-Corollary 9.14 and Theorem 9.16 on arbitrary open sets); Corollary 9.19 (Poincaré) with
-Remark 21; Remark 22 (`W_0^{m,p}`); the dual space `W^{−1,p'}(Ω)`, `H^{−1}(Ω)`, the inclusions
-`H_0^1 ⊂ L^2 ⊂ H^{−1}`; Proposition 9.20 (representation of the dual).
-
-The book's `W_0^{1,p}(Ω)`, the closure of `C_c^1(Ω)` in `W^{1,p}(Ω)`, is `SobolevEuclideanZero N 1 p Ω`
-(`SobolevMultiIndexZero`, the closure of `𝓓(Ω)`; the two closures agree by Remark 18 /
-Lemma 9.5). Backbone modules: `Cutoff` (Lemma 9.5), `Poincare` (Corollary 9.19, Remark 21's
-bounded-projection clause), `Zero` (everything else), `Compactness` (Remark 20's compactness).
-Theorem 9.17 and Proposition 9.18 are split into their implications, the ones valid for every
-open `Ω` (Remark 19) separately from the ones needing `Ω` of class `C^1`; the class-`C^1`
-hypothesis is `IsClassC1 Ω` of `Section02`. The dual `W^{−1,p'}(Ω)` is `StrongDual ℝ (W_0^{1,p}(Ω))`;
-Proposition 9.20's norm identity `‖F‖ = max ‖f_i‖_{p'}` refers to the book's norm on
-`(L^p)^{N+1}` and is stated as the one-sided bound `‖f_i‖_{p'} ≤ ‖F‖` for the type's norm (see
-"Doubts" in `Chapter09.toml`). Chapter 9b consumes `theorem_9_17`, `proposition_9_18`,
-`corollary_9_19`, `remark_9_20` and `proposition_9_5` from here.
-'''
 
 [[node]]
 id = "sobolevZeroSpace"
-kind = "definition"
-desc = '''`sobolevZeroSpace N p Ω := SobolevEuclideanZero N 1 p Ω`, the space `W_0^{1,p}(Ω)`, `1 ≤ p < ∞`,
-"the closure of `C_c^1(Ω)` in `W^{1,p}(Ω)`" — here the closure of the test functions
-`𝓓(Ω, ℝ)`, which is the same closure by `remark_9_18`; `hZeroSpace N Ω := sobolevZeroSpace N 2 Ω`
-is `H_0^1(Ω)`. `sobolevZeroSpace_banach`: with the `W^{1,p}` norm it is a separable Banach space
-(`SobolevMultiIndexZero.instCompleteSpace`, `SobolevMultiIndexZero.instSecondCountableTopology`),
-reflexive for `1 < p < ∞` (`SobolevMultiIndexZero.instIsReflexive`), and `H_0^1` with the `H^1`
-scalar product is a Hilbert space (`SobolevMultiIndex.inner_eq` restricted). Footnote 19 is
-notation. ★'''
-deps = ["SobolevEuclideanZero", "sobolevSpace", "SobolevMultiIndexZero.instCompleteSpace", "SobolevMultiIndexZero.instSecondCountableTopology", "SobolevMultiIndexZero.instIsReflexive", "SobolevMultiIndex.inner_eq"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
+
+[[node]]
+id = "hZeroSpace"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
+
+[[node]]
+id = "sobolevZeroSpace_banach"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, Definition"
 
 [[node]]
 id = "remark_9_17"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
+
+[[node]]
+id = "remark_9_17_punctured"
 kind = "theorem"
-desc = '''Remark 17: `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` — `sobolevZeroSpace N p ⊤ = ⊤` — since
-`C_c^1(ℝ^N)` is dense in `W^{1,p}(ℝ^N)` (Theorem 9.2). The backbone's `SobolevEuclideanZero.eq_top`
-(`Zero`). `remark_9_17_punctured`: for `Ω = ℝ^N ∖ {0}` and `N ≥ 2`, `H_0^1(Ω) = H^1(Ω)` — the
-backbone's `SobolevEuclideanZero.eq_top_of_compl_singleton` (★★★ there, low priority); the remark's
-"in general `W_0^{1,p}(Ω) ≠ W^{1,p}(Ω)`" is the content of Theorem 9.17 (a function continuous
-on `Ω̄` and nonzero on `Γ`). ★'''
-deps = ["sobolevZeroSpace", "SobolevEuclideanZero.eq_top", "SobolevEuclideanZero.eq_top_of_compl_singleton"]
+desc = '''Remark 17, the punctured space: for `Ω = ℝ^N ∖ {0}` and `N ≥ 2`, `H_0^1(Ω) = H^1(Ω)`
+(`hZeroSpace N ⟨{0}ᶜ, isOpen_compl_singleton⟩ = ⊤`) — the backbone's
+`SobolevEuclideanZero.eq_top_of_compl_singleton` (★★★ there, low priority, no consumer); the
+remark's "in general `W_0^{1,p}(Ω) ≠ W^{1,p}(Ω)`" is the content of Theorem 9.17, and this example
+is also Remark 19's counterexample to Theorem 9.17 (ii) ⇒ (i) without smoothness. Split off
+`remark_9_17` (surf10, 2026-09-20), whose first clause `W_0^{1,p}(ℝ^N) = W^{1,p}(ℝ^N)` is proved.
+★
+
+Blocked (2026-09-20, surf10): the dependency `SobolevEuclideanZero.eq_top_of_compl_singleton`
+(`Zero.toml`) is open (not attempted by sob9, sob12; capacity-of-a-point route, ~400 lines);
+the surface restatement is two lines once it lands.'''
+deps = ["sobolevZeroSpace", "hZeroSpace", "SobolevEuclideanZero.eq_top_of_compl_singleton"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
 
 [[node]]
 id = "remark_9_18"
-kind = "theorem"
-desc = '''Remark 18: `C_c^∞(Ω)` is dense in `W_0^{1,p}(Ω)`, so `C_c^∞(Ω)` could have been used instead
-of `C_c^1(Ω)` in the definition — in the surface's terms: every `C^1` function with compact
-support in `Ω` lies in `sobolevZeroSpace N p Ω` (the backbone's
-`SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport`, from Lemma 9.5), so the closure of
-`C_c^1(Ω)` is the closure of `𝓓(Ω)`, which is `SobolevMultiIndexZero` by definition. ★'''
-deps = ["sobolevZeroSpace", "SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 18"
+
+[[node]]
+id = "remark_9_18_closure"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 18"
 
 [[node]]
 id = "lemma_9_5"
-kind = "theorem"
-desc = '''Lemma 9.5: if `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, and `supp u` is a compact subset of `Ω`
-(`u = 0` a.e. outside a compact `K ⊆ Ω`), then `u ∈ W_0^{1,p}(Ω)`. The backbone's
-`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` (`Cutoff`, at every order). ★'''
-deps = ["sobolevZeroSpace", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.5"
 
 [[node]]
+id = "theorem_9_17_mp"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17 (i) ⇒ (ii)"
+
+[[node]]
+id = "remark_9_19"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 19"
+
+[[node]]
+id = "theorem_9_17_mpr"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17 (ii) ⇒ (i)"
+
+[[node]]
 id = "theorem_9_17"
-kind = "theorem"
-desc = '''Theorem 9.17: for `Ω` of class `C^1` and `u ∈ W^{1,p}(Ω) ∩ C(Ω̄)`, `1 ≤ p < ∞` — `u` with a
-representative `ũ` continuous on `closure Ω` — the following are equivalent: (i) `ũ = 0` on
-`Γ = frontier Ω`; (ii) `u ∈ W_0^{1,p}(Ω)`. `theorem_9_17_mp` ((i) ⇒ (ii)) holds for every open
-`Ω` (Remark 19): the backbone's `SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`
-(`Zero`); `theorem_9_17_mpr` ((ii) ⇒ (i)) needs the class `C^1`:
-`SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure`. Footnote 21: for `p > N` the
-continuity hypothesis is automatic by Corollary 9.14. Consumed by chapter 9b's Step A (classical
-solutions are weak solutions) and the maximum principle. ★'''
-deps = ["IsClassC1", "sobolevZeroSpace", "SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier", "SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.17"
 
 [[node]]
+id = "proposition_9_18_i_ii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (i) ⇒ (ii)"
+
+[[node]]
+id = "proposition_9_18_ii_iii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (ii) ⇒ (iii)"
+
+[[node]]
+id = "proposition_9_18_i_iii"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (i) ⇒ (iii)"
+
+[[node]]
+id = "proposition_9_18_iii_i"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18 (iii) ⇒ (i)"
+
+[[node]]
 id = "proposition_9_18"
-kind = "theorem"
-desc = '''Proposition 9.18: for `Ω` of class `C^1` and `u ∈ L^p(Ω)`, `1 < p < ∞`, the following are
-equivalent: (i) `u ∈ W_0^{1,p}(Ω)` (`u` is the function of an element of `sobolevZeroSpace`);
-(ii) there is `C` with `|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ C_c^1(ℝ^N)` and all `i`;
-(iii) the extension by zero `ū` lies in `W^{1,p}(ℝ^N)`, and then `∂_i ū = \overline{∂_i u}`.
-Implications: `proposition_9_18_i_ii` (any `Ω`, `SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le`),
-`proposition_9_18_ii_iii` (any `Ω`, `SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le`,
-chapter 4's Riesz representation), `proposition_9_18_i_iii` (any `Ω` and every `1 ≤ p < ∞`,
-`SobolevMultiIndexZero.indicator_memSobolevMultiIndex` / `SobolevEuclideanZero.extendZeroL`, proved
-without the Riesz theorem), `proposition_9_18_iii_i` (class `C^1`,
-`SobolevEuclideanZero.mem_of_indicator_memSobolev`). The node is the equivalence. ★'''
-deps = ["IsClassC1", "sobolevZeroSpace", "SobolevEuclideanZero.abs_integral_fn_smul_fderiv_le", "SobolevEuclidean.indicator_memSobolev_of_forall_abs_integral_le", "SobolevMultiIndexZero.indicator_memSobolevMultiIndex", "SobolevEuclideanZero.extendZeroL", "SobolevEuclideanZero.mem_of_indicator_memSobolev"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.18"
 
 [[node]]
-id = "remark_9_20"
-kind = "theorem"
-desc = '''Remark 20: for an arbitrary open `Ω`, the conclusions of Corollary 9.14 hold for
-`W_0^{1,p}(Ω)` (`remark_9_20_embedding`: `W_0^{1,p}(Ω) ⊆ L^{p*}(Ω)`, `L^q(Ω)` for `q ∈ [p,∞)`,
-`L^∞(Ω)` with the Hölder estimate, according to `p < N`, `p = N`, `p > N`, all continuous —
-the backbone's `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq` and the three restatements of
-`EmbeddingDomain` under `SobolevEuclideanZero.hasSobolevExtensionOn`); for an arbitrary *bounded*
-open `Ω` the conclusion of Theorem 9.16 holds for `W_0^{1,p}(Ω)` (`remark_9_20_compact`:
-`IsCompactEmbedding` of `sobolevZeroSpace N p Ω → L^q(Ω)` for the same `q`, in particular into
-`L^p(Ω)` — the backbone's `SobolevEuclideanZero.isCompactEmbedding_toLp`, `Compactness`); and
-for `1 ≤ p < N`, `‖u‖_{L^{p*}(Ω)} ≤ C(p, N) ‖∇u‖_{L^p(Ω)}` for all `u ∈ W_0^{1,p}(Ω)`
-(`remark_9_20_sobolev`, `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq`). The node is the
-conjunction. Chapter 9b's Theorem 9.31 consumes `remark_9_20_compact` at `p = 2`. ★'''
-deps = ["sobolevZeroSpace", "SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_eq", "SobolevEuclideanZero.hasSobolevExtensionOn", "SobolevEuclideanZero.isCompactEmbedding_toLp"]
+id = "IsContinuousInjectionLpZero"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
 
 [[node]]
+id = "IsCompactInjectionLpZero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "IsCompactInjectionLpZero.isContinuousInjectionLpZero"
+
+[[node]]
+id = "remark_9_20_embedding_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_embedding_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_embedding_gt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_embedding_holder"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_embedding"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_compact_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_compact_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "toContinuousMapClosureZero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "exists_continuous_ae_eq_toContinuousMapClosureZero"
+
+[[node]]
+id = "remark_9_20_compact_gt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_compact_self"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_compact"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20_sobolev"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "remark_9_20"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 20"
+
+[[node]]
+id = "eLpNorm_gradient_two_sq"
+
+[[node]]
+id = "gradNorm_eq_toReal_eLpNorm_gradient_two"
+
+[[node]]
 id = "corollary_9_19"
-kind = "theorem"
-desc = '''Corollary 9.19 (Poincaré's inequality): for `1 ≤ p < ∞` and `Ω` bounded, there is `C`
-(depending on `Ω` and `p`) with `‖u‖_{L^p(Ω)} ≤ C ‖∇u‖_{L^p(Ω)}` for all `u ∈ W_0^{1,p}(Ω)`
-(`SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded`, `Numlib/Analysis/Sobolev/Poincare`, with
-`C = 2R` for `Ω ⊆ ball 0 R` and `‖∇u‖_p` any of `SobolevMultiIndex.gradNorm u` or the sum of the
-`‖∂_i u‖_p`); `corollary_9_19_norm`: `‖∇u‖_{L^p(Ω)}` (`SobolevMultiIndex.gradNorm`) is a norm on
-`W_0^{1,p}(Ω)` equivalent to `‖u‖_{W^{1,p}}` (`SobolevEuclideanZero.norm_le_gradNorm` and
-`SobolevMultiIndex.gradNorm_le_norm`); `corollary_9_19_inner`: on `H_0^1(Ω)`,
-`∑_i ∫_Ω ∂_i u ∂_i v` — chapter 9b's bundled form `Elliptic.dirichletForm Ω` restricted to `H¹₀`
-(`Numlib/Analysis/PDE/Elliptic/Dirichlet`), whose diagonal is `gradNorm u ^ 2`
-(`Elliptic.dirichletForm_self_eq_gradNorm_sq`) — is a scalar product inducing the norm
-`‖∇u‖_{L^2}`, equivalent to `‖u‖_{H^1}` (positive definite by `SobolevEuclideanZero.norm_le_gradNorm`). Proved directly by the fundamental theorem of calculus
-and Fubini (the book gives no proof here), needing neither extension nor compactness. Closes,
-at `p = 2`, the five Atkinson–Han §8.8 nodes (`Chapter09.toml`); consumed by chapter 9b's
-Theorem 9.21. ★'''
-deps = ["sobolevZeroSpace", "SobolevEuclideanZero.eLpNorm_fn_le_of_isBounded", "SobolevEuclideanZero.norm_le_gradNorm", "SobolevMultiIndex.gradNorm", "Elliptic.dirichletForm", "Elliptic.dirichletForm_self_eq"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
 
 [[node]]
+id = "corollary_9_19_gradNorm"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "corollary_9_19_norm"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "corollary_9_19_norm_eq_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "corollary_9_19_inner"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.19"
+
+[[node]]
+id = "remark_9_21_projection"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 21"
+
+[[node]]
+id = "remark_9_21_measure"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 21"
+
+[[node]]
 id = "remark_9_21"
-kind = "theorem"
-desc = '''Remark 21: Poincaré's inequality remains true if `Ω` has finite measure
-(`remark_9_21_measure`, `N ≥ 2`: the backbone's `SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top`,
-`Zero`, through Remark 20's Sobolev inequality — for `N = 1` and unbounded `Ω` of finite measure
-the statement is false, see that node), and also if `Ω` has a bounded projection on some axis
-(`remark_9_21_projection`: `Ω ⊆ {a < x_i < b}` for some `i`, the backbone's
-`SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab`, `Poincare`, with `C = b − a`). ★'''
-deps = ["sobolevZeroSpace", "SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_of_measure_ne_top", "SobolevEuclideanZero.eLpNorm_fn_le_of_subset_slab"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 21"
 
 [[node]]
 id = "sobolevZeroSpaceHigher"
-kind = "definition"
-desc = '''Remark 22: `sobolevZeroSpaceHigher N m p Ω := SobolevEuclideanZero N m p Ω`, the space
-`W_0^{m,p}(Ω)`, "the closure of `C_c^m(Ω)` in `W^{m,p}(Ω)`" — the closure of `𝓓(Ω)`, the same by
-Lemma 9.5 at order `m` (`SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport`,
-`sobolevZeroSpaceHigher_eq_closure_contDiff`). The remark's "roughly, `D^α u = 0` on `Γ` for
-`|α| ≤ m − 1`" is heuristic, and its claim that `W_0^{m,p}(Ω) ≠ W^{m,p}(Ω) ∩ W_0^{1,p}(Ω)` for
-`m ≥ 2` needs an example and is not planned. ★'''
-deps = ["SobolevEuclideanZero", "sobolevSpaceHigher", "SobolevEuclidean.mem_zero_of_contDiff_hasCompactSupport"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 22"
+
+[[node]]
+id = "sobolevZeroSpaceHigher_one"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 22"
+
+[[node]]
+id = "sobolevZeroSpaceHigher_eq_closure_contDiff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 22"
 
 [[node]]
 id = "dualSpace"
-kind = "definition"
-desc = '''`dualSpace N p Ω := StrongDual ℝ (sobolevZeroSpace N p Ω)`, the space `W^{−1,p'}(Ω)`, the dual
-of `W_0^{1,p}(Ω)`, `1 ≤ p < ∞`; `hMinusOne N Ω := dualSpace N 2 Ω` is `H^{−1}(Ω)`. (The Notation
-paragraph: "the dual of `L^2(Ω)` is identified with `L^2(Ω)`, but we do not identify `H_0^1(Ω)`
-with its dual".) ★'''
-deps = ["sobolevZeroSpace"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
+
+[[node]]
+id = "hMinusOne"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
 
 [[node]]
 id = "dual_inclusions"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
+
+[[node]]
+id = "dual_inclusions_of_le"
 kind = "theorem"
-desc = '''The inclusions `H_0^1(Ω) ⊂ L^2(Ω) ⊂ H^{−1}(Ω)`, "where these injections are continuous and
-dense": the maps `hZeroSpace N Ω →L L^2(Ω)` (`u ↦ fn u`) and `L^2(Ω) →L hMinusOne N Ω`
-(`f ↦ (v ↦ ∫_Ω f v)`) are injective, bounded and have dense range — the backbone's
-`SobolevEuclideanZero.gelfandTriple` (`Zero`). `dual_inclusions_of_le`: for `Ω` bounded and
-`2N/(N+2) ≤ p < ∞` (unbounded `Ω`: `2N/(N+2) ≤ p ≤ 2`), the same for
-`W_0^{1,p}(Ω) ⊂ L^2(Ω) ⊂ W^{−1,p'}(Ω)` — the second node described there
-(`SobolevEuclideanZero.gelfandTriple_of_le`, through Remark 20's Sobolev inequality and the
-reflexivity of `W_0^{1,p}`). ★'''
-deps = ["dualSpace", "sobolevZeroSpace", "SobolevEuclideanZero.gelfandTriple"]
+desc = '''The Notation paragraph, second display: if `Ω` is bounded then
+`W_0^{1,p}(Ω) ⊂ L^2(Ω) ⊂ W^{−1,p'}(Ω)` for `2N/(N+2) ≤ p < ∞` (unbounded `Ω`: for
+`2N/(N+2) ≤ p ≤ 2`), with continuous and dense injections — the maps `u ↦ fn u`,
+`W_0^{1,p}(Ω) → L^2(Ω)`, and `f ↦ (v ↦ ∫_Ω f v)`, `L^2(Ω) → W^{−1,p'}(Ω)`, are injective, bounded
+and have dense range. Split off `dual_inclusions` (surf10, 2026-09-20), which is the `p = 2`
+display `H_0^1(Ω) ⊂ L^2(Ω) ⊂ H^{−1}(Ω)`. Route: `W_0^{1,p}(Ω) ⊂ L^2(Ω)` is Remark 20's
+`SobolevEuclideanZero.memLp_fn_of_le` (`1/p − 1/N ≤ 1/2` is `2N/(N+2) ≤ p`) with Hölder's
+inequality on the finite measure for `p* > 2`; the second map is the transpose of the first
+composed with the self-duality of `L^2(Ω)`, injective by the density of `𝓓(Ω)` in `L^2(Ω)`, and
+of dense range by the reflexivity of `W_0^{1,p}(Ω)` for `1 < p < ∞` (a functional vanishing on the
+range is a `v ∈ W_0^{1,p}(Ω)` orthogonal to `L^2(Ω)`), the case `p = 1` (`N = 2`) needing a
+separate argument. ★★
+
+Blocked (2026-09-20, surf10): no backbone node — the plan's `SobolevEuclideanZero.gelfandTriple_of_le`
+does not exist in `Zero.lean` (only the `p = 2` `gelfandTriple` does); the general-`p` triple
+(the `L^2` membership through Remark 20, the transpose map, its injectivity and density) is
+~200 lines of backbone work in `Numlib/Analysis/Sobolev/Zero.lean`, not surface material.'''
+deps = ["dualSpace", "sobolevZeroSpace", "SobolevEuclideanZero.gelfandTriple", "SobolevEuclideanZero.memLp_fn_of_le", "SobolevMultiIndexZero.instIsReflexive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
 
 [[node]]
 id = "proposition_9_20"
-kind = "theorem"
-desc = '''Proposition 9.20: for `F ∈ W^{−1,p'}(Ω)`, `1 ≤ p < ∞`, there are `f_0, f_1, …, f_N ∈ L^{p'}(Ω)`
-with `⟨F, v⟩ = ∫_Ω f_0 v + ∑_i ∫_Ω f_i ∂_i v` for all `v ∈ W_0^{1,p}(Ω)`, and `‖f_i‖_{p'} ≤ ‖F‖`
-for every `i` (the book's `‖F‖ = max_i ‖f_i‖_{p'}` is with respect to its norm `∑ ‖h_i‖_p` on
-`(L^p)^{N+1}`; for the type's `ℓ^p`-sum norm the identity reads `‖F‖ = (∑ ‖f_i‖_{p'}^{p'})^{1/p'}`
-and only the bound is stated — see "Doubts" in `Chapter09.toml`). The backbone's
-`SobolevEuclideanZero.exists_dual_repr` (`Zero`; Hahn–Banach and chapter 4's Riesz representation
-on each factor). `proposition_9_20_bounded`: if `Ω` is bounded one can take `f_0 = 0` —
-`SobolevEuclideanZero.exists_dual_repr_of_isBounded`, through Poincaré's inequality. ★'''
-deps = ["dualSpace", "sobolevZeroSpace", "SobolevEuclideanZero.exists_dual_repr", "SobolevEuclideanZero.exists_dual_repr_of_isBounded"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.20"
+
+[[node]]
+id = "proposition_9_20_bounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.20"

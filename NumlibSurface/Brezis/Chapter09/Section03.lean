@@ -48,12 +48,13 @@ the extension operator of §9.2, packaged as `IsSobolevExtensionDomain`) and
 
 * `IsContinuousInjectionLp`, `IsCompactInjectionLp`, `isContinuousInjectionLp_iff` — the
   vocabulary.
-* `theorem_9_9`, `corollary_9_10`, `corollary_9_11`, `theorem_9_12`, `theorem_9_12_top`,
-  `remark_9_11`, `remark_9_12`, `corollary_9_13` (with `corollary_9_13_lt`, `_eq`, `_gt`,
-  `_holder`), `remark_9_13` — the whole space.
+* `lemma_9_4`, `theorem_9_9`, `corollary_9_10`, `corollary_9_11`, `theorem_9_12`,
+  `theorem_9_12_top`, `remark_9_11`, `remark_9_12`, `corollary_9_13` (with `corollary_9_13_lt`,
+  `_eq`, `_gt`, `_holder`), `remark_9_13` — the whole space.
 * `IsClassC1BoundedFrontierOrHalfSpace`, `corollary_9_14` (with `_lt`, `_eq`, `_gt`, `_holder`),
   `corollary_9_15_lp`, `corollary_9_15_ck`, `toContinuousMapClosure`, `theorem_9_16` (with
-  `_lt`, `_eq`, `_gt`, `_self`), `remark_9_15` (with `_lt`, `_eq`, `_gt`) — the domain.
+  `_lt`, `_eq`, `_gt`, `_self`), `remark_9_15` (with `_lt`, `_eq`, `_gt`), `remark_9_16` — the
+  domain.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace
@@ -219,6 +220,45 @@ theorem toReal_eLpNorm_gradient_le_gradNorm (u : sobolevSpace N p Ω) :
     _ = N * SobolevMultiIndex.gradNorm u := by
         simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
+
+/-! ### Lemma 9.4: Gagliardo's product lemma -/
+
+section Gagliardo
+
+/-- **Lemma 9.4.** Let `N ≥ 2` — here `N = n + 2` and `ℝ^{N−1}` is `Fin (n + 1) → ℝ` — and let
+`f_1, f_2, …, f_N ∈ L^{N−1}(ℝ^{N−1})`. For `x ∈ ℝ^N` and `1 ≤ i ≤ N` set
+`x̃_i = (x_1, …, x_{i−1}, x_{i+1}, …, x_N) ∈ ℝ^{N−1}`, i.e. `x_i` is omitted from the list
+(`x ∘ Fin.succAbove i`). Then the function `f(x) = f_1(x̃_1) f_2(x̃_2) ⋯ f_N(x̃_N)` belongs to
+`L^1(ℝ^N)` and `‖f‖_{L^1(ℝ^N)} ≤ ∏_{i=1}^N ‖f_i‖_{L^{N−1}(ℝ^{N−1})}`. The backbone's
+`MeasureTheory.lintegral_prod_comp_succAbove_le` (the book's induction on `N`, Hölder's
+inequality in the last coordinate at each step), applied to the `|f_i|`. -/
+theorem lemma_9_4 {n : ℕ} (f : Fin (n + 2) → Lp ℝ (n + 1) (volume : Measure (Fin (n + 1) → ℝ))) :
+    Integrable (fun x : Fin (n + 2) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove)) volume ∧
+      eLpNorm (fun x : Fin (n + 2) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove)) 1 volume
+        ≤ ∏ i, eLpNorm (f i) (n + 1) volume := by
+  have hmeas : Measurable fun x : Fin (n + 2) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove) :=
+    Finset.measurable_prod _ fun i _ ↦
+      (Lp.stronglyMeasurable (f i)).measurable.comp (measurable_comp_succAbove i)
+  have h1 : eLpNorm (fun x : Fin (n + 2) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove)) 1 volume
+      = ∫⁻ x, ∏ i, ‖f i (x ∘ i.succAbove)‖ₑ := by
+    rw [eLpNorm_one_eq_lintegral_enorm hmeas.aestronglyMeasurable]
+    refine lintegral_congr fun x ↦ ?_
+    simp only [enorm_eq_nnnorm, nnnorm_prod, ENNReal.ofNNReal_finsetProd]
+  have h2 : ∀ i, eLpNorm (f i) (n + 1) volume
+      = (∫⁻ y, ‖f i y‖ₑ ^ ((n : ℝ) + 1)) ^ (1 / ((n : ℝ) + 1)) := fun i ↦ by
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by positivity) (by simp)
+      (Lp.aestronglyMeasurable (f i))]
+    simp [ENNReal.toReal_add]
+  have hle : eLpNorm (fun x : Fin (n + 2) → ℝ ↦ ∏ i, f i (x ∘ i.succAbove)) 1 volume
+      ≤ ∏ i, eLpNorm (f i) (n + 1) volume := by
+    rw [h1]
+    simp_rw [h2]
+    exact MeasureTheory.lintegral_prod_comp_succAbove_le (fun i y ↦ ‖f i y‖ₑ)
+      fun i ↦ (Lp.stronglyMeasurable (f i)).measurable.enorm
+  refine ⟨memLp_one_iff_integrable.1 ?_, hle⟩
+  exact hle.trans_lt (ENNReal.prod_lt_top fun i _ ↦ Lp.eLpNorm_lt_top (f i))
+
+end Gagliardo
 
 /-! ### Theorem 9.9: the Sobolev–Gagliardo–Nirenberg inequality -/
 
@@ -1313,4 +1353,33 @@ theorem remark_9_15 (hΩ : IsClassC1 (Ω : Set 𝔼)) (hb : Bornology.IsBounded 
   · exact remark_9_15_gt hΩ hb hp hq
 
 end Domain
+
+/-! ### Remark 16: the limiting case `p = N` -/
+
+section LimitingCase
+
+variable {N : ℕ}
+
+/-- The book's `ℝ^N`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+/-- **Remark 16 (the limiting case `p = N`).** Let `Ω` be a bounded open set of class `C^1` and
+let `u ∈ W^{1,N}(Ω)`. Then in general `u ∉ L^∞(Ω)`. For example, if
+`Ω = {x ∈ ℝ^N : |x| < 1/2}`, the function `u(x) = (log 1/|x|)^α` with `0 < α < 1 − 1/N`
+belongs to `W^{1,N}(Ω)` — here for `N ≥ 2` — but it is not bounded because of the singularity at
+`x = 0`. The backbone's `memSobolevMultiIndex_logRpow` (the weak gradient
+`−α (log 1/|x|)^{α−1} x/|x|²` off the origin, the removable-singularity lemma, and the radial
+integral `∫₀^{1/2} (log 1/r)^{(α−1)N} r^{−1} dr < ∞`, which is where `α < 1 − 1/N` enters) and
+`eLpNorm_logRpow_top`. Trudinger's inequality is quoted without proof and is not restated. -/
+theorem remark_9_16 (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
+    (∃ u : sobolevSpace N N ⟨ball 0 (1 / 2), isOpen_ball⟩,
+      SobolevMultiIndex.fn u =ᵐ[volume.restrict (ball (0 : 𝔼) (1 / 2))]
+        fun x ↦ Real.log (1 / ‖x‖) ^ α) ∧
+    ¬ MemLp (fun x : 𝔼 ↦ Real.log (1 / ‖x‖) ^ α) ⊤ (volume.restrict (ball (0 : 𝔼) (1 / 2))) := by
+  have : Fact (1 ≤ (N : ℝ≥0∞)) := ⟨by exact_mod_cast (by omega : 1 ≤ N)⟩
+  refine ⟨(exists_fn_ae_eq_iff _).2 (memSobolevMultiIndex_logRpow hN hα hα1), fun h ↦ ?_⟩
+  exact h.eLpNorm_ne_top (eLpNorm_logRpow_top (by omega) hα)
+
+end LimitingCase
+
 end Brezis.Chapter09
