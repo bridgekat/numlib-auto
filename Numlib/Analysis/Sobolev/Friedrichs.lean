@@ -53,7 +53,10 @@ at order `1`, and the local approximation on one relatively compact open `ω ⋐
   translation estimate `‖u(· + h) − u‖_{L^p(ω)} ≤ ‖h‖ ‖∇u‖_{L^p(Ω)}` for `1 ≤ p < ∞`, from the
   smooth case `ContDiff.eLpNorm_sub_translate_le` and the local approximation; and
   `HasWeakFDerivOn.eLpNorm_sub_translate_le_top`, the same at `p = ∞`;
-* `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`: **Proposition 9.3, (iii) ⇒ (ii)**;
+* `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt` and
+  `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le`: **Proposition 9.3, (iii) ⇒ (ii)**,
+  with the translation estimate assumed for small translations (the book's
+  `|h| < dist(ω, ∂Ω)`) or for every translation whose segments stay in `Ω`;
 * `MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le`: **Remark 4 (i)**, an `L^p` limit of functions
   with bounded gradients lies in `W^{1,p}`, `1 < p ≤ ∞`;
 * `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm_of_ae_norm_le`: **the local
@@ -1414,22 +1417,22 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
   {μ : Measure E} [μ.IsAddHaarMeasure] {Ω : Opens E} {u : E → F} {p q : ℝ≥0∞}
 
-/-- **Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`: if `u ∈ L^p(Ω)` satisfies the translation
-estimate `‖u(· + a) − u‖_{L^p(V)} ≤ C ‖a‖` on every open `V` with compact closure in `Ω` and
-every `a` whose segments `[x, x + a]`, `x ∈ V`, stay in `Ω` — the conclusion of
-`HasWeakFDerivOn.eLpNorm_sub_translate_le` — then `|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for every
-test function `φ` and direction `y`, `q` the conjugate exponent.
+/-- **Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`, for small translations: if `u ∈ L^p(Ω)`
+satisfies, on every open `V` with compact closure in `Ω`, the translation estimate
+`‖u(· + a) − u‖_{L^p(V)} ≤ C ‖a‖` for all `a` with `‖a‖ < δ`, for some `δ = δ(V) > 0` — the
+book's "`|h| < dist(V, ∂Ω)`" — then `|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for every test function
+`φ` and direction `y`, `q` the conjugate exponent.
 
 With `V ⊇ supp φ`, the change of variables `∫_Ω (u(· + ty) − u) φ = ∫_Ω u (φ(· − ty) − φ)` and
 Hölder's inequality against the hypothesis bound the difference quotients
-`∫_Ω u (φ(· − ty) − φ)/t` by `C ‖y‖ ‖φ‖_q`; as `t → 0` they converge to `−∫_Ω u ∂_y φ` by
-dominated convergence, the quotients being bounded by `‖∇φ‖_∞ ‖y‖` on one compact subset of `Ω`.
-[brezis2011functional] Proposition 9.3, (iii) ⇒ (ii). -/
-theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderConjugate p q]
-    (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞}
-    (h : ∀ V : Set E, IsOpen V → IsCompact (closure V) → closure V ⊆ (Ω : Set E) → ∀ a : E,
-      (∀ x ∈ V, ∀ t ∈ Icc (0 : ℝ) 1, x + t • a ∈ (Ω : Set E)) →
-      eLpNorm (fun x ↦ u (x + a) - u x) p (μ.restrict V) ≤ C * ‖a‖ₑ)
+`∫_Ω u (φ(· − ty) − φ)/t` by `C ‖y‖ ‖φ‖_q` for `t` small; as `t → 0` they converge to
+`−∫_Ω u ∂_y φ` by dominated convergence, the quotients being bounded by `‖∇φ‖_∞ ‖y‖` on one
+compact subset of `Ω`. [brezis2011functional] Proposition 9.3, (iii) ⇒ (ii). -/
+theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt
+    [ENNReal.HolderConjugate p q] (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞}
+    (h : ∀ V : Set E, IsOpen V → IsCompact (closure V) → closure V ⊆ (Ω : Set E) →
+      ∃ δ : ℝ, 0 < δ ∧ ∀ a : E, ‖a‖ < δ →
+        eLpNorm (fun x ↦ u (x + a) - u x) p (μ.restrict V) ≤ C * ‖a‖ₑ)
     (φ : 𝓓(Ω, ℝ)) (y : E) :
     ‖∫ x in (Ω : Set E), fderiv ℝ φ x y • u x ∂μ‖ₑ
       ≤ C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) := by
@@ -1443,6 +1446,8 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
     φ.hasCompactSupport.exists_pos_forall_closedBall_subset hWo hφW
   have hVΩ : closure V ⊆ (Ω : Set E) := hVW.trans (subset_closure.trans hWΩ)
   have hWΩ' : W ⊆ (Ω : Set E) := subset_closure.trans hWΩ
+  -- the translation estimate on `V`, for translations of norm `< δ₀`
+  obtain ⟨δ₀, hδ₀, hV⟩ := h V hVo hVc hVΩ
   -- the translated test function is supported in `W` for small translations
   have hsupp : ∀ a : E, ‖a‖ ≤ ε → ∀ x, x ∉ W → (φ : E → ℝ) (x - a) = 0 := by
     intro a ha x hx
@@ -1459,17 +1464,11 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
       (by simp)).differentiableAt) (fun x _ ↦ hM x) convex_univ (mem_univ x) (mem_univ z)
   -- the difference quotients and their bound
   set Q : ℝ → E → ℝ := fun t x ↦ t⁻¹ * ((φ : E → ℝ) (x - t • y) - φ x) with hQdef
-  have hQbound : ∀ t : ℝ, t ≠ 0 → ‖t • y‖ ≤ ε →
+  have hQbound : ∀ t : ℝ, t ≠ 0 → ‖t • y‖ ≤ ε → ‖t • y‖ < δ₀ →
       ‖∫ x in (Ω : Set E), Q t x • u x ∂μ‖ₑ
         ≤ C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) := by
-    intro t ht hty
-    have hseg : ∀ x ∈ V, ∀ s ∈ Icc (0 : ℝ) 1, x + s • (t • y) ∈ (Ω : Set E) := by
-      intro x hx s hs
-      refine hWΩ' (hVball x hx ?_)
-      rw [mem_closedBall, dist_eq_norm, add_sub_cancel_left, norm_smul, Real.norm_eq_abs,
-        abs_of_nonneg hs.1]
-      exact (mul_le_of_le_one_left (norm_nonneg _) hs.2).trans hty
-    have htrans := h V hVo hVc hVΩ (t • y) hseg
+    intro t ht hty htδ
+    have htrans := hV (t • y) htδ
     -- the change of variables
     have h1 : Integrable (fun x ↦ (φ : E → ℝ) (x - t • y) • u x) μ := by
       refine LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset huloc
@@ -1496,7 +1495,7 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
       rw [integral_sub h1.integrableOn h2.integrableOn, integral_sub h4.integrableOn
         h2.integrableOn, h3]
     -- Hölder's inequality on `V`, then the hypothesis
-    have hV : ∫ x in (Ω : Set E), (φ : E → ℝ) x • (u (x + t • y) - u x) ∂μ
+    have hV' : ∫ x in (Ω : Set E), (φ : E → ℝ) x • (u (x + t • y) - u x) ∂μ
         = ∫ x in V, (φ : E → ℝ) x • (u (x + t • y) - u x) ∂μ := by
       rw [setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
           rw [φ.eq_zero_of_notMem hx, zero_smul],
@@ -1513,7 +1512,7 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
           simp only [hQdef, mul_smul]
           rw [integral_smul, enorm_smul]
       _ ≤ ‖t⁻¹‖ₑ * (eLpNorm φ q (μ.restrict (Ω : Set E)) * (C * ‖t • y‖ₑ)) := by
-          rw [hI, hV]
+          rw [hI, hV']
           exact mul_le_mul' le_rfl hHolder
       _ = (‖t‖ₑ⁻¹ * ‖t‖ₑ) * (C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E))) := by
           rw [enorm_inv ht, enorm_smul]
@@ -1521,20 +1520,23 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
       _ = C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) := by
           rw [ENNReal.inv_mul_cancel ht0 enorm_ne_top, one_mul]
   -- the sequence of difference quotients, and its limit by dominated convergence
-  set δ : ℝ := ε / (‖y‖ + 1) with hδdef
+  set δ : ℝ := min ε (δ₀ / 2) / (‖y‖ + 1) with hδdef
   have hδ : 0 < δ := by positivity
   set t : ℕ → ℝ := fun n ↦ δ / (n + 1) with htdef
   have htpos : ∀ n, 0 < t n := fun n ↦ by positivity
-  have htε : ∀ n, ‖t n • y‖ ≤ ε := by
+  have htmin : ∀ n, ‖t n • y‖ ≤ min ε (δ₀ / 2) := by
     intro n
     rw [norm_smul, Real.norm_eq_abs, abs_of_pos (htpos n)]
     have h1 : t n ≤ δ := by
       rw [htdef]
       exact div_le_self hδ.le (by linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n)])
-    have h2 : δ * ‖y‖ ≤ ε := by
+    have h2 : δ * ‖y‖ ≤ min ε (δ₀ / 2) := by
       rw [hδdef, div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
-      nlinarith [norm_nonneg y]
+      nlinarith [norm_nonneg y, lt_min hε (half_pos hδ₀)]
     exact (mul_le_mul_of_nonneg_right h1 (norm_nonneg y)).trans h2
+  have htε : ∀ n, ‖t n • y‖ ≤ ε := fun n ↦ (htmin n).trans (min_le_left _ _)
+  have htδ : ∀ n, ‖t n • y‖ < δ₀ := fun n ↦
+    ((htmin n).trans (min_le_right _ _)).trans_lt (half_lt_self hδ₀)
   have ht0 : Tendsto t atTop (𝓝 0) :=
     tendsto_const_nhds.div_atTop (tendsto_atTop_add_const_right _ 1 tendsto_natCast_atTop_atTop)
   have ht0' : Tendsto t atTop (𝓝[≠] 0) :=
@@ -1582,8 +1584,33 @@ theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderC
   have hfinal : ‖∫ x in (Ω : Set E), (-(fderiv ℝ φ x y)) • u x ∂μ‖ₑ
       ≤ C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) :=
     le_of_tendsto' ((continuous_enorm.tendsto _).comp hlim) fun n ↦
-      hQbound (t n) (htpos n).ne' (htε n)
+      hQbound (t n) (htpos n).ne' (htε n) (htδ n)
   simpa only [neg_smul, integral_neg, enorm_neg] using hfinal
+
+/-- **Proposition 9.3, (iii) ⇒ (ii)**, any `1 ≤ p ≤ ∞`, with the translation estimate assumed for
+every `a` whose segments `[x, x + a]`, `x ∈ V`, stay in `Ω` — the conclusion of
+`HasWeakFDerivOn.eLpNorm_sub_translate_le`: if `u ∈ L^p(Ω)` satisfies
+`‖u(· + a) − u‖_{L^p(V)} ≤ C ‖a‖` on every open `V` with compact closure in `Ω` and every such `a`,
+then `|∫_Ω (∂_y φ) u| ≤ C ‖y‖ ‖φ‖_{L^q(Ω)}` for every test function `φ` and direction `y`, `q` the
+conjugate exponent. This is the small-translation form
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`, the segments from `V` of
+length `< ε` staying in `Ω` for the `ε` of `IsCompact.exists_pos_forall_closedBall_subset`.
+[brezis2011functional] Proposition 9.3, (iii) ⇒ (ii). -/
+theorem abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le [ENNReal.HolderConjugate p q]
+    (hu : MemLp u p (μ.restrict (Ω : Set E))) {C : ℝ≥0∞}
+    (h : ∀ V : Set E, IsOpen V → IsCompact (closure V) → closure V ⊆ (Ω : Set E) → ∀ a : E,
+      (∀ x ∈ V, ∀ t ∈ Icc (0 : ℝ) 1, x + t • a ∈ (Ω : Set E)) →
+      eLpNorm (fun x ↦ u (x + a) - u x) p (μ.restrict V) ≤ C * ‖a‖ₑ)
+    (φ : 𝓓(Ω, ℝ)) (y : E) :
+    ‖∫ x in (Ω : Set E), fderiv ℝ φ x y • u x ∂μ‖ₑ
+      ≤ C * ‖y‖ₑ * eLpNorm φ q (μ.restrict (Ω : Set E)) := by
+  refine abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt hu
+    (fun V hVo hVc hVΩ ↦ ?_) φ y
+  obtain ⟨V', ε, -, hVV', hε, -, -, hball⟩ := hVc.exists_pos_forall_closedBall_subset Ω.isOpen hVΩ
+  refine ⟨ε, hε, fun a ha ↦ h V hVo hVc hVΩ a fun x hx t ht ↦ hball x (hVV' (subset_closure hx)) ?_⟩
+  rw [mem_closedBall, dist_eq_norm, add_sub_cancel_left, norm_smul, Real.norm_eq_abs,
+    abs_of_nonneg ht.1]
+  exact (mul_le_of_le_one_left (norm_nonneg _) ht.2).trans ha.le
 
 end DifferenceQuotient
 

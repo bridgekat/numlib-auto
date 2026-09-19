@@ -20,6 +20,10 @@ finite-dimensional real normed space with an additive Haar measure:
   of `Ω` is a weak derivative on `Ω`
   (`HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset`), the device by which the book
   reduces a `W^{1,∞}` statement to `W^{1,q}`, `q < ∞`, on relatively compact subsets;
+* **`C_c^1` test functions** (Remark 1): the defining identity of a weak derivative holds for
+  every `C^1` test function with compact support in `Ω`
+  (`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`), by mollifying the function
+  rather than the test function;
 * **the zero extension of `α u`** for a cut-off `α` (Remark 4 (ii)): `IsSobolevCutoff Ω α` says
   that `α` is smooth, bounded with bounded derivative, and supported away from `∂Ω`; for such `α`
   and `u ∈ W^{1,p}(Ω)`, the extension of `α u` by zero lies in `W^{1,p}` of the whole space with
@@ -30,9 +34,10 @@ finite-dimensional real normed space with an additive Haar measure:
   extension `u ↦ α u` as a bounded linear map `W^{1,p}(Ω) → W^{1,p}(E)`
   (`SobolevMultiIndex.extendZeroMulL`), and the inclusion `W^{k,p}(Ω) → L^q(Ω)` given the
   membership (`SobolevMultiIndex.toLpₗ`), in the vocabulary of `IsContinuousEmbedding`;
-* **the cut-off sequence** `ζ_n x = ζ (x / n)` of footnote 5
-  (`MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub`, `SobolevMultiIndex.tendsto_cutoff_smul`):
-  `ζ_n u → u` in `W^{1,p}(Ω)` for `1 ≤ p < ∞`;
+* **the cut-off sequence** `ζ_n x = ζ (x / (n + 1))` of footnote 5
+  (`MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub` in the tensor reading,
+  `SobolevMultiIndex.tendsto_cutoff_smul` on the typed space): `ζ_n u → u` in `W^{1,p}(Ω)` for
+  `1 ≤ p < ∞`, with the tensor Leibniz rule `HasWeakIteratedFDerivOn.contDiff_mul_one`;
 * **Lemma 9.5**: a `W^{k,p}(Ω)` function vanishing outside a compact subset of `Ω` lies in
   `W_0^{k,p}(Ω)` (`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), at every order;
 * **the local space** `W^{k,p}_loc(Ω)` (`MemSobolevMultiIndexLoc`), with the cut-off lemma that
@@ -62,8 +67,8 @@ bound the `ℓ^p` norm of the tuple of derivatives coordinatewise
 
 ## References
 
-[brezis2011functional], §9.1 (Remark 4 (ii), footnote 5), §9.2 (proof of Theorem 9.7, step (a)),
-§9.3.B (the standing hypothesis), §9.4 (Lemma 9.5, Remark 25).
+[brezis2011functional], §9.1 (Remarks 1 and 4 (ii), footnote 5), §9.2 (proof of Theorem 9.7,
+step (a)), §9.3.B (the standing hypothesis), §9.4 (Lemma 9.5, Remark 25).
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -109,6 +114,140 @@ theorem HasWeakIteratedLineDerivOn.of_forall_isCompact_closure_subset
     exact key
 
 end Locality
+
+/-! ### Remark 1: `C_c^1` test functions -/
+
+section TestFunctionOne
+
+variable {X G : Type*} [MeasurableSpace X] {ν : Measure X} [NormedAddCommGroup G]
+  [NormedSpace ℝ G]
+
+/-- **Passing to the limit against a bounded factor**: if `a j → a₀` in `L^1(ν)` and `b` is a
+bounded measurable scalar function, then `∫ b • a j → ∫ b • a₀`. -/
+theorem MeasureTheory.tendsto_integral_smul_of_tendsto_eLpNorm_one {b : X → ℝ} {M : ℝ}
+    (hb : ∀ x, |b x| ≤ M) (hbm : AEStronglyMeasurable b ν) {a : ℕ → X → G} {a₀ : X → G}
+    (ha : ∀ j, Integrable (a j) ν) (ha₀ : Integrable a₀ ν)
+    (hlim : Tendsto (fun j ↦ eLpNorm (fun x ↦ a j x - a₀ x) 1 ν) atTop (𝓝 0)) :
+    Tendsto (fun j ↦ ∫ x, b x • a j x ∂ν) atTop (𝓝 (∫ x, b x • a₀ x ∂ν)) := by
+  have hint : ∀ c : X → G, Integrable c ν → Integrable (fun x ↦ b x • c x) ν := fun c hc ↦
+    hc.bdd_smul M hbm (Eventually.of_forall fun x ↦ by simpa [Real.norm_eq_abs] using hb x)
+  have hup : Tendsto (fun j ↦ (ENNReal.ofReal M * eLpNorm (fun x ↦ a j x - a₀ x) 1 ν).toReal)
+      atTop (𝓝 0) := by
+    rw [show (0 : ℝ) = (0 : ℝ≥0∞).toReal by simp]
+    refine (ENNReal.tendsto_toReal (by simp)).comp ?_
+    simpa using ENNReal.Tendsto.const_mul hlim (Or.inr ENNReal.ofReal_ne_top)
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hup
+    (fun j ↦ norm_nonneg _) fun j ↦ ?_
+  have hfin : ENNReal.ofReal M * eLpNorm (fun x ↦ a j x - a₀ x) 1 ν ≠ ⊤ :=
+    ENNReal.mul_ne_top ENNReal.ofReal_ne_top
+      (memLp_one_iff_integrable.2 ((ha j).sub ha₀)).eLpNorm_ne_top
+  have e : (∫ x, b x • a j x ∂ν) - ∫ x, b x • a₀ x ∂ν = ∫ x, b x • (a j x - a₀ x) ∂ν := by
+    rw [← integral_sub (hint _ (ha j)) (hint _ ha₀)]
+    exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp [smul_sub])
+  rw [e, ← ENNReal.toReal_ofReal (norm_nonneg _), ofReal_norm]
+  exact ENNReal.toReal_mono hfin (enorm_integral_smul_le_of_bound hb)
+
+end TestFunctionOne
+
+section ContDiffOne
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
+  [CompleteSpace F] {Ω : Opens E} {μ : Measure E} [μ.IsAddHaarMeasure] {f w : E → F}
+
+/-- **Remark 1: `C_c^1` test functions.** If `w` is a weak derivative of `f` along `y` on `Ω`
+(`HasWeakIteratedLineDerivOn ![y] f w Ω μ`) and `φ : E → ℝ` is `C^1` with compact support
+contained in `Ω`, then the defining identity `∫_Ω (∂_y φ) f = −∫_Ω φ w` holds for `φ` as well:
+the test functions of the definition of `W^{1,p}` may be taken in `C_c^1(Ω)` instead of
+`C_c^∞(Ω)`. Proof by mollification of `f` rather than of `φ`: on a relatively compact open
+`V ⊇ supp φ` the local approximation
+`HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm` gives smooth `g_j` with
+`g_j → f` and `∂_y g_j → w` in `L^1(V)`, the classical integration by parts
+`∫ (∂_y φ) g_j = −∫ φ ∂_y g_j` (`integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable`) holds
+for each `j`, and both sides pass to the limit against the bounded factors `∂_y φ` and `φ`.
+[brezis2011functional] §9.1, Remark 1 ("to show this, use a sequence of mollifiers"). -/
+theorem HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one {y : E}
+    (h : HasWeakIteratedLineDerivOn ![y] f w Ω μ) {φ : E → ℝ} (hφ : ContDiff ℝ 1 φ)
+    (hφc : HasCompactSupport φ) (hφΩ : tsupport φ ⊆ Ω) :
+    ∫ x in (Ω : Set E), fderiv ℝ φ x y • f x ∂μ = -∫ x in (Ω : Set E), φ x • w x ∂μ := by
+  -- a relatively compact open neighbourhood `V` of the support of `φ`
+  obtain ⟨V, -, hVo, hφV, -, hVc, hVΩ, -⟩ :=
+    hφc.exists_pos_forall_closedBall_subset Ω.isOpen hφΩ
+  have hVΩ' : V ⊆ (Ω : Set E) := subset_closure.trans hVΩ
+  -- the local approximation in `L^1(V)`
+  obtain ⟨g, hgs, hg1, -, hgf, hgw⟩ := h.exists_seq_contDiff_tendsto_eLpNorm (p := 1)
+    (locallyMemLpOn_one_iff.2 h.locallyIntegrableOn)
+    (locallyMemLpOn_one_iff.2 h.locallyIntegrableOn_weakDeriv) le_rfl ENNReal.one_ne_top
+    hVo hVc hVΩ
+  simp only [iteratedFDeriv_one_apply, Matrix.cons_val_fin_one] at hgw
+  -- the bounded factors
+  have hφd : Differentiable ℝ φ := hφ.differentiable one_ne_zero
+  have hφ'c : Continuous fun x ↦ fderiv ℝ φ x y :=
+    (hφ.continuous_fderiv one_ne_zero).clm_apply continuous_const
+  obtain ⟨M, hM⟩ := (hφc.fderiv_apply ℝ y).exists_bound_of_continuous hφ'c
+  obtain ⟨M', hM'⟩ := hφc.exists_bound_of_continuous hφ.continuous
+  -- vanishing of the test factors off `V`
+  have hφ0 : ∀ x, x ∉ V → φ x = 0 := fun x hx ↦
+    image_eq_zero_of_notMem_tsupport fun hm ↦ hx (hφV hm)
+  have hφ'0 : ∀ x, x ∉ V → fderiv ℝ φ x y = 0 := fun x hx ↦ by
+    have : x ∉ tsupport (fderiv ℝ φ) := fun hm ↦ hx (hφV ((tsupport_fderiv_subset ℝ) hm))
+    rw [image_eq_zero_of_notMem_tsupport this]
+    rfl
+  -- integrability on `V`
+  have hfV : Integrable f (μ.restrict V) :=
+    (h.locallyIntegrableOn.integrableOn_compact_subset hVΩ hVc).mono_set subset_closure
+  have hwV : Integrable w (μ.restrict V) :=
+    (h.locallyIntegrableOn_weakDeriv.integrableOn_compact_subset hVΩ hVc).mono_set
+      subset_closure
+  have hgV : ∀ j, Integrable (g j) (μ.restrict V) := fun j ↦ memLp_one_iff_integrable.1 (hg1 j)
+  have hgdV : ∀ j, Integrable (fun x ↦ fderiv ℝ (g j) x y) (μ.restrict V) := fun j ↦ by
+    have hc : Continuous fun x ↦ fderiv ℝ (g j) x y :=
+      ((hgs j).continuous_fderiv (by simp)).clm_apply continuous_const
+    exact (hc.continuousOn.integrableOn_compact hVc).mono_set subset_closure
+  -- the classical identity for each `j`, on `V`
+  have hclass : ∀ j, ∫ x in V, fderiv ℝ φ x y • g j x ∂μ
+      = -∫ x in V, φ x • fderiv ℝ (g j) x y ∂μ := by
+    intro j
+    have hgd : Differentiable ℝ (g j) := (hgs j).differentiable (by simp)
+    have hint : ∀ (b : E → ℝ) (c : E → F), Continuous b → (∀ x, x ∉ V → b x = 0) →
+        Continuous c → Integrable (fun x ↦ b x • c x) μ := fun b c hb hb0 hc ↦ by
+      refine (hb.smul hc).integrable_of_hasCompactSupport ?_
+      refine hVc.of_isClosed_subset (isClosed_tsupport _) (closure_mono fun x hx ↦ ?_)
+      by_contra hxV
+      exact hx (by simp [hb0 x hxV])
+    have key := integral_smul_fderiv_eq_neg_fderiv_smul_of_integrable (μ := μ) (f := φ)
+      (g := g j) (v := y) (hint _ _ hφ'c hφ'0 (hgs j).continuous)
+      (hint _ _ hφ.continuous hφ0 (((hgs j).continuous_fderiv (by simp)).clm_apply
+        continuous_const)) (hint _ _ hφ.continuous hφ0 (hgs j).continuous)
+      (fun x _ ↦ hφd.differentiableAt) (fun x _ ↦ hgd.differentiableAt)
+    have e1 : ∫ x in V, fderiv ℝ φ x y • g j x ∂μ = ∫ x, fderiv ℝ φ x y • g j x ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by rw [hφ'0 x hx, zero_smul]
+    have e2 : ∫ x in V, φ x • fderiv ℝ (g j) x y ∂μ = ∫ x, φ x • fderiv ℝ (g j) x y ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by rw [hφ0 x hx, zero_smul]
+    rw [e1, e2, key, neg_neg]
+  -- the two limits
+  have hlim1 : Tendsto (fun j ↦ ∫ x in V, fderiv ℝ φ x y • g j x ∂μ) atTop
+      (𝓝 (∫ x in V, fderiv ℝ φ x y • f x ∂μ)) :=
+    tendsto_integral_smul_of_tendsto_eLpNorm_one (fun x ↦ by simpa [Real.norm_eq_abs] using hM x)
+      hφ'c.aestronglyMeasurable hgV hfV hgf
+  have hlim2 : Tendsto (fun j ↦ ∫ x in V, φ x • fderiv ℝ (g j) x y ∂μ) atTop
+      (𝓝 (∫ x in V, φ x • w x ∂μ)) :=
+    tendsto_integral_smul_of_tendsto_eLpNorm_one (fun x ↦ by simpa [Real.norm_eq_abs] using hM' x)
+      hφ.continuous.aestronglyMeasurable hgdV hwV hgw
+  have hlim := tendsto_nhds_unique hlim1 (by simpa only [hclass] using hlim2.neg)
+  -- back to `Ω`
+  have e1 : ∫ x in (Ω : Set E), fderiv ℝ φ x y • f x ∂μ = ∫ x in V, fderiv ℝ φ x y • f x ∂μ := by
+    rw [setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [hφ'0 x fun hxV ↦ hx (hVΩ' hxV), zero_smul],
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by rw [hφ'0 x hx, zero_smul]]
+  have e2 : ∫ x in (Ω : Set E), φ x • w x ∂μ = ∫ x in V, φ x • w x ∂μ := by
+    rw [setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [hφ0 x fun hxV ↦ hx (hVΩ' hxV), zero_smul],
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by rw [hφ0 x hx, zero_smul]]
+  rw [e1, e2, hlim]
+
+end ContDiffOne
 
 /-! ### Cut-off functions and the zero extension of `α u` -/
 
@@ -1438,6 +1577,33 @@ theorem HasWeakIteratedLineDerivOn.contDiff_mul {u w : E → ℝ} {y : E}
       rw [iteratedFDeriv_one_apply, Matrix.cons_val_zero]
       ring)
 
+/-- **The Leibniz rule for a smooth factor, in the tensor form at order one**: if `w` is a
+first-order weak derivative of the real function `f` on `Ω` and `g` is smooth, then `g f` has the
+weak derivative `g w + f ∂g`, `∂g = iteratedFDeriv ℝ 1 g` the classical derivative of `g`
+(`HasWeakIteratedLineDerivOn.mul_contDiff` along every direction at once). -/
+theorem HasWeakIteratedFDerivOn.contDiff_mul_one {f : E → ℝ} {w : E → E [×1]→L[ℝ] ℝ}
+    (h : HasWeakIteratedFDerivOn 1 f w Ω μ) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) :
+    HasWeakIteratedFDerivOn 1 (fun x ↦ g x * f x)
+      (fun x ↦ g x • w x + f x • iteratedFDeriv ℝ 1 g x) Ω μ where
+  locallyIntegrableOn := by
+    simpa only [mul_comm] using h.locallyIntegrableOn.mul_continuous hg.continuous
+  locallyIntegrableOn_weakDeriv :=
+    (h.locallyIntegrableOn_weakDeriv.continuousOn_smul Ω.isOpen.isLocallyClosed
+      hg.continuous.continuousOn).add (h.locallyIntegrableOn.smul_continuousOn
+        Ω.isOpen.isLocallyClosed
+        (hg.iteratedFDeriv_right (m := ∞) (i := 1) (by simp)).continuous.continuousOn)
+  integral_smul_eq φ y := by
+    have key := ((h.lineDeriv y).mul_contDiff rfl hg).integral_smul_eq φ
+    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 φ x y • (g x * f x) ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 φ x y • (f x * g x) ∂μ :=
+      integral_congr_ae (Eventually.of_forall fun x ↦ by dsimp only; rw [mul_comm (g x)])
+    have e2 : ∫ x in (Ω : Set E), φ x • (g x • w x + f x • iteratedFDeriv ℝ 1 g x) y ∂μ
+        = ∫ x in (Ω : Set E), φ x • (w x y * g x + f x * iteratedFDeriv ℝ 1 g x y) ∂μ :=
+      integral_congr_ae (Eventually.of_forall fun x ↦ by
+        simp only [add_apply, smul_apply, smul_eq_mul]
+        ring)
+    rw [e1, e2, key]
+
 variable [IsLocallyFiniteMeasure μ]
 
 omit [FiniteDimensional ℝ E] in
@@ -1507,6 +1673,144 @@ theorem eLpNorm_sub_one_mul_le_of_eqOn_ball {G : Type*} [NormedAddCommGroup G] [
   · rw [Set.indicator_of_mem (Set.mem_compl hx), norm_smul, Real.norm_eq_abs]
     refine mul_le_of_le_one_left (norm_nonneg _) (abs_le.2 ⟨?_, ?_⟩) <;>
       linarith [(hc01 x).1, (hc01 x).2]
+
+/-- **The cut-off sequence approximates in `W^{1,p}(Ω)`, tensor form**, any open `Ω`,
+`1 ≤ p < ∞`: for `ζ : E → ℝ` smooth with values in `[0, 1]`, equal to `1` on `closedBall 0 1`
+and supported in `closedBall 0 2` (`exists_contDiff_eqOn_one_closedBall_one` of `Density.lean`),
+put `ζ_n x = ζ ((n + 1)⁻¹ • x)`. Then for a real `f ∈ W^{1,p}(Ω)`, every `ζ_n f` lies in
+`W^{1,p}(Ω)`, with the weak gradient `ζ_n ∇f + f ∇ζ_n` (`HasWeakIteratedFDerivOn.contDiff_mul_one`),
+and `‖ζ_n f − f‖_{W^{1,p}(Ω)} → 0`: `(ζ_n − 1) f` and `(ζ_n − 1) ∇f` are bounded by the `L^p`
+mass outside `ball 0 (n + 1)` (`MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball_restrict`)
+and `‖∇ζ_n‖_∞ ≤ ‖∇ζ‖_∞ / (n + 1)`. This is footnote 5 of [brezis2011functional] §9.1, the
+sequence `ζ_n u` of Corollary 9.8, Theorem 9.17 and Proposition 9.18, in the reading of
+`Numlib/Analysis/Sobolev/Domain.lean` (`MemSobolev`, `sobolevNorm`); the typed form is
+`SobolevMultiIndex.tendsto_cutoff_smul`. -/
+theorem MemSobolev.tendsto_sobolevNorm_cutoff_mul_sub (hp : 1 ≤ p) (hp' : p ≠ ⊤) {ζ : E → ℝ}
+    (hζ : ContDiff ℝ ∞ ζ) (hζ01 : ∀ x, ζ x ∈ Icc (0 : ℝ) 1) (hζ1 : EqOn ζ 1 (closedBall 0 1))
+    (hζs : tsupport ζ ⊆ closedBall 0 2) {f : E → ℝ} (hf : MemSobolev f 1 p Ω μ) :
+    (∀ n : ℕ, MemSobolev (fun x ↦ ζ ((n + 1 : ℝ)⁻¹ • x) * f x) 1 p Ω μ) ∧
+      Tendsto (fun n : ℕ ↦ sobolevNorm (fun x ↦ ζ ((n + 1 : ℝ)⁻¹ • x) * f x - f x) 1 p Ω μ)
+        atTop (𝓝 0) := by
+  have hΩm : MeasurableSet (Ω : Set E) := Ω.isOpen.measurableSet
+  have hζc : HasCompactSupport ζ :=
+    IsCompact.of_isClosed_subset (isCompact_closedBall 0 2) (isClosed_tsupport ζ) hζs
+  obtain ⟨Mζ, hMζ0, hMζ⟩ : ∃ M : ℝ, 0 ≤ M ∧ ∀ x, ‖fderiv ℝ ζ x‖ ≤ M := by
+    obtain ⟨M, hM⟩ := (hζc.fderiv ℝ).exists_bound_of_continuous (hζ.continuous_fderiv (by simp))
+    exact ⟨max M 0, le_max_right _ _, fun x ↦ (hM x).trans (le_max_left _ _)⟩
+  -- the cut-offs `ζ_n`
+  set R : ℕ → ℝ := fun n ↦ (n : ℝ) + 1 with hRdef
+  have hRpos : ∀ n, 0 < R n := fun n ↦ by simp only [hRdef]; positivity
+  set c : ℕ → E → ℝ := fun n x ↦ ζ ((R n)⁻¹ • x) with hcdef
+  have hcs : ∀ n, ContDiff ℝ ∞ (c n) := fun n ↦ hζ.comp (contDiff_id.const_smul _)
+  have hc01 : ∀ n x, c n x ∈ Icc (0 : ℝ) 1 := fun n x ↦ hζ01 _
+  have hcd : ∀ n x, fderiv ℝ (c n) x = (R n)⁻¹ • fderiv ℝ ζ ((R n)⁻¹ • x) := fun n x ↦ by
+    have h : HasFDerivAt (c n) ((fderiv ℝ ζ ((R n)⁻¹ • x)).comp
+        ((R n)⁻¹ • ContinuousLinearMap.id ℝ E)) x :=
+      ((hζ.differentiable (by simp)) _).hasFDerivAt.comp x ((hasFDerivAt_id x).const_smul _)
+    rw [h.fderiv, ContinuousLinearMap.comp_smul, ContinuousLinearMap.comp_id]
+  have hcdn : ∀ n x, ‖iteratedFDeriv ℝ 1 (c n) x‖ ≤ (R n)⁻¹ * Mζ := fun n x ↦ by
+    rw [norm_iteratedFDeriv_one, hcd, norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos (hRpos n)]
+    exact mul_le_mul_of_nonneg_left (hMζ _) (inv_pos.2 (hRpos n)).le
+  have hc1 : ∀ n, ∀ x ∈ ball (0 : E) (R n), c n x = 1 := fun n x hx ↦ by
+    refine hζ1 (mem_closedBall_zero_iff.2 ?_)
+    rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos (hRpos n), inv_mul_le_iff₀ (hRpos n),
+      mul_one]
+    exact (mem_ball_zero_iff.1 hx).le
+  have hcbound : ∀ n, MemLp (c n) ⊤ (μ.restrict (Ω : Set E)) := fun n ↦
+    memLp_top_of_bound (hcs n).continuous.aestronglyMeasurable 1 (Eventually.of_forall fun x ↦ by
+      rw [Real.norm_eq_abs]
+      exact abs_le.2 ⟨by linarith [(hc01 n x).1], (hc01 n x).2⟩)
+  -- the weak gradients
+  obtain ⟨w, hw, hwp⟩ := hf.exists_hasWeakIteratedFDerivOn (n := 1) le_rfl
+  have hwn : ∀ n, HasWeakIteratedFDerivOn 1 (fun x ↦ c n x * f x)
+      (fun x ↦ c n x • w x + f x • iteratedFDeriv ℝ 1 (c n) x) Ω μ := fun n ↦
+    hw.contDiff_mul_one (hcs n)
+  have hwn' : ∀ n, HasWeakIteratedFDerivOn 1 (fun x ↦ c n x * f x - f x)
+      (fun x ↦ (c n x - 1) • w x + f x • iteratedFDeriv ℝ 1 (c n) x) Ω μ := fun n ↦
+    ((hwn n).sub hw).congr_ae (Eventually.of_forall fun x ↦ rfl)
+      (Eventually.of_forall fun x ↦ by
+        simp only [Pi.sub_apply, sub_smul, one_smul]
+        abel)
+  have hfD : ∀ n, MemLp (fun x ↦ f x • iteratedFDeriv ℝ 1 (c n) x) p (μ.restrict (Ω : Set E)) :=
+    fun n ↦ by
+    refine (hf.memLp.const_mul ((R n)⁻¹ * Mζ)).of_le
+      (hf.memLp.aestronglyMeasurable.smul ((hcs n).iteratedFDeriv_right (m := ∞) (i := 1)
+        (by simp)).continuous.aestronglyMeasurable) (Eventually.of_forall fun x ↦ ?_)
+    rw [norm_smul, Real.norm_eq_abs, Real.norm_eq_abs, abs_mul,
+      abs_of_nonneg (by positivity : 0 ≤ (R n)⁻¹ * Mζ), mul_comm]
+    exact mul_le_mul_of_nonneg_right (hcdn n x) (abs_nonneg _)
+  -- membership
+  have hmem : ∀ n, MemSobolev (fun x ↦ c n x * f x) 1 p Ω μ := fun n ↦ by
+    have h0 : MemLp (fun x ↦ c n x * f x) p (μ.restrict (Ω : Set E)) :=
+      (hcbound n).smul hf.memLp
+    refine ⟨h0, fun m hm ↦ ?_⟩
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (by exact_mod_cast hm) with rfl | rfl
+    · exact ((memSobolev_zero_order hp).2 h0).2 0 le_rfl
+    · exact ⟨_, hwn n, ((hcbound n).smul hwp).add (hfD n)⟩
+  refine ⟨hmem, ?_⟩
+  -- the estimates
+  have hR : Tendsto R atTop atTop :=
+    tendsto_atTop_add_const_right _ 1 tendsto_natCast_atTop_atTop
+  have hind0 := hf.memLp.tendsto_eLpNorm_indicator_compl_ball_restrict hp' hΩm hR
+  have hind1 := hwp.tendsto_eLpNorm_indicator_compl_ball_restrict hp' hΩm hR
+  have hE0 : Tendsto (fun n ↦ eLpNorm (weakIteratedFDeriv 0 (fun x ↦ c n x * f x - f x) Ω μ) p
+      (μ.restrict (Ω : Set E))) atTop (𝓝 0) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hind0
+      (fun _ ↦ zero_le) fun n ↦ ?_
+    have hloc : LocallyIntegrableOn (fun x ↦ c n x * f x - f x) Ω μ :=
+      (hwn' n).locallyIntegrableOn
+    have hfm := hf.memLp.aestronglyMeasurable
+    have hm1 : AEStronglyMeasurable (fun x ↦ c n x * f x - f x) (μ.restrict (Ω : Set E)) :=
+      ((hcs n).continuous.aestronglyMeasurable.mul hfm).sub hfm
+    rw [(hasWeakIteratedFDerivOn_zero hloc).eLpNorm_weakIteratedFDeriv,
+      eLpNorm_congr_norm_ae (g := fun x ↦ (c n x - 1) • f x)
+        ((continuousMultilinearCurryFin0 ℝ E ℝ).symm.continuous.comp_aestronglyMeasurable hm1)
+        (((hcs n).continuous.sub continuous_const).aestronglyMeasurable.smul hfm)
+        (Eventually.of_forall fun x ↦ by
+          rw [LinearIsometryEquiv.norm_map, sub_smul, one_smul, smul_eq_mul])]
+    exact eLpNorm_sub_one_mul_le_of_eqOn_ball (hcs n).continuous (hc01 n) (hc1 n)
+      hf.memLp.aestronglyMeasurable
+  have hE1 : Tendsto (fun n ↦ eLpNorm (weakIteratedFDeriv 1 (fun x ↦ c n x * f x - f x) Ω μ) p
+      (μ.restrict (Ω : Set E))) atTop (𝓝 0) := by
+    have hB : Tendsto (fun n ↦ ENNReal.ofReal ((R n)⁻¹ * Mζ)
+        * eLpNorm f p (μ.restrict (Ω : Set E))) atTop (𝓝 0) := by
+      have h1 : Tendsto (fun n ↦ (R n)⁻¹ * Mζ) atTop (𝓝 0) := by
+        simpa [hRdef, one_div] using tendsto_one_div_add_atTop_nhds_zero_nat.mul_const Mζ
+      have h2 := ENNReal.Tendsto.mul_const (ENNReal.tendsto_ofReal h1)
+        (Or.inr hf.memLp.eLpNorm_ne_top)
+      simpa using h2
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
+      (by simpa using hind1.add hB) (fun _ ↦ zero_le) fun n ↦ ?_
+    rw [(hwn' n).eLpNorm_weakIteratedFDeriv]
+    refine (eLpNorm_add_le hp).trans (add_le_add ?_ ?_)
+    · exact eLpNorm_sub_one_mul_le_of_eqOn_ball (hcs n).continuous (hc01 n) (hc1 n)
+        hwp.aestronglyMeasurable
+    · refine eLpNorm_le_mul_eLpNorm_of_ae_le_mul
+        (f := fun x ↦ f x • iteratedFDeriv ℝ 1 (c n) x) (g := f) (c := (R n)⁻¹ * Mζ)
+        (hfD n).aestronglyMeasurable (Eventually.of_forall fun x ↦ ?_) p
+      rw [norm_smul, mul_comm]
+      exact mul_le_mul_of_nonneg_right (hcdn n x) (norm_nonneg _)
+  -- the convergence of the Sobolev norm
+  have hsum : Tendsto (fun n ↦ (1 + 1 : ℝ≥0∞) *
+      (eLpNorm (weakIteratedFDeriv 0 (fun x ↦ c n x * f x - f x) Ω μ) p (μ.restrict (Ω : Set E))
+        + eLpNorm (weakIteratedFDeriv 1 (fun x ↦ c n x * f x - f x) Ω μ) p
+          (μ.restrict (Ω : Set E)))) atTop (𝓝 0) := by
+    simpa using ENNReal.Tendsto.const_mul (hE0.add hE1) (Or.inr (by simp))
+  have key : ∀ n, sobolevNorm (fun x ↦ c n x * f x - f x) 1 p Ω μ ≤ (1 + 1 : ℝ≥0∞) *
+      (eLpNorm (weakIteratedFDeriv 0 (fun x ↦ c n x * f x - f x) Ω μ) p (μ.restrict (Ω : Set E))
+        + eLpNorm (weakIteratedFDeriv 1 (fun x ↦ c n x * f x - f x) Ω μ) p
+          (μ.restrict (Ω : Set E))) := fun n ↦ by
+    have := sobolevNorm_le_of_forall_eLpNorm_le (f := fun x ↦ c n x * f x - f x) (k := 1)
+      (Ω := Ω) (μ := μ) hp hp'
+      (c := eLpNorm (weakIteratedFDeriv 0 (fun x ↦ c n x * f x - f x) Ω μ) p
+          (μ.restrict (Ω : Set E))
+        + eLpNorm (weakIteratedFDeriv 1 (fun x ↦ c n x * f x - f x) Ω μ) p
+          (μ.restrict (Ω : Set E))) fun m hm ↦ ?_
+    · simpa using this
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 hm with rfl | rfl
+    · exact le_add_right le_rfl
+    · exact le_add_left le_rfl
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum (fun _ ↦ zero_le) key
 
 namespace SobolevMultiIndex
 

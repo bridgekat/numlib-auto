@@ -40,6 +40,12 @@ The theorem is stated existentially, `∃ P C, …`, as the book states it: its 
 compact piece `K` of the boundary and a cut-off `χ` with `tsupport χ ∩ ∂Ω ⊆ K`, and extends the
 functions with `u = χ u`; Theorem 9.7 is `K = ∂Ω`, `χ = 1`.
 
+Remark 9, the extension operator for the unit square `(0, 1)²` — which is not of class `C^1` —
+is `SobolevEuclidean.exists_extensionL_unitSquare`: four reflections across the sides
+(`SobolevEuclidean.exists_reflectionStep`, a reflection across a translated hyperplane) reach
+`W^{1,p}((−1, 3)²)`, and a cut-off extends by zero; the assembly is
+`SobolevEuclidean.exists_extensionL_of_steps`.
+
 ## Elaboration
 
 Every identity about the composites is proved first for *variables* standing for the operators
@@ -49,7 +55,7 @@ rewrite in a goal costs a second of unification and the default heartbeat budget
 
 ## References
 
-[brezis2011functional], §9.2, Theorem 9.7 and its proof, Corollary 9.8.
+[brezis2011functional], §9.2, Theorem 9.7 and its proof, Corollary 9.8, Remark 9.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace EuclideanSpace
@@ -863,3 +869,553 @@ theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto (hp' : p 
     tendsto_one_div_add_atTop_nhds_zero_nat
 
 end Corollary98
+
+/-! ### Remark 9: the square by four reflections -/
+
+section Square
+
+variable {N : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+/-- Composition of two extension steps, with the composite as a variable: identities on `Ω`
+compose, and the `L^p` bounds multiply. -/
+theorem SobolevEuclidean.extension_step_comp {Ω Ω₀ Ω₁ Ω₂ : Opens (EuclideanSpace ℝ (Fin N))}
+    (S : SobolevEuclidean N 1 p Ω₀ →L[ℝ] SobolevEuclidean N 1 p Ω₁)
+    (S' : SobolevEuclidean N 1 p Ω₁ →L[ℝ] SobolevEuclidean N 1 p Ω₂)
+    (S'' : SobolevEuclidean N 1 p Ω₀ →L[ℝ] SobolevEuclidean N 1 p Ω₂) (hS'' : ∀ u, S'' u = S' (S u))
+    {C C' : ℝ≥0∞}
+    (hS : ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+      eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₁ : Set _))
+        ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)))
+    (hS' : ∀ w, SobolevMultiIndex.fn (S' w) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn w ∧
+      eLpNorm (SobolevMultiIndex.fn (S' w)) p (volume.restrict (Ω₂ : Set _))
+        ≤ C' * eLpNorm (SobolevMultiIndex.fn w) p (volume.restrict (Ω₁ : Set _))) :
+    ∀ u, SobolevMultiIndex.fn (S'' u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+      eLpNorm (SobolevMultiIndex.fn (S'' u)) p (volume.restrict (Ω₂ : Set _))
+        ≤ C' * C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)) := fun u ↦ by
+  rw [hS'' u]
+  exact ⟨(hS' (S u)).1.trans (hS u).1,
+    (hS' (S u)).2.trans (by rw [mul_assoc]; gcongr; exact (hS u).2)⟩
+
+/-- **A reflection across a translated hyperplane**, with the operators as variables: the
+translation `T₁ : u ↦ u(· + c)` from `Ω₀` to `V₊ = posHalf v V`, the even reflection
+`R : W^{1,p}(V₊) → W^{1,p}(V)`, and the translation back `T₂ : w ↦ w(· − c)` from `V` to `Ω₁`,
+compose to an extension operator `Ω₀ → Ω₁` whose function agrees with `u` on `Ω₀`. -/
+theorem SobolevEuclidean.exists_reflectionStep_of_ops {v c : EuclideanSpace ℝ (Fin N)}
+    {V Ω₀ Ω₁ : Opens (EuclideanSpace ℝ (Fin N))}
+    (h₀ : (posHalf v V : Set (EuclideanSpace ℝ (Fin N))) = (fun x ↦ x + c) ⁻¹' Ω₀)
+    (h₁ : (Ω₁ : Set (EuclideanSpace ℝ (Fin N))) = (fun x ↦ x + -c) ⁻¹' V)
+    (T₁ : SobolevEuclidean N 1 p Ω₀ →L[ℝ] SobolevEuclidean N 1 p (posHalf v V))
+    (R : SobolevEuclidean N 1 p (posHalf v V) →L[ℝ] SobolevEuclidean N 1 p V)
+    (T₂ : SobolevEuclidean N 1 p V →L[ℝ] SobolevEuclidean N 1 p Ω₁) {C₁ C₂ : ℝ≥0∞}
+    (hT₁ : ∀ u, SobolevMultiIndex.fn (T₁ u) =ᵐ[volume.restrict (posHalf v V : Set _)]
+      fun y ↦ SobolevMultiIndex.fn u (y + c))
+    (hT₁L : ∀ u, eLpNorm (SobolevMultiIndex.fn (T₁ u)) p (volume.restrict (posHalf v V : Set _))
+      ≤ C₁ * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)))
+    (hR : ∀ w, SobolevMultiIndex.fn (R w) =ᵐ[volume.restrict (posHalf v V : Set _)]
+      SobolevMultiIndex.fn w)
+    (hRL : ∀ w, eLpNorm (SobolevMultiIndex.fn (R w)) p (volume.restrict (V : Set _))
+      ≤ 2 * eLpNorm (SobolevMultiIndex.fn w) p (volume.restrict (posHalf v V : Set _)))
+    (hT₂ : ∀ w, SobolevMultiIndex.fn (T₂ w) =ᵐ[volume.restrict (Ω₁ : Set _)]
+      fun y ↦ SobolevMultiIndex.fn w (y + -c))
+    (hT₂L : ∀ w, eLpNorm (SobolevMultiIndex.fn (T₂ w)) p (volume.restrict (Ω₁ : Set _))
+      ≤ C₂ * eLpNorm (SobolevMultiIndex.fn w) p (volume.restrict (V : Set _))) :
+    ∀ u, SobolevMultiIndex.fn (T₂ (R (T₁ u))) =ᵐ[volume.restrict (Ω₀ : Set _)]
+        SobolevMultiIndex.fn u ∧
+      eLpNorm (SobolevMultiIndex.fn (T₂ (R (T₁ u)))) p (volume.restrict (Ω₁ : Set _))
+        ≤ C₂ * 2 * C₁ * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)) := by
+  intro u
+  have hΩ₀m : MeasurableSet (Ω₀ : Set (EuclideanSpace ℝ (Fin N))) := Ω₀.isOpen.measurableSet
+  have hΩ₁m : MeasurableSet (Ω₁ : Set (EuclideanSpace ℝ (Fin N))) := Ω₁.isOpen.measurableSet
+  have hPm : MeasurableSet (posHalf v V : Set (EuclideanSpace ℝ (Fin N))) :=
+    (posHalf v V).isOpen.measurableSet
+  -- membership bookkeeping
+  have hmem : ∀ x, x ∈ (Ω₀ : Set _) → x + -c ∈ (posHalf v V : Set _) := fun x hx ↦ by
+    rw [h₀]
+    simpa using hx
+  have hΩ₀₁ : (Ω₀ : Set (EuclideanSpace ℝ (Fin N))) ⊆ Ω₁ := fun x hx ↦ by
+    rw [h₁]
+    exact (hmem x hx).1
+  refine ⟨?_, ?_⟩
+  · -- the identity on `Ω₀`
+    have h2 : ∀ᵐ x ∂volume, x ∈ (Ω₁ : Set _) →
+        SobolevMultiIndex.fn (T₂ (R (T₁ u))) x = SobolevMultiIndex.fn (R (T₁ u)) (x + -c) :=
+      (ae_restrict_iff' hΩ₁m).1 (hT₂ (R (T₁ u)))
+    have h3 : ∀ᵐ y ∂volume, y ∈ (posHalf v V : Set _) →
+        SobolevMultiIndex.fn (R (T₁ u)) y = SobolevMultiIndex.fn (T₁ u) y :=
+      (ae_restrict_iff' hPm).1 (hR (T₁ u))
+    have h4 : ∀ᵐ y ∂volume, y ∈ (posHalf v V : Set _) →
+        SobolevMultiIndex.fn (T₁ u) y = SobolevMultiIndex.fn u (y + c) :=
+      (ae_restrict_iff' hPm).1 (hT₁ u)
+    have h3' := (measurePreserving_add_right volume (-c)).quasiMeasurePreserving.ae h3
+    have h4' := (measurePreserving_add_right volume (-c)).quasiMeasurePreserving.ae h4
+    rw [EventuallyEq, ae_restrict_iff' hΩ₀m]
+    filter_upwards [h2, h3', h4'] with x hx2 hx3 hx4 hx
+    rw [hx2 (hΩ₀₁ hx), hx3 (hmem x hx), hx4 (hmem x hx)]
+    simp
+  · -- the `L^p` bound
+    calc eLpNorm (SobolevMultiIndex.fn (T₂ (R (T₁ u)))) p (volume.restrict (Ω₁ : Set _))
+        ≤ C₂ * eLpNorm (SobolevMultiIndex.fn (R (T₁ u))) p (volume.restrict (V : Set _)) :=
+          hT₂L _
+      _ ≤ C₂ * (2 * eLpNorm (SobolevMultiIndex.fn (T₁ u)) p
+          (volume.restrict (posHalf v V : Set _))) := by gcongr; exact hRL _
+      _ ≤ C₂ * (2 * (C₁ * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)))) := by
+          gcongr; exact hT₁L _
+      _ = C₂ * 2 * C₁ * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)) := by
+          ring
+
+/-- **A reflection across a translated hyperplane**: for a unit vector `v`, a translation `c`, an
+open `V` symmetric under the reflection `σ` across `v^⊥`, and opens `Ω₀`, `Ω₁` with
+`V₊ = Ω₀ − c` and `Ω₁ = V + c`, there is a bounded linear `S : W^{1,p}(Ω₀) → W^{1,p}(Ω₁)` with
+`S u = u` on `Ω₀` and `‖S u‖_{L^p(Ω₁)} ≤ C ‖u‖_{L^p(Ω₀)}`: translate by `c`
+(`SobolevEuclidean.compDiffeoL` for the affine map), reflect (`SobolevEuclidean.evenReflectionL`),
+translate back. This is one of the "four successive reflections" of [brezis2011functional]
+Chapter 9, Remark 9. -/
+theorem SobolevEuclidean.exists_reflectionStep {v c : EuclideanSpace ℝ (Fin N)} (hv : ‖v‖ = 1)
+    {V Ω₀ Ω₁ : Opens (EuclideanSpace ℝ (Fin N))}
+    (hV : hyperplaneReflection v '' (V : Set (EuclideanSpace ℝ (Fin N))) = V)
+    (h₀ : (posHalf v V : Set (EuclideanSpace ℝ (Fin N))) = (fun x ↦ x + c) ⁻¹' Ω₀)
+    (h₁ : (Ω₁ : Set (EuclideanSpace ℝ (Fin N))) = (fun x ↦ x + -c) ⁻¹' V) :
+    ∃ (S : SobolevEuclidean N 1 p Ω₀ →L[ℝ] SobolevEuclidean N 1 p Ω₁) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω₀ : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₁ : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₀ : Set _)) := by
+  -- the two translations as diffeomorphisms with bounded Jacobians
+  have hd₁ := isDiffeoOnWithBoundedJacobian_affine
+    (ContinuousLinearEquiv.refl ℝ (EuclideanSpace ℝ (Fin N))) c Ω₀
+  have hd₂ := isDiffeoOnWithBoundedJacobian_affine
+    (ContinuousLinearEquiv.refl ℝ (EuclideanSpace ℝ (Fin N))) (-c) V
+  simp only [ContinuousLinearEquiv.coe_refl', id, ContinuousLinearEquiv.refl_symm] at hd₁ hd₂
+  rw [← h₀] at hd₁
+  rw [← h₁] at hd₂
+  obtain ⟨C₁, hC₁, hT₁L⟩ := SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le
+    (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := p) (μ := volume) hd₁
+  obtain ⟨C₂, hC₂, hT₂L⟩ := SobolevMultiIndex.exists_eLpNorm_fn_compDiffeoL_le
+    (F := ℝ) (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (p := p) (μ := volume) hd₂
+  refine ⟨SobolevEuclidean.compDiffeoL hd₂ ∘L SobolevEuclidean.evenReflectionL hv hV ∘L
+    SobolevEuclidean.compDiffeoL hd₁, C₂ * 2 * C₁,
+    ENNReal.mul_ne_top (ENNReal.mul_ne_top hC₂ (by simp)) hC₁, ?_⟩
+  exact SobolevEuclidean.exists_reflectionStep_of_ops h₀ h₁ (SobolevEuclidean.compDiffeoL hd₁)
+    (SobolevEuclidean.evenReflectionL hv hV) (SobolevEuclidean.compDiffeoL hd₂)
+    (fun u ↦ SobolevMultiIndex.fn_compDiffeoL hd₁ u) hT₁L
+    (fun w ↦ SobolevMultiIndex.fn_evenReflectionL_restrict hv hV w)
+    (fun w ↦ SobolevMultiIndex.eLpNorm_fn_evenReflectionL_le hv hV w)
+    (fun w ↦ SobolevMultiIndex.fn_compDiffeoL hd₂ w) hT₂L
+
+
+/-- An extension operator with an `ℝ≥0∞` constant has the shape of Theorem 9.7: the constant
+`max C.toReal ‖P‖` serves both the `L^p` bound and the operator bound. -/
+theorem SobolevEuclidean.exists_extensionL_of_ops' {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+    (P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤) {C : ℝ≥0∞} (hC : C ≠ ⊤)
+    (hP : ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+      eLpNorm (SobolevMultiIndex.fn (P u)) p
+          (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set _))
+        ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set _))) :
+    ∃ (P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤) (C : ℝ),
+      ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
+          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set _)) ∧
+        ‖P u‖ ≤ C * ‖u‖ := by
+  refine ⟨P, max C.toReal ‖P‖, fun u ↦ ⟨(hP u).1, ?_, ?_⟩⟩
+  · rw [← eLpNorm_restrict_coe_top]
+    refine (hP u).2.trans ?_
+    gcongr
+    exact (ENNReal.ofReal_toReal hC).symm.le.trans (ENNReal.ofReal_le_ofReal (le_max_left _ _))
+  · exact (P.le_opNorm u).trans (mul_le_mul_of_nonneg_right (le_max_right _ _) (norm_nonneg _))
+
+/-- **Assembly of an extension operator from four steps and a cut-off**, with the sets as
+variables: extension steps `Ω → Ω₁ → Ω₂ → Ω₃ → Ω₄`, each the identity on its source, followed
+by a cut-off `Ω₄ → ℝ^N` which is the identity on `Ω`, give an extension operator `Ω → ℝ^N` in
+the shape of Theorem 9.7. -/
+theorem SobolevEuclidean.exists_extensionL_of_steps
+    {Ω Ω₁ Ω₂ Ω₃ Ω₄ : Opens (EuclideanSpace ℝ (Fin N))}
+    (hΩ₁ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ Ω₁)
+    (hΩ₂ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ Ω₂)
+    (hΩ₃ : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ Ω₃)
+    (h₁ : ∃ (S : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₁) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₁ : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set _)))
+    (h₂ : ∃ (S : SobolevEuclidean N 1 p Ω₁ →L[ℝ] SobolevEuclidean N 1 p Ω₂) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω₁ : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₂ : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₁ : Set _)))
+    (h₃ : ∃ (S : SobolevEuclidean N 1 p Ω₂ →L[ℝ] SobolevEuclidean N 1 p Ω₃) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω₂ : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₃ : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₂ : Set _)))
+    (h₄ : ∃ (S : SobolevEuclidean N 1 p Ω₃ →L[ℝ] SobolevEuclidean N 1 p Ω₄) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u) =ᵐ[volume.restrict (Ω₃ : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p (volume.restrict (Ω₄ : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω₃ : Set _)))
+    (h₅ : ∃ E : SobolevEuclidean N 1 p Ω₄ →L[ℝ] SobolevEuclidean N 1 p ⊤, ∀ w,
+      SobolevMultiIndex.fn (E w) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn w ∧
+      eLpNorm (SobolevMultiIndex.fn (E w)) p
+          (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin N))) : Set _))
+        ≤ ENNReal.ofReal 1 * eLpNorm (SobolevMultiIndex.fn w) p (volume.restrict (Ω₄ : Set _))) :
+    ∃ (P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤) (C : ℝ),
+      ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
+          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set _)) ∧
+        ‖P u‖ ≤ C * ‖u‖ := by
+  obtain ⟨S₁, C₁, hC₁, hS₁⟩ := h₁
+  obtain ⟨S₂, C₂, hC₂, hS₂⟩ := h₂
+  obtain ⟨S₃, C₃, hC₃, hS₃⟩ := h₃
+  obtain ⟨S₄, C₄, hC₄, hS₄⟩ := h₄
+  obtain ⟨E, hE⟩ := h₅
+  have hres : ∀ {A B : Opens (EuclideanSpace ℝ (Fin N))}
+      (h : (A : Set (EuclideanSpace ℝ (Fin N))) ⊆ (B : Set (EuclideanSpace ℝ (Fin N))))
+      {f g : EuclideanSpace ℝ (Fin N) → ℝ},
+      f =ᵐ[volume.restrict (B : Set _)] g → f =ᵐ[volume.restrict (A : Set _)] g := by
+    intro _ _ h _ _ hfg
+    exact hfg.filter_mono (ae_mono (Measure.restrict_mono h le_rfl))
+  have hS₂' := fun u ↦ (hS₂ u).imp_left (hres hΩ₁)
+  have hS₃' := fun u ↦ (hS₃ u).imp_left (hres hΩ₂)
+  have hS₄' := fun u ↦ (hS₄ u).imp_left (hres hΩ₃)
+  -- the composite, one operator at a time
+  obtain ⟨P₂, hP₂⟩ : ∃ P₂ : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₂,
+      ∀ u, P₂ u = S₂ (S₁ u) := ⟨S₂ ∘L S₁, fun u ↦ rfl⟩
+  have h₂' := SobolevEuclidean.extension_step_comp S₁ S₂ P₂ hP₂ hS₁ hS₂'
+  obtain ⟨P₃, hP₃⟩ : ∃ P₃ : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₃,
+      ∀ u, P₃ u = S₃ (P₂ u) := ⟨S₃ ∘L P₂, fun u ↦ rfl⟩
+  have h₃' := SobolevEuclidean.extension_step_comp P₂ S₃ P₃ hP₃ h₂' hS₃'
+  obtain ⟨P₄, hP₄⟩ : ∃ P₄ : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p Ω₄,
+      ∀ u, P₄ u = S₄ (P₃ u) := ⟨S₄ ∘L P₃, fun u ↦ rfl⟩
+  have h₄' := SobolevEuclidean.extension_step_comp P₃ S₄ P₄ hP₄ h₃' hS₄'
+  obtain ⟨P, hP⟩ : ∃ P : SobolevEuclidean N 1 p Ω →L[ℝ] SobolevEuclidean N 1 p ⊤,
+      ∀ u, P u = E (P₄ u) := ⟨E ∘L P₄, fun u ↦ rfl⟩
+  have h₅' := SobolevEuclidean.extension_step_comp P₄ E P hP h₄' hE
+  exact SobolevEuclidean.exists_extensionL_of_ops' P
+    (ENNReal.mul_ne_top ENNReal.ofReal_ne_top (ENNReal.mul_ne_top hC₄ (ENNReal.mul_ne_top hC₃
+      (ENNReal.mul_ne_top hC₂ hC₁)))) h₅'
+
+/-- The reflection across `x_i = 0` in coordinates: `σ x j = if j = i then −x i else x j`. -/
+theorem hyperplaneReflection_single_apply (i : Fin N) (x : EuclideanSpace ℝ (Fin N)) (j : Fin N) :
+    hyperplaneReflection (EuclideanSpace.single i (1 : ℝ)) x j
+      = if j = i then -x i else x j := by
+  rw [hyperplaneReflection_apply_of_norm_eq_one (by simp), EuclideanSpace.inner_single_right,
+    PiLp.sub_apply, PiLp.smul_apply, PiLp.single_apply, smul_eq_mul]
+  simp only [conj_trivial, one_mul]
+  split_ifs with h
+  · subst h; ring
+  · ring
+
+/-- The reflections across `v^⊥` and `(−v)^⊥` coincide. -/
+theorem hyperplaneReflection_neg {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (v : E) : hyperplaneReflection (-v) = hyperplaneReflection v := by
+  have h : (ℝ ∙ -v) = (ℝ ∙ v) := by rw [← Set.neg_singleton, Submodule.span_neg]
+  unfold hyperplaneReflection
+  simp only [h]
+
+/-- The image of a set under an involution which preserves membership is the set. -/
+theorem Function.Involutive.image_eq_of_forall_mem_iff {α : Type*} {σ : α → α}
+    (hσ : Function.Involutive σ) {s : Set α} (h : ∀ x, σ x ∈ s ↔ x ∈ s) : σ '' s = s := by
+  ext x
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    exact (h y).2 hy
+  · intro hx
+    exact ⟨σ x, (h x).2 hx, hσ x⟩
+
+/-- The open rectangle `(a₁, b₁) × (a₂, b₂)` of `ℝ²`. -/
+def EuclideanSpace.rect (a₁ b₁ a₂ b₂ : ℝ) : Opens (EuclideanSpace ℝ (Fin 2)) :=
+  ⟨{x | a₁ < x 0 ∧ x 0 < b₁ ∧ a₂ < x 1 ∧ x 1 < b₂}, by
+    have h0 : Continuous fun x : EuclideanSpace ℝ (Fin 2) ↦ x 0 :=
+      (EuclideanSpace.proj (0 : Fin 2)).continuous
+    have h1 : Continuous fun x : EuclideanSpace ℝ (Fin 2) ↦ x 1 :=
+      (EuclideanSpace.proj (1 : Fin 2)).continuous
+    exact (isOpen_lt continuous_const h0).inter ((isOpen_lt h0 continuous_const).inter
+      ((isOpen_lt continuous_const h1).inter (isOpen_lt h1 continuous_const)))⟩
+
+/-- Membership of the rectangle, unfolded. -/
+theorem EuclideanSpace.mem_rect {a₁ b₁ a₂ b₂ : ℝ} {x : EuclideanSpace ℝ (Fin 2)} :
+    x ∈ (EuclideanSpace.rect a₁ b₁ a₂ b₂ : Set (EuclideanSpace ℝ (Fin 2)))
+      ↔ a₁ < x 0 ∧ x 0 < b₁ ∧ a₂ < x 1 ∧ x 1 < b₂ :=
+  Iff.rfl
+
+/-- The norm of a point of `ℝ²` is at most the sum of the absolute values of its coordinates. -/
+theorem EuclideanSpace.norm_le_abs_add_abs (x : EuclideanSpace ℝ (Fin 2)) :
+    ‖x‖ ≤ |x 0| + |x 1| := by
+  rw [EuclideanSpace.norm_eq, Fin.sum_univ_two, Real.norm_eq_abs, Real.norm_eq_abs, sq_abs,
+    sq_abs]
+  refine (Real.sqrt_le_sqrt ?_).trans_eq (Real.sqrt_sq (by positivity))
+  nlinarith [sq_abs (x 0), sq_abs (x 1), mul_nonneg (abs_nonneg (x 0)) (abs_nonneg (x 1))]
+
+/-- A rectangle is bounded. -/
+theorem EuclideanSpace.rect_subset_closedBall (a₁ b₁ a₂ b₂ : ℝ) :
+    (EuclideanSpace.rect a₁ b₁ a₂ b₂ : Set (EuclideanSpace ℝ (Fin 2)))
+      ⊆ closedBall 0 (max |a₁| |b₁| + max |a₂| |b₂|) := by
+  intro x hx
+  rw [EuclideanSpace.mem_rect] at hx
+  rw [mem_closedBall_zero_iff]
+  refine (EuclideanSpace.norm_le_abs_add_abs x).trans (add_le_add ?_ ?_)
+  · exact abs_le.2 ⟨by linarith [neg_abs_le a₁, le_max_left |a₁| |b₁|],
+      by linarith [le_abs_self b₁, le_max_right |a₁| |b₁|]⟩
+  · exact abs_le.2 ⟨by linarith [neg_abs_le a₂, le_max_left |a₂| |b₂|],
+      by linarith [le_abs_self b₂, le_max_right |a₂| |b₂|]⟩
+
+/-- The closure of the unit square lies in the closed square, hence in `(−1, 3)²`. -/
+theorem EuclideanSpace.closure_rect_unit_subset :
+    closure (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))
+      ⊆ {x | 0 ≤ x 0 ∧ x 0 ≤ 1 ∧ 0 ≤ x 1 ∧ x 1 ≤ 1} := by
+  have h0 : Continuous fun x : EuclideanSpace ℝ (Fin 2) ↦ x 0 :=
+    (EuclideanSpace.proj (0 : Fin 2)).continuous
+  have h1 : Continuous fun x : EuclideanSpace ℝ (Fin 2) ↦ x 1 :=
+    (EuclideanSpace.proj (1 : Fin 2)).continuous
+  refine closure_minimal (fun x hx ↦ ?_) ((isClosed_le continuous_const h0).inter
+    ((isClosed_le h0 continuous_const).inter
+      ((isClosed_le continuous_const h1).inter (isClosed_le h1 continuous_const))))
+  rw [EuclideanSpace.mem_rect] at hx
+  exact ⟨hx.1.le, hx.2.1.le, hx.2.2.1.le, hx.2.2.2.le⟩
+
+/-- The reflection across `x_2 = 0` of Remark 9: an extension operator
+`W^{1,p}(0 1 0 1) → W^{1,p}(0 1 −1 1)`. -/
+theorem SobolevEuclidean.exists_extension_rect_step₁ :
+    ∃ (S : SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 0 1) →L[ℝ]
+        SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 (-1) 1)) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u)
+          =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p
+            (volume.restrict (EuclideanSpace.rect 0 1 (-1) 1 : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set _)) := by
+  have he : ∀ i : Fin 2, ‖(EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by simp
+  have hne : ∀ i : Fin 2, ‖(-EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by rw [norm_neg]; exact he i
+  have hinv : ∀ i : Fin 2, Function.Involutive
+      (hyperplaneReflection (EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))) :=
+    fun i x ↦ hyperplaneReflection_hyperplaneReflection _ x
+  exact SobolevEuclidean.exists_reflectionStep (p := p)
+    (v := EuclideanSpace.single 1 (1 : ℝ)) (c := 0) (he 1)
+    (V := EuclideanSpace.rect 0 1 (-1) 1) (Ω₀ := EuclideanSpace.rect 0 1 0 1)
+    (Ω₁ := EuclideanSpace.rect 0 1 (-1) 1)
+    (by
+      refine (hinv 1).image_eq_of_forall_mem_iff fun x ↦ ?_
+      simp only [EuclideanSpace.mem_rect, hyperplaneReflection_single_apply, Fin.isValue,
+        zero_ne_one, ↓reduceIte]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+    (by
+      ext x
+      simp only [coe_posHalf, EuclideanSpace.inner_single_right, conj_trivial, one_mul,
+        Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_preimage, add_zero, EuclideanSpace.mem_rect]
+      constructor
+      · rintro ⟨⟨h1, h2, h3, h4⟩, h5⟩
+        exact ⟨h1, h2, h5, h4⟩
+      · rintro ⟨h1, h2, h3, h4⟩
+        exact ⟨⟨h1, h2, by linarith, h4⟩, h3⟩)
+    (by
+      ext x
+      simp)
+/-- The reflection across `x_2 = 1` of Remark 9: an extension operator
+`W^{1,p}(0 1 −1 1) → W^{1,p}(0 1 −1 3)`. -/
+theorem SobolevEuclidean.exists_extension_rect_step₂ :
+    ∃ (S : SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 (-1) 1) →L[ℝ]
+        SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 (-1) 3)) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u)
+          =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 (-1) 1 : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p
+            (volume.restrict (EuclideanSpace.rect 0 1 (-1) 3 : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect 0 1 (-1) 1 : Set _)) := by
+  have he : ∀ i : Fin 2, ‖(EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by simp
+  have hne : ∀ i : Fin 2, ‖(-EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by rw [norm_neg]; exact he i
+  have hinv : ∀ i : Fin 2, Function.Involutive
+      (hyperplaneReflection (EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))) :=
+    fun i x ↦ hyperplaneReflection_hyperplaneReflection _ x
+  exact SobolevEuclidean.exists_reflectionStep (p := p)
+    (v := -EuclideanSpace.single 1 (1 : ℝ)) (c := EuclideanSpace.single 1 (1 : ℝ)) (hne 1)
+    (V := EuclideanSpace.rect 0 1 (-2) 2) (Ω₀ := EuclideanSpace.rect 0 1 (-1) 1)
+    (Ω₁ := EuclideanSpace.rect 0 1 (-1) 3)
+    (by
+      rw [hyperplaneReflection_neg]
+      refine (hinv 1).image_eq_of_forall_mem_iff fun x ↦ ?_
+      simp only [EuclideanSpace.mem_rect, hyperplaneReflection_single_apply, Fin.isValue,
+        zero_ne_one, ↓reduceIte]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+    (by
+      ext x
+      simp only [coe_posHalf, inner_neg_right, EuclideanSpace.inner_single_right, conj_trivial,
+        one_mul, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_preimage, EuclideanSpace.mem_rect,
+        PiLp.add_apply, PiLp.single_apply, Fin.isValue, zero_ne_one, ↓reduceIte, add_zero]
+      constructor
+      · rintro ⟨⟨h1, h2, h3, h4⟩, h5⟩
+        exact ⟨h1, h2, by linarith, by linarith⟩
+      · rintro ⟨h1, h2, h3, h4⟩
+        exact ⟨⟨h1, h2, by linarith, by linarith⟩, by linarith⟩)
+    (by
+      ext x
+      simp only [Set.mem_preimage, EuclideanSpace.mem_rect, PiLp.add_apply, PiLp.neg_apply,
+        PiLp.single_apply, Fin.isValue, zero_ne_one, ↓reduceIte, neg_zero, add_zero]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+/-- The reflection across `x_1 = 0` of Remark 9: an extension operator
+`W^{1,p}(0 1 −1 3) → W^{1,p}(−1 1 −1 3)`. -/
+theorem SobolevEuclidean.exists_extension_rect_step₃ :
+    ∃ (S : SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 (-1) 3) →L[ℝ]
+        SobolevEuclidean 2 1 p (EuclideanSpace.rect (-1) 1 (-1) 3)) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u)
+          =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 (-1) 3 : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p
+            (volume.restrict (EuclideanSpace.rect (-1) 1 (-1) 3 : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect 0 1 (-1) 3 : Set _)) := by
+  have he : ∀ i : Fin 2, ‖(EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by simp
+  have hne : ∀ i : Fin 2, ‖(-EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by rw [norm_neg]; exact he i
+  have hinv : ∀ i : Fin 2, Function.Involutive
+      (hyperplaneReflection (EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))) :=
+    fun i x ↦ hyperplaneReflection_hyperplaneReflection _ x
+  exact SobolevEuclidean.exists_reflectionStep (p := p)
+    (v := EuclideanSpace.single 0 (1 : ℝ)) (c := 0) (he 0)
+    (V := EuclideanSpace.rect (-1) 1 (-1) 3) (Ω₀ := EuclideanSpace.rect 0 1 (-1) 3)
+    (Ω₁ := EuclideanSpace.rect (-1) 1 (-1) 3)
+    (by
+      refine (hinv 0).image_eq_of_forall_mem_iff fun x ↦ ?_
+      simp only [EuclideanSpace.mem_rect, hyperplaneReflection_single_apply, Fin.isValue,
+        one_ne_zero, ↓reduceIte]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+    (by
+      ext x
+      simp only [coe_posHalf, EuclideanSpace.inner_single_right, conj_trivial, one_mul,
+        Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_preimage, add_zero, EuclideanSpace.mem_rect]
+      constructor
+      · rintro ⟨⟨h1, h2, h3, h4⟩, h5⟩
+        exact ⟨h5, h2, h3, h4⟩
+      · rintro ⟨h1, h2, h3, h4⟩
+        exact ⟨⟨by linarith, h2, h3, h4⟩, h1⟩)
+    (by
+      ext x
+      simp)
+/-- The reflection across `x_1 = 1` of Remark 9: an extension operator
+`W^{1,p}(−1 1 −1 3) → W^{1,p}(−1 3 −1 3)`. -/
+theorem SobolevEuclidean.exists_extension_rect_step₄ :
+    ∃ (S : SobolevEuclidean 2 1 p (EuclideanSpace.rect (-1) 1 (-1) 3) →L[ℝ]
+        SobolevEuclidean 2 1 p (EuclideanSpace.rect (-1) 3 (-1) 3)) (C : ℝ≥0∞), C ≠ ⊤ ∧
+      ∀ u, SobolevMultiIndex.fn (S u)
+          =ᵐ[volume.restrict (EuclideanSpace.rect (-1) 1 (-1) 3 : Set _)] SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (S u)) p
+            (volume.restrict (EuclideanSpace.rect (-1) 3 (-1) 3 : Set _))
+          ≤ C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect (-1) 1 (-1) 3 : Set _)) := by
+  have he : ∀ i : Fin 2, ‖(EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by simp
+  have hne : ∀ i : Fin 2, ‖(-EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))‖ = 1 :=
+    fun i ↦ by rw [norm_neg]; exact he i
+  have hinv : ∀ i : Fin 2, Function.Involutive
+      (hyperplaneReflection (EuclideanSpace.single i (1 : ℝ) : EuclideanSpace ℝ (Fin 2))) :=
+    fun i x ↦ hyperplaneReflection_hyperplaneReflection _ x
+  exact SobolevEuclidean.exists_reflectionStep (p := p)
+    (v := -EuclideanSpace.single 0 (1 : ℝ)) (c := EuclideanSpace.single 0 (1 : ℝ)) (hne 0)
+    (V := EuclideanSpace.rect (-2) 2 (-1) 3) (Ω₀ := EuclideanSpace.rect (-1) 1 (-1) 3)
+    (Ω₁ := EuclideanSpace.rect (-1) 3 (-1) 3)
+    (by
+      rw [hyperplaneReflection_neg]
+      refine (hinv 0).image_eq_of_forall_mem_iff fun x ↦ ?_
+      simp only [EuclideanSpace.mem_rect, hyperplaneReflection_single_apply, Fin.isValue,
+        one_ne_zero, ↓reduceIte]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+    (by
+      ext x
+      simp only [coe_posHalf, inner_neg_right, EuclideanSpace.inner_single_right, conj_trivial,
+        one_mul, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_preimage, EuclideanSpace.mem_rect,
+        PiLp.add_apply, PiLp.single_apply, Fin.isValue, one_ne_zero, ↓reduceIte, add_zero]
+      constructor
+      · rintro ⟨⟨h1, h2, h3, h4⟩, h5⟩
+        exact ⟨by linarith, by linarith, h3, h4⟩
+      · rintro ⟨h1, h2, h3, h4⟩
+        exact ⟨⟨by linarith, by linarith, h3, h4⟩, by linarith⟩)
+    (by
+      ext x
+      simp only [Set.mem_preimage, EuclideanSpace.mem_rect, PiLp.add_apply, PiLp.neg_apply,
+        PiLp.single_apply, Fin.isValue, one_ne_zero, ↓reduceIte, neg_zero, add_zero]
+      constructor <;> rintro ⟨h1, h2, h3, h4⟩ <;>
+        exact ⟨by linarith, by linarith, by linarith, by linarith⟩)
+/-- The cut-off of Remark 9: a bounded linear `E : W^{1,p}((−1, 3)²) → W^{1,p}(ℝ²)`, `w ↦ ψ w`
+extended by zero for a smooth `ψ` equal to `1` on the unit square and supported in `(−1, 3)²`,
+so that `E w = w` on the square and `‖E w‖_{L^p(ℝ²)} ≤ ‖w‖_{L^p((−1, 3)²)}`. -/
+theorem SobolevEuclidean.exists_extension_rect_cutoff :
+    ∃ E : SobolevEuclidean 2 1 p (EuclideanSpace.rect (-1) 3 (-1) 3) →L[ℝ]
+      SobolevEuclidean 2 1 p ⊤, ∀ w,
+      SobolevMultiIndex.fn (E w)
+        =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set _)] SobolevMultiIndex.fn w ∧
+      eLpNorm (SobolevMultiIndex.fn (E w)) p
+          (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin 2))) : Set _))
+        ≤ ENNReal.ofReal 1 * eLpNorm (SobolevMultiIndex.fn w) p
+          (volume.restrict (EuclideanSpace.rect (-1) 3 (-1) 3 : Set _)) := by
+  -- the cut-off
+  have hKc : IsCompact (closure (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))) :=
+    Metric.isCompact_of_isClosed_isBounded isClosed_closure
+      (((Metric.isBounded_iff_subset_closedBall 0).2
+        ⟨_, EuclideanSpace.rect_subset_closedBall 0 1 0 1⟩).closure)
+  have hKV : closure (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))
+      ⊆ EuclideanSpace.rect (-1) 3 (-1) 3 := fun x hx ↦ by
+    have h := EuclideanSpace.closure_rect_unit_subset hx
+    rw [SetLike.mem_coe, ← SetLike.mem_coe, EuclideanSpace.mem_rect]
+    exact ⟨by linarith [h.1], by linarith [h.2.1], by linarith [h.2.2.1], by linarith [h.2.2.2]⟩
+  obtain ⟨ψ, hψs, hψ1, hψsupp, hψ01⟩ :=
+    hKc.exists_contDiff_eqOn_one (EuclideanSpace.rect (-1) 3 (-1) 3).isOpen hKV
+  have hψc : HasCompactSupport ψ :=
+    IsCompact.of_isClosed_subset (isCompact_closedBall 0 _) (isClosed_tsupport ψ)
+      (hψsupp.trans (EuclideanSpace.rect_subset_closedBall (-1) 3 (-1) 3))
+  have hcut : IsSobolevCutoff (EuclideanSpace.rect (-1) 3 (-1) 3) ψ :=
+    IsSobolevCutoff.of_hasCompactSupport hψs hψc hψsupp
+  have hψM : ∀ x, |ψ x| ≤ 1 := fun x ↦
+    abs_le.2 ⟨by linarith [(hψ01 x).1], (hψ01 x).2⟩
+  have hΩ₄ : (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))
+      ⊆ EuclideanSpace.rect (-1) 3 (-1) 3 := fun x hx ↦ by
+    rw [EuclideanSpace.mem_rect] at hx ⊢
+    exact ⟨by linarith [hx.1], by linarith [hx.2.1], by linarith [hx.2.2.1],
+      by linarith [hx.2.2.2]⟩
+  refine ⟨SobolevMultiIndex.extendZeroMulL ℝ (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis p
+    volume hcut, fun w ↦ ⟨?_, ?_⟩⟩
+  · have h := (SobolevMultiIndex.fn_extendZeroMulL_restrict hcut w).filter_mono
+      (ae_mono (Measure.restrict_mono hΩ₄ le_rfl))
+    rw [EventuallyEq, ae_restrict_iff' (EuclideanSpace.rect 0 1 0 1).isOpen.measurableSet] at h ⊢
+    filter_upwards [h] with x hx hxΩ
+    rw [hx hxΩ, hψ1 (subset_closure hxΩ), Pi.one_apply, one_smul]
+  · rw [eLpNorm_restrict_coe_top]
+    exact SobolevMultiIndex.eLpNorm_fn_extendZeroMulL_le hcut hψM w
+
+/-- **Remark 9: the unit square has an extension operator**, although it is not of class `C^1`:
+for `Ω = (0, 1) × (0, 1) ⊆ ℝ²` (`EuclideanSpace.rect 0 1 0 1`) and `1 ≤ p ≤ ∞` there are a
+bounded linear `P : W^{1,p}(Ω) → W^{1,p}(ℝ²)` and a constant `C` with `P u = u` on `Ω`,
+`‖P u‖_{L^p(ℝ²)} ≤ C ‖u‖_{L^p(Ω)}` and `‖P u‖_{W^{1,p}(ℝ²)} ≤ C ‖u‖_{W^{1,p}(Ω)}`, the shape of
+`SobolevEuclidean.exists_extensionL`. By four successive reflections
+(`SobolevEuclidean.exists_reflectionStep`) — across `x_2 = 0`, `x_2 = 1`, `x_1 = 0`, `x_1 = 1`,
+reaching `W^{1,p}((−1, 3)²)` — followed by multiplication by a smooth `ψ` equal to `1` on the
+square and supported in `(−1, 3)²`, extended by zero (`SobolevMultiIndex.extendZeroMulL`).
+[brezis2011functional] Chapter 9, Remark 9 (Figure 6). -/
+theorem SobolevEuclidean.exists_extensionL_unitSquare :
+    ∃ (P : SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 0 1) →L[ℝ]
+        SobolevEuclidean 2 1 p ⊤) (C : ℝ),
+      ∀ u : SobolevEuclidean 2 1 p (EuclideanSpace.rect 0 1 0 1),
+        SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set _)]
+          SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
+          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set _)) ∧
+        ‖P u‖ ≤ C * ‖u‖ := by
+  refine SobolevEuclidean.exists_extensionL_of_steps ?_ ?_ ?_
+    (SobolevEuclidean.exists_extension_rect_step₁ (p := p))
+    (SobolevEuclidean.exists_extension_rect_step₂ (p := p))
+    (SobolevEuclidean.exists_extension_rect_step₃ (p := p))
+    (SobolevEuclidean.exists_extension_rect_step₄ (p := p))
+    (SobolevEuclidean.exists_extension_rect_cutoff (p := p))
+  · intro x hx
+    rw [EuclideanSpace.mem_rect] at hx ⊢
+    exact ⟨hx.1, hx.2.1, by linarith [hx.2.2.1], hx.2.2.2⟩
+  · intro x hx
+    rw [EuclideanSpace.mem_rect] at hx ⊢
+    exact ⟨hx.1, hx.2.1, by linarith [hx.2.2.1], by linarith [hx.2.2.2]⟩
+  · intro x hx
+    rw [EuclideanSpace.mem_rect] at hx ⊢
+    exact ⟨by linarith [hx.1], hx.2.1, by linarith [hx.2.2.1], by linarith [hx.2.2.2]⟩
+
+end Square

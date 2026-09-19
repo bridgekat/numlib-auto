@@ -47,6 +47,10 @@ id = "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii) ⇒ (ii)"
 
 [[node]]
+id = "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii) ⇒ (ii)"
+
+[[node]]
 id = "MemSobolev.of_tendsto_eLpNorm_of_eLpNorm_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 4 (i)"
 

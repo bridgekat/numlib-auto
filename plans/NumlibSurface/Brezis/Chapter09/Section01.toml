@@ -98,18 +98,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.1"
 
 [[node]]
 id = "remark_9_1"
-kind = "theorem"
-desc = '''Remark 1: `C_c^1(Ω)` test functions may be used in the definition — for `u ∈ W^{1,p}(Ω)`
-and `φ : EuclideanSpace ℝ (Fin N) → ℝ` of class `C^1` with compact support and `tsupport φ ⊆ Ω`,
-`∫_Ω u ∂_i φ = −∫_Ω (∂_i u) φ`. The backbone's
-`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` (`Numlib/Analysis/Sobolev/Cutoff`).
-Together with `sobolevSpace_iff` this is the equivalence of the book's definition (with `C_c^1`)
-and the surface's (with `𝓓(Ω)`), the equivalence decision D6 asks to record. ★
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 1"
 
-Blocked: the backbone dependency `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`
-(`Cutoff.toml`, Remark 1) is open; the surface node is its instance at `y = e_i` through
-`hasWeakIteratedLineDerivOn_partialDeriv` (five lines once it lands).'''
-deps = ["sobolevSpace", "HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one"]
+[[node]]
+id = "remark_9_1_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 1"
 
 [[node]]
@@ -173,6 +165,10 @@ id = "segment_subset_of_enorm_lt_edistFrontier"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii)"
 
 [[node]]
+id = "exists_pos_ofReal_le_edistFrontier"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3 (iii)"
+
+[[node]]
 id = "proposition_9_3_i_ii"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
@@ -186,41 +182,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
 id = "proposition_9_3_iii_ii"
-kind = "theorem"
-desc = '''Proposition 9.3, (iii) ⇒ (ii): for `u ∈ L^p(Ω)`, `1 < p ≤ ∞` (any `1 ≤ p ≤ ∞` in fact,
-Remark 6), if there is `C` with `‖τ_h u − u‖_{L^p(ω)} ≤ C ‖h‖` for every `ω ⊂⊂ Ω`
-(`IsStronglyIncluded ω Ω`) and every `h` with `‖h‖ₑ < edistFrontier ω Ω`, then
-`|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^{p'}(Ω)}` for every `φ ∈ 𝓓(Ω, ℝ)` and every `i` — stated as
-`proposition_9_3_i_ii` with `ENNReal.ofReal C` in place of `‖∇u‖_p`. ★
-
-Blocked: the backbone's `abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le` assumes the
-translation estimate for every `a` whose segments `[x, x + a]`, `x ∈ V`, stay in `Ω` — a wider
-class of `a` than the book's `|h| < dist(ω, ∂Ω)` (a long `a` along a thin `Ω`), so the book's
-(iii) does not feed it. Its proof uses only `‖t • y‖ ≤ ε` for the `ε` of
-`exists_pos_forall_closedBall_subset`; weaken its hypothesis to
-`∀ V, IsOpen V → IsCompact (closure V) → closure V ⊆ Ω → ∃ δ > 0, ∀ a, ‖a‖ < δ → eLpNorm (…) p (μ.restrict V) ≤ C * ‖a‖ₑ`
-(replace `set δ : ℝ := ε / (‖y‖ + 1)` by `min ε δ₀ / (‖y‖ + 1)`; the current statement follows
-with `δ := ε`), after which this node is `segment_subset_of_enorm_lt_edistFrontier` plus the
-positivity of `edistFrontier V Ω` for `V ⊂⊂ Ω` (compactness of `closure V`, ~30 lines).'''
-deps = ["sobolevSpace", "IsStronglyIncluded", "edistFrontier", "abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
 id = "proposition_9_3"
-kind = "theorem"
-desc = '''Proposition 9.3: for `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, the following are equivalent: (i) `u` is
-(the function of) an element of `W^{1,p}(Ω)`; (ii) there is `C` with
-`|∫_Ω u ∂_i φ| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ 𝓓(Ω, ℝ)` and all `i`; (iii) there is `C` such that
-for every `ω ⊂⊂ Ω` and every `h` with `‖h‖ₑ < edistFrontier ω Ω` (the book's
-`|h| < dist(ω, ∂Ω)`), `‖τ_h u − u‖_{L^p(ω)} ≤ C ‖h‖`; the `TFAE` of the three, the constants
-`C : ℝ` entering as `ENNReal.ofReal C`. The "furthermore, `C = ‖∇u‖_{L^p(Ω)}`" clauses are the
-proved clause nodes `proposition_9_3_i_ii` and `proposition_9_3_i_iii` (with
-`eLpNorm (gradient v) p (volume.restrict Ω)`), (ii) ⇒ (i) is `proposition_9_3_ii_i`, and the
-whole-space estimate is `proposition_9_3_univ`. ★★
-
-Blocked: on `proposition_9_3_iii_ii` (see its `Blocked:` line); the three other implications are
-proved and the `TFAE` is their assembly (~20 lines).'''
-deps = ["proposition_9_3_i_ii", "proposition_9_3_ii_i", "proposition_9_3_i_iii", "proposition_9_3_iii_ii"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
@@ -229,17 +194,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.3"
 
 [[node]]
 id = "remark_9_6"
-kind = "theorem"
-desc = '''Remark 6: when `p = 1` the implications (i) ⇒ (ii) ⇔ (iii) of Proposition 9.3 remain
-true — stated as (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii) at `p = 1` (`q = ∞`), the three
-backbone implications being valid for every `1 ≤ p ≤ ∞`: `proposition_9_3_i_ii` and
-`proposition_9_3_i_iii` are already stated for every `p`. The implication (ii) ⇒ (iii) at
-`p = 1` — that a function of bounded variation has the translation estimate — is the theory of
-`BV` functions and is not planned; the remark's discussion of `BV` has no node. ★
-
-Blocked: on `proposition_9_3_iii_ii` (its (iii) ⇒ (ii) clause); the other two clauses are the
-proved nodes at `p = 1`.'''
-deps = ["proposition_9_3_i_ii", "proposition_9_3_i_iii", "proposition_9_3_iii_ii"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 6"
 
 [[node]]

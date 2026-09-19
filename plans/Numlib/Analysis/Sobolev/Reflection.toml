@@ -29,27 +29,24 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8 (th
 
 [[node]]
 id = "eLpNorm_lastZero_le_of_contDiff"
-kind = "theorem"
-desc = '''**Lemma 9.9 (Comments on Chapter 9, 7, the trace inequality on the half space)**: for
-`1 ≤ p < ∞` and `u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ` of class `C^1` with compact support,
-`eLpNorm (fun x' : EuclideanSpace ℝ (Fin d) ↦ u (x', 0)) p volume ≤ C * (eLpNorm u p (volume.restrict (upperHalfSpace d)) + eLpNorm (fderiv ℝ u) p (volume.restrict (upperHalfSpace d)))`
-with `C = p^{1/p}` (or any explicit `C(p)`) — in the book's words,
-`(∫_{ℝ^{N-1}} |u(x', 0)|^p dx')^{1/p} ≤ C ‖u‖_{W^{1,p}(ℝ^N_+)}`. Proof ([brezis2011functional]
-Comments on Chapter 9, 7, proof of Lemma 9.9): with `G(t) = |t|^{p-1} t`,
-`G(u(x', 0)) = −∫_0^∞ ∂_N G(u(x', x_N)) dx_N` (fundamental theorem of calculus along the
-half-line, `u` compactly supported), so `|u(x',0)|^p ≤ p ∫_0^∞ |u|^{p-1} |∂_N u| dx_N ≤ (p−1) ∫_0^∞ |u|^p + ∫_0^∞ |∂_N u|^p`
-(Young's inequality `ab ≤ a^{p'}/p' + b^p/p`, Mathlib `Real.young_inequality_of_nonneg` in
-`Mathlib/Analysis/MeanInequalities.lean`), then integrate in `x'` by the Fubini splitting
-`EuclideanSpace.measurePreserving_lastInit`; at `p = 1` directly `|u(x',0)| ≤ ∫_0^∞ |∂_N u|`.
-The `C^1` regularity of `t ↦ |t|^{p−1} t` is `Real.rpow` calculus (`NormPow.lean` in
-`Numlib/Analysis/InnerProductSpace/` has `‖x‖^s`). A bounded task (≤ 300 lines, ★★) and the first
-move of `notes/frontier.md` blocker 2: extending it by density to `W^{1,p}(ℝ^N_+)` defines the
-trace on the flat boundary. The trace theory proper — (i)–(iv) of Comment 7, surface measure on a
-curved boundary — is not planned.
-
-Blocked: not attempted for lack of time (sob6, 2026-09-18); no consumer in the current plans; the route in the desc stands, ~300 lines (`G(t) = |t|^{p-1} t` calculus, fundamental theorem of calculus along the half-line, Young, Fubini through `EuclideanSpace.measurePreserving_lastInit`).'''
-deps = ["EuclideanSpace.measurePreserving_lastInit", "EuclideanSpace.upperHalfSpace"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 9, Lemma 9.9"
+
+[[node]]
+id = "lintegral_enorm_lastZero_rpow_le_of_contDiff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 9, Lemma 9.9"
+
+[[node]]
+id = "enorm_rpow_le_lintegral_Ioi_of_hasDerivAt"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 9, Lemma 9.9"
+
+[[node]]
+id = "Real.mul_rpow_sub_one_mul_le"
+
+[[node]]
+id = "EuclideanSpace.lintegral_upperHalfSpace_lastInit"
+
+[[node]]
+id = "EuclideanSpace.snocLast_mem_upperHalfSpace_iff"
 
 [[node]]
 id = "hyperplaneReflection"

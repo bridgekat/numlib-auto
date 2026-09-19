@@ -71,17 +71,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.2"
 
 [[node]]
 id = "remark_9_9"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 9: for the square `Ω = (0,1) × (0,1) ⊆ ℝ^2`, which is not of class `C^1`, there is
-nevertheless an extension operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^2)` with the three properties of
-Theorem 9.7, obtained by four reflections and a cut-off. The backbone's
-`SobolevEuclidean.exists_extensionL_unitSquare` (`Extension`). ★ (backbone ★★, low priority).
-
-Blocked: the backbone dependency `SobolevEuclidean.exists_extensionL_unitSquare`
-(`Extension.toml`, Remark 9) is open (sob6: not attempted, ~250 lines of bookkeeping with
-`evenReflectionL`, the affine `compDiffeoL` and `extendZeroMulL`); the surface node is
-`exists_extension_of_backbone` applied to it, once it lands.'''
-deps = ["sobolevSpace", "SobolevEuclidean.exists_extensionL_unitSquare"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
 
 [[node]]

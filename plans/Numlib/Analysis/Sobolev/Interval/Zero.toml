@@ -56,7 +56,15 @@ distinction `W_0^{2,p} ≠ W^{2,p} ∩ W_0^{1,p}` is the surface's `remark_8_18_
 Blocked: wave 2 (sob7) proved both directions on a bounded interval
 (`mem_sobolevIntervalLpZero_higher_iff_of_bounded`) and the forward direction on every `I`; the
 converse on an unbounded `I` needs the higher-order cut-off machinery listed above, which does not
-exist in the interval formulation (the product rule `SobolevIntervalLp.mul` is order one).'''
+exist in the interval formulation (the product rule `SobolevIntervalLp.mul` is order one). Wave 3
+(sob10, 2026-09-18): not attempted for lack of time. Since wave 2 the *membership*
+`ζ_n u ∈ W^{m+1,p}(I)` at every order is available through the multi-index bridge
+(`MemSobolevMultiIndex.indicator_smul_of_tsupport_subset` of `Cutoff.lean`, with `Ω' = Ω = I`
+and `α = ζ_n`), and the order-one tensor Leibniz rule is `HasWeakIteratedFDerivOn.contDiff_mul_one`;
+what is still missing is the Leibniz *formula* for `D^j (ζ_n u)`, `j ≤ m + 1` (needed both for
+`rep (D^j (ζ_n u)) = 0` at the finite endpoints of `I ∩ (−R_n, R_n)`, so that the bounded case
+applies there, and for the convergence `ζ_n u → u` in `W^{m+1,p}(I)`); a primitive-based route
+fails on an unbounded `I` because `∫_I Du` need not converge. ~300 lines.'''
 deps = ["SobolevIntervalLpZero", "mem_sobolevIntervalLpZero_higher_iff_of_bounded", "SobolevIntervalLpZero.rep_derivOne_frontier_eq_zero", "SobolevIntervalLp.tendsto_cutoff_smul", "SobolevIntervalLpZero.mem_of_rep_eq_zero_off_Ioo"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 18"
 

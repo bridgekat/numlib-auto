@@ -171,6 +171,23 @@ theorem theorem_9_7_halfSpace :
         bookNorm (P u) ≤ C * bookNorm u :=
   exists_extension_of_backbone SobolevEuclidean.exists_extensionL_upperHalfSpace
 
+/-- **Remark 9.** Lemma 9.2 gives a very simple construction of extension operators for certain
+open sets that are not of class `C^1`: for the square `Ω = {x ∈ ℝ² ; 0 < x_1 < 1, 0 < x_2 < 1}`
+(`EuclideanSpace.rect 0 1 0 1`) there is a linear extension operator
+`P : W^{1,p}(Ω) → W^{1,p}(ℝ²)`, `1 ≤ p ≤ ∞`, with the three properties of Theorem 9.7 — by four
+successive reflections (Figure 6) reaching `ũ ∈ W^{1,p}(Ω̃)`, `Ω̃ = (−1, 3)²`, followed by a
+cut-off: the backbone's `SobolevEuclidean.exists_extensionL_unitSquare`. -/
+theorem remark_9_9 :
+    ∃ (P : sobolevSpace 2 p (EuclideanSpace.rect 0 1 0 1) →L[ℝ] sobolevSpace 2 p ⊤) (C : ℝ),
+      ∀ u, SobolevMultiIndex.fn (P u)
+          =ᵐ[volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))]
+            SobolevMultiIndex.fn u ∧
+        eLpNorm (SobolevMultiIndex.fn (P u)) p volume
+          ≤ ENNReal.ofReal C * eLpNorm (SobolevMultiIndex.fn u) p
+            (volume.restrict (EuclideanSpace.rect 0 1 0 1 : Set (EuclideanSpace ℝ (Fin 2)))) ∧
+        bookNorm (P u) ≤ C * bookNorm u :=
+  exists_extension_of_backbone (d := 1) SobolevEuclidean.exists_extensionL_unitSquare
+
 /-! ### Lemma 9.2 -/
 
 /-- The reflection across `x_N = 0` fixes the basis vectors `e_i`, `i < N`, and sends `e_N` to

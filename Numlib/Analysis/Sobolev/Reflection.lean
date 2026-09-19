@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/Cutoff.lean` and `Numlib/Analysis/Sobolev/Calculus.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.InnerProductSpace.NormPow
 import Mathlib.Analysis.SpecialFunctions.SmoothTransition
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Numlib.Analysis.Sobolev.Calculus
@@ -49,10 +50,16 @@ to the even reflection of `∂_y u` for `y ⊥ v` and to the odd reflection of `
   **Theorem 9.7 for the half space**, and
   `SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalfSpace`, **Corollary
   9.8 on the half space**.
+* `eLpNorm_lastZero_le_of_contDiff`: **Lemma 9.9 (Comments on Chapter 9, 7)**, the trace
+  inequality `‖u(·, 0)‖_{L^p(ℝ^{N−1})} ≤ p^{1/p} (‖u‖_{L^p(ℝ^N_+)} + ‖∂_N u‖_{L^p(ℝ^N_+)})` for
+  `u ∈ C_c^1(ℝ^N)`, `1 ≤ p < ∞`, from the one-dimensional inequality
+  `enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` (the fundamental theorem of calculus for `|v|^p`
+  along a half-line and Young's inequality) and Fubini along the last coordinate.
 
 ## References
 
-[brezis2011functional], §9.2, Lemma 9.2 and the sentences after its proof; Remark 9.
+[brezis2011functional], §9.2, Lemma 9.2 and the sentences after its proof; Remark 9; Comments
+on Chapter 9, 7, Lemma 9.9.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
@@ -1462,3 +1469,252 @@ theorem SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_upperHalf
     IsSobolevExtensionDomain.upperHalfSpace ⟨u, Submodule.mem_top⟩
 
 end HalfSpace
+
+/-! ### Lemma 9.9: the trace inequality on the half space -/
+
+section Trace
+
+/-- **Young's inequality in the form `P a^{P−1} b ≤ (P − 1) a^P + b^P`**, `P > 1`, `a, b ≥ 0`. -/
+theorem Real.mul_rpow_sub_one_mul_le {P : ℝ} (hP : 1 < P) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    P * (a ^ (P - 1) * b) ≤ (P - 1) * a ^ P + b ^ P := by
+  have hpq := Real.HolderConjugate.conjExponent hP
+  have h := Real.young_inequality_of_nonneg hb (Real.rpow_nonneg ha (P - 1)) hpq
+  rw [← Real.rpow_mul ha, hpq.sub_one_mul_conj] at h
+  have hQ : 0 < Real.conjExponent P := hpq.symm.pos
+  have hP0 : 0 < P := hpq.pos
+  have e : P / Real.conjExponent P = P - 1 := hpq.div_conj_eq_sub_one
+  calc P * (a ^ (P - 1) * b) = P * (b * a ^ (P - 1)) := by ring
+    _ ≤ P * (b ^ P / P + a ^ P / Real.conjExponent P) := by gcongr
+    _ = b ^ P + (P / Real.conjExponent P) * a ^ P := by field_simp
+    _ = (P - 1) * a ^ P + b ^ P := by rw [e]; ring
+
+/-- **The one-dimensional trace inequality**: for a `C^1` function `v : ℝ → ℝ` vanishing beyond
+some `T`, with derivative `v'`, and `1 ≤ P < ∞`,
+`|v 0|^P ≤ ∫_0^∞ ((P − 1) |v|^P + |v'|^P)`. From `G(v(0)) = −∫_0^∞ (G ∘ v)'` with
+`G(t) = |t|^P` (for `P = 1`, `v(0) = −∫_0^∞ v'`) and Young's inequality
+`P |v|^{P−1} |v'| ≤ (P − 1) |v|^P + |v'|^P`. This is the line-by-line step of
+[brezis2011functional] Comments on Chapter 9, 7, proof of Lemma 9.9. -/
+theorem enorm_rpow_le_lintegral_Ioi_of_hasDerivAt {v v' : ℝ → ℝ} (hv : ContDiff ℝ 1 v)
+    (hv' : ∀ t, HasDerivAt v (v' t) t) (hv'c : Continuous v') {T : ℝ}
+    (hT : ∀ t, T ≤ t → v t = 0) {P : ℝ} (hP : 1 ≤ P) :
+    ‖v 0‖ₑ ^ P ≤ ∫⁻ t in Ioi (0 : ℝ),
+      (ENNReal.ofReal (P - 1) * ‖v t‖ₑ ^ P + ‖v' t‖ₑ ^ P) := by
+  -- a point beyond the support, on the right of `0`
+  obtain ⟨T', hT'0, hT'⟩ : ∃ T' : ℝ, 0 ≤ T' ∧ v T' = 0 :=
+    ⟨max T 0, le_max_right _ _, hT _ (le_max_left _ _)⟩
+  have hP0 : 0 < P := zero_lt_one.trans_le hP
+  rcases hP.eq_or_lt with rfl | hP1
+  · -- `P = 1`: the fundamental theorem of calculus for `v` itself
+    have hfund := intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ ↦ hv' t)
+      (hv'c.intervalIntegrable 0 T')
+    rw [hT', zero_sub] at hfund
+    simp only [ENNReal.rpow_one, sub_self, ENNReal.ofReal_zero, zero_mul, zero_add]
+    calc ‖v 0‖ₑ = ‖∫ t in Ioc 0 T', v' t‖ₑ := by
+          rw [← intervalIntegral.integral_of_le hT'0, hfund, enorm_neg]
+      _ ≤ ∫⁻ t in Ioc 0 T', ‖v' t‖ₑ := enorm_integral_le_lintegral_enorm _
+      _ ≤ ∫⁻ t in Ioi 0, ‖v' t‖ₑ := lintegral_mono_set Ioc_subset_Ioi_self
+  · -- `P > 1`: the fundamental theorem of calculus for `|v|^P`
+    set Φ : ℝ → ℝ := fun t ↦ ‖v t‖ ^ P with hΦdef
+    have hΦ : ContDiff ℝ 1 Φ := (contDiff_norm_rpow hP1).comp hv
+    have hΦd : ∀ t, HasDerivAt Φ (P * ‖v t‖ ^ (P - 2) * v t * v' t) t := fun t ↦
+      (hasDerivAt_norm_rpow (v t) hP1).comp t (hv' t)
+    have hΦ' : ∀ t, deriv Φ t = P * ‖v t‖ ^ (P - 2) * v t * v' t := fun t ↦ (hΦd t).deriv
+    have hΦc : Continuous (deriv Φ) := hΦ.continuous_deriv le_rfl
+    have hfund := intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (fun t _ ↦ (hΦ.differentiable one_ne_zero t).hasDerivAt) (hΦc.intervalIntegrable 0 T')
+    have hΦT : Φ T' = 0 := by simp [hΦdef, hT', Real.zero_rpow hP0.ne']
+    rw [hΦT, zero_sub] at hfund
+    -- the pointwise bound on the derivative
+    have hpt : ∀ t, ‖deriv Φ t‖ₑ
+        ≤ ENNReal.ofReal (P - 1) * ‖v t‖ₑ ^ P + ‖v' t‖ₑ ^ P := by
+      intro t
+      have h1 : ‖deriv Φ t‖ ≤ P * (‖v t‖ ^ (P - 1) * ‖v' t‖) := by
+        rw [hΦ' t]
+        rcases eq_or_ne (v t) 0 with h0 | h0
+        · simp [h0, Real.zero_rpow (by linarith : P - 1 ≠ 0)]
+        · have hpos : 0 < ‖v t‖ := norm_pos_iff.2 h0
+          rw [norm_mul, norm_mul, norm_mul, Real.norm_eq_abs P, abs_of_pos hP0,
+            Real.norm_eq_abs (‖v t‖ ^ (P - 2)), abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _)]
+          have e : ‖v t‖ ^ (P - 2) * ‖v t‖ = ‖v t‖ ^ (P - 1) := by
+            rw [← Real.rpow_add_one hpos.ne']
+            ring_nf
+          rw [mul_assoc, mul_assoc, ← mul_assoc (‖v t‖ ^ (P - 2)), e]
+      calc ‖deriv Φ t‖ₑ = ENNReal.ofReal ‖deriv Φ t‖ := (ofReal_norm _).symm
+        _ ≤ ENNReal.ofReal ((P - 1) * ‖v t‖ ^ P + ‖v' t‖ ^ P) :=
+          ENNReal.ofReal_le_ofReal (h1.trans
+            (Real.mul_rpow_sub_one_mul_le hP1 (norm_nonneg _) (norm_nonneg _)))
+        _ = ENNReal.ofReal (P - 1) * ‖v t‖ₑ ^ P + ‖v' t‖ₑ ^ P := by
+          rw [ENNReal.ofReal_add (by positivity) (by positivity), ENNReal.ofReal_mul (by linarith),
+            ← ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) hP0.le,
+            ← ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) hP0.le, ofReal_norm, ofReal_norm]
+    calc ‖v 0‖ₑ ^ P = ‖Φ 0‖ₑ := by
+          simp only [hΦdef]
+          rw [← ofReal_norm (‖v 0‖ ^ P), Real.norm_eq_abs (‖v 0‖ ^ P),
+            abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _),
+            ← ENNReal.ofReal_rpow_of_nonneg (norm_nonneg _) hP0.le, ofReal_norm]
+      _ = ‖∫ t in Ioc 0 T', deriv Φ t‖ₑ := by
+          rw [← intervalIntegral.integral_of_le hT'0, hfund, enorm_neg]
+      _ ≤ ∫⁻ t in Ioc 0 T', ‖deriv Φ t‖ₑ := enorm_integral_le_lintegral_enorm _
+      _ ≤ ∫⁻ t in Ioi 0, ‖deriv Φ t‖ₑ := lintegral_mono_set Ioc_subset_Ioi_self
+      _ ≤ ∫⁻ t in Ioi 0, (ENNReal.ofReal (P - 1) * ‖v t‖ₑ ^ P + ‖v' t‖ₑ ^ P) :=
+          lintegral_mono hpt
+
+variable {d : ℕ} {p : ℝ≥0∞}
+
+/-- The upper half space in the last-coordinate splitting: `(x', t) ∈ ℝ^N_+ ↔ 0 < t`. -/
+theorem EuclideanSpace.snocLast_mem_upperHalfSpace_iff {x' : EuclideanSpace ℝ (Fin d)} {t : ℝ} :
+    EuclideanSpace.snocLast x' t ∈ EuclideanSpace.upperHalfSpace d ↔ 0 < t := by
+  simp [EuclideanSpace.mem_upperHalfSpace]
+
+/-- Fubini along the last coordinate on the upper half space:
+`∫_{ℝ^N_+} f = ∫_{ℝ^{N−1}} ∫_0^∞ f(x', t) dt dx'`. -/
+theorem EuclideanSpace.lintegral_upperHalfSpace_lastInit (f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ≥0∞)
+    (hf : AEMeasurable f) :
+    ∫⁻ x in EuclideanSpace.upperHalfSpace d, f x
+      = ∫⁻ x', ∫⁻ t in Ioi (0 : ℝ), f (EuclideanSpace.snocLast x' t) := by
+  have hm : MeasurableSet (EuclideanSpace.upperHalfSpace d) :=
+    EuclideanSpace.isOpen_upperHalfSpace.measurableSet
+  rw [← lintegral_indicator hm, EuclideanSpace.lintegral_lastInit _ (hf.indicator hm)]
+  refine lintegral_congr fun x' ↦ ?_
+  rw [← lintegral_indicator measurableSet_Ioi]
+  refine lintegral_congr fun t ↦ ?_
+  by_cases ht : 0 < t
+  · rw [Set.indicator_of_mem (Set.mem_Ioi.2 ht),
+      Set.indicator_of_mem (EuclideanSpace.snocLast_mem_upperHalfSpace_iff.2 ht)]
+  · rw [Set.indicator_of_notMem (mt Set.mem_Ioi.1 ht),
+      Set.indicator_of_notMem (mt EuclideanSpace.snocLast_mem_upperHalfSpace_iff.1 ht)]
+
+/-- **Lemma 9.9, the `p`-th power form**: for `u : ℝ^{d+1} → ℝ` of class `C^1` with compact
+support and `1 ≤ p < ∞`,
+`∫_{ℝ^{N−1}} |u(x', 0)|^p dx' ≤ (p − 1) ∫_{ℝ^N_+} |u|^p + ∫_{ℝ^N_+} |∂_N u|^p`,
+`∂_N u = fderiv ℝ u · e_N`: the one-dimensional inequality
+`enorm_rpow_le_lintegral_Ioi_of_hasDerivAt` on each line `x' + t e_N`, integrated in `x'`
+by Fubini (`EuclideanSpace.lintegral_upperHalfSpace_lastInit`). [brezis2011functional] Comments
+on Chapter 9, 7, proof of Lemma 9.9. -/
+theorem lintegral_enorm_lastZero_rpow_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hu : ContDiff ℝ 1 u) (huc : HasCompactSupport u) :
+    ∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal
+      ≤ ENNReal.ofReal (p.toReal - 1)
+          * (∫⁻ x in EuclideanSpace.upperHalfSpace d, ‖u x‖ₑ ^ p.toReal)
+        + ∫⁻ x in EuclideanSpace.upperHalfSpace d,
+            ‖fderiv ℝ u x (EuclideanSpace.single (Fin.last d) 1)‖ₑ ^ p.toReal := by
+  set e : EuclideanSpace ℝ (Fin (d + 1)) := EuclideanSpace.single (Fin.last d) 1 with hedef
+  set g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ := fun x ↦ fderiv ℝ u x e with hgdef
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have hP1 : 1 ≤ p.toReal := by
+    rw [← ENNReal.toReal_one]
+    exact ENNReal.toReal_mono hp' hp
+  have huc' : Continuous u := hu.continuous
+  have hgc : Continuous g := (hu.continuous_fderiv one_ne_zero).clm_apply continuous_const
+  -- `u` vanishes beyond a radius `R`
+  obtain ⟨R, -, hR⟩ := huc.exists_pos_le_norm
+  -- the lines `t ↦ u (x', t)`
+  have hline : ∀ x' : EuclideanSpace ℝ (Fin d),
+      ContDiff ℝ 1 fun t : ℝ ↦ u (EuclideanSpace.snocLast x' t) := fun x' ↦
+    hu.comp ((EuclideanSpace.lastInitL d).symm.contDiff.comp
+      (contDiff_id.prodMk contDiff_const))
+  have hderiv : ∀ (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ),
+      HasDerivAt (fun s ↦ u (EuclideanSpace.snocLast x' s))
+        (g (EuclideanSpace.snocLast x' t)) t := by
+    intro x' t
+    have h1 : HasDerivAt (fun s : ℝ ↦ EuclideanSpace.snocLast x' s) e t := by
+      have h := ((EuclideanSpace.lastInitL d).symm.hasFDerivAt (x := (t, x'))).comp_hasDerivAt t
+        ((hasDerivAt_id t).prodMk (hasDerivAt_const t x'))
+      refine h.congr_deriv ?_
+      ext i
+      induction i using Fin.lastCases <;> simp [hedef, EuclideanSpace.snocLast, Fin.snoc,
+        Fin.castSucc_ne_last]
+    have h2 := (hu.differentiable one_ne_zero (EuclideanSpace.snocLast x' t)).hasFDerivAt
+    exact h2.comp_hasDerivAt t h1
+  have hvanish : ∀ (x' : EuclideanSpace ℝ (Fin d)) (t : ℝ), R ≤ t →
+      u (EuclideanSpace.snocLast x' t) = 0 := fun x' t ht ↦ by
+    refine hR _ (ht.trans ?_)
+    calc t ≤ ‖t‖ := (le_abs_self t).trans_eq (Real.norm_eq_abs t).symm
+      _ = ‖EuclideanSpace.snocLast x' t (Fin.last d)‖ := by simp
+      _ ≤ ‖EuclideanSpace.snocLast x' t‖ := PiLp.norm_apply_le _ _
+  -- the one-dimensional inequality on each line
+  have hpt : ∀ x' : EuclideanSpace ℝ (Fin d),
+      ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal
+        ≤ ∫⁻ t in Ioi (0 : ℝ), (ENNReal.ofReal (p.toReal - 1)
+            * ‖u (EuclideanSpace.snocLast x' t)‖ₑ ^ p.toReal
+          + ‖g (EuclideanSpace.snocLast x' t)‖ₑ ^ p.toReal) := fun x' ↦
+    enorm_rpow_le_lintegral_Ioi_of_hasDerivAt (hline x') (hderiv x')
+      (hgc.comp (EuclideanSpace.continuous_snocLast.comp (Continuous.prodMk_right x')))
+      (hvanish x') hP1
+  -- Fubini
+  have hum : AEMeasurable fun x ↦ ‖u x‖ₑ ^ p.toReal :=
+    (huc'.measurable.enorm.pow_const _).aemeasurable
+  have hgm : AEMeasurable fun x ↦ ‖g x‖ₑ ^ p.toReal :=
+    (hgc.measurable.enorm.pow_const _).aemeasurable
+  calc ∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal
+      ≤ ∫⁻ x', ∫⁻ t in Ioi (0 : ℝ), (ENNReal.ofReal (p.toReal - 1)
+          * ‖u (EuclideanSpace.snocLast x' t)‖ₑ ^ p.toReal
+          + ‖g (EuclideanSpace.snocLast x' t)‖ₑ ^ p.toReal) := lintegral_mono hpt
+    _ = ∫⁻ x in EuclideanSpace.upperHalfSpace d,
+          (ENNReal.ofReal (p.toReal - 1) * ‖u x‖ₑ ^ p.toReal + ‖g x‖ₑ ^ p.toReal) :=
+        (EuclideanSpace.lintegral_upperHalfSpace_lastInit _
+          ((hum.const_mul _).add hgm)).symm
+    _ = ENNReal.ofReal (p.toReal - 1) * (∫⁻ x in EuclideanSpace.upperHalfSpace d, ‖u x‖ₑ ^ p.toReal)
+          + ∫⁻ x in EuclideanSpace.upperHalfSpace d, ‖g x‖ₑ ^ p.toReal := by
+        rw [lintegral_add_left' (hum.const_mul _).restrict, lintegral_const_mul'' _ hum.restrict]
+
+/-- **Lemma 9.9 (Comments on Chapter 9, 7): the trace inequality on the half space.** For
+`1 ≤ p < ∞` there is a constant `C = p^{1/p}` such that, for every `u : ℝ^{d+1} → ℝ` of class
+`C^1` with compact support,
+`(∫_{ℝ^{N−1}} |u(x', 0)|^p dx')^{1/p} ≤ C (‖u‖_{L^p(ℝ^N_+)} + ‖∂_N u‖_{L^p(ℝ^N_+)})`,
+`∂_N u = fderiv ℝ u · e_N`, so that `u ↦ u(·, 0)` is bounded from `C_c^1(ℝ^N)` with the
+`W^{1,p}(ℝ^N_+)` norm to `L^p(ℝ^{N−1})`. The `p`-th power form is
+`lintegral_enorm_lastZero_rpow_le_of_contDiff`. [brezis2011functional] Comments on Chapter 9, 7,
+Lemma 9.9. -/
+theorem eLpNorm_lastZero_le_of_contDiff (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ} (hu : ContDiff ℝ 1 u) (huc : HasCompactSupport u) :
+    eLpNorm (fun x' : EuclideanSpace ℝ (Fin d) ↦ u (EuclideanSpace.snocLast x' 0)) p volume
+      ≤ ENNReal.ofReal p.toReal ^ (1 / p.toReal)
+        * (eLpNorm u p (volume.restrict (EuclideanSpace.upperHalfSpace d))
+          + eLpNorm (fun x ↦ fderiv ℝ u x (EuclideanSpace.single (Fin.last d) 1)) p
+            (volume.restrict (EuclideanSpace.upperHalfSpace d))) := by
+  set g : EuclideanSpace ℝ (Fin (d + 1)) → ℝ :=
+    fun x ↦ fderiv ℝ u x (EuclideanSpace.single (Fin.last d) 1) with hgdef
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have hP : 0 < p.toReal := ENNReal.toReal_pos hp0 hp'
+  have hP1 : 1 ≤ p.toReal := by
+    rw [← ENNReal.toReal_one]
+    exact ENNReal.toReal_mono hp' hp
+  have huc' : Continuous u := hu.continuous
+  have hgc : Continuous g := (hu.continuous_fderiv one_ne_zero).clm_apply continuous_const
+  have hu0c : Continuous fun x' : EuclideanSpace ℝ (Fin d) ↦ u (EuclideanSpace.snocLast x' 0) :=
+    huc'.comp (EuclideanSpace.continuous_snocLast.comp (continuous_id.prodMk continuous_const))
+  set S : ℝ≥0∞ := eLpNorm u p (volume.restrict (EuclideanSpace.upperHalfSpace d))
+    + eLpNorm g p (volume.restrict (EuclideanSpace.upperHalfSpace d)) with hSdef
+  -- the `p`-th powers of the two norms on the half space are the integrals
+  have hpow : ∀ f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous f →
+      (∫⁻ x in EuclideanSpace.upperHalfSpace d, ‖f x‖ₑ ^ p.toReal)
+        = eLpNorm f p (volume.restrict (EuclideanSpace.upperHalfSpace d)) ^ p.toReal := by
+    intro f hf
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp' hf.aestronglyMeasurable, ← ENNReal.rpow_mul,
+      one_div_mul_cancel hP.ne', ENNReal.rpow_one]
+  have hmain := lintegral_enorm_lastZero_rpow_le_of_contDiff hp hp' hu huc
+  rw [hpow u huc', hpow g hgc] at hmain
+  have hS : ∀ f : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+      eLpNorm f p (volume.restrict (EuclideanSpace.upperHalfSpace d)) ≤ S →
+      eLpNorm f p (volume.restrict (EuclideanSpace.upperHalfSpace d)) ^ p.toReal
+        ≤ S ^ p.toReal := fun f hf ↦ ENNReal.rpow_le_rpow hf hP.le
+  have hbound : (∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal)
+      ≤ ENNReal.ofReal p.toReal * S ^ p.toReal := by
+    calc (∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal)
+        ≤ ENNReal.ofReal (p.toReal - 1) * S ^ p.toReal + S ^ p.toReal :=
+          hmain.trans (add_le_add (mul_le_mul' le_rfl (hS u (le_add_right le_rfl)))
+            (hS g (le_add_left le_rfl)))
+      _ = ENNReal.ofReal p.toReal * S ^ p.toReal := by
+          rw [← add_one_mul, ← ENNReal.ofReal_one, ← ENNReal.ofReal_add (by linarith) zero_le_one,
+            sub_add_cancel]
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hp0 hp' hu0c.aestronglyMeasurable]
+  calc (∫⁻ x' : EuclideanSpace ℝ (Fin d), ‖u (EuclideanSpace.snocLast x' 0)‖ₑ ^ p.toReal)
+        ^ (1 / p.toReal)
+      ≤ (ENNReal.ofReal p.toReal * S ^ p.toReal) ^ (1 / p.toReal) :=
+        ENNReal.rpow_le_rpow hbound (by positivity)
+    _ = ENNReal.ofReal p.toReal ^ (1 / p.toReal) * S := by
+        rw [ENNReal.mul_rpow_of_nonneg _ _ (by positivity), ← ENNReal.rpow_mul,
+          mul_one_div_cancel hP.ne', ENNReal.rpow_one]
+
+end Trace

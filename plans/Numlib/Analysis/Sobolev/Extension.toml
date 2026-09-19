@@ -24,22 +24,67 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.8"
 
 [[node]]
 id = "SobolevEuclidean.exists_extensionL_unitSquare"
-kind = "theorem"
-desc = '''**Remark 9 (the square by four reflections)**: for `Ω = (0,1) × (0,1) ⊆ ℝ^2`
-(`{x | 0 < x 0 ∧ x 0 < 1 ∧ 0 < x 1 ∧ x 1 < 1}` as an `Opens (EuclideanSpace ℝ (Fin 2))`) and
-`1 ≤ p ≤ ∞`, there are `P` and `C` as in `SobolevEuclidean.exists_extensionL` although `Ω` is
-not of class `C^1`. Proof ([brezis2011functional] §9.2, Remark 9, Figure 6): reflect across
-`x_2 = 0` (Lemma 9.2 with `v = e_2`, `V = (0,1) × (−1,1)`), then across `x_2 = 1` after
-translating (the translation `x ↦ x − e_2` acts on `W^{1,p}` by
-`HasWeakIteratedFDerivOn.comp_affineEquiv`), then across `x_1 = 0` and `x_1 = 1` with `v = e_1`,
-reaching `ũ ∈ W^{1,p}((−1,3)^2)`; multiply by `ψ ∈ C_c^∞((−1,3)^2)` with `ψ = 1` on `Ω` and
-extend by zero (`extendZeroMulL`). All linear, all bounded. ★★, ~250 lines; low priority — no
-consumer, the general reflection lemma of `Reflection.lean` makes it cheap and the remark
-explicitly displays it. Not extended to general rectangles or boxes, though the same proof
-would.
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
 
-Blocked: not attempted (sob6, 2026-09-18; low priority per the desc). Every ingredient is now in place: `SobolevEuclidean.evenReflectionL` for the four reflections (the cube lemmas `hyperplaneReflection_image_unitChartCube` and `coe_posHalf_unitChartCubeOpens` of this module show how `σ '' V = V` is verified for a box), `HasWeakIteratedFDerivOn.comp_affineEquiv` for the translations, `SobolevMultiIndex.extendZeroMulL` for the final cut-off; ~250 lines of bookkeeping.'''
-deps = ["SobolevEuclidean.evenReflectionL", "HasWeakIteratedFDerivOn.comp_affineEquiv", "SobolevMultiIndex.extendZeroMulL", "SobolevEuclidean"]
+[[node]]
+id = "SobolevEuclidean.extension_step_comp"
+
+[[node]]
+id = "SobolevEuclidean.exists_reflectionStep_of_ops"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_reflectionStep"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_ops'"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_steps"
+
+[[node]]
+id = "hyperplaneReflection_single_apply"
+
+[[node]]
+id = "hyperplaneReflection_neg"
+
+[[node]]
+id = "Function.Involutive.image_eq_of_forall_mem_iff"
+
+[[node]]
+id = "EuclideanSpace.rect"
+
+[[node]]
+id = "EuclideanSpace.mem_rect"
+
+[[node]]
+id = "EuclideanSpace.norm_le_abs_add_abs"
+
+[[node]]
+id = "EuclideanSpace.rect_subset_closedBall"
+
+[[node]]
+id = "EuclideanSpace.closure_rect_unit_subset"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_rect_step₁"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_rect_step₂"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_rect_step₃"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_rect_step₄"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_rect_cutoff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9"
 
 [[node]]

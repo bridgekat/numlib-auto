@@ -29,12 +29,13 @@ The backbone theorems are stated over a general finite-dimensional space with a 
 `HasWeakFDerivOn` / `MemSobolev` / `MemSobolevMultiIndex` readings; the surface instantiates them on
 `ℝ^N` and converts between the tensor gradient and the partial derivatives
 (`exists_hasWeakFDerivOn_fn_gradient`). Test functions are `𝓓(Ω, ℝ) = C_c^∞(Ω)`; Remark 1, that
-`C_c^1(Ω)` may be used instead, is planned but waits on its backbone lemma.
+`C_c^1(Ω)` may be used instead, is `remark_9_1` and `remark_9_1_iff`.
 
 ## Main results
 
 * `sobolevSpace`, `sobolevSpace_iff`, `partialDeriv`, `partialDeriv_spec`, `gradient` — the
-  Definition; `hSpace`, `hInner`, `hNorm` — `H^1(Ω)`; `bookNorm`, `bookNorm_equiv` — the norm.
+  Definition; `remark_9_1`, `remark_9_1_iff` — `C_c^1` test functions; `hSpace`, `hInner`,
+  `hNorm` — `H^1(Ω)`; `bookNorm`, `bookNorm_equiv` — the norm.
 * `proposition_9_1` — `W^{1,p}(Ω)` is a Banach space, reflexive for `1 < p < ∞`, separable for
   `p < ∞`; `H^1(Ω)` is a separable Hilbert space.
 * `remark_9_2`, `remark_9_2_closure`, `remark_9_2_converse` — `C^1` functions in `W^{1,p}`, and
@@ -43,10 +44,10 @@ The backbone theorems are stated over a general finite-dimensional space with a 
   under `L^p` limits, and the extension by zero of `α u`.
 * `IsStronglyIncluded`, `theorem_9_2`, `theorem_9_2_univ`, `lemma_9_1`, `remark_9_5` — Friedrichs'
   theorem, convolution with an `L^1` kernel, Meyers–Serrin.
-* `proposition_9_3_i_ii`, `proposition_9_3_ii_i`, `proposition_9_3_i_iii`, `proposition_9_3_univ`
-  — the characterizations of `W^{1,p}` (the direction (iii) ⇒ (ii), and hence the equivalence,
-  waits on a backbone generalization); `remark_9_7`, `remark_9_7_convex`, `remark_9_7_const` —
-  `W^{1,∞}` and Lipschitz functions.
+* `proposition_9_3` (the `TFAE`), `proposition_9_3_i_ii`, `proposition_9_3_ii_i`,
+  `proposition_9_3_i_iii`, `proposition_9_3_iii_ii`, `proposition_9_3_univ`, `remark_9_6` — the
+  characterizations of `W^{1,p}`, with the book's `dist(ω, ∂Ω)` as `edistFrontier`;
+  `remark_9_7`, `remark_9_7_convex`, `remark_9_7_const` — `W^{1,∞}` and Lipschitz functions.
 * `proposition_9_4`, `proposition_9_5`, `proposition_9_6` — products, compositions, change of
   variables.
 * `sobolevSpaceHigher`, `sobolevSpaceHigher_iff`, `sobolevSpaceHigher_iff_inductive`,
@@ -245,6 +246,51 @@ theorem sobolevSpace_iff (u : 𝔼 → ℝ) :
         ((hgp i).locallyIntegrableOn hp) fun φ ↦ hg φ i) hgp
     exact ⟨v, hv⟩
 
+
+/-! ### Remark 1: `C_c^1` test functions -/
+
+omit [Fact (1 ≤ p)] in
+/-- **Remark 1.** In the definition of `W^{1,p}(Ω)` the test functions may be taken in `C_c^1(Ω)`
+instead of `C_c^∞(Ω)`: for `u ∈ W^{1,p}(Ω)` and `φ : ℝ^N → ℝ` of class `C^1` with compact
+support contained in `Ω`, `∫_Ω u ∂φ/∂x_i = −∫_Ω (∂u/∂x_i) φ` — the identity `partialDeriv_spec`
+for a `C_c^1` test function, the backbone's
+`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` ("use a sequence of
+mollifiers"). `remark_9_1_iff` is the resulting equivalence of the two definitions. -/
+theorem remark_9_1 (u : sobolevSpace N p Ω) (i : Fin N) {φ : 𝔼 → ℝ} (hφ : ContDiff ℝ 1 φ)
+    (hφc : HasCompactSupport φ) (hφΩ : tsupport φ ⊆ Ω) :
+    ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+      = -∫ x in (Ω : Set 𝔼), partialDeriv u i x * φ x := by
+  have hs := Ω.isOpen.measurableSet
+  have h := (hasWeakIteratedLineDerivOn_partialDeriv u i).integral_smul_eq_of_contDiff_one hφ
+    hφc hφΩ
+  refine (setIntegral_congr_fun hs fun x _ ↦ ?_).trans (h.trans ?_)
+  · rw [smul_eq_mul, mul_comm]
+  · congr 1
+    exact setIntegral_congr_fun hs fun x _ ↦ by rw [smul_eq_mul, mul_comm]
+
+/-- **Remark 1, as the equivalence of the two definitions.** A function `u : ℝ^N → ℝ` is (almost
+everywhere on `Ω`) the function of an element of `W^{1,p}(Ω)` if and only if `u ∈ L^p(Ω)` and
+there are `g_1, …, g_N ∈ L^p(Ω)` with `∫_Ω u ∂φ/∂x_i = −∫_Ω g_i φ` for every `φ ∈ C_c^1(Ω)` and
+every `i` — the Definition of `W^{1,p}(Ω)` with `C_c^1(Ω)` in place of `C_c^∞(Ω)`
+(`sobolevSpace_iff`): every `C_c^∞(Ω)` function is `C_c^1`, and `remark_9_1` gives the
+identities for `C_c^1(Ω)` from those for `C_c^∞(Ω)`. -/
+theorem remark_9_1_iff (u : 𝔼 → ℝ) :
+    (∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
+      MemLp u p (volume.restrict (Ω : Set 𝔼)) ∧ ∃ g : Fin N → 𝔼 → ℝ,
+        (∀ i, MemLp (g i) p (volume.restrict (Ω : Set 𝔼))) ∧
+        ∀ φ : 𝔼 → ℝ, ContDiff ℝ 1 φ → HasCompactSupport φ → tsupport φ ⊆ Ω → ∀ i : Fin N,
+          ∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+            = -∫ x in (Ω : Set 𝔼), g i x * φ x := by
+  have hs := Ω.isOpen.measurableSet
+  constructor
+  · rintro ⟨v, hv⟩
+    refine ⟨(SobolevMultiIndex.memLp v).ae_eq hv, fun i ↦ partialDeriv v i, fun i ↦ Lp.memLp _,
+      fun φ hφ hφc hφΩ i ↦ ?_⟩
+    rw [← remark_9_1 v i hφ hφc hφΩ]
+    exact setIntegral_congr_ae hs ((ae_restrict_iff' hs).1 (hv.mono fun x hx ↦ by rw [hx]))
+  · rintro ⟨hu, g, hgp, hg⟩
+    exact (sobolevSpace_iff u).2 ⟨hu, g, hgp, fun φ i ↦
+      hg φ (φ.contDiff.of_le (by simp)) φ.hasCompactSupport φ.tsupport_subset i⟩
 
 /-! ### `H^1(Ω)` -/
 
@@ -916,6 +962,113 @@ theorem proposition_9_3_univ (u : sobolevSpace N p ⊤) (h : 𝔼) :
   · exact hw.eLpNorm_sub_translate_le_univ
       (by simpa [Measure.restrict_coe_top] using SobolevMultiIndex.memLp u)
       (by simpa [Measure.restrict_coe_top] using hwp) Fact.out hp' h
+
+/-- **The distance `dist(ω, ∂Ω)` is positive for `ω ⊂⊂ Ω`**: there is `δ > 0` with
+`δ ≤ dist(ω, ∂Ω)`, since the compact set `ω̄ ⊆ Ω` has a `δ`-thickening inside the open set `Ω`,
+which its boundary avoids. -/
+theorem exists_pos_ofReal_le_edistFrontier {V : Set 𝔼} (hV : IsStronglyIncluded V Ω) :
+    ∃ δ : ℝ, 0 < δ ∧ ENNReal.ofReal δ ≤ edistFrontier V Ω := by
+  obtain ⟨δ, hδ, hδΩ⟩ := hV.2.2.exists_thickening_subset_open Ω.isOpen hV.2.1
+  refine ⟨δ, hδ, le_iInf₂ fun x hx ↦ Metric.le_infEDist.2 fun z hz ↦ ?_⟩
+  by_contra hlt
+  rw [not_le] at hlt
+  have hz' : z ∈ thickening δ (closure V) :=
+    mem_thickening_iff.2 ⟨x, subset_closure hx, by rwa [dist_comm, ← edist_lt_ofReal]⟩
+  refine hz.2 ?_
+  rw [Ω.isOpen.interior_eq]
+  exact hδΩ hz'
+
+omit [Fact (1 ≤ p)] in
+/-- **Proposition 9.3, (iii) ⇒ (ii).** Let `u ∈ L^p(Ω)`, `1 ≤ p ≤ ∞`, `q` the conjugate exponent.
+If there is a constant `C` such that `‖τ_h u − u‖_{L^p(ω)} ≤ C |h|` for every `ω ⊂⊂ Ω` and every
+`h ∈ ℝ^N` with `|h| < dist(ω, ∂Ω)`, then `|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{p'}` for every `φ ∈ C_c^∞(Ω)`
+and every `i`. The book's proof: with `supp φ ⊆ ω ⊂⊂ Ω` and `h = t e_i`, `t` small, the change of
+variables `∫_Ω (τ_h u − u) φ = ∫_Ω u (φ(· − h) − φ)` and Hölder's inequality bound the difference
+quotients of `φ` against `u` by `C ‖φ‖_{p'}`, and `t → 0` gives (ii) — the backbone's
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`, fed with the
+positivity of `dist(ω, ∂Ω)` (`exists_pos_ofReal_le_edistFrontier`). -/
+theorem proposition_9_3_iii_ii {q : ℝ≥0∞} [p.HolderConjugate q] {u : 𝔼 → ℝ}
+    (hu : MemLp u p (volume.restrict Ω)) {C : ℝ}
+    (h : ∀ V : Set 𝔼, IsStronglyIncluded V Ω → ∀ h : 𝔼, ‖h‖ₑ < edistFrontier V Ω →
+      eLpNorm (fun x ↦ u (x + h) - u x) p (volume.restrict V) ≤ ENNReal.ofReal C * ‖h‖ₑ)
+    (φ : 𝓓(Ω, ℝ)) (i : Fin N) :
+    ‖∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x (EuclideanSpace.single i 1)‖ₑ
+      ≤ ENNReal.ofReal C * eLpNorm φ q (volume.restrict Ω) := by
+  have key := abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt (q := q) hu
+    (C := ENNReal.ofReal C) (fun V hVo hVc hVΩ ↦ ?_) φ (EuclideanSpace.single i 1)
+  · have h1 : ‖(EuclideanSpace.single i (1 : ℝ) : 𝔼)‖ₑ = 1 := by
+      rw [← ofReal_norm]
+      simp
+    rw [h1, mul_one] at key
+    refine le_of_eq_of_le ?_ key
+    congr 1
+    exact setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ by rw [smul_eq_mul, mul_comm]
+  · obtain ⟨δ, hδ, hδV⟩ := exists_pos_ofReal_le_edistFrontier ⟨hVo, hVΩ, hVc⟩
+    refine ⟨δ, hδ, fun a ha ↦ h V ⟨hVo, hVΩ, hVc⟩ a ?_⟩
+    calc ‖a‖ₑ < ENNReal.ofReal δ := by rwa [← ofReal_norm, ENNReal.ofReal_lt_ofReal_iff hδ]
+      _ ≤ edistFrontier V Ω := hδV
+
+/-- **Proposition 9.3.** Let `u ∈ L^p(Ω)` with `1 < p ≤ ∞` (`q` the conjugate exponent). The
+following properties are equivalent: (i) `u ∈ W^{1,p}(Ω)`, that is, `u` is almost everywhere on
+`Ω` the function of an element of `W^{1,p}(Ω)`; (ii) there is a constant `C` such that
+`|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ C_c^∞(Ω)` and all `i = 1, …, N`; (iii) there
+is a constant `C` such that for all `ω ⊂⊂ Ω` and all `h ∈ ℝ^N` with `|h| < dist(ω, ∂Ω)`,
+`‖τ_h u − u‖_{L^p(ω)} ≤ C |h|`. "Furthermore, we can take `C = ‖∇u‖_{L^p(Ω)}` in (ii) and (iii)"
+is `proposition_9_3_i_ii` and `proposition_9_3_i_iii`, and the case `Ω = ℝ^N` is
+`proposition_9_3_univ`. -/
+theorem proposition_9_3 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p) {u : 𝔼 → ℝ}
+    (hu : MemLp u p (volume.restrict Ω)) :
+    [∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u,
+      ∃ C : ℝ, ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
+        ‖∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x (EuclideanSpace.single i 1)‖ₑ
+          ≤ ENNReal.ofReal C * eLpNorm φ q (volume.restrict Ω),
+      ∃ C : ℝ, ∀ V : Set 𝔼, IsStronglyIncluded V Ω → ∀ h : 𝔼, ‖h‖ₑ < edistFrontier V Ω →
+        eLpNorm (fun x ↦ u (x + h) - u x) p (volume.restrict V)
+          ≤ ENNReal.ofReal C * ‖h‖ₑ].TFAE := by
+  tfae_have 1 → 2 := by
+    rintro ⟨v, hv⟩
+    refine ⟨(eLpNorm (gradient v) p (volume.restrict Ω)).toReal, fun φ i ↦ ?_⟩
+    rw [ENNReal.ofReal_toReal (memLp_gradient v).eLpNorm_ne_top]
+    refine le_of_eq_of_le ?_ (proposition_9_3_i_ii v φ i)
+    congr 1
+    exact integral_congr_ae (hv.symm.mono fun x hx ↦ by simp only [hx])
+  tfae_have 2 → 1 := fun ⟨C, hC⟩ ↦ proposition_9_3_ii_i hp hu hC
+  tfae_have 1 → 3 := by
+    rintro ⟨v, hv⟩
+    refine ⟨(eLpNorm (gradient v) p (volume.restrict Ω)).toReal, fun V hV h hh ↦ ?_⟩
+    rw [ENNReal.ofReal_toReal (memLp_gradient v).eLpNorm_ne_top]
+    exact proposition_9_3_i_iii v hv hV hh
+  tfae_have 3 → 2 := fun ⟨C, hC⟩ ↦ ⟨C, proposition_9_3_iii_ii hu hC⟩
+  tfae_finish
+
+omit [Fact (1 ≤ p)] in
+/-- **Remark 6.** When `p = 1` the implications (i) ⇒ (ii) ⇔ (iii) of Proposition 9.3 remain
+true: for `u ∈ L^1(Ω)` (with `p' = ∞`), (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii), the three
+backbone implications being valid for every `1 ≤ p ≤ ∞`. The implication (ii) ⇒ (iii) at
+`p = 1` — that a function of bounded variation satisfies the translation estimate — belongs to
+the theory of `BV` functions and is not formalized; the remark's discussion of `BV` has no node. -/
+theorem remark_9_6 {u : 𝔼 → ℝ} (hu : MemLp u 1 (volume.restrict Ω)) :
+    ((∃ v : sobolevSpace N 1 Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) →
+      ∃ C : ℝ, ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
+        ‖∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x (EuclideanSpace.single i 1)‖ₑ
+          ≤ ENNReal.ofReal C * eLpNorm φ ⊤ (volume.restrict Ω)) ∧
+    ((∃ v : sobolevSpace N 1 Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) →
+      ∃ C : ℝ, ∀ V : Set 𝔼, IsStronglyIncluded V Ω → ∀ h : 𝔼, ‖h‖ₑ < edistFrontier V Ω →
+        eLpNorm (fun x ↦ u (x + h) - u x) 1 (volume.restrict V) ≤ ENNReal.ofReal C * ‖h‖ₑ) ∧
+    ((∃ C : ℝ, ∀ V : Set 𝔼, IsStronglyIncluded V Ω → ∀ h : 𝔼, ‖h‖ₑ < edistFrontier V Ω →
+        eLpNorm (fun x ↦ u (x + h) - u x) 1 (volume.restrict V) ≤ ENNReal.ofReal C * ‖h‖ₑ) →
+      ∃ C : ℝ, ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
+        ‖∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x (EuclideanSpace.single i 1)‖ₑ
+          ≤ ENNReal.ofReal C * eLpNorm φ ⊤ (volume.restrict Ω)) := by
+  refine ⟨fun ⟨v, hv⟩ ↦ ⟨(eLpNorm (gradient v) 1 (volume.restrict Ω)).toReal, fun φ i ↦ ?_⟩,
+    fun ⟨v, hv⟩ ↦ ⟨(eLpNorm (gradient v) 1 (volume.restrict Ω)).toReal, fun V hV h hh ↦ ?_⟩,
+    fun ⟨C, hC⟩ ↦ ⟨C, proposition_9_3_iii_ii hu hC⟩⟩
+  · rw [ENNReal.ofReal_toReal (memLp_gradient v).eLpNorm_ne_top]
+    refine le_of_eq_of_le ?_ (proposition_9_3_i_ii v φ i)
+    congr 1
+    exact integral_congr_ae (hv.symm.mono fun x hx ↦ by simp only [hx])
+  · rw [ENNReal.ofReal_toReal (memLp_gradient v).eLpNorm_ne_top]
+    exact proposition_9_3_i_iii v hv hV hh
 
 /-! ### Remark 7 -/
 
