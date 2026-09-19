@@ -27,9 +27,9 @@ point of the open `Ω` by continuity (`Elliptic.forall_le_of_ae_le_of_continuous
 ## The engine
 
 Every proof of the section is the same three steps, and `Elliptic.le_of_forall_truncation_mem`
-states them once: (1) a Stampacchia truncation `G` (`Elliptic.IsStampacchiaTruncation`: `C¹`,
+states them once: (1) a Stampacchia truncation `G` (`IsStampacchiaTruncation`: `C¹`,
 `|G'| ≤ M`, `G' ≥ 0`, `G = 0` on `(-∞, 0]`, `G > 0` on `(0, ∞)`; the concrete
-`Elliptic.stampacchiaTruncation` is `s ↦ ∫₀ˢ min (max t 0) 1 dt`); (2) `v = G(u − K') ∈ H^1(Ω)`
+`stampacchiaTruncation` is `s ↦ ∫₀ˢ min (max t 0) 1 dt`); (2) `v = G(u − K') ∈ H^1(Ω)`
 by the chain rule (Proposition 9.5, `MemSobolevMultiIndex.contDiff_comp`), which the engine
 constructs itself in both cases of the proof of Theorem 9.27 — `t ↦ G(t − K') − G(−K')` plus the
 constant `G(−K')` when `|Ω| < ∞`, and `t ↦ G(t − K')` directly when `K' ≥ 0`, the case `|Ω| = ∞`
@@ -49,7 +49,7 @@ heat equation consumes.
 
 Proposition 9.29 replaces `∫ |∇u|²` by `∫ ∑ a_ij ∂ᵢu ∂ⱼu G'(u) ≥ α ∫ |∇u|² G'(u)` and, the form
 having no `∫ uv` term, concludes from `|∇u|² G'(u) = 0` by the auxiliary `H(t) = ∫₀ᵗ √G'(s) ds`
-(`Elliptic.stampacchiaTruncationSqrt`): `H(u) ∈ H^1_0(Ω)` has `∇H(u) = 0`, hence `H(u) = 0`
+(`stampacchiaTruncationSqrt`): `H(u) ∈ H^1_0(Ω)` has `∇H(u) = 0`, hence `H(u) = 0`
 by footnote 39 (`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`: the extension by zero of a
 `W_0^{1,p}` function with vanishing gradient is a constant `L^p` function on `ℝ^N`, hence zero,
 for `N ≥ 1`), hence `u ≤ 0`. The general statement with a drift term `a_i` (Gilbarg–Trudinger,
@@ -77,188 +77,8 @@ noncomputable section
 
 namespace Elliptic
 
-/-! ### Stampacchia's truncation -/
-
-/-- The derivative of Stampacchia's truncation: `t ↦ min (max t 0) 1`, continuous, with values in
-`[0, 1]`, vanishing on `(-∞, 0]` and positive on `(0, ∞)`. -/
-def truncationDeriv (t : ℝ) : ℝ := min (max t 0) 1
-
-theorem continuous_truncationDeriv : Continuous truncationDeriv :=
-  (continuous_id.max continuous_const).min continuous_const
-
-theorem truncationDeriv_nonneg (t : ℝ) : 0 ≤ truncationDeriv t :=
-  le_min (le_max_right _ _) zero_le_one
-
-theorem truncationDeriv_le_one (t : ℝ) : truncationDeriv t ≤ 1 := min_le_right _ _
-
-theorem truncationDeriv_of_nonpos {t : ℝ} (ht : t ≤ 0) : truncationDeriv t = 0 := by
-  rw [truncationDeriv, max_eq_right ht, min_eq_left zero_le_one]
-
-theorem truncationDeriv_pos {t : ℝ} (ht : 0 < t) : 0 < truncationDeriv t :=
-  lt_min (lt_max_of_lt_left ht) one_pos
-
-/-- **Stampacchia's truncation** `G(s) = ∫₀ˢ min (max t 0) 1 dt`: of class `C¹`, `G = 0` on
-`(-∞, 0]`, `G(s) = s²/2` on `[0, 1]` and `G(s) = s − 1/2` on `[1, ∞)`, with `0 ≤ G' ≤ 1` and
-`G' > 0` on `(0, ∞)`. It is the function `G` of the proof of [brezis2011functional] Theorem 9.27
-(conditions (i)–(iii) there, with `M = 1`). -/
-def stampacchiaTruncation (s : ℝ) : ℝ := ∫ t in (0 : ℝ)..s, truncationDeriv t
-
-theorem hasDerivAt_stampacchiaTruncation (s : ℝ) :
-    HasDerivAt stampacchiaTruncation (truncationDeriv s) s :=
-  (continuous_truncationDeriv.integral_hasStrictDerivAt 0 s).hasDerivAt
-
-/-- The derivative of the truncation `G` is `min (max s 0) 1`. -/
-theorem deriv_stampacchiaTruncation (s : ℝ) :
-    deriv stampacchiaTruncation s = truncationDeriv s :=
-  (hasDerivAt_stampacchiaTruncation s).deriv
-
-/-- The truncation `G` is `C¹`: its derivative `min (max s 0) 1` is continuous. -/
-theorem contDiff_stampacchiaTruncation : ContDiff ℝ 1 stampacchiaTruncation := by
-  refine contDiff_one_iff_deriv.2
-    ⟨fun s ↦ (hasDerivAt_stampacchiaTruncation s).differentiableAt, ?_⟩
-  rw [funext deriv_stampacchiaTruncation]
-  exact continuous_truncationDeriv
-
-theorem stampacchiaTruncation_of_nonpos {s : ℝ} (hs : s ≤ 0) : stampacchiaTruncation s = 0 := by
-  unfold stampacchiaTruncation
-  refine (intervalIntegral.integral_congr (g := fun _ ↦ (0 : ℝ)) fun _ ht ↦ ?_).trans
-    intervalIntegral.integral_zero
-  rw [uIcc_of_ge hs] at ht
-  exact truncationDeriv_of_nonpos ht.2
-
-theorem stampacchiaTruncation_pos {s : ℝ} (hs : 0 < s) : 0 < stampacchiaTruncation s :=
-  intervalIntegral.intervalIntegral_pos_of_pos_on
-    (continuous_truncationDeriv.intervalIntegrable _ _)
-    (fun _ ht ↦ truncationDeriv_pos ht.1) hs
-
-theorem stampacchiaTruncation_nonneg (s : ℝ) : 0 ≤ stampacchiaTruncation s := by
-  rcases le_or_gt s 0 with hs | hs
-  · rw [stampacchiaTruncation_of_nonpos hs]
-  · exact (stampacchiaTruncation_pos hs).le
-
-/-- The truncation `G` is strictly increasing on `(0, ∞)`, where `G' > 0`. -/
-theorem strictMonoOn_stampacchiaTruncation : StrictMonoOn stampacchiaTruncation (Ioi 0) :=
-  strictMonoOn_of_deriv_pos (convex_Ioi 0) contDiff_stampacchiaTruncation.continuous.continuousOn
-    fun s hs ↦ by
-      rw [interior_Ioi] at hs
-      rw [deriv_stampacchiaTruncation]
-      exact truncationDeriv_pos hs
-
-/-- **The truncation functions of Stampacchia's method**: `G ∈ C¹(ℝ)` with `|G'| ≤ M`, `G' ≥ 0`,
-`G = 0` on `(-∞, 0]` and `G > 0` on `(0, ∞)` — the conditions (i)–(iii) of the proof of
-[brezis2011functional] Theorem 9.27 in the form the engine `Elliptic.le_of_forall_truncation_mem`
-uses (strict monotonicity on `(0, ∞)` enters only through `G > 0` there). -/
-structure IsStampacchiaTruncation (G : ℝ → ℝ) (M : ℝ) : Prop where
-  contDiff : ContDiff ℝ 1 G
-  abs_deriv_le : ∀ s, |deriv G s| ≤ M
-  deriv_nonneg : ∀ s, 0 ≤ deriv G s
-  eq_zero_of_nonpos : ∀ s, s ≤ 0 → G s = 0
-  pos_of_pos : ∀ s, 0 < s → 0 < G s
-
-namespace IsStampacchiaTruncation
-
-variable {G : ℝ → ℝ} {M : ℝ}
-
-theorem nonneg (hG : IsStampacchiaTruncation G M) (s : ℝ) : 0 ≤ G s := by
-  rcases le_or_gt s 0 with hs | hs
-  · rw [hG.eq_zero_of_nonpos s hs]
-  · exact (hG.pos_of_pos s hs).le
-
-/-- `t G(t) ≥ 0`. -/
-theorem mul_nonneg (hG : IsStampacchiaTruncation G M) (t : ℝ) : 0 ≤ t * G t := by
-  rcases le_or_gt t 0 with ht | ht
-  · rw [hG.eq_zero_of_nonpos t ht, mul_zero]
-  · exact _root_.mul_nonneg ht.le (hG.nonneg t)
-
-/-- `t G(t) = 0` exactly when `t ≤ 0`. -/
-theorem mul_eq_zero_iff (hG : IsStampacchiaTruncation G M) {t : ℝ} : t * G t = 0 ↔ t ≤ 0 := by
-  constructor
-  · intro h
-    by_contra ht
-    push Not at ht
-    exact (_root_.mul_pos ht (hG.pos_of_pos t ht)).ne' h
-  · intro ht
-    rw [hG.eq_zero_of_nonpos t ht, mul_zero]
-
-theorem zero (hG : IsStampacchiaTruncation G M) : G 0 = 0 := hG.eq_zero_of_nonpos 0 le_rfl
-
-/-- The shifted truncation `t ↦ G (t − K)` is `C¹` with the same derivative bound. -/
-theorem contDiff_sub (hG : IsStampacchiaTruncation G M) (K : ℝ) :
-    ContDiff ℝ 1 fun t ↦ G (t - K) :=
-  hG.contDiff.comp (contDiff_id.sub contDiff_const)
-
-theorem abs_deriv_sub_le (hG : IsStampacchiaTruncation G M) (K t : ℝ) :
-    |deriv (fun t ↦ G (t - K)) t| ≤ M := by
-  rw [deriv_comp_sub_const G K t]; exact hG.abs_deriv_le _
-
-end IsStampacchiaTruncation
-
-/-- The truncation `G s = ∫₀^s min (max t 0) 1 dt` is a Stampacchia truncation with `M = 1`. -/
-theorem isStampacchiaTruncation_stampacchiaTruncation :
-    IsStampacchiaTruncation stampacchiaTruncation 1 where
-  contDiff := contDiff_stampacchiaTruncation
-  abs_deriv_le s := by
-    rw [deriv_stampacchiaTruncation, abs_of_nonneg (truncationDeriv_nonneg s)]
-    exact truncationDeriv_le_one s
-  deriv_nonneg s := by rw [deriv_stampacchiaTruncation]; exact truncationDeriv_nonneg s
-  eq_zero_of_nonpos _ hs := stampacchiaTruncation_of_nonpos hs
-  pos_of_pos _ hs := stampacchiaTruncation_pos hs
-
-/-- **The truncation function of Stampacchia's method exists**: a `G ∈ C¹(ℝ)` with `|G'| ≤ 1`,
-`G' ≥ 0`, strictly increasing on `(0, ∞)`, `G = 0` on `(-∞, 0]` and `G ≥ 0` — the function of the
-proof of [brezis2011functional] Theorem 9.27, conditions (i)–(iii) with `M = 1`
-(`Elliptic.stampacchiaTruncation`). -/
-theorem exists_truncation :
-    ∃ G : ℝ → ℝ, IsStampacchiaTruncation G 1 ∧ StrictMonoOn G (Ioi 0) ∧ ∀ s, 0 ≤ G s :=
-  ⟨stampacchiaTruncation, isStampacchiaTruncation_stampacchiaTruncation,
-    strictMonoOn_stampacchiaTruncation, stampacchiaTruncation_nonneg⟩
-
-/-- **The auxiliary function `H(t) = ∫₀ᵗ √(G'(s)) ds`** of the proof of [brezis2011functional]
-Proposition 9.29, for Stampacchia's truncation: `C¹` with `H' = √G'`, so that `|∇H(u)|² =
-|∇u|² G'(u)`. -/
-def stampacchiaTruncationSqrt (s : ℝ) : ℝ := ∫ t in (0 : ℝ)..s, √(truncationDeriv t)
-
-theorem continuous_sqrt_truncationDeriv : Continuous fun t ↦ √(truncationDeriv t) :=
-  continuous_truncationDeriv.sqrt
-
-theorem hasDerivAt_stampacchiaTruncationSqrt (s : ℝ) :
-    HasDerivAt stampacchiaTruncationSqrt (√(truncationDeriv s)) s :=
-  (continuous_sqrt_truncationDeriv.integral_hasStrictDerivAt 0 s).hasDerivAt
-
-theorem deriv_stampacchiaTruncationSqrt (s : ℝ) :
-    deriv stampacchiaTruncationSqrt s = √(truncationDeriv s) :=
-  (hasDerivAt_stampacchiaTruncationSqrt s).deriv
-
-/-- `H'(s)² = G'(s)`. -/
-theorem sq_deriv_stampacchiaTruncationSqrt (s : ℝ) :
-    deriv stampacchiaTruncationSqrt s ^ 2 = deriv stampacchiaTruncation s := by
-  rw [deriv_stampacchiaTruncationSqrt, deriv_stampacchiaTruncation,
-    Real.sq_sqrt (truncationDeriv_nonneg s)]
-
-/-- The truncation `G s = ∫₀^s √(min (max t 0) 1) dt` is a Stampacchia truncation with `M = 1`;
-its derivative squared is `min (max s 0) 1`, the derivative of `stampacchiaTruncation`. -/
-theorem isStampacchiaTruncation_stampacchiaTruncationSqrt :
-    IsStampacchiaTruncation stampacchiaTruncationSqrt 1 where
-  contDiff := by
-    refine contDiff_one_iff_deriv.2
-      ⟨fun s ↦ (hasDerivAt_stampacchiaTruncationSqrt s).differentiableAt, ?_⟩
-    rw [funext deriv_stampacchiaTruncationSqrt]
-    exact continuous_sqrt_truncationDeriv
-  abs_deriv_le s := by
-    rw [deriv_stampacchiaTruncationSqrt, abs_of_nonneg (Real.sqrt_nonneg _)]
-    exact Real.sqrt_le_one.2 (truncationDeriv_le_one s)
-  deriv_nonneg s := by rw [deriv_stampacchiaTruncationSqrt]; exact Real.sqrt_nonneg _
-  eq_zero_of_nonpos s hs := by
-    unfold stampacchiaTruncationSqrt
-    refine (intervalIntegral.integral_congr (g := fun _ ↦ (0 : ℝ)) fun _ ht ↦ ?_).trans
-      intervalIntegral.integral_zero
-    rw [uIcc_of_ge hs] at ht
-    simp [truncationDeriv_of_nonpos ht.2]
-  pos_of_pos s hs :=
-    intervalIntegral.intervalIntegral_pos_of_pos_on
-      (continuous_sqrt_truncationDeriv.intervalIntegrable _ _)
-      (fun t ht ↦ Real.sqrt_pos.2 (truncationDeriv_pos ht.1)) hs
-
+@[deprecated exists_stampacchiaTruncation (since := "2026-09-20")]
+alias exists_truncation := exists_stampacchiaTruncation
 
 /-! ### Almost everywhere bounds of continuous functions, and the negation of the data -/
 
@@ -455,7 +275,7 @@ theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 �
         fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
           (fun x ↦ G (fn u x - K')) → v ∈ V) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), fn u x ≤ K := by
-  obtain ⟨G, hG, -, -⟩ := exists_truncation
+  obtain ⟨G, hG, -, -⟩ := exists_stampacchiaTruncation
   have hΩm := Ω.isOpen.measurableSet
   -- for every `K' > K`, `u ≤ K'` almost everywhere
   have key : ∀ K', K < K' →
@@ -479,7 +299,7 @@ theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 �
     have hgrad : 0 ≤ ∑ i : Fin N, ⟪weakDeriv u (MultiIndexLE.single i),
         weakDeriv v (MultiIndexLE.single i)⟫_ℝ := by
       refine Finset.sum_nonneg fun i _ ↦ ?_
-      rw [inner_eq_integral]
+      rw [L2.inner_eq_integral_mul]
       refine integral_nonneg_of_ae ?_
       filter_upwards [weakDeriv_single_ae_eq_of_fn_ae_eq_truncation hG hv i] with x hx
       rw [hx, show weakDeriv u (MultiIndexLE.single i) x
@@ -494,7 +314,7 @@ theorem le_of_forall_truncation_mem (V : Submodule ℝ (SobolevEuclidean N 1 2 �
         (fn u x - f x) * G (fn u x - K') ≤ 0 := by
       have h1 : ⟪weakDeriv u 0, weakDeriv v 0⟫_ℝ - ⟪f, weakDeriv v 0⟫_ℝ
           = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (fn u x - f x) * G (fn u x - K') := by
-        rw [← inner_sub_left, inner_eq_integral]
+        rw [← inner_sub_left, L2.inner_eq_integral_mul]
         refine integral_congr_ae ?_
         filter_upwards [Lp.coeFn_sub (weakDeriv u 0) f, hv'] with x hx hx'
         rw [hx, Pi.sub_apply, hx']
@@ -738,64 +558,6 @@ theorem ge_of_neumann {u : SobolevEuclidean N 1 2 Ω}
 
 end Neumann
 
-/-! ### Footnote 39: a `W_0^{1,p}` function with vanishing gradient is zero -/
-
-section Footnote39
-
-open SobolevMultiIndex
-
-/-- **Footnote 39 of [brezis2011functional] §9.7**: for `N ≥ 1`, `1 ≤ p < ∞` and any open
-`Ω ⊆ ℝ^N`, an element of `W_0^{1,p}(Ω)` whose partial derivatives all vanish is zero. The
-extension by zero `ū` lies in `W^{1,p}(ℝ^N)` with `∇ū = ext(∇u) = 0` (Proposition 9.18 (i) ⇒
-(iii), `SobolevEuclideanZero.extendZeroL`), so `ū` is almost everywhere constant on the connected
-`ℝ^N` (Remark 7, `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`), and a constant in
-`L^p(ℝ^N)`, `p < ∞`, is `0` (`MeasureTheory.memLp_const_iff`, the measure of `ℝ^N` being
-infinite for `N ≥ 1`; for `N = 0` the statement is false). -/
-theorem _root_.SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero {N : ℕ} (hN : N ≠ 0)
-    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤) {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-    (u : SobolevEuclideanZero N 1 p Ω)
-    (h : ∀ i, weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i) = 0) : u = 0 := by
-  classical
-  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
-  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
-  have hΩm := Ω.isOpen.measurableSet
-  have : Nonempty (Fin N) := ⟨⟨0, Nat.pos_of_ne_zero hN⟩⟩
-  -- the tensor gradient of the extension by zero vanishes almost everywhere
-  obtain ⟨w, hw, -, hwi, -⟩ := exists_hasWeakFDerivOn_fn (SobolevEuclideanZero.extendZeroL N p Ω u)
-  simp only [Opens.coe_top, Measure.restrict_univ] at hwi
-  have hw0 : w =ᵐ[volume] 0 := by
-    have hall : ∀ᵐ x ∂volume, ∀ i, w x ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis i) = 0 :=
-      ae_all_iff.2 fun i ↦ by
-        refine (hwi i).trans ((SobolevEuclideanZero.weakDeriv_extendZeroL_single u i).trans ?_)
-        rw [h i]
-        have := (ae_eq_restrict_iff_indicator_ae_eq hΩm).1
-          (Lp.coeFn_zero ℝ p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-        refine this.trans (Eventually.of_forall fun x ↦ ?_)
-        simp
-    filter_upwards [hall] with x hx
-    simp only [EuclideanSpace.basisFun_toBasis_apply] at hx
-    refine ContinuousLinearMap.ext fun ξ ↦ ?_
-    rw [← (EuclideanSpace.basisFun (Fin N) ℝ).toBasis.sum_repr ξ, map_sum]
-    simp [hx]
-  obtain ⟨c, hc⟩ := hw.ae_eq_const_of_isPreconnected
-    (by simpa only [Opens.coe_top, Measure.restrict_univ] using hw0) isPreconnected_univ
-  simp only [Opens.coe_top, Measure.restrict_univ] at hc
-  -- the constant is zero, the measure of `ℝ^N` being infinite
-  have hmem : MemLp (fun _ : EuclideanSpace ℝ (Fin N) ↦ c) p volume :=
-    (SobolevEuclidean.memLp_fn (SobolevEuclideanZero.extendZeroL N p Ω u)).ae_eq hc
-  have hc0 : c = 0 := by
-    rcases (memLp_const_iff hp0 hp').1 hmem with h0 | hfin
-    · exact h0
-    · rw [measure_univ_of_isAddLeftInvariant] at hfin
-      exact absurd hfin (lt_irrefl _)
-  -- hence `u = 0`
-  refine Subtype.ext (ext_of_fn_ae_eq ?_)
-  refine ((SobolevEuclideanZero.fn_extendZeroL_restrict u).symm.trans ?_).trans fn_zero.symm
-  refine ae_restrict_of_ae (hc.trans (Eventually.of_forall fun x ↦ ?_))
-  simp [hc0]
-
-end Footnote39
-
 /-! ### Proposition 9.29: the maximum principle for general elliptic operators (no drift) -/
 
 section General
@@ -855,7 +617,7 @@ theorem nonpos_ae_of_general_zero_drift_of_forall_mem (hN : N ≠ 0)
     rw [hx', mul_assoc]
     exact mul_nonneg hx (hG.mul_nonneg _)
   have hrhs : ⟪f, weakDeriv v 0⟫_ℝ ≤ 0 := by
-    rw [inner_eq_integral]
+    rw [L2.inner_eq_integral_mul]
     refine integral_nonpos_of_ae ?_
     filter_upwards [hf, hv'] with x hx hx'
     rw [hx']
@@ -1250,25 +1012,6 @@ theorem _root_.Matrix.posSemidef_of_of_symm_of_nonneg {N : ℕ} {a : Fin N → F
     refine h.trans (le_of_eq ?_)
     refine Finset.sum_congr rfl fun i _ ↦ Finset.sum_congr rfl fun j _ ↦ ?_
     ring
-
-/-- **The Hessian of a `C²` function is nonpositive at a local maximum**: `D²f(x₀)[v, v] ≤ 0`
-for every `v`, read as `fderiv (fderiv f) x₀ v v` — the second derivative at `0` of the line
-restriction `s ↦ f (x₀ + s v)` (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
-maximum at `0` (`IsLocalMax.deriv_deriv_nonpos`). -/
-theorem _root_.IsLocalMax.fderiv_fderiv_apply_self_nonpos {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace ℝ E] {f : E → ℝ} {x₀ : E} (hmax : IsLocalMax f x₀)
-    (hf : ContDiffAt ℝ 2 f x₀) (v : E) : fderiv ℝ (fderiv ℝ f) x₀ v v ≤ 0 := by
-  have h := hf.deriv_deriv_comp_add_smul v
-  rw [iteratedFDeriv_two_apply] at h
-  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h
-  rw [← h]
-  have hline : Continuous fun s : ℝ ↦ x₀ + s • v := by fun_prop
-  have h0 : x₀ + (0 : ℝ) • v = x₀ := by simp
-  refine IsLocalMax.deriv_deriv_nonpos ?_ ?_
-  · have : IsLocalMax f ((fun s : ℝ ↦ x₀ + s • v) 0) := by simpa only [h0] using hmax
-    exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • v) (b := 0) this
-      hline.continuousAt
-  · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 

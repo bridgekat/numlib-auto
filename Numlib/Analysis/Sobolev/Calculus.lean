@@ -1376,6 +1376,202 @@ theorem MemSobolevMultiIndex.posPart {u : E → ℝ} (hp : 1 ≤ p)
 
 end PosPart
 
+/-! ### Stampacchia's truncation
+
+The truncation functions `G` of Stampacchia's method ([brezis2011functional] §9.7, proof of
+Theorem 9.27, conditions (i)–(iii)): `C¹`, nondecreasing, vanishing on `(-∞, 0]`, positive on
+`(0, ∞)`, with bounded derivative. `stampacchiaTruncation` is `s ↦ ∫₀ˢ min (max t 0) 1 dt` and
+`stampacchiaTruncationSqrt` the auxiliary `H = ∫₀ᵗ √G'` of Proposition 9.29; `G(u)` is placed in
+`W^{1,p}` by the chain rule of this file, as `posSq` is. -/
+
+section Truncation
+
+/-- The derivative of Stampacchia's truncation: `t ↦ min (max t 0) 1`, continuous, with values in
+`[0, 1]`, vanishing on `(-∞, 0]` and positive on `(0, ∞)`. -/
+def stampacchiaTruncationDeriv (t : ℝ) : ℝ := min (max t 0) 1
+
+theorem continuous_stampacchiaTruncationDeriv : Continuous stampacchiaTruncationDeriv :=
+  (continuous_id.max continuous_const).min continuous_const
+
+theorem stampacchiaTruncationDeriv_nonneg (t : ℝ) : 0 ≤ stampacchiaTruncationDeriv t :=
+  le_min (le_max_right _ _) zero_le_one
+
+theorem stampacchiaTruncationDeriv_le_one (t : ℝ) : stampacchiaTruncationDeriv t ≤ 1 :=
+  min_le_right _ _
+
+theorem stampacchiaTruncationDeriv_of_nonpos {t : ℝ} (ht : t ≤ 0) :
+    stampacchiaTruncationDeriv t = 0 := by
+  rw [stampacchiaTruncationDeriv, max_eq_right ht, min_eq_left zero_le_one]
+
+theorem stampacchiaTruncationDeriv_pos {t : ℝ} (ht : 0 < t) : 0 < stampacchiaTruncationDeriv t :=
+  lt_min (lt_max_of_lt_left ht) one_pos
+
+/-- **Stampacchia's truncation** `G(s) = ∫₀ˢ min (max t 0) 1 dt`: of class `C¹`, `G = 0` on
+`(-∞, 0]`, `G(s) = s²/2` on `[0, 1]` and `G(s) = s − 1/2` on `[1, ∞)`, with `0 ≤ G' ≤ 1` and
+`G' > 0` on `(0, ∞)`. It is the function `G` of the proof of [brezis2011functional] Theorem 9.27
+(conditions (i)–(iii) there, with `M = 1`). -/
+def stampacchiaTruncation (s : ℝ) : ℝ := ∫ t in (0 : ℝ)..s, stampacchiaTruncationDeriv t
+
+theorem hasDerivAt_stampacchiaTruncation (s : ℝ) :
+    HasDerivAt stampacchiaTruncation (stampacchiaTruncationDeriv s) s :=
+  (continuous_stampacchiaTruncationDeriv.integral_hasStrictDerivAt 0 s).hasDerivAt
+
+/-- The derivative of the truncation `G` is `min (max s 0) 1`. -/
+theorem deriv_stampacchiaTruncation (s : ℝ) :
+    deriv stampacchiaTruncation s = stampacchiaTruncationDeriv s :=
+  (hasDerivAt_stampacchiaTruncation s).deriv
+
+/-- The truncation `G` is `C¹`: its derivative `min (max s 0) 1` is continuous. -/
+theorem contDiff_stampacchiaTruncation : ContDiff ℝ 1 stampacchiaTruncation := by
+  refine contDiff_one_iff_deriv.2
+    ⟨fun s ↦ (hasDerivAt_stampacchiaTruncation s).differentiableAt, ?_⟩
+  rw [funext deriv_stampacchiaTruncation]
+  exact continuous_stampacchiaTruncationDeriv
+
+theorem stampacchiaTruncation_of_nonpos {s : ℝ} (hs : s ≤ 0) : stampacchiaTruncation s = 0 := by
+  unfold stampacchiaTruncation
+  refine (intervalIntegral.integral_congr (g := fun _ ↦ (0 : ℝ)) fun _ ht ↦ ?_).trans
+    intervalIntegral.integral_zero
+  rw [uIcc_of_ge hs] at ht
+  exact stampacchiaTruncationDeriv_of_nonpos ht.2
+
+theorem stampacchiaTruncation_pos {s : ℝ} (hs : 0 < s) : 0 < stampacchiaTruncation s :=
+  intervalIntegral.intervalIntegral_pos_of_pos_on
+    (continuous_stampacchiaTruncationDeriv.intervalIntegrable _ _)
+    (fun _ ht ↦ stampacchiaTruncationDeriv_pos ht.1) hs
+
+theorem stampacchiaTruncation_nonneg (s : ℝ) : 0 ≤ stampacchiaTruncation s := by
+  rcases le_or_gt s 0 with hs | hs
+  · rw [stampacchiaTruncation_of_nonpos hs]
+  · exact (stampacchiaTruncation_pos hs).le
+
+/-- The truncation `G` is strictly increasing on `(0, ∞)`, where `G' > 0`. -/
+theorem strictMonoOn_stampacchiaTruncation : StrictMonoOn stampacchiaTruncation (Ioi 0) :=
+  strictMonoOn_of_deriv_pos (convex_Ioi 0) contDiff_stampacchiaTruncation.continuous.continuousOn
+    fun s hs ↦ by
+      rw [interior_Ioi] at hs
+      rw [deriv_stampacchiaTruncation]
+      exact stampacchiaTruncationDeriv_pos hs
+
+/-- **The truncation functions of Stampacchia's method**: `G ∈ C¹(ℝ)` with `|G'| ≤ M`, `G' ≥ 0`,
+`G = 0` on `(-∞, 0]` and `G > 0` on `(0, ∞)` — the conditions (i)–(iii) of the proof of
+[brezis2011functional] Theorem 9.27 in the form the engine `Elliptic.le_of_forall_truncation_mem`
+of `Numlib/Analysis/PDE/Elliptic/MaximumPrinciple.lean`
+uses (strict monotonicity on `(0, ∞)` enters only through `G > 0` there). -/
+structure IsStampacchiaTruncation (G : ℝ → ℝ) (M : ℝ) : Prop where
+  contDiff : ContDiff ℝ 1 G
+  abs_deriv_le : ∀ s, |deriv G s| ≤ M
+  deriv_nonneg : ∀ s, 0 ≤ deriv G s
+  eq_zero_of_nonpos : ∀ s, s ≤ 0 → G s = 0
+  pos_of_pos : ∀ s, 0 < s → 0 < G s
+
+namespace IsStampacchiaTruncation
+
+variable {G : ℝ → ℝ} {M : ℝ}
+
+theorem nonneg (hG : IsStampacchiaTruncation G M) (s : ℝ) : 0 ≤ G s := by
+  rcases le_or_gt s 0 with hs | hs
+  · rw [hG.eq_zero_of_nonpos s hs]
+  · exact (hG.pos_of_pos s hs).le
+
+/-- `t G(t) ≥ 0`. -/
+theorem mul_nonneg (hG : IsStampacchiaTruncation G M) (t : ℝ) : 0 ≤ t * G t := by
+  rcases le_or_gt t 0 with ht | ht
+  · rw [hG.eq_zero_of_nonpos t ht, mul_zero]
+  · exact _root_.mul_nonneg ht.le (hG.nonneg t)
+
+/-- `t G(t) = 0` exactly when `t ≤ 0`. -/
+theorem mul_eq_zero_iff (hG : IsStampacchiaTruncation G M) {t : ℝ} : t * G t = 0 ↔ t ≤ 0 := by
+  constructor
+  · intro h
+    by_contra ht
+    push Not at ht
+    exact (_root_.mul_pos ht (hG.pos_of_pos t ht)).ne' h
+  · intro ht
+    rw [hG.eq_zero_of_nonpos t ht, mul_zero]
+
+theorem zero (hG : IsStampacchiaTruncation G M) : G 0 = 0 := hG.eq_zero_of_nonpos 0 le_rfl
+
+/-- The shifted truncation `t ↦ G (t − K)` is `C¹` with the same derivative bound. -/
+theorem contDiff_sub (hG : IsStampacchiaTruncation G M) (K : ℝ) :
+    ContDiff ℝ 1 fun t ↦ G (t - K) :=
+  hG.contDiff.comp (contDiff_id.sub contDiff_const)
+
+theorem abs_deriv_sub_le (hG : IsStampacchiaTruncation G M) (K t : ℝ) :
+    |deriv (fun t ↦ G (t - K)) t| ≤ M := by
+  rw [deriv_comp_sub_const G K t]; exact hG.abs_deriv_le _
+
+end IsStampacchiaTruncation
+
+/-- The truncation `G s = ∫₀^s min (max t 0) 1 dt` is a Stampacchia truncation with `M = 1`. -/
+theorem isStampacchiaTruncation_stampacchiaTruncation :
+    IsStampacchiaTruncation stampacchiaTruncation 1 where
+  contDiff := contDiff_stampacchiaTruncation
+  abs_deriv_le s := by
+    rw [deriv_stampacchiaTruncation, abs_of_nonneg (stampacchiaTruncationDeriv_nonneg s)]
+    exact stampacchiaTruncationDeriv_le_one s
+  deriv_nonneg s := by rw [deriv_stampacchiaTruncation]; exact stampacchiaTruncationDeriv_nonneg s
+  eq_zero_of_nonpos _ hs := stampacchiaTruncation_of_nonpos hs
+  pos_of_pos _ hs := stampacchiaTruncation_pos hs
+
+/-- **The truncation function of Stampacchia's method exists**: a `G ∈ C¹(ℝ)` with `|G'| ≤ 1`,
+`G' ≥ 0`, strictly increasing on `(0, ∞)`, `G = 0` on `(-∞, 0]` and `G ≥ 0` — the function of the
+proof of [brezis2011functional] Theorem 9.27, conditions (i)–(iii) with `M = 1`
+(`stampacchiaTruncation`). -/
+theorem exists_stampacchiaTruncation :
+    ∃ G : ℝ → ℝ, IsStampacchiaTruncation G 1 ∧ StrictMonoOn G (Ioi 0) ∧ ∀ s, 0 ≤ G s :=
+  ⟨stampacchiaTruncation, isStampacchiaTruncation_stampacchiaTruncation,
+    strictMonoOn_stampacchiaTruncation, stampacchiaTruncation_nonneg⟩
+
+/-- **The auxiliary function `H(t) = ∫₀ᵗ √(G'(s)) ds`** of the proof of [brezis2011functional]
+Proposition 9.29, for Stampacchia's truncation: `C¹` with `H' = √G'`, so that `|∇H(u)|² =
+|∇u|² G'(u)`. -/
+def stampacchiaTruncationSqrt (s : ℝ) : ℝ := ∫ t in (0 : ℝ)..s, √(stampacchiaTruncationDeriv t)
+
+theorem continuous_sqrt_stampacchiaTruncationDeriv :
+    Continuous fun t ↦ √(stampacchiaTruncationDeriv t) :=
+  continuous_stampacchiaTruncationDeriv.sqrt
+
+theorem hasDerivAt_stampacchiaTruncationSqrt (s : ℝ) :
+    HasDerivAt stampacchiaTruncationSqrt (√(stampacchiaTruncationDeriv s)) s :=
+  (continuous_sqrt_stampacchiaTruncationDeriv.integral_hasStrictDerivAt 0 s).hasDerivAt
+
+theorem deriv_stampacchiaTruncationSqrt (s : ℝ) :
+    deriv stampacchiaTruncationSqrt s = √(stampacchiaTruncationDeriv s) :=
+  (hasDerivAt_stampacchiaTruncationSqrt s).deriv
+
+/-- `H'(s)² = G'(s)`. -/
+theorem sq_deriv_stampacchiaTruncationSqrt (s : ℝ) :
+    deriv stampacchiaTruncationSqrt s ^ 2 = deriv stampacchiaTruncation s := by
+  rw [deriv_stampacchiaTruncationSqrt, deriv_stampacchiaTruncation,
+    Real.sq_sqrt (stampacchiaTruncationDeriv_nonneg s)]
+
+/-- The truncation `G s = ∫₀^s √(min (max t 0) 1) dt` is a Stampacchia truncation with `M = 1`;
+its derivative squared is `min (max s 0) 1`, the derivative of `stampacchiaTruncation`. -/
+theorem isStampacchiaTruncation_stampacchiaTruncationSqrt :
+    IsStampacchiaTruncation stampacchiaTruncationSqrt 1 where
+  contDiff := by
+    refine contDiff_one_iff_deriv.2
+      ⟨fun s ↦ (hasDerivAt_stampacchiaTruncationSqrt s).differentiableAt, ?_⟩
+    rw [funext deriv_stampacchiaTruncationSqrt]
+    exact continuous_sqrt_stampacchiaTruncationDeriv
+  abs_deriv_le s := by
+    rw [deriv_stampacchiaTruncationSqrt, abs_of_nonneg (Real.sqrt_nonneg _)]
+    exact Real.sqrt_le_one.2 (stampacchiaTruncationDeriv_le_one s)
+  deriv_nonneg s := by rw [deriv_stampacchiaTruncationSqrt]; exact Real.sqrt_nonneg _
+  eq_zero_of_nonpos s hs := by
+    unfold stampacchiaTruncationSqrt
+    refine (intervalIntegral.integral_congr (g := fun _ ↦ (0 : ℝ)) fun _ ht ↦ ?_).trans
+      intervalIntegral.integral_zero
+    rw [uIcc_of_ge hs] at ht
+    simp [stampacchiaTruncationDeriv_of_nonpos ht.2]
+  pos_of_pos s hs :=
+    intervalIntegral.intervalIntegral_pos_of_pos_on
+      (continuous_sqrt_stampacchiaTruncationDeriv.intervalIntegrable _ _)
+      (fun t ht ↦ Real.sqrt_pos.2 (stampacchiaTruncationDeriv_pos ht.1)) hs
+
+end Truncation
+
 /-! ### The affine change of variables at every order -/
 
 section Affine

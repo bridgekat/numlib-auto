@@ -29,48 +29,6 @@ id = "SobolevEuclidean.isCompactEmbedding_toLower_of_lt"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (Brezis, Theorem 9.16 iterated)"
 
 [[node]]
-id = "MeasureTheory.Lp.monoExponentL"
-
-[[node]]
-id = "MeasureTheory.Lp.coeFn_monoExponentL"
-
-[[node]]
-id = "MeasureTheory.Lp.monoExponentL_injective"
-
-[[node]]
-id = "MeasureTheory.Lp.isContinuousEmbedding_monoExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.memSobolevMultiIndex_of_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_toLowerExponent"
-
-[[node]]
-id = "SobolevMultiIndex.norm_weakDeriv_toLowerExponent_le"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerExponent_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerExponentL_injective"
-
-[[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_toLowerExponentL"
-
-[[node]]
 id = "SobolevEuclidean.exists_forall_eLpNorm_fn_sub_translate_le"
 
 [[node]]
@@ -140,9 +98,6 @@ id = "ContinuousMap.extendZeroToLpL_injective"
 id = "ContinuousMap.isContinuousEmbedding_extendZeroToLpL"
 
 [[node]]
-id = "IsSobolevExtensionDomainAll.of_isContDiffChartDomain"
-
-[[node]]
 id = "SobolevEuclidean.toLpₗ_eq_extendZeroToLpL_comp_toContinuousMapL"
 
 [[node]]
@@ -186,33 +141,6 @@ id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq_fnL"
 
 [[node]]
 id = "SobolevMultiIndex.isCompactEmbedding_of_forall_weakDeriv_eq"
-
-[[node]]
-id = "SobolevMultiIndex.toLpₗOn_self"
-
-[[node]]
-id = "SobolevMultiIndexZero.toLpₗOn_eq_fnL"
-
-[[node]]
-id = "SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp"
-
-[[node]]
-id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self"
-
-[[node]]
-id = "SobolevMultiIndexZero.toLowerExponentL_mem"
-
-[[node]]
-id = "SobolevMultiIndexZero.toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndexZero.coe_toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndexZero.fn_toLowerExponentL"
-
-[[node]]
-id = "SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL"
 
 [[node]]
 id = "HasSobolevExtensionOn.isBounded_image_closedBall_self"

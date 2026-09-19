@@ -173,19 +173,6 @@ theorem eq_solution_of_isGalerkinSolution (h : Hypotheses a b p q α)
   (EllipticInterval.existsUnique_isWeakSolution h.lt h.pL h.qL h.pos h.ae_le_pL h.ae_nonneg_qL
     f).unique hu (isGalerkinSolution_solution h f)
 
-/-- The load functional is additive in `f`. -/
-theorem _root_.EllipticInterval.load_add (f g : Lp ℝ 2 (volume.restrict (Ioo a b))) :
-    load a b (f + g) = load a b f + load a b g := by
-  ext v
-  rw [add_apply, load_apply_inner, load_apply_inner, load_apply_inner, inner_add_left]
-
-/-- The load functional is homogeneous in `f`. -/
-theorem _root_.EllipticInterval.load_smul (c : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo a b))) :
-    load a b (c • f) = c • load a b f := by
-  ext v
-  rw [smul_apply, load_apply_inner, load_apply_inner, inner_smul_left]
-  simp
-
 /-- The weak solution is additive in the datum. -/
 theorem solution_add (h : Hypotheses a b p q α) (f g : Lp ℝ 2 (volume.restrict (Ioo a b))) :
     solution h (f + g) = solution h f + solution h g := by

@@ -35,8 +35,9 @@ theorem (`MeasureTheory.Lp.isCompact_closure_image_restrictCLM_of_uniform_transl
 `Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz.lean`) makes the restrictions to `Ω`
 relatively compact, and `ℋ = ℱ|_Ω` (`HasSobolevExtensionOn.toLpₗOn_eq_restrictCLM`). For `q < p`
 the case `q = p` is composed with the continuous inclusion `L^p(Ω) ⊆ L^q(Ω)`
-(`MeasureTheory.Lp.monoExponentL`). The instances are `S = ⊤` with Theorem 9.7's operator
-(`SobolevEuclidean.isCompactEmbedding_toLp_of_lt`) and `S = W_0^{1,p}(Ω)` with the extension by
+(`MeasureTheory.Lp.monoExponentL` of `Numlib/Analysis/Sobolev/Cutoff.lean`). The instances are
+`S = ⊤` with Theorem 9.7's operator (`SobolevEuclidean.isCompactEmbedding_toLp_of_lt`) and
+`S = W_0^{1,p}(Ω)` with the extension by
 zero of `Numlib/Analysis/Sobolev/Zero.lean` (Remark 20,
 `SobolevEuclideanZero.isCompactEmbedding_toLp_of_lt`).
 At the exponent `q = p` itself no interpolation is needed — `ℱ` is bounded in `L^p(ℝ^N)` by `‖P‖`
@@ -66,9 +67,9 @@ leave out only `N = 1 = p` (an interval, where the one-dimensional theory applie
 
 On `W_0^{1,p}(Ω)` the other clauses of Theorem 9.16 hold with no regularity of `Ω` (Remark 20):
 `W_0^{1,N}(Ω) ↪↪ L^q(Ω)` for `N ≤ q < ∞`, `N ≥ 2`, through the inclusion
-`W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)` (`SobolevMultiIndexZero.toLowerExponentL`, which exists because
-`SobolevMultiIndex.toLowerExponentL` maps test functions to test functions and closures to
-closures) and the pull-back lemma `SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp`
+`W_0^{1,N}(Ω) ↪ W_0^{1,r}(Ω)` (`SobolevMultiIndexZero.toLowerExponentL` of
+`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`) and the pull-back lemma
+`SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp` (same file)
 (`SobolevEuclideanZero.isCompactEmbedding_toLp_of_eq`), and `W_0^{1,p}(Ω) ↪↪ C(K)` for `p > N`
 and a compact `K ⊇ Ω` (`SobolevEuclideanZero.isCompactEmbedding_toContinuousMapOnL`).
 
@@ -80,8 +81,9 @@ operators as variables) extracts one subsequence along which `u_n` and all `∂_
 `W^{k,p}(Ω)` (`IsCompactEmbedding.exists_subseq_forall_tendsto`), so that every component
 `∂^β u_n` converges in `L^p(Ω)` and `u_n` converges in the closed subspace `W^{k+1,p}(Ω)`
 (`SobolevMultiIndex.exists_tendsto_of_forall_tendsto_weakDeriv`).
-`IsSobolevExtensionDomainAll.of_isContDiffChartDomain` records that Theorem 9.7 makes a bounded
-`C¹` chart domain an extension domain for every exponent, the hypothesis of Corollary 9.15.
+`IsSobolevExtensionDomainAll.of_isContDiffChartDomain` (`EmbeddingDomain.lean`) records that
+Theorem 9.7 makes a bounded `C¹` chart domain an extension domain for every exponent, the
+hypothesis of Corollary 9.15.
 
 ## References
 
@@ -93,181 +95,6 @@ open Filter MeasureTheory Metric Module Set TopologicalSpace
 open scoped ContDiff Distributions ENNReal NNReal Topology
 
 noncomputable section
-
-/-! ### `L^p ⊆ L^q` on a finite measure, as a bounded linear map -/
-
-section MonoExponent
-
-variable {α G : Type*} [MeasurableSpace α] {μ : Measure α} [NormedAddCommGroup G]
-  [NormedSpace ℝ G] {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
-
-namespace MeasureTheory.Lp
-
-variable (G p q μ) in
-/-- **The inclusion `L^p(μ) ⊆ L^q(μ)` for `q ≤ p` on a finite measure**, as a bounded linear map
-of norm at most `μ(univ)^{1/q − 1/p}`. -/
-def monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) : Lp G p μ →L[ℝ] Lp G q μ :=
-  LinearMap.mkContinuous
-    { toFun := fun f ↦ ((Lp.memLp f).mono_exponent hqp).toLp f
-      map_add' := fun f g ↦ by
-        rw [← MemLp.toLp_add]
-        exact MemLp.toLp_congr _ _ (Lp.coeFn_add f g)
-      map_smul' := fun c f ↦ by
-        simp only [RingHom.id_apply]
-        rw [← MemLp.toLp_const_smul]
-        exact MemLp.toLp_congr _ _ (Lp.coeFn_smul c f) }
-    (μ univ ^ (1 / q.toReal - 1 / p.toReal)).toReal fun f ↦ by
-      rw [LinearMap.coe_mk, AddHom.coe_mk, Lp.norm_toLp, Lp.norm_def, ← ENNReal.toReal_mul,
-        mul_comm]
-      have hexp : 0 ≤ 1 / q.toReal - 1 / p.toReal := by
-        rw [sub_nonneg]
-        rcases eq_or_ne p ⊤ with rfl | hp
-        · simp
-        · exact one_div_le_one_div_of_le
-            (ENNReal.toReal_pos (one_pos.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ q)).ne'
-              (ne_top_of_le_ne_top hp hqp)) (ENNReal.toReal_mono hp hqp)
-      refine ENNReal.toReal_mono (ENNReal.mul_ne_top (Lp.eLpNorm_ne_top f)
-        (ENNReal.rpow_ne_top_of_nonneg hexp (measure_ne_top μ univ))) ?_
-      exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hqp (Lp.aestronglyMeasurable f)
-
-/-- The inclusion `L^p ⊆ L^q` is the identity on functions, almost everywhere. -/
-theorem coeFn_monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) (f : Lp G p μ) :
-    monoExponentL G μ p q hqp f =ᵐ[μ] f :=
-  MemLp.coeFn_toLp ((Lp.memLp f).mono_exponent hqp)
-
-/-- The inclusion `L^p ⊆ L^q` is injective. -/
-theorem monoExponentL_injective [IsFiniteMeasure μ] (hqp : q ≤ p) :
-    Function.Injective (monoExponentL G μ p q hqp) := fun f g hfg ↦
-  Lp.ext ((coeFn_monoExponentL hqp f).symm.trans ((Lp.ext_iff.1 hfg).trans
-    (coeFn_monoExponentL hqp g)))
-
-/-- **`L^p(μ) ↪ L^q(μ)` is a continuous embedding for `q ≤ p` on a finite measure.** -/
-theorem isContinuousEmbedding_monoExponentL [IsFiniteMeasure μ] (hqp : q ≤ p) :
-    IsContinuousEmbedding (monoExponentL G μ p q hqp).toLinearMap :=
-  ⟨monoExponentL_injective hqp, _, (monoExponentL G μ p q hqp).le_opNorm⟩
-
-end MeasureTheory.Lp
-
-end MonoExponent
-
-/-! ### `W^{k,p}(Ω) ⊆ W^{k,r}(Ω)` for `r ≤ p` on a set of finite measure -/
-
-section LowerExponent
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [FiniteDimensional ℝ E] [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
-  [CompleteSpace F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ}
-  {p r : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ r)] {Ω : Opens E} {μ : Measure E}
-
-namespace SobolevMultiIndex
-
-omit [FiniteDimensional ℝ E] [CompleteSpace F] [Fact (1 ≤ p)] [Fact (1 ≤ r)] in
-/-- A function of `W^{k,p}(Ω)` lies in `W^{k,r}(Ω)` for `r ≤ p` when `μ Ω < ∞`
-(`MemSobolev.mono_exponent` in the multi-index formulation). -/
-theorem memSobolevMultiIndex_of_le (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
-    (u : SobolevMultiIndex F b k p Ω μ) :
-    MemSobolevMultiIndex b (fn u) k r Ω μ := by
-  have : IsFiniteMeasure (μ.restrict (Ω : Set E)) := isFiniteMeasure_restrict.2 hΩ
-  refine ⟨(SobolevMultiIndex.memLp u).mono_exponent hrp, fun α hα ↦ ?_⟩
-  exact ⟨weakDeriv u ⟨α, hα⟩, hasWeakIteratedLineDerivOn u ⟨α, hα⟩,
-    (Lp.memLp _).mono_exponent hrp⟩
-
-variable (F b k p r μ) in
-/-- **The inclusion `W^{k,p}(Ω) ⊆ W^{k,r}(Ω)`, `r ≤ p`, on a set of finite measure**, as an element
-map: the element of `W^{k,r}(Ω)` with the same function. -/
-def toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ) :
-    SobolevMultiIndex F b k r Ω μ :=
-  (memSobolevMultiIndex_of_le hΩ hrp u).exists_sobolevMultiIndex.choose
-
-omit [Fact (1 ≤ p)] in
-/-- The function of `toLowerExponent u` is the function of `u`. -/
-theorem fn_toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ) :
-    fn (toLowerExponent F b k p r μ hΩ hrp u) =ᵐ[μ.restrict (Ω : Set E)] fn u :=
-  (memSobolevMultiIndex_of_le hΩ hrp u).exists_sobolevMultiIndex.choose_spec
-
-omit [Fact (1 ≤ p)] in
-/-- The weak derivatives of `toLowerExponent u` are those of `u`. -/
-theorem weakDeriv_toLowerExponent (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ)
-    (α : MultiIndexLE ι k) :
-    weakDeriv (toLowerExponent F b k p r μ hΩ hrp u) α =ᵐ[μ.restrict (Ω : Set E)] weakDeriv u α :=
-  (ae_restrict_iff' Ω.isOpen.measurableSet).2
-    (((hasWeakIteratedLineDerivOn _ α).congr_ae (fn_toLowerExponent hΩ hrp u)
-      (Filter.EventuallyEq.refl _ _)).ae_eq (hasWeakIteratedLineDerivOn u α))
-
-/-- The norm of each weak derivative of `toLowerExponent u` in `L^r(Ω)` is bounded by its norm in
-`L^p(Ω)` times `μ(Ω)^{1/r − 1/p}`. -/
-theorem norm_weakDeriv_toLowerExponent_le (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
-    (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
-    ‖weakDeriv (toLowerExponent F b k p r μ hΩ hrp u) α‖
-      ≤ (μ Ω ^ (1 / r.toReal - 1 / p.toReal)).toReal * ‖weakDeriv u α‖ := by
-  have hexp : 0 ≤ 1 / r.toReal - 1 / p.toReal := by
-    rw [sub_nonneg]
-    rcases eq_or_ne p ⊤ with rfl | hp
-    · simp
-    · exact one_div_le_one_div_of_le
-        (ENNReal.toReal_pos (one_pos.trans_le (Fact.out : (1 : ℝ≥0∞) ≤ r)).ne'
-          (ne_top_of_le_ne_top hp hrp)) (ENNReal.toReal_mono hp hrp)
-  rw [Lp.norm_def, Lp.norm_def, eLpNorm_congr_ae (weakDeriv_toLowerExponent hΩ hrp u α),
-    ← ENNReal.toReal_mul, mul_comm]
-  refine ENNReal.toReal_mono (ENNReal.mul_ne_top (Lp.eLpNorm_ne_top _)
-    (ENNReal.rpow_ne_top_of_nonneg hexp hΩ)) ?_
-  have := eLpNorm_le_eLpNorm_mul_rpow_measure_univ (μ := μ.restrict (Ω : Set E)) hrp
-    (Lp.aestronglyMeasurable (weakDeriv u α))
-  rwa [Measure.restrict_apply_univ] at this
-
-/-- The inclusion `W^{k,p}(Ω) ⊆ W^{k,r}(Ω)` is bounded: `‖u‖_{k,r} ≤ C ‖u‖_{k,p}` with
-`C = (#α) μ(Ω)^{1/r − 1/p}`. -/
-theorem norm_toLowerExponent_le (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ) :
-    ‖toLowerExponent F b k p r μ hΩ hrp u‖
-      ≤ Fintype.card (MultiIndexLE ι k) * (μ Ω ^ (1 / r.toReal - 1 / p.toReal)).toReal * ‖u‖ := by
-  refine (norm_le_sum_norm_weakDeriv _).trans ?_
-  calc ∑ α, ‖weakDeriv (toLowerExponent F b k p r μ hΩ hrp u) α‖
-      ≤ ∑ _α : MultiIndexLE ι k, (μ Ω ^ (1 / r.toReal - 1 / p.toReal)).toReal * ‖u‖ :=
-        Finset.sum_le_sum fun α _ ↦ (norm_weakDeriv_toLowerExponent_le hΩ hrp u α).trans
-          (mul_le_mul_of_nonneg_left (norm_weakDeriv_le u α) ENNReal.toReal_nonneg)
-    _ = _ := by
-        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-        ring
-
-variable (F b k p r μ) in
-/-- **The inclusion `W^{k,p}(Ω) → W^{k,r}(Ω)`, `r ≤ p`, on a set of finite measure, as a bounded
-linear map** (`MemSobolev.mono_exponent` typed); the device by which [brezis2011functional]
-Theorem 9.16 reduces the case `p = N` to `p < N`. -/
-def toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
-    SobolevMultiIndex F b k p Ω μ →L[ℝ] SobolevMultiIndex F b k r Ω μ :=
-  LinearMap.mkContinuous
-    { toFun := toLowerExponent F b k p r μ hΩ hrp
-      map_add' := fun u v ↦ ext_of_fn_ae_eq <| by
-        refine (fn_toLowerExponent hΩ hrp (u + v)).trans ((fn_add u v).trans ?_)
-        refine ((fn_toLowerExponent hΩ hrp u).add (fn_toLowerExponent hΩ hrp v)).symm.trans ?_
-        exact (fn_add _ _).symm
-      map_smul' := fun c u ↦ ext_of_fn_ae_eq <| by
-        refine (fn_toLowerExponent hΩ hrp (c • u)).trans ((fn_smul c u).trans ?_)
-        refine ((fn_toLowerExponent hΩ hrp u).const_smul c).symm.trans ?_
-        exact (fn_smul _ _).symm }
-    _ (norm_toLowerExponent_le hΩ hrp)
-
-/-- The function of `toLowerExponentL u` is the function of `u`. -/
-theorem fn_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) (u : SobolevMultiIndex F b k p Ω μ) :
-    fn (toLowerExponentL F b k p r μ hΩ hrp u) =ᵐ[μ.restrict (Ω : Set E)] fn u :=
-  fn_toLowerExponent hΩ hrp u
-
-/-- `toLowerExponentL` is injective. -/
-theorem toLowerExponentL_injective (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
-    Function.Injective (toLowerExponentL F b k p r μ hΩ hrp) := fun u v huv ↦ by
-  refine ext_of_fn_ae_eq ((fn_toLowerExponentL hΩ hrp u).symm.trans ?_)
-  rw [huv]
-  exact fn_toLowerExponentL hΩ hrp v
-
-/-- **`W^{k,p}(Ω) ↪ W^{k,r}(Ω)` is a continuous embedding** for `r ≤ p` on a set of finite
-measure. -/
-theorem isContinuousEmbedding_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
-    IsContinuousEmbedding (toLowerExponentL F b k p r μ hΩ hrp).toLinearMap :=
-  ⟨toLowerExponentL_injective hΩ hrp, _, (toLowerExponentL F b k p r μ hΩ hrp).le_opNorm⟩
-
-end SobolevMultiIndex
-
-end LowerExponent
 
 /-! ### The abstract Rellich–Kondrachov lemma -/
 
@@ -896,15 +723,6 @@ section RellichGtSelf
 
 open SobolevMultiIndex
 
-/-- **Corollary 9.15's standing hypothesis holds for a bounded `C¹` chart domain**: Theorem 9.7
-gives an extension operator at every exponent. -/
-theorem IsSobolevExtensionDomainAll.of_isContDiffChartDomain {d : ℕ}
-    {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
-    IsSobolevExtensionDomainAll (d + 1) Ω :=
-  fun _ _ ↦ IsSobolevExtensionDomain.of_isContDiffChartDomain hΩ hΓ
-
 /-- **The injection `W^{1,p}(Ω) ⊂ L^p(Ω)` factors through `C(Ω̄, ℝ)` for `p > N`**: on an
 extension domain of finite measure, the inclusion `SobolevMultiIndex.toLpₗ` is the extension by
 zero `C(closure Ω, ℝ) → L^p(Ω)` composed with the trace map `SobolevEuclidean.toContinuousMapL`
@@ -1230,117 +1048,6 @@ theorem SobolevEuclidean.isCompactEmbedding_toLower_of_lt
       (isContinuousEmbedding_toLowerOrderL (Nat.le_succ (k + 1))) ih
 
 end RellichLower
-
-/-! ### The inclusion of a subspace into `L^p(Ω)` itself, and `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)` -/
-
-section ZeroInclusion
-
-open SobolevMultiIndex
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
-  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p q r : ℝ≥0∞} [Fact (1 ≤ p)]
-  [Fact (1 ≤ q)] [Fact (1 ≤ r)] {Ω : Opens E} {μ : Measure E}
-
-/-- The inclusion `SobolevMultiIndex.toLpₗOn` of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` itself
-is `SobolevMultiIndex.fnL` restricted to `S`. -/
-theorem SobolevMultiIndex.toLpₗOn_self (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
-    toLpₗOn F b k p Ω μ S (fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ))
-      = ((fnL F b k p Ω μ).comp S.subtypeL).toLinearMap :=
-  LinearMap.ext fun u ↦ Lp.ext ((toLpₗOn_coeFn _ u).trans (Eventually.of_forall fun _ ↦ rfl))
-
-/-- The inclusion `W_0^{k,p}(Ω) → L^p(Ω)` along `SobolevMultiIndex.toLpₗOn` is
-`SobolevMultiIndexZero.fnL`. -/
-theorem SobolevMultiIndexZero.toLpₗOn_eq_fnL :
-    toLpₗOn F b k p Ω μ (SobolevMultiIndexZero F b k p Ω μ)
-        (fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ))
-      = (SobolevMultiIndexZero.fnL F b k p Ω μ).toLinearMap :=
-  SobolevMultiIndex.toLpₗOn_self _
-
-/-- **A compact embedding of a subspace into `L^q(Ω)` pulls back along a continuous embedding
-that preserves the function**: for subspaces `S ⊆ W^{k,p}(Ω)`, `S' ⊆ W^{k,r}(Ω)` and a bounded
-injective `T : S → S'` with `fn (T u) = fn u` on `Ω`, the compactness of `S' → L^q(Ω)` gives that of
-`S → L^q(Ω)`, the latter being the composite. Stated with the operators as variables so that the
-typed instances (`W_0^{1,N}(Ω) → W_0^{1,r}(Ω)`) cost nothing. -/
-theorem SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp
-    {S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)}
-    {S' : Submodule ℝ (SobolevMultiIndex F b k r Ω μ)} (T : S →L[ℝ] S')
-    (hT : IsContinuousEmbedding T.toLinearMap)
-    (hfn : ∀ u : S, fn ((T u : S') : SobolevMultiIndex F b k r Ω μ)
-      =ᵐ[μ.restrict (Ω : Set E)] fn (u : SobolevMultiIndex F b k p Ω μ))
-    {h' : ∀ v : S', MemLp (fn (v : SobolevMultiIndex F b k r Ω μ)) q (μ.restrict (Ω : Set E))}
-    (hc : IsCompactEmbedding (toLpₗOn F b k r Ω μ S' h'))
-    (h : ∀ u : S, MemLp (fn (u : SobolevMultiIndex F b k p Ω μ)) q (μ.restrict (Ω : Set E))) :
-    IsCompactEmbedding (toLpₗOn F b k p Ω μ S h) := by
-  have := hT.comp_isCompactEmbedding hc
-  convert this using 1
-  refine LinearMap.ext fun u ↦ Lp.ext ((toLpₗOn_coeFn h u).trans ?_)
-  exact ((toLpₗOn_coeFn h' (T u)).trans (hfn u)).symm
-
-variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
-
-/-- **The inclusion of a subspace `S ⊆ W^{k,p}(Ω)` into `L^p(Ω)` is a continuous embedding**:
-injective, of norm at most one. -/
-theorem SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self
-    (S : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)) :
-    IsContinuousEmbedding (toLpₗOn F b k p Ω μ S
-      fun u ↦ memLp (u : SobolevMultiIndex F b k p Ω μ)) := by
-  rw [toLpₗOn_self]
-  exact ⟨fun _ _ huv ↦ Subtype.ext (fnL_injective huv), _,
-    ((fnL F b k p Ω μ).comp S.subtypeL).le_opNorm⟩
-
-/-- **`SobolevMultiIndex.toLowerExponentL` maps `W_0^{k,p}(Ω)` into `W_0^{k,r}(Ω)`**, `r ≤ p`, on
-a set of finite measure: it maps the test functions to the test functions (the function is
-unchanged) and is continuous, so it maps the closure into the closure. -/
-theorem SobolevMultiIndexZero.toLowerExponentL_mem (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
-    {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
-    toLowerExponentL F b k p r μ hΩ hrp u ∈ SobolevMultiIndexZero F b k r Ω μ := by
-  have h : SobolevMultiIndexZero F b k p Ω μ ≤ (SobolevMultiIndexZero F b k r Ω μ).comap
-      (toLowerExponentL F b k p r μ hΩ hrp : SobolevMultiIndex F b k p Ω μ →ₗ[ℝ] _) := by
-    refine Submodule.topologicalClosure_minimal _ ?_ ?_
-    · intro v hv
-      obtain ⟨φ, hφ⟩ := mem_testFunctions.1 hv
-      exact SobolevMultiIndexZero.testFunctions_le
-        (mem_testFunctions.2 ⟨φ, (fn_toLowerExponentL hΩ hrp v).trans hφ⟩)
-    · exact SobolevMultiIndexZero.isClosed.preimage (toLowerExponentL F b k p r μ hΩ hrp).continuous
-  exact h hu
-
-variable (F b k p r μ) in
-/-- **The inclusion `W_0^{k,p}(Ω) → W_0^{k,r}(Ω)`, `r ≤ p`, on a set of finite measure**, as a
-bounded linear map: `SobolevMultiIndex.toLowerExponentL` restricted to the closures of the test
-functions. -/
-def SobolevMultiIndexZero.toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
-    SobolevMultiIndexZero F b k p Ω μ →L[ℝ] SobolevMultiIndexZero F b k r Ω μ :=
-  ((SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp).comp
-    (SobolevMultiIndexZero F b k p Ω μ).subtypeL).codRestrict _
-      fun u ↦ SobolevMultiIndexZero.toLowerExponentL_mem hΩ hrp u.2
-
-/-- `SobolevMultiIndexZero.toLowerExponentL` is `SobolevMultiIndex.toLowerExponentL` on the
-underlying element. -/
-@[simp]
-theorem SobolevMultiIndexZero.coe_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
-    (u : SobolevMultiIndexZero F b k p Ω μ) :
-    (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp u : SobolevMultiIndex F b k r Ω μ)
-      = SobolevMultiIndex.toLowerExponentL F b k p r μ hΩ hrp u :=
-  rfl
-
-/-- The function of `SobolevMultiIndexZero.toLowerExponentL u` is the function of `u`. -/
-theorem SobolevMultiIndexZero.fn_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p)
-    (u : SobolevMultiIndexZero F b k p Ω μ) :
-    fn ((SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp u : _) :
-        SobolevMultiIndex F b k r Ω μ)
-      =ᵐ[μ.restrict (Ω : Set E)] fn (u : SobolevMultiIndex F b k p Ω μ) := by
-  rw [SobolevMultiIndexZero.coe_toLowerExponentL]
-  exact SobolevMultiIndex.fn_toLowerExponentL hΩ hrp _
-
-/-- **`W_0^{k,p}(Ω) ↪ W_0^{k,r}(Ω)` is a continuous embedding** for `r ≤ p` on a set of finite
-measure. -/
-theorem SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL (hΩ : μ Ω ≠ ⊤) (hrp : r ≤ p) :
-    IsContinuousEmbedding (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp).toLinearMap :=
-  ⟨fun _ _ huv ↦ Subtype.ext (toLowerExponentL_injective hΩ hrp (congrArg Subtype.val huv)), _,
-    (SobolevMultiIndexZero.toLowerExponentL F b k p r μ hΩ hrp).le_opNorm⟩
-
-end ZeroInclusion
 
 /-! ### The abstract Rellich–Kondrachov lemma at `q = p`: every `1 ≤ p < ∞`, every `N` -/
 

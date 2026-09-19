@@ -202,4 +202,22 @@ theorem IsLocalMax.laplacian_nonpos [FiniteDimensional ℝ E] {f : E → ℝ} {x
       (b := 0) this hline.continuousAt
   · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
 
+/-- **The Hessian of a `C²` function is nonpositive at a local maximum**: `D²f(x₀)[v, v] ≤ 0`
+for every `v`, read as `fderiv (fderiv f) x₀ v v` — the second derivative at `0` of the line
+restriction `s ↦ f (x₀ + s v)` (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
+maximum at `0` (`IsLocalMax.deriv_deriv_nonpos`). -/
+theorem IsLocalMax.fderiv_fderiv_apply_self_nonpos {f : E → ℝ} {x₀ : E} (hmax : IsLocalMax f x₀)
+    (hf : ContDiffAt ℝ 2 f x₀) (v : E) : fderiv ℝ (fderiv ℝ f) x₀ v v ≤ 0 := by
+  have h := hf.deriv_deriv_comp_add_smul v
+  rw [iteratedFDeriv_two_apply] at h
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h
+  rw [← h]
+  have hline : Continuous fun s : ℝ ↦ x₀ + s • v := by fun_prop
+  have h0 : x₀ + (0 : ℝ) • v = x₀ := by simp
+  refine IsLocalMax.deriv_deriv_nonpos ?_ ?_
+  · have : IsLocalMax f ((fun s : ℝ ↦ x₀ + s • v) 0) := by simpa only [h0] using hmax
+    exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • v) (b := 0) this
+      hline.continuousAt
+  · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
+
 end Laplacian

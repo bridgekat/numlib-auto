@@ -231,75 +231,6 @@ id = "SobolevEuclidean.exists_forall_eLpNorm_fn_le_of_eq_finrank"
 id = "SobolevEuclidean.memLp_fn_of_eq_finrank"
 
 [[node]]
-id = "SobolevMultiIndex.norm_le_card_mul_of_forall_norm_weakDeriv_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_toLowerOrder"
-
-[[node]]
-id = "SobolevMultiIndex.fn_toLowerOrder"
-
-[[node]]
-id = "MultiIndexLE.castLE_injective"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerOrder_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL"
-
-[[node]]
-id = "SobolevMultiIndex.norm_toLowerOrderL_le"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL_injective"
-
-[[node]]
-id = "SobolevMultiIndex.norm_le_norm_of_injective"
-
-[[node]]
-id = "MultiIndexLE.addSingle"
-
-[[node]]
-id = "MultiIndexLE.addSingle_injective"
-
-[[node]]
-id = "MultiIndexLE.singleLE"
-
-[[node]]
-id = "MultiIndexLE.addSingle_zero"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_single"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_addSingle"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.weakDeriv_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.fn_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_fn_partialDeriv"
-
-[[node]]
-id = "SobolevMultiIndex.norm_partialDeriv_le"
-
-[[node]]
-id = "SobolevMultiIndex.partialDerivL"
-
-[[node]]
-id = "SobolevMultiIndex.norm_partialDerivL_le"
-
-[[node]]
 id = "SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_le"
 
 [[node]]
@@ -355,27 +286,6 @@ id = "SobolevEuclidean.exists_sobolevEuclidean_one_of_forall_eLpNorm_fn_restrict
 
 [[node]]
 id = "iteratedFDeriv_fun_sum_smul_const_of_contDiffAt"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder_add"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrder_smul"
-
-[[node]]
-id = "SobolevMultiIndex.toLowerOrderL_apply"
-
-[[node]]
-id = "MultiIndexLE.coe_addSingle"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv_add"
-
-[[node]]
-id = "SobolevMultiIndex.partialDeriv_smul"
-
-[[node]]
-id = "SobolevMultiIndex.partialDerivL_apply"
 
 [[node]]
 id = "ContDiff.enorm_le_lintegral_fderiv_line"

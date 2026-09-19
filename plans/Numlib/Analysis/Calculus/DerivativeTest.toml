@@ -14,3 +14,6 @@ id = "ContDiffAt.deriv_deriv_comp_add_smul"
 
 [[node]]
 id = "IsLocalMax.laplacian_nonpos"
+
+[[node]]
+id = "IsLocalMax.fderiv_fderiv_apply_self_nonpos"

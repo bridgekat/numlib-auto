@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/Cutoff.lean` and `Numlib/Analysis/Sobolev/Calculus.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Numlib.Analysis.Normed.Lp.PiLpDual
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Analysis.Sobolev.Embedding
@@ -3256,53 +3257,6 @@ end Thm917Chart
 
 section Dual
 
-/-! #### Functionals on a finite `ℓ^p` product -/
-
-namespace PiLp
-
-variable {κ : Type*} [DecidableEq κ] {X : κ → Type*} [∀ i, NormedAddCommGroup (X i)]
-  [∀ i, NormedSpace ℝ (X i)] {p : ℝ≥0∞}
-
-variable (p) in
-/-- The inclusion of the `i`-th factor into the `ℓ^p` product, as a continuous linear map. -/
-def singleCLM (i : κ) : X i →L[ℝ] PiLp p X :=
-  (continuousLinearEquiv p ℝ X).symm.toContinuousLinearMap.comp (ContinuousLinearMap.single ℝ X i)
-
-/-- `singleCLM p i b` is `PiLp.single p i b`. -/
-theorem singleCLM_apply (i : κ) (b : X i) : singleCLM p i b = single p i b := rfl
-
-variable [Fintype κ] [Fact (1 ≤ p)]
-
-/-- The inclusion of a factor is isometric. -/
-theorem norm_singleCLM_apply (i : κ) (b : X i) : ‖singleCLM p i b‖ = ‖b‖ := by
-  rw [singleCLM_apply, norm_single]
-
-omit [Fact (1 ≤ p)] in
-/-- Every element of the product is the sum of its coordinates. -/
-theorem sum_singleCLM_apply (x : PiLp p X) : ∑ i, singleCLM p i (x i) = x := by
-  refine (continuousLinearEquiv p ℝ X).injective ?_
-  rw [map_sum]
-  simp only [singleCLM, ContinuousLinearMap.comp_apply, ContinuousLinearEquiv.coe_coe,
-    ContinuousLinearEquiv.apply_symm_apply, ContinuousLinearMap.single_apply]
-  exact Finset.univ_sum_single _
-
-omit [Fact (1 ≤ p)] in
-/-- A functional on the product is the sum of its restrictions to the factors. -/
-theorem strongDual_apply_eq_sum_singleCLM (Φ : StrongDual ℝ (PiLp p X)) (x : PiLp p X) :
-    Φ x = ∑ i, Φ.comp (singleCLM p i) (x i) := by
-  conv_lhs => rw [← sum_singleCLM_apply x]
-  rw [map_sum]
-  rfl
-
-/-- The restriction of a functional to a factor has norm at most that of the functional. -/
-theorem norm_strongDual_comp_singleCLM_le (Φ : StrongDual ℝ (PiLp p X)) (i : κ) :
-    ‖Φ.comp (singleCLM p i)‖ ≤ ‖Φ‖ :=
-  ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun b ↦ by
-    rw [ContinuousLinearMap.comp_apply]
-    exact (Φ.le_opNorm _).trans_eq (by rw [norm_singleCLM_apply])
-
-end PiLp
-
 /-! #### Hahn–Banach along a bounded-below linear map, and the Riesz representation on `(L^p)^κ` -/
 
 /-- **Hahn–Banach along a linear map with bounded inverse**: if `g : V →ₗ W` satisfies
@@ -3359,13 +3313,13 @@ theorem MeasureTheory.Lp.strongDual_piLp_exists_forall_eq_sum_integral {α : Typ
   obtain ⟨e, he⟩ : ∃ e : Lp ℝ q ν ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ p ν),
       ∀ (u : Lp ℝ q ν) (f : Lp ℝ p ν), e u f = ∫ x, u x * f x ∂ν :=
     ⟨Lp.dualEquiv ℝ p q ν hp, fun u f ↦ Lp.dualEquiv_apply hp u f⟩
-  refine ⟨fun i ↦ e.symm (Φ.comp (PiLp.singleCLM p (X := fun _ : κ ↦ Lp ℝ p ν) i)),
+  refine ⟨fun i ↦ e.symm (Φ.comp (PiLp.singleL p (X := fun _ : κ ↦ Lp ℝ p ν) i)),
     fun x ↦ ?_, fun i ↦ ?_⟩
-  · rw [PiLp.strongDual_apply_eq_sum_singleCLM Φ]
+  · rw [PiLp.strongDual_apply_eq_sum Φ]
     refine Finset.sum_congr rfl fun i _ ↦ ?_
     rw [← he, LinearIsometryEquiv.apply_symm_apply]
   · rw [LinearIsometryEquiv.norm_map]
-    exact PiLp.norm_strongDual_comp_singleCLM_le Φ i
+    exact PiLp.norm_strongDual_comp_singleL_le Φ i
 
 /-! #### The dual of `W_0^{1,p}(Ω)` -/
 
@@ -3470,13 +3424,6 @@ open scoped InnerProductSpace
 namespace SobolevEuclideanZero
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- The `L²(Ω)` inner product of two `L²` functions is the integral of their product. -/
-theorem _root_.MeasureTheory.L2.inner_eq_integral_mul
-    (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
-    ⟪f, g⟫_ℝ = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * g x := by
-  rw [L2.inner_def]
-  exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp [RCLike.inner_apply, mul_comm])
 
 variable (N Ω) in
 /-- **The inclusion `L²(Ω) ⊂ H^{-1}(Ω)`**: `f ↦ (v ↦ ∫_Ω f v)`, the transpose of the inclusion
@@ -4412,3 +4359,82 @@ theorem SobolevEuclideanZero.eq_top_of_compl_singleton {N : ℕ}
     (by rw [hΩ, compl_compl])
 
 end PointCapacity
+
+/-! ### Density: identities checked on the test functions hold on `W_0^{k,p}(Ω)` -/
+
+section EqOn
+
+/-- **Two continuous maps on `W^{k,p}(Ω)` that agree on the test functions agree on
+`W_0^{k,p}(Ω)`**, the closure of the test functions. This is the density step of every "classical
+solution is a weak solution" argument: an identity between continuous functionals checked on
+`C_c^∞(Ω)` holds on `W_0^{1,p}(Ω)`. -/
+theorem SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions {E F : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι]
+    {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E}
+    {X : Type*} [TopologicalSpace X] [T2Space X] {f g : SobolevMultiIndex F b k p Ω μ → X}
+    (hf : Continuous f) (hg : Continuous g)
+    (h : EqOn f g (SobolevMultiIndex.testFunctions F b k p Ω μ)) :
+    EqOn f g (SobolevMultiIndexZero F b k p Ω μ) := by
+  rw [SobolevMultiIndexZero, Submodule.topologicalClosure_coe]
+  exact closure_minimal h (isClosed_eq hf hg)
+
+end EqOn
+
+/-! ### Footnote 39: a `W_0^{1,p}` function with vanishing gradient is zero -/
+
+section Footnote39
+
+open SobolevMultiIndex
+
+/-- **Footnote 39 of [brezis2011functional] §9.7**: for `N ≥ 1`, `1 ≤ p < ∞` and any open
+`Ω ⊆ ℝ^N`, an element of `W_0^{1,p}(Ω)` whose partial derivatives all vanish is zero. The
+extension by zero `ū` lies in `W^{1,p}(ℝ^N)` with `∇ū = ext(∇u) = 0` (Proposition 9.18 (i) ⇒
+(iii), `SobolevEuclideanZero.extendZeroL`), so `ū` is almost everywhere constant on the connected
+`ℝ^N` (Remark 7, `HasWeakFDerivOn.ae_eq_const_of_isPreconnected`), and a constant in
+`L^p(ℝ^N)`, `p < ∞`, is `0` (`MeasureTheory.memLp_const_iff`, the measure of `ℝ^N` being
+infinite for `N ≥ 1`; for `N = 0` the statement is false). -/
+theorem SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero {N : ℕ} (hN : N ≠ 0)
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤) {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+    (u : SobolevEuclideanZero N 1 p Ω)
+    (h : ∀ i, weakDeriv (u : SobolevEuclidean N 1 p Ω) (MultiIndexLE.single i) = 0) : u = 0 := by
+  classical
+  have hp : (1 : ℝ≥0∞) ≤ p := Fact.out
+  have hp0 : p ≠ 0 := (zero_lt_one.trans_le hp).ne'
+  have hΩm := Ω.isOpen.measurableSet
+  have : Nonempty (Fin N) := ⟨⟨0, Nat.pos_of_ne_zero hN⟩⟩
+  -- the tensor gradient of the extension by zero vanishes almost everywhere
+  obtain ⟨w, hw, -, hwi, -⟩ := exists_hasWeakFDerivOn_fn (SobolevEuclideanZero.extendZeroL N p Ω u)
+  simp only [Opens.coe_top, Measure.restrict_univ] at hwi
+  have hw0 : w =ᵐ[volume] 0 := by
+    have hall : ∀ᵐ x ∂volume, ∀ i, w x ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis i) = 0 :=
+      ae_all_iff.2 fun i ↦ by
+        refine (hwi i).trans ((SobolevEuclideanZero.weakDeriv_extendZeroL_single u i).trans ?_)
+        rw [h i]
+        have := (ae_eq_restrict_iff_indicator_ae_eq hΩm).1
+          (Lp.coeFn_zero ℝ p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+        refine this.trans (Eventually.of_forall fun x ↦ ?_)
+        simp
+    filter_upwards [hall] with x hx
+    simp only [EuclideanSpace.basisFun_toBasis_apply] at hx
+    refine ContinuousLinearMap.ext fun ξ ↦ ?_
+    rw [← (EuclideanSpace.basisFun (Fin N) ℝ).toBasis.sum_repr ξ, map_sum]
+    simp [hx]
+  obtain ⟨c, hc⟩ := hw.ae_eq_const_of_isPreconnected
+    (by simpa only [Opens.coe_top, Measure.restrict_univ] using hw0) isPreconnected_univ
+  simp only [Opens.coe_top, Measure.restrict_univ] at hc
+  -- the constant is zero, the measure of `ℝ^N` being infinite
+  have hmem : MemLp (fun _ : EuclideanSpace ℝ (Fin N) ↦ c) p volume :=
+    (SobolevEuclidean.memLp_fn (SobolevEuclideanZero.extendZeroL N p Ω u)).ae_eq hc
+  have hc0 : c = 0 := by
+    rcases (memLp_const_iff hp0 hp').1 hmem with h0 | hfin
+    · exact h0
+    · rw [measure_univ_of_isAddLeftInvariant] at hfin
+      exact absurd hfin (lt_irrefl _)
+  -- hence `u = 0`
+  refine Subtype.ext (ext_of_fn_ae_eq ?_)
+  refine ((SobolevEuclideanZero.fn_extendZeroL_restrict u).symm.trans ?_).trans fn_zero.symm
+  refine ae_restrict_of_ae (hc.trans (Eventually.of_forall fun x ↦ ?_))
+  simp [hc0]
+
+end Footnote39

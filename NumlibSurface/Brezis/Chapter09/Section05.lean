@@ -107,7 +107,7 @@ theorem laplaceForm_apply_two (u v : hSpace N Ω) :
       = (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv v i x)
         + ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x := by
   rw [Elliptic.laplaceForm, add_apply, add_apply, Elliptic.dirichletForm_apply,
-    Elliptic.pairing_apply, ContinuousLinearMap.id_apply, Elliptic.inner_eq_integral]
+    Elliptic.pairing_apply, ContinuousLinearMap.id_apply, MeasureTheory.L2.inner_eq_integral_mul]
   rfl
 
 /-- **The weak formulation (32) is the backbone's Galerkin problem** for the form
@@ -699,7 +699,7 @@ theorem theorem_9_23 (hb : Bornology.IsBounded (Ω : Set 𝔼))
   obtain ⟨F, hF, hd, h⟩ := Elliptic.exists_orthogonality_iff_exists_solution Ω (a₁ := a₁)
     (a₀ := a₀) hb.measure_lt_top.ne hA
   refine ⟨F, hF, hd, fun f ↦ ?_⟩
-  simp only [isWeakSolutionGeneralElliptic_iff, h f, Elliptic.inner_eq_integral]
+  simp only [isWeakSolutionGeneralElliptic_iff, h f, MeasureTheory.L2.inner_eq_integral_mul]
 
 /-- **Remark 23, first clause.** Suppose that the homogeneous equation associated to (40), i.e.
 with `f = 0`, has `u = 0` as its unique solution. Then for every `f ∈ L²` there exists a unique

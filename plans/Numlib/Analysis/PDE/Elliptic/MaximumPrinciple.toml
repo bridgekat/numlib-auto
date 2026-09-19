@@ -2,9 +2,7 @@ namespace = "Elliptic"
 
 [[node]]
 id = "exists_truncation"
-
-[[node]]
-id = "_root_.SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero"
+deprecated = '''Moved and renamed on 2026-09-20 (tidy2): use `exists_stampacchiaTruncation` of `Numlib/Analysis/Sobolev/Calculus.lean`; the alias goes once `Heat/MaximumPrinciple.toml` (`exists_isTruncation`) repoints its `deps`.'''
 
 [[node]]
 id = "le_of_forall_truncation_mem"
@@ -26,9 +24,6 @@ id = "_root_.Matrix.PosSemidef.sum_mul_apply_single_nonpos"
 
 [[node]]
 id = "_root_.Matrix.posSemidef_of_of_symm_of_nonneg"
-
-[[node]]
-id = "_root_.IsLocalMax.fderiv_fderiv_apply_self_nonpos"
 
 [[node]]
 id = "nonneg_of_nonneg_frontier_general_zero_drift"
@@ -76,42 +71,6 @@ deps = ["nonneg_of_nonneg_frontier_general", "nonneg_of_nonneg_frontier_general_
 
 [[node]]
 id = "le_of_neumann"
-
-[[node]]
-id = "truncationDeriv"
-
-[[node]]
-id = "stampacchiaTruncation"
-
-[[node]]
-id = "contDiff_stampacchiaTruncation"
-
-[[node]]
-id = "deriv_stampacchiaTruncation"
-
-[[node]]
-id = "strictMonoOn_stampacchiaTruncation"
-
-[[node]]
-id = "IsStampacchiaTruncation"
-
-[[node]]
-id = "IsStampacchiaTruncation.mul_nonneg"
-
-[[node]]
-id = "IsStampacchiaTruncation.mul_eq_zero_iff"
-
-[[node]]
-id = "isStampacchiaTruncation_stampacchiaTruncation"
-
-[[node]]
-id = "stampacchiaTruncationSqrt"
-
-[[node]]
-id = "sq_deriv_stampacchiaTruncationSqrt"
-
-[[node]]
-id = "isStampacchiaTruncation_stampacchiaTruncationSqrt"
 
 [[node]]
 id = "forall_le_of_ae_le_of_continuousOn"

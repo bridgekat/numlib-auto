@@ -13,6 +13,9 @@ id = "Lp.norm_toDualCLM_apply_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 
 [[node]]
+id = "L2.inner_eq_integral_mul"
+
+[[node]]
 id = "Lp.norm_toDualCLM_apply_of_ne_top"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 4.10, Step 3"
 

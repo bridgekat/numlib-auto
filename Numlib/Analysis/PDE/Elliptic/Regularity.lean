@@ -1,4 +1,6 @@
+import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.Analysis.Sobolev.Translate
 
 /-!
 # Regularity of weak solutions of elliptic equations
@@ -10,12 +12,13 @@ coefficients, on an open `Ω ⊆ ℝ^N`.
 
 ## Contents
 
-* **Translations and difference quotients.** For an open set `Ω` invariant under the translation
-  by `h` (`IsTranslationInvariant Ω h`), the translation `u ↦ u(· + h)` commutes with the weak
-  derivatives (`HasWeakIteratedLineDerivOn.comp_add_right`), acts isometrically on `L^p(Ω)`
-  (`Elliptic.translateLp`) and on `W^{k,p}(Ω)` (`Elliptic.translateL`); the difference quotient
-  `D_h u = (u(· + h) − u)/|h|` (`Elliptic.diffQuot`) is `Elliptic.diffQuotLp` on `L^p(Ω)` and
-  `Elliptic.diffQuotL` on `W^{k,p}(Ω)`, with the adjointness `⟪D_h u, v⟫ = ⟪u, D_{−h} v⟫`.
+* **Difference quotients.** For an open set `Ω` invariant under the translation by `h`
+  (`IsTranslationInvariant Ω h`), the translation `u ↦ u(· + h)` acts isometrically on `L^p(Ω)`
+  (`MeasureTheory.Lp.translate`) and on `W^{k,p}(Ω)` (`SobolevMultiIndex.translateL`) and
+  commutes with the weak derivatives (`Numlib/Analysis/Sobolev/Translate.lean`); the difference
+  quotient `D_h u = (u(· + h) − u)/|h|` (`Elliptic.diffQuot`) is `Elliptic.diffQuotLp` on
+  `L^p(Ω)` and `Elliptic.diffQuotL` on `W^{k,p}(Ω)`, with the adjointness
+  `⟪D_h u, v⟫ = ⟪u, D_{−h} v⟫`.
 * **Weak derivatives from bounded difference quotients**
   (`Elliptic.exists_hasWeakIteratedLineDerivOn_of_diffQuot_bounded`): if the difference quotients
   `D_{t y} u`, `t → 0`, are bounded in a Hilbert space `H` mapped continuously into `L²(Ω)`, then
@@ -28,8 +31,9 @@ coefficients, on an open `Ω ⊆ ℝ^N`.
   with the constant from the closed graph theorem, `Elliptic.regularity_dirichlet`. The
   `H^{m+2}` clause (`Elliptic.regularity_dirichlet_higher`, membership
   `regularity_dirichlet_higher_mem`) is the same induction on the order one level up: the
-  multipliers `Elliptic.IsContDiffConstOffCompact` (smooth functions constant off a compact set,
-  closed under derivatives, products and inversion) keep `H^k` stable
+  multipliers `IsContDiffConstOffCompact` (smooth functions constant off a compact set,
+  closed under derivatives, products and inversion,
+  `Numlib/Analysis/Calculus/ContDiffConstOffCompact.lean`) keep `H^k` stable
   (`MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact`), the differentiated
   variable-coefficient equation (`Elliptic.forall_testFunction_deriv_general`) drives the
   induction on the half space (`Elliptic.memSobolevMultiIndex_of_tangential_of_order`), and the
@@ -48,47 +52,9 @@ open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
 
-/-! ### Open sets invariant under a translation -/
+/-! ### The half space is invariant under the tangential translations -/
 
-section Invariant
-
-variable {E : Type*} [AddGroup E]
-
-/-- `IsTranslationInvariant Ω h` says that the set `Ω` is invariant under the translation by `h`:
-`x + h ∈ Ω ↔ x ∈ Ω`. The whole space is invariant under every translation, and the half space
-`{x_N > 0}` under the tangential ones (`h_N = 0`); this is what the method of translations of
-[brezis2011functional] §9.6 needs of the domain. -/
-def IsTranslationInvariant (Ω : Set E) (h : E) : Prop := ∀ x, x + h ∈ Ω ↔ x ∈ Ω
-
-namespace IsTranslationInvariant
-
-variable {Ω : Set E} {h : E}
-
-theorem mem (hΩ : IsTranslationInvariant Ω h) {x : E} (hx : x ∈ Ω) : x + h ∈ Ω := (hΩ x).2 hx
-
-theorem preimage_eq (hΩ : IsTranslationInvariant Ω h) : (· + h) ⁻¹' Ω = Ω :=
-  Set.ext fun x ↦ hΩ x
-
-theorem neg (hΩ : IsTranslationInvariant Ω h) : IsTranslationInvariant Ω (-h) := fun x ↦ by
-  have := hΩ (x + -h)
-  rw [neg_add_cancel_right] at this
-  exact this.symm
-
-theorem univ (h : E) : IsTranslationInvariant (univ : Set E) h := fun _ ↦ Iff.rfl
-
-theorem zero (Ω : Set E) : IsTranslationInvariant Ω 0 := fun x ↦ by rw [add_zero]
-
-theorem add {h' : E} (hΩ : IsTranslationInvariant Ω h) (hΩ' : IsTranslationInvariant Ω h') :
-    IsTranslationInvariant Ω (h + h') := fun x ↦ by
-  rw [← add_assoc, hΩ', hΩ]
-
-end IsTranslationInvariant
-
-end Invariant
-
-section InvariantSmul
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+section InvariantHalfSpace
 
 /-- The half space is invariant under the tangential translations `t • y`, `y_N = 0`. -/
 theorem EuclideanSpace.isTranslationInvariant_upperHalfSpace {d : ℕ}
@@ -96,122 +62,7 @@ theorem EuclideanSpace.isTranslationInvariant_upperHalfSpace {d : ℕ}
     IsTranslationInvariant (EuclideanSpace.upperHalfSpace d) (t • y) := fun x ↦ by
   simp [EuclideanSpace.mem_upperHalfSpace, hy]
 
-/-- A set invariant under all the translations `t • y` contains the lines `x + ℝ y` through its
-points. -/
-theorem IsTranslationInvariant.smul_mem {Ω : Set E} {y : E}
-    (hΩ : ∀ t : ℝ, IsTranslationInvariant Ω (t • y)) {x : E} (hx : x ∈ Ω) (t : ℝ) :
-    x + t • y ∈ Ω :=
-  (hΩ t).mem hx
-
-end InvariantSmul
-
-/-! ### Translations of locally integrable functions and of test functions -/
-
-section Translate
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
-  {Ω : Opens E} {h : E}
-
-omit [NormedSpace ℝ E] in
-/-- The translation by `h` preserves `μ.restrict Ω` when `Ω` is invariant under it. -/
-theorem IsTranslationInvariant.measurePreserving [μ.IsAddRightInvariant]
-    (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    MeasurePreserving (· + h) (μ.restrict (Ω : Set E)) (μ.restrict (Ω : Set E)) := by
-  have := (measurePreserving_add_right μ h).restrict_preimage Ω.isOpen.measurableSet
-  rwa [hΩ.preimage_eq] at this
-
-omit [NormedSpace ℝ E] [NormedSpace ℝ F] in
-/-- A translate of a locally integrable function on an invariant open set is locally integrable
-there. -/
-theorem LocallyIntegrableOn.comp_add_right [μ.IsAddRightInvariant] [ProperSpace E] {u : E → F}
-    (hu : LocallyIntegrableOn u Ω μ) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    LocallyIntegrableOn (fun x ↦ u (x + h)) Ω μ := by
-  rw [locallyIntegrableOn_iff Ω.isOpen.isLocallyClosed] at hu ⊢
-  intro k hk hkc
-  have hk' : (· + h) '' k ⊆ (Ω : Set E) := by
-    rintro _ ⟨x, hx, rfl⟩
-    exact hΩ.mem (hk hx)
-  have := hu ((· + h) '' k) hk' (hkc.image (continuous_id.add continuous_const))
-  exact ((measurePreserving_add_right μ h).integrableOn_image
-    (MeasurableEquiv.addRight h).measurableEmbedding).1 this
-
-/-- The translate `x ↦ φ (x + h)` of a test function on an open set invariant under the
-translation by `h`, as a test function on the same set. -/
-def TestFunction.compAddRightOn (φ : 𝓓(Ω, F)) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    𝓓(Ω, F) where
-  toFun x := φ (x + h)
-  contDiff' := φ.contDiff.comp (contDiff_id.add contDiff_const)
-  hasCompactSupport' := φ.hasCompactSupport.comp_homeomorph (Homeomorph.addRight h)
-  tsupport_subset' := by
-    have : tsupport (fun x ↦ φ (x + h)) = (Homeomorph.addRight h) ⁻¹' tsupport φ := by
-      rw [tsupport, tsupport, (Homeomorph.addRight h).preimage_closure]
-      rfl
-    rw [this]
-    intro x hx
-    exact (hΩ x).1 (φ.tsupport_subset hx)
-
-omit [MeasurableSpace E] [BorelSpace E] in
-@[simp]
-theorem TestFunction.compAddRightOn_coe (φ : 𝓓(Ω, F))
-    (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    (φ.compAddRightOn hΩ : E → F) = fun x ↦ φ (x + h) :=
-  rfl
-
-/-- The change of variables `x ↦ x + h` in an integral over an invariant open set, for an
-integrand that is the product of a test function and a locally integrable function:
-`∫_Ω ψ(x) u(x + h) dx = ∫_Ω ψ(x − h) u(x) dx`. -/
-theorem integral_smul_comp_add_right [μ.IsAddRightInvariant] (u : E → F)
-    (hΩ : IsTranslationInvariant (Ω : Set E) h) (ψ : 𝓓(Ω, ℝ)) :
-    ∫ x in (Ω : Set E), ψ x • u (x + h) ∂μ = ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ := by
-  have e1 : ∫ x in (Ω : Set E), ψ x • u (x + h) ∂μ = ∫ x, ψ x • u (x + h) ∂μ :=
-    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      rw [ψ.eq_zero_of_notMem hx, zero_smul]
-  have e2 : ∫ x in (Ω : Set E), ψ (x - h) • u x ∂μ = ∫ x, ψ (x - h) • u x ∂μ :=
-    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
-      have := (ψ.compAddRightOn hΩ.neg).eq_zero_of_notMem hx
-      simp only [TestFunction.compAddRightOn_coe, ← sub_eq_add_neg] at this
-      rw [this, zero_smul]
-  rw [e1, e2, ← integral_add_right_eq_self (fun x ↦ ψ (x - h) • u x) h]
-  simp only [add_sub_cancel_right]
-
-end Translate
-
-/-! ### The translation commutes with the weak derivative -/
-
-section WeakDerivTranslate
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [BorelSpace E] [ProperSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E}
-  [μ.IsAddRightInvariant] {Ω : Opens E} {h : E}
-
-/-- **Translation commutes with the weak derivative** on an invariant open set: if `w` is a weak
-derivative of `u` along the tuple `y` on `Ω`, then `w(· + h)` is one of `u(· + h)`. The test
-function `φ` is traded for its translate `φ(· − h)`, a test function on `Ω` again. -/
-theorem HasWeakIteratedLineDerivOn.comp_add_right {n : ℕ} {y : Fin n → E} {u w : E → F}
-    (hu : HasWeakIteratedLineDerivOn y u w Ω μ) (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    HasWeakIteratedLineDerivOn y (fun x ↦ u (x + h)) (fun x ↦ w (x + h)) Ω μ where
-  locallyIntegrableOn := LocallyIntegrableOn.comp_add_right hu.locallyIntegrableOn hΩ
-  locallyIntegrableOn_weakDeriv :=
-    LocallyIntegrableOn.comp_add_right hu.locallyIntegrableOn_weakDeriv hΩ
-  integral_smul_eq φ := by
-    obtain ⟨ψ, hψ⟩ : ∃ ψ : 𝓓(Ω, ℝ), (ψ : E → ℝ) = fun x ↦ φ (x - h) :=
-      ⟨φ.compAddRightOn hΩ.neg, by simp [sub_eq_add_neg]⟩
-    have hψd : ∀ x, iteratedFDeriv ℝ n (ψ : E → ℝ) x y
-        = iteratedFDeriv ℝ n (φ : E → ℝ) (x - h) y := fun x ↦ by
-      rw [hψ, iteratedFDeriv_comp_sub']
-    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • u (x + h) ∂μ
-        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n ψ x y • u x ∂μ := by
-      have := integral_smul_comp_add_right (μ := μ) u hΩ (φ.iteratedFDerivApply n y)
-      simp only [TestFunction.iteratedFDerivApply_apply] at this
-      rw [this]
-      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψd])
-    have e2 : ∫ x in (Ω : Set E), φ x • w (x + h) ∂μ = ∫ x in (Ω : Set E), ψ x • w x ∂μ := by
-      rw [integral_smul_comp_add_right (μ := μ) w hΩ φ]
-      exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp only [hψ])
-    rw [e1, e2, hu.integral_smul_eq ψ]
-
-end WeakDerivTranslate
+end InvariantHalfSpace
 
 
 /-! ### From second partial derivatives to `W^{2,p}(Ω)` -/
@@ -387,16 +238,6 @@ theorem _root_.HasWeakIteratedLineDerivOn.diffQuot [NormedSpace ℝ E] [Measurab
     HasWeakIteratedLineDerivOn y (diffQuot h u) (diffQuot h w) Ω μ :=
   ((hu.comp_add_right hΩ).sub hu).const_smul _
 
-omit [NormedSpace ℝ F] in
-/-- A translate of an `L^p(Ω)` function on an invariant open set is in `L^p(Ω)`, with the same
-norm. -/
-theorem _root_.MeasureTheory.MemLp.comp_add_right [MeasurableSpace E] [BorelSpace E]
-    {μ : Measure E} [μ.IsAddRightInvariant] {Ω : Opens E} {u : E → F}
-    {p : ℝ≥0∞} (hu : MemLp u p (μ.restrict (Ω : Set E)))
-    (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    MemLp (fun x ↦ u (x + h)) p (μ.restrict (Ω : Set E)) :=
-  hu.comp_measurePreserving hΩ.measurePreserving
-
 /-- The difference quotient of an `L^p(Ω)` function on an invariant open set is in `L^p(Ω)`. -/
 theorem _root_.MeasureTheory.MemLp.diffQuot [MeasurableSpace E] [BorelSpace E] {μ : Measure E}
     [μ.IsAddRightInvariant] {Ω : Opens E} {u : E → F} {p : ℝ≥0∞}
@@ -406,48 +247,24 @@ theorem _root_.MeasureTheory.MemLp.diffQuot [MeasurableSpace E] [BorelSpace E] {
 
 end DiffQuot
 
-/-! ### Translations and difference quotients on `L^p(Ω)` -/
+/-! ### Difference quotients on `L^p(Ω)` -/
 
-section TranslateLp
+section DiffQuotLp
 
 variable {E F : Type*} [NormedAddCommGroup E] [MeasurableSpace E]
   [BorelSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {μ : Measure E} [μ.IsAddRightInvariant]
   {Ω : Opens E} {h : E} {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
 variable (F p) in
-/-- **Translation by `h` on `L^p(Ω)`**, `u ↦ u(· + h)`, for an open set `Ω` invariant under the
-translation: a linear isometry, by the translation invariance of the measure
-(`MeasureTheory.Lp.compMeasurePreservingₗᵢ`). -/
-def translateLp (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    Lp F p (μ.restrict (Ω : Set E)) →ₗᵢ[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
-  Lp.compMeasurePreservingₗᵢ ℝ (· + h) hΩ.measurePreserving
-
-/-- `translateLp hΩ u` is `u(· + h)` almost everywhere on `Ω`. -/
-theorem coeFn_translateLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u : Lp F p (μ.restrict (Ω : Set E))) :
-    translateLp F p hΩ u =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ u (x + h) :=
-  Lp.coeFn_compMeasurePreserving u hΩ.measurePreserving
-
-/-- Translating by `h` and then by `−h` is the identity on `L^p(Ω)`. -/
-theorem translateLp_neg_translateLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u : Lp F p (μ.restrict (Ω : Set E))) :
-    translateLp F p hΩ.neg (translateLp F p hΩ u) = u := by
-  refine Lp.ext ?_
-  have h1 := coeFn_translateLp hΩ.neg (translateLp F p hΩ u)
-  have h2 := hΩ.neg.measurePreserving.quasiMeasurePreserving.ae_eq_comp (coeFn_translateLp hΩ u)
-  refine h1.trans (h2.trans (Eventually.of_forall fun x ↦ ?_))
-  simp
-
-variable (F p) in
 /-- **The difference quotient `D_h = (τ_h − 1)/|h|` on `L^p(Ω)`**, as a bounded linear map, for an
 open set `Ω` invariant under the translation by `h`. -/
 def diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h) :
     Lp F p (μ.restrict (Ω : Set E)) →L[ℝ] Lp F p (μ.restrict (Ω : Set E)) :=
-  ‖h‖⁻¹ • ((translateLp F p hΩ).toContinuousLinearMap - ContinuousLinearMap.id ℝ _)
+  ‖h‖⁻¹ • ((Lp.translate F p hΩ).toContinuousLinearMap - ContinuousLinearMap.id ℝ _)
 
 theorem diffQuotLp_apply (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
-    diffQuotLp F p hΩ u = ‖h‖⁻¹ • (translateLp F p hΩ u - u) :=
+    diffQuotLp F p hΩ u = ‖h‖⁻¹ • (Lp.translate F p hΩ u - u) :=
   rfl
 
 /-- `diffQuotLp hΩ u` is the difference quotient `D_h u` almost everywhere on `Ω`. -/
@@ -455,8 +272,8 @@ theorem coeFn_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     diffQuotLp F p hΩ u =ᵐ[μ.restrict (Ω : Set E)] diffQuot h u := by
   rw [diffQuotLp_apply]
-  filter_upwards [Lp.coeFn_smul (‖h‖⁻¹) (translateLp F p hΩ u - u),
-    Lp.coeFn_sub (translateLp F p hΩ u) u, coeFn_translateLp hΩ u] with x h1 h2 h3
+  filter_upwards [Lp.coeFn_smul (‖h‖⁻¹) (Lp.translate F p hΩ u - u),
+    Lp.coeFn_sub (Lp.translate F p hΩ u) u, Lp.coeFn_translate hΩ u] with x h1 h2 h3
   rw [h1, Pi.smul_apply, h2, Pi.sub_apply, h3, diffQuot_apply]
 
 /-- `‖D_h u‖_p ≤ 2 ‖h‖⁻¹ ‖u‖_p`. -/
@@ -464,27 +281,9 @@ theorem norm_diffQuotLp_apply_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u : Lp F p (μ.restrict (Ω : Set E))) :
     ‖diffQuotLp F p hΩ u‖ ≤ 2 * ‖h‖⁻¹ * ‖u‖ := by
   rw [diffQuotLp_apply, norm_smul, norm_inv, norm_norm]
-  calc ‖h‖⁻¹ * ‖translateLp F p hΩ u - u‖ ≤ ‖h‖⁻¹ * (‖translateLp F p hΩ u‖ + ‖u‖) := by
+  calc ‖h‖⁻¹ * ‖Lp.translate F p hΩ u - u‖ ≤ ‖h‖⁻¹ * (‖Lp.translate F p hΩ u‖ + ‖u‖) := by
         gcongr; exact norm_sub_le _ _
     _ = 2 * ‖h‖⁻¹ * ‖u‖ := by rw [LinearIsometry.norm_map]; ring
-
-/-- **Adjointness of the translations in `L²(Ω)`**: `⟪τ_h u, v⟫ = ⟪u, τ_{−h} v⟫`, by the change of
-variables `x ↦ x − h`. -/
-theorem inner_translateLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u v : Lp ℝ 2 (μ.restrict (Ω : Set E))) :
-    ⟪translateLp ℝ 2 hΩ u, v⟫_ℝ = ⟪u, translateLp ℝ 2 hΩ.neg v⟫_ℝ := by
-  rw [L2.inner_def, L2.inner_def]
-  have e1 : ∫ x, ⟪translateLp ℝ 2 hΩ u x, v x⟫_ℝ ∂(μ.restrict (Ω : Set E))
-      = ∫ x, u (x + h) * v x ∂(μ.restrict (Ω : Set E)) := by
-    refine integral_congr_ae ((coeFn_translateLp hΩ u).mono fun x hx ↦ ?_)
-    simp [hx, mul_comm]
-  have e2 : ∫ x, ⟪u x, translateLp ℝ 2 hΩ.neg v x⟫_ℝ ∂(μ.restrict (Ω : Set E))
-      = ∫ x, u x * v (x + -h) ∂(μ.restrict (Ω : Set E)) := by
-    refine integral_congr_ae ((coeFn_translateLp hΩ.neg v).mono fun x hx ↦ ?_)
-    simp [hx, mul_comm]
-  rw [e1, e2, ← hΩ.measurePreserving.integral_comp (MeasurableEquiv.addRight h).measurableEmbedding
-    (fun x ↦ u x * v (x + -h))]
-  simp only [add_neg_cancel_right]
 
 /-- **Adjointness of the difference quotients in `L²(Ω)`**: `⟪D_h u, v⟫ = ⟪u, D_{−h} v⟫`
 ([brezis2011functional] §9.6, proof of Theorem 9.25, case B: "`∫ D_h u φ = −∫ u D_{−h} φ`" up to
@@ -493,14 +292,14 @@ theorem inner_diffQuotLp (hΩ : IsTranslationInvariant (Ω : Set E) h)
     (u v : Lp ℝ 2 (μ.restrict (Ω : Set E))) :
     ⟪diffQuotLp ℝ 2 hΩ u, v⟫_ℝ = ⟪u, diffQuotLp ℝ 2 hΩ.neg v⟫_ℝ := by
   rw [diffQuotLp_apply, diffQuotLp_apply, inner_smul_left, inner_smul_right, inner_sub_left,
-    inner_sub_right, inner_translateLp hΩ u v, norm_neg]
+    inner_sub_right, Lp.inner_translate hΩ u v, norm_neg]
   simp
 
-end TranslateLp
+end DiffQuotLp
 
-/-! ### Translations and difference quotients on `W^{k,p}(Ω)` -/
+/-! ### Difference quotients on `W^{k,p}(Ω)` -/
 
-section TranslateSobolev
+section DiffQuotSobolev
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
   [BorelSpace E] [ProperSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
@@ -508,79 +307,6 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω : Opens E} {μ : Measure E} [μ.IsAddRightInvariant] {h : E}
 
 open SobolevMultiIndex
-
-variable (F b k p μ) in
-/-- The family of the translates of the weak derivatives of `u ∈ W^{k,p}(Ω)`, as an element of
-the ambient `ℓ^p` product. -/
-def translateTuple (hΩ : IsTranslationInvariant (Ω : Set E) h) (u : SobolevMultiIndex F b k p Ω μ) :
-    SobolevMultiIndexTuple F ι k p Ω μ :=
-  WithLp.toLp p fun α ↦ translateLp F p hΩ (weakDeriv u α)
-
-/-- The translated family lies in `W^{k,p}(Ω)`: translation commutes with the weak derivatives
-(`HasWeakIteratedLineDerivOn.comp_add_right`). -/
-theorem translateTuple_mem (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u : SobolevMultiIndex F b k p Ω μ) :
-    translateTuple F b k p μ hΩ u ∈ SobolevMultiIndex F b k p Ω μ := fun α ↦
-  ((hasWeakIteratedLineDerivOn u α).comp_add_right hΩ).congr_ae
-    (coeFn_translateLp hΩ (weakDeriv u 0)).symm (coeFn_translateLp hΩ (weakDeriv u α)).symm
-
-variable (F b k p μ) in
-/-- **Translation by `h` as a linear isometry of `W^{k,p}(Ω)`**, for an open set `Ω` invariant
-under the translation: every weak derivative is translated
-(`HasWeakIteratedLineDerivOn.comp_add_right`), and each `L^p(Ω)` norm is preserved. This is the
-map `u ↦ τ_h u` of [brezis2011functional] §9.6, and the invariance of `H^1_0(ℝ^N_+)` under the
-tangential translations is `Elliptic.translateL_mem_zero`. -/
-def translateL (hΩ : IsTranslationInvariant (Ω : Set E) h) :
-    SobolevMultiIndex F b k p Ω μ →ₗᵢ[ℝ] SobolevMultiIndex F b k p Ω μ where
-  toLinearMap :=
-    { toFun := fun u ↦ ⟨translateTuple F b k p μ hΩ u, translateTuple_mem hΩ u⟩
-      map_add' := fun u v ↦ Subtype.ext (PiLp.ext fun α ↦ by
-        change translateLp F p hΩ (weakDeriv (u + v) α)
-          = translateLp F p hΩ (weakDeriv u α) + translateLp F p hΩ (weakDeriv v α)
-        rw [weakDeriv_add, map_add])
-      map_smul' := fun c u ↦ Subtype.ext (PiLp.ext fun α ↦ by
-        change translateLp F p hΩ (weakDeriv (c • u) α) = c • translateLp F p hΩ (weakDeriv u α)
-        rw [weakDeriv_smul, map_smul]) }
-  norm_map' u := by
-    rw [← Submodule.norm_coe, ← Submodule.norm_coe]
-    refine le_antisymm (PiLp.norm_le_norm_of_forall_norm_le fun α ↦ ?_)
-      (PiLp.norm_le_norm_of_forall_norm_le fun α ↦ ?_)
-    · exact (LinearIsometry.norm_map _ _).le
-    · exact (LinearIsometry.norm_map _ _).symm.le
-
-/-- The weak derivatives of the translate are the translates of the weak derivatives, as elements
-of `L^p(Ω)`. -/
-theorem weakDeriv_translateL (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u : SobolevMultiIndex F b k p Ω μ) (α : MultiIndexLE ι k) :
-    weakDeriv (translateL F b k p μ hΩ u) α = translateLp F p hΩ (weakDeriv u α) :=
-  rfl
-
-/-- The function of the translate is the translate of the function, almost everywhere on `Ω`. -/
-theorem fn_translateL (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    (u : SobolevMultiIndex F b k p Ω μ) :
-    fn (translateL F b k p μ hΩ u) =ᵐ[μ.restrict (Ω : Set E)] fun x ↦ fn u (x + h) :=
-  coeFn_translateLp hΩ (weakDeriv u 0)
-
-/-- **`W_0^{k,p}(Ω)` is invariant under the translations that leave `Ω` invariant**
-([brezis2011functional] §9.6, (54): "`H^1_0(Ω)` is invariant under tangential translations"):
-the translate of a test function on `Ω` is a test function on `Ω`, and the translation is
-continuous on `W^{k,p}(Ω)`, so it preserves the closure of the test functions. -/
-theorem translateL_mem_zero (hΩ : IsTranslationInvariant (Ω : Set E) h)
-    {u : SobolevMultiIndex F b k p Ω μ} (hu : u ∈ SobolevMultiIndexZero F b k p Ω μ) :
-    translateL F b k p μ hΩ u ∈ SobolevMultiIndexZero F b k p Ω μ := by
-  have hT : ∀ v ∈ testFunctions F b k p Ω μ,
-      translateL F b k p μ hΩ v ∈ testFunctions F b k p Ω μ := by
-    rintro v ⟨φ, hφ⟩
-    refine ⟨φ.compAddRightOn hΩ, (fn_translateL hΩ v).trans ?_⟩
-    rw [TestFunction.compAddRightOn_coe]
-    exact hΩ.measurePreserving.quasiMeasurePreserving.ae_eq_comp hφ
-  have hmem : u ∈ closure (testFunctions F b k p Ω μ : Set (SobolevMultiIndex F b k p Ω μ)) := by
-    rw [← Submodule.topologicalClosure_coe]
-    exact hu
-  change translateL F b k p μ hΩ u ∈ (SobolevMultiIndexZero F b k p Ω μ : Set _)
-  rw [SobolevMultiIndexZero, Submodule.topologicalClosure_coe]
-  refine closure_mono (image_subset_iff.2 hT) ?_
-  exact image_closure_subset_closure_image (translateL F b k p μ hΩ).continuous ⟨u, hmem, rfl⟩
 
 variable (F b k p μ) in
 /-- **The difference quotient `D_h = (τ_h − 1)/|h|` on `W^{k,p}(Ω)`**, as a bounded linear map,
@@ -625,7 +351,7 @@ theorem norm_diffQuotL_apply_le (hΩ : IsTranslationInvariant (Ω : Set E) h)
       ≤ ‖h‖⁻¹ * (‖translateL F b k p μ hΩ u‖ + ‖u‖) := by gcongr; exact norm_sub_le _ _
     _ = 2 * ‖h‖⁻¹ * ‖u‖ := by rw [LinearIsometry.norm_map]; ring
 
-end TranslateSobolev
+end DiffQuotSobolev
 
 
 /-! ### Weak derivatives from bounded difference quotients -/
@@ -833,12 +559,12 @@ theorem norm_translateLp_sub_le_of_eLpNorm_le (hΩ : IsTranslationInvariant (Ω 
     (f : Lp F 2 (μ.restrict (Ω : Set E))) {C : ℝ} (hC : 0 ≤ C)
     (hf : eLpNorm (fun x ↦ f (x + h) - f x) 2 (μ.restrict (Ω : Set E))
       ≤ ‖h‖ₑ * ENNReal.ofReal C) :
-    ‖translateLp F 2 hΩ f - f‖ ≤ ‖h‖ * C := by
+    ‖Lp.translate F 2 hΩ f - f‖ ≤ ‖h‖ * C := by
   rw [Lp.norm_def, ← ENNReal.toReal_ofReal (mul_nonneg (norm_nonneg h) hC)]
   refine ENNReal.toReal_mono ENNReal.ofReal_ne_top ?_
   rw [ENNReal.ofReal_mul (norm_nonneg h), ofReal_norm]
   refine le_trans (le_of_eq (eLpNorm_congr_ae ?_)) hf
-  filter_upwards [Lp.coeFn_sub (translateLp F 2 hΩ f) f, coeFn_translateLp hΩ f] with x h1 h2
+  filter_upwards [Lp.coeFn_sub (Lp.translate F 2 hΩ f) f, Lp.coeFn_translate hΩ f] with x h1 h2
   rw [h1, Pi.sub_apply, h2]
 
 /-- `‖D_h f‖ ≤ C` for `f ∈ L²(Ω)` with the translation estimate `‖f(· + h) − f‖₂ ≤ ‖h‖ C`. -/
@@ -851,7 +577,7 @@ theorem norm_diffQuotLp_le_of_eLpNorm_le (hΩ : IsTranslationInvariant (Ω : Set
   · rw [diffQuotLp_apply, norm_zero, inv_zero, zero_smul, norm_zero]
     exact hC
   rw [diffQuotLp_apply, norm_smul, norm_inv, norm_norm]
-  calc ‖h‖⁻¹ * ‖translateLp F 2 hΩ f - f‖ ≤ ‖h‖⁻¹ * (‖h‖ * C) := by
+  calc ‖h‖⁻¹ * ‖Lp.translate F 2 hΩ f - f‖ ≤ ‖h‖⁻¹ * (‖h‖ * C) := by
         gcongr
         exact norm_translateLp_sub_le_of_eLpNorm_le hΩ f hC hf
     _ = C := by rw [← mul_assoc, inv_mul_cancel₀ (norm_ne_zero_iff.2 hh), one_mul]
@@ -982,14 +708,14 @@ theorem diffQuotLp_mulL (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace 
     (a : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     diffQuotLp ℝ 2 hΩ (mulL Ω a f)
-      = mulL Ω (translateLp ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f) + mulL Ω (diffQuotLp ℝ ⊤ hΩ a) f := by
+      = mulL Ω (Lp.translate ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f) + mulL Ω (diffQuotLp ℝ ⊤ hΩ a) f := by
   refine Lp.ext ?_
   have h1 := hΩ.measurePreserving.quasiMeasurePreserving.ae_eq_comp (coeFn_mulL Ω a f)
   filter_upwards [coeFn_diffQuotLp hΩ (mulL Ω a f), h1, coeFn_mulL Ω a f,
-    Lp.coeFn_add (mulL Ω (translateLp ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f))
+    Lp.coeFn_add (mulL Ω (Lp.translate ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f))
       (mulL Ω (diffQuotLp ℝ ⊤ hΩ a) f),
-    coeFn_mulL Ω (translateLp ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f),
-    coeFn_mulL Ω (diffQuotLp ℝ ⊤ hΩ a) f, coeFn_translateLp hΩ a, coeFn_diffQuotLp hΩ f,
+    coeFn_mulL Ω (Lp.translate ℝ ⊤ hΩ a) (diffQuotLp ℝ 2 hΩ f),
+    coeFn_mulL Ω (diffQuotLp ℝ ⊤ hΩ a) f, Lp.coeFn_translate hΩ a, coeFn_diffQuotLp hΩ f,
     coeFn_diffQuotLp hΩ a] with x e1 e2 e3 e4 e5 e6 e7 e8 e9
   rw [e1, e4, Pi.add_apply, e5, e6, e7, e8, e9, diffQuot_apply, diffQuot_apply, diffQuot_apply,
     e3]
@@ -1040,12 +766,12 @@ theorem isUniformlyElliptic_translateLp
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
     (hA : IsUniformlyElliptic Ω A α) :
-    IsUniformlyElliptic Ω (fun k l ↦ translateLp ℝ ⊤ hΩ (A k l)) α := by
+    IsUniformlyElliptic Ω (fun k l ↦ Lp.translate ℝ ⊤ hΩ (A k l)) α := by
   refine ⟨hA.1, ?_⟩
   have h1 := hΩ.measurePreserving.quasiMeasurePreserving.ae hA.2
   have h2 : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
-      ∀ k l, translateLp ℝ ⊤ hΩ (A k l) x = A k l (x + h) :=
-    ae_all_iff.2 fun k ↦ ae_all_iff.2 fun l ↦ coeFn_translateLp hΩ (A k l)
+      ∀ k l, Lp.translate ℝ ⊤ hΩ (A k l) x = A k l (x + h) :=
+    ae_all_iff.2 fun k ↦ ae_all_iff.2 fun l ↦ Lp.coeFn_translate hΩ (A k l)
   filter_upwards [h1, h2] with x hx hx' ξ
   simp only [hx']
   exact hx ξ
@@ -1122,7 +848,7 @@ theorem generalForm_apply_diffQuotL_diffQuotL_split
     (u : SobolevEuclidean N 1 2 Ω) :
     generalForm Ω A 0 0 u (diffQuotL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume
       hΩ.neg (diffQuotL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 volume hΩ u))
-      = (∑ k, ∑ l, ⟪mulL Ω (translateLp ℝ ⊤ hΩ (A k l))
+      = (∑ k, ∑ l, ⟪mulL Ω (Lp.translate ℝ ⊤ hΩ (A k l))
           (diffQuotLp ℝ 2 hΩ (weakDeriv u (MultiIndexLE.single k))),
           diffQuotLp ℝ 2 hΩ (weakDeriv u (MultiIndexLE.single l))⟫_ℝ)
         + ∑ k, ∑ l, ⟪mulL Ω (diffQuotLp ℝ ⊤ hΩ (A k l)) (weakDeriv u (MultiIndexLE.single k)),
@@ -1197,7 +923,7 @@ theorem gradNorm_diffQuotL_le
     (hΩ : IsTranslationInvariant (Ω : Set (EuclideanSpace ℝ (Fin N))) h)
     (hseg' : ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N))), ∀ t ∈ Icc (0 : ℝ) 1, x + t • (-h) ∈ Ω)
     {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))} {α : ℝ}
-    (hA : IsUniformlyElliptic Ω (fun k l ↦ translateLp ℝ ⊤ hΩ (A k l)) α) {M : ℝ} (hM0 : 0 ≤ M)
+    (hA : IsUniformlyElliptic Ω (fun k l ↦ Lp.translate ℝ ⊤ hΩ (A k l)) α) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : ∀ k l, ‖diffQuotLp ℝ ⊤ hΩ (A k l)‖ ≤ M)
     {u : SobolevEuclidean N 1 2 Ω}
     {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -1793,7 +1519,7 @@ theorem dirichletForm_apply_eq_of_ae_eq {V : SobolevEuclidean N 1 2 Ω}
       wv i x * fderiv ℝ ψ x (EuclideanSpace.single i 1) := by
   rw [dirichletForm_apply_inner]
   refine Finset.sum_congr rfl fun i _ ↦ ?_
-  rw [inner_eq_integral]
+  rw [L2.inner_eq_integral_mul]
   have hΦi := weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω
     (ψ.contDiff.contDiffOn.of_le (by simp)) hΦ i
   refine integral_congr_ae ?_
@@ -4145,8 +3871,8 @@ theorem sum_integral_chartCoeff_eq (h : IsDiffeoOnWithBoundedJacobian H J Ω' Ω
   have hΩ'm : MeasurableSet (Ω' : Set (EuclideanSpace ℝ (Fin N))) := Ω'.isOpen.measurableSet
   obtain ⟨Ψ, hΨ0, hΨfn, hΨd⟩ := exists_pullback_testFunction h ψ
   have hΨeq := heq Ψ hΨ0
-  rw [dirichletForm_apply_inner, load_apply_inner, inner_eq_integral] at hΨeq
-  simp only [inner_eq_integral] at hΨeq
+  rw [dirichletForm_apply_inner, load_apply_inner, L2.inner_eq_integral_mul] at hΨeq
+  simp only [L2.inner_eq_integral_mul] at hΨeq
   obtain ⟨W, hW, -, hWi, -⟩ := exists_hasWeakFDerivOn_fn w
   simp only [EuclideanSpace.basisFun_toBasis_apply] at hWi
   have hvd := weakDeriv_eq_of_compDiffeo h v (hw ▸ hW)
@@ -5576,145 +5302,6 @@ theorem tangentialDeriv_mem_zero_of_isGalerkinSolution
 
 end HalfSpaceLemmas
 
-/-! ### Smooth multipliers: `C^n` functions constant off a compact set -/
-
-section ConstOffCompact
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-/-- `IsContDiffConstOffCompact n c`: the real function `c` is of class `C^n` on the whole space
-and agrees with a constant off a compact set. This is the class of multipliers used in the
-higher-order regularity theory: it contains the smooth compactly supported functions, the
-constants, the extended coefficients `χ a + (1 − χ) δ`, and it is closed under partial
-derivatives, products and inversion of positive members, so that every derivative of every order
-of a member is bounded. -/
-structure IsContDiffConstOffCompact (n : ℕ) (c : E → ℝ) : Prop where
-  /-- A multiplier is `C^n`. -/
-  contDiff : ContDiff ℝ n c
-  /-- A multiplier agrees with a constant off a compact set. -/
-  exists_hasCompactSupport_sub : ∃ κ : ℝ, HasCompactSupport fun x ↦ c x - κ
-
-namespace IsContDiffConstOffCompact
-
-variable {n : ℕ} {c : E → ℝ}
-
-/-- A `C^n` function with compact support is a multiplier. -/
-theorem of_hasCompactSupport (hc : ContDiff ℝ n c) (hcs : HasCompactSupport c) :
-    IsContDiffConstOffCompact n c :=
-  ⟨hc, 0, by simpa using hcs⟩
-
-/-- A constant is a multiplier. -/
-theorem const (κ : ℝ) : IsContDiffConstOffCompact n fun _ : E ↦ κ :=
-  ⟨contDiff_const, κ, by simp [HasCompactSupport, tsupport]⟩
-
-/-- A multiplier of class `C^n` is one of class `C^m` for `m ≤ n`. -/
-theorem of_le {m : ℕ} (h : IsContDiffConstOffCompact n c) (hmn : m ≤ n) :
-    IsContDiffConstOffCompact m c :=
-  ⟨h.contDiff.of_le (by exact_mod_cast hmn), h.exists_hasCompactSupport_sub⟩
-
-/-- A multiplier is continuous. -/
-theorem continuous (h : IsContDiffConstOffCompact n c) : Continuous c := h.contDiff.continuous
-
-/-- A multiplier is bounded. -/
-theorem exists_bound (h : IsContDiffConstOffCompact n c) : ∃ C, ∀ x, |c x| ≤ C := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  obtain ⟨C, hC⟩ := hκ.exists_bound_of_continuous (h.continuous.sub continuous_const)
-  refine ⟨C + |κ|, fun x ↦ ?_⟩
-  have := hC x
-  rw [Real.norm_eq_abs] at this
-  calc |c x| = |(c x - κ) + κ| := by ring_nf
-    _ ≤ |c x - κ| + |κ| := abs_add_le _ _
-    _ ≤ C + |κ| := by linarith
-
-/-- The sum of two multipliers is a multiplier. -/
-theorem add {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
-    (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x + c' x := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  obtain ⟨κ', hκ'⟩ := h'.exists_hasCompactSupport_sub
-  refine ⟨h.contDiff.add h'.contDiff, κ + κ', ?_⟩
-  have e : (fun x ↦ c x + c' x - (κ + κ')) = (fun x ↦ c x - κ) + fun x ↦ c' x - κ' := by
-    funext x
-    simp only [Pi.add_apply]
-    ring
-  rw [e]
-  exact hκ.add hκ'
-
-/-- The product of two multipliers is a multiplier. -/
-theorem mul {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
-    (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x * c' x := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  obtain ⟨κ', hκ'⟩ := h'.exists_hasCompactSupport_sub
-  refine ⟨h.contDiff.mul h'.contDiff, κ * κ', ?_⟩
-  have h1 : HasCompactSupport fun x ↦ (c x - κ) * c' x := hκ.mul_right
-  have h2 : HasCompactSupport fun x ↦ κ * (c' x - κ') := hκ'.mul_left
-  have e : (fun x ↦ c x * c' x - κ * κ')
-      = (fun x ↦ (c x - κ) * c' x) + fun x ↦ κ * (c' x - κ') := by
-    funext x
-    simp only [Pi.add_apply]
-    ring
-  rw [e]
-  exact h1.add h2
-
-/-- A scalar multiple of a multiplier is a multiplier. -/
-theorem const_mul (h : IsContDiffConstOffCompact n c) (r : ℝ) :
-    IsContDiffConstOffCompact n fun x ↦ r * c x :=
-  (const r).mul h
-
-/-- The negative of a multiplier is a multiplier. -/
-theorem neg (h : IsContDiffConstOffCompact n c) : IsContDiffConstOffCompact n fun x ↦ -c x := by
-  have := h.const_mul (-1)
-  simpa using this
-
-/-- The difference of two multipliers is a multiplier. -/
-theorem sub {c' : E → ℝ} (h : IsContDiffConstOffCompact n c)
-    (h' : IsContDiffConstOffCompact n c') : IsContDiffConstOffCompact n fun x ↦ c x - c' x := by
-  have := h.add h'.neg
-  simpa [sub_eq_add_neg] using this
-
-/-- A finite sum of multipliers is a multiplier. -/
-theorem finset_sum {κ : Type*} (s : Finset κ) {c : κ → E → ℝ}
-    (h : ∀ i ∈ s, IsContDiffConstOffCompact n (c i)) :
-    IsContDiffConstOffCompact n fun x ↦ ∑ i ∈ s, c i x := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa using const (E := E) (n := n) 0
-  | insert a s ha ih =>
-    simp only [Finset.sum_insert ha]
-    exact (h a (Finset.mem_insert_self a s)).add (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
-
-/-- The partial derivative of a multiplier of class `C^{n+1}` is a multiplier of class `C^n`,
-with compact support. -/
-theorem fderiv_apply (h : IsContDiffConstOffCompact (n + 1) c) (y : E) :
-    IsContDiffConstOffCompact n fun x ↦ fderiv ℝ c x y := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  refine of_hasCompactSupport ?_ ?_
-  · exact (h.contDiff.fderiv_right (m := n) (by norm_cast)).clm_apply contDiff_const
-  · have := hκ.fderiv_apply (𝕜 := ℝ) y
-    have e : (fun x ↦ fderiv ℝ c x y) = fun x ↦ fderiv ℝ (fun x ↦ c x - κ) x y := by
-      funext x
-      simp only [fderiv_sub_const]
-    rw [e]
-    exact this
-
-/-- The inverse of a multiplier bounded below by a positive constant is a multiplier. -/
-theorem inv (h : IsContDiffConstOffCompact n c) {α : ℝ} (hα : 0 < α) (hc : ∀ x, α ≤ c x) :
-    IsContDiffConstOffCompact n fun x ↦ (c x)⁻¹ := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  have hne : ∀ x, c x ≠ 0 := fun x ↦ (hα.trans_le (hc x)).ne'
-  refine ⟨h.contDiff.inv hne, κ⁻¹, ?_⟩
-  refine hκ.mono fun x hx ↦ ?_
-  simp only [Function.mem_support, ne_eq] at hx ⊢
-  intro hcx
-  apply hx
-  have : c x = κ := by linarith
-  rw [this, sub_self]
-
-end IsContDiffConstOffCompact
-
-end ConstOffCompact
-
-
-
 section MultiplierProduct
 
 open SobolevMultiIndex
@@ -6141,16 +5728,6 @@ section ConstOffCompactBounds
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- A multiplier of class `C^{n+1}` has a bounded derivative. -/
-theorem IsContDiffConstOffCompact.exists_bound_fderiv {n : ℕ} {c : E → ℝ}
-    (h : IsContDiffConstOffCompact (n + 1) c) : ∃ C, ∀ x, ‖fderiv ℝ c x‖ ≤ C := by
-  obtain ⟨κ, hκ⟩ := h.exists_hasCompactSupport_sub
-  obtain ⟨C, hC⟩ := (hκ.fderiv (𝕜 := ℝ)).exists_bound_of_continuous
-    ((h.contDiff.sub contDiff_const).continuous_fderiv (by simp))
-  refine ⟨C, fun x ↦ ?_⟩
-  have := hC x
-  rwa [fderiv_sub_const] at this
-
 /-- A finite family of multipliers has a common bound. -/
 theorem exists_forall_abs_le_of_isContDiffConstOffCompact {n : ℕ} {N : ℕ}
     {a : Fin N → Fin N → E → ℝ} (ha : ∀ k l, IsContDiffConstOffCompact n (a k l)) :
@@ -6196,7 +5773,7 @@ variable-coefficient elliptic form** — [brezis2011functional] Theorem 9.25, ca
 induction "`f ∈ H^m ⇒ u ∈ H^{m+2}`", in the generality of case C₂. Let `Ω ⊆ ℝ^N` be open and
 invariant under the translations `t e_j`, `j ≠ N`, let the coefficients `A_{kℓ} ∈ L^∞(Ω)` have
 representatives `a_{kℓ}` of class `C^{m+1}` on `ℝ^N` and constant off a compact set
-(`Elliptic.IsContDiffConstOffCompact`), elliptic with constant `α > 0` at every point, and let
+(`IsContDiffConstOffCompact`), elliptic with constant `α > 0` at every point, and let
 `u ∈ H^1_0(Ω)` satisfy `∑_{kℓ} ∫_Ω a_{kℓ} ∂_k u ∂_ℓ ψ = ∫_Ω g ψ` for all `ψ ∈ H^1_0(Ω)` with
 `g ∈ H^m(Ω)`. Then `u ∈ H^{m+2}(Ω)`.
 

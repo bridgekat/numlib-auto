@@ -1,0 +1,35 @@
+namespace = "IsContDiffConstOffCompact"
+
+[[node]]
+id = "_root_.IsContDiffConstOffCompact"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.6, proof of Theorem 9.25 (the extended coefficients)"
+
+[[node]]
+id = "of_hasCompactSupport"
+
+[[node]]
+id = "const"
+
+[[node]]
+id = "of_le"
+
+[[node]]
+id = "exists_bound"
+
+[[node]]
+id = "add"
+
+[[node]]
+id = "mul"
+
+[[node]]
+id = "finset_sum"
+
+[[node]]
+id = "fderiv_apply"
+
+[[node]]
+id = "inv"
+
+[[node]]
+id = "exists_bound_fderiv"

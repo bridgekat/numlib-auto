@@ -1,0 +1,54 @@
+[[node]]
+id = "IsTranslationInvariant"
+
+[[node]]
+id = "IsTranslationInvariant.neg"
+
+[[node]]
+id = "IsTranslationInvariant.add"
+
+[[node]]
+id = "IsTranslationInvariant.smul_mem"
+
+[[node]]
+id = "IsTranslationInvariant.measurePreserving"
+
+[[node]]
+id = "LocallyIntegrableOn.comp_add_right"
+
+[[node]]
+id = "MeasureTheory.MemLp.comp_add_right"
+
+[[node]]
+id = "TestFunction.compAddRightOn"
+
+[[node]]
+id = "integral_smul_comp_add_right"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.comp_add_right"
+
+[[node]]
+id = "MeasureTheory.Lp.translate"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_translate"
+
+[[node]]
+id = "MeasureTheory.Lp.translate_neg_translate"
+
+[[node]]
+id = "MeasureTheory.Lp.inner_translate"
+
+[[node]]
+id = "SobolevMultiIndex.translateL"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_translateL"
+
+[[node]]
+id = "SobolevMultiIndex.fn_translateL"
+
+[[node]]
+id = "SobolevMultiIndex.translateL_mem_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.6, (54)"

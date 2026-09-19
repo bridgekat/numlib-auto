@@ -788,7 +788,7 @@ theorem corollary_9_19_inner (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
   refine ⟨fun u v ↦ ?_, fun u v ↦ ?_, fun u ↦ ?_, fun u hu hu0 ↦ ?_,
     (max K 1)⁻¹, 1, inv_pos.2 hK0, fun u hu ↦ ⟨?_, ?_⟩⟩
   · rw [Elliptic.dirichletForm_apply_inner]
-    exact Finset.sum_congr rfl fun i _ ↦ Elliptic.inner_eq_integral Ω _ _
+    exact Finset.sum_congr rfl fun i _ ↦ MeasureTheory.L2.inner_eq_integral_mul _ _
   · have h := Elliptic.dirichletForm_isHermitian Ω u v
     simpa using h
   · rw [hsq, gradNorm_eq_toReal_eLpNorm_gradient_two]

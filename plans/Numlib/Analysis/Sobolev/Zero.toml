@@ -313,24 +313,6 @@ id = "SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier_of_for
 id = "SobolevMultiIndex.mem_zero_of_continuousOn_closure_of_eqOn_frontier"
 
 [[node]]
-id = "PiLp.singleCLM"
-
-[[node]]
-id = "PiLp.singleCLM_apply"
-
-[[node]]
-id = "PiLp.norm_singleCLM_apply"
-
-[[node]]
-id = "PiLp.sum_singleCLM_apply"
-
-[[node]]
-id = "PiLp.strongDual_apply_eq_sum_singleCLM"
-
-[[node]]
-id = "PiLp.norm_strongDual_comp_singleCLM_le"
-
-[[node]]
 id = "exists_strongDual_comp_eq_of_norm_le"
 
 [[node]]
@@ -344,9 +326,6 @@ id = "SobolevEuclideanZero.gradₗ_apply"
 
 [[node]]
 id = "SobolevEuclideanZero.norm_le_mul_norm_gradₗ"
-
-[[node]]
-id = "MeasureTheory.L2.inner_eq_integral_mul"
 
 [[node]]
 id = "SobolevEuclideanZero.toDualL2"
@@ -507,3 +486,9 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 [[node]]
 id = "SobolevMultiIndexZero.eq_top_of_compl_subset_singleton"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
+
+[[node]]
+id = "SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero"
+
+[[node]]
+id = "SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions"

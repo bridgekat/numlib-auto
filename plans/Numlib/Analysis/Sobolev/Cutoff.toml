@@ -286,3 +286,117 @@ id = "HasWeakIteratedLineDerivOn.indicator_smul_of_tsupport_inter_subset"
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.exists_indicator_smul_of_forall_tuple"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_card_mul_of_forall_norm_weakDeriv_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerOrder"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerOrder"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerOrder_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerOrderL_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL_injective"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_norm_of_injective"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_single"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_addSingle"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.fn_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn_fn_partialDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.norm_partialDeriv_le"
+
+[[node]]
+id = "SobolevMultiIndex.partialDerivL"
+
+[[node]]
+id = "SobolevMultiIndex.norm_partialDerivL_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder_add"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrder_smul"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerOrderL_apply"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv_add"
+
+[[node]]
+id = "SobolevMultiIndex.partialDeriv_smul"
+
+[[node]]
+id = "MeasureTheory.Lp.monoExponentL"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_monoExponentL"
+
+[[node]]
+id = "MeasureTheory.Lp.monoExponentL_injective"
+
+[[node]]
+id = "MeasureTheory.Lp.isContinuousEmbedding_monoExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.memSobolevMultiIndex_of_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerExponent"
+
+[[node]]
+id = "SobolevMultiIndex.norm_weakDeriv_toLowerExponent_le"
+
+[[node]]
+id = "SobolevMultiIndex.norm_toLowerExponent_le"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.fn_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.toLowerExponentL_injective"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndex.partialDerivL_apply"

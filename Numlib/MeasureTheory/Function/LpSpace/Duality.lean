@@ -8,6 +8,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff
 import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
 import Mathlib.MeasureTheory.Function.Holder
+import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Function.LpSpace.Indicator
 import Mathlib.MeasureTheory.Function.UniformIntegrable
 import Mathlib.MeasureTheory.VectorMeasure.Decomposition.RadonNikodym
@@ -28,7 +29,8 @@ For conjugate exponents `1/p + 1/q = 1` the pairing `u ↦ (f ↦ ∫ u f)` is a
 ## Main definitions
 
 * `MeasureTheory.Lp.toDualCLM 𝕜 p q μ : Lp 𝕜 q μ →L[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the pairing,
-  Mathlib's `ContinuousLinearMap.lpPairing` for the multiplication of `𝕜`.
+  Mathlib's `ContinuousLinearMap.lpPairing` for the multiplication of `𝕜`; at `p = q = 2` over
+  `ℝ` it is the inner product, `MeasureTheory.L2.inner_eq_integral_mul`.
 * `MeasureTheory.Lp.toDual 𝕜 p q μ : Lp 𝕜 q μ →ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the same map
   bundled as a linear isometry (σ-finite `μ`).
 * `MeasureTheory.Lp.dualEquiv 𝕜 p q μ hp : Lp 𝕜 q μ ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p μ)` — the
@@ -134,6 +136,16 @@ theorem norm_toDualCLM_apply_le [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConju
   exact h
 
 end Lp
+
+/-! ### The `L²` inner product -/
+
+open scoped InnerProductSpace in
+/-- **The `L²(μ)` inner product of two real `L²` functions is the integral of their product**,
+`⟪f, g⟫ = ∫ f g`: the real case of `MeasureTheory.L2.inner_def`, in which the pairing
+`toDualCLM ℝ 2 2 μ` is the inner product. -/
+theorem L2.inner_eq_integral_mul (f g : Lp ℝ 2 μ) : ⟪f, g⟫_ℝ = ∫ x, f x * g x ∂μ := by
+  rw [L2.inner_def]
+  exact integral_congr_ae (Eventually.of_forall fun x ↦ by simp [RCLike.inner_apply, mul_comm])
 
 /-! ### The extremal test functions
 

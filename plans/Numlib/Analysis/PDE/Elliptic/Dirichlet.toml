@@ -62,15 +62,6 @@ id = "isGalerkinSolution_laplace_of_classical"
 id = "exists_sobolev_forall_laplaceForm_eq_load_of_classical"
 
 [[node]]
-id = "_root_.ContDiffOnClosure.memSobolevMultiIndex_of_isBounded"
-
-[[node]]
-id = "_root_.SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions"
-
-[[node]]
-id = "_root_.ContDiffOnClosure.memLp_of_isBounded"
-
-[[node]]
 id = "generalForm_eq_integral_of_contDiffOn"
 
 [[node]]
@@ -123,9 +114,6 @@ id = "inner_mulL_eq_integral"
 
 [[node]]
 id = "integrable_mul_mul"
-
-[[node]]
-id = "inner_eq_integral"
 
 [[node]]
 id = "pairing_apply"
@@ -311,9 +299,6 @@ id = "laplacian_eq_sum_fderiv_fderiv"
 id = "continuousOn_laplacian"
 
 [[node]]
-id = "_root_.ContDiffOn.hasWeakIteratedLineDerivOn_single"
-
-[[node]]
 id = "weakDeriv_single_ae_eq_fderiv_of_contDiffOn"
 
 [[node]]
@@ -387,9 +372,6 @@ id = "existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator"
 
 [[node]]
 id = "solutionOperator_isCompactOperator_of_isCompactOperator_fnL"
-
-[[node]]
-id = "_root_.SesqForm.IsCoercive.restrict"
 
 [[node]]
 id = "generalForm_garding_restrict_isCoercive"

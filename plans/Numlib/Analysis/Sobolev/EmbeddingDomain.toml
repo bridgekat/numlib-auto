@@ -311,3 +311,42 @@ id = "hasWeakFDerivOn_logRpow"
 [[node]]
 id = "eLpNorm_logRpow_top"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 16"
+
+[[node]]
+id = "IsSobolevExtensionDomainAll.of_isContDiffChartDomain"
+
+[[node]]
+id = "SobolevMultiIndex.toLpₗOn_self"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLpₗOn_eq_fnL"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_toLpₗOn_of_comp"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗOn_self"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLowerExponentL_mem"
+
+[[node]]
+id = "SobolevMultiIndexZero.toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.coe_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.fn_toLowerExponentL"
+
+[[node]]
+id = "SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL"
+
+[[node]]
+id = "ContDiffOnClosure.memSobolevMultiIndex_of_isBounded"
+
+[[node]]
+id = "ContDiffOnClosure.memLp_of_isBounded"
+
+[[node]]
+id = "ContDiffOn.hasWeakIteratedLineDerivOn_single"

@@ -52,7 +52,9 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
   of Atkinson–Han, Definition 7.2.9, in the multi-index formulation — a closed subspace, hence a
   Hilbert space at `p = 2`, which is what `Numlib/Analysis/Sobolev/Interval.lean` takes as
   `H^1_0(a, b)`;
-* `MultiIndexLE.single i`, the multi-index `e_i` of the partial derivative `∂_i`;
+* `MultiIndexLE.single i`, the multi-index `e_i` of the partial derivative `∂_i`,
+  `MultiIndexLE.singleLE i` its copy at order `k + 1` and `MultiIndexLE.addSingle i α` the
+  multi-index `α + e_i`;
   `SobolevMultiIndex.weakDerivL α` and `SobolevMultiIndex.fnL`, the weak derivative `u ↦ ∂^α u`
   and the inclusion `W^{k,p}(Ω) → L^p(Ω)` as bounded linear maps, with
   `SobolevMultiIndexZero.fnL` the inclusion of `W_0^{k,p}(Ω)`; `SobolevMultiIndex.grad` and
@@ -193,6 +195,11 @@ theorem coe_zero : ((0 : MultiIndexLE ι k) : ι → ℕ) = 0 := rfl
 `(0 : MultiIndexLE ι k)` because that is the form in which the order appears. -/
 theorem sum_zero : ∑ _i : ι, (0 : ι → ℕ) _i = 0 := by simp
 
+/-- The multi-indices of order at most `k'` embed into those of order at most `k ≥ k'`. -/
+theorem castLE_injective {k' : ℕ} (hk : k' ≤ k) :
+    Function.Injective fun α : MultiIndexLE ι k' ↦ (⟨α.1, α.2.trans hk⟩ : MultiIndexLE ι k) :=
+  fun _ _ h ↦ Subtype.ext (Subtype.mk.inj h)
+
 
 /-! #### The multi-indices of order one -/
 
@@ -256,6 +263,33 @@ theorem sum_univ_one {M : Type*} [AddCommMonoid M] (f : MultiIndexLE ι 1 → M)
     · exact absurd h0 hα
     · exact ⟨i, rfl⟩
   rw [h, Finset.sum_image single_injective.injOn]
+
+/-- The multi-index `α + e_i` of order at most `k + 1`, for `α` of order at most `k`. -/
+def addSingle (i : ι) (α : MultiIndexLE ι k) : MultiIndexLE ι (k + 1) :=
+  ⟨α.1 + Pi.single i 1, by
+    simp only [Pi.add_apply, Finset.sum_add_distrib, Finset.sum_pi_single', Finset.mem_univ,
+      ite_true]
+    omega⟩
+
+/-- The multi-index underlying `addSingle i α` is `α + e_i`. -/
+@[simp]
+theorem coe_addSingle (i : ι) (α : MultiIndexLE ι k) :
+    ((MultiIndexLE.addSingle i α : MultiIndexLE ι (k + 1)) : ι → ℕ) = α.1 + Pi.single i 1 :=
+  rfl
+
+/-- `α ↦ α + e_i` is injective. -/
+theorem addSingle_injective (i : ι) :
+    Function.Injective (MultiIndexLE.addSingle i : MultiIndexLE ι k → MultiIndexLE ι (k + 1)) :=
+  fun _ _ h ↦ Subtype.ext (add_right_cancel (Subtype.mk.inj h))
+
+/-- The multi-index `e_i` of order at most `k + 1`. -/
+def singleLE (i : ι) : MultiIndexLE ι (k + 1) :=
+  ⟨Pi.single i 1, by simp⟩
+
+/-- `0 + e_i = e_i`. -/
+theorem addSingle_zero (i : ι) :
+    MultiIndexLE.addSingle i (0 : MultiIndexLE ι k) = MultiIndexLE.singleLE i :=
+  Subtype.ext (zero_add _)
 
 end Single
 

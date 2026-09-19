@@ -76,33 +76,6 @@ id = "SobolevIntervalLpDual.ofL2OfBounded_injective"
 id = "SobolevIntervalLpDual.denseRange_ofL2OfBounded"
 
 [[node]]
-id = "PiLp.singleL"
-
-[[node]]
-id = "PiLp.singleL_apply"
-
-[[node]]
-id = "PiLp.norm_singleL_apply"
-
-[[node]]
-id = "PiLp.norm_singleL_le"
-
-[[node]]
-id = "PiLp.sum_singleL_apply"
-
-[[node]]
-id = "PiLp.strongDual_apply_eq_sum"
-
-[[node]]
-id = "PiLp.norm_strongDual_comp_singleL_le"
-
-[[node]]
-id = "PiLp.norm_strongDual_eq"
-
-[[node]]
-id = "PiLp.norm_eq_norm_toLp_norm"
-
-[[node]]
 id = "SobolevIntervalLp.exists_repr_strongDual"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 8, Remark 21"
 

@@ -10,37 +10,6 @@ id = "_root_.SobolevInterval.fn_ae_eq_repLp"
 id = "_root_.SobolevInterval.rep_sub"
 
 [[node]]
-id = "modelForm"
-
-[[node]]
-id = "mulL_zero"
-
-[[node]]
-id = "modelForm_apply"
-
-[[node]]
-id = "modelForm_eq_innerSL"
-
-[[node]]
-id = "modelForm_isCoerciveWith"
-
-[[node]]
-id = "modelForm_isHermitian"
-
-[[node]]
-id = "modelForm_comm"
-
-[[node]]
-id = "hasWeakDerivOn_mulL_deriv_of_forall"
-
-[[node]]
-id = "mem_sobolevInterval_two_of_forall_testFunction"
-source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Steps C and D'
-
-[[node]]
-id = "exists_sobolevInterval_two_of_forall_testFunction"
-
-[[node]]
 id = "deriv_inclusionCLM_eq"
 
 [[node]]
@@ -184,9 +153,6 @@ id = "natural_boundary_robin"
 
 [[node]]
 id = "natural_boundary_periodic"
-
-[[node]]
-id = "_root_.SesqForm.IsCoerciveWith.restrict"
 
 [[node]]
 id = "existsUnique_dirichletSet_of_variationalInequality"

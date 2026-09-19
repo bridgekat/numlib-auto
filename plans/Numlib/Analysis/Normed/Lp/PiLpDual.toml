@@ -1,0 +1,28 @@
+namespace = "PiLp"
+
+[[node]]
+id = "singleL"
+
+[[node]]
+id = "singleL_apply"
+
+[[node]]
+id = "norm_singleL_apply"
+
+[[node]]
+id = "norm_singleL_le"
+
+[[node]]
+id = "sum_singleL_apply"
+
+[[node]]
+id = "strongDual_apply_eq_sum"
+
+[[node]]
+id = "norm_strongDual_comp_singleL_le"
+
+[[node]]
+id = "norm_strongDual_eq"
+
+[[node]]
+id = "norm_eq_norm_toLp_norm"

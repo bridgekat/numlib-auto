@@ -1,4 +1,5 @@
 import Numlib.Algebra.LinearRecurrence
+import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ContDiffOnIcc
@@ -175,6 +176,7 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Lp.PiLp
+import Numlib.Analysis.Normed.Lp.PiLpDual
 import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Normed.Module.Annihilator
@@ -248,6 +250,7 @@ import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered
+import Numlib.Analysis.Sobolev.Translate
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.Sobolev.Zero
 import Numlib.Analysis.SpecialFunctions.Chebyshev

@@ -19,9 +19,6 @@ id = "regularity_interior"
 id = "regularity_interior_higher"
 
 [[node]]
-id = "translateL_mem_zero"
-
-[[node]]
 id = "eLpNorm_diffQuot_le_of_tangential"
 
 [[node]]
@@ -38,9 +35,6 @@ id = "tangentialDeriv_mem_zero_of_sobolev_two"
 
 [[node]]
 id = "regularity_upperHalfSpace_higher"
-
-[[node]]
-id = "IsContDiffConstOffCompact"
 
 [[node]]
 id = "_root_.MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact"

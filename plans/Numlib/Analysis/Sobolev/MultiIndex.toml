@@ -360,3 +360,21 @@ id = "SobolevMultiIndex.gradNorm_le_norm"
 
 [[node]]
 id = "SobolevMultiIndex.norm_weakDeriv_single_le_gradNorm"
+
+[[node]]
+id = "MultiIndexLE.castLE_injective"
+
+[[node]]
+id = "MultiIndexLE.addSingle"
+
+[[node]]
+id = "MultiIndexLE.addSingle_injective"
+
+[[node]]
+id = "MultiIndexLE.singleLE"
+
+[[node]]
+id = "MultiIndexLE.addSingle_zero"
+
+[[node]]
+id = "MultiIndexLE.coe_addSingle"

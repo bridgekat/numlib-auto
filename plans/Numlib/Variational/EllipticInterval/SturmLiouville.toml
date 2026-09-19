@@ -53,12 +53,6 @@ id = "form_solution"
 id = "eq_solution_of_isGalerkinSolution"
 
 [[node]]
-id = "_root_.EllipticInterval.load_add"
-
-[[node]]
-id = "_root_.EllipticInterval.load_smul"
-
-[[node]]
 id = "solution_add"
 
 [[node]]

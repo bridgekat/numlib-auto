@@ -89,7 +89,7 @@ theorem theorem_9_31 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set
   have h := Elliptic.dirichletForm_dirichletEigenfunction Ω hb hne n ⟨φ, hφ⟩
   refine (Elliptic.dirichletForm_apply Ω _ _).symm.trans (h.trans ?_)
   exact congrArg (fun y ↦ Elliptic.dirichletEigenvalue Ω hb n * y)
-    (Elliptic.inner_eq_integral Ω _ _)
+    (MeasureTheory.L2.inner_eq_integral_mul _ _)
 
 /-- **Theorem 9.31, "`-Δe_n = λ_n e_n` in `Ω`" for a `C²` representative**: if `e ∈ L²(Ω)` is
 the function of some `u ∈ H^1(Ω)` satisfying the weak equation (83) with the eigenvalue `λ`,
@@ -109,7 +109,7 @@ theorem theorem_9_31_laplacian {e : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} 
     (hue.trans he₀)
   have h := heq V (SobolevMultiIndexZero.testFunctions_le hV)
   refine (Elliptic.dirichletForm_apply Ω _ _).trans (h.trans ?_)
-  rw [Elliptic.inner_eq_integral]
+  rw [MeasureTheory.L2.inner_eq_integral_mul]
   congr 1
   refine integral_congr_ae ?_
   filter_upwards [hue] with x hx
@@ -193,7 +193,7 @@ theorem remark_9_30 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 
   obtain ⟨u, hu0, hue, heq⟩ := h n
   refine ⟨u, hu0, EventuallyEq.of_eq (congrArg (fun z : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) ↦
     (z : 𝔼 → ℝ)) hue), fun φ hφ ↦ ?_⟩
-  rw [← generalForm_zero_drift_apply, heq φ hφ, Elliptic.inner_eq_integral]
+  rw [← generalForm_zero_drift_apply, heq φ hφ, MeasureTheory.L2.inner_eq_integral_mul]
   rfl
 
 end Spectral

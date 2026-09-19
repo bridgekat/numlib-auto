@@ -248,3 +248,43 @@ id = "setIntegral_comp_affine"
 
 [[node]]
 id = "isDiffeoOnWithBoundedJacobian_affine"
+
+[[node]]
+id = "stampacchiaTruncationDeriv"
+
+[[node]]
+id = "stampacchiaTruncation"
+
+[[node]]
+id = "contDiff_stampacchiaTruncation"
+
+[[node]]
+id = "deriv_stampacchiaTruncation"
+
+[[node]]
+id = "strictMonoOn_stampacchiaTruncation"
+
+[[node]]
+id = "IsStampacchiaTruncation"
+
+[[node]]
+id = "IsStampacchiaTruncation.mul_nonneg"
+
+[[node]]
+id = "IsStampacchiaTruncation.mul_eq_zero_iff"
+
+[[node]]
+id = "isStampacchiaTruncation_stampacchiaTruncation"
+
+[[node]]
+id = "stampacchiaTruncationSqrt"
+
+[[node]]
+id = "sq_deriv_stampacchiaTruncationSqrt"
+
+[[node]]
+id = "isStampacchiaTruncation_stampacchiaTruncationSqrt"
+
+[[node]]
+id = "exists_stampacchiaTruncation"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.7, proof of Theorem 9.27, conditions (i)–(iii)"

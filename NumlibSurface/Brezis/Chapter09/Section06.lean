@@ -539,7 +539,7 @@ theorem lemma_9_7 {f u : hSpace (d + 1) ℝ₊}
     obtain ⟨ψ, hψ⟩ := hΦ
     rw [Elliptic.laplaceForm_apply_eq_dirichletForm_add_weakDeriv,
       Elliptic.dirichletForm_apply_eq_of_ae_eq (fun i ↦ EventuallyEq.refl _ _) hψ,
-      Elliptic.load_apply_eq_of_ae_eq (EventuallyEq.refl _ _) hψ, Elliptic.inner_eq_integral]
+      Elliptic.load_apply_eq_of_ae_eq (EventuallyEq.refl _ _) hψ, L2.inner_eq_integral_mul]
     have e1 : ∑ i, ∫ x in ((ℝ₊ : Opens 𝔼) : Set 𝔼),
         SobolevMultiIndex.weakDeriv w (MultiIndexLE.single i) x
           * fderiv ℝ ψ x (EuclideanSpace.single i 1)

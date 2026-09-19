@@ -10,6 +10,12 @@ id = "_root_.SesqForm.restrict_apply"
 id = "_root_.SesqForm.IsHermitian.restrict"
 
 [[node]]
+id = "_root_.SesqForm.IsCoerciveWith.restrict"
+
+[[node]]
+id = "_root_.SesqForm.IsCoercive.restrict"
+
+[[node]]
 id = "mulL"
 
 [[node]]
@@ -163,3 +169,40 @@ id = "norm_le_sum_norm_deriv"
 [[node]]
 id = "galerkin_norm_sub_le_l2"
 source = 'Quarteroni, Sacco and Saleri, Numerical Mathematics, (12.60)'
+
+[[node]]
+id = "modelForm"
+
+[[node]]
+id = "mulL_zero"
+
+[[node]]
+id = "modelForm_apply"
+
+[[node]]
+id = "modelForm_eq_innerSL"
+
+[[node]]
+id = "modelForm_isCoerciveWith"
+
+[[node]]
+id = "modelForm_isHermitian"
+
+[[node]]
+id = "modelForm_comm"
+
+[[node]]
+id = "hasWeakDerivOn_mulL_deriv_of_forall"
+
+[[node]]
+id = "mem_sobolevInterval_two_of_forall_testFunction"
+source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.4, Steps C and D'
+
+[[node]]
+id = "exists_sobolevInterval_two_of_forall_testFunction"
+
+[[node]]
+id = "load_add"
+
+[[node]]
+id = "load_smul"

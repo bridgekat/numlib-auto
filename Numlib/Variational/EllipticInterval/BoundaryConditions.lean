@@ -1,4 +1,4 @@
-import Numlib.Analysis.PDE.Elliptic.Regularity
+import Numlib.Analysis.Sobolev.Translate
 import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Inequality.Basic
@@ -36,7 +36,8 @@ bilinear form is the inner product and Lax–Milgram is the Riesz representation
 ## Main statements
 
 * `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`,
-  `exists_sobolevInterval_two_of_forall_testFunction` (**Step C**, `H²` regularity from the test
+  `exists_sobolevInterval_two_of_forall_testFunction` (now in the parent module; **Step C**, `H²`
+  regularity from the test
   functions alone): `u ∈ H¹` with `a(u, v) = (f, v)` for every `v ∈ H_0^1` lies in `H²`, with
   `α u'' = β u' + γ u − f − α' u'` almost everywhere;
   `exists_contDiffMapIcc_of_continuous` (Step C, the `C²` clause): it is `C²` when `f`, `β`, `γ`
@@ -62,15 +63,15 @@ bilinear form is the inner product and Lax–Milgram is the Riesz representation
   weak solution is the unique classical solution, and lies in `H²(ℝ)`;
   `Line.solution_translateLp`: the solution operator commutes with the translations
   `Line.translateLp` of `L²(ℝ)` and `Line.translate` of `H¹(ℝ)` (the whole-line instances of
-  the isometries of `Numlib/Analysis/PDE/Elliptic/Regularity.lean`), `Line.solution_eq_zero_iff`:
+  the isometries of `Numlib/Analysis/Sobolev/Translate.lean`), `Line.solution_eq_zero_iff`:
   it is injective, and `Line.not_tendsto_translateLp`: the translates of a nonzero `L²(ℝ)`
   function have no limit — which makes the solution operator non-compact on `L²(ℝ)`
   (Remark 30 of Chapter 8, stated in the surface).
 
 ## Design
 
-* The regularity lemmas restate the parent's `isWeakSolution_mem_sobolevInterval_two` and
-  `exists_sobolevInterval_two_of_isWeakSolution` with the weak equation as the only hypothesis
+* The regularity lemmas of the parent, `mem_sobolevInterval_two_of_forall_testFunction` and
+  `exists_sobolevInterval_two_of_forall_testFunction`, take the weak equation as the only hypothesis
   (the parent asks `u ∈ H_0^1` as well, which Examples 1 and 3–8 do not have); the parent's
   versions are their instances.
 * The `C²` clause is proved through the continuous representative of `u' ∈ H¹` and Remark 6
@@ -124,194 +125,6 @@ end Bridge
 namespace EllipticInterval
 
 variable {a b : ℝ}
-
-/-! ### The model form -/
-
-variable (a b) in
-/-- **The form of the model operator `−u'' + u`**: `form a b 1 0 1`,
-`a(u, v) = ∫_a^b (u' v' + u v)`, which is the `H¹(a, b)` inner product
-(`EllipticInterval.modelForm_eq_innerSL`). It is the form of every problem of
-[brezis2011functional] §8.4 except the Sturm–Liouville Example 2. -/
-abbrev modelForm : SesqForm ℝ (SobolevInterval 1 a b) :=
-  form a b (constLinf a b 1) 0 (constLinf a b 1)
-
-/-- Multiplication by the zero coefficient is zero. -/
-theorem mulL_zero (f : Lp ℝ 2 (volume.restrict (Ioo a b))) : mulL (0 : Lp ℝ ⊤ _) f = 0 := by
-  rw [← constLinf_zero a b, mulL_constLinf, zero_smul]
-
-/-- The model form is the `H¹` inner product. -/
-theorem modelForm_apply (u v : SobolevInterval 1 a b) : modelForm a b u v = ⟪u, v⟫_ℝ := by
-  rw [modelForm, form_apply_inner, mulL_constLinf, mulL_constLinf, mulL_zero, one_smul, one_smul,
-    inner_zero_left, add_zero, SobolevInterval.inner_eq, Fin.sum_univ_two, add_comm]
-
-/-- The model form is `innerSL ℝ`. -/
-theorem modelForm_eq_innerSL : modelForm a b = innerSL ℝ := by
-  ext u v
-  exact modelForm_apply u v
-
-/-- The model form is coercive with constant `1`. -/
-theorem modelForm_isCoerciveWith : (modelForm a b).IsCoerciveWith 1 := by
-  rw [modelForm_eq_innerSL]; exact SesqForm.innerSL_isCoerciveWith
-
-/-- The model form is symmetric. -/
-theorem modelForm_isHermitian : (modelForm a b).IsHermitian := by
-  rw [modelForm_eq_innerSL]; exact SesqForm.innerSL_isHermitian
-
-/-- The model form is symmetric, unbundled. -/
-theorem modelForm_comm (u v : SobolevInterval 1 a b) : modelForm a b u v = modelForm a b v u := by
-  rw [modelForm_apply, modelForm_apply, real_inner_comm]
-
-/-! ### Step C: `H²` regularity from the test functions alone -/
-
-open SobolevInterval in
-/-- **The flux `α u'` of a weak solution has a weak derivative** `β u' + γ u - f ∈ L²`, for `u`
-satisfying the weak equation tested against `H_0^1(a, b)` only (`u` itself need not lie in
-`H_0^1`). This is the parent's `EllipticInterval.hasWeakDerivOn_mulL_deriv` with the weaker
-hypothesis, which its proof never used. -/
-theorem hasWeakDerivOn_mulL_deriv_of_forall (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b)))
-    (f : Lp ℝ 2 (volume.restrict (Ioo a b))) {u : SobolevInterval 1 a b}
-    (hu : ∀ v ∈ SobolevIntervalZero a b, form a b αL βL γL u v = load a b f v) :
-    HasWeakDerivOn (fun x ↦ αL x * deriv u 1 x)
-      (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x) (Opens.Ioo a b) := by
-  have hG : MemLp (fun x ↦ αL x * deriv u 1 x) 2 (volume.restrict (Ioo a b)) :=
-    (Lp.memLp (mulL αL (deriv u 1))).ae_eq (coeFn_mulL αL (deriv u 1))
-  have hW : MemLp (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x) 2
-      (volume.restrict (Ioo a b)) :=
-    (((Lp.memLp (mulL βL (deriv u 1))).ae_eq (coeFn_mulL βL (deriv u 1))).add
-      ((Lp.memLp (mulL γL (deriv u 0))).ae_eq (coeFn_mulL γL (deriv u 0)))).sub (Lp.memLp f)
-  refine hasWeakDerivOn_iff.2 ⟨hG.locallyIntegrableOn (Ω := Opens.Ioo a b) one_le_two,
-    hW.locallyIntegrableOn (Ω := Opens.Ioo a b) one_le_two, fun φ ↦ ?_⟩
-  obtain ⟨v, hvmem, hvφ⟩ := SobolevIntervalZero.exists_mem_fn_ae_eq φ
-  have hvφ' := deriv_ae_eq_of_fn_ae_eq φ hvφ
-  have key := hu v hvmem
-  rw [form_apply, load_apply] at key
-  have e1 : ∫ x in Ioo a b, (αL x * deriv u 1 x * deriv v 1 x + βL x * deriv u 1 x * deriv v 0 x
-      + γL x * deriv u 0 x * deriv v 0 x) = ∫ x in Ioo a b,
-        (_root_.deriv φ x * (αL x * deriv u 1 x)
-          + φ x * (βL x * deriv u 1 x + γL x * deriv u 0 x)) := by
-    refine integral_congr_ae ?_
-    filter_upwards [hvφ, hvφ'] with x h1 h2
-    rw [h2, deriv_zero, h1]
-    ring
-  have e2 : ∫ x in Ioo a b, f x * deriv v 0 x = ∫ x in Ioo a b, φ x * f x := by
-    refine integral_congr_ae ?_
-    filter_upwards [hvφ] with x h1
-    rw [deriv_zero, h1, mul_comm]
-  rw [e1, e2] at key
-  have i1 : IntegrableOn (fun x ↦ _root_.deriv φ x * (αL x * deriv u 1 x)) (Ioo a b) :=
-    IntegrableOn.continuousOn_mul_of_subset (φ.fderivApply 1).continuous.continuousOn
-      (hG.integrable one_le_two) isCompact_Icc measurableSet_Ioo Ioo_subset_Icc_self
-  have hW' : MemLp (fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x) 2
-      (volume.restrict (Ioo a b)) :=
-    ((Lp.memLp (mulL βL (deriv u 1))).ae_eq (coeFn_mulL βL (deriv u 1))).add
-      ((Lp.memLp (mulL γL (deriv u 0))).ae_eq (coeFn_mulL γL (deriv u 0)))
-  have i2 : IntegrableOn (fun x ↦ φ x * (βL x * deriv u 1 x + γL x * deriv u 0 x)) (Ioo a b) :=
-    IntegrableOn.continuousOn_mul_of_subset φ.continuous.continuousOn
-      (hW'.integrable one_le_two) isCompact_Icc measurableSet_Ioo Ioo_subset_Icc_self
-  have i3 : IntegrableOn (fun x ↦ φ x * f x) (Ioo a b) :=
-    IntegrableOn.continuousOn_mul_of_subset φ.continuous.continuousOn
-      ((Lp.memLp f).integrable one_le_two) isCompact_Icc measurableSet_Ioo Ioo_subset_Icc_self
-  rw [integral_add i1 i2] at key
-  have e3 : ∫ x in Ioo a b, φ x * (βL x * deriv u 1 x + γL x * deriv u 0 x - f x)
-      = (∫ x in Ioo a b, φ x * (βL x * deriv u 1 x + γL x * deriv u 0 x))
-        - ∫ x in Ioo a b, φ x * f x := by
-    rw [← integral_sub i2 i3]
-    refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
-    simp only
-    ring
-  rw [Opens.coe_Ioo, e3]
-  linarith
-
-open SobolevInterval in
-/-- **Step C, general form (`H²` regularity from the test functions alone)**, the "Steps C and D"
-paragraph of [brezis2011functional] §8.4: if the coefficient `α` is `C¹` on `[a, b]` and does not
-vanish there, `f ∈ L²(a, b)`, and `u ∈ H¹(a, b)` satisfies `a(u, v) = (f, v)` for every
-`v ∈ H_0^1(a, b)` — `u` itself is *not* assumed to vanish at the endpoints, so this covers the
-inhomogeneous Dirichlet, Neumann, mixed, Robin and periodic problems — then `u ∈ H²(a, b)`. The
-parent's `EllipticInterval.isWeakSolution_mem_sobolevInterval_two` is the case `u ∈ H_0^1`. -/
-theorem mem_sobolevInterval_two_of_forall_testFunction (hab : a < b)
-    (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
-    (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
-    (hα0 : ∀ x ∈ Icc a b, α x ≠ 0) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
-    {u : SobolevInterval 1 a b}
-    (hu : ∀ v ∈ SobolevIntervalZero a b, form a b αL βL γL u v = load a b f v) :
-    MemSobolevInterval (fn u) 2 a b := by
-  set W : ℝ → ℝ := fun x ↦ βL x * deriv u 1 x + γL x * deriv u 0 x - f x with hWdef
-  have hW : MemLp W 2 (volume.restrict (Ioo a b)) :=
-    (((Lp.memLp (mulL βL (deriv u 1))).ae_eq (coeFn_mulL βL (deriv u 1))).add
-      ((Lp.memLp (mulL γL (deriv u 0))).ae_eq (coeFn_mulL γL (deriv u 0)))).sub (Lp.memLp f)
-  have hWint : IntegrableOn W (Ioo a b) := hW.integrable one_le_two
-  have hweak := hasWeakDerivOn_mulL_deriv_of_forall αL βL γL f hu
-  obtain ⟨c, hc⟩ := hweak.exists_ae_eq_integral hab hWint
-  set g : ℝ → ℝ := fun x ↦ c + ∫ t in a..x, W t with hgdef
-  have hgc : ContinuousOn g (Icc a b) :=
-    intervalIntegral.continuousOn_integral_of_integrableOn_Ioo hab.le hWint c
-  have hg1 : MemSobolevInterval g 1 a b :=
-    memSobolevInterval_one_iff.2 ⟨hgc.memLp_two_restrict_Ioo, W,
-      hasWeakDerivOn_integral hab.le hWint c, hW⟩
-  obtain ⟨Gel, hGel⟩ := MemSobolevMultiIndex.exists_sobolevMultiIndex hg1
-  have hGrep : EqOn (rep Gel) g (Icc a b) := rep_eq_of_continuousOn hab Gel hgc hGel
-  have hαinv : ContDiffOn ℝ ((1 : ℕ) : ℕ∞ω) (fun x ↦ (α x)⁻¹) (Icc a b) := by
-    rw [Nat.cast_one]; exact hα.inv hα0
-  set Ainv := ContDiffMapIcc.ofContDiffOn hab.le hab hαinv with hAinv
-  set AinvH := ContDiffMapIcc.toSobolevInterval hab.le hab 1 Ainv with hAinvH
-  have hArep : EqOn (rep AinvH) (fun x ↦ (α x)⁻¹) (Icc a b) := by
-    refine rep_eq_of_continuousOn hab AinvH hαinv.continuousOn ?_
-    refine (ContDiffMapIcc.fn_toSobolevInterval_ae_eq hab.le hab Ainv).trans ?_
-    refine (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx ↦ ?_)
-    rw [ContDiffMapIcc.extend_of_mem Ainv (Ioo_subset_Icc_self hx), hAinv]
-    exact ContDiffMapIcc.coe_ofContDiffOn hab.le hab hαinv ⟨x, Ioo_subset_Icc_self hx⟩
-  have hmul := memSobolevInterval_mul hab Gel AinvH
-  have hu' : MemSobolevInterval (deriv u 1) 1 a b := by
-    refine hmul.congr_ae ?_
-    filter_upwards [hc, hαL, ae_restrict_mem measurableSet_Ioo] with x h1 h2 hx
-    have hx' := Ioo_subset_Icc_self hx
-    rw [hGrep hx', hArep hx', ← h1, h2]
-    field_simp [hα0 x hx']
-  exact memSobolevInterval_succ_iff.2 ⟨Lp.memLp _, deriv u 1, hasWeakDerivOn_fn u, hu'⟩
-
-open SobolevInterval in
-/-- **Step C with the equation**: under the hypotheses of
-`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction`, `u` is the inclusion of an
-element `Φ ∈ H²(a, b)` whose second derivative satisfies the flux identity
-`α u'' = β u' + γ u − f − α' u'` almost everywhere (with `α' = derivWithin α (Icc a b)`): the two
-weak derivatives `(α u')' = β u' + γ u − f` and `(α u')' = α' u' + α u''` of the flux agree. For
-the model operator, `u'' = β u' + γ u − f`. -/
-theorem exists_sobolevInterval_two_of_forall_testFunction (hab : a < b)
-    (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo a b))) {α : ℝ → ℝ}
-    (hαL : αL =ᵐ[volume.restrict (Ioo a b)] α) (hα : ContDiffOn ℝ 1 α (Icc a b))
-    (hα0 : ∀ x ∈ Icc a b, α x ≠ 0) (f : Lp ℝ 2 (volume.restrict (Ioo a b)))
-    {u : SobolevInterval 1 a b}
-    (hu : ∀ v ∈ SobolevIntervalZero a b, form a b αL βL γL u v = load a b f v) :
-    ∃ Φ : SobolevInterval 2 a b, inclusionCLM 1 a b Φ = u ∧
-      ∀ᵐ x ∂(volume.restrict (Ioo a b)), α x * deriv Φ 2 x
-        = βL x * deriv u 1 x + γL x * deriv u 0 x - f x
-          - derivWithin α (Icc a b) x * deriv u 1 x := by
-  have hu2 := mem_sobolevInterval_two_of_forall_testFunction hab αL βL γL hαL hα hα0 f hu
-  obtain ⟨-, w, hw, hw1⟩ := memSobolevInterval_succ_iff.1 hu2
-  have hw' : w =ᵐ[volume.restrict (Ioo a b)] deriv u 1 :=
-    (ae_restrict_iff' measurableSet_Ioo).2 (hw.ae_eq (hasWeakDerivOn_fn u))
-  obtain ⟨U₁, hU₁⟩ := MemSobolevMultiIndex.exists_sobolevMultiIndex (hw1.congr_ae hw')
-  obtain ⟨Φ, hΦ, hΦ2⟩ := exists_sobolevInterval_two u U₁ hU₁
-  refine ⟨Φ, hΦ, ?_⟩
-  rw [hΦ2]
-  have hweak := hasWeakDerivOn_mulL_deriv_of_forall αL βL γL f hu
-  obtain ⟨A, hArep, hA'⟩ := exists_sobolevInterval_of_contDiffOn hab hα
-  have hprod := hasWeakDerivOn_rep_mul hab A U₁
-  have hrepU₁ := fn_ae_eq_rep hab U₁
-  have hfn : (fun t ↦ rep A t * rep U₁ t) =ᵐ[volume.restrict (Ioo a b)]
-      fun x ↦ αL x * deriv u 1 x := by
-    filter_upwards [hαL, hU₁, hrepU₁, ae_restrict_mem measurableSet_Ioo] with x h1 h2 h3 hx
-    rw [hArep (Ioo_subset_Icc_self hx), h1, ← h3]
-    exact congrArg (α x * ·) h2
-  have huniq := (ae_restrict_iff' measurableSet_Ioo).2
-    ((hprod.congr_ae hfn (Eventually.of_forall fun _ ↦ rfl)).ae_eq hweak)
-  filter_upwards [huniq, hA', hU₁, hrepU₁, ae_restrict_mem measurableSet_Ioo]
-    with x h1 h2 h3 h4 hx
-  have hx' := Ioo_subset_Icc_self hx
-  have h3' : fn U₁ x = deriv u 1 x := h3
-  rw [hArep hx', h2, ← h4, h3'] at h1
-  linarith
 
 /-! ### Step C: the `C²` clause -/
 
@@ -1004,16 +817,6 @@ theorem natural_boundary_periodic (hab : a < b) (f : Lp ℝ 2 (volume.restrict (
     rw [rep_affineLift_left, rep_affineLift_right]))
   rw [rep_affineLift_left, rep_affineLift_right, mul_one, mul_one] at this
   linarith
-
-/-! ### Lax–Milgram on a closed subspace, and the restriction of a coercive form -/
-
-/-- The restriction of a coercive form to a subspace is coercive with the same constant. Belongs
-beside `SesqForm.restrict` in `Numlib/Variational/Forms.lean`. -/
-theorem _root_.SesqForm.IsCoerciveWith.restrict {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
-    [InnerProductSpace 𝕜 V] {a : SesqForm 𝕜 V} {c : ℝ} (h : a.IsCoerciveWith c)
-    (K : Submodule 𝕜 V) : (a.restrict K).IsCoerciveWith c := fun v ↦ by
-  rw [SesqForm.restrict_apply, ← Submodule.norm_coe]
-  exact h v
 
 /-! ### Proposition 8.16: the inhomogeneous Dirichlet problem -/
 
@@ -1975,20 +1778,21 @@ theorem isTranslationInvariant_top (h : ℝ) :
     IsTranslationInvariant ((⊤ : Opens ℝ) : Set ℝ) h := fun _ ↦ Iff.rfl
 
 /-- **Translation by `h` on `L²(ℝ)`**, `f ↦ f(· + h)`, a linear isometry
-(`Elliptic.translateLp` on the whole line). -/
+(`MeasureTheory.Lp.translate` on the whole line). -/
 abbrev translateLp (h : ℝ) : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →ₗᵢ[ℝ]
     Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) :=
-  Elliptic.translateLp ℝ 2 (isTranslationInvariant_top h)
+  Lp.translate ℝ 2 (isTranslationInvariant_top h)
 
 /-- **Translation by `h` on `H¹(ℝ)`**, `u ↦ u(· + h)`, a linear isometry
-(`Elliptic.translateL` on the whole line). -/
+(`SobolevMultiIndex.translateL` on the whole line). -/
 abbrev translate (h : ℝ) : SobolevIntervalLp 1 2 ⊤ →ₗᵢ[ℝ] SobolevIntervalLp 1 2 ⊤ :=
-  Elliptic.translateL ℝ (Module.Basis.singleton Unit ℝ) 1 2 volume (isTranslationInvariant_top h)
+  SobolevMultiIndex.translateL ℝ (Module.Basis.singleton Unit ℝ) 1 2 volume
+    (isTranslationInvariant_top h)
 
 /-- `τ_h f = f(· + h)` almost everywhere. -/
 theorem coeFn_translateLp (h : ℝ) (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     ⇑(translateLp h f) =ᵐ[volume.restrict ((⊤ : Opens ℝ) : Set ℝ)] fun x ↦ f (x + h) :=
-  Elliptic.coeFn_translateLp _ f
+  Lp.coeFn_translate _ f
 
 /-- The weak derivatives of `τ_h u` are the translates of those of `u`. -/
 theorem deriv_translate (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) (j : Fin 2) :
@@ -1999,7 +1803,7 @@ theorem deriv_translate (h : ℝ) (u : SobolevIntervalLp 1 2 ⊤) (j : Fin 2) :
 theorem translateLp_translateLp_neg (h : ℝ)
     (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     translateLp h (translateLp (-h) f) = f := by
-  have := Elliptic.translateLp_neg_translateLp (isTranslationInvariant_top (-h)) f
+  have := Lp.translate_neg_translate (isTranslationInvariant_top (-h)) f
   simpa using this
 
 /-- Translating by `-h` and then by `h` is the identity on `H¹(ℝ)`. -/
