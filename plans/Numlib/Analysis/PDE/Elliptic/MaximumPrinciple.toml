@@ -20,33 +20,15 @@ id = "nonneg_of_nonneg_frontier"
 
 [[node]]
 id = "le_of_classical"
-kind = "theorem"
-desc = '''**[brezis2011functional] Chapter 9, Remark 27: the maximum principle for classical
-solutions of a general elliptic equation, by the second-derivative test.** Let `Ω` be bounded,
-`ũ` continuous on `closure Ω` and `C²` on `Ω`, and suppose
-`-∑_{ij} ∂_j (a_ij ∂_i ũ) + ∑_i a_i ∂_i ũ + ũ = f` on `Ω` with `a_ij ∈ C¹(Ω)` symmetric and
-elliptic (`α |ξ|² ≤ ∑ a_ij(x) ξ_i ξ_j`) and `a_i` continuous. If `ũ ≤ K` on `frontier Ω` and
-`f ≤ K` on `Ω`, then `ũ ≤ K` on `Ω`; the Laplacian is the case `a_ij = δ_ij`, `a_i = 0`, which
-is the "other proof" of Theorem 9.27 for classical solutions.
 
-Proof (p. 11605): `ũ` attains its maximum on the compact `closure Ω` at some `x₀`
-(`IsCompact.exists_isMaxOn`). If `x₀ ∈ frontier Ω`, done. If `x₀ ∈ Ω`, then `∇ũ(x₀) = 0`
-(`IsLocalMax.fderiv_eq_zero`) and the Hessian `D²ũ(x₀)` is negative semidefinite — Mathlib has
-no second-order necessary condition; `IsLocalMax.iteratedFDeriv_two_nonpos`, planned here as a
-companion node, restricts to the line `t ↦ ũ(x₀ + t ξ)` and derives `g''(0) ≤ 0` from
-`isLocalMin_of_deriv_deriv_pos` by contradiction (a strict local minimum of `g` at a local
-maximum forces `g` locally constant there, so `g''(0) = 0`). Then
-`∑ a_ij(x₀) ∂_i∂_j ũ(x₀) = tr (A(x₀) D²ũ(x₀)) ≤ 0` because the trace of the product of a positive
-semidefinite and a negative semidefinite symmetric matrix is `≤ 0` (`tr(A H) = tr(√A H √A)`, with
-Mathlib's `Matrix.PosSemidef.sqrt`, or the book's diagonalization of `a_ij(x₀)` by an orthogonal
-change of coordinates and the one-dimensional test along each eigen-direction), and the
-first-order terms vanish at `x₀`, so `ũ(x₀) = f(x₀) + ∑ a_ij ∂_i∂_j ũ(x₀) + ∑ (∂_j a_ij) ∂_i ũ(x₀) ≤ f(x₀) ≤ K`.
-★★ (~250 lines including the Hessian lemma). The remark's last sentence — that the conclusion
-holds for *weak* solutions of (77) — is Gilbarg–Trudinger's theorem and is
-`nonneg_of_nonneg_frontier_general`'s territory; not part of this node.
+[[node]]
+id = "_root_.Matrix.PosSemidef.sum_mul_apply_single_nonpos"
 
-Blocked: not attempted for lack of time (sob12, 2026-09-19); the Laplacian instance is proved as `Elliptic.le_of_classical_laplacian` from `IsLocalMax.laplacian_nonpos` (`Numlib/Analysis/Calculus/DerivativeTest.lean`, ~30 lines). The general operator needs the Hessian-trace step `∑ a_ij(x₀) ∂_i∂_j ũ(x₀) ≤ 0` for a symmetric positive semidefinite `a(x₀)` and a negative semidefinite Hessian: `tr(A H) = tr(√A H √A) = ∑_k D²ũ(x₀)[√A e_k, √A e_k] ≤ 0` with `Matrix.PosSemidef.sqrt` and the line restriction `ContDiffAt.deriv_deriv_comp_add_smul`; ~200 lines, no consumer.'''
-deps = []
+[[node]]
+id = "_root_.Matrix.posSemidef_of_of_symm_of_nonneg"
+
+[[node]]
+id = "_root_.IsLocalMax.fderiv_fderiv_apply_self_nonpos"
 
 [[node]]
 id = "nonneg_of_nonneg_frontier_general_zero_drift"

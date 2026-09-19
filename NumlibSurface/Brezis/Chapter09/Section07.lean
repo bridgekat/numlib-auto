@@ -7,7 +7,7 @@ Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial D
 Equations*, Universitext, Springer, 2011, §9.7, on a general open subset `Ω` of
 `ℝ^N = EuclideanSpace ℝ (Fin N)` with Lebesgue measure: Theorem 9.27 (the maximum principle for
 the Dirichlet problem of `-Δu + u = f`, by Stampacchia's truncation), Corollary 9.28, Remark 27
-(the classical proof),
+(the classical proof, for the Laplacian and for a general elliptic operator),
 Proposition 9.29 (general second-order elliptic operators with `a₀ ≥ 0`) and Proposition 9.30
 (the Neumann problem). Everything delegates to `Numlib/Analysis/PDE/Elliptic/MaximumPrinciple`.
 
@@ -33,8 +33,7 @@ Proposition 9.29 (general second-order elliptic operators with `a₀ ≥ 0`) and
 
 * `theorem_9_27`, `theorem_9_27_of_mem_zero`, `corollary_9_28`, `corollary_9_28_bound`,
   `corollary_9_28_zero_load`, `corollary_9_28_zero_boundary`.
-* `remark_9_27` (the Laplacian); `remark_9_27_general` waits for the backbone's
-  `Elliptic.le_of_classical`.
+* `remark_9_27` (the Laplacian), `remark_9_27_general` (the general elliptic operator).
 * `proposition_9_29_zero_drift`, `proposition_9_29_zero_drift_of_mem_zero`,
   `proposition_9_29_inf_zero_drift`, `proposition_9_29_sup_inf_zero_drift`; the general-drift
   `proposition_9_29`, `proposition_9_29_inf`, `proposition_9_29_sup_inf` wait for the backbone.
@@ -223,6 +222,30 @@ theorem remark_9_27 (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u f : 𝔼 → �
     (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), u x ≤ K)
     (hf : ∀ x ∈ Ω, f x ≤ K) : ∀ x ∈ Ω, u x ≤ K :=
   Elliptic.le_of_classical_laplacian hb hc hu heq hΓ hf
+
+/-- **Remark 27, the general operator.** "This method has the advantage that it applies to general
+second-order elliptic equations": the conclusion of Theorem 9.27 holds for classical solutions
+`u ∈ C(Ω̄) ∩ C²(Ω)` of `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ a_i ∂ᵢu + u = f` in a bounded `Ω` (77), with
+`a_ij ∈ C¹(Ω)` symmetric satisfying the ellipticity condition (36) and any `a_i` (their
+continuity plays no role, the first-order term vanishing at a critical point): `u ≤ K` on `Γ`
+and `f ≤ K` on `Ω` give `u ≤ K` on `Ω`. At an interior maximum `x₀`, `∇u(x₀) = 0` and
+`∑ a_ij(x₀) ∂ᵢ∂ⱼu(x₀) ≤ 0` (78) — "by a change of coordinates one can reduce this to the case in
+which the matrix `a_ij(x₀)` is diagonal" — so `u(x₀) = f(x₀) + ∑ a_ij(x₀) ∂ᵢ∂ⱼu(x₀) ≤ f(x₀) ≤ K`.
+The backbone's `Elliptic.le_of_classical` (with the square root of `a(x₀)` in place of its
+diagonalization); the remark's last sentence, the same for *weak* solutions of (77)
+(Gilbarg–Trudinger), is not restated. -/
+theorem remark_9_27_general (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u f : 𝔼 → ℝ}
+    (hc : ContinuousOn u (closure (Ω : Set 𝔼))) (hu : ContDiffOn ℝ 2 u Ω)
+    {a : Fin N → Fin N → 𝔼 → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
+    (hsymm : ∀ i j, a i j = a j i) {α : ℝ} (hell : ellipticityCondition Ω a α)
+    {b : Fin N → 𝔼 → ℝ}
+    (heq : ∀ x ∈ Ω, -(∑ i, ∑ j, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+        (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+      + (∑ i, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + u x = f x)
+    {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), u x ≤ K) (hf : ∀ x ∈ Ω, f x ≤ K) :
+    ∀ x ∈ Ω, u x ≤ K :=
+  Elliptic.le_of_classical hb hc hu (fun i j ↦ (ha i j).differentiableOn one_ne_zero) hsymm
+    (fun x hx ξ ↦ (mul_nonneg hell.1.le (sq_nonneg _)).trans (hell.2 x hx ξ)) heq hΓ hf
 
 /-! ### Proposition 9.29, the drift-free case -/
 

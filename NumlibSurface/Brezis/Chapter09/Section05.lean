@@ -27,8 +27,7 @@ Proposition 9.24, Steps A and D of Example 1) and, for Remark 23's maximum princ
   `ContinuousOn u (closure Ω)` — `u` is `C²` on `Ω`, its derivatives of order `≤ 2` extend
   continuously to `Ω̄`, and `u` is its own continuous extension, so that its boundary values are
   meaningful. Mathlib's `ContDiffOn ℝ 2 u (closure Ω)` is a stronger hypothesis
-  (`isClassicalSolutionDirichlet_of_contDiffOn`); the backbone's Step A is stated with it, which
-  is why `example_9_1_stepA_of_contDiffOn` is proved and the faithful `example_9_1_stepA` waits.
+  (`isClassicalSolutionDirichlet_of_contDiffOn`, `example_9_1_stepA_of_contDiffOn`).
 * The Laplacian is Mathlib's `Δ` (`InnerProductSpace.instLaplacian`); the data `f` of the weak
   problems are elements of `L²(Ω)`, and the classical equations hold pointwise on `Ω`.
 * The coefficients `a_ij, a_i, a₀` of (39)–(40) are `L^∞(Ω)` classes, as in the book, with the
@@ -41,16 +40,15 @@ Proposition 9.24, Steps A and D of Example 1) and, for Remark 23's maximum princ
 ## Main results
 
 * `IsClassicalSolutionDirichlet`, `IsWeakSolutionDirichlet`, `isWeakSolutionDirichlet_iff`,
-  `example_9_1_stepA_of_contDiffOn`, `theorem_9_21`, `theorem_9_21_isMinOn`,
-  `example_9_1_stepD`, `example_9_1_stepD_of_continuous`. Not yet restated: the faithful
-  `example_9_1_stepA` and Example 2's Step A (they wait for the backbone's Step A under
-  `ContDiffOnClosure`), Example 3's Step A (integration by parts of `a_ij ∂ᵢu`) and Example 4's
-  Steps A and D (Green's formula and the surface measure on `Γ`).
+  `example_9_1_stepA`, `example_9_1_stepA_of_contDiffOn`, `theorem_9_21`, `theorem_9_21_isMinOn`,
+  `example_9_1_stepD`, `example_9_1_stepD_of_continuous`. Not yet restated: Example 4's Steps A
+  and D (Green's formula and the surface measure on `Γ`).
 * `admissibleSetInhomogeneous`, `example_9_2`, `IsClassicalSolutionInhomogeneous`,
-  `IsWeakSolutionInhomogeneous`, `proposition_9_22`, `proposition_9_22_iff`,
+  `IsWeakSolutionInhomogeneous`, `example_9_2_stepA`, `proposition_9_22`, `proposition_9_22_iff`,
   `proposition_9_22_isMinOn`.
 * `ellipticityCondition`, `IsClassicalSolutionElliptic`, `IsWeakSolutionElliptic`,
-  `example_9_3`, `example_9_3_isMinOn`, `IsWeakSolutionGeneralElliptic`, `theorem_9_23`,
+  `example_9_3_stepA`, `example_9_3`, `example_9_3_isMinOn`, `IsWeakSolutionGeneralElliptic`,
+  `theorem_9_23`,
   `remark_9_23`, `remark_9_23_zero_drift`.
 * `IsClassicalSolutionNeumann`, `IsWeakSolutionNeumann`, `proposition_9_24`,
   `proposition_9_24_isMinOn`, `example_9_4_stepD_interior`, `example_9_5_a`, `example_9_5_b`,
@@ -120,22 +118,32 @@ theorem isWeakSolutionDirichlet_iff (f : Lp ℝ 2 (volume.restrict (Ω : Set �
   simp only [IsWeakSolutionDirichlet, IsGalerkinSolution, laplaceForm_apply_two,
     Elliptic.load_apply]
 
-/-- **Example 1, Step A, for a solution of class `C²` on `closure Ω`**: every classical
-solution of (31) is a weak solution. Let `Ω` be bounded, `u` with `ContDiffOn ℝ 2 u (closure Ω)`
-(Mathlib's reading of `u ∈ C²(Ω̄)`, `isClassicalSolutionDirichlet_of_contDiffOn`) satisfying
-(31), and `f ∈ L²(Ω)`. Then `u` is the function of some `U ∈ H^1_0(Ω)`, and `U` is a weak
-solution of (31). The backbone's `Elliptic.isGalerkinSolution_laplace_of_classical`: `u` and `∇u`
-are bounded, so `u ∈ H^1(Ω) ∩ C(Ω̄)` with `u = 0` on `Γ`, hence `u ∈ H^1_0(Ω)` by Theorem 9.17
-(i) ⇒ (ii) (Remark 19: no regularity of `Ω`); for `v ∈ C_c^1(Ω)` the identity (32) is an
-integration by parts, and by density it holds for all `v ∈ H^1_0(Ω)`. -/
+/-- **Example 1, Step A: every classical solution is a weak solution.** Let `Ω` be bounded, `u`
+a classical solution of (31) (`IsClassicalSolutionDirichlet Ω f u`: `u ∈ C²(Ω̄)` in the sense of
+footnote 16 of §9.3, continuous on `Ω̄`, with `-Δu + u = f` in `Ω` and `u = 0` on `Γ`), and
+`f ∈ L²(Ω)`. Then `u` is the function of some `U ∈ H^1_0(Ω)`, and `U` is a weak solution of (31).
+The backbone's `Elliptic.isGalerkinSolution_laplace_of_classical`: `u` and `∇u` are bounded, so
+`u ∈ H^1(Ω) ∩ C(Ω̄)` with `u = 0` on `Γ`, hence `u ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii)
+(Remark 19: no regularity of `Ω`); for `v ∈ C_c^1(Ω)` the identity (32) is an integration by
+parts, and by density it holds for all `v ∈ H^1_0(Ω)`. -/
+theorem example_9_1_stepA (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f u : 𝔼 → ℝ}
+    (hu : IsClassicalSolutionDirichlet Ω f u) (hf : MemLp f 2 (volume.restrict (Ω : Set 𝔼))) :
+    ∃ U : hSpace N Ω, SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
+      IsWeakSolutionDirichlet Ω (hf.toLp f) U := by
+  obtain ⟨U, -, hUu, hUw⟩ := Elliptic.isGalerkinSolution_laplace_of_classical Ω hb hu.1 hu.2.1
+    hu.2.2.2 hf hu.2.2.1
+  exact ⟨U, hUu, (isWeakSolutionDirichlet_iff _ _).2 hUw⟩
+
+/-- **Example 1, Step A, for a solution of class `C²` on `closure Ω`**: the same for `u` with
+`ContDiffOn ℝ 2 u (closure Ω)` (Mathlib's reading of `u ∈ C²(Ω̄)`,
+`isClassicalSolutionDirichlet_of_contDiffOn`) satisfying (31). -/
 theorem example_9_1_stepA_of_contDiffOn (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : 𝔼 → ℝ}
     (hu : ContDiffOn ℝ 2 u (closure (Ω : Set 𝔼))) {f : 𝔼 → ℝ}
     (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) (h0 : EqOn u 0 (frontier (Ω : Set 𝔼)))
     (hf : MemLp f 2 (volume.restrict (Ω : Set 𝔼))) :
     ∃ U : hSpace N Ω, SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
-      IsWeakSolutionDirichlet Ω (hf.toLp f) U := by
-  obtain ⟨U, -, hUu, hUw⟩ := Elliptic.isGalerkinSolution_laplace_of_classical Ω hb hu h0 hf heq
-  exact ⟨U, hUu, (isWeakSolutionDirichlet_iff _ _).2 hUw⟩
+      IsWeakSolutionDirichlet Ω (hf.toLp f) U :=
+  example_9_1_stepA hb (isClassicalSolutionDirichlet_of_contDiffOn hu heq h0) hf
 
 /-- **Theorem 9.21 (Dirichlet, Riemann, Poincaré, Hilbert).** Given any `f ∈ L²(Ω)`, there exists
 a unique weak solution `u ∈ H^1_0(Ω)` of (31). The backbone's
@@ -282,6 +290,28 @@ theorem isWeakSolutionInhomogeneous_iff (f : Lp ℝ 2 (volume.restrict (Ω : Set
       ∀ v ∈ hZeroSpace N Ω, Elliptic.laplaceForm Ω u v = Elliptic.load Ω f v := by
   simp only [IsWeakSolutionInhomogeneous, Elliptic.laplaceForm_apply, Elliptic.load_apply]
   rfl
+
+/-- **Example 2, "as above, any classical solution is a weak solution".** Let `Ω` be bounded,
+`g̃ ∈ H^1(Ω) ∩ C(Ω̄)` with `g̃ = g` on `Γ` — `G : H^1(Ω)` with a representative `k` continuous
+on `closure Ω` and `k = g` on `Γ` — and `u` a classical solution of (33)
+(`IsClassicalSolutionInhomogeneous Ω f g u`), with `f ∈ L²(Ω)`. Then `u` is the function of some
+`U ∈ K`, and `U` is a weak solution of (33): `u − g̃ ∈ H^1(Ω) ∩ C(Ω̄)` vanishes on `Γ`, hence
+lies in `H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii) (`theorem_9_17_mp`, no regularity of `Ω`), and the
+identity (34) is Example 1's Step A without its boundary condition (the backbone's
+`Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical`). -/
+theorem example_9_2_stepA (hb : Bornology.IsBounded (Ω : Set 𝔼)) {G : hSpace N Ω} {k g : 𝔼 → ℝ}
+    (hG : SobolevMultiIndex.fn G =ᵐ[volume.restrict (Ω : Set 𝔼)] k)
+    (hk : ContinuousOn k (closure (Ω : Set 𝔼))) (hkg : EqOn k g (frontier (Ω : Set 𝔼)))
+    {f u : 𝔼 → ℝ} (hu : IsClassicalSolutionInhomogeneous Ω f g u)
+    (hf : MemLp f 2 (volume.restrict (Ω : Set 𝔼))) :
+    ∃ U : hSpace N Ω, SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
+      IsWeakSolutionInhomogeneous Ω (hf.toLp f) G U := by
+  obtain ⟨U, hUu, hUw⟩ :=
+    Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical Ω hb hu.1 hf hu.2.2.1
+  refine ⟨U, hUu, (isWeakSolutionInhomogeneous_iff _ _ _).2 ⟨?_, hUw⟩⟩
+  refine mem_admissibleSetInhomogeneous_iff.2 (theorem_9_17_mp (by simp) (U - G)
+    ((SobolevMultiIndex.fn_sub U G).trans (hUu.sub hG)) (hu.2.1.sub hk) fun x hx ↦ ?_)
+  simp only [Pi.sub_apply, Pi.zero_apply, hu.2.2.2 hx, hkg hx, sub_self]
 
 /-- **Proposition 9.22.** Given any `f ∈ L²(Ω)`, there exists a unique weak solution `u ∈ K` of
 (33). The backbone's `Elliptic.existsUnique_isWeakSolution_inhomogeneous`; the book's proof goes
@@ -497,6 +527,38 @@ theorem isWeakSolutionElliptic_iff {a : Fin N → Fin N → 𝔼 → ℝ} {a₀ 
       integral_congr_ae (hA₀.mono fun x hx ↦ by simp only [hx])
     rw [e1, e2, integral_zero, e3, add_zero]
   simp only [IsWeakSolutionElliptic, IsGalerkinSolution, key, Elliptic.load_apply]
+
+/-- **Example 3, "as above, any classical solution is a weak solution".** Let `Ω` be bounded,
+`a_ij ∈ C¹(Ω̄)` (`ContDiffOnClosure ℝ 1 (a i j) Ω`, footnote 16 of §9.3), `a₀ ∈ C(Ω̄)`, `u` a
+classical solution of (37) (`IsClassicalSolutionElliptic Ω a a₀ f u`) and `f ∈ L²(Ω)`. Then `u`
+is the function of some `U ∈ H^1_0(Ω)`, and `U` is a weak solution of (37). The backbone's
+`Elliptic.isGalerkinSolution_general_of_classical` with the `L^∞(Ω)` classes of the coefficients
+and no first-order term: `u ∈ H^1(Ω) ∩ C(Ω̄)` vanishes on `Γ`, hence lies in `H^1_0(Ω)`
+(Theorem 9.17), and for `v ∈ C_c^1(Ω)` the identity (38) is the integration by parts
+`∫_Ω ∂ⱼ(a_ij ∂ᵢu) v = −∫_Ω a_ij ∂ᵢu ∂ⱼv` of the `C¹` functions `a_ij ∂ᵢu`, extended to
+`H^1_0(Ω)` by density. -/
+theorem example_9_3_stepA (hb : Bornology.IsBounded (Ω : Set 𝔼)) {a : Fin N → Fin N → 𝔼 → ℝ}
+    (ha : ∀ i j, ContDiffOnClosure ℝ 1 (a i j) Ω) {a₀ : 𝔼 → ℝ}
+    (ha₀ : ContinuousOn a₀ (closure (Ω : Set 𝔼))) {f u : 𝔼 → ℝ}
+    (hu : IsClassicalSolutionElliptic Ω a a₀ f u) (hf : MemLp f 2 (volume.restrict (Ω : Set 𝔼))) :
+    ∃ U : hSpace N Ω, SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
+      IsWeakSolutionElliptic Ω a a₀ (hf.toLp f) U := by
+  have hA := fun i j ↦ (ha i j).memLp_of_isBounded Ω hb ⊤
+  have hA₀ := memLp_top_of_continuousOn_closure hb ha₀
+  have hzero : ∀ i, ((0 : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) i : 𝔼 → ℝ)
+      =ᵐ[volume.restrict (Ω : Set 𝔼)] (fun _ ↦ (0 : ℝ)) := fun i ↦ by
+    filter_upwards [Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ω : Set 𝔼))] with x hx
+    simpa only [Pi.zero_apply] using hx
+  have heq : ∀ x ∈ Ω, -(∑ i, ∑ j, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+        (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+      + (∑ i, (fun _ : 𝔼 ↦ (0 : ℝ)) x * fderiv ℝ u x (EuclideanSpace.single i 1))
+      + a₀ x * u x = f x := fun x hx ↦ by
+    simpa only [zero_mul, Finset.sum_const_zero, add_zero] using hu.2.2.1 x hx
+  obtain ⟨U, -, hUu, hUw⟩ := Elliptic.isGalerkinSolution_general_of_classical Ω hb hu.1 hu.2.1
+    hu.2.2.2 (fun i j ↦ (ha i j).contDiffOn) (fun i j ↦ (hA i j).coeFn_toLp) hzero
+    hA₀.coeFn_toLp hf heq
+  exact ⟨U, hUu, (isWeakSolutionElliptic_iff (fun i j ↦ (hA i j).coeFn_toLp) hA₀.coeFn_toLp
+    _ _).2 hUw⟩
 
 end Example3
 

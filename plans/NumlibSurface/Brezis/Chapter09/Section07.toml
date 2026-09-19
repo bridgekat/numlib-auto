@@ -41,19 +41,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "remark_9_27_general"
-kind = "theorem"
-desc = '''Remark 27, the general operator: the conclusion of Theorem 9.27 holds for classical
-solutions `u ∈ C(Ω̄) ∩ C²(Ω)` of `-∑ ∂_j(a_ij ∂_i u) + ∑ a_i ∂_i u + u = f` in a bounded `Ω` (77),
-with `a_ij ∈ C¹` symmetric elliptic and `a_i` continuous: at an interior maximum
-`∑ a_ij(x₀) ∂_i∂_j u(x₀) ≤ 0` (78), by diagonalizing `a_ij(x₀)`. `Elliptic.le_of_classical`. The
-remark's last sentence — the same for *weak* solutions of (77), "the proof is more delicate;
-see Gilbarg–Trudinger" — is not a node; its drift-free instance is Proposition 9.29. ★
-
-Blocked (2026-09-20, surf10): the dependency `Elliptic.le_of_classical` (`MaximumPrinciple.toml`)
-is open (sob12: the Hessian-trace step `∑ a_ij(x₀) ∂_i∂_j ũ(x₀) ≤ 0` for `a(x₀)` positive
-semidefinite and a negative semidefinite Hessian, ~200 lines, no consumer); the Laplacian
-instance is `remark_9_27`. Five lines once it lands.'''
-deps = ["Elliptic.le_of_classical", "ellipticityCondition"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 27"
 
 [[node]]

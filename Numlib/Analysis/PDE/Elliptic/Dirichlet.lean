@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Laplacian
 import Mathlib.Analysis.InnerProductSpace.LaxMilgram
 import Mathlib.MeasureTheory.Function.Holder
+import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Sobolev.Compactness
 import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.Zero
@@ -43,7 +44,9 @@ from a Galerkin discretization.
   principle);
 * `Elliptic.isGalerkinSolution_laplace_of_classical` and
   `Elliptic.laplacian_ae_eq_of_isGalerkinSolution`: Steps A and D of Example 1, a classical
-  solution is a weak solution and a `C²` weak solution satisfies the equation;
+  solution is a weak solution and a `C²` weak solution satisfies the equation — the interior
+  half of Step A, without the boundary condition, is
+  `Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical` (what Example 2 uses);
 * `Elliptic.existsUnique_isWeakSolution_inhomogeneous`: **Proposition 9.22** (inhomogeneous
   Dirichlet data, on the affine set `Elliptic.admissibleSet`);
 * `Elliptic.existsUnique_isGalerkinSolution_general_of_nonneg`: Example 3;
@@ -63,7 +66,11 @@ from a Galerkin discretization.
 Coefficients live in `Lp ℝ ⊤ (volume.restrict Ω)`, so the book's `C^1(Ω̄)` coefficients enter as
 `L^∞` classes on a bounded `Ω` and the ellipticity condition is stated almost everywhere. The
 Laplacian of a classical solution is Mathlib's `Δ` (`InnerProductSpace.instLaplacian`, computed in
-coordinates by `laplacian_eq_iteratedFDeriv_orthonormalBasis`).
+coordinates by `laplacian_eq_iteratedFDeriv_orthonormalBasis`). The book's `u ∈ C²(Ω̄)` of a
+classical solution is `ContDiffOnClosure ℝ 2 u Ω` (`Numlib/Analysis/Calculus/ContDiffOnClosure`:
+`C²` on `Ω` with derivatives of order `≤ 2` extending continuously to `Ω̄`, footnote 16 of
+[brezis2011functional] §9.3), together with `ContinuousOn u (closure Ω)` where boundary values
+are read; Mathlib's stronger `ContDiffOn ℝ 2 u (closure Ω)` implies both.
 
 ## References
 
@@ -1321,87 +1328,134 @@ theorem laplaceForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
   congr 1
   exact Finset.sum_congr rfl fun i _ ↦ by rw [e1, hibp]
 
-/-- **Step A of Example 1: a classical solution is a weak solution.** Let `Ω ⊆ ℝ^N` be open and
-bounded, `u ∈ C²(Ω̄)` (`ContDiffOn ℝ 2 u (closure Ω)`) with `u = 0` on `∂Ω`, and `f ∈ L²(Ω)`
-with `-Δu + u = f` on `Ω`. Then `u` is the function of some `U ∈ H^1_0(Ω)`, and `U` is the weak
-solution: `IsGalerkinSolution (laplaceForm Ω) (load Ω f) (H^1_0(Ω)) U`.
+/-- **Two continuous maps on `W^{k,p}(Ω)` that agree on the test functions agree on
+`W_0^{k,p}(Ω)`**, the closure of the test functions. This is the density step of every "classical
+solution is a weak solution" argument: an identity between continuous functionals checked on
+`C_c^∞(Ω)` holds on `W_0^{1,p}(Ω)`. -/
+theorem _root_.SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions {E F : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι]
+    {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E}
+    {X : Type*} [TopologicalSpace X] [T2Space X] {f g : SobolevMultiIndex F b k p Ω μ → X}
+    (hf : Continuous f) (hg : Continuous g)
+    (h : EqOn f g (SobolevMultiIndex.testFunctions F b k p Ω μ)) :
+    EqOn f g (SobolevMultiIndexZero F b k p Ω μ) := by
+  rw [SobolevMultiIndexZero, Submodule.topologicalClosure_coe]
+  exact closure_minimal h (isClosed_eq hf hg)
 
-Proof ([brezis2011functional] §9.5, Example 1, Step A): `u` and `∇u` are bounded on `Ω`
-(`ContDiffOn.exists_norm_fderiv_le_of_isCompact` on the compact `closure Ω`), so `u ∈ W^{1,2}(Ω)`
-with its classical gradient as weak gradient (Remark 2), hence the function of some `U ∈ H^1(Ω)`;
-`u` is continuous on `closure Ω` and vanishes on `∂Ω`, so `U ∈ H^1_0(Ω)` by Theorem 9.17
-(i) ⇒ (ii), which holds for every open `Ω` (Remark 19); for a test function `v`,
-`a(U, v) = ∫_Ω (-Δu + u) v = ∫_Ω f v` (`Elliptic.laplaceForm_eq_integral_of_contDiffOn`), and the
-identity extends to `H^1_0(Ω)` by density, both sides being continuous in `v`. -/
+/-- **A function of class `C¹(Ω̄)` on a bounded open set lies in `W^{1,p}(Ω)`**, with its
+classical partial derivatives as weak derivatives: `u` and `∇u` are bounded on `Ω`, being the
+restrictions of functions continuous on the compact `closure Ω` (`ContDiffOnClosure`), so they
+lie in `L^p(Ω)`, and `∂ᵢu` is the weak derivative of `u` along `e_i`
+(`ContDiffOn.hasWeakIteratedLineDerivOn_single`). This is [brezis2011functional] Remark 2 of
+Chapter 9 read on `Ω̄`, the membership step of §9.5, Example 1, Step A. -/
+theorem _root_.ContDiffOnClosure.memSobolevMultiIndex_of_isBounded
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ 1 u Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 p Ω volume := by
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    isFiniteMeasure_restrict.2 hΩ.measure_lt_top.ne
+  have hu1 : ContDiffOn ℝ 1 u Ω := hu.contDiffOn
+  -- `u` is bounded on `Ω`: it is the restriction of a function continuous on `closure Ω`
+  obtain ⟨g₀, hg₀c, hg₀⟩ := hu.continuousOn_closure
+  obtain ⟨C, hC⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hg₀c
+  have hC' : ∀ x ∈ Ω, ‖u x‖ ≤ C := fun x hx ↦ by
+    rw [← hg₀ hx]
+    exact hC x (subset_closure hx)
+  -- so is `∇u`: `iteratedFDeriv ℝ 1 u` extends continuously to `closure Ω`
+  obtain ⟨g₁, hg₁c, hg₁⟩ := hu.exists_continuousOn_closure_iteratedFDeriv (m := 1) le_rfl
+  obtain ⟨M, hM⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hg₁c
+  have hM' : ∀ x ∈ Ω, ‖fderiv ℝ u x‖ ≤ M := fun x hx ↦ by
+    rw [← norm_iteratedFDeriv_one, ← hg₁ hx]
+    exact hM x (subset_closure hx)
+  have hu0 : MemLp u p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+    refine MemLp.of_bound (hu1.continuousOn.aestronglyMeasurable hΩm) C ?_
+    filter_upwards [ae_restrict_mem hΩm] with x hx using hC' x hx
+  refine ⟨hu0, fun β hβ ↦ ?_⟩
+  rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0' | ⟨i, hi⟩
+  · obtain rfl : β = 0 := congrArg Subtype.val h0'
+    exact ⟨u, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
+      (hu1.continuousOn.locallyIntegrableOn hΩm), hu0⟩
+  · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
+    refine ⟨fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1), ?_,
+      MemLp.of_bound (((hu1.continuousOn_fderiv_of_isOpen hΩo le_rfl).clm_apply
+        continuousOn_const).aestronglyMeasurable hΩm) M ?_⟩
+    · have hperm := multiIndexTuple_single_perm
+        ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → _) i
+      rw [EuclideanSpace.basisFun_toBasis_apply] at hperm
+      exact (hu1.hasWeakIteratedLineDerivOn_single Ω i).of_perm hperm.symm
+    · filter_upwards [ae_restrict_mem hΩm] with x hx
+      calc ‖fderiv ℝ u x (EuclideanSpace.single i 1)‖
+          ≤ ‖fderiv ℝ u x‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ :=
+            ContinuousLinearMap.le_opNorm _ _
+        _ = ‖fderiv ℝ u x‖ := by simp
+        _ ≤ M := hM' x hx
+
+/-- **The interior half of Step A of Example 1**: let `Ω ⊆ ℝ^N` be open and bounded,
+`u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`: `C²` on `Ω` with derivatives of order `≤ 2` extending
+continuously to `Ω̄`), and `f ∈ L²(Ω)` with `-Δu + u = f` on `Ω`. Then `u` is the function of
+some `U ∈ H^1(Ω)` with `a(U, v) = ∫_Ω f v` for every `v ∈ H^1_0(Ω)`, where `a` is the form of
+`-Δ + 1`. No boundary condition enters: this is what the inhomogeneous Dirichlet problem
+([brezis2011functional] §9.5, Example 2, "as above, any classical solution is a weak solution")
+uses, the homogeneous problem adding `U ∈ H^1_0(Ω)` by Theorem 9.17
+(`Elliptic.isGalerkinSolution_laplace_of_classical`).
+
+Proof ([brezis2011functional] §9.5, Example 1, Step A): `u ∈ W^{1,2}(Ω)` with its classical
+gradient as weak gradient (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`), hence the
+function of some `U ∈ H^1(Ω)`; for a test function `v`, `a(U, v) = ∫_Ω (-Δu + u) v = ∫_Ω f v`
+(`Elliptic.laplaceForm_eq_integral_of_contDiffOn`), and the identity extends to `H^1_0(Ω)` by
+density, both sides being continuous in `v`
+(`SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions`). -/
+theorem exists_sobolev_forall_laplaceForm_eq_load_of_classical
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ 2 u Ω) {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hf : MemLp f 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) :
+    ∃ U : SobolevEuclidean N 1 2 Ω,
+      SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u ∧
+        ∀ v ∈ SobolevEuclideanZero N 1 2 Ω, laplaceForm Ω U v = load Ω (hf.toLp f) v := by
+  have hΩm := Ω.isOpen.measurableSet
+  have hu1 : ContDiffOnClosure ℝ 1 u Ω := hu.of_le (by norm_num)
+  obtain ⟨U, hU⟩ := (hu1.memSobolevMultiIndex_of_isBounded Ω hΩ 2).exists_sobolevMultiIndex
+  refine ⟨U, hU, SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions (laplaceForm Ω U).continuous
+    (load Ω (hf.toLp f)).continuous ?_⟩
+  rintro V ⟨φ, hV⟩
+  rw [laplaceForm_eq_integral_of_contDiffOn Ω hu.contDiffOn hU hV, load_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [ae_restrict_mem hΩm, hf.coeFn_toLp, hV] with x hx hfx hVx
+  rw [heq x hx, hfx, hVx]
+
+/-- **Step A of Example 1: a classical solution is a weak solution.** Let `Ω ⊆ ℝ^N` be open and
+bounded, `u ∈ C²(Ω̄)` — `ContDiffOnClosure ℝ 2 u Ω` (footnote 16 of [brezis2011functional]
+§9.3: `C²` on `Ω` with derivatives of order `≤ 2` extending continuously to `Ω̄`) and `u` itself
+continuous on `closure Ω`, so that its boundary values are meaningful — with `u = 0` on `∂Ω`,
+and `f ∈ L²(Ω)` with `-Δu + u = f` on `Ω`. Then `u` is the function of some `U ∈ H^1_0(Ω)`, and
+`U` is the weak solution: `IsGalerkinSolution (laplaceForm Ω) (load Ω f) (H^1_0(Ω)) U`.
+Mathlib's `ContDiffOn ℝ 2 u (closure Ω)` gives both hypotheses on `u`
+(`ContDiffOn.contDiffOnClosure`, `ContDiffOn.continuousOn`).
+
+Proof ([brezis2011functional] §9.5, Example 1, Step A): `u` is the function of some `U ∈ H^1(Ω)`
+satisfying the weak identity on `H^1_0(Ω)`
+(`Elliptic.exists_sobolev_forall_laplaceForm_eq_load_of_classical`); `u` is continuous on
+`closure Ω` and vanishes on `∂Ω`, so `U ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which holds for
+every open `Ω` (Remark 19). -/
 theorem isGalerkinSolution_laplace_of_classical
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
-    (hu : ContDiffOn ℝ 2 u (closure Ω)) (h0 : EqOn u 0 (frontier Ω))
-    {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hu : ContDiffOnClosure ℝ 2 u Ω)
+    (huc : ContinuousOn u (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (h0 : EqOn u 0 (frontier Ω)) {f : EuclideanSpace ℝ (Fin N) → ℝ}
     (hf : MemLp f 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) :
     ∃ U ∈ SobolevEuclideanZero N 1 2 Ω,
       SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u ∧
         IsGalerkinSolution (laplaceForm Ω) (load Ω (hf.toLp f)) (SobolevEuclideanZero N 1 2 Ω)
           U := by
-  have hΩo := Ω.isOpen
-  have hΩm := hΩo.measurableSet
-  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    isFiniteMeasure_restrict.2 hΩ.measure_lt_top.ne
-  have huΩ : ContDiffOn ℝ 2 u Ω := hu.mono subset_closure
-  have hu1 : ContDiffOn ℝ 1 u Ω := huΩ.of_le (by norm_num)
-  -- `u` and `∇u` are bounded on `Ω`
-  obtain ⟨C, hC⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hu.continuousOn
-  obtain ⟨M, hM⟩ := (hu.of_le (by norm_num) : ContDiffOn ℝ 1 u (closure Ω))
-    |>.exists_norm_fderiv_le_of_isCompact hΩ.isCompact_closure
-  have hΩint : (Ω : Set (EuclideanSpace ℝ (Fin N))) ⊆ interior (closure Ω) :=
-    interior_maximal subset_closure hΩo
-  -- `u ∈ W^{1,2}(Ω)`
-  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 2 Ω volume := by
-    refine ⟨MemLp.of_bound (hu1.continuousOn.aestronglyMeasurable hΩm) C ?_, fun β hβ ↦ ?_⟩
-    · filter_upwards [ae_restrict_mem hΩm] with x hx using hC x (subset_closure hx)
-    · rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0' | ⟨i, hi⟩
-      · obtain rfl : β = 0 := congrArg Subtype.val h0'
-        refine ⟨u, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
-          (hu1.continuousOn.locallyIntegrableOn hΩm),
-          MemLp.of_bound (hu1.continuousOn.aestronglyMeasurable hΩm) C ?_⟩
-        filter_upwards [ae_restrict_mem hΩm] with x hx using hC x (subset_closure hx)
-      · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
-        refine ⟨fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1), ?_,
-          MemLp.of_bound (((hu1.continuousOn_fderiv_of_isOpen hΩo le_rfl).clm_apply
-            continuousOn_const).aestronglyMeasurable hΩm) M ?_⟩
-        · have hperm := multiIndexTuple_single_perm
-            ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → _) i
-          rw [EuclideanSpace.basisFun_toBasis_apply] at hperm
-          exact (hu1.hasWeakIteratedLineDerivOn_single Ω i).of_perm hperm.symm
-        · filter_upwards [ae_restrict_mem hΩm] with x hx
-          calc ‖fderiv ℝ u x (EuclideanSpace.single i 1)‖
-              ≤ ‖fderiv ℝ u x‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ :=
-                ContinuousLinearMap.le_opNorm _ _
-            _ = ‖fderiv ℝ u x‖ := by simp
-            _ ≤ M := hM x (hΩint hx)
-  obtain ⟨U, hU⟩ := hmem.exists_sobolevMultiIndex
+  obtain ⟨U, hU, hUw⟩ := exists_sobolev_forall_laplaceForm_eq_load_of_classical Ω hΩ hu hf heq
   have hU0 : U ∈ SobolevEuclideanZero N 1 2 Ω :=
-    SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier (by norm_num) U hU
-      hu.continuousOn h0
-  refine ⟨U, hU0, hU, hU0, ?_⟩
-  -- the weak identity on the test functions
-  have htest : ∀ V ∈ SobolevMultiIndex.testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
-      1 2 Ω volume, laplaceForm Ω U V = load Ω (hf.toLp f) V := by
-    rintro V ⟨φ, hV⟩
-    rw [laplaceForm_eq_integral_of_contDiffOn Ω huΩ hU hV, load_apply]
-    refine integral_congr_ae ?_
-    filter_upwards [ae_restrict_mem hΩm, hf.coeFn_toLp, hV] with x hx hfx hVx
-    rw [heq x hx, hfx, hVx]
-  -- extension to `H^1_0(Ω)` by density
-  have hclosed :
-      IsClosed {v : SobolevEuclidean N 1 2 Ω | laplaceForm Ω U v = load Ω (hf.toLp f) v} :=
-    isClosed_eq (laplaceForm Ω U).continuous (load Ω (hf.toLp f)).continuous
-  intro v hv
-  have hsub : (SobolevEuclideanZero N 1 2 Ω : Set (SobolevEuclidean N 1 2 Ω))
-      ⊆ {v : SobolevEuclidean N 1 2 Ω | laplaceForm Ω U v = load Ω (hf.toLp f) v} := by
-    rw [SobolevEuclideanZero, SobolevMultiIndexZero, Submodule.topologicalClosure_coe]
-    exact closure_minimal (fun V hV ↦ htest V hV) hclosed
-  exact hsub hv
+    SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier (by norm_num) U hU huc h0
+  exact ⟨U, hU0, hU, hU0, hUw⟩
 
 /-- **Step D of Example 1: a `C²` weak solution satisfies the equation almost everywhere.** If
 `U ∈ H^1(Ω)` satisfies `a(U, v) = ⟨f, v⟩` for every test function `v` and its function is a `C²`
@@ -1491,6 +1545,260 @@ theorem laplacian_eq_of_isGalerkinSolution_of_continuousOn {U : SobolevEuclidean
   Measure.eqOn_open_of_ae_eq ((laplacian_ae_eq_of_isGalerkinSolution Ω hUw hu hU).trans hfg)
     Ω.isOpen ((continuousOn_laplacian Ω hu).neg.add
       (hu.of_le (by norm_num) : ContDiffOn ℝ 1 u Ω).continuousOn) hg
+
+/-! ### Step A of Example 3: a classical solution of the general equation is a weak solution -/
+
+/-- A function of class `C^n(Ω̄)` on a bounded open set lies in every `L^p(Ω)`: it is bounded on
+`Ω`, being the restriction of a function continuous on the compact `closure Ω`. -/
+theorem _root_.ContDiffOnClosure.memLp_of_isBounded {n : WithTop ℕ∞}
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ n u Ω) (p : ℝ≥0∞) :
+    MemLp u p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+  have hΩm := Ω.isOpen.measurableSet
+  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    isFiniteMeasure_restrict.2 hΩ.measure_lt_top.ne
+  obtain ⟨g, hgc, hg⟩ := hu.continuousOn_closure
+  obtain ⟨C, hC⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hgc
+  refine MemLp.of_bound (hu.contDiffOn.continuousOn.aestronglyMeasurable hΩm) C ?_
+  filter_upwards [ae_restrict_mem hΩm] with x hx
+  rw [← hg hx]
+  exact hC x (subset_closure hx)
+
+/-- **The general form against a test function, for a `C²` function and `C¹` coefficients**: if
+`U ∈ H^1(Ω)` has the `C²` function `u` on `Ω` as its function, the `L^∞` coefficients `A i j`,
+`a₁ i`, `a₀` agree almost everywhere on `Ω` with functions `a i j` (of class `C¹` on `Ω`), `b i`
+and `c`, and `V` has the test function `φ` as its function, then
+`generalForm Ω A a₁ a₀ U V = ∫_Ω (-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u) φ`, where
+`∂ⱼ(a_ij ∂ᵢu)(x) = D(a_ij ∂ᵢu)(x) e_j`. Integration by parts of the `C^1` function `a_ij ∂ᵢu`
+against `φ` along `e_j` (`ContDiffOn.hasWeakIteratedLineDerivOn_single`) for each pair `(i, j)`;
+the first- and zeroth-order terms are read off almost everywhere. -/
+theorem generalForm_eq_integral_of_contDiffOn (hu : ContDiffOn ℝ 2 u Ω)
+    {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
+    {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (hA : ∀ i j, (A i j : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] a i j)
+    {b : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₁ : ∀ i, (a₁ i : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] b i)
+    {c : EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₀ : (a₀ : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] c)
+    {U : SobolevEuclidean N 1 2 Ω}
+    (hU : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u)
+    {V : SobolevEuclidean N 1 2 Ω} {φ : 𝓓(Ω, ℝ)}
+    (hV : SobolevMultiIndex.fn V =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ) :
+    generalForm Ω A a₁ a₀ U V = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      (-(∑ i : Fin N, ∑ j : Fin N, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+          (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+        + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + c x * u x) * φ x := by
+  have hΩo := Ω.isOpen
+  have hΩm := hΩo.measurableSet
+  have hu1 : ContDiffOn ℝ 1 u Ω := hu.of_le (by norm_num)
+  have hUd := weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω hu1 hU
+  have hVd : ∀ j : Fin N,
+      (SobolevMultiIndex.weakDeriv V (MultiIndexLE.single j) : EuclideanSpace ℝ (Fin N) → ℝ)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+          fun x ↦ fderiv ℝ φ x (EuclideanSpace.single j 1) := fun j ↦ by
+    have h := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hV j
+    rwa [EuclideanSpace.basisFun_toBasis_apply] at h
+  -- `a_ij ∂ᵢu` is `C^1` on `Ω`, so its weak derivative along `e_j` is `∂ⱼ(a_ij ∂ᵢu)`
+  have hg : ∀ i j : Fin N,
+      ContDiffOn ℝ 1 (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) Ω :=
+    fun i j ↦ (ha i j).mul ((hu.fderiv_of_isOpen hΩo le_rfl).clm_apply contDiffOn_const)
+  have hibp : ∀ i j : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      a i j x * fderiv ℝ u x (EuclideanSpace.single i 1) * fderiv ℝ φ x (EuclideanSpace.single j 1)
+      = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), φ x
+        * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single j 1) := by
+    intro i j
+    have h := ((hg i j).hasWeakIteratedLineDerivOn_single Ω j).integral_smul_eq φ
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, smul_eq_mul, pow_one,
+      neg_one_mul] at h
+    rw [← h]
+    congr 1
+    funext x
+    ring
+  -- integrability of the pieces
+  have hI2 : ∀ i j : Fin N, Integrable (fun x ↦ φ x
+      * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+        (EuclideanSpace.single j 1))
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i j ↦ by
+    have := ((hg i j).hasWeakIteratedLineDerivOn_single Ω j).integrable_smul_weakDeriv φ
+    simp only [smul_eq_mul] at this
+    exact this.integrableOn
+  have hI1 : ∀ i : Fin N, Integrable (fun x ↦ b i x * fderiv ℝ u x (EuclideanSpace.single i 1)
+      * φ x) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦
+    (integrable_mul_mul Ω (a₁ i) (SobolevMultiIndex.weakDeriv U (MultiIndexLE.single i))
+      (SobolevMultiIndex.weakDeriv V 0)).congr (((ha₁ i).mul (hUd i)).mul hV)
+  have hI0 : Integrable (fun x ↦ c x * u x * φ x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    (integrable_mul_mul Ω a₀ (SobolevMultiIndex.weakDeriv U 0)
+      (SobolevMultiIndex.weakDeriv V 0)).congr ((ha₀.mul hU).mul hV)
+  -- the left-hand side as integrals of classical quantities
+  have e2 : ∀ i j : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), A i j x
+      * SobolevMultiIndex.weakDeriv U (MultiIndexLE.single i) x
+      * SobolevMultiIndex.weakDeriv V (MultiIndexLE.single j) x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), a i j x
+        * fderiv ℝ u x (EuclideanSpace.single i 1) * fderiv ℝ φ x (EuclideanSpace.single j 1) :=
+    fun i j ↦ integral_congr_ae (((hA i j).mul (hUd i)).mul (hVd j))
+  have e1 : ∀ i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), a₁ i x
+      * SobolevMultiIndex.weakDeriv U (MultiIndexLE.single i) x
+      * SobolevMultiIndex.weakDeriv V 0 x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+        b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x :=
+    fun i ↦ integral_congr_ae (((ha₁ i).mul (hUd i)).mul hV)
+  have e0 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), a₀ x
+      * SobolevMultiIndex.weakDeriv U 0 x * SobolevMultiIndex.weakDeriv V 0 x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), c x * u x * φ x :=
+    integral_congr_ae ((ha₀.mul hU).mul hV)
+  -- the right-hand side, split
+  have e3 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      (-(∑ i : Fin N, ∑ j : Fin N, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+          (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+        + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + c x * u x) * φ x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+        (-(∑ i : Fin N, ∑ j : Fin N, φ x * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+            (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+          + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x)
+          + c x * u x * φ x) := by
+    congr 1
+    funext x
+    simp only [← Finset.mul_sum, ← Finset.sum_mul]
+    ring
+  have e4 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+        (-(∑ i : Fin N, ∑ j : Fin N, φ x * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+            (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+          + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x)
+          + c x * u x * φ x)
+      = (∑ i : Fin N, ∑ j : Fin N, -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+          φ x * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+            (EuclideanSpace.single j 1))
+        + (∑ i : Fin N, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+          b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x)
+        + ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), c x * u x * φ x := by
+    have hs2 : Integrable (fun x ↦ ∑ i : Fin N, ∑ j : Fin N, φ x
+        * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single j 1)) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+      integrable_finsetSum _ fun i _ ↦ integrable_finsetSum _ fun j _ ↦ hI2 i j
+    have hs1 : Integrable (fun x ↦ ∑ i : Fin N,
+        b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x)
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+      integrable_finsetSum _ fun i _ ↦ hI1 i
+    have h2n : Integrable (fun x ↦ -(∑ i : Fin N, ∑ j : Fin N, φ x
+        * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single j 1))) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+      hs2.neg
+    have h12 : Integrable (fun x ↦ -(∑ i : Fin N, ∑ j : Fin N, φ x
+        * fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y (EuclideanSpace.single i 1)) x
+          (EuclideanSpace.single j 1))
+        + ∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1) * φ x)
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := h2n.add hs1
+    rw [integral_add h12 hI0, integral_add h2n hs1, integral_neg,
+      integral_finsetSum _ fun i _ ↦ integrable_finsetSum _ fun j _ ↦ hI2 i j,
+      integral_finsetSum _ fun i _ ↦ hI1 i]
+    simp only [Finset.sum_neg_distrib]
+    congr 3
+    exact Finset.sum_congr rfl fun i _ ↦ integral_finsetSum _ fun j _ ↦ hI2 i j
+  rw [generalForm_apply_inner]
+  simp only [inner_mulL_eq_integral]
+  rw [e3, e4, e0]
+  congr 2
+  · exact Finset.sum_congr rfl fun i _ ↦ Finset.sum_congr rfl fun j _ ↦ by rw [e2, hibp]
+  · exact Finset.sum_congr rfl fun i _ ↦ e1 i
+
+/-- **The interior half of Step A of Example 3**: let `Ω ⊆ ℝ^N` be open and bounded,
+`u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`), `a_ij ∈ C¹(Ω)`, and let the `L^∞` coefficients `A i j`,
+`a₁ i`, `a₀` agree almost everywhere on `Ω` with `a_ij`, `b_i`, `c`. If `f ∈ L²(Ω)` and
+`-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u = f` on `Ω`, then `u` is the function of some
+`U ∈ H^1(Ω)` with `a(U, v) = ∫_Ω f v` for every `v ∈ H^1_0(Ω)`, `a` being the form (41)
+`generalForm Ω A a₁ a₀`. No boundary condition enters; the homogeneous Dirichlet problem adds
+`U ∈ H^1_0(Ω)` by Theorem 9.17 (`Elliptic.isGalerkinSolution_general_of_classical`).
+
+Proof ([brezis2011functional] §9.5, Example 3, "as above, any classical solution is a weak
+solution"): `u ∈ W^{1,2}(Ω)` (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`), hence the
+function of some `U ∈ H^1(Ω)`; for a test function `v`, `a(U, v) = ∫_Ω f v` is the integration by
+parts `Elliptic.generalForm_eq_integral_of_contDiffOn`, and the identity extends to `H^1_0(Ω)`
+by density (`SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions`). -/
+theorem exists_sobolev_forall_generalForm_eq_load_of_classical
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ 2 u Ω)
+    {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
+    {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (hA : ∀ i j, (A i j : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] a i j)
+    {b : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₁ : ∀ i, (a₁ i : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] b i)
+    {c : EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₀ : (a₀ : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] c)
+    {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hf : MemLp f 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (heq : ∀ x ∈ Ω, -(∑ i : Fin N, ∑ j : Fin N, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+        (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+      + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + c x * u x = f x) :
+    ∃ U : SobolevEuclidean N 1 2 Ω,
+      SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u ∧
+        ∀ v ∈ SobolevEuclideanZero N 1 2 Ω,
+          generalForm Ω A a₁ a₀ U v = load Ω (hf.toLp f) v := by
+  have hΩm := Ω.isOpen.measurableSet
+  have hu1 : ContDiffOnClosure ℝ 1 u Ω := hu.of_le (by norm_num)
+  obtain ⟨U, hU⟩ := (hu1.memSobolevMultiIndex_of_isBounded Ω hΩ 2).exists_sobolevMultiIndex
+  refine ⟨U, hU, SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions
+    (generalForm Ω A a₁ a₀ U).continuous (load Ω (hf.toLp f)).continuous ?_⟩
+  rintro V ⟨φ, hV⟩
+  rw [generalForm_eq_integral_of_contDiffOn Ω hu.contDiffOn ha hA ha₁ ha₀ hU hV, load_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [ae_restrict_mem hΩm, hf.coeFn_toLp, hV] with x hx hfx hVx
+  rw [heq x hx, hfx, hVx]
+
+/-- **Step A of Example 3: a classical solution of the general second-order equation is a weak
+solution.** Let `Ω ⊆ ℝ^N` be open and bounded, `u ∈ C²(Ω̄)` (`ContDiffOnClosure ℝ 2 u Ω`,
+continuous on `closure Ω`) with `u = 0` on `∂Ω`, let `a_ij ∈ C¹(Ω)`, and let the `L^∞`
+coefficients `A i j`, `a₁ i`, `a₀` agree almost everywhere on `Ω` with `a_ij`, `b_i`, `c`. If
+`f ∈ L²(Ω)` and `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + ∑ᵢ b_i ∂ᵢu + c u = f` on `Ω`, then `u` is the function of
+some `U ∈ H^1_0(Ω)`, and `U` is the weak solution:
+`IsGalerkinSolution (generalForm Ω A a₁ a₀) (load Ω f) (H^1_0(Ω)) U`. The book's (37) is the case
+`a₁ = 0`, `b = 0`, with `a_ij ∈ C¹(Ω̄)` and `a₀ ∈ C(Ω̄)` supplying the `L^∞` classes
+([brezis2011functional] §9.5, Example 3, "as above, any classical solution is a weak solution").
+
+Proof: the interior identity is `Elliptic.exists_sobolev_forall_generalForm_eq_load_of_classical`,
+and `U ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which needs no regularity of `Ω`. -/
+theorem isGalerkinSolution_general_of_classical
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ 2 u Ω)
+    (huc : ContinuousOn u (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (h0 : EqOn u 0 (frontier Ω))
+    {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
+    {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (hA : ∀ i j, (A i j : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] a i j)
+    {b : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₁ : ∀ i, (a₁ i : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] b i)
+    {c : EuclideanSpace ℝ (Fin N) → ℝ}
+    {a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (ha₀ : (a₀ : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] c)
+    {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hf : MemLp f 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (heq : ∀ x ∈ Ω, -(∑ i : Fin N, ∑ j : Fin N, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ u y
+        (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+      + (∑ i : Fin N, b i x * fderiv ℝ u x (EuclideanSpace.single i 1)) + c x * u x = f x) :
+    ∃ U ∈ SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] u ∧
+        IsGalerkinSolution (generalForm Ω A a₁ a₀) (load Ω (hf.toLp f))
+          (SobolevEuclideanZero N 1 2 Ω) U := by
+  obtain ⟨U, hU, hUw⟩ :=
+    exists_sobolev_forall_generalForm_eq_load_of_classical Ω hΩ hu ha hA ha₁ ha₀ hf heq
+  have hU0 : U ∈ SobolevEuclideanZero N 1 2 Ω :=
+    SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier (by norm_num) U hU huc h0
+  exact ⟨U, hU0, hU, hU0, hUw⟩
 
 end Classical
 

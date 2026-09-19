@@ -59,6 +59,27 @@ id = "isMinOn_energy_iff_isGalerkinSolution_laplace"
 id = "isGalerkinSolution_laplace_of_classical"
 
 [[node]]
+id = "exists_sobolev_forall_laplaceForm_eq_load_of_classical"
+
+[[node]]
+id = "_root_.ContDiffOnClosure.memSobolevMultiIndex_of_isBounded"
+
+[[node]]
+id = "_root_.SobolevMultiIndexZero.eqOn_of_eqOn_testFunctions"
+
+[[node]]
+id = "_root_.ContDiffOnClosure.memLp_of_isBounded"
+
+[[node]]
+id = "generalForm_eq_integral_of_contDiffOn"
+
+[[node]]
+id = "exists_sobolev_forall_generalForm_eq_load_of_classical"
+
+[[node]]
+id = "isGalerkinSolution_general_of_classical"
+
+[[node]]
 id = "laplacian_ae_eq_of_isGalerkinSolution"
 
 [[node]]

@@ -54,7 +54,8 @@ the Dirichlet form of `Numlib/Analysis/PDE/Elliptic/Dirichlet`.
 * `corollary_9_19` (with `corollary_9_19_gradNorm`, `corollary_9_19_norm`,
   `corollary_9_19_inner`), `remark_9_21` (with `remark_9_21_measure`, `remark_9_21_projection`).
 * `sobolevZeroSpaceHigher`, `sobolevZeroSpaceHigher_eq_closure_contDiff`, `dualSpace`,
-  `hMinusOne`, `dual_inclusions`, `proposition_9_20`, `proposition_9_20_bounded`.
+  `hMinusOne`, `dual_inclusions`, `exists_inclusionL2_of_le`, `dual_inclusions_of_le`,
+  `proposition_9_20`, `proposition_9_20_bounded`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace
@@ -1017,5 +1018,84 @@ theorem proposition_9_20_bounded [p.HolderConjugate q] (hp' : p ≠ ⊤)
   exact ⟨f, hf, hfn⟩
 
 end DualBounded
+
+section DualLe
+
+variable {d : ℕ}
+
+/-- The book's `ℝ^N`, with `N = d + 1`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
+
+/-- The standard basis of `ℝ^N`, as a `Basis`. -/
+local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin (d + 1)) ℝ)
+
+variable {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **The inclusion `W_0^{1,p}(Ω) ⊂ L²(Ω)` for `2N/(N+2) ≤ p < ∞`**, with `p ≤ 2` or `Ω`
+bounded, as a bounded linear map sending each element to its function: for `p ≤ 2` it is
+Remark 20's embedding `W_0^{1,p}(Ω) ↪ L^q(Ω)` at `q = 2` (the condition `1/p − 1/N ≤ 1/2` is
+`2N/(N+2) ≤ p`; `remark_9_20_embedding`), and for `p > 2` on a bounded `Ω` it is the inclusion
+`W_0^{1,p}(Ω) ⊂ W_0^{1,2}(Ω) ⊂ L²(Ω)` (`SobolevMultiIndexZero.toLowerExponentL`, Hölder's
+inequality on the finite measure). -/
+theorem exists_inclusionL2_of_le (hp : 1 < p)
+    (hpN : (2 * (d + 1 : ℕ) / ((d + 1 : ℕ) + 2) : ℝ) ≤ p)
+    (h : p ≤ 2 ∨ Bornology.IsBounded (Ω : Set 𝔼)) :
+    ∃ ι : sobolevZeroSpace (d + 1) p Ω →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)),
+      ∀ v : sobolevZeroSpace (d + 1) p Ω, (ι v : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)]
+        SobolevMultiIndex.fn (v : sobolevSpace (d + 1) p Ω) := by
+  rcases le_or_gt p 2 with hp2 | hp2
+  · -- `p ≤ 2`: Remark 20 at `q = 2`
+    have : Fact (1 ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+    have hp0 : (0 : ℝ) < p := zero_lt_one.trans (by exact_mod_cast hp)
+    have hN0 : (0 : ℝ) < (d + 1 : ℕ) := by positivity
+    have hq : (p : ℝ)⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹ ≤ ((2 : ℝ≥0) : ℝ)⁻¹ := by
+      rw [div_le_iff₀ (by positivity)] at hpN
+      rw [NNReal.coe_ofNat, sub_le_iff_le_add, inv_eq_one_div, inv_eq_one_div, inv_eq_one_div,
+        div_add_div _ _ two_ne_zero hN0.ne', div_le_div_iff₀ hp0 (by positivity)]
+      nlinarith
+    refine ⟨(SobolevEuclideanZero.isContinuousEmbedding_toLp (q := 2) (Or.inr hp) hp2
+      hq).toContinuousLinearMap, fun v ↦ ?_⟩
+    exact SobolevMultiIndex.toLpₗOn_coeFn _ v
+  · -- `p > 2`, `Ω` bounded: `W_0^{1,p}(Ω) ⊂ W_0^{1,2}(Ω) ⊂ L²(Ω)`
+    have hb : Bornology.IsBounded (Ω : Set 𝔼) := h.resolve_left (not_le.2 hp2)
+    have h2p : (2 : ℝ≥0∞) ≤ p := by exact_mod_cast hp2.le
+    refine ⟨(SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume).comp
+      (SobolevMultiIndexZero.toLowerExponentL ℝ 𝔟 1 p 2 volume hb.measure_lt_top.ne h2p),
+      fun v ↦ ?_⟩
+    rw [ContinuousLinearMap.comp_apply, SobolevMultiIndexZero.fnL_apply]
+    exact SobolevMultiIndexZero.fn_toLowerExponentL hb.measure_lt_top.ne h2p v
+
+/-- **The inclusions `W_0^{1,p}(Ω) ⊂ L^2(Ω) ⊂ W^{−1,p'}(Ω)`, the Notation paragraph's second
+display**: "if `Ω` is bounded then `W_0^{1,p}(Ω) ⊂ L²(Ω) ⊂ W^{−1,p'}(Ω)` if `2N/(N+2) ≤ p < ∞`,
+with continuous and dense injections; if `Ω` is not bounded, the same holds, but only for the
+range `2N/(N+2) ≤ p ≤ 2`". For `1 < p`: there is a bounded linear map
+`ι : W_0^{1,p}(Ω) → L²(Ω)`, `u ↦ u` (`exists_inclusionL2_of_le`, Remark 20's embedding at `q = 2`
+or Hölder's inequality on the bounded `Ω`), injective with dense range, and the map
+`L²(Ω) → W^{−1,p'}(Ω)`, `f ↦ (v ↦ ∫_Ω f v)` (the backbone's `SobolevEuclideanZero.toDualOfL2 ι`,
+the transpose of `ι` composed with the self-duality of `L²(Ω)`), is injective with dense range
+— the backbone's `SobolevEuclideanZero.gelfandTriple_of_forall_ae_eq`, the density of the second
+map by the reflexivity of `W_0^{1,p}(Ω)`. The book's range includes `p = 1` when `N ≤ 2`, where
+the density of `L²(Ω)` in `W^{−1,∞}(Ω)` fails (`W_0^{1,1}(Ω)` contains a complemented `ℓ¹`, so its
+dual is not separable); hence the hypothesis `1 < p`. -/
+theorem dual_inclusions_of_le (hp : 1 < p)
+    (hpN : (2 * (d + 1 : ℕ) / ((d + 1 : ℕ) + 2) : ℝ) ≤ p)
+    (h : p ≤ 2 ∨ Bornology.IsBounded (Ω : Set 𝔼)) :
+    ∃ ι : sobolevZeroSpace (d + 1) p Ω →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)),
+      (∀ v : sobolevZeroSpace (d + 1) p Ω, (ι v : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)]
+        SobolevMultiIndex.fn (v : sobolevSpace (d + 1) p Ω)) ∧
+      Function.Injective ι ∧ DenseRange ι ∧
+      (∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) (v : sobolevZeroSpace (d + 1) p Ω),
+        (SobolevEuclideanZero.toDualOfL2 ι f : dualSpace (d + 1) p Ω) v
+          = ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v : sobolevSpace (d + 1) p Ω) x) ∧
+      Function.Injective (SobolevEuclideanZero.toDualOfL2 ι) ∧
+      DenseRange (SobolevEuclideanZero.toDualOfL2 ι) := by
+  refine (exists_inclusionL2_of_le hp hpN h).imp fun ι hι ↦ ?_
+  have hp1 : (1 : ℝ≥0∞) < p := by exact_mod_cast hp
+  have hp' : (p : ℝ≥0∞) ≠ ⊤ := ENNReal.coe_ne_top
+  have h4 := SobolevEuclideanZero.gelfandTriple_of_forall_ae_eq hp1 hp' hι
+  exact ⟨hι, h4.1, h4.2.1, fun f v ↦ SobolevEuclideanZero.toDualOfL2_apply hι f v, h4.2.2.1,
+    h4.2.2.2⟩
+
+end DualLe
 
 end Brezis.Chapter09

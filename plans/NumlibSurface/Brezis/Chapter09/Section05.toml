@@ -25,23 +25,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Exampl
 
 [[node]]
 id = "example_9_1_stepA"
-kind = "theorem"
-desc = '''Example 1, Step A: every classical solution of (31) is a weak solution — for
-`IsClassicalSolutionDirichlet Ω f u` (the faithful reading of `u ∈ C²(Ω̄)`: `ContDiffOnClosure ℝ 2 u Ω`
-with `u` continuous on `closure Ω`) on a bounded `Ω`, with `f ∈ L²(Ω)`, there is `U ∈ H^1_0(Ω)`
-whose function is `u` a.e. on `Ω` with `IsWeakSolutionDirichlet Ω f U`. The book's proof uses
-Theorem 9.17 (i) ⇒ (ii) (and Remark 19, that this direction needs no regularity of `Ω`) to place
-`u` in `H^1_0`, and the density of `C_c^1(Ω)` in `H^1_0(Ω)`. Proved under Mathlib's stronger
-reading `ContDiffOn ℝ 2 u (closure Ω)` as `example_9_1_stepA_of_contDiffOn`. ★
-
-Blocked (2026-09-20, surf10): the backbone's `Elliptic.isGalerkinSolution_laplace_of_classical`
-takes `hu : ContDiffOn ℝ 2 u (closure Ω)`, which the faithful `ContDiffOnClosure` reading does not
-imply; its proof uses the closure hypothesis only for the bounds on `u` and `∇u` over `Ω` and the
-continuity of `u` on `closure Ω`, all of which `ContDiffOnClosure ℝ 2 u Ω ∧ ContinuousOn u (closure Ω)`
-provides (the extension of `iteratedFDeriv 1 u` is continuous on the compact closure). Restating
-that backbone theorem with the weaker hypotheses (~10 lines changed) closes this node in two
-lines.'''
-deps = ["IsClassicalSolutionDirichlet", "IsWeakSolutionDirichlet", "Elliptic.isGalerkinSolution_laplace_of_classical", "theorem_9_17"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 1"
 
 [[node]]
@@ -86,21 +69,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition
 
 [[node]]
 id = "example_9_2_stepA"
-kind = "theorem"
-desc = '''Example 2, "as above, any classical solution is a weak solution": for `Ω` bounded, `g̃ ∈ H^1(Ω)`
-with a representative continuous on `closure Ω` equal to `g` on `Γ`, and a classical solution `u`
-of (33) (`IsClassicalSolutionInhomogeneous Ω f g u`), there is `U ∈ K` (`admissibleSetInhomogeneous Ω g̃`)
-whose function is `u` a.e. with `IsWeakSolutionInhomogeneous Ω f g̃ U`: `u − g̃ ∈ H^1 ∩ C(Ω̄)` vanishes
-on `Γ`, hence lies in `H^1_0` by Theorem 9.17 (i) ⇒ (ii), and the identity (34) is as in Example 1's
-Step A. Split off `IsWeakSolutionInhomogeneous` (surf10, 2026-09-20). ★
-
-Blocked (2026-09-20, surf10): the backbone's `Elliptic.isGalerkinSolution_laplace_of_classical`
-bundles the interior identity with the homogeneous boundary condition; this node needs the
-interior half on its own — "a `C²(Ω̄)` function `u` on a bounded `Ω` with `-Δu + u = f` in `Ω` is
-the function of some `U ∈ H^1(Ω)` with `laplaceForm Ω U v = load Ω f v` for all `v ∈ H^1_0(Ω)`"
-(the first two thirds of that proof, ~50 lines, under `ContDiffOnClosure`) — after which the
-node is `theorem_9_17_mp` on `U − G` plus that identity, ten lines.'''
-deps = ["IsClassicalSolutionInhomogeneous", "IsWeakSolutionInhomogeneous", "theorem_9_17_mp", "Elliptic.isGalerkinSolution_laplace_of_classical"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 2"
 
 [[node]]
@@ -151,20 +119,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, Definition
 
 [[node]]
 id = "example_9_3_stepA"
-kind = "theorem"
-desc = '''Example 3, "as above, any classical solution is a weak solution": for `Ω` bounded,
-`a_ij ∈ C¹(Ω̄)`, `a₀ ∈ C(Ω̄)`, a classical solution of (37) (`IsClassicalSolutionElliptic Ω a a₀ f u`)
-is the function of a weak solution (`IsWeakSolutionElliptic Ω a a₀ f U`). The integration by
-parts `∫ ∂ⱼ(a_ij ∂ᵢu) v = −∫ a_ij ∂ᵢu ∂ⱼv` for `v ∈ 𝓓(Ω)` is the weak-derivative identity of the
-`C¹` function `a_ij ∂ᵢu` (`ContDiffOn.hasWeakIteratedFDerivOn`), the rest is as in
-`example_9_1_stepA`; there is no backbone node for it because Step A for the general operator
-is only asserted, and it is the same 200 lines as the Laplacian case with the coefficients
-carried along. ★★
-
-Blocked (2026-09-20, surf10): no backbone node (the coefficient-carrying integration by parts and
-the density argument are backbone work, ~200 lines in `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`,
-beside `Elliptic.isGalerkinSolution_laplace_of_classical`); not surface material.'''
-deps = ["IsClassicalSolutionElliptic", "IsWeakSolutionElliptic", "ContDiffOn.hasWeakIteratedFDerivOn", "theorem_9_17_mp"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Example 3"
 
 [[node]]

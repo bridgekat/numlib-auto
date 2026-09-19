@@ -137,7 +137,23 @@ dense in `W^{1,p}` (truncation, Proposition 9.5). ★★★, ~400 lines; low pri
 also the counterexample of Remark 19 (the converse of Theorem 9.17 (i) ⇒ (ii) fails without
 smoothness: a `u ∈ H^1(ℝ^N ∖ {0}) ∩ C(Ω̄)` not vanishing at `0` is in `H_0^1`).
 
-Blocked: not attempted (sob9 and sob12, 2026-09-19; low priority per the desc, no consumer); the route in the desc stands, ~400 lines. The ingredients now available: `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact` (Lemma 9.5), `SobolevMultiIndexZero.mul_contDiff_mem` (a smooth compactly supported factor preserves `W_0^{1,p}`), `SobolevMultiIndexZero.contDiff_comp_mem` (truncation).'''
+Blocked: not attempted (sob9, sob12, 2026-09-19; sob14, 2026-09-20 — planned in detail, judged
+~500 lines, no consumer, left for a dedicated agent). Refined route, with the ingredients now in
+place: (1) for `v ∈ W^{1,p}(Ω)` vanishing a.e. on a ball `B(0, r)`, `v ∈ W_0^{1,p}(Ω)`: the
+cut-offs at infinity `χ_R v → v` (`SobolevMultiIndex.tendsto_cutoff_smul`) vanish a.e. outside the
+compact `closedBall 0 (2R) ∖ ball 0 r ⊆ Ω`, so lie in `W_0` by Lemma 9.5
+(`SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`), and `W_0` is closed; (2) for bounded
+`u`, `(1 − η_n) u → u` in `W^{1,p}(Ω)` with `η_n = 1` near `0`, `supp η_n ⊆ B(0, 2/n)`,
+`‖∇η_n‖_p → 0` — `η_n(x) = η(n x)` for `p < N`, the logarithmic cut-off for `p = N` (the radial
+integral `∫_{1/n² < |x| < 1/n} |x|^{-N} = c log n` by `integrableOn_fun_norm_addHaar`, as in
+Remark 16's `integrableOn_neg_log_rpow_div` of `EmbeddingDomain.lean`); the product with the
+smooth bounded `1 − η_n` is `MemSobolevMultiIndex.contDiff_mul`, the convergence is dominated
+(`MeasureTheory.tendsto_eLpNorm_sub_of_tendsto_ae`,
+`SobolevMultiIndex.tendsto_of_forall_tendsto_eLpNorm_weakDeriv_sub`); (3) bounded functions are
+dense: `G_k ∘ u → u` in `W^{1,p}` for `C¹` truncations `G_k` with `G_k(t) = t` on `[−k, k]`,
+`|G_k'| ≤ 1` (`MemSobolevMultiIndex.contDiff_comp`, Proposition 9.5; the weak derivative
+`G_k'(u) ∂ᵢu` by `HasWeakIteratedLineDerivOn.contDiff_comp` and uniqueness), again dominated
+convergence. Estimate ~500 lines, the `p = N` cut-off being a third of it.'''
 deps = ["SobolevEuclideanZero", "SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact", "MemSobolevMultiIndex.contDiff_comp", "SobolevMultiIndex.tendsto_cutoff_smul"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 17"
 
@@ -155,6 +171,31 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 9.20"
 
 [[node]]
 id = "SobolevEuclideanZero.gelfandTriple"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
+
+[[node]]
+id = "SobolevEuclideanZero.toDualOfL2"
+
+[[node]]
+id = "SobolevEuclideanZero.toDualOfL2_apply"
+
+[[node]]
+id = "SobolevEuclideanZero.toDualL2_eq_toDualOfL2"
+
+[[node]]
+id = "SobolevEuclideanZero.injective_of_forall_ae_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.denseRange_of_forall_ae_eq"
+
+[[node]]
+id = "SobolevEuclideanZero.toDualOfL2_injective"
+
+[[node]]
+id = "SobolevEuclideanZero.denseRange_toDualOfL2"
+
+[[node]]
+id = "SobolevEuclideanZero.gelfandTriple_of_forall_ae_eq"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4, The Dual Space of W_0^{1,p}(Ω), Notation"
 
 [[node]]

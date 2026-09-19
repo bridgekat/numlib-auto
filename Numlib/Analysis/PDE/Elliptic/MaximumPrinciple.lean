@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Matrix.Order
 import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 
@@ -54,6 +55,14 @@ by footnote 39 (`SobolevMultiIndexZero.eq_zero_of_gradient_eq_zero`: the extensi
 for `N ≥ 1`), hence `u ≤ 0`. The general statement with a drift term `a_i` (Gilbarg–Trudinger,
 Theorem 8.1) is quoted without proof by the book and not proved here; the clauses (80)–(81) are
 proved in the drift-free case.
+
+Remark 27 is the classical proof, for solutions `ũ ∈ C(Ω̄) ∩ C²(Ω)` on a bounded `Ω`: at an
+interior maximum the gradient vanishes and the Hessian is nonpositive, so the equation gives
+`ũ(x₀) ≤ f(x₀)`. For the Laplacian this is `Elliptic.le_of_classical_laplacian`
+(`IsLocalMax.laplacian_nonpos`); for the general operator `-∑ ∂ⱼ(a_ij ∂ᵢũ) + ∑ b_i ∂ᵢũ + ũ`
+with symmetric positive semidefinite `a_ij(x₀)` it is `Elliptic.le_of_classical`, whose
+Hessian-trace step `∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ 0` (`Matrix.PosSemidef.sum_mul_apply_single_nonpos`)
+goes through the square root of `a(x₀)` (`CFC.sqrt`) instead of the book's diagonalization.
 
 ## References
 
@@ -1185,5 +1194,143 @@ theorem le_of_classical_laplacian (hΩ : Bornology.IsBounded (Ω : Set (Euclidea
   · exact hΓ x₀ hx₀
 
 end Classical
+
+/-! ### Remark 27: the classical maximum principle for a general elliptic operator -/
+
+section ClassicalGeneral
+
+open scoped MatrixOrder ComplexOrder
+
+/-- **The trace of a positive semidefinite matrix against a nonpositive bilinear form is
+nonpositive**: if `A` is positive semidefinite and `D` is a bilinear form on `ℝ^N` with
+`D v v ≤ 0` for every `v`, then `∑ᵢⱼ A_ij D(e_i, e_j) ≤ 0`. With `A = S S` for the positive
+semidefinite square root `S` (`CFC.sqrt`), symmetric, the sum is `∑ₖ D(S e_k, S e_k)`. -/
+theorem _root_.Matrix.PosSemidef.sum_mul_apply_single_nonpos {N : ℕ}
+    {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.PosSemidef)
+    (D : EuclideanSpace ℝ (Fin N) →L[ℝ] EuclideanSpace ℝ (Fin N) →L[ℝ] ℝ)
+    (hD : ∀ v, D v v ≤ 0) :
+    ∑ i, ∑ j, A i j * D (EuclideanSpace.single i 1) (EuclideanSpace.single j 1) ≤ 0 := by
+  obtain ⟨S, hS⟩ : ∃ S, S = CFC.sqrt A := ⟨_, rfl⟩
+  have hS0 : 0 ≤ S := by rw [hS]; exact CFC.sqrt_nonneg A
+  have hSS : S * S = A := by rw [hS]; exact CFC.sqrt_mul_sqrt_self A hA.nonneg
+  have hSsymm : ∀ i j, S i j = S j i := fun i j ↦ by
+    have h := (Matrix.nonneg_iff_posSemidef.1 hS0).1
+    have := congrFun (congrFun h j) i
+    simpa using this
+  obtain ⟨w, hw⟩ : ∃ w : Fin N → EuclideanSpace ℝ (Fin N),
+      ∀ k, w k = ∑ i, S k i • EuclideanSpace.single i (1 : ℝ) := ⟨_, fun _ ↦ rfl⟩
+  have key : ∀ k, D (w k) (w k) = ∑ i, ∑ j, S k i * S k j
+      * D (EuclideanSpace.single i 1) (EuclideanSpace.single j 1) := fun k ↦ by
+    simp only [hw, map_sum, map_smul, FunLike.coe_sum, Finset.sum_apply, FunLike.coe_smul,
+      Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun i _ ↦ Finset.sum_congr rfl fun j _ ↦ ?_
+    ring
+  calc ∑ i, ∑ j, A i j * D (EuclideanSpace.single i 1) (EuclideanSpace.single j 1)
+      = ∑ k, D (w k) (w k) := by
+        simp only [key, ← hSS, Matrix.mul_apply, Finset.sum_mul]
+        conv_rhs => rw [Finset.sum_comm]
+        refine Finset.sum_congr rfl fun i _ ↦ ?_
+        conv_rhs => rw [Finset.sum_comm]
+        refine Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun k _ ↦ ?_
+        rw [hSsymm i k]
+    _ ≤ 0 := Finset.sum_nonpos fun k _ ↦ hD (w k)
+
+/-- A symmetric matrix of coefficients `a_ij(x)` whose quadratic form is nonnegative is positive
+semidefinite. -/
+theorem _root_.Matrix.posSemidef_of_of_symm_of_nonneg {N : ℕ} {a : Fin N → Fin N → ℝ}
+    (hsymm : ∀ i j, a i j = a j i)
+    (hnn : ∀ ξ : EuclideanSpace ℝ (Fin N), 0 ≤ ∑ i, ∑ j, a i j * ξ i * ξ j) :
+    (Matrix.of a).PosSemidef := by
+  refine Matrix.PosSemidef.of_dotProduct_mulVec_nonneg (Matrix.IsHermitian.ext fun i j ↦ ?_)
+    fun x ↦ ?_
+  · simp [hsymm i j]
+  · have h := hnn (WithLp.toLp 2 x)
+    simp only [dotProduct, Matrix.mulVec, star_trivial, Matrix.of_apply, Finset.mul_sum]
+    refine h.trans (le_of_eq ?_)
+    refine Finset.sum_congr rfl fun i _ ↦ Finset.sum_congr rfl fun j _ ↦ ?_
+    ring
+
+/-- **The Hessian of a `C²` function is nonpositive at a local maximum**: `D²f(x₀)[v, v] ≤ 0`
+for every `v`, read as `fderiv (fderiv f) x₀ v v` — the second derivative at `0` of the line
+restriction `s ↦ f (x₀ + s v)` (`ContDiffAt.deriv_deriv_comp_add_smul`), which has a local
+maximum at `0` (`IsLocalMax.deriv_deriv_nonpos`). -/
+theorem _root_.IsLocalMax.fderiv_fderiv_apply_self_nonpos {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] {f : E → ℝ} {x₀ : E} (hmax : IsLocalMax f x₀)
+    (hf : ContDiffAt ℝ 2 f x₀) (v : E) : fderiv ℝ (fderiv ℝ f) x₀ v v ≤ 0 := by
+  have h := hf.deriv_deriv_comp_add_smul v
+  rw [iteratedFDeriv_two_apply] at h
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h
+  rw [← h]
+  have hline : Continuous fun s : ℝ ↦ x₀ + s • v := by fun_prop
+  have h0 : x₀ + (0 : ℝ) • v = x₀ := by simp
+  refine IsLocalMax.deriv_deriv_nonpos ?_ ?_
+  · have : IsLocalMax f ((fun s : ℝ ↦ x₀ + s • v) 0) := by simpa only [h0] using hmax
+    exact IsLocalMax.comp_continuous (g := fun s : ℝ ↦ x₀ + s • v) (b := 0) this
+      hline.continuousAt
+  · exact hf.continuousAt.comp_of_eq hline.continuousAt h0
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **Remark 27, the classical maximum principle for a general second-order elliptic operator**
+([brezis2011functional] Chapter 9, Remark 27): for a bounded open `Ω ⊆ ℝ^N`, a classical
+solution `ũ` of `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢũ) + ∑ᵢ b_i ∂ᵢũ + ũ = f` on `Ω` — continuous on `closure Ω` and
+`C²` on `Ω`, with `a_ij` differentiable on `Ω`, symmetric and with nonnegative quadratic form
+(the ellipticity condition, of which only `∑ a_ij(x) ξ_i ξ_j ≥ 0` is used), and arbitrary `b_i`
+— with `ũ ≤ K` on `frontier Ω` and `f ≤ K` on `Ω` satisfies `ũ ≤ K` on `Ω`. The Laplacian is the
+case `a_ij = δ_ij`, `b = 0` (`Elliptic.le_of_classical_laplacian`).
+
+Proof: the maximum of `ũ` on the compact `closure Ω` is attained at some `x₀`; if
+`x₀ ∈ frontier Ω` there is nothing to prove. If `x₀ ∈ Ω` then `∇ũ(x₀) = 0`
+(`IsLocalMax.fderiv_eq_zero`) and the Hessian is nonpositive
+(`IsLocalMax.fderiv_fderiv_apply_self_nonpos`), so by the product rule
+`∂ⱼ(a_ij ∂ᵢũ)(x₀) = a_ij(x₀) ∂ᵢ∂ⱼũ(x₀)` and the first-order term vanishes; the book's
+"`∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ 0` by a change of coordinates diagonalizing `a_ij(x₀)`" is
+`Matrix.PosSemidef.sum_mul_apply_single_nonpos` (through the square root of `a(x₀)` rather than
+its diagonalization), whence `ũ(x₀) = f(x₀) + ∑ a_ij(x₀) ∂ᵢ∂ⱼũ(x₀) ≤ f(x₀) ≤ K`. -/
+theorem le_of_classical (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    {ũ f : EuclideanSpace ℝ (Fin N) → ℝ} (hc : ContinuousOn ũ (closure Ω))
+    (hu : ContDiffOn ℝ 2 ũ Ω) {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    (ha : ∀ i j, DifferentiableOn ℝ (a i j) Ω) (hsymm : ∀ i j, a i j = a j i)
+    (hell : ∀ x ∈ Ω, ∀ ξ : EuclideanSpace ℝ (Fin N), 0 ≤ ∑ i, ∑ j, a i j x * ξ i * ξ j)
+    {b : Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    (heq : ∀ x ∈ Ω, -(∑ i, ∑ j, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ ũ y
+        (EuclideanSpace.single i 1)) x (EuclideanSpace.single j 1))
+      + (∑ i, b i x * fderiv ℝ ũ x (EuclideanSpace.single i 1)) + ũ x = f x)
+    {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set (EuclideanSpace ℝ (Fin N))), ũ x ≤ K)
+    (hf : ∀ x ∈ Ω, f x ≤ K) : ∀ x ∈ Ω, ũ x ≤ K := by
+  intro x hx
+  obtain ⟨x₀, hx₀, hmax⟩ := hΩ.isCompact_closure.exists_isMaxOn ⟨x, subset_closure hx⟩ hc
+  refine (hmax (subset_closure hx)).trans ?_
+  rw [closure_eq_interior_union_frontier, Ω.isOpen.interior_eq] at hx₀
+  rcases hx₀ with hx₀ | hx₀
+  · have hnhds := Ω.isOpen.mem_nhds hx₀
+    have hloc : IsLocalMax ũ x₀ := hmax.isLocalMax (mem_of_superset hnhds subset_closure)
+    have hu2 : ContDiffAt ℝ 2 ũ x₀ := hu.contDiffAt hnhds
+    have hgrad : fderiv ℝ ũ x₀ = 0 := hloc.fderiv_eq_zero
+    have hD : ∀ v, (fderiv ℝ (fderiv ℝ ũ) x₀).flip v v ≤ 0 := fun v ↦
+      hloc.fderiv_fderiv_apply_self_nonpos hu2 v
+    -- the product rule at the critical point `x₀`
+    have hprod : ∀ i j, fderiv ℝ (fun y ↦ a i j y * fderiv ℝ ũ y (EuclideanSpace.single i 1)) x₀
+          (EuclideanSpace.single j 1)
+        = a i j x₀ * (fderiv ℝ (fderiv ℝ ũ) x₀).flip (EuclideanSpace.single i 1)
+          (EuclideanSpace.single j 1) := by
+      intro i j
+      have hai : DifferentiableAt ℝ (a i j) x₀ := (ha i j).differentiableAt hnhds
+      have hd2 : DifferentiableAt ℝ (fderiv ℝ ũ) x₀ :=
+        (hu2.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero
+      have hg : DifferentiableAt ℝ (fun y ↦ fderiv ℝ ũ y (EuclideanSpace.single i 1)) x₀ :=
+        hd2.clm_apply (differentiableAt_const _)
+      rw [fderiv_fun_mul hai hg, fderiv_clm_apply hd2 (differentiableAt_const _)]
+      simp [hgrad]
+    have hsum := (Matrix.posSemidef_of_of_symm_of_nonneg (fun i j ↦ congrFun (hsymm i j) x₀)
+      (hell x₀ hx₀)).sum_mul_apply_single_nonpos _ hD
+    simp only [Matrix.of_apply] at hsum
+    have h := heq x₀ hx₀
+    simp only [hprod, hgrad, zero_apply, mul_zero, Finset.sum_const_zero, add_zero] at h
+    linarith [hf x₀ hx₀]
+  · exact hΓ x₀ hx₀
+
+end ClassicalGeneral
 
 end Elliptic
