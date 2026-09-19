@@ -189,9 +189,6 @@ id = "natural_boundary_periodic"
 id = "_root_.SesqForm.IsCoerciveWith.restrict"
 
 [[node]]
-id = "_root_.SesqForm.IsHermitian.restrict"
-
-[[node]]
 id = "existsUnique_dirichletSet_of_variationalInequality"
 source = 'Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.16'
 

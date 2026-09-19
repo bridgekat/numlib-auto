@@ -7,6 +7,9 @@ id = "_root_.SesqForm.restrict"
 id = "_root_.SesqForm.restrict_apply"
 
 [[node]]
+id = "_root_.SesqForm.IsHermitian.restrict"
+
+[[node]]
 id = "mulL"
 
 [[node]]

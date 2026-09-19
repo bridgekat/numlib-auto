@@ -1008,13 +1008,6 @@ theorem _root_.SesqForm.IsCoerciveWith.restrict {𝕜 V : Type*} [RCLike 𝕜] [
   rw [SesqForm.restrict_apply, ← Submodule.norm_coe]
   exact h v
 
-/-- The restriction of a Hermitian form to a subspace is Hermitian. -/
-theorem _root_.SesqForm.IsHermitian.restrict {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
-    [InnerProductSpace 𝕜 V] {a : SesqForm 𝕜 V} (h : a.IsHermitian) (K : Submodule 𝕜 V) :
-    (a.restrict K).IsHermitian := fun u v ↦ by
-  rw [SesqForm.restrict_apply, SesqForm.restrict_apply]
-  exact h u v
-
 /-! ### Proposition 8.16: the inhomogeneous Dirichlet problem -/
 
 /-- **Proposition 8.16 of [brezis2011functional], Method 2 (Stampacchia)**: for `f ∈ L²(a, b)` and

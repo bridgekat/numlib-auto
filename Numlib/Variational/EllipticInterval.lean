@@ -83,6 +83,12 @@ def SesqForm.restrict (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) : SesqForm �
 theorem SesqForm.restrict_apply (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) (u v : K) :
     a.restrict K u v = a u v := rfl
 
+/-- The restriction of a Hermitian form to a subspace is Hermitian. -/
+theorem SesqForm.IsHermitian.restrict {a : SesqForm 𝕜 V} (h : a.IsHermitian) (K : Submodule 𝕜 V) :
+    (a.restrict K).IsHermitian := fun u v ↦ by
+  rw [SesqForm.restrict_apply, SesqForm.restrict_apply]
+  exact h u v
+
 end Restrict
 
 namespace EllipticInterval

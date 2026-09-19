@@ -1,363 +1,77 @@
 namespace = "Elliptic"
-desc = '''
-The variational formulation of second-order elliptic boundary value problems on an open set
-`Ω ⊆ ℝ^N`: [brezis2011functional] §9.5. The Hilbert space is
-`H^1(Ω) = SobolevEuclidean N 1 2 Ω`, that is
-`SobolevMultiIndex ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume`, whose inner
-product is `∫ uv + ∑ᵢ ∫ ∂ᵢu ∂ᵢv` (`SobolevMultiIndex.inner_eq`); `H^1_0(Ω)` is the closed
-subspace `SobolevEuclideanZero N 1 2 Ω`. A bilinear form is a `SesqForm ℝ (H^1(Ω))` built, as
-`EllipticInterval.form` is on `H^1(a, b)`, from `L²(Ω)`-pairings `⟪T (∂^α u), ∂^β v⟫` of the weak
-derivatives through a bounded operator `T` on `L²(Ω)` — the identity, or multiplication by an
-`L^∞(Ω)` coefficient — and a weak problem is `IsGalerkinSolution a ℓ K u` with `K = H^1_0(Ω)` or
-`K = ⊤`. The prototype `notes/brezis/ch09b/proto/EllipticForm.lean` checked every definition
-below (the type-class plumbing of the forms, the load, the Galerkin problem and the solution
-operator through Mathlib's `IsCoercive.continuousLinearEquivOfBilin`).
-
-Main definitions (the `abbrev`s `SobolevEuclidean`, `SobolevEuclideanZero`, the weak derivative
-as a continuous linear map `SobolevMultiIndex.weakDerivL α : W^{k,p}(Ω) →L L^p(Ω)` — `weakDerivL 0`
-is the function itself, `SobolevMultiIndex.fnL` — and the multi-index `MultiIndexLE.single i = e_i`
-are chapter 9a's, in `MultiIndex.toml`): `mulL` (multiplication by an `L^∞` coefficient),
-`pairing`, `dirichletForm` (`∫ ∇u·∇v`), `laplaceForm`
-(`∫ ∇u·∇v + ∫ uv`), `generalForm` (the form (41)), `IsUniformlyElliptic` (the ellipticity
-condition (36)), `load` (`∫ f v`), `loadL`, `solutionOperator`, `admissibleSet` (the convex set
-`K = g̃ + H^1_0(Ω)` of Example 2).
-
-Main statements: `laplaceForm_eq_innerSL` (the form of `-Δu + u` *is* the `H^1` inner product, so
-Theorem 9.21 is the Riesz representation theorem), `existsUnique_isGalerkinSolution_laplace` and
-`isMinOn_energy_iff_isGalerkinSolution_laplace` (Theorem 9.21, Dirichlet's principle),
-`isGalerkinSolution_laplace_of_classical` (Step A) and `laplacian_ae_eq_of_isGalerkinSolution`
-(Step D), `existsUnique_isWeakSolution_inhomogeneous` (Proposition 9.22), `generalForm_garding`
-(Gårding's inequality), `generalForm_isCoerciveWith_of_nonneg` and
-`existsUnique_isGalerkinSolution_general_of_nonneg` (Example 3), `solutionOperator_isCompactOperator`
-(Rellich–Kondrachov read on the solution operator), `finiteDimensional_ker_general` and
-`exists_orthogonality_iff_exists_solution` (Theorem 9.23, the Fredholm alternative),
-`existsUnique_of_ker_eq_bot` (Remark 23), `existsUnique_isGalerkinSolution_neumann`
-(Proposition 9.24).
-
-Two conventions. Coefficients live in `Lp ℝ ⊤ (volume.restrict Ω)`, so the book's `C¹(Ω̄)`
-coefficients enter through `ContinuousOn.memLp_top` on a bounded `Ω` and the ellipticity
-condition is stated almost everywhere. The Laplacian of a classical solution is Mathlib's
-`Δ` of `Mathlib/Analysis/InnerProductSpace/Laplacian.lean` (`InnerProductSpace.instLaplacian`,
-computed in coordinates by `laplacian_eq_iteratedFDeriv_stdOrthonormalBasis`), so the
-classical equation `-Δu + u = f` is a pointwise statement about a `C²` function.
-
-`mulL` is general — it belongs beside `MeasureTheory.MemLp.integralSmulCLM` — and is placed here
-only because this plan does not edit that group; `EllipticInterval.mulL` is the instance of
-`mulL` on `(a, b)`. (The weak-derivative map, first planned here as `derivL`, is now
-`SobolevMultiIndex.weakDerivL` in `MultiIndex.toml`.)
-'''
 
 [[node]]
 id = "mulL"
-kind = "definition"
-desc = '''`mulL (Ω) (a : Lp ℝ ⊤ (volume.restrict Ω)) : Lp ℝ 2 (volume.restrict Ω) →L[ℝ] Lp ℝ 2 (volume.restrict Ω)`,
-multiplication by an `L^∞(Ω)` coefficient on `L²(Ω)`: Mathlib's Hölder product
-`(ContinuousLinearMap.mul ℝ ℝ).holderL (volume.restrict Ω) 2 ⊤ 2`, flipped. With `coeFn_mulL`
-(`mulL a f =ᵐ a * f`) and `norm_mulL_apply_le` (`‖a f‖₂ ≤ ‖a‖_∞ ‖f‖₂`). The same construction as
-`EllipticInterval.mulL`, on an arbitrary open set; it should eventually be stated once, for an
-arbitrary measure, beside `MeasureTheory.MemLp.integralSmulCLM`. ★'''
-deps = []
 
 [[node]]
 id = "pairing"
-kind = "definition"
-desc = '''`pairing (Ω) (T : L²(Ω) →L[ℝ] L²(Ω)) (α β : MultiIndexLE (Fin N) 1) : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)`,
-the bounded bilinear form `(u, v) ↦ ⟪T (∂^α u), ∂^β v⟫_{L²(Ω)}` on `H^1(Ω)`, built as
-`(((innerSL ℝ).comp (T.comp (weakDerivL α))).flip.comp (weakDerivL β)).flip` (`SobolevMultiIndex.weakDerivL`), exactly as
-`EllipticInterval.pairing`. With `pairing_apply` (by `rfl`) and `abs_pairing_le`
-(`|pairing T α β u v| ≤ ‖T‖ ‖∂^α u‖₂ ‖∂^β v‖₂ ≤ ‖T‖ ‖u‖ ‖v‖`, `norm_weakDerivL_apply_le`). Every form of this directory is a
-finite sum of pairings, so its boundedness is a sum of these bounds. ★'''
-deps = ["SobolevMultiIndex.weakDerivL"]
 
 [[node]]
 id = "dirichletForm"
-kind = "definition"
-desc = '''`dirichletForm (Ω) : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)`, the Dirichlet form
-`a₀(u, v) = ∫_Ω ∇u · ∇v = ∑ᵢ ∫_Ω ∂ᵢu ∂ᵢv`, as `∑ i, pairing Ω (ContinuousLinearMap.id ℝ _) (MultiIndexLE.single i) (MultiIndexLE.single i)`.
-This bundled `SesqForm` *is* the book's scalar product `∑ ∫ ∂ᵢu ∂ᵢv` of Corollary 9.19 on `H^1_0`;
-no separate function (`gradInner`) is defined — chapter 9a's `SobolevMultiIndex.gradNorm`
-(`MultiIndex.lean`) is its diagonal, `dirichletForm_self_eq_gradNorm_sq`.
-Its companion lemmas (`dirichletForm_apply`, `_isHermitian`, `_self_eq`, `_self_nonneg`, `_isBoundedWith`) are tracked as the next nodes because chapter 10 consumes them by name. This is the form of Theorem 9.31 and of Remark 25; the form of Theorem 9.21
-is `laplaceForm`. ★'''
-deps = ["pairing", "MultiIndexLE.single"]
 
 [[node]]
 id = "dirichletForm_apply"
-kind = "theorem"
-desc = '''`dirichletForm Ω u v = ∫ x in Ω, ∑ i, weakDeriv u (single i) x * weakDeriv v (single i) x`,
-the integral formula `∫_Ω ∇u·∇v`, by `L2.inner_def` and `integral_finset_sum` over the integrable
-products (`L2.integrable_inner`). Chapter 10's `DirichletLaplacian` consumes it. ★'''
-deps = ["dirichletForm"]
 
 [[node]]
 id = "dirichletForm_isHermitian"
-kind = "theorem"
-desc = '''`(dirichletForm Ω).IsHermitian`: each pairing `⟪∂ᵢu, ∂ᵢv⟫` is symmetric
-(`real_inner_comm`). With `dirichletForm_self_nonneg` (`0 ≤ dirichletForm Ω v v`) and
-`dirichletForm_self_eq` (`dirichletForm Ω v v = ∑ i, ‖weakDeriv v (single i)‖ ^ 2`, the book's
-`∫ |∇v|²`), tracked separately as chapter 10 consumes them by name. ★'''
-deps = ["dirichletForm"]
 
 [[node]]
 id = "dirichletForm_self_eq"
-kind = "theorem"
-desc = '''`dirichletForm Ω v v = ∑ i, ‖weakDeriv v (single i)‖ ^ 2`, hence `dirichletForm_self_nonneg :
-0 ≤ dirichletForm Ω v v`; at `N ≥ 1` this is `SobolevMultiIndex.gradNorm v ^ 2` in chapter 9a's
-vocabulary (`MultiIndex.toml`), `dirichletForm_self_eq_gradNorm_sq`. ★'''
-deps = ["dirichletForm"]
 
 [[node]]
 id = "dirichletForm_self_nonneg"
-kind = "theorem"
-desc = '''`0 ≤ dirichletForm Ω v v`, from `dirichletForm_self_eq`. ★'''
-deps = ["dirichletForm_self_eq"]
 
 [[node]]
 id = "dirichletForm_isBoundedWith"
-kind = "theorem"
-desc = '''`(dirichletForm Ω).IsBoundedWith 1`: `|∫ ∇u·∇v| ≤ ∑ᵢ ‖∂ᵢu‖ ‖∂ᵢv‖ ≤ ‖u‖ ‖v‖` by Cauchy–Schwarz
-in `ℓ²(Fin N)` and `norm_weakDerivL_apply_le`; equivalently `dirichletForm_le_inner :
-dirichletForm Ω v v ≤ ‖v‖ ^ 2`. ★'''
-deps = ["dirichletForm", "SobolevMultiIndex.weakDerivL"]
 
 [[node]]
 id = "laplaceForm"
-kind = "definition"
-desc = '''`laplaceForm (Ω) : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)`, the bilinear form of the
-operator `-Δ + 1`: `a(u, v) = ∫_Ω ∇u · ∇v + ∫_Ω u v`, as `dirichletForm Ω + pairing Ω (id) 0 0`.
-This is the form of [brezis2011functional] Theorem 9.21, Proposition 9.22, Proposition 9.24,
-Example 5, Theorem 9.25, Theorem 9.27 and Corollary 9.28. `laplaceForm_apply` is the integral
-formula (32). ★'''
-deps = ["dirichletForm"]
 
 [[node]]
 id = "laplaceForm_eq_innerSL"
-kind = "theorem"
-desc = '''`laplaceForm Ω = innerSL ℝ`: the form `∫ ∇u·∇v + ∫ uv` is the inner product of `H^1(Ω)`.
-By `SobolevMultiIndex.inner_eq`, `⟪u, v⟫ = ∫_Ω ∑_{|α| ≤ 1} ∂^α u ∂^α v`, and the multi-indices of
-order at most one are `0` and the `single i` (`multiIndexLE_one_eq`), so the sum is `uv + ∑ᵢ ∂ᵢu ∂ᵢv`.
-Consequences, each one line: `laplaceForm_isCoerciveWith_one` (`a(v, v) = ‖v‖²`, so
-`SesqForm.IsCoerciveWith (laplaceForm Ω) 1`), `laplaceForm_isHermitian`,
-`laplaceForm_isBoundedWith_one`. This is why Theorem 9.21 costs nothing: Lax–Milgram for the
-inner product is the Riesz representation theorem, and no boundedness of `Ω` is needed. ★★
-(the bookkeeping of the sum over `MultiIndexLE (Fin N) 1`, ~80 lines).'''
-deps = ["laplaceForm", "SobolevMultiIndex.inner_eq", "MultiIndexLE.single"]
 
 [[node]]
 id = "IsUniformlyElliptic"
-kind = "definition"
-desc = '''`IsUniformlyElliptic (Ω) (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict Ω)) (α : ℝ) : Prop`,
-the ellipticity condition (36) of [brezis2011functional] §9.5, Example 3, for `L^∞`
-coefficients: `0 < α` and, for almost every `x ∈ Ω`, `α ‖ξ‖² ≤ ∑ᵢⱼ A i j x * ξ i * ξ j` for every
-`ξ : EuclideanSpace ℝ (Fin N)`. Stated almost everywhere because the coefficients are classes;
-for continuous coefficients on `Ω` the pointwise condition implies it. The Dirichlet form is the
-case `A = δ_ij`, `α = 1` (`isUniformlyElliptic_one`). ★'''
 deps = []
 
 [[node]]
 id = "generalForm"
-kind = "definition"
-desc = '''`generalForm (Ω) (A : Fin N → Fin N → L^∞(Ω)) (a₁ : Fin N → L^∞(Ω)) (a₀ : L^∞(Ω)) : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)`,
-the form (41) of [brezis2011functional] §9.5:
-`a(u, v) = ∑ᵢⱼ ∫_Ω a_ij ∂ᵢu ∂ⱼv + ∑ᵢ ∫_Ω a_i ∂ᵢu v + ∫_Ω a₀ u v`, as
-`∑ᵢ ∑ⱼ pairing Ω (mulL Ω (A i j)) (single i) (single j) + ∑ᵢ pairing Ω (mulL Ω (a₁ i)) (single i) 0 + pairing Ω (mulL Ω a₀) 0 0`.
-The form (38) of the symmetric problem (37) is the case `a₁ = 0`. Companion lemmas:
-`generalForm_apply` (the integral formula), `generalForm_isBoundedWith`
-(`|a(u, v)| ≤ (∑ᵢⱼ ‖a_ij‖_∞ + ∑ᵢ ‖a_i‖_∞ + ‖a₀‖_∞) ‖u‖ ‖v‖`), `generalForm_isHermitian_of_symm`
-(when `a₁ = 0` and `A i j = A j i`), and `generalForm_self_ge`: under
-`IsUniformlyElliptic Ω A α`, `a(v, v) ≥ α ∑ᵢ ‖∂ᵢv‖₂² - (∑ᵢ ‖a_i‖_∞ ‖∂ᵢv‖₂) ‖v‖₂ - ‖a₀‖_∞ ‖v‖₂²`,
-by the pointwise ellipticity under the integral and Hölder. ★★ (~250 lines with the lemmas).'''
-deps = ["pairing", "mulL", "MultiIndexLE.single", "IsUniformlyElliptic"]
 
 [[node]]
 id = "generalForm_garding"
-kind = "theorem"
-desc = '''**Gårding's inequality** for the form (41) with `L^∞` coefficients: under
-`IsUniformlyElliptic Ω A α` there is `λ ≥ 0` (explicitly, `λ = (∑ᵢ ‖a_i‖_∞)² / (2α) + ‖a₀‖_∞ + α/2`)
-such that `generalForm Ω A a₁ a₀ + λ • pairing Ω (id) 0 0` is coercive on `H^1(Ω)` with constant
-`α / 2`: `(α/2) ‖v‖² ≤ a(v, v) + λ ‖v‖₂²`. From `generalForm_self_ge` and
-`c ‖∂ᵢv‖ ‖v‖ ≤ (α/(2N)) ‖∂ᵢv‖² + (N c²/(2α)) ‖v‖²`. This is the "fix `λ > 0` large enough that
-`a(u, v) + λ ∫ uv` is coercive" of the proof of [brezis2011functional] Theorem 9.23 (p. 11265),
-made explicit; no Poincaré inequality and no boundedness of `Ω` enters. ★★ (~150 lines).'''
-deps = ["generalForm"]
 
 [[node]]
 id = "generalForm_isCoerciveWith_of_nonneg"
-kind = "theorem"
-desc = '''Coercivity of the symmetric-problem form on `H^1_0(Ω)`, [brezis2011functional] §9.5,
-Example 3: for `Ω` bounded, `IsUniformlyElliptic Ω A α`, `a₁ = 0` and `0 ≤ a₀` almost everywhere,
-the restriction `(generalForm Ω A 0 a₀).restrict (SobolevEuclideanZero N 1 2 Ω)` satisfies
-`SesqForm.IsCoerciveWith _ (α / (1 + C_P²))`, `C_P` the Poincaré constant of `Ω`: for
-`v ∈ H^1_0(Ω)`, `a(v, v) ≥ α ∑ᵢ ‖∂ᵢv‖² + ∫ a₀ v² ≥ α ∑ᵢ ‖∂ᵢv‖²` and
-`‖v‖² = ‖v‖₂² + ∑ᵢ ‖∂ᵢv‖² ≤ (1 + C_P²) ∑ᵢ ‖∂ᵢv‖²` by Poincaré's inequality, Corollary 9.19. The
-book's hypotheses `a_ij ∈ C¹(Ω̄)`, `a₀ ∈ C(Ω̄)` enter as `L^∞` coefficients on a bounded set. ★★
-(~120 lines). Consumes the chapter-9a node for Corollary 9.19.'''
-deps = [
-  "generalForm",
-  "SesqForm.restrict",
-  "SobolevEuclideanZero.norm_le_gradNorm",  # ch9a, Poincare.toml: Corollary 9.19 in the coercivity form ‖u‖ ≤ C · gradNorm u
-]
 
 [[node]]
 id = "load"
-kind = "definition"
-desc = '''`load (Ω) (f : Lp ℝ 2 (volume.restrict Ω)) : SobolevEuclidean N 1 2 Ω →L[ℝ] ℝ`, the load
-functional `v ↦ ∫_Ω f v = ⟪f, v⟫_{L²}`, as `(innerSL ℝ f).comp (SobolevMultiIndex.fnL)`. With
-`load_apply` (the integral), `abs_load_le` (`|⟨f, v⟩| ≤ ‖f‖₂ ‖v‖₂`) and `norm_load_le`
-(`‖load f‖ ≤ ‖f‖₂`); the twin of `EllipticInterval.load`. ★'''
-deps = ["SobolevMultiIndex.weakDerivL"]
 
 [[node]]
 id = "loadL"
-kind = "definition"
-desc = '''`loadL (Ω) (K : Submodule ℝ (SobolevEuclidean N 1 2 Ω)) : Lp ℝ 2 (volume.restrict Ω) →L[ℝ] (K →L[ℝ] ℝ)`,
-the load restricted to the subspace `K`, as a continuous linear map of `f`:
-`((ContinuousLinearMap.compL ℝ K _ ℝ).flip ((SobolevMultiIndex.fnL).comp K.subtypeL)).comp (innerSL ℝ)`,
-with `loadL_apply : loadL Ω K f v = ⟪f, fn v⟫`. It is what makes the solution operator of
-`solutionOperator` a continuous linear map of `f`. ★'''
-deps = ["load"]
 
 [[node]]
 id = "existsUnique_isGalerkinSolution_laplace"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.21 (Dirichlet, Riemann, Poincaré, Hilbert), existence
-and uniqueness**: for every open `Ω ⊆ ℝ^N` and every `f ∈ L²(Ω)`,
-`∃! u, IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) u`,
-that is, exactly one `u ∈ H^1_0(Ω)` with `∫ ∇u·∇v + ∫ uv = ∫ fv` for all `v ∈ H^1_0(Ω)`.
-`IsGalerkinSolution.existsUnique` with `laplaceForm_isCoerciveWith_one`; `H^1_0(Ω)` is complete
-by `SobolevMultiIndexZero.instCompleteSpace`. No boundedness of `Ω` is needed, which is what
-Example 5 (a), (b) use. Companion: `norm_le_of_isGalerkinSolution_laplace`, the stability
-`‖u‖_{H^1} ≤ ‖f‖₂` (`SesqForm.norm_le_of_forall_apply_eq` on the restricted form, with
-`norm_load_le`), which the proof of Theorem 9.25 quotes as "`‖u‖_{H^1} ≤ ‖f‖₂` by (48)". ★'''
-deps = ["laplaceForm_eq_innerSL", "load", "SobolevEuclideanZero", "IsGalerkinSolution.existsUnique", "SesqForm.norm_le_of_forall_apply_eq"]
 
 [[node]]
 id = "isMinOn_energy_iff_isGalerkinSolution_laplace"
-kind = "theorem"
-desc = '''**Dirichlet's principle**, the second half of [brezis2011functional] Theorem 9.21: for
-`u ∈ H^1_0(Ω)`, `u` is the weak solution of (31) iff it minimizes
-`E(v) = ½ ∫_Ω (|∇v|² + v²) - ∫_Ω f v` over `H^1_0(Ω)`. This is `SesqForm.isMinOn_energy_iff` for the
-Hermitian coercive form `laplaceForm Ω` on the subspace `H^1_0(Ω)`, once `SesqForm.energy` is
-unfolded to the book's integral by `laplaceForm_apply` and `load_apply` (`energy_laplace_apply`,
-a companion lemma stating `(laplaceForm Ω).energy (load Ω f) v = ½ ∫ (∑ᵢ (∂ᵢv)² + v²) - ∫ f v`).
-★'''
-deps = ["laplaceForm_eq_innerSL", "load", "SesqForm.isMinOn_energy_iff", "SesqForm.energy"]
 
 [[node]]
 id = "isGalerkinSolution_laplace_of_classical"
-kind = "theorem"
-desc = '''**Step A of [brezis2011functional] §9.5, Example 1: a classical solution is a weak
-solution.** Let `Ω ⊆ ℝ^N` be open and bounded, `u : ℝ^N → ℝ` with `ContDiffOn ℝ 2 u (closure Ω)`,
-`u = 0` on `frontier Ω`, and `f : ℝ^N → ℝ` with `MemLp f 2 (volume.restrict Ω)` and
-`-Δ u x + u x = f x` for every `x ∈ Ω` (Mathlib's `Δ`, `InnerProductSpace.instLaplacian`). Then
-there is `U ∈ SobolevEuclideanZero N 1 2 Ω` with `SobolevMultiIndex.fn U =ᵐ[Ω] u` and
-`IsGalerkinSolution (laplaceForm Ω) (load Ω (MemLp.toLp f _)) (SobolevEuclideanZero N 1 2 Ω) U`.
-
-Proof (p. 10967): `u ∈ C¹(Ω̄)` on a bounded `Ω` lies in `W^{1,2}(Ω)` (Remark 2, chapter 9a) with
-its classical gradient as weak gradient (`ContDiffOn.hasWeakIteratedFDerivOn`), so it is the
-function of some `U ∈ H^1(Ω)` (`MemSobolevMultiIndex.exists_sobolevMultiIndex`; the membership itself, Remark 2, is `ContDiffOn.hasWeakIteratedFDerivOn` plus the `L²` membership of a continuous function on a bounded set); `u` is continuous
-on `closure Ω` and vanishes on `frontier Ω`, so `U ∈ H^1_0(Ω)` by Theorem 9.17 (i) ⇒ (ii), which
-holds for every open `Ω` (Remark 19). For a test function `v ∈ 𝓓(Ω)`,
-`∫ ∂ᵢu ∂ᵢv = -∫ ∂ᵢᵢu v` is the weak-derivative identity of the `C¹` function `∂ᵢu`
-(`ContDiffOn.hasWeakIteratedFDerivOn` at order one applied to `∂ᵢu`, which is `C¹` on `Ω`), and
-summing over `i` with `laplacian_eq_iteratedFDeriv_stdOrthonormalBasis` gives
-`a(U, v) = ∫ (-Δu + u) v = ∫ f v`; the identity extends from the test functions to all of
-`H^1_0(Ω)` because both sides are continuous in `v` and `H^1_0(Ω)` is the closure of the test
-functions (`SobolevMultiIndexZero`, `Submodule.topologicalClosure_minimal`-style argument via
-`SobolevMultiIndex.testFunctions`). ★★ (~250 lines; the identification of `Δ` in coordinates and the
-density step carry the weight).'''
-deps = [
-  "laplaceForm", "load", "SobolevEuclideanZero",
-  "ContDiffOn.hasWeakIteratedFDerivOn", "MemSobolevMultiIndex.exists_sobolevMultiIndex",
-  "SobolevMultiIndex.testFunctions",
-  "SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier",  # ch9a, Zero.toml: Theorem 9.17 (i) ⇒ (ii), any open Ω
-]
 
 [[node]]
 id = "laplacian_ae_eq_of_isGalerkinSolution"
-kind = "theorem"
-desc = '''**Step D of [brezis2011functional] §9.5, Example 1: a `C²` weak solution satisfies the
-equation.** Let `U` be a weak solution of (31) (`IsGalerkinSolution (laplaceForm Ω) (load Ω f) (SobolevEuclideanZero N 1 2 Ω) U`,
-or merely `a(U, v) = ⟨f, v⟩` for all test functions `v`) and let `u : ℝ^N → ℝ` with
-`ContDiffOn ℝ 2 u Ω` and `SobolevMultiIndex.fn U =ᵐ[Ω] u`. Then `-Δ u + u =ᵐ[volume.restrict Ω] f`.
-If moreover `f` agrees almost everywhere on `Ω` with a function continuous on `Ω`, then
-`-Δ u x + u x = f x` for every `x ∈ Ω` (`laplacian_eq_of_isGalerkinSolution_of_continuousOn`).
-
-Proof (p. 10993): for `v ∈ 𝓓(Ω)` the weak identity reads `∫ (-Δu + u - f) v = 0` after the
-integration by parts of `isGalerkinSolution_laplace_of_classical`, and Corollary 4.24 is
-Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`; two continuous functions that
-agree almost everywhere on an open set agree everywhere on it (`Measure.eqOn_of_ae_eq` with
-`IsOpen.measure_pos`). The boundary clause of Step D — `u = 0` on `Γ` for a `C¹` domain — is
-Theorem 9.17 (ii) ⇒ (i) of chapter 9a and is stated in the surface, not here. ★★ (~150 lines).'''
-deps = ["laplaceForm", "load", "ContDiffOn.hasWeakIteratedFDerivOn", "SobolevMultiIndex.testFunctions"]
 
 [[node]]
 id = "admissibleSet"
-kind = "definition"
-desc = '''`admissibleSet (Ω) (g : SobolevEuclidean N 1 2 Ω) : Set (SobolevEuclidean N 1 2 Ω)`, the set
-`K = {v ∈ H^1(Ω) : v - g ∈ H^1_0(Ω)}` of [brezis2011functional] §9.5, Example 2, that is
-`g +ᵥ (SobolevEuclideanZero N 1 2 Ω : Set _)`. Companion lemmas: `admissibleSet_nonempty`
-(`g ∈ K`), `isClosed_admissibleSet` (a translate of a closed subspace), `convex_admissibleSet`,
-`mem_admissibleSet_iff`, and `admissibleSet_eq_of_sub_mem` (`K` depends only on `g` modulo
-`H^1_0(Ω)`: if `g - g' ∈ H^1_0(Ω)` then the two sets agree — the book's "`K` is independent of the
-choice of `g̃`", whose hypothesis is supplied by Theorem 9.17 (i) ⇒ (ii) in the surface). ★'''
-deps = ["SobolevEuclideanZero"]
 
 [[node]]
 id = "existsUnique_isWeakSolution_inhomogeneous"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 9.22 (inhomogeneous Dirichlet condition).** For
-`Ω ⊆ ℝ^N` open, `g ∈ H^1(Ω)` and `f ∈ L²(Ω)` there is exactly one `u ∈ admissibleSet Ω g` with
-`laplaceForm Ω u v = load Ω f v` for all `v ∈ H^1_0(Ω)`; and `u` is the unique minimizer of
-`E(v) = ½ ∫ (|∇v|² + v²) - ∫ f v` over `K`.
-
-Two proofs are available. The book's (p. 11017): `u ∈ K` solves (34) iff it solves the
-variational inequality (35) `a(u, v - u) ≥ ⟨f, v - u⟩` for all `v ∈ K` (the claim
-`isWeakSolution_inhomogeneous_iff_forall_le`: one direction is equality, the other tests
-`v = u ± w` for `w ∈ H^1_0`), and Stampacchia's theorem,
-`existsUnique_isVariationalInequalitySolution_of_isCoercive` with `j = 0` on the nonempty closed
-convex `K`, gives existence and uniqueness; `SesqForm.isMinOn_energy_iff_forall_le` gives the
-minimization. The shorter one: `u = g + w` where `w ∈ H^1_0(Ω)` is the Galerkin solution for the
-load `load Ω f - (laplaceForm Ω) g` (`existsUnique_isGalerkinSolution_laplace` with a general
-functional, or `IsGalerkinSolution.existsUnique`). State it once; prove it the short way and
-record the equivalence (35) ⇔ (34) as the separate lemma, since the surface restates the book's
-argument. ★★ (~150 lines).'''
-deps = [
-  "admissibleSet", "laplaceForm_eq_innerSL", "load",
-  "existsUnique_isVariationalInequalitySolution_of_isCoercive",
-  "SesqForm.isMinOn_energy_iff_forall_le", "IsGalerkinSolution.existsUnique",
-]
 
 [[node]]
 id = "existsUnique_isGalerkinSolution_general_of_nonneg"
-kind = "theorem"
-desc = '''**[brezis2011functional] §9.5, Example 3, existence for the symmetric-problem form (37).**
-For `Ω` bounded, `IsUniformlyElliptic Ω A α` and `0 ≤ a₀` a.e., every `f ∈ L²(Ω)` has exactly one
-`u ∈ H^1_0(Ω)` with `generalForm Ω A 0 a₀ u v = load Ω f v` for all `v ∈ H^1_0(Ω)` —
-`IsGalerkinSolution.existsUnique` with `generalForm_isCoerciveWith_of_nonneg`. Companion
-`isMinOn_energy_iff_isGalerkinSolution_general_of_symm`: when `A i j = A j i` the form is
-Hermitian and `u` is the minimizer of `½ ∫ (∑ᵢⱼ a_ij ∂ᵢv ∂ⱼv + a₀ v²) - ∫ f v` over `H^1_0(Ω)`
-(`SesqForm.isMinOn_energy_iff`). No symmetry is needed for existence, as the book notes. ★'''
-deps = ["generalForm_isCoerciveWith_of_nonneg", "IsGalerkinSolution.existsUnique", "SesqForm.isMinOn_energy_iff", "load"]
 
 [[node]]
 id = "solutionOperator"
-kind = "definition"
-desc = '''`solutionOperator (Ω) (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)) (ha : IsCoercive (a.restrict (SobolevEuclideanZero N 1 2 Ω))) : Lp ℝ 2 (volume.restrict Ω) →L[ℝ] Lp ℝ 2 (volume.restrict Ω)`,
-the solution operator `T : f ↦ u` of the weak Dirichlet problem for a form `a` coercive on
-`H^1_0(Ω)`: `T f` is the function of the unique `u ∈ H^1_0(Ω)` with `a u v = ⟨f, v⟩` for all
-`v ∈ H^1_0(Ω)`. Built, as the prototype `notes/brezis/ch09b/proto/EllipticForm.lean` does, as the
-composite `L²(Ω) → (H^1_0)' → H^1_0 → H^1_0 → L²(Ω)` of `loadL`, the Riesz map
-`(InnerProductSpace.toDual ℝ _).symm.toContinuousLinearEquiv` (real, so a `≃L[ℝ]`), the inverse of
-Mathlib's Lax–Milgram equivalence `IsCoercive.continuousLinearEquivOfBilin` for the restricted
-form, and `SobolevMultiIndexZero.fnL`. The coercivity hypothesis is Mathlib's real `IsCoercive`;
-`SesqForm.isCoerciveWith_real_iff` converts from `SesqForm.IsCoerciveWith`.
-
-Companion lemmas: `solutionOperator_spec` (`∃ u ∈ H^1_0, fn u = T f ∧ ∀ v ∈ H^1_0, a u v = ⟨f, v⟩`),
-`solutionOperator_eq_of_isGalerkinSolution` (uniqueness: any Galerkin solution has function
-`T f`), `norm_solutionOperator_le` (`‖T f‖₂ ≤ ‖f‖₂ / c` for the coercivity constant `c`). This is
-the `T` of the proofs of Theorems 9.23 and 9.31 and of Comment 10 (a). ★★ (~150 lines).'''
-deps = ["loadL", "SobolevMultiIndex.weakDerivL", "SesqForm.restrict", "SesqForm.isCoerciveWith_real_iff", "SobolevEuclideanZero"]
 
 [[node]]
 id = "solutionOperator_isCompactOperator"
@@ -369,7 +83,9 @@ arbitrary bounded open set, no regularity of `Ω`), and a compact operator compo
 ones is compact (`IsCompactOperator.comp_clm`, `IsCompactOperator.clm_comp`). This is the
 sentence "`T : L² → L²` is a compact linear operator (since `Ω` is bounded, the injection
 `H^1_0 ⊂ L²` is compact; see Theorem 9.16 and Remark 20)" of the proof of Theorem 9.23, and the
-compactness of `T` in the proof of Theorem 9.31. ★★ (~100 lines). Consumes the chapter-9a node.'''
+compactness of `T` in the proof of Theorem 9.31. ★★ (~100 lines). Consumes the chapter-9a node.
+
+Blocked: the dependency `SobolevEuclideanZero.isCompactEmbedding_toLp` (sob8, `Compactness.lean`) is absent from this branch (sob9, 2026-09-19). `Elliptic.solutionOperator_isCompactOperator_of_isCompactOperator_fnL` reduces the node to `IsCompactOperator (SobolevMultiIndexZero.fnL ℝ _ 1 2 Ω volume)`, which is that dependency read through `isCompactEmbedding_iff_isCompactOperator`; ~15 lines once it lands.'''
 deps = [
   "solutionOperator",
   "SobolevEuclideanZero.isCompactEmbedding_toLp",  # ch9a, Compactness.toml: Remark 20, W_0^{1,p}(Ω) ↪↪ L^p(Ω) on a bounded open Ω
@@ -392,7 +108,9 @@ the function `w = fn u` satisfies `w = λ T w`, so `fn` maps `ker a` injectively
 (`SobolevMultiIndex.ext_of_fn_ae_eq`) onto `ker (1 - λ T) ⊆ L²(Ω)`, which is finite-dimensional by
 `IsCompactOperator.finiteDimensional_ker_pow` (at the power `1`, with `μ = 1` and `K = λ T`).
 ★★★ (~250 lines: the equivalence "(40) ⇔ `u = T(f + λu)`", which is `solutionOperator_spec` plus
-the algebra of forms, is the bulk).'''
+the algebra of forms, is the bulk).
+
+Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it: `Elliptic.homogeneousKernel Ω a` is the space of homogeneous solutions, and `Elliptic.finiteDimensional_homogeneousKernel_of_isCompactOperator` gives its finite-dimensionality from `IsCompactOperator (solutionOperator Ω (a + μ • pairing Ω id 0 0) ha)` for any `μ` making the shifted form coercive on `H^1_0(Ω)` (`Elliptic.range_homogeneousKernelToLp` identifies the kernel with `ker (1 - μ T_μ)`). The planned statement is that lemma with `μ` from `generalForm_garding` and `Ω` bounded; ~30 lines.'''
 deps = ["generalForm_garding", "solutionOperator", "solutionOperator_isCompactOperator", "IsCompactOperator.finiteDimensional_ker_pow", "SobolevMultiIndex.ext_of_fn_ae_eq"]
 
 [[node]]
@@ -412,7 +130,9 @@ gives `range (1 - λT) = (ker (1 - λ T†))ᗮ`, so `F := ker (1 - λ T†)` wo
 which is the dimension of `homogeneousKernel Ω a` by the injection of the first half. The book
 routes through its Theorem 6.6 (the Banach-space Fredholm alternative); the Hilbert-space form
 of `Numlib/Analysis/Normed/Operator/{Compact,Riesz}` is what is available and is sufficient. ★★★
-(~250 lines beyond the first half).'''
+(~250 lines beyond the first half).
+
+Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it as `Elliptic.exists_orthogonality_iff_exists_solution_of_isCompactOperator` (which also records `FiniteDimensional ℝ F`), through the abstract Fredholm alternative `Elliptic.exists_finiteDimensional_forall_iff_inner_eq_zero` and the reduction `Elliptic.exists_isGalerkinSolution_iff_mem_range`; ~30 lines once compactness lands.'''
 deps = ["finiteDimensional_ker_general", "IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint", "IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint", "load"]
 
 [[node]]
@@ -427,21 +147,283 @@ lies in the kernel. ★ (~60 lines). The remark's second clause — that `a₀ �
 trivial kernel, for arbitrary `a_i` — is the general case of Proposition 9.29, which the book
 cites from Gilbarg–Trudinger; its drift-free instance is
 `Elliptic.nonneg_of_nonneg_frontier_general_zero_drift` of `Elliptic/MaximumPrinciple` in its
-`H^1_0` form.'''
+`H^1_0` form.
+
+Blocked: on `solutionOperator_isCompactOperator` (sob9, 2026-09-19). Proved modulo it as `Elliptic.existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator` (hypothesis `homogeneousKernel Ω a = ⊥`), through `Elliptic.surjective_smul_one_sub_of_ker_eq_bot`; ~20 lines once compactness lands.'''
 deps = ["exists_orthogonality_iff_exists_solution"]
 
 [[node]]
 id = "existsUnique_isGalerkinSolution_neumann"
-kind = "theorem"
-desc = '''**[brezis2011functional] Proposition 9.24 (homogeneous Neumann problem), existence,
-uniqueness and Dirichlet's principle.** For every open `Ω ⊆ ℝ^N` and `f ∈ L²(Ω)`,
-`∃! u, IsGalerkinSolution (laplaceForm Ω) (load Ω f) ⊤ u`, i.e. exactly one `u ∈ H^1(Ω)` with
-`∫ ∇u·∇v + ∫ uv = ∫ f v` for all `v ∈ H^1(Ω)`; and `u` is the minimizer of
-`½ ∫ (|∇v|² + v²) - ∫ f v` over `H^1(Ω)` (`isMinOn_energy_iff_isGalerkinSolution_neumann`).
-`IsGalerkinSolution.existsUnique` on `K = ⊤` with `laplaceForm_isCoerciveWith_one`, and
-`SesqForm.isMinOn_energy_iff` at `K = ⊤`; since the form is the inner product, this is the Riesz
-representation of `load Ω f`. The book's hypothesis "`Ω` bounded of class `C¹`" is not needed
-for this proposition; it is needed for Step A (Green's formula, which requires a surface measure
-and is not available — `notes/frontier.md` blocker 2) and for Step D's boundary clause, neither of
-which is stated here. Example 5 (a) and (c) are this theorem on `Ω = ⊤` and on the half space. ★'''
-deps = ["laplaceForm_eq_innerSL", "load", "IsGalerkinSolution.existsUnique", "SesqForm.isMinOn_energy_iff"]
+
+[[node]]
+id = "coeFn_mulL"
+
+[[node]]
+id = "norm_mulL_apply_le"
+
+[[node]]
+id = "norm_mulL_le"
+
+[[node]]
+id = "inner_mulL_eq_integral"
+
+[[node]]
+id = "integrable_mul_mul"
+
+[[node]]
+id = "inner_eq_integral"
+
+[[node]]
+id = "pairing_apply"
+
+[[node]]
+id = "abs_pairing_le"
+
+[[node]]
+id = "abs_pairing_le'"
+
+[[node]]
+id = "pairing_id_comm"
+
+[[node]]
+id = "dirichletForm_apply_inner"
+
+[[node]]
+id = "gradNorm_eq_sqrt"
+
+[[node]]
+id = "norm_sq_eq"
+
+[[node]]
+id = "dirichletForm_self_eq_gradNorm_sq"
+
+[[node]]
+id = "dirichletForm_self_le"
+
+[[node]]
+id = "abs_dirichletForm_le"
+
+[[node]]
+id = "laplaceForm_apply_inner"
+
+[[node]]
+id = "laplaceForm_apply"
+
+[[node]]
+id = "laplaceForm_apply_eq_inner"
+
+[[node]]
+id = "laplaceForm_isCoerciveWith_one"
+
+[[node]]
+id = "laplaceForm_isHermitian"
+
+[[node]]
+id = "laplaceForm_isBoundedWith_one"
+
+[[node]]
+id = "load_apply_inner"
+
+[[node]]
+id = "load_apply"
+
+[[node]]
+id = "abs_load_le"
+
+[[node]]
+id = "norm_load_le"
+
+[[node]]
+id = "loadL_apply"
+
+[[node]]
+id = "loadL_eq"
+
+[[node]]
+id = "norm_le_of_isGalerkinSolution_laplace"
+
+[[node]]
+id = "energy_laplace_apply"
+
+[[node]]
+id = "completeSpace_top"
+
+[[node]]
+id = "isMinOn_energy_iff_isGalerkinSolution_neumann"
+
+[[node]]
+id = "mem_admissibleSet_iff"
+
+[[node]]
+id = "self_mem_admissibleSet"
+
+[[node]]
+id = "admissibleSet_nonempty"
+
+[[node]]
+id = "isClosed_admissibleSet"
+
+[[node]]
+id = "convex_admissibleSet"
+
+[[node]]
+id = "admissibleSet_eq_of_sub_mem"
+
+[[node]]
+id = "isWeakSolution_inhomogeneous_iff_forall_le"
+
+[[node]]
+id = "isMinOn_energy_iff_isWeakSolution_inhomogeneous"
+
+[[node]]
+id = "generalForm_apply_inner"
+
+[[node]]
+id = "generalForm_apply"
+
+[[node]]
+id = "generalForm_isBoundedWith"
+
+[[node]]
+id = "mulL_zero"
+
+[[node]]
+id = "pairing_zero"
+
+[[node]]
+id = "generalForm_isHermitian_of_symm"
+
+[[node]]
+id = "_root_.IsGalerkinSolution.existsUnique_of_restrict"
+
+[[node]]
+id = "_root_.SesqForm.isMinOn_energy_iff_of_restrict"
+
+[[node]]
+id = "sum_inner_mulL_ge"
+
+[[node]]
+id = "generalForm_self_ge"
+
+[[node]]
+id = "isMinOn_energy_iff_isGalerkinSolution_general_of_symm"
+
+[[node]]
+id = "_root_.SesqForm.IsCoercive.isCoercive"
+
+[[node]]
+id = "rieszEquiv"
+
+[[node]]
+id = "inner_rieszEquiv_apply"
+
+[[node]]
+id = "solutionMap"
+
+[[node]]
+id = "solutionOperator_apply"
+
+[[node]]
+id = "restrict_apply_solutionMap"
+
+[[node]]
+id = "isGalerkinSolution_solutionMap"
+
+[[node]]
+id = "eq_solutionMap_of_isGalerkinSolution"
+
+[[node]]
+id = "solutionOperator_eq_of_isGalerkinSolution"
+
+[[node]]
+id = "solutionOperator_spec"
+
+[[node]]
+id = "norm_solutionMap_le"
+
+[[node]]
+id = "norm_solutionOperator_apply_le"
+
+[[node]]
+id = "laplacian_eq_sum_fderiv_fderiv"
+
+[[node]]
+id = "continuousOn_laplacian"
+
+[[node]]
+id = "_root_.ContDiffOn.hasWeakIteratedLineDerivOn_single"
+
+[[node]]
+id = "weakDeriv_single_ae_eq_fderiv_of_contDiffOn"
+
+[[node]]
+id = "laplaceForm_eq_integral_of_contDiffOn"
+
+[[node]]
+id = "laplacian_ae_eq_of_forall_testFunction"
+
+[[node]]
+id = "laplacian_eq_of_isGalerkinSolution_of_continuousOn"
+
+[[node]]
+id = "one_smul_one_sub_smul_apply"
+
+[[node]]
+id = "exists_finiteDimensional_forall_iff_inner_eq_zero"
+
+[[node]]
+id = "surjective_smul_one_sub_of_ker_eq_bot"
+
+[[node]]
+id = "homogeneousKernel"
+
+[[node]]
+id = "mem_homogeneousKernel_iff"
+
+[[node]]
+id = "homogeneousKernel_le"
+
+[[node]]
+id = "mem_homogeneousKernel_iff_isGalerkinSolution"
+
+[[node]]
+id = "add_smul_pairing_apply"
+
+[[node]]
+id = "load_add_smul"
+
+[[node]]
+id = "isGalerkinSolution_iff_eq_solutionMap"
+
+[[node]]
+id = "mem_homogeneousKernel_iff_eq_solutionMap"
+
+[[node]]
+id = "homogeneousKernelToLp"
+
+[[node]]
+id = "homogeneousKernelToLp_apply"
+
+[[node]]
+id = "homogeneousKernelToLp_injective"
+
+[[node]]
+id = "range_homogeneousKernelToLp"
+
+[[node]]
+id = "finiteDimensional_homogeneousKernel_of_isCompactOperator"
+
+[[node]]
+id = "finrank_homogeneousKernel"
+
+[[node]]
+id = "exists_isGalerkinSolution_iff_mem_range"
+
+[[node]]
+id = "exists_orthogonality_iff_exists_solution_of_isCompactOperator"
+
+[[node]]
+id = "existsUnique_of_homogeneousKernel_eq_bot_of_isCompactOperator"
+
+[[node]]
+id = "solutionOperator_isCompactOperator_of_isCompactOperator_fnL"

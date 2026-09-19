@@ -211,6 +211,7 @@ import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.PDE.Bochner
+import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.Sobolev.Calculus
@@ -242,6 +243,7 @@ import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered
 import Numlib.Analysis.Sobolev.WeakDeriv
+import Numlib.Analysis.Sobolev.Zero
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.SpecialFunctions.EulerMaclaurin
