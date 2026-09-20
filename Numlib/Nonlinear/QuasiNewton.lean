@@ -29,7 +29,8 @@ On `Matrix n n ℝ` the update is `Matrix.broydenUpdate`, bridged to the operato
 `‖Q₊ - J(z)‖_F ≤ ‖Q - J(z)‖_F + (L / 2) (‖x₊ - z‖ + ‖x - z‖)`
 (`Matrix.frobenius_norm_broydenUpdate_sub_le_add`, Dennis–Schnabel Lemma 8.2.1), the first
 step of every superlinear convergence proof for Broyden's method. The superlinear convergence
-theorem itself ([quarteroni2000numerical] Property 7.2, the Dennis–Moré theory) is not formalized.
+theorem itself ([quarteroni2000numerical] Property 7.2, the Dennis–Moré theory) is
+`Broyden.exists_superlinear` of `Numlib/Nonlinear/DennisMore`.
 
 The estimates rest on two auxiliary facts: the mean value inequality with the derivative frozen
 at a *third* point, `‖F y - F x - F' z (y - x)‖ ≤ (L / 2) (‖x - z‖ + ‖y - z‖) ‖y - x‖`

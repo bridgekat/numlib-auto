@@ -425,6 +425,7 @@ import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.TwoGrid
 import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.CompletelyContinuous
+import Numlib.Nonlinear.DennisMore
 import Numlib.Nonlinear.DifferenceJacobian
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Nemytskii

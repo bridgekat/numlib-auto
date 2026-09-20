@@ -4,6 +4,7 @@ import Mathlib.Analysis.Calculus.LagrangeMultipliers
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.InnerProductSpace.Calculus
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.LinearInequalities
@@ -50,7 +51,13 @@ constraints `g j x ≤ 0` indexed by a `Fintype κ`. Derivatives are data, `f' :
   `ConvexAnalysis.exists_multipliers_of_slater_eq` of the convex library;
 * `Constrained.penalty_clusterPt`, `Constrained.tendsto_penalty_of_unique`,
   `Constrained.augmented_clusterPt`: convergence of the penalty method and of the method of
-  multipliers ([quarteroni2000numerical] Property 7.16, in its correct cluster-point form).
+  multipliers ([quarteroni2000numerical] Property 7.16, in its correct cluster-point form);
+* `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker`: **Debreu's lemma** (Bertsekas
+  Lemma 1.25), a bilinear form positive on the kernel of `A` becomes positive definite after
+  adding `α ‖A ·‖²` for large `α`; `Constrained.fderiv_fderiv_augmented_apply`, the Hessian of
+  the augmented Lagrangian at a feasible point, `H_{𝒢_α} = H_ℒ + α J_hᵀ J_h`; and
+  `Constrained.exists_forall_pos_fderiv_fderiv_augmented`, condition 3 of Bertsekas'
+  Proposition 2.4 ([quarteroni2000numerical] Property 7.17) from its condition 2.
 
 ## Design
 
@@ -901,5 +908,193 @@ theorem augmented_clusterPt {f : E → ℝ} {h : E → F} {Ω : Set E} (hΩ : Is
   exact ⟨hmem, hzero, fun y hy => le_trans hfle (hmin hy)⟩
 
 end Penalty
+
+/-! ### Debreu's lemma -/
+
+section Debreu
+
+variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+
+/-- **Debreu's lemma** (Bertsekas, *Constrained Optimization and Lagrange Multiplier Methods*,
+Lemma 1.25; Finsler 1937, Debreu 1952): on a finite-dimensional space, if a continuous bilinear
+form `H` is positive on the nonzero kernel vectors of a continuous linear map `A`, `H z z > 0`
+for `z ≠ 0` with `A z = 0`, then `H + α ‖A ·‖²` is positive definite for every large `α`: there
+is `α₀` with `H z z + α ‖A z‖² > 0` for all `α ≥ α₀` and `z ≠ 0`.
+
+By compactness of the unit sphere: otherwise there are `α_k ≥ k` and unit vectors `u_k` with
+`H u_k u_k + α_k ‖A u_k‖² ≤ 0`, so `‖A u_k‖² ≤ ‖H‖ / k → 0` and `H u_k u_k ≤ 0`; a cluster point
+`w` of `u_k` is a unit vector with `A w = 0` and `H w w ≤ 0`. -/
+theorem exists_forall_pos_add_mul_sq_norm_of_pos_on_ker [FiniteDimensional ℝ E]
+    (H : E →L[ℝ] E →L[ℝ] ℝ) (A : E →L[ℝ] F) (hpos : ∀ z, z ≠ 0 → A z = 0 → 0 < H z z) :
+    ∃ α₀ : ℝ, ∀ α, α₀ ≤ α → ∀ z, z ≠ 0 → 0 < H z z + α * ‖A z‖ ^ 2 := by
+  by_contra hcon
+  push Not at hcon
+  choose α hα z hz0 hz using fun k : ℕ => hcon k
+  -- normalize to the unit sphere
+  set u : ℕ → E := fun k => ‖z k‖⁻¹ • z k with hu
+  have hunorm : ∀ k, ‖u k‖ = 1 := fun k => by
+    rw [hu, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ (norm_ne_zero_iff.2 (hz0 k))]
+  have hineq : ∀ k, H (u k) (u k) + α k * ‖A (u k)‖ ^ 2 ≤ 0 := fun k => by
+    have hzn : 0 < ‖z k‖ := norm_pos_iff.2 (hz0 k)
+    have h1 : H (u k) (u k) = ‖z k‖⁻¹ ^ 2 * H (z k) (z k) := by
+      simp only [hu, map_smul, smul_apply, smul_eq_mul]
+      ring
+    have h2 : ‖A (u k)‖ ^ 2 = ‖z k‖⁻¹ ^ 2 * ‖A (z k)‖ ^ 2 := by
+      rw [hu, map_smul, norm_smul, norm_inv, norm_norm, mul_pow]
+    rw [h1, h2]
+    have := hz k
+    have hc : 0 ≤ ‖z k‖⁻¹ ^ 2 := by positivity
+    nlinarith [mul_le_mul_of_nonneg_left this hc]
+  have hαk : ∀ k : ℕ, (k : ℝ) ≤ α k := hα
+  have hα0 : ∀ k : ℕ, 0 ≤ α k := fun k => (Nat.cast_nonneg k).trans (hαk k)
+  have hHle : ∀ k : ℕ, H (u k) (u k) ≤ 0 := fun k => by
+    have := hineq k
+    have : 0 ≤ α k * ‖A (u k)‖ ^ 2 := mul_nonneg (hα0 k) (by positivity)
+    linarith
+  have hAle : ∀ k : ℕ, (k : ℝ) * ‖A (u k)‖ ^ 2 ≤ ‖H‖ := fun k => by
+    have h1 : ‖H (u k) (u k)‖ ≤ ‖H‖ * ‖u k‖ * ‖u k‖ := H.le_opNorm₂ (u k) (u k)
+    rw [hunorm, mul_one, mul_one, Real.norm_eq_abs] at h1
+    have h2 : -H (u k) (u k) ≤ ‖H‖ := by linarith [neg_abs_le (H (u k) (u k))]
+    have h3 : (k : ℝ) * ‖A (u k)‖ ^ 2 ≤ α k * ‖A (u k)‖ ^ 2 :=
+      mul_le_mul_of_nonneg_right (hαk k) (by positivity)
+    linarith [hineq k]
+  -- a cluster point of the unit vectors
+  obtain ⟨w, hw, φ, hφ, hlim⟩ := (isCompact_sphere (0 : E) 1).tendsto_subseq
+    fun k => mem_sphere_zero_iff_norm.2 (hunorm k)
+  have hw0 : w ≠ 0 := by
+    intro h0
+    rw [mem_sphere_zero_iff_norm, h0, norm_zero] at hw
+    exact zero_ne_one hw
+  -- `A w = 0`
+  have hAw : A w = 0 := by
+    have h1 : Tendsto (fun k => ‖A (u (φ k))‖ ^ 2) atTop (𝓝 0) := by
+      refine squeeze_zero' (Eventually.of_forall fun k => by positivity) ?_
+        ((tendsto_const_div_atTop_nhds_zero_nat ‖H‖).comp hφ.tendsto_atTop)
+      filter_upwards [eventually_ge_atTop 1] with k hk
+      have hφk : (1 : ℝ) ≤ φ k := by exact_mod_cast hk.trans (hφ.id_le k)
+      rw [Function.comp_apply, le_div_iff₀ (by linarith)]
+      linarith [hAle (φ k)]
+    have h2 : Tendsto (fun k => ‖A (u (φ k))‖) atTop (𝓝 0) := by
+      have := h1.sqrt
+      rw [Real.sqrt_zero] at this
+      exact this.congr fun k => Real.sqrt_sq (norm_nonneg _)
+    have h3 : Tendsto (fun k => A (u (φ k))) atTop (𝓝 (A w)) :=
+      (A.continuous.tendsto w).comp hlim
+    exact tendsto_nhds_unique h3 (tendsto_zero_iff_norm_tendsto_zero.2 h2)
+  -- `H w w ≤ 0`
+  have hHw : H w w ≤ 0 := by
+    have hcont : Continuous fun v : E => H v v :=
+      H.continuous₂.comp (continuous_id.prodMk continuous_id)
+    have h1 : Tendsto (fun k => H (u (φ k)) (u (φ k))) atTop (𝓝 (H w w)) :=
+      (hcont.tendsto w).comp hlim
+    exact le_of_tendsto' h1 fun k => hHle (φ k)
+  exact absurd (hpos w hw0 hAw) (not_lt.2 hHw)
+
+end Debreu
+
+/-! ### The Hessian of the augmented Lagrangian at a feasible point -/
+
+section AugmentedHessian
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+
+/-- The second derivative of `y ↦ ‖h y‖²` at a zero of `h`: for `h` of class `C²` at `x` with
+`h x = 0`, `(‖h ·‖²)''(x) v v = 2 ‖h'(x) v‖²`. The first derivative is
+`y ↦ 2 ⟪h y, h'(y) ·⟫`, whose derivative at `x` is `2 ⟪h'(x) ·, h'(x) ·⟫ + 2 ⟪h x, h''(x) · ·⟫`,
+and the second term vanishes. -/
+theorem fderiv_fderiv_norm_sq_apply {h : E → F} {x : E} (hx : h x = 0)
+    (hh : ContDiffAt ℝ 2 h x) (v : E) :
+    fderiv ℝ (fderiv ℝ fun y => ‖h y‖ ^ 2) x v v = 2 * ‖fderiv ℝ h x v‖ ^ 2 := by
+  set g : E → ℝ := fun y => ‖h y‖ ^ 2 with hgdef
+  have hg : ContDiffAt ℝ 2 g x := ContDiffAt.norm_sq ℝ hh
+  have hgd : DifferentiableAt ℝ (fderiv ℝ g) x :=
+    (hg.fderiv_right (m := 1) le_rfl).differentiableAt one_ne_zero
+  -- reduce to the scalar function `y ↦ g'(y) v`
+  have e1 : fderiv ℝ (fderiv ℝ g) x v v = fderiv ℝ (fun y => fderiv ℝ g y v) x v := by
+    rw [fderiv_clm_apply hgd (differentiableAt_const v)]
+    simp
+  have hd : ∀ᶠ y in 𝓝 x, DifferentiableAt ℝ h y := by
+    filter_upwards [hh.eventually (by simp)] with y hy
+    exact hy.differentiableAt (by simp)
+  have e2 : (fun y => fderiv ℝ g y v) =ᶠ[𝓝 x] fun y => 2 * inner ℝ (h y) (fderiv ℝ h y v) := by
+    filter_upwards [hd] with y hy
+    rw [hgdef, (HasFDerivAt.norm_sq hy.hasFDerivAt).fderiv]
+    simp
+  rw [e1, e2.fderiv_eq]
+  -- differentiate `y ↦ 2 ⟪h y, h'(y) v⟫` at `x`
+  have hh' : HasFDerivAt (fderiv ℝ h) (fderiv ℝ (fderiv ℝ h) x) x :=
+    ((hh.fderiv_right (m := 1) le_rfl).differentiableAt one_ne_zero).hasFDerivAt
+  have hhv := hh'.clm_apply (hasFDerivAt_const v x)
+  have hin := (hd.self_of_nhds.hasFDerivAt.inner ℝ hhv).const_mul (2 : ℝ)
+  rw [hin.fderiv]
+  simp [fderivInnerCLM_apply, hx]
+
+/-- **The Hessian of the augmented Lagrangian at a feasible point**: for `f`, `h` of class `C²`
+at `x` with `h x = 0`, the second derivative of `𝒢_α(·, λ) = f + ⟪λ, h ·⟫ + ½ α ‖h ·‖²` is that
+of the Lagrangian `𝒢_0(·, λ)` plus `α ‖h'(x) ·‖²`:
+
+`𝒢_α''(x) v v = 𝒢_0''(x) v v + α ‖h'(x) v‖²`,
+
+the matrix identity `H_{𝒢_α}(x, λ) = H_ℒ(x, λ) + α J_h(x)ᵀ J_h(x)` of Bertsekas, *Constrained
+Optimization and Lagrange Multiplier Methods*, §2.2. -/
+theorem fderiv_fderiv_augmented_apply {f : E → ℝ} {h : E → F} {x : E} (hx : h x = 0)
+    (hf : ContDiffAt ℝ 2 f x) (hh : ContDiffAt ℝ 2 h x) (α : ℝ) (l : F) (v : E) :
+    fderiv ℝ (fderiv ℝ (augmented f h α l)) x v v
+      = fderiv ℝ (fderiv ℝ (augmented f h 0 l)) x v v + α * ‖fderiv ℝ h x v‖ ^ 2 := by
+  have hsplit : augmented f h α l = augmented f h 0 l + (1 / 2 * α) • fun y => ‖h y‖ ^ 2 := by
+    funext y
+    simp only [augmented, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    ring
+  -- `C²` of the pieces
+  have hG : ContDiffAt ℝ 2 (augmented f h 0 l) x := by
+    have : augmented f h 0 l = fun y => f y + inner ℝ l (h y) := by
+      funext y; simp [augmented]
+    rw [this]
+    exact hf.add (ContDiffAt.inner ℝ contDiffAt_const hh)
+  have hg : ContDiffAt ℝ 2 (fun y => ‖h y‖ ^ 2) x := ContDiffAt.norm_sq ℝ hh
+  have hGd : ∀ᶠ y in 𝓝 x, DifferentiableAt ℝ (augmented f h 0 l) y := by
+    filter_upwards [hG.eventually (by simp)] with y hy
+    exact hy.differentiableAt (by simp)
+  have hgd : ∀ᶠ y in 𝓝 x, DifferentiableAt ℝ (fun y => ‖h y‖ ^ 2) y := by
+    filter_upwards [hg.eventually (by simp)] with y hy
+    exact hy.differentiableAt (by simp)
+  -- the first derivative near `x`
+  have h1 : fderiv ℝ (augmented f h α l)
+      =ᶠ[𝓝 x] fderiv ℝ (augmented f h 0 l) + (1 / 2 * α) • fderiv ℝ (fun y => ‖h y‖ ^ 2) := by
+    filter_upwards [hGd, hgd] with y hGy hgy
+    rw [Pi.add_apply, Pi.smul_apply, hsplit, fderiv_add hGy (hgy.const_smul _),
+      fderiv_const_smul hgy]
+  -- differentiate again
+  have hG' : HasFDerivAt (fderiv ℝ (augmented f h 0 l))
+      (fderiv ℝ (fderiv ℝ (augmented f h 0 l)) x) x :=
+    ((hG.fderiv_right (m := 1) le_rfl).differentiableAt one_ne_zero).hasFDerivAt
+  have hg' : HasFDerivAt (fderiv ℝ (fun y => ‖h y‖ ^ 2))
+      (fderiv ℝ (fderiv ℝ (fun y => ‖h y‖ ^ 2)) x) x :=
+    ((hg.fderiv_right (m := 1) le_rfl).differentiableAt one_ne_zero).hasFDerivAt
+  have h2 := hG'.add (hg'.const_smul (1 / 2 * α))
+  rw [h1.fderiv_eq, h2.fderiv]
+  simp only [add_apply, FunLike.coe_smul, Pi.smul_apply, smul_eq_mul]
+  rw [fderiv_fderiv_norm_sq_apply hx hh v]
+  ring
+
+/-- **Condition 3 of Bertsekas' Proposition 2.4 follows from condition 2** (Bertsekas,
+*Constrained Optimization and Lagrange Multiplier Methods*, Lemma 1.25 applied to the augmented
+Lagrangian; [quarteroni2000numerical] Property 7.17): at a feasible point `x`, `h x = 0`, with
+`f`, `h` of class `C²`, if the Hessian of the Lagrangian `𝒢_0(·, λ)` is positive on the nonzero
+directions `z` tangent to the constraints, `h'(x) z = 0`, then the Hessian of the augmented
+Lagrangian `𝒢_α(·, λ)` at `x` is positive definite for every large `α`. -/
+theorem exists_forall_pos_fderiv_fderiv_augmented [FiniteDimensional ℝ E] {f : E → ℝ} {h : E → F}
+    {x : E} (hx : h x = 0) (hf : ContDiffAt ℝ 2 f x) (hh : ContDiffAt ℝ 2 h x) (l : F)
+    (hpos : ∀ z, z ≠ 0 → fderiv ℝ h x z = 0 →
+      0 < fderiv ℝ (fderiv ℝ (augmented f h 0 l)) x z z) :
+    ∃ α₀ : ℝ, ∀ α, α₀ ≤ α → ∀ z, z ≠ 0 →
+      0 < fderiv ℝ (fderiv ℝ (augmented f h α l)) x z z := by
+  obtain ⟨α₀, hα₀⟩ := exists_forall_pos_add_mul_sq_norm_of_pos_on_ker
+    (fderiv ℝ (fderiv ℝ (augmented f h 0 l)) x) (fderiv ℝ h x) hpos
+  refine ⟨α₀, fun α hα z hz => ?_⟩
+  rw [fderiv_fderiv_augmented_apply hx hf hh α l z]
+  exact hα₀ α hα z hz
+
+end AugmentedHessian
 
 end Constrained

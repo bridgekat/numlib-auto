@@ -13,7 +13,7 @@ convex set (Property 7.9), strong convexity (7.49) and Property 7.10, equality c
 Definition 7.2, the Lagrangian and Property 7.11, inequality constraints with Definition 7.3 and
 the Karush–Kuhn–Tucker conditions of Property 7.12, the nonlinear programming problem (7.52) with
 the Kuhn–Tucker conditions of Properties 7.13–7.15, the penalty method (7.53) with Property 7.16,
-the augmented Lagrangian (7.55) with Example 7.7, and Property 7.17. The backbone is
+the augmented Lagrangian (7.55) with Example 7.7, and Property 7.17's Debreu clause. The backbone is
 `Numlib/Optimization/{Constrained, Descent}`, `Numlib/Analysis/Convex/Gateaux` and
 `Numlib/Variational/Minimization`; Mathlib's `IsLocalExtrOn.exists_multipliers_of_hasStrictFDerivAt`
 and `StrongConvexOn`.
@@ -37,7 +37,11 @@ Local minimizers on a set are `IsLocalMinOn`.
   minimizer and a bounded sequence (`property_7_16`).
 * Example 7.7's augmented Lagrangian `-x⁴ + λx + ½αx²` has no *global* minimizer; for `λ = 0`
   and `α > 0` the point `0` is a strict local one (`example_7_7_isLocalMin`).
-* Property 7.17 (Bertsekas' uniform local analysis of the augmented Lagrangian) is not
+* Property 7.17 (Bertsekas' uniform local analysis of the augmented Lagrangian): its
+  condition 3 is a consequence of condition 2 by Debreu's lemma (`property_7_17_debreu`, with the
+  Hessian identity `H_{𝒢_α}(x*, λ*) = H_{𝒢_0}(x*, λ*) + α J_h(x*)ᵀ J_h(x*)` at the feasible `x*`);
+  the uniform existence, uniqueness and Lipschitz dependence of the minimizer `x(λ, α)` (the
+  implicit function theorem in the compactified parameters `(λ - λ*)/α`, `1/α`) is not
   formalized.
 -/
 
@@ -1013,5 +1017,46 @@ theorem example_7_7_isLocalMin {α : ℝ} (hα : 0 < α) :
   nlinarith
 
 end Example77
+
+/-! ### Property 7.17: the Hessian of the augmented Lagrangian -/
+
+section Property717
+
+variable {m : ℕ}
+
+/-- **Property 7.17, condition 3 from condition 2 (Debreu's lemma).** Let `x*` be feasible,
+`h(x*) = 0`, with `f`, `h` of class `C²` at `x*` (the book: on `B(x*; R)`), and let `λ*` be any
+multiplier. If condition 2 holds — `zᵀ H_{𝒢_0}(x*, λ*) z > 0` for every `z ≠ 0` with
+`J_h(x*)ᵀ z = 0`, i.e. `h'(x*) z = 0`, where `H_{𝒢_0}(x*, λ*)` is the Hessian in `x` of the
+Lagrangian `𝒢_0(·, λ*) = f + λ*ᵀ h` — then condition 3 holds for every large parameter: there is
+`ᾱ > 0` such that `H_{𝒢_α}(x*, λ*)` is positive definite for all `α ≥ ᾱ`. This is Bertsekas'
+Lemma 1.25 (Debreu's lemma) applied to `H_{𝒢_α}(x*, λ*) = H_{𝒢_0}(x*, λ*) + α J_h(x*)ᵀ J_h(x*)`,
+the form the Hessian of `𝒢_α` takes at a zero of `h`; the book lists condition 3 as a separate
+hypothesis. Backbone `Constrained.exists_forall_pos_fderiv_fderiv_augmented`, through
+`Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker` and
+`Constrained.fderiv_fderiv_augmented_apply`. -/
+theorem property_7_17_debreu {f : EuclideanSpace ℝ (Fin n) → ℝ}
+    {h : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)} {xstar : EuclideanSpace ℝ (Fin n)}
+    {l : EuclideanSpace ℝ (Fin m)} (hfeas : h xstar = 0) (hf : ContDiffAt ℝ 2 f xstar)
+    (hh : ContDiffAt ℝ 2 h xstar)
+    (hpos : ∀ z, z ≠ 0 → fderiv ℝ h xstar z = 0 →
+      0 < ⟪toEuclideanLin (hessianMatrix (Constrained.augmented f h 0 l) xstar) z, z⟫_ℝ) :
+    ∃ ᾱ > 0, ∀ α, ᾱ ≤ α → ∀ z, z ≠ 0 →
+      0 < ⟪toEuclideanLin (hessianMatrix (Constrained.augmented f h α l) xstar) z, z⟫_ℝ := by
+  have hG : ∀ α, ContDiffAt ℝ 2 (Constrained.augmented f h α l) xstar := fun α =>
+    (hf.add (ContDiffAt.inner ℝ contDiffAt_const hh)).add
+      (contDiffAt_const.mul (ContDiffAt.norm_sq ℝ hh))
+  have hGd : ∀ α, DifferentiableAt ℝ (fderiv ℝ (Constrained.augmented f h α l)) xstar := fun α =>
+    ((hG α).fderiv_right (m := 1) le_rfl).differentiableAt one_ne_zero
+  have hpos' : ∀ z, z ≠ 0 → fderiv ℝ h xstar z = 0 →
+      0 < fderiv ℝ (fderiv ℝ (Constrained.augmented f h 0 l)) xstar z z := fun z hz hAz => by
+    rw [← inner_toEuclideanLin_hessianMatrix (hGd 0)]
+    exact hpos z hz hAz
+  obtain ⟨α₀, hα₀⟩ := Constrained.exists_forall_pos_fderiv_fderiv_augmented hfeas hf hh l hpos'
+  refine ⟨max α₀ 1, lt_of_lt_of_le one_pos (le_max_right _ _), fun α hα z hz => ?_⟩
+  rw [inner_toEuclideanLin_hessianMatrix (hGd α)]
+  exact hα₀ α ((le_max_left _ _).trans hα) z hz
+
+end Property717
 
 end QuarteroniSaccoSaleri.Chapter07

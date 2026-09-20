@@ -1,0 +1,86 @@
+[[node]]
+id = "Matrix.frobenius_norm_sq_mul_one_sub_add_sq_mul"
+
+[[node]]
+id = "Matrix.smul_vecMulVec_mulVec_self"
+
+[[node]]
+id = "Matrix.norm_mulVec_le_frobenius_norm_mul_proj"
+
+[[node]]
+id = "Matrix.sq_norm_mulVec_div_le_frobenius"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Matrix.sq_norm_sub_mulVec_div_le_broydenUpdate"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Matrix.norm_toEuclideanCLM_le_frobenius_norm"
+
+[[node]]
+id = "Matrix.frobenius_norm_le_sqrt_card_mul_norm_toEuclideanCLM"
+
+[[node]]
+id = "Broyden.LipschitzJacobianRoot"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 7.1'
+
+[[node]]
+id = "Broyden.LipschitzJacobianRoot.norm_sub_apply_le"
+
+[[node]]
+id = "Broyden.LipschitzJacobianRoot.norm_sub_sub_apply_le"
+
+[[node]]
+id = "Broyden.norm_step_x_sub_le"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Broyden.symm_iterate_succ_Q"
+
+[[node]]
+id = "Matrix.broydenUpdate_zero_left"
+
+[[node]]
+id = "Broyden.iterate_Q_sub_eq"
+
+[[node]]
+id = "Broyden.frobenius_norm_symm_iterate_succ_sub_le"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Lemma 8.2.1'
+
+[[node]]
+id = "Broyden.norm_iterate_sub_le_and_frobenius_norm_le"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Broyden.sq_norm_iterate_sub_apply_div_le"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Broyden.dennisMoreQuotient"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.4'
+
+[[node]]
+id = "Broyden.dennisMoreQuotient_nonneg"
+
+[[node]]
+id = "Broyden.norm_sub_apply_le_dennisMoreQuotient_mul"
+
+[[node]]
+id = "Broyden.tendsto_dennisMoreQuotient"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Broyden.norm_iterate_succ_sub_le_mul"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.4'
+
+[[node]]
+id = "Broyden.tendsto_div_two_pow"
+
+[[node]]
+id = "Broyden.superlinear_of_le"
+source = 'Dennis–Schnabel, Numerical Methods for Unconstrained Optimization and Nonlinear Equations, Theorem 8.2.2'
+
+[[node]]
+id = "Broyden.exists_superlinear"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.2'

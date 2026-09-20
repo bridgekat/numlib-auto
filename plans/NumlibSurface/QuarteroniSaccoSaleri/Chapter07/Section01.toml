@@ -50,24 +50,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.1.4'
 
 [[node]]
 id = "property_7_2"
-kind = "theorem"
-desc = '''Property 7.2 (Broyden–Dennis–Moré): under the hypotheses of Theorem 7.1, there are
-`ε γ > 0` such that if `‖x₀ - xstar‖ ≤ ε` and `‖Q₀ - J_F(xstar)‖ ≤ γ` then the Broyden iterates
-`(Broyden.iterate F x₀ Q₀ k).x` are well defined and converge superlinearly to `xstar`:
-`‖x_k - xstar‖ ≤ c_k ‖x_{k-1} - xstar‖` with `c_k → 0`. Not formalized: the proof (Dennis–Moré
-1974; Dennis–Schnabel Thm 8.2.2 and Lemma 8.2.5) is the bounded deterioration estimate
-`Matrix.frobenius_norm_broydenUpdate_sub_le_add` (planned in `Numlib/Nonlinear/QuasiNewton`),
-the resulting linear convergence by a two-sequence induction, and the Dennis–Moré
-characterization of superlinear convergence
-`‖(Q_k - J_F(xstar)) s_k‖ / ‖s_k‖ → 0`, obtained from a telescoping Frobenius-norm identity
-`‖Q_{k+1} - J*‖_F² ≤ ‖Q_k - J*‖_F² - ‖(Q_k - J*) s_k‖² / ‖s_k‖² + O(‖e_k‖)`; several pages of
-estimates with no counterpart in Mathlib or the backbone. The book states it without proof. It
-is reachable in principle, but not worth its cost until a second source needs it. ★★★
-
-Blocked: not attempted, as planned — the Dennis–Moré theory (bounded deterioration is in the
-backbone as `Matrix.frobenius_norm_broydenUpdate_sub_le_add`; the linear-convergence induction and
-the superlinear characterization are several pages of estimates, an estimated 300–500 lines).'''
-deps = ["Broyden.iterate", "Matrix.frobenius_norm_broydenUpdate_sub_le_add", "QuarteroniSaccoSaleri.Chapter07.theorem_7_1"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.2'
 
 [[node]]

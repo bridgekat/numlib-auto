@@ -1,4 +1,5 @@
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Nonlinear.DennisMore
 import Numlib.Nonlinear.DifferenceJacobian
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
@@ -13,9 +14,10 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 [quarteroni2000numerical], §7.1: Newton's method (7.4) in `ℝⁿ` with Theorem 7.1, the composite
 Newton–SOR method (7.7)–(7.8) through Exercise 7.1, the difference-Jacobian method (7.9)–(7.10)
 and Property 7.1, Broyden's method (7.11)–(7.14) with the least-change characterization the book
-derives it from, and the fixed-point iteration (7.17) with Definition 7.1, Theorem 7.2, Property
-7.3, Example 7.4 and Remark 7.1. The backbone is `Numlib/Nonlinear/{Newton, DifferenceJacobian,
-QuasiNewton, FixedPoint}` and `Numlib/Stationary/Basic` for the truncated inner iteration.
+derives it from and its superlinear convergence (Property 7.2), and the fixed-point iteration
+(7.17) with Definition 7.1, Theorem 7.2, Property 7.3, Example 7.4 and Remark 7.1. The backbone
+is `Numlib/Nonlinear/{Newton, DifferenceJacobian, QuasiNewton, DennisMore, FixedPoint}` and
+`Numlib/Stationary/Basic` for the truncated inner iteration.
 
 ## Conventions
 
@@ -41,8 +43,11 @@ needs coordinates lives on `EuclideanSpace ℝ (Fin n)`, and the Jacobian matrix
 * Remark 7.1 writes Newton's method as `(I - J_{G_N}(x^{(k)})) δ = -r^{(k)}`; the matrix that
   makes the identity true, and Newton a preconditioned Richardson iteration, is `J_F(x^{(k)})`
   (`notes/book-errata.md`).
-* Property 7.2 (superlinear convergence of Broyden's method, the Dennis–Moré theory) is not
-  formalized; Examples 7.1–7.3 are numerical runs.
+* Property 7.2 (superlinear convergence of Broyden's method) is stated on
+  `EuclideanSpace ℝ (Fin n)` with the hypotheses of Theorem 7.1 there, the constants `c_k` of
+  (7.15) being made explicit (`4C (η_k + L ε / 2ᵏ)` with `η_k` the Dennis–Moré quotient); the
+  book states it without proof, and the proof is the Dennis–Moré theory of the backbone
+  `Numlib/Nonlinear/DennisMore`. Examples 7.1–7.3 are numerical runs.
 -/
 
 open Filter Matrix Metric Set Topology WithLp
@@ -534,6 +539,53 @@ theorem broydenUpdate_leastChange (Q : H →L[ℝ] H) {s : H} (hs : s ≠ 0) (b 
     have := Broyden.update_sub_apply_of_inner_eq_zero Q s b hw
     rwa [_root_.sub_apply, sub_eq_zero] at this
   rw [hv, map_add, map_add, map_smul, map_smul, hQ's, Broyden.update_apply_self Q hs b, h1, h2]
+
+/-- **Property 7.2 (local superlinear convergence of Broyden's method).** Under the hypotheses of
+Theorem 7.1 on `ℝⁿ = EuclideanSpace ℝ (Fin n)` — `F(x*) = 0`, `J_F(x*)⁻¹` existing with
+`‖J_F(x*)⁻¹‖ ≤ C`, and `‖J_F(x) - J_F(y)‖ ≤ L ‖x - y‖` on `B(x*; R)` — there are `ε, γ > 0`
+such that if `‖x^{(0)} - x*‖ ≤ ε` and `‖Q₀ - J_F(x*)‖ ≤ γ` then the sequence `x^{(k)}` generated
+by Broyden's method (7.11)–(7.14) from `(x^{(0)}, Q₀)` is well defined (every `Q_k` is
+invertible) and converges superlinearly to `x*`, (7.15): `‖x^{(k+1)} - x*‖ ≤ c_{k+1}
+‖x^{(k)} - x*‖` with `c_k → 0` (here `c_{k+1} = 4C (η_k + L ε / 2ᵏ)`, with `η_k → 0` the
+Dennis–Moré quotient `‖(Q_k - J_F(x*)) δx^{(k+1)}‖ / ‖δx^{(k+1)}‖`); the iterates also satisfy
+`‖x^{(k)} - x*‖ ≤ ε / 2ᵏ`. The book states the result without proof; it is the Dennis–Moré
+theory (Dennis–Schnabel Theorem 8.2.2), backbone `Broyden.exists_superlinear` of
+`Numlib/Nonlinear/DennisMore`, with the Jacobian read as the matrix of `F'`. -/
+theorem property_7_2 {n : ℕ} {F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
+    {F' : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
+    {xstar : EuclideanSpace ℝ (Fin n)} (hstar : F xstar = 0)
+    (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
+    (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) {R C L : ℝ}
+    (hR : 0 < R) (hC : 0 < C) (hL : 0 < L)
+    (hCe : ‖(e.symm : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))‖ ≤ C)
+    (hF : ∀ x ∈ ball xstar R, HasFDerivAt F (F' x) x)
+    (hLip : ∀ x ∈ ball xstar R, ∀ y ∈ ball xstar R, ‖F' x - F' y‖ ≤ L * ‖x - y‖) :
+    ∃ ε > 0, ∃ γ > 0, ∀ (x₀ : EuclideanSpace ℝ (Fin n))
+      (Q₀ : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)),
+      ‖x₀ - xstar‖ ≤ ε → ‖Q₀ - F' xstar‖ ≤ γ →
+      (∀ k, ∃ e' : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n),
+          (e' : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
+            = (Broyden.iterate F x₀ Q₀ k).Q) ∧
+        (∀ k, ‖(Broyden.iterate F x₀ Q₀ k).x - xstar‖ ≤ ε / 2 ^ k) ∧
+        Tendsto (fun k => (Broyden.iterate F x₀ Q₀ k).x) atTop (𝓝 xstar) ∧
+        ∃ c : ℕ → ℝ, Tendsto c atTop (𝓝 0) ∧
+          ∀ k, ‖(Broyden.iterate F x₀ Q₀ (k + 1)).x - xstar‖
+            ≤ c k * ‖(Broyden.iterate F x₀ Q₀ k).x - xstar‖ := by
+  set J : EuclideanSpace ℝ (Fin n) → Matrix (Fin n) (Fin n) ℝ :=
+    fun w => (toEuclideanCLM (𝕜 := ℝ)).symm (F' w) with hJ
+  have hJw : ∀ w, toEuclideanCLM (𝕜 := ℝ) (J w) = F' w := fun w => by
+    rw [hJ, StarAlgEquiv.apply_symm_apply]
+  have h : Broyden.LipschitzJacobianRoot F J (ball xstar R) xstar L :=
+    { convex := convex_ball xstar R
+      hasFDerivAt := fun w hw => by rw [hJw]; exact hF w hw
+      root := hstar
+      mem := mem_ball_self hR
+      lipschitz := fun w hw => by rw [hJw, hJw]; exact hLip w hw xstar (mem_ball_self hR)
+      nonneg := hL.le }
+  obtain ⟨ε, hε, γ, hγ, H⟩ := Broyden.exists_superlinear h e (by rw [hJw]; exact he) hCe hC hR
+    subset_rfl
+  refine ⟨ε, hε, γ, hγ, fun x₀ Q₀ hx₀ hQ₀ => H x₀ Q₀ hx₀ ?_⟩
+  rwa [hJw]
 
 end Broyden
 

@@ -28,18 +28,26 @@ chapter 1.
 * `remark_3_7`, `remark_3_7_iSup`, `remark_3_7_scaling` — the Skeel condition numbers.
 * `iterativeRefinementStep`, `iterativeRefinementStep_eq`, `iterativeRefinement_exact`,
   `iterativeRefinement_convergence` — iterative refinement in exact arithmetic.
+* `iterativeRefinement_fixedPrecision`, `iterativeRefinement_mixedPrecision` — the two
+  finite-precision convergence statements of §3.12.2 (`ρ ≃ 2 n cond(A, x) u` for fixed-precision
+  and `ρ ≃ u` for mixed-precision refinement), in the rigorous form of [higham2002accuracy]
+  Theorems 12.2 and 12.1: the relative error obeys `e_{i+1} ≤ ρ e_i + φ` with explicit `ρ < 1`
+  and floor `φ`, hence `e_k ≤ ρᵏ e_0 + φ / (1 - ρ)` and `limsup e_k ≤ φ / (1 - ρ)`, where the
+  floor is `≈ 2 (n + 1) cond(A, x) u` in fixed precision and `≈ u` in mixed precision.
 
 One step of iterative refinement in floating-point arithmetic — the exact error identity, its
 `∞`-norm form and its instantiation in the relational rounding model — is a general fact with no
 book-specific content and lives in the backbone as `Refinement.step_error`,
-`Refinement.norm_step_error_le` and `Refinement.step_error_fp`.
+`Refinement.norm_step_error_le` and `Refinement.step_error_fp`; the computed steps of the two
+convergence theorems are the backbone predicates `Refinement.RoundsStepLU` (residual in the
+working precision) and `Refinement.RoundsStepLUMixed` (residual in a second, finer rounding model,
+rounded once to the working precision), and the theorems are
+`Refinement.norm_sub_le_of_forall_roundsStepLU` and
+`Refinement.norm_sub_le_of_forall_roundsStepLUMixed`.
 
 Example 3.10 (a numerical run), the heuristics `‖D₂⁻¹(x̂ - x)‖/‖D₂⁻¹ x‖ ≃ u K_∞(D₁ A D₂)` (which is
 (3.69) for the scaled system) and `K_∞(A) ≃ β^{t(1 - 1/p)}`, and the stopping test of step 4 are
-not nodes. The two finite-precision convergence factors of §3.12.2 (`ρ ≃ 2 n cond(A, x) u` for
-fixed-precision and `ρ ≃ u` for mixed-precision refinement, [higham2002accuracy] Theorems
-12.1–12.2) are asymptotic statements and are planned as not formalized; what is proved instead is
-the rigorous one-step recursion they summarize, the backbone's `Refinement.step_error_fp`.
+not nodes.
 
 ## Readings and errata
 
@@ -48,7 +56,13 @@ Remark 3.7 prints `cond(A, x) = ‖|A⁻¹| A |x| x‖_∞ / ‖x‖_∞`; it is
 convergence of iterative refinement in exact arithmetic is stated as "the iterates converge
 from every `x⁽⁰⁾` to one and the same limit, for every `b`, iff `ρ(I - C A) < 1`"; the backbone's
 `Refinement.forall_tendsto_iff_spectralRadius_lt_one` allows the limit to depend on the start and
-needs `C` onto instead (`C = 0` is a counterexample otherwise).
+needs `C` onto instead (`C = 0` is a counterexample otherwise). The two displays
+`ρ ≃ 2 n cond(A, x) u` (FPR) and `ρ ≃ u` (MPR) of §3.12.2 are not propositions as printed (`≃`,
+and "sufficiently small" without a quantifier); they are read as [higham2002accuracy] Theorems
+12.2 and 12.1, the source the book cites, where the two quantities are the *limiting accuracy*
+of the refined solution and the contraction factor is `η ≈ u ‖|A⁻¹| (|A| + 3n |L̂| |Û|)‖_∞`.
+"sufficiently small" is the explicit hypothesis `2θ + γ_{n+1} cond(A) + 2u < 1` with
+`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, and `≃` is replaced by the explicit constants of the model.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -247,5 +261,160 @@ theorem iterativeRefinement_convergence (C A : Matrix (Fin n) (Fin n) ℝ) :
         hpow (x₀ - A⁻¹ *ᵥ b)
 
 end Refinement
+
+/-! ### §3.12.2: iterative refinement in finite precision -/
+
+section FinitePrecision
+
+open FloatingPoint
+open scoped Matrix.Norms.Operator
+
+variable [NeZero n] {m : RoundingModel ℝ} {A L U : Matrix (Fin n) (Fin n) ℝ} {b x : Fin n → ℝ}
+
+/-- Division of a recursion `a (k + 1) ≤ ρ a k + φ ‖x‖` by `‖x‖ > 0`. -/
+private theorem div_recursion {a : ℕ → ℝ} {ρ φ c : ℝ} (hc : 0 < c)
+    (h : ∀ k, a (k + 1) ≤ ρ * a k + φ * c) (k : ℕ) : a (k + 1) / c ≤ ρ * (a k / c) + φ :=
+  (div_le_div_of_nonneg_right (h k) hc.le).trans_eq
+    (by rw [add_div, mul_div_assoc, mul_div_assoc, div_self hc.ne', mul_one])
+
+/-- **§3.12.2, fixed-precision iterative refinement (FPR)**, in the rigorous form of
+[higham2002accuracy] Theorem 12.2, which the book's display summarizes. Let `A x = b` with `A`
+nonsingular and `x ≠ 0`, let `L̂`, `Û` be the computed LU factors of `A` with nonzero pivots in a
+floating-point arithmetic with roundoff unit `u`, `3 n u < 1`, and let `x⁽⁰⁾, x⁽¹⁾, …` be
+iterates of the refinement algorithm (steps 1–3) computed in that arithmetic, the residual in the
+working precision (`Refinement.RoundsStepLU` at every step). Put
+
+`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, `ρ = (θ + γ_{n+1} cond(A)) / (1 - 2u - θ)`,
+`φ = (2 γ_{n+1} cond(A, x) + u (1 + θ)) / (1 - 2u - θ)`,
+
+with `cond(A)`, `cond(A, x)` the Skeel condition numbers of Remark 3.7 and
+`γ_k = k u / (1 - k u)`. If `‖|A⁻¹| |L̂| |Û|‖_∞` is sufficiently small — precisely, if
+`2θ + γ_{n+1} cond(A) + 2u < 1` — then `ρ < 1` and at each step the relative error
+`‖x - x⁽ⁱ⁾‖_∞ / ‖x‖_∞` is reduced by the factor `ρ` up to the floor `φ`:
+
+`‖x - x⁽ⁱ⁺¹⁾‖_∞ / ‖x‖_∞ ≤ ρ ‖x - x⁽ⁱ⁾‖_∞ / ‖x‖_∞ + φ`,
+
+hence `‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ / ‖x‖_∞ + φ / (1 - ρ)`, and the limiting accuracy
+is `limsup_k ‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ φ / (1 - ρ)`, where `φ ≈ 2 (n + 1) cond(A, x) u`. The book's
+"`ρ ≃ 2 n cond(A, x) u`" is this floor (Higham's "until
+`‖x - x̂_i‖_∞ / ‖x‖_∞ ≲ 2n cond(A, x) u`"); the contraction factor itself is
+`ρ ≈ u ‖|A⁻¹| (3n |L̂| |Û| + (n + 1) |A|)‖_∞`, Higham's `η`. Backbone
+`Refinement.norm_sub_le_of_forall_roundsStepLU`. -/
+theorem iterativeRefinement_fixedPrecision (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hA : IsUnit A)
+    (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hLU : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)
+    {xs : ℕ → Fin n → ℝ} (hstep : ∀ i, Refinement.RoundsStepLU m A L U b (xs i) (xs (i + 1)))
+    {θ ρ φ : ℝ} (hθ : θ = gamma m.u (3 * n) * ‖A⁻¹.abs * (L.abs * U.abs)‖)
+    (hρ : ρ = (θ + gamma m.u (n + 1) * skeelCond A) / (1 - 2 * m.u - θ))
+    (hφ : φ = (2 * gamma m.u (n + 1) * skeelCondAt A x + m.u * (1 + θ)) / (1 - 2 * m.u - θ))
+    (hsmall : 2 * θ + gamma m.u (n + 1) * skeelCond A + 2 * m.u < 1) :
+    ρ < 1 ∧ (∀ i, ‖x - xs (i + 1)‖ / ‖x‖ ≤ ρ * (‖x - xs i‖ / ‖x‖) + φ) ∧
+      (∀ k, ‖x - xs k‖ / ‖x‖ ≤ ρ ^ k * (‖x - xs 0‖ / ‖x‖) + φ / (1 - ρ)) ∧
+      limsup (fun k => ‖x - xs k‖ / ‖x‖) atTop ≤ φ / (1 - ρ) := by
+  have hxn : 0 < ‖x‖ := norm_pos_iff.2 hx0
+  have hφx : φ * ‖x‖ = (2 * gamma m.u (n + 1) * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖
+      + m.u * (1 + θ) * ‖x‖) / (1 - 2 * m.u - θ) := by
+    rw [hφ, skeelCondAt, div_mul_eq_mul_div]
+    congr 1
+    field_simp
+  obtain ⟨hρ1, hrec, -, -⟩ := Refinement.norm_sub_le_of_forall_roundsStepLU (ρ := ρ)
+    (φ := φ * ‖x‖) hcard hA hx hLU hd hstep hθ (by rw [hρ, skeelCond]) hφx
+    (by rw [skeelCond] at hsmall; exact hsmall)
+  have hθ0 : 0 ≤ θ := by
+    rw [hθ]; exact mul_nonneg (gamma_nonneg m.u_nonneg hcard) (norm_nonneg _)
+  have hn : 1 ≤ n := Nat.one_le_iff_ne_zero.2 (NeZero.ne n)
+  have hcard1 : ((n + 1 : ℕ) : ℝ) * m.u < 1 := by
+    have h1 : ((n + 1 : ℕ) : ℝ) ≤ ((3 * n : ℕ) : ℝ) := by
+      exact_mod_cast (by omega : n + 1 ≤ 3 * n)
+    nlinarith [m.u_nonneg]
+  have hγ1 := gamma_nonneg m.u_nonneg hcard1
+  have hc0 : 0 ≤ skeelCond A := by rw [skeelCond]; exact norm_nonneg _
+  have hcx0 := skeelCondAt_nonneg (A := A) x
+  have hu0 := m.u_nonneg
+  have hpos : 0 < 1 - 2 * m.u - θ := by linarith [mul_nonneg hγ1 hc0]
+  have hρ0 : 0 ≤ ρ := by rw [hρ]; positivity
+  have hφ0 : 0 ≤ φ := by rw [hφ]; positivity
+  have hrec' : ∀ i, ‖x - xs (i + 1)‖ / ‖x‖ ≤ ρ * (‖x - xs i‖ / ‖x‖) + φ :=
+    div_recursion (a := fun k => ‖x - xs k‖) hxn hrec
+  refine ⟨hρ1, hrec', fun k =>
+    Refinement.le_pow_mul_add_div_of_forall_le_mul_add (a := fun k => ‖x - xs k‖ / ‖x‖) hρ0 hρ1
+      hφ0 hrec' k, ?_⟩
+  exact Refinement.limsup_le_div_of_forall_le_mul_add hρ0 hρ1 hφ0 (fun k => by positivity) hrec'
+
+/-- **§3.12.2, mixed-precision iterative refinement (MPR)**, in the rigorous form of
+[higham2002accuracy] Theorem 12.1. As `iterativeRefinement_fixedPrecision`, but the residual
+`r⁽ⁱ⁾ = b - A x⁽ⁱ⁾` is computed in a second, finer floating-point arithmetic with roundoff unit
+`ū` ("double precision"), `(n + 1) ū < 1`, and rounded once to the working precision
+(`Refinement.RoundsStepLUMixed` at every step, a statement with two rounding models). Put
+
+`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, `ρ = (θ + (u + (1 + u) γ̄_{n+1}) cond(A)) / (1 - 2u - θ)`,
+`φ = (2 (1 + u) γ̄_{n+1} cond(A, x) + u (1 + θ)) / (1 - 2u - θ)`,
+
+with `γ̄_k = k ū / (1 - k ū)` the constant of the finer arithmetic. If
+`2θ + (u + (1 + u) γ̄_{n+1}) cond(A) + 2u < 1` then `ρ < 1`, the relative error is reduced by the
+factor `ρ` at each step up to the floor `φ`, `‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ / ‖x‖_∞
++ φ / (1 - ρ)`, and `limsup_k ‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ φ / (1 - ρ)`. Moreover, in double the
+working precision, `ū ≤ u²` with `2 (n + 1) ū ≤ 1`, the floor is
+
+`φ ≤ u (1 + θ + 4 (1 + u) (n + 1) u cond(A, x)) / (1 - 2u - θ)`,
+
+of the order of the roundoff unit `u` and independent of the condition number to first order in
+`u`: this is the book's "`ρ ≃ u`, independent of the condition number of `A`" (Higham's "until
+`‖x - x̂_i‖_∞ / ‖x‖_∞ ≈ u`"). Backbone `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`. -/
+theorem iterativeRefinement_mixedPrecision {m' : RoundingModel ℝ}
+    (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1) (hA : IsUnit A)
+    (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hLU : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)
+    {xs : ℕ → Fin n → ℝ}
+    (hstep : ∀ i, Refinement.RoundsStepLUMixed m m' A L U b (xs i) (xs (i + 1)))
+    {θ ρ φ : ℝ} (hθ : θ = gamma m.u (3 * n) * ‖A⁻¹.abs * (L.abs * U.abs)‖)
+    (hρ : ρ = (θ + (m.u + (1 + m.u) * gamma m'.u (n + 1)) * skeelCond A) / (1 - 2 * m.u - θ))
+    (hφ : φ = (2 * (1 + m.u) * gamma m'.u (n + 1) * skeelCondAt A x + m.u * (1 + θ))
+      / (1 - 2 * m.u - θ))
+    (hsmall : 2 * θ + (m.u + (1 + m.u) * gamma m'.u (n + 1)) * skeelCond A + 2 * m.u < 1) :
+    ρ < 1 ∧ (∀ i, ‖x - xs (i + 1)‖ / ‖x‖ ≤ ρ * (‖x - xs i‖ / ‖x‖) + φ) ∧
+      (∀ k, ‖x - xs k‖ / ‖x‖ ≤ ρ ^ k * (‖x - xs 0‖ / ‖x‖) + φ / (1 - ρ)) ∧
+      limsup (fun k => ‖x - xs k‖ / ‖x‖) atTop ≤ φ / (1 - ρ) ∧
+      (m'.u ≤ m.u ^ 2 → 2 * ((n + 1 : ℕ) * m'.u) ≤ 1 →
+        φ ≤ m.u * (1 + θ + 4 * (1 + m.u) * (n + 1) * m.u * skeelCondAt A x)
+          / (1 - 2 * m.u - θ)) := by
+  have hxn : 0 < ‖x‖ := norm_pos_iff.2 hx0
+  have hφx : φ * ‖x‖ = (2 * (1 + m.u) * gamma m'.u (n + 1) * ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖
+      + m.u * (1 + θ) * ‖x‖) / (1 - 2 * m.u - θ) := by
+    rw [hφ, skeelCondAt, div_mul_eq_mul_div]
+    congr 1
+    field_simp
+  obtain ⟨hρ1, hrec, -, -, hfloor⟩ := Refinement.norm_sub_le_of_forall_roundsStepLUMixed (ρ := ρ)
+    (φ := φ * ‖x‖) hcard hcard' hA hx hLU hd hstep hθ (by rw [hρ, skeelCond]) hφx
+    (by rw [skeelCond] at hsmall; exact hsmall)
+  have hθ0 : 0 ≤ θ := by
+    rw [hθ]; exact mul_nonneg (gamma_nonneg m.u_nonneg hcard) (norm_nonneg _)
+  have hγ1 := gamma_nonneg m'.u_nonneg hcard'
+  have hc0 : 0 ≤ skeelCond A := by rw [skeelCond]; exact norm_nonneg _
+  have hcx0 := skeelCondAt_nonneg (A := A) x
+  have hu0 := m.u_nonneg
+  have hpos : 0 < 1 - 2 * m.u - θ := by
+    have : 0 ≤ (m.u + (1 + m.u) * gamma m'.u (n + 1)) * skeelCond A := by positivity
+    linarith
+  have hρ0 : 0 ≤ ρ := by rw [hρ]; positivity
+  have hφ0 : 0 ≤ φ := by rw [hφ]; positivity
+  have hrec' : ∀ i, ‖x - xs (i + 1)‖ / ‖x‖ ≤ ρ * (‖x - xs i‖ / ‖x‖) + φ :=
+    div_recursion (a := fun k => ‖x - xs k‖) hxn hrec
+  refine ⟨hρ1, hrec', fun k =>
+    Refinement.le_pow_mul_add_div_of_forall_le_mul_add (a := fun k => ‖x - xs k‖ / ‖x‖) hρ0 hρ1
+      hφ0 hrec' k,
+    Refinement.limsup_le_div_of_forall_le_mul_add hρ0 hρ1 hφ0 (fun k => by positivity) hrec',
+    fun hu2 hn2 => ?_⟩
+  have h := hfloor hu2 hn2
+  have hcx : ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ = skeelCondAt A x * ‖x‖ := by
+    rw [skeelCondAt, div_mul_cancel₀ _ hxn.ne']
+  rw [hcx] at h
+  have h' : φ * ‖x‖ ≤ (m.u * (1 + θ + 4 * (1 + m.u) * (n + 1) * m.u * skeelCondAt A x)
+      / (1 - 2 * m.u - θ)) * ‖x‖ := by
+    refine h.trans (le_of_eq ?_)
+    rw [div_mul_eq_mul_div]
+    congr 1
+    ring
+  exact le_of_mul_le_mul_right h' hxn
+
+end FinitePrecision
 
 end QuarteroniSaccoSaleri.Chapter03

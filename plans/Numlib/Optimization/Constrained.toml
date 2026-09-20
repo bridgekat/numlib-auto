@@ -101,3 +101,18 @@ id = "tendsto_penalty_of_unique"
 
 [[node]]
 id = "augmented_clusterPt"
+
+[[node]]
+id = "exists_forall_pos_add_mul_sq_norm_of_pos_on_ker"
+source = 'Bertsekas, Constrained Optimization and Lagrange Multiplier Methods, Lemma 1.25'
+
+[[node]]
+id = "fderiv_fderiv_norm_sq_apply"
+
+[[node]]
+id = "fderiv_fderiv_augmented_apply"
+source = 'Bertsekas, Constrained Optimization and Lagrange Multiplier Methods, Section 2.2'
+
+[[node]]
+id = "exists_forall_pos_fderiv_fderiv_augmented"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 7.17'
