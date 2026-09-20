@@ -102,25 +102,7 @@ source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem
 
 [[node]]
 id = "theorem_7_3_8_c_holder"
-kind = "theorem"
-desc = '''Theorem 7.3.8 (c), the Hölder target: if `k > (d+1)/p` then
-`W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(closure Ω)` for every `0 ≤ β < [(d+1)/p] + 1 − (d+1)/p`, on
-a bounded extension domain. The case `β = 0` with the target `C(closure Ω)` is `theorem_7_3_8_c`.
-
-Blocked: 2026-09-21 (re-checked; the closing round closed `theorem_7_3_7_c_integer` and
-`theorem_7_3_9_top` beside it, which do not change the estimate). There is no Hölder space
-`C^{j,β}(closure Ω)` as a normed type in the project at main `854d8c75` or in Mathlib
-(`HolderWith` is a predicate; `Mathlib/Topology/MetricSpace/Holder.lean` carries no space), so
-the compact embedding cannot be stated as a `definition_7_3_6_compact` into it; a Hölder-space
-type is in preparation in the closing round (the Hölder-spaces agent), not yet on main. Once
-such a type exists (a `C^j` space with Hölder-seminormed top derivative, in the style of
-`ContDiffMapIcc`), the compactness is the Arzelà–Ascoli argument of
-`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL` applied to the derivatives (the
-form `ExtensionHigher.exists_strictMono_forall_dist_lt_of_lipschitzWith` of
-`Numlib/Analysis/Sobolev/ExtensionHigher.lean` is the Lipschitz special case), with the strict
-`β` giving equicontinuity by `theorem_7_3_7_c` and `theorem_7_3_7_c_integer`: ~300 lines after
-the type.'''
-deps = ["theorem_7_3_8_c", "theorem_7_3_7_c"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), the Hölder target"
 
 [[node]]
 id = "theorem_7_3_8"

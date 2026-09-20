@@ -2,6 +2,7 @@ import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.Analysis.Sobolev.ExtensionHigher
+import Numlib.Analysis.Sobolev.HolderEmbedding
 import NumlibSurface.AtkinsonHan.Chapter07.Section02
 
 /-!
@@ -45,8 +46,9 @@ Theorem 7.3.7 (the Sobolev embeddings) is in its three clauses `theorem_7_3_7_a`
 Hölder clause (c) read on continuous representatives (`ContDiffOnClosure`), the integer case
 `theorem_7_3_7_c_integer` through the order-lowering map of
 `Numlib/Analysis/Sobolev/ExtensionHigher.lean`; Theorem 7.3.8 (Rellich–Kondrachov) likewise,
-with the clause (c) into `C(Ω̄)` and the Hölder-space target left open
-(`theorem_7_3_8_c_holder`); Theorem 7.3.9 is `W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)` for `p < ∞` and, by
+with the clause (c) into `C(Ω̄)` and into the Hölder spaces `C^{j,β}(Ω̄)` of
+`Numlib/Analysis/Calculus/HolderSpace.lean` (`theorem_7_3_8_c_holder`); Theorem 7.3.9 is
+`W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)` for `p < ∞` and, by
 Arzelà–Ascoli on the Lipschitz representatives, at `p = ∞` (`theorem_7_3_9_top`). All of these
 are the whole-space theorems of `Numlib/Analysis/Sobolev/Embedding.lean` carried to the domain by
 the extension operator, in `Numlib/Analysis/Sobolev/{EmbeddingDomain,Compactness,DenyLions}.lean`
@@ -680,8 +682,8 @@ linear `ι : W^{k,p}(Ω) → C(Ω̄)` sending `v` to the restriction of a contin
 of `v`, and `ι` is a compact embedding. The backbone's
 `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order` (`W^{k,p}(Ω) ↪ W^{1,r}(Ω)`
 for an `r > d + 1` and Arzelà–Ascoli); the hypothesis `d ≥ 1 ∨ p > 1` is the backbone's. The
-Hölder clause `W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` for `β < [(d+1)/p] + 1 − (d+1)/p` is the
-open `theorem_7_3_8_c_holder`. -/
+Hölder clause `W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` for `β < [(d+1)/p] + 1 − (d+1)/p` is
+`theorem_7_3_8_c_holder`. -/
 theorem theorem_7_3_8_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
@@ -706,12 +708,55 @@ theorem theorem_7_3_8_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
   exact SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order k hΩ hN' hk
     subset_closure
 
+/-- **Theorem 7.3.8 (c), the Hölder target**: on a bounded extension domain `Ω ⊆ ℝ^{d+1}`, if
+`k > (d+1)/p` then `W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` for every
+`0 < β < [(d+1)/p] + 1 − (d+1)/p`: a bounded linear injection into the Hölder space
+`HolderSpace` of `Numlib/Analysis/Calculus/HolderSpace.lean`, sending `v` to its continuous
+representative, which is a compact embedding. The backbone's
+`SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt`: Arzelà–Ascoli with Hölder
+interpolation in `C^{j,·}(Ω̄)`, the sharp exponent of Corollary 9.15 in the non-integer case and
+the order lowering `W^{k,p}(Ω) → W^{j+1,q}(Ω)` with Morrey at exponent `q` when `(d+1)/p` is an
+integer (where the bound on `β` reads `β < 1`); the hypothesis `d ≥ 1 ∨ p > 1` is the backbone's.
+The case `β = 0` with the target `C(Ω̄)` is `theorem_7_3_8_c`. -/
+theorem theorem_7_3_8_c_holder {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
+    (hk : ((d + 1 : ℕ) : ℝ) / p < k) {β : ℝ≥0} (hβ0 : 0 < β)
+    (hβ : (β : ℝ) < ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ + 1 - ((d + 1 : ℕ) : ℝ) / p) :
+    ∃ ι : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume →L[ℝ]
+        HolderSpace Ω ℝ (k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1) β,
+      (∀ v, ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous v' ∧
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' ∧
+        ∀ x, ι v x = v' x) ∧
+      definition_7_3_6_compact ι.toLinearMap := by
+  have hN' : 2 ≤ d + 1 ∨ 1 < p := hN.imp (fun h ↦ by omega) id
+  have hs0 : (0 : ℝ) ≤ ((d + 1 : ℕ) : ℝ) / p := by positivity
+  have hfloor : ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ < k := Nat.floor_lt hs0 |>.2 hk
+  have hjcast : ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : ℝ)
+      = k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 := by
+    rw [Nat.cast_sub (by omega), Nat.cast_sub (by omega)]
+    push_cast
+    ring
+  have hlt := Nat.lt_floor_add_one (((d + 1 : ℕ) : ℝ) / p)
+  have hfl := Nat.floor_le hs0
+  have hm : ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : ℝ) + (d + 1 : ℕ) / p < k := by
+    rw [hjcast]
+    linarith
+  have hle : (k : ℝ) - (d + 1 : ℕ) / p - ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : ℝ) ≤ 1 := by
+    rw [hjcast]
+    linarith
+  have hβ' : (β : ℝ) < k - (d + 1 : ℕ) / p - ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : ℝ) := by
+    rw [hjcast]
+    linarith
+  exact SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt (N := d + 1) _ hΩ hb
+    (by omega) hN' hm hle hβ0 hβ'
+
 /-- **Theorem 7.3.8 (compact Sobolev embedding theorem, Rellich–Kondrachov)**, on a bounded
 extension domain `Ω ⊆ ℝ^{d+1}`: (a) if `1 ≤ k < (d+1)/p` then `W^{k,p}(Ω) ↪↪ L^q(Ω)` for every
 `q < p^*` (`theorem_7_3_8_a`); (b) if `k = (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every `q < ∞`
 (`theorem_7_3_8_b`, as printed; the compact form is `theorem_7_3_8_b_compact`); (c) if
 `k > (d+1)/p` then `W^{k,p}(Ω) ↪↪ C(Ω̄)` (`theorem_7_3_8_c`, the case `β = 0` of the book's
-`C^{k−[(d+1)/p]−1,β}(Ω̄)`; the Hölder clause is the open `theorem_7_3_8_c_holder`). -/
+`C^{k−[(d+1)/p]−1,β}(Ω̄)`; the Hölder clause is `theorem_7_3_8_c_holder`). -/
 theorem theorem_7_3_8 {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
