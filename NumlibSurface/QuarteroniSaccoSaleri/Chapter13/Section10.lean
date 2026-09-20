@@ -1,6 +1,7 @@
 import Numlib.Analysis.PDE.Transport
 import Numlib.Variational.EllipticInterval
 import Numlib.Variational.Evolution
+import Numlib.Variational.SpaceTimeGalerkin
 
 /-!
 # Quarteroni–Sacco–Saleri §13.10: finite elements for the transport equation
@@ -40,8 +41,10 @@ Euler (13.70), which is unconditionally stable (`equation_13_70_stability`, `equ
 `equation_13_70_norm_le`).
 
 The two convergence rates quoted in §13.10.1 from [QV94] — `O(h^r)` for `cG(r)` and
-`O(h^{r+1/2})` for `dG(r)` — are stated there without proof and are not formalized; the plan file
-records what they would need.
+`O(h^{r+1/2})` for `dG(r)` — are `cG_convergence` and `dG_convergence`, restatements of
+`Variational.cG_error_le` and `Variational.dG_error_sq_le` (`Numlib/Variational/SpaceTimeGalerkin`)
+with the regularity of the exact solution as hypotheses (`u(·, t) ∈ H^{r+1}(α, β)` uniformly in
+`t`, and for `cG` also `∂ₜu(·, t)`) and explicit constants in place of the `O(·)`.
 
 ## Readings and errata
 
@@ -480,6 +483,235 @@ theorem exercise_13_10 (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
       simp
     simp only [hF]
     linarith
+
+/-! ### The convergence estimate of the continuous Galerkin method -/
+
+/-- **The error estimate for continuous finite elements of degree `r ≥ 1`**
+([quarteroni2000numerical] §13.10.1, quoted there from [QV94] §14.3.1 without proof; proved here
+with explicit constants, as `Variational.cG_error_le`). The book says "for a smooth solution `u`";
+the regularity is taken as hypotheses: `u` is a classical solution of (13.64) with `φ = 0`
+(`equation_13_64`), its time derivative is `ut`, continuous in `x`, and for every `t ∈ [0, T]`
+`u(·, t) ∈ H^{r+1}(α, β)` with `|u(·, t)|_{H^{r+1}} ≤ M` and `ut(·, t) ∈ H^{r+1}(α, β)` with
+`|ut(·, t)|_{H^{r+1}} ≤ M'`. The discrete source `f_h(t)` is the `L²` projection of `f(·, t)` onto
+`V_h^{in}` (the hypothesis `hfh`), the partition has mesh at most `h` and carries a Lagrange node
+system of degree `r` (`BrokenPolynomial.IsLagrangeNodes`; `r ≥ 1` is forced by the node system),
+and (13.66) holds with `|a| ≤ A`, `|a₀| ≤ A₀`, `a(β) ≥ 0`. Then for every `t ∈ [0, T]`
+
+`‖u(t) - u_h(t)‖_{L²(α,β)} + (∫₀ᵗ a(β) |u(β, τ) - u_h(β, τ)|² dτ)^{1/2}
+  ≤ √2 (‖u₀ - u_{0,h}‖_{L²(α,β)} + h^r (2 h M + √(T/μ₀) (A M + h (M' + A₀ M))))`,
+
+which is the book's `O(‖u₀ - u_{0,h}‖ + h^r)` with the constant made explicit (the `L²` norms are
+written as sums of panel integrals, and the bound is uniform in `t`, which is the `max` of the
+book). **Reading**: the book prints the boundary term at the inflow end `α`, where it vanishes
+identically (both `u` and `u_h` satisfy the inflow condition); the term the energy estimate
+(13.66) controls, and the one stated here, is at the outflow end `β`. -/
+theorem cG_convergence (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
+    (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
+    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
+    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) {hn : 0 < n} {T : ℝ} (hT : 0 < T)
+    {μ₀ : ℝ} (hμ : 0 < μ₀)
+    (hμ₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), μ₀ ≤ a₀ s t - deriv a s / 2)
+    (hβ : 0 ≤ a (x (Fin.last n))) {A A₀ : ℝ}
+    (hA : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a s| ≤ A)
+    (hA₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a₀ s t| ≤ A₀)
+    {f : ℝ → ℝ → ℝ} {u₀ : ℝ → ℝ} {u : ℝ → ℝ → ℝ}
+    (hu : equation_13_64 a a₀ f 0 u₀ (x 0) (x (Fin.last n)) T u) {ut : ℝ → ℝ → ℝ}
+    (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun t => u y t) (ut y t) (Icc 0 T) t)
+    (hutc : ∀ t ∈ Icc 0 T, ContinuousOn (fun y => ut y t) (Icc (x 0) (x (Fin.last n))))
+    {M M' : ℝ}
+    (hreg : ∀ t ∈ Icc 0 T, ∃ U : SobolevInterval (r + 1) (x 0) (x (Fin.last n)),
+      SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] (fun y => u y t) ∧
+        SobolevInterval.seminorm (r + 1) (x 0) (x (Fin.last n)) U ≤ M)
+    (hreg' : ∀ t ∈ Icc 0 T, ∃ U : SobolevInterval (r + 1) (x 0) (x (Fin.last n)),
+      SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] (fun y => ut y t) ∧
+        SobolevInterval.seminorm (r + 1) (x 0) (x (Fin.last n)) U ≤ M')
+    {node : Fin n → Fin (r + 1) → ℝ} (hnode : BrokenPolynomial.IsLagrangeNodes x r node) {h : ℝ}
+    (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h) {fh : ℝ → BrokenPolynomial x r}
+    (hfh : ∀ t ∈ Icc 0 T, ∀ v ∈ inflowSpace x r hn,
+      ⟪fh t, v⟫ = BrokenPolynomial.pairing (fun y => f y t) v)
+    {u₀h : inflowSpace x r hn} {uh : ℝ → inflowSpace x r hn}
+    (huh : equation_13_65 hn ha ha₀ fh u₀h T uh) {t : ℝ} (ht : t ∈ Icc 0 T) :
+    √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - ((uh t : BrokenPolynomial x r) i).eval s) ^ 2)
+      + √(∫ τ in (0 : ℝ)..t, a (x (Fin.last n)) * (u (x (Fin.last n)) τ
+          - BrokenPolynomial.traceLeft (uh τ : BrokenPolynomial x r) (Fin.last n)) ^ 2)
+    ≤ √2 * (√(∑ i, ∫ s in x i.castSucc..x i.succ,
+          (u₀ s - ((u₀h : BrokenPolynomial x r) i).eval s) ^ 2)
+        + h ^ r * (2 * h * M + √(T / μ₀) * (A * M + h * (M' + A₀ * M)))) := by
+  obtain ⟨ux, ut₀, hpart, hpde, hin, hinit⟩ := hu
+  have hm : Monotone x := hx.out.monotone
+  have hux : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun y => u y t) (ux y t) (Icc (x 0) (x (Fin.last n))) y :=
+    fun y hy t ht => hpart.hasDerivWithinAt_fst hy ht
+  have hut₀ : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T, ut₀ y t = ut y t :=
+    fun y hy t ht =>
+      (uniqueDiffOn_Icc hT t ht).eq_deriv _ (hpart.hasDerivWithinAt_snd hy ht) (hut y hy t ht)
+  have hpde' : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      ut y t + a y * ux y t + a₀ y t * u y t = f y t := fun y hy t ht => by
+    rw [← hut₀ y hy t ht]
+    exact hpde y hy t ht
+  have hin' : ∀ t ∈ Icc 0 T, u (x 0) t = 0 := fun t ht => by simpa using hin t ht
+  have key := Variational.cG_error_le hn hT ha ha₀ hd hd' hμ hμ₀ hβ hA hA₀ hux hut hutc hpde' hin'
+    hreg hreg' (fun v => mem_inflowSpace_iff) hnode hmesh hfh huh ht
+  have e : ∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - ((u₀h : BrokenPolynomial x r) i).eval s) ^ 2
+      = ∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - ((u₀h : BrokenPolynomial x r) i).eval s) ^ 2 :=
+    Finset.sum_congr rfl fun i _ => intervalIntegral.integral_congr fun s hs => by
+      rw [uIcc_of_le (hm (Fin.castSucc_lt_succ (i := i)).le)] at hs
+      rw [hinit s (BrokenPolynomial.Icc_panel_subset hm i hs)]
+  rwa [e] at key
+
+/-! ### The convergence estimate of the discontinuous Galerkin method -/
+
+/-- `√(p + q) ≤ √p + √q` for `p, q ≥ 0`. -/
+private theorem sqrt_add_le_sqrt_add_sqrt {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    √(p + q) ≤ √p + √q := by
+  calc √(p + q) ≤ √((√p + √q) ^ 2) := by
+        refine Real.sqrt_le_sqrt ?_
+        rw [add_sq, Real.sq_sqrt hp, Real.sq_sqrt hq]
+        nlinarith [mul_nonneg (Real.sqrt_nonneg p) (Real.sqrt_nonneg q)]
+    _ = √p + √q := Real.sqrt_sq (by positivity)
+
+/-- `√p + √q ≤ √2 √(p + q)` for `p, q ≥ 0`. -/
+private theorem sqrt_add_sqrt_le_sqrt_two_mul {p q : ℝ} (hp : 0 ≤ p) (hq : 0 ≤ q) :
+    √p + √q ≤ √2 * √(p + q) := by
+  have hsq : (√p + √q) ^ 2 ≤ (√2 * √(p + q)) ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt (by norm_num), Real.sq_sqrt (add_nonneg hp hq), add_sq,
+      Real.sq_sqrt hp, Real.sq_sqrt hq]
+    nlinarith [sq_nonneg (√p - √q), Real.sq_sqrt hp, Real.sq_sqrt hq]
+  exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).1 hsq
+
+/-- **The convergence estimate for discontinuous finite elements of degree `r ≥ 0`**
+([quarteroni2000numerical] §13.10.1, quoted there from [QV94] §14.3.3 without proof; proved here
+with explicit constants, as `Variational.dG_error_sq_le`). The book says "for a smooth solution
+`u`"; the regularity is taken as hypotheses: `u` is a classical solution of (13.64)
+(`equation_13_64`) continuous on the strip, its time derivative `ut` is continuous on the strip,
+and `u(·, t) ∈ H^{r+1}(α, β)` with `|u(·, t)|_{H^{r+1}} ≤ M` for every `t ∈ [0, T]`. The discrete
+source `f_h(t)` is the `L²` projection of `f(·, t)` onto `W_h` (the hypothesis `hfh`), the
+partition has panels of length between `h_min` and `h` and carries a node system of degree `r`,
+and (13.66) holds with `0 ≤ a ≤ A`, `|a'| ≤ A'`, `|a₀| ≤ A₀`. Then for every `t ∈ [0, T]`
+
+`‖u(t) - u_h(t)‖_{L²}
+  + (∫₀ᵗ (‖u(τ) - u_h(τ)‖²_{L²} + ∑_{j=0}^{n-1} a(x_j) [u(τ) - u_h(τ)]_j²) dτ)^{1/2}
+  ≤ √2 (√(16 + 4/μ₀) ‖u₀ - u_{0,h}‖_{L²} + √(dgConst) h^{r+1/2})`,
+
+the book's `O(‖u₀ - u_{0,h}‖ + h^{r+1/2})` with the constant `Variational.dgConst` made
+explicit; `h^{r+1/2}` is written `h^r √h`. **Reading**: the book's printed left side has a
+garbled `∫_{j=0}^{T_{n-1}}`, read as `∫₀ᵀ ∑_{j=0}^{n-1}`; the jumps of `u - u_h` are those of
+`-u_h` at the interior nodes (`u` is continuous), and at `x_0 = α` the jump is `φ - u_h⁺(α)` by the
+convention `U_h^-(x_0, t) = φ(t)` of (13.68). -/
+theorem dG_convergence (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
+    (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
+    (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
+    (hd' : ContinuousOn (deriv a) (Icc (x 0) (x (Fin.last n)))) {hn : 0 < n} {T : ℝ} (hT : 0 < T)
+    {μ₀ : ℝ} (hμ : 0 < μ₀)
+    (hμ₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), μ₀ ≤ a₀ s t - deriv a s / 2)
+    (hapos : ∀ s ∈ Icc (x 0) (x (Fin.last n)), 0 ≤ a s) {A A' A₀ : ℝ}
+    (hA : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a s| ≤ A)
+    (hA' : ∀ s ∈ Icc (x 0) (x (Fin.last n)), |deriv a s| ≤ A')
+    (hA₀ : ∀ t ∈ Icc 0 T, ∀ s ∈ Icc (x 0) (x (Fin.last n)), |a₀ s t| ≤ A₀)
+    {f : ℝ → ℝ → ℝ} {φ u₀ : ℝ → ℝ} {u : ℝ → ℝ → ℝ}
+    (hu : equation_13_64 a a₀ f φ u₀ (x 0) (x (Fin.last n)) T u)
+    (huc : ContinuousOn (fun p : ℝ × ℝ => u p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
+    {ut : ℝ → ℝ → ℝ}
+    (hut : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun t => u y t) (ut y t) (Icc 0 T) t)
+    (hutc : ContinuousOn (fun p : ℝ × ℝ => ut p.1 p.2) (Icc (x 0) (x (Fin.last n)) ×ˢ Icc 0 T))
+    {M : ℝ}
+    (hreg : ∀ t ∈ Icc 0 T, ∃ U : SobolevInterval (r + 1) (x 0) (x (Fin.last n)),
+      SobolevInterval.fn U =ᵐ[volume.restrict (Ioo (x 0) (x (Fin.last n)))] (fun y => u y t) ∧
+        SobolevInterval.seminorm (r + 1) (x 0) (x (Fin.last n)) U ≤ M)
+    {node : Fin n → Fin (r + 1) → ℝ} (hnode : BrokenPolynomial.IsNodes x r node) {h hmin : ℝ}
+    (hmesh : ∀ i : Fin n, x i.succ - x i.castSucc ≤ h) (h0 : 0 < hmin)
+    (hminle : ∀ i : Fin n, hmin ≤ x i.succ - x i.castSucc) {fh : ℝ → BrokenPolynomial x r}
+    (hfh : ∀ t ∈ Icc 0 T, ∀ v, ⟪fh t, v⟫ = BrokenPolynomial.pairing (fun y => f y t) v)
+    {u₀h : BrokenPolynomial x r} {uh : ℝ → BrokenPolynomial x r}
+    (huh : equation_13_68 hn ha ha₀ φ fh u₀h T uh) {t : ℝ} (ht : t ∈ Icc 0 T) :
+    √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+      + √(∫ τ in (0 : ℝ)..t, ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+              a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
+          + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2))
+    ≤ √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2)
+        + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
+  obtain ⟨ux, ut₀, hpart, hpde, hin, hinit⟩ := hu
+  have hm : Monotone x := hx.out.monotone
+  have hab : x 0 < x (Fin.last n) := hx.out (Fin.pos_iff_ne_zero.2 (Fin.ne_of_val_ne hn.ne'))
+  have hT0 : (0 : ℝ) ∈ Icc 0 T := ⟨le_rfl, hT.le⟩
+  have hle : ∀ i : Fin n, x i.castSucc ≤ x i.succ := fun i => hm (Fin.castSucc_lt_succ (i := i)).le
+  have hh : 0 ≤ h := (sub_nonneg.2 (hle ⟨0, hn⟩)).trans (hmesh ⟨0, hn⟩)
+  obtain ⟨U₀, hU₀, hU₀M⟩ := hreg 0 hT0
+  have hM : 0 ≤ M := (apply_nonneg _ _).trans hU₀M
+  have hA0 : 0 ≤ A := (abs_nonneg _).trans (hA (x 0) (left_mem_Icc.2 hab.le))
+  have hA'0 : 0 ≤ A' := (abs_nonneg _).trans (hA' (x 0) (left_mem_Icc.2 hab.le))
+  have hA₀0 : 0 ≤ A₀ := (abs_nonneg _).trans (hA₀ 0 hT0 (x 0) (left_mem_Icc.2 hab.le))
+  have hux : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      HasDerivWithinAt (fun y => u y t) (ux y t) (Icc (x 0) (x (Fin.last n))) y :=
+    fun y hy t ht => hpart.hasDerivWithinAt_fst hy ht
+  have hut₀ : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T, ut₀ y t = ut y t :=
+    fun y hy t ht =>
+      (uniqueDiffOn_Icc hT t ht).eq_deriv _ (hpart.hasDerivWithinAt_snd hy ht) (hut y hy t ht)
+  have hpde' : ∀ y ∈ Icc (x 0) (x (Fin.last n)), ∀ t ∈ Icc 0 T,
+      ut y t + a y * ux y t + a₀ y t * u y t = f y t := fun y hy t ht => by
+    rw [← hut₀ y hy t ht]
+    exact hpde y hy t ht
+  have key := Variational.dG_error_sq_le hn hT ha ha₀ hd hd' hμ hμ₀ hapos hA hA' hA₀ huc hux hut
+    hutc hpde' hin hreg hnode hmesh h0 hminle hfh huh ht
+  have e : ∑ i, ∫ s in x i.castSucc..x i.succ, (u s 0 - (u₀h i).eval s) ^ 2
+      = ∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2 :=
+    Finset.sum_congr rfl fun i _ => intervalIntegral.integral_congr fun s hs => by
+      rw [uIcc_of_le (hle i)] at hs
+      rw [hinit s (BrokenPolynomial.Icc_panel_subset hm i hs)]
+  rw [e] at key
+  -- nonnegativity of the pieces
+  have hY₀ : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2 :=
+    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+  have hI : 0 ≤ ∫ τ in (0 : ℝ)..t,
+      ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+        + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+            a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
+        + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2) := by
+    refine intervalIntegral.integral_nonneg ht.1 fun τ _ => ?_
+    have h1 : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2 :=
+      Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+    have h2 : 0 ≤ ∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+        a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2 :=
+      Finset.sum_nonneg fun i _ => mul_nonneg
+        (hapos _ (BrokenPolynomial.Icc_panel_subset hm i (left_mem_Icc.2 (hle i)))) (sq_nonneg _)
+    have h3 : 0 ≤ a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2 :=
+      mul_nonneg (hapos _ (left_mem_Icc.2 hab.le)) (sq_nonneg _)
+    linarith
+  have hYi : 0 ≤ ∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2 :=
+    Finset.sum_nonneg fun i _ => intervalIntegral.integral_nonneg (hle i) fun _ _ => sq_nonneg _
+  have hC₁ : 0 ≤ 16 + 4 / μ₀ := by positivity
+  have hC₂ : 0 ≤ Variational.dgConst r A A' A₀ μ₀ T M h hmin := by
+    unfold Variational.dgConst
+    positivity
+  have hpow : √(h ^ (2 * r + 1)) = h ^ r * √h := by
+    rw [show h ^ (2 * r + 1) = (h ^ r) ^ 2 * h by rw [pow_succ, pow_mul'],
+      Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq (pow_nonneg hh r)]
+  calc √(∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+        + √(∫ τ in (0 : ℝ)..t,
+          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+              a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
+          + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2))
+      ≤ √2 * √((∑ i, ∫ s in x i.castSucc..x i.succ, (u s t - (uh t i).eval s) ^ 2)
+          + ∫ τ in (0 : ℝ)..t,
+          ((∑ i, ∫ s in x i.castSucc..x i.succ, (u s τ - (uh τ i).eval s) ^ 2)
+          + (∑ i ∈ Finset.univ.erase (⟨0, hn⟩ : Fin n),
+              a (x i.castSucc) * BrokenPolynomial.jump (uh τ) i ^ 2)
+          + a (x 0) * (BrokenPolynomial.traceRight (uh τ) ⟨0, hn⟩ - φ τ) ^ 2)) :=
+        sqrt_add_sqrt_le_sqrt_two_mul hY₀ hI
+    _ ≤ √2 * √((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2)
+          + Variational.dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1)) :=
+        mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt key) (Real.sqrt_nonneg _)
+    _ ≤ √2 * (√((16 + 4 / μ₀) * (∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2))
+          + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin * h ^ (2 * r + 1))) :=
+        mul_le_mul_of_nonneg_left (sqrt_add_le_sqrt_add_sqrt (by positivity) (by positivity))
+          (Real.sqrt_nonneg _)
+    _ = √2 * (√(16 + 4 / μ₀) * √(∑ i, ∫ s in x i.castSucc..x i.succ, (u₀ s - (u₀h i).eval s) ^ 2)
+          + √(Variational.dgConst r A A' A₀ μ₀ T M h hmin) * (h ^ r * √h)) := by
+        rw [Real.sqrt_mul hC₁, Real.sqrt_mul hC₂, hpow]
 
 /-! ### Time discretization: backward Euler (13.70) -/
 

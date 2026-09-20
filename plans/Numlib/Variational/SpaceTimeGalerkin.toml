@@ -1,0 +1,68 @@
+[[node]]
+id = "Variational.IsSemidiscreteGalerkin.sub"
+
+[[node]]
+id = "Variational.hasDerivWithinAt_ofValuesₗ"
+
+[[node]]
+id = "Variational.hasDerivWithinAt_interp"
+
+[[node]]
+id = "Transport.HasPartialsOn.hasDerivWithinAt_fst"
+
+[[node]]
+id = "Transport.HasPartialsOn.hasDerivWithinAt_snd"
+
+[[node]]
+id = "SobolevInterval.ae_eq_deriv_one_of_hasDerivAt"
+
+[[node]]
+id = "HasDerivWithinAt.codRestrict_submodule"
+
+[[node]]
+id = "Variational.le_transportForm_restrict"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity hypothesis of (13.66)"
+
+[[node]]
+id = "Variational.abs_transport_defect_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the consistency error of the space–time Galerkin methods"
+
+[[node]]
+id = "Variational.cG_error_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the error estimate for continuous finite elements of degree r (quoted from Quarteroni–Valli §14.3.1)"
+
+[[node]]
+id = "Variational.continuousOn_integral_panel_mul"
+
+[[node]]
+id = "Variational.continuousOn_pairing"
+
+[[node]]
+id = "Variational.continuousOn_proj"
+
+[[node]]
+id = "Variational.pairing_sub_eq_integral"
+
+[[node]]
+id = "Variational.proj_eq_add_integral"
+
+[[node]]
+id = "Variational.hasDerivWithinAt_proj"
+
+[[node]]
+id = "Variational.dg_defect_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the consistency error of the upwind discontinuous Galerkin form"
+
+[[node]]
+id = "Variational.le_dgUpwindForm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the coercivity behind (13.69)"
+
+[[node]]
+id = "Variational.sum_mul_sq_sub_proj_le"
+
+[[node]]
+id = "Variational.dgConst"
+
+[[node]]
+id = "Variational.dG_error_sq_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the convergence estimate for discontinuous finite elements of degree r (quoted from Quarteroni–Valli §14.3.3)"

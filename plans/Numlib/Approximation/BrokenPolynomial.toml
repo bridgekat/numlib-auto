@@ -134,3 +134,10 @@ id = "toLpₗᵢ"
 
 [[node]]
 id = "coeFn_toLpₗᵢ"
+
+[[node]]
+id = "_root_.intervalIntegral.integral_mul_le_sqrt_mul_sqrt"
+
+[[node]]
+id = "_root_.sq_le_of_sub_eq_integral"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the trace inequality behind the h^{r+1/2} estimate of the discontinuous Galerkin method"

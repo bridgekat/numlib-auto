@@ -39,6 +39,11 @@ continuous piecewise polynomials `X_h^r` of §12.4.5 as the subspace of zero int
 * `inverseInequality_linear`: the inverse inequality `‖v'‖² ≤ 12 h_min⁻² ‖v‖²` for piecewise
   linear functions, the `λ_max ≤ c h⁻²` behind the parabolic stability condition `Δt ≤ C h²` of
   the θ-method with `θ < 1/2` ([quarteroni2000numerical] §13.4.1).
+* `sq_le_of_sub_eq_integral`: the trace inequality on a panel,
+  `v(t)² ≤ 2 h⁻¹ ‖v‖²_{L²(u,w)} + 2 h ‖v'‖²_{L²(u,w)}` for an absolutely continuous `v` with
+  `v' ∈ L²`, the origin of the half power in the `h^{r+1/2}` estimate of the discontinuous
+  Galerkin method; `intervalIntegral.integral_mul_le_sqrt_mul_sqrt` is Cauchy–Schwarz for
+  interval integrals of square integrable functions.
 * `toLpₗᵢ`: the isometric embedding of `BrokenPolynomial x r` into `L²(x 0, x n)`, the class of
   the step function `stepFun v` equal to `v_i` on the half-open panel `[x i, x (i+1))`. The
   `r = 1` image is the discontinuous piecewise linear space of
@@ -766,5 +771,87 @@ theorem coeFn_toLpₗᵢ (v : BrokenPolynomial x r) :
 end ToLp
 
 end BrokenPolynomial
+
+/-! ### Cauchy–Schwarz for interval integrals, and the trace inequality on a panel -/
+
+/-- **Cauchy–Schwarz for interval integrals** of square integrable functions:
+`∫_u^v f g ≤ √(∫_u^v f²) √(∫_u^v g²)`. Hölder's inequality at the conjugate pair `(2, 2)`. -/
+theorem intervalIntegral.integral_mul_le_sqrt_mul_sqrt {u v : ℝ} (huv : u ≤ v) {f g : ℝ → ℝ}
+    (hf : IntervalIntegrable f volume u v) (hf2 : IntervalIntegrable (fun s => f s ^ 2) volume u v)
+    (hg : IntervalIntegrable g volume u v)
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u v) :
+    ∫ s in u..v, f s * g s ≤ √(∫ s in u..v, f s ^ 2) * √(∫ s in u..v, g s ^ 2) := by
+  have hfm : MemLp f 2 (volume.restrict (Ioc u v)) :=
+    (memLp_two_iff_integrable_sq hf.1.aestronglyMeasurable).2 hf2.1
+  have hgm : MemLp g 2 (volume.restrict (Ioc u v)) :=
+    (memLp_two_iff_integrable_sq hg.1.aestronglyMeasurable).2 hg2.1
+  have key := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq (μ := volume.restrict (Ioc u v))
+    (f := f) (g := g) Real.HolderConjugate.two_two (by rwa [ENNReal.ofReal_ofNat])
+    (by rwa [ENNReal.ofReal_ofNat])
+  have hrw : ∀ h : ℝ → ℝ, (∫ y in Ioc u v, ‖h y‖ ^ (2 : ℝ)) ^ (1 / 2 : ℝ)
+      = √(∫ y in u..v, h y ^ 2) := by
+    intro h
+    rw [Real.sqrt_eq_rpow, intervalIntegral.integral_of_le huv]
+    congr 1
+    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
+    change ‖h y‖ ^ (2 : ℝ) = h y ^ 2
+    rw [Real.rpow_two, Real.norm_eq_abs, sq_abs]
+  rw [hrw f, hrw g] at key
+  refine le_trans (le_abs_self _) (le_trans (abs_integral_le_integral_abs huv) ?_)
+  rw [intervalIntegral.integral_of_le huv]
+  refine le_trans (le_of_eq ?_) key
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
+  simp [abs_mul, Real.norm_eq_abs]
+
+/-- **The trace inequality on a panel** `[u, w]`: for `v` continuous on `[u, w]` with
+`v t - v s = ∫_s^t g` on `[u, w]` and `g` square integrable (the absolutely continuous
+functions with derivative `g ∈ L²`, in particular every `v ∈ H¹(u, w)`), every value on the
+panel is controlled by the `L²` norms of `v` and `g`:
+`v(t)² ≤ 2 (w - u)⁻¹ ∫_u^w v² + 2 (w - u) ∫_u^w g²`. Proof: `v(t) = v(s) + ∫_s^t g`, so by
+Cauchy–Schwarz `v(t)² ≤ 2 v(s)² + 2 (w - u) ∫_u^w g²` for every `s`, and integrating in `s`
+over the panel gives the claim. With `v` an interpolation error of order `h^{r+1}` in `L²` and
+`h^r` in `H¹` this is the source of the half power `h^{r+1/2}` in the discontinuous Galerkin
+error estimate ([quarteroni2000numerical] §13.10.1). -/
+theorem sq_le_of_sub_eq_integral {u w : ℝ} (huw : u < w) {v g : ℝ → ℝ}
+    (hv : ContinuousOn v (Icc u w)) (hg : IntervalIntegrable g volume u w)
+    (hg2 : IntervalIntegrable (fun s => g s ^ 2) volume u w)
+    (hvg : ∀ s ∈ Icc u w, ∀ t ∈ Icc u w, v t - v s = ∫ r in s..t, g r) {t : ℝ}
+    (ht : t ∈ Icc u w) :
+    v t ^ 2 ≤ 2 / (w - u) * (∫ s in u..w, v s ^ 2) + 2 * (w - u) * ∫ s in u..w, g s ^ 2 := by
+  have hpos : 0 < w - u := sub_pos.2 huw
+  have hG : 0 ≤ ∫ s in u..w, g s ^ 2 := integral_nonneg huw.le fun _ _ => sq_nonneg _
+  -- the pointwise bound for every `s` in the panel
+  have hpt : ∀ s ∈ Icc u w, v t ^ 2 ≤ 2 * v s ^ 2 + 2 * (w - u) * ∫ r in u..w, g r ^ 2 := by
+    intro s hs
+    have h1 : v t = v s + ∫ r in s..t, g r := by rw [← hvg s hs t ht]; ring
+    have h2 : |∫ r in s..t, g r| ≤ √(w - u) * √(∫ r in u..w, g r ^ 2) :=
+      abs_intervalIntegral_le_sqrt_mul_sqrt huw.le hg hg2 hs ht
+    have h3 : (∫ r in s..t, g r) ^ 2 ≤ (w - u) * ∫ r in u..w, g r ^ 2 := by
+      rw [← sq_abs]
+      calc |∫ r in s..t, g r| ^ 2 ≤ (√(w - u) * √(∫ r in u..w, g r ^ 2)) ^ 2 :=
+            pow_le_pow_left₀ (abs_nonneg _) h2 2
+        _ = (w - u) * ∫ r in u..w, g r ^ 2 := by
+            rw [mul_pow, Real.sq_sqrt hpos.le, Real.sq_sqrt hG]
+    rw [h1]
+    nlinarith [sq_nonneg (v s - ∫ r in s..t, g r)]
+  -- integrate the pointwise bound over the panel
+  have hint : IntervalIntegrable (fun s => v s ^ 2) volume u w :=
+    ((hv.pow 2).mono (uIcc_of_le huw.le).le).intervalIntegrable
+  have hI : ∫ s in u..w, v t ^ 2
+      ≤ ∫ s in u..w, (2 * v s ^ 2 + 2 * (w - u) * ∫ r in u..w, g r ^ 2) :=
+    integral_mono_on huw.le intervalIntegrable_const
+      ((hint.const_mul 2).add intervalIntegrable_const) hpt
+  rw [intervalIntegral.integral_const, integral_add (hint.const_mul 2) intervalIntegrable_const,
+    intervalIntegral.integral_const_mul, intervalIntegral.integral_const, smul_eq_mul,
+    smul_eq_mul] at hI
+  have key : (w - u) * v t ^ 2
+      ≤ (w - u) * (2 / (w - u) * (∫ s in u..w, v s ^ 2) + 2 * (w - u) * ∫ s in u..w, g s ^ 2) := by
+    have h2 : (w - u) * (2 / (w - u)) = 2 := by field_simp
+    have e : (w - u) * (2 / (w - u) * (∫ s in u..w, v s ^ 2) + 2 * (w - u) * ∫ s in u..w, g s ^ 2)
+        = 2 * (∫ s in u..w, v s ^ 2) + (w - u) * (2 * (w - u) * ∫ s in u..w, g s ^ 2) := by
+      rw [mul_add, ← mul_assoc, h2]
+    rw [e]
+    linarith
+  exact le_of_mul_le_mul_left key hpos
 
 end

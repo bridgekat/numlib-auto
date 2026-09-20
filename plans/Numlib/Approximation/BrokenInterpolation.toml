@@ -1,0 +1,154 @@
+namespace = "BrokenPolynomial"
+
+[[node]]
+id = "_root_.intervalIntegrable_mul_of_sq"
+
+[[node]]
+id = "uIcc_panel_subset"
+
+[[node]]
+id = "Icc_panel_subset"
+
+[[node]]
+id = "intervalIntegrable_panel"
+
+[[node]]
+id = "integral_eq_sum_panels"
+
+[[node]]
+id = "sum_integral_mul_le_sqrt_mul_sqrt"
+
+[[node]]
+id = "sqrt_sum_integral_add_sq_le"
+
+[[node]]
+id = "pairing"
+
+[[node]]
+id = "sum_integral_eval_mul_eq_inner"
+
+[[node]]
+id = "pairing_le_sqrt_mul_norm"
+
+[[node]]
+id = "abs_pairing_le"
+
+[[node]]
+id = "pairingL"
+
+[[node]]
+id = "norm_pairingL_le"
+
+[[node]]
+id = "sqrt_sum_integral_sub_sq_le"
+
+[[node]]
+id = "IsNodes"
+
+[[node]]
+id = "IsLagrangeNodes"
+
+[[node]]
+id = "natDegree_interpolate_le"
+
+[[node]]
+id = "ofValuesₗ"
+
+[[node]]
+id = "interp"
+
+[[node]]
+id = "eval_interp_node"
+
+[[node]]
+id = "interp_congr"
+
+[[node]]
+id = "interp_eval"
+
+[[node]]
+id = "traceRight_interp"
+
+[[node]]
+id = "traceLeft_interp_succ"
+
+[[node]]
+id = "interp_mem_continuous"
+
+[[node]]
+id = "sum_integral_sq_iteratedDeriv_sub_interp_le"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 8.3, in broken form for a node system of degree r"
+
+[[node]]
+id = "sum_integral_sq_iteratedDeriv_sub_interp_le_seminorm"
+
+[[node]]
+id = "sum_integral_sq_sub_interp_le_seminorm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.26) with m = 0"
+
+[[node]]
+id = "sum_integral_sq_deriv_sub_interp_le_seminorm"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.26) with m = 1"
+
+[[node]]
+id = "_root_.intervalIntegrable_sub_sq"
+
+[[node]]
+id = "pairing_congr"
+
+[[node]]
+id = "traceLeft_interp_last"
+
+[[node]]
+id = "traceRight_interp_zero"
+
+[[node]]
+id = "norm_sub_le_sqrt_add_sqrt"
+
+[[node]]
+id = "abs_sum_integral_mul_eval_le"
+
+[[node]]
+id = "abs_sum_integral_mul_mul_eval_le"
+
+[[node]]
+id = "integral_derivative_sq_le_panel"
+
+[[node]]
+id = "sum_integral_sq_derivative_le"
+
+[[node]]
+id = "single"
+
+[[node]]
+id = "pairing_single"
+
+[[node]]
+id = "proj"
+
+[[node]]
+id = "inner_proj"
+
+[[node]]
+id = "sum_integral_sub_proj_mul_eval_eq_zero"
+
+[[node]]
+id = "integral_sub_proj_mul_eq_zero"
+
+[[node]]
+id = "sum_integral_add_eval_sq_eq"
+
+[[node]]
+id = "sum_integral_sq_sub_proj_le"
+
+[[node]]
+id = "_root_.SobolevInterval.sub_eq_integral_deriv_one"
+
+[[node]]
+id = "sqrt_sum_integral_sq_sub_proj_le_seminorm"
+
+[[node]]
+id = "sqrt_sum_integral_sq_deriv_sub_proj_le_seminorm"
+
+[[node]]
+id = "sum_mul_sq_sub_eval_le"

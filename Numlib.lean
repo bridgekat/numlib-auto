@@ -290,6 +290,7 @@ import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Analysis.Wavelet.QuadratureMirror
 import Numlib.Approximation.BSpline
 import Numlib.Approximation.Bezier
+import Numlib.Approximation.BrokenInterpolation
 import Numlib.Approximation.BrokenPolynomial
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
@@ -513,6 +514,7 @@ import Numlib.Variational.Minimax
 import Numlib.Variational.Minimization
 import Numlib.Variational.PLaplacianEnergy
 import Numlib.Variational.ProjectionMethod
+import Numlib.Variational.SpaceTimeGalerkin
 import Numlib.Variational.WeakMinimization
 
 /-!

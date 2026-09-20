@@ -78,65 +78,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.10'
 
 [[node]]
 id = "cG_convergence"
-kind = "theorem"
-desc = '''The continuous Galerkin error estimate quoted from [QV94] §14.3.1: for `r ≥ 1`,
-`max_{t ≤ T} ‖u(t) - u_h(t)‖_{L²} + (∫₀ᵗ a |u(α,τ) - u_h(α,τ)|² dτ)^{1/2} = O(‖u₀ - u_{0,h}‖_{L²} +
-h^r)` for a smooth solution `u`. Not formalized: the proof combines the stability estimate with
-the interpolation error of degree-`r` piecewise polynomials in `H¹` for the *time-dependent*
-exact solution and an error equation with the `L²` projection; the piecewise polynomial
-interpolation estimates in Sobolev norms are chapter 8's Theorem 8.3
-(`Approximation/SobolevInterpolation`, open) and the argument needs them for every `r`, plus
-regularity of `u` that the book only assumes. The book states it without proof.
-
-Blocked (2026-09-20, agent qss5; replaces the 2026-09-16/17 notes, whose correction is kept here).
-Proved: the stability half (`equation_13_66`, `equation_13_67`), the error equation's ingredients
-(`equation_13_64`), and the degree-`r` interpolation estimate in broken form
-(`sobolevSeminorm_sub_piecewisePolyInterp_le`, `Numlib/Approximation/SobolevInterpolation`, every
-`r` and every `m ≤ r`). Re-checked 2026-09-20 against the Brezis backbone for the time regularity of
-the exact solution: `Numlib/Analysis/PDE/Heat` gives the *homogeneous* Dirichlet heat equation on
-`Ω : Opens (EuclideanSpace ℝ (Fin N))` with `u ∈ C^∞((0,∞); L²)`, `u(t) ∈ D(A^ℓ)`,
-`‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖`, and `u ∈ C^{k−j}([0,∞); D(A^j))` for `u₀ ∈ D(A^k)`
-(`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup`), with `D(A^ℓ) = H^{2ℓ} ∩ H¹₀` on
-`C^{2ℓ}` domains (`dirichletLaplacian.powDomainToSobolevL`). The transport problem here is
-`u_t + a u_x + a₀ u = f` with inflow data (hyperbolic, (13.64), `Transport.IsInflowSolution`), not
-the heat equation, so none of that applies directly: what the estimate needs is
-`u(·, t) ∈ H^{r+1}(α, β)` uniformly in `t ∈ [0, T]` together with `∂ₜu(·, t) ∈ H^{r+1}` (so that the
-interpolant `Π_h u(t)` commutes with `∂ₜ` and the error equation can be tested against
-`u_h − Π_h u`), i.e. a solution theory for the variable-coefficient transport equation by
-characteristics with Sobolev regularity in `x` — `Numlib/Analysis/PDE/Transport` has the
-constant-coefficient d'Alembert-type solution only. Still missing: (ii) that regularity as a
-hypothesis or a theorem, and the `Bochner.ContDiffOnThrough`-style statement
-`t ↦ u(t) ∈ C¹([0,T]; H^{r+1})` through which `Π_h` commutes with `∂ₜ`
-(`Bochner.ContDiffOnThrough.derivWithin_eq`, `Numlib/Analysis/PDE/Bochner`, is exactly the lemma for
-that step, so the vocabulary now exists); (iii) the bridge from `SobolevInterval`'s `H^{r+1}(α, β)`
-norm to the broken seminorm; (iv) an explicit-constant form of the `O(·)` statement. The book quotes
-the result from [QV94] without proof; out of scope by policy. Estimate: with the regularity taken as
-a hypothesis on `u` (the honest reading of "for a smooth solution"), ~800 lines; the hypothesis-free
-form needs a transport regularity theorem (~1000 more).'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_65", "QuarteroniSaccoSaleri.Chapter13.equation_13_66"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the error estimate for continuous finite elements of degree r'''
 
 [[node]]
 id = "dG_convergence"
-kind = "theorem"
-desc = '''The discontinuous Galerkin error estimate quoted from [QV94] §14.3.3: for `r ≥ 0`,
-`max_{t ≤ T} ‖u - u_h‖_{L²} + (∫₀ᵀ ‖u - u_h‖²_{L²} + ∑_j a(x_j) [u - u_h]_j² dt)^{1/2} = O(‖u₀ -
-u_{0,h}‖ + h^{r+1/2})` (the printed left side has a garbled `∫_{j=0}^{T_{n-1}}`; read `∫₀ᵀ
-∑_{j=0}^{n-1}`). Not formalized: as for `cG_convergence`, with in addition the trace inequality
-on each element that produces the half power `h^{r+1/2}`.
-
-Blocked (2026-09-20, agent qss5; replaces the 2026-09-16/17 notes). Everything `cG_convergence` is
-blocked on (see its refreshed note: the interpolation estimate exists for every degree, the
-transport regularity in `x` uniformly in `t` and the `∂ₜ`-commuting projection are the gap,
-`Bochner.ContDiffOnThrough` now supplies the vocabulary for the latter), plus the elementwise trace
-inequality `|v(x_j)|² ≤ C (h_j⁻¹ ‖v‖²_{L²(I_j)} + h_j ‖v'‖²_{L²(I_j)})` for polynomials on a panel,
-which `Numlib/Approximation/BrokenPolynomial` still lacks (checked 2026-09-20: it has `traceLeft`,
-`traceRight`, `jumpₗ` and `inverseInequality_linear` for `r = 1` only). That trace inequality is a
-self-contained ~150-line addition (the fundamental theorem of calculus on the panel and
-Cauchy–Schwarz, no polynomial structure needed) and is the origin of the half power in `h^{r+1/2}`,
-but on its own it does not close the node. Quoted from [QV94] without proof; out of scope by policy.
-Estimate: `cG_convergence`'s plus ~300 lines.'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_68", "QuarteroniSaccoSaleri.Chapter13.equation_13_69"]
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.10.1, the convergence estimate for discontinuous finite elements of degree r'''
 
 [[node]]
