@@ -134,31 +134,19 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 10.3.7"
 
 [[node]]
 id = "theorem_10_3_9"
-kind = "theorem"
-desc = '''
-Theorem 10.3.9: under the conditions of Corollary 10.3.7 the global interpolant `Π_h v`, defined
-piecewise by `(Π_h v)|_K = Π_K v`, obeys (10.3.13),
-`‖v - Π_h v‖_{m,Ω} ≤ c h^{k+1-m} |v|_{k+1,Ω}` for every `v ∈ H^{k+1}(Ω)` and `m = 0, 1`, with `c`
-independent of `h`.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.9"
 
-Blocked: rechecked 2026-09-20 (ah7). `corollary_10_3_7` is now proved (elementwise, for the
-tensor norm, on a regular family whose elements have diameter at most `H`), so the missing
-mathematics is only the triangulation scaffold (blocker 11 of `notes/frontier.md`), which
-nothing in `Numlib/` provides: `Chapter10/Section02.lean` has no triangulation — its
-`IsRegularFamily` (here) is a family of *collections of sets* `Set (Set ℝ^d)` with no covering,
-disjointness or affine-equivalence structure, and no global interpolant `Π_h`. The proof once
-the scaffold exists is short: with `𝒯` a finite family of open elements `K = F_K(K̂)` with
-pairwise disjoint interiors whose closures cover `Ω̄`, and `Π_h v` the function equal to `Π_K v`
-on each `K` (defined off the skeleton, a null set), one needs (i) `‖w‖²_{m,Ω} = ∑_K ‖w‖²_{m,K}`
-and `|v|²_{k+1,Ω} = ∑_K |v|²_{k+1,K}` for the tensor norm — the restriction of a weak derivative
-to an open subset is a weak derivative (`HasWeakIteratedFDerivOn.mono`), and `L²(Ω)` splits as
-the `ℓ²` sum of the `L²(K)` over an almost-everywhere partition (`MeasureTheory.lintegral_iUnion`
-/`eLpNorm` over a disjoint union), and (ii) that `v − Π_h v ∈ H^m(Ω)` for `m ≤ 1`, i.e. that the
-piecewise interpolant is globally `H¹` — the conformity `X_h ⊆ C(Ω̄)` of `example_10_2_3`, which
-needs the matching of nodes across shared faces; this is the genuinely new content and is where
-the scaffold's axioms (1)–(4) enter. Then (10.3.13) is Corollary 10.3.7 squared and summed with
-`h_K ≤ h`. Estimate: 800–1500 lines for the scaffold (a `Numlib/Geometry/Triangulation` module with
-the global interpolant and the conformity lemma), then ~150 for this node; the `m = 0` case needs
-no conformity and would be ~100 lines once (i) exists.
-'''
-deps = ["corollary_10_3_7", "meshSize"]
+[[node]]
+id = "theorem_10_3_9_linear"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.9 (for the linear element of Example 10.3.8)"
+
+[[node]]
+id = "theorem_10_3_9_lattice"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.9 (for the ℙ_k Lagrange element on the principal lattice)"
+
+[[node]]
+id = "meshSize_range_K"
+
+[[node]]
+id = "isRegularFamily_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 10.3.6 (for a family of triangulations)"

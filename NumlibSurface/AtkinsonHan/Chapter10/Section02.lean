@@ -2,7 +2,9 @@ import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.MvPolynomial.CommRing
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.Fin.VecNotation
+import Mathlib.LinearAlgebra.Lagrange
 import Numlib.Analysis.Normed.Operator.Scaling
+import Numlib.Analysis.Sobolev.Triangulation
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
 
@@ -14,11 +16,12 @@ Analysis Framework*, 3rd edition, Springer, 2009, §10.2.
 
 The section builds the finite element machinery on a polygon: triangulations, the local spaces
 `ℙ_k` on a triangle, barycentric coordinates, and the affine map (10.2.25)
-`F_K(x̂) = T_K x̂ + b_K` carrying the reference element `K̂` onto an element `K`. The model boundary
-value problem in `H¹(Ω)` is out of scope — not for want of the space, which is
-`Chapter07.definition_7_2_2_multiIndex`, but for the trace and the Poincaré inequality of §7.3 —
-and with it the finite element space and the triangulation axioms; **the rest of the section is
-not**, and it is what this file holds.
+`F_K(x̂) = T_K x̂ + b_K` carrying the reference element `K̂` onto an element `K`. The triangulation
+axioms (1)–(4) are the backbone's `Triangulation` (`Numlib/Geometry/Triangulation.lean`), and the
+linear element space on a triangulation, Example 10.2.3, is `example_10_2_3` at the end of this
+file. The model boundary value problem in `H¹(Ω)` is out of scope — not for want of the space,
+which is `Chapter07.definition_7_2_2_multiIndex`, but for the trace on the boundary of §7.3 that
+its Neumann data need; **the rest of the section is not**, and it is what this file holds.
 
 Lemma 10.2.2's proof uses only two facts about the sets involved: a ball of diameter `ρ̂` sits
 inside `K̂`, and `K` has diameter `h_K`. No triangle, no polynomial space and no Sobolev norm. The
@@ -59,6 +62,14 @@ allows.
   interpolation at those nodes with those shape functions reproduces every polynomial of the space.
 * `proposition_10_2_1` — unisolvence of `ℙ_k` on the principal lattice `N̂_k`, for every `k ≥ 1`,
   with `eq_zero_of_eval_latticePoint` for the uniqueness half alone.
+* `example_10_2_3` — the linear element space on a triangulation: the representation (10.2.28)
+  in barycentric coordinates, the conformity across the edges, and the global continuity and
+  `H¹`-membership of the glued piecewise linear function.
+* `latticeNode`, `latticeShapeFun`, `isConformingElement_lattice` — the `ℙ_k` Lagrange element on
+  the principal lattice, on `EuclideanSpace ℝ (Fin 2)`: nodal (`latticeShapeFun_isNodalBasis`),
+  reproducing `ℙ_k` (`nodalInterp_lattice_eval`), and conforming on every triangulation — the
+  book's remark after Example 10.2.3, and Exercise 10.2.4 at `k = 2`, by the unisolvence of a
+  polynomial of one variable at the `k + 1` lattice nodes of an edge.
 
 ## Deviations from the book
 
@@ -77,10 +88,12 @@ follows from it.
 
 ## Not formalized here
 
-The triangulation axioms (1)–(4) and the model Neumann problem (10.2.4)–(10.2.12), whose space is
-`H¹(Ω)` on a polygon; Example 10.2.3 and Exercises 10.2.4, 10.2.5, which characterize `H¹`- and
-`H(div)`-conformity of a piecewise polynomial space and need the weak derivative of a
-piecewise-smooth function.
+The model Neumann problem (10.2.4)–(10.2.12), whose boundary term needs the trace on `Γ`;
+Exercise 10.2.5, the `H(div)`-conformity of a piecewise `H¹` vector field (Exercise 10.2.4, the
+`H¹`-conformity of the quadratic element, is the case `k = 2` of `isConformingElement_lattice`).
+The `H¹`-conformity of a continuous piecewise-`C¹` function, on which Example 10.2.3 rests, is
+the backbone's `Triangulation.memSobolev_of_piecewise`
+(`Numlib/Analysis/Sobolev/Triangulation.lean`).
 Proposition 10.2.1, the unisolvence of `ℙ_k` on the principal lattice for *every* `k`, is proved
 below. It was planned as the hard item of the chapter, on the ground that the classical induction
 needs the divisibility of a polynomial vanishing on a line by the affine form of that line; the
@@ -524,5 +537,368 @@ theorem eq_zero_of_eval_latticePoint {k : ℕ} (hk : 0 < k) {p : MvPolynomial (F
     simpa using h (m : Fin 2 →₀ ℕ) (mem_latticeIndex_iff.mp m.2)
 
 end PrincipalLattice
+
+/-! ### Example 10.2.3: the linear element space on a triangulation
+
+The triangulation is `Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`, the book's
+properties 1–4 of §10.2), the local space `X_K = ℙ₁(K)` is spanned by the barycentric coordinates
+`λᵢ = λ̂ᵢ ∘ F_K⁻¹` of the element, and the local finite element function determined by the values
+at the three vertices is `Triangulation.localInterp` at the vertices of the reference triangle with
+the shape functions `EuclideanSpace.baryCoord` (the `λ̂ᵢ` of `refBary`, on
+`EuclideanSpace ℝ (Fin 2)`). -/
+
+section Example1023
+
+open MeasureTheory TopologicalSpace EuclideanSpace
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **Example 10.2.3** (the linear element space). Let `𝒯_h` be a triangulation of a plane
+domain `Ω` and let the local function on each element `K` be the `ℙ₁(K)` function determined by
+the values of `v` at the three vertices `aⱼ`. Then
+
+* (10.2.28): on `K` it is `∑ᵢ v(aᵢ) λᵢ` with `λᵢ = λ̂ᵢ ∘ F_K⁻¹` the barycentric coordinates of
+  `K`;
+* the element is conforming — the local functions of two elements agree at every point of
+  their common closed elements (the condition (10.2.6)): at a common vertex both take the value
+  of `v` there, and along a common edge the difference is a linear function of one variable
+  vanishing at the two end points;
+* so the piecewise linear function `v_h` glued from them (`Triangulation.globalInterp`) is
+  globally continuous, `v_h ∈ C(Ω̄)`, and lies in `H¹(Ω)` (§10.2.3: `X_h ⊆ H¹(Ω)` because
+  `X_h ⊆ C(Ω̄)`).
+
+The local space `X_K` "consists of `ℙ₁(K)` functions determined by their values at the three
+vertices": `nodalInterp_coord_affineMap` (§10.3) says that the interpolant reproduces every
+affine function, and `latticeShape` at `k = 1` are the shape functions of the reference element.
+The book adds that `ℙ_k` on the nodal set `N_k(K)` of (10.2.29) is conforming as well: that is
+`isConformingElement_lattice` below. -/
+theorem example_10_2_3 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (v : 𝔼₂ → ℝ) :
+    (∀ (T : 𝒯.elems) (x : 𝔼₂), 𝒯.localInterp referenceTriangleVertex baryCoord T v x
+      = ∑ i, v (T.1 i) * baryCoord i ((𝒯.linearPart T).symm (x - T.1 0))) ∧
+    𝒯.IsConformingElement referenceTriangleVertex baryCoord ∧
+    ContinuousOn (𝒯.globalInterp referenceTriangleVertex baryCoord v) (closure (Ω : Set 𝔼₂)) ∧
+    MemSobolev (𝒯.globalInterp referenceTriangleVertex baryCoord v) 1 2 Ω volume := by
+  refine ⟨fun T x ↦ ?_, 𝒯.isConformingElement_linear, ?_, ?_⟩
+  · rw [Triangulation.localInterp_apply]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    rw [𝒯.affine_referenceTriangleVertex T i, mul_comm]
+  · exact 𝒯.continuousOn_globalInterp _ _ 𝒯.isConformingElement_linear
+      (fun i ↦ (contDiff_baryCoord i).continuous) v
+  · exact 𝒯.memSobolev_globalInterp _ _ 𝒯.isConformingElement_linear
+      (fun i ↦ (contDiff_baryCoord i).of_le (by simp)) v 2
+
+end Example1023
+
+/-! ### The Lagrange element `ℙ_k` on the reference triangle, on `EuclideanSpace` -/
+
+section LatticeElement
+
+open Finset MvPolynomial EuclideanSpace TopologicalSpace
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- The index type of the nodes of the principal lattice `N̂_k`: the pairs `(m₀, m₁)` of naturals
+with `m₀ + m₁ ≤ k`. -/
+def LatticeNode (k : ℕ) : Type := {p : Fin (k + 1) × Fin (k + 1) // (p.1 : ℕ) + p.2 ≤ k}
+
+instance (k : ℕ) : Fintype (LatticeNode k) := Subtype.fintype _
+
+/-- The exponent vector `(m₀, m₁)` of a lattice node, as the `Fin 2 →₀ ℕ` that indexes
+`latticePoint` and `latticeShape`. -/
+noncomputable def LatticeNode.toFinsupp {k : ℕ} (p : LatticeNode k) : Fin 2 →₀ ℕ :=
+  Finsupp.single 0 (p.1.1 : ℕ) + Finsupp.single 1 (p.1.2 : ℕ)
+
+/-- The first entry of the exponent vector of a lattice node. -/
+@[simp]
+theorem LatticeNode.toFinsupp_zero {k : ℕ} (p : LatticeNode k) : p.toFinsupp 0 = p.1.1 := by
+  simp [LatticeNode.toFinsupp]
+
+/-- The second entry of the exponent vector of a lattice node. -/
+@[simp]
+theorem LatticeNode.toFinsupp_one {k : ℕ} (p : LatticeNode k) : p.toFinsupp 1 = p.1.2 := by
+  simp [LatticeNode.toFinsupp]
+
+/-- The exponent vector of a lattice node has entries summing to at most `k`. -/
+theorem LatticeNode.sum_toFinsupp_le {k : ℕ} (p : LatticeNode k) :
+    p.toFinsupp 0 + p.toFinsupp 1 ≤ k := by
+  simp only [LatticeNode.toFinsupp_zero, LatticeNode.toFinsupp_one]
+  exact p.2
+
+/-- Distinct lattice nodes have distinct exponent vectors. -/
+theorem LatticeNode.toFinsupp_injective (k : ℕ) :
+    Function.Injective (LatticeNode.toFinsupp (k := k)) := by
+  intro p q h
+  have h0 := congrArg (fun m : Fin 2 →₀ ℕ ↦ m 0) h
+  have h1 := congrArg (fun m : Fin 2 →₀ ℕ ↦ m 1) h
+  simp only [LatticeNode.toFinsupp_zero, LatticeNode.toFinsupp_one] at h0 h1
+  exact Subtype.ext (Prod.ext (Fin.ext h0) (Fin.ext h1))
+
+/-- Every exponent vector with `m₀ + m₁ ≤ k` is the exponent vector of a lattice node. -/
+theorem LatticeNode.exists_toFinsupp_eq {k : ℕ} {m : Fin 2 →₀ ℕ} (hm : m 0 + m 1 ≤ k) :
+    ∃ p : LatticeNode k, p.toFinsupp = m :=
+  ⟨⟨(⟨m 0, by omega⟩, ⟨m 1, by omega⟩), hm⟩, by
+    ext i
+    fin_cases i <;> simp [LatticeNode.toFinsupp]⟩
+
+/-- The lattice node with exponent vector `(m₀, m₁)`, given by two naturals with `m₀ + m₁ ≤ k`. -/
+def LatticeNode.mk' {k : ℕ} (m₀ m₁ : ℕ) (h : m₀ + m₁ ≤ k) : LatticeNode k :=
+  ⟨(⟨m₀, by omega⟩, ⟨m₁, by omega⟩), h⟩
+
+/-- **The nodes of the `ℙ_k` Lagrange element** on the reference triangle: the points of the
+principal lattice `N̂_k` (10.2.24), as points of `EuclideanSpace ℝ (Fin 2)`, indexed by
+`Fin (card (LatticeNode k))`. -/
+noncomputable def latticeNode (k : ℕ) : Fin (Fintype.card (LatticeNode k)) → 𝔼₂ := fun i ↦
+  WithLp.toLp 2 (latticePoint k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp)
+
+/-- **The shape functions of the `ℙ_k` Lagrange element**: Silvester's `latticeShape`, as
+functions on `EuclideanSpace ℝ (Fin 2)`. -/
+noncomputable def latticeShapeFun (k : ℕ) : Fin (Fintype.card (LatticeNode k)) → 𝔼₂ → ℝ :=
+  fun i x ↦
+    eval (fun j ↦ x j) (latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp)
+
+/-- The coordinates of a lattice node: `(m₀ / k, m₁ / k)`. -/
+theorem latticeNode_apply (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) (j : Fin 2) :
+    latticeNode k i j
+      = (((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp j : ℝ) / k := rfl
+
+/-- The shape functions of the lattice element are nodal for its nodes (Proposition 10.2.1, the
+duality `L_m(x_{m'}) = δ_{m m'}`). -/
+theorem latticeShapeFun_isNodalBasis {k : ℕ} (hk : 0 < k) :
+    Approximation.IsNodalBasis (latticeNode k) (latticeShapeFun k) where
+  eval_self i := by
+    simp only [latticeShapeFun, latticeNode]
+    rw [show (fun j ↦ (WithLp.toLp 2 (latticePoint k _) : 𝔼₂) j) = latticePoint k _ from rfl,
+      eval_latticeShape hk (LatticeNode.sum_toFinsupp_le _) (LatticeNode.sum_toFinsupp_le _),
+      ite_eq_left rfl]
+  eval_of_ne i j hij := by
+    simp only [latticeShapeFun, latticeNode]
+    rw [show (fun j ↦ (WithLp.toLp 2 (latticePoint k _) : 𝔼₂) j) = latticePoint k _ from rfl,
+      eval_latticeShape hk (LatticeNode.sum_toFinsupp_le _) (LatticeNode.sum_toFinsupp_le _),
+      ite_eq_right]
+    intro h
+    exact hij ((Fintype.equivFin (LatticeNode k)).symm.injective
+      (LatticeNode.toFinsupp_injective k h))
+
+/-- The lattice nodes lie in the closed reference triangle. -/
+theorem latticeNode_mem_closure {k : ℕ} (hk : 0 < k) (i : Fin (Fintype.card (LatticeNode k))) :
+    latticeNode k i ∈ closure (referenceTriangle : Set 𝔼₂) := by
+  refine mem_closure_referenceTriangle ?_
+  simp only [latticeNode_apply]
+  have hk' : (0 : ℝ) < k := by exact_mod_cast hk
+  have h := LatticeNode.sum_toFinsupp_le ((Fintype.equivFin (LatticeNode k)).symm i)
+  refine ⟨by positivity, by positivity, ?_⟩
+  rw [← add_div, div_le_one hk']
+  exact_mod_cast h
+
+/-- The shape functions of the lattice element are smooth. -/
+theorem contDiff_latticeShapeFun (k : ℕ) (i : Fin (Fintype.card (LatticeNode k))) :
+    ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) (latticeShapeFun k i) := by
+  have : latticeShapeFun k i = evalBasis (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis
+      (latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp) := by
+    funext x
+    exact (MvPolynomial.evalBasis_basisFun _ x).symm
+  rw [this]
+  exact MvPolynomial.contDiff_evalBasis _ _
+
+/-- **`ℙ_k` interpolation on the principal lattice reproduces `ℙ_k`** (Proposition 10.2.1, in
+the form (10.3.4) needs it): interpolating a polynomial of total degree at most `k` at the
+lattice nodes with the shape functions `latticeShape` gives it back — their difference is a
+polynomial of degree at most `k` vanishing at every lattice node, hence zero. -/
+theorem nodalInterp_lattice_eval {k : ℕ} (hk : 0 < k) (q : MvPolynomial (Fin 2) ℝ)
+    (hq : q.totalDegree ≤ k) (x : 𝔼₂) :
+    Approximation.nodalInterp (latticeNode k) (latticeShapeFun k)
+      (fun y : 𝔼₂ ↦ eval (fun i ↦ y i) q) x = eval (fun i ↦ x i) q := by
+  set e := Fintype.equivFin (LatticeNode k) with he
+  set r : MvPolynomial (Fin 2) ℝ := q - ∑ i, C (eval (latticePoint k (e.symm i).toFinsupp) q)
+    * latticeShape k (e.symm i).toFinsupp with hr
+  have hrdeg : r.totalDegree ≤ k := by
+    rw [← mem_restrictTotalDegree]
+    refine Submodule.sub_mem _ ((mem_restrictTotalDegree _ _ _).2 hq)
+      (Submodule.sum_mem _ fun i _ ↦ ?_)
+    rw [C_mul']
+    exact Submodule.smul_mem _ _ ((mem_restrictTotalDegree _ _ _).2
+      (totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _)))
+  have hrzero : ∀ m : Fin 2 →₀ ℕ, m 0 + m 1 ≤ k → eval (latticePoint k m) r = 0 := by
+    intro m hm
+    obtain ⟨p, rfl⟩ := LatticeNode.exists_toFinsupp_eq hm
+    rw [hr, map_sub, map_sum, Finset.sum_eq_single (e p)]
+    · rw [map_mul, eval_C, Equiv.symm_apply_apply,
+        eval_latticeShape hk (LatticeNode.sum_toFinsupp_le _) (LatticeNode.sum_toFinsupp_le _),
+        ite_eq_left rfl, mul_one, sub_self]
+    · intro i _ hi
+      rw [map_mul, eval_latticeShape hk (LatticeNode.sum_toFinsupp_le _)
+        (LatticeNode.sum_toFinsupp_le _), ite_eq_right, mul_zero]
+      intro h
+      exact hi (by rw [← e.apply_symm_apply i, LatticeNode.toFinsupp_injective k h])
+    · exact fun h ↦ absurd (Finset.mem_univ _) h
+  have hr0 : r = 0 := eq_zero_of_eval_latticePoint hk hrdeg hrzero
+  have hq' : q = ∑ i, C (eval (latticePoint k (e.symm i).toFinsupp) q)
+      * latticeShape k (e.symm i).toFinsupp := by
+    rw [← sub_eq_zero]
+    exact hr0
+  conv_rhs => rw [hq']
+  rw [map_sum, Approximation.nodalInterp_apply]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [map_mul, eval_C, smul_eq_mul, mul_comm]
+  rfl
+
+/-- The composition of a polynomial in two variables with an affine parametrization
+`s ↦ (A₀ + B₀ s, A₁ + B₁ s)` of a line, as a polynomial in `s`. -/
+noncomputable def lineRestrict (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) : Polynomial ℝ :=
+  aeval (fun j ↦ Polynomial.C (A j) + Polynomial.C (B j) * Polynomial.X) q
+
+/-- The restriction to a line evaluates as the polynomial does along the line. -/
+theorem eval_lineRestrict (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) (s : ℝ) :
+    (lineRestrict q A B).eval s = eval (fun j ↦ A j + B j * s) q := by
+  rw [lineRestrict, ← Polynomial.coe_aeval_eq_eval, comp_aeval_apply]
+  simp only [map_add, Polynomial.aeval_C, map_mul, Polynomial.aeval_X, Algebra.algebraMap_self,
+    RingHom.id_apply]
+  rw [MvPolynomial.aeval_eq_eval]
+
+/-- The restriction to a line of a polynomial of total degree at most `k` has degree at most
+`k`. -/
+theorem natDegree_lineRestrict_le (q : MvPolynomial (Fin 2) ℝ) (A B : Fin 2 → ℝ) :
+    (lineRestrict q A B).natDegree ≤ q.totalDegree := by
+  rw [lineRestrict, aeval_def, eval₂_eq']
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun d hd ↦ ?_
+  rw [Polynomial.algebraMap_eq]
+  refine (Polynomial.natDegree_C_mul_le _ _).trans ((Polynomial.natDegree_prod_le _ _).trans ?_)
+  have h1 : ∀ j : Fin 2,
+      (Polynomial.C (A j) + Polynomial.C (B j) * Polynomial.X).natDegree ≤ 1 := fun j ↦
+    Polynomial.natDegree_add_le_of_degree_le (by simp)
+      ((Polynomial.natDegree_C_mul_le _ _).trans Polynomial.natDegree_X_le)
+  refine (Finset.sum_le_sum fun j _ ↦ Polynomial.natDegree_pow_le.trans
+    (Nat.mul_le_mul_left (d j) (h1 j))).trans ?_
+  simp only [mul_one]
+  have := le_totalDegree hd
+  rwa [Finsupp.sum_fintype _ _ fun _ ↦ rfl] at this
+
+/-- **The lattice nodes on an edge**: the point `x̂_a + (j/k)(x̂_b − x̂_a)` of the segment from
+the vertex `a` to the vertex `b` of the reference triangle, `0 ≤ j ≤ k`, is a lattice node. -/
+theorem exists_latticeNode_eq_lineMap {k : ℕ} (hk : 0 < k) (a b : Fin 3) {j : ℕ} (hj : j ≤ k) :
+    ∃ i, latticeNode k i = referenceTriangleVertex a
+      + ((j : ℝ) / k) • (referenceTriangleVertex b - referenceTriangleVertex a) := by
+  have hm : (k - j) * (if a = 1 then 1 else 0) + j * (if b = 1 then 1 else 0)
+      + ((k - j) * (if a = 2 then 1 else 0) + j * (if b = 2 then 1 else 0)) ≤ k := by
+    fin_cases a <;> fin_cases b <;> simp <;> omega
+  refine ⟨Fintype.equivFin (LatticeNode k) (LatticeNode.mk' _ _ hm), ?_⟩
+  have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast hk.ne'
+  have hkj : ((k - j : ℕ) : ℝ) = k - j := by rw [Nat.cast_sub hj]
+  ext c
+  rw [latticeNode_apply, Equiv.symm_apply_apply]
+  fin_cases c
+  · simp only [Fin.zero_eta, Fin.isValue]
+    rw [LatticeNode.toFinsupp_zero]
+    simp only [LatticeNode.mk', PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply, smul_eq_mul,
+      Nat.cast_add, Nat.cast_mul, hkj]
+    fin_cases a <;> fin_cases b <;>
+      simp [referenceTriangleVertex, sub_eq_add_neg, add_div, neg_div, hk.ne']
+  · simp only [Fin.mk_one, Fin.isValue]
+    rw [LatticeNode.toFinsupp_one]
+    simp only [LatticeNode.mk', PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply, smul_eq_mul,
+      Nat.cast_add, Nat.cast_mul, hkj]
+    fin_cases a <;> fin_cases b <;>
+      simp [referenceTriangleVertex, sub_eq_add_neg, add_div, neg_div, hk.ne']
+
+/-- The local interpolant of the lattice element on an element, as a polynomial in the reference
+coordinates: `∑ᵢ v(F_K x̂ᵢ) L_i`. -/
+noncomputable def latticeLocalPoly {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) (T : 𝒯.elems)
+    (v : 𝔼₂ → ℝ) : MvPolynomial (Fin 2) ℝ :=
+  ∑ i, C (v (𝒯.linearPart T (latticeNode k i) + T.1 0))
+    * latticeShape k ((Fintype.equivFin (LatticeNode k)).symm i).toFinsupp
+
+/-- The local polynomial of the lattice element has total degree at most `k`. -/
+theorem totalDegree_latticeLocalPoly_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ)
+    (T : 𝒯.elems) (v : 𝔼₂ → ℝ) : (latticeLocalPoly 𝒯 k T v).totalDegree ≤ k := by
+  rw [← mem_restrictTotalDegree]
+  refine Submodule.sum_mem _ fun i _ ↦ ?_
+  rw [C_mul']
+  exact Submodule.smul_mem _ _ ((mem_restrictTotalDegree _ _ _).2
+    (totalDegree_latticeShape_le (LatticeNode.sum_toFinsupp_le _)))
+
+/-- The local interpolant of the lattice element is its local polynomial read through
+`F_K⁻¹`. -/
+theorem localInterp_lattice_eq {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) (T : 𝒯.elems)
+    (v : 𝔼₂ → ℝ) (y : 𝔼₂) :
+    𝒯.localInterp (latticeNode k) (latticeShapeFun k) T v y
+      = eval (fun j ↦ ((𝒯.linearPart T).symm (y - T.1 0)) j) (latticeLocalPoly 𝒯 k T v) := by
+  rw [Triangulation.localInterp_apply, latticeLocalPoly, map_sum]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [map_mul, eval_C, mul_comm]
+  rfl
+
+/-- **The `ℙ_k` Lagrange element on the principal lattice is conforming** (the extension of
+Example 10.2.3 to every `k`, which the book leaves to the reader for `k = 2`, Exercise 10.2.4):
+the local interpolants of two elements agree at every point of a common closed element. At a
+common vertex both take the value of `v` (a vertex is a lattice node). Along a common edge
+`[P, Q]` both restrict to polynomials of degree at most `k` in the parameter `s` of
+`P + s (Q − P)`, which agree at the `k + 1` lattice nodes `s = j/k` of the edge — these are nodes
+of both elements, where each interpolant takes the value of `v` — hence everywhere. -/
+theorem isConformingElement_lattice {k : ℕ} (hk : 0 < k) {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) :
+    𝒯.IsConformingElement (latticeNode k) (latticeShapeFun k) := by
+  intro v T T' x hx hx'
+  dsimp only
+  by_cases hTT' : T = T'
+  · subst hTT'; rfl
+  have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast hk.ne'
+  -- the interpolant takes the value of `v` at the lattice nodes of every edge
+  have hnode : ∀ (S : 𝒯.elems) (a b : Fin 3) {j : ℕ}, j ≤ k →
+      𝒯.localInterp (latticeNode k) (latticeShapeFun k) S v
+          (S.1 a + ((j : ℝ) / k) • (S.1 b - S.1 a))
+        = v (S.1 a + ((j : ℝ) / k) • (S.1 b - S.1 a)) := by
+    intro S a b j hj
+    obtain ⟨i, hi⟩ := exists_latticeNode_eq_lineMap hk a b hj
+    rw [← 𝒯.affine_vertex_lineMap S a b, ← hi]
+    exact 𝒯.localInterp_apply_node _ _ (latticeShapeFun_isNodalBasis hk) S v i
+  rcases 𝒯.conforming' hTT' hx hx' with ⟨a, b, rfl, hab⟩ | ⟨a, b, a', b', -, ha, hb, hseg⟩
+  · -- a common vertex
+    have h0 : ∀ (S : 𝒯.elems) (c : Fin 3),
+        S.1 c = S.1 c + (((0 : ℕ) : ℝ) / k) • (S.1 c - S.1 c) := by simp
+    rw [h0 T a, hnode T a a (Nat.zero_le k), ← h0, hab, h0 T' b, hnode T' b b (Nat.zero_le k),
+      ← h0]
+  · -- a common edge
+    rw [segment_eq_image'] at hseg
+    obtain ⟨s, -, rfl⟩ := hseg
+    -- the restrictions of the two interpolants to the edge are polynomials in `s`
+    obtain ⟨A, hA⟩ : ∃ A : 𝒯.elems → Fin 2 → ℝ,
+        ∀ S, A S = fun j ↦ ((𝒯.linearPart S).symm (T.1 a - S.1 0)) j := ⟨_, fun _ ↦ rfl⟩
+    obtain ⟨B, hB⟩ : ∃ B : 𝒯.elems → Fin 2 → ℝ, ∀ S, B S = fun j ↦
+        ((𝒯.linearPart S).symm (T.1 b - S.1 0) - (𝒯.linearPart S).symm (T.1 a - S.1 0)) j :=
+      ⟨_, fun _ ↦ rfl⟩
+    have key : ∀ S : 𝒯.elems, ∀ t : ℝ,
+        𝒯.localInterp (latticeNode k) (latticeShapeFun k) S v (T.1 a + t • (T.1 b - T.1 a))
+          = (lineRestrict (latticeLocalPoly 𝒯 k S v) (A S) (B S)).eval t := by
+      intro S t
+      rw [eval_lineRestrict, localInterp_lattice_eq, hA, hB]
+      refine congrArg (fun g : Fin 2 → ℝ ↦ eval g (latticeLocalPoly 𝒯 k S v)) (funext fun j ↦ ?_)
+      have : (𝒯.linearPart S).symm (T.1 a + t • (T.1 b - T.1 a) - S.1 0)
+          = (𝒯.linearPart S).symm (T.1 a - S.1 0)
+            + t • ((𝒯.linearPart S).symm (T.1 b - S.1 0)
+              - (𝒯.linearPart S).symm (T.1 a - S.1 0)) := by
+        simp only [map_add, map_sub, map_smul]
+        module
+      rw [this]
+      simp only [PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply, smul_eq_mul, mul_comm]
+    -- they agree at the `k + 1` nodes `j / k` of the edge
+    have hagree : ∀ y ∈ (Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k),
+        (lineRestrict (latticeLocalPoly 𝒯 k T v) (A T) (B T)).eval y
+          = (lineRestrict (latticeLocalPoly 𝒯 k T' v) (A T') (B T')).eval y := by
+      intro y hy
+      obtain ⟨j, hj, rfl⟩ := Finset.mem_image.1 hy
+      have hj' : j ≤ k := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
+      rw [← key T, ← key T', hnode T a b hj', ha, hb, hnode T' a' b' hj']
+    have hcard : ((Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k)).card = k + 1 := by
+      rw [Finset.card_image_of_injective _ fun j₁ j₂ h ↦ ?_, Finset.card_range]
+      exact_mod_cast (div_left_inj' hk').1 h
+    have hdeg : ∀ S : 𝒯.elems, (lineRestrict (latticeLocalPoly 𝒯 k S v) (A S) (B S)).degree
+        < ((Finset.range (k + 1)).image (fun j : ℕ ↦ (j : ℝ) / k)).card := by
+      intro S
+      rw [hcard]
+      refine Polynomial.degree_le_natDegree.trans_lt ?_
+      exact_mod_cast Nat.lt_succ_of_le
+        ((natDegree_lineRestrict_le _ _ _).trans (totalDegree_latticeLocalPoly_le 𝒯 k S v))
+    rw [key T, key T', Polynomial.eq_of_degrees_lt_of_eval_finset_eq _ (hdeg T) (hdeg T') hagree]
+
+end LatticeElement
 
 end AtkinsonHan.Chapter10

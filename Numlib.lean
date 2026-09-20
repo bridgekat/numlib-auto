@@ -6,6 +6,7 @@ import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.DerivativeTest
 import Numlib.Analysis.Calculus.HolderSpace
+import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
@@ -275,6 +276,7 @@ import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered
 import Numlib.Analysis.Sobolev.Translate
+import Numlib.Analysis.Sobolev.Triangulation
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.Sobolev.Zero
 import Numlib.Analysis.SpecialFunctions.Chebyshev
@@ -368,6 +370,7 @@ import Numlib.FloatingPoint.Stationary
 import Numlib.FloatingPoint.Substitution
 import Numlib.FloatingPoint.System
 import Numlib.Geometry.Euclidean.TriangleShape
+import Numlib.Geometry.Triangulation
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel
 import Numlib.IntegralEquations.Nystrom

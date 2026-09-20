@@ -3,6 +3,7 @@ import Mathlib.LinearAlgebra.AffineSpace.Basis
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.SeminormCompare
 import Numlib.Analysis.Sobolev.Simplex
+import Numlib.Analysis.Sobolev.Triangulation
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Geometry.Euclidean.TriangleShape
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
@@ -15,12 +16,12 @@ Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysi
 Analysis Framework*, 3rd edition, Springer, 2009, §10.3.
 
 The section estimates the finite element interpolation error on an element by transporting the
-problem to the reference element. Everything is here except the global estimate over a
-triangulation: Theorem 10.3.1 (the transport of the interpolant), Theorem 10.3.3 (the estimate on
+problem to the reference element, and then sums over the elements of a triangulation. Everything
+is here: Theorem 10.3.1 (the transport of the interpolant), Theorem 10.3.3 (the estimate on
 the reference element), Theorem 10.3.4 (the affine change of variables in `H^m`), Theorem 10.3.5
-(the local estimate), Definition 10.3.6 and Corollary 10.3.7 (regular families), and Example
-10.3.8 (the linear element on triangles, and its `Q₁` analogue on the unit square). Two of these
-are not Sobolev statements at all:
+(the local estimate), Definition 10.3.6 and Corollary 10.3.7 (regular families), Example
+10.3.8 (the linear element on triangles, and its `Q₁` analogue on the unit square), and Theorem
+10.3.9 (the global estimate on a triangulation). Two of these are not Sobolev statements at all:
 
 * **Theorem 10.3.1**, that nodal interpolation commutes with the affine pullback, is an algebraic
   identity between two finite sums. It is the backbone's `Approximation.nodalInterp_comp`, and the
@@ -58,6 +59,10 @@ are not Sobolev statements at all:
   `m ≤ 2`: `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`, (10.3.11).
 * `example_10_3_8_square` — the same for the `Q₁` element on the affine images of the unit
   square.
+* `theorem_10_3_9` — the global estimate `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}`, `m = 0, 1`,
+  on a regular family of triangulations (`Triangulation`, `Numlib/Geometry/Triangulation.lean`)
+  for a conforming element type, and `theorem_10_3_9_linear`, `theorem_10_3_9_lattice`, its
+  instances for the linear element and for the `ℙ_k` Lagrange element on the principal lattice.
 * `example_10_3_2` — the linear element: the barycentric coordinates of a simplex are nodal for its
   vertices, so `Π_K` is the interpolant through the vertex values, and
   `nodalInterp_coord_affineMap` says that it reproduces affine functions.
@@ -106,14 +111,10 @@ family together with the affine map `F_K` carrying the reference element onto ea
 
 ## Not formalized here
 
-Theorem 10.3.9, the global estimate `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}`: it is Corollary
-10.3.7 summed over the elements of a triangulation of `Ω`, and needs the triangulation scaffold —
-a finite family of elements with disjoint interiors covering `Ω̄`, the global interpolant `Π_h`
-glued from the `Π_K`, and the additivity `‖w‖²_{m,Ω} = ∑_K ‖w‖²_{m,K}` of the tensor norm over
-the elements — which does not exist (`notes/frontier.md`, blocker 11). Exercises 10.3.1, 10.3.2,
-10.3.4 and 10.3.7 are not nodes; Exercise 10.3.3
+Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7 are not nodes; Exercise 10.3.3
 (`h_K / ρ_K` bounded if and only if the minimal angles are bounded below) is Sobolev-free, and is
-`exercise_10_3_3` below.
+`exercise_10_3_3` below. The remark after Theorem 10.3.9 on the interpolation of discontinuous
+functions by local `L²` projections is a pointer to the literature.
 -/
 
 open Filter Metric Topology
@@ -1135,11 +1136,11 @@ open scoped ENNReal NNReal Topology
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
 /-- **The barycentric coordinates are nodal for the vertices of the reference triangle**: the
-`P₁` element, Example 10.3.2 with the explicit coordinates of `EuclideanSpace.baryCoord`. -/
+`P₁` element, Example 10.3.2 with the explicit coordinates of `EuclideanSpace.baryCoord`
+(the backbone's `EuclideanSpace.isNodalBasis_baryCoord`). -/
 theorem baryCoord_isNodalBasis :
-    Approximation.IsNodalBasis referenceTriangleVertex baryCoord where
-  eval_self i := by rw [baryCoord_apply_vertex, ite_eq_left rfl]
-  eval_of_ne i j hij := by rw [baryCoord_apply_vertex, ite_eq_right hij]
+    Approximation.IsNodalBasis referenceTriangleVertex baryCoord :=
+  isNodalBasis_baryCoord
 
 /-- The barycentric coordinates lie in `H^m` of the reference triangle for every `m`. -/
 theorem memSobolev_baryCoord (m : ℕ) (i : Fin 3) :
@@ -1215,5 +1216,161 @@ theorem example_10_3_8 {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
     (fun q hq x _ ↦ nodalInterp_baryCoord_eval q hq x) hreg hH
 
 end Example1038
+
+/-! ### Theorem 10.3.9: the global interpolation error on a triangulation
+
+The triangulation is `Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`): a finite set of
+nondegenerate triangles with disjoint interiors, whose closures cover `Ω`, meeting edge to
+edge. Its elements are the affine images `F_K(K̂)` of the reference triangle
+(`Triangulation.image_referenceTriangle`), the local interpolant `Π_K v` is
+`Triangulation.localInterp` ((10.3.2), with the transported nodes and shape functions of
+Corollary 10.3.7) and the global interpolant `Π_h v` is `Triangulation.globalInterp`, glued
+from the local ones (§10.3.4, `Π_h v|_K = Π_K v`). The element type is assumed *conforming*
+(`Triangulation.IsConformingElement`: the local interpolants agree on the common edges, the
+book's standing assumption `X_h ⊆ C(Ω̄)` of §10.2.3, which Example 10.2.3 verifies for the
+linear element); then `Π_h v` is continuous on `Ω̄` and lies in `H¹(Ω)`
+(`Triangulation.memSobolev_globalInterp`, through the weak derivative of a continuous
+piecewise-`C¹` function, `Numlib/Analysis/Sobolev/Triangulation.lean`). -/
+
+section Theorem1039
+
+open MeasureTheory Set TopologicalSpace EuclideanSpace
+open scoped ENNReal NNReal Topology
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- The mesh parameter of a triangulation, read as a collection of elements, is its
+`Triangulation.meshSize`. -/
+theorem meshSize_range_K {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) :
+    meshSize (Set.range 𝒯.K) = 𝒯.meshSize :=
+  𝒯.meshSize_eq_sSup_image.symm
+
+/-- **Definition 10.3.6 for a family of triangulations**: the family is regular exactly when
+(a) some `σ` bounds `h_K / ρ_K` for every element of every triangulation — every element
+contains a ball of radius `r` with `h_K ≤ σ (2 r)` — and (b) the mesh parameters
+`Triangulation.meshSize` tend to `0`. -/
+theorem isRegularFamily_iff {Ω : Opens 𝔼₂} {ι : Type*} (l : Filter ι) (𝒯 : ι → Triangulation Ω) :
+    IsRegularFamily l (fun i ↦ Set.range (𝒯 i).K) ↔
+      (∃ σ : ℝ, ∀ i, ∀ T : (𝒯 i).elems, ∃ (c : 𝔼₂) (r : ℝ), 0 < r ∧
+        Metric.closedBall c r ⊆ (𝒯 i).K T ∧ Metric.diam ((𝒯 i).K T) ≤ σ * (2 * r)) ∧
+      Tendsto (fun i ↦ (𝒯 i).meshSize) l (𝓝 0) := by
+  simp only [IsRegularFamily, meshSize_range_K, Set.forall_mem_range]
+
+/-- **Theorem 10.3.9** (the global interpolation error, (10.3.13)). Let `{𝒯_h}` be a regular
+family of triangulations of a plane domain `Ω` (Definition 10.3.6, `IsRegularFamily`, with mesh
+parameters at most `H`), and let the reference element be the reference triangle with nodes
+`x̂ᵢ ∈ K̂̄`, `C¹` shape functions `φ̂ᵢ` and the polynomial invariance `ℙ_k(K̂) ⊆ X̂`, `k ≥ 1`, the
+element being conforming on every triangulation of the family. Then there is a constant `c`,
+independent of `h`, such that for every `v ∈ H^{k+1}(Ω)` (read on its continuous representative
+up to the boundary, as in Corollary 10.3.7) and `m = 0, 1`,
+
+  `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}`.
+
+The proof is the book's: `‖v − Π_h v‖²_{m,Ω} = ∑_K ‖v − Π_K v‖²_{m,K}`
+(`Triangulation.sobolevNorm_rpow_eq_sum`, the additivity of the tensor norm over the elements,
+which needs `v − Π_h v ∈ H^m(Ω)` — for `m = 1` the conformity), each term is bounded by
+Corollary 10.3.7 with `h_K ≤ h`, and `∑_K |v|²_{k+1,K} = |v|²_{k+1,Ω}`. The hypothesis
+`k + 1 > d/2` of Corollary 10.3.7 is `k ≥ 1` in the plane. -/
+theorem theorem_10_3_9 {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k)
+    {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
+    (hφ : ∀ i, ContDiff ℝ 1 (φhat i))
+    (hP : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k →
+      ∀ x ∈ referenceTriangle, Approximation.nodalInterp xhat φhat
+        (fun y ↦ MvPolynomial.eval (fun i ↦ y i) q) x = MvPolynomial.eval (fun i ↦ x i) q)
+    {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
+    (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H)
+    (hconf : ∀ i, (𝒯 i).IsConformingElement xhat φhat) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ i, ∀ v : 𝔼₂ → ℝ, MemSobolev v (k + 1) 2 Ω volume →
+      ContinuousOn v (closure (Ω : Set 𝔼₂)) →
+      sobolevNorm (v - (𝒯 i).globalInterp xhat φhat v) m 2 Ω volume
+        ≤ ENNReal.ofReal (c * (𝒯 i).meshSize ^ (k + 1 - m))
+          * sobolevSeminorm v (k + 1) 2 Ω volume := by
+  -- the elementwise estimate, Corollary 10.3.7 on the reference triangle
+  have hφ1 : ∀ i, MemSobolev (φhat i) m 2 referenceTriangle volume := fun i ↦
+    ((hφ i).memSobolev_of_isBounded isBounded_referenceTriangle 2).mono_order
+      (by exact_mod_cast hm)
+  have hkd : (2 : ℝ) / 2 < k + 1 := by
+    norm_num
+    exact_mod_cast hk
+  have hH' : ∀ i, ∀ K ∈ Set.range (𝒯 i).K, Metric.diam K ≤ H := by
+    rintro i _ ⟨T, rfl⟩
+    exact ((𝒯 i).diam_le_meshSize T).trans (hH i)
+  obtain ⟨c, hc0, hc⟩ := corollary_10_3_7 (k := k) (m := m)
+    isSobolevExtensionDomainAll_referenceTriangle isBounded_referenceTriangle
+    convex_referenceTriangle.isPreconnected (by norm_num : (0 : ℝ) < 1 / 4)
+    closedBall_subset_referenceTriangle (hm.trans (by omega)) hkd xhat φhat hx hφ1 hP hreg hH'
+  refine ⟨c, hc0, fun i v hv hvc ↦ ?_⟩
+  -- `v − Π_h v ∈ H^m(Ω)`: the conformity of the element
+  have hw : MemSobolev (v - (𝒯 i).globalInterp xhat φhat v) m 2 Ω volume :=
+    (hv.mono_order (by exact_mod_cast (show m ≤ k + 1 by omega))).sub
+      (((𝒯 i).memSobolev_globalInterp xhat φhat (hconf i) hφ v 2).mono_order
+        (by exact_mod_cast hm))
+  -- the bound on each element, with `h_K ≤ h`
+  have helem : ∀ T : (𝒯 i).elems,
+      sobolevNorm (v - (𝒯 i).globalInterp xhat φhat v) m 2 ((𝒯 i).Kopens T) volume
+        ≤ ENNReal.ofReal (c * (𝒯 i).meshSize ^ (k + 1 - m))
+          * sobolevSeminorm v (k + 1) 2 ((𝒯 i).Kopens T) volume := by
+    intro T
+    rw [(𝒯 i).sobolevNorm_sub_globalInterp xhat φhat (hconf i) T v m]
+    refine (hc i _ ⟨T, rfl⟩ ((𝒯 i).Kopens T) rfl ((𝒯 i).linearPart T) (T.1 0)
+      ((𝒯 i).image_referenceTriangle T) v (hv.mono_set ((𝒯 i).Kopens_le T))
+      (hvc.mono (closure_mono ((𝒯 i).K_subset T)))).trans ?_
+    gcongr
+    exact (𝒯 i).diam_le_meshSize T
+  -- sum the squares over the elements
+  have h2 : (2 : ℝ≥0∞).toReal = 2 := by simp
+  have hsum := (𝒯 i).sobolevNorm_rpow_eq_sum (p := 2) (by simp) hw
+  have hsum' := (𝒯 i).sobolevSeminorm_rpow_eq_sum (p := 2) (by simp) hv
+  rw [h2] at hsum hsum'
+  have key : sobolevNorm (v - (𝒯 i).globalInterp xhat φhat v) m 2 Ω volume ^ (2 : ℝ)
+      ≤ (ENNReal.ofReal (c * (𝒯 i).meshSize ^ (k + 1 - m))
+          * sobolevSeminorm v (k + 1) 2 Ω volume) ^ (2 : ℝ) := by
+    rw [hsum, ENNReal.mul_rpow_of_nonneg _ _ (by norm_num), hsum', Finset.mul_sum]
+    refine Finset.sum_le_sum fun T _ ↦ ?_
+    rw [← ENNReal.mul_rpow_of_nonneg _ _ (by norm_num)]
+    exact ENNReal.rpow_le_rpow (helem T) (by norm_num)
+  exact (ENNReal.rpow_le_rpow_iff (by norm_num : (0 : ℝ) < 2)).1 key
+
+/-- **Theorem 10.3.9 for the linear element** of Example 10.3.8: on a regular family of
+triangulations with mesh parameters at most `H`, the continuous piecewise linear interpolant
+`Π_h v` at the vertices satisfies `‖v − Π_h v‖_{m,Ω} ≤ c h^{2−m} |v|_{2,Ω}` for every
+`v ∈ H²(Ω)` and `m = 0, 1`. The linear element is conforming on every triangulation
+(`Triangulation.isConformingElement_linear`, Example 10.2.3), and `ℙ₁(K̂) ⊆ X̂`
+(`nodalInterp_baryCoord_eval`). -/
+theorem theorem_10_3_9_linear {m : ℕ} (hm : m ≤ 1) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
+    {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ i, ∀ v : 𝔼₂ → ℝ, MemSobolev v 2 2 Ω volume →
+      ContinuousOn v (closure (Ω : Set 𝔼₂)) →
+      sobolevNorm (v - (𝒯 i).globalInterp referenceTriangleVertex baryCoord v) m 2 Ω volume
+        ≤ ENNReal.ofReal (c * (𝒯 i).meshSize ^ (2 - m)) * sobolevSeminorm v 2 2 Ω volume :=
+  theorem_10_3_9 (k := 1) hm le_rfl referenceTriangleVertex baryCoord
+    referenceTriangleVertex_mem_closure (fun i ↦ (contDiff_baryCoord i).of_le (by simp))
+    (fun q hq x _ ↦ nodalInterp_baryCoord_eval q hq x) hreg hH
+    fun i ↦ (𝒯 i).isConformingElement_linear
+
+/-- **Theorem 10.3.9 for the `ℙ_k` Lagrange element** on the principal lattice `N̂_k` (10.2.24) —
+the book's "affine-equivalent finite element spaces of piecewise polynomials of degree at most
+`k`": on a regular family of triangulations with mesh parameters at most `H`, the continuous
+piecewise-`ℙ_k` interpolant `Π_h v` at the lattice nodes satisfies
+`‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}` for every `v ∈ H^{k+1}(Ω)`, `k ≥ 1`, `m = 0, 1`.
+The lattice element is conforming on every triangulation (`isConformingElement_lattice`) and
+reproduces `ℙ_k` (`nodalInterp_lattice_eval`, Proposition 10.2.1). -/
+theorem theorem_10_3_9_lattice {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*}
+    {l : Filter ι} {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ i, ∀ v : 𝔼₂ → ℝ, MemSobolev v (k + 1) 2 Ω volume →
+      ContinuousOn v (closure (Ω : Set 𝔼₂)) →
+      sobolevNorm (v - (𝒯 i).globalInterp (latticeNode k) (latticeShapeFun k) v) m 2 Ω volume
+        ≤ ENNReal.ofReal (c * (𝒯 i).meshSize ^ (k + 1 - m))
+          * sobolevSeminorm v (k + 1) 2 Ω volume :=
+  theorem_10_3_9 hm hk (latticeNode k) (latticeShapeFun k) (latticeNode_mem_closure hk)
+    (fun i ↦ (contDiff_latticeShapeFun k i).of_le (by simp))
+    (fun q hq x _ ↦ nodalInterp_lattice_eval hk q hq x) hreg hH
+    fun i ↦ isConformingElement_lattice hk (𝒯 i)
+
+end Theorem1039
 
 end AtkinsonHan.Chapter10

@@ -1,0 +1,274 @@
+# Numlib/Geometry/Triangulation.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "EuclideanSpace.closedReferenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.closure_referenceTriangle_eq"
+
+[[node]]
+id = "EuclideanSpace.isCompact_closedReferenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.triangleAffine"
+
+[[node]]
+id = "EuclideanSpace.openTriangle_eq_image_triangleAffine"
+
+[[node]]
+id = "EuclideanSpace.triangleAffine_referenceTriangleVertex"
+
+[[node]]
+id = "EuclideanSpace.triangleAffine_eq"
+
+[[node]]
+id = "EuclideanSpace.continuous_triangleAffine"
+
+[[node]]
+id = "EuclideanSpace.triangleAffine_lineMap"
+
+[[node]]
+id = "EuclideanSpace.closedTriangle"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2 (the elements of a triangulation)"
+
+[[node]]
+id = "EuclideanSpace.mem_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.openTriangle_subset_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.isCompact_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.isClosed_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.isBounded_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.isBounded_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.closure_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.vertex_mem_closedTriangle"
+
+[[node]]
+id = "EuclideanSpace.convex_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.frontier_openTriangle_subset"
+
+[[node]]
+id = "EuclideanSpace.volume_frontier_openTriangle"
+
+[[node]]
+id = "Triangulation"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2 (the definition of a triangulation, properties 1–4)"
+
+[[node]]
+id = "Triangulation.K"
+
+[[node]]
+id = "Triangulation.closedK"
+
+[[node]]
+id = "Triangulation.li"
+
+[[node]]
+id = "Triangulation.Kopens"
+
+[[node]]
+id = "Triangulation.coe_Kopens"
+
+[[node]]
+id = "Triangulation.isOpen_K"
+
+[[node]]
+id = "Triangulation.closure_K"
+
+[[node]]
+id = "Triangulation.isClosed_closedK"
+
+[[node]]
+id = "Triangulation.isCompact_closedK"
+
+[[node]]
+id = "Triangulation.K_subset_closedK"
+
+[[node]]
+id = "Triangulation.convex_K"
+
+[[node]]
+id = "Triangulation.isBounded_K"
+
+[[node]]
+id = "Triangulation.K_subset"
+
+[[node]]
+id = "Triangulation.Kopens_le"
+
+[[node]]
+id = "Triangulation.closedK_subset_closure"
+
+[[node]]
+id = "Triangulation.vertex_mem_closedK"
+
+[[node]]
+id = "Triangulation.subset_iUnion_closedK"
+
+[[node]]
+id = "Triangulation.closure_eq_iUnion_closedK"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2 (property 1 of a triangulation)"
+
+[[node]]
+id = "Triangulation.isBounded"
+
+[[node]]
+id = "Triangulation.isCompact_closure"
+
+[[node]]
+id = "Triangulation.pairwise_disjoint_K"
+
+[[node]]
+id = "Triangulation.conforming'"
+
+[[node]]
+id = "Triangulation.linearPart"
+
+[[node]]
+id = "Triangulation.image_referenceTriangle"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.2.25)"
+
+[[node]]
+id = "Triangulation.affine_eq_triangleAffine"
+
+[[node]]
+id = "Triangulation.affine_referenceTriangleVertex"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.2.27)"
+
+[[node]]
+id = "Triangulation.affine_symm"
+
+[[node]]
+id = "Triangulation.image_closedReferenceTriangle"
+
+[[node]]
+id = "Triangulation.meshSize"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.3.9)"
+
+[[node]]
+id = "Triangulation.diam_le_meshSize"
+
+[[node]]
+id = "Triangulation.meshSize_nonneg"
+
+[[node]]
+id = "Triangulation.meshSize_eq_sSup_image"
+
+[[node]]
+id = "Triangulation.skeleton"
+
+[[node]]
+id = "Triangulation.skeleton_subset_iUnion_segment"
+
+[[node]]
+id = "Triangulation.volume_skeleton"
+
+[[node]]
+id = "Triangulation.isClosed_skeleton"
+
+[[node]]
+id = "Triangulation.exists_mem_K_of_notMem_skeleton"
+
+[[node]]
+id = "Triangulation.volume_diff_iUnion_K"
+
+[[node]]
+id = "Triangulation.ae_eq_iUnion_K"
+
+[[node]]
+id = "Triangulation.vertices"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2.1 (the nodes of the linear element space)"
+
+[[node]]
+id = "Triangulation.vertex_mem_vertices"
+
+[[node]]
+id = "Triangulation.exists_vertex_of_mem_vertices"
+
+[[node]]
+id = "Triangulation.vertices_subset_closure"
+
+[[node]]
+id = "Triangulation.Compatible"
+
+[[node]]
+id = "Triangulation.glue"
+
+[[node]]
+id = "Triangulation.glue_eq_of_mem_closedK"
+
+[[node]]
+id = "Triangulation.glue_eq_of_mem_K"
+
+[[node]]
+id = "Triangulation.glue_eq_zero_of_notMem_closure"
+
+[[node]]
+id = "Triangulation.continuousOn_glue"
+
+[[node]]
+id = "Triangulation.localInterp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.3.2)"
+
+[[node]]
+id = "Triangulation.localInterp_apply"
+
+[[node]]
+id = "Triangulation.isNodalBasis_local"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2.2 (φᵢᴷ(xⱼᴷ) = δᵢⱼ)"
+
+[[node]]
+id = "Triangulation.localInterp_apply_node"
+
+[[node]]
+id = "Triangulation.contDiff_localInterp"
+
+[[node]]
+id = "Triangulation.localInterp_lineMap"
+
+[[node]]
+id = "Triangulation.IsConformingElement"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2.3, (10.2.6)"
+
+[[node]]
+id = "Triangulation.globalInterp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.3.4 (the global interpolant Π_h)"
+
+[[node]]
+id = "Triangulation.globalInterp_eq_of_mem_closedK"
+
+[[node]]
+id = "Triangulation.globalInterp_eq_of_mem_K"
+
+[[node]]
+id = "Triangulation.continuousOn_globalInterp"
+
+[[node]]
+id = "EuclideanSpace.isNodalBasis_baryCoord"
+
+[[node]]
+id = "EuclideanSpace.baryCoord_lineMap"
+
+[[node]]
+id = "Triangulation.localInterp_linear_vertex"
+
+[[node]]
+id = "Triangulation.isConformingElement_linear"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.2.3"
+
+[[node]]
+id = "Triangulation.affine_vertex_lineMap"

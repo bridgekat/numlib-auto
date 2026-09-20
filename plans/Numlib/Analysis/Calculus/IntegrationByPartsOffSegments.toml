@@ -1,0 +1,22 @@
+# Numlib/Analysis/Calculus/IntegrationByPartsOffSegments.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "integral_bilinear_hasDerivAt_right_eq_neg_left_of_countable"
+
+[[node]]
+id = "HasCompactSupport.comp_prodMk"
+
+[[node]]
+id = "subsingleton_setOf_mem_segment"
+
+[[node]]
+id = "integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux₁"
+
+[[node]]
+id = "integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_aux₂"
+
+[[node]]
+id = "integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable_off_segments"
+
+[[node]]
+id = "integral_fderiv_smul_eq_neg_smul_fderiv_of_integrable_off_segments"

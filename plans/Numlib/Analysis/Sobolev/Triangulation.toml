@@ -1,0 +1,62 @@
+# Numlib/Analysis/Sobolev/Triangulation.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "sobolevSeminorm_rpow_eq_sum"
+
+[[node]]
+id = "sobolevNorm_rpow_eq_sum_sobolevSeminorm_rpow"
+
+[[node]]
+id = "sobolevNorm_rpow_eq_sum"
+
+[[node]]
+id = "Triangulation.sobolevSeminorm_rpow_eq_sum"
+
+[[node]]
+id = "Triangulation.sobolevNorm_rpow_eq_sum"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.9 (the first line of the proof)"
+
+[[node]]
+id = "Triangulation.pieceFDeriv"
+
+[[node]]
+id = "Triangulation.pieceFDeriv_of_mem"
+
+[[node]]
+id = "Triangulation.measurable_pieceFDeriv"
+
+[[node]]
+id = "Triangulation.exists_norm_pieceFDeriv_le"
+
+[[node]]
+id = "Triangulation.memLp_top_pieceFDeriv"
+
+[[node]]
+id = "Triangulation.hasWeakFDerivOn_of_piecewise"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 7.2.7 and §10.2.3 (conformity)"
+
+[[node]]
+id = "Triangulation.memSobolev_of_piecewise"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 7.2.7 and §10.2.3 (conformity)"
+
+[[node]]
+id = "Triangulation.memSobolev_glue"
+
+[[node]]
+id = "Triangulation.hasWeakFDerivOn_glue"
+
+[[node]]
+id = "Triangulation.sobolevNorm_sub_glue"
+
+[[node]]
+id = "Triangulation.memSobolev_globalInterp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.2.3 (X_h ⊆ H¹(Ω))"
+
+[[node]]
+id = "Triangulation.sobolevNorm_sub_globalInterp"
+
+[[node]]
+id = "Continuous.memLp_restrict_of_isBounded"
+
+[[node]]
+id = "ContDiff.memSobolev_of_isBounded"
