@@ -1,0 +1,59 @@
+[[node]]
+id = "isSaddlePointOn_swap_neg_iff"
+
+[[node]]
+id = "LowerSemicontinuousOn.isClosed_sep_le"
+
+[[node]]
+id = "UpperSemicontinuousOn.isClosed_sep_ge"
+
+[[node]]
+id = "image_toWeakSpace_sep"
+
+[[node]]
+id = "Convex.image_toWeakSpace"
+
+[[node]]
+id = "QuasiconvexOn.comp_toWeakSpace_symm"
+
+[[node]]
+id = "QuasiconcaveOn.comp_toWeakSpace_symm"
+
+[[node]]
+id = "LowerSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconvexOn"
+
+[[node]]
+id = "UpperSemicontinuousOn.comp_toWeakSpace_symm_of_quasiconcaveOn"
+
+[[node]]
+id = "exists_isSaddlePointOn_of_isBounded"
+source = "Ekeland–Temam, Convex Analysis and Variational Problems, Chapter VI, Proposition 2.1"
+
+[[node]]
+id = "IsSaddlePointOn.of_inter_closedBall_left"
+
+[[node]]
+id = "IsSaddlePointOn.of_inter_closedBall_right"
+
+[[node]]
+id = "exists_isMaxOn_of_concaveOn"
+
+[[node]]
+id = "exists_isSaddlePointOn_of_isCoerciveFunctionalOn"
+source = "Ekeland–Temam, Convex Analysis and Variational Problems, Chapter VI, Proposition 2.2"
+
+[[node]]
+id = "exists_isSaddlePointOn_of_sup_coercive"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 8.6.3"
+
+[[node]]
+id = "exists_isSaddlePointOn_of_inf_coercive"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 8.6.3"
+
+[[node]]
+id = "IsSaddlePointOn.fst_eq_of_strictConvexOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 8.6.3"
+
+[[node]]
+id = "IsSaddlePointOn.snd_eq_of_strictConcaveOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 8.6.3"

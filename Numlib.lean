@@ -486,6 +486,7 @@ import Numlib.Variational.Inequality.Approximation
 import Numlib.Variational.Inequality.Basic
 import Numlib.Variational.Inequality.NormalCone
 import Numlib.Variational.LaxMilgram
+import Numlib.Variational.Minimax
 import Numlib.Variational.Minimization
 import Numlib.Variational.ProjectionMethod
 import Numlib.Variational.WeakMinimization
