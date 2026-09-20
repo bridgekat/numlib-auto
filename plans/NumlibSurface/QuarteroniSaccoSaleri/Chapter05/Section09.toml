@@ -30,23 +30,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.10'
 
 [[node]]
 id = "generalizedRealSchur"
-kind = "theorem"
-desc = '''The generalized *real* Schur form stated after Property 5.10: for real `A`, `B` with `(A, B)`
-regular there are orthogonal `Ũ`, `Z̃` with `Ũᵀ A Z̃` quasi upper triangular (`BlockTriangular p`
-with blocks of size `≤ 2`) and `Ũᵀ B Z̃` upper triangular. The book states it without proof
-(citing [GL89] §7.7).
-
-Blocked: the case of a nonsingular `B` is proved, as `generalizedRealSchur_of_isUnit` — the real
-Schur form of `B⁻¹ A` gives `Z̃`, a QR factorization `B Z̃ = Ũ R` gives `Ũ`, and `Ũᵀ A Z̃ = R T`
-is triangular times quasi-triangular. What is left open is exactly the singular case, where there
-is no `B⁻¹ A`: the pencil is still regular, but neither of the two natural repairs works. Shifting
-(`A ↦ A - μ B` with `A - μ B` nonsingular) triangularizes the wrong pair, since recovering `B` from
-a quasi-triangular and a triangular matrix gives a quasi-triangular `B`, not a triangular one; and
-the rotation `(A cosθ - B sinθ, A sinθ + B cosθ)` has the same defect. Golub–Van Loan's proof
-(Theorem 7.7.2) descends through real deflating subspaces of the pencil, a theory the backbone
-does not have. Estimate: a `Eigen/Pencil` development of deflating subspaces, several hundred
-lines; nothing downstream in the book uses it.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_10"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.1'
 
 [[node]]
@@ -64,14 +47,19 @@ desc = '''The stability statement after the QR–Cholesky algorithm: a computed 
 `λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` with `‖E‖₂ ≃ u ‖A‖₂ ‖B⁻¹‖₂`. The book cites it from [GL89] p. 464
 without proof.
 
-Blocked, and out of scope as printed: the `≃` is not an inequality, so there is no proposition to
-prove. Even the rigorous form behind it (the computed `λ̂` is an exact eigenvalue of
-`Ĥ⁻ᵀ A Ĥ⁻¹ + E` with `‖E‖₂ ≤ c(n) u ‖A‖₂ ‖B⁻¹‖₂`) needs three floating-point analyses the
-library does not have: the computed Cholesky factor `Ĥ` of `B` (available, `RoundsCholesky` in
-`Numlib/FloatingPoint/LU`), the computed two-sided triangular solve `Ĥ⁻ᵀ A Ĥ⁻¹` (needs a
-`RoundsBackSubst` analysis with a matrix right-hand side, not in the library), and the backward
-stability of the symmetric QR iteration on the result — which is the same missing Householder
-rounding model as `Chapter05.equation_5_46`. Estimate: not reachable without that model.'''
+Blocked, and out of scope as printed (re-examined 2026-09-20, agent qss1): the `≃` is not an
+inequality, so there is no proposition to prove, and the book names no source for a rigorous
+form beyond [GL89] p. 464 (Golub–Van Loan state it as `‖E‖₂ ≈ u ‖A‖₂ ‖B⁻¹‖₂` too, so no single
+reading is forced and the node stays under its printed id). The rigorous statement behind it —
+the computed `λ̂` is an exact eigenvalue of `Ĥ⁻ᵀ A Ĥ⁻¹ + E` with `‖E‖₂ ≤ c(n) u ‖A‖₂ ‖B⁻¹‖₂` —
+needs three floating-point analyses; checked in `Numlib/FloatingPoint/*` (`System`, `Model`,
+`InnerProduct`, `Substitution`, `LU`, `Stationary`): the computed Cholesky factor `Ĥ` of `B` is
+available (`RoundsCholesky` in `FloatingPoint/LU`), the computed two-sided triangular solve
+`Ĥ⁻ᵀ A Ĥ⁻¹` needs a `RoundsBackSubst`-style analysis with a matrix right-hand side (not there),
+and the backward stability of the symmetric QR iteration on the result is the missing
+Householder/Givens rounding model of blocker 12 (`Chapter05.equation_5_46`,
+`Chapter05.golubKahan_svd_stability`). Estimate: not reachable without that model; with it,
+~300 lines for the two-sided solve and the assembly.'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_7"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2'
 

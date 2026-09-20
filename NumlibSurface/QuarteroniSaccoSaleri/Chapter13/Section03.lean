@@ -1,8 +1,10 @@
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Approximation.CompositeQuadrature
+import Numlib.Approximation.MarkovInequality
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.FiniteDifference.Parabolic
 import Numlib.Variational.FiniteElementInterval
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section03
 
 /-!
 # Quarteroni–Sacco–Saleri §13.3: finite elements for the heat equation, the θ-method
@@ -36,7 +38,18 @@ matrices of chapter 12's hat basis (`massMatrix_eq_gram`, `heatStiffnessMatrix_e
 `Matrix.symmTridiagonalToeplitz`, so is `A_fe - λ M`, and `pencil_hasEigenvalue_iff` reads the
 generalized eigenvalues `λ_h^i = (6ν/h²)(1 - cos θ_i)/(2 + cos θ_i)` off the cosine spectrum;
 `pencil_maxEigenvalue_bounds` gives `3ν h^{-2} ≤ λ_h^{N_h} ≤ 12ν h^{-2}` and `equation_13_23`
-the stability condition `Δt ≤ h²/(6ν(1 - 2θ))`. **Erratum**: the hint of Exercise 2 prints
+the stability condition `Δt ≤ h²/(6ν(1 - 2θ))`.
+
+The pseudo-spectral Galerkin approximation of (13.24) is `SpectralSpace N x w`, the space
+`ℙ_N^0` of §12.3 with the Legendre–Gauss–Lobatto inner product `(·, ·)_N` of (12.37) (an inner
+product space under `[Fact (IsLegendreLobatto N x w)]`), with the form
+`a_N(u, v) = ν (u', v')_N = ν ∫ u' v'` (`SpectralSpace.spectralForm`). Its eigenvalues are at most
+`ν N²(N + 1)²` (`SpectralSpace.spectralForm_eigenvalue_le`, from the `L²` Markov inequality of
+`Numlib/Approximation/MarkovInequality` and the norm equivalence of §12.3), so the θ-method with
+`θ < 1/2` is stable whenever `Δt ≤ N⁻⁴/(2ν(1 - 2θ))` (`equation_13_24`). The matching lower bound
+`λ_max ≥ c N⁴`, which would make the condition necessary, is not proved.
+
+**Erratum**: the hint of Exercise 2 prints
 `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the exact integrals are `∫ φ_i² = 2h/3` and
 `∫ φ_i φ_{i±1} = h/6`, i.e. `M = (h/6) tridiag(1, 4, 1)`, which is what Program 100 assembles.
 
@@ -673,6 +686,309 @@ theorem equation_13_23 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ
 
 
 end Eigen
+
+section Spectral
+
+open Polynomial
+
+/-! ### The pseudo-spectral Galerkin approximation and (13.24) -/
+
+/-- **`ℙ_N^0`**, the polynomials of degree at most `N` vanishing at `±1`, as a submodule of
+`ℝ[X]`: the trial space of the spectral collocation method of §12.3. -/
+def spectralSubmodule (N : ℕ) : Submodule ℝ ℝ[X] where
+  carrier := {p | p.natDegree ≤ N ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0}
+  add_mem' {p q} hp hq := ⟨(natDegree_add_le p q).trans (max_le hp.1 hq.1),
+    by rw [eval_add, hp.2.1, hq.2.1, add_zero], by rw [eval_add, hp.2.2, hq.2.2, add_zero]⟩
+  zero_mem' := ⟨by simp, by simp, by simp⟩
+  smul_mem' c {p} hp := ⟨(natDegree_smul_le c p).trans hp.1,
+    by rw [eval_smul, hp.2.1, smul_zero], by rw [eval_smul, hp.2.2, smul_zero]⟩
+
+/-- Membership of `ℙ_N^0`: degree at most `N` and vanishing at `±1`. -/
+theorem mem_spectralSubmodule_iff {N : ℕ} {p : ℝ[X]} :
+    p ∈ spectralSubmodule N ↔ p.natDegree ≤ N ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 := Iff.rfl
+
+-- the nodes and weights are phantom parameters of the type, there for the inner product instance
+set_option linter.unusedVariables false in
+/-- **The pseudo-spectral trial space** `V_N = ℙ_N^0` of §13.3.1's "pseudo-spectral Galerkin
+approximation", carrying the Legendre–Gauss–Lobatto discrete inner product `(u, v)_N` of (12.37)
+in place of the `L²` inner product. The nodes and weights are parameters of the type so that the
+inner product can be an instance; it is definite when they are the Gauss–Lobatto ones, which is
+why the inner product space instance asks for `[Fact (IsLegendreLobatto N x w)]`. -/
+def SpectralSpace (N : ℕ) (x w : Fin (N + 1) → ℝ) : Type := spectralSubmodule N
+
+namespace SpectralSpace
+
+variable {N : ℕ} {x w : Fin (N + 1) → ℝ}
+
+instance : AddCommGroup (SpectralSpace N x w) :=
+  inferInstanceAs (AddCommGroup (spectralSubmodule N))
+
+instance : Module ℝ (SpectralSpace N x w) := inferInstanceAs (Module ℝ (spectralSubmodule N))
+
+instance : Inhabited (SpectralSpace N x w) := ⟨0⟩
+
+/-- The polynomial of an element of the trial space. -/
+def poly (v : SpectralSpace N x w) : ℝ[X] := (v : spectralSubmodule N).1
+
+theorem poly_mem (v : SpectralSpace N x w) : v.poly ∈ spectralSubmodule N :=
+  (v : spectralSubmodule N).2
+
+theorem natDegree_poly_le (v : SpectralSpace N x w) : v.poly.natDegree ≤ N := v.poly_mem.1
+
+theorem eval_neg_one_poly (v : SpectralSpace N x w) : v.poly.eval (-1) = 0 := v.poly_mem.2.1
+
+theorem eval_one_poly (v : SpectralSpace N x w) : v.poly.eval 1 = 0 := v.poly_mem.2.2
+
+@[ext]
+theorem ext {u v : SpectralSpace N x w} (h : u.poly = v.poly) : u = v := Subtype.ext h
+
+/-- An element of the trial space from a polynomial of `ℙ_N^0`. -/
+def mk (x w : Fin (N + 1) → ℝ) (p : ℝ[X]) (hp : p ∈ spectralSubmodule N) : SpectralSpace N x w :=
+  (⟨p, hp⟩ : spectralSubmodule N)
+
+@[simp]
+theorem poly_mk (p : ℝ[X]) (hp : p ∈ spectralSubmodule N) : (mk x w p hp).poly = p := rfl
+
+@[simp]
+theorem poly_add (u v : SpectralSpace N x w) : (u + v).poly = u.poly + v.poly := rfl
+
+@[simp]
+theorem poly_smul (c : ℝ) (v : SpectralSpace N x w) : (c • v).poly = c • v.poly := rfl
+
+@[simp]
+theorem poly_zero : (0 : SpectralSpace N x w).poly = 0 := rfl
+
+/-- The trial space is finite-dimensional: it sits inside `ℝ[X]_{< N + 1}`. -/
+instance : FiniteDimensional ℝ (SpectralSpace N x w) := by
+  have : FiniteDimensional ℝ (Polynomial.degreeLT ℝ (N + 1)) :=
+    (Polynomial.degreeLTEquiv ℝ (N + 1)).symm.finiteDimensional
+  exact Submodule.finiteDimensional_of_le (S₁ := spectralSubmodule N)
+    (S₂ := Polynomial.degreeLT ℝ (N + 1)) fun p hp => mem_degreeLT.2
+      ((degree_le_of_natDegree_le hp.1).trans_lt (WithBot.coe_lt_coe.2 (Nat.lt_succ_self N)))
+
+/-- **The Gauss–Lobatto inner product** `(u, v)_N` of (12.37) on the trial space. -/
+instance : Inner ℝ (SpectralSpace N x w) :=
+  ⟨fun u v => Chapter12.equation_12_37 N x w (fun t => u.poly.eval t) fun t => v.poly.eval t⟩
+
+/-- The inner product of the trial space is the discrete scalar product (12.37) of the
+polynomials. -/
+theorem inner_def (u v : SpectralSpace N x w) :
+    ⟪u, v⟫ = Chapter12.equation_12_37 N x w (fun t => u.poly.eval t) fun t => v.poly.eval t := rfl
+
+instance [hx : Fact (Chapter12.IsLegendreLobatto N x w)] :
+    InnerProductSpace.Core ℝ (SpectralSpace N x w) where
+  toInner := inferInstance
+  conj_inner_symm u v := by
+    simp only [conj_trivial, inner_def, Chapter12.equation_12_37]
+    exact Quadrature.discreteInner_comm _ _ _ _
+  re_inner_nonneg v := by
+    simp only [RCLike.re_to_real, inner_def]
+    exact Chapter12.equation_12_37_self_nonneg hx.out _
+  add_left u v z := by
+    simp only [inner_def, poly_add, eval_add, Chapter12.equation_12_37]
+    exact Quadrature.discreteInner_add_left _ _ _ _ _
+  smul_left u v c := by
+    simp only [inner_def, poly_smul, eval_smul, smul_eq_mul, conj_trivial,
+      Chapter12.equation_12_37]
+    exact Quadrature.discreteInner_smul_left _ _ _ _ _
+  definite v hv := by
+    simp only [inner_def, Chapter12.equation_12_37] at hv
+    by_contra hne
+    have hp0 : v.poly ≠ 0 := fun h => hne (ext (by rw [h, poly_zero]))
+    have hdeg : v.poly.degree < N + 1 :=
+      (degree_le_of_natDegree_le v.natDegree_poly_le).trans_lt
+        (WithBot.coe_lt_coe.2 (Nat.lt_succ_self N))
+    exact (Quadrature.discreteInner_self_pos hx.out.weight_pos hx.out.injective hp0
+      (by exact_mod_cast hdeg)).ne' hv
+
+instance [Fact (Chapter12.IsLegendreLobatto N x w)] : NormedAddCommGroup (SpectralSpace N x w) :=
+  InnerProductSpace.Core.toNormedAddCommGroup (𝕜 := ℝ)
+
+instance [Fact (Chapter12.IsLegendreLobatto N x w)] : InnerProductSpace ℝ (SpectralSpace N x w) :=
+  InnerProductSpace.ofCore _
+
+/-- The squared norm is the discrete norm `‖v‖_N² = (v, v)_N`. -/
+theorem norm_sq_eq [Fact (Chapter12.IsLegendreLobatto N x w)] (v : SpectralSpace N x w) :
+    ‖v‖ ^ 2 = Chapter12.equation_12_37 N x w (fun t => v.poly.eval t) fun t => v.poly.eval t := by
+  rw [← real_inner_self_eq_norm_sq, inner_def]
+
+/-- **The pseudo-spectral bilinear form** `a_N(u, v) = ν (u', v')_N`, the discrete form of
+`a(u, v) = ν ∫ u' v'`; on `ℙ_N^0` the Gauss–Lobatto rule is exact on `u' v' ∈ ℙ_{2N-2}`, so
+`a_N = a` (`spectralForm_apply_eq_integral`). -/
+def spectralBilin (N : ℕ) (x w : Fin (N + 1) → ℝ) (ν : ℝ) :
+    SpectralSpace N x w →ₗ[ℝ] SpectralSpace N x w →ₗ[ℝ] ℝ :=
+  LinearMap.mk₂ ℝ (fun u v => ν * Chapter12.equation_12_37 N x w
+      (fun t => (derivative u.poly).eval t) fun t => (derivative v.poly).eval t)
+    (fun u u' v => by
+      simp only [poly_add, derivative_add, eval_add, Chapter12.equation_12_37,
+        Quadrature.discreteInner, Finset.mul_sum, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun i _ => by ring)
+    (fun c u v => by
+      simp only [poly_smul, derivative_smul, eval_smul, smul_eq_mul, Chapter12.equation_12_37,
+        Quadrature.discreteInner, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun i _ => by ring)
+    (fun u v v' => by
+      simp only [poly_add, derivative_add, eval_add, Chapter12.equation_12_37,
+        Quadrature.discreteInner, Finset.mul_sum, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun i _ => by ring)
+    (fun c u v => by
+      simp only [poly_smul, derivative_smul, eval_smul, smul_eq_mul, Chapter12.equation_12_37,
+        Quadrature.discreteInner, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun i _ => by ring)
+
+/-- The pseudo-spectral form as a bounded form on the trial space. -/
+def spectralForm (N : ℕ) (x w : Fin (N + 1) → ℝ) [Fact (Chapter12.IsLegendreLobatto N x w)]
+    (ν : ℝ) : SesqForm ℝ (SpectralSpace N x w) :=
+  SesqForm.ofBilin (spectralBilin N x w ν)
+
+/-- The pseudo-spectral form is `ν (u', v')_N`. -/
+theorem spectralForm_apply [Fact (Chapter12.IsLegendreLobatto N x w)] (ν : ℝ)
+    (u v : SpectralSpace N x w) :
+    spectralForm N x w ν u v = ν * Chapter12.equation_12_37 N x w
+      (fun t => (derivative u.poly).eval t) fun t => (derivative v.poly).eval t := rfl
+
+/-- **The pseudo-spectral form is the exact form**: `a_N(u, v) = ν ∫_{-1}^1 u' v'`, the
+Gauss–Lobatto rule being exact on `ℙ_{2N-1}`. -/
+theorem spectralForm_apply_eq_integral [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (ν : ℝ)
+    (u v : SpectralSpace N x w) :
+    spectralForm N x w ν u v =
+      ν * ∫ t in (-1 : ℝ)..1, (derivative u.poly).eval t * (derivative v.poly).eval t := by
+  rw [spectralForm_apply, Chapter12.equation_12_37_exact hx.out]
+  rw [← natDegree_le_iff_degree_le]
+  have d1 := natDegree_derivative_le u.poly
+  have d2 := natDegree_derivative_le v.poly
+  have hu := u.natDegree_poly_le
+  have hv := v.natDegree_poly_le
+  have hm := natDegree_mul_le (p := derivative u.poly) (q := derivative v.poly)
+  omega
+
+/-- The pseudo-spectral form is symmetric. -/
+theorem spectralForm_isHermitian [Fact (Chapter12.IsLegendreLobatto N x w)] (ν : ℝ) :
+    (spectralForm N x w ν).IsHermitian := fun u v => by
+  simp only [spectralForm_apply, RCLike.conj_to_real, Chapter12.equation_12_37]
+  rw [Quadrature.discreteInner_comm]
+
+/-- **The energy of the pseudo-spectral form**: `a_N(v, v) = ν ‖v'‖²_{L²(-1,1)}`, the discrete
+counterpart of (13.18). -/
+theorem spectralForm_apply_self [Fact (Chapter12.IsLegendreLobatto N x w)] (ν : ℝ)
+    (v : SpectralSpace N x w) :
+    spectralForm N x w ν v v = ν * ∫ t in (-1 : ℝ)..1, (derivative v.poly).eval t ^ 2 := by
+  rw [spectralForm_apply_eq_integral]
+  congr 1
+  exact intervalIntegral.integral_congr fun t _ => (sq _).symm
+
+/-- **`L²`-coercivity of the pseudo-spectral form**: `(ν/6) ‖v‖_N² ≤ a_N(v, v)`. Poincaré's
+inequality (12.16) on `(-1, 1)` gives `∫ v² ≤ 2 ∫ (v')²` for `v ∈ ℙ_N^0`, and the norm
+equivalence `‖v‖_N² ≤ 3 ∫ v²` (`Chapter12.equation_12_37_norm_equiv`) converts the discrete norm.
+-/
+theorem spectralForm_coercive [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (hN : 1 ≤ N) {ν : ℝ}
+    (hν : 0 < ν) : (spectralForm N x w ν).IsCoerciveWith (ν / 6) := by
+  intro v
+  rw [RCLike.re_to_real, spectralForm_apply_self, norm_sq_eq]
+  have h1 := (Chapter12.equation_12_37_norm_equiv hN hx.out v.natDegree_poly_le).2
+  have h2 := Chapter12.poincare_poly v.eval_neg_one_poly
+  nlinarith
+
+/-- **The eigenvalues of the pseudo-spectral discretization are `O(N⁴)`** ([quarteroni2000numerical]
+§13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like `O(N⁴)`"): every
+eigenvalue `λ` of the form `a_N(u, v) = ν (u', v')_N` relative to `(·, ·)_N` on `ℙ_N^0`
+(Definition 13.1) satisfies `λ ≤ ν N² (N + 1)²`. With `v` an eigenvector,
+`λ ‖v‖_N² = a_N(v, v) = ν ‖v'‖²_{L²} ≤ ν N²(N + 1)² ‖v‖²_{L²} ≤ ν N²(N + 1)² ‖v‖_N²` by the `L²`
+Markov inequality `Polynomial.integral_derivative_sq_le` and the lower half of the norm
+equivalence `Chapter12.equation_12_37_norm_equiv`. The matching lower bound `c N⁴ ≤ λ_max` is not
+proved (the open plan node `equation_13_24_lower`). -/
+theorem spectralForm_eigenvalue_le [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (hN : 1 ≤ N)
+    {ν : ℝ} (hν : 0 ≤ ν) {lam : ℝ} {v : SpectralSpace N x w}
+    (h : definition_13_1 (spectralForm N x w ν) lam v) :
+    lam ≤ ν * ((N : ℝ) * (N + 1)) ^ 2 := by
+  refine Variational.IsFormEigenpair.le_of_le (fun u => ?_) h
+  rw [spectralForm_apply_self, norm_sq_eq]
+  have h1 := (Chapter12.equation_12_37_norm_equiv hN hx.out u.natDegree_poly_le).1
+  have h2 := Polynomial.integral_derivative_sq_le u.natDegree_poly_le
+  have h3 : (0 : ℝ) ≤ ((N : ℝ) * (N + 1)) ^ 2 := sq_nonneg _
+  calc ν * ∫ t in (-1 : ℝ)..1, (derivative u.poly).eval t ^ 2
+      ≤ ν * (((N : ℝ) * (N + 1)) ^ 2 * ∫ t in (-1 : ℝ)..1, u.poly.eval t ^ 2) := by gcongr
+    _ ≤ ν * (((N : ℝ) * (N + 1)) ^ 2 *
+          Chapter12.equation_12_37 N x w (fun t => u.poly.eval t) fun t => u.poly.eval t) := by
+        gcongr
+    _ = _ := by ring
+
+end SpectralSpace
+
+/-- **(13.24), the stability condition of the θ-method for the pseudo-spectral Galerkin
+approximation** ([quarteroni2000numerical] (13.24)): on `V_N = ℙ_N^0` with the Gauss–Lobatto
+inner product and the form `a_N(u, v) = ν (u', v')_N`, the θ-method with `0 ≤ θ < 1/2` is stable
+— `‖u_N^{k+1}‖_N ≤ ‖u_N^k‖_N` for every datum — whenever `Δt ≤ C₂(θ) N⁻⁴` with
+`C₂(θ) = 1/(2ν(1 - 2θ))`, since every eigenvalue of the form is at most
+`ν N²(N + 1)² ≤ 4 ν N⁴` (`SpectralSpace.spectralForm_eigenvalue_le`) and the sharp condition is
+`Δt ≤ 2/((1 - 2θ) λ_max)` (`thetaMethod_stable_iff_of_lt_half`). The book's "only if" — the
+necessity of `Δt ≤ C N⁻⁴` — needs the matching lower bound `λ_max ≥ c N⁴`, which is not proved
+(the open plan node `equation_13_24_lower`). The book's `θ ≥ 0` is not needed for sufficiency.
+For `θ ≥ 1/2` the method is unconditionally stable by `thetaMethod_stable_of_half_le`. -/
+theorem equation_13_24 {N : ℕ} (hN : 1 ≤ N) {x w : Fin (N + 1) → ℝ}
+    [hx : Fact (Chapter12.IsLegendreLobatto N x w)] {ν : ℝ} (hν : 0 < ν) {θ Δt : ℝ}
+    (hθ : θ < 1 / 2) (hΔt : 0 < Δt)
+    (hstep : Δt ≤ 1 / (2 * ν * (1 - 2 * θ)) * ((N : ℝ) ^ 4)⁻¹) :
+    ∀ u u' : SpectralSpace N x w,
+      equation_13_17 (SpectralSpace.spectralForm N x w ν) θ Δt 0 0 u u' → ‖u'‖ ≤ ‖u‖ := by
+  have hN' : (1 : ℝ) ≤ N := by exact_mod_cast hN
+  have hθ' : 0 < 1 - 2 * θ := by linarith
+  -- the largest eigenvalue
+  obtain ⟨lam, b, hb⟩ := equation_13_22_basis (SpectralSpace.spectralForm_isHermitian (x := x)
+    (w := w) ν)
+  have hcoer := SpectralSpace.spectralForm_coercive (x := x) (w := w) hN hν
+  set lmax : ℝ := ν * ((N : ℝ) * (N + 1)) ^ 2 with hlmax
+  -- every eigenvalue is at most `lmax`, hence so is the quadratic form
+  have hle : ∀ v : SpectralSpace N x w,
+      SpectralSpace.spectralForm N x w ν v v ≤ lmax * ‖v‖ ^ 2 := by
+    intro v
+    have hexp : v = ∑ i, ⟪b i, v⟫ • b i := (b.sum_repr' v).symm
+    have hv : ∀ i, SpectralSpace.spectralForm N x w ν (b i) v = lam i * ⟪b i, v⟫ :=
+      fun i => (hb i).2 v
+    have hsymm := SpectralSpace.spectralForm_isHermitian (x := x) (w := w) ν
+    have hform : SpectralSpace.spectralForm N x w ν v v = ∑ i, lam i * ⟪b i, v⟫ ^ 2 := by
+      calc SpectralSpace.spectralForm N x w ν v v
+          = SpectralSpace.spectralForm N x w ν (∑ i, ⟪b i, v⟫ • b i) v := by rw [← hexp]
+        _ = ∑ i, ⟪b i, v⟫ * SpectralSpace.spectralForm N x w ν (b i) v := by
+            rw [map_sum]
+            simp only [FunLike.coe_sum, Finset.sum_apply, map_smul, FunLike.coe_smul,
+              Pi.smul_apply, smul_eq_mul]
+        _ = ∑ i, lam i * ⟪b i, v⟫ ^ 2 := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [hv i]; ring
+    have hnorm : ‖v‖ ^ 2 = ∑ i, ⟪b i, v⟫ ^ 2 := by
+      rw [← real_inner_self_eq_norm_sq, ← b.sum_inner_mul_inner v v]
+      exact Finset.sum_congr rfl fun i _ => by rw [real_inner_comm v (b i), sq]
+    rw [hform, hnorm, Finset.mul_sum]
+    refine Finset.sum_le_sum fun i _ => ?_
+    exact mul_le_mul_of_nonneg_right
+      (SpectralSpace.spectralForm_eigenvalue_le hN hν.le (hb i)) (sq_nonneg _)
+  have hpos : (SpectralSpace.spectralForm N x w ν).IsCoerciveWith 0 :=
+    SesqForm.IsCoerciveWith.mono _ hcoer (by positivity)
+  intro u u' h
+  refine Variational.IsThetaStep.norm_le_of_le_of_lt_half h
+    (SpectralSpace.spectralForm_isHermitian ν) hpos hle hΔt ?_
+  -- `(1 - 2θ) lmax Δt ≤ 2`
+  have hN4 : ((N : ℝ) * (N + 1)) ^ 2 ≤ 4 * (N : ℝ) ^ 4 := by
+    have h1 : (N : ℝ) + 1 ≤ 2 * N := by linarith
+    have h2 : (N : ℝ) * (N + 1) ≤ N * (2 * N) := by
+      exact mul_le_mul_of_nonneg_left h1 (by positivity)
+    calc ((N : ℝ) * (N + 1)) ^ 2 ≤ ((N : ℝ) * (2 * N)) ^ 2 := by gcongr
+      _ = 4 * (N : ℝ) ^ 4 := by ring
+  have hstep' : Δt * (2 * ν * (1 - 2 * θ)) * (N : ℝ) ^ 4 ≤ 1 := by
+    have hpos4 : (0 : ℝ) < (N : ℝ) ^ 4 := by positivity
+    have := mul_le_mul_of_nonneg_right hstep (by positivity : (0 : ℝ) ≤ 2 * ν * (1 - 2 * θ) * N ^ 4)
+    calc Δt * (2 * ν * (1 - 2 * θ)) * (N : ℝ) ^ 4
+        = Δt * (2 * ν * (1 - 2 * θ) * N ^ 4) := by ring
+      _ ≤ 1 / (2 * ν * (1 - 2 * θ)) * ((N : ℝ) ^ 4)⁻¹ * (2 * ν * (1 - 2 * θ) * N ^ 4) := this
+      _ = 1 := by field_simp
+  calc (1 - 2 * θ) * lmax * Δt = (1 - 2 * θ) * ν * Δt * ((N : ℝ) * (N + 1)) ^ 2 := by
+        rw [hlmax]; ring
+    _ ≤ (1 - 2 * θ) * ν * Δt * (4 * (N : ℝ) ^ 4) := by gcongr
+    _ = 2 * (Δt * (2 * ν * (1 - 2 * θ)) * (N : ℝ) ^ 4) := by ring
+    _ ≤ 2 := by linarith
+
+end Spectral
 
 end
 

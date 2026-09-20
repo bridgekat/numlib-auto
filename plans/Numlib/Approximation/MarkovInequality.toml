@@ -1,0 +1,67 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "legendreCoeff"
+
+[[node]]
+id = "legendreCoeff_add"
+
+[[node]]
+id = "legendreCoeff_C_mul"
+
+[[node]]
+id = "legendreCoeff_sum"
+
+[[node]]
+id = "legendreCoeff_legendre"
+
+[[node]]
+id = "legendreCoeff_eq_zero_of_natDegree_lt"
+
+[[node]]
+id = "eq_sum_legendreCoeff"
+
+[[node]]
+id = "integral_sq_eq_sum_legendreCoeff"
+
+[[node]]
+id = "eval_one_derivative_legendre"
+
+[[node]]
+id = "eval_neg_one_derivative_legendre"
+
+[[node]]
+id = "integral_derivative_legendre_mul_legendre"
+
+[[node]]
+id = "abs_legendreCoeff_derivative_legendre_le"
+
+[[node]]
+id = "abs_legendreCoeff_derivative_le"
+
+[[node]]
+id = "sum_range_two_mul_add_one"
+
+[[node]]
+id = "sq_sum_abs_legendreCoeff_le"
+
+[[node]]
+id = "integral_derivative_sq_le"
+
+[[node]]
+id = "sqrt_integral_derivative_sq_le"
+
+[[node]]
+id = "_root_.intervalIntegral.sq_integral_mul_le_of_continuousOn"
+
+[[node]]
+id = "integral_legendre_mul_derivative_derivative"
+
+[[node]]
+id = "integral_derivative_legendre_sq"
+
+[[node]]
+id = "integral_X_mul_derivative_legendre_mul_derivative_derivative"
+
+[[node]]
+id = "integral_derivative_derivative_legendre_sq_ge"

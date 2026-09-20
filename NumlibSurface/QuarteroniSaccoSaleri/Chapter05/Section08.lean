@@ -1,3 +1,5 @@
+import Mathlib.Data.Matrix.ColumnRowPartitioned
+import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section07
 
@@ -27,13 +29,18 @@ leading block `T₁₁ = T.submatrix (Fin.castLE _) (Fin.castLE _)` of order `k`
 * `equation_5_56` — §5.8.2: the eigenvector of a simple eigenvalue from the Schur form, and its
   transport `x = Q y` to `A`.
 * `equation_5_57` — §5.8.3: the Golub–Kahan bidiagonalization `𝒰ᵀ A 𝒱 = (B; 0)`.
+* `golubKahan_svd` — §5.8.3, the iterative phase by its limit: orthogonal `𝒲`, `𝒵` with
+  `𝒲ᵀ B 𝒵 = Σ`, and `U = 𝒰 diag(𝒲, I)`, `V = 𝒱 𝒵` the SVD of `A`, with `padBlock` for the block
+  matrix `diag(𝒲, I_{m−n})`.
 
 ## Readings
 
 The iterative phase of the Golub–Kahan–Reinsch algorithm (§5.8.3) is described only by its limit,
-whose existence is the SVD itself, and its rounding-error bound `‖δA‖₂ ≤ C_{mn} u ‖A‖₂` is quoted
-without proof; neither is formalized (`golubKahan_svd`). Inverse iteration needs `λ ∉ σ(A)` for
-its linear systems to be solvable, which `inverseIterate_conj` assumes, as (5.28) does.
+whose existence is the SVD itself (`golubKahan_svd`, from the backbone `Matrix.exists_svd`); its
+rounding-error bound `‖δA‖₂ ≤ C_{mn} u ‖A‖₂` is quoted without proof and needs a floating-point
+model of orthogonal transformations the library does not have (the open node
+`golubKahan_svd_stability`). Inverse iteration needs `λ ∉ σ(A)` for its linear systems to be
+solvable, which `inverseIterate_conj` assumes, as (5.28) does.
 -/
 
 open Matrix
@@ -120,5 +127,100 @@ theorem equation_5_57 {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
   obtain ⟨U, hU, V, hV, h0, hB⟩ := exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal h A
   rw [conjTranspose_eq_transpose_of_trivial] at h0 hB
   exact ⟨U, hU, V, hV, h0, hB⟩
+
+/-! ### §5.8.3: the iterative phase, the SVD from the bidiagonal form -/
+
+/-- The identification `Fin n ⊕ Fin (m - n) ≃ Fin m` of the row index of `(B; 0)` with the block
+index, for `n ≤ m`: `inl k ↦ k`, `inr k ↦ n + k`. -/
+def blockEquiv {m : ℕ} (h : n ≤ m) : Fin n ⊕ Fin (m - n) ≃ Fin m :=
+  finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' h))
+
+/-- `blockEquiv h (inl k) = k`, as a natural number. -/
+theorem coe_blockEquiv_inl {m : ℕ} (h : n ≤ m) (k : Fin n) :
+    (blockEquiv h (Sum.inl k) : ℕ) = k := by
+  simp [blockEquiv]
+
+/-- `blockEquiv h (inr k) = n + k`, as a natural number. -/
+theorem coe_blockEquiv_inr {m : ℕ} (h : n ≤ m) (k : Fin (m - n)) :
+    (blockEquiv h (Sum.inr k) : ℕ) = n + k := by
+  simp [blockEquiv]
+
+/-- **The block matrix `diag(W, I_{m-n}) ∈ ℝ^{m×m}`** of §5.8.3, for `W ∈ ℝ^{n×n}` and `n ≤ m`:
+`W` in the leading `n × n` block, the identity in the trailing one. -/
+def padBlock {m : ℕ} (h : n ≤ m) (W : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin m) (Fin m) ℝ :=
+  (fromBlocks W 0 0 (1 : Matrix (Fin (m - n)) (Fin (m - n)) ℝ)).submatrix (blockEquiv h).symm
+    (blockEquiv h).symm
+
+/-- `diag(W, I)` is orthogonal when `W` is. -/
+theorem padBlock_mem_orthogonalGroup {m : ℕ} (h : n ≤ m) {W : Matrix (Fin n) (Fin n) ℝ}
+    (hW : W ∈ orthogonalGroup (Fin n) ℝ) : padBlock h W ∈ orthogonalGroup (Fin m) ℝ := by
+  rw [mem_orthogonalGroup_iff'] at hW ⊢
+  rw [padBlock, transpose_submatrix, submatrix_mul_equiv, fromBlocks_transpose, transpose_zero,
+    transpose_zero, transpose_one, fromBlocks_multiply]
+  simp only [hW, Matrix.mul_zero, add_zero, Matrix.zero_mul, zero_add, Matrix.mul_one,
+    fromBlocks_one, submatrix_one_equiv]
+
+/-- **§5.8.3, the iterative phase: the SVD of `A` from its bidiagonalization.** Given the direct
+phase `𝒰ᵀ A 𝒱 = (B; 0)` of (5.57) — `𝒰`, `𝒱` orthogonal, the rows `n, …, m − 1` of `𝒰ᵀ A 𝒱`
+null, `B` its leading `n × n` block — the QR iteration on `B` converges, in the limit, to
+orthogonal `𝒲`, `𝒵` with `𝒲ᵀ B 𝒵 = Σ = diag(σ₁, …, σₙ)`; and then `U = 𝒰 diag(𝒲, I_{m−n})`,
+`V = 𝒱 𝒵` is the SVD of `A`, `Uᵀ A V = (Σ; 0)`. The existence of the limit is the SVD of the
+square matrix `B` (Property 1.7, backbone `Matrix.exists_svd`), and the assembly is the block
+computation `diag(𝒲, I)ᵀ (B; 0) 𝒵 = (𝒲ᵀ B 𝒵; 0)`; `Σ` is `Matrix.rectDiagonal σ` in both
+shapes, with `σ` the singular values of `B`. Nothing is claimed about the *iteration* that
+produces `𝒲`, `𝒵`; the book describes it by its limit only. The rounding-error bound
+`‖δA‖₂ ≤ C_{mn} u ‖A‖₂` quoted after it is the open node `golubKahan_svd_stability`. -/
+theorem golubKahan_svd {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
+    {𝒰 : Matrix (Fin m) (Fin m) ℝ} (h𝒰 : 𝒰 ∈ orthogonalGroup (Fin m) ℝ)
+    {𝒱 : Matrix (Fin n) (Fin n) ℝ} (h𝒱 : 𝒱 ∈ orthogonalGroup (Fin n) ℝ)
+    (h0 : ∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → (𝒰ᵀ * A * 𝒱) i j = 0) :
+    ∃ W ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ σ : ℕ → ℝ,
+      Wᵀ * (𝒰ᵀ * A * 𝒱).submatrix (Fin.castLE h) id * Z = rectDiagonal σ ∧
+      𝒰 * padBlock h W ∈ orthogonalGroup (Fin m) ℝ ∧ 𝒱 * Z ∈ orthogonalGroup (Fin n) ℝ ∧
+      (𝒰 * padBlock h W)ᵀ * A * (𝒱 * Z) = rectDiagonal σ := by
+  set M := 𝒰ᵀ * A * 𝒱 with hM
+  set B := M.submatrix (Fin.castLE h) id with hB
+  obtain ⟨W, hW, Z, hZ, hsvd⟩ := exists_svd B
+  rw [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at hsvd
+  set σ : ℕ → ℝ := fun i => ((toEuclideanLin B).singularValues i : ℝ) with hσ
+  have hsvd' : Wᵀ * B * Z = rectDiagonal σ := by
+    rw [hsvd]
+    exact rectDiagonal_congr fun i _ _ => by simp [hσ]
+  refine ⟨W, hW, Z, hZ, σ, hsvd', mul_mem h𝒰 (padBlock_mem_orthogonalGroup h hW), mul_mem h𝒱 hZ,
+    ?_⟩
+  -- `M = (B; 0)` in block form
+  set e := blockEquiv h with he
+  have hMblock : M = (fromRows B (0 : Matrix (Fin (m - n)) (Fin n) ℝ)).submatrix e.symm id := by
+    ext i j
+    obtain ⟨s, rfl⟩ := e.surjective i
+    rw [submatrix_apply, Equiv.symm_apply_apply, id]
+    cases s with
+    | inl k =>
+      rw [fromRows_apply_inl, hB, submatrix_apply, id]
+      congr 1
+    | inr k =>
+      rw [fromRows_apply_inr, Matrix.zero_apply]
+      exact h0 _ j (by rw [coe_blockEquiv_inr]; exact Nat.le_add_right n k)
+  -- the assembly `diag(W, I)ᵀ (B; 0) Z = (Wᵀ B Z; 0)`
+  have hassemble : (𝒰 * padBlock h W)ᵀ * A * (𝒱 * Z) = (padBlock h W)ᵀ * M * Z := by
+    rw [transpose_mul, hM]
+    simp only [Matrix.mul_assoc]
+  have hX : ∀ X : Matrix (Fin n ⊕ Fin (m - n)) (Fin n) ℝ,
+      X.submatrix e.symm id * Z = (X * Z).submatrix e.symm id := fun X =>
+    (submatrix_mul X Z e.symm id id Function.bijective_id).symm
+  rw [hassemble, hMblock, padBlock, transpose_submatrix, submatrix_mul_equiv, fromBlocks_transpose,
+    transpose_zero, transpose_zero, transpose_one, fromBlocks_mul_fromRows]
+  simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero]
+  rw [← he, hX, fromRows_mul, hsvd', Matrix.zero_mul]
+  ext i j
+  obtain ⟨s, rfl⟩ := e.surjective i
+  rw [submatrix_apply, Equiv.symm_apply_apply, id, rectDiagonal_apply]
+  cases s with
+  | inl k =>
+    rw [fromRows_apply_inl, rectDiagonal_apply, coe_blockEquiv_inl]
+  | inr k =>
+    rw [fromRows_apply_inr, Matrix.zero_apply, coe_blockEquiv_inr]
+    have : n + (k : ℕ) ≠ j := by have := j.isLt; omega
+    rw [ite_eq_right this]
 
 end QuarteroniSaccoSaleri.Chapter05

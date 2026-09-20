@@ -283,6 +283,7 @@ import Numlib.Approximation.Hyperinterpolation
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
 import Numlib.Approximation.LeastSquares
+import Numlib.Approximation.MarkovInequality
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NewtonCotes
 import Numlib.Approximation.NewtonForm
@@ -380,6 +381,7 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.DiagDominant
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
+import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Jordan

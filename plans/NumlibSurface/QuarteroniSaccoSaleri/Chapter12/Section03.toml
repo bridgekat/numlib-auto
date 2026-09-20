@@ -53,29 +53,24 @@ id = "equation_12_37_inner_mul_le"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, "(f, v_n)_n ≤ ‖f‖_n ‖v_n‖_n"'
 
 [[node]]
-id = "equation_12_38_stability"
-kind = "theorem"
-desc = '''The stability bound after (12.38): `‖u_n'‖_{L²(-1,1)} ≤ √6 C_P ‖f‖_∞` for the collocation solution,
-hence uniqueness.
+id = "IsLegendreLobatto.isInterpolatoryMeasure_and_nodal_eq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the Legendre–Gauss–Lobatto nodes of §10.4'
 
-Blocked: re-examined 2026-09-16. Every step of the book's four-line argument is now proved here
-except one: the energy identity is `equation_12_38_energy`, the discrete Cauchy–Schwarz
-`(f, v_n)_n ≤ ‖f‖_n ‖v_n‖_n` is `equation_12_37_inner_mul_le`, the bound `‖f‖_n ≤ √2 ‖f‖_∞` is
-`equation_12_37_le_sup` (over `equation_12_37_sum_weights`, `∑_j w_j = 2`), and Poincaré is
-`SobolevInterval.norm_le_of_eq_integral` at `b - a = 2`. What is missing is the upper half of the
-norm equivalence `‖v_n‖_n ≤ √3 ‖v_n‖_{L²(-1,1)}` on `P_n`, quoted from [CHQZ88, p. 286]. Its proof
-is not long but needs two Legendre facts the library does not have: `‖L_k‖²_{L²(-1,1)} = 2/(2k+1)`
-and the *explicit Gauss–Lobatto weights* `w_j = 2/(n(n+1) L_n(x_j)²)`, from which
-`(L_n, L_n)_n = 2/n` and hence, for `p = r + c L_n` with `r ∈ P_{n-1}`,
-`‖p‖_n² = ‖r‖² + c²·2/n ≤ ((2n+1)/n) ‖p‖² ≤ 3‖p‖²`. `Numlib/Approximation/GaussLobatto`
-gives existence, positivity and exactness of the rule but no weight formula, and
-`Numlib/Approximation/OrthogonalPolynomial/Classical` carries the Legendre weight but not the
-normalization of the Legendre polynomials. Following `notes/backbone.md` §17.2.5, no hypothesis
-bundle is introduced to make the node provable. Estimate: the two Legendre facts are a day each;
-the rest is half an hour.'''
-deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_38", "SobolevInterval.norm_le_of_eq_integral"]
+[[node]]
+id = "equation_12_37_norm_equiv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the norm equivalence quoted from [CHQZ88] p. 286'
+
+[[node]]
+id = "poincare_poly"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the Poincaré inequality (12.16) on (-1, 1)'
+
+[[node]]
+id = "equation_12_38_stability"
 source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the stability estimate after (12.38)'''
 
+[[node]]
+id = "equation_12_36_unique"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, "problem (12.36) has a unique solution which is stable"'
 
 [[node]]
 id = "theorem_12_2"
@@ -84,19 +79,23 @@ desc = '''Theorem 12.2: for `f ∈ H^s(-1, 1)`, `s ≥ 1`, the spectral collocat
 `‖u' - u_n'‖_{L²(-1,1)} ≤ C n^{-s} (‖f‖_{H^s(-1,1)} + ‖u‖_{H^{s+1}(-1,1)})` with `C` independent of `n`.
 Statable with `SobolevInterval s (-1) 1` for the norms.
 
-Blocked: re-examined 2026-09-16. The book's proof is Galerkin orthogonality against the quadrature
-defect `E(f, v_n) = (f, v_n) - (f, v_n)_n` followed by Young's inequality, and *all* of its
-elementary steps are available: `equation_12_38` gives the discrete weak form, `exercise_12_8` is
-(12.40), Poincaré is `SobolevInterval.norm_le_of_eq_integral`, and `equation_12_37_exact` is the
-exactness the defect is measured against. The two quoted inputs are the whole of what is missing
-and neither is in chapter 10: (i) the Gauss–Lobatto quadrature error `|E(f, v_n)| ≤ C n^{-s}
-‖f‖_{H^s} ‖v_n‖_{L²}` of (10.36), proved in [CHQZ88] through the *weighted* Sobolev spaces
-`H^s_w` and the decay of Legendre coefficients; (ii) the interpolation error (10.22)
-`‖u - I_n u‖_{H^1} ≤ C n^{1-s} ‖u‖_{H^s}` at the Gauss–Lobatto nodes, same source. Chapter 10's plan
-marks both "not formalized" for the same reason, and the book proves neither. Note also that the
-constant `C` is not effective in the book's statement, so a faithful Lean statement must existentially
-quantify a single `C` over all `n`, which makes (i) and (ii) the only possible route.
-Estimate: a spectral-approximation module of its own (weighted Sobolev spaces on `(-1, 1)`,
-Legendre coefficient decay), several weeks.'''
+Blocked: re-examined 2026-09-20 (agent qss1). Checked in `Numlib/`: the discrete weak form
+`equation_12_38`, Young's inequality `exercise_12_8`, exactness `equation_12_37_exact`, the norm
+equivalence `equation_12_37_norm_equiv` (now proved, from `Quadrature.discreteInner_legendre_legendre`
+and the closed-form weights `Quadrature.legendreLobattoWeight_eq`), Poincaré (`poincare_poly` in
+this module, `SobolevInterval.norm_le_of_eq_integral`), and the Legendre normalizations
+`Polynomial.integral_legendre_sq`, `OrthogonalPolynomial.normSq_legendreMeasure`. Still missing,
+and the whole of what is missing (blocker 10 of `notes/frontier.md`): (i) the Gauss–Lobatto
+quadrature error `|E(f, v_n)| ≤ C n^{-s} ‖f‖_{H^s} ‖v_n‖_{L²}` of (10.36) and (ii) the interpolation
+error (10.22) `‖u - I_n u‖_{H^1} ≤ C n^{1-s} ‖u‖_{H^s}` at the Gauss–Lobatto nodes, both quoted from
+[CHQZ88] and proved there through the weighted Sobolev spaces `H^s_w` and the decay of Legendre
+coefficients; neither `Numlib/Approximation/*` nor Mathlib has the Legendre coefficient decay
+`|f̂_k| ≤ C k^{-s} ‖f‖_{H^s}` (repeated integration by parts against the Sturm–Liouville operator
+`((1-x²) f')'`, whose ingredients — `Polynomial.legendre_ode`, `Quadrature.derivative_legendre_eq_family`
+— exist) or the aliasing step from projection to interpolant. Chapter 10's nodes (10.22), (10.36)
+are open for the same reason. The constant `C` is not effective in the book, so the statement must
+quantify one `C` over all `n`, which makes (i) and (ii) the only route. Estimate: a
+`Approximation/SpectralProjection` module (weighted Sobolev seminorms on `(-1, 1)`, coefficient
+decay, aliasing), over a thousand lines; several weeks.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_38", "QuarteroniSaccoSaleri.Chapter12.exercise_12_8", "SobolevInterval"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.2'

@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "exists_generalizedRealSchur_of_isUnit"
+
+[[node]]
+id = "isClosed_orthogonalGroup"
+
+[[node]]
+id = "abs_apply_le_one_of_mem_orthogonalGroup"
+
+[[node]]
+id = "isCompact_orthogonalGroup"
+
+[[node]]
+id = "exists_forall_isUnit_det_add_smul_one"
+
+[[node]]
+id = "exists_generalizedRealSchur"

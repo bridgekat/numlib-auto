@@ -1,4 +1,5 @@
-import Numlib.Approximation.GaussLobatto
+import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
+import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section02
 
 /-!
 # Quarteroni–Sacco–Saleri §12.3: the spectral collocation method
@@ -34,16 +35,17 @@ collocation problem is equivalent to the discrete weak form
 * `equation_12_38_energy` — `(L_n v, v)_n = (L_n v, v) = ‖v'‖²_{L²(-1,1)}` for `v ∈ P_n^0`.
 * `exercise_12_8` — Young's inequality `ab ≤ ε a² + b²/(4ε)` (12.40), used in the proofs of
   Theorems 12.2 and 12.4.
+* `equation_12_37_norm_equiv` — the norm equivalence `‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²}` on
+  `P_n` quoted from [CHQZ88] p. 286, from the backbone's closed-form Gauss–Lobatto weights
+  (`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`).
+* `equation_12_38_stability`, `equation_12_36_unique` — the stability bound
+  `‖u_n'‖_{L²} ≤ √6 C_P ‖f‖_∞` after (12.38) and the uniqueness of the collocation solution.
 
 ## Not formalized here
 
-The stability bound `‖u_n'‖_{L²} ≤ √6 C_P ‖f‖_∞` after (12.38) and Theorem 12.2 rest on results the
-book quotes without proof from [CHQZ88]: the norm equivalence
-`‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²}` on `P_n` (p. 286) and the quadrature error bound (10.36) in
-weighted Sobolev norms, neither of which chapter 10 has. The plan keeps them as open nodes with the
-reason; every *other* step of both arguments — the energy identity, Cauchy–Schwarz for `(·, ·)_n`,
-`‖f‖_n ≤ √2 ‖f‖_∞`, Young's inequality, Poincaré — is proved here or in
-`Numlib/Analysis/Sobolev/Interval`.
+Theorem 12.2 rests on the quadrature error bound (10.36) in weighted Sobolev norms and the
+interpolation estimate (10.22), which the book quotes without proof from [CHQZ88] and which
+chapter 10 does not have; its node stays open with the reason.
 
 ## Conventions
 
@@ -296,5 +298,173 @@ theorem exercise_12_8 {ε : ℝ} (hε : 0 < ε) (a b : ℝ) :
     ring
   rw [h]
   positivity
+
+/-! ### The stability estimate after (12.38) -/
+
+/-- The Legendre–Gauss–Lobatto rule is interpolatory and has the Lobatto nodal polynomial: the
+two facts the closed-form weights need, read off the bundle `IsLegendreLobatto` through the
+uniqueness of the Gauss–Lobatto rule (`Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure`). -/
+theorem IsLegendreLobatto.isInterpolatoryMeasure_and_nodal_eq {n : ℕ} (hn : 1 ≤ n)
+    {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w) :
+    Quadrature.IsInterpolatoryMeasure OrthogonalPolynomial.legendreMeasure w x ∧
+      Lagrange.nodal Finset.univ x =
+        Quadrature.lobattoNodal OrthogonalPolynomial.legendreMeasure n :=
+  ⟨Quadrature.isInterpolatoryMeasure_of_isExactOnMeasure_two_mul_sub_one
+      OrthogonalPolynomial.isWeight_legendreMeasure hn hx.injective hx.exact,
+    Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure
+      OrthogonalPolynomial.isWeight_legendreMeasure OrthogonalPolynomial.legendreMeasure_compl_Icc
+      hn hx.injective ⟨Fin.last n, hx.last⟩ ⟨0, hx.first⟩ hx.exact⟩
+
+/-- **The norm equivalence `‖v_n‖_{L²(-1,1)} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²(-1,1)}` on `ℙ_n`** quoted in
+§12.3 from [CHQZ88] p. 286, in squared form: `∫_{-1}^1 v² ≤ (v, v)_n ≤ 3 ∫_{-1}^1 v²` for every
+polynomial `v` of degree at most `n`. Backbone
+`Quadrature.integral_sq_le_discreteInner_self_legendre` and
+`Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`. -/
+theorem equation_12_37_norm_equiv {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
+    (hx : IsLegendreLobatto n x w) {v : ℝ[X]} (hv : v.natDegree ≤ n) :
+    (∫ t in (-1 : ℝ)..1, v.eval t ^ 2) ≤
+        equation_12_37 n x w (fun t => v.eval t) (fun t => v.eval t) ∧
+      equation_12_37 n x w (fun t => v.eval t) (fun t => v.eval t) ≤
+        3 * ∫ t in (-1 : ℝ)..1, v.eval t ^ 2 := by
+  obtain ⟨hint, hnodal⟩ := hx.isInterpolatoryMeasure_and_nodal_eq hn
+  have h1 := Quadrature.integral_sq_le_discreteInner_self_legendre hn hx.injective hint hnodal
+    hx.exact hv
+  have h2 := Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq hn hx.injective hint
+    hnodal hx.exact hv
+  rw [OrthogonalPolynomial.integral_legendreMeasure] at h1 h2
+  exact ⟨h1, h2⟩
+
+/-- **Poincaré's inequality (12.16) on `(-1, 1)` for a polynomial vanishing at `-1`**:
+`∫_{-1}^1 p² ≤ C_P² ∫_{-1}^1 (p')²` with `C_P² = (b - a)²/2 = 2`, the constant the stability
+estimate after (12.38) uses. As `Chapter13.poincare_classical` on `(0, 1)`: `p(y) = ∫_{-1}^y p'`,
+Cauchy–Schwarz against `1` gives `p(y)² ≤ (y + 1) ∫ (p')²`, and `∫_{-1}^1 (y + 1) dy = 2`. -/
+theorem poincare_poly {p : ℝ[X]} (hm1 : p.eval (-1) = 0) :
+    (∫ t in (-1 : ℝ)..1, p.eval t ^ 2) ≤ 2 * ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 := by
+  set K := ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 with hK
+  have hcont : ∀ q : ℝ[X], ∀ s : Set ℝ, ContinuousOn (fun t => q.eval t) s := fun q s =>
+    (Polynomial.continuous q).continuousOn
+  have hrep : ∀ y, p.eval y = ∫ t in (-1 : ℝ)..y, (derivative p).eval t := by
+    intro y
+    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ => p.hasDerivAt t)
+      ((Polynomial.continuous _).intervalIntegrable _ _), hm1, sub_zero]
+  have hbound : ∀ y ∈ Icc (-1 : ℝ) 1, p.eval y ^ 2 ≤ (y + 1) * K := by
+    intro y hy
+    have hcs := sq_integral_mul_le (p := -1) (q := y) (k := fun t => (derivative p).eval t)
+      (f := fun _ => (1 : ℝ)) (by linarith [hy.1]) continuousOn_const (hcont _ _)
+    have h1 : (∫ t in (-1 : ℝ)..y, (1 : ℝ) * (derivative p).eval t) = p.eval y := by
+      rw [hrep y]
+      exact intervalIntegral.integral_congr fun t _ => one_mul _
+    have h2 : (∫ t in (-1 : ℝ)..y, (1 : ℝ) ^ 2) = y + 1 := by
+      simp
+    rw [h1, h2] at hcs
+    have i1 : IntervalIntegrable (fun t => (derivative p).eval t ^ 2) volume (-1) y :=
+      ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
+    have i2 : IntervalIntegrable (fun t => (derivative p).eval t ^ 2) volume y 1 :=
+      ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
+    have h3 : (∫ t in (-1 : ℝ)..y, (derivative p).eval t ^ 2) ≤ K := by
+      have hsp : K = (∫ t in (-1 : ℝ)..y, (derivative p).eval t ^ 2)
+          + ∫ t in y..1, (derivative p).eval t ^ 2 :=
+        (intervalIntegral.integral_add_adjacent_intervals i1 i2).symm
+      have hnn : (0 : ℝ) ≤ ∫ t in y..1, (derivative p).eval t ^ 2 :=
+        intervalIntegral.integral_nonneg hy.2 fun t _ => sq_nonneg _
+      linarith
+    have hy1 : 0 ≤ y + 1 := by linarith [hy.1]
+    nlinarith [hcs, h3, hy1]
+  have hint1 : IntervalIntegrable (fun t => p.eval t ^ 2) volume (-1) 1 :=
+    ((Polynomial.continuous _).pow 2).intervalIntegrable _ _
+  have hint2 : IntervalIntegrable (fun t => (t + 1) * K) volume (-1) 1 :=
+    ((continuous_id.add continuous_const).mul continuous_const).intervalIntegrable _ _
+  have hmono := intervalIntegral.integral_mono_on (by norm_num) hint1 hint2 hbound
+  have hlin : (∫ t in (-1 : ℝ)..1, (t + 1) * K) = 2 * K := by
+    rw [intervalIntegral.integral_mul_const, intervalIntegral.integral_add
+      (continuous_id'.intervalIntegrable _ _) intervalIntegrable_const, integral_id,
+      intervalIntegral.integral_const]
+    norm_num
+  rw [hlin] at hmono
+  exact hmono
+
+/-- **The stability estimate after (12.38)**: a solution `u_n ∈ ℙ_n^0` of the collocation problem
+(12.36) with `|f(x_j)| ≤ M` at the nodes (`M = ‖f‖_∞` in the book) satisfies
+`‖u_n'‖_{L²(-1,1)} ≤ √6 C_P M` with the Poincaré constant `C_P = (b - a)/√2 = 2/√2` of (12.16) on
+`(-1, 1)`. Testing (12.38) with `v_n = u_n`, the energy identity `equation_12_38_energy` gives
+`‖u_n'‖² = (f, u_n)_n ≤ ‖f‖_n ‖u_n‖_n ≤ √2 M · √3 ‖u_n‖_{L²}` (`equation_12_37_inner_mul_le`,
+`equation_12_37_le_sup`, `equation_12_37_norm_equiv`) and Poincaré `‖u_n‖_{L²} ≤ C_P ‖u_n'‖_{L²}`
+closes the estimate. -/
+theorem equation_12_38_stability {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
+    (hx : IsLegendreLobatto n x w) {f : ℝ → ℝ} {M : ℝ} (hM : ∀ j, |f (x j)| ≤ M) {p : ℝ[X]}
+    (hp : equation_12_36 n x f p) :
+    Real.sqrt (∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2) ≤
+      Real.sqrt 6 * (2 / Real.sqrt 2) * M := by
+  obtain ⟨hdeg, hm1, h1, hweak⟩ := (equation_12_38 hx f p).1 hp
+  set E := ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 with hE
+  set P := ∫ t in (-1 : ℝ)..1, p.eval t ^ 2 with hP
+  have hE0 : 0 ≤ E := intervalIntegral.integral_nonneg (by norm_num) fun t _ => sq_nonneg _
+  have hP0 : 0 ≤ P := intervalIntegral.integral_nonneg (by norm_num) fun t _ => sq_nonneg _
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
+  -- the energy identity: `E = (f, p)_n`
+  have henergy : E = equation_12_37 n x w f fun t => p.eval t := by
+    rw [hE, ← equation_12_38_energy hx hdeg hm1 h1, hweak p hdeg hm1 h1]
+  -- Cauchy–Schwarz, `‖f‖_n² ≤ 2 M²`, `‖p‖_n² ≤ 3 P`
+  have hcs := equation_12_37_inner_mul_le hx f fun t => p.eval t
+  have hf := equation_12_37_le_sup hx hM
+  have hpn := (equation_12_37_norm_equiv hn hx hdeg).2
+  have hpp0 := equation_12_37_self_nonneg hx fun t => p.eval t
+  -- Poincaré: `P ≤ 2 E`
+  have hpoinc : P ≤ 2 * E := poincare_poly hm1
+  -- assemble: `E² ≤ 2 M² · 3 P ≤ 12 M² E`, hence `E ≤ 12 M²`
+  have hE2 : E ^ 2 ≤ 12 * M ^ 2 * E := by
+    calc E ^ 2 = (equation_12_37 n x w f fun t => p.eval t) ^ 2 := by rw [henergy]
+      _ ≤ equation_12_37 n x w f f * equation_12_37 n x w (fun t => p.eval t) fun t => p.eval t :=
+          hcs
+      _ ≤ (2 * M ^ 2) * (3 * P) := mul_le_mul hf hpn hpp0 (by positivity)
+      _ ≤ (2 * M ^ 2) * (3 * (2 * E)) := by gcongr
+      _ = 12 * M ^ 2 * E := by ring
+  have hEle : E ≤ 12 * M ^ 2 := by
+    rcases hE0.eq_or_lt with h0 | hpos
+    · rw [← h0]; positivity
+    · nlinarith [hE2, hpos]
+  have hconst : Real.sqrt 6 * (2 / Real.sqrt 2) * M = Real.sqrt (12 * M ^ 2) := by
+    rw [Real.div_sqrt, ← Real.sqrt_mul (by norm_num), Real.sqrt_mul (by norm_num) (M ^ 2),
+      Real.sqrt_sq hM0]
+    norm_num
+  rw [hconst]
+  exact Real.sqrt_le_sqrt hEle
+
+/-- **Uniqueness for the collocation problem (12.36)**, the consequence of the stability estimate
+after (12.38): two solutions `u_n`, `ũ_n ∈ ℙ_n^0` of (12.36) for the same `f` coincide. Their
+difference solves (12.36) with `f = 0`, so `‖(u_n - ũ_n)'‖_{L²} ≤ 0`; a polynomial with vanishing
+derivative is constant, and it vanishes at `±1`. -/
+theorem equation_12_36_unique {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
+    (hx : IsLegendreLobatto n x w) {f : ℝ → ℝ} {p q : ℝ[X]} (hp : equation_12_36 n x f p)
+    (hq : equation_12_36 n x f q) : p = q := by
+  obtain ⟨hpdeg, hpm1, hp1, hpcoll⟩ := hp
+  obtain ⟨hqdeg, hqm1, hq1, hqcoll⟩ := hq
+  have hd : equation_12_36 n x (fun _ => 0) (p - q) := by
+    refine ⟨(natDegree_sub_le p q).trans (max_le hpdeg hqdeg),
+      by rw [eval_sub, hpm1, hqm1, sub_zero], by rw [eval_sub, hp1, hq1, sub_zero],
+      fun j hj0 hjn => ?_⟩
+    have h1 := hpcoll j hj0 hjn
+    have h2 := hqcoll j hj0 hjn
+    rw [derivative_sub, derivative_sub, eval_sub]
+    simp only
+    linarith
+  have hst := equation_12_38_stability hn hx (M := 0) (fun _ => by simp) hd
+  rw [mul_zero] at hst
+  have hE0 : (0 : ℝ) ≤ ∫ t in (-1 : ℝ)..1, (derivative (p - q)).eval t ^ 2 :=
+    intervalIntegral.integral_nonneg (by norm_num) fun t _ => sq_nonneg _
+  have hE : ∫ t in (-1 : ℝ)..1, (derivative (p - q)).eval t ^ 2 = 0 := by
+    have := Real.sqrt_eq_zero'.mp (le_antisymm hst (Real.sqrt_nonneg _))
+    exact le_antisymm this hE0
+  -- the derivative vanishes identically, so `p - q` is a constant, vanishing at `1`
+  have hder : derivative (p - q) = 0 := by
+    by_contra hne
+    have hpos := OrthogonalPolynomial.isWeight_legendreMeasure.integral_eval_sq_pos hne
+    rw [OrthogonalPolynomial.integral_legendreMeasure] at hpos
+    exact hpos.ne' hE
+  have hc := Polynomial.eq_C_of_derivative_eq_zero hder
+  have h1 : (p - q).eval 1 = 0 := by rw [eval_sub, hp1, hq1, sub_zero]
+  rw [hc, eval_C] at h1
+  rw [h1, C_0] at hc
+  exact sub_eq_zero.mp hc
 
 end QuarteroniSaccoSaleri.Chapter12

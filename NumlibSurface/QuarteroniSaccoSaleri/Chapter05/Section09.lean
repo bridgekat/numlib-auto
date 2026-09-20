@@ -1,4 +1,5 @@
 import Numlib.Eigen.Pencil
+import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
 
@@ -32,18 +33,16 @@ positive definite `B` is `Matrix.PosDef`.
 * `pencilSpectrum_eq_spectrum_of_isUnit` — §5.9.1, `n` finite eigenvalues iff `B` is nonsingular,
   and then `σ(A, B) = σ(C)` for the solution `C` of `B C = A`.
 * `property_5_10` — the generalized Schur decomposition.
-* `generalizedRealSchur_of_isUnit` — the generalized *real* Schur form, for a nonsingular `B`.
+* `generalizedRealSchur_of_isUnit`, `generalizedRealSchur` — the generalized *real* Schur form,
+  first for a nonsingular `B` (the book's QZ route), then for every real pair.
 * `theorem_5_7`, `theorem_5_7_eigenvectors` — symmetric-definite pencils.
 
 ## Not formalized
 
-The generalized *real* Schur form stated after Property 5.10 for an arbitrary regular pencil
-(`generalizedRealSchur`): the case of a nonsingular `B` is `generalizedRealSchur_of_isUnit`,
-proved here the way the book's own QZ sketch proceeds, but for a singular `B` there is no `B⁻¹ A`
-to take the real Schur form of. Also the rounding-error statement after the QR–Cholesky algorithm
-(`qrCholesky_stability`), a floating-point claim the book quotes without proof; both stay open
-nodes of the plan with the reason. The QZ iteration and the QR–Cholesky algorithm are described
-without a theorem and are not nodes.
+The rounding-error statement after the QR–Cholesky algorithm (`qrCholesky_stability`), a
+floating-point claim the book quotes without proof, stays an open node of the plan with the
+reason. The QZ iteration and the QR–Cholesky algorithm are described without a theorem and are
+not nodes.
 -/
 
 open Finset Matrix Polynomial
@@ -311,5 +310,20 @@ theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : 
   refine Matrix.BlockTriangular.mul (fun i j hij => hRtri ?_) htri
   by_contra hji
   exact absurd (hmono (not_lt.1 hji)) (not_le.2 hij)
+
+/-- **The generalized real Schur form of an arbitrary real pair**, stated (without proof, citing
+[GL89] §7.7) after Property 5.10: for real `A`, `B` there are orthogonal `Ŭ`, `Z̃` such that
+`T̃ = Ŭᵀ A Z̃` is upper quasi-triangular and `S̃ = Ŭᵀ B Z̃` is upper triangular. The book states it
+for a regular pencil; it holds with no hypothesis at all. Backbone
+`Matrix.exists_generalizedRealSchur`: the nonsingular case `generalizedRealSchur_of_isUnit`
+applied to `(A, B + εI)` for `ε → 0`, with the limits taken in the compact orthogonal group and
+`Ŭᵀ B Z̃ = lim (Ŭ_εᵀ (B + εI) Z̃_ε - ε Ŭ_εᵀ Z̃_ε)`. The quasi-triangular shape is that of
+Property 5.8: the blocks are the fibres of a monotone `p : Fin n → ℕ` with at most two indices
+each. -/
+theorem generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
+      Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧
+        (Uᵀ * A * Z).BlockTriangular p ∧ (Uᵀ * B * Z).IsUpperTriangular :=
+  Matrix.exists_generalizedRealSchur A B
 
 end QuarteroniSaccoSaleri.Chapter05

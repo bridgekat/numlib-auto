@@ -44,3 +44,24 @@ id = "inv_le_eval_legendreEnergy_zero"
 
 [[node]]
 id = "inv_le_eval_legendre_sq"
+
+[[node]]
+id = "_root_.Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure"
+
+[[node]]
+id = "_root_.Quadrature.isInterpolatoryMeasure_of_isExactOnMeasure_two_mul_sub_one"
+
+[[node]]
+id = "_root_.Quadrature.discreteInner_add_smul_self"
+
+[[node]]
+id = "_root_.Quadrature.integral_eval_add_C_mul_sq"
+
+[[node]]
+id = "_root_.Quadrature.discreteInner_self_legendre_eq_and_integral_sq_eq"
+
+[[node]]
+id = "_root_.Quadrature.integral_sq_le_discreteInner_self_legendre"
+
+[[node]]
+id = "_root_.Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq"
