@@ -141,6 +141,7 @@ import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 import Numlib.Analysis.Convex.Tangent
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Convolution.Lp
+import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
@@ -248,6 +249,7 @@ import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.Periodic.Smooth
 import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.Reflection
 import Numlib.Analysis.Sobolev.RemovableSingularity

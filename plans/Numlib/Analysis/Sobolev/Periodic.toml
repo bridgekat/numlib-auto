@@ -141,3 +141,36 @@ id = "PeriodicSobolev.dualPairing"
 
 [[node]]
 id = "PeriodicSobolev.norm_dualPairing_le"
+
+[[node]]
+id = "Function.Periodic.lift_eq_liftIoc"
+
+[[node]]
+id = "Function.Periodic.continuous_lift"
+
+[[node]]
+id = "Function.Periodic.fourierCoeff_lift_eq_fourierCoeffOn"
+
+[[node]]
+id = "continuous_tsum_smul_fourier"
+
+[[node]]
+id = "fourierCoeff_tsum_smul_fourier"
+
+[[node]]
+id = "integral_haarAddCircle_eq_intervalIntegral"
+
+[[node]]
+id = "hasSum_sq_fourierCoeff_of_continuous"
+
+[[node]]
+id = "intervalIntegral_norm_tsum_smul_fourier_sq"
+
+[[node]]
+id = "PeriodicSobolev.eval_eq_tsum_smul_fourier"
+
+[[node]]
+id = "PeriodicSobolev.fourierCoeff_lift_eval"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_norm_eval_sq"

@@ -1,0 +1,104 @@
+[[node]]
+id = "DFT.window"
+
+[[node]]
+id = "DFT.mul_abs_le_two_mul_abs_add_mul"
+
+[[node]]
+id = "DFT.existsUnique_mem_window_dvd"
+
+[[node]]
+id = "DFT.sum_window_tsum_add_mul"
+
+[[node]]
+id = "PeriodicSobolev.aliasTail"
+
+[[node]]
+id = "PeriodicSobolev.windowTailNormSq"
+
+[[node]]
+id = "PeriodicSobolev.windowTailNormSq_le"
+
+[[node]]
+id = "PeriodicSobolev.norm_aliasTail_le"
+
+[[node]]
+id = "PeriodicSobolev.sum_window_aliasNormSq"
+
+[[node]]
+id = "PeriodicSobolev.sum_window_norm_aliasTail_sq_le"
+
+[[node]]
+id = "PeriodicSobolev.sum_window_norm_aliasTail_le"
+
+[[node]]
+id = "PeriodicSobolev.tsum_norm_coeff_notMem_window_le"
+
+[[node]]
+id = "PeriodicSobolev.tsum_norm_coeff_sq_notMem_window_le"
+
+[[node]]
+id = "DFT.fourier_coe_two_pi"
+
+[[node]]
+id = "DFT.sum_range_eq_sum_window"
+
+[[node]]
+id = "PeriodicSobolev.dftCoeff_eval"
+
+[[node]]
+id = "PeriodicSobolev.dftCoeff_eval_window"
+
+[[node]]
+id = "PeriodicSobolev.interpErrorCoeff"
+
+[[node]]
+id = "PeriodicSobolev.eval_sub_interp_eq_tsum"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_norm_eval_sub_interp_sq"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_norm_eval_sub_interp_sq_le"
+
+[[node]]
+id = "PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le"
+
+[[node]]
+id = "PeriodicSobolev.norm_eval_sub_interp_le"
+
+[[node]]
+id = "DFT.windowTrigPoly"
+
+[[node]]
+id = "DFT.intervalIntegral_norm_windowTrigPoly_sq"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_eval_mul_conj_exp"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_eval_mul_conj_windowTrigPoly"
+
+[[node]]
+id = "PeriodicSobolev.discreteInner_eval_windowTrigPoly"
+
+[[node]]
+id = "PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le"
+
+[[node]]
+id = "PeriodicSobolev.trigInterp"
+
+[[node]]
+id = "PeriodicSobolev.coeff_trigInterp_of_mem"
+
+[[node]]
+id = "PeriodicSobolev.eval_trigInterp"
+
+[[node]]
+id = "PeriodicSobolev.eval_trigInterp_angleNode"
+
+[[node]]
+id = "PeriodicSobolev.coeff_incl_sub_trigInterp"
+
+[[node]]
+id = "PeriodicSobolev.norm_incl_sub_trigInterp_le"

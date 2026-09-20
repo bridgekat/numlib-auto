@@ -1,6 +1,7 @@
+import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Normed.Module.BestApprox
-import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.Periodic.Smooth
 
 /-!
 # Quarteroni–Sacco–Saleri §10.9: Fourier trigonometric polynomials
@@ -44,7 +45,14 @@ matrices of (10.55) are built from `Matrix.dft`.
 * `equation_10_55`, `equation_10_55_dft`, `equation_10_55_idft`, `equation_10_55_inv` — the
   interpolation property, the DFT and IDFT as matrix–vector products, and `C = T⁻¹`.
 * `interp_isBestApprox_discrete` — the discrete least-squares property of `Π^F_N f`.
-* `fourier_trapezoid_error_sobolev` — the spectral accuracy of the trapezoidal rule (10.51) on a
+* `fourier_interp_error`, `fourier_interp_error_sup` — the two interpolation estimates
+  `‖f − Π^F_N f‖_{L²} ≤ C N^{-s} ‖f‖_s` and `max |f − Π^F_N f| ≤ C N^{1/2−s} ‖f‖_s` for `f`
+  `2π`-periodic of class `C^s`, `s ≥ 1`.
+* `fourier_discreteInner_error`, `fourier_trapezoid_error` — the quadrature estimates
+  `|(f, v_N) − (f, v_N)_N| ≤ C N^{-s} ‖f‖_s ‖v_N‖` for `v_N ∈ S_N` and, at `v_N = 1`, the
+  composite trapezoidal error `|∫_0^{2π} f − h ∑_j f(x_j)| ≤ C N^{-s} ‖f‖_s`, in the book's norm
+  `‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²_{L²})^{1/2}` (`PeriodicSobolev.derivNormSq`).
+* `fourier_trapezoid_error_sobolev` — the trapezoidal estimate in coefficient form, on a
   periodic function with `H^s` coefficients.
 * `fft_radix_two` — the Cooley–Tukey splitting of a transform of even order.
 
@@ -60,14 +68,22 @@ matrices of (10.55) are built from `Matrix.dft`.
   `W_N^{-(j − N/2) k}` differs by the factor `(−1)^{j−k}`, and that `C` would not invert `T`.
   Program 89 implements the corrected formula.
 
+## The estimates
+
+The four estimates the book quotes from Canuto–Hussaini–Quarteroni–Zang without proof are proved
+through the backbone: the bridge `PeriodicSobolev.ofSmooth` of
+`Numlib/Analysis/Sobolev/Periodic/Smooth` puts the Fourier coefficients of a `C^s` periodic `f`
+into the coefficient-form space `PeriodicSobolev s` with `‖φ‖ ≤ (2π)^{-1/2} ‖f‖_s`, and the
+aliasing bounds of `Numlib/Analysis/Fourier/Aliasing` estimate `f̃_k − f̂_k = ∑_{m ≠ 0} f̂_{k+mN}`
+in `ℓ²` and `ℓ¹` over the window. The constants are explicit (`√(1 + 2ζ(2s)) 2^s`,
+`2^{s+1} √(2ζ(2s))/√(2π)`, `√(2ζ(2s)) 2^s`, `√(4π ζ(2s))`) but not sharp; the book leaves `C`
+unspecified. The space `S_N` is the set of trigonometric polynomials `DFT.windowTrigPoly N c` over
+the window `−N/2 ≤ k ≤ N/2 − 1`.
+
 ## Not formalized
 
-The two interpolation estimates (`fourier_interp_error`) and the first quadrature estimate
-(`fourier_trapezoid_error`) are quoted from Canuto–Hussaini–Quarteroni–Zang without proof; the
-trapezoidal estimate is proved here with the coefficient-form `H^s` norm of
-`Numlib/Analysis/Sobolev/Periodic` in place of the book's `‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²)^{1/2}`, and
-the identification of the two norms is not. The Gibbs phenomenon (§10.9.1) is described, not
-stated, and gets no node; the operation count of the FFT is algorithmic.
+The Gibbs phenomenon (§10.9.1) is described, not stated, and gets no node; the operation count of
+the FFT is algorithmic.
 -/
 
 open AddCircle Complex Finset Matrix MeasureTheory Quadrature
@@ -411,16 +427,114 @@ theorem interp_isBestApprox_discrete {N : ℕ} (hN : 0 < N) (f g : ℝ → ℂ) 
   rw [h0]
   exact Real.sqrt_nonneg _
 
-/-! ### The quadrature estimate -/
+/-! ### The interpolation and quadrature estimates -/
 
-/-- **The quadrature estimate of §10.9** for the discrete scalar product at `v_N = 1`, the composite
+private theorem half_lt_of_one_le {s : ℕ} (hs : 1 ≤ s) : (1 : ℝ) / 2 < (s : ℝ) := by
+  have : (1 : ℝ) ≤ s := by exact_mod_cast hs
+  linarith
+
+/-- **The `L²` interpolation estimate of §10.9.** For `f` `2π`-periodic of class `C^s`, `s ≥ 1`,
+
+`‖f − Π^F_N f‖_{L²(0,2π)} ≤ C N^{-s} ‖f‖_s`, `‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²_{L²(0,2π)})^{1/2}`,
+
+with `C = √(1 + 2ζ(2s)) 2^s`. The coefficient sequence `φ = PeriodicSobolev.ofSmooth` of `f`
+lies in `H^s` with `‖φ‖ ≤ (2π)^{-1/2} ‖f‖_s`, its series sums to `f`, and the backbone's
+`PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le` bounds the error of the
+discrete Fourier series by the aliasing and truncation tails. Quoted by the book from
+[CHQZ88], chapter 2. -/
+theorem fourier_interp_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
+    (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) :
+    √(∫ x in (0 : ℝ)..2 * π, ‖f x - discreteSeries N f x‖ ^ 2)
+      ≤ √(1 + 2 * zetaReal (2 * s)) * 2 ^ s * (N : ℝ) ^ (-(s : ℝ))
+        * √(PeriodicSobolev.derivNormSq s f) := by
+  have h := PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le
+    (half_lt_of_one_le hs) hN (PeriodicSobolev.ofSmooth hf hd)
+  rw [PeriodicSobolev.eval_ofSmooth hf hs hd] at h
+  have hb := PeriodicSobolev.norm_ofSmooth_le hf hs hd
+  have hsqrt : √(2 * π * (1 + 2 * zetaReal (2 * s))) * (√(2 * π))⁻¹
+      = √(1 + 2 * zetaReal (2 * s)) := by
+    rw [Real.sqrt_mul (by positivity), mul_comm, ← mul_assoc,
+      inv_mul_cancel₀ (Real.sqrt_pos.mpr (by positivity)).ne', one_mul]
+  simp only [discreteSeries]
+  rw [← Real.rpow_natCast]
+  calc √(∫ x in (0 : ℝ)..2 * π,
+          ‖f x - DFT.interp N (-((N / 2 : ℕ) : ℤ)) f x‖ ^ 2)
+      ≤ √(2 * π * (1 + 2 * zetaReal (2 * s))) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (-(s : ℝ))
+          * ‖PeriodicSobolev.ofSmooth hf hd‖ := h
+    _ ≤ √(2 * π * (1 + 2 * zetaReal (2 * s))) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (-(s : ℝ))
+          * ((√(2 * π))⁻¹ * √(PeriodicSobolev.derivNormSq s f)) :=
+        mul_le_mul_of_nonneg_left hb (by positivity)
+    _ = _ := by rw [← hsqrt]; ring
+
+/-- **The sup-norm interpolation estimate of §10.9.** For `f` `2π`-periodic of class `C^s`,
+`s ≥ 1`, `max_{0 ≤ x ≤ 2π} |f(x) − Π^F_N f(x)| ≤ C N^{1/2−s} ‖f‖_s` with
+`C = 2^{s+1} √(2ζ(2s)) / √(2π)`: the error is a trigonometric series bounded by the sum of the
+moduli of its coefficients, the `ℓ¹` aliasing bound over the window and the `ℓ¹` tail outside it
+(`PeriodicSobolev.norm_eval_sub_interp_le`), whose extra `√N` over the `L²` estimate is the
+Cauchy–Schwarz inequality over the `N` frequencies of the window. Stated at every `x`, which
+covers the maximum over `[0, 2π]`. -/
+theorem fourier_interp_error_sup {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
+    (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) (x : ℝ) :
+    ‖f x - discreteSeries N f x‖
+      ≤ 2 * √(2 * zetaReal (2 * s)) * 2 ^ s / √(2 * π) * (N : ℝ) ^ (1 / 2 - (s : ℝ))
+        * √(PeriodicSobolev.derivNormSq s f) := by
+  have h := PeriodicSobolev.norm_eval_sub_interp_le
+    (half_lt_of_one_le hs) hN (PeriodicSobolev.ofSmooth hf hd) x
+  rw [PeriodicSobolev.eval_ofSmooth hf hs hd] at h
+  have hb := PeriodicSobolev.norm_ofSmooth_le hf hs hd
+  simp only [discreteSeries]
+  rw [← Real.rpow_natCast]
+  calc ‖f x - DFT.interp N (-((N / 2 : ℕ) : ℤ)) f x‖
+      ≤ 2 * √(2 * zetaReal (2 * s)) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (1 / 2 - (s : ℝ))
+          * ‖PeriodicSobolev.ofSmooth hf hd‖ := h
+    _ ≤ 2 * √(2 * zetaReal (2 * s)) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (1 / 2 - (s : ℝ))
+          * ((√(2 * π))⁻¹ * √(PeriodicSobolev.derivNormSq s f)) :=
+        mul_le_mul_of_nonneg_left hb (by positivity)
+    _ = _ := by ring
+
+/-- **The discrete scalar product estimate of §10.9.** For `f` `2π`-periodic of class `C^s`,
+`s ≥ 1`, and every `v_N ∈ S_N` — every trigonometric polynomial
+`v_N = ∑_{k=-N/2}^{N/2-1} c_k e^{ikx}`, that is `DFT.windowTrigPoly N c` —
+
+`|(f, v_N) − (f, v_N)_N| ≤ C N^{-s} ‖f‖_s ‖v_N‖_{L²(0,2π)}`,
+
+with `(f, g) = ∫_0^{2π} f conj g`, the discrete scalar product (10.51) and `C = √(2ζ(2s)) 2^s`.
+Expanding `v_N`, the discrete orthogonality turns the difference into
+`2π ∑_k (f̂_k − f̃_k) conj c_k`, which the `ℓ²` aliasing bound and Cauchy–Schwarz control
+(`PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le`). Quoted by the book from
+[CHQZ88]. -/
+theorem fourier_discreteInner_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
+    (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) (c : ℤ → ℂ) :
+    ‖(∫ x in (0 : ℝ)..2 * π, f x * conj (DFT.windowTrigPoly N c x))
+        - equation_10_51 N f (DFT.windowTrigPoly N c)‖
+      ≤ √(2 * zetaReal (2 * s)) * 2 ^ s * (N : ℝ) ^ (-(s : ℝ))
+        * √(PeriodicSobolev.derivNormSq s f)
+        * √(∫ x in (0 : ℝ)..2 * π, ‖DFT.windowTrigPoly N c x‖ ^ 2) := by
+  have h := PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le
+    (half_lt_of_one_le hs) hN (PeriodicSobolev.ofSmooth hf hd) c
+  rw [PeriodicSobolev.eval_ofSmooth hf hs hd] at h
+  have hb := PeriodicSobolev.norm_ofSmooth_le hf hs hd
+  have hpos : 0 < √(2 * π) := Real.sqrt_pos.mpr (by positivity)
+  rw [equation_10_51, ← Real.rpow_natCast]
+  calc ‖(∫ x in (0 : ℝ)..2 * π, f x * conj (DFT.windowTrigPoly N c x))
+        - ((2 * π / N : ℝ) : ℂ) * ∑ j ∈ range N,
+            f (angleNode N j) * conj (DFT.windowTrigPoly N c (angleNode N j))‖
+      ≤ √(2 * π) * √(2 * zetaReal (2 * s)) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (-(s : ℝ))
+          * ‖PeriodicSobolev.ofSmooth hf hd‖
+          * √(∫ x in (0 : ℝ)..2 * π, ‖DFT.windowTrigPoly N c x‖ ^ 2) := h
+    _ ≤ √(2 * π) * √(2 * zetaReal (2 * s)) * (2 : ℝ) ^ (s : ℝ) * (N : ℝ) ^ (-(s : ℝ))
+          * ((√(2 * π))⁻¹ * √(PeriodicSobolev.derivNormSq s f))
+          * √(∫ x in (0 : ℝ)..2 * π, ‖DFT.windowTrigPoly N c x‖ ^ 2) := by gcongr
+    _ = _ := by field_simp
+
+/-- **The quadrature estimate of §10.9 in coefficient form**, at `v_N = 1`, the composite
 trapezoidal rule: for a `2π`-periodic `f = eval (2π) φ` given by Fourier coefficients
 `φ ∈ H^s`, `s > 1/2` (the coefficient-form Sobolev space `PeriodicSobolev s` of
 `Numlib/Analysis/Sobolev/Periodic`), `|∫_0^{2π} f − h ∑_{j<N} f(x_j)| ≤ C N^{-s} ‖φ‖_{H^s}` with
 `C = 2π √(2 ζ(2s))`. The backbone's `PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le`,
 whose trapezoidal sum runs over the nodes `x_1, …, x_N`, which by periodicity is the book's sum
-over `x_0, …, x_{N-1}`. The book's norm `‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²)^{1/2}` is equivalent to
-`‖φ‖_{H^s}` for smooth `f`; the identification is not formalized. -/
+over `x_0, …, x_{N-1}`. `fourier_trapezoid_error` restates it in the book's norm
+`‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²)^{1/2}` through `PeriodicSobolev.ofSmooth`. -/
 theorem fourier_trapezoid_error_sobolev {s : ℝ} (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ‖(∫ x in (0 : ℝ)..2 * π, PeriodicSobolev.eval (2 * π) φ x)
@@ -449,6 +563,44 @@ theorem fourier_trapezoid_error_sobolev {s : ℝ} (hs : 1 / 2 < s) {N : ℕ} (hN
   rw [hsum] at h
   refine h.trans (le_of_eq ?_)
   ring
+
+/-- **The quadrature estimate of §10.9 at `v_N = 1`, in the book's norm**: for a `2π`-periodic `f`
+of class `C^s`, `s ≥ 1`, the composite trapezoidal rule (10.51) satisfies
+
+`|∫_0^{2π} f − h ∑_{j<N} f(x_j)| ≤ C N^{-s} ‖f‖_s`, `‖f‖_s = (∑_{k≤s} ‖f^{(k)}‖²_{L²(0,2π)})^{1/2}`,
+
+with `C = √(4π ζ(2s))`. The coefficient-form estimate `fourier_trapezoid_error_sobolev` applied
+to the coefficient sequence `PeriodicSobolev.ofSmooth` of `f`, whose series sums to `f`
+(`PeriodicSobolev.eval_ofSmooth`) and whose norm is at most `(2π)^{-1/2} ‖f‖_s`
+(`PeriodicSobolev.norm_ofSmooth_le`). The book quotes the estimate from [CHQZ88]. -/
+theorem fourier_trapezoid_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
+    (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) :
+    ‖(∫ x in (0 : ℝ)..2 * π, f x) - ((2 * π / N : ℝ) : ℂ) * ∑ j ∈ range N, f (angleNode N j)‖
+      ≤ √(4 * π * zetaReal (2 * s)) * (N : ℝ) ^ (-(s : ℝ))
+        * √(PeriodicSobolev.derivNormSq s f) := by
+  have h := fourier_trapezoid_error_sobolev (half_lt_of_one_le hs) hN
+    (PeriodicSobolev.ofSmooth hf hd)
+  rw [PeriodicSobolev.eval_ofSmooth hf hs hd] at h
+  refine h.trans ?_
+  have hb := PeriodicSobolev.norm_ofSmooth_le hf hs hd
+  have hsqrt : 2 * π * √(2 * zetaReal (2 * s)) * (√(2 * π))⁻¹
+      = √(4 * π * zetaReal (2 * s)) := by
+    have h2 : √(2 * π) * √(2 * π) = 2 * π := Real.mul_self_sqrt (by positivity)
+    have hpos : 0 < √(2 * π) := Real.sqrt_pos.mpr (by positivity)
+    have h3 : 2 * π * (√(2 * π))⁻¹ = √(2 * π) := by
+      rw [mul_inv_eq_iff_eq_mul₀ hpos.ne', h2]
+    calc 2 * π * √(2 * zetaReal (2 * s)) * (√(2 * π))⁻¹
+        = (2 * π * (√(2 * π))⁻¹) * √(2 * zetaReal (2 * s)) := by ring
+      _ = √(2 * π) * √(2 * zetaReal (2 * s)) := by rw [h3]
+      _ = √(4 * π * zetaReal (2 * s)) := by
+          rw [← Real.sqrt_mul (by positivity)]
+          congr 1
+          ring
+  calc 2 * π * √(2 * zetaReal (2 * s)) * (N : ℝ) ^ (-(s : ℝ)) * ‖PeriodicSobolev.ofSmooth hf hd‖
+      ≤ 2 * π * √(2 * zetaReal (2 * s)) * (N : ℝ) ^ (-(s : ℝ))
+        * ((√(2 * π))⁻¹ * √(PeriodicSobolev.derivNormSq s f)) :=
+        mul_le_mul_of_nonneg_left hb (by positivity)
+    _ = _ := by rw [← hsqrt]; ring
 
 /-! ### (10.56): Lanczos smoothing -/
 

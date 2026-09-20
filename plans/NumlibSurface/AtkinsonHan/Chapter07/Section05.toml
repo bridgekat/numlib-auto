@@ -28,6 +28,13 @@ id = "weight_sq_le_sum_le"
 id = "theorem_7_5_2_norm_equiv"
 
 [[node]]
+id = "classicalNormSq_ofSmooth"
+
+[[node]]
+id = "theorem_7_5_2_smooth"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.5.2, the equivalence with the classical norm on smooth functions'
+
+[[node]]
 id = "proposition_7_5_4_bound"
 
 [[node]]
@@ -74,19 +81,21 @@ has Fourier series `1/2 - (i/π) ∑_{k≥0} (2k+1)^{-1} [e^{(2k+1)it} - e^{-(2k
 distributional derivative is the Dirac comb `∑_j (-1)^j δ(t - πj)`, `δ` acting on `H^s(2π)` for
 `s > 1/2` by `δ[φ] = φ(0)`. Not formalized: this needs distributions on the circle, and Mathlib's
 `TemperedDistribution` lives on `ℝ^d` only; the module doc of `Chapter07/Section05` records the
-same exclusion.'''
+same exclusion.
+
+Blocked (2026-09-20): still no distributions on the circle. Checked: `Numlib/Analysis/Sobolev/Periodic`
+has the dual pairing `PeriodicSobolev.dualPairing` (`H^{-t}` as functionals on `H^t`, Exercise
+7.5.4) and `PeriodicSobolev.eval` for `s > 1/2`, so `δ` is representable as the element of
+`H^{-t}` with all coefficients `(2π)^{-1/2}`, and the square wave's coefficients are computable
+from `fourierCoeffOn` of a step function; what is missing is the distributional derivative
+`𝒟 : H^s → H^{s-1}` (the operator of (7.5.3), not built, see the module doc) and the identity
+`𝒟 φ = ∑_j (-1)^j δ(· − πj)` in `H^{-t}`. A coefficient-level statement (`(i m) a_m` equals the
+coefficients of the Dirac comb) would be 150–250 lines once `𝒟` exists; the example is
+illustrative and no node depends on it.'''
 deps = ["theorem_7_5_2"]
 
 [[node]]
 id = "theorem_7_5_7"
-kind = "theorem"
-desc = '''Theorem 7.5.7: for `s > 1/2`, `φ ∈ H^s(2π)` and `0 ≤ r ≤ s`, the trigonometric
-interpolant satisfies `‖φ - 𝓘_n φ‖_r ≤ c n^{r-s} ‖φ‖_s` (7.5.15), a marginal sharpening of
-Theorem 3.7.1 and the bound chapter 13 quotes for its convergence rates. Not formalized: the
-project has no trigonometric interpolation operator `𝓘_n` -- `Numlib/Analysis/Fourier/`
-`TrigonometricBasis` builds the Fourier projection and the target subspace `trigPolyLE (2π) n` but
-not the interpolant -- and the book gives no proof, referring to Kress [151].'''
-deps = ["theorem_7_5_2", "proposition_7_5_6"]
 
 [[node]]
 id = "definition_7_5_8"
@@ -95,7 +104,13 @@ desc = '''Definition 7.5.8: a spherical polynomial of degree `≤ N` is the rest
 sphere `U ⊆ ℝ^3` of a polynomial in `(x,y,z)` of degree `≤ N`; `𝕊_N` is the set of them, the
 analogue of the trigonometric polynomials. Not formalized: §7.5.5 is about spherical harmonics,
 of which Mathlib has none (zero occurrences), and nothing in this corpus uses the sphere; unlike
-the rest of §7.5 it is not a weighted `ℓ^2` and shares no machinery with it.'''
+the rest of §7.5 it is not a weighted `ℓ^2` and shares no machinery with it.
+
+Blocked (2026-09-20): rechecked, unchanged (blocker 3). The definition itself — the image of
+`MvPolynomial (Fin 3) ℝ` of degree `≤ N` under restriction to the unit sphere `Metric.sphere 0 1`
+— could be written in 30 lines (`Numlib/Approximation/MvPolynomial` has multivariate polynomial
+spaces of bounded degree), but without spherical harmonics and a surface measure nothing of
+Definition 7.5.9 or Theorem 7.5.10 follows, so it is left with them.'''
 
 [[node]]
 id = "definition_7_5_9"
@@ -106,7 +121,15 @@ span `𝕊̂_N` of those of degree `≤ N` equals `𝕊_N` (7.5.20) with `dim �
 the standard `L^2(U)`-orthonormal basis (7.5.22) is built from Legendre polynomials and associated
 Legendre functions. Not formalized: Mathlib has no spherical harmonics, no associated Legendre
 functions and no surface measure on the sphere for the `L^2(U)` orthonormality; the book quotes
-(7.5.20) and (7.5.21) from MacRobert [161] without proof.'''
+(7.5.20) and (7.5.21) from MacRobert [161] without proof.
+
+Blocked (2026-09-20): blocker 3 of `notes/frontier.md`, unchanged by the Brezis round. Checked:
+`grep -rn 'sphericalHarmonic\|SphericalHarmonic' Numlib .lake/packages/mathlib/Mathlib` is empty;
+`Numlib/Approximation/OrthogonalPolynomial` has the Legendre polynomials on `[-1, 1]` but no
+associated Legendre functions; there is no surface measure on `S^2` in the corpus (the Brezis
+round's `IsContDiffDomain` boundary work stopped short of a surface measure, blocker 2). A
+faithful statement needs the space of homogeneous harmonic polynomials restricted to the sphere
+and its dimension count `2n + 1`; research-scale, out of scope.'''
 deps = ["definition_7_5_8"]
 
 [[node]]
@@ -117,5 +140,11 @@ polynomials satisfies `ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}` for `N ≥ 1` (7
 depending only on `k`; the rates (7.5.32)-(7.5.33) for the Laplace expansion follow. Not
 formalized: it rests on Definitions 7.5.8-7.5.9, which need spherical harmonics that Mathlib does
 not have, and the book states it without proof, citing Gronwall [100] for `k = 0` and Ragozin
-[190, Theorem 3.3] in general.'''
+[190, Theorem 3.3] in general.
+
+Blocked (2026-09-20): blocker 3 and blocker 17 (quoted without proof) of `notes/frontier.md`,
+unchanged by the Brezis round; the Jackson-type argument on the sphere (Ragozin) is a research
+project on top of the missing spherical harmonics and the `C^{k,γ}(U)` Hölder spaces on the sphere,
+which the corpus does not have either (`Numlib/Analysis/Sobolev/Slobodeckij` is on domains of
+`ℝ^d`).'''
 deps = ["definition_7_5_8", "definition_7_5_9"]

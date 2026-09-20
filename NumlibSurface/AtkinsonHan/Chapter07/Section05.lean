@@ -1,4 +1,6 @@
+import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.Periodic.Smooth
 
 /-!
 # Atkinson–Han §7.5: periodic Sobolev spaces
@@ -29,13 +31,19 @@ book's with the book's constants.
 * `definition_7_5_1_norm`, `definition_7_5_1_inner` — (7.5.2) and the inner product that induces it.
 * `theorem_7_5_2` — `H^s(2π)` is exactly the set of series (7.5.1) with `‖φ‖_{*,s} < ∞`.
 * `theorem_7_5_2_norm_equiv` — for an integer `k ≥ 0` the norm `‖·‖_{*,k}` is equivalent to the
-  classical `‖φ‖²_{H^k} = ∑_{j ≤ k} ‖φ^{(j)}‖²_{L²}`, with the constants `1` and `k + 1`.
+  classical `‖φ‖²_{H^k} = ∑_{j ≤ k} ‖φ^{(j)}‖²_{L²}`, with the constants `1` and `k + 1`;
+  `classicalNormSq_ofSmooth` and `theorem_7_5_2_smooth` are the same statement on the function
+  side, for a `2π`-periodic `C^k` function `f` and its coefficient sequence
+  `PeriodicSobolev.ofSmooth`.
 * `proposition_7_5_4`, `proposition_7_5_4_bound` — the Sobolev embedding for `s > 1/2`: the series
   converges to a continuous `2π`-periodic function, with (7.5.10) and (7.5.11).
 * `proposition_7_5_5` — for `s > t` the space `H^s(2π)` is dense in `H^t(2π)` and the inclusion is
   compact.  This is also Exercise 7.5.1, which asks for its proof.
 * `proposition_7_5_6` — **the trapezoidal rule is exponentially accurate on smooth periodic
   integrands**: `|I(φ) − T_k(φ)| ≤ √(4 π ζ(2 s)) k^{-s} ‖φ‖_{*,s}`, the bound (7.5.13).
+* `theorem_7_5_7` — the trigonometric interpolant `𝓘_n φ` of degree `≤ n` at the `2n + 1`
+  equispaced nodes satisfies `‖φ − 𝓘_n φ‖_{*,r} ≤ √(1 + 2 ζ(2 s)) n^{r − s} ‖φ‖_{*,s}` for
+  `0 ≤ r ≤ s`, `s > 1/2`, the bound (7.5.15) with an explicit constant.
 * `exercise_7_5_2` — the trigonometric polynomials `𝕋` of (7.5.4) are dense in `H^s(2π)` for every
   real `s`.
 * `exercise_7_5_3` — Simpson's rule obeys the same bound, with the constant `(5/3) √(4 π ζ(2 s))`.
@@ -52,10 +60,6 @@ book's with the book's constants.
   built, because nothing else here consumes them.
 * **Example 7.5.3**, the square wave and its Dirac comb: this needs distributions on the circle,
   and Mathlib's `TemperedDistribution` lives on `ℝ^d` only.
-* **Theorem 7.5.7**, the trigonometric interpolation bound: the project has no trigonometric
-  interpolation operator `𝓘_n` — `Numlib/Analysis/Fourier/TrigonometricBasis` builds the Fourier
-  projection `𝓕_n` and the target subspace `trigPolyLE (2π) n`, but not the interpolant — and the
-  book quotes the bound from Kress without proof.
 * **§7.5.4**, the logarithmic-kernel operator `𝒜` of (7.5.16): the book obtains its symbol
   `a_m/|m|` from complex function theory that it does not reproduce.
 * **§7.5.5**, spherical polynomials, spherical harmonics and the Laplace expansion (7.5.8)–(7.5.10)
@@ -67,7 +71,7 @@ book's with the book's constants.
 [han2009theoretical] §7.5.
 -/
 
-open Filter Metric Set Topology
+open Filter Metric Set Topology Quadrature
 open scoped ComplexConjugate ENNReal InnerProductSpace Real
 
 namespace AtkinsonHan.Chapter07
@@ -217,6 +221,29 @@ theorem theorem_7_5_2_norm_equiv (k : ℕ) (φ : PeriodicSobolev (k : ℝ)) :
     refine hmid.tsum_le_tsum (fun m => ?_) hupper.summable
     exact mul_le_mul_of_nonneg_right (weight_sq_le_sum_le k m).2 (by positivity)
 
+/-- **The classical norm of a smooth periodic function on the Fourier side.** For a `2π`-periodic
+`f` of class `C^k` with coefficient sequence `φ = PeriodicSobolev.ofSmooth hf hd`, the Fourier-side
+expression `classicalNormSq k φ` is `(1/2π) ∑_{j ≤ k} ‖f^{(j)}‖²_{L²(0,2π)}`: Parseval for each
+derivative, `f̂^{(j)}_m = (i m)^j f̂_m`. The factor `1/2π` is the book's normalization `ψ_m =
+(2π)^{-1/2} e^{imx}`, under which `‖f‖²_{L²} = 2π ∑ |a_m|²`. -/
+theorem classicalNormSq_ofSmooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π)) {k : ℕ}
+    (hd : ContDiff ℝ k f) :
+    classicalNormSq k (PeriodicSobolev.ofSmooth hf hd)
+      = (2 * π)⁻¹ * PeriodicSobolev.derivNormSq k f := by
+  rw [classicalNormSq, PeriodicSobolev.coeff_ofSmooth]
+  exact (PeriodicSobolev.hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq hf hd).tsum_eq
+
+/-- **Theorem 7.5.2 on the function side**: for a `2π`-periodic `f` of class `C^k`, the norm
+`‖·‖_{*,k}` of its coefficient sequence and the classical norm `‖f‖²_{H^k} = ∑_{j ≤ k}
+‖f^{(j)}‖²_{L²(0,2π)}` are equivalent, `‖φ‖²_{*,k} ≤ (1/2π) ‖f‖²_{H^k} ≤ (k + 1) ‖φ‖²_{*,k}`. -/
+theorem theorem_7_5_2_smooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π)) {k : ℕ}
+    (hd : ContDiff ℝ k f) :
+    ‖PeriodicSobolev.ofSmooth hf hd‖ ^ 2 ≤ (2 * π)⁻¹ * PeriodicSobolev.derivNormSq k f ∧
+      (2 * π)⁻¹ * PeriodicSobolev.derivNormSq k f
+        ≤ ((k : ℝ) + 1) * ‖PeriodicSobolev.ofSmooth hf hd‖ ^ 2 := by
+  rw [← classicalNormSq_ofSmooth hf hd]
+  exact theorem_7_5_2_norm_equiv k _
+
 /-! ### §7.5.2, the embedding results -/
 
 /-- **The bound (7.5.10)**: `|φ(x)| ≤ |a₀| + √(2 ζ(2 s)) ‖φ‖_{*,s}` for `s > 1/2`. -/
@@ -321,6 +348,28 @@ theorem proposition_7_5_6 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : Periodic
     _ = √(2 * π) * ((k : ℝ) ^ (-s) * √(2 * zetaReal (2 * s)) * ‖φ‖) := by
         rw [inv_mul_cancel_left₀ (ne_of_gt sqrt_two_pi_pos)]
     _ = √(4 * π * zetaReal (2 * s)) * (k : ℝ) ^ (-s) * ‖φ‖ := by rw [h4]; ring
+
+/-- **Theorem 7.5.7, the trigonometric interpolation bound (7.5.15).** For `s > 1/2`,
+`φ ∈ H^s(2π)`, `0 ≤ r ≤ s` and `n ≥ 1`, the trigonometric interpolant `𝓘_n φ` — the
+trigonometric polynomial of degree `≤ n` that agrees with `φ` at the `2n + 1` equispaced nodes
+`t_j = 2πj/(2n+1)` of §3.7, here `PeriodicSobolev.trigInterp r n φ`, read in `H^r(2π)` — satisfies
+
+`‖φ − 𝓘_n φ‖_{*,r} ≤ c n^{r − s} ‖φ‖_{*,s}` with `c = √(1 + 2 ζ(2 s))`.
+
+The first conjunct is the interpolation property that defines `𝓘_n φ`; the second is (7.5.15).
+The book refers to Kress for the proof, which is the aliasing argument of
+`Numlib/Analysis/Fourier/Aliasing`: the Fourier coefficients of `𝓘_n φ` on the window `-n, …, n`
+are `a_m + ∑_{j ≠ 0} a_{m + j(2n+1)}` and vanish outside it, and Cauchy–Schwarz against
+`∑_{j ≠ 0} |m + j(2n+1)|^{-2s}` bounds the aliasing tails. The book's constant `c` depends on
+`s` and `r` only; ours depends on `s` alone. -/
+theorem theorem_7_5_7 (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (hrs : r ≤ s) {n : ℕ} (hn : 1 ≤ n)
+    (φ : PeriodicSobolev s) :
+    (∀ j < 2 * n + 1, eval (PeriodicSobolev.trigInterp r n φ) (angleNode (2 * n + 1) j)
+        = eval φ (angleNode (2 * n + 1) j)) ∧
+      ‖PeriodicSobolev.incl hrs φ - PeriodicSobolev.trigInterp r n φ‖
+        ≤ √(1 + 2 * zetaReal (2 * s)) * (n : ℝ) ^ (r - s) * ‖φ‖ :=
+  ⟨fun j hj => by rw [eval, eval, PeriodicSobolev.eval_trigInterp_angleNode r n φ hj],
+    PeriodicSobolev.norm_incl_sub_trigInterp_le hs hr hrs hn φ⟩
 
 /-- **Simpson's rule** on one period at `2 k` equally spaced points, `h = π / k`:
 `S_{2k}(φ) = (h/3) [4 ∑_{j=1}^{k} φ(x_{2j-1}) + 2 ∑_{j=1}^{k} φ(x_{2j})]` with `x_i = i h`. For a

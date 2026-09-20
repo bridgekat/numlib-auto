@@ -88,62 +88,19 @@ source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the disc
 
 [[node]]
 id = "fourier_interp_error"
-kind = "theorem"
-desc = '''The two unnumbered interpolation estimates of §10.9: for `f` `2π`-periodic of class `C^s`, `s >= 1`,
-`‖f - Pi^F_N f‖_{L^2(0,2pi)} <= C N^{-s} ‖f‖_s` and `max |f - Pi^F_N f| <= C N^{1/2-s} ‖f‖_s`, with
-`‖f‖_s = (sum_{k<=s} ‖f^{(k)}‖^2_{L^2})^{1/2}`. Quoted from [CHQZ88] chapter 2; the book proves
-nothing.
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the L² interpolation error estimate'
 
-Blocked, but the route is now known and both missing pieces are named. The aliasing identity
-`DFT.coeff_eq_tsum_fourierCoeff` (proved) gives
-`ftilde_k - fhat_k = sum_{m != 0} fhat_{k + mN}`, and the estimate splits as
-`‖f - Pi_N f‖^2 = ‖f - S_N f‖^2 + ‖S_N f - Pi_N f‖^2` with `S_N` the truncation, the first term the
-tail `sum_{|k| > N/2} |fhat_k|^2` and the second `sum_{|k| <= N/2} |ftilde_k - fhat_k|^2`. What is
-missing is:
-(A) **the coefficient-to-function bridge**, `PeriodicSobolev.ofSmooth`: a `2pi`-periodic `f` of
-class `C^s` has `sum_m |m|^{2s} |fhat_m|^2 = (1/2pi) ‖f^{(s)}‖^2_{L^2}`, so its coefficient
-sequence lies in `PeriodicSobolev s` with `‖phi‖ <= (2pi)^{-1/2} ‖f‖_s`, and `eval (2pi) phi = f`.
-Every Mathlib ingredient exists: `fourierCoeffOn_of_hasDerivAt` at `a = 0`, `b = 2pi` with
-`f(2pi) = f(0)` gives `fourierCoeffOn f n = fourierCoeffOn f' n / (i n)`, hence
-`|fhat^{(k)}_n| = |n|^k |fhat_n|`; `tsum_sq_fourierCoeffOn` is Parseval on the interval;
-`Summable (fourierCoeff f)` for `s >= 1` follows by Cauchy-Schwarz against `sum |m|^{-2}`, and then
-`has_pointwise_sum_fourier_series_of_summable` identifies the series with `f`;
-`fourierCoeff_liftIoc_eq` converts between the interval and the `AddCircle (2pi)` forms. Estimated
-250-400 lines in a new module beside `Numlib/Analysis/Sobolev/Periodic`.
-(B) **the quantitative aliasing bound**
-`sum_{|k| <= N/2} |sum_{m != 0} fhat_{k+mN}|^2 <= C N^{-2s} sum_j |j|^{2s} |fhat_j|^2`, by
-Cauchy-Schwarz in `m` against `sum_{m != 0} |k + mN|^{-2s} <= C N^{-2s}` and then re-indexing
-`(k, m) |-> k + mN` as a bijection onto the frequencies outside the window. The re-indexing is the
-expensive part in Lean. Estimated 300-500 lines.
-The sup-norm estimate needs (B) plus the inverse inequality `‖v_N‖_inf <= C N^{1/2} ‖v_N‖_{L^2}` on
-trigonometric polynomials, which is Cauchy-Schwarz over the `N` coefficients and is cheap once
-(A) and (B) are there. Consider splitting this node into the `L^2` and the sup-norm estimate when
-it is attempted. ★★★'''
-deps = ["DFT.coeff_eq_tsum_fourierCoeff", "QuarteroniSaccoSaleri.Chapter10.equation_10_52"]
-source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the interpolation error estimates'
+[[node]]
+id = "fourier_interp_error_sup"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the maximum-norm interpolation error estimate'
+
+[[node]]
+id = "fourier_discreteInner_error"
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the quadrature error estimate for the discrete scalar product against v_N ∈ S_N'''
 
 [[node]]
 id = "fourier_trapezoid_error"
-kind = "theorem"
-desc = '''The two unnumbered quadrature estimates of §10.9: `|(f, v_N) - (f, v_N)_N| <= C N^{-s} ‖f‖_s ‖v_N‖`
-for `v_N` in `S_N`, and at `v_N = 1` the composite trapezoidal error
-`|int_0^{2pi} f - h sum_{j<N} f(x_j)| <= C N^{-s} ‖f‖_s` for `2pi`-periodic `f` of class `C^s`,
-with the book's norm `‖f‖_s = (sum_{k<=s} ‖f^{(k)}‖^2_{L^2})^{1/2}`.
-
-Blocked on the same two pieces as `fourier_interp_error`, and see its description for both.
-The second estimate is proved here in the coefficient form as
-`fourier_trapezoid_error_sobolev` (the backbone's
-`PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le`); restating it with the book's `‖f‖_s`
-needs exactly the bridge (A) of `fourier_interp_error` and nothing else, so that clause is within
-250-400 lines of being closed. The first estimate is the aliasing bound (B): expanding
-`v_N = sum_{|k| <= N/2} c_k e^{ikx}`, the discrete orthogonality `lemma_10_1` turns the difference
-into `2pi sum_k (ftilde_k - fhat_k) conj(c_k)`, and Cauchy-Schwarz reduces it to (B).
-
-When this is attempted, split the node: keep `fourier_trapezoid_error` for the trapezoidal
-estimate in the book's norm (which (A) alone closes) and add a node for the discrete scalar
-product estimate, which needs (B) as well. ★★★'''
-deps = ["PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le", "QuarteroniSaccoSaleri.Chapter10.equation_10_51"]
-source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the quadrature error estimates for the discrete scalar product'''
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.9, the quadrature error estimate for the composite trapezoidal rule (the discrete scalar product at v_N = 1)'''
 
 [[node]]
 id = "fourier_trapezoid_error_sobolev"

@@ -66,6 +66,11 @@ of the *bridge to functions*, not of the space.
   accurate on smooth periodic integrands**, `|I(φ) − T_k(φ)| ≤ T k^{-s} √(2 ζ(2 s)) ‖φ‖`. The whole
   content is `sum_periodicChar`: the trapezoidal sum of `periodicChar T m` vanishes unless `k ∣ m`,
   so the quadrature error is the tail `∑_{j ≠ 0} a_{j k}` of the series along the multiples of `k`.
+* `fourierCoeff_tsum_smul_fourier` and `intervalIntegral_norm_tsum_smul_fourier_sq`: an absolutely
+  convergent trigonometric series on `AddCircle T` has the coefficients it was built from, and
+  satisfies Parseval's identity; hence `PeriodicSobolev.fourierCoeff_lift_eval` and
+  `PeriodicSobolev.intervalIntegral_norm_eval_sq`, the bridge from `eval` back to Mathlib's
+  `fourierCoeff` and the `L²` norm, `∫_0^T ‖eval T φ‖² = T ∑ ‖a m‖²`, for `s > 1/2`.
 
 ## References
 
@@ -964,6 +969,193 @@ theorem norm_intervalIntegral_sub_trapezoidSum_le (hs : 1 / 2 < s) {T : ℝ} (hT
   refine mul_le_mul_of_nonneg_left ?_ hT.le
   exact le_trans (norm_tsum_le_tsum_norm htailnorm)
     (le_trans (le_of_eq (tsum_congr hnormtail)) (tsum_norm_coeff_mul_le hs hk φ))
+
+end PeriodicSobolev
+
+/-! ### Periodic functions on the line, lifted to the circle -/
+
+namespace Function.Periodic
+
+variable {F : Type*} {T : ℝ} [hT : Fact (0 < T)]
+
+omit hT in
+/-- Lifts of equal functions are equal (the periodicity proofs are irrelevant). -/
+theorem lift_congr {f g : ℝ → F} (h : f = g) (hf : Periodic f T) (hg : Periodic g T) :
+    hf.lift = hg.lift := by
+  subst h
+  rfl
+
+/-- The lift of a `T`-periodic function to `AddCircle T` agrees with every `AddCircle.liftIoc`. -/
+theorem lift_eq_liftIoc {f : ℝ → F} (hf : Periodic f T) (a : ℝ) :
+    hf.lift = AddCircle.liftIoc T a f := by
+  funext t
+  rw [← AddCircle.coe_equivIoc (y := t), lift_coe,
+    AddCircle.liftIoc_coe_apply (AddCircle.equivIoc T a t).2]
+
+/-- The lift of a continuous periodic function is continuous. -/
+theorem continuous_lift [TopologicalSpace F] {f : ℝ → F} (hf : Periodic f T)
+    (hc : Continuous f) : Continuous hf.lift := by
+  rw [lift_eq_liftIoc hf 0]
+  exact AddCircle.liftIoc_continuous (hf 0).symm hc.continuousOn
+
+/-- The Fourier coefficients of the lift are Mathlib's `fourierCoeffOn` over `[0, T]`. -/
+theorem fourierCoeff_lift_eq_fourierCoeffOn {f : ℝ → ℂ} (hf : Periodic f T) (n : ℤ) :
+    fourierCoeff hf.lift n = fourierCoeffOn (lt_add_of_pos_right 0 hT.out) f n := by
+  rw [lift_eq_liftIoc hf 0, fourierCoeff_liftIoc_eq]
+
+end Function.Periodic
+
+/-! ### Absolutely convergent trigonometric series on the circle
+
+An absolutely summable coefficient family `c : ℤ → ℂ` sums to a continuous function
+`t ↦ ∑ c m • fourier m t` on `AddCircle T`, whose Fourier coefficients are the `c m` and for which
+Parseval's identity reads `∑ ‖c m‖² = (1/T) ∫_0^T ‖∑ c m • fourier m‖²`. This is the function side
+of `PeriodicSobolev.eval`. -/
+
+section TrigSeries
+
+open AddCircle MeasureTheory
+
+variable {T : ℝ} [hT : Fact (0 < T)]
+
+omit hT in
+/-- The characters of the circle have modulus one at every point. -/
+theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
+  rw [fourier_apply, Circle.norm_coe]
+
+omit hT in
+/-- The sum of an absolutely convergent trigonometric series is continuous. -/
+theorem continuous_tsum_smul_fourier {c : ℤ → ℂ} (hc : Summable fun m => ‖c m‖) :
+    Continuous fun t : AddCircle T => ∑' m : ℤ, c m • fourier m t := by
+  refine continuous_tsum (fun m => (map_continuous (fourier m)).const_smul (c m)) hc
+    fun m t => ?_
+  rw [norm_smul, norm_fourier_apply, mul_one]
+
+/-- **The Fourier coefficients of an absolutely convergent trigonometric series are its
+coefficients.** The series converges uniformly, so the integral defining `fourierCoeff` is taken
+termwise, and `fourierCoeff_fourier` keeps the `n`-th term alone. -/
+theorem fourierCoeff_tsum_smul_fourier {c : ℤ → ℂ} (hc : Summable fun m => ‖c m‖) (n : ℤ) :
+    fourierCoeff (fun t : AddCircle T => ∑' m : ℤ, c m • fourier m t) n = c n := by
+  set F : ℤ → AddCircle T → ℂ := fun m t => fourier (-n) t • (c m • fourier m t) with hF
+  have hnorm : ∀ m t, ‖F m t‖ = ‖c m‖ := by
+    intro m t
+    simp only [hF, norm_smul, norm_fourier_apply, one_mul, mul_one]
+  have hint : ∀ m, Integrable (F m) haarAddCircle := fun m =>
+    ((map_continuous (fourier (-n))).smul ((map_continuous (fourier m)).const_smul
+      (c m))).integrable_of_hasCompactSupport (HasCompactSupport.of_compactSpace _)
+  have hsum : Summable fun m => ∫ t, ‖F m t‖ ∂haarAddCircle := by
+    refine hc.congr fun m => ?_
+    simp only [hnorm, integral_const, probReal_univ, one_smul]
+  have h := hasSum_integral_of_summable_integral_norm hint hsum
+  have hterm : ∀ m, ∫ t, F m t ∂haarAddCircle = if m = n then c m else 0 := by
+    intro m
+    have : ∫ t, F m t ∂haarAddCircle = c m * fourierCoeff (T := T) (fourier m) n := by
+      rw [fourierCoeff, ← integral_const_mul]
+      refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+      simp only [hF, smul_eq_mul]
+      ring
+    rw [this, fourierCoeff_fourier, Pi.single_apply]
+    split_ifs with h1 h2 h2
+    · rw [mul_one]
+    · exact absurd h1.symm h2
+    · exact absurd h2.symm h1
+    · rw [mul_zero]
+  rw [fourierCoeff]
+  have hswap : ∀ t : AddCircle T, fourier (-n) t • ∑' m, c m • fourier m t = ∑' m, F m t := by
+    intro t
+    rw [← tsum_const_smul'' (fourier (-n) t)]
+  simp_rw [hswap]
+  rw [← h.tsum_eq]
+  simp_rw [hterm]
+  rw [tsum_ite_eq]
+
+/-- The integral over the circle against the probability Haar measure is the average over one
+period. -/
+theorem integral_haarAddCircle_eq_intervalIntegral {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] (F : AddCircle T → E) :
+    ∫ t, F t ∂haarAddCircle = T⁻¹ • ∫ x in (0 : ℝ)..T, F x := by
+  rw [integral_haarAddCircle, ← AddCircle.intervalIntegral_preimage T 0 F, zero_add]
+
+/-- **Parseval's identity for a continuous function on the circle**, through its image in
+`L²(haarAddCircle)`. -/
+theorem hasSum_sq_fourierCoeff_of_continuous {G : AddCircle T → ℂ} (hG : Continuous G) :
+    HasSum (fun i : ℤ => ‖fourierCoeff G i‖ ^ 2)
+      (∫ t : AddCircle T, ‖G t‖ ^ 2 ∂haarAddCircle) := by
+  have h := hasSum_sq_fourierCoeff (ContinuousMap.toLp (E := ℂ) 2 haarAddCircle ℂ ⟨G, hG⟩)
+  simp_rw [fourierCoeff_toLp] at h
+  convert h using 1
+  refine integral_congr_ae ?_
+  filter_upwards [ContinuousMap.coeFn_toLp (E := ℂ) (p := 2) (μ := @haarAddCircle T _) (𝕜 := ℂ)
+    ⟨G, hG⟩] with t ht
+  rw [ht]
+  rfl
+
+/-- Parseval's identity for a continuous function on the circle, with the integral over a
+period: `∑ ‖Ĝ i‖² = (1/T) ∫_0^T ‖G‖²`. -/
+theorem hasSum_sq_fourierCoeff_of_continuous' {G : AddCircle T → ℂ} (hG : Continuous G) :
+    HasSum (fun i : ℤ => ‖fourierCoeff G i‖ ^ 2) (T⁻¹ * ∫ x in (0 : ℝ)..T, ‖G x‖ ^ 2) := by
+  have h := hasSum_sq_fourierCoeff_of_continuous hG
+  rwa [integral_haarAddCircle_eq_intervalIntegral (fun t : AddCircle T => ‖G t‖ ^ 2),
+    smul_eq_mul] at h
+
+/-- **Parseval for an absolutely convergent trigonometric series**:
+`∫_0^T ‖∑ c m • fourier m‖² = T ∑ ‖c m‖²`. -/
+theorem intervalIntegral_norm_tsum_smul_fourier_sq {c : ℤ → ℂ} (hc : Summable fun m => ‖c m‖) :
+    ∫ x in (0 : ℝ)..T, ‖∑' m : ℤ, c m • fourier m (x : AddCircle T)‖ ^ 2
+      = T * ∑' m : ℤ, ‖c m‖ ^ 2 := by
+  have h := (hasSum_sq_fourierCoeff_of_continuous' (T := T)
+    (continuous_tsum_smul_fourier hc)).tsum_eq
+  simp_rw [fourierCoeff_tsum_smul_fourier hc] at h
+  rw [h, ← mul_assoc, mul_inv_cancel₀ hT.out.ne', one_mul]
+
+end TrigSeries
+
+/-! ### The sum of the series on the circle, and its Fourier coefficients -/
+
+namespace PeriodicSobolev
+
+open AddCircle MeasureTheory
+
+variable {s : ℝ}
+
+/-- The character `periodicChar T m` is Mathlib's `fourier m` read on the line. -/
+theorem periodicChar_eq_fourier (T : ℝ) (m : ℤ) (x : ℝ) :
+    periodicChar T m x = fourier m (x : AddCircle T) := by
+  rw [fourier_coe_apply, periodicChar]
+
+/-- The sum of the series, written against Mathlib's characters `fourier m`. -/
+theorem eval_eq_tsum_smul_fourier (T : ℝ) (φ : PeriodicSobolev s) (x : ℝ) :
+    eval T φ x = ∑' m : ℤ, coeff φ m • fourier m (x : AddCircle T) := by
+  simp_rw [eval, periodicChar_eq_fourier, smul_eq_mul]
+
+variable {T : ℝ} [hT : Fact (0 < T)]
+
+/-- The sum of the series, lifted to the circle, is the trigonometric series with the same
+coefficients. -/
+theorem lift_eval (φ : PeriodicSobolev s) :
+    (eval_periodic hT.out.ne' φ).lift
+      = fun t : AddCircle T => ∑' m : ℤ, coeff φ m • fourier m t := by
+  funext t
+  induction t using QuotientAddGroup.induction_on with
+  | H x => exact eval_eq_tsum_smul_fourier T φ x
+
+/-- **The Fourier coefficients of the sum of the series are its coefficients**: the bridge from
+`PeriodicSobolev` back to Mathlib's `fourierCoeff`, for `s > 1/2`. -/
+theorem fourierCoeff_lift_eval (hs : 1 / 2 < s) (φ : PeriodicSobolev s) (n : ℤ) :
+    fourierCoeff (eval_periodic hT.out.ne' φ).lift n = coeff φ n := by
+  rw [lift_eval]
+  exact fourierCoeff_tsum_smul_fourier (summable_norm_coeff hs φ) n
+
+/-- The Fourier coefficients of the sum of the series are summable, for `s > 1/2`. -/
+theorem summable_fourierCoeff_lift_eval (hs : 1 / 2 < s) (φ : PeriodicSobolev s) :
+    Summable (fourierCoeff (eval_periodic hT.out.ne' φ).lift) :=
+  (summable_coeff hs φ).congr fun n => (fourierCoeff_lift_eval hs φ n).symm
+
+/-- **Parseval for the sum of the series**: `∫_0^T ‖eval T φ‖² = T ∑_m ‖a_m‖²` for `s > 1/2`. -/
+theorem intervalIntegral_norm_eval_sq (hs : 1 / 2 < s) (φ : PeriodicSobolev s) :
+    ∫ x in (0 : ℝ)..T, ‖eval T φ x‖ ^ 2 = T * ∑' m : ℤ, ‖coeff φ m‖ ^ 2 := by
+  simp_rw [eval_eq_tsum_smul_fourier T φ]
+  exact intervalIntegral_norm_tsum_smul_fourier_sq (summable_norm_coeff hs φ)
 
 end PeriodicSobolev
 

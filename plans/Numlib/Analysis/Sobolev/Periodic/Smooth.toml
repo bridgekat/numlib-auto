@@ -1,0 +1,35 @@
+[[node]]
+id = "Function.Periodic.deriv'"
+
+[[node]]
+id = "Function.Periodic.iteratedDeriv'"
+
+[[node]]
+id = "fourierCoeff_lift_deriv"
+
+[[node]]
+id = "fourierCoeff_lift_iteratedDeriv"
+
+[[node]]
+id = "PeriodicSobolev.derivNormSq"
+
+[[node]]
+id = "PeriodicSobolev.hasSum_abs_pow_mul_norm_fourierCoeff_lift_sq"
+
+[[node]]
+id = "PeriodicSobolev.hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq"
+
+[[node]]
+id = "PeriodicSobolev.ofSmooth"
+
+[[node]]
+id = "PeriodicSobolev.coeff_ofSmooth"
+
+[[node]]
+id = "PeriodicSobolev.norm_ofSmooth_sq_le"
+
+[[node]]
+id = "PeriodicSobolev.norm_ofSmooth_le"
+
+[[node]]
+id = "PeriodicSobolev.eval_ofSmooth"
