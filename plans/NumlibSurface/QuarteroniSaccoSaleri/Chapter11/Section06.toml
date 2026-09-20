@@ -67,8 +67,20 @@ Not formalized: the proof (Dahlquist 1956; Hairer–Nørsett–Wanner III.3) nee
 series, and the counting of sign changes forced by the root condition — a substantial piece of
 complex analysis with no Mathlib support; the book states it without proof (citing [Dah63]).
 
-Blocked: not attempted — one of the fifty-odd results this corpus records as not formalized
-(notes/backbone.md §17.2.5). Nothing about it changed this round.'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). Checked in `Numlib/ODE/Multistep`:
+the vocabulary is complete — `LinearMultistep`, `HasOrder`, the algebraic order conditions
+`orderCondition i` with `orderCondition_iff_taylorCoeff_eq_zero` (Theorem 11.3), the characteristic
+polynomials `ρ`, `σ` (`characteristicPolynomials`) and `Polynomial.SatisfiesRootCondition`
+(Definition 11.10) — so the statement can be written as
+`M.SatisfiesRootCondition → M.HasOrder q → q ≤ p + (if Even p then 2 else 1)`. What the proof needs
+and the library does not have: the Möbius transform `ζ = (1+z)/(1−z)` carrying the closed unit disc
+to the left half-plane, the expansion of `(ρ/σ)(ζ) − log ζ` in `z`, and the positivity of the
+coefficients of `z/log((1+z)/(1−z))`-type power series together with a sign-change count forced by
+the root condition (Dahlquist 1956; Hairer–Nørsett–Wanner I, III.3, Theorem 3.5); nothing named
+Dahlquist, Herglotz or "positive real" is in Mathlib or in `Numlib/` outside the unrelated
+Dahlquist–Golub–Nash identity of `Numlib/Krylov`. The book quotes the result without proof
+([Dah63]), so it is out of scope for this round by policy. Estimate: 1500–2500 lines of complex
+analysis on power series with real coefficients, a module of its own (`ODE/Multistep/Dahlquist`).'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_10", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.1'
 
@@ -95,9 +107,17 @@ both without proof ([Wid67]). The explicit clause alone is reachable — `Π` is
 of degree `p + 1` in `r` whose roots cannot all stay in the disc as `|z| → ∞` (the product of the
 roots is `-(a_p + z b_p)`, unbounded in `z`) — and is planned as `property_11_2_explicit` (★★).
 
-Blocked: not attempted — the reachable clause is the separate node `property_11_2_explicit`,
-which is proved; the two barriers themselves are recorded as not formalized
-(notes/backbone.md §17.2.5).'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). The explicit clause is proved as
+`property_11_2_explicit`. Checked in `Numlib/ODE/Multistep` and the surface: `absoluteStability` and
+`thetaStable` (Definitions 11.11–11.13) exist, so the order-2 barrier reads
+`M.IsAStable → M.HasOrder q → q ≤ 2`; its proof (Dahlquist 1963; Hairer–Wanner II, V.1, Theorem 1.4)
+needs, beyond the first barrier's Möbius transform, the Riesz–Herglotz argument that a function with
+nonnegative real part on the disc has a nonnegative error constant — nothing of which is in Mathlib
+or `Numlib/`. The ϑ-stability clause is Widlund's theorem and is existential ("there exist ϑ-stable
+`p`-step methods of order `p` for `p = 3, 4`"), a construction plus a stability-region computation
+for two specific methods. The book quotes all of it without proof ([Wid67]), so it is out of scope
+by policy. Estimate: 1500–2500 lines with the first barrier, of which ~500 for the order-2 barrier
+once the transform is there.'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.thetaStable", "QuarteroniSaccoSaleri.Chapter11.absoluteStability", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.2'
 

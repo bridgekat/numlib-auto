@@ -59,29 +59,10 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.6, (10.
 
 [[node]]
 id = "equation_10_80"
-kind = "theorem"
-desc = '''(10.80): for a linear shift-invariant system `S` and admissible inputs `f, g`,
-`S(f * g) = f * S(g)`.
-
-Blocked, and the book's derivation is not valid as it stands. The book calls (10.80) "an immediate
-consequence of the linearity and shift-invariance", but a convolution is a *continuous*
-superposition of translates, `f * g = int f(y) tau_y g dy`, not a finite linear combination, so
-passing `S` through it needs `S` to commute with a vector-valued integral, that is, to be
-continuous. Linearity and shift invariance alone do not suffice, and the book assumes nothing else:
-its `S` has no domain, no target and no topology.
-
-The statement that is true and worth having is: for `S : L^1(R) ->L[C] L^1(R)` commuting with every
-translation and `f, g` in `L^1`, `S (f * g) = f * S g`. Its proof is
-`S (int y, f y . tau_y g) = int y, f y . S (tau_y g) = int y, f y . tau_y (S g)` by
-`ContinuousLinearMap.integral_comp_comm`. The missing ingredient is the first identity: that the
-`L^1` class of the pointwise convolution `f * g` **is** the Bochner integral in `L^1` of
-`y |-> f y . tau_y g`. Mathlib has `MeasureTheory.convolution` only pointwise; there is no
-Banach-algebra or Bochner-integral view of it. Estimated 250-400 lines (a Fubini argument plus the
-strong measurability of `y |-> tau_y g` as an `L^1`-valued map), in a new backbone module. The
-consequences the book draws, `u = i * h` and (10.81), are stated here for a system *given* as a
-convolution (`equation_10_81`) and are proved.'''
-deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_76"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.80)'
+
+[[node]]
+id = "equation_10_77_integrable"
 
 [[node]]
 id = "equation_10_81"

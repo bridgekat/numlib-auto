@@ -20,21 +20,28 @@ argument needing the discrete backward parabolic problem and parabolic regularit
 equation, i.e. the classical heat-equation theory recorded as a blocker in `notes/frontier.md`;
 the space–time spaces themselves are not planned.
 
-Blocked: three independent gaps, checked 2026-09-16. (i) The space–time spaces `Q_q(S_k)`,
-`V_{h,Δt}`, `Y_{h,k}`, the time jump `[v^k]` and the cG(1)dG(q) form do not exist anywhere in the
-project and are not planned; building them is a new backbone module — per slab a tensor product of
-chapter 12's spatial `X_h^1` with `P_q(I_k)`, with a *different* spatial mesh on each slab (which is
-the point of `B_{k,k-1}`), plus one-sided time traces, for which `Approximation/BrokenPolynomial`
-is the right shape in the time direction only. (ii) The estimate compares `U^n` with the *exact*
-weak solution `u(t^n)`; `equation_13_12` is a definition only, because existence, uniqueness and
-regularity of weak solutions of (13.12) is Lions' theorem in the Bochner spaces
-`L²(0, T; H¹₀) ∩ H¹(0, T; H⁻¹)`, which neither this project nor Mathlib has. (iii) The [EEHJ96]
-proof is a space–time duality (Aubin–Nitsche) argument over the discrete backward parabolic
-problem, needing a strong-stability estimate for it and parabolic regularity of the heat equation
-— `notes/frontier.md` blocker 9, "Mathlib has no parabolic theory". The book's constant
-`C(u_{0h}, f, u, n)` is unspecified, so even the shape of the statement (`∃ C` after which data?)
-is a judgement call. Estimate: weeks, dominated by (ii) and (iii), neither of which is numerical
-analysis. Nothing short of that closes the node, so it stays open; the section contributes no
-other numbered item.'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). Three gaps, re-checked against the
+Brezis backbone. (i) Unchanged: the space–time spaces `Q_q(S_k)`, `V_{h,Δt}`, `Y_{h,k}`, the time
+jumps `[v^k]` and the cG(1)dG(q) form exist nowhere; per slab a tensor product of chapter 12's
+`X_h^1` with `P_q(I_k)` on a slab-dependent mesh, with one-sided time traces —
+`Approximation/BrokenPolynomial` has traces and jumps in one variable only. (ii) The exact solution
+`u(t^n)`: `equation_13_12` is a definition. The Brezis round gives the *homogeneous* heat equation
+on the Dirichlet Laplacian of `Ω : Opens (EuclideanSpace ℝ (Fin N))` (`Heat.IsSolution`,
+`Heat.existsUnique_isSolution`, `Numlib/Analysis/PDE/Heat`), with `u ∈ C^∞((0,∞); L²)`,
+`u(t) ∈ D(A^ℓ)` and `‖u^{(k)}(t)‖ ≤ (k/t)^k ‖u₀‖` (`LinearPMap.norm_applyL_semigroupLift_le`), and
+`u ∈ C^{k−j}([0,∞); D(A^j))` for `u₀ ∈ D(A^k)`
+(`LinearPMap.IsMaximalMonotone.contDiffOnPowDomain_semigroup`, Theorem 7.5); what (13.12) needs
+beyond it is a source term `f ≠ 0` (no Duhamel formula `u = S(t)u₀ + ∫₀ᵗ S(t−s) f(s) ds` anywhere in
+`Numlib/Analysis/ODE/HilleYosida`), the identification of the 1-D problem with that vocabulary (no
+bridge between `SobolevInterval` on `Ioo 0 1 ⊆ ℝ` and `SobolevEuclidean` on
+`EuclideanSpace ℝ (Fin 1)`, and no instance that an interval is an `IsContDiffChartDomain`), and,
+for the weak formulation with `u' ∈ L²(0,T;H⁻¹)`, Lions' theorem, still absent
+(`Numlib/Analysis/PDE/Bochner` has the classes `C^k(s;V)` and `L^p(s;V)` read through an embedding,
+no `L²(0,T;V)` type and no existence theory). (iii) The [EEHJ96] proof is a space–time duality
+argument over the discrete backward problem with a strong-stability estimate and parabolic
+regularity in time for the *nonhomogeneous* problem; the semigroup smoothing above is the `f = 0`
+piece of it. The constant `C(u_{0h}, f, u, n)` is unspecified by the book. Quoted without proof; out
+of scope by policy. Estimate: weeks — the space–time discretization module (~1500 lines), Duhamel
+plus the 1-D bridge (~800), and the duality argument (~1500).'''
 deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_12"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.25)'

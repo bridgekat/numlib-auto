@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Distribution.TemperedDistribution
 import Mathlib.Analysis.Fourier.RiemannLebesgueLemma
+import Numlib.Analysis.Convolution.Bochner
 import Numlib.Analysis.Fourier.FourierIntegral
 import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.SpecialFunctions.LaplaceTransform
@@ -43,6 +44,9 @@ book uses that Mathlib does not state are `Numlib/Analysis/Fourier/FourierIntegr
   properties 1–5.
 * `example_10_5_rect`, `example_10_5_saw`, `example_10_6` — the transforms of the rectangle, of
   the sawtooth, and of the constant and the cosine as Dirac masses.
+* `equation_10_80` — a bounded operator on `L¹(ℝ)` commuting with every translation commutes
+  with every convolution, `S(f ⋆ g) = f ⋆ S(g)`; the shift-invariant linear system, with the
+  continuity the book's argument silently needs.
 * `equation_10_81`, `example_10_7`, `equation_10_82` — the transfer function, the ideal low-pass
   filter, and the sampling (aliasing) formula.
 * `example_10_8`, `property_10_4`, `example_10_9`, `example_10_9_solution` — the unit step, the
@@ -60,12 +64,18 @@ book uses that Mathlib does not state are `Numlib/Analysis/Fourier/FourierIntegr
   `z = e^{sΔt}`, not `e^{-sΔt}`.
 * The Cauchy–Hadamard radius `R = limsup |f(nΔt)|^{1/n}` must be read in `[0, ∞]`.
 
+* (10.80), `S(f ⋆ g) = f ⋆ S(g)` for a "linear shift-invariant system" `S`, is not a
+  mathematical statement as printed (no domain, no continuity of `S`), and "an immediate
+  consequence of the linearity and shift-invariance" is not a proof: the convolution is an
+  integral of translates, which only a *continuous* `S` passes through. `equation_10_80` takes
+  `S` bounded on `L¹(ℝ)` and commuting with the translations, and proves the identity from the
+  Bochner-integral reading of the convolution (`Numlib.Analysis.Convolution.Bochner`); its
+  consequences (10.81) are stated for a system *given* as a convolution.
+
 ## Not formalized
 
-(10.80), `S(f ⋆ g) = f ⋆ S(g)` for a "linear shift-invariant system" `S`, is not a mathematical
-statement as printed (no domain, no continuity of `S`); its consequences are stated for a system
-*given* as a convolution. The second claim of Example 10.7 (the spectrum of the output is `I H`)
-is (10.81) with `h ∉ L¹`, and is not stated.
+The second claim of Example 10.7 (the spectrum of the output is `I H`) is (10.81) with `h ∉ L¹`,
+and is not stated.
 -/
 
 open MeasureTheory Filter Topology Complex Set
@@ -187,6 +197,13 @@ noncomputable def equation_10_77 (f g : ℝ → ℂ) (t : ℝ) : ℂ :=
 
 theorem equation_10_77_eq_convolution (f g : ℝ → ℂ) :
     equation_10_77 f g = f ⋆[ContinuousLinearMap.mul ℂ ℂ] g := rfl
+
+/-- The convolution (10.77) of two functions of `L¹(ℝ)` is in `L¹(ℝ)`
+(`MeasureTheory.Integrable.integrable_convolution`). -/
+theorem equation_10_77_integrable {f g : ℝ → ℂ} (hf : Integrable f) (hg : Integrable g) :
+    Integrable (equation_10_77 f g) := by
+  rw [equation_10_77_eq_convolution]
+  exact hf.integrable_convolution _ hg
 
 /-- **(10.76), property 5 (convolution and product).** For `f, g ∈ L¹(ℝ)`, `𝓕(f ⋆ g) = 𝓕 f · 𝓕 g`
 (Mathlib's `Real.fourier_mul_convolution_eq`); and `𝓕(f g) = 𝓕 f ⋆ 𝓕 g` when moreover
@@ -379,6 +396,38 @@ theorem example_10_6 (A ν₀ : ℝ) :
     refine integral_congr_ae (Eventually.of_forall fun t => ?_)
     push_cast
     ring
+
+/-- **(10.80), the shift-invariant linear system.** The book's `S` is "a linear operator" on
+unspecified "admissible input functions" with `S(i(· − t₀)) = u(· − t₀)` for every `t₀`, and
+`S(f ⋆ g) = f ⋆ S(g)` is called an immediate consequence of linearity and shift invariance. It is
+not: `f ⋆ g = ∫ f(τ) τ_τ g dτ` is a *continuous* superposition of translates, not a finite linear
+combination, and passing `S` through that integral needs `S` to be continuous — linearity and
+shift invariance alone do not suffice (nor does the book give `S` a domain or a topology).
+
+The formalization takes `S` to be a bounded linear operator on `L¹(ℝ)` commuting with every
+translation `τ_{t₀} u = u(· − t₀)` (`MeasureTheory.Lp.translateₗᵢ`): `L¹` is the space in which
+the book's inputs `f, g` and the convolution (10.77) live, boundedness is the continuity the
+argument needs, and `S(f ⋆ g) = f ⋆ S(g)` then holds almost everywhere for all `f, g ∈ L¹(ℝ)`.
+The proof is the book's, made rigorous: `f ⋆ g` is the `L¹`-valued Bochner integral of the
+translates (`MeasureTheory.Lp.integral_smul_translateₗᵢ_eq_toL1`), `S` passes through the integral
+and through each translate (`MeasureTheory.Lp.coeFn_toL1_convolution_of_translateₗᵢ_comm`). -/
+theorem equation_10_80 (S : Lp ℂ 1 (volume : Measure ℝ) →L[ℂ] Lp ℂ 1 (volume : Measure ℝ))
+    (hS : ∀ (t₀ : ℝ) (i : Lp ℂ 1 (volume : Measure ℝ)),
+      S (Lp.translateₗᵢ ℂ ℂ 1 t₀ i) = Lp.translateₗᵢ ℂ ℂ 1 t₀ (S i))
+    {f g : ℝ → ℂ} (hf : Integrable f) (hg : Integrable g) :
+    ⇑(S ((equation_10_77_integrable hf hg).toL1 (equation_10_77 f g)))
+      =ᵐ[volume] equation_10_77 f (S (hg.toL1 g)) := by
+  have hmul : ContinuousLinearMap.mul ℂ ℂ = ContinuousLinearMap.lsmul ℂ ℂ := by
+    ext
+    simp
+  have hg' : Integrable (hg.toL1 g) volume := L1.integrable_coeFn _
+  have h1 : (equation_10_77_integrable hf hg).toL1 (equation_10_77 f g)
+      = (hf.integrable_convolution (ContinuousLinearMap.lsmul ℂ ℂ) hg').toL1 _ := by
+    rw [Integrable.toL1_eq_toL1_iff, equation_10_77_eq_convolution, hmul]
+    exact Eventually.of_forall (congrFun (convolution_congr _ (ae_eq_refl f) hg.coeFn_toL1.symm))
+  rw [h1]
+  refine (Lp.coeFn_toL1_convolution_of_translateₗᵢ_comm S hS hf (hg.toL1 g)).trans ?_
+  rw [equation_10_77_eq_convolution, hmul]
 
 /-- **(10.81), the transfer function.** If the output of a system is the convolution `u = i ⋆ h` of
 the input `i ∈ L¹` with the impulse response `h ∈ L¹`, then `U(ν) = I(ν) H(ν)` for the transforms

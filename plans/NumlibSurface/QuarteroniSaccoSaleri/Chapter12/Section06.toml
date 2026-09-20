@@ -34,20 +34,24 @@ exist in the library (the Atkinson–Han plan's Chapter 10 group records the tri
 deliberate scope exclusion), and `H^1_0(Ω)` with a boundary trace is `notes/frontier.md` blocker 2. The
 book defines it and proves nothing about it.
 
-Blocked: re-examined 2026-09-16 and the verdict stands. Three things are missing and none is
-one-dimensional: (i) a triangulation of a plane domain — a finite family of nondegenerate triangles
-with pairwise disjoint interiors whose union is `Ω̄` and which meet edge to edge — with the affine
-map to a reference triangle, none of which is in Mathlib or in `Numlib`; (ii) `H¹(Ω)` for a plane
-`Ω` *is* available (`Numlib/Analysis/Sobolev/MultiIndex` with `Ω : Opens (Fin 2 → ℝ)`), but
-`H¹₀(Ω)` as "vanishing on `∂Ω`" needs the trace operator, which needs the surface measure on
-`∂Ω` (`notes/frontier.md` blocker 2); the closure definition `SobolevMultiIndexZero` is available
-and would let the *space* be defined, but not the membership criterion the book states; (iii) the
-piecewise-polynomial subspace of `H¹(Ω)` needs the fact that a continuous piecewise-smooth function
-on a triangulation is weakly differentiable, whose proof is the divergence theorem on each triangle
-plus the cancellation of the interface terms — the same missing divergence theorem as
-`exercise_12_15`. The one-dimensional counterpart is
-`Variational.FiniteElement.lagrangeSpace`; a faithful two-dimensional statement is a module of its
-own, not a node. Estimate: weeks, gated on the triangulation scaffold.'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note, whose verdict stands). Checked in
+`Numlib/`: (i) still no triangulation of a plane domain —
+`Numlib/Analysis/Convex/Polyhedral/Simplicial` triangulates a polytope as a finite union of
+simplices for the convex-analysis purposes of Rockafellar, without the edge-to-edge conformity, the
+affine reference map or any function space on it, and `Numlib/Approximation/TriangleQuadrature`
+transports a rule to one triangle only (`notes/frontier.md` blocker 11); (ii) `H¹(Ω)` and `H¹₀(Ω)`
+on a plane `Ω` exist as `SobolevEuclidean 2 1 2 Ω` and `SobolevEuclideanZero 2 1 2 Ω` (the closure
+of the test functions), so the *space* side of (12.94) is nameable, but the membership criterion
+`v_h|_∂Ω = 0` for a continuous `v_h` still needs the trace (blocker 2), unless the node is restated
+with `H¹₀` as the closure and `v_h ∈ H¹₀` proved from a compact support or a
+Lipschitz-continuous-vanishing-on-the-boundary argument (Brezis Theorem 9.17 is proved in both
+directions for `C¹` domains, `Numlib/Analysis/Sobolev/Zero`, and a polygon is not `C¹`); (iii) a
+continuous piecewise-`P_k` function on a triangulation is in `H¹(Ω)` — the divergence theorem on
+each triangle with the interface terms cancelling, the same gap as `exercise_12_15`. The
+one-dimensional counterpart is `Variational.FiniteElement.lagrangeSpace`; the two-dimensional
+statement is a module of its own. Estimate: weeks, gated on the triangulation scaffold and on
+Green's formula for a triangle (or on the alternative characterization of `H¹` by absolutely
+continuous restrictions to lines, which avoids Green's formula for (iii)).'''
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.94)'
 
 [[node]]
@@ -68,7 +72,17 @@ exists), and the divergence theorem on `Ω` itself — Mathlib's divergence theo
 (`MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable` and the plane corollary
 used here) and for nothing else. `Numlib/Analysis/Calculus/CurvilinearLaplacian` carries the
 Laplacian in polar and spherical coordinates and no integration theorem, so it does not help. This
-is `notes/frontier.md` blocker 2 in its integration form. Estimate: a Mathlib-scale project.'''
+is `notes/frontier.md` blocker 2 in its integration form. Estimate: a Mathlib-scale project.
+
+Refreshed 2026-09-20 (agent qss5): the verdict stands. Checked in `Numlib/`: the Brezis round added
+no boundary measure, no outward normal and no divergence theorem on a domain; Green's formula
+remains blocker 2 in its integration form, and the Brezis nodes deferred on it
+(`example_9_4_stepA/D`, Theorem 9.26's Neumann clause) are still open for the same reason.
+`Numlib/Analysis/Sobolev/Zero` (Theorem 9.17) and `Numlib/Analysis/PDE/Elliptic/Regularity` (Theorem
+9.25) work on `C¹`/`C²` domains through charts without ever integrating over the boundary, so they
+do not help. Mathlib's divergence theorems are still box-only. Estimate: unchanged, a Mathlib-scale
+project (surface measure on a `C¹` boundary via the charts, the normal field, the divergence theorem
+by partition of unity).'''
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.95) and Exercise 12.15'
 
 [[node]]
@@ -83,18 +97,27 @@ degree `k ≥ 1` on a triangulation, `‖u - u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C
 1)` (12.96), and `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}` (12.97). The book quotes both from
 [QV94, Theorem 6.2.1] and proves neither.
 
-Blocked: re-examined 2026-09-16. The abstract half is available and is *not* the obstruction —
-Céa’s lemma is `IsGalerkinSolution.norm_sub_le_infDist` and its seminorm form
-`seminorm_sub_le_of_galerkin_orthogonal`, both proved, and they reduce (12.96) to the interpolation
-estimate `inf_{v_h ∈ V_h} |u - v_h|_{H¹} ≤ C h^l |u|_{H^{l+1}}`. Three ingredients of that estimate
-are missing, in increasing order of cost: (a) the space `V_h` itself, which is `equation_12_94`
-and is blocked on the triangulation scaffold; (b) the multi-dimensional Bramble–Hilbert lemma —
-the reachable route is Brenner–Scott’s averaged Taylor polynomial, which uses no compactness and
-which `notes/lessons.md` already names as the single highest-leverage gap (blocker 1 of
-`notes/frontier.md`); (c) for (12.97), the Aubin–Nitsche duality argument needs `H²` regularity of
-the Poisson problem on a convex polygon, which is a genuine elliptic-regularity theorem nobody in
-this corpus proves. The one-dimensional counterparts are all proved (`property_12_1`,
-`property_12_1_l2`), so the shape of the argument is settled; only the two-dimensional analysis is
-absent. Estimate: gated on (a) and (b), each a module of its own.'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). Checked in `Numlib/`: the abstract
+half is proved — Céa's lemma `IsGalerkinSolution.norm_sub_le_infDist` and
+`seminorm_sub_le_of_galerkin_orthogonal` — so (12.96) reduces to the interpolation estimate
+`inf_{v_h} |u − v_h|_{H¹} ≤ C h^l |u|_{H^{l+1}}` on a triangulation. Of its three ingredients: (a)
+the space `V_h` is `equation_12_94`, still blocked on the triangulation scaffold (blocker 11); (b)
+the Bramble–Hilbert lemma on the reference triangle — the Brezis round changed this:
+Rellich–Kondrachov is proved for extension domains
+(`SobolevEuclidean.isCompactEmbedding_toLp_of_hasSobolevExtensionOn`,
+`Numlib/Analysis/Sobolev/Compactness`), agent ah1 is proving Deny–Lions / Bramble–Hilbert on a fixed
+extension domain (`Numlib/Analysis/Sobolev/DenyLions.lean`, this round), and the affine change of
+variables for Sobolev seminorms is `sobolevSeminorm_comp_affine_le` / `memSobolev_comp_affine_iff`
+(AH `theorem_10_3_4`, `NumlibSurface/AtkinsonHan/Chapter10/Section03`, which belongs in the
+backbone) — so what remains for (b) is that a triangle (a convex polygon, Lipschitz but not `C¹`) is
+a Sobolev extension domain, which the `C¹`-chart route
+`IsSobolevExtensionDomain.of_isContDiffChartDomain` does not give; a reflection or star-shaped
+extension for a triangle is ~500 lines, and Brenner–Scott's averaged-Taylor route needs none of it;
+(c) for (12.97), the Aubin–Nitsche argument needs `H²` regularity of the Poisson problem on a convex
+polygon; `Elliptic.regularity_dirichlet` (`Numlib/Analysis/PDE/Elliptic/Regularity`, Brezis Theorem
+9.25) now gives it on `C²` domains with a bounded boundary, not on polygons (Grisvard's theorem,
+`notes/frontier.md` blocker 18). The book quotes both estimates from [QV94] without proof. Estimate:
+(12.96) is gated on (a) and the extension property of a triangle, a few weeks once `DenyLions`
+lands; (12.97) is gated on Grisvard-type regularity, research-scale.'''
 deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_94"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 12.2, equations (12.96)–(12.97)'

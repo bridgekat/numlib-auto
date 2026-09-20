@@ -140,6 +140,7 @@ import Numlib.Analysis.Convex.Subdifferential.StrictlyConvex
 import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 import Numlib.Analysis.Convex.Tangent
 import Numlib.Analysis.Convex.Uniform
+import Numlib.Analysis.Convolution.Bochner
 import Numlib.Analysis.Convolution.Lp
 import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Fourier.CosineBasis

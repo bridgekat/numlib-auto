@@ -1,0 +1,34 @@
+[[node]]
+id = "MeasureTheory.L1.setIntegralCLM"
+
+[[node]]
+id = "MeasureTheory.Lp.translateₗᵢ"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_translateₗᵢ"
+
+[[node]]
+id = "MeasureTheory.Lp.translateₗᵢ_translateₗᵢ"
+
+[[node]]
+id = "MeasureTheory.Lp.continuous_translateₗᵢ"
+
+[[node]]
+id = "MeasureTheory.Lp.integrable_smul_translateₗᵢ"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_integral_smul_translateₗᵢ_of_integrable"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_integral_smul_translateₗᵢ"
+source = 'The convolution as a Bochner integral of translates in L^1; see e.g. Folland, A Course in Abstract Harmonic Analysis, 2nd edition, chapter 2 (convolutions on locally compact groups)'
+
+[[node]]
+id = "MeasureTheory.Lp.integral_smul_translateₗᵢ_eq_toL1"
+
+[[node]]
+id = "MeasureTheory.Lp.convolutionCLM_eq_integral"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_toL1_convolution_of_translateₗᵢ_comm"
+source = 'A bounded operator commuting with translations commutes with convolutions; see e.g. Grafakos, Classical Fourier Analysis, 3rd edition, section 2.5'

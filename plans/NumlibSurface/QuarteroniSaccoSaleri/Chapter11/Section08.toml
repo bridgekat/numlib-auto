@@ -26,8 +26,18 @@ conditions (a B-series theory, not in Mathlib nor in this library) and, for the 
 on a delicate case analysis of those conditions (Butcher 1965; Hairer–Nørsett–Wanner II.5); the
 book states the property without proof (citing [But87]).
 
-Blocked: not attempted — recorded as not formalized (notes/backbone.md §17.2.5); a B-series
-framework is the prerequisite, and `rk4_hasOrderFor` is the first step towards one.'''
+Blocked (2026-09-20, agent qss5; replaces the 2026-09-16 note). Checked in `Numlib/ODE/RungeKutta`:
+`ButcherTableau`, the order conditions up to four written out for RK4 (`rk4_orderConditions`,
+`rk4_hasOrderFor`), consistency (`rungeKutta_consistent_iff`, (11.71)); no rooted-tree
+combinatorics, no elementary differentials, no B-series — the order conditions exist only as the
+explicit list for `s ≤ 4`. The first clause (`order ≤ s` for an explicit `s`-stage method) is the
+cheapest: on `y' = y` the stability function is a polynomial of degree `≤ s` in `hλ`, and order `q`
+forces it to agree with `e^{hλ}` to order `q`, so `q ≤ s` (~200 lines from the linear-test-equation
+lemmas of the chapter-11 surface). The `s ≥ 5` clause and the minimal stage counts are Butcher's
+case analysis of the tree order conditions (Butcher 1965; Hairer–Nørsett–Wanner I, II.5), which
+presupposes the B-series framework, several thousand lines. The book quotes the property without
+proof ([But87]); out of scope by policy. Estimate: the first clause alone is a bounded task (~200
+lines, would be a new node `property_11_4_order_le_stages`); the rest is a B-series module.'''
 deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_71", "QuarteroniSaccoSaleri.Chapter11.rungeKutta_consistent_iff"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.4'
 
