@@ -35,6 +35,10 @@ with Remark 10 (regularity and the compatibility conditions). The backbone is
 * The standing hypothesis "`Ω` of class `C^∞` with `Γ` bounded" is carried by Theorem 10.7 as
   stated; the energy identity (32), Remark 6, Remark 7 and Remark 9 hold on every open set (or
   every bounded one) and are stated so.
+* Remark 8 is stated on `Ω = ⊤ : Opens ℝ¹` (`ℝ¹ = EuclideanSpace ℝ (Fin 1)`), the data
+  `u₀ ∈ H²(ℝ)`, `v₀ ∈ H¹(ℝ)` read in `H¹₀(ℝ) = H¹(ℝ)` through the backbone's `Wave.toZeroTopL`,
+  and the formula (40) through `Wave.lineEmbed : ℝ → ℝ¹` and the coordinate `x ↦ x 0`
+  (`Wave.coeFn_dAlembertL2_dAlembert`).
 * Remark 7's clause `A* = −A` (the adjoint for the Dirichlet scalar product) is not restated:
   the backbone does not formalize it. The two-sided solvability and `|U(t)|_H = |U₀|_H` for all
   `t ∈ ℝ` are obtained by time reversal (`Wave.existsUnique_isSolution_backward`), which needs
@@ -55,10 +59,9 @@ with Remark 10 (regularity and the compatibility conditions). The backbone is
   `waveOperator_add_id_isMaximalMonotone`.
 * `IsWaveSolution`, `IsWaveSolution.isSolution`, `isWaveSolution_iff`, `theorem_10_7`,
   `theorem_10_7_energy`, `remark_10_6`.
-* `remark_10_7`, `remark_10_7_group`, `remark_10_8_characteristics`, `remark_10_9`.
+* `remark_10_7`, `remark_10_7_group`, `remark_10_8`, `remark_10_8_characteristics`,
+  `remark_10_9`.
 * `theorem_10_8_domain`, `theorem_10_8_domain_norm`, `theorem_10_8`, `remark_10_10`.
-* Waiting for the backbone (`Numlib/Analysis/PDE/Wave`, `Wave.isSolution_dAlembert`):
-  `remark_10_8`, d'Alembert's formula (40) as the solution of (27)–(30) on `Ω = ℝ`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -599,6 +602,40 @@ theorem theorem_10_8 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   exact ⟨U, fun t ht ↦ hU t ht, hc⟩
 
 end Regular
+
+section DAlembert
+
+/-- The line `ℝ` as `ℝ¹`. -/
+local notation "𝔼₁" => EuclideanSpace ℝ (Fin 1)
+
+/-! ### Remark 8: d'Alembert's formula is the solution on `Ω = ℝ` -/
+
+/-- **Remark 8, d'Alembert's formula (40).** On `Ω = ℝ` (`N = 1`, `Ω = ⊤`), for `u₀ ∈ H²(ℝ)` and
+`v₀ ∈ H¹(ℝ)` — the data of Theorem 10.7, `H¹₀(ℝ) = H¹(ℝ)` (Remark 17 of chapter 9,
+`Wave.toZeroTopL`) — the curve `u` of the `L²(ℝ)` classes of
+`u(x, t) = ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀(s) ds` (the backbone's
+`Wave.dAlembertL2`, whose value is `Wave.dAlembert` read on the line through the coordinate
+`x ↦ x₀` and `Wave.lineEmbed : ℝ → ℝ¹`) is the solution of (27)–(30) in the class (31): it is a
+solution (`Wave.isSolution_dAlembert`), and every solution agrees with it on `[0, ∞)`
+(`Wave.IsSolution.eqOn_dAlembertL2`). For `v₀ = 0` it is (41). -/
+theorem remark_10_8 (u₀ : sobolevSpaceHigher 1 2 2 ⊤) (v₀ : hSpace 1 ⊤) :
+    IsWaveSolution ⊤ (Wave.toZeroTopL (by simp) (Wave.dAlembertU₀ u₀))
+        (Wave.toZeroTopL (by simp) v₀) (Wave.dAlembertL2 u₀ v₀) ∧
+      (∀ v, IsWaveSolution ⊤ (Wave.toZeroTopL (by simp) (Wave.dAlembertU₀ u₀))
+        (Wave.toZeroTopL (by simp) v₀) v → EqOn v (Wave.dAlembertL2 u₀ v₀) (Ici 0)) ∧
+      ∀ t, Wave.dAlembertL2 u₀ v₀ t =ᵐ[volume.restrict ((⊤ : Opens 𝔼₁) : Set 𝔼₁)]
+        fun x ↦ Wave.dAlembert (fun r ↦ fn u₀ (Wave.lineEmbed r))
+          (fun r ↦ fn v₀ (Wave.lineEmbed r)) t (x 0) := by
+  have hΩ : IsOfClassC 2 ((⊤ : Opens 𝔼₁) : Set 𝔼₁) :=
+    ⟨isOpen_univ, fun _ h ↦ by simp [frontier_univ] at h⟩
+  have hΓ : Bornology.IsBounded (frontier ((⊤ : Opens 𝔼₁) : Set 𝔼₁)) := by
+    rw [Opens.coe_top, frontier_univ]
+    exact Bornology.isBounded_empty
+  have h := Wave.isSolution_dAlembert u₀ v₀
+  refine ⟨(isWaveSolution_iff hΩ hΓ).2 h, fun v hv ↦ hv.isSolution.unique h, fun t ↦ ?_⟩
+  exact Wave.coeFn_dAlembertL2_dAlembert u₀ v₀ t
+
+end DAlembert
 
 section Necessity
 

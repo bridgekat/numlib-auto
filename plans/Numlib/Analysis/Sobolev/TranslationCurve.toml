@@ -1,0 +1,200 @@
+[[node]]
+id = "HasDerivAt.of_submodule_val"
+
+[[node]]
+id = "Continuous.of_submodule_val"
+
+[[node]]
+id = "hasDerivAt_piLp"
+
+[[node]]
+id = "continuous_piLp"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_sub"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_neg"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_sub"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_add"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_smul"
+
+[[node]]
+id = "SobolevMultiIndex.hasDerivAt_of_forall_weakDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.continuous_of_forall_weakDeriv"
+
+[[node]]
+id = "norm_sub_sub_fderiv_le_of_lipschitzWith"
+
+[[node]]
+id = "ContDiff.exists_eLpNorm_sub_sub_smul_fderiv_le"
+
+[[node]]
+id = "IsTranslationInvariant.top"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_translateCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_zero"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_add"
+
+[[node]]
+id = "MeasureTheory.Lp.norm_translateCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_add_fun"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_sub_fun"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_smul_fun"
+
+[[node]]
+id = "MeasureTheory.Lp.translateCurve_neg_fun"
+
+[[node]]
+id = "MeasureTheory.Lp.continuous_translateCurve"
+
+[[node]]
+id = "SobolevEuclidean.norm_translate_fnL_sub_le"
+
+[[node]]
+id = "SobolevEuclidean.exists_testFunctions_norm_sub_lt"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_translateCurve_sub_sub_smul_le"
+
+[[node]]
+id = "SobolevEuclidean.norm_translateCurve_sub_le"
+
+[[node]]
+id = "SobolevEuclidean.norm_le_of_eq_weakDeriv"
+
+[[node]]
+id = "SobolevEuclidean.norm_translateCurve_sub_sub_smul_le"
+
+[[node]]
+id = "SobolevEuclidean.eventually_norm_translateCurve_sub_sub_smul_le"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_translateCurve_fnL_zero"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_partialDerivL"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_toLowerOrderL_single"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_toLowerOrderL"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_translateCurve_fnL"
+
+[[node]]
+id = "SobolevEuclidean.deriv_translateCurve_fnL"
+
+[[node]]
+id = "SobolevEuclidean.contDiff_translateCurve_fnL"
+
+[[node]]
+id = "MultiIndexLE.addSingle_single_comm"
+
+[[node]]
+id = "SobolevEuclidean.continuous_translateL_smul"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_translateL"
+
+[[node]]
+id = "SobolevEuclidean.contDiff_translateL"
+
+[[node]]
+id = "MeasureTheory.integral_norm_restrict_le_of_memLp_two"
+
+[[node]]
+id = "MeasureTheory.Lp.quasiMeasurePreserving_add_smul"
+
+[[node]]
+id = "MeasureTheory.Lp.aestronglyMeasurable_add_smul_add_sub_smul"
+
+[[node]]
+id = "MeasureTheory.Lp.integrable_add_smul_add_sub_smul"
+
+[[node]]
+id = "MeasureTheory.Lp.primitiveCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.primitiveCurve_zero"
+
+[[node]]
+id = "MeasureTheory.Lp.continuous_translateCurve_add_neg"
+
+[[node]]
+id = "MeasureTheory.Lp.hasDerivAt_primitiveCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.contDiff_primitiveCurve"
+
+[[node]]
+id = "MeasureTheory.Lp.primitiveCurve_neg"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_setIntegral_translateCurve_add_neg"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_primitiveCurve"
+
+[[node]]
+id = "SobolevEuclidean.continuous_translateL_add_neg"
+
+[[node]]
+id = "SobolevEuclidean.primitiveCurveL"
+
+[[node]]
+id = "SobolevEuclidean.weakDeriv_primitiveCurveL"
+
+[[node]]
+id = "SobolevEuclidean.fnL_primitiveCurveL"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_primitiveCurveL"
+
+[[node]]
+id = "SobolevEuclidean.contDiff_primitiveCurveL"
+
+[[node]]
+id = "SobolevEuclidean.primitiveCurveL_zero"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_translateCurve_sub_neg"
+
+[[node]]
+id = "SobolevEuclidean.primitiveCurve_weakDeriv_single"
+
+[[node]]
+id = "SobolevEuclidean.hasDerivAt_translateCurve_add_neg"
+
+[[node]]
+id = "MeasureTheory.Lp.continuous_translateCurve_sub_neg"
+
+[[node]]
+id = "SobolevEuclidean.contDiff_translateL_add_neg"
+
+[[node]]
+id = "MeasureTheory.Lp.coeFn_smul_add_add_smul"

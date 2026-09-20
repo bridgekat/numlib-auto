@@ -276,6 +276,7 @@ import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered
 import Numlib.Analysis.Sobolev.Translate
+import Numlib.Analysis.Sobolev.TranslationCurve
 import Numlib.Analysis.Sobolev.Triangulation
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.Sobolev.Zero

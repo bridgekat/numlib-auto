@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Numlib.Analysis.ODE.HarmonicOscillator
 import Numlib.Analysis.PDE.Heat
 import Numlib.Analysis.PDE.Heat.Classical
+import Numlib.Analysis.Sobolev.TranslationCurve
 
 /-!
 # The wave equation
@@ -68,7 +69,18 @@ Corollary 9.19); for it `⟪AU, U⟫ = 0`, and `A` and `−A` are maximal monoto
 phase-space type, `Wave.dirichletPhaseSpace`, with the same operator (`Wave.operator'`); the
 two-sided solvability and the energy identity for all `t ∈ ℝ` are obtained without it by time
 reversal (`t ↦ −t`, `v₀ ↦ −v₀`, `Wave.existsUnique_isSolution_backward`). Remark 8 (d'Alembert's
-formula on `Ω = ℝ`, `Wave.dAlembert`) is the one place where a concrete solution is exhibited;
+formula on `Ω = ℝ`, `Wave.dAlembert`) is the one place where a concrete solution is exhibited:
+for `u₀ ∈ H²(ℝ)` and `v₀ ∈ H¹(ℝ) = H¹₀(ℝ)` the curve
+`Wave.dAlembertL2 u₀ v₀ t = ½ (τ_t u₀ + τ_{−t} u₀) + ½ ∫_{−t}^{t} τ_s v₀ ds` in `L²(ℝ)` — the class
+of `x ↦ ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀` (`Wave.coeFn_dAlembertL2_dAlembert`) — is a
+solution in the class (31) (`Wave.isSolution_dAlembert`), hence *the* solution on `[0, ∞)`
+(`Wave.IsSolution.eqOn_dAlembertL2`). The calculus of the translation group
+`t ↦ τ_t f = f(· + t)` in `L²(ℝ)` and `H¹(ℝ)` (`C^k` for `f ∈ H^k`, derivative `τ_t f'`) and of
+the primitive curve `∫_{−t}^{t} τ_s v₀ ds` is `Numlib/Analysis/Sobolev/TranslationCurve`; here
+`u(t) ∈ D(−Δ)` is read through the `H¹` element `Wave.dAlembertH1Space` carrying `∂ₓu(t)`
+(`Wave.mem_dirichletLaplacianDomain_of_forall_ae_eq`: `v ∈ H¹₀` with `∂ᵢv = fn Qᵢ`, `Qᵢ ∈ H¹`,
+lies in `D(−Δ)` with `−Δv = −∑ ∂ᵢQᵢ`), and `−Δu(t) = −∂ₜₜu(t)` is the identity
+`½ (τ_t u₀'' + τ_{−t} u₀'') + ½ (τ_t v₀' − τ_{−t} v₀')` on both sides.
 Remark 9 (the Fourier method, `Wave.IsSolution.inner_eigenfunction`) reduces to the harmonic
 oscillator on `[0, ∞)` (`eq_cos_add_sin_of_hasDerivWithinAt_oscillator` of
 `Numlib/Analysis/ODE/HarmonicOscillator`).
@@ -80,7 +92,7 @@ Remark 6.
 -/
 
 open Filter MeasureTheory Metric Module Set TopologicalSpace
-open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
+open scoped ContDiff Distributions ENNReal Interval Topology InnerProductSpace
 
 noncomputable section
 
@@ -2409,5 +2421,402 @@ theorem IsSolution.contDiffOnClosure_spaceTime (h : IsSolution Ω u₀ v₀ u)
     (h.contDiffOnThrough_sobolev_forall hU₀ hΩ hΓ)
 
 end Regularity10_8'
+
+end Wave
+
+namespace Wave
+
+open LinearPMap.PowDomain SobolevMultiIndex Elliptic SobolevEuclidean MeasureTheory.Lp
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-! ### Remark 8: d'Alembert's formula solves the wave equation on `ℝ` -/
+
+/-- **Membership in `D(−Δ)` through `H¹` derivatives**: if `v ∈ H¹₀(Ω)` and each `∂ᵢ v` is the
+function of some `Qᵢ ∈ H¹(Ω)`, then `f = fnL v` lies in `D(−Δ)` and `−Δ f = −∑ᵢ ∂ᵢ Qᵢ`. This is
+`mem_dirichletLaplacianDomain_of_sobolev_two` with the `H²` element replaced by the family of
+its first derivatives, the only thing the proof uses. -/
+theorem mem_dirichletLaplacianDomain_of_forall_ae_eq {v : SobolevEuclidean N 1 2 Ω}
+    (hv : v ∈ SobolevEuclideanZero N 1 2 Ω) (Q : Fin N → SobolevEuclidean N 1 2 Ω)
+    (hQ : ∀ i, ⇑(weakDeriv v (MultiIndexLE.single i))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn (Q i)) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v ∈ dirichletLaplacianDomain Ω
+      ∧ dirichletLaplacianApply Ω (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v)
+        = -∑ i, weakDeriv (Q i) (MultiIndexLE.single i) := by
+  -- the datum, as a function
+  have hg : ⇑(-∑ i, weakDeriv (Q i) (MultiIndexLE.single i))
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+      fun x ↦ -∑ i, weakDeriv (Q i) (MultiIndexLE.single i) x := by
+    filter_upwards [Lp.coeFn_neg (∑ i, weakDeriv (Q i) (MultiIndexLE.single i)),
+      Lp.coeFn_finsetSum Finset.univ fun i ↦ weakDeriv (Q i) (MultiIndexLE.single i)] with x hx1 hx2
+    rw [hx1, Pi.neg_apply, hx2, Finset.sum_apply]
+  -- the equation against test functions
+  have heq : ∀ Φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω v Φ = load Ω (-∑ i, weakDeriv (Q i) (MultiIndexLE.single i)) Φ := by
+    intro Φ hΦ
+    obtain ⟨ψ, hψ⟩ := hΦ
+    rw [dirichletForm_apply_eq_of_ae_eq hQ hψ, load_apply_eq_of_ae_eq hg hψ]
+    have hterm : ∀ i, ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+        fn (Q i) x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
+        = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+          weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x := by
+      intro i
+      have key := (weakDeriv_hasWeakIteratedLineDerivOn_single (Q i) i)
+        |>.integral_fderiv_mul_eq_of_eqOn ψ (fun _ _ ↦ rfl)
+      calc ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+            fn (Q i) x * fderiv ℝ ψ x (EuclideanSpace.single i 1)
+          = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+              fderiv ℝ ψ x (EuclideanSpace.single i 1) * fn (Q i) x :=
+            integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+              ψ x * weakDeriv (Q i) (MultiIndexLE.single i) x := key
+        _ = -∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+              weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x := by
+            congr 1
+            exact integral_congr_ae (Eventually.of_forall fun x ↦ mul_comm _ _)
+    simp only [hterm, Finset.sum_neg_distrib]
+    have hI : ∀ i, Integrable
+        (fun x ↦ weakDeriv (Q i) (MultiIndexLE.single i) x * ψ x)
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := fun i ↦ by
+      have := ((weakDeriv_hasWeakIteratedLineDerivOn_single (Q i) i)
+        |>.integrable_smul_weakDeriv ψ).integrableOn (s := (Ω : Set (EuclideanSpace ℝ (Fin N))))
+      exact this.congr (Eventually.of_forall fun x ↦ by simp only [smul_eq_mul]; ring)
+    rw [← integral_finsetSum _ fun i _ ↦ hI i, ← integral_neg]
+    exact integral_congr_ae (Eventually.of_forall fun x ↦ by
+      simp only [Finset.sum_mul, neg_mul])
+  have heq' : ∀ φ ∈ SobolevEuclideanZero N 1 2 Ω,
+      dirichletForm Ω v φ = load Ω (-∑ i, weakDeriv (Q i) (MultiIndexLE.single i)) φ :=
+    fun φ hφ ↦ dirichletForm_eq_load_of_forall_testFunctions heq hφ
+  exact ⟨⟨v, hv, rfl, _, heq'⟩, (eq_dirichletLaplacianApply hv rfl heq').symm⟩
+
+/-- **The inclusion `W^{1,p}(ℝ^N) → W_0^{1,p}(ℝ^N)`** as a bounded linear map, `p < ∞`: the two
+spaces coincide (`SobolevEuclideanZero.eq_top`), and the map is the identity. -/
+def toZeroTopL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
+    SobolevEuclidean N 1 p ⊤ →L[ℝ] SobolevEuclideanZero N 1 p ⊤ :=
+  LinearMap.mkContinuous
+    (LinearMap.codRestrict (SobolevEuclideanZero N 1 p ⊤) LinearMap.id fun u ↦ by
+      rw [SobolevEuclideanZero.eq_top hp]; exact Submodule.mem_top)
+    1 fun u ↦ by rw [one_mul]; exact le_rfl
+
+/-- The function of `toZeroTopL u` is the function of `u`. -/
+theorem fnL_toZeroTopL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p ⊤) :
+    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p ⊤ volume
+      (toZeroTopL hp u) = fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 p ⊤ volume u :=
+  rfl
+
+/-- `toZeroTopL u` is `u` as an element of `W^{1,p}`. -/
+theorem coe_toZeroTopL {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) (u : SobolevEuclidean N 1 p ⊤) :
+    (toZeroTopL hp u : SobolevEuclidean N 1 p ⊤) = u :=
+  rfl
+
+
+/-! ### d'Alembert's formula as a solution on `ℝ` -/
+
+section DAlembertSolution
+
+local notation "𝔼₁" => EuclideanSpace ℝ (Fin 1)
+local notation "𝔟₁" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin 1) ℝ)
+local notation "𝕖" => EuclideanSpace.single (0 : Fin 1) (1 : ℝ)
+local notation "L2₁" => Lp ℝ 2 (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin 1))) :
+  Set (EuclideanSpace ℝ (Fin 1))))
+
+variable (u₀ : SobolevEuclidean 1 2 2 ⊤) (v₀ : SobolevEuclidean 1 1 2 ⊤)
+
+/-- The datum `u₀ ∈ H²(ℝ)` as an element of `H¹(ℝ)`. -/
+abbrev dAlembertU₀ : SobolevEuclidean 1 1 2 ⊤ := toLowerOrderL ℝ 𝔟₁ 2 ⊤ volume (by omega) u₀
+
+/-- The derivative `u₀' ∈ H¹(ℝ)` of the datum `u₀ ∈ H²(ℝ)`. -/
+abbrev dAlembertU₀' : SobolevEuclidean 1 1 2 ⊤ := partialDerivL ℝ 𝔟₁ 2 ⊤ volume 0 u₀
+
+/-- **d'Alembert's formula as a curve in `L²(ℝ)`**:
+`u(t) = ½ (τ_t u₀ + τ_{−t} u₀) + ½ ∫_{−t}^{t} τ_s v₀ ds`, the `L²` class of
+`x ↦ ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀(s) ds` (`coeFn_dAlembertL2`). -/
+def dAlembertL2 (t : ℝ) : L2₁ :=
+  (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) t
+      + translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) (-t))
+    + (1 / 2 : ℝ) • primitiveCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) t
+
+/-- The time derivative of d'Alembert's curve:
+`∂ₜu(t) = ½ (τ_t u₀' − τ_{−t} u₀') + ½ (τ_t v₀ + τ_{−t} v₀)`. -/
+def dAlembertL2Deriv (t : ℝ) : L2₁ :=
+  (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀' u₀)) t
+      - translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀' u₀)) (-t))
+    + (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) t
+      + translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) (-t))
+
+/-- The second time derivative of d'Alembert's curve, which is also its second space derivative:
+`∂ₜₜu(t) = ½ (τ_t u₀'' + τ_{−t} u₀'') + ½ (τ_t v₀' − τ_{−t} v₀')`. -/
+def dAlembertL2Deriv2 (t : ℝ) : L2₁ :=
+  (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (weakDeriv (dAlembertU₀' u₀) (MultiIndexLE.single 0)) t
+      + translateCurve ℝ 2 𝕖 (weakDeriv (dAlembertU₀' u₀) (MultiIndexLE.single 0)) (-t))
+    + (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (weakDeriv v₀ (MultiIndexLE.single 0)) t
+      - translateCurve ℝ 2 𝕖 (weakDeriv v₀ (MultiIndexLE.single 0)) (-t))
+
+/-- `weakDeriv (toLowerOrderL u₀) e₀ = fnL u₀'`. -/
+theorem weakDeriv_dAlembertU₀ :
+    weakDeriv (dAlembertU₀ u₀) (MultiIndexLE.single 0) = fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀' u₀) :=
+  (fnL_partialDerivL (k := 1) 0 u₀).symm
+
+/-- **`∂ₜ u = ∂ₜu`**: d'Alembert's curve is differentiable in `L²(ℝ)`. -/
+theorem hasDerivAt_dAlembertL2 (t : ℝ) :
+    HasDerivAt (dAlembertL2 u₀ v₀) (dAlembertL2Deriv u₀ v₀ t) t := by
+  have h1 := ((hasDerivAt_translateCurve_add_neg (by simp) (dAlembertU₀ u₀) 0 t).congr_deriv
+    (by rw [weakDeriv_dAlembertU₀])).const_smul (1 / 2 : ℝ)
+  have h2 := (hasDerivAt_primitiveCurve 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) (by simp) t).const_smul
+    (1 / 2 : ℝ)
+  exact h1.add h2
+
+/-- **`∂ₜₜ u`**: the time derivative of d'Alembert's curve is differentiable in `L²(ℝ)`. -/
+theorem hasDerivAt_dAlembertL2Deriv (t : ℝ) :
+    HasDerivAt (dAlembertL2Deriv u₀ v₀) (dAlembertL2Deriv2 u₀ v₀ t) t := by
+  have h1 := (hasDerivAt_translateCurve_sub_neg (by simp) (dAlembertU₀' u₀) 0 t).const_smul
+    (1 / 2 : ℝ)
+  have h2 := (hasDerivAt_translateCurve_add_neg (by simp) v₀ 0 t).const_smul (1 / 2 : ℝ)
+  exact h1.add h2
+
+/-- The second derivative of d'Alembert's curve is continuous in `L²(ℝ)`. -/
+theorem continuous_dAlembertL2Deriv2 : Continuous (dAlembertL2Deriv2 u₀ v₀) := by
+  have h1 := (continuous_translateCurve_add_neg 𝕖
+    (weakDeriv (dAlembertU₀' u₀) (MultiIndexLE.single 0)) (by simp)).const_smul (1 / 2 : ℝ)
+  have h2 := (continuous_translateCurve_sub_neg 𝕖
+    (weakDeriv v₀ (MultiIndexLE.single 0)) (by simp)).const_smul (1 / 2 : ℝ)
+  exact h1.add h2
+
+/-- **`u ∈ C²(ℝ; L²(ℝ))`** for d'Alembert's curve. -/
+theorem contDiff_dAlembertL2 : ContDiff ℝ 2 (dAlembertL2 u₀ v₀) := by
+  rw [show (2 : WithTop ℕ∞) = 1 + 1 from rfl, contDiff_succ_iff_deriv]
+  refine ⟨fun t ↦ (hasDerivAt_dAlembertL2 u₀ v₀ t).differentiableAt, fun h ↦ by simp at h, ?_⟩
+  have e : deriv (dAlembertL2 u₀ v₀) = dAlembertL2Deriv u₀ v₀ :=
+    funext fun t ↦ (hasDerivAt_dAlembertL2 u₀ v₀ t).deriv
+  rw [e, contDiff_one_iff_deriv]
+  refine ⟨fun t ↦ (hasDerivAt_dAlembertL2Deriv u₀ v₀ t).differentiableAt, ?_⟩
+  have e2 : deriv (dAlembertL2Deriv u₀ v₀) = dAlembertL2Deriv2 u₀ v₀ :=
+    funext fun t ↦ (hasDerivAt_dAlembertL2Deriv u₀ v₀ t).deriv
+  rw [e2]
+  exact continuous_dAlembertL2Deriv2 u₀ v₀
+
+/-- The translation `τ_{t e}` on `H¹(ℝ)`. -/
+abbrev dAlembertTL (w : SobolevEuclidean 1 1 2 ⊤) (t : ℝ) : SobolevEuclidean 1 1 2 ⊤ :=
+  translateL ℝ 𝔟₁ 1 2 volume (IsTranslationInvariant.top (t • 𝕖)) w
+
+/-- **The lift of d'Alembert's curve to `H¹(ℝ)`**:
+`ũ(t) = ½ (τ_t u₀ + τ_{−t} u₀) + ½ ∫_{−t}^{t} τ_s v₀ ds` in `H¹(ℝ)`. -/
+def dAlembertH1 (t : ℝ) : SobolevEuclidean 1 1 2 ⊤ :=
+  (1 / 2 : ℝ) • (dAlembertTL (dAlembertU₀ u₀) t + dAlembertTL (dAlembertU₀ u₀) (-t))
+    + (1 / 2 : ℝ) • primitiveCurveL 1 𝕖 v₀ t
+
+/-- **The space derivative of d'Alembert's curve as an `H¹(ℝ)` element**:
+`∂ₓu(t) = ½ (τ_t u₀' + τ_{−t} u₀') + ½ (τ_t v₀ − τ_{−t} v₀)`. -/
+def dAlembertH1Space (t : ℝ) : SobolevEuclidean 1 1 2 ⊤ :=
+  (1 / 2 : ℝ) • (dAlembertTL (dAlembertU₀' u₀) t + dAlembertTL (dAlembertU₀' u₀) (-t))
+    + (1 / 2 : ℝ) • (dAlembertTL v₀ t - dAlembertTL v₀ (-t))
+
+/-- The function of the `H¹` lift is d'Alembert's curve. -/
+theorem fnL_dAlembertH1 (t : ℝ) :
+    fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertH1 u₀ v₀ t) = dAlembertL2 u₀ v₀ t := by
+  change (1 / 2 : ℝ) • (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertTL (dAlembertU₀ u₀) t)
+      + fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertTL (dAlembertU₀ u₀) (-t)))
+    + (1 / 2 : ℝ) • fnL ℝ 𝔟₁ 1 2 ⊤ volume (primitiveCurveL 1 𝕖 v₀ t) = _
+  rw [fnL_primitiveCurveL (by simp) 𝕖 v₀ t]
+  rfl
+
+/-- **The weak derivative of the `H¹` lift is the function of `dAlembertH1Space`**: the space
+derivative of `∫_{−t}^{t} τ_s v₀ ds` is `τ_t v₀ − τ_{−t} v₀` (`primitiveCurve_weakDeriv_single`). -/
+theorem weakDeriv_dAlembertH1 (t : ℝ) :
+    weakDeriv (dAlembertH1 u₀ v₀ t) (MultiIndexLE.single 0)
+      = fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertH1Space u₀ v₀ t) := by
+  change (1 / 2 : ℝ) • (translateCurve ℝ 2 𝕖 (weakDeriv (dAlembertU₀ u₀) (MultiIndexLE.single 0)) t
+      + translateCurve ℝ 2 𝕖 (weakDeriv (dAlembertU₀ u₀) (MultiIndexLE.single 0)) (-t))
+    + (1 / 2 : ℝ) • weakDeriv (primitiveCurveL 1 𝕖 v₀ t) (MultiIndexLE.single 0) = _
+  simp only [weakDeriv_primitiveCurveL (by simp) 𝕖 v₀ t,
+    primitiveCurve_weakDeriv_single (by simp) v₀ 0 t, weakDeriv_dAlembertU₀]
+  rfl
+
+/-- The weak derivative of `dAlembertH1Space` is the second derivative `dAlembertL2Deriv2`. -/
+theorem weakDeriv_dAlembertH1Space (t : ℝ) :
+    weakDeriv (dAlembertH1Space u₀ v₀ t) (MultiIndexLE.single 0) = dAlembertL2Deriv2 u₀ v₀ t :=
+  rfl
+
+/-- **`u ∈ C¹(ℝ; H¹(ℝ))`** for the `H¹` lift of d'Alembert's curve. -/
+theorem contDiff_dAlembertH1 : ContDiff ℝ 1 (dAlembertH1 u₀ v₀) :=
+  ((contDiff_translateL_add_neg (by simp) u₀ 0).const_smul (1 / 2 : ℝ)).add
+    ((contDiff_primitiveCurveL (by simp) 𝕖 v₀).const_smul (1 / 2 : ℝ))
+
+/-- **d'Alembert's curve lies in `D(−Δ)` with `−Δ u(t) = −∂ₜₜu(t)`**: through the `H¹` lift and
+the `H¹` element `dAlembertH1Space` carrying its space derivative
+(`mem_dirichletLaplacianDomain_of_forall_ae_eq`). -/
+theorem dAlembertL2_mem_dirichletLaplacianDomain (t : ℝ) :
+    dAlembertL2 u₀ v₀ t ∈ dirichletLaplacianDomain ⊤
+      ∧ dirichletLaplacianApply ⊤ (dAlembertL2 u₀ v₀ t) = -dAlembertL2Deriv2 u₀ v₀ t := by
+  have hmem : dAlembertH1 u₀ v₀ t ∈ SobolevEuclideanZero 1 1 2 ⊤ := by
+    rw [SobolevEuclideanZero.eq_top (by simp)]
+    exact Submodule.mem_top
+  have h := mem_dirichletLaplacianDomain_of_forall_ae_eq hmem (fun _ ↦ dAlembertH1Space u₀ v₀ t)
+    fun i ↦ by
+      have hi : i = 0 := Subsingleton.elim i 0
+      subst hi
+      rw [weakDeriv_dAlembertH1]
+      exact EventuallyEq.rfl
+  rw [fnL_dAlembertH1, Fin.sum_univ_one, weakDeriv_dAlembertH1Space] at h
+  exact h
+
+/-- d'Alembert's curve at `t = 0` is `u₀`. -/
+theorem dAlembertL2_zero : dAlembertL2 u₀ v₀ 0 = fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀) := by
+  unfold dAlembertL2
+  simp only [neg_zero, translateCurve_zero, primitiveCurve_zero]
+  module
+
+/-- The time derivative of d'Alembert's curve at `t = 0` is `v₀`. -/
+theorem dAlembertL2Deriv_zero : dAlembertL2Deriv u₀ v₀ 0 = fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀ := by
+  unfold dAlembertL2Deriv
+  simp only [neg_zero, translateCurve_zero]
+  module
+
+/-- **Remark 8: d'Alembert's formula solves the wave equation on `ℝ`** ([brezis2011functional]
+§10.3, Remark 8, (40)): for `u₀ ∈ H²(ℝ)` and `v₀ ∈ H¹(ℝ)` (`= H¹₀(ℝ)`), the curve
+`t ↦ ½ (τ_t u₀ + τ_{−t} u₀) + ½ ∫_{−t}^{t} τ_s v₀ ds` in `L²(ℝ)` — the `L²` class of
+`x ↦ ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀(s) ds` (`coeFn_dAlembertL2`) — is a solution
+in the class (31) of Theorem 10.7 with data `(u₀, v₀)`: it is `C²` into `L²` and `C¹` into
+`H¹₀ = H¹` (the translation calculus of `Numlib/Analysis/Sobolev/TranslationCurve`), `u(t)` lies
+in `D(−Δ)` with `−Δu(t) = −∂ₜₜu(t) = −½ (τ_t u₀'' + τ_{−t} u₀'') − ½ (τ_t v₀' − τ_{−t} v₀')`, and
+the initial conditions hold. By uniqueness (`IsSolution.unique`) it is the solution of
+Theorem 10.7 (`IsSolution.eqOn_dAlembertL2`). -/
+theorem isSolution_dAlembert :
+    IsSolution ⊤ (toZeroTopL (by simp) (dAlembertU₀ u₀)) (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀)
+      (dAlembertL2 u₀ v₀) where
+  contDiffOn := (contDiff_dAlembertL2 u₀ v₀).contDiffOn
+  contDiffOnThrough := ⟨fun t ↦ toZeroTopL (by simp) (dAlembertH1 u₀ v₀ t),
+    ((toZeroTopL (N := 1) (p := 2) (by simp)).contDiff.comp
+      (contDiff_dAlembertH1 u₀ v₀)).contDiffOn,
+    fun t _ ↦ (fnL_dAlembertH1 u₀ v₀ t).symm⟩
+  mem_domain t _ := (dAlembertL2_mem_dirichletLaplacianDomain u₀ v₀ t).1
+  contDiffOnPowDomain := by
+    rw [LinearPMap.contDiffOnPowDomain_iff dirichletLaplacian_isClosed]
+    refine ⟨![dAlembertL2 u₀ v₀, fun t ↦ -dAlembertL2Deriv2 u₀ v₀ t], fun t _ ↦ rfl, ?_, ?_⟩
+    · rw [Fin.forall_fin_two]
+      exact ⟨contDiffOn_zero.2 (contDiff_dAlembertL2 u₀ v₀).continuous.continuousOn,
+        contDiffOn_zero.2 (continuous_dAlembertL2Deriv2 u₀ v₀).neg.continuousOn⟩
+    · intro t _ i
+      have hi : i = 0 := Subsingleton.elim i 0
+      subst hi
+      exact ⟨(dAlembertL2_mem_dirichletLaplacianDomain u₀ v₀ t).1,
+        (dAlembertL2_mem_dirichletLaplacianDomain u₀ v₀ t).2⟩
+  eqn t ht := by
+    rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Ici 0)
+      (contDiff_dAlembertL2 u₀ v₀).contDiffAt ht, iteratedDeriv_succ, iteratedDeriv_one,
+      dirichletLaplacian_apply, (dAlembertL2_mem_dirichletLaplacianDomain u₀ v₀ t).2, neg_neg]
+    have e : deriv (dAlembertL2 u₀ v₀) = dAlembertL2Deriv u₀ v₀ :=
+      funext fun t ↦ (hasDerivAt_dAlembertL2 u₀ v₀ t).deriv
+    rw [e]
+    exact (hasDerivAt_dAlembertL2Deriv u₀ v₀ t).deriv
+  apply_zero := dAlembertL2_zero u₀ v₀
+  derivWithin_zero := by
+    rw [(hasDerivAt_dAlembertL2 u₀ v₀ 0).hasDerivWithinAt.derivWithin (uniqueDiffOn_Ici 0 0
+      self_mem_Ici)]
+    exact dAlembertL2Deriv_zero u₀ v₀
+
+/-- **Remark 8, uniqueness: every solution with data `(u₀, v₀)` is d'Alembert's curve on
+`[0, ∞)`** (`IsSolution.unique`). -/
+theorem IsSolution.eqOn_dAlembertL2 {u : ℝ → L2₁}
+    (h : IsSolution ⊤ (toZeroTopL (by simp) (dAlembertU₀ u₀)) (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) u) :
+    EqOn u (dAlembertL2 u₀ v₀) (Ici 0) :=
+  h.unique (isSolution_dAlembert u₀ v₀)
+
+/-- **d'Alembert's curve, pointwise**: `u(t)` is the class of
+`x ↦ ½ (u₀(x + t e) + u₀(x − t e)) + ½ ∫_0^t (v₀(x + s e) + v₀(x − s e)) ds`, `e` the unit
+vector of `ℝ¹`. -/
+theorem coeFn_dAlembertL2 (t : ℝ) :
+    dAlembertL2 u₀ v₀ t
+      =ᵐ[volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin 1))) : Set (EuclideanSpace ℝ (Fin 1)))]
+      fun x ↦ (1 / 2 : ℝ) * (fn u₀ (x + t • 𝕖) + fn u₀ (x - t • 𝕖))
+        + (1 / 2 : ℝ) * ∫ s in (0 : ℝ)..t, (fn v₀ (x + s • 𝕖) + fn v₀ (x - s • 𝕖)) := by
+  refine (Lp.coeFn_smul_add_add_smul (1 / 2 : ℝ)
+    (translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) t)
+    (translateCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) (-t))
+    (primitiveCurve ℝ 2 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) t)).trans ?_
+  filter_upwards [coeFn_translateCurve 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) t,
+    coeFn_translateCurve 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume (dAlembertU₀ u₀)) (-t),
+    coeFn_primitiveCurve 𝕖 (fnL ℝ 𝔟₁ 1 2 ⊤ volume v₀) t] with x h1 h2 h3
+  simp only [h1, h2, h3, neg_smul, ← sub_eq_add_neg]
+  rfl
+
+/-- The line `ℝ` as `ℝ¹ = EuclideanSpace ℝ (Fin 1)`: `r ↦ (r)`. -/
+def lineEmbed (r : ℝ) : EuclideanSpace ℝ (Fin 1) := WithLp.toLp 2 fun _ ↦ r
+
+/-- The coordinate of `lineEmbed r` is `r`. -/
+@[simp]
+theorem lineEmbed_apply (r : ℝ) (i : Fin 1) : lineEmbed r i = r := rfl
+
+/-- Every point of `ℝ¹` is `lineEmbed` of its coordinate. -/
+theorem lineEmbed_coord (x : EuclideanSpace ℝ (Fin 1)) : lineEmbed (x 0) = x := by
+  ext i
+  rw [lineEmbed_apply, Subsingleton.elim i 0]
+
+/-- `x + t e = lineEmbed (x₀ + t)`. -/
+theorem add_smul_single_eq_lineEmbed (x : EuclideanSpace ℝ (Fin 1)) (t : ℝ) :
+    x + t • 𝕖 = lineEmbed (x 0 + t) := by
+  ext i
+  rw [Subsingleton.elim i 0]
+  simp [lineEmbed]
+
+/-- `x − t e = lineEmbed (x₀ − t)`. -/
+theorem sub_smul_single_eq_lineEmbed (x : EuclideanSpace ℝ (Fin 1)) (t : ℝ) :
+    x - t • 𝕖 = lineEmbed (x 0 - t) := by
+  ext i
+  rw [Subsingleton.elim i 0]
+  simp [lineEmbed]
+
+/-- `lineEmbed` preserves Lebesgue measure. -/
+theorem measurePreserving_lineEmbed : MeasurePreserving lineEmbed volume volume :=
+  (PiLp.volume_preserving_toLp (Fin 1)).comp
+    ((volume_preserving_funUnique (Fin 1) ℝ).symm (MeasurableEquiv.funUnique (Fin 1) ℝ))
+
+/-- `lineEmbed` preserves Lebesgue measure, read on the whole space `⊤ : Opens ℝ¹`. -/
+theorem measurePreserving_lineEmbed_top : MeasurePreserving lineEmbed volume
+    (volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin 1))) : Set (EuclideanSpace ℝ (Fin 1)))) :=
+  ⟨measurePreserving_lineEmbed.measurable, by
+    rw [measurePreserving_lineEmbed.map_eq, Measure.restrict_coe_top]⟩
+
+/-- The composite of an `L²(ℝ¹)` function with `lineEmbed` is interval integrable on `ℝ`. -/
+theorem intervalIntegrable_comp_lineEmbed (w : SobolevEuclidean 1 1 2 ⊤) (a b : ℝ) :
+    IntervalIntegrable (fun r ↦ fn w (lineEmbed r)) volume a b := by
+  have h : MemLp (fun r ↦ fn w (lineEmbed r)) 2 (volume : Measure ℝ) :=
+    (SobolevMultiIndex.memLp w).comp_measurePreserving measurePreserving_lineEmbed_top
+  have : IsFiniteMeasure ((volume : Measure ℝ).restrict (Ι a b)) :=
+    ⟨by rw [Measure.restrict_apply_univ]; exact measure_Ioc_lt_top⟩
+  exact intervalIntegrable_iff.2 ((h.restrict (Ι a b)).integrable one_le_two)
+
+/-- The interval integral `∫_{x₀−t}^{x₀+t} g` as `∫_0^t (g(x₀ + s) + g(x₀ − s)) ds`. -/
+theorem integral_add_sub_eq_integral_sub_add {g : ℝ → ℝ}
+    (hg : ∀ a b, IntervalIntegrable g volume a b) (x₀ t : ℝ) :
+    ∫ s in (0 : ℝ)..t, (g (x₀ + s) + g (x₀ - s)) = ∫ s in (x₀ - t)..(x₀ + t), g s := by
+  have h1 : IntervalIntegrable (fun s ↦ g (x₀ + s)) volume 0 t := by
+    have := (hg x₀ (x₀ + t)).comp_add_left x₀
+    simpa using this
+  have h2 : IntervalIntegrable (fun s ↦ g (x₀ - s)) volume 0 t := by
+    have := (hg (x₀ - t) x₀).comp_sub_left x₀
+    simpa using this.symm
+  rw [intervalIntegral.integral_add h1 h2, intervalIntegral.integral_comp_add_left g,
+    intervalIntegral.integral_comp_sub_left g, add_zero, sub_zero, add_comm,
+    intervalIntegral.integral_add_adjacent_intervals (hg _ _) (hg _ _)]
+
+/-- **d'Alembert's curve is d'Alembert's formula (40)**: `u(t)` is the class of
+`x ↦ ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀(s) ds`, the data read as functions on `ℝ`
+through `lineEmbed` and the point `x ∈ ℝ¹` through its coordinate (`Wave.dAlembert`). -/
+theorem coeFn_dAlembertL2_dAlembert (t : ℝ) :
+    dAlembertL2 u₀ v₀ t
+      =ᵐ[volume.restrict ((⊤ : Opens (EuclideanSpace ℝ (Fin 1))) : Set (EuclideanSpace ℝ (Fin 1)))]
+      fun x ↦ dAlembert (fun r ↦ fn u₀ (lineEmbed r)) (fun r ↦ fn v₀ (lineEmbed r)) t (x 0) := by
+  refine (coeFn_dAlembertL2 u₀ v₀ t).trans (Eventually.of_forall fun x ↦ ?_)
+  beta_reduce
+  rw [dAlembert_apply, add_smul_single_eq_lineEmbed, sub_smul_single_eq_lineEmbed]
+  congr 2
+  have e : ∀ s, fn v₀ (x + s • 𝕖) + fn v₀ (x - s • 𝕖)
+      = fn v₀ (lineEmbed (x 0 + s)) + fn v₀ (lineEmbed (x 0 - s)) := fun s ↦ by
+    rw [add_smul_single_eq_lineEmbed, sub_smul_single_eq_lineEmbed]
+  simp only [e]
+  exact integral_add_sub_eq_integral_sub_add (intervalIntegrable_comp_lineEmbed v₀) (x 0) t
+
+end DAlembertSolution
 
 end Wave

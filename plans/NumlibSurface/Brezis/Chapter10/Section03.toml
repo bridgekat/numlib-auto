@@ -82,22 +82,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remar
 
 [[node]]
 id = "remark_10_8"
-kind = "theorem"
-desc = '''Remark 8, d'Alembert's formula: for `Ω = ℝ` (`N = 1`, `Ω = ⊤`), `u₀ ∈ H²(ℝ)` and
-`v₀ ∈ H¹(ℝ)` (the data of Theorem 10.7 on `ℝ`, where `H¹₀(ℝ) = H¹(ℝ)`), the solution of
-(27)–(30) is (40): `u(x,t) = ½ (u₀(x+t) + u₀(x-t)) + ½ ∫_{x-t}^{x+t} v₀(s) ds`, i.e.
-`u t =ᵐ Wave.dAlembert u₀ v₀ t` for every `t ≥ 0`; for `v₀ = 0`, (41). Backbone `Wave.dAlembert`,
-`Wave.isSolution_dAlembert`, `Wave.IsSolution.eq_dAlembert` (the formula solves the problem in
-the class (31), and uniqueness). ★★★ (the translation calculus in `L²(ℝ)`).
-
-Blocked (2026-09-20, surf12): the backbone node `Wave.isSolution_dAlembert` (`PDE/Wave`, agent
-pde6) is open in this worktree. The characteristics clause of the Remark, which needs only
-`Wave.dAlembert` and `dAlembert_contDiffOn_off_characteristics`, is proved as
-`remark_10_8_characteristics`. Still blocked (2026-09-20, surf13, main `7d141265`): pde6 left
-`Wave.isSolution_dAlembert` open (its `Blocked:` paragraph in `plans/Numlib/Analysis/PDE/Wave.toml`
-estimates ~500 lines of translation calculus in `L²(ℝ)`); the surface node is ~10 lines once it
-lands.'''
-deps = ["theorem_10_7", "Wave.dAlembert", "Wave.isSolution_dAlembert"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8, (40)–(41)"
 
 [[node]]

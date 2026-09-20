@@ -229,35 +229,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remar
 
 [[node]]
 id = "isSolution_dAlembert"
-kind = "theorem"
-desc = '''For `Ω = ℝ` (`N = 1`, `Ω = ⊤`), `u₀ ∈ H²(ℝ)` and `v₀ ∈ H¹(ℝ)` (`= H¹₀(ℝ)`: the whole-space
-density of `C_c^∞` in `H^k(ℝ^N)`, `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`,
-gives `SobolevEuclideanZero N 1 2 ⊤ = ⊤`), the curve `t ↦ [dAlembert u₀ v₀ t]` in `L²(ℝ)` is
-`IsSolution` with data `(u₀, v₀)`, so by uniqueness the solution of Theorem 10.7 is d'Alembert's
-formula (`IsSolution.eq_dAlembert`). Proof: translation `τ_t f = f(· + t)` is a `C^k` curve in
-`L²(ℝ)` for `f ∈ H^k(ℝ)` with `d/dt τ_t f = τ_t f'` (difference quotients converge in `L²` for
-`f ∈ H¹`: the estimate `‖τ_h f - f‖_{L²} ≤ |h| ‖f'‖_{L²}` of Proposition 9.3, chapter 9a's
-`HasWeakFDerivOn.eLpNorm_sub_translate_le_top` in `Friedrichs.lean`, and the density of smooth
-functions), and `x ↦ ∫_{x-t}^{x+t} v₀` is `v₀(x+t) - v₀(x-t)`-differentiable in `t` with
-`v₀ ∈ H¹`; the computation `∂ₜₜ = ∂ₓₓ` termwise, weak derivatives read through the `H²` element.
-★★★, ~400 lines, most of it the translation calculus in `L²`. Not attempted by pde5 (time);
-sob15's `Numlib/Analysis/Sobolev/Translate` may now supply the translation calculus.
-
-Blocked (pde6, 2026-09-20, not attempted after the Theorem 10.8 chain): the ingredients are in
-place — `MeasureTheory.Lp.translate` (`Sobolev/Translate`, an isometry of `L²(ℝ)` with
-`weakDeriv_translateL`, `translateL_mem_zero`), the translation estimate
-`MemSobolev.eLpNorm_sub_translate_le` / `SobolevEuclidean.eLpNorm_fn_sub_translate_le`
-(`Sobolev/Friedrichs`, `p = 2`), the density `MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm`
-(`Sobolev/Density`), and `IsSolution`'s fields — but the curve calculus is missing: (a) the
-strong continuity and differentiability of `t ↦ τ_t f` in `L²(ℝ)` for `f ∈ H¹(ℝ)` with
-derivative `τ_t f'` (by the estimate and density, first at `t = 0`, then by the group law),
-iterated once more for `f ∈ H²`; (b) the primitive term `x ↦ ∫_{x−t}^{x+t} v₀` as the curve
-`t ↦ V(· + t) − V(· − t)` of a primitive `V ∈ H²_loc` with the same calculus; (c)
-`u(t) ∈ D(−Δ)` with `−Δ u(t)` the `L²` combination of the translates of `u₀''` and `v₀'`
-(weak derivatives of translates through `weakDeriv_translateL`; `H¹₀(ℝ) = H¹(ℝ)` through the
-whole-space density); (d) the `H¹`-lift (`ContDiffOnThrough fnL 1`). Estimate 500 lines in
-the `SobolevEuclidean`/`Lp` contexts; each of (a)–(c) is a tracked node on its own.'''
-deps = ["dAlembert", "IsSolution", "existsUnique_isSolution", "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm", "HasWeakFDerivOn.eLpNorm_sub_translate_le_top"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
 
 [[node]]
@@ -281,3 +252,115 @@ id = "IsClassicalSolution.timeDeriv_iterate_eqOn"
 [[node]]
 id = "IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 10"
+
+[[node]]
+id = "mem_dirichletLaplacianDomain_of_forall_ae_eq"
+
+[[node]]
+id = "toZeroTopL"
+
+[[node]]
+id = "fnL_toZeroTopL"
+
+[[node]]
+id = "coe_toZeroTopL"
+
+[[node]]
+id = "dAlembertU₀"
+
+[[node]]
+id = "dAlembertU₀'"
+
+[[node]]
+id = "dAlembertL2"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
+
+[[node]]
+id = "dAlembertL2Deriv"
+
+[[node]]
+id = "dAlembertL2Deriv2"
+
+[[node]]
+id = "weakDeriv_dAlembertU₀"
+
+[[node]]
+id = "hasDerivAt_dAlembertL2"
+
+[[node]]
+id = "hasDerivAt_dAlembertL2Deriv"
+
+[[node]]
+id = "continuous_dAlembertL2Deriv2"
+
+[[node]]
+id = "contDiff_dAlembertL2"
+
+[[node]]
+id = "dAlembertTL"
+
+[[node]]
+id = "dAlembertH1"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
+
+[[node]]
+id = "dAlembertH1Space"
+
+[[node]]
+id = "fnL_dAlembertH1"
+
+[[node]]
+id = "weakDeriv_dAlembertH1"
+
+[[node]]
+id = "weakDeriv_dAlembertH1Space"
+
+[[node]]
+id = "contDiff_dAlembertH1"
+
+[[node]]
+id = "dAlembertL2_mem_dirichletLaplacianDomain"
+
+[[node]]
+id = "dAlembertL2_zero"
+
+[[node]]
+id = "dAlembertL2Deriv_zero"
+
+[[node]]
+id = "IsSolution.eqOn_dAlembertL2"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
+
+[[node]]
+id = "coeFn_dAlembertL2"
+
+[[node]]
+id = "lineEmbed"
+
+[[node]]
+id = "lineEmbed_apply"
+
+[[node]]
+id = "lineEmbed_coord"
+
+[[node]]
+id = "add_smul_single_eq_lineEmbed"
+
+[[node]]
+id = "sub_smul_single_eq_lineEmbed"
+
+[[node]]
+id = "measurePreserving_lineEmbed"
+
+[[node]]
+id = "measurePreserving_lineEmbed_top"
+
+[[node]]
+id = "intervalIntegrable_comp_lineEmbed"
+
+[[node]]
+id = "integral_add_sub_eq_integral_sub_add"
+
+[[node]]
+id = "coeFn_dAlembertL2_dAlembert"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8"
