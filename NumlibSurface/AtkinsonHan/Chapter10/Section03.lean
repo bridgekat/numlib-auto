@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.LinearAlgebra.AffineSpace.Basis
 import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.SeminormCompare
+import Numlib.Analysis.Sobolev.Simplex
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Geometry.Euclidean.TriangleShape
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
@@ -18,7 +19,8 @@ problem to the reference element. Everything is here except the global estimate 
 triangulation: Theorem 10.3.1 (the transport of the interpolant), Theorem 10.3.3 (the estimate on
 the reference element), Theorem 10.3.4 (the affine change of variables in `H^m`), Theorem 10.3.5
 (the local estimate), Definition 10.3.6 and Corollary 10.3.7 (regular families), and Example
-10.3.8 in its unit-square form. Two of these are not Sobolev statements at all:
+10.3.8 (the linear element on triangles, and its `Q₁` analogue on the unit square). Two of these
+are not Sobolev statements at all:
 
 * **Theorem 10.3.1**, that nodal interpolation commutes with the affine pullback, is an algebraic
   identity between two finite sums. It is the backbone's `Approximation.nodalInterp_comp`, and the
@@ -51,8 +53,11 @@ the reference element), Theorem 10.3.4 (the affine change of variables in `H^m`)
   `K = F_K(K̂)`, with `c` depending on `K̂` and `Π̂` only.
 * `corollary_10_3_7` — `‖v − Π_K v‖_{m,K} ≤ c h_K^{k+1−m} |v|_{k+1,K}` on a regular family whose
   elements have diameter at most `H`.
-* `example_10_3_8_square` — Corollary 10.3.7 for the `Q₁` element on the affine images of the
-  unit square, `m ≤ 2`: `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`.
+* `example_10_3_8` — the book's example: Corollary 10.3.7 for the linear element (`P₁`, the
+  barycentric coordinates as shape functions) on the affine images of the reference triangle,
+  `m ≤ 2`: `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`, (10.3.11).
+* `example_10_3_8_square` — the same for the `Q₁` element on the affine images of the unit
+  square.
 * `example_10_3_2` — the linear element: the barycentric coordinates of a simplex are nodal for its
   vertices, so `Π_K` is the interpolant through the vertex values, and
   `nodalInterp_coord_affineMap` says that it reproduces affine functions.
@@ -62,15 +67,16 @@ the reference element), Theorem 10.3.4 (the affine change of variables in `H^m`)
 The book's reference element is a triangle, a Lipschitz domain, and its Theorem 10.3.3 rests on
 Corollary 7.3.18 (Bramble–Hilbert) and the embedding `H^{k+1}(K̂) ↪ C(K̂)` on it. The backbone
 proves both on Sobolev extension domains (`IsSobolevExtensionDomainAll`,
-`Numlib/Analysis/Sobolev/{EmbeddingDomain,DenyLions}.lean`), whose instances are the `C¹` chart
-domains and the unit square (`SobolevEuclidean.exists_extensionL_unitSquare`); no Lipschitz
-extension operator is formalized, so the reference simplex is not known to be one. The
-estimates are therefore stated for a reference element that is an extension domain *as a
-hypothesis*, which the unit square satisfies (`isSobolevExtensionDomainAll_unitSquare`) and the
-reference triangle will once a simplex extension operator exists; Example 10.3.8 on triangles
-stays open, its `Q₁` counterpart on the square is `example_10_3_8_square`. The dimension is
-general and the hypothesis `k + 1 > d/2` is carried explicitly (the book's `k > 0` is its case
-`d = 2`).
+`Numlib/Analysis/Sobolev/{EmbeddingDomain,DenyLions}.lean`); no general Lipschitz extension
+operator is formalized, so the estimates are stated for a reference element that is an extension
+domain *as a hypothesis*. The reference triangle satisfies it
+(`isSobolevExtensionDomainAll_referenceTriangle`, `Numlib/Analysis/Sobolev/Simplex.lean`: two
+reflections across its legs reach the diamond `|x̂₁| + |x̂₂| < 1`, an affine image of the unit
+square, and being an extension domain is affine-invariant), as does the unit square
+(`isSobolevExtensionDomainAll_unitSquare`, Brezis's Remark 9), so every estimate of the section
+applies to the book's triangles verbatim: `example_10_3_8` is the book's example and
+`example_10_3_8_square` its `Q₁` counterpart. The dimension is general and the hypothesis
+`k + 1 > d/2` is carried explicitly (the book's `k > 0` is its case `d = 2`).
 
 `H^m(K)` is `Chapter07.definition_7_2_2 m 2 K` (`MemSobolev v m 2 K volume`), and the seminorm
 `|·|_{m,K}` and norm `‖·‖_{m,K}` are the backbone's tensor `sobolevSeminorm` and `sobolevNorm`,
@@ -104,8 +110,8 @@ Theorem 10.3.9, the global estimate `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m}
 10.3.7 summed over the elements of a triangulation of `Ω`, and needs the triangulation scaffold —
 a finite family of elements with disjoint interiors covering `Ω̄`, the global interpolant `Π_h`
 glued from the `Π_K`, and the additivity `‖w‖²_{m,Ω} = ∑_K ‖w‖²_{m,K}` of the tensor norm over
-the elements — which does not exist (`notes/frontier.md`, blocker 11). Example 10.3.8 on
-triangles (see above). Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7 are not nodes; Exercise 10.3.3
+the elements — which does not exist (`notes/frontier.md`, blocker 11). Exercises 10.3.1, 10.3.2,
+10.3.4 and 10.3.7 are not nodes; Exercise 10.3.3
 (`h_K / ρ_K` bounded if and only if the minimal angles are bounded below) is Sobolev-free, and is
 `exercise_10_3_3` below.
 -/
@@ -919,14 +925,13 @@ end Corollary1037
 
 /-! ### Example 10.3.8 on the unit square: `Q₁` elements on parallelograms
 
-The book's Example 10.3.8 is the linear element on a *triangle*, whose reference element, the
-reference simplex, is a Lipschitz domain that the backbone does not know to be a Sobolev extension
-domain; it stays open (`example_10_3_8`). The unit square is an extension domain (Brezis's
-Remark 9, `SobolevEuclidean.exists_extensionL_unitSquare`), so the estimate is instantiated here
-for the `Q₁` element on it: nodes the four vertices, shape functions the bilinear
-`(1 ∓ x̂₁)(1 ∓ x̂₂)` of Exercise 10.2.3 (`bilinearShape`, here on `EuclideanSpace ℝ (Fin 2)`),
-local space `Q₁ ⊇ ℙ₁`, and the elements the affine images of the square — parallelograms, of
-which the book's rectangles are the case of a diagonal `T_K`. -/
+The book's Example 10.3.8 is the linear element on a *triangle* (`example_10_3_8` below). The
+unit square is an extension domain as well (Brezis's Remark 9,
+`SobolevEuclidean.exists_extensionL_unitSquare`, `isSobolevExtensionDomainAll_unitSquare`), so
+the estimate is instantiated here also for the `Q₁` element on it: nodes the four vertices, shape
+functions the bilinear `(1 ∓ x̂₁)(1 ∓ x̂₂)` of Exercise 10.2.3 (`bilinearShape`, here on
+`EuclideanSpace ℝ (Fin 2)`), local space `Q₁ ⊇ ℙ₁`, and the elements the affine images of the
+square — parallelograms, of which the book's rectangles are the case of a diagonal `T_K`. -/
 
 section Example1038Square
 
@@ -934,14 +939,6 @@ open MeasureTheory Set TopologicalSpace
 open scoped ENNReal NNReal Topology
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
-
-/-- **The unit square is a Sobolev extension domain for every exponent**: Brezis's Remark 9
-(`SobolevEuclidean.exists_extensionL_unitSquare`), read as the backbone's hypothesis. -/
-theorem isSobolevExtensionDomainAll_unitSquare :
-    IsSobolevExtensionDomainAll 2 (EuclideanSpace.rect 0 1 0 1) := by
-  intro q _
-  obtain ⟨P, C, hP⟩ := SobolevEuclidean.exists_extensionL_unitSquare (p := q)
-  exact ⟨P.comp (Submodule.subtypeL ⊤), fun u ↦ (hP u.1).1⟩
 
 /-- The unit square is bounded. -/
 theorem isBounded_unitSquare : Bornology.IsBounded (EuclideanSpace.rect 0 1 0 1 : Set 𝔼₂) :=
@@ -1102,7 +1099,7 @@ This is Corollary 10.3.7 at `k = 1`, `d = 2` (so `k + 1 = 2 > d/2 = 1`), the ref
 being an extension domain (`isSobolevExtensionDomainAll_unitSquare`), bounded, convex, with the
 ball of radius `1/4` about its centre inscribed, the vertices in its closure, the shape
 functions smooth, and `Q₁ ⊇ ℙ₁` (`nodalInterp_q1_eval`). The book's example is the linear
-element on triangles, `example_10_3_8`, which waits for a simplex extension operator. -/
+element on triangles, `example_10_3_8`. -/
 theorem example_10_3_8_square {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Set (Set 𝔼₂)} (hreg : IsRegularFamily l 𝒯) {H : ℝ}
     (hH : ∀ i, ∀ K ∈ 𝒯 i, Metric.diam K ≤ H) :
@@ -1118,5 +1115,105 @@ theorem example_10_3_8_square {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter 
     (fun q hq x _ ↦ nodalInterp_q1_eval q hq x) hreg hH
 
 end Example1038Square
+
+/-! ### Example 10.3.8: the linear element on triangles
+
+The book's example: the reference element is the reference triangle
+`K̂ = {x̂₁, x̂₂ > 0, x̂₁ + x̂₂ < 1}` (`EuclideanSpace.referenceTriangle`), the nodes its three
+vertices, the shape functions the barycentric coordinates `1 − x̂₁ − x̂₂, x̂₁, x̂₂` (Example
+10.3.2, `EuclideanSpace.baryCoord`), the local space `X̂ = ℙ₁(K̂)`, and the elements the affine
+images of `K̂` — every nondegenerate triangle. The reference triangle is a Sobolev extension
+domain for every exponent (`isSobolevExtensionDomainAll_referenceTriangle`,
+`Numlib/Analysis/Sobolev/Simplex.lean`: two reflections and an affine change of variables to the
+unit square), so Corollary 10.3.7 applies to it verbatim. -/
+
+section Example1038
+
+open MeasureTheory Set TopologicalSpace EuclideanSpace
+open scoped ENNReal NNReal Topology
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **The barycentric coordinates are nodal for the vertices of the reference triangle**: the
+`P₁` element, Example 10.3.2 with the explicit coordinates of `EuclideanSpace.baryCoord`. -/
+theorem baryCoord_isNodalBasis :
+    Approximation.IsNodalBasis referenceTriangleVertex baryCoord where
+  eval_self i := by rw [baryCoord_apply_vertex, ite_eq_left rfl]
+  eval_of_ne i j hij := by rw [baryCoord_apply_vertex, ite_eq_right hij]
+
+/-- The barycentric coordinates lie in `H^m` of the reference triangle for every `m`. -/
+theorem memSobolev_baryCoord (m : ℕ) (i : Fin 3) :
+    MemSobolev (baryCoord i) m 2 referenceTriangle volume :=
+  memSobolev_of_contDiff isBounded_referenceTriangle (contDiff_baryCoord i) m
+
+/-- **`P₁` interpolation reproduces `ℙ₁`**: the polynomial invariance (10.3.4) of the linear
+element at `k = 1`. A polynomial of total degree at most `1` is `c₀ + c₁ x̂₁ + c₂ x̂₂`, and the
+barycentric interpolant reproduces `1`, `x̂₁` and `x̂₂`, everywhere — the explicit form of
+`nodalInterp_coord_affineMap` on the reference triangle. -/
+theorem nodalInterp_baryCoord_eval (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree ≤ 1)
+    (x : 𝔼₂) :
+    Approximation.nodalInterp referenceTriangleVertex baryCoord
+      (fun y : 𝔼₂ ↦ MvPolynomial.eval (fun i ↦ y i) q) x = MvPolynomial.eval (fun i ↦ x i) q := by
+  have key : ∀ d ∈ q.support,
+      ∑ i, baryCoord i x * (q.coeff d * ∏ j, referenceTriangleVertex i j ^ d j)
+        = q.coeff d * ∏ j, x j ^ d j := by
+    intro d hd
+    have hdeg : d 0 + d 1 ≤ 1 := by
+      have h := (MvPolynomial.le_totalDegree hd).trans hq
+      rwa [Finsupp.sum_fintype _ _ fun _ ↦ rfl, Fin.sum_univ_two] at h
+    simp only [Fin.prod_univ_two, Fin.sum_univ_three]
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (le_trans (Nat.le_add_right _ _) hdeg) with h0 | h0
+    · rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (le_trans (Nat.le_add_left _ _) hdeg) with h1 | h1
+      · simp [referenceTriangleVertex, baryCoord, h0, h1]
+        ring
+      · simp [referenceTriangleVertex, baryCoord, h0, h1]
+        ring
+    · have h1 : d 1 = 0 := by omega
+      simp [referenceTriangleVertex, baryCoord, h0, h1]
+      ring
+  calc Approximation.nodalInterp referenceTriangleVertex baryCoord
+        (fun y : 𝔼₂ ↦ MvPolynomial.eval (fun i ↦ y i) q) x
+      = ∑ i, baryCoord i x * ∑ d ∈ q.support,
+          q.coeff d * ∏ j, referenceTriangleVertex i j ^ d j := by
+        simp only [Approximation.nodalInterp_apply, smul_eq_mul, MvPolynomial.eval_eq']
+    _ = ∑ d ∈ q.support, ∑ i, baryCoord i x * (q.coeff d * ∏ j,
+          referenceTriangleVertex i j ^ d j) := by
+        simp_rw [Finset.mul_sum]
+        exact Finset.sum_comm
+    _ = ∑ d ∈ q.support, q.coeff d * ∏ j, x j ^ d j := Finset.sum_congr rfl key
+    _ = MvPolynomial.eval (fun i ↦ x i) q := (MvPolynomial.eval_eq' _ _).symm
+
+/-- **Example 10.3.8: the linear element on a regular family of triangles.** Let `K` be a
+triangle in a regular family of affine finite elements (Definition 10.3.6, `IsRegularFamily`,
+with the elements of diameter at most `H`), each the affine image `K = F_K(K̂)` of the reference
+triangle `K̂`, with the three vertices `F_K(x̂ᵢ)` as nodes, the transported barycentric coordinates
+`λ̂ᵢ ∘ F_K⁻¹` as shape functions and the local space `X_K = ℙ₁(K)`. Then for every `v ∈ H²(K)`
+the estimate (10.3.11) holds,
+
+  `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`,
+
+for `m = 0, 1` (and `m = 2`). This is Corollary 10.3.7 (the estimate (10.3.10)) at `k = 1`,
+`d = 2` (so `k + 1 = 2 > d/2 = 1`), the reference triangle being a Sobolev extension domain
+(`isSobolevExtensionDomainAll_referenceTriangle`, the backbone's reading of "Lipschitz"), bounded,
+convex, with the ball of radius `1/8` about `(1/4, 1/4)` inscribed, the vertices in its closure,
+the barycentric coordinates smooth and nodal (Example 10.3.2), and `ℙ₁(K̂) ⊆ X̂`
+(`nodalInterp_baryCoord_eval`). `v` is read on its continuous representative up to the boundary
+and `K` is the open element, as in Corollary 10.3.7. -/
+theorem example_10_3_8 {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
+    {𝒯 : ι → Set (Set 𝔼₂)} (hreg : IsRegularFamily l 𝒯) {H : ℝ}
+    (hH : ∀ i, ∀ K ∈ 𝒯 i, Metric.diam K ≤ H) :
+    ∃ c : ℝ, 0 ≤ c ∧ ∀ i, ∀ K ∈ 𝒯 i, ∀ Kop : Opens 𝔼₂, (Kop : Set 𝔼₂) = K →
+      ∀ (T : 𝔼₂ ≃L[ℝ] 𝔼₂) (b : 𝔼₂), (fun x ↦ T x + b) '' referenceTriangle = Kop →
+      ∀ v : 𝔼₂ → ℝ, MemSobolev v 2 2 Kop volume → ContinuousOn v (closure (Kop : Set 𝔼₂)) →
+      sobolevNorm (v - Approximation.nodalInterp ((fun x ↦ T x + b) ∘ referenceTriangleVertex)
+          (fun i ↦ baryCoord i ∘ fun y ↦ T.symm (y - b)) v) m 2 Kop volume
+        ≤ ENNReal.ofReal (c * Metric.diam K ^ (2 - m)) * sobolevSeminorm v 2 2 Kop volume :=
+  corollary_10_3_7 (k := 1) isSobolevExtensionDomainAll_referenceTriangle
+    isBounded_referenceTriangle convex_referenceTriangle.isPreconnected
+    (by norm_num : (0 : ℝ) < 1 / 4) closedBall_subset_referenceTriangle hm (by norm_num)
+    referenceTriangleVertex baryCoord referenceTriangleVertex_mem_closure (memSobolev_baryCoord m)
+    (fun q hq x _ ↦ nodalInterp_baryCoord_eval q hq x) hreg hH
+
+end Example1038
 
 end AtkinsonHan.Chapter10

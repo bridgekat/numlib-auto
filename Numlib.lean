@@ -264,6 +264,7 @@ import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.Reflection
 import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.SeminormCompare
+import Numlib.Analysis.Sobolev.Simplex
 import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered

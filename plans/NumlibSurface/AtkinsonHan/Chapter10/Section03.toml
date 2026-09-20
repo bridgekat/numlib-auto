@@ -23,35 +23,18 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.3.3"
 
 [[node]]
 id = "example_10_3_8"
-kind = "theorem"
-desc = '''
-Example 10.3.8: for a triangle `K` in a regular family of affine finite elements whose nodes are
-its three vertices and whose local space is `X_K = ℙ₁(K)`, Corollary 10.3.7 at `k = 1` gives
-(10.3.11), `‖v - Π_K v‖_{m,K} ≤ c h_K^{2-m} |v|_{2,K}` for every `v ∈ H²(K)`, and the book notes it
-holds for `m = 0` and `m = 1`. The shape functions are the barycentric coordinates
-(`example_10_3_2`), which reproduce affine functions (`nodalInterp_coord_affineMap`).
-
-Blocked: rechecked 2026-09-20 (ah7). `corollary_10_3_7` is now proved, and this node is its
-instance at `k = 1`, `d = 2` on the reference *triangle* — `Metric.closedBall`-inscribed, bounded,
-convex, with `H²(K̂) ↪ C(K̂̄)` since `k + 1 = 2 > d/2 = 1` — except for one hypothesis:
-`IsSobolevExtensionDomainAll 2 K̂` for the reference simplex `K̂ = {x̂₁, x̂₂ > 0, x̂₁ + x̂₂ < 1}`. The
-backbone has extension operators for `C¹` chart domains
-(`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`) and for the unit square by four
-reflections across its sides (`SobolevEuclidean.exists_extensionL_unitSquare`, Brezis's
-Remark 9); the triangle is Lipschitz, not `C¹`, and its hypotenuse is not a coordinate hyperplane,
-so neither instance applies. What is missing is a Lipschitz extension operator (Stein's, or
-the reflection across the three sides after an affine change of coordinates on each — the
-square's route, `SobolevEuclidean.exists_reflectionStep`, is across a coordinate hyperplane
-and would need the affine transport of `Numlib/Analysis/Sobolev/Affine.lean` at order one to
-handle the hypotenuse; ~300–500 lines). With it, this node is `corollary_10_3_7` applied as in
-`example_10_3_8_square` (the same instance on the unit square, proved): ~60 lines. The polynomial
-invariance for the barycentric shape functions is `nodalInterp_coord_affineMap`, restated on
-`MvPolynomial` of total degree `≤ 1` as in `nodalInterp_q1_eval`.
-'''
-deps = ["corollary_10_3_7", "example_10_3_2", "nodalInterp_coord_affineMap"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.3.8"
 
 [[node]]
-id = "isSobolevExtensionDomainAll_unitSquare"
+id = "baryCoord_isNodalBasis"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.3.2 (on the reference triangle)"
+
+[[node]]
+id = "memSobolev_baryCoord"
+
+[[node]]
+id = "nodalInterp_baryCoord_eval"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.3.4) for the linear element"
 
 [[node]]
 id = "isBounded_unitSquare"

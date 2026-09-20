@@ -1,0 +1,214 @@
+# Numlib/Analysis/Sobolev/Simplex.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "affine_symm_preimage_affine_preimage"
+
+[[node]]
+id = "affine_image_eq_affine_symm_preimage"
+
+[[node]]
+id = "SobolevEuclidean.fn_comp_affine_of_ops"
+
+[[node]]
+id = "SobolevEuclidean.eLpNorm_comp_affine_of_ops"
+
+[[node]]
+id = "isDiffeoOnWithBoundedJacobian_affine_top"
+
+[[node]]
+id = "isDiffeoOnWithBoundedJacobian_affine_symm"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_preimage_affine"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7 (the shape of the extension operator), transported along an affine bijection"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_preimage_affine"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_image_affine"
+
+[[node]]
+id = "IsSobolevExtensionDomain.affinePreimage"
+
+[[node]]
+id = "IsSobolevExtensionDomainAll.of_preimage_affine"
+
+[[node]]
+id = "IsSobolevExtensionDomainAll.of_image_affine"
+
+[[node]]
+id = "IsSobolevExtensionDomainAll.affinePreimage"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_exists_extensionL"
+
+[[node]]
+id = "IsSobolevExtensionDomain.of_extension_step"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_of_step"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_unitSquare"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9 (the unit square)"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangle"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.3 (the reference triangle)"
+
+[[node]]
+id = "EuclideanSpace.mem_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.halfDiamond"
+
+[[node]]
+id = "EuclideanSpace.mem_halfDiamond"
+
+[[node]]
+id = "EuclideanSpace.diamond"
+
+[[node]]
+id = "EuclideanSpace.mem_diamond"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangle_subset_halfDiamond"
+
+[[node]]
+id = "EuclideanSpace.halfDiamond_subset_diamond"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangle_le_halfDiamond"
+
+[[node]]
+id = "EuclideanSpace.halfDiamond_le_diamond"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangle_subset_ball"
+
+[[node]]
+id = "EuclideanSpace.isBounded_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.convex_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.closure_referenceTriangle_subset"
+
+[[node]]
+id = "EuclideanSpace.mem_closure_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.closure_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.closedBall_subset_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangleVertex"
+
+[[node]]
+id = "EuclideanSpace.baryCoord"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.3.2 (the barycentric coordinates of the reference triangle)"
+
+[[node]]
+id = "EuclideanSpace.sum_baryCoord"
+
+[[node]]
+id = "EuclideanSpace.sum_baryCoord_smul_vertex"
+
+[[node]]
+id = "EuclideanSpace.mem_referenceTriangle_iff_baryCoord_pos"
+
+[[node]]
+id = "EuclideanSpace.baryCoord_apply_vertex"
+
+[[node]]
+id = "EuclideanSpace.referenceTriangleVertex_mem_closure"
+
+[[node]]
+id = "EuclideanSpace.contDiff_baryCoord"
+
+[[node]]
+id = "abs_add_abs_lt_iff"
+
+[[node]]
+id = "EuclideanSpace.diamondLinear"
+
+[[node]]
+id = "EuclideanSpace.diamondLinearInv"
+
+[[node]]
+id = "EuclideanSpace.diamondEquiv"
+
+[[node]]
+id = "EuclideanSpace.diamondEquiv_apply"
+
+[[node]]
+id = "EuclideanSpace.coe_diamond_eq_preimage"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_referenceTriangle_step₁"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9 (a reflection across a side)"
+
+[[node]]
+id = "SobolevEuclidean.exists_extension_referenceTriangle_step₂"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 9 (a reflection across a side)"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_diamond"
+
+[[node]]
+id = "SobolevEuclidean.exists_extensionL_referenceTriangle"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.7 (the shape), for the reference triangle of Atkinson–Han §10.3"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_diamond"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_referenceTriangle"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.3 (the reference element is an extension domain)"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_of_image_referenceTriangle"
+
+[[node]]
+id = "EuclideanSpace.spanLinear"
+
+[[node]]
+id = "EuclideanSpace.spanLinear_apply"
+
+[[node]]
+id = "EuclideanSpace.spanLinear_injective"
+
+[[node]]
+id = "EuclideanSpace.triangleEquiv"
+
+[[node]]
+id = "EuclideanSpace.triangleEquiv_apply"
+
+[[node]]
+id = "EuclideanSpace.openTriangle"
+
+[[node]]
+id = "EuclideanSpace.mem_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.openTriangle_eq_image"
+
+[[node]]
+id = "EuclideanSpace.isOpen_openTriangle"
+
+[[node]]
+id = "EuclideanSpace.openTriangleOpens"
+
+[[node]]
+id = "EuclideanSpace.coe_openTriangleOpens"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_of_eq_openTriangle"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.3 (every triangle is an extension domain)"
+
+[[node]]
+id = "isSobolevExtensionDomainAll_openTriangleOpens"

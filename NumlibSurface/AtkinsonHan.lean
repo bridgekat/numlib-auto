@@ -154,7 +154,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | **10** | | *Finite Element Analysis* |
 | 10.1 | `Chapter10.Section01` | Static condensation and the cubic Hermite element on `[0,1]` |
 | 10.2 | `Chapter10.Section02` | The affine map onto an element: `‖T_K‖ ≤ h_K/ρ̂` |
-| 10.3 | `Chapter10.Section03` | Interpolation error estimates on extension-domain elements |
+| 10.3 | `Chapter10.Section03` | Interpolation error estimates on triangles (extension domains) |
 | 10.4 | `Chapter10.Section04` | The Aubin–Nitsche lemma |
 | **11** | | *Elliptic Variational Inequalities and Their Numerical Approximations* |
 | 11.2 | `Chapter11.Section02` | Convex minimization and the inequality equivalent to it |
