@@ -1,60 +1,6 @@
 namespace = "Heat"
 
 [[node]]
-id = "_root_.integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg"
-
-[[node]]
-id = "_root_.integrableOn_Ioi_and_integral_le_of_forall_integral_le"
-
-[[node]]
-id = "_root_.exists_continuousLinearMap_comp_eq_of_injective"
-
-[[node]]
-id = "_root_.LinearPMap.semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.applyL_zero_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.eq_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.semigroupLift_eq_semigroup_powPart"
-
-[[node]]
-id = "_root_.LinearPMap.applyL_semigroupLift_eq"
-
-[[node]]
-id = "_root_.LinearPMap.hasDerivAt_applyL_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.shiftL_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.norm_applyL_last_semigroupLift_le"
-
-[[node]]
-id = "_root_.LinearPMap.castLE_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.norm_applyL_semigroupLift_le"
-
-[[node]]
-id = "_root_.LinearPMap.contDiffOn_semigroupLift"
-
-[[node]]
-id = "_root_.LinearPMap.norm_sq_powDomain_one"
-
-[[node]]
-id = "_root_.LinearPMap.exists_powDomain_one"
-
-[[node]]
-id = "_root_.LinearPMap.isSolutionOn_zero"
-
-[[node]]
-id = "_root_.LinearPMap.IsSolutionOn.energy_Ioi"
-
-[[node]]
 id = "IsSolution"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, (1)–(4)"
 
@@ -168,18 +114,6 @@ id = "IsSolution.hasDerivAt_deriv"
 
 [[node]]
 id = "IsSolution.inner_apply_deriv_eq"
-
-[[node]]
-id = "_root_.dirichletLaplacian_exists_sobolevZero_lift"
-
-[[node]]
-id = "_root_.dirichletLaplacian.sobolevZeroLiftL"
-
-[[node]]
-id = "_root_.fnL_sobolevZeroLiftL"
-
-[[node]]
-id = "_root_.dirichletLaplacian_norm_sq_lift_eq"
 
 [[node]]
 id = "isSolution_fnL_of_isSolutionOn_H10"
@@ -304,24 +238,6 @@ id = "IsSolution.norm_sq_sobolevTwoLift_le"
 [[node]]
 id = "IsSolution.memLpThrough_two_of_isBounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.2 (a), `u ∈ L²(0,∞; H²(Ω))`"
-
-[[node]]
-id = "_root_.dirichletForm_eq_load_fnL_dirichletLaplacianH10_apply"
-
-[[node]]
-id = "_root_.Elliptic.exists_sobolev_three_of_forall_dirichletForm_eq_load"
-
-[[node]]
-id = "_root_.dirichletLaplacianH10_exists_sobolev_three"
-
-[[node]]
-id = "_root_.dirichletLaplacianH10_exists_sobolev_three_comp"
-
-[[node]]
-id = "_root_.dirichletLaplacianH10.powDomainOneToSobolevThreeL"
-
-[[node]]
-id = "_root_.fnL_powDomainOneToSobolevThreeL"
 
 [[node]]
 id = "sobolevZeroLiftDeriv"

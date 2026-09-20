@@ -37,6 +37,10 @@ this module adds:
 * **The right shift** `lp.shiftRightL 𝕜 : ℓ²(ℕ; 𝕜) →L[𝕜] ℓ²(ℕ; 𝕜)`, `u ↦ (0, u₀, u₁, …)`, an
   isometry (`lp.norm_shiftRightL_apply`): the operator of [brezis2011functional] chapter 6,
   Remark 6 and §11.4 (`0` in the spectrum but not an eigenvalue; over `ℂ`, no eigenvalue).
+* **The diagonal operators** `lp.diagonalL E p α hα : lp E p →L[𝕜] lp E p`, `x ↦ (αᵢ • xᵢ)ᵢ` for a
+  bounded scalar family `α` (`‖T‖ ≤ |C|`, the unit vectors as eigenvectors `lp.diagonalL_single`,
+  finite rank for a finitely supported `α`), the multiplication operators of
+  [brezis2011functional] chapter 6, Remark 7; and `lp.not_finiteDimensional_of_infinite`.
 * **Duality**, Propositions 11.18–11.20 of [brezis2011functional], as isometric isomorphisms for
   scalar sequences over `RCLike 𝕜`: `(ℓ^p)* = ℓ^{p'}` for `1 ≤ p < ∞` (`lp.toDual`,
   `lp.dualEquiv`, any index type), `(c₀)* = ℓ¹` (`lp.zeroAtInfty.dualEquiv`) and
@@ -447,6 +451,133 @@ theorem norm_shiftRightL_apply (u : lp (fun _ : ℕ => 𝕜) 2) : ‖shiftRightL
   norm_shiftFun 𝕜 u
 
 end Shift
+
+/-! ### Diagonal operators on `ℓ^p` -/
+
+section Diagonal
+
+variable {ι 𝕜 : Type*} [NontriviallyNormedField 𝕜] {E : ι → Type*}
+  [∀ i, NormedAddCommGroup (E i)] [∀ i, NormedSpace 𝕜 (E i)] {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+omit [Fact (1 ≤ p)] in
+/-- The coordinatewise product `(αᵢ • xᵢ)ᵢ` of a bounded scalar family and an `ℓ^p` family lies
+in `ℓ^p`. -/
+theorem memℓp_smul_of_forall_norm_le {α : ι → 𝕜} {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) :
+    Memℓp (fun i ↦ α i • x i) p :=
+  ((lp.memℓp x).norm.const_mul C).mono fun i ↦
+    (norm_smul_le _ _).trans (mul_le_mul_of_nonneg_right (hα i) (norm_nonneg _))
+
+private theorem norm_smul_le_abs_mul_norm {α : ι → 𝕜} {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C)
+    (x : lp E p) :
+    ‖(⟨fun i ↦ α i • x i, memℓp_smul_of_forall_norm_le hα x⟩ : lp E p)‖ ≤ |C| * ‖x‖ := by
+  have hp : p ≠ 0 := (zero_lt_one.trans_le Fact.out).ne'
+  let y : lp (fun _ : ι ↦ ℝ) p := ⟨fun i ↦ ‖x i‖, (lp.memℓp x).norm⟩
+  calc ‖(⟨fun i ↦ α i • x i, memℓp_smul_of_forall_norm_le hα x⟩ : lp E p)‖
+      ≤ ‖C • y‖ := lp.norm_mono hp fun i ↦ by
+        change ‖α i • x i‖ ≤ ‖(C • y) i‖
+        rw [lp.coeFn_smul, Pi.smul_apply, smul_eq_mul, Real.norm_eq_abs, abs_mul, abs_norm]
+        exact (norm_smul_le _ _).trans
+          (mul_le_mul_of_nonneg_right ((hα i).trans (le_abs_self C)) (norm_nonneg _))
+    _ ≤ ‖C‖ * ‖y‖ := lp.norm_const_smul_le hp C y
+    _ ≤ |C| * ‖x‖ := by
+        rw [Real.norm_eq_abs]
+        refine mul_le_mul_of_nonneg_left (lp.norm_mono hp fun i ↦ ?_) (abs_nonneg C)
+        change ‖‖x i‖‖ ≤ ‖x i‖
+        exact (norm_norm _).le
+
+variable (E p) in
+/-- **The diagonal operator** `x ↦ (αᵢ • xᵢ)ᵢ` on `ℓ^p` of a bounded scalar family `α`
+(`‖αᵢ‖ ≤ C` for all `i`): a bounded operator of norm at most `|C|` (`norm_diagonalL_le`), with
+the unit vectors as eigenvectors, `T (single i a) = αᵢ • single i a` (`diagonalL_single`) — the
+multiplication operator on `ℓ²` of [brezis2011functional] chapter 6, Remark 7 (and of its
+Exercises 6.1, 6.17). -/
+def diagonalL (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) : lp E p →L[𝕜] lp E p :=
+  LinearMap.mkContinuous
+    { toFun := fun x ↦ ⟨fun i ↦ α i • x i, memℓp_smul_of_forall_norm_le hα x⟩
+      map_add' := fun x y ↦ lp.ext (funext fun i ↦ by
+        change α i • (x + y) i = α i • x i + α i • y i
+        rw [lp.coeFn_add, Pi.add_apply, smul_add])
+      map_smul' := fun c x ↦ lp.ext (funext fun i ↦ by
+        change α i • (c • x) i = c • (α i • x i)
+        rw [lp.coeFn_smul, Pi.smul_apply, smul_comm]) }
+    |C| fun x ↦ norm_smul_le_abs_mul_norm hα x
+
+/-- The diagonal operator acts by `(T x)ᵢ = αᵢ • xᵢ`. -/
+@[simp]
+theorem diagonalL_apply (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) (i : ι) :
+    diagonalL E p α hα x i = α i • x i :=
+  rfl
+
+/-- `‖T x‖ ≤ |C| ‖x‖`. -/
+theorem norm_diagonalL_apply_le (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (x : lp E p) :
+    ‖diagonalL E p α hα x‖ ≤ |C| * ‖x‖ :=
+  norm_smul_le_abs_mul_norm hα x
+
+/-- `‖T‖ ≤ |C|`. -/
+theorem norm_diagonalL_le (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) :
+    ‖diagonalL E p α hα‖ ≤ |C| :=
+  LinearMap.mkContinuous_norm_le _ (abs_nonneg C) _
+
+/-- The difference of two diagonal operators is the diagonal operator of the difference. -/
+theorem diagonalL_sub (α β : ι → 𝕜) {C D : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (hβ : ∀ i, ‖β i‖ ≤ D)
+    {G : ℝ} (hαβ : ∀ i, ‖α i - β i‖ ≤ G) :
+    diagonalL E p α hα - diagonalL E p β hβ = diagonalL E p (α - β) hαβ := by
+  ext x i
+  rw [sub_apply, lp.coeFn_sub, Pi.sub_apply, diagonalL_apply, diagonalL_apply, diagonalL_apply,
+    Pi.sub_apply, sub_smul]
+
+/-- **The unit vectors are eigenvectors of the diagonal operator**:
+`T (single i a) = αᵢ • single i a`. -/
+theorem diagonalL_single [DecidableEq ι] (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (i : ι)
+    (a : E i) : diagonalL E p α hα (lp.single p i a) = α i • lp.single p i a := by
+  ext j
+  rw [diagonalL_apply, lp.coeFn_smul, Pi.smul_apply, lp.single_apply]
+  by_cases h : j = i
+  · subst h
+    rfl
+  · rw [Pi.single_eq_of_ne h, smul_zero, smul_zero]
+
+/-- **A diagonal operator with finitely many nonzero entries has finite rank** when the fibres
+are finite-dimensional: its range lies in the span of the unit vectors of the support. -/
+theorem finiteDimensional_range_diagonalL [∀ i, FiniteDimensional 𝕜 (E i)]
+    (α : ι → 𝕜) {C : ℝ} (hα : ∀ i, ‖α i‖ ≤ C) (s : Finset ι) (hs : ∀ i ∉ s, α i = 0) :
+    FiniteDimensional 𝕜 (LinearMap.range (diagonalL E p α hα : lp E p →ₗ[𝕜] lp E p)) := by
+  classical
+  refine Submodule.finiteDimensional_of_le
+    (S₂ := s.sup fun i ↦ LinearMap.range (lp.lsingle (𝕜 := 𝕜) (E := E) p i)) fun y hy ↦ ?_
+  obtain ⟨x, rfl⟩ := LinearMap.mem_range.1 hy
+  have hx : diagonalL E p α hα x = ∑ i ∈ s, lp.single p i (α i • x i) := by
+    ext j
+    rw [lp.coeFn_sum, Finset.sum_apply, diagonalL_apply]
+    by_cases hj : j ∈ s
+    · rw [Finset.sum_eq_single_of_mem j hj fun i _ hij ↦ lp.single_apply_ne p i _ hij.symm,
+        lp.single_apply_self]
+    · rw [hs j hj, zero_smul]
+      exact (Finset.sum_eq_zero fun i hi ↦
+        lp.single_apply_ne p i (α i • x i) (j := j) fun hji ↦ hj (by rw [hji]; exact hi)).symm
+  rw [ContinuousLinearMap.coe_coe, hx]
+  exact Submodule.sum_mem _ fun i hi ↦
+    (Finset.le_sup (f := fun i ↦ LinearMap.range (lp.lsingle (𝕜 := 𝕜) (E := E) p i)) hi)
+      (LinearMap.mem_range_self _ _)
+
+omit [Fact (1 ≤ p)] in
+/-- **`ℓ^p(ι; 𝕜)` is infinite-dimensional** for an infinite index set: the unit vectors are
+linearly independent. -/
+theorem not_finiteDimensional_of_infinite [Infinite ι] :
+    ¬ FiniteDimensional 𝕜 (lp (fun _ : ι ↦ 𝕜) p) := by
+  classical
+  intro h
+  have hli : LinearIndependent 𝕜 fun i : ι ↦ lp.single p i (1 : 𝕜) := by
+    rw [linearIndependent_iff']
+    intro s g hg i hi
+    have := congrArg (fun z : lp (fun _ : ι ↦ 𝕜) p ↦ z i) hg
+    simp only [lp.coeFn_sum, Finset.sum_apply, lp.coeFn_smul, Pi.smul_apply, lp.single_apply,
+      Pi.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, hi,
+      ite_true, lp.coeFn_zero, Pi.zero_apply] at this
+    exact this
+  exact Module.Finite.not_linearIndependent_of_infinite _ hli
+
+end Diagonal
 
 /-! ### Finitely supported sequences in `c₀`, and the bridge to `C₀(ℕ, E)` -/
 

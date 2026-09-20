@@ -40,7 +40,8 @@ module.
 
 * `Bochner.ContDiffOnThrough.contDiffOn`, `.mono`, `.of_le`, `.comp`, `.of_comp`: the curve itself
   is `C^k`, monotonicity in the set and the order, composition with a further bounded map and
-  restriction of the lift;
+  restriction of the lift; `.infty_of_forall_nat`: through an injective `J`, `C^n(s; V)` for
+  every `n : ℕ` is `C^∞(s; V)`;
 * `Bochner.ContDiffOnThrough.derivWithin_eq`, `.derivWithin`: the derivative commutes with the
   embedding, and is again of class `C^m(s; V)` for `m + 1 ≤ k`;
 * `Bochner.MemLpThrough.of_contDiffOnThrough_of_integrable`: a continuous lift whose norm to the
@@ -92,6 +93,16 @@ theorem of_le {k' : WithTop ℕ∞} (h : ContDiffOnThrough J k u s) (hk : k' ≤
     ContDiffOnThrough J k' u s :=
   let ⟨v, hv, huv⟩ := h
   ⟨v, hv.of_le hk, huv⟩
+
+/-- **One lift for all orders**: a curve of class `C^n(s; V)` for every `n : ℕ`, through an
+injective `J`, is of class `C^∞(s; V)`: the lifts at the various orders agree on `s`, so the
+lift of order `0` is of every class. -/
+theorem infty_of_forall_nat (hJ : Function.Injective J)
+    (h : ∀ n : ℕ, ContDiffOnThrough J n u s) : ContDiffOnThrough J (⊤ : ℕ∞) u s := by
+  obtain ⟨v, -, huv⟩ := h 0
+  refine ⟨v, contDiffOn_infty.2 fun n ↦ ?_, huv⟩
+  obtain ⟨w, hw, huw⟩ := h n
+  exact hw.congr fun t ht ↦ hJ ((huv t ht).symm.trans (huw t ht))
 
 /-- A `C^k` curve in `V` is of class `C^k(s; V)` through the identity. -/
 theorem of_contDiffOn {v : ℝ → V} (hv : ContDiffOn ℝ k v s) :

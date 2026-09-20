@@ -1869,16 +1869,6 @@ section ClassicalMembership
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N))) {u : EuclideanSpace ℝ (Fin N) → ℝ}
 
-/-- A `C^1` function on an open set has its partial derivative `∂ᵢu = fderiv u · e_i` as weak
-derivative along `e_i`. -/
-theorem ContDiffOn.hasWeakIteratedLineDerivOn_single (hu : ContDiffOn ℝ 1 u Ω) (i : Fin N) :
-    HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u
-      (fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1)) Ω volume := by
-  have h := (ContDiffOn.hasWeakIteratedFDerivOn (μ := volume) hu (m := 1) le_rfl).lineDeriv
-    ![EuclideanSpace.single i 1]
-  exact h.congr_ae (Filter.EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ by
-    simp [iteratedFDeriv_one_apply])
-
 /-- A function of class `C^n(Ω̄)` on a bounded open set lies in every `L^p(Ω)`: it is bounded on
 `Ω`, being the restriction of a function continuous on the compact `closure Ω`. -/
 theorem ContDiffOnClosure.memLp_of_isBounded {n : WithTop ℕ∞}
@@ -1895,55 +1885,40 @@ theorem ContDiffOnClosure.memLp_of_isBounded {n : WithTop ℕ∞}
   rw [← hg hx]
   exact hC x (subset_closure hx)
 
+/-- **A function of class `C^n(Ω̄)` on a bounded open set lies in `W^{m,p}(Ω)` for every
+`m ≤ n`**: its derivatives of order `≤ n` extend continuously to the compact `closure Ω`
+(`ContDiffOnClosure`), so they are bounded on `Ω` and lie in `L^p(Ω)`, and the classical
+derivatives are the weak ones (`ContDiffOn.hasWeakIteratedFDerivOn`). -/
+theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le {n : WithTop ℕ∞}
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
+    (hu : ContDiffOnClosure ℝ n u Ω) (p : ℝ≥0∞) {m : ℕ} (hm : (m : WithTop ℕ∞) ≤ n) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u m p Ω volume := by
+  have hΩm : MeasurableSet (Ω : Set (EuclideanSpace ℝ (Fin N))) := Ω.isOpen.measurableSet
+  have : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    isFiniteMeasure_restrict.2 hΩ.measure_lt_top.ne
+  have hbound : ∀ k : ℕ, (k : WithTop ℕ∞) ≤ n →
+      MemLp (iteratedFDeriv ℝ k u) p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
+    intro k hk
+    obtain ⟨g, hgc, hge⟩ := hu.exists_continuousOn_closure_iteratedFDeriv hk
+    obtain ⟨C, hC⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hgc
+    refine MemLp.of_bound
+      ((hu.contDiffOn.continuousOn_iteratedFDeriv hk).aestronglyMeasurable hΩm) C ?_
+    filter_upwards [ae_restrict_mem hΩm] with x hx
+    rw [← hge hx]
+    exact hC x (subset_closure hx)
+  refine MemSobolev.memSobolevMultiIndex ⟨hu.memLp_of_isBounded Ω hΩ p, fun k hk ↦ ?_⟩
+  have hk' : (k : WithTop ℕ∞) ≤ n := (by exact_mod_cast hk : (k : WithTop ℕ∞) ≤ m).trans hm
+  exact ⟨iteratedFDeriv ℝ k u, hu.contDiffOn.hasWeakIteratedFDerivOn hk', hbound k hk'⟩
+
 /-- **A function of class `C¹(Ω̄)` on a bounded open set lies in `W^{1,p}(Ω)`**, with its
-classical partial derivatives as weak derivatives: `u` and `∇u` are bounded on `Ω`, being the
-restrictions of functions continuous on the compact `closure Ω` (`ContDiffOnClosure`), so they
-lie in `L^p(Ω)`, and `∂ᵢu` is the weak derivative of `u` along `e_i`
-(`ContDiffOn.hasWeakIteratedLineDerivOn_single`). This is [brezis2011functional] Remark 2 of
-Chapter 9 read on `Ω̄`, the membership step of §9.5, Example 1, Step A. -/
+classical partial derivatives as weak derivatives: the case `m = n = 1` of
+`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`. This is [brezis2011functional]
+Remark 2 of Chapter 9 read on `Ω̄`, the membership step of §9.5, Example 1, Step A. -/
 theorem ContDiffOnClosure.memSobolevMultiIndex_of_isBounded
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin N))))
     (hu : ContDiffOnClosure ℝ 1 u Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)] :
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 p Ω volume := by
-  have hΩo := Ω.isOpen
-  have hΩm := hΩo.measurableSet
-  have hfin : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-    isFiniteMeasure_restrict.2 hΩ.measure_lt_top.ne
-  have hu1 : ContDiffOn ℝ 1 u Ω := hu.contDiffOn
-  -- `u` is bounded on `Ω`: it is the restriction of a function continuous on `closure Ω`
-  obtain ⟨g₀, hg₀c, hg₀⟩ := hu.continuousOn_closure
-  obtain ⟨C, hC⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hg₀c
-  have hC' : ∀ x ∈ Ω, ‖u x‖ ≤ C := fun x hx ↦ by
-    rw [← hg₀ hx]
-    exact hC x (subset_closure hx)
-  -- so is `∇u`: `iteratedFDeriv ℝ 1 u` extends continuously to `closure Ω`
-  obtain ⟨g₁, hg₁c, hg₁⟩ := hu.exists_continuousOn_closure_iteratedFDeriv (m := 1) le_rfl
-  obtain ⟨M, hM⟩ := hΩ.isCompact_closure.exists_bound_of_continuousOn hg₁c
-  have hM' : ∀ x ∈ Ω, ‖fderiv ℝ u x‖ ≤ M := fun x hx ↦ by
-    rw [← norm_iteratedFDeriv_one, ← hg₁ hx]
-    exact hM x (subset_closure hx)
-  have hu0 : MemLp u p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) := by
-    refine MemLp.of_bound (hu1.continuousOn.aestronglyMeasurable hΩm) C ?_
-    filter_upwards [ae_restrict_mem hΩm] with x hx using hC' x hx
-  refine ⟨hu0, fun β hβ ↦ ?_⟩
-  rcases MultiIndexLE.eq_zero_or_exists_eq_single ⟨β, hβ⟩ with h0' | ⟨i, hi⟩
-  · obtain rfl : β = 0 := congrArg Subtype.val h0'
-    exact ⟨u, HasWeakIteratedLineDerivOn.of_length_eq_zero (by simp) _
-      (hu1.continuousOn.locallyIntegrableOn hΩm), hu0⟩
-  · obtain rfl : β = Pi.single i 1 := congrArg Subtype.val hi
-    refine ⟨fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1), ?_,
-      MemLp.of_bound (((hu1.continuousOn_fderiv_of_isOpen hΩo le_rfl).clm_apply
-        continuousOn_const).aestronglyMeasurable hΩm) M ?_⟩
-    · have hperm := multiIndexTuple_single_perm
-        ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → _) i
-      rw [EuclideanSpace.basisFun_toBasis_apply] at hperm
-      exact (hu1.hasWeakIteratedLineDerivOn_single Ω i).of_perm hperm.symm
-    · filter_upwards [ae_restrict_mem hΩm] with x hx
-      calc ‖fderiv ℝ u x (EuclideanSpace.single i 1)‖
-          ≤ ‖fderiv ℝ u x‖ * ‖EuclideanSpace.single i (1 : ℝ)‖ :=
-            ContinuousLinearMap.le_opNorm _ _
-        _ = ‖fderiv ℝ u x‖ := by simp
-        _ ≤ M := hM' x hx
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 p Ω volume :=
+  hu.memSobolevMultiIndex_of_isBounded_of_le Ω hΩ p le_rfl
 
 end ClassicalMembership
 

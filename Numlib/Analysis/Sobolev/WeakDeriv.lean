@@ -128,6 +128,44 @@ theorem locallyMemLpOn_one_iff : LocallyMemLpOn f 1 s μ ↔ LocallyIntegrableOn
 alias ⟨LocallyMemLpOn.locallyIntegrableOn, LocallyIntegrableOn.locallyMemLpOn⟩ :=
   locallyMemLpOn_one_iff
 
+section LocalLp
+
+omit [TopologicalSpace X] in
+/-- A bound `|f x| ≤ c |g x|` almost everywhere, with `g ∈ L^p`, puts `f` in `L^p`. -/
+theorem MemLp.of_ae_norm_le_mul {ν : Measure X} {f g : X → ℝ} {q : ℝ≥0∞} (hg : MemLp g q ν)
+    (hf : AEStronglyMeasurable f ν) {c : ℝ}
+    (h : ∀ᵐ x ∂ν, |f x| ≤ c * |g x|) : MemLp f q ν :=
+  (hg.const_mul c).of_le hf (h.mono fun x hx ↦ by
+    rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
+    exact hx.trans (mul_le_mul_of_nonneg_right (le_abs_self c) (abs_nonneg _)))
+
+variable {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E] [ProperSpace E]
+  {μ : Measure E} [IsLocallyFiniteMeasure μ] {Ω : Opens E} {p : ℝ≥0∞}
+
+omit [BorelSpace E] [ProperSpace E] [IsLocallyFiniteMeasure μ] in
+/-- A function in `L^p(Ω)` is locally in `L^p` on `Ω`. -/
+theorem MemLp.locallyMemLpOn {f : E → ℝ}
+    (hf : MemLp f p (μ.restrict (Ω : Set E))) : LocallyMemLpOn f p Ω μ :=
+  fun _ _ ↦ ⟨Ω, self_mem_nhdsWithin, hf⟩
+
+open Metric in
+/-- A function continuous on an open set is locally in every `L^p` there. -/
+theorem _root_.ContinuousOn.locallyMemLpOn {f : E → ℝ} (hf : ContinuousOn f Ω) (p : ℝ≥0∞) :
+    LocallyMemLpOn f p Ω μ := by
+  intro x hx
+  obtain ⟨ε, hε, hεΩ⟩ := Metric.isOpen_iff.1 Ω.isOpen x hx
+  have hball : closedBall x (ε / 2) ⊆ Ω := (closedBall_subset_ball (half_lt_self hε)).trans hεΩ
+  refine ⟨closedBall x (ε / 2), mem_nhdsWithin_of_mem_nhds (closedBall_mem_nhds x (half_pos hε)),
+    ?_⟩
+  obtain ⟨C, hC⟩ := (isCompact_closedBall x (ε / 2)).exists_bound_of_continuousOn
+    (hf.mono hball)
+  have : IsFiniteMeasure (μ.restrict (closedBall x (ε / 2))) :=
+    ⟨by rw [Measure.restrict_apply_univ]; exact (isCompact_closedBall x (ε / 2)).measure_lt_top⟩
+  exact MemLp.of_bound ((hf.mono hball).aestronglyMeasurable measurableSet_closedBall) C
+    ((ae_restrict_mem measurableSet_closedBall).mono fun z hz ↦ hC z hz)
+
+end LocalLp
+
 omit [TopologicalSpace X] in
 /-- `L^p` membership is stable under a union of two sets, for `p < ∞`. The exponent `p = ∞` is
 excluded only because the proof compares `p`-th powers of the `L^p` norms; the statement is true
@@ -631,6 +669,20 @@ protected theorem add {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLin
     have j₂ := (h₂.integrable_smul_weakDeriv φ).integrableOn (s := (Ω : Set E))
     simp only [Pi.add_apply, smul_add]
     rw [integral_add i₁ i₂, integral_add j₁ j₂, h₁.integral_smul_eq, h₂.integral_smul_eq, smul_add]
+
+/-- A finite sum of weakly differentiable functions is weakly differentiable, with the sum of
+the weak derivatives. -/
+protected theorem finset_sum {ι : Type*} {s : Finset ι}
+    {f w : ι → E → F} (h : ∀ i ∈ s, HasWeakIteratedLineDerivOn y (f i) (w i) Ω μ) :
+    HasWeakIteratedLineDerivOn y (fun x ↦ ∑ i ∈ s, f i x) (fun x ↦ ∑ i ∈ s, w i x) Ω μ := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact HasWeakIteratedLineDerivOn.zero
+  | insert a s ha ih =>
+    simp only [Finset.sum_insert ha]
+    exact (h a (Finset.mem_insert_self a s)).add (ih fun i hi ↦ h i (Finset.mem_insert_of_mem hi))
 
 omit [OpensMeasurableSpace E] in
 /-- Weak differentiation along a tuple of directions commutes with scalar multiplication. -/

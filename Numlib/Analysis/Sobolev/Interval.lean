@@ -8,6 +8,8 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 import Mathlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Sobolev.Interval.Basic
+import Numlib.Analysis.Sobolev.Interval.Higher
+import Numlib.Analysis.Sobolev.Interval.Zero
 
 /-!
 # Sobolev spaces on an interval
@@ -26,7 +28,14 @@ space for the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L�
 (`SobolevMultiIndex.inner_eq`). `H^1_0(a, b)` is accordingly `SobolevIntervalLpZero 1 2 _`, the
 closure of the test functions in the multi-index space. The weak derivative on an interval,
 `HasWeakDerivOn f w (Opens.Ioo a b)`, and the general theory of `W^{m,p}(I)` on an arbitrary open
-`I ⊆ ℝ` live in `Interval/Basic.lean`; this module is the bounded `p = 2` layer over it.
+`I ⊆ ℝ` live in `Interval/Basic.lean`; this module is the bounded `p = 2` layer over it. The
+general-`p` theory is spread over the modules of `Interval/`: `Basic` (the weak derivative, the
+spaces `W^{m,p}(I)`, the continuous representative), `Extension` (the extension operator),
+`Embedding` (`W^{1,p}(I) ↪ C(Ī)` and its compactness), `Density` (the density of `C_c^∞`),
+`Higher` (`W^{m,p}` as an iterated `W^{1,p}`, `C^k[a, b] → W^{k,p}(a, b)`, Poincaré's
+inequality at every `p`), `Zero` (`W_0^{1,p}(I)`, its boundary characterization and cut-offs),
+`DifferenceQuotient` and `Dual` (`W^{-1,p'}`); several statements of this module are the
+`p = 2` instances of theirs.
 
 ## Main definitions
 
@@ -1306,35 +1315,38 @@ theorem exists_mem_fn_ae_eq (φ : 𝓓(Opens.Ioo a b, ℝ)) :
     (b := Module.Basis.singleton Unit ℝ) (k := 1) (p := 2) φ
   ⟨u, SobolevMultiIndexZero.testFunctions_le hu, hφ⟩
 
-open SobolevInterval in
-/-- The continuous representative of an element of `H^1_0(a, b)` vanishes at `a`: evaluation
-at `a` is a continuous linear functional on `H^1(a, b)` that vanishes on the test functions, hence
-on their closure. -/
-theorem rep_left_eq_zero (hab : a < b) {u : SobolevInterval 1 a b}
-    (hu : u ∈ SobolevIntervalZero a b) : rep u a = 0 := by
-  let e : SobolevInterval 1 a b →L[ℝ] ℝ :=
-    (ContinuousMap.evalCLM ℝ (⟨a, left_mem_Icc.2 hab.le⟩ : Icc a b)).comp (toContinuousMap hab)
-  have hker : SobolevMultiIndex.testFunctions ℝ (Module.Basis.singleton Unit ℝ) 1 2
-      (Opens.Ioo a b) volume ≤ LinearMap.ker (e : SobolevInterval 1 a b →ₗ[ℝ] ℝ) := by
-    rintro v ⟨φ, hφ⟩
-    change toContinuousMap hab v ⟨a, _⟩ = 0
-    rw [toContinuousMap_eq_of_continuousOn hab v φ.continuous.continuousOn hφ]
-    exact φ.eq_zero_of_le_left le_rfl
-  exact Submodule.topologicalClosure_minimal _ hker e.isClosed_ker hu
+/-- The continuous representative `SobolevInterval.rep` of this module and the general
+`SobolevIntervalLp.rep` of `Numlib/Analysis/Sobolev/Interval/Basic.lean` agree on `[a, b]`: both
+are continuous there and agree almost everywhere with the function. -/
+theorem _root_.SobolevInterval.rep_eq_repLp (hab : a < b) (u : SobolevInterval 1 a b) :
+    EqOn (SobolevInterval.rep u) (SobolevIntervalLp.rep u) (Icc a b) := by
+  have h := SobolevIntervalLp.rep_eq_of_continuousOn (SobolevIntervalLp.ordConnected_coe_Ioo a b) u
+    (g := SobolevInterval.rep u) (by
+      rw [SobolevIntervalLp.closure_coe_Ioo hab]; exact SobolevInterval.continuousOn_rep hab.le u)
+    (SobolevInterval.fn_ae_eq_rep hab u)
+  rw [SobolevIntervalLp.closure_coe_Ioo hab] at h
+  exact h.symm
+
+/-- The function of `u ∈ H¹(a, b)` agrees almost everywhere with its general representative. -/
+theorem _root_.SobolevInterval.fn_ae_eq_repLp (u : SobolevInterval 1 a b) :
+    SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] SobolevIntervalLp.rep u :=
+  SobolevIntervalLp.fn_ae_eq_rep (SobolevIntervalLp.ordConnected_coe_Ioo a b) u
 
 open SobolevInterval in
-/-- The continuous representative of an element of `H^1_0(a, b)` vanishes at `b`. -/
+/-- The continuous representative of an element of `H^1_0(a, b)` vanishes at `a`
+(`SobolevIntervalLpZero.rep_left_eq_zero` at `p = 2`). -/
+theorem rep_left_eq_zero (hab : a < b) {u : SobolevInterval 1 a b}
+    (hu : u ∈ SobolevIntervalZero a b) : rep u a = 0 :=
+  (rep_eq_repLp hab u (left_mem_Icc.2 hab.le)).trans
+    (SobolevIntervalLpZero.rep_left_eq_zero hab hu)
+
+open SobolevInterval in
+/-- The continuous representative of an element of `H^1_0(a, b)` vanishes at `b`
+(`SobolevIntervalLpZero.rep_right_eq_zero` at `p = 2`). -/
 theorem rep_right_eq_zero (hab : a < b) {u : SobolevInterval 1 a b}
-    (hu : u ∈ SobolevIntervalZero a b) : rep u b = 0 := by
-  let e : SobolevInterval 1 a b →L[ℝ] ℝ :=
-    (ContinuousMap.evalCLM ℝ (⟨b, right_mem_Icc.2 hab.le⟩ : Icc a b)).comp (toContinuousMap hab)
-  have hker : SobolevMultiIndex.testFunctions ℝ (Module.Basis.singleton Unit ℝ) 1 2
-      (Opens.Ioo a b) volume ≤ LinearMap.ker (e : SobolevInterval 1 a b →ₗ[ℝ] ℝ) := by
-    rintro v ⟨φ, hφ⟩
-    change toContinuousMap hab v ⟨b, _⟩ = 0
-    rw [toContinuousMap_eq_of_continuousOn hab v φ.continuous.continuousOn hφ]
-    exact φ.eq_zero_of_le_right le_rfl
-  exact Submodule.topologicalClosure_minimal _ hker e.isClosed_ker hu
+    (hu : u ∈ SobolevIntervalZero a b) : rep u b = 0 :=
+  (rep_eq_repLp hab u (right_mem_Icc.2 hab.le)).trans
+    (SobolevIntervalLpZero.rep_right_eq_zero hab hu)
 
 open SobolevInterval in
 /-- **An element of `H^1_0(a, b)` vanishes at both endpoints**: the trace of `H^1_0(a, b)` is
@@ -1355,14 +1367,16 @@ theorem rep_eq_integral (hab : a < b) {u : SobolevInterval 1 a b}
 
 open SobolevInterval in
 /-- **Poincaré's inequality on `H^1_0(a, b)`**, [quarteroni2000numerical] (12.16) with the
-explicit constant `C_P = (b - a)/√2`: `‖u‖_{L²(a, b)} ≤ ((b - a)/√2) ‖u'‖_{L²(a, b)}`. An
-element of `H^1_0(a, b)` is the antiderivative of its derivative, so this is the elementary form
-`SobolevInterval.norm_le_of_eq_integral`. -/
+explicit constant `C_P = (b - a)/√2`: `‖u‖_{L²(a, b)} ≤ ((b - a)/√2) ‖u'‖_{L²(a, b)}` — the case
+`p = 2` of `SobolevIntervalLpZero.norm_deriv_zero_le`, whose constant `(b - a)/p^{1/p}` is
+`(b - a)/√2`. -/
 theorem norm_deriv_zero_le (hab : a < b) {u : SobolevInterval 1 a b}
     (hu : u ∈ SobolevIntervalZero a b) :
-    ‖deriv u 0‖ ≤ (b - a) / Real.sqrt 2 * ‖deriv u 1‖ :=
-  norm_le_of_eq_integral hab.le ((fn_ae_eq_rep hab u).trans (Eventually.of_forall
-    fun x ↦ rep_eq_integral hab hu x))
+    ‖deriv u 0‖ ≤ (b - a) / Real.sqrt 2 * ‖deriv u 1‖ := by
+  have h := SobolevIntervalLpZero.norm_deriv_zero_le hab hu
+  rw [ENNReal.toReal_ofNat] at h
+  rw [Real.sqrt_eq_rpow, one_div]
+  exact h
 
 open SobolevInterval in
 /-- **The `H^1` norm and the `H^1` seminorm are equivalent on `H^1_0(a, b)`**:
@@ -1533,136 +1547,15 @@ theorem exists_testFunction_norm_sub_toLp_le (hab : a < b)
 
 open SobolevInterval in
 /-- **A function of `H^1(a, b)` whose continuous representative vanishes at both endpoints lies
-in `H^1_0(a, b)`**, the converse of `SobolevIntervalZero.toContinuousMap_eq_zero`.
-
-The derivative `u'` has zero mean on `(a, b)`, since `u(b) - u(a) = ∫_a^b u'`. Approximate `u'` in
-`L²(a, b)` by a test function `ψ` (`exists_testFunction_norm_sub_toLp_le`), correct its mean by
-a multiple of a fixed test function of integral one, and take the primitive `φ = ∫_a^x ψ` of the
-corrected function, which is again a test function (`TestFunction.primitive`). Then
-`u - φ = ∫_a^x (u' - ψ)` and Poincaré's inequality `SobolevInterval.norm_le_of_eq_integral`
-bounds `‖u - φ‖_{H^1}` by a multiple of `‖u' - ψ‖_{L²}`. No cut-off or mollification of `u`
-itself is needed. -/
+in `H^1_0(a, b)`**, the converse of `SobolevIntervalZero.toContinuousMap_eq_zero`: the case
+`p = 2` of `SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded` (Theorem 8.12 of
+[brezis2011functional] on a bounded interval), through the identification of the two continuous
+representatives on `[a, b]` (`SobolevInterval.rep_eq_repLp`). -/
 theorem SobolevIntervalZero.mem_of_rep_eq_zero (hab : a < b) (u : SobolevInterval 1 a b)
-    (ha : rep u a = 0) (hb : rep u b = 0) : u ∈ SobolevIntervalZero a b := by
-  have hrep : ∀ x, rep u x = ∫ t in a..x, deriv u 1 t := fun x ↦ by
-    have h := ha
-    rw [rep_apply, intervalIntegral.integral_same, add_zero] at h
-    rw [rep_apply, h, zero_add]
-  have hwint : ∫ x in Ioo a b, deriv u 1 x = 0 := by
-    have := rep_sub_rep hab.le u (left_mem_Icc.2 hab.le) (right_mem_Icc.2 hab.le)
-    rw [ha, hb, sub_zero, intervalIntegral.integral_of_le hab.le,
-      integral_Ioc_eq_integral_Ioo] at this
-    exact this.symm
-  have hwi : ∀ x ∈ Icc a b, IntervalIntegrable (deriv u 1) volume a x := fun x hx ↦
-    (integrableOn_deriv u 1).intervalIntegrable_of_Ioo (left_mem_Icc.2 hab.le) hx
-  obtain ⟨ψ₀, hψ₀⟩ := exists_testFunction_integral_eq_one hab
-  set N := ‖ψ₀.toLp₂‖ with hN
-  set CP := (b - a) / Real.sqrt 2 with hCP
-  have hCP0 : 0 ≤ CP := by positivity
-  set M := Real.sqrt (1 + CP ^ 2) * (1 + Real.sqrt (b - a) * N) with hM
-  have hM0 : 0 < M := by positivity
-  rw [← SetLike.mem_coe, SobolevIntervalZero, SobolevIntervalLpZero, SobolevMultiIndexZero,
-    Submodule.topologicalClosure_coe, Metric.mem_closure_iff]
-  intro ε hε
-  set η := ε / (2 * M) with hη
-  have hη0 : 0 < η := by positivity
-  obtain ⟨ψ, hψ⟩ := exists_testFunction_norm_sub_toLp_le hab (deriv u 1) hη0
-  -- correct the mean of `ψ`
-  set m := ∫ x, ψ x with hm
-  obtain ⟨ψ', hψ'c, hmean⟩ : ∃ ψ' : 𝓓(Opens.Ioo a b, ℝ),
-      ((ψ' : ℝ → ℝ) = fun x ↦ ψ x - m * ψ₀ x) ∧ ∫ x, ψ' x = 0 := by
-    refine ⟨ψ - m • ψ₀, ?_, ?_⟩
-    · funext x; simp [smul_eq_mul]
-    · simp only [FunLike.coe_sub, FunLike.coe_smul, Pi.sub_apply, Pi.smul_apply, smul_eq_mul]
-      rw [integral_sub ψ.integrable_volume (ψ₀.integrable_volume.const_mul m), integral_const_mul,
-        hψ₀]
-      simp [hm]
-  obtain ⟨φ, hφc⟩ : ∃ φ : 𝓓(Opens.Ioo a b, ℝ), (φ : ℝ → ℝ) = fun x ↦ ∫ t in a..x, ψ' t :=
-    ⟨TestFunction.primitive hab ψ' hmean, rfl⟩
-  have hφ' : HasWeakDerivOn φ ψ' (Opens.Ioo a b) := by
-    have := hasWeakDerivOn_integral hab.le ψ'.integrable_volume.integrableOn 0
-    refine this.congr_ae (Eventually.of_forall fun x ↦ ?_) (Eventually.of_forall fun _ ↦ rfl)
-    rw [hφc]; simp
-  -- the element of `H^1(a, b)` carried by `φ`
-  obtain ⟨v, hv0, hv1⟩ : ∃ v : SobolevInterval 1 a b, deriv v 0 = φ.toLp₂ ∧
-      deriv v 1 = ψ'.toLp₂ := by
-    have hloc : LocallyIntegrableOn (φ.toLp₂ : ℝ → ℝ) (Ioo a b) :=
-      (Lp.memLp φ.toLp₂).locallyIntegrableOn (Ω := Opens.Ioo a b) one_le_two
-    have h0 : HasWeakIteratedDerivOn 0 φ.toLp₂ φ.toLp₂ (Opens.Ioo a b) :=
-      HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _ hloc
-    have h1 : HasWeakIteratedDerivOn 1 φ.toLp₂ ψ'.toLp₂ (Opens.Ioo a b) :=
-      hφ'.congr_ae φ.coeFn_toLp₂.symm ψ'.coeFn_toLp₂.symm
-    have hv : ∀ j : Fin 2, HasWeakIteratedDerivOn (j : ℕ) (![φ.toLp₂, ψ'.toLp₂] 0)
-        (![φ.toLp₂, ψ'.toLp₂] j) (Opens.Ioo a b) := by
-      intro j
-      fin_cases j
-      · exact h0
-      · exact h1
-    exact ⟨mk _ hv, rfl, rfl⟩
-  refine ⟨v, ⟨φ, ?_⟩, ?_⟩
-  · have e : (deriv v 0 : ℝ → ℝ) = SobolevMultiIndex.fn v := rfl
-    rw [← e, hv0]
-    exact φ.coeFn_toLp₂
-  -- the bound on the derivative
-  have hψ'Lp : ψ'.toLp₂ = ψ.toLp₂ - m • ψ₀.toLp₂ := by
-    refine Lp.ext (ψ'.coeFn_toLp₂.trans ?_)
-    filter_upwards [Lp.coeFn_sub ψ.toLp₂ (m • ψ₀.toLp₂), Lp.coeFn_smul m ψ₀.toLp₂,
-      ψ.coeFn_toLp₂, ψ₀.coeFn_toLp₂] with x hx1 hx2 hx3 hx4
-    rw [hx1, Pi.sub_apply, hx2, Pi.smul_apply, hx3, hx4, hψ'c, smul_eq_mul]
-  have hm' : |m| ≤ Real.sqrt (b - a) * η := by
-    have e1 : m = ∫ x in Ioo a b, ψ x :=
-      (setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ ψ.eq_zero_of_notMem hx).symm
-    have e2 : ∫ x in Ioo a b, (deriv u 1 - ψ.toLp₂) x
-        = ∫ x in Ioo a b, (deriv u 1 x - ψ x) := by
-      refine integral_congr_ae ?_
-      filter_upwards [Lp.coeFn_sub (deriv u 1) ψ.toLp₂, ψ.coeFn_toLp₂] with x hx1 hx2
-      rw [hx1, Pi.sub_apply, hx2]
-    have := abs_setIntegral_le_sqrt_mul_norm (deriv u 1 - ψ.toLp₂) measurableSet_Ioo subset_rfl
-    rw [e2, integral_sub (integrableOn_deriv u 1) ψ.integrable_volume.integrableOn, hwint,
-      zero_sub, abs_neg, Real.volume_real_Ioo_of_le hab.le, ← e1] at this
-    exact this.trans (by gcongr)
-  have hD : ‖deriv u 1 - ψ'.toLp₂‖ ≤ η * (1 + Real.sqrt (b - a) * N) := by
-    rw [hψ'Lp, show deriv u 1 - (ψ.toLp₂ - m • ψ₀.toLp₂)
-      = (deriv u 1 - ψ.toLp₂) + m • ψ₀.toLp₂ by abel]
-    refine (norm_add_le _ _).trans ?_
-    rw [norm_smul, Real.norm_eq_abs]
-    calc ‖deriv u 1 - ψ.toLp₂‖ + |m| * N ≤ η + Real.sqrt (b - a) * η * N := by
-          gcongr
-      _ = η * (1 + Real.sqrt (b - a) * N) := by ring
-  -- the bound on the function, by Poincaré
-  have hderiv1 : deriv (u - v) 1 = deriv u 1 - ψ'.toLp₂ := by
-    rw [SobolevInterval.deriv_sub, hv1]
-  have hderiv0 : (deriv (u - v) 0 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
-      fun x ↦ ∫ t in a..x, (deriv (u - v) 1) t := by
-    rw [hderiv1, SobolevInterval.deriv_sub, hv0]
-    filter_upwards [Lp.coeFn_sub (deriv u 0) φ.toLp₂, fn_ae_eq_rep hab u, φ.coeFn_toLp₂,
-      ae_restrict_mem measurableSet_Ioo] with x hx1 hx2 hx3 hx4
-    rw [hx1, Pi.sub_apply, SobolevInterval.deriv_zero, hx2, hx3, hrep, hφc]
-    dsimp only
-    rw [← intervalIntegral.integral_sub (hwi x (Ioo_subset_Icc_self hx4))
-      (ψ'.continuous.intervalIntegrable _ _)]
-    refine intervalIntegral_congr_ae_Ioo ?_ (Ioo_subset_Icc_self hx4)
-    exact ((Lp.coeFn_sub (deriv u 1) ψ'.toLp₂).trans (ψ'.coeFn_toLp₂.mono fun t ht ↦ by
-      simp only [Pi.sub_apply, ht])).symm
-  have h0 : ‖deriv (u - v) 0‖ ≤ CP * ‖deriv (u - v) 1‖ :=
-    norm_le_of_eq_integral hab.le hderiv0
-  -- assembling
-  rw [dist_eq_norm]
-  have hsq : ‖u - v‖ ^ 2 ≤ (1 + CP ^ 2) * ‖deriv (u - v) 1‖ ^ 2 := by
-    rw [norm_sq_eq, Fin.sum_univ_two]
-    have := norm_nonneg (deriv (u - v) 1)
-    nlinarith [h0, norm_nonneg (deriv (u - v) 0)]
-  have h1 : ‖u - v‖ ≤ Real.sqrt (1 + CP ^ 2) * ‖deriv (u - v) 1‖ := by
-    rw [← pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero, mul_pow,
-      Real.sq_sqrt (by positivity)]
-    exact hsq
-  calc ‖u - v‖ ≤ Real.sqrt (1 + CP ^ 2) * ‖deriv (u - v) 1‖ := h1
-    _ ≤ Real.sqrt (1 + CP ^ 2) * (η * (1 + Real.sqrt (b - a) * N)) := by
-        rw [hderiv1]; gcongr
-    _ = M * η := by rw [hM]; ring
-    _ = ε / 2 := by
-        rw [hη, ← mul_div_assoc, mul_comm M ε, mul_div_mul_right _ _ hM0.ne']
-    _ < ε := half_lt_self hε
+    (ha : rep u a = 0) (hb : rep u b = 0) : u ∈ SobolevIntervalZero a b :=
+  SobolevIntervalLpZero.mem_of_rep_frontier_eq_zero_of_bounded hab (by norm_num) u
+    ((rep_eq_repLp hab u (left_mem_Icc.2 hab.le)).symm.trans ha)
+    ((rep_eq_repLp hab u (right_mem_Icc.2 hab.le)).symm.trans hb)
 
 open SobolevInterval in
 /-- **A function of `H^1(a, b)` vanishing at both endpoints lies in `H^1_0(a, b)`**, stated for
@@ -1690,57 +1583,38 @@ namespace ContDiffMapIcc
 variable {a b : ℝ} {hab : a ≤ b} {k : ℕ}
 
 /-- The `j`-th derivative of `u ∈ C^k[a, b]`, extended by its endpoint values off `[a, b]`, as an
-element of `L²(a, b)`. -/
+element of `L²(a, b)`: `ContDiffMapIcc.derivLpOf` at `p = 2`. -/
 def derivLp (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) : Lp ℝ 2 (volume.restrict (Ioo a b)) :=
-  ((ContinuousMap.IccExtend hab (u.deriv j)).continuous.continuousOn.memLp_two_restrict_Ioo).toLp _
+  derivLpOf 2 u j
 
 /-- `ContDiffMapIcc.derivLp` is the extended derivative almost everywhere. -/
 theorem coeFn_derivLp (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     u.derivLp j =ᵐ[volume.restrict (Ioo a b)] IccExtend hab (u.deriv j) :=
-  MemLp.coeFn_toLp _
+  coeFn_derivLpOf u j
 
 /-- `ContDiffMapIcc.derivLp` is additive. -/
 theorem derivLp_add (u v : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
-    (u + v).derivLp j = u.derivLp j + v.derivLp j := by
-  refine Lp.ext ((coeFn_derivLp _ _).trans ?_)
-  refine ((Lp.coeFn_add _ _).trans ((coeFn_derivLp u j).add (coeFn_derivLp v j))).symm.trans ?_
-  exact Eventually.of_forall fun x ↦ rfl
+    (u + v).derivLp j = u.derivLp j + v.derivLp j :=
+  derivLpOf_add u v j
 
 /-- `ContDiffMapIcc.derivLp` is homogeneous. -/
 theorem derivLp_smul (c : ℝ) (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
-    (c • u).derivLp j = c • u.derivLp j := by
-  refine Lp.ext ((coeFn_derivLp _ _).trans ?_)
-  refine ((Lp.coeFn_smul _ _).trans ((coeFn_derivLp u j).const_smul c)).symm.trans ?_
-  exact Eventually.of_forall fun x ↦ rfl
+    (c • u).derivLp j = c • u.derivLp j :=
+  derivLpOf_smul c u j
 
-/-- The extended derivatives of `u ∈ C^k[a, b]` are the weak derivatives of `u` on `(a, b)`: on
-the open interval the `j`-th entry of the tuple is the `j`-th classical derivative
-(`ContDiffMapIcc.deriv_eq_iteratedDerivWithin`), and a classical derivative is a weak one. -/
+/-- The extended derivatives of `u ∈ C^k[a, b]` are the weak derivatives of `u` on `(a, b)`
+(`ContDiffMapIcc.hasWeakIteratedDerivOn_derivLpOf` at `p = 2`). -/
 theorem hasWeakIteratedDerivOn_derivLp (hlt : a < b) (u : ContDiffMapIcc hab k)
     (j : Fin (k + 1)) :
-    HasWeakIteratedDerivOn (j : ℕ) (u.derivLp 0) (u.derivLp j) (Opens.Ioo a b) := by
-  have hcd : ContDiffOn ℝ k u.extend (Ioo a b) := (u.contDiffOn hlt).mono Ioo_subset_Icc_self
-  have h := hasWeakIteratedDerivOn_of_contDiffOn (I := Opens.Ioo a b) hcd (k := j)
-    (by exact_mod_cast Fin.is_le j)
-  refine h.congr_ae ?_ ?_
-  · exact (coeFn_derivLp u 0).symm
-  · refine EventuallyEq.trans ?_ (coeFn_derivLp u j).symm
-    refine (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx ↦ ?_)
-    have hx' : x ∈ Icc a b := Ioo_subset_Icc_self hx
-    have e1 := u.deriv_eq_iteratedDerivWithin hlt j.2 ⟨x, hx'⟩
-    have e2 := iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hlt)
-      ((hcd.contDiffAt (isOpen_Ioo.mem_nhds hx)).of_le (by exact_mod_cast Fin.is_le j)) hx'
-    rw [← e2, ← e1, IccExtend_of_mem hab _ hx']
+    HasWeakIteratedDerivOn (j : ℕ) (u.derivLp 0) (u.derivLp j) (Opens.Ioo a b) :=
+  hasWeakIteratedDerivOn_derivLpOf hlt u j
 
 /-- The inclusion `C^k[a, b] → H^k(a, b)` as a linear map: `u` goes to the element whose `j`-th
-component is the extended derivative `u^{(j)}`. -/
+component is the extended derivative `u^{(j)}` (`ContDiffMapIcc.toSobolevIntervalLpₗ` at
+`p = 2`). -/
 def toSobolevIntervalₗ (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
-    ContDiffMapIcc hab k →ₗ[ℝ] SobolevInterval k a b where
-  toFun u := SobolevInterval.mk u.derivLp (hasWeakIteratedDerivOn_derivLp hlt u)
-  map_add' u v := SobolevInterval.ext fun j ↦ by simp only [SobolevInterval.deriv_mk,
-    SobolevInterval.deriv_add, derivLp_add]
-  map_smul' c u := SobolevInterval.ext fun j ↦ by simp only [SobolevInterval.deriv_mk,
-    SobolevInterval.deriv_smul, derivLp_smul, RingHom.id_apply]
+    ContDiffMapIcc hab k →ₗ[ℝ] SobolevInterval k a b :=
+  toSobolevIntervalLpₗ 2 hab hlt k
 
 /-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
 @[simp]
@@ -1748,40 +1622,36 @@ theorem deriv_toSobolevIntervalₗ (hab : a ≤ b) (hlt : a < b) (u : ContDiffMa
     (j : Fin (k + 1)) : SobolevInterval.deriv (toSobolevIntervalₗ hab hlt k u) j = u.derivLp j :=
   rfl
 
-/-- `‖u^{(j)}‖_{L²(a, b)} ≤ √(b - a) ‖u^{(j)}‖_∞`. -/
+/-- `‖u^{(j)}‖_{L²(a, b)} ≤ √(b - a) ‖u^{(j)}‖_∞` (`ContDiffMapIcc.norm_derivLpOf_le` at `p = 2`,
+where `(b - a)^{1/p} = √(b - a)`). -/
 theorem norm_derivLp_le (u : ContDiffMapIcc hab k) (j : Fin (k + 1)) :
     ‖u.derivLp j‖ ≤ Real.sqrt (b - a) * ‖u.deriv j‖ := by
-  refine Lp.norm_le_sqrt_mul_of_ae_bound hab _ (norm_nonneg _) ?_
-  filter_upwards [coeFn_derivLp u j] with x hx
-  rw [hx, ← Real.norm_eq_abs, IccExtend_apply]
-  exact ContinuousMap.norm_coe_le_norm _ _
+  have h := norm_derivLpOf_le (p := 2) u j
+  rw [ENNReal.toReal_ofNat] at h
+  rw [Real.sqrt_eq_rpow, one_div]
+  exact h
 
 /-- The constant of the inclusion `C^k[a, b] → H^k(a, b)`, for the linear map:
-`‖u‖_{H^k} ≤ √(b - a) ‖u‖_{C^k}`. -/
+`‖u‖_{H^k} ≤ √(b - a) ‖u‖_{C^k}` (`ContDiffMapIcc.norm_toSobolevIntervalLpₗ_le` at `p = 2`). -/
 theorem norm_toSobolevIntervalₗ_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMapIcc hab k) :
     ‖toSobolevIntervalₗ hab hlt k u‖ ≤ Real.sqrt (b - a) * ‖u‖ := by
-  rw [← pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero,
-    SobolevInterval.norm_sq_eq, mul_pow, Real.sq_sqrt (sub_nonneg.2 hab), norm_def]
-  simp only [deriv_toSobolevIntervalₗ]
-  calc ∑ j, ‖u.derivLp j‖ ^ 2 ≤ ∑ j, (Real.sqrt (b - a) * ‖u.deriv j‖) ^ 2 := by
-        gcongr with j
-        exact norm_derivLp_le u j
-    _ = (b - a) * ∑ j, ‖u.deriv j‖ ^ 2 := by
-        simp only [mul_pow, Real.sq_sqrt (sub_nonneg.2 hab), Finset.mul_sum]
-    _ ≤ (b - a) * (∑ j, ‖u.deriv j‖) ^ 2 := by
-        gcongr
-        exact Finset.sum_sq_le_sq_sum_of_nonneg fun j _ ↦ norm_nonneg _
+  have h := norm_toSobolevIntervalLpₗ_le (p := 2) hab hlt u
+  rw [ENNReal.toReal_ofNat] at h
+  rw [Real.sqrt_eq_rpow, one_div]
+  exact h
 
 /-- **The inclusion `C^k[a, b] → H^k(a, b)`**: the continuous linear map sending
 `u ∈ C^k[a, b]` to the element of `H^k(a, b)` whose components are its derivatives
-`u, u', …, u^{(k)}`, extended by their endpoint values off `[a, b]`. It is injective
+`u, u', …, u^{(k)}`, extended by their endpoint values off `[a, b]` —
+`ContDiffMapIcc.toSobolevIntervalLp` at `p = 2`. It is injective
 (`ContDiffMapIcc.toSobolevInterval_injective`) and has norm at most `√(b - a)`
 (`ContDiffMapIcc.norm_toSobolevInterval_le`). Its completion is what Atkinson and Han,
 *Theoretical Numerical Analysis*, 3rd edition, Examples 1.2.28(b) and 2.4.2 call `H^k(a, b)`;
-for `k = 1` its range is dense (`ContDiffMapIcc.denseRange_toSobolevInterval_one`). -/
+its range is dense at every order (`ContDiffMapIcc.denseRange_toSobolevInterval`,
+`ContDiffMapIcc.denseRange_toSobolevInterval_one`). -/
 def toSobolevInterval (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
     ContDiffMapIcc hab k →L[ℝ] SobolevInterval k a b :=
-  (toSobolevIntervalₗ hab hlt k).mkContinuous _ (norm_toSobolevIntervalₗ_le hab hlt)
+  toSobolevIntervalLp 2 hab hlt k
 
 /-- The weak derivatives of the inclusion of `u ∈ C^k[a, b]` are its extended derivatives. -/
 @[simp]
@@ -1801,112 +1671,24 @@ theorem norm_toSobolevInterval_le (hab : a ≤ b) (hlt : a < b) (u : ContDiffMap
   norm_toSobolevIntervalₗ_le hab hlt u
 
 /-- **The inclusion `C^k[a, b] → H^k(a, b)` is injective**: a continuous function vanishing
-almost everywhere on `(a, b)` vanishes on `[a, b]`. -/
+almost everywhere on `(a, b)` vanishes on `[a, b]` (`ContDiffMapIcc.toSobolevIntervalLp_injective`
+at `p = 2`). -/
 theorem toSobolevInterval_injective (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
-    Function.Injective (toSobolevInterval hab hlt k) := by
-  refine (injective_iff_map_eq_zero _).2 fun u hu ↦ ?_
-  have h0 : u.derivLp 0 = 0 := by
-    rw [← deriv_toSobolevInterval hab hlt u 0, hu, SobolevInterval.deriv_zero_elem]
-  have hae : (IccExtend hab (u.deriv 0) : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ 0 :=
-    (coeFn_derivLp u 0).symm.trans (by rw [h0]; exact Lp.coeFn_zero _ _ _)
-  have heq := eqOn_Icc_of_ae_eq hlt
-    (ContinuousMap.IccExtend hab (u.deriv 0)).continuous.continuousOn continuousOn_const hae
-  refine coe_injective hlt ?_
-  funext t
-  have := heq t.2
-  simp only [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ t.2] at this
-  exact this
+    Function.Injective (toSobolevInterval hab hlt k) :=
+  toSobolevIntervalLp_injective (p := 2) hab hlt k
 
-/-- **`C¹[a, b]` is dense in `H^1(a, b)`.** Given `u ∈ H^1(a, b)`, approximate its weak derivative
-`u'` in `L²(a, b)` by a test function `ψ` (`exists_testFunction_norm_sub_toLp_le`) and take
-`v = u(a) + ∫_a^x ψ`, which is `C^∞` on `[a, b]`. Then `v - u = ∫_a^x (ψ - u')` vanishes at `a`,
-so Poincaré's inequality `SobolevInterval.norm_le_of_eq_integral` bounds `‖v - u‖_{L²}` by
-`((b - a)/√2) ‖ψ - u'‖_{L²}`, and `‖v - u‖_{H^1} ≤ (1 + (b - a)/√2) ‖ψ - u'‖_{L²}`. No
-mollification of `u` itself is needed. -/
+/-- **`C^k[a, b]` is dense in `H^k(a, b)`** at every order
+(`ContDiffMapIcc.denseRange_toSobolevIntervalLp` at `p = 2`). -/
+theorem denseRange_toSobolevInterval (hab : a ≤ b) (hlt : a < b) (k : ℕ) :
+    DenseRange (toSobolevInterval hab hlt k) :=
+  denseRange_toSobolevIntervalLp (p := 2) hab hlt (by norm_num) k
+
+/-- **`C¹[a, b]` is dense in `H^1(a, b)`**: the case `k = 1` of
+`ContDiffMapIcc.denseRange_toSobolevInterval` (Atkinson and Han, *Theoretical Numerical
+Analysis*, 3rd edition, Examples 1.2.28(b) and 2.4.2). -/
 theorem denseRange_toSobolevInterval_one (hlt : a < b) :
-    DenseRange (toSobolevInterval hlt.le hlt 1) := by
-  rw [Metric.denseRange_iff]
-  intro u ε hε
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hlt.le
-  set w : Lp ℝ 2 (volume.restrict (Ioo a b)) := SobolevInterval.deriv u 1 with hwdef
-  set K : ℝ := 1 + (b - a) / Real.sqrt 2 with hKdef
-  have hK0 : 0 < K := by
-    have : (0 : ℝ) ≤ (b - a) / Real.sqrt 2 := by positivity
-    linarith
-  obtain ⟨ψ, hψ⟩ := exists_testFunction_norm_sub_toLp_le hlt w (ε := ε / (2 * K)) (by positivity)
-  set ψC : C(Icc a b, ℝ) := ⟨fun t => ψ t, ψ.continuous.comp continuous_subtype_val⟩ with hψC
-  set p : Fin 2 → C(Icc a b, ℝ) :=
-    ![ContinuousMap.antideriv hlt.le ψC (SobolevInterval.repConst u), ψC] with hp
-  have hderiv : ∀ j : Fin 1, ContinuousMap.HasDerivIcc hlt.le (p j.castSucc) (p j.succ) := by
-    intro j
-    fin_cases j
-    exact ContinuousMap.hasDerivIcc_antideriv hlt.le ψC _
-  set v : ContDiffMapIcc hlt.le 1 := mk hlt.le p hderiv with hv
-  refine ⟨v, ?_⟩
-  set d : SobolevInterval 1 a b := toSobolevInterval hlt.le hlt 1 v - u with hd
-  have hIcc : ∀ x ∈ Icc a b, IccExtend hlt.le ψC x = ψ x := fun x hx => by
-    rw [IccExtend_of_mem hlt.le _ hx]; rfl
-  have hmid : (IccExtend hlt.le (v.deriv 1) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)] (ψ : ℝ → ℝ) :=
-    (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx => by
-      have hv1 : v.deriv 1 = ψC := rfl
-      rw [hv1]
-      exact hIcc x (Ioo_subset_Icc_self hx))
-  have h1 : SobolevInterval.deriv d 1 = ψ.toLp₂ - w := by
-    rw [hd, SobolevInterval.deriv_sub]
-    congr 1
-    exact Lp.ext (((coeFn_derivLp v 1).trans hmid).trans ψ.coeFn_toLp₂.symm)
-  have hWae : ((ψ.toLp₂ - w : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)] fun t => (ψ : ℝ → ℝ) t - w t := by
-    filter_upwards [Lp.coeFn_sub ψ.toLp₂ w, ψ.coeFn_toLp₂] with t ht1 ht2
-    rw [ht1, Pi.sub_apply, ht2]
-  have hv0 : (IccExtend hlt.le (v.deriv 0) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)]
-      fun x => SobolevInterval.repConst u + ∫ s in a..x, (ψ : ℝ → ℝ) s := by
-    refine (ae_restrict_iff' measurableSet_Ioo).2 (Eventually.of_forall fun x hx => ?_)
-    have hxI : x ∈ Icc a b := Ioo_subset_Icc_self hx
-    have hv0' : v.deriv 0 = ContinuousMap.antideriv hlt.le ψC (SobolevInterval.repConst u) := rfl
-    rw [hv0', IccExtend_of_mem hlt.le _ hxI, ContinuousMap.antideriv_apply]
-    congr 1
-    refine intervalIntegral.integral_congr fun s hs => ?_
-    rw [uIcc_of_le hx.1.le] at hs
-    exact hIcc s ⟨hs.1, hs.2.trans hxI.2⟩
-  have hu0 : (SobolevInterval.deriv u 0 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo a b)]
-      fun x => SobolevInterval.repConst u + ∫ t in a..x, w t :=
-    SobolevInterval.fn_ae_eq_rep hlt u
-  have h0 : ((SobolevInterval.deriv d 0 : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ)
-      =ᵐ[volume.restrict (Ioo a b)]
-      fun x => ∫ t in a..x, ((ψ.toLp₂ - w : Lp ℝ 2 (volume.restrict (Ioo a b))) : ℝ → ℝ) t := by
-    have hsub : SobolevInterval.deriv d 0 = v.derivLp 0 - SobolevInterval.deriv u 0 := by
-      rw [hd, SobolevInterval.deriv_sub]; rfl
-    rw [hsub]
-    filter_upwards [Lp.coeFn_sub (v.derivLp 0) (SobolevInterval.deriv u 0),
-      coeFn_derivLp v 0, hv0, hu0, ae_restrict_mem measurableSet_Ioo] with
-      x hxs hx1 hx2 hx3 hxI
-    have hxIcc : x ∈ Icc a b := Ioo_subset_Icc_self hxI
-    rw [hxs, Pi.sub_apply, hx1, hx2, hx3, intervalIntegral_congr_ae_Ioo hWae hxIcc,
-      intervalIntegral.integral_sub (ψ.continuous.intervalIntegrable _ _)
-        ((SobolevInterval.integrableOn_deriv u 1).intervalIntegrable_of_Ioo
-          (left_mem_Icc.2 hlt.le) hxIcc)]
-    ring
-  have hb0 : ‖SobolevInterval.deriv d 0‖ ≤ (b - a) / Real.sqrt 2 * (ε / (2 * K)) := by
-    refine (SobolevInterval.norm_le_of_eq_integral hlt.le h0).trans ?_
-    gcongr
-    rw [norm_sub_rev]; exact hψ
-  have hb1 : ‖SobolevInterval.deriv d 1‖ ≤ ε / (2 * K) := by
-    rw [h1, norm_sub_rev]; exact hψ
-  have hfin : (b - a) / Real.sqrt 2 * (ε / (2 * K)) + ε / (2 * K) = ε / 2 := by
-    rw [hKdef]
-    have h2 : Real.sqrt 2 ≠ 0 := by positivity
-    field_simp
-    ring
-  calc dist u (toSobolevInterval hlt.le hlt 1 v) = ‖d‖ := by
-        rw [hd, dist_eq_norm']
-    _ ≤ ‖SobolevInterval.deriv d 0‖ + ‖SobolevInterval.deriv d 1‖ :=
-        SobolevInterval.norm_le_add_norm_deriv d
-    _ ≤ (b - a) / Real.sqrt 2 * (ε / (2 * K)) + ε / (2 * K) := by gcongr
-    _ = ε / 2 := hfin
-    _ < ε := by linarith
+    DenseRange (toSobolevInterval hlt.le hlt 1) :=
+  denseRange_toSobolevInterval hlt.le hlt 1
 
 end ContDiffMapIcc
 

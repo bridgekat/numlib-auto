@@ -346,7 +346,7 @@ id = "SobolevMultiIndexZero.isContinuousEmbedding_toLowerExponentL"
 id = "ContDiffOnClosure.memSobolevMultiIndex_of_isBounded"
 
 [[node]]
-id = "ContDiffOnClosure.memLp_of_isBounded"
+id = "ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le"
 
 [[node]]
-id = "ContDiffOn.hasWeakIteratedLineDerivOn_single"
+id = "ContDiffOnClosure.memLp_of_isBounded"

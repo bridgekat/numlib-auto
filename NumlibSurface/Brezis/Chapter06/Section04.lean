@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.InnerProductSpace.Ascent
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
 import NumlibSurface.Brezis.Chapter06.Section03
 
@@ -258,50 +259,17 @@ theorem remark_6_8 {T : H →L[ℝ] H} (_hT : IsSelfAdjoint T) (hK : IsCompactOp
 
 /-! ### The ascent of a self-adjoint operator -/
 
-omit [CompleteSpace H] in
-/-- If `N(A²) = N(A)` then `N(Aᵏ) = N(A)` for all `k ≥ 1`. -/
-private theorem ker_pow_eq_of_ker_sq_eq (A : H →L[ℝ] H) (h : (A ^ 2).ker = A.ker) :
-    ∀ k, 1 ≤ k → (A ^ k).ker = A.ker := by
-  intro k hk
-  induction k with
-  | zero => omega
-  | succ n ih =>
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · simp
-    refine le_antisymm (fun x hx => ?_) (fun x hx => ?_)
-    · rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe, pow_succ, mul_apply_eq_comp] at hx
-      have hAx : A x ∈ (A ^ n).ker := by
-        rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe]
-        exact hx
-      rw [ih hn] at hAx
-      have hx2 : x ∈ (A ^ 2).ker := by
-        rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe, pow_two, mul_apply_eq_comp]
-        exact hAx
-      rwa [h] at hx2
-    · rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hx ⊢
-      rw [pow_succ, mul_apply_eq_comp, hx, map_zero]
-
 /-- **Comments on Chapter 6, 3, last sentence.** For a self-adjoint `T ∈ L(H)` (compact or not)
 and `λ ∈ ℝ`, the geometric and algebraic multiplicities of `λ` coincide because the ascent of
 `T - λI` is `1`: `N((T - λI)²) = N(T - λI)`, hence `N((T - λI)ᵏ) = N(T - λI)` for all `k ≥ 1`
-(Problem 36). Indeed `(T - λI)² v = 0` gives `|(T - λI) v|² = ((T - λI)² v, v) = 0`. -/
+(Problem 36). Indeed `(T - λI)² v = 0` gives `|(T - λI) v|² = ((T - λI)² v, v) = 0` — the
+backbone's `IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`,
+over the real scalars for which every `λ` is real. -/
 theorem multiplicity_eq_of_isSelfAdjoint {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (l : ℝ) :
     ((T - l • (1 : H →L[ℝ] H)) ^ 2).ker = (T - l • (1 : H →L[ℝ] H)).ker ∧
-      ∀ k, 1 ≤ k → ((T - l • (1 : H →L[ℝ] H)) ^ k).ker = (T - l • (1 : H →L[ℝ] H)).ker := by
-  set A : H →L[ℝ] H := T - l • 1 with hA
-  have hAsa : IsSelfAdjoint A := by
-    rw [hA]
-    exact hT.sub ((IsSelfAdjoint.all l).smul (IsSelfAdjoint.one (H →L[ℝ] H)))
-  have hsym : ∀ u v, ⟪A u, v⟫_ℝ = ⟪u, A v⟫_ℝ :=
-    ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.1 hAsa
-  have h2 : (A ^ 2).ker = A.ker := by
-    refine le_antisymm (fun v hv => ?_) (fun v hv => ?_)
-    · rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe, pow_two, mul_apply_eq_comp] at hv
-      rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe, ← norm_eq_zero,
-        ← sq_eq_zero_iff, ← real_inner_self_eq_norm_sq, ← hsym, hv, inner_zero_left]
-    · rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
-      rw [pow_two, mul_apply_eq_comp, hv, map_zero]
-  exact ⟨h2, ker_pow_eq_of_ker_sq_eq A h2⟩
+      ∀ k, 1 ≤ k → ((T - l • (1 : H →L[ℝ] H)) ^ k).ker = (T - l • (1 : H →L[ℝ] H)).ker :=
+  ⟨hT.ker_sq_sub_smul_eq_ker (conj_trivial l),
+    fun _ hk ↦ hT.ker_pow_sub_smul_eq_ker (conj_trivial l) hk⟩
 
 end Brezis.Chapter06
 

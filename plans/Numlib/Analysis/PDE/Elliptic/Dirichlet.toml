@@ -16,6 +16,12 @@ id = "dirichletForm_apply"
 id = "dirichletForm_isHermitian"
 
 [[node]]
+id = "dirichletForm_add_left"
+
+[[node]]
+id = "dirichletForm_smul_left"
+
+[[node]]
 id = "dirichletForm_self_eq"
 
 [[node]]
@@ -33,6 +39,10 @@ id = "laplaceForm_eq_innerSL"
 [[node]]
 id = "IsUniformlyElliptic"
 deps = []
+
+[[node]]
+id = "isUniformlyElliptic_of_forall_mem"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, (36)"
 
 [[node]]
 id = "generalForm"
@@ -182,6 +192,15 @@ id = "abs_load_le"
 id = "norm_load_le"
 
 [[node]]
+id = "load_add"
+
+[[node]]
+id = "load_smul"
+
+[[node]]
+id = "load_sub"
+
+[[node]]
 id = "loadL_apply"
 
 [[node]]
@@ -228,6 +247,14 @@ id = "generalForm_apply_inner"
 
 [[node]]
 id = "generalForm_apply"
+
+[[node]]
+id = "generalForm_apply_three"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.5, (40)–(41)"
+
+[[node]]
+id = "generalForm_zero_drift_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.7, (78)"
 
 [[node]]
 id = "generalForm_isBoundedWith"

@@ -66,19 +66,6 @@ id = "lemma_9_8"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.8"
 
 [[node]]
-id = "memSobolevMultiIndexLoc_of_contDiffOn"
-
-[[node]]
-id = "memSobolevMultiIndex_of_contDiffOnClosure_of_isBounded"
-
-[[node]]
-id = "memSobolevMultiIndexLoc_of_forall_testFunction_add_mul"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
-
-[[node]]
-id = "forall_testFunction_of_le"
-
-[[node]]
 id = "remark_9_25"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 25"
 

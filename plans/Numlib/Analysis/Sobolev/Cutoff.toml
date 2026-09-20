@@ -242,6 +242,9 @@ id = "MemSobolevMultiIndexLoc.mono_set"
 id = "MemSobolevMultiIndexLoc.congr_ae"
 
 [[node]]
+id = "ContDiffOn.memSobolevMultiIndexLoc"
+
+[[node]]
 id = "HasSobolevExtensionOn"
 
 [[node]]
@@ -400,3 +403,24 @@ id = "SobolevMultiIndex.isContinuousEmbedding_toLowerExponentL"
 
 [[node]]
 id = "SobolevMultiIndex.partialDerivL_apply"
+
+[[node]]
+id = "SobolevMultiIndex.fnL_comp_toLowerOrderL"
+
+[[node]]
+id = "MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact"
+
+[[node]]
+id = "MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub"
+
+[[node]]
+id = "ContDiffOn.hasWeakIteratedLineDerivOn_single"
+
+[[node]]
+id = "MeasureTheory.MemLp.mul_of_forall_abs_le"
+
+[[node]]
+id = "MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact"
+
+[[node]]
+id = "IsSobolevCutoff.of_hasCompactSupport_sub"

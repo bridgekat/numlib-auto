@@ -324,27 +324,6 @@ id = "ContDiff.enorm_le_lintegral_iteratedFDeriv_finrank"
 id = "lintegral_enorm_apply_stdDirs_le_eLpNorm_one"
 
 [[node]]
-id = "Fin.comp_succ_succAbove"
-
-[[node]]
-id = "Fin.comp_zero_succAbove"
-
-[[node]]
-id = "measurable_fin_cons_prod"
-
-[[node]]
-id = "measurable_fin_cons_const"
-
-[[node]]
-id = "measurable_comp_succAbove"
-
-[[node]]
-id = "MeasureTheory.lintegral_fin_succ_eq'"
-
-[[node]]
-id = "MeasureTheory.lintegral_fin_zero"
-
-[[node]]
 id = "MeasureTheory.lintegral_prod_comp_succAbove_two"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Lemma 9.4"
 

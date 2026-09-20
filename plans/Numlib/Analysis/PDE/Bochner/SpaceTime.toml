@@ -29,15 +29,6 @@ id = "eqOn_closure_deriv_rep_add"
 id = "eqOn_closure_deriv_rep_smul"
 
 [[node]]
-id = "norm_sub_le_of_forall_add_smul_norm_le"
-
-[[node]]
-id = "hasDerivWithinAt_of_forall_add_smul_norm_le"
-
-[[node]]
-id = "_root_.SobolevMultiIndex.fnL_comp_toLowerOrderL"
-
-[[node]]
 id = "ContDiffOnThrough.sobolev_of_le"
 
 [[node]]

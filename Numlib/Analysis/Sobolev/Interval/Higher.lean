@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Normed.Lp.SmoothApprox
+import Numlib.Analysis.Sobolev.Cutoff
 import Numlib.Analysis.Sobolev.Interval.Embedding
 
 /-!
@@ -1295,5 +1296,143 @@ theorem exists_norm_le_mul_norm_deriv_add (hI : (I : Set ℝ).OrdConnected) (m :
     _ = (∑ j, (1 + C j)) * (‖deriv u 0‖ + ‖deriv u (Fin.last m)‖) := by rw [Finset.sum_mul]
 
 end SobolevIntervalLp
+
+/-! ### The Leibniz formula for the weak derivatives of a product by a smooth function -/
+
+section LeibnizLine
+
+variable {I : Opens ℝ} {f v w : ℝ → ℝ} {k : ℕ}
+
+/-- Adding a weak derivative at the end of a chain: if `v` is the `k`-th weak derivative of `f`
+and `w` the weak derivative of `v`, then `w` is the `(k + 1)`-th weak derivative of `f`. -/
+theorem HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn (h : HasWeakIteratedDerivOn k f v I)
+    (h' : HasWeakDerivOn v w I) : HasWeakIteratedDerivOn (k + 1) f w I := by
+  have h'' : HasWeakIteratedLineDerivOn ![(1 : ℝ)] v w I volume :=
+    (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (fun j ↦ by fin_cases j; rfl) rfl).2 h'
+  exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (y := Fin.cons 1 fun _ ↦ 1)
+    (fun j ↦ by refine Fin.cases rfl (fun j ↦ rfl) j) rfl).1 (h.cons h'')
+
+/-- **The Leibniz rule for a smooth factor on the line**: for `w` the weak derivative of `u` on
+`I` and `g` smooth, `g' u + g w` is the weak derivative of `g u`; the one-dimensional reading of
+`HasWeakIteratedLineDerivOn.contDiff_mul`. -/
+theorem HasWeakDerivOn.contDiff_mul (h : HasWeakDerivOn f w I) {g : ℝ → ℝ}
+    (hg : ContDiff ℝ ∞ g) :
+    HasWeakDerivOn (fun x ↦ g x * f x) (fun x ↦ g x * w x + deriv g x * f x) I := by
+  have h1 : HasWeakIteratedLineDerivOn ![(1 : ℝ)] f w I volume :=
+    (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn (fun j ↦ by fin_cases j; rfl) rfl).2 h
+  exact (hasWeakIteratedLineDerivOn_iff_hasWeakIteratedDerivOn
+    (fun j ↦ by fin_cases j; rfl) rfl).1 (h1.contDiff_mul hg)
+
+/-- **The Leibniz formula for the iterated weak derivatives of a product by a smooth function**:
+for a chain `D 0, D 1, …, D m` of functions on `I`, each the weak derivative of the one before,
+and the chain `G 0, G 1, …` of the successive derivatives of a smooth function `G 0`, the
+`j`-th weak derivative of `G 0 · D 0` is `∑_{i ≤ j} C(j, i) G (j − i) D i`, for every `j ≤ m`.
+By induction on `j` from the order-one rule `HasWeakDerivOn.contDiff_mul` and Pascal's rule
+(`Finset.sum_choose_succ_mul`). -/
+theorem hasWeakIteratedDerivOn_sum_choose_mul {D G : ℕ → ℝ → ℝ} {m : ℕ}
+    (hD : ∀ i < m, HasWeakDerivOn (D i) (D (i + 1)) I) (hD0 : LocallyIntegrableOn (D 0) I)
+    (hG : ∀ n, ContDiff ℝ ∞ (G n)) (hGd : ∀ n, deriv (G n) = G (n + 1)) {j : ℕ} (hj : j ≤ m) :
+    HasWeakIteratedDerivOn j (fun x ↦ G 0 x * D 0 x)
+      (fun x ↦ ∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * G (j - i) x * D i x) I := by
+  induction j with
+  | zero =>
+    refine (HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _ ?_).congr_ae
+      (EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ by simp)
+    exact hD0.continuousOn_smul I.isOpen.isLocallyClosed (hG 0).continuous.continuousOn
+  | succ j ih =>
+    refine (ih (Nat.le_of_succ_le hj)).succ_of_hasWeakDerivOn ?_
+    have hterm : ∀ i ∈ Finset.range (j + 1), HasWeakDerivOn
+        (fun x ↦ ((j.choose i : ℕ) : ℝ) * G (j - i) x * D i x)
+        (fun x ↦ ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x + G (j - i + 1) x * D i x))
+        I := fun i hi ↦ by
+      have hi' : i < m := by have := Finset.mem_range.1 hi; omega
+      have := ((hD i hi').contDiff_mul (hG (j - i))).const_smul ((j.choose i : ℕ) : ℝ)
+      refine this.congr_ae (Eventually.of_forall fun x ↦ ?_) (Eventually.of_forall fun x ↦ ?_)
+      · simp only [Pi.smul_apply, smul_eq_mul]; ring
+      · simp only [Pi.smul_apply, smul_eq_mul, hGd]
+    refine (HasWeakIteratedLineDerivOn.finset_sum hterm).congr_ae (EventuallyEq.refl _ _)
+      (Eventually.of_forall fun x ↦ ?_)
+    dsimp only
+    have key := Finset.sum_choose_succ_mul (fun i k ↦ G k x * D i x) j
+    calc ∑ i ∈ Finset.range (j + 1),
+          ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x + G (j - i + 1) x * D i x)
+        = (∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * (G (j + 1 - i) x * D i x))
+          + ∑ i ∈ Finset.range (j + 1), ((j.choose i : ℕ) : ℝ) * (G (j - i) x * D (i + 1) x) := by
+          rw [← Finset.sum_add_distrib]
+          refine Finset.sum_congr rfl fun i hi ↦ ?_
+          have : j + 1 - i = j - i + 1 := by have := Finset.mem_range.1 hi; omega
+          rw [this]; ring
+      _ = ∑ i ∈ Finset.range (j + 2), (((j + 1).choose i : ℕ) : ℝ) * (G (j + 1 - i) x * D i x) :=
+          key.symm
+      _ = _ := Finset.sum_congr rfl fun i _ ↦ by ring
+
+end LeibnizLine
+
+section ContDiffMul
+
+namespace SobolevIntervalLp
+
+variable {p : ℝ≥0∞} {I : Opens ℝ} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- **Multiplication by a smooth function with bounded derivatives preserves `W^{m,p}(I)`**, with
+the Leibniz formula: for `g` smooth with `|g^{(k)}| ≤ B` for `k ≤ m` and `u ∈ W^{m,p}(I)`, there
+is `v ∈ W^{m,p}(I)` with `D^j v = ∑_{i ≤ j} C(j, i) g^{(j−i)} D^i u` for every `j ≤ m` (so
+`v = g u`); the element is built from `hasWeakIteratedDerivOn_sum_choose_mul` by
+`SobolevIntervalLp.mk`. -/
+theorem exists_contDiff_mul {g : ℝ → ℝ} (hg : ContDiff ℝ ∞ g) {B : ℝ}
+    (hB : ∀ k ≤ m, ∀ x, |iteratedDeriv k g x| ≤ B) (u : SobolevIntervalLp m p I) :
+    ∃ v : SobolevIntervalLp m p I, ∀ j : Fin (m + 1), ⇑(deriv v j) =ᵐ[volume.restrict I]
+      fun x ↦ ∑ i : Fin (j + 1), ((j : ℕ).choose i : ℝ) * iteratedDeriv (j - i) g x
+        * deriv u ⟨i, by omega⟩ x := by
+  classical
+  -- the chain of weak derivatives, indexed by `ℕ`
+  obtain ⟨D, hDdef⟩ : ∃ D : ℕ → ℝ → ℝ,
+      D = fun i ↦ if h : i < m + 1 then ⇑(deriv u ⟨i, h⟩) else 0 := ⟨_, rfl⟩
+  have hDi : ∀ i (h : i < m + 1), D i = ⇑(deriv u ⟨i, h⟩) := fun i h ↦ by
+    rw [hDdef]; exact dite_eq_left h
+  have hD : ∀ i < m, HasWeakDerivOn (D i) (D (i + 1)) I := fun i hi ↦ by
+    rw [hDi i (by omega), hDi (i + 1) (by omega)]
+    exact hasWeakDerivOn_deriv_succ u ⟨i, hi⟩
+  have hD0 : LocallyIntegrableOn (D 0) I := by
+    rw [hDi 0 (by omega)]; exact locallyIntegrableOn_deriv u _
+  have hDp : ∀ i (h : i < m + 1), MemLp (D i) p (volume.restrict I) := fun i h ↦ by
+    rw [hDi i h]; exact memLp_deriv u _
+  -- the chain of derivatives of `g`
+  obtain ⟨G, hGdef⟩ : ∃ G : ℕ → ℝ → ℝ, G = fun k ↦ iteratedDeriv k g := ⟨_, rfl⟩
+  have hG : ∀ k, ContDiff ℝ ∞ (G k) := fun k ↦ by
+    rw [hGdef]; dsimp only; rw [iteratedDeriv_eq_iterate]; exact hg.iterate_deriv k
+  have hGd : ∀ k, _root_.deriv (G k) = G (k + 1) := fun k ↦ by
+    rw [hGdef]; exact iteratedDeriv_succ.symm
+  have hGB : ∀ k ≤ m, ∀ x, |G k x| ≤ B := fun k hk x ↦ by rw [hGdef]; exact hB k hk x
+  -- the Leibniz sums lie in `L^p(I)`
+  have hL : ∀ j : Fin (m + 1), MemLp (fun x ↦ ∑ i ∈ Finset.range (j + 1),
+      (((j : ℕ).choose i : ℕ) : ℝ) * G (j - i) x * D i x) p (volume.restrict I) := fun j ↦ by
+    refine memLp_finsetSum _ fun i hi ↦ ?_
+    have hi' : i < m + 1 := by have := Finset.mem_range.1 hi; omega
+    refine (hDp i hi').of_ae_norm_le_mul
+      ((continuous_const.mul (hG (j - i)).continuous).aestronglyMeasurable.mul
+        (hDp i hi').aestronglyMeasurable) (c := (((j : ℕ).choose i : ℕ) : ℝ) * B)
+      (Eventually.of_forall fun x ↦ ?_)
+    rw [abs_mul, abs_mul, abs_of_nonneg (Nat.cast_nonneg (α := ℝ) _)]
+    have hB0 : 0 ≤ B := (abs_nonneg _).trans (hGB 0 (Nat.zero_le _) 0)
+    have := hGB (j - i) (by omega) x
+    gcongr
+  have hw : ∀ j : Fin (m + 1), HasWeakIteratedDerivOn j ⇑((hL 0).toLp _) ⇑((hL j).toLp _) I :=
+    fun j ↦ by
+    refine (hasWeakIteratedDerivOn_sum_choose_mul hD hD0 hG hGd (j := j) (by omega)).congr_ae
+      ?_ (hL j).coeFn_toLp.symm
+    refine EventuallyEq.trans ?_ (hL 0).coeFn_toLp.symm
+    exact Eventually.of_forall fun x ↦ by simp
+  refine ⟨mk (fun j ↦ (hL j).toLp _) hw, fun j ↦ ?_⟩
+  rw [deriv_mk]
+  refine (hL j).coeFn_toLp.trans (Eventually.of_forall fun x ↦ ?_)
+  dsimp only
+  rw [Finset.sum_range (fun i ↦ (((j : ℕ).choose i : ℕ) : ℝ) * G (j - i) x * D i x)]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [hDi i (by omega), hGdef]
+
+end SobolevIntervalLp
+
+end ContDiffMul
 
 end

@@ -1,0 +1,20 @@
+[[node]]
+id = "Fin.comp_succ_succAbove"
+
+[[node]]
+id = "Fin.comp_zero_succAbove"
+
+[[node]]
+id = "measurable_fin_cons_prod"
+
+[[node]]
+id = "measurable_fin_cons_const"
+
+[[node]]
+id = "measurable_comp_succAbove"
+
+[[node]]
+id = "MeasureTheory.lintegral_fin_succ_eq'"
+
+[[node]]
+id = "MeasureTheory.lintegral_fin_zero"

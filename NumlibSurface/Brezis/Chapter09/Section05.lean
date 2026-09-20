@@ -1,4 +1,5 @@
 import Numlib.Analysis.PDE.Elliptic.MaximumPrinciple
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import NumlibSurface.Brezis.Chapter09.Section04
 
 /-!
@@ -381,27 +382,19 @@ def ellipticityCondition (Ω : Opens (EuclideanSpace ℝ (Fin N)))
   0 < α ∧ ∀ x ∈ Ω, ∀ ξ : EuclideanSpace ℝ (Fin N), α * ‖ξ‖ ^ 2 ≤ ∑ i, ∑ j, a i j x * ξ i * ξ j
 
 /-- The pointwise ellipticity condition (36) on functions `a_ij` gives the backbone's
-almost-everywhere condition on `L^∞(Ω)` classes `A i j` equal to `a_ij` a.e. on `Ω`. -/
+almost-everywhere condition on `L^∞(Ω)` classes `A i j` equal to `a_ij` a.e. on `Ω`
+(`Elliptic.isUniformlyElliptic_of_forall_mem`). -/
 theorem isUniformlyElliptic_of_ellipticityCondition {a : Fin N → Fin N → 𝔼 → ℝ} {α : ℝ}
     (h : ellipticityCondition Ω a α) {A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))}
     (hA : ∀ i j, (A i j : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)] a i j) :
-    Elliptic.IsUniformlyElliptic Ω A α := by
-  refine ⟨h.1, ?_⟩
-  have hall : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), ∀ i j, (A i j : 𝔼 → ℝ) x = a i j x :=
-    eventually_all.2 fun i ↦ eventually_all.2 fun j ↦ hA i j
-  filter_upwards [hall, ae_restrict_mem Ω.isOpen.measurableSet] with x hx hxΩ ξ
-  simp only [hx]
-  exact h.2 x hxΩ ξ
+    Elliptic.IsUniformlyElliptic Ω A α :=
+  Elliptic.isUniformlyElliptic_of_forall_mem Ω A h.1 h.2 hA
 
 /-- A function continuous on the closure of a bounded open set is (the function of) an element
-of `L^∞(Ω)`. -/
+of `L^∞(Ω)` (`ContinuousOn.memLp_top_restrict_of_isBounded`). -/
 theorem memLp_top_of_continuousOn_closure (hb : Bornology.IsBounded (Ω : Set 𝔼)) {a : 𝔼 → ℝ}
-    (ha : ContinuousOn a (closure (Ω : Set 𝔼))) : MemLp a ⊤ (volume.restrict (Ω : Set 𝔼)) := by
-  obtain ⟨C, hC⟩ := hb.isCompact_closure.exists_bound_of_continuousOn ha
-  refine memLp_top_of_bound ((ha.mono subset_closure).aestronglyMeasurable
-    Ω.isOpen.measurableSet) C ?_
-  filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
-  exact hC x (subset_closure hx)
+    (ha : ContinuousOn a (closure (Ω : Set 𝔼))) : MemLp a ⊤ (volume.restrict (Ω : Set 𝔼)) :=
+  ha.memLp_top_restrict_of_isBounded hb Ω.isOpen.measurableSet
 
 /-- **Definition (§9.5, Example 3): a classical solution of (37)**,
 `-∑ᵢⱼ ∂ⱼ(a_ij ∂ᵢu) + a₀ u = f` in `Ω`, `u = 0` on `Γ`, for `a_ij ∈ C¹(Ω̄)`, `a₀ ∈ C(Ω̄)`: a function
@@ -447,37 +440,16 @@ def IsWeakSolutionGeneralElliptic (Ω : Opens (EuclideanSpace ℝ (Fin N)))
           a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x
       = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * SobolevMultiIndex.fn v x
 
-/-- **The form (41) is the left-hand side of (40)**, as three integrals (the backbone's
-`Elliptic.generalForm_apply` writes one): each summand is integrable, being the product of an
-`L^∞` coefficient and two `L²` functions. -/
+/-- **The form (41) is the left-hand side of (40)**, as three integrals, in the surface's
+`partialDeriv` vocabulary (the backbone's `Elliptic.generalForm_apply_three`). -/
 theorem generalForm_apply_three (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼)))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) (a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼)))
     (u v : hSpace N Ω) :
     Elliptic.generalForm Ω A a₁ a₀ u v
       = (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv v j x)
         + (∫ x in (Ω : Set 𝔼), ∑ i, a₁ i x * partialDeriv u i x * SobolevMultiIndex.fn v x)
-        + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x := by
-  have h1 : Integrable (fun x ↦ ∑ i, ∑ j, A i j x
-      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
-      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x) (volume.restrict (Ω : Set 𝔼)) :=
-    integrable_finsetSum _ fun i _ ↦ integrable_finsetSum _ fun j _ ↦
-      Elliptic.integrable_mul_mul Ω _ _ _
-  have h2 : Integrable (fun x ↦ ∑ i, a₁ i x
-      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x * SobolevMultiIndex.fn v x)
-      (volume.restrict (Ω : Set 𝔼)) :=
-    integrable_finsetSum _ fun i _ ↦
-      Elliptic.integrable_mul_mul Ω _ _ (SobolevMultiIndex.weakDeriv v 0)
-  have h3 : Integrable (fun x ↦ a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x)
-      (volume.restrict (Ω : Set 𝔼)) :=
-    Elliptic.integrable_mul_mul Ω _ (SobolevMultiIndex.weakDeriv u 0)
-      (SobolevMultiIndex.weakDeriv v 0)
-  have h12 : Integrable (fun x ↦ (∑ i, ∑ j, A i j x
-      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
-      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x)
-      + ∑ i, a₁ i x * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
-        * SobolevMultiIndex.fn v x) (volume.restrict (Ω : Set 𝔼)) := h1.add h2
-  rw [Elliptic.generalForm_apply, integral_add h12 h3, integral_add h1 h2]
-  rfl
+        + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x :=
+  Elliptic.generalForm_apply_three Ω A a₁ a₀ u v
 
 /-- **The weak formulation (40) is the backbone's Galerkin problem** for the form
 `Elliptic.generalForm Ω A a₁ a₀` and the load `Elliptic.load Ω f` on `H^1_0(Ω)`. -/

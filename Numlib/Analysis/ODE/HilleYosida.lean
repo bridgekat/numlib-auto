@@ -6,6 +6,7 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.SpecialFunctions.Exponential
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Numlib.Analysis.InnerProductSpace.MaximalMonotone
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # The Hille–Yosida theorem on a real Hilbert space
@@ -1408,5 +1409,248 @@ theorem IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup {c : ℝ}
     (Real.contDiff_exp.comp (contDiff_const.mul contDiff_id)).contDiffOn
 
 end Shift
+
+end LinearPMap
+
+/-! ### Semigroup lifts into `D(A^ℓ)` and the derivatives `(−A)^j S_A(t) u₀` -/
+
+namespace LinearPMap
+
+open MeasureTheory PowDomain
+open scoped ContDiff
+
+variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
+  {A : H →ₗ.[ℝ] H}
+
+variable (A) in
+/-- **The lift of `S_A(t) u₀` into `D(A^ℓ)`**: the element of `D(A^ℓ)` whose `0`-th coordinate
+is `S_A(t) u₀` when there is one (it is then unique, `LinearPMap.PowDomain.applyL_zero_injective`),
+and `0` otherwise. For a symmetric maximal monotone `A` and `t > 0` it exists for every `u₀`
+(`LinearPMap.exists_powDomain_semigroup_apply_of_isFormalAdjoint`), and its coordinates are the
+iterates `A^j S_A(t) u₀`. -/
+def semigroupLift (u₀ : H) (ℓ : ℕ) (t : ℝ) : A.PowDomain ℓ :=
+  open Classical in
+  if h : ∃ x : A.PowDomain ℓ, applyL A ℓ 0 x = A.semigroup t u₀ then h.choose else 0
+
+variable (hA : A.IsMaximalMonotone) (hs : A.IsFormalAdjoint A) {u₀ : H} {ℓ : ℕ}
+include hA hs
+
+/-- The `0`-th coordinate of the lift is `S_A(t) u₀`, for `t > 0`. -/
+theorem applyL_zero_semigroupLift {t : ℝ} (ht : 0 < t) :
+    applyL A ℓ 0 (semigroupLift A u₀ ℓ t) = A.semigroup t u₀ := by
+  have h := exists_powDomain_semigroup_apply_of_isFormalAdjoint hA hs u₀ ℓ ht
+  unfold semigroupLift
+  rw [dite_eq_left h]
+  exact h.choose_spec
+
+/-- **The lift is unique**: any element of `D(A^ℓ)` over `S_A(t) u₀`, `t > 0`, is the lift. -/
+theorem eq_semigroupLift {t : ℝ} (ht : 0 < t) {x : A.PowDomain ℓ}
+    (hx : applyL A ℓ 0 x = A.semigroup t u₀) : x = semigroupLift A u₀ ℓ t :=
+  applyL_zero_injective (hx.trans (applyL_zero_semigroupLift hA hs ht).symm)
+
+/-- **The lift is the semigroup of the part**: for `0 < δ ≤ t`,
+`semigroupLift t = S_{A_ℓ}(t − δ) (semigroupLift δ)`, `A_ℓ` the part of `A` in `D(A^ℓ)`. -/
+theorem semigroupLift_eq_semigroup_powPart {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
+    semigroupLift A u₀ ℓ t = (A.powPart ℓ).semigroup (t - δ) (semigroupLift A u₀ ℓ δ) := by
+  refine (eq_semigroupLift hA hs (hδ.trans_le hδt) ?_).symm
+  rw [hA.applyL_semigroup_powPart ℓ (by linarith) _ 0, applyL_zero_semigroupLift hA hs hδ,
+    ← ContinuousLinearMap.comp_apply, ← hA.semigroup_add (by linarith) hδ.le, sub_add_cancel]
+
+/-- **The coordinates of the lift are transported by the semigroup**: for `0 < δ ≤ t` and every
+`i ≤ ℓ`, `A^i S_A(t) u₀ = S_A(t − δ) (A^i S_A(δ) u₀)`. -/
+theorem applyL_semigroupLift_eq {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) (i : Fin (ℓ + 1)) :
+    applyL A ℓ i (semigroupLift A u₀ ℓ t)
+      = A.semigroup (t - δ) (applyL A ℓ i (semigroupLift A u₀ ℓ δ)) := by
+  rw [semigroupLift_eq_semigroup_powPart hA hs hδ hδt, hA.applyL_semigroup_powPart ℓ (by linarith)]
+
+/-- **The equation for the iterates**: for `t > 0` and `j < ℓ`, `t ↦ A^j S_A(t) u₀` has derivative
+`−A^{j+1} S_A(t) u₀` at `t`. Near `t`, with `δ = t/2`, the function is
+`τ ↦ S_A(τ − δ) w_j` with `w_j = A^j S_A(δ) u₀ ∈ D(A)`, whose derivative is
+`−S_A(τ − δ) (A w_j) = −S_A(τ − δ) w_{j+1}` (Step 5 of the proof of Theorem 7.4). -/
+theorem hasDerivAt_applyL_semigroupLift {t : ℝ} (ht : 0 < t) (j : Fin ℓ) :
+    HasDerivAt (fun τ ↦ applyL A ℓ j.castSucc (semigroupLift A u₀ ℓ τ))
+      (-(applyL A ℓ j.succ (semigroupLift A u₀ ℓ t))) t := by
+  set δ := t / 2 with hδ
+  have hδ0 : 0 < δ := by positivity
+  have hδt : δ < t := by linarith
+  set w : A.PowDomain ℓ := semigroupLift A u₀ ℓ δ with hw
+  set wj : A.domain := ⟨applyL A ℓ j.castSucc w, applyL_mem_domain w j⟩ with hwj
+  have hEq : ∀ τ ∈ Ioi δ, applyL A ℓ j.castSucc (semigroupLift A u₀ ℓ τ)
+      = A.semigroup (τ - δ) wj := fun τ hτ ↦
+    applyL_semigroupLift_eq hA hs hδ0 (le_of_lt hτ) j.castSucc
+  have h1 : HasDerivAt (fun s ↦ A.semigroup s wj) (-(A.semigroup (t - δ) (A wj))) (t - δ) :=
+    (hA.hasDerivWithinAt_semigroup_apply wj (by linarith)).hasDerivAt
+      (Ici_mem_nhds (by linarith))
+  have h2 : HasDerivAt (fun τ ↦ A.semigroup (τ - δ) wj) (-(A.semigroup (t - δ) (A wj))) t :=
+    h1.comp_sub_const t δ
+  have h3 : A wj = applyL A ℓ j.succ w := apply_applyL w j
+  rw [h3, ← applyL_semigroupLift_eq hA hs hδ0 hδt.le j.succ] at h2
+  exact h2.congr_of_eventuallyEq (eventually_of_mem (Ioi_mem_nhds hδt) hEq)
+
+/-- The lift of `S_A(t) w'` in `D(A^{j+1})` for `w' = A S_A(τ) u₀`, `t = s + τ`, is the shift of
+the lift of `S_A(t) u₀` in `D(A^{j+2})`: `A^{i+1} S_A(t) u₀ = A^i S_A(s) (A S_A(τ) u₀)`. -/
+theorem shiftL_semigroupLift {s τ : ℝ} (hs' : 0 < s) (hτ : 0 < τ) (j : ℕ) :
+    shiftL A (j + 1) (semigroupLift A u₀ (j + 2) (s + τ))
+      = semigroupLift A (A ⟨A.semigroup τ u₀,
+          (semigroup_apply_mem_domain_of_isFormalAdjoint hA hs u₀ hτ).fst⟩) (j + 1) s := by
+  refine eq_semigroupLift hA hs hs' ?_
+  rw [applyL_zero_shiftL]
+  set w : A.domain := ⟨A.semigroup τ u₀,
+    (semigroup_apply_mem_domain_of_isFormalAdjoint hA hs u₀ hτ).fst⟩ with hw
+  have h2 : applyL A (j + 2) 0 (semigroupLift A u₀ (j + 2) (s + τ)) = A.semigroup s w := by
+    rw [applyL_zero_semigroupLift hA hs (by linarith), hA.semigroup_add hs'.le hτ.le]
+    rfl
+  have h3 := hA.semigroup_apply_apply w hs'.le
+  rw [← h3]
+  exact congrArg (fun z : A.domain ↦ A z) (Subtype.ext h2)
+
+/-- **The parabolic bound on the top iterate**: for a symmetric maximal monotone `A`, `t > 0`
+and every `u₀`, `‖A^{j+1} S_A(t) u₀‖ ≤ ((j + 1)/t)^{j+1} ‖u₀‖`. Induction on `j` along the
+subdivision `t = s + τ`, `τ = t/(j+2)`: `A^{j+2} S_A(t) u₀ = A^{j+1} S_A(s) (A S_A(τ) u₀)` with
+`‖A S_A(τ) u₀‖ ≤ ‖u₀‖/τ` (Theorem 7.7's estimate). -/
+theorem norm_applyL_last_semigroupLift_le (j : ℕ) :
+    ∀ (u₀ : H) {t : ℝ}, 0 < t →
+      ‖applyL A (j + 1) (Fin.last (j + 1)) (semigroupLift A u₀ (j + 1) t)‖
+        ≤ ((j + 1 : ℝ) / t) ^ (j + 1) * ‖u₀‖ := by
+  induction j with
+  | zero =>
+    intro u₀ t ht
+    obtain ⟨hmem, hbound⟩ := semigroup_apply_mem_domain_of_isFormalAdjoint hA hs u₀ ht
+    have h3 : applyL A 1 (Fin.castSucc 0) (semigroupLift A u₀ 1 t) = A.semigroup t u₀ :=
+      applyL_zero_semigroupLift hA hs ht
+    have h1 : applyL A 1 (Fin.last 1) (semigroupLift A u₀ 1 t) = A ⟨A.semigroup t u₀, hmem⟩ := by
+      change applyL A 1 (Fin.succ 0) (semigroupLift A u₀ 1 t) = _
+      rw [← apply_applyL (semigroupLift A u₀ 1 t) 0]
+      exact congrArg (fun z : A.domain ↦ A z) (Subtype.ext h3)
+    rw [h1]
+    refine hbound.trans (le_of_eq ?_)
+    rw [Nat.cast_zero, zero_add, pow_one, div_mul_eq_mul_div, one_mul]
+  | succ j ih =>
+    intro u₀ t ht
+    obtain ⟨τ, hτ⟩ : ∃ τ : ℝ, τ = t / (j + 2) := ⟨_, rfl⟩
+    obtain ⟨s, hs'⟩ : ∃ s : ℝ, s = t - τ := ⟨_, rfl⟩
+    have hτ0 : 0 < τ := by rw [hτ]; positivity
+    have hs0 : 0 < s := by
+      rw [hs', hτ, sub_pos, div_lt_iff₀ (by positivity)]
+      nlinarith
+    have hst : t = s + τ := by rw [hs']; ring
+    obtain ⟨hmem, hw'⟩ := semigroup_apply_mem_domain_of_isFormalAdjoint hA hs u₀ hτ0
+    have key : applyL A (j + 2) (Fin.last (j + 2)) (semigroupLift A u₀ (j + 2) t)
+        = applyL A (j + 1) (Fin.last (j + 1))
+          (semigroupLift A (A ⟨A.semigroup τ u₀, hmem⟩) (j + 1) s) := by
+      rw [hst, ← shiftL_semigroupLift hA hs hs0 hτ0 j, applyL_shiftL]
+      rfl
+    rw [key]
+    refine (ih _ hs0).trans ?_
+    have hs1 : (j + 1 : ℝ) / s = (j + 2 : ℝ) / t := by
+      rw [div_eq_div_iff hs0.ne' ht.ne', hs', hτ]
+      field_simp
+      ring
+    have hτ1 : ‖u₀‖ / τ = (j + 2 : ℝ) / t * ‖u₀‖ := by
+      rw [hτ, div_div_eq_mul_div]
+      ring
+    calc ((j + 1 : ℝ) / s) ^ (j + 1) * ‖A ⟨A.semigroup τ u₀, hmem⟩‖
+        ≤ ((j + 1 : ℝ) / s) ^ (j + 1) * (‖u₀‖ / τ) :=
+          mul_le_mul_of_nonneg_left hw' (by positivity)
+      _ = ((((j + 1 : ℕ) : ℝ) + 1) / t) ^ (j + 1 + 1) * ‖u₀‖ := by
+          rw [hs1, hτ1]
+          push_cast
+          ring
+
+/-- The lift in `D(A^j)` is the cast of the lift in `D(A^ℓ)`, `j ≤ ℓ`. -/
+theorem castLE_semigroupLift {j : ℕ} (h : j ≤ ℓ) {t : ℝ} (ht : 0 < t) :
+    castLE A h (semigroupLift A u₀ ℓ t) = semigroupLift A u₀ j t :=
+  eq_semigroupLift hA hs ht (by rw [applyL_castLE]; exact applyL_zero_semigroupLift hA hs ht)
+
+/-- **The parabolic bound at every order** ([brezis2011functional] Theorem 7.7 (27) iterated):
+for a symmetric maximal monotone `A`, `t > 0`, every `u₀ ∈ H` and every `j ≤ ℓ`,
+`‖A^j S_A(t) u₀‖ ≤ (j/t)^j ‖u₀‖`. -/
+theorem norm_applyL_semigroupLift_le {t : ℝ} (ht : 0 < t) (j : Fin (ℓ + 1)) :
+    ‖applyL A ℓ j (semigroupLift A u₀ ℓ t)‖ ≤ ((j : ℕ) / t : ℝ) ^ (j : ℕ) * ‖u₀‖ := by
+  have hcast : applyL A ℓ j (semigroupLift A u₀ ℓ t)
+      = applyL A j (Fin.last j) (semigroupLift A u₀ j t) := by
+    rw [← castLE_semigroupLift hA hs (Nat.lt_succ_iff.1 j.2) ht, applyL_castLE]
+    rfl
+  rw [hcast]
+  generalize (j : ℕ) = k
+  rcases k with _ | k
+  · rw [Nat.cast_zero, pow_zero, one_mul]
+    exact (hA.norm_semigroup_apply_le ht.le u₀).trans_eq' (by
+      rw [show (Fin.last 0 : Fin 1) = 0 from rfl, applyL_zero_semigroupLift hA hs ht])
+  · have := norm_applyL_last_semigroupLift_le hA hs k u₀ ht
+    push_cast at this ⊢
+    exact this
+
+/-- **The lift is `C^∞` on `(0, ∞)`**: the lifts of Theorem 7.7 at every order agree with
+`semigroupLift` by uniqueness, so the latter is `C^k` on `(0, ∞)` for every `k`. -/
+theorem contDiffOn_semigroupLift (u₀ : H) (ℓ : ℕ) :
+    ContDiffOn ℝ ∞ (semigroupLift A u₀ ℓ) (Ioi 0) := by
+  refine contDiffOn_infty.2 fun k ↦ ?_
+  obtain ⟨v, hv0, hv⟩ := contDiffOnPowDomain_semigroup_Ioi hA hs u₀ k ℓ
+  exact hv.congr fun t ht ↦ (eq_semigroupLift hA hs ht (hv0 t ht)).symm
+
+omit hA hs [CompleteSpace H] in
+/-- The graph norm on `D(A)`: `‖x‖² = ‖A^0 x‖² + ‖A^1 x‖²` for `x ∈ D(A)` (`PowDomain 1`). -/
+theorem norm_sq_powDomain_one (x : A.PowDomain 1) :
+    ‖x‖ ^ 2 = ‖applyL A 1 0 x‖ ^ 2 + ‖applyL A 1 1 x‖ ^ 2 := by
+  rw [PowDomain.norm_sq_eq, Fin.sum_univ_two]
+
+omit hA hs [CompleteSpace H] in
+/-- The element `(u₀, A u₀)` of `D(A)` with the graph norm, for `u₀ ∈ D(A)`. -/
+theorem exists_powDomain_one (u₀ : A.domain) :
+    ∃ x : A.PowDomain 1, applyL A 1 0 x = u₀ ∧ applyL A 1 1 x = A u₀ := by
+  refine ⟨PowDomain.mk A ![(u₀ : H), A u₀] fun i ↦ ?_, rfl, rfl⟩
+  rw [Fin.fin_one_eq_zero i]
+  exact ⟨u₀.2, rfl⟩
+
+omit hA hs [CompleteSpace H] in
+/-- The zero curve solves the evolution problem with the datum `0`, on any set of times. -/
+theorem isSolutionOn_zero (s : Set ℝ) : A.IsSolutionOn 0 s (fun _ ↦ (0 : H)) where
+  apply_zero := rfl
+  mem_domain _ _ := Submodule.zero_mem _
+  hasDerivWithinAt t _ := by
+    have : -A ⟨(0 : H), Submodule.zero_mem _⟩ = 0 := by
+      rw [show (⟨(0 : H), Submodule.zero_mem _⟩ : A.domain) = 0 from rfl, map_zero, neg_zero]
+    rw [this]
+    exact hasDerivWithinAt_const t s (0 : H)
+
+omit hA hs [CompleteSpace H] in
+/-- **The abstract energy identity (6)**: for a monotone `A`, a solution `u` on `(0, ∞)` with
+`u ∈ C([0, ∞); H) ∩ C¹((0, ∞); H)`, and `g t = ⟪A u(t), u(t)⟫` for `t > 0`, the function `g` is
+integrable on `(0, T]` and `½ ‖u(T)‖² + ∫₀ᵀ g = ½ ‖u₀‖²` for every `T > 0`
+([brezis2011functional], proof of Theorem 10.1, the identity (6)). The function
+`φ(t) = ½ ‖u(t)‖²` is `C¹` on `(0, ∞)` with `φ' = ⟪u, u'⟫ = −g ≤ 0`; integrability of `g` on
+`(0, T]` follows from `∫_ε^T g = φ(ε) − φ(T) ≤ ½ ‖u₀‖²`, and the identity from the fundamental
+theorem of calculus with the one-sided limits `φ(ε) → φ(0)`, `φ(t) → φ(T)`. -/
+theorem IsSolutionOn.energy_Ioi (hA : A.IsMonotone) {u : ℝ → H}
+    (hu : A.IsSolutionOn u₀ (Ioi 0) u) (hc : ContinuousOn u (Ici 0))
+    (hd : ContDiffOn ℝ 1 u (Ioi 0)) {g : ℝ → ℝ}
+    (hg : ∀ t (ht : 0 < t), g t = ⟪A ⟨u t, hu.mem_domain t ht⟩, u t⟫_ℝ) {T : ℝ} (hT : 0 < T) :
+    IntegrableOn g (Ioc 0 T) ∧
+      1 / 2 * ‖u T‖ ^ 2 + ∫ t in (0 : ℝ)..T, g t = 1 / 2 * ‖u₀‖ ^ 2 := by
+  have hder : ∀ t (ht : 0 < t), HasDerivAt u (-(A ⟨u t, hu.mem_domain t ht⟩)) t := fun t ht ↦
+    (hu.hasDerivWithinAt t ht).hasDerivAt (Ioi_mem_nhds ht)
+  have hφ : ∀ t, 0 < t → HasDerivAt (fun t ↦ 1 / 2 * ‖u t‖ ^ 2) (-(g t)) t := by
+    intro t ht
+    have := (hder t ht).norm_sq.const_mul (1 / 2)
+    convert this using 1
+    rw [hg t ht, inner_neg_right, real_inner_comm]
+    ring
+  have hg0 : ∀ t, 0 < t → 0 ≤ g t := fun t ht ↦ by
+    rw [hg t ht]
+    simpa using hA ⟨u t, hu.mem_domain t ht⟩
+  have hgc : ContinuousOn g (Ioi 0) := by
+    have h1 : ContinuousOn (fun t ↦ ⟪-deriv u t, u t⟫_ℝ) (Ioi 0) :=
+      (hd.continuousOn_deriv_of_isOpen isOpen_Ioi le_rfl).neg.inner
+        (hd.continuousOn.mono le_rfl)
+    refine h1.congr fun t ht ↦ ?_
+    change g t = ⟪-deriv u t, u t⟫_ℝ
+    rw [hg t ht, (hder t ht).deriv, neg_neg]
+  have hL : Tendsto (fun t ↦ 1 / 2 * ‖u t‖ ^ 2) (𝓝[>] 0) (𝓝 (1 / 2 * ‖u₀‖ ^ 2)) := by
+    rw [← hu.apply_zero]
+    exact (continuousWithinAt_const.mul ((hc 0 self_mem_Ici).norm.pow 2)).tendsto.mono_left
+      (nhdsWithin_mono _ Ioi_subset_Ici_self)
+  exact integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg hT hφ hg0 hgc
+    (fun t _ ↦ by positivity) hL
 
 end LinearPMap

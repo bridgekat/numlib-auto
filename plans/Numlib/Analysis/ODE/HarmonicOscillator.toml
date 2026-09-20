@@ -1,0 +1,11 @@
+[[node]]
+id = "eq_zero_of_hasDerivWithinAt_oscillator"
+
+[[node]]
+id = "hasDerivAt_cos_add_sin"
+
+[[node]]
+id = "hasDerivAt_neg_sin_add_cos"
+
+[[node]]
+id = "eq_cos_add_sin_of_hasDerivWithinAt_oscillator"

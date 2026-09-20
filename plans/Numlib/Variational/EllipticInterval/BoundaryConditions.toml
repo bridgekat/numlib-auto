@@ -1,12 +1,6 @@
 namespace = "EllipticInterval"
 
 [[node]]
-id = "_root_.SobolevInterval.rep_eq_repLp"
-
-[[node]]
-id = "_root_.SobolevInterval.fn_ae_eq_repLp"
-
-[[node]]
 id = "_root_.SobolevInterval.rep_sub"
 
 [[node]]

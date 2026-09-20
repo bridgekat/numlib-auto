@@ -7,6 +7,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Calculus.ContDiff.Operations
 import Mathlib.Analysis.Calculus.FDeriv.Const
+import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 
 /-!
 # Smooth functions constant off a compact set
@@ -169,3 +170,12 @@ theorem exists_bound_fderiv (h : IsContDiffConstOffCompact (n + 1) c) :
 end IsContDiffConstOffCompact
 
 end ConstOffCompact
+
+/-! ### Iterated derivatives of compactly supported functions of one variable -/
+
+/-- The iterated derivatives of a compactly supported function have compact support. -/
+theorem HasCompactSupport.iteratedDeriv {f : ℝ → ℝ} (hf : HasCompactSupport f) (k : ℕ) :
+    HasCompactSupport (iteratedDeriv k f) := by
+  induction k with
+  | zero => simpa using hf
+  | succ k ih => rw [iteratedDeriv_succ]; exact ih.deriv

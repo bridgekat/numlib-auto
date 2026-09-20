@@ -1,0 +1,79 @@
+namespace = "Heat"
+
+[[node]]
+id = "timeDeriv"
+
+[[node]]
+id = "spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_apply"
+
+[[node]]
+id = "spaceLaplacian_apply"
+
+[[node]]
+id = "iteratedFDeriv_slice_fst"
+
+[[node]]
+id = "spaceLaplacian_eq_sum_iteratedFDeriv"
+
+[[node]]
+id = "timeDeriv_eq_fderiv"
+
+[[node]]
+id = "contDiff_timeDeriv"
+
+[[node]]
+id = "contDiff_spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_spaceLaplacian"
+
+[[node]]
+id = "timeDeriv_eqOn"
+
+[[node]]
+id = "spaceLaplacian_eqOn"
+
+[[node]]
+id = "timeDeriv_const_smul"
+
+[[node]]
+id = "spaceLaplacian_const_smul"
+
+[[node]]
+id = "contDiff_spaceLaplacian_iterate"
+
+[[node]]
+id = "contDiff_timeDeriv_iterate"
+
+[[node]]
+id = "timeDeriv_spaceLaplacian_iterate"
+
+[[node]]
+id = "spaceLaplacian_iterate_eqOn"
+
+[[node]]
+id = "spaceLaplacian_iterate_const_smul"
+
+[[node]]
+id = "spaceLaplacian_iterate_slice"
+
+[[node]]
+id = "timeDeriv_iterate_slice"
+
+[[node]]
+id = "iterate_deriv_eq_zero_of_eqOn"
+
+[[node]]
+id = "timeDeriv_iterate_apply_zero_eq_zero"
+
+[[node]]
+id = "_root_.Bochner.norm_sub_le_of_forall_add_smul_norm_le"
+
+[[node]]
+id = "_root_.Bochner.hasDerivWithinAt_of_forall_add_smul_norm_le"
+
+[[node]]
+id = "_root_.iteratedDerivWithin_two"

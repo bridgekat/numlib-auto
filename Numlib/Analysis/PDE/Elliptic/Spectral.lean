@@ -615,35 +615,23 @@ theorem _root_.HilbertBasis.coe_ofInnerEqMulEnergy (A : E →L[ℝ] E)
 
 end Transport
 
-/-! ### The energy basis of a symmetric coercive form (Remark 28, first clause) -/
+/-! ### The operator of a form restricted to `H^1_0(Ω)` -/
 
-/-- The operator of a Hermitian coercive form is symmetric and coercive. Belongs beside
-`SesqForm.isHermitian_iff_toOperator_isSymmetric` in `Numlib/Variational/Forms.lean`. -/
-theorem _root_.SesqForm.IsHermitian.isSymmetricCoercive_toOperator {V : Type*}
-    [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V] {a : SesqForm ℝ V}
-    (hsymm : a.IsHermitian) (ha : a.IsCoercive) :
-    (SesqForm.toOperator a : V →ₗ[ℝ] V).IsSymmetricCoercive :=
-  ⟨(SesqForm.isHermitian_iff_toOperator_isSymmetric a).1 hsymm,
-    let ⟨c, hc, h⟩ := ha
-    ⟨c, hc, (SesqForm.isCoerciveWith_iff_toOperator a c).1 h⟩⟩
+section RestrictOperator
 
-section EnergyBasis
-
-variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
-  (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ≠ ⊤)
-  (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
-  (a : SesqForm ℝ (SobolevEuclidean (d + 1) 1 2 Ω)) (hsymm : a.IsHermitian)
-  (ha : (a.restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoercive)
+variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
+  (a : SesqForm ℝ (SobolevEuclidean N 1 2 Ω)) (hsymm : a.IsHermitian)
+  (ha : (a.restrict (SobolevEuclideanZero N 1 2 Ω)).IsCoercive)
 
 /-- **The operator of a form restricted to `H^1_0(Ω)`**: the bounded operator `A` on `H^1_0(Ω)`
 with `⟪A u, v⟫_{H^1} = a(u, v)` (`SesqForm.toOperator`); its energy space `WithEnergy` is
 `H^1_0(Ω)` with the inner product `a(u, v)`. -/
 def restrictOperator :
-    SobolevEuclideanZero (d + 1) 1 2 Ω →L[ℝ] SobolevEuclideanZero (d + 1) 1 2 Ω :=
-  SesqForm.toOperator (a.restrict (SobolevEuclideanZero (d + 1) 1 2 Ω))
+    SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
+  SesqForm.toOperator (a.restrict (SobolevEuclideanZero N 1 2 Ω))
 
 /-- `⟪A u, v⟫_{H^1} = a(u, v)`. -/
-theorem inner_restrictOperator (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+theorem inner_restrictOperator (u v : SobolevEuclideanZero N 1 2 Ω) :
     ⟪restrictOperator Ω a u, v⟫_ℝ = a u v :=
   SesqForm.inner_toOperator _ u v
 
@@ -661,6 +649,39 @@ theorem completeSpace_withEnergy_restrictOperator :
     CompleteSpace (WithEnergy (restrictOperator Ω a).toLinearMap
       (restrictOperator_isSymmetricCoercive Ω a hsymm ha)) :=
   WithEnergy.instCompleteSpace_of_continuousLinearMap _
+
+/-- **The operator of the Dirichlet form on `H^1_0(Ω)`**: the bounded operator `A` on `H^1_0(Ω)`
+with `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v` (`Elliptic.inner_dirichletOperator`); symmetric and coercive
+for a bounded `Ω` (`Elliptic.dirichletOperator_isSymmetricCoercive`), so that its energy space
+`WithEnergy (dirichletOperator Ω) _` is `H^1_0(Ω)` with the scalar product `∫ ∇u·∇v` of
+[brezis2011functional] Chapter 9, Remark 28 — the first factor of the phase space of the wave
+equation, whose energy `∫_Ω |∇u|²` is `⟪A u, u⟫` ([brezis2011functional] §10.3, (32)). -/
+def dirichletOperator :
+    SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
+  restrictOperator Ω (dirichletForm Ω)
+
+/-- `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v`. -/
+theorem inner_dirichletOperator (u v : SobolevEuclideanZero N 1 2 Ω) :
+    ⟪dirichletOperator Ω u, v⟫_ℝ = dirichletForm Ω u v :=
+  inner_restrictOperator Ω _ u v
+
+/-- `⟪A u, v⟫_{H¹} = ⟪A v, u⟫_{H¹}`: the operator of the Dirichlet form is symmetric. -/
+theorem inner_dirichletOperator_comm (u v : SobolevEuclideanZero N 1 2 Ω) :
+    ⟪dirichletOperator Ω u, v⟫_ℝ = ⟪dirichletOperator Ω v, u⟫_ℝ := by
+  rw [inner_dirichletOperator, inner_dirichletOperator, dirichletForm_isHermitian Ω _ _,
+    conj_trivial]
+
+end RestrictOperator
+
+/-! ### The energy basis of a symmetric coercive form (Remark 28, first clause) -/
+
+section EnergyBasis
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+  (hΩ : volume (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ≠ ⊤)
+  (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
+  (a : SesqForm ℝ (SobolevEuclidean (d + 1) 1 2 Ω)) (hsymm : a.IsHermitian)
+  (ha : (a.restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)).IsCoercive)
 
 /-- **The eigenfunctions normalized in the energy norm form a Hilbert basis of `H^1_0(Ω)` for
 the inner product `a(u, v)`** ([brezis2011functional] Chapter 9, Remark 28, first clause, for a
@@ -751,21 +772,6 @@ theorem hilbertBasis_sobolevZero :
     ∃ b : HilbertBasis ℕ ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω),
       ∀ n, b n = (√(dirichletEigenvalue Ω hΩ n + 1))⁻¹ • dirichletEigenfunction Ω hΩ hne n :=
   ⟨sobolevZeroEigenbasis Ω hΩ hne, fun n ↦ congrFun (coe_sobolevZeroEigenbasis Ω hΩ hne) n⟩
-
-/-- **The operator of the Dirichlet form on `H^1_0(Ω)`**: the bounded operator `A` on `H^1_0(Ω)`
-with `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v` (`Elliptic.inner_dirichletOperator`); symmetric and coercive
-for a bounded `Ω` (`Elliptic.dirichletOperator_isSymmetricCoercive`), so that its energy space
-`WithEnergy (dirichletOperator Ω) _` is `H^1_0(Ω)` with the scalar product `∫ ∇u·∇v` of
-[brezis2011functional] Chapter 9, Remark 28 — the first factor of the phase space of the wave
-equation. -/
-def dirichletOperator :
-    SobolevEuclideanZero (d + 1) 1 2 Ω →L[ℝ] SobolevEuclideanZero (d + 1) 1 2 Ω :=
-  restrictOperator Ω (dirichletForm Ω)
-
-/-- `⟪A u, v⟫_{H^1} = ∫_Ω ∇u·∇v`. -/
-theorem inner_dirichletOperator (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
-    ⟪dirichletOperator Ω u, v⟫_ℝ = dirichletForm Ω u v :=
-  inner_restrictOperator Ω _ u v
 
 include hΩ in
 /-- The operator of the Dirichlet form is symmetric and coercive on `H^1_0(Ω)` of a bounded

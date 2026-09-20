@@ -96,3 +96,21 @@ id = "SesqForm₂.IsNondegenerate"
 
 [[node]]
 id = "SesqForm₂.iSup_norm_div_eq_norm"
+
+[[node]]
+id = "SesqForm.restrict"
+
+[[node]]
+id = "SesqForm.restrict_apply"
+
+[[node]]
+id = "SesqForm.IsHermitian.restrict"
+
+[[node]]
+id = "SesqForm.IsCoerciveWith.restrict"
+
+[[node]]
+id = "SesqForm.IsCoercive.restrict"
+
+[[node]]
+id = "SesqForm.IsHermitian.isSymmetricCoercive_toOperator"

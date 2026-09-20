@@ -425,6 +425,9 @@ id = "SobolevInterval.exists_toContinuousMap_eq"
 id = "SobolevInterval.norm_le_add_norm_deriv"
 
 [[node]]
+id = "ContDiffMapIcc.denseRange_toSobolevInterval"
+
+[[node]]
 id = "ContDiffMapIcc.denseRange_toSobolevInterval_one"
 
 [[node]]
@@ -438,3 +441,9 @@ id = "SobolevInterval.evalCLM_apply"
 
 [[node]]
 id = "SobolevInterval.rep_finset_sum"
+
+[[node]]
+id = "SobolevInterval.rep_eq_repLp"
+
+[[node]]
+id = "SobolevInterval.fn_ae_eq_repLp"

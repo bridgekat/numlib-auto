@@ -262,9 +262,6 @@ id = "SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset"
 id = "ContDiff.exists_sobolevMultiIndex_of_hasCompactSupport'"
 
 [[node]]
-id = "EuclideanSpace.basisFun_toBasis_apply"
-
-[[node]]
 id = "TestFunction.setIntegral_mul_fderiv_eq_neg"
 
 [[node]]

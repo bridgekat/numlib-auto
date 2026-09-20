@@ -33,3 +33,6 @@ id = "inv"
 
 [[node]]
 id = "exists_bound_fderiv"
+
+[[node]]
+id = "_root_.HasCompactSupport.iteratedDeriv"

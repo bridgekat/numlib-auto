@@ -95,23 +95,6 @@ section Bridge
 
 variable {a b : ℝ}
 
-/-- The continuous representative `SobolevInterval.rep` of `Numlib/Analysis/Sobolev/Interval.lean`
-and the general `SobolevIntervalLp.rep` of `Numlib/Analysis/Sobolev/Interval/Basic.lean` agree on
-`[a, b]`: both are continuous there and agree almost everywhere with the function. -/
-theorem SobolevInterval.rep_eq_repLp (hab : a < b) (u : SobolevInterval 1 a b) :
-    EqOn (SobolevInterval.rep u) (SobolevIntervalLp.rep u) (Icc a b) := by
-  have h := SobolevIntervalLp.rep_eq_of_continuousOn (SobolevIntervalLp.ordConnected_coe_Ioo a b) u
-    (g := SobolevInterval.rep u) (by
-      rw [SobolevIntervalLp.closure_coe_Ioo hab]; exact SobolevInterval.continuousOn_rep hab.le u)
-    (SobolevInterval.fn_ae_eq_rep hab u)
-  rw [SobolevIntervalLp.closure_coe_Ioo hab] at h
-  exact h.symm
-
-/-- The function of `u ∈ H¹(a, b)` agrees almost everywhere with its general representative. -/
-theorem SobolevInterval.fn_ae_eq_repLp (u : SobolevInterval 1 a b) :
-    SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] SobolevIntervalLp.rep u :=
-  SobolevIntervalLp.fn_ae_eq_rep (SobolevIntervalLp.ordConnected_coe_Ioo a b) u
-
 /-- The continuous representative of a difference. -/
 theorem SobolevInterval.rep_sub (hab : a < b) (u v : SobolevInterval 1 a b) :
     EqOn (SobolevInterval.rep (u - v)) (SobolevInterval.rep u - SobolevInterval.rep v) (Icc a b) :=

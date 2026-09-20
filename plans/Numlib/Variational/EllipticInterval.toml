@@ -1,21 +1,6 @@
 namespace = "EllipticInterval"
 
 [[node]]
-id = "_root_.SesqForm.restrict"
-
-[[node]]
-id = "_root_.SesqForm.restrict_apply"
-
-[[node]]
-id = "_root_.SesqForm.IsHermitian.restrict"
-
-[[node]]
-id = "_root_.SesqForm.IsCoerciveWith.restrict"
-
-[[node]]
-id = "_root_.SesqForm.IsCoercive.restrict"
-
-[[node]]
 id = "mulL"
 
 [[node]]

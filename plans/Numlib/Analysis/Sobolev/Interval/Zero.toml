@@ -291,27 +291,6 @@ id = "SobolevIntervalLpZero.hasWeakDerivOn_indicator"
 id = "SobolevIntervalLpZero.mem_of_tsupport_rep_subset"
 
 [[node]]
-id = "HasWeakIteratedLineDerivOn.finset_sum"
-
-[[node]]
-id = "HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn"
-
-[[node]]
-id = "HasWeakDerivOn.contDiff_mul"
-
-[[node]]
-id = "hasWeakIteratedDerivOn_sum_choose_mul"
-
-[[node]]
-id = "SobolevIntervalLp.tendsto_of_forall_tendsto_eLpNorm_deriv_sub"
-
-[[node]]
-id = "SobolevIntervalLp.exists_contDiff_mul"
-
-[[node]]
-id = "HasCompactSupport.iteratedDeriv"
-
-[[node]]
 id = "SobolevIntervalLp.exists_forall_abs_iteratedDeriv_cutoffFn_le"
 
 [[node]]
@@ -334,7 +313,7 @@ id = "SobolevIntervalLp.exists_cutoff_tendsto"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 8.7"
 
 [[node]]
-id = "TopologicalSpace.Opens.inf_Ioo_eq_empty_or_exists_eq_Ioo"
+id = "SobolevIntervalLpZero.mem_of_restrictL_mem"
 
 [[node]]
-id = "SobolevIntervalLpZero.mem_of_restrictL_mem"
+id = "SobolevIntervalLp.tendsto_of_forall_tendsto_eLpNorm_deriv_sub"

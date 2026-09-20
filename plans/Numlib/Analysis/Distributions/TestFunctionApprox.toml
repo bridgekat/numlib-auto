@@ -1,0 +1,21 @@
+[[node]]
+id = "Bornology.IsBounded.cocompact_inf_principal_eq_bot"
+
+[[node]]
+id = "Bornology.IsBounded.tendsto_cocompact_inf_principal"
+
+[[node]]
+id = "exists_isCompact_subset_abs_lt"
+
+[[node]]
+id = "continuous_indicator_mul_of_tsupport_subset"
+
+[[node]]
+id = "exists_testFunction_abs_sub_le_of_hasCompactSupport"
+
+[[node]]
+id = "exists_testFunction_abs_sub_le"
+
+[[node]]
+id = "exists_testFunction_tendsto_of_continuousOn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Corollary 10.5"

@@ -1,0 +1,11 @@
+desc = '''
+Test functions and distributions beyond Mathlib's `Mathlib.Analysis.Distribution.TestFunction`
+(natural home: `Mathlib.Analysis.Distribution.*`). Directory-only group; the modules are
+
+* `TestFunctionApprox` -- uniform approximation, by test functions of an open set `Ω`, of a
+  function continuous on `closure Ω` vanishing on its frontier and at infinity along `Ω` (the
+  approximation step of Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
+  Equations*, Corollary 10.5), and the triviality of `cocompact ⊓ 𝓟 Ω` for a bounded `Ω`;
+* `TestFunctionOps` -- a test function of `Ω'` read on a larger `Ω`, the `L²` class of a test
+  function, and its negative Laplacian as a test function.
+'''

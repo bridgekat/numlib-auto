@@ -1,0 +1,8 @@
+desc = '''
+Constructions of measures in Mathlib's own layout (natural home: `Mathlib.MeasureTheory.Constructions.*`).
+Directory-only group; the modules are
+
+* `Pi` -- Lebesgue integrals over `ℝ^{j+1}` as iterated integrals with the first coordinate
+  outermost (the one-coordinate Fubini step of Gagliardo's product lemma), the measurability of
+  `Fin.cons` and of the omission of a coordinate.
+'''

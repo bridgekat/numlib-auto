@@ -1,0 +1,8 @@
+[[node]]
+id = "ContinuousOn.memLp_top_restrict_of_isCompact_closure"
+
+[[node]]
+id = "ContinuousOn.memLp_top_restrict_of_isBounded"
+
+[[node]]
+id = "ContinuousOn.abs_le_on_closure_of_ae_abs_le"

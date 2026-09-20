@@ -216,6 +216,16 @@ theorem dirichletForm_isHermitian : (dirichletForm Ω).IsHermitian := fun u v �
   rw [dirichletForm_apply_inner, dirichletForm_apply_inner, conj_trivial]
   exact Finset.sum_congr rfl fun i _ ↦ real_inner_comm _ _
 
+/-- The Dirichlet form is additive in its first argument. -/
+theorem dirichletForm_add_left (u v w : SobolevEuclidean N 1 2 Ω) :
+    dirichletForm Ω (u + v) w = dirichletForm Ω u w + dirichletForm Ω v w := by
+  rw [map_add, add_apply]
+
+/-- The Dirichlet form is homogeneous in its first argument. -/
+theorem dirichletForm_smul_left (c : ℝ) (u w : SobolevEuclidean N 1 2 Ω) :
+    dirichletForm Ω (c • u) w = c * dirichletForm Ω u w := by
+  rw [map_smulₛₗ, smul_apply, smul_eq_mul, conj_trivial]
+
 /-- The diagonal of the Dirichlet form is `∫_Ω |∇v|² = ∑ᵢ ‖∂ᵢv‖₂²`. -/
 theorem dirichletForm_self_eq (v : SobolevEuclidean N 1 2 Ω) :
     dirichletForm Ω v v
@@ -390,6 +400,22 @@ theorem norm_load_le (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace �
   refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun v ↦ ?_
   rw [Real.norm_eq_abs]
   exact (abs_load_le Ω f v).trans (by gcongr; exact SobolevMultiIndex.norm_weakDeriv_le v 0)
+
+/-- The load functional is additive in the datum. -/
+theorem load_add (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (v : SobolevEuclidean N 1 2 Ω) : load Ω (f + g) v = load Ω f v + load Ω g v := by
+  simp only [load_apply_inner, inner_add_left]
+
+/-- The load functional is homogeneous in the datum. -/
+theorem load_smul (c : ℝ)
+    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (v : SobolevEuclidean N 1 2 Ω) : load Ω (c • f) v = c * load Ω f v := by
+  simp only [load_apply_inner, real_inner_smul_left]
+
+/-- The load functional of a difference. -/
+theorem load_sub (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (v : SobolevEuclidean N 1 2 Ω) : load Ω (f - g) v = load Ω f v - load Ω g v := by
+  simp only [load_apply_inner, inner_sub_left]
 
 /-- **The load restricted to a subspace `K` of `H^1(Ω)`, as a continuous linear map of `f`**:
 `loadL Ω K f v = ∫_Ω f v` for `v ∈ K`. It is what makes the solution operator of the weak
@@ -751,6 +777,84 @@ theorem generalForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
   simp only [e1]
   rw [e2, e3, e4, e5]
   rfl
+
+/-- **The general form as three integrals**, the left-hand side of (40) in [brezis2011functional]
+§9.5: `a(u, v) = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫_Ω ∑ᵢ a_i ∂ᵢu v + ∫_Ω a₀ u v` (`generalForm_apply` writes
+one integral); each summand is integrable, being the product of an `L^∞` coefficient and two
+`L²` functions. -/
+theorem generalForm_apply_three (u v : SobolevEuclidean N 1 2 Ω) :
+    generalForm Ω A a₁ a₀ u v
+      = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ∑ i, ∑ j, A i j x
+          * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x)
+        + (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ∑ i, a₁ i x
+          * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x * SobolevMultiIndex.fn v x)
+        + ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+          a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x := by
+  have h1 : Integrable (fun x ↦ ∑ i, ∑ j, A i j x
+      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    integrable_finsetSum _ fun i _ ↦ integrable_finsetSum _ fun j _ ↦ integrable_mul_mul Ω _ _ _
+  have h2 : Integrable (fun x ↦ ∑ i, a₁ i x
+      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x * SobolevMultiIndex.fn v x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    integrable_finsetSum _ fun i _ ↦
+      integrable_mul_mul Ω _ _ (SobolevMultiIndex.weakDeriv v 0)
+  have h3 : Integrable (fun x ↦ a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x)
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    integrable_mul_mul Ω _ (SobolevMultiIndex.weakDeriv u 0) (SobolevMultiIndex.weakDeriv v 0)
+  have h12 : Integrable (fun x ↦ (∑ i, ∑ j, A i j x
+      * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+      * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x)
+      + ∑ i, a₁ i x * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+        * SobolevMultiIndex.fn v x) (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+    h1.add h2
+  rw [generalForm_apply, integral_add h12 h3, integral_add h1 h2]
+
+/-- **The general form without drift**: `generalForm Ω A 0 a₀ u v = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv
++ ∫_Ω a₀ u v`, the left-hand side of (78) of [brezis2011functional] §9.7 with `a_i = 0`. -/
+theorem generalForm_zero_drift_apply (u v : SobolevEuclidean N 1 2 Ω) :
+    generalForm Ω A 0 a₀ u v
+      = (∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), ∑ i, ∑ j, A i j x
+          * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv v (MultiIndexLE.single j) x)
+        + ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+          a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x := by
+  rw [generalForm_apply_three]
+  have hzero : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))), ∀ i,
+      ((0 : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) i :
+        EuclideanSpace ℝ (Fin N) → ℝ) x = 0 := by
+    filter_upwards [Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))]
+      with x hx i
+    simpa only [Pi.zero_apply] using hx
+  have e2 : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, ((0 : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) i :
+        EuclideanSpace ℝ (Fin N) → ℝ) x
+        * SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i) x * SobolevMultiIndex.fn v x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (0 : ℝ) :=
+    integral_congr_ae (hzero.mono fun x hx ↦ by simp only [hx, zero_mul,
+      Finset.sum_const_zero])
+  rw [e2, integral_zero, add_zero]
+
+/-- **The pointwise ellipticity condition gives the almost-everywhere one**: if
+`α ‖ξ‖² ≤ ∑ᵢⱼ a_ij(x) ξᵢ ξⱼ` for every `x ∈ Ω` and `ξ` (the condition (36) of
+[brezis2011functional] §9.5 on functions `a_ij`), with `α > 0`, then the `L^∞(Ω)` classes
+`A i j` equal to `a_ij` almost everywhere on `Ω` are uniformly elliptic with constant `α`. -/
+theorem isUniformlyElliptic_of_forall_mem {a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ}
+    {α : ℝ} (hα : 0 < α)
+    (h : ∀ x ∈ Ω, ∀ ξ : EuclideanSpace ℝ (Fin N), α * ‖ξ‖ ^ 2 ≤ ∑ i, ∑ j, a i j x * ξ i * ξ j)
+    (hA : ∀ i j, (A i j : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] a i j) :
+    IsUniformlyElliptic Ω A α := by
+  refine ⟨hα, ?_⟩
+  have hall : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
+      ∀ i j, (A i j : EuclideanSpace ℝ (Fin N) → ℝ) x = a i j x :=
+    eventually_all.2 fun i ↦ eventually_all.2 fun j ↦ hA i j
+  filter_upwards [hall, ae_restrict_mem Ω.isOpen.measurableSet] with x hx hxΩ ξ
+  simp only [hx]
+  exact h x hxΩ ξ
+
 
 /-- **The general form is bounded**, with constant `∑ᵢⱼ ‖a_ij‖_∞ + ∑ᵢ ‖a_i‖_∞ + ‖a₀‖_∞`. -/
 theorem generalForm_isBoundedWith :

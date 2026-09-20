@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.ContDiffConstOffCompact
+import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
 import Numlib.Analysis.Sobolev.Translate
 
@@ -1292,13 +1293,6 @@ theorem _root_.HasWeakIteratedLineDerivOn.integral_fderiv_mul_eq_of_eqOn {y : E}
     setIntegral_congr_fun Ω.isOpen.measurableSet fun x hx ↦ by rw [hχ x hx]
   rw [e1, e2, key]
 
-omit [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E] in
-/-- The second derivative `∂_y ∂_y θ` of a smooth function, as a function. -/
-theorem contDiff_fderiv_fderiv_apply {θ : E → ℝ} (hθ : ContDiff ℝ ∞ θ) (y : E) :
-    ContDiff ℝ ∞ fun x ↦ fderiv ℝ (fun z ↦ fderiv ℝ θ z y) x y :=
-  (((hθ.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const).fderiv_right (m := ∞)
-    le_rfl).clm_apply contDiff_const
-
 omit [μ.IsAddHaarMeasure] in
 /-- **Cutting off a weak solution of `−div(∇u) = f`** ([brezis2011functional] §9.6, proof of
 Theorem 9.25, case C₁, "it is easy to verify that `θ₀ u` is a weak solution in `ℝ^N` of
@@ -1783,34 +1777,6 @@ end InteriorEuclidean
 
 /-! ### The normal derivative from the equation -/
 
-section LocalLp
-
-variable {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E] [ProperSpace E]
-  {μ : Measure E} [IsLocallyFiniteMeasure μ] {Ω : Opens E} {p : ℝ≥0∞}
-
-omit [BorelSpace E] [ProperSpace E] [IsLocallyFiniteMeasure μ] in
-/-- A function in `L^p(Ω)` is locally in `L^p` on `Ω`. -/
-theorem _root_.MeasureTheory.MemLp.locallyMemLpOn {f : E → ℝ}
-    (hf : MemLp f p (μ.restrict (Ω : Set E))) : LocallyMemLpOn f p Ω μ :=
-  fun _ _ ↦ ⟨Ω, self_mem_nhdsWithin, hf⟩
-
-/-- A function continuous on an open set is locally in every `L^p` there. -/
-theorem _root_.ContinuousOn.locallyMemLpOn {f : E → ℝ} (hf : ContinuousOn f Ω) (p : ℝ≥0∞) :
-    LocallyMemLpOn f p Ω μ := by
-  intro x hx
-  obtain ⟨ε, hε, hεΩ⟩ := Metric.isOpen_iff.1 Ω.isOpen x hx
-  have hball : closedBall x (ε / 2) ⊆ Ω := (closedBall_subset_ball (half_lt_self hε)).trans hεΩ
-  refine ⟨closedBall x (ε / 2), mem_nhdsWithin_of_mem_nhds (closedBall_mem_nhds x (half_pos hε)),
-    ?_⟩
-  obtain ⟨C, hC⟩ := (isCompact_closedBall x (ε / 2)).exists_bound_of_continuousOn
-    (hf.mono hball)
-  have : IsFiniteMeasure (μ.restrict (closedBall x (ε / 2))) :=
-    ⟨by rw [Measure.restrict_apply_univ]; exact (isCompact_closedBall x (ε / 2)).measure_lt_top⟩
-  exact MemLp.of_bound ((hf.mono hball).aestronglyMeasurable measurableSet_closedBall) C
-    ((ae_restrict_mem measurableSet_closedBall).mono fun z hz ↦ hC z hz)
-
-end LocalLp
-
 /-- A double sum with the `(i₀, i₀)` term separated off. -/
 theorem sum_sum_eq_add_sum_sum_ite {ι M : Type*} [Fintype ι] [DecidableEq ι] [AddCommMonoid M]
     (F : ι → ι → M) (i₀ : ι) :
@@ -1826,17 +1792,6 @@ theorem sum_sum_eq_add_sum_sum_ite {ι M : Type*} [Fintype ι] [DecidableEq ι] 
 section Normal
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-/-- A bounded measurable coefficient times an `L²(Ω)` function is in `L²(Ω)`. -/
-theorem _root_.MeasureTheory.MemLp.mul_of_forall_abs_le {E : Type*} [NormedAddCommGroup E]
-    [MeasurableSpace E] [OpensMeasurableSpace E] {μ : Measure E} {Ω : Opens E} {c w : E → ℝ}
-    (hc : AEStronglyMeasurable c (μ.restrict (Ω : Set E))) {C : ℝ}
-    (hC : ∀ x ∈ (Ω : Set E), |c x| ≤ C) (hw : MemLp w 2 (μ.restrict (Ω : Set E))) :
-    MemLp (fun x ↦ c x * w x) 2 (μ.restrict (Ω : Set E)) :=
-  hw.of_ae_norm_le_mul (hc.mul hw.aestronglyMeasurable)
-    ((ae_restrict_mem Ω.isOpen.measurableSet).mono fun x hx ↦ by
-      rw [abs_mul]
-      exact mul_le_mul_of_nonneg_right (hC x hx) (abs_nonneg _))
 
 /-- **The equation gives the normal derivative of `a_{NN} w_N`** ([brezis2011functional] §9.6,
 (57) and (69)): let `w i ∈ L²(Ω)` (the weak partial derivatives of a solution), let the
@@ -2787,55 +2742,6 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   {Ω : Opens E} {μ : Measure E}
 
 
-/-- `W^{k,p}(Ω)` is closed under addition. -/
-protected theorem _root_.MemSobolevMultiIndex.add {f g : E → F}
-    (hf : MemSobolevMultiIndex b f k p Ω μ)
-    (hg : MemSobolevMultiIndex b g k p Ω μ) : MemSobolevMultiIndex b (f + g) k p Ω μ :=
-  ⟨hf.1.add hg.1, fun α hα ↦
-    let ⟨w₁, hw₁, hw₁p⟩ := hf.2 α hα
-    let ⟨w₂, hw₂, hw₂p⟩ := hg.2 α hα
-    ⟨w₁ + w₂, hw₁.add hw₂, hw₁p.add hw₂p⟩⟩
-
-omit [OpensMeasurableSpace E] in
-/-- `W^{k,p}(Ω)` is closed under negation. -/
-protected theorem _root_.MemSobolevMultiIndex.neg {f : E → F}
-    (hf : MemSobolevMultiIndex b f k p Ω μ) :
-    MemSobolevMultiIndex b (-f) k p Ω μ :=
-  ⟨hf.1.neg, fun α hα ↦
-    let ⟨w, hw, hwp⟩ := hf.2 α hα
-    ⟨-w, hw.neg, hwp.neg⟩⟩
-
-/-- `W^{k,p}(Ω)` is closed under subtraction. -/
-protected theorem _root_.MemSobolevMultiIndex.sub {f g : E → F}
-    (hf : MemSobolevMultiIndex b f k p Ω μ)
-    (hg : MemSobolevMultiIndex b g k p Ω μ) : MemSobolevMultiIndex b (f - g) k p Ω μ := by
-  rw [sub_eq_add_neg]
-  exact hf.add hg.neg
-
-omit [OpensMeasurableSpace E] in
-/-- `W^{k,p}(Ω)` is closed under scalar multiplication. -/
-protected theorem _root_.MemSobolevMultiIndex.const_smul {f : E → F}
-    (hf : MemSobolevMultiIndex b f k p Ω μ) (c : ℝ) :
-    MemSobolevMultiIndex b (c • f) k p Ω μ :=
-  ⟨hf.1.const_smul c, fun α hα ↦
-    let ⟨w, hw, hwp⟩ := hf.2 α hα
-    ⟨c • w, hw.const_smul c, hwp.const_smul c⟩⟩
-
-/-- `W^{k,p}(Ω)` is closed under finite sums. -/
-protected theorem _root_.MemSobolevMultiIndex.finset_sum {κ : Type*} (s : Finset κ) {f : κ → E → F}
-    (hf : ∀ i ∈ s, MemSobolevMultiIndex b (f i) k p Ω μ) :
-    MemSobolevMultiIndex b (∑ i ∈ s, f i) k p Ω μ := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact ⟨MemLp.zero, fun α _ ↦ ⟨0, HasWeakIteratedLineDerivOn.zero, MemLp.zero⟩⟩
-  | insert a s ha ih =>
-    rw [Finset.sum_insert ha]
-    exact (hf a (Finset.mem_insert_self a s)).add
-      (ih fun i hi ↦ hf i (Finset.mem_insert_of_mem hi))
-
-
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F] [IsLocallyFiniteMeasure μ]
 
 omit [OpensMeasurableSpace E] [BorelSpace E] [CompleteSpace F] [IsLocallyFiniteMeasure μ] in
@@ -2873,24 +2779,6 @@ section InteriorHigher
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 open SobolevMultiIndex
-
-/-- The Laplacian `Δθ = ∑ᵢ ∂ᵢ∂ᵢθ` of a smooth compactly supported `θ` is smooth, compactly
-supported, with support inside the support of `θ`. -/
-theorem laplacianRep_props {θ : EuclideanSpace ℝ (Fin N) → ℝ} (hθ : ContDiff ℝ ∞ θ)
-    (hθc : HasCompactSupport θ) :
-    ContDiff ℝ ∞ (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ∧
-    HasCompactSupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ∧
-    tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
-  have hsub : tsupport (fun x ↦ ∑ i, fderiv ℝ (fun z ↦ fderiv ℝ θ z (EuclideanSpace.single i 1)) x
-      (EuclideanSpace.single i 1)) ⊆ tsupport θ := by
-    refine closure_minimal ((Finset.support_sum _ _).trans ?_) (isClosed_tsupport θ)
-    refine Set.iUnion₂_subset fun i _ ↦ subset_closure.trans ?_
-    exact (tsupport_fderiv_apply_subset ℝ _).trans (tsupport_fderiv_apply_subset ℝ _)
-  refine ⟨ContDiff.sum fun i _ ↦ contDiff_fderiv_fderiv_apply hθ _,
-    hθc.of_isClosed_subset (isClosed_tsupport _) hsub, hsub⟩
 
 /-- **Chapter 9, Remark 25: interior `H^{m+2}` regularity** ([brezis2011functional] §9.6). Let
 `Ω ⊆ ℝ^N` be open, `u ∈ H^1_loc(Ω)` with weak partial derivatives `w i` on `Ω`,
@@ -3040,6 +2928,66 @@ theorem regularity_interior_higher (m : ℕ) : ∀ {u f : EuclideanSpace ℝ (Fi
     refine (ae_restrict_iff' V.isOpen.measurableSet).2 (Eventually.of_forall fun x hx ↦ ?_)
     rw [hv, Set.indicator_of_mem (hVΩ (subset_closure hx)), hθ1 (subset_closure hx), Pi.one_apply,
       one_mul]
+
+/-- **The bootstrap of [brezis2011functional] Chapter 9, Remark 25** ("the same method applies …
+and argue by induction on `m`") for a datum that depends on the solution: let `u ∈ H^1_loc(Ω)`
+with weak partial derivatives `w i`, and let `∫_Ω ∇u · ∇φ = ∫_Ω (f + c u) φ` for every test
+function `φ` on `Ω`, with `f ∈ H^m_loc(Ω)`. Then `u ∈ H^{m+2}_loc(Ω)`: the datum `f + c u` gains
+regularity with `u`, and interior regularity (`regularity_interior_higher`) raises the order by
+two at each step. The datum `f − u` of the Dirichlet problem for `−Δ + 1` is the case `c = −1`,
+the eigenvalue equation `−Δu = λu` the case `f = 0`, `c = λ`. -/
+theorem memSobolevMultiIndexLoc_of_forall_testFunction_add_mul (m : ℕ)
+    {u f : EuclideanSpace ℝ (Fin N) → ℝ} {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {c : ℝ}
+    (hu : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u 1 2 Ω volume)
+    (hw : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u (w i) Ω volume)
+    (hf : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f m 2 Ω volume)
+    (heq : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (f x + c * u x) * φ x) :
+    MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u (m + 2) 2 Ω volume := by
+  have key : ∀ k : ℕ, k ≤ m + 1 →
+      MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis u (k + 1) 2 Ω volume := by
+    intro k
+    induction k with
+    | zero => exact fun _ ↦ hu
+    | succ k ih =>
+      intro hk
+      have hu' := ih (by omega)
+      have hfu : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+          (fun x ↦ f x + c * u x) k 2 Ω volume :=
+        fun V hVc hVΩ ↦ (((hf V hVc hVΩ).mono_order (by omega)).add
+          (((hu' V hVc hVΩ).mono_order (by omega)).const_smul c)).congr_ae
+            (Eventually.of_forall fun x ↦ by simp)
+      exact regularity_interior_higher k hu hw hfu heq
+  exact key (m + 1) le_rfl
+
+/-- **The weak equation against the test functions of `Ω` restricts to any open `Ω' ⊆ Ω`**: both
+integrands vanish off `Ω'`, the test function on `Ω'` being a test function on `Ω`. -/
+theorem forall_testFunction_of_le {f : EuclideanSpace ℝ (Fin N) → ℝ}
+    {w : Fin N → EuclideanSpace ℝ (Fin N) → ℝ} {Ω' : Opens (EuclideanSpace ℝ (Fin N))}
+    (hω : Ω' ≤ Ω)
+    (heq : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), f x * φ x) (φ : 𝓓(Ω', ℝ)) :
+    ∫ x in (Ω' : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+      = ∫ x in (Ω' : Set (EuclideanSpace ℝ (Fin N))), f x * φ x := by
+  have h := heq (φ.ofLE hω)
+  rw [TestFunction.ofLE_coe] at h
+  have h1 : ∀ x, x ∉ (Ω' : Set (EuclideanSpace ℝ (Fin N))) →
+      ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1) = 0 := by
+    intro x hx
+    refine Finset.sum_eq_zero fun i _ ↦ ?_
+    have := (φ.fderivApply (EuclideanSpace.single i 1)).eq_zero_of_notMem hx
+    rw [TestFunction.fderivApply_apply] at this
+    rw [this, mul_zero]
+  have h2 : ∀ x, x ∉ (Ω' : Set (EuclideanSpace ℝ (Fin N))) → f x * φ x = 0 := fun x hx ↦ by
+    rw [φ.eq_zero_of_notMem hx, mul_zero]
+  rw [setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ h1 x fun h' ↦ hx (hω h'),
+    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ h2 x fun h' ↦ hx (hω h')] at h
+  rw [setIntegral_eq_integral_of_forall_compl_eq_zero h1,
+    setIntegral_eq_integral_of_forall_compl_eq_zero h2]
+  exact h
 
 end InteriorHigher
 
@@ -3217,18 +3165,6 @@ theorem weakDeriv_hasWeakIteratedLineDerivOn_single (u : SobolevEuclidean N 1 2 
     (multiIndexTuple_single_perm ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis :
       Fin N → EuclideanSpace ℝ (Fin N)) i)
   rwa [EuclideanSpace.basisFun_toBasis_apply] at this
-
-/-- A test function on `Ω'` is a test function on any larger open set. -/
-def _root_.TestFunction.ofLE (ψ : 𝓓(Ω', ℝ)) (h : Ω' ≤ Ω) : 𝓓(Ω, ℝ) where
-  toFun := ψ
-  contDiff' := ψ.contDiff
-  hasCompactSupport' := ψ.hasCompactSupport
-  tsupport_subset' := ψ.tsupport_subset.trans h
-
-@[simp]
-theorem _root_.TestFunction.ofLE_coe (ψ : 𝓓(Ω', ℝ)) (h : Ω' ≤ Ω) :
-    (ψ.ofLE h : EuclideanSpace ℝ (Fin N) → ℝ) = ψ :=
-  rfl
 
 /-- A smooth function `θ` with `tsupport θ ∩ Ω ⊆ Ω'` times a test function on `Ω` is a test
 function on `Ω'`. -/
@@ -5302,159 +5238,7 @@ theorem tangentialDeriv_mem_zero_of_isGalerkinSolution
 
 end HalfSpaceLemmas
 
-section MultiplierProduct
 
-open SobolevMultiIndex
-
-/-- `W^{0,p}(Ω)` is `L^p(Ω)`. -/
-theorem _root_.memSobolevMultiIndex_zero_iff {E F : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E] [NormedAddCommGroup F]
-    [NormedSpace ℝ F] {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {p : ℝ≥0∞}
-    [Fact (1 ≤ p)] {Ω : Opens E} {μ : Measure E} [IsLocallyFiniteMeasure μ] {f : E → F} :
-    MemSobolevMultiIndex b f 0 p Ω μ ↔ MemLp f p (μ.restrict (Ω : Set E)) := by
-  refine ⟨fun h ↦ h.memLp, fun hf ↦ ⟨hf, fun α hα ↦ ?_⟩⟩
-  have h0 : ∑ i, α i = 0 := Nat.le_zero.1 hα
-  exact ⟨f, HasWeakIteratedLineDerivOn.of_length_eq_zero h0 _ (hf.locallyIntegrableOn Fact.out),
-    hf⟩
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- **Multiplication by a `C^k` multiplier preserves `H^k(Ω)`**: for a multiplier `c`
-(`IsContDiffConstOffCompact k c`) and `f ∈ H^k(Ω)`, the product `c f` lies in `H^k(Ω)`. By
-induction on `k` through `memSobolevMultiIndex_succ_iff` and the product rule
-`∂_i (c f) = (∂_i c) f + c (∂_i f)` (`HasWeakIteratedLineDerivOn.mul`). -/
-theorem _root_.MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact (k : ℕ) :
-    ∀ {c f : EuclideanSpace ℝ (Fin N) → ℝ}, IsContDiffConstOffCompact k c →
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f k 2 Ω volume →
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fun x ↦ c x * f x) k 2 Ω
-      volume := by
-  induction k with
-  | zero =>
-    intro c f hc hf
-    rw [memSobolevMultiIndex_zero_iff] at hf ⊢
-    obtain ⟨C, hC⟩ := hc.exists_bound
-    exact MemLp.mul_of_forall_abs_le hc.continuous.aestronglyMeasurable (fun x _ ↦ hC x) hf
-  | succ k ih =>
-    intro c f hc hf
-    obtain ⟨hf0, hfd⟩ := memSobolevMultiIndex_succ_iff.1 hf
-    refine memSobolevMultiIndex_succ_iff.2 ⟨ih (hc.of_le (Nat.le_succ k)) hf0, fun i ↦ ?_⟩
-    obtain ⟨w, hw, hwm⟩ := hfd i
-    rw [EuclideanSpace.basisFun_toBasis_apply] at hw ⊢
-    have h2 : (2 : ℝ≥0∞) ≠ ⊤ := ENNReal.ofNat_ne_top
-    have hc1 : ContDiffOn ℝ 1 c Ω :=
-      (hc.contDiff.of_le (by exact_mod_cast Nat.le_add_left 1 k)).contDiffOn
-    have hcd := hc1.hasWeakIteratedLineDerivOn_single Ω i
-    refine ⟨fun x ↦ fderiv ℝ c x (EuclideanSpace.single i 1) * f x + c x * w x, ?_, ?_⟩
-    · exact hcd.mul rfl hw one_le_two h2 h2 (hc.continuous.continuousOn.locallyMemLpOn 2)
-        ((hc.fderiv_apply _).continuous.continuousOn.locallyMemLpOn 2) hf0.memLp.locallyMemLpOn
-        hwm.memLp.locallyMemLpOn
-    · have h1 := ih (hc.fderiv_apply (EuclideanSpace.single i 1)) hf0
-      have h2' := ih (hc.of_le (Nat.le_succ k)) hwm
-      exact h1.add h2'
-
-/-- A finite sum of products of multipliers and `H^k(Ω)` functions lies in `H^k(Ω)`. -/
-theorem _root_.MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact {k : ℕ} {κ : Type*}
-    (s : Finset κ) {c : κ → EuclideanSpace ℝ (Fin N) → ℝ}
-    {f : κ → EuclideanSpace ℝ (Fin N) → ℝ} (hc : ∀ i ∈ s, IsContDiffConstOffCompact k (c i))
-    (hf : ∀ i ∈ s, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (f i) k 2 Ω
-      volume) :
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
-      (fun x ↦ ∑ i ∈ s, c i x * f i x) k 2 Ω volume := by
-  have := MemSobolevMultiIndex.finset_sum s (f := fun i x ↦ c i x * f i x) fun i hi ↦
-    MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact k (hc i hi) (hf i hi)
-  refine this.congr_ae (Eventually.of_forall fun x ↦ ?_)
-  simp only [Finset.sum_apply]
-
-end MultiplierProduct
-
-/-! ### The zero extension at every order, for a cut-off constant off a compact set -/
-
-section ZeroExtensionHigher
-
-open SobolevMultiIndex
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- A smooth function constant off a compact set whose support misses the frontier of `Ω` is a
-Sobolev cut-off for `Ω` (bounded with bounded derivative). -/
-theorem _root_.IsSobolevCutoff.of_hasCompactSupport_sub {θ : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hθ : ContDiff ℝ ∞ θ) {κ : ℝ} (hθκ : HasCompactSupport fun x ↦ θ x - κ)
-    (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
-    IsSobolevCutoff Ω θ where
-  contDiff := hθ
-  exists_bound := by
-    obtain ⟨C₁, hC₁⟩ :=
-      (IsContDiffConstOffCompact.mk (n := 1) (hθ.of_le (by simp)) ⟨κ, hθκ⟩).exists_bound
-    obtain ⟨C₂, hC₂⟩ := (hθκ.fderiv (𝕜 := ℝ)).exists_bound_of_continuous
-      ((hθ.sub contDiff_const).continuous_fderiv (by simp))
-    refine ⟨max C₁ C₂, fun x ↦ ⟨(hC₁ x).trans (le_max_left _ _), ?_⟩⟩
-    have := hC₂ x
-    rw [fderiv_sub_const] at this
-    exact this.trans (le_max_right _ _)
-  disjoint_frontier := hθΓ
-
-/-- The support of a partial derivative of `θ` misses the frontier of `Ω` when that of `θ`
-does. -/
-theorem tsupport_fderiv_apply_disjoint_frontier {θ : EuclideanSpace ℝ (Fin N) → ℝ}
-    (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (y : EuclideanSpace ℝ (Fin N)) :
-    Disjoint (tsupport fun x ↦ fderiv ℝ θ x y) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-  hθΓ.mono_left (tsupport_fderiv_apply_subset ℝ y)
-
-/-- **The zero extension of `θ f` at every order** ([brezis2011functional] Chapter 9, Remark 4
-(ii), iterated): for a smooth `θ` constant off a compact set with support off the frontier of `Ω`
-(the function `θ₀ = 1 − ∑ θᵢ` of a partition of unity) and `f ∈ H^k(Ω)`, the extension of `θ f`
-by zero lies in `H^k(ℝ^N)`. Induction on `k` through `memSobolevMultiIndex_succ_iff`, the
-derivative of the extension being the extension of `θ ∂_i f + (∂_i θ) f`
-(`HasWeakIteratedLineDerivOn.indicator_mul`). -/
-theorem _root_.MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub (k : ℕ) :
-    ∀ {θ f : EuclideanSpace ℝ (Fin N) → ℝ}, ContDiff ℝ ∞ θ →
-    (∃ κ : ℝ, HasCompactSupport fun x ↦ θ x - κ) →
-    Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))) →
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f k 2 Ω volume →
-    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
-      ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator fun x ↦ θ x * f x) k 2 ⊤ volume := by
-  induction k with
-  | zero =>
-    rintro θ f hθ ⟨κ, hθκ⟩ hθΓ hf
-    rw [memSobolevMultiIndex_zero_iff] at hf ⊢
-    have hcut := IsSobolevCutoff.of_hasCompactSupport_sub (Ω := Ω) hθ hθκ hθΓ
-    obtain ⟨M, hM⟩ := hcut.exists_bound
-    have := memLp_indicator_smul_of_forall_norm_le (μ := volume) Ω.isOpen.measurableSet
-      (g := θ) (M := M) (fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x).1)
-      hcut.continuous.aestronglyMeasurable hf
-    rw [Opens.coe_top, Measure.restrict_univ]
-    exact this
-  | succ k ih =>
-    rintro θ f hθ ⟨κ, hθκ⟩ hθΓ hf
-    have hcut := IsSobolevCutoff.of_hasCompactSupport_sub (Ω := Ω) hθ hθκ hθΓ
-    obtain ⟨hf0, hfd⟩ := memSobolevMultiIndex_succ_iff.1 hf
-    refine memSobolevMultiIndex_succ_iff.2 ⟨ih hθ ⟨κ, hθκ⟩ hθΓ hf0, fun i ↦ ?_⟩
-    obtain ⟨w, hw, hwm⟩ := hfd i
-    rw [EuclideanSpace.basisFun_toBasis_apply] at hw ⊢
-    refine ⟨(Ω : Set (EuclideanSpace ℝ (Fin N))).indicator fun x ↦
-      θ x * w x + fderiv ℝ θ x (EuclideanSpace.single i 1) * f x, ?_, ?_⟩
-    · have := hw.indicator_mul hcut
-      simpa only [smul_eq_mul] using this
-    · have hθ' : ContDiff ℝ ∞ fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) :=
-        hcut.contDiff_fderiv_apply _
-      have hθ'c : HasCompactSupport fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) - 0 := by
-        have := hθκ.fderiv_apply (𝕜 := ℝ) (EuclideanSpace.single i 1)
-        have e : (fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) - 0)
-            = fun x ↦ fderiv ℝ (fun x ↦ θ x - κ) x (EuclideanSpace.single i 1) := by
-          funext x
-          simp only [fderiv_sub_const, sub_zero]
-        rw [e]
-        exact this
-      have h1 := ih hθ ⟨κ, hθκ⟩ hθΓ hwm
-      have h2 := ih hθ' ⟨0, hθ'c⟩ (tsupport_fderiv_apply_disjoint_frontier hθΓ _) hf0
-      refine (h1.add h2).congr_ae (Eventually.of_forall fun x ↦ ?_)
-      simp only [Pi.add_apply]
-      by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N)))
-      · simp only [Set.indicator_of_mem hx]
-      · simp only [Set.indicator_of_notMem hx, add_zero]
-
-end ZeroExtensionHigher
 
 
 
@@ -5746,19 +5530,6 @@ theorem exists_forall_norm_fderiv_le_of_isContDiffConstOffCompact {n : ℕ} {N :
 
 end ConstOffCompactBounds
 
-section MemSobolevZero
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F]
-  {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E} {k : ℕ} {p : ℝ≥0∞}
-  {Ω : Opens E} {μ : Measure E}
-
-omit [OpensMeasurableSpace E] in
-/-- The zero function lies in `W^{k,p}(Ω)`. -/
-protected theorem _root_.MemSobolevMultiIndex.zero : MemSobolevMultiIndex b (0 : E → F) k p Ω μ :=
-  ⟨MemLp.zero, fun _ _ ↦ ⟨0, HasWeakIteratedLineDerivOn.zero, MemLp.zero⟩⟩
-
-end MemSobolevZero
 
 /-! ### Case B, higher order: `H^{m+2}` regularity on a tangentially invariant open set -/
 
@@ -6839,73 +6610,6 @@ end AssemblyHigher
 
 /-! ### The estimate `‖u‖_{H^{m+2}} ≤ C ‖f‖_{H^m}`, by the closed graph theorem -/
 
-section ClosedGraphHigher
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-open SobolevMultiIndex
-
-/-- **The `H^k` bound from the membership, by the closed graph theorem**: if a continuous linear
-solution map `S : X → H¹(Ω)` from a Banach space `X` takes every `f` to the function of some
-element of `H^k(Ω)`, then the `H^k` element is bounded by `C ‖f‖`. The map `f ↦ U_f ∈ H^k(Ω)` is
-linear (elements of `H^k(Ω)` are determined by their functions) and its graph is closed
-(`H^k → L²` and `S` are continuous), so it is bounded. The case `X = L²(Ω)`, `k = 2` is
-`Elliptic.exists_norm_le_of_forall_exists_sobolev_two`. -/
-theorem exists_norm_le_of_forall_exists_sobolev {X : Type*} [NormedAddCommGroup X]
-    [NormedSpace ℝ X] [CompleteSpace X] {k : ℕ} {S : X →L[ℝ] SobolevEuclidean N 1 2 Ω}
-    (hS : ∀ f, ∃ U : SobolevEuclidean N k 2 Ω,
-      fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn (S f)) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : X) (U : SobolevEuclidean N k 2 Ω),
-      fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] fn (S f) → ‖U‖ ≤ C * ‖f‖ := by
-  choose T hT using hS
-  -- `T` is linear
-  obtain ⟨Tₗ, hTₗ⟩ : ∃ Tₗ : X →ₗ[ℝ] SobolevEuclidean N k 2 Ω, ∀ f, Tₗ f = T f := by
-    refine ⟨{ toFun := T, map_add' := fun f g ↦ ?_, map_smul' := fun c f ↦ ?_ }, fun _ ↦ rfl⟩
-    · refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
-      filter_upwards [hT (f + g), hT f, hT g, fn_add (S f) (S g), fn_add (T f) (T g)]
-        with x h1 h2 h3 h4 h5
-      rw [h1, map_add, h4, h5, Pi.add_apply, Pi.add_apply, h2, h3]
-    · refine SobolevMultiIndex.ext_of_fn_ae_eq ?_
-      simp only [RingHom.id_apply]
-      filter_upwards [hT (c • f), hT f, fn_smul c (S f), fn_smul c (T f)] with x h1 h2 h3 h4
-      rw [h1, map_smul, h3, h4, Pi.smul_apply, Pi.smul_apply, h2]
-  -- its graph is closed
-  have hcont : Continuous Tₗ := by
-    refine Tₗ.continuous_of_seq_closed_graph fun u x y hux hTy ↦ ?_
-    have h1 : Tendsto (fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume
-        (Tₗ (u n))) atTop (𝓝 (fnL ℝ _ k 2 Ω volume y)) :=
-      ((fnL ℝ _ k 2 Ω volume).continuous.tendsto y).comp hTy
-    have h2 : Tendsto (fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
-        (S (u n))) atTop (𝓝 (fnL ℝ _ 1 2 Ω volume (S x))) :=
-      ((fnL ℝ _ 1 2 Ω volume).continuous.tendsto _).comp ((S.continuous.tendsto x).comp hux)
-    have h12 : (fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume (Tₗ (u n)))
-        = fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume (S (u n)) := by
-      funext n
-      refine Lp.ext ?_
-      rw [hTₗ]
-      exact hT (u n)
-    rw [h12] at h1
-    have h3 := tendsto_nhds_unique h1 h2
-    refine (SobolevMultiIndex.ext_of_fn_ae_eq ?_).symm
-    rw [hTₗ]
-    refine (hT x).trans ?_
-    have := congrArg (fun w : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) ↦
-      (w : EuclideanSpace ℝ (Fin N) → ℝ)) h3
-    exact Filter.EventuallyEq.of_eq this.symm
-  obtain ⟨Tc, hTc⟩ : ∃ Tc : X →L[ℝ] SobolevEuclidean N k 2 Ω, Tc = ⟨Tₗ, hcont⟩ := ⟨_, rfl⟩
-  refine ⟨‖Tc‖, norm_nonneg _, fun f U hU ↦ ?_⟩
-  have hUT : U = Tc f := by
-    refine SobolevMultiIndex.ext_of_fn_ae_eq (hU.trans ?_)
-    have h1 : Tc f = T f := by
-      rw [hTc]
-      exact hTₗ f
-    rw [h1]
-    exact (hT f).symm
-  rw [hUT]
-  exact Tc.le_opNorm f
-
-end ClosedGraphHigher
-
 section MainHigher
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
@@ -6959,7 +6663,8 @@ class `C^{m+2}` with bounded boundary. There is a constant `C` such that for eve
 
 The membership is `Elliptic.regularity_dirichlet_higher_mem_laplace` (induction on `m` through
 the interior and boundary pieces), and the constant comes from the closed graph theorem applied
-to the solution map `H^m(Ω) → H¹(Ω)` (`Elliptic.exists_norm_le_of_forall_exists_sobolev`). -/
+to the solution map `H^m(Ω) → H¹(Ω)`
+(`SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev`). -/
 theorem regularity_dirichlet_higher (m : ℕ)
     (hΩ : IsContDiffChartDomain (m + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
@@ -6991,7 +6696,8 @@ theorem regularity_dirichlet_higher (m : ℕ)
       (SobolevEuclideanZero (d + 1) 1 2 Ω) (S F) := fun F ↦ by
     rw [hS]
     exact isGalerkinSolution_solutionMap Ω (laplaceForm Ω) laplaceForm_restrict_isCoercive _
-  obtain ⟨C, hC0, hC⟩ := exists_norm_le_of_forall_exists_sobolev (S := S) fun F ↦
+  obtain ⟨C, hC0, hC⟩ := SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev (S := S)
+    fun F ↦
     (hmem F (S F) (hSf F)).exists_sobolevMultiIndex
   refine ⟨C, hC0, fun F u hu ↦ ⟨hmem F u hu, fun U hU ↦ hC F U (hU.trans ?_)⟩⟩
   have : u = S F := by
@@ -7041,6 +6747,70 @@ theorem exists_contDiffOn_of_memSobolevMultiIndex (k : ℕ) {m : ℕ}
   obtain ⟨G, hGc, hGeq, -⟩ := hG j hj
   exact ⟨G, hGc, hGeq⟩
 
+/-- **A function in `H^m(Ω)` for every `m` is `C^∞(Ω̄)`** on a `C¹` domain with bounded
+boundary: it agrees almost everywhere on `Ω` with a function `ũ` continuous on `ℝ^N`, of class
+`C^∞` on `Ω`, all of whose derivatives extend continuously from `Ω` to `ℝ^N` — the book's
+`C^∞(Ω̄)` ([brezis2011functional] Chapter 9, footnote 16). Corollary 9.15 at every order
+(`exists_contDiffOn_of_memSobolevMultiIndex`) gives a `C^k(Ω̄)` representative for each `k`; two
+continuous representatives agree on the open set `Ω` (`Measure.eqOn_open_of_ae_eq`), so the
+representative at order `0` is of class `C^k` on `Ω` for every `k`, with the derivative
+extensions of the representative at order `k`. -/
+theorem exists_contDiffOn_infty_of_forall_memSobolevMultiIndex
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : ∀ m : ℕ, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u m 2 Ω
+      volume) :
+    ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous ũ ∧ ContDiffOn ℝ ∞ ũ Ω ∧
+      u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
+      ∀ j : ℕ, ∃ G : EuclideanSpace ℝ (Fin (d + 1)) →
+        (EuclideanSpace ℝ (Fin (d + 1)) [×j]→L[ℝ] ℝ), Continuous G ∧
+        EqOn (iteratedFDeriv ℝ j ũ) G Ω := by
+  -- a `C^k(Ω̄)` representative for every `k`
+  have hrep : ∀ k : ℕ, ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous ũ ∧
+      ContDiffOn ℝ k ũ Ω ∧ u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
+      ∀ j ≤ k, ∃ G : EuclideanSpace ℝ (Fin (d + 1)) →
+        (EuclideanSpace ℝ (Fin (d + 1)) [×j]→L[ℝ] ℝ), Continuous G ∧
+        EqOn (iteratedFDeriv ℝ j ũ) G Ω := fun k ↦ by
+    refine exists_contDiffOn_of_memSobolevMultiIndex k hΩ hΓ (m := k + (d + 1)) ?_ (hu _)
+    push_cast
+    have : (0 : ℝ) ≤ d := Nat.cast_nonneg d
+    linarith
+  choose v hvc hvk hvae hvG using hrep
+  -- the representatives agree on `Ω`
+  have hagree : ∀ k, EqOn (v 0) (v k) Ω := fun k ↦
+    Measure.eqOn_open_of_ae_eq ((hvae 0).symm.trans (hvae k)) Ω.isOpen
+      (hvc 0).continuousOn (hvc k).continuousOn
+  refine ⟨v 0, hvc 0, ?_, hvae 0, fun j ↦ ?_⟩
+  · rw [contDiffOn_infty]
+    intro k
+    exact (hvk k).congr fun x hx ↦ hagree k hx
+  · obtain ⟨G, hGc, hGeq⟩ := hvG j j le_rfl
+    refine ⟨G, hGc, fun x hx ↦ ?_⟩
+    rw [← hGeq hx]
+    have h : v 0 =ᶠ[𝓝 x] v j :=
+      Filter.eventually_of_mem (Ω.isOpen.mem_nhds hx) fun y hy ↦ hagree j hy
+    exact (h.iteratedFDeriv ℝ j).eq_of_nhds
+
+/-- **A function in `H^m(Ω)` for every `m` is `C^∞(Ω̄)`**, in the `ContDiffOnClosure` reading of
+the class `C^∞(Ω̄)`: on a `C¹` domain with bounded boundary it agrees almost everywhere on `Ω`
+with a function of class `C^∞(Ω̄)` (`ContDiffOnClosure ℝ ∞ ũ Ω`), continuous on `Ω̄`
+(`exists_contDiffOn_infty_of_forall_memSobolevMultiIndex`, the extensions restricted to the
+closure). -/
+theorem exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex
+    (hΩ : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
+    (hu : ∀ m : ℕ, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis u m 2 Ω
+      volume) :
+    ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, ContDiffOnClosure ℝ ∞ ũ Ω ∧
+      ContinuousOn ũ (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) ∧
+      u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ := by
+  obtain ⟨ũ, hc, hk, hae, hG⟩ := exists_contDiffOn_infty_of_forall_memSobolevMultiIndex hΩ hΓ hu
+  refine ⟨ũ, ⟨hk, fun j _ ↦ ?_⟩, hc.continuousOn, hae⟩
+  obtain ⟨G, hGc, hGeq⟩ := hG j
+  exact ⟨G, hGc.continuousOn, fun x hx ↦ (hGeq hx).symm⟩
+
 /-- **[brezis2011functional] Theorem 9.25, the `C²(Ω̄)` clause**: for `Ω` of class `C^{m+2}`
 with bounded boundary, `f ∈ H^m(Ω)` and `m > N/2`, the weak solution `u ∈ H^1_0(Ω)` of
 `−Δu + u = f` agrees almost everywhere with a function `ũ` continuous on `ℝ^N` and of class
@@ -7073,10 +6843,9 @@ theorem regularity_dirichlet_contDiffOn (m : ℕ)
 bounded boundary and `f ∈ H^m(Ω)` for every `m` (which holds for every `f ∈ C^∞(Ω̄)` with
 bounded derivatives on a bounded `Ω`), the weak solution `u ∈ H^1_0(Ω)` of `−Δu + u = f` agrees
 almost everywhere with a function `ũ` continuous on `ℝ^N`, of class `C^∞` on `Ω`, all of whose
-derivatives extend continuously from `Ω` to `ℝ^N` — the book's `C^∞(Ω̄)`. For each `k` the
-`C^k(Ω̄)` clause gives a representative; two continuous representatives agree on the open set
-`Ω` (`Measure.eqOn_open_of_ae_eq`), so the representative at order `0` is of class `C^k` on `Ω`
-for every `k`, with the derivative extensions of the representative at order `k`. -/
+derivatives extend continuously from `Ω` to `ℝ^N` — the book's `C^∞(Ω̄)`. The solution lies in
+`H^{m+2}(Ω)` for every `m` (`regularity_dirichlet_higher_mem_laplace`), and a function in every
+`H^m(Ω)` is `C^∞(Ω̄)` (`exists_contDiffOn_infty_of_forall_memSobolevMultiIndex`). -/
 theorem regularity_dirichlet_smooth
     (hΩ : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
@@ -7089,37 +6858,10 @@ theorem regularity_dirichlet_smooth
       fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
       ∀ j : ℕ, ∃ G : EuclideanSpace ℝ (Fin (d + 1)) →
         (EuclideanSpace ℝ (Fin (d + 1)) [×j]→L[ℝ] ℝ), Continuous G ∧
-        EqOn (iteratedFDeriv ℝ j ũ) G Ω := by
-  have hΩ1 : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
-    hΩ.of_le (by simp)
-  -- a `C^k(Ω̄)` representative for every `k`
-  have hrep : ∀ k : ℕ, ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous ũ ∧
-      ContDiffOn ℝ k ũ Ω ∧ fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
-      ∀ j ≤ k, ∃ G : EuclideanSpace ℝ (Fin (d + 1)) →
-        (EuclideanSpace ℝ (Fin (d + 1)) [×j]→L[ℝ] ℝ), Continuous G ∧
-        EqOn (iteratedFDeriv ℝ j ũ) G Ω := by
-    intro k
-    have hmem := regularity_dirichlet_higher_mem_laplace (k + (d + 1))
-      (hΩ.of_le (by simp)) hΓ (hf _) hu
-    refine exists_contDiffOn_of_memSobolevMultiIndex k hΩ1 hΓ ?_ hmem
-    push_cast
-    have : (0 : ℝ) ≤ d := Nat.cast_nonneg d
-    linarith
-  choose v hvc hvk hvae hvG using hrep
-  -- the representatives agree on `Ω`
-  have hagree : ∀ k, EqOn (v 0) (v k) Ω := fun k ↦
-    Measure.eqOn_open_of_ae_eq ((hvae 0).symm.trans (hvae k)) Ω.isOpen
-      (hvc 0).continuousOn (hvc k).continuousOn
-  refine ⟨v 0, hvc 0, ?_, hvae 0, fun j ↦ ?_⟩
-  · rw [contDiffOn_infty]
-    intro k
-    exact (hvk k).congr fun x hx ↦ hagree k hx
-  · obtain ⟨G, hGc, hGeq⟩ := hvG j j le_rfl
-    refine ⟨G, hGc, fun x hx ↦ ?_⟩
-    rw [← hGeq hx]
-    have h : v 0 =ᶠ[𝓝 x] v j :=
-      Filter.eventually_of_mem (Ω.isOpen.mem_nhds hx) fun y hy ↦ hagree j hy
-    exact (h.iteratedFDeriv ℝ j).eq_of_nhds
+        EqOn (iteratedFDeriv ℝ j ũ) G Ω :=
+  exists_contDiffOn_infty_of_forall_memSobolevMultiIndex (hΩ.of_le (by simp)) hΓ fun m ↦
+    (regularity_dirichlet_higher_mem_laplace m (hΩ.of_le (by simp)) hΓ (hf m) hu).mono_order
+      (Nat.le_add_right m 2)
 
 end Smooth
 

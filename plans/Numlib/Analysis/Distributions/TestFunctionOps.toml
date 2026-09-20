@@ -1,0 +1,17 @@
+[[node]]
+id = "Elliptic.contDiff_fderiv_fderiv_apply"
+
+[[node]]
+id = "Elliptic.laplacianRep_props"
+
+[[node]]
+id = "TestFunction.toL2"
+
+[[node]]
+id = "TestFunction.negLaplacian"
+
+[[node]]
+id = "TestFunction.ofLE"
+
+[[node]]
+id = "TestFunction.ofLE_coe"

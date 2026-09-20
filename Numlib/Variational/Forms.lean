@@ -12,9 +12,12 @@ boundedness with constant `M`, coercivity `c ‖v‖² ≤ re (a v v)` (what [ha
 `SesqForm.toOperator a` (`⟪A u, v⟫ = a u v`, Mathlib's
 `InnerProductSpace.continuousLinearMapOfBilin`), the Riesz representative of a functional, and the
 energy functional `E(v) = ½ re (a v v) - re (ℓ v)` ([han2009theoretical] §8.3, §9.4;
-[kress1998numerical] §11.3; [saad2003iterative] §5.2 in the operator language). Over `ℝ` a `V →L[ℝ]
-V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same defeq Mathlib's `LaxMilgram.lean` uses), so the real
-surfaces need no conversion; the `_real` lemmas remove the `re`/`conj` decorations.
+[kress1998numerical] §11.3; [saad2003iterative] §5.2 in the operator language), and the
+restriction `SesqForm.restrict a K` of a form to a subspace, which keeps Hermitian symmetry
+and coercivity (the weak problems on `H^1_0` of the Sobolev backbone are posed through it).
+Over `ℝ` a `V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same defeq Mathlib's
+`LaxMilgram.lean` uses), so the real surfaces need no conversion; the `_real` lemmas remove the
+`re`/`conj` decorations.
 -/
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
@@ -208,6 +211,49 @@ theorem energyNorm_le_sqrt_mul_norm {M : ℝ} (h : a.IsBoundedWith M) (v : V) :
 end Energy
 
 end SesqForm
+
+/-! ### Restriction of a form to a subspace -/
+
+section Restrict
+
+/-- The restriction of a bounded sesquilinear form on `V` to a subspace `K`, as a bounded form
+on `K`. -/
+noncomputable def SesqForm.restrict (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) : SesqForm 𝕜 K :=
+  ((a.comp K.subtypeL).flip.comp K.subtypeL).flip
+
+/-- The restricted form is the form. -/
+@[simp]
+theorem SesqForm.restrict_apply (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) (u v : K) :
+    a.restrict K u v = a u v := rfl
+
+/-- The restriction of a Hermitian form to a subspace is Hermitian. -/
+theorem SesqForm.IsHermitian.restrict {a : SesqForm 𝕜 V} (h : a.IsHermitian) (K : Submodule 𝕜 V) :
+    (a.restrict K).IsHermitian := fun u v ↦ by
+  rw [SesqForm.restrict_apply, SesqForm.restrict_apply]
+  exact h u v
+
+/-- The restriction of a coercive form to a subspace is coercive with the same constant. -/
+theorem SesqForm.IsCoerciveWith.restrict {a : SesqForm 𝕜 V} {c : ℝ} (h : a.IsCoerciveWith c)
+    (K : Submodule 𝕜 V) : (a.restrict K).IsCoerciveWith c := fun v ↦ by
+  rw [SesqForm.restrict_apply, ← Submodule.norm_coe]
+  exact h v
+
+/-- The restriction of a coercive form to a subspace is coercive. -/
+theorem SesqForm.IsCoercive.restrict {a : SesqForm 𝕜 V} (h : a.IsCoercive) (K : Submodule 𝕜 V) :
+    (a.restrict K).IsCoercive :=
+  let ⟨c, hc, h⟩ := h
+  ⟨c, hc, h.restrict K⟩
+
+/-- The operator of a Hermitian coercive form is symmetric and coercive
+(`SesqForm.isHermitian_iff_toOperator_isSymmetric`, `SesqForm.isCoerciveWith_iff_toOperator`). -/
+theorem SesqForm.IsHermitian.isSymmetricCoercive_toOperator [CompleteSpace V] {a : SesqForm 𝕜 V}
+    (hsymm : a.IsHermitian) (ha : a.IsCoercive) :
+    (SesqForm.toOperator a : V →ₗ[𝕜] V).IsSymmetricCoercive :=
+  ⟨(SesqForm.isHermitian_iff_toOperator_isSymmetric a).1 hsymm,
+    let ⟨c, hc, h⟩ := ha
+    ⟨c, hc, (SesqForm.isCoerciveWith_iff_toOperator a c).1 h⟩⟩
+
+end Restrict
 
 /-- Two-space bounded sesquilinear forms `U × V → 𝕜` (Petrov–Galerkin, Babuška–Nečas). -/
 abbrev SesqForm₂ (𝕜 U V : Type*) [RCLike 𝕜] [NormedAddCommGroup U] [InnerProductSpace 𝕜 U]

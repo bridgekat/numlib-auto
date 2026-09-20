@@ -464,3 +464,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Proposition 8.5"
 [[node]]
 id = "SobolevIntervalLpZero"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §8.3, Definition"
+
+[[node]]
+id = "TopologicalSpace.Opens.inf_Ioo_eq_empty_or_exists_eq_Ioo"

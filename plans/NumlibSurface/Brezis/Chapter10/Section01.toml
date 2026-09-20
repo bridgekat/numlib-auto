@@ -1,14 +1,6 @@
 namespace = "Brezis.Chapter10"
 
 [[node]]
-id = "contDiffOnThrough_infty_of_forall"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.2 (c) (a lemma for `Numlib/Analysis/PDE/Bochner`)"
-
-[[node]]
-id = "exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 at every order (a lemma for `Numlib/Analysis/PDE/Elliptic/Regularity`)"
-
-[[node]]
 id = "heatOperator"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.1, proof of Theorem 10.1, the operator `A`"
 

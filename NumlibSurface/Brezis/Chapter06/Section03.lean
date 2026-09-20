@@ -20,8 +20,8 @@ the backbone `Numlib/Analysis/Normed/Operator/Compact/Banach` (and Mathlib's Fre
 alternative `IsCompactOperator.hasEigenvalue_iff_mem_spectrum` for (b)). The examples of
 Remarks 6 and 7 live on `ℓ² = lp (fun _ : ℕ => ℝ) 2`: the right shift is the backbone's
 `lp.shiftRightL ℝ` (`Numlib/Analysis/Normed/Lp/Sequence`, shared with §11.4), restated here as
-`rightShift`; Mathlib has no multiplication operators on `lp`, so `multiplicationOperator` is
-defined here, by content (it belongs in the same backbone module). The unnumbered claim of the
+`rightShift`, and the multiplication operator is the backbone's diagonal operator
+`lp.diagonalL`, restated as `multiplicationOperator`. The unnumbered claim of the
 Comments (3) that the null spaces of the powers of `T - λI` stabilize is `ascent_stabilizes`.
 
 ## Main results
@@ -233,42 +233,15 @@ theorem lemma_6_2 [CompleteSpace E] {T : E →L[ℝ] E} (hT : IsCompactOperator 
 
 /-! ### The multiplication operators on `ℓ²` -/
 
-/-- The pointwise product `(αₙ uₙ)ₙ`. -/
-private def mulFun (α x : ℕ → ℝ) : ℕ → ℝ := fun n => α n * x n
-
-private theorem norm_mulFun_le {α : ℕ → ℝ} {C : ℝ} (hα : ∀ n, |α n| ≤ C)
-    (x : lp (fun _ : ℕ => ℝ) 2) (n : ℕ) : ‖mulFun α x n‖ ≤ ‖(C • x) n‖ := by
-  rw [lp.coeFn_smul, Pi.smul_apply, smul_eq_mul, mulFun, Real.norm_eq_abs, Real.norm_eq_abs,
-    abs_mul, abs_mul]
-  exact mul_le_mul_of_nonneg_right ((hα n).trans (le_abs_self C)) (abs_nonneg _)
-
-private theorem memℓp_mulFun {α : ℕ → ℝ} {C : ℝ} (hα : ∀ n, |α n| ≤ C)
-    (x : lp (fun _ : ℕ => ℝ) 2) : Memℓp (mulFun α x) 2 :=
-  (lp.memℓp (C • x)).mono' (norm_mulFun_le hα x)
-
 /-- **The multiplication operator of Remark 7** (and of Exercises 6.1, 6.17) on
 `ℓ² = lp (fun _ : ℕ => ℝ) 2`, for a bounded sequence `α` (`|αₙ| ≤ C` for all `n`):
-`T u = (α₁ u₁, α₂ u₂, …)`, a bounded operator of norm at most `|C|`. -/
-def multiplicationOperator (α : ℕ → ℝ) {C : ℝ} (hα : ∀ n, |α n| ≤ C) :
+`T u = (α₁ u₁, α₂ u₂, …)`, a bounded operator of norm at most `|C|`. It is the backbone's
+diagonal operator `lp.diagonalL` (`Numlib/Analysis/Normed/Lp/Sequence`). -/
+abbrev multiplicationOperator (α : ℕ → ℝ) {C : ℝ} (hα : ∀ n, |α n| ≤ C) :
     lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2 :=
-  LinearMap.mkContinuous
-    { toFun := fun x => ⟨mulFun α x, memℓp_mulFun hα x⟩
-      map_add' := fun x y => by
-        ext n
-        change α n * (x + y) n = α n * x n + α n * y n
-        rw [lp.coeFn_add, Pi.add_apply, mul_add]
-      map_smul' := fun c x => by
-        ext n
-        change α n * (c • x) n = c * (α n * x n)
-        rw [lp.coeFn_smul, Pi.smul_apply, smul_eq_mul]
-        ring }
-    |C| (fun x => by
-      have h := lp.norm_mono two_ne_zero (x := (⟨mulFun α x, memℓp_mulFun hα x⟩ : lp _ 2))
-        (y := C • x) (norm_mulFun_le hα x)
-      rwa [norm_smul, Real.norm_eq_abs] at h)
+  lp.diagonalL (fun _ : ℕ => ℝ) 2 α hα
 
 /-- The multiplication operator acts by `(T u)ₙ = αₙ uₙ`. -/
-@[simp]
 theorem multiplicationOperator_apply (α : ℕ → ℝ) {C : ℝ} (hα : ∀ n, |α n| ≤ C)
     (x : lp (fun _ : ℕ => ℝ) 2) (n : ℕ) : multiplicationOperator α hα x n = α n * x n :=
   rfl
@@ -281,24 +254,14 @@ private theorem abs_ite_lt_le {α : ℕ → ℝ} {C : ℝ} (hC : ∀ n, |α n| �
   · simpa using (abs_nonneg _).trans (hC 0)
 
 /-- The truncated multiplication operator `Tₙ u = (α₁ u₁, …, αₙ uₙ, 0, 0, …)` has finite rank:
-its range lies in the span of the first `n` unit vectors. -/
+its range lies in the span of the first `n` unit vectors
+(`lp.finiteDimensional_range_diagonalL`). -/
 private theorem isFiniteRank_multiplicationOperator_truncation {α : ℕ → ℝ} {C : ℝ}
     (hC : ∀ n, |α n| ≤ C) (n : ℕ) :
     IsFiniteRank (multiplicationOperator (fun k => if k < n then α k else 0)
-      (abs_ite_lt_le hC n)) := by
-  set G : Submodule ℝ (lp (fun _ : ℕ => ℝ) 2) := Submodule.span ℝ (Set.range fun k : Fin n =>
-    (lp.single 2 (k : ℕ) (1 : ℝ) : lp (fun _ : ℕ => ℝ) 2)) with hG
-  have hspan : FiniteDimensional ℝ G := FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
-  refine Submodule.finiteDimensional_of_le (S₂ := G) fun y hy => ?_
-  obtain ⟨x, rfl⟩ := LinearMap.mem_range.1 hy
-  have hx : multiplicationOperator (fun k => if k < n then α k else 0) (abs_ite_lt_le hC n) x =
-      ∑ k ∈ Finset.range n, (α k * x k) • lp.single 2 k (1 : ℝ) := by
-    ext m
-    rw [lp.coeFn_sum, Finset.sum_apply]
-    simp [Pi.single_apply, Finset.sum_ite_eq, ite_mul]
-  rw [ContinuousLinearMap.coe_coe, hx]
-  exact Submodule.sum_mem _ fun k hk =>
-    Submodule.smul_mem _ _ (Submodule.subset_span ⟨⟨k, Finset.mem_range.1 hk⟩, rfl⟩)
+      (abs_ite_lt_le hC n)) :=
+  lp.finiteDimensional_range_diagonalL _ _ (Finset.range n) fun _ hk =>
+    ite_eq_right fun h => hk (Finset.mem_range.2 h)
 
 /-- **Remark 7, compactness.** If `αₙ → 0` (so that `α` is bounded, by `C`), the multiplication
 operator `T u = (α₁ u₁, α₂ u₂, …)` on `ℓ²` is compact: it is the norm limit of the finite-rank
@@ -331,28 +294,6 @@ theorem remark_6_7_isCompactOperator {α : ℕ → ℝ} (hα : Tendsto α atTop 
   have h := lp.norm_mono two_ne_zero hle
   rwa [norm_smul, Real.norm_eq_abs, abs_of_pos (half_pos hε)] at h
 
-/-- The unit vectors `eₙ = lp.single 2 n 1` of `ℓ²` are eigenvectors of the multiplication
-operator: `T eₙ = αₙ eₙ`. -/
-private theorem multiplicationOperator_single (α : ℕ → ℝ) {C : ℝ} (hC : ∀ n, |α n| ≤ C)
-    (n : ℕ) :
-    multiplicationOperator α hC (lp.single 2 n (1 : ℝ)) = α n • lp.single 2 n (1 : ℝ) := by
-  ext m
-  rw [lp.coeFn_smul, Pi.smul_apply, multiplicationOperator_apply, smul_eq_mul, lp.single_apply,
-    Pi.single_apply]
-  split_ifs with h
-  · subst h; ring
-  · ring
-
-/-- `ℓ²` is infinite dimensional: the unit vectors form an infinite orthonormal family. -/
-private theorem not_finiteDimensional_lp : ¬ FiniteDimensional ℝ (lp (fun _ : ℕ => ℝ) 2) := by
-  intro h
-  have hon : Orthonormal ℝ fun n : ℕ => lp.single 2 n (1 : ℝ) := by
-    rw [orthonormal_iff_ite]
-    intro i j
-    rw [lp.inner_single_left, lp.single_apply, Pi.single_apply]
-    split_ifs <;> simp
-  exact Module.Finite.not_linearIndependent_of_infinite _ hon.linearIndependent
-
 /-- **Remark 7, the spectrum.** For a sequence `(αₙ)` converging to `0`, the multiplication
 operator `T` on `ℓ²` has `σ(T) = {αₙ} ∪ {0}`; each `αₙ` is an eigenvalue (with eigenvector
 `eₙ`), and `0` is an eigenvalue iff some `αₙ = 0` — so `0` may or may not belong to `EV(T)`
@@ -368,7 +309,7 @@ theorem remark_6_7_spectrum {α : ℕ → ℝ} (hα : Tendsto α atTop (𝓝 0))
       (multiplicationOperator α hC : Module.End ℝ (lp (fun _ : ℕ => ℝ) 2)) (α n) := fun n => by
     refine hasEigenvalue_of_hasEigenvector (x := lp.single 2 n (1 : ℝ)) ⟨?_, ?_⟩
     · rw [mem_eigenspace_iff, ContinuousLinearMap.coe_coe]
-      exact multiplicationOperator_single α hC n
+      exact lp.diagonalL_single α hC n 1
     · intro h
       have := congrArg (fun z : lp (fun _ : ℕ => ℝ) 2 => z n) h
       simp at this
@@ -423,7 +364,8 @@ theorem remark_6_7_spectrum {α : ℕ → ℝ} (hα : Tendsto α atTop (𝓝 0))
       exact hμ hunit.neg
     · rintro μ (⟨n, rfl⟩ | rfl)
       · exact remark_6_6 (hev n)
-      · exact theorem_6_8_a (remark_6_7_isCompactOperator hα hC) not_finiteDimensional_lp
+      · exact theorem_6_8_a (remark_6_7_isCompactOperator hα hC)
+          lp.not_finiteDimensional_of_infinite
   · constructor
     · intro h
       obtain ⟨x, hx, hx0⟩ := h.exists_hasEigenvector

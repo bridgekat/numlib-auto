@@ -5,6 +5,7 @@ Natural home: `Mathlib.Analysis.Distribution.Sobolev`, beside the material of
 `Numlib/Analysis/Sobolev/MultiIndex.lean` and `Numlib/Analysis/Sobolev/Density.lean`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Numlib.Analysis.Calculus.ContDiffConstOffCompact
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.MultiIndex
@@ -557,6 +558,171 @@ theorem MemSobolevMultiIndex.indicator_mul [IsLocallyFiniteMeasure μ] {ι : Typ
     by_cases hx : x ∈ (Ω : Set E) <;> simp [hx]
 
 end MemIndicator
+
+/-! ### Multipliers: `C^k` functions constant off a compact set, and cut-offs at every order -/
+
+section MulAbs
+
+variable {E : Type*} [NormedAddCommGroup E] [MeasurableSpace E] [OpensMeasurableSpace E]
+  {μ : Measure E} {Ω : Opens E}
+
+/-- A bounded measurable coefficient times an `L²(Ω)` function is in `L²(Ω)`. -/
+theorem _root_.MeasureTheory.MemLp.mul_of_forall_abs_le {c w : E → ℝ}
+    (hc : AEStronglyMeasurable c (μ.restrict (Ω : Set E))) {C : ℝ}
+    (hC : ∀ x ∈ (Ω : Set E), |c x| ≤ C) (hw : MemLp w 2 (μ.restrict (Ω : Set E))) :
+    MemLp (fun x ↦ c x * w x) 2 (μ.restrict (Ω : Set E)) :=
+  hw.of_ae_norm_le_mul (hc.mul hw.aestronglyMeasurable)
+    ((ae_restrict_mem Ω.isOpen.measurableSet).mono fun x hx ↦ by
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_right (hC x hx) (abs_nonneg _))
+
+end MulAbs
+
+section Multiplier
+
+open SobolevMultiIndex
+
+variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
+
+/-- A `C^1` function on an open set has its partial derivative `∂ᵢu = fderiv u · e_i` as weak
+derivative along `e_i`. -/
+theorem ContDiffOn.hasWeakIteratedLineDerivOn_single {u : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hu : ContDiffOn ℝ 1 u Ω) (i : Fin N) :
+    HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u
+      (fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1)) Ω volume := by
+  have h := (ContDiffOn.hasWeakIteratedFDerivOn (μ := volume) hu (m := 1) le_rfl).lineDeriv
+    ![EuclideanSpace.single i 1]
+  exact h.congr_ae (Filter.EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ by
+    simp [iteratedFDeriv_one_apply])
+
+variable {Ω}
+
+/-- **Multiplication by a `C^k` multiplier preserves `H^k(Ω)`**: for a multiplier `c`
+(`IsContDiffConstOffCompact k c`) and `f ∈ H^k(Ω)`, the product `c f` lies in `H^k(Ω)`. By
+induction on `k` through `memSobolevMultiIndex_succ_iff` and the product rule
+`∂_i (c f) = (∂_i c) f + c (∂_i f)` (`HasWeakIteratedLineDerivOn.mul`). -/
+theorem MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact (k : ℕ) :
+    ∀ {c f : EuclideanSpace ℝ (Fin N) → ℝ}, IsContDiffConstOffCompact k c →
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f k 2 Ω volume →
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fun x ↦ c x * f x) k 2 Ω
+      volume := by
+  induction k with
+  | zero =>
+    intro c f hc hf
+    rw [memSobolevMultiIndex_zero_iff] at hf ⊢
+    obtain ⟨C, hC⟩ := hc.exists_bound
+    exact MemLp.mul_of_forall_abs_le hc.continuous.aestronglyMeasurable (fun x _ ↦ hC x) hf
+  | succ k ih =>
+    intro c f hc hf
+    obtain ⟨hf0, hfd⟩ := memSobolevMultiIndex_succ_iff.1 hf
+    refine memSobolevMultiIndex_succ_iff.2 ⟨ih (hc.of_le (Nat.le_succ k)) hf0, fun i ↦ ?_⟩
+    obtain ⟨w, hw, hwm⟩ := hfd i
+    rw [EuclideanSpace.basisFun_toBasis_apply] at hw ⊢
+    have h2 : (2 : ℝ≥0∞) ≠ ⊤ := ENNReal.ofNat_ne_top
+    have hc1 : ContDiffOn ℝ 1 c Ω :=
+      (hc.contDiff.of_le (by exact_mod_cast Nat.le_add_left 1 k)).contDiffOn
+    have hcd := hc1.hasWeakIteratedLineDerivOn_single Ω i
+    refine ⟨fun x ↦ fderiv ℝ c x (EuclideanSpace.single i 1) * f x + c x * w x, ?_, ?_⟩
+    · exact hcd.mul rfl hw one_le_two h2 h2 (hc.continuous.continuousOn.locallyMemLpOn 2)
+        ((hc.fderiv_apply _).continuous.continuousOn.locallyMemLpOn 2) hf0.memLp.locallyMemLpOn
+        hwm.memLp.locallyMemLpOn
+    · have h1 := ih (hc.fderiv_apply (EuclideanSpace.single i 1)) hf0
+      have h2' := ih (hc.of_le (Nat.le_succ k)) hwm
+      exact h1.add h2'
+
+/-- A finite sum of products of multipliers and `H^k(Ω)` functions lies in `H^k(Ω)`. -/
+theorem MemSobolevMultiIndex.sum_mul_of_isContDiffConstOffCompact {k : ℕ} {κ : Type*}
+    (s : Finset κ) {c : κ → EuclideanSpace ℝ (Fin N) → ℝ}
+    {f : κ → EuclideanSpace ℝ (Fin N) → ℝ} (hc : ∀ i ∈ s, IsContDiffConstOffCompact k (c i))
+    (hf : ∀ i ∈ s, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (f i) k 2 Ω
+      volume) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+      (fun x ↦ ∑ i ∈ s, c i x * f i x) k 2 Ω volume := by
+  have := MemSobolevMultiIndex.finset_sum s (f := fun i x ↦ c i x * f i x) fun i hi ↦
+    MemSobolevMultiIndex.mul_of_isContDiffConstOffCompact k (hc i hi) (hf i hi)
+  refine this.congr_ae (Eventually.of_forall fun x ↦ ?_)
+  simp only [Finset.sum_apply]
+
+
+/-- A smooth function constant off a compact set whose support misses the frontier of `Ω` is a
+Sobolev cut-off for `Ω` (bounded with bounded derivative). -/
+theorem IsSobolevCutoff.of_hasCompactSupport_sub {θ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hθ : ContDiff ℝ ∞ θ) {κ : ℝ} (hθκ : HasCompactSupport fun x ↦ θ x - κ)
+    (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
+    IsSobolevCutoff Ω θ where
+  contDiff := hθ
+  exists_bound := by
+    obtain ⟨C₁, hC₁⟩ :=
+      (IsContDiffConstOffCompact.mk (n := 1) (hθ.of_le (by simp)) ⟨κ, hθκ⟩).exists_bound
+    obtain ⟨C₂, hC₂⟩ := (hθκ.fderiv (𝕜 := ℝ)).exists_bound_of_continuous
+      ((hθ.sub contDiff_const).continuous_fderiv (by simp))
+    refine ⟨max C₁ C₂, fun x ↦ ⟨(hC₁ x).trans (le_max_left _ _), ?_⟩⟩
+    have := hC₂ x
+    rw [fderiv_sub_const] at this
+    exact this.trans (le_max_right _ _)
+  disjoint_frontier := hθΓ
+
+/-- The support of a partial derivative of `θ` misses the frontier of `Ω` when that of `θ`
+does. -/
+theorem tsupport_fderiv_apply_disjoint_frontier {θ : EuclideanSpace ℝ (Fin N) → ℝ}
+    (hθΓ : Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))))
+    (y : EuclideanSpace ℝ (Fin N)) :
+    Disjoint (tsupport fun x ↦ fderiv ℝ θ x y) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
+  hθΓ.mono_left (tsupport_fderiv_apply_subset ℝ y)
+
+/-- **The zero extension of `θ f` at every order** ([brezis2011functional] Chapter 9, Remark 4
+(ii), iterated): for a smooth `θ` constant off a compact set with support off the frontier of `Ω`
+(the function `θ₀ = 1 − ∑ θᵢ` of a partition of unity) and `f ∈ H^k(Ω)`, the extension of `θ f`
+by zero lies in `H^k(ℝ^N)`. Induction on `k` through `memSobolevMultiIndex_succ_iff`, the
+derivative of the extension being the extension of `θ ∂_i f + (∂_i θ) f`
+(`HasWeakIteratedLineDerivOn.indicator_mul`). -/
+theorem MemSobolevMultiIndex.indicator_mul_of_hasCompactSupport_sub (k : ℕ) :
+    ∀ {θ f : EuclideanSpace ℝ (Fin N) → ℝ}, ContDiff ℝ ∞ θ →
+    (∃ κ : ℝ, HasCompactSupport fun x ↦ θ x - κ) →
+    Disjoint (tsupport θ) (frontier (Ω : Set (EuclideanSpace ℝ (Fin N)))) →
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis f k 2 Ω volume →
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin N) ℝ).toBasis
+      ((Ω : Set (EuclideanSpace ℝ (Fin N))).indicator fun x ↦ θ x * f x) k 2 ⊤ volume := by
+  induction k with
+  | zero =>
+    rintro θ f hθ ⟨κ, hθκ⟩ hθΓ hf
+    rw [memSobolevMultiIndex_zero_iff] at hf ⊢
+    have hcut := IsSobolevCutoff.of_hasCompactSupport_sub (Ω := Ω) hθ hθκ hθΓ
+    obtain ⟨M, hM⟩ := hcut.exists_bound
+    have := memLp_indicator_smul_of_forall_norm_le (μ := volume) Ω.isOpen.measurableSet
+      (g := θ) (M := M) (fun x _ ↦ (Real.norm_eq_abs _).trans_le (hM x).1)
+      hcut.continuous.aestronglyMeasurable hf
+    rw [Opens.coe_top, Measure.restrict_univ]
+    exact this
+  | succ k ih =>
+    rintro θ f hθ ⟨κ, hθκ⟩ hθΓ hf
+    have hcut := IsSobolevCutoff.of_hasCompactSupport_sub (Ω := Ω) hθ hθκ hθΓ
+    obtain ⟨hf0, hfd⟩ := memSobolevMultiIndex_succ_iff.1 hf
+    refine memSobolevMultiIndex_succ_iff.2 ⟨ih hθ ⟨κ, hθκ⟩ hθΓ hf0, fun i ↦ ?_⟩
+    obtain ⟨w, hw, hwm⟩ := hfd i
+    rw [EuclideanSpace.basisFun_toBasis_apply] at hw ⊢
+    refine ⟨(Ω : Set (EuclideanSpace ℝ (Fin N))).indicator fun x ↦
+      θ x * w x + fderiv ℝ θ x (EuclideanSpace.single i 1) * f x, ?_, ?_⟩
+    · have := hw.indicator_mul hcut
+      simpa only [smul_eq_mul] using this
+    · have hθ' : ContDiff ℝ ∞ fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) :=
+        hcut.contDiff_fderiv_apply _
+      have hθ'c : HasCompactSupport fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) - 0 := by
+        have := hθκ.fderiv_apply (𝕜 := ℝ) (EuclideanSpace.single i 1)
+        have e : (fun x ↦ fderiv ℝ θ x (EuclideanSpace.single i 1) - 0)
+            = fun x ↦ fderiv ℝ (fun x ↦ θ x - κ) x (EuclideanSpace.single i 1) := by
+          funext x
+          simp only [fderiv_sub_const, sub_zero]
+        rw [e]
+        exact this
+      have h1 := ih hθ ⟨κ, hθκ⟩ hθΓ hwm
+      have h2 := ih hθ' ⟨0, hθ'c⟩ (tsupport_fderiv_apply_disjoint_frontier hθΓ _) hf0
+      refine (h1.add h2).congr_ae (Eventually.of_forall fun x ↦ ?_)
+      simp only [Pi.add_apply]
+      by_cases hx : x ∈ (Ω : Set (EuclideanSpace ℝ (Fin N)))
+      · simp only [Set.indicator_of_mem hx]
+      · simp only [Set.indicator_of_notMem hx, add_zero]
+end Multiplier
 
 section PiLpNorm
 
@@ -1566,6 +1732,11 @@ theorem toLowerOrderL_apply [Fact (1 ≤ p)] (hk : k' ≤ k) (u : SobolevMultiIn
 theorem norm_toLowerOrderL_le [Fact (1 ≤ p)] (hk : k' ≤ k) : ‖toLowerOrderL F b p Ω μ hk‖ ≤ 1 :=
   LinearMap.mkContinuous_norm_le _ zero_le_one _
 
+/-- The inclusion `W^{k,p}(Ω) → L^p(Ω)` factors through `W^{k',p}(Ω)` for `k' ≤ k`. -/
+theorem fnL_comp_toLowerOrderL [Fact (1 ≤ p)] (hk : k' ≤ k) :
+    (fnL F b k' p Ω μ).comp (toLowerOrderL F b p Ω μ hk) = fnL F b k p Ω μ :=
+  rfl
+
 /-- `SobolevMultiIndex.toLowerOrderL` is injective: an element is determined by its function. -/
 theorem toLowerOrderL_injective [Fact (1 ≤ p)] [FiniteDimensional ℝ E] [BorelSpace E]
     [CompleteSpace F] (hk : k' ≤ k) :
@@ -1752,6 +1923,41 @@ theorem congr_ae {f' : E → F} (h : MemSobolevMultiIndexLoc b f k p Ω μ)
     (ae_mono (Measure.restrict_mono (subset_closure.trans hVΩ) le_rfl) hf)
 
 end MemSobolevMultiIndexLoc
+
+section Classical
+
+variable [FiniteDimensional ℝ E] [BorelSpace E] [μ.IsAddHaarMeasure]
+
+/-- **A `C^n` function on `Ω` lies in `W^{m,p}_loc(Ω)` for every `m ≤ n`**: on an open `V` with
+compact closure in `Ω`, its derivatives of order `≤ m` are continuous on the compact `closure V`,
+hence bounded, hence in `L^p(V)`, and the classical derivatives are the weak ones
+(`ContDiffOn.hasWeakIteratedFDerivOn`). -/
+theorem _root_.ContDiffOn.memSobolevMultiIndexLoc {n : WithTop ℕ∞} (hf : ContDiffOn ℝ n f Ω)
+    {m : ℕ} (hm : (m : WithTop ℕ∞) ≤ n) : MemSobolevMultiIndexLoc b f m p Ω μ := by
+  intro V hVc hVΩ
+  have hVm : MeasurableSet (V : Set E) := V.isOpen.measurableSet
+  have hVΩ' : (V : Set E) ⊆ Ω := subset_closure.trans hVΩ
+  have : IsFiniteMeasure (μ.restrict (V : Set E)) :=
+    isFiniteMeasure_restrict.2 ((measure_mono subset_closure).trans_lt hVc.measure_lt_top).ne
+  have hbound : ∀ j : ℕ, (j : WithTop ℕ∞) ≤ n →
+      MemLp (iteratedFDeriv ℝ j f) p (μ.restrict (V : Set E)) := by
+    intro j hj
+    have hc : ContinuousOn (iteratedFDeriv ℝ j f) Ω := hf.continuousOn_iteratedFDeriv hj
+    obtain ⟨C, hC⟩ := hVc.exists_bound_of_continuousOn (hc.mono hVΩ)
+    refine MemLp.of_bound ((hc.mono hVΩ').aestronglyMeasurable hVm) C ?_
+    filter_upwards [ae_restrict_mem hVm] with x hx
+    exact hC x (subset_closure hx)
+  have hf0 : MemLp f p (μ.restrict (V : Set E)) := by
+    obtain ⟨C, hC⟩ := hVc.exists_bound_of_continuousOn (hf.continuousOn.mono hVΩ)
+    refine MemLp.of_bound ((hf.continuousOn.mono hVΩ').aestronglyMeasurable hVm) C ?_
+    filter_upwards [ae_restrict_mem hVm] with x hx
+    exact hC x (subset_closure hx)
+  refine MemSobolev.memSobolevMultiIndex ⟨hf0, fun j hj ↦ ?_⟩
+  have hj' : (j : WithTop ℕ∞) ≤ n := (by exact_mod_cast hj : (j : WithTop ℕ∞) ≤ m).trans hm
+  exact ⟨iteratedFDeriv ℝ j f, (hf.mono hVΩ').hasWeakIteratedFDerivOn hj', hbound j hj'⟩
+
+end Classical
+
 
 end Loc
 

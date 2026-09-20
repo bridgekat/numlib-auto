@@ -269,3 +269,48 @@ id = "ContDiffOnPowDomain.smul"
 [[node]]
 id = "IsMaximalMonotone.contDiffOnPowDomain_exp_smul_semigroup"
 source = "[brezis2011functional] Theorem 7.5 and chapter 7, Remark 6"
+
+[[node]]
+id = "semigroupLift"
+
+[[node]]
+id = "applyL_zero_semigroupLift"
+
+[[node]]
+id = "eq_semigroupLift"
+
+[[node]]
+id = "semigroupLift_eq_semigroup_powPart"
+
+[[node]]
+id = "applyL_semigroupLift_eq"
+
+[[node]]
+id = "hasDerivAt_applyL_semigroupLift"
+
+[[node]]
+id = "shiftL_semigroupLift"
+
+[[node]]
+id = "norm_applyL_last_semigroupLift_le"
+
+[[node]]
+id = "castLE_semigroupLift"
+
+[[node]]
+id = "norm_applyL_semigroupLift_le"
+
+[[node]]
+id = "contDiffOn_semigroupLift"
+
+[[node]]
+id = "norm_sq_powDomain_one"
+
+[[node]]
+id = "exists_powDomain_one"
+
+[[node]]
+id = "isSolutionOn_zero"
+
+[[node]]
+id = "IsSolutionOn.energy_Ioi"

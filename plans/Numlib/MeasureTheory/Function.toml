@@ -9,7 +9,10 @@ layout (natural homes: `Mathlib.MeasureTheory.Function.*`). Directory-only group
 * `EssSupport` -- the essential support of a measurable function, the notion of support that makes
   sense for an `L^p` class;
 * `LpInterpolation` -- the `k`-fold Hoelder inequality and the interpolation inequality
-  `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` between two exponents.
+  `‖f‖_r ≤ ‖f‖_p^α ‖f‖_q^(1-α)` between two exponents;
+* `ContinuousOnClosure` -- functions continuous on the closure of a set: essentially bounded on
+  the set when the closure is compact, and an almost-everywhere bound on an open set holds on
+  its closure.
 
 All of it is general measure theory over a `MeasurableSpace`, with the finite-dimensional
 Lebesgue setting entering only in `KolmogorovRiesz` and in the negative results about `L^∞`. The

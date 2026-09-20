@@ -11,6 +11,7 @@ import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Function.LpOrder
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.AbsolutelyContinuousFun
+import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Topology.Order.IntermediateValue
 
@@ -417,3 +418,86 @@ theorem exists_continuous_nonneg_integral_abs_sub_le {p : ℝ → ℝ} (hab : a 
     _ ≤ ε := hq₀
 
 end intervalIntegral
+
+/-! ### The fundamental theorem on `(0, T]` with a limit at `0⁺`, and integrability on `(0, ∞)` -/
+
+/-- **The fundamental theorem of calculus on `(0, T]` for a function with a nonpositive
+continuous derivative**: if `φ' = −g` on `(0, ∞)` with `g ≥ 0` continuous there, `φ ≥ 0` on
+`(0, ∞)`, and `φ(t) → L` as `t → 0⁺`, then `g` is integrable on `(0, T]` and
+`φ(T) + ∫₀ᵀ g = L`. The integrability comes from `∫_ε^T g = φ(ε) − φ(T) ≤ φ(ε)`, eventually
+bounded as `ε → 0⁺`; the identity from the fundamental theorem with one-sided limits. This is the
+pattern of every energy identity of the heat equation (`∫_ε^T`, then `ε → 0`). -/
+theorem integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg {φ g : ℝ → ℝ} {T L : ℝ} (hT : 0 < T)
+    (hφ : ∀ t, 0 < t → HasDerivAt φ (-(g t)) t) (hg0 : ∀ t, 0 < t → 0 ≤ g t)
+    (hgc : ContinuousOn g (Ioi 0)) (hφ0 : ∀ t, 0 < t → 0 ≤ φ t)
+    (hL : Tendsto φ (𝓝[>] 0) (𝓝 L)) :
+    IntegrableOn g (Ioc 0 T) ∧ φ T + ∫ t in (0 : ℝ)..T, g t = L := by
+  -- the identity on `[ε, T]`
+  have hint : ∀ ε, 0 < ε → ε ≤ T → ∫ t in ε..T, g t = φ ε - φ T := by
+    intro ε hε hεT
+    have hI : IntervalIntegrable (fun t ↦ -(g t)) volume ε T :=
+      (hgc.mono fun t ht ↦ by
+        rw [uIcc_of_le hεT] at ht
+        exact hε.trans_le ht.1).neg.intervalIntegrable
+    have := intervalIntegral.integral_eq_sub_of_hasDerivAt (f := φ) (f' := fun t ↦ -(g t))
+      (fun t ht ↦ hφ t (by
+        rw [uIcc_of_le hεT] at ht
+        exact hε.trans_le ht.1)) hI
+    rw [intervalIntegral.integral_neg] at this
+    linarith
+  -- integrability on `(0, T]`
+  have hgi : IntegrableOn g (Ioc 0 T) := by
+    have hIoc : ∀ n : ℕ, IntegrableOn g (Ioc (T / (n + 1)) T) := fun n ↦ by
+      have hpos : 0 < T / (n + 1) := by positivity
+      exact (hgc.mono fun t ht ↦ hpos.trans_le ht.1).integrableOn_Icc.mono_set Ioc_subset_Icc_self
+    have ha : Tendsto (fun n : ℕ ↦ T / (n + 1)) atTop (𝓝 0) := by
+      have := tendsto_one_div_add_atTop_nhds_zero_nat.const_mul T
+      rw [mul_zero] at this
+      exact this.congr fun n ↦ mul_one_div T _
+    have ha' : Tendsto (fun n : ℕ ↦ T / (n + 1)) atTop (𝓝[>] 0) :=
+      tendsto_nhdsWithin_iff.2 ⟨ha, Eventually.of_forall fun n ↦
+        (by positivity : (0 : ℝ) < T / (n + 1))⟩
+    have hev : ∀ᶠ n : ℕ in atTop, φ (T / (n + 1)) ≤ L + 1 :=
+      (hL.comp ha').eventually (Iic_mem_nhds (by linarith))
+    refine integrableOn_Ioc_of_intervalIntegral_norm_bounded_left (I := L + 1)
+      (a := fun n : ℕ ↦ T / (n + 1)) hIoc ha (hev.mono fun n hn ↦ ?_)
+    have hpos : 0 < T / (n + 1) := by positivity
+    have hle' : T / (n + 1) ≤ T := by
+      rw [div_le_iff₀ (by positivity)]
+      nlinarith
+    have h1 : ∫ x in Ioc (T / (n + 1)) T, ‖g x‖ = ∫ x in T / (n + 1)..T, g x := by
+      rw [intervalIntegral.integral_of_le hle']
+      exact setIntegral_congr_fun measurableSet_Ioc fun x hx ↦
+        Real.norm_of_nonneg (hg0 x (hpos.trans hx.1))
+    rw [h1, hint _ hpos hle']
+    linarith [hφ0 T hT]
+  refine ⟨hgi, ?_⟩
+  -- the identity on `(0, T)` by the fundamental theorem of calculus with limits
+  have hI : IntervalIntegrable (fun t ↦ -(g t)) volume 0 T := by
+    rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hT.le]
+    exact hgi.neg
+  have hTl : Tendsto φ (𝓝[<] T) (𝓝 (φ T)) :=
+    (hφ T hT).continuousAt.tendsto.mono_left nhdsWithin_le_nhds
+  have := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_tendsto hT (f := φ)
+    (f' := fun t ↦ -(g t)) (fun t ht ↦ hφ t ht.1) hI hL hTl
+  rw [intervalIntegral.integral_neg] at this
+  linarith
+
+/-- **From bounded integrals on `(0, T]` to integrability on `(0, ∞)`**: a function `g ≥ 0` on
+`(0, ∞)`, integrable on every `(0, T]` with `∫₀ᵀ g ≤ L`, is integrable on `(0, ∞)` with
+`∫₀^∞ g ≤ L`. -/
+theorem integrableOn_Ioi_and_integral_le_of_forall_integral_le {g : ℝ → ℝ} {L : ℝ}
+    (hg0 : ∀ t, 0 < t → 0 ≤ g t) (hfi : ∀ T, 0 < T → IntegrableOn g (Ioc 0 T))
+    (hle : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, g t ≤ L) :
+    IntegrableOn g (Ioi 0) ∧ ∫ t in Ioi 0, g t ≤ L := by
+  have hb : Tendsto (fun n : ℕ ↦ (n : ℝ) + 1) atTop atTop :=
+    tendsto_natCast_atTop_atTop.atTop_add tendsto_const_nhds
+  have hgi : IntegrableOn g (Ioi 0) := by
+    refine integrableOn_Ioi_of_intervalIntegral_norm_bounded L 0 (b := fun n : ℕ ↦ (n : ℝ) + 1)
+      (fun n ↦ hfi ((n : ℝ) + 1) (by positivity)) hb (Eventually.of_forall fun n ↦ ?_)
+    have hn : (0 : ℝ) ≤ n + 1 := by positivity
+    refine (le_of_eq ?_).trans (hle ((n : ℝ) + 1) (by positivity))
+    rw [intervalIntegral.integral_of_le hn, intervalIntegral.integral_of_le hn]
+    exact setIntegral_congr_fun measurableSet_Ioc fun t ht ↦ Real.norm_of_nonneg (hg0 t ht.1)
+  refine ⟨hgi, le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hgi hb)
+    (Eventually.of_forall fun n ↦ hle ((n : ℝ) + 1) (by positivity))⟩

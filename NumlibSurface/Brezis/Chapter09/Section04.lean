@@ -637,38 +637,21 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 /-- `∫_Ω |∇u|² = ∑ᵢ ‖∂ᵢu‖_{L²(Ω)}²` for `u ∈ H^1(Ω)`: the square of the `L²` norm of the
-gradient vector is the sum of the squares of the `L²` norms of the partial derivatives. -/
+gradient vector is the sum of the squares of the `L²` norms of the partial derivatives (the
+backbone's `SobolevMultiIndex.eLpNorm_gradFn_two_sq`, `gradient u` being its `gradFn u`). -/
 theorem eLpNorm_gradient_two_sq (u : hSpace N Ω) :
     eLpNorm (gradient u) 2 (volume.restrict (Ω : Set 𝔼)) ^ 2
-      = ∑ i, eLpNorm (partialDeriv u i) 2 (volume.restrict (Ω : Set 𝔼)) ^ 2 := by
-  have hg := eLpNorm_nnreal_pow_eq_lintegral (p := 2) two_ne_zero
-    (aestronglyMeasurable_gradient u)
-  have hi : ∀ i, eLpNorm (partialDeriv u i) 2 (volume.restrict (Ω : Set 𝔼)) ^ 2
-      = ∫⁻ x, ‖partialDeriv u i x‖ₑ ^ 2 ∂(volume.restrict (Ω : Set 𝔼)) := fun i ↦ by
-    have h := eLpNorm_nnreal_pow_eq_lintegral (p := 2) two_ne_zero
-      (Lp.aestronglyMeasurable (partialDeriv u i))
-    simpa only [NNReal.coe_ofNat, ENNReal.coe_ofNat, ENNReal.rpow_two] using h
-  simp only [NNReal.coe_ofNat, ENNReal.coe_ofNat, ENNReal.rpow_two] at hg
-  rw [hg]
-  simp_rw [hi]
-  rw [← lintegral_finsetSum' _ fun i _ ↦
-    (Lp.aestronglyMeasurable (partialDeriv u i)).enorm.pow_const 2]
-  refine lintegral_congr fun x ↦ ?_
-  simp only [enorm_eq_nnnorm, ← ENNReal.coe_pow, EuclideanSpace.nnnorm_eq, NNReal.sq_sqrt,
-    ENNReal.ofNNReal_finsetSum, gradient_apply]
+      = ∑ i, eLpNorm (partialDeriv u i) 2 (volume.restrict (Ω : Set 𝔼)) ^ 2 :=
+  SobolevMultiIndex.eLpNorm_gradFn_two_sq u
 
 /-- **At `p = 2` the two readings of `‖∇u‖_{L²(Ω)}` agree**: the Euclidean reading
 `(∫_Ω |∇u|²)^{1/2}` of §9.1 (`eLpNorm (gradient u) 2`) is the backbone's `ℓ²` reading
-`(∑ᵢ ‖∂ᵢu‖₂²)^{1/2}` (`SobolevMultiIndex.gradNorm`). -/
+`(∑ᵢ ‖∂ᵢu‖₂²)^{1/2}` (`SobolevMultiIndex.gradNorm`; the backbone's
+`SobolevMultiIndex.gradNorm_eq_toReal_eLpNorm_gradFn`). -/
 theorem gradNorm_eq_toReal_eLpNorm_gradient_two (u : hSpace N Ω) :
     SobolevMultiIndex.gradNorm u
-      = (eLpNorm (gradient u) 2 (volume.restrict (Ω : Set 𝔼))).toReal := by
-  rw [Elliptic.gradNorm_eq_sqrt]
-  have h := congrArg ENNReal.toReal (eLpNorm_gradient_two_sq u)
-  rw [ENNReal.toReal_pow, ENNReal.toReal_sum fun i _ ↦ ENNReal.pow_ne_top (Lp.eLpNorm_ne_top _)]
-    at h
-  simp only [ENNReal.toReal_pow, ← Lp.norm_def, partialDeriv] at h
-  rw [← h, Real.sqrt_sq ENNReal.toReal_nonneg]
+      = (eLpNorm (gradient u) 2 (volume.restrict (Ω : Set 𝔼))).toReal :=
+  SobolevMultiIndex.gradNorm_eq_toReal_eLpNorm_gradFn u
 
 end GradientTwo
 

@@ -1173,6 +1173,32 @@ theorem eq_intervals_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :
   · exact Or.inr (Or.inl h)
   · exact Or.inl h
 
+/-- An open interval meets a bounded open interval in the empty set or in a bounded open
+interval `(a, b)`, `a < b`. -/
+theorem inf_Ioo_eq_empty_or_exists_eq_Ioo (hI : (I : Set ℝ).OrdConnected) (c d : ℝ) :
+    ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = ∅ ∨
+      ∃ a b, a < b ∧ ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = Set.Ioo a b := by
+  have hKI : ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ) = (I : Set ℝ) ∩ Set.Ioo c d := rfl
+  have hKord : ((I ⊓ Opens.Ioo c d : Opens ℝ) : Set ℝ).OrdConnected := by
+    rw [hKI]; exact hI.inter ordConnected_Ioo
+  rcases eq_intervals_of_ordConnected hKord with h | h | ⟨a, h⟩ | ⟨b, h⟩ | ⟨a, b, hab, h⟩
+  · exact Or.inl h
+  · exfalso
+    rw [hKI] at h
+    have : max c d + 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by rw [h]; exact mem_univ _
+    linarith [this.2.2, le_max_right c d]
+  · exfalso
+    rw [hKI] at h
+    have : max a d + 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by
+      rw [h]; exact show a < max a d + 1 by linarith [le_max_left a d]
+    linarith [this.2.2, le_max_right a d]
+  · exfalso
+    rw [hKI] at h
+    have : min b c - 1 ∈ (I : Set ℝ) ∩ Set.Ioo c d := by
+      rw [h]; exact show min b c - 1 < b by linarith [min_le_left b c]
+    linarith [this.2.1, min_le_right b c]
+  · exact Or.inr ⟨a, b, hab, h⟩
+
 /-- The frontier of an open interval is the set of its finite endpoints, a finite set: `{a, b}`
 for `(a, b)`, `{a}` for `(a, ∞)`, `{b}` for `(-∞, b)`, empty for `ℝ` and for `∅`. -/
 theorem finite_frontier_of_ordConnected (hI : (I : Set ℝ).OrdConnected) :

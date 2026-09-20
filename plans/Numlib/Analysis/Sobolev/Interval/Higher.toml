@@ -171,3 +171,15 @@ id = "SobolevIntervalLp.deriv_shift"
 
 [[node]]
 id = "SobolevIntervalLp.shift_sub"
+
+[[node]]
+id = "HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn"
+
+[[node]]
+id = "HasWeakDerivOn.contDiff_mul"
+
+[[node]]
+id = "hasWeakIteratedDerivOn_sum_choose_mul"
+
+[[node]]
+id = "SobolevIntervalLp.exists_contDiff_mul"

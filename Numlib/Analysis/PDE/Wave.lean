@@ -1,4 +1,5 @@
 import Mathlib.Analysis.InnerProductSpace.ProdL2
+import Numlib.Analysis.ODE.HarmonicOscillator
 import Numlib.Analysis.PDE.Heat
 import Numlib.Analysis.PDE.Heat.Classical
 
@@ -52,9 +53,10 @@ are `phaseSpace.fst`, `phaseSpace.snd`, `phaseSpace.mk`, with `phaseSpace.inner_
 which is (34) by `Elliptic.laplaceForm_eq_innerSL`. The operator is a `LinearPMap` on it whose
 domain asks the first component to lie in `D(−Δ)` after the embedding `SobolevMultiIndexZero.fnL`
 and the second to be in the range of that embedding (`Wave.MemOperatorDomain`, with
-`Wave.toSobolevZero` the `H¹₀`-preimage). A solution is a curve `u : ℝ → L²(Ω)` — the book's `u`,
-not `U` — in the class (31): `C²([0, ∞); L²)`, `C¹([0, ∞); H¹₀)` through the embedding
-(`Bochner.ContDiffOnThrough`), `u(t) ∈ D(−Δ)` with `−Δu` continuous, `u'' = Δu`, `u 0 = u₀`,
+`toSobolevZero` of `Numlib/Analysis/PDE/DirichletLaplacian` the `H¹₀`-preimage). A solution is
+a curve `u : ℝ → L²(Ω)` — the book's `u`, not `U` — in the class (31): `C²([0, ∞); L²)`,
+`C¹([0, ∞); H¹₀)` through the embedding (`Bochner.ContDiffOnThrough`), `u(t) ∈ D(−Δ)` with
+`−Δu` continuous, `u'' = Δu`, `u 0 = u₀`,
 `u' 0 = v₀`; the translation between `U` and `u` (`Wave.isSolution_of_isSolutionOn`,
 `Wave.IsSolution.isSolutionOn`) is the bulk of `Wave.existsUnique_isSolution`.
 
@@ -68,7 +70,8 @@ two-sided solvability and the energy identity for all `t ∈ ℝ` are obtained w
 reversal (`t ↦ −t`, `v₀ ↦ −v₀`, `Wave.existsUnique_isSolution_backward`). Remark 8 (d'Alembert's
 formula on `Ω = ℝ`, `Wave.dAlembert`) is the one place where a concrete solution is exhibited;
 Remark 9 (the Fourier method, `Wave.IsSolution.inner_eigenfunction`) reduces to the harmonic
-oscillator on `[0, ∞)` (`Wave.eq_cos_add_sin_of_hasDerivWithinAt_oscillator`).
+oscillator on `[0, ∞)` (`eq_cos_add_sin_of_hasDerivWithinAt_oscillator` of
+`Numlib/Analysis/ODE/HarmonicOscillator`).
 
 ## References
 
@@ -227,59 +230,6 @@ theorem inner_sobolevZero_eq (u₁ u₂ : SobolevEuclideanZero N 1 2 Ω) :
           u₂⟫_ℝ :=
   (laplaceForm_apply_eq_inner Ω (u₁ : SobolevEuclidean N 1 2 Ω)
     (u₂ : SobolevEuclidean N 1 2 Ω)).symm.trans (laplaceForm_apply_eq_dirichletForm_add Ω _ _)
-
-/-! ### The `H¹₀`-preimage of an `L²` function -/
-
-variable (Ω) in
-/-- **The `H¹₀`-preimage of `v ∈ L²(Ω)`**: the element `w ∈ H¹₀(Ω)` with `fnL w = v` when there is
-one (it is then unique, `SobolevMultiIndexZero.fnL_injective`), and `0` otherwise. -/
-def toSobolevZero (v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
-    SobolevEuclideanZero N 1 2 Ω :=
-  open Classical in
-  if h : ∃ w : SobolevEuclideanZero N 1 2 Ω,
-    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v
-  then h.choose else 0
-
-/-- `fnL (toSobolevZero v) = v` when `v` lies in `H¹₀(Ω)`. -/
-theorem fnL_toSobolevZero {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (hv : ∃ w : SobolevEuclideanZero N 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v) :
-    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
-      (toSobolevZero Ω v) = v := by
-  unfold toSobolevZero
-  rw [dite_eq_left hv]
-  exact hv.choose_spec
-
-/-- `toSobolevZero (fnL w) = w`. -/
-theorem toSobolevZero_fnL (w : SobolevEuclideanZero N 1 2 Ω) :
-    toSobolevZero Ω (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
-      volume w) = w :=
-  SobolevMultiIndexZero.fnL_injective (fnL_toSobolevZero ⟨w, rfl⟩)
-
-/-- The preimage is unique: `toSobolevZero v = w` for any `w` with `fnL w = v`. -/
-theorem toSobolevZero_eq {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    {w : SobolevEuclideanZero N 1 2 Ω}
-    (hw : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
-      = v) : toSobolevZero Ω v = w := by
-  rw [← hw, toSobolevZero_fnL]
-
-/-- The preimage of a sum of two `H¹₀` functions. -/
-theorem toSobolevZero_add {v₁ v₂ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (h₁ : ∃ w : SobolevEuclideanZero N 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v₁)
-    (h₂ : ∃ w : SobolevEuclideanZero N 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
-        = v₂) :
-    toSobolevZero Ω (v₁ + v₂) = toSobolevZero Ω v₁ + toSobolevZero Ω v₂ :=
-  toSobolevZero_eq (by rw [_root_.map_add, fnL_toSobolevZero h₁, fnL_toSobolevZero h₂])
-
-/-- The preimage of a scalar multiple of an `H¹₀` function. -/
-theorem toSobolevZero_smul (c : ℝ)
-    {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (h : ∃ w : SobolevEuclideanZero N 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v) :
-    toSobolevZero Ω (c • v) = c • toSobolevZero Ω v :=
-  toSobolevZero_eq (by rw [_root_.map_smul, fnL_toSobolevZero h])
 
 /-! ### The operator `A(u, v) = (−v, −Δu)` -/
 
@@ -532,17 +482,6 @@ theorem operator_add_id_isMonotone :
   linarith
 
 
-/-- `u + (u + −(2u − f)) = f`. -/
-theorem add_add_neg_two_smul_sub {E : Type*} [AddCommGroup E] [Module ℝ E] (u f : E) :
-    u + (u + -((2 : ℝ) • u - f)) = f := by
-  module
-
-/-- From `4x + a = g + 2f`: `(2x − f) + ((2x − f) + a) = g`. -/
-theorem two_smul_sub_add_eq {E : Type*} [AddCommGroup E] [Module ℝ E] {x f g a : E}
-    (h : (4 : ℝ) • x + a = g + (2 : ℝ) • f) :
-    (2 : ℝ) • x - f + ((2 : ℝ) • x - f + a) = g := by
-  linear_combination (norm := module) h
-
 /-- **(ii) `R(A + 2I) = H`** ([brezis2011functional] §10.3, proof of Theorem 10.7, (ii),
 (36)–(37)): for every `F = (f, g)` there is `U = (u, v) ∈ D(A)` with `2U + AU = F`. Solve
 `4u − Δu = 2f + g` in `D(−Δ)` (`dirichletLaplacian_exists_smul_add_apply_eq` at `λ = 4`, on
@@ -571,7 +510,7 @@ theorem operator_exists_two_smul_add_apply_eq (F : phaseSpace Ω) :
     have hw := toSobolevZero_fnL ((2 : ℝ) • (⟨v', hv'⟩ : SobolevEuclideanZero N 1 2 Ω) - F.fst)
     exact (congrArg (fun z ↦ (⟨v', hv'⟩ : SobolevEuclideanZero N 1 2 Ω)
       + ((⟨v', hv'⟩ : SobolevEuclideanZero N 1 2 Ω) + -z)) hw).trans
-      (add_add_neg_two_smul_sub _ _)
+      (by module)
   · change SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
       ((2 : ℝ) • (⟨v', hv'⟩ : SobolevEuclideanZero N 1 2 Ω) - F.fst)
       + (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
@@ -596,7 +535,7 @@ theorem operator_exists_two_smul_add_apply_eq (F : phaseSpace Ω) :
         + dirichletLaplacianApply Ω x = F.snd + (2 : ℝ) • SobolevMultiIndexZero.fnL ℝ
           (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume F.fst := hx
     refine (congrArg₂ (fun a b ↦ a + (a + dirichletLaplacianApply Ω b)) h1 hux).trans ?_
-    exact two_smul_sub_add_eq hx'
+    linear_combination (norm := module) hx'
 
 /-- **`A + I` is maximal monotone** on the phase space `H¹₀(Ω) × L²(Ω)`, for every open `Ω`
 ([brezis2011functional] §10.3, proof of Theorem 10.7, (i)–(ii)): `LinearMap.id +ᵥ operator Ω`
@@ -899,11 +838,6 @@ theorem operator_eqOn_of_isSolutionOn {U₀ : phaseSpace Ω} {U₁ U₂ : ℝ �
   have h' := congrArg (fun z ↦ Real.exp t • z) h
   simpa only [smul_smul, ← Real.exp_add, add_neg_cancel, Real.exp_zero, one_smul] using h'
 
-/-- `iteratedDerivWithin 2 f s = derivWithin (derivWithin f s) s`. -/
-theorem iteratedDerivWithin_two {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    (f : ℝ → F) (s : Set ℝ) : iteratedDerivWithin 2 f s = derivWithin (derivWithin f s) s :=
-  iteratedDerivWithin_succ.trans (congrArg (fun g ↦ derivWithin g s) iteratedDerivWithin_one)
-
 namespace IsSolution
 
 variable {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
@@ -1066,31 +1000,12 @@ theorem solution_smul (c : ℝ) (t : ℝ) :
 /-! ### Conservation of energy -/
 
 variable (Ω) in
-/-- **The operator of the Dirichlet form on `H¹₀(Ω)`**: the bounded `T` with
-`⟪T u, v⟫_{H¹} = ∫_Ω ∇u·∇v` (`SesqForm.toOperator` of the restricted form; chapter 9b's
-`Elliptic.restrictOperator Ω (dirichletForm Ω)`, here for every `N`). -/
-def dirichletFormOperator : SobolevEuclideanZero N 1 2 Ω →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
-  SesqForm.toOperator ((dirichletForm Ω).restrict (SobolevEuclideanZero N 1 2 Ω))
-
-/-- `⟪T u, v⟫_{H¹} = ∫_Ω ∇u·∇v`. -/
-theorem inner_dirichletFormOperator (u v : SobolevEuclideanZero N 1 2 Ω) :
-    ⟪dirichletFormOperator Ω u, v⟫_ℝ
-      = dirichletForm Ω (u : SobolevEuclidean N 1 2 Ω) (v : SobolevEuclidean N 1 2 Ω) :=
-  SesqForm.inner_toOperator _ u v
-
-/-- `⟪T u, v⟫_{H¹} = ⟪T v, u⟫_{H¹}`. -/
-theorem inner_dirichletFormOperator_comm (u v : SobolevEuclideanZero N 1 2 Ω) :
-    ⟪dirichletFormOperator Ω u, v⟫_ℝ = ⟪dirichletFormOperator Ω v, u⟫_ℝ := by
-  rw [inner_dirichletFormOperator, inner_dirichletFormOperator, dirichletForm_isHermitian Ω _ _,
-    conj_trivial]
-
-variable (Ω) in
 /-- **The energy** `E(t) = ‖u'(t)‖² + ∫_Ω |∇ũ(t)|²` of a curve `u`, with `ũ` its `H¹₀` lift
 ([brezis2011functional] §10.3, (32)). -/
 def energyFun (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (t : ℝ) :
     ℝ :=
   ‖derivWithin u (Ici 0) t‖ ^ 2
-    + ⟪dirichletFormOperator Ω (toSobolevZero Ω (u t)), toSobolevZero Ω (u t)⟫_ℝ
+    + ⟪dirichletOperator Ω (toSobolevZero Ω (u t)), toSobolevZero Ω (u t)⟫_ℝ
 
 namespace IsSolution
 
@@ -1099,11 +1014,11 @@ variable {u₀ : SobolevEuclideanZero N 1 2 Ω}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
 /-- `∫ ∇ũ(t)·∇ũ'(t) = ⟪−Δu(t), u'(t)⟫` along a solution. -/
-theorem inner_dirichletFormOperator_eq (h : IsSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t) :
-    ⟪dirichletFormOperator Ω (toSobolevZero Ω (u t)),
+theorem inner_dirichletOperator_eq (h : IsSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t) :
+    ⟪dirichletOperator Ω (toSobolevZero Ω (u t)),
       toSobolevZero Ω (derivWithin u (Ici 0) t)⟫_ℝ
       = ⟪dirichletLaplacian Ω ⟨u t, h.mem_domain t ht⟩, derivWithin u (Ici 0) t⟫_ℝ :=
-  (inner_dirichletFormOperator _ _).trans
+  (inner_dirichletOperator _ _ _).trans
     ((dirichletLaplacian_inner_eq_dirichletForm ⟨u t, h.mem_domain t ht⟩
       (toSobolevZero Ω (u t)).2 (h.fnL_toSobolevZero_apply ht)
       (toSobolevZero Ω (derivWithin u (Ici 0) t)).2).symm.trans
@@ -1117,15 +1032,15 @@ theorem hasDerivWithinAt_energyFun (h : IsSolution Ω u₀ v₀ u) {t : ℝ} (ht
   have h1 := (h.hasDerivWithinAt_derivWithin ht).norm_sq
   have hũ := h.hasDerivWithinAt_toSobolevZero ht
   have h2 : HasDerivWithinAt
-      (fun t ↦ ⟪dirichletFormOperator Ω (toSobolevZero Ω (u t)), toSobolevZero Ω (u t)⟫_ℝ)
-      (⟪dirichletFormOperator Ω (toSobolevZero Ω (u t)),
+      (fun t ↦ ⟪dirichletOperator Ω (toSobolevZero Ω (u t)), toSobolevZero Ω (u t)⟫_ℝ)
+      (⟪dirichletOperator Ω (toSobolevZero Ω (u t)),
         toSobolevZero Ω (derivWithin u (Ici 0) t)⟫_ℝ
-        + ⟪dirichletFormOperator Ω (toSobolevZero Ω (derivWithin u (Ici 0) t)),
+        + ⟪dirichletOperator Ω (toSobolevZero Ω (derivWithin u (Ici 0) t)),
           toSobolevZero Ω (u t)⟫_ℝ) (Ici 0) t :=
-    ((dirichletFormOperator Ω).hasFDerivAt.comp_hasDerivWithinAt t hũ).inner ℝ hũ
+    ((dirichletOperator Ω).hasFDerivAt.comp_hasDerivWithinAt t hũ).inner ℝ hũ
   refine (h1.add h2).congr_deriv ?_
-  have e1 := h.inner_dirichletFormOperator_eq ht
-  have e2 := inner_dirichletFormOperator_comm (toSobolevZero Ω (derivWithin u (Ici 0) t))
+  have e1 := h.inner_dirichletOperator_eq ht
+  have e2 := inner_dirichletOperator_comm _ (toSobolevZero Ω (derivWithin u (Ici 0) t))
     (toSobolevZero Ω (u t))
   have e3 : ⟪derivWithin u (Ici 0) t, -(dirichletLaplacian Ω ⟨u t, h.mem_domain t ht⟩)⟫_ℝ
       = -⟪dirichletLaplacian Ω ⟨u t, h.mem_domain t ht⟩, derivWithin u (Ici 0) t⟫_ℝ := by
@@ -1157,11 +1072,11 @@ theorem energy_dirichletForm (h : IsSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 �
   have e1 : energyFun Ω u t = ‖derivWithin u (Ici 0) t‖ ^ 2
       + dirichletForm Ω (toSobolevZero Ω (u t) : SobolevEuclidean N 1 2 Ω)
         (toSobolevZero Ω (u t) : SobolevEuclidean N 1 2 Ω) :=
-    congrArg (fun z ↦ ‖derivWithin u (Ici 0) t‖ ^ 2 + z) (inner_dirichletFormOperator _ _)
+    congrArg (fun z ↦ ‖derivWithin u (Ici 0) t‖ ^ 2 + z) (inner_dirichletOperator _ _ _)
   have e2 : energyFun Ω u 0 = ‖v₀‖ ^ 2
       + dirichletForm Ω (u₀ : SobolevEuclidean N 1 2 Ω) (u₀ : SobolevEuclidean N 1 2 Ω) := by
     unfold energyFun
-    rw [h.derivWithin_zero, toSobolevZero_eq h.apply_zero.symm, inner_dirichletFormOperator]
+    rw [h.derivWithin_zero, toSobolevZero_eq h.apply_zero.symm, inner_dirichletOperator]
   exact e1.symm.trans (e.trans e2)
 
 /-- **(32), conservation of energy** ([brezis2011functional] §10.3): for `t ≥ 0`,
@@ -1349,82 +1264,6 @@ theorem IsSolution.energy_neg (h : IsSolution Ω u₀ (-v₀) fun t ↦ u (-t))
 
 end Wave
 
-/-! ### The harmonic oscillator on `[0, ∞)` -/
-
-namespace Wave
-
-section Oscillator
-
-/-- **Uniqueness for the harmonic oscillator `a'' = −λ a` on `[0, ∞)`**, first-order form: if
-`a' = b` and `b' = −λ a` within `[0, ∞)`, `λ > 0`, and `a(0) = b(0) = 0`, then `a = 0` on
-`[0, ∞)` — the energy `b² + λ a²` is constant and vanishes at `0`. -/
-theorem eq_zero_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (hlam : 0 < lam)
-    (ha : ∀ t, 0 ≤ t → HasDerivWithinAt a (b t) (Ici 0) t)
-    (hb : ∀ t, 0 ≤ t → HasDerivWithinAt b (-lam * a t) (Ici 0) t) (ha0 : a 0 = 0)
-    (hb0 : b 0 = 0) {t : ℝ} (ht : 0 ≤ t) : a t = 0 := by
-  have hE : ∀ s, 0 ≤ s → HasDerivWithinAt (fun s ↦ b s ^ 2 + lam * a s ^ 2) 0 (Ici 0) s :=
-    fun s hs ↦ by
-      have h1 := ((hb s hs).pow 2).add (((ha s hs).pow 2).const_mul lam)
-      refine h1.congr_deriv ?_
-      simp only [Nat.cast_ofNat, Nat.add_one_sub_one, pow_one]
-      ring
-  have hconst : b t ^ 2 + lam * a t ^ 2 = b 0 ^ 2 + lam * a 0 ^ 2 := by
-    rcases eq_or_lt_of_le ht with rfl | hpos
-    · rfl
-    exact constant_of_derivWithin_zero (f := fun s ↦ b s ^ 2 + lam * a s ^ 2) (a := 0) (b := t)
-      (fun x hx ↦ ((hE x hx.1).mono Icc_subset_Ici_self).differentiableWithinAt)
-      (fun x hx ↦ ((hE x hx.1).mono Icc_subset_Ici_self).derivWithin
-        (uniqueDiffOn_Icc hpos x ⟨hx.1, hx.2.le⟩)) t (right_mem_Icc.2 ht)
-  rw [ha0, hb0] at hconst
-  have h2 : lam * a t ^ 2 ≤ 0 := by nlinarith [sq_nonneg (b t)]
-  have h3 : a t ^ 2 ≤ 0 := by nlinarith
-  exact pow_eq_zero_iff (n := 2) (by norm_num) |>.1 (le_antisymm h3 (sq_nonneg _))
-
-/-- The derivative of `c₀ cos(w t) + (c₁ / w) sin(w t)`. -/
-theorem hasDerivAt_cos_add_sin (c₀ c₁ w t : ℝ) :
-    HasDerivAt (fun t ↦ c₀ * Real.cos (w * t) + c₁ / w * Real.sin (w * t))
-      (-(c₀ * w) * Real.sin (w * t) + c₁ / w * w * Real.cos (w * t)) t := by
-  have h1 : HasDerivAt (fun t ↦ w * t) w t := by simpa using (hasDerivAt_id t).const_mul w
-  have h2 := (Real.hasDerivAt_cos (w * t)).comp t h1
-  have h3 := (Real.hasDerivAt_sin (w * t)).comp t h1
-  refine ((h2.const_mul c₀).add (h3.const_mul (c₁ / w))).congr_deriv ?_
-  ring
-
-/-- The derivative of `−c₀ w sin(w t) + (c₁ / w) w cos(w t)`. -/
-theorem hasDerivAt_neg_sin_add_cos (c₀ c₁ w t : ℝ) :
-    HasDerivAt (fun t ↦ -(c₀ * w) * Real.sin (w * t) + c₁ / w * w * Real.cos (w * t))
-      (-(w ^ 2) * (c₀ * Real.cos (w * t) + c₁ / w * Real.sin (w * t))) t := by
-  have h1 : HasDerivAt (fun t ↦ w * t) w t := by simpa using (hasDerivAt_id t).const_mul w
-  have h2 := (Real.hasDerivAt_cos (w * t)).comp t h1
-  have h3 := (Real.hasDerivAt_sin (w * t)).comp t h1
-  refine ((h3.const_mul (-(c₀ * w))).add (h2.const_mul (c₁ / w * w))).congr_deriv ?_
-  ring
-
-/-- **The harmonic oscillator on `[0, ∞)`**: if `a' = b` and `b' = −λ a` within `[0, ∞)` with
-`λ > 0`, then `a(t) = a(0) cos(√λ t) + (b(0) / √λ) sin(√λ t)` for `t ≥ 0`. -/
-theorem eq_cos_add_sin_of_hasDerivWithinAt_oscillator {a b : ℝ → ℝ} {lam : ℝ} (hlam : 0 < lam)
-    (ha : ∀ t, 0 ≤ t → HasDerivWithinAt a (b t) (Ici 0) t)
-    (hb : ∀ t, 0 ≤ t → HasDerivWithinAt b (-lam * a t) (Ici 0) t) {t : ℝ} (ht : 0 ≤ t) :
-    a t = a 0 * Real.cos (√lam * t) + b 0 / √lam * Real.sin (√lam * t) := by
-  have hw : √lam ^ 2 = lam := Real.sq_sqrt hlam.le
-  have hw0 : √lam ≠ 0 := (Real.sqrt_pos.2 hlam).ne'
-  have key := eq_zero_of_hasDerivWithinAt_oscillator (lam := lam)
-    (a := fun t ↦ a t - (a 0 * Real.cos (√lam * t) + b 0 / √lam * Real.sin (√lam * t)))
-    (b := fun t ↦ b t - (-(a 0 * √lam) * Real.sin (√lam * t)
-      + b 0 / √lam * √lam * Real.cos (√lam * t))) hlam
-    (fun s hs ↦ (ha s hs).sub (hasDerivAt_cos_add_sin (a 0) (b 0) √lam s).hasDerivWithinAt)
-    (fun s hs ↦ by
-      refine ((hb s hs).sub
-        (hasDerivAt_neg_sin_add_cos (a 0) (b 0) √lam s).hasDerivWithinAt).congr_deriv ?_
-      rw [hw]
-      ring)
-    (by simp) (by simp [div_mul_cancel₀ _ hw0]) ht
-  exact sub_eq_zero.1 key
-
-end Oscillator
-
-end Wave
-
 /-! ### Remark 9: the eigenfunction expansion -/
 
 section Eigen
@@ -1514,20 +1353,6 @@ end Eigen
 namespace Wave
 
 open LinearPMap.PowDomain SobolevMultiIndex Elliptic
-
-section Lift
-
-variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
-
-/-- The lift of `x ∈ D(−Δ)` to `H¹₀(Ω)`, as an element of `SobolevEuclideanZero`. -/
-theorem dirichletLaplacian_exists_sobolevZero_lift (x : (dirichletLaplacian Ω).domain) :
-    ∃ u : SobolevEuclideanZero N 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume u
-        = x := by
-  obtain ⟨v, hv, hvx⟩ := dirichletLaplacian_exists_lift x
-  exact ⟨⟨v, hv⟩, hvx⟩
-
-end Lift
 
 section DirichletPhaseSpace
 
@@ -1853,22 +1678,15 @@ theorem neg_operator'_isMonotone : (-operator' Ω hΩ).IsMonotone := fun U ↦ b
   change (0 : ℝ) ≤ ⟪(-operator' Ω hΩ) U, (U : dirichletPhaseSpace Ω hΩ)⟫_ℝ
   rw [LinearPMap.neg_apply, inner_neg_left, operator'_inner_self_eq_zero, neg_zero]
 
-/-- `u + −(u − f) = f`. -/
-theorem add_neg_sub_cancel' {E : Type*} [AddCommGroup E] (u f : E) : u + -(u - f) = f := by
-  abel
-
-/-- From `x + a = g + f`: `(x − f) + a = g`. -/
-theorem sub_add_eq_of_add_eq {E : Type*} [AddCommGroup E] {x f g a : E} (h : x + a = g + f) :
-    x - f + a = g := by
+/-- From `x + a = g + f`: `(x − f) + a = g` (stated once, so that the rewriting happens on the
+abstract group and not on the `L²` terms). -/
+private theorem sub_add_eq_of_add_eq {E : Type*} [AddCommGroup E] {x f g a : E}
+    (h : x + a = g + f) : x - f + a = g := by
   rw [sub_add_eq_add_sub, h, add_sub_cancel_right]
 
-/-- `u − −(f − u) = f`. -/
-theorem sub_neg_sub_cancel' {E : Type*} [AddCommGroup E] (u f : E) : u - -(f - u) = f := by
-  abel
-
 /-- From `x + a = f − g`: `(f − x) − a = g`. -/
-theorem sub_sub_eq_of_add_eq {E : Type*} [AddCommGroup E] {x f g a : E} (h : x + a = f - g) :
-    f - x - a = g := by
+private theorem sub_sub_eq_of_add_eq {E : Type*} [AddCommGroup E] {x f g a : E}
+    (h : x + a = f - g) : f - x - a = g := by
   rw [sub_sub, h, sub_sub_cancel]
 
 /-- **Remark 7 (ii), `R(I + A) = H`**: for `F = (f, g)` solve `−Δu + u = g + f` in `D(−Δ)`
@@ -1893,7 +1711,7 @@ theorem operator'_exists_add_apply_eq (F : dirichletPhaseSpace Ω hΩ) :
   · change u + -toSobolevZero Ω (SobolevMultiIndexZero.fnL ℝ
       (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume (u - F.fst)) = F.fst
     exact (congrArg (fun z ↦ u + -z) (toSobolevZero_fnL (u - F.fst))).trans
-      (add_neg_sub_cancel' u F.fst)
+      (by abel)
   · change SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
       volume (u - F.fst) + dirichletLaplacianApply Ω (SobolevMultiIndexZero.fnL ℝ
         (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume u) = F.snd
@@ -1977,23 +1795,6 @@ Remark 10 of [brezis2011functional] chapter 10 assumes `u` smooth on `E × ℝ` 
 structure IsClassicalSolution (Ω : Set E) (T : ℝ) (u : E × ℝ → ℝ) : Prop where
   /-- The wave equation `∂ₜₜ u = Δ_x u` on the open cylinder. -/
   eqn : EqOn (timeDeriv (timeDeriv u)) (spaceLaplacian u) (Ω ×ˢ Ioo 0 T)
-
-omit [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] in
-/-- **The iterated time derivatives of a smooth function vanishing on `{x} × (0, T)` vanish at
-`(x, 0)`**: they vanish on `{x} × (0, T)` (`Heat.iterate_deriv_eq_zero_of_eqOn`) and are
-continuous. -/
-theorem timeDeriv_iterate_apply_zero_eq_zero [NormedSpace ℝ E] (hT : 0 < T)
-    (hsmooth : ContDiff ℝ ∞ u) {x : E} (hx : ∀ t ∈ Ioo 0 T, u (x, t) = 0) (n : ℕ) :
-    timeDeriv^[n] u (x, 0) = 0 := by
-  have h1 : EqOn (fun s ↦ timeDeriv^[n] u (x, s)) 0 (Ioo 0 T) := by
-    rw [timeDeriv_iterate_slice]
-    exact iterate_deriv_eq_zero_of_eqOn isOpen_Ioo (fun t ht ↦ hx t ht) n
-  have h2 : EqOn (fun s ↦ timeDeriv^[n] u (x, s)) 0 (Icc 0 T) := by
-    rw [← closure_Ioo hT.ne]
-    exact h1.of_subset_closure ((contDiff_timeDeriv_iterate hsmooth n).continuous.comp
-      (continuous_const.prodMk continuous_id)).continuousOn continuousOn_const subset_closure
-      subset_rfl
-  exact h2 (left_mem_Icc.2 hT.le)
 
 /-- **The iterated wave equation**: a smooth classical solution of `∂ₜₜ u = Δ_x u` on
 `Ω × (0, T)` satisfies `∂ₜ^{2j} u = Δ_x^j u` and `∂ₜ^{2j+1} u = Δ_x^j ∂ₜ u` there, for every `j`:
@@ -2275,19 +2076,6 @@ end LaplacianDomain
 
 end Wave
 
-/-- **One lift for all orders**: a curve of class `C^n(s; V)` for every `n : ℕ`, through an
-injective `J`, is of class `C^∞(s; V)`: the lifts at the various orders agree on `s`. -/
-theorem Bochner.ContDiffOnThrough.infty_of_forall_nat {V W : Type*} [NormedAddCommGroup V]
-    [NormedSpace ℝ V] [NormedAddCommGroup W] [NormedSpace ℝ W] {J : V →L[ℝ] W}
-    (hJ : Function.Injective J) {u : ℝ → W} {s : Set ℝ}
-    (h : ∀ n : ℕ, Bochner.ContDiffOnThrough J n u s) : Bochner.ContDiffOnThrough J ∞ u s := by
-  obtain ⟨v, -, huv⟩ := h 0
-  refine ⟨v, ?_, huv⟩
-  rw [contDiffOn_infty]
-  intro n
-  obtain ⟨w, hw, huw⟩ := h n
-  exact hw.congr fun t ht ↦ hJ ((huv t ht).symm.trans (huw t ht))
-
 namespace Wave
 
 open LinearPMap LinearPMap.PowDomain SobolevMultiIndex Elliptic
@@ -2298,74 +2086,6 @@ section Regularity
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
   {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
-
-/-- **The elliptic step at every order**: on a `C^{m+2}` domain with bounded boundary, if
-`f ∈ D(−Δ)` and `−Δ f` is the function of an element of `H^m(Ω)`, then `f` is the function of an
-element of `H^{m+2}(Ω)` (`dirichletLaplacian_exists_sobolev_of_apply` for every `m`, not only
-the even ones): the `H¹₀`-lift of `f` solves `−Δv = −Δ f` weakly, and
-`Elliptic.regularity_dirichlet_higher_mem` applies. -/
-theorem dirichletLaplacian_exists_sobolev_add_two_of_apply (m k : ℕ) (hk : k = m + 2)
-    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
-    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
-    {f : (dirichletLaplacian Ω).domain} (w' : SobolevEuclidean (d + 1) m 2 Ω)
-    (hw' : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω volume w'
-      = dirichletLaplacian Ω f) :
-    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
-      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w = f := by
-  subst hk
-  obtain ⟨v, hv, hvf⟩ := dirichletLaplacian_exists_lift f
-  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      (⇑(dirichletLaplacian Ω f)) m 2 Ω volume := by
-    refine (memSobolevMultiIndex w').congr_ae ?_
-    rw [← hw']
-    rfl
-  have heq : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
-      dirichletForm Ω v Φ = load Ω (dirichletLaplacian Ω f) Φ := fun Φ hΦ ↦
-    (dirichletLaplacian_inner_eq_dirichletForm f hv hvf hΦ).symm
-  obtain ⟨w, hw⟩ :=
-    (regularity_dirichlet_higher_mem m hΩ hΓ hv hg heq).exists_sobolevMultiIndex
-  refine ⟨w, Lp.ext (hw.trans ?_)⟩
-  rw [← hvf]
-  rfl
-
-/-- **`D_{2ℓ+1} ⊆ H^{2ℓ+1}(Ω)` on a `C^{2ℓ+1}` domain with bounded boundary**, in the form of an
-induction on `ℓ` (`k = 2ℓ + 1` kept as a variable): if `x ∈ D((−Δ)^ℓ)` has its last coordinate
-`(−Δ)^ℓ x` in `H¹₀(Ω)`, then `x` is the function of an element of `H^{2ℓ+1}(Ω)`. The step is
-`dirichletLaplacian_exists_sobolev_add_two_of_apply` applied to `−Δ x ∈ H^{2ℓ+1}` — the odd-order
-companion of `dirichletLaplacian_exists_sobolev_of_powDomain`. -/
-theorem dirichletLaplacian_exists_sobolev_of_powDomain_of_last (ℓ : ℕ) :
-    ∀ k : ℕ, k = 2 * ℓ + 1 →
-    IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) →
-    Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
-    ∀ x : (dirichletLaplacian Ω).PowDomain ℓ,
-    (∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
-      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume w
-        = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) x) →
-    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
-      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w
-        = applyL (dirichletLaplacian Ω) ℓ 0 x := by
-  induction ℓ with
-  | zero =>
-    intro k hk _ _ x hx
-    subst hk
-    obtain ⟨w, hw⟩ := hx
-    exact ⟨(w : SobolevEuclidean (d + 1) 1 2 Ω), hw.trans (congrArg
-      (fun i ↦ applyL (dirichletLaplacian Ω) 0 i x) (by simp : Fin.last 0 = 0))⟩
-  | succ ℓ ih =>
-    intro k hk hΩ hΓ x hx
-    have hΩ' : IsContDiffChartDomain (2 * ℓ + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
-      hΩ.of_le (by exact_mod_cast (by omega : 2 * ℓ + 1 ≤ k))
-    have hlast : ∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
-        SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
-          w = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) (shiftL (dirichletLaplacian Ω) ℓ x) := by
-      obtain ⟨w, hw⟩ := hx
-      exact ⟨w, hw.trans ((congrArg (fun i ↦ applyL (dirichletLaplacian Ω) (ℓ + 1) i x)
-        (Fin.succ_last ℓ).symm).trans (applyL_shiftL (Fin.last ℓ) x).symm)⟩
-    obtain ⟨w', hw'⟩ := ih (2 * ℓ + 1) rfl hΩ' hΓ (shiftL (dirichletLaplacian Ω) ℓ x) hlast
-    have := dirichletLaplacian_exists_sobolev_add_two_of_apply (2 * ℓ + 1) k (by omega) hΩ hΓ
-      (f := ⟨applyL (dirichletLaplacian Ω) (ℓ + 1) 0 x, applyL_mem_domain x 0⟩) w'
-      (hw'.trans (applyL_zero_shiftL x))
-    exact this
 
 /-- `D_{2ℓ} ⊆ H^{2ℓ}(Ω)` on a `C^{2ℓ}` domain with bounded boundary (Theorem 9.25 through
 `dirichletLaplacian_exists_sobolev_of_powDomain`). -/

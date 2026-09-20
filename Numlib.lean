@@ -10,6 +10,7 @@ import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
 import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.RootMultiplicity
+import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
@@ -142,6 +143,8 @@ import Numlib.Analysis.Convex.Tangent
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Convolution.Bochner
 import Numlib.Analysis.Convolution.Lp
+import Numlib.Analysis.Distributions.TestFunctionApprox
+import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.Fourier.Aliasing
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
@@ -155,6 +158,7 @@ import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
 import Numlib.Analysis.Fourier.Uncertainty
 import Numlib.Analysis.HarmonicPolynomial
+import Numlib.Analysis.InnerProductSpace.Ascent
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
@@ -197,6 +201,7 @@ import Numlib.Analysis.Normed.Module.WeakClosed
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Module.WeakStarMetrizable
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
+import Numlib.Analysis.Normed.Operator.ClosedGraph
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Compact.Banach
@@ -212,6 +217,7 @@ import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
+import Numlib.Analysis.ODE.HarmonicOscillator
 import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
@@ -413,6 +419,8 @@ import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearAlgebra.Subspace
+import Numlib.MeasureTheory.Constructions.Pi
+import Numlib.MeasureTheory.Function.ContinuousOnClosure
 import Numlib.MeasureTheory.Function.EssSupport
 import Numlib.MeasureTheory.Function.LpInterpolation
 import Numlib.MeasureTheory.Function.LpSpace.Clarkson

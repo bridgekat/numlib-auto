@@ -106,12 +106,6 @@ id = "sobolevLaplacianL"
 id = "dirichletLaplacian_apply_of_sobolev_two"
 
 [[node]]
-id = "TestFunction.toL2"
-
-[[node]]
-id = "TestFunction.negLaplacian"
-
-[[node]]
 id = "weakDeriv_addSingle_ae_eq_of_testFunction"
 
 [[node]]
@@ -151,9 +145,6 @@ id = "dirichletLaplacianH10_exists_add_apply_eq"
 id = "dirichletLaplacianH10_isSelfAdjoint"
 
 [[node]]
-id = "SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq"
-
-[[node]]
 id = "dirichletLaplacian_exists_sobolev_of_apply"
 
 [[node]]
@@ -179,3 +170,42 @@ id = "dirichletLaplacian_exists_sobolev_two_lift"
 
 [[node]]
 id = "isDirichletLaplacianChain_of_powDomain"
+
+[[node]]
+id = "dirichletLaplacian_exists_sobolevZero_lift"
+
+[[node]]
+id = "dirichletLaplacian.sobolevZeroLiftL"
+
+[[node]]
+id = "fnL_sobolevZeroLiftL"
+
+[[node]]
+id = "dirichletLaplacian_norm_sq_lift_eq"
+
+[[node]]
+id = "dirichletForm_eq_load_fnL_dirichletLaplacianH10_apply"
+
+[[node]]
+id = "Elliptic.exists_sobolev_three_of_forall_dirichletForm_eq_load"
+
+[[node]]
+id = "dirichletLaplacianH10_exists_sobolev_three"
+
+[[node]]
+id = "dirichletLaplacianH10_exists_sobolev_three_comp"
+
+[[node]]
+id = "dirichletLaplacianH10.powDomainOneToSobolevThreeL"
+
+[[node]]
+id = "fnL_powDomainOneToSobolevThreeL"
+
+[[node]]
+id = "toSobolevZero"
+
+[[node]]
+id = "dirichletLaplacian_exists_sobolev_add_two_of_apply"
+
+[[node]]
+id = "dirichletLaplacian_exists_sobolev_of_powDomain_of_last"

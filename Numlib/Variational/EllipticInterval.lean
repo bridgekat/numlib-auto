@@ -16,6 +16,13 @@ solution in `H^1_0(a, b)` by Lax–Milgram with the stability estimate (12.51), 
 regularity of the weak solution, and the Galerkin error bounds — Céa's lemma with the constant
 of Theorem 12.3, and the Aubin–Nitsche `L²` estimate behind (12.60).
 
+The regularity of weak solutions and the boundary conditions other than the homogeneous
+Dirichlet one (the inhomogeneous Dirichlet, Neumann, mixed, Robin and periodic problems of
+[brezis2011functional] §8.4, and the problem on `ℝ`) are in `EllipticInterval/BoundaryConditions`,
+the maximum principle for the two-point boundary value problem in
+`EllipticInterval/MaximumPrinciple`, and the Sturm–Liouville eigenvalue problem in
+`EllipticInterval/SturmLiouville`; this module is their common base.
+
 ## Main definitions
 
 * `EllipticInterval.form a b α β γ`, the bilinear form `(12.44)` as a `SesqForm ℝ (H^1(a, b))`,
@@ -24,9 +31,8 @@ of Theorem 12.3, and the Aubin–Nitsche `L²` estimate behind (12.60).
 * `EllipticInterval.load a b f`, the load functional `v ↦ ∫_a^b f v` for `f ∈ L²(a, b)`;
 * `EllipticInterval.modelForm a b = form a b 1 0 1`, the form of the model operator `−u'' + u`,
   which is the `H¹(a, b)` inner product (`modelForm_eq_innerSL`);
-* `SesqForm.restrict a K`, the restriction of a bounded form to a subspace, Hermitian
-  (`SesqForm.IsHermitian.restrict`) or coercive (`SesqForm.IsCoerciveWith.restrict`,
-  `SesqForm.IsCoercive.restrict`) when the form is.
+* the weak problem is posed on `H^1_0(a, b)` through `SesqForm.restrict a K`, the restriction
+  of a bounded form to a subspace (`Numlib/Variational/Forms.lean`).
 
 The weak problem on `H^1_0(a, b)` — find `u ∈ H^1_0` with `a(u, v) = (f, v)` for all
 `v ∈ H^1_0` — is `IsGalerkinSolution (form a b α β γ) (load a b f) (SobolevIntervalZero a b) u`,
@@ -73,42 +79,6 @@ open Filter MeasureTheory Set TopologicalSpace
 open scoped ContDiff Distributions ENNReal Topology InnerProductSpace
 
 noncomputable section
-
-/-! ### Restriction of a form to a subspace -/
-
-section Restrict
-
-variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
-
-/-- The restriction of a bounded sesquilinear form on `V` to a subspace `K`, as a bounded form
-on `K`. Belongs beside `SesqForm` in `Numlib/Variational/Forms.lean`. -/
-def SesqForm.restrict (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) : SesqForm 𝕜 K :=
-  ((a.comp K.subtypeL).flip.comp K.subtypeL).flip
-
-/-- The restricted form is the form. -/
-@[simp]
-theorem SesqForm.restrict_apply (a : SesqForm 𝕜 V) (K : Submodule 𝕜 V) (u v : K) :
-    a.restrict K u v = a u v := rfl
-
-/-- The restriction of a Hermitian form to a subspace is Hermitian. -/
-theorem SesqForm.IsHermitian.restrict {a : SesqForm 𝕜 V} (h : a.IsHermitian) (K : Submodule 𝕜 V) :
-    (a.restrict K).IsHermitian := fun u v ↦ by
-  rw [SesqForm.restrict_apply, SesqForm.restrict_apply]
-  exact h u v
-
-/-- The restriction of a coercive form to a subspace is coercive with the same constant. -/
-theorem SesqForm.IsCoerciveWith.restrict {a : SesqForm 𝕜 V} {c : ℝ} (h : a.IsCoerciveWith c)
-    (K : Submodule 𝕜 V) : (a.restrict K).IsCoerciveWith c := fun v ↦ by
-  rw [SesqForm.restrict_apply, ← Submodule.norm_coe]
-  exact h v
-
-/-- The restriction of a coercive form to a subspace is coercive. -/
-theorem SesqForm.IsCoercive.restrict {a : SesqForm 𝕜 V} (h : a.IsCoercive) (K : Submodule 𝕜 V) :
-    (a.restrict K).IsCoercive :=
-  let ⟨c, hc, h⟩ := h
-  ⟨c, hc, h.restrict K⟩
-
-end Restrict
 
 namespace EllipticInterval
 

@@ -1,0 +1,32 @@
+namespace = "IsSelfAdjoint"
+
+[[node]]
+id = "_root_.ContinuousLinearMap.ker_pow_eq_ker_of_ker_sq_eq"
+
+[[node]]
+id = "ker_sq_eq_ker"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 3 (last sentence); Atkinson–Han, Theorem 2.8.15 (the index clause)"
+
+[[node]]
+id = "ker_pow_eq_ker"
+
+[[node]]
+id = "sub_smul_one"
+
+[[node]]
+id = "smul_one_sub"
+
+[[node]]
+id = "ker_sq_sub_smul_eq_ker"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Comments on Chapter 6, 3 (last sentence)"
+
+[[node]]
+id = "ker_pow_sub_smul_eq_ker"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Problem 36"
+
+[[node]]
+id = "ker_sq_smul_sub_eq_ker"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.8.15 (the index clause)"
+
+[[node]]
+id = "ker_pow_smul_sub_eq_ker"

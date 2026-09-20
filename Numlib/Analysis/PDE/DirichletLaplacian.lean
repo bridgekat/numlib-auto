@@ -1,3 +1,4 @@
+import Numlib.Analysis.Distributions.TestFunctionOps
 import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.PDE.Elliptic.Regularity
@@ -71,32 +72,6 @@ theorem SobolevEuclideanZero.ext_on_testFunctions {L₁ L₂ : SobolevEuclidean 
   rwa [sub_apply, sub_eq_zero] at this
 
 /-! ### The domain `{u ∈ H¹₀(Ω) : Δu ∈ L²(Ω)}` -/
-
-/-- The load functional is additive in the datum. -/
-theorem Elliptic.load_add (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (v : SobolevEuclidean N 1 2 Ω) : load Ω (f + g) v = load Ω f v + load Ω g v := by
-  simp only [load_apply_inner, inner_add_left]
-
-/-- The load functional is homogeneous in the datum. -/
-theorem Elliptic.load_smul (c : ℝ)
-    (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (v : SobolevEuclidean N 1 2 Ω) : load Ω (c • f) v = c * load Ω f v := by
-  simp only [load_apply_inner, real_inner_smul_left]
-
-/-- The load functional of a difference. -/
-theorem Elliptic.load_sub (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
-    (v : SobolevEuclidean N 1 2 Ω) : load Ω (f - g) v = load Ω f v - load Ω g v := by
-  simp only [load_apply_inner, inner_sub_left]
-
-/-- The Dirichlet form is additive in its first argument. -/
-theorem Elliptic.dirichletForm_add_left (u v w : SobolevEuclidean N 1 2 Ω) :
-    dirichletForm Ω (u + v) w = dirichletForm Ω u w + dirichletForm Ω v w := by
-  rw [map_add, add_apply]
-
-/-- The Dirichlet form is homogeneous in its first argument. -/
-theorem Elliptic.dirichletForm_smul_left (c : ℝ) (u w : SobolevEuclidean N 1 2 Ω) :
-    dirichletForm Ω (c • u) w = c * dirichletForm Ω u w := by
-  rw [map_smulₛₗ, smul_apply, smul_eq_mul, conj_trivial]
 
 variable (Ω) in
 /-- **The domain of the Dirichlet Laplacian**: the `L²(Ω)` functions `f` that are the function of
@@ -369,6 +344,123 @@ theorem dirichletLaplacian_isSelfAdjoint : IsSelfAdjoint (dirichletLaplacian Ω)
   dirichletLaplacian_isMaximalMonotone.isSelfAdjoint_of_isFormalAdjoint
     dirichletLaplacian_isFormalAdjoint
 
+/-! ### The `H¹₀`-lift of `D(A)` as a bounded operator -/
+
+section SobolevZeroLift
+
+open LinearPMap LinearPMap.PowDomain
+
+/-- Every `f ∈ D(A)` has an `H¹₀`-lift, as an element of the type `H¹₀(Ω)`. -/
+theorem dirichletLaplacian_exists_sobolevZero_lift (f : (dirichletLaplacian Ω).domain) :
+    ∃ v : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v
+        = f := by
+  obtain ⟨v, hv, hvf⟩ := dirichletLaplacian_exists_lift f
+  exact ⟨⟨v, hv⟩, hvf⟩
+
+variable (Ω) in
+/-- **The `H¹₀`-lift `D(A) → H¹₀(Ω)` as a bounded linear map** on the Hilbert space `D(A)` with
+the graph norm (`PowDomain 1`): `x ↦ v` with `fnL v = A^0 x`, continuous by the closed graph
+theorem (`exists_continuousLinearMap_comp_eq_of_injective`); `fnL_sobolevZeroLiftL` is its
+defining property. It turns the semigroup lifts into `H¹₀`-valued curves. -/
+def dirichletLaplacian.sobolevZeroLiftL :
+    (dirichletLaplacian Ω).PowDomain 1 →L[ℝ] SobolevEuclideanZero N 1 2 Ω :=
+  haveI : CompleteSpace ((dirichletLaplacian Ω).PowDomain 1) :=
+    dirichletLaplacian_isClosed.completeSpace_powDomain 1
+  Classical.choose (exists_continuousLinearMap_comp_eq_of_injective
+    (J := SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume)
+    SobolevMultiIndexZero.fnL_injective (S := applyL (dirichletLaplacian Ω) 1 0)
+    fun x ↦ dirichletLaplacian_exists_sobolevZero_lift ⟨_, applyL_mem_domain x 0⟩)
+
+/-- The function of `sobolevZeroLiftL x` is `A^0 x`. -/
+theorem fnL_sobolevZeroLiftL (x : (dirichletLaplacian Ω).PowDomain 1) :
+    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
+      (dirichletLaplacian.sobolevZeroLiftL Ω x) = applyL (dirichletLaplacian Ω) 1 0 x :=
+  haveI : CompleteSpace ((dirichletLaplacian Ω).PowDomain 1) :=
+    dirichletLaplacian_isClosed.completeSpace_powDomain 1
+  Classical.choose_spec (exists_continuousLinearMap_comp_eq_of_injective
+    (J := SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume)
+    SobolevMultiIndexZero.fnL_injective (S := applyL (dirichletLaplacian Ω) 1 0)
+    fun x ↦ dirichletLaplacian_exists_sobolevZero_lift ⟨_, applyL_mem_domain x 0⟩) x
+
+/-- **The `H¹` norm of an `H¹₀`-lift of `f ∈ D(A)`**: `‖v‖²_{H¹} = ‖f‖² + ⟪A f, f⟫`
+(`‖v‖² = ‖v‖₂² + ∫ |∇v|²`, `laplaceForm_eq_innerSL`). -/
+theorem dirichletLaplacian_norm_sq_lift_eq (f : (dirichletLaplacian Ω).domain)
+    {v : SobolevEuclideanZero N 1 2 Ω}
+    (hv : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume v
+      = f) :
+    ‖v‖ ^ 2 = ‖(f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))‖ ^ 2
+      + ⟪dirichletLaplacian Ω f,
+        (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))⟫_ℝ := by
+  have h1 : ‖v‖ ^ 2 = ‖(v : SobolevEuclidean N 1 2 Ω)‖ ^ 2 := by rw [Submodule.norm_coe]
+  have h2 := Elliptic.norm_sq_eq Ω (v : SobolevEuclidean N 1 2 Ω)
+  have h3 := dirichletForm_self_eq Ω (v : SobolevEuclidean N 1 2 Ω)
+  have h4 := dirichletLaplacian_inner_self_eq_dirichletForm f v.2 hv
+  have h5 : weakDeriv (v : SobolevEuclidean N 1 2 Ω) 0 = f := hv
+  have h5' : ‖weakDeriv (v : SobolevEuclidean N 1 2 Ω) 0‖ ^ 2
+      = ‖(f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))‖ ^ 2 := by rw [h5]
+  linarith
+
+end SobolevZeroLift
+
+/-! ### The `H¹₀`-preimage of an `L²` function -/
+
+section ToSobolevZero
+
+
+variable (Ω) in
+/-- **The `H¹₀`-preimage of `v ∈ L²(Ω)`**: the element `w ∈ H¹₀(Ω)` with `fnL w = v` when there is
+one (it is then unique, `SobolevMultiIndexZero.fnL_injective`), and `0` otherwise. -/
+def toSobolevZero (v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
+    SobolevEuclideanZero N 1 2 Ω :=
+  open Classical in
+  if h : ∃ w : SobolevEuclideanZero N 1 2 Ω,
+    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v
+  then h.choose else 0
+
+/-- `fnL (toSobolevZero v) = v` when `v` lies in `H¹₀(Ω)`. -/
+theorem fnL_toSobolevZero {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (hv : ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v) :
+    SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume
+      (toSobolevZero Ω v) = v := by
+  unfold toSobolevZero
+  rw [dite_eq_left hv]
+  exact hv.choose_spec
+
+/-- `toSobolevZero (fnL w) = w`. -/
+theorem toSobolevZero_fnL (w : SobolevEuclideanZero N 1 2 Ω) :
+    toSobolevZero Ω (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω
+      volume w) = w :=
+  SobolevMultiIndexZero.fnL_injective (fnL_toSobolevZero ⟨w, rfl⟩)
+
+/-- The preimage is unique: `toSobolevZero v = w` for any `w` with `fnL w = v`. -/
+theorem toSobolevZero_eq {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    {w : SobolevEuclideanZero N 1 2 Ω}
+    (hw : SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
+      = v) : toSobolevZero Ω v = w := by
+  rw [← hw, toSobolevZero_fnL]
+
+/-- The preimage of a sum of two `H¹₀` functions. -/
+theorem toSobolevZero_add {v₁ v₂ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (h₁ : ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v₁)
+    (h₂ : ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w
+        = v₂) :
+    toSobolevZero Ω (v₁ + v₂) = toSobolevZero Ω v₁ + toSobolevZero Ω v₂ :=
+  toSobolevZero_eq (by rw [_root_.map_add, fnL_toSobolevZero h₁, fnL_toSobolevZero h₂])
+
+/-- The preimage of a scalar multiple of an `H¹₀` function. -/
+theorem toSobolevZero_smul (c : ℝ)
+    {v : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (h : ∃ w : SobolevEuclideanZero N 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume w = v) :
+    toSobolevZero Ω (c • v) = c • toSobolevZero Ω v :=
+  toSobolevZero_eq (by rw [_root_.map_smul, fnL_toSobolevZero h])
+
+end ToSobolevZero
+
 /-! ### `H²(Ω) ∩ H¹₀(Ω) ⊆ D(A)` on any open set -/
 
 variable (Ω) in
@@ -483,34 +575,6 @@ theorem dirichletLaplacian_apply_of_sobolev_two (w : SobolevEuclidean N 2 2 Ω)
   exact (mem_dirichletLaplacianDomain_of_sobolev_two w hv hvw).2
 
 /-! ### Test functions lie in every `D(A^ℓ)` -/
-
-/-- The `L²(Ω)` class of a test function. -/
-def TestFunction.toL2 (φ : 𝓓(Ω, ℝ)) :
-    Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) :=
-  (φ.memLp 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))).toLp φ
-
-/-- The `L²(Ω)` class of a test function is the function. -/
-theorem TestFunction.coeFn_toL2 (φ : 𝓓(Ω, ℝ)) :
-    ⇑φ.toL2 =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] φ :=
-  MemLp.coeFn_toLp _
-
-/-- **The negative Laplacian of a test function**, `−∑ᵢ ∂ᵢ∂ᵢ φ`, is a test function. -/
-def TestFunction.negLaplacian (φ : 𝓓(Ω, ℝ)) : 𝓓(Ω, ℝ) where
-  toFun x := -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ φ z (EuclideanSpace.single i 1)) x
-    (EuclideanSpace.single i 1)
-  contDiff' := (laplacianRep_props φ.contDiff φ.hasCompactSupport).1.neg
-  hasCompactSupport' := (laplacianRep_props φ.contDiff φ.hasCompactSupport).2.1.neg
-  tsupport_subset' := by
-    refine subset_trans ?_ ((laplacianRep_props φ.contDiff φ.hasCompactSupport).2.2.trans
-      φ.tsupport_subset)
-    exact (tsupport_neg _).subset
-
-/-- The negative Laplacian of a test function, as a function. -/
-theorem TestFunction.negLaplacian_coe (φ : 𝓓(Ω, ℝ)) :
-    (φ.negLaplacian : EuclideanSpace ℝ (Fin N) → ℝ)
-      = fun x ↦ -∑ i, fderiv ℝ (fun z ↦ fderiv ℝ φ z (EuclideanSpace.single i 1)) x
-        (EuclideanSpace.single i 1) :=
-  rfl
 
 /-- The classical second derivatives `∂ᵢ∂ᵢ φ` of a test function are the components at `2 eᵢ`
 of any `H²(Ω)` element with function `φ`. -/
@@ -1018,47 +1082,40 @@ theorem dirichletLaplacianH10_isSelfAdjoint : IsSelfAdjoint (dirichletLaplacianH
 
 /-! ### `D(A^ℓ) ↪ H^{2ℓ}(Ω)` on a `C^{2ℓ}` domain -/
 
-/-- **A bounded lift into `H^k(Ω)` from the closed graph theorem**: if a continuous linear map
-`S : X → L²(Ω)` from a Banach space `X` takes every `x` to the function of some element of
-`H^k(Ω)`, then the lift `x ↦ U_x ∈ H^k(Ω)` is a bounded linear map: it is linear (elements of
-`H^k(Ω)` are determined by their functions) with closed graph (`H^k → L²` and `S` are
-continuous). -/
-theorem SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq {X : Type*}
-    [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X] {k : ℕ}
-    {S : X →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
-    (hS : ∀ x, ∃ U : SobolevEuclidean N k 2 Ω,
-      fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume U = S x) :
-    ∃ T : X →L[ℝ] SobolevEuclidean N k 2 Ω,
-      ∀ x, fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume (T x) = S x := by
-  choose T hT using hS
-  -- `T` is linear
-  obtain ⟨Tₗ, hTₗ⟩ : ∃ Tₗ : X →ₗ[ℝ] SobolevEuclidean N k 2 Ω, ∀ x, Tₗ x = T x := by
-    refine ⟨{ toFun := T, map_add' := fun x y ↦ ?_, map_smul' := fun c x ↦ ?_ }, fun _ ↦ rfl⟩
-    · refine SobolevMultiIndex.fnL_injective ?_
-      rw [map_add, hT, hT, hT, map_add]
-    · refine SobolevMultiIndex.fnL_injective ?_
-      rw [RingHom.id_apply, map_smul, hT, hT, map_smul]
-  -- its graph is closed
-  have hcont : Continuous Tₗ := by
-    refine Tₗ.continuous_of_seq_closed_graph fun u x y hux hTy ↦ ?_
-    have h1 : Tendsto (fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume
-        (Tₗ (u n))) atTop (𝓝 (fnL ℝ _ k 2 Ω volume y)) :=
-      ((fnL ℝ _ k 2 Ω volume).continuous.tendsto y).comp hTy
-    have h2 : Tendsto (fun n ↦ S (u n)) atTop (𝓝 (S x)) := (S.continuous.tendsto x).comp hux
-    have h12 : (fun n ↦ fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume (Tₗ (u n)))
-        = fun n ↦ S (u n) := by
-      funext n
-      rw [hTₗ, hT]
-    rw [h12] at h1
-    have h3 := tendsto_nhds_unique h1 h2
-    refine SobolevMultiIndex.fnL_injective ?_
-    rw [hTₗ, hT, h3]
-  exact ⟨⟨Tₗ, hcont⟩, fun x ↦ by rw [← hT x, ← hTₗ x]; rfl⟩
+/-- **The elliptic step at every order**: on a `C^{m+2}` domain with bounded boundary, if
+`f ∈ D(−Δ)` and `−Δ f` is the function of an element of `H^m(Ω)`, then `f` is the function of an
+element of `H^{m+2}(Ω)` (`dirichletLaplacian_exists_sobolev_of_apply` is the even case): the
+`H¹₀`-lift of `f` solves `−Δv = −Δ f` weakly, and `Elliptic.regularity_dirichlet_higher_mem`
+applies. -/
+theorem dirichletLaplacian_exists_sobolev_add_two_of_apply {d : ℕ}
+    {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (m k : ℕ) (hk : k = m + 2)
+    (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {f : (dirichletLaplacian Ω).domain} (w' : SobolevEuclidean (d + 1) m 2 Ω)
+    (hw' : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis m 2 Ω volume w'
+      = dirichletLaplacian Ω f) :
+    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w = f := by
+  subst hk
+  obtain ⟨v, hv, hvf⟩ := dirichletLaplacian_exists_lift f
+  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑(dirichletLaplacian Ω f)) m 2 Ω volume := by
+    refine (memSobolevMultiIndex w').congr_ae ?_
+    rw [← hw']
+    rfl
+  have heq : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
+      dirichletForm Ω v Φ = load Ω (dirichletLaplacian Ω f) Φ := fun Φ hΦ ↦
+    (dirichletLaplacian_inner_eq_dirichletForm f hv hvf hΦ).symm
+  obtain ⟨w, hw⟩ :=
+    (regularity_dirichlet_higher_mem m hΩ hΓ hv hg heq).exists_sobolevMultiIndex
+  refine ⟨w, Lp.ext (hw.trans ?_)⟩
+  rw [← hvf]
+  rfl
 
 /-- **The inductive step of `D(A^ℓ) ⊆ H^{2ℓ}(Ω)`**: on a `C^{2ℓ+2}` domain with bounded boundary,
 if `f ∈ D(A)` and `A f` is the function of an element of `H^{2ℓ}(Ω)`, then `f` is the function
-of an element of `H^{2ℓ+2}(Ω)`: the `H¹₀`-lift of `f` solves `−Δv = A f` weakly, and
-`Elliptic.regularity_dirichlet_higher_mem` applies. -/
+of an element of `H^{2ℓ+2}(Ω)` — the even case of
+`dirichletLaplacian_exists_sobolev_add_two_of_apply`. -/
 theorem dirichletLaplacian_exists_sobolev_of_apply {d : ℕ}
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (ℓ k : ℕ) (hk : k = 2 * ℓ + 2)
     (hΩ : IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1067,23 +1124,8 @@ theorem dirichletLaplacian_exists_sobolev_of_apply {d : ℕ}
     (hw' : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ) 2 Ω volume w'
       = dirichletLaplacian Ω f) :
     ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
-      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w = f := by
-  subst hk
-  obtain ⟨v, hv, hvf⟩ := dirichletLaplacian_exists_lift f
-  -- the datum `A f` lies in `H^{2ℓ}(Ω)`
-  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
-      (⇑(dirichletLaplacian Ω f)) (2 * ℓ) 2 Ω volume := by
-    refine (memSobolevMultiIndex w').congr_ae ?_
-    rw [← hw']
-    rfl
-  have heq : ∀ Φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω,
-      dirichletForm Ω v Φ = load Ω (dirichletLaplacian Ω f) Φ := fun Φ hΦ ↦
-    (dirichletLaplacian_inner_eq_dirichletForm f hv hvf hΦ).symm
-  obtain ⟨w, hw⟩ :=
-    (regularity_dirichlet_higher_mem (2 * ℓ) hΩ hΓ hv hg heq).exists_sobolevMultiIndex
-  refine ⟨w, Lp.ext (hw.trans ?_)⟩
-  rw [← hvf]
-  rfl
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w = f :=
+  dirichletLaplacian_exists_sobolev_add_two_of_apply (2 * ℓ) k hk hΩ hΓ w' hw'
 
 /-- **`D(A^ℓ) ⊆ H^{2ℓ}(Ω)` on a `C^{2ℓ}` domain with bounded boundary**, in the form of the
 induction on `ℓ` (`k = 2ℓ` kept as a variable so that no arithmetic on the order is needed):
@@ -1124,6 +1166,47 @@ theorem dirichletLaplacian_exists_sobolev_of_powDomain {d : ℕ}
       fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (2 * ℓ) 2 Ω volume w
         = LinearPMap.PowDomain.applyL (dirichletLaplacian Ω) ℓ 0 x :=
   dirichletLaplacian_exists_sobolev_of_powDomain' ℓ (2 * ℓ) rfl hΩ hΓ x
+
+open LinearPMap.PowDomain in
+/-- **`D_{2ℓ+1} ⊆ H^{2ℓ+1}(Ω)` on a `C^{2ℓ+1}` domain with bounded boundary**, in the form of an
+induction on `ℓ` (`k = 2ℓ + 1` kept as a variable): if `x ∈ D((−Δ)^ℓ)` has its last coordinate
+`(−Δ)^ℓ x` in `H¹₀(Ω)`, then `x` is the function of an element of `H^{2ℓ+1}(Ω)`. The step is
+`dirichletLaplacian_exists_sobolev_add_two_of_apply` applied to `−Δ x ∈ H^{2ℓ+1}` — the odd-order
+companion of `dirichletLaplacian_exists_sobolev_of_powDomain`. -/
+theorem dirichletLaplacian_exists_sobolev_of_powDomain_of_last {d : ℕ}
+    {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (ℓ : ℕ) :
+    ∀ k : ℕ, k = 2 * ℓ + 1 →
+    IsContDiffChartDomain k (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) →
+    Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) →
+    ∀ x : (dirichletLaplacian Ω).PowDomain ℓ,
+    (∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume w
+        = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) x) →
+    ∃ w : SobolevEuclidean (d + 1) k 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis k 2 Ω volume w
+        = applyL (dirichletLaplacian Ω) ℓ 0 x := by
+  induction ℓ with
+  | zero =>
+    intro k hk _ _ x hx
+    subst hk
+    obtain ⟨w, hw⟩ := hx
+    exact ⟨(w : SobolevEuclidean (d + 1) 1 2 Ω), hw.trans (congrArg
+      (fun i ↦ applyL (dirichletLaplacian Ω) 0 i x) (by simp : Fin.last 0 = 0))⟩
+  | succ ℓ ih =>
+    intro k hk hΩ hΓ x hx
+    have hΩ' : IsContDiffChartDomain (2 * ℓ + 1) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+      hΩ.of_le (by exact_mod_cast (by omega : 2 * ℓ + 1 ≤ k))
+    have hlast : ∃ w : SobolevEuclideanZero (d + 1) 1 2 Ω,
+        SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+          w = applyL (dirichletLaplacian Ω) ℓ (Fin.last ℓ) (shiftL (dirichletLaplacian Ω) ℓ x) := by
+      obtain ⟨w, hw⟩ := hx
+      exact ⟨w, hw.trans ((congrArg (fun i ↦ applyL (dirichletLaplacian Ω) (ℓ + 1) i x)
+        (Fin.succ_last ℓ).symm).trans (applyL_shiftL (Fin.last ℓ) x).symm)⟩
+    obtain ⟨w', hw'⟩ := ih (2 * ℓ + 1) rfl hΩ' hΓ (shiftL (dirichletLaplacian Ω) ℓ x) hlast
+    have := dirichletLaplacian_exists_sobolev_add_two_of_apply (2 * ℓ + 1) k (by omega) hΩ hΓ
+      (f := ⟨applyL (dirichletLaplacian Ω) (ℓ + 1) 0 x, applyL_mem_domain x 0⟩) w'
+      (hw'.trans (applyL_zero_shiftL x))
+    exact this
 
 /-- **The continuous injection `D(A^ℓ) ↪ H^{2ℓ}(Ω)`** on a `C^{2ℓ}` domain with bounded boundary
 ([brezis2011functional] §10.1, the identification (7) and "`D(A^ℓ) ⊂ H^{2ℓ}(Ω)` with continuous
@@ -1305,5 +1388,135 @@ theorem dirichletLaplacian_mem_powDomain_iff {d : ℕ}
   · have hΩ2 : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
       hΩ.of_le (by exact_mod_cast (by omega : 2 ≤ 2 * ℓ))
     exact hx ▸ isDirichletLaplacianChain_of_powDomain hΩ2 hΓ x
+
+/-! ### The bounded injection `D(A₁) ↪ H³(Ω)` on a `C³` domain -/
+
+section SobolevThree
+
+open LinearPMap LinearPMap.PowDomain
+
+variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **The weak equation of an element of `D(A₁)`**: `∫ ∇y · ∇φ = ∫ (A₁ y) φ` for `y ∈ D(A₁)` and
+`φ ∈ H¹₀(Ω)`. -/
+theorem dirichletForm_eq_load_fnL_dirichletLaplacianH10_apply (y : (dirichletLaplacianH10 Ω).domain)
+    {φ : SobolevEuclidean (d + 1) 1 2 Ω} (hφ : φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    dirichletForm Ω ((y : SobolevEuclideanZero (d + 1) 1 2 Ω) : SobolevEuclidean (d + 1) 1 2 Ω) φ
+      = load Ω (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+        volume (dirichletLaplacianH10 Ω y)) φ := by
+  have h1 := fnL_dirichletLaplacianH10_apply y
+  have h2 := dirichletLaplacian_inner_eq_dirichletForm ⟨_, y.2.1⟩
+    (y : SobolevEuclideanZero (d + 1) 1 2 Ω).2 rfl hφ
+  have h3 := congrArg (fun z ↦ ⟪z, fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+    volume φ⟫_ℝ) h1
+  exact h2.symm.trans h3.symm
+
+/-- **`H³` regularity of a weak solution with an `H¹` datum** on a `C³` domain with bounded
+boundary, in the typed form: for `v ∈ H¹₀(Ω)` with `∫ ∇v · ∇φ = ∫ g φ` on `H¹₀(Ω)` and `g ∈ H¹(Ω)`,
+there is `U ∈ H³(Ω)` with the same function as `v` (Theorem 9.25,
+`Elliptic.regularity_dirichlet_higher_mem` at `m = 1`). -/
+theorem Elliptic.exists_sobolev_three_of_forall_dirichletForm_eq_load
+    (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    {v : SobolevEuclidean (d + 1) 1 2 Ω} (hv : v ∈ SobolevEuclideanZero (d + 1) 1 2 Ω)
+    {g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+    (hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (⇑g) 1 2 Ω volume)
+    (heq : ∀ φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletForm Ω v φ = load Ω g φ) :
+    ∃ U : SobolevEuclidean (d + 1) 3 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume U
+        = fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume v := by
+  have hΩ' : IsContDiffChartDomain ((1 : ℕ) + 2) (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+    hΩ.of_le (by norm_num)
+  have hmem := regularity_dirichlet_higher_mem 1 hΩ' hΓ hv hg heq
+  have key : ∀ k : ℕ, k = 1 + 2 →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis (fn v) k 2 Ω
+        volume := by
+    intro k hk
+    subst hk
+    exact hmem
+  obtain ⟨U, hU⟩ := (key 3 rfl).exists_sobolevMultiIndex
+  exact ⟨U, Lp.ext hU⟩
+
+/-- **An element of `D(A₁)` lies in `H³(Ω)`** on a `C³` domain with bounded boundary: for
+`y ∈ D(A₁)` (`y ∈ H¹₀(Ω)` with `A (fnL y) ∈ H¹₀(Ω)`), `y` solves `−Δy = fnL (A₁ y)` weakly with a
+datum in `H¹(Ω)`, so Theorem 9.25 gives `y ∈ H³(Ω)`. -/
+theorem dirichletLaplacianH10_exists_sobolev_three
+    (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (y : (dirichletLaplacianH10 Ω).domain) :
+    ∃ U : SobolevEuclidean (d + 1) 3 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume U
+        = SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+          volume (y : SobolevEuclideanZero (d + 1) 1 2 Ω) := by
+  have hg : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑(SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+        (dirichletLaplacianH10 Ω y))) 1 2 Ω volume :=
+    (memSobolevMultiIndex ((dirichletLaplacianH10 Ω y : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+      SobolevEuclidean (d + 1) 1 2 Ω)).congr_ae
+      (Filter.EventuallyEq.of_eq (SobolevMultiIndexZero.fnL_apply _).symm)
+  exact exists_sobolev_three_of_forall_dirichletForm_eq_load hΩ hΓ
+    (y : SobolevEuclideanZero (d + 1) 1 2 Ω).2 hg
+    fun φ hφ ↦ dirichletForm_eq_load_fnL_dirichletLaplacianH10_apply y hφ
+
+/-- `dirichletLaplacianH10_exists_sobolev_three` for the `0`-th coordinate of `x ∈ D(A₁^1)`, in
+the composed form used by the closed graph theorem. -/
+theorem dirichletLaplacianH10_exists_sobolev_three_comp
+    (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (dirichletLaplacianH10 Ω).PowDomain 1) :
+    ∃ U : SobolevEuclidean (d + 1) 3 2 Ω,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume U
+        = ((SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+          volume).comp (applyL (dirichletLaplacianH10 Ω) 1 0)) x := by
+  have hmem := applyL_mem_domain x 0
+  have h := dirichletLaplacianH10_exists_sobolev_three hΩ hΓ
+    ⟨applyL (dirichletLaplacianH10 Ω) 1 0 x, hmem⟩
+  rw [ContinuousLinearMap.comp_apply]
+  exact h
+
+set_option maxHeartbeats 1000000 in
+-- The instance chain of `D(A₁)` (a submodule of `PiLp 2 (Fin 2 → H¹₀(Ω))`, itself a submodule
+-- of a subtype of a `PiLp` of `L²` spaces) makes the defeq checks of the closed graph lemma's
+-- instance arguments exceed the default budget; the term itself is a single application.
+variable (Ω) in
+/-- **The bounded injection `D(A₁) ↪ H³(Ω)`** on a `C³` domain with bounded boundary, on the
+Hilbert space `D(A₁)` with the graph norm (`PowDomain 1` of `dirichletLaplacianH10 Ω`), by the
+closed graph theorem (`exists_continuousLinearMap_comp_eq_of_injective`);
+`fnL_powDomainOneToSobolevThreeL` is its defining property. -/
+def dirichletLaplacianH10.powDomainOneToSobolevThreeL
+    (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (dirichletLaplacianH10 Ω).PowDomain 1 →L[ℝ] SobolevEuclidean (d + 1) 3 2 Ω :=
+  haveI : CompleteSpace ((dirichletLaplacianH10 Ω).PowDomain 1) :=
+    dirichletLaplacianH10_isMaximalMonotone.isClosed.completeSpace_powDomain 1
+  Classical.choose (exists_continuousLinearMap_comp_eq_of_injective
+    (J := fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume)
+    SobolevMultiIndex.fnL_injective
+    (S := (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+      volume).comp (applyL (dirichletLaplacianH10 Ω) 1 0))
+    (dirichletLaplacianH10_exists_sobolev_three_comp hΩ hΓ))
+
+set_option maxHeartbeats 1000000 in
+-- Same instance chain as in the definition above.
+/-- The function of `powDomainOneToSobolevThreeL x` is the function of `A₁^0 x ∈ H¹₀(Ω)`. -/
+theorem fnL_powDomainOneToSobolevThreeL
+    (hΩ : IsContDiffChartDomain 3 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+    (x : (dirichletLaplacianH10 Ω).PowDomain 1) :
+    fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume
+      (dirichletLaplacianH10.powDomainOneToSobolevThreeL Ω hΩ hΓ x)
+      = SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+        (applyL (dirichletLaplacianH10 Ω) 1 0 x) :=
+  haveI : CompleteSpace ((dirichletLaplacianH10 Ω).PowDomain 1) :=
+    dirichletLaplacianH10_isMaximalMonotone.isClosed.completeSpace_powDomain 1
+  (Classical.choose_spec (exists_continuousLinearMap_comp_eq_of_injective
+    (J := fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 3 2 Ω volume)
+    SobolevMultiIndex.fnL_injective
+    (S := (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω
+      volume).comp (applyL (dirichletLaplacianH10 Ω) 1 0))
+    (dirichletLaplacianH10_exists_sobolev_three_comp hΩ hΓ)) x).trans
+    (ContinuousLinearMap.comp_apply _ _ _)
+
+end SobolevThree
 
 end

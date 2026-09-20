@@ -117,7 +117,7 @@ theorem loadZero_sub
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     loadZero Ω (f - g) = loadZero Ω f - loadZero Ω g := by
   ext v
-  exact Elliptic.load_sub f g v
+  exact Elliptic.load_sub (Ω := Ω) f g v
 
 /-- `‖loadZero Ω f‖ ≤ ‖f‖_{L²(Ω)}`. -/
 theorem norm_loadZero_le

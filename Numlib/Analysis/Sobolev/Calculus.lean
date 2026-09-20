@@ -1042,14 +1042,6 @@ theorem HasWeakIteratedLineDerivOn.mul_of_ae_norm_le {u wu v wv : E → ℝ}
 
 variable {ι : Type*} [Fintype ι] [LinearOrder ι] {b : Basis ι ℝ E}
 
-/-- A bound `|f x| ≤ c |g x|` almost everywhere, with `g ∈ L^p`, puts `f` in `L^p`. -/
-theorem MeasureTheory.MemLp.of_ae_norm_le_mul {X : Type*} [MeasurableSpace X] {ν : Measure X}
-    {f g : X → ℝ} {q : ℝ≥0∞} (hg : MemLp g q ν) (hf : AEStronglyMeasurable f ν) {c : ℝ}
-    (h : ∀ᵐ x ∂ν, |f x| ≤ c * |g x|) : MemLp f q ν :=
-  (hg.const_mul c).of_le hf (h.mono fun x hx ↦ by
-    rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul]
-    exact hx.trans (mul_le_mul_of_nonneg_right (le_abs_self c) (abs_nonneg _)))
-
 /-- **Proposition 9.5** of [brezis2011functional] §9.1: for `G : ℝ → ℝ` of class `C^1` with
 `G 0 = 0` and `|G'| ≤ M`, and `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, the composite `G ∘ u` lies in
 `W^{1,p}(Ω)`; its weak derivatives are `(G' ∘ u) ∂_i u`

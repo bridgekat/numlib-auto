@@ -9,6 +9,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Measure.SeparableMeasure
 import Numlib.Analysis.Normed.Module.Reflexive
+import Numlib.Analysis.Normed.Operator.ClosedGraph
 import Numlib.Analysis.Sobolev.Space
 import Numlib.MeasureTheory.Function.LpSpace.Duality
 
@@ -800,6 +801,54 @@ theorem congr_ae {f' : E → F} (h : MemSobolevMultiIndex b f k p Ω μ)
     let ⟨w, hw, hwp⟩ := h.2 α hα
     ⟨w, hw.congr_ae hf (Filter.EventuallyEq.refl _ _), hwp⟩⟩
 
+/-- `W^{k,p}(Ω)` is closed under addition. -/
+protected theorem add {f g : E → F}
+    (hf : MemSobolevMultiIndex b f k p Ω μ)
+    (hg : MemSobolevMultiIndex b g k p Ω μ) : MemSobolevMultiIndex b (f + g) k p Ω μ :=
+  ⟨hf.1.add hg.1, fun α hα ↦
+    let ⟨w₁, hw₁, hw₁p⟩ := hf.2 α hα
+    let ⟨w₂, hw₂, hw₂p⟩ := hg.2 α hα
+    ⟨w₁ + w₂, hw₁.add hw₂, hw₁p.add hw₂p⟩⟩
+
+omit [OpensMeasurableSpace E] in
+/-- `W^{k,p}(Ω)` is closed under negation. -/
+protected theorem neg {f : E → F}
+    (hf : MemSobolevMultiIndex b f k p Ω μ) :
+    MemSobolevMultiIndex b (-f) k p Ω μ :=
+  ⟨hf.1.neg, fun α hα ↦
+    let ⟨w, hw, hwp⟩ := hf.2 α hα
+    ⟨-w, hw.neg, hwp.neg⟩⟩
+
+/-- `W^{k,p}(Ω)` is closed under subtraction. -/
+protected theorem sub {f g : E → F}
+    (hf : MemSobolevMultiIndex b f k p Ω μ)
+    (hg : MemSobolevMultiIndex b g k p Ω μ) : MemSobolevMultiIndex b (f - g) k p Ω μ := by
+  rw [sub_eq_add_neg]
+  exact hf.add hg.neg
+
+omit [OpensMeasurableSpace E] in
+/-- `W^{k,p}(Ω)` is closed under scalar multiplication. -/
+protected theorem const_smul {f : E → F}
+    (hf : MemSobolevMultiIndex b f k p Ω μ) (c : ℝ) :
+    MemSobolevMultiIndex b (c • f) k p Ω μ :=
+  ⟨hf.1.const_smul c, fun α hα ↦
+    let ⟨w, hw, hwp⟩ := hf.2 α hα
+    ⟨c • w, hw.const_smul c, hwp.const_smul c⟩⟩
+
+/-- `W^{k,p}(Ω)` is closed under finite sums. -/
+protected theorem finset_sum {κ : Type*} (s : Finset κ) {f : κ → E → F}
+    (hf : ∀ i ∈ s, MemSobolevMultiIndex b (f i) k p Ω μ) :
+    MemSobolevMultiIndex b (∑ i ∈ s, f i) k p Ω μ := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact ⟨MemLp.zero, fun α _ ↦ ⟨0, HasWeakIteratedLineDerivOn.zero, MemLp.zero⟩⟩
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha]
+    exact (hf a (Finset.mem_insert_self a s)).add
+      (ih fun i hi ↦ hf i (Finset.mem_insert_of_mem hi))
+
 end MemSobolevMultiIndex
 
 /-- The function underlying an element of `W^{k,p}(Ω)` belongs to `W^{k,p}(Ω)` in the sense of
@@ -1130,6 +1179,19 @@ theorem MemSobolevMultiIndex.mono_order {k' : ℕ} (h : MemSobolevMultiIndex b f
     (hk : k' ≤ k) : MemSobolevMultiIndex b f k' p Ω μ :=
   ⟨h.1, fun α hα ↦ h.2 α (hα.trans hk)⟩
 
+/-- The zero function lies in `W^{k,p}(Ω)`. -/
+protected theorem MemSobolevMultiIndex.zero : MemSobolevMultiIndex b (0 : E → F) k p Ω μ :=
+  ⟨MemLp.zero, fun _ _ ↦ ⟨0, HasWeakIteratedLineDerivOn.zero, MemLp.zero⟩⟩
+
+/-- `W^{0,p}(Ω)` is `L^p(Ω)`. -/
+theorem memSobolevMultiIndex_zero_iff [OpensMeasurableSpace E] [Fact (1 ≤ p)]
+    [IsLocallyFiniteMeasure μ] :
+    MemSobolevMultiIndex b f 0 p Ω μ ↔ MemLp f p (μ.restrict (Ω : Set E)) := by
+  refine ⟨fun h ↦ h.memLp, fun hf ↦ ⟨hf, fun α hα ↦ ?_⟩⟩
+  have h0 : ∑ i, α i = 0 := Nat.le_zero.1 hα
+  exact ⟨f, HasWeakIteratedLineDerivOn.of_length_eq_zero h0 _ (hf.locallyIntegrableOn Fact.out),
+    hf⟩
+
 /-- **The inductive definition of `W^{m+1,p}(Ω)` agrees with the multi-index one**: `f` lies in
 `W^{m+1,p}(Ω)` exactly when `f` lies in `W^{m,p}(Ω)` and, for every basis direction `b i`, `f` has
 a weak derivative `∂_i f` along `b i` that lies in `W^{m,p}(Ω)`. This is the equivalence of the two
@@ -1412,6 +1474,75 @@ theorem norm_weakDeriv_single_le_gradNorm (u : SobolevMultiIndex F b 1 p Ω μ) 
     ‖weakDeriv u (MultiIndexLE.single i)‖ ≤ gradNorm u :=
   PiLp.norm_apply_le (grad u) i
 
+/-- **The Pythagorean identity in `L²(ν; ℓ²(ι; F))`**: for a finite family `g i` of measurable
+functions, the square of the `L²` norm of `x ↦ (g i x)ᵢ` in the `ℓ²` product is the sum of the
+squares of the `L²` norms of the `g i`. -/
+theorem _root_.MeasureTheory.eLpNorm_toLp_two_sq {X ι F : Type*} [MeasurableSpace X]
+    {ν : Measure X} [Fintype ι] [NormedAddCommGroup F] {g : ι → X → F}
+    (hg : ∀ i, AEStronglyMeasurable (g i) ν)
+    (hm : AEStronglyMeasurable (fun x ↦ (WithLp.toLp 2 fun i ↦ g i x : PiLp 2 fun _ : ι ↦ F)) ν) :
+    eLpNorm (fun x ↦ (WithLp.toLp 2 fun i ↦ g i x : PiLp 2 fun _ : ι ↦ F)) 2 ν ^ 2
+      = ∑ i, eLpNorm (g i) 2 ν ^ 2 := by
+  have hG := eLpNorm_nnreal_pow_eq_lintegral (p := 2) two_ne_zero hm
+  have hi : ∀ i, eLpNorm (g i) 2 ν ^ 2 = ∫⁻ x, ‖g i x‖ₑ ^ 2 ∂ν := fun i ↦ by
+    have h := eLpNorm_nnreal_pow_eq_lintegral (p := 2) two_ne_zero (hg i)
+    simpa only [NNReal.coe_ofNat, ENNReal.coe_ofNat, ENNReal.rpow_two] using h
+  simp only [NNReal.coe_ofNat, ENNReal.coe_ofNat, ENNReal.rpow_two] at hG
+  rw [hG]
+  simp_rw [hi]
+  rw [← lintegral_finsetSum' _ fun i _ ↦ (hg i).enorm.pow_const 2]
+  refine lintegral_congr fun x ↦ ?_
+  simp only [enorm_eq_nnnorm, ← ENNReal.coe_pow, PiLp.nnnorm_eq_of_L2, NNReal.sq_sqrt,
+    ENNReal.ofNNReal_finsetSum]
+
+/-- **The pointwise gradient** `x ↦ (∂ᵢu(x))ᵢ` of `u ∈ W^{1,p}(Ω)`, as a function with values in
+the Euclidean (`ℓ²`) product of copies of `F` — the reading `|∇u(x)|` of the gradient's length of
+[brezis2011functional] §9.1, `‖∇u‖_{L^p(Ω)} = (∫_Ω |∇u|^p)^{1/p}`. -/
+noncomputable def gradFn (u : SobolevMultiIndex F b 1 p Ω μ) (x : E) : PiLp 2 fun _ : ι ↦ F :=
+  WithLp.toLp 2 fun i ↦ weakDeriv u (MultiIndexLE.single i) x
+
+omit [Fact (1 ≤ p)] in
+/-- The `i`-th component of the pointwise gradient is `∂ᵢu`. -/
+@[simp]
+theorem gradFn_apply (u : SobolevMultiIndex F b 1 p Ω μ) (x : E) (i : ι) :
+    gradFn u x i = weakDeriv u (MultiIndexLE.single i) x :=
+  rfl
+
+variable [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F]
+
+omit [Fact (1 ≤ p)] in
+/-- The pointwise gradient is almost everywhere strongly measurable on `Ω`. -/
+theorem aestronglyMeasurable_gradFn (u : SobolevMultiIndex F b 1 p Ω μ) :
+    AEStronglyMeasurable (gradFn u) (μ.restrict (Ω : Set E)) :=
+  (PiLp.continuous_toLp 2 _).comp_aestronglyMeasurable
+    (aemeasurable_pi_iff.2 fun _ ↦ (Lp.aestronglyMeasurable _).aemeasurable).aestronglyMeasurable
+
+omit [Fact (1 ≤ p)] in
+/-- `∫_Ω |∇u|² = ∑ᵢ ‖∂ᵢu‖²_{L²(Ω)}` for `u ∈ W^{1,2}(Ω)`: the square of the `L²` norm of the
+pointwise gradient is the sum of the squares of the `L²` norms of the partial derivatives. -/
+theorem eLpNorm_gradFn_two_sq (u : SobolevMultiIndex F b 1 2 Ω μ) :
+    eLpNorm (gradFn u) 2 (μ.restrict (Ω : Set E)) ^ 2
+      = ∑ i, eLpNorm (weakDeriv u (MultiIndexLE.single i)) 2 (μ.restrict (Ω : Set E)) ^ 2 :=
+  MeasureTheory.eLpNorm_toLp_two_sq (fun _ ↦ Lp.aestronglyMeasurable _)
+    (aestronglyMeasurable_gradFn u)
+
+omit [Fact (1 ≤ p)] in
+/-- **At `p = 2` the two readings of `‖∇u‖_{L²(Ω)}` agree**: the Euclidean reading
+`(∫_Ω |∇u|²)^{1/2}` (`eLpNorm (gradFn u) 2`) is the `ℓ²` reading `(∑ᵢ ‖∂ᵢu‖₂²)^{1/2}`
+(`SobolevMultiIndex.gradNorm`). -/
+theorem gradNorm_eq_toReal_eLpNorm_gradFn (u : SobolevMultiIndex F b 1 2 Ω μ) :
+    gradNorm u = (eLpNorm (gradFn u) 2 (μ.restrict (Ω : Set E))).toReal := by
+  have hsq : gradNorm u = √(∑ i, ‖weakDeriv u (MultiIndexLE.single i)‖ ^ 2) := by
+    rw [gradNorm_eq_sum (p := 2) (by norm_num), Real.sqrt_eq_rpow]
+    simp only [ENNReal.toReal_ofNat, Real.rpow_two]
+  rw [hsq]
+  have h := congrArg ENNReal.toReal (eLpNorm_gradFn_two_sq u)
+  rw [ENNReal.toReal_pow, ENNReal.toReal_sum fun i _ ↦ ENNReal.pow_ne_top (Lp.eLpNorm_ne_top _)]
+    at h
+  simp only [ENNReal.toReal_pow, ← Lp.norm_def] at h
+  rw [← h, Real.sqrt_sq ENNReal.toReal_nonneg]
+
+
 end SobolevMultiIndex
 
 end Gradient
@@ -1499,4 +1630,68 @@ noncomputable abbrev SobolevEuclideanZero (N k : ℕ) (p : ℝ≥0∞) [Fact (1 
     Submodule ℝ (SobolevEuclidean N k p Ω) :=
   SobolevMultiIndexZero ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k p Ω volume
 
+/-- The `i`-th vector of the standard basis of `ℝ^N` is `e_i`. -/
+theorem EuclideanSpace.basisFun_toBasis_apply {N : ℕ} (i : Fin N) :
+    ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i
+      = EuclideanSpace.single i 1 := by
+  rw [OrthonormalBasis.coe_toBasis, EuclideanSpace.basisFun_apply]
+
 end Euclidean
+
+/-! ### The closed-graph lifts into `H^k(Ω)` -/
+
+section ClosedGraph
+
+variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-- **A bounded lift into `H^k(Ω)` from the closed graph theorem**: if a continuous linear map
+`S : X → L²(Ω)` from a Banach space `X` takes every `x` to the function of some element of
+`H^k(Ω)`, then the lift `x ↦ U_x ∈ H^k(Ω)` is a bounded linear map
+(`exists_continuousLinearMap_comp_eq_of_injective` along the injective inclusion
+`H^k(Ω) → L²(Ω)`, `SobolevMultiIndex.fnL_injective`). -/
+theorem SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq {X : Type*}
+    [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X] {k : ℕ}
+    {S : X →L[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
+    (hS : ∀ x, ∃ U : SobolevEuclidean N k 2 Ω,
+      SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume U = S x) :
+    ∃ T : X →L[ℝ] SobolevEuclidean N k 2 Ω,
+      ∀ x, SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume (T x)
+        = S x := by
+  -- the injectivity with its type spelled out (instance search on the implicit form of
+  -- `fnL_injective` exhausts the heartbeat budget)
+  have hJ : Function.Injective
+      (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume) :=
+    SobolevMultiIndex.fnL_injective
+  exact exists_continuousLinearMap_comp_eq_of_injective hJ hS
+
+/-- **The `H^k` bound from the membership, by the closed graph theorem**: if a continuous linear
+solution map `S : X → H¹(Ω)` from a Banach space `X` takes every `f` to the function of some
+element of `H^k(Ω)`, then the `H^k` element is bounded by `C ‖f‖`: the lift `f ↦ U_f ∈ H^k(Ω)`
+is bounded (`SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq` along
+`H¹(Ω) → L²(Ω)`), and the element with the function of `S f` is unique
+(`SobolevMultiIndex.ext_of_fn_ae_eq`). -/
+theorem SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev {X : Type*}
+    [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X] {k : ℕ}
+    {S : X →L[ℝ] SobolevEuclidean N 1 2 Ω}
+    (hS : ∀ f, ∃ U : SobolevEuclidean N k 2 Ω, SobolevMultiIndex.fn U
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] SobolevMultiIndex.fn (S f)) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : X) (U : SobolevEuclidean N k 2 Ω),
+      SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+        SobolevMultiIndex.fn (S f) → ‖U‖ ≤ C * ‖f‖ := by
+  obtain ⟨T, hT⟩ := SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq
+    (S := (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume).comp
+      S) (k := k) fun f ↦ by
+      obtain ⟨U, hU⟩ := hS f
+      exact ⟨U, Lp.ext hU⟩
+  refine ⟨‖T‖, norm_nonneg _, fun f U hU ↦ ?_⟩
+  have hJ : Function.Injective
+      (SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis k 2 Ω volume) :=
+    SobolevMultiIndex.fnL_injective
+  have hUT : U = T f := by
+    refine hJ ?_
+    rw [hT f, ContinuousLinearMap.comp_apply]
+    exact Lp.ext hU
+  rw [hUT]
+  exact T.le_opNorm f
+
+end ClosedGraph

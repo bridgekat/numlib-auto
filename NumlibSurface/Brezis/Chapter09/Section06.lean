@@ -62,117 +62,7 @@ local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin 
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-! ### Smooth functions in the local and global Sobolev spaces -/
-
-/-- **A `C^∞` function on `Ω` lies in `H^m_loc(Ω)` for every `m`**: on an open `V` with compact
-closure in `Ω`, its derivatives of every order are continuous on the compact `closure V`, hence
-bounded, hence in `L²(V)`, and the classical derivatives are the weak ones. -/
-theorem memSobolevMultiIndexLoc_of_contDiffOn {f : 𝔼 → ℝ} (hf : ContDiffOn ℝ ∞ f Ω) (m : ℕ) :
-    MemSobolevMultiIndexLoc 𝔟 f m 2 Ω volume := by
-  intro V hVc hVΩ
-  have hVm : MeasurableSet (V : Set 𝔼) := V.isOpen.measurableSet
-  have hVΩ' : (V : Set 𝔼) ⊆ Ω := subset_closure.trans hVΩ
-  have : IsFiniteMeasure (volume.restrict (V : Set 𝔼)) :=
-    isFiniteMeasure_restrict.2 ((measure_mono subset_closure).trans_lt hVc.measure_lt_top).ne
-  have hbound : ∀ n : ℕ, MemLp (iteratedFDeriv ℝ n f) 2 (volume.restrict (V : Set 𝔼)) := by
-    intro n
-    have hc : ContinuousOn (iteratedFDeriv ℝ n f) Ω := hf.continuousOn_iteratedFDeriv (by simp)
-    obtain ⟨C, hC⟩ := hVc.exists_bound_of_continuousOn (hc.mono hVΩ)
-    refine MemLp.of_bound ((hc.mono hVΩ').aestronglyMeasurable hVm) C ?_
-    filter_upwards [ae_restrict_mem hVm] with x hx
-    exact hC x (subset_closure hx)
-  have hf0 : MemLp f 2 (volume.restrict (V : Set 𝔼)) := by
-    obtain ⟨C, hC⟩ := hVc.exists_bound_of_continuousOn (hf.continuousOn.mono hVΩ)
-    refine MemLp.of_bound ((hf.continuousOn.mono hVΩ').aestronglyMeasurable hVm) C ?_
-    filter_upwards [ae_restrict_mem hVm] with x hx
-    exact hC x (subset_closure hx)
-  exact MemSobolev.memSobolevMultiIndex ⟨hf0, fun n _ ↦ ⟨iteratedFDeriv ℝ n f,
-    (hf.mono hVΩ').hasWeakIteratedFDerivOn (by simp), hbound n⟩⟩
-
-/-- **A function of class `C^n(Ω̄)` on a bounded open set lies in `H^m(Ω)` for every `m ≤ n`**:
-its derivatives of order `≤ n` extend continuously to the compact `closure Ω`
-(`ContDiffOnClosure`), so they are bounded on `Ω` and lie in `L²(Ω)`. The case `m = n = 1` is
-the backbone's `ContDiffOnClosure.memSobolevMultiIndex_of_isBounded`. -/
-theorem memSobolevMultiIndex_of_contDiffOnClosure_of_isBounded
-    (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : 𝔼 → ℝ} {n : WithTop ℕ∞}
-    (hf : ContDiffOnClosure ℝ n f Ω) {m : ℕ} (hm : (m : WithTop ℕ∞) ≤ n) :
-    MemSobolevMultiIndex 𝔟 f m 2 Ω volume := by
-  have hΩm : MeasurableSet (Ω : Set 𝔼) := Ω.isOpen.measurableSet
-  have : IsFiniteMeasure (volume.restrict (Ω : Set 𝔼)) :=
-    isFiniteMeasure_restrict.2 hb.measure_lt_top.ne
-  have hbound : ∀ k : ℕ, (k : WithTop ℕ∞) ≤ n →
-      MemLp (iteratedFDeriv ℝ k f) 2 (volume.restrict (Ω : Set 𝔼)) := by
-    intro k hk
-    obtain ⟨g, hgc, hge⟩ := hf.exists_continuousOn_closure_iteratedFDeriv hk
-    obtain ⟨C, hC⟩ := hb.isCompact_closure.exists_bound_of_continuousOn hgc
-    refine MemLp.of_bound
-      ((hf.contDiffOn.continuousOn_iteratedFDeriv hk).aestronglyMeasurable hΩm) C ?_
-    filter_upwards [ae_restrict_mem hΩm] with x hx
-    rw [← hge hx]
-    exact hC x (subset_closure hx)
-  have hf0 : MemLp f 2 (volume.restrict (Ω : Set 𝔼)) := by
-    obtain ⟨g, hgc, hge⟩ := hf.continuousOn_closure
-    obtain ⟨C, hC⟩ := hb.isCompact_closure.exists_bound_of_continuousOn hgc
-    refine MemLp.of_bound (hf.contDiffOn.continuousOn.aestronglyMeasurable hΩm) C ?_
-    filter_upwards [ae_restrict_mem hΩm] with x hx
-    rw [← hge hx]
-    exact hC x (subset_closure hx)
-  refine MemSobolev.memSobolevMultiIndex ⟨hf0, fun k hk ↦ ?_⟩
-  have hk' : (k : WithTop ℕ∞) ≤ n := (by exact_mod_cast hk : (k : WithTop ℕ∞) ≤ m).trans hm
-  exact ⟨iteratedFDeriv ℝ k f, hf.contDiffOn.hasWeakIteratedFDerivOn hk', hbound k hk'⟩
-
 /-! ### Remark 25: interior regularity -/
-
-/-- **The bootstrap of Remark 25** ("the same method applies... and argue by induction on `m`"):
-let `u ∈ H^1_loc(Ω)` with weak partial derivatives `w i`, and let `∫_Ω ∇u · ∇φ = ∫_Ω (f + c u) φ`
-for every test function `φ` on `Ω`, with `f ∈ H^m_loc(Ω)`. Then `u ∈ H^{m+2}_loc(Ω)`: the datum
-`f + c u` gains regularity with `u`, and interior regularity (`Elliptic.regularity_interior_higher`)
-raises the order by two at each step. The datum `f − u` of the Dirichlet problem for `−Δ + 1` is
-the case `c = −1`, the eigenvalue equation `−Δu = λu` the case `f = 0`, `c = λ`. -/
-theorem memSobolevMultiIndexLoc_of_forall_testFunction_add_mul (m : ℕ) {u f : 𝔼 → ℝ}
-    {w : Fin N → 𝔼 → ℝ} {c : ℝ}
-    (hu : MemSobolevMultiIndexLoc 𝔟 u 1 2 Ω volume)
-    (hw : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u (w i) Ω volume)
-    (hf : MemSobolevMultiIndexLoc 𝔟 f m 2 Ω volume)
-    (heq : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
-      = ∫ x in (Ω : Set 𝔼), (f x + c * u x) * φ x) :
-    MemSobolevMultiIndexLoc 𝔟 u (m + 2) 2 Ω volume := by
-  have key : ∀ k : ℕ, k ≤ m + 1 → MemSobolevMultiIndexLoc 𝔟 u (k + 1) 2 Ω volume := by
-    intro k
-    induction k with
-    | zero => exact fun _ ↦ hu
-    | succ k ih =>
-      intro hk
-      have hu' := ih (by omega)
-      have hfu : MemSobolevMultiIndexLoc 𝔟 (fun x ↦ f x + c * u x) k 2 Ω volume :=
-        fun V hVc hVΩ ↦ (((hf V hVc hVΩ).mono_order (by omega)).add
-          (((hu' V hVc hVΩ).mono_order (by omega)).const_smul c)).congr_ae
-            (Eventually.of_forall fun x ↦ by simp)
-      exact Elliptic.regularity_interior_higher k hu hw hfu heq
-  exact key (m + 1) le_rfl
-
-/-- **The weak equation against the test functions of `Ω` restricts to any open `ω ⊆ Ω`**: both
-integrands vanish off `ω`, the test function on `ω` being a test function on `Ω`. -/
-theorem forall_testFunction_of_le {f : 𝔼 → ℝ} {w : Fin N → 𝔼 → ℝ} {Ω' : Opens 𝔼} (hω : Ω' ≤ Ω)
-    (heq : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
-      = ∫ x in (Ω : Set 𝔼), f x * φ x) (φ : 𝓓(Ω', ℝ)) :
-    ∫ x in (Ω' : Set 𝔼), ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1)
-      = ∫ x in (Ω' : Set 𝔼), f x * φ x := by
-  have h := heq (φ.ofLE hω)
-  rw [TestFunction.ofLE_coe] at h
-  have h1 : ∀ x, x ∉ (Ω' : Set 𝔼) → ∑ i, w i x * fderiv ℝ φ x (EuclideanSpace.single i 1) = 0 := by
-    intro x hx
-    refine Finset.sum_eq_zero fun i _ ↦ ?_
-    have := (φ.fderivApply (EuclideanSpace.single i 1)).eq_zero_of_notMem hx
-    rw [TestFunction.fderivApply_apply] at this
-    rw [this, mul_zero]
-  have h2 : ∀ x, x ∉ (Ω' : Set 𝔼) → f x * φ x = 0 := fun x hx ↦ by
-    rw [φ.eq_zero_of_notMem hx, mul_zero]
-  rw [setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ h1 x fun h' ↦ hx (hω h'),
-    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ h2 x fun h' ↦ hx (hω h')] at h
-  rw [setIntegral_eq_integral_of_forall_compl_eq_zero h1,
-    setIntegral_eq_integral_of_forall_compl_eq_zero h2]
-  exact h
 
 /-- **Remark 25 (interior regularity).** Let `Ω` be an arbitrary open set and let `u ∈ H^1(Ω)`
 be such that `∫_Ω ∇u · ∇φ = ∫_Ω f φ` for all `φ ∈ C_c^∞(Ω)`. We suppose that `f ∈ H^m(Ω)`. Then
@@ -202,7 +92,7 @@ theorem remark_9_25 (m : ℕ) (u : hSpace N Ω) (f : sobolevSpaceHigher N m 2 Ω
 /-- **Remark 25, "in particular, `f ∈ C^∞(Ω) ⇒ u ∈ C^∞(Ω)`"**: for `u ∈ H^1(Ω)` with
 `∫_Ω ∇u · ∇φ = ∫_Ω f φ` for all `φ ∈ C_c^∞(Ω)` and `f` of class `C^∞` on `Ω`, `u` agrees almost
 everywhere on `Ω` with a `C^∞` function on `Ω`. A `C^∞` function lies in `H^m_loc(Ω)` for every
-`m` (`memSobolevMultiIndexLoc_of_contDiffOn`), so `u ∈ H^{m+2}_loc(Ω)` for every `m` by
+`m` (`ContDiffOn.memSobolevMultiIndexLoc`), so `u ∈ H^{m+2}_loc(Ω)` for every `m` by
 `Elliptic.regularity_interior_higher`, and `MemSobolevMultiIndexLoc.exists_contDiffOn` gives the
 smooth representative. Footnote 33 — nothing can be said about `u` up to the boundary — is a
 remark and not a node. -/
@@ -216,7 +106,7 @@ theorem remark_9_25_smooth (u : hSpace N Ω) {f : 𝔼 → ℝ} (hf : ContDiffOn
     (Elliptic.regularity_interior_higher m
       (SobolevMultiIndex.memSobolevMultiIndex u).memSobolevMultiIndexLoc
       (fun i ↦ Elliptic.weakDeriv_hasWeakIteratedLineDerivOn_single u i)
-      (memSobolevMultiIndexLoc_of_contDiffOn hf m) heq).mono_order (Nat.le_add_right m 2)
+      (hf.memSobolevMultiIndexLoc (by simp)) heq).mono_order (Nat.le_add_right m 2)
 
 /-- **Remark 25, hypoellipticity.** Let `f ∈ L²(Ω)` and let `u ∈ H^1_0(Ω)` be the weak solution
 of `∫_Ω ∇u · ∇φ + ∫_Ω u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)`, and fix an open `ω ⊆ Ω` (the book
@@ -225,7 +115,8 @@ takes `ω ⊂⊂ Ω`). The regularity of `u|_ω` depends only on the regularity 
 function on `ω` then so does `u` — `f ∈ C^∞(ω) ⇒ u ∈ C^∞(ω)` even if `f` is very irregular
 outside `ω`. Interior regularity on the open set `ω` with the datum `f − u`, whose regularity on
 `ω` is that of `f` one step behind, bootstrapped
-(`memSobolevMultiIndexLoc_of_forall_testFunction_add_mul`). The sentence before, that `u|_ω`
+(`Elliptic.memSobolevMultiIndexLoc_of_forall_testFunction_add_mul`). The sentence before, that
+`u|_ω`
 depends on the values of `f` in all of `Ω`, is footnote 34's pointer to the strong maximum
 principle and is not a node. -/
 theorem remark_9_25_local {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
@@ -257,18 +148,18 @@ theorem remark_9_25_local {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : 
     refine (hpred φ).trans (integral_congr_ae ?_)
     filter_upwards [hsub] with x hx
     rw [hx]
-  have hpredω := forall_testFunction_of_le hω hpred'
+  have hpredω := Elliptic.forall_testFunction_of_le hω hpred'
   have huω : MemSobolevMultiIndexLoc 𝔟 (SobolevMultiIndex.fn u) 1 2 Ω' volume :=
     ((SobolevMultiIndex.memSobolevMultiIndex u).mono_set hω).memSobolevMultiIndexLoc
   have hwω : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (SobolevMultiIndex.fn u)
       (partialDeriv u i) Ω' volume := fun i ↦
     (Elliptic.weakDeriv_hasWeakIteratedLineDerivOn_single u i).mono hω
-  refine ⟨fun m hf ↦ memSobolevMultiIndexLoc_of_forall_testFunction_add_mul m huω hwω
+  refine ⟨fun m hf ↦ Elliptic.memSobolevMultiIndexLoc_of_forall_testFunction_add_mul m huω hwω
     hf.memSobolevMultiIndexLoc hpredω, fun f₀ hf₀ hff ↦ ?_⟩
   refine MemSobolevMultiIndexLoc.exists_contDiffOn fun m ↦ ?_
   have hfm : MemSobolevMultiIndexLoc 𝔟 (⇑f) m 2 Ω' volume :=
-    (memSobolevMultiIndexLoc_of_contDiffOn hf₀ m).congr_ae hff.symm
-  exact (memSobolevMultiIndexLoc_of_forall_testFunction_add_mul m huω hwω hfm
+    (hf₀.memSobolevMultiIndexLoc (by simp)).congr_ae hff.symm
+  exact (Elliptic.memSobolevMultiIndexLoc_of_forall_testFunction_add_mul m huω hwω hfm
     hpredω).mono_order (Nat.le_add_right m 2)
 
 end Interior
@@ -402,7 +293,7 @@ every boundary point) and the datum `f ∈ L²(Ω)` agrees almost everywhere wit
 `C^∞(Ω̄)` (`ContDiffOnClosure ℝ ∞ · Ω`), then the weak solution `u ∈ H^1_0(Ω)` of (48) agrees
 almost everywhere on `Ω` with a function `ũ` of class `C^∞(Ω̄)`, continuous on `Ω̄`. On the
 bounded `Ω`, `f ∈ C^∞(Ω̄)` gives `f ∈ H^m(Ω)` for every `m`
-(`memSobolevMultiIndex_of_contDiffOnClosure_of_isBounded`), and the backbone's
+(`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`), and the backbone's
 `Elliptic.regularity_dirichlet_smooth` is the `C²(Ω̄)` clause at every order, with one
 representative for all orders. For an unbounded `Ω` with bounded `Γ` the hypothesis
 `f ∈ C^∞(Ω̄)` does not give `f ∈ H^m(Ω)`; that case is `theorem_9_25_smooth_of_forall_mem`. -/
@@ -415,7 +306,7 @@ theorem theorem_9_25_smooth (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hb : Bornolo
   have hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)) :=
     hb.isCompact_closure.isBounded.subset frontier_subset_closure
   have hfm : ∀ m : ℕ, MemSobolevMultiIndex 𝔟 (⇑f) m 2 Ω volume := fun m ↦
-    (memSobolevMultiIndex_of_contDiffOnClosure_of_isBounded hb hf (by simp)).congr_ae hff.symm
+    (hf.memSobolevMultiIndex_of_isBounded_of_le Ω hb 2 (by simp)).congr_ae hff.symm
   obtain ⟨ũ, hc, h2, hae, hG⟩ := Elliptic.regularity_dirichlet_smooth hΩ hΓ hfm
     ((isWeakSolutionDirichlet_iff _ u).1 hu)
   refine ⟨ũ, ⟨h2, fun j _ ↦ ?_⟩, hc.continuousOn, hae⟩

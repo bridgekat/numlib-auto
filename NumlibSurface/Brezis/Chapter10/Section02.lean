@@ -196,23 +196,16 @@ theorem corollary_10_5 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
 
 /-- **Corollary 10.5 for bounded `Ω`**, as printed: `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0` on `Γ`
 gives `u ∈ C(Q̄)`. Footnote 6's condition at infinity is void, `cocompact ⊓ 𝓟 Ω` being the
-trivial filter when `Ω̄` is compact. -/
+trivial filter when `Ω̄` is compact (the backbone's
+`Heat.IsSolution.continuousOn_spaceTime_of_isBounded`). -/
 theorem corollary_10_5_of_isBounded (hb : Bornology.IsBounded (Ω : Set 𝔼))
-    (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
-    {f : 𝔼 → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼)))
+    (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) {f : 𝔼 → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼)))
     (hf0 : ∀ x ∈ frontier (Ω : Set 𝔼), f x = 0) (hu₀ : u₀ =ᵐ[volume.restrict (Ω : Set 𝔼)] f)
     (hu : IsHeatSolution Ω u₀ u) :
     ∃ U : 𝔼 × ℝ → ℝ, ContinuousOn U (closure (Ω : Set 𝔼) ×ˢ Ici 0) ∧
       (∀ t, 0 ≤ t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t) ∧
-      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set 𝔼)) := by
-  refine corollary_10_5 hΩ hΓ hf hf0 ?_ hu₀ hu
-  -- `Ω` and the complement of the compact `Ω̄` are disjoint, so the filter is `⊥`
-  have h : cocompact 𝔼 ⊓ 𝓟 (Ω : Set 𝔼) = ⊥ :=
-    Filter.inf_eq_bot_iff.2 ⟨(closure (Ω : Set 𝔼))ᶜ, hb.isCompact_closure.compl_mem_cocompact,
-      Ω, mem_principal_self _,
-      Set.eq_empty_iff_forall_notMem.2 fun _ hx ↦ hx.1 (subset_closure hx.2)⟩
-  rw [h]
-  exact tendsto_bot
+      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set 𝔼)) :=
+  hu.isSolution.continuousOn_spaceTime_of_isBounded hb hΩ hf hf0 hu₀
 
 end Regular
 

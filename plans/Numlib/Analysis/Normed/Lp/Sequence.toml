@@ -174,6 +174,36 @@ id = "shiftRightL_apply_succ"
 id = "norm_shiftRightL_apply"
 
 [[node]]
+id = "memℓp_smul_of_forall_norm_le"
+
+[[node]]
+id = "diagonalL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7 (the multiplication operator on ℓ²)"
+
+[[node]]
+id = "diagonalL_apply"
+
+[[node]]
+id = "norm_diagonalL_apply_le"
+
+[[node]]
+id = "norm_diagonalL_le"
+
+[[node]]
+id = "diagonalL_sub"
+
+[[node]]
+id = "diagonalL_single"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7 (the unit vectors are eigenvectors)"
+
+[[node]]
+id = "finiteDimensional_range_diagonalL"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 6, Remark 7 (the finite-rank truncations)"
+
+[[node]]
+id = "not_finiteDimensional_of_infinite"
+
+[[node]]
 id = "zeroAtInfty.hasSum_single"
 
 [[node]]

@@ -12,9 +12,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (34)"
 id = "phaseSpace.hasDerivWithinAt_mk"
 
 [[node]]
-id = "toSobolevZero"
-
-[[node]]
 id = "MemOperatorDomain"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (35)"
 
@@ -64,9 +61,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (uni
 [[node]]
 id = "existsUnique_isSolution"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (existence and uniqueness)"
-
-[[node]]
-id = "dirichletFormOperator"
 
 [[node]]
 id = "IsSolution.energy_dirichletForm"
@@ -122,15 +116,6 @@ id = "memLaplacianDomain_two_mul_iff"
 
 [[node]]
 id = "memLaplacianDomain_two_mul_add_one_iff"
-
-[[node]]
-id = "_root_.Bochner.ContDiffOnThrough.infty_of_forall_nat"
-
-[[node]]
-id = "dirichletLaplacian_exists_sobolev_add_two_of_apply"
-
-[[node]]
-id = "dirichletLaplacian_exists_sobolev_of_powDomain_of_last"
 
 [[node]]
 id = "MemLaplacianDomain.exists_sobolev_two_mul"
@@ -280,9 +265,6 @@ id = "dAlembert_contDiffOn_off_characteristics"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8 (characteristics)"
 
 [[node]]
-id = "eq_cos_add_sin_of_hasDerivWithinAt_oscillator"
-
-[[node]]
 id = "IsSolution.inner_eigenfunction"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 9"
 
@@ -292,9 +274,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remar
 
 [[node]]
 id = "IsClassicalSolution"
-
-[[node]]
-id = "timeDeriv_iterate_apply_zero_eq_zero"
 
 [[node]]
 id = "IsClassicalSolution.timeDeriv_iterate_eqOn"

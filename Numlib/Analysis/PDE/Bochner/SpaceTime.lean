@@ -1,5 +1,6 @@
 import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ProdContDiff
+import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.Sobolev.EmbeddingDomain
 
@@ -259,37 +260,6 @@ theorem eqOn_closure_deriv_rep_smul (hrepc : ∀ w, Continuous (rep w))
 
 end Linearity
 
-/-! ### Evaluation of a bounded linear family commutes with `d/dt` -/
-
-section Linear
-
-variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
-  [NormedSpace ℝ W] {Φ : V → W}
-
-/-- An additive, homogeneous map bounded by `C ‖w‖` is Lipschitz with constant `C`. -/
-theorem norm_sub_le_of_forall_add_smul_norm_le (hadd : ∀ w₁ w₂, Φ (w₁ + w₂) = Φ w₁ + Φ w₂)
-    (hsmul : ∀ (c : ℝ) w, Φ (c • w) = c • Φ w) {C : ℝ} (hb : ∀ w, ‖Φ w‖ ≤ C * ‖w‖) (w₁ w₂ : V) :
-    ‖Φ w₁ - Φ w₂‖ ≤ C * ‖w₁ - w₂‖ := by
-  let L : V →ₗ[ℝ] W := ⟨⟨Φ, hadd⟩, hsmul⟩
-  have : Φ w₁ - Φ w₂ = Φ (w₁ - w₂) := (map_sub L w₁ w₂).symm
-  rw [this]
-  exact hb _
-
-/-- **A bounded linear map commutes with the derivative of a curve**: if `Φ` is additive,
-homogeneous and bounded by `C ‖w‖`, then `Φ ∘ v` has derivative `Φ v'` within `s` wherever `v`
-has derivative `v'`. This is how the evaluation at a point of the canonical `C^k(Ω̄)`
-representative — a bounded linear functional of `w ∈ H^m(Ω)` — commutes with `d/dt`. -/
-theorem hasDerivWithinAt_of_forall_add_smul_norm_le (hadd : ∀ w₁ w₂, Φ (w₁ + w₂) = Φ w₁ + Φ w₂)
-    (hsmul : ∀ (c : ℝ) w, Φ (c • w) = c • Φ w) {C : ℝ} (hb : ∀ w, ‖Φ w‖ ≤ C * ‖w‖)
-    {v : ℝ → V} {v' : V} {s : Set ℝ} {t : ℝ} (hv : HasDerivWithinAt v v' s t) :
-    HasDerivWithinAt (fun r ↦ Φ (v r)) (Φ v') s t := by
-  let L : V →L[ℝ] W := LinearMap.mkContinuous ⟨⟨Φ, hadd⟩, hsmul⟩ C hb
-  exact L.hasFDerivAt.comp_hasDerivWithinAt t hv
-
-end Linear
-
-
-
 /-! ### Lowering the Sobolev order of a curve -/
 
 section LowerOrder
@@ -298,12 +268,6 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpa
   [OpensMeasurableSpace E] [NormedAddCommGroup F] [NormedSpace ℝ F] {ι : Type*} [Fintype ι]
   [LinearOrder ι] {b : Module.Basis ι ℝ E} {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens E}
   {μ : Measure E}
-
-/-- The inclusion `W^{k,p}(Ω) → L^p(Ω)` factors through `W^{k',p}(Ω)` for `k' ≤ k`. -/
-theorem _root_.SobolevMultiIndex.fnL_comp_toLowerOrderL {k k' : ℕ} (hk : k' ≤ k) :
-    (SobolevMultiIndex.fnL F b k' p Ω μ).comp (SobolevMultiIndex.toLowerOrderL F b p Ω μ hk) =
-      SobolevMultiIndex.fnL F b k p Ω μ :=
-  rfl
 
 /-- **A curve of class `C^n(s; W^{k,p}(Ω))` is of class `C^n(s; W^{k',p}(Ω))` for `k' ≤ k`**: the
 hypothesis `∀ m, u ∈ C^∞(s; H^m(Ω))` of the space–time bridge follows from

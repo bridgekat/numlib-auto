@@ -229,6 +229,27 @@ id = "multiIndexTuple_add_single_perm"
 id = "MemSobolevMultiIndex.mono_order"
 
 [[node]]
+id = "MemSobolevMultiIndex.add"
+
+[[node]]
+id = "MemSobolevMultiIndex.neg"
+
+[[node]]
+id = "MemSobolevMultiIndex.sub"
+
+[[node]]
+id = "MemSobolevMultiIndex.const_smul"
+
+[[node]]
+id = "MemSobolevMultiIndex.finset_sum"
+
+[[node]]
+id = "MemSobolevMultiIndex.zero"
+
+[[node]]
+id = "memSobolevMultiIndex_zero_iff"
+
+[[node]]
 id = "memSobolevMultiIndex_succ_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1, the spaces W^{m,p}"
 
@@ -362,6 +383,26 @@ id = "SobolevMultiIndex.gradNorm_le_norm"
 id = "SobolevMultiIndex.norm_weakDeriv_single_le_gradNorm"
 
 [[node]]
+id = "MeasureTheory.eLpNorm_toLp_two_sq"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.1 (the gradient |∇u| in the Euclidean reading)"
+
+[[node]]
+id = "SobolevMultiIndex.gradFn_apply"
+
+[[node]]
+id = "SobolevMultiIndex.aestronglyMeasurable_gradFn"
+
+[[node]]
+id = "SobolevMultiIndex.eLpNorm_gradFn_two_sq"
+
+[[node]]
+id = "SobolevMultiIndex.gradNorm_eq_toReal_eLpNorm_gradFn"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §9.4 (the two readings of ‖∇u‖_{L²})"
+
+[[node]]
 id = "MultiIndexLE.castLE_injective"
 
 [[node]]
@@ -378,3 +419,12 @@ id = "MultiIndexLE.addSingle_zero"
 
 [[node]]
 id = "MultiIndexLE.coe_addSingle"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_of_forall_exists_fnL_eq"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_of_forall_exists_sobolev"
+
+[[node]]
+id = "EuclideanSpace.basisFun_toBasis_apply"

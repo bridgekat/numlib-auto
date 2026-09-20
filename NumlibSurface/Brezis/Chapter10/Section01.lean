@@ -66,12 +66,6 @@ space–time bridge behind (5)) and `Numlib/Analysis/PDE/Heat/Classical` (Remark
 * `theorem_10_2_a`, `theorem_10_2_a_memLp`, `theorem_10_2_b`, `theorem_10_2_b_memLp`,
   `theorem_10_2_c`.
 * `IsBackwardHeatSolution`, `remark_10_1`, `remark_10_1_necessary`, `remark_10_3`, `remark_10_4`.
-
-Two lemmas written here belong in the backbone and are marked for relocation:
-`contDiffOnThrough_infty_of_forall` (`Numlib/Analysis/PDE/Bochner`) and
-`exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex`
-(`Numlib/Analysis/PDE/Elliptic/Regularity`, beside `Elliptic.regularity_dirichlet_smooth`, whose
-proof it repeats).
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -80,71 +74,6 @@ open scoped ContDiff Distributions ENNReal NNReal InnerProductSpace
 namespace Brezis.Chapter10
 
 open Brezis.Chapter07 Brezis.Chapter09 SobolevMultiIndex
-
-/-! ### Two lemmas for the backbone -/
-
-/-- **A curve of class `C^n(s; V)` for every finite `n` is of class `C^∞(s; V)`** when the
-inclusion `J` is injective: the lifts of the different orders agree on `s`, so the lift of order
-`0` is of every class. (Belongs beside `Bochner.ContDiffOnThrough.of_le` in
-`Numlib/Analysis/PDE/Bochner`.) -/
-theorem contDiffOnThrough_infty_of_forall {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
-    [NormedAddCommGroup W] [NormedSpace ℝ W] {J : V →L[ℝ] W} (hJ : Function.Injective J)
-    {u : ℝ → W} {s : Set ℝ} (h : ∀ n : ℕ, Bochner.ContDiffOnThrough J n u s) :
-    Bochner.ContDiffOnThrough J ∞ u s := by
-  obtain ⟨v, -, hv⟩ := h 0
-  refine ⟨v, contDiffOn_infty.2 fun n ↦ ?_, hv⟩
-  obtain ⟨w, hw, hwu⟩ := h n
-  exact hw.congr fun t ht ↦ hJ ((hv t ht).symm.trans (hwu t ht))
-
-section Smooth
-
-variable {d : ℕ}
-
-/-- The book's `ℝ^N`, with `N = d + 1`. -/
-local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
-
-/-- The standard basis of `ℝ^N`. -/
-local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin (d + 1)) ℝ)
-
-variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
-
-/-- **A function in `H^m(Ω)` for every `m` is `C^∞(Ω̄)`** on a `C¹` domain with bounded
-boundary: it agrees almost everywhere on `Ω` with a function of class `C^∞(Ω̄)` in the sense of
-footnote 16 of §9.3 (`ContDiffOnClosure`), continuous on `Ω̄`. Corollary 9.15 at every order
-(`Elliptic.exists_contDiffOn_of_memSobolevMultiIndex`) gives a `C^k(Ω̄)` representative for each
-`k`; two continuous representatives agree on the open set `Ω`, so the representative of order `0`
-is of every class, with the derivative extensions of the representative of order `k`. (The
-gluing argument of `Elliptic.regularity_dirichlet_smooth`, which belongs beside it in
-`Numlib/Analysis/PDE/Elliptic/Regularity`.) -/
-theorem exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex
-    (hΩ : IsContDiffChartDomain 1 (Ω : Set 𝔼)) (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
-    {f : 𝔼 → ℝ} (hf : ∀ m : ℕ, MemSobolevMultiIndex 𝔟 f m 2 Ω volume) :
-    ∃ ũ : 𝔼 → ℝ, ContDiffOnClosure ℝ ∞ ũ Ω ∧ ContinuousOn ũ (closure (Ω : Set 𝔼)) ∧
-      f =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ := by
-  have hrep : ∀ k : ℕ, ∃ ũ : 𝔼 → ℝ, Continuous ũ ∧ ContDiffOn ℝ k ũ Ω ∧
-      f =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ ∧ ∀ j ≤ k, ∃ G : 𝔼 → (𝔼 [×j]→L[ℝ] ℝ),
-        Continuous G ∧ EqOn (iteratedFDeriv ℝ j ũ) G Ω := fun k ↦ by
-    refine Elliptic.exists_contDiffOn_of_memSobolevMultiIndex k hΩ hΓ (m := k + (d + 1)) ?_
-      (hf _)
-    push_cast
-    have : (0 : ℝ) ≤ d := Nat.cast_nonneg d
-    linarith
-  choose v hvc hvk hvae hvG using hrep
-  have hagree : ∀ k, EqOn (v 0) (v k) Ω := fun k ↦
-    Measure.eqOn_open_of_ae_eq ((hvae 0).symm.trans (hvae k)) Ω.isOpen
-      (hvc 0).continuousOn (hvc k).continuousOn
-  refine ⟨v 0, ⟨?_, fun j _ ↦ ?_⟩, (hvc 0).continuousOn, hvae 0⟩
-  · rw [contDiffOn_infty]
-    intro k
-    exact (hvk k).congr fun x hx ↦ hagree k hx
-  · obtain ⟨G, hGc, hGeq⟩ := hvG j j le_rfl
-    refine ⟨G, hGc.continuousOn, fun x hx ↦ ?_⟩
-    rw [← hGeq hx]
-    have h : v j =ᶠ[𝓝 x] v 0 :=
-      Filter.eventually_of_mem (Ω.isOpen.mem_nhds hx) fun y hy ↦ (hagree j hy).symm
-    exact (h.iteratedFDeriv ℝ j).eq_of_nhds
-
-end Smooth
 
 section General
 
@@ -596,8 +525,8 @@ theorem theorem_10_2_b_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼))
 
 /-- Theorem 10.2 (c)'s input to the space–time bridge: if `u₀ ∈ D(A^k)` for every `k`, then
 `u ∈ C^∞([0, ∞); H^m(Ω))` for every `m` (Theorem 7.5 and (7); one lift for all orders by
-`contDiffOnThrough_infty_of_forall`, then every `m` from every `2ℓ`). To be replaced by the
-backbone's `Heat.IsSolution.contDiffOnClosure_spaceTime_Ici` once it exists. -/
+`Bochner.ContDiffOnThrough.infty_of_forall_nat`, then every `m` from every `2ℓ`). To be replaced
+by the backbone's `Heat.IsSolution.contDiffOnClosure_spaceTime_Ici` once it exists. -/
 private theorem forall_contDiffOnThrough_Ici_of_forall_powDomain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (h : Heat.IsSolution Ω u₀ u)
     (hk : ∀ k : ℕ, ∃ x : (dirichletLaplacian Ω).PowDomain k,
@@ -612,7 +541,7 @@ private theorem forall_contDiffOnThrough_Ici_of_forall_powDomain (hΩ : IsOfClas
   -- the injectivity of the inclusion, with its type spelled out (instance search on the
   -- implicit form of `fnL_injective` takes a minute)
   have hJ : Function.Injective (fnL ℝ 𝔟 (2 * m) 2 Ω volume) := SobolevMultiIndex.fnL_injective
-  exact (contDiffOnThrough_infty_of_forall hJ h2m).sobolev_of_le (by omega)
+  exact (Bochner.ContDiffOnThrough.infty_of_forall_nat hJ h2m).sobolev_of_le (by omega)
 
 /-- **Theorem 10.2 (c).** Let `Ω` be of class `C^∞` with `Γ` bounded. If `u₀ ∈ H^k(Ω)` for every
 `k` and satisfies the compatibility conditions (8), `u₀ = Δu₀ = ⋯ = Δ^j u₀ = ⋯ = 0` on `Γ` for
@@ -709,8 +638,8 @@ theorem remark_10_1_necessary (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   refine ⟨fun ℓ ↦ ?_, h7, ?_⟩
   · rw [heatOperator_eq_dirichletLaplacian (hΩ.of_le le_top) hΓ, mem_domainPow_iff]
     exact hpow ℓ
-  · refine exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex (hΩ.of_le (by simp)) hΓ
-      fun m ↦ ?_
+  · refine Elliptic.exists_contDiffOnClosure_infty_of_forall_memSobolevMultiIndex
+      (hΩ.of_le (by simp)) hΓ fun m ↦ ?_
     obtain ⟨w, hw⟩ := (h7 m).1
     have hw' : fn w =ᵐ[volume.restrict (Ω : Set 𝔼)] uT :=
       Filter.EventuallyEq.of_eq (congrArg (fun z : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) ↦

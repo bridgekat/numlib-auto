@@ -133,25 +133,6 @@ id = "IsSolution.eLpNorm_top_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (ii)"
 
 [[node]]
-id = "exists_isCompact_subset_abs_lt"
-
-[[node]]
-id = "continuous_indicator_mul_of_tsupport_subset"
-
-[[node]]
-id = "exists_testFunction_abs_sub_le_of_hasCompactSupport"
-
-[[node]]
-id = "exists_testFunction_abs_sub_le"
-
-[[node]]
-id = "exists_testFunction_tendsto_of_continuousOn"
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Corollary 10.5"
-
-[[node]]
-id = "abs_le_on_closure_of_ae_abs_le"
-
-[[node]]
 id = "IsSolution.abs_sub_le_of_abs_sub_le"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, (19)"
 
@@ -165,3 +146,7 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
 [[node]]
 id = "IsSolution.continuousOn_spaceTime"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
+
+[[node]]
+id = "IsSolution.continuousOn_spaceTime_of_isBounded"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5 (bounded Ω)"

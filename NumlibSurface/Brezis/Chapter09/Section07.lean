@@ -68,23 +68,14 @@ theorem forall_laplaceForm_eq_load_iff (u : hSpace N Ω) (f : Lp ℝ 2 (volume.r
   simp only [laplaceForm_apply_two, Elliptic.load_apply]
 
 /-- **The form (41) without drift is the left-hand side of (78) with `a_i = 0`**:
-`generalForm Ω A 0 a₀ u v = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫_Ω a₀ u v`. -/
+`generalForm Ω A 0 a₀ u v = ∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼv + ∫_Ω a₀ u v`, in the surface's `partialDeriv`
+vocabulary (the backbone's `Elliptic.generalForm_zero_drift_apply`). -/
 theorem generalForm_zero_drift_apply (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼)))
     (a₀ : Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) (u v : hSpace N Ω) :
     Elliptic.generalForm Ω A 0 a₀ u v
       = (∫ x in (Ω : Set 𝔼), ∑ i, ∑ j, A i j x * partialDeriv u i x * partialDeriv v j x)
-        + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x := by
-  rw [generalForm_apply_three]
-  have hzero : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), ∀ i,
-      ((0 : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) i : 𝔼 → ℝ) x = 0 := by
-    filter_upwards [Lp.coeFn_zero ℝ ⊤ (volume.restrict (Ω : Set 𝔼))] with x hx i
-    simpa only [Pi.zero_apply] using hx
-  have e2 : ∫ x in (Ω : Set 𝔼),
-      ∑ i, ((0 : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set 𝔼))) i : 𝔼 → ℝ) x
-        * partialDeriv u i x * SobolevMultiIndex.fn v x = ∫ x in (Ω : Set 𝔼), (0 : ℝ) :=
-    integral_congr_ae (hzero.mono fun x hx ↦ by simp only [hx, zero_mul,
-      Finset.sum_const_zero])
-  rw [e2, integral_zero, add_zero]
+        + ∫ x in (Ω : Set 𝔼), a₀ x * SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x :=
+  Elliptic.generalForm_zero_drift_apply Ω A a₀ u v
 
 /-- **The weak equation (78) with `a_i = 0` in the backbone's terms**:
 `∫_Ω ∑ᵢⱼ a_ij ∂ᵢu ∂ⱼφ + ∫_Ω a₀ u φ = ∫_Ω f φ` for all `φ ∈ H^1_0(Ω)` if and only if

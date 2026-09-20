@@ -57,3 +57,9 @@ id = "intervalIntegral.exists_mem_Ioo_integral_mul_eq_mul_integral_of_nonpos"
 
 [[node]]
 id = "intervalIntegral.exists_continuous_nonneg_integral_abs_sub_le"
+
+[[node]]
+id = "integrableOn_Ioc_and_integral_eq_of_hasDerivAt_neg"
+
+[[node]]
+id = "integrableOn_Ioi_and_integral_le_of_forall_integral_le"

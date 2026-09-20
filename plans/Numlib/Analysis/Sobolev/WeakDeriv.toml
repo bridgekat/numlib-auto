@@ -164,3 +164,15 @@ id = "HasWeakFDerivOn.locallyIntegrableOn"
 
 [[node]]
 id = "HasWeakFDerivOn.locallyIntegrableOn_weakDeriv"
+
+[[node]]
+id = "MeasureTheory.MemLp.of_ae_norm_le_mul"
+
+[[node]]
+id = "MeasureTheory.MemLp.locallyMemLpOn"
+
+[[node]]
+id = "ContinuousOn.locallyMemLpOn"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.finset_sum"

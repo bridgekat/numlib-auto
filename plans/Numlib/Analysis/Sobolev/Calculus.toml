@@ -166,9 +166,6 @@ id = "HasWeakIteratedLineDerivOn.contDiff_comp'"
 id = "HasWeakIteratedLineDerivOn.mul_self_of_ae_abs_le"
 
 [[node]]
-id = "MeasureTheory.MemLp.of_ae_norm_le_mul"
-
-[[node]]
 id = "posSq"
 
 [[node]]

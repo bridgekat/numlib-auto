@@ -983,12 +983,6 @@ section Characterization
 
 variable {N : ℕ} {p q : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The `i`-th vector of the standard basis of `ℝ^N` is `e_i`. -/
-theorem EuclideanSpace.basisFun_toBasis_apply (i : Fin N) :
-    ((EuclideanSpace.basisFun (Fin N) ℝ).toBasis : Fin N → EuclideanSpace ℝ (Fin N)) i
-      = EuclideanSpace.single i 1 := by
-  rw [OrthonormalBasis.coe_toBasis, EuclideanSpace.basisFun_apply]
-
 /-- **Integration by parts of a test function on `Ω` against a `C^1` function on `ℝ^N`**:
 `∫_Ω φ ∂_v ψ = -∫_Ω (∂_v φ) ψ`, both integrals being over `Ω` because `φ` vanishes outside it. -/
 theorem TestFunction.setIntegral_mul_fderiv_eq_neg {ψ : EuclideanSpace ℝ (Fin N) → ℝ}

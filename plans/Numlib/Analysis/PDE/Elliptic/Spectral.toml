@@ -130,9 +130,6 @@ id = "_root_.HilbertBasis.ofInnerEqMulEnergy"
 id = "_root_.HilbertBasis.coe_ofInnerEqMulEnergy"
 
 [[node]]
-id = "_root_.SesqForm.IsHermitian.isSymmetricCoercive_toOperator"
-
-[[node]]
 id = "restrictOperator"
 
 [[node]]
@@ -167,6 +164,9 @@ id = "dirichletOperator"
 
 [[node]]
 id = "inner_dirichletOperator"
+
+[[node]]
+id = "inner_dirichletOperator_comm"
 
 [[node]]
 id = "dirichletOperator_isSymmetricCoercive"
