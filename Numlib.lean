@@ -223,6 +223,7 @@ import Numlib.Analysis.ODE.HarmonicOscillator
 import Numlib.Analysis.ODE.HilleYosida
 import Numlib.Analysis.ODE.LinearSystem
 import Numlib.Analysis.ODE.PicardLindelof
+import Numlib.Analysis.ODE.SturmComparison
 import Numlib.Analysis.PDE.Bochner
 import Numlib.Analysis.PDE.Bochner.SpaceTime
 import Numlib.Analysis.PDE.DirichletLaplacian
@@ -313,6 +314,7 @@ import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.OrthogonalPolynomial.Classical
 import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
+import Numlib.Approximation.OrthogonalPolynomial.LegendreNodes
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial

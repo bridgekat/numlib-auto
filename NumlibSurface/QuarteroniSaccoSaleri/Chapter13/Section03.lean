@@ -1,6 +1,7 @@
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.MarkovInequality
+import Numlib.Approximation.OrthogonalPolynomial.LegendreNodes
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.FiniteDifference.Parabolic
 import Numlib.Variational.FiniteElementInterval
@@ -47,7 +48,13 @@ product space under `[Fact (IsLegendreLobatto N x w)]`), with the form
 `ν N²(N + 1)²` (`SpectralSpace.spectralForm_eigenvalue_le`, from the `L²` Markov inequality of
 `Numlib/Approximation/MarkovInequality` and the norm equivalence of §12.3), so the θ-method with
 `θ < 1/2` is stable whenever `Δt ≤ N⁻⁴/(2ν(1 - 2θ))` (`equation_13_24`). The matching lower bound
-`λ_max ≥ c N⁴`, which would make the condition necessary, is not proved.
+`λ_max ≥ c N⁴` with `c = 1/(5184 π²)`, which makes the condition necessary, is
+`equation_13_24_lower`: the Rayleigh quotient of the Lagrange basis polynomial `l_j ∈ ℙ_N^0` of
+the interior Gauss–Lobatto node nearest to `1` is at least `ν/((1 - x_j) w_j)`
+(`SpectralSpace.le_spectralForm_lagrangeBasis_self`, `SpectralSpace.norm_sq_lagrangeBasis`), and
+the Sturm comparison for the Legendre equation in `θ = arccos x`
+(`Numlib/Approximation/OrthogonalPolynomial/LegendreNodes`) puts `x_j` within `81π²/(32 N²)` of
+`1` with `w_j ≤ 2048/N²`.
 
 **Erratum**: the hint of Exercise 2 prints
 `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the exact integrals are `∫ φ_i² = 2h/3` and
@@ -685,6 +692,36 @@ theorem equation_13_23 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ
   nlinarith [mul_le_mul_of_nonneg_left hbound hΔt.le]
 
 
+/-- **The Rayleigh quotient of any vector is at most the largest eigenvalue**
+([quarteroni2000numerical] §13.3.1, the eigenbasis expansion): for a symmetric form on a
+finite-dimensional trial space and any `v ≠ 0`, some eigenpair `(λ, w)` satisfies
+`a(v, v) ≤ λ ‖v‖²`. In the orthonormal eigenbasis `a(v, v) = ∑ λ_i ⟪w_i, v⟫² ≤ max_i λ_i ‖v‖²`. -/
+theorem exists_definition_13_1_mul_norm_sq_le [FiniteDimensional ℝ V] {a : SesqForm ℝ V}
+    (ha : a.IsHermitian) {v : V} (hv : v ≠ 0) :
+    ∃ (lam : ℝ) (w : V), definition_13_1 a lam w ∧ a v v ≤ lam * ‖v‖ ^ 2 := by
+  obtain ⟨lam, b, hb⟩ := equation_13_22_basis ha
+  have hpos : 0 < Module.finrank ℝ V := Module.finrank_pos_iff_exists_ne_zero.2 ⟨v, hv⟩
+  have : Nonempty (Fin (Module.finrank ℝ V)) := ⟨⟨0, hpos⟩⟩
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_max_image Finset.univ lam Finset.univ_nonempty
+  refine ⟨lam i₀, b i₀, hb i₀, ?_⟩
+  have hexp : v = ∑ i, ⟪b i, v⟫ • b i := (b.sum_repr' v).symm
+  have hv' : ∀ i, a (b i) v = lam i * ⟪b i, v⟫ := fun i => (hb i).2 v
+  have hform : a v v = ∑ i, lam i * ⟪b i, v⟫ ^ 2 := by
+    calc a v v = a (∑ i, ⟪b i, v⟫ • b i) v := by rw [← hexp]
+      _ = ∑ i, ⟪b i, v⟫ * a (b i) v := by
+          rw [map_sum]
+          simp only [FunLike.coe_sum, Finset.sum_apply, map_smul, FunLike.coe_smul,
+            Pi.smul_apply, smul_eq_mul]
+      _ = ∑ i, lam i * ⟪b i, v⟫ ^ 2 := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [hv' i]; ring
+  have hnorm : ‖v‖ ^ 2 = ∑ i, ⟪b i, v⟫ ^ 2 := by
+    rw [← real_inner_self_eq_norm_sq, ← b.sum_inner_mul_inner v v]
+    exact Finset.sum_congr rfl fun i _ => by rw [real_inner_comm v (b i), sq]
+  rw [hform, hnorm, Finset.mul_sum]
+  exact Finset.sum_le_sum fun i _ =>
+    mul_le_mul_of_nonneg_right (hi₀ i (Finset.mem_univ i)) (sq_nonneg _)
+
 end Eigen
 
 section Spectral
@@ -706,6 +743,20 @@ def spectralSubmodule (N : ℕ) : Submodule ℝ ℝ[X] where
 /-- Membership of `ℙ_N^0`: degree at most `N` and vanishing at `±1`. -/
 theorem mem_spectralSubmodule_iff {N : ℕ} {p : ℝ[X]} :
     p ∈ spectralSubmodule N ↔ p.natDegree ≤ N ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 := Iff.rfl
+
+/-- **Cauchy–Schwarz for the increment of a polynomial**: `(p(b) − p(a))² ≤ (b − a) ∫_a^b (p')²`,
+from `p(b) − p(a) = ∫_a^b p'` and `intervalIntegral.sq_integral_mul_le_of_continuousOn` against
+`1`. TODO(backbone): the `C¹` form beside `Chapter12.poincare_poly`. -/
+theorem sq_sub_le_mul_integral_derivative_sq (p : ℝ[X]) {a b : ℝ} (hab : a ≤ b) :
+    (p.eval b - p.eval a) ^ 2 ≤ (b - a) * ∫ t in a..b, (derivative p).eval t ^ 2 := by
+  have hftc : ∫ t in a..b, (derivative p).eval t = p.eval b - p.eval a :=
+    intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ => p.hasDerivAt t)
+      ((derivative p).continuous.intervalIntegrable _ _)
+  have hcs := intervalIntegral.sq_integral_mul_le_of_continuousOn hab (f := fun _ => (1 : ℝ))
+    (g := fun t => (derivative p).eval t) continuousOn_const
+    (derivative p).continuous.continuousOn
+  simp only [one_mul, one_pow, intervalIntegral.integral_const, smul_eq_mul, mul_one] at hcs
+  rwa [hftc] at hcs
 
 -- the nodes and weights are phantom parameters of the type, there for the inner product instance
 set_option linter.unusedVariables false in
@@ -895,8 +946,8 @@ eigenvalue `λ` of the form `a_N(u, v) = ν (u', v')_N` relative to `(·, ·)_N`
 (Definition 13.1) satisfies `λ ≤ ν N² (N + 1)²`. With `v` an eigenvector,
 `λ ‖v‖_N² = a_N(v, v) = ν ‖v'‖²_{L²} ≤ ν N²(N + 1)² ‖v‖²_{L²} ≤ ν N²(N + 1)² ‖v‖_N²` by the `L²`
 Markov inequality `Polynomial.integral_derivative_sq_le` and the lower half of the norm
-equivalence `Chapter12.equation_12_37_norm_equiv`. The matching lower bound `c N⁴ ≤ λ_max` is not
-proved (the open plan node `equation_13_24_lower`). -/
+equivalence `Chapter12.equation_12_37_norm_equiv`. The matching lower bound `c N⁴ ≤ λ_max` is
+`equation_13_24_lower`. -/
 theorem spectralForm_eigenvalue_le [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (hN : 1 ≤ N)
     {ν : ℝ} (hν : 0 ≤ ν) {lam : ℝ} {v : SpectralSpace N x w}
     (h : definition_13_1 (spectralForm N x w ν) lam v) :
@@ -913,6 +964,78 @@ theorem spectralForm_eigenvalue_le [hx : Fact (Chapter12.IsLegendreLobatto N x w
         gcongr
     _ = _ := by ring
 
+/-! ### The lower eigenvalue bound: the Lagrange basis polynomial of the first interior node -/
+
+/-- **The Lagrange basis polynomial of an interior Gauss–Lobatto node** `x_j`, `0 < j < N`, as an
+element of `ℙ_N^0`: it has degree `N` and vanishes at the other nodes, among them `x_0 = −1` and
+`x_N = 1`. It is the test function of the lower eigenvalue bound `equation_13_24_lower`. -/
+def lagrangeBasis [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (j : Fin (N + 1)) (hj0 : j ≠ 0)
+    (hjN : j ≠ Fin.last N) : SpectralSpace N x w :=
+  mk x w (Lagrange.basis Finset.univ x j)
+    ⟨by
+      rw [Lagrange.natDegree_basis hx.out.injective.injOn (Finset.mem_univ _), Finset.card_univ,
+        Fintype.card_fin, Nat.add_sub_cancel],
+      by rw [← hx.out.first]; exact Lagrange.eval_basis_of_ne hj0 (Finset.mem_univ _),
+      by rw [← hx.out.last]; exact Lagrange.eval_basis_of_ne hjN (Finset.mem_univ _)⟩
+
+/-- The polynomial of `lagrangeBasis j` is the Lagrange basis polynomial `l_j` of the nodes. -/
+@[simp]
+theorem poly_lagrangeBasis [Fact (Chapter12.IsLegendreLobatto N x w)] (j : Fin (N + 1))
+    (hj0 : j ≠ 0) (hjN : j ≠ Fin.last N) :
+    (lagrangeBasis j hj0 hjN : SpectralSpace N x w).poly = Lagrange.basis Finset.univ x j := rfl
+
+/-- `l_j ≠ 0`, since `l_j(x_j) = 1`. -/
+theorem lagrangeBasis_ne_zero [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (j : Fin (N + 1))
+    (hj0 : j ≠ 0) (hjN : j ≠ Fin.last N) : (lagrangeBasis j hj0 hjN : SpectralSpace N x w) ≠ 0 := by
+  intro h
+  have := congrArg (fun v : SpectralSpace N x w => v.poly.eval (x j)) h
+  simp only [poly_lagrangeBasis, poly_zero, eval_zero] at this
+  rw [Lagrange.eval_basis_self hx.out.injective.injOn (Finset.mem_univ _)] at this
+  exact one_ne_zero this
+
+/-- **The discrete norm of a Lagrange basis polynomial is its weight**: `‖l_j‖_N² = w_j`, since
+`l_j(x_i) = δ_{ij}`. -/
+theorem norm_sq_lagrangeBasis [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (j : Fin (N + 1))
+    (hj0 : j ≠ 0) (hjN : j ≠ Fin.last N) :
+    ‖(lagrangeBasis j hj0 hjN : SpectralSpace N x w)‖ ^ 2 = w j := by
+  rw [norm_sq_eq, Chapter12.equation_12_37_eq, poly_lagrangeBasis, Finset.sum_eq_single j]
+  · rw [Lagrange.eval_basis_self hx.out.injective.injOn (Finset.mem_univ _)]; ring
+  · intro i _ hij
+    rw [Lagrange.eval_basis_of_ne (Ne.symm hij) (Finset.mem_univ _)]; ring
+  · intro h; exact absurd (Finset.mem_univ j) h
+
+/-- **The energy of a Lagrange basis polynomial is at least `ν/(1 − x_j)`**: on `[x_j, 1]` the
+polynomial `l_j` drops from `1` to `0`, so Cauchy–Schwarz gives `1 ≤ (1 − x_j) ∫_{x_j}^1 (l_j')²`,
+and `a_N(l_j, l_j) = ν ∫_{-1}^1 (l_j')²`. This is the boundary-layer mechanism behind
+`λ_max ≥ c N⁴`: for the node nearest to `1`, `1 − x_j ≤ C N⁻²` while `‖l_j‖_N² = w_j ≤ C N⁻²`. -/
+theorem le_spectralForm_lagrangeBasis_self [hx : Fact (Chapter12.IsLegendreLobatto N x w)] {ν : ℝ}
+    (hν : 0 ≤ ν) (j : Fin (N + 1)) (hj0 : j ≠ 0) (hjN : j ≠ Fin.last N) :
+    ν / (1 - x j) ≤ spectralForm N x w ν (lagrangeBasis j hj0 hjN) (lagrangeBasis j hj0 hjN) := by
+  rw [spectralForm_apply_self, poly_lagrangeBasis]
+  set l := Lagrange.basis Finset.univ x j with hl
+  have hxj1 : x j < 1 := lt_of_le_of_ne (hx.out.mem j).2
+    fun h => hjN (hx.out.injective (h.trans hx.out.last.symm))
+  have hxj : -1 ≤ x j := (hx.out.mem j).1
+  have hpos : 0 < 1 - x j := by linarith
+  have h1 := sq_sub_le_mul_integral_derivative_sq l hxj1.le
+  have hl1 : l.eval 1 = 0 := by
+    rw [hl, ← hx.out.last]; exact Lagrange.eval_basis_of_ne hjN (Finset.mem_univ _)
+  have hlj : l.eval (x j) = 1 := by
+    rw [hl]; exact Lagrange.eval_basis_self hx.out.injective.injOn (Finset.mem_univ _)
+  rw [hl1, hlj] at h1
+  norm_num at h1
+  have h2 : ∫ t in x j..1, (derivative l).eval t ^ 2 ≤
+      ∫ t in (-1 : ℝ)..1, (derivative l).eval t ^ 2 :=
+    intervalIntegral.integral_mono_interval hxj hxj1.le le_rfl
+      (Filter.Eventually.of_forall fun t => sq_nonneg _)
+      (((derivative l).continuous.pow 2).intervalIntegrable _ _)
+  rw [div_le_iff₀ hpos]
+  calc ν = ν * 1 := (mul_one ν).symm
+    _ ≤ ν * ((1 - x j) * ∫ t in x j..1, (derivative l).eval t ^ 2) :=
+        mul_le_mul_of_nonneg_left h1 hν
+    _ ≤ ν * ((1 - x j) * ∫ t in (-1 : ℝ)..1, (derivative l).eval t ^ 2) := by gcongr
+    _ = (ν * ∫ t in (-1 : ℝ)..1, (derivative l).eval t ^ 2) * (1 - x j) := by ring
+
 end SpectralSpace
 
 /-- **(13.24), the stability condition of the θ-method for the pseudo-spectral Galerkin
@@ -922,8 +1045,8 @@ inner product and the form `a_N(u, v) = ν (u', v')_N`, the θ-method with `0 �
 `C₂(θ) = 1/(2ν(1 - 2θ))`, since every eigenvalue of the form is at most
 `ν N²(N + 1)² ≤ 4 ν N⁴` (`SpectralSpace.spectralForm_eigenvalue_le`) and the sharp condition is
 `Δt ≤ 2/((1 - 2θ) λ_max)` (`thetaMethod_stable_iff_of_lt_half`). The book's "only if" — the
-necessity of `Δt ≤ C N⁻⁴` — needs the matching lower bound `λ_max ≥ c N⁴`, which is not proved
-(the open plan node `equation_13_24_lower`). The book's `θ ≥ 0` is not needed for sufficiency.
+necessity of `Δt ≤ C N⁻⁴` — is the matching lower bound `λ_max ≥ c N⁴` of
+`equation_13_24_lower`. The book's `θ ≥ 0` is not needed for sufficiency.
 For `θ ≥ 1/2` the method is unconditionally stable by `thetaMethod_stable_of_half_le`. -/
 theorem equation_13_24 {N : ℕ} (hN : 1 ≤ N) {x w : Fin (N + 1) → ℝ}
     [hx : Fact (Chapter12.IsLegendreLobatto N x w)] {ν : ℝ} (hν : 0 < ν) {θ Δt : ℝ}
@@ -987,6 +1110,86 @@ theorem equation_13_24 {N : ℕ} (hN : 1 ≤ N) {x w : Fin (N + 1) → ℝ}
     _ ≤ (1 - 2 * θ) * ν * Δt * (4 * (N : ℝ) ^ 4) := by gcongr
     _ = 2 * (Δt * (2 * ν * (1 - 2 * θ)) * (N : ℝ) ^ 4) := by ring
     _ ≤ 2 := by linarith
+
+/-- **The lower half of the eigenvalue estimate behind (13.24)** ([quarteroni2000numerical]
+§13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like `O(N⁴)`"), which
+makes the stability condition *necessary*: there is a `c > 0` such that for every `N ≥ 2` the
+pseudo-spectral form `a_N(u, v) = ν (u', v')_N` on `ℙ_N^0` with the Gauss–Lobatto inner product
+has an eigenvalue `λ ≥ c ν N⁴`. With `thetaMethod_stable_iff_of_lt_half` this is "stable only if
+`Δt ≤ C₂(θ) N⁻⁴`", the reading of (13.24) the book states; the sufficiency half is
+`equation_13_24`. The constant is `c = 1/(5184 π²)`.
+
+The test function is the Lagrange basis polynomial `l_j ∈ ℙ_N^0` of the interior Gauss–Lobatto
+node `x_j` nearest to `1`: the Rayleigh quotient of any vector is at most the largest eigenvalue
+(`exists_definition_13_1_mul_norm_sq_le`), `a_N(l_j, l_j) ≥ ν/(1 − x_j)`
+(`SpectralSpace.le_spectralForm_lagrangeBasis_self`) and `‖l_j‖_N² = w_j`, while the Sturm
+comparison for the Legendre equation puts `x_j` within `81π²/(32 N²)` of `1`
+(`Polynomial.exists_eval_derivative_legendre_eq_zero_near_one`) and the Christoffel-function bound
+gives `w_j ≤ 2048/N²` (`Quadrature.legendreLobattoWeight_le_of_near_one`); so
+`λ ≥ ν/((1 − x_j) w_j) ≥ ν N⁴/(5184 π²)`.
+
+The plan's `N ≥ 1` is `N ≥ 2` here: `ℙ_1^0 = {0}` has no eigenvector at all, so the statement is
+false at `N = 1`, and the book's `O(N⁴)` is asymptotic. -/
+theorem equation_13_24_lower {ν : ℝ} (hν : 0 ≤ ν) :
+    ∃ c : ℝ, 0 < c ∧ ∀ N : ℕ, 2 ≤ N → ∀ (x w : Fin (N + 1) → ℝ)
+      [Fact (Chapter12.IsLegendreLobatto N x w)], ∃ (lam : ℝ) (v : SpectralSpace N x w),
+        definition_13_1 (SpectralSpace.spectralForm N x w ν) lam v ∧
+          c * ν * (N : ℝ) ^ 4 ≤ lam := by
+  refine ⟨1 / (5184 * π ^ 2), by positivity, fun N hN x w hx => ?_⟩
+  have hN1 : 1 ≤ N := by omega
+  have hNR : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+  -- the interior node nearest to `1`
+  obtain ⟨t, ht0, ht1, ht2⟩ := Polynomial.exists_eval_derivative_legendre_eq_zero_near_one hN
+  obtain ⟨-, hnodal⟩ := hx.out.isInterpolatoryMeasure_and_nodal_eq hN1
+  have hroot : (Lagrange.nodal Finset.univ x).eval t = 0 := by
+    rw [hnodal, Quadrature.lobattoNodal, eval_mul]
+    have hc : ((N : ℝ) * (Polynomial.legendre N).leadingCoeff) ≠ 0 :=
+      mul_ne_zero hNR.ne' (leadingCoeff_ne_zero.mpr (Polynomial.legendre_ne_zero N))
+    rw [Quadrature.derivative_legendre_eq_family hN1, eval_mul, eval_C] at ht0
+    rw [(mul_eq_zero.1 ht0).resolve_left hc, mul_zero]
+  obtain ⟨j, hj⟩ : ∃ j, x j = t := by
+    by_contra h
+    push Not at h
+    exact Lagrange.eval_nodal_not_at_node (fun i _ => (h i).symm) hroot
+  have hj0 : j ≠ 0 := by
+    rintro rfl
+    rw [hx.out.first] at hj
+    have := Polynomial.eval_neg_one_derivative_legendre N
+    rw [← hj] at ht0
+    rw [ht0] at this
+    have hpos : (0 : ℝ) < (N : ℝ) * (N + 1) / 2 := by positivity
+    rcases neg_one_pow_eq_or ℝ (N + 1) with h | h <;> rw [h] at this <;> linarith
+  have hjN : j ≠ Fin.last N := by
+    rintro rfl
+    rw [hx.out.last] at hj
+    linarith
+  -- the test element and its Rayleigh quotient
+  have hv0 := SpectralSpace.lagrangeBasis_ne_zero (x := x) (w := w) j hj0 hjN
+  obtain ⟨lam, e, he, hle⟩ := exists_definition_13_1_mul_norm_sq_le
+    (SpectralSpace.spectralForm_isHermitian (x := x) (w := w) ν) hv0
+  refine ⟨lam, e, he, ?_⟩
+  rw [SpectralSpace.norm_sq_lagrangeBasis] at hle
+  have hlam : ν / (1 - x j) ≤ lam * w j :=
+    (SpectralSpace.le_spectralForm_lagrangeBasis_self hν j hj0 hjN).trans hle
+  -- the weight and the node location
+  have hnear : 1 - x j ≤ 81 * π ^ 2 / (32 * (N : ℝ) ^ 2) := by rw [hj]; linarith
+  have hwj : w j ≤ 2048 / (N : ℝ) ^ 2 :=
+    Quadrature.legendreLobattoWeight_le_of_near_one hN1 (fun i => (hx.out.weight_pos i).le)
+      hx.out.exact j (hx.out.mem j) hnear
+  have hwpos : 0 < w j := hx.out.weight_pos j
+  have hxj1 : 0 < 1 - x j := by rw [hj]; linarith
+  have hprod : (1 - x j) * w j ≤ 5184 * π ^ 2 / (N : ℝ) ^ 4 := by
+    calc (1 - x j) * w j ≤ (81 * π ^ 2 / (32 * (N : ℝ) ^ 2)) * (2048 / (N : ℝ) ^ 2) :=
+          mul_le_mul hnear hwj hwpos.le (by positivity)
+      _ = 5184 * π ^ 2 / (N : ℝ) ^ 4 := by field_simp; ring
+  have hlam' : ν / ((1 - x j) * w j) ≤ lam := by
+    rw [div_le_iff₀ (by positivity)]
+    rw [div_le_iff₀ hxj1] at hlam
+    nlinarith
+  calc 1 / (5184 * π ^ 2) * ν * (N : ℝ) ^ 4 = ν / (5184 * π ^ 2 / (N : ℝ) ^ 4) := by
+        field_simp
+    _ ≤ ν / ((1 - x j) * w j) := div_le_div_of_nonneg_left hν (by positivity) hprod
+    _ ≤ lam := hlam'
 
 end Spectral
 

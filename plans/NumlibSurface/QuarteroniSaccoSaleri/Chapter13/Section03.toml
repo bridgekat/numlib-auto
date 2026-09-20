@@ -209,31 +209,35 @@ id = "equation_13_24"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.24)'
 
 [[node]]
-id = "equation_13_24_lower"
-kind = "theorem"
-desc = '''The lower half of the eigenvalue estimate behind (13.24), which makes the stability condition
-*necessary*: there is a `c > 0` such that for every `N ≥ 1` the pseudo-spectral form
-`SpectralSpace.spectralForm N x w ν` on `ℙ_N^0` with the Gauss–Lobatto inner product has an
-eigenvalue `λ ≥ c ν N⁴` (`∃ c > 0, ∀ N ≥ 1, ∀ x w, [IsLegendreLobatto N x w] → ∃ lam v,
-definition_13_1 (SpectralSpace.spectralForm N x w ν) lam v ∧ c * ν * N ^ 4 ≤ lam`). With
-`thetaMethod_stable_iff_of_lt_half` it gives "stable only if `Δt ≤ C₂(θ) N⁻⁴`", the reading of
-(13.24) the book states; the sufficiency half is `equation_13_24`.
+id = "exists_definition_13_1_mul_norm_sq_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the eigenbasis expansion of the θ-method'
 
-Blocked (2026-09-20, agent qss1): the upper half is proved. The lower half needs a test polynomial
-`p ∈ ℙ_N^0` (vanishing at `±1`) with `∫ (p')² ≥ c N⁴ (p, p)_N`, i.e. a boundary layer of width
-`N⁻²`. The `L²` Markov sharpness test `L_N'` of `Numlib/Approximation/MarkovInequality`
-(`Polynomial.integral_derivative_derivative_legendre_sq_ge`) does not vanish at `±1`, and every
-smooth correction (`L_N' - L_N'(±1)`, `(1 - x²) L_{N-2}''`, `(1 - x²) K_{N-2}(·, 1)` with the
-Christoffel–Darboux kernel) was checked to give only `N²` or `N³`: the `L²` mass of the correction
-dominates. The natural test function is the Lagrange basis polynomial `l_1` of the first interior
-Gauss–Lobatto node, whose Rayleigh quotient is `≥ 1/(1 + x_1)²`, which needs the node location
-`1 + x_1 ≤ C N⁻²` — a Sturm comparison for the Legendre equation in the variable `θ = arccos x`
-(`u'' + ((N + ½)² + 1/(4 sin² θ)) u = 0` has zeros at most `π/(N + ½)` apart), not in Mathlib nor
-in `Numlib/Approximation/OrthogonalPolynomial/*` (`Polynomial.inv_le_eval_legendre_sq` bounds the
-value at the nodes, not their position). Estimate: a Sturm comparison theorem for
-`u'' + q u = 0` (~300 lines) plus the transformation of the Legendre equation (~200) and the
-Rayleigh-quotient computation for `l_1` through `Quadrature.legendreLobattoWeight_eq` (~150).'''
-deps = ["QuarteroniSaccoSaleri.Chapter13.SpectralSpace.spectralForm_eigenvalue_le"]
+[[node]]
+id = "sq_sub_le_mul_integral_derivative_sq"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the Cauchy–Schwarz step of the Poincaré inequality (12.16)'
+
+[[node]]
+id = "SpectralSpace.lagrangeBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
+
+[[node]]
+id = "SpectralSpace.poly_lagrangeBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
+
+[[node]]
+id = "SpectralSpace.lagrangeBasis_ne_zero"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
+
+[[node]]
+id = "SpectralSpace.norm_sq_lagrangeBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
+
+[[node]]
+id = "SpectralSpace.le_spectralForm_lagrangeBasis_self"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
+
+[[node]]
+id = "equation_13_24_lower"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "the largest eigenvalue of the spectral stiffness matrix grows like O(N⁴)"'
 
 [[node]]

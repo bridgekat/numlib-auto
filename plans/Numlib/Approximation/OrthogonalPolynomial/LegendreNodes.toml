@@ -1,0 +1,61 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "legendreLiouville"
+
+[[node]]
+id = "legendreLiouvilleDeriv"
+
+[[node]]
+id = "legendreLiouvillePotential"
+
+[[node]]
+id = "hasDerivAt_legendreLiouville"
+
+[[node]]
+id = "hasDerivAt_legendreLiouvilleDeriv"
+
+[[node]]
+id = "isSturmSolutionOn_legendreLiouville"
+
+[[node]]
+id = "sq_lt_legendreLiouvillePotential"
+
+[[node]]
+id = "exists_eval_legendre_cos_eq_zero"
+
+[[node]]
+id = "exists_eval_derivative_legendre_cos_eq_zero"
+
+[[node]]
+id = "exists_eval_derivative_legendre_cos_eq_zero_lt"
+
+[[node]]
+id = "exists_eval_derivative_legendre_eq_zero_near_one"
+
+[[node]]
+id = "abs_eval_derivative_legendre_le"
+
+[[node]]
+id = "one_sub_sq_mul_le_eval_legendre"
+
+[[node]]
+id = "legendreKernelOne"
+
+[[node]]
+id = "natDegree_legendreKernelOne_le"
+
+[[node]]
+id = "legendreCoeff_legendreKernelOne"
+
+[[node]]
+id = "integral_legendreKernelOne_sq"
+
+[[node]]
+id = "le_eval_legendreKernelOne"
+
+[[node]]
+id = "_root_.Quadrature.weight_mul_eval_sq_le_of_isExactOnMeasure"
+
+[[node]]
+id = "_root_.Quadrature.legendreLobattoWeight_le_of_near_one"

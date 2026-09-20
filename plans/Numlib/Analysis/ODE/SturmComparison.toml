@@ -1,0 +1,56 @@
+[[node]]
+id = "IsSturmSolutionOn"
+
+[[node]]
+id = "HasDerivAt.nonneg_of_pos_Ioo"
+
+[[node]]
+id = "HasDerivAt.nonpos_of_pos_Ioo"
+
+[[node]]
+id = "ContinuousAt.nonneg_of_pos_Ioo_left"
+
+[[node]]
+id = "ContinuousAt.nonneg_of_pos_Ioo_right"
+
+[[node]]
+id = "IsPreconnected.forall_pos_or_forall_neg"
+
+[[node]]
+id = "IsSturmSolutionOn.mono"
+
+[[node]]
+id = "IsSturmSolutionOn.neg"
+
+[[node]]
+id = "IsSturmSolutionOn.continuousOn"
+
+[[node]]
+id = "IsSturmSolutionOn.continuousOn_deriv"
+
+[[node]]
+id = "IsSturmSolutionOn.hasDerivAt_wronskian"
+
+[[node]]
+id = "IsSturmSolutionOn.wronskian_apply_le"
+
+[[node]]
+id = "IsSturmSolutionOn.wronskian_apply_lt"
+
+[[node]]
+id = "IsSturmSolutionOn.exists_zero_Ioo_of_lt"
+
+[[node]]
+id = "IsSturmSolutionOn.exists_zero_Icc_of_le"
+
+[[node]]
+id = "isSturmSolutionOn_sin"
+
+[[node]]
+id = "IsSturmSolutionOn.exists_zero_Icc_of_sq_le"
+
+[[node]]
+id = "IsSturmSolutionOn.exists_zero_Ioo_of_sq_lt"
+
+[[node]]
+id = "IsSturmSolutionOn.div_le_sub_of_le_sq"
