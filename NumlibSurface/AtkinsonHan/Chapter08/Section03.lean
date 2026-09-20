@@ -3,6 +3,7 @@ import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Variational.Forms
 import Numlib.Variational.LaxMilgram
+import NumlibSurface.AtkinsonHan.Chapter08.Section02
 
 /-!
 # Atkinson–Han §8.3: the Lax–Milgram lemma
@@ -38,9 +39,13 @@ and `BilinForm.energy` is the energy functional `E(v) = ½ a(v,v) − ℓ(v)` of
   (`contractingWith_damped_sub_smul`) and the closed-range argument of the second
   (`isClosed_range_toOperator`, `bijective_toOperator`).
 * `exercise_8_3_1` — Lax–Milgram rederived from the strongly monotone Lipschitz theory of §5.1.
+* `example_8_3_5` — the Lax–Milgram lemma applied to the model Dirichlet problem (8.2.3) on
+  `H¹₀(Ω)` of a bounded open `Ω ⊆ ℝ^{d+1}`, the bilinear form `∫_Ω ∇u · ∇v` being the operator
+  `modelOperator Ω` of Example 8.2.6 (`Chapter08/Section02`) and its `V`-ellipticity Poincaré's
+  inequality.
 -/
 
-open Filter Topology
+open Filter Metric MeasureTheory Set TopologicalSpace Topology
 open scoped InnerProductSpace
 
 namespace AtkinsonHan
@@ -547,6 +552,51 @@ theorem exercise_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M
     (lipschitzWith_toOperator hM0 hM) (SesqForm.rieszRep ℓ)
   refine ⟨u, (BilinForm.toOperator_eq_rieszRep_iff hM ℓ u).mp hu, fun y hy => ?_⟩
   exact huniq y ((BilinForm.toOperator_eq_rieszRep_iff hM ℓ y).mpr hy)
+
+/-! ### Example 8.3.5: the model Dirichlet problem -/
+
+/-- **Example 8.3.5**: the Lax–Milgram lemma applied to the boundary value problem (8.2.3),
+`−Δu = f` in `Ω`, `u = 0` on `∂Ω`, on a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`: for every
+`ℓ ∈ H^{-1}(Ω) = (H¹₀(Ω))'` there is exactly one `u ∈ H¹₀(Ω)` with `∫_Ω ∇u · ∇v = ℓ(v)` for all
+`v ∈ H¹₀(Ω)`, the unique weak solution.
+
+The bilinear form `a(u, v) = ∫_Ω ∇u · ∇v = ∑ᵢ ∫_Ω ∂ᵢu ∂ᵢv` is `BilinForm.ofCLM (modelOperator Ω)`,
+the Dirichlet form of Example 8.2.6 read as a form on `V = H¹₀(Ω) = SobolevEuclideanZero (d + 1)
+1 2 Ω`; it is bounded with `M = 1` (`Elliptic.dirichletForm_isBoundedWith`) and `V`-elliptic with
+`α = (1 + (2R)²)⁻¹`, which is Poincaré's inequality
+(`Elliptic.dirichletForm_restrict_isCoerciveWith`), so `theorem_8_3_4` applies.  A datum
+`f ∈ L²(Ω)` enters as `ℓ = (Elliptic.load Ω f).comp V.subtypeL`, `ℓ(v) = ∫_Ω f v`.  The book's
+Lipschitz boundary is not needed; the AH surface's `H¹₀(Ω)` and `H^{-1}(Ω)`
+(`AtkinsonHan.Chapter07.definition_7_2_9`, `definition_7_2_12_hMinusOne`) are the same spaces
+on the tensor formulation of `W^{1,2}(Ω)`, see `modelOperator`. -/
+theorem example_8_3_5 {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
+    (ℓ : StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω)) :
+    ∃! u : SobolevEuclideanZero (d + 1) 1 2 Ω, ∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        ∑ i, SobolevMultiIndex.weakDeriv (u : SobolevEuclidean (d + 1) 1 2 Ω)
+          (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
+            (MultiIndexLE.single i) x = ℓ v := by
+  have hcoer := Elliptic.dirichletForm_restrict_isCoerciveWith Ω hR hΩ
+  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  have hM : (BilinForm.ofCLM (modelOperator Ω)).IsBoundedWith 1 := fun u v ↦ by
+    rw [BilinForm.ofCLM_apply, modelOperator_apply, one_mul, ← Real.norm_eq_abs]
+    have h := Elliptic.dirichletForm_isBoundedWith Ω u v
+    rwa [one_mul] at h
+  have hα : (BilinForm.ofCLM (modelOperator Ω)).IsEllipticWith (1 + (2 * R) ^ 2)⁻¹ := fun v ↦ by
+    rw [BilinForm.ofCLM_apply, modelOperator_apply]
+    exact hcoer v
+  have key := theorem_8_3_4 hM hpos hα ℓ
+  have e : ∀ u v : SobolevEuclideanZero (d + 1) 1 2 Ω, BilinForm.ofCLM (modelOperator Ω) u v
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        ∑ i, SobolevMultiIndex.weakDeriv (u : SobolevEuclidean (d + 1) 1 2 Ω)
+          (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
+            (MultiIndexLE.single i) x := fun u v ↦
+    Elliptic.dirichletForm_apply Ω u v
+  simp only [e] at key
+  exact key
 
 end Chapter08
 

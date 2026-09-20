@@ -40,6 +40,14 @@ id = "exercise_11_3_10"
 id = "exercise_11_3_13"
 
 [[node]]
+id = "theorem_11_3_9_zero_existsUnique"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.9"
+
+[[node]]
+id = "theorem_11_3_9_zero_lipschitz"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.9"
+
+[[node]]
 id = "example_11_3_11"
 kind = "theorem"
 desc = '''
@@ -47,21 +55,20 @@ Example 11.3.11: Theorem 11.3.9 applied to the variational inequality of Example
 simplified friction problem — shows it has a unique solution. Not formalized: it is
 `theorem_11_3_9` instantiated on `H¹(Ω)` with `j v = g ∫_Γ |v| ds`, so it needs a Sobolev space and
 a trace on `Γ`; §11.3's module doc lists it beside Example 11.3.10 for that reason.
+
+Blocked: rechecked 2026-09-20 after the Brezis backbone. Example 11.3.10 beside it is now proved
+(`example_11_3_10`, through `theorem_11_3_9_zero_existsUnique`); this one still needs blocker 2 of
+`notes/frontier.md`, the trace operator `H¹(Ω) → L¹(Γ)` and the surface measure on `∂Ω`, which
+exist nowhere in `Numlib/` (see `example_11_1_2`). With a bounded trace `T`, it is `theorem_11_3_9`
+on `V = H¹(Ω)`, `K = V`, `a = Elliptic.laplaceForm Ω` (`Elliptic.laplaceForm_isCoerciveWith_one`,
+`laplaceForm_isBoundedWith_one`) and `j = g ‖T ·‖_{L¹(Γ)}`, convex and continuous; estimate 40
+lines after the trace.
 '''
 deps = ["theorem_11_3_9", "example_11_2_4"]
 
 [[node]]
 id = "example_11_3_10"
-kind = "theorem"
-desc = '''
-Example 11.3.10: the obstacle problem (11.1.7) is an elliptic variational inequality of the first
-kind, so Theorem 11.3.9 gives it a unique solution. Not formalized: it is `theorem_11_3_9`
-instantiated on `H¹₀(Ω)` with the constraint set `K = {v : v ≥ ψ a.e.}`, so it needs a Sobolev
-space; §11.3's module doc lists it beside Example 11.3.11 for that reason. Beware the near-match:
-`exercise_11_3_10` is Exercise 11.3.10, on a positively homogeneous `j`, a different result with
-the same number, and it is formalized.
-'''
-deps = ["theorem_11_3_9", "example_11_2_3"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.3.10"
 
 [[node]]
 id = "theorem_11_3_12"
@@ -74,5 +81,20 @@ Theorem 11.3.12: on a `C^{1,1}` domain `Ω ⊆ ℝ^d`, for `a_ij ∈ C(Ω̄)` un
 Not formalized: it needs `W^{2,p}(Ω)` and `L^p(Ω)` on a `C^{1,1}` domain and the elliptic regularity
 theory behind them, and the book gives no proof, citing Brezis–Stampacchia and Gilbarg–Trudinger
 Theorem 9.14; the chapter's group description records the same.
+
+Blocked: rechecked 2026-09-20 after the Brezis backbone. The obstacle problem it speaks of is now
+`example_11_3_10` on `obstacleSet Ω ψ` (`Chapter11/Section01`), and linear elliptic regularity
+exists for `p = 2` on `C²` domains: `Elliptic.regularity_dirichlet` of
+`Numlib/Analysis/PDE/Elliptic/Regularity.lean` (`H²` with `‖u‖_{H²} ≤ C ‖f‖_{L²}` for the Dirichlet
+problem of `−Δ + 1`, Brezis's Theorem 9.25). What is still missing, even for the `p = 2` clause
+with `a_ij = δ_ij`: the Brezis–Stampacchia argument itself — the Lewy–Stampacchia inequality
+`f ≤ −Δu ≤ max (f, −Δψ)` a.e. (by penalization or by the dual estimate), which shows `−Δu ∈ L²(Ω)`
+and reduces the obstacle problem to the linear one — is in no library, and it is the whole
+content of the theorem; `W^{2,p}` regularity for `p ≠ 2` (Gilbarg–Trudinger Theorem 9.14,
+Calderón–Zygmund) and the `C^{1,1}` class are further away (blocker 18 of `notes/frontier.md`).
+The `p = 2` clause on a `C²` domain is a bounded task once the Lewy–Stampacchia inequality is
+proved: estimate 300–500 lines of backbone (`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`: the
+penalized problems `−Δu_ε + β_ε(u_ε − ψ) = f`, their `L²` bounds, the passage to the limit) and
+then one application of `Elliptic.regularity_dirichlet`. The book quotes the theorem without proof.
 '''
 deps = ["example_11_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

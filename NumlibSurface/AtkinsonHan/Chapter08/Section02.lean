@@ -1,3 +1,6 @@
+import Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange
+import Numlib.Analysis.PDE.DirichletLaplacian
+import Numlib.Analysis.PDE.Elliptic.Spectral
 import Numlib.Variational.Forms
 import Numlib.Variational.LaxMilgram
 
@@ -15,17 +18,34 @@ closedness is Mathlib's `LinearPMap.IsClosed` (`isClosed_iff_seq` records the eq
 book's sequential phrasing) and the stability estimate is used unbundled, exactly as the backbone
 states it.
 
-Theorem 8.2.7 is out of scope in the Banach generality of the book (Mathlib has no continuous
-Banach dual of an unbounded densely defined operator); its Hilbert-space bounded case is recorded
-as `theorem_8_2_7_hilbert`.
+Theorem 8.2.7, Banach's closed range theorem, is `theorem_8_2_7` in the book's generality —
+densely defined closed operators between Banach spaces, with the dual operator
+`LinearPMap.strongDualAdjoint` of `Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean` and
+the theorem itself from `Unbounded/ClosedRange.lean`; its Hilbert-space bounded case, which was
+all that could be stated before the Banach adjoint existed, is kept as `theorem_8_2_7_hilbert`.
+
+The two examples that name a domain are here as well.  Example 8.2.3, the Laplacian `−Δ` on
+`L²(Ω)` as a closed unbounded operator, is `example_8_2_3` on the backbone's Dirichlet Laplacian
+`dirichletLaplacian Ω` (`Numlib/Analysis/PDE/DirichletLaplacian.lean`), its non-continuity
+witnessed by the Dirichlet eigenfunctions of `Numlib/Analysis/PDE/Elliptic/Spectral.lean`.
+Example 8.2.6, the model Dirichlet problem read through Example 8.2.5, is `example_8_2_6` on the
+operator `modelOperator Ω`, the Dirichlet form `∫_Ω ∇u · ∇v` restricted to
+`V = H¹₀(Ω) = SobolevEuclideanZero (d + 1) 1 2 Ω` as a map into `V' = H^{-1}(Ω)`; the seminorm
+`|·|_{H¹}` the book takes as the norm of `V` is `SobolevMultiIndex.gradNorm`, a norm on `V`
+equivalent to the `H¹` norm by Poincaré's inequality (`Numlib/Analysis/Sobolev/Poincare.lean`).
+Both examples are set on bounded open sets `Ω ⊆ ℝ^{d+1}`; the book's Lipschitz boundary is not
+needed.  The AH surface's own `H¹₀(Ω)` and `H^{-1}(Ω)` (`AtkinsonHan.Chapter07.definition_7_2_9`,
+`definition_7_2_12_hMinusOne`) are the same spaces in the tensor formulation of `W^{1,2}(Ω)`,
+whose norm is equivalent but not equal; the examples are stated on the multi-index formulation,
+where the backbone's Dirichlet form and Poincaré inequality live.
 
 Exercise 8.2.1 closes the file with the finite-dimensional instance the book asks for: on
 `ℝ^d = EuclideanSpace ℝ (Fin d)` every range is closed, so Theorem 8.2.1 alone turns uniqueness of
 a solution of `A x = b` into existence for every `b`.
 -/
 
-open Filter Topology
-open scoped InnerProductSpace
+open Filter MeasureTheory Metric Set TopologicalSpace Topology
+open scoped ContDiff Distributions ENNReal InnerProductSpace
 
 namespace AtkinsonHan.Chapter08
 
@@ -42,33 +62,14 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
 /-- Definition 8.2.2 in the book's sequential form: `T` is closed iff whenever `v_n ∈ D(T)`,
 `v_n → v` and `T v_n → w`, then `v ∈ D(T)` and `T v = w`.  Mathlib's `LinearPMap.IsClosed` is
-closedness of the graph, which on a metric space is the same thing. -/
+closedness of the graph, which on a metric space is the same thing; the backbone's
+`LinearPMap.isClosed_iff_seq` (`Numlib/Analysis/Normed/Operator/Unbounded/Basic.lean`) is the
+statement over any nontrivially normed field. -/
 theorem isClosed_iff_seq (T : V →ₗ.[ℝ] W) :
     T.IsClosed ↔ ∀ (v : ℕ → T.domain) (x : V) (w : W),
       Tendsto (fun n => (v n : V)) atTop (𝓝 x) → Tendsto (fun n => T (v n)) atTop (𝓝 w) →
-        ∃ hx : x ∈ T.domain, T ⟨x, hx⟩ = w := by
-  rw [LinearPMap.IsClosed, ← isSeqClosed_iff_isClosed]
-  constructor
-  · intro h v x w hv hw
-    have hmem : ∀ n, ((v n : V), T (v n)) ∈ (T.graph : Set (V × W)) := fun n => T.mem_graph (v n)
-    have hg := h hmem (hv.prodMk_nhds hw)
-    rw [SetLike.mem_coe, LinearPMap.mem_graph_iff] at hg
-    obtain ⟨y, hy1, hy2⟩ := hg
-    have hy1' : (y : V) = x := hy1
-    have hx : x ∈ T.domain := hy1' ▸ y.2
-    refine ⟨hx, ?_⟩
-    have hxy : (⟨x, hx⟩ : T.domain) = y := Subtype.ext hy1'.symm
-    rw [hxy]
-    exact hy2
-  · intro h p q hp hq
-    choose y hy1 hy2 using fun n => (LinearPMap.mem_graph_iff T).mp (hp n)
-    have h1 : Tendsto (fun n => ((y n : V))) atTop (𝓝 q.1) := by
-      simpa [hy1, Function.comp_def] using (continuous_fst.tendsto q).comp hq
-    have h2 : Tendsto (fun n => T (y n)) atTop (𝓝 q.2) := by
-      simpa [hy2, Function.comp_def] using (continuous_snd.tendsto q).comp hq
-    obtain ⟨hx, hxv⟩ := h y q.1 q.2 h1 h2
-    rw [SetLike.mem_coe, LinearPMap.mem_graph_iff]
-    exact ⟨⟨q.1, hx⟩, rfl, hxv⟩
+        ∃ hx : x ∈ T.domain, T ⟨x, hx⟩ = w :=
+  LinearPMap.isClosed_iff_seq T
 
 /-- The remark after Definition 8.2.2: a continuous linear operator defined on all of `V` is
 closed. -/
@@ -229,9 +230,8 @@ variable {V W : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [Complet
 
 /-- The Hilbert-space, bounded case of Theorem 8.2.7 (the closed range theorem): if `R(T)` is
 closed then `R(T) = N(T*)^⊥`, so `T u = f` is solvable exactly when `f` is orthogonal to the
-kernel of the adjoint.  The book states the theorem for densely defined closed operators between
-Banach spaces, which is out of scope here (Mathlib has no continuous Banach dual for unbounded
-operators). -/
+kernel of the adjoint.  The book's statement, for densely defined closed operators between
+Banach spaces, is `theorem_8_2_7`. -/
 theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
     (hclosed : IsClosed (LinearMap.range (T : V →ₗ[ℝ] W) : Set W)) (f : W) :
     f ∈ LinearMap.range (T : V →ₗ[ℝ] W) ↔
@@ -244,6 +244,210 @@ theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
   simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe]
 
 end ClosedRange
+
+section ClosedRangeBanach
+
+variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+  [NormedAddCommGroup W] [NormedSpace ℝ W] [CompleteSpace W]
+
+/-- **Theorem 8.2.7** (Banach's closed range theorem), in the book's generality: for Banach
+spaces `V`, `W` and a densely defined closed linear operator `L : D(L) ⊂ V → W` with dual
+operator `L* : D(L*) ⊂ W' → V'`, `⟨L* w*, v⟩ = ⟨w*, L v⟩`, the following are equivalent:
+(a) `R(L)` is closed in `W`; (b) `R(L) = N(L*)^⊥ = {w ∈ W | ⟨w*, w⟩ = 0 ∀ w* ∈ N(L*)}`;
+(c) `R(L*)` is closed in `V'`; (d) `R(L*) = N(L)^⊥ = {v* ∈ V' | ⟨v*, v⟩ = 0 ∀ v ∈ N(L)}`.
+
+The dual operator is the backbone's Banach adjoint `LinearPMap.strongDualAdjoint`
+(`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean`), and the theorem is
+`LinearPMap.IsClosed.isClosed_range_tfae` of `Unbounded/ClosedRange.lean`, with the two
+annihilators written out as the sets the book displays.  The abstract Fredholm alternative
+the book draws from it, (a) ⇒ (b), is
+`LinearPMap.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range`.
+The Hilbert-space bounded case is `theorem_8_2_7_hilbert`. -/
+theorem theorem_8_2_7 (L : V →ₗ.[ℝ] W) (hd : Dense (L.domain : Set V)) (hc : L.IsClosed) :
+    [IsClosed (LinearMap.range L.toFun : Set W),
+      (LinearMap.range L.toFun : Set W) = {w | ∀ w' ∈ L.strongDualAdjoint.ker, w' w = 0},
+      IsClosed (LinearMap.range L.strongDualAdjoint.toFun : Set (StrongDual ℝ V)),
+      (LinearMap.range L.strongDualAdjoint.toFun : Set (StrongDual ℝ V))
+        = {v' | ∀ v ∈ L.ker, v' v = 0}].TFAE := by
+  have key := hc.isClosed_range_tfae hd
+  have e2 : LinearMap.range L.toFun = L.strongDualAdjoint.ker.strongDualCoannihilator ↔
+      (LinearMap.range L.toFun : Set W) = {w | ∀ w' ∈ L.strongDualAdjoint.ker, w' w = 0} := by
+    rw [← SetLike.coe_set_eq]
+    have : (L.strongDualAdjoint.ker.strongDualCoannihilator : Set W)
+        = {w | ∀ w' ∈ L.strongDualAdjoint.ker, w' w = 0} := by
+      ext w
+      simp
+    rw [this]
+  have e4 : LinearMap.range L.strongDualAdjoint.toFun = L.ker.strongDualAnnihilator ↔
+      (LinearMap.range L.strongDualAdjoint.toFun : Set (StrongDual ℝ V))
+        = {v' | ∀ v ∈ L.ker, v' v = 0} := by
+    rw [← SetLike.coe_set_eq]
+    have : (L.ker.strongDualAnnihilator : Set (StrongDual ℝ V))
+        = {v' | ∀ v ∈ L.ker, v' v = 0} := by
+      ext v'
+      simp
+    rw [this]
+  tfae_have 1 ↔ 2 := (key.out 1 3).trans e2
+  tfae_have 1 ↔ 3 := key.out 1 2
+  tfae_have 1 ↔ 4 := (key.out 1 4).trans e4
+  tfae_finish
+
+end ClosedRangeBanach
+
+section Laplacian
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+
+/-- The Dirichlet eigenfunctions `e_n` of `−Δ` on a bounded nonempty `Ω` (Brezis's Theorem 9.31,
+`Elliptic.dirichletEigenbasis`) lie in the domain of the Dirichlet Laplacian, with
+`(−Δ) e_n = λ_n e_n`: the weak eigenvalue equation `∫ ∇e_n · ∇φ = λ_n ∫ e_n φ` on `H¹₀(Ω)` is the
+defining identity of the domain with the datum `λ_n e_n`. -/
+theorem dirichletEigenbasis_mem_dirichletLaplacian_domain
+    (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty) (n : ℕ) :
+    ∃ h : Elliptic.dirichletEigenbasis Ω hΩ hne n ∈ (dirichletLaplacian Ω).domain,
+      dirichletLaplacian Ω ⟨Elliptic.dirichletEigenbasis Ω hΩ hne n, h⟩
+        = Elliptic.dirichletEigenvalue Ω hΩ n • Elliptic.dirichletEigenbasis Ω hΩ hne n := by
+  obtain ⟨u, hu, hfn, heq⟩ := Elliptic.dirichletEigenbasis_mem_sobolevZero Ω hΩ hne n
+  have key : ∀ φ ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, Elliptic.dirichletForm Ω u φ
+      = Elliptic.load Ω (Elliptic.dirichletEigenvalue Ω hΩ n
+        • Elliptic.dirichletEigenbasis Ω hΩ hne n) φ := fun φ hφ ↦ by
+    rw [heq φ hφ, Elliptic.load_smul]
+    rfl
+  exact ⟨⟨u, hu, hfn, _, key⟩, dirichletLaplacian_apply_unique _ hu hfn key⟩
+
+/-- **Example 8.2.3**: the differential operator `L v = −Δv` on `L²(Ω)`, for a bounded nonempty
+open `Ω ⊆ ℝ^{d+1}`, is a closed operator that is not continuous — so the converse of the remark
+after Definition 8.2.2 fails.
+
+The operator is the backbone's Dirichlet Laplacian `dirichletLaplacian Ω`
+(`Numlib/Analysis/PDE/DirichletLaplacian.lean`), the unbounded operator on `L²(Ω)` with domain
+`{v ∈ H¹₀(Ω) : Δv ∈ L²(Ω)}` and `L v = −Δv` in the weak sense; the four clauses are:
+
+* `L` is closed (Definition 8.2.2; `dirichletLaplacian_isClosed`, and `isClosed_iff_seq` turns it
+  into the book's sequential phrasing);
+* every `φ ∈ C₀^∞(Ω)` lies in `D(L)` with `L φ = −Δφ` computed classically
+  (`testFunction_mem_dirichletLaplacianDomain`);
+* the identity `∫_Ω (−Δv) φ = −∫_Ω v Δφ` for `v ∈ D(L)` and `φ ∈ C₀^∞(Ω)` that the book's proof
+  of closedness passes to the limit in — here `⟪L v, φ⟫ = ⟪v, −Δφ⟫`, the symmetry of `L`
+  (`dirichletLaplacian_isFormalAdjoint`);
+* `L` is not continuous: no `C` has `‖L v‖ ≤ C ‖v‖` on `D(L)`.  The book gives no argument for
+  this clause; here the Dirichlet eigenfunctions `e_n` of Brezis's Theorem 9.31
+  (`Elliptic.dirichletEigenbasis`, unit vectors of `L²(Ω)` with `L e_n = λ_n e_n`) witness it,
+  since `λ_n → +∞` (`Elliptic.tendsto_dirichletEigenvalue_atTop`).
+
+The book's closedness argument — the limit passage in the distributional identity — is how the
+backbone proves the weak derivative closed under `L^p` limits
+(`hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm`); the closedness of `dirichletLaplacian` itself
+is proved there from its maximal monotonicity, which is the same fact in Hilbert-space dress. -/
+theorem example_8_2_3 (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty) :
+    (dirichletLaplacian Ω).IsClosed ∧
+    (∀ φ : 𝓓(Ω, ℝ), ∃ h : φ.toL2 ∈ (dirichletLaplacian Ω).domain,
+      dirichletLaplacian Ω ⟨φ.toL2, h⟩ = φ.negLaplacian.toL2) ∧
+    (∀ (f : (dirichletLaplacian Ω).domain) (φ : 𝓓(Ω, ℝ)),
+      ⟪dirichletLaplacian Ω f, φ.toL2⟫_ℝ
+        = ⟪(f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))),
+            φ.negLaplacian.toL2⟫_ℝ) ∧
+    ¬ ∃ C : ℝ, ∀ f : (dirichletLaplacian Ω).domain,
+      ‖dirichletLaplacian Ω f‖
+        ≤ C * ‖(f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))‖ := by
+  have hφ : ∀ φ : 𝓓(Ω, ℝ), ∃ h : φ.toL2 ∈ (dirichletLaplacian Ω).domain,
+      dirichletLaplacian Ω ⟨φ.toL2, h⟩ = φ.negLaplacian.toL2 := fun φ ↦
+    ⟨(testFunction_mem_dirichletLaplacianDomain φ).1,
+      (testFunction_mem_dirichletLaplacianDomain φ).2⟩
+  refine ⟨dirichletLaplacian_isClosed, hφ, fun f φ ↦ ?_, ?_⟩
+  · obtain ⟨h, hh⟩ := hφ φ
+    rw [← hh]
+    exact dirichletLaplacian_isFormalAdjoint f ⟨φ.toL2, h⟩
+  · rintro ⟨C, hC⟩
+    obtain ⟨n, hn⟩ := (Elliptic.tendsto_dirichletEigenvalue_atTop Ω hΩ hne).eventually_gt_atTop C
+      |>.exists
+    obtain ⟨hmem, hApp⟩ := dirichletEigenbasis_mem_dirichletLaplacian_domain Ω hΩ hne n
+    have h1 := hC ⟨Elliptic.dirichletEigenbasis Ω hΩ hne n, hmem⟩
+    have hnorm : ‖Elliptic.dirichletEigenbasis Ω hΩ hne n‖ = 1 :=
+      (Elliptic.dirichletEigenbasis Ω hΩ hne).orthonormal.1 n
+    rw [hApp, norm_smul, Real.norm_eq_abs, Submodule.coe_mk, hnorm, mul_one, mul_one,
+      abs_of_pos (Elliptic.dirichletEigenvalue_pos Ω hΩ hne n)] at h1
+    exact absurd h1 (not_le.2 hn)
+
+end Laplacian
+
+section Model
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+
+/-- **The operator `L : V → V'` of Example 8.2.6**, `⟨L u, v⟩ = ∫_Ω ∇u · ∇v` for
+`u, v ∈ V = H¹₀(Ω)`: the restriction of the backbone's Dirichlet form
+(`Elliptic.dirichletForm`, `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`) to `H¹₀(Ω)`, read as a
+bounded linear map into the dual `V' = H^{-1}(Ω)`.
+
+The spaces are the backbone's: `V` is `SobolevEuclideanZero (d + 1) 1 2 Ω`, the closure of
+`C₀^∞(Ω)` in `H¹(Ω) = SobolevEuclidean (d + 1) 1 2 Ω` in the multi-index formulation of
+Definition 7.2.2, and `V'` is its `StrongDual`.  The AH surface's own
+`AtkinsonHan.Chapter07.definition_7_2_9 1 2 Ω` (`H¹₀(Ω)`) and `definition_7_2_12_hMinusOne`
+(`H^{-1}(Ω)`) are the same closure and the same dual taken in the tensor formulation
+`Sobolev ℝ 1 2 Ω volume`, whose norm is equivalent but not equal; the Poincaré inequality and
+the Dirichlet form of the backbone are stated on the multi-index space, which is why the
+example is stated there. -/
+noncomputable def modelOperator : SobolevEuclideanZero (d + 1) 1 2 Ω →L[ℝ]
+    StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
+  (Elliptic.dirichletForm Ω).restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)
+
+/-- `⟨L u, v⟩` is the Dirichlet form `∫_Ω ∇u · ∇v`. -/
+theorem modelOperator_apply (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+    modelOperator Ω u v = Elliptic.dirichletForm Ω u v :=
+  rfl
+
+/-- **Example 8.2.6**: the weak formulation of the model problem `−Δu = f` in `Ω`, `u = 0` on
+`∂Ω` (8.2.3), on `V = H¹₀(Ω)` with the seminorm `‖v‖_V = |v|_{H¹(Ω)} = ‖∇v‖_{L²(Ω)}` as norm and
+`V' = H^{-1}(Ω)`, for a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`.  The operator
+`L = modelOperator Ω`, `⟨L u, v⟩ = ∫_Ω ∇u · ∇v`, is linear and continuous with `‖L‖ = 1` and
+strongly monotone with `⟨L v, v⟩ = ‖v‖_V²`, so by Example 8.2.5 it is a bijection of `V` onto
+`V'`: for every `f ∈ H^{-1}(Ω)` there is exactly one `u ∈ H¹₀(Ω)` with
+`∫_Ω ∇u · ∇v = ⟨f, v⟩` for all `v ∈ V`, the unique weak solution of (8.2.3).
+
+The clauses, in order: the formula `⟨L u, v⟩ = ∫_Ω ∑ᵢ ∂ᵢu ∂ᵢv`; the bound
+`|⟨L u, v⟩| ≤ ‖∇u‖₂ ‖∇v‖₂`, that is `‖L‖ ≤ 1` for the norm `‖·‖_V`, and the identity
+`⟨L v, v⟩ = ‖∇v‖₂² = ‖v‖_V²`, which makes `‖L‖ = 1` exactly; the strong monotonicity
+`⟨L v, v⟩ ≥ c ‖v‖²_{H¹}` with `c = (1 + (2R)²)⁻¹`, which is Poincaré's inequality
+(`Elliptic.dirichletForm_restrict_isCoerciveWith`, from `SobolevEuclideanZero.norm_le_gradNorm`
+of `Numlib/Analysis/Sobolev/Poincare.lean`) and is what makes the seminorm a norm on `V`
+equivalent to the `H¹` norm; the bijectivity of `L` (Example 8.2.5); and the unique weak
+solution for every `f ∈ V'`.
+
+The book's "`‖L‖ = 1`" and "`⟨L v, v⟩ = ‖v‖_V²`" refer to the seminorm `|·|_{H¹}`, which the
+type `SobolevEuclideanZero (d + 1) 1 2 Ω` does not carry as its norm (its norm is the `H¹` norm);
+they are therefore stated through `SobolevMultiIndex.gradNorm`, and the strong monotonicity in
+the `H¹` norm carries the constant of Poincaré's inequality.  The book asks for a Lipschitz
+boundary, which no clause needs. -/
+theorem example_8_2_6 {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
+    (∀ u v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      modelOperator Ω u v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        ∑ i, SobolevMultiIndex.weakDeriv (u : SobolevEuclidean (d + 1) 1 2 Ω)
+          (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
+            (MultiIndexLE.single i) x) ∧
+    (∀ u v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      |modelOperator Ω u v| ≤ SobolevMultiIndex.gradNorm (u : SobolevEuclidean (d + 1) 1 2 Ω)
+        * SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 2 Ω)) ∧
+    (∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      modelOperator Ω v v = SobolevMultiIndex.gradNorm (v : SobolevEuclidean (d + 1) 1 2 Ω) ^ 2) ∧
+    (∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      (1 + (2 * R) ^ 2)⁻¹ * ‖v‖ ^ 2 ≤ modelOperator Ω v v) ∧
+    Function.Bijective (modelOperator Ω) ∧
+    ∀ f : StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω),
+      ∃! u : SobolevEuclideanZero (d + 1) 1 2 Ω, ∀ v, modelOperator Ω u v = f v := by
+  have hcoer := Elliptic.dirichletForm_restrict_isCoerciveWith Ω hR hΩ
+  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  exact ⟨fun u v ↦ Elliptic.dirichletForm_apply Ω u v,
+    fun u v ↦ Elliptic.abs_dirichletForm_le Ω u v,
+    fun v ↦ Elliptic.dirichletForm_self_eq_gradNorm_sq Ω v, fun v ↦ hcoer v,
+    (example_8_2_5 (modelOperator Ω) hpos hcoer).2.2,
+    fun f ↦ SesqForm.laxMilgram (modelOperator Ω) f hpos hcoer⟩
+
+end Model
 
 section FiniteDimensional
 

@@ -1,34 +1,97 @@
 namespace = "AtkinsonHan.Chapter11"
-desc = '''
-Atkinson–Han §11.1: the two problems that motivate the chapter — the obstacle problem
-(Example 11.1.1) and the simplified friction problem (Example 11.1.2) — with their energy
-minimization forms (11.1.6), (11.1.12), the equivalent variational inequalities (11.1.7), (11.1.13),
-their pointwise complementarity forms (11.1.9), (11.1.11), (11.1.14)–(11.1.15), and Exercises
-11.1.1–11.1.3.
 
-No module is planned for this section, and the two nodes below record why rather than promise one.
-Both problems live on `H¹₀(Ω)` and `H¹(Ω)` over a planar Lipschitz domain, the second with a
-boundary integral over `Γ`, and everything §11.1 claims about them is an instance of the abstract
-theory that §11.2–§11.4 do state — `theorem_11_2_1`, `theorem_11_2_2`, `theorem_11_3_9` — once a
-Sobolev space and a trace are available. `Chapter11.toml` records the same split for §11.5.
-'''
+[[node]]
+id = "dirichletBilinForm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.3)"
+
+[[node]]
+id = "dirichletBilinForm_isBoundedWith"
+
+[[node]]
+id = "dirichletBilinForm_isEllipticWith"
+
+[[node]]
+id = "dirichletBilinForm_isSymm"
+
+[[node]]
+id = "loadZero"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.3)"
+
+[[node]]
+id = "loadZero_apply"
+
+[[node]]
+id = "loadZero_sub"
+
+[[node]]
+id = "norm_loadZero_le"
+
+[[node]]
+id = "norm_loadZero_sub_le"
+
+[[node]]
+id = "obstacleEnergy"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (11.1.5)"
+
+[[node]]
+id = "obstacleEnergy_apply"
+
+[[node]]
+id = "_root_.MeasureTheory.Lp.le_smul_add_smul_of_le"
+
+[[node]]
+id = "_root_.MeasureTheory.Lp.convex_Ici"
+
+[[node]]
+id = "obstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1"
+
+[[node]]
+id = "mem_obstacleSet_iff"
+
+[[node]]
+id = "isClosed_obstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
+
+[[node]]
+id = "convex_obstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
+
+[[node]]
+id = "obstacleSet_nonempty"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
 
 [[node]]
 id = "example_11_1_1"
-kind = "theorem"
-desc = '''
-Example 11.1.1, the obstacle problem: an elastic membrane fixed along `Γ = ∂Ω` and lying above an
-obstacle of height `ψ ∈ H¹(Ω)` with `ψ ≤ 0` on `Γ`, under a vertical force of density `τ f` with
-`f ∈ L²(Ω)`, takes the position that minimizes the scaled energy
-`E v = ∫_Ω (½ |∇v|² - f v) dx` over `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e. in Ω}` (11.1.6); the minimizer is
-characterized by the variational inequality (11.1.7),
-`∫_Ω ∇u · ∇(v - u) dx ≥ ∫_Ω f (v - u) dx` for all `v ∈ K`, and under the extra regularity (11.1.8)
-by the pointwise complementarity relations `u ≥ ψ`, `-Δu - f ≥ 0`, `(u - ψ)(-Δu - f) = 0` in `Ω`.
-Not formalized: it names a domain, so it needs `H¹₀(Ω)` on a Lipschitz domain, and the pointwise
-form needs in addition the fundamental lemma of the calculus of variations and integration by parts
-there; the abstract content is `theorem_11_2_1` and `theorem_11_2_2`.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.example_7_3_15"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1"
+
+[[node]]
+id = "le_on_of_ae_le"
+
+[[node]]
+id = "integrable_mul_testFunction"
+
+[[node]]
+id = "nonneg_on_of_forall_integral_mul_testFunction_nonneg"
+
+[[node]]
+id = "eqOn_zero_of_forall_integral_mul_testFunction_eq_zero"
+
+[[node]]
+id = "dirichletForm_eq_integral_neg_laplacian_mul"
+
+[[node]]
+id = "le_of_forall_sub_le"
+
+[[node]]
+id = "smul_le_of_le"
+
+[[node]]
+id = "obstacle_testFunction_step"
+
+[[node]]
+id = "example_11_1_1_pointwise"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.1.1, (11.1.9)"
 
 [[node]]
 id = "example_11_1_2"
@@ -43,5 +106,17 @@ book's model of a variational inequality of the second kind, the one §11.3 and 
 Not formalized: the boundary term needs the trace of an `H¹(Ω)` function and the surface measure on
 `Γ`, and the pointwise form needs the normal derivative there; the abstract content is
 `theorem_11_2_1` and, for solvability, `theorem_11_3_7`.
+
+Blocked: rechecked 2026-09-20 after the Brezis backbone. The space is there
+(`SobolevEuclidean (d + 1) 1 2 Ω` with `Elliptic.laplaceForm Ω = ⟪·,·⟫_{H¹}`, the form of
+`−Δ + 1`), and the abstract theorem is `theorem_11_2_1` / `theorem_11_3_7` (proved). What is still
+missing is blocker 2 of `notes/frontier.md`: no trace operator `H¹(Ω) → L²(Γ)` and no surface
+measure on `∂Ω` exist anywhere in `Numlib/` (the only "trace" is the half-space inequality
+`eLpNorm_lastZero_le_of_contDiff` of `Numlib/Analysis/Sobolev/Reflection.lean`, Brezis's
+Lemma 9.9, which is not a bounded operator on a domain), so `j(v) = g ∫_Γ |v| ds` cannot be
+written; the pointwise clause needs the normal derivative on `Γ` as well. Estimate: the trace
+theorem on a `C¹` domain (charts, the half-space inequality, density of `C¹(Ω̄)`) is several
+hundred lines of backbone; the example is then `theorem_11_2_1` with `j` the trace composed with
+`‖·‖_{L¹(Γ)}`.
 '''
 deps = ["AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

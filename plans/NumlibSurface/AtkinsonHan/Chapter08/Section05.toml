@@ -20,5 +20,21 @@ g · v` for all `v ∈ V` — has a unique solution, equivalent to minimizing th
 Not formalized: the book leaves the proof to Exercise 8.5.3 (apply Lax-Milgram), and the
 `V`-ellipticity step needs Korn's inequality on a Lipschitz domain, alongside the trace on `Γ_D`
 and surface measure on `Γ_N`, none of which any library has; `[H¹(Ω)]^d` itself is available,
-`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` being proved.'''
+`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` being proved.
+
+Blocked: rechecked 2026-09-20 after the Brezis backbone. What exists now: `[H¹(Ω)]^d` as a
+`PiLp 2` of copies of `SobolevEuclidean N 1 2 Ω` (or `EuclideanSpace`-valued `SobolevMultiIndex`),
+the Lax–Milgram lemma `theorem_8_3_4` with its subspace form
+`IsGalerkinSolution.existsUnique_of_restrict`, `L^∞` coefficient forms `Elliptic.generalForm` with
+Gårding's inequality, and Poincaré's inequality on `W_0^{1,p}(Ω)`. Still missing, and found in
+no library (grep `Korn`, `trace`, surface measure over `Numlib/` and Mathlib): (1) Korn's second
+inequality `‖v‖_{H¹} ≤ C (‖v‖_{L²} + ‖ε(v)‖_{L²})` on a `C¹` (let alone Lipschitz) domain and its
+consequence `‖v‖_{H¹} ≤ C ‖ε(v)‖_{L²}` on `V = {v : v = 0 on Γ_D}` for `meas(Γ_D) > 0`, which is the
+`V`-ellipticity of (8.5.15); (2) blocker 2 of `notes/frontier.md`, the trace on `Γ_D` and the
+surface measure on `Γ_N` that the space `V` and the load `∫_{Γ_N} g · v` need. The pure Dirichlet
+case `Γ_D = Γ` with `g` absent needs only Korn's inequality on `[H¹₀(Ω)]^d`, which for `v` with
+zero trace is the elementary identity `∫ |ε(v)|² = ½ ∫ |∇v|² + ½ ∫ (div v)²` (integration by
+parts against `𝓓(Ω)^d` twice, by density): a bounded task (≈ 300 lines on the backbone's
+`SobolevEuclideanZero`), after which the Dirichlet case of Theorem 8.5.1 is one application of
+`IsGalerkinSolution.existsUnique_of_restrict`; the mixed case waits on the trace.'''
 deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

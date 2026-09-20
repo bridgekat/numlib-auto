@@ -13,17 +13,21 @@ id = "exercise_11_2_1"
 id = "theorem_11_2_2_iff"
 
 [[node]]
+id = "_root_.SesqForm.strongConvexOn_energy"
+
+[[node]]
+id = "_root_.StrongConvexOn.isCoerciveFunctionalOn_of_continuous"
+
+[[node]]
+id = "_root_.StrongConvexOn.mono_of_univ"
+
+[[node]]
+id = "theorem_11_2_2_zero"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.2.2"
+
+[[node]]
 id = "example_11_2_3"
-kind = "theorem"
-desc = '''
-Example 11.2.3: for the obstacle problem of §11.1 the set `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e. in Ω}` is
-nonempty — it contains `max (0, ψ)` — closed and convex, and the energy
-`E v = ∫_Ω (½ |∇v|² - f v) dx` is strictly convex, coercive and continuous on it, so Theorem 11.2.2
-gives the minimization problem (11.1.6), and with it the variational inequality (11.1.7), exactly
-one solution. Not formalized: it is `theorem_11_2_2` on a domain and needs `H¹₀(Ω)`; §11.2's module
-doc records the same.
-'''
-deps = ["theorem_11_2_2", "example_11_1_1"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.2.3"
 
 [[node]]
 id = "example_11_2_4"
@@ -33,5 +37,15 @@ Example 11.2.4: the same argument applied to the simplified friction problem of 
 variational inequality (11.1.13) on `V = H¹(Ω)`, with the boundary functional `j v = g ∫_Γ |v| ds`,
 exactly one solution. Not formalized: it is `theorem_11_2_2` on a domain, and its `j` needs the
 trace of an `H¹(Ω)` function and the surface measure on `Γ`; §11.2's module doc records the same.
+
+Blocked: rechecked 2026-09-20 after the Brezis backbone. The obstacle problem beside it is now
+`example_11_2_3`, so the abstract part (`theorem_11_2_2` at `j ≠ 0`, `theorem_11_3_7`) is the
+only thing this example needs beyond `example_11_1_2` — and that one is blocked on blocker 2 of
+`notes/frontier.md`: no trace operator `H¹(Ω) → L²(Γ)` and no surface measure on `∂Ω` exist in
+`Numlib/`, so `j(v) = g ∫_Γ |v| ds` is not statable. Once a bounded trace `T : H¹(Ω) → L¹(Γ)` on
+a `C¹` domain exists, `j = g ‖T ·‖_{L¹(Γ)}` is convex and continuous and the example is one
+application of `theorem_11_2_2` with `a = Elliptic.laplaceForm Ω` (bounded, symmetric, elliptic
+with `α = 1` on all of `H¹(Ω)`, `Elliptic.laplaceForm_isCoerciveWith_one`); estimate 60 lines
+after the trace.
 '''
 deps = ["theorem_11_2_2", "example_11_1_2"]

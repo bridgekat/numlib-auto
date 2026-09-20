@@ -1,6 +1,9 @@
+import Mathlib.Analysis.Convex.Strong
 import Numlib.Variational.Inequality.Basic
+import Numlib.Variational.Minimization
 import NumlibSurface.AtkinsonHan.Chapter05.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
+import NumlibSurface.AtkinsonHan.Chapter11.Section01
 
 /-!
 # Atkinson–Han §11.2: existence and uniqueness based on convex minimization
@@ -43,11 +46,21 @@ route of the backbone's `existsUnique_isMinOn_energy_add`.  The statement is the
   `V`-elliptic sesquilinear form.  They stay bundled there because the two halves share the
   passage to the real form `b(u,v) = re a(u,v)` that is the whole of the proof.
 
-Not formalized: Examples 11.2.3 and 11.2.4, the obstacle problem and the simplified friction
-problem, both of which name a domain and its Sobolev spaces.
+* `example_11_2_3` — the obstacle problem of §11.1 (`Chapter11/Section01`): the admissible set
+  `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` is nonempty, closed and convex, the energy
+  `∫_Ω (½ |∇v|² − f v)` is strictly convex, coercive and continuous, and Theorem 11.2.2 gives the
+  minimization problem (11.1.6) and the variational inequality (11.1.7) exactly one solution.
+  The strong convexity of the quadratic energy of a `V`-elliptic symmetric form,
+  `SesqForm.strongConvexOn_energy`, and the coercivity of a continuous strongly convex functional,
+  `StrongConvexOn.isCoerciveFunctionalOn_of_continuous`, are proved here on the way and belong in
+  the backbone (`Numlib/Variational/LaxMilgram.lean`, `Numlib/Variational/Minimization.lean`);
+  `theorem_11_2_2_zero` is Theorem 11.2.2 at `j = 0`.
+
+Not formalized: Example 11.2.4, the simplified friction problem, whose functional
+`g ∫_Γ |v| ds` needs the trace of an `H¹(Ω)` function and the surface measure on `Γ`.
 -/
 
-open Filter Set Topology
+open Filter Set TopologicalSpace Topology
 open scoped InnerProductSpace
 
 namespace AtkinsonHan.Chapter11
@@ -191,5 +204,145 @@ theorem exercise_11_2_1 {a : SesqForm ℂ V} (ha : a.IsHermitian) {α : ℝ} (h�
     exact h v hv
 
 end Complex
+
+/-! ### Example 11.2.3: the obstacle problem -/
+
+section Obstacle
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+
+/-- The energy `E(v) = ½ a(v, v) − ℓ(v)` of a symmetric form coercive with constant `c` is
+`c`-strongly convex: `E(s x + t y) = s E(x) + t E(y) − (s t / 2) a(x − y, x − y)`.  Belongs beside
+`SesqForm.convexOn_energy` in `Numlib/Variational/LaxMilgram.lean`. -/
+theorem _root_.SesqForm.strongConvexOn_energy {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ}
+    (hc : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) : StrongConvexOn univ c (a.energy ℓ) := by
+  refine ⟨convex_univ, fun x _ y _ s t hs ht hst ↦ ?_⟩
+  have hsym : a y x = a x y := by simpa using ha y x
+  have hcoer := hc (x - y)
+  have hsub : a (x - y) (x - y) = a x x - (a x y + a y x) + a y y := by
+    simp only [map_sub, sub_apply]
+    ring
+  rw [RCLike.re_to_real, hsub, hsym] at hcoer
+  simp only [SesqForm.energy, RCLike.re_to_real, map_smulₛₗ, map_add, add_apply, smul_apply,
+    smul_eq_mul, RingHom.id_apply, starRingEnd_apply, star_trivial, hsym]
+  obtain rfl : t = 1 - s := by linarith
+  nlinarith [mul_le_mul_of_nonneg_left hcoer (mul_nonneg hs ht)]
+
+/-- A strongly convex continuous functional is coercive on any nonempty set: the local lower
+bound that `StrongConvexOn.isCoerciveFunctionalOn` asks for comes from continuity at a point.
+Belongs beside it in `Numlib/Variational/Minimization.lean`. -/
+theorem _root_.StrongConvexOn.isCoerciveFunctionalOn_of_continuous {K : Set V} {f : V → ℝ} {m : ℝ}
+    (hf : StrongConvexOn K m f) (hm : 0 < m) (hne : K.Nonempty) (hc : Continuous f) :
+    IsCoerciveFunctionalOn f K := by
+  obtain ⟨x₀, hx₀⟩ := hne
+  obtain ⟨r, hr, hball⟩ : ∃ r > 0, ∀ x ∈ Metric.ball x₀ r, f x₀ - 1 < f x := by
+    have h := (hc.tendsto x₀).eventually (lt_mem_nhds (show f x₀ - 1 < f x₀ by linarith))
+    rw [Metric.eventually_nhds_iff_ball] at h
+    exact h
+  refine hf.isCoerciveFunctionalOn hm hx₀ hr ⟨f x₀ - 1, ?_⟩
+  rintro _ ⟨x, ⟨-, hxb⟩, rfl⟩
+  exact (hball x hxb).le
+
+/-- Strong convexity on the whole space restricts to any convex set.  Belongs in
+`Mathlib/Analysis/Convex/Strong.lean`. -/
+theorem _root_.StrongConvexOn.mono_of_univ {K : Set V} {f : V → ℝ} {m : ℝ}
+    (hf : StrongConvexOn univ m f) (hK : Convex ℝ K) : StrongConvexOn K m f :=
+  ⟨hK, fun x _ y _ _ _ hs ht hst ↦ hf.2 (mem_univ x) (mem_univ y) hs ht hst⟩
+
+variable [CompleteSpace V] {a : BilinForm V} {M α : ℝ}
+
+/-- **Theorem 11.2.2 with `j = 0`**: the energy of a bounded symmetric `V`-elliptic form has
+exactly one minimizer on a nonempty closed convex set, and that minimizer is the unique solution
+of the variational inequality `a(u, v − u) ≥ ℓ(v − u)`, the book's (11.3.13).  The instantiation
+of `theorem_11_2_2` and `theorem_11_2_2_iff` at `j = 0`, kept abstract so that the concrete
+Sobolev instance of Example 11.2.3 is a single application (the typed Sobolev context makes every
+unification step expensive). -/
+theorem theorem_11_2_2_zero (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
+    (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {K : Set V}
+    (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) :
+    (∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ) K u) ∧
+      ∃! u, u ∈ K ∧ ∀ v ∈ K, a u (v - u) ≥ ℓ (v - u) := by
+  have hmin := theorem_11_2_2 hM hα ha hs ℓ (j := fun _ ↦ (0 : ℝ)) hKne hKcl hKcv
+    (convexOn_const _ hKcv) (lowerSemicontinuous_const.lowerSemicontinuousOn _)
+  have e0 : a.energy ℓ + (fun _ ↦ (0 : ℝ)) = a.energy ℓ := funext fun v ↦ add_zero _
+  rw [e0] at hmin
+  refine ⟨hmin, ?_⟩
+  have hiff : ∀ u ∈ K, IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, a u (v - u) ≥ ℓ (v - u) :=
+    fun u hu ↦ by
+      have h := theorem_11_2_2_iff hM hα ha hs ℓ (j := fun _ ↦ (0 : ℝ)) hKcv (convexOn_const _ hKcv)
+        hu
+      rw [e0] at h
+      simp only [sub_zero, add_zero] at h
+      exact h
+  obtain ⟨u, ⟨hu, humin⟩, huniq⟩ := hmin
+  refine ⟨u, ⟨hu, (hiff u hu).1 humin⟩, ?_⟩
+  rintro y ⟨hy, hyvi⟩
+  exact huniq y ⟨hy, (hiff y hy).2 hyvi⟩
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+
+/-- **Example 11.2.3 (the obstacle problem, continued)**: on a bounded open `Ω ⊆ B(0, R)`, for an
+obstacle `ψ ∈ H¹(Ω)` whose positive part `max (ψ, 0)` is the function of an element of `H¹₀(Ω)`
+(the reading of "`ψ ≤ 0` on `Γ`", see `Chapter11/Section01`) and a load `f ∈ L²(Ω)`, the set
+`K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` is nonempty (it contains `max (0, ψ)`), closed and convex, and the
+energy `E(v) = ∫_Ω (½ |∇v|² − f v)` is strictly convex, coercive and continuous on it.  Hence, by
+Theorem 11.2.2, the minimization problem (11.1.6) has exactly one solution `u ∈ K`, and so has the
+equivalent variational inequality (11.1.7),
+`∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)` for all `v ∈ K`.
+
+Strict convexity and coercivity come from the strong convexity of the quadratic energy of a
+`V`-elliptic symmetric form (`SesqForm.strongConvexOn_energy`, with Poincaré's constant
+`(1 + (2R)²)⁻¹`), continuity from `SesqForm.continuous_energy`; the minimizer is
+`theorem_11_2_2` at `j = 0` (`theorem_11_2_2_zero`), and the inequality is its
+characterization, Example 11.1.1.  The set-theoretic clauses are `obstacleSet_nonempty`,
+`isClosed_obstacleSet` and `convex_obstacleSet` of `Chapter11/Section01`. -/
+theorem example_11_2_3 {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ Metric.ball 0 R)
+    {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hψ : ∃ w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, SobolevMultiIndex.fn w
+      =ᵐ[MeasureTheory.volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        fun x ↦ max (SobolevMultiIndex.fn ψ x) 0)
+    (f : MeasureTheory.Lp ℝ 2
+      (MeasureTheory.volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
+    (obstacleSet Ω ψ).Nonempty ∧ IsClosed (obstacleSet Ω ψ) ∧ Convex ℝ (obstacleSet Ω ψ) ∧
+    StrictConvexOn ℝ (obstacleSet Ω ψ) (obstacleEnergy Ω f) ∧
+    IsCoerciveFunctionalOn (obstacleEnergy Ω f) (obstacleSet Ω ψ) ∧
+    Continuous (obstacleEnergy Ω f) ∧
+    (∃! u, u ∈ obstacleSet Ω ψ ∧ IsMinOn (obstacleEnergy Ω f) (obstacleSet Ω ψ) u) ∧
+    ∃! u, u ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+      ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        f x * SobolevMultiIndex.fn ((v - u : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+          SobolevEuclidean (d + 1) 1 2 Ω) x
+      ≤ ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        ∑ i, SobolevMultiIndex.weakDeriv (u : SobolevEuclidean (d + 1) 1 2 Ω)
+          (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv ((v - u : SobolevEuclideanZero (d + 1) 1 2 Ω) :
+            SobolevEuclidean (d + 1) 1 2 Ω) (MultiIndexLE.single i) x := by
+  have hM := dirichletBilinForm_isBoundedWith Ω
+  have hα := dirichletBilinForm_isEllipticWith Ω hR hΩ
+  have hs := dirichletBilinForm_isSymm Ω
+  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  have hne := obstacleSet_nonempty Ω hψ
+  have hcl := isClosed_obstacleSet Ω ψ
+  have hcv := convex_obstacleSet Ω ψ
+  have hstrong : StrongConvexOn (obstacleSet Ω ψ) (1 + (2 * R) ^ 2)⁻¹ (obstacleEnergy Ω f) :=
+    (SesqForm.strongConvexOn_energy ((BilinForm.isSymm_iff_isHermitian hM).mp hs)
+      ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).mp hα) (loadZero Ω f)).mono_of_univ hcv
+  have hcont : Continuous (obstacleEnergy Ω f) :=
+    SesqForm.continuous_energy ((dirichletBilinForm Ω).toCLM hM) (loadZero Ω f)
+  obtain ⟨hmin, hvi⟩ := theorem_11_2_2_zero hM hpos hα hs (loadZero Ω f) hne hcl hcv
+  refine ⟨hne, hcl, hcv, hstrong.strictConvexOn hpos,
+    hstrong.isCoerciveFunctionalOn_of_continuous hpos hne hcont, hcont, hmin, ?_⟩
+  have e : ∀ v w : SobolevEuclideanZero (d + 1) 1 2 Ω, dirichletBilinForm Ω v w
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+        ∑ i, SobolevMultiIndex.weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω)
+          (MultiIndexLE.single i) x
+          * SobolevMultiIndex.weakDeriv (w : SobolevEuclidean (d + 1) 1 2 Ω)
+            (MultiIndexLE.single i) x := fun v w ↦
+    Elliptic.dirichletForm_apply Ω v w
+  simp only [e, loadZero_apply, ge_iff_le] at hvi
+  exact hvi
+
+end Obstacle
 
 end AtkinsonHan.Chapter11

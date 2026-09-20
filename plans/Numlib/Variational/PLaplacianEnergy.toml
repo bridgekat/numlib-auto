@@ -1,0 +1,118 @@
+namespace = "PLaplacian"
+
+[[node]]
+id = "kernel"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.10)"
+
+[[node]]
+id = "kernel_pos"
+
+[[node]]
+id = "kernel_nonneg"
+
+[[node]]
+id = "continuous_kernel"
+
+[[node]]
+id = "norm_rpow_le_kernel"
+
+[[node]]
+id = "one_add_rpow_le"
+
+[[node]]
+id = "kernel_le"
+
+[[node]]
+id = "kernel_eq_norm_rpow"
+
+[[node]]
+id = "strictConvexOn_norm_rpow"
+
+[[node]]
+id = "strictConvexOn_kernel"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 5.3.13"
+
+[[node]]
+id = "convexOn_kernel"
+
+[[node]]
+id = "derivWeight"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.1)"
+
+[[node]]
+id = "derivWeight_pos"
+
+[[node]]
+id = "continuous_derivWeight"
+
+[[node]]
+id = "kernelBound"
+
+[[node]]
+id = "kernelBound_pos"
+
+[[node]]
+id = "continuous_kernelBound"
+
+[[node]]
+id = "kernelBound_le_kernelBound"
+
+[[node]]
+id = "kernelBound_rpow_conj"
+
+[[node]]
+id = "hasDerivAt_kernel_line"
+
+[[node]]
+id = "abs_derivWeight_mul_inner_le"
+
+[[node]]
+id = "energy"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.10)"
+
+[[node]]
+id = "aestronglyMeasurable_kernel_comp"
+
+[[node]]
+id = "integrable_kernel_comp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.2"
+
+[[node]]
+id = "energy_nonneg"
+
+[[node]]
+id = "integral_norm_rpow_le_energy"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.1"
+
+[[node]]
+id = "energy_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.2"
+
+[[node]]
+id = "energy_combo_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.3"
+
+[[node]]
+id = "energy_combo_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.3"
+
+[[node]]
+id = "one_lt_toReal"
+
+[[node]]
+id = "integrable_kernelBound_mul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.4"
+
+[[node]]
+id = "hasDerivAt_energy_line"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.4"
+
+[[node]]
+id = "derivWeight_mul_norm_le"
+
+[[node]]
+id = "memLp_kernelBound"
+
+[[node]]
+id = "memLp_derivWeight_mul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.11)"

@@ -1,6 +1,7 @@
 import Numlib.Variational.Inequality.Basic
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
+import NumlibSurface.AtkinsonHan.Chapter11.Section01
 
 /-!
 # Atkinson–Han §11.3: existence and uniqueness for elliptic variational inequalities
@@ -59,13 +60,19 @@ Exercise 11.3.1 is proved through the backbone's
 `A` are required on the constraint set alone.  That form is **Remark 11.3.2**, which the book states
 without proof and which the fixed point argument gives for nothing: every iterate stays in `K`.
 
+* `example_11_3_10` — the obstacle problem of §11.1 (`Chapter11/Section01`) as an inequality of
+  the first kind on `H¹₀(Ω)`: unique solvability for every `f ∈ L²(Ω)` and Lipschitz dependence
+  on `f`, from Theorem 11.3.9 at `j = 0` (`theorem_11_3_9_zero_existsUnique`,
+  `theorem_11_3_9_zero_lipschitz`).
+
 Not formalized: Theorem 11.3.12 (`W^{2,p}` regularity of the obstacle problem, quoted from
-Brezis–Stampacchia), Examples 11.3.10 and 11.3.11 and the one-dimensional solution formula
+Brezis–Stampacchia), Example 11.3.11 (the simplified friction problem, which needs the trace of
+an `H¹(Ω)` function and the surface measure on `Γ`) and the one-dimensional solution formula
 following them, and Exercises 11.3.4–11.3.9, 11.3.11 and 11.3.12, all of which name a domain and
 hence a Sobolev space.
 -/
 
-open Filter Set Topology
+open Filter Set TopologicalSpace Topology
 open scoped InnerProductSpace
 
 namespace AtkinsonHan.Chapter11
@@ -553,5 +560,86 @@ theorem exercise_11_3_10 (hM : a.IsBoundedWith M) {j : V → ℝ} (hj : ConvexOn
   simp only [BilinForm.inner_toOperator, BilinForm.inner_rieszRep]
 
 end BilinearForm
+
+/-! ### Example 11.3.10: the obstacle problem -/
+
+section Obstacle
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
+  {a : BilinForm V} {M α : ℝ}
+
+/-- **Theorem 11.3.9 with `j = 0`**, the inequality of the first kind (11.3.13): unique
+solvability for every `ℓ ∈ V'`.  Kept abstract so that the concrete Sobolev instance of
+Example 11.3.10 is a single application. -/
+theorem theorem_11_3_9_zero_existsUnique (hM : a.IsBoundedWith M) (hα : 0 < α)
+    (ha : a.IsEllipticWith α) {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
+    (hKcv : Convex ℝ K) (ℓ : StrongDual ℝ V) :
+    ∃! u, u ∈ K ∧ ∀ v ∈ K, a u (v - u) ≥ ℓ (v - u) := by
+  have h := (theorem_11_3_9 hM hα ha hKne hKcl hKcv (j := fun _ ↦ (0 : ℝ))
+    (convexOn_const _ hKcv) (lowerSemicontinuous_const.lowerSemicontinuousOn _)).1 ℓ
+  simp only [add_zero, sub_zero] at h
+  exact h
+
+/-- **Theorem 11.3.9 with `j = 0`**: the solution of the inequality of the first kind (11.3.13)
+depends Lipschitz continuously on `ℓ`, with constant `1/α`.  Kept abstract so that the concrete
+Sobolev instance of Example 11.3.10 is a single application. -/
+theorem theorem_11_3_9_zero_lipschitz (hM : a.IsBoundedWith M) (hα : 0 < α)
+    (ha : a.IsEllipticWith α) {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
+    (hKcv : Convex ℝ K) (ℓ₁ ℓ₂ : StrongDual ℝ V) {u₁ u₂ : V}
+    (h₁ : u₁ ∈ K ∧ ∀ v ∈ K, a u₁ (v - u₁) ≥ ℓ₁ (v - u₁))
+    (h₂ : u₂ ∈ K ∧ ∀ v ∈ K, a u₂ (v - u₂) ≥ ℓ₂ (v - u₂)) :
+    ‖u₁ - u₂‖ ≤ 1 / α * ‖ℓ₁ - ℓ₂‖ := by
+  have h := (theorem_11_3_9 hM hα ha hKne hKcl hKcv (j := fun _ ↦ (0 : ℝ))
+    (convexOn_const _ hKcv) (lowerSemicontinuous_const.lowerSemicontinuousOn _)).2 ℓ₁ ℓ₂ u₁ u₂
+  simp only [add_zero, sub_zero] at h
+  exact h h₁ h₂
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+
+/-- **Example 11.3.10**: the obstacle problem (11.1.7) is an elliptic variational inequality of
+the first kind — (11.3.13) on `V = H¹₀(Ω)` with `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}`, the form
+`a(u, v) = ∫_Ω ∇u · ∇v` and `ℓ(v) = ∫_Ω f v` — so by Theorem 11.3.9 it has a unique solution for
+every `f ∈ L²(Ω)`, and the solution depends Lipschitz continuously on `f`:
+`‖u₁ − u₂‖_{H¹} ≤ (1 + (2R)²) ‖f₁ − f₂‖_{L²}` for a bounded open `Ω ⊆ B(0, R)`.
+
+The hypotheses of Theorem 11.3.9 are those of Example 11.2.3: `K` is nonempty (it contains
+`max (0, ψ)`, given that the positive part of `ψ ∈ H¹(Ω)` is the function of an element of
+`H¹₀(Ω)` — the reading of "`ψ ≤ 0` on `Γ`"), closed and convex (`Chapter11/Section01`); the form
+is bounded with `M = 1` and `V`-elliptic with `α = (1 + (2R)²)⁻¹` by Poincaré's inequality, which
+is the Lipschitz constant `1/α` of the theorem; and `‖ℓ₁ − ℓ₂‖ ≤ ‖f₁ − f₂‖_{L²}`.  The theorem
+is applied at `j = 0` through `theorem_11_3_9_zero_existsUnique` and
+`theorem_11_3_9_zero_lipschitz`. -/
+theorem example_11_3_10 {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ Metric.ball 0 R)
+    {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
+    (hψ : ∃ w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, SobolevMultiIndex.fn w
+      =ᵐ[MeasureTheory.volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        fun x ↦ max (SobolevMultiIndex.fn ψ x) 0) :
+    (∀ f : MeasureTheory.Lp ℝ 2
+        (MeasureTheory.volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      ∃! u, u ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+        dirichletBilinForm Ω u (v - u) ≥ loadZero Ω f (v - u)) ∧
+    ∀ (f₁ f₂ : MeasureTheory.Lp ℝ 2
+        (MeasureTheory.volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
+      (u₁ u₂ : SobolevEuclideanZero (d + 1) 1 2 Ω),
+      (u₁ ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+        dirichletBilinForm Ω u₁ (v - u₁) ≥ loadZero Ω f₁ (v - u₁)) →
+      (u₂ ∈ obstacleSet Ω ψ ∧ ∀ v ∈ obstacleSet Ω ψ,
+        dirichletBilinForm Ω u₂ (v - u₂) ≥ loadZero Ω f₂ (v - u₂)) →
+      ‖u₁ - u₂‖ ≤ (1 + (2 * R) ^ 2) * ‖f₁ - f₂‖ := by
+  have hM := dirichletBilinForm_isBoundedWith Ω
+  have hα := dirichletBilinForm_isEllipticWith Ω hR hΩ
+  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  refine ⟨fun f ↦ theorem_11_3_9_zero_existsUnique hM hpos hα (obstacleSet_nonempty Ω hψ)
+    (isClosed_obstacleSet Ω ψ) (convex_obstacleSet Ω ψ) (loadZero Ω f),
+    fun f₁ f₂ u₁ u₂ hh₁ hh₂ ↦ ?_⟩
+  have hk := theorem_11_3_9_zero_lipschitz hM hpos hα (obstacleSet_nonempty Ω hψ)
+    (isClosed_obstacleSet Ω ψ) (convex_obstacleSet Ω ψ) (loadZero Ω f₁) (loadZero Ω f₂) hh₁ hh₂
+  have hc : ∀ y : ℝ, 1 / (1 + (2 * R) ^ 2)⁻¹ * y = (1 + (2 * R) ^ 2) * y := fun y ↦ by
+    rw [one_div, inv_inv]
+  exact (hk.trans_eq (hc _)).trans
+    (mul_le_mul_of_nonneg_left (norm_loadZero_sub_le Ω f₁ f₂) (by positivity))
+
+end Obstacle
 
 end AtkinsonHan.Chapter11

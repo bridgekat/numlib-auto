@@ -1,105 +1,140 @@
 namespace = "AtkinsonHan.Chapter08"
-desc = '''
-Atkinson-Han §8.8, a nonlinear problem. No module is planned: the section studies
-`-div[(1 + |∇u|²)^{p/2-1} ∇u] = f` in `Ω` with `u = 0` on `Γ`, whose weak form (8.8.6) and energy
-(8.8.10) live on `V = W^{1,p}₀(Ω)` for `p ∈ (1, ∞)`, normed by `‖v‖_V = (∫_Ω |∇v|^p)^{1/p}`. That
-space exists — `AtkinsonHan.Chapter07.definition_7_2_9` is `W_0^{k,p}(Ω)` over an `Opens` and is
-proved — and its reflexivity is statable, `NormedSpace.IsReflexive` of
-`Numlib/Analysis/Normed/Module/Reflexive` being AH Definition 2.7.4. What is missing is the
-Poincaré inequality of AH Theorem 7.3.13, which is what makes `‖v‖_V` a norm on `V` equivalent to
-`‖·‖_{1,p}`, and a proof that `V` is reflexive; neither is available. The abstract content of the
-section is AH Theorem 3.3.12 — a coercive, continuous, strictly convex functional on a reflexive
-space has a unique minimizer — together with `AtkinsonHan.Chapter05.theorem_5_3_19`, which is
-proved. The group exists so that the section's numbered results are on the record.
-'''
+
+[[node]]
+id = "gradFn"
+
+[[node]]
+id = "gradFn_apply"
+
+[[node]]
+id = "gradFn_eq_sum"
+
+[[node]]
+id = "aestronglyMeasurable_gradFn"
+
+[[node]]
+id = "norm_gradFn_le_sum"
+
+[[node]]
+id = "norm_le_norm_gradFn"
+
+[[node]]
+id = "inner_gradFn"
+
+[[node]]
+id = "memLp_gradFn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.2"
+
+[[node]]
+id = "gradFn_add"
+
+[[node]]
+id = "gradFn_smul"
+
+[[node]]
+id = "gradFn_combo"
+
+[[node]]
+id = "gradFn_sub"
+
+[[node]]
+id = "gradNorm_eq_zero_of_gradFn_ae_eq_zero"
+
+[[node]]
+id = "_root_.MeasureTheory.Lp.norm_rpow_eq_integral"
+
+[[node]]
+id = "gradNorm_rpow_le_integral"
+
+[[node]]
+id = "integral_norm_gradFn_rpow_le"
+
+[[node]]
+id = "normV"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.5)"
+
+[[node]]
+id = "energyFunctional"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.10)"
+
+[[node]]
+id = "formA"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.7)"
+
+[[node]]
+id = "normV_nonneg"
+
+[[node]]
+id = "normV_rpow"
+
+[[node]]
+id = "normV_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.1"
+
+[[node]]
+id = "norm_le_normV"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 8.8.1"
+
+[[node]]
+id = "isFiniteMeasure_restrict_of_subset_ball"
+
+[[node]]
+id = "eq_of_gradFn_ae_eq"
 
 [[node]]
 id = "lemma_8_8_1"
-kind = "theorem"
-desc = '''Lemma 8.8.1: the energy functional `E(v) = (1/p) ∫_Ω (1 + |∇v|²)^{p/2} - ∫_Ω f v` of
-(8.8.10) is coercive on `V = W^{1,p}₀(Ω)`, since `E(v) ≥ (1/p) ‖v‖_V^p - ‖f‖_{V'} ‖v‖_V` and
-`p > 1`. Not formalized: the space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what
-is missing is the norm `‖v‖_V = (∫_Ω |∇v|^p)^{1/p}` on it, which is a norm equivalent to
-`‖·‖_{1,p}` only through the Poincaré inequality of AH Theorem 7.3.13, together with the duality
-pairing `‖f‖_{V'}` over it.
-
-Blocked: rechecked 2026-09-15 and the reason stands, but it is narrower than
-`AtkinsonHan.Chapter07.theorem_7_3_13` (open). What (8.8.5) needs is only the Poincaré inequality
-on `W^{1,p}_0(Ω)` for a bounded `Ω`, which does *not* need the compact embedding of 7.3.13: the
-test functions are dense in `definition_7_2_9` by its definition, and on them `|u(x)| ≤ ∫ |∂_1 u|`
-along a line gives `‖u‖_p ≤ 2R ‖∇u‖_p`. Nothing in `Numlib/Analysis/Sobolev` carries it in
-dimension `d > 1` (`SobolevIntervalZero.norm_deriv_zero_le` is the interval case). Estimate: a
-Fubini argument over `EuclideanSpace ℝ (Fin d)` plus the density, a few hundred lines, and then a
-gradient-only `L^p` norm instance on `W^{1,p}_0(Ω)` and its dual norm.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.1"
 
 [[node]]
-id = "lemma_8_8_2"
-kind = "theorem"
-desc = '''Lemma 8.8.2: the energy functional (8.8.10) is continuous on `V = W^{1,p}₀(Ω)`, by an
-integral mean-value form of `E(u) - E(v)` bounded through Hölder's inequality.
-Not formalized: the space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what is
-missing is its norm `‖·‖_V`, for which see `lemma_8_8_1`, and the Hölder estimate over `Ω` that the
-continuity argument runs on.
+id = "convexOn_const_mul_sub_of_forall"
 
-Blocked: rechecked 2026-09-15; the reason stands. Because `‖v‖_V ≤ ‖v‖_{1,p}` unconditionally, the
-continuity half alone could be stated in the ambient `W^{1,p}` topology without the Poincaré
-inequality, but the energy `E` itself is unwritten: it needs `∇v` assembled from
-`SobolevMultiIndex.weakDeriv` and the integrability of `(1 + |∇v|²)^{p/2}` over `Ω`, which is
-finite only for `Ω` of finite measure. See `lemma_8_8_1` for the missing norm.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
+[[node]]
+id = "strictConvexOn_const_mul_sub_of_forall"
+
+[[node]]
+id = "convexOn_energyFunctional"
 
 [[node]]
 id = "lemma_8_8_3"
-kind = "theorem"
-desc = '''Lemma 8.8.3: the energy functional (8.8.10) is strictly convex, which the book reduces
-to strict convexity of `ξ ↦ (1/p)(1 + |ξ|²)^{p/2}` on `ℝ^d` (Exercise 5.3.13). Not formalized: the
-space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved) and only its norm `‖·‖_V` is
-missing, for which see `lemma_8_8_1`; the finite-dimensional ingredient is separable from all of
-that and is elementary.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.3"
 
-Blocked: rechecked 2026-09-15; the reason stands and is not only the norm. Strict convexity of
-`E` on `V` needs `u ≠ v ⇒ ∇u ≠ ∇v` on a set of positive measure, which on `W^{1,p}_0(Ω)` is
-again the Poincaré inequality of `lemma_8_8_1`; the finite-dimensional ingredient, strict
-convexity of `ξ ↦ (1/p)(1 + |ξ|²)^{p/2}` on `ℝ^d`, is elementary and separable from it.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.proposition_5_3_13"]
+[[node]]
+id = "energyFunctional_le"
+
+[[node]]
+id = "lemma_8_8_2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.2"
+
+[[node]]
+id = "fact_one_le_conjExponent"
+
+[[node]]
+id = "weightedDeriv"
+
+[[node]]
+id = "coeFn_weightedDeriv"
+
+[[node]]
+id = "energyDeriv"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.11)"
+
+[[node]]
+id = "energyDeriv_apply"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (8.8.11)"
+
+[[node]]
+id = "one_div_mul_integral_const_mul_mul_sub"
+
+[[node]]
+id = "hasDerivAt_line_of_eq"
 
 [[node]]
 id = "lemma_8_8_4"
-kind = "theorem"
-desc = '''Lemma 8.8.4: the energy functional (8.8.10) is Gateaux differentiable, with
-`⟨E'(u), v⟩ = ∫_Ω (1 + |∇u|²)^{p/2-1} ∇u · ∇v - ∫_Ω f v` (8.8.11); the proof dominates the
-difference quotient by `[1 + (|∇u| + |∇v|)²]^{(p-1)/2} |∇v| ∈ L¹(Ω)` and passes to the limit by
-dominated convergence. Not formalized: the space exists
-(`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what is missing is its norm `‖·‖_V`, for which
-see `lemma_8_8_1`, and the dominated-convergence passage under the integral over `Ω`.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.8.4"
 
-Blocked: rechecked 2026-09-15; the reason stands. See `lemma_8_8_1` for the missing norm and
-`lemma_8_8_2` for the missing energy functional; the dominated-convergence passage is routine once
-those exist.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.HasGateauxDerivAt"]
+[[node]]
+id = "forall_nonneg_sub_iff_forall_eq_zero"
 
 [[node]]
 id = "theorem_8_8_5"
-kind = "theorem"
-desc = '''Theorem 8.8.5: for `f ∈ V'` and `p ∈ (1, ∞)`, the weak formulation (8.8.6) and the
-minimization problem (8.8.9) are equivalent and both have a unique solution — by AH Theorem 3.3.12
-applied to the coercive, continuous, strictly convex `E` on the reflexive `V`, and by AH Theorem
-5.3.19 for the equivalence. Not formalized: `W^{1,p}₀(Ω)` exists
-(`AtkinsonHan.Chapter07.definition_7_2_9`, proved) and reflexivity is expressible, as
-`NormedSpace.IsReflexive`, which is `AtkinsonHan.Chapter02.definition_2_7_4`; what is missing is a
-proof that this space is reflexive, and the norm equivalence of AH Theorem 7.3.13. The abstract
-half is `AtkinsonHan.Chapter05.theorem_5_3_19` together with AH Theorem 3.3.12, both proved.
-
-Blocked: rechecked 2026-09-15; the reason stands, and reflexivity is the harder of the two halves.
-`Numlib/Analysis/Normed/Module/Reflexive` has exactly one instance,
-`instIsReflexiveOfInnerProductSpace`, so `W^{1,p}_0(Ω)` is reflexive in this library only at
-`p = 2`; the book states the section for `p ∈ (1, ∞)`, and reflexivity there needs `L^p`-`L^{p*}`
-duality, which is `AtkinsonHan.Chapter02.example_2_5_1`, also open. Specializing to `p = 2` would
-weaken the statement and is not done.
-'''
-deps = ["lemma_8_8_1", "lemma_8_8_2", "lemma_8_8_3", "lemma_8_8_4", "AtkinsonHan.Chapter05.theorem_5_3_19", "AtkinsonHan.Chapter02.definition_2_7_4"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 8.8.5"
