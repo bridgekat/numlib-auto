@@ -47,20 +47,29 @@ desc = '''The stability statement after the QR–Cholesky algorithm: a computed 
 `λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` with `‖E‖₂ ≃ u ‖A‖₂ ‖B⁻¹‖₂`. The book cites it from [GL89] p. 464
 without proof.
 
-Blocked, and out of scope as printed (re-examined 2026-09-20, agent qss1): the `≃` is not an
-inequality, so there is no proposition to prove, and the book names no source for a rigorous
-form beyond [GL89] p. 464 (Golub–Van Loan state it as `‖E‖₂ ≈ u ‖A‖₂ ‖B⁻¹‖₂` too, so no single
-reading is forced and the node stays under its printed id). The rigorous statement behind it —
-the computed `λ̂` is an exact eigenvalue of `Ĥ⁻ᵀ A Ĥ⁻¹ + E` with `‖E‖₂ ≤ c(n) u ‖A‖₂ ‖B⁻¹‖₂` —
-needs three floating-point analyses; checked in `Numlib/FloatingPoint/*` (`System`, `Model`,
-`InnerProduct`, `Substitution`, `LU`, `Stationary`): the computed Cholesky factor `Ĥ` of `B` is
-available (`RoundsCholesky` in `FloatingPoint/LU`), the computed two-sided triangular solve
-`Ĥ⁻ᵀ A Ĥ⁻¹` needs a `RoundsBackSubst`-style analysis with a matrix right-hand side (not there),
-and the backward stability of the symmetric QR iteration on the result is the missing
-Householder/Givens rounding model of blocker 12 (`Chapter05.equation_5_46`,
-`Chapter05.golubKahan_svd_stability`). Estimate: not reachable without that model; with it,
-~300 lines for the two-sided solve and the assembly.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_7"]
+Blocked (re-examined 2026-09-20, agent qss7; blocker 12 of `notes/frontier.md`, now half open):
+the `≃` is not an inequality, so the node stays under its printed id. Of the three floating-point
+analyses a rigorous form needs, two are now in the backbone: the computed Cholesky factor `Ĥ`
+(`FloatingPoint.RoundsCholesky`, `FloatingPoint.exists_roundsCholesky_eq_add` in
+`Numlib/FloatingPoint/LU`) and the computed two-sided solve `Ĉ = fl(Ĥ⁻ᵀ A Ĥ⁻¹)`
+(`FloatingPoint.RoundsTwoSidedSolve`, `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`
+in `Numlib/FloatingPoint/Householder`), the latter with the bound
+`‖Ĉ − Ĥ⁻ᵀ A Ĥ⁻¹‖_F ≤ (2θ/(1 − θ)²) ‖Ĥ⁻¹‖_F² ‖A‖_F`, `θ = γ_n ‖Ĥ⁻¹‖_F ‖Ĥ‖_F` — which shows that
+the rigorous statement is **not** the desc's `‖E‖₂ ≤ c(n) u ‖A‖₂ ‖B⁻¹‖₂`: the triangular solves
+contribute `κ(Ĥ) = κ(B)^{1/2}` on top of `‖B⁻¹‖₂ = ‖Ĥ⁻¹‖₂²` (the forward error of a solve is the
+condition number times the backward error), so any faithful re-planning must carry `κ(Ĥ)` (or
+assume `‖B‖₂ ≈ 1`). The third piece, the backward stability of the symmetric QR iteration on `Ĉ`
+— `λ̂ ∈ σ(Ĉ + E₂)`, `‖E₂‖ ≤ c₂(n, s) u ‖Ĉ‖` for `s` computed shifted QR steps with deflation —
+is still missing: it needs the Givens rounding model ([higham2002accuracy] Lemmas 19.7–19.9,
+a `RoundsGivens` predicate on the pattern of `FloatingPoint.RoundsHouseholderApply`), the
+computed shifted step `T̂' = fl(R̂ Q̂) + μ I` as a two-sided perturbed similarity (the
+accumulation `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd` is already general enough),
+the deflation criterion as an explicit perturbation, and the Householder tridiagonalization
+(`FloatingPoint.exists_roundsHessenbergReduce_eq`, done). Estimate: 400–600 lines for the Givens
+model and the QR step, then ~100 for the assembly under the same id with the corrected bound.
+The exact-arithmetic Cholesky factor of `B` is `Matrix.exists_isCholesky` in
+`Numlib/LinearAlgebra/Matrix/Cholesky`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_7", "FloatingPoint.RoundsTwoSidedSolve", "FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve", "FloatingPoint.exists_roundsCholesky_eq_add"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2'
 
 [[node]]

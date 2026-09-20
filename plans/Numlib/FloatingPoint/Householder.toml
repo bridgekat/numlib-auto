@@ -1,0 +1,142 @@
+namespace = "FloatingPoint"
+
+[[node]]
+id = "isRelPert_of_abs_sub_le"
+
+[[node]]
+id = "IsRelPert.abs_sub_le"
+
+[[node]]
+id = "IsRelPert.mul_one_add"
+
+[[node]]
+id = "IsRelPert.div_one_add"
+
+[[node]]
+id = "IsRelPert.rounds"
+
+[[node]]
+id = "IsRelPert.sqrt"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, proof of Lemma 19.1"
+
+[[node]]
+id = "norm_toLp_le_of_abs_le_add"
+
+[[node]]
+id = "abs_dotProduct_abs_le"
+
+[[node]]
+id = "frobenius_norm_le_of_forall_col_le"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 6.6 (a)"
+
+[[node]]
+id = "frobenius_norm_le_of_forall_row_le"
+
+[[node]]
+id = "householderAxis_dotProduct_self"
+
+[[node]]
+id = "abs_householderAxis_apply_self"
+
+[[node]]
+id = "householder_householderVec_eq"
+
+[[node]]
+id = "RoundsHouseholderVector"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.1, construction (19.1)"
+
+[[node]]
+id = "RoundsHouseholderVector.isRelPert"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.1"
+
+[[node]]
+id = "RoundsHouseholderApply"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2"
+
+[[node]]
+id = "norm_sub_le_of_roundsHouseholderApply"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2"
+
+[[node]]
+id = "prodRev"
+
+[[node]]
+id = "prodFwd"
+
+[[node]]
+id = "prodRev_mem_orthogonalGroup"
+
+[[node]]
+id = "prodFwd_mem_orthogonalGroup"
+
+[[node]]
+id = "one_add_pow_sub_one_le_gamma"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.1 and (19.10)"
+
+[[node]]
+id = "exists_eq_prodRev_mulVec_add"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3"
+
+[[node]]
+id = "exists_eq_prodRev_mulVec_add_gamma"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3, (19.10)"
+
+[[node]]
+id = "exists_eq_prodRev_mul_add"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.3, (19.7)-(19.8)"
+
+[[node]]
+id = "exists_eq_prodRev_mul_add_mul_prodFwd"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, §19.10 (two-sided transformations)"
+
+[[node]]
+id = "exists_eq_transpose_mul_add_mul_prodFwd"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, §19.10 (two-sided transformations)"
+
+[[node]]
+id = "hessenbergTailCol"
+
+[[node]]
+id = "hessenbergReflector_eq_householder"
+
+[[node]]
+id = "RoundsHessenbergStep"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2 (Program 29); Higham, Theorem 19.4"
+
+[[node]]
+id = "RoundsHessenbergReduce"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2 (Program 29)"
+
+[[node]]
+id = "RoundsHessenbergStep.apply_eq_zero"
+
+[[node]]
+id = "exists_isRelPert_hessenbergReflector"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.1"
+
+[[node]]
+id = "RoundsHessenbergStep.frobenius_norm_sub_le"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 19.2 and §19.10"
+
+[[node]]
+id = "exists_roundsHessenbergReduce_eq"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.46); Wilkinson, The Algebraic Eigenvalue Problem, p. 351"
+
+[[node]]
+id = "frobenius_norm_le_of_forall_abs_le"
+
+[[node]]
+id = "frobenius_norm_sub_le_of_forall_roundsForwardSubst_col"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorem 8.5 (columnwise)"
+
+[[node]]
+id = "frobenius_norm_sub_le_of_forall_roundsForwardSubst_row"
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorem 8.5 (rowwise)"
+
+[[node]]
+id = "RoundsTwoSidedSolve"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2 (QR–Cholesky algorithm, step 2)"
+
+[[node]]
+id = "frobenius_norm_sub_le_of_roundsTwoSidedSolve"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2; Golub–Van Loan, Matrix Computations, §8.7.2"

@@ -37,9 +37,11 @@ leading block `T₁₁ = T.submatrix (Fin.castLE _) (Fin.castLE _)` of order `k`
 
 The iterative phase of the Golub–Kahan–Reinsch algorithm (§5.8.3) is described only by its limit,
 whose existence is the SVD itself (`golubKahan_svd`, from the backbone `Matrix.exists_svd`); its
-rounding-error bound `‖δA‖₂ ≤ C_{mn} u ‖A‖₂` is quoted without proof and needs a floating-point
-model of orthogonal transformations the library does not have (the open node
-`golubKahan_svd_stability`). Inverse iteration needs `λ ∉ σ(A)` for its linear systems to be
+rounding-error bound `‖δA‖₂ ≤ C_{mn} u ‖A‖₂` is quoted without proof; the floating-point model of
+Householder transformations now exists (`Numlib/FloatingPoint/Householder`, Higham's Lemmas
+19.1–19.3 and the Hessenberg reduction), the models of the bidiagonalization and of the
+implicit-shift QR sweep (Givens rotations) do not, so the node `golubKahan_svd_stability` stays
+open with the reason. Inverse iteration needs `λ ∉ σ(A)` for its linear systems to be
 solvable, which `inverseIterate_conj` assumes, as (5.28) does.
 -/
 

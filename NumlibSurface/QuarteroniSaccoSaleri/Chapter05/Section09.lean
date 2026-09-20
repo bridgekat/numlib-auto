@@ -40,9 +40,13 @@ positive definite `B` is `Matrix.PosDef`.
 ## Not formalized
 
 The rounding-error statement after the QR–Cholesky algorithm (`qrCholesky_stability`), a
-floating-point claim the book quotes without proof, stays an open node of the plan with the
-reason. The QZ iteration and the QR–Cholesky algorithm are described without a theorem and are
-not nodes.
+floating-point claim the book quotes without proof and with a `≃`, stays an open node of the
+plan with the reason: the computed Cholesky factor (`FloatingPoint.RoundsCholesky`) and the
+computed two-sided solve `Ĉ = fl(Ĥ⁻ᵀ A Ĥ⁻¹)` (`FloatingPoint.RoundsTwoSidedSolve`,
+`FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`, whose bound carries the condition
+number of `Ĥ` that the book's `u ‖A‖₂ ‖B⁻¹‖₂` omits) are in the backbone, the backward
+stability of the symmetric QR iteration is not. The QZ iteration and the QR–Cholesky algorithm
+are described without a theorem and are not nodes.
 -/
 
 open Finset Matrix Polynomial

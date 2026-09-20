@@ -1,5 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Numlib.Direct.Refinement
 import Numlib.Eigen.Deflation
+import Numlib.FloatingPoint.Householder
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
 
 /-!
@@ -9,8 +11,9 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 [quarteroni2000numerical], §5.6, over the backbone `Numlib/LinearAlgebra/Matrix/QR` (Householder
 reflectors, the tail reflector, the Householder reduction to Hessenberg form and the Givens QR
 factorization of a Hessenberg matrix), `Numlib/LinearAlgebra/Matrix/PlaneRotation` (plane rotations
-and the Givens pair), `Numlib/Eigen/Deflation` (Householder deflation) and
-`Numlib/Eigen/QRAlgorithm` (the Hessenberg invariance of a QR step).
+and the Givens pair), `Numlib/Eigen/Deflation` (Householder deflation),
+`Numlib/Eigen/QRAlgorithm` (the Hessenberg invariance of a QR step) and
+`Numlib/FloatingPoint/Householder` (the rounding model of the Householder reduction, for (5.46)).
 
 ## Conventions
 
@@ -43,6 +46,10 @@ exhibited as the products of the book's rotations `G_j = G(j, j+1, θ_j)`.
 * `hessenbergStep`, `hessenbergIter`, `hessenbergReduce`, `hessenbergQ` and their `_eq` lemmas,
   `equation_5_45`, `hessenbergReduce_isUpperHessenberg`, `exists_orthogonal_conj_isUpperHessenberg`,
   `remark_5_4` — the Householder reduction to Hessenberg form.
+* `equation_5_46` — the backward stability of the Householder reduction in floating-point
+  arithmetic, `Ĥ = Qᵀ (A + E) Q` with `‖E‖_F ≤ c n² u ‖A‖_F`, for the reduction
+  `FloatingPoint.RoundsHessenbergReduce` of the relational rounding model, with `c = 528` and
+  `c n² u ≤ 1` as the explicit form of "`u` small enough".
 * `equation_5_47` — the Givens QR factorization of a Hessenberg matrix, (5.47)–(5.48).
 * `isUpperHessenberg_qrIterate` — §5.6.4: Hessenberg form is preserved by the QR iteration.
 * `equation_5_49` — applying a reflector is a rank-one update, (5.49)–(5.50).
@@ -51,9 +58,16 @@ exhibited as the products of the book's rotations `G_j = G(j, j+1, θ_j)`.
 
 Remark 5.3 prints "`H x₁ = α x₁`" for the reflector `H`; it should read `H x₁ = α e₁`, which is
 what `v = x₁ ± ‖x₁‖₂ e₁` and (5.40) give and what the block form of `H A H` requires. The rounding
-error estimate (5.46) and the unnumbered one after Program 30 are floating-point statements
-without a model here (`equation_5_46`, not formalized). Examples 5.5–5.9 are numerical, operation
-counts are prose, and Programs 29–35 are not nodes.
+error estimate (5.46) is stated with the book's `c` made explicit and "the roundoff unit `u`"
+qualified by `c n² u ≤ 1`; the algorithm it is stated for is Program 29 read as
+[higham2002accuracy] §19.3 reads such an algorithm — the Householder vector in the construction
+(19.1) of Higham's Lemma 19.1 (the sign `+ sign(x_k)` of the backbone; Program 32 uses the other
+sign with the rationalized formula, which Higham covers "similarly" and which is not formalized),
+the products by `R` as the rank-one updates (5.49)–(5.50) with one rounding per operation, and
+the annihilated entries of column `k` set to zero rather than left as the roundoff-sized junk
+Program 29 leaves. The unnumbered `‖E‖₂ ≃ u ‖A‖₂` after Program 30 (the Hessenberg-QR iteration)
+carries a `≃` and is not a proposition; it gets no node. Examples 5.5–5.9 are numerical,
+operation counts are prose, and Programs 29–35 are not nodes.
 -/
 
 open Finset Matrix Polynomial
@@ -426,6 +440,69 @@ theorem remark_5_4 {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) :
       hA.eq, Matrix.mul_assoc]
   exact ⟨hsymm, hsymm (N - 2),
     (hessenbergReduce_isUpperHessenberg A).isTridiagonal_of_isSymm (hsymm (N - 2))⟩
+
+/-! ### (5.46): the stability of the Householder reduction -/
+
+open scoped Matrix.Norms.Frobenius in
+/-- **(5.46), the backward stability of the Householder reduction to Hessenberg form**
+(Wilkinson; the book quotes it without proof): there is a constant `c` such that, for every
+order `n`, every rounding model of unit roundoff `u` with `c n² u ≤ 1`, every `A ∈ ℝ^{n×n}` and
+every Hessenberg matrix `Ĥ` computed by the Householder reduction in floating-point arithmetic
+(`FloatingPoint.RoundsHessenbergReduce m A Ĥ`, the `n − 2` steps of Program 29 with one
+rounding per operation: the Householder vector of Program 32 in the construction of Higham's
+Lemma 19.1, the products `R H(k+1:n, k:n)` and `H(1:n, k+1:n) R` as the rank-one updates
+(5.49)–(5.50), and the annihilated entries set to zero), there is an orthogonal `Q` with
+`Ĥ = Qᵀ (A + E) Q` and `‖E‖_F ≤ c n² u ‖A‖_F`. The constant is `c = 528`, and `Q` is the
+product `P_(1) ⋯ P_(n−2)` of the *exact* reflectors of the *computed* matrices `A^{(k−1)}`.
+Backbone `FloatingPoint.exists_roundsHessenbergReduce_eq` ([higham2002accuracy] Lemmas
+19.1–19.3 applied to the two sweeps of every step), whose explicit bound
+`‖E‖_F ≤ γ_{2(n−2)}(3 γ_{13n+27}) ‖A‖_F` is turned into `c n² u` by `γ_k ≤ 2 k u` for
+`2 k u ≤ 1`. -/
+theorem equation_5_46 :
+    ∃ c : ℝ, 0 < c ∧ ∀ (n : ℕ) (m : FloatingPoint.RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
+      (Hhat : ℕ → Matrix (Fin n) (Fin n) ℝ), c * n ^ 2 * m.u ≤ 1 →
+      FloatingPoint.RoundsHessenbergReduce m A Hhat →
+      ∃ Q ∈ Matrix.orthogonalGroup (Fin n) ℝ, ∃ E : Matrix (Fin n) (Fin n) ℝ,
+        Hhat (n - 2) = Qᵀ * (A + E) * Q ∧ ‖E‖ ≤ c * n ^ 2 * m.u * ‖A‖ := by
+  refine ⟨528, by norm_num, fun n m A Hhat hu h => ?_⟩
+  have hu0 := m.u_nonneg
+  have hcnn : 0 ≤ (528 : ℝ) * n ^ 2 * m.u * ‖A‖ := by positivity
+  rcases lt_or_ge n 3 with hn | hn
+  · -- fewer than three rows: no step is taken, `Ĥ = A`
+    have h2 : n - 2 = 0 := by omega
+    refine ⟨1, one_mem _, 0, ?_, by simpa using hcnn⟩
+    rw [h2, h.1]
+    simp
+  · have hn3 : (3 : ℝ) ≤ n := by exact_mod_cast hn
+    have hn0 : (0 : ℝ) ≤ n := by linarith
+    -- the smallness hypotheses of the backbone theorem
+    have hK : ((13 * n + 27 : ℕ) : ℝ) ≤ 22 * n := by push_cast; linarith
+    have hnu : (0 : ℝ) ≤ n * m.u := by positivity
+    have hn2u : (n : ℝ) * m.u ≤ n ^ 2 * m.u := by nlinarith
+    have h44 : 2 * (((13 * n + 27 : ℕ) : ℝ) * m.u) ≤ 1 := by nlinarith
+    have hcard : ((13 * n + 27 : ℕ) : ℝ) * m.u < 1 := by linarith
+    have hγ : FloatingPoint.gamma m.u (13 * n + 27) ≤ 2 * (((13 * n + 27 : ℕ) : ℝ) * m.u) :=
+      FloatingPoint.gamma_le_two_mul hu0 h44
+    have hγ0 : 0 ≤ FloatingPoint.gamma m.u (13 * n + 27) := FloatingPoint.gamma_nonneg hu0 hcard
+    set ε := 3 * FloatingPoint.gamma m.u (13 * n + 27) with hε
+    have hε0 : 0 ≤ ε := by positivity
+    have hεle : ε ≤ 132 * (n * m.u) := by rw [hε]; nlinarith
+    have hr2 : ((2 * (n - 2) : ℕ) : ℝ) ≤ 2 * n := by
+      have : ((n - 2 : ℕ) : ℝ) ≤ n := by exact_mod_cast Nat.sub_le n 2
+      push_cast
+      linarith
+    have hrε : 2 * (((2 * (n - 2) : ℕ) : ℝ) * ε) ≤ 1 := by
+      have h1 : ((2 * (n - 2) : ℕ) : ℝ) * ε ≤ 2 * n * (132 * (n * m.u)) :=
+        mul_le_mul hr2 hεle hε0 (by positivity)
+      nlinarith
+    have hr : ((2 * (n - 2) : ℕ) : ℝ) * ε < 1 := by linarith
+    obtain ⟨Q, hQ, E, hH, hE⟩ := FloatingPoint.exists_roundsHessenbergReduce_eq hcard hr h
+    refine ⟨Q, hQ, E, hH, hE.trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))⟩
+    calc FloatingPoint.gamma ε (2 * (n - 2)) ≤ 2 * (((2 * (n - 2) : ℕ) : ℝ) * ε) :=
+          FloatingPoint.gamma_le_two_mul hε0 hrε
+      _ ≤ 2 * (2 * n * (132 * (n * m.u))) :=
+          mul_le_mul_of_nonneg_left (mul_le_mul hr2 hεle hε0 (by positivity)) (by norm_num)
+      _ = 528 * n ^ 2 * m.u := by ring
 
 /-! ### §5.6.3: the Givens QR factorization of a Hessenberg matrix -/
 

@@ -122,28 +122,6 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.6.2'
 
 [[node]]
 id = "equation_5_46"
-kind = "theorem"
-desc = '''(5.46), backward stability of the Householder reduction: the computed `Ĥ` satisfies
-`Ĥ = Qᵀ (A + E) Q` with `‖E‖_F ≤ c n² u ‖A‖_F`. The book states it without proof (Wilkinson,
-p. 351). Likewise the unnumbered `‖E‖₂ ≃ u ‖A‖₂` for the Hessenberg-QR iteration after Program 30
-and (5.12), which carries a `≃` and is not a proposition at all.
-
-Blocked (re-examined 2026-09-20, agent qss1; blocker 12 of `notes/frontier.md`): the verdict is
-confirmed. Checked: `Numlib/FloatingPoint/` still holds exactly `System`, `Model`, `InnerProduct`,
-`Substitution`, `LU`, `Stationary` — dot products, triangular solves, Gaussian elimination and
-stationary iterations, nothing about reflectors or rotations — and `Numlib/LinearAlgebra/Matrix/QR`,
-`PlaneRotation`, `Hessenberg` are exact-arithmetic; the Brezis round (2026-09-17–20) touched no
-floating-point module. (5.46) is a proposition (`∃ c, ∀ n A, …`), but proving it needs a new
-module: (i) a relational `RoundsHouseholder` predicate for the computed reflector `v̂` of a vector
-and for the computed application `(I - β v vᵀ) x` ([higham2002accuracy] Lemmas 19.2–19.3,
-`‖fl(Px) - Px‖₂ ≤ c₁ γ_n ‖x‖₂`), (ii) the accumulation of `2(n - 2)` such applications on the two
-sides of `A` (Lemma 19.3: a product of computed Householder transformations is an exactly
-orthogonal one of a nearby matrix), and (iii) the Frobenius-norm bookkeeping that turns the
-per-application `γ` into `c n² u`. Estimate: a `FloatingPoint/Householder` module of several
-hundred lines on the model of `FloatingPoint/Substitution`; it would also close
-`Chapter05.qrCholesky_stability` and `Chapter05.golubKahan_svd_stability`. The unnumbered
-`‖E‖₂ ≃ u ‖A‖₂` after Program 30 is not a proposition and gets no node.'''
-deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_45"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.46)'
 
 [[node]]
