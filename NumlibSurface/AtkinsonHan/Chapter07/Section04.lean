@@ -49,15 +49,21 @@ The general material supporting (7.4.1) — the symbol of an iterated directiona
 the Fourier transform of a weak derivative — lives in `Numlib/Analysis/Sobolev/Tempered`; what
 remains here is the bound on the symbol in the standard basis and the equivalence itself.
 
-Examples 7.4.2 and 7.4.3 are not formalized. Their Step 3 carries a whole-space estimate onto a
-Lipschitz domain through the extension operator of Theorem 7.3.5, and their Step 2 is the density
-of Theorem 7.3.4, so they are the §7.3 obstruction rather than the Fourier analysis; the same holds
-for Exercises 7.4.3 and 7.4.4.
+Example 7.4.2, `H^k(Ω) ↪ C(Ω̄)` for `k > d/2`, is here as `example_7_4_2` on a bounded extension
+domain (the book's Lipschitz domain, the `C¹` domains of Definition 7.2.1 included through
+`isSobolevExtensionDomainAll_of_definition_7_2_1`), but *not* by the book's route: the book
+proves it by the Fourier characterization on `ℝ^d` (Step 1), the density of Theorem 7.3.4
+(Step 2) and the extension operator (Step 3); here it is the Sobolev embedding of Theorem 7.3.8 (c)
+— Morrey's theorem on `ℝ^d` through the order-one extension operator, in
+`Numlib/Analysis/Sobolev/DenyLions.lean` — since the backbone's extension operator exists at
+order one only and Step 3 at order `k` is the open `theorem_7_3_5_universal`. Example 7.4.3, the
+interpolation inequality `‖v‖_{C(Ω̄)} ≤ c ‖v‖_{H^d}^{1/2} ‖v‖_{L^2}^{1/2}`, stays open for the same
+reason; so do Exercises 7.4.3 and 7.4.4.
 -/
 
 open FourierTransform LineDeriv MeasureTheory TemperedDistribution TopologicalSpace
 
-open scoped ENNReal SchwartzMap
+open scoped ENNReal NNReal SchwartzMap
 
 namespace AtkinsonHan.Chapter07
 
@@ -745,5 +751,54 @@ theorem equation_7_4_1 (d k : ℕ) :
   simpa only [norm_ofRealCLM_compLp] using key
 
 end NormEquivalence
+
+/-! ### Example 7.4.2: `H^k(Ω) ↪ C(Ω̄)` for `k > d/2` -/
+
+section Embedding
+
+variable {d : ℕ}
+
+/-- **Example 7.4.2**: on a bounded extension domain `Ω ⊆ ℝ^{d+1}` (the book's Lipschitz domain)
+with `k > (d+1)/2`, `H^k(Ω) ↪ C(Ω̄)`: there is a bounded linear `ι : H^k(Ω) → C(Ω̄)` sending `v`
+to the restriction of a continuous representative of `v`, and
+`‖v‖_{C(Ω̄)} ≤ c ‖v‖_{H^k(Ω)}` (7.4.3) for all `v ∈ H^k(Ω)`; `ι` is even compact.
+
+The book's proof is by the Fourier transform on `ℝ^d` (Step 1, the Cauchy–Schwarz inequality
+against `∫ (1 + |ξ|²)^{−k} dξ < ∞`), the density of Theorem 7.3.4 (Step 2) and the extension
+operator of Theorem 7.3.5 at order `k` (Step 3). The formalization is the Sobolev embedding
+`theorem_7_3_8_c` instead — `W^{k,2}(Ω) ↪ W^{1,r}(Ω)` for an `r > d + 1` and Morrey's theorem
+through the order-one extension operator
+(`SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`) — because the
+backbone's extension operator exists at order one only (`theorem_7_3_5_universal` is open).
+`H^k(Ω) = W^{k,2}(Ω)` is the space of Definition 7.2.2 in the book's own indexing. -/
+theorem example_7_4_2 {k : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hk : ((d + 1 : ℕ) : ℝ) / 2 < k) :
+    haveI : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+      isCompact_iff_compactSpace.1 hb.isCompact_closure
+    ∃ ι : SobolevMultiIndex ℝ (stdBasis (d + 1)) k 2 Ω volume →L[ℝ]
+        C(closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ℝ),
+      (∀ v, ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous v' ∧
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' ∧
+        ∀ x, ι v x = v' x) ∧
+      definition_7_3_6 ι.toLinearMap ∧ ∃ c : ℝ, ∀ v, ‖ι v‖ ≤ c * ‖v‖ := by
+  have : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    isCompact_iff_compactSpace.1 hb.isCompact_closure
+  have hk1 : 1 ≤ k := by
+    have h1 : (0 : ℝ) < (d + 1 : ℕ) / 2 := by positivity
+    exact_mod_cast h1.trans hk
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  have hk' : ((d + 1 : ℕ) : ℝ) / ((2 : ℝ≥0) : ℝ) < ((k + 1 : ℕ) : ℝ) := by
+    rw [NNReal.coe_ofNat]
+    exact hk
+  have : Fact (1 ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+  have h := SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order (p := 2) k hΩ
+    (Or.inr (by norm_num)) hk' (K := closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    subset_closure
+  obtain ⟨ι, hι, hc⟩ := h
+  exact ⟨ι, hι, hc.toIsContinuousEmbedding, ‖ι‖, ι.le_opNorm⟩
+
+end Embedding
 
 end AtkinsonHan.Chapter07

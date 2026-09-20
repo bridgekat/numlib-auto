@@ -232,6 +232,7 @@ import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Compactness
 import Numlib.Analysis.Sobolev.Cutoff
 import Numlib.Analysis.Sobolev.Density
+import Numlib.Analysis.Sobolev.DenyLions
 import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Embedding
 import Numlib.Analysis.Sobolev.EmbeddingDomain

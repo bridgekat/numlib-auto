@@ -1,5 +1,6 @@
 import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Sobolev.Density
+import Numlib.Analysis.Sobolev.DenyLions
 import NumlibSurface.AtkinsonHan.Chapter07.Section02
 
 /-!
@@ -28,24 +29,39 @@ theory available to it. Theorem 7.3.3, that every `v ∈ W_0^{k,p}(Ω)` is the `
 sequence in `C_0^∞(Ω)`, is here too: Definition 7.2.9 is formalized as the closure of the image of
 `C_0^∞(Ω)` in `W^{k,p}(Ω)`, so the theorem is that closure read sequentially.
 
-Everything else in §7.3 is out of reach, and this is the section that blocks the rest of the book.
-Theorem 7.3.2 (Calderón–Stein) is the density of `C^∞(closure Ω)` on a Lipschitz domain, which is
-smoothness up to the boundary and needs boundary charts; Theorem 7.3.5 is Stein's extension
-operator; Theorems 7.3.7–7.3.9 are the Sobolev embeddings and Rellich–Kondrachov;
-Theorems 7.3.10 and 7.3.11 are the trace and the generalized normal derivative; and
-Theorems 7.3.12–7.3.14, Examples 7.3.15–7.3.16, Theorem 7.3.17 and Corollary 7.3.18 are the
-Deny–Lions norm equivalences, Poincaré–Friedrichs and Bramble–Hilbert, each proved in the book by a
-compactness contradiction that uses the compact embedding of Theorem 7.3.9. Mathlib has none of
-this: no density theory for a Sobolev space on an open set, no extension operator, no
-Gagliardo–Nirenberg–Sobolev on a domain (`Mathlib/Analysis/Calculus/SobolevInequality.lean` covers
-only compactly supported `C^1` functions on the whole space), no Rellich–Kondrachov, and no surface
-measure on a Lipschitz boundary, so `L^p(Γ)` and the trace are not even statable. The book itself
-states almost all of §7.3.1–§7.3.4 without proof.
+The rest of §7.3 is here under the hypothesis of the Brezis backbone — an *extension domain*
+(`IsSobolevExtensionDomain`, `IsSobolevExtensionDomainAll` of
+`Numlib/Analysis/Sobolev/{Cutoff,EmbeddingDomain}.lean`) where the book assumes a Lipschitz
+domain; the `C¹` domains of Definition 7.2.1 are extension domains by Brezis's Theorem 9.7
+(`isSobolevExtensionDomainAll_of_definition_7_2_1`), a Lipschitz domain would be one by Stein's
+or Calderón's theorem, which is not formalized. The ambient dimension is written `d + 1` as in
+Definition 7.2.1. Theorem 7.3.2 (density of `C^∞(Ω̄)`) and Theorem 7.3.5 (the extension
+operator) are at order `k = 1`, the order of the backbone's extension operator; their higher-order
+and universal forms are the open `theorem_7_3_2_higher` and `theorem_7_3_5_universal`.
+Theorem 7.3.7 (the Sobolev embeddings) is in its three clauses `theorem_7_3_7_a`, `_b`, `_c`, the
+Hölder clause (c) read on continuous representatives (`ContDiffOnClosure`) and in the non-integer
+case only; Theorem 7.3.8 (Rellich–Kondrachov) likewise, with the clause (c) into `C(Ω̄)` and the
+Hölder-space target left open (`theorem_7_3_8_c_holder`); Theorem 7.3.9 is
+`W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)`. All of these are the whole-space theorems of
+`Numlib/Analysis/Sobolev/Embedding.lean` carried to the domain by the extension operator, in
+`Numlib/Analysis/Sobolev/{EmbeddingDomain,Compactness,DenyLions}.lean`.
+
+Theorems 7.3.12–7.3.14, the Deny–Lions norm equivalences, are here for both quantities (7.3.3)
+and (7.3.4) (`equation_7_3_3`, `equation_7_3_4`), from `Numlib/Analysis/Sobolev/DenyLions.lean`:
+the compactness argument of the book with `W^{k,p}(Ω) ↪↪ W^{k−1,p}(Ω)`, and the fact that
+`|v|_{k,p,Ω} = 0` on a connected open set forces a polynomial of degree `< k`. Example 7.3.15 is
+here in its `H_0^1` clause, the Poincaré–Friedrichs inequality (7.3.10), which needs no regularity
+of the boundary (Poincaré's inequality of `Numlib/Analysis/Sobolev/Poincare.lean`); its boundary
+clause, Example 7.3.16, and Theorems 7.3.10–7.3.11 need the trace on `∂Ω`, which exists nowhere
+(`notes/frontier.md`, blocker 2). Theorem 7.3.17 and Corollary 7.3.18 (§7.3.6, the Sobolev
+quotient space `W^{k+1,p}(Ω)/ℙ_k(Ω)`) are here, with `ℙ_k(Ω)` the backbone's
+`SobolevEuclidean.polynomialSubmodule` and the quotient norm written as the infimum over it:
+the book's Hahn–Banach proof through Theorem 7.3.12.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
 
-open scoped ContDiff Distributions ENNReal Topology
+open scoped ContDiff Distributions ENNReal NNReal Topology
 
 namespace AtkinsonHan.Chapter07
 
@@ -166,5 +182,626 @@ theorem theorem_7_3_3 {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
   obtain ⟨u, hu, hlim⟩ := mem_closure_iff_seq_limit.1 hv
   choose φ hφ using fun n ↦ hu n
   exact ⟨φ, u, hφ, tendsto_iff_norm_sub_tendsto_zero.1 hlim⟩
+
+/-! ### The domain hypothesis of §7.3 -/
+
+section DomainHypothesis
+
+/-- **The `C¹` domains of Definition 7.2.1 are extension domains for every exponent**: a bounded
+open `Ω ⊆ ℝ^{d+1}` whose boundary is of class `C¹` in the sense of Definition 7.2.1 satisfies the
+hypothesis `IsSobolevExtensionDomainAll (d + 1) Ω` under which the results of §7.3 are stated
+here. This is Theorem 9.7 of Brezis (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`)
+through the bridge `definition_7_2_1_contDiffDomain` between Definition 7.2.1 and the backbone's
+graph domains. The book states §7.3 for Lipschitz domains; the formalization's hypothesis is the
+extension property, which the `C¹` domains have (`notes/fem-roadmap.md`, Decision B) and which
+a Lipschitz domain would have through Stein's or Calderón's theorem, not formalized. -/
+theorem isSobolevExtensionDomainAll_of_definition_7_2_1
+    {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : definition_7_2_1 {g | ContDiff ℝ 1 g} Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    IsSobolevExtensionDomainAll (d + 1) Ω :=
+  IsSobolevExtensionDomainAll.of_isContDiffChartDomain
+    ((definition_7_2_1_contDiffDomain 1 Ω).2 hΩ).isContDiffChartDomain
+    (hb.closure.subset frontier_subset_closure)
+
+end DomainHypothesis
+
+/-! ### Theorem 7.3.2: density of `C^∞(Ω̄)` -/
+
+section Density
+
+/-- **Theorem 7.3.2** at order `k = 1`: for `v ∈ W^{1,p}(Ω)` with `1 ≤ p < ∞` on an extension
+domain `Ω` there is a sequence `{v_n} ⊆ C^∞(Ω̄)` with `‖v_n − v‖_{1,p} → 0`. The approximants
+`φ n` are even restrictions to `Ω` of `C_c^∞(ℝ^d)` functions, and `u n` is the element of
+`W^{1,p}(Ω)` they define.
+
+The book states the theorem for every order `k` on a Lipschitz domain; the formalization has
+the extension domains of the `C¹` route (Brezis, Corollary 9.8, through
+`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`) and
+only the order `k = 1`, which is the order of the backbone's extension operator; the higher
+orders are the open `theorem_7_3_2_higher`. `IsSobolevExtensionDomain` is supplied for the `C¹`
+domains of Definition 7.2.1 by `isSobolevExtensionDomainAll_of_definition_7_2_1`. -/
+theorem theorem_7_3_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
+    {Ω : Opens (EuclideanSpace ℝ (Fin d))} (hΩ : IsSobolevExtensionDomain d p Ω)
+    (v : SobolevMultiIndex ℝ (stdBasis d) 1 p Ω volume) :
+    ∃ (φ : ℕ → EuclideanSpace ℝ (Fin d) → ℝ)
+      (u : ℕ → SobolevMultiIndex ℝ (stdBasis d) 1 p Ω volume),
+      (∀ n, ContDiff ℝ ∞ (φ n)) ∧ (∀ n, HasCompactSupport (φ n)) ∧
+      (∀ n, SobolevMultiIndex.fn (u n) =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))]
+        φ n) ∧
+      Tendsto (fun n ↦ ‖u n - v‖) atTop (𝓝 0) := by
+  obtain ⟨φ, hφ, hφc, u, hu, hlim⟩ :=
+    SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn hp' hΩ
+      ⟨v, Submodule.mem_top⟩
+  exact ⟨φ, u, hφ, hφc, hu, tendsto_iff_norm_sub_tendsto_zero.1 hlim⟩
+
+end Density
+
+/-! ### Theorem 7.3.5: the extension operator -/
+
+section Extension
+
+/-- **Theorem 7.3.5** at order `k = 1`: for a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}` (Definition
+7.2.1) and `p ∈ [1, ∞]`, there is a linear continuous extension operator
+`E : W^{1,p}(Ω) → W^{1,p}(ℝ^{d+1})`, `Ev = v` in `Ω`, with
+`‖Ev‖_{W^{1,p}(ℝ^{d+1})} ≤ c ‖v‖_{W^{1,p}(Ω)}` for a constant `c` independent of `v`.
+
+The book's theorem is Stein's *universal* extension theorem: one operator `E`, for a Lipschitz
+domain or a half-space, continuous `W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for *every* `k ≥ 0` and
+`p ∈ [1, ∞]`, with `Ev` smooth off `closure Ω`. The formalization is Brezis's Theorem 9.7
+(`SobolevEuclidean.exists_extensionL`, reflection across `C¹` charts): one operator per `p`, at
+order `k = 1` only, with no smoothness of `Ev` off `closure Ω` — the reflected pieces are not
+smooth there. The universal statement is the open `theorem_7_3_5_universal`. -/
+theorem theorem_7_3_5 {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+    (hΩ : definition_7_2_1 {g | ContDiff ℝ 1 g} Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ E : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 p Ω volume →L[ℝ]
+        SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 p ⊤ volume,
+      (∀ v, SobolevMultiIndex.fn (E v)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] SobolevMultiIndex.fn v) ∧
+      ∃ c : ℝ, ∀ v, ‖E v‖ ≤ c * ‖v‖ := by
+  have h1 : IsContDiffChartDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) :=
+    ((definition_7_2_1_contDiffDomain 1 Ω).2 hΩ).isContDiffChartDomain
+  have h2 : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    hb.closure.subset frontier_subset_closure
+  have h3 := SobolevEuclidean.exists_extensionL (p := p) h1 h2
+  obtain ⟨E, c, hE⟩ := h3
+  exact ⟨E, fun v ↦ (hE v).1, c, fun v ↦ (hE v).2.2⟩
+
+end Extension
+
+/-! ### Theorems 7.3.7–7.3.9: the Sobolev embeddings -/
+
+section Embeddings
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+
+/-- **Theorem 7.3.7 (a)**: on a bounded extension domain `Ω ⊆ ℝ^{d+1}` (the book's Lipschitz
+domain), if `k < (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every `q ≤ p^*`, where
+`1/p^* = 1/p − k/(d+1)`; the embedding is the inclusion `SobolevMultiIndex.toLpₗ`, and
+`definition_7_3_6` is the reading of `↪`. For `q ≤ p` this is Hölder's inequality on the bounded
+`Ω`; for `p < q ≤ p^*` it is Brezis's Corollary 9.15 on the domain
+(`SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension`). -/
+theorem theorem_7_3_7_a {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hk : (k : ℝ) < (d + 1 : ℕ) / p) {p' : ℝ≥0}
+    (hp' : (p' : ℝ)⁻¹ = (p : ℝ)⁻¹ - k / (d + 1 : ℕ)) (hq : q ≤ p') :
+    ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        MemLp (SobolevMultiIndex.fn u) q
+          (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h) := by
+  have hμ := (hb.measure_lt_top (μ := volume)).ne
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hN0 : (0 : ℝ) < (d + 1 : ℕ) := by positivity
+  rcases le_or_gt q p with hqp | hpq
+  · have : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+      isFiniteMeasure_restrict.2 hμ
+    have hqp' : (q : ℝ≥0∞) ≤ p := by exact_mod_cast hqp
+    exact ⟨fun u ↦ (SobolevMultiIndex.memLp u).mono_exponent hqp',
+      SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le hμ hqp' _⟩
+  · have hq0 : (0 : ℝ) < q := hp0.trans (by exact_mod_cast hpq)
+    have hp'0 : (0 : ℝ) < p' := hq0.trans_le (by exact_mod_cast hq)
+    have hq' : (p : ℝ)⁻¹ - k / (d + 1 : ℕ) ≤ (q : ℝ)⁻¹ := by
+      rw [← hp']
+      exact inv_anti₀ hq0 (by exact_mod_cast hq)
+    -- `p < q ≤ p*` forces `k ≥ 1`, hence `d + 1 > p ≥ 1`
+    have hN : 2 ≤ d + 1 ∨ 1 < p := by
+      left
+      have hpp' : (p : ℝ) < p' := hpq.trans_le (by exact_mod_cast hq)
+      have hk1 : (0 : ℝ) < k := by
+        by_contra hk0
+        push Not at hk0
+        have hk0' : (k : ℝ) = 0 := le_antisymm hk0 (Nat.cast_nonneg k)
+        rw [hk0', zero_div, sub_zero] at hp'
+        exact absurd (inv_inj.1 hp') hpp'.ne'
+      have h1 : (1 : ℝ) < (d + 1 : ℕ) / p := lt_of_le_of_lt (by exact_mod_cast hk1) hk
+      have h2 : (p : ℝ) < (d + 1 : ℕ) := by rwa [lt_div_iff₀ hp0, one_mul] at h1
+      have h3 : (1 : ℝ) < (d + 1 : ℕ) := lt_of_le_of_lt (by exact_mod_cast hp1) h2
+      exact_mod_cast h3
+    exact ⟨_, SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension hΩ hN
+      hpq.le hq'⟩
+
+/-- **Theorem 7.3.7 (b)**: on a bounded extension domain `Ω ⊆ ℝ^{d+1}`, if `k = (d+1)/p` then
+`W^{k,p}(Ω) ↪ L^q(Ω)` for every `q < ∞`. The hypothesis `d ≥ 1 ∨ p > 1` excludes the case
+`d + 1 = 1 = p` (an interval and `W^{1,1}`), for which the backbone's Corollary 9.15 is not
+available; see Brezis's Corollary 9.11. -/
+theorem theorem_7_3_7_b {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
+    (hk : (k : ℝ) = (d + 1 : ℕ) / p) :
+    ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        MemLp (SobolevMultiIndex.fn u) q
+          (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h) := by
+  have hμ := (hb.measure_lt_top (μ := volume)).ne
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hN0 : (0 : ℝ) < (d + 1 : ℕ) := by positivity
+  rcases le_or_gt q p with hqp | hpq
+  · have : IsFiniteMeasure (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+      isFiniteMeasure_restrict.2 hμ
+    have hqp' : (q : ℝ≥0∞) ≤ p := by exact_mod_cast hqp
+    exact ⟨fun u ↦ (SobolevMultiIndex.memLp u).mono_exponent hqp',
+      SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le hμ hqp' _⟩
+  · have hq' : (p : ℝ)⁻¹ - k / (d + 1 : ℕ) ≤ (q : ℝ)⁻¹ := by
+      rw [hk, div_div, mul_comm, ← div_div, div_self hN0.ne', one_div, sub_self]
+      positivity
+    have hN' : 2 ≤ d + 1 ∨ 1 < p := hN.imp (fun h ↦ by omega) id
+    exact ⟨_, SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension hΩ hN'
+      hpq.le hq'⟩
+
+/-- **Theorem 7.3.7 (c)**, the case `(d+1)/p` not an integer: on a bounded extension domain
+`Ω ⊆ ℝ^{d+1}`, if `k > (d+1)/p` then `W^{k,p}(Ω) ↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` with
+`β = [(d+1)/p] + 1 − (d+1)/p`. With `j = k − [(d+1)/p] − 1`, every `v ∈ W^{k,p}(Ω)` has a
+representative `v' ∈ C^j(Ω̄)` (`ContDiffOnClosure`, the derivatives up to order `j` extending
+continuously to `Ω̄`) whose derivatives of order `≤ j` are bounded by `C ‖v‖_{k,p}` and whose
+derivative of order `j` is `β`-Hölder with constant `C ‖v‖_{k,p}` — the bound
+`‖v'‖_{C^{j,β}} ≤ C ‖v‖_{k,p}` of the embedding, read on the representative. Brezis's
+Corollary 9.15 (`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`); the hypothesis
+`d ≥ 1 ∨ p > 1` is the backbone's. The case `(d+1)/p` an integer, where the book allows any
+`β < 1`, is the open `theorem_7_3_7_c_integer`. -/
+theorem theorem_7_3_7_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω) (hN : 1 ≤ d ∨ 1 < p)
+    (hk : ((d + 1 : ℕ) : ℝ) / p < k) (hint : ∀ j : ℕ, ((d + 1 : ℕ) : ℝ) / p ≠ j) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+      ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+        ContDiffOnClosure ℝ ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : WithTop ℕ∞) v' Ω ∧
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' ∧
+        (∀ i ≤ k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1, ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+          ‖iteratedFDeriv ℝ i v' x‖ ≤ C * ‖v‖) ∧
+        ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+          ∀ y ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+          ‖iteratedFDeriv ℝ (k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1) v' x
+              - iteratedFDeriv ℝ (k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1) v' y‖
+            ≤ C * ‖v‖ * ‖x - y‖ ^ (⌊((d + 1 : ℕ) : ℝ) / p⌋₊ + 1 - ((d + 1 : ℕ) : ℝ) / p) := by
+  have hN' : 2 ≤ d + 1 ∨ 1 < p := hN.imp (fun h ↦ by omega) id
+  have hs0 : (0 : ℝ) ≤ ((d + 1 : ℕ) : ℝ) / p := by positivity
+  obtain ⟨j, hj⟩ : ∃ j : ℕ, j = k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 := ⟨_, rfl⟩
+  have hfloor : ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ < k := Nat.floor_lt hs0 |>.2 hk
+  have hjcast : (j : ℝ) = k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 := by
+    have hk' : k = j + ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ + 1 := by omega
+    rw [hk']
+    push_cast
+    ring
+  have hθ : (k : ℝ) - (d + 1 : ℕ) / p - j
+      = ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ + 1 - ((d + 1 : ℕ) : ℝ) / p := by
+    rw [hjcast]
+    ring
+  have hθ0 : 0 < (k : ℝ) - (d + 1 : ℕ) / p - j := by
+    rw [hθ, sub_pos]
+    exact Nat.lt_floor_add_one _
+  have hθ1 : (k : ℝ) - (d + 1 : ℕ) / p - j < 1 := by
+    have hlt : (⌊((d + 1 : ℕ) : ℝ) / p⌋₊ : ℝ) < ((d + 1 : ℕ) : ℝ) / p :=
+      lt_of_le_of_ne (Nat.floor_le hs0) (Ne.symm (hint _))
+    rw [hθ]
+    linarith
+  obtain ⟨C, hC0, hC⟩ := SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order
+    (N := d + 1) (m := k) (k := j) hΩ hN' hθ0 hθ1
+  rw [← hθ, ← hj]
+  refine ⟨C, hC0, fun v ↦ ?_⟩
+  obtain ⟨v', -, hv', hae, hG, G, hGc, hGeq, hGh⟩ := hC v
+  refine ⟨v', ⟨hv', fun i hi ↦ ?_⟩, hae, fun i hi x hx ↦ ?_, fun x hx y hy ↦ ?_⟩
+  · obtain ⟨G', hG'c, hG'eq, -⟩ := hG i (by exact_mod_cast hi)
+    exact ⟨G', hG'c.continuousOn, hG'eq.symm⟩
+  · obtain ⟨G', -, hG'eq, hG'b⟩ := hG i hi
+    rw [hG'eq hx]
+    exact hG'b x
+  · rw [hGeq hx, hGeq hy]
+    exact hGh x y
+
+/-- **Theorem 7.3.7 (Sobolev embedding theorem)**, on a bounded extension domain `Ω ⊆ ℝ^{d+1}`
+(the book's Lipschitz domain, see `isSobolevExtensionDomainAll_of_definition_7_2_1`): (a) if
+`k < (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every `q ≤ p^*`, `1/p^* = 1/p − k/(d+1)`
+(`theorem_7_3_7_a`); (b) if `k = (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every `q < ∞`
+(`theorem_7_3_7_b`); (c) if `k > (d+1)/p` and `(d+1)/p` is not an integer then
+`W^{k,p}(Ω) ↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` with `β = [(d+1)/p] + 1 − (d+1)/p`, read on continuous
+representatives (`theorem_7_3_7_c`). The clauses (b) and (c) carry the backbone's hypothesis
+`d ≥ 1 ∨ p > 1`; the integer case of (c) is the open `theorem_7_3_7_c_integer`. -/
+theorem theorem_7_3_7 {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], (k : ℝ) < (d + 1 : ℕ) / p →
+      (p' : ℝ)⁻¹ = (p : ℝ)⁻¹ - k / (d + 1 : ℕ) → q ≤ p' →
+      ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+          MemLp (SobolevMultiIndex.fn u) q
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h)) ∧
+    (1 ≤ d ∨ 1 < p → (k : ℝ) = (d + 1 : ℕ) / p → ∀ (q : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))],
+      ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+          MemLp (SobolevMultiIndex.fn u) q
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h)) ∧
+    (1 ≤ d ∨ 1 < p → ((d + 1 : ℕ) : ℝ) / p < k → (∀ j : ℕ, ((d + 1 : ℕ) : ℝ) / p ≠ j) →
+      ∃ C : ℝ, 0 ≤ C ∧ ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ,
+          ContDiffOnClosure ℝ ((k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1 : ℕ) : WithTop ℕ∞) v' Ω ∧
+          SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+            v' ∧
+          (∀ i ≤ k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1,
+            ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+            ‖iteratedFDeriv ℝ i v' x‖ ≤ C * ‖v‖) ∧
+          ∀ x ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+            ∀ y ∈ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))),
+            ‖iteratedFDeriv ℝ (k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1) v' x
+                - iteratedFDeriv ℝ (k - ⌊((d + 1 : ℕ) : ℝ) / p⌋₊ - 1) v' y‖
+              ≤ C * ‖v‖ * ‖x - y‖ ^ (⌊((d + 1 : ℕ) : ℝ) / p⌋₊ + 1 - ((d + 1 : ℕ) : ℝ) / p)) :=
+  ⟨fun _ _ _ hk hp' hq ↦ theorem_7_3_7_a hΩ hb hk hp' hq,
+    fun hN hk _ _ ↦ theorem_7_3_7_b hΩ hb hN hk, fun hN hk hint ↦ theorem_7_3_7_c hΩ hN hk hint⟩
+
+/-- **Theorem 7.3.8 (a)** (Rellich–Kondrachov): on a bounded extension domain `Ω ⊆ ℝ^{d+1}`, if
+`1 ≤ k < (d+1)/p` then `W^{k,p}(Ω) ↪↪ L^q(Ω)` for every `q < p^*`, `1/p^* = 1/p − k/(d+1)`.
+The book writes `k < d/p` with `k ≥ 1` understood — at `k = 0` the statement would say
+`L^p(Ω) ↪↪ L^q(Ω)` for `q < p`, which is false. The backbone's
+`SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt`: `W^{k,p}(Ω) ↪ W^{1,r}(Ω)` and the
+Rellich–Kondrachov theorem for `W^{1,r}(Ω)` (Brezis, Theorem 9.16). -/
+theorem theorem_7_3_8_a {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hk1 : 1 ≤ k)
+    (hk : (k : ℝ) < (d + 1 : ℕ) / p) {p' : ℝ≥0}
+    (hp' : (p' : ℝ)⁻¹ = (p : ℝ)⁻¹ - k / (d + 1 : ℕ)) (hq : q < p') :
+    ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        MemLp (SobolevMultiIndex.fn u) q
+          (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      definition_7_3_6_compact
+        (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h) := by
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  exact SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt k hΩ
+    (hb.measure_lt_top (μ := volume)).ne hk hp' hq
+
+/-- **Theorem 7.3.8 (b)**, as printed: if `k = (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every
+`q < ∞` — the book's clause (b) states a continuous embedding, the same as Theorem 7.3.7 (b);
+the compact embedding it presumably intends is `theorem_7_3_8_b_compact`. -/
+theorem theorem_7_3_8_b {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
+    (hk : (k : ℝ) = (d + 1 : ℕ) / p) :
+    ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        MemLp (SobolevMultiIndex.fn u) q
+          (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h) :=
+  theorem_7_3_7_b hΩ hb hN hk
+
+/-- **Theorem 7.3.8 (b), the compact form**: on a bounded extension domain `Ω ⊆ ℝ^{d+1}` with
+`d ≥ 1`, if `k = (d+1)/p` (so `k ≥ 1`) then `W^{k,p}(Ω) ↪↪ L^q(Ω)` for every `q < ∞`. The
+backbone's `SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq`:
+`W^{k,p}(Ω) ↪ W^{1,d+1}(Ω) ↪↪ L^q(Ω)`. -/
+theorem theorem_7_3_8_b_compact {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hd : 1 ≤ d)
+    (hk : (k : ℝ) = (d + 1 : ℕ) / p) :
+    ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+        MemLp (SobolevMultiIndex.fn u) q
+          (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+      definition_7_3_6_compact
+        (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h) := by
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hk1 : 1 ≤ k := by
+    have h1 : (0 : ℝ) < (d + 1 : ℕ) / p := div_pos (by positivity) hp0
+    rw [← hk] at h1
+    exact_mod_cast h1
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  exact SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq k hΩ
+    (hb.measure_lt_top (μ := volume)).ne (by omega) hk
+
+/-- **Theorem 7.3.8 (c)**, the case `β = 0` and `k − [(d+1)/p] − 1` replaced by `0`: on a bounded
+extension domain `Ω ⊆ ℝ^{d+1}`, if `k > (d+1)/p` then `W^{k,p}(Ω) ↪↪ C(Ω̄)`: there is a bounded
+linear `ι : W^{k,p}(Ω) → C(Ω̄)` sending `v` to the restriction of a continuous representative
+of `v`, and `ι` is a compact embedding. The backbone's
+`SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order` (`W^{k,p}(Ω) ↪ W^{1,r}(Ω)`
+for an `r > d + 1` and Arzelà–Ascoli); the hypothesis `d ≥ 1 ∨ p > 1` is the backbone's. The
+Hölder clause `W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(Ω̄)` for `β < [(d+1)/p] + 1 − (d+1)/p` is the
+open `theorem_7_3_8_c_holder`. -/
+theorem theorem_7_3_8_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
+    (hk : ((d + 1 : ℕ) : ℝ) / p < k) :
+    haveI : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+      isCompact_iff_compactSpace.1 hb.isCompact_closure
+    ∃ ι : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume →L[ℝ]
+        C(closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ℝ),
+      (∀ v, ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous v' ∧
+        SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] v' ∧
+        ∀ x, ι v x = v' x) ∧
+      definition_7_3_6_compact ι.toLinearMap := by
+  have : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    isCompact_iff_compactSpace.1 hb.isCompact_closure
+  have hN' : 2 ≤ d + 1 ∨ 1 < p := hN.imp (fun h ↦ by omega) id
+  have hp1 : (1 : ℝ≥0) ≤ p := by exact_mod_cast (Fact.out : (1 : ℝ≥0∞) ≤ p)
+  have hp0 : (0 : ℝ) < p := zero_lt_one.trans_le (by exact_mod_cast hp1)
+  have hk1 : 1 ≤ k := by
+    have h1 : (0 : ℝ) < (d + 1 : ℕ) / p := div_pos (by positivity) hp0
+    exact_mod_cast h1.trans hk
+  obtain ⟨k, rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  exact SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order k hΩ hN' hk
+    subset_closure
+
+/-- **Theorem 7.3.8 (compact Sobolev embedding theorem, Rellich–Kondrachov)**, on a bounded
+extension domain `Ω ⊆ ℝ^{d+1}`: (a) if `1 ≤ k < (d+1)/p` then `W^{k,p}(Ω) ↪↪ L^q(Ω)` for every
+`q < p^*` (`theorem_7_3_8_a`); (b) if `k = (d+1)/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for every `q < ∞`
+(`theorem_7_3_8_b`, as printed; the compact form is `theorem_7_3_8_b_compact`); (c) if
+`k > (d+1)/p` then `W^{k,p}(Ω) ↪↪ C(Ω̄)` (`theorem_7_3_8_c`, the case `β = 0` of the book's
+`C^{k−[(d+1)/p]−1,β}(Ω̄)`; the Hölder clause is the open `theorem_7_3_8_c_holder`). -/
+theorem theorem_7_3_8 {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    haveI : CompactSpace (closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+      isCompact_iff_compactSpace.1 hb.isCompact_closure
+    (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], 1 ≤ k → (k : ℝ) < (d + 1 : ℕ) / p →
+      (p' : ℝ)⁻¹ = (p : ℝ)⁻¹ - k / (d + 1 : ℕ) → q < p' →
+      ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+          MemLp (SobolevMultiIndex.fn u) q
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        definition_7_3_6_compact
+          (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h)) ∧
+    (1 ≤ d ∨ 1 < p → (k : ℝ) = (d + 1 : ℕ) / p → ∀ (q : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))],
+      ∃ h : ∀ u : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume,
+          MemLp (SobolevMultiIndex.fn u) q
+            (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
+        definition_7_3_6 (SobolevMultiIndex.toLpₗ ℝ (stdBasis (d + 1)) k p Ω volume h)) ∧
+    (1 ≤ d ∨ 1 < p → ((d + 1 : ℕ) : ℝ) / p < k →
+      ∃ ι : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume →L[ℝ]
+          C(closure (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ℝ),
+        (∀ v, ∃ v' : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous v' ∧
+          SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+            v' ∧
+          ∀ x, ι v x = v' x) ∧
+        definition_7_3_6_compact ι.toLinearMap) :=
+  ⟨fun _ _ _ hk1 hk hp' hq ↦ theorem_7_3_8_a hΩ hb hk1 hk hp' hq,
+    fun hN hk _ _ ↦ theorem_7_3_8_b hΩ hb hN hk, fun hN hk ↦ theorem_7_3_8_c hΩ hb hN hk⟩
+
+/-- **Theorem 7.3.9**: for integers `k > l ≥ 0`, `p ∈ [1, ∞)` and a bounded extension domain
+`Ω ⊆ ℝ^{d+1}` (the book's nonempty open bounded Lipschitz domain), `W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)`
+along the inclusion `SobolevMultiIndex.toLowerOrderL`. The backbone's
+`SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt` (Brezis's Theorem 9.16 iterated); the
+book's `p = ∞` is the open `theorem_7_3_9_top`. -/
+theorem theorem_7_3_9 {k l : ℕ} (hlk : l < k) {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    definition_7_3_6_compact
+      (SobolevMultiIndex.toLowerOrderL ℝ (stdBasis (d + 1)) p Ω volume hlk.le).toLinearMap :=
+  SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt hΩ (hb.measure_lt_top (μ := volume)).ne
+    hlk
+
+end Embeddings
+
+/-! ### §7.3.5: equivalent norms (Deny–Lions) -/
+
+section DenyLions
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)]
+
+/-- **The quantity (7.3.3)**, `‖v‖ = |v|_{k,p,Ω} + ∑_{j=1}^J f_j(v)`, for seminorms `f_j` on
+`W^{k,p}(Ω)`, where `|v|_{k,p,Ω} = (∫_Ω ∑_{|α| = k} |∂^α v|^p)^{1/p}` is the seminorm of §7.3.5,
+the backbone's `SobolevMultiIndex.topSeminorm` (whose formula is
+`SobolevMultiIndex.topSeminorm_eq_sum`; at `k = 1` it is the gradient norm,
+`SobolevMultiIndex.topSeminorm_one_eq_gradNorm`). -/
+noncomputable def equation_7_3_3 {J : Type*} [Fintype J]
+    (f : J → Seminorm ℝ (SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume) : ℝ :=
+  SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) k p Ω volume v + ∑ j, f j v
+
+/-- **The quantity (7.3.4)**, `‖v‖ = [|v|_{k,p,Ω}^p + ∑_{j=1}^J f_j(v)^p]^{1/p}`, for seminorms
+`f_j` on `W^{k,p}(Ω)` and `p < ∞`. -/
+noncomputable def equation_7_3_4 {J : Type*} [Fintype J]
+    (f : J → Seminorm ℝ (SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume))
+    (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) k p Ω volume) : ℝ :=
+  (SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) k p Ω volume v ^ p.toReal
+    + ∑ j, f j v ^ p.toReal) ^ (1 / p.toReal)
+
+/-- **Theorem 7.3.12 (Deny–Lions norm equivalence)**: let `Ω ⊆ ℝ^{d+1}` be a connected bounded
+extension domain (the book's Lipschitz domain), `k ≥ 1` (written `k + 1`), `1 ≤ p < ∞`, and let
+`f_j : W^{k+1,p}(Ω) → ℝ`, `j ∈ J` finite, be seminorms with (H1) `0 ≤ f_j(v) ≤ c ‖v‖_{k+1,p,Ω}`
+and (H2) "`v ∈ ℙ_k(Ω)` and `f_j(v) = 0` for all `j` imply `v = 0`". Then the quantities (7.3.3),
+`|v|_{k+1,p,Ω} + ∑_j f_j(v)`, and (7.3.4), `[|v|_{k+1,p,Ω}^p + ∑_j f_j(v)^p]^{1/p}`, define norms
+on `W^{k+1,p}(Ω)` equivalent to `‖v‖_{k+1,p,Ω}`: each vanishes only at `0` and is bounded above
+and below by positive multiples of `‖v‖_{k+1,p,Ω}`.
+
+`ℙ_k(Ω)` is read as the restrictions to `Ω` of the polynomials
+`MvPolynomial.restrictTotalDegree (Fin (d + 1)) ℝ k` of total degree at most `k`, `v ∈ ℙ_k(Ω)`
+meaning that the function of `v` agrees almost everywhere on `Ω` with one. The backbone's
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected`: the book's compactness
+argument through `W^{k+1,p}(Ω) ↪↪ W^{k,p}(Ω)` (Theorem 7.3.9), and the fact that
+`|v|_{k+1,p,Ω} = 0` on a connected `Ω` forces `v ∈ ℙ_k(Ω)`
+(`SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero`). The book's Lipschitz
+hypothesis is replaced by the extension property, which the `C¹` domains have
+(`isSobolevExtensionDomainAll_of_definition_7_2_1`). -/
+theorem theorem_7_3_12 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) {J : Type*} [Fintype J]
+    (f : J → Seminorm ℝ (SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume))
+    (h1 : ∃ c : ℝ, ∀ j v, f j v ≤ c * ‖v‖)
+    (h2 : ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+      (∃ q ∈ MvPolynomial.restrictTotalDegree (Fin (d + 1)) ℝ k, SobolevMultiIndex.fn v
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+          fun x ↦ MvPolynomial.eval (fun i ↦ x i) q) →
+      (∀ j, f j v = 0) → v = 0) :
+    ((∀ v, equation_7_3_3 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_3 f v ∧ equation_7_3_3 f v ≤ c₂ * ‖v‖) ∧
+    ((∀ v, equation_7_3_4 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_4 f v ∧ equation_7_3_4 f v ≤ c₂ * ‖v‖) := by
+  obtain ⟨c, hf⟩ := h1
+  exact SobolevMultiIndex.norm_equiv_of_exists_norm_le_topSeminorm_add_sum (by simp) hf
+    (SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected hΩ
+      (hb.measure_lt_top (μ := volume)).ne hc f hf h2)
+
+/-- **Theorem 7.3.13**: the conclusion of Theorem 7.3.12 on a bounded extension domain
+`Ω ⊆ ℝ^{d+1}` (the book's open bounded set with Lipschitz boundary), without connectedness, under
+(H1) and the stronger (H2)′ "`|v|_{k+1,p,Ω} = 0` and `f_j(v) = 0` for all `j` imply `v = 0`":
+both (7.3.3) and (7.3.4) are norms on `W^{k+1,p}(Ω)` equivalent to `‖v‖_{k+1,p,Ω}`. This is the
+form that yields the Poincaré–Friedrichs inequality of Example 7.3.15. The backbone's
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`. -/
+theorem theorem_7_3_13 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) {J : Type*} [Fintype J]
+    (f : J → Seminorm ℝ (SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume))
+    (h1 : ∃ c : ℝ, ∀ j v, f j v ≤ c * ‖v‖)
+    (h2 : ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+      SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume v = 0 →
+      (∀ j, f j v = 0) → v = 0) :
+    ((∀ v, equation_7_3_3 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_3 f v ∧ equation_7_3_3 f v ≤ c₂ * ‖v‖) ∧
+    ((∀ v, equation_7_3_4 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_4 f v ∧ equation_7_3_4 f v ≤ c₂ * ‖v‖) := by
+  obtain ⟨c, hf⟩ := h1
+  exact SobolevMultiIndex.norm_equiv_of_exists_norm_le_topSeminorm_add_sum (by simp) hf
+    (SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero hΩ
+      (hb.measure_lt_top (μ := volume)).ne f hf h2)
+
+/-- **Theorem 7.3.14**: the conclusion of Theorem 7.3.12 for `Ω = ⋃_{λ ∈ Λ} Ω_λ` a bounded
+extension domain of `ℝ^{d+1}` which is the union of connected open sets `Ω_λ` (the book's
+disjoint union of sets with Lipschitz boundaries — disjointness plays no role in the proof and is
+not assumed), under (H1) and (H2) "`v|_{Ω_λ} ∈ ℙ_k(Ω_λ)` for every `λ` and `f_j(v) = 0` for all
+`j` imply `v = 0`": both (7.3.3) and (7.3.4) are norms on `W^{k+1,p}(Ω)` equivalent to
+`‖v‖_{k+1,p,Ω}`. The backbone's `SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup`. -/
+theorem theorem_7_3_14 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    {Λ : Type*} {Ω' : Λ → Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ' : Ω = ⨆ l, Ω' l)
+    (hc : ∀ l, IsPreconnected (Ω' l : Set (EuclideanSpace ℝ (Fin (d + 1))))) {J : Type*}
+    [Fintype J] (f : J → Seminorm ℝ (SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume))
+    (h1 : ∃ c : ℝ, ∀ j v, f j v ≤ c * ‖v‖)
+    (h2 : ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+      (∀ l, ∃ q ∈ MvPolynomial.restrictTotalDegree (Fin (d + 1)) ℝ k, SobolevMultiIndex.fn v
+        =ᵐ[volume.restrict (Ω' l : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+          fun x ↦ MvPolynomial.eval (fun i ↦ x i) q) →
+      (∀ j, f j v = 0) → v = 0) :
+    ((∀ v, equation_7_3_3 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_3 f v ∧ equation_7_3_3 f v ≤ c₂ * ‖v‖) ∧
+    ((∀ v, equation_7_3_4 f v = 0 → v = 0) ∧
+      ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+        ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+          c₁ * ‖v‖ ≤ equation_7_3_4 f v ∧ equation_7_3_4 f v ≤ c₂ * ‖v‖) := by
+  obtain ⟨c, hf⟩ := h1
+  exact SobolevMultiIndex.norm_equiv_of_exists_norm_le_topSeminorm_add_sum (by simp) hf
+    (SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup hΩ
+      (hb.measure_lt_top (μ := volume)).ne hΩ' hc f hf h2)
+
+/-- **Example 7.3.15, the Poincaré–Friedrichs inequality (7.3.10)**: for a bounded open
+`Ω ⊆ ℝ^{d+1}`, `‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` for all `v ∈ H_0^1(Ω)`, so the seminorm `|·|_{1,Ω}` is
+a norm on `H_0^1(Ω)` equivalent to the `H^1(Ω)`-norm (the other inequality being
+`SobolevMultiIndex.topSeminorm_le_norm`).
+
+The book derives it from Theorem 7.3.13 with `f_1(v) = ∫_Γ |v| ds` (`example_7_3_15_boundary`,
+open: no trace). Here it is Poincaré's inequality on `W_0^{1,p}(Ω)`
+(`SobolevEuclideanZero.norm_le_gradNorm`, Brezis's Corollary 9.19), which needs no regularity of
+`∂Ω` and no compactness, with `c = (1 + 4R²)^{1/2}` for `Ω ⊆ B(0, R)`. `H_0^1(Ω)` is the
+backbone's `SobolevEuclideanZero (d + 1) 1 2 Ω`, the closure of `C_0^∞(Ω)` in the space of
+Definition 7.2.2 in the book's own indexing; `definition_7_2_9` is the same closure taken in the
+bundled reading `Sobolev ℝ 1 2 Ω volume`, and the two are not identified. -/
+theorem example_7_3_15 (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ c : ℝ, ∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
+      ‖(v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume)‖
+        ≤ c * SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) 1 2 Ω volume
+          (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume) := by
+  obtain ⟨R, hR0, hR⟩ := hb.subset_ball_lt 0 0
+  refine ⟨(1 + (2 * R) ^ (2 : ℝ≥0∞).toReal) ^ (1 / (2 : ℝ≥0∞).toReal), fun v ↦ ?_⟩
+  rw [SobolevMultiIndex.topSeminorm_one_eq_gradNorm]
+  exact SobolevEuclideanZero.norm_le_gradNorm (by simp) hR0.le hR v
+
+
+/-! ### §7.3.6: the Sobolev quotient space -/
+
+section Quotient
+
+/-- `1 ≤ 2` for the exponent `p = 2` written in the backbone's form `((2 : ℝ≥0) : ℝ≥0∞)`, the
+form in which the Euclidean theorems of `Numlib/Analysis/Sobolev/DenyLions.lean` (which take
+`p : ℝ≥0`) return statements at `p = 2`. -/
+instance fact_one_le_two_coe : Fact (1 ≤ ((2 : ℝ≥0) : ℝ≥0∞)) := ⟨by norm_num⟩
+
+/-- **Theorem 7.3.17**: let `Ω ⊆ ℝ^{d+1}` be a connected bounded extension domain (the book's
+Lipschitz domain), `1 ≤ p < ∞` and `k ≥ 0`, and let `V = W^{k+1,p}(Ω)/ℙ_k(Ω)` be the quotient
+space with its quotient norm `‖[v]‖_V = inf_{q ∈ ℙ_k(Ω)} ‖v + q‖_{k+1,p,Ω}`. Then the quantity
+`|v|_{k+1,p,Ω}`, `v ∈ [v]`, is a norm on `V` equivalent to `‖[v]‖_V`: it does not depend on the
+representative, it vanishes exactly on the class of `0`, and
+`c₁ |v|_{k+1,p,Ω} ≤ ‖[v]‖_V ≤ c₂ |v|_{k+1,p,Ω}` for all `v`, with `c₁ = 1` — the inequality
+(7.3.13) being the second.
+
+`ℙ_k(Ω)` is the backbone's `SobolevEuclidean.polynomialSubmodule`, the subspace of
+`W^{k+1,p}(Ω)` of the elements whose function agrees almost everywhere on `Ω` with a polynomial
+of total degree at most `k` (`SobolevEuclidean.mem_polynomialSubmodule_iff`), and the quotient
+norm is written on representatives as the infimum over that subspace. The proof is the book's
+first: the coordinate functionals of a basis of `ℙ_k(Ω)` extend by the Hahn–Banach theorem to
+bounded functionals `f_i` on `W^{k+1,p}(Ω)`, the seminorms `|f_i|` satisfy the hypotheses of
+Theorem 7.3.12, and the representative `v + q` with all `f_i(v + q) = 0` gives (7.3.13)
+(`SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm`); `|v|_{k+1,p,Ω} ≤ ‖[v]‖_V` because
+`|·|_{k+1,p,Ω}` vanishes on `ℙ_k(Ω)` and is bounded by the norm. -/
+theorem theorem_7_3_17 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
+    (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    (∀ (v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume)
+        (q : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume),
+        q ∈ SobolevEuclidean.polynomialSubmodule (k := k) (p := p) hb →
+        SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume (v + q)
+          = SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume v) ∧
+    (∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+        SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume v = 0 ↔
+          v ∈ SobolevEuclidean.polynomialSubmodule (k := k) (p := p) hb) ∧
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧
+      ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) p Ω volume,
+        c₁ * SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume v
+          ≤ ⨅ q : SobolevEuclidean.polynomialSubmodule (k := k) (p := p) hb, ‖v + q‖ ∧
+        ⨅ q : SobolevEuclidean.polynomialSubmodule (k := k) (p := p) hb, ‖v + q‖
+          ≤ c₂ * SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) p Ω volume v := by
+  have h := SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm (k := k) hΩ hb hc
+  obtain ⟨C, hC, hle⟩ := h
+  refine ⟨fun v q hq ↦ ?_, fun v ↦ ?_, 1, C, one_pos, hC, fun v ↦ ⟨?_, hle v⟩⟩
+  · exact SobolevEuclidean.topSeminorm_add_of_mem_polynomialSubmodule hb v hq
+  · exact SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule hb hc
+  · exact (one_mul _).trans_le (SobolevEuclidean.topSeminorm_le_ciInf_norm_add hb v)
+
+/-- **Corollary 7.3.18**, the inequality (7.3.16): for a connected bounded extension domain
+`Ω ⊆ ℝ^{d+1}` (the book's Lipschitz domain) there is a constant `c` depending only on `Ω` (and
+`k`) with `inf_{q ∈ ℙ_k(Ω)} ‖v + q‖_{k+1,Ω} ≤ c |v|_{k+1,Ω}` for all `v ∈ H^{k+1}(Ω)` — Theorem
+7.3.17 at `p = 2`, the form Chapter 10 quotes for the finite element interpolation error. The
+exponent is written `((2 : ℝ≥0) : ℝ≥0∞)`, the backbone's form of `p = 2`; `H^{k+1}(Ω)` is
+`SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) 2 Ω volume`, definitionally. -/
+theorem corollary_7_3_18 (hΩ : IsSobolevExtensionDomain (d + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω)
+    (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+    (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
+    ∃ c : ℝ, ∀ v : SobolevMultiIndex ℝ (stdBasis (d + 1)) (k + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω volume,
+      ⨅ q : SobolevEuclidean.polynomialSubmodule (k := k) (p := ((2 : ℝ≥0) : ℝ≥0∞)) hb, ‖v + q‖
+        ≤ c * SobolevMultiIndex.topSeminorm ℝ (stdBasis (d + 1)) (k + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω
+          volume v := by
+  have h := SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm (k := k) (p := 2) hΩ hb hc
+  obtain ⟨C, -, hle⟩ := h
+  exact ⟨C, hle⟩
+
+end Quotient
+
+end DenyLions
 
 end AtkinsonHan.Chapter07

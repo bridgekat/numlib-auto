@@ -38,29 +38,7 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.4.1)
 
 [[node]]
 id = "example_7_4_2"
-kind = "theorem"
-desc = '''Example 7.4.2: on a Lipschitz domain `Ω ⊆ ℝ^d` with `k > d/2`, `H^k(Ω) ↪ C(closure Ω)`,
-i.e. `‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^k(Ω)}` (7.4.3). The proof inverts the Fourier transform,
-applies Cauchy-Schwarz against `∫ (1+|ξ|^2)^{-k} dξ < ∞ ↔ k > d/2`, extends by density from
-`C_0^∞(ℝ^d)`, and then transfers to `Ω` by the extension operator. Not formalized: Step 3 is
-Theorem 7.3.5 and Step 2 is Theorem 7.3.4, so this is the §7.3 embedding on a domain again -- the
-chapter's obstruction, not the Fourier analysis.
-
-Blocked: re-checked 2026-09-15 against Mathlib at this pin. Step 3 is the extension operator of
-Theorem 7.3.5, which does not exist here or in Mathlib (`Stein`, `Calderon`, `extensionOperator`:
-zero relevant occurrences), so the statement *on a domain* stays out of reach. Steps 1 and 2 --
-the whole-space embedding `H^k(R^d)` into the bounded continuous functions for `k > d/2` -- are
-*not* blocked: Mathlib's `TemperedDistribution.MemSobolev.fourier_memL1` (needing
-`finrank R E < 2 s`) is exactly the Cauchy-Schwarz step, built on
-`integrable_rpow_neg_one_add_norm_sq`, and what remains is to read the continuous representative
-off the inverse Fourier transform of an `L^1` function and bound it by the `L^1` norm. The
-friction there is that `MeasureTheory.Lp.fourierInv_toTemperedDistribution_eq`
-(`Mathlib/Analysis/Fourier/LpSpace.lean`) is stated for `p = 2` only, so the `L^1` end of that
-bridge -- that the distributional inverse Fourier transform of an `L^1` function is the pointwise
-integral, which `VectorFourier.fourierIntegral_continuous` then makes a bounded continuous
-function -- has to be built. Estimated 150-250 lines for that whole-space clause, which would be
-a new node; the domain node itself still needs 7.3.5.'''
-deps = ["theorem_7_4_1", "theorem_7_3_4", "theorem_7_3_5", "definition_7_3_6"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.2 (by the Sobolev embedding, not the Fourier route)"
 
 [[node]]
 id = "example_7_4_3"
@@ -68,11 +46,20 @@ kind = "theorem"
 desc = '''Example 7.4.3: on a Lipschitz domain `Ω ⊆ ℝ^d`,
 `‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^d(Ω)}^{1/2} ‖v‖_{L^2(Ω)}^{1/2}` for `v ∈ H^d(Ω)` (7.4.4), by the
 argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and the optimal
-`λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`. Not formalized: like Example 7.4.2 it reaches the domain only
-through the extension operator of Theorem 7.3.5 and the density of Theorem 7.3.4, which are the
-chapter's obstruction.
+`λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`.
 
-Blocked: re-checked 2026-09-15. Same obstruction as `example_7_4_2` and downstream of it; the
-scaling argument adds nothing that is missing, the extension operator of Theorem 7.3.5 is what
-is missing.'''
-deps = ["example_7_4_2", "theorem_7_3_5"]
+Blocked: 2026-09-20. Two pieces are missing. (1) Step 1 on `ℝ^d`: the pointwise bound
+`|v(x)| ≤ c ∫ |ℱv|` for the continuous representative of `v ∈ H^k(ℝ^d)`, `k > d/2` — Mathlib has
+`TemperedDistribution.MemSobolev.fourier_memL1` (`ℱv ∈ L^1` for `finrank < 2s`) and
+`theorem_7_4_1`/`equation_7_4_1` identify `∫ (1+|ξ|²)^k |ℱv|²` with `‖v‖²_{H^k}`, but the
+inverse Fourier representation `v = ℱ⁻¹(ℱv)` of the continuous representative of an `L²`
+function with `ℱv ∈ L¹` (`Mathlib/Analysis/Fourier/LpSpace.lean` is `p = 2` only) is not
+written (150–250 lines); the scaling `ξ ↦ λ^{1/2} ξ` of that bound and the optimization in `λ`
+are then elementary (`SobolevEuclidean.eLpNorm_comp_smul_eq` of `Translate.lean` is the scaling
+device). (2) Step 3, the transfer to `Ω`, needs the extension operator at order `d`
+(`theorem_7_3_5_universal`, open; the backbone's is order one), so the domain statement is out
+of reach for `d ≥ 2` even with (1); for `d = 1` the order-one operator suffices. Neither the
+Deny–Lions module nor `example_7_4_2` (proved by the Sobolev embedding instead of the Fourier
+route) helps here: the inequality is a genuine Fourier statement, whose whole-space form on
+`ℝ^d` would be a new node.'''
+deps = ["example_7_4_2", "theorem_7_4_1", "theorem_7_3_5_universal"]

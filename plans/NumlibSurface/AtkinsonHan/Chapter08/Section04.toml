@@ -1,24 +1,30 @@
 namespace = "AtkinsonHan.Chapter08"
-desc = '''
-Atkinson-Han §8.4, weak formulations of linear elliptic boundary value problems. No module is
-planned: every statement of the section quantifies over `H¹(Ω)` or `H¹₀(Ω)` — both of which exist,
-as `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` and `definition_7_2_9` — together with the
-trace `γ : H¹(Ω) → H^{1/2}(Γ)` of AH Theorem 7.3.10, which does not: no library has a surface
-measure on a Lipschitz boundary. The weak formulations (8.4.1)-(8.4.22) for the homogeneous and
-non-homogeneous Dirichlet, Neumann, pure
-Neumann, mixed and general second-order problems, and Exercises 8.4.1-8.4.9, all rest on that
-same layer; their abstract content is `theorem_8_3_4`, which is proved. The group exists so that
-the section's one numbered result is on the record.
-'''
+# NumlibSurface/AtkinsonHan/Chapter08/Section04.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "exists_fn_ae_eq_one"
+source = "the constant function `1` as an element of `H¹(Ω)`, `Ω` bounded"
+
+[[node]]
+id = "topSeminorm_eq_zero_of_fn_ae_eq_one"
+source = "the seminorm `|·|₁` vanishes on the constants"
+
+[[node]]
+id = "topSeminorm_add_smul_one"
+source = "`|v + α 𝟙|₁ = |v|₁`, the sentence after (8.4.12)"
+
+[[node]]
+id = "exists_integralCLM"
+source = "the functional `v ↦ ∫_Ω v` is bounded on `H¹(Ω)`, `Ω` bounded"
+
+[[node]]
+id = "eq_zero_of_integral_eq_zero"
+source = "hypothesis (H2) of Theorem 7.3.12 for the seminorm `|∫_Ω v|`"
+
+[[node]]
+id = "exists_norm_le_topSeminorm_add_abs_integral"
+source = "Theorem 7.3.12 with `k = 1`, `p = 2` and `f₁(v) = |∫_Ω v|`, the proof of Lemma 8.4.1"
 
 [[node]]
 id = "lemma_8_4_1"
-kind = "theorem"
-desc = '''Lemma 8.4.1: on a Lipschitz domain `Ω ⊆ ℝ^d`, the quotient norm
-`‖[v]‖_V = inf_{α ∈ ℝ} ‖v + α‖₁` on `V = H¹(Ω)/ℝ` is equivalent to the `H¹(Ω)` seminorm `|v|₁`;
-this is what makes `ā([u], [v]) = ∫_Ω ∇u · ∇v` elliptic on `V` and so gives the pure Neumann
-problem a unique solution. Not formalized: `H¹(Ω)` on an open set exists,
-`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` being proved; what is missing is the Deny-Lions
-norm-equivalence theorem (AH Theorem 7.3.12), whose proof rests on the Rellich-Kondrachov compact
-embedding, which neither Mathlib nor this project has.'''
-deps = ["AtkinsonHan.Chapter07.theorem_7_3_12", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
+source = "Lemma 8.4.1"

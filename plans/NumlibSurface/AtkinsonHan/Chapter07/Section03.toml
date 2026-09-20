@@ -4,24 +4,32 @@ namespace = "AtkinsonHan.Chapter07"
 id = "theorem_7_3_1"
 
 [[node]]
-id = "theorem_7_3_2"
-kind = "theorem"
-desc = '''Theorem 7.3.2: on a Lipschitz domain, `C^∞(closure Ω)` is dense in `W^{k,p}(Ω)` for
-`1 ≤ p < ∞`, so `W^{k,p}(Ω)` is the completion of `C^∞(closure Ω)` under `‖·‖_{k,p}`. Not
-formalized: density up to the boundary is the Calderon-Stein apparatus -- a translation-and-mollify
-argument in boundary charts -- and Mathlib has neither Sobolev spaces on a domain nor Lipschitz
-boundary charts. The book states it without proof (citing [78]).
+id = "isSobolevExtensionDomainAll_of_definition_7_2_1"
 
-Blocked: re-checked 2026-09-15 against Mathlib at this pin (grep over the whole library:
-`Calderon`, `Calderón`, `Meyers`, `Serrin`, `Rellich`, `Kondrachov`, `Korn` all have zero
-occurrences, and `Stein` only in unrelated names). The domain-side apparatus this needs is the
-same as Theorem 7.3.5's. The boundary charts themselves are *available* here --
-`definition_7_2_1_finite_cover` produces the `(x_i, r_i)` and the graph functions `g_i` -- so what
-is missing is the translation-and-mollify argument in a chart and the partition of unity gluing
-it, not the hypothesis. `notes/fem-roadmap.md` Decision B applies: the `C^1`-domain version
-(Evans §5.4) is elementary and `IsContDiffDomain` already exists in
-`Numlib/Analysis/Sobolev/Domain.lean`, so a weaker-hypothesis restatement is the cheap route.'''
-deps = ["definition_7_2_1", "theorem_7_3_1"]
+[[node]]
+id = "theorem_7_3_2"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.2 (at order k = 1, on an extension domain)"
+
+[[node]]
+id = "theorem_7_3_2_higher"
+kind = "theorem"
+desc = '''Theorem 7.3.2 at every order: on a Lipschitz domain (here: an extension domain), for
+`k ≥ 2` and `1 ≤ p < ∞`, `C^∞(closure Ω)` is dense in `W^{k,p}(Ω)`. The order `k = 1` is
+`theorem_7_3_2`, from Brezis's Corollary 9.8.
+
+Blocked: 2026-09-20. The backbone's density up to the boundary
+(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`,
+`Numlib/Analysis/Sobolev/Cutoff.lean`) goes through the extension operator of Brezis's
+Theorem 9.7, which exists at order one only (`SobolevEuclidean.exists_extensionL`,
+`Extension.lean`: an even reflection across the `C¹` charts, which is not `C²`). A `W^{k,p}`
+extension operator for a `C^k` domain needs the higher-order reflection
+`u(x', -x_N) ↦ ∑_j c_j u(x', -2^j x_N)` of the book's Exercise 7.3.2 in a chart, plus the
+`C^k` chart transport of `Numlib/Analysis/Sobolev/Calculus.lean`
+(`memSobolevMultiIndex_comp_chart_of_order` exists in `PDE/Elliptic/Regularity.lean`): estimated
+600–900 lines, after which this node and `theorem_7_3_5` at every order follow as at `k = 1`.
+Alternatively the translation-and-mollify argument of Evans §5.3.3 in each chart, of similar
+size.'''
+deps = ["theorem_7_3_2"]
 
 [[node]]
 id = "theorem_7_3_3"
@@ -31,23 +39,27 @@ id = "theorem_7_3_4"
 
 [[node]]
 id = "theorem_7_3_5"
-kind = "theorem"
-desc = '''Theorem 7.3.5 (universal extension theorem): for `Ω` an open half-space or a Lipschitz
-domain there is one linear operator `E` that is continuous `W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for every
-`k ≥ 0` and every `p ∈ [1,∞]`, with `Ev = v` on `Ω`, `Ev` smooth off `closure Ω`, and
-`‖Ev‖_{W^{k,p}(ℝ^d)} ≤ c ‖v‖_{W^{k,p}(Ω)}`. Not formalized: Mathlib has no extension operator; the
-book quotes Stein [211, Theorem 5, p. 181] without proof, and Stein's construction (a reflection
-across a Lipschitz graph regularized by a Calderon kernel) is a substantial analysis project.
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.5 (at order k = 1, for a bounded C¹ domain)"
 
-Blocked: re-checked 2026-09-15. Mathlib at this pin has no extension operator under any name
-(`extensionOperator`: zero occurrences) and nothing of Stein's singular-integral apparatus. This
-is the single node that gates most of chapters 8-11, and it is the critical path of
-`notes/fem-roadmap.md` step 2. The realistic move is Decision B there: prove the
-reflection-and-cutoff extension for a `C^1` domain (Evans §5.4) under the already-existing
-`IsContDiffDomain` hypothesis, which unblocks the same consumers with a stronger hypothesis that
-can be relaxed later without restating any consumer. The Lipschitz case as the book states it is
-research-scale.'''
-deps = ["definition_7_2_1", "theorem_7_3_2"]
+[[node]]
+id = "theorem_7_3_5_universal"
+kind = "theorem"
+desc = '''Theorem 7.3.5 (universal extension theorem, Stein): for `Ω` an open half-space or a
+Lipschitz domain there is one linear operator `E` that is continuous
+`W^{k,p}(Ω) → W^{k,p}(ℝ^d)` for every `k ≥ 0` and every `p ∈ [1,∞]`, with `Ev = v` on `Ω`, `Ev`
+smooth off `closure Ω`, and `‖Ev‖_{W^{k,p}(ℝ^d)} ≤ c ‖v‖_{W^{k,p}(Ω)}`. The order-one operator,
+one per `p`, on a bounded `C¹` domain is `theorem_7_3_5`.
+
+Blocked: 2026-09-20. What exists is Brezis's Theorem 9.7 (`SobolevEuclidean.exists_extensionL`,
+`Numlib/Analysis/Sobolev/Extension.lean`; the half-space `IsSobolevExtensionDomain.upperHalfSpace`
+in `Reflection.lean`): one bounded operator `W^{1,p}(Ω) → W^{1,p}(ℝ^d)` for each `p`, built by
+even reflection, which is neither `W^{k,p}`-bounded for `k ≥ 2` nor smooth off `closure Ω`, and
+whose partition of unity does not depend on `p` — so "one operator for all `p`" is in reach
+(the construction is uniform in `p`; only the `∃ P` statement is per `p`) while "all `k`" is
+not. Stein's universal operator on a Lipschitz domain is a Calderón-kernel regularization of the
+reflection (Stein, *Singular Integrals*, VI.3), research-scale here. A per-`k` operator for a
+`C^k` domain is the route of `theorem_7_3_2_higher` (600–900 lines).'''
+deps = ["theorem_7_3_5"]
 
 [[node]]
 id = "definition_7_3_6"
@@ -59,55 +71,97 @@ id = "definition_7_3_6_compact"
 id = "definition_7_3_6_of_compact"
 
 [[node]]
-id = "theorem_7_3_7"
-kind = "theorem"
-desc = '''Theorem 7.3.7 (Sobolev embedding theorem) on a Lipschitz domain `Ω ⊆ ℝ^d`: (a) if
-`k < d/p` then `W^{k,p}(Ω) ↪ L^q(Ω)` for `q ≤ p^*` with `1/p^* = 1/p - k/d`; (b) if `k = d/p` then
-`W^{k,p}(Ω) ↪ L^q(Ω)` for every `q < ∞`; (c) if `k > d/p` then
-`W^{k,p}(Ω) ↪ C^{k-[d/p]-1,β}(Ω)` with `β = [d/p] + 1 - d/p` when `d/p` is not an integer and any
-`β < 1` otherwise. In one dimension `W^{k,p}(a,b) ↪ C[a,b]` for all `k, p ≥ 1`. Not formalized:
-this needs Gagliardo-Nirenberg-Sobolev on a domain, obtained from the whole-space inequality
-through the extension operator 7.3.5. Mathlib's `SobolevInequality.lean` has GNS only for
-compactly supported `C^1` functions on the whole space; the book states the theorem without proof
-(citing [78]).
+id = "theorem_7_3_7_a"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (a)"
 
-Blocked: re-checked 2026-09-15. `Mathlib/Analysis/FunctionalSpaces/SobolevInequality.lean` is
-still whole-space and compactly-supported-`C^1` only, and the transfer to a domain is Theorem
-7.3.5. Note that the one-dimensional sentence is a *remark* after the theorem, not one of its
-clauses (a)-(c), so it is not what this node states; the `k = 1`, `p = 2` instance of it is
-already proved in the backbone as `SobolevInterval.norm_toContinuousMap_le`
-(`Numlib/Analysis/Sobolev/Interval.lean`), with the explicit constant
-`(b-a)^{-1/2} + (b-a)^{1/2}`. Making the remark a node in its stated generality would first need a
-`W^{1,p}(a,b)` theory for `p ≠ 2`, which `Interval.lean` (built at `p = 2` throughout) does not
-have.'''
-deps = ["definition_7_3_6", "theorem_7_3_5", "theorem_7_3_4"]
+[[node]]
+id = "theorem_7_3_7_b"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (b)"
+
+[[node]]
+id = "theorem_7_3_7_c"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (c), the non-integer case"
+
+[[node]]
+id = "theorem_7_3_7_c_integer"
+kind = "theorem"
+desc = '''Theorem 7.3.7 (c), the case `(d+1)/p` an integer: if `k > (d+1)/p = ℓ ∈ ℕ` then
+`W^{k,p}(Ω) ↪ C^{k−ℓ−1,β}(closure Ω)` for every `0 < β < 1`, on a bounded extension domain
+(the book's Lipschitz domain); read on representatives as in `theorem_7_3_7_c`. The non-integer
+case, with the sharp `β = [(d+1)/p] + 1 − (d+1)/p`, is `theorem_7_3_7_c`.
+
+Blocked: 2026-09-20. The backbone's `C^j(closure Ω)` representative
+(`SobolevEuclidean.exists_forall_contDiffOn_closure_ae_eq_of_order`,
+`Numlib/Analysis/Sobolev/EmbeddingDomain.lean`) produces *one* Hölder exponent `θ ∈ (0, 1]`,
+sharp only when `k − (d+1)/p − j < 1`; in the integer case `θ = 1` is not what it returns. The
+route to every `β < 1` is `W^{k,p}(Ω) ↪ W^{j+1,q}(Ω)` for every `q < ∞` (the critical case of
+Corollary 9.15) followed by Morrey at exponent `q > d + 1`, which needs the order-lowering map
+`W^{k,p}(Ω) → W^{j+1,q}(Ω)`; the backbone lowers only to order one
+(`SobolevEuclidean.exists_continuousLinearMap_orderOne`, `DenyLions.lean`). Generalizing that
+map to a target order `j + 1` by the same induction: ~150 lines; then this node is ~60 lines.
+For `j = 0` (`k = ℓ + 1`) it is provable today from `exists_continuousLinearMap_orderOne` and
+`SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq`.'''
+deps = ["theorem_7_3_7_c"]
+
+[[node]]
+id = "theorem_7_3_7"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7"
+
+[[node]]
+id = "theorem_7_3_8_a"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (a)"
+
+[[node]]
+id = "theorem_7_3_8_b"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (b), as printed"
+
+[[node]]
+id = "theorem_7_3_8_b_compact"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (b), compact form"
+
+[[node]]
+id = "theorem_7_3_8_c"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), into C(closure Ω)"
+
+[[node]]
+id = "theorem_7_3_8_c_holder"
+kind = "theorem"
+desc = '''Theorem 7.3.8 (c), the Hölder target: if `k > (d+1)/p` then
+`W^{k,p}(Ω) ↪↪ C^{k−[(d+1)/p]−1,β}(closure Ω)` for every `0 ≤ β < [(d+1)/p] + 1 − (d+1)/p`, on
+a bounded extension domain. The case `β = 0` with the target `C(closure Ω)` is `theorem_7_3_8_c`.
+
+Blocked: 2026-09-20. There is no Hölder space `C^{j,β}(closure Ω)` as a normed type in the
+project or in Mathlib (`HolderWith` is a predicate; `Mathlib/Topology/MetricSpace/Holder.lean`
+carries no space), so the compact embedding cannot be stated as a `definition_7_3_6_compact`
+into it. Once such a type exists (a `C^j` space with Hölder-seminormed top derivative, in the
+style of `ContDiffMapIcc`), the compactness is the Arzelà–Ascoli argument of
+`HasSobolevExtensionOn.isCompactEmbedding_toContinuousMapOnL` applied to the derivatives, with
+the strict `β` giving equicontinuity by `theorem_7_3_7_c`: ~300 lines after the type.'''
+deps = ["theorem_7_3_8_c", "theorem_7_3_7_c"]
 
 [[node]]
 id = "theorem_7_3_8"
-kind = "theorem"
-desc = '''Theorem 7.3.8 (compact Sobolev embedding, Rellich-Kondrachov) on a Lipschitz domain:
-(a) `W^{k,p}(Ω) ↪↪ L^q(Ω)` for `q < p^*` when `k < d/p`; (b) `W^{k,p}(Ω) ↪ L^q(Ω)` for all
-`q < ∞` when `k = d/p`; (c) `W^{k,p}(Ω) ↪↪ C^{k-[d/p]-1,β}(Ω)` for `β < [d/p] + 1 - d/p` when
-`k > d/p`. Not formalized: Rellich-Kondrachov has no Mathlib counterpart (`Rellich`, `Kondrachov`
-have zero occurrences), and it rests on Theorem 7.3.7 and the extension operator 7.3.5, neither of
-which exists here. The book states it without proof.
-
-Blocked: re-checked 2026-09-15; `Rellich` and `Kondrachov` still have zero occurrences in Mathlib
-at this pin, and nothing else in the library provides a compactness criterion for a bounded family
-in `W^{k,p}`. Downstream of 7.3.7 and 7.3.5.'''
-deps = ["definition_7_3_6_compact", "theorem_7_3_7", "theorem_7_3_5"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8"
 
 [[node]]
 id = "theorem_7_3_9"
-kind = "theorem"
-desc = '''Theorem 7.3.9: for integers `k > l ≥ 0`, `p ∈ [1,∞]` and `Ω ⊆ ℝ^d` a nonempty open
-bounded Lipschitz domain, `W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)`. This is the compactness that every norm
-equivalence in §7.3.5 and §7.3.6 uses. Not formalized: a direct consequence of Theorem 7.3.8,
-which is itself out of reach -- it is the Rellich-Kondrachov compactness, absent from Mathlib.
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.9 (1 ≤ p < ∞)"
 
-Blocked: re-checked 2026-09-15. The book's own Exercise 7.3.4 derives it from Theorem 7.3.8, and
-that theorem is the obstruction.'''
-deps = ["definition_7_3_6_compact", "theorem_7_3_8"]
+[[node]]
+id = "theorem_7_3_9_top"
+kind = "theorem"
+desc = '''Theorem 7.3.9 at `p = ∞`: for integers `k > l ≥ 0` and a bounded extension domain (the
+book's bounded Lipschitz domain), `W^{k,∞}(Ω) ↪↪ W^{l,∞}(Ω)`. The case `1 ≤ p < ∞` is
+`theorem_7_3_9`.
+
+Blocked: 2026-09-20. The backbone's Rellich–Kondrachov theorem
+(`Numlib/Analysis/Sobolev/Compactness.lean`) is for `p < ∞`: at `p = ∞` the compactness of
+`W^{1,∞}(Ω) ⊂ L^∞(Ω)` is Arzelà–Ascoli for the Lipschitz representatives
+(`HasWeakFDerivOn.exists_lipschitzOnWith_ae_eq_of_convex` in `Friedrichs.lean` gives them on
+convex sets; on an extension domain through `P u`), which is not written; ~200 lines, then the
+induction on `k` of `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain`
+applies unchanged.'''
+deps = ["theorem_7_3_9"]
 
 [[node]]
 id = "theorem_7_3_10"
@@ -119,15 +173,18 @@ its range is `W^{1-1/p,p}(Γ)`, and `H^{1/2}(Γ) = γ(H^1(Ω))` with the quotien
 formalized: Mathlib has no surface measure on a Lipschitz boundary, so `L^p(Γ)` is not available,
 and no trace operator (`traceMap` is unused); the book states the theorem without proof.
 
-Blocked: re-checked 2026-09-15. One correction to the reason: `L^p(Γ)` is in fact *nameable*
-today, as `Lp F p ((μH[(d-1 : ℝ)] : Measure (EuclideanSpace ℝ (Fin d))).restrict (frontier Ω))`,
-Mathlib having `MeasureTheory.Measure.hausdorffMeasure`. What is missing is every fact about it:
-no area formula relating that measure to the chart integrals over the `g_i` of
-`definition_7_2_1_finite_cover`, no Gauss-Green (Mathlib's divergence theorem,
-`integral_divergence_of_hasFDerivAt_off_countable`, is for boxes), and `finite perimeter` /
-`reducedBoundary` both have zero occurrences, so De Giorgi's theory is absent too. The trace
-inequality itself therefore has no route, and `notes/fem-roadmap.md` Decision C (build the
-boundary measure from sets of finite perimeter) remains the recommendation.'''
+Blocked: 2026-09-20 (blocker 2 of `notes/frontier.md`). Checked: the Brezis round left the trace
+untouched — `Numlib/Analysis/Sobolev/` has no boundary measure, no `trace`, no Gauss–Green on a
+domain (grep `trace`, `hausdorffMeasure`, `divergence`, `frontier` in `Numlib/`: only the
+`IsContDiffChartDomain` charts of `Chart.lean` and the `frontier`-of-`Ω` bookkeeping of
+`Extension.lean`). `L^p(Γ)` is nameable as
+`Lp F p ((μH[d] : Measure (EuclideanSpace ℝ (Fin (d+1)))).restrict (frontier Ω))`, and what is
+missing is the area formula relating `μH[d]` on a `C¹` graph piece to Lebesgue measure on the
+chart (Mathlib has `MeasureTheory.Measure.hausdorffMeasure` and
+`LipschitzWith.hausdorffMeasure_image_le`, no equality on graphs), after which the trace
+inequality on a chart is the one-dimensional `|u(x', g(x'))|^p ≤ ∫ |∂_N u| + |u|^p` argument
+(Evans §5.5) glued by the partition of unity of `Extension.lean`: estimated 1500–2500 lines, the
+`C¹` case first. Nothing else in the corpus provides it.'''
 deps = ["definition_7_2_1", "theorem_7_3_2", "definition_7_2_13"]
 
 [[node]]
@@ -140,69 +197,49 @@ desc = '''Theorem 7.3.11: on a bounded open set with `C^{k,1}` boundary `Γ`, fo
 problems. Not formalized: it needs everything Theorem 7.3.10 needs, plus the fractional Sobolev
 spaces over the boundary of Definition 7.2.13; the book quotes it from [98] without proof.
 
-Blocked: re-checked 2026-09-15. Downstream of `theorem_7_3_10` and of `definition_7_2_13`, both
-of which need the boundary measure; see their `Blocked` notes.'''
+Blocked: 2026-09-20 (blocker 2). Downstream of `theorem_7_3_10` and of `definition_7_2_13`
+(fractional spaces on `Γ`), both waiting on the boundary measure; nothing of the Brezis round
+touches it. After the trace, the surjectivity onto the fractional spaces is a further
+Gagliardo-type theorem (1000+ lines).'''
 deps = ["theorem_7_3_10", "definition_7_2_13"]
 
 [[node]]
-id = "theorem_7_3_12"
-kind = "theorem"
-desc = '''Theorem 7.3.12 (Deny-Lions norm equivalence): for a Lipschitz domain `Ω` (connected),
-`k ≥ 1`, `1 ≤ p < ∞`, and seminorms `f_j` on `W^{k,p}(Ω)` with (H1) `0 ≤ f_j(v) ≤ c ‖v‖_{k,p,Ω}`
-and (H2) `v ∈ ℙ_{k-1}(Ω)` with all `f_j(v) = 0` implies `v = 0`, both `|v|_{k,p,Ω} + ∑_j f_j(v)`
-(7.3.3) and `(|v|^p_{k,p,Ω} + ∑_j f_j(v)^p)^{1/p}` (7.3.4) are norms equivalent to `‖v‖_{k,p,Ω}`.
-Not formalized: the book's proof is a compactness contradiction using `W^{k,p}(Ω) ↪↪ W^{k-1,p}(Ω)`
-(Theorem 7.3.9) and the fact that `|v|_{k,p,Ω} = 0` forces `v ∈ ℙ_{k-1}` on a connected `Ω`; the
-compact embedding is exactly what Mathlib lacks.
+id = "equation_7_3_3"
 
-Blocked: re-checked 2026-09-15. Two ingredients, both missing: the compact embedding
-`theorem_7_3_9`, and "`|v|_{k,p,Ω} = 0` on a connected open set implies `v` is a polynomial of
-degree `< k`", which is the weak-derivative form of "vanishing `k`-th derivative implies
-polynomial" and has no Mathlib counterpart either (the closest, `Polynomial.funext`-style
-statements, are about polynomials already known to exist). The second is the cheaper of the two
-and would be a useful backbone node on its own.'''
-deps = ["theorem_7_3_9", "definition_7_2_2_multiIndex_norm"]
+[[node]]
+id = "equation_7_3_4"
+
+[[node]]
+id = "theorem_7_3_12"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.12"
 
 [[node]]
 id = "theorem_7_3_13"
-kind = "theorem"
-desc = '''Theorem 7.3.13: the same conclusion as Theorem 7.3.12 on an open bounded `Ω` with
-Lipschitz boundary, with (H2) weakened to (H2)' -- `|v|_{k,p,Ω} = 0` together with all
-`f_j(v) = 0` implies `v = 0` -- so connectedness is not needed. It is the form that yields the
-Poincare-Friedrichs inequality of Example 7.3.15. Not formalized: the same compactness argument as
-Theorem 7.3.12, hence blocked by the compact embedding 7.3.9.
-
-Blocked: re-checked 2026-09-15; downstream of `theorem_7_3_12`.'''
-deps = ["theorem_7_3_12"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.13"
 
 [[node]]
 id = "theorem_7_3_14"
-kind = "theorem"
-desc = '''Theorem 7.3.14: the norm equivalence again for `Ω = ⋃_{λ∈Λ} Ω_λ` a disjoint union of
-open sets with Lipschitz boundaries, with (H2) reading `v|_{Ω_λ} ∈ ℙ_{k-1}(Ω_λ)` for every `λ` and
-all `f_j(v) = 0` implies `v = 0`. Not formalized: the same compactness argument as Theorem 7.3.12,
-hence blocked by the compact embedding 7.3.9.
-
-Blocked: re-checked 2026-09-15; downstream of `theorem_7_3_12`.'''
-deps = ["theorem_7_3_12"]
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.14"
 
 [[node]]
 id = "example_7_3_15"
-kind = "theorem"
-desc = '''Example 7.3.15: Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` and `f_1(v) = ∫_Γ |v| ds`
-gives `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ)})` on `H^1(Ω)`, hence the **Poincare-Friedrichs
-inequality** `‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` on `H_0^1(Ω)` (7.3.10), so `|·|_{1,Ω}` is an equivalent norm
-there. Not formalized: it rests on Theorem 7.3.13, and its seminorm `f_1` is a boundary integral,
-so it needs both the compact embedding 7.3.9 and the trace of Theorem 7.3.10. Mathlib has no
-Poincare or Friedrichs inequality in this setting.
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.3.15, the inequality (7.3.10)"
 
-Blocked: re-checked 2026-09-15; `Poincare`/`Friedrichs` still have no relevant occurrence in
-Mathlib, and this needs both of the chapter's obstructions at once. The one-dimensional case is
-not blocked and is already proved in the backbone as
-`SobolevIntervalZero.norm_deriv_zero_le` (`Numlib/Analysis/Sobolev/Interval.lean`), with the
-sharp constant `(b-a)/√2`; it is not an instance of this node, whose seminorm is a boundary
-integral over `Γ`.'''
-deps = ["theorem_7_3_13", "theorem_7_3_10", "definition_7_2_9"]
+[[node]]
+id = "example_7_3_15_boundary"
+kind = "theorem"
+desc = '''Example 7.3.15, the boundary clause: on an open bounded `Ω ⊆ ℝ^d` with Lipschitz
+boundary, Theorem 7.3.13 with `k = 1`, `p = 2`, `J = 1` and `f_1(v) = ∫_Γ |v| ds` gives a
+constant `c > 0` with `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ)})` for all `v ∈ H^1(Ω)`. The
+`H_0^1` clause (7.3.10) that the book derives from it is `example_7_3_15`, proved directly by
+Poincaré's inequality.
+
+Blocked: 2026-09-20 (blocker 2 of `notes/frontier.md`): `f_1` is the boundary integral of the
+trace, which needs `theorem_7_3_10`. Everything else is in place: with a trace
+`γ : W^{1,2}(Ω) → L^1(Γ)` bounded (`(H1)`), the seminorm `f_1 = ‖γ ·‖_{L^1(Γ)}` satisfies (H2)′
+because a constant with zero trace is zero (`Γ` has positive surface measure), and
+`theorem_7_3_13` gives the inequality in ten lines.'''
+deps = ["theorem_7_3_13", "theorem_7_3_10"]
 
 [[node]]
 id = "example_7_3_16"
@@ -211,41 +248,22 @@ desc = '''Example 7.3.16: with `Γ_0 ⊆ Γ` open and nonempty and `f_1(v) = ∫
 7.3.12 gives `‖v‖_{1,Ω} ≤ c (|v|_{1,Ω} + ‖v‖_{L^1(Γ_0)})` on `H^1(Ω)` and hence
 `‖v‖_{1,Ω} ≤ c |v|_{1,Ω}` on `H^1_{Γ_0}(Ω) = {v ∈ H^1(Ω) : v = 0 a.e. on Γ_0}` -- the
 Poincare-Friedrichs inequality under a mixed boundary condition. Not formalized: as Example 7.3.15,
-it needs the compact embedding 7.3.9 and the trace of Theorem 7.3.10.
+it needs the trace of Theorem 7.3.10.
 
-Blocked: re-checked 2026-09-15; as `example_7_3_15`, and additionally "`v = 0` a.e. on `Γ_0`" is
-not statable until the boundary measure of `theorem_7_3_10` exists.'''
+Blocked: 2026-09-20 (blocker 2). `theorem_7_3_12` is proved; what is missing is only the trace
+`γ` of `theorem_7_3_10` (the seminorm `f_1(v) = ‖γ v‖_{L^1(Γ_0)}` and the fact that a constant
+vanishing on `Γ_0` of positive surface measure is zero), and "`v = 0` a.e. on `Γ_0`" is not
+statable before the boundary measure exists. Ten lines after `theorem_7_3_10`.'''
 deps = ["theorem_7_3_12", "theorem_7_3_10"]
 
 [[node]]
-id = "theorem_7_3_17"
-kind = "theorem"
-desc = '''Theorem 7.3.17: for `1 ≤ p < ∞` and `Ω` a Lipschitz domain, `|v|_{k+1,p,Ω}` (independent
-of the representative) is a norm on the quotient `V = W^{k+1,p}(Ω)/ℙ_k(Ω)` equivalent to the
-quotient norm `inf_{q ∈ ℙ_k} ‖v + q‖_{k+1,p,Ω}` -- the **Bramble-Hilbert** estimate (7.3.13) that
-drives finite element interpolation error bounds. The book gives two proofs, one via Hahn-Banach
-and one constructing `q̄` with `∫_Ω ∂^α (v + q̄) = 0` for `|α| ≤ k`. Not formalized: both proofs go
-through Theorem 7.3.12, hence through the compact embedding 7.3.9, which Mathlib lacks.
+id = "fact_one_le_two_coe"
+source = "the exponent `p = 2` in the backbone's form `((2 : ℝ≥0) : ℝ≥0∞)`, for Corollary 7.3.18"
 
-Blocked: re-checked 2026-09-15. Both of the book's proofs go through `theorem_7_3_12`. But note
-`notes/fem-roadmap.md` Decision A: Brenner and Scott prove Bramble-Hilbert constructively, by
-averaged Taylor polynomials and a Riesz potential estimate, using no compactness at all. That
-route is independent of everything else open in §7.3 and would unblock this node, `corollary_7_3_18`
-and the whole interpolation spine of chapter 10 (`AtkinsonHan.Chapter10.theorem_10_3_3`,
-`theorem_10_3_5`, `corollary_10_3_7`, `theorem_10_3_9`, `example_10_3_8`). It is a self-contained
-project of its own -- the averaged Taylor polynomial, its error representation as a Riesz
-potential, and the boundedness of that potential on `L^p` over a star-shaped domain -- estimated
-at 800-1500 lines, and it is the highest-leverage item in this group.'''
-deps = ["theorem_7_3_12"]
+[[node]]
+id = "theorem_7_3_17"
+source = "Theorem 7.3.17"
 
 [[node]]
 id = "corollary_7_3_18"
-kind = "theorem"
-desc = '''Corollary 7.3.18: for a Lipschitz domain `Ω ⊆ ℝ^d`,
-`inf_{p ∈ ℙ_k(Ω)} ‖v + p‖_{k+1,Ω} ≤ c |v|_{k+1,Ω}` for all `v ∈ H^{k+1}(Ω)` (7.3.16) -- the
-`p = 2` case of Theorem 7.3.17, and the form chapter 10 quotes. Not formalized: immediate from
-Theorem 7.3.17, which is blocked by the compact embedding 7.3.9.
-
-Blocked: re-checked 2026-09-15; downstream of `theorem_7_3_17`, and would follow from it in a few
-lines.'''
-deps = ["theorem_7_3_17"]
+source = "Corollary 7.3.18, the inequality (7.3.16)"

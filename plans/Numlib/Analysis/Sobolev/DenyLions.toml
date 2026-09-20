@@ -1,0 +1,260 @@
+# Numlib/Analysis/Sobolev/DenyLions.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "SobolevMultiIndex.topDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §7.3.5, the seminorm |v|_{k,p,Ω}"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_eq_sum"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_eq_zero_iff"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_le_norm"
+
+[[node]]
+id = "SobolevMultiIndex.continuous_topSeminorm"
+
+[[node]]
+id = "MultiIndexLE.sum_univ_succ"
+
+[[node]]
+id = "SobolevMultiIndex.norm_rpow_eq_norm_toLowerOrder_rpow_add"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_isSobolevExtensionDomain"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9 (on an extension domain)"
+
+[[node]]
+id = "MvPolynomial.contDiff_eval"
+
+[[node]]
+id = "MvPolynomial.hasFDerivAt_eval"
+
+[[node]]
+id = "MvPolynomial.fderiv_eval_single"
+
+[[node]]
+id = "MvPolynomial.gradientAntideriv"
+
+[[node]]
+id = "MvPolynomial.pderiv_gradientAntideriv"
+
+[[node]]
+id = "MvPolynomial.degree_lt_of_mem_support_gradientAntideriv"
+
+[[node]]
+id = "MvPolynomial.evalBasis"
+
+[[node]]
+id = "MvPolynomial.contDiff_evalBasis"
+
+[[node]]
+id = "MvPolynomial.fderiv_evalBasis_apply_basis"
+
+[[node]]
+id = "MvPolynomial.eq_of_evalBasis_ae_eq"
+
+[[node]]
+id = "SobolevMultiIndex.exists_ae_eq_add_const_of_forall_fderiv_apply_ae_eq"
+
+[[node]]
+id = "SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §7.3.5, the sentence preceding Theorem 7.3.12"
+
+[[node]]
+id = "Seminorm.continuous_of_forall_le_mul_norm"
+
+[[node]]
+id = "SobolevMultiIndex.norm_le_norm_toLowerOrder_add_topSeminorm"
+
+[[node]]
+id = "SobolevMultiIndex.exists_norm_le_topSeminorm_add_sum_of_isCompactEmbedding"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.13 (the proof of Theorem 7.3.12)"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_add_sum_le_norm"
+
+[[node]]
+id = "SobolevMultiIndex.lp_topSeminorm_sum_le_add"
+
+[[node]]
+id = "SobolevMultiIndex.add_le_card_mul_lp_topSeminorm_sum"
+
+[[node]]
+id = "MvPolynomial.evalBasis_basisFun"
+
+[[node]]
+id = "SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.13"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_isPreconnected"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.12"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_abs_of_isPreconnected"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.12 with f_j(v) = |ℓ_j(v)|"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_topSeminorm_add_abs_of_isPreconnected"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.12 with one functional, the proof of Lemma 8.4.1"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_iSup"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.14"
+
+[[node]]
+id = "SobolevEuclidean.exists_norm_le_lp_topSeminorm_sum_of_forall_eq_zero"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.13, the norm (7.3.4)"
+
+[[node]]
+id = "SobolevMultiIndex.isContinuousEmbedding_toLpₗ_of_le"
+
+[[node]]
+id = "SobolevMultiIndex.isCompactEmbedding_toLpₗ_of_comp"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_orderOne"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15 (the inclusion W^{m+1,p} ⊆ W^{1,r})"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLp_of_le_of_isSobolevExtensionDomainAll"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_isSobolevExtensionDomain"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.16 (on an extension domain)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (a)"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (b), compact form"
+
+[[node]]
+id = "SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.8 (c) into C(Ω̄), Example 7.4.2"
+
+[[node]]
+id = "SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.9"
+
+[[node]]
+id = "MultiIndexLE.single_bijective"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_one_eq_gradNorm"
+
+[[node]]
+id = "SobolevMultiIndex.norm_equiv_of_exists_norm_le_topSeminorm_add_sum"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorems 7.3.12–7.3.14, the two norms (7.3.3) and (7.3.4)"
+
+[[node]]
+id = "Seminorm.apply_add_smul_of_eq_zero"
+
+[[node]]
+id = "Seminorm.le_ciInf_norm_add_smul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.4.1, the lower bound"
+
+[[node]]
+id = "Seminorm.ciInf_norm_add_smul_le_mul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 8.4.1, the upper bound"
+
+[[node]]
+id = "Seminorm.apply_add_of_eq_zero"
+
+[[node]]
+id = "Seminorm.le_ciInf_norm_add"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, the first inequality of the proof"
+
+[[node]]
+id = "Seminorm.ciInf_norm_add_le_mul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, the Hahn–Banach proof"
+
+[[node]]
+id = "Submodule.exists_continuousLinearMap_forall_apply_eq_coord"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, the extended functionals f_i"
+
+[[node]]
+id = "Submodule.eq_zero_of_forall_apply_eq_zero"
+
+[[node]]
+id = "MvPolynomial.add_single_mem_support_of_mem_support_pderiv"
+
+[[node]]
+id = "MvPolynomial.degree_le_of_mem_support_pderiv"
+
+[[node]]
+id = "MvPolynomial.fderiv_evalBasis"
+
+[[node]]
+id = "iteratedFDeriv_smul_const_eq_zero"
+
+[[node]]
+id = "MvPolynomial.iteratedFDeriv_evalBasis_eq_zero"
+source = "the (k+1)-st derivative of a polynomial of degree at most k vanishes"
+
+[[node]]
+id = "MvPolynomial.iteratedFDeriv_evalBasis_eq_zero_of_le"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_eq_zero_of_fn_ae_eq_evalBasis"
+
+[[node]]
+id = "SobolevEuclidean.exists_fn_ae_eq_of_contDiff"
+
+[[node]]
+id = "SobolevEuclidean.exists_fn_ae_eq_eval"
+
+[[node]]
+id = "SobolevEuclidean.ofPolynomial"
+
+[[node]]
+id = "SobolevEuclidean.fn_ofPolynomial"
+
+[[node]]
+id = "SobolevEuclidean.ofPolynomial_add"
+
+[[node]]
+id = "SobolevEuclidean.ofPolynomial_smul"
+
+[[node]]
+id = "SobolevEuclidean.polynomialToSobolevₗ"
+
+[[node]]
+id = "SobolevEuclidean.polynomialSubmodule"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §7.3.6, the space ℙ_k(Ω) in W^{k+1,p}(Ω)"
+
+[[node]]
+id = "SobolevEuclidean.instFiniteDimensionalPolynomialSubmodule"
+
+[[node]]
+id = "SobolevEuclidean.mem_polynomialSubmodule_iff"
+
+[[node]]
+id = "SobolevEuclidean.topSeminorm_eq_zero_of_mem_polynomialSubmodule"
+
+[[node]]
+id = "SobolevEuclidean.topSeminorm_add_of_mem_polynomialSubmodule"
+
+[[node]]
+id = "SobolevEuclidean.topSeminorm_le_ciInf_norm_add"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, ‖[v]‖_V ≥ |v|_{k+1,p,Ω}"
+
+[[node]]
+id = "SobolevEuclidean.topSeminorm_eq_zero_iff_mem_polynomialSubmodule"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, |v|_{k+1,p,Ω} is a norm on V"
+
+[[node]]
+id = "SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 7.3.17, the inequality (7.3.13)"
