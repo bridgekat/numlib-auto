@@ -1,4 +1,5 @@
 import Numlib.Analysis.PDE.Elliptic.Spectral
+import NumlibSurface.Brezis.Chapter09.Section06
 import NumlibSurface.Brezis.Chapter09.Section07
 
 /-!
@@ -24,9 +25,10 @@ coercive form on `H^1_0(Ω)` and names the Dirichlet data `Elliptic.dirichletEig
   written with the book's integrals, `∫_Ω ∇u_n · ∇φ = λ_n ∫_Ω e_n φ` for all `φ ∈ H^1_0(Ω)`.
 * Theorem 9.31 is stated as the book's existential (`theorem_9_31`), its witnesses being the
   backbone's named data; the clause "`e_n ∈ C^∞(Ω)` and `-Δe_n = λ_n e_n` in `Ω`" (pointwise,
-  with Mathlib's Laplacian `Δ`, for the `C^∞` representative) is the separate node
-  `theorem_9_31_smooth`, which waits for the backbone's smooth representative; the classical
-  equation for any `C²` representative is `theorem_9_31_laplacian`.
+  with Mathlib's Laplacian `Δ`, for the `C^∞` representative) is restated in
+  `theorem_9_31_smooth`, the complete theorem; the weak equation (83) for the backbone's data
+  is `theorem_9_31_weak`, and the classical equation for any `C²` representative is
+  `theorem_9_31_laplacian`.
 * Remark 28 is stated for the data of Theorem 9.31: the scalar product `∫_Ω ∇u · ∇v` is that of
   the energy space `WithEnergy` of the operator of the Dirichlet form on `H^1_0(Ω)`, and
   `∫_Ω (∇u · ∇v + uv)` is the scalar product `H^1_0(Ω)` carries; both identifications are part of
@@ -34,15 +36,17 @@ coercive form on `H^1_0(Ω)` and names the Dirichlet data `Elliptic.dirichletEig
 * Remark 30 carries the symmetry `a_ij = a_ji`, which the book omits and without which there is
   no orthonormal basis of eigenfunctions; its `λ_n` need not be positive. The ellipticity
   condition (36) on the `L^∞` classes is the almost-everywhere `Elliptic.IsUniformlyElliptic`, as
-  in §9.5. Remark 29 (`e_n ∈ L^∞(Ω)`, and `e_n ∈ C^∞(Ω̄)` on a `C^∞` domain) is stated by the
-  book without proof and is not restated here.
+  in §9.5. Remark 29's second clause, `e_n ∈ C^∞(Ω̄)` on a `C^∞` domain, is `remark_9_29`, with
+  `C^∞(Ω̄)` in the sense of footnote 16 of §9.3 (`ContDiffOnClosure`, as in §9.6); its first
+  clause, `e_n ∈ L^∞(Ω)` for a general bounded `Ω`, is stated by the book without proof and is
+  not restated here.
 * The book's proof "repeat the proof of Theorem 8.21" refers to the one-dimensional
   Sturm–Liouville theorem, which is its Theorem 8.22.
 
 ## Main results
 
-* `theorem_9_31`, `theorem_9_31_laplacian`; `theorem_9_31_smooth` waits for the backbone.
-* `remark_9_28`, `remark_9_28_h1`.
+* `theorem_9_31_weak`, `theorem_9_31`, `theorem_9_31_laplacian`, `theorem_9_31_smooth`.
+* `remark_9_28`, `remark_9_28_h1`, `remark_9_29`.
 * `remark_9_30`.
 -/
 
@@ -62,6 +66,29 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 /-! ### Theorem 9.31 -/
 
+/-- **The weak eigenvalue equation (83) for the backbone's Dirichlet eigenbasis**: for every
+`n`, `e_n = Elliptic.dirichletEigenbasis Ω hb hne n` is the function of an element
+`u_n ∈ H^1_0(Ω)` (`Elliptic.dirichletEigenfunction`) with `∫_Ω ∇u_n · ∇φ = λ_n ∫_Ω e_n φ` for all
+`φ ∈ H^1_0(Ω)`, `λ_n = Elliptic.dirichletEigenvalue Ω hb n`. The clause of Theorem 9.31 shared by
+`theorem_9_31` and `theorem_9_31_smooth`. -/
+theorem theorem_9_31_weak (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty)
+    (n : ℕ) :
+    ∃ u : hSpace (d + 1) Ω, u ∈ hZeroSpace (d + 1) Ω ∧
+      SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)]
+        Elliptic.dirichletEigenbasis Ω hb hne n ∧
+      ∀ φ ∈ hZeroSpace (d + 1) Ω,
+        ∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x
+          = Elliptic.dirichletEigenvalue Ω hb n
+            * ∫ x in (Ω : Set 𝔼), Elliptic.dirichletEigenbasis Ω hb hne n x
+              * SobolevMultiIndex.fn φ x := by
+  refine ⟨Elliptic.dirichletEigenfunction Ω hb hne n,
+    (Elliptic.dirichletEigenfunction Ω hb hne n).2, Elliptic.fn_dirichletEigenfunction Ω hb hne n,
+    fun φ hφ ↦ ?_⟩
+  have h := Elliptic.dirichletForm_dirichletEigenfunction Ω hb hne n ⟨φ, hφ⟩
+  refine (Elliptic.dirichletForm_apply Ω _ _).symm.trans (h.trans ?_)
+  exact congrArg (fun y ↦ Elliptic.dirichletEigenvalue Ω hb n * y)
+    (MeasureTheory.L2.inner_eq_integral_mul _ _)
+
 /-- **Theorem 9.31, the Hilbert-space clauses.** Let `Ω ⊆ ℝ^N` be a bounded open set (nonempty,
 `N ≥ 1`). There exist a Hilbert basis `(e_n)_{n ≥ 1}` of `L²(Ω)` and a sequence `(λ_n)_{n ≥ 1}` of
 reals with `λ_n > 0` for all `n` and `λ_n → +∞` (moreover increasing) such that
@@ -80,16 +107,35 @@ theorem theorem_9_31 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set
         SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] e n ∧
         ∀ φ ∈ hZeroSpace (d + 1) Ω,
           ∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x
-            = lam n * ∫ x in (Ω : Set 𝔼), e n x * SobolevMultiIndex.fn φ x := by
-  refine ⟨Elliptic.dirichletEigenbasis Ω hb hne, Elliptic.dirichletEigenvalue Ω hb,
+            = lam n * ∫ x in (Ω : Set 𝔼), e n x * SobolevMultiIndex.fn φ x :=
+  ⟨Elliptic.dirichletEigenbasis Ω hb hne, Elliptic.dirichletEigenvalue Ω hb,
     Elliptic.dirichletEigenvalue_pos Ω hb hne, Elliptic.monotone_dirichletEigenvalue Ω hb hne,
-    Elliptic.tendsto_dirichletEigenvalue_atTop Ω hb hne, fun n ↦
-    ⟨Elliptic.dirichletEigenfunction Ω hb hne n, (Elliptic.dirichletEigenfunction Ω hb hne n).2,
-      Elliptic.fn_dirichletEigenfunction Ω hb hne n, fun φ hφ ↦ ?_⟩⟩
-  have h := Elliptic.dirichletForm_dirichletEigenfunction Ω hb hne n ⟨φ, hφ⟩
-  refine (Elliptic.dirichletForm_apply Ω _ _).symm.trans (h.trans ?_)
-  exact congrArg (fun y ↦ Elliptic.dirichletEigenvalue Ω hb n * y)
-    (MeasureTheory.L2.inner_eq_integral_mul _ _)
+    Elliptic.tendsto_dirichletEigenvalue_atTop Ω hb hne, theorem_9_31_weak hb hne⟩
+
+/-- **Theorem 9.31, complete**, with the smoothness clause "`e_n ∈ C^∞(Ω)` and `-Δe_n = λ_n e_n`
+in `Ω`": for `Ω ⊆ ℝ^N` bounded, open and nonempty (`N ≥ 1`) there exist a Hilbert basis `(e_n)`
+of `L²(Ω)` and reals `λ_n > 0`, increasing to `+∞`, such that every `e_n` lies in `H^1_0(Ω)` and
+satisfies the weak equation (83) (the clauses of `theorem_9_31`), and every `e_n` agrees almost
+everywhere on `Ω` with a function `ẽ_n` of class `C^∞` on `Ω` satisfying `-Δ ẽ_n x = λ_n ẽ_n x`
+at every point `x ∈ Ω` (Mathlib's Laplacian `Δ`). The regularity is the book's "from the
+regularity results of Section 9.6 (Remark 25): `e_n ∈ H²(ω)`, hence `H⁴(ω)`, … for every
+`ω ⊂⊂ Ω`, so `e_n ∈ C^∞(Ω)`" — the backbone's `Elliptic.dirichletEigenbasis_exists_contDiffOn`,
+which also carries the pointwise equation (`theorem_9_31_laplacian` for the `C^∞`
+representative). -/
+theorem theorem_9_31_smooth (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty) :
+    ∃ (e : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))) (lam : ℕ → ℝ),
+      (∀ n, 0 < lam n) ∧ Monotone lam ∧ Tendsto lam atTop atTop ∧
+      (∀ n, ∃ u : hSpace (d + 1) Ω, u ∈ hZeroSpace (d + 1) Ω ∧
+        SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] e n ∧
+        ∀ φ ∈ hZeroSpace (d + 1) Ω,
+          ∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x
+            = lam n * ∫ x in (Ω : Set 𝔼), e n x * SobolevMultiIndex.fn φ x) ∧
+      ∀ n, ∃ e₀ : 𝔼 → ℝ, ContDiffOn ℝ ∞ e₀ Ω ∧
+        (e n : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)] e₀ ∧ ∀ x ∈ Ω, -Δ e₀ x = lam n * e₀ x :=
+  ⟨Elliptic.dirichletEigenbasis Ω hb hne, Elliptic.dirichletEigenvalue Ω hb,
+    Elliptic.dirichletEigenvalue_pos Ω hb hne, Elliptic.monotone_dirichletEigenvalue Ω hb hne,
+    Elliptic.tendsto_dirichletEigenvalue_atTop Ω hb hne, theorem_9_31_weak hb hne,
+    Elliptic.dirichletEigenbasis_exists_contDiffOn Ω hb hne⟩
 
 /-- **Theorem 9.31, "`-Δe_n = λ_n e_n` in `Ω`" for a `C²` representative**: if `e ∈ L²(Ω)` is
 the function of some `u ∈ H^1(Ω)` satisfying the weak equation (83) with the eigenvalue `λ`,
@@ -162,6 +208,26 @@ theorem remark_9_28_h1 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : S
   refine ⟨fun u v ↦ ?_, Elliptic.hilbertBasis_sobolevZero Ω hb hne⟩
   rw [Submodule.coe_inner, ← Elliptic.laplaceForm_apply_eq_inner, Elliptic.laplaceForm_apply]
   rfl
+
+/-! ### Remark 29: smoothness up to the boundary -/
+
+/-- **Remark 29, second clause.** If `Ω` is of class `C^∞` (bounded, nonempty), then
+`e_n ∈ C^∞(Ω̄)` for every `n`: the `n`-th eigenfunction `e_n` of Theorem 9.31
+(`Elliptic.dirichletEigenbasis Ω hb hne n`) agrees almost everywhere on `Ω` with a function
+`ẽ_n` of class `C^∞(Ω̄)` in the sense of footnote 16 of §9.3 — `C^∞` on `Ω` with every
+derivative extending continuously to `Ω̄` (`ContDiffOnClosure`), and `ẽ_n` itself continuous on
+`Ω̄`. "This results easily from Theorem 9.25" applied to `-Δe_n + e_n = (λ_n + 1) e_n` and
+iterated (`theorem_9_25_smooth`); the backbone's
+`Elliptic.exists_contDiffOn_closure_eigenfunction`. The first clause of the Remark, `e_n ∈ L^∞(Ω)`
+for a general bounded `Ω`, is quoted without proof and is not restated. -/
+theorem remark_9_29 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
+    (hne : (Ω : Set 𝔼).Nonempty) (n : ℕ) :
+    ∃ e₀ : 𝔼 → ℝ, ContDiffOnClosure ℝ ∞ e₀ Ω ∧ ContinuousOn e₀ (closure (Ω : Set 𝔼)) ∧
+      (Elliptic.dirichletEigenbasis Ω hb hne n : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)] e₀ := by
+  obtain ⟨e₀, hc, h2, hae, hG⟩ := Elliptic.exists_contDiffOn_closure_eigenfunction Ω hb hne hΩ n
+  refine ⟨e₀, ⟨h2, fun j _ ↦ ?_⟩, hc.continuousOn, hae⟩
+  obtain ⟨G, hGc, hGe⟩ := hG j
+  exact ⟨G, hGc.continuousOn, hGe.symm⟩
 
 /-! ### Remark 30: general symmetric elliptic operators -/
 

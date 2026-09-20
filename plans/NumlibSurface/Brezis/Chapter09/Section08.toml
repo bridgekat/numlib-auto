@@ -9,30 +9,11 @@ id = "theorem_9_31_laplacian"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31"
 
 [[node]]
-id = "theorem_9_31_smooth"
-kind = "theorem"
-desc = '''Theorem 9.31, the smoothness clause "`e_n ∈ C^∞(Ω)` and `-Δe_n = λ_n e_n` in `Ω`", as
-the complete statement of the theorem: for `Ω ⊆ ℝ^N` open, bounded and nonempty (`N = d + 1`)
-there are a Hilbert basis `(e_n)` of `L²(Ω)` and reals `λ_n > 0` with `λ_n → +∞` such that for
-every `n`, `e_n` is the function of an element `u_n ∈ H^1_0(Ω)` with
-`∫ ∇u_n·∇φ = λ_n ∫ e_n φ` for all `φ ∈ H^1_0(Ω)` (83, the clauses of `theorem_9_31`), and `e_n`
-agrees a.e. on `Ω` with a function `ẽ_n` with `ContDiffOn ℝ ∞ ẽ_n Ω` and `-Δ ẽ_n x = λ_n ẽ_n x`
-for every `x ∈ Ω` (Mathlib's `Δ`). Split off `theorem_9_31` on 2026-09-20 (surf11): the
-Hilbert-space clauses are proved there with the witnesses `Elliptic.dirichletEigenbasis`,
-`Elliptic.dirichletEigenvalue`, `Elliptic.dirichletEigenfunction`; the classical equation for any
-`C²` representative is `theorem_9_31_laplacian`; what remains is the `C^∞` representative of
-`e_n` on `Ω`, "from the regularity results of Section 9.6 (Remark 25): `e_n ∈ H²(ω)`, hence
-`H⁴(ω)`, … for every `ω ⊂⊂ Ω`, so `e_n ∈ C^∞(Ω)`" — the backbone's
-`Elliptic.dirichletEigenbasis_exists_contDiffOn`, after which the node is a ten-line assembly of
-`theorem_9_31`'s proof and that lemma (`theorem_9_31_laplacian` is not even needed, the backbone
-lemma carrying the pointwise equation). ★
+id = "theorem_9_31_weak"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31, (83)"
 
-Blocked: the dependency `Elliptic.dirichletEigenbasis_exists_contDiffOn` (`PDE/Elliptic/Spectral`)
-is open in this worktree (being closed by agent pde5 in parallel). The surface's
-`memSobolevMultiIndexLoc_of_forall_testFunction_add_mul` (Section06, the bootstrap of Remark 25
-with datum `f + c u`, here `f = 0`, `c = λ_n`) together with `MemSobolevMultiIndexLoc.exists_contDiffOn`
-would also close it in ~20 lines without the backbone lemma, if the orchestrator prefers.'''
-deps = ["theorem_9_31", "theorem_9_31_laplacian", "Elliptic.dirichletEigenbasis", "Elliptic.dirichletEigenbasis_exists_contDiffOn", "remark_9_25"]
+[[node]]
+id = "theorem_9_31_smooth"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 9.31"
 
 [[node]]
@@ -45,12 +26,6 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark
 
 [[node]]
 id = "remark_9_29"
-kind = "theorem"
-desc = '''Deferred (2026-09-17 policy: the book states this without proof, and no planned node needs it — formalize last, if at all). Remark 29, second clause: if `Ω` is of class `C^∞` then `e_n ∈ C^∞(Ω̄)`, a representative
-`ContDiffOn ℝ ⊤ ẽ_n (closure Ω)`; "this results easily from Theorem 9.25", applied iteratively to
-`-Δe_n + e_n = (λ_n + 1) e_n`. `Elliptic.exists_contDiffOn_closure_eigenfunction`. The first
-clause, `e_n ∈ L^∞(Ω)` for a general bounded `Ω`, is quoted without proof and is not a node. ★'''
-deps = ["theorem_9_31", "IsOfClassC", "theorem_9_25_smooth", "Elliptic.exists_contDiffOn_closure_eigenfunction"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 9, Remark 29"
 
 [[node]]

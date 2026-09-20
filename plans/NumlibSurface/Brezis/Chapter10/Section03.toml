@@ -1,92 +1,63 @@
 namespace = "Brezis.Chapter10"
-desc = '''
-Brezis §10.3, the wave equation `∂ₜₜu - Δu = 0` on `Ω × (0,∞)`, `u = 0` on `Σ`, `u(·,0) = u₀`,
-`∂ₜu(·,0) = v₀`, solved as the first-order system (33)–(35) in `H = H¹₀(Ω) × L²(Ω)` with the
-scalar product (34): `A U = (-v, -Δu)`, `D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)`, `A + I` maximal
-monotone, Hille–Yosida (Theorem 7.4 with chapter 7's Remark 6 — the book's citation "Remark 7.7"
-is that remark). Nodes: the operator, the solution class (31), Theorem 10.7 (existence and
-uniqueness; the energy identity (32)), Remark 6, Theorem 10.8 (the description of `D(A^k)` in the
-proof and the regularity), Remark 7 (bounded `Ω`, the Dirichlet scalar product, `A` and `-A`
-maximal monotone, `A* = -A`, the group of isometries), Remark 8 (d'Alembert's formula (40) on
-`Ω = ℝ` and the propagation of singularities along the characteristics), Remark 9 (the Fourier
-method (42)), Remark 10 (the compatibility conditions are necessary). Remark 11 (Klein–Gordon)
-asserts nothing precise. Backbone: `Numlib/Analysis/PDE/Wave`, which works with the curve `u`
-(the book's unknown) and proves everything but the `H^{k+1} × H^k` reading of `D(A^k)` and the
-space-time smoothness on an arbitrary open set. Conventions as in `Section01`: `Ω` of class `C^∞`
-with `Γ` bounded (`Brezis.Chapter09.IsOfClassC ⊤ Ω`, `Bornology.IsBounded (frontier Ω)`),
-regularity classes through `Bochner.ContDiffOnThrough`, `C^∞(Ω̄ × [0,∞))` through
-`ContDiffOnClosure`.
-'''
 
 [[node]]
 id = "waveOperator"
-kind = "definition"
-desc = '''The operator (35): `waveOperator (Ω) : Wave.phaseSpace Ω →ₗ.[ℝ] Wave.phaseSpace Ω`,
-`A (u, v) = (-v, -Δu)` on `H = H¹₀(Ω) × L²(Ω)` with the scalar product (34)
-(`WithLp 2 (SobolevEuclideanZero N 1 2 Ω × L²(Ω))`, whose inner product is
-`∫ ∇u₁·∇u₂ + ∫ u₁u₂ + ∫ v₁v₂` by `Elliptic.laplaceForm_eq_innerSL`), with
-`D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)`: the backbone's `Wave.operator Ω` restricted to the pairs whose
-first component is the function of an `H²` element (`LinearPMap.domRestrict`, as `heatOperator`),
-equal to `Wave.operator Ω` on a `C²` domain with `Γ` bounded (`waveOperator_eq`, from
-`dirichletLaplacianDomain_eq_of_isContDiffChartDomain`). "The boundary condition (28) has been
-incorporated in the space `H`." ★'''
-deps = ["Wave.phaseSpace", "Wave.operator", "heatOperator", "dirichletLaplacianDomain_eq_of_isContDiffChartDomain", "Elliptic.laplaceForm_eq_innerSL"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (34)–(35)"
 
 [[node]]
+id = "waveOperator_domain_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (35)"
+
+[[node]]
+id = "waveOperator_mem_domain_iff"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, `D(A) = (H² ∩ H¹₀) × H¹₀`"
+
+[[node]]
+id = "waveOperator_apply_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (35)"
+
+[[node]]
+id = "waveOperator_apply"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (35)"
+
+[[node]]
+id = "waveOperator_add_id_inner_self_nonneg"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.7 (i)"
+
+[[node]]
+id = "waveOperator_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.7 (ii)"
+
+[[node]]
 id = "waveOperator_add_id_isMaximalMonotone"
-kind = "theorem"
-desc = '''The claim of the proof of Theorem 10.7: `A + I` is maximal monotone in `H` —
-`Brezis.Chapter07.IsMaximalMonotone (LinearMap.id +ᵥ waveOperator Ω)`, on a `C²` domain with `Γ`
-bounded: (i) `(AU, U)_H + |U|²_H = -∫ uv + ∫ u² + ∫ v² + ∫ |∇u|² ≥ 0`, (ii) `A + 2I` is onto,
-solving `-Δu + 4u = 2f + g` by Theorem 9.25 and `v = 2u - f`. Backbone
-`Wave.operator_add_id_inner_self_nonneg`, `Wave.operator_add_id_isMaximalMonotone` (on any open
-set for the weak domain). ★'''
-deps = ["waveOperator", "Wave.operator_add_id_inner_self_nonneg", "Wave.operator_add_id_isMaximalMonotone", "Brezis.Chapter07.IsMaximalMonotone", "Brezis.Chapter09.theorem_9_25"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.7 (i)–(ii)"
 
 [[node]]
 id = "IsWaveSolution"
-kind = "definition"
-desc = '''The problem (27)–(30) in the class (31): `IsWaveSolution (Ω) (u₀ : H¹₀(Ω)) (v₀ : L²(Ω)) (u : ℝ → L²(Ω)) : Prop`
-— `u ∈ C([0,∞); H²(Ω) ∩ H¹₀(Ω))` (`Bochner.ContDiffOnThrough (SobolevMultiIndex.fnL : SobolevEuclidean N 2 2 Ω →L[ℝ] L²(Ω)) 0 u (Ici 0)`
-with `u t ∈ (heatOperator Ω).domain`), `u ∈ C¹([0,∞); H¹₀(Ω))`
-(`Bochner.ContDiffOnThrough (SobolevMultiIndexZero.fnL : SobolevEuclideanZero N 1 2 Ω →L[ℝ] L²(Ω)) 1 u (Ici 0)`), `u ∈ C²([0,∞); L²(Ω))`
-(`ContDiffOn ℝ 2 u (Ici 0)`), (27) `iteratedDerivWithin 2 u (Ici 0) t = -(heatOperator Ω ⟨u t, _⟩)`
-for `t ≥ 0`, (29) `u 0 = fnL u₀`, (30) `derivWithin u (Ici 0) 0 = v₀`; (28) is the `H¹₀`
-membership. `isWaveSolution_iff`: on a `C²` domain with `Γ` bounded,
-`IsWaveSolution Ω u₀ v₀ u ↔ Wave.IsSolution Ω u₀ v₀ u`. ★'''
-deps = ["heatOperator", "heatOperator_eq_dirichletLaplacian", "Wave.IsSolution", "Bochner.ContDiffOnThrough", "SobolevMultiIndex.weakDerivL", "SobolevMultiIndexZero.fnL"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (27)–(31)"
+
+[[node]]
+id = "IsWaveSolution.isSolution"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (27)–(31)"
+
+[[node]]
+id = "IsWaveSolution.inner_apply_self_eq"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, footnote 10"
+
+[[node]]
+id = "isWaveSolution_iff"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, (27)–(31)"
 
 [[node]]
 id = "theorem_10_7"
-kind = "theorem"
-desc = '''Theorem 10.7 (existence and uniqueness): for `Ω` of class `C^∞` with `Γ` bounded,
-`u₀ ∈ H²(Ω) ∩ H¹₀(Ω)` and `v₀ ∈ H¹₀(Ω)`, there is a unique `u` with `IsWaveSolution Ω u₀ v₀ u`
-(unique on `Ici 0`). The book's proof: `A + I` maximal monotone, Theorem 7.4 and Remark 7.6 give
-`U ∈ C¹([0,∞); H) ∩ C([0,∞); D(A))` solving (38), and (31) is read off (39). Backbone
-`Wave.existsUnique_isSolution` through `isWaveSolution_iff`; the backbone proves it on every open
-set for the weak class. ★'''
-deps = ["IsWaveSolution", "waveOperator_add_id_isMaximalMonotone", "Wave.existsUnique_isSolution", "Brezis.Chapter07.theorem_7_4", "Brezis.Chapter07.remark_7_6", "Brezis.Chapter09.IsOfClassC"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7"
 
 [[node]]
 id = "theorem_10_7_energy"
-kind = "theorem"
-desc = '''Theorem 10.7, (32): for every `t ≥ 0`,
-`‖∂ₜu(t)‖²_{L²} + ‖∇u(t)‖²_{L²} = ‖v₀‖²_{L²} + ‖∇u₀‖²_{L²}`, with `‖∇u(t)‖² = Elliptic.dirichletForm Ω ũ(t) ũ(t)`
-(footnote 10) and `∂ₜu(t) = derivWithin u (Ici 0) t`. "Multiply (27) by `∂ₜu` and integrate":
-`Wave.IsSolution.energy`. Holds on every open set. ★'''
-deps = ["theorem_10_7", "Wave.IsSolution.energy", "Elliptic.dirichletForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.7 (32)"
 
 [[node]]
 id = "remark_10_6"
-kind = "theorem"
-desc = '''Remark 6: (32) is a conservation law — the energy `E(t) = ‖∂ₜu(t)‖² + ‖∇u(t)‖²` is
-invariant in time, `E t = E 0` for all `t ≥ 0`. A restatement of `theorem_10_7_energy`. ★'''
-deps = ["theorem_10_7_energy"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 6"
 
 [[node]]
@@ -97,7 +68,12 @@ desc = '''The display in the proof of Theorem 10.8: for every `k`,
 ("`= 0` on `Γ`" as membership of `H¹₀`), with `D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)` continuously —
 `Brezis.Chapter07.domainPow (waveOperator Ω) k` described through `Wave.mem_operator_powGraph_iff`
 and `dirichletLaplacian_mem_powDomain_iff`, the injection being `Wave.operator.powDomainToSobolevL`.
-"It is easy to see, by induction on `k`" (line 12736). ★'''
+"It is easy to see, by induction on `k`" (line 12736). ★
+
+Blocked (2026-09-20, surf12): the backbone nodes `Wave.mem_operator_powGraph_iff` and
+`Wave.operator.powDomainToSobolevL` (`PDE/Wave`, agent pde6) are open in this worktree. Once
+they land, restate as for `equation_10_7`: rewrite `waveOperator Ω` to `Wave.operator Ω` by
+`waveOperator_eq`, then `mem_domainPow_iff` and the two backbone lemmas.'''
 deps = ["waveOperator", "Wave.mem_operator_powGraph_iff", "Wave.operator.powDomainToSobolevL", "equation_10_7", "Brezis.Chapter07.domainPow"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.3, proof of Theorem 10.8, `D(A^k)`"
 
@@ -108,36 +84,25 @@ desc = '''Theorem 10.8 (regularity): for `Ω` of class `C^∞` with `Γ` bounded
 for every `k` and satisfy the compatibility conditions `Δ^j u₀ = 0`, `Δ^j v₀ = 0` on `Γ` for every
 `j ≥ 0` (i.e. `(u₀, v₀) ∈ D(A^k)` for every `k`, `theorem_10_8_domain`), then the solution of
 (27)–(30) belongs to `C^∞(Ω̄ × [0,∞))`: a `U` with `U(·,t) =ᵐ u t` for `t ≥ 0` and
-`ContDiffOnClosure ⊤ U (Ω ×ˢ Ioi 0)` whose derivatives extend continuously to
-`closure Ω ×ˢ Ici 0`. Proof: Theorem 7.5 gives `U ∈ C^{k-j}([0,∞); D(A^j))`, so
-`u ∈ C^{k-j}([0,∞); H^{j+1}(Ω))`, and Corollary 9.15. Backbone
-`Wave.IsSolution.contDiffOnThrough_of_powDomain`, `Wave.IsSolution.contDiffOnClosure_spaceTime`. ★★★'''
+`ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi 0)` whose derivatives extend continuously to
+`closure Ω ×ˢ Ici 0` (the `Ici 0` shape of pde4's bridge, as `theorem_10_2_c`). Proof: Theorem 7.5
+gives `U ∈ C^{k-j}([0,∞); D(A^j))`, so `u ∈ C^{k-j}([0,∞); H^{j+1}(Ω))`, and Corollary 9.15.
+Backbone `Wave.IsSolution.contDiffOnThrough_of_powDomain`, `Wave.IsSolution.contDiffOnClosure_spaceTime`. ★★★
+
+Blocked (2026-09-20, surf12): the backbone nodes `Wave.IsSolution.contDiffOnThrough_of_powDomain`
+and `Wave.IsSolution.contDiffOnClosure_spaceTime` (`PDE/Wave`, agent pde6) are open in this
+worktree. Once they land the node is the assembly of `theorem_10_2_c`: the hypotheses in the
+chain shape of `IsDirichletLaplacianChain` (for `u₀` and `v₀`), `hu.isSolution`, and the
+backbone's space–time clause.'''
 deps = ["theorem_10_7", "theorem_10_8_domain", "Wave.IsSolution.contDiffOnThrough_of_powDomain", "Wave.IsSolution.contDiffOnClosure_spaceTime", "Brezis.Chapter07.theorem_7_5", "Brezis.Chapter09.corollary_9_15"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.8"
 
 [[node]]
 id = "remark_10_7"
-kind = "theorem"
-desc = '''Remark 7 (i)–(ii): for bounded `Ω`, with the scalar product `∫ ∇u₁·∇u₂` on `H¹₀(Ω)`
-(Corollary 9.19) and `(U₁, U₂) = ∫ ∇u₁·∇u₂ + ∫ v₁v₂` on `H` (the backbone type
-`Wave.dirichletPhaseSpace Ω`), `(AU, U) = 0` for all `U ∈ D(A)`, `A` and `-A` are maximal monotone
-(`Brezis.Chapter07.IsMaximalMonotone`), and `A* = -A` (`A† = -A` for Mathlib's `LinearPMap.adjoint`,
-the adjoint of §7.4 read in the Dirichlet scalar product). Backbone `Wave.operator'_inner_self_eq_zero`,
-`Wave.operator'_isMaximalMonotone`, `neg_operator'_isMaximalMonotone`, `operator'_adjoint_eq_neg`. ★'''
-deps = ["waveOperator", "Wave.dirichletPhaseSpace", "Wave.operator'", "Wave.operator'_isMaximalMonotone", "Brezis.Chapter07.IsMaximalMonotone", "Brezis.Chapter09.corollary_9_19"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7 (i)–(ii)"
 
 [[node]]
 id = "remark_10_7_group"
-kind = "theorem"
-desc = '''Remark 7, the group of isometries: the problem `dU/dt + AU = 0` may also be solved on
-`(-∞, 0]` ("just change `t` into `-t`"), so the solution of (27)–(30) extends to a unique
-`u ∈ C²(ℝ; L²) ∩ C¹(ℝ; H¹₀)` solving the wave equation on all of `ℝ`, and (32) reads
-`|U(t)|_H = |U₀|_H` for all `t ∈ ℝ` — the energy `‖∂ₜu(t)‖² + ‖∇u(t)‖²` is constant on `ℝ`
-(footnote 12: time is reversible for the wave equation). Backbone
-`Wave.existsUnique_isSolution_backward`, `Wave.IsSolution.energy_two_sided`; needs no boundedness
-of `Ω` and no Dirichlet scalar product. ★'''
-deps = ["theorem_10_7", "theorem_10_7_energy", "Wave.existsUnique_isSolution_backward"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 7 (the group of isometries)"
 
 [[node]]
@@ -148,29 +113,21 @@ desc = '''Remark 8, d'Alembert's formula: for `Ω = ℝ` (`N = 1`, `Ω = ⊤`), 
 (27)–(30) is (40): `u(x,t) = ½ (u₀(x+t) + u₀(x-t)) + ½ ∫_{x-t}^{x+t} v₀(s) ds`, i.e.
 `u t =ᵐ Wave.dAlembert u₀ v₀ t` for every `t ≥ 0`; for `v₀ = 0`, (41). Backbone `Wave.dAlembert`,
 `Wave.isSolution_dAlembert`, `Wave.IsSolution.eq_dAlembert` (the formula solves the problem in
-the class (31), and uniqueness). ★★★ (the translation calculus in `L²(ℝ)`).'''
+the class (31), and uniqueness). ★★★ (the translation calculus in `L²(ℝ)`).
+
+Blocked (2026-09-20, surf12): the backbone node `Wave.isSolution_dAlembert` (`PDE/Wave`, agent
+pde6) is open in this worktree. The characteristics clause of the Remark, which needs only
+`Wave.dAlembert` and `dAlembert_contDiffOn_off_characteristics`, is proved as
+`remark_10_8_characteristics`.'''
 deps = ["theorem_10_7", "Wave.dAlembert", "Wave.isSolution_dAlembert"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8, (40)–(41)"
 
 [[node]]
 id = "remark_10_8_characteristics"
-kind = "theorem"
-desc = '''Remark 8, propagation of singularities: if `u₀ ∈ C^∞(ℝ ∖ {x₀})` and `v₀ = 0`, then
-`u(x,t)` of (41) is `C^∞` on `ℝ × ℝ` except on the characteristics `x + t = x₀` and `x - t = x₀`:
-`ContDiffOn ℝ ⊤ (fun p ↦ Wave.dAlembert u₀ 0 p.2 p.1) {p | p.1 + p.2 ≠ x₀ ∧ p.1 - p.2 ≠ x₀}`
-(`Wave.dAlembert_contDiffOn_off_characteristics`). ★'''
-deps = ["remark_10_8", "Wave.dAlembert_contDiffOn_off_characteristics"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 8 (characteristics)"
 
 [[node]]
 id = "remark_10_9"
-kind = "theorem"
-desc = '''Remark 9, the Fourier method for the wave equation: for bounded (nonempty) `Ω` and the
-Dirichlet eigenbasis `(eₙ)`, `(λₙ)` of Theorem 9.31, the solution of (27)–(30) is
-`u(x,t) = ∑ₙ aₙ(t) eₙ(x)` with `aₙ(t) = aₙ(0) cos(√λₙ t) + (aₙ'(0)/√λₙ) sin(√λₙ t)`, `aₙ(0) = ∫ u₀ eₙ`,
-`aₙ'(0) = ∫ v₀ eₙ` (42): `HasSum (fun n ↦ a n t • e n) (u t)` for `t ≥ 0`, the `a n` solving
-`aₙ'' + λₙ aₙ = 0`. Backbone `Wave.IsSolution.inner_eigenfunction`, `hasSum_eigenfunction`. ★'''
-deps = ["theorem_10_7", "Wave.IsSolution.inner_eigenfunction", "Brezis.Chapter09.theorem_9_31"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 9, (42)"
 
 [[node]]
@@ -178,10 +135,13 @@ id = "remark_10_10"
 kind = "theorem"
 desc = '''Remark 10: the compatibility conditions of Theorem 10.8 are necessary and sufficient for a
 solution `u ∈ C^∞(Ω̄ × [0,∞))` of (27)–(30). Sufficiency is `theorem_10_8`; necessity, "the proof
-is the same as in Remark 4": if `u : ℝ^N × ℝ → ℝ` is `C^∞` on `Ω̄ × [0,∞)`
-(`ContDiffOnClosure ⊤ u (Ω ×ˢ Ioi 0)`, extensions continuous on `closure Ω ×ˢ Ici 0`),
-solves `∂ₜₜu = Δu` in `Q` and vanishes on `Σ`, then the continuous extensions of `Δ^j (u(·,0))`
-and of `Δ^j (∂ₜu(·,0))` vanish on `Γ` for every `j`. Backbone
-`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`. ★★★'''
+is the same as in Remark 4": if `u : ℝ^N × ℝ → ℝ` is `C^∞` (on `ℝ^N × ℝ`, as `remark_10_4`),
+solves `∂ₜₜu = Δu` in `Q` and vanishes on `Σ`, then `Δ^j (u(·,0))` and `Δ^j (∂ₜu(·,0))` vanish on
+`Γ` for every `j`. Backbone `Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`. ★★
+
+Blocked (2026-09-20, surf12): the backbone node
+`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier` (`PDE/Wave`, agent pde6) is open
+in this worktree; the surface node is then the shape of `remark_10_4` with the wave equation
+`deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x` in place of the heat equation.'''
 deps = ["theorem_10_8", "remark_10_4", "Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Chapter 10, Remark 10"
