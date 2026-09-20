@@ -42,6 +42,21 @@ Not formalized: it is Theorem 10.4.1 on a concrete domain. `H¹₀(Ω)` exists,
 the concrete finite element subspaces of that space — which the chapter's group description puts
 out of scope — and, through `AtkinsonHan.Chapter08.example_8_3_5`, the Poincaré inequality
 `AtkinsonHan.Chapter07.example_7_3_15`.
+
+Blocked: rechecked 2026-09-20; downstream of `theorem_10_4_1` and of the concrete finite
+element subspaces of `H¹₀(Ω)` (blocker 11). The Poincaré inequality it cites through
+`AtkinsonHan.Chapter08.example_8_3_5` is now in the backbone on `W^{1,p}_0` of a bounded domain
+(`SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_*`, `Numlib/Analysis/Sobolev/Zero.lean`), so that
+is no longer an obstruction. The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex).
 '''
 deps = ["theorem_10_4_1", "AtkinsonHan.Chapter08.example_8_3_5"]
 
@@ -57,5 +72,18 @@ with `v_h = Π_h u` and Theorem 10.3.9, and the convergence half rests on the de
 element spaces in `H¹`; the abstract convergence statement is already
 `Chapter09.corollary_9_1_4`, so what is missing is Theorem 10.3.9 and that density, not the Sobolev
 space, which exists (`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`, proved).
+
+Blocked: rechecked 2026-09-20; downstream of `theorem_10_3_9` and of the density of the finite
+element spaces in `H¹` (blocker 11 of `notes/frontier.md`, the triangulation scaffold);
+`Chapter09.corollary_9_1_4` is proved and `theorem_10_3_4` now is. The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex).
 '''
 deps = ["theorem_10_3_9", "AtkinsonHan.Chapter09.corollary_9_1_4"]

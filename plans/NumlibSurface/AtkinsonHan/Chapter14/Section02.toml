@@ -90,6 +90,14 @@ Not formalized: the book quotes it from Yuan Xu without proof. The reduction to
 book's own (2.2.8) -- but the `O(n)` bound on that integral is an estimate on Jacobi polynomials
 through the closed form (14.2.14)-(14.2.15) of the reproducing kernel, and Mathlib has neither
 Jacobi nor Gegenbauer polynomials. The chapter group's desc records the same.
+
+Blocked: rechecked 2026-09-20 (blocker 3); the reason stands. Mathlib on this pin still has no
+Jacobi or Gegenbauer polynomials (zero occurrences), and `Numlib/Approximation/OrthogonalPolynomial`
+carries only the general Sturm–Liouville families of one variable with the Legendre and Chebyshev
+normalizations (`Classical.lean`, `LegendreBounds.lean`); the reproducing kernel of the disk
+polynomials (14.2.14)–(14.2.15) and its `O(n)` row integral are unwritten. `IntegralOperator.norm_kernelCLM`
+still provides the reduction. Estimate 600–1000 lines for the Jacobi polynomials and the kernel
+asymptotics; the book quotes the result from Yuan Xu without proof.
 '''
 deps = ["equation_14_2_12", "IntegralOperator.norm_kernelCLM"]
 
@@ -107,5 +115,9 @@ Not formalized: it is literally `equation_14_2_13` -- the quasi-optimality
 `‖f - P_n f‖ ≤ (1 + ‖P_n‖) E_n(f)` -- combined with `theorem_14_2_4` and `theorem_14_1_1`, both of
 which are out of reach; the combination is one line and becomes available the moment they do. The
 chapter group's desc records the same.
+
+Blocked: rechecked 2026-09-20; the reason stands — it is `equation_14_2_13` (proved) with
+`theorem_14_2_4` (blocker 3, Jacobi polynomials) and `theorem_14_1_1` (blocker 3, spherical
+harmonics), and becomes one line the moment those two exist; nothing else is missing.
 '''
 deps = ["theorem_14_2_4", "equation_14_2_13", "AtkinsonHan.Chapter14.theorem_14_1_1"]

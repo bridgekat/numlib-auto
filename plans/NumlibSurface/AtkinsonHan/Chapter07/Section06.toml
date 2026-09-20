@@ -20,5 +20,21 @@ normal `ν` (defined a.e.), `∫_Ω u_{x_i} v dx = ∫_Γ u v ν_i ds - ∫_Ω u
 passing to the limit, and notes the extension to `u ∈ W^{1,p}(Ω)`, `v ∈ W^{1,p'}(Ω)` (7.6.3). Not
 formalized: the boundary integral needs surface measure on a Lipschitz boundary -- Mathlib's
 divergence theorem is for boxes -- and the limit passage needs the density of Theorem 7.3.2 and
-the continuity of the trace of Theorem 7.3.10, none of which exist.'''
+the continuity of the trace of Theorem 7.3.10, none of which exist.
+
+Blocked: rechecked 2026-09-20 (blocker 2); the reason stands for the boundary integral, while the
+other two ingredients now exist: the density of `C^∞(Ω̄)` in `W^{1,p}(Ω)` on an extension domain is
+the backbone's `SobolevEuclidean.exists_seq_contDiff_tendsto` / Corollary 9.8
+(`Numlib/Analysis/Sobolev/Density.lean`, `EmbeddingDomain.lean`), and a bounded trace into
+`L^p(∂Ω)` would follow from the same density once `L^p(∂Ω)` carries the area formula. The Brezis round (2026-09-17–20) left blocker 2 untouched: `Numlib/` has no surface measure on a
+boundary (`hausdorffMeasure`, `Gauss`, `divergence`, `perimeter` occur only in the quadrature and
+Fourier modules, for unrelated reasons), no trace operator (`theorem_7_3_10` is still open) and no
+integration by parts on a domain; Mathlib on this pin still has the divergence theorem for boxes
+only (`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) and the new
+`CurveIntegral/Poincare` for plane curves, nothing for a Lipschitz or `C¹` hypersurface. The
+Brezis surface's own boundary nodes (`example_9_4_stepA/D`, Theorem 9.26's Neumann clause,
+`regularity_neumann`) are deferred on the same gap. `notes/fem-roadmap.md` Decision C stands.
+Estimate: after a boundary measure with Gauss–Green on `C¹` chart domains, ~300 lines for (7.6.1)
+at `p = 2` and (7.6.3) together.
+'''
 deps = ["theorem_7_3_2", "theorem_7_3_10"]

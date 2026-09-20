@@ -47,4 +47,13 @@ a surface measure on `S^d` and a convolution structure on it -- Mathlib has none
 statement also needs the moduli of continuity `ω_k(f, h)` and the norm `‖f‖_{*,k}`, which nothing
 in Mathlib or in this library defines and which have no other consumer here while this theorem is
 out of reach. The chapter group's desc records both halves of that.
+
+Blocked: rechecked 2026-09-20 (blocker 3 of `notes/frontier.md`); the reason stands. Mathlib on
+this pin has no spherical harmonics, no surface measure on `S^d` with an integration formula and
+no convolution on the sphere (`SphericalHarmonic`, `Gegenbauer`: zero occurrences), and `Numlib/`
+has only the one-dimensional orthogonal polynomials; the Brezis round added nothing here. The
+moduli `ω_k(f, h)` and the norm `‖f‖_{*,k}` remain undefined. Shared with `example_2_8_16`,
+`definition_7_5_8`, `theorem_7_5_9`, `theorem_7_5_10`, `theorem_14_2_5`; a self-contained
+harmonic-analysis project, estimate two to three thousand lines for the sphere theory before this
+theorem's own proof (Ragozin's, several pages) can start.
 '''

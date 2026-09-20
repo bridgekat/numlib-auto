@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.InnerProductSpace.ConvexProjection
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.OrthogonalPolynomial
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
@@ -20,7 +21,9 @@ case) and its `(u − û, v)` is `inner 𝕜 v (u - uhat)`.
 ## Main results
 
 * `lemma_3_4_1`, `corollary_3_4_2` — the variational characterization (3.4.1) and uniqueness.
-* `theorem_3_4_3`, `projConvex` — the projection onto a nonempty closed convex set.
+* `theorem_3_4_3`, `projConvex` — the projection onto a nonempty closed convex set; `projConvex`
+  is the backbone's metric projection `bestApprox` (`Numlib/Analysis/Normed/Module/BestApprox`),
+  whose Hilbert-space theory is `Numlib/Analysis/InnerProductSpace/ConvexProjection`.
 * `proposition_3_4_4`, `proposition_3_4_4'` — `P_K` is monotone and non-expansive.
 * `theorem_3_4_5` — the finite-dimensional case.
 * `theorem_3_4_6`, `exercise_3_4_8` — subspaces: the orthogonality characterization (3.4.2).
@@ -66,28 +69,28 @@ theorem corollary_3_4_2 {K : Set H} (hK : Convex ℝ K) {u v₁ v₂ : H} (h₁ 
 has a unique best approximation from a nonempty closed convex set. It is characterized by (3.4.1),
 that is by `lemma_3_4_1`. -/
 theorem theorem_3_4_3 [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K)
-    (hK : Convex ℝ K) (u : H) : ∃! uhat, IsBestApprox K u uhat := by
-  obtain ⟨v, hv, hnorm⟩ := exists_norm_eq_iInf_of_complete_convex hne hcl.isComplete hK u
-  have hbest : IsBestApprox K u v := (isBestApprox_iff_norm_eq_iInf K u v).2 ⟨hv, hnorm⟩
-  exact ⟨v, hbest, fun w hw => corollary_3_4_2 hK hw hbest⟩
+    (hK : Convex ℝ K) (u : H) : ∃! uhat, IsBestApprox K u uhat :=
+  existsUnique_isBestApprox hne hcl hK u
 
 /-- The **projection operator onto a nonempty closed convex set** `K`, written `P_K` in the book
-(after Theorem 3.4.3). It is not linear unless `K` is a subspace. -/
-noncomputable def projConvex [CompleteSpace H] (K : Set H) (hne : K.Nonempty) (hcl : IsClosed K)
-    (hK : Convex ℝ K) (u : H) : H :=
-  (theorem_3_4_3 hne hcl hK u).exists.choose
+(after Theorem 3.4.3): the backbone's metric projection `bestApprox K`
+(`Numlib/Analysis/Normed/Module/BestApprox.lean`), which is defined for every `K` and is the
+best approximation whenever one exists (`isBestApprox_projConvex`). It is not linear unless `K`
+is a subspace (`projConvex_eq_starProjection`). -/
+noncomputable abbrev projConvex (K : Set H) : H → H :=
+  bestApprox K
 
-/-- Defining property of `projConvex`: it is the best approximation from `K`. -/
+/-- Defining property of `projConvex`: on a nonempty closed convex set of a real Hilbert space it
+is the best approximation from `K` (the backbone's `isBestApprox_bestApprox_of_isClosed`). -/
 theorem isBestApprox_projConvex [CompleteSpace H] (K : Set H) (hne : K.Nonempty)
-    (hcl : IsClosed K) (hK : Convex ℝ K) (u : H) :
-    IsBestApprox K u (projConvex K hne hcl hK u) :=
-  (theorem_3_4_3 hne hcl hK u).exists.choose_spec
+    (hcl : IsClosed K) (hK : Convex ℝ K) (u : H) : IsBestApprox K u (projConvex K u) :=
+  isBestApprox_bestApprox_of_isClosed hne hcl hK u
 
-/-- On a complete subspace, `P_K` is Mathlib's orthogonal projection. -/
-theorem projConvex_eq_starProjection [CompleteSpace H] (K : Submodule ℝ H) [CompleteSpace K]
-    (hne : (K : Set H).Nonempty) (hcl : IsClosed (K : Set H)) (hK : Convex ℝ (K : Set H)) (u : H) :
-    projConvex (K : Set H) hne hcl hK u = K.starProjection u :=
-  (isBestApprox_projConvex (K : Set H) hne hcl hK u).eq_starProjection K
+/-- On a complete subspace, `P_K` is Mathlib's orthogonal projection (the backbone's
+`bestApprox_eq_starProjection`). -/
+theorem projConvex_eq_starProjection (K : Submodule ℝ H) [CompleteSpace K] (u : H) :
+    projConvex (K : Set H) u = K.starProjection u :=
+  bestApprox_eq_starProjection K u
 
 /-- **Proposition 3.4.4** (pairs form). The metric projection onto a convex set is monotone and
 non-expansive. No completeness is needed in this form. -/
@@ -96,13 +99,13 @@ theorem proposition_3_4_4 {K : Set H} (hK : Convex ℝ K) {u v uhat vhat : H}
     0 ≤ inner ℝ (uhat - vhat) (u - v) ∧ ‖uhat - vhat‖ ≤ ‖u - v‖ :=
   hu.dist_le_dist hK hv
 
-/-- **Proposition 3.4.4** in the book's form, for the projection operator `P_K`. -/
+/-- **Proposition 3.4.4** in the book's form, for the projection operator `P_K` (the backbone's
+`inner_bestApprox_sub_nonneg` and `norm_bestApprox_sub_bestApprox_le`). -/
 theorem proposition_3_4_4' [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K)
     (hK : Convex ℝ K) (u v : H) :
-    0 ≤ inner ℝ (projConvex K hne hcl hK u - projConvex K hne hcl hK v) (u - v) ∧
-      ‖projConvex K hne hcl hK u - projConvex K hne hcl hK v‖ ≤ ‖u - v‖ :=
-  proposition_3_4_4 hK (isBestApprox_projConvex K hne hcl hK u)
-    (isBestApprox_projConvex K hne hcl hK v)
+    0 ≤ inner ℝ (projConvex K u - projConvex K v) (u - v) ∧
+      ‖projConvex K u - projConvex K v‖ ≤ ‖u - v‖ :=
+  ⟨inner_bestApprox_sub_nonneg hne hcl hK u v, norm_bestApprox_sub_bestApprox_le hne hcl hK u v⟩
 
 /-- **Theorem 3.4.5.** A nonempty closed convex subset of a finite-dimensional subspace of an
 inner product space admits a unique best approximation to every point; no completeness of the

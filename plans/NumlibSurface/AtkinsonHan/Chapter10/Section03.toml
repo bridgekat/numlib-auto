@@ -33,8 +33,17 @@ blocked by that corollary and, through it, by Theorem 10.3.3. `H²(K)` itself, w
 seminorm, is available: `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` and
 `definition_7_2_2_multiIndex_norm` are proved.
 
-Blocked: re-checked 2026-09-15; downstream of corollary_10_3_7 and hence of theorem_10_3_3,
-whose own blockers are AtkinsonHan.Chapter07.theorem_7_3_7 and theorem_7_3_17.
+Blocked: rechecked 2026-09-20; downstream of `corollary_10_3_7`, hence of `theorem_10_3_3`
+(`theorem_10_3_4` is proved). Note that the example is on *triangles*, the simplex case: The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex).
 '''
 deps = ["corollary_10_3_7"]
 
@@ -52,73 +61,28 @@ is the §7.3 theory over it — the embedding `H^{k+1}(K̂) ↪ C(K̂)` that mak
 Beware the near-match: `exercise_10_3_3` is Exercise 10.3.3, the angle criterion for regularity, a
 different result with the same number, and it *is* formalized.
 
-Blocked: re-checked 2026-09-15 against Mathlib at this pin. Both blockers stand:
-Rellich-Kondrachov (under theorem_7_3_17 via theorem_7_3_12) and the Sobolev embedding
-(theorem_7_3_7 via the extension operator theorem_7_3_5) have zero counterpart in Mathlib.
-The Bramble-Hilbert half has a compactness-free route -- Brenner and Scott's averaged Taylor
-polynomials, notes/fem-roadmap.md Decision A -- which would unblock this node and the four
-that hang off it without touching Rellich-Kondrachov at all.
+Blocked: rechecked 2026-09-20. Theorem 10.3.4 is now proved (`theorem_10_3_4`, with the general
+`sobolevSeminorm_comp_affine_le`), and the seminorm `|·|_{m,K̂}` of this section is the backbone's
+`sobolevSeminorm` (tensor form). The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex). With Bramble–Hilbert on the square in hand, this node is the
+book's four-line argument: the polynomial invariance (10.3.4) of `Approximation.nodalInterp` plus
+the boundedness of `Π̂ : H^{k+1}(K̂) → H^m(K̂)`, which needs the embedding `H^{k+1}(K̂) ↪ C(K̂)`
+(`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt` on an extension domain, `k + 1 > d/2`).
+Estimate 200–300 lines on the square once `ah1`'s 7.3.17 lands; the simplex case waits.
 '''
 deps = ["AtkinsonHan.Chapter07.theorem_7_3_17", "AtkinsonHan.Chapter07.theorem_7_3_7", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "theorem_10_3_4"
-kind = "theorem"
-desc = '''
-Theorem 10.3.4: if `x = T_K x̂ + b_K` is a bijection of `K̂` onto `K`, then `v ∈ H^m(K)` if and only
-if `v̂ = v ∘ F_K ∈ H^m(K̂)`, and (10.3.5)–(10.3.6) hold,
-`|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{-1/2} |v|_{m,K}` and
-`|v|_{m,K} ≤ c ‖T_K⁻¹‖^m |det T_K|^{1/2} |v̂|_{m,K̂}`. Not formalized: it is the behaviour of an
-`H^m` seminorm under an affine change of variables. The space and the seminorm are available,
-`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` and `definition_7_2_2_multiIndex_norm` being
-proved, and no §7.3 result enters: what is missing is the change-of-variables computation itself,
-the chain rule for a weak derivative along an affine map — of which
-`HasWeakIteratedLineDerivOn.contDiff_comp` (`Numlib/Analysis/Sobolev/Mollification.lean`) is the
-first-order form — with the Jacobian factor in the `L²` norm. This one is simply unwritten.
-
-Blocked: not blocked mathematically — re-checked 2026-09-15 — but it is a *task*, not a node, and
-was left for one. One correction first: `HasWeakIteratedLineDerivOn.contDiff_comp` is **not** the
-first-order form of what is wanted. It is the chain rule for `f ∘ v` with `f : ℝ → ℝ` a `C¹`
-function composed on the *outside*; what 10.3.4 needs is a change of variables in the *domain*,
-`v ∘ F` with `F` affine, and that has no form, first-order or otherwise, anywhere in the tree.
-The route, in four pieces:
-
-(1) **Transport of test functions.** For an affine equivalence `F x = T x + b` of `ℝ^d` and
-`Ωhat = F ⁻¹' Ω`, the map sending a test function on `Ωhat` to its composition with `F⁻¹` lands in
-the test functions on `Ω`: smooth by composition, `tsupport` the continuous image of a compact set
-and inside `Ω`. About 40 lines; `TestFunction.compConstSub` in
-`Numlib/Analysis/Sobolev/Mollification.lean` is the template for the four structure fields.
-
-(2) **The affine change of variables for a weak derivative**, the missing backbone lemma:
-`HasWeakIteratedFDerivOn n v w Ω μ` gives `HasWeakIteratedFDerivOn n (v ∘ F) (fun x ↦ (w (F
-x)).compContinuousLinearMap fun _ ↦ T) (F ⁻¹' Ω) μ`. The proof is the defining identity read once:
-`iteratedFDeriv ℝ n (φ ∘ F) x z = iteratedFDeriv ℝ n φ (F x) (T ∘ z)` by
-`ContinuousLinearMap.iteratedFDeriv_comp_right` together with `iteratedFDeriv_comp_add_left` —
-exactly the pair `Mollification.lean` already uses for the reflection — then the integral
-substitution from `MeasureTheory.Measure.map_linearMap_addHaar_eq_smul_addHaar` with
-`integral_map`, whose Jacobian factor cancels between the two sides of the identity. This is the
-piece worth having on its own.
-
-(3) **The seminorm bound needs no tensor-versus-multi-index norm comparison**, which is what makes
-the whole thing tractable. Expanding each `T e_i` in the basis by multilinearity
-(`ContinuousMultilinearMap.apply_eq_sum_basis` in `Numlib/Analysis/Sobolev/MultiIndex.lean`) gives
-the `alpha`-th weak derivative of `v ∘ F` at `x` as a sum, over tuples `l : Fin m → Fin d`, of
-products of matrix entries of `T` times `(∂^{multiIndexCount l} v) (F x)`; and each entry is at
-most `‖T‖`. So the pointwise bound is `‖T‖^m d^m` times the largest `|∂^β v| ∘ F` with `|β| = m`.
-Summing over the multi-indices of order `m` and changing variables in the `L²` norm gives
-(10.3.5) with `c = d^m (#{α : |α| = m})^{1/2}`, which depends only on `d` and `m`, as the book
-says. (10.3.6) is the same statement for `F⁻¹`, and the membership equivalence follows from the
-two bounds.
-
-(4) `MemSobolevMultiIndex.memSobolev` supplies the tensor-valued weak derivatives that (2) and (3)
-are phrased over, and `MemSobolev.memSobolevMultiIndex` returns to the multi-index seminorm the
-book displays; both are proved.
-
-Estimated 400-600 lines across the four pieces, of which (2) is the only novel mathematics.
-Nothing in §7.3 enters at any point, so this node is independent of everything else open in this
-group.
-'''
-deps = ["AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4"
 
 [[node]]
 id = "theorem_10_3_5"
@@ -130,8 +94,19 @@ every `v ∈ H^{k+1}(K)`, with `c` depending only on `K̂` and `Π̂`. Not forma
 10.3.1 combined with Theorems 10.3.3 and 10.3.4 and Lemma 10.2.2, so it is blocked by those two,
 not by the `H^m` seminorm, which is available.
 
-Blocked: re-checked 2026-09-15; downstream of theorem_10_3_3 and theorem_10_3_4, the second
-of which is a bounded task and not a mathematical gap -- see its own note.
+Blocked: rechecked 2026-09-20; `theorem_10_3_4` is proved, so this is downstream of
+`theorem_10_3_3` alone (Theorem 10.3.1 and Lemma 10.2.2 are proved). The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex). The proof
+is then the book's: (10.3.5), (10.3.3) on `K̂`, (10.3.6) and Lemma 10.2.2's bounds
+`‖T_K‖ ≤ h_K/ρ̂`, `‖T_K⁻¹‖ ≤ ĥ/ρ_K`; estimate 100–150 lines once `theorem_10_3_3` exists.
 '''
 deps = ["theorem_10_3_1", "theorem_10_3_3", "theorem_10_3_4", "lemma_10_2_2"]
 
@@ -147,7 +122,18 @@ Theorem 10.3.5 read on a regular family, so it is blocked by that theorem and, t
 Theorem 10.3.3; `IsRegularFamily`, the Definition 10.3.6 half of its hypotheses, is formalized
 here.
 
-Blocked: re-checked 2026-09-15; downstream of theorem_10_3_5, hence of theorem_10_3_3.
+Blocked: rechecked 2026-09-20; downstream of `theorem_10_3_5`, hence of `theorem_10_3_3`
+(`theorem_10_3_4` is proved). The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex). Estimate 50 lines once `theorem_10_3_5` exists,
+`IsRegularFamily` being formalized.
 '''
 deps = ["theorem_10_3_5", "IsRegularFamily"]
 
@@ -162,8 +148,18 @@ independent of `h`. Not formalized: on top of Corollary 10.3.7 it needs the addi
 norm over a triangulation of `Ω`, hence a triangulation scaffold, which the chapter's group
 description puts out of scope; the Sobolev space itself is available.
 
-Blocked: re-checked 2026-09-15; downstream of corollary_10_3_7, and in addition the
-triangulation scaffold its global norm additivity needs is a deliberate scope exclusion of
-the chapter's group description, not a mathematical gap.
+Blocked: rechecked 2026-09-20; downstream of `corollary_10_3_7` (`theorem_10_3_4` is proved),
+and in addition the triangulation scaffold (blocker 11 of `notes/frontier.md`) that the additivity
+of the `H^m` norm over the elements needs is a deliberate scope exclusion of the chapter's group
+description. The Brezis backbone (2026-09-20) proves the missing §7.3 theory on `C¹` domains and on
+Sobolev extension domains (`IsSobolevExtensionDomain N p Ω`, `Numlib/Analysis/Sobolev/Cutoff.lean`;
+instances: `C¹` chart domains by `IsSobolevExtensionDomain.of_isContDiffChartDomain`, the unit
+square by `SobolevEuclidean.exists_extensionL_unitSquare` of `Extension.lean`): the embeddings
+(`EmbeddingDomain.lean`), Rellich–Kondrachov with `W^{k+1,p} ⊂⊂ W^{k,p}` (`Compactness.lean`), and
+agent `ah1` is restating Deny–Lions (AH 7.3.12) and, if time allows, 7.3.17/7.3.18 on a fixed
+extension domain. The reference simplex is a Lipschitz domain, not `C¹`, and no simplex extension
+operator exists, so the reachable restatement of this node is on rectangular (`Q_k`) reference
+elements — the unit square `EuclideanSpace.rect 0 1 0 1` — or waits for a simplex (Lipschitz)
+extension operator (Stein, or reflection across the faces of a simplex).
 '''
 deps = ["corollary_10_3_7"]

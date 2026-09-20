@@ -1,7 +1,9 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.LinearAlgebra.AffineSpace.Basis
+import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Geometry.Euclidean.TriangleShape
+import NumlibSurface.AtkinsonHan.Chapter07.Section02
 
 /-!
 # Atkinson–Han §10.3: local interpolation and regular families
@@ -12,7 +14,8 @@ Analysis Framework*, 3rd edition, Springer, 2009, §10.3.
 The section estimates the finite element interpolation error on an element by transporting the
 problem to the reference element. The estimates themselves are Sobolev statements and are not
 available yet — *Not formalized here* below says what each one waits on, which is no longer the
-Sobolev space — but the two results this file holds are not Sobolev statements at all:
+Sobolev space — but the transport itself, Theorem 10.3.4, is here, and two of the results are not
+Sobolev statements at all:
 
 * **Theorem 10.3.1**, that nodal interpolation commutes with the affine pullback, is an algebraic
   identity between two finite sums. It is the backbone's `Approximation.nodalInterp_comp`, and the
@@ -32,6 +35,10 @@ Sobolev space — but the two results this file holds are not Sobolev statements
 ## Main results
 
 * `theorem_10_3_1` — `Π̂ (v ∘ F_K) = (Π_K v) ∘ F_K`.
+* `theorem_10_3_4` — the affine change of variables in `H^m`: `v ∈ H^m(K)` iff `v ∘ F_K ∈ H^m(K̂)`,
+  with the seminorm bounds (10.3.5)–(10.3.6); the general lemmas `eLpNorm_comp_affine`,
+  `memSobolev_comp_affine_iff` and `sobolevSeminorm_comp_affine_le` (every order, every `p`) sit
+  beside it and belong in `Numlib/Analysis/Sobolev/Calculus.lean`.
 * `example_10_3_2` — the linear element: the barycentric coordinates of a simplex are nodal for its
   vertices, so `Π_K` is the interpolant through the vertex values, and
   `nodalInterp_coord_affineMap` says that it reproduces affine functions.
@@ -53,17 +60,21 @@ not for a family of triangulations.
 
 ## Not formalized here
 
-Theorems 10.3.3, 10.3.4, 10.3.5, Corollary 10.3.7 and Theorem 10.3.9, the interpolation error
+Theorems 10.3.3, 10.3.5, Corollary 10.3.7 and Theorem 10.3.9, the interpolation error
 estimates: they are inequalities between `H^m` seminorms and rest on the Deny–Lions estimate
 (the Bramble–Hilbert lemma, Exercises 10.3.5 and 10.3.6), on the transformation of a Sobolev
-seminorm under an affine map, and — for the global bound — on the additivity of the `H^m` norm over
-a triangulation. `H^m(K)` is not the obstruction: the weak derivative on an open set of `ℝᵈ` is
-`Chapter07.definition_7_1_3_multiIndex` and the space with its norm and seminorm is
-`Chapter07.definition_7_2_2_multiIndex` with `Chapter07.definition_7_2_2_multiIndex_norm`, all
-proved. What is missing is §7.3 over them — Deny–Lions is Theorem 7.3.12, Bramble–Hilbert is
-Theorem 7.3.17, and the embedding `H^{k+1}(K̂) ↪ C(K̂)` that makes the interpolant of a Sobolev
-function meaningful is Theorem 7.3.7 — except for Theorem 10.3.4, the affine change of variables,
-which needs no §7.3 result and is simply unwritten. The same gap rules out Exercises 10.3.1,
+seminorm under an affine map (Theorem 10.3.4, proved here), and — for the global bound — on the
+additivity of the `H^m` norm over a triangulation. `H^m(K)` is not the obstruction: the weak
+derivative on an open set of `ℝᵈ` is `Chapter07.definition_7_1_3_multiIndex` and the space with
+its norm is `Chapter07.definition_7_2_2` / `Chapter07.definition_7_2_2_multiIndex` with
+`Chapter07.definition_7_2_2_multiIndex_norm`, all proved; the seminorm `|·|_{m,K}` used here is
+the backbone's `sobolevSeminorm`, the tensor form, equivalent to the book's sum over `|α| = m`
+with constants depending on `d` and `m` only. What is missing is §7.3 over them — Deny–Lions is
+Theorem 7.3.12, Bramble–Hilbert is Theorem 7.3.17, and the embedding `H^{k+1}(K̂) ↪ C(K̂)` that
+makes the interpolant of a Sobolev function meaningful is Theorem 7.3.7; the Brezis backbone
+proves these on `C¹` domains and on Sobolev extension domains (`IsSobolevExtensionDomain`), which
+the reference simplex, a Lipschitz domain, is not known to be, while the unit square is
+(`SobolevEuclidean.exists_extensionL_unitSquare`). The same gap rules out Exercises 10.3.1,
 10.3.2, 10.3.4 and 10.3.7. Exercise 10.3.3 (`h_K / ρ_K` bounded if and only if the minimal angles
 are bounded below) is Sobolev-free, and is
 `exercise_10_3_3` below.
@@ -210,5 +221,193 @@ theorem exercise_10_3_3 {ι : Type*}
       (fun i => le_trans (min_le_left _ _) (hα t i))
     rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
     nlinarith [h, (T t).inradius_pos]
+
+/-! ### The affine change of variables in `W^{m,p}`: the general lemmas -/
+
+section Affine
+
+open MeasureTheory Set TopologicalSpace
+open scoped ENNReal
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E] {μ : Measure E} [μ.IsAddHaarMeasure]
+  {G : Type*} [NormedAddCommGroup G]
+
+/-- The open set `F⁻¹(Ω)` for the affine map `F x = T x + c`, as an open set. -/
+abbrev affinePreimage (T : E ≃L[ℝ] E) (c : E) (Ω : Opens E) : Opens E :=
+  ⟨(fun x ↦ T x + c) ⁻¹' Ω, Ω.isOpen.preimage (T.continuous.add continuous_const)⟩
+
+/-- (General; belongs beside `setIntegral_comp_affine` in `Numlib/Analysis/Sobolev/Calculus.lean`.)
+**The affine change of variables in an `L^p` norm**: for `F x = T x + c`,
+`‖f ∘ F‖_{L^p(F⁻¹ A)} = |det T|^{-1/p} ‖f‖_{L^p(A)}`, for every `p`, by the pushforward formula
+`map_affine_addHaar`. -/
+theorem eLpNorm_comp_affine (T : E ≃L[ℝ] E) (c : E) {A : Set E} (hA : MeasurableSet A)
+    (f : E → G) (p : ℝ≥0∞) :
+    eLpNorm (fun x ↦ f (T x + c)) p (μ.restrict ((fun x ↦ T x + c) ⁻¹' A))
+      = ENNReal.ofReal |(LinearMap.det (T : E →ₗ[ℝ] E))⁻¹| ^ (1 / p).toReal
+        * eLpNorm f p (μ.restrict A) := by
+  have hmeas : Measurable fun x ↦ T x + c := (measurableEmbedding_affine T c).measurable
+  have h1 : (μ.restrict ((fun x ↦ T x + c) ⁻¹' A)).map (fun x ↦ T x + c)
+      = ENNReal.ofReal |(LinearMap.det (T : E →ₗ[ℝ] E))⁻¹| • μ.restrict A := by
+    rw [← Measure.restrict_map hmeas hA, map_affine_addHaar, Measure.restrict_smul]
+  rw [← smul_eq_mul, ← eLpNorm_smul_measure_of_ne_zero
+    (by simp [(LinearEquiv.isUnit_det' T.toLinearEquiv).ne_zero]), ← h1,
+    (measurableEmbedding_affine T c).eLpNorm_map_measure]
+  rfl
+
+/-- (General.) `L^p` membership transports along an affine map, onto the preimage. -/
+theorem memLp_comp_affine (T : E ≃L[ℝ] E) (c : E) {A : Set E} (hA : MeasurableSet A)
+    {f : E → G} {p : ℝ≥0∞} (hf : MemLp f p (μ.restrict A)) :
+    MemLp (fun x ↦ f (T x + c)) p (μ.restrict ((fun x ↦ T x + c) ⁻¹' A)) := by
+  rw [memLp_iff, eLpNorm_comp_affine T c hA]
+  exact ENNReal.mul_lt_top (ENNReal.rpow_lt_top_of_nonneg (by positivity) ENNReal.ofReal_ne_top)
+    hf
+
+/-- (General; the all-orders affine form of `MemSobolev.comp_diffeoOn` of
+`Numlib/Analysis/Sobolev/Calculus.lean`.) **Membership of `W^{m,p}` transports along an affine
+map**: `v ∈ W^{m,p}(Ω)` gives `v ∘ F ∈ W^{m,p}(F⁻¹ Ω)` for `F x = T x + c`, the weak derivatives
+being `x ↦ ∂^n v (F x) ∘ (T, …, T)` (`HasWeakIteratedFDerivOn.comp_affineEquiv`). -/
+theorem memSobolev_comp_affine [NormedSpace ℝ G] (T : E ≃L[ℝ] E) (c : E) {Ω : Opens E}
+    {v : E → G} {m : ℕ∞} {p : ℝ≥0∞} (h : MemSobolev v m p Ω μ) :
+    MemSobolev (fun x ↦ v (T x + c)) m p (affinePreimage T c Ω) μ := by
+  refine ⟨memLp_comp_affine T c Ω.isOpen.measurableSet h.1, fun n hn ↦ ?_⟩
+  obtain ⟨w, hw, hwp⟩ := h.2 n hn
+  refine ⟨_, hw.comp_affineEquiv T c, ?_⟩
+  exact (ContinuousMultilinearMap.compContinuousLinearMapL
+    fun _ : Fin n ↦ (T : E →L[ℝ] E)).comp_memLp' (memLp_comp_affine T c Ω.isOpen.measurableSet hwp)
+
+omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- The inverse of the affine map `x ↦ T x + c` is `y ↦ T⁻¹ y + (-T⁻¹ c)`, and the preimage of
+the preimage is the set itself. -/
+theorem affinePreimage_symm (T : E ≃L[ℝ] E) (c : E) (Ω : Opens E) :
+    affinePreimage T.symm (-T.symm c) (affinePreimage T c Ω) = Ω := by
+  ext y
+  simp
+
+/-- (General.) **Membership of `W^{m,p}` is equivalent along an affine map.** -/
+theorem memSobolev_comp_affine_iff [NormedSpace ℝ G] (T : E ≃L[ℝ] E) (c : E) {Ω : Opens E}
+    {v : E → G} {m : ℕ∞} {p : ℝ≥0∞} :
+    MemSobolev v m p Ω μ ↔ MemSobolev (fun x ↦ v (T x + c)) m p (affinePreimage T c Ω) μ := by
+  refine ⟨memSobolev_comp_affine T c, fun h ↦ ?_⟩
+  have := memSobolev_comp_affine T.symm (-T.symm c) h
+  rw [affinePreimage_symm] at this
+  simpa using this
+
+/-- (General.) **The seminorm bound of the affine change of variables**, (10.3.5) of
+[han2009theoretical] Theorem 10.3.4 for the tensor seminorm and every `p`:
+`|v ∘ F|_{m,p,F⁻¹ Ω} ≤ ‖T‖^m |det T|^{-1/p} |v|_{m,p,Ω}`, since
+`∂^m (v ∘ F) x = ∂^m v (F x) ∘ (T, …, T)` has norm at most `‖T‖^m ‖∂^m v (F x)‖`
+(`ContinuousMultilinearMap.norm_compContinuousLinearMap_le`) and the `L^p` norm transports with
+the factor `|det T|^{-1/p}` (`eLpNorm_comp_affine`). -/
+theorem sobolevSeminorm_comp_affine_le [NormedSpace ℝ G] [CompleteSpace G] (T : E ≃L[ℝ] E) (c : E)
+    {Ω : Opens E} {v : E → G} {m : ℕ} {p : ℝ≥0∞} (h : MemSobolev v m p Ω μ) :
+    sobolevSeminorm (fun x ↦ v (T x + c)) m p (affinePreimage T c Ω) μ
+      ≤ ENNReal.ofReal (‖(T : E →L[ℝ] E)‖ ^ m)
+        * (ENNReal.ofReal |(LinearMap.det (T : E →ₗ[ℝ] E))⁻¹| ^ (1 / p).toReal
+          * sobolevSeminorm v m p Ω μ) := by
+  obtain ⟨w, hw, hwp⟩ := h.2 m le_rfl
+  have hw' := hw.comp_affineEquiv T c
+  -- the chosen weak derivatives are `w` and its transport, almost everywhere
+  have e1 : sobolevSeminorm v m p Ω μ = eLpNorm w p (μ.restrict Ω) := by
+    refine eLpNorm_congr_ae ((ae_restrict_iff' Ω.isOpen.measurableSet).2 ?_)
+    exact hw.weakIteratedFDeriv_ae_eq
+  have e2 : sobolevSeminorm (fun x ↦ v (T x + c)) m p (affinePreimage T c Ω) μ
+      = eLpNorm (fun x ↦ (w (T x + c)).compContinuousLinearMap fun _ ↦ (T : E →L[ℝ] E)) p
+        (μ.restrict ((fun x ↦ T x + c) ⁻¹' Ω)) := by
+    refine eLpNorm_congr_ae ((ae_restrict_iff' (affinePreimage T c Ω).isOpen.measurableSet).2 ?_)
+    exact hw'.weakIteratedFDeriv_ae_eq
+  rw [e1, e2, ← eLpNorm_comp_affine T c Ω.isOpen.measurableSet,
+    ← Real.enorm_eq_ofReal (by positivity), ← eLpNorm_const_smul]
+  refine eLpNorm_mono_ae ?_ (Eventually.of_forall fun x ↦ ?_)
+  · exact ((ContinuousMultilinearMap.compContinuousLinearMapL fun _ : Fin m ↦
+      (T : E →L[ℝ] E)).comp_memLp' (memLp_comp_affine T c Ω.isOpen.measurableSet hwp))
+      |>.aestronglyMeasurable
+  · simp only [Pi.smul_apply, norm_smul, Real.norm_of_nonneg (pow_nonneg (norm_nonneg _) m)]
+    refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans_eq ?_
+    rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin, mul_comm]
+
+end Affine
+
+/-! ### Theorem 10.3.4 -/
+
+section Theorem1034
+
+open MeasureTheory Set TopologicalSpace
+open scoped ENNReal
+
+local notation "𝔼" => EuclideanSpace ℝ (Fin d)
+
+/-- The determinant of the inverse of `T` is the inverse of the determinant of `T`. -/
+theorem det_symm_eq_inv (T : 𝔼 ≃L[ℝ] 𝔼) :
+    LinearMap.det (T.symm : 𝔼 →ₗ[ℝ] 𝔼) = (LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼))⁻¹ := by
+  refine eq_inv_of_mul_eq_one_left ?_
+  rw [← LinearMap.det_comp]
+  have : (T.symm : 𝔼 →ₗ[ℝ] 𝔼).comp (T : 𝔼 →ₗ[ℝ] 𝔼) = LinearMap.id :=
+    LinearMap.ext fun x ↦ T.symm_apply_apply x
+  rw [this, LinearMap.det_id]
+
+/-- The constants of (10.3.5)–(10.3.6) in `ℝ≥0∞`: `ofReal (a^m) * ofReal |x| ^ (1/2)` is
+`ofReal (a^m |x|^{1/2})`. -/
+theorem ofReal_pow_mul_ofReal_abs_rpow {a : ℝ} (ha : 0 ≤ a) (m : ℕ) (x : ℝ) :
+    ENNReal.ofReal (a ^ m) * ENNReal.ofReal |x| ^ (1 / (2 : ℝ≥0∞)).toReal
+      = ENNReal.ofReal (a ^ m * |x| ^ (1 / 2 : ℝ)) := by
+  have h2 : (1 / (2 : ℝ≥0∞)).toReal = 1 / 2 := by norm_num
+  rw [h2, ENNReal.ofReal_rpow_of_nonneg (abs_nonneg _) (by norm_num),
+    ← ENNReal.ofReal_mul (pow_nonneg ha m)]
+
+/-- **Theorem 10.3.4** (affine change of variables in `H^m`). Let `x = T x̂ + b` be a bijection of
+the reference element `K̂` onto the element `K`, both open subsets of `ℝ^d`, and let
+`v̂ = v ∘ F`, `F x̂ = T x̂ + b`. Then `v ∈ H^m(K)` if and only if `v̂ ∈ H^m(K̂)`, and the estimates
+(10.3.5) `|v̂|_{m,K̂} ≤ ‖T‖^m |det T|^{-1/2} |v|_{m,K}` and (10.3.6)
+`|v|_{m,K} ≤ ‖T⁻¹‖^m |det T|^{1/2} |v̂|_{m,K̂}` hold.
+
+`H^m(K)` is `Chapter07.definition_7_2_2 m 2 K` (the bundled reading of Definition 7.2.2), and the
+seminorm `|·|_{m,K}` is the backbone's `sobolevSeminorm · m 2 K volume`, the `L²(K)` norm of the
+operator norm of the derivative tensor of order `m`. That seminorm is equivalent to the book's
+`(∑_{|α| = m} ‖∂^α v‖²_{L²(K)})^{1/2}` with constants depending on `d` and `m` only (the book's
+`c`, which it does not specify); for the tensor seminorm the constant is exactly `1`, and this is
+what is proved: `∂^m v̂ (x̂) = ∂^m v (F x̂) ∘ (T, …, T)` has operator norm at most
+`‖T‖^m ‖∂^m v (F x̂)‖`, and the change of variables `x = F x̂` in the `L²` integral contributes
+`|det T|^{-1/2}` (`sobolevSeminorm_comp_affine_le`, `eLpNorm_comp_affine`); (10.3.6) is (10.3.5)
+for `F⁻¹`. The membership equivalence is `memSobolev_comp_affine_iff`, from the backbone's
+`HasWeakIteratedFDerivOn.comp_affineEquiv`. `‖T‖` is the operator norm of `T` on Euclidean
+`ℝ^d` and `det T` the determinant of its linear map. -/
+theorem theorem_10_3_4 (T : 𝔼 ≃L[ℝ] 𝔼) (b : 𝔼) (Khat K : Opens 𝔼)
+    (hK : (fun x ↦ T x + b) '' Khat = K) (m : ℕ) (v : 𝔼 → ℝ) :
+    (Chapter07.definition_7_2_2 m 2 K v ↔
+      Chapter07.definition_7_2_2 m 2 Khat (fun x ↦ v (T x + b))) ∧
+    (Chapter07.definition_7_2_2 m 2 K v →
+      sobolevSeminorm (fun x ↦ v (T x + b)) m 2 Khat volume
+        ≤ ENNReal.ofReal (‖(T : 𝔼 →L[ℝ] 𝔼)‖ ^ m * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (-(1 / 2 : ℝ)))
+          * sobolevSeminorm v m 2 K volume) ∧
+    (Chapter07.definition_7_2_2 m 2 K v →
+      sobolevSeminorm v m 2 K volume
+        ≤ ENNReal.ofReal
+            (‖(T.symm : 𝔼 →L[ℝ] 𝔼)‖ ^ m * |LinearMap.det (T : 𝔼 →ₗ[ℝ] 𝔼)| ^ (1 / 2 : ℝ))
+          * sobolevSeminorm (fun x ↦ v (T x + b)) m 2 Khat volume) := by
+  -- `K̂` is the preimage of `K`
+  have hKhat : Khat = affinePreimage T b K := by
+    ext x
+    change x ∈ (Khat : Set 𝔼) ↔ T x + b ∈ (K : Set 𝔼)
+    rw [← hK]
+    exact ⟨fun hx ↦ ⟨x, hx, rfl⟩, fun ⟨y, hy, hxy⟩ ↦ by
+      rwa [← T.injective (add_right_cancel hxy)]⟩
+  subst hKhat
+  refine ⟨memSobolev_comp_affine_iff T b, fun h ↦ ?_, fun h ↦ ?_⟩
+  · refine (sobolevSeminorm_comp_affine_le T b h).trans (le_of_eq ?_)
+    rw [← mul_assoc, ofReal_pow_mul_ofReal_abs_rpow (norm_nonneg _), abs_inv,
+      Real.inv_rpow (abs_nonneg _), ← Real.rpow_neg (abs_nonneg _)]
+  · have h' : MemSobolev (fun x ↦ v (T x + b)) m 2 (affinePreimage T b K) volume :=
+      memSobolev_comp_affine T b h
+    have key := sobolevSeminorm_comp_affine_le T.symm (-T.symm b) h'
+    rw [affinePreimage_symm] at key
+    have hfun : (fun y ↦ v (T (T.symm y + -T.symm b) + b)) = v := by
+      funext y
+      simp
+    rw [hfun] at key
+    refine key.trans (le_of_eq ?_)
+    rw [← mul_assoc, ofReal_pow_mul_ofReal_abs_rpow (norm_nonneg _), det_symm_eq_inv, inv_inv]
+
+end Theorem1034
 
 end AtkinsonHan.Chapter10

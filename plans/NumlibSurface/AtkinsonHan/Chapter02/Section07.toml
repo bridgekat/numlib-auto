@@ -36,46 +36,11 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
 
 [[node]]
 id = "theorem_2_7_5_mpr"
-kind = "theorem"
-desc = '''Theorem 2.7.5, the converse half: a Banach space in which every bounded sequence has a
-weakly convergent subsequence is reflexive. Not formalized; the forward half is `theorem_2_7_5_mp`.
-Two pieces are missing, and only the second is a real obstruction.
-
-(1) **Goldstine's theorem**, that the image of the closed unit ball of `V` is weak-∗ dense in the
-closed unit ball of `(V')'`. Mathlib has no bipolar theorem for the weak-∗ topology
-(`LinearMap.subset_bipolar` is one inclusion only), but it does have the two ingredients: the weak
-representation theorem `LinearMap.dualEmbedding_surjective` and `LinearMap.rightDualEquiv`, which
-identify the dual of `WeakBilin B` with the other side of the pairing, and
-`geometric_hahn_banach_closed_point` for separating a point from a closed convex set in a locally
-convex space. Estimate: around a hundred lines.
-
-(2) The reduction from the *sequential* hypothesis to the *topological* weak compactness that
-Kakutani's argument consumes. That is the hard half of Eberlein–Šmulian, whose proof builds
-alternating sequences of vectors and functionals to produce a separable subspace, and Mathlib has
-nothing in that direction. Estimate: several hundred lines, a task of its own.
-
-Blocked: rechecked 2026-09-15; the reason stands. Neither Goldstine's theorem nor the
-sequential-to-topological half of Eberlein–Šmulian has appeared in Mathlib on this pin
-(`Goldstine`, `Smulian`, `Eberlein`: zero occurrences).
-'''
-deps = ["definition_2_7_4"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
 
 [[node]]
 id = "theorem_2_7_5"
-kind = "theorem"
-desc = '''Theorem 2.7.5: a Banach space is reflexive if and only if every bounded sequence in it
-has a subsequence converging weakly to an element of the space. Split into its two implications,
-`theorem_2_7_5_mp` (proved, from the backbone's
-`NormedSpace.exists_subseq_forall_dual_tendsto`) and `theorem_2_7_5_mpr` (open); the `iff` itself
-is one line once the converse exists. Where the book applies the theorem (its Theorems 3.3.8,
-3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as the backbone's
-class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`, which `theorem_2_7_5_mp`
-now discharges from reflexivity.
-
-Blocked: rechecked 2026-09-15; it is one line once `theorem_2_7_5_mpr` exists, and nothing
-else is missing.
-'''
-deps = ["theorem_2_7_5_mp", "theorem_2_7_5_mpr"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
 
 [[node]]
 id = "definition_2_7_6"

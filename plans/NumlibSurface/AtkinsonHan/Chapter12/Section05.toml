@@ -56,6 +56,21 @@ A worthwhile intermediate target, and the only consequence chapter 12 actually c
 `y |-> l(x, y) u(y)` is of Rice's type `(gamma, m + 1)` uniformly in `x` whenever `u` is. That is
 the hypothesis `theorem_12_5_6` carries, and deriving it from 12.5.4 needs only the Leibniz rule
 and the smoothness of `l`.
+
+Blocked: rechecked 2026-09-20 (blocker 18, "one-offs", of `notes/frontier.md`); the note above
+stands, and the route it describes is neither complete nor short, so the node was not attempted
+this round. Checked: `Numlib/IntegralEquations/WeaklySingular.lean` still carries the admissible
+kernels (`isAdmissibleKernel_abs_sub_rpow`, `abs_log_le_two_mul_rpow`) and nothing about
+differentiating a weakly singular integral in its parameter; the only parameter-differentiation
+lemma in the tree is Mathlib's `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`
+(used in `Numlib/Analysis/SpecialFunctions/LaplaceTransform.lean`), which needs a dominating
+function that the differentiated kernel `|x - y|^{γ-2}` does not admit; the log-modified class
+`C^{(0,1)}[a, b]` is still undefined (`AtkinsonHan.Chapter03.HolderClass` covers `0 < β < 1`); and
+the Brezis round added nothing on either point. The book itself quotes the theorem from Schneider
+without proof, and its full statement is a `k`-step bootstrap over the weighted Hölder classes
+(12.5.27). Estimate: (1) the moving-singularity change of variables and one differentiation
+step, 300–500 lines; (2) the log-modified class, 50; (3) the bootstrap to order `k` with the
+endpoint weights, 500–800 more — a task of its own, not a bounded one.
 '''
 deps = ["theorem_12_5_1"]
 

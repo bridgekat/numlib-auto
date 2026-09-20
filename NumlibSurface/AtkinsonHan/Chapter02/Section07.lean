@@ -3,6 +3,7 @@ import Mathlib.Analysis.Normed.Module.DoubleDual
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Normed.Module.Reflexive
+import Numlib.Analysis.Normed.Module.Reflexive.EberleinSmulian
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Variational.WeakMinimization
 
@@ -42,8 +43,10 @@ Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
   makes the inequality of `exercise_2_7_2` strict.
 * `exercise_2_7_3`, `exercise_2_7_4` — the Radon–Riesz property, in an inner product space and in
   a uniformly convex Banach space.
-* `theorem_2_7_5_mp` — the half of Theorem 2.7.5 the book uses: in a reflexive space every bounded
-  sequence has a weakly convergent subsequence.
+* `theorem_2_7_5_mp`, `theorem_2_7_5_mpr`, `theorem_2_7_5` — Theorem 2.7.5: a normed space is
+  reflexive if and only if every bounded sequence has a weakly convergent subsequence; the forward
+  half is the one the book goes on to use, the converse is Kakutani's characterization with the
+  Eberlein–Šmulian theorem.
 * `definition_2_7_6_weakStar_iff_weak` — the remark closing the section: in the dual of a reflexive
   space, weak-∗ convergence and weak convergence agree.
 
@@ -61,16 +64,17 @@ Beware the colliding numbers: `exercise_2_7_4` is Exercise 2.7.4, the Radon–Ri
 uniformly convex space, and is a different result from Definition 2.7.4, reflexivity, which
 precedes Theorem 2.7.5.
 
-## Not formalized here
+## Theorem 2.7.5
 
-Of Theorem 2.7.5 only the converse half is missing: that weak sequential compactness of the bounded
-sets forces reflexivity. The forward half is `theorem_2_7_5_mp`, proved from the backbone's
-`NormedSpace.exists_subseq_forall_dual_tendsto`. The converse is Kakutani's characterisation
-together with the hard half of Eberlein–Šmulian. It needs Goldstine's theorem — the weak-∗ density
-of `J (B_V)` in the closed unit ball of `(V')'` — which Mathlib does not state, although
-`LinearMap.dualEmbedding_surjective` and `geometric_hahn_banach_closed_point` would give it; and it
-needs the separable-subspace construction of Eberlein–Šmulian to turn the sequential hypothesis
-into the topological weak compactness Kakutani's argument consumes, of which Mathlib has nothing.
+Both halves are the backbone's: the forward half `theorem_2_7_5_mp` is
+`NormedSpace.exists_subseq_forall_dual_tendsto` (`Numlib/Analysis/Normed/Module/Reflexive.lean`),
+and the converse `theorem_2_7_5_mpr` is
+`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`
+(`Numlib/Analysis/Normed/Module/Reflexive/EberleinSmulian.lean`): Kakutani's characterization of
+reflexivity by the weak compactness of the closed unit ball (`Reflexive/Kakutani.lean`, through
+Goldstine's theorem) together with the Eberlein–Šmulian theorem, which turns the sequential
+hypothesis into that topological compactness. Neither half needs the completeness the book
+assumes, a reflexive normed space being complete.
 
 Wherever the book applies Theorem 2.7.5 (its Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14) the surface
 assumes reflexivity itself, `NormedSpace.IsReflexive ℝ V`, which is Definition 2.7.4 by
@@ -241,12 +245,37 @@ normed space is complete (`NormedSpace.completeSpace_of_isReflexive`). The proof
 separable, and reflexive because it is a closed subspace — and applies the sequential
 Banach–Alaoglu theorem there.
 
-The converse is not formalized; see the module doc. -/
+The converse is `theorem_2_7_5_mpr`. -/
 theorem theorem_2_7_5_mp (hV : definition_2_7_4 𝕜 V) {v : ℕ → V} {C : ℝ}
     (hv : ∀ n, ‖v n‖ ≤ C) :
     ∃ (u : V) (φ : ℕ → ℕ), StrictMono φ ∧ WeakSeqTendsto 𝕜 (fun k => v (φ k)) u := by
   have : NormedSpace.IsReflexive 𝕜 V := definition_2_7_4_iff_isReflexive.1 hV
   exact NormedSpace.exists_subseq_forall_dual_tendsto hv
+
+/-- **Theorem 2.7.5**, the converse half: a normed space in which every bounded sequence has a
+subsequence converging weakly to an element of the space is reflexive.
+
+This is Kakutani's characterization of reflexivity by the weak compactness of the closed unit
+ball together with the Eberlein–Šmulian theorem, which turns the sequential hypothesis into that
+topological compactness — the backbone's
+`NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto`
+(`Numlib/Analysis/Normed/Module/Reflexive/EberleinSmulian.lean`). As in `theorem_2_7_5_mp`, the
+book's completeness hypothesis is not needed: the conclusion implies it. -/
+theorem theorem_2_7_5_mpr
+    (h : ∀ (v : ℕ → V) (C : ℝ), (∀ n, ‖v n‖ ≤ C) →
+      ∃ (u : V) (φ : ℕ → ℕ), StrictMono φ ∧ WeakSeqTendsto 𝕜 (fun k => v (φ k)) u) :
+    definition_2_7_4 𝕜 V :=
+  definition_2_7_4_iff_isReflexive.2
+    (NormedSpace.isReflexive_of_forall_exists_subseq_forall_dual_tendsto h)
+
+/-- **Theorem 2.7.5**: a normed space is reflexive if and only if every bounded sequence in it has
+a subsequence converging weakly to an element of the space — `theorem_2_7_5_mp` and
+`theorem_2_7_5_mpr` together. The book assumes a Banach space; completeness is not needed, since
+either side implies it. -/
+theorem theorem_2_7_5 :
+    definition_2_7_4 𝕜 V ↔ ∀ (v : ℕ → V) (C : ℝ), (∀ n, ‖v n‖ ≤ C) →
+      ∃ (u : V) (φ : ℕ → ℕ), StrictMono φ ∧ WeakSeqTendsto 𝕜 (fun k => v (φ k)) u :=
+  ⟨fun hV _ _ hv => theorem_2_7_5_mp hV hv, theorem_2_7_5_mpr⟩
 
 end Reflexive
 

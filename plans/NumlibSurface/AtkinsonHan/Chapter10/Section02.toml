@@ -98,5 +98,14 @@ spaces the chapter's group description puts out of scope, together with the tria
 space, and the reference-element half — the nodal bases and their duality — is `quadraticShape`,
 `cubicShape` and `latticeShape` here. Beware the near-match: `exercise_10_2_3` is Exercise 10.2.3,
 the `ℚ_{1,1}` nodal basis on the reference square, a different result with the same number.
+
+Blocked: rechecked 2026-09-20 (blocker 11 of `notes/frontier.md`); the reason stands and is a
+scope decision, not a mathematical gap: a triangulation of a plane domain (a finite family of
+nondegenerate triangles meeting edge to edge, the affine maps to the reference triangle) and the
+conformity `X_h ⊆ C(Ω̄)` of a piecewise polynomial space over it are not formalized anywhere in
+`Numlib/`; the Brezis round added nothing in this direction. The reference-element half is proved
+here. A `Numlib/Geometry/Triangulation` scaffold is the prerequisite of this node, of
+`theorem_10_3_9`, `theorem_10_4_1`, `example_10_4_2` and of the chapter-11 concrete variational
+inequalities; estimate 800–1500 lines for the scaffold, then ~150 for this node.
 '''
 deps = ["lemma_10_2_2", "refBary", "latticeShape"]

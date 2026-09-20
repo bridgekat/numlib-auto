@@ -11,6 +11,7 @@ import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.Instances.AddCircle.Real
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Sobolev.Interval.Higher
 
 /-!
 # Atkinson–Han §1.2: normed spaces
@@ -36,6 +37,8 @@ Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tends
 * `definition_1_2_20`, `definition_1_2_20_schauder` — the two clauses of Definition 1.2.20: a
   countably-infinite basis, which is what the book calls separability, and a Schauder basis.
 * `definition_1_2_21` — a Cauchy sequence.
+* `ContDiffMapIccSobolevNorm` — `Cᵐ[a, b]` carrying the Sobolev norm of Example 1.2.28 (b), as a
+  type synonym of the backbone's `ContDiffMapIcc`.
 
 ## Main results
 
@@ -58,6 +61,9 @@ Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tends
   illustrations of the section.
 * `example_1_2_28_a`, `example_1_2_28_a_periodic` — Example 1.2.28 (a): `Cᵐ[a, b]` and
   `C_p^k(2π)` are Banach spaces.
+* `example_1_2_28_b_norm`, `example_1_2_28_b` — Example 1.2.28 (b): `Cᵐ[a, b]` with the norm
+  `‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}` (`ContDiffMapIccSobolevNorm`, the norm pulled back from
+  `W^{m,p}(a, b)` along the inclusion) is not complete, and its completion is `W^{m,p}(a, b)`.
 
 ## Conventions
 
@@ -86,11 +92,13 @@ part of the statement of `example_1_2_28_a`. `C_p^k(2π)` is read on one period,
 `Cᵏ[0, 2π]` on which every derivative up to order `k` matches at the two ends; that is
 `example_1_2_28_a_periodic`, whose last two conjuncts identify it with the genuinely `2π`-periodic
 `Cᵏ` functions on `ℝ`, and which agrees at `k = 0` with the `C(AddCircle (2π), ℝ)` of
-Example 1.2.5. Example 1.2.28 (b), the Sobolev completion `W^{m,p}(a, b)`, is not restated: the
-space itself is the backbone's `SobolevMultiIndex` (`Numlib/Analysis/Sobolev/MultiIndex.lean`)
-read on `E = ℝ`, but the `‖·‖_p`-type norm on `Cᵐ[a, b]` and the density of `Cᵐ[a, b]` in
-`W^{m,p}(a, b)` are not built; see the plan of this section. Example 1.2.19 is Theorem 1.5.6
-restated for a bounded `Ω`, and is recorded with it in §1.5.
+Example 1.2.5. Example 1.2.28 (b) reads `W^{m,p}(a, b)` as the backbone's `SobolevIntervalLp`
+(`Numlib/Analysis/Sobolev/Interval/Basic.lean`, the multi-index Sobolev space on `E = ℝ`), and
+the book's norm on `Cᵐ[a, b]` as the norm of `W^{m,p}(a, b)` pulled back along the injective
+inclusion `ContDiffMapIcc.toSobolevIntervalLp` (`ContDiffMapIccSobolevNorm`); the book's
+"completion" is then the dense linear isometry into a Banach space, the sense of
+`theorem_1_2_25_uniqueness`. Example 1.2.19 is Theorem 1.5.6 restated for a bounded `Ω`, and is
+recorded with it in §1.5.
 
 The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
 it — Examples 1.2.15, 1.2.16 and the second half of Example 1.2.22 — it is written out as the
@@ -827,9 +835,9 @@ rather than the maximum `max_{j ≤ m} ‖v⁽ʲ⁾‖_∞` of Example 1.2.5 (b)
 two-sided bound between the two norms, so the completeness of the third is the book's statement for
 either of them.
 
-The other half of clause (a), that `C_p^k(2π)` is a Banach space, is still open: the periodic `Cᵏ`
-space does not exist here. Clause (b), the incompleteness for the `‖·‖_p` norms and the Sobolev
-completion, is out of scope. -/
+The other half of clause (a), that `C_p^k(2π)` is a Banach space, is `example_1_2_28_a_periodic`.
+Clause (b), the incompleteness for the `‖·‖_p`-type norm and the Sobolev completion, is
+`example_1_2_28_b`. -/
 theorem example_1_2_28_a {a b : ℝ} (hab : a ≤ b) (m : ℕ) :
     (∀ v : ContDiffMapIcc hab m, ⨆ j, ‖v.deriv j‖ ≤ ‖v‖) ∧
       (∀ v : ContDiffMapIcc hab m, ‖v‖ ≤ (m + 1) * ⨆ j, ‖v.deriv j‖) ∧
@@ -882,6 +890,249 @@ theorem example_1_2_28_a_periodic (k : ℕ) :
       fun t => rfl⟩
 
 end Normed
+
+/-! ### Example 1.2.28 (b): `Cᵐ[a, b]` with the Sobolev norm and its completion `W^{m,p}(a, b)` -/
+
+section Example1228b
+
+noncomputable section
+
+open Set TopologicalSpace
+
+variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {m : ℕ}
+
+/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) The primitive
+`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` lies in `L^p(a, b)`, being continuous on `[a, b]`. -/
+theorem memLp_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
+    MemLp (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t) p
+      (volume.restrict (Ioo a b)) := by
+  have hint : IntegrableOn (SobolevIntervalLp.deriv u 0) (Icc a b) :=
+    (SobolevIntervalLp.integrableOn_deriv_Ioo u 0).integrableOn_Icc_of_Ioo
+  have hy₀ : (a + b) / 2 ∈ Icc a b := ⟨by linarith, by linarith⟩
+  have hF : ContinuousOn (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t)
+      (Icc a b) :=
+    continuousOn_integral_of_intervalIntegrable hy₀
+      (fun x hx y hy ↦ (hint.mono_set (uIcc_subset_Icc hx hy)).intervalIntegrable) 0
+  exact hF.memLp_top_restrict_Ioo.mono_exponent le_top
+
+/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) **The primitive
+`x ↦ ∫_{(a+b)/2}^x u` of `u ∈ W^{m,p}(a, b)` as an element of `W^{m+1,p}(a, b)`**: its components
+are the primitive followed by the components of `u`. A right inverse of the shift
+`SobolevIntervalLp.shift` (`shift_sobolevPrimitive`). -/
+def sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
+    SobolevIntervalLp (m + 1) p (Opens.Ioo a b) :=
+  SobolevIntervalLp.mk
+    (Fin.cons ((memLp_sobolevPrimitive hlt u).toLp _) fun j ↦ SobolevIntervalLp.deriv u j)
+    (by
+      have hy₀ : (a + b) / 2 ∈ Opens.Ioo a b := ⟨by linarith, by linarith⟩
+      have hw : HasWeakDerivOn (fun x ↦ 0 + ∫ t in (a + b) / 2..x, SobolevIntervalLp.deriv u 0 t)
+          (SobolevIntervalLp.deriv u 0) (Opens.Ioo a b) :=
+        (SobolevIntervalLp.locallyIntegrableOn_deriv u 0).hasWeakDerivOn_integral
+          (SobolevIntervalLp.ordConnected_coe_Ioo a b) hy₀ 0
+      intro j
+      refine Fin.cases ?_ (fun i ↦ ?_) j
+      · simp only [Fin.val_zero]
+        exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _
+          ((Lp.memLp _).locallyIntegrableOn Fact.out)
+      · simp only [Fin.val_succ]
+        refine (hw.hasWeakIteratedDerivOn_succ
+          (SobolevIntervalLp.hasWeakIteratedDerivOn_deriv u i)).congr_ae ?_ (EventuallyEq.refl _ _)
+        exact (memLp_sobolevPrimitive hlt u).coeFn_toLp.symm)
+
+/-- The shift of the primitive of `u` is `u`. -/
+theorem shift_sobolevPrimitive (hlt : a < b) (u : SobolevIntervalLp m p (Opens.Ioo a b)) :
+    SobolevIntervalLp.shift (sobolevPrimitive hlt u) = u :=
+  SobolevIntervalLp.ext fun _ ↦ rfl
+
+/-- The inclusion `C^{m+1}[a, b] → W^{m+1,p}(a, b)` intertwines the two shifts `u ↦ u'`. -/
+theorem shift_toSobolevIntervalLp (hlt : a < b) (v : ContDiffMapIcc hlt.le (m + 1)) :
+    SobolevIntervalLp.shift (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt (m + 1) v)
+      = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m v.shift :=
+  SobolevIntervalLp.ext fun j ↦ by
+    rw [SobolevIntervalLp.deriv_shift, ContDiffMapIcc.deriv_toSobolevIntervalLp,
+      ContDiffMapIcc.deriv_toSobolevIntervalLp]
+    exact (MemLp.toLp_eq_toLp_iff _ _).2 (by rw [ContDiffMapIcc.deriv_shift])
+
+/-- (General.) **The inclusion `C[a, b] → L^p(a, b)` is not surjective**: the step function
+`x ↦ 1` for `x > (a + b)/2`, `-1` otherwise, has no continuous representative on `[a, b]`. -/
+theorem not_surjective_toSobolevIntervalLp_zero (hlt : a < b) :
+    ¬ Function.Surjective (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt 0) := by
+  obtain ⟨c, hc⟩ : ∃ c, c = (a + b) / 2 := ⟨_, rfl⟩
+  have hac : a < c := by rw [hc]; linarith
+  have hcb : c < b := by rw [hc]; linarith
+  have hsm : MemLp (fun x : ℝ ↦ if c < x then (1 : ℝ) else -1) p (volume.restrict (Ioo a b)) := by
+    refine MemLp.of_bound ?_ 1 (Eventually.of_forall fun x ↦ ?_)
+    · exact (Measurable.ite measurableSet_Ioi measurable_const
+        measurable_const).aestronglyMeasurable
+    · split_ifs <;> simp
+  obtain ⟨u, hu⟩ :=
+    ((memSobolevIntervalLp_zero_iff (I := Opens.Ioo a b)).2 hsm).exists_sobolevIntervalLp
+  rintro hsurj
+  obtain ⟨v, hv⟩ := hsurj u
+  have h2 : SobolevIntervalLp.fn u =ᵐ[volume.restrict (Ioo a b)] v.extend := by
+    rw [← hv]
+    exact ContDiffMapIcc.fn_toSobolevIntervalLp_ae_eq hlt.le hlt v
+  have hae : (fun x : ℝ ↦ if c < x then (1 : ℝ) else -1) =ᵐ[volume.restrict (Ioo a b)]
+      v.extend := hu.symm.trans h2
+  have hpos : EqOn (fun _ ↦ (1 : ℝ)) v.extend (Icc c b) := by
+    refine eqOn_Icc_of_ae_eq hcb continuousOn_const v.extend.continuous.continuousOn ?_
+    filter_upwards [ae_restrict_of_ae_restrict_of_subset (Ioo_subset_Ioo hac.le le_rfl) hae,
+      ae_restrict_mem measurableSet_Ioo] with t ht htI
+    rw [← ht, ite_eq_left htI.1]
+  have hneg : EqOn (fun _ ↦ (-1 : ℝ)) v.extend (Icc a c) := by
+    refine eqOn_Icc_of_ae_eq hac continuousOn_const v.extend.continuous.continuousOn ?_
+    filter_upwards [ae_restrict_of_ae_restrict_of_subset (Ioo_subset_Ioo le_rfl hcb.le) hae,
+      ae_restrict_mem measurableSet_Ioo] with t ht htI
+    rw [← ht, ite_eq_right (not_lt.2 htI.2.le)]
+  have h1 := hpos (left_mem_Icc.2 hcb.le)
+  have h2 := hneg (right_mem_Icc.2 hac.le)
+  simp only at h1 h2
+  linarith
+
+/-- (General; belongs in `Numlib/Analysis/Sobolev/Interval/Higher.lean`.) **The inclusion
+`C^m[a, b] → W^{m,p}(a, b)` is not surjective, for every `m` and every `1 ≤ p ≤ ∞`**: by
+induction on `m`, the primitive `sobolevPrimitive` lifting an element of `W^{m,p}(a, b)` outside
+the range of `C^m[a, b]` to one of `W^{m+1,p}(a, b)` outside the range of `C^{m+1}[a, b]`. -/
+theorem not_surjective_toSobolevIntervalLp (hlt : a < b) (m : ℕ) :
+    ¬ Function.Surjective (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m) := by
+  induction m with
+  | zero => exact not_surjective_toSobolevIntervalLp_zero hlt
+  | succ m ih =>
+    intro hsurj
+    refine ih fun u ↦ ?_
+    obtain ⟨v, hv⟩ := hsurj (sobolevPrimitive hlt u)
+    exact ⟨v.shift, by rw [← shift_toSobolevIntervalLp, hv, shift_sobolevPrimitive]⟩
+
+
+/-! #### `Cᵐ[a, b]` with the Sobolev norm -/
+
+/-- **Example 1.2.28 (b), the space**: `Cᵐ[a, b]` carrying the alternative norm
+`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}`, as a type synonym of `ContDiffMapIcc hlt.le m`
+(`Numlib/Analysis/Calculus/ContDiffMapIcc.lean`). The norm is pulled back from `W^{m,p}(a, b)`,
+the backbone's `SobolevIntervalLp m p (Opens.Ioo a b)`
+(`Numlib/Analysis/Sobolev/Interval/Basic.lean`), along the injective inclusion
+`ContDiffMapIcc.toSobolevIntervalLp`, whose components are the derivatives `f, f', …, f^{(m)}` in
+`L^p(a, b)`; `example_1_2_28_b_norm` reads it back as the book's formula. -/
+def ContDiffMapIccSobolevNorm (hlt : a < b) (m : ℕ) (_p : ℝ≥0∞) : Type :=
+  ContDiffMapIcc hlt.le m
+
+namespace ContDiffMapIccSobolevNorm
+
+variable (hlt : a < b) (m : ℕ) (p : ℝ≥0∞)
+
+instance : AddCommGroup (ContDiffMapIccSobolevNorm hlt m p) :=
+  inferInstanceAs (AddCommGroup (ContDiffMapIcc hlt.le m))
+
+instance : Module ℝ (ContDiffMapIccSobolevNorm hlt m p) :=
+  inferInstanceAs (Module ℝ (ContDiffMapIcc hlt.le m))
+
+/-- The identity linear equivalence with `Cᵐ[a, b]` carrying the supremum norm. It is not an
+isometry. -/
+def equiv : ContDiffMapIccSobolevNorm hlt m p ≃ₗ[ℝ] ContDiffMapIcc hlt.le m :=
+  LinearEquiv.refl ℝ _
+
+variable [Fact (1 ≤ p)]
+
+/-- The inclusion into `W^{m,p}(a, b)` as a linear map, along which the norm is induced. -/
+def toSobolevₗ : ContDiffMapIccSobolevNorm hlt m p →ₗ[ℝ] SobolevIntervalLp m p (Opens.Ioo a b) :=
+  (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m : ContDiffMapIcc hlt.le m →ₗ[ℝ] _).comp
+    (equiv hlt m p).toLinearMap
+
+variable {hlt m p} in
+@[simp]
+theorem toSobolevₗ_apply (f : ContDiffMapIccSobolevNorm hlt m p) :
+    toSobolevₗ hlt m p f = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m (equiv hlt m p f) :=
+  rfl
+
+/-- The inclusion is injective (`ContDiffMapIcc.toSobolevIntervalLp_injective`), which is what
+lets the norm be induced along it. -/
+theorem toSobolevₗ_injective : Function.Injective (toSobolevₗ hlt m p) :=
+  (ContDiffMapIcc.toSobolevIntervalLp_injective (p := p) hlt.le hlt m).comp
+    (equiv hlt m p).injective
+
+/-- The norm `‖f‖ = ‖f‖_{W^{m,p}(a, b)}`, induced from `W^{m,p}(a, b)` along the injective
+inclusion. -/
+instance : NormedAddCommGroup (ContDiffMapIccSobolevNorm hlt m p) :=
+  NormedAddCommGroup.induced (ContDiffMapIccSobolevNorm hlt m p)
+    (SobolevIntervalLp m p (Opens.Ioo a b)) (toSobolevₗ hlt m p).toAddMonoidHom
+    (toSobolevₗ_injective hlt m p)
+
+variable {hlt m p} in
+/-- The norm of `f` is the `W^{m,p}` norm of its inclusion, by construction. -/
+theorem norm_eq (f : ContDiffMapIccSobolevNorm hlt m p) : ‖f‖ = ‖toSobolevₗ hlt m p f‖ := rfl
+
+instance : NormedSpace ℝ (ContDiffMapIccSobolevNorm hlt m p) where
+  norm_smul_le c f := le_of_eq (by rw [norm_eq, norm_eq, map_smul, norm_smul])
+
+/-- The inclusion `Cᵐ[a, b] → W^{m,p}(a, b)` as a linear isometry, again by construction. -/
+def toSobolevₗᵢ : ContDiffMapIccSobolevNorm hlt m p →ₗᵢ[ℝ] SobolevIntervalLp m p (Opens.Ioo a b) :=
+  ⟨toSobolevₗ hlt m p, fun _ ↦ rfl⟩
+
+variable {hlt m p} in
+@[simp]
+theorem toSobolevₗᵢ_apply (f : ContDiffMapIccSobolevNorm hlt m p) :
+    toSobolevₗᵢ hlt m p f = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m (equiv hlt m p f) :=
+  rfl
+
+/-- The inclusion has dense range for `p < ∞` (`ContDiffMapIcc.denseRange_toSobolevIntervalLp`). -/
+theorem denseRange_toSobolevₗᵢ (hp : p ≠ ⊤) : DenseRange (toSobolevₗᵢ hlt m p) :=
+  (ContDiffMapIcc.denseRange_toSobolevIntervalLp hlt.le hlt hp m).comp
+    (equiv hlt m p).surjective.denseRange (ContDiffMapIcc.toSobolevIntervalLp p _ hlt m).continuous
+
+/-- The inclusion is not surjective (`not_surjective_toSobolevIntervalLp`), for every `p`. -/
+theorem not_surjective_toSobolevₗᵢ : ¬ Function.Surjective (toSobolevₗᵢ hlt m p) := fun h ↦
+  not_surjective_toSobolevIntervalLp (p := p) hlt m fun u ↦ by
+    obtain ⟨f, hf⟩ := h u
+    exact ⟨equiv hlt m p f, hf⟩
+
+/-- **`Cᵐ[a, b]` is not complete for the Sobolev norm** when `p < ∞`: it is isometric to a dense
+proper subspace of the Banach space `W^{m,p}(a, b)`, and a complete subspace is closed. -/
+theorem not_completeSpace (hp : p ≠ ⊤) : ¬ CompleteSpace (ContDiffMapIccSobolevNorm hlt m p) := by
+  intro h
+  refine not_surjective_toSobolevₗᵢ hlt m p (Set.range_eq_univ.1 ?_)
+  rw [← (toSobolevₗᵢ hlt m p).isometry.isClosedEmbedding.isClosed_range.closure_eq]
+  exact (denseRange_toSobolevₗᵢ hlt m p hp).closure_eq
+
+end ContDiffMapIccSobolevNorm
+
+/-- **Example 1.2.28 (b), the norm**: on `Cᵐ[a, b]` with the Sobolev norm, for `1 ≤ p < ∞`,
+`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}`, the `j`-th derivative `f^{(j)}` being read in `L^p(a, b)`
+as `ContDiffMapIcc.derivLpOf p f j`. -/
+theorem example_1_2_28_b_norm (hlt : a < b) (m : ℕ) (hp : p ≠ ⊤)
+    (f : ContDiffMapIccSobolevNorm hlt m p) :
+    ‖f‖ = (∑ j : Fin (m + 1),
+      ‖ContDiffMapIcc.derivLpOf p (ContDiffMapIccSobolevNorm.equiv hlt m p f) j‖ ^ p.toReal)
+        ^ (1 / p.toReal) := by
+  rw [ContDiffMapIccSobolevNorm.norm_eq, SobolevIntervalLp.norm_eq_sum hp]
+  rfl
+
+/-- **Example 1.2.28 (b)**: for `1 ≤ p < ∞` and `m ≥ 0`, the space `Cᵐ[a, b]` with the norm
+`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}` (`ContDiffMapIccSobolevNorm hlt m p`,
+`example_1_2_28_b_norm`) is *not* complete, and its completion is the Sobolev space
+`W^{m,p}(a, b)`: the inclusion `ContDiffMapIccSobolevNorm.toSobolevₗᵢ` is a linear isometry with
+dense range into the Banach space `W^{m,p}(a, b)`, so, by the uniqueness of the completion
+(`theorem_1_2_25_uniqueness`), there is a linear isometric isomorphism of the abstract completion
+onto `W^{m,p}(a, b)` extending the inclusion.
+
+The book's closing remark, that `f, f', …, f^{(m-1)}` are continuous and `f^{(m)}` exists almost
+everywhere and lies in `L^p(a, b)` for `f ∈ W^{m,p}(a, b)`, is the backbone's embedding
+`SobolevIntervalLp.toContDiffMapIcc : W^{m,p}(a, b) → C^{m-1}[a, b]`
+(`Numlib/Analysis/Sobolev/Interval/Higher.lean`), and is not restated here. -/
+theorem example_1_2_28_b (hlt : a < b) (m : ℕ) (hp : p ≠ ⊤) :
+    ¬ CompleteSpace (ContDiffMapIccSobolevNorm hlt m p) ∧
+      CompleteSpace (SobolevIntervalLp m p (Opens.Ioo a b)) ∧
+      DenseRange (ContDiffMapIccSobolevNorm.toSobolevₗᵢ hlt m p) ∧
+      ∃ e : UniformSpace.Completion (ContDiffMapIccSobolevNorm hlt m p) ≃ₗᵢ[ℝ]
+          SobolevIntervalLp m p (Opens.Ioo a b),
+        ∀ f : ContDiffMapIccSobolevNorm hlt m p,
+          e f = ContDiffMapIccSobolevNorm.toSobolevₗᵢ hlt m p f :=
+  ⟨ContDiffMapIccSobolevNorm.not_completeSpace hlt m p hp, inferInstance,
+    ContDiffMapIccSobolevNorm.denseRange_toSobolevₗᵢ hlt m p hp,
+    theorem_1_2_25_uniqueness _ (ContDiffMapIccSobolevNorm.denseRange_toSobolevₗᵢ hlt m p hp)⟩
+
+end
+
+end Example1228b
 
 section Measure
 

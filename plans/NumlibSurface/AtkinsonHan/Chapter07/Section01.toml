@@ -64,7 +64,18 @@ if `v ∈ C^k(closure Ω)` with `v|_{Ω_n} ∈ C^{k+1}(closure Ω_n)` then the w
 `k + 1` exist and are the piecewise classical ones -- the regularity statement behind conforming
 finite elements. Not formalized: unlike the rest of §7.1 this one really is blocked, since the
 verification integrates by parts on each sub-domain and cancels the interface terms, which needs
-surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.'''
+surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.
+
+Blocked: rechecked 2026-09-20 (blocker 2); the reason stands — the interface integrals
+`∫_{∂Ω_n} v φ ν_i` need a boundary measure and Gauss–Green on the sub-domains. The Brezis round (2026-09-17–20) left blocker 2 untouched: `Numlib/` has no surface measure on a
+boundary (`hausdorffMeasure`, `Gauss`, `divergence`, `perimeter` occur only in the quadrature and
+Fourier modules, for unrelated reasons), no trace operator (`theorem_7_3_10` is still open) and no
+integration by parts on a domain; Mathlib on this pin still has the divergence theorem for boxes
+only (`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) and the new
+`CurveIntegral/Poincare` for plane curves, nothing for a Lipschitz or `C¹` hypersurface. The
+Brezis surface's own boundary nodes (`example_9_4_stepA/D`, Theorem 9.26's Neumann clause,
+`regularity_neumann`) are deferred on the same gap. `notes/fem-roadmap.md` Decision C stands.
+'''
 deps = ["definition_7_1_3", "theorem_7_3_10", "proposition_7_6_1"]
 
 [[node]]

@@ -36,6 +36,19 @@ same computation with `abs k`" and that this was the part worth attempting first
 for a non-convex smooth curve the chord direction reverses, so
 `int_0^L abs (k (t, s)) ds > abs (int_0^L k (t, s) ds) = pi` and `norm K > pi`. Convexity is used
 for the whole statement, not only for the lower bound.
+
+Blocked: rechecked 2026-09-20 (blocker 18, "one-offs"); the reason stands — a continuous argument
+and a turning number for a plane curve, with the monotonicity of the chord direction under
+convexity. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
+convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
+principle for harmonic functions continuous up to the boundary
+(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
+a region bounded by a smooth closed curve (the divergence theorem remains
+`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
+a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
+the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2. Mathlib's `Complex.arg` and the covering `ℝ → S¹` are available for the local
+lift; the global lift along a closed curve and the Umlaufsatz at a boundary point are unwritten,
+estimate 400–600 lines.
 '''
 deps = ["doubleLayerKernel", "doubleLayerKernel_eq_neg_im_div", "IntegralOperator.norm_kernelCLM"]
 
@@ -60,6 +73,18 @@ range of Mathlib''s `HarmonicContOnCl`; the jump relation is not.
 There is no singularity subtraction in Atkinson-Han Section 13.2.1; the earlier note here described
 a scheme from Atkinson''s own monograph instead. This node belongs on the skip list beside the rest
 of the potential theory.
+
+Blocked: rechecked 2026-09-20 (blocker 2); the reason stands — the jump relations of the double
+layer potential and the potential as a function on the region. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
+convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
+principle for harmonic functions continuous up to the boundary
+(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
+a region bounded by a smooth closed curve (the divergence theorem remains
+`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
+a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
+the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2. The maximum-principle half
+is now Mathlib's `HarmonicContOnCl` machinery; the jump relation is not, and waits for
+`theorem_13_1_2`.
 '''
 deps = ["equation_13_2_7"]
 

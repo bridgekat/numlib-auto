@@ -71,6 +71,17 @@ could instead be proved abstractly by density.  (3) Cohen's condition and the in
 algebra of `Numlib/Analysis/Wavelet/QuadratureMirror`, and so is the existence of the Daubechies
 `D4` function (`equation_4_5_6`), from the cascade estimate of `Numlib/Analysis/Wavelet/Daubechies`
 — that construction is for one explicit mask and gives no general theorem here.
+
+Blocked: rechecked 2026-09-20 (blocker 18 of `notes/frontier.md`); the reason stands. Of the three
+missing pieces, (2) has moved: `Numlib/Analysis/Fourier/FourierIntegral` now carries the translation
+rule `Real.fourierIntegral_comp_add_right` and the identification of Mathlib's `L²` transform with
+`Real.fourierIntegral` on `L¹ ∩ L²` (Plancherel with the integrals written out). Still missing:
+(1) `L¹` uniqueness on the circle (`AddCircle.fourierCoeff` injective on `L¹`; Mathlib has only the
+`L²` statement through `fourierBasis`), and (3) Cohen's condition with the infinite product
+`φ̂(ξ) = ∏_{j ≥ 1} m₀(2^{-j} ξ)` and its `L²` convergence; `Numlib/Analysis/Wavelet/Daubechies`
+proves the cascade estimate for the one explicit `D4` mask only. The corrected statement needs
+Cohen's condition as a hypothesis (the counterexample above stays); estimate 600–900 lines, a
+self-contained harmonic-analysis task not needed elsewhere in the chapter.
 '''
 deps = ["exercise_4_5_2"]
 

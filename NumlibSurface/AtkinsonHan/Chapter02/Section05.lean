@@ -1,6 +1,8 @@
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.Normed.Module.HahnBanach
 import Numlib.Analysis.Sobolev.Interval
+import Numlib.MeasureTheory.Function.LpSpace.Duality
+import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
 # Atkinson–Han §2.5: linear functionals
@@ -21,6 +23,11 @@ linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 
 * `theorem_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
 * `example_2_5_9_l2`, `example_2_5_9` — Example 2.5.9: the identification of `(L²(Ω))'` with
   `L²(Ω)`, and the representer of point evaluation on `H¹(a, b)`, which solves (2.5.8).
+* `example_2_5_1`, `example_2_5_1_top` — Example 2.5.1: `(Lᵖ(Ω))' = L^{p'}(Ω)` for `1 ≤ p < ∞`
+  through the pairing (2.5.1), and the dual of `L^∞(Ω)` strictly larger than `L¹(Ω)`.
+* `cosetLinfty`, `contCosets`, `evalCoset`, `example_2_5_3` — Example 2.5.3: the point evaluation
+  `ℓ_c([v]) = v(c)` on the cosets of continuous functions in `L^∞(0, 1)`, its Hahn–Banach
+  extension of norm one, and the fact that no such extension is given by an `L¹` function.
 
 `H¹(a, b)` is the backbone's `SobolevInterval 1 a b`
 (`Numlib/Analysis/Sobolev/Interval.lean`), a Hilbert space whose inner product is
@@ -28,10 +35,17 @@ linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 
 point evaluation at `c ∈ [a, b]` is bounded on it because `H¹(a, b)` embeds in `C[a, b]`
 (`SobolevInterval.toContinuousMap`), which is the hint of Exercise 2.5.5.
 
-## Not formalized here
+## Examples 2.5.1 and 2.5.3
 
-Example 2.5.1 (`(Lᵖ)' = Lᵖ'`) and Example 2.5.3 (point evaluation on `L^∞`) are out of scope:
-they need `Lᵖ`–`L^{p'}` duality, which Mathlib does not have.
+The `Lᵖ`–`L^{p'}` duality is the backbone's Riesz representation theorem
+`MeasureTheory.Lp.dualEquiv` (`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`), stated on
+any σ-finite measure, so Example 2.5.1 is proved for an arbitrary `Ω ⊆ ℝ^d` rather than the
+book's bounded open set; its `p = ∞` clause is the backbone's
+`MeasureTheory.Lp.not_surjective_toDual_top`. Example 2.5.3 builds the book's `V₀`, `ℓ_c` and
+`ℓ̂_c` explicitly; that `ℓ̂_c` is not an `L¹` function is proved for every extension of `ℓ_c`,
+by the argument of `MeasureTheory.Lp.exists_strongDual_top_apply_eq`
+(`toDual_ne_of_forall_contDiff_apply_eq`). The book's further properties of `ℓ̂_c` (locality and
+the bounds `m ≤ ℓ̂_c([v]) ≤ M`) are stated without proof and are not restated.
 -/
 
 open Filter Topology
@@ -159,5 +173,270 @@ theorem example_2_5_9 (hab : a < b) (c : Icc a b) :
     exact (hu' v).symm
 
 end Example259
+
+section Example251
+
+open MeasureTheory Set
+open scoped ENNReal
+
+/-! ### Example 2.5.1: `(Lᵖ(Ω))' = L^{p'}(Ω)` -/
+
+/-- **Example 2.5.1**, the identification `(Lᵖ(Ω))' = L^{p'}(Ω)` for `1 ≤ p < ∞` and the conjugate
+exponent `1/p + 1/p' = 1` (`p' = ∞` when `p = 1`): every `ℓ ∈ (Lᵖ(Ω))'` is `ℓ(v) = ∫_Ω u v`
+(2.5.1) for a unique `u ∈ L^{p'}(Ω)`; conversely every `u ∈ L^{p'}(Ω)` defines through (2.5.1) a
+bounded linear functional, of norm `‖u‖_{p'}`; and the identification is a linear isometric
+isomorphism `L^{p'}(Ω) ≃ (Lᵖ(Ω))'`.
+
+The book takes `Ω ⊆ ℝ^d` bounded and open; the backbone's Riesz representation theorem
+`MeasureTheory.Lp.dualEquiv` (`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) needs only a
+σ-finite measure, so `Ω` is any set here. The scalars are `ℝ` or `ℂ`, and the pairing is
+bilinear, `∫ u v` with no conjugate, as in (2.5.1). -/
+theorem example_2_5_1 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d))) (p p' : ℝ≥0∞) [Fact (1 ≤ p)]
+    [Fact (1 ≤ p')] [p.HolderConjugate p'] (hp : p ≠ ∞) :
+    (∀ ℓ : StrongDual 𝕜 (Lp 𝕜 p (volume.restrict Ω)),
+      ∃! u : Lp 𝕜 p' (volume.restrict Ω), ∀ v, ℓ v = ∫ x in Ω, u x * v x) ∧
+    (∀ u : Lp 𝕜 p' (volume.restrict Ω), ∃ ℓ : StrongDual 𝕜 (Lp 𝕜 p (volume.restrict Ω)),
+      ‖ℓ‖ = ‖u‖ ∧ ∀ v, ℓ v = ∫ x in Ω, u x * v x) ∧
+    ∃ e : Lp 𝕜 p' (volume.restrict Ω) ≃ₗᵢ[𝕜] StrongDual 𝕜 (Lp 𝕜 p (volume.restrict Ω)),
+      ∀ u v, e u v = ∫ x in Ω, u x * v x := by
+  set e := Lp.dualEquiv 𝕜 p p' (volume.restrict Ω) hp with he
+  refine ⟨fun ℓ ↦ ⟨e.symm ℓ, fun v ↦ ?_, fun u hu ↦ ?_⟩, fun u ↦ ⟨e u, e.norm_map u,
+    fun v ↦ Lp.dualEquiv_apply hp u v⟩, e, fun u v ↦ Lp.dualEquiv_apply hp u v⟩
+  · rw [← Lp.dualEquiv_apply hp (e.symm ℓ) v, he, LinearIsometryEquiv.apply_symm_apply]
+  · refine e.injective ?_
+    rw [he, LinearIsometryEquiv.apply_symm_apply]
+    ext v
+    rw [Lp.dualEquiv_apply hp u v, hu v]
+
+/-- **Example 2.5.1**, the case `p = ∞`: the dual of `L^∞(Ω)` is strictly larger than `L¹(Ω)`. For
+a nonempty open `Ω ⊆ ℝ^d` (`d ≥ 1`) there is a functional `ℓ ∈ (L^∞(Ω))'` that is not of the form
+(2.5.1) for any `u ∈ L¹(Ω)`: the backbone's `MeasureTheory.Lp.not_surjective_toDual_top`, a
+Hahn–Banach extension of a point evaluation (Example 2.5.3). Real scalars. -/
+theorem example_2_5_1_top {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) (hΩ : IsOpen Ω)
+    (hne : Ω.Nonempty) :
+    ∃ ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict Ω)), ∀ u : Lp ℝ 1 (volume.restrict Ω),
+      ∃ v, ℓ v ≠ ∫ x in Ω, u x * v x := by
+  have h := Lp.not_surjective_toDual_top (volume : Measure (EuclideanSpace ℝ (Fin (d + 1)))) hΩ hne
+  rw [Function.Surjective, not_forall] at h
+  obtain ⟨ℓ, hℓ⟩ := h
+  refine ⟨ℓ, fun u ↦ ?_⟩
+  by_contra hcon
+  push Not at hcon
+  exact hℓ ⟨u, ContinuousLinearMap.ext fun v ↦ by rw [Lp.toDual_apply, hcon v]⟩
+
+end Example251
+
+/-! ### Example 2.5.3: point evaluation on `L^∞(0, 1)` -/
+
+section Example253
+
+open MeasureTheory Set
+open scoped ENNReal
+
+/-- The coset `[v] ∈ L^∞(0, 1)` of a continuous function `v ∈ C[0, 1]`, Example 2.5.3: the class
+of the extension of `v` by its endpoint values. -/
+noncomputable def cosetLinfty : C(Icc (0 : ℝ) 1, ℝ) →ₗ[ℝ] Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))
+    where
+  toFun v := (ContinuousMap.IccExtend zero_le_one v).continuous.continuousOn.memLp_top_restrict_Ioo
+    |>.toLp _
+  map_add' v w := by
+    rw [← MemLp.toLp_add]
+    exact (MemLp.toLp_eq_toLp_iff _ _).2 (Eventually.of_forall fun x ↦ by
+      simp [ContinuousMap.coe_IccExtend, IccExtend, Pi.add_apply])
+  map_smul' c v := by
+    rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+    exact (MemLp.toLp_eq_toLp_iff _ _).2 (Eventually.of_forall fun x ↦ by
+      simp [ContinuousMap.coe_IccExtend, IccExtend, Pi.smul_apply])
+
+/-- The coset of `v` is the extension of `v` almost everywhere on `(0, 1)`. -/
+theorem coeFn_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) :
+    cosetLinfty v =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] IccExtend zero_le_one v :=
+  MemLp.coeFn_toLp
+    (ContinuousMap.IccExtend zero_le_one v).continuous.continuousOn.memLp_top_restrict_Ioo
+
+/-- **The values of a continuous function are bounded by the `L^∞(0, 1)` norm of its coset**,
+the inequality `|v(x)| ≤ ‖[v]‖_∞` for `x ∈ [0, 1]` of Example 2.5.3: the essential supremum over
+`(0, 1)` bounds `|v|` on a dense subset of `[0, 1]`, hence everywhere by continuity. -/
+theorem norm_apply_le_norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) (x : Icc (0 : ℝ) 1) :
+    ‖v x‖ ≤ ‖cosetLinfty v‖ := by
+  have hae : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)),
+      ‖IccExtend zero_le_one v t‖ ≤ ‖cosetLinfty v‖ := by
+    filter_upwards [coeFn_cosetLinfty v, Lp.ae_norm_le_norm_top (cosetLinfty v)] with t ht ht'
+    rw [← ht]
+    exact ht'
+  have hIoo : ∀ t ∈ Ioo (0 : ℝ) 1, ‖IccExtend zero_le_one v t‖ ≤ ‖cosetLinfty v‖ :=
+    forall_of_ae_restrict_of_isOpen isOpen_Ioo (by
+      simp only [not_le]
+      exact isOpen_lt continuous_const
+        (ContinuousMap.IccExtend zero_le_one v).continuous.norm) hae
+  have hcl : closure (Ioo (0 : ℝ) 1) ⊆ {t | ‖IccExtend zero_le_one v t‖ ≤ ‖cosetLinfty v‖} :=
+    (isClosed_le (ContinuousMap.IccExtend zero_le_one v).continuous.norm
+      continuous_const).closure_subset_iff.2 hIoo
+  rw [closure_Ioo zero_ne_one] at hcl
+  have := hcl x.2
+  rwa [mem_ofPred_eq, IccExtend_val] at this
+
+/-- **The `L^∞(0, 1)` norm of the coset of `v ∈ C[0, 1]` is the supremum norm of `v`**: the
+"equivalence" of the norm (2.5.2) restricted to `V₀` with the norm of `C[0, 1]` of Example 2.5.3
+is an equality. -/
+theorem norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) : ‖cosetLinfty v‖ = ‖v‖ := by
+  refine le_antisymm ?_ ((ContinuousMap.norm_le _ (norm_nonneg _)).2
+    (norm_apply_le_norm_cosetLinfty v))
+  rw [Lp.norm_def, eLpNorm_exponent_top (Lp.aestronglyMeasurable _)]
+  refine ENNReal.toReal_le_of_le_ofReal (norm_nonneg _) (eLpNormEssSup_le_of_ae_bound ?_)
+  filter_upwards [coeFn_cosetLinfty v, ae_restrict_mem measurableSet_Ioo] with t ht htI
+  rw [ht, IccExtend_of_mem _ _ (Ioo_subset_Icc_self htI)]
+  exact v.norm_coe_le_norm _
+
+/-- The coset map is injective: `V₀` is a copy of `C[0, 1]` inside `L^∞(0, 1)`. -/
+theorem cosetLinfty_injective : Function.Injective cosetLinfty :=
+  (injective_iff_map_eq_zero _).2 fun v hv ↦ by
+    have h := norm_cosetLinfty v
+    rw [hv, norm_zero] at h
+    exact norm_eq_zero.1 h.symm
+
+/-- **`V₀`**, the subspace of `L^∞(0, 1)` of the cosets of continuous functions on `[0, 1]`,
+Example 2.5.3. -/
+noncomputable abbrev contCosets : Submodule ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))) :=
+  LinearMap.range cosetLinfty
+
+/-- **The point evaluation `ℓ_c([v]) = v(c)`** (2.5.3) on `V₀`, well defined because the coset map
+is injective, and bounded with `‖ℓ_c‖ ≤ 1` because `|v(c)| ≤ ‖[v]‖_∞`. -/
+noncomputable def evalCoset (c : Icc (0 : ℝ) 1) : StrongDual ℝ contCosets :=
+  LinearMap.mkContinuous
+    ((ContinuousMap.evalCLM ℝ c : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] ℝ).toLinearMap ∘ₗ
+      (LinearEquiv.ofInjective cosetLinfty cosetLinfty_injective).symm.toLinearMap) 1
+    fun g ↦ by
+      obtain ⟨v, rfl⟩ := (LinearEquiv.ofInjective cosetLinfty cosetLinfty_injective).surjective g
+      rw [LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.symm_apply_apply, one_mul]
+      exact norm_apply_le_norm_cosetLinfty v c
+
+/-- The coset of a continuous function lies in `V₀`. -/
+theorem cosetLinfty_mem_contCosets (v : C(Icc (0 : ℝ) 1, ℝ)) : cosetLinfty v ∈ contCosets :=
+  LinearMap.mem_range_self _ v
+
+/-- `ℓ_c` evaluates the coset of `v` to `v(c)`. -/
+@[simp]
+theorem evalCoset_apply (c : Icc (0 : ℝ) 1) (v : C(Icc (0 : ℝ) 1, ℝ)) :
+    evalCoset c ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩ = v c := by
+  change (ContinuousMap.evalCLM ℝ c)
+    ((LinearEquiv.ofInjective cosetLinfty cosetLinfty_injective).symm
+      ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩) = v c
+  have : (LinearEquiv.ofInjective cosetLinfty cosetLinfty_injective).symm
+      ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩ = v := by
+    rw [LinearEquiv.symm_apply_eq]
+    rfl
+  rw [this]
+  rfl
+
+/-- `‖ℓ_c‖ = 1`: the bound `|v(c)| ≤ ‖[v]‖_∞` gives `‖ℓ_c‖ ≤ 1`, and the constant function `1`
+gives equality. -/
+theorem norm_evalCoset (c : Icc (0 : ℝ) 1) : ‖evalCoset c‖ = 1 := by
+  refine le_antisymm (LinearMap.mkContinuous_norm_le _ zero_le_one _) ?_
+  have h1 := (evalCoset c).le_opNorm ⟨cosetLinfty 1, cosetLinfty_mem_contCosets 1⟩
+  rw [evalCoset_apply, ContinuousMap.one_apply] at h1
+  change ‖(1 : ℝ)‖ ≤ ‖evalCoset c‖ * ‖cosetLinfty 1‖ at h1
+  simp only [norm_cosetLinfty, norm_one, mul_one] at h1
+  exact h1
+
+/-- (General; belongs beside `MeasureTheory.Lp.exists_strongDual_top_apply_eq` in
+`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`, whose proof it factors.) **A functional on
+`L^∞(μ)` that is the point evaluation at `x₀` on the smooth compactly supported functions is not
+`f ↦ ∫ u f` for any `u ∈ L¹(μ)`**, for an atomless σ-finite measure on a finite-dimensional real
+normed space: such a `u` would vanish
+almost everywhere off `x₀` (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`), hence
+almost everywhere, while `φ` is `1` on a bump at `x₀`. -/
+theorem toDual_ne_of_forall_contDiff_apply_eq {G : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] [FiniteDimensional ℝ G] [MeasurableSpace G] [BorelSpace G] {μ : Measure G}
+    [NullSingletonClass μ] [SigmaFinite μ] {x₀ : G} (φ : StrongDual ℝ (Lp ℝ ∞ μ))
+    (hφ : ∀ (f : G → ℝ) (hf : MemLp f ∞ μ), ContDiff ℝ (⊤ : ℕ∞) f → HasCompactSupport f →
+      φ (hf.toLp f) = f x₀) (u : Lp ℝ 1 μ) : Lp.toDual ℝ ∞ 1 μ u ≠ φ := by
+  intro hu
+  have hmem : ∀ f : G → ℝ, Continuous f → HasCompactSupport f → MemLp f ∞ μ := fun f hf hs => by
+    obtain ⟨C, hC⟩ := hf.bounded_above_of_compact_support hs
+    exact memLp_top_of_bound hf.aestronglyMeasurable C (ae_of_all _ hC)
+  -- a bump at `x₀`, on which `φ` is `1`
+  let ψ : ContDiffBump x₀ := ⟨1, 2, one_pos, one_lt_two⟩
+  have hψ : MemLp ψ ∞ μ := hmem ψ ψ.continuous ψ.hasCompactSupport
+  have hφψ : φ (hψ.toLp ψ) = 1 := by
+    rw [hφ ψ hψ ψ.contDiff ψ.hasCompactSupport]
+    exact ψ.one_of_mem_closedBall (Metric.mem_closedBall_self zero_le_one)
+  -- `u = 0` a.e. off `x₀`
+  have hu0 : ∀ᵐ x ∂μ, x ∈ ({x₀}ᶜ : Set G) → u x = 0 := by
+    have huint : Integrable u μ := memLp_one_iff_integrable.1 (Lp.memLp u)
+    refine isClosed_singleton.isOpen_compl.ae_eq_zero_of_integral_contDiff_smul_eq_zero
+      (huint.locallyIntegrable.locallyIntegrableOn _) fun g hg hgs hgΩ => ?_
+    have hgL : MemLp g ∞ μ := hmem g hg.continuous hgs
+    have h1 : φ (hgL.toLp g) = 0 := by
+      rw [hφ g hgL hg hgs]
+      exact image_eq_zero_of_notMem_tsupport fun h => (hgΩ h) rfl
+    rw [← hu, Lp.toDual_apply] at h1
+    rw [← h1]
+    refine integral_congr_ae ?_
+    filter_upwards [hgL.coeFn_toLp] with x hx
+    rw [hx, smul_eq_mul, mul_comm]
+  -- hence `u = 0` and `φ = 0`, contradicting `φ ψ = 1`
+  have hu' : u = 0 := by
+    have hx₀' : ∀ᵐ x ∂μ, x ≠ x₀ := by
+      rw [ae_iff]
+      simp
+    have huμ : ∀ᵐ x ∂μ, u x = 0 := by
+      filter_upwards [hu0, hx₀'] with x hx hx'
+      exact hx hx'
+    apply Lp.ext
+    filter_upwards [huμ, Lp.coeFn_zero ℝ 1 μ] with x hx hx0
+    rw [hx0, hx]
+    rfl
+  rw [hu', map_zero] at hu
+  rw [← hu] at hφψ
+  simp at hφψ
+
+/-- A functional on `L^∞(0, 1)` extending `ℓ_c` is the point evaluation at `c` on the continuous
+functions of the line. -/
+theorem apply_toLp_eq_of_forall_cosetLinfty (c : Icc (0 : ℝ) 1)
+    (ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))))
+    (hℓ : ∀ v : C(Icc (0 : ℝ) 1, ℝ), ℓ (cosetLinfty v) = v c) (f : ℝ → ℝ)
+    (hf : MemLp f ∞ (volume.restrict (Ioo (0 : ℝ) 1))) (hfc : Continuous f) :
+    ℓ (hf.toLp f) = f c := by
+  set v : C(Icc (0 : ℝ) 1, ℝ) := ⟨fun t ↦ f t, hfc.comp continuous_subtype_val⟩ with hv
+  have : hf.toLp f = cosetLinfty v := by
+    refine (MemLp.toLp_eq_toLp_iff hf (ContinuousMap.IccExtend zero_le_one
+      v).continuous.continuousOn.memLp_top_restrict_Ioo).2 ?_
+    filter_upwards [ae_restrict_mem measurableSet_Ioo] with t ht
+    rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem _ _ (Ioo_subset_Icc_self ht)]
+    rfl
+  rw [this, hℓ]
+  rfl
+
+/-- **Example 2.5.3**: on the subspace `V₀ ⊆ L^∞(0, 1)` of the cosets of continuous functions
+(`contCosets`), the point evaluation `ℓ_c([v]) = v(c)` (2.5.3) at `c ∈ [0, 1]` is well defined
+and bounded with `‖ℓ_c‖ = 1` (`evalCoset`); the Hahn–Banach theorem (`theorem_2_5_2`) extends it
+to `ℓ̂_c ∈ (L^∞(0, 1))'` with `‖ℓ̂_c‖ = 1` — a point evaluation on merely measurable functions;
+and no such extension is of the form (2.5.1) for a `u ∈ L¹(0, 1)`: the dual of `L^∞(0, 1)` is
+strictly larger than `L¹(0, 1)` (Example 2.5.1), the point of the example.
+
+The book's further properties of `ℓ̂_c` (the bounds `m ≤ ℓ̂_c([v]) ≤ M` from a neighbourhood of
+`c`, the value `v(c)` at a point of continuity of `v`) are stated without proof and are not
+restated. -/
+theorem example_2_5_3 (c : Icc (0 : ℝ) 1) :
+    ‖evalCoset c‖ = 1 ∧
+    (∃ ℓhat : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))),
+      (∀ v : C(Icc (0 : ℝ) 1, ℝ), ℓhat (cosetLinfty v) = v c) ∧ ‖ℓhat‖ = 1) ∧
+    ∀ ℓhat : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))),
+      (∀ v : C(Icc (0 : ℝ) 1, ℝ), ℓhat (cosetLinfty v) = v c) →
+      ∀ u : Lp ℝ 1 (volume.restrict (Ioo (0 : ℝ) 1)),
+        ∃ w, ℓhat w ≠ ∫ x in Ioo (0 : ℝ) 1, u x * w x := by
+  refine ⟨norm_evalCoset c, ?_, fun ℓhat hℓ u ↦ ?_⟩
+  · obtain ⟨ℓhat, hext, hnorm⟩ := theorem_2_5_2 contCosets (evalCoset c)
+    refine ⟨ℓhat, fun v ↦ ?_, hnorm.trans (norm_evalCoset c)⟩
+    rw [← evalCoset_apply c v]
+    exact hext ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩
+  · have h := toDual_ne_of_forall_contDiff_apply_eq (x₀ := (c : ℝ)) ℓhat
+      (fun f hf hfc _ ↦ apply_toLp_eq_of_forall_cosetLinfty c ℓhat hℓ f hf hfc.continuous) u
+    by_contra hcon
+    push Not at hcon
+    exact h (ContinuousLinearMap.ext fun w ↦ by rw [Lp.toDual_apply, hcon w])
+
+end Example253
 
 end AtkinsonHan.Chapter02

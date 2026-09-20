@@ -1,6 +1,7 @@
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 import Mathlib.MeasureTheory.Measure.Lebesgue.VolumeOfBalls
 import Numlib.Analysis.InnerProductSpace.NormPow
+import Numlib.Analysis.Sobolev.EmbeddingDomain
 import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.Slobodeckij
 import NumlibSurface.AtkinsonHan.Chapter07.Section01
@@ -76,9 +77,16 @@ proved here as `example_7_2_5_const`. The doc comment of `example_7_2_5_memW1p` 
 The corrected form of (7.2.1) reads `|x|^λ ∈ W^{k,p}(Ω) ↔ λ > k - d/p` for every real `λ` that is
 **not** a nonnegative even integer — the excluded values being exactly those at which `|x|^λ` is a
 polynomial and the equivalence's right-hand side is therefore too strong. That corrected form is
-the node `example_7_2_5` of the plan, and its case `k ≥ 2` is not formalized: it needs bounds on
-the derivatives of `|x|^λ` of every order, which the homogeneity of the function supplies but which
-are not available here, together with a composition rule for weak derivatives.
+the node `example_7_2_5` of the plan. What is proved at every order `k` is: the sufficiency half
+`example_7_2_5_mpr` for every real `λ`, and the equivalence `example_7_2_5_of_forall_ne` for every
+`λ` that is not one of `0, 1, …, k - 1` (`example_7_2_5_mp` is its necessity half). The
+derivatives of `|x|^λ` of every order are bounded by `C_n |x|^{λ-n}` through the homogeneity of
+the function (`iteratedFDeriv_normRpow_smul`, `exists_norm_iteratedFDeriv_normRpow_le`), the
+weak derivatives of every order come from the composition rule `HasWeakIteratedLineDerivOn.cons`
+and the removable-singularity lemma (`hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow`), and
+the necessity reads the size of `|x|^{λ-k}` off the radial derivative
+`D^k |·|^λ (x)(x/|x|, …, x/|x|) = λ(λ-1)⋯(λ-k+1) |x|^{λ-k}` (`iteratedFDeriv_normRpow_apply_unit`).
+For an odd `λ < k` that radial component vanishes and the necessity half is not proved.
 
 Example 7.2.6 is here as `example_7_2_6`: on `Ω = B(0,β) ⊆ ℝ^2` with `0 < β < 1` the function
 `v(x) = log(log(1/|x|))` has `∫_Ω |∇v|^2 = -2π/log β`, has finite `L^2(Ω)` norm, lies in
@@ -674,6 +682,444 @@ theorem example_7_2_5_const (k : ℕ) (p : ℝ≥0∞) (t : ℝ) :
       funext fun x ↦ iteratedFDeriv_one_apply_const _ x 0]
     exact memLp_const _
 
+/-! ### Example 7.2.5 at every order: the derivatives of `|x|^λ` and (7.2.1) -/
+
+section NormRpowHigher
+
+local notation "𝔼" => EuclideanSpace ℝ (Fin d)
+
+/-- `|x|^λ` is `C^n` off the origin, for every `n`. -/
+theorem contDiffOn_normRpow (lam : ℝ) (n : ℕ) :
+    ContDiffOn ℝ n (fun x : 𝔼 ↦ ‖x‖ ^ lam) {0}ᶜ := fun _ hx ↦
+  ((contDiffAt_norm (𝕜 := ℝ) hx).rpow_const_of_ne (norm_ne_zero_iff.2 hx)).contDiffWithinAt
+
+/-- **Homogeneity of the derivatives of `|x|^λ`**: `D^n |·|^λ (t x) = t^{λ-n} D^n |·|^λ (x)` for
+`t > 0` and `x ≠ 0`, from `|t x|^λ = t^λ |x|^λ` and the chain rule for the scaling `x ↦ t x`. -/
+theorem iteratedFDeriv_normRpow_smul (lam : ℝ) (n : ℕ) {t : ℝ} (ht : 0 < t) {x : 𝔼}
+    (hx : x ≠ 0) :
+    iteratedFDeriv ℝ n (fun y : 𝔼 ↦ ‖y‖ ^ lam) (t • x)
+      = t ^ (lam - n) • iteratedFDeriv ℝ n (fun y : 𝔼 ↦ ‖y‖ ^ lam) x := by
+  set v : 𝔼 → ℝ := fun y ↦ ‖y‖ ^ lam with hv
+  let g : 𝔼 ≃L[ℝ] 𝔼 := (LinearEquiv.smulOfNeZero ℝ 𝔼 t ht.ne').toContinuousLinearEquiv
+  have hg : ∀ y, g y = t • y := fun y ↦ rfl
+  have hs : IsOpen ({0}ᶜ : Set 𝔼) := isOpen_compl_singleton
+  have hpre : g ⁻¹' ({0}ᶜ : Set 𝔼) = {0}ᶜ := by
+    ext y
+    simp [hg, smul_eq_zero, ht.ne']
+  have hgx : g x ∈ ({0}ᶜ : Set 𝔼) := by
+    rw [hg]
+    exact smul_ne_zero ht.ne' hx
+  -- the chain rule for the scaling
+  have h1 := g.iteratedFDerivWithin_comp_right v hs.uniqueDiffOn hgx n
+  rw [hpre, iteratedFDerivWithin_of_isOpen n hs hx, iteratedFDerivWithin_of_isOpen n hs hgx] at h1
+  -- `v ∘ g = t^λ • v`
+  have hcomp : v ∘ g = t ^ lam • v := by
+    funext y
+    simp only [Function.comp_apply, hg, hv, Pi.smul_apply, smul_eq_mul, norm_smul,
+      Real.norm_of_nonneg ht.le, Real.mul_rpow ht.le (norm_nonneg y)]
+  have hx' : ContDiffAt ℝ n v x := (contDiffOn_normRpow lam n).contDiffAt (hs.mem_nhds hx)
+  rw [hcomp, iteratedFDeriv_const_smul_apply hx'] at h1
+  -- the composite with the scaling is `t^n` times the derivative
+  have h2 : (iteratedFDeriv ℝ n v (g x)).compContinuousLinearMap (fun _ ↦ (g : 𝔼 →L[ℝ] 𝔼))
+      = t ^ n • iteratedFDeriv ℝ n v (g x) := by
+    ext m
+    simp only [ContinuousMultilinearMap.compContinuousLinearMap_apply,
+      ContinuousLinearEquiv.coe_coe, hg, smul_apply]
+    rw [ContinuousMultilinearMap.map_smul_univ, Finset.prod_const, Finset.card_univ,
+      Fintype.card_fin]
+  rw [h2, hg] at h1
+  have htn : (t ^ n : ℝ) ≠ 0 := pow_ne_zero n ht.ne'
+  rw [← hg, hg]
+  calc iteratedFDeriv ℝ n v (t • x)
+      = (t ^ n)⁻¹ • (t ^ n • iteratedFDeriv ℝ n v (t • x)) := by
+        rw [smul_smul, inv_mul_cancel₀ htn, one_smul]
+    _ = (t ^ n)⁻¹ • (t ^ lam • iteratedFDeriv ℝ n v x) := by rw [h1]
+    _ = t ^ (lam - n) • iteratedFDeriv ℝ n v x := by
+        rw [smul_smul, Real.rpow_sub ht, Real.rpow_natCast, div_eq_inv_mul]
+
+/-- **The derivatives of `|x|^λ` are bounded by `C_n |x|^{λ-n}`** off the origin, with `C_n` the
+maximum of `‖D^n |·|^λ‖` on the unit sphere: homogeneity (`iteratedFDeriv_normRpow_smul`) and
+compactness of the sphere. -/
+theorem exists_norm_iteratedFDeriv_normRpow_le (lam : ℝ) (n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ x : 𝔼, x ≠ 0 →
+      ‖iteratedFDeriv ℝ n (fun y : 𝔼 ↦ ‖y‖ ^ lam) x‖ ≤ C * ‖x‖ ^ (lam - n) := by
+  set v : 𝔼 → ℝ := fun y ↦ ‖y‖ ^ lam with hv
+  have hcont : ContinuousOn (iteratedFDeriv ℝ n v) (sphere (0 : 𝔼) 1) :=
+    (ContinuousOn.continuousOn_iteratedFDeriv (contDiffOn_normRpow lam n) isOpen_compl_singleton
+      le_rfl).mono fun y hy ↦ by
+        simp only [mem_compl_iff, mem_singleton_iff]
+        rintro rfl
+        simp at hy
+  obtain ⟨C, hC⟩ := (isCompact_sphere (0 : 𝔼) 1).exists_bound_of_continuousOn hcont
+  refine ⟨max C 0, le_max_right _ _, fun x hx ↦ ?_⟩
+  have hnx : 0 < ‖x‖ := norm_pos_iff.2 hx
+  set u : 𝔼 := ‖x‖⁻¹ • x with hu
+  have hu1 : u ∈ sphere (0 : 𝔼) 1 := by
+    rw [mem_sphere_zero_iff_norm, hu, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hnx.ne']
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h] at hu1
+    simp at hu1
+  have hxu : x = ‖x‖ • u := by
+    rw [hu, smul_smul, mul_inv_cancel₀ hnx.ne', one_smul]
+  have key := iteratedFDeriv_normRpow_smul lam n hnx hu0
+  rw [← hxu] at key
+  rw [key, norm_smul, Real.norm_of_nonneg (Real.rpow_nonneg hnx.le _), mul_comm]
+  exact mul_le_mul_of_nonneg_right ((hC u hu1).trans (le_max_left _ _))
+    (Real.rpow_nonneg hnx.le _)
+
+/-- The `k`-th derivative of `s ↦ (c + s)^λ` at `t > -c` is `λ(λ-1)⋯(λ-k+1) (c+t)^{λ-k}`. -/
+theorem iteratedDeriv_const_add_rpow (lam c : ℝ) (k : ℕ) :
+    ∀ t : ℝ, -c < t →
+      iteratedDeriv k (fun s : ℝ ↦ (c + s) ^ lam) t
+        = (∏ j : Fin k, (lam - j)) * (c + t) ^ (lam - k) := by
+  induction k with
+  | zero =>
+    intro t _
+    simp
+  | succ k ih =>
+    intro t ht
+    have hopen : IsOpen {s : ℝ | -c < s} := isOpen_lt continuous_const continuous_id
+    have hev : iteratedDeriv k (fun s : ℝ ↦ (c + s) ^ lam)
+        =ᶠ[𝓝 t] fun s ↦ (∏ j : Fin k, (lam - j)) * (c + s) ^ (lam - k) :=
+      Filter.eventually_of_mem (hopen.mem_nhds ht) fun s hs ↦ ih s hs
+    have hct : c + t ≠ 0 := by linarith
+    have hder : HasDerivAt (fun s ↦ (∏ j : Fin k, (lam - j)) * (c + s) ^ (lam - k))
+        ((∏ j : Fin k, (lam - j)) * (1 * (lam - k) * (c + t) ^ (lam - k - 1))) t :=
+      (((hasDerivAt_id t).const_add c).rpow_const (Or.inl hct)).const_mul _
+    rw [iteratedDeriv_succ, hev.deriv_eq, hder.deriv, Fin.prod_univ_castSucc]
+    simp only [Fin.val_castSucc, Fin.val_last, Nat.cast_succ]
+    rw [show lam - (k + 1) = lam - k - 1 by ring]
+    ring
+
+/-- **The radial derivative of `|x|^λ`**: `D^k |·|^λ (x) (u, …, u) = λ(λ-1)⋯(λ-k+1) |x|^{λ-k}` for
+`u = x/|x|`, since along the ray `t ↦ x + t u` the function is `(|x| + t)^λ`. -/
+theorem iteratedFDeriv_normRpow_apply_unit (lam : ℝ) (k : ℕ) {x : 𝔼} (hx : x ≠ 0) :
+    iteratedFDeriv ℝ k (fun y : 𝔼 ↦ ‖y‖ ^ lam) x (fun _ ↦ ‖x‖⁻¹ • x)
+      = (∏ j : Fin k, (lam - j)) * ‖x‖ ^ (lam - k) := by
+  set v : 𝔼 → ℝ := fun y ↦ ‖y‖ ^ lam with hv
+  have hnx : 0 < ‖x‖ := norm_pos_iff.2 hx
+  set u : 𝔼 := ‖x‖⁻¹ • x with hu
+  have hu1 : ‖u‖ = 1 := by
+    rw [hu, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hnx.ne']
+  have hxu : x = ‖x‖ • u := by
+    rw [hu, smul_smul, mul_inv_cancel₀ hnx.ne', one_smul]
+  -- the line `t ↦ x + t u` through `x`
+  let g : ℝ →L[ℝ] 𝔼 := (ContinuousLinearMap.id ℝ ℝ).smulRight u
+  have hg : ∀ t : ℝ, g t = t • u := fun t ↦ rfl
+  set f : 𝔼 → ℝ := fun z ↦ v (x + z) with hf
+  set s' : Set 𝔼 := (fun z ↦ x + z) ⁻¹' {0}ᶜ with hs'
+  have hs'o : IsOpen s' := isOpen_compl_singleton.preimage (continuous_const.add continuous_id)
+  have hf' : ContDiffOn ℝ k f s' :=
+    (contDiffOn_normRpow lam k).comp (contDiff_const.add contDiff_id).contDiffOn fun z hz ↦ hz
+  have hpo : IsOpen (g ⁻¹' s') := hs'o.preimage g.continuous
+  have h0 : g 0 ∈ s' := by
+    simp [hs', hg, hx]
+  have h1 := g.iteratedFDerivWithin_comp_right hf' hs'o.uniqueDiffOn hpo.uniqueDiffOn h0 le_rfl
+  rw [iteratedFDerivWithin_of_isOpen k hpo (by simpa using h0),
+    iteratedFDerivWithin_of_isOpen k hs'o h0, map_zero] at h1
+  have h2 : iteratedFDeriv ℝ k f 0 = iteratedFDeriv ℝ k v x := by
+    rw [hf, iteratedFDeriv_comp_add_left' k x]
+    simp
+  rw [h2] at h1
+  -- evaluate at `(1, …, 1)`
+  have h3 := congrArg (fun T : ℝ [×k]→L[ℝ] ℝ ↦ T fun _ ↦ (1 : ℝ)) h1
+  simp only [ContinuousMultilinearMap.compContinuousLinearMap_apply, hg, one_smul] at h3
+  rw [← iteratedDeriv_eq_iteratedFDeriv] at h3
+  rw [← h3]
+  -- along the ray the function is `(|x| + t)^λ`
+  have hev : (f ∘ g) =ᶠ[𝓝 (0 : ℝ)] fun t ↦ (‖x‖ + t) ^ lam := by
+    have : {t : ℝ | -‖x‖ < t} ∈ 𝓝 (0 : ℝ) :=
+      (isOpen_lt continuous_const continuous_id).mem_nhds (by simpa using hnx)
+    filter_upwards [this] with t ht
+    simp only [Function.comp_apply, hf, hv, hg]
+    rw [show x + t • u = (‖x‖ + t) • u by rw [add_smul, ← hxu], norm_smul, hu1, mul_one,
+      Real.norm_of_nonneg (by linarith)]
+  rw [hev.iteratedDeriv_eq, iteratedDeriv_const_add_rpow lam ‖x‖ k 0 (by simpa using hnx), add_zero]
+
+/-- (General; belongs beside `tendsto_inv_mul_setIntegral_norm_ball_zero` in
+`Numlib/Analysis/Sobolev/RemovableSingularity.lean`.) The smallness criterion with the bound
+`‖f x‖ ≤ C ‖x‖^s` required off the origin only, where the value of `f` does not matter. -/
+theorem tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne {E F : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] [FiniteDimensional ℝ E]
+    [NormedAddCommGroup F] {μ : Measure E} [μ.IsAddHaarMeasure] (hd : 1 ≤ finrank ℝ E)
+    {f : E → F} {C s R : ℝ} (hR : 0 < R) (hs : 1 - (finrank ℝ E : ℝ) < s)
+    (hmeas : AEStronglyMeasurable f μ) (hle : ∀ x ∈ ball (0 : E) R, x ≠ 0 → ‖f x‖ ≤ C * ‖x‖ ^ s) :
+    Tendsto (fun δ : ℝ ↦ δ⁻¹ * ∫ x in ball (0 : E) δ, ‖f x‖ ∂μ) (𝓝[>] 0) (𝓝 0) := by
+  classical
+  have hnt : Nontrivial E := Module.nontrivial_of_finrank_pos (R := ℝ) (by omega)
+  have h0 : ∀ᵐ x ∂μ, x ≠ 0 := by
+    rw [ae_iff]
+    simp
+  set f' : E → F := fun x ↦ if x = 0 then 0 else f x with hf'
+  have hff' : f =ᵐ[μ] f' := h0.mono fun x hx ↦ by simp [hf', hx]
+  have hmeas' : AEStronglyMeasurable f' μ := hmeas.congr hff'
+  have hle' : ∀ x ∈ ball (0 : E) R, ‖f' x‖ ≤ max C 0 * ‖x‖ ^ s := fun x hx ↦ by
+    rcases eq_or_ne x 0 with rfl | hx0
+    · simp only [hf', ite_true, norm_zero]
+      positivity
+    · simp only [hf', hx0, ite_false]
+      exact (hle x hx hx0).trans (mul_le_mul_of_nonneg_right (le_max_left _ _)
+        (Real.rpow_nonneg (norm_nonneg _) _))
+  have h := tendsto_inv_mul_setIntegral_norm_ball_zero hd hR hs hmeas' hle'
+  refine h.congr fun δ ↦ ?_
+  congr 1
+  exact integral_congr_ae (ae_restrict_of_ae (hff'.symm.mono fun x hx ↦ by simp only [hx]))
+
+/-- The evaluation of `D^n |·|^λ` at a fixed tuple of directions is measurable: it is continuous
+off the origin, a null set. -/
+theorem aestronglyMeasurable_iteratedFDeriv_normRpow_apply (hd : 0 < d) (lam : ℝ) (n : ℕ)
+    (y : Fin n → 𝔼) :
+    AEStronglyMeasurable (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) volume := by
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have hcont : ContinuousOn (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) {0}ᶜ :=
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y).continuous.comp_continuousOn
+      (ContinuousOn.continuousOn_iteratedFDeriv (contDiffOn_normRpow lam n)
+        isOpen_compl_singleton le_rfl)
+  have h := hcont.aestronglyMeasurable (μ := volume) isOpen_compl_singleton.measurableSet
+  rwa [Measure.restrict_eq_self_of_ae_mem] at h
+  rw [ae_iff]
+  simp
+
+/-- The bound `‖D^n |·|^λ (x) y‖ ≤ C ‖x‖^{λ-n}` for a fixed tuple `y`, with `C` depending on `y`. -/
+theorem exists_norm_iteratedFDeriv_normRpow_apply_le (lam : ℝ) (n : ℕ) (y : Fin n → 𝔼) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ x : 𝔼, x ≠ 0 →
+      ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y‖ ≤ C * ‖x‖ ^ (lam - n) := by
+  obtain ⟨C, hC0, hC⟩ := exists_norm_iteratedFDeriv_normRpow_le (d := d) lam n
+  refine ⟨C * ∏ i, ‖y i‖, by positivity, fun x hx ↦ ?_⟩
+  calc ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y‖
+      ≤ ‖iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x‖ * ∏ i, ‖y i‖ :=
+        ContinuousMultilinearMap.le_opNorm _ _
+    _ ≤ C * ‖x‖ ^ (lam - n) * ∏ i, ‖y i‖ :=
+        mul_le_mul_of_nonneg_right (hC x hx) (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+    _ = C * (∏ i, ‖y i‖) * ‖x‖ ^ (lam - n) := by ring
+
+/-- `D^n |·|^λ (·) y` is integrable on every ball about the origin as soon as `λ - n > -d`. -/
+theorem integrableOn_iteratedFDeriv_normRpow_apply (hd : 0 < d) {lam : ℝ} {n : ℕ}
+    (hlam : (n : ℝ) - d < lam) (y : Fin n → 𝔼) (t : ℝ) :
+    IntegrableOn (fun x : 𝔼 ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) (ball 0 t)
+      volume := by
+  obtain ⟨C, -, hC⟩ := exists_norm_iteratedFDeriv_normRpow_apply_le (d := d) lam n y
+  refine Integrable.mono' ((integrableOn_normRpow hd (q := lam - n) (by linarith) t).const_mul C)
+    (aestronglyMeasurable_iteratedFDeriv_normRpow_apply hd lam n y).restrict ?_
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have h0 : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+    rw [ae_iff]
+    simp
+  filter_upwards [ae_restrict_of_ae h0] with x hx
+  exact hC x hx
+
+/-- **The weak derivatives of `|x|^λ` of every order `n ≤ k` on a ball**, for `λ > k - d`: along
+any tuple `y` of `n` directions the classical `D^n |·|^λ (·) y`, which exists off the origin, is
+the weak derivative on the whole ball. By induction on `n` through the composition rule
+`HasWeakIteratedLineDerivOn.cons`: the derivative of order `n + 1` along `z :: y` is the
+first-order weak derivative in the direction `z` of the derivative of order `n` along `y`, and the
+latter's singularity at the origin is removable
+(`hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`) because it is `O(|x|^{λ-n})` with
+`λ - n > 1 - d`. -/
+theorem hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow (hd : 0 < d) {lam : ℝ} {k : ℕ}
+    (hlam : (k : ℝ) - d < lam) (t : ℝ) :
+    ∀ n ≤ k, ∀ y : Fin n → 𝔼,
+      HasWeakIteratedLineDerivOn y (fun x : 𝔼 ↦ ‖x‖ ^ lam)
+        (fun x ↦ iteratedFDeriv ℝ n (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y) ⟨ball 0 t, isOpen_ball⟩
+        volume := by
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have hnt : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have hd1 : (1 : ℝ) ≤ d := by exact_mod_cast hd
+  set v : 𝔼 → ℝ := fun z ↦ ‖z‖ ^ lam with hv
+  intro n hn
+  induction n with
+  | zero =>
+    intro y
+    have h0 : (fun x ↦ iteratedFDeriv ℝ 0 v x y) = v := by
+      funext x
+      simp [iteratedFDeriv_zero_apply]
+    rw [h0]
+    exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl y
+      (integrableOn_normRpow hd (q := lam) (by linarith) t).locallyIntegrableOn
+  | succ n ih =>
+    intro y
+    have hy : y = Fin.cons (y 0) (Fin.tail y) := (Fin.cons_self_tail y).symm
+    set z := y 0 with hz
+    set y' := Fin.tail y with hy'
+    rw [hy]
+    refine HasWeakIteratedLineDerivOn.cons (ih (by omega) y') ?_
+    -- the first-order weak derivative of `D^n v (·) y'` in the direction `z`
+    set w' : 𝔼 → ℝ := fun x ↦ iteratedFDeriv ℝ n v x y' with hw'
+    set W : 𝔼 → 𝔼 →L[ℝ] ℝ := fun x ↦
+      (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').comp
+        (fderiv ℝ (iteratedFDeriv ℝ n v) x) with hW
+    have hWz : ∀ x, W x z = iteratedFDeriv ℝ (n + 1) v x (Fin.cons z y') := fun x ↦ by
+      rw [iteratedFDeriv_succ_apply_left, Fin.cons_zero, Fin.tail_cons]
+      rfl
+    have hWnorm : ∀ x, ‖W x‖ ≤ ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) := fun x ↦ by
+      refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun h ↦ ?_
+      rw [hW]
+      simp only [ContinuousLinearMap.comp_apply, ContinuousMultilinearMap.apply_apply]
+      calc ‖fderiv ℝ (iteratedFDeriv ℝ n v) x h y'‖
+          ≤ ‖fderiv ℝ (iteratedFDeriv ℝ n v) x h‖ * (∏ i, ‖y' i‖) :=
+            ContinuousMultilinearMap.le_opNorm _ _
+        _ ≤ ‖fderiv ℝ (iteratedFDeriv ℝ n v) x‖ * ‖h‖ * (∏ i, ‖y' i‖) :=
+            mul_le_mul_of_nonneg_right (ContinuousLinearMap.le_opNorm _ _)
+              (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+        _ = ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) * ‖h‖ := by
+            rw [norm_fderiv_iteratedFDeriv]; ring
+    have hWcont : ContinuousOn W {0}ᶜ := by
+      have h1 : ContinuousOn (fderiv ℝ (iteratedFDeriv ℝ n v)) {0}ᶜ := by
+        rw [fderiv_iteratedFDeriv]
+        exact (continuousMultilinearCurryLeftEquiv ℝ (fun _ : Fin (n + 1) ↦ 𝔼) ℝ).continuous
+          |>.comp_continuousOn (ContinuousOn.continuousOn_iteratedFDeriv
+            (contDiffOn_normRpow lam (n + 1)) isOpen_compl_singleton le_rfl)
+      exact ((ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').compL ℝ 𝔼 _ ℝ
+        |>.continuous.comp_continuousOn h1)
+    have h0ae : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+      rw [ae_iff]
+      simp
+    have hWmeas : AEStronglyMeasurable W volume := by
+      have h := hWcont.aestronglyMeasurable (μ := volume) isOpen_compl_singleton.measurableSet
+      rwa [Measure.restrict_eq_self_of_ae_mem] at h
+    obtain ⟨C, hC0, hC⟩ := exists_norm_iteratedFDeriv_normRpow_le (d := d) lam (n + 1)
+    have hnk : ((n : ℝ) + 1) ≤ k := by exact_mod_cast hn
+    have hWint : IntegrableOn W (ball 0 t) volume := by
+      refine Integrable.mono' ((integrableOn_normRpow hd (q := lam - (n + 1)) (by linarith) t)
+        |>.const_mul (C * ∏ i, ‖y' i‖)) hWmeas.restrict ?_
+      filter_upwards [ae_restrict_of_ae h0ae] with x hx
+      calc ‖W x‖ ≤ ‖iteratedFDeriv ℝ (n + 1) v x‖ * (∏ i, ‖y' i‖) := hWnorm x
+        _ ≤ C * ‖x‖ ^ (lam - (n + 1 : ℕ)) * (∏ i, ‖y' i‖) :=
+            mul_le_mul_of_nonneg_right (hC x hx) (Finset.prod_nonneg fun i _ ↦ norm_nonneg _)
+        _ = C * (∏ i, ‖y' i‖) * ‖x‖ ^ (lam - (n + 1)) := by push_cast; ring
+    have hfd : ∀ x ∈ ((⟨ball 0 t, isOpen_ball⟩ : Opens 𝔼) : Set 𝔼), x ≠ 0 →
+        HasFDerivAt w' (W x) x := fun x _ hx ↦ by
+      have hdiff : DifferentiableAt ℝ (iteratedFDeriv ℝ n v) x :=
+        ((contDiffOn_normRpow lam (n + 1)).contDiffAt
+          (isOpen_compl_singleton.mem_nhds hx)).differentiableAt_iteratedFDeriv
+          (by exact_mod_cast Nat.lt_succ_self n)
+      exact (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ 𝔼) ℝ y').hasFDerivAt.comp x
+        hdiff.hasFDerivAt
+    obtain ⟨C', -, hC'⟩ := exists_norm_iteratedFDeriv_normRpow_apply_le (d := d) lam n y'
+    have hlim : Tendsto (fun δ : ℝ ↦ δ⁻¹ * ∫ x in ball (0 : 𝔼) δ, ‖w' x‖) (𝓝[>] 0) (𝓝 0) :=
+      tendsto_inv_mul_setIntegral_norm_ball_zero_of_ne (by omega) (R := 1) one_pos
+        (s := lam - n) (by rw [hfr]; linarith)
+        (aestronglyMeasurable_iteratedFDeriv_normRpow_apply hd lam n y')
+        fun x _ hx ↦ hC' x hx
+    have key := hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton (a := (0 : 𝔼))
+      (y := ![z]) (u := z) rfl (fun i ↦ by fin_cases i; rfl)
+      (ih (by omega) y').locallyIntegrableOn_weakDeriv hWint.locallyIntegrableOn hfd hlim
+    refine key.congr_ae (EventuallyEq.refl _ _) (Eventually.of_forall fun x ↦ ?_)
+    exact hWz x
+
+/-- **Example 7.2.5, (7.2.1), the sufficiency half**: on the unit ball of `ℝ^d`, for every real
+`λ > k - d/p` (`1 ≤ p < ∞`), `|x|^λ ∈ W^{k,p}(Ω)`. Each weak derivative of order `n ≤ k` is the
+classical `D^n |·|^λ` off the origin (`hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow`), which
+is `O(|x|^{λ-n})` (`exists_norm_iteratedFDeriv_normRpow_apply_le`) and hence in `L^p(Ω)` by
+`example_7_2_5_memLp`, since `λ - n > -d/p`. No restriction on `λ` is needed for this half. -/
+theorem example_7_2_5_mpr (hd : 0 < d) (lam : ℝ) (k : ℕ) (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤)
+    (hlam : (k : ℝ) - d / p.toReal < lam) :
+    definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam) := by
+  have hp0 : p ≠ 0 := by
+    intro hz
+    rw [hz] at hp1
+    simp at hp1
+  have hpr : 0 < p.toReal := ENNReal.toReal_pos hp0 hpt
+  have h1pr : (1 : ℝ) ≤ p.toReal := by
+    rw [← ENNReal.toReal_one]
+    exact ENNReal.toReal_mono hpt hp1
+  have hdp : (d : ℝ) / p.toReal ≤ d := div_le_self (by positivity) h1pr
+  have hlam' : (k : ℝ) - d < lam := by linarith
+  rw [definition_7_2_2_multiIndex_iff]
+  refine ⟨(example_7_2_5_memLp hd lam p hp0 hpt).2 (by linarith), fun α hα ↦ ?_⟩
+  refine ⟨_, hasWeakIteratedLineDerivOn_iteratedFDeriv_normRpow hd hlam' 1 (∑ i, α i) hα
+    (multiIndexTuple (stdBasis d) α), ?_⟩
+  obtain ⟨C, hC0, hC⟩ := exists_norm_iteratedFDeriv_normRpow_apply_le (d := d) lam (∑ i, α i)
+    (multiIndexTuple (stdBasis d) α)
+  have hαk : ((∑ i, α i : ℕ) : ℝ) ≤ k := by exact_mod_cast hα
+  have hmem : MemLp (fun x : 𝔼 ↦ C * ‖x‖ ^ (lam - (∑ i, α i : ℕ))) p
+      (volume.restrict (ball 0 1)) :=
+    ((example_7_2_5_memLp hd (lam - (∑ i, α i : ℕ)) p hp0 hpt).2 (by linarith)).const_mul C
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  have h0 : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+    rw [ae_iff]
+    simp
+  refine hmem.of_le (aestronglyMeasurable_iteratedFDeriv_normRpow_apply hd lam _ _).restrict ?_
+  filter_upwards [ae_restrict_of_ae h0] with x hx
+  refine (hC x hx).trans (le_of_eq ?_)
+  rw [Real.norm_of_nonneg (by positivity)]
+
+/-- **Example 7.2.5, (7.2.1), the necessity half**, for `λ` not one of `0, 1, …, k - 1`: if
+`|x|^λ ∈ W^{k,p}(Ω)` on the unit ball then `λ > k - d/p`. The weak derivative tensor of order `k`
+agrees almost everywhere off the origin with the classical `D^k |·|^λ`, whose radial component is
+`λ(λ-1)⋯(λ-k+1) |x|^{λ-k}` (`iteratedFDeriv_normRpow_apply_unit`); the coefficient is nonzero, so
+`|x|^{λ-k} ∈ L^p(Ω)`, which is `λ - k > -d/p` by `example_7_2_5_memLp`. The excluded values are
+those where this radial component vanishes identically; there the argument needs another direction
+of differentiation, see `example_7_2_5`. -/
+theorem example_7_2_5_mp (hd : 0 < d) {lam : ℝ} {k : ℕ} (hlam : ∀ j : ℕ, j < k → lam ≠ j)
+    (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤)
+    (h : definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam)) :
+    (k : ℝ) - d / p.toReal < lam := by
+  have hp0 : p ≠ 0 := by
+    intro hz
+    rw [hz] at hp1
+    simp at hp1
+  have hfr : finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
+  have hnt : Nontrivial 𝔼 := Module.nontrivial_of_finrank_pos (R := ℝ) (by rw [hfr]; exact hd)
+  -- the weak derivative tensor of order `k`
+  obtain ⟨W, hW, hWp⟩ := (MemSobolevMultiIndex.memSobolev h).2 k le_rfl
+  -- it is the classical derivative off the origin
+  set Ω' : Opens 𝔼 := ⟨ball 0 1 ∩ {0}ᶜ, isOpen_ball.inter isOpen_compl_singleton⟩ with hΩ'
+  have hΩ'le : Ω' ≤ ⟨ball 0 1, isOpen_ball⟩ := fun x hx ↦ hx.1
+  have hcl : HasWeakIteratedFDerivOn k (fun x : 𝔼 ↦ ‖x‖ ^ lam)
+      (iteratedFDeriv ℝ k (fun x : 𝔼 ↦ ‖x‖ ^ lam)) Ω' volume :=
+    ((contDiffOn_normRpow lam k).mono fun x hx ↦ hx.2).hasWeakIteratedFDerivOn le_rfl
+  have hae := (hW.mono hΩ'le).ae_eq hcl
+  -- the falling factorial is nonzero
+  set c : ℝ := ∏ j : Fin k, (lam - j) with hc
+  have hc0 : c ≠ 0 := Finset.prod_ne_zero_iff.2 fun j _ ↦ sub_ne_zero.2 (hlam j j.2)
+  -- `|x|^{λ-k} ≤ |c|⁻¹ ‖W x‖` almost everywhere on the ball
+  have hbound : ∀ᵐ x ∂(volume.restrict (ball (0 : 𝔼) 1)),
+      ‖‖x‖ ^ (lam - k)‖ ≤ ‖|c|⁻¹ * ‖W x‖‖ := by
+    have h0 : ∀ᵐ x : 𝔼 ∂volume, x ≠ 0 := by
+      rw [ae_iff]
+      simp
+    filter_upwards [ae_restrict_of_ae h0, ae_restrict_mem measurableSet_ball,
+      ae_restrict_of_ae hae] with x hx hxb hxW
+    have hxΩ' : x ∈ (Ω' : Set 𝔼) := ⟨hxb, hx⟩
+    have hunit : ‖(‖x‖⁻¹ • x : 𝔼)‖ = 1 := by
+      rw [norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ (norm_ne_zero_iff.2 hx)]
+    have key : c * ‖x‖ ^ (lam - k) = W x fun _ ↦ ‖x‖⁻¹ • x := by
+      rw [hxW hxΩ', hc, iteratedFDeriv_normRpow_apply_unit lam k hx]
+    have hle : |c| * ‖x‖ ^ (lam - k) ≤ ‖W x‖ := by
+      calc |c| * ‖x‖ ^ (lam - k) = ‖c * ‖x‖ ^ (lam - k)‖ := by
+            rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _)]
+        _ = ‖W x fun _ ↦ ‖x‖⁻¹ • x‖ := by rw [key]
+        _ ≤ ‖W x‖ * ∏ _i : Fin k, ‖(‖x‖⁻¹ • x : 𝔼)‖ := ContinuousMultilinearMap.le_opNorm _ _
+        _ = ‖W x‖ := by rw [hunit, Finset.prod_const_one, mul_one]
+    rw [Real.norm_of_nonneg (Real.rpow_nonneg (norm_nonneg _) _),
+      Real.norm_of_nonneg (by positivity), ← div_eq_inv_mul, le_div_iff₀ (abs_pos.2 hc0),
+      mul_comm]
+    exact hle
+  have hmem : MemLp (fun x : 𝔼 ↦ ‖x‖ ^ (lam - k)) p (volume.restrict (ball 0 1)) :=
+    MemLp.of_le (hWp.norm.const_mul |c|⁻¹)
+      (measurable_norm.pow_const _).aestronglyMeasurable hbound
+  have := (example_7_2_5_memLp hd (lam - k) p hp0 hpt).1 hmem
+  linarith
+
+/-- **Example 7.2.5, (7.2.1), for every real `λ` that is not one of `0, 1, …, k - 1`**: on the unit
+ball of `ℝ^d` and for `1 ≤ p < ∞`, `|x|^λ ∈ W^{k,p}(Ω)` if and only if `λ > k - d/p`
+(`example_7_2_5_mpr` and `example_7_2_5_mp`). For the excluded values, `|x|^λ` is a polynomial
+when `λ` is even and the equivalence fails (see `example_7_2_5`), and when `λ` is odd the
+equivalence is expected to hold but its necessity half needs a non-radial direction of
+differentiation. -/
+theorem example_7_2_5_of_forall_ne (hd : 0 < d) {lam : ℝ} {k : ℕ}
+    (hlam : ∀ j : ℕ, j < k → lam ≠ j) (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤) :
+    definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam) ↔
+      (k : ℝ) - d / p.toReal < lam :=
+  ⟨example_7_2_5_mp hd hlam p hp1 hpt, example_7_2_5_mpr hd lam k p hp1 hpt⟩
+
+end NormRpowHigher
+
 /-! ### Example 7.2.6: an unbounded `H^1` function of the plane -/
 
 /-- The antiderivative `-1/log r` of the radial integrand `1/(r log^2 r)` of Example 7.2.6 has
@@ -863,15 +1309,6 @@ theorem integral_sq_norm_logLogNormGrad {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 
         rw [integral_inv_mul_log_sq hβ0 hβ1]
         field_simp
 
-/-- `log(1/r) ≤ 4 r^{-1/4}` for every `r > 0`: the logarithm grows more slowly than any power.
-Only `0 < r < 1` is used below, where both sides are positive. -/
-theorem neg_log_le_rpow {r : ℝ} (hr0 : 0 < r) : -Real.log r ≤ 4 * r ^ (-1 / 4 : ℝ) := by
-  have hs : (0 : ℝ) < r ^ (-1 / 4 : ℝ) := Real.rpow_pos_of_pos hr0 _
-  have hlog : Real.log (r ^ (-1 / 4 : ℝ)) = (-1 / 4 : ℝ) * Real.log r := Real.log_rpow hr0 _
-  have h1 : Real.log (r ^ (-1 / 4 : ℝ)) ≤ r ^ (-1 / 4 : ℝ) - 1 := Real.log_le_sub_one_of_pos hs
-  rw [hlog] at h1
-  linarith
-
 /-- On `B(0, β)` with `0 < β < 1` the function `v(x) = log(log(1/|x|))` of Example 7.2.6 is
 dominated by the power `|x|^{-1/4}`, which is what puts it in `L^2` and makes its integral over a
 small ball `o(δ)`. -/
@@ -903,7 +1340,7 @@ theorem abs_logLogNorm_le {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) :
       le_trans (neg_abs_le _) hmono
     nlinarith [abs_nonneg (Real.log (-Real.log β)), Real.rpow_nonneg hn.le (-1 / 4 : ℝ)]
   · calc logLogNorm x ≤ -Real.log ‖x‖ := hupper
-      _ ≤ 4 * ‖x‖ ^ (-1 / 4 : ℝ) := neg_log_le_rpow hn
+      _ ≤ 4 * ‖x‖ ^ (-1 / 4 : ℝ) := Real.neg_log_le_four_mul_rpow hn
       _ ≤ (4 + |Real.log (-Real.log β)|) * ‖x‖ ^ (-1 / 4 : ℝ) := by
           have := abs_nonneg (Real.log (-Real.log β))
           nlinarith [Real.rpow_nonneg hn.le (-1 / 4 : ℝ)]
@@ -919,11 +1356,6 @@ theorem aestronglyMeasurable_logLogNormGrad (μ : Measure (EuclideanSpace ℝ (F
     (((measurable_norm.pow_const 2).mul (Real.measurable_log.comp measurable_norm)).inv
       ).aestronglyMeasurable
     (innerSL ℝ).continuous.aestronglyMeasurable
-
-/-- The restriction of Lebesgue measure to a ball is finite. -/
-theorem isFiniteMeasure_restrict_ball (β : ℝ) :
-    IsFiniteMeasure (volume.restrict (ball (0 : EuclideanSpace ℝ (Fin 2)) β)) :=
-  ⟨by rw [Measure.restrict_apply_univ]; exact measure_ball_lt_top⟩
 
 /-- **`v ∈ L^2(Ω)` in Example 7.2.6**: the function `v(x) = log(log(1/|x|))` lies in `L^2(B(0,β))`
 for `0 < β < 1`, being dominated there by `|x|^{-1/4}`. -/
@@ -951,13 +1383,13 @@ theorem memLp_logLogNormGrad {β : ℝ} (hβ1 : β < 1) :
 /-- `v` is integrable on `B(0, β)`, hence locally integrable there. -/
 theorem integrableOn_logLogNorm {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) :
     IntegrableOn logLogNorm (ball (0 : EuclideanSpace ℝ (Fin 2)) β) volume := by
-  have := isFiniteMeasure_restrict_ball β
+  have := isFiniteMeasure_volume_restrict_ball (0 : EuclideanSpace ℝ (Fin 2)) β
   exact (memLp_logLogNorm hβ0 hβ1).integrable one_le_two
 
 /-- `∇v` is integrable on `B(0, β)`, hence locally integrable there. -/
 theorem integrableOn_logLogNormGrad {β : ℝ} (hβ1 : β < 1) :
     IntegrableOn logLogNormGrad (ball (0 : EuclideanSpace ℝ (Fin 2)) β) volume := by
-  have := isFiniteMeasure_restrict_ball β
+  have := isFiniteMeasure_volume_restrict_ball (0 : EuclideanSpace ℝ (Fin 2)) β
   exact (memLp_logLogNormGrad hβ1).integrable one_le_two
 
 /-- **The step Example 7.2.6 needs and the book passes over**: the classical gradient of

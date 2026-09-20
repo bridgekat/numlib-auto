@@ -69,6 +69,20 @@ variational one needs `H^1_0` of a planar region and a trace theorem, and the po
 one is the layer-potential machinery the rest of §13.1 is skipped for -- Green's identities on a
 piecewise smooth region and the jump relations, neither of which Mathlib supports, since it has no
 surface measure and no normal field on a curve. The chapter group's desc records the same.
+
+Blocked: rechecked 2026-09-20 (blocker 2 of `notes/frontier.md`); the reason stands. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
+convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
+principle for harmonic functions continuous up to the boundary
+(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
+a region bounded by a smooth closed curve (the divergence theorem remains
+`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
+a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
+the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2.
+The variational route has moved: `H^1_0` of a planar region and the Dirichlet problem now exist
+(`Numlib/Analysis/PDE/Elliptic/Dirichlet`, Brezis Theorem 9.25 on `C²` domains), so the interior
+Dirichlet problem with `H^{1/2}` boundary data would be within reach once a trace theorem on a
+`C¹` boundary exists (`theorem_7_3_10`, blocker 2 again); the Neumann problem and the potential
+route are not. Estimate: as for `theorem_13_1_2`.
 '''
 deps = ["theorem_13_1_2"]
 
@@ -86,4 +100,17 @@ multiply connected planar region needs the arclength measure on the boundary cur
 normal field along it, and Mathlib has neither. This is the result Green's identities
 (13.1.5)-(13.1.6) and the representation formula (13.1.23) are derived from, so it carries the
 whole skipped half of §13.1 with it, exactly as the chapter group's desc records.
+
+Blocked: rechecked 2026-09-20 (blocker 2); the reason stands. Checked 2026-09-20: Mathlib on this pin now has curve integrals of 1-forms and the Poincaré lemma on
+convex sets (`Mathlib/MeasureTheory/Integral/CurveIntegral/{Basic,Poincare}`) and the maximum
+principle for harmonic functions continuous up to the boundary
+(`Mathlib/Analysis/InnerProductSpace/Harmonic/HarmonicContOnCl`), but still no Green's theorem for
+a region bounded by a smooth closed curve (the divergence theorem remains
+`integral_divergence_of_hasFDerivAt_off_countable`, boxes only), no arclength measure on a curve as
+a boundary measure, no normal field and no winding number; `Numlib/` has none of these either, and
+the Brezis round (2026-09-17–20) worked on Sobolev spaces and did not touch blocker 2.
+The planar case is the most tractable instance of blocker 2 — Green's theorem for a region bounded
+by a `C²` Jordan curve, from Mathlib's box divergence theorem by a change of variables in a collar
+of the boundary — estimate 800–1200 lines including the arclength measure, and it would carry
+(13.1.5)–(13.1.6), (13.1.23) and the jump relations behind it.
 '''

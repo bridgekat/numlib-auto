@@ -27,6 +27,12 @@ Theorem 5.5.1, Brouwer's fixed-point theorem: a continuous `T : K → K` on a bo
 convex `K ⊆ ℝ^d` has at least one fixed point in `K`. Not formalized: Mathlib has no Brouwer
 fixed-point theorem and none of the simplicial or degree-theoretic machinery a proof of it needs,
 and the book states it without proof, referring the reader elsewhere for one.
+
+Blocked: rechecked 2026-09-20 (blocker 5 of `notes/frontier.md`); the reason stands. Mathlib on
+this pin has no Brouwer fixed-point theorem (`brouwer`, `Brouwer` match only unrelated
+order-theoretic files) and no simplicial or degree-theoretic machinery for one; `Numlib/` has none
+either (`Numlib/Nonlinear/CompletelyContinuous` records the same). A proof from Sperner's lemma or
+from the no-retraction theorem via Stokes is a project of its own, estimate 1500–3000 lines.
 '''
 
 [[node]]
@@ -38,5 +44,14 @@ and convex, a completely continuous `T : K → K` has at least one fixed point i
 Not formalized: a proof needs Brouwer's theorem — itself absent from Mathlib, see `theorem_5_5_1` —
 together with the finite-rank Schauder projection, and the book quotes it without proof; Example
 5.5.2, formalized here, is what shows its hypotheses cannot be weakened to a Lipschitz condition.
+
+Blocked: rechecked 2026-09-20 (blocker 5 of `notes/frontier.md`); the reason is `theorem_5_5_1`
+alone. The other half of the standard proof now exists: the Brezis round's
+`Brezis.Chapter06.remark_6_1_nonlinear` (`NumlibSurface/Brezis/Chapter06/Section01.lean`)
+approximates a continuous map with relatively compact range by continuous finite-rank maps — the
+Schauder projections onto the convex hull of a finite `ε`-net — so Schauder's theorem follows from
+Brouwer's on the finite-dimensional convex set `conv {x₁, …, xₙ}` by the usual limiting argument,
+estimate 150–250 lines once Brouwer's theorem exists (the projection lemma should then move to
+`Numlib/Nonlinear/CompletelyContinuous` or a `Nonlinear/SchauderProjection` module).
 '''
 deps = ["theorem_5_5_1", "IsCompletelyContinuousOn"]

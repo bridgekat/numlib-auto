@@ -151,34 +151,13 @@ id = "example_1_2_28_a_periodic"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.28 (a)"
 
 [[node]]
+id = "ContDiffMapIccSobolevNorm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.28 (b)"
+
+[[node]]
+id = "example_1_2_28_b_norm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.28 (b)"
+
+[[node]]
 id = "example_1_2_28_b"
-kind = "theorem"
-desc = '''
-Example 1.2.28 (b): under the norm `‖f‖ = [∑_{j ≤ m} ‖f^(j)‖_p^p]^{1/p}`, `Cᵐ[a, b]` is *not*
-complete, and its completion is the Sobolev space `W^{m,p}(a, b)`.
-
-Open. The target space is expressible: the backbone's `SobolevMultiIndex` of
-`Numlib/Analysis/Sobolev/MultiIndex.lean` is stated over any real normed space, so
-`W^{m,p}(a, b)` is that space on `E = ℝ` with the one-element basis, which is what the planned
-group `Numlib/Analysis/Sobolev/Interval` names `SobolevInterval`. What is missing is the norm in
-the statement — `ContDiffMapIcc` carries the supremum norm, not the `‖·‖_p` one, so
-`‖f‖ = [∑_{j ≤ m} ‖f^(j)‖_p^p]^{1/p}` would have to be put on `Cᵐ[a, b]` as a second normed
-structure — and the identification of the completion with the Sobolev space, which is the
-density of `Cᵐ[a, b]` in `W^{m,p}(a, b)`; the same obstruction as
-`AtkinsonHan.Chapter02.example_2_4_2`.
-
-Blocked: rechecked 2026-09-15, and the reason has shrunk but not gone. The identification half is
-available at `m = 1`, `p = 2`: `AtkinsonHan.Chapter02.example_2_4_2_dense` proves `C¹[a, b]` dense
-in `H¹(a, b)` and the inclusion `ContDiffMapIcc.toSobolevInterval` is injective, so `H¹(a, b)` is
-the completion of `C¹[a, b]` in `‖·‖_{1,2}`. Three things are still missing for the node as the
-book states it. (1) `p ≠ 2`: the carrier `SobolevInterval` of
-`Numlib/Analysis/Sobolev/Interval.lean` is fixed at `p = 2`, and so is the inclusion from
-`C^k[a, b]`, so the book's `‖f‖ = [∑_j ‖f^{(j)}‖_p^p]^{1/p}` has no carrier here for other `p`
-(the ambient `SobolevMultiIndex` does carry general `p`). (2) `m > 1`: the density proof
-approximates `u^{(m)}` by a test function and integrates it `m` times, which is the same argument
-with more bookkeeping, but it is unwritten. (3) The *incompleteness* half, which needs an element
-of `H^m(a, b)` outside the range of the inclusion — `x ↦ |x - (a + b)/2|` at `m = 1`, which is in
-`H¹` by `memSobolevInterval_of_piecewise_contDiffOn` and has no `C¹` representative because the
-continuous representative is unique. That half is within reach and independent of the others.
-'''
-deps = ["example_1_2_28_a", "theorem_1_2_25"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.28 (b)"

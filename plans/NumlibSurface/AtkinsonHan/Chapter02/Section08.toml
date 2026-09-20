@@ -137,10 +137,17 @@ formalized: the book states it without proof, citing Mikhlin for the compactness
 the surface measure of the sphere as an integration theory — Mathlib has `Measure.toSphere` but no
 integration formula in this shape — and spherical harmonics, of which Mathlib has none.
 
-Blocked: rechecked 2026-09-15; the reason stands. Spherical harmonics are still absent from
-Mathlib (`SphericalHarmonic`, `sphericalHarmonic`, `Gegenbauer`: zero occurrences; Mathlib's
-`Legendre` is `legendreSym`, the quadratic residue symbol), and this node is one
-of the six that the same gap holds up (with `AtkinsonHan.Chapter07.definition_7_5_8`,
-`theorem_7_5_9`, `theorem_7_5_10`, `AtkinsonHan.Chapter14.theorem_14_1_1`, `theorem_14_2_5`).
+Blocked: rechecked 2026-09-20 (blocker 3 of `notes/frontier.md`); the reason stands. The Brezis
+round added no spherical harmonics and no integration formula on the sphere: Mathlib on this pin
+still has `SphericalHarmonic`, `sphericalHarmonic`, `Gegenbauer`: zero occurrences (its
+`Legendre` is `legendreSym`), and `Numlib/` has only the one-dimensional Legendre polynomials
+(`Numlib/Approximation/OrthogonalPolynomial`) and the planar single-layer kernel of
+`Numlib/Analysis/Fourier/LogSingleLayer`. What the node needs is the surface measure of `S²` as an
+integration theory, the spherical harmonics as a Hilbert basis of `L²(S²)` with the dimension
+count `2k + 1`, and the Funk–Hecke eigenvalue computation `K φ_k = 4π/(2k + 1) φ_k`; the
+compactness alone would follow from `isCompactOperator_of_isAdmissibleKernel` once `L²(S²)` is
+available. A self-contained harmonic-analysis project shared with `definition_7_5_8`,
+`theorem_7_5_9`, `theorem_7_5_10`, `theorem_14_1_1`, `theorem_14_2_5`; estimate two to three
+thousand lines.
 '''
 deps = ["theorem_2_8_15", "isCompactOperator_of_isAdmissibleKernel"]
