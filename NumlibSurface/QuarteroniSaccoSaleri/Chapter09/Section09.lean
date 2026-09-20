@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Approximation.TriangleQuadrature
 import Numlib.Probability.MonteCarlo
 
@@ -13,13 +14,16 @@ composite rules apply (§9.9.1; the midpoint and trapezoidal reduction formulae,
 algorithms with no stated property and are not nodes). The *composite interpolatory rules on a
 triangulation* (§9.9.2): (9.57) with the local weights `α_T^{(j)} = 2|T| ∫_{T̂} l̂_j`, the
 composite midpoint (9.58) and trapezoidal (9.59) formulae, Definition 9.1 (degree of exactness on
-the reference triangle `T̂`), Property 9.4 (not formalized), and the two symmetric formulae `I₃`,
-`I₇`. The *Monte Carlo method* (§9.9.3): the integral as `|Ω|` times a mean value, the sample
-mean (9.60), the strong law of large numbers and the variance identity (9.61).
+the reference triangle `T̂`), Property 9.4 (the error bound `K_n h^{n+1} |Ω| M_{n+1}` of a rule
+exact on `ℙ_n` with nonnegative weights, on one triangle and on a finite family of them), and the
+two symmetric formulae `I₃`, `I₇`. The *Monte Carlo method* (§9.9.3): the integral as `|Ω|` times
+a mean value, the sample mean (9.60), the strong law of large numbers and the variance identity
+(9.61).
 
 The backbone is `Numlib/Approximation/TriangleQuadrature` — `Quadrature.refTriangle`, the
 Dirichlet integrals, the four rules as `Approximation.IsExactOn (volume.restrict refTriangle)`,
 which is Definition 9.1 verbatim, and the affine transport `Quadrature.isExactOn_affineImage` —
+`Numlib/Analysis/Calculus/TaylorSegment` (Taylor's theorem along a segment, behind Property 9.4)
 and `Numlib/Probability/MonteCarlo`; the reduction formula is Fubini's theorem
 (`MeasureTheory.integral_prod`).
 
@@ -46,12 +50,11 @@ and `Numlib/Probability/MonteCarlo`; the reduction formula is Fubini's theorem
 * `equation_9_58_degreeOfExactness`, `symmetricFormulae` — the composite midpoint and trapezoidal
   formulae have degree of exactness exactly `1`, the symmetric formulae `I₃`, `I₇` degrees `2`
   and `3`.
+* `property_9_4_triangle`, `property_9_4` — `|E_n^c(f)| ≤ (2/(n+1)!) h^{n+1} |Ω| M_{n+1}` for a
+  rule of degree of exactness `n` with nonnegative weights, on one triangle (a Taylor expansion at
+  a vertex, the rule being exact on the Taylor polynomial) and on a finite family of triangles
+  covering `Ω` up to null sets.
 * `monteCarlo_mean`, `monteCarlo_strongLaw`, `equation_9_61` — the Monte Carlo statements.
-
-## Not formalized
-
-Property 9.4 (`|E_k^c(f)| ≤ K_n h^{n+1} |Ω| M_{n+1}`) is a two-dimensional Bramble–Hilbert
-estimate, out of reach on this pin; its node is open in the plan.
 
 ## Conventions
 
@@ -60,7 +63,9 @@ chapter 8's `equation_8_34` writes the same affine map on `ℝ × ℝ`), except 
 formula (9.56), whose iterated integral reads naturally on `ℝ × ℝ`. `ℙ_n(T̂)` of (8.35) is the
 polynomials `p : MvPolynomial (Fin 2) ℝ` with `p.totalDegree ≤ n`. A family of triangles is
 indexed by a finite type `ι`; no triangulation structure is assumed, as none is needed for the
-statements formalized.
+statements formalized — Property 9.4 asks only that the triangles cover `Ω` and overlap on null
+sets. In Property 9.4, `M_{n+1}` bounds the operator norm of `iteratedFDeriv ℝ (n + 1) f` for
+the sup norm on `Fin 2 → ℝ`, and `h` bounds the two edges at the first vertex of each triangle.
 -/
 
 open Set Filter Topology MeasureTheory ProbabilityTheory Function Quadrature
@@ -328,6 +333,203 @@ theorem symmetricFormulae :
           4) :=
   ⟨⟨isExactOn_edgeMidpoint, not_isExactOn_edgeMidpoint_three⟩,
     ⟨isExactOn_sevenPoint, not_isExactOn_sevenPoint_four⟩⟩
+
+/-! #### Property 9.4: the error of a composite rule with nonnegative weights -/
+
+/-- `F_T x̂ - a₁ = x̂₀ (a₂ - a₁) + x̂₁ (a₃ - a₁)`: the affine map (8.34) is its vertex `a₁` plus
+a linear map. -/
+theorem triangleMap_sub_vertex (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) :
+    triangleMap v x - v 0 = x 0 • (v 1 - v 0) + x 1 • (v 2 - v 0) := by
+  rw [triangleMap_apply]
+  abel
+
+/-- **The triangle `T` is star-shaped with respect to its vertex `a₁`**: the segment from `a₁`
+to `F_T x̂` is `F_T` of the segment from `(0, 0)` to `x̂`, which stays in `T̂`. -/
+theorem triangleMap_segment_mem (v : Fin 3 → Fin 2 → ℝ) {x : Fin 2 → ℝ} (hx : x ∈ refTriangle)
+    {s : ℝ} (hs : s ∈ Icc (0 : ℝ) 1) : v 0 + s • (triangleMap v x - v 0) ∈ triangle v := by
+  obtain ⟨h0, h1, h2⟩ := hx
+  refine ⟨s • x, ⟨mul_nonneg hs.1 h0, mul_nonneg hs.1 h1, ?_⟩, ?_⟩
+  · calc s * x 0 + s * x 1 = s * (x 0 + x 1) := by ring
+      _ ≤ 1 * 1 := mul_le_mul hs.2 h2 (add_nonneg h0 h1) zero_le_one
+      _ = 1 := one_mul 1
+  · rw [triangleMap_apply, triangleMap_sub_vertex]
+    simp only [Pi.smul_apply, smul_eq_mul, smul_add, smul_smul]
+    abel
+
+/-- **The distance from the vertex `a₁` to a point of `T`** is at most any `h` bounding the two
+edge lengths `‖a₂ - a₁‖`, `‖a₃ - a₁‖` at `a₁`. -/
+theorem norm_triangleMap_sub_vertex_le {v : Fin 3 → Fin 2 → ℝ} {h : ℝ} (hh₁ : ‖v 1 - v 0‖ ≤ h)
+    (hh₂ : ‖v 2 - v 0‖ ≤ h) {x : Fin 2 → ℝ} (hx : x ∈ refTriangle) :
+    ‖triangleMap v x - v 0‖ ≤ h := by
+  obtain ⟨h0, h1, h2⟩ := hx
+  rw [triangleMap_sub_vertex]
+  calc ‖x 0 • (v 1 - v 0) + x 1 • (v 2 - v 0)‖ ≤ ‖x 0 • (v 1 - v 0)‖ + ‖x 1 • (v 2 - v 0)‖ :=
+        norm_add_le _ _
+    _ = x 0 * ‖v 1 - v 0‖ + x 1 * ‖v 2 - v 0‖ := by
+        rw [norm_smul, norm_smul, Real.norm_of_nonneg h0, Real.norm_of_nonneg h1]
+    _ ≤ x 0 * h + x 1 * h :=
+        add_le_add (mul_le_mul_of_nonneg_left hh₁ h0) (mul_le_mul_of_nonneg_left hh₂ h1)
+    _ = (x 0 + x 1) * h := by ring
+    _ ≤ 1 * h := mul_le_mul_of_nonneg_right h2 ((norm_nonneg _).trans hh₁)
+    _ = h := one_mul h
+
+/-- The affine map `F_T` is continuous. -/
+theorem continuous_triangleMap (v : Fin 3 → Fin 2 → ℝ) : Continuous (triangleMap v) :=
+  (triangleLinear v).continuous_of_finiteDimensional.add continuous_const
+
+/-- A triangle is compact. -/
+theorem isCompact_triangle (v : Fin 3 → Fin 2 → ℝ) : IsCompact (triangle v) :=
+  isCompact_refTriangle.image (continuous_triangleMap v)
+
+/-- A triangle is measurable. -/
+theorem measurableSet_triangle (v : Fin 3 → Fin 2 → ℝ) : MeasurableSet (triangle v) :=
+  (isCompact_triangle v).isClosed.measurableSet
+
+/-- The area of a triangle is nonnegative. -/
+theorem area_nonneg (v : Fin 3 → Fin 2 → ℝ) : 0 ≤ area v :=
+  ENNReal.toReal_nonneg
+
+/-- **The local weights of an exact rule sum to the area**: if the reference rule has degree of
+exactness `n` (so integrates the constant `1` over `T̂`, of area `1/2`), the local weights
+`α_T^{(j)} = 2|T| ŵ_j` of (9.57) sum to `|T|`. -/
+theorem sum_triangleWeight_eq_area {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ}
+    {n : ℕ} (hexact : definition_9_1 w z n) (v : Fin 3 → Fin 2 → ℝ) :
+    ∑ j, 2 * area v * w j = area v := by
+  have h1 := hexact 1 (by simp)
+  simp only [map_one, mul_one] at h1
+  have h00 : ∫ _x in refTriangle, (1 : ℝ) = 1 / 2 := by
+    rw [setIntegral_const, smul_eq_mul, mul_one, measureReal_def, volume_refTriangle,
+      ENNReal.toReal_ofReal (by norm_num)]
+  rw [h00] at h1
+  rw [← Finset.mul_sum, h1]
+  ring
+
+/-- **Property 9.4 on a single triangle.** Let the reference rule `(ŵ_j, ẑ_j)` have degree of
+exactness `n` (Definition 9.1) and nonnegative weights, with nodes in `T̂`, and let `T` be a
+nondegenerate triangle with vertices `a₁, a₂, a₃` and `h ≥ ‖a₂ - a₁‖, ‖a₃ - a₁‖`. If `f` is
+`C^{n+1}` at every point of `T` with `‖f^{(n+1)}‖_{∞,T} ≤ M_{n+1}`, the local rule (9.57) satisfies
+
+  `|E_T(f)| = |∫_T f - ∑_j 2|T| ŵ_j f(F_T ẑ_j)| ≤ (2/(n+1)!) h^{n+1} |T| M_{n+1}`.
+
+With `P` the Taylor polynomial of `f` of degree `n` at `a₁`, `E_T(f) = E_T(f - P)` because the
+rule is exact on `ℙ_n(T)` (`definition_9_1_transport`, `exists_mvPolynomial_taylorSum_pi`);
+`|f - P| ≤ M_{n+1} h^{n+1}/(n+1)!` on `T` by Taylor's theorem along the segments from `a₁`
+(`norm_sub_taylorSum_segment_le`, `triangleMap_segment_mem`), and `|E_T(g)| ≤ 2|T| ‖g‖_{∞,T}` for
+every `g`, the nonnegative weights summing to `|T|` (`sum_triangleWeight_eq_area`). -/
+theorem property_9_4_triangle {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ} {n : ℕ}
+    (hexact : definition_9_1 w z n) (hw : ∀ j, 0 ≤ w j) (hz : ∀ j, z j ∈ refTriangle)
+    {v : Fin 3 → Fin 2 → ℝ} (hv : Function.Injective (triangleLinear v)) {h : ℝ}
+    (hh₁ : ‖v 1 - v 0‖ ≤ h) (hh₂ : ‖v 2 - v 0‖ ≤ h) {f : (Fin 2 → ℝ) → ℝ}
+    (hf : ∀ x ∈ triangle v, ContDiffAt ℝ (n + 1) f x) {M : ℝ}
+    (hM : ∀ x ∈ triangle v, ‖iteratedFDeriv ℝ (n + 1) f x‖ ≤ M) :
+    |(∫ x in triangle v, f x) - ∑ j, (2 * area v * w j) * f (triangleMap v (z j))|
+      ≤ 2 / (n + 1)! * h ^ (n + 1) * area v * M := by
+  set P : (Fin 2 → ℝ) → ℝ := fun y =>
+    ∑ k ∈ Finset.range (n + 1), ((k ! : ℝ)⁻¹) • iteratedFDeriv ℝ k f (v 0) (fun _ => y - v 0)
+    with hP
+  set B : ℝ := M * h ^ (n + 1) / (n + 1)! with hB
+  -- (1) Taylor's theorem along the segments from the vertex
+  have htaylor : ∀ y ∈ triangle v, |f y - P y| ≤ B := by
+    rintro _ ⟨x, hx, rfl⟩
+    have key := norm_sub_taylorSum_segment_le (f := f) (n := n) (a := v 0)
+      (w := triangleMap v x - v 0) (M := M) (fun s hs => hf _ (triangleMap_segment_mem v hx hs))
+      (fun s hs => hM _ (triangleMap_segment_mem v hx hs))
+    rw [add_sub_cancel, Real.norm_eq_abs] at key
+    refine key.trans ?_
+    have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM _ ⟨x, hx, rfl⟩)
+    rw [hB]
+    gcongr
+    exact norm_triangleMap_sub_vertex_le hh₁ hh₂ hx
+  -- (2) the rule is exact on the Taylor polynomial
+  obtain ⟨q, hqdeg, hq⟩ := exists_mvPolynomial_taylorSum_pi (f := f) (v 0) n
+  have hPq : P = fun y => MvPolynomial.eval y q := funext hq
+  have hEP : (∫ x in triangle v, P x) = ∑ j, (2 * area v * w j) * P (triangleMap v (z j)) := by
+    rw [hPq]
+    exact (definition_9_1_transport hexact v hv q hqdeg).symm
+  -- (3) integrability
+  have hfc : ContinuousOn f (triangle v) := fun x hx => (hf x hx).continuousAt.continuousWithinAt
+  have hfi : IntegrableOn f (triangle v) := hfc.integrableOn_compact (isCompact_triangle v)
+  have hPi : IntegrableOn P (triangle v) := by
+    rw [hPq]
+    exact (MvPolynomial.continuous_eval q).continuousOn.integrableOn_compact (isCompact_triangle v)
+  -- (4) `E(f) = E(f - P)` and the two bounds
+  have hsplit : (∫ x in triangle v, f x) - ∑ j, (2 * area v * w j) * f (triangleMap v (z j))
+      = (∫ x in triangle v, (f x - P x))
+        - ∑ j, (2 * area v * w j) * (f (triangleMap v (z j)) - P (triangleMap v (z j))) := by
+    rw [integral_sub hfi hPi, hEP]
+    simp only [mul_sub, Finset.sum_sub_distrib]
+    ring
+  have hint : |∫ x in triangle v, (f x - P x)| ≤ B * area v := by
+    have := norm_setIntegral_le_of_norm_le_const (μ := volume) (s := triangle v)
+      (f := fun x => f x - P x) (C := B) (isCompact_triangle v).measure_lt_top
+      (fun x hx => by rw [Real.norm_eq_abs]; exact htaylor x hx)
+    rwa [Real.norm_eq_abs, measureReal_def] at this
+  have hnodes : |∑ j, (2 * area v * w j) * (f (triangleMap v (z j)) - P (triangleMap v (z j)))|
+      ≤ area v * B := by
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    calc ∑ j, |(2 * area v * w j) * (f (triangleMap v (z j)) - P (triangleMap v (z j)))|
+        = ∑ j, (2 * area v * w j) * |f (triangleMap v (z j)) - P (triangleMap v (z j))| := by
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [abs_mul, abs_of_nonneg (by have := area_nonneg v; have := hw j; positivity)]
+      _ ≤ ∑ j, (2 * area v * w j) * B :=
+          Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_left (htaylor _ ⟨z j, hz j, rfl⟩)
+            (by have := area_nonneg v; have := hw j; positivity)
+      _ = area v * B := by rw [← Finset.sum_mul, sum_triangleWeight_eq_area hexact v]
+  rw [hsplit, sub_eq_add_neg]
+  calc |(∫ x in triangle v, (f x - P x))
+        + -∑ j, (2 * area v * w j) * (f (triangleMap v (z j)) - P (triangleMap v (z j)))|
+      ≤ |∫ x in triangle v, (f x - P x)|
+        + |∑ j, (2 * area v * w j) * (f (triangleMap v (z j)) - P (triangleMap v (z j)))| := by
+        rw [← abs_neg (∑ j, _)]
+        exact abs_add_le _ _
+    _ ≤ B * area v + area v * B := add_le_add hint hnodes
+    _ = 2 / (n + 1)! * h ^ (n + 1) * area v * M := by rw [hB]; ring
+
+/-- **Property 9.4.** Let the composite rule (9.57) be built from a reference rule of degree of
+exactness `n ≥ 0` (Definition 9.1) with nonnegative weights and nodes in `T̂`, on a finite family
+of nondegenerate triangles `T` covering `Ω` and overlapping only on null sets, with `h` bounding
+the edge lengths. Then for every `f ∈ C^{n+1}(Ω)`,
+
+  `|E_n^c(f)| = |∫_Ω f - I_n^c(f)| ≤ K_n h^{n+1} |Ω| M_{n+1}`, `K_n = 2/(n+1)!`,
+
+`M_{n+1}` bounding the moduli of the derivatives of order `n + 1` of `f` on `Ω` and `|Ω|` the area
+of `Ω`. The book states it without proof ([IK66], pp. 361–362); it is the sum over the elements of
+the per-triangle bound `property_9_4_triangle`, `|Ω| = ∑_T |T|`. Only a finite family of triangles
+enters — no triangulation structure is needed for the bound itself. Conventions: `‖f^{(n+1)}(x)‖`
+is the operator norm of `iteratedFDeriv ℝ (n + 1) f x` for the sup norm on `Fin 2 → ℝ`, and `h`
+bounds the two edges at the first vertex of every triangle (the maximum edge length qualifies). -/
+theorem property_9_4 {ι K : Type*} [Fintype ι] [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ}
+    {n : ℕ} (hexact : definition_9_1 w z n) (hw : ∀ j, 0 ≤ w j) (hz : ∀ j, z j ∈ refTriangle)
+    {v : ι → Fin 3 → Fin 2 → ℝ} (hv : ∀ T, Function.Injective (triangleLinear (v T)))
+    (hdisj : Pairwise (AEDisjoint volume on fun T => triangle (v T)))
+    {Ω : Set (Fin 2 → ℝ)} (hΩ : Ω = ⋃ T, triangle (v T)) {h : ℝ}
+    (hh : ∀ T, ‖v T 1 - v T 0‖ ≤ h ∧ ‖v T 2 - v T 0‖ ≤ h) {f : (Fin 2 → ℝ) → ℝ}
+    (hf : ∀ x ∈ Ω, ContDiffAt ℝ (n + 1) f x) {M : ℝ}
+    (hM : ∀ x ∈ Ω, ‖iteratedFDeriv ℝ (n + 1) f x‖ ≤ M) :
+    |(∫ x in Ω, f x) - equation_9_57 v w z f|
+      ≤ 2 / (n + 1)! * h ^ (n + 1) * (volume Ω).toReal * M := by
+  subst hΩ
+  have hmeas : ∀ T, NullMeasurableSet (triangle (v T)) volume := fun T =>
+    (measurableSet_triangle _).nullMeasurableSet
+  have hfc : ContinuousOn f (⋃ T, triangle (v T)) := fun x hx =>
+    (hf x hx).continuousAt.continuousWithinAt
+  have hfi : IntegrableOn f (⋃ T, triangle (v T)) :=
+    hfc.integrableOn_compact (isCompact_iUnion fun T => isCompact_triangle _)
+  have hvol : (volume (⋃ T, triangle (v T))).toReal = ∑ T, area (v T) := by
+    rw [measure_iUnion₀ hdisj hmeas, tsum_fintype,
+      ENNReal.toReal_sum fun T _ => (isCompact_triangle _).measure_lt_top.ne]
+    rfl
+  rw [integral_iUnion_ae hmeas hdisj hfi, tsum_fintype, hvol, equation_9_57,
+    ← Finset.sum_sub_distrib]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+  calc ∑ T, |(∫ x in triangle (v T), f x)
+        - ∑ j, (2 * area (v T) * w j) * f (triangleMap (v T) (z j))|
+      ≤ ∑ T, 2 / (n + 1)! * h ^ (n + 1) * area (v T) * M :=
+        Finset.sum_le_sum fun T _ => property_9_4_triangle hexact hw hz (hv T) (hh T).1 (hh T).2
+          (fun x hx => hf x (mem_iUnion.mpr ⟨T, hx⟩))
+          (fun x hx => hM x (mem_iUnion.mpr ⟨T, hx⟩))
+    _ = 2 / (n + 1)! * h ^ (n + 1) * (∑ T, area (v T)) * M := by
+        rw [Finset.mul_sum, Finset.sum_mul]
 
 /-! ### §9.9.3: the Monte Carlo method -/
 

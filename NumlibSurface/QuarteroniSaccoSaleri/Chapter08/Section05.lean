@@ -1,5 +1,6 @@
 import Mathlib.LinearAlgebra.Basis.Fin
 import Mathlib.LinearAlgebra.Determinant
+import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.Unisolvent
@@ -12,14 +13,16 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 [quarteroni2000numerical], §8.5: tensor-product Lagrange interpolation on a rectangle (§8.5.1),
 the ill-posed bilinear example of Remark 8.1, and piecewise interpolation on a triangulation
 (§8.5.2): the affine map (8.34) from the reference triangle, the space `𝒫_k` (8.35) with
-`dim 𝒫_k(T) = (k+1)(k+2)/2`, and the reference-element identity behind (8.38). The error estimates
-(8.39)–(8.40) are not formalized (the planning brief rules the multi-dimensional estimates out of
-scope); they are stated in the plan and left open there.
+`dim 𝒫_k(T) = (k+1)(k+2)/2`, the reference-element identity behind (8.38), and the sup-norm
+interpolation error (8.39) on a triangle, with the reference Lagrange basis as data. The global
+estimate (8.40) needs a triangulation and is stated in the plan and left open there.
 
 The algebra is `Numlib/Approximation/NodalInterpolation` (`Approximation.nodalInterp`,
 `Approximation.IsNodalBasis`, `Approximation.nodalInterp_comp`),
 `Numlib/Approximation/Unisolvent` (`Approximation.IsUnisolvent`) and
-`Numlib/Approximation/MvPolynomial` (`Approximation.mvPolyLE`, `Approximation.finrank_mvPolyLE`).
+`Numlib/Approximation/MvPolynomial` (`Approximation.mvPolyLE`, `Approximation.finrank_mvPolyLE`);
+the analysis behind (8.39) is `Numlib/Analysis/Calculus/TaylorSegment` (Taylor's theorem along a
+segment with the Lagrange bound, and the polynomial nature of the Taylor polynomial).
 The triangulation itself (admissibility, the global nodes `z_i`, `𝒫_k^c(Ω)`, (8.36)–(8.37)) is a
 definition with no numbered result in reach and is not stated; Example 8.7 is a table.
 
@@ -30,6 +33,7 @@ definition with no numbered result in reach and is not stated; Example 8.7 is a 
   square `[-1, 1]²` and the four nodes `(-1, 0), (0, -1), (1, 0), (0, 1)` of Remark 8.1.
 * `equation_8_34 a₁ a₂ a₃` — the affine map `F_T x̂ = B_T x̂ + b_T` from the reference triangle onto
   the triangle with vertices `a₁, a₂, a₃`, and `equation_8_34_matrix` its matrix `B_T`.
+* `referenceTriangle` — the reference triangle `T̂` with vertices `(0, 0), (1, 0), (0, 1)`.
 
 ## Main results
 
@@ -42,6 +46,13 @@ definition with no numbered result in reach and is not stated; Example 8.7 is a 
   `a₁, a₂, a₃` and is a bijection exactly when `det B_T ≠ 0`.
 * `equation_8_35_finrank` — `d_k = dim 𝒫_k(T) = (k+1)(k+2)/2`.
 * `equation_8_38_comp` — the element interpolant is the reference interpolant read through `F_T`.
+* `equation_8_39` — `‖f - Π_T^k f‖_{∞,T} ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}` with
+  `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!`, for a reference Lagrange basis `l̂_m` of `𝒫_k(T̂)` given as
+  data; `equation_8_34_segment_mem`, `norm_equation_8_34_sub_vertex_le` and
+  `exists_mvPolynomial_taylor_equation_8_34` are its geometric and algebraic ingredients.
+* `equation_8_39_linear` — the case `k = 1` with the nodes at the vertices and the barycentric
+  coordinates `linearShape` as the reference basis (`linearShape_isNodalBasis`,
+  `linearShape_span`): `‖f - Π_T^1 f‖_{∞,T} ≤ 2 h_T² ‖f''‖_{∞,T}`.
 
 ## Conventions
 
@@ -50,6 +61,7 @@ on `D : Set (Fin 2 → ℝ)`.
 -/
 
 open Polynomial Set
+open scoped Nat
 
 namespace QuarteroniSaccoSaleri.Chapter08
 
@@ -282,5 +294,240 @@ theorem equation_8_38_comp {ι : Type*} [Fintype ι] (a₁ a₂ a₃ : ℝ × �
         ∘ equation_8_34 a₁ a₂ a₃
       = Approximation.nodalInterp zhat lhat (f ∘ equation_8_34 a₁ a₂ a₃) :=
   Approximation.nodalInterp_comp zhat lhat f hG
+
+/-! ### (8.39): the interpolation error on a triangle -/
+
+/-- **The reference triangle `T̂`** of §8.5.2, with vertices `(0, 0)`, `(1, 0)` and `(0, 1)`, as a
+subset of the plane `ℝ × ℝ` on which the affine map (8.34) acts:
+`T̂ = {(x̂, ŷ) : x̂ ≥ 0, ŷ ≥ 0, x̂ + ŷ ≤ 1}`. -/
+def referenceTriangle : Set (ℝ × ℝ) :=
+  {x | 0 ≤ x.1 ∧ 0 ≤ x.2 ∧ x.1 + x.2 ≤ 1}
+
+section Triangle
+
+variable {a₁ a₂ a₃ : ℝ × ℝ}
+
+local notation "F_T" => equation_8_34 a₁ a₂ a₃
+
+/-- `F_T x̂ - a₁ = x̂ (a₂ - a₁) + ŷ (a₃ - a₁)`: the affine map (8.34) is `a₁` plus a linear map. -/
+theorem equation_8_34_sub_vertex (x : ℝ × ℝ) :
+    F_T x - a₁ = x.1 • (a₂ - a₁) + x.2 • (a₃ - a₁) := by
+  rw [equation_8_34_apply, add_sub_cancel_right]
+
+/-- **The triangle `T = F_T(T̂)` is star-shaped with respect to its vertex `a₁`**: the segment from
+`a₁` to `F_T x̂` is `F_T` of the segment from `(0, 0)` to `x̂`, which stays in `T̂`. -/
+theorem equation_8_34_segment_mem {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) {s : ℝ}
+    (hs : s ∈ Icc (0 : ℝ) 1) : a₁ + s • (F_T x - a₁) ∈ F_T '' referenceTriangle := by
+  refine ⟨s • x, ⟨mul_nonneg hs.1 hx.1, mul_nonneg hs.1 hx.2.1, ?_⟩, ?_⟩
+  · calc s * x.1 + s * x.2 = s * (x.1 + x.2) := by ring
+      _ ≤ 1 * 1 := mul_le_mul hs.2 hx.2.2 (add_nonneg hx.1 hx.2.1) zero_le_one
+      _ = 1 := one_mul 1
+  · rw [equation_8_34_apply, equation_8_34_sub_vertex]
+    simp only [Prod.smul_fst, Prod.smul_snd, smul_eq_mul, smul_add, smul_smul]
+    abel
+
+/-- **The distance from the vertex `a₁` to a point of `T`** is at most any `h` bounding the two
+edge lengths `‖a₂ - a₁‖`, `‖a₃ - a₁‖` at `a₁`. -/
+theorem norm_equation_8_34_sub_vertex_le {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h)
+    {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) : ‖F_T x - a₁‖ ≤ h := by
+  rw [equation_8_34_sub_vertex]
+  calc ‖x.1 • (a₂ - a₁) + x.2 • (a₃ - a₁)‖ ≤ ‖x.1 • (a₂ - a₁)‖ + ‖x.2 • (a₃ - a₁)‖ :=
+        norm_add_le _ _
+    _ = x.1 * ‖a₂ - a₁‖ + x.2 * ‖a₃ - a₁‖ := by
+        rw [norm_smul, norm_smul, Real.norm_of_nonneg hx.1, Real.norm_of_nonneg hx.2.1]
+    _ ≤ x.1 * h + x.2 * h :=
+        add_le_add (mul_le_mul_of_nonneg_left hh₂ hx.1) (mul_le_mul_of_nonneg_left hh₃ hx.2.1)
+    _ = (x.1 + x.2) * h := by ring
+    _ ≤ 1 * h := mul_le_mul_of_nonneg_right hx.2.2 ((norm_nonneg _).trans hh₂)
+    _ = h := one_mul h
+
+/-- **The Taylor polynomial of `f` at the vertex `a₁`, read through `F_T`, lies in `𝒫_k(T̂)`**:
+`x̂ ↦ ∑_{j ≤ k} (1/j!) D^j f(a₁)[F_T x̂ - a₁]^j` is the evaluation at `(x̂, ŷ)` of a polynomial in
+two variables of total degree at most `k` (`exists_mvPolynomial_taylorSum`, since
+`F_T x̂ - a₁ = x̂ (a₂ - a₁) + ŷ (a₃ - a₁)`). -/
+theorem exists_mvPolynomial_taylor_equation_8_34 (f : ℝ × ℝ → ℝ) (k : ℕ) :
+    ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧ ∀ x : ℝ × ℝ,
+      ∑ j ∈ Finset.range (k + 1), ((j ! : ℝ)⁻¹) • iteratedFDeriv ℝ j f a₁ (fun _ => F_T x - a₁)
+        = MvPolynomial.eval ![x.1, x.2] q := by
+  obtain ⟨q, hqdeg, hq⟩ := exists_mvPolynomial_taylorSum (f := f) a₁ k ![a₂ - a₁, a₃ - a₁]
+  refine ⟨q, hqdeg, fun x => ?_⟩
+  rw [← hq ![x.1, x.2]]
+  simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+    equation_8_34_sub_vertex]
+
+/-- **(8.39), the interpolation error on a triangle.** Let `T = F_T(T̂)` be the image of the
+reference triangle under the affine map (8.34) with vertices `a₁, a₂, a₃`, let `G` be a left
+inverse of `F_T`, and let `l̂_m`, `m ∈ ι`, be the Lagrange basis of `𝒫_k(T̂)` at the local nodes
+`ẑ_m ∈ T̂`: `l̂_m(ẑ_j) = δ_{mj}` and every polynomial of total degree `≤ k` is a combination of the
+`l̂_m` on `T̂`. Let `Π_T^k f = ∑_m f(F_T ẑ_m) l̂_m ∘ G` be the element interpolant (8.38). If `f` is
+`C^{k+1}` at every point of `T` with `‖f^{(k+1)}‖_{∞,T} ≤ M`, and `h_T ≥ ‖a₂ - a₁‖, ‖a₃ - a₁‖`,
+then for every `x ∈ T`
+
+  `|f(x) - Π_T^k f(x)| ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}`, `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!`,
+
+with `C` independent of `h_T` and `f`. The book quotes Ciarlet–Lions Theorem 16.1 (the
+Bramble–Hilbert route through `W^{k+1,∞}`); in the sup norm the proof is elementary: with `P` the
+Taylor polynomial of `f` of degree `k` at the vertex `a₁`, `f - Π_T^k f = (f - P) - Π_T^k(f - P)`
+because `Π_T^k` reproduces `𝒫_k(T)` (`exists_mvPolynomial_taylor_equation_8_34`), and
+`|f - P| ≤ M h_T^{k+1}/(k+1)!` on `T` by Taylor's theorem along the segments from `a₁`
+(`norm_sub_taylorSum_segment_le`), `T` being star-shaped with respect to `a₁`
+(`equation_8_34_segment_mem`). No shape regularity enters. Conventions: `ℝ × ℝ` carries the sup
+norm, `‖f^{(k+1)}(x)‖` is the operator norm of the `(k+1)`-linear map `iteratedFDeriv ℝ (k + 1) f x`
+for that norm, and `h_T` is any bound on the two edges at `a₁` (the maximum edge length of `T`, in
+any norm dominating the sup norm, qualifies). The reference basis is data: its existence for the
+principal lattice of Figure 8.8 is the `𝒫_k`-unisolvence of Ciarlet, Theorem 2.2.1, not
+formalized. -/
+theorem equation_8_39 {ι : Type*} [Fintype ι] {k : ℕ} {G : ℝ × ℝ → ℝ × ℝ}
+    (hG : Function.LeftInverse G F_T)
+    {zhat : ι → ℝ × ℝ} (hz : ∀ m, zhat m ∈ referenceTriangle) {lhat : ι → ℝ × ℝ → ℝ}
+    (hnodal : Approximation.IsNodalBasis zhat lhat)
+    (hspan : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∃ c : ι → ℝ,
+      ∀ x ∈ referenceTriangle, MvPolynomial.eval ![x.1, x.2] q = ∑ m, c m * lhat m x)
+    {L : ι → ℝ} (hL : ∀ m, ∀ x ∈ referenceTriangle, |lhat m x| ≤ L m)
+    {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h) {f : ℝ × ℝ → ℝ}
+    (hf : ∀ x ∈ F_T '' referenceTriangle, ContDiffAt ℝ (k + 1) f x) {M : ℝ}
+    (hM : ∀ x ∈ F_T '' referenceTriangle, ‖iteratedFDeriv ℝ (k + 1) f x‖ ≤ M) :
+    ∀ x ∈ F_T '' referenceTriangle,
+      |f x - Approximation.nodalInterp (F_T ∘ zhat) (fun m => lhat m ∘ G) f x|
+        ≤ (∑ m, L m + 1) / (k + 1)! * h ^ (k + 1) * M := by
+  rintro _ ⟨x, hx, rfl⟩
+  -- the Taylor polynomial of `f` at the vertex `a₁`
+  set P : ℝ × ℝ → ℝ := fun y =>
+    ∑ j ∈ Finset.range (k + 1), ((j ! : ℝ)⁻¹) • iteratedFDeriv ℝ j f a₁ (fun _ => y - a₁) with hP
+  -- (1) Taylor's theorem along the segments from `a₁`
+  have htaylor : ∀ y ∈ referenceTriangle,
+      |f (F_T y) - P (F_T y)| ≤ M * h ^ (k + 1) / (k + 1)! := by
+    intro y hy
+    have key := norm_sub_taylorSum_segment_le (f := f) (n := k) (a := a₁) (w := F_T y - a₁)
+      (M := M) (fun s hs => hf _ (equation_8_34_segment_mem hy hs))
+      (fun s hs => hM _ (equation_8_34_segment_mem hy hs))
+    rw [add_sub_cancel, Real.norm_eq_abs] at key
+    refine key.trans ?_
+    have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM _ ⟨y, hy, rfl⟩)
+    gcongr
+    exact norm_equation_8_34_sub_vertex_le hh₂ hh₃ hy
+  -- (2) the interpolant reproduces `P`, a polynomial of degree `≤ k`
+  obtain ⟨q, hqdeg, hq⟩ := exists_mvPolynomial_taylor_equation_8_34 (a₂ := a₂) (a₃ := a₃) f k
+  have hPF : ∀ y : ℝ × ℝ, P (F_T y) = MvPolynomial.eval ![y.1, y.2] q := hq
+  obtain ⟨c, hc⟩ := hspan q hqdeg
+  have hcm : ∀ m, c m = P (F_T (zhat m)) := by
+    intro m
+    rw [hPF, hc _ (hz m), Finset.sum_eq_single m]
+    · rw [hnodal.eval_self, mul_one]
+    · intro m' _ hm'
+      rw [hnodal.eval_of_ne m' m hm', mul_zero]
+    · intro hm
+      exact absurd (Finset.mem_univ m) hm
+  have hrepr : ∑ m, lhat m x * P (F_T (zhat m)) = P (F_T x) := by
+    rw [hPF, hc x hx]
+    exact Finset.sum_congr rfl fun m _ => by rw [hcm, mul_comm]
+  -- (3) assemble
+  have hinterp : Approximation.nodalInterp (F_T ∘ zhat) (fun m => lhat m ∘ G) f (F_T x)
+      = ∑ m, lhat m x * f (F_T (zhat m)) := by
+    simp only [Approximation.nodalInterp_apply, Function.comp, hG x, smul_eq_mul]
+  have hsplit : f (F_T x) - ∑ m, lhat m x * f (F_T (zhat m))
+      = (f (F_T x) - P (F_T x)) + ∑ m, lhat m x * (P (F_T (zhat m)) - f (F_T (zhat m))) := by
+    simp only [mul_sub, Finset.sum_sub_distrib, hrepr]
+    ring
+  rw [hinterp, hsplit]
+  calc |(f (F_T x) - P (F_T x)) + ∑ m, lhat m x * (P (F_T (zhat m)) - f (F_T (zhat m)))|
+      ≤ |f (F_T x) - P (F_T x)| + |∑ m, lhat m x * (P (F_T (zhat m)) - f (F_T (zhat m)))| :=
+        abs_add_le _ _
+    _ ≤ M * h ^ (k + 1) / (k + 1)! + ∑ m, L m * (M * h ^ (k + 1) / (k + 1)!) := by
+        gcongr
+        · exact htaylor x hx
+        · refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun m _ => ?_)
+          rw [abs_mul, abs_sub_comm]
+          exact mul_le_mul (hL m x hx) (htaylor _ (hz m)) (abs_nonneg _)
+            ((abs_nonneg _).trans (hL m x hx))
+    _ = (∑ m, L m + 1) / (k + 1)! * h ^ (k + 1) * M := by
+        rw [← Finset.sum_mul]
+        ring
+
+end Triangle
+
+/-! #### The case `k = 1`: the three vertices -/
+
+/-- **The local nodes for `k = 1`** (§8.5.2, Figure 8.8): the three vertices
+`(0, 0), (1, 0), (0, 1)` of the reference triangle. -/
+def linearNodes : Fin 3 → ℝ × ℝ :=
+  ![(0, 0), (1, 0), (0, 1)]
+
+/-- **The reference Lagrange basis of `𝒫_1(T̂)` at the vertices**: the barycentric coordinates
+`λ₀ = 1 - x̂ - ŷ`, `λ₁ = x̂`, `λ₂ = ŷ`. -/
+def linearShape : Fin 3 → ℝ × ℝ → ℝ :=
+  ![fun x => 1 - x.1 - x.2, fun x => x.1, fun x => x.2]
+
+/-- The vertices lie in the reference triangle. -/
+theorem linearNodes_mem (m : Fin 3) : linearNodes m ∈ referenceTriangle := by
+  fin_cases m <;> simp [linearNodes, referenceTriangle]
+
+/-- The barycentric coordinates are dual to the vertices, `λ_m(ẑ_j) = δ_{mj}`. -/
+theorem linearShape_isNodalBasis : Approximation.IsNodalBasis linearNodes linearShape where
+  eval_self m := by fin_cases m <;> simp [linearNodes, linearShape]
+  eval_of_ne m j hmj := by
+    fin_cases m <;> fin_cases j <;> simp_all [linearNodes, linearShape]
+
+/-- The barycentric coordinates are bounded by `1` on the reference triangle. -/
+theorem abs_linearShape_le (m : Fin 3) {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) :
+    |linearShape m x| ≤ 1 := by
+  obtain ⟨h1, h2, h3⟩ := hx
+  rw [abs_le]
+  fin_cases m <;> simp [linearShape] <;> constructor <;> linarith
+
+/-- **The barycentric coordinates span `𝒫_1(T̂)`**: a polynomial of total degree at most `1` is
+`q(0,0) λ₀ + q(1,0) λ₁ + q(0,1) λ₂`, monomial by monomial. -/
+theorem linearShape_span (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree ≤ 1) :
+    ∃ c : Fin 3 → ℝ, ∀ x ∈ referenceTriangle,
+      MvPolynomial.eval ![x.1, x.2] q = ∑ m, c m * linearShape m x := by
+  refine ⟨fun m => MvPolynomial.eval ![(linearNodes m).1, (linearNodes m).2] q, fun x _ => ?_⟩
+  -- monomial by monomial
+  have hmono : ∀ v ∈ q.support, ∏ i, ![x.1, x.2] i ^ v i
+      = ∑ m, (∏ i, ![(linearNodes m).1, (linearNodes m).2] i ^ v i) * linearShape m x := by
+    intro v hv
+    have hdeg : v 0 + v 1 ≤ 1 := by
+      have := MvPolynomial.le_totalDegree hv
+      rw [Finsupp.sum_fintype _ _ (fun _ => rfl), Fin.sum_univ_two] at this
+      exact this.trans hq
+    simp only [Fin.prod_univ_two, Fin.sum_univ_three, linearNodes, linearShape,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
+      Matrix.tail_cons, Matrix.cons_val_fin_one]
+    rcases Nat.eq_zero_or_pos (v 0) with h0 | h0 <;> rcases Nat.eq_zero_or_pos (v 1) with h1 | h1
+    · rw [h0, h1]; ring
+    · obtain h1' : v 1 = 1 := by omega
+      rw [h0, h1']; ring
+    · obtain h0' : v 0 = 1 := by omega
+      rw [h0', h1]; ring
+    · omega
+  simp only [MvPolynomial.eval_eq', Finset.sum_mul]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun v hv => ?_
+  rw [hmono v hv, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun m _ => ?_
+  ring
+
+section Triangle
+
+variable {a₁ a₂ a₃ : ℝ × ℝ}
+
+local notation "F_T" => equation_8_34 a₁ a₂ a₃
+
+/-- **(8.39) for `k = 1`**, with the three local nodes at the vertices of `T` and the constant
+made explicit: `‖f - Π_T^1 f‖_{∞,T} ≤ 2 h_T² ‖f''‖_{∞,T}`. `equation_8_39` with the barycentric
+coordinates as the reference basis, `‖λ_m‖_{∞,T̂} = 1`, so `C = (3 + 1)/2! = 2`. -/
+theorem equation_8_39_linear {G : ℝ × ℝ → ℝ × ℝ} (hG : Function.LeftInverse G F_T)
+    {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h) {f : ℝ × ℝ → ℝ}
+    (hf : ∀ x ∈ F_T '' referenceTriangle, ContDiffAt ℝ 2 f x) {M : ℝ}
+    (hM : ∀ x ∈ F_T '' referenceTriangle, ‖iteratedFDeriv ℝ 2 f x‖ ≤ M) :
+    ∀ x ∈ F_T '' referenceTriangle,
+      |f x - Approximation.nodalInterp (F_T ∘ linearNodes) (fun m => linearShape m ∘ G) f x|
+        ≤ 2 * h ^ 2 * M := by
+  intro x hx
+  refine (equation_8_39 (k := 1) hG linearNodes_mem linearShape_isNodalBasis linearShape_span
+    (L := fun _ => 1) (fun m x hx => abs_linearShape_le m hx) hh₂ hh₃ hf hM x hx).trans_eq ?_
+  simp only [Fin.sum_univ_three, Nat.factorial]
+  norm_num
+
+end Triangle
 
 end QuarteroniSaccoSaleri.Chapter08

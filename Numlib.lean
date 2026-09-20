@@ -12,6 +12,7 @@ import Numlib.Analysis.Calculus.ProdContDiff
 import Numlib.Analysis.Calculus.RootMultiplicity
 import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
+import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex
 import Numlib.Analysis.Convex.Bifunction.Algebra
@@ -306,6 +307,7 @@ import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
 import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial
+import Numlib.Approximation.RungePhenomenon
 import Numlib.Approximation.SingularIntegral
 import Numlib.Approximation.SobolevInterpolation
 import Numlib.Approximation.Spline

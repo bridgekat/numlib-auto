@@ -73,44 +73,54 @@ id = "equation_8_38_comp"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.38)'
 
 [[node]]
+id = "referenceTriangle"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.2 (the reference triangle T̂)'
+
+[[node]]
+id = "equation_8_34_sub_vertex"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.34)'
+
+[[node]]
+id = "equation_8_34_segment_mem"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.34)'
+
+[[node]]
+id = "norm_equation_8_34_sub_vertex_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.2 (h_T)'
+
+[[node]]
+id = "exists_mvPolynomial_taylor_equation_8_34"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.35) and (8.39)'
+
+[[node]]
 id = "equation_8_39"
-kind = "theorem"
-desc = '''(8.39): for a triangle `T` of diameter `h_T`, `f ∈ C^{k+1}(T)` and the `𝒫_k` Lagrange
-interpolant `Π_T^k f` at the `d_k` local nodes, `‖f - Π_T^k f‖_{∞,T} ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}`
-with `C` independent of `h_T` and `f` (`‖f^{(k+1)}‖_{∞,T}` the supremum of the `(k+1)`-st
-derivative tensor). Not formalized: the brief rules the two-dimensional interpolation estimates
-out of scope, and the book quotes Ciarlet–Lions Theorem 16.1, whose proof is the Bramble–Hilbert
-lemma over `W^{k+1,∞}`. Honest caveat for a future pass: the sup-norm case is elementary — Taylor's
-theorem at a point of `T` (`taylor_mean_remainder_bound` in several variables via
-`ContDiff` along segments) plus the boundedness of the reference basis functions, which are
-polynomials in the barycentric coordinates and so bounded on `T` by a constant depending on `k`
-only — and needs no shape regularity; it is a `★★★` bookkeeping project, not a blocker.
-Blocked, sharpened (2026-09-16). Re-checked against what §8.5 now has. The surface already carries
-the affine map `equation_8_34`, its bijectivity, `equation_8_35_finrank` (`dim 𝒫_k(T) = d_k`) and
-`equation_8_38_comp` (the element interpolant is the reference interpolant read through `F_T`), so
-the shape of the statement is settled: with a nodal basis `l̂_1, …, l̂_{d_k}` of `𝒫_k` on the
-reference triangle given as data, `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1) / (k + 1)!` works for every `T` at
-once, because `l_m = l̂_m ∘ F_T^{-1}` has the same sup norm. Two ingredients are missing, and both
-are real work rather than blockers.
-
-* **A nodal basis to instantiate it with.** The `d_k` points of the principal lattice are
-  `𝒫_k`-unisolvent on a triangle (Ciarlet, Theorem 2.2.1); the project has
-  `Approximation.IsUnisolvent` and `Approximation.nodalInterp` but no two-dimensional instance of
-  either, and the lattice proof is an induction on `k` over the lines `λ_3 = j/k`. Stating (8.39)
-  with the reference basis as a hypothesis avoids this entirely and is the recommended reading.
-* **A multivariate Taylor remainder.** `‖f - P_a f‖_{∞,T} ≤ h_T^{k+1} ‖D^{k+1} f‖_{∞,T}/(k + 1)!`
-  for the Taylor polynomial at a vertex `a`, by restricting to the segment `[a, x] ⊆ T` and using
-  Mathlib's one-dimensional `taylor_mean_remainder_lagrange_iteratedDeriv` on
-  `s ↦ f (a + s • (x - a))`, whose `j`-th derivative is
-  `iteratedFDeriv ℝ j f (a + s • (x - a)) (fun _ => x - a)` and so is bounded by
-  `‖iteratedFDeriv ℝ j f‖ ‖x - a‖^j`. That identification of the derivatives along a segment is
-  the piece Mathlib does not state directly and is worth about 150 lines on its own; it would also
-  serve `Numlib/Analysis/Calculus/PartialDeriv`.
-
-Estimated 350-500 lines for (8.39) with the basis as data, and about 60 more for (8.40) once a
-triangulation type exists. Still left "not formalized" here per the brief's two-dimensional rule.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_38_comp"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.39)'
+
+[[node]]
+id = "linearNodes"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.2 (k = 1, Figure 8.8)'
+
+[[node]]
+id = "linearShape"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.2 (k = 1)'
+
+[[node]]
+id = "linearNodes_mem"
+
+[[node]]
+id = "linearShape_isNodalBasis"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.36) for k = 1'
+
+[[node]]
+id = "abs_linearShape_le"
+
+[[node]]
+id = "linearShape_span"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.35) for k = 1'
+
+[[node]]
+id = "equation_8_39_linear"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.39) for k = 1'
 
 [[node]]
 id = "equation_8_40"
@@ -121,6 +131,19 @@ it needs the triangulation and the global interpolant `Π_h^k` of (8.37), which 
 (no numbered one-dimensional result depends on them), and it rests on `equation_8_39`. Reading: for
 the sup norm the regularity assumption is superfluous — (8.40) is the maximum of (8.39) over the
 elements — and is inherited from the Sobolev-norm version of the cited theorem; recorded in the
-report's errata.'''
+report's errata.
+
+Blocked (2026-09-20, refreshed; blocker 11 of `notes/frontier.md`): `equation_8_39` is now proved
+(the per-element bound, with the reference Lagrange basis of `𝒫_k(T̂)` as data and a constant
+`C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!` independent of the element), so what (8.40) still needs is
+only the triangulation scaffold: a finite family of nondegenerate triangles `T = F_T(T̂)` covering
+`Ω`, the global nodes `z_i` with the local-to-global correspondence of (8.38), and the global
+interpolant `Π_h^k f` of (8.37) whose restriction to each `T` is `Π_T^k f` (which is where the
+admissibility of the triangulation — the continuity of the `l_i` across edges — is used). With
+those, (8.40) is `equation_8_39` on each element and the maximum over the finitely many elements,
+about 60 lines; the regularity hypothesis `max_T h_T/ρ_T ≤ σ` is not needed in the sup norm. No
+triangulation structure exists in `Numlib/` (checked: `Numlib/Approximation/TriangleQuadrature`
+and `NumlibSurface/QuarteroniSaccoSaleri/Chapter09/Section09` work with a finite family of
+triangles and no adjacency), and building one is the scope decision of blocker 11.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_39"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.40)'

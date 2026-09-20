@@ -76,13 +76,17 @@ book without proof; the `O(h⁴)` bound with non-sharp constants for `r = 0, 1, 
 `Spline.norm_sub_clampedInterp_le` (`★★★`) and the surface can state that version as
 `property_8_3_weak` once it exists.
 
-Blocked: the backbone bounds with non-sharp constants are now proved
-(`Spline.norm_sub_clampedInterp_le`, `Spline.norm_deriv_sub_clampedInterp_le`,
-`Spline.norm_deriv2_sub_clampedInterp_le`) and the surface states them as `property_8_3_weak`;
-what stays open here is only the *sharp* Hall–Meyer constants `5/384`, `1/24`, `3/8` and the
-clause `r = 3`, which the book quotes without proof. Not attempted: Hall–Meyer's proof is a
-separate development (an explicit two-point boundary value problem for the error of the moment
-system), and no other node needs it.'''
+Blocked (2026-09-20, refreshed; blocker 17 of `notes/frontier.md`): the backbone bounds with
+non-sharp constants are proved (`Spline.norm_sub_clampedInterp_le`,
+`Spline.norm_deriv_sub_clampedInterp_le`, `Spline.norm_deriv2_sub_clampedInterp_le`, checked in
+`Numlib/Approximation/Spline.lean`) and the surface states them as `property_8_3_weak`; what stays
+open is only the *sharp* Hall–Meyer constants `5/384`, `1/24`, `3/8` and the clause `r = 3`, which
+the book quotes without proof and no other node needs. Nothing in the backbone or Mathlib bounds
+the clamped-spline error by the sharp constants; Hall–Meyer's proof (the error `e = f - s₃` on
+each panel through the Hermite interpolant of `f` at the nodes with the slopes `s₃'(x_i)`, the
+slope errors bounded through the tridiagonal system's inverse with `‖A⁻¹‖_∞ ≤ 1/2` by diagonal
+dominance, and the sharp Hermite constant `1/384`) is a separate 400–600-line development. Not
+attempted this round (out of the round's scope: quoted without proof).'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique", "Spline.norm_sub_clampedInterp_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 8.3'
 
@@ -108,23 +112,15 @@ id = "bSpline_nonneg"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2'
 
 [[node]]
-id = "bSpline_minimalSupport"
-kind = "theorem"
-desc = '''§8.6.2, quoted from Schoenberg: `B_{i,k+1}` is, up to a scalar, the unique nonzero spline of
-degree `k` and class `C^{k-1}` on `ℝ` supported in `[x_i, x_{i+k+1}]`: if `s : ℝ → ℝ` is `C^{k-1}`,
-a polynomial of degree `≤ k` on each `[x_j, x_{j+1}]` and outside `[x_i, x_{i+k+1}]`, and vanishes
-outside `[x_i, x_{i+k+1}]`, then `s = c • BSpline.bspline x k i` for some `c`. Proof: by the
-truncated-power representation (`Spline.span_truncPow_eq_splineSpace` on a large interval, with
-vanishing to the left of `x_i` killing the polynomial part), `s = ∑_{j=i}^{i+k+1} c_j (t - x_j)_+^k`;
-vanishing to the right of `x_{i+k+1}` says `∑_j c_j (t - x_j)^k = 0` as a polynomial, `k + 1`
-linear conditions on `k + 2` unknowns whose matrix (the moments `∑_j c_j x_j^p = 0`, `p ≤ k`,
-after binomial expansion) is a `(k+1) × (k+2)` Vandermonde of full rank, so the kernel is
-one-dimensional, and (8.53) exhibits `B_{i,k+1}` in it. ★★★
+id = "bSpline_pos"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2'
 
-Blocked: not attempted in this pass. The route above (truncated-power representation, a Vandermonde
-kernel of dimension one) is a 300-line development with no backbone support for the kernel computation;
-estimate one focused day.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_53", "Spline.span_truncPow_eq_splineSpace"]
+[[node]]
+id = "bSpline_minimalSupport"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2 (Schoenberg 1967)'
+
+[[node]]
+id = "bSpline_minimalSupport_eq_zero"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2 (Schoenberg 1967)'
 
 [[node]]

@@ -17,18 +17,37 @@ id = "definition_9_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 9.1'
 
 [[node]]
+id = "triangleMap_sub_vertex"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.34) as used in §9.9.2'
+
+[[node]]
+id = "triangleMap_segment_mem"
+
+[[node]]
+id = "norm_triangleMap_sub_vertex_le"
+
+[[node]]
+id = "continuous_triangleMap"
+
+[[node]]
+id = "isCompact_triangle"
+
+[[node]]
+id = "measurableSet_triangle"
+
+[[node]]
+id = "area_nonneg"
+
+[[node]]
+id = "sum_triangleWeight_eq_area"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.9.2 (local weights and Definition 9.1)'
+
+[[node]]
+id = "property_9_4_triangle"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.4 (one triangle)'
+
+[[node]]
 id = "property_9_4"
-kind = "theorem"
-desc = '''Property 9.4: if the rule (9.57) has degree of exactness `n ≥ 0` on `Ω` and nonnegative
-weights, there is `K_n` independent of `h` with `|E_k^c(f)| ≤ K_n h^{n+1} |Ω| M_{n+1}` for every
-`f ∈ C^{n+1}(Ω)`, `M_{n+1}` the maximum of the moduli of the derivatives of order `n + 1` and `h`
-the maximum edge length. Not formalized: this is a Bramble–Hilbert estimate on each triangle (the
-error of a rule exact on `ℙ_n` is bounded by the best `ℙ_n`-approximation error of `f` on `T`,
-which is `O(h_T^{n+1} M_{n+1})` by a multivariate Taylor expansion with shape-regularity constants),
-and the two-dimensional polynomial approximation on a simplex with constants uniform in the
-triangle is `notes/frontier.md`'s known blocker; the book states it without proof ([IK66]
-pp. 361–362). The one-dimensional analogue is Theorem 9.3.'''
-deps = ["QuarteroniSaccoSaleri.Chapter09.definition_9_1", "QuarteroniSaccoSaleri.Chapter09.equation_9_57"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.4'
 
 [[node]]

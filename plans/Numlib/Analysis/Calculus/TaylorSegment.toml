@@ -1,0 +1,17 @@
+[[node]]
+id = "hasDerivAt_iteratedFDeriv_segment"
+
+[[node]]
+id = "norm_sub_taylorSum_segment_le"
+
+[[node]]
+id = "ContDiff.norm_sub_taylorSum_segment_le"
+
+[[node]]
+id = "ContinuousMultilinearMap.exists_mvPolynomial_apply_sum_smul"
+
+[[node]]
+id = "exists_mvPolynomial_taylorSum"
+
+[[node]]
+id = "exists_mvPolynomial_taylorSum_pi"

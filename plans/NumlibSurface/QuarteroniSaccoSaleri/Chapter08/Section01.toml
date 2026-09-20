@@ -91,7 +91,18 @@ no help here, since every step of it is an upper estimate and what is wanted is 
 cheapest true lower bound in sight is still the equispaced one — evaluate the Lebesgue function at
 the midpoint of the first panel, where the basis product telescopes into a ratio of factorials and
 gives `Λ_n ≥ 2^{n-3}/n²` — which bounds one interpolation matrix, not all of them, and so refutes
-nothing about `erdos_lebesgueConstant` or `faber` as they are stated.'''
+nothing about `erdos_lebesgueConstant` or `faber` as they are stated.
+
+Blocked (2026-09-20, refreshed; blocker 17 of `notes/frontier.md`, quoted without proof — not in
+this round's scope). Checked: `Numlib/Approximation/Interpolation.lean` has the *upper* bounds
+`Lagrange.norm_interpolateCLM`, `Lagrange.norm_interpolateCLM_chebyshev_le` and
+`SineSum.sum_term_le`, and `Numlib/Approximation/RungePhenomenon.lean` (this round) has a lower
+bound on one *error* at one point for one node scheme (`Runge.one_le_abs_sub_interpolate`), not on
+a Lebesgue constant; no lower bound on an algebraic Lebesgue constant exists in `Numlib/` or
+Mathlib. What is missing is Erdős's argument itself (or Bernstein's `Λ_n ≥ c log n` for arbitrary
+nodes through the Lebesgue function at the Chebyshev-like points), several pages of hard analysis;
+estimate a week. The equispaced one-scheme bound `Λ_n ≥ 2^{n-3}/n²` remains the cheap partial
+result and would take about 200 lines.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2 (Erdős 1961)'
 
@@ -105,50 +116,28 @@ function. Not formalized: given the unboundedness of the Lebesgue constants it i
 `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` of
 `Numlib/Analysis/Normed/Operator/BanachSteinhaus` with `L = 1` and `lebesgueConstant_eq_norm` —
 but the unboundedness is `erdos_lebesgueConstant` (or Bernstein's weaker bound), which is out of
-reach; the book quotes both without proof.'''
+reach; the book quotes both without proof.
+
+Blocked (2026-09-20, refreshed; blocker 17): unchanged. Checked:
+`ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` exists in
+`Numlib/Analysis/Normed/Operator/BanachSteinhaus.lean` and `lebesgueConstant_eq_norm` is proved, so
+the node reduces in five lines to `¬ BddAbove (Set.range (lebesgueConstant X))` for every
+interpolation matrix, which is the open `erdos_lebesgueConstant` (or Bernstein's bound). Note that
+Runge's counterexample (`example_8_1`, proved this round) is the special case of one node scheme
+and one explicit function, and does not give Faber's statement for arbitrary `X`.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.erdos_lebesgueConstant", "QuarteroniSaccoSaleri.Chapter08.interpRow", "QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_eq_norm", "ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.2 (Faber 1914)'
 
 [[node]]
-id = "example_8_1"
-kind = "theorem"
-desc = '''Example 8.1, Runge's counterexample: for `f t = 1 / (1 + t²)` on `[-5, 5]` and the equispaced
-nodes `x_j^{(n)} = -5 + 10 j / n`, there is `t ∈ Icc (-5) 5` (indeed every `|t| > 3.63…`, but one
-point suffices for the statement) such that
-`¬ Tendsto (fun n => (Lagrange.interpolate Finset.univ (x n) (f ∘ x n)).eval t) atTop (𝓝 (f t))`.
-Proof route (real-variable, no contour integral): (i) by `DividedDifference.sub_eval_interpolate_eq_newton`
-the error is `ω_{n+1}(t) f[x_0, …, x_n, t]`; (ii) `f = Re (i/(s + i))` and
-`DividedDifference.newton_inv_sub` over `ℂ` give `f[x_0, …, x_n, t] = Re (i · (-1)^{n+1} / ((t + i) ∏_j (x_j + i)))`,
-whose modulus is at least `κ(t) / |ω_{n+1}(i)|` with `κ(t) = min(1, |t|)/(1 + t²)`, because the
-symmetric node set makes `∏_j (x_j + i)` real or purely imaginary; (iii) so
-`|E_n(t)| ≥ κ(t) exp(∑_j (log|t - x_j| - ½ log(1 + x_j²)))`, and Riemann-sum bounds for the two
-monotone-on-pieces integrands show the exponent is `(n/10)(φ(t) - ψ) - O(log n)` with
-`φ(t) = ∫_{-5}^{5} log|t - s| ds` and `ψ = ∫_0^5 log(1 + s²) ds = 5 log 26 - 10 + 2 arctan 5 ≈ 9.04`;
-(iv) at `t = √20 ≈ 4.47` (irrational, so never a node), `φ(t) ≈ 11.0 > ψ` with margin `≈ 2`, which
-crude bounds on `log` and `arctan` certify. The exact threshold `3.6334…` is where `φ(t) = ψ` and is
-not part of the statement. ★★★ (500–800 lines; the book quotes the fact without proof, and it is
-optional — see the report's open questions)
+id = "example_8_1_nodes"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
 
-Blocked: not attempted this round; the engine `DividedDifference.newton_inv_sub` (real) and
-`DividedDifference.newtonOn_inv_sub` (any field, so over `ℂ` with `Finset.univ`) now exist in
-`Numlib/Approximation/NewtonForm`, and what remains is the Riemann-sum estimate of the exponent and
-the certified margin at `t = √20`, 500–800 lines that nothing downstream uses.
-Sharpened route (2026-09-16). Two changes make the estimate materially easier than the `t = √20`
-plan above. First, take the **rational** evaluation point `t = 4.9` and restrict to **odd** `n`:
-`t` is a node exactly when `100 ∣ n`, so it never is, and every nonzero `t - x_j = (99 n - 100 j)/(10 n)`
-has `|t - x_j| ≥ 1/(10 n)` — an elementary separation that replaces the Liouville-type argument the
-irrational point needed (for `t = √20` the elementary form is `|20 q² - p²| ≥ 1`). Odd `n` also
-picks the branch where `∏_j (i - x_j)` is real, so `κ(t) = 1/(1 + t²)` with no case split, and
-`¬ Tendsto` needs only a subsequence. Second, the margin is larger: with
-`φ(t) = ∫_{-5}^5 log|t - s| ds = |t - 5| log|t - 5| - |t - 5| + (t + 5) log (t + 5) - (t + 5)`,
-`φ(4.9) = 0.1 log 0.1 - 0.1 + 9.9 log 9.9 - 9.9 ≈ 12.47` against
-`ψ = ∫_0^5 log (1 + s²) ds = 5 log 26 - 10 + 2 arctan 5 ≈ 9.04`, a margin of `≈ 3.4` instead of
-`≈ 1.9`. The identity to start from is exact:
-`|E_n(t)| = κ(t) ∏_j |t - x_j| / √(1 + x_j²)`, so `log |E_n(t)| = log κ(t) + ∑_j (log|t - x_j| - ½ log(1 + x_j²))`,
-and what remains is the one-sided Riemann-sum comparison of that sum with `(n/10)(φ(t) - ψ)`, for
-which the integrands are monotone on each side of their singularity. Estimated 400-600 lines, the
-bulk of it certified numeric bounds for `log 9.9`, `log 26` and `arctan 5`.'''
-deps = ["DividedDifference.sub_eval_interpolate_eq_newton", "DividedDifference.newton_inv_sub"]
+[[node]]
+id = "example_8_1_one_le"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
+
+[[node]]
+id = "example_8_1"
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1'
 
 [[node]]
@@ -165,6 +154,15 @@ Function Theory*). Not formalized: the asymptotic equivalence needs the precise 
 Lebesgue function near the ends of the interval and the book states it without proof. A rigorous
 one-sided bound `lebesgueConstant X n ≥ 2^{n-3}/n²` (Schönhage) is provable by evaluating the
 Lebesgue function at the midpoint of the first panel, and would suffice to show that equispaced
-interpolation is unstable; it is not stated by the book and is not planned.'''
+interpolation is unstable; it is not stated by the book and is not planned.
+
+Blocked (2026-09-20, refreshed; blocker 17): unchanged, the book quotes Turetskii's asymptotics
+without proof and the round did not take it up. Checked: no asymptotics of Lebesgue constants
+exist in `Numlib/` or Mathlib; the Chebyshev upper bound `Lagrange.norm_interpolateCLM_chebyshev_le`
+and the equispaced machinery of `Numlib/Approximation/RungePhenomenon.lean` (products of
+`|t - x_j|` over equispaced nodes, `Runge.abs_sub_interpolate_eq`) are the nearest material. The
+one-sided `Λ_n ≥ 2^{n-3}/n²` is about 200 lines (evaluate the Lebesgue function at the midpoint of
+the first panel, where the basis product telescopes into factorials); the two-sided asymptotics
+are a few pages of Natanson and are not bounded work.'''
 deps = ["QuarteroniSaccoSaleri.Chapter08.lebesgueConstant"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.1.3 (Natanson; Turetskii 1940)'

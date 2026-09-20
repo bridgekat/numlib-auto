@@ -48,16 +48,17 @@ by divided differences, the B-spline basis).
   approximation of `f''` by the clamped spline.
 * `property_8_3_weak` — Property 8.3 with non-sharp constants, for the clamped spline.
 * `remark_8_4` — Boehm's knot insertion.
-* `equation_8_53`, `bSpline_support`, `bSpline_nonneg`, `equation_8_54`, `equation_8_54_zero`,
-  `equation_8_54_definition_8_2`, `remark_8_3_left`, `remark_8_3_right`, `example_8_9`,
-  `equation_8_56`, `equation_8_56_repr`, `equation_8_57`, `equation_8_57_right` — B-splines.
+* `equation_8_53`, `bSpline_support`, `bSpline_nonneg`, `bSpline_pos`, `equation_8_54`,
+  `equation_8_54_zero`, `equation_8_54_definition_8_2`, `remark_8_3_left`, `remark_8_3_right`,
+  `example_8_9`, `equation_8_56`, `equation_8_56_repr`, `equation_8_57`, `equation_8_57_right` —
+  B-splines; `bSpline_minimalSupport`, `bSpline_minimalSupport_eq_zero` — Schoenberg's
+  characterization of `B_{i,k+1}` as the unique non null spline of minimum support.
 
 ## Not formalized
 
-Property 8.3 with the sharp Hall–Meyer constants (`property_8_3`) and the minimal-support
-characterization of B-splines quoted from Schoenberg (`bSpline_minimalSupport`) are stated in the
-plan and left open there; see the plan for the reasons. `property_8_3_weak` is Property 8.3 with
-non-sharp constants.
+Property 8.3 with the sharp Hall–Meyer constants (`property_8_3`) is stated in the plan and left
+open there; see the plan for the reasons. `property_8_3_weak` is Property 8.3 with non-sharp
+constants.
 
 ## Conventions
 
@@ -768,6 +769,64 @@ theorem bSpline_support (hx : Monotone x) {i : ℕ} {t : ℝ} (ht : t ∉ Icc (x
 `BSpline.bspline_nonneg`. -/
 theorem bSpline_nonneg (hx : Monotone x) (i : ℕ) (t : ℝ) : 0 ≤ BSpline.bspline x k i t :=
   BSpline.bspline_nonneg hx
+
+/-- **Positivity on the open support** (§8.6.2): `B_{i,k+1}(x) > 0` for `x ∈ (x_i, x_{i+k+1})` and
+strictly increasing knots. `BSpline.bspline_pos`. -/
+theorem bSpline_pos (hx : StrictMono x) {i : ℕ} {t : ℝ} (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
+    0 < BSpline.bspline x k i t :=
+  BSpline.bspline_pos hx ht
+
+/-- **Minimal support** (§8.6.2, quoted from Schoenberg [Sch67]): "`B_{i,k+1}` is the unique non
+null spline of minimum support relative to the nodes `x_i, …, x_{i+k+1}`". For strictly increasing
+knots and `k ≥ 1`, every spline of degree `k` with support in `[x_i, x_{i+k+1}]` — a function
+`s : ℝ → ℝ` of class `C^{k-1}`, vanishing outside `[x_i, x_{i+k+1}]` and a polynomial of degree
+`≤ k` on each `[x_j, x_{j+1}]`, `i ≤ j ≤ i + k` — is a scalar multiple of `B_{i,k+1}`. The
+backbone's `BSpline.exists_eq_smul_bspline`: both `s` and `B_{i,k+1}` are combinations of the
+powers `(x - x_j)^k` with jump coefficients in the one-dimensional kernel of
+`c ↦ ∑_{j=i}^{i+k+1} c_j (x - x_j)^k`, a Vandermonde argument. -/
+theorem bSpline_minimalSupport (hx : StrictMono x) (hk : 1 ≤ k) {i : ℕ} {s : ℝ → ℝ}
+    (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
+    (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
+    (hp : ∀ j, i ≤ j → j ≤ i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1)))) :
+    ∃ c : ℝ, s = c • BSpline.bspline x k i :=
+  BSpline.exists_eq_smul_bspline hx hk hs h0 hp
+
+/-- **Minimal support, the minimality** (§8.6.2): no non null spline of degree `k` is supported in
+fewer than `k + 2` consecutive nodes — a spline of degree `k` supported in `[x_i, x_{i+k}]` is
+zero. It is a multiple of `B_{i,k+1}` by `bSpline_minimalSupport`, and `B_{i,k+1}` is positive on
+`(x_{i+k}, x_{i+k+1})`, where the spline vanishes. -/
+theorem bSpline_minimalSupport_eq_zero (hx : StrictMono x) (hk : 1 ≤ k) {i : ℕ} {s : ℝ → ℝ}
+    (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
+    (h0 : ∀ t ∉ Icc (x i) (x (i + k)), s t = 0)
+    (hp : ∀ j, i ≤ j → j < i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1)))) :
+    s = 0 := by
+  have hlt : x (i + k) < x (i + k + 1) := hx (Nat.lt_succ_self _)
+  have h0' : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0 := fun t ht =>
+    h0 t fun h => ht ⟨h.1, h.2.trans hlt.le⟩
+  have hp' : ∀ j, i ≤ j → j ≤ i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1))) := by
+    intro j hij hjk
+    rcases Nat.lt_or_ge j (i + k) with h | h
+    · exact hp j hij h
+    · obtain rfl : j = i + k := by omega
+      refine ⟨0, by simp, EqOn.of_subset_closure (s := Ioc (x (i + k)) (x (i + k + 1)))
+        (fun t ht => ?_) hs.continuous.continuousOn (0 : ℝ[X]).continuous.continuousOn
+        Ioc_subset_Icc_self (by rw [closure_Ioc hlt.ne])⟩
+      rw [eval_zero]
+      exact h0 t fun h' => absurd h'.2 (not_le.mpr ht.1)
+  obtain ⟨c, hc⟩ := bSpline_minimalSupport hx hk hs h0' hp'
+  set t := (x (i + k) + x (i + k + 1)) / 2 with ht
+  have htm : t ∈ Ioo (x (i + k)) (x (i + k + 1)) := ⟨by rw [ht]; linarith, by rw [ht]; linarith⟩
+  have hst : s t = 0 := h0 t fun h => absurd h.2 (not_le.mpr htm.1)
+  have hpos : 0 < BSpline.bspline x k i t :=
+    bSpline_pos hx ⟨(hx.monotone (Nat.le_add_right i k)).trans_lt htm.1, htm.2⟩
+  have hc0 : c = 0 := by
+    have := congrFun hc t
+    rw [hst, Pi.smul_apply, smul_eq_mul] at this
+    exact (mul_eq_zero.mp this.symm).resolve_right hpos.ne'
+  rw [hc, hc0, zero_smul]
 
 /-- **(8.54), the degree-zero B-spline**: `B_{i,1}` is `1` on `[x_i, x_{i+1})` and `0` otherwise.
 The book prints the closed interval `[x_i, x_{i+1}]`, which cannot be right at the shared knots

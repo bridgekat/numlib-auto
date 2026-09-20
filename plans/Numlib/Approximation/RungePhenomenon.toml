@@ -1,0 +1,48 @@
+namespace = "Runge"
+
+[[node]]
+id = "runge"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.12)"
+
+[[node]]
+id = "runge_eq_re"
+
+[[node]]
+id = "newton_runge"
+
+[[node]]
+id = "node"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1 (equally spaced nodes)"
+
+[[node]]
+id = "node_rev"
+
+[[node]]
+id = "node_injective"
+
+[[node]]
+id = "exists_prod_I_sub_node_eq"
+
+[[node]]
+id = "abs_sub_interpolate_eq"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1 (the exact error)"
+
+[[node]]
+id = "sum_log_one_add_abs_le"
+
+[[node]]
+id = "sep_le_abs_sub"
+
+[[node]]
+id = "sum_log_abs_sub_ge"
+
+[[node]]
+id = "margin"
+
+[[node]]
+id = "one_le_abs_sub_interpolate"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1"
+
+[[node]]
+id = "not_tendsto_interpolate"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.1 (Runge 1901)"

@@ -34,13 +34,20 @@ Guide to Splines*, chapters IX–XI.
 
 ## Main results
 
-* `BSpline.bspline_eq_zero_of_notMem`, `BSpline.bspline_nonneg`, `BSpline.sum_bspline`,
-  `BSpline.exists_eqOn_bspline`: support, positivity, partition of unity, piecewise polynomial.
+* `BSpline.bspline_eq_zero_of_notMem`, `BSpline.bspline_nonneg`, `BSpline.bspline_pos`,
+  `BSpline.sum_bspline`, `BSpline.exists_eqOn_bspline`: support, positivity, partition of unity,
+  piecewise polynomial.
 * `BSpline.bspline_eq_mul_newton_truncPow` and `BSpline.bspline_eq_sum_truncPow`: Definition 8.2
   and (8.53) as theorems, through the divided-difference form of the Cox–de Boor recursion.
 * `BSpline.contDiff_bspline`, `BSpline.bspline_mem_splineSpace`,
   `BSpline.linearIndependent_bspline`, `BSpline.exists_basis_bspline`: smoothness `C^{k-1}` at
   simple knots and the B-spline basis of the spline space.
+* `BSpline.linearIndependent_X_sub_C_pow`,
+  `BSpline.exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`,
+  `BSpline.exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn` and `BSpline.exists_eq_smul_bspline`:
+  Schoenberg's characterization of `B_{i,k}` as the unique (up to a scalar) `C^{k-1}` spline of
+  degree `k` supported in `[x_i, x_{i+k+1}]`, through the one-dimensional kernel of
+  `c ↦ ∑_j c_j (X - x_j)^k` on `k + 2` distinct knots (a Vandermonde argument).
 * `BSpline.bspline_apply_of_coincident_left`, `BSpline.bspline_apply_of_coincident_right`,
   `BSpline.sum_smul_bspline_left`, `BSpline.sum_smul_bspline_right`: coincident knots and the
   endpoint values (8.57); `BSpline.bspline_uniform_cubic`: Example 8.9.
@@ -246,6 +253,61 @@ theorem exists_eqOn_bspline (hx : Monotone x) (j : ℕ) :
           _ = ((d + 1 : ℕ) : WithBot ℕ) := by push_cast; ring
     · simp only [bspline_succ, eval_add, eval_mul, eval_sub, eval_one, eval_weightPoly, hpe ht,
         hqe ht]
+
+/-- **Positivity on the open support**: for strictly increasing knots, `B_{i,k}(t) > 0` for every
+`t ∈ (x_i, x_{i+k+1})`. By induction on `k` through the Cox–de Boor recursion: one of the two
+terms has a positive weight and a positive B-spline of degree `k - 1`, the other is nonnegative. -/
+theorem bspline_pos (hx : StrictMono x) (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
+    0 < bspline x k i t := by
+  induction k generalizing i with
+  | zero =>
+    rw [bspline_zero, ite_eq_left (Ioo_subset_Ico_self ht)]
+    exact one_pos
+  | succ d ih =>
+    rw [bspline_succ]
+    have hw1 : 0 ≤ weight x i (d + 1) t := by
+      unfold weight
+      split_ifs with h
+      · exact le_rfl
+      · exact div_nonneg (sub_nonneg.mpr ht.1.le)
+          (sub_nonneg.mpr (hx.monotone (Nat.le_add_right _ _)))
+    have hw2 : 0 ≤ 1 - weight x (i + 1) (d + 1) t := by
+      unfold weight
+      split_ifs with h
+      · norm_num
+      · have hlt : x (i + 1) < x (i + 1 + (d + 1)) := hx (by omega)
+        rw [sub_nonneg, div_le_one (sub_pos.mpr hlt)]
+        have : t < x (i + 1 + (d + 1)) := by
+          simpa [add_assoc, add_comm, add_left_comm] using ht.2
+        linarith
+    rcases lt_or_ge t (x (i + d + 1)) with h1 | h1
+    · -- the first term is positive
+      have hB : 0 < bspline x d i t := ih ⟨ht.1, h1⟩
+      have hw : 0 < weight x i (d + 1) t := by
+        unfold weight
+        have hlt : x i < x (i + (d + 1)) := hx (by omega)
+        rw [ite_eq_right hlt.ne']
+        exact div_pos (sub_pos.mpr ht.1) (sub_pos.mpr hlt)
+      have := mul_nonneg hw2 (bspline_nonneg (k := d) (i := i + 1) (t := t) hx.monotone)
+      nlinarith [mul_pos hw hB]
+    · -- the second term is positive
+      have hB : 0 < bspline x d (i + 1) t := by
+        rcases Nat.eq_zero_or_pos d with rfl | hd
+        · rw [bspline_zero, ite_eq_left]
+          · exact one_pos
+          · refine ⟨by simpa using h1, ?_⟩
+            simpa [add_assoc, add_comm, add_left_comm] using ht.2
+        · refine ih ⟨(hx (by omega : i + 1 < i + d + 1)).trans_le h1, ?_⟩
+          simpa [add_assoc, add_comm, add_left_comm] using ht.2
+      have hw : 0 < 1 - weight x (i + 1) (d + 1) t := by
+        unfold weight
+        have hlt : x (i + 1) < x (i + 1 + (d + 1)) := hx (by omega)
+        rw [ite_eq_right hlt.ne', sub_pos, div_lt_one (sub_pos.mpr hlt)]
+        have : t < x (i + 1 + (d + 1)) := by
+          simpa [add_assoc, add_comm, add_left_comm] using ht.2
+        linarith
+      have := mul_nonneg hw1 (bspline_nonneg (k := d) (i := i) (t := t) hx.monotone)
+      nlinarith [mul_pos hw hB]
 
 /-! ### Divided differences of truncated powers
 
@@ -806,6 +868,233 @@ theorem exists_basis_bspline (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) :
   refine ⟨basisOfLinearIndependentOfCardEqFinrank hli hcard, fun i t => ?_⟩
   rw [coe_basisOfLinearIndependentOfCardEqFinrank]
   rfl
+
+/-! ### Schoenberg's minimal-support characterization -/
+
+/-- **The `k + 1` powers `(X - y_j)^k` at distinct points are linearly independent**: extracting
+the coefficients of a vanishing combination gives the vanishing of the moments
+`∑_j c_j (-y_j)^p`, `p ≤ k`, a Vandermonde system in the `c_j`. -/
+theorem linearIndependent_X_sub_C_pow {K : Type*} [Field K] [CharZero K] {k : ℕ}
+    {y : Fin (k + 1) → K} (hy : Function.Injective y) :
+    LinearIndependent K fun j => (X - C (y j)) ^ k := by
+  classical
+  rw [Fintype.linearIndependent_iff]
+  intro g hg
+  have hmom : ∀ p : Fin (k + 1), ∑ j, g j * (-y j) ^ (p : ℕ) = 0 := by
+    intro p
+    have h := congrArg (fun q : K[X] => q.coeff (k - p)) hg
+    simp only [finsetSum_coeff, coeff_smul, smul_eq_mul, coeff_zero] at h
+    have hc : ∀ j, ((X - C (y j)) ^ k).coeff (k - p)
+        = (-y j) ^ (p : ℕ) * (k.choose (k - p) : K) := by
+      intro j
+      rw [sub_eq_add_neg, ← C_neg, coeff_X_add_C_pow]
+      congr 2
+      have := p.2
+      omega
+    simp only [hc, ← mul_assoc, ← Finset.sum_mul] at h
+    refine (mul_eq_zero.mp h).resolve_right ?_
+    exact_mod_cast (Nat.choose_pos (Nat.sub_le k p)).ne'
+  have hvm : Matrix.vecMul g (Matrix.vandermonde fun j => -y j) = 0 := by
+    funext p
+    simpa [Matrix.vecMul, dotProduct, Matrix.vandermonde_apply] using hmom p
+  have hdet : (Matrix.vandermonde fun j => -y j).det ≠ 0 :=
+    Matrix.det_vandermonde_ne_zero_iff.mpr (neg_injective.comp hy)
+  exact congrFun (Matrix.eq_zero_of_vecMul_eq_zero hdet hvm)
+
+/-- **The kernel of `c ↦ ∑_j c_j (X - y_j)^k` on `k + 2` distinct points is one-dimensional**:
+two vanishing combinations, the second nontrivial, are proportional. -/
+theorem exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero {K : Type*} [Field K] [CharZero K]
+    {k : ℕ} {y : Fin (k + 2) → K} (hy : Function.Injective y) {c c' : Fin (k + 2) → K}
+    (hc : ∑ j, C (c j) * (X - C (y j)) ^ k = 0)
+    (hc' : ∑ j, C (c' j) * (X - C (y j)) ^ k = 0) (hne : c' ≠ 0) :
+    ∃ l : K, c = l • c' := by
+  obtain ⟨m, hm⟩ : ∃ m, c' m ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hne (funext h)
+  refine ⟨c m / c' m, ?_⟩
+  set d : Fin (k + 2) → K := c - (c m / c' m) • c' with hd
+  have hdm : d m = 0 := by simp [hd, div_mul_cancel₀ _ hm]
+  have hdsum : ∑ j, C (d j) * (X - C (y j)) ^ k = 0 := by
+    simp only [hd, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, C_sub, C_mul, sub_mul,
+      Finset.sum_sub_distrib, hc, mul_assoc, ← Finset.mul_sum, hc', mul_zero, sub_zero]
+  have hli := linearIndependent_X_sub_C_pow (hy.comp (Fin.succAbove_right_injective (p := m)))
+  rw [Fintype.linearIndependent_iff] at hli
+  have h0 : ∀ j, d (m.succAbove j) = 0 := by
+    refine hli (fun j => d (m.succAbove j)) ?_
+    rw [Fin.sum_univ_succAbove _ m, hdm, C_0, zero_mul, zero_add] at hdsum
+    simpa only [smul_eq_C_mul, Function.comp] using hdsum
+  have : d = 0 := by
+    funext j
+    rcases Fin.eq_self_or_eq_succAbove m j with rfl | ⟨j', rfl⟩
+    · exact hdm
+    · exact h0 j'
+  exact sub_eq_zero.mp this
+
+/-- **The jump representation of a `C^{k-1}` piecewise polynomial supported in
+`[x_i, x_{i+k+1}]`**: if `s` is `C^{k-1}` on `ℝ`, vanishes outside `[x_i, x_{i+k+1}]` and is a
+polynomial of degree at most `k` on each knot interval `[x_j, x_{j+1}]`, `i ≤ j ≤ i + k`, then on
+`[x_{i+m}, x_{i+m+1}]` it is `∑_{j ≤ m} c_j (t - x_{i+j})^k`, where `c_j` is the jump of the
+leading coefficient at `x_{i+j}`, and the vanishing to the right of `x_{i+k+1}` says
+`∑_{j ≤ k+1} c_j (X - x_{i+j})^k = 0`. The jump at each knot is a multiple of `(X - x_j)^k`
+because the difference of the adjacent pieces has `C^{k-1}` contact with zero there
+(`Spline.iterate_derivative_eval_eq_zero_of_eqOn`). -/
+theorem exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn (hx : StrictMono x) (hk : 1 ≤ k)
+    {s : ℝ → ℝ} (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
+    (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
+    (hp : ∀ j, i ≤ j → j ≤ i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1)))) :
+    ∃ c : ℕ → ℝ, (∑ j ∈ Finset.range (k + 2), C (c j) * (X - C (x (i + j))) ^ k = 0) ∧
+      ∀ m ≤ k, ∀ t ∈ Icc (x (i + m)) (x (i + m + 1)),
+        s t = ∑ j ∈ Finset.range (m + 1), c j * (t - x (i + j)) ^ k := by
+  classical
+  have hp' : ∀ j, ∃ p : ℝ[X], i ≤ j → j ≤ i + k →
+      p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1))) := fun j =>
+    if h : i ≤ j ∧ j ≤ i + k then (hp j h.1 h.2).imp fun _ hp' _ _ => hp'
+    else ⟨0, fun h1 h2 => absurd ⟨h1, h2⟩ h⟩
+  choose p hp using hp'
+  -- the pieces: `q 0 = 0` left of `x_i`, `q (m + 1)` on `[x_{i+m}, x_{i+m+1}]`, `q (k + 2) = 0`
+  set q : ℕ → ℝ[X] := fun m => if 1 ≤ m ∧ m ≤ k + 1 then p (i + m - 1) else 0 with hq
+  have hq0 : q 0 = 0 := by simp [hq]
+  have hqlast : q (k + 2) = 0 := by simp [hq]
+  have hqsucc : ∀ m ≤ k, q (m + 1) = p (i + m) := by
+    intro m hm
+    simp only [hq, show 1 ≤ m + 1 ∧ m + 1 ≤ k + 1 from ⟨by omega, by omega⟩, and_self, ite_true,
+      show i + (m + 1) - 1 = i + m by omega]
+  have hqdeg : ∀ m, (q m).degree ≤ k := by
+    intro m
+    simp only [hq]
+    split_ifs with h
+    · exact (hp _ (by omega) (by omega)).1
+    · simp
+  -- the left neighbours of the knots
+  set L : ℕ → ℝ := fun m => if m = 0 then x i - 1 else x (i + m - 1) with hL
+  have hLlt : ∀ m, L m < x (i + m) := by
+    intro m
+    simp only [hL]
+    split_ifs with h
+    · subst h; simp
+    · exact hx (by omega)
+  -- `s` is `q m` on `(L m, x_{i+m})` and `q (m+1)` on `(x_{i+m}, x_{i+m+1})`
+  have hleft : ∀ m ≤ k + 1, ∀ t ∈ Ioo (L m) (x (i + m)), s t = (q m).eval t := by
+    intro m hm t ht
+    rcases Nat.eq_zero_or_pos m with rfl | hm0
+    · rw [hq0, eval_zero]
+      refine h0 t fun h => ?_
+      simp only [hL, ite_true, add_zero] at ht
+      exact absurd h.1 (not_le.mpr ht.2)
+    · obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+      rw [hqsucc m' (by omega)]
+      simp only [hL, Nat.add_one_ne_zero, ite_false,
+        show i + (m' + 1) - 1 = i + m' by omega] at ht
+      exact (hp (i + m') (by omega) (by omega)).2 (Ioo_subset_Icc_self ht)
+  have hright : ∀ m ≤ k + 1, ∀ t ∈ Ioo (x (i + m)) (x (i + m + 1)),
+      s t = (q (m + 1)).eval t := by
+    intro m hm t ht
+    rcases Nat.lt_or_ge m (k + 1) with hmk | hmk
+    · rw [hqsucc m (by omega)]
+      exact (hp (i + m) (by omega) (by omega)).2 (Ioo_subset_Icc_self ht)
+    · obtain rfl : m = k + 1 := by omega
+      rw [hqlast, eval_zero]
+      exact h0 t fun h => absurd h.2 (not_le.mpr ht.1)
+  -- the jumps
+  set c : ℕ → ℝ := fun m => (taylor (x (i + m)) (q (m + 1) - q m)).coeff k with hc
+  have hjump : ∀ m ≤ k + 1, q (m + 1) - q m = C (c m) * (X - C (x (i + m))) ^ k := by
+    intro m hm
+    have hcontact : ∀ j ≤ k - 1, (derivative^[j] (q (m + 1) - q m)).eval (x (i + m)) = 0 := by
+      intro j hj
+      refine Spline.iterate_derivative_eval_eq_zero_of_eqOn (hLlt m) (hx (Nat.lt_succ_self _))
+        (e := fun t => s t - (q m).eval t) (hs.contDiffOn.sub ((q m).contDiff_eval _).contDiffOn)
+        (fun t ht => ?_) (fun t ht => ?_) hj
+      · simp only [Pi.zero_apply, hleft m hm t ht, sub_self]
+      · simp only [eval_sub, hright m hm t ht]
+    have hnat : (q (m + 1) - q m).natDegree ≤ k :=
+      natDegree_le_iff_degree_le.mpr ((degree_sub_le _ _).trans (max_le (hqdeg _) (hqdeg _)))
+    refine Polynomial.funext fun t => ?_
+    rw [Spline.eval_eq_sum_Ioc_of_iterate_derivative_eq_zero hnat hcontact t]
+    have hIoc : Finset.Ioc (k - 1) k = {k} := by
+      ext j; simp only [Finset.mem_Ioc, Finset.mem_singleton]; omega
+    rw [hIoc, Finset.sum_singleton, eval_mul, eval_C, eval_pow, eval_sub, eval_X, eval_C]
+  -- telescoping
+  have htel : ∀ m ≤ k + 1,
+      q (m + 1) = ∑ j ∈ Finset.range (m + 1), C (c j) * (X - C (x (i + j))) ^ k := by
+    intro m
+    induction m with
+    | zero =>
+      intro _
+      rw [Finset.sum_range_one, ← hjump 0 (by omega), hq0, sub_zero]
+    | succ m ih =>
+      intro hm
+      rw [Finset.sum_range_succ, ← ih (by omega), ← hjump (m + 1) hm]
+      ring
+  refine ⟨c, ?_, fun m hm t ht => ?_⟩
+  · rw [← htel (k + 1) le_rfl, hqlast]
+  · rw [(hp (i + m) (by omega) (by omega)).2 ht, ← hqsucc m hm, htel m (by omega)]
+    simp only [eval_finsetSum, eval_mul, eval_C, eval_pow, eval_sub, eval_X]
+
+/-- **Schoenberg's minimal-support characterization of the B-spline** ([quarteroni2000numerical]
+§8.6.2, quoting Schoenberg): for strictly increasing knots and `1 ≤ k`, a function `s : ℝ → ℝ` of
+class `C^{k-1}`, vanishing outside `[x_i, x_{i+k+1}]` and a polynomial of degree at most `k` on
+each knot interval `[x_j, x_{j+1}]`, `i ≤ j ≤ i + k`, is a scalar multiple of `B_{i,k}`. Both `s`
+and `B_{i,k}` are combinations `∑_{j ≤ m} c_j (t - x_{i+j})^k` on the `m`-th knot interval with
+jump coefficients in the kernel of `c ↦ ∑_{j ≤ k+1} c_j (X - x_{i+j})^k`
+(`exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn`), which is one-dimensional
+(`exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero`); the B-spline's coefficients are nonzero
+because it is positive on `(x_i, x_{i+k+1})` (`bspline_pos`). -/
+theorem exists_eq_smul_bspline (hx : StrictMono x) (hk : 1 ≤ k) {s : ℝ → ℝ}
+    (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
+    (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
+    (hp : ∀ j, i ≤ j → j ≤ i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn s p.eval (Icc (x j) (x (j + 1)))) :
+    ∃ c : ℝ, s = c • bspline x k i := by
+  classical
+  obtain ⟨c, hc0, hcs⟩ := exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn hx hk hs h0 hp
+  have hB0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), bspline x k i t = 0 := fun t ht =>
+    bspline_eq_zero_of_notMem hx.monotone fun h => ht (Ico_subset_Icc_self h)
+  have hBp : ∀ j, i ≤ j → j ≤ i + k →
+      ∃ p : ℝ[X], p.degree ≤ k ∧ EqOn (bspline x k i) p.eval (Icc (x j) (x (j + 1))) := by
+    intro j _ _
+    obtain ⟨p, hpd, hpe⟩ := exists_eqOn_bspline (k := k) (i := i) hx.monotone j
+    refine ⟨p, hpd, hpe.of_subset_closure (contDiff_bspline hx hk i).continuous.continuousOn
+      p.continuous.continuousOn Ico_subset_Icc_self ?_⟩
+    rw [closure_Ico (hx (Nat.lt_succ_self j)).ne]
+  obtain ⟨c', hc'0, hc's⟩ :=
+    exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn hx hk (contDiff_bspline hx hk i) hB0 hBp
+  -- the B-spline's coefficients are not all zero
+  have hne : (fun j : Fin (k + 2) => c' j) ≠ 0 := by
+    intro hzero
+    have hz : ∀ j < k + 2, c' j = 0 := fun j hj => congrFun hzero ⟨j, hj⟩
+    set t := (x (i + k) + x (i + k + 1)) / 2 with ht
+    have hlt := hx (Nat.lt_succ_self (i + k))
+    have htm : t ∈ Ioo (x (i + k)) (x (i + k + 1)) :=
+      ⟨by rw [ht]; linarith, by rw [ht]; linarith⟩
+    have hpos : 0 < bspline x k i t :=
+      bspline_pos hx ⟨(hx.monotone (Nat.le_add_right i k)).trans_lt htm.1, htm.2⟩
+    rw [hc's k le_rfl t (Ioo_subset_Icc_self htm)] at hpos
+    refine hpos.ne' (Finset.sum_eq_zero fun j hj => ?_)
+    rw [hz j (by have := Finset.mem_range.mp hj; omega), zero_mul]
+  have hinj : Function.Injective fun j : Fin (k + 2) => x (i + j) := fun a b h =>
+    Fin.ext (by simpa using hx.injective h)
+  obtain ⟨l, hl⟩ := exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero hinj (c := fun j => c j)
+    (c' := fun j => c' j)
+    ((Fin.sum_univ_eq_sum_range (fun j => C (c j) * (X - C (x (i + j))) ^ k) (k + 2)).trans hc0)
+    ((Fin.sum_univ_eq_sum_range (fun j => C (c' j) * (X - C (x (i + j))) ^ k) (k + 2)).trans hc'0)
+    hne
+  have hl' : ∀ j < k + 2, c j = l * c' j := fun j hj => by
+    simpa using congrFun hl ⟨j, hj⟩
+  refine ⟨l, funext fun t => ?_⟩
+  rw [Pi.smul_apply, smul_eq_mul]
+  by_cases ht : t ∈ Icc (x i) (x (i + k + 1))
+  · have hpart : Spline.IsPartition (x i) (x (i + k + 1)) (k + 1) fun m => x (i + m) :=
+      ⟨fun j _ => hx (by omega), rfl, rfl⟩
+    obtain ⟨m, hm1, hmk, htm, -⟩ := hpart.exists_mem_panel (by omega) ht
+    obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+    simp only [Nat.add_sub_cancel] at htm
+    rw [hcs m (by omega) t htm, hc's m (by omega) t htm, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    rw [hl' j (by have := Finset.mem_range.mp hj; omega)]
+    ring
+  · rw [h0 t ht, hB0 t ht, mul_zero]
 
 /-! ### Coincident knots -/
 

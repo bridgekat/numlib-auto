@@ -17,6 +17,10 @@ id = "bspline_nonneg"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property 2"
 
 [[node]]
+id = "bspline_pos"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2 (positivity on the open support)"
+
+[[node]]
 id = "sum_bspline"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property 3 (partition of unity)"
 
@@ -47,6 +51,19 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property 6"
 [[node]]
 id = "exists_basis_bspline"
 source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7, property 6 and (8.56)"
+
+[[node]]
+id = "linearIndependent_X_sub_C_pow"
+
+[[node]]
+id = "exists_eq_smul_of_sum_C_mul_X_sub_C_pow_eq_zero"
+
+[[node]]
+id = "exists_sum_C_mul_X_sub_C_pow_eq_zero_and_eqOn"
+
+[[node]]
+id = "exists_eq_smul_bspline"
+source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.6.2 (Schoenberg 1967, minimal support)"
 
 [[node]]
 id = "bspline_apply_of_coincident_left"

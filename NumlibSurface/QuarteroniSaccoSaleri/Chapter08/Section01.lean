@@ -2,6 +2,7 @@ import Mathlib.LinearAlgebra.Vandermonde
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.NewtonForm
+import Numlib.Approximation.RungePhenomenon
 
 /-!
 # Quarteroni–Sacco–Saleri §8.1: polynomial interpolation
@@ -17,7 +18,8 @@ Everything is Mathlib's `Lagrange.interpolate`, `Lagrange.basis` and `Lagrange.n
 `Numlib/Approximation/Interpolation` (the error formula
 `Lagrange.exists_sub_interpolate_eq_of_contDiffOn`, the interpolation operator
 `Lagrange.interpolateCLM` with its norm `Lagrange.norm_interpolateCLM`) and the Lebesgue lemma
-`norm_sub_apply_le_of_isIdempotentElem` of `Numlib/Analysis/Normed/Module/BestApprox`.
+`norm_sub_apply_le_of_isIdempotentElem` of `Numlib/Analysis/Normed/Module/BestApprox`; Runge's
+counterexample is `Numlib/Approximation/RungePhenomenon`.
 
 ## Main definitions
 
@@ -39,12 +41,16 @@ Everything is Mathlib's `Lagrange.interpolate`, `Lagrange.basis` and `Lagrange.n
   the operator norm of `Π_n`, and `E_{n,∞}(X) ≤ E_n^*(1 + Λ_n(X))`.
 * `interpRow_sub_le_lebesgueConstant` — the stability estimate of §8.1.3.
 
+* `example_8_1`, `example_8_1_one_le` — Runge's counterexample: at `x = 4.9` the equispaced
+  interpolants of `1/(1 + x²)` on `[-5, 5]` do not converge, the error being `≥ 1` for every odd
+  `n ≥ 401` (`Numlib/Approximation/RungePhenomenon`).
+
 ## Not formalized
 
 The Erdős lower bound `Λ_n(X) > (2/π) log(n + 1) - C` (`erdos_lebesgueConstant`), Faber's theorem
-(`faber`), the equispaced asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)` (`lebesgueConstant_equispaced`)
-and Runge's counterexample (`example_8_1`) are stated in the plan and left open there; the book
-quotes all four without proof.
+(`faber`) and the equispaced asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)`
+(`lebesgueConstant_equispaced`) are stated in the plan and left open there; the book quotes all
+three without proof.
 
 ## Conventions
 
@@ -302,5 +308,36 @@ theorem interpRow_sub_le_lebesgueConstant {X : ℕ → ℕ → Icc a b} (hX : Is
         gcongr
         exact sum_abs_basisCM_le_lebesgueConstant hX n t
     _ = lebesgueConstant X n * M := mul_comm _ _
+
+/-! ### Example 8.1: Runge's counterexample -/
+
+/-- **Example 8.1, the equally spaced nodes** `x_j^{(n)} = -5 + 10j/n`, `j = 0, …, n`, on
+`[-5, 5]`. -/
+noncomputable def example_8_1_nodes (n : ℕ) (j : Fin (n + 1)) : ℝ :=
+  -5 + 10 * (j : ℝ) / n
+
+/-- **Example 8.1, a quantitative form.** For the function `f(x) = 1/(1 + x²)` of (8.12) and the
+equally spaced nodes on `[-5, 5]`, the interpolation error at `x = 4.9` is at least `1` for every
+odd `n ≥ 401`: `Runge.one_le_abs_sub_interpolate`. -/
+theorem example_8_1_one_le {n : ℕ} (hn : Odd n) (hn400 : 400 ≤ n) :
+    1 ≤ |1 / (1 + (49 / 10 : ℝ) ^ 2)
+      - (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
+          fun j => 1 / (1 + (example_8_1_nodes n j) ^ 2)).eval (49 / 10)| :=
+  Runge.one_le_abs_sub_interpolate hn hn400
+
+/-- **Example 8.1 (Runge's counterexample).** Approximating `f(x) = 1/(1 + x²)`, `-5 ≤ x ≤ 5`
+(8.12), by Lagrange interpolation on equally spaced nodes, "some points `x` exist within the
+interpolation interval such that `lim_{n→∞} |f(x) - Π_n f(x)| ≠ 0`": at `x = 4.9` the sequence
+`Π_n f(x)` does not converge to `f(x)`, because along the odd `n` the error stays `≥ 1`
+(`example_8_1_one_le`). The backbone's `Runge.not_tendsto_interpolate`: the error is
+`ω_{n+1}(x) f[x_0, …, x_n, x]` with the divided difference computed exactly through the partial
+fraction `1/(1 + s²) = Re (i/(i - s))`, and the products are estimated by Riemann sums of
+logarithms. The book's threshold `|x| > 3.63…` is not part of the statement. -/
+theorem example_8_1 :
+    ∃ t ∈ Icc (-5 : ℝ) 5, ¬ Filter.Tendsto
+      (fun n => (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
+        fun j => 1 / (1 + (example_8_1_nodes n j) ^ 2)).eval t)
+      Filter.atTop (nhds (1 / (1 + t ^ 2))) :=
+  ⟨49 / 10, by norm_num, Runge.not_tendsto_interpolate⟩
 
 end QuarteroniSaccoSaleri.Chapter08
