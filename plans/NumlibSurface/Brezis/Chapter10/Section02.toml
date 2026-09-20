@@ -22,24 +22,10 @@ source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (i
 
 [[node]]
 id = "corollary_10_5"
-kind = "theorem"
-desc = '''Corollary 10.5: for `Ω` of class `C^∞` with `Γ` bounded, `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0`
-on `Γ` (and, footnote 6, `u₀(x) → 0` as `|x| → ∞` if `Ω` is unbounded), the solution `u` of (1),
-(2), (3) belongs to `C(Q̄)`: there is `U : ℝ^N × ℝ → ℝ` continuous on `closure Ω ×ˢ Ici 0` with
-`U(·,t) =ᵐ u t` for every `t ≥ 0`. The book's proof — `u_{0n} ∈ C_c^∞(Ω)` with `u_{0n} → u₀` in
-`L^∞` and `L²`, `uₙ ∈ C^∞(Q̄)` by Theorem 10.2 (c), `|uₙ(t) - u(t)|_{L²} ≤ |u_{0n} - u₀|_{L²}`
-(Theorem 7.7), `‖uₙ - uₘ‖_{L^∞(Q)} ≤ ‖u_{0n} - u_{0m}‖_∞` by (19), uniform convergence — is
-`Heat.IsSolution.continuousOn_spaceTime`, with `Heat.exists_testFunction_tendsto_of_continuousOn`
-for the "easily established" approximation. ★★★ (through Theorem 10.2 (c)'s Bochner clause and
-the joint-continuity bridge).
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
 
-Blocked (2026-09-20, surf12): the backbone nodes `Heat.IsSolution.continuousOn_spaceTime` and
-`Heat.exists_testFunction_tendsto_of_continuousOn` (`PDE/Heat/MaximumPrinciple`, agent pde6) are
-open in this worktree. Once they land the surface node is a five-line restatement for
-`hu : IsHeatSolution Ω u₀ u` (`hu.isSolution`), with the datum's hypotheses in the backbone's
-shape (a representative continuous on `closure Ω`, vanishing on `frontier Ω`, tending to `0`
-along `cocompact ⊓ 𝓟 Ω`).'''
-deps = ["theorem_10_1", "theorem_10_2_c", "corollary_10_4_ii", "Heat.IsSolution.continuousOn_spaceTime", "Heat.exists_testFunction_tendsto_of_continuousOn", "Brezis.Chapter07.theorem_7_7"]
+[[node]]
+id = "corollary_10_5_of_isBounded"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.5"
 
 [[node]]

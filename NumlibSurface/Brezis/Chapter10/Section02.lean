@@ -28,6 +28,13 @@ heat-equation examples of `notes/frontier.md`).
 * Corollary 10.4 (ii)'s `‖u‖_{L^∞(Q)} ≤ ‖u₀‖_{L^∞(Ω)}` is stated as
   `‖u(t)‖_{L^∞(Ω)} ≤ ‖u₀‖_{L^∞(Ω)}` for every `t ≥ 0` (no jointly measurable representative of
   the curve is built; erratum recorded in `notes/book-errata.md`).
+* Corollary 10.5's datum `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0` on `Γ` is an `L²` datum agreeing
+  a.e. with a function `f` continuous on `closure Ω` and vanishing on `frontier Ω`, which
+  (footnote 6) tends to `0` at infinity along `Ω` — `Tendsto f (cocompact ⊓ 𝓟 Ω) (𝓝 0)`, void
+  for bounded `Ω` (`corollary_10_5_of_isBounded`); `u ∈ C(Q̄)` is a representative `U` continuous
+  on `closure Ω × [0, ∞)` with `U(·, t) = u(t)` a.e. for every `t ≥ 0` and `U(·, 0) = f` on
+  `closure Ω`. The backbone (`Heat.IsSolution.continuousOn_spaceTime`) needs only a `C^{2ℓ}`
+  domain with `N/2 < 2ℓ`; the surface keeps the chapter's `C^∞`.
 * Theorem 10.6 is classical: `u : ℝ^N × ℝ → ℝ`, the Laplacian in `x` is Mathlib's `Δ`
   (`InnerProductSpace.laplacian`), the hypotheses (20), (21), (22) are `IsHeatSubsolution`, and
   the parabolic boundary is `parabolicBoundary`. The book's `max_{Ω̄ × [0,T]} u = max_P u` is
@@ -38,11 +45,9 @@ heat-equation examples of `notes/frontier.md`).
 ## Main results
 
 * `theorem_10_3`, `theorem_10_3_essSup`, `theorem_10_3_pointwise`.
-* `corollary_10_4_i`, `corollary_10_4_ii`.
+* `corollary_10_4_i`, `corollary_10_4_ii`, `corollary_10_5`, `corollary_10_5_of_isBounded`.
 * `parabolicBoundary`, `IsHeatSubsolution`, `IsHeatSubsolution.isClassicalSubsolution`,
   `theorem_10_6`, `theorem_10_6_le`.
-* Corollary 10.5 (`corollary_10_5`) waits for the backbone's
-  `Heat.IsSolution.continuousOn_spaceTime`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -153,6 +158,63 @@ theorem corollary_10_4_ii (hu : IsHeatSolution Ω u₀ u)
   ⟨(hu.isSolution.eLpNorm_top_le ht).trans_lt hu₀, hu.isSolution.eLpNorm_top_le ht⟩
 
 end General
+
+/-! ### Corollary 10.5: continuity on `Q̄` for continuous data vanishing on `Γ` -/
+
+section Regular
+
+variable {d : ℕ}
+
+/-- The book's `ℝ^N`, with `N = d + 1`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
+  {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+  {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
+
+/-- **Corollary 10.5.** Let `Ω` be of class `C^∞` with `Γ` bounded, and let `u₀ ∈ C(Ω̄) ∩ L²(Ω)`
+with `u₀ = 0` on `Γ` — and, footnote 6, `u₀(x) → 0` as `|x| → ∞` if `Ω` is unbounded: the `L²`
+datum `u₀` agrees a.e. on `Ω` with a function `f` continuous on `Ω̄`, vanishing on `Γ` and tending
+to `0` along `cocompact ⊓ 𝓟 Ω` (void for bounded `Ω`, `corollary_10_5_of_isBounded`). Then the
+solution `u` of (1), (2), (3) belongs to `C(Q̄)`: there is `U : ℝ^N × ℝ → ℝ`, continuous on
+`Ω̄ × [0, ∞)`, with `U(·, t) = u(t)` a.e. on `Ω` for every `t ≥ 0` and `U(·, 0) = u₀` on `Ω̄`. The
+book's proof: `u_{0n} ∈ C_c^∞(Ω)` with `u_{0n} → u₀` in `L^∞(Ω)` (the "easily established"
+approximation, `Heat.exists_testFunction_tendsto_of_continuousOn`), `uₙ ∈ C^∞(Q̄)` by
+Theorem 10.2 (c), `‖uₙ − uₘ‖_{L^∞(Q)} ≤ ‖u_{0n} − u_{0m}‖_{L^∞(Ω)}` by (19), so `(uₙ)` converges
+uniformly on `Q̄`; the limit is `u` by `|uₙ(t) − u(t)|_{L²} ≤ |u_{0n} − u₀|_{L²}` (Theorem 7.7),
+which the backbone replaces by (19) once more (`uₙ(t) → u(t)` a.e.). The backbone's
+`Heat.IsSolution.continuousOn_spaceTime`. -/
+theorem corollary_10_5 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) {f : 𝔼 → ℝ}
+    (hf : ContinuousOn f (closure (Ω : Set 𝔼))) (hf0 : ∀ x ∈ frontier (Ω : Set 𝔼), f x = 0)
+    (hft : Tendsto f (cocompact 𝔼 ⊓ 𝓟 (Ω : Set 𝔼)) (𝓝 0))
+    (hu₀ : u₀ =ᵐ[volume.restrict (Ω : Set 𝔼)] f) (hu : IsHeatSolution Ω u₀ u) :
+    ∃ U : 𝔼 × ℝ → ℝ, ContinuousOn U (closure (Ω : Set 𝔼) ×ˢ Ici 0) ∧
+      (∀ t, 0 ≤ t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t) ∧
+      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set 𝔼)) :=
+  hu.isSolution.continuousOn_spaceTime hΩ hΓ hf hf0 hft hu₀
+
+/-- **Corollary 10.5 for bounded `Ω`**, as printed: `u₀ ∈ C(Ω̄) ∩ L²(Ω)` with `u₀ = 0` on `Γ`
+gives `u ∈ C(Q̄)`. Footnote 6's condition at infinity is void, `cocompact ⊓ 𝓟 Ω` being the
+trivial filter when `Ω̄` is compact. -/
+theorem corollary_10_5_of_isBounded (hb : Bornology.IsBounded (Ω : Set 𝔼))
+    (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
+    {f : 𝔼 → ℝ} (hf : ContinuousOn f (closure (Ω : Set 𝔼)))
+    (hf0 : ∀ x ∈ frontier (Ω : Set 𝔼), f x = 0) (hu₀ : u₀ =ᵐ[volume.restrict (Ω : Set 𝔼)] f)
+    (hu : IsHeatSolution Ω u₀ u) :
+    ∃ U : 𝔼 × ℝ → ℝ, ContinuousOn U (closure (Ω : Set 𝔼) ×ˢ Ici 0) ∧
+      (∀ t, 0 ≤ t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t) ∧
+      EqOn (fun x ↦ U (x, 0)) f (closure (Ω : Set 𝔼)) := by
+  refine corollary_10_5 hΩ hΓ hf hf0 ?_ hu₀ hu
+  -- `Ω` and the complement of the compact `Ω̄` are disjoint, so the filter is `⊥`
+  have h : cocompact 𝔼 ⊓ 𝓟 (Ω : Set 𝔼) = ⊥ :=
+    Filter.inf_eq_bot_iff.2 ⟨(closure (Ω : Set 𝔼))ᶜ, hb.isCompact_closure.compl_mem_cocompact,
+      Ω, mem_principal_self _,
+      Set.eq_empty_iff_forall_notMem.2 fun _ hx ↦ hx.1 (subset_closure hx.2)⟩
+  rw [h]
+  exact tendsto_bot
+
+end Regular
 
 /-! ### Theorem 10.6: the classical maximum principle -/
 

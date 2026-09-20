@@ -39,6 +39,14 @@ with Remark 10 (regularity and the compatibility conditions). The backbone is
   the backbone does not formalize it. The two-sided solvability and `|U(t)|_H = |U₀|_H` for all
   `t ∈ ℝ` are obtained by time reversal (`Wave.existsUnique_isSolution_backward`), which needs
   neither the boundedness of `Ω` nor the Dirichlet scalar product.
+* Theorem 10.8's compatibility conditions `Δ^j u₀ = Δ^j v₀ = 0` on `Γ` for every `j` are read,
+  as the display of its proof does, through the domains `D_m` of the Dirichlet Laplacian
+  (`Wave.MemLaplacianDomain`: `D_0 = L²`, `D_1 = H¹₀`, `D_{m+2} = {w ∈ D(−Δ) : −Δw ∈ D_m}`) as
+  `u₀, v₀ ∈ D_k` for every `k`; the hypothesis `u₀, v₀ ∈ H^k(Ω)` for every `k` is then a
+  consequence (`Wave.MemLaplacianDomain.exists_sobolev`, as for Theorem 10.2 (c)), and
+  `D(A^k) = D_{k+1} × D_k` with the continuous injection into `H^{k+1} × H^k` is
+  `theorem_10_8_domain`, `theorem_10_8_domain_norm`. Remark 10 (necessity) is stated as
+  Remark 4 of §10.1 is, for a `C^∞` function on `ℝ^N × ℝ`.
 
 ## Main results
 
@@ -48,8 +56,9 @@ with Remark 10 (regularity and the compatibility conditions). The backbone is
 * `IsWaveSolution`, `IsWaveSolution.isSolution`, `isWaveSolution_iff`, `theorem_10_7`,
   `theorem_10_7_energy`, `remark_10_6`.
 * `remark_10_7`, `remark_10_7_group`, `remark_10_8_characteristics`, `remark_10_9`.
-* Waiting for the backbone (`Numlib/Analysis/PDE/Wave`, agent pde6): `theorem_10_8_domain`,
-  `theorem_10_8`, `remark_10_8`, `remark_10_10`.
+* `theorem_10_8_domain`, `theorem_10_8_domain_norm`, `theorem_10_8`, `remark_10_10`.
+* Waiting for the backbone (`Numlib/Analysis/PDE/Wave`, `Wave.isSolution_dAlembert`):
+  `remark_10_8`, d'Alembert's formula (40) as the solution of (27)–(30) on `Ω = ℝ`.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -481,6 +490,146 @@ theorem remark_10_9 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 
     refine this.congr_fun fun n ↦ ?_
     rw [HilbertBasis.repr_apply_apply, real_inner_comm]
 
+/-! ### Theorem 10.8: regularity -/
+
+/-- **The display in the proof of Theorem 10.8.** For `Ω` of class `C^∞` with `Γ` bounded and
+every `k`, `D(A^k) = {(u, v) : u ∈ H^{k+1}(Ω), Δ^j u = 0 on Γ for 0 ≤ j ≤ [k/2];
+v ∈ H^k(Ω), Δ^j v = 0 on Γ for 0 ≤ j ≤ [(k+1)/2] − 1}` ("easy to see, by induction on `k`"),
+read with the backbone's domains `D_m` of the Dirichlet Laplacian (`Wave.MemLaplacianDomain`:
+`D_0 = L²(Ω)`, `D_1 = H¹₀(Ω)`, `D_{m+2} = {w ∈ D(−Δ) : −Δw ∈ D_m}` — the book's "`w ∈ H^m(Ω)`,
+`Δ^j w = 0` on `Γ` for `2j < m`", with "`= 0` on `Γ`" as membership of `H¹₀(Ω)` and each
+iterate in `D(−Δ) = H² ∩ H¹₀`):
+`(u, v) ∈ D(A^k)` (chapter 7's `domainPow`) iff `u ∈ D_{k+1}` and `v ∈ D_k`
+(`Wave.mem_operator_powGraph_iff`, on every open set), and in particular
+`D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)`: `u` and `v` are the functions of elements of `H^{k+1}(Ω)` and
+`H^k(Ω)` (`Wave.MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at every order). The book's `A`
+is the backbone's `Wave.operator Ω` on a `C²` domain (`waveOperator_eq`); the continuity of the
+injection is `theorem_10_8_domain_norm`. -/
+theorem theorem_10_8_domain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (k : ℕ) :
+    (∀ U : Wave.phaseSpace Ω, U ∈ domainPow (waveOperator Ω) k ↔
+      Wave.MemLaplacianDomain Ω (k + 1) (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume U.fst) ∧
+        Wave.MemLaplacianDomain Ω k U.snd) ∧
+    ∀ U : Wave.phaseSpace Ω, U ∈ domainPow (waveOperator Ω) k →
+      (∃ w : sobolevSpaceHigher (d + 1) (k + 1) 2 Ω,
+        fnL ℝ 𝔟 (k + 1) 2 Ω volume w = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume U.fst) ∧
+      ∃ z : sobolevSpaceHigher (d + 1) k 2 Ω, fnL ℝ 𝔟 k 2 Ω volume z = U.snd := by
+  have hΩk : IsContDiffChartDomain (k + 1) (Ω : Set 𝔼) := hΩ.of_le (by simp)
+  have hΩk' : IsContDiffChartDomain k (Ω : Set 𝔼) := hΩ.of_le (by simp)
+  have e := waveOperator_eq (hΩ.of_le le_top) hΓ
+  -- membership in `D(A^k)` is transported along `A = Wave.operator Ω` by `congrArg` (a `rw` of
+  -- `e` in a goal mentioning `MemLaplacianDomain Ω (k + 1)` exhausts the budget)
+  have hmem : ∀ U : Wave.phaseSpace Ω, U ∈ domainPow (waveOperator Ω) k ↔
+      Wave.MemLaplacianDomain Ω (k + 1) (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume U.fst) ∧
+        Wave.MemLaplacianDomain Ω k U.snd := fun U ↦
+    (Iff.of_eq (congrArg (fun A ↦ U ∈ domainPow A k) e)).trans
+      (mem_domainPow_iff.trans (Wave.mem_operator_powGraph_iff k U))
+  exact ⟨hmem, fun U hU ↦ ⟨((hmem U).1 hU).1.exists_sobolev (k + 1) hΩk hΓ,
+    ((hmem U).1 hU).2.exists_sobolev k hΩk' hΓ⟩⟩
+
+/-- **"`D(A^k) ⊂ H^{k+1}(Ω) × H^k(Ω)` with continuous injection"** (proof of Theorem 10.8): for
+`Ω` of class `C^∞` with `Γ` bounded and every `k` there is `C` with `‖w‖_{H^{k+1}} ≤ C ‖x‖_{D(A^k)}`
+and `‖z‖_{H^k} ≤ C ‖x‖_{D(A^k)}` for every `x ∈ D(A^k)` (chapter 7's Hilbert space `PowDomain`,
+graph norm `(∑ⱼ |A^j U|²)^{1/2}`) and the lifts `w ∈ H^{k+1}(Ω)`, `z ∈ H^k(Ω)` of the components
+`(u, v) = A^0 x` given by `theorem_10_8_domain`. The backbone's bounded linear map
+`Wave.operator.powDomainToSobolevL` (closed graph theorem), whose two components the lifts are
+since `fnL` is injective. -/
+theorem theorem_10_8_domain_norm (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (x : (waveOperator Ω).PowDomain k)
+      (w : sobolevSpaceHigher (d + 1) (k + 1) 2 Ω) (z : sobolevSpaceHigher (d + 1) k 2 Ω),
+      fnL ℝ 𝔟 (k + 1) 2 Ω volume w = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume
+          (LinearPMap.PowDomain.applyL (waveOperator Ω) k 0 x).fst →
+        fnL ℝ 𝔟 k 2 Ω volume z = (LinearPMap.PowDomain.applyL (waveOperator Ω) k 0 x).snd →
+        ‖w‖ ≤ C * ‖x‖ ∧ ‖z‖ ≤ C * ‖x‖ := by
+  have hΩk : IsContDiffChartDomain (k + 1) (Ω : Set 𝔼) := hΩ.of_le (by simp)
+  -- the statement is transported from the backbone's operator along `A = Wave.operator Ω` with
+  -- an explicit motive (`rw`, `simp only` and `generalize` all fail on the dependent binder
+  -- `x : D(A^k)`: the first two exhaust the budget, the third cannot rewrite it)
+  refine Eq.mpr (congrArg (fun A : Wave.phaseSpace Ω →ₗ.[ℝ] Wave.phaseSpace Ω ↦
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (x : A.PowDomain k)
+      (w : sobolevSpaceHigher (d + 1) (k + 1) 2 Ω) (z : sobolevSpaceHigher (d + 1) k 2 Ω),
+      fnL ℝ 𝔟 (k + 1) 2 Ω volume w = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume
+          (LinearPMap.PowDomain.applyL A k 0 x).fst →
+        fnL ℝ 𝔟 k 2 Ω volume z = (LinearPMap.PowDomain.applyL A k 0 x).snd →
+        ‖w‖ ≤ C * ‖x‖ ∧ ‖z‖ ≤ C * ‖x‖) (waveOperator_eq (hΩ.of_le le_top) hΓ)) ?_
+  refine ⟨‖Wave.operator.powDomainToSobolevL k hΩk hΓ‖, norm_nonneg _, fun x w z hw hz ↦ ?_⟩
+  -- the lifts are the components of `powDomainToSobolevL x` (`fnL` is injective; its
+  -- injectivity is stated with the type spelled out, instance search on the implicit form being
+  -- a minute)
+  have hJ : Function.Injective (fnL ℝ 𝔟 (k + 1) 2 Ω volume) := fnL_injective
+  have hJ' : Function.Injective (fnL ℝ 𝔟 k 2 Ω volume) := fnL_injective
+  have e1 : w = (Wave.operator.powDomainToSobolevL k hΩk hΓ x).1 :=
+    hJ (hw.trans (Wave.fnL_powDomainToSobolevL_fst k hΩk hΓ x).symm)
+  have e2 : z = (Wave.operator.powDomainToSobolevL k hΩk hΓ x).2 :=
+    hJ' (hz.trans (Wave.fnL_powDomainToSobolevL_snd k hΩk hΓ x).symm)
+  rw [e1, e2]
+  exact ⟨(norm_fst_le _).trans ((Wave.operator.powDomainToSobolevL k hΩk hΓ).le_opNorm x),
+    (norm_snd_le _).trans ((Wave.operator.powDomainToSobolevL k hΩk hΓ).le_opNorm x)⟩
+
+/-- **Theorem 10.8 (regularity).** Let `Ω` be of class `C^∞` with `Γ` bounded. Assume that the
+initial data satisfy `u₀, v₀ ∈ H^k(Ω)` for every `k` and the compatibility conditions
+`Δ^j u₀ = 0`, `Δ^j v₀ = 0` on `Γ` for every integer `j ≥ 0` — read, as in the display of the
+proof (`theorem_10_8_domain`), as `u₀ ∈ D_k` and `v₀ ∈ D_k` for every `k`
+(`Wave.MemLaplacianDomain`: the iterates `u₀, −Δu₀, (−Δ)²u₀, …` lie in `D(−Δ) = H² ∩ H¹₀`
+with `(−Δ)^j u₀ ∈ H¹₀(Ω)` for every `j`, likewise for `v₀`), which on a `C^∞` domain contains
+`u₀, v₀ ∈ H^k(Ω)` for every `k` (`Wave.MemLaplacianDomain.exists_sobolev`). Then the solution
+`u` of (27), (28), (29), (30) belongs to `C^∞(Ω̄ × [0, ∞))`: there is `U : ℝ^N × ℝ → ℝ` with
+`U(·, t) = u(t)` a.e. on `Ω` for every `t ≥ 0`, of class `C^∞` on `Ω × (0, ∞)` with every
+derivative extending continuously to `closure (Ω × (0, ∞)) = Ω̄ × [0, ∞)` (`ContDiffOnClosure`,
+the shape of `theorem_10_2_c`). The book's proof: `U₀ = (u₀, v₀) ∈ D(A^k)` for every `k`
+(`theorem_10_8_domain`), Theorem 7.5 gives `U ∈ C^{k−j}([0, ∞); D(A^j))` for `0 ≤ j ≤ k`, so
+`u ∈ C^{k−j}([0, ∞); H^{j+1}(Ω))` (`theorem_10_8_domain_norm`), and Corollary 9.15 — the
+backbone's `Wave.IsSolution.contDiffOnThrough_of_powDomain` and
+`Wave.IsSolution.contDiffOnClosure_spaceTime` (through the space–time bridge
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
+theorem theorem_10_8 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
+    (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
+    (hu₀ : ∀ k, Wave.MemLaplacianDomain Ω k (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀))
+    (hv₀ : ∀ k, Wave.MemLaplacianDomain Ω k (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀))
+    (hu : IsWaveSolution Ω u₀ v₀ u) :
+    ∃ U : 𝔼 × ℝ → ℝ, (∀ t, 0 ≤ t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t) ∧
+      ContDiffOnClosure ℝ ∞ U ((Ω : Set 𝔼) ×ˢ Ioi 0) := by
+  -- `(u₀, v₀) ∈ D(A^k)` for every `k`: the display of the proof, `D(A^k) = D_{k+1} × D_k`
+  have hU₀ : ∀ k, ∃ x : (Wave.operator Ω).PowDomain k,
+      LinearPMap.PowDomain.applyL (Wave.operator Ω) k 0 x
+        = Wave.phaseSpace.mk Ω u₀ (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀) := fun k ↦
+    (Wave.mem_operator_powGraph_iff k _).2 ⟨hu₀ (k + 1), hv₀ k⟩
+  obtain ⟨U, hU, hc⟩ := hu.isSolution.contDiffOnClosure_spaceTime hU₀ hΩ hΓ
+  exact ⟨U, fun t ht ↦ hU t ht, hc⟩
+
 end Regular
+
+section Necessity
+
+variable {N : ℕ}
+
+/-- The book's `ℝ^N`. -/
+local notation "𝔼" => EuclideanSpace ℝ (Fin N)
+
+variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
+
+/-! ### Remark 10: the compatibility conditions are necessary -/
+
+/-- **Remark 10.** The compatibility conditions of Theorem 10.8 are necessary and sufficient in
+order to have a solution `u ∈ C^∞(Ω̄ × [0, ∞))` of (27), (28), (29), (30). Sufficiency is
+`theorem_10_8`; necessity, "the proof is the same as in Remark 4" (`remark_10_4`): if
+`u : ℝ^N × ℝ → ℝ` is of class `C^∞` (on `ℝ^N × ℝ`, so that `u ∈ C^∞(Ω̄ × [0, ∞))` and the
+boundary values of `Δ^j u(·, 0)` and `Δ^j ∂ₜu(·, 0)` are meaningful as written), satisfies
+`∂ₜₜu = Δu` in `Q = Ω × (0, ∞)` and `u = 0` on `Σ = Γ × (0, ∞)`, then `Δ^j u₀ = 0` and
+`Δ^j v₀ = 0` on `Γ` for every `j`, where `u₀ = u(·, 0)` and `v₀ = ∂ₜu(·, 0)`: all time derivatives
+of `u` vanish on `Γ × [0, ∞)` by continuity, `∂ₜ^{2j} u = Δ^j u` and `∂ₜ^{2j+1} u = Δ^j ∂ₜu` in
+`Q̄` by induction and continuity, and the two are compared on `Γ × {0}`. The backbone's
+`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier` (on the cylinder `Ω × (0, 1)`). -/
+theorem remark_10_10 {u : 𝔼 × ℝ → ℝ} (hu : ContDiff ℝ ∞ u)
+    (heq : ∀ x ∈ Ω, ∀ t, 0 < t →
+      deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x)
+    (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), ∀ t, 0 < t → u (x, t) = 0) (j : ℕ) :
+    ∀ x ∈ frontier (Ω : Set 𝔼), (Δ^[j] fun y ↦ u (y, 0)) x = 0 ∧
+      (Δ^[j] fun y ↦ deriv (fun s ↦ u (y, s)) 0) x = 0 :=
+  Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier Ω.isOpen one_pos
+    ⟨fun p hp ↦ heq p.1 hp.1 p.2 hp.2.1⟩ hu (fun x hx t ht ↦ hΓ x hx t ht.1) j
+
+end Necessity
 
 end Brezis.Chapter10
