@@ -1,0 +1,55 @@
+# Numlib/Analysis/Sobolev/SeminormCompare.lean has the module doc comment; the plan desc is
+# superseded.
+
+[[node]]
+id = "sobolevSeminorm_congr_ae"
+
+[[node]]
+id = "MemSobolev.sobolevSeminorm_ne_top"
+
+[[node]]
+id = "MemSobolev.sobolevSeminorm_lt_top"
+
+[[node]]
+id = "sobolevSeminorm_add_le"
+
+[[node]]
+id = "sobolevSeminorm_sub_le"
+
+[[node]]
+id = "sobolevSeminorm_const_smul"
+
+[[node]]
+id = "MemSobolev.finsetSum"
+
+[[node]]
+id = "sobolevSeminorm_sum_smul_le"
+
+[[node]]
+id = "MemSobolev.sobolevNorm_le_sum_sobolevSeminorm"
+
+[[node]]
+id = "ContinuousMultilinearMap.norm_le_sum_norm_basisCoordProd_mul"
+
+[[node]]
+id = "SobolevMultiIndex.memSobolev_fn"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_ae_eq_weakIteratedFDeriv_apply"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_multiIndexCount_ae_eq"
+
+[[node]]
+id = "SobolevMultiIndex.eLpNorm_weakDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.sobolevSeminorm_fn_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 7.2.2 (the two norms are equivalent)"
+
+[[node]]
+id = "SobolevMultiIndex.ofReal_topSeminorm_le_sobolevSeminorm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 7.2.2 (the two norms are equivalent)"
+
+[[node]]
+id = "SobolevMultiIndex.topSeminorm_le_mul_toReal_sobolevSeminorm"

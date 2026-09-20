@@ -1,0 +1,41 @@
+# Numlib/Analysis/Sobolev/Affine.lean has the module doc comment; the plan desc is superseded.
+
+[[node]]
+id = "affinePreimage"
+
+[[node]]
+id = "mem_affinePreimage"
+
+[[node]]
+id = "affinePreimage_symm"
+
+[[node]]
+id = "affinePreimage_eq_of_image_eq"
+
+[[node]]
+id = "closure_affinePreimage"
+
+[[node]]
+id = "ContinuousOn.comp_affine_closure"
+
+[[node]]
+id = "eLpNorm_comp_affine"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4 (the change of variables)"
+
+[[node]]
+id = "memLp_comp_affine"
+
+[[node]]
+id = "memSobolev_comp_affine"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4"
+
+[[node]]
+id = "memSobolev_comp_affine_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4"
+
+[[node]]
+id = "sobolevSeminorm_comp_affine_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.4, (10.3.5)"
+
+[[node]]
+id = "ContinuousLinearEquiv.det_symm_eq_inv"

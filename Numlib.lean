@@ -235,6 +235,7 @@ import Numlib.Analysis.PDE.Heat.MaximumPrinciple
 import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
+import Numlib.Analysis.Sobolev.Affine
 import Numlib.Analysis.Sobolev.Calculus
 import Numlib.Analysis.Sobolev.Chart
 import Numlib.Analysis.Sobolev.Compactness
@@ -262,6 +263,7 @@ import Numlib.Analysis.Sobolev.Periodic.Smooth
 import Numlib.Analysis.Sobolev.Poincare
 import Numlib.Analysis.Sobolev.Reflection
 import Numlib.Analysis.Sobolev.RemovableSingularity
+import Numlib.Analysis.Sobolev.SeminormCompare
 import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.Tempered
