@@ -5,6 +5,7 @@ import Numlib.Analysis.Calculus.ContDiffOnClosure
 import Numlib.Analysis.Calculus.ContDiffOnIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.DerivativeTest
+import Numlib.Analysis.Calculus.HolderSpace
 import Numlib.Analysis.Calculus.IteratedFDeriv
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Calculus.PartialDeriv
@@ -249,6 +250,7 @@ import Numlib.Analysis.Sobolev.EmbeddingDomain
 import Numlib.Analysis.Sobolev.Extension
 import Numlib.Analysis.Sobolev.ExtensionHigher
 import Numlib.Analysis.Sobolev.Friedrichs
+import Numlib.Analysis.Sobolev.HolderEmbedding
 import Numlib.Analysis.Sobolev.Interval
 import Numlib.Analysis.Sobolev.Interval.Basic
 import Numlib.Analysis.Sobolev.Interval.Density

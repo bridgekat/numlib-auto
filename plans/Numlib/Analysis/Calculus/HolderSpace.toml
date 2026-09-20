@@ -1,0 +1,136 @@
+[[node]]
+id = "holderSeminorm"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, §1.4.1"
+
+[[node]]
+id = "holderSeminorm_le"
+
+[[node]]
+id = "HolderWith.holderSeminorm_le"
+
+[[node]]
+id = "norm_sub_le_holderSeminorm_mul"
+
+[[node]]
+id = "holderWith_of_dist_le"
+
+[[node]]
+id = "holderOnWith_of_dist_le"
+
+[[node]]
+id = "holderWith_holderSeminorm"
+
+[[node]]
+id = "holderSeminorm_add_le"
+
+[[node]]
+id = "holderSeminorm_smul"
+
+[[node]]
+id = "HolderWith.of_le_of_forall_norm_sub_le"
+
+[[node]]
+id = "HolderSpace.IsDerivTuple"
+
+[[node]]
+id = "HolderSpace.submodule"
+
+[[node]]
+id = "HolderSpace"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, §1.4.1, the space C^{m,β}(closure Ω)"
+
+[[node]]
+id = "HolderSpace.deriv"
+
+[[node]]
+id = "HolderSpace.norm_def"
+
+[[node]]
+id = "HolderSpace.norm_deriv_le"
+
+[[node]]
+id = "HolderSpace.holderSeminorm_le_norm"
+
+[[node]]
+id = "HolderSpace.holderWith_norm"
+
+[[node]]
+id = "HolderSpace.normedSpaceCore"
+
+[[node]]
+id = "HolderSpace.instNormedAddCommGroup"
+
+[[node]]
+id = "HolderSpace.instNormedSpaceReal"
+
+[[node]]
+id = "HolderSpace.eq_of_forall_eq_of_continuous"
+
+[[node]]
+id = "HolderSpace.IsDerivTuple.eq_of_eqOn"
+
+[[node]]
+id = "HolderSpace.ext_of_eqOn"
+
+[[node]]
+id = "HolderSpace.mk'"
+
+[[node]]
+id = "HolderSpace.coe_mk'"
+
+[[node]]
+id = "HolderSpace.norm_mk'_le"
+
+[[node]]
+id = "HolderSpace.toBCFL"
+
+[[node]]
+id = "HolderSpace.isContinuousEmbedding_toBCFL"
+
+[[node]]
+id = "HolderSpace.toLower"
+
+[[node]]
+id = "HolderSpace.exists_forall_norm_toLower_le"
+
+[[node]]
+id = "HolderSpace.toLowerL"
+
+[[node]]
+id = "HolderSpace.isContinuousEmbedding_toLowerL"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, §1.4.1, the inclusions C^{m,β} ⊂ C^{m,α}"
+
+[[node]]
+id = "HolderSpace.IsDerivTuple.of_tendsto"
+
+[[node]]
+id = "HolderSpace.holderWith_of_tendsto"
+
+[[node]]
+id = "HolderSpace.derivCLM"
+
+[[node]]
+id = "HolderSpace.instCompleteSpace"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, §1.4.1: C^{m,β}(closure Ω) is a Banach space"
+
+[[node]]
+id = "ContinuousMultilinearMap.instFiniteDimensional"
+
+[[node]]
+id = "HolderSpace.isCompact_closure_range_of_holderWith"
+
+[[node]]
+id = "HolderSpace.holderWith_sub"
+
+[[node]]
+id = "HolderSpace.exists_subseq_tendsto_toLower"
+
+[[node]]
+id = "HolderSpace.isCompactEmbedding_toLowerL"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), the Hölder-space compactness"
+
+[[node]]
+id = "HolderSpace.isCompactEmbedding_toLowerL_comp"
+
+[[node]]
+id = "HolderSpace.isCompactEmbedding_toLowerL_zero"

@@ -48,18 +48,58 @@ desc = '''Example 7.4.3: on a Lipschitz domain `Ω ⊆ ℝ^d`,
 argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and the optimal
 `λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`.
 
-Blocked: 2026-09-20. Two pieces are missing. (1) Step 1 on `ℝ^d`: the pointwise bound
-`|v(x)| ≤ c ∫ |ℱv|` for the continuous representative of `v ∈ H^k(ℝ^d)`, `k > d/2` — Mathlib has
-`TemperedDistribution.MemSobolev.fourier_memL1` (`ℱv ∈ L^1` for `finrank < 2s`) and
-`theorem_7_4_1`/`equation_7_4_1` identify `∫ (1+|ξ|²)^k |ℱv|²` with `‖v‖²_{H^k}`, but the
-inverse Fourier representation `v = ℱ⁻¹(ℱv)` of the continuous representative of an `L²`
-function with `ℱv ∈ L¹` (`Mathlib/Analysis/Fourier/LpSpace.lean` is `p = 2` only) is not
-written (150–250 lines); the scaling `ξ ↦ λ^{1/2} ξ` of that bound and the optimization in `λ`
-are then elementary (`SobolevEuclidean.eLpNorm_comp_smul_eq` of `Translate.lean` is the scaling
-device). (2) Step 3, the transfer to `Ω`, needs the extension operator at order `d`
-(`theorem_7_3_5_universal`, open; the backbone's is order one), so the domain statement is out
-of reach for `d ≥ 2` even with (1); for `d = 1` the order-one operator suffices. Neither the
-Deny–Lions module nor `example_7_4_2` (proved by the Sobolev embedding instead of the Fourier
-route) helps here: the inequality is a genuine Fourier statement, whose whole-space form on
-`ℝ^d` would be a new node.'''
-deps = ["example_7_4_2", "theorem_7_4_1", "theorem_7_3_5_universal"]
+Blocked: 2026-09-21. The whole-space case `Ω = ℝ^d`, which the book's proof reduces to, is now
+`example_7_4_3_whole_space` (and `example_7_4_3_whole_space_complex`): the continuous
+representative as the inverse Fourier integral of `ℱv ∈ L¹`, the scaled Cauchy–Schwarz
+inequality and the optimization in `λ` are all proved. What remains is Step 3, the transfer to
+`Ω`: `v ∈ H^d(Ω)` must be extended to `Ev ∈ H^d(ℝ^d)` with `‖Ev‖_{H^d} ≤ c ‖v‖_{H^d(Ω)}` *and*
+`‖Ev‖_{L²(ℝ^d)} ≤ c ‖v‖_{L²(Ω)}` (the book's `E` is the universal extension operator of
+Theorem 7.3.5, bounded on every `H^k` at once), after which (7.4.4) on `Ω` is
+`example_7_4_3_whole_space` applied to `Ev`, ten lines. The backbone's extension operator
+(`SobolevEuclidean.exists_extensionL`, `Numlib/Analysis/Sobolev/Extension.lean`) is at order one
+only, so this needs the order-`d` operator of `theorem_7_3_5_universal` / `theorem_7_3_2_higher`
+(estimated 600–900 lines there), with the additional `L²` bound of the even reflection, which the
+reflection construction gives for free.'''
+deps = ["example_7_4_3_whole_space", "theorem_7_3_5_universal"]
+
+[[node]]
+id = "ae_eq_of_toTemperedDistribution_eq"
+
+[[node]]
+id = "fourierInv_ae_eq_of_toTemperedDistribution_eq"
+
+[[node]]
+id = "exists_continuous_ae_eq_of_integrable_fourier"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.2, Step 1 (the bound |v(x)| ≤ c ∫ |ℱv|)"
+
+[[node]]
+id = "sq_lintegral_enorm_le_mul"
+
+[[node]]
+id = "lintegral_ofReal_rpow_neg_one_add_mul_norm_sq"
+
+[[node]]
+id = "pow_one_add_mul_le"
+
+[[node]]
+id = "exists_rpow_neg_half_mul_add_eq"
+
+[[node]]
+id = "lintegral_ofReal_rpow_neg_one_add_norm_sq_ne_top"
+
+[[node]]
+id = "sq_lintegral_enorm_fourier_le"
+
+[[node]]
+id = "sq_toReal_lintegral_enorm_fourier_le"
+
+[[node]]
+id = "norm_le_toReal_eLpNorm_symbol_mul_fourier"
+
+[[node]]
+id = "example_7_4_3_whole_space_complex"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.3, the whole-space case Ω = ℝ^d, complex-valued"
+
+[[node]]
+id = "example_7_4_3_whole_space"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.4.3, the whole-space case Ω = ℝ^d, the inequality (7.4.4)"

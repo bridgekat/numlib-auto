@@ -1,0 +1,56 @@
+[[node]]
+id = "MultiIndexLE.exists_eq_addSingle"
+
+[[node]]
+id = "SobolevMultiIndex.exists_succ_of_partialDeriv"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, proof (repeated application)"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_of_forall_eLpNorm_fn_le"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, proof; the order-lowering map at every target order"
+
+[[node]]
+id = "SobolevEuclidean.eqOn_closure_of_ae_eq"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_rep_tuple"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 9.15, footnote 16"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_rep"
+
+[[node]]
+id = "SobolevEuclidean.exists_forall_holderWith_deriv"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_toHolderSpace"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (c), the non-integer case, on an extension domain"
+
+[[node]]
+id = "SobolevEuclidean.injective_of_forall_exists_ae_eq"
+
+[[node]]
+id = "SobolevEuclidean.isContinuousEmbedding_of_forall_exists_ae_eq"
+
+[[node]]
+id = "SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), the Hölder target, on an extension domain"
+
+[[node]]
+id = "NNReal.exists_integer_case_exponent"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_eq_one"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (c), the integer case, on an extension domain"
+
+[[node]]
+id = "SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_eq_one"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), the integer case, on an extension domain"
+
+[[node]]
+id = "SobolevEuclidean.exists_isCompactEmbedding_toHolderSpace_of_lt"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.8 (c), both cases, on an extension domain"
+
+[[node]]
+id = "SobolevEuclidean.exists_continuousLinearMap_toHolderSpace_of_le"
+source = "Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.7 (c), both cases, on an extension domain"
