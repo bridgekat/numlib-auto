@@ -26,39 +26,42 @@ id = "theorem_6_3_2'"
 id = "exercise_6_3_1"
 
 [[node]]
-id = "example_6_3_3"
-kind = "theorem"
-desc = '''Example 6.3.3: convergence of the forward scheme (6.1.8)-(6.1.10) for the heat equation.
-With `u_tt` and `u_xxxx` continuous on `[0, π] × [0, T]`, Taylor expansion bounds the truncation
-error of (6.3.6) by `|τ_j^m| ≤ c(h_x² + h_t)`; the scheme has the tridiagonal Toeplitz iteration
-matrix `Q` with `1 - 2r` on the diagonal and `r` off it, and for `r ≤ 1/2` both `‖Q‖_∞ = 1` and,
-by the eigenvalues `λ_j(Q) = 1 - 4r sin²(jπ/(2N_x))` of Exercise 6.3.1, `‖Q‖₂ < 1`. Theorem 6.3.2
-then gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in the maximum norm and in the discrete norm
-`‖v‖_{2,h_x} = √h_x ‖v‖₂`, so the order is 2 in `h_x` and 1 in `h_t`. Not formalized: it is the
-concrete heat-equation instance of `theorem_6_3_2'`, needing a classical solution of the
-initial-boundary value problem to Taylor-expand — the book assumes one exists — and, for the
-`‖·‖_{2,h_x}` half, the Toeplitz spectrum of `exercise_6_3_1`.
+id = "IsRegularHeatSolution"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Examples 6.3.3–6.3.4, the hypothesis `u_tt, u_xxxx ∈ C([0, π] × [0, T])`"
 
-Blocked: rechecked 2026-09-15. The reason stands only in its first half: the classical solution of
-the initial-boundary value problem that (6.3.6) Taylor-expands is what is missing, and it is the
-heat-equation theory of `example_6_2_4`. The second half of the stated reason is wrong —
-`exercise_6_3_1` is proved (`NumlibSurface/AtkinsonHan/Chapter06/Section03.lean`), so the Toeplitz
-spectrum is available and the `‖·‖_{2,h_x}` half of the bound is not blocked by it.
-'''
-deps = ["theorem_6_3_2'", "exercise_6_3_1", "AtkinsonHan.Chapter06.example_6_2_4"]
+[[node]]
+id = "IsRegularHeatSolution.abs_sub_forward_time_le"
+
+[[node]]
+id = "IsRegularHeatSolution.abs_sub_backward_time_le"
+
+[[node]]
+id = "IsRegularHeatSolution.abs_centred_sub_le"
+
+[[node]]
+id = "gridValues"
+
+[[node]]
+id = "example_6_3_3"
+
+[[node]]
+id = "example_6_3_3_l2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 6.3.3, the `‖·‖_{2, h_x}` half"
 
 [[node]]
 id = "example_6_3_4"
-kind = "theorem"
-desc = '''Example 6.3.4: the same for the backward scheme (6.1.12)-(6.1.14), whose iteration
-matrix is `Q = Q₁⁻¹` with `Q₁` tridiagonal Toeplitz, `1 + 2r` on the diagonal and `-r` off it.
-Diagonal dominance gives `‖Q‖_∞ ≤ 1` directly, and `λ_j(Q₁) = 1 + 4r cos²(jπ/(2N_x))` gives
-`‖Q‖₂ < 1`, so the scheme is unconditionally stable; with `|τ̄_j^m| ≤ c(h_x² + h_t)` and
-`‖τ^m‖ ≤ ‖τ̄^m‖`, Theorem 6.3.2 gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in both norms, again of
-order 2 in `h_x` and 1 in `h_t`. Not formalized: as for Example 6.3.3 — a classical solution of
-the heat equation to Taylor-expand.
 
-Blocked: rechecked 2026-09-15; as for `example_6_3_3`, and only the classical solution is missing
-(`exercise_6_3_1` is proved).
-'''
-deps = ["theorem_6_3_2'", "exercise_6_3_1", "example_6_3_3"]
+[[node]]
+id = "example_6_3_4_l2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 6.3.4, the `‖·‖_{2, h_x}` half"
+
+[[node]]
+id = "sineSeries_isRegularHeatSolution"
+
+[[node]]
+id = "example_6_3_3_sineSeries"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 6.3.3 for the solutions of Example 6.2.4"
+
+[[node]]
+id = "example_6_3_4_sineSeries"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 6.3.4 for the solutions of Example 6.2.4"

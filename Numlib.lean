@@ -223,6 +223,7 @@ import Numlib.Analysis.PDE.Elliptic.Spectral
 import Numlib.Analysis.PDE.Heat
 import Numlib.Analysis.PDE.Heat.Classical
 import Numlib.Analysis.PDE.Heat.MaximumPrinciple
+import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.Analysis.PDE.Transport
 import Numlib.Analysis.PDE.Wave
 import Numlib.Analysis.Sobolev.Calculus

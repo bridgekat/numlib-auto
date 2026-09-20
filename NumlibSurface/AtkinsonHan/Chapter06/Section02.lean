@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.Deriv.Slope
+import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.FiniteDifference.LaxEquivalence
 
 /-!
@@ -53,8 +54,47 @@ translating a solution back by `t₀` produces a solution on `[0, T - t₀]`, an
 therefore carries that hypothesis.  The Lax equivalence theorem does not use the semigroup
 property at all.
 
-Not formalized: the specific difference schemes of §6.1 and the examples of §6.2, which are Taylor
-expansions of a solution assumed smooth.
+## The heat equation: Examples 6.2.4, 6.2.8 and 6.2.13
+
+The book's running example is `u_t = ν u_xx` on `(0, π) × (0, T)` with homogeneous Dirichlet
+boundary values, in `V = C₀[0, π]` (`C₀`, a closed subspace of `C[0, π]` with the maximum norm)
+with `V₀` the finite sine polynomials (`sinePolynomials`, (6.2.5)) and `L = ν ∂²/∂x²` on `V₀`
+(`heatOperator`, presented through its action on the sines and identified with the second
+derivative by `heatOperator_apply_eq_laplacian`).
+
+* **Example 6.2.4**: `V₀` is dense (`example_6_2_4_dense`, the book's Exercise 6.2.1, from the
+  uniform density of trigonometric polynomials on the circle applied to the odd periodic extension,
+  `exists_mem_span_sinMap_norm_sub_lt`); for a sine polynomial the solution is the explicit
+  series (6.2.7) (`sineSolution`, `isSolution_sineSolution`); every solution in the sense of
+  Definition 6.2.1 is a classical solution of the heat equation and the maximum principle
+  (`Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`, Brezis's Theorem 10.6) bounds it by its
+  initial value (`norm_le_of_isSolution`); so the problem is well posed with `c₀ = 1`
+  (`example_6_2_4`) and the solution operators are bounded by `1`
+  (`example_6_2_4_norm_solutionOperator_le`).
+* **Example 6.2.8**: the forward scheme `C (Δt) v = (1 - 2r) v + r [ṽ (· + Δx) + ṽ (· - Δx)]`,
+  on the odd `2π`-periodic extension `ṽ` (`oddPeriodicExtend`,
+  `Numlib.Analysis.PDE.Heat.SineSeries`), as a bounded operator `forwardScheme` with
+  `‖C (Δt)‖ ≤ |1 - 2r| + 2r` (6.2.8) (`norm_forwardScheme_le`); its consistency on `V_c = V₀` by
+  the Taylor expansion of (6.2.7) (`example_6_2_8`); the backward scheme `backwardScheme = Q₁⁻¹`
+  inverted by a Neumann series, with `‖C (Δt)‖ ≤ 1` for every `r` (`norm_backwardScheme_le`)
+  and, the clause the book leaves to the reader, its consistency (`example_6_2_8_backward`).
+* **Example 6.2.13**: the equivalence theorem applied — the forward scheme is stable and
+  convergent for `r ≤ 1/2` (`example_6_2_13`), the backward one unconditionally
+  (`example_6_2_13_backward`); and the book's Exercise 6.2.3 as helpers — the exact norm
+  `‖C (Δt)‖ = |1 - 2r| + 2r` (`norm_forwardScheme_eq`, valid once `Δx < π/2`) and the
+  instability of the forward scheme for `r > 1/2` (`not_isStable_forwardScheme`, from the
+  amplification factor `1 - 2r + 2r cos ((k + 1) Δx)` on the modes `sin ((k + 1) x)`), so that
+  the forward scheme is stable if and only if `r ≤ 1/2`: it is *conditionally* stable.
+
+**The consistency horizon.** Definition 6.2.7 evaluates `S (t + Δt) u₀` for `t ∈ [0, T]`, and the
+solution operators of Definition 6.2.3 are determined only on their own horizon. The consistency
+and convergence statements therefore take the solution operators on a horizon `T' ≥ T + Δ₀` (on
+`[0, T]` the same family, by uniqueness), and the equivalence theorem is applied in its backbone
+form `FiniteDifference.isStable_iff_isConvergent`, which takes an arbitrary strongly continuous
+family; the surface `theorem_6_2_11` fixes one horizon for both and is not directly applicable to
+a solution-operator family.
+
+Not formalized: the book's Exercise 6.2.2 (Crank–Nicolson).
 -/
 
 open Filter Set Topology
@@ -316,5 +356,1120 @@ theorem corollary_6_2_12 {C : ℝ → V →L[ℝ] V} {Δt c M₀ t : ℝ} {k m :
     hstab fun s hs => hloc s ⟨hs.1, hs.2.trans ht.2⟩
 
 end Equivalence
+
+/-! ### Example 6.2.4: the heat equation on `(0, π)` in `C₀[0, π]` -/
+
+section HeatExample
+
+open Submodule InnerProductSpace Laplacian
+open scoped Real
+
+/-- **Example 6.2.4, the space `V = C₀[0, π]`**: the continuous functions on `[0, π]` vanishing
+at both ends, a closed subspace of `C[0, π]` with the maximum norm, hence a Banach space. -/
+def C₀ : Submodule ℝ C(Icc (0 : ℝ) π, ℝ) where
+  carrier := {v | v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0 ∧
+    v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0}
+  add_mem' ha hb := ⟨by simp [ha.1, hb.1], by simp [ha.2, hb.2]⟩
+  zero_mem' := ⟨rfl, rfl⟩
+  smul_mem' c v hv := ⟨by simp [hv.1], by simp [hv.2]⟩
+
+/-- Membership in `C₀[0, π]`: vanishing at both ends. -/
+theorem mem_C₀_iff {v : C(Icc (0 : ℝ) π, ℝ)} :
+    v ∈ C₀ ↔ v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0 ∧
+      v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0 :=
+  Iff.rfl
+
+/-- `C₀[0, π]` is closed in `C[0, π]`: it is cut out by two evaluations. -/
+theorem isClosed_C₀ : IsClosed (C₀ : Set C(Icc (0 : ℝ) π, ℝ)) :=
+  (isClosed_eq (continuous_eval_const _) continuous_const).inter
+    (isClosed_eq (continuous_eval_const _) continuous_const)
+
+/-- `C₀[0, π]` is a Banach space, being closed in the Banach space `C[0, π]`. -/
+instance : CompleteSpace C₀ := isClosed_C₀.completeSpace_coe
+
+/-- A sine polynomial vanishes at both ends of `[0, π]`. -/
+theorem sinePolynomial_mem_C₀ (n : ℕ) (c : ℕ → ℝ) : sinePolynomial n c ∈ C₀ :=
+  ⟨sinePolynomial_zero_apply n c, sinePolynomial_pi_apply n c⟩
+
+/-- The sine `sin ((k + 1) x)` as an element of `C₀[0, π]`. -/
+noncomputable def sinV (k : ℕ) : C₀ :=
+  ⟨sinMap k, by
+    refine ⟨by simp [sinMap_apply], ?_⟩
+    rw [sinMap_apply]
+    exact_mod_cast Real.sin_nat_mul_pi (k + 1)⟩
+
+@[simp]
+theorem coe_sinV (k : ℕ) : (sinV k : C(Icc (0 : ℝ) π, ℝ)) = sinMap k := rfl
+
+/-- **Example 6.2.4, the subspace `V₀`** of (6.2.5): the finite sine polynomials
+`∑_{j = 1}^n a_j sin (j x)`, the span of the sines in `C₀[0, π]`. -/
+noncomputable def sinePolynomials : Submodule ℝ C₀ := span ℝ (range sinV)
+
+/-- The sine polynomial `∑ c j sin ((j + 1) x)` as an element of `C₀[0, π]`. -/
+noncomputable def sinePolyV (n : ℕ) (c : ℕ → ℝ) : C₀ := ∑ j ∈ Finset.range n, c j • sinV j
+
+@[simp]
+theorem coe_sinePolyV (n : ℕ) (c : ℕ → ℝ) :
+    (sinePolyV n c : C(Icc (0 : ℝ) π, ℝ)) = sinePolynomial n c := by
+  simp [sinePolyV, sinePolynomial]
+
+/-- A sine polynomial lies in `V₀`. -/
+theorem sinePolyV_mem (n : ℕ) (c : ℕ → ℝ) : sinePolyV n c ∈ sinePolynomials :=
+  Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (subset_span ⟨j, rfl⟩)
+
+/-- Under the inclusion `C₀ ⊆ C[0, π]` the sine polynomials of `C₀` are the span of the sine
+system. -/
+theorem sinePolynomials_map_subtype :
+    sinePolynomials.map C₀.subtype = span ℝ (range sinMap) := by
+  rw [sinePolynomials, Submodule.map_span, ← Set.range_comp]
+  rfl
+
+/-- The elements of `V₀` are exactly the sine polynomials `sinePolyV n c`. -/
+theorem mem_sinePolynomials_iff {v : C₀} :
+    v ∈ sinePolynomials ↔ ∃ (n : ℕ) (c : ℕ → ℝ), v = sinePolyV n c := by
+  constructor
+  · intro hv
+    have h : (v : C(Icc (0 : ℝ) π, ℝ)) ∈ span ℝ (range sinMap) := by
+      rw [← sinePolynomials_map_subtype]
+      exact Submodule.mem_map_of_mem hv
+    obtain ⟨n, c, hc⟩ := mem_span_sinMap_iff.1 h
+    exact ⟨n, c, Subtype.ext (by rw [coe_sinePolyV, hc])⟩
+  · rintro ⟨n, c, rfl⟩
+    exact sinePolyV_mem n c
+
+/-- The sines are linearly independent in `C₀[0, π]`. -/
+theorem linearIndependent_sinV : LinearIndependent ℝ sinV :=
+  LinearIndependent.of_comp C₀.subtype linearIndependent_sinMap
+
+/-- The linear map `sin ((k + 1) x) ↦ -ν (k + 1)² sin ((k + 1) x)` on the sine polynomials, the
+underlying map of `heatOperator`. -/
+noncomputable def heatOperatorAux (ν : ℝ) : sinePolynomials →ₗ[ℝ] C₀ :=
+  (Module.Basis.span linearIndependent_sinV).constr ℝ fun k => (-ν * ((k : ℝ) + 1) ^ 2) • sinV k
+
+/-- **Example 6.2.4, the operator `L`**: `L = ν ∂²/∂x²` with domain `V₀`, the finite sine
+polynomials, as a partially defined linear map `C₀ →ₗ.[ℝ] C₀`.
+
+It is presented through its action on the basis `sin ((k + 1) x)` of `V₀`, which it multiplies
+by `-ν (k + 1)²`, which is what `ν ∂²/∂x²` does to it; `heatOperator_apply_eq_laplacian` records
+that on every element of `V₀` it is indeed `ν` times the second derivative. The domain is the
+sine polynomials rather than all of `C² ∩ C₀`, because well-posedness (Definition 6.2.2) asks
+for a solution from *every* initial value in the domain, and the book produces one only for
+the sine polynomials, by the explicit formula (6.2.7). -/
+noncomputable def heatOperator (ν : ℝ) : C₀ →ₗ.[ℝ] C₀ := ⟨sinePolynomials, heatOperatorAux ν⟩
+
+variable {ν : ℝ}
+
+@[simp]
+theorem heatOperator_domain : (heatOperator ν).domain = sinePolynomials := rfl
+
+/-- `L` acts through its underlying linear map `heatOperatorAux`. -/
+theorem heatOperator_apply (x : sinePolynomials) : heatOperator ν x = heatOperatorAux ν x := rfl
+
+/-- `L (sin ((k + 1) x)) = -ν (k + 1)² sin ((k + 1) x)`. -/
+theorem heatOperatorAux_sinV (k : ℕ) (hk : sinV k ∈ sinePolynomials) :
+    heatOperatorAux ν ⟨sinV k, hk⟩ = (-ν * ((k : ℝ) + 1) ^ 2) • sinV k := by
+  have h : (⟨sinV k, hk⟩ : sinePolynomials) = Module.Basis.span linearIndependent_sinV k :=
+    Subtype.ext (by rw [Module.Basis.span_apply])
+  rw [heatOperatorAux, h]
+  exact Module.Basis.constr_basis (Module.Basis.span linearIndependent_sinV) ℝ
+    (fun k => (-ν * ((k : ℝ) + 1) ^ 2) • sinV k) k
+
+/-- `L` on a sine polynomial: `L (∑ c j sin ((j + 1) x)) = ∑ c j (-ν (j + 1)²) sin ((j + 1) x)`. -/
+theorem heatOperatorAux_sinePolyV (n : ℕ) (c : ℕ → ℝ) (h : sinePolyV n c ∈ sinePolynomials) :
+    heatOperatorAux ν ⟨sinePolyV n c, h⟩
+      = sinePolyV n fun j => c j * (-ν * ((j : ℝ) + 1) ^ 2) := by
+  have hmem : ∀ j, sinV j ∈ sinePolynomials := fun j => subset_span ⟨j, rfl⟩
+  have e : (⟨sinePolyV n c, h⟩ : sinePolynomials)
+      = ∑ j ∈ Finset.range n, c j • (⟨sinV j, hmem j⟩ : sinePolynomials) :=
+    Subtype.ext (by simp only [sinePolyV, Submodule.coe_sum, Submodule.coe_smul])
+  rw [e, map_sum]
+  simp only [map_smul, heatOperatorAux_sinV, sinePolyV, smul_smul]
+
+/-- `L (∑ c j sin ((j + 1) x)) = ∑ c j (-ν (j + 1)²) sin ((j + 1) x)`, for the partial map. -/
+theorem heatOperator_sinePolyV (n : ℕ) (c : ℕ → ℝ) (h : sinePolyV n c ∈ sinePolynomials) :
+    heatOperator ν ⟨sinePolyV n c, h⟩ = sinePolyV n fun j => c j * (-ν * ((j : ℝ) + 1) ^ 2) :=
+  heatOperatorAux_sinePolyV n c h
+
+/-- The value of a sine polynomial of `C₀` at a point. -/
+theorem sinePolyV_apply (n : ℕ) (c : ℕ → ℝ) (x : Icc (0 : ℝ) π) :
+    (sinePolyV n c : C(Icc (0 : ℝ) π, ℝ)) x
+      = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * (x : ℝ)) := by
+  rw [coe_sinePolyV, sinePolynomial_apply]
+
+/-- **`L` is `ν ∂²/∂x²`**: on a sine polynomial `v`, `(L v) (x) = ν Δ v (x)` at every interior
+point, the second derivative being that of the (smooth) sine polynomial `v` read as a function
+on the line. -/
+theorem heatOperatorAux_apply_eq_laplacian (n : ℕ) (c : ℕ → ℝ)
+    (h : sinePolyV n c ∈ sinePolynomials) (x : Icc (0 : ℝ) π) :
+    (heatOperatorAux ν ⟨sinePolyV n c, h⟩ : C(Icc (0 : ℝ) π, ℝ)) x
+      = ν * Δ (fun y : ℝ => ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * y)) (x : ℝ) := by
+  rw [heatOperatorAux_sinePolyV, sinePolyV_apply, ← Heat.sineSeries_zero_nu_eq n c 0,
+    Heat.laplacian_sineSeries_fst, Heat.sineSeriesDerivX_two, mul_neg, Finset.mul_sum,
+    ← Finset.sum_neg_distrib]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  simp only [neg_zero, zero_mul, Real.exp_zero]
+  ring
+
+/-- The same for the partial map `L`. -/
+theorem heatOperator_apply_eq_laplacian (n : ℕ) (c : ℕ → ℝ)
+    (h : sinePolyV n c ∈ sinePolynomials) (x : Icc (0 : ℝ) π) :
+    (heatOperator ν ⟨sinePolyV n c, h⟩ : C(Icc (0 : ℝ) π, ℝ)) x
+      = ν * Δ (fun y : ℝ => ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * y)) (x : ℝ) :=
+  heatOperatorAux_apply_eq_laplacian n c h x
+
+/-! #### The solution (6.2.7) -/
+
+/-- **(6.2.7), the solution for a sine-polynomial initial value**: for
+`u₀ = ∑_{j < n} b j sin ((j + 1) x)`, the curve
+`u (t) = ∑_{j < n} b j exp (-ν (j + 1)² t) sin ((j + 1) x)` in `C₀[0, π]`. -/
+noncomputable def sineSolution (ν : ℝ) (n : ℕ) (b : ℕ → ℝ) (t : ℝ) : C₀ :=
+  sinePolyV n fun j => b j * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * t)
+
+/-- At `t = 0` the solution (6.2.7) is its initial value `∑ b j sin ((j + 1) x)`. -/
+theorem sineSolution_zero (n : ℕ) (b : ℕ → ℝ) : sineSolution ν n b 0 = sinePolyV n b := by
+  simp [sineSolution]
+
+/-- The solution (6.2.7) read pointwise is the sine series `Heat.sineSeries`. -/
+theorem sineSolution_apply (n : ℕ) (b : ℕ → ℝ) (t : ℝ) (x : Icc (0 : ℝ) π) :
+    (sineSolution ν n b t : C(Icc (0 : ℝ) π, ℝ)) x = Heat.sineSeries ν n b ((x : ℝ), t) := by
+  rw [sineSolution, sinePolyV_apply, Heat.sineSeries]
+
+/-- The solution (6.2.7) stays in `V₀`. -/
+theorem sineSolution_mem (n : ℕ) (b : ℕ → ℝ) (t : ℝ) :
+    sineSolution ν n b t ∈ sinePolynomials := sinePolyV_mem _ _
+
+/-- The curve (6.2.7) is differentiable, with derivative `L u (t)`. -/
+theorem hasDerivAt_sineSolution (n : ℕ) (b : ℕ → ℝ) (t : ℝ) :
+    HasDerivAt (sineSolution ν n b) (heatOperator ν ⟨sineSolution ν n b t, sineSolution_mem n b t⟩)
+      t := by
+  rw [show heatOperator ν ⟨sineSolution ν n b t, sineSolution_mem n b t⟩
+      = sinePolyV n fun j => b j * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * t) * (-ν * ((j : ℝ) + 1) ^ 2)
+    from heatOperator_sinePolyV _ _ _]
+  unfold sineSolution sinePolyV
+  refine HasDerivAt.fun_sum (A := fun j s => (b j * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * s)) • sinV j)
+    fun j _ => ?_
+  have h1 : HasDerivAt (fun s : ℝ => -ν * ((j : ℝ) + 1) ^ 2 * s) (-ν * ((j : ℝ) + 1) ^ 2) t :=
+    (hasDerivAt_id t).const_mul (-ν * ((j : ℝ) + 1) ^ 2) |>.congr_deriv (mul_one _)
+  have h2 := (((Real.hasDerivAt_exp _).comp t h1).const_mul (b j)).smul_const (sinV j)
+  refine h2.congr_deriv ?_
+  simp only
+  ring_nf
+
+/-- **(6.2.7) solves (6.2.4)**: for the initial value `∑_{j < n} b j sin ((j + 1) x) ∈ V₀`, the
+curve `sineSolution ν n b` is a solution in the sense of Definition 6.2.1, on every horizon. -/
+theorem isSolution_sineSolution (T : ℝ) (n : ℕ) (b : ℕ → ℝ) :
+    IsSolution (heatOperator ν) T (sinePolyV n b) (sineSolution ν n b) := by
+  rw [isSolution_iff]
+  exact ⟨sineSolution_zero n b, fun t _ =>
+    ⟨sineSolution_mem n b t, (hasDerivAt_sineSolution n b t).hasDerivWithinAt⟩⟩
+
+/-! #### The maximum principle and well-posedness -/
+
+/-- The difference of two solutions is a solution, with the difference of the initial values:
+`L` is linear. -/
+private theorem isSolution_sub {L : V →ₗ.[ℝ] V} {T : ℝ} {u₀ ū₀ : V} {u ū : ℝ → V}
+    (hu : FiniteDifference.IsSolution L T u₀ u) (hū : FiniteDifference.IsSolution L T ū₀ ū) :
+    FiniteDifference.IsSolution L T (u₀ - ū₀) (u - ū) := by
+  refine ⟨by rw [Pi.sub_apply, hu.1, hū.1], fun t ht => ?_⟩
+  obtain ⟨h1, hd1⟩ := hu.2 t ht
+  obtain ⟨h2, hd2⟩ := hū.2 t ht
+  exact ⟨L.domain.sub_mem h1 h2, (hd1.sub hd2).congr_deriv (L.map_sub ⟨u t, h1⟩ ⟨ū t, h2⟩).symm⟩
+
+/-- A solution of the abstract problem read as a function of `(x, t)`: `U (x, t) = u (t) (x)`,
+the space variable clamped to `[0, π]`. -/
+private noncomputable def spaceTime (u : ℝ → C₀) (p : ℝ × ℝ) : ℝ :=
+  (u p.2 : C(Icc (0 : ℝ) π, ℝ)) (projIcc 0 π Real.pi_pos.le p.1)
+
+/-- Evaluation at a point of `[0, π]`, as a bounded linear functional on `C₀`. -/
+private noncomputable def evalC₀ (x : Icc (0 : ℝ) π) : C₀ →L[ℝ] ℝ :=
+  (ContinuousMap.evalCLM ℝ x).comp C₀.subtypeL
+
+private theorem evalC₀_apply (x : Icc (0 : ℝ) π) (v : C₀) :
+    evalC₀ x v = (v : C(Icc (0 : ℝ) π, ℝ)) x := rfl
+
+/-- **Every solution with values in `V₀` is a classical solution of the heat equation** on the
+cylinder `(0, π) × (0, T)`, in the sense of `Heat.IsClassicalSolution`: continuity on the closed
+cylinder comes from the continuity of `t ↦ u (t)` in the maximum norm, differentiability in `t`
+from the derivative of Definition 6.2.1 evaluated at `x`, and the equation from
+`L = ν ∂²/∂x²` on the sine polynomials. -/
+private theorem isClassicalSolution_of_isSolution {T : ℝ} {u₀ : C₀} {u : ℝ → C₀}
+    (hu : FiniteDifference.IsSolution (heatOperator ν) T u₀ u) :
+    Heat.IsClassicalSolution ν (Ioo 0 π) T (spaceTime u) := by
+  have hcl : closure (Ioo (0 : ℝ) π) = Icc 0 π := closure_Ioo Real.pi_pos.ne
+  -- the representation of `u t` as a sine polynomial, at every time
+  have hrep : ∀ t ∈ Icc (0 : ℝ) T, ∃ (n : ℕ) (c : ℕ → ℝ), u t = sinePolyV n c :=
+    fun t ht => mem_sinePolynomials_iff.1 (hu.2 t ht).1
+  -- the derivative of `u` at an interior time
+  have hderiv : ∀ t ∈ Ioo (0 : ℝ) T, ∃ h : u t ∈ sinePolynomials,
+      HasDerivAt u (heatOperator ν ⟨u t, h⟩) t := fun t ht => by
+    obtain ⟨h, hd⟩ := hu.2 t (Ioo_subset_Icc_self ht)
+    exact ⟨h, hd.hasDerivAt (Icc_mem_nhds ht.1 ht.2)⟩
+  refine ⟨?_, fun x _ t ht => ?_, fun x hx t _ => ?_, fun x hx t ht => ?_⟩
+  · -- continuity on the closed cylinder
+    have hcont : ContinuousOn u (Icc 0 T) := fun t ht =>
+      (hu.2 t ht).2.continuousWithinAt
+    have h1 : ContinuousOn (fun p : ℝ × ℝ => ((u p.2 : C(Icc (0 : ℝ) π, ℝ)),
+        projIcc 0 π Real.pi_pos.le p.1)) (closure (Ioo 0 π) ×ˢ Icc 0 T) := by
+      refine ContinuousOn.prodMk ?_ (continuous_projIcc.comp continuous_fst).continuousOn
+      exact continuous_subtype_val.comp_continuousOn
+        (hcont.comp continuous_snd.continuousOn fun p hp => hp.2)
+    exact continuous_eval.comp_continuousOn h1
+  · -- differentiability in `t`
+    obtain ⟨h, hd⟩ := hderiv t ht
+    exact ((evalC₀ (projIcc 0 π Real.pi_pos.le x)).hasFDerivAt.comp_hasDerivAt t
+      hd).differentiableAt
+  · -- `C²` in `x`: near `x ∈ (0, π)`, the slice is a sine polynomial
+    obtain ⟨n, c, hc⟩ := hrep t (Ioo_subset_Icc_self ‹_›)
+    have heq : (fun y => spaceTime u (y, t))
+        =ᶠ[𝓝 x] fun y => Heat.sineSeries 0 n c (y, 0) := by
+      filter_upwards [Icc_mem_nhds hx.1 hx.2] with y hy
+      simp only [spaceTime, hc, coe_sinePolyV, projIcc_of_mem _ hy, sinePolynomial_apply]
+      exact (congrFun (Heat.sineSeries_zero_nu_eq n c 0) y).symm
+    exact ((Heat.contDiff_sineSeries_fst (ν := 0) (n := n) (b := c) 0).contDiffAt
+      ).congr_of_eventuallyEq heq
+  · -- the equation
+    obtain ⟨h, hd⟩ := hderiv t ht
+    obtain ⟨n, c, hc⟩ := hrep t (Ioo_subset_Icc_self ht)
+    have hdx : HasDerivAt (fun s => spaceTime u (x, s))
+        (evalC₀ (projIcc 0 π Real.pi_pos.le x) (heatOperator ν ⟨u t, h⟩)) t :=
+      (evalC₀ (projIcc 0 π Real.pi_pos.le x)).hasFDerivAt.comp_hasDerivAt t hd
+    rw [hdx.deriv]
+    have hval : evalC₀ (projIcc 0 π Real.pi_pos.le x) (heatOperator ν ⟨u t, h⟩)
+        = ν * Δ (fun y : ℝ => ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * y)) x := by
+      have e : (⟨u t, h⟩ : sinePolynomials) = ⟨sinePolyV n c, hc ▸ h⟩ := Subtype.ext hc
+      refine (congrArg (fun z : sinePolynomials =>
+        evalC₀ (projIcc 0 π Real.pi_pos.le x) (heatOperatorAux ν z)) e).trans ?_
+      rw [evalC₀_apply, heatOperatorAux_apply_eq_laplacian,
+        projIcc_of_mem _ (Ioo_subset_Icc_self hx)]
+    rw [hval]
+    congr 1
+    refine Filter.EventuallyEq.eq_of_nhds (laplacian_congr_nhds ?_)
+    filter_upwards [Icc_mem_nhds hx.1 hx.2] with y hy
+    simp only [spaceTime, hc, coe_sinePolyV, projIcc_of_mem _ hy, sinePolynomial_apply]
+
+/-- **The maximum principle for the abstract problem**: every solution of (6.2.4) in the sense
+of Definition 6.2.1, on a horizon `T ≥ 0` and for `ν > 0`, satisfies
+`max_x |u (x, t)| ≤ max_x |u₀ (x)|`, i.e. `‖u (t)‖ ≤ ‖u₀‖`, for `t ∈ [0, T]`. -/
+theorem norm_le_of_isSolution (hν : 0 < ν) {T : ℝ} {u₀ : C₀} {u : ℝ → C₀}
+    (hu : IsSolution (heatOperator ν) T u₀ u) : ∀ t ∈ Icc (0 : ℝ) T, ‖u t‖ ≤ ‖u₀‖ := by
+  rw [isSolution_iff] at hu
+  intro t ht
+  rcases eq_or_lt_of_le ht.1 with rfl | htpos
+  · rw [hu.1]
+  have hT : 0 < T := htpos.trans_le ht.2
+  have hcl : closure (Ioo (0 : ℝ) π) = Icc 0 π := closure_Ioo Real.pi_pos.ne
+  have hfr : frontier (Ioo (0 : ℝ) π) = {0, π} := frontier_Ioo Real.pi_pos
+  have hbound := (isClassicalSolution_of_isSolution hu).abs_le_of_eq_zero_frontier isOpen_Ioo
+    (Metric.isBounded_Ioo 0 π) hν hT (M := ‖u₀‖) ?_ ?_
+  · rw [← Submodule.norm_coe]
+    refine (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun x => ?_
+    have := hbound x (by rw [hcl]; exact x.2) t ht
+    rw [spaceTime, projIcc_val] at this
+    rw [Real.norm_eq_abs]
+    exact this
+  · intro x hx s _
+    rw [hfr] at hx
+    rcases hx with rfl | rfl
+    · change (u s : C(Icc (0 : ℝ) π, ℝ)) (projIcc 0 π Real.pi_pos.le 0) = 0
+      rw [projIcc_left]
+      exact (u s).2.1
+    · change (u s : C(Icc (0 : ℝ) π, ℝ)) (projIcc 0 π Real.pi_pos.le π) = 0
+      rw [projIcc_right]
+      exact (u s).2.2
+  · intro y hy
+    rw [spaceTime, hu.1, ← Real.norm_eq_abs, ← Submodule.norm_coe]
+    exact ContinuousMap.norm_coe_le_norm _ _
+
+/-- **Example 6.2.4, the well-posedness of the heat equation (6.2.4)** in `V = C₀[0, π]` with
+`L = ν ∂²/∂x²` on the sine polynomials `V₀` (6.2.5): the problem is well posed in the sense of
+Definition 6.2.2, with stability constant `c₀ = 1`. Existence is the explicit solution (6.2.7),
+`isSolution_sineSolution`; uniqueness and the continuous dependence
+`sup_t ‖u (t) - ū (t)‖ ≤ ‖u₀ - ū₀‖` are the maximum principle `norm_le_of_isSolution` applied to
+the difference of two solutions. Consequently the solution operators `S (t) : V₀ ⊆ V → V` are
+bounded by `1` (`example_6_2_4_norm_solutionOperator_le`). -/
+theorem example_6_2_4 (hν : 0 < ν) (T : ℝ) : IsWellPosed (heatOperator ν) T 1 := by
+  rw [isWellPosed_iff]
+  refine ⟨fun u₀ hu₀ => ?_, fun u₀ ū₀ u ū hu hū t ht => ?_⟩
+  · obtain ⟨n, c, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
+    exact ⟨sineSolution ν n c, (isSolution_iff _ _ _ _).1 (isSolution_sineSolution T n c)⟩
+  · have h := norm_le_of_isSolution hν ((isSolution_iff _ _ _ _).2 (isSolution_sub hu hū)) t ht
+    rwa [one_mul]
+
+/-- **Example 6.2.4, the density of `V₀` in `V`** (the book's Exercise 6.2.1): the finite sine
+polynomials are dense in `C₀[0, π]` for the maximum norm. -/
+theorem example_6_2_4_dense : Dense (sinePolynomials : Set C₀) := by
+  refine Metric.dense_iff.2 fun v ε hε => ?_
+  obtain ⟨p, hp, hvp⟩ := exists_mem_span_sinMap_norm_sub_lt v.2.1 v.2.2 hε
+  obtain ⟨n, c, rfl⟩ := mem_span_sinMap_iff.1 hp
+  refine ⟨sinePolyV n c, ?_, sinePolyV_mem n c⟩
+  rw [Metric.mem_ball, dist_eq_norm, ← Submodule.norm_coe, Submodule.coe_sub, coe_sinePolyV,
+    norm_sub_rev]
+  exact hvp
+
+/-- The domain of `L` is dense in `V`. -/
+theorem dense_heatOperator_domain : Dense ((heatOperator ν).domain : Set C₀) :=
+  example_6_2_4_dense
+
+/-- **Example 6.2.4, the solution operators**: `S (t) = solutionOperator …` of Definition 6.2.3
+for the heat equation satisfies `‖S (t)‖ ≤ 1` on `[0, T]`, the bound
+`max_x |u (x, t)| ≤ max_x |u₀ (x)|` read on the extended operators. -/
+theorem example_6_2_4_norm_solutionOperator_le (hν : 0 < ν) {T : ℝ} (hT : 0 ≤ T) :
+    ∀ t ∈ Icc (0 : ℝ) T, ‖solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+      (example_6_2_4 hν T) t‖ ≤ 1 :=
+  norm_solutionOperator_le _ _ _ _ _
+
+/-- **Example 6.2.4, (6.2.7) through the solution operators**: for the initial value
+`u₀ = ∑_{j < n} b j sin ((j + 1) x)`, `S (t) u₀` is the sine series (6.2.7). -/
+theorem example_6_2_4_solutionOperator_apply (hν : 0 < ν) {T : ℝ} (hT : 0 ≤ T) {t : ℝ}
+    (ht : t ∈ Icc (0 : ℝ) T) (n : ℕ) (b : ℕ → ℝ) :
+    solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
+      (example_6_2_4 hν T) t (sinePolyV n b) = sineSolution ν n b t :=
+  solutionOperator_apply _ _ _ _ _ ht (sinePolyV_mem n b) _ (isSolution_sineSolution T n b)
+
+/-! ### Examples 6.2.8 and 6.2.13: the forward and backward schemes on `C₀[0, π]` -/
+
+section Schemes
+
+/-- The odd `2π`-periodic extension of `v ∈ C₀[0, π]`, the `ṽ` of Example 6.2.8. -/
+noncomputable abbrev ext (v : C₀) : ℝ → ℝ := oddPeriodicExtend (v : C(Icc (0 : ℝ) π, ℝ))
+
+/-- The extension `ṽ` is continuous. -/
+theorem continuous_ext (v : C₀) : Continuous (ext v) := continuous_oddPeriodicExtend v.2.1 v.2.2
+
+/-- The extension `ṽ` is odd. -/
+theorem ext_neg (v : C₀) (x : ℝ) : ext v (-x) = -ext v x := oddPeriodicExtend_neg v.2.1 v.2.2 x
+
+/-- The extension `ṽ` agrees with `v` on `[0, π]`. -/
+theorem ext_of_mem (v : C₀) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) π) :
+    ext v x = (v : C(Icc (0 : ℝ) π, ℝ)) ⟨x, hx⟩ := oddPeriodicExtend_of_mem v.2.2 hx
+
+/-- The extension `ṽ` is bounded by `‖v‖`. -/
+theorem abs_ext_le (v : C₀) (x : ℝ) : |ext v x| ≤ ‖v‖ := abs_oddPeriodicExtend_le _ x
+
+/-- The extension of a sine polynomial is the sine polynomial on the whole line. -/
+theorem ext_sinePolyV (n : ℕ) (c : ℕ → ℝ) (x : ℝ) :
+    ext (sinePolyV n c) x = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * x) := by
+  rw [ext, coe_sinePolyV, oddPeriodicExtend_sinePolynomial]
+
+/-- The extension of the solution (6.2.7) at time `t` is the sine series `Heat.sineSeries`. -/
+theorem ext_sineSolution (n : ℕ) (b : ℕ → ℝ) (t x : ℝ) :
+    ext (sineSolution ν n b t) x = Heat.sineSeries ν n b (x, t) := by
+  rw [sineSolution, ext_sinePolyV, Heat.sineSeries]
+
+/-- The translated sum `v ↦ ṽ (· + Δx) + ṽ (· - Δx)` on `C₀[0, π]`, as a function: the operator
+common to the forward and backward schemes of Example 6.2.8. It maps `C₀` to itself because the
+extension is odd about `0` and about `π`. -/
+noncomputable def translateSumFun (Δx : ℝ) (v : C₀) : C₀ :=
+  ⟨⟨fun x => ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx), by
+      have hc := continuous_ext v
+      exact (hc.comp (continuous_subtype_val.add continuous_const)).add
+        (hc.comp (continuous_subtype_val.sub continuous_const))⟩, by
+    refine ⟨?_, ?_⟩
+    · change ext v ((0 : ℝ) + Δx) + ext v ((0 : ℝ) - Δx) = 0
+      rw [zero_add, zero_sub, ext_neg, add_neg_cancel]
+    · change ext v (π + Δx) + ext v (π - Δx) = 0
+      have h : ext v (π + Δx) = -ext v (π - Δx) := by
+        have hp := (oddPeriodicExtend_periodic (v : C(Icc (0 : ℝ) π, ℝ))).sub_eq (π + Δx)
+        rw [show π + Δx - 2 * π = -(π - Δx) by ring] at hp
+        rw [ext, ← hp, ← ext, ext_neg]
+      rw [h, neg_add_cancel]⟩
+
+/-- The value of the translated sum at a point. -/
+theorem translateSumFun_apply (Δx : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
+    (translateSumFun Δx v : C(Icc (0 : ℝ) π, ℝ)) x = ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx) :=
+  rfl
+
+/-- The translated sum is bounded by `2 ‖v‖`. -/
+theorem norm_translateSumFun_le (Δx : ℝ) (v : C₀) : ‖translateSumFun Δx v‖ ≤ 2 * ‖v‖ := by
+  rw [← Submodule.norm_coe]
+  refine (ContinuousMap.norm_le _ (by positivity)).2 fun x => ?_
+  rw [translateSumFun_apply, Real.norm_eq_abs]
+  calc |ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx)|
+      ≤ |ext v ((x : ℝ) + Δx)| + |ext v ((x : ℝ) - Δx)| := abs_add_le _ _
+    _ ≤ ‖v‖ + ‖v‖ := add_le_add (abs_ext_le v _) (abs_ext_le v _)
+    _ = 2 * ‖v‖ := by ring
+
+/-- The translated sum `v ↦ ṽ (· + Δx) + ṽ (· - Δx)` as a bounded operator on `C₀[0, π]`, of norm
+at most `2`. -/
+noncomputable def translateSum (Δx : ℝ) : C₀ →L[ℝ] C₀ :=
+  LinearMap.mkContinuous
+    { toFun := translateSumFun Δx
+      map_add' := fun v w => Subtype.ext (ContinuousMap.ext fun x => by
+        simp only [translateSumFun_apply, Submodule.coe_add, ContinuousMap.add_apply, ext,
+          oddPeriodicExtend_add]
+        ring)
+      map_smul' := fun a v => Subtype.ext (ContinuousMap.ext fun x => by
+        simp only [translateSumFun_apply, Submodule.coe_smul, ContinuousMap.smul_apply, ext,
+          oddPeriodicExtend_smul, RingHom.id_apply, smul_eq_mul]
+        ring) }
+    2 (norm_translateSumFun_le Δx)
+
+/-- The value of the translated sum at a point. -/
+theorem translateSum_apply (Δx : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
+    (translateSum Δx v : C(Icc (0 : ℝ) π, ℝ)) x = ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx) :=
+  rfl
+
+/-- `‖ṽ (· + Δx) + ṽ (· - Δx)‖ ≤ 2 ‖v‖`, as an operator norm bound. -/
+theorem norm_translateSum_le (Δx : ℝ) : ‖translateSum Δx‖ ≤ 2 :=
+  LinearMap.mkContinuous_norm_le _ (by norm_num) _
+
+/-- **Example 6.2.8, the forward scheme as an operator on `C₀[0, π]`**:
+`C (Δt) v (x) = (1 - 2r) v (x) + r [ṽ (x + Δx) + ṽ (x - Δx)]` with `Δx = √(ν Δt / r)` and `ṽ`
+the odd `2π`-periodic extension of `v`; `r = ν Δt / Δx²` is the mesh ratio, held fixed as
+`Δt → 0`. -/
+noncomputable def forwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
+  (1 - 2 * r) • (1 : C₀ →L[ℝ] C₀) + r • translateSum (Real.sqrt (ν * Δt / r))
+
+/-- The value of `C (Δt) v` at a point, the formula of Example 6.2.8. -/
+theorem forwardScheme_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
+    (forwardScheme ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
+      = (1 - 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
+        + r * (ext v ((x : ℝ) + Real.sqrt (ν * Δt / r))
+          + ext v ((x : ℝ) - Real.sqrt (ν * Δt / r))) := by
+  simp only [forwardScheme, add_apply, smul_apply, one_apply_eq_self, Submodule.coe_add,
+    Submodule.coe_smul, ContinuousMap.add_apply, ContinuousMap.smul_apply, smul_eq_mul,
+    translateSum_apply]
+
+/-- **(6.2.8)**: `‖C (Δt)‖ ≤ |1 - 2r| + 2r`, so the forward family is uniformly bounded. -/
+theorem norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
+    ‖forwardScheme ν r Δt‖ ≤ |1 - 2 * r| + 2 * r := by
+  refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+  · rw [norm_smul, Real.norm_eq_abs]
+    exact mul_le_of_le_one_right (abs_nonneg _) ContinuousLinearMap.norm_id_le
+  · rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hr, mul_comm]
+    exact mul_le_mul_of_nonneg_right (norm_translateSum_le _) hr
+
+/-- The forward family is uniformly bounded by `|1 - 2r| + 2r` on every range of step sizes. -/
+theorem forall_norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δ₀ : ℝ) :
+    ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖forwardScheme ν r Δt‖ ≤ |1 - 2 * r| + 2 * r :=
+  fun Δt _ => norm_forwardScheme_le hr ν Δt
+
+/-! #### Consistency of the forward scheme (Example 6.2.8) -/
+
+/-- The Taylor-expansion constant of Example 6.2.8 for the initial value `∑ b j sin ((j + 1) x)`:
+`(∑ |b j| (ν (j + 1)²)²) / 2 + ν² (∑ |b j| (j + 1)⁴) / (12 r)`, the sum of the bounds on
+`u_tt / 2` and on `(ν² / 12 r) u_xxxx`. -/
+noncomputable def forwardConsistencyConst (ν r : ℝ) (n : ℕ) (b : ℕ → ℝ) : ℝ :=
+  (∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2) / 2
+    + ν ^ 2 * (∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4) / (12 * r)
+
+/-- The consistency constant is nonnegative. -/
+theorem forwardConsistencyConst_nonneg {ν r : ℝ} (hr : 0 ≤ r) (n : ℕ) (b : ℕ → ℝ) :
+    0 ≤ forwardConsistencyConst ν r n b := by
+  unfold forwardConsistencyConst
+  have h1 : 0 ≤ ∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2 :=
+    Finset.sum_nonneg fun j _ => by positivity
+  have h2 : 0 ≤ ∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4 :=
+    Finset.sum_nonneg fun j _ => by positivity
+  positivity
+
+/-- **The local truncation error of the forward scheme on the solution (6.2.7)**: by the Taylor
+expansions of Example 6.2.8, `‖C (Δt) u (t) - u (t + Δt)‖ ≤ c Δt²` for `t ≥ 0` and `Δt ≥ 0`,
+with `c = forwardConsistencyConst ν r n b`. -/
+theorem norm_forwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
+    (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
+    ‖forwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
+      ≤ forwardConsistencyConst ν r n b * Δt ^ 2 := by
+  set Δx := Real.sqrt (ν * Δt / r) with hΔx
+  have hΔx0 : 0 ≤ Δx := Real.sqrt_nonneg _
+  have hΔx2 : Δx ^ 2 = ν * Δt / r := Real.sq_sqrt (by positivity)
+  have hrΔx : r * Δx ^ 2 = ν * Δt := by rw [hΔx2]; field_simp
+  set Mt := ∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2 with hMt
+  set Mx := ∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4 with hMx
+  have hMt0 : 0 ≤ Mt := Finset.sum_nonneg fun j _ => by positivity
+  have hMx0 : 0 ≤ Mx := Finset.sum_nonneg fun j _ => by positivity
+  rw [← Submodule.norm_coe]
+  refine (ContinuousMap.norm_le _ (by
+    have := forwardConsistencyConst_nonneg (ν := ν) hr.le n b
+    positivity)).2 fun x => ?_
+  rw [Submodule.coe_sub, ContinuousMap.sub_apply, forwardScheme_apply, ext_sineSolution,
+    ext_sineSolution, sineSolution_apply, sineSolution_apply, Real.norm_eq_abs]
+  -- the identity `C (Δt) u (t) - u (t + Δt) = r B - A`
+  set U := Heat.sineSeries ν n b with hU
+  have hUt : Heat.sineSeriesDerivT ν n b 1 ((x : ℝ), t)
+      = ν * Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t) := Heat.sineSeriesDerivT_one _
+  have e : (1 - 2 * r) * U ((x : ℝ), t) + r * (U ((x : ℝ) + Δx, t) + U ((x : ℝ) - Δx, t))
+        - U ((x : ℝ), t + Δt)
+      = r * (U ((x : ℝ) + Δx, t) - 2 * U ((x : ℝ), t) + U ((x : ℝ) - Δx, t)
+          - Δx ^ 2 * Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t))
+        - (U ((x : ℝ), t + Δt) - U ((x : ℝ), t)
+          - Δt * Heat.sineSeriesDerivT ν n b 1 ((x : ℝ), t)) := by
+    rw [hUt]
+    linear_combination (Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t)) * hrΔx
+  rw [e]
+  have hA := Heat.abs_sineSeries_sub_forward_time_le (ν := ν) (n := n) (b := b) hν.le (x := x) ht
+    hΔt
+  have hB := Heat.abs_sineSeries_centred_sub_le (ν := ν) (n := n) (b := b) hν.le (x := x) ht hΔx0
+  have hΔx4 : r * Δx ^ 4 = ν ^ 2 * Δt ^ 2 / r := by
+    rw [show Δx ^ 4 = (Δx ^ 2) ^ 2 by ring, hΔx2]; field_simp
+  calc _ ≤ r * (Mx * Δx ^ 4 / 12) + Mt * Δt ^ 2 / 2 := by
+        refine (abs_sub _ _).trans (add_le_add ?_ hA)
+        rw [abs_mul, abs_of_pos hr]
+        exact mul_le_mul_of_nonneg_left hB hr.le
+    _ = forwardConsistencyConst ν r n b * Δt ^ 2 := by
+        rw [forwardConsistencyConst, ← hMt, ← hMx,
+          show r * (Mx * Δx ^ 4 / 12) = (r * Δx ^ 4) * Mx / 12 by ring, hΔx4]
+        field_simp
+        ring
+
+/-- **Example 6.2.8, consistency of the forward scheme** with `V_c = V₀`: for every sine polynomial
+initial value the local truncation error satisfies `‖[C (Δt) u (t) - u (t + Δt)] / Δt‖ ≤ c Δt`,
+so the forward family is consistent (Definition 6.2.7) with the solution operators of the heat
+equation on `[0, T]`, for step sizes in `(0, Δ₀]`.
+
+The solution operators of Definition 6.2.3 are known only on their horizon, and Definition 6.2.7
+evaluates `S (t + Δt)` for `t ≤ T`, so the family used is the one on the longer horizon
+`T' ≥ T + Δ₀` — on `[0, T]` it is the same family, by uniqueness of the solution. -/
+theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ} (hΔ₀ : 0 < Δ₀)
+    (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+      (example_6_2_4 hν T')) (forwardScheme ν r) T Δ₀ sinePolynomials := by
+  refine ⟨example_6_2_4_dense, fun u₀ hu₀ ε hε => ?_⟩
+  obtain ⟨n, b, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
+  set c := forwardConsistencyConst ν r n b with hc
+  have hc0 : 0 ≤ c := forwardConsistencyConst_nonneg hr.le n b
+  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht => ?_⟩
+  have htT' : t ∈ Icc (0 : ℝ) T' := ⟨ht.1, by linarith [ht.2, hΔt.2]⟩
+  have htΔT' : t + Δt ∈ Icc (0 : ℝ) T' := ⟨by linarith [ht.1, hΔt.1], by linarith [ht.2, hΔt.2]⟩
+  rw [example_6_2_4_solutionOperator_apply hν hT' htT', example_6_2_4_solutionOperator_apply hν hT'
+    htΔT', norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
+    div_le_iff₀ hΔt.1]
+  calc ‖forwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
+      ≤ c * Δt ^ 2 := norm_forwardScheme_sineSolution_sub_le hν hr n b ht.1 hΔt.1.le
+    _ = (c * Δt) * Δt := by ring
+    _ ≤ ε * Δt := by
+        refine mul_le_mul_of_nonneg_right ?_ hΔt.1.le
+        calc c * Δt ≤ c * (ε / (c + 1)) := mul_le_mul_of_nonneg_left hlt.le hc0
+          _ ≤ ε := by
+              rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+              nlinarith
+
+/-! #### The backward scheme (Example 6.2.8, second half) -/
+
+/-- The operator `Q₁ = (1 + 2r) I - r [ṽ (· + Δx) + ṽ (· - Δx)]` of the backward scheme, the
+left-hand side of the implicit relation
+`(1 + 2r) u (x, t + Δt) - r [u (x - Δx, t + Δt) + u (x + Δx, t + Δt)] = u (x, t)` of Example 6.2.8,
+with `Δx = √(ν Δt / r)`. -/
+noncomputable def backwardSchemeInv (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
+  (1 + 2 * r) • (1 : C₀ →L[ℝ] C₀) - r • translateSum (Real.sqrt (ν * Δt / r))
+
+/-- The value of `Q₁ v` at a point. -/
+theorem backwardSchemeInv_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
+    (backwardSchemeInv ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
+      = (1 + 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
+        - r * (ext v ((x : ℝ) + Real.sqrt (ν * Δt / r))
+          + ext v ((x : ℝ) - Real.sqrt (ν * Δt / r))) := by
+  simp only [backwardSchemeInv, sub_apply, smul_apply, one_apply_eq_self, Submodule.coe_sub,
+    Submodule.coe_smul, ContinuousMap.sub_apply, ContinuousMap.smul_apply, smul_eq_mul,
+    translateSum_apply]
+
+/-- `Q₁` is invertible for `r ≥ 0`: `Q₁ = (1 + 2r) (I - B)` with `‖B‖ ≤ 2r / (1 + 2r) < 1`, a
+Neumann series. -/
+theorem isUnit_backwardSchemeInv {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
+    IsUnit (backwardSchemeInv ν r Δt) := by
+  have h12 : (0 : ℝ) < 1 + 2 * r := by linarith
+  have hB : ‖(r / (1 + 2 * r)) • translateSum (Real.sqrt (ν * Δt / r))‖ < 1 := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    calc r / (1 + 2 * r) * ‖translateSum (Real.sqrt (ν * Δt / r))‖ ≤ r / (1 + 2 * r) * 2 :=
+          mul_le_mul_of_nonneg_left (norm_translateSum_le _) (by positivity)
+      _ < 1 := by rw [div_mul_eq_mul_div, div_lt_one h12]; linarith
+  have e : backwardSchemeInv ν r Δt
+      = ((1 + 2 * r) • (1 : C₀ →L[ℝ] C₀))
+        * (1 - (r / (1 + 2 * r)) • translateSum (Real.sqrt (ν * Δt / r))) := by
+    rw [backwardSchemeInv, mul_sub, mul_one, smul_mul_assoc, one_mul, smul_smul,
+      mul_div_cancel₀ _ h12.ne']
+  rw [e]
+  refine IsUnit.mul ?_ (isUnit_one_sub_of_norm_lt_one hB)
+  rw [← Algebra.algebraMap_eq_smul_one]
+  exact (algebraMap ℝ (C₀ →L[ℝ] C₀)).isUnit_map (isUnit_iff_ne_zero.2 h12.ne')
+
+/-- **Example 6.2.8, the backward scheme as an operator on `C₀[0, π]`**: `C (Δt) = Q₁⁻¹`, the
+solution operator of the implicit relation
+`(1 + 2r) w (x) - r [w̃ (x - Δx) + w̃ (x + Δx)] = v (x)`. Outside `r ≥ 0` the inverse is Mathlib's
+junk value `Ring.inverse`. -/
+noncomputable def backwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
+  Ring.inverse (backwardSchemeInv ν r Δt)
+
+/-- `Q₁ C (Δt) = I` for `r ≥ 0`. -/
+theorem backwardSchemeInv_mul_backwardScheme {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
+    backwardSchemeInv ν r Δt * backwardScheme ν r Δt = 1 :=
+  Ring.mul_inverse_cancel _ (isUnit_backwardSchemeInv hr ν Δt)
+
+/-- `C (Δt) Q₁ = I` for `r ≥ 0`. -/
+theorem backwardScheme_mul_backwardSchemeInv {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
+    backwardScheme ν r Δt * backwardSchemeInv ν r Δt = 1 :=
+  Ring.inverse_mul_cancel _ (isUnit_backwardSchemeInv hr ν Δt)
+
+/-- `Q₁ (C (Δt) v) = v`: the backward scheme solves its implicit relation. -/
+theorem backwardSchemeInv_backwardScheme {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) (v : C₀) :
+    backwardSchemeInv ν r Δt (backwardScheme ν r Δt v) = v := by
+  rw [← mul_apply_eq_comp, backwardSchemeInv_mul_backwardScheme hr, one_apply_eq_self]
+
+/-- **Example 6.2.8, `‖C (Δt)‖ ≤ 1` for the backward scheme, whatever `r ≥ 0`**: the book's
+argument — with `w = C (Δt) v`, `(1 + 2r) w = v + r [w̃ (· - Δx) + w̃ (· + Δx)]` gives
+`(1 + 2r) ‖w‖ ≤ ‖v‖ + 2r ‖w‖`. -/
+theorem norm_backwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) : ‖backwardScheme ν r Δt‖ ≤ 1 := by
+  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v => ?_
+  rw [one_mul]
+  set w := backwardScheme ν r Δt v with hw
+  have h12 : (0 : ℝ) < 1 + 2 * r := by linarith
+  have hQ : (1 + 2 * r) • w = v + r • translateSum (Real.sqrt (ν * Δt / r)) w := by
+    have := backwardSchemeInv_backwardScheme hr ν Δt v
+    rw [backwardSchemeInv, sub_apply, smul_apply, one_apply_eq_self, smul_apply] at this
+    rw [← this]
+    abel
+  have hnorm : (1 + 2 * r) * ‖w‖ ≤ ‖v‖ + 2 * r * ‖w‖ := by
+    calc (1 + 2 * r) * ‖w‖ = ‖(1 + 2 * r) • w‖ := by
+          rw [norm_smul, Real.norm_eq_abs, abs_of_pos h12]
+      _ ≤ ‖v‖ + ‖r • translateSum (Real.sqrt (ν * Δt / r)) w‖ := by
+          rw [hQ]; exact norm_add_le _ _
+      _ ≤ ‖v‖ + r * (2 * ‖w‖) := by
+          gcongr
+          rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hr]
+          exact mul_le_mul_of_nonneg_left (norm_translateSumFun_le _ w) hr
+      _ = ‖v‖ + 2 * r * ‖w‖ := by ring
+  linarith
+
+/-- The backward family is uniformly bounded by `1` on every range of step sizes. -/
+theorem forall_norm_backwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δ₀ : ℝ) :
+    ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖backwardScheme ν r Δt‖ ≤ 1 :=
+  fun Δt _ => norm_backwardScheme_le hr ν Δt
+
+/-- **The local truncation error of the backward scheme on the solution (6.2.7)**: as
+`C (Δt) u (t) - u (t + Δt) = C (Δt) [u (t) - Q₁ u (t + Δt)]` and `‖C (Δt)‖ ≤ 1`, the Taylor
+expansions at `(x, t + Δt)` give `‖C (Δt) u (t) - u (t + Δt)‖ ≤ c Δt²` with the same constant
+`c = forwardConsistencyConst ν r n b` as for the forward scheme. -/
+theorem norm_backwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
+    (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
+    ‖backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
+      ≤ forwardConsistencyConst ν r n b * Δt ^ 2 := by
+  set Δx := Real.sqrt (ν * Δt / r) with hΔx
+  have hΔx0 : 0 ≤ Δx := Real.sqrt_nonneg _
+  have hΔx2 : Δx ^ 2 = ν * Δt / r := Real.sq_sqrt (by positivity)
+  have hrΔx : r * Δx ^ 2 = ν * Δt := by rw [hΔx2]; field_simp
+  set Mt := ∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2 with hMt
+  set Mx := ∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4 with hMx
+  have hMt0 : 0 ≤ Mt := Finset.sum_nonneg fun j _ => by positivity
+  have hMx0 : 0 ≤ Mx := Finset.sum_nonneg fun j _ => by positivity
+  -- the difference is `C (Δt)` of the residual of `u (t + Δt)` in the implicit relation
+  have e : backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)
+      = backwardScheme ν r Δt
+          (sineSolution ν n b t - backwardSchemeInv ν r Δt (sineSolution ν n b (t + Δt))) := by
+    rw [map_sub, ← mul_apply_eq_comp, backwardScheme_mul_backwardSchemeInv hr.le,
+      one_apply_eq_self]
+  rw [e]
+  refine ((backwardScheme ν r Δt).le_opNorm _).trans ?_
+  refine (mul_le_mul_of_nonneg_right (norm_backwardScheme_le hr.le ν Δt) (norm_nonneg _)).trans ?_
+  rw [one_mul, ← Submodule.norm_coe]
+  refine (ContinuousMap.norm_le _ (by
+    have := forwardConsistencyConst_nonneg (ν := ν) hr.le n b
+    positivity)).2 fun x => ?_
+  rw [Submodule.coe_sub, ContinuousMap.sub_apply, backwardSchemeInv_apply, ext_sineSolution,
+    ext_sineSolution, sineSolution_apply, sineSolution_apply, Real.norm_eq_abs]
+  set U := Heat.sineSeries ν n b with hU
+  have hUt : Heat.sineSeriesDerivT ν n b 1 ((x : ℝ), t + Δt)
+      = ν * Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t + Δt) := Heat.sineSeriesDerivT_one _
+  have e2 : U ((x : ℝ), t) - ((1 + 2 * r) * U ((x : ℝ), t + Δt)
+        - r * (U ((x : ℝ) + Δx, t + Δt) + U ((x : ℝ) - Δx, t + Δt)))
+      = r * (U ((x : ℝ) + Δx, t + Δt) - 2 * U ((x : ℝ), t + Δt) + U ((x : ℝ) - Δx, t + Δt)
+          - Δx ^ 2 * Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t + Δt))
+        - (U ((x : ℝ), t + Δt) - U ((x : ℝ), t)
+          - Δt * Heat.sineSeriesDerivT ν n b 1 ((x : ℝ), t + Δt)) := by
+    rw [hUt]
+    linear_combination (Heat.sineSeriesDerivX ν n b 2 ((x : ℝ), t + Δt)) * hrΔx
+  rw [e2]
+  have hA := Heat.abs_sineSeries_sub_backward_time_le (ν := ν) (n := n) (b := b) hν.le (x := x) ht
+    hΔt
+  have hB := Heat.abs_sineSeries_centred_sub_le (ν := ν) (n := n) (b := b) hν.le (x := x)
+    (by linarith : 0 ≤ t + Δt) hΔx0
+  have hΔx4 : r * Δx ^ 4 = ν ^ 2 * Δt ^ 2 / r := by
+    rw [show Δx ^ 4 = (Δx ^ 2) ^ 2 by ring, hΔx2]; field_simp
+  calc _ ≤ r * (Mx * Δx ^ 4 / 12) + Mt * Δt ^ 2 / 2 := by
+        refine (abs_sub _ _).trans (add_le_add ?_ hA)
+        rw [abs_mul, abs_of_pos hr]
+        exact mul_le_mul_of_nonneg_left hB hr.le
+    _ = forwardConsistencyConst ν r n b * Δt ^ 2 := by
+        rw [forwardConsistencyConst, ← hMt, ← hMx,
+          show r * (Mx * Δx ^ 4 / 12) = (r * Δx ^ 4) * Mx / 12 by ring, hΔx4]
+        field_simp
+        ring
+
+/-- **Example 6.2.8, consistency of the backward scheme** with `V_c = V₀` — the clause the book
+says is "more involved" and leaves to the reader: the same statement as `example_6_2_8` for
+`backwardScheme`, from `norm_backwardScheme_sineSolution_sub_le`. -/
+theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ}
+    (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+    IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+      (example_6_2_4 hν T')) (backwardScheme ν r) T Δ₀ sinePolynomials := by
+  refine ⟨example_6_2_4_dense, fun u₀ hu₀ ε hε => ?_⟩
+  obtain ⟨n, b, rfl⟩ := mem_sinePolynomials_iff.1 hu₀
+  set c := forwardConsistencyConst ν r n b with hc
+  have hc0 : 0 ≤ c := forwardConsistencyConst_nonneg hr.le n b
+  refine ⟨ε / (c + 1), by positivity, fun Δt hΔt hlt t ht => ?_⟩
+  have htT' : t ∈ Icc (0 : ℝ) T' := ⟨ht.1, by linarith [ht.2, hΔt.2]⟩
+  have htΔT' : t + Δt ∈ Icc (0 : ℝ) T' := ⟨by linarith [ht.1, hΔt.1], by linarith [ht.2, hΔt.2]⟩
+  rw [example_6_2_4_solutionOperator_apply hν hT' htT', example_6_2_4_solutionOperator_apply hν hT'
+    htΔT', norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt.1, ← div_eq_inv_mul,
+    div_le_iff₀ hΔt.1]
+  calc ‖backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
+      ≤ c * Δt ^ 2 := norm_backwardScheme_sineSolution_sub_le hν hr n b ht.1 hΔt.1.le
+    _ = (c * Δt) * Δt := by ring
+    _ ≤ ε * Δt := by
+        refine mul_le_mul_of_nonneg_right ?_ hΔt.1.le
+        calc c * Δt ≤ c * (ε / (c + 1)) := mul_le_mul_of_nonneg_left hlt.le hc0
+          _ ≤ ε := by
+              rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+              nlinarith
+
+/-! #### Example 6.2.13: the Lax equivalence theorem applied -/
+
+/-- A family of operators of norm at most `1` is stable, with `M₀ = 1`, on every horizon. -/
+theorem isStable_of_forall_norm_le_one {C : ℝ → C₀ →L[ℝ] C₀} {Δ₀ : ℝ}
+    (hC : ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖C Δt‖ ≤ 1) (T : ℝ) : IsStable C T Δ₀ := by
+  refine ⟨1, fun Δt hΔt m _ => ?_⟩
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · rw [pow_zero]
+    exact ContinuousLinearMap.norm_id_le
+  · exact (norm_pow_le' _ hm).trans (pow_le_one₀ (norm_nonneg _) (hC Δt hΔt))
+
+/-- **Example 6.2.13, the forward scheme**: for `r ≤ 1/2`, `‖C (Δt)‖ ≤ 1` by (6.2.8), hence
+`‖C (Δt)^m‖ ≤ 1` for all `m` — the scheme is stable — and, being consistent, it is convergent
+(6.2.11) by the Lax equivalence theorem: `‖u_{Δt} (·, m_i Δt_i) - u (·, t)‖ → 0` whenever
+`m_i Δt_i → t`, for every initial value in `C₀[0, π]`.
+
+The evolution family is that of `example_6_2_8`, the solution operators on the horizon
+`T' ≥ T + Δ₀`; the equivalence theorem is applied in the backbone form
+`FiniteDifference.isStable_iff_isConvergent`, since the surface `theorem_6_2_11` takes the family
+and the consistency on one and the same horizon. -/
+theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2) {T Δ₀ T' : ℝ}
+    (hT : 0 ≤ T) (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+    IsStable (forwardScheme ν r) T Δ₀ ∧
+      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+        (example_6_2_4 hν T')) (forwardScheme ν r) T Δ₀ := by
+  have hC : ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖forwardScheme ν r Δt‖ ≤ 1 := fun Δt hΔt => by
+    refine (norm_forwardScheme_le hr.le ν Δt).trans ?_
+    rw [abs_of_nonneg (by linarith)]
+    linarith
+  have hstab := isStable_of_forall_norm_le_one hC T
+  refine ⟨hstab, ?_⟩
+  rw [isConvergent_iff]
+  rw [isStable_iff] at hstab
+  refine (FiniteDifference.isStable_iff_isConvergent hT (solutionOperator_zero _ _ _ _ _)
+    (fun u₀ => (proposition_6_2_5 (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+      (example_6_2_4 hν T') u₀).mono (Icc_subset_Icc le_rfl (by linarith)))
+    hC ((isConsistent_iff _ _ _ _ _).1 (example_6_2_8 hν hr hΔ₀ hT' hTT'))).1 hstab
+
+/-- **Example 6.2.13, the backward scheme**: `‖C (Δt)‖ ≤ 1` for every `r`, so the scheme is
+unconditionally stable, and, being consistent, unconditionally convergent. -/
+theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ T' : ℝ} (hT : 0 ≤ T)
+    (hΔ₀ : 0 < Δ₀) (hT' : 0 ≤ T') (hTT' : T + Δ₀ ≤ T') :
+    IsStable (backwardScheme ν r) T Δ₀ ∧
+      IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+        (example_6_2_4 hν T')) (backwardScheme ν r) T Δ₀ := by
+  have hC := forall_norm_backwardScheme_le hr.le ν Δ₀
+  have hstab := isStable_of_forall_norm_le_one hC T
+  refine ⟨hstab, ?_⟩
+  rw [isConvergent_iff]
+  rw [isStable_iff] at hstab
+  refine (FiniteDifference.isStable_iff_isConvergent hT (solutionOperator_zero _ _ _ _ _)
+    (fun u₀ => (proposition_6_2_5 (heatOperator ν) dense_heatOperator_domain hT' zero_le_one
+      (example_6_2_4 hν T') u₀).mono (Icc_subset_Icc le_rfl (by linarith)))
+    hC ((isConsistent_iff _ _ _ _ _).1 (example_6_2_8_backward hν hr hΔ₀ hT' hTT'))).1 hstab
+
+/-! #### Exercise 6.2.3: the exact norm of the forward scheme -/
+
+section ExactNorm
+
+/-- The test function of Exercise 6.2.3: on `[0, π]`, the plateau `1` on
+`[π/2 - Δx, π/2 + Δx]` joined linearly to `0` at the ends, minus twice the hat of height `1` and
+half-width `Δx` at `π/2` when `r > 1/2`. It has `|v| ≤ 1`, `v = 1` at `π/2 ± Δx`, and `v = ±1`
+at `π/2`, the sign being that of `1 - 2r`. -/
+private noncomputable def testFun (r Δx : ℝ) : C(Icc (0 : ℝ) π, ℝ) :=
+  ⟨fun x => min 1 (min ((x : ℝ) / (π / 2 - Δx)) ((π - (x : ℝ)) / (π / 2 - Δx)))
+    - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |(x : ℝ) - π / 2| / Δx), by fun_prop⟩
+
+private theorem testFun_apply (r Δx : ℝ) (x : Icc (0 : ℝ) π) :
+    testFun r Δx x = min 1 (min ((x : ℝ) / (π / 2 - Δx)) ((π - (x : ℝ)) / (π / 2 - Δx)))
+      - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |(x : ℝ) - π / 2| / Δx) := rfl
+
+variable {r Δx : ℝ} (hΔx : 0 < Δx) (hΔx' : Δx < π / 2)
+include hΔx hΔx'
+
+omit hΔx' in
+private theorem hat_eq_zero {y : ℝ} (hy : Δx ≤ |y - π / 2|) :
+    max 0 (1 - |y - π / 2| / Δx) = 0 :=
+  max_eq_left (by rw [sub_nonpos, one_le_div hΔx]; exact hy)
+
+private theorem testFun_mem_C₀ : testFun r Δx ∈ C₀ := by
+  have ha : 0 < π / 2 - Δx := by linarith
+  refine ⟨?_, ?_⟩
+  · change min 1 (min ((0 : ℝ) / (π / 2 - Δx)) ((π - 0) / (π / 2 - Δx)))
+      - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |0 - π / 2| / Δx) = 0
+    have h0 : Δx ≤ |(0 : ℝ) - π / 2| := by
+      rw [zero_sub, abs_neg, abs_of_pos (by positivity)]; exact hΔx'.le
+    rw [hat_eq_zero hΔx h0, zero_div,
+      min_eq_left (a := (0 : ℝ)) (b := (π - 0) / (π / 2 - Δx))
+        (div_nonneg (by linarith [Real.pi_pos]) ha.le),
+      min_eq_right zero_le_one]
+    ring
+  · change min 1 (min (π / (π / 2 - Δx)) ((π - π) / (π / 2 - Δx)))
+      - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |π - π / 2| / Δx) = 0
+    have hπ : Δx ≤ |π - π / 2| := by
+      rw [show π - π / 2 = π / 2 by ring, abs_of_pos (by positivity)]; exact hΔx'.le
+    rw [hat_eq_zero hΔx hπ, sub_self, zero_div,
+      min_eq_right (a := π / (π / 2 - Δx)) (b := (0 : ℝ)) (div_nonneg Real.pi_pos.le ha.le),
+      min_eq_right zero_le_one]
+    ring
+
+private theorem abs_testFun_le (x : Icc (0 : ℝ) π) : |testFun r Δx x| ≤ 1 := by
+  have ha : 0 < π / 2 - Δx := by linarith
+  rw [testFun_apply]
+  set w := min 1 (min ((x : ℝ) / (π / 2 - Δx)) ((π - (x : ℝ)) / (π / 2 - Δx))) with hw
+  set h := max 0 (1 - |(x : ℝ) - π / 2| / Δx) with hh
+  have hw1 : w ≤ 1 := min_le_left _ _
+  have hw0 : 0 ≤ w := le_min zero_le_one (le_min (by have := x.2.1; positivity)
+    (by have := x.2.2; exact div_nonneg (by linarith) ha.le))
+  have hh0 : 0 ≤ h := le_max_left _ _
+  have hh1 : h ≤ 1 := max_le zero_le_one (by
+    have : 0 ≤ |(x : ℝ) - π / 2| / Δx := by positivity
+    linarith)
+  split_ifs with hr
+  · rw [zero_mul, sub_zero, abs_le]; constructor <;> linarith
+  · -- off the plateau the hat vanishes, on it `w = 1`
+    rw [abs_le]
+    rcases le_or_gt (|(x : ℝ) - π / 2|) Δx with hin | hout
+    · have hw' : w = 1 := by
+        rw [hw]
+        refine min_eq_left (le_min ?_ ?_)
+        · rw [le_div_iff₀ ha]
+          have := abs_le.1 hin
+          linarith
+        · rw [le_div_iff₀ ha]
+          have := abs_le.1 hin
+          linarith
+      rw [hw']
+      constructor <;> linarith
+    · have hh' : h = 0 := hat_eq_zero hΔx hout.le
+      rw [hh', mul_zero, sub_zero]
+      exact ⟨by linarith, hw1⟩
+
+private theorem testFun_mid :
+    testFun r Δx ⟨π / 2, ⟨by positivity, by linarith [Real.pi_pos]⟩⟩
+      = if r ≤ 1 / 2 then 1 else -1 := by
+  have ha : 0 < π / 2 - Δx := by linarith
+  change min 1 (min (π / 2 / (π / 2 - Δx)) ((π - π / 2) / (π / 2 - Δx)))
+    - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |π / 2 - π / 2| / Δx) = _
+  have h1 : min 1 (min (π / 2 / (π / 2 - Δx)) ((π - π / 2) / (π / 2 - Δx))) = 1 := by
+    refine min_eq_left (le_min ?_ ?_)
+    · rw [le_div_iff₀ ha]; linarith
+    · rw [le_div_iff₀ ha]; linarith
+  rw [h1, sub_self, abs_zero, zero_div, sub_zero, max_eq_right zero_le_one, mul_one]
+  split_ifs <;> norm_num
+
+private theorem testFun_mid_add :
+    testFun r Δx ⟨π / 2 + Δx, ⟨by positivity, by linarith [Real.pi_pos]⟩⟩ = 1 := by
+  have ha : 0 < π / 2 - Δx := by linarith
+  change min 1 (min ((π / 2 + Δx) / (π / 2 - Δx)) ((π - (π / 2 + Δx)) / (π / 2 - Δx)))
+    - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |π / 2 + Δx - π / 2| / Δx) = 1
+  have h1 : Δx ≤ |π / 2 + Δx - π / 2| := by rw [add_sub_cancel_left, abs_of_pos hΔx]
+  rw [hat_eq_zero hΔx h1, mul_zero, sub_zero]
+  refine min_eq_left (le_min ?_ ?_)
+  · rw [le_div_iff₀ ha]; linarith
+  · rw [le_div_iff₀ ha]; linarith
+
+private theorem testFun_mid_sub :
+    testFun r Δx ⟨π / 2 - Δx, ⟨by linarith, by linarith [Real.pi_pos]⟩⟩ = 1 := by
+  have ha : 0 < π / 2 - Δx := by linarith
+  change min 1 (min ((π / 2 - Δx) / (π / 2 - Δx)) ((π - (π / 2 - Δx)) / (π / 2 - Δx)))
+    - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |π / 2 - Δx - π / 2| / Δx) = 1
+  have h1 : Δx ≤ |π / 2 - Δx - π / 2| := by rw [sub_sub_cancel_left, abs_neg, abs_of_pos hΔx]
+  rw [hat_eq_zero hΔx h1, mul_zero, sub_zero]
+  refine min_eq_left (le_min ?_ ?_)
+  · rw [div_self ha.ne']
+  · rw [le_div_iff₀ ha]; linarith
+
+omit hΔx hΔx' in
+/-- **Exercise 6.2.3, the exact norm of the forward scheme**: `‖C (Δt)‖ = |1 - 2r| + 2r` as soon
+as the space step `Δx = √(ν Δt / r)` is smaller than `π / 2`. The bound `≤` is (6.2.8); the test
+function `testFun` has `|v| ≤ 1`, `v (π/2 ± Δx) = 1` and `v (π/2) = sign (1 - 2r)`, so
+`C (Δt) v (π/2) = |1 - 2r| + 2r`.
+
+Some smallness of `Δx` is needed, though the book states none: for `Δx = 2π` the shifts are
+trivial, `C (Δt) = I`, and `‖C (Δt)‖ = 1 < |1 - 2r| + 2r` when `r > 1/2`. -/
+theorem norm_forwardScheme_eq {ν r Δt : ℝ} (hr : 0 < r) (hΔx : 0 < Real.sqrt (ν * Δt / r))
+    (hΔx' : Real.sqrt (ν * Δt / r) < π / 2) :
+    ‖forwardScheme ν r Δt‖ = |1 - 2 * r| + 2 * r := by
+  refine le_antisymm (norm_forwardScheme_le hr.le ν Δt) ?_
+  set Δx := Real.sqrt (ν * Δt / r) with hΔxdef
+  set v : C₀ := ⟨testFun r Δx, testFun_mem_C₀ hΔx hΔx'⟩ with hv
+  have hv1 : ‖v‖ ≤ 1 := by
+    rw [← Submodule.norm_coe]
+    exact (ContinuousMap.norm_le _ zero_le_one).2 fun x => by
+      rw [Real.norm_eq_abs]; exact abs_testFun_le hΔx hΔx' x
+  have hmid : π / 2 ∈ Icc (0 : ℝ) π := ⟨by positivity, by linarith [Real.pi_pos]⟩
+  have hval : (forwardScheme ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) ⟨π / 2, hmid⟩
+      = |1 - 2 * r| + 2 * r := by
+    rw [forwardScheme_apply, ← hΔxdef, ext_of_mem v (x := π / 2 + Δx)
+      ⟨by positivity, by linarith [Real.pi_pos]⟩, ext_of_mem v (x := π / 2 - Δx)
+      ⟨by linarith, by linarith [Real.pi_pos]⟩]
+    change (1 - 2 * r) * testFun r Δx ⟨π / 2, hmid⟩ + r * (testFun r Δx ⟨π / 2 + Δx, _⟩
+      + testFun r Δx ⟨π / 2 - Δx, _⟩) = _
+    rw [testFun_mid hΔx hΔx', testFun_mid_add hΔx hΔx', testFun_mid_sub hΔx hΔx']
+    split_ifs with h
+    · rw [abs_of_nonneg (by linarith)]; ring
+    · rw [abs_of_neg (by linarith)]; ring
+  calc |1 - 2 * r| + 2 * r = ‖(forwardScheme ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) ⟨π / 2, hmid⟩‖ := by
+        rw [hval, Real.norm_eq_abs, abs_of_nonneg (a := |1 - 2 * r| + 2 * r) (by positivity)]
+    _ ≤ ‖forwardScheme ν r Δt v‖ := by
+        rw [← Submodule.norm_coe]; exact ContinuousMap.norm_coe_le_norm _ _
+    _ ≤ ‖forwardScheme ν r Δt‖ * ‖v‖ := (forwardScheme ν r Δt).le_opNorm v
+    _ ≤ ‖forwardScheme ν r Δt‖ := mul_le_of_le_one_right (norm_nonneg _) hv1
+
+end ExactNorm
+
+/-! #### Exercise 6.2.3, second half: the forward scheme is unstable for `r > 1/2` -/
+
+section Instability
+
+/-- The sines are eigenfunctions of the translated sum:
+`ṽ (x + Δx) + ṽ (x - Δx) = 2 cos ((k + 1) Δx) sin ((k + 1) x)` for `v = sin ((k + 1) x)`. -/
+theorem ext_sinV (k : ℕ) (y : ℝ) : ext (sinV k) y = Real.sin (((k : ℝ) + 1) * y) := by
+  have h : sinV k = sinePolyV (k + 1) fun j => if j = k then 1 else 0 := by
+    apply Subtype.ext
+    rw [coe_sinePolyV, coe_sinV]
+    ext x
+    rw [sinePolynomial_apply, Finset.sum_eq_single k (fun j _ hj => by simp [hj])
+      (fun h => absurd (Finset.mem_range.2 (Nat.lt_succ_self k)) h)]
+    simp [sinMap_apply]
+  rw [h, ext_sinePolyV, Finset.sum_eq_single k (fun j _ hj => by simp [hj])
+    (fun h => absurd (Finset.mem_range.2 (Nat.lt_succ_self k)) h)]
+  simp
+
+/-- **The amplification factor of the forward scheme on the mode `sin ((k + 1) x)`**:
+`C (Δt) sin ((k + 1) x) = (1 - 2r + 2r cos ((k + 1) Δx)) sin ((k + 1) x)`. -/
+theorem forwardScheme_sinV (ν r Δt : ℝ) (k : ℕ) :
+    forwardScheme ν r Δt (sinV k)
+      = (1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))) • sinV k := by
+  apply Subtype.ext
+  ext x
+  rw [forwardScheme_apply, ext_sinV, ext_sinV, Submodule.coe_smul, ContinuousMap.smul_apply,
+    coe_sinV, sinMap_apply, smul_eq_mul]
+  simp only [mul_add, mul_sub, Real.sin_add, Real.sin_sub]
+  ring
+
+/-- The powers of the forward scheme on the mode `sin ((k + 1) x)`. -/
+theorem forwardScheme_pow_sinV (ν r Δt : ℝ) (k m : ℕ) :
+    (forwardScheme ν r Δt ^ m) (sinV k)
+      = (1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))) ^ m • sinV k := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    rw [pow_succ']
+    change forwardScheme ν r Δt ((forwardScheme ν r Δt ^ m) (sinV k)) = _
+    rw [ih, map_smul, forwardScheme_sinV, smul_smul, pow_succ, mul_comm]
+
+/-- `‖sin ((k + 1) x)‖ = 1` in `C₀[0, π]`: attained at `x = π / (2 (k + 1))`. -/
+theorem norm_sinV (k : ℕ) : ‖sinV k‖ = 1 := by
+  rw [← Submodule.norm_coe, coe_sinV]
+  refine le_antisymm ((ContinuousMap.norm_le _ zero_le_one).2 fun x => by
+    rw [sinMap_apply, Real.norm_eq_abs]; exact Real.abs_sin_le_one _) ?_
+  have hk : (0 : ℝ) < (k : ℝ) + 1 := by positivity
+  have hmem : π / (2 * ((k : ℝ) + 1)) ∈ Icc (0 : ℝ) π := by
+    refine ⟨by positivity, ?_⟩
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith [Real.pi_pos]
+  calc (1 : ℝ) = ‖sinMap k ⟨π / (2 * ((k : ℝ) + 1)), hmem⟩‖ := by
+        rw [sinMap_apply, Real.norm_eq_abs]
+        change (1 : ℝ) = |Real.sin (((k : ℝ) + 1) * (π / (2 * ((k : ℝ) + 1))))|
+        rw [show ((k : ℝ) + 1) * (π / (2 * ((k : ℝ) + 1))) = π / 2 by field_simp,
+          Real.sin_pi_div_two, abs_one]
+    _ ≤ ‖sinMap k‖ := ContinuousMap.norm_coe_le_norm _ _
+
+/-- `‖C (Δt)^m‖ ≥ |1 - 2r + 2r cos ((k + 1) Δx)|^m`, from the mode `sin ((k + 1) x)`. -/
+theorem pow_le_norm_forwardScheme_pow (ν r Δt : ℝ) (k m : ℕ) :
+    |1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))| ^ m
+      ≤ ‖forwardScheme ν r Δt ^ m‖ := by
+  have h := (forwardScheme ν r Δt ^ m).le_opNorm (sinV k)
+  rw [forwardScheme_pow_sinV, norm_smul, norm_sinV, mul_one, mul_one, Real.norm_eq_abs,
+    abs_pow] at h
+  exact h
+
+/-- **Exercise 6.2.3, the necessity of `r ≤ 1/2`**: for `r > 1/2` the forward scheme is not
+stable on any horizon `T > 0`, for any range `(0, Δ₀]` of step sizes. On the mode
+`sin ((k + 1) x)` with `(k + 1) Δx` within `Δx` of `π` the amplification factor
+`1 - 2r + 2r cos ((k + 1) Δx)` is at most `-2r` once `Δx² ≤ (2r - 1) / r`, so `‖C (Δt)^m‖ ≥ (2r)^m`
+with `2r > 1`, unbounded as `Δt → 0` and `m Δt ≤ T`. Together with `example_6_2_13`, the forward
+scheme is stable if and only if `r ≤ 1/2`: it is *conditionally* stable. -/
+theorem not_isStable_forwardScheme (hν : 0 < ν) {r : ℝ} (hr : 1 / 2 < r) {T Δ₀ : ℝ} (hT : 0 < T)
+    (hΔ₀ : 0 < Δ₀) : ¬ IsStable (forwardScheme ν r) T Δ₀ := by
+  rintro ⟨M₀, hM₀⟩
+  have hr0 : 0 < r := by linarith
+  have h2r : 1 < 2 * r := by linarith
+  -- a number of steps `m ≥ 1` with `(2r)^m > M₀`
+  obtain ⟨m, hm⟩ := (tendsto_pow_atTop_atTop_of_one_lt h2r).eventually_gt_atTop M₀ |>.exists
+  set m' := m + 1
+  have hm' : M₀ < (2 * r) ^ m' :=
+    hm.trans_le (pow_le_pow_right₀ h2r.le (Nat.le_succ m))
+  have hm'pos : (0 : ℝ) < m' := by positivity
+  -- the step size
+  set Δt := min (T / m') (min Δ₀ ((2 * r - 1) / ν)) with hΔt
+  have hΔt0 : 0 < Δt := lt_min (by positivity) (lt_min hΔ₀ (by
+    have : 0 < 2 * r - 1 := by linarith
+    positivity))
+  have hΔtT : (m' : ℝ) * Δt ≤ T := by
+    calc (m' : ℝ) * Δt ≤ m' * (T / m') := mul_le_mul_of_nonneg_left (min_le_left _ _) hm'pos.le
+      _ = T := by field_simp
+  have hΔtΔ₀ : Δt ≤ Δ₀ := (min_le_right _ _).trans (min_le_left _ _)
+  have hΔtν : Δt ≤ (2 * r - 1) / ν := (min_le_right _ _).trans (min_le_right _ _)
+  -- the space step and the mode
+  set Δx := Real.sqrt (ν * Δt / r) with hΔx
+  have hΔx0 : 0 < Δx := Real.sqrt_pos.2 (by positivity)
+  have hΔx2 : Δx ^ 2 ≤ (2 * r - 1) / r := by
+    rw [hΔx, Real.sq_sqrt (by positivity), div_le_div_iff_of_pos_right hr0]
+    calc ν * Δt ≤ ν * ((2 * r - 1) / ν) := mul_le_mul_of_nonneg_left hΔtν hν.le
+      _ = 2 * r - 1 := by field_simp
+  set k := ⌈π / Δx⌉₊ - 1 with hk
+  have hk1 : 1 ≤ ⌈π / Δx⌉₊ := Nat.one_le_iff_ne_zero.2 (by
+    rw [Ne, Nat.ceil_eq_zero, not_le]; positivity)
+  have hkcast : ((k : ℕ) : ℝ) + 1 = (⌈π / Δx⌉₊ : ℝ) := by
+    rw [hk, Nat.cast_sub hk1, Nat.cast_one, sub_add_cancel]
+  -- `(k + 1) Δx ∈ [π, π + Δx)`
+  have hlow : π ≤ ((k : ℝ) + 1) * Δx := by
+    rw [hkcast, ← div_le_iff₀ hΔx0]
+    exact Nat.le_ceil _
+  have hupp : ((k : ℝ) + 1) * Δx < π + Δx := by
+    rw [hkcast, ← lt_div_iff₀ hΔx0, add_div, div_self hΔx0.ne']
+    exact Nat.ceil_lt_add_one (by positivity)
+  -- the amplification factor is at most `-2r`
+  have hcos : Real.cos (((k : ℝ) + 1) * Δx) ≤ -(1 - Δx ^ 2 / 2) := by
+    have h1 : Real.cos (((k : ℝ) + 1) * Δx) = -Real.cos (((k : ℝ) + 1) * Δx - π) := by
+      rw [Real.cos_sub_pi, neg_neg]
+    rw [h1, neg_le_neg_iff]
+    refine (Real.one_sub_sq_div_two_le_cos (x := ((k : ℝ) + 1) * Δx - π)).trans' ?_
+    have h2 : (((k : ℝ) + 1) * Δx - π) ^ 2 ≤ Δx ^ 2 :=
+      sq_le_sq' (by linarith) (by linarith)
+    linarith
+  have hlam : 1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Δx) ≤ -(2 * r) := by
+    have h3 : 2 * r * Real.cos (((k : ℝ) + 1) * Δx) ≤ 2 * r * (-(1 - Δx ^ 2 / 2)) :=
+      mul_le_mul_of_nonneg_left hcos (by positivity)
+    have h4 : r * Δx ^ 2 ≤ 2 * r - 1 := by
+      rw [mul_comm, ← le_div_iff₀ hr0]; exact hΔx2
+    nlinarith
+  have habs : 2 * r ≤ |1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Δx)| := by
+    rw [abs_of_nonpos (by linarith)]
+    linarith
+  -- the contradiction
+  have hbound := hM₀ Δt ⟨hΔt0, hΔtΔ₀⟩ m' hΔtT
+  have hlower := pow_le_norm_forwardScheme_pow ν r Δt k m'
+  rw [← hΔx] at hlower
+  have : (2 * r) ^ m' ≤ ‖forwardScheme ν r Δt ^ m'‖ :=
+    (pow_le_pow_left₀ (by positivity) habs m').trans hlower
+  linarith
+
+end Instability
+
+end Schemes
+
+end HeatExample
 
 end AtkinsonHan.Chapter06
