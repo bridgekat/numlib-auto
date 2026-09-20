@@ -199,65 +199,28 @@ id = "exists_hilbertBasis_eigen_general"
 id = "laplacian_eq_dirichletEigenfunction"
 
 [[node]]
-id = "eigenfunction_memSobolevMultiIndexLoc"
-kind = "theorem"
-desc = '''A weak Dirichlet eigenfunction of `-Δ` is in `H^m_loc(Ω)` for every `m`: if
-`U ∈ H^1(Ω)` satisfies `dirichletForm Ω U V = lam * ⟪fnL U, fnL V⟫` for all
-`V ∈ SobolevMultiIndex.testFunctions` (the hypothesis shape of `laplacian_eq_of_eigenfunction`;
-for the Dirichlet eigenfunctions it holds for all `V ∈ H^1_0(Ω)`,
-`dirichletForm_dirichletEigenfunction`), then
-`MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) m 2 Ω volume` for
-every `m`. Proof (p. 11709): the datum `f = lam • fn U` is in `H^1_loc(Ω)`, so
-`regularity_interior_higher` gives `U ∈ H^3_loc`, whence `f ∈ H^3_loc` and `U ∈ H^5_loc`, and so
-on: induction on `m` with the datum's regularity one step behind the solution's. Consequently
-(`eigenfunction_exists_contDiffOn`) `fn U` agrees a.e. on `Ω` with a `ũ` with
-`ContDiffOn ℝ ⊤ ũ Ω`, by `MemSobolevMultiIndexLoc.exists_contDiffOn`. ★★ (~120 lines).
+id = "integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction"
 
-Blocked: depends on `Elliptic.regularity_interior_higher` (`Elliptic/Regularity`, agent pde1,
-absent from this branch). Everything else is in place: the weak equation of the eigenfunctions
-is `dirichletForm_dirichletEigenfunction`, the smooth representative is
-`MemSobolevMultiIndexLoc.exists_contDiffOn`, the classical equation for a `C²` representative is
-`laplacian_eq_dirichletEigenfunction`. Estimate once the dependency lands: ~60 lines (an
-induction on `m` applying `regularity_interior_higher` with the datum `lam • fn U`).'''
-deps = ["dirichletForm", "dirichletForm_dirichletEigenfunction", "regularity_interior_higher", "_root_.MemSobolevMultiIndexLoc.exists_contDiffOn"]
+[[node]]
+id = "memSobolevMultiIndexLoc_add_two_of_eigenfunction"
+
+[[node]]
+id = "eigenfunction_memSobolevMultiIndexLoc"
+
+[[node]]
+id = "eigenfunction_exists_contDiffOn"
+
+[[node]]
+id = "dirichletForm_dirichletEigenfunction_testFunctions"
 
 [[node]]
 id = "dirichletEigenbasis_exists_contDiffOn"
-kind = "theorem"
-desc = '''**[brezis2011functional] Theorem 9.31, the smoothness clauses**: for every `n` there is
-`ẽ : ℝ^N → ℝ` with `ContDiffOn ℝ ⊤ ẽ Ω` (`e_n ∈ C^∞(Ω)`),
-`(dirichletEigenbasis Ω hΩ hne n : ℝ^N → ℝ) =ᵐ[volume.restrict Ω] ẽ`, and
-`-Δ ẽ x = dirichletEigenvalue Ω hΩ n * ẽ x` for all `x ∈ Ω` (`-Δe_n = λ_n e_n` in `Ω`). From
-`eigenfunction_memSobolevMultiIndexLoc` applied to `dirichletEigenfunction Ω hΩ hne n` (whose weak
-equation is `dirichletForm_dirichletEigenfunction`), `MemSobolevMultiIndexLoc.exists_contDiffOn`
-for the representative, and `laplacian_eq_dirichletEigenfunction` for the pointwise equation. With
-`dirichletEigenbasis`, `dirichletEigenvalue_pos`, `tendsto_dirichletEigenvalue_atTop` and
-`dirichletEigenfunction` this is the whole of Theorem 9.31, which the surface's `theorem_9_31`
-packages as one existential. The book's proof cites its Theorem 6.11 and Remark 25. ★ (~15 lines
-of assembly).
 
-Blocked: depends on `eigenfunction_memSobolevMultiIndexLoc`, itself blocked on
-`Elliptic.regularity_interior_higher` (agent pde1). The classical equation for any `C²`
-representative is already proved (`laplacian_eq_dirichletEigenfunction`), so only the existence of
-the `C^∞` representative is missing.'''
-deps = ["dirichletEigenbasis", "eigenfunction_memSobolevMultiIndexLoc", "laplacian_eq_dirichletEigenfunction", "fn_dirichletEigenfunction", "_root_.MemSobolevMultiIndexLoc.exists_contDiffOn"]
+[[node]]
+id = "dirichletEigenfunction_isGalerkinSolution_laplace"
+
+[[node]]
+id = "dirichletEigenfunction_memSobolevMultiIndex"
 
 [[node]]
 id = "exists_contDiffOn_closure_eigenfunction"
-kind = "theorem"
-desc = '''**[brezis2011functional] Chapter 9, Remark 29, second clause**: if in addition `Ω` is of
-class `C^∞` (`IsContDiffChartDomain ⊤ Ω`, bounded), then every `e_n` of `dirichletEigenbasis`
-agrees a.e. with a function `ContDiffOn ℝ ⊤ ẽ (closure Ω)`, `e_n ∈ C^∞(Ω̄)`. Proof:
-`u_n ∈ H^1_0(Ω)` satisfies `laplaceForm Ω u_n φ = (λ_n + 1) ⟪e_n, fn φ⟫` for `φ ∈ H^1_0(Ω)`
-(`laplaceForm_apply_eq_dirichletForm_add` with `dirichletForm_dirichletEigenfunction` and
-`fnL_dirichletEigenfunction`), so Theorem 9.25 (`regularity_dirichlet_higher`) with datum
-`(λ_n + 1) e_n ∈ H^m(Ω)` gives `u_n ∈ H^{m+2}(Ω)`, and induction on `m` gives `u_n ∈ H^m(Ω)` for
-every `m`, whence the `C^∞(Ω̄)` representative as in `regularity_dirichlet_smooth`. The remark's
-first clause, `e_n ∈ L^∞(Ω)` for an arbitrary bounded `Ω`, is quoted without proof and not
-planned. ★★ (~120 lines).
-
-Blocked: depends on `Elliptic.regularity_dirichlet_higher` and
-`Elliptic.regularity_dirichlet_smooth` (`Elliptic/Regularity`, agent pde1, absent from this
-branch). The weak equation for `laplaceForm` is available from
-`laplaceForm_apply_eq_dirichletForm_add` and `dirichletForm_dirichletEigenfunction`.'''
-deps = ["dirichletEigenbasis", "dirichletForm_dirichletEigenfunction", "fnL_dirichletEigenfunction", "laplaceForm_apply_eq_dirichletForm_add", "regularity_dirichlet_higher", "regularity_dirichlet_smooth", "laplaceForm_eq_innerSL"]

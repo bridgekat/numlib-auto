@@ -77,9 +77,6 @@ noncomputable section
 
 namespace Elliptic
 
-@[deprecated exists_stampacchiaTruncation (since := "2026-09-20")]
-alias exists_truncation := exists_stampacchiaTruncation
-
 /-! ### Almost everywhere bounds of continuous functions, and the negation of the data -/
 
 section Aux

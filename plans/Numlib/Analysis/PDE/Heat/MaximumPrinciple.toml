@@ -1,129 +1,135 @@
 namespace = "Heat"
-desc = '''
-The maximum principle for the heat equation by Stampacchia's truncation method in time:
-[brezis2011functional] Theorem 10.3 (`min{0, inf u₀} ≤ u(t) ≤ max{0, sup u₀}`), Corollary 10.4
-(positivity, the `L^∞` contraction) and Corollary 10.5 (`u ∈ C(Q̄)` for continuous data vanishing
-on the boundary). The classical maximum principle of Theorem 10.6 is in `Heat/Classical`.
-
-The argument, lines 12436–12460, is elementary once three ingredients are in place, and all of it
-holds on an **arbitrary** open `Ω` for the weak solution of `Numlib/Analysis/PDE/Heat`: (a) a
-`C¹` truncation `G` with `|G'| ≤ 1`, `G = 0` on `(-∞, 0]`, strictly increasing on `(0,∞)` — the
-one of Theorem 9.27's proof, chapter 9b's `Elliptic.exists_truncation`, whose four properties are
-bundled here as the hypothesis `IsTruncation G` — with primitive `H(s) = ∫₀ˢ G`; (b) the
-functional `Φ(v) = ∫_Ω H(v - K)` on `L²(Ω)`, finite for `K ≥ 0` since `0 ≤ H(s) ≤ s²/2`, and its
-derivative along a `C¹` curve, `d/dt Φ(u(t)) = ⟪G(u(t) - K), u'(t)⟫`, obtained from the elementary
-estimate `|H(a) - H(b) - G(b)(a - b)| ≤ (a-b)²/2` rather than from Fréchet differentiability of a
-Nemytskii operator; (c) `G(v - K) ∈ H¹₀(Ω)` with `∇ G(v - K) = G'(v - K) ∇v` for `v ∈ H¹₀(Ω)` —
-chapter 9a's chain rule (Proposition 9.5, `MemSobolevMultiIndex.contDiff_comp`) with chapter 9b's
-`SobolevMultiIndexZero.contDiff_comp_mem` (the chain rule preserves `W₀^{1,p}`), applied to
-`t ↦ G(t - K)`, which vanishes at `0` because `K ≥ 0`. With (a)–(c): `φ(t) = Φ(u(t))` is
-continuous on `[0,∞)`, `φ(0) = 0` when `u₀ ≤ K` a.e., `φ ≥ 0`, `C¹` on `(0,∞)` with
-`φ' = ⟪G(u-K), Δu⟫ = -∫ G'(u-K) |∇u|² ≤ 0` (the identity `⟪A u, w⟫ = ∫ ∇u·∇w` for
-`w = G(u - K) ∈ H¹₀`), so `φ ≡ 0`, i.e. `u(t) ≤ K` a.e. The book's `K = max{0, sup u₀}` is the
-least such `K`; the theorem is stated for every admissible `K` and the surface recovers the
-`essSup` form.
-
-Corollary 10.5 needs in addition the approximation of `u₀ ∈ C(Ω̄) ∩ L²`, `u₀ = 0` on `Γ`
-(and `u₀(x) → 0` at infinity if `Ω` is unbounded, footnote 6) by `C_c^∞(Ω)` functions uniformly
-and in `L²` ("easily established", not proved in the book: cut off near `Γ` and at infinity, then
-mollify), Theorem 10.2 (c) for the approximants (test-function data lie in every `D(A^k)`), the
-joint continuity of `Numlib/Analysis/PDE/Bochner`, and the `L^∞` contraction applied to
-differences of solutions (linearity of `Heat.solution`).
-'''
 
 [[node]]
 id = "IsTruncation"
-kind = "definition"
-desc = '''`Heat.IsTruncation (G : ℝ → ℝ) : Prop`: `ContDiff ℝ 1 G`, `∀ s, |deriv G s| ≤ 1`,
-`StrictMonoOn G (Ioi 0)`, `∀ s ≤ 0, G s = 0` — the four properties of the function `G` fixed in
-the proof of Theorem 9.27 (i)–(iii) and reused in Theorem 10.3, exactly as chapter 9b's
-`Elliptic.exists_truncation` produces it (`exists_isTruncation : ∃ G, IsTruncation G` is that
-node). A predicate rather than a fixed `G` so that the truncation argument reads as the book's.
-`IsTruncation.nonneg`, `IsTruncation.abs_le : |G s| ≤ s₊` (Lipschitz with `G 0 = 0`). ★'''
-deps = ["Elliptic.exists_truncation"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3 (and Theorem 9.27)"
 
 [[node]]
+id = "exists_isTruncation"
+
+[[node]]
+id = "IsTruncation.abs_sub_le"
+
+[[node]]
+id = "IsTruncation.abs_le"
+
+[[node]]
+id = "IsTruncation.le_self"
+
+[[node]]
 id = "truncationPrimitive"
-kind = "definition"
-desc = '''`Heat.truncationPrimitive G s := ∫ σ in (0:ℝ)..s, G σ`, the book's `H`. For
-`IsTruncation G`: `H` is `C²` with `H' = G` (`intervalIntegral.integral_hasDerivAt_right`),
-`H = 0` on `(-∞,0]`, `0 < H s` for `s > 0`, `0 ≤ H s ≤ s² / 2`, and the second-order bound
-`|H a - H b - G b * (a - b)| ≤ (a - b)² / 2` (mean value on `G`, which is `1`-Lipschitz). ★'''
-deps = ["IsTruncation"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, `H(s) = ∫₀ˢ G`"
 
 [[node]]
+id = "hasDerivAt_truncationPrimitive"
+
+[[node]]
+id = "continuous_truncationPrimitive"
+
+[[node]]
+id = "truncationPrimitive_of_nonpos"
+
+[[node]]
+id = "truncationPrimitive_pos"
+
+[[node]]
+id = "truncationPrimitive_nonneg"
+
+[[node]]
+id = "le_zero_of_truncationPrimitive_eq_zero"
+
+[[node]]
+id = "truncationPrimitive_le_sq"
+
+[[node]]
+id = "abs_truncationPrimitive_sub_sub_le"
+
+[[node]]
+id = "truncationPrimitive_sub_le_sq"
+
+[[node]]
+id = "norm_sq_eq_integral_sq"
+
+[[node]]
+id = "integrable_sq"
+
+[[node]]
+id = "integrable_truncationPrimitive_sub"
+
+[[node]]
 id = "truncationFunctional"
-kind = "definition"
-desc = '''`Heat.truncationFunctional G K (v : L²(Ω)) : ℝ := ∫ x in Ω, truncationPrimitive G (v x - K)`,
-the book's `φ(t) = ∫_Ω H(u(x,t) - K) dx` as a functional of `v = u(t)`, for `K ≥ 0`. Well
-defined (`0 ≤ H(v - K) ≤ ½ (v-K)₊² ≤ ½ v²` since `K ≥ 0`, and `v² ∈ L¹`), nonnegative, zero when
-`v ≤ K` a.e., positive when `v > K` on a set of positive measure, and locally Lipschitz on `L²`:
-`|Φ(v) - Φ(w)| ≤ (‖v‖ + ‖w‖) ‖v - w‖`. The key estimate
-`|Φ(v + w) - Φ(v) - ⟪G(v - K), w⟫| ≤ ½ ‖w‖²` (integrate the second-order bound of
-`truncationPrimitive`; `G(v - K) ∈ L²` since `|G(s)| ≤ s₊`). ★★'''
-deps = ["truncationPrimitive"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, (17)"
 
 [[node]]
-id = "IsSolution.hasDerivAt_truncationFunctional"
-kind = "theorem"
-desc = '''Along a solution, `φ t := truncationFunctional G K (u t)` is continuous on `Ici 0` and
-has, at every `t > 0`, the derivative `⟪G(u t - K), deriv u t⟫`: the key estimate of
-`truncationFunctional` with `w = u(t+h) - u(t) = h u'(t) + o(h)`. (The book's (18); no
-Fréchet differentiability of `Φ` is needed.) ★★'''
-deps = ["truncationFunctional", "IsSolution"]
-source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, (18)"
+id = "truncationFunctional_nonneg"
+
+[[node]]
+id = "truncationFunctional_eq_zero_of_ae_le"
+
+[[node]]
+id = "ae_le_of_truncationFunctional_eq_zero"
+
+[[node]]
+id = "memLp_truncation_sub"
+
+[[node]]
+id = "truncationL2"
+
+[[node]]
+id = "coeFn_truncationL2"
+
+[[node]]
+id = "norm_truncationL2_le"
+
+[[node]]
+id = "abs_truncationFunctional_sub_sub_inner_le"
+
+[[node]]
+id = "abs_truncationFunctional_sub_le"
+
+[[node]]
+id = "continuous_truncationFunctional"
 
 [[node]]
 id = "truncation_comp_mem_sobolevZero"
-kind = "theorem"
-desc = '''For `IsTruncation G`, `K ≥ 0` and `v ∈ H¹₀(Ω)`, the function `G(v - K)` is the function of
-an element `w ∈ SobolevEuclideanZero N 1 2 Ω` with `weakDeriv w (single i) = G'(v - K) · ∂ᵢv` a.e.:
-chapter 9a's chain rule `MemSobolevMultiIndex.contDiff_comp` for `t ↦ G(t - K)` (`C¹`, bounded
-derivative, `G(0 - K) = 0` as `K ≥ 0`) and chapter 9b's `SobolevMultiIndexZero.contDiff_comp_mem`.
-Consequence, for `u ∈ D(A)` with `H¹₀`-lift `v`: `⟪A u, G(v - K)⟫ = ∫ G'(v - K) |∇v|² ≥ 0`
-(`dirichletLaplacian_inner_eq_dirichletForm`, `Elliptic.dirichletForm_apply`) — the book's
-`-∫ G'(u - K)|∇u|² ≤ 0`. ★★'''
-deps = ["IsTruncation", "dirichletLaplacian_inner_eq_dirichletForm", "MemSobolevMultiIndex.contDiff_comp", "SobolevMultiIndexZero.contDiff_comp_mem", "Elliptic.dirichletForm"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, and Proposition 9.5"
 
 [[node]]
+id = "dirichletForm_truncation_nonneg"
+
+[[node]]
+id = "dirichletLaplacian_inner_truncationL2_nonneg"
+
+[[node]]
+id = "IsSolution.continuousOn_truncationFunctional"
+
+[[node]]
+id = "IsSolution.hasDerivAt_truncationFunctional"
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, §10.2, proof of Theorem 10.3, (18)"
+
+[[node]]
+id = "IsSolution.inner_truncationL2_deriv_nonpos"
+
+[[node]]
+id = "IsSolution.antitoneOn_truncationFunctional"
+
+[[node]]
 id = "IsSolution.le_of_le"
-kind = "theorem"
-desc = '''**Theorem 10.3, upper bound**: for `0 ≤ K` with `u₀ ≤ K` a.e. on `Ω`, every solution has
-`u t ≤ K` a.e. on `Ω` for all `t > 0`. Proof as in the module description: `φ` continuous on
-`[0,∞)`, `φ(0) = 0`, `φ ≥ 0`, `φ' ≤ 0` on `(0,∞)`
-(`hasDerivAt_truncationFunctional`, the equation `u' = -A u`, `truncation_comp_mem_sobolevZero`),
-hence `φ ≡ 0` (`antitoneOn_of_deriv_nonpos` on `Ioi 0` and continuity at `0`), hence
-`H(u(t) - K) = 0` a.e., hence `u(t) ≤ K` a.e. The lower bound `IsSolution.ge_of_ge` (for `K ≥ 0`
-with `-K ≤ u₀` a.e., `-K ≤ u t` a.e.) is the same applied to `-u`, a solution with datum `-u₀`
-(`solution_smul`). Together: `min{0, essInf u₀} ≤ u(t) ≤ max{0, essSup u₀}`, the book's form,
-which the surface states with `essSup`/`essInf` when finite. On a regular domain `u(t)` is
-continuous (Theorem 10.1 (5)) and the a.e. bound is everywhere on `Ω` (surface node
-`theorem_10_3_pointwise`). Any open `Ω`. ★★★ (with `truncationFunctional`, ~400 lines).'''
-deps = ["IsSolution.hasDerivAt_truncationFunctional", "truncation_comp_mem_sobolevZero", "IsSolution", "truncationFunctional", "IsTruncation", "solution"]
+source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.3"
+
+[[node]]
+id = "IsSolution.neg"
+
+[[node]]
+id = "IsSolution.ge_of_ge"
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Theorem 10.3"
 
 [[node]]
 id = "IsSolution.nonneg"
-kind = "theorem"
-desc = '''**Corollary 10.4 (i)**: `0 ≤ u₀` a.e. on `Ω` implies `0 ≤ u t` a.e. on `Ω` for every `t ≥ 0`
-(`IsSolution.ge_of_ge` with `K = 0`). ★'''
-deps = ["IsSolution.le_of_le"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (i)"
 
 [[node]]
 id = "IsSolution.eLpNorm_top_le"
-kind = "theorem"
-desc = '''**Corollary 10.4 (ii)**: `eLpNorm (u t) ∞ (volume.restrict Ω) ≤ eLpNorm u₀ ∞ (volume.restrict Ω)`
-for every `t ≥ 0` — `‖u(t)‖_{L^∞(Ω)} ≤ ‖u₀‖_{L^∞(Ω)}`, both bounds of Theorem 10.3 with
-`K = ‖u₀‖_∞` (`MeasureTheory.ae_le_eLpNormEssSup`-type lemmas; trivial if `u₀ ∉ L^∞`). The book's
-`‖u‖_{L^∞(Q)}` is this bound for every `t`; see `Numlib/Analysis/PDE/Bochner` for why the joint
-reading is not built. Applied to `solution Ω u₀ - solution Ω v₀ = solution Ω (u₀ - v₀)` it is the
-`L^∞` contraction (19) of Corollary 10.5's proof (`eLpNorm_top_solution_sub_le`). ★'''
-deps = ["IsSolution.le_of_le", "solution"]
 source = "Brezis, Functional Analysis, Sobolev Spaces and PDE, Corollary 10.4 (ii)"
 
 [[node]]

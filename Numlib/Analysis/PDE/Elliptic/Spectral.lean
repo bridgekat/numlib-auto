@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.PDE.Elliptic.Dirichlet
+import Numlib.Analysis.PDE.Elliptic.Regularity
 import Numlib.MeasureTheory.Function.LpSpace.Convergence
 
 /-!
@@ -61,9 +62,13 @@ the Dirichlet form restricted to `H^1_0(Ω)`, symmetric and coercive there
 `e_n ∈ C^∞(Ω)` is interior regularity alone (Remark 25, `Elliptic.regularity_interior_higher` of
 `Numlib/Analysis/PDE/Elliptic/Regularity.lean`): the weak equation bootstraps
 `e_n ∈ H^1_loc ⇒ H^3_loc ⇒ …`, and `MemSobolevMultiIndexLoc.exists_contDiffOn` gives a `C^∞`
-representative on `Ω`. The classical equation `-Δ ẽ_n = λ_n ẽ_n` pointwise on `Ω` for a `C²`
+representative on `Ω`. The classical equation `-Δ ũ_n = λ_n ũ_n` pointwise on `Ω` for a `C²`
 representative, with Mathlib's `Δ`, is `Elliptic.laplacian_eq_of_eigenfunction`, from the weak
-one against test functions by the variational lemma (Step D of §9.5, Example 1).
+one against test functions by the variational lemma (Step D of §9.5, Example 1). The smoothness
+clauses of Theorem 9.31 are `Elliptic.dirichletEigenbasis_exists_contDiffOn`; on a `C^∞` domain the
+eigenfunctions lie in every `H^m(Ω)` and are `C^∞(Ω̄)` (Remark 29,
+`Elliptic.exists_contDiffOn_closure_eigenfunction`, through Theorem 9.25 of
+`Numlib/Analysis/PDE/Elliptic/Regularity.lean`).
 
 ## References
 
@@ -921,8 +926,8 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
   (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
 
-/-- **`-Δ e_n = λ_n e_n` in `Ω`** ([brezis2011functional] Theorem 9.31): a representative `ẽ` of
-the Dirichlet eigenfunction `e_n` that is `C²` on `Ω` satisfies `-Δ ẽ x = λ_n ẽ x` at every point
+/-- **`-Δ e_n = λ_n e_n` in `Ω`** ([brezis2011functional] Theorem 9.31): a representative `ũ` of
+the Dirichlet eigenfunction `e_n` that is `C²` on `Ω` satisfies `-Δ ũ x = λ_n ũ x` at every point
 of `Ω`, by `Elliptic.laplacian_eq_of_eigenfunction` and the weak equation (83). The `C^∞`
 representative itself comes from interior regularity (Remark 25). -/
 theorem laplacian_eq_dirichletEigenfunction (n : ℕ) {u : EuclideanSpace ℝ (Fin (d + 1)) → ℝ}
@@ -940,5 +945,261 @@ theorem laplacian_eq_dirichletEigenfunction (n : ℕ) {u : EuclideanSpace ℝ (F
     hu ((fn_dirichletEigenfunction Ω hΩ hne n).trans hU)
 
 end DirichletClassical
+
+
+/-! ### Smoothness of the eigenfunctions: interior regularity and regularity up to the boundary -/
+
+section Smoothness
+
+variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
+
+open SobolevMultiIndex
+
+/-- **The weak eigenvalue equation against a test function, in terms of functions**: if
+`U ∈ H^1(Ω)` satisfies `∫_Ω ∇U·∇V = λ ⟪U, V⟫` for every test-function element `V`, then for every
+test function `φ`, `∫_Ω ∑ᵢ ∂ᵢU ∂ᵢφ = ∫_Ω (λ U) φ` — the hypothesis shape of the interior
+regularity theorem `Elliptic.regularity_interior_higher`. -/
+theorem integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction {U : SobolevEuclidean N 1 2 Ω}
+    {lam : ℝ}
+    (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω U V
+        = lam * ⟪fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
+          fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ)
+    (φ : 𝓓(Ω, ℝ)) :
+    ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, weakDeriv U (MultiIndexLE.single i) x * fderiv ℝ φ x (EuclideanSpace.single i 1)
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (lam • fn U) x * φ x := by
+  obtain ⟨V, hV, hVφ⟩ := φ.exists_mem_sobolevMultiIndex_testFunctions
+    (b := (EuclideanSpace.basisFun (Fin N) ℝ).toBasis) (k := 1) (p := 2) (μ := volume)
+  have h1 := hUw V hV
+  rw [dirichletForm_apply, L2.inner_eq_integral_mul, ← integral_const_mul] at h1
+  have hVi : ∀ i, (weakDeriv V (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin N) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))]
+        fun x ↦ fderiv ℝ φ x (EuclideanSpace.single i 1) := fun i ↦
+    weakDeriv_single_ae_eq_fderiv_of_contDiffOn Ω (φ.contDiff.contDiffOn.of_le (by simp)) hVφ i
+  have hL : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      ∑ i, weakDeriv U (MultiIndexLE.single i) x * weakDeriv V (MultiIndexLE.single i) x
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+        ∑ i, weakDeriv U (MultiIndexLE.single i) x * fderiv ℝ φ x (EuclideanSpace.single i 1) := by
+    refine integral_congr_ae ?_
+    filter_upwards [ae_all_iff.2 hVi] with x hx
+    exact Finset.sum_congr rfl fun i _ ↦ by rw [hx i]
+  have hR : ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
+      lam * (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U x
+        * fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V x)
+      = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))), (lam • fn U) x * φ x := by
+    refine integral_congr_ae ?_
+    filter_upwards [hVφ] with x hx
+    rw [fnL_apply, fnL_apply, hx, Pi.smul_apply, smul_eq_mul, mul_assoc]
+  rw [← hL, h1, hR]
+
+/-- **The `H¹_loc`-to-`H^{m+2}_loc` bootstrap for a weak eigenfunction**: if `U ∈ H^1(Ω)`
+satisfies the weak eigenvalue equation against the test functions and its function lies in
+`H^m_loc(Ω)`, then it lies in `H^{m+2}_loc(Ω)`: the datum `λ U` of the equation `−ΔU = λ U` is in
+`H^m_loc(Ω)`, and `Elliptic.regularity_interior_higher` applies. -/
+theorem memSobolevMultiIndexLoc_add_two_of_eigenfunction {U : SobolevEuclidean N 1 2 Ω}
+    {lam : ℝ}
+    (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω U V
+        = lam * ⟪fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
+          fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ)
+    {m : ℕ}
+    (hm : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) m 2 Ω
+      volume) :
+    MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) (m + 2) 2 Ω
+      volume :=
+  regularity_interior_higher m (memSobolevMultiIndex U).memSobolevMultiIndexLoc
+    (fun i ↦ weakDeriv_hasWeakIteratedLineDerivOn_single U i)
+    (fun V hVc hVΩ ↦ (hm V hVc hVΩ).const_smul lam)
+    (integral_sum_weakDeriv_mul_fderiv_eq_of_eigenfunction Ω hUw)
+
+/-- **A weak Dirichlet eigenfunction of `−Δ` lies in `H^m_loc(Ω)` for every `m`**
+([brezis2011functional] §9.8, proof of Theorem 9.31, "`e_n ∈ ⋂_m H^m(ω)` for all `ω ⊂⊂ Ω`"):
+if `U ∈ H^1(Ω)` satisfies `∫_Ω ∇U·∇V = λ ⟪U, V⟫` for every test-function element `V`, then the
+function of `U` lies in `H^m_loc(Ω)` for every `m`. Induction on `m` two steps at a time: `U`
+lies in `H^1_loc(Ω)`, and `U ∈ H^m_loc(Ω)` gives `U ∈ H^{m+2}_loc(Ω)` by interior regularity
+(Remark 25, `Elliptic.regularity_interior_higher`) applied to the equation `−ΔU = λ U`, whose datum
+`λ U` is then in `H^m_loc(Ω)`. -/
+theorem eigenfunction_memSobolevMultiIndexLoc {U : SobolevEuclidean N 1 2 Ω} {lam : ℝ}
+    (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω U V
+        = lam * ⟪fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
+          fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ)
+    (m : ℕ) :
+    MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) m 2 Ω volume := by
+  have h1 : MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) 1 2 Ω
+      volume := (memSobolevMultiIndex U).memSobolevMultiIndexLoc
+  have key : ∀ m : ℕ,
+      MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) m 2 Ω volume ∧
+      MemSobolevMultiIndexLoc (EuclideanSpace.basisFun (Fin N) ℝ).toBasis (fn U) (m + 1) 2 Ω
+        volume := by
+    intro m
+    induction m with
+    | zero => exact ⟨h1.mono_order zero_le_one, h1⟩
+    | succ m ih => exact ⟨ih.2, memSobolevMultiIndexLoc_add_two_of_eigenfunction Ω hUw ih.1⟩
+  exact (key m).1
+
+/-- **A weak Dirichlet eigenfunction of `−Δ` has a `C^∞` representative on `Ω`**: with the
+hypotheses of `Elliptic.eigenfunction_memSobolevMultiIndexLoc`, the function of `U` agrees almost
+everywhere on `Ω` with a function of class `C^∞` on `Ω`
+(`MemSobolevMultiIndexLoc.exists_contDiffOn`). -/
+theorem eigenfunction_exists_contDiffOn {U : SobolevEuclidean N 1 2 Ω} {lam : ℝ}
+    (hUw : ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω U V
+        = lam * ⟪fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume U,
+          fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume V⟫_ℝ) :
+    ∃ ũ : EuclideanSpace ℝ (Fin N) → ℝ, ContDiffOn ℝ ∞ ũ Ω ∧
+      fn U =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))] ũ :=
+  MemSobolevMultiIndexLoc.exists_contDiffOn (eigenfunction_memSobolevMultiIndexLoc Ω hUw)
+
+end Smoothness
+
+section DirichletSmooth
+
+open Laplacian SobolevMultiIndex
+
+variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
+  (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
+  (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
+
+/-- The weak eigenvalue equation (83) of the `n`-th Dirichlet eigenfunction against the
+test-function elements, in the shape of `Elliptic.eigenfunction_memSobolevMultiIndexLoc`. -/
+theorem dirichletForm_dirichletEigenfunction_testFunctions (n : ℕ) :
+    ∀ V ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume,
+      dirichletForm Ω (dirichletEigenfunction Ω hΩ hne n) V
+        = dirichletEigenvalue Ω hΩ n
+          * ⟪fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+              (dirichletEigenfunction Ω hΩ hne n),
+            fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume V⟫_ℝ :=
+  fun V hV ↦ (dirichletForm_dirichletEigenfunction Ω hΩ hne n
+    ⟨V, SobolevMultiIndexZero.testFunctions_le hV⟩).trans
+    (congrArg (fun y ↦ dirichletEigenvalue Ω hΩ n * ⟪y, fnL ℝ
+      (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume V⟫_ℝ)
+      (fnL_dirichletEigenfunction Ω hΩ hne n).symm)
+
+/-- **[brezis2011functional] Theorem 9.31, the smoothness clauses**: for every `n` there is
+`ũ : ℝ^N → ℝ` of class `C^∞` on `Ω` (`e_n ∈ C^∞(Ω)`), agreeing almost everywhere on `Ω` with the
+`n`-th Dirichlet eigenfunction `e_n = dirichletEigenbasis Ω hΩ hne n`, with
+`−Δ ũ x = λ_n ũ x` at every point `x ∈ Ω` (`−Δ e_n = λ_n e_n` in `Ω`). The representative comes
+from interior regularity (`Elliptic.eigenfunction_exists_contDiffOn`, Remark 25) and the pointwise
+equation from `Elliptic.laplacian_eq_dirichletEigenfunction`. With `dirichletEigenbasis`,
+`dirichletEigenvalue_pos`, `tendsto_dirichletEigenvalue_atTop` and `dirichletEigenfunction`, this
+is the whole of Theorem 9.31. -/
+theorem dirichletEigenbasis_exists_contDiffOn (n : ℕ) :
+    ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, ContDiffOn ℝ ∞ ũ Ω ∧
+      (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
+      ∀ x ∈ Ω, -Δ ũ x = dirichletEigenvalue Ω hΩ n * ũ x := by
+  obtain ⟨ũ, hũ, hae⟩ := eigenfunction_exists_contDiffOn Ω
+    (dirichletForm_dirichletEigenfunction_testFunctions Ω hΩ hne n)
+  have hae' : (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ :=
+    (fn_dirichletEigenfunction Ω hΩ hne n).symm.trans hae
+  exact ⟨ũ, hũ, hae', laplacian_eq_dirichletEigenfunction Ω hΩ hne n
+    (hũ.of_le (by simp)) hae'⟩
+
+/-- **The Dirichlet eigenfunction `u_n ∈ H^1_0(Ω)` solves `−Δu + u = (λ_n + 1) e_n` weakly**: it
+is the Galerkin solution of the form of `−Δ + 1` with the datum `(λ_n + 1) e_n` on `H^1_0(Ω)`,
+by `laplaceForm_apply_eq_dirichletForm_add` and the weak eigenvalue equation (83). -/
+theorem dirichletEigenfunction_isGalerkinSolution_laplace (n : ℕ) :
+    IsGalerkinSolution (laplaceForm Ω)
+      (load Ω ((dirichletEigenvalue Ω hΩ n + 1) • dirichletEigenbasis Ω hΩ hne n))
+      (SobolevEuclideanZero (d + 1) 1 2 Ω)
+      (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω) := by
+  refine ⟨(dirichletEigenfunction Ω hΩ hne n).2, fun φ hφ ↦ ?_⟩
+  have h1 := laplaceForm_apply_eq_dirichletForm_add Ω
+    (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω) φ
+  have h2 : dirichletForm Ω (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω)
+      φ = dirichletEigenvalue Ω hΩ n * ⟪dirichletEigenbasis Ω hΩ hne n,
+        fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ :=
+    dirichletForm_dirichletEigenfunction Ω hΩ hne n ⟨φ, hφ⟩
+  have h3 : fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+      (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω)
+      = dirichletEigenbasis Ω hΩ hne n := fnL_dirichletEigenfunction Ω hΩ hne n
+  have h4 : load Ω ((dirichletEigenvalue Ω hΩ n + 1) • dirichletEigenbasis Ω hΩ hne n) φ
+      = (dirichletEigenvalue Ω hΩ n + 1) * ⟪dirichletEigenbasis Ω hΩ hne n,
+        fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ := by
+    rw [load_apply_inner, real_inner_smul_left]
+    rfl
+  have h5 : dirichletForm Ω (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω)
+      φ + ⟪fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume
+        (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω),
+        fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ
+      = dirichletEigenvalue Ω hΩ n * ⟪dirichletEigenbasis Ω hΩ hne n,
+        fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ
+        + ⟪dirichletEigenbasis Ω hΩ hne n,
+          fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ :=
+    congrArg₂ (· + ·) h2 (congrArg (fun y ↦ ⟪y,
+      fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ) h3)
+  refine h1.trans (h5.trans (Eq.trans ?_ h4.symm))
+  ring
+
+/-- **The Dirichlet eigenfunctions lie in `H^m(Ω)` for every `m`** on a `C^∞` domain (bounded, so
+that the eigenbasis exists): `u_n` solves `−Δu + u = (λ_n + 1) e_n` weakly, so `u_n ∈ H^m` gives
+`(λ_n + 1) e_n ∈ H^m`, hence `u_n ∈ H^{m+2}` by Theorem 9.25
+(`Elliptic.regularity_dirichlet_higher_mem_laplace`); induction on `m`. -/
+theorem dirichletEigenfunction_memSobolevMultiIndex
+    (hΩ' : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (n : ℕ) (m : ℕ) :
+    MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑(dirichletEigenbasis Ω hΩ hne n)) m 2 Ω volume := by
+  have hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    hΩ.closure.subset frontier_subset_closure
+  have hfn : (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+      =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
+        fn (dirichletEigenfunction Ω hΩ hne n : SobolevEuclidean (d + 1) 1 2 Ω) :=
+    (fn_dirichletEigenfunction Ω hΩ hne n).symm
+  -- the datum is in `H^m` whenever the eigenfunction is
+  have hdat : ∀ j : ℕ, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑(dirichletEigenbasis Ω hΩ hne n)) j 2 Ω volume →
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (⇑((dirichletEigenvalue Ω hΩ n + 1) • dirichletEigenbasis Ω hΩ hne n)) j 2 Ω volume :=
+    fun j hj ↦ (hj.const_smul (dirichletEigenvalue Ω hΩ n + 1)).congr_ae
+      (Lp.coeFn_smul _ _).symm
+  have key : ∀ m : ℕ,
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (⇑(dirichletEigenbasis Ω hΩ hne n)) m 2 Ω volume ∧
+      MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+        (⇑(dirichletEigenbasis Ω hΩ hne n)) (m + 1) 2 Ω volume := by
+    intro m
+    induction m with
+    | zero =>
+      have h1 : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+          (⇑(dirichletEigenbasis Ω hΩ hne n)) 1 2 Ω volume :=
+        (memSobolevMultiIndex (dirichletEigenfunction Ω hΩ hne n :
+          SobolevEuclidean (d + 1) 1 2 Ω)).congr_ae hfn.symm
+      exact ⟨h1.mono_order zero_le_one, h1⟩
+    | succ m ih =>
+      refine ⟨ih.2, ?_⟩
+      have := regularity_dirichlet_higher_mem_laplace m (hΩ'.of_le (by simp)) hΓ (hdat m ih.1)
+        (dirichletEigenfunction_isGalerkinSolution_laplace Ω hΩ hne n)
+      exact this.congr_ae hfn.symm
+  exact (key m).1
+
+/-- **[brezis2011functional] Chapter 9, Remark 29, second clause**: on a bounded nonempty open
+set of class `C^∞`, every Dirichlet eigenfunction `e_n` agrees almost everywhere on `Ω` with a
+function `ũ` continuous on `ℝ^N`, of class `C^∞` on `Ω`, all of whose derivatives extend
+continuously from `Ω` to `ℝ^N` — `e_n ∈ C^∞(Ω̄)` in the sense of Chapter 9, footnote 16. The
+eigenfunction solves `−Δu + u = (λ_n + 1) e_n` weakly with a datum in every `H^m(Ω)`
+(`Elliptic.dirichletEigenfunction_memSobolevMultiIndex`), and Theorem 9.25's `C^∞(Ω̄)` clause
+(`Elliptic.regularity_dirichlet_smooth`) applies. -/
+theorem exists_contDiffOn_closure_eigenfunction
+    (hΩ' : IsContDiffChartDomain ∞ (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (n : ℕ) :
+    ∃ ũ : EuclideanSpace ℝ (Fin (d + 1)) → ℝ, Continuous ũ ∧ ContDiffOn ℝ ∞ ũ Ω ∧
+      (dirichletEigenbasis Ω hΩ hne n : EuclideanSpace ℝ (Fin (d + 1)) → ℝ)
+        =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] ũ ∧
+      ∀ j : ℕ, ∃ G : EuclideanSpace ℝ (Fin (d + 1)) →
+        (EuclideanSpace ℝ (Fin (d + 1)) [×j]→L[ℝ] ℝ), Continuous G ∧
+        EqOn (iteratedFDeriv ℝ j ũ) G Ω := by
+  have hΓ : Bornology.IsBounded (frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :=
+    hΩ.closure.subset frontier_subset_closure
+  have hf : ∀ m : ℕ, MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis
+      (⇑((dirichletEigenvalue Ω hΩ n + 1) • dirichletEigenbasis Ω hΩ hne n)) m 2 Ω volume :=
+    fun m ↦ ((dirichletEigenfunction_memSobolevMultiIndex Ω hΩ hne hΩ' n m).const_smul
+      (dirichletEigenvalue Ω hΩ n + 1)).congr_ae (Lp.coeFn_smul _ _).symm
+  obtain ⟨ũ, hc, hk, hae, hG⟩ := regularity_dirichlet_smooth hΩ' hΓ hf
+    (dirichletEigenfunction_isGalerkinSolution_laplace Ω hΩ hne n)
+  exact ⟨ũ, hc, hk, (fn_dirichletEigenfunction Ω hΩ hne n).symm.trans hae, hG⟩
+
+end DirichletSmooth
 
 end Elliptic

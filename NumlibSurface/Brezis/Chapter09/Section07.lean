@@ -109,7 +109,7 @@ Then for all `x ∈ Ω`, `min {inf_Γ u, inf_Ω f} ≤ u(x) ≤ max {sup_Γ u, s
 `K₁ ≥ ũ` on `Γ` and `K₂ ≥ f` a.e. on `Ω`, `ũ x ≤ max {K₁, K₂}`, and for every `K₁ ≤ ũ` on `Γ` and
 `K₂ ≤ f` a.e. on `Ω`, `min {K₁, K₂} ≤ ũ x`. The backbone's `Elliptic.le_max_of_isWeakSolution`
 and `Elliptic.ge_of_ge_frontier` — Stampacchia's truncation `G(u − K')`
-(`Elliptic.exists_truncation`, placed in `H^1(Ω)` by Proposition 9.5 and in `H^1_0(Ω)` by
+(`exists_stampacchiaTruncation`, placed in `H^1(Ω)` by Proposition 9.5 and in `H^1_0(Ω)` by
 Theorem 9.17), for both cases
 `|Ω| < ∞` and `|Ω| = ∞` of the book's proof. The proof's "proceed as in the proof of Theorem
 8.18" refers to the one-dimensional maximum principle, which is Theorem 8.19. -/

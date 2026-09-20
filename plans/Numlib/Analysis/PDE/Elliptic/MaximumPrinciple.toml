@@ -1,10 +1,6 @@
 namespace = "Elliptic"
 
 [[node]]
-id = "exists_truncation"
-deprecated = '''Moved and renamed on 2026-09-20 (tidy2): use `exists_stampacchiaTruncation` of `Numlib/Analysis/Sobolev/Calculus.lean`; the alias goes once `Heat/MaximumPrinciple.toml` (`exists_isTruncation`) repoints its `deps`.'''
-
-[[node]]
 id = "le_of_forall_truncation_mem"
 
 [[node]]
