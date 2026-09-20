@@ -31,54 +31,48 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.4.5"
 
 [[node]]
 id = "example_10_4_2"
-kind = "theorem"
-desc = '''
-Example 10.4.2: for `-Δu = f` in `Ω` with `u = 0` on `Γ`, the weak problem `u ∈ H¹₀(Ω)` with
-`∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)` and its discretization over a finite element subspace
-`V_h ⊆ H¹₀(Ω)` of piecewise polynomials of degree at most `k` on a regular triangulation of `Ω̄`
-each have a unique solution, and `‖u - u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}` when `u ∈ H^{k+1}(Ω)`.
-Not formalized: it is Theorem 10.4.1 on a concrete domain. `H¹₀(Ω)` exists,
-`AtkinsonHan.Chapter07.definition_7_2_9` being proved; what is missing is Theorem 10.4.1 itself
-and the concrete finite element subspaces of that space.
-
-Blocked: rechecked 2026-09-20 (ah7). Downstream of `theorem_10_4_1` and of the triangulation
-scaffold (blocker 11 of `notes/frontier.md`). What exists: the unique solvability of the weak
-problem and of its Galerkin discretization on *any* finite-dimensional subspace of `H¹₀(Ω)`
-(Lax–Milgram, `Chapter08.example_8_3_5` with the Poincaré inequality of
-`SobolevEuclideanZero.eLpNorm_fn_le_gradNorm_*`, `Numlib/Analysis/Sobolev/Zero.lean`; Céa,
-`Chapter09.theorem_9_1_3`); the elementwise interpolation estimate `corollary_10_3_7` (proved this
-round, on reference elements that are extension domains — the unit square, `Q_k` on
-parallelograms, `example_10_3_8_square`; the reference triangle waits for a Lipschitz extension
-operator). What is missing: a triangulation of `Ω̄` and the finite element space `V_h ⊆ H¹₀(Ω)`
-of continuous piecewise polynomials vanishing on `Γ` (which needs the trace, blocker 2, to be
-stated as a subspace of `H¹₀` in the book's way; as the closure of `C_c^∞` it needs `Π_h u ∈ H¹₀`
-for `u ∈ H¹₀ ∩ C(Ω̄)`), and Theorem 10.3.9. Estimate: after the scaffold and `theorem_10_3_9`,
-~200 lines.
-'''
-deps = ["theorem_10_4_1", "AtkinsonHan.Chapter08.example_8_3_5"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.4.2"
 
 [[node]]
 id = "theorem_10_4_1"
-kind = "theorem"
-desc = '''
-Theorem 10.4.1: for affine-equivalent finite element spaces `{V_h} ⊆ V` of piecewise polynomials of
-degree at most `k` over a regular family of triangulations of `Ω̄`, the finite element method
-converges, `‖u - u_h‖_V → 0` as `h → 0`, and when `u ∈ H^{k+1}(Ω)` the error obeys (10.4.4),
-`‖u - u_h‖_{1,Ω} ≤ c h^k |u|_{k+1,Ω}`. The error bound is Céa's inequality (10.4.3) with
-`v_h = Π_h u` and Theorem 10.3.9, and the convergence half rests on the density of the finite
-element spaces in `H¹`; the abstract convergence statement is `Chapter09.corollary_9_1_4`.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.4.1, (10.4.4)"
 
-Blocked: rechecked 2026-09-20 (ah7). Downstream of `theorem_10_3_9` alone for the error bound
-(Céa's inequality is `Chapter09.theorem_9_1_3`, and the local interpolation estimates
-`theorem_10_3_3`, `theorem_10_3_5`, `corollary_10_3_7` are now proved on reference elements that
-are Sobolev extension domains — the unit square is one, the reference triangle waits for a
-Lipschitz extension operator), and of the density of the finite element spaces in `H¹(Ω)` for
-the convergence half: that density is Theorem 10.3.9 applied to the dense subspace `C^∞(Ω̄)`
-(density of `C^∞(Ω̄)` in `H¹(Ω)` on an extension domain is `Chapter07.theorem_7_3_2`, proved),
-so both halves reduce to `theorem_10_3_9` and hence to the triangulation scaffold (blocker 11 of
-`notes/frontier.md`): the global interpolant `Π_h`, its conformity `Π_h v ∈ H¹(Ω)`, and the
-additivity of the `H^m` norm over the elements. Estimate: ~150 lines once `theorem_10_3_9`
-exists (the error bound is `corollary_9_1_4`/`theorem_9_1_3` composed with (10.3.13) at `m = 1`,
-`h^{k} = h^{k+1-1}`).
-'''
-deps = ["theorem_10_3_9", "AtkinsonHan.Chapter09.corollary_9_1_4"]
+[[node]]
+id = "theorem_10_4_1_tendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.4.1, the convergence"
+
+[[node]]
+id = "exists_norm_le_sobolevNorm"
+
+[[node]]
+id = "norm_sub_le_of_fn_ae_eq"
+
+[[node]]
+id = "toReal_sobolevNorm_sub_globalInterp_le"
+
+[[node]]
+id = "latticeShapeFun_eq_eval"
+
+[[node]]
+id = "isEdgeUnisolvent_lattice"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.2.3 (the edge argument)"
+
+[[node]]
+id = "poissonForm"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.4.2"
+
+[[node]]
+id = "poissonForm_apply"
+
+[[node]]
+id = "poissonLoad"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.4.2"
+
+[[node]]
+id = "poissonLoad_apply"
+
+[[node]]
+id = "poissonForm_isBoundedWith"
+
+[[node]]
+id = "poissonForm_isEllipticWith"

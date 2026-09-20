@@ -1,5 +1,6 @@
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Variational.Inequality.Approximation
+import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
 /-!
@@ -20,7 +21,10 @@ solvability is Theorem 11.3.1 again.  What the section adds is the analysis of t
 * `exercise_11_4_3` — the a priori bound (11.4.20) for a regularized functional;
 * `theorem_11_4_6` — convergence of the method of numerical integration (11.4.25), the one result
   of the section whose discrete functional `j_h` varies with `h`;
-* `theorem_11_4_7` — the error bound (11.4.27) when the discrete functional dominates `j`.
+* `theorem_11_4_7` — the error bound (11.4.27) when the discrete functional dominates `j`;
+* `example_11_4_3` — the obstacle problem discretized with linear elements on a polygon: the
+  optimal-order estimate `‖u − u_h‖_{H¹} ≤ c h` from Falk's lemma, with the discrete admissible
+  set `discreteObstacleSet` (`K_h ⊄ K`), `Π_h u ∈ K_h` and `max (u_h, ψ) ∈ K`.
 
 `residual` is the book's `R(v, w)` of the display preceding (11.4.7), with the functional at the
 two arguments kept separate so that the same definition serves the `R_h` of (11.4.27).
@@ -46,12 +50,22 @@ two arguments kept separate so that the same definition serves the `R_h` of (11.
   the finite dimensionality of the `V_h` and the convexity and lower semicontinuity of the `j_h`
   are what Theorem 11.3.1 needs to produce `u_h`, and the theorem takes the `u_h` as given.
 
+* **Example 11.4.3 reads the data on continuous representatives.** The regularity `u, ψ ∈ H²(Ω)`
+  of the book enters through representatives continuous up to the boundary (as in Theorem
+  10.3.9), the boundary conditions `u = 0`, `ψ ≤ 0` on `Γ` are stated on those representatives (on
+  a polygon they do not follow from `u ∈ H¹₀(Ω)`, the domain not being `C¹`), and `−Δu ∈ L²(Ω)` —
+  the regularity theorem for the obstacle problem on a `C²` domain
+  (`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`) — is the hypothesis `a(u, v) = ∫_Ω g v` for all
+  `v ∈ H¹₀(Ω)`. The polygon enters through `Triangulation.FrontierSubsetEdges` (`∂Ω` is a union of
+  element edges), and the discrete admissible set asks `v_h ≥ ψ` at every vertex (the boundary
+  vertices included, where it holds automatically as `v_h = 0 ≥ ψ`).
+
 ## Not formalized
 
 Theorem 11.4.5 and Exercise 11.4.4 (the Lagrange-multiplier form of the simplified friction
-problem) live on `H^{1/2}(Γ)`; Examples 11.4.3 and 11.4.4 and the analysis of (11.4.29) are finite
-element interpolation estimates on a polygonal domain; Exercises 11.4.1 and 11.4.5 name a domain
-as well.
+problem) live on `H^{1/2}(Γ)`; Example 11.4.4 and the analysis of (11.4.29) need the trace, the
+surface measure on `Γ` and Green's formula on a polygon (`notes/frontier.md` blocker 2);
+Exercises 11.4.1 and 11.4.5 name a domain as well.
 -/
 
 open Filter Set Topology
@@ -340,5 +354,461 @@ theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
   linarith
 
 end
+
+
+/-! ### Example 11.4.3: the obstacle problem with linear elements
+
+The finite element approximation of the obstacle problem of Example 11.1.1 on a polygon, with
+the discrete admissible set `K_h` of continuous piecewise linear functions dominating the
+obstacle at the nodes (`discreteObstacleSet`), and the optimal-order estimate
+`‖u − u_h‖_{H¹} ≤ c h` (`example_11_4_3`) from Falk's lemma. The triangulation scaffold is
+`Numlib/Geometry/Triangulation.lean`, the interpolation estimates are Theorem 10.3.9 for the
+linear element (`Chapter10.theorem_10_3_9_linear`), and the finite element space is
+`Triangulation.polySpaceZero`; the ingredients specific to the example are the monotonicity of
+the linear interpolant (`globalInterp_linear_mono`), the membership `max (u_h, ψ) ∈ K`
+(`exists_max_mem_obstacleSet`) and `Π_h u ∈ K_h` (`exists_globalInterp_mem_discreteObstacleSet`).
+-/
+
+section Example1143
+
+open MeasureTheory TopologicalSpace EuclideanSpace
+open scoped ENNReal
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- The barycentric coordinates are nonnegative on the closed reference triangle. -/
+theorem baryCoord_nonneg {x : 𝔼₂} (hx : x ∈ closure (referenceTriangle : Set 𝔼₂)) (i : Fin 3) :
+    0 ≤ baryCoord i x := by
+  rw [closure_referenceTriangle_eq] at hx
+  obtain ⟨h0, h1, h2⟩ := hx
+  fin_cases i
+  · simp only [baryCoord, Fin.zero_eta, Fin.isValue, Matrix.cons_val_zero]
+    linarith
+  · simpa [baryCoord] using h0
+  · simpa [baryCoord] using h1
+
+/-- The barycentric coordinates are polynomials of total degree at most `1`. -/
+theorem baryCoord_eq_eval (i : Fin 3) : ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ 1 ∧
+    ∀ x : 𝔼₂, baryCoord i x = MvPolynomial.eval (fun j ↦ x j) q := by
+  fin_cases i
+  · refine ⟨MvPolynomial.C 1 - MvPolynomial.X 0 - MvPolynomial.X 1, ?_, fun x ↦ ?_⟩
+    · refine (MvPolynomial.totalDegree_sub _ _).trans (max_le ?_ ?_)
+      · refine (MvPolynomial.totalDegree_sub _ _).trans (max_le ?_ ?_)
+        · simp
+        · exact (MvPolynomial.totalDegree_X _).le
+      · exact (MvPolynomial.totalDegree_X _).le
+    · simp [baryCoord]
+  · refine ⟨MvPolynomial.X 0, (MvPolynomial.totalDegree_X _).le, fun x ↦ ?_⟩
+    simp [baryCoord]
+  · refine ⟨MvPolynomial.X 1, (MvPolynomial.totalDegree_X _).le, fun x ↦ ?_⟩
+    simp [baryCoord]
+
+/-- **The linear element is edge unisolvent**: the interpolant is affine along a reference edge
+and vanishes at its two ends, which are nodes. -/
+theorem isEdgeUnisolvent_linear : IsEdgeUnisolvent referenceTriangleVertex baryCoord := by
+  intro a b hab v hv y hy
+  rw [segment_eq_image'] at hy
+  obtain ⟨s, -, rfl⟩ := hy
+  have hlin : ∀ (P Q : 𝔼₂) (t : ℝ),
+      Approximation.nodalInterp referenceTriangleVertex baryCoord v (P + t • (Q - P))
+        = Approximation.nodalInterp referenceTriangleVertex baryCoord v P
+          + t * (Approximation.nodalInterp referenceTriangleVertex baryCoord v Q
+            - Approximation.nodalInterp referenceTriangleVertex baryCoord v P) := by
+    intro P Q t
+    simp only [Approximation.nodalInterp_apply, baryCoord_lineMap, smul_eq_mul, add_mul, sub_mul,
+      mul_assoc, Finset.sum_add_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum]
+  have hnode : ∀ c : Fin 3, c ∈ ({a, b} : Set (Fin 3)) →
+      Approximation.nodalInterp referenceTriangleVertex baryCoord v (referenceTriangleVertex c)
+        = 0 := by
+    intro c hc
+    rw [isNodalBasis_baryCoord.nodalInterp_apply_node]
+    refine hv c ?_
+    rcases hc with rfl | rfl
+    · exact left_mem_segment ℝ _ _
+    · exact right_mem_segment ℝ _ _
+  rw [hlin, hnode a (by simp), hnode b (by simp)]
+  ring
+
+/-- **The linear interpolant is monotone**: if `v ≤ w` at every vertex then `Π_h v ≤ Π_h w` on
+`Ω̄`, the barycentric coordinates being nonnegative on the closed elements. -/
+theorem globalInterp_linear_mono {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {v w : 𝔼₂ → ℝ}
+    (hvw : ∀ x ∈ 𝒯.vertices, v x ≤ w x) {x : 𝔼₂} (hx : x ∈ closure (Ω : Set 𝔼₂)) :
+    𝒯.globalInterp referenceTriangleVertex baryCoord v x
+      ≤ 𝒯.globalInterp referenceTriangleVertex baryCoord w x := by
+  rw [𝒯.closure_eq_iUnion_closedK, mem_iUnion] at hx
+  obtain ⟨T, hxT⟩ := hx
+  have hxT' := hxT
+  rw [← 𝒯.image_closedReferenceTriangle] at hxT'
+  obtain ⟨z, hz, rfl⟩ := hxT'
+  rw [𝒯.globalInterp_eq_of_mem_closedK _ _ 𝒯.isConformingElement_linear T v hxT,
+    𝒯.globalInterp_eq_of_mem_closedK _ _ 𝒯.isConformingElement_linear T w hxT]
+  simp only [Triangulation.localInterp_apply, 𝒯.affine_referenceTriangleVertex, 𝒯.affine_symm]
+  refine Finset.sum_le_sum fun i _ ↦ ?_
+  refine mul_le_mul_of_nonneg_left (hvw _ (𝒯.vertex_mem_vertices T i)) ?_
+  refine baryCoord_nonneg ?_ i
+  rw [closure_referenceTriangle_eq]
+  exact hz
+
+/-- Two functions continuous on `Ω̄` with `v ≤ w` almost everywhere on `Ω` satisfy `v ≤ w` on
+`Ω̄`. -/
+theorem le_on_closure_of_ae_le {Ω : Opens 𝔼₂} {v w : 𝔼₂ → ℝ}
+    (h : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼₂)), v x ≤ w x)
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hw : ContinuousOn w (closure (Ω : Set 𝔼₂))) :
+    ∀ x ∈ closure (Ω : Set 𝔼₂), v x ≤ w x := by
+  have hmax : EqOn (fun x ↦ max (v x) (w x)) w (closure (Ω : Set 𝔼₂)) := by
+    refine Triangulation.eqOn_closure_of_ae_eq ?_ (hv.sup hw) hw
+    filter_upwards [h] with x hx
+    exact max_eq_right hx
+  intro x hx
+  have := hmax hx
+  simp only at this
+  rw [← this]
+  exact le_max_left _ _
+
+/-- The `L²(Ω)` norm is at most the tensor Sobolev norm of order `0`. -/
+theorem eLpNorm_le_sobolevNorm_zero {Ω : Opens 𝔼₂} {f : 𝔼₂ → ℝ}
+    (hf : MemSobolev f 0 2 Ω volume) :
+    eLpNorm f 2 (volume.restrict (Ω : Set 𝔼₂)) ≤ sobolevNorm f 0 2 Ω volume := by
+  have hW := hasWeakIteratedFDerivOn_zero (μ := volume) (hf.memLp.locallyIntegrableOn one_le_two)
+  have hae : ∀ᵐ x ∂volume.restrict (Ω : Set 𝔼₂),
+      ‖weakIteratedFDeriv 0 f Ω volume x‖ = ‖f x‖ := by
+    filter_upwards [(ae_restrict_iff' Ω.isOpen.measurableSet).2 hW.weakIteratedFDeriv_ae_eq]
+      with x hx
+    rw [hx]
+    exact LinearIsometryEquiv.norm_map _ _
+  rw [← eLpNorm_congr_norm_ae (hf.memLp_weakIteratedFDeriv le_rfl).aestronglyMeasurable
+    hf.memLp.aestronglyMeasurable hae]
+  exact eLpNorm_weakIteratedFDeriv_le_sobolevNorm one_le_two (by simp) le_rfl
+
+
+/-- **The discrete admissible set `K_h`** of Example 11.4.3 for the linear element on a
+triangulation `𝒯_h`: the continuous piecewise linear functions `v_h ∈ H¹₀(Ω)` (the elements of
+`Triangulation.polySpaceZero 2 1`, through a representative `v` continuous on `Ω̄`, piecewise
+linear, vanishing on `∂Ω`) with `v_h(x) ≥ ψ(x)` at every node `x`, the obstacle `ψ` being read
+on a representative `ψ'`. In general `K_h ⊄ K`. -/
+def discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (ψ' : 𝔼₂ → ℝ) :
+    Set (SobolevEuclideanZero 2 1 2 Ω) :=
+  {vh | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧ 𝒯.IsPiecewisePoly 1 v ∧
+    EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
+    SobolevMultiIndex.fn (vh : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v ∧
+    ∀ x ∈ 𝒯.vertices, ψ' x ≤ v x}
+
+/-- `K_h` lies in the finite element space `V_h` of continuous piecewise linear functions
+vanishing on `∂Ω`. -/
+theorem discreteObstacleSet_subset {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (ψ' : 𝔼₂ → ℝ) :
+    discreteObstacleSet 𝒯 ψ' ⊆ (𝒯.polySpaceZero 2 1 : Set (SobolevEuclideanZero 2 1 2 Ω)) := by
+  rintro vh ⟨v, hvc, hvp, hv0, hvh, -⟩
+  exact ⟨v, hvc, hvp, hv0, hvh⟩
+
+/-- **`u^{h,*} = max (u_h, ψ)` lies in `K`**: for `u_h ∈ H¹₀(Ω)` with a representative continuous
+on `Ω̄`, in `H¹(Ω)` and vanishing on `∂Ω`, and an obstacle `ψ ∈ H¹(Ω)` with a representative
+continuous on `Ω̄` and `≤ 0` on `∂Ω`, the function `max (u_h, ψ)` is the function of an element
+of the admissible set `K = {v ∈ H¹₀(Ω) : v ≥ ψ}`: it is `u_h + (ψ − u_h)⁺ ∈ H¹(Ω)`, continuous on
+`Ω̄` and vanishing on `∂Ω`, hence in `H¹₀(Ω)` (Theorem 9.17, (i) ⇒ (ii)). -/
+theorem exists_max_mem_obstacleSet {Ω : Opens 𝔼₂} {ψ : SobolevEuclidean 2 1 2 Ω} {ψ' : 𝔼₂ → ℝ}
+    (hψ : SobolevMultiIndex.fn ψ =ᵐ[volume.restrict (Ω : Set 𝔼₂)] ψ')
+    (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hψ1 : MemSobolev ψ' 1 2 Ω volume)
+    (hψ0 : ∀ x ∈ frontier (Ω : Set 𝔼₂), ψ' x ≤ 0)
+    {v : 𝔼₂ → ℝ} (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv1 : MemSobolev v 1 2 Ω volume)
+    (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
+    ∃ w : SobolevEuclideanZero 2 1 2 Ω, w ∈ obstacleSet (d := 1) Ω ψ ∧
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
+        fun x ↦ max (v x) (ψ' x) := by
+  have hmax : ∀ x, v x + max (ψ' x - v x) 0 = max (v x) (ψ' x) := fun x ↦ by
+    rcases le_total (v x) (ψ' x) with h | h
+    · rw [max_eq_left (sub_nonneg.2 h), max_eq_right h]
+      ring
+    · rw [max_eq_right (sub_nonpos.2 h), max_eq_left h, add_zero]
+  -- `max (v, ψ') = v + (ψ' − v)⁺ ∈ H¹(Ω)`
+  have hmem : MemSobolevMultiIndex (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis
+      (fun x ↦ max (v x) (ψ' x)) 1 2 Ω volume := by
+    have h1 := hv1.memSobolevMultiIndex (b := (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis)
+    have h2 := ((hψ1.sub hv1).memSobolevMultiIndex
+      (b := (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis)).posPart one_le_two
+    have h3 := h1.add h2
+    refine h3.congr_ae (Filter.Eventually.of_forall fun x ↦ ?_)
+    simp only [Pi.add_apply, Pi.sub_apply]
+    exact hmax x
+  have hex := hmem.exists_sobolevMultiIndex
+  obtain ⟨w', hw'⟩ := hex
+  have hcont : ContinuousOn (fun x ↦ max (v x) (ψ' x)) (closure (Ω : Set 𝔼₂)) := hvc.sup hψc
+  have h0 : EqOn (fun x ↦ max (v x) (ψ' x)) 0 (frontier (Ω : Set 𝔼₂)) := fun x hx ↦ by
+    simp only [hv0 hx, Pi.zero_apply]
+    exact max_eq_left (hψ0 x hx)
+  have hw'0 : w' ∈ SobolevEuclideanZero 2 1 2 Ω :=
+    SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier (by simp) w' hw' hcont h0
+  refine ⟨⟨w', hw'0⟩, ?_, hw'⟩
+  rw [mem_obstacleSet_iff]
+  filter_upwards [hψ, hw'] with x h1 h2
+  rw [h1]
+  exact (le_max_right _ _).trans_eq h2.symm
+
+/-- The interpolant `Π_h u` of the solution lies in `K_h`: it is a continuous piecewise linear
+function vanishing on `∂Ω` with `u` (`Triangulation.globalInterp_eqOn_frontier`), and at every
+node it takes the value `u(x) ≥ ψ(x)`. -/
+theorem exists_globalInterp_mem_discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
+    (hedge : 𝒯.FrontierSubsetEdges) {ψ' u' : 𝔼₂ → ℝ}
+    (hψu : ∀ x ∈ closure (Ω : Set 𝔼₂), ψ' x ≤ u' x) (hu0 : EqOn u' 0 (frontier (Ω : Set 𝔼₂))) :
+    ∃ vh ∈ discreteObstacleSet 𝒯 ψ',
+      SobolevMultiIndex.fn (vh : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
+        𝒯.globalInterp referenceTriangleVertex baryCoord u' := by
+  have hcont := 𝒯.continuousOn_globalInterp referenceTriangleVertex baryCoord
+    𝒯.isConformingElement_linear (fun i ↦ (contDiff_baryCoord i).continuous) u'
+  have hpoly := 𝒯.globalInterp_isPiecewisePoly 𝒯.isConformingElement_linear baryCoord_eq_eval u'
+  have h0 := 𝒯.globalInterp_eqOn_frontier referenceTriangleVertex baryCoord hedge
+    𝒯.isConformingElement_linear isEdgeUnisolvent_linear hu0
+  have hex := 𝒯.exists_mem_polySpaceZero 2 (by simp) hcont hpoly h0
+  obtain ⟨w, -, hw⟩ := hex
+  refine ⟨w, ⟨_, hcont, hpoly, h0, hw, fun x hx ↦ ?_⟩, hw⟩
+  obtain ⟨T, a, rfl⟩ := 𝒯.exists_vertex_of_mem_vertices hx
+  rw [𝒯.globalInterp_eq_of_mem_closedK _ _ 𝒯.isConformingElement_linear T u'
+    (𝒯.vertex_mem_closedK T a), 𝒯.localInterp_linear_vertex]
+  exact hψu _ (𝒯.closedK_subset_closure T (𝒯.vertex_mem_closedK T a))
+
+
+/-- The residual of the obstacle problem's solution in terms of `−Δu`: when
+`a(u, v) = ∫_Ω g v` for all `v ∈ H¹₀(Ω)` (`g = −Δu ∈ L²(Ω)`), the residual
+`R(v, w) = a(u, v − w) − ℓ(v − w)` is `∫_Ω (g − f)(v − w)`, bounded by
+`‖g − f‖_{L²} ‖v − w‖_{L²}`. -/
+theorem residual_le_of_eq_load {Ω : Opens 𝔼₂}
+    (f g : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂))) {u : SobolevEuclideanZero 2 1 2 Ω}
+    (hΔ : ∀ v : SobolevEuclideanZero 2 1 2 Ω,
+      dirichletBilinForm (d := 1) Ω u v = loadZero (d := 1) Ω g v)
+    (z : SobolevEuclideanZero 2 1 2 Ω) :
+    dirichletBilinForm (d := 1) Ω u z - loadZero (d := 1) Ω f z
+      ≤ ‖g - f‖ * (eLpNorm (SobolevMultiIndex.fn (z : SobolevEuclidean 2 1 2 Ω)) 2
+        (volume.restrict (Ω : Set 𝔼₂))).toReal := by
+  rw [hΔ z, ← sub_apply, ← loadZero_sub]
+  refine (le_abs_self _).trans ((Elliptic.abs_load_le Ω (g - f) z).trans_eq ?_)
+  rw [Lp.norm_def]
+  rfl
+
+/-- Real form of an `ℝ≥0∞` bound `a ≤ ofReal c * S`. -/
+theorem toReal_le_of_le_ofReal_mul {a S : ℝ≥0∞} {c : ℝ} (hc : 0 ≤ c) (hS : S ≠ ⊤)
+    (h : a ≤ ENNReal.ofReal c * S) : a.toReal ≤ c * S.toReal := by
+  have h' := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hS) h
+  rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal hc] at h'
+
+/-- `v − Π_h v ∈ L²(Ω)` for `v ∈ H²(Ω)` and the linear interpolant. -/
+theorem memSobolev_sub_globalInterp_linear {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {v : 𝔼₂ → ℝ}
+    (hv : MemSobolev v 2 2 Ω volume) :
+    MemSobolev (v - 𝒯.globalInterp referenceTriangleVertex baryCoord v) 0 2 Ω volume :=
+  (hv.mono_order (by norm_num)).sub
+    ((𝒯.memSobolev_globalInterp referenceTriangleVertex baryCoord 𝒯.isConformingElement_linear
+      (fun j ↦ (contDiff_baryCoord j).of_le (by simp)) v 2).mono_order (by norm_num))
+
+/-- **`‖max (u_h, ψ) − u_h‖₀ ≤ ‖ψ − Π_h ψ‖₀`** for a continuous piecewise linear `u_h` with
+`u_h ≥ ψ` at the vertices: `u_h = Π_h u_h ≥ Π_h ψ` on `Ω̄` by the monotonicity of the linear
+interpolant, so that `0 ≤ ψ − u_h ≤ ψ − Π_h ψ` where `u_h < ψ`, and `max (u_h, ψ) − u_h = 0`
+elsewhere. -/
+theorem eLpNorm_max_sub_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {ψ' v : 𝔼₂ → ℝ}
+    (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂)))
+    (hvp : 𝒯.IsPiecewisePoly 1 v) (hψv : ∀ x ∈ 𝒯.vertices, ψ' x ≤ v x) :
+    eLpNorm (fun x ↦ max (v x) (ψ' x) - v x) 2 (volume.restrict (Ω : Set 𝔼₂))
+      ≤ eLpNorm (ψ' - 𝒯.globalInterp referenceTriangleVertex baryCoord ψ') 2
+        (volume.restrict (Ω : Set 𝔼₂)) := by
+  have hrep : EqOn (𝒯.globalInterp referenceTriangleVertex baryCoord v) v
+      (closure (Ω : Set 𝔼₂)) :=
+    𝒯.globalInterp_eqOn_closure_of_isPiecewisePoly 𝒯.isConformingElement_linear
+      referenceTriangleVertex_mem_closure (fun q hq x ↦ Chapter10.nodalInterp_baryCoord_eval q hq x)
+      hvp
+  have hge : ∀ x ∈ closure (Ω : Set 𝔼₂),
+      𝒯.globalInterp referenceTriangleVertex baryCoord ψ' x ≤ v x := fun x hx ↦
+    (globalInterp_linear_mono 𝒯 hψv hx).trans_eq (hrep hx)
+  have hpt : ∀ x ∈ (Ω : Set 𝔼₂), ‖max (v x) (ψ' x) - v x‖
+      ≤ ‖(ψ' - 𝒯.globalInterp referenceTriangleVertex baryCoord ψ') x‖ := by
+    intro x hx
+    have h1 := hge x (subset_closure hx)
+    rw [Real.norm_eq_abs, Real.norm_eq_abs, Pi.sub_apply]
+    rcases le_total (ψ' x) (v x) with h | h
+    · rw [max_eq_left h, sub_self, abs_zero]
+      exact abs_nonneg _
+    · rw [max_eq_right h, abs_of_nonneg (sub_nonneg.2 h)]
+      exact (sub_le_sub_left h1 _).trans (le_abs_self _)
+  have hmeas : AEStronglyMeasurable (fun x ↦ max (v x) (ψ' x) - v x)
+      (volume.restrict (Ω : Set 𝔼₂)) := by
+    have hv' := (hvc.mono subset_closure).aestronglyMeasurable (μ := volume) Ω.isOpen.measurableSet
+    have hψ' := (hψc.mono subset_closure).aestronglyMeasurable (μ := volume) Ω.isOpen.measurableSet
+    exact (hv'.sup hψ').sub hv'
+  exact eLpNorm_mono_ae hmeas
+    ((ae_restrict_iff' Ω.isOpen.measurableSet).2 (Filter.Eventually.of_forall hpt))
+
+/-- **Example 11.4.3.** Theorem 11.4.2 applied to the obstacle problem (Example 11.1.1,
+Example 11.3.10) on a polygon `Ω ⊆ B(0, R)` (`∂Ω` a union of element edges), discretized with
+linear elements on a regular family of triangulations `{𝒯_h}` with the discrete admissible set
+`K_h = {v_h ∈ V_h : v_h(x) ≥ ψ(x) at every node x}` (`discreteObstacleSet`), which is not
+contained in `K`. Let `f ∈ L²(Ω)`, let the obstacle `ψ ∈ H¹(Ω)` have a representative `ψ'`
+continuous on `Ω̄`, in `H²(Ω)`, with `ψ' ≤ 0` on `∂Ω`, let `u ∈ K` be the solution of the obstacle
+problem with a representative `u'` continuous on `Ω̄`, in `H²(Ω)`, vanishing on `∂Ω`, and with
+`−Δu = g ∈ L²(Ω)` in the weak sense `a(u, v) = ∫_Ω g v` for `v ∈ H¹₀(Ω)` (the book's
+`u ∈ H²(Ω)`; on a `C²` domain this is the regularity theorem for the obstacle problem, on a
+polygon it is a hypothesis), and let `u_h ∈ K_h` be the discrete solutions. Then
+
+  `‖u − u_h‖_{H¹(Ω)} ≤ c h`
+
+for a constant `c` depending on `|u|_{2,Ω}`, `|ψ|_{2,Ω}`, `‖f‖₀` and `‖−Δu‖₀` only. The proof is
+the book's: Falk's lemma (11.4.7) (`norm_sub_le_of_isVariationalInequalitySolution`, the
+pointwise form behind `theorem_11_4_2`) with `v_h = Π_h u ∈ K_h`
+(`exists_globalInterp_mem_discreteObstacleSet`) and `v = u^{h,*} = max (u_h, ψ) ∈ K`
+(`exists_max_mem_obstacleSet`); the residual is `∫_Ω (−Δu − f)(v − w)` (`residual_le_of_eq_load`),
+bounded through the `L²` norms; `‖u − Π_h u‖_{m,Ω} ≤ c h^{2−m} |u|_{2,Ω}` at `m = 0, 1`
+(`Chapter10.theorem_10_3_9_linear`); and `‖u^{h,*} − u_h‖₀ ≤ ‖ψ − Π_h ψ‖₀ ≤ c h² |ψ|_{2,Ω}`
+(`eLpNorm_max_sub_le`). -/
+theorem example_11_4_3 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
+    (hreg : Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hedge : ∀ i, (𝒯 i).FrontierSubsetEdges)
+    {R : ℝ} (hR : 0 ≤ R) (hΩ : (Ω : Set 𝔼₂) ⊆ Metric.ball 0 R)
+    (f g : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂))) {ψ : SobolevEuclidean 2 1 2 Ω} {ψ' : 𝔼₂ → ℝ}
+    (hψ : SobolevMultiIndex.fn ψ =ᵐ[volume.restrict (Ω : Set 𝔼₂)] ψ')
+    (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hψ2 : MemSobolev ψ' 2 2 Ω volume)
+    (hψ0 : ∀ x ∈ frontier (Ω : Set 𝔼₂), ψ' x ≤ 0)
+    {u : SobolevEuclideanZero 2 1 2 Ω}
+    (hu : u ∈ obstacleSet (d := 1) Ω ψ ∧ ∀ v ∈ obstacleSet (d := 1) Ω ψ,
+      dirichletBilinForm (d := 1) Ω u (v - u) ≥ loadZero (d := 1) Ω f (v - u))
+    {u' : 𝔼₂ → ℝ} (hu' : SobolevMultiIndex.fn (u : SobolevEuclidean 2 1 2 Ω)
+      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] u')
+    (hu'2 : MemSobolev u' 2 2 Ω volume) (hu'c : ContinuousOn u' (closure (Ω : Set 𝔼₂)))
+    (hu'0 : EqOn u' 0 (frontier (Ω : Set 𝔼₂)))
+    (hΔ : ∀ v : SobolevEuclideanZero 2 1 2 Ω,
+      dirichletBilinForm (d := 1) Ω u v = loadZero (d := 1) Ω g v)
+    {uh : ι → SobolevEuclideanZero 2 1 2 Ω}
+    (huh : ∀ i, uh i ∈ discreteObstacleSet (𝒯 i) ψ' ∧ ∀ vh ∈ discreteObstacleSet (𝒯 i) ψ',
+      dirichletBilinForm (d := 1) Ω (uh i) (vh - uh i) ≥ loadZero (d := 1) Ω f (vh - uh i)) :
+    ∃ c : ℝ, ∀ i, ‖u - uh i‖ ≤ c * (𝒯 i).meshSize := by
+  have hM := dirichletBilinForm_isBoundedWith (d := 1) Ω
+  have hα := dirichletBilinForm_isEllipticWith (d := 1) Ω hR hΩ
+  have hc₀ : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  -- the variational inequalities in operator form
+  have hmono := Chapter08.stronglyMonotone_toOperator hM hα
+  have hlip := Chapter08.lipschitzWith_toOperator zero_le_one hM
+  have huVI : IsVariationalInequalitySolution
+      (BilinForm.toOperator (dirichletBilinForm (d := 1) Ω) hM) (fun _ ↦ (0 : ℝ))
+      (SesqForm.rieszRep (loadZero (d := 1) Ω f)) (obstacleSet (d := 1) Ω ψ) u := by
+    rw [Chapter11.isVariationalInequalitySolution_toOperator_iff]
+    simpa only [add_zero, sub_zero] using hu
+  -- the interpolation estimates of Theorem 10.3.9 for the linear element
+  have h1 := Chapter10.theorem_10_3_9_linear (m := 1) le_rfl hreg hH
+  obtain ⟨c₁, hc₁, hest₁⟩ := h1
+  have h0 := Chapter10.theorem_10_3_9_linear (m := 0) (by norm_num) hreg hH
+  obtain ⟨c₀', hc₀', hest₀⟩ := h0
+  have hCC := Chapter10.exists_norm_le_sobolevNorm Ω
+  obtain ⟨C, hC0, hC⟩ := hCC
+  -- the seminorms of the data
+  obtain ⟨Su, hSu⟩ : ∃ Su : ℝ, Su = (sobolevSeminorm u' 2 2 Ω volume).toReal := ⟨_, rfl⟩
+  obtain ⟨Sψ, hSψ⟩ : ∃ Sψ : ℝ, Sψ = (sobolevSeminorm ψ' 2 2 Ω volume).toReal := ⟨_, rfl⟩
+  have hSu0 : 0 ≤ Su := hSu ▸ ENNReal.toReal_nonneg
+  have hSψ0 : 0 ≤ Sψ := hSψ ▸ ENNReal.toReal_nonneg
+  have hSufin : sobolevSeminorm u' 2 2 Ω volume ≠ ⊤ := hu'2.sobolevSeminorm_ne_top
+  have hSψfin : sobolevSeminorm ψ' 2 2 Ω volume ≠ ⊤ := hψ2.sobolevSeminorm_ne_top
+  -- the constant
+  obtain ⟨K, hK⟩ : ∃ K : ℝ, K = ‖g - f‖ * (c₀' * Sψ) + ‖g - f‖ * (c₀' * Su)
+      + 1 ^ 2 / (2 * (1 + (2 * R) ^ 2)⁻¹) * (C * (c₁ * Su)) ^ 2 := ⟨_, rfl⟩
+  have hK0 : 0 ≤ K := by rw [hK]; positivity
+  refine ⟨Real.sqrt (2 / (1 + (2 * R) ^ 2)⁻¹ * K), fun i ↦ ?_⟩
+  have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
+  -- the discrete solution and its representative
+  obtain ⟨hmem, hvi⟩ := huh i
+  obtain ⟨v, hvc, hvp, hv0, hvh, hψv⟩ := hmem
+  have hv1 : MemSobolev v 1 2 Ω volume := hvp.memSobolev hvc 2
+  have huhVI : IsVariationalInequalitySolution
+      (BilinForm.toOperator (dirichletBilinForm (d := 1) Ω) hM) (fun _ ↦ (0 : ℝ))
+      (SesqForm.rieszRep (loadZero (d := 1) Ω f)) (discreteObstacleSet (𝒯 i) ψ') (uh i) := by
+    rw [Chapter11.isVariationalInequalitySolution_toOperator_iff]
+    simpa only [add_zero, sub_zero] using huh i
+  -- `ψ ≤ u` on `Ω̄`
+  have hψu : ∀ x ∈ closure (Ω : Set 𝔼₂), ψ' x ≤ u' x := by
+    refine le_on_closure_of_ae_le ?_ hψc hu'c
+    have hK' := (mem_obstacleSet_iff (d := 1) Ω).1 hu.1
+    filter_upwards [hK', hψ, hu'] with x hx h1 h2
+    rw [← h1, ← h2]
+    exact hx
+  -- `v_h = Π_h u ∈ K_h`
+  obtain ⟨vh, hvhK, hfvh⟩ := exists_globalInterp_mem_discreteObstacleSet (𝒯 i) (hedge i) hψu hu'0
+  -- `v = u^{h,*} = max (u_h, ψ) ∈ K`
+  obtain ⟨w, hwK, hfw⟩ := exists_max_mem_obstacleSet hψ hψc (hψ2.mono_order (by norm_num)) hψ0
+    hvc hv1 hv0
+  -- Falk's lemma
+  have hfalk := norm_sub_le_of_isVariationalInequalitySolution (L := 1) hc₀ hmono hlip huVI huhVI
+    hwK hvhK
+  simp only [sub_zero, add_zero, BilinForm.inner_toOperator, BilinForm.inner_rieszRep] at hfalk
+  -- the two residuals
+  have hres1 := residual_le_of_eq_load f g hΔ (w - uh i)
+  have hres2 := residual_le_of_eq_load f g hΔ (vh - u)
+  -- `‖u^{h,*} − u_h‖₀ ≤ ‖ψ − Π_h ψ‖₀ ≤ c h² |ψ|₂`
+  have hL1 : (eLpNorm (SobolevMultiIndex.fn ((w - uh i : SobolevEuclideanZero 2 1 2 Ω)
+      : SobolevEuclidean 2 1 2 Ω)) 2 (volume.restrict (Ω : Set 𝔼₂))).toReal
+      ≤ c₀' * (𝒯 i).meshSize ^ 2 * Sψ := by
+    have hae : SobolevMultiIndex.fn ((w - uh i : SobolevEuclideanZero 2 1 2 Ω)
+        : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
+        fun x ↦ max (v x) (ψ' x) - v x := by
+      filter_upwards [SobolevMultiIndex.fn_sub (w : SobolevEuclidean 2 1 2 Ω) (uh i), hfw, hvh]
+        with x h1 h2 h3
+      have h1' : SobolevMultiIndex.fn ((w - uh i : SobolevEuclideanZero 2 1 2 Ω)
+          : SobolevEuclidean 2 1 2 Ω) x
+          = (SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω)
+            - SobolevMultiIndex.fn (uh i : SobolevEuclidean 2 1 2 Ω)) x := h1
+      rw [h1', Pi.sub_apply, h2, h3]
+    have hest := hest₀ i ψ' hψ2 hψc
+    simp only [Nat.sub_zero] at hest
+    rw [eLpNorm_congr_ae hae, hSψ]
+    exact toReal_le_of_le_ofReal_mul (by positivity) hSψfin
+      ((eLpNorm_max_sub_le (𝒯 i) hψc hvc hvp hψv).trans
+        ((eLpNorm_le_sobolevNorm_zero (memSobolev_sub_globalInterp_linear (𝒯 i) hψ2)).trans hest))
+  -- `‖Π_h u − u‖₀ ≤ c h² |u|₂`
+  have hL2 : (eLpNorm (SobolevMultiIndex.fn ((vh - u : SobolevEuclideanZero 2 1 2 Ω)
+      : SobolevEuclidean 2 1 2 Ω)) 2 (volume.restrict (Ω : Set 𝔼₂))).toReal
+      ≤ c₀' * (𝒯 i).meshSize ^ 2 * Su := by
+    have hae : SobolevMultiIndex.fn ((vh - u : SobolevEuclideanZero 2 1 2 Ω)
+        : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
+        (𝒯 i).globalInterp referenceTriangleVertex baryCoord u' - u' := by
+      filter_upwards [SobolevMultiIndex.fn_sub (vh : SobolevEuclidean 2 1 2 Ω) u, hfvh, hu']
+        with x h1 h2 h3
+      have h1' : SobolevMultiIndex.fn ((vh - u : SobolevEuclideanZero 2 1 2 Ω)
+          : SobolevEuclidean 2 1 2 Ω) x
+          = (SobolevMultiIndex.fn (vh : SobolevEuclidean 2 1 2 Ω)
+            - SobolevMultiIndex.fn (u : SobolevEuclidean 2 1 2 Ω)) x := h1
+      rw [h1', Pi.sub_apply, h2, h3, Pi.sub_apply]
+    have hest := hest₀ i u' hu'2 hu'c
+    simp only [Nat.sub_zero] at hest
+    rw [eLpNorm_congr_ae hae, eLpNorm_sub_comm, hSu]
+    exact toReal_le_of_le_ofReal_mul (by positivity) hSufin
+      ((eLpNorm_le_sobolevNorm_zero (memSobolev_sub_globalInterp_linear (𝒯 i) hu'2)).trans hest)
+  -- `‖u − Π_h u‖₁ ≤ C c h |u|₂`
+  have hH1 : ‖u - vh‖ ≤ C * (c₁ * (𝒯 i).meshSize * Su) := by
+    have h1 := Chapter10.norm_sub_le_of_fn_ae_eq hC u vh hu' hfvh
+    have hest := hest₁ i u' hu'2 hu'c
+    simp only [Nat.add_one_sub_one, pow_one] at hest
+    rw [hSu]
+    exact h1.trans (mul_le_mul_of_nonneg_left
+      (toReal_le_of_le_ofReal_mul (by positivity) hSufin hest) hC0)
+  -- assemble: `(c₀/2) ‖u − u_h‖² ≤ K h²`
+  have hG0 : 0 ≤ ‖g - f‖ := norm_nonneg _
+  have hR1 := hres1.trans (mul_le_mul_of_nonneg_left hL1 hG0)
+  have hR2 := hres2.trans (mul_le_mul_of_nonneg_left hL2 hG0)
+  have hH1' : ‖u - vh‖ ^ 2 ≤ (C * (c₁ * (𝒯 i).meshSize * Su)) ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) hH1 2
+  have hmain : (1 + (2 * R) ^ 2)⁻¹ / 2 * ‖u - uh i‖ ^ 2 ≤ K * (𝒯 i).meshSize ^ 2 := by
+    rw [hK]
+    refine hfalk.trans ?_
+    calc _ ≤ ‖g - f‖ * (c₀' * (𝒯 i).meshSize ^ 2 * Sψ) + ‖g - f‖ * (c₀' * (𝒯 i).meshSize ^ 2 * Su)
+          + 1 ^ 2 / (2 * (1 + (2 * R) ^ 2)⁻¹) * (C * (c₁ * (𝒯 i).meshSize * Su)) ^ 2 :=
+          add_le_add (add_le_add hR1 hR2) (mul_le_mul_of_nonneg_left hH1' (by positivity))
+      _ = _ := by ring
+  have key : ∀ e : ℝ, e = 2 / (1 + (2 * R) ^ 2)⁻¹ * ((1 + (2 * R) ^ 2)⁻¹ / 2 * e) := fun e ↦ by
+    have hne : (1 + (2 * R) ^ 2 : ℝ) ≠ 0 := by positivity
+    field_simp
+  have hsq : ‖u - uh i‖ ^ 2 ≤ 2 / (1 + (2 * R) ^ 2)⁻¹ * K * (𝒯 i).meshSize ^ 2 :=
+    calc ‖u - uh i‖ ^ 2
+        = 2 / (1 + (2 * R) ^ 2)⁻¹ * ((1 + (2 * R) ^ 2)⁻¹ / 2 * ‖u - uh i‖ ^ 2) := key _
+      _ ≤ 2 / (1 + (2 * R) ^ 2)⁻¹ * (K * (𝒯 i).meshSize ^ 2) :=
+          mul_le_mul_of_nonneg_left hmain (by positivity)
+      _ = _ := by ring
+  calc ‖u - uh i‖ = Real.sqrt (‖u - uh i‖ ^ 2) := (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ Real.sqrt (2 / (1 + (2 * R) ^ 2)⁻¹ * K * (𝒯 i).meshSize ^ 2) := Real.sqrt_le_sqrt hsq
+    _ = Real.sqrt (2 / (1 + (2 * R) ^ 2)⁻¹ * K) * (𝒯 i).meshSize := by
+        rw [Real.sqrt_mul (by positivity), Real.sqrt_sq hh0]
+
+
+end Example1143
 
 end AtkinsonHan.Chapter11

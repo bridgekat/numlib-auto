@@ -43,6 +43,11 @@ Sobolev extension domain and the affine map `F_K` of the reference element techn
   `g : 𝒯.elems → ℝ² → ℝ` that is `Compatible` (the `g T` agree on the overlaps of the closed
   elements); it is continuous on `Ω̄` when each `g T` is continuous on its closed element
   (`continuousOn_glue`), by the pasting lemma over the finite closed cover.
+* `𝒯.FrontierSubsetEdges` — the polygonal-domain hypothesis: `∂Ω` is a union of element edges.
+  It does not follow from the four axioms (see its doc comment) and it is what makes a piecewise
+  polynomial vanishing at the boundary nodes vanish on `∂Ω` (`globalInterp_eqOn_frontier`), for
+  an `IsEdgeUnisolvent` reference element — one whose interpolant vanishes along a reference
+  edge as soon as it vanishes at the nodes of that edge, as the Lagrange elements do.
 
 ## Implementation notes
 
@@ -213,6 +218,20 @@ theorem frontier_openTriangle_subset (A B C : 𝔼₂) (h : LinearIndependent �
 theorem volume_frontier_openTriangle (A B C : 𝔼₂) :
     volume (frontier (openTriangle A B C)) = 0 :=
   Convex.addHaar_frontier volume (convex_openTriangle A B C)
+
+/-- **Edge unisolvence of a reference element**: the nodes `x̂ᵢ` and shape functions `φ̂ᵢ` on the
+reference triangle are *edge unisolvent* when, on each edge `[x̂_a, x̂_b]` of the reference
+triangle, the interpolant `Π̂ v = ∑ᵢ v(x̂ᵢ) φ̂ᵢ` of a function vanishing at the nodes lying on that
+edge vanishes on the whole edge. It is what makes the interpolant of a function vanishing on the
+boundary of a polygon vanish on that boundary (`Triangulation.globalInterp_eqOn_frontier`), the
+Lagrange elements being edge unisolvent by one-variable unisolvence along the edge
+([han2009theoretical] Example 10.2.3). -/
+def IsEdgeUnisolvent {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ) : Prop :=
+  ∀ a b : Fin 3, a ≠ b → ∀ v : 𝔼₂ → ℝ,
+    (∀ i, xhat i ∈ segment ℝ (referenceTriangleVertex a) (referenceTriangleVertex b) →
+      v (xhat i) = 0) →
+    ∀ y ∈ segment ℝ (referenceTriangleVertex a) (referenceTriangleVertex b),
+      Approximation.nodalInterp xhat φhat v y = 0
 
 end EuclideanSpace
 
@@ -625,6 +644,107 @@ theorem continuousOn_globalInterp (h : 𝒯.IsConformingElement xhat φhat)
       (continuous_id.sub continuous_const))).smul continuous_const
 
 end Interpolant
+
+/-! #### Edges, the boundary and edge unisolvence -/
+
+section Edges
+
+variable {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
+
+/-- The segment between two vertices of an element lies in the closed element. -/
+theorem segment_subset_closedK (T : 𝒯.elems) (a b : Fin 3) :
+    segment ℝ (T.1 a) (T.1 b) ⊆ 𝒯.closedK T := by
+  have hc : Convex ℝ (𝒯.closedK T) := by
+    rw [← 𝒯.closure_K]
+    exact (𝒯.convex_K T).closure
+  exact hc.segment_subset (𝒯.vertex_mem_closedK T a) (𝒯.vertex_mem_closedK T b)
+
+/-- **The boundary of the domain is a union of element edges**: every point of `∂Ω` lies on an
+edge `[T_a, T_b]` of some element, and that whole edge lies in `∂Ω`. This is what
+"`Ω` is a polygonal domain triangulated by `𝒯`" means ([han2009theoretical] §10.2), and it is a
+hypothesis rather than a consequence of the four axioms of `Triangulation`: the open square
+minus a closed segment `S` lying strictly inside an interior edge `[P, Q]` of a triangulation of
+the closed square satisfies all four (the open elements miss `S`), while `S ⊆ ∂Ω` lies on no edge
+contained in `∂Ω`. It is what makes a piecewise polynomial vanishing at the boundary nodes vanish
+on `∂Ω` (`Triangulation.globalInterp_eqOn_frontier`). -/
+def FrontierSubsetEdges : Prop :=
+  ∀ x ∈ frontier (Ω : Set 𝔼₂), ∃ (T : 𝒯.elems) (a b : Fin 3), a ≠ b ∧
+    x ∈ segment ℝ (T.1 a) (T.1 b) ∧ segment ℝ (T.1 a) (T.1 b) ⊆ frontier (Ω : Set 𝔼₂)
+
+/-- The transported node `F_K x̂ᵢ` lies in the closed element when `x̂ᵢ` lies in the closed
+reference triangle. -/
+theorem node_mem_closedK (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) (T : 𝒯.elems)
+    (i : Fin I) : 𝒯.linearPart T (xhat i) + T.1 0 ∈ 𝒯.closedK T := by
+  rw [← 𝒯.image_closedReferenceTriangle, ← closure_referenceTriangle_eq]
+  exact ⟨xhat i, hx i, rfl⟩
+
+/-- **The local interpolant is the reference interpolant read through `F_K`**
+([han2009theoretical] Theorem 10.3.1, `Π_K v = (Π̂ (v ∘ F_K)) ∘ F_K⁻¹`). -/
+theorem localInterp_eq_nodalInterp_comp (T : 𝒯.elems) (v : 𝔼₂ → ℝ) (x : 𝔼₂) :
+    𝒯.localInterp xhat φhat T v x
+      = Approximation.nodalInterp xhat φhat (fun y ↦ v (𝒯.linearPart T y + T.1 0))
+        ((𝒯.linearPart T).symm (x - T.1 0)) := by
+  simp [localInterp_apply, Approximation.nodalInterp_apply]
+
+/-- The global interpolant depends only on the values at the nodes of the elements. -/
+theorem globalInterp_congr {v w : 𝔼₂ → ℝ}
+    (h : ∀ (T : 𝒯.elems) (i : Fin I),
+      v (𝒯.linearPart T (xhat i) + T.1 0) = w (𝒯.linearPart T (xhat i) + T.1 0)) :
+    𝒯.globalInterp xhat φhat v = 𝒯.globalInterp xhat φhat w := by
+  unfold globalInterp
+  congr 1
+  funext T x
+  simp only [localInterp_apply, h]
+
+/-- The global interpolant of the zero function is zero. -/
+theorem globalInterp_zero : 𝒯.globalInterp xhat φhat 0 = 0 := by
+  funext x
+  simp only [globalInterp, glue, localInterp_apply, Pi.zero_apply, mul_zero, Finset.sum_const_zero]
+  split_ifs <;> rfl
+
+/-- **Edge unisolvence along an element edge**: for an edge-unisolvent reference element, the
+local interpolant of a function vanishing on the edge `[T_a, T_b]` vanishes on that edge. The
+edge is the image under `F_K` of the reference edge `[x̂_a, x̂_b]` parameter by parameter
+(`Triangulation.affine_vertex_lineMap`), so the nodes on it are the images of the reference
+nodes on the reference edge. -/
+theorem localInterp_eq_zero_of_mem_segment (hunis : IsEdgeUnisolvent xhat φhat) (T : 𝒯.elems)
+    {a b : Fin 3} (hab : a ≠ b) {v : 𝔼₂ → ℝ} (hv : ∀ x ∈ segment ℝ (T.1 a) (T.1 b), v x = 0)
+    {x : 𝔼₂} (hx : x ∈ segment ℝ (T.1 a) (T.1 b)) : 𝒯.localInterp xhat φhat T v x = 0 := by
+  rw [localInterp_eq_nodalInterp_comp]
+  rw [segment_eq_image'] at hx
+  obtain ⟨s, hs, rfl⟩ := hx
+  have hF : (𝒯.linearPart T).symm (T.1 a + s • (T.1 b - T.1 a) - T.1 0)
+      = referenceTriangleVertex a
+        + s • (referenceTriangleVertex b - referenceTriangleVertex a) := by
+    rw [← 𝒯.affine_vertex_lineMap T a b s, 𝒯.affine_symm]
+  rw [hF]
+  refine hunis a b hab _ (fun i hi ↦ ?_) _ ?_
+  · rw [segment_eq_image'] at hi
+    obtain ⟨t, ht, hti⟩ := hi
+    rw [← hti, 𝒯.affine_vertex_lineMap]
+    refine hv _ ?_
+    rw [segment_eq_image']
+    exact ⟨t, ht, rfl⟩
+  · rw [segment_eq_image']
+    exact ⟨s, hs, rfl⟩
+
+/-- **A piecewise polynomial vanishing at the boundary nodes vanishes on the boundary.** For a
+conforming, edge-unisolvent element on a triangulation whose boundary is a union of element
+edges, the global interpolant of a function vanishing on `∂Ω` vanishes on `∂Ω`: a boundary
+point lies on an edge contained in `∂Ω`, where the interpolant is the local one, and the nodes of
+that edge are boundary points, where the function vanishes. This is the boundary-condition half
+of "`V_h ⊆ H¹₀(Ω)`" ([han2009theoretical] Example 10.4.2, [quarteroni2000numerical] (12.94)). -/
+theorem globalInterp_eqOn_frontier (hedge : 𝒯.FrontierSubsetEdges)
+    (hconf : 𝒯.IsConformingElement xhat φhat) (hunis : IsEdgeUnisolvent xhat φhat) {v : 𝔼₂ → ℝ}
+    (hv : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
+    EqOn (𝒯.globalInterp xhat φhat v) 0 (frontier (Ω : Set 𝔼₂)) := by
+  intro x hx
+  obtain ⟨T, a, b, hab, hxs, hseg⟩ := hedge x hx
+  rw [𝒯.globalInterp_eq_of_mem_closedK xhat φhat hconf T v (𝒯.segment_subset_closedK T a b hxs),
+    Pi.zero_apply]
+  exact 𝒯.localInterp_eq_zero_of_mem_segment xhat φhat hunis T hab (fun y hy ↦ hv (hseg hy)) hxs
+
+end Edges
 
 /-! #### The linear element -/
 

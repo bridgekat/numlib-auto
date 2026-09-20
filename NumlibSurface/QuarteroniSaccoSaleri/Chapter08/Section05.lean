@@ -4,6 +4,7 @@ import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.Unisolvent
+import Numlib.Geometry.Triangulation
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section01
 
 /-!
@@ -14,8 +15,8 @@ Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical 
 the ill-posed bilinear example of Remark 8.1, and piecewise interpolation on a triangulation
 (§8.5.2): the affine map (8.34) from the reference triangle, the space `𝒫_k` (8.35) with
 `dim 𝒫_k(T) = (k+1)(k+2)/2`, the reference-element identity behind (8.38), and the sup-norm
-interpolation error (8.39) on a triangle, with the reference Lagrange basis as data. The global
-estimate (8.40) needs a triangulation and is stated in the plan and left open there.
+interpolation error (8.39) on a triangle, with the reference Lagrange basis as data, and the
+global estimate (8.40) on a triangulation.
 
 The algebra is `Numlib/Approximation/NodalInterpolation` (`Approximation.nodalInterp`,
 `Approximation.IsNodalBasis`, `Approximation.nodalInterp_comp`),
@@ -23,8 +24,13 @@ The algebra is `Numlib/Approximation/NodalInterpolation` (`Approximation.nodalIn
 `Numlib/Approximation/MvPolynomial` (`Approximation.mvPolyLE`, `Approximation.finrank_mvPolyLE`);
 the analysis behind (8.39) is `Numlib/Analysis/Calculus/TaylorSegment` (Taylor's theorem along a
 segment with the Lagrange bound, and the polynomial nature of the Taylor polynomial).
-The triangulation itself (admissibility, the global nodes `z_i`, `𝒫_k^c(Ω)`, (8.36)–(8.37)) is a
-definition with no numbered result in reach and is not stated; Example 8.7 is a table.
+The triangulation is `Triangulation` of `Numlib/Geometry/Triangulation.lean` (a finite family of
+nondegenerate triangles covering `Ω̄`, edge to edge), on the plane `EuclideanSpace ℝ (Fin 2)`;
+the admissibility that makes the piecewise interpolant (8.37) continuous is
+`Triangulation.IsConformingElement`, and `Π_h^k f` is `Triangulation.globalInterp`, whose
+restriction to an element is `Π_T^k f` of (8.38) (`Triangulation.localInterp`). The space
+`𝒫_k^c(Ω)` of (8.36) is `Triangulation.polySpace` of `Numlib/Analysis/Sobolev/Triangulation.lean`.
+Example 8.7 is a table.
 
 ## Main definitions
 
@@ -53,11 +59,16 @@ definition with no numbered result in reach and is not stated; Example 8.7 is a 
 * `equation_8_39_linear` — the case `k = 1` with the nodes at the vertices and the barycentric
   coordinates `linearShape` as the reference basis (`linearShape_isNodalBasis`,
   `linearShape_span`): `‖f - Π_T^1 f‖_{∞,T} ≤ 2 h_T² ‖f''‖_{∞,T}`.
+* `equation_8_40` — `‖f - Π_h^k f‖_{∞,Ω} ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}` on a triangulation, `h`
+  the mesh size: (8.39) on the element containing the point, transported from `ℝ × ℝ` to the
+  plane of the triangulation along the coordinate equivalence `planeEquiv`. The book's
+  regularity hypothesis on the triangulation is not needed in the sup norm.
 
 ## Conventions
 
-Points of the plane are `ℝ × ℝ`; a polynomial space on a set `D ⊆ ℝ²` is `Approximation.mvPolyLE`
-on `D : Set (Fin 2 → ℝ)`.
+Points of the plane are `ℝ × ℝ`, except in (8.40), whose triangulation lives on
+`EuclideanSpace ℝ (Fin 2)` and whose reference data are read through `planeEquiv`; a polynomial
+space on a set `D ⊆ ℝ²` is `Approximation.mvPolyLE` on `D : Set (Fin 2 → ℝ)`.
 -/
 
 open Polynomial Set
@@ -529,5 +540,196 @@ theorem equation_8_39_linear {G : ℝ × ℝ → ℝ × ℝ} (hG : Function.Left
   norm_num
 
 end Triangle
+
+
+/-! ### (8.40): the interpolation error on a triangulation
+
+The global estimate is (8.39) on each element and the maximum over the elements. The
+triangulation is `Triangulation` of `Numlib/Geometry/Triangulation.lean`, on the plane
+`EuclideanSpace ℝ (Fin 2)`, with the global interpolant `Π_h^k f = Triangulation.globalInterp`
+of (8.37); the element estimate (8.39) is stated on the plane `ℝ × ℝ` of the affine map (8.34),
+so it is transported along the coordinate equivalence `planeEquiv : ℝ² ≃L ℝ × ℝ`, which
+changes the norms by the factor `‖planeEquiv.symm‖^{k+1}` absorbed into the constant. -/
+
+section Equation840
+
+open EuclideanSpace TopologicalSpace
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- The plane of the triangulations, `EuclideanSpace ℝ (Fin 2)`, as the plane `ℝ × ℝ` of the
+affine map (8.34): the coordinate equivalence `x ↦ (x₀, x₁)`. -/
+noncomputable def planeEquiv : 𝔼₂ ≃L[ℝ] ℝ × ℝ :=
+  (EuclideanSpace.equiv (Fin 2) ℝ).trans (ContinuousLinearEquiv.finTwoArrow ℝ ℝ)
+
+/-- `planeEquiv x = (x₀, x₁)`. -/
+theorem planeEquiv_apply (x : 𝔼₂) : planeEquiv x = (x 0, x 1) := rfl
+
+/-- The first coordinate of `planeEquiv.symm p` is `p.1`. -/
+theorem planeEquiv_symm_apply_zero (p : ℝ × ℝ) : planeEquiv.symm p 0 = p.1 := rfl
+
+/-- The second coordinate of `planeEquiv.symm p` is `p.2`. -/
+theorem planeEquiv_symm_apply_one (p : ℝ × ℝ) : planeEquiv.symm p 1 = p.2 := rfl
+
+/-- The sup norm of `ℝ × ℝ` is at most the Euclidean norm: `‖planeEquiv x‖ ≤ ‖x‖`. -/
+theorem norm_planeEquiv_apply_le (x : 𝔼₂) : ‖planeEquiv x‖ ≤ ‖x‖ := by
+  rw [planeEquiv_apply, Prod.norm_def]
+  exact max_le (PiLp.norm_apply_le x 0) (PiLp.norm_apply_le x 1)
+
+/-- The iterated derivative of `f ∘ planeEquiv.symm` is that of `f` composed with the
+equivalence in each slot. -/
+theorem iteratedFDeriv_comp_planeEquiv_symm (f : 𝔼₂ → ℝ) (y : ℝ × ℝ) (i : ℕ) :
+    iteratedFDeriv ℝ i (f ∘ planeEquiv.symm) y
+      = (iteratedFDeriv ℝ i f (planeEquiv.symm y)).compContinuousLinearMap
+        fun _ ↦ (planeEquiv.symm : ℝ × ℝ →L[ℝ] 𝔼₂) := by
+  have := planeEquiv.symm.iteratedFDerivWithin_comp_right f uniqueDiffOn_univ
+    (mem_univ (planeEquiv.symm y)) i
+  rwa [preimage_univ, iteratedFDerivWithin_univ, iteratedFDerivWithin_univ] at this
+
+/-- `‖D^i (f ∘ planeEquiv.symm)(y)‖ ≤ ‖D^i f (planeEquiv.symm y)‖ ‖planeEquiv.symm‖^i`. -/
+theorem norm_iteratedFDeriv_comp_planeEquiv_symm_le (f : 𝔼₂ → ℝ) (y : ℝ × ℝ) (i : ℕ) :
+    ‖iteratedFDeriv ℝ i (f ∘ planeEquiv.symm) y‖
+      ≤ ‖iteratedFDeriv ℝ i f (planeEquiv.symm y)‖
+        * ‖(planeEquiv.symm : ℝ × ℝ →L[ℝ] 𝔼₂)‖ ^ i := by
+  rw [iteratedFDeriv_comp_planeEquiv_symm]
+  refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
+  rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+
+/-- A point of the closed reference triangle of the triangulations, read in `ℝ × ℝ`, lies in the
+reference triangle `T̂` of (8.34). -/
+theorem planeEquiv_mem_referenceTriangle {x : 𝔼₂}
+    (hx : x ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂)) :
+    planeEquiv x ∈ referenceTriangle := by
+  rw [closure_referenceTriangle_eq] at hx
+  exact hx
+
+/-- A point of `T̂` read in `ℝ²` lies in the closed reference triangle of the triangulations. -/
+theorem planeEquiv_symm_mem_closure_referenceTriangle {y : ℝ × ℝ} (hy : y ∈ referenceTriangle) :
+    planeEquiv.symm y ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂) := by
+  rw [closure_referenceTriangle_eq]
+  exact hy
+
+/-- The affine map (8.34) of the vertices of an element, read through `planeEquiv`, is the
+element's affine map `F_K` of `Triangulation`: `F_T (planeEquiv y) = planeEquiv (F_K y)`. -/
+theorem equation_8_34_planeEquiv {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (T : 𝒯.elems)
+    (y : ℝ × ℝ) :
+    equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1)) (planeEquiv (T.1 2)) y
+      = planeEquiv (𝒯.linearPart T (planeEquiv.symm y) + T.1 0) := by
+  rw [show 𝒯.linearPart T (planeEquiv.symm y) + T.1 0
+      = triangleAffine (T.1 0) (T.1 1) (T.1 2) (planeEquiv.symm y) from
+    congrFun (𝒯.affine_eq_triangleAffine T) _, equation_8_34_apply]
+  simp only [triangleAffine, map_add, map_smul, map_sub, planeEquiv_symm_apply_zero,
+    planeEquiv_symm_apply_one]
+  abel
+
+/-- **(8.40), the interpolation error on a triangulation.** Let `x̂ᵢ ∈ T̂` and `φ̂ᵢ`, `i ∈ I`, be
+the nodes and the Lagrange basis of `𝒫_k(T̂)` on the reference triangle (nodal, spanning every
+polynomial of total degree at most `k` on `T̂`, with `‖φ̂ᵢ‖_{∞,T̂} ≤ Lᵢ`). Then there is a constant
+`C`, depending on `k` and the reference basis only, such that for every triangulation `𝒯_h` of
+a plane domain `Ω` on which the element is conforming (the admissibility of the triangulation,
+which makes the piecewise interpolant `Π_h^k f` of (8.37) continuous), every `f ∈ C^{k+1}(Ω̄)`
+and every `x ∈ Ω̄`,
+
+  `|f(x) − Π_h^k f(x)| ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}`,
+
+`h = max_T h_T` the mesh size. The proof is (8.39) on the element containing `x`, with
+`h_T ≤ h`, transported from the plane `ℝ × ℝ` of (8.34) to the plane of the triangulation along
+`planeEquiv` (the factor `‖planeEquiv.symm‖^{k+1}` goes into `C`), and `Π_h^k f = Π_T^k f` on
+`T`. The regularity hypothesis `max_T h_T/ρ_T ≤ σ` of the book is not needed in the sup norm
+(it is inherited from the Sobolev-norm version of the cited theorem, [QV94] Remark 3.4.2); the
+`ℙ_k` Lagrange element on the principal lattice satisfies the hypotheses on the reference
+basis (Atkinson–Han, `Chapter10/Section02`: `latticeShapeFun_isNodalBasis`,
+`nodalInterp_lattice_eval`, `isConformingElement_lattice`). -/
+theorem equation_8_40 {I : ℕ} {k : ℕ} {xhat : Fin I → 𝔼₂}
+    (hx : ∀ i, xhat i ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂))
+    {φhat : Fin I → 𝔼₂ → ℝ} (hnodal : Approximation.IsNodalBasis xhat φhat)
+    (hspan : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∃ c : Fin I → ℝ,
+      ∀ x ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂),
+        MvPolynomial.eval (fun j ↦ x j) q = ∑ m, c m * φhat m x)
+    {L : Fin I → ℝ}
+    (hL : ∀ m, ∀ x ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂), |φhat m x| ≤ L m) :
+    ∃ C : ℝ, ∀ {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω), 𝒯.IsConformingElement xhat φhat →
+      ∀ {f : 𝔼₂ → ℝ}, (∀ x ∈ closure (Ω : Set 𝔼₂), ContDiffAt ℝ (k + 1) f x) →
+      ∀ {M : ℝ}, (∀ x ∈ closure (Ω : Set 𝔼₂), ‖iteratedFDeriv ℝ (k + 1) f x‖ ≤ M) →
+      ∀ x ∈ closure (Ω : Set 𝔼₂),
+        |f x - 𝒯.globalInterp xhat φhat f x| ≤ C * 𝒯.meshSize ^ (k + 1) * M := by
+  set N : ℝ := ‖(planeEquiv.symm : ℝ × ℝ →L[ℝ] 𝔼₂)‖ with hN
+  refine ⟨(∑ m, L m + 1) / (k + 1)! * N ^ (k + 1), fun {Ω} 𝒯 hconf {f} hf {M} hM x hx' ↦ ?_⟩
+  -- the element containing `x`
+  rw [𝒯.closure_eq_iUnion_closedK, mem_iUnion] at hx'
+  obtain ⟨T, hxT⟩ := hx'
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM x (𝒯.closedK_subset_closure T hxT))
+  -- the data of (8.39) on `ℝ × ℝ`
+  have hFe : ∀ y : ℝ × ℝ, equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1))
+      (planeEquiv (T.1 2)) y = planeEquiv (𝒯.linearPart T (planeEquiv.symm y) + T.1 0) :=
+    fun y ↦ equation_8_34_planeEquiv 𝒯 T y
+  have hG : Function.LeftInverse
+      (fun p ↦ planeEquiv ((𝒯.linearPart T).symm (planeEquiv.symm p - T.1 0)))
+      (equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1)) (planeEquiv (T.1 2))) := by
+    intro y
+    simp only [hFe, ContinuousLinearEquiv.symm_apply_apply, 𝒯.affine_symm,
+      ContinuousLinearEquiv.apply_symm_apply]
+  have hz : ∀ m, planeEquiv (xhat m) ∈ referenceTriangle := fun m ↦
+    planeEquiv_mem_referenceTriangle (hx m)
+  have hnodal' : Approximation.IsNodalBasis (planeEquiv ∘ xhat) fun m ↦ φhat m ∘ planeEquiv.symm :=
+    hnodal.comp planeEquiv.symm_apply_apply
+  have hspan' : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∃ c : Fin I → ℝ,
+      ∀ y ∈ referenceTriangle,
+        MvPolynomial.eval ![y.1, y.2] q = ∑ m, c m * (φhat m ∘ planeEquiv.symm) y := by
+    intro q hq
+    obtain ⟨c, hc⟩ := hspan q hq
+    refine ⟨c, fun y hy ↦ ?_⟩
+    have h := hc _ (planeEquiv_symm_mem_closure_referenceTriangle hy)
+    have hy' : (![y.1, y.2] : Fin 2 → ℝ) = fun j ↦ planeEquiv.symm y j := by
+      funext j
+      fin_cases j <;> rfl
+    rw [hy']
+    exact h
+  have hL' : ∀ m, ∀ y ∈ referenceTriangle, |(φhat m ∘ planeEquiv.symm) y| ≤ L m :=
+    fun m y hy ↦ hL m _ (planeEquiv_symm_mem_closure_referenceTriangle hy)
+  -- the element's edges at the first vertex are bounded by the mesh size
+  have hedge : ∀ a : Fin 3, ‖planeEquiv (T.1 a) - planeEquiv (T.1 0)‖ ≤ 𝒯.meshSize := fun a ↦ by
+    rw [← map_sub]
+    refine (norm_planeEquiv_apply_le _).trans ?_
+    rw [← dist_eq_norm]
+    refine (Metric.dist_le_diam_of_mem (𝒯.isCompact_closedK T).isBounded
+      (𝒯.vertex_mem_closedK T a) (𝒯.vertex_mem_closedK T 0)).trans ?_
+    rw [← 𝒯.closure_K, Metric.diam_closure]
+    exact 𝒯.diam_le_meshSize T
+  -- the image of `T̂` under `F_T` is the element, read in `ℝ × ℝ`
+  have himage : ∀ y ∈ equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1))
+      (planeEquiv (T.1 2)) '' referenceTriangle, planeEquiv.symm y ∈ 𝒯.closedK T := by
+    rintro _ ⟨y, hy, rfl⟩
+    rw [hFe, ContinuousLinearEquiv.symm_apply_apply, ← 𝒯.image_closedReferenceTriangle,
+      ← closure_referenceTriangle_eq]
+    exact ⟨_, planeEquiv_symm_mem_closure_referenceTriangle hy, rfl⟩
+  have hf' : ∀ y ∈ equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1))
+      (planeEquiv (T.1 2)) '' referenceTriangle, ContDiffAt ℝ (k + 1) (f ∘ planeEquiv.symm) y :=
+    fun y hy ↦ (hf _ (𝒯.closedK_subset_closure T (himage y hy))).comp y
+      planeEquiv.symm.contDiff.contDiffAt
+  have hM' : ∀ y ∈ equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1))
+      (planeEquiv (T.1 2)) '' referenceTriangle,
+      ‖iteratedFDeriv ℝ (k + 1) (f ∘ planeEquiv.symm) y‖ ≤ M * N ^ (k + 1) := fun y hy ↦
+    (norm_iteratedFDeriv_comp_planeEquiv_symm_le f y (k + 1)).trans
+      (mul_le_mul_of_nonneg_right (hM _ (𝒯.closedK_subset_closure T (himage y hy)))
+        (by positivity))
+  -- (8.39) on the element, at the point `e x = F_T (e (F_K⁻¹ x))`
+  have hx'' : planeEquiv x ∈ equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1))
+      (planeEquiv (T.1 2)) '' referenceTriangle := by
+    rw [← 𝒯.image_closedReferenceTriangle] at hxT
+    obtain ⟨z, hz', rfl⟩ := hxT
+    refine ⟨planeEquiv z, planeEquiv_mem_referenceTriangle (by rwa [closure_referenceTriangle_eq]),
+      ?_⟩
+    rw [hFe, ContinuousLinearEquiv.symm_apply_apply]
+  have h839 := equation_8_39 hG hz hnodal' hspan' hL' (hedge 1) (hedge 2) hf' hM'
+    (planeEquiv x) hx''
+  -- identify the two sides with `f x` and `Π_h^k f (x)`
+  simp only [Approximation.nodalInterp_apply, Function.comp_apply, hFe,
+    ContinuousLinearEquiv.symm_apply_apply, smul_eq_mul] at h839
+  rw [𝒯.globalInterp_eq_of_mem_closedK xhat φhat hconf T f hxT, Triangulation.localInterp_apply]
+  refine h839.trans (le_of_eq ?_)
+  ring
+
+end Equation840
 
 end QuarteroniSaccoSaleri.Chapter08

@@ -124,26 +124,35 @@ source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.39) for k = 1'
 
 [[node]]
 id = "equation_8_40"
-kind = "theorem"
-desc = '''(8.40): on a regular triangulation `𝒯_h` of a polygon `Ω` (`max_T h_T/ρ_T ≤ σ`) with mesh
-`h`, `‖f - Π_h^k f‖_{∞,Ω} ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}` for every `f ∈ C^{k+1}(Ω)`. Not formalized:
-it needs the triangulation and the global interpolant `Π_h^k` of (8.37), which are not planned
-(no numbered one-dimensional result depends on them), and it rests on `equation_8_39`. Reading: for
-the sup norm the regularity assumption is superfluous — (8.40) is the maximum of (8.39) over the
-elements — and is inherited from the Sobolev-norm version of the cited theorem; recorded in the
-report's errata.
-
-Blocked (2026-09-20, refreshed; blocker 11 of `notes/frontier.md`): `equation_8_39` is now proved
-(the per-element bound, with the reference Lagrange basis of `𝒫_k(T̂)` as data and a constant
-`C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!` independent of the element), so what (8.40) still needs is
-only the triangulation scaffold: a finite family of nondegenerate triangles `T = F_T(T̂)` covering
-`Ω`, the global nodes `z_i` with the local-to-global correspondence of (8.38), and the global
-interpolant `Π_h^k f` of (8.37) whose restriction to each `T` is `Π_T^k f` (which is where the
-admissibility of the triangulation — the continuity of the `l_i` across edges — is used). With
-those, (8.40) is `equation_8_39` on each element and the maximum over the finitely many elements,
-about 60 lines; the regularity hypothesis `max_T h_T/ρ_T ≤ σ` is not needed in the sup norm. No
-triangulation structure exists in `Numlib/` (checked: `Numlib/Approximation/TriangleQuadrature`
-and `NumlibSurface/QuarteroniSaccoSaleri/Chapter09/Section09` work with a finite family of
-triangles and no adjacency), and building one is the scope decision of blocker 11.'''
-deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_39"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.40)'
+
+[[node]]
+id = "planeEquiv"
+
+[[node]]
+id = "planeEquiv_apply"
+
+[[node]]
+id = "planeEquiv_symm_apply_zero"
+
+[[node]]
+id = "planeEquiv_symm_apply_one"
+
+[[node]]
+id = "norm_planeEquiv_apply_le"
+
+[[node]]
+id = "iteratedFDeriv_comp_planeEquiv_symm"
+
+[[node]]
+id = "norm_iteratedFDeriv_comp_planeEquiv_symm_le"
+
+[[node]]
+id = "planeEquiv_mem_referenceTriangle"
+
+[[node]]
+id = "planeEquiv_symm_mem_closure_referenceTriangle"
+
+[[node]]
+id = "equation_8_34_planeEquiv"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.34)'

@@ -1,6 +1,7 @@
 import Mathlib.MeasureTheory.Integral.DivergenceTheorem
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import NumlibSurface.AtkinsonHan.Chapter10.Section04
 
 /-!
 # Quarteroni–Sacco–Saleri §12.6: a quick glance at the two-dimensional case
@@ -15,13 +16,18 @@ difference approximation (12.91) with the **five-point discretization of the Lap
 on the `(N - 1)²` interior unknowns, the pentadiagonal matrix (12.93); read on the index set
 `Fin (N-1) × Fin (N-1)` it is `h⁻²` times the **Kronecker sum** `T ⊕ₖ T` of two copies of the
 one-dimensional model matrix `T = tridiag(-1, 2, -1)`, which makes its symmetry, its positive
-definiteness and its M-matrix property (Exercise 14) immediate.
+definiteness and its M-matrix property (Exercise 14) immediate. The finite element method of
+the section — the space `V_h` of (12.94) on a triangulation and the error estimate (12.96) of
+Property 12.2 — is stated on the triangulation scaffold of `Numlib/Geometry/Triangulation.lean`
+and proved through Atkinson–Han's Theorem 10.4.1 (`NumlibSurface/AtkinsonHan/Chapter10/Section04`,
+the one module of the other book this file imports, for its `ℙ_k` Lagrange element).
 
 ## Main definitions
 
 * `equation_12_92 N u i j` — the five-point discrete Laplacian at the interior node
   `x_{i+1,j+1}`, and `IsFivePointSolution N f u` the discrete problem (12.91).
 * `fivePointMatrix N` — the matrix (12.93) of the scheme, `h⁻² (T ⊕ₖ T)`.
+* `equation_12_94 𝒯 k` — the finite element space `V_h ⊆ H¹₀(Ω)` (12.94).
 
 ## Main results
 
@@ -33,17 +39,31 @@ definiteness and its M-matrix property (Exercise 14) immediate.
 * `exercise_12_15_rectangle` — Green's formula (12.95) on a rectangle, with the boundary integral
   written as its four sides: `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²`,
   `v ∈ C¹`, by the exercise's own hint over Mathlib's divergence theorem for a rectangle.
+* `equation_12_94` — the finite element space `V_h ⊆ H¹₀(Ω)` of continuous piecewise polynomials
+  of degree `≤ k` vanishing on `∂Ω` on a triangulation `𝒯_h` (`Triangulation.polySpaceZero`);
+  `exists_mem_equation_12_94` says the book's functions are its elements (no trace theorem: a
+  continuous `H¹` function vanishing on `∂Ω` is in `H¹₀`, Brezis's Theorem 9.17), and
+  `finiteDimensional_equation_12_94` that it is finite-dimensional.
+* `property_12_2` — the `H¹` estimate (12.96), `‖u − u_h‖_{H¹₀} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}}`,
+  on a polygon triangulated by a regular family: Atkinson–Han's Theorem 10.4.1
+  (`AtkinsonHan.Chapter10.theorem_10_4_1`, Céa's lemma and the interpolation estimate of
+  Theorem 10.3.9) with the `ℙ_k` Lagrange element on the principal lattice, whose interpolant of
+  a boundary-vanishing function lies in `V_h`.
 
 ## Not formalized here
 
-The two-dimensional finite element space (12.94), Green's formula (12.95) of Exercise 15 on a
-*general* plane domain, and Property 12.2 are left as open nodes with their reasons: a
-triangulation of a plane domain with continuous piecewise polynomials on it, the trace that makes
-`H¹₀(Ω)` meaningful, a boundary measure `dγ` and an outward normal for the divergence theorem, and
-the multi-dimensional Bramble–Hilbert interpolation theory behind (12.96)–(12.97) are all outside
-the library (the book proves none of them either — Property 12.2 is quoted from [QV94]). The
+Green's formula (12.95) of Exercise 15 on a *general* plane domain and the `L²` estimate (12.97)
+of Property 12.2 (`property_12_2_l2`) are left as open nodes with their reasons: a boundary
+measure `dγ` and an outward normal for the divergence theorem (`notes/frontier.md` blocker 2), and
+the `H²` regularity of the Dirichlet problem on a convex polygon behind the Aubin–Nitsche argument
+(blocker 18; the abstract duality argument is `AtkinsonHan.Chapter10.theorem_10_4_3`). The
 rectangle is the case the divergence theorem *is* available for, and it is the domain §12.6's own
-finite difference discretization uses, so it is proved here.
+finite difference discretization uses, so it is proved here. The book proves neither estimate of
+Property 12.2 (both are quoted from [QV94]); (12.96) is proved here on the triangulation
+scaffold of `Numlib/Geometry/Triangulation.lean`, with the polygon entering through the
+hypothesis that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`), the
+regularity `u ∈ H^{l+1}(Ω)` read on a representative continuous up to the boundary, and the
+boundary condition `u = 0` on `∂Ω` on that representative.
 
 ## Conventions
 
@@ -235,5 +255,147 @@ theorem exercise_12_15_rectangle {u v : ℝ × ℝ → ℝ} (hu : ContDiff ℝ 2
   linarith
 
 end Green
+
+
+/-! ### The finite element space (12.94) and Property 12.2
+
+The two-dimensional finite element method of §12.6 on the triangulation scaffold of
+`Numlib/Geometry/Triangulation.lean`: the space `V_h` of (12.94) is `Triangulation.polySpaceZero`
+of `Numlib/Analysis/Sobolev/Triangulation.lean`, and Property 12.2 is Atkinson–Han's Theorem
+10.4.1 (`AtkinsonHan.Chapter10.theorem_10_4_1`, Céa's lemma with the interpolation estimate of
+Theorem 10.3.9) for the `ℙ_k` Lagrange element on the principal lattice
+(`AtkinsonHan.Chapter10.latticeNode`, `latticeShapeFun`), the element whose global basis is the
+Lagrange basis (8.36)–(8.37) of §8.5.2. -/
+
+section FiniteElement
+
+open MeasureTheory Set TopologicalSpace EuclideanSpace Filter
+open scoped ENNReal
+
+local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
+
+/-- **The finite element space (12.94)**,
+
+  `V_h = {v_h ∈ C⁰(Ω̄) : v_h|_T ∈ ℙ_k(T) for all T ∈ 𝒯_h, v_h|_∂Ω = 0}`,
+
+as a subspace of `H¹₀(Ω)`: `Triangulation.polySpaceZero`, the elements of `H¹₀(Ω)` whose function
+is (almost everywhere on `Ω`) a function continuous on `Ω̄`, polynomial of degree at most `k` on
+each closed element in the reference coordinates (`Triangulation.IsPiecewisePoly`), and
+vanishing on `∂Ω`. Every such function is the function of an element of `H¹₀(Ω)`
+(`exists_mem_equation_12_94`), so `V_h` is the book's space; the membership in `H¹₀(Ω)` is
+Brezis's Theorem 9.17, (i) ⇒ (ii), on any open set — no trace theorem is needed to read
+`v_h|_∂Ω = 0`, and the piecewise-`ℙ_k` function lies in `H¹(Ω)` by the characterization through
+lines (`Triangulation.memSobolev_of_piecewise`), not through Green's formula (12.95). -/
+noncomputable def equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) :
+    Submodule ℝ (SobolevEuclideanZero 2 1 2 Ω) :=
+  𝒯.polySpaceZero 2 k
+
+/-- Membership of `V_h` (12.94), unfolded. -/
+theorem mem_equation_12_94_iff {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ)
+    {w : SobolevEuclideanZero 2 1 2 Ω} :
+    w ∈ equation_12_94 𝒯 k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
+      𝒯.IsPiecewisePoly k v ∧ EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
+  Iff.rfl
+
+/-- **Every function of the book's `V_h` is the function of an element of (12.94)**: a
+function continuous on `Ω̄`, piecewise polynomial of degree at most `k` and vanishing on `∂Ω`
+lies in `H¹₀(Ω)`. -/
+theorem exists_mem_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ} {v : 𝔼₂ → ℝ}
+    (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v)
+    (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
+    ∃ w ∈ equation_12_94 𝒯 k,
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
+  𝒯.exists_mem_polySpaceZero 2 (by simp) hvc hvp hv0
+
+/-- **`V_h` is finite-dimensional**, `k ≥ 1`: its elements are determined by their values at the
+nodes of the `ℙ_k` Lagrange element (`Triangulation.finiteDimensional_polySpaceZero`). -/
+theorem finiteDimensional_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ}
+    (hk : 1 ≤ k) : FiniteDimensional ℝ (equation_12_94 𝒯 k) :=
+  𝒯.finiteDimensional_polySpaceZero 2 (AtkinsonHan.Chapter10.isConformingElement_lattice hk 𝒯)
+    (AtkinsonHan.Chapter10.latticeNode_mem_closure hk)
+    (AtkinsonHan.Chapter10.nodalInterp_lattice_eval hk)
+
+/-- **Property 12.2, the estimate (12.96).** Let `u ∈ H¹₀(Ω)` be the exact solution of the Poisson
+problem (12.90), `∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)`, on a polygon `Ω ⊆ B(0, R)`
+triangulated by a regular family `{𝒯_h}` (mesh parameters at most `H`, `∂Ω` a union of element
+edges), and let `u_h ∈ V_h` be its finite element approximation with continuous piecewise
+polynomials of degree `k ≥ 1`, the Galerkin solution on `V_h` (12.94). If `u ∈ H^{l+1}(Ω)` for
+some `1 ≤ l ≤ k` (the book's `l = min(k, s − 1)` for `u ∈ H^s(Ω)`, `s ≥ 2`), read on a
+representative `ũ` continuous up to the boundary with `ũ = 0` on `∂Ω`, then
+
+  `‖u − u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}(Ω)}`,
+
+with `M = 1` the continuity constant of the form and `α₀ = (1 + (2R)²)⁻¹` its coercivity
+constant on `H¹₀(Ω)` (Poincaré's inequality), and `C` independent of `h` and of `u`. The book
+quotes the estimate from [QV94, Theorem 6.2.1]; it is Céa's lemma
+(`IsGalerkinSolution.norm_sub_le`) with `v_h = Π_h u` and the interpolation estimate of
+Atkinson–Han's Theorem 10.3.9 for the `ℙ_k` Lagrange element, packaged as
+`AtkinsonHan.Chapter10.theorem_10_4_1`; `Π_h u ∈ V_h` because the Lagrange element is conforming,
+polynomial and edge unisolvent, so that `Π_h ũ` vanishes on `∂Ω` with `ũ`
+(`Triangulation.exists_mem_polySpaceZero_globalInterp`). The regularity `u ∈ H^{l+1}(Ω)` is read on
+the continuous representative as in Theorem 10.3.9; the boundary condition `ũ = 0` on `∂Ω` is
+the problem's, a hypothesis on a polygon (on a `C¹` domain it follows from `u ∈ H¹₀(Ω)`). The
+`L²` estimate (12.97) is `property_12_2_l2`, open. -/
+theorem property_12_2 {k : ℕ} (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
+    {𝒯 : ι → Triangulation Ω}
+    (hreg : AtkinsonHan.Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
+    {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hedge : ∀ i, (𝒯 i).FrontierSubsetEdges)
+    {R : ℝ} (hR : 0 ≤ R) (hΩ : (Ω : Set 𝔼₂) ⊆ Metric.ball 0 R) {s : ℕ} (hs : 1 ≤ s) (hsk : s ≤ k) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂)))
+      (u : SobolevEuclideanZero 2 1 2 Ω),
+      (∀ v : SobolevEuclideanZero 2 1 2 Ω, Elliptic.dirichletForm Ω u v = Elliptic.load Ω f v) →
+      ∀ uh : ι → SobolevEuclideanZero 2 1 2 Ω,
+        (∀ i, IsGalerkinSolution
+          ((Elliptic.dirichletForm Ω).restrict (SobolevEuclideanZero 2 1 2 Ω))
+          ((Elliptic.load Ω f).comp (SobolevEuclideanZero 2 1 2 Ω).subtypeL)
+          (equation_12_94 (𝒯 i) k) (uh i)) →
+        ∀ ũ : 𝔼₂ → ℝ,
+          SobolevMultiIndex.fn (u : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] ũ →
+          MemSobolev ũ (s + 1) 2 Ω volume → ContinuousOn ũ (closure (Ω : Set 𝔼₂)) →
+          EqOn ũ 0 (frontier (Ω : Set 𝔼₂)) →
+          ∀ i, ‖u - uh i‖ ≤ (1 / (1 + (2 * R) ^ 2)⁻¹) * C * (𝒯 i).meshSize ^ s
+            * (sobolevNorm ũ (s + 1) 2 Ω volume).toReal := by
+  have hk0 : 0 < k := hk
+  have hpos : (0 : ℝ) < (1 + (2 * R) ^ 2)⁻¹ := by positivity
+  have hα : (0 : ℝ) < 1 + (2 * R) ^ 2 := by positivity
+  have h10 := AtkinsonHan.Chapter10.theorem_10_4_1 (k := s) hs
+    (AtkinsonHan.Chapter10.latticeNode k) (AtkinsonHan.Chapter10.latticeShapeFun k)
+    (AtkinsonHan.Chapter10.latticeNode_mem_closure hk0)
+    (fun i ↦ (AtkinsonHan.Chapter10.contDiff_latticeShapeFun k i).of_le (by simp))
+    (fun q hq x _ ↦ AtkinsonHan.Chapter10.nodalInterp_lattice_eval hk0 q (hq.trans hsk) x)
+    hreg hH (fun i ↦ AtkinsonHan.Chapter10.isConformingElement_lattice hk0 (𝒯 i))
+    (AtkinsonHan.Chapter10.poissonForm_isBoundedWith Ω) hpos
+    (AtkinsonHan.Chapter10.poissonForm_isEllipticWith Ω hR hΩ)
+  obtain ⟨c, hc0, hc⟩ := h10
+  refine ⟨c / (1 + (2 * R) ^ 2), by positivity, fun f u hu uh huh ũ hũ hũk hũc hũ0 i ↦ ?_⟩
+  have hint : ∀ i, ∃ w ∈ equation_12_94 (𝒯 i) k,
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)]
+        (𝒯 i).globalInterp (AtkinsonHan.Chapter10.latticeNode k)
+          (AtkinsonHan.Chapter10.latticeShapeFun k) ũ := fun i ↦
+    (𝒯 i).exists_mem_polySpaceZero_globalInterp 2 (by simp)
+      (AtkinsonHan.Chapter10.isConformingElement_lattice hk0 (𝒯 i))
+      (fun i ↦ (AtkinsonHan.Chapter10.contDiff_latticeShapeFun k i).continuous)
+      (AtkinsonHan.Chapter10.isEdgeUnisolvent_lattice hk0)
+      (AtkinsonHan.Chapter10.latticeShapeFun_eq_eval k) (hedge i) hũ0
+  have h := hc (AtkinsonHan.Chapter10.poissonLoad Ω f) u hu (fun i ↦ equation_12_94 (𝒯 i) k) uh
+    huh ũ hũ hũk hũc hint i
+  refine h.trans ?_
+  -- the seminorm is bounded by the norm, and `(M/α₀) C = c`
+  have hfin : sobolevNorm ũ (s + 1) 2 Ω volume ≠ ⊤ := by
+    refine ne_top_of_le_ne_top ?_ (hũk.sobolevNorm_le_sum_sobolevSeminorm (by simp))
+    exact ENNReal.sum_ne_top.2 fun n _ ↦
+      (hũk.mono_order (by exact_mod_cast Nat.lt_succ_iff.1 n.2)).sobolevSeminorm_ne_top
+  have hle : (sobolevSeminorm ũ (s + 1) 2 Ω volume).toReal
+      ≤ (sobolevNorm ũ (s + 1) 2 Ω volume).toReal :=
+    ENNReal.toReal_mono hfin
+      (eLpNorm_weakIteratedFDeriv_le_sobolevNorm (by simp) (by simp) le_rfl)
+  have hh0 : 0 ≤ (𝒯 i).meshSize := (𝒯 i).meshSize_nonneg
+  have hcc : 1 / (1 + (2 * R) ^ 2)⁻¹ * (c / (1 + (2 * R) ^ 2)) = c := by
+    field_simp
+  rw [hcc]
+  gcongr
+
+end FiniteElement
 
 end QuarteroniSaccoSaleri.Chapter12

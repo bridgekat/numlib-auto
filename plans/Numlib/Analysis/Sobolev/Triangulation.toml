@@ -60,3 +60,81 @@ id = "Continuous.memLp_restrict_of_isBounded"
 
 [[node]]
 id = "ContDiff.memSobolev_of_isBounded"
+
+[[node]]
+id = "Triangulation.IsPiecewisePoly"
+
+[[node]]
+id = "Triangulation.IsPiecewisePoly.zero"
+
+[[node]]
+id = "Triangulation.IsPiecewisePoly.add"
+
+[[node]]
+id = "Triangulation.IsPiecewisePoly.smul"
+
+[[node]]
+id = "Triangulation.contDiff_eval_symm"
+
+[[node]]
+id = "Triangulation.IsPiecewisePoly.memSobolev"
+
+[[node]]
+id = "Triangulation.globalInterp_isPiecewisePoly"
+
+[[node]]
+id = "Triangulation.polySpace"
+
+[[node]]
+id = "Triangulation.mem_polySpace_iff"
+
+[[node]]
+id = "Triangulation.exists_mem_polySpace"
+
+[[node]]
+id = "Triangulation.eqOn_closure_of_ae_eq"
+
+[[node]]
+id = "Triangulation.globalInterp_eqOn_closure_of_isPiecewisePoly"
+
+[[node]]
+id = "Triangulation.polySpaceRep"
+
+[[node]]
+id = "Triangulation.continuousOn_polySpaceRep"
+
+[[node]]
+id = "Triangulation.isPiecewisePoly_polySpaceRep"
+
+[[node]]
+id = "Triangulation.fn_ae_eq_polySpaceRep"
+
+[[node]]
+id = "Triangulation.polySpaceRep_eqOn"
+
+[[node]]
+id = "Triangulation.nodalValues"
+
+[[node]]
+id = "Triangulation.nodalValues_injective"
+
+[[node]]
+id = "Triangulation.finiteDimensional_polySpace"
+
+[[node]]
+id = "Triangulation.polySpaceZero"
+
+[[node]]
+id = "Triangulation.mem_polySpaceZero_iff"
+
+[[node]]
+id = "Triangulation.coe_mem_polySpace_of_mem_polySpaceZero"
+
+[[node]]
+id = "Triangulation.exists_mem_polySpaceZero"
+
+[[node]]
+id = "Triangulation.exists_mem_polySpaceZero_globalInterp"
+
+[[node]]
+id = "Triangulation.finiteDimensional_polySpaceZero"

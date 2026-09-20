@@ -1,6 +1,7 @@
 import Numlib.Analysis.Calculus.IntegrationByPartsOffSegments
 import Numlib.Analysis.Sobolev.Friedrichs
 import Numlib.Analysis.Sobolev.SeminormCompare
+import Numlib.Analysis.Sobolev.Zero
 import Numlib.Geometry.Triangulation
 
 /-!
@@ -31,6 +32,17 @@ The two facts about Sobolev spaces that the finite element method needs from a t
 * **The glued function.** The function `𝒯.glue g` equal to `g K` on each closed element, for a
   compatible family of `C¹` pieces, is therefore in `W^{1,p}(Ω)` (`Triangulation.memSobolev_glue`):
   this is how the global finite element interpolant `Π_h v` enters `H¹(Ω)`.
+* **The finite element spaces.** `Triangulation.polySpace p k` is the space `X_h ⊆ W^{1,p}(Ω)`
+  of continuous piecewise polynomials of degree at most `k` (`Triangulation.IsPiecewisePoly`),
+  and `Triangulation.polySpaceZero p k` the space `V_h ⊆ W_0^{1,p}(Ω)` of those vanishing on
+  `∂Ω` ([quarteroni2000numerical] (12.94), [han2009theoretical] §10.4). The boundary condition
+  is read on the continuous representative and needs no trace: a continuous `W^{1,p}` function
+  vanishing on `∂Ω` lies in `W_0^{1,p}(Ω)` on any open set ([brezis2011functional] Theorem 9.17,
+  `Triangulation.exists_mem_polySpaceZero`). The interpolant of a boundary-vanishing function
+  lies in `V_h` for an edge-unisolvent element on a polygon
+  (`Triangulation.exists_mem_polySpaceZero_globalInterp`), and both spaces are
+  finite-dimensional once a conforming element reproducing `ℙ_k` is fixed, an element of `X_h`
+  being determined by its nodal values (`Triangulation.finiteDimensional_polySpace`).
 -/
 
 open EuclideanSpace Function Set Topology MeasureTheory TopologicalSpace
@@ -287,6 +299,357 @@ theorem sobolevNorm_sub_globalInterp (h : 𝒯.IsConformingElement xhat φhat) (
   𝒯.sobolevNorm_sub_glue (h v) T v k
 
 end Interpolant
+
+/-! #### Continuous piecewise polynomials: the finite element spaces -/
+
+section PolySpace
+
+open MvPolynomial
+
+/-- **A piecewise polynomial of degree at most `k`** on the triangulation: on each closed element
+`K` the function is a polynomial of total degree at most `k` in the reference coordinates
+`F_K⁻¹ x`, that is, `v|_K ∈ ℙ_k(K)` ([han2009theoretical] §10.4, [quarteroni2000numerical]
+(12.94), (8.35)). -/
+def IsPiecewisePoly (k : ℕ) (v : 𝔼₂ → ℝ) : Prop :=
+  ∀ T : 𝒯.elems, ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
+    ∀ x ∈ 𝒯.closedK T, v x = eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q
+
+variable {𝒯}
+
+/-- The zero function is piecewise polynomial. -/
+theorem IsPiecewisePoly.zero (k : ℕ) : 𝒯.IsPiecewisePoly k 0 := fun _ ↦
+  ⟨0, by simp, fun _ _ ↦ by simp⟩
+
+/-- The sum of two piecewise polynomials of degree at most `k` is one. -/
+theorem IsPiecewisePoly.add {k : ℕ} {v w : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecewisePoly k v)
+    (hw : 𝒯.IsPiecewisePoly k w) : 𝒯.IsPiecewisePoly k (v + w) := fun T ↦ by
+  obtain ⟨q, hq, hvq⟩ := hv T
+  obtain ⟨r, hr, hwr⟩ := hw T
+  refine ⟨q + r, (totalDegree_add q r).trans (max_le hq hr), fun x hx ↦ ?_⟩
+  rw [Pi.add_apply, hvq x hx, hwr x hx, map_add]
+
+/-- A scalar multiple of a piecewise polynomial of degree at most `k` is one. -/
+theorem IsPiecewisePoly.smul {k : ℕ} {v : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecewisePoly k v) (c : ℝ) :
+    𝒯.IsPiecewisePoly k (c • v) := fun T ↦ by
+  obtain ⟨q, hq, hvq⟩ := hv T
+  refine ⟨c • q, (totalDegree_smul_le c q).trans hq, fun x hx ↦ ?_⟩
+  rw [Pi.smul_apply, hvq x hx, smul_eval, smul_eq_mul]
+
+variable (𝒯)
+
+/-- A polynomial in the reference coordinates of an element is smooth. -/
+theorem contDiff_eval_symm (T : 𝒯.elems) (q : MvPolynomial (Fin 2) ℝ) :
+    ContDiff ℝ 1 fun x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q := by
+  have : (fun x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) q)
+      = evalBasis (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis q
+        ∘ fun x ↦ (𝒯.linearPart T).symm (x - T.1 0) := by
+    funext x
+    exact (evalBasis_basisFun q _).symm
+  rw [this]
+  exact ((contDiff_evalBasis _ q).of_le (by simp)).comp
+    ((𝒯.linearPart T).symm.contDiff.comp (contDiff_id.sub contDiff_const))
+
+variable {𝒯}
+
+/-- **A continuous piecewise polynomial lies in `W^{1,p}(Ω)`** for every `1 ≤ p ≤ ∞`
+([han2009theoretical] §10.2.3, the conformity `X_h ⊆ H¹(Ω)`): `memSobolev_of_piecewise` with
+the polynomial pieces. -/
+theorem IsPiecewisePoly.memSobolev {k : ℕ} {v : 𝔼₂ → ℝ}
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (h : 𝒯.IsPiecewisePoly k v) (p : ℝ≥0∞)
+    [Fact (1 ≤ p)] : MemSobolev v 1 p Ω volume := by
+  choose q hq hvq using h
+  exact 𝒯.memSobolev_of_piecewise hv
+    (g := fun T x ↦ eval (fun j ↦ (𝒯.linearPart T).symm (x - T.1 0) j) (q T))
+    (fun T ↦ 𝒯.contDiff_eval_symm T (q T))
+    (fun T x hx ↦ hvq T x (𝒯.K_subset_closedK T hx)) p
+
+variable (𝒯)
+
+/-- **The interpolant with polynomial shape functions is piecewise polynomial**: when every
+shape function `φ̂ᵢ` is a polynomial of total degree at most `k`, so is every local
+interpolant `Π_K v = ∑ᵢ v(F_K x̂ᵢ) φ̂ᵢ ∘ F_K⁻¹` in the reference coordinates, and hence the global
+interpolant of a conforming element is piecewise polynomial. -/
+theorem globalInterp_isPiecewisePoly {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
+    (hconf : 𝒯.IsConformingElement xhat φhat) {k : ℕ}
+    (hpoly : ∀ i, ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
+      ∀ x, φhat i x = eval (fun j ↦ x j) q) (v : 𝔼₂ → ℝ) :
+    𝒯.IsPiecewisePoly k (𝒯.globalInterp xhat φhat v) := by
+  choose q hq hφq using hpoly
+  intro T
+  refine ⟨∑ i, C (v (𝒯.linearPart T (xhat i) + T.1 0)) * q i, ?_, fun x hx ↦ ?_⟩
+  · rw [← mem_restrictTotalDegree]
+    refine Submodule.sum_mem _ fun i _ ↦ ?_
+    rw [C_mul']
+    exact Submodule.smul_mem _ _ ((mem_restrictTotalDegree _ _ _).2 (hq i))
+  · rw [𝒯.globalInterp_eq_of_mem_closedK xhat φhat hconf T v hx, localInterp_apply, map_sum]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    rw [map_mul, eval_C, hφq i, mul_comm]
+
+variable (p : ℝ≥0∞)
+
+/-- **The finite element space `X_h ⊆ H¹(Ω)`** of continuous piecewise polynomials of degree at
+most `k` on the triangulation, as a subspace of `W^{1,p}(Ω)`: the elements whose function is,
+almost everywhere on `Ω`, a function continuous on `Ω̄` and piecewise polynomial of degree at
+most `k` ([han2009theoretical] §10.2.3, §10.4, "affine-equivalent finite element spaces of
+piecewise polynomials of degree less than or equal to `k`"). -/
+def polySpace (k : ℕ) : Submodule ℝ (SobolevEuclidean 2 1 p Ω) where
+  carrier := {w | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
+    𝒯.IsPiecewisePoly k v ∧ SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v}
+  add_mem' := by
+    rintro w w' ⟨v, hvc, hvp, hvw⟩ ⟨v', hvc', hvp', hvw'⟩
+    refine ⟨v + v', hvc.add hvc', hvp.add hvp', (SobolevMultiIndex.fn_add w w').trans ?_⟩
+    filter_upwards [hvw, hvw'] with x h1 h2
+    simp only [Pi.add_apply, h1, h2]
+  zero_mem' := ⟨0, continuousOn_const, IsPiecewisePoly.zero k, SobolevMultiIndex.fn_zero⟩
+  smul_mem' := by
+    rintro c w ⟨v, hvc, hvp, hvw⟩
+    refine ⟨c • v, hvc.const_smul c, hvp.smul c, (SobolevMultiIndex.fn_smul c w).trans ?_⟩
+    filter_upwards [hvw] with x h1
+    simp only [Pi.smul_apply, h1]
+
+/-- Membership of `X_h`, unfolded. -/
+theorem mem_polySpace_iff {k : ℕ} {w : SobolevEuclidean 2 1 p Ω} :
+    w ∈ 𝒯.polySpace p k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
+      𝒯.IsPiecewisePoly k v ∧ SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
+  Iff.rfl
+
+/-- **Every continuous piecewise polynomial is the function of an element of `X_h`**: the
+space `X_h` is the book's space of continuous piecewise polynomials. -/
+theorem exists_mem_polySpace [Fact (1 ≤ p)] {k : ℕ} {v : 𝔼₂ → ℝ}
+    (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v) :
+    ∃ w ∈ 𝒯.polySpace p k, SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v := by
+  have h := ((hvp.memSobolev hvc p).memSobolevMultiIndex
+    (b := (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis)).exists_sobolevMultiIndex
+  obtain ⟨u, hu⟩ := h
+  exact ⟨u, ⟨v, hvc, hvp, hu⟩, hu⟩
+
+/-! ##### Finite dimensionality
+
+`X_h` is finite-dimensional because an element of `X_h` is determined by its nodal values, once
+a conforming element reproducing `ℙ_k` is fixed: the continuous representative `v` of `w ∈ X_h`
+is unique (two continuous functions agreeing almost everywhere on the open set `Ω` agree on
+`Ω̄`), it satisfies `v = Π_h v` on `Ω̄` (`ℙ_k` reproduction on each element), and `Π_h v` depends
+on the nodal values of `v` only. -/
+
+omit 𝒯 in
+/-- Two functions continuous on `Ω̄` that are almost everywhere equal on `Ω` agree on `Ω̄`. -/
+theorem eqOn_closure_of_ae_eq {v v' : 𝔼₂ → ℝ} (h : v =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v')
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContinuousOn v' (closure (Ω : Set 𝔼₂))) :
+    EqOn v v' (closure (Ω : Set 𝔼₂)) :=
+  (Measure.eqOn_open_of_ae_eq h Ω.isOpen (hv.mono subset_closure)
+    (hv'.mono subset_closure)).of_subset_closure hv hv' subset_closure subset_rfl
+
+/-- **`ℙ_k` reproduction on the elements**: for a conforming element with nodes in the closed
+reference triangle whose reference interpolant reproduces every polynomial of total degree at
+most `k`, the global interpolant of a piecewise polynomial of degree at most `k` is that
+function on `Ω̄`. -/
+theorem globalInterp_eqOn_closure_of_isPiecewisePoly {I : ℕ} {xhat : Fin I → 𝔼₂}
+    {φhat : Fin I → 𝔼₂ → ℝ} (hconf : 𝒯.IsConformingElement xhat φhat)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
+    (hrep : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∀ x : 𝔼₂,
+      Approximation.nodalInterp xhat φhat (fun y ↦ eval (fun j ↦ y j) q) x = eval (fun j ↦ x j) q)
+    {v : 𝔼₂ → ℝ} (hv : 𝒯.IsPiecewisePoly k v) :
+    EqOn (𝒯.globalInterp xhat φhat v) v (closure (Ω : Set 𝔼₂)) := by
+  intro x hx'
+  rw [𝒯.closure_eq_iUnion_closedK, mem_iUnion] at hx'
+  obtain ⟨T, hxT⟩ := hx'
+  obtain ⟨q, hq, hvq⟩ := hv T
+  rw [𝒯.globalInterp_eq_of_mem_closedK xhat φhat hconf T v hxT, hvq x hxT,
+    𝒯.localInterp_eq_nodalInterp_comp, ← hrep q hq]
+  simp only [Approximation.nodalInterp_apply]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [hvq _ (𝒯.node_mem_closedK xhat hx T i), 𝒯.affine_symm]
+
+/-- The continuous representative of an element of `X_h`. -/
+noncomputable def polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) : 𝔼₂ → ℝ := w.2.choose
+
+/-- The continuous representative is continuous on `Ω̄`. -/
+theorem continuousOn_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
+    ContinuousOn (𝒯.polySpaceRep p w) (closure (Ω : Set 𝔼₂)) := w.2.choose_spec.1
+
+/-- The continuous representative is piecewise polynomial. -/
+theorem isPiecewisePoly_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
+    𝒯.IsPiecewisePoly k (𝒯.polySpaceRep p w) := w.2.choose_spec.2.1
+
+/-- The continuous representative represents. -/
+theorem fn_ae_eq_polySpaceRep {k : ℕ} (w : 𝒯.polySpace p k) :
+    SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
+      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] 𝒯.polySpaceRep p w := w.2.choose_spec.2.2
+
+/-- The continuous representative is the unique one: any function continuous on `Ω̄`
+representing `w` agrees with it on `Ω̄`. -/
+theorem polySpaceRep_eqOn {k : ℕ} (w : 𝒯.polySpace p k) {v : 𝔼₂ → ℝ}
+    (hv : ContinuousOn v (closure (Ω : Set 𝔼₂)))
+    (hvw : SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
+      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v) :
+    EqOn (𝒯.polySpaceRep p w) v (closure (Ω : Set 𝔼₂)) :=
+  eqOn_closure_of_ae_eq ((𝒯.fn_ae_eq_polySpaceRep p w).symm.trans hvw)
+    (𝒯.continuousOn_polySpaceRep p w) hv
+
+/-- **The nodal values of an element of `X_h`**, as a linear map into `ℝ^{𝒯.elems × I}`: the
+values of the continuous representative at the nodes `F_K x̂ᵢ` of the elements. -/
+noncomputable def nodalValues {I : ℕ} (xhat : Fin I → 𝔼₂)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) (k : ℕ) :
+    𝒯.polySpace p k →ₗ[ℝ] (𝒯.elems × Fin I → ℝ) where
+  toFun w := fun q ↦ 𝒯.polySpaceRep p w (𝒯.linearPart q.1 (xhat q.2) + q.1.1 0)
+  map_add' w w' := by
+    funext q
+    have hmem := 𝒯.closedK_subset_closure q.1 (𝒯.node_mem_closedK xhat hx q.1 q.2)
+    have h := 𝒯.polySpaceRep_eqOn p (w + w') (v := 𝒯.polySpaceRep p w + 𝒯.polySpaceRep p w')
+      ((𝒯.continuousOn_polySpaceRep p w).add (𝒯.continuousOn_polySpaceRep p w')) ?_
+    · exact h hmem
+    · refine (SobolevMultiIndex.fn_add (w : SobolevEuclidean 2 1 p Ω) w').trans ?_
+      filter_upwards [𝒯.fn_ae_eq_polySpaceRep p w, 𝒯.fn_ae_eq_polySpaceRep p w'] with x h1 h2
+      simp only [Pi.add_apply, h1, h2]
+  map_smul' c w := by
+    funext q
+    have hmem := 𝒯.closedK_subset_closure q.1 (𝒯.node_mem_closedK xhat hx q.1 q.2)
+    have h := 𝒯.polySpaceRep_eqOn p (c • w) (v := c • 𝒯.polySpaceRep p w)
+      ((𝒯.continuousOn_polySpaceRep p w).const_smul c) ?_
+    · exact h hmem
+    · refine (SobolevMultiIndex.fn_smul c (w : SobolevEuclidean 2 1 p Ω)).trans ?_
+      filter_upwards [𝒯.fn_ae_eq_polySpaceRep p w] with x h1
+      simp only [Pi.smul_apply, h1]
+
+/-- **An element of `X_h` is determined by its nodal values**, for a conforming element
+reproducing `ℙ_k`: the nodal-value map is injective. -/
+theorem nodalValues_injective {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
+    (hconf : 𝒯.IsConformingElement xhat φhat)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
+    (hrep : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∀ x : 𝔼₂,
+      Approximation.nodalInterp xhat φhat (fun y ↦ eval (fun j ↦ y j) q) x
+        = eval (fun j ↦ x j) q) :
+    Function.Injective (𝒯.nodalValues p xhat hx k) := by
+  refine (injective_iff_map_eq_zero _).2 fun w hw ↦ ?_
+  -- the representative vanishes at every node, hence its interpolant vanishes
+  have hint : 𝒯.globalInterp xhat φhat (𝒯.polySpaceRep p w) = 0 := by
+    rw [← 𝒯.globalInterp_zero xhat φhat]
+    refine 𝒯.globalInterp_congr xhat φhat fun T i ↦ ?_
+    exact congrFun hw (T, i)
+  -- so the representative vanishes on `Ω̄` by `ℙ_k` reproduction
+  have hrep0 : EqOn (𝒯.polySpaceRep p w) 0 (closure (Ω : Set 𝔼₂)) := fun x hx' ↦ by
+    rw [← 𝒯.globalInterp_eqOn_closure_of_isPiecewisePoly hconf hx hrep
+      (𝒯.isPiecewisePoly_polySpaceRep p w) hx', hint]
+  -- hence `w = 0`
+  apply Subtype.ext
+  refine SobolevMultiIndex.ext_of_fn_ae_eq ((𝒯.fn_ae_eq_polySpaceRep p w).trans ?_)
+  refine Filter.EventuallyEq.trans ?_ (SobolevMultiIndex.fn_zero (F := ℝ)
+    (b := (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis)).symm
+  refine (ae_restrict_iff' Ω.isOpen.measurableSet).2 (Filter.Eventually.of_forall fun x hx' ↦ ?_)
+  exact hrep0 (subset_closure hx')
+
+/-- **`X_h` is finite-dimensional** once a conforming element with nodes in the closed
+reference triangle reproducing `ℙ_k` is given (the `ℙ_k` Lagrange element on the principal
+lattice, for instance): its elements are determined by finitely many nodal values. -/
+theorem finiteDimensional_polySpace {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
+    (hconf : 𝒯.IsConformingElement xhat φhat)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
+    (hrep : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∀ x : 𝔼₂,
+      Approximation.nodalInterp xhat φhat (fun y ↦ eval (fun j ↦ y j) q) x
+        = eval (fun j ↦ x j) q) :
+    FiniteDimensional ℝ (𝒯.polySpace p k) :=
+  FiniteDimensional.of_injective (𝒯.nodalValues p xhat hx k)
+    (𝒯.nodalValues_injective p hconf hx hrep)
+
+/-! ##### The space with the homogeneous Dirichlet condition -/
+
+variable [Fact (1 ≤ p)]
+
+/-- **The finite element space `V_h ⊆ H¹₀(Ω)`** of continuous piecewise polynomials of degree
+at most `k` vanishing on the boundary, as a subspace of `W_0^{1,p}(Ω)`:
+
+  `V_h = {v_h ∈ C(Ω̄) : v_h|_K ∈ ℙ_k(K) for every K ∈ 𝒯_h, v_h|_∂Ω = 0}`
+
+([quarteroni2000numerical] (12.94), [han2009theoretical] Example 10.4.2). Its elements are the
+elements of `W_0^{1,p}(Ω)` whose function is, almost everywhere on `Ω`, such a `v_h`; that every
+such `v_h` *is* the function of an element of `W_0^{1,p}(Ω)` is `exists_mem_polySpaceZero`
+(Brezis's Theorem 9.17, (i) ⇒ (ii), which needs no regularity of `Ω`). -/
+def polySpaceZero (k : ℕ) : Submodule ℝ (SobolevEuclideanZero 2 1 p Ω) where
+  carrier := {w | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
+    𝒯.IsPiecewisePoly k v ∧ EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
+    SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v}
+  add_mem' := by
+    rintro w w' ⟨v, hvc, hvp, hv0, hvw⟩ ⟨v', hvc', hvp', hv0', hvw'⟩
+    refine ⟨v + v', hvc.add hvc', hvp.add hvp', fun x hx ↦ ?_,
+      (SobolevMultiIndex.fn_add (w : SobolevEuclidean 2 1 p Ω) w').trans ?_⟩
+    · simp only [Pi.add_apply, hv0 hx, hv0' hx, Pi.zero_apply, add_zero]
+    · filter_upwards [hvw, hvw'] with x h1 h2
+      simp only [Pi.add_apply, h1, h2]
+  zero_mem' := ⟨0, continuousOn_const, IsPiecewisePoly.zero k, fun _ _ ↦ rfl,
+    SobolevMultiIndex.fn_zero⟩
+  smul_mem' := by
+    rintro c w ⟨v, hvc, hvp, hv0, hvw⟩
+    refine ⟨c • v, hvc.const_smul c, hvp.smul c, fun x hx ↦ ?_,
+      (SobolevMultiIndex.fn_smul c (w : SobolevEuclidean 2 1 p Ω)).trans ?_⟩
+    · simp only [Pi.smul_apply, hv0 hx, Pi.zero_apply, smul_zero]
+    · filter_upwards [hvw] with x h1
+      simp only [Pi.smul_apply, h1]
+
+/-- Membership of `V_h`, unfolded. -/
+theorem mem_polySpaceZero_iff {k : ℕ} {w : SobolevEuclideanZero 2 1 p Ω} :
+    w ∈ 𝒯.polySpaceZero p k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
+      𝒯.IsPiecewisePoly k v ∧ EqOn v 0 (frontier (Ω : Set 𝔼₂)) ∧
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
+  Iff.rfl
+
+/-- An element of `V_h` is, as an element of `W^{1,p}(Ω)`, an element of `X_h`. -/
+theorem coe_mem_polySpace_of_mem_polySpaceZero {k : ℕ} {w : SobolevEuclideanZero 2 1 p Ω}
+    (hw : w ∈ 𝒯.polySpaceZero p k) : (w : SobolevEuclidean 2 1 p Ω) ∈ 𝒯.polySpace p k := by
+  obtain ⟨v, hvc, hvp, -, hvw⟩ := hw
+  exact ⟨v, hvc, hvp, hvw⟩
+
+/-- **Every continuous piecewise polynomial vanishing on `∂Ω` is the function of an element of
+`V_h ⊆ W_0^{1,p}(Ω)`**, `1 ≤ p < ∞`: it lies in `W^{1,p}(Ω)` by `IsPiecewisePoly.memSobolev`
+and in `W_0^{1,p}(Ω)` by [brezis2011functional] Theorem 9.17, (i) ⇒ (ii)
+(`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`), with no regularity of
+`Ω` — no trace theorem is needed to read the boundary condition `v_h|_∂Ω = 0`. -/
+theorem exists_mem_polySpaceZero (hp' : p ≠ ⊤) {k : ℕ} {v : 𝔼₂ → ℝ}
+    (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v)
+    (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
+    ∃ w ∈ 𝒯.polySpaceZero p k,
+      SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v := by
+  have h := ((hvp.memSobolev hvc p).memSobolevMultiIndex
+    (b := (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis)).exists_sobolevMultiIndex
+  obtain ⟨u, hu⟩ := h
+  have hu0 : u ∈ SobolevEuclideanZero 2 1 p Ω :=
+    SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier hp' u hu hvc hv0
+  exact ⟨⟨u, hu0⟩, ⟨v, hvc, hvp, hv0, hu⟩, hu⟩
+
+/-- **The interpolant of a boundary-vanishing function lies in `V_h`**: for a conforming,
+edge-unisolvent element with polynomial shape functions of degree at most `k` on a
+triangulation whose boundary is a union of edges, the global interpolant `Π_h v` of a function
+`v` continuous on `Ω̄` and vanishing on `∂Ω` is the function of an element of `V_h`, `1 ≤ p < ∞`.
+This is the `v_h = Π_h u` step of the finite element error analysis on `H¹₀(Ω)`
+([han2009theoretical] Example 10.4.2, [quarteroni2000numerical] Property 12.2). -/
+theorem exists_mem_polySpaceZero_globalInterp (hp' : p ≠ ⊤) {I : ℕ} {xhat : Fin I → 𝔼₂}
+    {φhat : Fin I → 𝔼₂ → ℝ} (hconf : 𝒯.IsConformingElement xhat φhat)
+    (hφ : ∀ i, Continuous (φhat i)) (hunis : IsEdgeUnisolvent xhat φhat) {k : ℕ}
+    (hpoly : ∀ i, ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧
+      ∀ x, φhat i x = eval (fun j ↦ x j) q)
+    (hedge : 𝒯.FrontierSubsetEdges) {v : 𝔼₂ → ℝ} (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
+    ∃ w ∈ 𝒯.polySpaceZero p k, SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 p Ω)
+      =ᵐ[volume.restrict (Ω : Set 𝔼₂)] 𝒯.globalInterp xhat φhat v :=
+  𝒯.exists_mem_polySpaceZero p hp' (𝒯.continuousOn_globalInterp xhat φhat hconf hφ v)
+    (𝒯.globalInterp_isPiecewisePoly hconf hpoly v)
+    (𝒯.globalInterp_eqOn_frontier xhat φhat hedge hconf hunis hv0)
+
+/-- **`V_h` is finite-dimensional** under the hypotheses of `finiteDimensional_polySpace`: it
+embeds in `X_h`. -/
+theorem finiteDimensional_polySpaceZero {I : ℕ} {xhat : Fin I → 𝔼₂} {φhat : Fin I → 𝔼₂ → ℝ}
+    (hconf : 𝒯.IsConformingElement xhat φhat)
+    (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂)) {k : ℕ}
+    (hrep : ∀ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k → ∀ x : 𝔼₂,
+      Approximation.nodalInterp xhat φhat (fun y ↦ eval (fun j ↦ y j) q) x
+        = eval (fun j ↦ x j) q) :
+    FiniteDimensional ℝ (𝒯.polySpaceZero p k) := by
+  have := 𝒯.finiteDimensional_polySpace p hconf hx hrep
+  refine FiniteDimensional.of_injective (LinearMap.codRestrict (𝒯.polySpace p k)
+    ((SobolevEuclideanZero 2 1 p Ω).subtype.comp (𝒯.polySpaceZero p k).subtype)
+    fun w ↦ 𝒯.coe_mem_polySpace_of_mem_polySpaceZero p w.2) fun w w' h ↦ ?_
+  have h' := congrArg Subtype.val h
+  exact Subtype.ext (Subtype.ext h')
+
+end PolySpace
 
 end Triangulation
 

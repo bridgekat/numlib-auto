@@ -33,27 +33,76 @@ Example 11.4.4: Theorem 11.4.2 applied to the friction problem (11.1.13) on a po
 a regular partition. An integration by parts turns the residual into
 `R(v_h, u) = ∫_Γ [(∂u/∂ν)(v_h - u) + g (|v_h| - |u|)] ds + ∫_Ω (-Δu + u - f)(v_h - u) dx`, whence
 `|R(v_h, u)| ≤ (‖∂u/∂ν‖_{L²(Γ)} + g √(meas Γ)) ‖v_h - u‖_{L²(Γ)}`, and with the regularity
-`u ∈ H²(Ω)`, `u|_{Γᵢ} ∈ H²(Γᵢ)` the error estimate has order `h` in `H¹(Ω)`. Not formalized: it is
-`theorem_11_4_2` on a domain, needing the trace and the normal derivative on `Γ` and the finite
-element interpolation estimates of §10.3; §11.4's module doc records the same.
+`u ∈ H²(Ω)`, `u|_{Γᵢ} ∈ H²(Γᵢ)` the error estimate has order `h` in `H¹(Ω)`.
+
+Blocked (2026-09-21, agent fem2; replaces the 2026-09-15 note). What now exists: the
+triangulation scaffold with the linear element and its finite element space `V_h`
+(`Triangulation.polySpace`, `Numlib/Analysis/Sobolev/Triangulation.lean`), Falk's lemma in its
+pointwise form (`norm_sub_le_of_isVariationalInequalitySolution`), the interpolation estimates
+of Theorem 10.3.9 for the linear element (`Chapter10.theorem_10_3_9_linear`), and the obstacle
+analogue `example_11_4_3` proved with the same tools. What is missing is everything that lives
+on `Γ`: the friction problem itself (`example_11_3_11`, the functional `j(v) = g ∫_Γ |v| ds`)
+needs the trace `v ↦ v|_Γ` and the surface measure `ds` on the polygon's boundary, the
+integration by parts of the residual needs the normal derivative `∂u/∂ν ∈ L²(Γ)` and Green's
+formula on a polygon, and the estimate needs the trace inequality `‖v_h − u‖_{L²(Γ)} ≤ c
+‖v_h − u‖_{H¹(Ω)}` and the one-dimensional interpolation estimate on each side `Γᵢ` — all of
+`notes/frontier.md` blocker 2 (no boundary measure, trace or Green formula on a domain in
+`Numlib/`, checked: `Numlib/Analysis/Sobolev/Zero.lean` reads boundary values only through
+continuous representatives, and Mathlib's divergence theorems are box-only). Estimate: after
+blocker 2, ~300 lines on the model of `example_11_4_3`.
 '''
 deps = ["theorem_11_4_2", "example_11_3_11", "AtkinsonHan.Chapter10.theorem_10_3_9"]
 
 [[node]]
 id = "example_11_4_3"
-kind = "theorem"
-desc = '''
-Example 11.4.3: Theorem 11.4.2 applied to the obstacle problem on a polygon `Ω` with linear
-elements on a regular family of triangulations and the discrete admissible set
-`K_h = {v_h piecewise linear, v_h = 0 on Γ, v_h(x) ≥ ψ(x) at every node}`, which need not be
-contained in `K`. With `R(v, w) = ∫_Ω (-Δu - f)(v - w) dx` the inequality (11.4.7) gives the bound
-(11.4.9), and with `u, ψ ∈ H²(Ω)` the interpolant `Π_h u ∈ K_h` makes the error `O(h)`.
-Not formalized: it is `theorem_11_4_2` on a domain, needing `H¹₀(Ω)`, `H²(Ω)` and the finite element
-interpolation estimates of §10.3; §11.4's module doc records the same. Beware the near-match:
-`exercise_11_4_3` is Exercise 11.4.3, the regularization bound (11.4.20), a different result with
-the same number, and it is formalized.
-'''
-deps = ["theorem_11_4_2", "example_11_3_10", "AtkinsonHan.Chapter10.theorem_10_3_9"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3"
+
+[[node]]
+id = "baryCoord_nonneg"
+
+[[node]]
+id = "baryCoord_eq_eval"
+
+[[node]]
+id = "isEdgeUnisolvent_linear"
+
+[[node]]
+id = "globalInterp_linear_mono"
+
+[[node]]
+id = "le_on_closure_of_ae_le"
+
+[[node]]
+id = "eLpNorm_le_sobolevNorm_zero"
+
+[[node]]
+id = "discreteObstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the set K_h)"
+
+[[node]]
+id = "discreteObstacleSet_subset"
+
+[[node]]
+id = "exists_max_mem_obstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (u^{h,*} ∈ K)"
+
+[[node]]
+id = "exists_globalInterp_mem_discreteObstacleSet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (Π_h u ∈ K_h)"
+
+[[node]]
+id = "residual_le_of_eq_load"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the residual)"
+
+[[node]]
+id = "toReal_le_of_le_ofReal_mul"
+
+[[node]]
+id = "memSobolev_sub_globalInterp_linear"
+
+[[node]]
+id = "eLpNorm_max_sub_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 11.4.3 (the bound on inf_K ‖v − u_h‖₀)"
 
 [[node]]
 id = "theorem_11_4_5"
@@ -62,9 +111,17 @@ desc = '''
 Theorem 11.4.5: with `Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1 a.e. on Γ}`, the simplified friction problem
 (11.4.10) is equivalent to finding `u ∈ V` and `λ ∈ Λ` with (11.4.21)
 `∫_Ω (∇u · ∇v + u v) dx + g ∫_Γ λ v ds = ∫_Ω f v dx` for all `v ∈ V` and (11.4.22) `λ u = |u|` a.e.
-on `Γ`; the Lagrange multiplier `λ` is unique. Not formalized: the proof runs on the trace space
-`H^{1/2}(Γ)`, its density in `L²(Γ)`, a Hahn–Banach extension into `(L¹(Γ))'` and the duality
-`(L¹(Γ))' = L^∞(Γ)`, and Mathlib has neither the trace space nor the surface measure on `Γ`; the
-chapter's group description records the same, and Exercise 11.4.4 is a second proof of it.
+on `Γ`; the Lagrange multiplier `λ` is unique.
+
+Blocked (2026-09-21, agent fem2; replaces the 2026-09-15 note, whose verdict stands). The
+statement lives on the boundary: the space `L^∞(Γ)` and the integrals `∫_Γ λ v ds` need the
+surface measure on `Γ = ∂Ω` and the trace `v ↦ v|_Γ` (Theorem 7.3.10, `theorem_7_3_10`, itself
+open on blocker 2), and the proof runs on the trace space `H^{1/2}(Γ)`, its density in `L²(Γ)`, a
+Hahn–Banach extension into `(L¹(Γ))'` and the duality `(L¹(Γ))' = L^∞(Γ)` (the last exists,
+`MeasureTheory.Lp.toDual_surjective` for `p = 1` on a σ-finite measure). Checked in `Numlib/`
+(2026-09-21): no boundary measure, no trace and no `H^{1/2}(Γ)` — `notes/frontier.md` blocker 2;
+`Numlib/Analysis/Sobolev/Slobodeckij.lean` has the fractional spaces on open sets of `ℝ^N`, not on
+a boundary. Exercise 11.4.4 is a second proof through the regularization (11.4.14), on the same
+objects. Estimate: after blocker 2 (trace, `L^p(Γ)`), ~250 lines.
 '''
 deps = ["example_11_3_11", "AtkinsonHan.Chapter07.theorem_7_3_10"]

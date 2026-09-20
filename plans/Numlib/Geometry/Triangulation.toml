@@ -272,3 +272,30 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 10.2.3"
 
 [[node]]
 id = "Triangulation.affine_vertex_lineMap"
+
+[[node]]
+id = "EuclideanSpace.IsEdgeUnisolvent"
+
+[[node]]
+id = "Triangulation.segment_subset_closedK"
+
+[[node]]
+id = "Triangulation.FrontierSubsetEdges"
+
+[[node]]
+id = "Triangulation.node_mem_closedK"
+
+[[node]]
+id = "Triangulation.localInterp_eq_nodalInterp_comp"
+
+[[node]]
+id = "Triangulation.globalInterp_congr"
+
+[[node]]
+id = "Triangulation.globalInterp_zero"
+
+[[node]]
+id = "Triangulation.localInterp_eq_zero_of_mem_segment"
+
+[[node]]
+id = "Triangulation.globalInterp_eqOn_frontier"
